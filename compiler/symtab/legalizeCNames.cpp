@@ -36,12 +36,8 @@ static void symbolSub(Symbol* sym, int index) {
 
 static void applyRenamePragma(Symbol* sym) {
   if (sym->defPoint && sym->defPoint->parentStmt) {
-    for (Pragma* pragma = sym->defPoint->parentStmt->pragmas->first();
-         pragma;
-         pragma = sym->defPoint->parentStmt->pragmas->next()) {
-      if (!strncmp(pragma->str, "rename ", 7)) {
-        sym->cname = copystring(pragma->str+7);
-      }
+    if (char* pragma = sym->defPoint->parentStmt->hasPragma("rename")) {
+      sym->cname = copystring(pragma+7);
     }
   }
 }

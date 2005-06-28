@@ -44,13 +44,15 @@ static void build_constructor(StructuralType* structType) {
     forv_Vec(VarSymbol, tmp, structType->fields) {
       char* name = tmp->name;
       Type* type = tmp->type;
-      Expr* init = (tmp->defPoint->init) ? tmp->defPoint->init->copy() : new VarInitExpr(new Variable(tmp));
+      UserInitExpr* init = (tmp->defPoint->init) 
+        ? tmp->defPoint->init->copy()
+        : new UserInitExpr(new VarInitExpr(new Variable(tmp)));
       if (tmp->defPoint->init) {
         tmp->defPoint->init->remove();
       }
       ParamSymbol* arg = new ParamSymbol(
         tmp->consClass == VAR_PARAM ? PARAM_PARAMETER : PARAM_BLANK, name, type);
-      args->insertAtTail(new DefExpr(arg, new UserInitExpr(init)));
+      args->insertAtTail(new DefExpr(arg, init));
     }
   }
 

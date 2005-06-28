@@ -34,11 +34,8 @@ class Type : public BaseAST {
   Type *metaType;
 
   Type(astType_t astType, Expr* init_defaultVal);
+  COPY_DEF(Type);
   void addSymbol(Symbol* newSymbol);
-
-  Type* copy(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL);
-  Type* copyInternal(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL);
-  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
   Type *instantiate_generic(Map<BaseAST *, BaseAST *> &substitutions);
   Type *getMetaType();
 
@@ -91,7 +88,7 @@ class EnumType : public Type {
   AList<EnumSymbol>* valList;
 
   EnumType(AList<EnumSymbol>* init_valList);
-  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
+  COPY_DEF(EnumType);
 
   void traverseDefType(Traversal* traversal);
 
@@ -121,8 +118,8 @@ class DomainType : public Type {
 
   DomainType(Expr* init_expr = NULL);
   DomainType(int init_numdims);
+  COPY_DEF(DomainType);
   void computeRank(void);
-  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
 
   int rank(void);
 
@@ -156,7 +153,7 @@ class IndexType : public Type {
   IndexType(Expr* init_expr = NULL);
   //IndexType(int init_numdims);
   IndexType(Type* init_idxType);
-  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
+  COPY_DEF(IndexType);
   void codegenDef(FILE* outfile);
   
   void print(FILE* outfile);
@@ -171,8 +168,7 @@ class UserType : public Type {
   Type* definition;
 
   UserType(Type* init_definition, Expr* init_defaultVal = NULL);
-  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
-
+  COPY_DEF(UserType);
   void traverseDefType(Traversal* traversal);
 
   void printDef(FILE* outfile);
@@ -188,8 +184,7 @@ class LikeType : public Type {
   Expr* expr;
 
   LikeType(Expr* init_expr);
-  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
-
+  COPY_DEF(LikeType);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseDefType(Traversal* traversal);
 
@@ -239,8 +234,7 @@ class ClassType : public StructuralType {
  public:
   Vec<ClassType*> parentClasses;
   ClassType(astType_t astType = TYPE_CLASS);
-  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
-
+  COPY_DEF(ClassType);
   virtual void codegenStructName(FILE* outfile);
   virtual void ClassType::codegenMemberAccessOp(FILE* outfile);
 
@@ -252,7 +246,7 @@ class ClassType : public StructuralType {
 class RecordType : public StructuralType {
  public:
   RecordType(void);
-  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
+  COPY_DEF(RecordType);
 };
 
 
@@ -270,7 +264,7 @@ class UnionType : public StructuralType {
   EnumType* fieldSelector;
 
   UnionType();
-  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
+  COPY_DEF(UnionType);
 
   void buildFieldSelector(void);
   FnCall* buildSafeUnionAccessCall(unionCall type, Expr* base, Symbol* field);
@@ -291,7 +285,7 @@ class TupleType : public StructuralType {
   Vec<Type*> components;
 
   TupleType(void);
-  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
+  COPY_DEF(TupleType);
   void traverseDefType(Traversal* traversal);
   void print(FILE* outfile);
 
@@ -306,7 +300,7 @@ class ArrayType : public Type {
   Type* elementType;
 
   ArrayType(Expr* init_domain, Type* init_elementType);
-  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
+  COPY_DEF(ArrayType);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseDefType(Traversal* traversal);
@@ -347,7 +341,7 @@ class VariableType : public Type {
   Type* type;
 
   VariableType(Type *init_type = NULL);
-  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
+  COPY_DEF(VariableType);
   void traverseDefType(Traversal* traversal);
   void codegen(FILE* outfile);
 };
@@ -357,7 +351,7 @@ class ExprType : public Type {
   Expr* expr;
 
   ExprType(Expr *init_expr = NULL);
-  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
+  COPY_DEF(ExprType);
   void traverseDefType(Traversal* traversal);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void print(FILE* outfile);
@@ -369,7 +363,7 @@ class UnresolvedType : public Type {
   Vec<char*>* names;
 
   UnresolvedType(Vec<char*>* init_names);
-  virtual Type* copyType(bool clone, Map<BaseAST*,BaseAST*>* map);
+  COPY_DEF(UnresolvedType);
   void print(FILE* outfile);
   void codegen(FILE* outfile);
 };

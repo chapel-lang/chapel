@@ -47,7 +47,7 @@ static void build_anon_array_type_def(Stmt* stmt, Type** type) {
           TypeSymbol* array_sym = new TypeSymbol(name, array_type);
           array_type->addSymbol(array_sym);
           array_type->domainType = domain_type;
-          array_type->defaultVal = array_type->elementType->defaultVal->copy();
+          array_type->defaultVal = COPY(array_type->elementType->defaultVal);
           DefExpr* def_expr = new DefExpr(array_sym);
           DefStmt* array_type_def = new DefStmt(def_expr);
           if (Symboltable::getCurrentScope() == commonModule->modScope) {

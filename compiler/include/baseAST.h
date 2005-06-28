@@ -96,8 +96,6 @@ enum astType_t {
 
   LIST,
 
-  PRAGMA,
-
   AST_TYPE_END 
 };
 
@@ -106,7 +104,25 @@ extern char* astTypeName[];
 #define isSomeStmt(_x) (((_x) >= STMT) && (_x) < EXPR)
 #define isSomeExpr(_x) (((_x) >= EXPR) && (_x) < SYMBOL)
 #define isSomeSymbol(_x) (((_x) >= SYMBOL) && (_x) < TYPE)
-#define isSomeType(_x) (((_x) >= TYPE) && (_x) < AST_TYPE_END)
+#define isSomeType(_x) (((_x) >= TYPE) && (_x) < LIST)
+
+#define COPY_DEF(type)                                   \
+  virtual type* copy(bool clone = false,                 \
+                     Map<BaseAST*,BaseAST*>* map = NULL, \
+                     Vec<BaseAST*>* update_list = NULL,  \
+                     bool internal = false) {            \
+    preCopy(clone, map, update_list, internal);          \
+    type* _this = copyInner(clone, map);                 \
+    postCopy(_this, clone, map, update_list, internal);  \
+    return _this;                                        \
+  }                                                      \
+  virtual type* copyInner(bool clone,                    \
+                          Map<BaseAST*,BaseAST*>* map)
+
+#define COPY(c) (c ? c->copy() : NULL)
+#define COPY_INTERNAL(c) (c ? c->copy(clone, map, NULL, true) : NULL)
+#define CLONE(c) (c ? c->copy(true) : NULL)
+#define CLONE_INTERNAL(c) (c ? c->copy(true, map, NULL, true) : NULL)
 
 class BaseAST : public gc {
  public:
@@ -124,11 +140,13 @@ class BaseAST : public gc {
   Vec<char*>* copyInfo; // traversals where this was copied
   BaseAST* copyFrom;    // if this was created in a copy, from what?
 
+  Vec<char*> pragmas;
+
   static long getNumIDs(void);
 
   BaseAST(void);
   BaseAST(astType_t type);
-
+  COPY_DEF(BaseAST);
   virtual void traverse(Traversal* traversal, bool atTop = true);
   virtual void traverseDef(Traversal* traversal, bool atTop = true);
 
@@ -148,11 +166,15 @@ class BaseAST : public gc {
 
 // need to put this as default value to copy for new interface
 //    new Map<BaseAST*,BaseAST*>();
-  void copySupport(BaseAST* copy, bool clone, Map<BaseAST*,BaseAST*>* map, Vec<BaseAST*>* update_list);
-  void copySupportTopLevel(BaseAST* copy, bool clone, Map<BaseAST*,BaseAST*>* map, Vec<BaseAST*>* update_list);
+  void preCopy(bool clone, Map<BaseAST*,BaseAST*>*& map, Vec<BaseAST*>* update_list, bool internal);
+  void postCopy(BaseAST* copy, bool clone, Map<BaseAST*,BaseAST*>* map, Vec<BaseAST*>* update_list, bool internal);
 
   char* stringLoc(void);
   void printLoc(FILE* outfile);
+
+  char* hasPragma(char* str);
+  void addPragma(char* str);
+  void copyPragmas(Vec<char*> srcPragmas);
 };
 
 #define forv_BaseAST(_p, _v) forv_Vec(BaseAST, _p, _v)

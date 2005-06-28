@@ -32,24 +32,20 @@ void OmitForNoAnalysis::postProcessStmt(Stmt* stmt) {
     return;
   }
 
-  Pragma* pr = def_stmt->pragmas->first();
-  while (pr) {
-    if (!strcmp(pr->str, "omit for noanalysis")) {
-      DefExpr* def_expr = def_stmt->defExprls->first();
-      while (def_expr) {
-        Symbol* sym = def_expr->sym;
-        sym->parentScope->remove(sym);
-        if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
-          Symboltable::removeScope(fn->paramScope);
-        } else if (StructuralType* ctype = dynamic_cast<StructuralType*>(sym->type)) {
-          Symboltable::removeScope(ctype->structScope);
-        } 
-        def_expr = def_stmt->defExprls->next();
-      }
-      def_stmt->remove();
-      return;
+  if (def_stmt->hasPragma("omit for noanalysis")) {
+    DefExpr* def_expr = def_stmt->defExprls->first();
+    while (def_expr) {
+      Symbol* sym = def_expr->sym;
+      sym->parentScope->remove(sym);
+      if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
+        Symboltable::removeScope(fn->paramScope);
+      } else if (StructuralType* ctype = dynamic_cast<StructuralType*>(sym->type)) {
+        Symboltable::removeScope(ctype->structScope);
+      } 
+      def_expr = def_stmt->defExprls->next();
     }
-    pr = def_stmt->pragmas->next();
+    def_stmt->remove();
+    return;
   }
 }
 

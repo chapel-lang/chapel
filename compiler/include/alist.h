@@ -25,9 +25,10 @@ class AList : public BaseAST {
   void clear(void);
 
   // copy routines
-  AList<elemType>* copy(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL,
-                        Vec<BaseAST*>* update_list = NULL);
-  AList<elemType>* copyInternal(bool clone, Map<BaseAST*,BaseAST*>* map);
+  virtual AList<elemType>* copy(bool clone = false,
+                                Map<BaseAST*,BaseAST*>* map = NULL,
+                                Vec<BaseAST*>* update_list = NULL,
+                                bool internal = false);
 
   // checks for length
   bool isEmpty(void);
@@ -356,41 +357,43 @@ void AList<elemType>::codegenDef(FILE* outfile, char* separator) {
 
 
 template <class elemType>
-AList<elemType>* AList<elemType>::copy(bool clone, Map<BaseAST*,BaseAST*>* map,
-                                       Vec<BaseAST*>* update_list) {
+AList<elemType>*
+AList<elemType>::copy(bool clone,
+                      Map<BaseAST*,BaseAST*>* map,
+                      Vec<BaseAST*>* update_list,
+                      bool internal) {
   if (isEmpty()) {
     return new AList<elemType>();
   }
-  
-  if (map == NULL) {
+
+  if (!map) {
     map = new Map<BaseAST*,BaseAST*>();
   }
-  AList<elemType>* newList = copyInternal(clone, map);
-  if (update_list) {
-    for (int j = 0; j < update_list->n; j++) {
-      for (int i = 0; i < map->n; i++) {
-        if (update_list->v[j] == map->v[i].key) {
-          update_list->v[j] = map->v[i].value;
-        }
-      }
-    }
-  }
-  newList->traverse(new UpdateSymbols(map), true);
-  return newList;
-}
 
-
-template <class elemType>
-AList<elemType>* AList<elemType>::copyInternal(bool clone, 
-                                               Map<BaseAST*, BaseAST*>* map) {
-  AList<elemType>* newList = new AList<elemType>;
+  AList<elemType>* newList = new AList<elemType>();
   _for_all_elems(node) {
-    elemType* newnode = dynamic_cast<elemType*>(node->copyInternal(clone, map));
+    elemType* newnode = COPY_INTERNAL(node);
     newnode->next = NULL;
     newnode->prev = NULL;
     newList->insertAtTail(newnode);
   }
 
+  newList->copyFrom = this;
+  newList->lineno = lineno;
+  newList->filename = filename;
+  newList->copyPragmas(pragmas);
+  if (!internal) {
+    if (update_list) {
+      for (int j = 0; j < update_list->n; j++) {
+        for (int i = 0; i < map->n; i++) {
+          if (update_list->v[j] == map->v[i].key) {
+            update_list->v[j] = map->v[i].value;
+          }
+        }
+      }
+    }
+    TRAVERSE(newList, new UpdateSymbols(map), true);
+  }
   return newList;
 }
 

@@ -4,7 +4,6 @@
 #include "alist.h"
 #include "baseAST.h"
 #include "analysis.h"
-#include "pragma.h"
 #include "type.h"
 
 class DefExpr;
@@ -42,7 +41,6 @@ class Symbol : public BaseAST {
   bool isDead;
   bool keepLive;
   DefExpr* defPoint; // Point of definition
-  AList<Pragma> *pragmas;
 
   ASymbol *asymbol;
   Symbol* overload; // Overloading (functions only, FnSymbol/ForwardingSymbol)
@@ -50,11 +48,7 @@ class Symbol : public BaseAST {
   Symbol(astType_t astType = SYMBOL, char* init_name = NULL, 
          Type* init_type = dtUnknown, bool init_exportMe = true);
   void setParentScope(SymScope* init_parentScope);
-
-  Symbol* copy(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL);
-  Symbol* copyInternal(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL);
-  virtual Symbol* copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map);
-
+  COPY_DEF(Symbol);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void traverse(Traversal* traversal, bool atTop = true);
   virtual void traverseDef(Traversal* traversal, bool atTop = true);
@@ -76,8 +70,6 @@ class Symbol : public BaseAST {
   virtual FnSymbol* getFnSymbol(void);
   virtual Symbol* getSymbol(void);
   virtual Type* typeInfo(void);
-  bool hasPragma(char* str);
-  void addPragma(char* str);
 };
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
 
@@ -85,7 +77,7 @@ class Symbol : public BaseAST {
 class UnresolvedSymbol : public Symbol {
  public:
   UnresolvedSymbol(char* init_name, char* init_cname = NULL);
-  virtual Symbol* copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map);
+  COPY_DEF(UnresolvedSymbol);
 
   virtual void traverseDefSymbol(Traversal* traverse);
 
@@ -104,9 +96,7 @@ class VarSymbol : public Symbol {
   VarSymbol(char* init_name = NULL, Type* init_type = dtUnknown,
             varType init_varClass = VAR_NORMAL, 
             consType init_consClass = VAR_VAR);
-            
-  virtual Symbol* copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map);
-
+  COPY_DEF(VarSymbol);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void traverseDefSymbol(Traversal* traverse);
 
@@ -129,8 +119,7 @@ class ParamSymbol : public Symbol {
 
   ParamSymbol(paramType init_intent = PARAM_BLANK, char* init_name = NULL, 
               Type* init_type = dtUnknown);
-  virtual Symbol* copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map);
-
+  COPY_DEF(ParamSymbol);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void traverseDefSymbol(Traversal* traverse);
 
@@ -148,7 +137,7 @@ class ParamSymbol : public Symbol {
 class TypeSymbol : public Symbol {
  public:
   TypeSymbol(char* init_name, Type* init_definition);
-  virtual Symbol* copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map);
+  COPY_DEF(TypeSymbol);
   TypeSymbol* clone(Map<BaseAST*,BaseAST*>* map);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void traverseDefSymbol(Traversal* traverse);
@@ -182,12 +171,12 @@ class FnSymbol : public Symbol {
   bool noparens;
 
   FnSymbol(char* init_name, Symbol* init_typeBinding = NULL);
+  COPY_DEF(FnSymbol);
   void continueDef(AList<DefExpr>* init_formals, Type* init_retType, 
                    bool isRef, Expr *whereExpr);
   void finishDef(BlockStmt* init_body, SymScope* init_paramScope, 
                  bool init_exportMe=true);
   virtual FnSymbol* getFnSymbol(void);
-  virtual Symbol* copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void traverseDefSymbol(Traversal* traverse);
 
@@ -214,7 +203,7 @@ class EnumSymbol : public Symbol {
   int val;
 
   EnumSymbol(char* init_name = NULL, Expr* init_init = NULL, int init_val = 0);
-  virtual Symbol* copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map);
+  COPY_DEF(EnumSymbol);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void traverseDefSymbol(Traversal* traverse);
   static void setValues(AList<EnumSymbol>* symList);
@@ -243,6 +232,7 @@ class ModuleSymbol : public Symbol {
   Vec<SymScope*> usedBy;   // list of SymScopes that use this module
 
   ModuleSymbol(char* init_name = NULL, modType init_modtype = MOD_SENTINEL);
+  COPY_DEF(ModuleSymbol);
   void setModScope(SymScope* init_modScope);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void traverseDefSymbol(Traversal* traverse);

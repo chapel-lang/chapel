@@ -518,11 +518,11 @@ AList<DefExpr>* Symboltable::defineParams(paramType tag,
                                           AList<Symbol>* syms,
                                           Type* type, Expr* init) {
   Symbol* sym = syms->first();
-  AList<Pragma>* pragma = sym->pragmas;
+  Vec<char*>* pragma = &sym->pragmas;
   AList<DefExpr>* list = new AList<DefExpr>();
   while (sym) {
     ParamSymbol* s = new ParamSymbol(tag, sym->name, type);
-    s->pragmas = pragma;
+    s->copyPragmas(*pragma);
     list->insertAtTail(new DefExpr(s, init ? new UserInitExpr(init) : NULL));
     sym = syms->next();
   }

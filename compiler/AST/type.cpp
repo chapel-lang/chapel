@@ -37,35 +37,9 @@ void Type::addSymbol(Symbol* newsymbol) {
 }
 
 
-Type* Type::copy(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  if (!this) {
-    return this;
-  }
-
-  if (map == NULL) {
-    map = new Map<BaseAST*,BaseAST*>();
-  }
-  Type* new_type = copyInternal(clone, map);
-  TRAVERSE(new_type, new UpdateSymbols(map), true);
-  return new_type;
-}
-
-
-Type* Type::copyInternal(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  Type* new_type = copyType(clone, map);
-
-  new_type->copyFrom = this;
-  new_type->lineno = lineno;
-  new_type->filename = filename;
-  if (map) {
-    map->put(this, new_type);
-  }
-  return new_type;
-}
-
-
-Type* Type::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  INT_FATAL(this, "Unanticipated call to Type::copyType");
+Type*
+Type::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  INT_FATAL(this, "Illegal call to Type::copy");
   return NULL;
 }
 
@@ -93,7 +67,7 @@ void Type::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == defaultVal) {
     defaultVal = dynamic_cast<Expr*>(new_ast);
   } else {
-    INT_FATAL(this, "Unexpected case in Type::replaceChild(old, new)");
+    INT_FATAL(this, "Unexpected case in Type::replaceChild");
   }
 }
 
@@ -311,8 +285,9 @@ EnumType::EnumType(AList<EnumSymbol>* init_valList) :
 }
 
 
-Type* EnumType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  Type* copy = new EnumType(valList);
+EnumType*
+EnumType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  EnumType* copy = new EnumType(valList);
   copy->addSymbol(symbol);
   return copy;
 }
@@ -488,12 +463,13 @@ void DomainType::computeRank(void) {
 }
 
 
-Type* DomainType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  Type* copy;
+DomainType*
+DomainType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  DomainType* copy;
   if (!parent) {
     copy = new DomainType(numdims);
   } else {
-    copy = new DomainType(parent->copyInternal(clone, map));
+    copy = new DomainType(COPY_INTERNAL(parent));
   }
   copy->addSymbol(symbol);
   return copy;
@@ -587,8 +563,9 @@ IndexType::IndexType(Expr* init_expr) :
 }
 
 
-Type* IndexType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  Type* copy = new IndexType(idxType->copyInternal(clone, map));
+IndexType*
+IndexType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  IndexType* copy = new IndexType(COPY_INTERNAL(idxType));
   copy->addSymbol(symbol);
   return copy;
 }
@@ -639,7 +616,7 @@ void IndexType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   } else if (old_ast == idxExpr) {
     idxExpr = dynamic_cast<Expr*>(new_ast);
   } else {
-    INT_FATAL(this, "Unexpected case in Type::replaceChild(old, new)");
+    INT_FATAL(this, "Unexpected case in Type::replaceChild");
   }
 }
 
@@ -665,9 +642,9 @@ ArrayType::ArrayType(Expr* init_domain, Type* init_elementType):
 { }
 
 
-Type* ArrayType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  Type* copy = new ArrayType(domain->copyInternal(clone, map),
-                             elementType);
+ArrayType*
+ArrayType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  ArrayType* copy = new ArrayType(COPY_INTERNAL(domain), elementType);
   copy->addSymbol(symbol);
   return copy;
 }
@@ -679,7 +656,7 @@ void ArrayType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   } else if (old_ast == domain) {
     domain = dynamic_cast<Expr*>(new_ast);
   } else {
-    INT_FATAL(this, "Unexpected case in Type::replaceChild(old, new)");
+    INT_FATAL(this, "Unexpected case in Type::replaceChild");
   }
 }
 
@@ -802,9 +779,10 @@ UserType::UserType(Type* init_definition, Expr* init_defaultVal) :
 {}
 
 
-Type* UserType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  Type* copy = new UserType(definition,
-                            defaultVal->copyInternal(clone, map));
+UserType*
+UserType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  UserType* copy = new UserType(definition,
+                                COPY_INTERNAL(defaultVal));
   copy->addSymbol(symbol);
   return copy;
 }
@@ -849,8 +827,9 @@ LikeType::LikeType(Expr* init_expr) :
 { }
 
 
-Type* LikeType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  Type* copy = new LikeType(expr->copyInternal(clone, map));
+LikeType*
+LikeType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  LikeType* copy = new LikeType(COPY_INTERNAL(expr));
   copy->addSymbol(symbol);
   return copy;
 }
@@ -862,7 +841,7 @@ void LikeType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   } else if (old_ast == expr) {
     expr = dynamic_cast<Expr*>(new_ast);
   } else {
-    INT_FATAL(this, "Unexpected case in Type::replaceChild(old, new)");
+    INT_FATAL(this, "Unexpected case in Type::replaceChild");
   }
 }
 
@@ -919,7 +898,7 @@ void StructuralType::copyGuts(StructuralType* copy_type, bool clone,
         }
       }
     } else {
-      new_decls->insertAtTail(old_decls->copyInternal(true, map));
+      new_decls->insertAtTail(CLONE_INTERNAL(old_decls));
     }
   }
   copy_type->addDeclarations(new_decls);
@@ -983,7 +962,7 @@ void StructuralType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   } else if (old_ast == declarationList) {
     declarationList = dynamic_cast<AList<Stmt>*>(new_ast);
   } else {
-    INT_FATAL(this, "Unexpected case in Type::replaceChild(old, new)");
+    INT_FATAL(this, "Unexpected case in Type::replaceChild");
   }
 }
 
@@ -1197,7 +1176,8 @@ ClassType::ClassType(astType_t astType) :
 }
 
 
-Type* ClassType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
+ClassType*
+ClassType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   ClassType* copy_type = new ClassType(astType);
   copyGuts(copy_type, clone, map);
   return copy_type;
@@ -1232,7 +1212,8 @@ RecordType::RecordType(void) :
 {}
 
 
-Type* RecordType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
+RecordType*
+RecordType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   RecordType* copy_type = new RecordType();
   copyGuts(copy_type, clone, map);
   return copy_type;
@@ -1245,7 +1226,8 @@ UnionType::UnionType(void) :
 {}
 
 
-Type* UnionType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
+UnionType*
+UnionType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   UnionType* copy_type = new UnionType();
   copyGuts(copy_type, clone, map);
   return copy_type;
@@ -1377,7 +1359,8 @@ void TupleType::addType(Type* additionalType) {
 }
 
 
-Type* TupleType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
+TupleType*
+TupleType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   TupleType* newTupleType = new TupleType();
   forv_Vec(Type, component, components) {
     newTupleType->components.add(component);
@@ -1444,7 +1427,8 @@ VariableType::VariableType(Type *init_type) :
 {}
 
 
-Type* VariableType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
+VariableType*
+VariableType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   return new VariableType(type);
 }
 
@@ -1464,7 +1448,8 @@ UnresolvedType::UnresolvedType(Vec<char*>* init_names) :
 }
 
 
-Type* UnresolvedType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
+UnresolvedType*
+UnresolvedType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   Vec<char*>* new_names = new Vec<char*>();
   forv_Vec(char, str, *names) {
     new_names->add(str);
@@ -1492,8 +1477,9 @@ ExprType::ExprType(Expr *init_expr) :
 { }
 
 
-Type* ExprType::copyType(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new ExprType(expr->copyInternal(clone, map));
+ExprType*
+ExprType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  return new ExprType(COPY_INTERNAL(expr));
 }
 
 
@@ -1508,7 +1494,7 @@ void ExprType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   } else if (old_ast == expr) {
     expr = dynamic_cast<Expr*>(new_ast);
   } else {
-    INT_FATAL(this, "Unexpected case in ExprType::replaceChild(old, new)");
+    INT_FATAL(this, "Unexpected case in ExprType::replaceChild");
   }
 }
 

@@ -63,7 +63,7 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
               if (formal->sym->defPoint->init) {
                 initializer = formal->sym->defPoint->init->copy();
               } else {
-                initializer = formal->sym->type->defaultVal->copy();
+                initializer = COPY(formal->sym->type->defaultVal);
               }
             } else {
               initializer = actual->copy();

@@ -44,8 +44,7 @@
   TypeSymbol* ptsym;
   FnSymbol* fnsym;
   ModuleSymbol* modsym;
-  Pragma* pragma;
-  AList<Pragma>* pragmas;
+  Vec<char*>* vpch;
 }
 
 %token TATOMIC
@@ -162,8 +161,8 @@
 %type <stmt> function_body_single_stmt 
 %type <blkstmt> function_body_stmt block_stmt par_block_stmt
 %type <blktype> par_block_header
-%type <pragma> pragma
-%type <pragmas> pragmas
+%type <pch> pragma
+%type <vpch> pragmas
 
 
 /* These are declared in increasing order of precedence. */
@@ -233,7 +232,7 @@ ident_symbol:
   pragmas identifier
     { 
       $$ = new Symbol(SYMBOL, $2);
-      $$->pragmas = $1;
+      $$->copyPragmas(*$1);
     } 
 ;
 
@@ -310,7 +309,7 @@ typealias:
     {
       UserType* newtype = new UserType($5, $6);
       TypeSymbol* typeSym = new TypeSymbol($3, newtype);
-      typeSym->pragmas = $2;
+      typeSym->copyPragmas(*$2);
       newtype->addSymbol(typeSym);
       DefExpr* def_expr = new DefExpr(typeSym);
       $$ = new DefStmt(def_expr);
@@ -323,7 +322,7 @@ typevardecl:
     {
       VariableType* new_type = new VariableType(getMetaType(0));
       TypeSymbol* new_symbol = new TypeSymbol($3, new_type);
-      new_symbol->pragmas = $2;
+      new_symbol->copyPragmas(*$2);
       new_type->addSymbol(new_symbol);
       DefExpr* def_expr = new DefExpr(new_symbol);
       $$ = new DefStmt(def_expr);
@@ -337,7 +336,7 @@ enumdecl:
       EnumSymbol::setValues($5);
       EnumType* pdt = new EnumType($5);
       TypeSymbol* pst = new TypeSymbol($3, pdt);
-      pst->pragmas = $2;
+      pst->copyPragmas(*$2);
       pdt->addSymbol(pst);
       DefExpr* def_expr = new DefExpr(pst);
       Symbol::setDefPoints($5, def_expr); /* SJD: Should enums have more DefExprs? */
@@ -365,7 +364,7 @@ structdecl:
     {
       SymScope *scope = Symboltable::popScope();
       Type* type = Symboltable::defineStructType($3, $1, scope, $6);
-      type->symbol->pragmas = $2;
+      type->symbol->copyPragmas(*$2);
       $$ = new DefStmt(type->symbol->defPoint);
     }
 ;
@@ -732,7 +731,7 @@ decls:
     { $$ = new AList<Stmt>(); }
 | decls pragmas decl
     {
-      $3->pragmas = $2;
+      $3->copyPragmas(*$2);
       $1->insertAtTail($3);
     }
 ;
@@ -822,7 +821,7 @@ statements:
     { $$ = new AList<Stmt>(); }
 | statements pragmas statement
     { 
-      $3->pragmas = $2;
+      $3->copyPragmas(*$2);
       $1->insertAtTail($3);
     }
 ;
@@ -879,22 +878,17 @@ statement:
 
 
 pragmas:
-  /* empty */
-    { $$ = NULL; }
+    { $$ = new Vec<char*>(); }
 | pragmas pragma
     {
-      if ($1 == NULL) {
-        $$ = new AList<Pragma>($2);
-      } else {
-        $1->insertAtTail($2);
-      }
+      $1->add($2);
     }
 ;
 
 
 pragma:
   TPRAGMA STRINGLITERAL
-  { $$ = new Pragma($2); }
+{ $$ = copystring($2); }
 ;
 
 
@@ -1113,9 +1107,9 @@ expr_list_item:
 
 nonemptyExprlist:
   pragmas expr_list_item
-    { $2->pragmas = $1; $$ = new AList<Expr>($2); }
+    { $2->copyPragmas(*$1); $$ = new AList<Expr>($2); }
 | nonemptyExprlist TCOMMA pragmas expr_list_item
-    { $4->pragmas = $3; $1->insertAtTail($4); }
+    { $4->copyPragmas(*$3); $1->insertAtTail($4); }
 ;
 
 

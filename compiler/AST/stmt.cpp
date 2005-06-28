@@ -17,8 +17,7 @@ Stmt::Stmt(astType_t astType) :
   BaseAST(astType),
   parentSymbol(NULL),
   parentStmt(NULL),
-  ainfo(NULL),
-  pragmas(NULL)
+  ainfo(NULL)
 {}
 
 
@@ -31,48 +30,9 @@ FnSymbol *Stmt::parentFunction() {
 }
 
 
-Stmt* Stmt::copy(bool clone, Map<BaseAST*,BaseAST*>* map, Vec<BaseAST*>* update_list) {
-  if (map == NULL) {
-    map = new Map<BaseAST*,BaseAST*>();
-  }
-  Stmt* new_stmt = copyInternal(clone, map);
-  if (update_list) {
-    for (int j = 0; j < update_list->n; j++) {
-      for (int i = 0; i < map->n; i++) {
-        if (update_list->v[j] == map->v[i].key) {
-          update_list->v[j] = map->v[i].value;
-        }
-      }
-    }
-  }
-  TRAVERSE(new_stmt, new UpdateSymbols(map), true);
-  return new_stmt;
-}
-
-
-Stmt* Stmt::copyInternal(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  if (!this) {
-    return this;
-  }
-
-  Stmt* new_stmt = copyStmt(clone, map);
-
-  new_stmt->copyFrom = this;
-  new_stmt->lineno = lineno;
-  new_stmt->filename = filename;
-  new_stmt->pragmas = pragmas;
-  if (!RunAnalysis::isRunning) {
-    new_stmt->ainfo = ainfo;
-  }
-  if (map) {
-    map->put(this, new_stmt);
-  }
-  return new_stmt;
-}
-
-
-Stmt* Stmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  INT_FATAL(this, "copy not implemented for Stmt subclass");
+Stmt*
+Stmt::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  INT_FATAL(this, "Illegal call to Stmt::copy");
   return NULL;
 }
 
@@ -139,33 +99,13 @@ void Stmt::callReplaceChild(BaseAST* new_ast) {
 }
 
 
-bool Stmt::hasPragma(char* str) {
-  Pragma* pr = pragmas->first();
-  while (pr) {
-    if (!strcmp(pr->str, str)) {
-      return true;
-    }
-    pr = pragmas->next();
-  }
-  return false;
-}
-
-
-void Stmt::addPragma(char* str) {
-  if (pragmas) {
-    pragmas->insertAtTail(new Pragma(copystring(str)));
-  } else {
-    pragmas = new AList<Pragma>(new Pragma(copystring(str)));
-  }
-}
-
-
 NoOpStmt::NoOpStmt(void) :
   Stmt(STMT_NOOP)
 {}
 
 
-Stmt* NoOpStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
+NoOpStmt*
+NoOpStmt::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   return new NoOpStmt();
 }
 
@@ -192,8 +132,9 @@ DefStmt::DefStmt(AList<DefExpr>* init_defExprls) :
 {}
 
 
-Stmt* DefStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new DefStmt(defExprls->copy(clone, map));
+DefStmt*
+DefStmt::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  return new DefStmt(COPY_INTERNAL(defExprls));
 }
 
 
@@ -201,7 +142,7 @@ void DefStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == defExprls) {
     defExprls = dynamic_cast<AList<DefExpr>*>(new_ast);
   } else {
-    INT_FATAL(this, "Unexpected case in DefStmt::replaceChild(old, new)");
+    INT_FATAL(this, "Unexpected case in DefStmt::replaceChild");
   }
 }
 
@@ -298,8 +239,9 @@ ExprStmt::ExprStmt(Expr* initExpr) :
 { }
 
 
-Stmt* ExprStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new ExprStmt(expr->copyInternal(clone, map));
+ExprStmt*
+ExprStmt::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  return new ExprStmt(COPY_INTERNAL(expr));
 }
 
 
@@ -307,7 +249,7 @@ void ExprStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == expr) {
     expr = dynamic_cast<Expr*>(new_ast);
   } else {
-    INT_FATAL(this, "Unexpected case in ExprStmt::replaceChild(old, new)");
+    INT_FATAL(this, "Unexpected case in ExprStmt::replaceChild");
   }
 }
 
@@ -337,8 +279,9 @@ ReturnStmt::ReturnStmt(Expr* initExpr, bool init_yield) :
 }
 
 
-Stmt* ReturnStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new ReturnStmt(expr->copyInternal(clone, map));
+ReturnStmt*
+ReturnStmt::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  return new ReturnStmt(COPY_INTERNAL(expr));
 }
 
 
@@ -378,8 +321,9 @@ WithStmt::WithStmt(Expr* initExpr) :
 }
 
 
-Stmt* WithStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new WithStmt(expr->copyInternal(clone, map));
+WithStmt*
+WithStmt::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  return new WithStmt(COPY_INTERNAL(expr));
 }
 
 
@@ -425,8 +369,9 @@ UseStmt::UseStmt(Expr* initExpr) :
 }
 
 
-Stmt* UseStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new UseStmt(expr->copyInternal(clone, map));
+UseStmt*
+UseStmt::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  return new UseStmt(COPY_INTERNAL(expr));
 }
 
 
@@ -480,9 +425,10 @@ void BlockStmt::setBlkScope(SymScope* init_blkScope) {
 }
 
 
-Stmt* BlockStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
+BlockStmt*
+BlockStmt::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   Symboltable::pushScope(SCOPE_LOCAL);
-  AList<Stmt>* body_copy = body->copyInternal(true, map);
+  AList<Stmt>* body_copy = CLONE_INTERNAL(body);
   SymScope* block_scope = Symboltable::popScope();
   BlockStmt* block_copy = new BlockStmt(body_copy, block_scope);
   block_scope->setContext(block_copy);
@@ -494,7 +440,7 @@ void BlockStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == body) {
     body = dynamic_cast<AList<Stmt>*>(new_ast);
   } else {
-    INT_FATAL(this, "Unexpected case in BlockStmt::replaceChild(old, new)");
+    INT_FATAL(this, "Unexpected case in BlockStmt::replaceChild");
   }
 }
 
@@ -551,8 +497,11 @@ WhileLoopStmt::WhileLoopStmt(bool init_whileDo,
 }
 
 
-Stmt* WhileLoopStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new WhileLoopStmt(isWhileDo, condition->copyInternal(clone, map), body->copyInternal(clone, map));
+WhileLoopStmt* 
+WhileLoopStmt::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  return new WhileLoopStmt(isWhileDo,
+                           COPY_INTERNAL(condition),
+                           COPY_INTERNAL(body));
 }
 
 
@@ -562,7 +511,7 @@ void WhileLoopStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   } else if (old_ast == body) {
     body = dynamic_cast<AList<Stmt>*>(new_ast);
   } else {
-    INT_FATAL(this, "Unexpected case in WhileLoopStmt::replaceChild(old, new)");
+    INT_FATAL(this, "Unexpected case in WhileLoopStmt::replaceChild");
   }
 }
 
@@ -632,11 +581,12 @@ void ForLoopStmt::setIndexScope(SymScope* init_indexScope) {
 }
 
 
-Stmt* ForLoopStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
+ForLoopStmt*
+ForLoopStmt::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   Symboltable::pushScope(SCOPE_FORLOOP);
-  AList<DefExpr>* indices_copy = indices->copyInternal(true, map);
-  Expr* domain_copy = domain->copyInternal(true, map);
-  AList<Stmt>* body_copy = body->copyInternal(true, map);
+  AList<DefExpr>* indices_copy = CLONE_INTERNAL(indices);
+  Expr* domain_copy = COPY_INTERNAL(domain);
+  AList<Stmt>* body_copy = CLONE_INTERNAL(body);
   SymScope* index_scope = Symboltable::popScope();
   ForLoopStmt* for_loop_stmt_copy =
     new ForLoopStmt(forall, indices_copy, domain_copy, body_copy);
@@ -653,7 +603,7 @@ void ForLoopStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   } else if (old_ast == body) {
     body = dynamic_cast<AList<Stmt>*>(new_ast);
   } else {
-    INT_FATAL(this, "Unexpected case in ForLoopStmt::replaceChild(old, new)");
+    INT_FATAL(this, "Unexpected case in ForLoopStmt::replaceChild");
   }
 }
 
@@ -838,10 +788,11 @@ void CondStmt::addElseStmt(BlockStmt* init_elseStmt) {
 }
 
 
-Stmt* CondStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new CondStmt(condExpr->copyInternal(clone, map),
-                      dynamic_cast<BlockStmt*>(thenStmt->copyInternal(clone, map)),
-                      dynamic_cast<BlockStmt*>(elseStmt->copyInternal(clone, map)));
+CondStmt*
+CondStmt::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  return new CondStmt(COPY_INTERNAL(condExpr),
+                      COPY_INTERNAL(thenStmt),
+                      COPY_INTERNAL(elseStmt));
 }
 
 
@@ -853,7 +804,7 @@ void CondStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   } else if (old_ast == elseStmt) {
     elseStmt = dynamic_cast<BlockStmt*>(new_ast);
   } else {
-    INT_FATAL(this, "Unexpected case in CondStmt::replaceChild(old, new)");
+    INT_FATAL(this, "Unexpected case in CondStmt::replaceChild");
   }
 }
 
@@ -920,9 +871,10 @@ WhenStmt::WhenStmt(AList<Expr>* init_caseExprs, BlockStmt* init_doStmt) :
 { }
 
 
-Stmt* WhenStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new WhenStmt(caseExprs->copyInternal(clone, map),
-                      dynamic_cast<BlockStmt*>(doStmt->copyInternal(clone, map)));
+WhenStmt*
+WhenStmt::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  return new WhenStmt(COPY_INTERNAL(caseExprs),
+                      COPY_INTERNAL(doStmt));
 }
 
 
@@ -932,7 +884,7 @@ void WhenStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   } else if (old_ast == doStmt) {
     doStmt = dynamic_cast<BlockStmt*>(new_ast);
   } else {
-    INT_FATAL(this, "Unexpected case in WhenStmt::replaceChild(old, new)");
+    INT_FATAL(this, "Unexpected case in WhenStmt::replaceChild");
   }
 }
 
@@ -963,9 +915,9 @@ SelectStmt::SelectStmt(Expr* init_caseExpr, AList<WhenStmt>* init_whenStmts) :
 { }
 
 
-Stmt* SelectStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new SelectStmt(caseExpr->copyInternal(clone, map),
-                        whenStmts->copyInternal(clone, map));
+SelectStmt*
+SelectStmt::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  return new SelectStmt(COPY_INTERNAL(caseExpr), COPY_INTERNAL(whenStmts));
 }
 
 
@@ -975,7 +927,7 @@ void SelectStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   } else if (old_ast == whenStmts) {
     whenStmts = dynamic_cast<AList<WhenStmt>*>(new_ast);
   } else {
-    INT_FATAL(this, "Unexpected case in SelectStmt::replaceChild(old, new)");
+    INT_FATAL(this, "Unexpected case in SelectStmt::replaceChild");
   }
 }
 
@@ -1038,8 +990,9 @@ LabelStmt::LabelStmt(LabelSymbol* init_label, BlockStmt* init_stmt) :
 { }
 
 
-Stmt* LabelStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new LabelStmt(label, dynamic_cast<BlockStmt*>(stmt->copyInternal(clone, map)));
+LabelStmt*
+LabelStmt::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  return new LabelStmt(label, COPY_INTERNAL(stmt));
 }
 
 
@@ -1047,7 +1000,7 @@ void LabelStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == stmt) {
     stmt = dynamic_cast<BlockStmt*>(new_ast);
   } else {
-    INT_FATAL(this, "Unexpected case in LabelStmt::replaceChild(old, new)");
+    INT_FATAL(this, "Unexpected case in LabelStmt::replaceChild");
   }
 }
 
@@ -1099,7 +1052,8 @@ GotoStmt::GotoStmt(gotoType init_goto_type, Symbol* init_label) :
 }
 
 
-Stmt* GotoStmt::copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map) {
+GotoStmt*
+GotoStmt::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   return new GotoStmt(goto_type, label);
 }
 

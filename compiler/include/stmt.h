@@ -5,7 +5,6 @@
 #include "alist.h"
 #include "analysis.h"
 #include "baseAST.h"
-#include "pragma.h"
 #include "symbol.h"
 
 extern bool printCppLineno;
@@ -19,16 +18,9 @@ class Stmt : public BaseAST {
   Symbol* parentSymbol;
   Stmt* parentStmt;
   AInfo *ainfo;
-  AList<Pragma>* pragmas;
 
   Stmt(astType_t astType = STMT);
-
-  FnSymbol *parentFunction();
-
-  Stmt* copy(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL, Vec<BaseAST*>* update_list = NULL);
-  Stmt* copyInternal(bool clone = false, Map<BaseAST*,BaseAST*>* map = NULL);
-  virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map);
-
+  COPY_DEF(Stmt);
   void codegen(FILE* outfile);
   virtual void codegenStmt(FILE* outfile);
   virtual void callReplaceChild(BaseAST* new_ast);
@@ -36,9 +28,7 @@ class Stmt : public BaseAST {
   virtual void traverse(Traversal* traversal, bool atTop = true);
   virtual void traverseDef(Traversal* traversal, bool atTop = true);
   virtual void traverseStmt(Traversal* traversal);
-
-  bool hasPragma(char* str);
-  void addPragma(char* str);
+  FnSymbol* parentFunction();
 };
 #define forv_Stmt(_p, _v) forv_Vec(Stmt, _p, _v)
 
@@ -46,7 +36,7 @@ class Stmt : public BaseAST {
 class NoOpStmt : public Stmt {
  public:
   NoOpStmt(void);
-  virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map);
+  COPY_DEF(NoOpStmt);
 
   void print(FILE* outfile);
   void codegenStmt(FILE* outfile);
@@ -59,7 +49,7 @@ public:
 
   DefStmt(DefExpr* init_defExprls);
   DefStmt(AList<DefExpr>* init_defExprls);
-  virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map);
+  COPY_DEF(DefStmt);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseStmt(Traversal* traversal);
   void print(FILE* outfile);
@@ -80,8 +70,7 @@ class ExprStmt : public Stmt {
   Expr* expr;
 
   ExprStmt(Expr* initExpr);
-  virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map);
-
+  COPY_DEF(ExprStmt);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseStmt(Traversal* traversal);
 
@@ -94,8 +83,7 @@ class ReturnStmt : public ExprStmt {
  public:
   bool yield;
   ReturnStmt(Expr* initExpr, bool init_yield = false);
-  virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map);
-
+  COPY_DEF(ReturnStmt);
   void print(FILE* outfile);
   void codegenStmt(FILE* outfile);
 };
@@ -104,8 +92,7 @@ class ReturnStmt : public ExprStmt {
 class WithStmt : public ExprStmt {
  public:
   WithStmt(Expr* initExpr);
-  virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map);
-
+  COPY_DEF(WithStmt);
   void print(FILE* outfile);
   void codegenStmt(FILE* outfile);
 
@@ -116,8 +103,7 @@ class WithStmt : public ExprStmt {
 class UseStmt : public ExprStmt {
  public:
   UseStmt(Expr* initExpr);
-  virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map);
-
+  COPY_DEF(UseStmt);
   void print(FILE* outfile);
   void codegenStmt(FILE* outfile);
 
@@ -142,10 +128,9 @@ class BlockStmt : public Stmt {
   BlockStmt::BlockStmt(AList<Stmt>* init_body = new AList<Stmt>(), 
                        SymScope* init_scope = NULL, 
                        blockStmtType init_blockType = BLOCK_NORMAL);
+  COPY_DEF(BlockStmt);
   void addBody(AList<Stmt>* init_body);
   void setBlkScope(SymScope* init_blkScope);
-  virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map);
-
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseStmt(Traversal* traversal);
 
@@ -160,7 +145,7 @@ class WhileLoopStmt : public BlockStmt {
   Expr* condition;
 
   WhileLoopStmt(bool init_whileDo, Expr* init_cond, AList<Stmt>* body);
-  virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map);
+  COPY_DEF(WhileLoopStmt);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseStmt(Traversal* traversal);
@@ -180,9 +165,8 @@ class ForLoopStmt : public BlockStmt {
 
   ForLoopStmt(bool init_forall, AList<DefExpr>* init_indices, Expr* init_domain,
               AList<Stmt>* body = new AList<Stmt>());
+  COPY_DEF(ForLoopStmt);
   void setIndexScope(SymScope* init_indexScope);
-  virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map);
-
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseStmt(Traversal* traversal);
 
@@ -199,9 +183,8 @@ class CondStmt : public Stmt {
 
   CondStmt(Expr* init_condExpr, BlockStmt* init_thenStmt, 
            BlockStmt* init_elseStmt = NULL);
+  COPY_DEF(CondStmt);
   void addElseStmt(BlockStmt* init_elseStmt);
-  virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map);
-
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void verify(void);
   void traverseStmt(Traversal* traversal);
@@ -217,7 +200,7 @@ class WhenStmt : public Stmt {
   BlockStmt* doStmt;
 
   WhenStmt(AList<Expr>* init_caseExprs = NULL, BlockStmt* init_doStmt = NULL);
-  virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map);
+  COPY_DEF(WhenStmt);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseStmt(Traversal* traversal);
   void print(FILE* outfile);
@@ -231,7 +214,7 @@ class SelectStmt : public Stmt {
   AList<WhenStmt>* whenStmts;
 
   SelectStmt(Expr* init_caseExpr = NULL, AList<WhenStmt>* init_whenStmts = NULL);
-  virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map);
+  COPY_DEF(SelectStmt);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseStmt(Traversal* traversal);
   void print(FILE* outfile);
@@ -245,9 +228,7 @@ class LabelStmt : public Stmt {
   BlockStmt* stmt;
   
   LabelStmt(LabelSymbol* init_label, BlockStmt* init_stmt);
-
-  virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map);
-
+  COPY_DEF(LabelStmt);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseStmt(Traversal* traversal);
 
@@ -271,11 +252,8 @@ class GotoStmt : public Stmt {
   GotoStmt(gotoType init_goto_type);
   GotoStmt(gotoType init_goto_type, char* init_label);
   GotoStmt(gotoType init_goto_type, Symbol* init_label);
-
-  virtual Stmt* copyStmt(bool clone, Map<BaseAST*,BaseAST*>* map);
-
+  COPY_DEF(GotoStmt);
   void traverseStmt(Traversal* traversal);
-
   void print(FILE* outfile);
   void codegenStmt(FILE* outfile);
 };

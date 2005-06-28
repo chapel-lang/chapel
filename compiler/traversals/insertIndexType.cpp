@@ -106,7 +106,7 @@ void InsertIndexType::preProcessType(Type* type) {
     DefExpr* def_expr = new DefExpr(index_sym);
     DefStmt* def_stmt = new DefStmt(def_expr);
     if (!index_type->defaultVal) {
-      index_type->defaultVal = index_type->idxType->defaultVal->copy();
+      index_type->defaultVal = COPY(index_type->idxType->defaultVal);
     }
     commonModule->stmts->insertAtHead(def_stmt);
     Symboltable::setCurrentScope(saveScope);

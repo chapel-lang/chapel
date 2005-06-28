@@ -736,11 +736,8 @@ map_baseast(BaseAST *s) {
         case PARAM_CONST: sym->asymbol->sym->is_read_only = 1; break;
       }
       // handle pragmas
-      Pragma *pr = sym->pragmas->first();
-      while (pr) {
-        if (!strcmp(pr->str, "clone_for_constants"))
-          s->asymbol->sym->clone_for_constants = 1;
-        pr = sym->pragmas->next();
+      if (sym->hasPragma("clone_for_constants")) {
+        s->asymbol->sym->clone_for_constants = 1;
       }
     }
     if (verbose_level > 1 && sym->name)
@@ -2338,7 +2335,6 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
   case TYPE_NIL:
   case AST_TYPE_END:
   case LIST:
-  case PRAGMA:
     assert(!"case");
     break;
   }
@@ -2597,11 +2593,8 @@ finalize_function(Fun *fun) {
   // check pragmas
   Sym *fn = fun->sym;
   FnSymbol *f = dynamic_cast<FnSymbol*>(fn->asymbol->symbol);
-  Pragma *pr = f->defPoint->pragmas->first();
-  while (pr) {
-    if (!strcmp(pr->str, "test pragma"))
-      printf("test pragma\n");
-    pr = f->defPoint->pragmas->next();
+  if (f->defPoint->hasPragma("test pragma")) {
+    printf("test pragma\n");
   }
 }
 

@@ -47,6 +47,11 @@ static void html_print_fnsymbol(FILE* html_file, FnSymbol* fn) {
   fprintf(html_file, " : ");
     html_print_symbol(html_file, fn->retType->symbol);
   }
+  if (fn->defPoint->parentStmt) {
+    forv_Vec(char, pragma, fn->defPoint->parentStmt->pragmas) {
+      fprintf(html_file, "<BR><b>pragma</b> \"%s\"\n", pragma);
+    }
+  }
 }
 
 static void html_indent(FILE* html_file, int indent) {

@@ -53,6 +53,13 @@ BaseAST::BaseAST(astType_t type) :
 }
 
 
+BaseAST*
+BaseAST::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  INT_FATAL(this, "copyInner not implemented for BaseAST subclass");
+  return NULL;
+}
+
+
 void BaseAST::traverse(Traversal* traversal, bool atTop) {
   INT_FATAL(this, "Cannot traverse BaseAST");
 }
@@ -170,33 +177,50 @@ void BaseAST::insertAfter(BaseAST* new_ast) {
 }
 
 
-void BaseAST::copySupport(BaseAST* copy,
-                          bool clone,
-                          Map<BaseAST*,BaseAST*>* map,
-                          Vec<BaseAST*>* update_list) {
-  copy->lineno = lineno;
-  copy->filename = filename;
-  if (!RunAnalysis::isRunning) {
-    //    copy->ainfo = ainfo;  // if we need this, we have to go to expr
+void BaseAST::preCopy(bool clone,
+                      Map<BaseAST*,BaseAST*>*& map,
+                      Vec<BaseAST*>* update_list,
+                      bool internal) {
+  if (!map) {
+    map = new Map<BaseAST*,BaseAST*>();
   }
-  map->put(this, copy);
 }
 
 
-void BaseAST::copySupportTopLevel(BaseAST* copy,
-                                  bool clone,
-                                  Map<BaseAST*,BaseAST*>* map,
-                                  Vec<BaseAST*>* update_list) {
-  if (update_list) {
-    for (int j = 0; j < update_list->n; j++) {
-      for (int i = 0; i < map->n; i++) {
-        if (update_list->v[j] == map->v[i].key) {
-          update_list->v[j] = map->v[i].value;
+void BaseAST::postCopy(BaseAST* copy,
+                       bool clone,
+                       Map<BaseAST*,BaseAST*>* map,
+                       Vec<BaseAST*>* update_list,
+                       bool internal) {
+  copy->copyFrom = this;
+  copy->lineno = lineno;
+  copy->filename = filename;
+  copy->copyPragmas(pragmas);
+  if (!RunAnalysis::isRunning) {
+    Expr* expr = dynamic_cast<Expr*>(this);
+    Expr* exprCopy = dynamic_cast<Expr*>(copy);
+    if (expr && exprCopy) {
+      exprCopy->ainfo = expr->ainfo;
+    }
+    Stmt* stmt = dynamic_cast<Stmt*>(this);
+    Stmt* stmtCopy = dynamic_cast<Stmt*>(copy);
+    if (stmt && stmtCopy) {
+      stmtCopy->ainfo = stmt->ainfo;
+    }
+  }
+  map->put(this, copy);
+  if (!internal) {
+    if (update_list) {
+      for (int j = 0; j < update_list->n; j++) {
+        for (int i = 0; i < map->n; i++) {
+          if (update_list->v[j] == map->v[i].key) {
+            update_list->v[j] = map->v[i].value;
+          }
         }
       }
     }
+    TRAVERSE(copy, new UpdateSymbols(map), true);
   }
-  TRAVERSE(copy, new UpdateSymbols(map), true);
 }
 
 
@@ -211,6 +235,28 @@ char* BaseAST::stringLoc(void) {
 
 void BaseAST::printLoc(FILE* outfile) {
   fprintf(outfile, "%s:%d", filename, lineno);
+}
+
+
+char* BaseAST::hasPragma(char* str) {
+  forv_Vec(char, pragma, pragmas) {
+    if (!strncmp(pragma, str, strlen(str))) {
+      return pragma;
+    }
+  }
+  return NULL;
+}
+
+
+void BaseAST::addPragma(char* str) {
+  pragmas.add(copystring(str));
+}
+
+
+void BaseAST::copyPragmas(Vec<char*> srcPragmas) {
+  forv_Vec(char, srcPragma, srcPragmas) {
+    addPragma(srcPragma);
+  }
 }
 
 
@@ -308,8 +354,6 @@ char* astTypeName[AST_TYPE_END+1] = {
   "NilType",
 
   "List",
-
-  "Pragma",
 
   "AST_TYPE_END"
 };
@@ -575,9 +619,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
   case AST_TYPE_END: break;
   case LIST: 
     INT_FATAL(a, "Unexpected case in AST_GET_CHILDREN (LIST)");
-    break;
-  case PRAGMA: 
-    INT_FATAL(a, "Unexpected case in AST_GET_CHILDREN (PRAGMA)");
     break;
   }
 }

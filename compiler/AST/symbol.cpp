@@ -27,7 +27,6 @@ Symbol::Symbol(astType_t astType, char* init_name, Type* init_type,
   isDead(false),
   keepLive(false),
   defPoint(NULL),
-  pragmas(NULL),
   asymbol(0),
   overload(NULL)
 {}
@@ -38,41 +37,15 @@ void Symbol::setParentScope(SymScope* init_parentScope) {
 }
 
 
-Symbol* Symbol::copy(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  if (!this) {
-    return this;
-  }
-  if (map == NULL) {
-    map = new Map<BaseAST*,BaseAST*>();
-  }
-  Symbol* new_symbol = copyInternal(clone, map);
-  TRAVERSE(new_symbol, new UpdateSymbols(map), true);
-  return new_symbol;
-}
-
-
-Symbol* Symbol::copyInternal(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  Symbol* new_symbol = copySymbol(clone, map);
-
-  new_symbol->copyFrom = this;
-  new_symbol->pragmas = pragmas;
-  new_symbol->lineno = lineno;
-  new_symbol->filename = filename;
-  if (map) {
-    map->put(this, new_symbol);
-  }
-  return new_symbol;
-}
-
-
-Symbol* Symbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  INT_FATAL(this, "Symbol::copySymbol() not anticipated to be needed");
+Symbol*
+Symbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  INT_FATAL(this, "Illegal call to Symbol::copy");
   return NULL;
 }
 
 
 void Symbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  INT_FATAL(this, "Unexpected call to Symbol::replaceChild(old, new)");
+  INT_FATAL(this, "Unexpected call to Symbol::replaceChild");
 }
 
 
@@ -150,27 +123,6 @@ void Symbol::print(FILE* outfile) {
 }
 
 
-bool Symbol::hasPragma(char* str) {
-  Pragma* pr = pragmas->first();
-  while (pr) {
-    if (!strcmp(pr->str, str)) {
-      return true;
-    }
-    pr = pragmas->next();
-  }
-  return false;
-}
-
-
-void Symbol::addPragma(char* str) {
-  if (pragmas) {
-    pragmas->insertAtTail(new Pragma(copystring(str)));
-  } else {
-    pragmas = new AList<Pragma>(new Pragma(copystring(str)));
-  }
-}
-
-
 void Symbol::codegen(FILE* outfile) {
   if (hasPragma("codegen data")) {
     StructuralType* dataType = dynamic_cast<StructuralType*>(type);
@@ -229,7 +181,8 @@ void UnresolvedSymbol::codegen(FILE* outfile) {
 }
 
 
-Symbol* UnresolvedSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map) {
+UnresolvedSymbol*
+UnresolvedSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   return new UnresolvedSymbol(copystring(name));
 }
 
@@ -268,7 +221,8 @@ VarSymbol::VarSymbol(char* init_name,
 }
 
 
-Symbol* VarSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map) {
+VarSymbol*
+VarSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   VarSymbol* newVarSymbol = 
     new VarSymbol(copystring(name), type, varClass, consClass);
   newVarSymbol->aspect = aspect;
@@ -410,7 +364,8 @@ ParamSymbol::ParamSymbol(paramType init_intent, char* init_name,
 }
 
 
-Symbol* ParamSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map) {
+ParamSymbol*
+ParamSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   ParamSymbol *ps = new ParamSymbol(intent, copystring(name), type);
   if (typeVariable)
     ps->typeVariable = typeVariable;
@@ -420,7 +375,7 @@ Symbol* ParamSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map) {
 
 
 void ParamSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  INT_FATAL(this, "Unexpected case in ParamSymbol::replaceChild(old, new)");
+  INT_FATAL(this, "Unexpected case in ParamSymbol::replaceChild");
 }
 
 
@@ -493,8 +448,9 @@ TypeSymbol::TypeSymbol(char* init_name, Type* init_definition) :
 }
 
 
-Symbol* TypeSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  Type* new_type = type->copyInternal(clone, map);
+TypeSymbol*
+TypeSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  Type* new_type = COPY_INTERNAL(type);
   TypeSymbol* new_type_symbol = new TypeSymbol(copystring(name), new_type);
   new_type->addSymbol(new_type_symbol);
   if (StructuralType* stype =
@@ -512,7 +468,7 @@ TypeSymbol* TypeSymbol::clone(Map<BaseAST*,BaseAST*>* map) {
     INT_FATAL(this, "Attempt to clone non-class type");
   }
   SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
-  TypeSymbol* clone = dynamic_cast<TypeSymbol*>(copy(true, map));
+  TypeSymbol* clone = copy(true, map);
   if (ClassType* newClassType = dynamic_cast<ClassType*>(clone->type)) {
     ClassType* oldClassType = dynamic_cast<ClassType*>(type);
     if (!oldClassType) {
@@ -659,7 +615,8 @@ FnSymbol* FnSymbol::getFnSymbol(void) {
 }
 
 
-Symbol* FnSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map) {
+FnSymbol*
+FnSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   char* copy_name;
   if (_getter) {
     copy_name = glomstrings(2, "_chplget_", name);
@@ -677,10 +634,11 @@ Symbol* FnSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map) {
   copy->_setter = _setter; //  to point to the new member, but how do we do that
   copy->_this = _this;
   AList<DefExpr>* new_formals =
-    dynamic_cast<AList<DefExpr>*>(formals->copyInternal(true, map));
-  Symboltable::continueFnDef(copy, new_formals, retType, retRef, whereExpr->copyInternal(clone, map));
+    dynamic_cast<AList<DefExpr>*>(CLONE_INTERNAL(formals));
+  Symboltable::continueFnDef(copy, new_formals, retType, retRef,
+                             CLONE_INTERNAL(whereExpr));
   BlockStmt* new_body = 
-    dynamic_cast<BlockStmt*>(body->copyInternal(true, map));
+    dynamic_cast<BlockStmt*>(CLONE_INTERNAL(body));
   if (body != NULL && new_body == NULL) {
     INT_FATAL(body, "function body was not a BlockStmt!?");
   }
@@ -696,7 +654,7 @@ void FnSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   } else if (old_ast == whereExpr) {
     whereExpr = dynamic_cast<Expr*>(new_ast);
   } else {
-    INT_FATAL(this, "Unexpected case in FnSymbol::replaceChild(old, new)");
+    INT_FATAL(this, "Unexpected case in FnSymbol::replaceChild");
   }
 }
 
@@ -806,11 +764,10 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
   AList<DefExpr>* wrapper_formals = new AList<DefExpr>();
   for_alist(DefExpr, formal, formals) {
     if (!defaults->set_in(formal->sym)) {
-      DefExpr* formalCopy = dynamic_cast<DefExpr*>(formal->copy(true));
-      wrapper_formals->insertAtTail(formalCopy);
+      wrapper_formals->insertAtTail(formal->copy(true));
     }
   }
-  Symboltable::continueFnDef(wrapper_fn, wrapper_formals, retType, retRef, whereExpr->copy());
+  Symboltable::continueFnDef(wrapper_fn, wrapper_formals, retType, retRef, COPY(whereExpr));
   AList<Stmt>* wrapper_body = new AList<Stmt>();
   Vec<VarSymbol*> temps;
   for_alist_backward(DefExpr, formal, formals) {
@@ -823,7 +780,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
         new DefExpr(temp_symbol,
                     (dynamic_cast<ParamSymbol*>(formal->sym)->intent == PARAM_OUT)
                     ? NULL
-                    : dynamic_cast<UserInitExpr*>(formal->sym->defPoint->init->copy()));
+                    : formal->sym->defPoint->init->copy());
       DefStmt* temp_def_stmt = new DefStmt(new AList<DefExpr>(temp_def_expr));
       wrapper_body->insertAtHead(temp_def_stmt);
       temps.add(temp_symbol);
@@ -1000,7 +957,7 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
       if (functionContainsAnyAST(fn, &genericParameters)) {
         //printf("  instantiating %s\n", fn->cname);
         SymScope* save_scope = Symboltable::setCurrentScope(fn->parentScope);
-        DefExpr* fnDef = dynamic_cast<DefExpr*>(fn->defPoint->copy(true, map));
+        DefExpr* fnDef = fn->defPoint->copy(true, map);
         fnDef->sym->cname = glomstrings(3, fnDef->sym->cname, "_instantiate_", intstring(uid++));
         fn->defPoint->insertBefore(fnDef);
         instantiate_add_subs(substitutions, map);
@@ -1024,7 +981,7 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
     }
   } else {
     SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
-    DefExpr* fnDef = dynamic_cast<DefExpr*>(defPoint->copy(true, map));
+    DefExpr* fnDef = defPoint->copy(true, map);
     defPoint->insertBefore(fnDef);
     instantiate_add_subs(substitutions, map);
     instantiate_update_expr(substitutions, fnDef, map);
@@ -1101,12 +1058,8 @@ void FnSymbol::codegenDef(FILE* outfile) {
   FILE* headfile;
 
   if (defPoint && defPoint->parentStmt) {
-    for (Pragma* pragma = defPoint->parentStmt->pragmas->first();
-         pragma;
-         pragma = defPoint->parentStmt->pragmas->next()) {
-      if (!strcmp(pragma->str, "no codegen")) {
-        return;
-      }
+    if (defPoint->parentStmt->hasPragma("no codegen")) {
+      return;
     }
   }
 
@@ -1158,8 +1111,9 @@ EnumSymbol::EnumSymbol(char* init_name, Expr* init_init, int init_val) :
 }
 
 
-Symbol* EnumSymbol::copySymbol(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new EnumSymbol(copystring(name), init->copyInternal(clone, map), val);
+EnumSymbol*
+EnumSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  return new EnumSymbol(copystring(name), COPY_INTERNAL(init), val);
 }
 
 
@@ -1167,7 +1121,7 @@ void EnumSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == init) {
     init = dynamic_cast<Expr*>(new_ast);
   } else {
-    INT_FATAL(this, "Unexpected case in EnumSymbol::replaceChild(old, new)");
+    INT_FATAL(this, "Unexpected case in EnumSymbol::replaceChild");
   }
 }
 
@@ -1205,6 +1159,13 @@ ModuleSymbol::ModuleSymbol(char* init_name, modType init_modtype) :
   modScope(NULL)
 {
   uses.clear();
+}
+
+
+ModuleSymbol*
+ModuleSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  INT_FATAL(this, "Illegal call to ModuleSymbol::copy");
+  return NULL;
 }
 
 
@@ -1258,7 +1219,7 @@ void ModuleSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == stmts) {
     stmts = dynamic_cast<AList<Stmt>*>(new_ast);
   } else {
-    INT_FATAL(this, "Unexpected case in ModuleSymbol::replaceChild(old, new)");
+    INT_FATAL(this, "Unexpected case in ModuleSymbol::replaceChild");
   }
 }
 

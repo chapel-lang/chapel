@@ -107,12 +107,8 @@ gets_to_binop(getsOpType i) {
 
 static int
 is_builtin(FnSymbol *fn) {
-  Pragma* pr = fn->defPoint->parentStmt->pragmas->first();
-  while (pr) {
-    if (!strcmp(pr->str, "builtin")) {
-      return 1;
-    }
-    pr = fn->defPoint->parentStmt->pragmas->next();
+  if (fn->defPoint->parentStmt->hasPragma("builtin")) {
+    return 1;
   }
   return 0;
 }
@@ -269,14 +265,9 @@ resolve_binary_operator(BinOp *op, FnSymbol *resolved = 0) {
       INT_FATAL(expr, "Trouble resolving operator");
     }
   } else {
-    Pragma* pr = fns.e[0]->defPoint->parentStmt->pragmas->first();
-    while (pr) {
-      if (!strcmp(pr->str, "builtin")) {
-        return expr;
-      }
-      pr = fns.e[0]->defPoint->parentStmt->pragmas->next();
+    if (fns.e[0]->defPoint->parentStmt->hasPragma("builtin")) {
+      return expr;
     }
-    
     AList<Expr>* args = new AList<Expr>(op->left->copy());
     args->insertAtTail(op->right->copy());
     FnCall *new_expr = new FnCall(new Variable(fns.e[0]), args);
