@@ -37781,3 +37781,47 @@ Removed files:
 	chapel/compiler/traversals/: destructureTupleAssignments.cpp 
 	                             destructureTupleAssignments.h 
 
+---------------------------------------------------------------------------
+
+06/28/05 13:11:15 -- deitz
+
+Log message:
+	Simplified and improved the implementation of copy.  Copying a
+	DefStmt, for example, now returns a DefStmt, rather than a Stmt.  The
+	overall structure of copy is similar; the changes are superficial.
+	
+	One result of this changes is that copy can no longer be called when
+	an object is NULL.  So c->copy() would now seg fault if c is NULL
+	rather than work.  To get around this, I added a macro COPY(c) that
+	can be used when this might be the case.  Alternatively, one can check
+	for NULL.  There are relatively few uses of this macro now.
+	
+	Simplified pragma implementation.  They are now a vector of strings in
+	the BaseAST rather than a BaseAST.  The function hasPragma(char*)
+	checks to see if the BaseAST has a specific pragma (using strncmp to
+	compare the start of the pragma with the search string).  The function
+	addPragma(char*) adds a pragma to a BaseAST's pragma vector.  The
+	function copyPragmas() is used by copy to copy pragmas on a BaseAST to
+	the result.
+
+Modified files:
+	chapel/compiler/AST/: Makefile.share baseAST.cpp expr.cpp 
+	                      stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: alist.h baseAST.h expr.h stmt.h 
+	                          symbol.h type.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: legalizeCNames.cpp symtab.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             findUnknownTypes.cpp 
+	                             insertAnonymousTypes.cpp 
+	                             insertIndexType.cpp 
+	                             omitForNoAnalysis.cpp 
+	                             processParameters.cpp 
+	                             resolveSymbols.cpp 
+	                             scopeResolveSymbols.cpp 
+	                             verifyASTType.cpp view.cpp 
+Removed files:
+	chapel/compiler/AST/: pragma.cpp 
+	chapel/compiler/include/: pragma.h 
+
