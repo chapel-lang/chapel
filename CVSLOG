@@ -37825,3 +37825,14 @@ Removed files:
 	chapel/compiler/AST/: pragma.cpp 
 	chapel/compiler/include/: pragma.h 
 
+---------------------------------------------------------------------------
+
+06/28/05 13:36:48 -- deitz
+
+Log message:
+	Updated my domain class to use the new data.  It doesn't work.  This
+	is just an update for Brad.
+
+Modified files:
+	chapel/test/arrays/deitz/: test_array_class1.chpl 
+
