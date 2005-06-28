@@ -1,4 +1,4 @@
-class MyDomainInfo {
+record MyDomainInfo {
   var low : integer;
   var high : integer;
   var stride : integer;
@@ -7,10 +7,7 @@ class MyDomainInfo {
 
 class MyDomain {
   parameter rank : integer;
-  var info : _data = _data(MyDomainInfo);
-  function init() {
-    info.alloc(rank, "domain info");
-  }
+  var info : _data(MyDomainInfo, rank);
   function dimInit(d : integer, low, high, stride) {
     info(d-1).low = low;
     info(d-1).high = high;
