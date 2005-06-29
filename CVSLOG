@@ -37887,3 +37887,27 @@ Modified files:
 	chapel/compiler/main/: runpasses.cpp 
 	chapel/compiler/traversals/: view.cpp 
 
+---------------------------------------------------------------------------
+
+06/29/05 13:46:06 -- shannon
+
+Log message:
+	Added a new compilation flag, --cg-chpl-lineno.  When this
+	flag is used, two global variables are generated,
+	_chpl_input_filename and _chpl_input_linenumber.  The
+	filename is printed at the start of a function or when it
+	changes, and the linenumbers are also printed when they're
+	updated.  These variables can now be used for generating
+	more descriptive runtime error messages.
+	
+	Changed the --codegen-cpp-lines flag that I added recently
+	to --cg-cpp-lines, and added an environment variable for it,
+	CHPL_CG_CPP_LINES.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp symbol.cpp 
+	chapel/compiler/include/: stmt.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/runtime/include/: error.h 
+	chapel/runtime/src/: error.c 
+
