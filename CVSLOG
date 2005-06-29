@@ -37911,3 +37911,26 @@ Modified files:
 	chapel/runtime/include/: error.h 
 	chapel/runtime/src/: error.c 
 
+---------------------------------------------------------------------------
+
+06/29/05 16:36:44 -- deitz
+
+Log message:
+	Cleaned up the html view facility alot, factoring it into its own
+	traversal and decreasing the size of the output by a factor of 6.  I
+	moved the output back to the log directory where it is not as slow as
+	it used to be but still a bit slow on our fileserver.
+	
+	I also cleaned the output a bit so things stay on the same line more
+	frequently.
+	
+	Indenting is now done with <DL> rather than many &nbsp;'s which
+	accounts for a few megabytes of savings.  Other major savings include
+	removing the prelude from the output.
+
+Modified files:
+	chapel/compiler/main/: passlist.cpp runpasses.cpp 
+	chapel/compiler/traversals/: Makefile.share view.cpp view.h 
+Added files:
+	chapel/compiler/traversals/: htmlview.cpp htmlview.h 
+
