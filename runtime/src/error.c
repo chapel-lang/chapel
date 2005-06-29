@@ -5,6 +5,8 @@
 #include "chplrt.h"
 
 
+char* _chpl_input_filename;
+int   _chpl_input_linenumber;
 
 void printError(char* message) {
   fflush(stdout);

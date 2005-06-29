@@ -1085,7 +1085,10 @@ void FnSymbol::codegenDef(FILE* outfile) {
     // variable of name x (as in trivial/bradc/vardecls1b.chpl), these
     // extra braces are required to make the generated code work out.
     fprintf(outfile, " {\n");
+    inFunction = true;
+    justStartedGeneratingFunction = true;
     body->codegen(outfile);
+    inFunction = false;
     fprintf(outfile, "\n");
     fprintf(outfile, "}\n");
     fprintf(outfile, "\n\n");

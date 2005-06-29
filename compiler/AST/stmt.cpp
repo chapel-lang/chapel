@@ -12,6 +12,9 @@
 #include "../passes/runAnalysis.h"
 
 bool printCppLineno = false;
+bool printChplLineno = false;
+bool inFunction = false;
+bool justStartedGeneratingFunction = false;
 
 Stmt::Stmt(astType_t astType) :
   BaseAST(astType),
@@ -37,11 +40,27 @@ Stmt::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
 }
 
 
+static char* priorFilename = "";
+static int priorLineno = -1;
+
 void Stmt::codegen(FILE* outfile) {
-  if (printCppLineno) {
-    if (lineno > 0) {
+  if (lineno > 0) {
+    if (printCppLineno) {
       fprintf(outfile, "/* ZLINE: %d %s */\n", lineno, filename);
     } 
+    
+    if (printChplLineno && inFunction) {
+      if (strcmp(filename, priorFilename) != 0 ||  
+          justStartedGeneratingFunction) {
+        fprintf(outfile, "_chpl_input_filename = \"%s\";\n", filename);
+        priorFilename = copystring(filename);
+        justStartedGeneratingFunction = false;
+      }
+      if (lineno != priorLineno) {
+        fprintf(outfile, "_chpl_input_linenumber = %d;\n", lineno);
+        priorLineno = lineno;
+      }
+    }
   }
   codegenStmt(outfile);
 }

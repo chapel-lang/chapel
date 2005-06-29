@@ -7,7 +7,11 @@
 #include "baseAST.h"
 #include "symbol.h"
 
+
 extern bool printCppLineno;
+extern bool printChplLineno;
+extern bool inFunction;
+extern bool justStartedGeneratingFunction;
 
 class Expr;
 class DefExpr;
