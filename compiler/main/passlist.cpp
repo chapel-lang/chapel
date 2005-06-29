@@ -32,6 +32,7 @@
 #include "../traversals/findUnresolvedSymbols.h"
 #include "../traversals/fixup.h"
 #include "../traversals/getstuff.h"
+#include "../traversals/htmlview.h"
 #include "../traversals/insertIndexType.h"
 #include "../traversals/insertAnonymousDomains.h"
 #include "../traversals/insertAnonymousTypes.h"
@@ -81,6 +82,7 @@ REGISTER(FindUnresolvedSymbols);
 REGISTER(FilesToAST);
 REGISTER(Fixup);
 REGISTER(GetStuff);
+REGISTER(HtmlView);
 REGISTER(InsertIndexType);
 REGISTER(InsertAnonymousDomains);
 REGISTER(InsertAnonymousTypes);

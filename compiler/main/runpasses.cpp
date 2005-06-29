@@ -66,15 +66,13 @@ static void runPass(char* passName, Pass* pass, char* args) {
   if (fdump_html) {
     gettimeofday(&stopTime, &timezone);
     if (strcmp(passName, "Verify")) {
-      fprintf(html_index_file, "<B>%s &nbsp; : &nbsp; ", passName);
-      fprintf(html_index_file, "%8.3f seconds</B><BR>\n",  
-              ((double)((stopTime.tv_sec*1e6+stopTime.tv_usec) - 
-                        (startTime.tv_sec*1e6+startTime.tv_usec))) / 1e6);
-    }
-    if (strcmp(passName, "Verify")) {
-      View* view = new View(false);
-      view->setArgs(glomstrings(2, "html ", passName));
-      view->run(Symboltable::getModuleList(MODULES_ALL));
+      fprintf(html_index_file, "<TR><TD>", passName);
+      fprintf(html_index_file, "%s", passName);
+      fprintf(html_index_file, "</TD><TD>", passName);
+      HtmlView* htmlview = new HtmlView();
+      htmlview->setArgs(glomstrings(2, "html ", passName));
+      htmlview->run(Symboltable::getModuleList(MODULES_CODEGEN));
+      fprintf(html_index_file, "</TD></TR>", passName);
     }
   }
 }
@@ -135,10 +133,9 @@ static void parsePassFile(char* passfilename) {
 
 void runPasses(char* passfilename) {
   if (fdump_html) {
-    system("rm -rf /tmp/chpllog/");
-    system("mkdir /tmp/chpllog/");
     html_index_file = fopen(glomstrings(2, log_dir, "index.html"), "w");
     dump_index_header(html_index_file);
+    fprintf(html_index_file, "<TABLE CELLPADDING=\"0\" CELLSPACING=\"0\">");
   }
   if (strcmp(passfilename, "") == 0) {
     PassInfo* pass = passlist+1;  // skip over FIRST
@@ -152,6 +149,7 @@ void runPasses(char* passfilename) {
     parsePassFile(passfilename);
   }
   if (fdump_html) {
+    fprintf(html_index_file, "</TABLE>");
     dump_index_footer(html_index_file);
     fclose(html_index_file);
   }
