@@ -37854,3 +37854,19 @@ Added files:
 	                              test_seq_tuple.future 
 	                              test_seq_tuple.good 
 
+---------------------------------------------------------------------------
+
+06/29/05 09:48:09 -- deitz
+
+Log message:
+	Added a working domain test to capture what works.
+	
+	Added a future domain test that shows the function I want added by the
+	compiler during instantiation.  It doesn't work.
+
+Added files:
+	chapel/test/arrays/deitz/: test_domain2D.chpl 
+	                           test_domain2D.future 
+	                           test_domain2D.good test_domain3.chpl 
+	                           test_domain3.good 
+
