@@ -37870,3 +37870,20 @@ Added files:
 	                           test_domain2D.good test_domain3.chpl 
 	                           test_domain3.good 
 
+---------------------------------------------------------------------------
+
+06/29/05 10:13:58 -- deitz
+
+Log message:
+	Moved the pass*-module* output files generated with the -t flag out of
+	the log/ directory and into a directory /tmp/chpllog/ that is
+	destroyed and created when the -t flag is used.
+	
+	This greatly improves the compile time with the -t flag because our
+	fileserver is slow.  However, is this a problem to rely on the
+	location of /tmp/chpllog?
+
+Modified files:
+	chapel/compiler/main/: runpasses.cpp 
+	chapel/compiler/traversals/: view.cpp 
+
