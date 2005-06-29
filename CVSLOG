@@ -37934,3 +37934,29 @@ Modified files:
 Added files:
 	chapel/compiler/traversals/: htmlview.cpp htmlview.h 
 
+---------------------------------------------------------------------------
+
+06/29/05 16:46:59 -- roxana
+
+Log message:
+	Added some tests that seem unrelated to domains.
+	The starting point was to work on writing the Chapel class
+	for the indefinite domains implementation. To do that, I needed
+	a storage (for iterators, etc.) and so I tried to implement a hash
+	table for that purpose. I got stuck in various problems (array
+	setters and type parameterization) before I could even start
+	on doing something. I am checking those tests in since this
+	is what I have been working on, even though without much
+	success.
+
+Added files:
+	chapel/test/domains/roxana/: test_hash_table2.chpl 
+	                             test_hash_table.good 
+	                             test_hash_table1.good 
+	                             test_hash_table1.future 
+	                             test_hash_table1.chpl 
+	                             test_hash_table.chpl 
+	                             test_hash_table2.good 
+	                             test_hash_table2.future 
+	                             test_hash_table.future 
+
