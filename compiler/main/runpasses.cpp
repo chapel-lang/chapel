@@ -135,6 +135,8 @@ static void parsePassFile(char* passfilename) {
 
 void runPasses(char* passfilename) {
   if (fdump_html) {
+    system("rm -rf /tmp/chpllog/");
+    system("mkdir /tmp/chpllog/");
     html_index_file = fopen(glomstrings(2, log_dir, "index.html"), "w");
     dump_index_header(html_index_file);
   }

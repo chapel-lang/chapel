@@ -75,9 +75,9 @@ void View::run(ModuleList* moduleList) {
   ModuleSymbol* mod = moduleList->first();
   while (mod) {
     if (html) {
-      filename = glomstrings(5, "pass", intstring(uid), "_module_", mod->name, ".html");
+      filename = glomstrings(5, "/tmp/chpllog/pass", intstring(uid), "_module_", mod->name, ".html");
       fprintf(html_index_file, "&nbsp;&nbsp;<a href=\"%s\">ast&nbsp;%s</a>\n", filename, mod->name);
-      html_file = fopen(glomstrings(2, log_dir, filename), "w");
+      html_file = fopen(filename, "w");
       fprintf(html_file, "<CHPLTAG=\"%s\">\n", html);
       fprintf(html_file, "<HTML>\n");
       fprintf(html_file, "<HEAD>\n");
