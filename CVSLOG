@@ -37836,3 +37836,21 @@ Log message:
 Modified files:
 	chapel/test/arrays/deitz/: test_array_class1.chpl 
 
+---------------------------------------------------------------------------
+
+06/29/05 09:37:03 -- deitz
+
+Log message:
+	Three futures for John to look at when he returns.  I think the
+	general test_seq_tuple is a simplification of the other two.  It
+	creates a sequence and a tuple and it seems that functions of one are
+	shared with the other even though they shouldn't be.
+
+Added files:
+	chapel/test/arrays/deitz/: test_domain1.chpl test_domain1.future 
+	                           test_domain1.good test_domain2.chpl 
+	                           test_domain2.future test_domain2.good 
+	chapel/test/types/seq/deitz/: test_seq_tuple.chpl 
+	                              test_seq_tuple.future 
+	                              test_seq_tuple.good 
+
