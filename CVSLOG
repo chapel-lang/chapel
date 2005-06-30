@@ -38096,3 +38096,20 @@ Modified files:
 	                             specializeParenOpExprs.cpp 
 	                             verifyASTType.cpp 
 
+---------------------------------------------------------------------------
+
+06/30/05 14:00:16 -- shannon
+
+Log message:
+	Added a couple tests for the new compilation
+	flag, --codegen-cpp-lines.
+
+Added files:
+	chapel/test/compflags/shannon/cpplines/: .cvsignore CLEANFILES 
+	                                         PREDIFF cppLines.chpl 
+	                                         cppLines.compopts 
+	                                         cppLines.good 
+	                                         noCppLines.chpl 
+	                                         noCppLines.compopts 
+	                                         noCppLines.good 
+
