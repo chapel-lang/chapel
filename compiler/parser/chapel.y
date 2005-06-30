@@ -144,7 +144,9 @@
 %type <defexprls> formal formals optional_formals
 %type <enumsym> enum_item
 %type <enumsymlist> enum_list
-%type <pexpr> paren_op_expr member_access_expr non_tuple_lvalue lvalue tuple_paren_expr atom expr expr_list_item literal range seq_expr where whereexpr
+%type <pexpr> paren_op_expr member_access_expr non_tuple_lvalue lvalue tuple_paren_expr atom expr expr_list_item
+%type <pexpr> literal range seq_expr where whereexpr
+%type <pexpr> tuple_multiplier intliteral
 %type <exprlist> exprlist nonemptyExprlist
 %type <pexpr> reduction optional_init_expr assignExpr conditional_expr
 %type <pfaexpr> forallExpr
@@ -737,6 +739,12 @@ decls:
 ;
 
 
+tuple_multiplier:
+  intliteral
+/* | non_tuple_lvalue */
+;
+
+
 exprType:
   identifier
     {
@@ -759,6 +767,12 @@ exprType:
 | paren_op_expr
     {
       $$ = new ExprType($1);
+    }
+| tuple_multiplier TSTAR identifier
+    {
+      AList<Expr>* argList = new AList<Expr>(new Variable(new UnresolvedSymbol($3)));
+      argList->insertAtTail($1);
+      $$ = new ExprType(new ParenOpExpr(new Variable(new UnresolvedSymbol("_htuple")), argList));
     }
 ;
 
@@ -1263,9 +1277,14 @@ range:
 ;
 
 
-literal:
+intliteral:
   INTLITERAL
     { $$ = new IntLiteral(yytext, atol(yytext)); }
+;
+
+
+literal:
+  intliteral
 | FLOATLITERAL
     { $$ = new FloatLiteral(yytext, atof(yytext)); }
 | COMPLEXLITERAL

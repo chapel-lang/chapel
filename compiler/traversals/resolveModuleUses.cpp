@@ -46,6 +46,11 @@ void ResolveModuleUses::run(ModuleList* moduleList) {
           new Variable(
             new UnresolvedSymbol("_chpl_complex"))));
       if (analyzeAST) {
+        if (!_dtinteger_IndexType_switch)
+          mod->initFn->body->body->insertAtHead(
+            new UseStmt(
+              new Variable(
+                new UnresolvedSymbol("_chpl_htuple"))));
         mod->initFn->body->body->insertAtHead(
           new UseStmt(
             new Variable(

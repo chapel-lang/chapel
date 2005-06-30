@@ -40,6 +40,11 @@ linux and general regressions
   been instantiated so that the test would pass for all parameters.
   (deitz/bradc)
 
+[Error matching compiler output for types/complex/bradc/intfloatelement]
+
+  There seems to be a weird conflict with the complex record and the
+  new _htuple record in analysis.
+
 ==========================
 linux valgrind regressions
 ==========================
