@@ -38041,3 +38041,26 @@ Added files:
 	chapel/test/domains/roxana/: test_hash_table3.chpl 
 	                             test_hash_table3.good 
 
+---------------------------------------------------------------------------
+
+06/30/05 12:35:37 -- deitz
+
+Log message:
+	Changed UseStmt and WithStmt into UseExpr and WithExpr mostly to pave
+	the way for future changes.  These expressions can now be found in
+	ExprStmts.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp stmt.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h expr.h stmt.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: createEntryPoint.cpp 
+	chapel/compiler/traversals/: expandClassWiths.cpp 
+	                             expandClassWiths.h 
+	                             resolveModuleUses.cpp 
+	                             resolveModuleUses.h 
+	                             verifyASTType.cpp 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
