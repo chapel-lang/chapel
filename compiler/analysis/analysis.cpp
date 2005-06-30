@@ -2080,7 +2080,6 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
         break;
       }
       if (s->left->astType == EXPR_ARRAYREF ||
-          s->left->astType == EXPR_TUPLESELECT ||
           s->left->astType == EXPR_FNCALL ||
           s->left->astType == EXPR_PARENOP) 
       {
@@ -2229,7 +2228,6 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       break;
     }
     case EXPR_ARRAYREF: // **************** CURRENTLY UNUSED ****************
-    case EXPR_TUPLESELECT:
     case EXPR_FNCALL:
     case EXPR_PARENOP:
       if (gen_paren_op(dynamic_cast<ParenOpExpr *>(ast)) < 0)

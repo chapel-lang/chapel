@@ -207,11 +207,6 @@ static void verifyASTType(BaseAST* ast) {
       INT_FATAL(ast, "Unexpected AST expression type: EXPR_FNCALL");
     }
     break;
-  case EXPR_TUPLESELECT:
-    if (typeid(*ast) != typeid(TupleSelect)) {
-      INT_FATAL(ast, "Unexpected AST expression type: EXPR_TUPLESELECT");
-    }
-    break;
   case EXPR_ARRAYREF:
     if (typeid(*ast) != typeid(ArrayRef)) {
       INT_FATAL(ast, "Unexpected AST expression type: EXPR_ARRAYREF");

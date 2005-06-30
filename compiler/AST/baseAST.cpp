@@ -313,7 +313,6 @@ char* astTypeName[AST_TYPE_END+1] = {
   "CastLike",
   "FnCall",
   "ArrayRef",
-  "TupleSelect",
   "MemberAccess",
   "Reduce",
   "Tuple",
@@ -504,7 +503,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     goto LExprCommon;
   case EXPR_FNCALL:
   case EXPR_ARRAYREF:
-  case EXPR_TUPLESELECT:
     goto LParenOpCommon;
   case EXPR_MEMBERACCESS:
     AST_ADD_CHILD(MemberAccess, base);

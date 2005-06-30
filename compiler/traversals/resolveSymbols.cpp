@@ -289,8 +289,6 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
   if (ParenOpExpr* paren = dynamic_cast<ParenOpExpr*>(expr)) {
     if (dynamic_cast<ArrayType*>(paren->baseExpr->typeInfo())) {
       paren_replacement = new ArrayRef(paren->baseExpr, paren->argList);
-    } else if (dynamic_cast<TupleType*>(paren->baseExpr->typeInfo())) {
-      paren_replacement = new TupleSelect(paren->baseExpr, paren->argList);
     }
   }
   if (paren_replacement) {

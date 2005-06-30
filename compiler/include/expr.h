@@ -386,19 +386,6 @@ class ArrayRef : public ParenOpExpr {
 };
 
 
-class TupleSelect : public ParenOpExpr {
- public:
-  /* baseExpr is TupleExpr, argList is indexing expression (single expression) */
-  TupleSelect(Expr* init_base, Expr* init_arg);
-  TupleSelect(Expr* init_base, AList<Expr>* init_arg);
-  COPY_DEF(TupleSelect);
-  bool isConst(void);
-  Type* typeInfo(void);
-
-  void codegen(FILE* outfile);
-};
-
-
 class FnCall : public ParenOpExpr {
  public:
   FnCall(Expr* init_base, AList<Expr>* init_arg = new AList<Expr>());
