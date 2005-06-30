@@ -38019,3 +38019,25 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+06/30/05 12:16:33 -- roxana
+
+Log message:
+	Modified the tests I checked in yesterday so that they use
+	the _data(...) storage structure rather than arrays for storage
+	 per Steve's and Brad's advice. However, _data does
+	not work from within a class. I added one more test which
+	works for _data outside a class.
+
+Modified files:
+	chapel/test/domains/roxana/: test_hash_table2.chpl 
+	                             test_hash_table1.future 
+	                             test_hash_table1.chpl 
+	                             test_hash_table.chpl 
+	                             test_hash_table2.future 
+	                             test_hash_table.future 
+Added files:
+	chapel/test/domains/roxana/: test_hash_table3.chpl 
+	                             test_hash_table3.good 
+
