@@ -1,13 +1,9 @@
-/* The CHAPEL Parser */
-
 %{
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-/* NOTE: all chapel.y #includes should go in lexyacc.h so make depend works */
-#include "lexyacc.h"
-/* NOTE: all chapel.y #includes should go in lexyacc.h so make depend works */
+#include "lexyacc.h" // all #includes here, for make depend
 
 %}
 
@@ -16,6 +12,8 @@
 %union  {
   bool boolval;
   char* pch;
+  Vec<char*>* vpch;
+
   getsOpType got;
   varType vt;
   consType ct;
@@ -24,27 +22,28 @@
   fnType ft;
 
   Expr* pexpr;
-  AList<Expr>* exprlist;
-  ForallExpr* pfaexpr;
-  Stmt* stmt;
-  AList<Stmt>* stmtlist;
-  AList<WhenStmt>* whenstmtlist;
-  WhenStmt* whenstmt;
-  DefStmt* defstmt;
-  DefExpr* defexpr;
-  AList<DefExpr>* defexprls;
-  ForLoopStmt* forstmt;
-  BlockStmt* blkstmt;
-  Type* pdt;
-  EnumSymbol* enumsym;
-  AList<EnumSymbol>* enumsymlist;
+  DefExpr* pdefexpr;
+  ForallExpr* pforallexpr;
+
+  Stmt* pstmt;
+  DefStmt* pdefstmt;
+  WhenStmt* pwhenstmt;
+  ForLoopStmt* pforloopstmt;
+  BlockStmt* pblockstmt;
+
+  Type* ptype;
+
   Symbol* psym;
-  AList<Symbol>* symlist;
-  VarSymbol* pvsym;
-  TypeSymbol* ptsym;
-  FnSymbol* fnsym;
-  ModuleSymbol* modsym;
-  Vec<char*>* vpch;
+  FnSymbol* pfnsym;
+  ModuleSymbol* pmodsym;
+  EnumSymbol* penumsym;
+
+  AList<Expr>* pexprls;
+  AList<Stmt>* pstmtls;
+  AList<WhenStmt>* pwhenstmtls;
+  AList<DefExpr>* pdefexprls;
+  AList<EnumSymbol>* penumsymls;
+  AList<Symbol>* psymls;
 }
 
 %token TATOMIC
@@ -126,46 +125,51 @@
 
 %token TQUESTION
 
-%type <ct> varconst
+%type <vt> config_static
+%type <ct> var_const_param
  
-%type <got> assignOp
-%type <vt> vardecltag
-%type <pt> formaltag
-%type <ft> fntag
+%type <got> assign_op_tag
+%type <pt> formal_tag
+%type <ft> fn_tag
+%type <blktype> atomic_cobegin
 
 %type <boolval> fortype fnretref
-%type <pdt> type domainType indexType arrayType record_tuple_type record_tuple_inner_type exprType
-%type <exprlist> tuple_inner_types
-%type <pdt> opt_vardecltype vardecltype typevardecltype fnrettype
-%type <pch> identifier query_identifier fname optional_identifier
-%type <psym> ident_symbol ident_symbol_nopragma
-%type <fnsym> function
-%type <symlist> ident_symbol_ls indexes indexlist
-%type <defexprls> formal formals optional_formals
-%type <enumsym> enum_item
-%type <enumsymlist> enum_list
-%type <pexpr> paren_op_expr member_access_expr non_tuple_lvalue lvalue tuple_paren_expr atom expr expr_list_item
+
+%type <pch> identifier query_identifier fname opt_identifier
+%type <pch> pragma
+%type <vpch> pragma_ls
+
+%type <pexpr> parenop_expr memberaccess_expr non_tuple_lvalue lvalue
+%type <pexpr> tuple_paren_expr atom expr expr_list_item
 %type <pexpr> literal range seq_expr where whereexpr
 %type <pexpr> tuple_multiplier intliteral
-%type <exprlist> exprlist nonemptyExprlist
-%type <pexpr> reduction optional_init_expr assignExpr conditional_expr
-%type <pfaexpr> forallExpr
-%type <stmt> statement call_stmt noop_stmt decl typevardecl
-%type <stmtlist> decls statements modulebody program
-%type <defexprls> vardecl_inner vardecl_inner_ls record_inner_vars
-%type <defstmt> vardecl
-%type <stmt> assignment conditional retStmt loop forloop whileloop enumdecl
-%type <whenstmtlist> when_stmts
-%type <whenstmt> when_stmt
-%type <stmt> select_stmt
-%type <pdt> class_record_union
-%type <stmt> typealias typedecl fndecl structdecl moduledecl
-%type <stmt> function_body_single_stmt 
-%type <blkstmt> function_body_stmt block_stmt par_block_stmt
-%type <blktype> par_block_header
-%type <pch> pragma
-%type <vpch> pragmas
+%type <pexpr> reduction opt_init_expr assign_expr if_expr
+%type <pexprls> expr_ls nonempty_expr_ls tuple_inner_type_ls
+%type <pdefexprls> formal formal_ls opt_formal_ls
+%type <pdefexprls> var_decl_inner var_decl_inner_ls record_inner_var_ls
+%type <pforallexpr> forallExpr
 
+%type <pstmt> select_stmt
+%type <pstmt> usertype_decl type_decl fn_decl struct_decl mod_decl
+%type <pstmt> function_body_single_stmt 
+%type <pstmt> assign_stmt if_stmt return_stmt loop forloop whileloop enumdecl
+%type <pstmt> statement call_stmt noop_stmt decl typevar_decl
+%type <pstmtls> decl_ls statements modulebody program
+%type <pdefstmt> var_decl
+%type <pblockstmt> function_body_stmt block_stmt
+%type <pwhenstmt> when_stmt
+%type <pwhenstmtls> when_stmts
+
+%type <ptype> opt_var_type var_type typevar_type fnrettype
+%type <ptype> type domain_type index_type array_type record_tuple_type
+%type <ptype> record_tuple_inner_type expr_type
+%type <ptype> class_record_union
+
+%type <psym> ident_symbol ident_symbol_nopragma
+%type <psymls> ident_symbol_ls indexes indexlist
+%type <pfnsym> function
+%type <penumsym> enum_item
+%type <penumsymls> enum_list
 
 /* These are declared in increasing order of precedence. */
 
@@ -211,7 +215,7 @@ modulebody:
   statements
 ;
 
-vardecltag:
+config_static:
   /* nothing */
     { $$ = VAR_NORMAL; }
 | TCONFIG
@@ -221,7 +225,7 @@ vardecltag:
 ;
 
 
-varconst:
+var_const_param:
   TVAR
     { $$ = VAR_VAR; }
 | TCONST
@@ -231,7 +235,7 @@ varconst:
 ;
         
 ident_symbol:
-  pragmas identifier
+  pragma_ls identifier
     { 
       $$ = new Symbol(SYMBOL, $2);
       $$->copyPragmas(*$1);
@@ -254,7 +258,7 @@ ident_symbol_ls:
 ;
 
 
-vardecltype:
+var_type:
   TCOLON type
     { $$ = $2; }
 | TLIKE expr
@@ -262,14 +266,14 @@ vardecltype:
 ;
 
 
-opt_vardecltype:
+opt_var_type:
   /* nothing */
     { $$ = dtUnknown; }
-| vardecltype
+| var_type
 ;
 
 
-optional_init_expr:
+opt_init_expr:
   /* nothing */
     { $$ = NULL; }
 | TASSIGN expr
@@ -277,37 +281,37 @@ optional_init_expr:
 ;
 
 
-vardecl_inner:
-  ident_symbol_ls opt_vardecltype optional_init_expr
+var_decl_inner:
+  ident_symbol_ls opt_var_type opt_init_expr
     { $$ = Symboltable::defineVarDef1($1, $2, $3); }
 ;
 
 
-vardecl_inner_ls:
-  vardecl_inner
-| vardecl_inner_ls TCOMMA vardecl_inner
+var_decl_inner_ls:
+  var_decl_inner
+| var_decl_inner_ls TCOMMA var_decl_inner
     { $1->add($3); }
 ;
 
 
-vardecl:
-  vardecltag varconst vardecl_inner_ls TSEMI
+var_decl:
+  config_static var_const_param var_decl_inner_ls TSEMI
     {
       Symboltable::defineVarDef2($3, $1, $2);
       $$ = new DefStmt($3);
     }
 ;
 
-typedecl:
-  typealias
-| typevardecl
+type_decl:
+  usertype_decl
+| typevar_decl
 | enumdecl
-| structdecl
+| struct_decl
 ;
 
 
-typealias:
-  TTYPE pragmas identifier TCOLON type optional_init_expr TSEMI
+usertype_decl:
+  TTYPE pragma_ls identifier TCOLON type opt_init_expr TSEMI
     {
       UserType* newtype = new UserType($5, $6);
       TypeSymbol* typeSym = new TypeSymbol($3, newtype);
@@ -319,8 +323,8 @@ typealias:
 ;
 
 
-typevardecl:
-  TTYPE pragmas identifier TSEMI
+typevar_decl:
+  TTYPE pragma_ls identifier TSEMI
     {
       VariableType* new_type = new VariableType(getMetaType(0));
       TypeSymbol* new_symbol = new TypeSymbol($3, new_type);
@@ -333,7 +337,7 @@ typevardecl:
 
 
 enumdecl:
-  TENUM pragmas identifier TLCBR enum_list TRCBR TSEMI
+  TENUM pragma_ls identifier TLCBR enum_list TRCBR TSEMI
     {
       EnumSymbol::setValues($5);
       EnumType* pdt = new EnumType($5);
@@ -341,7 +345,8 @@ enumdecl:
       pst->copyPragmas(*$2);
       pdt->addSymbol(pst);
       DefExpr* def_expr = new DefExpr(pst);
-      Symbol::setDefPoints($5, def_expr); /* SJD: Should enums have more DefExprs? */
+      Symbol::setDefPoints($5, def_expr);
+        /* SJD: Should enums have more DefExprs? */
       $$ = new DefStmt(def_expr);
     }
 ;
@@ -357,12 +362,12 @@ class_record_union:
 ;
 
 
-structdecl:
-  class_record_union pragmas identifier TLCBR
+struct_decl:
+  class_record_union pragma_ls identifier TLCBR
     {
       Symboltable::pushScope(SCOPE_CLASS);
     }
-                                              decls TRCBR
+                                              decl_ls TRCBR
     {
       SymScope *scope = Symboltable::popScope();
       Type* type = Symboltable::defineStructType($3, $1, scope, $6);
@@ -372,12 +377,12 @@ structdecl:
 ;
 
 
-tuple_inner_types:
+tuple_inner_type_ls:
   lvalue
     {
       $$ = new AList<Expr>($1);
     }
-| tuple_inner_types TCOMMA lvalue
+| tuple_inner_type_ls TCOMMA lvalue
     { 
       $1->insertAtTail($3);
       $$ = $1;
@@ -385,12 +390,12 @@ tuple_inner_types:
 ;
 
 
-record_inner_vars:
-  ident_symbol_nopragma vardecltype optional_init_expr
+record_inner_var_ls:
+  ident_symbol_nopragma var_type opt_init_expr
     {
       $$ = Symboltable::defineVarDef1(new AList<Symbol>($1), $2, $3);
     }
-| record_inner_vars TCOMMA ident_symbol vardecltype
+| record_inner_var_ls TCOMMA ident_symbol var_type
     {
       $1->add(Symboltable::defineVarDef1(new AList<Symbol>($3), $4, NULL));
       $$ = $1;
@@ -399,13 +404,13 @@ record_inner_vars:
 
 
 record_tuple_inner_type:
-  record_inner_vars TRP
+  record_inner_var_ls TRP
     {
       SymScope *scope = Symboltable::popScope();
       $$ = Symboltable::defineStructType(NULL, new RecordType(), scope, 
                                          new AList<Stmt>(new DefStmt($1)));
     }
-| tuple_inner_types TRP
+| tuple_inner_type_ls TRP
     {
       Symboltable::popScope();
       char *tupleName = glomstrings(2, "_tuple", intstring($1->length()));
@@ -421,7 +426,7 @@ record_tuple_type:
     {
       Symboltable::pushScope(SCOPE_CLASS);
     }
-                decls TRCBR
+                decl_ls TRCBR
     {
       SymScope *scope = Symboltable::popScope();
       $$ = Symboltable::defineStructType(NULL, new RecordType(), scope, $4);
@@ -462,7 +467,7 @@ enum_list:
 ;
 
 
-formaltag:
+formal_tag:
   /* nothing */
     { $$ = PARAM_BLANK; }
 | TIN
@@ -478,7 +483,7 @@ formaltag:
 ;
 
 
-typevardecltype:
+typevar_type:
   /* nothing */
     { $$ = NULL; }
 | TCOLON type
@@ -487,11 +492,11 @@ typevardecltype:
 
 
 formal:
-  formaltag ident_symbol_ls opt_vardecltype optional_init_expr
+  formal_tag ident_symbol_ls opt_var_type opt_init_expr
     {
       $$ = Symboltable::defineParams($1, $2, $3, $4);
     }
-| TTYPE ident_symbol typevardecltype
+| TTYPE ident_symbol typevar_type
     {
       AList<DefExpr> *psl = Symboltable::defineParams(PARAM_TYPE, new AList<Symbol>($2), getMetaType($3), NULL);
       ParamSymbol* ps = dynamic_cast<ParamSymbol*>(psl->only()->sym);
@@ -508,18 +513,18 @@ formal:
 ;
 
 
-formals:
+formal_ls:
   /* empty */
     { $$ = new AList<DefExpr>(); }
 | formal
-| formals TCOMMA formal
+| formal_ls TCOMMA formal
     { $1->add($3); }
 ;
 
 
-optional_formals:
+opt_formal_ls:
   { $$ = NULL; }
-| TLP formals TRP
+| TLP formal_ls TRP
   { $$ = $2; }
 ;
 
@@ -603,7 +608,7 @@ fname:
   { $$ = "#"; } 
   ;
 
-fntag:
+fn_tag:
   TFUNCTION
     { $$ = FN_FUNCTION; }
 | TCONSTRUCTOR
@@ -667,7 +672,7 @@ whereexpr:
     { $$ = new BinOp(BINOP_SUBTYPE, $1, $3); }
 | whereexpr TNOTCOLON whereexpr
     { $$ = new BinOp(BINOP_NOTSUBTYPE, $1, $3); }
-| class_record_union pragmas optional_identifier TLCBR decls TRCBR
+| class_record_union pragma_ls opt_identifier TLCBR decl_ls TRCBR
     { $$ = NULL; }
 ;
 
@@ -680,35 +685,35 @@ function:
 ;
 
 
-fndecl:
-  fntag function
+fn_decl:
+  fn_tag function
     {
-      $<fnsym>$ = Symboltable::startFnDef($2);
-      $<fnsym>$->fnClass = $1;
+      $<pfnsym>$ = Symboltable::startFnDef($2);
+      $<pfnsym>$->fnClass = $1;
     }
-                       optional_formals fnretref fnrettype where
+                       opt_formal_ls fnretref fnrettype where
     {
       if (!$4) {
         $4 = new AList<DefExpr>();
-        $<fnsym>3->noparens = true;
+        $<pfnsym>3->noparens = true;
       }
-      Symboltable::continueFnDef($<fnsym>3, $4, $6, $5, $7);
+      Symboltable::continueFnDef($<pfnsym>3, $4, $6, $5, $7);
     }
                                                  function_body_stmt
     {
-      $$ = new DefStmt(new DefExpr(Symboltable::finishFnDef($<fnsym>3, $9)));
+      $$ = new DefStmt(new DefExpr(Symboltable::finishFnDef($<pfnsym>3, $9)));
     }
 ;
 
 
-moduledecl:
+mod_decl:
   TMODULE identifier
     {
-      $<modsym>$ = Symboltable::startModuleDef($2);
+      $<pmodsym>$ = Symboltable::startModuleDef($2);
     }
                      TLCBR modulebody TRCBR
     {
-      $$ = new DefStmt(Symboltable::finishModuleDef($<modsym>3, $5));
+      $$ = new DefStmt(Symboltable::finishModuleDef($<pmodsym>3, $5));
     }
 ;
 
@@ -720,18 +725,18 @@ decl:
     { $$ = new UseStmt($2); }
 | TWHERE whereexpr TSEMI
     { $$ = new ExprStmt($2); }
-| vardecl
+| var_decl
     { $$ = $1; }
-| typedecl
-| fndecl
-| moduledecl
+| type_decl
+| fn_decl
+| mod_decl
 ;
 
 
-decls:
+decl_ls:
   /* empty */
     { $$ = new AList<Stmt>(); }
-| decls pragmas decl
+| decl_ls pragma_ls decl
     {
       $3->copyPragmas(*$2);
       $1->insertAtTail($3);
@@ -745,7 +750,7 @@ tuple_multiplier:
 ;
 
 
-exprType:
+expr_type:
   identifier
     {
       Vec<char*>* new_names = new Vec<char*>();
@@ -760,11 +765,11 @@ exprType:
                  new Variable(
                    new UnresolvedSymbol($3)))));
     }
-| member_access_expr
+| memberaccess_expr
     {
       $$ = new ExprType($1);
     }
-| paren_op_expr
+| parenop_expr
     {
       $$ = new ExprType($1);
     }
@@ -778,16 +783,16 @@ exprType:
 
 
 type:
-  domainType
-| indexType
-| arrayType
+  domain_type
+| index_type
+| array_type
 | record_tuple_type
-| exprType
+| expr_type
 | query_identifier
     { $$ = dtUnknown; }
 ;
 
-domainType:
+domain_type:
   TDOMAIN
     { $$ = new DomainType(); }
 | TDOMAIN TLP expr TRP
@@ -795,7 +800,7 @@ domainType:
 ;
 
 
-indexType:
+index_type:
   TINDEX
     { $$ = new IndexType(); }
 | TINDEX TLP expr TRP
@@ -804,14 +809,14 @@ indexType:
 
 
 forallExpr:
-  TLSBR nonemptyExprlist TRSBR
+  TLSBR nonempty_expr_ls TRSBR
     { $$ = Symboltable::startForallExpr($2); }
-| TLSBR nonemptyExprlist TIN nonemptyExprlist TRSBR
+| TLSBR nonempty_expr_ls TIN nonempty_expr_ls TRSBR
     { $$ = Symboltable::startForallExpr($4, $2); }
 ;
 
 
-arrayType:
+array_type:
   TLSBR TRSBR type
     { $$ = new ArrayType(unknownDomain, $3); }
 | TLSBR query_identifier TRSBR type
@@ -833,7 +838,7 @@ arrayType:
 statements:
   /* empty */
     { $$ = new AList<Stmt>(); }
-| statements pragmas statement
+| statements pragma_ls statement
     { 
       $3->copyPragmas(*$2);
       $1->insertAtTail($3);
@@ -843,11 +848,11 @@ statements:
 
 function_body_single_stmt:
   noop_stmt
-| conditional
+| if_stmt
 | select_stmt
 | loop
 | call_stmt
-| retStmt
+| return_stmt
 ;
 
 
@@ -874,26 +879,24 @@ statement:
 | TCONTINUE TSEMI
     { $$ = new GotoStmt(goto_continue); }
 | decl
-| assignment
-| conditional
+| assign_stmt
+| if_stmt
 | select_stmt
 | loop
 | call_stmt
 | lvalue TSEMI
     { $$ = new ExprStmt($1); }
-| retStmt
+| return_stmt
 | block_stmt
-    { $$ = $1; }
-| par_block_stmt
     { $$ = $1; }
 | error
     { printf("syntax error"); exit(1); }
 ;
 
 
-pragmas:
+pragma_ls:
     { $$ = new Vec<char*>(); }
-| pragmas pragma
+| pragma_ls pragma
     {
       $1->add($2);
     }
@@ -918,32 +921,29 @@ noop_stmt:
 ;
 
 
-block_stmt:
-  TLCBR
-    { $<blkstmt>$ = Symboltable::startCompoundStmt(); }
-        statements TRCBR
-    { $$ = Symboltable::finishCompoundStmt($<blkstmt>2, $3); }
-;
-
-
-par_block_header:
-  TATOMIC
+atomic_cobegin:
+    { $$ = BLOCK_NORMAL; }
+| TATOMIC
     { $$ = BLOCK_ATOMIC; }
 | TCOBEGIN
     { $$ = BLOCK_COBEGIN; }
 ;
 
 
-par_block_stmt:
-  par_block_header block_stmt
-    { 
-      $2->blockType = $1;
-      $$ = $2;
+block_stmt:
+  atomic_cobegin TLCBR
+    {
+      $<pblockstmt>$ = Symboltable::startCompoundStmt();
+    }
+                       statements TRCBR
+    {
+      $$ = Symboltable::finishCompoundStmt($<pblockstmt>3, $4);
+      $$->blockType = $1;
     }
 ;
 
 
-retStmt:
+return_stmt:
   TRETURN TSEMI
     { $$ = new ReturnStmt(NULL); }
 | TRETURN expr TSEMI
@@ -981,27 +981,27 @@ indexlist:
 forloop:
   fortype indexlist TIN expr
     { 
-      $<forstmt>$ = Symboltable::startForLoop($1, $2, $4);
+      $<pforloopstmt>$ = Symboltable::startForLoop($1, $2, $4);
     }
                              block_stmt
     { 
-      $$ = Symboltable::finishForLoop($<forstmt>5, $6);
+      $$ = Symboltable::finishForLoop($<pforloopstmt>5, $6);
     }
 | fortype indexlist TIN expr
     { 
-      $<forstmt>$ = Symboltable::startForLoop($1, $2, $4);
+      $<pforloopstmt>$ = Symboltable::startForLoop($1, $2, $4);
     }
                              TDO statement
     { 
-      $$ = Symboltable::finishForLoop($<forstmt>5, $7);
+      $$ = Symboltable::finishForLoop($<pforloopstmt>5, $7);
     }
 | TLSBR indexlist TIN expr TRSBR
     { 
-      $<forstmt>$ = Symboltable::startForLoop(true, $2, $4);
+      $<pforloopstmt>$ = Symboltable::startForLoop(true, $2, $4);
     }
                                  statement
     { 
-      $$ = Symboltable::finishForLoop($<forstmt>6, $7);
+      $$ = Symboltable::finishForLoop($<pforloopstmt>6, $7);
     }
 ;
 
@@ -1022,7 +1022,7 @@ loop:
 ;
 
 
-conditional:
+if_stmt:
   TIF expr block_stmt %prec TNOELSE
     { $$ = new CondStmt($2, dynamic_cast<BlockStmt*>($3)); }
 | TIF expr TTHEN statement %prec TNOELSE
@@ -1035,11 +1035,11 @@ conditional:
 
 
 when_stmt:
-  TWHEN nonemptyExprlist TDO statement
+  TWHEN nonempty_expr_ls TDO statement
     {
       $$ = new WhenStmt($2, new BlockStmt(new AList<Stmt>($4)));
     }
-| TWHEN nonemptyExprlist block_stmt
+| TWHEN nonempty_expr_ls block_stmt
     {
       $$ = new WhenStmt($2, $3);
     }
@@ -1070,7 +1070,7 @@ select_stmt:
 ;
 
 
-assignOp:
+assign_op_tag:
   TASSIGN
     { $$ = GETS_NORM; }
 | TASSIGNPLUS
@@ -1092,22 +1092,22 @@ assignOp:
 ;
 
 
-assignExpr:
-  lvalue assignOp expr
+assign_expr:
+  lvalue assign_op_tag expr
     { $$ = new AssignOp($2, $1, $3); }
 ;
 
 
-assignment:
-  assignExpr TSEMI
+assign_stmt:
+  assign_expr TSEMI
     { $$ = new ExprStmt($1); }
 ;
 
 
-exprlist:
+expr_ls:
   /* empty */
     { $$ = new AList<Expr>(); }
-| nonemptyExprlist
+| nonempty_expr_ls
 ;
 
 
@@ -1119,16 +1119,16 @@ expr_list_item:
 ;
 
 
-nonemptyExprlist:
-  pragmas expr_list_item
+nonempty_expr_ls:
+  pragma_ls expr_list_item
     { $2->copyPragmas(*$1); $$ = new AList<Expr>($2); }
-| nonemptyExprlist TCOMMA pragmas expr_list_item
+| nonempty_expr_ls TCOMMA pragma_ls expr_list_item
     { $4->copyPragmas(*$3); $1->insertAtTail($4); }
 ;
 
 
 tuple_paren_expr:
-  TLP nonemptyExprlist TRP 
+  TLP nonempty_expr_ls TRP 
     { 
       if ($2->length() == 1) {
         $$ = $2->popHead();
@@ -1139,13 +1139,13 @@ tuple_paren_expr:
 ;
 
 
-paren_op_expr:
-  non_tuple_lvalue TLP exprlist TRP
+parenop_expr:
+  non_tuple_lvalue TLP expr_ls TRP
     { $$ = new ParenOpExpr($1, $3); }
 ;
 
 
-member_access_expr:
+memberaccess_expr:
   non_tuple_lvalue TDOT identifier
     { $$ = new MemberAccess($1, new UnresolvedSymbol($3)); }
 ;
@@ -1154,8 +1154,8 @@ member_access_expr:
 non_tuple_lvalue:
   identifier
     { $$ = new Variable(new UnresolvedSymbol($1)); }
-| paren_op_expr
-| member_access_expr
+| parenop_expr
+| memberaccess_expr
 ;
 
 
@@ -1172,12 +1172,12 @@ atom:
 
 
 seq_expr:
-  TSEQBEGIN exprlist TSEQEND
+  TSEQBEGIN expr_ls TSEQEND
     { $$ = new SeqExpr($2); }
 ;
 
 
-conditional_expr:
+if_expr:
   TLP TIF expr TTHEN expr TELSE expr TRP
     {
       $$ = new CondExpr($3, $5, $7);
@@ -1193,7 +1193,7 @@ expr:
     { $$ = new Variable(Symboltable::lookupInternal("nil", SCOPE_INTRINSIC)); }
 | TLET
     { $<pexpr>$ = Symboltable::startLetExpr(); }
-       vardecl_inner_ls TIN expr
+       var_decl_inner_ls TIN expr
     { $$ = Symboltable::finishLetExpr($<pexpr>2, $3, $5); }
 | reduction %prec TREDUCE
 | expr TCOLON type
@@ -1207,7 +1207,7 @@ expr:
     $$ = new ParenOpExpr(_tostring, args);
   }
 | range %prec TDOTDOT
-| conditional_expr
+| if_expr
 | seq_expr
 | forallExpr expr %prec TRSBR
     { $$ = Symboltable::finishForallExpr($1, $2); }
@@ -1300,9 +1300,10 @@ identifier:
 ;
 
 
-optional_identifier:
+opt_identifier:
     { $$ = NULL; }
-| identifier;
+| identifier
+;
 
 
 query_identifier:
