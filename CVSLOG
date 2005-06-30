@@ -37960,3 +37960,50 @@ Added files:
 	                             test_hash_table2.future 
 	                             test_hash_table.future 
 
+---------------------------------------------------------------------------
+
+06/29/05 17:00:31 -- deitz
+
+Log message:
+	NEW REGRESSION: types/complex/bradc/intfloatelement
+	
+	Added support for homogeneous tuples as in
+	
+	  var t : 3*integer;
+	
+	Parsing support is currently restricted to an integer literal TIMES a
+	type given by a single identifier.
+	
+	Added the _chpl_htuple module to implement this as a record.  There
+	are minimal compiler rewrites:
+	
+	  number * type_identifier
+	
+	is changed in the parser to
+	
+	  _htuple(type_identifier, number)
+	
+	There are no other rewrites.
+	
+	Homogeneous tuples do not yet work with standard tuples so you can't
+	assign one as in
+	
+	  var t : 3 * integer = (12, 13, 14)
+	
+	Also because instantiated types can't be fields in a type, these are
+	implemented without them and the number of components of a homogeneous
+	tuple is currently limited to 3.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: filesToAST.cpp 
+	chapel/compiler/traversals/: resolveModuleUses.cpp 
+	chapel/test/: REGRESSIONS 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+Added files:
+	chapel/modules/standard/: _chpl_htuple.chpl 
+	chapel/test/types/tuple/deitz/: test_htuple1.chpl 
+	                                test_htuple1.good 
+
