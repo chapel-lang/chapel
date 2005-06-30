@@ -1,6 +1,6 @@
 class HashTable { 
   var size : integer;
-  var table : [1..size] integer;
+  var table : _data(integer, size);
   
   function Init(s : integer) {
     size = s;

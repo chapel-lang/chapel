@@ -1,7 +1,8 @@
 class HashTable {
   --type T : integer;  
   var size : integer;
-  var table : [1..size] integer;
+  --var table : [1..size] integer;
+  var table : _data(integer, size);
   
   function Init(s : integer) {
     size = s;
@@ -17,5 +18,3 @@ read(size);
 writeln("Size is: ", size);
   
 var ht : HashTable = HashTable(size);
---ht.Init(size);
-writeln(ht);

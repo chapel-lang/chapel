@@ -3,7 +3,8 @@ parameter del = -1000000;
 class HashTable {
   type T;  
   var size : integer;
-  var table : [1..size] T;
+  --var table : [1..size] T;
+  var table : _data(T, size);
  
   function KeyToInt(k : T) : integer {
  	/*typeselect (T) {
