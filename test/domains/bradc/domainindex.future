@@ -1,0 +1,4 @@
+deitz/bradc
+
+Use-before-def error when using a domain name as part of an
+index variable declaration.
