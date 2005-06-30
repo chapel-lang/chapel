@@ -38064,3 +38064,19 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+06/30/05 13:50:03 -- bradc
+
+Log message:
+	This test reveals what appears to be a bug in
+	scopeResolveSymbols when using a domain name
+	to define a user type that is an index type.
+	While I'm not completely surprised that this
+	might not work, I was surprised that the
+	problem was in scopeResolveSymbols...
+
+Added files:
+	chapel/test/domains/bradc/: domainindex.chpl domainindex.future 
+	                            domainindex.good 
+
