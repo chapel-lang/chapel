@@ -38080,3 +38080,19 @@ Added files:
 	chapel/test/domains/bradc/: domainindex.chpl domainindex.future 
 	                            domainindex.good 
 
+---------------------------------------------------------------------------
+
+06/30/05 13:54:28 -- deitz
+
+Log message:
+	Removed Expr subclass TupleSelect as this is now handled with the
+	tuple's this method.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h expr.h 
+	chapel/compiler/traversals/: resolveSymbols.cpp 
+	                             specializeParenOpExprs.cpp 
+	                             verifyASTType.cpp 
+
