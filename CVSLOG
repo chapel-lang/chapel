@@ -38007,3 +38007,15 @@ Added files:
 	chapel/test/types/tuple/deitz/: test_htuple1.chpl 
 	                                test_htuple1.good 
 
+---------------------------------------------------------------------------
+
+06/30/05 12:14:53 -- deitz
+
+Log message:
+	Some cleanup on the parser file.  Superficial.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
