@@ -63,7 +63,6 @@ void CreateEntryPoint::run(ModuleList* moduleList) {
   entryPoint->insertAtTail(buildFnCallStmt(internalPrelude->initFn));
   entryPoint->insertAtTail(buildFnCallStmt(prelude->initFn));
   entryPoint->insertAtTail(buildFnCallStmt(commonModule->initFn));
-  entryPoint->insertAtTail(new UseStmt(new Variable(new UnresolvedSymbol("_chpl_complex"))));
 
   // find main function if it exists; create one if not
   FnSymbol* mainFn = FnSymbol::mainFn;
@@ -94,14 +93,6 @@ void CreateEntryPoint::run(ModuleList* moduleList) {
   }
   mainBody->body->insertAtHead(buildFnCallStmt(mainModule->initFn));
   mainBody->body->insertAtHead(buildFnCallStmt(commonModule->initFn));
-  // BLC: the following also seems reasonable, but we have to do this
-  // for user modules as well so that they can access the symbols in
-  // question, so it's not crucial.  moreover, it seems that these
-  // symbols are never resolved if the --noanalysis flag is used, for
-  // some reason...
-  //  mainBody->body->insertAtHead(new UseStmt(new Variable(new UnresolvedSymbol("_chpl_complex"))));
-  //  mainBody->body->insertAtHead(new UseStmt(new Variable(new UnresolvedSymbol("_chpl_seq"))));
-
 
   // add a call to main to the entry point's body
   ExprStmt* mainCallStmt = buildFnCallStmt(mainFn);

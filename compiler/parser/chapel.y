@@ -720,9 +720,9 @@ mod_decl:
 
 decl:
   TWITH lvalue TSEMI
-    { $$ = new WithStmt($2); }
+    { $$ = new ExprStmt(new WithExpr($2)); }
 | TUSE lvalue TSEMI
-    { $$ = new UseStmt($2); }
+    { $$ = new ExprStmt(new UseExpr($2)); }
 | TWHERE whereexpr TSEMI
     { $$ = new ExprStmt($2); }
 | var_decl

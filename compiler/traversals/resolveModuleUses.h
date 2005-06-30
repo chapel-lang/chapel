@@ -5,7 +5,7 @@
 
 class ResolveModuleUses : public Traversal {
 public:
-  void preProcessStmt(Stmt* stmt);
+  void preProcessExpr(Expr* expr);
   void run(ModuleList* moduleList);
 };
 

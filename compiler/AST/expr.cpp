@@ -2298,3 +2298,118 @@ void UserInitExpr::codegen(FILE* outfile) {
 }
 
 
+UseExpr::UseExpr(Expr* init_expr) :
+  Expr(EXPR_USE),
+  expr(init_expr)
+{ }
+
+
+UseExpr*
+UseExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  return new UseExpr(COPY_INTERNAL(expr));
+}
+
+
+void UseExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == expr) {
+    expr = dynamic_cast<Expr*>(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in UseExpr::replaceChild");
+  }
+}
+
+
+void UseExpr::traverseExpr(Traversal* traversal) {
+  TRAVERSE(expr, traversal, false);
+}
+
+
+Type* UseExpr::typeInfo(void) {
+  return expr->typeInfo();
+}
+
+
+void UseExpr::print(FILE* outfile) {
+  fprintf(outfile, "use ");
+  expr->print(outfile);
+}
+
+
+void UseExpr::codegen(FILE* outfile) {
+  fprintf(outfile, "/* use ");
+  expr->codegen(outfile);
+  fprintf(outfile, " */");
+}
+
+
+ModuleSymbol* UseExpr::getModule(void) {
+  if (Variable* variable = dynamic_cast<Variable*>(expr)) {
+    if (Symbol* symbol = variable->var) {
+      if (ModuleSymbol* module =
+          dynamic_cast<ModuleSymbol*>(Symboltable::lookup(symbol->name))) {
+        return module;
+      }
+    }
+  }
+  return NULL;
+}
+
+
+WithExpr::WithExpr(Expr* init_expr) :
+  Expr(EXPR_WITH),
+  expr(init_expr)
+{ }
+
+
+WithExpr*
+WithExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  return new WithExpr(COPY_INTERNAL(expr));
+}
+
+
+void WithExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == expr) {
+    expr = dynamic_cast<Expr*>(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in WithExpr::replaceChild");
+  }
+}
+
+
+void WithExpr::traverseExpr(Traversal* traversal) {
+  TRAVERSE(expr, traversal, false);
+}
+
+
+Type* WithExpr::typeInfo(void) {
+  return expr->typeInfo();
+}
+
+
+void WithExpr::print(FILE* outfile) {
+  fprintf(outfile, "with ");
+  expr->print(outfile);
+}
+
+
+void WithExpr::codegen(FILE* outfile) {
+  INT_FATAL(this, "Unexpected call to WithExpr::codegen");
+}
+
+
+StructuralType* WithExpr::getStruct(void) {
+  if (Variable* var = dynamic_cast<Variable*>(expr)) {
+    if (StructuralType* result = 
+        dynamic_cast<StructuralType*>(var->var->type)) {
+      return result;
+    } else if (UnresolvedSymbol* unresolved = 
+             dynamic_cast<UnresolvedSymbol*>(var->var)) {
+      if (StructuralType* result = 
+          dynamic_cast<StructuralType*>(Symboltable::lookup(unresolved->name)->type)) {
+        return result;
+      }
+    }
+  }
+  INT_FATAL(this, "Cannot find StructuralType in WithExpr");
+  return NULL;
+}

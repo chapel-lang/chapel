@@ -32,16 +32,6 @@ static void verifyASTType(BaseAST* ast) {
       INT_FATAL(ast, "Unexpected AST statement type: STMT_RETURN");
     }
     break;
-  case STMT_WITH:
-    if (typeid(*ast) != typeid(WithStmt)) {
-      INT_FATAL(ast, "Unexpected AST statement type: STMT_WITH");
-    }
-    break;
-  case STMT_USE:
-    if (typeid(*ast) != typeid(UseStmt)) {
-      INT_FATAL(ast, "Unexpected AST statement type: STMT_USE");
-    }
-    break;
   case STMT_BLOCK:
     if (typeid(*ast) != typeid(BlockStmt)) {
       INT_FATAL(ast, "Unexpected AST statement type: STMT_BLOCK");
@@ -245,6 +235,16 @@ static void verifyASTType(BaseAST* ast) {
   case EXPR_NAMED:
     if (typeid(*ast) != typeid(NamedExpr)) {
       INT_FATAL(ast, "Unexpected AST expression type: EXPR_NAMED");
+    }
+    break;
+  case EXPR_WITH:
+    if (typeid(*ast) != typeid(WithExpr)) {
+      INT_FATAL(ast, "Unexpected AST expression type: EXPR_WITH");
+    }
+    break;
+  case EXPR_USE:
+    if (typeid(*ast) != typeid(UseExpr)) {
+      INT_FATAL(ast, "Unexpected AST expression type: EXPR_USE");
     }
     break;
   case SYMBOL:

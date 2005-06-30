@@ -276,8 +276,6 @@ char* astTypeName[AST_TYPE_END+1] = {
   "DefStmt",
   "ExprStmt",
   "ReturnStmt",
-  "WithStmt",
-  "UseStmt",
   "BlockStmt",
   "WhileLoopStmt",
   "ForLoopStmt",
@@ -320,6 +318,8 @@ char* astTypeName[AST_TYPE_END+1] = {
   "Reduce",
   "Tuple",
   "NamedExpr",
+  "WithExpr",
+  "UseExpr",
 
   "Symbol",
   "UnresolvedSymbol",
@@ -389,8 +389,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     AST_ADD_CHILD(ExprStmt, expr);
     goto LStmtCommon;
   case STMT_RETURN:
-  case STMT_WITH:
-  case STMT_USE:
     goto LExprStmtCommon;
   case STMT_BLOCK:
   LBlockStmtCommon:
@@ -440,6 +438,8 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
   case EXPR_VARINIT:
     AST_ADD_CHILD(VarInitExpr, expr);
     goto LExprCommon;
+  case EXPR_USE:
+  case EXPR_WITH:
   case EXPR_USERINIT:
     AST_ADD_CHILD(UserInitExpr, expr);
     goto LExprCommon;

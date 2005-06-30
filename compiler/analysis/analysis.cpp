@@ -1873,8 +1873,6 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       break;
     }
     case STMT_NOOP: break;
-    case STMT_WITH: break;
-    case STMT_USE: break;
     case STMT_DEF:
       if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(ast)) {
         if (def_stmt->varDef() && gen_vardef(def_stmt) < 0) return -1;
@@ -2303,6 +2301,8 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       s->ainfo->rval->arg_name = if1_cannonicalize_string(if1, s->name);
       break;
     }
+  case EXPR_WITH: break;
+  case EXPR_USE: break;
   case SYMBOL:
   case SYMBOL_UNRESOLVED:
   case SYMBOL_MODULE:

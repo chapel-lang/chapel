@@ -637,4 +637,32 @@ class UserInitExpr : public Expr {
 };
 
 
+class UseExpr : public Expr {
+ public:
+  Expr* expr;
+  UseExpr(Expr* init_expr);
+  COPY_DEF(UseExpr);
+  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  void traverseExpr(Traversal* traversal);
+  Type* typeInfo(void);
+  void print(FILE* outfile);
+  void codegen(FILE* outfile);
+  ModuleSymbol* getModule(void);
+};
+
+
+class WithExpr : public Expr {
+ public:
+  Expr* expr;
+  WithExpr(Expr* init_expr);
+  COPY_DEF(WithExpr);
+  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  void traverseExpr(Traversal* traversal);
+  Type* typeInfo(void);
+  void print(FILE* outfile);
+  void codegen(FILE* outfile);
+  StructuralType* getStruct(void);
+};
+
+
 #endif

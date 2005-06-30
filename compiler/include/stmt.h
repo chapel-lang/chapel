@@ -93,28 +93,6 @@ class ReturnStmt : public ExprStmt {
 };
 
 
-class WithStmt : public ExprStmt {
- public:
-  WithStmt(Expr* initExpr);
-  COPY_DEF(WithStmt);
-  void print(FILE* outfile);
-  void codegenStmt(FILE* outfile);
-
-  StructuralType* getStruct(void);
-};
-
-
-class UseStmt : public ExprStmt {
- public:
-  UseStmt(Expr* initExpr);
-  COPY_DEF(UseStmt);
-  void print(FILE* outfile);
-  void codegenStmt(FILE* outfile);
-
-  ModuleSymbol* getModule(void);
-};
-
-
 enum blockStmtType {
   BLOCK_NORMAL = 0,
   BLOCK_ATOMIC,
