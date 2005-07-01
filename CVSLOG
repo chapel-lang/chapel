@@ -38154,3 +38154,22 @@ Modified files:
 	                             omitForNoAnalysis.cpp 
 	                             transformLetExprs.cpp 
 
+---------------------------------------------------------------------------
+
+07/01/05 09:07:56 -- deitz
+
+Log message:
+	Removed the remains of the internal prelude.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: symbol.h symscope.h symtab.h 
+	chapel/compiler/passes/: createEntryPoint.cpp filesToAST.cpp 
+	                         filesToAST.h 
+	chapel/compiler/symtab/: symscope.cpp symtab.cpp 
+	chapel/compiler/traversals/: insertAnonymousTypes.cpp 
+	                             resolveSymbols.cpp 
+Removed files:
+	chapel/compiler/parser/: internal_prelude.chpl 
+
