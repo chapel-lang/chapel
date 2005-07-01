@@ -374,7 +374,7 @@ ParamSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
 
 
 void ParamSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  INT_FATAL(this, "Unexpected case in ParamSymbol::replaceChild");
+  type->replaceChild(old_ast, new_ast);
 }
 
 
