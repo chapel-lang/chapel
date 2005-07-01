@@ -5,7 +5,6 @@
 
 class Stmt;
 
-extern ModuleSymbol* internalPrelude;
 extern ModuleSymbol* prelude;
 extern ModuleSymbol* seqModule;
 

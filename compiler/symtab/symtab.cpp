@@ -12,7 +12,6 @@
 
 enum parsePhaseType {
   PARSING_PRE,
-  PARSING_INTERNAL_PRELUDE,
   PARSING_PRELUDE,
   PARSING_USERFILES,
   PARSING_POST
@@ -28,7 +27,6 @@ static SymScope* currentScope = NULL;
 static ModuleSymbol* currentModule = NULL;
 
 ModuleSymbol* commonModule = NULL;
-SymScope* internalScope = NULL;
 bool _dtinteger_IndexType_switch = false;
 
 static ModuleList* moduleList = new ModuleList();
@@ -52,21 +50,10 @@ void Symboltable::init(void) {
 }
 
 
-void Symboltable::parseInternalPrelude(void) {
-  internalScope = new SymScope(SCOPE_INTERNAL_PRELUDE);
-  internalScope->parent = rootScope;
-  rootScope->child = internalScope;
-
-  currentScope = internalScope;
-
-  parsePhase = PARSING_INTERNAL_PRELUDE;
-}
-
-
 void Symboltable::parsePrelude(void) {
   preludeScope = new SymScope(SCOPE_PRELUDE);
   preludeScope->parent = rootScope;
-  internalScope->sibling = preludeScope;
+  rootScope->child = preludeScope;
 
   currentScope = preludeScope;
 
@@ -89,10 +76,7 @@ void Symboltable::doneParsingPreludes(void) {
   registerModule(commonModule);
 
   prelude->modScope = preludeScope;          // SJD: Why here?
-  internalPrelude->modScope = internalScope; // I just put it here
-                                             // But it should go elsewhere
   preludeScope->symContext = prelude;
-  internalScope->symContext = internalPrelude;
 }
 
 
@@ -296,9 +280,6 @@ Symbol* Symboltable::lookupInternal(char* name, scopeType scope) {
   switch (scope) {
   case SCOPE_INTRINSIC:
     sym = lookupInScope(name, rootScope);
-    break;
-  case SCOPE_INTERNAL_PRELUDE:
-    sym = lookupInScope(name, internalScope);
     break;
   case SCOPE_PRELUDE:
     sym = lookupInScope(name, preludeScope);

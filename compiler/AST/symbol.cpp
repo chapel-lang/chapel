@@ -282,7 +282,6 @@ bool VarSymbol::initializable(void) {
   case SCOPE_MODULE:
     return true;
   case SCOPE_INTRINSIC:
-  case SCOPE_INTERNAL_PRELUDE:
   case SCOPE_PRELUDE:
   case SCOPE_POSTPARSE:
   case SCOPE_PARAM:

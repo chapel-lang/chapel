@@ -20,12 +20,9 @@ static void build_anon_array_type_def(Stmt* stmt, Type** type) {
   }
 
   SymScope* saveScope;
-  /** SJD: Why is SCOPE_INTRINSIC not internal? **/
-  if (array_type->elementType->symbol->parentScope->isInternal() ||
-      !array_type->elementType->symbol->defPoint) {
+  if (!array_type->elementType->symbol->defPoint) {
     saveScope = Symboltable::setCurrentScope(commonModule->modScope);
-  }
-  else {
+  } else {
     saveScope = Symboltable::setCurrentScope(array_type->elementType->symbol->parentScope);
   }
   if (ForallExpr* forall = dynamic_cast<ForallExpr*>(array_type->domain)) {

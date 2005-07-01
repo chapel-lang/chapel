@@ -709,7 +709,6 @@ map_baseast(BaseAST *s) {
       switch (sym->parentScope->type) {
         default: assert(0);
         case SCOPE_INTRINSIC:
-        case SCOPE_INTERNAL_PRELUDE:
         case SCOPE_PRELUDE:
         case SCOPE_MODULE:
         case SCOPE_POSTPARSE:

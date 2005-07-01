@@ -212,7 +212,7 @@ class EnumSymbol : public Symbol {
 
 
 enum modType {
-  MOD_INTERNAL, // intrinsic, internal prelude, prelude (no codegen)
+  MOD_INTERNAL, // intrinsic, prelude (no codegen)
   MOD_STANDARD, // standard modules require codegen, e.g., _chpl_complex
   MOD_COMMON,   // a module above the scope of the user modules (codegen)
   MOD_USER,

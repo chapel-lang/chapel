@@ -44,7 +44,7 @@ CreateEntryPoint::CreateEntryPoint(void) :
 void CreateEntryPoint::run(ModuleList* moduleList) {
 
   // SJD: Can't do this when dtString is defined because
-  // internalPrelude hasn't been made yet.  Need to do it after.
+  // prelude hasn't been made yet.  Need to do it after.
   dtString->defaultConstructor =
     dynamic_cast<FnSymbol*>(Symboltable::lookupInternal("_init_string"));
 
@@ -60,7 +60,6 @@ void CreateEntryPoint::run(ModuleList* moduleList) {
   // add prelude initialization code to the entry point
   // BLC: This assumes there is some useful init code in the preludes;
   // is there?
-  entryPoint->insertAtTail(buildFnCallStmt(internalPrelude->initFn));
   entryPoint->insertAtTail(buildFnCallStmt(prelude->initFn));
   entryPoint->insertAtTail(buildFnCallStmt(commonModule->initFn));
 

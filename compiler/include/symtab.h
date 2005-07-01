@@ -9,13 +9,11 @@
 
 
 extern ModuleSymbol* commonModule;
-extern SymScope* internalScope;
 extern bool _dtinteger_IndexType_switch;
 
 class Symboltable {
  public:
   static void init(void);
-  static void parseInternalPrelude(void);
   static void parsePrelude(void);
   static void doneParsingPreludes(void);
   static void doneParsingUserFiles(void);

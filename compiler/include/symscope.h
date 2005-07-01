@@ -7,8 +7,7 @@
 
 enum scopeType {
   // builtins at the global level
-  SCOPE_INTRINSIC = -4,
-  SCOPE_INTERNAL_PRELUDE = -3,
+  SCOPE_INTRINSIC = -3,
   SCOPE_PRELUDE = -2,
   SCOPE_POSTPARSE = -1,
   SCOPE_MODULE = 0,           // less is all modules
@@ -50,7 +49,6 @@ class SymScope : public gc {
   void traverse(SymtabTraversal* traversal);
 
   bool isEmpty(void);
-  bool isInternal(void);
 
   void insert(Symbol* sym);
   void remove(Symbol* sym);

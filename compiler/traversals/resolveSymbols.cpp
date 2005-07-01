@@ -190,9 +190,7 @@ static void
 mangle_overloaded_operator_function_names(Expr *expr) {
   if (DefExpr* def_expr = dynamic_cast<DefExpr*>(expr)) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def_expr->sym)) {
-      if (fn->parentScope->type != SCOPE_INTERNAL_PRELUDE) {
-        mangle_overloaded_operator_function_names(fn);
-      }
+      mangle_overloaded_operator_function_names(fn);
     }
   }
 }

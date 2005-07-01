@@ -60,19 +60,6 @@ bool SymScope::isEmpty(void) {
 }
 
 
-bool SymScope::isInternal(void) {
-  SymScope* scope = this;
-
-  while (scope != NULL) {
-    if (scope->type == SCOPE_INTERNAL_PRELUDE) {
-      return true;
-    }
-    scope = scope->parent;
-  }
-  return false;
-}
-
-
 void SymScope::insert(Symbol* sym) {
   table.put(sym->name, sym);
   sym->setParentScope(this);
@@ -188,9 +175,6 @@ void SymScope::printHeader(FILE* outfile) {
   switch (type) {
   case SCOPE_INTRINSIC:
     fprintf(outfile, "intrinsic");
-    break;
-  case SCOPE_INTERNAL_PRELUDE:
-    fprintf(outfile, "internal prelude");
     break;
   case SCOPE_PRELUDE:
     fprintf(outfile, "prelude");
@@ -409,18 +393,6 @@ void SymScope::setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions) {
       if (!fs) fs = new Vec<FnSymbol*>;
       fs->add(fn);
       visibleFunctions.put(n, fs);
-    }
-  } else if (type == SCOPE_PRELUDE) {
-    //
-    // Include internal prelude's visible functions in prelude
-    //
-    for (int i = 0; i < internalPrelude->modScope->visibleFunctions.n; i++) {
-      Vec<FnSymbol *> *fs = visibleFunctions.get(internalPrelude->modScope->visibleFunctions.v[i].key);
-      if (!fs)
-        fs = internalPrelude->modScope->visibleFunctions.v[i].value;
-      else
-        fs->append(*internalPrelude->modScope->visibleFunctions.v[i].value);
-      visibleFunctions.put(internalPrelude->modScope->visibleFunctions.v[i].key, fs);
     }
   } else if (parent) {
     //
