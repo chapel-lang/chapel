@@ -38258,3 +38258,15 @@ Added files:
 	                             memmaxInput.execopts 
 	                             memmaxInput.good 
 
+---------------------------------------------------------------------------
+
+07/01/05 16:04:03 -- deitz
+
+Log message:
+	Added a few lines of code to try and better maintain the exprType
+	field of the DefExpr even when new DefExprs are created for copied
+	symbols.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+
