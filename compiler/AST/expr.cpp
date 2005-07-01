@@ -564,6 +564,11 @@ DefExpr::DefExpr(Symbol* initSym, UserInitExpr* initInit, Expr* initExprType) :
       fn->paramScope->setContext(NULL, fn, this);
     }
   }
+  if (!exprType && sym) {
+    if (dynamic_cast<ExprType*>(sym->type) && sym->defPoint->exprType) {
+      exprType = sym->defPoint->exprType->copy();
+    }
+  }
 }
 
 
