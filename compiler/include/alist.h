@@ -77,18 +77,26 @@ class AList : public BaseAST {
               AList<elemType>*& falseElems);
 };
 
-#define for_alist(basetype, variable, list) \
-  for (basetype* variable = list->first(); variable; variable = list->next())
+#define for_alist(elemtype, node, list)               \
+  for (elemtype *node = list->first(),                \
+         *_alist_next = (node) ? list->next() : NULL; \
+       node;                                          \
+       node = _alist_next,                            \
+         _alist_next = (node) ? list->next() : NULL)
 
-#define for_alist_backward(basetype, variable, list) \
-  for (basetype* variable = list->last(); variable; variable = list->prev())
+#define for_alist_backward(elemtype, node, list)  \
+  for (elemtype *node = list->last(),                 \
+         *_alist_prev = (node) ? list->prev() : NULL; \
+       node;                                          \
+       node = _alist_prev,                            \
+         _alist_prev = (node) ? list->prev() : NULL)
 
 // this is intended for internal use only
 // note that we store a node one ahead in case the current node is
 // removed or something
 #define _for_all_elems(node)                                            \
   elemType* node;                                                       \
-  BaseAST* nextNode;                                                      \
+  BaseAST* nextNode;                                                    \
   for (node = dynamic_cast<elemType*>(head->next), nextNode = node->next; \
        node != tail;                                                    \
        node = dynamic_cast<elemType*>(nextNode), nextNode = node->next)

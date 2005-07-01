@@ -38,8 +38,8 @@ void RemoveTypeVariableFormals::preProcessSymbol(Symbol* sym) {
     }
     for_alist(DefExpr, formal, fn->formals) {
       if (dynamic_cast<ParamSymbol*>(formal->sym)->typeVariable) {
+        formal->sym->parentScope->remove(formal->sym);
         formal->remove();
-        fn->body->body->insertAtHead(new DefStmt(formal->copy()));
       } else if (formal->sym->type->symbol ==
                  Symboltable::lookupInternal("_methodTokenType")) {
         formal->sym->parentScope->remove(formal->sym);
