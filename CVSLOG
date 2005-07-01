@@ -38203,3 +38203,21 @@ Removed files:
 	                                test_tuple_simple6.future 
 	                                test_tuple_simple7.future 
 
+---------------------------------------------------------------------------
+
+07/01/05 09:49:50 -- deitz
+
+Log message:
+	Added a test that passes an instantiated type to a function.  Fixed
+	some bugs regarding the handling of this test before analysis.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/traversals/: insertAnonymousTypes.cpp 
+	                             insertAnonymousTypes.h 
+Added files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_foo_instantiated1.chpl 
+	                                         test_foo_instantiated1.future 
+	                                         test_foo_instantiated1.good 
+
