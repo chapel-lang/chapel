@@ -38,17 +38,16 @@ void TransformLetExprs::doTransformation(void) {
     Expr* innerCopy = letExpr->innerExpr->copy(false, NULL, &lets);
     letExpr->replace(innerCopy);
     Map<BaseAST*,BaseAST*>* map = new Map<BaseAST*,BaseAST*>();
-    AList<DefExpr>* defExpr = letExpr->symDefs->copy(true, map, &lets);
-    Stmt* letStmtCopy = letStmt->copy(false, map, &lets);
-    AList<Stmt>* defStmt = new AList<Stmt>(new DefStmt(defExpr));
-    defStmt->insertAtTail(letStmtCopy);
-    blockStmt = Symboltable::finishCompoundStmt(blockStmt, defStmt);
-
-    for (DefExpr* tmp = defExpr->first(); tmp; tmp = defExpr->next()) {
-      tmp->sym->cname =
-        glomstrings(3, tmp->sym->cname, "_let_", intstring(uid++));
+    AList<Stmt>* defStmts = new AList<Stmt>();
+    for_alist(DefExpr, defExpr, letExpr->symDefs) {
+      DefStmt* defStmt = new DefStmt(defExpr->copy(true, map, &lets));
+      defStmt->defExpr->sym->cname =
+        glomstrings(3, defStmt->defExpr->sym->cname, "_let_", intstring(uid++));
+      defStmts->insertAtTail(defStmt);
     }
-
+    Stmt* letStmtCopy = letStmt->copy(false, map, &lets);
+    defStmts->insertAtTail(letStmtCopy);
+    blockStmt = Symboltable::finishCompoundStmt(blockStmt, defStmts);
     letStmt->replace(blockStmt);
     TRAVERSE(blockStmt, new InsertFunctionTemps(), true);
   }

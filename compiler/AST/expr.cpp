@@ -1934,7 +1934,7 @@ void initExpr(void) {
   Variable* var = new Variable(pst);
   unknownDomain = new ForallExpr(new AList<Expr>(var));
   
-  gNil = Symboltable::defineSingleVarDefStmt("nil", dtNil, NULL, VAR_NORMAL, VAR_CONST)->defExprls->only()->sym;
+  gNil = Symboltable::defineSingleVarDefStmt("nil", dtNil, NULL, VAR_NORMAL, VAR_CONST)->defExpr->sym;
   dtNil->defaultVal = new Variable(gNil);
 }
 
@@ -1951,11 +1951,17 @@ void LetExpr::setInnerExpr(Expr* expr) {
 }
 
 
-void LetExpr::setSymDefs(AList<DefExpr>* expr) {
+void LetExpr::setSymDefs(AList<Stmt>* stmts) {
   if (!symDefs->isEmpty()) {
     INT_FATAL(this, "Setting symDefs, but it wasn't empty");
   }
-  symDefs->add(expr);
+  for_alist(Stmt, stmt, stmts) {
+    if (DefStmt* defStmt = dynamic_cast<DefStmt*>(stmt)) {
+      symDefs->insertAtTail(defStmt->defExpr->copy());
+    } else {
+      INT_FATAL(this, "Invalid DefStmt in LetExpr::setSymDefs");
+    }
+  }
 }
 
 

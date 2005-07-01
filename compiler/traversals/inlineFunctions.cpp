@@ -24,7 +24,7 @@ void InlineFunctions::postProcessExpr(Expr* expr) {
         //create a temp variable
         if (fn_sym->retType && (fn_sym->retType != dtVoid)) {
           DefStmt* temp_def_stmt = createTempVariable(fn_sym->retType);
-          temp_def_expr = temp_def_stmt->defExprls->only();
+          temp_def_expr = temp_def_stmt->defExpr;
   
           fn_call->parentStmt->insertBefore(temp_def_stmt);
           rep_returns = new ReplaceReturns(temp_def_expr->sym);
@@ -69,7 +69,7 @@ Map<BaseAST*,BaseAST*>* InlineFunctions::createFormalToActualArgMappings(FnCall*
     fn_call->parentStmt->insertBefore(temp_def_stmt);
     //map variable of param symbol to temp symbol so that when copy is passed the map, it
     //will replace the formal parameter symbol with the temp symbol
-    DefExpr* temp_def_expr = temp_def_stmt->defExprls->only();
+    DefExpr* temp_def_expr = temp_def_stmt->defExpr;
     formal_to_actual_arg_map->put(curr_param, temp_def_expr->sym);
     curr_arg = actual_args->next();
     curr_param = formal_params->next();

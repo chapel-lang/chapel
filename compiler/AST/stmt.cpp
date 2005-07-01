@@ -139,27 +139,21 @@ void NoOpStmt::codegenStmt(FILE* outfile) {
 }
 
 
-DefStmt::DefStmt(DefExpr* init_defExprls) :
+DefStmt::DefStmt(DefExpr* init_defExpr) :
   Stmt(STMT_DEF),
-  defExprls(new AList<DefExpr>(init_defExprls))
-{}
-
-
-DefStmt::DefStmt(AList<DefExpr>* init_defExprls) :
-  Stmt(STMT_DEF),
-  defExprls(init_defExprls)
+  defExpr(init_defExpr)
 {}
 
 
 DefStmt*
 DefStmt::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new DefStmt(COPY_INTERNAL(defExprls));
+  return new DefStmt(COPY_INTERNAL(defExpr));
 }
 
 
 void DefStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == defExprls) {
-    defExprls = dynamic_cast<AList<DefExpr>*>(new_ast);
+  if (old_ast == defExpr) {
+    defExpr = dynamic_cast<DefExpr*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in DefStmt::replaceChild");
   }
@@ -167,12 +161,12 @@ void DefStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 void DefStmt::traverseStmt(Traversal* traversal) {
-  defExprls->traverse(traversal, false);
+  defExpr->traverse(traversal, false);
 }
 
 
 void DefStmt::print(FILE* outfile) {
-  defExprls->print(outfile, "\n");
+  defExpr->print(outfile);
 }
 
 
@@ -180,73 +174,35 @@ void DefStmt::codegenStmt(FILE* outfile) { /* Noop */ }
 
 
 VarSymbol* DefStmt::varDef() {
-  if (defExprls->isEmpty()) {
-    return NULL;
-  }
-  return dynamic_cast<VarSymbol*>(defExprls->first()->sym);
+  return dynamic_cast<VarSymbol*>(defExpr->sym);
 }
 
 
 FnSymbol* DefStmt::fnDef() {
-  if (defExprls->isEmpty()) {
-    return NULL;
-  }
-  return dynamic_cast<FnSymbol*>(defExprls->first()->sym);
+  return dynamic_cast<FnSymbol*>(defExpr->sym);
 }
 
 
 bool DefStmt::definesTypes() {
-  if (defExprls->isEmpty()) {
-    return false;
-  }
-  for (DefExpr* defExpr = defExprls->first();
-       defExpr;
-       defExpr = defExprls->next()) {
-    if (!dynamic_cast<TypeSymbol*>(defExpr->sym)) {
-      return false;
-    }
-  }
-  return true;
+  return dynamic_cast<TypeSymbol*>(defExpr->sym);
 }
 
 
 bool DefStmt::definesFunctions() {
-  if (defExprls->isEmpty()) {
-    return false;
-  }
-  for (DefExpr* defExpr = defExprls->first();
-       defExpr;
-       defExpr = defExprls->next()) {
-    if (!dynamic_cast<FnSymbol*>(defExpr->sym)) {
-      return false;
-    }
-  }
-  return true;
+  return dynamic_cast<FnSymbol*>(defExpr->sym);
 }
 
 
 bool DefStmt::definesVariables() {
-  if (defExprls->isEmpty()) {
-    return false;
-  }
-  for (DefExpr* defExpr = defExprls->first();
-       defExpr;
-       defExpr = defExprls->next()) {
-    if (!dynamic_cast<VarSymbol*>(defExpr->sym)) {
-      return false;
-    }
-  }
-  return true;
+  return dynamic_cast<VarSymbol*>(defExpr->sym);
 }
 
 
 Vec<VarSymbol*>* DefStmt::varDefSet() {
   Vec<VarSymbol*>* var_set = new Vec<VarSymbol*>();
-  DefExpr* def_expr = defExprls->first();
-  while (def_expr) {
-    VarSymbol* var = dynamic_cast<VarSymbol*>(def_expr->sym);
+  VarSymbol* var = dynamic_cast<VarSymbol*>(defExpr->sym);
+  if (var) {
     var_set->set_add(var);
-    def_expr = defExprls->next();
   }
   return var_set;
 }

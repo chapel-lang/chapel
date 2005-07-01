@@ -9,7 +9,7 @@
 static void markAsDeadAndExtract(Symbol* sym) {
   sym->isDead = true;
   if (sym->defPoint) {
-    sym->defPoint->remove();
+    sym->defPoint->parentStmt->remove();
   }
   sym->parentScope->remove(sym);
 }
@@ -25,11 +25,6 @@ void RemoveDeadSymbols::processSymbol(Symbol* sym) {
 
   if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(sym)) {
     if (!type_is_used(typeSym)) {
-      // SJD: Don't want to remove function if type variable parameter
-      // is dead
-      if (sym->defPoint && dynamic_cast<FnSymbol*>(sym->defPoint->sym)) {
-        return;
-      }
       markAsDeadAndExtract(sym);
       if (StructuralType* structuralType = dynamic_cast<StructuralType*>(sym->type)) {
         Symboltable::removeScope(structuralType->structScope);

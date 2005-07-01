@@ -54,7 +54,7 @@ class Symboltable {
   static TypeSymbol* lookupInternalType(char* name);
 
   static Expr* startLetExpr(void);
-  static Expr* finishLetExpr(Expr* let_expr, AList<DefExpr>* exprs, 
+  static Expr* finishLetExpr(Expr* let_expr, AList<Stmt>* stmts, 
                              Expr* inner_expr);
   static BlockStmt* startCompoundStmt(void);
   static BlockStmt* finishCompoundStmt(BlockStmt* blkstmt, AList<Stmt>* body);
@@ -63,10 +63,10 @@ class Symboltable {
   static AList<DefExpr>* Symboltable::defineParams(paramType tag, 
                                                    AList<Symbol>* syms,
                                                    Type* type, Expr* init);
-  static AList<DefExpr>* Symboltable::defineVarDef1(AList<Symbol>* idents,
-                                                    Type* type, 
-                                                    Expr* init);
-  static void Symboltable::defineVarDef2(AList<DefExpr>* stmts, varType vartag, 
+  static AList<Stmt>* Symboltable::defineVarDef1(AList<Symbol>* idents,
+                                                 Type* type, 
+                                                 Expr* init);
+  static void Symboltable::defineVarDef2(AList<Stmt>* stmts, varType vartag, 
                                          consType constag);
   static DefStmt* Symboltable::defineSingleVarDefStmt(char* name, 
                                                       Type* type,

@@ -381,7 +381,7 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
   case STMT_NOOP:
     goto LStmtCommon;
   case STMT_DEF:
-    AST_ADD_LIST(DefStmt, defExprls, DefExpr);
+    AST_ADD_CHILD(DefStmt, defExpr);
     goto LStmtCommon;
   case STMT_EXPR:
   LExprStmtCommon:

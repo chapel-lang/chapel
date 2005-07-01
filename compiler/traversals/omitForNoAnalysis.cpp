@@ -33,17 +33,13 @@ void OmitForNoAnalysis::postProcessStmt(Stmt* stmt) {
   }
 
   if (def_stmt->hasPragma("omit for noanalysis")) {
-    DefExpr* def_expr = def_stmt->defExprls->first();
-    while (def_expr) {
-      Symbol* sym = def_expr->sym;
-      sym->parentScope->remove(sym);
-      if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
-        Symboltable::removeScope(fn->paramScope);
-      } else if (StructuralType* ctype = dynamic_cast<StructuralType*>(sym->type)) {
-        Symboltable::removeScope(ctype->structScope);
-      } 
-      def_expr = def_stmt->defExprls->next();
-    }
+    Symbol* sym = def_stmt->defExpr->sym;
+    sym->parentScope->remove(sym);
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
+      Symboltable::removeScope(fn->paramScope);
+    } else if (StructuralType* ctype = dynamic_cast<StructuralType*>(sym->type)) {
+      Symboltable::removeScope(ctype->structScope);
+    } 
     def_stmt->remove();
     return;
   }

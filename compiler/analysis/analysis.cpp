@@ -417,6 +417,7 @@ install_new_function(FnSymbol *f, FnSymbol *old_f, Map<BaseAST*,BaseAST*> *map =
     collect_asts(&syms, f);
     syms.add(f);
     syms.add(f->defPoint);
+    syms.add(f->defPoint->parentStmt);
     funs.add(f);
   }
   map_asts(syms);
@@ -1473,15 +1474,12 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
 static int
 gen_vardef(BaseAST *a) {
   DefStmt *def = dynamic_cast<DefStmt*>(a);
-  for (DefExpr* def_expr = def->defExprls->first(); 
-       def_expr; 
-       def_expr = def->defExprls->next()) {
-    for (VarSymbol *var = dynamic_cast<VarSymbol*>(def_expr->sym); var;
-         var = dynamic_cast<VarSymbol*>(var->next))
-      if (gen_one_vardef(var, def_expr))
-        return -1;
-    if1_gen(if1, &def->ainfo->code, def_expr->ainfo->code);
+  if (VarSymbol* var = dynamic_cast<VarSymbol*>(def->defExpr->sym)) {
+    if (gen_one_vardef(var, def->defExpr)) {
+      return -1;
+    }
   }
+  if1_gen(if1, &def->ainfo->code, def->defExpr->ainfo->code);
   return 0;
 }
 
@@ -2690,9 +2688,7 @@ debug_new_ast(Vec<AList<Stmt> *> &stmts, Vec<BaseAST *> &syms) {
     forv_BaseAST(s, syms) {
       DefStmt* def_stmt = dynamic_cast<DefStmt*>(s);
       if (def_stmt && def_stmt->definesFunctions()) {
-        //SJD: This only prints out one of the function bodies
-        // The def_stmt can define more than one function.
-        print_ast(dynamic_cast<FnSymbol*>(def_stmt->defExprls->first()->sym)->body);
+        print_ast(dynamic_cast<FnSymbol*>(def_stmt->defExpr->sym)->body);
       } else {
         Type *t = dynamic_cast<Type*>(s); 
         if (t) 
@@ -3044,7 +3040,7 @@ print_AST_types() {
   forv_Fun(f, pdb->fa->funs) {
     AInfo *a = dynamic_cast<AInfo *>(f->ast);
     DefStmt* def_stmt = dynamic_cast<DefStmt*>(a->xast);
-    FnSymbol* fn = dynamic_cast<FnSymbol*>(def_stmt->defExprls->first()->sym);
+    FnSymbol* fn = dynamic_cast<FnSymbol*>(def_stmt->defExpr->sym);
     print_AST_Expr_types(fn->body);
   }
 }

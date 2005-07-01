@@ -57,7 +57,7 @@ void ReconstructIterators::processSymbol(Symbol* sym) {
                                                           NULL,
                                                           VAR_NORMAL,
                                                           VAR_VAR);
-  Symbol* seq = def_stmt->defExprls->only()->sym;
+  Symbol* seq = def_stmt->defExpr->sym;
 
   fn->body->body->insertAtHead(def_stmt);
   TRAVERSE(fn->body, new ReconstructIteratorsHelper(seq), true);

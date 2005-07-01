@@ -221,13 +221,8 @@ void InsertVariableInitializations::postProcessStmt(Stmt* stmt) {
       return;
     }
 
-    DefExpr* def_expr = def_stmt->defExprls->first();
-    while (def_expr) {
-      VarSymbol* var = dynamic_cast<VarSymbol*>(def_expr->sym);
-      insert_init(stmt, var, var->type);
-      def_expr = def_stmt->defExprls->next();
-    }
-    
+    VarSymbol* var = dynamic_cast<VarSymbol*>(def_stmt->defExpr->sym);
+    insert_init(stmt, var, var->type);
     //    def_stmt->remove();
   }
 }

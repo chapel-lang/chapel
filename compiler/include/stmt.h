@@ -49,10 +49,9 @@ class NoOpStmt : public Stmt {
 
 class DefStmt : public Stmt {
 public:
-  AList<DefExpr>* defExprls;
+  DefExpr* defExpr;
 
-  DefStmt(DefExpr* init_defExprls);
-  DefStmt(AList<DefExpr>* init_defExprls);
+  DefStmt(DefExpr* init_defExpr);
   COPY_DEF(DefStmt);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseStmt(Traversal* traversal);

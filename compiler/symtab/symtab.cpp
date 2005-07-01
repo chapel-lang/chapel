@@ -381,44 +381,27 @@ ModuleSymbol* Symboltable::startModuleDef(char* name, modType modtype) {
 }
 
 bool ModuleDefContainsOnlyNestedModules(AList<Stmt>* def) {
-  Stmt* stmt = def->first();
-
-  while (stmt) {
+  for_alist(Stmt, stmt, def) {
     if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {
-      for (DefExpr* defExpr = def_stmt->defExprls->first();
-           defExpr;
-           defExpr = def_stmt->defExprls->next()) {
-        if (!dynamic_cast<ModuleSymbol*>(defExpr->sym)) {
-          return false;
-        }
+      if (!dynamic_cast<ModuleSymbol*>(def_stmt->defExpr->sym)) {
+        return false;
       }
     } else {
       return false;
     }
-    
-    stmt = def->next();
   }
   return true;
 }
 
 
 static Stmt* ModuleDefContainsNestedModules(AList<Stmt>* def) {
-  Stmt* stmt = def->first();
-
-  while (stmt) {
+  for_alist(Stmt, stmt, def) {
     if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {
-      for (DefExpr* defExpr = def_stmt->defExprls->first();
-           defExpr;
-           defExpr = def_stmt->defExprls->next()) {
-        if (dynamic_cast<ModuleSymbol*>(defExpr->sym)) {
-          def->reset();
-          def_stmt->defExprls->reset();
-          return stmt;
-        }
+      if (dynamic_cast<ModuleSymbol*>(def_stmt->defExpr->sym)) {
+        def->reset();
+        return stmt;
       }
     }
-    
-    stmt = def->next();
   }
   return NULL;
 }
@@ -531,8 +514,8 @@ AList<DefExpr>* Symboltable::defineParams(paramType tag,
 }
 
 
-AList<DefExpr>* Symboltable::defineVarDef1(AList<Symbol>* idents, Type* type, 
-                                           Expr* init) {
+AList<Stmt>* Symboltable::defineVarDef1(AList<Symbol>* idents, Type* type, 
+                                        Expr* init) {
 
   /** SJD: This is a stopgap measure to deal with changing sequences
       into domains when the type of a declared variable is a domain.
@@ -553,27 +536,29 @@ AList<DefExpr>* Symboltable::defineVarDef1(AList<Symbol>* idents, Type* type,
 
   AList<VarSymbol>* varList = symsToVars(idents, type, init);
   Symbol* var = varList->popHead();
-  AList<DefExpr>* defExprs = new AList<DefExpr>();
+  AList<Stmt>* stmts = new AList<Stmt>();
   while (var) {
-    defExprs->insertAtTail(new DefExpr(var, 
-                              init ? new UserInitExpr(init->copy()) : NULL));
-    
-    
+    stmts->insertAtTail(
+      new DefStmt(
+        new DefExpr(var, init ? new UserInitExpr(init->copy()) : NULL)));
     var = varList->popHead();
   }
-
-  return defExprs;
+  return stmts;
 }
 
 
-void Symboltable::defineVarDef2(AList<DefExpr>* exprs, varType vartag, 
-                                consType constag) {
-  DefExpr* expr = exprs->first();
-  while (expr) {
-    VarSymbol* var = dynamic_cast<VarSymbol*>(expr->sym);
-    var->consClass = constag;
-    var->varClass = vartag;
-    expr = exprs->next();
+void Symboltable::defineVarDef2(AList<Stmt>* stmts, varType vartag, consType constag) {
+  for_alist(Stmt, stmt, stmts) {
+    if (DefStmt* defStmt = dynamic_cast<DefStmt*>(stmt)) {
+      if (VarSymbol* var = dynamic_cast<VarSymbol*>(defStmt->defExpr->sym)) {
+        var->consClass = constag;
+        var->varClass = vartag;
+      } else {
+        INT_FATAL(stmt, "Expected VarSymbol in Symboltable::defineVarDef2");
+      }
+    } else {
+      INT_FATAL(stmt, "Expected DefStmt in Symboltable::defineVarDef2");
+    }
   }
 }
 
@@ -581,10 +566,12 @@ void Symboltable::defineVarDef2(AList<DefExpr>* exprs, varType vartag,
 DefStmt* Symboltable::defineSingleVarDefStmt(char* name, Type* type, 
                                              Expr* init, varType vartag, 
                                              consType constag) {
-  Symbol* sym = new Symbol(SYMBOL, name);
-  AList<DefExpr>* defExpr = defineVarDef1(new AList<Symbol>(sym), type, init);
-  defineVarDef2(defExpr, vartag, constag);
-  return new DefStmt(defExpr);
+  VarSymbol* var = new VarSymbol(name, type, vartag, constag);
+  if (init) {
+    return new DefStmt(new DefExpr(var, new UserInitExpr(init->copy())));
+  } else {
+    return new DefStmt(new DefExpr(var, NULL));
+  }
 }
 
 
@@ -628,7 +615,7 @@ Expr* Symboltable::startLetExpr(void) {
 }
 
 
-Expr* Symboltable::finishLetExpr(Expr* let_expr, AList<DefExpr>* exprs, 
+Expr* Symboltable::finishLetExpr(Expr* let_expr, AList<Stmt>* stmts, 
                                  Expr* inner_expr) {
   LetExpr* let = dynamic_cast<LetExpr*>(let_expr);
 
@@ -636,7 +623,7 @@ Expr* Symboltable::finishLetExpr(Expr* let_expr, AList<DefExpr>* exprs,
     INT_FATAL(let_expr, "LetExpr expected");
   }
 
-  let->setSymDefs(exprs);
+  let->setSymDefs(stmts);
   let->setInnerExpr(inner_expr);
 
   SymScope* let_scope = Symboltable::popScope();

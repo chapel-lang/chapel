@@ -555,7 +555,7 @@ class LetExpr : public Expr {
           Expr* init_innerExpr = NULL);
   COPY_DEF(LetExpr);
   void setInnerExpr(Expr* expr);
-  void setSymDefs(AList<DefExpr>* expr);
+  void setSymDefs(AList<Stmt>* stmts);
   void setLetScope(SymScope* init_letScope);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);

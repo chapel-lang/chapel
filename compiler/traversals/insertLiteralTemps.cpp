@@ -48,7 +48,7 @@ static void replaceSequenceLiteral(SeqExpr* seqExpr) {
                                                           NULL,
                                                           VAR_NORMAL,
                                                           VAR_VAR);
-  DefExpr* def_expr = def_stmt->defExprls->only();
+  DefExpr* def_expr = def_stmt->defExpr;
   Type* elt_type = dtUnknown;
   if (seqExpr->exprls->length() > 0) {
     elt_type = seqExpr->exprls->representative()->typeInfo();
@@ -117,7 +117,7 @@ static void replaceTupleLiteral2(Tuple* tuple) {
                                                           init,
                                                           VAR_NORMAL,
                                                           VAR_VAR);
-  DefExpr* def_expr = def_stmt->defExprls->only();
+  DefExpr* def_expr = def_stmt->defExpr;
   tuple->getStmt()->insertBefore(def_stmt);
   Symbol* tmp = def_expr->sym;
   int i = 1;

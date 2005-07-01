@@ -37,11 +37,7 @@ void InsertFunctionTemps::postProcessStmt(Stmt* stmt) {
     exprs.add(condStmt->condExpr);
   } else if (DefStmt* defStmt = dynamic_cast<DefStmt*>(stmt)) {
     if (defStmt->varDef()) {
-      for (DefExpr* tmp = defStmt->defExprls->first(); 
-           tmp; 
-           tmp = defStmt->defExprls->next()) {
-        exprs.add(tmp);
-      }
+      exprs.add(defStmt->defExpr);
     }
   }
 

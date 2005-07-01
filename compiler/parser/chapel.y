@@ -42,6 +42,7 @@
   AList<Stmt>* pstmtls;
   AList<WhenStmt>* pwhenstmtls;
   AList<DefExpr>* pdefexprls;
+  AList<DefStmt>* pdefstmtls;
   AList<EnumSymbol>* penumsymls;
   AList<Symbol>* psymls;
 }
@@ -146,7 +147,6 @@
 %type <pexpr> reduction opt_init_expr assign_expr if_expr
 %type <pexprls> expr_ls nonempty_expr_ls tuple_inner_type_ls
 %type <pdefexprls> formal formal_ls opt_formal_ls
-%type <pdefexprls> var_decl_inner var_decl_inner_ls record_inner_var_ls
 %type <pforallexpr> forallExpr
 
 %type <pstmt> select_stmt
@@ -155,7 +155,7 @@
 %type <pstmt> assign_stmt if_stmt return_stmt loop forloop whileloop enumdecl
 %type <pstmt> statement call_stmt noop_stmt decl typevar_decl
 %type <pstmtls> decl_ls statements modulebody program
-%type <pdefstmt> var_decl
+%type <pstmtls> var_decl var_decl_inner var_decl_inner_ls record_inner_var_ls
 %type <pblockstmt> function_body_stmt block_stmt
 %type <pwhenstmt> when_stmt
 %type <pwhenstmtls> when_stmts
@@ -298,7 +298,7 @@ var_decl:
   config_static var_const_param var_decl_inner_ls TSEMI
     {
       Symboltable::defineVarDef2($3, $1, $2);
-      $$ = new DefStmt($3);
+      $$ = $3;
     }
 ;
 
@@ -407,8 +407,7 @@ record_tuple_inner_type:
   record_inner_var_ls TRP
     {
       SymScope *scope = Symboltable::popScope();
-      $$ = Symboltable::defineStructType(NULL, new RecordType(), scope, 
-                                         new AList<Stmt>(new DefStmt($1)));
+      $$ = Symboltable::defineStructType(NULL, new RecordType(), scope, $1);
     }
 | tuple_inner_type_ls TRP
     {
@@ -725,8 +724,6 @@ decl:
     { $$ = new ExprStmt(new UseExpr($2)); }
 | TWHERE whereexpr TSEMI
     { $$ = new ExprStmt($2); }
-| var_decl
-    { $$ = $1; }
 | type_decl
 | fn_decl
 | mod_decl
@@ -740,6 +737,11 @@ decl_ls:
     {
       $3->copyPragmas(*$2);
       $1->insertAtTail($3);
+    }
+| decl_ls pragma_ls var_decl
+    {
+      $3->copyPragmas(*$2);
+      $1->add($3);
     }
 ;
 
@@ -842,6 +844,11 @@ statements:
     { 
       $3->copyPragmas(*$2);
       $1->insertAtTail($3);
+    }
+| statements pragma_ls var_decl
+    { 
+      $3->copyPragmas(*$2);
+      $1->add($3);
     }
 ;
 

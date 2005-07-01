@@ -890,13 +890,7 @@ void StructuralType::copyGuts(StructuralType* copy_type, bool clone,
        old_decls = declarationList->next()) {
     DefStmt* def = dynamic_cast<DefStmt*>(old_decls);
     if (def && def->definesFunctions()) {
-      for (DefExpr* defExpr = def->defExprls->first();
-           defExpr;
-           defExpr = def->defExprls->next()) {
-        if (FnSymbol* fn = dynamic_cast<FnSymbol*>(defExpr->sym)) {
-          copy_type->methods.add(fn);
-        }
-      }
+      copy_type->methods.add(dynamic_cast<FnSymbol*>(def->defExpr->sym));
     } else {
       new_decls->insertAtTail(CLONE_INTERNAL(old_decls));
     }
@@ -914,29 +908,17 @@ void StructuralType::addDeclarations(AList<Stmt>* newDeclarations,
     DefStmt* def_stmt = dynamic_cast<DefStmt*>(tmp);
     if (def_stmt) {
       if (def_stmt->definesFunctions()) {
-        for (DefExpr* defExpr = def_stmt->defExprls->first();
-             defExpr;
-             defExpr = def_stmt->defExprls->next()) {
-          FnSymbol* fn = dynamic_cast<FnSymbol*>(defExpr->sym);
-          fn->typeBinding = this->symbol;
-          if (fn->fnClass != FN_CONSTRUCTOR) {
-            fn->method_type = PRIMARY_METHOD;
-          }
-          methods.add(fn);
+        FnSymbol* fn = dynamic_cast<FnSymbol*>(def_stmt->defExpr->sym);
+        fn->typeBinding = this->symbol;
+        if (fn->fnClass != FN_CONSTRUCTOR) {
+          fn->method_type = PRIMARY_METHOD;
         }
+        methods.add(fn);
       } else if (def_stmt->definesTypes()) {
-        for (DefExpr* defExpr = def_stmt->defExprls->first();
-             defExpr;
-             defExpr = def_stmt->defExprls->next()) {
-          types.add(dynamic_cast<TypeSymbol*>(defExpr->sym));
-        }
+        types.add(dynamic_cast<TypeSymbol*>(def_stmt->defExpr->sym));
       } else if (def_stmt->definesVariables()) {
-        for (DefExpr* defExpr = def_stmt->defExprls->first();
-             defExpr;
-             defExpr = def_stmt->defExprls->next()) {
-          VarSymbol* var = dynamic_cast<VarSymbol*>(defExpr->sym);
-          fields.add(var);
-        }
+        VarSymbol* var = dynamic_cast<VarSymbol*>(def_stmt->defExpr->sym);
+        fields.add(var);
       }
     }
     tmp = newDeclarations->next();
@@ -1065,13 +1047,9 @@ void StructuralType::codegenDef(FILE* outfile) {
   for (Stmt* tmp = declarationList->first(); tmp; tmp = declarationList->next()) {
     if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(tmp)) {
       if (def_stmt->definesVariables()) {
-        for (DefExpr* defExpr = def_stmt->defExprls->first();
-             defExpr;
-             defExpr = def_stmt->defExprls->next()) {
-          VarSymbol* var = dynamic_cast<VarSymbol*>(defExpr->sym);
-          var->codegenDef(outfile);
-          printedSomething = true;
-        }
+        VarSymbol* var = dynamic_cast<VarSymbol*>(def_stmt->defExpr->sym);
+        var->codegenDef(outfile);
+        printedSomething = true;
       }
     }
   }

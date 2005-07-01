@@ -16,14 +16,10 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
   if (!fn) {
     /*** mangle type names in class types ***/
     if (def_stmt->definesTypes()) {
-      for (DefExpr* defExpr = def_stmt->defExprls->first();
-           defExpr;
-           defExpr = def_stmt->defExprls->next()) {
-        TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(defExpr->sym);
-        if (StructuralType* classType = dynamic_cast<StructuralType*>(type_sym->type)) {
-          forv_Vec(TypeSymbol, type, classType->types) {
-            type->cname = glomstrings(4, "_", classType->symbol->cname, "_", type->cname);
-          }
+      TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(def_stmt->defExpr->sym);
+      if (StructuralType* classType = dynamic_cast<StructuralType*>(type_sym->type)) {
+        forv_Vec(TypeSymbol, type, classType->types) {
+          type->cname = glomstrings(4, "_", classType->symbol->cname, "_", type->cname);
         }
       }
     }
