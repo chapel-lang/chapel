@@ -38221,3 +38221,21 @@ Added files:
 	                                         test_foo_instantiated1.future 
 	                                         test_foo_instantiated1.good 
 
+---------------------------------------------------------------------------
+
+07/01/05 13:47:52 -- deitz
+
+Log message:
+	Robustified for_alist and for_alist_backward so that you can remove
+	something in the list within these loop macros.
+	
+	Removed the two futures that I had previously removed the tests for on
+	June 21 but that needed some fixes.
+
+Modified files:
+	chapel/compiler/include/: alist.h 
+	chapel/compiler/traversals/: findUnknownTypes.cpp 
+Removed files:
+	chapel/test/types/tuple/jplevyak/: tuple_index-1.future 
+	                                   tuple_index-2.future 
+
