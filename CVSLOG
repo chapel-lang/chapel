@@ -38270,3 +38270,17 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: expr.cpp 
 
+---------------------------------------------------------------------------
+
+07/01/05 16:08:20 -- deitz
+
+Log message:
+	Added a simpler test that contains a record with a field that is an
+	instantiated record.
+
+Added files:
+	chapel/test/arrays/deitz/: 
+	                           test_record_of_record_instantiated2.chpl 
+	                           test_record_of_record_instantiated2.future 
+	                           test_record_of_record_instantiated2.good 
+
