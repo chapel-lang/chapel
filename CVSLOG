@@ -38173,3 +38173,33 @@ Modified files:
 Removed files:
 	chapel/compiler/parser/: internal_prelude.chpl 
 
+---------------------------------------------------------------------------
+
+07/01/05 09:42:18 -- deitz
+
+Log message:
+	I just noticed that on June 21, I deleted ten tuple tests rather than
+	their futures.  I just readded all of them and removed eight of their
+	futures.
+
+Added files:
+	chapel/test/types/tuple/bradc/: returnTuple3.chpl 
+	                                writeTuple.chpl 
+	chapel/test/types/tuple/deitz/: test_tuple_simple1.chpl 
+	                                test_tuple_simple3.chpl 
+	                                test_tuple_simple4.chpl 
+	                                test_tuple_simple5.chpl 
+	                                test_tuple_simple6.chpl 
+	                                test_tuple_simple7.chpl 
+	chapel/test/types/tuple/jplevyak/: tuple_index-1.chpl 
+	                                   tuple_index-2.chpl 
+Removed files:
+	chapel/test/types/tuple/bradc/: returnTuple3.future 
+	                                writeTuple.future 
+	chapel/test/types/tuple/deitz/: test_tuple_simple1.future 
+	                                test_tuple_simple3.future 
+	                                test_tuple_simple4.future 
+	                                test_tuple_simple5.future 
+	                                test_tuple_simple6.future 
+	                                test_tuple_simple7.future 
+
