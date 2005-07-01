@@ -38113,3 +38113,44 @@ Added files:
 	                                         noCppLines.compopts 
 	                                         noCppLines.good 
 
+---------------------------------------------------------------------------
+
+06/30/05 17:23:54 -- deitz
+
+Log message:
+	With this checkin, there is no longer a list of DefExprs inside a
+	DefStmt, but rather a single DefExpr.  This paves the way for
+	eliminating DefStmt altogether (using an ExprStmt like for everything
+	else), and then eventually making anonymous record types be
+	expressions.
+	
+	This checkin also simplifies alot of code by getting rid of many loops
+	that walked over this list of DefExprs.
+	
+	Note that something like
+	
+	  var x, y, z : integer;
+	
+	will now parse equivalently to
+	
+	  var x;
+	  var y;
+	  var z : integer;
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp stmt.cpp symbol.cpp 
+	                      type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: expr.h stmt.h symtab.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: reconstructIterators.cpp 
+	                         removeDeadSymbols.cpp symtab.cpp 
+	chapel/compiler/traversals/: inlineFunctions.cpp 
+	                             insertAnonymousTypes.cpp 
+	                             insertFunctionTemps.cpp 
+	                             insertLiteralTemps.cpp 
+	                             insertThisParameters.cpp 
+	                             insertVariableInitializations.cpp 
+	                             omitForNoAnalysis.cpp 
+	                             transformLetExprs.cpp 
+
