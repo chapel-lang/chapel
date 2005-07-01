@@ -38239,3 +38239,22 @@ Removed files:
 	chapel/test/types/tuple/jplevyak/: tuple_index-1.future 
 	                                   tuple_index-2.future 
 
+---------------------------------------------------------------------------
+
+07/01/05 15:53:11 -- shannon
+
+Log message:
+	Added a test for when the --memmax flag is
+	not followed by a value.
+	
+	Added newlines to a couple .goods to please
+	the testing system.
+
+Modified files:
+	chapel/test/memory/shannon/: memmaxIntOnly.good 
+	                             memstatEquals.good 
+Added files:
+	chapel/test/memory/shannon/: memmaxInput.chpl 
+	                             memmaxInput.execopts 
+	                             memmaxInput.good 
+
