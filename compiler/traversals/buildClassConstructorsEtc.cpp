@@ -47,12 +47,16 @@ static void build_constructor(StructuralType* structType) {
       UserInitExpr* init = (tmp->defPoint->init) 
         ? tmp->defPoint->init->copy()
         : new UserInitExpr(new VarInitExpr(new Variable(tmp)));
+      Expr* exprType = (tmp->defPoint->exprType)
+        ? tmp->defPoint->exprType->copy()
+        : NULL;
       if (tmp->defPoint->init) {
         tmp->defPoint->init->remove();
       }
       ParamSymbol* arg = new ParamSymbol(
         tmp->consClass == VAR_PARAM ? PARAM_PARAMETER : PARAM_BLANK, name, type);
-      args->insertAtTail(new DefExpr(arg, init));
+      DefExpr* defExpr = new DefExpr(arg, init, exprType);
+      args->insertAtTail(defExpr);
     }
   }
 

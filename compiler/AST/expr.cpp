@@ -565,8 +565,10 @@ DefExpr::DefExpr(Symbol* initSym, UserInitExpr* initInit, Expr* initExprType) :
     }
   }
   if (!exprType && sym) {
-    if (dynamic_cast<ExprType*>(sym->type) && sym->defPoint->exprType) {
-      exprType = sym->defPoint->exprType->copy();
+    if (ExprType* symExprType = dynamic_cast<ExprType*>(sym->type)) {
+      if (symExprType->expr) {
+        exprType = symExprType->expr->copy();
+      }
     }
   }
 }
