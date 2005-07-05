@@ -38388,3 +38388,15 @@ Added files:
 	                                invalidExecOption.execopts 
 	                                invalidExecOption.good 
 
+---------------------------------------------------------------------------
+
+07/05/05 15:57:31 -- deitz
+
+Log message:
+	The exprType field of the DefExpr for temporaries in default_wrappers
+	is now copied from the DefExpr for the ParamSymbol with the default
+	initialization if it has an exprType.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
