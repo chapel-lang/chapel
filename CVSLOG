@@ -38296,3 +38296,14 @@ Modified files:
 	chapel/compiler/AST/: expr.cpp 
 	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
 
+---------------------------------------------------------------------------
+
+07/05/05 10:13:10 -- deitz
+
+Log message:
+	Updated test output and future.
+
+Modified files:
+	chapel/test/types/type_variables/jplevyak/: construct-1.future 
+	                                            construct-1.good 
+
