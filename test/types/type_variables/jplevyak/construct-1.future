@@ -1,3 +1,12 @@
+jplevyak
+
+What should the semantics be.  Since we can coerce an integer to a
+float, it seems that should apply to this test case.  Currently, it
+looks like the field becomes an integer like the value passed to x
+rather than the type passed to t.
+
+---------
+
 deitz
 
 is this code legal?  if it is it doesn't work.
