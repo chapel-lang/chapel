@@ -38376,3 +38376,15 @@ Modified files:
 	chapel/test/memory/shannon/: invalidMemFlag.execopts 
 	                             invalidMemFlag.good 
 
+---------------------------------------------------------------------------
+
+07/05/05 15:33:27 -- shannon
+
+Log message:
+	Added a test for an invalid execution option.
+
+Added files:
+	chapel/test/execflags/shannon/: invalidExecOption.chpl 
+	                                invalidExecOption.execopts 
+	                                invalidExecOption.good 
+
