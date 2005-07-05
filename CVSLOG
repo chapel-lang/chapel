@@ -38307,3 +38307,29 @@ Modified files:
 	chapel/test/types/type_variables/jplevyak/: construct-1.future 
 	                                            construct-1.good 
 
+---------------------------------------------------------------------------
+
+07/05/05 11:21:38 -- deitz
+
+Log message:
+	Removed the rest of getter hack code that was partially removed when
+	_chplget_ was removed.
+	
+	Removed future for
+	test/types/type_variables/jplevyak/test_typevar_class1 which used the
+	--newvardef flag to create a getter for a type in a class or record
+	though which doesn't use this getter.
+	
+	Added a new test to make sure a class field can be the same name as a
+	variable outside the class.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/traversals/: verify.cpp 
+Added files:
+	chapel/test/classes/deitz/: test_record_field1.chpl 
+	                            test_record_field1.good 
+Removed files:
+	chapel/test/types/type_variables/jplevyak/: 
+	                                            test_typevar_class1.future 
+
