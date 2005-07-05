@@ -38353,3 +38353,15 @@ Modified files:
 	                                         test_clone_class1b.good 
 	                                         test_clone_class1b.prediff 
 
+---------------------------------------------------------------------------
+
+07/05/05 14:58:27 -- shannon
+
+Log message:
+	Added a test for an invalid memory flag.
+
+Added files:
+	chapel/test/memory/shannon/: invalidMemFlag.chpl 
+	                             invalidMemFlag.execopts 
+	                             invalidMemFlag.good 
+
