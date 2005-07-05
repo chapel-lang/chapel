@@ -616,19 +616,11 @@ FnSymbol* FnSymbol::getFnSymbol(void) {
 
 FnSymbol*
 FnSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  char* copy_name;
-  if (_getter) {
-    copy_name = glomstrings(2, "_chplget_", name);
-  } else {
-    copy_name = copystring(name);
-  }
+  char* copy_name = copystring(name);
   FnSymbol* copy = new FnSymbol(copy_name, typeBinding);
   copy->method_type = method_type;
   copy->fnClass = fnClass;
   Symboltable::startFnDef(copy);
-  if (_getter) {
-    copy->name = copystring(name);
-  }
   copy->_getter = _getter; // If it is a cloned class we probably want this
   copy->_setter = _setter; //  to point to the new member, but how do we do that
   copy->_this = _this;
