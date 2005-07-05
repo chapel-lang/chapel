@@ -354,3 +354,25 @@ Sym::coerce_to(Sym *to) {
   }
   return NULL;
 }
+
+Immediate& Immediate::operator=(const Immediate& imm) {
+  memcpy(this, &imm, sizeof(imm));
+  return *this;
+}
+
+Immediate::Immediate() {
+  memset(this, 0, sizeof(*this));
+}
+
+unsigned int
+ImmHashFns::hash(Immediate *imm) {
+  unsigned int h = 0;
+  for (int i = 0; i < (int)(sizeof(*imm)/sizeof(unsigned int)); i++)
+    h = h + open_hash_multipliers[i] * ((unsigned int*)imm)[i];
+  return h;
+}
+
+int
+ImmHashFns::equal(Immediate *imm1, Immediate *imm2) {
+  return !memcmp(imm1, imm2, sizeof(*imm1));
+}

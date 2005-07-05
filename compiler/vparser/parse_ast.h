@@ -10,6 +10,7 @@
 #include "scope.h"
 #include "callbacks.h"
 #include "builtin.h"
+#include "sym.h"
 
 // C++'s manditory heap'o forward declarations
 struct D_ParseNode;
@@ -102,6 +103,7 @@ void ast_print(FILE *fp, ParseAST *a, int indent = 0);
 void ast_print_recursive(FILE *fp, ParseAST *a, int indent = 0);
 int ast_gen_if1(IF1 *if1, Vec<ParseAST *> &av);
 int ast_constant_fold(IF1 *if1, ParseAST *ast);
+void convert_string_to_immediate(char *str, Sym *type, Immediate *imm);
 
 extern char *AST_name[];
 

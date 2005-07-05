@@ -467,7 +467,17 @@ new_constant(IF1 *i, char *string, char *constant_type) {
       s++;
     return if1_make_symbol(i, s, e);
   }
-  return if1_const(i, if1_get_builtin(i, constant_type), dupstr(s, e));
+  char *str = dupstr(s, e);
+  Sym *type = if1_get_builtin(i, constant_type);
+  if (type == sym_int) type = sym_int32;
+  if (type == sym_uint) type = sym_uint32;
+  if (type == sym_float) type = sym_float64;
+  if (type == sym_complex) type = sym_complex64;
+  if (type == sym_char) type = sym_uint8;
+  if (type == sym_size) type = sym_uint32;
+  Immediate imm;
+  convert_string_to_immediate(str, type, &imm);
+  return if1_const(i, type, str, &imm);
 }
 
 Sym *
@@ -1303,15 +1313,17 @@ gen_new(IF1 *i, ParseAST *ast) {
 
 static Sym *
 make_int(IF1 *i, int n) {
+  Immediate imm;
+  imm.v_int32 = n;
   if (n >= 0 && n < 10) {
     char c[2];
     c[0] = n + '0';
     c[1] = 0;
-    return if1_const(i, sym_int, c);
+    return if1_const(i, sym_int32, c, &imm);
   } else {
     char str[100];
     sprintf(str, "%d", n);
-    return if1_const(i, sym_int, str);
+    return if1_const(i, sym_int32, str, &imm);
   }
 }
 
@@ -1974,9 +1986,9 @@ ast_gen_if1(IF1 *i, Vec<ParseAST *> &av) {
 #include "builtin_symbols.h"
 #undef S
   if1_set_primitive_types(i);
-  make_module(i, sym_system->name, global, sym_system);
   forv_ParseAST(a, av)
     build_constant_syms(i, a);
+  make_module(i, sym_system->name, global, sym_system);
   Sym *user_mod = in_module(i, if1_cannonicalize_string(i, "user"), global);
   Scope *scope = user_mod->scope;
   forv_ParseAST(a, av)

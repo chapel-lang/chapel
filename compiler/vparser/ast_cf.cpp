@@ -250,66 +250,71 @@ fold_constant(IF1 *i, ParseAST *ast) {
 }
 
 void
-convert_constant_to_immediate(Sym *sym) {
-  if (!sym->is_constant)        
-    return;
-  switch (sym->type->num_kind) {
+convert_string_to_immediate(char *str, Sym *type, Immediate *imm) {
+  switch (type->num_kind) {
     case IF1_NUM_KIND_NONE:
       break;
     case IF1_NUM_KIND_UINT: {
-      switch (sym->type->num_index) {
+      switch (type->num_index) {
         case IF1_INT_TYPE_8: 
-          if (sym->constant[0] != '\'')
-            sym->imm.v_uint8 = strtoul(sym->constant, 0, 0);
+          if (str[0] != '\'')
+            imm->v_uint8 = strtoul(str, 0, 0);
           else {
-            if (sym->constant[1] != '\\')
-              sym->imm.v_uint8 = sym->constant[1];
+            if (str[1] != '\\')
+              imm->v_uint8 = str[1];
             else
-              sym->imm.v_uint8 = sym->constant[2];
+              imm->v_uint8 = str[2];
           }
           break;
         case IF1_INT_TYPE_16:
-          sym->imm.v_uint16 = strtoul(sym->constant, 0, 0); break;
+          imm->v_uint16 = strtoul(str, 0, 0); break;
         case IF1_INT_TYPE_32:
-          sym->imm.v_uint32 = strtoul(sym->constant, 0, 0); break;
+          imm->v_uint32 = strtoul(str, 0, 0); break;
         case IF1_INT_TYPE_64:
-          sym->imm.v_uint64 = strtoull(sym->constant, 0, 0); break;
+          imm->v_uint64 = strtoull(str, 0, 0); break;
         default: assert(!"case");
       }
       break;
     }
     case IF1_NUM_KIND_INT: {
-      switch (sym->type->num_index) {
+      switch (type->num_index) {
         case IF1_INT_TYPE_8: 
-          if (sym->constant[0] != '\'')
-            sym->imm.v_int8 = strtoul(sym->constant, 0, 0);
+          if (str[0] != '\'')
+            imm->v_int8 = strtoul(str, 0, 0);
           else {
-            if (sym->constant[1] != '\\')
-              sym->imm.v_int8 = sym->constant[1];
+            if (str[1] != '\\')
+              imm->v_int8 = str[1];
             else
-              sym->imm.v_int8 = sym->constant[2];
+              imm->v_int8 = str[2];
           }
           break;
         case IF1_INT_TYPE_16:
-          sym->imm.v_int16 = strtol(sym->constant, 0, 0); break;
+          imm->v_int16 = strtol(str, 0, 0); break;
         case IF1_INT_TYPE_32:
-          sym->imm.v_int32 = strtol(sym->constant, 0, 0); break;
+          imm->v_int32 = strtol(str, 0, 0); break;
         case IF1_INT_TYPE_64:
-          sym->imm.v_int64 = strtoll(sym->constant, 0, 0); break;
+          imm->v_int64 = strtoll(str, 0, 0); break;
         default: assert(!"case");
       }
       break;
     }
     case IF1_NUM_KIND_FLOAT:
-      switch (sym->type->num_index) {
+      switch (type->num_index) {
         case IF1_FLOAT_TYPE_32:
-          sym->imm.v_float32 = strtod(sym->constant, 0); break;
+          imm->v_float32 = strtod(str, 0); break;
         case IF1_FLOAT_TYPE_64:
-          sym->imm.v_float64 = strtod(sym->constant, 0); break;
+          imm->v_float64 = strtod(str, 0); break;
         default: assert(!"case");
       }
       break;
   }
+}
+
+void
+convert_constant_to_immediate(Sym *sym) {
+  if (!sym->is_constant)        
+    return;
+  convert_string_to_immediate(sym->constant, sym->type, &sym->imm);
 }
 
 int

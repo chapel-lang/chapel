@@ -4,6 +4,7 @@
 #include "if1.h"
 #include "builtin.h"
 #include "ast.h"
+#include "sym.h"
 
 char *builtin_strings[] = {
 #define S(_x) #_x,
@@ -32,10 +33,20 @@ if1_register_sym(IF1 *p, Sym *sy, char *name) {
 }
 
 Sym *
-if1_const(IF1 *p, Sym *type, char *constant) {
+if1_const(IF1 *p, Sym *type, char *constant, Immediate *imm) {
   assert(type);
+  imm->const_kind = type->num_kind;
+  imm->num_index = type->num_index;
+  if (!imm->const_kind) {
+    if (type == sym_string)
+      imm->const_kind = IF1_CONST_KIND_STRING;
+    else if (type == sym_symbol) 
+      imm->const_kind = IF1_CONST_KIND_SYMBOL;  
+    else
+      assert(!"bad const");
+  }
   char *c = if1_cannonicalize_string(p, constant);
-  Sym *sym = p->constants.get(c);
+  Sym *sym = p->constants.get(imm);
   if (type)
     type = unalias_type(type);
   if (sym) {
@@ -47,7 +58,8 @@ if1_const(IF1 *p, Sym *type, char *constant) {
   sym->constant = c;
   sym->type = type;
   sym->meta_type = sym;
-  p->constants.put(c, sym);
+  sym->imm = *imm;
+  p->constants.put(&sym->imm, sym);
   return sym;
 }
 

@@ -13,13 +13,18 @@ class Primitives;
 
 extern char *builtin_strings[];
 
+class ImmHashFns { public:
+  static unsigned int hash(Immediate *);
+  static int equal(Immediate *, Immediate *);
+};
+
 class IF1 : public gc {
  public:
   StringChainHash       strings;                // unique strings
   Map<char *, Sym *>    symbols;                // language level symbols
   Map<char *, Sym *>    builtins;               // symbols builtin to the compiler
   Map<Sym *, char *>    builtins_names;         // names of symbols builtin to the compiler
-  Map<char *, Sym *>    constants;              // unique constants (by string)
+  HashMap<Immediate *, ImmHashFns, Sym *> constants;        // unique constants (by string)
   Vec<Sym *>            allsyms;
   Vec<Label *>          alllabels; 
   Vec<Sym *>            allclosures;
@@ -35,7 +40,7 @@ class IF1 : public gc {
 };
 
 Sym     *if1_register_sym(IF1 *p, Sym *, char *name = 0);
-Sym     *if1_const(IF1 *p, Sym *typ, char *value);
+Sym     *if1_const(IF1 *p, Sym *typ, char *value, Immediate *imm);
 Sym     *if1_make_symbol(IF1 *p, char *name, char *end = 0);
 void    if1_set_symbols_type(IF1 *p);
 void    if1_set_builtin(IF1 *p, Sym *s, char *name, char *end = 0);

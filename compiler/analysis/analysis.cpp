@@ -21,9 +21,8 @@
 #include "clone.h"
 
 #define VARARG_END     0ll
-
-//#define MINIMIZED_MEMORY 1  // minimize the memory used by Sym's... needs valgrind checking of Boehm GC for safety
 #define MAKE_USER_TYPE_BE_DEFINITION       1
+//#define MINIMIZED_MEMORY 1  // minimize the memory used by Sym's... needs valgrind checking for safety
 
 #define OPERATOR_CHAR(_c) \
 (((_c > ' ' && _c < '0') || (_c > '9' && _c < 'A') || \
@@ -65,7 +64,7 @@ static int init_function(FnSymbol *f);
 static int build_function(FnSymbol *f);
 static void map_asts(Vec<BaseAST *> &syms);
 static void build_symbols(Vec<BaseAST *> &syms);
-static void build_types(Vec<BaseAST *> &syms);
+static void build_types(Vec<BaseAST *> &syms, Vec<Type *> *types = NULL);
 static int build_classes(Vec<BaseAST *> &syms);
 static int gen_if1(BaseAST *ast, BaseAST *parent = 0);
 static void finalize_function(Fun *fun);
@@ -862,13 +861,13 @@ get_defaultVal(Type *t) {
 }
 
 static Sym *
-build_type(Type *t) {
+build_type(Type *t, bool make_default = true) {
   if (t->symbol) {
     t->asymbol->sym->meta_type = t->symbol->asymbol->sym;
     t->symbol->asymbol->sym->meta_type = t->asymbol->sym;
   }
   make_meta_type(t->asymbol->sym);
-  if (t->defaultVal)
+  if (make_default && t->defaultVal)
     get_defaultVal(t);
   switch (t->astType) {
     default: assert(!"case");
@@ -995,15 +994,16 @@ build_type(Type *t) {
 }
 
 static void
-build_types(Vec<BaseAST *> &syms) {
-  Vec<Type *> types;
+build_types(Vec<BaseAST *> &syms, Vec<Type *> *atypes) {
+  Vec<Type *> ttypes;
+  Vec<Type *> *types  = atypes ? atypes : &ttypes;
   forv_BaseAST(s, syms) {
     Type *t = dynamic_cast<Type *>(s);
     if (t) 
-      types.add(t);
+      types->add(t);
   }
-  forv_Type(t, types)
-    build_type(t);
+  forv_Type(t, *types)
+    build_type(t, false);
 }
 
 static void
@@ -1182,15 +1182,6 @@ build_builtin_symbols() {
 #undef S
 }
 
-static int
-import_symbols(Vec<BaseAST *> &syms) {
-  map_asts(syms);
-  build_builtin_symbols();
-  build_types(syms);
-  build_symbols(syms);
-  return 0;
-}
-
 static Stmt *
 label_target(Stmt *stmt) {
   Stmt *target = stmt;
@@ -1290,8 +1281,8 @@ make_symbol(char *name) {
 }
 
 static Sym *
-make_const(Sym *type, char *c) {
-  Sym *s = if1_const(if1, type, c);
+make_const(Sym *type, char *c, Immediate *imm) {
+  Sym *s = if1_const(if1, type, c, imm);
   s->global_scope = 1;
   return s;
 }
@@ -1916,36 +1907,43 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
     case EXPR_LITERAL: assert(!"case"); break;
     case EXPR_BOOLLITERAL: {
       BoolLiteral *s = dynamic_cast<BoolLiteral*>(ast);
-      Sym *c = make_const(sym_bool, s->str);
-      c->imm.v_bool = s->val;
+      Immediate imm;
+      imm.v_bool = s->val;
+      Sym *c = make_const(sym_bool, s->str, &imm);
       s->ainfo->rval = c;
       break;
     }
     case EXPR_INTLITERAL: {
       IntLiteral *s = dynamic_cast<IntLiteral*>(ast);
-      Sym *c = make_const(sym_int64, s->str);
-      c->imm.v_int64 = s->val;
+      Immediate imm;
+      imm.v_int64 = s->val;
+      Sym *c = make_const(sym_int64, s->str, &imm);
       s->ainfo->rval = c;
       break;
     }
     case EXPR_FLOATLITERAL: {
       FloatLiteral *s = dynamic_cast<FloatLiteral*>(ast);
-      Sym *c = make_const(sym_float64, s->str);
-      c->imm.v_float64 = s->val;
+      Immediate imm;
+      imm.v_float64 = s->val;
+      Sym *c = make_const(sym_float64, s->str, &imm);
       s->ainfo->rval = c;
       break;
     }
     case EXPR_COMPLEXLITERAL: {
       ComplexLiteral *s = dynamic_cast<ComplexLiteral*>(ast);
-      Sym *c = make_const(sym_complex64, s->str);
-      c->imm.v_complex64.r = s->realVal;
-      c->imm.v_complex64.i = s->imagVal;
+      Immediate imm;
+      imm.v_complex64.r = s->realVal;
+      imm.v_complex64.i = s->imagVal;
+      Sym *c = make_const(sym_complex64, s->str, &imm);
       s->ainfo->rval = c;
       break;
     }
     case EXPR_STRINGLITERAL: {
       StringLiteral *s = dynamic_cast<StringLiteral*>(ast);
-      Sym *c = make_const(sym_string, s->str);
+      char *str = if1_cannonicalize_string(if1, s->str);
+      Immediate imm;
+      imm.v_string = str;
+      Sym *c = make_const(sym_string, str, &imm);
       s->ainfo->rval = c;
       break;
     }
@@ -2969,10 +2967,17 @@ ast_to_if1(Vec<AList<Stmt> *> &stmts) {
   qsort(syms.v, syms.n, sizeof(syms.v[0]), compar_baseast);
   init_symbols();
   debug_new_ast(stmts, syms);
-  if (import_symbols(syms) < 0) return -1;
+  map_asts(syms);
+  build_builtin_symbols();
+  Vec<Type *> types;
+  build_types(syms, &types);
+  build_symbols(syms);
   if (applyGettersSetters)
     method_token = Symboltable::lookupInternal("_methodToken")->asymbol->sym;
   if1_set_primitive_types(if1);
+  forv_Type(t, types)
+    if (t->defaultVal)
+      get_defaultVal(t);
   if (build_classes(syms) < 0) return -1;
   finalize_types(if1);
   if (build_functions(syms) < 0) return -1;

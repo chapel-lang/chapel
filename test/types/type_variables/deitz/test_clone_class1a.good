@@ -1,25 +1,3 @@
-  called from test_clone_class1a.chpl:10
-  called from test_clone_class1a.chpl:10
-  called from test_clone_class1a.chpl:10
-  called from test_clone_class1a.chpl:10
-  called from test_clone_class1a.chpl:10
-  called from test_clone_class1a.chpl:10
-  called from test_clone_class1a.chpl:12
-  called from test_clone_class1a.chpl:14
-  called from test_clone_class1a.chpl:14
-  called from test_clone_class1a.chpl:14
-  called from test_clone_class1a.chpl:14
-  called from test_clone_class1a.chpl:14
-  called from test_clone_class1a.chpl:14
-  called from test_clone_class1a.chpl:16
-  called from test_clone_class1a.chpl:4
-  called from test_clone_class1a.chpl:4
-  called from test_clone_class1a.chpl:4
-  called from test_clone_class1a.chpl:4
-  called from test_clone_class1a.chpl:4
-  called from test_clone_class1a.chpl:6
-  called from test_clone_class1a.chpl:6
-  called from test_clone_class1a.chpl:6
 fail: fatal error, program does not type
 test_clone_class1a.chpl:10: expression has mixed basic types:( int64 float64 null ) 
 test_clone_class1a.chpl:14: expression has mixed basic types:( int64 float64 null ) 
