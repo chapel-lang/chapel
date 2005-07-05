@@ -767,7 +767,10 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
         new DefExpr(temp_symbol,
                     (dynamic_cast<ParamSymbol*>(formal->sym)->intent == PARAM_OUT)
                     ? NULL
-                    : formal->sym->defPoint->init->copy());
+                    : formal->sym->defPoint->init->copy(),
+                    (formal->sym->defPoint->exprType)
+                    ? formal->sym->defPoint->exprType->copy()
+                    : NULL);
       DefStmt* temp_def_stmt = new DefStmt(temp_def_expr);
       wrapper_body->insertAtHead(temp_def_stmt);
       temps.add(temp_symbol);
