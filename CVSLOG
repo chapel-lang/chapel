@@ -38284,3 +38284,15 @@ Added files:
 	                           test_record_of_record_instantiated2.future 
 	                           test_record_of_record_instantiated2.good 
 
+---------------------------------------------------------------------------
+
+07/05/05 09:57:10 -- deitz
+
+Log message:
+	Fixed a bug in which the exprType of a field was not copied to the
+	parameter in its constructor.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+
