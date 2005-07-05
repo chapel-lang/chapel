@@ -38365,3 +38365,14 @@ Added files:
 	                             invalidMemFlag.execopts 
 	                             invalidMemFlag.good 
 
+---------------------------------------------------------------------------
+
+07/05/05 15:10:51 -- shannon
+
+Log message:
+	Woops, I inadvertently tested the wrong error message.
+
+Modified files:
+	chapel/test/memory/shannon/: invalidMemFlag.execopts 
+	                             invalidMemFlag.good 
+
