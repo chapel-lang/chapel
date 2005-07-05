@@ -38333,3 +38333,23 @@ Removed files:
 	chapel/test/types/type_variables/jplevyak/: 
 	                                            test_typevar_class1.future 
 
+---------------------------------------------------------------------------
+
+07/05/05 13:29:35 -- jplevyak
+
+Log message:
+	Constants are now hashed directly on the binary representation
+	and the type.  This fixes types/complex/bradc/intfloatelement.chpl.
+	This will also enable interprocedural constant propagation to
+	also do constant folding (in the future).
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp if1.cpp sym.cpp 
+	chapel/compiler/include/: if1.h sym.h 
+	chapel/compiler/vparser/: ast_cf.cpp parse_ast.cpp parse_ast.h 
+	                          v.g 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1a.prediff 
+	                                         test_clone_class1b.good 
+	                                         test_clone_class1b.prediff 
+
