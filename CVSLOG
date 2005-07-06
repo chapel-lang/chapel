@@ -38438,3 +38438,18 @@ Log message:
 Added files:
 	chapel/test/compflags/shannon/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+07/06/05 09:02:25 -- shannon
+
+Log message:
+	Added a test for attempting to set the value
+	of a config var in a module where it has not been
+	declared.
+
+Added files:
+	chapel/test/execflags/shannon/configs/: 
+	                                        configVarNotInModule.chpl 
+	                                        configVarNotInModule.execopts 
+	                                        configVarNotInModule.good 
+
