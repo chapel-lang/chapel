@@ -10,14 +10,24 @@ int   _chpl_input_linenumber;
 
 void printError(char* message) {
   fflush(stdout);
-  fprintf(stderr, "***Error: %s***\n", message);
+  if (_chpl_input_linenumber) {
+    fprintf(stderr, "%s, line%d:  ***Error: %s***\n", _chpl_input_filename, 
+            _chpl_input_linenumber, message);
+  } else {
+    fprintf(stderr, "***Error: %s***\n", message);
+  }
   exit(0);
 }
 
 
 void printWarning(char* message) {
   fflush(stdout);
-  fprintf(stderr, "***Warning: %s***\n", message);
+  if (_chpl_input_linenumber) {
+    fprintf(stderr, "%s, line%d:  ***Warning: %s***\n", _chpl_input_filename, 
+            _chpl_input_linenumber, message);
+  } else {  
+    fprintf(stderr, "***Warning: %s***\n", message);
+  }
 }
 
 

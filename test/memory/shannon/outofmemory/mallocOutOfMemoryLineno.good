@@ -1,0 +1,1 @@
+mallocOutOfMemoryLineno.chpl, line1:  ***Error: Out of memory allocating "malloc test"***

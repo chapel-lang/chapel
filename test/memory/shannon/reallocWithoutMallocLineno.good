@@ -1,0 +1,1 @@
+reallocWithoutMallocLineno.chpl, line1:  ***Error: Attempting to realloc memory for _integer64that wasn't allocated***
