@@ -874,7 +874,7 @@ statement:
   noop_stmt
 | TLABEL identifier statement
     { $$ = new LabelStmt(new LabelSymbol($2), 
-           new BlockStmt(new AList<Stmt>($3))); }
+                         new BlockStmt(new AList<Stmt>($3))); }
 | TGOTO identifier TSEMI
     { $$ = new GotoStmt(goto_normal, $2); }
 | TBREAK identifier TSEMI
@@ -1014,12 +1014,24 @@ forloop:
 
 
 whileloop:
-TWHILE expr TDO statement
-    { $$ = new WhileLoopStmt(true, $2, new AList<Stmt>($4)); }
+TWHILE expr TDO 
+    {
+      $<pblockstmt>$ = Symboltable::startCompoundStmt();
+    }
+                statement
+    {
+      $$ = new WhileLoopStmt(true, $2, Symboltable::finishCompoundStmt($<pblockstmt>4, new AList<Stmt>($5)));
+    }
+| TDO
+    {
+      $<pblockstmt>$ = Symboltable::startCompoundStmt();
+    }
+      statement TWHILE expr TSEMI
+    {
+      $$ = new WhileLoopStmt(false, $5, Symboltable::finishCompoundStmt($<pblockstmt>2, new AList<Stmt>($3)));
+    }
 | TWHILE expr block_stmt
-    { $$ = new WhileLoopStmt(true, $2, new AList<Stmt>($3)); }
-| TDO statement TWHILE expr TSEMI
-    { $$ = new WhileLoopStmt(false, $4, new AList<Stmt>($2)); }
+    { $$ = new WhileLoopStmt(true, $2, $3); }
 ;
 
 

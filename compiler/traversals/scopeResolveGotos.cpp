@@ -31,21 +31,28 @@ void ScopeResolveGotos::preProcessStmt(Stmt* stmt) {
   if (dynamic_cast<WhileLoopStmt*>(stmt) ||
       dynamic_cast<ForLoopStmt*>(stmt)) { 
 
-    BlockStmt* loop_stmt = dynamic_cast<BlockStmt*>(stmt);
+    BlockStmt* loop_block;
 
-    if (!loop_stmt) {
+    if (WhileLoopStmt* loop = dynamic_cast<WhileLoopStmt*>(stmt)) {
+      loop_block = loop->block;
+    }
+    if (ForLoopStmt* loop = dynamic_cast<ForLoopStmt*>(stmt)) {
+      loop_block = loop->block;
+    }
+
+    if (!loop_block) {
       INT_FATAL(stmt, "BlockStmt expected in ScopeResolveGotos");
     }
 
     FindBreakOrContinue* traversal = new FindBreakOrContinue();
-    loop_stmt->body->traverse(traversal, true);
+    loop_block->body->traverse(traversal, true);
     if (traversal->found) {
       NoOpStmt* noop_stmt = new NoOpStmt();
-      loop_stmt->replace(noop_stmt);
+      stmt->replace(noop_stmt);
 
       char* label_name = glomstrings(2, "_loop_label_", intstring(uid++));
       LabelSymbol* label_symbol = new LabelSymbol(label_name);
-      LabelStmt* label_stmt = new LabelStmt(label_symbol, loop_stmt);
+      LabelStmt* label_stmt = new LabelStmt(label_symbol, stmt);
       noop_stmt->replace(label_stmt);
       currentLoop = label_stmt;
       return;

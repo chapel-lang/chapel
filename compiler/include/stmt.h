@@ -120,12 +120,13 @@ class BlockStmt : public Stmt {
 };
 
 
-class WhileLoopStmt : public BlockStmt {
+class WhileLoopStmt : public Stmt {
  public:
+  BlockStmt* block;
   bool isWhileDo;
   Expr* condition;
 
-  WhileLoopStmt(bool init_whileDo, Expr* init_cond, AList<Stmt>* body);
+  WhileLoopStmt(bool init_whileDo, Expr* init_cond, BlockStmt* init_block);
   COPY_DEF(WhileLoopStmt);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -136,8 +137,9 @@ class WhileLoopStmt : public BlockStmt {
 };
 
 
-class ForLoopStmt : public BlockStmt {
+class ForLoopStmt : public Stmt {
  public:
+  BlockStmt* block;
   bool forall;
   AList<DefExpr>* indices; // DefExpr* containing local index variables
   Expr* domain;
@@ -145,7 +147,7 @@ class ForLoopStmt : public BlockStmt {
   SymScope* indexScope;
 
   ForLoopStmt(bool init_forall, AList<DefExpr>* init_indices, Expr* init_domain,
-              AList<Stmt>* body = new AList<Stmt>());
+              BlockStmt* init_block);
   COPY_DEF(ForLoopStmt);
   void setIndexScope(SymScope* init_indexScope);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -206,9 +208,9 @@ class SelectStmt : public Stmt {
 class LabelStmt : public Stmt {
  public:
   LabelSymbol* label;
-  BlockStmt* stmt;
+  Stmt* stmt;
   
-  LabelStmt(LabelSymbol* init_label, BlockStmt* init_stmt);
+  LabelStmt(LabelSymbol* init_label, Stmt* init_stmt);
   COPY_DEF(LabelStmt);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseStmt(Traversal* traversal);

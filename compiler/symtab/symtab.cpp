@@ -757,13 +757,18 @@ ForLoopStmt* Symboltable::startForLoop(bool forall, AList<Symbol>* indices,
     defExpr->insertAtTail(new DefExpr(var));
     var = indexVars->popHead();
   }
-  ForLoopStmt* for_loop_stmt = new ForLoopStmt(forall, defExpr, domain);
+  ForLoopStmt* for_loop_stmt = new ForLoopStmt(forall, defExpr, domain, NULL);
   return for_loop_stmt;
 }
 
 
 ForLoopStmt* Symboltable::finishForLoop(ForLoopStmt* forstmt, Stmt* body) {
-  forstmt->addBody(new AList<Stmt>(body));
+  if (BlockStmt* blockStmt = dynamic_cast<BlockStmt*>(body)) {
+    forstmt->block = blockStmt;
+  } else {
+    forstmt->block = Symboltable::startCompoundStmt();
+    forstmt->block = Symboltable::finishCompoundStmt(forstmt->block, new AList<Stmt>(body));
+  }
 
   SymScope* forScope = Symboltable::popScope();
   forScope->setContext(forstmt);

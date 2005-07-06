@@ -82,7 +82,7 @@ static void insert_array_init(Stmt* stmt, VarSymbol* var, Type* type) {
   stmt->insertBefore(loop);
   insert_init(noop_stmt, var, array_type->elementType);
   AList<DefExpr>* indices_change = loop->indices;
-  TRAVERSE(loop->body, new InsertElidedIndices(indices_change), true);
+  TRAVERSE(loop->block, new InsertElidedIndices(indices_change), true);
 }
 
 

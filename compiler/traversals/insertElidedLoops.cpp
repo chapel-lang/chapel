@@ -40,7 +40,7 @@ void InsertElidedLoops::postProcessStmt(Stmt* stmt) {
         ForLoopStmt* loop = Symboltable::startForLoop(true, indices, array_type->domain->copy());
         loop = Symboltable::finishForLoop(loop, stmt->copy());
         stmt->replace(loop);
-        TRAVERSE(loop->body, new InsertElidedIndices(loop->indices), true);
+        TRAVERSE(loop->block, new InsertElidedIndices(loop->indices), true);
       }
     }
   }

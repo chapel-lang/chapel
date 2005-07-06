@@ -375,28 +375,27 @@ void BlockStmt::codegenStmt(FILE* outfile) {
 
 WhileLoopStmt::WhileLoopStmt(bool init_whileDo,
                              Expr* init_cond,
-                             AList<Stmt>* init_body) :
-  BlockStmt(init_body),
+                             BlockStmt* init_block) :
+  Stmt(STMT_WHILELOOP),
+  block(init_block),
   isWhileDo(init_whileDo),
   condition(init_cond)
-{
-  astType = STMT_WHILELOOP;
-}
+{ }
 
 
 WhileLoopStmt* 
 WhileLoopStmt::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   return new WhileLoopStmt(isWhileDo,
                            COPY_INTERNAL(condition),
-                           COPY_INTERNAL(body));
+                           COPY_INTERNAL(block));
 }
 
 
 void WhileLoopStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == condition) {
     condition = dynamic_cast<Expr*>(new_ast);
-  } else if (old_ast == body) {
-    body = dynamic_cast<AList<Stmt>*>(new_ast);
+  } else if (old_ast == block) {
+    block = dynamic_cast<BlockStmt*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in WhileLoopStmt::replaceChild");
   }
@@ -406,9 +405,9 @@ void WhileLoopStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 void WhileLoopStmt::traverseStmt(Traversal* traversal) {
   if (isWhileDo) {
     TRAVERSE(condition, traversal, false);
-    TRAVERSE(body, traversal, false);
+    TRAVERSE(block, traversal, false);
   } else {
-    TRAVERSE(body, traversal, false);
+    TRAVERSE(block, traversal, false);
     TRAVERSE(condition, traversal, false);
   }
 }
@@ -420,10 +419,10 @@ void WhileLoopStmt::print(FILE* outfile) {
     fprintf(outfile, "while (");
     condition->print(outfile);
     fprintf(outfile, ") ");
-    body->print(outfile);
+    block->print(outfile);
   } else {
     fprintf(outfile, "do ");
-    body->print(outfile);
+    block->print(outfile);
     fprintf(outfile, "while (");
     condition->print(outfile);
     fprintf(outfile, ")");
@@ -437,11 +436,11 @@ void WhileLoopStmt::codegenStmt(FILE* outfile) {
     fprintf(outfile, "while (");
     condition->codegen(outfile);
     fprintf(outfile, ") {\n");
-    body->codegen(outfile);
+    block->codegen(outfile);
     fprintf(outfile, "\n}");
   } else { 
     fprintf(outfile, "do {\n");
-    body->codegen(outfile);
+    block->codegen(outfile);
     fprintf(outfile, "\n} while (");
     condition->codegen(outfile);
     fprintf(outfile, ");\n");
@@ -452,15 +451,14 @@ void WhileLoopStmt::codegenStmt(FILE* outfile) {
 ForLoopStmt::ForLoopStmt(bool init_forall,
                          AList<DefExpr>* init_indices,
                          Expr* init_domain,
-                         AList<Stmt>* body)
-  : BlockStmt(body),
-    forall(init_forall),
-    indices(init_indices),
-    domain(init_domain),
-    indexScope(NULL)
-{
-  astType = STMT_FORLOOP;
-}
+                         BlockStmt* init_block) :
+  Stmt(STMT_FORLOOP),
+  block(init_block),
+  forall(init_forall),
+  indices(init_indices),
+  domain(init_domain),
+  indexScope(NULL)
+{ }
 
 
 void ForLoopStmt::setIndexScope(SymScope* init_indexScope) {
@@ -473,10 +471,10 @@ ForLoopStmt::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   Symboltable::pushScope(SCOPE_FORLOOP);
   AList<DefExpr>* indices_copy = CLONE_INTERNAL(indices);
   Expr* domain_copy = COPY_INTERNAL(domain);
-  AList<Stmt>* body_copy = CLONE_INTERNAL(body);
+  BlockStmt* block_copy = CLONE_INTERNAL(block);
   SymScope* index_scope = Symboltable::popScope();
   ForLoopStmt* for_loop_stmt_copy =
-    new ForLoopStmt(forall, indices_copy, domain_copy, body_copy);
+    new ForLoopStmt(forall, indices_copy, domain_copy, block_copy);
   for_loop_stmt_copy->setIndexScope(index_scope);
   return for_loop_stmt_copy;
 }
@@ -487,8 +485,8 @@ void ForLoopStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
     indices = dynamic_cast<AList<DefExpr>*>(new_ast);
   } else if (old_ast == domain) {
     domain = dynamic_cast<Expr*>(new_ast);
-  } else if (old_ast == body) {
-    body = dynamic_cast<AList<Stmt>*>(new_ast);
+  } else if (old_ast == block) {
+    block = dynamic_cast<BlockStmt*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in ForLoopStmt::replaceChild");
   }
@@ -503,7 +501,7 @@ void ForLoopStmt::traverseStmt(Traversal* traversal) {
     prevScope = Symboltable::setCurrentScope(indexScope);
   }
   indices->traverse(traversal, false);
-  TRAVERSE(body, traversal, false);
+  TRAVERSE(block, traversal, false);
   if (indexScope) {
     Symboltable::setCurrentScope(prevScope);
   }
@@ -520,7 +518,7 @@ void ForLoopStmt::print(FILE* outfile) {
   fprintf(outfile, " in ");
   domain->print(outfile);
   fprintf(outfile, " ");
-  body->print(outfile);
+  block->print(outfile);
 }
 
 
@@ -543,7 +541,7 @@ void ForLoopStmt::codegenStmt(FILE* outfile) {
     StructuralType* seqType = dynamic_cast<StructuralType*>(domain->typeInfo());
     fprintf(outfile, "%s", seqType->fields.v[1]->type->symbol->cname);
     fprintf(outfile, ") {\n");
-    body->codegen(outfile);
+    block->codegen(outfile);
     fprintf(outfile, "\n");
     fprintf(outfile, "}\n");
     fprintf(outfile, "}\n");
@@ -640,7 +638,7 @@ void ForLoopStmt::codegenStmt(FILE* outfile) {
     }
   }
   
-  body->codegen(outfile);
+  block->codegen(outfile);
   fprintf(outfile, "\n");
 
   for (int i=0; i<rank; i++) {
@@ -870,7 +868,7 @@ void SelectStmt::codegenStmt(FILE* outfile) {
 }
 
 
-LabelStmt::LabelStmt(LabelSymbol* init_label, BlockStmt* init_stmt) :
+LabelStmt::LabelStmt(LabelSymbol* init_label, Stmt* init_stmt) :
   Stmt(STMT_LABEL),
   label(init_label),
   stmt(init_stmt)
@@ -885,7 +883,7 @@ LabelStmt::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
 
 void LabelStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == stmt) {
-    stmt = dynamic_cast<BlockStmt*>(new_ast);
+    stmt = dynamic_cast<Stmt*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in LabelStmt::replaceChild");
   }

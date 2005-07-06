@@ -171,7 +171,9 @@ const SD: ??? = S.Domain();
 const Rstr: ??? = R.stride;
 const Sstr: ??? = S.stride;
 forall var ioff: integer; in IDom {
-forall var ijk: integer; in SD R((ijk+(Rstr*ioff))) += (w(ioff)*reduce by sum [var off: integer;:IStn(ioff)] S((ijk+(Sstr*off))));
+forall var ijk: integer; in SD {
+R((ijk+(Rstr*ioff))) += (w(ioff)*reduce by sum [var off: integer;:IStn(ioff)] S((ijk+(Sstr*off))));
+}
 }
 }
 

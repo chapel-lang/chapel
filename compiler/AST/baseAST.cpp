@@ -390,16 +390,17 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
   case STMT_RETURN:
     goto LExprStmtCommon;
   case STMT_BLOCK:
-  LBlockStmtCommon:
     AST_ADD_LIST(BlockStmt, body, Stmt);
     goto LStmtCommon;
   case STMT_WHILELOOP:
     AST_ADD_CHILD(WhileLoopStmt, condition);
-    goto LBlockStmtCommon;
+    AST_ADD_CHILD(WhileLoopStmt, block);
+    goto LStmtCommon;
   case STMT_FORLOOP:
     AST_ADD_LIST(ForLoopStmt, indices, DefExpr);
     AST_ADD_CHILD(ForLoopStmt, domain);
-    goto LBlockStmtCommon;
+    AST_ADD_CHILD(ForLoopStmt, block);
+    goto LStmtCommon;
   case STMT_COND:
     AST_ADD_CHILD(CondStmt, condExpr);
     AST_ADD_CHILD(CondStmt, thenStmt);

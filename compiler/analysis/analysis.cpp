@@ -1483,10 +1483,7 @@ static int
 gen_while(BaseAST *a) {
   WhileLoopStmt *s = dynamic_cast<WhileLoopStmt*>(a);
   Code *body_code = 0;
-  Vec<Stmt*> body;
-  s->body->getElements(body);
-  forv_Stmt(ss, body)
-    if1_gen(if1, &body_code, ss->ainfo->code);
+  if1_gen(if1, &body_code, s->block->ainfo->code);
   if1_loop(if1, &s->ainfo->code, s->ainfo->label[0], s->ainfo->label[1],
            s->condition->ainfo->rval, 0, 
            s->condition->ainfo->code, 0, 
@@ -1544,10 +1541,7 @@ static int
 gen_for(BaseAST *a) {
   ForLoopStmt *s = dynamic_cast<ForLoopStmt*>(a);
   Code *body = 0;
-  Vec<Stmt*> body_stmts;
-  s->body->getElements(body_stmts);
-  forv_Stmt(ss, body_stmts)
-    if1_gen(if1, &body, ss->ainfo->code);
+  if1_gen(if1, &body, s->block->ainfo->code);
   Vec<Symbol*> indices;
   Vec<DefExpr*> indexDefs;
   s->indices->getElements(indexDefs);

@@ -167,7 +167,9 @@ state const w: [var ijk: integer;:IDom] float = (1.0/IStn.size());
 const Rstr: [1..3] integer = DR.stride;
 const Sstr: [1..3] integer = DS.stride;
 forall var ioff: integer; in IDom {
-forall var ijk: integer; in DS R((ijk+(Rstr*ioff))) += (w(ioff)*reduce by sum [var off: integer;:IStn(ioff)] S((ijk+(Sstr*off))));
+forall var ijk: integer; in DS {
+R((ijk+(Rstr*ioff))) += (w(ioff)*reduce by sum [var off: integer;:IStn(ioff)] S((ijk+(Sstr*off))));
+}
 }
 }
 
