@@ -38663,3 +38663,14 @@ Added files:
 	                                 test_string_equal3.chpl 
 	                                 test_string_equal3.good 
 
+---------------------------------------------------------------------------
+
+07/06/05 14:33:38 -- mjoyner
+
+Log message:
+	Fixed several bugs in function inlining that were exposed by the test suite.
+
+Modified files:
+	chapel/compiler/traversals/: inlineFunctions.cpp 
+	                             inlineFunctions.h 
+
