@@ -38691,3 +38691,16 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: htmlview.cpp 
 
+---------------------------------------------------------------------------
+
+07/06/05 14:51:27 -- deitz
+
+Log message:
+	Added a link to dump.html in the log directory from index.html.  You
+	can now click on RunAnalysis in the passlist and you will go to
+	analysis's dump of information.
+
+Modified files:
+	chapel/compiler/main/: runpasses.cpp 
+	chapel/compiler/traversals/: htmlview.cpp 
+
