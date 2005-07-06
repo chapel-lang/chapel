@@ -38473,3 +38473,72 @@ Modified files:
 	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.good 
 	                                     mg-seq.good 
 
+---------------------------------------------------------------------------
+
+07/06/05 11:07:38 -- shannon
+
+Log message:
+	Added the ability to print runtime error messages
+	with the chpl filename and corresponding line number,
+	where applicable, when the test is compiled with the
+	--cg-chpl-lineno option.
+	
+	Added a copy of all the tests that have changed error
+	messages when compiled with the flag.
+
+Modified files:
+	chapel/runtime/src/: error.c 
+	chapel/test/memory/shannon/: freedWithoutMalloc.execopts 
+Added files:
+	chapel/test/execflags/shannon/configs/: 
+	                                        configVarInvalidBooleanLineno.chpl 
+	                                        configVarInvalidBooleanLineno.compopts 
+	                                        configVarInvalidBooleanLineno.execopts 
+	                                        configVarInvalidBooleanLineno.good 
+	                                        configVarInvalidComplexLineno.chpl 
+	                                        configVarInvalidComplexLineno.compopts 
+	                                        configVarInvalidComplexLineno.execopts 
+	                                        configVarInvalidComplexLineno.good 
+	                                        configVarInvalidFloatLineno.chpl 
+	                                        configVarInvalidFloatLineno.compopts 
+	                                        configVarInvalidFloatLineno.execopts 
+	                                        configVarInvalidFloatLineno.good 
+	                                        configVarInvalidIntegerLineno.chpl 
+	                                        configVarInvalidIntegerLineno.compopts 
+	                                        configVarInvalidIntegerLineno.execopts 
+	                                        configVarInvalidIntegerLineno.good 
+	chapel/test/memory/shannon/: freedWithoutMallocLineno.chpl 
+	                             freedWithoutMallocLineno.compopts 
+	                             freedWithoutMallocLineno.execopts 
+	                             freedWithoutMallocLineno.good 
+	                             memmaxExceedsLineno.chpl 
+	                             memmaxExceedsLineno.compopts 
+	                             memmaxExceedsLineno.execopts 
+	                             memmaxExceedsLineno.good 
+	                             memstatFlagLineno.chpl 
+	                             memstatFlagLineno.compopts 
+	                             memstatFlagLineno.good 
+	                             memtrackFlagLineno.chpl 
+	                             memtrackFlagLineno.compopts 
+	                             memtrackFlagLineno.good 
+	                             reallocWithoutMallocLineno.chpl 
+	                             reallocWithoutMallocLineno.compopts 
+	                             reallocWithoutMallocLineno.execopts 
+	                             reallocWithoutMallocLineno.good 
+	chapel/test/memory/shannon/outofmemory/: 
+	                                         mallocOutOfMemoryLineno.chpl 
+	                                         mallocOutOfMemoryLineno.compopts 
+	                                         mallocOutOfMemoryLineno.good 
+	chapel/test/trivial/shannon/: readStringOverflowLineno.chpl 
+	                              readStringOverflowLineno.compopts 
+	                              readStringOverflowLineno.good 
+	                              readStringOverflowLineno.stdin 
+	                              readWriteBoolLineno.chpl 
+	                              readWriteBoolLineno.compopts 
+	                              readWriteBoolLineno.good 
+	                              readWriteBoolLineno.stdin 
+	                              readWriteComplexLineno.chpl 
+	                              readWriteComplexLineno.compopts 
+	                              readWriteComplexLineno.good 
+	                              readWriteComplexLineno.stdin 
+
