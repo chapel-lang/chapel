@@ -38428,3 +38428,13 @@ Added files:
 	                                        configVarFileStringOverflow.good 
 	                                        configVarFileStringOverflow.input 
 
+---------------------------------------------------------------------------
+
+07/06/05 08:07:28 -- shannon
+
+Log message:
+	Forgot to include this when I added this directory.
+
+Added files:
+	chapel/test/compflags/shannon/: .cvsignore 
+
