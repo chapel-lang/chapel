@@ -71,7 +71,6 @@ void HtmlView::run(ModuleList* moduleList) {
     mod = moduleList->next();
   }
   uid++;
-  fprintf(html_index_file, "<BR>\n");
 }
 
 void HtmlView::preProcessStmt(Stmt* stmt) {

@@ -67,7 +67,13 @@ static void runPass(char* passName, Pass* pass, char* args) {
     gettimeofday(&stopTime, &timezone);
     if (strcmp(passName, "Verify")) {
       fprintf(html_index_file, "<TR><TD>", passName);
+      if (!strcmp(passName, "RunAnalysis")) {
+        fprintf(html_index_file, "<A HREF=\"dump.html\">");
+      }
       fprintf(html_index_file, "%s", passName);
+      if (!strcmp(passName, "RunAnalysis")) {
+        fprintf(html_index_file, "</A>");
+      }
       fprintf(html_index_file, "</TD><TD>", passName);
       HtmlView* htmlview = new HtmlView();
       htmlview->setArgs(glomstrings(2, "html ", passName));
