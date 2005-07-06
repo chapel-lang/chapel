@@ -38575,3 +38575,24 @@ Modified files:
 Added files:
 	chapel/test/trivial/shannon/: readWriteComplexLineno.future 
 
+---------------------------------------------------------------------------
+
+07/06/05 13:58:47 -- shannon
+
+Log message:
+	Fixed an error in the getStringArg function where I
+	checked for only a NULL string and not the empty
+	string.
+	
+	Removed a future test which now prints the message
+	I expected thanks to the above correction.
+	
+	Made a few error messages in arg.c  more descriptive.
+
+Modified files:
+	chapel/runtime/src/: arg.c 
+	chapel/test/memory/shannon/: memmaxBytes.good memmaxInput.good 
+	                             memtraceNoFilename.good 
+Removed files:
+	chapel/test/memory/shannon/: memtraceNoFilename.future 
+
