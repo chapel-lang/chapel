@@ -38453,3 +38453,23 @@ Added files:
 	                                        configVarNotInModule.execopts 
 	                                        configVarNotInModule.good 
 
+---------------------------------------------------------------------------
+
+07/06/05 11:02:27 -- deitz
+
+Log message:
+	WhileLoopStmt and ForLoopStmt are no longer subclasses of BlockStmt
+	but contain a BlockStmt.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp stmt.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: stmt.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: insertElidedLoops.cpp 
+	                             insertVariableInitializations.cpp 
+	                             scopeResolveGotos.cpp 
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.good 
+	                                     mg-seq.good 
+
