@@ -699,43 +699,6 @@ void ArrayType::codegenDef(FILE* outfile) {
   fprintf(outfile, "* domain;\n");
   fprintf(outfile, "  _arr_perdim dim_info[%d];\n", domainType->numdims);
   fprintf(outfile, "};\n");
-
-  fprintf(outfile, "void _write");
-  symbol->codegen(outfile);
-  fprintf(outfile, "(FILE* F, char* format, ");
-  symbol->codegen(outfile);
-  fprintf(outfile, " arr);\n\n");
-
-  fprintf(codefile, "void _write");
-  symbol->codegen(codefile);
-  fprintf(codefile, "(FILE* F, char* format, ");
-  symbol->codegen(codefile);
-  fprintf(codefile, " arr) {\n");
-  for (int dim = 0; dim < domainType->numdims; dim++) {
-    fprintf(codefile, "  int i%d;\n", dim);
-  }
-  domainType->codegen(codefile);
-  fprintf(codefile, "* const dom = arr.domain;\n\n");
-  for (int dim = 0; dim < domainType->numdims; dim++) {
-    fprintf(codefile, "for (i%d=dom->dim_info[%d].lo; i%d<=dom"
-            "->dim_info[%d].hi; i%d+=dom->dim_info[%d].str) {\n",
-            dim, dim, dim, dim, dim, dim);
-  }
-  fprintf(codefile, "fprintf(F, format, _ACC%d(arr, i0", domainType->numdims);
-  for (int dim = 1; dim < domainType->numdims; dim++) {
-    fprintf(codefile, ", i%d", dim);
-  }
-  fprintf(codefile, "));\n");
-  fprintf(codefile, "if (i%d<dom->dim_info[%d].hi) {\n",
-          domainType->numdims-1, domainType->numdims-1);
-  fprintf(codefile, "fprintf(F, \" \");\n");
-  fprintf(codefile, "}\n");
-  fprintf(codefile, "}\n");
-  for (int dim = 1; dim < domainType->numdims; dim++) {
-    fprintf(codefile, "fprintf(F, \"\\n\");\n");
-    fprintf(codefile, "}\n");
-  }
-  fprintf(codefile, "}\n");
 }
 
 
@@ -1033,12 +996,6 @@ void StructuralType::codegenStopDefFields(FILE* outfile) {}
 
 
 void StructuralType::codegenDef(FILE* outfile) {
-  forv_Vec(TypeSymbol, type, types) {
-    if (type) {
-      type->codegenDef(outfile);
-      fprintf(outfile, "\n");
-    }
-  }
   fprintf(outfile, "struct __");
   symbol->codegen(outfile);
   fprintf(outfile, " {\n");
@@ -1070,12 +1027,6 @@ void StructuralType::codegenStructName(FILE* outfile) {
 
 
 void StructuralType::codegenPrototype(FILE* outfile) {
-  forv_Vec(TypeSymbol, type, types) {
-    if (type) {
-      type->codegenPrototype(outfile);
-      fprintf(outfile, "\n");
-    }
-  }
   fprintf(outfile, "typedef struct __");
   symbol->codegen(outfile);
   fprintf(outfile, " ");

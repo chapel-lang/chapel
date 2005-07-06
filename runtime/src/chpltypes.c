@@ -95,3 +95,21 @@ char* _chpl_tostring_complex(_complex128 x, char* format) {
 _string _chpl_string_concat(_string x, _string y) {
   return _glom_strings(2, x, y);
 }
+
+
+_boolean _chpl_string_equal(_string x, _string y) {
+  if (!strcmp(x, y)) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+
+_boolean _chpl_string_notequal(_string x, _string y) {
+  if (strcmp(x, y)) {
+    return true;
+  } else {
+    return false;
+  }
+}

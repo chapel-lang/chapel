@@ -6,6 +6,7 @@
 #include "symtabTraversal.h"
 #include "if1.h"
 #include "../passes/filesToAST.h"
+#include "files.h"
 
 #define OPERATOR_CHAR(_c) \
 (((_c > ' ' && _c < '0') || (_c > '9' && _c < 'A') || \
@@ -269,49 +270,28 @@ void SymScope::print(FILE* outfile, bool tableOrder) {
 }
 
 void SymScope::codegen(FILE* outfile, char* separator) {
-  // codegen enums
   forv_Vec(Symbol, sym, symbols) {
     for (Symbol* tmp = sym; tmp; tmp = tmp->overload) {
-      if (dynamic_cast<TypeSymbol*>(tmp) && 
-          dynamic_cast<EnumType*>(tmp->type)) {
+      if (!dynamic_cast<TypeSymbol*>(tmp)) {
         tmp->codegenDef(outfile);
       }
     }
   }
+}
 
-  // codegen type prototypes
+
+void SymScope::codegenFunctions(FILE* outfile) {
   forv_Vec(Symbol, sym, symbols) {
     for (Symbol* tmp = sym; tmp; tmp = tmp->overload) {
-      if (dynamic_cast<TypeSymbol*>(tmp) &&
-          !dynamic_cast<EnumType*>(tmp->type)) {
-        tmp->codegenPrototype(outfile);
+      if (dynamic_cast<TypeSymbol*>(tmp)) {
+        tmp->type->codegenStringToType(codefile);
+        tmp->type->codegenConfigVarRoutines(codefile);
       }
     }
   }
-
-  // codegen types less enums
   forv_Vec(Symbol, sym, symbols) {
     for (Symbol* tmp = sym; tmp; tmp = tmp->overload) {
-      if (dynamic_cast<TypeSymbol*>(tmp) &&
-          !dynamic_cast<EnumType*>(tmp->type)) {
-        tmp->codegenDef(outfile);
-      }
-    }
-  }
-
-  // codegen other prototypes
-  forv_Vec(Symbol, sym, symbols) {
-    for (Symbol* tmp = sym; tmp; tmp = tmp->overload) {
-      if (!dynamic_cast<TypeSymbol*>(tmp)) {
-        tmp->codegenPrototype(outfile);
-      }
-    }
-  }
-
-  // codegen definitions less types and enums
-  forv_Vec(Symbol, sym, symbols) {
-    for (Symbol* tmp = sym; tmp; tmp = tmp->overload) {
-      if (!dynamic_cast<TypeSymbol*>(tmp)) {
+      if (dynamic_cast<FnSymbol*>(tmp)) {
         tmp->codegenDef(outfile);
       }
     }

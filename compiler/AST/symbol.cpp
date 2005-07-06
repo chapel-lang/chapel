@@ -314,13 +314,6 @@ bool Symbol::isThis(void) {
 }
 
 void VarSymbol::codegenDef(FILE* outfile) {
-  if (parentScope->type == SCOPE_MODULE) {
-    outfile = exportMe ? extheadfile : intheadfile;
-    if (!exportMe && !parentScope->commonModuleIsFirst()) {
-      fprintf(outfile, "static ");
-    }
-  }
-
   // need to ensure that this can be realized in C as a const, and
   // move its initializer here if it can be
   if (0 && (consClass == VAR_CONST)) {
@@ -499,14 +492,7 @@ void TypeSymbol::codegenPrototype(FILE* outfile) {
   if (isDead) {
     return;
   }
-
-  FILE* deffile = outfile;
-  /* if in file scope, hoist to internal header so that it will be
-     defined before global variables at file scope. */  
-  if (type->symbol->parentScope->type == SCOPE_MODULE) { 
-    deffile = exportMe ? extheadfile : intheadfile;
-  }
-  type->codegenPrototype(deffile);
+  type->codegenPrototype(outfile);
 }
 
 
@@ -515,16 +501,7 @@ void TypeSymbol::codegenDef(FILE* outfile) {
     return;
   }
 
-  FILE* deffile = outfile;
-  /* if in file scope, hoist to internal header so that it will be
-     defined before global variables at file scope. */  
-  if (type->symbol->parentScope->type == SCOPE_MODULE) { 
-    deffile = exportMe ? extheadfile : intheadfile;
-  }
-  type->codegenDef(deffile);
-
-  type->codegenStringToType(outfile);
-  type->codegenConfigVarRoutines(outfile);
+  type->codegenDef(outfile);
 }
 
 
@@ -1048,9 +1025,19 @@ void FnSymbol::codegenHeader(FILE* outfile) {
 }
 
 
-void FnSymbol::codegenDef(FILE* outfile) {
-  FILE* headfile;
+void FnSymbol::codegenPrototype(FILE* outfile) {
+  if (defPoint && defPoint->parentStmt) {
+    if (defPoint->parentStmt->hasPragma("no codegen")) {
+      return;
+    }
+  }
 
+  codegenHeader(outfile);
+  fprintf(outfile, ";\n");
+}
+
+
+void FnSymbol::codegenDef(FILE* outfile) {
   if (defPoint && defPoint->parentStmt) {
     if (defPoint->parentStmt->hasPragma("no codegen")) {
       return;
@@ -1058,14 +1045,6 @@ void FnSymbol::codegenDef(FILE* outfile) {
   }
 
   if (!isDead) {
-    if (exportMe) {
-      headfile = extheadfile;
-    } else {
-      headfile = intheadfile;
-    }
-    codegenHeader(headfile);
-    fprintf(headfile, ";\n");
-
     if (fnClass == FN_CONSTRUCTOR) {
       fprintf(outfile, "/* constructor */\n");
     }
@@ -1179,7 +1158,7 @@ void ModuleSymbol::codegenDef(void) {
   openCFiles(name, &outfileinfo, &extheadfileinfo, &intheadfileinfo);
 
   fprintf(codefile, "#include \"stdchpl.h\"\n");
-
+  fprintf(codefile, "#include \"_chpl_header.h\"\n");
   fprintf(codefile, "#include \"_CommonModule.h\"\n");
   fprintf(codefile, "#include \"_CommonModule-internal.h\"\n");
 
@@ -1192,8 +1171,8 @@ void ModuleSymbol::codegenDef(void) {
 
   fprintf(codefile, "\n");
 
-  modScope->codegen(codefile, "\n");
-  stmts->codegen(codefile, "\n");
+  modScope->codegenFunctions(codefile);
+  //  stmts->codegen(codefile, "\n");
 
   closeCFiles(&outfileinfo, &extheadfileinfo, &intheadfileinfo);
 }

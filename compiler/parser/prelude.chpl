@@ -264,7 +264,7 @@ pragma "builtin" function Index.=(b : integer) { return __primitive("indextype_s
 pragma "builtin" function integer.=(b : Index) { return __primitive("indextype_get", b); }
 pragma "builtin" function any.=(b : any) { return b; }
 
-pragma "builtin" function =(a : Index, b : integer) { return __primitive("indextype_set", this, b); }
+pragma "builtin" function =(a : Index, b : integer) { return __primitive("indextype_set", a, b); }
 pragma "builtin" function =(a : integer, b : Index) { return __primitive("indextype_get", b); }
 pragma "builtin" function =(a : any, b : any) { return b; }
 
@@ -272,6 +272,12 @@ pragma "rename _chpl_string_concat"
 function +(a : string, b : string) : string {
   return __primitive("string_op", a, b);
 }
+
+pragma "rename _chpl_string_equal"
+function ==(a : string, b : string) : boolean { }
+
+pragma "rename _chpl_string_notequal"
+function !=(a : string, b : string) : boolean { }
 
 function _chpl_malloc(number, size, description: string);
 function _chpl_calloc(number, size, description: string);

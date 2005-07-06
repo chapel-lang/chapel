@@ -33,6 +33,8 @@ PassInfo passlist[] = {
   RUN(Verify, ""), // this is a sanity check
   RUN(InsertThisParameters, ""),
   RUN(Verify, ""), // this is a sanity check
+  RUN(Flatten, ""),
+  RUN(Verify, ""), // this is a sanity check
   RUN(ResolveModuleUses, ""),
   RUN(Verify, ""), // this is a sanity check
   RUN(ScopeResolveSymbols, ""),
@@ -117,6 +119,7 @@ PassInfo passlist[] = {
 
   // passes to generate code and compile
   RUN(Verify, ""), // this is a sanity check
+  RUN(CodegenOne, ""), // types and function prototypes
   RUN(Codegen, ""),
   RUN(BuildBinary, ""),
 

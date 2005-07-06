@@ -229,10 +229,14 @@ static void genEndif(FILE* outfile) {
 }
 
 
-void open_common(fileinfo* common_file) {
-  codefile = common_file->fptr;
-  extheadfile = common_file->fptr;
-  intheadfile = common_file->fptr;
+FILE* openCFile(char* name) {
+  name = genIntFilename(name);
+  return fopen(name, "w");
+}
+
+
+void closeCFile(FILE* f) {
+  fclose(f);
 }
 
 

@@ -31,5 +31,7 @@ char* _chpl_tostring_float(_float64 x, char* format);
 char* _chpl_tostring_complex(_complex128 x, char* format);
 
 _string _chpl_string_concat(_string x, _string y);
+_boolean _chpl_string_equal(_string x, _string y);
+_boolean _chpl_string_notequal(_string x, _string y);
 
 #endif

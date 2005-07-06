@@ -6,7 +6,9 @@
 #include "../passes/renameCSymbols.h"
 #include "../passes/runAnalysis.h"
 
+#include "../symtab/codegenOne.h"
 #include "../symtab/computeVisibleFunctions.h"
+#include "../symtab/flatten.h"
 #include "../symtab/insertDefaultInitVariables.h"
 #include "../symtab/insertOutParameterInitializations.h"
 #include "../symtab/legalizeCNames.h"
@@ -71,6 +73,7 @@ REGISTER(CheckIDs);
 REGISTER(CheckSemantics);
 REGISTER(CheckTypeInfo);
 REGISTER(Codegen);
+REGISTER(CodegenOne);
 REGISTER(ComputeVisibleFunctions);
 REGISTER(CreateConfigVarTable);
 REGISTER(CreateEntryPoint);
@@ -81,6 +84,7 @@ REGISTER(ExpandClassWiths);
 REGISTER(FindUnresolvedSymbols);
 REGISTER(FilesToAST);
 REGISTER(Fixup);
+REGISTER(Flatten);
 REGISTER(GetStuff);
 REGISTER(HtmlView);
 REGISTER(InsertIndexType);

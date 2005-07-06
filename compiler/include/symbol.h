@@ -188,6 +188,7 @@ class FnSymbol : public Symbol {
                                 Map<BaseAST*,BaseAST*>* substitutions);
 
   void codegenHeader(FILE* outfile);
+  void codegenPrototype(FILE* outfile);
   void codegenDef(FILE* outfile);
 
   void printDef(FILE* outfile);
