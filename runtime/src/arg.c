@@ -84,14 +84,14 @@ static _integer64 getIntArg(char* valueString, char* memFlag) {
 
   if (!valueString) {
     char* message = _glom_strings(3, "The \"", memFlag, "\" flag is missing "
-                                  "its input");
+                                  "its integer input");
     printError(message);
   }
   int numScans = sscanf(valueString, _default_format_read_integer64"%c", 
                         &value, &extraChars);
   if (numScans != 1) {
     char* message = _glom_strings(3, "The \"", memFlag, "\" flag is missing "
-                                  "its byte value");
+                                  "its integer byte value");
     printError(message);
   }
   return value; 
@@ -99,9 +99,9 @@ static _integer64 getIntArg(char* valueString, char* memFlag) {
 
 
 static char* getStringArg(char* valueString, char* memFlag) {
-  if (!valueString) {
+  if (!valueString || strcmp(valueString, "") == 0) {
     char* message = _glom_strings(3, "The \"", memFlag, "\" flag is missing "
-                                  "its input");
+                                  "its string input");
     printError(message);
   }
   return valueString;

@@ -1,7 +1,0 @@
-shannon
-
-shannon@delta> a.out --memtrace=
-***Error: Unable to open ""***
-
-Make this error message more informative. 
-It should note that no filename was given.
