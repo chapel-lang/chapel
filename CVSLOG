@@ -38400,3 +38400,16 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+07/06/05 06:55:54 -- shannon
+
+Log message:
+	Added another test for an invalid execution option
+	for coverage of the error messages.
+
+Added files:
+	chapel/test/execflags/shannon/: unexpectedFlag.chpl 
+	                                unexpectedFlag.execopts 
+	                                unexpectedFlag.good 
+
