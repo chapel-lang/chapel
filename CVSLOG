@@ -38413,3 +38413,18 @@ Added files:
 	                                unexpectedFlag.execopts 
 	                                unexpectedFlag.good 
 
+---------------------------------------------------------------------------
+
+07/06/05 07:56:54 -- shannon
+
+Log message:
+	Added a test for string overflow of a config
+	var passed as a file argument.
+
+Added files:
+	chapel/test/execflags/shannon/configs/: 
+	                                        configVarFileStringOverflow.chpl 
+	                                        configVarFileStringOverflow.execopts 
+	                                        configVarFileStringOverflow.good 
+	                                        configVarFileStringOverflow.input 
+
