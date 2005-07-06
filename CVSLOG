@@ -38561,3 +38561,17 @@ Modified files:
 	chapel/compiler/main/: driver.cpp 
 	chapel/compiler/parser/: chapel.y 
 
+---------------------------------------------------------------------------
+
+07/06/05 13:01:51 -- shannon
+
+Log message:
+	Backed out a failing test.  Don't generate assignments
+	to the global line number variables for code generated
+	from built-in modules.
+
+Modified files:
+	chapel/test/trivial/shannon/: readWriteComplexLineno.good 
+Added files:
+	chapel/test/trivial/shannon/: readWriteComplexLineno.future 
+
