@@ -565,9 +565,17 @@ DefExpr::DefExpr(Symbol* initSym, UserInitExpr* initInit, Expr* initExprType) :
     }
   }
   if (!exprType && sym) {
-    if (ExprType* symExprType = dynamic_cast<ExprType*>(sym->type)) {
-      if (symExprType->expr) {
-        exprType = symExprType->expr->copy();
+    if (sym->type->symbol) {
+      if (useExprType) {
+        exprType = new Variable(sym->type->symbol);
+      }
+    } else if (ExprType* type = dynamic_cast<ExprType*>(sym->type)) {
+      if (type->expr) {
+        exprType = type->expr->copy();
+      }
+    } else if (UnresolvedType* type = dynamic_cast<UnresolvedType*>(sym->type)) {
+      if (useExprType) {
+        exprType = new Variable(new UnresolvedSymbol(type->names->v[0]));
       }
     }
   }

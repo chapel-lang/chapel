@@ -367,7 +367,7 @@ struct_decl:
     {
       Symboltable::pushScope(SCOPE_CLASS);
     }
-                                              decl_ls TRCBR
+                                                decl_ls TRCBR
     {
       SymScope *scope = Symboltable::popScope();
       Type* type = Symboltable::defineStructType($3, $1, scope, $6);
@@ -690,7 +690,7 @@ fn_decl:
       $<pfnsym>$ = Symboltable::startFnDef($2);
       $<pfnsym>$->fnClass = $1;
     }
-                       opt_formal_ls fnretref fnrettype where
+                  opt_formal_ls fnretref fnrettype where
     {
       if (!$4) {
         $4 = new AList<DefExpr>();
@@ -698,7 +698,7 @@ fn_decl:
       }
       Symboltable::continueFnDef($<pfnsym>3, $4, $6, $5, $7);
     }
-                                                 function_body_stmt
+                                                         function_body_stmt
     {
       $$ = new DefStmt(new DefExpr(Symboltable::finishFnDef($<pfnsym>3, $9)));
     }

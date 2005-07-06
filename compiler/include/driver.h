@@ -12,6 +12,7 @@ extern FILE* html_index_file;
 // Begin temporary development flags
 extern bool checkAnalysisTypeinfo;
 extern bool applyGettersSetters;
+extern bool useExprType;
 // End temporary development flags
 
 extern int fdump_html;
