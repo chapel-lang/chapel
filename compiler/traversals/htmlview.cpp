@@ -81,12 +81,13 @@ void HtmlView::preProcessStmt(Stmt* stmt) {
   }
   write("<DL>\n");
   if (dynamic_cast<BlockStmt*>(stmt)) {
-    if (dynamic_cast<WhileLoopStmt*>(stmt)) {
-      write("while ");
-    } else if (ForLoopStmt* s = dynamic_cast<ForLoopStmt*>(stmt)) {
-      write("%s", s->forall ? "forall " : "for ");
-    }
     write("{");
+  } else if (dynamic_cast<WhileLoopStmt*>(stmt)) {
+    write("<B>while</B> ");
+  } else if (ForLoopStmt* s = dynamic_cast<ForLoopStmt*>(stmt)) {
+    write("<B>%s</B> ", s->forall ? "forall" : "for");
+  } else if (dynamic_cast<ReturnStmt*>(stmt)) {
+    write("<B>return</B> ");
   } else {
     write("%s", astTypeName[stmt->astType]);
   }
@@ -99,10 +100,7 @@ void HtmlView::postProcessStmt(Stmt* stmt) {
     return;
   }
   if (dynamic_cast<BlockStmt*>(stmt)) {
-    write("</DL>\n");
     write("}");
-    output();
-    return;
   }
   write("</DL>\n");
   output();
@@ -130,15 +128,16 @@ void HtmlView::preProcessExpr(Expr* expr) {
       html_print_symbol(e->sym, true);
       write("</B><UL>\n");
     } else if (dynamic_cast<TypeSymbol*>(e->sym)) {
-      write("<B>type ");
+      write("<B>type</B> ");
       html_print_symbol(e->sym, true);
-      write("</B>");
     } else if (dynamic_cast<VarSymbol*>(e->sym)) {
-      write("<B>var ");
+      write("<B>var</B> ");
       html_print_symbol(e->sym, true);
-      write("</B>");
+    } else if (dynamic_cast<ParamSymbol*>(e->sym)) {
+      write("<B>arg</B> ");
+      html_print_symbol(e->sym, true);
     } else {
-      write("(%s ", astTypeName[expr->astType]);
+      write("<B>def</B> ");
       html_print_symbol(e->sym, true);
     }
   } else if (Literal* e = dynamic_cast<Literal*>(expr)) {
@@ -173,8 +172,6 @@ void HtmlView::postProcessExpr(Expr* expr) {
         write("<CHPLTAG=\"FN%d\">\n", fn->id);
       }
       write("</UL>\n");
-    } else {
-      write(")");
     }
   } else if (dynamic_cast<Literal*>(expr)) {
   } else if (dynamic_cast<Variable*>(expr)) {
