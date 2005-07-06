@@ -38596,3 +38596,70 @@ Modified files:
 Removed files:
 	chapel/test/memory/shannon/: memtraceNoFilename.future 
 
+---------------------------------------------------------------------------
+
+07/06/05 14:06:34 -- deitz
+
+Log message:
+	Due to conflicts in ordering of codegen, changed the general structure
+	of codegen so that all types are codegened and all functions are
+	prototyped and all global variables are declared in a file called
+	_chpl_header.h.  Perhaps this should be changed to a header file whose
+	name is based on the user module containing main.
+	
+	Added the function codegenFunctions to SymScopes because this is what
+	needs to be done for each module (given that the types, global
+	variables, and function prototypes have already been handled).
+	
+	Added functions openCFile and closeCFile to files.h to open a single
+	file for codegen purposes (rather than a module's three files).
+	
+	Note that the header files for modules, both internal and not, are no
+	longer used but are empty.
+	
+	Added a new traversal called Flatten in which the methods are removed
+	from classes and made into functions.  This used to be done in
+	InsertThisParameters.  It is my hope that I can eventually move it
+	after ScopeResolveSymbols and also flatten types.  It may also be the
+	place to flatten nested functions.
+	
+	Removed unused (duplicated) special-cased write function for arrays.
+	We had two but only need one.
+	
+	Added != and == over strings along with three test cases that test
+	these operators over strings.
+	
+	Updated .good for test/memory/shannon/jacobi.good and
+	test/memory/shannon/printMemTable.good.  With the cname change to
+	global variables in a module, the array name that is printed to the
+	mem log has changed.  This should ideally be the name not modified by
+	the module.  When arrays are classes, this will again be the case so
+	there is no pointing in spending effort here.
+	
+	Added tests for a sequence of integer variables and a sequence of
+	classes.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/include/: files.h symbol.h symscope.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/parser/: prelude.chpl 
+	chapel/compiler/symtab/: Makefile.share symscope.cpp 
+	chapel/compiler/traversals/: insertThisParameters.cpp 
+	chapel/compiler/util/: files.cpp 
+	chapel/runtime/include/: chpltypes.h 
+	chapel/runtime/src/: chpltypes.c 
+	chapel/test/memory/shannon/: jacobi.good printMemTable.good 
+Added files:
+	chapel/compiler/symtab/: codegenOne.cpp codegenOne.h flatten.cpp 
+	                         flatten.h 
+	chapel/test/types/seq/deitz/: test_seq1d.chpl test_seq1d.good 
+	                              test_seq_class1.chpl 
+	                              test_seq_class1.good 
+	chapel/test/types/string/deitz/: test_string_equal1.chpl 
+	                                 test_string_equal1.good 
+	                                 test_string_equal2.chpl 
+	                                 test_string_equal2.good 
+	                                 test_string_equal3.chpl 
+	                                 test_string_equal3.good 
+
