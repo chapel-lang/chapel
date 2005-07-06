@@ -38674,3 +38674,20 @@ Modified files:
 	chapel/compiler/traversals/: inlineFunctions.cpp 
 	                             inlineFunctions.h 
 
+---------------------------------------------------------------------------
+
+07/06/05 14:35:39 -- deitz
+
+Log message:
+	Fixed up the htmlview traversal to look better and deal with some of
+	my recent changes.
+	
+	While I remember, in my last checkin, I mangled all global variable
+	cnames to start with the module's cname followed by an underscore.
+	This lets us deal with different modules that have the same variable
+	names.  This should be eventually subsumed in a general name mangling
+	strategy.
+
+Modified files:
+	chapel/compiler/traversals/: htmlview.cpp 
+
