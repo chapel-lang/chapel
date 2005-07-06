@@ -38542,3 +38542,22 @@ Added files:
 	                              readWriteComplexLineno.good 
 	                              readWriteComplexLineno.stdin 
 
+---------------------------------------------------------------------------
+
+07/06/05 11:40:17 -- deitz
+
+Log message:
+	Added new temp flag --use-expr-type for bool useExprType.
+	
+	If this flag is used, I try to set the exprType field of the DefExpr
+	for everything.
+	
+	I didn't run any tests to make sure this is done for everything, but
+	it does get the common cases.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/parser/: chapel.y 
+
