@@ -1,0 +1,4 @@
+shannon
+
+Brad says:  Generate assignments to the global line number variables only
+for user code, and not for code generated from built-in modules.
