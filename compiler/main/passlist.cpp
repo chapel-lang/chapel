@@ -35,6 +35,7 @@
 #include "../traversals/fixup.h"
 #include "../traversals/getstuff.h"
 #include "../traversals/htmlview.h"
+#include "../traversals/inlineFunctions.h"
 #include "../traversals/insertIndexType.h"
 #include "../traversals/insertAnonymousDomains.h"
 #include "../traversals/insertAnonymousTypes.h"
@@ -80,12 +81,14 @@ REGISTER(DummyPass);
 REGISTER(BuildLValueFunctions);
 REGISTER(EliminateReturns);
 REGISTER(ExpandClassWiths);
+//REGISTER(FindUnknownTypes);
 REGISTER(FindUnresolvedSymbols);
 REGISTER(FilesToAST);
 REGISTER(Fixup);
 REGISTER(Flatten);
 REGISTER(GetStuff);
 REGISTER(HtmlView);
+REGISTER(InlineFunctions);
 REGISTER(InsertIndexType);
 REGISTER(InsertAnonymousDomains);
 REGISTER(InsertAnonymousTypes);

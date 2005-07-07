@@ -11,12 +11,14 @@ TRAVERSALS_SRCS = \
         buildLValueFunctions.cpp \
         eliminateReturns.cpp \
 	expandClassWiths.cpp \
+        findLeafFunctions.cpp \
         findTypeVariables.cpp \
 	findUnknownTypes.cpp \
 	findUnresolvedSymbols.cpp \
 	fixup.cpp \
 	getstuff.cpp \
         htmlview.cpp \
+        inlineFunctions.cpp \
 	insertIndexType.cpp \
 	insertAnonymousDomains.cpp \
 	insertAnonymousTypes.cpp \
@@ -29,6 +31,7 @@ TRAVERSALS_SRCS = \
 	printAST.cpp \
 	processParameters.cpp \
 	removeNamedParameters.cpp \
+        replaceReturns.cpp \
         resolveModuleUses.cpp \
 	resolveSymbols.cpp \
         scopeResolveGotos.cpp \

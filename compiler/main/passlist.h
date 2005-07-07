@@ -107,6 +107,8 @@ PassInfo passlist[] = {
   RUN(Verify, ""), // this is a sanity check
   RUN(ProcessParameters, ""),
   RUN(Verify, ""), // this is a sanity check
+  RUN(InlineFunctions, ""),
+  RUN(Verify, ""), // this is a sanity check
   RUN(InsertVariableInitializations, ""),
   RUN(Verify, ""), // this is a sanity check
   RUN(InsertUnionChecks, ""),
