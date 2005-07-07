@@ -52,7 +52,7 @@ static Sym *setter_token = 0;
 static Sym *set_symbol = 0;
 static Sym *make_seq_symbol = 0;
 static Sym *make_chapel_tuple_symbol = 0;
-static Sym *chapel_vardef_symbol = 0;
+static Sym *chapel_defexpr_symbol = 0;
 
 static Sym *sym_index = 0;
 static Sym *sym_domain = 0;
@@ -1331,7 +1331,7 @@ gen_coerce(Sym *s, Sym *type, Code **c, AST *ast) {
 }
 
 static int
-gen_one_vardef(VarSymbol *var, DefExpr *def) {
+gen_one_defexpr(VarSymbol *var, DefExpr *def) {
   Type *type = var->type;
 #ifdef MAKE_USER_TYPE_BE_DEFINITION
   if (type->astType == TYPE_USER)
@@ -1392,6 +1392,7 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
         Sym *tmp = new_sym();
         Code *send = if1_send(if1, &ast->code, 2, 1, sym_new, type->asymbol->sym, tmp);
         if1_move(if1, &ast->code, tmp, s, ast);
+        tmp->ast = ast;
         send->ast = ast;
         break;
       }
@@ -1417,10 +1418,11 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
   Lstandard:
     if (!var->noDefaultInit) {
       Sym *tmp = new_sym();
+      tmp->ast = ast;
       if (def->exprType)
         if1_gen(if1, &ast->code, def->exprType->ainfo->code);
       Code *c = if1_send(if1, &ast->code, 3, 1, sym_primitive,
-                         chapel_vardef_symbol, type->asymbol->sym, tmp);
+                         chapel_defexpr_symbol, type->asymbol->sym, tmp);
       if (def->exprType)
         if1_add_send_arg(if1, c, def->exprType->ainfo->rval);
       if1_move(if1, &ast->code, tmp, s, ast);
@@ -1444,6 +1446,7 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
       } else if (!var->noDefaultInit && !is_reference_type(type) && type != dtUnknown) {
         Sym *old_val = val;
         val = new_sym();
+        val->ast = init->ainfo;
         if (f_equal_method) {
           Code *c = if1_send(if1, &init->ainfo->code, 4, 1, make_symbol("="), method_token, ast->sym, old_val, val);
           c->ast = init->ainfo;
@@ -1462,10 +1465,10 @@ gen_one_vardef(VarSymbol *var, DefExpr *def) {
 }
 
 static int
-gen_vardef(BaseAST *a) {
+gen_defexpr(BaseAST *a) {
   DefStmt *def = dynamic_cast<DefStmt*>(a);
   if (VarSymbol* var = dynamic_cast<VarSymbol*>(def->defExpr->sym)) {
-    if (gen_one_vardef(var, def->defExpr)) {
+    if (gen_one_defexpr(var, def->defExpr)) {
       return -1;
     }
   }
@@ -1857,7 +1860,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
     case STMT_NOOP: break;
     case STMT_DEF:
       if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(ast)) {
-        if (def_stmt->varDef() && gen_vardef(def_stmt) < 0) return -1;
+        if (def_stmt->varDef() && gen_defexpr(def_stmt) < 0) return -1;
       }
       break;
     case STMT_EXPR: if (gen_expr_stmt(ast) < 0) return -1; break;
@@ -2612,7 +2615,7 @@ init_symbols() {
   set_symbol = make_symbol("=this");
   make_seq_symbol = make_symbol("make_seq");
   make_chapel_tuple_symbol = make_symbol("make_chapel_tuple");
-  chapel_vardef_symbol = make_symbol("chapel_vardef");
+  chapel_defexpr_symbol = make_symbol("chapel_defexpr");
   write_symbol = make_symbol("write");
   writeln_symbol = make_symbol("writeln");
   read_symbol = make_symbol("read");
@@ -2911,7 +2914,7 @@ indextype_set(PNode *pn, EntrySet *es) {
 }
 
 static void
-chapel_vardef(PNode *pn, EntrySet *es) {
+chapel_defexpr(PNode *pn, EntrySet *es) {
   AVar *tav = make_AVar(pn->rvals.v[2], es);
   AVar *result = make_AVar(pn->lvals.v[0], es);
   int type_expr = pn->rvals.n > 3;
@@ -2992,7 +2995,7 @@ ast_to_if1(Vec<AList<Stmt> *> &stmts) {
   REG(array_set_symbol->name, array_set);
   REG(make_seq_symbol->name, make_seq);
   REG(make_chapel_tuple_symbol->name, make_chapel_tuple);
-  REG(chapel_vardef_symbol->name, chapel_vardef);
+  REG(chapel_defexpr_symbol->name, chapel_defexpr);
   REG(if1_cannonicalize_string(if1, "ptr_eq"), ptr_eq);
   REG(if1_cannonicalize_string(if1, "ptr_neq"), ptr_neq);
   REG(if1_cannonicalize_string(if1, "array_pointwise_op"), array_pointwise_op);
