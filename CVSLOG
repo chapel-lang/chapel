@@ -38722,3 +38722,15 @@ Removed files:
 	chapel/compiler/traversals/: omitForNoAnalysis.cpp 
 	                             omitForNoAnalysis.h 
 
+---------------------------------------------------------------------------
+
+07/07/05 11:20:52 -- deitz
+
+Log message:
+	Added sequence of tuple test case future.
+
+Added files:
+	chapel/test/types/seq/deitz/: test_seq_tuple2.chpl 
+	                              test_seq_tuple2.future 
+	                              test_seq_tuple2.good 
+
