@@ -38815,3 +38815,13 @@ Log message:
 Modified files:
 	chapel/compiler/etc/: c_runtime.h 
 
+---------------------------------------------------------------------------
+
+07/07/05 16:54:12 -- jplevyak
+
+Log message:
+	remove special case for Records/Unions/Tuples from handling of DefExpr
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
