@@ -1403,10 +1403,6 @@ gen_one_defexpr(VarSymbol *var, DefExpr *def) {
         int is_this = f && f->_this == var;
         if (!is_this)
           goto Lstandard;
-        Sym *tmp = new_sym();
-        Code *send = if1_send(if1, &ast->code, 2, 1, sym_new, type->asymbol->sym, tmp);
-        if1_move(if1, &ast->code, tmp, s, ast);
-        send->ast = ast;
         break;
       }
       case TYPE_ARRAY:
