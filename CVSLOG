@@ -38746,3 +38746,15 @@ Added files:
 	                              test_seq_tuple3.future 
 	                              test_seq_tuple3.good 
 
+---------------------------------------------------------------------------
+
+07/07/05 15:00:40 -- mjoyner
+
+Log message:
+	Added 4 future tests because of variable reference problem exposed when creating temporary variables during function inlining so that I could bring function inlining online.
+
+Added files:
+	chapel/test/classes/deitz/: test_nested_record1.future 
+	                            test_nested_record_function.future 
+	chapel/test/arrays/deitz/: test_domain3.future 
+
