@@ -38704,3 +38704,21 @@ Modified files:
 	chapel/compiler/main/: runpasses.cpp 
 	chapel/compiler/traversals/: htmlview.cpp 
 
+---------------------------------------------------------------------------
+
+07/06/05 17:11:35 -- deitz
+
+Log message:
+	Removed pass OmitForNoAnalysis as well as the pragma "omit for
+	noanalysis" as these are no longer used and were doing the wrong
+	thing.
+
+Modified files:
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/parser/: prelude.chpl 
+	chapel/compiler/traversals/: Makefile.share 
+	chapel/modules/standard/: _chpl_complex.chpl 
+Removed files:
+	chapel/compiler/traversals/: omitForNoAnalysis.cpp 
+	                             omitForNoAnalysis.h 
+
