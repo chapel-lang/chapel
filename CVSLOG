@@ -38805,3 +38805,13 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+07/07/05 16:53:38 -- jplevyak
+
+Log message:
+	One more file for the vardef => defexpr change.
+
+Modified files:
+	chapel/compiler/etc/: c_runtime.h 
+
