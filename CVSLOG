@@ -38734,3 +38734,15 @@ Added files:
 	                              test_seq_tuple2.future 
 	                              test_seq_tuple2.good 
 
+---------------------------------------------------------------------------
+
+07/07/05 11:27:40 -- deitz
+
+Log message:
+	Added more complicated sequence of tuple test case future.
+
+Added files:
+	chapel/test/types/seq/deitz/: test_seq_tuple3.chpl 
+	                              test_seq_tuple3.future 
+	                              test_seq_tuple3.good 
+
