@@ -3194,18 +3194,15 @@ call_info(Expr* a, Vec<FnSymbol *> &fns, int find_type) {
 }
 
 int 
-constant_info(BaseAST *a, Vec<Symbol *> &constants, Symbol *s) {
+constant_info(BaseAST *a, Vec<Expr *> &constants, Symbol *s) {
   constants.clear();
   AST *ast = 0;
   Sym *sym = 0;
   ast_sym_info(a, s, &ast, &sym);
   Vec<Sym *> consts;
   constant_info(ast, consts, sym);
-  forv_Sym(ss, consts) {
-    Symbol *fs = dynamic_cast<Symbol *>(ss->asymbol->symbol);
-    assert(fs);
-    constants.add(fs);
-  }
+  forv_Sym(ss, consts)
+    constants.add(get_constant_Expr(ss));
   return constants.n;
 }
 

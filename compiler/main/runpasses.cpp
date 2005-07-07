@@ -71,11 +71,12 @@ static void runPass(char* passName, Pass* pass, char* args) {
         fprintf(html_index_file, "<A HREF=\"dump.html\">");
       }
       fprintf(html_index_file, "%s", passName);
-      if (!strcmp(passName, "RunAnalysis")) {
+      int analysis_pass = !strcmp(passName, "RunAnalysis");
+      if (analysis_pass) {
         fprintf(html_index_file, "</A>");
       }
       fprintf(html_index_file, "</TD><TD>", passName);
-      HtmlView* htmlview = new HtmlView();
+      HtmlView* htmlview = new HtmlView(analysis_pass);
       htmlview->setArgs(glomstrings(2, "html ", passName));
       htmlview->run(Symboltable::getModuleList(MODULES_CODEGEN));
       fprintf(html_index_file, "</TD></TR>", passName);

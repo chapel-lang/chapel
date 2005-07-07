@@ -3041,7 +3041,7 @@ info_var(AST *a, Sym *s) {
     s = a->symbol();
   if (!s)
     return 0;
-  if (a->pnodes.n) {
+  if (a && a->pnodes.n) {
     forv_PNode(n, a->pnodes) {
       forv_Var(v, n->lvals)
         if (v->sym == s)

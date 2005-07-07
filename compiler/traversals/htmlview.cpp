@@ -10,6 +10,11 @@
 #include "stringutil.h"
 #include "log.h"
 
+HtmlView::HtmlView(int ashow_analysis_info) 
+  : show_analysis_info(ashow_analysis_info) 
+{
+}
+
 char* strrstr(const char* s, const char* s2) {
   char* result = strstr(s, s2);
   char* next = result;
@@ -26,7 +31,7 @@ void HtmlView::write(char* fmt, ...) {
   va_start(args, fmt);
   vsprintf(html_string+strlen(html_string), fmt, args);
   va_end(args);
-  if (strlen(html_string) > 1024-128) {
+  if (strlen(html_string) > 2048-128) {
     INT_FATAL("HtmlView string too small");
   }
 }
@@ -177,6 +182,20 @@ void HtmlView::postProcessExpr(Expr* expr) {
   } else {
     write(")");
   }
+  if (show_analysis_info && expr->parentSymbol) {
+    Vec<FnSymbol *> fns, allfns;
+    call_info(expr, fns, CALL_INFO_FIND_OPERATOR);
+    allfns.append(fns);
+    call_info(expr, fns, CALL_INFO_FIND_FUNCTION);
+    allfns.append(fns);
+    if (allfns.n) {
+      write(" calls: ");
+      for (int i = 0; i < allfns.n; i++) {
+        if (i > 0) write(" ");
+        html_print_symbol(allfns.v[i], false);
+      }
+    }
+  }
   char* open = strrstr(html_string, "<DL>");
   if (expr->parentExpr && open && (strlen(html_string) - (open - html_string) < 128)) {
     memmove(open, open+4, strlen(open)+4);
@@ -189,6 +208,10 @@ void HtmlView::postProcessExpr(Expr* expr) {
 }
 
 void HtmlView::html_print_symbol(Symbol* sym, bool def) {
+  if (def)
+    write("<A NAME=\"SYM%d\">", sym->id);
+  else
+    write("<A HREF=\"#SYM%d\">", sym->id);
   if (dynamic_cast<FnSymbol*>(sym)) {
     write("<FONT COLOR=\"blue\">");
   } else if (dynamic_cast<TypeSymbol*>(sym)) {
@@ -199,6 +222,7 @@ void HtmlView::html_print_symbol(Symbol* sym, bool def) {
   write("%s", sym->name);
   write("</FONT>");
   write("<FONT COLOR=\"grey\">[%ld]</FONT>", sym->id);
+  write("</A>");
   if (def &&
       !dynamic_cast<TypeSymbol*>(sym) &&
       sym->type &&
@@ -207,6 +231,27 @@ void HtmlView::html_print_symbol(Symbol* sym, bool def) {
     write(":");
     html_print_symbol(sym->type->symbol, false);
   }
+  if (show_analysis_info) {
+    Vec<Expr *> constants;
+    constant_info(sym, constants);
+    if (constants.n) {
+      if (constants.n > 1)
+        write(" constants: { ");
+      else
+        write(" constant: ");
+      for (int i = 0; i < constants.n; i++) {
+        if (i > 0) write(", ");
+        if (Literal *l = dynamic_cast<Literal *>(constants.v[i]))
+          write("<FONT COLOR=\"lightblue\">'%s'</FONT>", l->str);
+        else if (Variable *v = dynamic_cast<Variable *>(constants.v[i]))          
+          html_print_symbol(v->var, false);
+        else 
+          INT_FATAL("bad constant");
+      }
+      if (constants.n > 1)
+        write(" }");
+    }
+  }
 }
 
 void HtmlView::html_print_fnsymbol(FnSymbol* fn) {
@@ -214,7 +259,7 @@ void HtmlView::html_print_fnsymbol(FnSymbol* fn) {
     html_print_symbol(fn->typeBinding, false);
     write(" . ");
   }
-  html_print_symbol(fn, false);
+  html_print_symbol(fn, true);
   write(" ( ");
   bool first = true;
   for_alist(DefExpr, arg, fn->formals) {
