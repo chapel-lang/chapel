@@ -38783,3 +38783,14 @@ Modified files:
 	chapel/compiler/main/: runpasses.cpp 
 	chapel/compiler/traversals/: htmlview.cpp htmlview.h 
 
+---------------------------------------------------------------------------
+
+07/07/05 16:19:34 -- jplevyak
+
+Log message:
+	Don't add the "calls" annotation to FnCall nodes since the first
+	argument is the call target already.
+
+Modified files:
+	chapel/compiler/traversals/: htmlview.cpp 
+
