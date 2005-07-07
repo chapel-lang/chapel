@@ -28,7 +28,6 @@ TRAVERSALS_SRCS = \
 	insertVariableInitializations.cpp \
 	printAST.cpp \
 	processParameters.cpp \
-        omitForNoAnalysis.cpp \
 	removeNamedParameters.cpp \
         resolveModuleUses.cpp \
 	resolveSymbols.cpp \

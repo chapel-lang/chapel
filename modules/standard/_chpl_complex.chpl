@@ -22,17 +22,17 @@ function _tostring(x : complex, format : string) : string {
   return _complex_tostring_hack(x, format);
 }
 
-pragma "omit for noanalysis" function +(x : complex, y : complex)
+function +(x : complex, y : complex)
   return complex(x._re + y._re, x._im + y._im);
 
-pragma "omit for noanalysis" function -(x : complex, y : complex)
+function -(x : complex, y : complex)
   return complex(x._re - y._re, x._im - y._im);
 
-pragma "omit for noanalysis" function *(x : complex, y : complex)
+function *(x : complex, y : complex)
   return complex(x._re*y._re - x._im*y._im,
                  x._im*y._re + x._re*y._im);
 
-pragma "omit for noanalysis" function /(x : complex, y : complex)
+function /(x : complex, y : complex)
   return let d = y._re*y._re + y._im*y._im in
     complex((x._re*y._re + x._im*y._im)/d,
             (x._im*y._re - x._re*y._im)/d);

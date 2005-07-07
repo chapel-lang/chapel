@@ -44,7 +44,6 @@
 #include "../traversals/insertThisParameters.h"
 #include "../traversals/insertUnionChecks.h"
 #include "../traversals/insertVariableInitializations.h"
-#include "../traversals/omitForNoAnalysis.h"
 #include "../traversals/printAST.h"
 #include "../traversals/processParameters.h"
 #include "../traversals/scopeResolveGotos.h"
@@ -99,7 +98,6 @@ REGISTER(InsertThisParameters);
 REGISTER(InsertUnionChecks);     // SJD: Insert runtime type checks for unions
 REGISTER(InsertVariableInitializations);
 REGISTER(LegalizeCNames);
-REGISTER(OmitForNoAnalysis);
 REGISTER(PostAnalysisCleanup);
 REGISTER(PrintAST);        // BLC: pretty-prints all or part of the AST
 REGISTER(PrintProgram);    // BLC: pretty-prints the whole program

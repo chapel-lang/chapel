@@ -73,10 +73,6 @@ PassInfo passlist[] = {
 
   RUN(RunAnalysis, ""),
 
-  // passes to run if --noanalysis is used
-  RUN(Verify, ""), // this is a sanity check
-  RUN(OmitForNoAnalysis, ""),
-
   // passes to capture analysis information in the AST
   RUN(Verify, ""), // this is a sanity check
   RUN(RemoveDeadSymbols, ""),

@@ -188,23 +188,23 @@ class _seq { -- this is no longer necessary
 class Index {
 }
 
-pragma "omit for noanalysis" class Array {
-  pragma "omit for noanalysis" function this(i) {
+class Array {
+  function this(i) {
     return __primitive("array_index", this, i);
   }
-  pragma "omit for noanalysis" function this(i, j) {
+  function this(i, j) {
     return __primitive("array_index", this, i, j);
   }
-  pragma "omit for noanalysis" function this(i, j, k) {
+  function this(i, j, k) {
     return __primitive("array_index", this, i, j, k);
   }
-  pragma "omit for noanalysis" function =this(i, x) {
+  function =this(i, x) {
     return __primitive("array_set", this, i, x);
   }
-  pragma "omit for noanalysis" function =this(i, j, x) {
+  function =this(i, j, x) {
     return __primitive("array_set", this, i, j, x);
   }
-  pragma "omit for noanalysis" function =this(i, j, k, x) {
+  function =this(i, j, k, x) {
     return __primitive("array_set", this, i, j, k, x);
   }
 }
