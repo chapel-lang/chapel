@@ -38758,3 +38758,28 @@ Added files:
 	                            test_nested_record_function.future 
 	chapel/test/arrays/deitz/: test_domain3.future 
 
+---------------------------------------------------------------------------
+
+07/07/05 16:14:59 -- jplevyak
+
+Log message:
+	Changed contant_info to return a set of LiteralExpr instead
+	of Symbols (since the front end doesn't have literal Symbols).
+	Make it possible to pass just a Symbol into constant_info
+	(without an AST context).
+	Modified HtmlView to annotate the AST with the reaching constant
+	(if any) and with the call targets for each AST node.
+	This is currently only displayed in the dump associated with
+	the analysis pass... we could modify this so that it is displayed
+	in all passes following analysis.
+	Added NAME labels for each SYM and cross-linked them (this
+	is how I got the links for "calls".  Also made the definition
+	of an FnSymbol call html_print_symbol with "true" for the "def"
+	field (which I assume was an oversight).
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp fa.cpp 
+	chapel/compiler/include/: analysis.h 
+	chapel/compiler/main/: runpasses.cpp 
+	chapel/compiler/traversals/: htmlview.cpp htmlview.h 
+
