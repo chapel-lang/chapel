@@ -38794,3 +38794,14 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: htmlview.cpp 
 
+---------------------------------------------------------------------------
+
+07/07/05 16:39:39 -- jplevyak
+
+Log message:
+	Rename defvar -> defexpr (to match the AST naming).
+	Attach ast information to more intermediates.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
