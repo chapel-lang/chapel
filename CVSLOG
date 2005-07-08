@@ -38836,3 +38836,15 @@ Modified files:
 	chapel/compiler/main/: passlist.cpp passlist.h 
 	chapel/compiler/traversals/: Makefile.share 
 
+---------------------------------------------------------------------------
+
+07/07/05 17:00:52 -- mjoyner
+
+Log message:
+	Small change to function inlining code.
+
+Modified files:
+	chapel/compiler/traversals/: inlineFunctions.cpp 
+	                             findLeafFunctions.cpp 
+	                             findLeafFunctions.h 
+
