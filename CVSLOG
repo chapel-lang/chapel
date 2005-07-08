@@ -38825,3 +38825,14 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+07/07/05 16:57:36 -- mjoyner
+
+Log message:
+	Added function inlining to pass list.
+
+Modified files:
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/traversals/: Makefile.share 
+
