@@ -38848,3 +38848,13 @@ Modified files:
 	                             findLeafFunctions.cpp 
 	                             findLeafFunctions.h 
 
+---------------------------------------------------------------------------
+
+07/07/05 17:10:56 -- deitz
+
+Log message:
+	Added Mack's fourth future.
+
+Added files:
+	chapel/test/classes/deitz/: test_nested_record2.future 
+
