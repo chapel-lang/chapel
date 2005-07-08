@@ -38939,3 +38939,19 @@ Added files:
 	chapel/test/functions/deitz/: test_iterator2.chpl 
 	                              test_iterator2.good 
 
+---------------------------------------------------------------------------
+
+07/07/05 17:26:46 -- deitz
+
+Log message:
+	Removed CompleteDimExpr and FloodExpr from the compiler since they are
+	no longer in the language.  Updated mvm_seq protoast test.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h expr.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/traversals/: verifyASTType.cpp 
+	chapel/test/trivial/bradc/protoast/: mvm-seq.chpl mvm-seq.good 
+
