@@ -50,6 +50,7 @@ bool suppressCodegen = false;
 int debugParserLevel = 0;
 bool developer = false;
 bool ignore_errors = false;
+bool _adhoc_to_uniform_mangling = false;
 int fnewvardef = 0;
 int fdce_if1 = 1;
 int finline = 0;
@@ -102,6 +103,7 @@ static ArgumentDescription arg_desc[] = {
  {"apply-getters-setters", ' ', "Apply getters and setters preanalysis", "F", &applyGettersSetters, NULL, NULL},
  {"use-expr-type", ' ', "Use exprType for all", "F", &useExprType, NULL, NULL},
  {"tmpRoxIndexType", ' ', "Roxana's index toggle", "F", &_dtinteger_IndexType_switch, "CHPL_DTINTEGER_INDEXTYPE_SWITCH", NULL},
+ {"tmpMangling", ' ', "Name mangling toggle", "F", &_adhoc_to_uniform_mangling, "CHPL_ADHOC_TO_UNIFORMA_MANGLING", NULL},
  {"no-codegen", ' ', "Suppress code generation", "F", &suppressCodegen, "CHPL_NO_CODEGEN", NULL},
  {"newvardef", ' ', "New Var Def code", "T", &fnewvardef, "CHPL_NEWVARDEF", NULL},
  {"equal_method", ' ', "= is a method", "T", &f_equal_method, "CHPL_EQUAL_METHOD", NULL},

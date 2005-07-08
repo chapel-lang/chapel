@@ -117,6 +117,10 @@ PassInfo passlist[] = {
   RUN(Verify, ""), // this is a sanity check
   RUN(LegalizeCNames, ""), 
 
+  //RED: pass to resolve name conflicts due to overloading
+  RUN(Verify, ""),
+  RUN(FindCollidingNames, ""),
+  
   // passes to generate code and compile
   RUN(Verify, ""), // this is a sanity check
   RUN(CodegenOne, ""), // types and function prototypes
