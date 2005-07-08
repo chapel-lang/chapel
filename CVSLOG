@@ -39011,3 +39011,40 @@ Added files:
 	chapel/compiler/symtab/: findCollidingNames.h 
 	                         findCollidingNames.cpp 
 
+---------------------------------------------------------------------------
+
+07/08/05 15:58:28 -- deitz
+
+Log message:
+	Added the ability to index into strings with an integer or an
+	arithmetic sequence.  These are interesting tests of overloading the
+	this method on primitive types and using the new arithmetic sequences.
+	
+	Added the length method to arithmetic sequences.
+	
+	Added a few tests for the above features.
+
+Modified files:
+	chapel/compiler/parser/: prelude.chpl 
+	chapel/modules/standard/: _chpl_seq.chpl 
+	chapel/runtime/include/: chpltypes.h 
+	chapel/runtime/src/: chpltypes.c 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/flowanalysis/newast/: chain.good 
+	                                  multiple_return.good 
+	                                  mutrec.good noargs.good 
+	                                  onearg.good printempty.good 
+	                                  printstring.good 
+	                                  usebeforedef.good var2.good 
+	                                  writen.good writetwo.good 
+	chapel/test/types/seq/bradc/: length.modify.good 
+Added files:
+	chapel/test/types/seq/deitz/: test_aseq1.chpl test_aseq1.good 
+	                              test_aseq2.chpl test_aseq2.good 
+	chapel/test/types/string/deitz/: test_string_select1.chpl 
+	                                 test_string_select1.good 
+	                                 test_string_shuffle.chpl 
+	                                 test_string_shuffle.good 
+
