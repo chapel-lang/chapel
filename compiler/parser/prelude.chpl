@@ -267,6 +267,21 @@ pragma "builtin" function =(a : Index, b : integer) { return __primitive("indext
 pragma "builtin" function =(a : integer, b : Index) { return __primitive("indextype_get", b); }
 pragma "builtin" function =(a : any, b : any) { return b; }
 
+pragma "rename _chpl_string_index"
+function string.this(i : integer) {
+  return __primitive("string_op", this, i);
+}
+
+pragma "rename _chpl_string_select"
+function _chpl_string_select(s : string, low : integer, high : integer) {
+  return __primitive("string_op", s, low, high);
+}
+
+pragma "rename _chpl_string_strided_select"
+function _chpl_string_strided_select(s : string, low : integer, high : integer, stride : integer) {
+  return __primitive("string_op", s, low, high, stride);
+}
+
 pragma "rename _chpl_string_concat"
 function +(a : string, b : string) : string {
   return __primitive("string_op", a, b);

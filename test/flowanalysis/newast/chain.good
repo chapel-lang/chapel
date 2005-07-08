@@ -1,10 +1,10 @@
- called from 10 in __init_chain at _chpl_seq.chpl:154
- called from 11 in __init_chain at _chpl_seq.chpl:154
+ called from 10 in __init_chain at _chpl_seq.chpl:156
+ called from 11 in __init_chain at _chpl_seq.chpl:156
  called from 3 in foo at chain.chpl:4
 ::a(chain.chpl:1) ( int64 )
 ::a(chain.chpl:6) ( int64 )
-function __init_chain _chpl_seq.chpl:154
+function __init_chain _chpl_seq.chpl:156
 function bar chain.chpl:6
 function foo chain.chpl:1
-function main _chpl_seq.chpl:154
+function main _chpl_seq.chpl:156
 globals

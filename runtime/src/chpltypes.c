@@ -97,6 +97,33 @@ _string _chpl_string_concat(_string x, _string y) {
 }
 
 
+_string
+_chpl_string_strided_select(_string x, int low, int high, int stride) {
+  _string result =
+    _chpl_malloc((high - low + 1), sizeof(char), "_chpl_string_strided_select temp");
+  _string src = x + low - 1;
+  _string dst = result;
+  while (src - x <= high - 1) {
+    *dst++ = *src;
+    src += stride;
+  }
+  *dst = '\0';
+  return _glom_strings(1, result);
+}
+
+_string
+_chpl_string_select(_string x, int low, int high) {
+  return _chpl_string_strided_select(x, low, high, 1);
+}
+
+_string
+_chpl_string_index(_string* x, int i) {
+  char buffer[2];
+  sprintf(buffer, "%c", (*x)[i-1]);
+  return _glom_strings(1, buffer);
+}
+
+
 _boolean _chpl_string_equal(_string x, _string y) {
   if (!strcmp(x, y)) {
     return true;

@@ -1,6 +1,6 @@
- called from 5 in __init_onearg at _chpl_seq.chpl:154
+ called from 5 in __init_onearg at _chpl_seq.chpl:156
 ::a(onearg.chpl:1) ( int64 )
-function __init_onearg _chpl_seq.chpl:154
+function __init_onearg _chpl_seq.chpl:156
 function foo onearg.chpl:1
-function main _chpl_seq.chpl:154
+function main _chpl_seq.chpl:156
 globals

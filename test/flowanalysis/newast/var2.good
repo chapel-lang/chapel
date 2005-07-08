@@ -1,4 +1,4 @@
 ::x(var2.chpl:1) ( int64 )
-function __init_var2 _chpl_seq.chpl:154
-function main _chpl_seq.chpl:154
+function __init_var2 _chpl_seq.chpl:156
+function main _chpl_seq.chpl:156
 globals

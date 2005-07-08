@@ -1,36 +1,3 @@
-function by(s : _aseq, i : integer) {
-  var tmp = s;
-  tmp._stride *= i;
-  return tmp;
-}
-
-function write(s : _aseq) {
-  write(s._low);
-  write("..");
-  write(s._high);
-  if (s._stride > 1) {
-    write(" by ");
-    write(s._stride);
-  }
-}
-
-function #(s1 : seq, s2 : seq) {
-  return s1._concat(s2);
-}
-
-function write(s : seq) {
-  write("(/");
-  var tmp = s._first;
-  while tmp != nil {
-    write(tmp._element);
-    tmp = tmp._next;
-    if (tmp != nil) {
-      write(", ");
-    }
-  }
-  write("/)");
-}
-
 class _seqNode {
   type _elementType;
 
@@ -137,6 +104,26 @@ record seq {
   }
 }
 
+function #(s1 : seq, s2 : seq) {
+  return s1._concat(s2);
+}
+
+function write(s : seq) {
+  write("(/");
+  var tmp = s._first;
+  while tmp != nil {
+    write(tmp._element);
+    tmp = tmp._next;
+    if (tmp != nil) {
+      write(", ");
+    }
+  }
+  write("/)");
+}
+
+-- Arithmetic sequence
+-- Should this eventually be a subclass of seq(integer)?
+
 record _aseq {
   var _low : integer;
   var _high : integer;
@@ -157,14 +144,29 @@ record _aseq {
       i += _stride;
     }
   }
+
+  function length : integer
+    return
+      (if _stride > 0
+        then (_high - _low + _stride) / _stride
+        else (_low - _high + _stride) / _stride);
 }
 
-/*** Need where clauses to get all these working
-function #(s : seq, e : seq._elementType) {
-  return s._append(e);
+function by(s : _aseq, i : integer) {
+  var tmp = s;
+  tmp._stride *= i;
+  return tmp;
 }
 
-function #(e : seq._elementType, s : seq) {
-  return s._prepend(e);
+function write(s : _aseq) {
+  write(s._low);
+  write("..");
+  write(s._high);
+  if (s._stride > 1) {
+    write(" by ");
+    write(s._stride);
+  }
 }
-***/
+
+function string.this(s : _aseq) : string
+  return _chpl_string_strided_select(this, s._low, s._high, s._stride);
