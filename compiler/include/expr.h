@@ -489,24 +489,6 @@ class SimpleSeqExpr : public Expr {
 };
 
 
-class FloodExpr : public Expr {
- public:
-  FloodExpr(void);
-  COPY_DEF(FloodExpr);
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-};
-
-
-class CompleteDimExpr : public Expr {
- public:
-  CompleteDimExpr(void);
-  COPY_DEF(CompleteDimExpr);
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-};
-
-
 class ForallExpr : public Expr {
  public:
   AList<Expr>* domains;

@@ -301,8 +301,6 @@ char* astTypeName[AST_TYPE_END+1] = {
   "AssignOp",
   "Seq",
   "SimpleSeq",
-  "Flood",
-  "CompleteDim",
   "Let",
   "CondExpr",
   "Forall",
@@ -464,10 +462,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     AST_ADD_CHILD(SimpleSeqExpr, lo);
     AST_ADD_CHILD(SimpleSeqExpr, hi);
     AST_ADD_CHILD(SimpleSeqExpr, str);
-    goto LExprCommon;
-  case EXPR_FLOOD:
-    goto LExprCommon;
-  case EXPR_COMPLETEDIM:
     goto LExprCommon;
   case EXPR_LET:
     AST_ADD_LIST(LetExpr, symDefs, DefExpr);

@@ -1,8 +1,8 @@
 var m: integer = 100;
 var n: integer = 200;
 var Mat: domain(???) = [1..m, 1..n];
-var Col: domain(???) = [*, 1..n];
-var Row: domain(???) = [1..m, *];
+var Col: domain(???) = [1, 1..n];
+var Row: domain(???) = [1..m, 1];
 var A: [Mat] float;
 var y: [Col] float;
 var x: [Row] float;

@@ -8,8 +8,8 @@ var m : integer = 100;
 var n : integer = 200;
 
 var Mat : domain(2) = (1..m, 1..n);
-var Col : domain(2) = (*, 1..n);
-var Row : domain(2) = (1..m, *);
+var Col : domain(2) = (1 /* * */, 1..n);  -- used to be flood
+var Row : domain(2) = (1..m, 1 /* * */);  -- used to be flood
 
 var A : [Mat] float;
 var y : [Col] float;

@@ -1774,47 +1774,6 @@ void SimpleSeqExpr::codegen(FILE* outfile) {
 }
 
 
-FloodExpr::FloodExpr(void) :
-  Expr(EXPR_FLOOD)
-{}
-
-
-FloodExpr*
-FloodExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new FloodExpr();
-}
-
-
-void FloodExpr::print(FILE* outfile) {
-  fprintf(outfile, "*");
-}
-
-
-void FloodExpr::codegen(FILE* outfile) {
-  fprintf(outfile, "This is FloodExpr's codegen method.\n");
-}
-
-
-CompleteDimExpr::CompleteDimExpr(void) :
-  Expr(EXPR_COMPLETEDIM)
-{}
-
-
-CompleteDimExpr*
-CompleteDimExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new CompleteDimExpr();
-}
-
-
-void CompleteDimExpr::print(FILE* outfile) {
-  fprintf(outfile, "..");
-}
-
-void CompleteDimExpr::codegen(FILE* outfile) {
-  fprintf(outfile, "This is CompleteDimExpr's codegen method.\n");
-}
-
-
 ForallExpr::ForallExpr(AList<Expr>* init_domains, AList<DefExpr>* init_indices,
                        Expr* init_forallExpr) :
   Expr(EXPR_FORALL),

@@ -1291,10 +1291,6 @@ range:
     {
       $$ = new SimpleSeqExpr($1, $3);
     }
-| TSTAR
-    { $$ = new FloodExpr(); }
-| TDOTDOT
-    { $$ = new CompleteDimExpr(); }
 ;
 
 

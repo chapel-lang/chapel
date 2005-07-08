@@ -41,8 +41,6 @@ static Sym *expr_reduce_symbol = 0;
 static Sym *write_symbol = 0;
 static Sym *writeln_symbol = 0;
 static Sym *read_symbol = 0;
-static Sym *flood_symbol = 0;
-static Sym *completedim_symbol = 0;
 static Sym *array_index_symbol = 0;
 static Sym *array_set_symbol = 0;
 static Sym *sizeof_symbol = 0;
@@ -2155,16 +2153,6 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       send->ast = s->ainfo;
       break;
     }
-    case EXPR_FLOOD: {
-      FloodExpr *s = dynamic_cast<FloodExpr *>(ast);
-      s->ainfo->rval = flood_symbol;
-      break;
-    }
-    case EXPR_COMPLETEDIM: {
-      CompleteDimExpr *s = dynamic_cast<CompleteDimExpr *>(ast);
-      s->ainfo->rval = completedim_symbol;
-      break;
-    }
     case EXPR_LET: {
       LetExpr *s = dynamic_cast<LetExpr *>(ast);
       DefExpr* def_expr = s->symDefs->first();
@@ -2616,8 +2604,6 @@ init_symbols() {
   read_symbol = make_symbol("read");
   array_index_symbol = make_symbol("array_index");
   array_set_symbol = make_symbol("array_set");
-  flood_symbol = make_symbol("*");
-  completedim_symbol = make_symbol("..");
 }
 
 static void

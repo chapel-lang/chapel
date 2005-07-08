@@ -152,16 +152,6 @@ static void verifyASTType(BaseAST* ast) {
       INT_FATAL(ast, "Unexpected AST expression type: EXPR_SIMPLESEQ");
     }
     break;
-  case EXPR_FLOOD:
-    if (typeid(*ast) != typeid(FloodExpr)) {
-      INT_FATAL(ast, "Unexpected AST expression type: EXPR_FLOOD");
-    }
-    break;
-  case EXPR_COMPLETEDIM:
-    if (typeid(*ast) != typeid(CompleteDimExpr)) {
-      INT_FATAL(ast, "Unexpected AST expression type: EXPR_COMPLETEDIM");
-    }
-    break;
   case EXPR_FORALL:
     if (typeid(*ast) != typeid(ForallExpr)) {
       INT_FATAL(ast, "Unexpected AST expression type: EXPR_FORALL");
