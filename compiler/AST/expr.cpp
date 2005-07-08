@@ -884,11 +884,11 @@ Expr::isRef(void) {
     if (VarSymbol* vs = dynamic_cast<VarSymbol*>(var->var))
       if (vs->varClass == VAR_REF)
         return true;
-  if (FnCall *fc = dynamic_cast<FnCall*>(this))
-    if (Variable *fn_var = dynamic_cast<Variable*>(fc->baseExpr))
-      if (FnSymbol *fn = dynamic_cast<FnSymbol*>(fn_var->var))
-        if (fn->_getter && is_Value_Type(fn->retType))
-          return true;
+//   if (FnCall *fc = dynamic_cast<FnCall*>(this))
+//     if (Variable *fn_var = dynamic_cast<Variable*>(fc->baseExpr))
+//       if (FnSymbol *fn = dynamic_cast<FnSymbol*>(fn_var->var))
+//         if (fn->_getter && is_Value_Type(fn->retType))
+//           return true;
   return false;
 }
 

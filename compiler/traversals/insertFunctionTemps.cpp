@@ -70,14 +70,15 @@ void InsertFunctionTemps::postProcessStmt(Stmt* stmt) {
           Expr* temp_init = function->copy(false, NULL, &functions);
           Type* temp_type = function->typeInfo();
           varType var_type = VAR_NORMAL;
-          if (Variable *fn_var = dynamic_cast<Variable*>(function->baseExpr)) {
-            if (FnSymbol *fn = dynamic_cast<FnSymbol*>(fn_var->var)) {
-              if (fn->_getter && is_Value_Type(fn->retType)) {
-                var_type = VAR_REF;
-                no_default_init = true;
-              }
-            }
-          }
+//           if (Variable *fn_var = dynamic_cast<Variable*>(function->baseExpr)) {
+//             if (FnSymbol *fn = dynamic_cast<FnSymbol*>(fn_var->var)) {
+//               if (fn->_getter && is_Value_Type(fn->retType)) {
+//                 var_type = VAR_REF;
+//                 no_default_init = true;
+//               }
+//             }
+//           }
+          no_default_init = true;
           DefStmt* defStmt =
             Symboltable::defineSingleVarDefStmt(temp_name, temp_type,
                                                 temp_init, var_type, VAR_VAR);

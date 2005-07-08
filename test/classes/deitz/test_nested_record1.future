@@ -1,5 +1,0 @@
-???
-
-This test exposes a referencing problem that shows up when function inlining is performed.  
-The problem stems from not being able to create temporary reference variables.
- 

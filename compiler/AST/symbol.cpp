@@ -1004,8 +1004,8 @@ void FnSymbol::codegenHeader(FILE* outfile) {
     INT_WARNING(this, "return type unknown, calling analysis late");
   }
   retType->codegen(outfile);
-  if (is_Value_Type(retType) && _getter)
-    fprintf(outfile, "*");
+//   if (is_Value_Type(retType) && _getter)
+//     fprintf(outfile, "*");
   fprintf(outfile, " ");
   this->codegen(outfile);
   fprintf(outfile, "(");
