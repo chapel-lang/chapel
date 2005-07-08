@@ -38911,3 +38911,31 @@ Added files:
 	chapel/compiler/traversals/: preAnalysisHacks.cpp 
 	                             preAnalysisHacks.h 
 
+---------------------------------------------------------------------------
+
+07/07/05 17:25:56 -- deitz
+
+Log message:
+	Attach to last checkin.  I committed from the wrong directory.
+
+Modified files:
+	chapel/modules/standard/: _chpl_htuple.chpl _chpl_seq.chpl 
+	chapel/runtime/include/: seq.h 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/flowanalysis/newast/: chain.good declprintdom.good 
+	                                  multiple_return.good 
+	                                  mutrec.good noargs.good 
+	                                  onearg.good printempty.good 
+	                                  printstring.good 
+	                                  usebeforedef.good var2.good 
+	                                  writen.good writetwo.good 
+	chapel/test/trivial/bradc/: declprintdom.good 
+	chapel/test/types/seq/bradc/: length.modify.good 
+Added files:
+	chapel/test/arrays/deitz/: test_forall1.chpl test_forall1.good 
+	                           test_forall2.chpl test_forall2.good 
+	chapel/test/functions/deitz/: test_iterator2.chpl 
+	                              test_iterator2.good 
+
