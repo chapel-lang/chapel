@@ -14,9 +14,12 @@ struct FuncLeaves {
 class FindLeafFunctions : public Traversal {
   bool _inside_leaf_func;
   void addLeaf(FnSymbol* fsym);
+  FuncLeaves* _leaf_functions;
 public :
+  virtual ~FindLeafFunctions();
   void preProcessExpr(Expr* expr);
   void postProcessExpr(Expr* expr);
+  bool isLeafFunction(FnSymbol* fs);
   void printLeaves(void);
 };
 

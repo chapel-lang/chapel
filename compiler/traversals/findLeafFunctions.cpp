@@ -2,8 +2,6 @@
 #include "findLeafFunctions.h"
 #include "expr.h"
 
-FuncLeaves* _leaf_functions;
-
 void FindLeafFunctions::preProcessExpr(Expr* expr) {
   //not handling nested function definitions yet
   if(DefExpr* def_expr = dynamic_cast<DefExpr*>(expr)){
@@ -47,5 +45,22 @@ void FindLeafFunctions::printLeaves() {
   printf("DONE PRINTING FUNCTION LEAVES \n"); 
 }
 
+bool FindLeafFunctions::isLeafFunction(FnSymbol* fs) {
+  FuncLeaves* temp_func_leaves = _leaf_functions;
+  while(temp_func_leaves) {
+    if (fs == temp_func_leaves->first)
+      return true;
+    temp_func_leaves = temp_func_leaves->next;
+  }
+  return false;
+}
 
-
+FindLeafFunctions::~FindLeafFunctions() {
+  FuncLeaves* tmp = _leaf_functions;
+  FuncLeaves* delete_leaf;
+  while(tmp) {
+    delete_leaf = tmp;
+    tmp = tmp->next;
+    delete delete_leaf;
+  }
+}
