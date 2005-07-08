@@ -38991,3 +38991,23 @@ Removed files:
 	                            test_nested_record2.future 
 	                            test_nested_record_function.future 
 
+---------------------------------------------------------------------------
+
+07/08/05 11:53:26 -- roxana
+
+Log message:
+	Added an empty placeholder pass to detect when name
+	collisions occur. The tricky part to begin working on it is that
+	I still have to figure out how to test it in the presence of Steve's
+	scattered collision resolution.
+	
+	Added a compiler flag --tmpMangling which would enable
+	this pass.
+
+Modified files:
+	chapel/compiler/symtab/: Makefile.share 
+	chapel/compiler/main/: passlist.h driver.cpp passlist.cpp 
+Added files:
+	chapel/compiler/symtab/: findCollidingNames.h 
+	                         findCollidingNames.cpp 
+
