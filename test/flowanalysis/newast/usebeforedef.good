@@ -1,6 +1,6 @@
- called from 1 in __init_usebeforedef at _chpl_seq.chpl:99
+ called from 1 in __init_usebeforedef at _chpl_seq.chpl:154
 ::a(usebeforedef.chpl:3) ( int64 )
-function __init_usebeforedef _chpl_seq.chpl:99
+function __init_usebeforedef _chpl_seq.chpl:154
 function foo usebeforedef.chpl:3
-function main _chpl_seq.chpl:99
+function main _chpl_seq.chpl:154
 globals

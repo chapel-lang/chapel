@@ -1,3 +1,19 @@
+function by(s : _aseq, i : integer) {
+  var tmp = s;
+  tmp._stride *= i;
+  return tmp;
+}
+
+function write(s : _aseq) {
+  write(s._low);
+  write("..");
+  write(s._high);
+  if (s._stride > 1) {
+    write(" by ");
+    write(s._stride);
+  }
+}
+
 function #(s1 : seq, s2 : seq) {
   return s1._concat(s2);
 }
@@ -102,6 +118,44 @@ record seq {
       tmp = tmp._next;
     }
     return new;
+  }
+
+  iterator _for() {
+    var tmp : _seqNode = _first;
+    while tmp != nil {
+      yield tmp._element;
+      tmp = tmp._next;
+    }
+  }
+
+  iterator _forall() {
+    var tmp : _seqNode = _first;
+    while tmp != nil {
+      yield tmp._element;
+      tmp = tmp._next;
+    }
+  }
+}
+
+record _aseq {
+  var _low : integer;
+  var _high : integer;
+  var _stride : integer;
+
+  iterator _for() {
+    var i = _low;
+    while i <= _high {
+      yield i;
+      i += _stride;
+    }
+  }
+
+  iterator _forall() {
+    var i = _low;
+    while i <= _high {
+      yield i;
+      i += _stride;
+    }
   }
 }
 

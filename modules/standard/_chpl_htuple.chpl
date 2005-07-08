@@ -1,3 +1,5 @@
+use _chpl_seq;
+
 record _htuple {
   type _elementType;
   parameter _size : integer;

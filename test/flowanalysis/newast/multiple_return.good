@@ -1,9 +1,9 @@
- called from 8 in __init_multiple_return at _chpl_seq.chpl:99
+ called from 8 in __init_multiple_return at _chpl_seq.chpl:154
 ::_retval(multiple_return.chpl:3) ( int64 )
 ::a(multiple_return.chpl:1) ( int64 )
 ::b(multiple_return.chpl:1) ( int64 )
 ::c(multiple_return.chpl:1) ( int64 )
-function __init_multiple_return _chpl_seq.chpl:99
+function __init_multiple_return _chpl_seq.chpl:154
 function f multiple_return.chpl:1
-function main _chpl_seq.chpl:99
+function main _chpl_seq.chpl:154
 globals
