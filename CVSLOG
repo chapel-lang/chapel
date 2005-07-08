@@ -38858,3 +38858,56 @@ Log message:
 Added files:
 	chapel/test/classes/deitz/: test_nested_record2.future 
 
+---------------------------------------------------------------------------
+
+07/07/05 17:22:27 -- deitz
+
+Log message:
+	Simplified the for macro over sequences and robustified it.  Added
+	forall macro to the runtime for looping over a sequence.  This uses
+	the sequence for macro.
+	
+	Added an arithmetic sequence record to _chpl_seq.  It's called _aseq.
+	
+	Removed Expr subclass SpecialBinOp and moved 'by' to BinOp.
+	
+	Added a new pass PreAnalysisHacks for things that I need temporarily
+	but will probably go.  In this pass, I added a change to for and
+	forall statements so that something like
+	
+	  forall i in D { ... }
+	
+	is changed to
+	
+	  forall i in D.forall() { ... }
+	
+	This uses the iterator and the sequence forall implementation.  In the
+	_aseq record, there is such an iterator.  In the seq record, there is
+	also such an iterator (though it is somewhat redundant currently).  It
+	should probably just return itself.
+	
+	Removed 'by' function from the prelude and I added a 'by' function
+	that operates on an arithmetic sequence and an integer.
+	
+	This change may be the way to go, but it is currently hacked so that
+	if D is a domain, this transformation won't take place.
+	
+	Added a use of _chpl_seq to _chpl_htuple since this module has a
+	forall of an arithmetic sequence.
+	
+	Added a new iterator test that is used in a forall loop.  Added a
+	couple simple forall over arithmetic sequence tests.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp stmt.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h expr.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/parser/: chapel.y prelude.chpl 
+	chapel/compiler/traversals/: Makefile.share 
+	                             insertLiteralTemps.cpp 
+	                             verifyASTType.cpp 
+Added files:
+	chapel/compiler/traversals/: preAnalysisHacks.cpp 
+	                             preAnalysisHacks.h 
+
