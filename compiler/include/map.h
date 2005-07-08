@@ -30,6 +30,7 @@ template <class K, class C> class MapElem : public gc {
 template <class K, class C> class Map : public Vec<MapElem<K,C> > {
  public:
   using Vec<MapElem<K, C> >::n;
+  using Vec<MapElem<K, C> >::i;
   using Vec<MapElem<K, C> >::v;
   inline MapElem<K,C> *put(K akey, C avalue);
   inline C get(K akey);
@@ -47,6 +48,7 @@ template <class C> class HashFns {
 template <class K, class AHashFns, class C> class HashMap : public Map<K,C> {
  public:
   using Map<K, C>::n;
+  using Map<K, C>::i;
   using Map<K, C>::v;
   using Map<K, C>::e;
   inline MapElem<K,C> *get_internal(K akey);
@@ -250,7 +252,8 @@ HashMap<K,AHashFns,C>::put(K akey, C avalue) {
           return &v[k];
         }
       }
-    }
+    } else
+      i = SET_INITIAL_INDEX-1; // will be incremented in set_expand
   }
   HashMap<K,AHashFns,C> vv(*this);
   Map<K,C>::set_expand();
