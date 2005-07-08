@@ -38966,3 +38966,28 @@ Log message:
 Modified files:
 	chapel/compiler/include/: map.h 
 
+---------------------------------------------------------------------------
+
+07/08/05 11:19:13 -- deitz
+
+Log message:
+	Disabled use of VAR_REF for temporaries in the InsertFunctionTemps and
+	EliminateReturns passes.  These temporaries are now normal.  Disabled
+	the extra pointer on getters of records.  Since we handle records via
+	pointers, the problem this was meant to solve doesn't exist.
+	
+	Removed Mack's futurizations.  Added another simple test case of a.b.c.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp 
+	chapel/compiler/traversals/: eliminateReturns.cpp 
+	                             insertFunctionTemps.cpp 
+Added files:
+	chapel/test/classes/deitz/: test_adotbdotc.chpl 
+	                            test_adotbdotc.good 
+Removed files:
+	chapel/test/arrays/deitz/: test_domain3.future 
+	chapel/test/classes/deitz/: test_nested_record1.future 
+	                            test_nested_record2.future 
+	                            test_nested_record_function.future 
+
