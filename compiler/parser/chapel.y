@@ -178,13 +178,13 @@
 %left TELSE
 
 %left TCOMMA
+%left TBY
 
 %left TCOLON
 %left TNOTCOLON
 
 %left TRSBR
 %left TIN
-%left TBY
 %left TDOTDOT
 %left TSEQCAT
 %left TOR
@@ -601,10 +601,10 @@ fname:
   { $$ = "and"; } 
 | TOR
   { $$ = "or"; } 
-| TBY
-  { $$ = "by"; } 
 | TSEQCAT
   { $$ = "#"; } 
+| TBY
+  { $$ = "by"; } 
   ;
 
 fn_tag:
@@ -1275,7 +1275,7 @@ expr:
 | expr TSEQCAT expr
     { $$ = new BinOp(BINOP_SEQCAT, $1, $3); }
 | expr TBY expr
-    { $$ = new SpecialBinOp(BINOP_BY, $1, $3); }
+    { $$ = new BinOp(BINOP_BY, $1, $3); }
 ;
 
 reduction:
@@ -1288,7 +1288,9 @@ reduction:
 
 range:
   expr TDOTDOT expr
-    { $$ = new SimpleSeqExpr($1, $3); }
+    {
+      $$ = new SimpleSeqExpr($1, $3);
+    }
 | TSTAR
     { $$ = new FloodExpr(); }
 | TDOTDOT

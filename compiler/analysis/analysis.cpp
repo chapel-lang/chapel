@@ -1997,7 +1997,6 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       c->ast = s->ainfo;
       break;
     }
-    case EXPR_SPECIALBINOP:
     case EXPR_BINOP: {
       BinOp *s = dynamic_cast<BinOp*>(ast);
       s->ainfo->rval = new_sym();

@@ -270,16 +270,6 @@ class AssignOp : public BinOp {
 };
 
 
-class SpecialBinOp : public BinOp {
- public:
-  SpecialBinOp(binOpType init_type, Expr* l, Expr* r);
-  COPY_DEF(SpecialBinOp);
-  Type* typeInfo(void);
-
-  precedenceType precedence(void);
-};
-
-
 class DefExpr : public Expr {
  public:
   Symbol* sym;

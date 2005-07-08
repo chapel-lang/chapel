@@ -298,7 +298,6 @@ char* astTypeName[AST_TYPE_END+1] = {
   "DefExpr",
   "UnOp",
   "BinOp",
-  "SpecialBinOp",
   "AssignOp",
   "Seq",
   "SimpleSeq",
@@ -456,8 +455,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     AST_ADD_CHILD(BinOp, left);
     AST_ADD_CHILD(BinOp, right);
     goto LExprCommon;
-  case EXPR_SPECIALBINOP:
-    goto LBinOpCommon;
   case EXPR_ASSIGNOP:
     goto LBinOpCommon;
   case EXPR_SEQ:

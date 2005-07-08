@@ -795,6 +795,7 @@ Type* BinOp::typeInfo(void) {
   case BINOP_LOGOR:
     return dtBoolean;
   case BINOP_BY:
+    return dtUnknown;
   case BINOP_OTHER:
   case NUM_BINOPS:
   default:
@@ -953,29 +954,6 @@ void AssignOp::codegen(FILE* outfile) {
 
 precedenceType AssignOp::precedence(void) {
  return PREC_LOWEST;
-}
-
-
-SpecialBinOp::SpecialBinOp(binOpType init_type, Expr* l, Expr* r) :
-  BinOp(init_type, l, r)
-{
-  astType = EXPR_SPECIALBINOP;
-}
-
-
-SpecialBinOp*
-SpecialBinOp::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new SpecialBinOp(type, COPY_INTERNAL(left), COPY_INTERNAL(right));
-}
-
-
-Type* SpecialBinOp::typeInfo(void) {
-  return dtUnknown; // These are always top-level in Chapel
-}
-
-
-precedenceType SpecialBinOp::precedence(void) {
-  return PREC_LOWEST;
 }
 
 
@@ -1775,7 +1753,7 @@ void SimpleSeqExpr::traverseExpr(Traversal* traversal) {
 
 
 Type* SimpleSeqExpr::typeInfo(void) {
-  return new DomainType(1);
+  return dtUnknown;
 }
 
 

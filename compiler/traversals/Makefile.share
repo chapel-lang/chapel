@@ -28,6 +28,7 @@ TRAVERSALS_SRCS = \
 	insertThisParameters.cpp \
 	insertUnionChecks.cpp \
 	insertVariableInitializations.cpp \
+        preAnalysisHacks.cpp \
 	printAST.cpp \
 	processParameters.cpp \
 	removeNamedParameters.cpp \

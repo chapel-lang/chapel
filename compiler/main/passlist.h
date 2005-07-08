@@ -70,6 +70,8 @@ PassInfo passlist[] = {
 
   // passes to run analysis
   RUN(Verify, ""), // this is a sanity check
+  RUN(PreAnalysisHacks, ""),
+  RUN(Verify, ""), // this is a sanity check
 
   RUN(RunAnalysis, ""),
 

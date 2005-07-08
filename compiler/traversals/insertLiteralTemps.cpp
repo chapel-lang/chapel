@@ -80,6 +80,22 @@ static void replaceSequenceLiteral(SeqExpr* seqExpr) {
 }
 
 
+static void replaceArithmeticSequenceLiteral(SimpleSeqExpr* literal) {
+  if (literal->parentExpr && dynamic_cast<ForallExpr*>(literal->parentExpr)) {
+    return;
+  }
+  if (literal->parentExpr && dynamic_cast<Tuple*>(literal->parentExpr)) {
+    return;
+  }
+  AList<Expr>* argList = new AList<Expr>();
+  argList->insertAtTail(literal->lo->copy());
+  argList->insertAtTail(literal->hi->copy());
+  argList->insertAtTail(literal->str->copy());
+  Expr* baseExpr = new Variable(new UnresolvedSymbol("_aseq"));
+  literal->replace(new ParenOpExpr(baseExpr, argList));
+}
+
+
 static void replaceTupleLiteral(Tuple* tuple) {
   AList<Expr>* argList = new AList<Expr>();
   for_alist(Expr, expr, tuple->exprs) {
@@ -225,26 +241,28 @@ static void createTupleBaseType(int size) {
 
 
 void InsertLiteralTemps::postProcessExpr(Expr* expr) {
-  if (SeqExpr* seqLiteral = dynamic_cast<SeqExpr*>(expr)) {
-    replaceSequenceLiteral(seqLiteral);
-  } else if (ComplexLiteral* complexLiteral = dynamic_cast<ComplexLiteral*>(expr)) {
-    replaceComplexLiteral(complexLiteral);
+  if (SimpleSeqExpr* literal = dynamic_cast<SimpleSeqExpr*>(expr)) {
+    replaceArithmeticSequenceLiteral(literal);
+  } else if (SeqExpr* literal = dynamic_cast<SeqExpr*>(expr)) {
+    replaceSequenceLiteral(literal);
+  } else if (ComplexLiteral* literal = dynamic_cast<ComplexLiteral*>(expr)) {
+    replaceComplexLiteral(literal);
   } else if (BinOp* binOp = dynamic_cast<BinOp*>(expr)) {
     if (binOp->type == BINOP_SEQCAT) {
       handleBasicSequenceAppendPrependOperations(binOp);
     }
-  } else if (Tuple* tuple = dynamic_cast<Tuple*>(expr)) {
-    createTupleBaseType(tuple->exprs->length());
-    if (dynamic_cast<ForLoopStmt*>(tuple->parentStmt)) {
+  } else if (Tuple* literal = dynamic_cast<Tuple*>(expr)) {
+    createTupleBaseType(literal->exprs->length());
+    if (dynamic_cast<ForLoopStmt*>(literal->parentStmt)) {
       return;  // HACK for domains
     }
-    if (AssignOp* assignOp = dynamic_cast<AssignOp*>(tuple->parentExpr)) {
-      if (assignOp->left == tuple) {
-        replaceTupleLiteral2(tuple); // Handle destructuring
+    if (AssignOp* assignOp = dynamic_cast<AssignOp*>(literal->parentExpr)) {
+      if (assignOp->left == literal) {
+        replaceTupleLiteral2(literal); // Handle destructuring
         return;
       }
     }
-    replaceTupleLiteral(tuple);
+    replaceTupleLiteral(literal);
   }
 }
 

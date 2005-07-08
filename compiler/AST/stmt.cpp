@@ -540,6 +540,8 @@ void ForLoopStmt::codegenStmt(FILE* outfile) {
     fprintf(outfile, ", ");
     StructuralType* seqType = dynamic_cast<StructuralType*>(domain->typeInfo());
     fprintf(outfile, "%s", seqType->fields.v[1]->type->symbol->cname);
+    fprintf(outfile, ", ");
+    fprintf(outfile, "%ld", id);
     fprintf(outfile, ") {\n");
     block->codegen(outfile);
     fprintf(outfile, "\n");

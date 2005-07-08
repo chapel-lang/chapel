@@ -137,11 +137,6 @@ static void verifyASTType(BaseAST* ast) {
       INT_FATAL(ast, "Unexpected AST expression type: EXPR_BINOP");
     }
     break;
-  case EXPR_SPECIALBINOP:
-    if (typeid(*ast) != typeid(SpecialBinOp)) {
-      INT_FATAL(ast, "Unexpected AST expression type: EXPR_SPECIALBINOP");
-    }
-    break;
   case EXPR_ASSIGNOP:
     if (typeid(*ast) != typeid(AssignOp)) {
       INT_FATAL(ast, "Unexpected AST expression type: EXPR_ASSIGNOP");
