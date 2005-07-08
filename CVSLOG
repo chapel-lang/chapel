@@ -38955,3 +38955,14 @@ Modified files:
 	chapel/compiler/traversals/: verifyASTType.cpp 
 	chapel/test/trivial/bradc/protoast/: mvm-seq.chpl mvm-seq.good 
 
+---------------------------------------------------------------------------
+
+07/08/05 08:49:28 -- jplevyak
+
+Log message:
+	Fix a bug in MapHash which was indexing 1 off the end of an array.
+	This fixes the valgrind failures from the constants change.
+
+Modified files:
+	chapel/compiler/include/: map.h 
+
