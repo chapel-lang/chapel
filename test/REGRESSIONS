@@ -40,11 +40,6 @@ linux and general regressions
   been instantiated so that the test would pass for all parameters.
   (deitz/bradc)
 
-[Error matching compiler output for types/complex/bradc/intfloatelement]
-
-  There seems to be a weird conflict with the complex record and the
-  new _htuple record in analysis.
-
 [Error matching compiler output for trivial/mjoyner/seq/seq_reverse]
 [Error matching compiler output for types/seq/deitz/test_seq_reverse1]
 [Error matching compiler output for types/type_variables/deitz/test_typevar_record6]
