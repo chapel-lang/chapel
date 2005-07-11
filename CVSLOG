@@ -39095,3 +39095,13 @@ Log message:
 Modified files:
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+07/11/05 12:24:48 -- jplevyak
+
+Log message:
+	Remove an old regression which is nolonger regressing.
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+
