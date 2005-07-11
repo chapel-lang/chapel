@@ -41,8 +41,13 @@ char* copystring(char* str) {
 
 
 char* intstring(int i) {
-  char scratch[8];
+  const size_t size = 64;
+  char scratch[size];
+  size_t charsWritten = snprintf(scratch, size, "%d", i);
 
-  sprintf(scratch, "%d", i);
+  if (charsWritten > size) {
+    INT_FATAL("intstring() buffer overflow");
+  }
+
   return glomstrings(1, scratch);
 }
