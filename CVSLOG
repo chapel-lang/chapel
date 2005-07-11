@@ -39105,3 +39105,17 @@ Log message:
 Modified files:
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+07/11/05 12:36:59 -- roxana
+
+Log message:
+	Added small string utility that implements the functionality
+	of creating unique names for mangling. Still postponing getting
+	to name mangling since I still did not figure out how to go about
+	testing in the presence of an existing scheme.
+
+Added files:
+	chapel/compiler/util/: uniqueName.cpp 
+	chapel/compiler/include/: uniqueName.h 
+
