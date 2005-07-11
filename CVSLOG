@@ -39131,3 +39131,20 @@ Log message:
 Modified files:
 	chapel/compiler/util/: stringutil.cpp 
 
+---------------------------------------------------------------------------
+
+07/11/05 15:56:52 -- shannon
+
+Log message:
+	Added the filename and line number to the
+	output of an assertion failure, and updated
+	the assert test output to reflect this.
+	
+	Refactored the generation of the assert()
+	and halt() functions in the specializeParenOpExprs
+	traversal.
+
+Modified files:
+	chapel/compiler/traversals/: specializeParenOpExprs.cpp 
+	chapel/test/trivial/shannon/quit/: assert.good 
+
