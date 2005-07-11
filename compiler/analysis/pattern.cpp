@@ -144,9 +144,10 @@ Matcher::pattern_match_sym(Sym *type, MPosition *acp, Vec<Fun *> *local_matches,
         Vec<Fun *> ffs;
         if (local_matches) {
           local_matches->set_intersection(*fs, ffs);
-          fs = &ffs;
+          fs = &ffs; 
         }
-        found = 1;
+        if (fs->n)
+          found = 1;
         funs.set_union(*fs);
       }
     }

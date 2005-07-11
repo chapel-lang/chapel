@@ -445,7 +445,7 @@ install_new_function(FnSymbol *f, FnSymbol *old_f, Map<BaseAST*,BaseAST*> *map =
   forv_BaseAST(ast, syms) {
     if (Symbol *s = dynamic_cast<Symbol *>(ast)) {
       initialize_Sym_for_fa(s->asymbol->sym);
-      if (map) 
+      if (map)
         if (FnSymbol *fs = dynamic_cast<FnSymbol *>(s)) {
           build_patterns(pdb->fa, fs->asymbol->sym->fun);
           finalize_function(fs->asymbol->sym->fun);
@@ -518,7 +518,7 @@ ACallbacks::instantiate(Sym *s, Map<Sym *, Sym *> &substitutions) {
   if (tt) {
     Type *type = NULL;
     if (ParamSymbol *p = dynamic_cast<ParamSymbol*>(s->asymbol->symbol))
-      type = p->typeVariable ? p->typeVariable->type : 0;
+      type = (p->isGeneric && p->typeVariable) ? p->typeVariable->type : 0;
     else
       type = dynamic_cast<Type*>(s->asymbol->symbol);
     if (!type)
@@ -526,7 +526,7 @@ ACallbacks::instantiate(Sym *s, Map<Sym *, Sym *> &substitutions) {
     Map<BaseAST *, BaseAST *> subs;
     form_SymSym(ss, substitutions) {
       if (ParamSymbol *p = dynamic_cast<ParamSymbol*>(ss->key->asymbol->symbol)) {
-        if (p->typeVariable)
+        if (p->isGeneric && p->typeVariable)
           subs.put(p->typeVariable->type, Sym_to_Type(ss->value));
         else
           subs.put(p, get_constant_Expr(ss->value));
@@ -624,7 +624,7 @@ ACallbacks::instantiate_generic(Match *m) {
       if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(s->key->asymbol->symbol))
         t = ts->type;
     if (!t)
-      if (p && p->typeVariable)
+      if (p && p->isGeneric && p->typeVariable)
         t = p->typeVariable->type;
     if (t)
       substitutions.put(t, Sym_to_Type(s->value));
@@ -839,6 +839,13 @@ build_symbols(Vec<BaseAST *> &syms) {
                 s->asymbol->sym->must_implement = s->type->asymbol->sym;
             }
           }
+#if 0
+          if (!p->isGeneric && p->typeVariable) {
+            TypeSymbol *ts = dynamic_cast<TypeSymbol*>(p->typeVariable);
+            s->asymbol->sym->must_implement = ts->asymbol->sym;
+          }
+          assert(p->isGeneric || p->typeVarible);
+#endif
           break;
         }
         default: break;
@@ -939,16 +946,6 @@ build_type(Type *t, bool make_default = true) {
       }
       INT_FATAL(t, "No analysis support for 'like'");
     }
-      /*** John:  There is no longer a TYPE_SEQ
-           It's now a record that we'll eventually flag.
-    case TYPE_SEQ: {
-      SeqType *tt = dynamic_cast<SeqType*>(t);
-      Sym *s = tt->asymbol->sym;
-      s->element = new_sym();
-      build_record_type(t, sym_sequence);
-      break;
-    }
-      ***/
     case TYPE_CLASS:
     case TYPE_RECORD:
     case TYPE_UNION: 
@@ -1461,11 +1458,9 @@ gen_one_defexpr(VarSymbol *var, DefExpr *def) {
 static int
 gen_defexpr(BaseAST *a) {
   DefStmt *def = dynamic_cast<DefStmt*>(a);
-  if (VarSymbol* var = dynamic_cast<VarSymbol*>(def->defExpr->sym)) {
-    if (gen_one_defexpr(var, def->defExpr)) {
+  if (VarSymbol* var = dynamic_cast<VarSymbol*>(def->defExpr->sym))
+    if (gen_one_defexpr(var, def->defExpr))
       return -1;
-    }
-  }
   if1_gen(if1, &def->ainfo->code, def->defExpr->ainfo->code);
   return 0;
 }
@@ -1853,9 +1848,8 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
     }
     case STMT_NOOP: break;
     case STMT_DEF:
-      if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(ast)) {
+      if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(ast))
         if (def_stmt->varDef() && gen_defexpr(def_stmt) < 0) return -1;
-      }
       break;
     case STMT_EXPR: if (gen_expr_stmt(ast) < 0) return -1; break;
     case STMT_RETURN: {
@@ -3183,6 +3177,8 @@ constant_info(BaseAST *a, Vec<Expr *> &constants, Symbol *s) {
   AST *ast = 0;
   Sym *sym = 0;
   ast_sym_info(a, s, &ast, &sym);
+  if (!ast && !sym)
+    return constants.n;
   Vec<Sym *> consts;
   constant_info(ast, consts, sym);
   forv_Sym(ss, consts)

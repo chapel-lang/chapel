@@ -187,6 +187,11 @@ compute_structural_type_hierarchy(Vec<Sym *> types) {
 void
 build_type_hierarchy() {
   Vec<Sym *> types, meta_types;
+  forv_Sym(s, if1->allsyms) {
+    s->specializers.clear();
+    s->implementors.clear();
+    s->dispatch_order.clear();
+  }
   implement_and_specialize(sym_unknown, sym_any, types);
   implement_and_specialize(sym_object, sym_null, types);
   forv_Sym(s, if1->allsyms) {
