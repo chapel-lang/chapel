@@ -39070,3 +39070,18 @@ Added files:
 	                                   test4.future test4.good 
 	                                   test5.chpl test5.good 
 
+---------------------------------------------------------------------------
+
+07/11/05 12:22:37 -- jplevyak
+
+Log message:
+	Fixed an issue in constant_info which was causing
+	SEGV with the -t option in some cases.
+	Recompute the entire type hierarchy after type instantitions --
+	  this can be made incremental, but for now it fixes an issue.
+	There are 3 new failures, these are exposed problems with
+	  visible functions.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp ast.cpp pattern.cpp 
+
