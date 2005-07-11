@@ -37,7 +37,7 @@ static void build_constructor(StructuralType* structType) {
         ParamSymbol* arg = new ParamSymbol(PARAM_BLANK, name, type);
         arg->isGeneric = true;
         arg->typeVariable = dynamic_cast<TypeSymbol*>(tv->symbol);
-        args->insertAtTail(new DefExpr(arg));
+        args->insertAtTail(new DefExpr(arg, new UserInitExpr(new Variable(dtUnknown->symbol))));
       }
     }
 
