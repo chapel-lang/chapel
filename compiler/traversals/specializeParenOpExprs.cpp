@@ -15,26 +15,62 @@ decomposeStmtFunction(ParenOpExpr* parenOpExpr, char* newFunctionName) {
 }
 
 
+static ExprStmt* genExit(void) {
+  Expr* rtexit = new Variable(new UnresolvedSymbol("exit"));
+  IntLiteral* exitZero = new IntLiteral("0", 0);
+  AList<Expr>* status = new AList<Expr>(exitZero);
+  Expr* callRtexit = new ParenOpExpr(rtexit, status);
+  return new ExprStmt(callRtexit);
+}
+
+
+static ExprStmt* genWriteln(void) {
+  Expr* writeln = new Variable(new UnresolvedSymbol("writeln"));
+  Expr* callWriteln = new ParenOpExpr(writeln);
+  return new ExprStmt(callWriteln);
+}
+
+
+static ExprStmt* genWrite(Literal* expression) {
+  Expr* write = new Variable(new UnresolvedSymbol("write"));
+  AList<Expr>* msg = new AList<Expr>(expression);
+  Expr* writeMsg = new ParenOpExpr(write, msg);
+  return new ExprStmt(writeMsg);
+}
+
+
+static ExprStmt* genIntWriteExpr(int newInt) {
+  IntLiteral* expression = new IntLiteral(intstring(newInt), newInt);
+  return genWrite(expression);
+}
+
+
+static ExprStmt* genStringWriteExpr(char* newString) {
+  StringLiteral* expression = new StringLiteral(newString);
+  return genWrite(expression);
+}
+
+
 void SpecializeParenOpExprs::postProcessStmt(Stmt* stmt) {
   if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {
     if (ParenOpExpr* parenOpExpr = dynamic_cast<ParenOpExpr*>(exprStmt->expr)) {
       if (Variable* baseVar = dynamic_cast<Variable*>(parenOpExpr->baseExpr)) {
         if (strcmp(baseVar->var->name, "assert") == 0) {
           BlockStmt* thenStmt = Symboltable::startCompoundStmt();
-          Expr* write = new Variable(new UnresolvedSymbol("write"));
-          StringLiteral* assertFailed = new StringLiteral("***Error:  Assert "
-                                                          "failed***");
-          AList<Expr>* errorMessage = new AList<Expr>(assertFailed);
-          Expr* callWrite = new ParenOpExpr(write, errorMessage);
-          AList<Stmt>* thenBody = new AList<Stmt>(new ExprStmt(callWrite));
-          Expr* writeln = new Variable(new UnresolvedSymbol("writeln"));
-          Expr* callWriteln = new ParenOpExpr(writeln);
-          thenBody->insertAtTail(new ExprStmt(callWriteln));
-          Expr* rtexit = new Variable(new UnresolvedSymbol("exit"));
-          IntLiteral* exitZero = new IntLiteral("0", 0);
-          AList<Expr>* status = new AList<Expr>(exitZero);
-          Expr* callRtexit = new ParenOpExpr(rtexit, status);
-          thenBody->insertAtTail(new ExprStmt(callRtexit));
+
+          ExprStmt* writeAssert = genStringWriteExpr("***Error:  Assertion at ");
+          AList<Stmt>* thenBody = new AList<Stmt>(writeAssert);
+          ExprStmt* writeFilename = genStringWriteExpr(stmt->filename);
+          thenBody->insertAtTail(writeFilename);
+          ExprStmt* writeColon = genStringWriteExpr(":");
+          thenBody->insertAtTail(writeColon);
+          ExprStmt* writeLinenumber = genIntWriteExpr(stmt->lineno);
+          thenBody->insertAtTail(writeLinenumber);
+          ExprStmt* writeFailed = genStringWriteExpr(" failed***");
+          thenBody->insertAtTail(writeFailed);
+          thenBody->insertAtTail(genWriteln());
+          thenBody->insertAtTail(genExit());
+
           thenStmt = Symboltable::finishCompoundStmt(thenStmt, thenBody);
           int length = parenOpExpr->argList->length();
           if (length != 1) {
@@ -49,17 +85,8 @@ void SpecializeParenOpExprs::postProcessStmt(Stmt* stmt) {
 
         } else if (strcmp(baseVar->var->name, "halt") == 0) {
           decomposeStmtFunction(parenOpExpr, "write");
-          Expr* writeln = new Variable(new UnresolvedSymbol("writeln"));
-          Expr* callWriteln = new ParenOpExpr(writeln);
-          parenOpExpr->parentStmt->insertBefore(new ExprStmt(callWriteln));
-
-          Expr* rtexit = new Variable(new UnresolvedSymbol("exit"));
-          IntLiteral* exitZero = new IntLiteral("0", 0);
-          AList<Expr>* status = new AList<Expr>(exitZero);
-          Expr* callRtexit = new ParenOpExpr(rtexit, status);
-          parenOpExpr->parentStmt->insertBefore(new ExprStmt(callRtexit));
-
-
+          parenOpExpr->parentStmt->insertBefore(genWriteln());
+          parenOpExpr->parentStmt->insertBefore(genExit());
           parenOpExpr->parentStmt->remove();
         } else if (strcmp(baseVar->var->name, "read") == 0) {
           decomposeStmtFunction(parenOpExpr, "read");
@@ -69,9 +96,7 @@ void SpecializeParenOpExprs::postProcessStmt(Stmt* stmt) {
           parenOpExpr->parentStmt->remove();
         } else if (strcmp(baseVar->var->name, "writeln") == 0) {
           decomposeStmtFunction(parenOpExpr, "write");
-          Expr* writeln = new Variable(new UnresolvedSymbol("writeln"));
-          Expr* callWriteln = new ParenOpExpr(writeln);
-          parenOpExpr->parentStmt->insertBefore(new ExprStmt(callWriteln));
+          parenOpExpr->parentStmt->insertBefore(genWriteln());
           parenOpExpr->parentStmt->remove();
         }
       }
