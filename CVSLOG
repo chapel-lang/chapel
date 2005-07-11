@@ -39085,3 +39085,13 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp ast.cpp pattern.cpp 
 
+---------------------------------------------------------------------------
+
+07/11/05 12:24:17 -- jplevyak
+
+Log message:
+	
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+
