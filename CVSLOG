@@ -39048,3 +39048,25 @@ Added files:
 	                                 test_string_shuffle.chpl 
 	                                 test_string_shuffle.good 
 
+---------------------------------------------------------------------------
+
+07/11/05 11:59:42 -- deitz
+
+Log message:
+	Made the default for a type variable passed to the default constructor
+	be dtUnknown.  This allows them to be left off.
+	
+	Added a few new tests, two of which future because this does not seem
+	to work.  It looks like the wrong function is resolved.  This is a low
+	priority future.
+
+Modified files:
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+Added files:
+	chapel/test/classes/deitz/suite1/: test1.chpl test1.good 
+	                                   test2.chpl test2.future 
+	                                   test2.good test3.chpl 
+	                                   test3.good test4.chpl 
+	                                   test4.future test4.good 
+	                                   test5.chpl test5.good 
+
