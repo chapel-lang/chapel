@@ -39119,3 +39119,15 @@ Added files:
 	chapel/compiler/util/: uniqueName.cpp 
 	chapel/compiler/include/: uniqueName.h 
 
+---------------------------------------------------------------------------
+
+07/11/05 15:17:39 -- shannon
+
+Log message:
+	Increased the size of the buffer for an
+	int-to-string conversion, and added an INT_FATAL
+	if the buffer is overwritten.
+
+Modified files:
+	chapel/compiler/util/: stringutil.cpp 
+
