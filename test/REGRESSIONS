@@ -45,6 +45,12 @@ linux and general regressions
   There seems to be a weird conflict with the complex record and the
   new _htuple record in analysis.
 
+[Error matching compiler output for trivial/mjoyner/seq/seq_reverse]
+[Error matching compiler output for types/seq/deitz/test_seq_reverse1]
+[Error matching compiler output for types/type_variables/deitz/test_typevar_record6]
+
+  These are all caused by visibility problems with instantiated functions.
+
 ==========================
 linux valgrind regressions
 ==========================
