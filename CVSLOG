@@ -39190,3 +39190,25 @@ Modified files:
 	chapel/compiler/main/: driver.cpp 
 	chapel/compiler/traversals/: inlineFunctions.cpp 
 
+---------------------------------------------------------------------------
+
+07/12/05 13:58:02 -- deitz
+
+Log message:
+	In preparation for cleaning up the DefExpr::exprType and Symbol::type
+	boundaries, I removed LikeType.  Instead this is currently stored as
+	an ExprType with a ParenOpExpr of the function "typeof".  It is
+	currently resolved before analysis in the pass RemoveLikeTypes as
+	before.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h type.h 
+	chapel/compiler/parser/: chapel.y prelude.chpl 
+	chapel/compiler/symtab/: removeLikeTypes.cpp 
+	chapel/compiler/traversals/: verifyASTType.cpp 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+
