@@ -317,11 +317,6 @@ static void verifyASTType(BaseAST* ast) {
       INT_FATAL(ast, "Unexpected AST type type: TYPE_USER");
     }
     break;
-  case TYPE_LIKE:
-    if (typeid(*ast) != typeid(LikeType)) {
-      INT_FATAL(ast, "Unexpected AST type type: TYPE_LIKE");
-    }
-    break;
   case TYPE_STRUCTURAL:
     if (typeid(*ast) != typeid(StructuralType)) {
       INT_FATAL(ast, "Unexpected AST type type: TYPE_STRUCTURAL");

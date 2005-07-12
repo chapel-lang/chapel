@@ -1,3 +1,5 @@
+function typeof(x) { }
+
 record pragma "codegen data" _data { -- a c array, basically
   type t;
   parameter size : integer;

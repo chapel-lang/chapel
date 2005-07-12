@@ -784,54 +784,6 @@ Type* UserType::getType(void) {
 }
 
 
-LikeType::LikeType(Expr* init_expr) :
-  Type(TYPE_LIKE, NULL),
-  expr(init_expr)
-{ }
-
-
-LikeType*
-LikeType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  LikeType* copy = new LikeType(COPY_INTERNAL(expr));
-  copy->addSymbol(symbol);
-  return copy;
-}
-
-
-void LikeType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == defaultVal) {
-    defaultVal = dynamic_cast<Expr*>(new_ast);
-  } else if (old_ast == expr) {
-    expr = dynamic_cast<Expr*>(new_ast);
-  } else {
-    INT_FATAL(this, "Unexpected case in Type::replaceChild");
-  }
-}
-
-
-void LikeType::traverseDefType(Traversal* traversal) {
-  TRAVERSE(expr, traversal, false);
-}
-
-
-void LikeType::printDef(FILE* outfile) {
-  fprintf(outfile, "like type ");
-  symbol->print(outfile);
-  fprintf(outfile, " = ");
-  expr->print(outfile);
-}
-
-
-void LikeType::codegen(FILE* outfile) {
-  INT_FATAL(this, "Unanticipated call to LikeType::codegen");
-}
-
-
-void LikeType::codegenDef(FILE* outfile) {
-  INT_FATAL(this, "Unanticipated call to LikeType::codegenDef");
-}
-
-
 StructuralType::StructuralType(astType_t astType, Expr* init_defaultVal) :
   Type(astType, init_defaultVal),
   structScope(NULL),

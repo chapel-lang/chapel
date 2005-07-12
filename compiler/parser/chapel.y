@@ -262,7 +262,7 @@ var_type:
   TCOLON type
     { $$ = $2; }
 | TLIKE expr
-    { $$ = new LikeType($2); }
+    { $$ = new ExprType(new ParenOpExpr(new Variable(new UnresolvedSymbol("typeof")), new AList<Expr>($2))); }
 ;
 
 

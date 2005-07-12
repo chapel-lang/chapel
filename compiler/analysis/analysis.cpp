@@ -934,18 +934,6 @@ build_type(Type *t, bool make_default = true) {
       t->asymbol->sym->alias = tt->definition->asymbol->sym;
       break;
     }
-    case TYPE_LIKE: {
-      LikeType *tt = dynamic_cast<LikeType*>(t);
-      if (tt->expr->astType == EXPR_VARIABLE) {
-        Variable *v = (Variable*)tt->expr;
-        if (v->var->type && v->var->type != dtUnknown) {
-          t->asymbol->sym->type_kind = Type_ALIAS;
-          t->asymbol->sym->alias = v->var->type->asymbol->sym;
-          break;
-        }
-      }
-      INT_FATAL(t, "No analysis support for 'like'");
-    }
     case TYPE_CLASS:
     case TYPE_RECORD:
     case TYPE_UNION: 
@@ -1372,7 +1360,6 @@ gen_one_defexpr(VarSymbol *var, DefExpr *def) {
       case TYPE_CLASS:
       case TYPE_NIL:
         // do not make it to analysis
-      case TYPE_LIKE:
       case TYPE_SUM:
       case TYPE_STRUCTURAL:
       case TYPE_UNRESOLVED:
@@ -2288,7 +2275,6 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
   case TYPE_INDEX:
   case TYPE_ARRAY:
   case TYPE_USER:
-  case TYPE_LIKE:
   case TYPE_STRUCTURAL:
   case TYPE_CLASS:
   case TYPE_RECORD:

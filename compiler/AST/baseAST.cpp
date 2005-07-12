@@ -336,7 +336,6 @@ char* astTypeName[AST_TYPE_END+1] = {
   "IndexType",
   "ArrayType",
   "UserType",
-  "LikeType",
   "StructuralType",
   "ClassType",
   "RecordType",
@@ -569,9 +568,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     goto LTypeCommon;
   case TYPE_USER:
     ADD_CHILD(UserType, definition);
-    goto LTypeCommon;
-  case TYPE_LIKE:
-    ADD_CHILD(LikeType, expr);
     goto LTypeCommon;
   case TYPE_STRUCTURAL:
   LStructuralTypeCommon:

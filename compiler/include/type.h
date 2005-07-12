@@ -179,21 +179,6 @@ class UserType : public Type {
 };
 
 
-class LikeType : public Type {
- public:
-  Expr* expr;
-
-  LikeType(Expr* init_expr);
-  COPY_DEF(LikeType);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseDefType(Traversal* traversal);
-
-  void printDef(FILE* outfile);
-  void codegen(FILE* outfile);
-  void codegenDef(FILE* outfile);
-};
-
-
 class StructuralType : public Type {
  public:
   SymScope* structScope;
