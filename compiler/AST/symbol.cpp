@@ -878,6 +878,15 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
           return tmp->newfn;
           /** already instantiated **/
         }
+        if (substitutions->n == 2 &&
+            tmp->subs->n == 2 &&
+            substitutions->v[0].key == tmp->subs->v[0].key &&
+            substitutions->v[1].key == tmp->subs->v[1].key &&
+            substitutions->v[0].value == tmp->subs->v[0].value &&
+            substitutions->v[1].value == tmp->subs->v[1].value) {
+          return tmp->newfn;
+          /** already instantiated **/
+        }
       }
     }
   }

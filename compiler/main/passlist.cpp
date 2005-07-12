@@ -46,6 +46,7 @@
 #include "../traversals/insertThisParameters.h"
 #include "../traversals/insertUnionChecks.h"
 #include "../traversals/insertVariableInitializations.h"
+#include "../traversals/instantiate.h"
 #include "../traversals/preAnalysisHacks.h"
 #include "../traversals/printAST.h"
 #include "../traversals/processParameters.h"
@@ -102,6 +103,7 @@ REGISTER(InsertOutParameterInitializations);
 REGISTER(InsertThisParameters);
 REGISTER(InsertUnionChecks);     // SJD: Insert runtime type checks for unions
 REGISTER(InsertVariableInitializations);
+REGISTER(Instantiate);
 REGISTER(LegalizeCNames);
 REGISTER(FindCollidingNames); //RED: find colliding names and resolve that
 REGISTER(PostAnalysisCleanup);

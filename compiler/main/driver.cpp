@@ -44,6 +44,7 @@ static bool rungdb = false;
 static int pre_malloc = 0;
 bool checkAnalysisTypeinfo = false;
 bool applyGettersSetters = false;
+bool instantiate = false;
 bool useExprType = false;
 bool analyzeAST = true;
 bool suppressCodegen = false;
@@ -101,6 +102,7 @@ static ArgumentDescription arg_desc[] = {
  {"noanalysis", ' ', "Skip analysis of AST", "f", &analyzeAST, NULL, NULL},
  {"checkAnalysisTypeinfo", ' ', "Check result of type_info and return_type_info", "F", &checkAnalysisTypeinfo, NULL, NULL},
  {"apply-getters-setters", ' ', "Apply getters and setters preanalysis", "F", &applyGettersSetters, NULL, NULL},
+ {"instantiate", ' ', "Instantiate before analysis", "F", &instantiate, NULL, NULL},
  {"use-expr-type", ' ', "Use exprType for all", "F", &useExprType, NULL, NULL},
  {"tmpRoxIndexType", ' ', "Roxana's index toggle", "F", &_dtinteger_IndexType_switch, "CHPL_DTINTEGER_INDEXTYPE_SWITCH", NULL},
  {"tmpMangling", ' ', "Name mangling toggle", "F", &_adhoc_to_uniform_mangling, "CHPL_ADHOC_TO_UNIFORMA_MANGLING", NULL},

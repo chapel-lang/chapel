@@ -49,8 +49,6 @@ PassInfo passlist[] = {
   RUN(Verify, ""), // this is a sanity check
   RUN(BuildClassConstructorsEtc, ""),
   RUN(Verify, ""), // this is a sanity check
-  RUN(SpecializeParenOpExprs, ""),
-  RUN(Verify, ""), // this is a sanity check
   RUN(ApplyThisParameters, ""),
   RUN(Verify, ""), // this is a sanity check
   RUN(ApplyGettersSetters, ""),
@@ -70,9 +68,12 @@ PassInfo passlist[] = {
 
   // passes to run analysis
   RUN(Verify, ""), // this is a sanity check
+  RUN(Instantiate, ""),
+  RUN(Verify, ""), // this is a sanity check
+  RUN(SpecializeParenOpExprs, ""),
+  RUN(Verify, ""), // this is a sanity check
   RUN(PreAnalysisHacks, ""),
   RUN(Verify, ""), // this is a sanity check
-
   RUN(RunAnalysis, ""),
 
   // passes to capture analysis information in the AST
@@ -91,7 +92,6 @@ PassInfo passlist[] = {
   // passes to normalize the basic AST after analysis
   RUN(Verify, ""), // this is a sanity check
   RUN(InsertElidedLoops, ""),
-
 
   // check the program's semantics
   RUN(Verify, ""), // this is a sanity check
