@@ -6,6 +6,9 @@
 #include "replaceReturns.h"
 
 void InlineFunctions::postProcessExpr(Expr* expr) {
+  //no inlining compiler flag was used
+  if (no_inline)
+    return;
   //function call
   if (FnCall* fn_call = dynamic_cast<FnCall*>(expr)) {
     //for now, only leaf getter/setter functions will be inlined 

@@ -61,6 +61,7 @@ int fgraph_constants = 0;
 int fgraph_frequencies = 0;
 int fgraph_vcg = 0;
 int fcg = 0;
+bool no_inline = false;
 char system_dir[FILENAME_MAX] = DEFAULT_SYSTEM_DIR;
 int print_call_depth = 2;
 int scoping_test = 0;
@@ -100,6 +101,7 @@ static ArgumentDescription arg_desc[] = {
  {"savec", ' ', "Save Intermediate C Code", "P", saveCDir, "CHPL_SAVEC_DIR", NULL},
  {"gdb", ' ', "Run compiler in gdb", "F", &rungdb, NULL, NULL},
  {"noanalysis", ' ', "Skip analysis of AST", "f", &analyzeAST, NULL, NULL},
+ {"no-inline", ' ', "No inlining of functions" , "F", &no_inline, NULL, NULL},
  {"checkAnalysisTypeinfo", ' ', "Check result of type_info and return_type_info", "F", &checkAnalysisTypeinfo, NULL, NULL},
  {"apply-getters-setters", ' ', "Apply getters and setters preanalysis", "F", &applyGettersSetters, NULL, NULL},
  {"instantiate", ' ', "Instantiate before analysis", "F", &instantiate, NULL, NULL},
