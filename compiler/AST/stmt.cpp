@@ -14,6 +14,7 @@
 bool printCppLineno = false;
 bool printChplLineno = false;
 bool inFunction = false;
+bool inUserModule = false;
 bool justStartedGeneratingFunction = false;
 
 Stmt::Stmt(astType_t astType) :
@@ -49,7 +50,7 @@ void Stmt::codegen(FILE* outfile) {
       fprintf(outfile, "/* ZLINE: %d %s */\n", lineno, filename);
     } 
     
-    if (printChplLineno && inFunction) {
+    if (printChplLineno && inFunction && inUserModule) {
       if (strcmp(filename, priorFilename) != 0 ||  
           justStartedGeneratingFunction) {
         fprintf(outfile, "_chpl_input_filename = \"%s\";\n", filename);

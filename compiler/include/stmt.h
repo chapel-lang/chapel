@@ -11,6 +11,7 @@
 extern bool printCppLineno;
 extern bool printChplLineno;
 extern bool inFunction;
+extern bool inUserModule;
 extern bool justStartedGeneratingFunction;
 
 class Expr;
