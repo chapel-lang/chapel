@@ -39178,3 +39178,15 @@ Added files:
 	                                test_tuple_function1.future 
 	                                test_tuple_function1.good 
 
+---------------------------------------------------------------------------
+
+07/12/05 13:29:38 -- mjoyner
+
+Log message:
+	Added a no-inline flag to disable function inlining.  Function inlining is enabled by default.
+
+Modified files:
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/traversals/: inlineFunctions.cpp 
+
