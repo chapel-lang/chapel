@@ -39148,3 +39148,21 @@ Modified files:
 	chapel/compiler/traversals/: specializeParenOpExprs.cpp 
 	chapel/test/trivial/shannon/quit/: assert.good 
 
+---------------------------------------------------------------------------
+
+07/12/05 11:37:43 -- deitz
+
+Log message:
+	Added a new pass called instantiate that instantiates classes and
+	records before analysis if possible.  Disabled by default, use
+	--instantiate to turn this on.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp passlist.cpp passlist.h 
+	chapel/compiler/passes/: filesToAST.cpp 
+	chapel/compiler/traversals/: Makefile.share 
+Added files:
+	chapel/compiler/traversals/: instantiate.cpp instantiate.h 
+
