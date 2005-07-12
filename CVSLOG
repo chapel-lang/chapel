@@ -39166,3 +39166,15 @@ Modified files:
 Added files:
 	chapel/compiler/traversals/: instantiate.cpp instantiate.h 
 
+---------------------------------------------------------------------------
+
+07/12/05 11:45:54 -- deitz
+
+Log message:
+	Added test that takes tuples (instantiated types) as arguments and future.
+
+Added files:
+	chapel/test/types/tuple/deitz/: test_tuple_function1.chpl 
+	                                test_tuple_function1.future 
+	                                test_tuple_function1.good 
+
