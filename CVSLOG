@@ -39229,3 +39229,14 @@ Modified files:
 Removed files:
 	chapel/test/trivial/shannon/: readWriteComplexLineno.future 
 
+---------------------------------------------------------------------------
+
+07/12/05 16:55:49 -- mjoyner
+
+Log message:
+	A good start on creating a pass that removes nested function definitions.
+
+Added files:
+	chapel/compiler/traversals/: removeNestedFunctions.h 
+	                             removeNestedFunctions.cpp 
+
