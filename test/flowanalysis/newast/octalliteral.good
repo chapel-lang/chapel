@@ -1,4 +1,2 @@
 ::x(octalliteral.chpl:1) ( int64 )
-function __init_octalliteral octalliteral.chpl:1
-function main octalliteral.chpl:1
 globals

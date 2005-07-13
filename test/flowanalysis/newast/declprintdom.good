@@ -4,6 +4,4 @@
 ::m1(declprintdom.chpl:1) ( int64 )
 ::m2(declprintdom.chpl:2) ( int64 )
 ::m3(declprintdom.chpl:3) ( int64 )
-function __init_declprintdom declprintdom.chpl:7
-function main declprintdom.chpl:7
 globals

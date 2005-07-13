@@ -1,11 +1,9 @@
- called from 5 in __init_enum at enum.chpl:7
+ called from 5 in __init_enum at _chpl_seq.chpl:-1
 ::B(enum.chpl:1) ( classVals )
 ::S(enum.chpl:1) ( classVals )
 ::_init_classVals2(enum.chpl:1) ( classVals )
 ::val(enum.chpl:1) ( classVals )
 ::x(enum.chpl:3) ( classVals )
 ::y(enum.chpl:7) ( int64 )
-function __init_enum enum.chpl:7
-function main enum.chpl:7
 function write enum.chpl:1
 globals

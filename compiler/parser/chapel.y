@@ -146,7 +146,8 @@
 %type <pexpr> tuple_multiplier intliteral
 %type <pexpr> reduction opt_init_expr assign_expr if_expr
 %type <pexprls> expr_ls nonempty_expr_ls tuple_inner_type_ls
-%type <pdefexprls> formal formal_ls opt_formal_ls
+%type <pdefexpr> formal
+%type <pdefexprls> formal_ls opt_formal_ls
 %type <pforallexpr> forallExpr
 
 %type <pstmt> select_stmt
@@ -165,8 +166,8 @@
 %type <ptype> record_tuple_inner_type expr_type
 %type <ptype> class_record_union
 
-%type <psym> ident_symbol ident_symbol_nopragma
-%type <psymls> ident_symbol_ls indexes indexlist
+%type <psym> ident_symbol
+%type <psymls> indexes indexlist
 %type <pfnsym> function
 %type <penumsym> enum_item
 %type <penumsymls> enum_list
@@ -242,21 +243,6 @@ ident_symbol:
     } 
 ;
 
-ident_symbol_nopragma:
-  identifier
-    {
-      $$ = new Symbol(SYMBOL, $1);
-    }
-;
-
-
-ident_symbol_ls:
-  ident_symbol
-    { $$ = new AList<Symbol>($1); }
-| ident_symbol_ls ident_symbol
-    { $1->insertAtTail($2); }
-;
-
 
 var_type:
   TCOLON type
@@ -282,15 +268,20 @@ opt_init_expr:
 
 
 var_decl_inner:
-  ident_symbol_ls opt_var_type opt_init_expr
-    { $$ = Symboltable::defineVarDef1($1, $2, $3); }
+  identifier opt_var_type opt_init_expr
+    {
+      $$ = Symboltable::defineVarDef1($1, $2, $3);
+    }
 ;
 
 
 var_decl_inner_ls:
   var_decl_inner
 | var_decl_inner_ls TCOMMA var_decl_inner
-    { $1->add($3); }
+    {
+      $1->add($3);
+      $$ = $1;
+    }
 ;
 
 
@@ -391,13 +382,13 @@ tuple_inner_type_ls:
 
 
 record_inner_var_ls:
-  ident_symbol_nopragma var_type opt_init_expr
+  identifier var_type opt_init_expr
     {
-      $$ = Symboltable::defineVarDef1(new AList<Symbol>($1), $2, $3);
+      $$ = Symboltable::defineVarDef1($1, $2, $3);
     }
-| record_inner_var_ls TCOMMA ident_symbol var_type
+| record_inner_var_ls TCOMMA identifier var_type
     {
-      $1->add(Symboltable::defineVarDef1(new AList<Symbol>($3), $4, NULL));
+      $1->add(Symboltable::defineVarDef1($3, $4, NULL));
       $$ = $1;
     }
 ;
@@ -491,33 +482,40 @@ typevar_type:
 
 
 formal:
-  formal_tag ident_symbol_ls opt_var_type opt_init_expr
+  formal_tag pragma_ls identifier opt_var_type opt_init_expr
     {
-      $$ = Symboltable::defineParams($1, $2, $3, $4);
+      $$ = Symboltable::defineParam($1, $3, $4, $5);
+      $$->sym->copyPragmas(*$2);
     }
-| TTYPE ident_symbol typevar_type
+| TTYPE pragma_ls identifier typevar_type
     {
-      AList<DefExpr> *psl = Symboltable::defineParams(PARAM_TYPE, new AList<Symbol>($2), getMetaType($3), NULL);
-      ParamSymbol* ps = dynamic_cast<ParamSymbol*>(psl->only()->sym);
-      if (ps == NULL) {
-        INT_FATAL("problem in parsing type variables");
-      }
+      DefExpr* defExpr = Symboltable::defineParam(PARAM_TYPE, $3, getMetaType($4), NULL);
+      defExpr->sym->copyPragmas(*$2);
+      ParamSymbol* ps = dynamic_cast<ParamSymbol*>(defExpr->sym);
       char *name = glomstrings(2, "__type_variable_", ps->name);
-      VariableType* new_type = new VariableType(getMetaType($3));
+      VariableType* new_type = new VariableType(getMetaType($4));
       TypeSymbol* new_type_symbol = new TypeSymbol(name, new_type);
       new_type->addSymbol(new_type_symbol);
       ps->typeVariable = new_type_symbol;
-      $$ = psl;
+      $$ = defExpr;
     }
 ;
 
 
 formal_ls:
   /* empty */
-    { $$ = new AList<DefExpr>(); }
+    {
+      $$ = new AList<DefExpr>();
+    }
 | formal
+    {
+      $$ = new AList<DefExpr>($1);
+    }
 | formal_ls TCOMMA formal
-    { $1->add($3); }
+    { 
+      $1->insertAtTail($3);
+      $$ = $1;
+    }
 ;
 
 

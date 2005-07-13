@@ -2,25 +2,25 @@
  called from 12 in length at sum_type-2.chpl:13
  called from 12 in length at sum_type-2.chpl:13
  called from 12 in length at sum_type-2.chpl:13
- called from 15 in __init_sum_type-2 at sum_type-2.chpl:22
- called from 17 in __init_sum_type-2 at sum_type-2.chpl:22
- called from 17 in __init_sum_type-2 at sum_type-2.chpl:22
- called from 18 in __init_sum_type-2 at sum_type-2.chpl:22
- called from 18 in __init_sum_type-2 at sum_type-2.chpl:22
- called from 20 in __init_sum_type-2 at sum_type-2.chpl:22
- called from 20 in __init_sum_type-2 at sum_type-2.chpl:22
- called from 22 in __init_sum_type-2 at sum_type-2.chpl:22
- called from 24 in __init_sum_type-2 at sum_type-2.chpl:22
- called from 24 in __init_sum_type-2 at sum_type-2.chpl:22
- called from 25 in __init_sum_type-2 at sum_type-2.chpl:22
- called from 25 in __init_sum_type-2 at sum_type-2.chpl:22
- called from 26 in __init_sum_type-2 at sum_type-2.chpl:22
- called from 26 in __init_sum_type-2 at sum_type-2.chpl:22
- called from 28 in __init_sum_type-2 at sum_type-2.chpl:22
- called from 28 in __init_sum_type-2 at sum_type-2.chpl:22
- called from 28 in __init_sum_type-2 at sum_type-2.chpl:22
- called from 30 in __init_sum_type-2 at sum_type-2.chpl:22
- called from 31 in __init_sum_type-2 at sum_type-2.chpl:22
+ called from 15 in __init_sum_type-2 at _chpl_seq.chpl:-1
+ called from 17 in __init_sum_type-2 at _chpl_seq.chpl:-1
+ called from 17 in __init_sum_type-2 at _chpl_seq.chpl:-1
+ called from 18 in __init_sum_type-2 at _chpl_seq.chpl:-1
+ called from 18 in __init_sum_type-2 at _chpl_seq.chpl:-1
+ called from 20 in __init_sum_type-2 at _chpl_seq.chpl:-1
+ called from 20 in __init_sum_type-2 at _chpl_seq.chpl:-1
+ called from 22 in __init_sum_type-2 at _chpl_seq.chpl:-1
+ called from 24 in __init_sum_type-2 at _chpl_seq.chpl:-1
+ called from 24 in __init_sum_type-2 at _chpl_seq.chpl:-1
+ called from 25 in __init_sum_type-2 at _chpl_seq.chpl:-1
+ called from 25 in __init_sum_type-2 at _chpl_seq.chpl:-1
+ called from 26 in __init_sum_type-2 at _chpl_seq.chpl:-1
+ called from 26 in __init_sum_type-2 at _chpl_seq.chpl:-1
+ called from 28 in __init_sum_type-2 at _chpl_seq.chpl:-1
+ called from 28 in __init_sum_type-2 at _chpl_seq.chpl:-1
+ called from 28 in __init_sum_type-2 at _chpl_seq.chpl:-1
+ called from 30 in __init_sum_type-2 at _chpl_seq.chpl:-1
+ called from 31 in __init_sum_type-2 at _chpl_seq.chpl:-1
  called from 4 in _construct_point at sum_type-2.chpl:4
  called from 9 in _construct_cpoint at sum_type-2.chpl:9
 ::_arg(sum_type-2.chpl:4) ( float64 )
@@ -70,7 +70,6 @@ function =x sum_type-2.chpl:4
 function =x sum_type-2.chpl:9
 function =y sum_type-2.chpl:4
 function =y sum_type-2.chpl:9
-function __init_sum_type-2 sum_type-2.chpl:22
 function _construct_cpoint sum_type-2.chpl:9
 function _construct_cpoint sum_type-2.chpl:9
 function _construct_point sum_type-2.chpl:4
@@ -78,7 +77,6 @@ function _construct_point sum_type-2.chpl:4
 function color sum_type-2.chpl:9
 function length sum_type-2.chpl:11
 function length sum_type-2.chpl:11
-function main sum_type-2.chpl:22
 function x sum_type-2.chpl:4
 function x sum_type-2.chpl:9
 function y sum_type-2.chpl:4

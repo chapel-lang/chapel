@@ -2,6 +2,4 @@
 ::m(arithmetic_ops.chpl:1) ( int64 )
 ::n(arithmetic_ops.chpl:2) ( int64 )
 ::o(arithmetic_ops.chpl:3) ( int64 )
-function __init_arithmetic_ops arithmetic_ops.chpl:4
-function main arithmetic_ops.chpl:4
 globals

@@ -2,6 +2,4 @@
 ::D(protoast_test.chpl:5) ( _domain_1d )
 ::i(protoast_test.chpl:9) ( int64 )
 ::n(protoast_test.chpl:3) ( int64 )
-function __init_protoast_test protoast_test.chpl:7
-function main protoast_test.chpl:7
 globals

@@ -1,4 +1,4 @@
-var x y z : float;
+var x, y, z : float;
 
 x = 2.3;
 y = 3.4;

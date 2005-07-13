@@ -42,6 +42,7 @@ CreateEntryPoint::CreateEntryPoint(void) :
 
 
 void CreateEntryPoint::run(ModuleList* moduleList) {
+  currentLineno = -1;
 
   // SJD: Can't do this when dtString is defined because
   // prelude hasn't been made yet.  Need to do it after.
@@ -70,9 +71,9 @@ void CreateEntryPoint::run(ModuleList* moduleList) {
   if (!mainFn) {
     mainModule = findUniqueUserModule(moduleList);
     if (mainModule) {
-      mainBody = new BlockStmt();
       SymScope* saveScope = Symboltable::getCurrentScope();
       Symboltable::setCurrentScope(mainModule->modScope);
+      mainBody = new BlockStmt();
       DefStmt* maindefstmt = Symboltable::defineFunction("main", NULL, 
                                                          dtVoid, mainBody, 
                                                          true);

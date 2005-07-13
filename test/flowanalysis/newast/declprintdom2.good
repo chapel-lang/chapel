@@ -10,6 +10,4 @@
 ::m7(declprintdom2.chpl:4) ( int64 )
 ::m8(declprintdom2.chpl:5) ( int64 )
 ::m9(declprintdom2.chpl:6) ( int64 )
-function __init_declprintdom2 declprintdom2.chpl:14
-function main declprintdom2.chpl:14
 globals

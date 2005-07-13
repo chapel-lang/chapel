@@ -1,6 +1,4 @@
 ::answer(logical_not.chpl:3) ( int64 )
 ::o(logical_not.chpl:1) ( int64 )
 ::p(logical_not.chpl:2) ( int64 )
-function __init_logical_not logical_not.chpl:3
-function main logical_not.chpl:3
 globals

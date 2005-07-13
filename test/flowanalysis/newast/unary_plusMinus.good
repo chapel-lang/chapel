@@ -1,6 +1,4 @@
 ::answer(unary_plusMinus.chpl:3) ( int64 )
 ::m(unary_plusMinus.chpl:1) ( int64 )
 ::n(unary_plusMinus.chpl:2) ( int64 )
-function __init_unary_plusMinus unary_plusMinus.chpl:3
-function main unary_plusMinus.chpl:3
 globals

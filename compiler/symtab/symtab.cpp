@@ -478,32 +478,22 @@ static AList<VarSymbol>* symsToVars(AList<Symbol>* idents, Type* type,
   return varList;
 }
 
-AList<DefExpr>* Symboltable::defineParams(paramType tag, 
-                                          AList<Symbol>* syms,
-                                          Type* type, Expr* init) {
-  Symbol* sym = syms->first();
-  Vec<char*>* pragma = &sym->pragmas;
-  AList<DefExpr>* list = new AList<DefExpr>();
-  while (sym) {
-    ParamSymbol* s = new ParamSymbol(tag, sym->name, type);
-    s->copyPragmas(*pragma);
-    list->insertAtTail(new DefExpr(s, init ? new UserInitExpr(init) : NULL));
-    sym = syms->next();
-  }
-
-  return list;
+DefExpr*
+Symboltable::defineParam(paramType tag, char* ident, Type* type, Expr* init) {
+  ParamSymbol* paramSymbol = new ParamSymbol(tag, ident, type);
+  UserInitExpr* userInitExpr = init ? new UserInitExpr(init) : NULL;
+  return new DefExpr(paramSymbol, userInitExpr);
 }
 
 
-AList<Stmt>* Symboltable::defineVarDef1(AList<Symbol>* idents, Type* type, 
-                                        Expr* init) {
+AList<Stmt>*
+Symboltable::defineVarDef1(char* ident, Type* type, Expr* init) {
 
   /** SJD: This is a stopgap measure to deal with changing sequences
       into domains when the type of a declared variable is a domain.
       It replaces the syntax of assigning domains using square
       brackets.
   **/
-  
   if (dynamic_cast<DomainType*>(type) &&
       !dynamic_cast<ForallExpr*>(init)) {
     if (dynamic_cast<Tuple*>(init)) {
@@ -515,16 +505,17 @@ AList<Stmt>* Symboltable::defineVarDef1(AList<Symbol>* idents, Type* type,
     }
   }
 
-  AList<VarSymbol>* varList = symsToVars(idents, type, init);
-  Symbol* var = varList->popHead();
-  AList<Stmt>* stmts = new AList<Stmt>();
-  while (var) {
-    stmts->insertAtTail(
-      new DefStmt(
-        new DefExpr(var, init ? new UserInitExpr(init->copy()) : NULL)));
-    var = varList->popHead();
+  // BLC: Placeholder until low-level type inference is hooked in to
+  // handle some cases -- infer type from initializer if possible
+  if (type == dtUnknown && init) {
+    type = init->typeInfo();
   }
-  return stmts;
+
+  bool copyType = !type->symbol && dynamic_cast<ArrayType*>(type);
+  VarSymbol* varSymbol =
+    new VarSymbol(ident, copyType ? type->copy() : type, VAR_NORMAL, VAR_VAR);
+  UserInitExpr* userInitExpr = init ? new UserInitExpr(init) : NULL;
+  return new AList<Stmt>(new DefStmt(new DefExpr(varSymbol, userInitExpr)));
 }
 
 

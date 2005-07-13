@@ -4,6 +4,4 @@
 ::j(domarr.chpl:8) ( int64 )
 ::m(domarr.chpl:1) ( int64 )
 ::n(domarr.chpl:2) ( int64 )
-function __init_domarr domarr.chpl:6
-function main domarr.chpl:6
 globals

@@ -1,4 +1,2 @@
 ::x(configVar.chpl:1) ( int64 )
-function __init_configVar configVar.chpl:1
-function main configVar.chpl:1
 globals

@@ -58,10 +58,9 @@ class Symboltable {
   static BlockStmt* finishCompoundStmt(BlockStmt* blkstmt, AList<Stmt>* body);
   static ModuleSymbol* startModuleDef(char* name, modType modtype = MOD_USER);
   static DefExpr* finishModuleDef(ModuleSymbol* mod, AList<Stmt>* def);
-  static AList<DefExpr>* Symboltable::defineParams(paramType tag, 
-                                                   AList<Symbol>* syms,
-                                                   Type* type, Expr* init);
-  static AList<Stmt>* Symboltable::defineVarDef1(AList<Symbol>* idents,
+  static DefExpr* Symboltable::defineParam(paramType tag, char* ident,
+                                           Type* type, Expr* init);
+  static AList<Stmt>* Symboltable::defineVarDef1(char* ident,
                                                  Type* type, 
                                                  Expr* init);
   static void Symboltable::defineVarDef2(AList<Stmt>* stmts, varType vartag, 

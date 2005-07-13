@@ -2,6 +2,4 @@
 ::m(mod.chpl:1) ( int64 )
 ::n(mod.chpl:2) ( int64 )
 ::o(mod.chpl:3) ( int64 )
-function __init_mod mod.chpl:4
-function main mod.chpl:4
 globals

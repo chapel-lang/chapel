@@ -1,4 +1,2 @@
 ::x(var.chpl:1) ( int64 )
-function __init_var var.chpl:1
-function main var.chpl:1
 globals

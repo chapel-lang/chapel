@@ -2,6 +2,4 @@
 ::m(equality_ops.chpl:1) ( int64 )
 ::n(equality_ops.chpl:2) ( int64 )
 ::o(equality_ops.chpl:3) ( int64 )
-function __init_equality_ops equality_ops.chpl:4
-function main equality_ops.chpl:4
 globals
