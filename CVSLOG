@@ -39240,3 +39240,15 @@ Added files:
 	chapel/compiler/traversals/: removeNestedFunctions.h 
 	                             removeNestedFunctions.cpp 
 
+---------------------------------------------------------------------------
+
+07/12/05 17:06:35 -- roxana
+
+Log message:
+	Seems like there was a syntax error on this one (some) forgotten
+	';'. I just got a fresh copy and it would not compile. Just added
+	the semicolon.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
