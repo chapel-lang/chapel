@@ -39364,3 +39364,16 @@ Modified files:
 	                             processParameters.cpp 
 	                             scopeResolveSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+07/13/05 13:58:01 -- shannon
+
+Log message:
+	Fixed the memstatEquals.future test.
+
+Modified files:
+	chapel/runtime/src/: arg.c 
+	chapel/test/memory/shannon/: memstatEquals.good 
+Removed files:
+	chapel/test/memory/shannon/: memstatEquals.future 
+
