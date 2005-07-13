@@ -39267,3 +39267,75 @@ Modified files:
 Removed files:
 	chapel/test/memory/shannon/: memmaxIntOnly.future 
 
+---------------------------------------------------------------------------
+
+07/13/05 10:18:19 -- deitz
+
+Log message:
+	Eliminated the ability to declare multiple variables of the same type
+	by writing, for example,
+	
+	  var x y z : integer;
+	
+	In so doing, cleaned up some of the parse code which I hope to
+	further.
+	
+	Eliminated the line numbers associated in createEntryPoint pass as
+	these have little meaning and are somewhat random.
+	
+	NOTE: Currently
+	
+	  var x, y, z : integer;
+	
+	has the meaning that z is of type integer, but x and y have unknown
+	type.  Their types must be inferred.  This seems already to be the
+	result of many chapel errors and misunderstandings.  I'd like to
+	discuss alternatives more fully.
+
+Modified files:
+	chapel/compiler/include/: symtab.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: createEntryPoint.cpp 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/test/arrays/deitz/: test_array_assign1.chpl 
+	                           test_array_assign2.chpl 
+	                           test_array_assign3.chpl 
+	chapel/test/flowanalysis/jplevyak/config/: configVar.good 
+	chapel/test/flowanalysis/newast/: arithmetic_ops.good 
+	                                  assignment_expr.good 
+	                                  bitwise_assignment.good 
+	                                  bitwise_negation.good 
+	                                  bitwise_ops.good chain.good 
+	                                  codegen_test.good 
+	                                  compSampler.good 
+	                                  conditional.good 
+	                                  danglingelse.good deadvar.good 
+	                                  declprintdom.good 
+	                                  declprintdom2.good 
+	                                  declprintint.good 
+	                                  declprintint2.good domarr.good 
+	                                  enum.good equality_ops.good 
+	                                  globalref.good 
+	                                  logical_and.good 
+	                                  logical_not.good mod.good 
+	                                  multiple_return.good 
+	                                  mutrec.good noargs.good 
+	                                  noop.good octalliteral.good 
+	                                  onearg.good pareninit.good 
+	                                  printempty.good 
+	                                  printstring.good 
+	                                  protoast_test.good 
+	                                  relational_ops.good 
+	                                  sum_type-1.good 
+	                                  sum_type-2.good 
+	                                  unary_plusMinus.good 
+	                                  usebeforedef.good var.good 
+	                                  var2.good whileLoop.good 
+	                                  writen.good writetwo.good 
+	chapel/test/functions/bradc/: multipleParamsSameType.chpl 
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.chpl 
+	                                     mg-seq-concrete.good 
+	                                     mg-seq.chpl mg-seq.good 
+	chapel/test/trivial/deitz/: test_var_decl1.chpl 
+	                            test_var_decl2.chpl 
+
