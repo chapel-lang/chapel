@@ -107,6 +107,15 @@ static char* getStringArg(char* valueString, char* memFlag) {
 }
 
 
+static void exitIfEqualsSign(char* equalsSign, char* memFlag) {
+  if (equalsSign) {
+    char* message = _glom_strings(3, "The ", memFlag, " flag takes no "
+                                  "argument");
+    printError(message);
+  }
+}
+
+
 static void parseMemFlag(char* memFlag) {
   char* equalsSign = strchr(memFlag, '=');
   char* valueString = NULL;
@@ -122,9 +131,11 @@ static void parseMemFlag(char* memFlag) {
     setMemmax(value);
 
   } else if (strcmp(memFlag, "memstat") == 0) {
+    exitIfEqualsSign(equalsSign, memFlag);
     setMemstat();
 
   } else if (strcmp(memFlag, "memtrack") == 0) {
+    exitIfEqualsSign(equalsSign, memFlag);
     setMemtrack();
 
   } else if ((strcmp(memFlag, "memthreshold") == 0) ||
