@@ -1164,7 +1164,7 @@ void ModuleSymbol::codegenDef(void) {
   fileinfo extheadfileinfo;
   fileinfo intheadfileinfo;
 
-  inUserModule = (modtype == MOD_USER)
+  inUserModule = (modtype == MOD_USER);
   openCFiles(name, &outfileinfo, &extheadfileinfo, &intheadfileinfo);
 
   fprintf(codefile, "#include \"stdchpl.h\"\n");
