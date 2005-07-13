@@ -43,12 +43,12 @@ void BuildLValueFunctions::preProcessStmt(Stmt* stmt) {
   DefStmt *old_def_stmt = dynamic_cast<DefStmt*>(stmt);
   if (!old_def_stmt)
     return;
-  FnSymbol *old_fn = old_def_stmt->fnDef();
+  FnSymbol *old_fn = dynamic_cast<FnSymbol*>(old_def_stmt->defExpr->sym);
   if (!old_fn || !old_fn->retRef)
     return;
   SymScope* saveScope = Symboltable::setCurrentScope(old_fn->parentScope);
   DefStmt *def_stmt = (DefStmt*)old_def_stmt->copy(true);
-  FnSymbol *fn = def_stmt->fnDef();
+  FnSymbol *fn = dynamic_cast<FnSymbol*>(def_stmt->defExpr->sym);
   fn->retRef = false;
   fn->retType = dtVoid;
   fn->name = glomstrings(2, "=", old_fn->name);

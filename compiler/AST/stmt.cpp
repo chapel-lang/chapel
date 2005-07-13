@@ -174,41 +174,6 @@ void DefStmt::print(FILE* outfile) {
 void DefStmt::codegenStmt(FILE* outfile) { /* Noop */ }
 
 
-VarSymbol* DefStmt::varDef() {
-  return dynamic_cast<VarSymbol*>(defExpr->sym);
-}
-
-
-FnSymbol* DefStmt::fnDef() {
-  return dynamic_cast<FnSymbol*>(defExpr->sym);
-}
-
-
-bool DefStmt::definesTypes() {
-  return dynamic_cast<TypeSymbol*>(defExpr->sym);
-}
-
-
-bool DefStmt::definesFunctions() {
-  return dynamic_cast<FnSymbol*>(defExpr->sym);
-}
-
-
-bool DefStmt::definesVariables() {
-  return dynamic_cast<VarSymbol*>(defExpr->sym);
-}
-
-
-Vec<VarSymbol*>* DefStmt::varDefSet() {
-  Vec<VarSymbol*>* var_set = new Vec<VarSymbol*>();
-  VarSymbol* var = dynamic_cast<VarSymbol*>(defExpr->sym);
-  if (var) {
-    var_set->set_add(var);
-  }
-  return var_set;
-}
-
-
 ExprStmt::ExprStmt(Expr* initExpr) :
   Stmt(STMT_EXPR),
   expr(initExpr) 

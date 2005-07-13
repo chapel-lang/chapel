@@ -1222,7 +1222,8 @@ static bool stmtIsGlob(Stmt* stmt) {
     INT_FATAL("Non-Stmt found in StmtIsGlob");
   }
   if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {
-    if (def_stmt->definesFunctions() || def_stmt->definesTypes()) {
+    if (dynamic_cast<FnSymbol*>(def_stmt->defExpr->sym) ||
+        dynamic_cast<TypeSymbol*>(def_stmt->defExpr->sym)) {
       return true;
     }
   }

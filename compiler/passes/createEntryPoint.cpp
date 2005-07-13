@@ -79,7 +79,7 @@ void CreateEntryPoint::run(ModuleList* moduleList) {
                                                          true);
       Symboltable::setCurrentScope(saveScope);
       mainModule->stmts->insertAtTail(maindefstmt);
-      mainFn = maindefstmt->fnDef();
+      mainFn = dynamic_cast<FnSymbol*>(maindefstmt->defExpr->sym);
     } else {
       USR_FATAL("Code defines multiple modules but no main function.");
     }

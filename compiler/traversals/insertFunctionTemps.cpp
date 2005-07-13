@@ -36,7 +36,7 @@ void InsertFunctionTemps::postProcessStmt(Stmt* stmt) {
   } else if (CondStmt* condStmt = dynamic_cast<CondStmt*>(stmt)) {
     exprs.add(condStmt->condExpr);
   } else if (DefStmt* defStmt = dynamic_cast<DefStmt*>(stmt)) {
-    if (defStmt->varDef()) {
+    if (dynamic_cast<VarSymbol*>(defStmt->defExpr->sym)) {
       exprs.add(defStmt->defExpr);
     }
   }
@@ -83,9 +83,10 @@ void InsertFunctionTemps::postProcessStmt(Stmt* stmt) {
             Symboltable::defineSingleVarDefStmt(temp_name, temp_type,
                                                 temp_init, var_type, VAR_VAR);
           copyStmt->insertBefore(defStmt);
+          VarSymbol* var = dynamic_cast<VarSymbol*>(defStmt->defExpr->sym);
           if (no_default_init)
-            defStmt->varDef()->noDefaultInit = true;
-          function->replace(new Variable(defStmt->varDef()));
+            var->noDefaultInit = true;
+          function->replace(new Variable(var));
         }
       }
     }

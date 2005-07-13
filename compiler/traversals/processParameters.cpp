@@ -74,9 +74,9 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
                                                   formal->sym->type, initializer,
                                                   VAR_NORMAL, VAR_VAR);
             body->insertAtTail(newActualDecl);
-            newActualDecl->varDef()->noDefaultInit = true;
-
-            newActualUse = new Variable(newActualDecl->varDef());
+            VarSymbol* var = dynamic_cast<VarSymbol*>(newActualDecl->defExpr->sym);
+            var->noDefaultInit = true;
+            newActualUse = new Variable(var);
           } else {
             newActualUse = actual->copy();
           }

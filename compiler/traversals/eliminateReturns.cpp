@@ -59,7 +59,7 @@ void EliminateReturns::preProcessStmt(Stmt* stmt) {
                                                                    NULL, 
                                                                    var_type,
                                                                    VAR_VAR);
-      retval = retValDefStmt->varDef();
+      retval = dynamic_cast<VarSymbol*>(retValDefStmt->defExpr->sym);
       retval->noDefaultInit = true;
       body->body->insertAtHead(retValDefStmt);
     } else {

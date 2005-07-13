@@ -48,7 +48,8 @@ void InsertIndexType::preProcessStmt(Stmt* stmt) {
                                                             VAR_NORMAL,
                                                             VAR_VAR);
     for_stmt->indices->first()->getStmt()->insertBefore(def_stmt);                                                          
-    for_stmt->indices->first()->replace(new Variable(def_stmt->varDef()));
+    VarSymbol* var = dynamic_cast<VarSymbol*>(def_stmt->defExpr->sym);
+    for_stmt->indices->first()->replace(new Variable(var));
   } else {
     indices_def->sym->type = domain_type->idxType;
   }

@@ -217,7 +217,7 @@ void InsertVariableInitializations::postProcessStmt(Stmt* stmt) {
       return;
     }
 
-    if (!def_stmt->varDef()) {
+    if (!dynamic_cast<VarSymbol*>(def_stmt->defExpr->sym)) {
       return;
     }
 

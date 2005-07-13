@@ -72,8 +72,9 @@ void InsertDefaultInitVariables::processSymbol(Symbol* sym) {
         Stmt* insert_point = outer_symbol->defPoint->parentStmt;
         insert_point->insertBefore(def_stmt);
       }
-      sym->type->defaultVal->replace(new Variable(def_stmt->varDef()));
-      def_stmt->varDef()->noDefaultInit = true;
+      VarSymbol* var = dynamic_cast<VarSymbol*>(def_stmt->defExpr->sym);
+      sym->type->defaultVal->replace(new Variable(var));
+      var->noDefaultInit = true;
     }
   }
 }

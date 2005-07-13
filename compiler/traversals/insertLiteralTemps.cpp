@@ -190,7 +190,8 @@ static void createTupleBaseType(int size) {
                                           VAR_NORMAL,
                                           VAR_VAR);
     decls->insertAtTail(defStmt);
-    fields.add(defStmt->varDef());
+    VarSymbol* var = dynamic_cast<VarSymbol*>(defStmt->defExpr->sym);
+    fields.add(var);
   }
   for (int i = 1; i <= size; i++) {
     FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("this"));

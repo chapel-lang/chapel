@@ -4,25 +4,27 @@
 #include "stringutil.h"
 #include "symtab.h"
 
-void InsertThisParameters::preProcessStmt(Stmt* stmt) {
-  DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt);
+void InsertThisParameters::preProcessExpr(Expr* expr) {
+  DefExpr* defExpr = dynamic_cast<DefExpr*>(expr);
 
-  if (!def_stmt) {
+  if (!defExpr) {
     return;
   }
 
-  FnSymbol* fn = def_stmt->fnDef();
-
-  if (!fn) {
-    /*** mangle type names in class types ***/
-    if (def_stmt->definesTypes()) {
-      TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(def_stmt->defExpr->sym);
-      if (StructuralType* classType = dynamic_cast<StructuralType*>(type_sym->type)) {
-        forv_Vec(TypeSymbol, type, classType->types) {
-          type->cname = glomstrings(4, "_", classType->symbol->cname, "_", type->cname);
-        }
+  /***
+   *** Mangle type names in class types
+   ***/
+  if (dynamic_cast<TypeSymbol*>(defExpr->sym)) {
+    if (StructuralType* classType = dynamic_cast<StructuralType*>(defExpr->sym->type)) {
+      forv_Vec(TypeSymbol, type, classType->types) {
+        type->cname = glomstrings(4, "_", classType->symbol->cname, "_", type->cname);
       }
     }
+  }
+
+  FnSymbol* fn = dynamic_cast<FnSymbol*>(defExpr->sym);
+
+  if (!fn) {
     return;
   }
 
@@ -57,7 +59,7 @@ void InsertThisParameters::preProcessStmt(Stmt* stmt) {
                                                                NULL,
                                                                VAR_NORMAL,
                                                                VAR_VAR);
-      fn->_this = this_decl->varDef();
+      fn->_this = dynamic_cast<VarSymbol*>(this_decl->defExpr->sym);
       fn->retType = typeSym->type;
       dynamic_cast<VarSymbol*>(fn->_this)->noDefaultInit = true;
       fn->body->body->insertAtHead(this_decl);

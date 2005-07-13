@@ -16,7 +16,7 @@ void Flatten::processSymbol(Symbol* sym) {
       SymScope* saveScope =
         Symboltable::setCurrentScope(moduleSymbol->modScope);
       DefStmt* defStmt = dynamic_cast<DefStmt*>(fn->defPoint->parentStmt->copy(true));
-      FnSymbol* newFn = defStmt->fnDef();
+      FnSymbol* newFn = dynamic_cast<FnSymbol*>(defStmt->defExpr->sym);
       newFn->cname = copystring(fn->cname);
       insertPoint->insertBefore(defStmt);
       fn->defPoint->parentStmt->remove();

@@ -174,16 +174,14 @@ void ScopeResolveSymbols::postProcessExpr(Expr* expr) {
   if (DefExpr* def_expr = dynamic_cast<DefExpr*>(expr)) {
     if (dynamic_cast<FnSymbol*>(def_expr->sym)) {
       currentFunction = NULL;
-    } else {
-      SymScope* currentScope = Symboltable::getCurrentScope();
-      Vec<VarSymbol*>* new_vars = def_expr->varDefSet();
-      if (new_vars) {
-        Vec<VarSymbol*>* old_vars = defList->get(currentScope);
-        if (old_vars) {
-          old_vars->set_union(*new_vars);
-        } else {
-        defList->put(currentScope, new_vars);
-        }
+    } else if (VarSymbol* sym = dynamic_cast<VarSymbol*>(def_expr->sym)) {
+      Vec<VarSymbol*>* syms = defList->get(Symboltable::getCurrentScope());
+      if (syms) {
+        syms->set_add(sym);
+      } else {
+        syms = new Vec<VarSymbol*>();
+        syms->set_add(sym);
+        defList->put(Symboltable::getCurrentScope(), syms);
       }
     }
   }

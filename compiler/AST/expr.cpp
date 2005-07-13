@@ -644,18 +644,6 @@ void DefExpr::print(FILE* outfile) {
 void DefExpr::codegen(FILE* outfile) { /** noop **/ }
 
 
-Vec<VarSymbol*>* DefExpr::varDefSet() {
-  Vec<VarSymbol*>* var_set = new Vec<VarSymbol*>();
-  VarSymbol* tmp = dynamic_cast<VarSymbol*>(sym);
-  var_set->set_add(tmp);
-  if (var_set->n > 0) {
-    return var_set;
-  } else {
-    return NULL;
-  }
-}
-
-
 UnOp::UnOp(unOpType init_type, Expr* op) :
   Expr(EXPR_UNOP),
   type(init_type),

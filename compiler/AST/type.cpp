@@ -804,7 +804,7 @@ void StructuralType::copyGuts(StructuralType* copy_type, bool clone,
        old_decls;
        old_decls = declarationList->next()) {
     DefStmt* def = dynamic_cast<DefStmt*>(old_decls);
-    if (def && def->definesFunctions()) {
+    if (def && dynamic_cast<FnSymbol*>(def->defExpr->sym)) {
       copy_type->methods.add(dynamic_cast<FnSymbol*>(def->defExpr->sym));
     } else {
       new_decls->insertAtTail(CLONE_INTERNAL(old_decls));
@@ -822,18 +822,16 @@ void StructuralType::addDeclarations(AList<Stmt>* newDeclarations,
   while (tmp) {
     DefStmt* def_stmt = dynamic_cast<DefStmt*>(tmp);
     if (def_stmt) {
-      if (def_stmt->definesFunctions()) {
-        FnSymbol* fn = dynamic_cast<FnSymbol*>(def_stmt->defExpr->sym);
-        fn->typeBinding = this->symbol;
-        if (fn->fnClass != FN_CONSTRUCTOR) {
-          fn->method_type = PRIMARY_METHOD;
+      if (FnSymbol* sym = dynamic_cast<FnSymbol*>(def_stmt->defExpr->sym)) {
+        sym->typeBinding = this->symbol;
+        if (sym->fnClass != FN_CONSTRUCTOR) {
+          sym->method_type = PRIMARY_METHOD;
         }
-        methods.add(fn);
-      } else if (def_stmt->definesTypes()) {
-        types.add(dynamic_cast<TypeSymbol*>(def_stmt->defExpr->sym));
-      } else if (def_stmt->definesVariables()) {
-        VarSymbol* var = dynamic_cast<VarSymbol*>(def_stmt->defExpr->sym);
-        fields.add(var);
+        methods.add(sym);
+      } else if (TypeSymbol* sym = dynamic_cast<TypeSymbol*>(def_stmt->defExpr->sym)) {
+        types.add(sym);
+      } else if (VarSymbol* sym = dynamic_cast<VarSymbol*>(def_stmt->defExpr->sym)) {
+        fields.add(sym);
       }
     }
     tmp = newDeclarations->next();
@@ -955,8 +953,7 @@ void StructuralType::codegenDef(FILE* outfile) {
   bool printedSomething = false; // BLC: this is to avoid empty structs, illegal in C
   for (Stmt* tmp = declarationList->first(); tmp; tmp = declarationList->next()) {
     if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(tmp)) {
-      if (def_stmt->definesVariables()) {
-        VarSymbol* var = dynamic_cast<VarSymbol*>(def_stmt->defExpr->sym);
+      if (VarSymbol* var = dynamic_cast<VarSymbol*>(def_stmt->defExpr->sym)) {
         var->codegenDef(outfile);
         printedSomething = true;
       }

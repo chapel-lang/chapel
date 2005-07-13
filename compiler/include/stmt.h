@@ -58,14 +58,6 @@ public:
   void traverseStmt(Traversal* traversal);
   void print(FILE* outfile);
   void codegenStmt(FILE* outfile);
-
-  VarSymbol* varDef();
-  FnSymbol* fnDef();
-
-  bool definesTypes();
-  bool definesFunctions();
-  bool definesVariables();
-  Vec<VarSymbol*>* varDefSet();
 };
 
 

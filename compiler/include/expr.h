@@ -288,8 +288,6 @@ class DefExpr : public Expr {
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
-
-  Vec<VarSymbol*>* varDefSet();
 };
 
 
