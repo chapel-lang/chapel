@@ -39339,3 +39339,28 @@ Modified files:
 	chapel/test/trivial/deitz/: test_var_decl1.chpl 
 	                            test_var_decl2.chpl 
 
+---------------------------------------------------------------------------
+
+07/13/05 13:26:45 -- deitz
+
+Log message:
+	Removed methods on DefStmt in preparation for its removal.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: expr.h stmt.h 
+	chapel/compiler/passes/: createEntryPoint.cpp 
+	chapel/compiler/symtab/: flatten.cpp 
+	                         insertDefaultInitVariables.cpp 
+	chapel/compiler/traversals/: buildLValueFunctions.cpp 
+	                             eliminateReturns.cpp 
+	                             insertFunctionTemps.cpp 
+	                             insertIndexType.cpp 
+	                             insertLiteralTemps.cpp 
+	                             insertThisParameters.cpp 
+	                             insertThisParameters.h 
+	                             insertVariableInitializations.cpp 
+	                             processParameters.cpp 
+	                             scopeResolveSymbols.cpp 
+
