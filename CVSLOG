@@ -39252,3 +39252,18 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+07/13/05 08:24:16 -- shannon
+
+Log message:
+	Fixed the memmaxIntOnly.future test.  Made the error
+	message more descriptive, and changed a conditional.
+	Updated the output of a couple of tests.
+
+Modified files:
+	chapel/runtime/src/: arg.c 
+	chapel/test/memory/shannon/: memmaxBytes.good memmaxIntOnly.good 
+Removed files:
+	chapel/test/memory/shannon/: memmaxIntOnly.future 
+
