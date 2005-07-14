@@ -39387,3 +39387,15 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: pattern.cpp 
 
+---------------------------------------------------------------------------
+
+07/14/05 13:49:56 -- jplevyak
+
+Log message:
+	Added an option to remove the caching of callees (not yet enabled
+	since it depends on other features).
+	Added additional debugging information for type/dispatch errors.
+
+Modified files:
+	chapel/compiler/analysis/: fa.cpp 
+
