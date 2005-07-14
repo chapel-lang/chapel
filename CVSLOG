@@ -39438,3 +39438,15 @@ Modified files:
 	                                     mg-seq.good mvm-seq.good 
 	                                     test.good 
 
+---------------------------------------------------------------------------
+
+07/14/05 14:47:25 -- shannon
+
+Log message:
+	Increase the virtual memory use limit to 48M
+	so the mallocOutOfMemory test can compile on
+	the linux64 and sun platforms.
+
+Modified files:
+	chapel/test/memory/shannon/outofmemory/: sub_test 
+
