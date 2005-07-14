@@ -39377,3 +39377,13 @@ Modified files:
 Removed files:
 	chapel/test/memory/shannon/: memstatEquals.future 
 
+---------------------------------------------------------------------------
+
+07/14/05 11:08:34 -- jplevyak
+
+Log message:
+	Fixed possible SEGV in dispatch log
+
+Modified files:
+	chapel/compiler/analysis/: pattern.cpp 
+
