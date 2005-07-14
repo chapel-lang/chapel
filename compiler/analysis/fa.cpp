@@ -12,6 +12,9 @@
 #include "var.h"
 #include "clone.h"
 
+// Caching of callees fails in the presence of generics
+#define CACHE_CALLEES           1
+
 static int avar_id = 1;
 static int creation_set_id = 1;
 int analysis_pass = 0;
@@ -1195,11 +1198,13 @@ function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> 
         }
       } else 
         partial_result = 1;
+#ifdef CACHE_CALLEES
       if (!p->next_callees)
         p->next_callees = new Callees;
       Fun *f = m->fun;
       while (f->wraps) f = f->wraps;
       p->next_callees->funs.set_add(f);
+#endif
     }
   }
   return matches.n ? partial_result : -1;
@@ -1747,6 +1752,8 @@ show_fun(Fun *f, FILE *fp) {
     if (s != f->sym->has.v[f->sym->has.n-1])
       fprintf(fp, ", ");
   }
+  if (verbose_level)
+    fprintf(fp, " id:%d", f->sym->id);
 }
 
 void
@@ -1888,7 +1895,11 @@ show_call_tree(FILE *fp, PNode *p, EntrySet *es, int depth = 0) {
   if (depth > 1 && p->code->filename() && p->code->line() > 0) {
     for (int x = 0; x < depth; x++)
       fprintf(fp, " ");
-    fprintf(fp, "called from %s:%d\n", p->code->filename(), p->code->line());
+    fprintf(fp, "called from %s:%d", p->code->filename(), p->code->line());
+    if (verbose_level && p->lvals.n)
+      fprintf(fp, " send:%d", p->lvals.v[0]->sym->id);
+    fprintf(fp, "\n");
+
   }
   Vec<AEdge*> edges;
   AEdge **last = es->edges.last();
@@ -1988,10 +1999,6 @@ show_violations(FA *fa, FILE *fp) {
     vv.add(v);
   qsort(vv.v, vv.n, sizeof(vv.v[0]), compar_tv);
   forv_ATypeViolation(v, vv) if (v) {
-#if 0
-    if (!verbose_level && !v->av->var->sym->name)
-      continue;
-#endif
     if (v->send && v->send->var->def->code->line() > 0)
       fprintf(fp, "%s:%d: ", v->send->var->def->code->filename(), 
               v->send->var->def->code->line());
@@ -2013,7 +2020,10 @@ show_violations(FA *fa, FILE *fp) {
       case ATypeViolation_SEND_ARGUMENT:
         if (v->av->var->sym->is_symbol &&
             v->send->var->def->rvals.v[0] == v->av->var) {
-          fprintf(fp, "unresolved call '%s'\n", v->av->var->sym->name);
+          fprintf(fp, "unresolved call '%s'", v->av->var->sym->name);
+          if (verbose_level)
+            fprintf(fp, " send:%d", v->send->var->sym->id);
+          fprintf(fp, "\n");
           show_candidates(fp, v->send->var->def, v->av->var->sym);
         } else {
           fprintf(fp, "illegal call argument type ");
@@ -2021,7 +2031,10 @@ show_violations(FA *fa, FILE *fp) {
         }
         break;
       case ATypeViolation_DISPATCH_AMBIGUITY:
-        fprintf(fp, "error: ambiguous call '%s'\n", v->av->var->sym->name);
+        fprintf(fp, "error: ambiguous call '%s'", v->av->var->sym->name);
+        if (verbose_level)
+          fprintf(fp, " send:%d", v->send->var->sym->id);
+        fprintf(fp, "\n");
         fprintf(fp, "note: candidates are:\n");
         forv_Fun(f, *v->funs) {
           show_fun(f, fp);
