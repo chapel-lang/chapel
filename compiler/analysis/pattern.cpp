@@ -1117,7 +1117,7 @@ void log_dispatch_funs(Matcher &matcher, Vec<Fun *> &funs) {
 void log_dispatch_matches(Matcher &matcher, Vec<Match *> &matches) {
   if (!logging(LOG_DISPATCH)) return;
   Vec<Fun *> funs;
-  forv_Match(m, matches)
+  forv_Match(m, matches) if (m)
     funs.add(m->fun);
   log_dispatch_funs(matcher, funs);
 }
