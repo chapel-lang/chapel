@@ -1,5 +1,5 @@
 #!/bin/tcsh -f
 
-limit vmemoryuse 24M
+limit vmemoryuse 48M
 
 source ../../../sub_test
