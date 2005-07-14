@@ -40,10 +40,10 @@ void TransformLetExprs::doTransformation(void) {
     Map<BaseAST*,BaseAST*>* map = new Map<BaseAST*,BaseAST*>();
     AList<Stmt>* defStmts = new AList<Stmt>();
     for_alist(DefExpr, defExpr, letExpr->symDefs) {
-      DefStmt* defStmt = new DefStmt(defExpr->copy(true, map, &lets));
-      defStmt->defExpr->sym->cname =
-        glomstrings(3, defStmt->defExpr->sym->cname, "_let_", intstring(uid++));
-      defStmts->insertAtTail(defStmt);
+      DefExpr* defExprCopy = defExpr->copy(true, map, &lets);
+      defExprCopy->sym->cname =
+        glomstrings(3, defExprCopy->sym->cname, "_let_", intstring(uid++));
+      defStmts->insertAtTail(new ExprStmt(defExprCopy));
     }
     Stmt* letStmtCopy = letStmt->copy(false, map, &lets);
     defStmts->insertAtTail(letStmtCopy);

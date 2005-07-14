@@ -17,11 +17,6 @@ static void verifyASTType(BaseAST* ast) {
       INT_FATAL(ast, "Unexpected AST statement type: STMT_NOOP");
     }
     break;
-  case STMT_DEF:
-    if (typeid(*ast) != typeid(DefStmt)) {
-      INT_FATAL(ast, "Unexpected AST statement type: STMT_DEF");
-    }
-    break;
   case STMT_EXPR:
     if (typeid(*ast) != typeid(ExprStmt)) {
       INT_FATAL(ast, "Unexpected AST statement type: STMT_EXPR");

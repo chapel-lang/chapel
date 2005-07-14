@@ -140,40 +140,6 @@ void NoOpStmt::codegenStmt(FILE* outfile) {
 }
 
 
-DefStmt::DefStmt(DefExpr* init_defExpr) :
-  Stmt(STMT_DEF),
-  defExpr(init_defExpr)
-{}
-
-
-DefStmt*
-DefStmt::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new DefStmt(COPY_INTERNAL(defExpr));
-}
-
-
-void DefStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == defExpr) {
-    defExpr = dynamic_cast<DefExpr*>(new_ast);
-  } else {
-    INT_FATAL(this, "Unexpected case in DefStmt::replaceChild");
-  }
-}
-
-
-void DefStmt::traverseStmt(Traversal* traversal) {
-  defExpr->traverse(traversal, false);
-}
-
-
-void DefStmt::print(FILE* outfile) {
-  defExpr->print(outfile);
-}
-
-
-void DefStmt::codegenStmt(FILE* outfile) { /* Noop */ }
-
-
 ExprStmt::ExprStmt(Expr* initExpr) :
   Stmt(STMT_EXPR),
   expr(initExpr) 
@@ -548,7 +514,6 @@ void ForLoopStmt::codegenStmt(FILE* outfile) {
       fprintf(outfile, ", %d) {\n", i);
     }
   } else {    
-    // TODO: Unify with VarDefStmt?  Have parser insert one here?
     // is it a challenge that we may not know the domain exprs at that point?
     while (aVar) {
       aVar->sym->codegenDef(outfile);

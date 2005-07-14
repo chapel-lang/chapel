@@ -40,22 +40,26 @@ replace_return(BaseAST *ast, Symbol *lvalue) {
 }
 
 void BuildLValueFunctions::preProcessStmt(Stmt* stmt) {
-  DefStmt *old_def_stmt = dynamic_cast<DefStmt*>(stmt);
-  if (!old_def_stmt)
+  ExprStmt *old_expr_stmt = dynamic_cast<ExprStmt*>(stmt);
+  if (!old_expr_stmt)
     return;
-  FnSymbol *old_fn = dynamic_cast<FnSymbol*>(old_def_stmt->defExpr->sym);
+  DefExpr *old_def_expr = dynamic_cast<DefExpr*>(old_expr_stmt->expr);
+  if (!old_def_expr)
+    return;
+  FnSymbol *old_fn = dynamic_cast<FnSymbol*>(old_def_expr->sym);
   if (!old_fn || !old_fn->retRef)
     return;
   SymScope* saveScope = Symboltable::setCurrentScope(old_fn->parentScope);
-  DefStmt *def_stmt = (DefStmt*)old_def_stmt->copy(true);
-  FnSymbol *fn = dynamic_cast<FnSymbol*>(def_stmt->defExpr->sym);
+  ExprStmt *expr_stmt = old_expr_stmt->copy(true);
+  DefExpr *def_expr = dynamic_cast<DefExpr*>(expr_stmt->expr);
+  FnSymbol *fn = dynamic_cast<FnSymbol*>(def_expr->sym);
   fn->retRef = false;
   fn->retType = dtVoid;
   fn->name = glomstrings(2, "=", old_fn->name);
   fn->cname = glomstrings(2, "_setter_", old_fn->cname);
   Symboltable::undefineInScope(fn, fn->parentScope);
   Symboltable::defineInScope(fn, fn->parentScope);
-  old_def_stmt->insertAfter(def_stmt);
+  old_expr_stmt->insertAfter(expr_stmt);
   Symboltable::setCurrentScope(fn->paramScope);
   ParamSymbol* lvalue = new ParamSymbol(PARAM_BLANK, "_lvalue", old_fn->retType);
   fn->formals->insertAtTail(new DefExpr(lvalue));

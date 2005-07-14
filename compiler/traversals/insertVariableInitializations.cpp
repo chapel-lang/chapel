@@ -212,17 +212,14 @@ InsertVariableInitializations::InsertVariableInitializations() {
 
 
 void InsertVariableInitializations::postProcessStmt(Stmt* stmt) {
-  if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {
-    if (dynamic_cast<TypeSymbol*>(def_stmt->parentSymbol)) {
-      return;
+  if (ExprStmt* expr_stmt = dynamic_cast<ExprStmt*>(stmt)) {
+    if (DefExpr* defExpr = dynamic_cast<DefExpr*>(expr_stmt->expr)) {
+      if (dynamic_cast<TypeSymbol*>(expr_stmt->parentSymbol)) {
+        return;
+      }
+      if (VarSymbol* var = dynamic_cast<VarSymbol*>(defExpr->sym)) {
+        insert_init(stmt, var, var->type);
+      }
     }
-
-    if (!dynamic_cast<VarSymbol*>(def_stmt->defExpr->sym)) {
-      return;
-    }
-
-    VarSymbol* var = dynamic_cast<VarSymbol*>(def_stmt->defExpr->sym);
-    insert_init(stmt, var, var->type);
-    //    def_stmt->remove();
   }
 }

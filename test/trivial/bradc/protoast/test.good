@@ -1,6 +1,6 @@
-var n: integer = 999;
-var D: domain(???) = [1..n];
-var A: [D] float;
+var n: integer = 999;;
+var D: domain(???) = [1..n];;
+var A: [D] float;;
 forall var i: integer; in D {
 A(i) = i;
 }

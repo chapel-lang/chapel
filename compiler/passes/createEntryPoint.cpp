@@ -74,12 +74,12 @@ void CreateEntryPoint::run(ModuleList* moduleList) {
       SymScope* saveScope = Symboltable::getCurrentScope();
       Symboltable::setCurrentScope(mainModule->modScope);
       mainBody = new BlockStmt();
-      DefStmt* maindefstmt = Symboltable::defineFunction("main", NULL, 
+      DefExpr* maindef = Symboltable::defineFunction("main", NULL, 
                                                          dtVoid, mainBody, 
                                                          true);
       Symboltable::setCurrentScope(saveScope);
-      mainModule->stmts->insertAtTail(maindefstmt);
-      mainFn = dynamic_cast<FnSymbol*>(maindefstmt->defExpr->sym);
+      mainModule->stmts->insertAtTail(new ExprStmt(maindef));
+      mainFn = dynamic_cast<FnSymbol*>(maindef->sym);
     } else {
       USR_FATAL("Code defines multiple modules but no main function.");
     }

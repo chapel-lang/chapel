@@ -60,19 +60,19 @@ void InsertDefaultInitVariables::processSymbol(Symbol* sym) {
 
       SymScope* saveScope =
         Symboltable::setCurrentScope(outer_symbol->parentScope);
-      DefStmt* def_stmt = Symboltable::defineSingleVarDefStmt(temp_name,
-                                                              temp_type,
-                                                              temp_init,
-                                                              VAR_NORMAL,
-                                                              VAR_VAR);
+      DefExpr* def = Symboltable::defineSingleVarDef(temp_name,
+                                                     temp_type,
+                                                     temp_init,
+                                                     VAR_NORMAL,
+                                                     VAR_VAR);
       Symboltable::setCurrentScope(saveScope);
       if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(parent_symbol)) {
-        mod->initFn->body->body->insertAtHead(def_stmt);
+        mod->initFn->body->body->insertAtHead(new ExprStmt(def));
       } else {
         Stmt* insert_point = outer_symbol->defPoint->parentStmt;
-        insert_point->insertBefore(def_stmt);
+        insert_point->insertBefore(new ExprStmt(def));
       }
-      VarSymbol* var = dynamic_cast<VarSymbol*>(def_stmt->defExpr->sym);
+      VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym);
       sym->type->defaultVal->replace(new Variable(var));
       var->noDefaultInit = true;
     }

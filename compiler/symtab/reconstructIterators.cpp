@@ -52,14 +52,14 @@ void ReconstructIterators::processSymbol(Symbol* sym) {
         new AList<Expr>(
           new Variable(elt_type))));
 
-  DefStmt* def_stmt = Symboltable::defineSingleVarDefStmt("_seq_result",
-                                                          type,
-                                                          NULL,
-                                                          VAR_NORMAL,
-                                                          VAR_VAR);
-  Symbol* seq = def_stmt->defExpr->sym;
+  DefExpr* def = Symboltable::defineSingleVarDef("_seq_result",
+                                                 type,
+                                                 NULL,
+                                                 VAR_NORMAL,
+                                                 VAR_VAR);
+  Symbol* seq = def->sym;
 
-  fn->body->body->insertAtHead(def_stmt);
+  fn->body->body->insertAtHead(new ExprStmt(def));
   TRAVERSE(fn->body, new ReconstructIteratorsHelper(seq), true);
   fn->body->body->insertAtTail(new ReturnStmt(new Variable(seq)));
   fn->retType = dtUnknown;

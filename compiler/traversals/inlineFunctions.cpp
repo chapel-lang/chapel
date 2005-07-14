@@ -21,18 +21,16 @@ void InlineFunctions::postProcessExpr(Expr* expr) {
       if (_ok_to_inline) {
         Stmt* inlined_body = fn_sym->body->copy(true,formal_to_actual_arg_map,NULL);
         ReplaceReturns* rep_returns;
-        DefExpr* temp_def_expr;
         if (fn_sym->retType && (fn_sym->retType != dtVoid)) {
-          DefStmt* temp_def_stmt = createTempVariable(fn_sym->retType);
-          temp_def_expr = temp_def_stmt->defExpr;
-          fn_call->parentStmt->insertBefore(temp_def_stmt);
+          DefExpr* temp_def = createTempVariable(fn_sym->retType);
+          fn_call->parentStmt->insertBefore(new ExprStmt(temp_def));
           //replace all returns in the inlined function body 
           //with an assignment the return expression
-          rep_returns = new ReplaceReturns(temp_def_expr->sym);
+          rep_returns = new ReplaceReturns(temp_def->sym);
           inlined_body->traverse(rep_returns);
           //inlined function
           fn_call->parentStmt->insertBefore(inlined_body);
-          fn_call->replace(new Variable(temp_def_expr->sym));
+          fn_call->replace(new Variable(temp_def->sym));
         }
         else {
           //inlined function
@@ -50,16 +48,16 @@ bool InlineFunctions::isCodegened(FnSymbol* fn_sym) {
   return (!fn_sym->hasPragma("no codegen") && mod_sym && (mod_sym->modtype != MOD_INTERNAL));  
 }
 
-DefStmt* InlineFunctions::createTempVariable(Type* type, Expr* init) {
+DefExpr* InlineFunctions::createTempVariable(Type* type, Expr* init) {
   static int id = 1;
   char* temp_name =  glomstrings(2, "_inline_temp_", intstring(id++));
-  DefStmt* temp_def_stmt = Symboltable::defineSingleVarDefStmt(temp_name,
-                                                          type,
-                                                          init,
-                                                          VAR_NORMAL,
-                                                          VAR_VAR);
-  dynamic_cast<VarSymbol*>(temp_def_stmt->defExpr->sym)->noDefaultInit = true;
-  return temp_def_stmt;
+  DefExpr* temp_def = Symboltable::defineSingleVarDef(temp_name,
+                                                      type,
+                                                      init,
+                                                      VAR_NORMAL,
+                                                      VAR_VAR);
+  dynamic_cast<VarSymbol*>(temp_def->sym)->noDefaultInit = true;
+  return temp_def;
 }
 
 bool InlineFunctions::isFormalParamOut(ParamSymbol* p_sym) {
@@ -102,15 +100,13 @@ Map<BaseAST*,BaseAST*>* InlineFunctions::createFormalToActualArgMappings(FnCall*
     }
     
     //create temporary variable and initialize it with the actual argument 
-    DefStmt* temp_def_stmt;
-    DefExpr* temp_def_expr;
+    DefExpr* temp_def;
     if (!param_ref && !typeVar) {
-      temp_def_stmt = createTempVariable(curr_arg->typeInfo(), curr_arg->copy());
-      temp_def_expr = temp_def_stmt->defExpr;
-      fn_call->parentStmt->insertBefore(temp_def_stmt);
+      temp_def = createTempVariable(curr_arg->typeInfo(), curr_arg->copy());
+      fn_call->parentStmt->insertBefore(new ExprStmt(temp_def));
       //map variable of param symbol to temp symbol so that when copy is passed the map, it
       //will replace the formal parameter symbol with the temp symbol                               
-      formal_to_actual_arg_map->put(curr_param->sym, temp_def_expr->sym);
+      formal_to_actual_arg_map->put(curr_param->sym, temp_def->sym);
     }
     //since a temporary variable was not created, map the actual argument to the formal parameter
     else 
@@ -119,7 +115,7 @@ Map<BaseAST*,BaseAST*>* InlineFunctions::createFormalToActualArgMappings(FnCall*
       //copy temp back to actual arg if formal param out
     if (param_intent_out)
       if (Variable* v = dynamic_cast<Variable*>(curr_arg))
-      fn_call->parentStmt->insertAfter(new ExprStmt(new AssignOp(GETS_NORM, new Variable(v->var), new Variable(temp_def_expr->sym))));
+      fn_call->parentStmt->insertAfter(new ExprStmt(new AssignOp(GETS_NORM, new Variable(v->var), new Variable(temp_def->sym))));
     
 
     curr_arg = actual_args->next();

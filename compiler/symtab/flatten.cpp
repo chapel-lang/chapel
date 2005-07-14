@@ -15,10 +15,11 @@ void Flatten::processSymbol(Symbol* sym) {
       ModuleSymbol* moduleSymbol = dynamic_cast<ModuleSymbol*>(insertPoint->parentSymbol);
       SymScope* saveScope =
         Symboltable::setCurrentScope(moduleSymbol->modScope);
-      DefStmt* defStmt = dynamic_cast<DefStmt*>(fn->defPoint->parentStmt->copy(true));
-      FnSymbol* newFn = dynamic_cast<FnSymbol*>(defStmt->defExpr->sym);
+      ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(fn->defPoint->parentStmt->copy(true));
+      DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr);
+      FnSymbol* newFn = dynamic_cast<FnSymbol*>(defExpr->sym);
       newFn->cname = copystring(fn->cname);
-      insertPoint->insertBefore(defStmt);
+      insertPoint->insertBefore(exprStmt);
       fn->defPoint->parentStmt->remove();
       fn->parentScope->remove(fn);
       Symboltable::removeScope(fn->paramScope);

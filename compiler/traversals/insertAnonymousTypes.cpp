@@ -46,7 +46,7 @@ static void build_anon_array_type_def(Stmt* stmt, Type** type) {
           array_type->domainType = domain_type;
           array_type->defaultVal = COPY(array_type->elementType->defaultVal);
           DefExpr* def_expr = new DefExpr(array_sym);
-          DefStmt* array_type_def = new DefStmt(def_expr);
+          ExprStmt* array_type_def = new ExprStmt(def_expr);
           if (Symboltable::getCurrentScope() == commonModule->modScope) {
             commonModule->stmts->insertAtTail(array_type_def);
           }
@@ -110,12 +110,11 @@ static void build_anon_structural_type_def(Stmt* stmt, Type** type) {
   }
   DefExpr* defExpr = new DefExpr(typeSymbol);
   structType->structScope->setContext(NULL, typeSymbol, defExpr);
-  DefStmt* defStmt = new DefStmt(defExpr);
   if (saveScope) {
     Symboltable::setCurrentScope(saveScope);
-    Symboltable::getCurrentModule()->stmts->insertAtHead(defStmt);
+    Symboltable::getCurrentModule()->stmts->insertAtHead(new ExprStmt(defExpr));
   } else {
-    stmt->insertBefore(defStmt);
+    stmt->insertBefore(new ExprStmt(defExpr));
   }
 }
 
@@ -155,8 +154,7 @@ static void build_anon_domain_type_def(Stmt* stmt, Type** type) {
     TypeSymbol* domain_sym = new TypeSymbol(name, domain_type);
     domain_type->addSymbol(domain_sym);
     DefExpr* def_expr = new DefExpr(domain_sym);
-    DefStmt* domain_type_def = new DefStmt(def_expr);
-    commonModule->stmts->insertAtHead(domain_type_def);
+    commonModule->stmts->insertAtHead(new ExprStmt(def_expr));
     Symboltable::setCurrentScope(saveScope);
     *type = domain_type;
   }
@@ -212,8 +210,7 @@ void build_index_type_def(Stmt* stmt, Type** type) {
       index_type->defaultVal = index_type->idxType->defaultVal->copy();
     }*/
     DefExpr* def_expr = new DefExpr(index_sym);
-    DefStmt* index_type_def = new DefStmt(def_expr);
-    commonModule->stmts->insertAtHead(index_type_def);
+    commonModule->stmts->insertAtHead(new ExprStmt(def_expr));
     Symboltable::setCurrentScope(saveScope);
     *type = index_type;
   }
@@ -240,10 +237,11 @@ static void build_anon_type_def(Stmt* stmt, Type** type) {
 
 
 void InsertAnonymousTypes::preProcessStmt(Stmt* stmt) {
-  if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {
-    DefExpr* def_expr = def_stmt->defExpr;
-    if (VarSymbol* var = dynamic_cast<VarSymbol*>(def_expr->sym)) {
-      build_anon_type_def(stmt, &var->type);
+  if (ExprStmt* expr_stmt = dynamic_cast<ExprStmt*>(stmt)) {
+    if (DefExpr* def_expr = dynamic_cast<DefExpr*>(expr_stmt->expr)) {
+      if (VarSymbol* var = dynamic_cast<VarSymbol*>(def_expr->sym)) {
+        build_anon_type_def(stmt, &var->type);
+      }
     }
   }
 }

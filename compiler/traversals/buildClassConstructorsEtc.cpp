@@ -79,7 +79,7 @@ static void build_constructor(StructuralType* structType) {
   }
 
   DefExpr* def_expr = new DefExpr(fn->_this);
-  stmts->insertAtTail(new DefStmt(def_expr));
+  stmts->insertAtTail(new ExprStmt(def_expr));
   char* description = glomstrings(2, "instance of class ", structType->symbol->name);
   AList<Expr>* alloc_args = new AList<Expr>(new IntLiteral("1", 1));
   alloc_args->insertAtTail(new SizeofExpr(new Variable(fn->_this)));
@@ -97,7 +97,7 @@ static void build_constructor(StructuralType* structType) {
   body = Symboltable::finishCompoundStmt(body, stmts);
   DefExpr* fn_def =
     new DefExpr(Symboltable::finishFnDef(fn, body));
-  structType->symbol->defPoint->parentStmt->insertBefore(new DefStmt(fn_def));
+  structType->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(fn_def));
   structType->methods.add(fn);
   if (structType->symbol->hasPragma("codegen data")) {
     fn->defPoint->parentStmt->addPragma("rename _data_construct");
@@ -131,8 +131,7 @@ static void build_getter(StructuralType* structType, Symbol *tmp) {
     new BlockStmt(new AList<Stmt>(new ReturnStmt(getter_expr)));
   DefExpr* getter_def_expr = 
     new DefExpr(Symboltable::finishFnDef(getter_fn, getter_return));
-  DefStmt* getter_def_stmt = new DefStmt(getter_def_expr);
-  structType->symbol->defPoint->parentStmt->insertBefore(getter_def_stmt);
+  structType->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(getter_def_expr));
   structType->methods.add(getter_fn);
   getter_fn->method_type = PRIMARY_METHOD;
   getter_fn->typeBinding = structType->symbol;
@@ -160,8 +159,7 @@ static void build_setters_and_getters(StructuralType* structType) {
     BlockStmt* setter_stmt = new BlockStmt(new AList<Stmt>(new ExprStmt(setter_assignment)));
     DefExpr* setter_def_expr = new DefExpr(
       Symboltable::finishFnDef(setter_fn, setter_stmt));
-    DefStmt* setter_def_stmt = new DefStmt(setter_def_expr);
-    structType->symbol->defPoint->parentStmt->insertBefore(setter_def_stmt);
+    structType->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(setter_def_expr));
     structType->methods.add(setter_fn);
     setter_fn->method_type = PRIMARY_METHOD;
     setter_fn->typeBinding = structType->symbol;
@@ -197,10 +195,8 @@ static void build_record_equality_function(StructuralType* structType) {
       : new BinOp(BINOP_EQUAL, left, right);
   }
   BlockStmt* retStmt = new BlockStmt(new AList<Stmt>(new ReturnStmt(cond)));
-  DefStmt* def_stmt = new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, 
-                                                                       retStmt))
-                                  );
-  structType->symbol->defPoint->parentStmt->insertBefore(def_stmt);
+  DefExpr* def = new DefExpr(Symboltable::finishFnDef(fn, retStmt));
+  structType->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def));
 }
 
 
@@ -225,10 +221,8 @@ static void build_record_inequality_function(StructuralType* structType) {
       : new BinOp(BINOP_NEQUAL, left, right);
   }
   BlockStmt* retStmt = new BlockStmt(new AList<Stmt>(new ReturnStmt(cond)));
-  DefStmt* def_stmt = new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, 
-                                                                       retStmt))
-                                  );
-  structType->symbol->defPoint->parentStmt->insertBefore(def_stmt);
+  DefExpr* def = new DefExpr(Symboltable::finishFnDef(fn, retStmt));
+  structType->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def));
 }
 
 
@@ -269,10 +263,8 @@ static void build_record_assignment_function(StructuralType* structType) {
   if (analyzeAST)
     body->insertAtTail(new ReturnStmt(new Variable(arg2)));
   BlockStmt* block_stmt = new BlockStmt(body, Symboltable::popScope());
-  DefStmt* defStmt = new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, 
-                                                                      block_stmt
-                                                                      )));
-  structType->symbol->defPoint->parentStmt->insertBefore(defStmt);
+  DefExpr* def = new DefExpr(Symboltable::finishFnDef(fn, block_stmt));
+  structType->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def));
   if (f_equal_method) {
     structType->methods.add(fn);
     fn->method_type = PRIMARY_METHOD;
@@ -314,9 +306,8 @@ static void buildDefaultIOFunctions(Type* type) {
       Symboltable::pushScope(SCOPE_LOCAL);
       AList<Stmt>* body = type->buildDefaultWriteFunctionBody(arg);
       BlockStmt* block_stmt = new BlockStmt(body, Symboltable::popScope());
-      DefStmt* defStmt =
-        new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, block_stmt)));
-      type->symbol->defPoint->parentStmt->insertBefore(defStmt);
+      DefExpr* def = new DefExpr(Symboltable::finishFnDef(fn, block_stmt));
+      type->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def));
     }
   }
 
@@ -339,9 +330,8 @@ static void buildDefaultIOFunctions(Type* type) {
       Symboltable::pushScope(SCOPE_LOCAL);
       AList<Stmt>* body = type->buildDefaultReadFunctionBody(arg);
       BlockStmt* block_stmt = new BlockStmt(body, Symboltable::popScope());
-      DefStmt* defStmt =
-        new DefStmt(new DefExpr(Symboltable::finishFnDef(fn, block_stmt)));
-      type->symbol->defPoint->parentStmt->insertBefore(defStmt);
+      DefExpr* def = new DefExpr(Symboltable::finishFnDef(fn, block_stmt));
+      type->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def));
     }
   }
 }

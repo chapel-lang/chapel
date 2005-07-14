@@ -35,9 +35,11 @@ void InsertFunctionTemps::postProcessStmt(Stmt* stmt) {
     exprs.add(whileStmt->condition);
   } else if (CondStmt* condStmt = dynamic_cast<CondStmt*>(stmt)) {
     exprs.add(condStmt->condExpr);
-  } else if (DefStmt* defStmt = dynamic_cast<DefStmt*>(stmt)) {
-    if (dynamic_cast<VarSymbol*>(defStmt->defExpr->sym)) {
-      exprs.add(defStmt->defExpr);
+  } else if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {
+    if (DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr)) {
+      if (dynamic_cast<VarSymbol*>(defExpr->sym)) {
+        exprs.add(defExpr);
+      }
     }
   }
 
@@ -53,7 +55,6 @@ void InsertFunctionTemps::postProcessStmt(Stmt* stmt) {
                                                 new AList<Stmt>(copyStmt));
     stmt->replace(blockStmt);
     SymScope* saveScope = Symboltable::setCurrentScope(blockStmt->blkScope);
-    bool no_default_init = 0;
     forv_Vec(BaseAST, ast, functions) {
       FnCall* function = dynamic_cast<FnCall*>(ast);
       if (!function) {
@@ -69,23 +70,12 @@ void InsertFunctionTemps::postProcessStmt(Stmt* stmt) {
           char* temp_name = glomstrings(2, "_fntemp_", intstring(uid++));
           Expr* temp_init = function->copy(false, NULL, &functions);
           Type* temp_type = function->typeInfo();
-          varType var_type = VAR_NORMAL;
-//           if (Variable *fn_var = dynamic_cast<Variable*>(function->baseExpr)) {
-//             if (FnSymbol *fn = dynamic_cast<FnSymbol*>(fn_var->var)) {
-//               if (fn->_getter && is_Value_Type(fn->retType)) {
-//                 var_type = VAR_REF;
-//                 no_default_init = true;
-//               }
-//             }
-//           }
-          no_default_init = true;
-          DefStmt* defStmt =
-            Symboltable::defineSingleVarDefStmt(temp_name, temp_type,
-                                                temp_init, var_type, VAR_VAR);
-          copyStmt->insertBefore(defStmt);
-          VarSymbol* var = dynamic_cast<VarSymbol*>(defStmt->defExpr->sym);
-          if (no_default_init)
-            var->noDefaultInit = true;
+          DefExpr* defExpr =
+            Symboltable::defineSingleVarDef(temp_name, temp_type,
+                                            temp_init, VAR_NORMAL, VAR_VAR);
+          copyStmt->insertBefore(new ExprStmt(defExpr));
+          VarSymbol* var = dynamic_cast<VarSymbol*>(defExpr->sym);
+          var->noDefaultInit = true;
           function->replace(new Variable(var));
         }
       }

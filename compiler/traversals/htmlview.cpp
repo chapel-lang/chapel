@@ -79,8 +79,7 @@ void HtmlView::run(ModuleList* moduleList) {
 }
 
 void HtmlView::preProcessStmt(Stmt* stmt) {
-  if (dynamic_cast<DefStmt*>(stmt) ||
-      typeid(ExprStmt) == typeid(*stmt)) {
+  if (typeid(ExprStmt) == typeid(*stmt)) {
     return;
   }
   write("<DL>\n");
@@ -98,8 +97,7 @@ void HtmlView::preProcessStmt(Stmt* stmt) {
 }
 
 void HtmlView::postProcessStmt(Stmt* stmt) {
-  if (dynamic_cast<DefStmt*>(stmt) ||
-      typeid(ExprStmt) == typeid(*stmt)) {
+  if (typeid(ExprStmt) == typeid(*stmt)) {
     output();
     return;
   }

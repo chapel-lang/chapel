@@ -9,7 +9,7 @@ class RemoveNestedFunctions : public Traversal {
 
 public :
   void postProcessStmt(Stmt* stmt);
-  FnSymbol* hasEnclosingFunction(DefStmt* fn_def);
+  FnSymbol* hasEnclosingFunction(DefExpr* fn_def);
 };
 
 #endif

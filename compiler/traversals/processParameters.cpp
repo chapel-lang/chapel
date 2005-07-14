@@ -69,12 +69,12 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
               initializer = actual->copy();
             }
             char* newActualName = glomstrings(2, "_", formal->sym->name);
-            DefStmt* newActualDecl = 
-              Symboltable::defineSingleVarDefStmt(newActualName,
-                                                  formal->sym->type, initializer,
-                                                  VAR_NORMAL, VAR_VAR);
-            body->insertAtTail(newActualDecl);
-            VarSymbol* var = dynamic_cast<VarSymbol*>(newActualDecl->defExpr->sym);
+            DefExpr* newActualDecl = 
+              Symboltable::defineSingleVarDef(newActualName,
+                                              formal->sym->type, initializer,
+                                              VAR_NORMAL, VAR_VAR);
+            body->insertAtTail(new ExprStmt(newActualDecl));
+            VarSymbol* var = dynamic_cast<VarSymbol*>(newActualDecl->sym);
             var->noDefaultInit = true;
             newActualUse = new Variable(var);
           } else {

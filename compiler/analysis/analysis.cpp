@@ -1443,12 +1443,11 @@ gen_one_defexpr(VarSymbol *var, DefExpr *def) {
 }
 
 static int
-gen_defexpr(BaseAST *a) {
-  DefStmt *def = dynamic_cast<DefStmt*>(a);
-  if (VarSymbol* var = dynamic_cast<VarSymbol*>(def->defExpr->sym))
-    if (gen_one_defexpr(var, def->defExpr))
+gen_defexpr(DefExpr* defExpr) {
+  if (VarSymbol* var = dynamic_cast<VarSymbol*>(defExpr->sym))
+    if (gen_one_defexpr(var, defExpr))
       return -1;
-  if1_gen(if1, &def->ainfo->code, def->defExpr->ainfo->code);
+  if1_gen(if1, &defExpr->parentStmt->ainfo->code, defExpr->ainfo->code);
   return 0;
 }
 
@@ -1812,8 +1811,8 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
   }
   // recurse
   GET_AST_CHILDREN(ast, getStuff);
-  DefStmt* def_stmt = dynamic_cast<DefStmt*>(ast);
-  if (!def_stmt || !dynamic_cast<FnSymbol*>(def_stmt->defExpr->sym))
+  DefExpr* def_expr = dynamic_cast<DefExpr*>(ast);
+  if (!def_expr || !dynamic_cast<FnSymbol*>(def_expr->sym))
     forv_BaseAST(a, getStuff.asts)
       if (gen_if1(a, ast) < 0)
         return -1;
@@ -1834,13 +1833,18 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       break;
     }
     case STMT_NOOP: break;
-    case STMT_DEF:
-      if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(ast))
-        if (dynamic_cast<VarSymbol*>(def_stmt->defExpr->sym) && 
-            gen_defexpr(def_stmt) < 0)
-          return -1;
+    case STMT_EXPR:
+      if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(ast)) {
+        if (DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr)) {
+          if (dynamic_cast<VarSymbol*>(defExpr->sym) && 
+              gen_defexpr(defExpr) < 0)
+            return -1;
+        } else {
+          if (gen_expr_stmt(ast) < 0)
+            return -1;
+        }
+      }
       break;
-    case STMT_EXPR: if (gen_expr_stmt(ast) < 0) return -1; break;
     case STMT_RETURN: {
       ReturnStmt *s = dynamic_cast<ReturnStmt*>(ast);
       Sym *fn = s->parentFunction()->asymbol->sym;
@@ -2643,9 +2647,9 @@ debug_new_ast(Vec<AList<Stmt> *> &stmts, Vec<BaseAST *> &syms) {
       }
     }
     forv_BaseAST(s, syms) {
-      DefStmt* def_stmt = dynamic_cast<DefStmt*>(s);
-      if (def_stmt && dynamic_cast<FnSymbol*>(def_stmt->defExpr->sym)) {
-        print_ast(dynamic_cast<FnSymbol*>(def_stmt->defExpr->sym)->body);
+      DefExpr* def_expr = dynamic_cast<DefExpr*>(s);
+      if (def_expr && dynamic_cast<FnSymbol*>(def_expr->sym)) {
+        print_ast(dynamic_cast<FnSymbol*>(def_expr->sym)->body);
       } else {
         Type *t = dynamic_cast<Type*>(s); 
         if (t) 
@@ -3003,8 +3007,8 @@ void
 print_AST_types() {
   forv_Fun(f, pdb->fa->funs) {
     AInfo *a = dynamic_cast<AInfo *>(f->ast);
-    DefStmt* def_stmt = dynamic_cast<DefStmt*>(a->xast);
-    FnSymbol* fn = dynamic_cast<FnSymbol*>(def_stmt->defExpr->sym);
+    DefExpr* defExpr = dynamic_cast<DefExpr*>(a->xast);
+    FnSymbol* fn = dynamic_cast<FnSymbol*>(defExpr->sym);
     print_AST_Expr_types(fn->body);
   }
 }

@@ -21,8 +21,7 @@ static void insertDomainTemp(ForallExpr* forall,
   VarSymbol* domain_sym = new VarSymbol(name, domain_type);
   DefExpr* def_expr = new DefExpr(domain_sym, 
                                   new UserInitExpr(forall->copy()));
-  DefStmt* def_stmt = new DefStmt(def_expr);
-  currentStmt->insertBefore(def_stmt);
+  currentStmt->insertBefore(new ExprStmt(def_expr));
 
   ForallExpr* new_forall =
     new ForallExpr(new AList<Expr>(new Variable(domain_sym)), 

@@ -42,13 +42,13 @@ void InsertIndexType::preProcessStmt(Stmt* stmt) {
     //printf("Name is %s \n", name);
     temp_type = domain_type->idxType;
     //for_stmt->indices->replace(indices);
-    DefStmt* def_stmt = Symboltable::defineSingleVarDefStmt(temp_name,
-                                                            temp_type,
-                                                            for_stmt->indices->first()->copy(),
-                                                            VAR_NORMAL,
-                                                            VAR_VAR);
-    for_stmt->indices->first()->getStmt()->insertBefore(def_stmt);                                                          
-    VarSymbol* var = dynamic_cast<VarSymbol*>(def_stmt->defExpr->sym);
+    DefExpr* def = Symboltable::defineSingleVarDef(temp_name,
+                                                   temp_type,
+                                                   for_stmt->indices->first()->copy(),
+                                                   VAR_NORMAL,
+                                                   VAR_VAR);
+    for_stmt->indices->first()->getStmt()->insertBefore(new ExprStmt(def));                                                          
+    VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym);
     for_stmt->indices->first()->replace(new Variable(var));
   } else {
     indices_def->sym->type = domain_type->idxType;
@@ -105,11 +105,10 @@ void InsertIndexType::preProcessType(Type* type) {
     TypeSymbol* index_sym = new TypeSymbol(name, index_type);
     index_type->addSymbol(index_sym);
     DefExpr* def_expr = new DefExpr(index_sym);
-    DefStmt* def_stmt = new DefStmt(def_expr);
     if (!index_type->defaultVal) {
       index_type->defaultVal = COPY(index_type->idxType->defaultVal);
     }
-    commonModule->stmts->insertAtHead(def_stmt);
+    commonModule->stmts->insertAtHead(new ExprStmt(def_expr));
     Symboltable::setCurrentScope(saveScope);
   }
 }

@@ -803,9 +803,10 @@ void StructuralType::copyGuts(StructuralType* copy_type, bool clone,
   for (Stmt* old_decls = declarationList->first();
        old_decls;
        old_decls = declarationList->next()) {
-    DefStmt* def = dynamic_cast<DefStmt*>(old_decls);
-    if (def && dynamic_cast<FnSymbol*>(def->defExpr->sym)) {
-      copy_type->methods.add(dynamic_cast<FnSymbol*>(def->defExpr->sym));
+    ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(old_decls);
+    DefExpr* defExpr = exprStmt ? dynamic_cast<DefExpr*>(exprStmt->expr) : NULL;
+    if (defExpr && dynamic_cast<FnSymbol*>(defExpr->sym)) {
+      copy_type->methods.add(dynamic_cast<FnSymbol*>(defExpr->sym));
     } else {
       new_decls->insertAtTail(CLONE_INTERNAL(old_decls));
     }
@@ -820,17 +821,18 @@ void StructuralType::addDeclarations(AList<Stmt>* newDeclarations,
                                      Stmt* beforeStmt) {
   Stmt* tmp = newDeclarations->first();
   while (tmp) {
-    DefStmt* def_stmt = dynamic_cast<DefStmt*>(tmp);
-    if (def_stmt) {
-      if (FnSymbol* sym = dynamic_cast<FnSymbol*>(def_stmt->defExpr->sym)) {
+    ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(tmp);
+    DefExpr* defExpr = exprStmt ? dynamic_cast<DefExpr*>(exprStmt->expr) : NULL;
+    if (defExpr) {
+      if (FnSymbol* sym = dynamic_cast<FnSymbol*>(defExpr->sym)) {
         sym->typeBinding = this->symbol;
         if (sym->fnClass != FN_CONSTRUCTOR) {
           sym->method_type = PRIMARY_METHOD;
         }
         methods.add(sym);
-      } else if (TypeSymbol* sym = dynamic_cast<TypeSymbol*>(def_stmt->defExpr->sym)) {
+      } else if (TypeSymbol* sym = dynamic_cast<TypeSymbol*>(defExpr->sym)) {
         types.add(sym);
-      } else if (VarSymbol* sym = dynamic_cast<VarSymbol*>(def_stmt->defExpr->sym)) {
+      } else if (VarSymbol* sym = dynamic_cast<VarSymbol*>(defExpr->sym)) {
         fields.add(sym);
       }
     }
@@ -952,10 +954,12 @@ void StructuralType::codegenDef(FILE* outfile) {
   codegenStartDefFields(outfile);
   bool printedSomething = false; // BLC: this is to avoid empty structs, illegal in C
   for (Stmt* tmp = declarationList->first(); tmp; tmp = declarationList->next()) {
-    if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(tmp)) {
-      if (VarSymbol* var = dynamic_cast<VarSymbol*>(def_stmt->defExpr->sym)) {
-        var->codegenDef(outfile);
-        printedSomething = true;
+    if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(tmp)) {
+      if (DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr)) {
+        if (VarSymbol* var = dynamic_cast<VarSymbol*>(defExpr->sym)) {
+          var->codegenDef(outfile);
+          printedSomething = true;
+        }
       }
     }
   }
@@ -1152,8 +1156,7 @@ void UnionType::buildFieldSelector(void) {
   DefExpr* def_expr = new DefExpr(enum_symbol);
   enum_symbol->setDefPoint(def_expr);
   EnumSymbol::setDefPoints(id_list, def_expr);
-  DefStmt* def_stmt = new DefStmt(def_expr);
-  symbol->defPoint->parentStmt->insertBefore(def_stmt);
+  symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def_expr));
 
   fieldSelector = enum_type;
 }
@@ -1232,7 +1235,7 @@ void TupleType::addType(Type* additionalType) {
   SymScope* saveScope = Symboltable::setCurrentScope(structScope);
   components.add(additionalType);
   char* field_name = glomstrings(2, "_field", intstring(components.n));
-  addDeclarations(new AList<Stmt>(new DefStmt(new DefExpr(new VarSymbol(field_name, additionalType)))));
+  addDeclarations(new AList<Stmt>(new ExprStmt(new DefExpr(new VarSymbol(field_name, additionalType)))));
   Symboltable::setCurrentScope(saveScope);
 }
 

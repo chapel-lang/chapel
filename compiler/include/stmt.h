@@ -48,19 +48,6 @@ class NoOpStmt : public Stmt {
 };
 
 
-class DefStmt : public Stmt {
-public:
-  DefExpr* defExpr;
-
-  DefStmt(DefExpr* init_defExpr);
-  COPY_DEF(DefStmt);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseStmt(Traversal* traversal);
-  void print(FILE* outfile);
-  void codegenStmt(FILE* outfile);
-};
-
-
 class ExprStmt : public Stmt {
  public:
   Expr* expr;

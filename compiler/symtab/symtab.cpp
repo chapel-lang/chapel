@@ -363,8 +363,12 @@ ModuleSymbol* Symboltable::startModuleDef(char* name, modType modtype) {
 
 bool ModuleDefContainsOnlyNestedModules(AList<Stmt>* def) {
   for_alist(Stmt, stmt, def) {
-    if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {
-      if (!dynamic_cast<ModuleSymbol*>(def_stmt->defExpr->sym)) {
+    if (ExprStmt* expr_stmt = dynamic_cast<ExprStmt*>(stmt)) {
+      if (DefExpr* defExpr = dynamic_cast<DefExpr*>(expr_stmt->expr)) {
+        if (!dynamic_cast<ModuleSymbol*>(defExpr->sym)) {
+          return false;
+        }
+      } else {
         return false;
       }
     } else {
@@ -377,10 +381,12 @@ bool ModuleDefContainsOnlyNestedModules(AList<Stmt>* def) {
 
 static Stmt* ModuleDefContainsNestedModules(AList<Stmt>* def) {
   for_alist(Stmt, stmt, def) {
-    if (DefStmt* def_stmt = dynamic_cast<DefStmt*>(stmt)) {
-      if (dynamic_cast<ModuleSymbol*>(def_stmt->defExpr->sym)) {
-        def->reset();
-        return stmt;
+    if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {
+      if (DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr)) {
+        if (dynamic_cast<ModuleSymbol*>(defExpr->sym)) {
+          def->reset();
+          return stmt;
+        }
       }
     }
   }
@@ -515,35 +521,36 @@ Symboltable::defineVarDef1(char* ident, Type* type, Expr* init) {
   VarSymbol* varSymbol =
     new VarSymbol(ident, copyType ? type->copy() : type, VAR_NORMAL, VAR_VAR);
   UserInitExpr* userInitExpr = init ? new UserInitExpr(init) : NULL;
-  return new AList<Stmt>(new DefStmt(new DefExpr(varSymbol, userInitExpr)));
+  return new AList<Stmt>(new ExprStmt(new DefExpr(varSymbol, userInitExpr)));
 }
 
 
 void Symboltable::defineVarDef2(AList<Stmt>* stmts, varType vartag, consType constag) {
   for_alist(Stmt, stmt, stmts) {
-    if (DefStmt* defStmt = dynamic_cast<DefStmt*>(stmt)) {
-      if (VarSymbol* var = dynamic_cast<VarSymbol*>(defStmt->defExpr->sym)) {
-        var->consClass = constag;
-        var->varClass = vartag;
+    if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {
+      if (DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr)) {
+        if (VarSymbol* var = dynamic_cast<VarSymbol*>(defExpr->sym)) {
+          var->consClass = constag;
+          var->varClass = vartag;
+        } else {
+          INT_FATAL(stmt, "Expected VarSymbol in Symboltable::defineVarDef2");
+        }
       } else {
-        INT_FATAL(stmt, "Expected VarSymbol in Symboltable::defineVarDef2");
+        INT_FATAL(stmt, "Expected DefExpr in Symboltable::defineVarDef2");
       }
     } else {
-      INT_FATAL(stmt, "Expected DefStmt in Symboltable::defineVarDef2");
+      INT_FATAL(stmt, "Expected ExprStmt in Symboltable::defineVarDef2");
     }
   }
 }
 
 
-DefStmt* Symboltable::defineSingleVarDefStmt(char* name, Type* type, 
-                                             Expr* init, varType vartag, 
-                                             consType constag) {
+DefExpr* Symboltable::defineSingleVarDef(char* name, Type* type, 
+                                         Expr* init, varType vartag, 
+                                         consType constag) {
   VarSymbol* var = new VarSymbol(name, type, vartag, constag);
-  if (init) {
-    return new DefStmt(new DefExpr(var, new UserInitExpr(init->copy())));
-  } else {
-    return new DefStmt(new DefExpr(var, NULL));
-  }
+  UserInitExpr* userInitExpr = init ? new UserInitExpr(init) : NULL;
+  return new DefExpr(var, userInitExpr);
 }
 
 
@@ -681,7 +688,7 @@ FnSymbol* Symboltable::finishFnDef(FnSymbol* fnsym, BlockStmt* blockBody,
 }
 
 
-DefStmt* Symboltable::defineFunction(char* name, AList<DefExpr>* formals, 
+DefExpr* Symboltable::defineFunction(char* name, AList<DefExpr>* formals, 
                                      Type* retType, BlockStmt* body, 
                                      bool isExtern) {
   if (formals == NULL) {
@@ -689,7 +696,7 @@ DefStmt* Symboltable::defineFunction(char* name, AList<DefExpr>* formals,
   }
   FnSymbol* fnsym = startFnDef(new FnSymbol(name));
   continueFnDef(fnsym, formals, retType);
-  return new DefStmt(new DefExpr(finishFnDef(fnsym, body, isExtern)));
+  return new DefExpr(finishFnDef(fnsym, body, isExtern));
 }
 
 

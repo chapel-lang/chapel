@@ -65,11 +65,11 @@ class Symboltable {
                                                  Expr* init);
   static void Symboltable::defineVarDef2(AList<Stmt>* stmts, varType vartag, 
                                          consType constag);
-  static DefStmt* Symboltable::defineSingleVarDefStmt(char* name, 
-                                                      Type* type,
-                                                      Expr* init,
-                                                      varType vartag,
-                                                      consType constag);
+  static DefExpr* Symboltable::defineSingleVarDef(char* name, 
+                                                  Type* type,
+                                                  Expr* init,
+                                                  varType vartag,
+                                                  consType constag);
   static ForallExpr* startForallExpr(AList<Expr>* domainExpr, 
                                      AList<Expr>* indexExpr = new AList<Expr>());
   static ForallExpr* finishForallExpr(ForallExpr* indexExpr, 
@@ -81,7 +81,7 @@ class Symboltable {
                             Type* retType, bool isRef = false, Expr *whereExp = NULL);
   static FnSymbol* finishFnDef(FnSymbol* fnsym, BlockStmt* body, 
                                bool isExtern = true);
-  static DefStmt* defineFunction(char* name, AList<DefExpr>* formals, 
+  static DefExpr* defineFunction(char* name, AList<DefExpr>* formals, 
                                  Type* retType, BlockStmt* body, 
                                  bool isExtern = false);
 

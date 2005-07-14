@@ -43,12 +43,11 @@ static void replaceSequenceLiteral(SeqExpr* seqExpr) {
     INT_FATAL(seqExpr, "Analysis required for sequences");
   }
   char* name = glomstrings(2, "_seq_temp_", intstring(uid++));
-  DefStmt* def_stmt = Symboltable::defineSingleVarDefStmt(name,
-                                                          dtUnknown,
-                                                          NULL,
-                                                          VAR_NORMAL,
-                                                          VAR_VAR);
-  DefExpr* def_expr = def_stmt->defExpr;
+  DefExpr* def = Symboltable::defineSingleVarDef(name,
+                                                 dtUnknown,
+                                                 NULL,
+                                                 VAR_NORMAL,
+                                                 VAR_VAR);
   Type* elt_type = dtUnknown;
   if (seqExpr->exprls->length() > 0) {
     elt_type = seqExpr->exprls->representative()->typeInfo();
@@ -56,7 +55,7 @@ static void replaceSequenceLiteral(SeqExpr* seqExpr) {
       elt_type = dtUnknown;
     }
   }
-  def_expr->sym->type =
+  def->sym->type =
     new ExprType(
       new ParenOpExpr(
         new Variable(
@@ -64,9 +63,9 @@ static void replaceSequenceLiteral(SeqExpr* seqExpr) {
         new AList<Expr>(
           new Variable(elt_type->symbol))));
 
-  seqExpr->getStmt()->insertBefore(def_stmt);
+  seqExpr->getStmt()->insertBefore(new ExprStmt(def));
 
-  Symbol* seq = def_expr->sym;
+  Symbol* seq = def->sym;
   for_alist(Expr, tmp, seqExpr->exprls) {
     Expr* append =
       new ParenOpExpr(
@@ -128,14 +127,13 @@ static void replaceTupleLiteral2(Tuple* tuple) {
                    new UnresolvedSymbol(
                      glomstrings(2, "_tuple", intstring(tuple->exprs->length())))),
                  argList);
-  DefStmt* def_stmt = Symboltable::defineSingleVarDefStmt(name,
-                                                          dtUnknown,
-                                                          init,
-                                                          VAR_NORMAL,
-                                                          VAR_VAR);
-  DefExpr* def_expr = def_stmt->defExpr;
-  tuple->getStmt()->insertBefore(def_stmt);
-  Symbol* tmp = def_expr->sym;
+  DefExpr* def = Symboltable::defineSingleVarDef(name,
+                                                 dtUnknown,
+                                                 init,
+                                                 VAR_NORMAL,
+                                                 VAR_VAR);
+  tuple->getStmt()->insertBefore(new ExprStmt(def));
+  Symbol* tmp = def->sym;
   int i = 1;
   for_alist(Expr, expr, tuple->exprs) {
     AssignOp* assignOp = new AssignOp(GETS_NORM, expr->copy(),
@@ -179,18 +177,18 @@ static void createTupleBaseType(int size) {
     TypeSymbol* typeSymbol =
       new TypeSymbol(glomstrings(2, "_t", intstring(i)), variableType);
     variableType->addSymbol(typeSymbol);
-    decls->insertAtTail(new DefStmt(new DefExpr(typeSymbol)));
+    decls->insertAtTail(new ExprStmt(new DefExpr(typeSymbol)));
     types.add(typeSymbol);
   }
   for (int i = 1; i <= size; i++) {
-    DefStmt* defStmt = 
-      Symboltable::defineSingleVarDefStmt(glomstrings(2, "_f", intstring(i)),
-                                          types.v[i-1]->type,
-                                          NULL,
-                                          VAR_NORMAL,
-                                          VAR_VAR);
-    decls->insertAtTail(defStmt);
-    VarSymbol* var = dynamic_cast<VarSymbol*>(defStmt->defExpr->sym);
+    DefExpr* def = 
+      Symboltable::defineSingleVarDef(glomstrings(2, "_f", intstring(i)),
+                                      types.v[i-1]->type,
+                                      NULL,
+                                      VAR_NORMAL,
+                                      VAR_VAR);
+    decls->insertAtTail(new ExprStmt(def));
+    VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym);
     fields.add(var);
   }
   for (int i = 1; i <= size; i++) {
@@ -203,12 +201,11 @@ static void createTupleBaseType(int size) {
     Symboltable::continueFnDef(fn, formals, dtUnknown, true, where);
     AList<Stmt>* body = new AList<Stmt>(new ReturnStmt(new Variable(fields.v[i-1])));
     Symboltable::finishFnDef(fn, new BlockStmt(body));
-    decls->insertAtTail(new DefStmt(new DefExpr(fn)));
+    decls->insertAtTail(new ExprStmt(new DefExpr(fn)));
   }
   SymScope *scope = Symboltable::popScope();
   Type* type = Symboltable::defineStructType(name, new RecordType(), scope, decls);
-  DefStmt* defStmt = new DefStmt(type->symbol->defPoint);
-  commonModule->stmts->insertAtHead(defStmt);
+  commonModule->stmts->insertAtHead(new ExprStmt(type->symbol->defPoint));
 
   FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("write"));
   Vec<char*>* uname = new Vec<char*>();
@@ -236,7 +233,7 @@ static void createTupleBaseType(int size) {
         args));
   AList<Stmt>* body = new AList<Stmt>(writeBody);
   Symboltable::finishFnDef(fn, new BlockStmt(body));
-  commonModule->stmts->insertAtTail(new DefStmt(new DefExpr(fn)));
+  commonModule->stmts->insertAtTail(new ExprStmt(new DefExpr(fn)));
   Symboltable::setCurrentScope(saveScope);
 }
 

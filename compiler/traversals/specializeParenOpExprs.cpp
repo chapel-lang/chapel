@@ -117,7 +117,7 @@ void SpecializeParenOpExprs::postProcessExpr(Expr* expr) {
           if (ctype->defaultConstructor) {
             paren_replacement = new ParenOpExpr(new Variable(new UnresolvedSymbol(ctype->defaultConstructor->name)), paren->argList);
           } else {
-            INT_FATAL(expr, "constructor does not have a DefStmt");
+            INT_FATAL(expr, "structural type has no default constructor");
           }
         }
       } else if (dynamic_cast<FnSymbol*>(baseVar->var)) {

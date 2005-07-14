@@ -54,15 +54,15 @@ void InsertThisParameters::preProcessExpr(Expr* expr) {
     if (fn->fnClass == FN_CONSTRUCTOR) {
       SymScope* saveScope = Symboltable::setCurrentScope(fn->body->body->first()->parentScope);
       fn->body->body->reset(); // reset iteration
-      DefStmt* this_decl = Symboltable::defineSingleVarDefStmt(copystring("this"),
-                                                               typeSym->type,
-                                                               NULL,
-                                                               VAR_NORMAL,
-                                                               VAR_VAR);
-      fn->_this = dynamic_cast<VarSymbol*>(this_decl->defExpr->sym);
+      DefExpr* this_decl = Symboltable::defineSingleVarDef(copystring("this"),
+                                                           typeSym->type,
+                                                           NULL,
+                                                           VAR_NORMAL,
+                                                           VAR_VAR);
+      fn->_this = dynamic_cast<VarSymbol*>(this_decl->sym);
       fn->retType = typeSym->type;
       dynamic_cast<VarSymbol*>(fn->_this)->noDefaultInit = true;
-      fn->body->body->insertAtHead(this_decl);
+      fn->body->body->insertAtHead(new ExprStmt(this_decl));
       char* description = glomstrings(2, "instance of class ", typeSym->name);
       AList<Expr>* alloc_args = new AList<Expr>(new IntLiteral("1", 1));
       alloc_args->insertAtTail(new SizeofExpr(new Variable(fn->_this)));
@@ -73,7 +73,7 @@ void InsertThisParameters::preProcessExpr(Expr* expr) {
       Expr* alloc_rhs = new CastLikeExpr(new Variable(fn->_this), alloc_call);
       Expr* alloc_expr = new AssignOp(GETS_NORM, alloc_lhs, alloc_rhs);
       Stmt* alloc_stmt = new ExprStmt(alloc_expr);
-      this_decl->insertAfter(alloc_stmt);
+      this_decl->parentStmt->insertAfter(alloc_stmt);
       fn->body->body->insertAtTail(new ReturnStmt(new Variable(fn->_this)));
       Symboltable::setCurrentScope(saveScope);
 

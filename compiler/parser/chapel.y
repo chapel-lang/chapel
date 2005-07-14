@@ -26,7 +26,6 @@
   ForallExpr* pforallexpr;
 
   Stmt* pstmt;
-  DefStmt* pdefstmt;
   WhenStmt* pwhenstmt;
   ForLoopStmt* pforloopstmt;
   BlockStmt* pblockstmt;
@@ -42,7 +41,6 @@
   AList<Stmt>* pstmtls;
   AList<WhenStmt>* pwhenstmtls;
   AList<DefExpr>* pdefexprls;
-  AList<DefStmt>* pdefstmtls;
   AList<EnumSymbol>* penumsymls;
   AList<Symbol>* psymls;
 }
@@ -309,7 +307,7 @@ usertype_decl:
       typeSym->copyPragmas(*$2);
       newtype->addSymbol(typeSym);
       DefExpr* def_expr = new DefExpr(typeSym);
-      $$ = new DefStmt(def_expr);
+      $$ = new ExprStmt(def_expr);
     }
 ;
 
@@ -322,7 +320,7 @@ typevar_decl:
       new_symbol->copyPragmas(*$2);
       new_type->addSymbol(new_symbol);
       DefExpr* def_expr = new DefExpr(new_symbol);
-      $$ = new DefStmt(def_expr);
+      $$ = new ExprStmt(def_expr);
     }
 ;
 
@@ -338,7 +336,7 @@ enumdecl:
       DefExpr* def_expr = new DefExpr(pst);
       Symbol::setDefPoints($5, def_expr);
         /* SJD: Should enums have more DefExprs? */
-      $$ = new DefStmt(def_expr);
+      $$ = new ExprStmt(def_expr);
     }
 ;
 
@@ -363,7 +361,7 @@ struct_decl:
       SymScope *scope = Symboltable::popScope();
       Type* type = Symboltable::defineStructType($3, $1, scope, $6);
       type->symbol->copyPragmas(*$2);
-      $$ = new DefStmt(type->symbol->defPoint);
+      $$ = new ExprStmt(type->symbol->defPoint);
     }
 ;
 
@@ -698,7 +696,7 @@ fn_decl:
     }
                                                          function_body_stmt
     {
-      $$ = new DefStmt(new DefExpr(Symboltable::finishFnDef($<pfnsym>3, $9)));
+      $$ = new ExprStmt(new DefExpr(Symboltable::finishFnDef($<pfnsym>3, $9)));
     }
 ;
 
@@ -710,7 +708,7 @@ mod_decl:
     }
                      TLCBR modulebody TRCBR
     {
-      $$ = new DefStmt(Symboltable::finishModuleDef($<pmodsym>3, $5));
+      $$ = new ExprStmt(Symboltable::finishModuleDef($<pmodsym>3, $5));
     }
 ;
 
