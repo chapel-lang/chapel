@@ -39399,3 +39399,42 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+07/14/05 14:04:01 -- deitz
+
+Log message:
+	Removed DefStmt.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp stmt.cpp symbol.cpp 
+	                      type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h stmt.h symtab.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: createEntryPoint.cpp 
+	chapel/compiler/symtab/: flatten.cpp 
+	                         insertDefaultInitVariables.cpp 
+	                         reconstructIterators.cpp symtab.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             buildLValueFunctions.cpp 
+	                             eliminateReturns.cpp htmlview.cpp 
+	                             inlineFunctions.cpp 
+	                             inlineFunctions.h 
+	                             insertAnonymousDomains.cpp 
+	                             insertAnonymousTypes.cpp 
+	                             insertFunctionTemps.cpp 
+	                             insertIndexType.cpp 
+	                             insertLiteralTemps.cpp 
+	                             insertThisParameters.cpp 
+	                             insertVariableInitializations.cpp 
+	                             processParameters.cpp 
+	                             removeNestedFunctions.cpp 
+	                             removeNestedFunctions.h 
+	                             specializeParenOpExprs.cpp 
+	                             transformLetExprs.cpp 
+	                             verifyASTType.cpp 
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.good 
+	                                     mg-seq.good mvm-seq.good 
+	                                     test.good 
+
