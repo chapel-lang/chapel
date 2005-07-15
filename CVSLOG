@@ -39519,3 +39519,23 @@ Modified files:
 	chapel/compiler/parser/: chapel.y 
 	chapel/compiler/traversals/: verify.cpp 
 
+---------------------------------------------------------------------------
+
+07/15/05 12:23:29 -- jplevyak
+
+Log message:
+	Fix bug with nested function lookup.
+	
+	function foo() {
+	 function bar() {
+	   writeln(0);
+	 }
+	 bar();
+	}
+	foo();
+	
+	now works up to codegen.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
