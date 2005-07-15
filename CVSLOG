@@ -39450,3 +39450,19 @@ Log message:
 Modified files:
 	chapel/test/memory/shannon/outofmemory/: sub_test 
 
+---------------------------------------------------------------------------
+
+07/15/05 11:18:13 -- deitz
+
+Log message:
+	Reworked parsing of ?type.  It now results in an error during parsing.
+	This is better (structurally) than how we had it before (where it was
+	simply ignored).
+
+Modified files:
+	chapel/compiler/parser/: chapel.lex chapel.y prelude.chpl 
+Added files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_typevar_function3.future 
+	                                         test_typevar_function4.future 
+
