@@ -876,15 +876,19 @@ build_type(Type *t, bool make_default = true) {
       t->asymbol->sym->type_kind = Type_FUN;
       break;
     case TYPE_ENUM: {
+      EnumType *tt = dynamic_cast<EnumType*>(t);
       t->asymbol->sym->type_kind = Type_TAGGED;
       t->asymbol->sym->inherits_add(sym_enum_element);
-      GetSymbols* getSymbols = new GetSymbols();
-      t->traverse(getSymbols, true);
-      for (int i = 0; i < getSymbols->symbols.n; i++) {
-        BaseAST *s = getSymbols->symbols.v[i];
-        Sym *ss = dynamic_cast<Symbol*>(s)->asymbol->sym;
+      Vec<DefExpr *> elements;
+      tt->constants->getElements(elements);
+      int i = 0;
+      forv_Vec(DefExpr, def, elements) {
+        Sym *ss = def->sym->asymbol->sym;
+        if (def->init && def->init->isConst() && def->init->typeInfo() == dtInteger)
+          i = def->init->intVal();
         build_enum_element(t->asymbol->sym, ss, i);
         t->asymbol->sym->has.add(ss);
+        i++;
       }
       break;
     }
