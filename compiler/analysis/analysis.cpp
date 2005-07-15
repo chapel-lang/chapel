@@ -22,6 +22,7 @@
 
 #define VARARG_END     0ll
 #define MAKE_USER_TYPE_BE_DEFINITION       1
+//#define USE_SCOPE_LOOKUP_CACHE                  1
 //#define MINIMIZED_MEMORY 1  // minimize the memory used by Sym's... needs valgrind checking for safety
 
 #define OPERATOR_CHAR(_c) \
@@ -166,23 +167,12 @@ AInfo::visible_functions(Sym *arg0) {
     name = arg0->name;
   else
     name = if1_cannonicalize_string(if1, "this");
-  Expr *e = dynamic_cast<Expr *>(this->xast);
-  Stmt *s = 0;
-  if (e)
-    s = e->getStmt();
-  else
-    s = dynamic_cast<Stmt *>(this->xast);
+  SymScope* scope = this->xast->parentScope;
+#ifdef USE_SCOPE_LOOKUP_CACHE
   ScopeLookupCache *sym_cache = 0;
-  Symbol *symbol = 0;
-  SymScope* scope = 0;
-  if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(s->parentSymbol))
-    scope = mod->modScope;
-  else if (FnSymbol* fn = dynamic_cast<FnSymbol*>(s->parentSymbol))
-    scope = fn->paramScope;
-  else { INT_FATAL(s, "Unexpected case"); }
-  sym_cache = scope->lookupCache;
   if (sym_cache && (v = sym_cache->get(name))) 
     return v;
+#endif
   Vec<FnSymbol *> *fss = scope->visibleFunctions.get(name);
   v = new Vec<Fun *>;
   if (fss)
@@ -191,10 +181,11 @@ AInfo::visible_functions(Sym *arg0) {
   Vec<Fun *> *universal = universal_lookup_cache.get(name);
   if (universal)
     v->set_union(*universal);
-  if (symbol && !sym_cache)
+#ifdef USE_SCOPE_LOOKUP_CACHE
+  if (!sym_cache)
     sym_cache = scope->lookupCache = new ScopeLookupCache;
-  if (sym_cache)
-    sym_cache->put(name, v);
+  sym_cache->put(name, v);
+#endif
   return v;
 }
 
