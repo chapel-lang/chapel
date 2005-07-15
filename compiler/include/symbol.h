@@ -64,9 +64,6 @@ class Symbol : public BaseAST {
   virtual void codegen(FILE* outfile);
   virtual void codegenDef(FILE* outfile);
   virtual void codegenPrototype(FILE* outfile);
-  void setDefPoint(DefExpr* init_defPoint);
-  template <class elemType>
-  static void setDefPoints(AList<elemType>* symList, DefExpr* init_defPoint);
   virtual FnSymbol* getFnSymbol(void);
   virtual Symbol* getSymbol(void);
   virtual Type* typeInfo(void);
@@ -200,14 +197,9 @@ class FnSymbol : public Symbol {
 
 class EnumSymbol : public Symbol {
  public:
-  Expr* init;
-  int val;
-
-  EnumSymbol(char* init_name = NULL, Expr* init_init = NULL, int init_val = 0);
+  EnumSymbol(char* init_name = NULL);
   COPY_DEF(EnumSymbol);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void traverseDefSymbol(Traversal* traverse);
-  static void setValues(AList<EnumSymbol>* symList);
   void codegenDef(FILE* outfile);
 };
 
@@ -264,15 +256,5 @@ class LabelSymbol : public Symbol {
 };
 
 extern Symbol *gNil;
-
-
-template <class elemType>
-void Symbol::setDefPoints(AList<elemType>* symList, DefExpr* init_defPoint) {
-  Symbol* tmp = symList->first();
-  while (tmp) {
-    tmp->setDefPoint(init_defPoint);
-    tmp = symList->next();
-  }
-}
 
 #endif

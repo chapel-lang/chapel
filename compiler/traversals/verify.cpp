@@ -35,22 +35,8 @@ void Verify::preProcessExpr(Expr* expr){
   expr->verify();
 
   if (DefExpr* defExpr = dynamic_cast<DefExpr*>(expr)) {
-
     if (!removeVerifySymbol(syms, defExpr->sym)) {
       INT_FATAL(defExpr, "Symbol in DefExpr not in Symboltable");
-    }
-
-    if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(defExpr->sym)) {
-      if (EnumType* enum_type = dynamic_cast<EnumType*>(type_sym->type)) {
-        EnumSymbol* tmp;
-        for (tmp = enum_type->valList->first(); 
-             tmp; 
-             tmp = enum_type->valList->next()) {
-          if (!removeVerifySymbol(syms, tmp)) {
-            INT_FATAL(tmp, "EnumSymbol not in Symboltable");
-          }
-        }
-      }
     }
   }
 }
@@ -160,17 +146,6 @@ static void verifyDefPoint(Symbol* sym) {
   Symbol* tmp = sym->defPoint->sym;
   if (tmp == sym) {
     return;
-  }
-  if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(sym->defPoint->sym)) {
-    if (EnumType* enum_type = dynamic_cast<EnumType*>(type_sym->type)) {
-      EnumSymbol* tmp = enum_type->valList->first();
-      while (tmp) {
-        if (tmp == sym) {
-          return;
-        }
-        tmp = enum_type->valList->next();
-      }
-    }
   }
   INT_FATAL(sym, "Incorrect defPoint for symbol '%s'", sym->name);
 }

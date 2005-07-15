@@ -273,28 +273,33 @@ void FnType::codegenDef(FILE* outfile) {
 }
 
 
-EnumType::EnumType(AList<EnumSymbol>* init_valList) :
-  Type(TYPE_ENUM, new Variable(init_valList->first())),
-  valList(init_valList)
-{
-  Symbol* val = valList->first();
-  while (val) {
-    val->type = this;
-    val = valList->next();
-  }
-}
+EnumType::EnumType(AList<DefExpr>* init_constants) :
+  Type(TYPE_ENUM, new Variable(init_constants->first()->sym)),
+  constants(init_constants)
+{ }
 
 
 EnumType*
 EnumType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  EnumType* copy = new EnumType(valList);
+  EnumType* copy = new EnumType(CLONE_INTERNAL(constants));
   copy->addSymbol(symbol);
   return copy;
 }
 
 
+void EnumType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == defaultVal) {
+    defaultVal = dynamic_cast<Expr*>(new_ast);
+  } else if (old_ast == constants) {
+    constants = dynamic_cast<AList<DefExpr>*>(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in Type::replaceChild");
+  }
+}
+
+
 void EnumType::traverseDefType(Traversal* traversal) {
-  valList->traverse(traversal, false);
+  TRAVERSE(constants, traversal, false);
   TRAVERSE(defaultVal, traversal, false);
 }
 
@@ -303,30 +308,32 @@ void EnumType::printDef(FILE* outfile) {
   printf("enum ");
   symbol->print(outfile);
   printf(" = ");
-  valList->print(outfile, " | ");
+  bool first = true;
+  for_alist(DefExpr, constant, constants) {
+    if (!first) {
+      fprintf(outfile, " | ");
+    } else {
+      first = false;
+    }
+    constant->sym->print(outfile);
+  }
 }
 
 
 void EnumType::codegenDef(FILE* outfile) {
-  EnumSymbol* enumSym;
-  int last = -1;
-
   fprintf(outfile, "typedef enum {\n");
-  enumSym = valList->first();
-  while (enumSym) {
-    enumSym->printDef(outfile);
-
-    if (enumSym->val != last + 1) {
-      fprintf(outfile, " = %d", enumSym->val);
+  bool first = true;
+  for_alist(DefExpr, constant, constants) {
+    if (!first) {
+      fprintf(outfile, ", ");
+    } else {
+      first = false;
     }
-    last = enumSym->val;
-
-    enumSym = valList->next();
-
-    if (enumSym) {
-      fprintf(outfile, ",");
+    constant->sym->codegen(outfile);
+    if (constant->init) {
+      fprintf(outfile, " = ");
+      constant->init->codegen(outfile);
     }
-    fprintf(outfile, "\n");
   }
   fprintf(outfile, "} ");
   symbol->codegen(outfile);
@@ -335,23 +342,19 @@ void EnumType::codegenDef(FILE* outfile) {
 
 
 void EnumType::codegenStringToType(FILE* outfile) {
-  EnumSymbol* enumSym = valList->first();
-
   fprintf(outfile, "int _convert_string_to_enum");
   symbol->codegen(outfile);
   fprintf(outfile, "(char* inputString, ");
   symbol->codegen(outfile);
   fprintf(outfile, "* val) {\n");
-  
-  while (enumSym) {
+  for_alist(DefExpr, constant, constants) {
     fprintf(outfile, "if (strcmp(inputString, \"");
-    enumSym->codegen(outfile);
+    constant->sym->codegen(outfile);
     fprintf(outfile, "\") == 0) {\n");
     fprintf(outfile, "*val = ");
-    enumSym->codegen(outfile);
+    constant->sym->codegen(outfile);
     fprintf(outfile, ";\n");
     fprintf(outfile, "} else ");
-    enumSym = valList->next();
   }
   fprintf(outfile, "{ \n");
   fprintf(outfile, "return 0;\n");
@@ -1133,18 +1136,17 @@ static char* buildFieldSelectorName(UnionType* unionType, Symbol* field,
 
 
 void UnionType::buildFieldSelector(void) {
-  AList<EnumSymbol>* id_list = new AList<EnumSymbol>();
+  AList<DefExpr>* id_list = new AList<DefExpr>();
 
   /* build list of enum symbols */
   char* id_name = buildFieldSelectorName(this, NULL);
-  EnumSymbol* id_symbol = new EnumSymbol(id_name, NULL);
-  id_list->insertAtTail(id_symbol);
+  EnumSymbol* id_symbol = new EnumSymbol(id_name);
+  id_list->insertAtTail(new DefExpr(id_symbol));
   forv_Vec(VarSymbol, tmp, fields) {
     id_name = buildFieldSelectorName(this, tmp);
-    id_symbol = new EnumSymbol(id_name, NULL);
-    id_list->insertAtTail(id_symbol);
+    id_symbol = new EnumSymbol(id_name);
+    id_list->insertAtTail(new DefExpr(id_symbol));
   }
-  EnumSymbol::setValues(id_list);
 
   /* build enum type */
   EnumType* enum_type = new EnumType(id_list);
@@ -1154,8 +1156,6 @@ void UnionType::buildFieldSelector(void) {
 
   /* build definition of enum */
   DefExpr* def_expr = new DefExpr(enum_symbol);
-  enum_symbol->setDefPoint(def_expr);
-  EnumSymbol::setDefPoints(id_list, def_expr);
   symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def_expr));
 
   fieldSelector = enum_type;
@@ -1187,7 +1187,7 @@ FnCall* UnionType::buildSafeUnionAccessCall(unionCall type, Expr* base,
 void UnionType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this, 
                                      AList<DefExpr>* arguments) {
   AList<Expr>* args = new AList<Expr>(new Variable(_this));
-  Expr* arg2 = new Variable(fieldSelector->valList->first());
+  Expr* arg2 = new Variable(fieldSelector->constants->first()->sym);
   args->insertAtTail(arg2);
   FnCall* init_function = 
     new FnCall(new Variable(Symboltable::lookupInternal("_UNION_SET")), args);

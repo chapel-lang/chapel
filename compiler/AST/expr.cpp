@@ -559,10 +559,10 @@ DefExpr::DefExpr(Symbol* initSym, UserInitExpr* initInit, Expr* initExprType) :
   exprType(initExprType)
 {
   if (sym) {
-    sym->setDefPoint(this);
-    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
-      fn->paramScope->setContext(NULL, fn, this);
-    }
+    sym->defPoint = this;
+  }
+  if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
+    fn->paramScope->setContext(NULL, fn, this);
   }
   if (!exprType && sym) {
     if (sym->type->symbol) {
@@ -1306,11 +1306,11 @@ void FnCall::codegen(FILE* outfile) {
     } else if (variable->var == Symboltable::lookupInternal("_EnumWriteStopgap")) {
       EnumType* enumType = dynamic_cast<EnumType*>(argList->only()->typeInfo());
       fprintf(outfile, "switch (val) {\n");
-      for_alist(EnumSymbol, enumSym, enumType->valList) {
+      for_alist(DefExpr, constant, enumType->constants) {
         fprintf(outfile, "case ");
-        enumSym->codegen(outfile);
+        constant->sym->codegen(outfile);
         fprintf(outfile, ":\n");
-        fprintf(outfile, "_chpl_write_string(\"%s\");\n", enumSym->name);
+        fprintf(outfile, "_chpl_write_string(\"%s\");\n", constant->sym->name);
         fprintf(outfile, "break;\n");
       }
       fprintf(outfile, "}\n");
@@ -1319,9 +1319,9 @@ void FnCall::codegen(FILE* outfile) {
       EnumType* enumType = dynamic_cast<EnumType*>(argList->only()->typeInfo());
       fprintf(outfile, "char* inputString = NULL;\n");
       fprintf(outfile, "_chpl_read_string(&inputString);\n");
-      for_alist(EnumSymbol, enumSym, enumType->valList) {
-        fprintf(outfile, "if (strcmp(inputString, \"%s\") == 0) {\n", enumSym->cname);
-        fprintf(outfile, "  *val = %s;\n", enumSym->cname);
+      for_alist(DefExpr, constant, enumType->constants) {
+        fprintf(outfile, "if (strcmp(inputString, \"%s\") == 0) {\n", constant->sym->cname);
+        fprintf(outfile, "  *val = %s;\n", constant->sym->cname);
         fprintf(outfile, "} else ");
       }
       fprintf(outfile, "{\n");

@@ -147,11 +147,6 @@ void Symbol::printDef(FILE* outfile) {
 }
 
 
-void Symbol::setDefPoint(DefExpr* init_defPoint) {
-  defPoint = init_defPoint;
-}
-
-
 FnSymbol* Symbol::getFnSymbol(void) {
   return NULL;
 }
@@ -1087,55 +1082,24 @@ void FnSymbol::init(void) {
 
 
 
-EnumSymbol::EnumSymbol(char* init_name, Expr* init_init, int init_val) :
-  Symbol(SYMBOL_ENUM, init_name),
-  init(init_init),
-  val(init_val)
+EnumSymbol::EnumSymbol(char* init_name) :
+  Symbol(SYMBOL_ENUM, init_name)
 {
-  if (init_name != NULL) {
-    Symboltable::define(this);
-  }
+  type = dtInteger;
+  Symboltable::define(this);
 }
 
 
 EnumSymbol*
 EnumSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new EnumSymbol(copystring(name), COPY_INTERNAL(init), val);
-}
-
-
-void EnumSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == init) {
-    init = dynamic_cast<Expr*>(new_ast);
-  } else {
-    INT_FATAL(this, "Unexpected case in EnumSymbol::replaceChild");
-  }
+  return new EnumSymbol(copystring(name));
 }
 
 
 void EnumSymbol::traverseDefSymbol(Traversal* traversal) { }
 
 
-void EnumSymbol::setValues(AList<EnumSymbol>* symList) {
-  EnumSymbol* tmp = symList->first();
-  int tally = 0;
-
-  while (tmp) {
-    if (tmp->init) {
-      if (tmp->init->isComputable() == false) {
-        USR_FATAL(tmp->init, "Enumerator value for %s must be integer parameter", tmp->name);
-      }
-      tally = tmp->init->intVal();
-    }
-    tmp->val = tally++;
-    tmp = symList->next();
-  }
-}
-
-
-void EnumSymbol::codegenDef(FILE* outfile) {
-  /* Do nothing */
-}
+void EnumSymbol::codegenDef(FILE* outfile) { }
 
 
 ModuleSymbol::ModuleSymbol(char* init_name, modType init_modtype) :

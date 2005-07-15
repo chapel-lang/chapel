@@ -144,14 +144,14 @@
 %type <pexpr> tuple_multiplier intliteral
 %type <pexpr> reduction opt_init_expr assign_expr if_expr
 %type <pexprls> expr_ls nonempty_expr_ls tuple_inner_type_ls
-%type <pdefexpr> formal
-%type <pdefexprls> formal_ls opt_formal_ls
+%type <pdefexpr> formal enum_item
+%type <pdefexprls> formal_ls opt_formal_ls enum_ls
 %type <pforallexpr> forallExpr
 
 %type <pstmt> select_stmt
 %type <pstmt> usertype_decl type_decl fn_decl struct_decl mod_decl
 %type <pstmt> function_body_single_stmt 
-%type <pstmt> assign_stmt if_stmt return_stmt loop forloop whileloop enumdecl
+%type <pstmt> assign_stmt if_stmt return_stmt loop forloop whileloop enum_decl
 %type <pstmt> statement call_stmt noop_stmt decl typevar_decl
 %type <pstmtls> decl_ls statements modulebody program
 %type <pstmtls> var_decl var_decl_inner var_decl_inner_ls record_inner_var_ls
@@ -167,8 +167,6 @@
 %type <psym> ident_symbol
 %type <psymls> indexes indexlist
 %type <pfnsym> function
-%type <penumsym> enum_item
-%type <penumsymls> enum_list
 
 /* These are declared in increasing order of precedence. */
 
@@ -294,7 +292,7 @@ var_decl:
 type_decl:
   usertype_decl
 | typevar_decl
-| enumdecl
+| enum_decl
 | struct_decl
 ;
 
@@ -325,17 +323,39 @@ typevar_decl:
 ;
 
 
-enumdecl:
-  TENUM pragma_ls identifier TLCBR enum_list TRCBR TSEMI
+enum_item:
+  identifier
     {
-      EnumSymbol::setValues($5);
+      $$ = new DefExpr(new EnumSymbol($1));
+    }
+| identifier TASSIGN expr
+    {
+      $$ = new DefExpr(new EnumSymbol($1), new UserInitExpr($3));
+    }
+;
+
+
+enum_ls:
+  enum_item
+    {
+      $$ = new AList<DefExpr>($1);
+    }
+| enum_ls TCOMMA enum_item
+    {
+      $1->insertAtTail($3);
+      $$ = $1;
+    }
+;
+
+
+enum_decl:
+  TENUM pragma_ls identifier TLCBR enum_ls TRCBR TSEMI
+    {
       EnumType* pdt = new EnumType($5);
       TypeSymbol* pst = new TypeSymbol($3, pdt);
       pst->copyPragmas(*$2);
       pdt->addSymbol(pst);
       DefExpr* def_expr = new DefExpr(pst);
-      Symbol::setDefPoints($5, def_expr);
-        /* SJD: Should enums have more DefExprs? */
       $$ = new ExprStmt(def_expr);
     }
 ;
@@ -426,31 +446,6 @@ record_tuple_type:
       record_tuple_inner_type
     {
       $$ = $3;
-    }
-;
-
-
-enum_item:
-  identifier
-    {
-      $$ = new EnumSymbol($1, NULL);
-    }
-| identifier TASSIGN expr
-    {
-      $$ = new EnumSymbol($1, $3);
-    }
-;
-
-
-enum_list:
-  enum_item
-    {
-      $$ = new AList<EnumSymbol>($1);
-    }
-| enum_list TCOMMA enum_item
-    {
-      $1->insertAtTail($3);
-      $$ = $1;
     }
 ;
 

@@ -85,10 +85,11 @@ class FnType : public Type {
 
 class EnumType : public Type {
  public:
-  AList<EnumSymbol>* valList;
+  AList<DefExpr>* constants; // EnumSymbols
 
-  EnumType(AList<EnumSymbol>* init_valList);
+  EnumType(AList<DefExpr>* init_constants);
   COPY_DEF(EnumType);
+  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
   void traverseDefType(Traversal* traversal);
 

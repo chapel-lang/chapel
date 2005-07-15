@@ -545,7 +545,7 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
   case TYPE_FN:
     goto LTypeCommon;
   case TYPE_ENUM:
-    ADD_LIST(EnumType, valList, EnumSymbol);
+    ADD_LIST(EnumType, constants, DefExpr);
     goto LTypeCommon;
   case TYPE_DOMAIN:
     ADD_CHILD(DomainType, parent);
