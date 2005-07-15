@@ -39566,3 +39566,14 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+07/15/05 13:05:37 -- deitz
+
+Log message:
+	Fixed regression of test/types/enum/deitz/test_enum6.chpl due to enum
+	changes.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+
