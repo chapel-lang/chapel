@@ -39466,3 +39466,21 @@ Added files:
 	                                         test_typevar_function3.future 
 	                                         test_typevar_function4.future 
 
+---------------------------------------------------------------------------
+
+07/15/05 11:52:34 -- jplevyak
+
+Log message:
+	Added
+	
+	float execution_frequency_info(Expr *);
+	float execution_frequency_info(FnSymbol *);
+	
+	to analysis.h
+	
+	Cleaned up call_info a bit.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: analysis.h 
+
