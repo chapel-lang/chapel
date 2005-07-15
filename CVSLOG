@@ -39539,3 +39539,30 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+07/15/05 12:53:53 -- jplevyak
+
+Log message:
+	Fix the enum tests save 1:
+	
+	[Error matching compiler output for types/type_variables/deitz/test_typevar_record6]
+	
+	which is a problem which occurs before analysis:
+	
+	[scopeResolveSymbols.cpp:135] Error: Variable 'j' used before it is defined (../test/types/enum/deitz/test_enum6.chpl:7)
+	
+	the error seems bogus:
+	
+	b:compiler [295] % cat  ../test/types/enum/deitz/test_enum6.chpl
+	var j : integer = 2;
+	
+	while (j < 100) {
+	  j *= (j + 1);
+	}
+	
+	enum ExprTypes { ADD, MUL, DIV, NEG=j };
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
