@@ -3125,23 +3125,14 @@ call_info(Expr* a, Vec<FnSymbol *> &fns, int find_type) {
   if (!f) // this is not executable code
     return -1;
   Fun *fun = f->asymbol->sym->fun;
-  AST *ast = 0;
-  Expr *e = dynamic_cast<Expr *>(a);
-  if (e)
-    ast = e->ainfo;
-  else {
-    Stmt *stmt = dynamic_cast<Stmt *>(a);
-    if (stmt)
-       ast = stmt->ainfo;
-  }
+  AST *ast = a->ainfo;
   if (!ast)
     return -1; // this code is not known to analysis
-  assert(ast);
-  PNode *found = 0;
-  forv_PNode(n, ast->pnodes) {
-    if (n->code->kind != Code_SEND)
+  PNode *found_pn = NULL;
+  forv_PNode(pn, ast->pnodes) {
+    if (pn->code->kind != Code_SEND)
       continue;
-    Vec<Fun *> *ff = fun->calls.get(n);
+    Vec<Fun *> *ff = fun->calls.get(pn);
     if (ff) {
       forv_Fun(f, *ff) {
         FnSymbol *fs = dynamic_cast<FnSymbol *>(f->sym->asymbol->symbol);
@@ -3153,9 +3144,9 @@ call_info(Expr* a, Vec<FnSymbol *> &fns, int find_type) {
           if (is_operator_name(fs->name))
             continue;
         }
-        if (found && found != n)
+        if (found_pn && found_pn != pn)
           fail("bad call to call_info");
-        found = n;
+        found_pn = pn;
         fns.add(fs);
       }
     }
@@ -3306,4 +3297,23 @@ element_type_info(TypeSymbol *t) {
     return to_AST_type(t->type->asymbol->sym->element->type);
   else
     return dtUnknown;  // analysis not run
+}
+
+float
+execution_frequence_info(Expr *expr) {
+  AST *ast = expr->ainfo;
+  if (!ast)
+    return -1; // this code is not known to analysis    
+  float freq = 0.0;
+  forv_PNode(pn, ast->pnodes) {
+    if (pn->code->kind != Code_SEND)
+      continue;
+    freq += pn->execution_frequency;
+  }
+  return freq;
+}
+
+float
+execution_frequence_info(FnSymbol *fn) {
+  return fn->asymbol->sym->fun->execution_frequency;
 }
