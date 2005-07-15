@@ -83,7 +83,7 @@ const true: boolean = 1;
 -- math
 
 function sqrt(x: float): float {}
-function abs(x: ?t): float {}  -- BLC: should be ": t"
+function abs(x): float {}  -- BLC: should be ": t"  SJD: redo with primitive?
 function ceil(x: float): float {}
 function min(x, y) {
   if (x < y) {

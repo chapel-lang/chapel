@@ -22,7 +22,7 @@
 
 digit           [0-9]
 letter          [_a-zA-Z]
-ident           \??{letter}({letter}|{digit}|\?)*
+ident           {letter}({letter}|{digit}|\?)*
 intLiteral      {digit}+{digit}*      
 floatLiteral    {digit}+"."{digit}+
 
@@ -131,12 +131,7 @@ yield           return TYIELD;
 
 "?"             return TQUESTION;
 
-{ident}         {
-                  if (yytext[0] == '?') {
-                    return QUERY_IDENT;
-                  }
-                  return TIDENT;
-                }
+{ident}         return TIDENT;
 {intLiteral}    return INTLITERAL;
 {floatLiteral}  return FLOATLITERAL;
 {intLiteral}i   return COMPLEXLITERAL;

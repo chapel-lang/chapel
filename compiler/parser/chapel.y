@@ -93,7 +93,7 @@
 %token TWITH
 %token TYIELD
 
-%token TIDENT QUERY_IDENT
+%token TIDENT
 %token INTLITERAL FLOATLITERAL COMPLEXLITERAL
 %token <pch> STRINGLITERAL
 
@@ -134,7 +134,7 @@
 
 %type <boolval> fortype fnretref
 
-%type <pch> identifier query_identifier fname opt_identifier
+%type <pch> identifier fname opt_identifier
 %type <pch> pragma
 %type <vpch> pragma_ls
 
@@ -755,6 +755,10 @@ expr_type:
       new_names->add($1);
       $$ = new UnresolvedType(new_names);
     }
+| TQUESTION identifier
+    {
+      INT_FATAL("Not yet handling ?type construct");
+    }
 | non_tuple_lvalue TOF identifier
     {
       $$ = new ExprType(
@@ -786,8 +790,6 @@ type:
 | array_type
 | record_tuple_type
 | expr_type
-| query_identifier
-    { $$ = dtUnknown; }
 ;
 
 domain_type:
@@ -817,13 +819,13 @@ forallExpr:
 array_type:
   TLSBR TRSBR type
     { $$ = new ArrayType(unknownDomain, $3); }
-| TLSBR query_identifier TRSBR type
+| TLSBR TQUESTION identifier TRSBR type
     { 
-      Symboltable::defineQueryDomain($2);  // really need to tuck this into
+      Symboltable::defineQueryDomain($3);  // really need to tuck this into
                                            // a var def stmt to be inserted
                                            // as soon as the next stmt is
                                            // defined  -- BLC
-      $$ = new ArrayType(unknownDomain, $4);
+      $$ = new ArrayType(unknownDomain, $5);
     }
 | forallExpr type
     {
@@ -1316,12 +1318,6 @@ identifier:
 opt_identifier:
     { $$ = NULL; }
 | identifier
-;
-
-
-query_identifier:
-  QUERY_IDENT
-    { $$ = copystring(yytext+1); }
 ;
 
 
