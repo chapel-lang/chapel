@@ -39484,3 +39484,38 @@ Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 	chapel/compiler/include/: analysis.h 
 
+---------------------------------------------------------------------------
+
+07/15/05 12:18:27 -- deitz
+
+Log message:
+	Reworked and simplified EnumType and EnumSymbol as per our discussion
+	yesterday.  EnumSymbol has no extra fields.  EnumType has a list of
+	DefExprs rather than a list of EnumSymbols.  Now every symbol has a
+	unique DefExpr.
+	
+	Temporary regressions of Enums until analysis is worked in:
+	
+	[Error matching compiler output for classes/deitz/test_union1]
+	[Error matching compiler output for classes/deitz/test_union2]
+	[Error matching compiler output for classes/deitz/test_union4]
+	[Error matching compiler output for classes/deitz/test_union_method1]
+	[Error matching compiler output for classes/deitz/test_union_method2]
+	[Error matching compiler output for classes/deitz/test_union_method3]
+	[Error matching compiler output for classes/jplevyak/union_type_hierarchy-1]
+	[Error matching compiler output for classes/jplevyak/union_type_hierarchy-2]
+	[Error matching compiler output for classes/jplevyak/union_type_hierarchy-3-error]
+	[Error matching compiler output for execflags/shannon/configs/configVarBadEnum]
+	[Error matching compiler output for execflags/shannon/configs/configVarFileBadEnum]
+	[Error matching compiler output for execflags/shannon/configs/configVarFileGoodEnum]
+	[Error matching compiler output for execflags/shannon/configs/configVarGoodEnum]
+	[Error matching compiler output for execflags/shannon/configs/help/varNameEnumQM]
+	[Error matching compiler output for flowanalysis/newast/enum]
+	[Error matching compiler output for trivial/bradc/protoast/codegen/enum]
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: symbol.h type.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/traversals/: verify.cpp 
+
