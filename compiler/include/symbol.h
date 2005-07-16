@@ -67,6 +67,10 @@ class Symbol : public BaseAST {
   virtual FnSymbol* getFnSymbol(void);
   virtual Symbol* getSymbol(void);
   virtual Type* typeInfo(void);
+  //RED comparison functions for e.g. sorting and searching
+  virtual bool lessThan(Symbol* s1, Symbol* s2);
+  virtual bool equalWith(Symbol* s1, Symbol* s2);
+  virtual bool greaterThan(Symbol* s1, Symbol* s2);
 };
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
 
@@ -101,7 +105,6 @@ class VarSymbol : public Symbol {
   bool isConst(void);
   //Roxana
   bool isParam(void);
-
   virtual void codegenDef(FILE* outfile);
 
   void printDef(FILE* outfile);
@@ -140,7 +143,6 @@ class TypeSymbol : public Symbol {
   virtual void traverseDefSymbol(Traversal* traverse);
   virtual void codegenDef(FILE* outfile);
   virtual void codegenPrototype(FILE* outfile);
-
   static TypeSymbol* lookupOrDefineTupleTypeSymbol(Vec<Type*>* components);
 };
 
@@ -167,7 +169,12 @@ class FnSymbol : public Symbol {
   Expr *whereExpr;
   bool noparens;
 
+  //bool lessThan(FnSymbol* s1, FnSymbol* s2);
+  //bool equalWith(FnSymbol* s1, FnSymbol* s2);
+  //bool greaterThan(FnSymbol* s1, FnSymbol* s2);
+  
   FnSymbol(char* init_name, Symbol* init_typeBinding = NULL);
+  FnSymbol(){};
   COPY_DEF(FnSymbol);
   void continueDef(AList<DefExpr>* init_formals, Type* init_retType, 
                    bool isRef, Expr *whereExpr);

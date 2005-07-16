@@ -122,6 +122,17 @@ void Symbol::print(FILE* outfile) {
   fprintf(outfile, "%s", name);
 }
 
+bool Symbol::lessThan(Symbol* s1, Symbol* s2) { 
+    return strcmp(s1->cname, s2->cname) < 0;
+}    
+
+bool Symbol::equalWith(Symbol* s1, Symbol* s2) { 
+    return strcmp(s1->cname, s2->cname) == 0;
+}    
+
+bool Symbol::greaterThan(Symbol* s1, Symbol* s2) { 
+    return strcmp(s1->cname, s2->cname) > 0;
+}    
 
 void Symbol::codegen(FILE* outfile) {
   if (hasPragma("codegen data")) {
@@ -307,7 +318,7 @@ bool Symbol::isThis(void) {
   else
     return f->_this == this;
 }
-
+ 
 void VarSymbol::codegenDef(FILE* outfile) {
   // need to ensure that this can be realized in C as a const, and
   // move its initializer here if it can be
@@ -426,7 +437,6 @@ void ParamSymbol::codegenDef(FILE* outfile) {
   fprintf(outfile, " ");
   Symbol::codegen(outfile);
 }
-
 
 TypeSymbol::TypeSymbol(char* init_name, Type* init_definition) :
   Symbol(SYMBOL_TYPE, init_name, init_definition)
@@ -548,7 +558,6 @@ FnSymbol::FnSymbol(char* init_name, Symbol* init_typeBinding) :
   Symboltable::define(this);
   method_type = NON_METHOD;
 }
-
 
 void FnSymbol::continueDef(AList<DefExpr>* init_formals, Type* init_retType, bool isRef, Expr *init_whereExpr) {
   formals = init_formals;
