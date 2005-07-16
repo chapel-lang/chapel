@@ -39591,3 +39591,13 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 	chapel/compiler/include/: symbol.h vec.h 
 
+---------------------------------------------------------------------------
+
+07/15/05 18:15:03 -- roxana
+
+Log message:
+	Forgot to comment out some stuff.
+
+Modified files:
+	chapel/compiler/symtab/: findCollidingNames.cpp 
+
