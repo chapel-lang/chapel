@@ -39577,3 +39577,17 @@ Log message:
 Modified files:
 	chapel/compiler/parser/: chapel.y 
 
+---------------------------------------------------------------------------
+
+07/15/05 18:11:02 -- roxana
+
+Log message:
+	Added a sorting facility to Vec<T> class in preparation for
+	name mangling. Added comparison function to symbols.
+
+Modified files:
+	chapel/compiler/symtab/: findCollidingNames.h 
+	                         findCollidingNames.cpp 
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h vec.h 
+
