@@ -709,6 +709,7 @@ map_baseast(BaseAST *s) {
         case SCOPE_FORLOOP:
         case SCOPE_FORALLEXPR:
           sym->asymbol->sym->function_scope = 1;
+          sym->asymbol->sym->nesting_depth = sym->nestingDepth();
           break;
         case SCOPE_CLASS: // handled as the symbols appears in code
           break;
@@ -2308,30 +2309,6 @@ fun_where_equal_constant(FnSymbol *f, Variable *v, Literal *c) {
   }
 }
 
-#if 0
-static void
-fun_where_equal_constant(Variable *v, Variable *v2) {
-  ParamSymbol *s = 0;
-  if ((s = dynamic_cast<ParamSymbol*>(v->var))) {
-    if (!s->isGeneric) {
-      show_error("where constraint on non-generic %s", f->body->ainfo, s->name);
-      return;
-    }
-  } else if ((s = dynamic_cast<ParamSymbol*>(v2->var))) {
-    if (!s->isGeneric) {
-      show_error("where constraint on non-generic %s", f->body->ainfo, s->name);
-      return;
-    }
-    v2 = v;
-  } else
-    return;
-  if (TypeSymbol *t = dynamic_cast<TypeSymbol *>(v2->var)) {
-    if (t->type->astType != TYPE_VARIABLE) {
-    }
-  }
-}
-#endif
-
 static void
 fun_where_clause(FnSymbol *f, Expr *w) {
   BinOp *op = dynamic_cast<BinOp*>(w);
@@ -2543,6 +2520,17 @@ finalize_function(Fun *fun) {
       }
     }
     p.inc();
+  }
+  // check nesting
+  if (fs->defPoint->parentStmt) {
+    if (!fun->nested_in) {
+      FnSymbol *fn = fs->defPoint->getStmt()->parentFunction();
+      if (fn) {
+        fun->nested_in = fn->asymbol->sym->fun;
+        if (fun->nested_in)
+          fun->nested_in->nested.add(fun);
+      }
+    }
   }
   // check pragmas
   Sym *fn = fun->sym;

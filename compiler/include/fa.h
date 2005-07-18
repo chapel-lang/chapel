@@ -63,6 +63,7 @@ class EntrySet : public gc {
   Vec<AVar *>           rets;
   EdgeHash              edges;
   EdgeMap               out_edge_map;
+  Vec<EntrySet *>       display;
   Vec<AEdge *>          out_edges;
   Vec<AEdge *>          backedges;
   Vec<AEdge *>          es_cs_backedges;

@@ -95,6 +95,7 @@ class BasicSym : public gc {
   AST                   *ast;                   // AST node which defined this symbol
   Var                   *var;                   // used by fa.cpp
   ASymbol               *asymbol;               // front end interface object
+  int                   nesting_depth;          // nested function depth
   char                  *cg_string;             // used by cg.cpp
 
   unsigned int          is_builtin:1;           // Sym is builtin to the compiler

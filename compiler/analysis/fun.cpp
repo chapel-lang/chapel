@@ -9,6 +9,7 @@
 #include "stmt.h"
 
 void Fun::init_fun() {
+  nested_in = 0;
   clone_for_constants = 0;
   vec_of_one = 0;
   execution_frequency = 0.0;

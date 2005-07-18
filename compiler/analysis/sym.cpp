@@ -15,6 +15,7 @@ BasicSym::BasicSym(void) :
   ast(NULL),
   var(NULL),
   asymbol(NULL),
+  nesting_depth(0),
   cg_string(NULL),
   is_builtin(0),
   is_read_only(0),

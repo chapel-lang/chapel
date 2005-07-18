@@ -36,6 +36,8 @@ class Fun : public gc {
   int id;
   Sym *sym;
   AST *ast;
+  Fun *nested_in;
+  Vec<Fun*> nested;
   
   // pnode
   PNode *entry;

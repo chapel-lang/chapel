@@ -132,19 +132,19 @@ compar_creation_sets(const void *ai, const void *aj) {
   return (i > j) ? 1 : ((i < j) ? -1 : 0);
 }
 
-static EntrySet *
-find_nesting_EntrySet(Fun *fn, EntrySet *e) {
-  assert(!"incomplete");
-  return (EntrySet*)GLOBAL_CONTOUR;
-}
-
 AVar *
 make_AVar(Var *v, EntrySet *es) {
-  if (v->sym->function_scope)
+  if (v->sym->function_scope) {
+    assert(!v->sym->global_scope);
+    if (es->fun && es->fun->sym->nesting_depth && v->sym->nesting_depth &&
+        v->sym->nesting_depth != es->fun->sym->nesting_depth + 1) {
+      assert(es->fun->sym->nesting_depth >= v->sym->nesting_depth);
+      return unique_AVar(v, es->display.v[v->sym->nesting_depth-1]);
+    }
     return unique_AVar(v, es);
-  if (v->sym->global_scope)
-    return unique_AVar(v, GLOBAL_CONTOUR);
-  return unique_AVar(v, find_nesting_EntrySet(v->sym->in->fun, es));
+  }
+  assert(v->sym->global_scope);
+  return unique_AVar(v, GLOBAL_CONTOUR);
 }
 
 static inline AVar *
@@ -612,6 +612,19 @@ same_eq_classes(Setters *s, Setters *ss) {
 }
 
 static int
+edge_nest_compatible_with_entry_set(AEdge *e, EntrySet *es) {
+  if (es->fun->nested_in != e->from->fun)
+    return 1;
+  AEdge **last = es->edges.last();
+  for (AEdge **pee = es->edges.first(); pee < last; pee++) if (*pee) {
+    AEdge *ee = *pee;
+    if (ee->from != e->from)
+      return 0;
+  }
+  return 1;
+}
+
+static int
 edge_type_compatible_with_entry_set(AEdge *e, EntrySet *es) {
   assert(e->args.n && es->args.n);
   if (!es->split) {
@@ -725,6 +738,8 @@ edge_constant_compatible_with_entry_set(AEdge *e, EntrySet *es) {
 static int
 entry_set_compatibility(AEdge *e, EntrySet *es) {
   int val = INT_MAX;
+  if (!edge_nest_compatible_with_entry_set(e, es))
+    return 0;
   switch (edge_type_compatible_with_entry_set(e, es)) {
     case 1: break;
     case 0: val -= 4; break;
@@ -739,6 +754,31 @@ entry_set_compatibility(AEdge *e, EntrySet *es) {
 }
 
 static void
+update_display(AEdge *e, EntrySet *es) {
+  if (es->fun->sym->nesting_depth > e->from->fun->sym->nesting_depth) { // call down
+    if (es->display.n == 0)
+      es->display.append(e->from->display);
+    else
+      for (int i = 0; i < e->from->display.n; i++)
+        assert(es->display.v[i] == e->from->display.v[i]);
+    es->display.add(e->from);
+  } else if (es->fun->sym->nesting_depth == e->from->fun->sym->nesting_depth) { // same level
+    if (es->display.n == 0)
+      es->display.append(e->from->display);
+    else
+      for (int i = 0; i < e->from->display.n; i++)
+        assert(es->display.v[i] == e->from->display.v[i]);
+  } else { // call up
+    if (es->display.n == 0)
+      for (int i = 0; i < es->fun->sym->nesting_depth; i++)
+        es->display.add(e->from->display.v[i]);
+    else
+      for (int i = 0; i < es->fun->sym->nesting_depth; i++)
+        assert(es->display.v[i] == e->from->display.v[i]);
+  }
+}
+
+static void
 set_entry_set(AEdge *e, EntrySet *es = 0) {
   EntrySet *new_es = es;
   if (!es) {
@@ -747,6 +787,8 @@ set_entry_set(AEdge *e, EntrySet *es = 0) {
   }
   e->to = new_es;
   new_es->edges.put(e);
+  if (new_es->fun->sym->nesting_depth)
+    update_display(e, new_es);
   if (!es) {
     forv_MPosition(p, e->match->fun->positional_arg_positions) {
       Var *v = e->match->fun->args.get(p);
@@ -782,7 +824,11 @@ check_split(AEdge *e) {
     if (m) {
       for (int i = 0; i < m->n; i++)
         if (m->v[i].key == e->match->fun) {
-          set_entry_set(e, m->v[i].value->to);
+          if (e->match->fun->nested_in == e->from->fun) {
+            set_entry_set(e);
+            e->to->split = m->v[i].value->to;
+          } else
+            set_entry_set(e, m->v[i].value->to);
           return 1;
         }
     }
