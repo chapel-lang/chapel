@@ -44,8 +44,8 @@ void InlineFunctions::postProcessExpr(Expr* expr) {
 
 bool InlineFunctions::isCodegened(FnSymbol* fn_sym) {
   //do not inline methods that are not codegened (e.g. prelude)
-  ModuleSymbol* mod_sym = fn_sym->parentScope->getModule();
-  return (!fn_sym->hasPragma("no codegen") && mod_sym && (mod_sym->modtype != MOD_INTERNAL));  
+  ModuleSymbol* mod_sym = fn_sym->paramScope->getModule();
+  return (!fn_sym->hasPragma("no codegen") && (mod_sym->modtype != MOD_INTERNAL));  
 }
 
 DefExpr* InlineFunctions::createTempVariable(Type* type, Expr* init) {
