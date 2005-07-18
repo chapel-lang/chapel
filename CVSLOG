@@ -39642,3 +39642,19 @@ Added files:
 	                               variables_in_nested_function.future 
 	                               variables_in_nested_function.good 
 
+---------------------------------------------------------------------------
+
+07/18/05 16:57:39 -- mjoyner
+
+Log message:
+	Updating traversal code that removes nested function definitions.
+
+Modified files:
+	chapel/compiler/traversals/: removeNestedFunctions.h 
+	                             removeNestedFunctions.cpp 
+Added files:
+	chapel/compiler/traversals/: findEnclosingScopeVarUses.h 
+	                             findEnclosingScopeVarUses.cpp 
+	                             simpleNestedFunctionMove.h 
+	                             simpleNestedFunctionMove.cpp 
+
