@@ -10,7 +10,7 @@ class FindCollidingNames : public SymtabTraversal {
   Vec<VarSymbol*> globalvars;
 public:
   void processSymbol(Symbol* sym);
-  void run(ModuleList* moduleList = NULL);
+  //void run(ModuleList* moduleList = NULL);
 };
 
 #endif 

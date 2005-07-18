@@ -28,12 +28,11 @@ void FindCollidingNames::processSymbol(Symbol* sym) {
   }
 }
 
-void FindCollidingNames::run(ModuleList* moduleList) {
-/*
+/*void FindCollidingNames::run(ModuleList* moduleList) {
+
   SymtabTraversal::run(moduleList);
   //RED: for test purposes only
   fnsyms.quickSort(0, fnsyms.length()-1);
-*/
-}
+}*/
 
 
