@@ -39623,3 +39623,22 @@ Modified files:
 	chapel/compiler/symtab/: findCollidingNames.h 
 	                         findCollidingNames.cpp 
 
+---------------------------------------------------------------------------
+
+07/18/05 14:52:14 -- jplevyak
+
+Log message:
+	Added support for variables scoped from nested function context
+	into analysis.
+	Added a test case for variables in nested functions.  It is currently
+	a future since there is no support in codegen.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: analysis.cpp fa.cpp fun.cpp sym.cpp 
+	chapel/compiler/include/: fa.h fun.h sym.h symbol.h 
+Added files:
+	chapel/test/trivial/jplevyak/: variables_in_nested_function.chpl 
+	                               variables_in_nested_function.future 
+	                               variables_in_nested_function.good 
+
