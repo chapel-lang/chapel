@@ -39611,3 +39611,15 @@ Log message:
 Modified files:
 	chapel/compiler/symtab/: findCollidingNames.cpp 
 
+---------------------------------------------------------------------------
+
+07/18/05 10:03:46 -- roxana
+
+Log message:
+	Forgot to comment out some code in the header file with the
+	last commit. John caught that.
+
+Modified files:
+	chapel/compiler/symtab/: findCollidingNames.h 
+	                         findCollidingNames.cpp 
+
