@@ -39658,3 +39658,13 @@ Added files:
 	                             simpleNestedFunctionMove.h 
 	                             simpleNestedFunctionMove.cpp 
 
+---------------------------------------------------------------------------
+
+07/18/05 16:59:29 -- mjoyner
+
+Log message:
+	Minor change in inline function traversal in method that determines when a function will be codegened.
+
+Modified files:
+	chapel/compiler/traversals/: inlineFunctions.cpp 
+
