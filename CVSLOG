@@ -39601,3 +39601,13 @@ Log message:
 Modified files:
 	chapel/compiler/symtab/: findCollidingNames.cpp 
 
+---------------------------------------------------------------------------
+
+07/18/05 09:24:07 -- jplevyak
+
+Log message:
+	Patch broken build.  To be reviewed by the author.
+
+Modified files:
+	chapel/compiler/symtab/: findCollidingNames.cpp 
+
