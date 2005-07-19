@@ -160,7 +160,7 @@
 %type <pwhenstmtls> when_stmts
 
 %type <ptype> opt_var_type var_type typevar_type fnrettype
-%type <ptype> type domain_type index_type array_type record_tuple_type
+%type <ptype> type record_tuple_type
 %type <ptype> record_tuple_inner_type expr_type
 %type <ptype> class_record_union
 
@@ -782,26 +782,8 @@ expr_type:
 
 
 type:
-  domain_type
-| index_type
-| array_type
-| record_tuple_type
+  record_tuple_type
 | expr_type
-;
-
-domain_type:
-  TDOMAIN
-    { $$ = new DomainType(); }
-| TDOMAIN TLP expr TRP
-    { $$ = new DomainType($3); }
-;
-
-
-index_type:
-  TINDEX
-    { $$ = new IndexType(); }
-| TINDEX TLP expr TRP
-    { $$ = new IndexType($3); }
 ;
 
 
@@ -810,25 +792,6 @@ forallExpr:
     { $$ = Symboltable::startForallExpr($2); }
 | TLSBR nonempty_expr_ls TIN nonempty_expr_ls TRSBR
     { $$ = Symboltable::startForallExpr($4, $2); }
-;
-
-
-array_type:
-  TLSBR TRSBR type
-    { $$ = new ArrayType(unknownDomain, $3); }
-| TLSBR TQUESTION identifier TRSBR type
-    { 
-      Symboltable::defineQueryDomain($3);  // really need to tuck this into
-                                           // a var def stmt to be inserted
-                                           // as soon as the next stmt is
-                                           // defined  -- BLC
-      $$ = new ArrayType(unknownDomain, $5);
-    }
-| forallExpr type
-    {
-      Symboltable::finishForallExpr($1);
-      $$ = new ArrayType($1, $2);
-    }
 ;
 
 

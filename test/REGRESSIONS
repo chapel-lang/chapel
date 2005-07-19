@@ -14,23 +14,6 @@
 linux and general regressions
 =============================
 
-[Error matching compiler output for arrays/deitz/test_array_basic1]
-[Error matching compiler output for arrays/deitz/test_array_of_record1]
-
-  Fail because the new wrapper constructor for the class is not called
-  when the array is initialized.  The array needs a constructor so
-  that its initialization code can be analyzed.
-
-[Error matching compiler output for arrays/deitz/test_array_integer_3d]
-
-  Arrays are not classes so we can't worry about everything.
-
-[Error matching compiler output for domains/bradc/writeIndex]
-[Error matching compiler output for domains/bradc/writeIndex2]
-
-  There is something very wrong with IndexTypes.  They should not
-  need their own write function (bradc).
-
 [Error matching program output for trivial/roxana/test_param_decl3]
 
   Parameters need to be initialized in certain contexts (e.g., global
