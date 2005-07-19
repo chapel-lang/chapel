@@ -39793,3 +39793,27 @@ Added files:
 	chapel/test/trivial/deitz/: test_scope1.future 
 	                            test_scope2.future 
 
+---------------------------------------------------------------------------
+
+07/19/05 10:39:56 -- mjoyner
+
+Log message:
+	Adding tests for nested function definitions.
+
+Added files:
+	chapel/test/trivial/mjoyner/nestedfndef/: nested_fndef1.chpl 
+	                                          nested_fndef1.future 
+	                                          nested_fndef1.good 
+	                                          nested_fndef2.chpl 
+	                                          nested_fndef2.future 
+	                                          nested_fndef2.good 
+	                                          nested_fndef3.chpl 
+	                                          nested_fndef3.future 
+	                                          nested_fndef3.good 
+	                                          nested_fndef4.chpl 
+	                                          nested_fndef4.future 
+	                                          nested_fndef4.good 
+	                                          nested_fndef5.chpl 
+	                                          nested_fndef5.future 
+	                                          nested_fndef5.good 
+
