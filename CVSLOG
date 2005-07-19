@@ -39866,3 +39866,24 @@ Removed files:
 	                             memstatPrint.future 
 	                             thresholdWithoutTrace.future 
 
+---------------------------------------------------------------------------
+
+07/19/05 13:19:00 -- jplevyak
+
+Log message:
+	Tuple Destructuring now works for arguments up to codegen.
+	fields are now "Symbol" (though they can be VarSymbol or ParamSymbol).
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: postAnalysisCleanup.cpp 
+	                         resolveTypes.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+Added files:
+	chapel/test/trivial/jplevyak/: destruct-arg-1.chpl 
+	                               destruct-arg-1.future 
+	                               destruct-arg-1.good 
+
