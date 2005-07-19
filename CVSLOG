@@ -39678,3 +39678,13 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: removeNestedFunctions.cpp 
 
+---------------------------------------------------------------------------
+
+07/19/05 09:20:49 -- jplevyak
+
+Log message:
+	comment use of "aspect" to force nominal typing of default parameters
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
