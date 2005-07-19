@@ -39817,3 +39817,17 @@ Added files:
 	                                          nested_fndef5.future 
 	                                          nested_fndef5.good 
 
+---------------------------------------------------------------------------
+
+07/19/05 11:28:37 -- mjoyner
+
+Log message:
+	Remove nested function traversal now handles cases where a nested function uses a variable defined in a function more than 1 level up in its enclosing function parent tree.
+	
+	An example can be found in the variables_in_nested_function test case.
+
+Modified files:
+	chapel/compiler/traversals/: removeNestedFunctions.h 
+	                             removeNestedFunctions.cpp 
+	                             findEnclosingScopeVarUses.cpp 
+
