@@ -39668,3 +39668,13 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: inlineFunctions.cpp 
 
+---------------------------------------------------------------------------
+
+07/19/05 07:57:28 -- mjoyner
+
+Log message:
+	Small change to fix bug.
+
+Modified files:
+	chapel/compiler/traversals/: removeNestedFunctions.cpp 
+
