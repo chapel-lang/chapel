@@ -18,6 +18,7 @@ void RemoveNestedFunctions::preProcessStmt(Stmt* stmt) {
       if (FnSymbol* fn_sym = dynamic_cast<FnSymbol*>(defExpr->sym))
         //nested function definition
         if (hasEnclosingFunction(defExpr)) {
+          Vec<Symbol*>* encl_func_var_uses;
           encl_func_var_uses = getEnclosingFuncVarUses(fn_sym);
           //store nested function actual arg info
           _nested_func_args_map->put(fn_sym, encl_func_var_uses);
