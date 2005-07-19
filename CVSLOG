@@ -39688,3 +39688,108 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+07/19/05 10:12:36 -- deitz
+
+Log message:
+	Futurized the following tests:
+	
+	   arrays/bradc/   domarr
+	   arrays/deitz/
+	     jacobi jacobi2 jacobi3 test_anon_domain1 test_anon_domain2
+	     test_array_assign1 test_array_assign2 test_array_assign3
+	     test_array_basic1 test_array_float1 test_array_init1
+	     test_array_init3 test_array_integer_2d test_array_integer_3d
+	     test_array_of_class1 test_array_of_record1 test_array_of_string1
+	     test_array_of_string2 test_basic1d1 test_basic1d2 test_basic1d3
+	     test_basic1d4
+	   compflags/shannon/cpplines/   cppLines noCppLines
+	   distributions/bradc/foundations/   blockdist3
+	   domains/bradc/   paramRank writeIndex writeIndex2
+	   domains/roxana/
+	     test_index_assign test_index_expr test_index_expr0
+	     test_index_expr2
+	   flowanalysis/newast/   declprintdom2 domarr noop protoast_test
+	   functions/bradc/   arrayArg intents-arrays2
+	   memory/shannon/
+	     jacobi memmaxBytes memmaxExceeds memmaxExceedsLineno memstatFlag
+	     memstatFlagLineno memstatPrint printMemTable
+	     thresholdWithoutTrace
+	   reductions/bradc/manual/
+	     identisinferredvar identisvar inferstatetype inferstatetype2
+	     manual threeuses-cast threeuses twouses usestate usestate2
+	   trivial/bradc/   declprintdom2
+	   trivial/bradc/protoast/   mg-seq-concrete mg-seq mvm-seq test
+	   trivial/deitz/   test_scope1 test_scope2
+	
+	These tests use arrays.  If they are not testing arrays, it may be
+	appropriate to rewrite the test so that it does not use arrays.
+	
+	There are now only four regressions.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/test/: REGRESSIONS 
+Added files:
+	chapel/test/arrays/bradc/: domarr.future 
+	chapel/test/arrays/deitz/: jacobi.future jacobi2.future 
+	                           jacobi3.future 
+	                           test_anon_domain1.future 
+	                           test_anon_domain2.future 
+	                           test_array_assign1.future 
+	                           test_array_assign2.future 
+	                           test_array_assign3.future 
+	                           test_array_basic1.future 
+	                           test_array_float1.future 
+	                           test_array_init1.future 
+	                           test_array_init3.future 
+	                           test_array_integer_2d.future 
+	                           test_array_integer_3d.future 
+	                           test_array_of_class1.future 
+	                           test_array_of_record1.future 
+	                           test_array_of_string1.future 
+	                           test_array_of_string2.future 
+	                           test_basic1d1.future 
+	                           test_basic1d2.future 
+	                           test_basic1d3.future 
+	                           test_basic1d4.future 
+	chapel/test/compflags/shannon/cpplines/: cppLines.future 
+	                                         noCppLines.future 
+	chapel/test/distributions/bradc/foundations/: blockdist3.future 
+	chapel/test/domains/bradc/: paramRank.future writeIndex.future 
+	                            writeIndex2.future 
+	chapel/test/domains/roxana/: test_index_assign.future 
+	                             test_index_expr.future 
+	                             test_index_expr0.future 
+	                             test_index_expr2.future 
+	chapel/test/flowanalysis/newast/: declprintdom2.future 
+	                                  domarr.future noop.future 
+	                                  protoast_test.future 
+	chapel/test/functions/bradc/: arrayArg.future 
+	                              intents-arrays2.future 
+	chapel/test/memory/shannon/: jacobi.future memmaxBytes.future 
+	                             memmaxExceeds.future 
+	                             memmaxExceedsLineno.future 
+	                             memstatFlag.future 
+	                             memstatFlagLineno.future 
+	                             memstatPrint.future 
+	                             printMemTable.future 
+	                             thresholdWithoutTrace.future 
+	chapel/test/reductions/bradc/manual/: identisinferredvar.future 
+	                                      identisvar.future 
+	                                      inferstatetype.future 
+	                                      inferstatetype2.future 
+	                                      manual.future 
+	                                      threeuses-cast.future 
+	                                      threeuses.future 
+	                                      twouses.future 
+	                                      usestate.future 
+	                                      usestate2.future 
+	chapel/test/trivial/bradc/: declprintdom2.future 
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.future 
+	                                     mg-seq.future 
+	                                     mvm-seq.future test.future 
+	chapel/test/trivial/deitz/: test_scope1.future 
+	                            test_scope2.future 
+
