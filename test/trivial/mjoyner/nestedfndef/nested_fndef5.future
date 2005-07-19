@@ -1,0 +1,4 @@
+mack
+
+handle nested functions in the language, in this case, variables are used that 
+have been defined in an enclosing function scope
