@@ -18,8 +18,7 @@ void RemoveNestedFunctions::preProcessStmt(Stmt* stmt) {
       if (FnSymbol* fn_sym = dynamic_cast<FnSymbol*>(defExpr->sym))
         //nested function definition
         if (hasEnclosingFunction(defExpr)) {
-          Vec<Symbol*>* encl_func_var_uses;
-          encl_func_var_uses = getEnclosingFuncVarUses(fn_sym);
+          Vec<Symbol*>* encl_func_var_uses = getEnclosingFuncVarUses(fn_sym);
           //store nested function actual arg info
           _nested_func_args_map->put(fn_sym, encl_func_var_uses);
         }
@@ -34,7 +33,6 @@ void RemoveNestedFunctions::postProcessStmt(Stmt* stmt) {
         //nested function definition
         if(hasEnclosingFunction(defExpr)) {
           Vec<Symbol*>* encl_func_var_uses = _nested_func_args_map->get(fn_sym);
-          printf("Found nested function: %s \n", fn_sym->name);
                  
           //add to global scope
           ModuleSymbol* curr_module = fn_sym->paramScope->getModule();
@@ -63,7 +61,7 @@ void RemoveNestedFunctions::postProcessExpr(Expr* expr) {
         Vec<Symbol*>* encl_func_var_uses = _nested_func_args_map->get(fn_sym);
         //nested function call
         if (encl_func_var_uses)
-          addNestedFuncActuals(paren_op, encl_func_var_uses);
+          addNestedFuncActuals(paren_op, encl_func_var_uses, fn_sym);
       } 
   }
 }
@@ -87,7 +85,6 @@ void RemoveNestedFunctions::addNestedFuncFormals(Expr* expr, Vec<Symbol*>* encl_
       Map<BaseAST*,BaseAST*>* update_map = new Map<BaseAST*,BaseAST*>();
       forv_Vec(Symbol, sym, *encl_var_uses) {
         if (sym) {
-          printf("Symbol %s used in function %s is defined in the enclosing function\n", sym->name,fn_sym->name);
           //create formal and add to nested function
           DefExpr* formal = Symboltable::defineParam(PARAM_BLANK,sym->name,sym->type,NULL);
           fn_sym->formals->insertAtTail(formal);
@@ -102,12 +99,13 @@ void RemoveNestedFunctions::addNestedFuncFormals(Expr* expr, Vec<Symbol*>* encl_
   } 
 }
 
-void RemoveNestedFunctions::addNestedFuncActuals(ParenOpExpr* paren_op, Vec<Symbol*>* encl_var_uses) {
-  AList<Expr>* nested_func_actuals = new AList<Expr>();
+void RemoveNestedFunctions::addNestedFuncActuals(ParenOpExpr* paren_op, Vec<Symbol*>* encl_var_uses, FnSymbol* old_func_sym) {
   //build nested function actuals list
   forv_Vec(Symbol, sym, *encl_var_uses) {
     if (sym) 
-      nested_func_actuals->insertAtTail(new Variable(sym));
+      paren_op->argList->insertAtTail(new Variable(sym));
   }
-  paren_op->argList = nested_func_actuals;
+  //replace original nested function call with call to non-nested function
+  FnSymbol* new_func_sym = _nested_func_sym_map->get(old_func_sym);
+  paren_op->baseExpr->replace(new Variable(new_func_sym));
 }
