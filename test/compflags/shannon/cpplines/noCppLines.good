@@ -1,4 +1,2 @@
-Jacobi computation complete.
-Delta is 9.68412e-06 (< epsilon = 1e-05)
-# of iterations: 79
+m = 10
 NOTE: #line directives were not generated

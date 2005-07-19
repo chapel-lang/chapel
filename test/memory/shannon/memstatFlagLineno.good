@@ -1,1 +1,1 @@
-memstatFlagLineno.chpl, line28:  ***Error: printMemStat() only works with the --memstat flag***
+memstatFlagLineno.chpl, line4:  ***Error: printMemStat() only works with the --memstat flag***
