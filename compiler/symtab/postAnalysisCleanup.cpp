@@ -49,7 +49,7 @@ static void resolveDefaultConstructorParameters(Symbol* sym,
       INT_FATAL(sym, "Error in default constructor parameter hack");
     }
 
-    forv_Vec(VarSymbol, field, structuralType->fields) {
+    forv_Vec(Symbol, field, structuralType->fields) {
       if (!strcmp(memberAccess->member->name, field->name)) {
         sym->type = field->type;
       }

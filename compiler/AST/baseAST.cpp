@@ -569,7 +569,7 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
   LStructuralTypeCommon:
     ADD_LIST(StructuralType, declarationList, Stmt);
     ADD_CHILD(StructuralType, parentStruct);
-    ADD_VEC(StructuralType, fields, VarSymbol);
+    ADD_VEC(StructuralType, fields, Symbol);
     ADD_VEC(StructuralType, types, TypeSymbol);
     goto LTypeCommon;
   case TYPE_CLASS:

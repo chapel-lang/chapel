@@ -1235,7 +1235,7 @@ void FnCall::codegen(FILE* outfile) {
       fprintf(outfile, "if (_UNION_CHECK_QUIET(val, _%s_union_id__uninitialized)) {\n",
               unionType->symbol->cname);
       fprintf(outfile, "_chpl_write_string(\"(uninitialized)\");\n");
-      forv_Vec(VarSymbol, field, unionType->fields) {
+      forv_Vec(Symbol, field, unionType->fields) {
         fprintf(outfile, "} else if (_UNION_CHECK_QUIET(val, _%s_union_id_%s)) {\n",
                 unionType->symbol->cname, field->name);
         fprintf(outfile, "_chpl_write_string(\"(%s = \");\n", field->name);

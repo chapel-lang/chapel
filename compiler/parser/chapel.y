@@ -494,6 +494,22 @@ formal:
       ps->typeVariable = new_type_symbol;
       $$ = defExpr;
     }
+| TLP formal_ls TRP
+    {
+      RecordType *t = new RecordType();
+      // NOTE:
+      //   change DefExpr into ExprStmt because functions take 
+      //   a list of DefExpr but records take a list of Stmt
+      // NOTE:
+      //   this RecordType has members which are ParamSymbols
+      AList<Stmt> *stmts = new AList<Stmt>;
+      for_alist(DefExpr, x, $2) {
+        stmts->insertAtTail(new ExprStmt(x));
+      }
+      Symboltable::defineStructType(NULL, t, Symboltable::getCurrentScope(), stmts);
+      $$ = Symboltable::defineParam(PARAM_IN, "<anonymous>", t, NULL);
+      t->isPattern = true;
+    }
 ;
 
 

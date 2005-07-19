@@ -8,6 +8,14 @@
 #include "chplenum.h"
 #include "vec.h"
 
+/*
+  Things which must be changed if instance variablers are added
+  to Types:
+
+  1. add variable to class and constructor
+  2. copy variable in copyInner
+
+*/
 
 class Symbol;
 class EnumSymbol;
@@ -186,7 +194,7 @@ class StructuralType : public Type {
   AList<Stmt>* declarationList;
   StructuralType* parentStruct;
 
-  Vec<VarSymbol*> fields;
+  Vec<Symbol*> fields;
   Vec<TypeSymbol*> types;
 
   StructuralType(astType_t astType, Expr* init_defaultVal = NULL);
@@ -231,6 +239,7 @@ class ClassType : public StructuralType {
 
 class RecordType : public StructuralType {
  public:
+  bool isPattern;
   RecordType(void);
   COPY_DEF(RecordType);
 };

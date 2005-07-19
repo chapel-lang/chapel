@@ -41,7 +41,7 @@ static void build_constructor(StructuralType* structType) {
       }
     }
 
-    forv_Vec(VarSymbol, tmp, structType->fields) {
+    forv_Vec(Symbol, tmp, structType->fields) {
       char* name = tmp->name;
       Type* type = tmp->type;
       UserInitExpr* init = (tmp->defPoint->init) 
@@ -53,8 +53,9 @@ static void build_constructor(StructuralType* structType) {
       if (tmp->defPoint->init) {
         tmp->defPoint->init->remove();
       }
+      VarSymbol *vtmp = dynamic_cast<VarSymbol*>(tmp);
       ParamSymbol* arg = new ParamSymbol(
-        tmp->consClass == VAR_PARAM ? PARAM_PARAMETER : PARAM_BLANK, name, type);
+        (vtmp && vtmp->consClass == VAR_PARAM) ? PARAM_PARAMETER : PARAM_BLANK, name, type);
       DefExpr* defExpr = new DefExpr(arg, init, exprType);
       args->insertAtTail(defExpr);
     }
@@ -139,7 +140,7 @@ static void build_getter(StructuralType* structType, Symbol *tmp) {
 }
 
 static void build_setters_and_getters(StructuralType* structType) {
-  forv_Vec(VarSymbol, tmp, structType->fields) {
+  forv_Vec(Symbol, tmp, structType->fields) {
     char* setter_name = glomstrings(2, "=", tmp->name);
     FnSymbol* setter_fn = Symboltable::startFnDef(new FnSymbol(setter_name));
     setter_fn->addPragma("inline");
@@ -187,7 +188,7 @@ static void build_record_equality_function(StructuralType* structType) {
   args->insertAtTail(new DefExpr(arg2));
   Symboltable::continueFnDef(fn, args, dtBoolean);
   Expr* cond = NULL;
-  forv_Vec(VarSymbol, tmp, structType->fields) {
+  forv_Vec(Symbol, tmp, structType->fields) {
     Expr* left = new MemberAccess(new Variable(arg1), tmp);
     Expr* right = new MemberAccess(new Variable(arg2), tmp);
     cond = (cond)
@@ -213,7 +214,7 @@ static void build_record_inequality_function(StructuralType* structType) {
   args->insertAtTail(new DefExpr(arg2));
   Symboltable::continueFnDef(fn, args, dtBoolean);
   Expr* cond = NULL;
-  forv_Vec(VarSymbol, tmp, structType->fields) {
+  forv_Vec(Symbol, tmp, structType->fields) {
     Expr* left = new MemberAccess(new Variable(arg1), tmp);
     Expr* right = new MemberAccess(new Variable(arg2), tmp);
     cond = (cond)
@@ -253,7 +254,7 @@ static void build_record_assignment_function(StructuralType* structType) {
   Symboltable::continueFnDef(fn, args, ret_type);
   AList<Stmt>* body = new AList<Stmt>();
   Symboltable::pushScope(SCOPE_LOCAL);
-  forv_Vec(VarSymbol, tmp, structType->fields) {
+  forv_Vec(Symbol, tmp, structType->fields) {
     Expr* left = new MemberAccess(new Variable(_arg1), tmp);
     Expr* right = new MemberAccess(new Variable(arg2), tmp);
     Expr* assign_expr = new AssignOp(GETS_NORM, left, right);

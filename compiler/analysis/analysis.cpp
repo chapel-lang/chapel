@@ -64,7 +64,7 @@ static int build_function(FnSymbol *f);
 static void map_asts(Vec<BaseAST *> &syms);
 static void build_symbols(Vec<BaseAST *> &syms);
 static void build_types(Vec<BaseAST *> &syms, Vec<Type *> *types = NULL);
-static int build_classes(Vec<BaseAST *> &syms);
+static void build_classes(Vec<BaseAST *> &syms);
 static int gen_if1(BaseAST *ast, BaseAST *parent = 0);
 static void finalize_function(Fun *fun);
 
@@ -818,13 +818,19 @@ build_symbols(Vec<BaseAST *> &syms) {
         }
         case SYMBOL_PARAM: {
           ParamSymbol *p = dynamic_cast<ParamSymbol*>(s);
+          RecordType *rt = dynamic_cast<RecordType*>(p->type);
+          if (rt && rt->isPattern) {
+            p->asymbol->sym->is_pattern = 1;
+            forv_Sym(s, rt->asymbol->sym->has)
+              p->asymbol->sym->has.add(s);
+          }
           if (p->isGeneric)
             s->asymbol->sym->is_generic = 1;
           if (s->type->astType == TYPE_META) {
             MetaType *t = dynamic_cast<MetaType*>(s->type);
             s->asymbol->sym->must_specialize = t->asymbol->sym;
           } else {
-            if (s->type && s->type != dtUnknown) {
+            if (!p->asymbol->sym->is_pattern && s->type && s->type != dtUnknown) {
               if (s->asymbol->sym->intent != Sym_OUT)
                 s->asymbol->sym->must_implement_and_specialize(s->type->asymbol->sym);
               else
@@ -841,6 +847,26 @@ build_symbols(Vec<BaseAST *> &syms) {
           break;
         }
         default: break;
+      }
+    }
+  }
+}
+
+static void
+build_patterns(Vec<BaseAST *> &syms) {
+  forv_BaseAST(ss, syms) {
+    Symbol *s = dynamic_cast<Symbol *>(ss);
+    if (s) { 
+      switch (s->astType) {
+        case SYMBOL_PARAM: {
+          ParamSymbol *p = dynamic_cast<ParamSymbol*>(s);
+          RecordType *rt = dynamic_cast<RecordType*>(p->type);
+          if (rt && rt->isPattern) {
+            forv_Sym(s, rt->asymbol->sym->has)
+              p->asymbol->sym->has.add(s);
+          }
+          default: break;
+        }
       }
     }
   }
@@ -2440,7 +2466,7 @@ build_function(FnSymbol *f) {
   return 0;
 }
 
-static int
+static void
 build_classes(Vec<BaseAST *> &syms) {
   Vec<StructuralType *> classes;
   forv_BaseAST(s, syms)
@@ -2453,14 +2479,14 @@ build_classes(Vec<BaseAST *> &syms) {
     printf("build_classes: %d classes\n", classes.n);
   forv_Vec(StructuralType, c, classes) {
     Sym *csym = c->asymbol->sym;
-    forv_Vec(VarSymbol, tmp, c->fields)
+    forv_Vec(Symbol, tmp, c->fields)
       csym->has.add(tmp->asymbol->sym);
     forv_Vec(TypeSymbol, tmp, c->types) if (tmp)
       if (tmp->type->astType == TYPE_USER || 
           (fnewvardef && tmp->type->astType == TYPE_VARIABLE))
         csym->has.add(tmp->asymbol->sym);
   }
-  return 0;
+  build_patterns(syms);
 }
 
 static int
@@ -2485,6 +2511,35 @@ add_to_universal_lookup_cache(char *name, Fun *fun) {
   universal_lookup_cache.put(name, v);
 }
 
+static int
+handle_argument(Sym *s, char *name, Fun *fun, int added, MPosition &p) {
+  if (s->is_pattern) {
+    p.push(1);
+    forv_Sym(ss, s->has) {
+      added = handle_argument(ss, name, fun, added, p);
+      p.inc();
+    }
+    p.pop();
+  }
+  // non-scoped lookup if any parameteter is specialized on a reference type
+  // (is dispatched)
+  if (!added && s->must_specialize && 
+      is_reference_type(s->must_specialize->asymbol->symbol)) 
+  {
+    add_to_universal_lookup_cache(name, fun);
+    added = 1;
+  }
+  // record default argument positions
+  if (s->asymbol->symbol) {
+    ParamSymbol *symbol = dynamic_cast<ParamSymbol*>(s->asymbol->symbol);
+    if (symbol && symbol->defPoint->init) {
+      assert(symbol->defPoint->init->ainfo);
+      fun->default_args.put(cannonicalize_mposition(p), symbol->defPoint->init->ainfo);
+    }
+  }
+  return added;
+}
+
 static void 
 finalize_function(Fun *fun) {
   int added = 0;
@@ -2502,23 +2557,7 @@ finalize_function(Fun *fun) {
   MPosition p;
   p.push(1);
   forv_Sym(s, fun->sym->has) {
-    assert(!s->is_pattern); // not yet supported
-    // non-scoped lookup if any parameteter is specialized on a reference type
-    // (is dispatched)
-    if (!added && s->must_specialize && 
-        is_reference_type(s->must_specialize->asymbol->symbol)) 
-    {
-      add_to_universal_lookup_cache(name, fun);
-      added = 1;
-    }
-    // record default argument positions
-    if (s->asymbol->symbol) {
-      ParamSymbol *symbol = dynamic_cast<ParamSymbol*>(s->asymbol->symbol);
-      if (symbol && symbol->defPoint->init) {
-        assert(symbol->defPoint->init->ainfo);
-        fun->default_args.put(cannonicalize_mposition(p), symbol->defPoint->init->ainfo);
-      }
-    }
+    added = handle_argument(s, name, fun, added, p);
     p.inc();
   }
   // check nesting
@@ -2791,7 +2830,7 @@ get_tuple_type(int n) {
   map_baseast(ts);
   map_baseast(ts->type);
   TupleType *tt = dynamic_cast<TupleType*>(ts->type);
-  forv_Vec(VarSymbol, x, tt->fields)
+  forv_Vec(Symbol, x, tt->fields)
     map_baseast(x);
   Vec<BaseAST*> asts;
   asts.add(ts->type);
@@ -2925,7 +2964,7 @@ ast_to_if1(Vec<AList<Stmt> *> &stmts) {
   forv_Type(t, types)
     if (t->defaultVal)
       get_defaultVal(t);
-  if (build_classes(syms) < 0) return -1;
+  build_classes(syms);
   finalize_types(if1);
   if (build_functions(syms) < 0) return -1;
 #define REG(_n, _f) pdb->fa->primitive_transfer_functions.put(_n, new RegisteredPrim(_f));

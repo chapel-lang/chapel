@@ -837,6 +837,8 @@ void StructuralType::addDeclarations(AList<Stmt>* newDeclarations,
         types.add(sym);
       } else if (VarSymbol* sym = dynamic_cast<VarSymbol*>(defExpr->sym)) {
         fields.add(sym);
+      } else if (ParamSymbol* sym = dynamic_cast<ParamSymbol*>(defExpr->sym)) {
+        fields.add(sym);
       }
     }
     tmp = newDeclarations->next();
@@ -901,7 +903,7 @@ is_Reference_Type(Type *t) {
 
 void StructuralType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this, 
                                           AList<DefExpr>* arguments) {
-  forv_Vec(VarSymbol, tmp, fields) {
+  forv_Vec(Symbol, tmp, fields) {
     if (is_Scalar_Type(tmp->type))
       continue;
     Expr* lhs = new MemberAccess(new Variable(_this), tmp);
@@ -921,7 +923,7 @@ void StructuralType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this,
       }
     }
   }
-  forv_Vec(VarSymbol, tmp, fields) {
+  forv_Vec(Symbol, tmp, fields) {
     Expr* lhs = new MemberAccess(new Variable(_this), tmp);
     Expr* rhs = NULL;
     if (analyzeAST) {
@@ -1030,7 +1032,7 @@ AList<Stmt>* StructuralType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
   }
 
   bool first = true;
-  forv_Vec(VarSymbol, tmp, fields) {
+  forv_Vec(Symbol, tmp, fields) {
     if (!first) {
       addWriteStmt(body, new StringLiteral(", "));
     }
@@ -1093,7 +1095,7 @@ bool ClassType::implementedUsingCVals(void) {
 
 
 RecordType::RecordType(void) :
-  StructuralType(TYPE_RECORD)
+  StructuralType(TYPE_RECORD), isPattern(false)
 {}
 
 
@@ -1101,6 +1103,7 @@ RecordType*
 RecordType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   RecordType* copy_type = new RecordType();
   copyGuts(copy_type, clone, map);
+  copy_type->isPattern = isPattern;
   return copy_type;
 }
 
@@ -1142,7 +1145,7 @@ void UnionType::buildFieldSelector(void) {
   char* id_name = buildFieldSelectorName(this, NULL);
   EnumSymbol* id_symbol = new EnumSymbol(id_name);
   id_list->insertAtTail(new DefExpr(id_symbol));
-  forv_Vec(VarSymbol, tmp, fields) {
+  forv_Vec(Symbol, tmp, fields) {
     id_name = buildFieldSelectorName(this, tmp);
     id_symbol = new EnumSymbol(id_name);
     id_list->insertAtTail(new DefExpr(id_symbol));
