@@ -742,6 +742,8 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
     if (defaults->set_in(formal->sym)) {
       char* temp_name = glomstrings(2, "_default_param_temp_", formal->sym->name);
       VarSymbol* temp_symbol = new VarSymbol(temp_name, formal->sym->type);
+      // mark default parameters as being of the nominal type of the corresponding
+      // non-default parameter.
       if (formal->sym->type != dtUnknown)
         temp_symbol->aspect = formal->sym->type;
       DefExpr* temp_def_expr =
