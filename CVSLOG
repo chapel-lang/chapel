@@ -39831,3 +39831,38 @@ Modified files:
 	                             removeNestedFunctions.cpp 
 	                             findEnclosingScopeVarUses.cpp 
 
+---------------------------------------------------------------------------
+
+07/19/05 11:46:14 -- shannon
+
+Log message:
+	Changed a bunch of tests that were using
+	arrays unnecessarily for the purpose of the
+	test, and removed their futures.
+
+Modified files:
+	chapel/test/compflags/shannon/cpplines/: cppLines.chpl 
+	                                         cppLines.good 
+	                                         noCppLines.chpl 
+	                                         noCppLines.good 
+	chapel/test/memory/shannon/: memmaxBytes.chpl memmaxExceeds.chpl 
+	                             memmaxExceeds.execopts 
+	                             memmaxExceedsLineno.chpl 
+	                             memmaxExceedsLineno.execopts 
+	                             memmaxExceedsLineno.good 
+	                             memstatFlag.chpl 
+	                             memstatFlagLineno.chpl 
+	                             memstatFlagLineno.good 
+	                             memstatPrint.chpl memstatPrint.good 
+	                             thresholdWithoutTrace.chpl 
+Removed files:
+	chapel/test/compflags/shannon/cpplines/: cppLines.future 
+	                                         noCppLines.future 
+	chapel/test/memory/shannon/: memmaxBytes.future 
+	                             memmaxExceeds.future 
+	                             memmaxExceedsLineno.future 
+	                             memstatFlag.future 
+	                             memstatFlagLineno.future 
+	                             memstatPrint.future 
+	                             thresholdWithoutTrace.future 
+
