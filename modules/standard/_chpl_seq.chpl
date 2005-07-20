@@ -71,9 +71,15 @@ record seq {
   }
 
   function _concat(s : seq) {
-    _last._next = s._first;
-    _last = s._last;
-    _length += s._length;
+    if _length > 0 {
+      _last._next = s._first;
+      _last = s._last;
+      _length += s._length;
+    } else {
+      _first = s._first;
+      _last = s._last;
+      _length = s._length;
+    }
     return this;
   }
 
