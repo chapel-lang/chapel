@@ -11,6 +11,7 @@ TRAVERSALS_SRCS = \
         buildLValueFunctions.cpp \
         eliminateReturns.cpp \
 	expandClassWiths.cpp \
+        findEnclosingScopeVarUses.cpp \
         findLeafFunctions.cpp \
         findTypeVariables.cpp \
 	findUnknownTypes.cpp \
@@ -33,11 +34,13 @@ TRAVERSALS_SRCS = \
 	printAST.cpp \
 	processParameters.cpp \
 	removeNamedParameters.cpp \
+        removeNestedFunctions.cpp \
         replaceReturns.cpp \
         resolveModuleUses.cpp \
 	resolveSymbols.cpp \
         scopeResolveGotos.cpp \
 	scopeResolveSymbols.cpp \
+        simpleNestedFunctionMove.cpp \
 	specializeParenOpExprs.cpp \
 	testGetStuff.cpp \
 	transformLetExprs.cpp \

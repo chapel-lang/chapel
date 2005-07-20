@@ -75,7 +75,7 @@ PassInfo passlist[] = {
   RUN(PreAnalysisHacks, ""),
   RUN(Verify, ""), // this is a sanity check
   RUN(RunAnalysis, ""),
-
+ 
   // passes to capture analysis information in the AST
   RUN(Verify, ""), // this is a sanity check
   RUN(RemoveDeadSymbols, ""),
@@ -88,6 +88,12 @@ PassInfo passlist[] = {
   RUN(RemoveNamedParameters, ""),
   RUN(RemoveTypeVariableActuals, ""),
   RUN(RemoveTypeVariableFormals, ""),
+
+  //passed to canonicalize AST
+  RUN(Verify,""),
+  RUN(SimpleNestedFunctionMove, ""),
+  RUN(Verify, ""),
+  RUN(RemoveNestedFunctions, ""),
 
   // passes to normalize the basic AST after analysis
   RUN(Verify, ""), // this is a sanity check

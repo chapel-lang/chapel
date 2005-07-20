@@ -11,10 +11,11 @@ void FindEnclosingScopeVarUses::postProcessExpr(Expr* expr) {
   if (Variable* v = dynamic_cast<Variable*>(expr)) {
     //variable defined in enclosing function scope
     Symbol* v_sym = v->var;
+    SymScope* var_sym_scope = v_sym->parentScope;
     SymScope* encl_scope = _encl_scope;
     //look up outer scopes until module scope is reached or symbol is found
     do {
-      if (Symboltable::lookupInScope(v_sym->name, encl_scope)) {
+      if (var_sym_scope == encl_scope) {
         _var_uses_vec->add_exclusive(v_sym);
         return;
       }

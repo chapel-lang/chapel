@@ -52,8 +52,10 @@
 #include "../traversals/processParameters.h"
 #include "../traversals/scopeResolveGotos.h"
 #include "../traversals/scopeResolveSymbols.h"
+#include "../traversals/simpleNestedFunctionMove.h"
 #include "../traversals/specializeParenOpExprs.h"
 #include "../traversals/removeNamedParameters.h"
+#include "../traversals/removeNestedFunctions.h"
 #include "../traversals/resolveModuleUses.h"
 #include "../traversals/resolveSymbols.h"
 #include "../traversals/testGetStuff.h"
@@ -116,6 +118,7 @@ REGISTER(ReconstructIterators);
 REGISTER(RemoveDeadSymbols);
 REGISTER(RemoveLikeTypes);
 REGISTER(RemoveNamedParameters);
+REGISTER(RemoveNestedFunctions);
 REGISTER(RemoveTypeVariableActuals);
 REGISTER(RemoveTypeVariableFormals);
 REGISTER(RenameCSymbols);  // BLC: rename symbols for C codegen
@@ -127,6 +130,7 @@ REGISTER(ResolveTupleTypes);
 REGISTER(RunAnalysis);
 REGISTER(ScopeResolveGotos);
 REGISTER(ScopeResolveSymbols);
+REGISTER(SimpleNestedFunctionMove);
 REGISTER(SpecializeParenOpExprs);
 REGISTER(TestGetStuff);
 REGISTER(TransformLetExprs);
