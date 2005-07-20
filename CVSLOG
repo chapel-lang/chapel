@@ -40101,3 +40101,24 @@ Added files:
 	                            test_record_in_function1.future 
 	                            test_record_in_function1.good 
 
+---------------------------------------------------------------------------
+
+07/20/05 16:58:26 -- deitz
+
+Log message:
+	Added four nested function tests and two futures.  test_nested2.chpl
+	shows similar symptoms to the function in record test I checked in
+	earlier.
+
+Added files:
+	chapel/test/functions/deitz/nested/: test_nested1.chpl 
+	                                     test_nested1.good 
+	                                     test_nested2.chpl 
+	                                     test_nested2.future 
+	                                     test_nested2.good 
+	                                     test_nested3.chpl 
+	                                     test_nested3.good 
+	                                     test_nested4.chpl 
+	                                     test_nested4.future 
+	                                     test_nested4.good 
+
