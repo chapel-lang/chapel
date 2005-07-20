@@ -30,7 +30,7 @@ template <class C> class Vec : public gc {
   Vec<C>();
   Vec<C>(const Vec<C> &vv);
 
-  inline void add(C a);
+  inline void add(C a);  
   inline int add_exclusive(C a);
   inline C& add();
   inline C pop();

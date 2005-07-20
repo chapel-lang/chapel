@@ -10,29 +10,59 @@
  * Initially all the cnames are the same as name; then we change them as needed.
  * 
  */
+
+void mangle(Vec<Symbol*> syms) {  
+  UniqueName* un = new UniqueName("_u", "_");
+  char* newname;
   
+  while (syms.length() - 2 >= 0) {
+    Symbol* s = syms.pop();
+    Symbol* s1 = syms.pop();
+    while(s->equalWith(s, s1)) {
+      un->inc();
+      newname = un->newName(intstring(s1->id));
+      s1->cname = copystring(newname);
+      if (syms.length()) { 
+        s1 = syms.pop();
+      }
+      else break;
+    }
+    if (syms.length() > 0) { syms.add(s1);}
+  }  
+}
 
 void FindCollidingNames::processSymbol(Symbol* sym) {
   if (_adhoc_to_uniform_mangling) {
-    if (FnSymbol* fnsym = dynamic_cast<FnSymbol*>(sym)) {
-      fnsyms.add(fnsym);
+    if (dynamic_cast<FnSymbol*>(sym)) {
+      //RED: a brute force "demangling" attempt -- does not quite work
+      //I wonder why (it seems that cnames are not really uniform, but have some
+      //hidden additions to them: e.g. integer -> _integer, etc.)
+      //sym->cname = copystring(sym->name);
+      fnsyms.add(sym);
     }
-    if (TypeSymbol* typesym = dynamic_cast<TypeSymbol*>(sym)) {
-      typesyms.add(typesym); 
+    if (dynamic_cast<TypeSymbol*>(sym)) {
+      //sym->cname = copystring(sym->name);
+      typesyms.add(sym); 
     }
-    if (VarSymbol* varsym = dynamic_cast<VarSymbol*>(sym)) {
-      if (varsym->parentScope->type == SCOPE_MODULE) {
-        globalvars.add(varsym);
+    if (dynamic_cast<VarSymbol*>(sym)) {
+      if (sym->parentScope->type == SCOPE_MODULE) {
+        //sym->cname = copystring(sym->name);
+        globalvars.add(sym);
       }
     }
   }
 }
 
-/*void FindCollidingNames::run(ModuleList* moduleList) {
-
-  SymtabTraversal::run(moduleList);
-  //RED: for test purposes only
-  fnsyms.quickSort(0, fnsyms.length()-1);
-}*/
+void FindCollidingNames::run(ModuleList* moduleList) {
+  if (_adhoc_to_uniform_mangling) {
+    SymtabTraversal::run(moduleList);  
+    fnsyms.quickSort(0, fnsyms.length()-1);
+    typesyms.quickSort(0, typesyms.length()-1);
+    globalvars.quickSort(0, globalvars.length()-1);
+    mangle(fnsyms);
+    mangle(typesyms);
+    mangle(globalvars);
+  }
+}
 
 

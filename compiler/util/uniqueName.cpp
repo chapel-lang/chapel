@@ -2,7 +2,7 @@
 
 void UniqueName::inc()
 {
-  char* ns = (char*) malloc((strlen(newstr) + 2)*sizeof(char));
+  char* ns = (char*)MALLOC((strlen(newstr) + 2)*sizeof(char));
   ns = strcpy(ns, newstr);
   ns = strcat(ns, newchar);
   newstr = ns;
@@ -26,10 +26,10 @@ void UniqueName::resetStr()
   newstr = strcpy(newstr, start);
 }
 
-char* UniqueName::newName() {
-  char* nn = (char*) malloc((2*(strlen(newstr) + 1) + strlen(name) + 1)*sizeof(char));
+char* UniqueName::newName(char* id) {
+  char* nn = (char*)MALLOC((2*(strlen(newstr) + 1) + strlen(id) + 1)*sizeof(char));
   nn = strcpy(nn, newstr);
-  nn = strcat(nn, name);
+  nn = strcat(nn, id);
   nn = strcat(nn, newstr);
   return nn;
 }
