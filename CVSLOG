@@ -40075,3 +40075,16 @@ Added files:
 	chapel/test/trivial/deitz/demo/: sample1.chpl sample1.good 
 	                                 sample2.chpl sample2.good 
 
+---------------------------------------------------------------------------
+
+07/20/05 16:43:39 -- deitz
+
+Log message:
+	Futurized the two newest regressions as they are now handled in a very
+	different way.  The new idea is to make anonymous records records that
+	are defined in a function.
+
+Added files:
+	chapel/test/classes/deitz/: test_anon_record1.future 
+	                            test_anon_record3.future 
+
