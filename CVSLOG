@@ -39908,3 +39908,19 @@ Removed files:
 	chapel/test/trivial/jplevyak/: 
 	                               variables_in_nested_function.future 
 
+---------------------------------------------------------------------------
+
+07/20/05 09:19:38 -- jplevyak
+
+Log message:
+	Added a test variables in nested functions which tests that they
+	are mutable and that the mutations are shared with the surrounding
+	function.  We could implement this as passing a pointer.
+	Note: GCC directly supports nested functions but G++ does not.
+
+Added files:
+	chapel/test/trivial/jplevyak/: 
+	                               variables_in_nested_function-2.chpl 
+	                               variables_in_nested_function-2.future 
+	                               variables_in_nested_function-2.good 
+
