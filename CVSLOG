@@ -39887,3 +39887,24 @@ Added files:
 	                               destruct-arg-1.future 
 	                               destruct-arg-1.good 
 
+---------------------------------------------------------------------------
+
+07/19/05 17:09:56 -- mjoyner
+
+Log message:
+	Added nested function removal to passlist.  Got rid of futures since it passes those tests.
+
+Modified files:
+	chapel/compiler/traversals/: findEnclosingScopeVarUses.cpp 
+	                             simpleNestedFunctionMove.cpp 
+	                             Makefile.share 
+	chapel/compiler/main/: passlist.h passlist.cpp 
+Removed files:
+	chapel/test/trivial/mjoyner/nestedfndef/: nested_fndef1.future 
+	                                          nested_fndef2.future 
+	                                          nested_fndef3.future 
+	                                          nested_fndef4.future 
+	                                          nested_fndef5.future 
+	chapel/test/trivial/jplevyak/: 
+	                               variables_in_nested_function.future 
+
