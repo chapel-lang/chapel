@@ -40064,3 +40064,14 @@ Modified files:
 	                               union_type_hierarchy-3-error.good 
 	chapel/test/types/seq/bradc/: length.modify.good 
 
+---------------------------------------------------------------------------
+
+07/20/05 16:37:30 -- deitz
+
+Log message:
+	Added two demo programs for the review to the testing system.
+
+Added files:
+	chapel/test/trivial/deitz/demo/: sample1.chpl sample1.good 
+	                                 sample2.chpl sample2.good 
+
