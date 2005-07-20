@@ -40088,3 +40088,16 @@ Added files:
 	chapel/test/classes/deitz/: test_anon_record1.future 
 	                            test_anon_record3.future 
 
+---------------------------------------------------------------------------
+
+07/20/05 16:47:52 -- deitz
+
+Log message:
+	Added a future test of a record in a function.  Should its constructor
+	be a nested function?
+
+Added files:
+	chapel/test/classes/deitz/: test_record_in_function1.chpl 
+	                            test_record_in_function1.future 
+	                            test_record_in_function1.good 
+
