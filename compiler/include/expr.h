@@ -298,7 +298,7 @@ class Variable : public Expr {
                              // if so, it might be renamed.
   Variable(Symbol* init_var, ForwardingSymbol* init_forward = NULL);
   COPY_DEF(Variable);
-
+  virtual void verify(void); 
   void traverseExpr(Traversal* traversal);
 
   Type* typeInfo(void);
@@ -353,6 +353,7 @@ class ParenOpExpr : public Expr {
 
   ParenOpExpr(Expr* init_base, AList<Expr>* init_arg = new AList<Expr>);
   COPY_DEF(ParenOpExpr);
+  virtual void verify(void); 
   void setArgs(AList<Expr>* init_arg);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -404,10 +405,11 @@ class SizeofExpr : public Expr {
 
 class CastExpr : public Expr {
  public:
-  Type* newType;
   Expr* expr;
+  Expr* newType;
+  Type* type;
 
-  CastExpr(Type* init_newType, Expr* init_expr);
+  CastExpr(Expr* initExpr, Expr* initNewType, Type* initType);
   COPY_DEF(CastExpr);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);

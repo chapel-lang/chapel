@@ -55,6 +55,7 @@ void BuildLValueFunctions::preProcessStmt(Stmt* stmt) {
   FnSymbol *fn = dynamic_cast<FnSymbol*>(def_expr->sym);
   fn->retRef = false;
   fn->retType = dtVoid;
+  def_expr->exprType = NULL;
   fn->name = glomstrings(2, "=", old_fn->name);
   fn->cname = glomstrings(2, "_setter_", old_fn->cname);
   Symboltable::undefineInScope(fn, fn->parentScope);

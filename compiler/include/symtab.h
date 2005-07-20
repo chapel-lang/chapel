@@ -59,9 +59,9 @@ class Symboltable {
   static ModuleSymbol* startModuleDef(char* name, modType modtype = MOD_USER);
   static DefExpr* finishModuleDef(ModuleSymbol* mod, AList<Stmt>* def);
   static DefExpr* Symboltable::defineParam(paramType tag, char* ident,
-                                           Type* type, Expr* init);
+                                           Expr* type, Expr* init);
   static AList<Stmt>* Symboltable::defineVarDef1(char* ident,
-                                                 Type* type, 
+                                                 Expr* type, 
                                                  Expr* init);
   static void Symboltable::defineVarDef2(AList<Stmt>* stmts, varType vartag, 
                                          consType constag);
@@ -85,8 +85,8 @@ class Symboltable {
                                  Type* retType, BlockStmt* body, 
                                  bool isExtern = false);
 
-  static Type* defineStructType(char* name, Type* type,
-                                SymScope* scope, AList<Stmt>* def);
+  static DefExpr* defineStructType(char* name, Type* type,
+                                   SymScope* scope, AList<Stmt>* def);
   static ForLoopStmt* startForLoop(bool forall, AList<Symbol>* indices, 
                                    Expr* domain);
   static ForLoopStmt* finishForLoop(ForLoopStmt* forstmt, Stmt* body);

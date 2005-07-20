@@ -6,8 +6,6 @@
 class InsertLiteralTemps : public Traversal {
  public:
   void postProcessExpr(Expr* expr);
-  void postProcessStmt(Stmt* stmt);
-  void postProcessType(Type* type);
 };
 
 #endif

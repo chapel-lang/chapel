@@ -55,13 +55,12 @@ static void replaceSequenceLiteral(SeqExpr* seqExpr) {
       elt_type = dtUnknown;
     }
   }
-  def->sym->type =
-    new ExprType(
-      new ParenOpExpr(
-        new Variable(
-          new UnresolvedSymbol("seq")),
-        new AList<Expr>(
-          new Variable(elt_type->symbol))));
+  def->exprType =
+    new ParenOpExpr(
+      new Variable(
+        new UnresolvedSymbol("seq")),
+      new AList<Expr>(
+        new Variable(elt_type->symbol)));
 
   seqExpr->getStmt()->insertBefore(new ExprStmt(def));
 
@@ -204,16 +203,15 @@ static void createTupleBaseType(int size) {
     decls->insertAtTail(new ExprStmt(new DefExpr(fn)));
   }
   SymScope *scope = Symboltable::popScope();
-  Type* type = Symboltable::defineStructType(name, new RecordType(), scope, decls);
-  commonModule->stmts->insertAtHead(new ExprStmt(type->symbol->defPoint));
-
+  DefExpr* def = Symboltable::defineStructType(name, new RecordType(), scope, decls);
+  commonModule->stmts->insertAtHead(new ExprStmt(def));
   FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("write"));
-  Vec<char*>* uname = new Vec<char*>();
-  uname->add(glomstrings(2, "_tuple", intstring(size)));
-  UnresolvedType* utype = new UnresolvedType(uname);
   ParamSymbol* paramSymbol =
-    new ParamSymbol(PARAM_BLANK, "val", utype);
-  AList<DefExpr>* formals = new AList<DefExpr>(new DefExpr(paramSymbol));
+    new ParamSymbol(PARAM_BLANK, "val", dtUnknown);
+  AList<DefExpr>* formals =
+    new AList<DefExpr>(new DefExpr(paramSymbol,
+                                   NULL,
+                                   new Variable(new UnresolvedSymbol(name))));
   Symboltable::continueFnDef(fn, formals, dtUnknown, false, NULL);
   AList<Expr>* args = new AList<Expr>();
   args->insertAtTail(new StringLiteral(copystring("(")));
@@ -261,18 +259,8 @@ void InsertLiteralTemps::postProcessExpr(Expr* expr) {
       }
     }
     replaceTupleLiteral(literal);
-  }
-}
-
-
-void InsertLiteralTemps::postProcessStmt(Stmt* stmt) {
-
-}
-
-
-void InsertLiteralTemps::postProcessType(Type* type) {
-  if (ExprType* exprType = dynamic_cast<ExprType*>(type)) {
-    if (ParenOpExpr* parenOpExpr = dynamic_cast<ParenOpExpr*>(exprType->expr)) {
+  } else if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
+    if (ParenOpExpr* parenOpExpr = dynamic_cast<ParenOpExpr*>(def->exprType)) {
       if (Variable* variable = dynamic_cast<Variable*>(parenOpExpr->baseExpr)) {
         if (!strncmp(variable->var->name, "_tuple", 6)) {
           createTupleBaseType(parenOpExpr->argList->length());

@@ -14,18 +14,18 @@ UpdateSymbols::UpdateSymbols(Map<BaseAST*,BaseAST*>* init_updateMap,
 }
 
 
-#define XSUB(_x, _t)                                 \
-  if (_x) {                                          \
+#define XSUB(_x, _t)                                  \
+  if (_x) {                                           \
     BaseAST *b = updateMap->get(_x);                  \
-    if (b) {                                         \
-      if (_t new_sym = dynamic_cast<_t>(b)) {        \
-        _x = new_sym;                                \
-        changed = true;                              \
-      } else {                                       \
-        INT_FATAL("Major error in UpdateSymbols");   \
-      }                                              \
-    }                                                \
-  }                                                  \
+    if (b) {                                          \
+      if (_t new_sym = dynamic_cast<_t>(b)) {         \
+        _x = new_sym;                                 \
+        changed = true;                               \
+      } else {                                        \
+        INT_FATAL("Major error in UpdateSymbols");    \
+      }                                               \
+    }                                                 \
+  }                                                   \
   
 
 void UpdateSymbols::preProcessExpr(Expr* expr) {
@@ -39,7 +39,7 @@ void UpdateSymbols::preProcessExpr(Expr* expr) {
   } else if (DefExpr* defExpr = dynamic_cast<DefExpr*>(expr)) {
     XSUB(defExpr->sym->type, Type*);
   } else if (CastExpr* castExpr = dynamic_cast<CastExpr*>(expr)) {
-    XSUB(castExpr->newType, Type*);
+    XSUB(castExpr->type, Type*);
   } else if (MemberAccess* memberAccess = dynamic_cast<MemberAccess*>(expr)) {
     XSUB(memberAccess->member, Symbol*);
   }

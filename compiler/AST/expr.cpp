@@ -499,6 +499,14 @@ Variable::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
 }
 
 
+void
+Variable::verify(void) {
+  if (!var) {
+    INT_FATAL(this, "Variable::var is NULL");
+  }
+}
+
+
 void Variable::traverseExpr(Traversal* traversal) {
   TRAVERSE(var, traversal, false);
   // Should we traverse forward?  I don't know.  --SJD
@@ -506,6 +514,11 @@ void Variable::traverseExpr(Traversal* traversal) {
 
 
 Type* Variable::typeInfo(void) {
+  if (ParamSymbol* paramSymbol = dynamic_cast<ParamSymbol*>(var)) {
+    if (paramSymbol->intent == PARAM_TYPE) {
+      return paramSymbol->typeVariable->type;
+    }
+  }
   return var->type;
 }
 
@@ -564,21 +577,6 @@ DefExpr::DefExpr(Symbol* initSym, UserInitExpr* initInit, Expr* initExprType) :
   if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
     fn->paramScope->setContext(NULL, fn, this);
   }
-  if (!exprType && sym) {
-    if (sym->type->symbol) {
-      if (useExprType) {
-        exprType = new Variable(sym->type->symbol);
-      }
-    } else if (ExprType* type = dynamic_cast<ExprType*>(sym->type)) {
-      if (type->expr) {
-        exprType = type->expr->copy();
-      }
-    } else if (UnresolvedType* type = dynamic_cast<UnresolvedType*>(sym->type)) {
-      if (useExprType) {
-        exprType = new Variable(new UnresolvedSymbol(type->names->v[0]));
-      }
-    }
-  }
 }
 
 
@@ -613,8 +611,17 @@ void DefExpr::verify(void) {
 
 
 void DefExpr::traverseExpr(Traversal* traversal) {
+  SymScope* saveScope = NULL;
   TRAVERSE(init, traversal, false);
+  if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
+    if (fn->paramScope) {
+      saveScope = Symboltable::setCurrentScope(fn->paramScope);
+    }
+  }
   TRAVERSE(exprType, traversal, false);
+  if (saveScope) {
+    Symboltable::setCurrentScope(saveScope);
+  }
   TRAVERSE_DEF(sym, traversal, false);
 }
 
@@ -1074,6 +1081,11 @@ ParenOpExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
 }
 
 
+void
+ParenOpExpr::verify() {
+}
+
+
 void ParenOpExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == baseExpr) {
     baseExpr = dynamic_cast<Expr*>(new_ast);
@@ -1129,7 +1141,7 @@ Type* ArrayRef::typeInfo(void) {
   // type
   Type* baseExprType = baseExpr->typeInfo();
   while (typeid(*baseExprType) == typeid(UserType)) {
-    baseExprType = ((UserType*)baseExprType)->definition;
+    baseExprType = ((UserType*)baseExprType)->defType;
   }
   // At this point, if we don't have an array type, we shouldn't
   // be in an array reference...
@@ -1498,22 +1510,27 @@ void SizeofExpr::codegen(FILE* outfile) {
 }
 
 
-CastExpr::CastExpr(Type* init_newType, Expr* init_expr) :
+CastExpr::CastExpr(Expr* initExpr, Expr* initNewType, Type* initType) :
   Expr(EXPR_CAST),
-  newType(init_newType),
-  expr(init_expr)
+  expr(initExpr),
+  newType(initNewType),
+  type(initType)
 { }
 
 
 CastExpr*
 CastExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new CastExpr(newType, COPY_INTERNAL(expr));
+  return new CastExpr(COPY_INTERNAL(expr),
+                      COPY_INTERNAL(newType),
+                      type);
 }
 
 
 void CastExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == expr) {
     expr = dynamic_cast<Expr*>(new_ast);
+  } else if (old_ast == newType) {
+    newType = dynamic_cast<Expr*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in CastExpr::replaceChild");
   }
@@ -1521,13 +1538,18 @@ void CastExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 void CastExpr::traverseExpr(Traversal* traversal) {
-  TRAVERSE(newType, traversal, false);
   TRAVERSE(expr, traversal, false);
+  TRAVERSE(newType, traversal, false);
+  TRAVERSE(type, traversal, false);
 }
 
 
 Type* CastExpr::typeInfo(void) {
-  return newType;
+  if (type) {
+    return type;
+  } else {
+    return newType->typeInfo();
+  }
 }
 
 
@@ -1540,11 +1562,11 @@ void CastExpr::print(FILE* outfile) {
 
 
 void CastExpr::codegen(FILE* outfile) {
-  if (newType == dtString) {
+  if (type == dtString) {
     expr->codegenCastToString(outfile);
   } else {
     fprintf(outfile, "(");
-    newType->codegen(outfile);
+    type->codegen(outfile);
     fprintf(outfile, ")(");
     expr->codegen(outfile);
     fprintf(outfile, ")");

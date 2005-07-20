@@ -352,16 +352,6 @@ static void verifyASTType(BaseAST* ast) {
       INT_FATAL(ast, "Unexpected AST type type: TYPE_VARIABLE");
     }
     break;
-  case TYPE_UNRESOLVED:
-    if (typeid(*ast) != typeid(UnresolvedType)) {
-      INT_FATAL(ast, "Unexpected AST type type: TYPE_UNRESOLVED");
-    }
-    break;
-  case TYPE_EXPR:
-    if (typeid(*ast) != typeid(ExprType)) {
-      INT_FATAL(ast, "Unexpected AST type type: TYPE_EXPR");
-    }
-    break;
   case  TYPE_NIL:
     if (typeid(*ast) != typeid(NilType)) {
       INT_FATAL(ast, "Unexpected AST type type: TYPE_NIL");

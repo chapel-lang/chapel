@@ -86,7 +86,8 @@ void RemoveNestedFunctions::addNestedFuncFormals(Expr* expr, Vec<Symbol*>* encl_
       forv_Vec(Symbol, sym, *encl_var_uses) {
         if (sym) {
           //create formal and add to nested function
-          DefExpr* formal = Symboltable::defineParam(PARAM_BLANK,sym->name,sym->type,NULL);
+          DefExpr* formal = Symboltable::defineParam(PARAM_BLANK,sym->name,NULL,NULL);
+          formal->sym->type = sym->type;
           fn_sym->formals->insertAtTail(formal);
           //will need to perform an update to map enclosing variables to formals
           update_map->put(sym, formal->sym);

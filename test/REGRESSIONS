@@ -29,6 +29,13 @@ linux and general regressions
 
   These are all caused by visibility problems with instantiated functions.
 
+[Error matching compiler output for classes/deitz/test_anon_record1]
+[Error matching compiler output for classes/deitz/test_anon_record3]
+
+  Anonymous records are defined in functions and their methods are
+  nested functions.  These are not being handled well by
+  RemoveNestedFunctions.
+
 ==========================
 linux valgrind regressions
 ==========================

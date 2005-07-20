@@ -40,27 +40,22 @@ void ReconstructIterators::processSymbol(Symbol* sym) {
   }
 
   Symbol* elt_type = dtUnknown->symbol;
-  if (UnresolvedType* utype = dynamic_cast<UnresolvedType*>(fn->retType)) {
-    elt_type = new UnresolvedSymbol(utype->names->v[0]);
-  }
-
-  Type* type =
-    new ExprType(
-      new ParenOpExpr(
-        new Variable(
-          new UnresolvedSymbol("seq")),
-        new AList<Expr>(
-          new Variable(elt_type))));
 
   DefExpr* def = Symboltable::defineSingleVarDef("_seq_result",
-                                                 type,
+                                                 dtUnknown,
                                                  NULL,
                                                  VAR_NORMAL,
                                                  VAR_VAR);
+  def->exprType = new ParenOpExpr(
+                    new Variable(
+                      new UnresolvedSymbol("seq")),
+                    new AList<Expr>(
+                      new Variable(elt_type)));
   Symbol* seq = def->sym;
 
   fn->body->body->insertAtHead(new ExprStmt(def));
   TRAVERSE(fn->body, new ReconstructIteratorsHelper(seq), true);
   fn->body->body->insertAtTail(new ReturnStmt(new Variable(seq)));
   fn->retType = dtUnknown;
+  fn->defPoint->exprType = NULL;
 }

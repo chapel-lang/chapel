@@ -485,43 +485,18 @@ static AList<VarSymbol>* symsToVars(AList<Symbol>* idents, Type* type,
 }
 
 DefExpr*
-Symboltable::defineParam(paramType tag, char* ident, Type* type, Expr* init) {
-  ParamSymbol* paramSymbol = new ParamSymbol(tag, ident, type);
+Symboltable::defineParam(paramType tag, char* ident, Expr* type, Expr* init) {
+  ParamSymbol* paramSymbol = new ParamSymbol(tag, ident, dtUnknown);
   UserInitExpr* userInitExpr = init ? new UserInitExpr(init) : NULL;
-  return new DefExpr(paramSymbol, userInitExpr);
+  return new DefExpr(paramSymbol, userInitExpr, type);
 }
 
 
 AList<Stmt>*
-Symboltable::defineVarDef1(char* ident, Type* type, Expr* init) {
-
-  /** SJD: This is a stopgap measure to deal with changing sequences
-      into domains when the type of a declared variable is a domain.
-      It replaces the syntax of assigning domains using square
-      brackets.
-  **/
-  if (dynamic_cast<DomainType*>(type) &&
-      !dynamic_cast<ForallExpr*>(init)) {
-    if (dynamic_cast<Tuple*>(init)) {
-      init = new ForallExpr(dynamic_cast<Tuple*>(init)->exprs,
-                            new AList<DefExpr>());
-    }
-    else {
-      init = new ForallExpr(new AList<Expr>(init));
-    }
-  }
-
-  // BLC: Placeholder until low-level type inference is hooked in to
-  // handle some cases -- infer type from initializer if possible
-  if (type == dtUnknown && init) {
-    type = init->typeInfo();
-  }
-
-  bool copyType = !type->symbol && dynamic_cast<ArrayType*>(type);
-  VarSymbol* varSymbol =
-    new VarSymbol(ident, copyType ? type->copy() : type, VAR_NORMAL, VAR_VAR);
+Symboltable::defineVarDef1(char* ident, Expr* type, Expr* init) {
+  VarSymbol* varSymbol = new VarSymbol(ident, dtUnknown, VAR_NORMAL, VAR_VAR);
   UserInitExpr* userInitExpr = init ? new UserInitExpr(init) : NULL;
-  return new AList<Stmt>(new ExprStmt(new DefExpr(varSymbol, userInitExpr)));
+  return new AList<Stmt>(new ExprStmt(new DefExpr(varSymbol, userInitExpr, type)));
 }
 
 
@@ -700,25 +675,23 @@ DefExpr* Symboltable::defineFunction(char* name, AList<DefExpr>* formals,
 }
 
 
-Type* Symboltable::defineStructType(char* name, // NULL = anonymous
-                                    Type* type,
-                                    SymScope* scope,
-                                    AList<Stmt>* def) {
+DefExpr* Symboltable::defineStructType(char* name, // NULL = anonymous
+                                       Type* type,
+                                       SymScope* scope,
+                                       AList<Stmt>* def) {
   StructuralType* structType = dynamic_cast<StructuralType*>(type);
 
   if (!structType) {
     INT_FATAL(type, "defineStructType called on non StructuralType");
   }
 
-  if (name) {
-    TypeSymbol* sym = new TypeSymbol(name, structType);
-    structType->addSymbol(sym);
-    DefExpr* defExpr = new DefExpr(sym);
-    scope->setContext(NULL, sym, defExpr);
-  }
+  TypeSymbol* sym = new TypeSymbol(name, structType);
+  structType->addSymbol(sym);
+  DefExpr* defExpr = new DefExpr(sym);
+  scope->setContext(NULL, sym, defExpr);
   structType->setScope(scope);
   structType->addDeclarations(def);
-  return structType;
+  return defExpr;
 }
 
 

@@ -30,93 +30,12 @@ static void check_legal_overload(Symbol* sym) {
 }
 
 
-static Symbol* resolveUnresolvedType(Vec<char*>* names) {
-  Symbol* typeSym = Symboltable::lookup(names->v[0]);
-  for (int i = 1; i < names->n; i++) {
-    if (typeSym) {
-      if (StructuralType* type = dynamic_cast<StructuralType*>(typeSym->type)) {
-        typeSym = Symboltable::lookupInScope(names->v[i], type->structScope);
-      }
-    }
-  }
-  return typeSym;
-}
-
-
-static void resolve_type_helper(FnSymbol* currentFunction, Type* &type) {
-  if (UnresolvedType* unresolvedType = dynamic_cast<UnresolvedType*>(type)) {
-    Symbol* new_type = resolveUnresolvedType(unresolvedType->names);
-    if (new_type) {
-      check_legal_overload(new_type);
-      if (ParamSymbol* param = dynamic_cast<ParamSymbol*>(new_type)) {
-        type = param->typeVariable->type;
-      } else if (ForwardingSymbol* forward =
-          dynamic_cast<ForwardingSymbol*>(new_type)) {
-        type = forward->forward->type;
-      } else if (!dynamic_cast<UnresolvedType*>(new_type->type)) {
-        type = new_type->type;
-      } else {
-        resolve_type_helper(currentFunction, new_type->type);
-        type = new_type->type;
-      }
-    } else {
-      INT_FATAL(type, "Error resolving type");
-    }
-  } else if (UserType* user_type = dynamic_cast<UserType*>(type)) {
-    resolve_type_helper(currentFunction, user_type->definition);
-    if (!user_type->defaultVal) {
-      user_type->defaultVal = COPY(user_type->definition->defaultVal);
-      fixup(user_type->symbol->defPoint);
-    }
-  } else if (IndexType* index_type = dynamic_cast<IndexType*>(type)) {
-    resolve_type_helper(currentFunction, index_type->idxType);
-  } else if (ArrayType* array_type = dynamic_cast<ArrayType*>(type)) {
-    resolve_type_helper(currentFunction, array_type->elementType);
-  } else if (TupleType* tuple_type = dynamic_cast<TupleType*>(type)) {
-    for (int i = 0; i < tuple_type->components.n; i++) {
-      resolve_type_helper(currentFunction, tuple_type->components.v[i]);
-    }
-  } else if (MetaType* metaType = dynamic_cast<MetaType*>(type)) {
-    if (UnresolvedType* unresolvedType = dynamic_cast<UnresolvedType*>(metaType->base)) {
-      Symbol* new_type = resolveUnresolvedType(unresolvedType->names);
-      if (new_type) {
-        check_legal_overload(new_type);
-        if (ParamSymbol* param = dynamic_cast<ParamSymbol*>(new_type)) {
-          type = getMetaType(param->typeVariable->type);
-        } else if (ForwardingSymbol* forward =
-                   dynamic_cast<ForwardingSymbol*>(new_type)) {
-          type = getMetaType(forward->forward->type);
-        } else if (!dynamic_cast<UnresolvedType*>(new_type->type)) {
-          type = getMetaType(new_type->type);
-        } else {
-          resolve_type_helper(currentFunction, new_type->type);
-          type = getMetaType(new_type->type);
-        }
-      } else {
-        INT_FATAL(type, "Error resolving type");
-      }
-    }
-  }
-}
-
-
 ScopeResolveSymbols::ScopeResolveSymbols() {
-  currentFunction = NULL;
   defList = new Map<SymScope*,Vec<VarSymbol*>*>();
 }
 
 
-void ScopeResolveSymbols::preProcessExpr(Expr* expr) {
-  if (DefExpr* def_expr = dynamic_cast<DefExpr*>(expr)) {
-    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def_expr->sym)) {
-      currentFunction = fn;
-    }
-  }
-
-  if (CastExpr* cast_expr = dynamic_cast<CastExpr*>(expr)) {
-    resolve_type_helper(currentFunction, cast_expr->newType);
-  }
-
+void ScopeResolveSymbols::postProcessExpr(Expr* expr) {
   if (Variable* sym_use = dynamic_cast<Variable*>(expr)) {
     if (dynamic_cast<UnresolvedSymbol*>(sym_use->var)) {
       SymScope* currentScope = Symboltable::getCurrentScope();
@@ -167,14 +86,9 @@ void ScopeResolveSymbols::preProcessExpr(Expr* expr) {
       }
     }
   }
-}
 
-
-void ScopeResolveSymbols::postProcessExpr(Expr* expr) {
   if (DefExpr* def_expr = dynamic_cast<DefExpr*>(expr)) {
-    if (dynamic_cast<FnSymbol*>(def_expr->sym)) {
-      currentFunction = NULL;
-    } else if (VarSymbol* sym = dynamic_cast<VarSymbol*>(def_expr->sym)) {
+    if (VarSymbol* sym = dynamic_cast<VarSymbol*>(def_expr->sym)) {
       Vec<VarSymbol*>* syms = defList->get(Symboltable::getCurrentScope());
       if (syms) {
         syms->set_add(sym);
@@ -185,31 +99,29 @@ void ScopeResolveSymbols::postProcessExpr(Expr* expr) {
       }
     }
   }
-}
 
-
-void ScopeResolveSymbols::preProcessSymbol(Symbol* sym) {
-  SymScope* paramScope = NULL;
-  SymScope* saveScope = NULL;
-
-  FnSymbol* fnSym = dynamic_cast<FnSymbol*>(sym);
-  if (fnSym) {
-    paramScope = fnSym->paramScope;
-
-    /* for a function, its return type (also currently stored as its
-       type... grumble grumble) may be defined in terms of symbols
-       defined in the paramScope */
-    if (paramScope) {
-      saveScope = Symboltable::setCurrentScope(paramScope);
+  if (DefExpr* def_expr = dynamic_cast<DefExpr*>(expr)) {
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def_expr->sym)) {
+      if (fn->retType == dtUnknown &&
+          def_expr->exprType &&
+          def_expr->exprType->typeInfo() != dtUnknown) {
+        fn->retType = def_expr->exprType->typeInfo();
+        def_expr->exprType = NULL;
+      }
+    } else if (def_expr->sym->type == dtUnknown &&
+               def_expr->exprType &&
+               def_expr->exprType->typeInfo() != dtUnknown) {
+      def_expr->sym->type = def_expr->exprType->typeInfo();
+      def_expr->exprType = NULL;
     }
   }
 
-  if (sym->type) {
-    resolve_type_helper(currentFunction, sym->type);
-  }
-
-  if (paramScope) {
-    resolve_type_helper(currentFunction, fnSym->retType);
-    Symboltable::setCurrentScope(saveScope);
+  if (CastExpr* castExpr = dynamic_cast<CastExpr*>(expr)) {
+    if (castExpr->type == dtUnknown &&
+        castExpr->newType &&
+        castExpr->newType->typeInfo() != dtUnknown) {
+      castExpr->type = castExpr->newType->typeInfo();
+      castExpr->newType = NULL;
+    }
   }
 }

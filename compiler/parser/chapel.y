@@ -5,6 +5,8 @@
 #include <string.h>
 #include "lexyacc.h" // all #includes here, for make depend
 
+  static int anon_record_uid = 1;
+
 %}
 
 %start program
@@ -110,6 +112,9 @@
 %token TSEMI
 %token TCOMMA
 %token TDOT
+%token TCOLON
+%token TNOTCOLON
+%token TQUESTION
 %token TLP
 %token TRP
 %token TSEQBEGIN
@@ -118,11 +123,6 @@
 %token TRSBR
 %token TLCBR
 %token TRCBR
-%token TCOLON
-%token TNOTCOLON
-
-
-%token TQUESTION
 
 %type <vt> config_static
 %type <ct> var_const_param
@@ -141,27 +141,27 @@
 %type <pexpr> parenop_expr memberaccess_expr non_tuple_lvalue lvalue
 %type <pexpr> tuple_paren_expr atom expr expr_list_item
 %type <pexpr> literal range seq_expr where whereexpr
-%type <pexpr> tuple_multiplier intliteral
+%type <pexpr> tuple_multiplier intliteral variable_expr
 %type <pexpr> reduction opt_init_expr assign_expr if_expr
 %type <pexprls> expr_ls nonempty_expr_ls tuple_inner_type_ls
 %type <pdefexpr> formal enum_item
 %type <pdefexprls> formal_ls opt_formal_ls enum_ls
 %type <pforallexpr> forallExpr
 
-%type <pstmt> select_stmt
+%type <pstmt> select_stmt label_stmt goto_stmt break_stmt continue_stmt
 %type <pstmt> usertype_decl type_decl fn_decl struct_decl mod_decl
 %type <pstmt> function_body_single_stmt 
 %type <pstmt> assign_stmt if_stmt return_stmt loop forloop whileloop enum_decl
-%type <pstmt> statement call_stmt noop_stmt decl typevar_decl
-%type <pstmtls> decl_ls statements modulebody program
+%type <pstmt> stmt call_stmt noop_stmt decl typevar_decl
+%type <pstmtls> decl_ls stmt_ls modulebody program
 %type <pstmtls> var_decl var_decl_inner var_decl_inner_ls record_inner_var_ls
 %type <pblockstmt> function_body_stmt block_stmt
 %type <pwhenstmt> when_stmt
-%type <pwhenstmtls> when_stmts
+%type <pwhenstmtls> when_stmt_ls
 
-%type <ptype> opt_var_type var_type typevar_type fnrettype
-%type <ptype> type record_tuple_type
-%type <ptype> record_tuple_inner_type expr_type
+%type <pexpr> opt_var_type var_type fnrettype
+%type <pexpr> type record_tuple_type
+%type <pexpr> record_tuple_inner_type
 %type <ptype> class_record_union
 
 %type <psym> ident_symbol
@@ -170,16 +170,12 @@
 
 /* These are declared in increasing order of precedence. */
 
-
 %left TNOELSE
 %left TELSE
-
 %left TCOMMA
 %left TBY
-
 %left TCOLON
 %left TNOTCOLON
-
 %left TRSBR
 %left TIN
 %left TDOTDOT
@@ -196,7 +192,6 @@
 %left TSTAR TDIVIDE TMOD
 %right TUPLUS TUMINUS TREDUCE TSCAN TBNOT
 %right TEXP
-
 %left TLP
 %left TDOT
 
@@ -209,57 +204,369 @@ program: modulebody
 
 
 modulebody: 
-  statements
-;
-
-config_static:
-  /* nothing */
-    { $$ = VAR_NORMAL; }
-| TCONFIG
-    { $$ = VAR_CONFIG; }
-| TSTATIC
-    { $$ = VAR_STATE; }
+  stmt_ls
 ;
 
 
-var_const_param:
-  TVAR
-    { $$ = VAR_VAR; }
-| TCONST
-    { $$ = VAR_CONST; }
-| TPARAMETER
-    { $$ = VAR_PARAM; }
-;
-        
-ident_symbol:
-  pragma_ls identifier
+stmt_ls:
+  /* empty */
+    { $$ = new AList<Stmt>(); }
+| stmt_ls pragma_ls stmt
     { 
-      $$ = new Symbol(SYMBOL, $2);
-      $$->copyPragmas(*$1);
-    } 
+      $3->copyPragmas(*$2);
+      $1->insertAtTail($3);
+    }
+| stmt_ls pragma_ls var_decl
+    { 
+      $3->copyPragmas(*$2);
+      $1->add($3);
+    }
 ;
 
 
-var_type:
-  TCOLON type
-    { $$ = $2; }
-| TLIKE expr
-    { $$ = new ExprType(new ParenOpExpr(new Variable(new UnresolvedSymbol("typeof")), new AList<Expr>($2))); }
+function_body_single_stmt:
+  noop_stmt
+| if_stmt
+| select_stmt
+| loop
+| call_stmt
+| return_stmt
 ;
 
 
-opt_var_type:
-  /* nothing */
-    { $$ = dtUnknown; }
-| var_type
+function_body_stmt:
+  function_body_single_stmt
+    { $$ = new BlockStmt(new AList<Stmt>($1)); }
+| block_stmt
 ;
 
 
-opt_init_expr:
-  /* nothing */
-    { $$ = NULL; }
-| TASSIGN expr
-    { $$ = $2; }
+stmt:
+  noop_stmt
+| label_stmt
+| goto_stmt
+| break_stmt
+| continue_stmt
+| decl
+| assign_stmt
+| if_stmt
+| select_stmt
+| loop
+| call_stmt
+| lvalue TSEMI
+    { $$ = new ExprStmt($1); }
+| return_stmt
+| block_stmt
+    { $$ = $1; }
+| error
+    { printf("syntax error"); exit(1); }
+;
+
+
+noop_stmt:
+  TSEMI
+    { $$ = new NoOpStmt(); }
+;
+
+
+label_stmt:
+  TLABEL identifier stmt
+    { $$ = new LabelStmt(new LabelSymbol($2), 
+                         new BlockStmt(new AList<Stmt>($3))); }
+;
+
+
+goto_stmt:
+  TGOTO identifier TSEMI
+    { $$ = new GotoStmt(goto_normal, $2); }
+;
+
+
+break_stmt:
+  TBREAK identifier TSEMI
+    { $$ = new GotoStmt(goto_break, $2); }
+| TBREAK TSEMI
+    { $$ = new GotoStmt(goto_break); }
+;
+
+
+continue_stmt:
+  TCONTINUE identifier TSEMI
+    { $$ = new GotoStmt(goto_continue, $2); }
+| TCONTINUE TSEMI
+    { $$ = new GotoStmt(goto_continue); }
+;
+
+
+call_stmt:
+  TCALL lvalue TSEMI
+    { $$ = new ExprStmt($2); }
+;
+
+
+atomic_cobegin:
+    { $$ = BLOCK_NORMAL; }
+| TATOMIC
+    { $$ = BLOCK_ATOMIC; }
+| TCOBEGIN
+    { $$ = BLOCK_COBEGIN; }
+;
+
+
+block_stmt:
+  atomic_cobegin TLCBR
+    {
+      $<pblockstmt>$ = Symboltable::startCompoundStmt();
+    }
+                       stmt_ls TRCBR
+    {
+      $$ = Symboltable::finishCompoundStmt($<pblockstmt>3, $4);
+      $$->blockType = $1;
+    }
+;
+
+
+return_stmt:
+  TRETURN TSEMI
+    { $$ = new ReturnStmt(NULL); }
+| TRETURN expr TSEMI
+    { $$ = new ReturnStmt($2); }
+| TYIELD TSEMI
+    { $$ = new ReturnStmt(NULL, true); }
+| TYIELD expr TSEMI
+    { $$ = new ReturnStmt($2, true); }
+;
+
+
+fortype:
+  TFOR
+    { $$ = false; }
+| TFORALL
+    { $$ = true; }
+;
+
+
+indexes:
+  ident_symbol
+    { $$ = new AList<Symbol>($1); }
+| indexes TCOMMA ident_symbol
+    { $1->insertAtTail($3); }
+;
+
+
+indexlist:
+  indexes
+| TLP indexes TRP
+  { $$ = $2; }
+;
+
+
+forloop:
+  fortype indexlist TIN expr
+    { 
+      $<pforloopstmt>$ = Symboltable::startForLoop($1, $2, $4);
+    }
+                             block_stmt
+    { 
+      $$ = Symboltable::finishForLoop($<pforloopstmt>5, $6);
+    }
+| fortype indexlist TIN expr
+    { 
+      $<pforloopstmt>$ = Symboltable::startForLoop($1, $2, $4);
+    }
+                             TDO stmt
+    { 
+      $$ = Symboltable::finishForLoop($<pforloopstmt>5, $7);
+    }
+| TLSBR indexlist TIN expr TRSBR
+    { 
+      $<pforloopstmt>$ = Symboltable::startForLoop(true, $2, $4);
+    }
+                                 stmt
+    { 
+      $$ = Symboltable::finishForLoop($<pforloopstmt>6, $7);
+    }
+;
+
+
+whileloop:
+TWHILE expr TDO 
+    {
+      $<pblockstmt>$ = Symboltable::startCompoundStmt();
+    }
+                stmt
+    {
+      $$ = new WhileLoopStmt(true, $2, Symboltable::finishCompoundStmt($<pblockstmt>4, new AList<Stmt>($5)));
+    }
+| TDO
+    {
+      $<pblockstmt>$ = Symboltable::startCompoundStmt();
+    }
+      stmt TWHILE expr TSEMI
+    {
+      $$ = new WhileLoopStmt(false, $5, Symboltable::finishCompoundStmt($<pblockstmt>2, new AList<Stmt>($3)));
+    }
+| TWHILE expr block_stmt
+    { $$ = new WhileLoopStmt(true, $2, $3); }
+;
+
+
+loop:
+  forloop
+| whileloop
+;
+
+
+if_stmt:
+  TIF expr block_stmt %prec TNOELSE
+    { $$ = new CondStmt($2, dynamic_cast<BlockStmt*>($3)); }
+| TIF expr TTHEN stmt %prec TNOELSE
+    { $$ = new CondStmt($2, new BlockStmt(new AList<Stmt>($4))); }
+| TIF expr block_stmt TELSE stmt
+    { $$ = new CondStmt($2, dynamic_cast<BlockStmt*>($3), new BlockStmt(new AList<Stmt>($5))); }
+| TIF expr TTHEN stmt TELSE stmt
+    { $$ = new CondStmt($2, new BlockStmt(new AList<Stmt>($4)), new BlockStmt(new AList<Stmt>($6))); }
+;
+
+
+when_stmt:
+  TWHEN nonempty_expr_ls TDO stmt
+    {
+      $$ = new WhenStmt($2, new BlockStmt(new AList<Stmt>($4)));
+    }
+| TWHEN nonempty_expr_ls block_stmt
+    {
+      $$ = new WhenStmt($2, $3);
+    }
+| TOTHERWISE stmt
+    {
+      $$ = new WhenStmt(new AList<Expr>(), new BlockStmt(new AList<Stmt>($2)));
+    }
+;
+
+
+when_stmt_ls:
+  /* empty */
+    {
+      $$ = new AList<WhenStmt>();
+    }
+| when_stmt_ls when_stmt
+    {
+      $1->insertAtTail($2);
+    }
+; 
+
+
+select_stmt:
+  TSELECT expr TLCBR when_stmt_ls TRCBR
+    {
+      $$ = new SelectStmt($2, $4);
+    }
+;
+
+
+assign_stmt:
+  assign_expr TSEMI
+    { $$ = new ExprStmt($1); }
+;
+
+
+mod_decl:
+  TMODULE identifier
+    {
+      $<pmodsym>$ = Symboltable::startModuleDef($2);
+    }
+                     TLCBR modulebody TRCBR
+    {
+      $$ = new ExprStmt(Symboltable::finishModuleDef($<pmodsym>3, $5));
+    }
+;
+
+
+fn_decl:
+  fn_tag function
+    {
+      $<pfnsym>$ = Symboltable::startFnDef($2);
+      $<pfnsym>$->fnClass = $1;
+    }
+                  opt_formal_ls fnretref fnrettype where
+    {
+      if (!$4) {
+        $4 = new AList<DefExpr>();
+        $<pfnsym>3->noparens = true;
+      }
+      Symboltable::continueFnDef($<pfnsym>3, $4, dtUnknown, $5, $7);
+    }
+                                                         function_body_stmt
+    {
+      DefExpr* def = new DefExpr(Symboltable::finishFnDef($<pfnsym>3, $9), NULL, $6);
+      $$ = new ExprStmt(def);
+    }
+;
+
+
+enum_item:
+  identifier
+    {
+      $$ = new DefExpr(new EnumSymbol($1));
+    }
+| identifier TASSIGN expr
+    {
+      if (!$3->isComputable())
+        USR_FATAL($3, "Enumerator value for %s must be integer parameter", $1);
+      $$ = new DefExpr(new EnumSymbol($1), new UserInitExpr($3));
+    }
+;
+
+
+enum_ls:
+  enum_item
+    {
+      $$ = new AList<DefExpr>($1);
+    }
+| enum_ls TCOMMA enum_item
+    {
+      $1->insertAtTail($3);
+      $$ = $1;
+    }
+;
+
+
+enum_decl:
+  TENUM pragma_ls identifier TLCBR enum_ls TRCBR TSEMI
+    {
+      EnumType* pdt = new EnumType($5);
+      TypeSymbol* pst = new TypeSymbol($3, pdt);
+      pst->copyPragmas(*$2);
+      pdt->addSymbol(pst);
+      DefExpr* def_expr = new DefExpr(pst);
+      $$ = new ExprStmt(def_expr);
+    }
+;
+
+
+class_record_union:
+  TCLASS
+    { $$ = new ClassType(); }
+| TRECORD
+    { $$ = new RecordType(); }
+| TUNION
+    { $$ = new UnionType(); }
+;
+
+
+struct_decl:
+  class_record_union pragma_ls identifier TLCBR
+    {
+      Symboltable::pushScope(SCOPE_CLASS);
+    }
+                                                decl_ls TRCBR
+    {
+      SymScope *scope = Symboltable::popScope();
+      DefExpr* def = Symboltable::defineStructType($3, $1, scope, $6);
+      def->sym->copyPragmas(*$2);
+      $$ = new ExprStmt(def);
+    }
 ;
 
 
@@ -323,68 +630,137 @@ typevar_decl:
 ;
 
 
-enum_item:
-  identifier
-    {
-      $$ = new DefExpr(new EnumSymbol($1));
-    }
-| identifier TASSIGN expr
-    {
-      if (!$3->isComputable())
-        USR_FATAL($3, "Enumerator value for %s must be integer parameter", $1);
-      $$ = new DefExpr(new EnumSymbol($1), new UserInitExpr($3));
-    }
+decl:
+  TWITH lvalue TSEMI
+    { $$ = new ExprStmt(new WithExpr($2)); }
+| TUSE lvalue TSEMI
+    { $$ = new ExprStmt(new UseExpr($2)); }
+| TWHERE whereexpr TSEMI
+    { $$ = new ExprStmt($2); }
+| type_decl
+| fn_decl
+| mod_decl
 ;
 
 
-enum_ls:
-  enum_item
+decl_ls:
+  /* empty */
+    { $$ = new AList<Stmt>(); }
+| decl_ls pragma_ls decl
     {
-      $$ = new AList<DefExpr>($1);
-    }
-| enum_ls TCOMMA enum_item
-    {
+      $3->copyPragmas(*$2);
       $1->insertAtTail($3);
-      $$ = $1;
     }
-;
-
-
-enum_decl:
-  TENUM pragma_ls identifier TLCBR enum_ls TRCBR TSEMI
+| decl_ls pragma_ls var_decl
     {
-      EnumType* pdt = new EnumType($5);
-      TypeSymbol* pst = new TypeSymbol($3, pdt);
-      pst->copyPragmas(*$2);
-      pdt->addSymbol(pst);
-      DefExpr* def_expr = new DefExpr(pst);
-      $$ = new ExprStmt(def_expr);
+      $3->copyPragmas(*$2);
+      $1->add($3);
     }
 ;
 
 
-class_record_union:
-  TCLASS
-    { $$ = new ClassType(); }
-| TRECORD
-    { $$ = new RecordType(); }
-| TUNION
-    { $$ = new UnionType(); }
+config_static:
+  /* nothing */
+    { $$ = VAR_NORMAL; }
+| TCONFIG
+    { $$ = VAR_CONFIG; }
+| TSTATIC
+    { $$ = VAR_STATE; }
 ;
 
 
-struct_decl:
-  class_record_union pragma_ls identifier TLCBR
+var_const_param:
+  TVAR
+    { $$ = VAR_VAR; }
+| TCONST
+    { $$ = VAR_CONST; }
+| TPARAMETER
+    { $$ = VAR_PARAM; }
+;
+        
+ident_symbol:
+  pragma_ls identifier
+    { 
+      $$ = new Symbol(SYMBOL, $2);
+      $$->copyPragmas(*$1);
+    } 
+;
+
+
+record_tuple_inner_type:
+  record_inner_var_ls TRP
+    {
+      SymScope *scope = Symboltable::popScope();
+      $$ = Symboltable::defineStructType(glomstrings(2, "_anon_record", intstring(anon_record_uid++)), new RecordType(), scope, $1);
+    }
+| tuple_inner_type_ls TRP
+    {
+      Symboltable::popScope();
+      char *tupleName = glomstrings(2, "_tuple", intstring($1->length()));
+      $$ = new ParenOpExpr(
+             new Variable(new UnresolvedSymbol(tupleName)), $1);
+    }
+;
+
+
+record_tuple_type:
+  TRECORD TLCBR
     {
       Symboltable::pushScope(SCOPE_CLASS);
     }
-                                                decl_ls TRCBR
+                decl_ls TRCBR
     {
       SymScope *scope = Symboltable::popScope();
-      Type* type = Symboltable::defineStructType($3, $1, scope, $6);
-      type->symbol->copyPragmas(*$2);
-      $$ = new ExprStmt(type->symbol->defPoint);
+      $$ = Symboltable::defineStructType(glomstrings(2, "_anon_record", intstring(anon_record_uid++)), new RecordType(), scope, $4);
     }
+| TLP
+    {
+      Symboltable::pushScope(SCOPE_CLASS);
+    }
+      record_tuple_inner_type
+    {
+      $$ = $3;
+    }
+;
+
+
+var_type:
+  TCOLON type
+    {
+      $$ = $2;
+    }
+| TLIKE expr
+    {
+      $$ = new ParenOpExpr(
+             new Variable(
+               new UnresolvedSymbol("typeof")),
+             new AList<Expr>($2));
+    }
+;
+
+
+fnrettype:
+  /* empty */
+    { $$ = NULL; }
+| TCOLON type
+    { $$ = $2; }
+;
+
+
+opt_var_type:
+  /* nothing */
+    {
+      $$ = NULL;
+    }
+| var_type
+;
+
+
+opt_init_expr:
+  /* nothing */
+    { $$ = NULL; }
+| TASSIGN expr
+    { $$ = $2; }
 ;
 
 
@@ -414,44 +790,6 @@ record_inner_var_ls:
 ;
 
 
-record_tuple_inner_type:
-  record_inner_var_ls TRP
-    {
-      SymScope *scope = Symboltable::popScope();
-      $$ = Symboltable::defineStructType(NULL, new RecordType(), scope, $1);
-    }
-| tuple_inner_type_ls TRP
-    {
-      Symboltable::popScope();
-      char *tupleName = glomstrings(2, "_tuple", intstring($1->length()));
-      $$ = new ExprType(
-             new ParenOpExpr(
-               new Variable(new UnresolvedSymbol(tupleName)), $1));
-    }
-;
-
-
-record_tuple_type:
-  TRECORD TLCBR
-    {
-      Symboltable::pushScope(SCOPE_CLASS);
-    }
-                decl_ls TRCBR
-    {
-      SymScope *scope = Symboltable::popScope();
-      $$ = Symboltable::defineStructType(NULL, new RecordType(), scope, $4);
-    }
-| TLP
-    {
-      Symboltable::pushScope(SCOPE_CLASS);
-    }
-      record_tuple_inner_type
-    {
-      $$ = $3;
-    }
-;
-
-
 formal_tag:
   /* nothing */
     { $$ = PARAM_BLANK; }
@@ -468,29 +806,22 @@ formal_tag:
 ;
 
 
-typevar_type:
-  /* nothing */
-    { $$ = NULL; }
-| TCOLON type
-    { $$ = $2; }
-;
-
-
 formal:
   formal_tag pragma_ls identifier opt_var_type opt_init_expr
     {
       $$ = Symboltable::defineParam($1, $3, $4, $5);
       $$->sym->copyPragmas(*$2);
     }
-| TTYPE pragma_ls identifier typevar_type
+| TTYPE pragma_ls identifier opt_var_type opt_init_expr
     {
-      DefExpr* defExpr = Symboltable::defineParam(PARAM_TYPE, $3, getMetaType($4), NULL);
+      DefExpr* defExpr = Symboltable::defineParam(PARAM_TYPE, $3, $4, $5);
       defExpr->sym->copyPragmas(*$2);
       ParamSymbol* ps = dynamic_cast<ParamSymbol*>(defExpr->sym);
       char *name = glomstrings(2, "__type_variable_", ps->name);
-      VariableType* new_type = new VariableType(getMetaType($4));
+      VariableType* new_type = new VariableType(getMetaType(NULL));
       TypeSymbol* new_type_symbol = new TypeSymbol(name, new_type);
       new_type->addSymbol(new_type_symbol);
+      ps->type = getMetaType(NULL);
       ps->typeVariable = new_type_symbol;
       $$ = defExpr;
     }
@@ -507,7 +838,8 @@ formal:
         stmts->insertAtTail(new ExprStmt(x));
       }
       Symboltable::defineStructType(NULL, t, Symboltable::getCurrentScope(), stmts);
-      $$ = Symboltable::defineParam(PARAM_IN, "<anonymous>", t, NULL);
+      $$ = Symboltable::defineParam(PARAM_IN, "<anonymous>", NULL, NULL);
+      $$->sym->type = t;
       t->isPattern = true;
     }
 ;
@@ -535,14 +867,6 @@ opt_formal_ls:
 | TLP formal_ls TRP
   { $$ = $2; }
 ;
-
-fnrettype:
-  /* empty */
-    { $$ = dtUnknown; }
-| TCOLON type
-    { $$ = $2; }
-;
-
 
 fnretref:
   /* empty */
@@ -693,113 +1017,41 @@ function:
 ;
 
 
-fn_decl:
-  fn_tag function
-    {
-      $<pfnsym>$ = Symboltable::startFnDef($2);
-      $<pfnsym>$->fnClass = $1;
-    }
-                  opt_formal_ls fnretref fnrettype where
-    {
-      if (!$4) {
-        $4 = new AList<DefExpr>();
-        $<pfnsym>3->noparens = true;
-      }
-      Symboltable::continueFnDef($<pfnsym>3, $4, $6, $5, $7);
-    }
-                                                         function_body_stmt
-    {
-      $$ = new ExprStmt(new DefExpr(Symboltable::finishFnDef($<pfnsym>3, $9)));
-    }
-;
-
-
-mod_decl:
-  TMODULE identifier
-    {
-      $<pmodsym>$ = Symboltable::startModuleDef($2);
-    }
-                     TLCBR modulebody TRCBR
-    {
-      $$ = new ExprStmt(Symboltable::finishModuleDef($<pmodsym>3, $5));
-    }
-;
-
-
-decl:
-  TWITH lvalue TSEMI
-    { $$ = new ExprStmt(new WithExpr($2)); }
-| TUSE lvalue TSEMI
-    { $$ = new ExprStmt(new UseExpr($2)); }
-| TWHERE whereexpr TSEMI
-    { $$ = new ExprStmt($2); }
-| type_decl
-| fn_decl
-| mod_decl
-;
-
-
-decl_ls:
-  /* empty */
-    { $$ = new AList<Stmt>(); }
-| decl_ls pragma_ls decl
-    {
-      $3->copyPragmas(*$2);
-      $1->insertAtTail($3);
-    }
-| decl_ls pragma_ls var_decl
-    {
-      $3->copyPragmas(*$2);
-      $1->add($3);
-    }
-;
-
-
 tuple_multiplier:
   intliteral
 /* | non_tuple_lvalue */
 ;
 
 
-expr_type:
+variable_expr:
   identifier
     {
-      Vec<char*>* new_names = new Vec<char*>();
-      new_names->add($1);
-      $$ = new UnresolvedType(new_names);
-    }
-| TQUESTION identifier
-    {
-      INT_FATAL("Not yet handling ?type construct");
-    }
-| non_tuple_lvalue TOF identifier
-    {
-      $$ = new ExprType(
-             new ParenOpExpr($1, 
-               new AList<Expr>(
-                 new Variable(
-                   new UnresolvedSymbol($3)))));
-    }
-| memberaccess_expr
-    {
-      $$ = new ExprType($1);
-    }
-| parenop_expr
-    {
-      $$ = new ExprType($1);
-    }
-| tuple_multiplier TSTAR identifier
-    {
-      AList<Expr>* argList = new AList<Expr>(new Variable(new UnresolvedSymbol($3)));
-      argList->insertAtTail($1);
-      $$ = new ExprType(new ParenOpExpr(new Variable(new UnresolvedSymbol("_htuple")), argList));
+      $$ = new Variable(new UnresolvedSymbol($1));
     }
 ;
 
 
 type:
-  record_tuple_type
-| expr_type
+  variable_expr
+| memberaccess_expr
+| parenop_expr
+| record_tuple_type
+| TQUESTION identifier
+    {
+      INT_FATAL("Not yet handling ?type construct");
+    }
+| non_tuple_lvalue TOF variable_expr
+    {
+      $$ = new ParenOpExpr($1, new AList<Expr>($3));
+    }
+| tuple_multiplier TSTAR variable_expr
+    {
+      AList<Expr>* argList = new AList<Expr>();
+      argList->insertAtTail($3);
+      argList->insertAtTail($1);
+      Expr* baseExpr = new Variable(new UnresolvedSymbol("_htuple"));
+      $$ = new ParenOpExpr(baseExpr, argList);
+    }
 ;
 
 
@@ -808,70 +1060,6 @@ forallExpr:
     { $$ = Symboltable::startForallExpr($2); }
 | TLSBR nonempty_expr_ls TIN nonempty_expr_ls TRSBR
     { $$ = Symboltable::startForallExpr($4, $2); }
-;
-
-
-statements:
-  /* empty */
-    { $$ = new AList<Stmt>(); }
-| statements pragma_ls statement
-    { 
-      $3->copyPragmas(*$2);
-      $1->insertAtTail($3);
-    }
-| statements pragma_ls var_decl
-    { 
-      $3->copyPragmas(*$2);
-      $1->add($3);
-    }
-;
-
-
-function_body_single_stmt:
-  noop_stmt
-| if_stmt
-| select_stmt
-| loop
-| call_stmt
-| return_stmt
-;
-
-
-function_body_stmt:
-  function_body_single_stmt
-    { $$ = new BlockStmt(new AList<Stmt>($1)); }
-| block_stmt
-;
-
-
-statement:
-  noop_stmt
-| TLABEL identifier statement
-    { $$ = new LabelStmt(new LabelSymbol($2), 
-                         new BlockStmt(new AList<Stmt>($3))); }
-| TGOTO identifier TSEMI
-    { $$ = new GotoStmt(goto_normal, $2); }
-| TBREAK identifier TSEMI
-    { $$ = new GotoStmt(goto_break, $2); }
-| TBREAK TSEMI
-    { $$ = new GotoStmt(goto_break); }
-| TCONTINUE identifier TSEMI
-    { $$ = new GotoStmt(goto_continue, $2); }
-| TCONTINUE TSEMI
-    { $$ = new GotoStmt(goto_continue); }
-| decl
-| assign_stmt
-| if_stmt
-| select_stmt
-| loop
-| call_stmt
-| lvalue TSEMI
-    { $$ = new ExprStmt($1); }
-| return_stmt
-| block_stmt
-    { $$ = $1; }
-| error
-    { printf("syntax error"); exit(1); }
 ;
 
 
@@ -887,179 +1075,6 @@ pragma_ls:
 pragma:
   TPRAGMA STRINGLITERAL
 { $$ = copystring($2); }
-;
-
-
-call_stmt:
-  TCALL lvalue TSEMI
-    { $$ = new ExprStmt($2); }
-;
-
-
-noop_stmt:
-  TSEMI
-    { $$ = new NoOpStmt(); }
-;
-
-
-atomic_cobegin:
-    { $$ = BLOCK_NORMAL; }
-| TATOMIC
-    { $$ = BLOCK_ATOMIC; }
-| TCOBEGIN
-    { $$ = BLOCK_COBEGIN; }
-;
-
-
-block_stmt:
-  atomic_cobegin TLCBR
-    {
-      $<pblockstmt>$ = Symboltable::startCompoundStmt();
-    }
-                       statements TRCBR
-    {
-      $$ = Symboltable::finishCompoundStmt($<pblockstmt>3, $4);
-      $$->blockType = $1;
-    }
-;
-
-
-return_stmt:
-  TRETURN TSEMI
-    { $$ = new ReturnStmt(NULL); }
-| TRETURN expr TSEMI
-    { $$ = new ReturnStmt($2); }
-| TYIELD TSEMI
-    { $$ = new ReturnStmt(NULL, true); }
-| TYIELD expr TSEMI
-    { $$ = new ReturnStmt($2, true); }
-;
-
-
-fortype:
-  TFOR
-    { $$ = false; }
-| TFORALL
-    { $$ = true; }
-;
-
-
-indexes:
-  ident_symbol
-    { $$ = new AList<Symbol>($1); }
-| indexes TCOMMA ident_symbol
-    { $1->insertAtTail($3); }
-;
-
-
-indexlist:
-  indexes
-| TLP indexes TRP
-  { $$ = $2; }
-;
-
-
-forloop:
-  fortype indexlist TIN expr
-    { 
-      $<pforloopstmt>$ = Symboltable::startForLoop($1, $2, $4);
-    }
-                             block_stmt
-    { 
-      $$ = Symboltable::finishForLoop($<pforloopstmt>5, $6);
-    }
-| fortype indexlist TIN expr
-    { 
-      $<pforloopstmt>$ = Symboltable::startForLoop($1, $2, $4);
-    }
-                             TDO statement
-    { 
-      $$ = Symboltable::finishForLoop($<pforloopstmt>5, $7);
-    }
-| TLSBR indexlist TIN expr TRSBR
-    { 
-      $<pforloopstmt>$ = Symboltable::startForLoop(true, $2, $4);
-    }
-                                 statement
-    { 
-      $$ = Symboltable::finishForLoop($<pforloopstmt>6, $7);
-    }
-;
-
-
-whileloop:
-TWHILE expr TDO 
-    {
-      $<pblockstmt>$ = Symboltable::startCompoundStmt();
-    }
-                statement
-    {
-      $$ = new WhileLoopStmt(true, $2, Symboltable::finishCompoundStmt($<pblockstmt>4, new AList<Stmt>($5)));
-    }
-| TDO
-    {
-      $<pblockstmt>$ = Symboltable::startCompoundStmt();
-    }
-      statement TWHILE expr TSEMI
-    {
-      $$ = new WhileLoopStmt(false, $5, Symboltable::finishCompoundStmt($<pblockstmt>2, new AList<Stmt>($3)));
-    }
-| TWHILE expr block_stmt
-    { $$ = new WhileLoopStmt(true, $2, $3); }
-;
-
-
-loop:
-  forloop
-| whileloop
-;
-
-
-if_stmt:
-  TIF expr block_stmt %prec TNOELSE
-    { $$ = new CondStmt($2, dynamic_cast<BlockStmt*>($3)); }
-| TIF expr TTHEN statement %prec TNOELSE
-    { $$ = new CondStmt($2, new BlockStmt(new AList<Stmt>($4))); }
-| TIF expr block_stmt TELSE statement
-    { $$ = new CondStmt($2, dynamic_cast<BlockStmt*>($3), new BlockStmt(new AList<Stmt>($5))); }
-| TIF expr TTHEN statement TELSE statement
-    { $$ = new CondStmt($2, new BlockStmt(new AList<Stmt>($4)), new BlockStmt(new AList<Stmt>($6))); }
-;
-
-
-when_stmt:
-  TWHEN nonempty_expr_ls TDO statement
-    {
-      $$ = new WhenStmt($2, new BlockStmt(new AList<Stmt>($4)));
-    }
-| TWHEN nonempty_expr_ls block_stmt
-    {
-      $$ = new WhenStmt($2, $3);
-    }
-| TOTHERWISE statement
-    {
-      $$ = new WhenStmt(new AList<Expr>(), new BlockStmt(new AList<Stmt>($2)));
-    }
-;
-
-
-when_stmts:
-  /* empty */
-    {
-      $$ = new AList<WhenStmt>();
-    }
-| when_stmts when_stmt
-    {
-      $1->insertAtTail($2);
-    }
-; 
-
-
-select_stmt:
-  TSELECT expr TLCBR when_stmts TRCBR
-    {
-      $$ = new SelectStmt($2, $4);
-    }
 ;
 
 
@@ -1088,12 +1103,6 @@ assign_op_tag:
 assign_expr:
   lvalue assign_op_tag expr
     { $$ = new AssignOp($2, $1, $3); }
-;
-
-
-assign_stmt:
-  assign_expr TSEMI
-    { $$ = new ExprStmt($1); }
 ;
 
 
@@ -1145,8 +1154,7 @@ memberaccess_expr:
 
 
 non_tuple_lvalue:
-  identifier
-    { $$ = new Variable(new UnresolvedSymbol($1)); }
+  variable_expr
 | parenop_expr
 | memberaccess_expr
 ;
@@ -1190,7 +1198,9 @@ expr:
     { $$ = Symboltable::finishLetExpr($<pexpr>2, $3, $5); }
 | reduction %prec TREDUCE
 | expr TCOLON type
-  { $$ = new CastExpr($3, $1); }
+    {
+      $$ = new CastExpr($1, $3, dtUnknown);
+    }
 | expr TCOLON STRINGLITERAL
   { 
     Variable* _tostring =

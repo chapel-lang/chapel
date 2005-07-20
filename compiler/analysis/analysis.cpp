@@ -895,10 +895,13 @@ build_type(Type *t, bool make_default = true) {
   switch (t->astType) {
     default: assert(!"case");
     case TYPE:
-    case TYPE_UNRESOLVED:
       t->asymbol->sym->type_kind = Type_UNKNOWN;
       break;
-    case TYPE_BUILTIN: break;
+    case TYPE_BUILTIN:
+      if (t == dtUnknown) {
+        t->asymbol->sym->type_kind = Type_UNKNOWN;
+      }
+      break;
     case TYPE_FN:
       t->asymbol->sym->type_kind = Type_FUN;
       break;
@@ -953,7 +956,7 @@ build_type(Type *t, bool make_default = true) {
     case TYPE_USER: {
       UserType *tt = dynamic_cast<UserType*>(t);
       t->asymbol->sym->type_kind = Type_ALIAS;
-      t->asymbol->sym->alias = tt->definition->asymbol->sym;
+      t->asymbol->sym->alias = tt->defType->asymbol->sym;
       break;
     }
     case TYPE_CLASS:
@@ -987,9 +990,6 @@ build_type(Type *t, bool make_default = true) {
       tt->asymbol->sym->meta_type->type = tt->asymbol->sym;
       break;
     }
-    case TYPE_EXPR:
-      t->asymbol->sym->type_kind = Type_UNKNOWN;
-      break;
     case TYPE_NIL:
       break;
   }
@@ -1340,7 +1340,7 @@ gen_one_defexpr(VarSymbol *var, DefExpr *def) {
   Type *type = var->type;
 #ifdef MAKE_USER_TYPE_BE_DEFINITION
   if (type->astType == TYPE_USER)
-    type = ((UserType*)type)->definition;
+    type = ((UserType*)type)->defType;
 #endif
   Sym *s = var->asymbol->sym;
   AInfo *ast = def->ainfo;
@@ -1369,9 +1369,6 @@ gen_one_defexpr(VarSymbol *var, DefExpr *def) {
   FnSymbol *f = def->parentStmt->parentFunction();
   if (type != dtUnknown && s->is_var && !scalar_or_reference(type)) {
     switch (type->astType) { 
-      case TYPE_EXPR:
-        type = dtUnknown;
-        goto Lstandard;
       case TYPE_VARIABLE:
       case TYPE_META:
         type = dtUnknown;  // as yet unknown
@@ -1384,7 +1381,6 @@ gen_one_defexpr(VarSymbol *var, DefExpr *def) {
         // do not make it to analysis
       case TYPE_SUM:
       case TYPE_STRUCTURAL:
-      case TYPE_UNRESOLVED:
       default:
         assert(!"impossible");
         goto Lstandard; 
@@ -1413,7 +1409,7 @@ gen_one_defexpr(VarSymbol *var, DefExpr *def) {
         gen_alloc(s, s->type, ast, f && f->_this == var);
         break;
     }
-  } else if (!init) {
+  } else if (!init || def->exprType) {
     // THIS IS THE STANDARD CODE
   Lstandard:
     if (!var->noDefaultInit) {
@@ -2223,7 +2219,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       s->ainfo->rval->ast = s->ainfo;
       if1_gen(if1, &s->ainfo->code, s->expr->ainfo->code);
       Code *send = if1_send(if1, &s->ainfo->code, 4, 1, sym_primitive, cast_symbol, 
-                            s->newType->asymbol->sym->meta_type, s->expr->ainfo->rval, s->ainfo->rval);
+                            s->type->asymbol->sym->meta_type, s->expr->ainfo->rval, s->ainfo->rval);
       send->ast = s->ainfo;
       break;
     }
@@ -2311,8 +2307,6 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
   case TYPE_META:
   case TYPE_SUM:
   case TYPE_VARIABLE:
-  case TYPE_UNRESOLVED:
-  case TYPE_EXPR:
   case TYPE_NIL:
   case AST_TYPE_END:
   case LIST:
@@ -3216,7 +3210,7 @@ type_is_used(TypeSymbol *t) {
           || t->type->astType == TYPE_INDEX
           || t->type->astType == TYPE_VARIABLE
           || (t->type->astType == TYPE_USER && 
-              type_is_used(dynamic_cast<TypeSymbol*>(dynamic_cast<UserType*>(t->type)->definition->symbol))))
+              type_is_used(dynamic_cast<TypeSymbol*>(dynamic_cast<UserType*>(t->type)->defType->symbol))))
         return true;
       int res = t->asymbol->sym->meta_type->creators.n != 0;
       return res;

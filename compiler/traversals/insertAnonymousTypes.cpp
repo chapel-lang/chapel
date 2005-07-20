@@ -247,12 +247,13 @@ void InsertAnonymousTypes::preProcessStmt(Stmt* stmt) {
 }
 
 
-void InsertAnonymousTypes::preProcessExpr(Expr* expr) {
-  if (DefExpr* def_expr = dynamic_cast<DefExpr*>(expr)) {
-    if (ExprType* symExprType = dynamic_cast<ExprType*>(def_expr->sym->type)) {
-      def_expr->exprType = symExprType->expr->copy();
-      symExprType->expr = NULL;
-      fixup(def_expr);
+void InsertAnonymousTypes::postProcessExpr(Expr* expr) {
+  if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
+    if (!strncmp("_anon_record", def->sym->name, 12)) {
+      if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(def->parentStmt)) {
+        exprStmt->insertBefore(new ExprStmt(def->copy()));
+        def->replace(new Variable(new UnresolvedSymbol(def->sym->name)));
+      }
     }
   }
 }

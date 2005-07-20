@@ -739,23 +739,51 @@ AList<Stmt>* ArrayType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
 }
 
 
-UserType::UserType(Type* init_definition, Expr* init_defaultVal) :
+UserType::UserType(Type* init_defType, Expr* init_defaultVal) :
   Type(TYPE_USER, init_defaultVal),
-  definition(init_definition)
+  defExpr(NULL),
+  defType(init_defType)
+{}
+
+
+UserType::UserType(Expr* init_defExpr, Expr* init_defaultVal) :
+  Type(TYPE_USER, init_defaultVal),
+  defExpr(init_defExpr),
+  defType(dtUnknown)
+{}
+
+
+UserType::UserType(Expr* init_defExpr, Type* init_defType, Expr* init_defaultVal) :
+  Type(TYPE_USER, init_defaultVal),
+  defExpr(init_defExpr),
+  defType(init_defType)
 {}
 
 
 UserType*
 UserType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  UserType* copy = new UserType(definition,
+  UserType* copy = new UserType(COPY_INTERNAL(defExpr),
+                                COPY_INTERNAL(defType),
                                 COPY_INTERNAL(defaultVal));
   copy->addSymbol(symbol);
   return copy;
 }
 
 
+void UserType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == defaultVal) {
+    defaultVal = dynamic_cast<Expr*>(new_ast);
+  } else if (old_ast == defExpr) {
+    defExpr = dynamic_cast<Expr*>(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in Type::replaceChild");
+  }
+}
+
+
 void UserType::traverseDefType(Traversal* traversal) {
-  TRAVERSE(definition, traversal, false);
+  TRAVERSE(defExpr, traversal, false);
+  TRAVERSE(defType, traversal, false);
   TRAVERSE(defaultVal, traversal, false);
 }
 
@@ -764,13 +792,13 @@ void UserType::printDef(FILE* outfile) {
   fprintf(outfile, "type ");
   symbol->print(outfile);
   fprintf(outfile, " = ");
-  definition->print(outfile);
+  defExpr->print(outfile);
 }
 
 
 void UserType::codegenDef(FILE* outfile) {
   fprintf(outfile, "typedef ");
-  definition->codegen(outfile);
+  defType->codegen(outfile);
   fprintf(outfile, " ");
   symbol->codegen(outfile);
   fprintf(outfile, ";\n");
@@ -778,12 +806,12 @@ void UserType::codegenDef(FILE* outfile) {
 
 
 void UserType::codegenDefaultFormat(FILE* outfile, bool isRead) {
-  definition->codegenDefaultFormat(outfile, isRead);
+  defType->codegenDefaultFormat(outfile, isRead);
 }
 
 
 Type* UserType::getType(void) {
-  return definition;
+  return defType;
 }
 
 
@@ -1323,73 +1351,6 @@ void VariableType::codegen(FILE* outfile) {
 
 void VariableType::traverseDefType(Traversal* traversal) {
   TRAVERSE(type, traversal, false);
-}
-
-
-UnresolvedType::UnresolvedType(Vec<char*>* init_names) :
-  Type(TYPE_UNRESOLVED, NULL),
-  names(init_names) {
-}
-
-
-UnresolvedType*
-UnresolvedType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  Vec<char*>* new_names = new Vec<char*>();
-  forv_Vec(char, str, *names) {
-    new_names->add(str);
-  }
-  return new UnresolvedType(new_names);
-}
-
-
-void UnresolvedType::print(FILE* outfile) {
-  fprintf(outfile, "%s", names->v[0]);
-  for (int i = 1; i < names->n; i++) {
-    fprintf(outfile, ".%s", names->v[i]);
-  }
-}
-
-
-void UnresolvedType::codegen(FILE* outfile) {
-  INT_FATAL(this, "Unanticipated call to UnresolvedType::codegen");
-}
-
-
-ExprType::ExprType(Expr *init_expr) :
-  Type(TYPE_EXPR, NULL),
-  expr(init_expr)
-{ }
-
-
-ExprType*
-ExprType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new ExprType(COPY_INTERNAL(expr));
-}
-
-
-void ExprType::traverseDefType(Traversal* traversal) {
-  TRAVERSE(expr, traversal, false);
-}
-
-
-void ExprType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == defaultVal) {
-    defaultVal = dynamic_cast<Expr*>(new_ast);
-  } else if (old_ast == expr) {
-    expr = dynamic_cast<Expr*>(new_ast);
-  } else {
-    INT_FATAL(this, "Unexpected case in ExprType::replaceChild");
-  }
-}
-
-
-void ExprType::print(FILE* outfile) {
-  expr->print(outfile);
-}
-
-
-void ExprType::codegen(FILE* outfile) {
-  INT_FATAL(this, "Unanticipated call to ExprType::codegen");
 }
 
 

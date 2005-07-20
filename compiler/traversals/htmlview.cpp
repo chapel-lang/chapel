@@ -206,10 +206,12 @@ void HtmlView::postProcessExpr(Expr* expr) {
 }
 
 void HtmlView::html_print_symbol(Symbol* sym, bool def) {
-  if (def)
-    write("<A NAME=\"SYM%d\">", sym->id);
-  else
-    write("<A HREF=\"#SYM%d\">", sym->id);
+  if (!dynamic_cast<UnresolvedSymbol*>(sym)) {
+    if (def)
+      write("<A NAME=\"SYM%d\">", sym->id);
+    else
+      write("<A HREF=\"#SYM%d\">", sym->id);
+  }
   if (dynamic_cast<FnSymbol*>(sym)) {
     write("<FONT COLOR=\"blue\">");
   } else if (dynamic_cast<TypeSymbol*>(sym)) {
@@ -219,7 +221,9 @@ void HtmlView::html_print_symbol(Symbol* sym, bool def) {
   }
   write("%s", sym->name);
   write("</FONT>");
-  write("<FONT COLOR=\"grey\">[%ld]</FONT>", sym->id);
+  if (!dynamic_cast<UnresolvedSymbol*>(sym)) {
+    write("<FONT COLOR=\"grey\">[%ld]</FONT>", sym->id);
+  }
   write("</A>");
   if (def &&
       !dynamic_cast<TypeSymbol*>(sym) &&

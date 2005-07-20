@@ -1,3 +1,3 @@
- called from 5 in __init_noargs at _chpl_seq.chpl:-1
+ called from 5 in __init_noargs at _chpl_complex.chpl:-1
 function foo noargs.chpl:1
 globals

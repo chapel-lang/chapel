@@ -12,7 +12,6 @@ extern FILE* html_index_file;
 // Begin temporary development flags
 extern bool checkAnalysisTypeinfo;
 extern bool applyGettersSetters;
-extern bool useExprType;
 extern bool instantiate;
 // End temporary development flags
 

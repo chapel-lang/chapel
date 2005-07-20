@@ -8,6 +8,8 @@
 class PreAnalysisHacks : public Traversal {
 public:
   void postProcessStmt(Stmt* stmt);
+  void postProcessExpr(Expr* expr);
+  void postProcessType(Type* type);
 };
 
 #endif

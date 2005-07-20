@@ -343,8 +343,6 @@ char* astTypeName[AST_TYPE_END+1] = {
   "MetaType",
   "SumType",
   "VariableType",
-  "UnresolvedType",
-  "ExprType",
   "NilType",
 
   "List",
@@ -481,7 +479,8 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     AST_ADD_LIST(ParenOpExpr, argList, Expr);
     goto LExprCommon;
   case EXPR_CAST:
-    ADD_CHILD(CastExpr, newType);
+    ADD_CHILD(CastExpr, type);
+    AST_ADD_CHILD(CastExpr, newType);
     AST_ADD_CHILD(CastExpr, expr);
     goto LExprCommon;
   case EXPR_CAST_LIKE:
@@ -563,7 +562,8 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     ADD_CHILD(ArrayType, elementType);
     goto LTypeCommon;
   case TYPE_USER:
-    ADD_CHILD(UserType, definition);
+    AST_ADD_CHILD(UserType, defExpr);
+    ADD_CHILD(UserType, defType);
     goto LTypeCommon;
   case TYPE_STRUCTURAL:
   LStructuralTypeCommon:
@@ -592,10 +592,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
   case TYPE_VARIABLE:
     ADD_CHILD(VariableType, type);
     goto LTypeCommon;
-  case TYPE_EXPR:
-    ADD_CHILD(ExprType, expr);
-    goto LTypeCommon;
-  case TYPE_UNRESOLVED:
   case TYPE_NIL:
     goto LTypeCommon;
   case AST_TYPE_END: break;

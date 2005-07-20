@@ -174,10 +174,14 @@ class IndexType : public Type {
 
 class UserType : public Type {
  public:
-  Type* definition;
+  Expr* defExpr;
+  Type* defType;
 
-  UserType(Type* init_definition, Expr* init_defaultVal = NULL);
+  UserType(Type* init_defType, Expr* init_defaultVal = NULL);
+  UserType(Expr* init_defExpr, Expr* init_defaultVal = NULL);
+  UserType(Expr* init_defExpr, Type* init_defType, Expr* init_defaultVal = NULL);
   COPY_DEF(UserType);
+  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseDefType(Traversal* traversal);
 
   void printDef(FILE* outfile);
@@ -338,28 +342,6 @@ class VariableType : public Type {
   VariableType(Type *init_type = NULL);
   COPY_DEF(VariableType);
   void traverseDefType(Traversal* traversal);
-  void codegen(FILE* outfile);
-};
-
-class ExprType : public Type {
- public:
-  Expr* expr;
-
-  ExprType(Expr *init_expr = NULL);
-  COPY_DEF(ExprType);
-  void traverseDefType(Traversal* traversal);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  virtual void print(FILE* outfile);
-  void codegen(FILE* outfile);
-};
-
-class UnresolvedType : public Type {
- public:
-  Vec<char*>* names;
-
-  UnresolvedType(Vec<char*>* init_names);
-  COPY_DEF(UnresolvedType);
-  void print(FILE* outfile);
   void codegen(FILE* outfile);
 };
 

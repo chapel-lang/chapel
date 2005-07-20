@@ -18,33 +18,33 @@ void InsertDefaultInitVariables::processSymbol(Symbol* sym) {
 
   // No type, no default init
   if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym)) {
-    if (var->type == dtUnknown) {
+    if (var->type == dtUnknown && !var->defPoint->exprType) {
       var->noDefaultInit = true;
     }
   }
 
 
   if (dynamic_cast<TypeSymbol*>(sym)) {
-    if (dynamic_cast<ArrayType*>(sym->type)) { // bail on array types
-      if (sym->type->defaultVal) {
-        sym->type->defaultVal->remove();
-        sym->type->defaultVal = NULL;
-      }
-      return; // they don't get default initialized yet
-      // the problem with not bailing is that the domain may not be
-      // declared where the default initial value is setup like in the
-      // common module.
-    }
-    if (dynamic_cast<IndexType*>(sym->type)) { // RED: bail on index types
-      if (sym->type->defaultVal) {
-        sym->type->defaultVal->remove();
-        sym->type->defaultVal = NULL;
-      }
-      return; // they don't get default initialized yet
-      // the problem is that index variables have a type symbol,
-      //but not the tuples when the IndexType happens to have a index type tuple
-    }
     if (sym->type->defaultVal) {
+
+
+      if (UserType* userType = dynamic_cast<UserType*>(sym->type)) {
+        if (userType->defType == dtUnknown &&
+            userType->defExpr &&
+            userType->defExpr->typeInfo() != dtUnknown) {
+          userType->defType = userType->defExpr->typeInfo();
+          userType->defExpr = NULL;
+          if (!userType->defaultVal) {
+            if (userType->defType->defaultVal) {
+              userType->defaultVal = userType->defType->defaultVal->copy();
+              fixup(userType->symbol->defPoint);
+            } else {
+              userType->defaultConstructor = userType->defType->defaultConstructor;
+            }
+          }
+        }
+      }
+
       char* temp_name = glomstrings(3, "_init_", sym->name, intstring(uid++));
       //RED -- initialization for index types.
       //Type* temp_type = sym->type;
