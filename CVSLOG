@@ -40049,3 +40049,18 @@ Modified files:
 Removed files:
 	chapel/test/classes/deitz/: test_myseq_record2.future 
 
+---------------------------------------------------------------------------
+
+07/20/05 16:36:50 -- deitz
+
+Log message:
+	Fixed a bug in sequence concatenation that showed up when the first
+	sequence was empty.
+
+Modified files:
+	chapel/modules/standard/: _chpl_seq.chpl 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/types/seq/bradc/: length.modify.good 
+
