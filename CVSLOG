@@ -39949,3 +39949,103 @@ Modified files:
 	chapel/compiler/util/: uniqueName.cpp Makefile.share 
 	chapel/compiler/include/: uniqueName.h vec.h 
 
+---------------------------------------------------------------------------
+
+07/20/05 16:36:15 -- deitz
+
+Log message:
+	Note: two new regressions:
+	
+	[Error matching compiler output for classes/deitz/test_anon_record1]
+	[Error matching compiler output for classes/deitz/test_anon_record3]
+	
+	Types are now parsed in as expressions allowing for things like
+	"foo(integer)" and "foo.elt_type".  These types are stored on the
+	DefExpr in the exprType field.  The Symbol's type is dtUnknown.  It is
+	filled in before analysis in many cases but only when the type is
+	fully qualified.  For example,
+	
+	  var i : integer;
+	
+	would be parsed in so that the DefExpr of i is a Variable of an
+	UnresolvedSymbol named integer.  After ScopeResolveSymbols, when the
+	Variable becomes a TypeSymbol, the Symbol::type field of i is set.
+	
+	Because types are now parsed as expressions, I changed the
+	implementation of CastExpr which used to only contain a Type* newType
+	along with an expression.  It now contains an Expr* newType and a
+	Type* type.  These are updated twice in the code.  Once in
+	InsertDefaultInitVariables (where it was used) and once in
+	PreAnalysisHacks to make sure that simple types are resolved.  Casts
+	to things like "foo(integer)" or "foo(t)" have not yet been tested or
+	supported.
+	
+	Similarly, UserType is changed to contain an Expr* defExpr and a Type*
+	defType rather than just a Type* type.
+	
+	Modified the traversal of DefExpr so that if it is a function, the
+	return type in the ExprType will be parsed within the ParamScope scope
+	of the function, allowing for things like
+	
+	  function f(type t, x : t) : t
+	
+	Previously this was hacked in ScopeResolveSymbols.
+	
+	Moved pass InsertAnonymousTypes up in the passlist now that arrays and
+	domains are out.  This pass can be dramatically simplified.
+	
+	Changed the parsing of anonymous records.  Rather than return a Type*
+	without a symbol, they now are a DefExpr in the type and the
+	TypeSymbol is named _anon_record*.  This is then handled in a post
+	parsing pass (currently InsertAnonymousTypes) where it is moved.
+	
+	Added verify routine to Variable to make sure that Variable::var is
+	not NULL.  It is a top priority to create verify methods for every
+	BaseAST subclass.
+	
+	Removed ExprType and UnresolvedType as they are no longer necessary.
+	
+	Removed the tricky code in ScopeResolveSymbols used to fixup up and
+	resolve types.
+	
+	Removed temporary compiler flag useExprType.
+	
+	Removed future for test/classes/deitz/test_myseq_record2 which I
+	noticed was working while making this change.
+	
+	Improved HtmlView so that it doesn't print out the ID number of an
+	UnresolvedSymbol nor allow it to be clicked on.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h driver.h expr.h symtab.h 
+	                          type.h 
+	chapel/compiler/main/: driver.cpp passlist.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: insertDefaultInitVariables.cpp 
+	                         reconstructIterators.cpp symtab.cpp 
+	chapel/compiler/traversals/: buildLValueFunctions.cpp 
+	                             htmlview.cpp 
+	                             insertAnonymousTypes.cpp 
+	                             insertAnonymousTypes.h 
+	                             insertLiteralTemps.cpp 
+	                             insertLiteralTemps.h 
+	                             preAnalysisHacks.cpp 
+	                             preAnalysisHacks.h 
+	                             removeNestedFunctions.cpp 
+	                             scopeResolveSymbols.cpp 
+	                             scopeResolveSymbols.h 
+	                             updateSymbols.cpp verifyASTType.cpp 
+	chapel/test/: REGRESSIONS 
+	chapel/test/classes/deitz/: test_myseq_record2.good 
+	chapel/test/flowanalysis/newast/: chain.good codegen_test.good 
+	                                  enum.good globalref.good 
+	                                  multiple_return.good 
+	                                  mutrec.good noargs.good 
+	                                  onearg.good sum_type-1.good 
+	                                  sum_type-2.good 
+	                                  usebeforedef.good 
+Removed files:
+	chapel/test/classes/deitz/: test_myseq_record2.future 
+
