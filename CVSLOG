@@ -39924,3 +39924,28 @@ Added files:
 	                               variables_in_nested_function-2.future 
 	                               variables_in_nested_function-2.good 
 
+---------------------------------------------------------------------------
+
+07/20/05 09:48:27 -- roxana
+
+Log message:
+	Completed a first version of name mangling scheme. It handles
+	function names, types, and global variables. Local variables
+	will be handled on scope basis. It will not be a problem to add
+	those once the present scheme is tested a bit more.
+	
+	There are few problems with testing its functionality. A brute
+	force demangling scheme works to the point that it does
+	interfere with some hidden convention used for cnames (uncomment)
+	the indicated code to try it out. Therefore I think Steve should
+	take a look and maybe we can come up with a way to slowly
+	integrate the new scheme once we are sure that it does what
+	we want. More functionality needs to and will be added.
+
+Modified files:
+	chapel/compiler/symtab/: findCollidingNames.h 
+	                         findCollidingNames.cpp 
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/util/: uniqueName.cpp Makefile.share 
+	chapel/compiler/include/: uniqueName.h vec.h 
+
