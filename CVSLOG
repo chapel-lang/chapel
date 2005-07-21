@@ -40246,3 +40246,13 @@ Log message:
 Modified files:
 	chapel/compiler/symtab/: findCollidingNames.cpp 
 
+---------------------------------------------------------------------------
+
+07/21/05 13:50:30 -- roxana
+
+Log message:
+	Forgot to comment out some code with my last commit.
+
+Modified files:
+	chapel/compiler/symtab/: findCollidingNames.cpp 
+
