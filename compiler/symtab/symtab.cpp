@@ -27,7 +27,6 @@ static SymScope* currentScope = NULL;
 static ModuleSymbol* currentModule = NULL;
 
 ModuleSymbol* commonModule = NULL;
-bool _dtinteger_IndexType_switch = false;
 
 static ModuleList* moduleList = new ModuleList();
 
@@ -453,35 +452,12 @@ DefExpr* Symboltable::finishModuleDef(ModuleSymbol* mod, AList<Stmt>* def) {
   return defExpr;
 }
 
-static AList<VarSymbol>* symsToVars(AList<Symbol>* idents, Type* type, 
-                                    Expr* init = NULL, 
-                                    varType vartag = VAR_NORMAL, 
-                                    consType constag = VAR_VAR) {
-
-  // BLC: Placeholder until low-level type inference is hooked in to
-  // handle some cases -- infer type from initializer if possible
-  if (type == dtUnknown && init) {
-    type = init->typeInfo();
+static AList<VarSymbol>* symsToVars(AList<Symbol>* idents, Type* type) {
+  AList<VarSymbol>* vlist = new AList<VarSymbol>();
+  for_alist(Symbol, ident, idents) {
+    vlist->insertAtTail(new VarSymbol(ident->name, type, VAR_NORMAL, VAR_VAR));
   }
-
-  Symbol* ident = idents->first();
-  AList<VarSymbol>* varList = new AList<VarSymbol>();
-  while (ident) {
-    VarSymbol* newVar;
-    // SJD: All this code is hacky. Let's copy the type because it has
-    // the domain expression and we need that to be duplicated for each
-    // array variable.
-    if (!type->symbol && dynamic_cast<ArrayType*>(type)) {
-      newVar = new VarSymbol(ident->name, type->copy(), vartag, constag);
-    } else {
-      newVar = new VarSymbol(ident->name, type, vartag, constag);
-    }
-    varList->insertAtTail(newVar);
-
-    ident = idents->next();
-  }
-
-  return varList;
+  return vlist;
 }
 
 DefExpr*
@@ -698,30 +674,7 @@ DefExpr* Symboltable::defineStructType(char* name, // NULL = anonymous
 ForLoopStmt* Symboltable::startForLoop(bool forall, AList<Symbol>* indices, 
                                        Expr* domain) {
   Symboltable::pushScope(SCOPE_FORLOOP);
-  AList<VarSymbol>* indexVars = NULL;
-  //RED: attempt to put in practice SJD's belief
-  if (!_dtinteger_IndexType_switch) {
-    // SJD: It is my thought that dtInteger should be dtUnknown. Then
-    // analysis can figure it out based on the type of the "domain"
-    // which may not be a domain but an array or a sequence too.
-    indexVars = symsToVars(indices, dtInteger);
-  }
-  //RED: here goes the index type logic
-  //Index type will typically be the domain->idxType if this is known
-  //E.g. for initialization of arrays
-  //Or dtUnknown, otherwise -- e.g. when after parsing a domain does not
-  //have an index type yet 
-  else {
-    DomainType* domain_type = dynamic_cast<DomainType*>(domain->typeInfo());
-    if (domain_type) {
-      indexVars = symsToVars(indices, domain_type->idxType);
-    } else{
-      //RED -- I think this should be dtUnknown if the index type of the domain is not known
-      //this is saving us from dangerous assumptions; another possibility was to make it dtinteger
-      //here, but I think that may cover incorrect behavior
-      indexVars = symsToVars(indices, dtUnknown);
-    }
-  }
+  AList<VarSymbol>* indexVars = symsToVars(indices, dtInteger);
   AList<DefExpr>* defExpr = new AList<DefExpr>();
   VarSymbol* var = indexVars->popHead();
   while (var) {
@@ -746,16 +699,6 @@ ForLoopStmt* Symboltable::finishForLoop(ForLoopStmt* forstmt, Stmt* body) {
   forstmt->setIndexScope(forScope);
 
   return forstmt;
-}
-
-
-ForallExpr* Symboltable::defineQueryDomain(char* name) {
-  DomainType* unknownDomType = new DomainType();
-  VarSymbol* newDomSym = 
-    new VarSymbol(name, unknownDomType, VAR_NORMAL, VAR_CONST);
-  Variable* newDom = new Variable(newDomSym);
-
-  return new ForallExpr(new AList<Expr>(newDom));
 }
 
 

@@ -9,7 +9,6 @@
 
 
 extern ModuleSymbol* commonModule;
-extern bool _dtinteger_IndexType_switch;
 
 class Symboltable {
  public:
@@ -90,8 +89,6 @@ class Symboltable {
   static ForLoopStmt* startForLoop(bool forall, AList<Symbol>* indices, 
                                    Expr* domain);
   static ForLoopStmt* finishForLoop(ForLoopStmt* forstmt, Stmt* body);
-
-  static ForallExpr* defineQueryDomain(char* name);
 
   static void print(FILE* outfile = stderr);
   static void dump(FILE* outfile = stderr);

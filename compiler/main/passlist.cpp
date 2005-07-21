@@ -38,10 +38,7 @@
 #include "../traversals/getstuff.h"
 #include "../traversals/htmlview.h"
 #include "../traversals/inlineFunctions.h"
-#include "../traversals/insertIndexType.h"
-#include "../traversals/insertAnonymousDomains.h"
 #include "../traversals/insertAnonymousTypes.h"
-#include "../traversals/insertElidedLoops.h"
 #include "../traversals/insertFunctionTemps.h"
 #include "../traversals/insertLiteralTemps.h"
 #include "../traversals/insertThisParameters.h"
@@ -87,7 +84,6 @@ REGISTER(DummyPass);
 REGISTER(BuildLValueFunctions);
 REGISTER(EliminateReturns);
 REGISTER(ExpandClassWiths);
-//REGISTER(FindUnknownTypes);
 REGISTER(FindUnresolvedSymbols);
 REGISTER(FilesToAST);
 REGISTER(Fixup);
@@ -95,11 +91,8 @@ REGISTER(Flatten);
 REGISTER(GetStuff);
 REGISTER(HtmlView);
 REGISTER(InlineFunctions);
-REGISTER(InsertIndexType);
-REGISTER(InsertAnonymousDomains);
 REGISTER(InsertAnonymousTypes);
 REGISTER(InsertDefaultInitVariables);
-REGISTER(InsertElidedLoops);
 REGISTER(InsertFunctionTemps);
 REGISTER(InsertLiteralTemps);
 REGISTER(InsertOutParameterInitializations);
@@ -128,7 +121,6 @@ REGISTER(RenameOverloadedFunctions);
 REGISTER(ResolveModuleUses);
 REGISTER(ResolveSymbols);       // SJD: Resolve symbols after analysis
 REGISTER(ResolveTypes);
-REGISTER(ResolveTupleTypes);
 REGISTER(RunAnalysis);
 REGISTER(ScopeResolveGotos);
 REGISTER(ScopeResolveSymbols);

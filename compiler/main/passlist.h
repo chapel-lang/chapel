@@ -23,8 +23,6 @@ PassInfo passlist[] = {
   RUN(Verify, ""), // this is a sanity check
   RUN(ExpandClassWiths, ""),
   RUN(Verify, ""), // this is a sanity check
-  RUN(InsertAnonymousDomains, ""),
-  RUN(Verify, ""), // this is a sanity check
   RUN(InsertAnonymousTypes, ""),
   RUN(Verify, ""), // this is a sanity check
   RUN(InsertLiteralTemps, ""),
@@ -44,8 +42,6 @@ PassInfo passlist[] = {
   RUN(ScopeResolveGotos, ""),
   RUN(Verify, ""), // this is a sanity check
   RUN(RenameOverloadedFunctions, ""),
-  RUN(Verify, ""), // this is a sanity check
-  RUN(InsertIndexType, ""),
   RUN(Verify, ""), // this is a sanity check
   RUN(BuildClassConstructorsEtc, ""),
   RUN(Verify, ""), // this is a sanity check
@@ -83,7 +79,6 @@ PassInfo passlist[] = {
   RUN(RemoveDeadSymbols, ""),
   RUN(ResolveTypes, ""),
   RUN(PostAnalysisCleanup, ""),
-  RUN(ResolveTupleTypes, ""),
   RUN(Verify, ""), // this is a sanity check
   RUN(ResolveSymbols, ""),
   RUN(Verify, ""), // this is a sanity check
@@ -96,10 +91,6 @@ PassInfo passlist[] = {
   RUN(SimpleNestedFunctionMove, ""),
   RUN(Verify, ""),
   RUN(RemoveNestedFunctions, ""),
-
-  // passes to normalize the basic AST after analysis
-  RUN(Verify, ""), // this is a sanity check
-  RUN(InsertElidedLoops, ""),
 
   // check the program's semantics
   RUN(Verify, ""), // this is a sanity check

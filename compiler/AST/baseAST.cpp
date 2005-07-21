@@ -308,7 +308,6 @@ char* astTypeName[AST_TYPE_END+1] = {
   "Cast",
   "CastLike",
   "FnCall",
-  "ArrayRef",
   "MemberAccess",
   "Reduce",
   "Tuple",
@@ -331,15 +330,11 @@ char* astTypeName[AST_TYPE_END+1] = {
   "BuiltinType",
   "FnType",
   "EnumType",
-  "DomainType",
-  "IndexType",
-  "ArrayType",
   "UserType",
   "StructuralType",
   "ClassType",
   "RecordType",
   "UnionType",
-  "TupleType",
   "MetaType",
   "SumType",
   "VariableType",
@@ -488,7 +483,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     AST_ADD_CHILD(CastLikeExpr, expr);
     goto LExprCommon;
   case EXPR_FNCALL:
-  case EXPR_ARRAYREF:
     goto LParenOpCommon;
   case EXPR_MEMBERACCESS:
     AST_ADD_CHILD(MemberAccess, base);
@@ -546,21 +540,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
   case TYPE_ENUM:
     ADD_LIST(EnumType, constants, DefExpr);
     goto LTypeCommon;
-  case TYPE_DOMAIN:
-    ADD_CHILD(DomainType, parent);
-    ADD_CHILD(DomainType, initExpr);
-    ADD_CHILD(DomainType, idxType);
-    goto LTypeCommon;
-  case TYPE_INDEX:
-    ADD_CHILD(IndexType, idxExpr);
-    ADD_CHILD(IndexType, domainType);
-    ADD_CHILD(IndexType, idxType);
-    goto LTypeCommon;
-  case TYPE_ARRAY:
-    ADD_CHILD(ArrayType, domain);
-    ADD_CHILD(ArrayType, domainType);
-    ADD_CHILD(ArrayType, elementType);
-    goto LTypeCommon;
   case TYPE_USER:
     AST_ADD_CHILD(UserType, defExpr);
     ADD_CHILD(UserType, defType);
@@ -579,9 +558,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     goto LStructuralTypeCommon;
   case TYPE_UNION:
     ADD_CHILD(UnionType, fieldSelector);
-    goto LStructuralTypeCommon;
-  case TYPE_TUPLE:
-    ADD_VEC(TupleType, components, Type);
     goto LStructuralTypeCommon;
   case TYPE_META:
     ADD_CHILD(MetaType, base);

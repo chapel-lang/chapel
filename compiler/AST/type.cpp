@@ -430,316 +430,6 @@ AList<Stmt>* EnumType::buildDefaultReadFunctionBody(ParamSymbol* arg) {
 }
 
 
-DomainType::DomainType(Expr* init_expr) :
-  Type(TYPE_DOMAIN, NULL),
-  numdims(0),
-  parent(NULL),
-  initExpr(init_expr),
-  idxType(NULL)
-{}
-
-
-DomainType::DomainType(int init_numdims) :
-  Type(TYPE_DOMAIN, NULL),
-  numdims(init_numdims),
-  parent(NULL),
-  idxType(NULL)
-{
-  //RED -- keep track of the initialization expression for domains
-  //can help with creating index types
-  initExpr = new IntLiteral(intstring(init_numdims), init_numdims);
-}
-
-
-void DomainType::computeRank(void) {
-  if (initExpr) {
-    if ((typeid(*initExpr) == typeid(IntLiteral)) ||
-        (initExpr->isParam() && initExpr->typeInfo() == dtInteger)) {
-      numdims = initExpr->intVal();
-      parent = NULL;
-    } else {
-      numdims = initExpr->rank();
-      parent = initExpr;
-    }
-    idxType = new IndexType(initExpr->copy());
-    idxType->domainType = this;
-  }
-}
-
-
-DomainType*
-DomainType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  DomainType* copy;
-  if (!parent) {
-    copy = new DomainType(numdims);
-  } else {
-    copy = new DomainType(COPY_INTERNAL(parent));
-  }
-  copy->addSymbol(symbol);
-  return copy;
-}
-
-
-int DomainType::rank(void) {
-  return numdims;
-}
-
-
-void DomainType::traverseDefType(Traversal* traversal) {
-  TRAVERSE(initExpr, traversal, false);
-}
-
-
-void DomainType::print(FILE* outfile) {
-  fprintf(outfile, "domain(");
-  if (!parent) {
-    if (numdims != 0) {
-      fprintf(outfile, "%d", numdims);
-    } else {
-      fprintf(outfile, "???");
-    }
-  } else {
-    parent->print(outfile);
-  }
-  fprintf(outfile, ")");
-}
-
-
-void DomainType::codegenDef(FILE* outfile) {
-  fprintf(outfile, "typedef struct _");
-  symbol->codegen(outfile);
-  fprintf(outfile, " {\n");
-  fprintf(outfile, "  _dom_perdim dim_info[%d];\n", numdims);
-  fprintf(outfile, "} ");
-  symbol->codegen(outfile);
-  fprintf(outfile, ";\n\n");
-}
-
-
-bool DomainType::blankIntentImpliesRef(void) {
-  return true;
-}
-
-
-bool DomainType::hasDefaultWriteFunction(void) {
-  return true;
-}
-
-
-AList<Stmt>* DomainType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
-  return new AList<Stmt>(new ExprStmt(new ParenOpExpr(new Variable(Symboltable::lookupInternal("_DomainWriteStopgap")), new AList<Expr>(new Variable(arg)))));
-}
-
-
-IndexType::IndexType(Type* init_idxType):
-  Type(TYPE_INDEX, init_idxType->defaultVal),
-  idxType(init_idxType) 
-{
-  domainType = NULL;
-}
-
-
-IndexType::IndexType(Expr* init_expr) :
-  Type(TYPE_INDEX, NULL),
-  idxExpr(init_expr),
-  domainType(NULL)
-{
-  if (typeid(*init_expr) == typeid(IntLiteral)) {
-    //RED: ugly hack -- apparently Tuple(1) does not work...
-    //I am not sure I understand why...
-    if (init_expr->intVal() == 1) {
-      idxType = dtInteger;
-    }
-    else {
-      TupleType* newTType = new TupleType();
-      for (int i = 0; i < init_expr->intVal(); i++){
-        newTType->addType(init_expr->typeInfo());
-      }
-      //idxType->defaultVal = newTType->defaultVal->copy();
-      //TypeSymbol* tupleSymbol = TypeSymbol::lookupOrDefineTupleTypeSymbol(&newTType->components);
-      idxType = newTType;
-      //idxType = tupleSymbol->type;
-    } 
-  } else {
-    //RED: init_expr in this case is a user-defined type
-    idxType = init_expr->typeInfo(); 
-  }
-}
-
-
-IndexType*
-IndexType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  IndexType* copy = new IndexType(COPY_INTERNAL(idxType));
-  copy->addSymbol(symbol);
-  return copy;
-}
-
-
-void IndexType::print(FILE* outfile) {
-  fprintf(outfile, "index(");
-  idxExpr->print(outfile);
-  fprintf(outfile, ")");
-}
-
-void IndexType::codegenDef(FILE* outfile) {
-  fprintf(outfile, "typedef ");
-  if (typeid(*idxType) == typeid(*dtInteger)) {
-    fprintf(outfile, "struct {\n");
-    int i = 0;
-    idxType->codegen(outfile);
-     fprintf(outfile, " _field%d;\n", ++i);
-    fprintf(outfile, "} ");
-    fprintf(outfile, " ");
-    symbol->codegen(outfile);
-    fprintf(outfile, ";\n\n");
-    return;
-  }
-  //fprintf(outfile, "typedef ");
-  TupleType* tt = dynamic_cast<TupleType*>(idxType);
-  if (tt){
-    fprintf(outfile, "struct {\n");
-    int i = 0;
-    forv_Vec(Type, component, tt->components) {
-      component->codegen(outfile);
-      fprintf(outfile, " _field%d;\n", ++i);
-    }
-    fprintf(outfile, "} ");
-    symbol->codegen(outfile);
-    fprintf(outfile, ";\n\n");
-  } else {
-    idxType->codegenDef(outfile);
-    symbol->codegen(outfile);
-    fprintf(outfile, ";\n\n");
-  }   
-}
-
-
-void IndexType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == defaultVal) {
-    defaultVal = dynamic_cast<Expr*>(new_ast);
-  } else if (old_ast == idxExpr) {
-    idxExpr = dynamic_cast<Expr*>(new_ast);
-  } else {
-    INT_FATAL(this, "Unexpected case in Type::replaceChild");
-  }
-}
-
-
-void IndexType::traverseDefType(Traversal* traversal) {
-  if (!(typeid(*idxExpr) == typeid(IntLiteral))) {
-    TRAVERSE(idxExpr, traversal, false);
-  }
-  TRAVERSE(idxType, traversal, false);
-  TRAVERSE(defaultVal, traversal, false);
-}
-
-
-Type* IndexType::getType(){
-  return idxType; 
-}
-
-
-ArrayType::ArrayType(Expr* init_domain, Type* init_elementType):
-  Type(TYPE_ARRAY, init_elementType->defaultVal),
-  domain(init_domain),
-  elementType(init_elementType)
-{ }
-
-
-ArrayType*
-ArrayType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  ArrayType* copy = new ArrayType(COPY_INTERNAL(domain), elementType);
-  copy->addSymbol(symbol);
-  return copy;
-}
-
-
-void ArrayType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == defaultVal) {
-    defaultVal = dynamic_cast<Expr*>(new_ast);
-  } else if (old_ast == domain) {
-    domain = dynamic_cast<Expr*>(new_ast);
-  } else {
-    INT_FATAL(this, "Unexpected case in Type::replaceChild");
-  }
-}
-
-
-void ArrayType::traverseDefType(Traversal* traversal) {
-  TRAVERSE(domain, traversal, false);
-  TRAVERSE(elementType, traversal, false);
-  TRAVERSE(defaultVal, traversal, false);
-}
-
-
-int ArrayType::rank(void) {
-  return domain->rank();
-}
-
-
-void ArrayType::print(FILE* outfile) {
-  //  fprintf(outfile, "[");
-  domain->print(outfile);
-  //  fprintf(outfile, "] ");
-  fprintf(outfile, " ");
-  elementType->print(outfile);
-}
-
-
-void ArrayType::codegenDef(FILE* outfile) {
-  fprintf(outfile, "struct _");
-  symbol->codegen(outfile);
-  fprintf(outfile, " {\n");
-  fprintf(outfile, "  int elemsize;\n");
-  fprintf(outfile, "  int size;\n");
-  fprintf(outfile, "  ");
-  elementType->codegen(outfile);
-  fprintf(outfile, "* base;\n");
-  fprintf(outfile, "  ");
-  elementType->codegen(outfile);
-  fprintf(outfile, "* origin;\n");
-  fprintf(outfile, "  ");
-  domainType->codegen(outfile);
-  fprintf(outfile, "* domain;\n");
-  fprintf(outfile, "  _arr_perdim dim_info[%d];\n", domainType->numdims);
-  fprintf(outfile, "};\n");
-}
-
-
-void ArrayType::codegenPrototype(FILE* outfile) {
-  fprintf(outfile, "typedef struct _");
-  symbol->codegen(outfile);
-  fprintf(outfile, " ");
-  symbol->codegen(outfile);
-  fprintf(outfile, ";\n");
-}
-
-
-void ArrayType::codegenDefaultFormat(FILE* outfile, bool isRead) {
-  elementType->codegenDefaultFormat(outfile, isRead);
-}
-
-
-bool ArrayType::blankIntentImpliesRef(void) {
-  return true;
-}
-
-
-bool ArrayType::hasDefaultWriteFunction(void) {
-  return true;
-}
-
-
-AList<Stmt>* ArrayType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
-  AList<Expr>* zero_inds = new AList<Expr>(new IntLiteral("0", 0));
-  AList<Stmt>* body = new AList<Stmt>(new ExprStmt(new ParenOpExpr(new Variable(Symboltable::lookupInternal("_ArrayWriteStopgap")), new AList<Expr>(new Variable(arg)))));
-  // The addition of this statement is somewhat of a kludge.  See the notes
-  // related to it in expr.cpp
-  body->insertAtTail(new ExprStmt(new ParenOpExpr(new Variable(new UnresolvedSymbol("write")), new AList<Expr>(new ArrayRef(new Variable(arg), zero_inds)))));
-  return body;
-}
-
-
 UserType::UserType(Type* init_defType, Expr* init_defaultVal) :
   Type(TYPE_USER, init_defaultVal),
   defExpr(NULL),
@@ -1065,10 +755,8 @@ AList<Stmt>* StructuralType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
     if (!first) {
       addWriteStmt(body, new StringLiteral(", "));
     }
-    if (!dynamic_cast<TupleType*>(this)) {
-      addWriteStmt(body, new StringLiteral(tmp->name));
-      addWriteStmt(body, new StringLiteral(" = "));
-    }
+    addWriteStmt(body, new StringLiteral(tmp->name));
+    addWriteStmt(body, new StringLiteral(" = "));
     addWriteStmt(body, new MemberAccess(new Variable(arg), tmp));
     first = false;
   }
@@ -1255,54 +943,6 @@ AList<Stmt>* UnionType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
 }
 
 
-TupleType::TupleType() :
-  StructuralType(TYPE_TUPLE)
-{
-  Symboltable::pushScope(SCOPE_CLASS);
-  setScope(Symboltable::popScope());
-}
-
-
-void TupleType::addType(Type* additionalType) {
-  SymScope* saveScope = Symboltable::setCurrentScope(structScope);
-  components.add(additionalType);
-  char* field_name = glomstrings(2, "_field", intstring(components.n));
-  addDeclarations(new AList<Stmt>(new ExprStmt(new DefExpr(new VarSymbol(field_name, additionalType)))));
-  Symboltable::setCurrentScope(saveScope);
-}
-
-
-TupleType*
-TupleType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  TupleType* newTupleType = new TupleType();
-  forv_Vec(Type, component, components) {
-    newTupleType->components.add(component);
-  }
-  copyGuts(newTupleType, clone, map);
-  return newTupleType;
-}
-
-
-void TupleType::traverseDefType(Traversal* traversal) {
-  for (int i=0; i<components.n; i++) {
-    TRAVERSE(components.v[i], traversal, false);
-  }
-  StructuralType::traverseDefType(traversal);
-}
-
-
-void TupleType::print(FILE* outfile) {
-  fprintf(outfile, "(");
-  for (int i=0; i<components.n; i++) {
-    if (i) {
-      fprintf(outfile, ", ");
-    }
-    components.v[i]->print(outfile);
-  }
-  fprintf(outfile, ")");
-}
-
-
 MetaType::MetaType(Type* init_base) :
   Type(TYPE_META, NULL),
   base(init_base)
@@ -1386,14 +1026,6 @@ void initTypes(void) {
   builtinTypes.add(dtNil);
 }
 
-
-void findInternalTypes(void) {
-  dtTuple = Symboltable::lookupInternalType("Tuple")->type;
-  dtIndex = Symboltable::lookupInternalType("Index")->type;
-  dtDomain = Symboltable::lookupInternalType("Domain")->type;
-  dtArray = Symboltable::lookupInternalType("Array")->type;
-}
-
 // you can use something like the following cache to 
 // find an existing SumType.
 
@@ -1457,4 +1089,11 @@ Type *getMetaType(Type *t) {
     return t->getMetaType();
   else
     return dtAny->getMetaType();
+}
+
+void findInternalTypes(void) {
+  dtTuple = Symboltable::lookupInternalType("Tuple")->type;
+  dtIndex = Symboltable::lookupInternalType("Index")->type;
+  dtDomain = Symboltable::lookupInternalType("Domain")->type;
+  dtArray = Symboltable::lookupInternalType("Array")->type;
 }

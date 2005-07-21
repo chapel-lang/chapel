@@ -53,11 +53,6 @@ static bool replaceTypeWithAnalysisType(Symbol* sym) {
     // BLC: if there's no type, apparently we can't call into analysis?
     return false;
   }
-  if (typeid(*(sym->type)) == typeid(IndexType)) {
-    // BLC: don't replace IndexTypes by what analysis has computed
-    // yet... it doesn't seem accurate enough yet
-    return false;
-  }
   if (is_Scalar_Type(sym->type) || sym->type->astType == TYPE_USER) {
     // BLC (quoting from John's 05/10/05 log message): "analysis
     // defers to declared scalar types since unused scalars would
@@ -142,24 +137,6 @@ void ResolveTypes::processSymbol(Symbol* sym) {
     if (!type_is_used(symType)) {
       INT_FATAL(sym, "type_is_used assertion failure\n"
                 "(likely to be due to dead code not being eliminated)");
-    }
-  }
-}
-
-ResolveTupleTypes::ResolveTupleTypes() {
-  //  whichModules = MODULES_CODEGEN;
-}
-
-void ResolveTupleTypes::processSymbol(Symbol* sym) {
-  if (!analyzeAST)
-    return;
-  if (TypeSymbol *t = dynamic_cast<TypeSymbol*>(sym)) {
-    if (TupleType *tt = dynamic_cast<TupleType*>(t->type)) {
-      tt->components.clear();
-      forv_Vec(Symbol, v, tt->fields) {
-        Type *t = type_info(v);
-        tt->components.add(t);
-      }
     }
   }
 }

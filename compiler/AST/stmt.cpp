@@ -485,35 +485,7 @@ void ForLoopStmt::codegenStmt(FILE* outfile) {
   DefExpr* aVar = indices->first();
   fprintf(outfile, "{\n");
   int rank = 0;
-  IndexType* index_type = NULL;
   
-  //RED -- added support for generating code for IndexTypes which are tuples
-  //This extra branching is ugly, but the only way to get around a strong bias
-  //towards integer indices
-  index_type = dynamic_cast<IndexType*>(aVar->sym->type);
-  if (index_type){
-    //aVar->codegen(outfile);
-    indices_def->sym->codegenDef(outfile);
-    fprintf(outfile, "\n");
-    TupleType* tt = dynamic_cast<TupleType*>(index_type->getType());
-    if (tt){
-      rank = tt->components.n;
-    }
-    for (int i=0; i<rank; i++) {
-      fprintf(outfile, "_FOR");
-      if (forall) {
-        fprintf(outfile, "ALL");
-      }
-      fprintf(outfile, "(");
-      //aVar->sym->codegen(outfile);
-      aVar->sym->codegen(outfile);
-      fprintf(outfile, "._field%d", i + 1);
-      
-      fprintf(outfile, ", ");
-      domain->codegen(outfile);
-      fprintf(outfile, ", %d) {\n", i);
-    }
-  } else {    
     // is it a challenge that we may not know the domain exprs at that point?
     while (aVar) {
       aVar->sym->codegenDef(outfile);
@@ -569,7 +541,6 @@ void ForLoopStmt::codegenStmt(FILE* outfile) {
         aVar = indices->next();
       }
     }
-  }
   
   block->codegen(outfile);
   fprintf(outfile, "\n");

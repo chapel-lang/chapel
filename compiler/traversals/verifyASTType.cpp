@@ -187,11 +187,6 @@ static void verifyASTType(BaseAST* ast) {
       INT_FATAL(ast, "Unexpected AST expression type: EXPR_FNCALL");
     }
     break;
-  case EXPR_ARRAYREF:
-    if (typeid(*ast) != typeid(ArrayRef)) {
-      INT_FATAL(ast, "Unexpected AST expression type: EXPR_ARRAYREF");
-    }
-    break;
   case EXPR_MEMBERACCESS:
     if (typeid(*ast) != typeid(MemberAccess)) {
       INT_FATAL(ast, "Unexpected AST expression type: EXPR_MEMBERACCESS");
@@ -292,21 +287,6 @@ static void verifyASTType(BaseAST* ast) {
       INT_FATAL(ast, "Unexpected AST type type: TYPE_ENUM");
     }
     break;
-  case TYPE_DOMAIN:
-    if (typeid(*ast) != typeid(DomainType)) {
-      INT_FATAL(ast, "Unexpected AST type type: TYPE_DOMAIN");
-    }
-    break;
-  case TYPE_INDEX:
-    if (typeid(*ast) != typeid(IndexType)) {
-      INT_FATAL(ast, "Unexpected AST type type: TYPE_INDEX");
-    }
-    break;
-  case TYPE_ARRAY:
-    if (typeid(*ast) != typeid(ArrayType)) {
-      INT_FATAL(ast, "Unexpected AST type type: TYPE_ARRAY");
-    }
-    break;
   case TYPE_USER:
     if (typeid(*ast) != typeid(UserType)) {
       INT_FATAL(ast, "Unexpected AST type type: TYPE_USER");
@@ -330,11 +310,6 @@ static void verifyASTType(BaseAST* ast) {
   case TYPE_UNION:
     if (typeid(*ast) != typeid(UnionType)) {
       INT_FATAL(ast, "Unexpected AST type type: TYPE_UNION");
-    }
-    break;
-  case TYPE_TUPLE:
-    if (typeid(*ast) != typeid(TupleType)) {
-      INT_FATAL(ast, "Unexpected AST type type: TYPE_TUPLE");
     }
     break;
   case TYPE_META:

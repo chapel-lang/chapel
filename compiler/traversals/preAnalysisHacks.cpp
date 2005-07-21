@@ -6,16 +6,14 @@
 
 void PreAnalysisHacks::postProcessStmt(Stmt* stmt) {
   if (ForLoopStmt* loop = dynamic_cast<ForLoopStmt*>(stmt)) {
-    if (dynamic_cast<Tuple*>(loop->domain) ||
-        dynamic_cast<DomainType*>(loop->domain->typeInfo())) {
-      return;
+    if (!dynamic_cast<Tuple*>(loop->domain)) {
+      loop->domain->replace(
+        new ParenOpExpr(
+          new MemberAccess(
+            loop->domain->copy(),
+            new UnresolvedSymbol("_forall")),
+          new AList<Expr>()));
     }
-    loop->domain->replace(
-      new ParenOpExpr(
-        new MemberAccess(
-          loop->domain->copy(),
-          new UnresolvedSymbol("_forall")),
-        new AList<Expr>()));
   }
 }
 

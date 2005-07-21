@@ -101,13 +101,6 @@ class AList : public BaseAST {
        node != tail;                                                    \
        node = dynamic_cast<elemType*>(nextNode), nextNode = node->next)
 
-#define _for_all_elems_nocache(node)                                    \
-  elemType* node;                                                       \
-  for (node = dynamic_cast<elemType*>(head->next);                      \
-       node != tail;                                                    \
-       node = dynamic_cast<elemType*>(node->next))
-
-
 template <class elemType>
 AList<elemType>::AList() :
   BaseAST(LIST),
@@ -342,9 +335,7 @@ void AList<elemType>::printDef(FILE* outfile, char* separator) {
 
 template <class elemType>
 void AList<elemType>::codegen(FILE* outfile, char* separator) {
-  // we use the nocache version here only to support the _ArrayWriteStopgap hack
-  // it relies on the ability to remove a "next" statement at codegen time
-  _for_all_elems_nocache(node) {
+  _for_all_elems(node) {
     node->codegen(outfile);
     if (node->next != tail) {
       fprintf(outfile, "%s", separator);

@@ -108,10 +108,7 @@ void SpecializeParenOpExprs::postProcessStmt(Stmt* stmt) {
 void SpecializeParenOpExprs::postProcessExpr(Expr* expr) {
   Expr* paren_replacement = NULL;
   if (ParenOpExpr* paren = dynamic_cast<ParenOpExpr*>(expr)) {
-    if (dynamic_cast<ArrayType*>(paren->baseExpr->typeInfo())) {
-      if (!analyzeAST)
-        paren_replacement = new ArrayRef(paren->baseExpr, paren->argList);
-    } else if (Variable* baseVar = dynamic_cast<Variable*>(paren->baseExpr)) {
+    if (Variable* baseVar = dynamic_cast<Variable*>(paren->baseExpr)) {
       if (StructuralType* ctype = dynamic_cast<StructuralType*>(baseVar->var->type)) {
         if (dynamic_cast<TypeSymbol*>(baseVar->var)) {
           if (ctype->defaultConstructor) {

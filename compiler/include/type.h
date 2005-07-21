@@ -72,7 +72,6 @@ class Type : public BaseAST {
   virtual bool implementedUsingCVals(void);
   
   //RED: facility to treat a type like other than this, if needed.
-  //E.g. an IndexType would be treated as TupleType in some situations.
   virtual Type* getType();
 
   virtual bool hasDefaultWriteFunction(void);
@@ -113,63 +112,6 @@ class EnumType : public Type {
   virtual AList<Stmt>* buildDefaultWriteFunctionBody(ParamSymbol* arg);
   virtual bool hasDefaultReadFunction(void);
   virtual AList<Stmt>* buildDefaultReadFunctionBody(ParamSymbol* arg);
-};
-
-class IndexType;  // break circular forward reference
-
-class DomainType : public Type {
- public:
-  int numdims;
-  Expr* parent;
-  //upon creation, each domain creates an index type;
-  //RED -- it seems useful to keep track of the init expr
-  Expr* initExpr;  
-  IndexType* idxType;
-
-  DomainType(Expr* init_expr = NULL);
-  DomainType(int init_numdims);
-  COPY_DEF(DomainType);
-  void computeRank(void);
-
-  int rank(void);
-
-  void traverseDefType(Traversal* traversal);
-
-  void print(FILE* outfile);
-  void codegenDef(FILE* outfile);
-
-  virtual bool blankIntentImpliesRef(void);
-
-  virtual bool hasDefaultWriteFunction(void);
-  virtual AList<Stmt>* buildDefaultWriteFunctionBody(ParamSymbol* arg);
-};
-
-//Roxana -- Index should not by subtype of Domain
-//class IndexType : public DomainType {
-class IndexType : public Type {
- public:
-  //the expression this index is instantiated from: e.g., index(2)
-  //or
-  //pointer to the domain, set to NULL until index(D) is used.
-  //then domain is used for bounds check
-  Expr* idxExpr;
-  DomainType* domainType;
-  //the type of the index: k-tuple for arithmetic domains, scalar type, or enum, record, union of scalar type
-  //for indefinite and opaque domains.
-  //taken from the domain it is associated with, or created anew otherwise
-  Type* idxType;
-
-  //IndexType();
-  IndexType(Expr* init_expr = NULL);
-  //IndexType(int init_numdims);
-  IndexType(Type* init_idxType);
-  COPY_DEF(IndexType);
-  void codegenDef(FILE* outfile);
-  
-  void print(FILE* outfile);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseDefType(Traversal* traversal);
-  Type* getType();
 };
 
 
@@ -280,44 +222,6 @@ class UnionType : public StructuralType {
 };
 
 
-class TupleType : public StructuralType {
- public:
-  Vec<Type*> components;
-
-  TupleType(void);
-  COPY_DEF(TupleType);
-  void traverseDefType(Traversal* traversal);
-  void print(FILE* outfile);
-
-  void addType(Type* additionalType);
-};
-
-
-class ArrayType : public Type {
- public:
-  Expr* domain;
-  DomainType* domainType;
-  Type* elementType;
-
-  ArrayType(Expr* init_domain, Type* init_elementType);
-  COPY_DEF(ArrayType);
-
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseDefType(Traversal* traversal);
-
-  int rank(void);
-
-  void print(FILE* outfile);
-  void codegenDef(FILE* outfile);
-  void codegenPrototype(FILE* outfile);
-  void codegenDefaultFormat(FILE* outfile, bool isRead);
-
-  virtual bool blankIntentImpliesRef(void);
-
-  virtual bool hasDefaultWriteFunction(void);
-  virtual AList<Stmt>* buildDefaultWriteFunctionBody(ParamSymbol* arg);
-};
-
 class MetaType : public Type {
  public:
   Type* base;
@@ -369,15 +273,17 @@ TYPE_EXTERN Type* dtFloat;
 TYPE_EXTERN Type* dtComplex;
 TYPE_EXTERN Type* dtString;
 
+TYPE_EXTERN Type* dtTuple;
+TYPE_EXTERN Type* dtIndex;
+TYPE_EXTERN Type* dtDomain;
+TYPE_EXTERN Type* dtArray;
+void findInternalTypes(void);
+
 TYPE_EXTERN Type* dtAny;
 TYPE_EXTERN Type* dtNumeric;
 TYPE_EXTERN Type* dtObject;
 
 // abstract base types
-TYPE_EXTERN Type* dtTuple;
-TYPE_EXTERN Type* dtIndex;
-TYPE_EXTERN Type* dtDomain;
-TYPE_EXTERN Type* dtArray;
 TYPE_EXTERN Type* dtSequence;
 
 // other funny types
@@ -388,7 +294,6 @@ TYPE_EXTERN Vec<Type*> builtinTypes;
 
 
 void initTypes(void);
-void findInternalTypes(void);
 Type *find_or_make_sum_type(Vec<Type *> *types);
 int is_Scalar_Type(Type *t);
 int is_Reference_Type(Type *t);

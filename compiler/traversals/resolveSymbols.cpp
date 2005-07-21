@@ -282,18 +282,6 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
     return;
   }
 
-  // Specialize Array references and Tuple selects
-  Expr* paren_replacement = NULL;
-  if (ParenOpExpr* paren = dynamic_cast<ParenOpExpr*>(expr)) {
-    if (dynamic_cast<ArrayType*>(paren->baseExpr->typeInfo())) {
-      paren_replacement = new ArrayRef(paren->baseExpr, paren->argList);
-    }
-  }
-  if (paren_replacement) {
-    expr->replace(paren_replacement);
-    expr = paren_replacement;
-  }
-
   // Resolve FnCalls
   if (typeid(*expr) == typeid(ParenOpExpr)) {
     ParenOpExpr* paren = dynamic_cast<ParenOpExpr*>(expr);

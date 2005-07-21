@@ -243,19 +243,7 @@ void VarSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 void VarSymbol::traverseDefSymbol(Traversal* traversal) {
-  SymScope* saveScope = NULL;
-  /** SJD: assumes no nested arrays, should use a traversal to push scopes **/
-  if (ArrayType* array_type = dynamic_cast<ArrayType*>(type)) {
-    if (ForallExpr* forall = dynamic_cast<ForallExpr*>(array_type->domain)) {
-      if (forall->indexScope) {
-        saveScope = Symboltable::setCurrentScope(forall->indexScope);
-      }
-    }
-  }
   TRAVERSE(type, traversal, false);
-  if (saveScope) {
-    Symboltable::setCurrentScope(saveScope);
-  }
 }
 
 
@@ -507,38 +495,6 @@ void TypeSymbol::codegenDef(FILE* outfile) {
   }
 
   type->codegenDef(outfile);
-}
-
-
-/***
- *** SJD: I'm assuming a tuple with component types that are all
- *** primitive types and I'm declaring this thing with a mangled name
- *** in the commonModule.  This won't be possible when we support
- *** tuples of different types.  In this case, they may have to be
- *** defined in the scope they are used.
- ***/
-TypeSymbol* TypeSymbol::lookupOrDefineTupleTypeSymbol(Vec<Type*>* components) {
-  char* name = glomstrings(1, "_tuple");
-  forv_Vec(Type, component, *components) {
-    name = glomstrings(3, name, "_", component->symbol->name);
-  }
-  SymScope* saveScope = Symboltable::setCurrentScope(commonModule->modScope);
-  TypeSymbol* tupleSym =
-    dynamic_cast<TypeSymbol*>(Symboltable::lookupInCurrentScope(name));
-  if (!tupleSym) {
-    TupleType* tupleType = new TupleType();
-    forv_Vec(Type, component, *components) {
-      tupleType->addType(component);
-    }
-    tupleSym = new TypeSymbol(name, tupleType);
-    tupleType->addSymbol(tupleSym);
-    DefExpr* defExpr = new DefExpr(tupleSym);
-    tupleType->structScope->setContext(NULL, tupleSym, defExpr);
-    commonModule->stmts->insertAtHead(new ExprStmt(defExpr));
-    buildDefaultStructuralTypeMethods(tupleType);
-  }
-  Symboltable::setCurrentScope(saveScope);
-  return tupleSym;
 }
 
 

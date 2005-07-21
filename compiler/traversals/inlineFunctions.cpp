@@ -65,8 +65,7 @@ bool InlineFunctions::isFormalParamOut(ParamSymbol* p_sym) {
 }
 
 bool InlineFunctions::isFormalParamRef(ParamSymbol* p_sym) {
-  return ((p_sym->intent == PARAM_REF) || dynamic_cast<ArrayType*>(p_sym->type) || 
-          dynamic_cast<ClassType*>(p_sym->type) || dynamic_cast<DomainType*>(p_sym->type));
+  return (p_sym->intent == PARAM_REF) || dynamic_cast<ClassType*>(p_sym->type);
 }
 
 bool InlineFunctions::isTypeVar(ParamSymbol* p_sym) {

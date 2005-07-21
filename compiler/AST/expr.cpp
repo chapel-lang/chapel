@@ -227,11 +227,6 @@ static EXPR_RW expr_read_written(Expr* expr) {
     if (dynamic_cast<Tuple*>(parent)) {
       return expr_read_written(parent);
     }
-    if (ArrayRef* array_expr = dynamic_cast<ArrayRef*>(parent)) {
-      if (expr == array_expr->baseExpr) {
-        return expr_read_written(parent);
-      }
-    }
     if (AssignOp* assignment = dynamic_cast<AssignOp*>(parent)) {
       if (assignment->left == expr) {
         return expr_w;
@@ -879,11 +874,6 @@ Expr::isRef(void) {
     if (VarSymbol* vs = dynamic_cast<VarSymbol*>(var->var))
       if (vs->varClass == VAR_REF)
         return true;
-//   if (FnCall *fc = dynamic_cast<FnCall*>(this))
-//     if (Variable *fn_var = dynamic_cast<Variable*>(fc->baseExpr))
-//       if (FnSymbol *fn = dynamic_cast<FnSymbol*>(fn_var->var))
-//         if (fn->_getter && is_Value_Type(fn->retType))
-//           return true;
   return false;
 }
 
@@ -917,23 +907,6 @@ void AssignOp::codegen(FILE* outfile) {
     leftType->codegen(outfile);
     fprintf(outfile, ")(intptr_t)");
     right->codegen(outfile);
-  } else if (dynamic_cast<IndexType*>(left->typeInfo()) || dynamic_cast<IndexType*>(right->typeInfo())) {
-    IndexType* origLeft = dynamic_cast<IndexType*>(left->typeInfo());
-    IndexType* origRight = dynamic_cast<IndexType*>(right->typeInfo());
-    
-    if ((origLeft != NULL ) && (origLeft->getType() == dtInteger)) { 
-      if (Variable* var = dynamic_cast<Variable*>(left)) {
-        var->var->codegen(outfile);
-        fprintf(outfile, "._field1");
-      } 
-    } else left->codegen(outfile);
-    fprintf(outfile, " %s ", cGetsOp[type]);
-    if ((origRight != NULL) && (origRight->getType() == dtInteger)){    
-      if (Variable* var = dynamic_cast<Variable*>(right)) {
-        var->var->codegen(outfile);
-        fprintf(outfile, "._field1");
-      }
-    } else right->codegen(outfile);
   } else {
     left->codegen(outfile);
     fprintf(outfile, " %s ", cGetsOp[type]);
@@ -1118,86 +1091,6 @@ void ParenOpExpr::codegen(FILE* outfile) {
 }
 
 
-ArrayRef::ArrayRef(Expr* init_base, AList<Expr>* init_arg) :
-  ParenOpExpr(init_base, init_arg)
-{
-  astType = EXPR_ARRAYREF;
-}
-
-
-ArrayRef*
-ArrayRef::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new ArrayRef(COPY_INTERNAL(baseExpr), COPY_INTERNAL(argList));
-}
-
-
-Type* ArrayRef::typeInfo(void) {
-  if (analyzeAST && !RunAnalysis::runCount) {
-    return dtUnknown;
-  }
-
-  // The Type of this expression may be a user type in which case we
-  // need to walk past these names to the real definition of the array
-  // type
-  Type* baseExprType = baseExpr->typeInfo();
-  while (typeid(*baseExprType) == typeid(UserType)) {
-    baseExprType = ((UserType*)baseExprType)->defType;
-  }
-  // At this point, if we don't have an array type, we shouldn't
-  // be in an array reference...
-  ArrayType* arrayType = dynamic_cast<ArrayType*>(baseExprType);
-  if (!arrayType) {
-    INT_FATAL(this, "array type is Null?");
-  }
-  // BLC: Assumes that each array index fully indexes array.
-  // This isn't how David thinks about it, and more care would
-  // need to be taken to get that scheme implemented.  Just
-  // trying to get something reasonable implemented now.
-  return arrayType->elementType;
-}
-
-
-bool ArrayRef::isConst(void) {
-  return baseExpr->isConst();
-}
-
-
-void ArrayRef::codegen(FILE* outfile) {
-  fprintf(outfile, "_ACC%d(", baseExpr->rank());
-  baseExpr->codegen(outfile);
-  fprintf(outfile, ", ");
-  // BLC: This seems like a hack since argList can be a list in general
-  IndexType* index_type = NULL;
-  //RED -- added support for code generation in case of index type 
-  //Specialized for tuple and integer
-  if (argList->length() == 1) {
-    index_type = dynamic_cast<IndexType*>(argList->only()->typeInfo());
-  }
-  if (index_type) {
-    int rank = 0;
-    TupleType* tt = dynamic_cast<TupleType*>(index_type->getType());
-    if (tt){
-      rank = tt->components.n;
-      for (int i=0; i<rank; i++) {
-        argList->codegen(outfile);
-        fprintf(outfile, "._field%d", i + 1);
-        if (i < rank - 1) fprintf(outfile, ",");
-     }
-    } else {
-      if (index_type->getType() == dtInteger){
-        int i = 0;
-        argList->codegen(outfile);
-        fprintf(outfile, "._field%d", i + 1);
-      }
-    } 
-    fprintf(outfile, ")");
-  } else {
-    argList->codegen(outfile, ", ");
-    fprintf(outfile, ")");
-  }
-}
-
-
 FnCall::FnCall(Expr* init_base, AList<Expr>* init_arg) :
   ParenOpExpr(init_base, init_arg)
 {
@@ -1234,7 +1127,7 @@ FnSymbol* FnCall::findFnSymbol(void) {
 
 void FnCall::codegen(FILE* outfile) {
 
-  // This is Kludge until arrays, unions, enums have write functions
+  // This is Kludge until unions and enums have write functions
 
   ///
   /// BEGIN KLUDGE
@@ -1242,7 +1135,6 @@ void FnCall::codegen(FILE* outfile) {
 
   if (Variable* variable = dynamic_cast<Variable*>(baseExpr)) {
     if (variable->var == Symboltable::lookupInternal("_UnionWriteStopgap")) {
-      // STEVE:  You are implementing a stopgap write routine for unions in codegeneration
       UnionType* unionType = dynamic_cast<UnionType*>(argList->only()->typeInfo());
       fprintf(outfile, "if (_UNION_CHECK_QUIET(val, _%s_union_id__uninitialized)) {\n",
               unionType->symbol->cname);
@@ -1269,51 +1161,6 @@ void FnCall::codegen(FILE* outfile) {
       fprintf(outfile, "} else {\n");
       fprintf(outfile, "_chpl_write_string(\"impossible\"); exit(0);\n");
       fprintf(outfile, "}\n");
-      return;
-    } else if (variable->var == Symboltable::lookupInternal("_ArrayWriteStopgap")) {
-      ArrayType* arrayType = dynamic_cast<ArrayType*>(argList->only()->typeInfo());
-      FnSymbol* innerFn;
-      if (ExprStmt* innerFnStmt = dynamic_cast<ExprStmt*>(parentStmt->next)) {
-
-        innerFn = dynamic_cast<FnSymbol*>(dynamic_cast<Variable*>(dynamic_cast<FnCall*>(innerFnStmt->expr)->baseExpr)->var);
-
-      } else if (BlockStmt* innerFnStmt = dynamic_cast<BlockStmt*>(parentStmt->next)) {
-        Stmt* last = innerFnStmt->body->last();
-        if (ExprStmt* innerFnStmt = dynamic_cast<ExprStmt*>(last)) {
-
-          innerFn = dynamic_cast<FnSymbol*>(dynamic_cast<Variable*>(dynamic_cast<FnCall*>(innerFnStmt->expr)->baseExpr)->var);
-        }
-      }
-
-      for (int dim = 0; dim < arrayType->domainType->numdims; dim++) {
-        fprintf(outfile, "  int i%d;\n", dim);
-      }
-      arrayType->domainType->codegen(outfile);
-      fprintf(outfile, "* const dom = val->domain;\n\n");
-      for (int dim = 0; dim < arrayType->domainType->numdims; dim++) {
-        fprintf(outfile, "for (i%d=dom->dim_info[%d].lo; i%d<=dom"
-                "->dim_info[%d].hi; i%d+=dom->dim_info[%d].str) {\n",
-                dim, dim, dim, dim, dim, dim);
-      }
-      fprintf(outfile, "%s(_ACC%d((*val), i0", innerFn->cname, arrayType->domainType->numdims);
-      for (int dim = 1; dim < arrayType->domainType->numdims; dim++) {
-        fprintf(outfile, ", i%d", dim);
-      }
-      fprintf(outfile, "));\n");
-      fprintf(outfile, "if (i%d<dom->dim_info[%d].hi) {\n",
-              arrayType->domainType->numdims-1, arrayType->domainType->numdims-1);
-      fprintf(outfile, "_chpl_write_string(\" \");\n");
-      fprintf(outfile, "}\n");
-      fprintf(outfile, "}\n");
-      for (int dim = 1; dim < arrayType->domainType->numdims; dim++) {
-        fprintf(outfile, "_chpl_write_linefeed();\n");
-        fprintf(outfile, "}\n");
-      }
-      // This is a kludge to remove a statement that was inserted only to grab
-      // some information from it.  Once it is removed, we can also fix
-      // AList::codegen() to use a normal iterator (it currently uses one that
-      // doesn't cache a lookahead
-      parentStmt->next->remove();
       return;
     } else if (variable->var == Symboltable::lookupInternal("_EnumWriteStopgap")) {
       EnumType* enumType = dynamic_cast<EnumType*>(argList->only()->typeInfo());
@@ -1342,9 +1189,6 @@ void FnCall::codegen(FILE* outfile) {
       fprintf(outfile, " type\";\n");
       fprintf(outfile, "printError(message);\n");
       fprintf(outfile, "}\n");
-      return;
-    } else if (variable->var == Symboltable::lookupInternal("_DomainWriteStopgap")) {
-      fprintf(outfile, "printf(\"%%d..%%d by %%d\", val->dim_info[0].lo, val->dim_info[0].hi, val->dim_info[0].str);\n");
       return;
     }
   }
@@ -1847,21 +1691,7 @@ void ForallExpr::traverseExpr(Traversal* traversal) {
 
 
 Type* ForallExpr::typeInfo(void) {
-  if (analyzeAST && !RunAnalysis::runCount) {
-    return dtUnknown;
-  }
-
-  Type* exprType = domains->only()->typeInfo();
-
-  if (typeid(*exprType) == typeid(DomainType)) {
-    return exprType;
-  } else {
-    int rank = 0;
-    for_alist(Expr, domainExprs, domains) {
-      rank++;
-    }
-    return new DomainType(rank);
-  }
+  return dtUnknown;
 }
 
 
@@ -1889,13 +1719,8 @@ void ForallExpr::codegen(FILE* outfile) {
 }
 
 
-ForallExpr* unknownDomain;
 
 void initExpr(void) {
-  Symbol* pst = new Symbol(SYMBOL, "?anonDomain");
-  Variable* var = new Variable(pst);
-  unknownDomain = new ForallExpr(new AList<Expr>(var));
-  
   gNil = Symboltable::defineSingleVarDef("nil", dtNil, NULL, VAR_NORMAL, VAR_CONST)->sym;
   dtNil->defaultVal = new Variable(gNil);
 }

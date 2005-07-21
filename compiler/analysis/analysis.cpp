@@ -50,7 +50,6 @@ static Sym *method_token = 0;
 static Sym *setter_token = 0;
 static Sym *set_symbol = 0;
 static Sym *make_seq_symbol = 0;
-static Sym *make_chapel_tuple_symbol = 0;
 static Sym *chapel_defexpr_symbol = 0;
 
 static Sym *sym_index = 0;
@@ -767,13 +766,6 @@ map_asts(Vec<BaseAST *> &syms) {
     map_baseast(s);
 }
 
-static void 
-build_record_type(Type *t, Sym *parent = 0) {
-  t->asymbol->sym->type_kind = Type_RECORD;
-  if (parent)
-    t->asymbol->sym->inherits_add(parent);
-}
-
 static void
 build_enum_element(Sym *enum_sym, Sym *element_sym, int i) {
   element_sym->inherits_add(enum_sym);
@@ -920,37 +912,6 @@ build_type(Type *t, bool make_default = true) {
         t->asymbol->sym->has.add(ss);
         i++;
       }
-      break;
-    }
-    case TYPE_DOMAIN: 
-      build_record_type(t, sym_domain);
-      break;
-    case TYPE_INDEX: {
-      IndexType *it = dynamic_cast<IndexType*>(t);
-      build_record_type(t, sym_index);
-      Sym *s = it->asymbol->sym;
-      s->element = new_sym();
-      s->element->type = it->idxType->asymbol->sym;
-      s->element->is_var = 1;
-      s->element->is_external = 1;
-      if (it->domainType)
-        s->domain = it->domainType->asymbol->sym;
-      break;
-    }
-    case TYPE_ARRAY: {
-      ArrayType *at = dynamic_cast<ArrayType*>(t);
-      build_record_type(t, sym_array); 
-      Sym *s = at->asymbol->sym;
-      s->element = new_sym();
-      s->element->type = at->elementType->asymbol->sym;
-      s->element->is_var = 1;
-      s->element->is_external = 1;
-      s->domain = at->domainType->asymbol->sym;
-      break;
-    }
-    case TYPE_TUPLE: {
-      t->asymbol->sym->type_kind = Type_PRODUCT;
-      t->asymbol->sym->inherits_add(sym_tuple);
       break;
     }
     case TYPE_USER: {
@@ -1264,21 +1225,6 @@ resolve_labels(BaseAST *ast, LabelMap *labelmap,
 }
 
 static Sym *
-gen_set_array(Sym *array, ArrayType *at, Sym *val, AInfo *ast) {
-  // currently just a hack to set the first element
-  Code **c = &ast->code;
-  Sym *index_sym = new_sym();
-  Code *start_index = if1_send(if1, c, 3, 1, sym_primitive, domain_start_index_symbol, 
-                               at->domainType->asymbol->sym, index_sym);
-  start_index->ast = ast;
-  Sym *res = new_sym();
-  Code *set_element = if1_send(if1, c, 5, 1, sym_primitive, array_set_symbol, 
-                                  array, index_sym, val, res);
-  set_element->ast = ast;
-  return res;
-}
-
-static Sym *
 make_symbol(char *name) {
   Sym *s = if1_make_symbol(if1, name);
   s->global_scope = 1;
@@ -1295,36 +1241,6 @@ make_const(Sym *type, char *c, Immediate *imm) {
 static Sym *
 constructor_name(Type *t) {
   return make_symbol(t->defaultConstructor->asymbol->sym->name);
-}
-
-static void
-gen_alloc(Sym *s, Sym *type, AInfo *ast, int is_this = 0) {
-  Code **c = &ast->code;
-  Code *send = 0;
-  StructuralType *ct = dynamic_cast<StructuralType*>(type->asymbol->symbol);
-  if (ct && (ct->astType == TYPE_RECORD || ct->astType == TYPE_UNION) && !is_this)
-    send = if1_send(if1, c, 1, 1, constructor_name(ct), s);
-  if (!send) {
-    Sym *tmp = new_sym();
-    send = if1_send(if1, c, 2, 1, sym_new, type, tmp);
-    if1_move(if1, c, tmp, s, ast);
-  }
-  send->ast = ast;
-  if (type->asymbol->symbol->astType == TYPE_ARRAY) {
-    ArrayType *at = dynamic_cast<ArrayType*>(type->asymbol->symbol);
-    Sym *ret = new_sym();
-    if (at->elementType->astType == TYPE_ARRAY) {
-      gen_alloc(ret, at->elementType->asymbol->sym, ast);
-    } else if (at->elementType->defaultVal) {
-      if1_move(if1, c, get_defaultVal(at->elementType), ret, ast);
-    } else if (at->elementType->defaultConstructor) {
-      Code *send = if1_send(if1, c, 1, 1, constructor_name(at->elementType), ret);
-      send->ast = ast;
-    } else
-      ret = sym_nil;
-    gen_set_array(s, at, ret, ast);
-  }
-  send->ast = ast;
 }
 
 static Sym *
@@ -1386,28 +1302,14 @@ gen_one_defexpr(VarSymbol *var, DefExpr *def) {
         goto Lstandard; 
       case TYPE_USER:
         goto Lstandard;
-      case TYPE_DOMAIN:
-      case TYPE_INDEX:
-      {
-        Sym *tmp = new_sym();
-        Code *send = if1_send(if1, &ast->code, 2, 1, sym_new, type->asymbol->sym, tmp);
-        if1_move(if1, &ast->code, tmp, s, ast);
-        tmp->ast = ast;
-        send->ast = ast;
-        break;
-      }
       case TYPE_RECORD:
       case TYPE_UNION:
-      case TYPE_TUPLE:
       {
         int is_this = f && f->_this == var;
         if (!is_this)
           goto Lstandard;
         break;
       }
-      case TYPE_ARRAY:
-        gen_alloc(s, s->type, ast, f && f->_this == var);
-        break;
     }
   } else if (!init || def->exprType) {
     // THIS IS THE STANDARD CODE
@@ -1427,34 +1329,28 @@ gen_one_defexpr(VarSymbol *var, DefExpr *def) {
       if1_move(if1, &ast->code, sym_nil, ast->sym, ast);
   }
   if (init) {
-    if (type->astType == TYPE_ARRAY) {
-      ArrayType *at = dynamic_cast<ArrayType*>(type->asymbol->symbol);
+    // THIS IS THE STANDARD CODE
+    Sym *val = init->ainfo->rval;
+    if (is_scalar_type(type)) {
       if1_gen(if1, &ast->code, init->ainfo->code);
-      gen_set_array(s, at, init->ainfo->rval, ast);
-    } else {
-      // THIS IS THE STANDARD CODE
-      Sym *val = init->ainfo->rval;
-      if (is_scalar_type(type)) {
-        if1_gen(if1, &ast->code, init->ainfo->code);
-        if (type != init->typeInfo())
-          val = gen_coerce(val, s->type, &ast->code, ast);
-        if1_move(if1, &ast->code, val, ast->sym, ast);
-      } else if (!var->noDefaultInit && !is_reference_type(type) && type != dtUnknown) {
-        Sym *old_val = val;
-        val = new_sym();
-        val->ast = init->ainfo;
-        if (f_equal_method) {
-          Code *c = if1_send(if1, &init->ainfo->code, 4, 1, make_symbol("="), method_token, ast->sym, old_val, val);
-          c->ast = init->ainfo;
-        } else {
-          Code *c = if1_send(if1, &init->ainfo->code, 3, 1, make_symbol("="), ast->sym, old_val, val);
-          c->ast = init->ainfo;
-        }
-        if1_gen(if1, &ast->code, init->ainfo->code);
+      if (type != init->typeInfo())
+        val = gen_coerce(val, s->type, &ast->code, ast);
+      if1_move(if1, &ast->code, val, ast->sym, ast);
+    } else if (!var->noDefaultInit && !is_reference_type(type) && type != dtUnknown) {
+      Sym *old_val = val;
+      val = new_sym();
+      val->ast = init->ainfo;
+      if (f_equal_method) {
+        Code *c = if1_send(if1, &init->ainfo->code, 4, 1, make_symbol("="), method_token, ast->sym, old_val, val);
+        c->ast = init->ainfo;
       } else {
-        if1_gen(if1, &ast->code, init->ainfo->code);
-        if1_move(if1, &ast->code, val, ast->sym, ast);
+        Code *c = if1_send(if1, &init->ainfo->code, 3, 1, make_symbol("="), ast->sym, old_val, val);
+        c->ast = init->ainfo;
       }
+      if1_gen(if1, &ast->code, init->ainfo->code);
+    } else {
+      if1_gen(if1, &ast->code, init->ainfo->code);
+      if1_move(if1, &ast->code, val, ast->sym, ast);
     }
   }
   return 0;
@@ -2069,8 +1965,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
           return -1;
         break;
       }
-      if (s->left->astType == EXPR_ARRAYREF ||
-          s->left->astType == EXPR_FNCALL ||
+      if (s->left->astType == EXPR_FNCALL ||
           s->left->astType == EXPR_PARENOP) 
       {
         if (gen_paren_op(dynamic_cast<ParenOpExpr*>(s->left), s->right, s->ainfo) < 0)
@@ -2207,7 +2102,6 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       }
       break;
     }
-    case EXPR_ARRAYREF: // **************** CURRENTLY UNUSED ****************
     case EXPR_FNCALL:
     case EXPR_PARENOP:
       if (gen_paren_op(dynamic_cast<ParenOpExpr *>(ast)) < 0)
@@ -2245,23 +2139,9 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       send->ast = s->ainfo;
       break;
     }
-    case EXPR_TUPLE: {
-      Tuple *s = dynamic_cast<Tuple *>(ast);
-      s->ainfo->sym = s->ainfo->rval = new_sym();
-      s->ainfo->rval->ast = s->ainfo;
-      Vec<Expr *> args;
-      s->exprs->getElements(args);
-      forv_Vec(Expr, a, args)
-        if1_gen(if1, &s->ainfo->code, a->ainfo->code);
-      Code *send = if1_send1(if1, &s->ainfo->code);
-      send->ast = s->ainfo;
-      if1_add_send_arg(if1, send, sym_primitive);
-      if1_add_send_arg(if1, send, make_chapel_tuple_symbol);
-      forv_Vec(Expr, a, args)
-        if1_add_send_arg(if1, send, a->ainfo->rval);
-      if1_add_send_result(if1, send, s->ainfo->rval);
+    case EXPR_TUPLE: 
+      INT_FATAL(ast, "Tuple is removed before Analysis");
       break;
-    }
     case EXPR_SIZEOF: {
       SizeofExpr *s = dynamic_cast<SizeofExpr *>(ast);
       s->ainfo->rval = new_sym();
@@ -2295,15 +2175,11 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
   case TYPE_BUILTIN:
   case TYPE_FN:
   case TYPE_ENUM:
-  case TYPE_DOMAIN:
-  case TYPE_INDEX:
-  case TYPE_ARRAY:
   case TYPE_USER:
   case TYPE_STRUCTURAL:
   case TYPE_CLASS:
   case TYPE_RECORD:
   case TYPE_UNION:
-  case TYPE_TUPLE:
   case TYPE_META:
   case TYPE_SUM:
   case TYPE_VARIABLE:
@@ -2466,7 +2342,6 @@ build_classes(Vec<BaseAST *> &syms) {
   forv_BaseAST(s, syms)
     if (s->astType == TYPE_CLASS || 
         s->astType == TYPE_RECORD || 
-        s->astType == TYPE_TUPLE || 
         s->astType == TYPE_UNION)
       classes.add(dynamic_cast<StructuralType*>(s)); 
   if (verbose_level > 1)
@@ -2599,7 +2474,6 @@ init_symbols() {
   }
   set_symbol = make_symbol("=this");
   make_seq_symbol = make_symbol("make_seq");
-  make_chapel_tuple_symbol = make_symbol("make_chapel_tuple");
   chapel_defexpr_symbol = make_symbol("chapel_defexpr");
   write_symbol = make_symbol("write");
   writeln_symbol = make_symbol("writeln");
@@ -2813,40 +2687,6 @@ make_seq(PNode *pn, EntrySet *es) {
   update_in(result, make_AType(cs));
 }
 
-static Sym *
-get_tuple_type(int n) {
-  Vec<Type *> components;
-  for (int i = 0; i < n; i++)
-    components.add(dtUnknown);
-  TypeSymbol *ts = TypeSymbol::lookupOrDefineTupleTypeSymbol(&components);
-  if (ts->asymbol)
-    return ts->type->asymbol->sym;
-  map_baseast(ts);
-  map_baseast(ts->type);
-  TupleType *tt = dynamic_cast<TupleType*>(ts->type);
-  forv_Vec(Symbol, x, tt->fields)
-    map_baseast(x);
-  Vec<BaseAST*> asts;
-  asts.add(ts->type);
-  build_classes(asts);
-  finalize_symbols(if1);
-  finalize_types(if1);
-  Sym *t = build_type(ts->type);
-  t->type = t;
-  forv_Sym(ss, t->has)
-    if (!ss->var)
-      ss->var = new Var(ss);
-  build_type_hierarchy();
-  if1_write_log();
-  return t;
-}
-
-static void
-make_chapel_tuple(PNode *pn, EntrySet *es) {
-  Sym *t = get_tuple_type(pn->rvals.n - 2);
-  prim_make(pn, es, t, 2);
-}
-
 static void
 seqcat_seq(PNode *pn, EntrySet *es) {
   AVar *result = make_AVar(pn->lvals.v[0], es);
@@ -2977,7 +2817,6 @@ ast_to_if1(Vec<AList<Stmt> *> &stmts) {
   REG(array_index_symbol->name, array_index);
   REG(array_set_symbol->name, array_set);
   REG(make_seq_symbol->name, make_seq);
-  REG(make_chapel_tuple_symbol->name, make_chapel_tuple);
   REG(chapel_defexpr_symbol->name, chapel_defexpr);
   REG(if1_cannonicalize_string(if1, "ptr_eq"), ptr_eq);
   REG(if1_cannonicalize_string(if1, "ptr_neq"), ptr_neq);
@@ -3207,7 +3046,6 @@ type_is_used(TypeSymbol *t) {
           || t->type == dtNil
           || t->type == dtUnknown
           || t->type->astType == TYPE_SUM 
-          || t->type->astType == TYPE_INDEX
           || t->type->astType == TYPE_VARIABLE
           || (t->type->astType == TYPE_USER && 
               type_is_used(dynamic_cast<TypeSymbol*>(dynamic_cast<UserType*>(t->type)->defType->symbol))))

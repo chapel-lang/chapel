@@ -364,17 +364,6 @@ class ParenOpExpr : public Expr {
 };
 
 
-class ArrayRef : public ParenOpExpr {
- public:
-  ArrayRef(Expr* init_base, AList<Expr>* init_arg);
-  COPY_DEF(ArrayRef);
-  bool isConst(void);
-  Type* typeInfo();
-
-  void codegen(FILE* outfile);
-};
-
-
 class FnCall : public ParenOpExpr {
  public:
   FnCall(Expr* init_base, AList<Expr>* init_arg = new AList<Expr>());
@@ -511,8 +500,6 @@ class ForallExpr : public Expr {
   void print(FILE* outfile);
   void codegen(FILE* outfile);
 };
-
-extern ForallExpr* unknownDomain;
 
 void initExpr(void);
 

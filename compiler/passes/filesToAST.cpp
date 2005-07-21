@@ -27,9 +27,8 @@ void FilesToAST::run(ModuleList* moduleList) {
 
   ParseFile(glomstrings(2, chplroot, "/modules/standard/_chpl_complex.chpl"),
             MOD_STANDARD);
-  if (!_dtinteger_IndexType_switch)
-    ParseFile(glomstrings(2, chplroot, "/modules/standard/_chpl_htuple.chpl"),
-              MOD_STANDARD);
+  ParseFile(glomstrings(2, chplroot, "/modules/standard/_chpl_htuple.chpl"),
+            MOD_STANDARD);
 
   seqModule = ParseFile(glomstrings(2, chplroot, "/modules/standard/_chpl_seq.chpl"),
                         MOD_STANDARD);

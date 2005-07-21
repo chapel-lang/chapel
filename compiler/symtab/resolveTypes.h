@@ -9,10 +9,4 @@ class ResolveTypes : public SymtabTraversal {
   void processSymbol(Symbol* sym);
 };
 
-class ResolveTupleTypes : public SymtabTraversal {
- public:
-  ResolveTupleTypes::ResolveTupleTypes();
-  void processSymbol(Symbol* sym);
-};
-
 #endif

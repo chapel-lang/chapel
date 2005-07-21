@@ -20,10 +20,7 @@ TRAVERSALS_SRCS = \
 	getstuff.cpp \
         htmlview.cpp \
         inlineFunctions.cpp \
-	insertIndexType.cpp \
-	insertAnonymousDomains.cpp \
 	insertAnonymousTypes.cpp \
-	insertElidedLoops.cpp \
 	insertFunctionTemps.cpp \
         insertLiteralTemps.cpp \
 	insertThisParameters.cpp \
