@@ -40316,3 +40316,20 @@ Added files:
 	                                    test_named6-error.future 
 	                                    test_named6-error.good 
 
+---------------------------------------------------------------------------
+
+07/21/05 14:56:19 -- deitz
+
+Log message:
+	Made it so that the cname of a symbol is copied if the symbol is
+	copied.
+	
+	Added a test of a nested function that has default values for its
+	arguments.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+Added files:
+	chapel/test/functions/deitz/nested/: test_nested5.chpl 
+	                                     test_nested5.good 
+
