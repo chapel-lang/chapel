@@ -40198,3 +40198,21 @@ Removed files:
 	chapel/test/functions/deitz/nested/: test_nested2.future 
 	                                     test_nested4.future 
 
+---------------------------------------------------------------------------
+
+07/21/05 13:26:46 -- jplevyak
+
+Log message:
+	Fixed bugs in the coercion and order wrappers whereby the return
+	 value was not getting propogated (missing ReturnStmt).
+	Fixed bug in the order wrapper where the first order change was
+	 being ignormed (left over from when the first entry wasn't used).
+	Fixed a bug in creation of the order wrapper table in which
+	 a reorder entry would sometimes not be passed along.
+	This fixes a number of problems with named arguments and "void" appearing
+	  during coersions (e.g. 1 + "one").
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: analysis.cpp pattern.cpp 
+
