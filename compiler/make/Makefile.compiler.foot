@@ -8,6 +8,7 @@ echocompilerdir:
 	@echo $(STARS) $(COMPILER_SUBDIR)/ $(STARS)
 
 %.makedir:
+	@$(PLATFORM_PREMAKE)
 	@cd $* && $(MAKE)
 
 %.cleandir:
@@ -20,6 +21,7 @@ echocompilerdir:
 	@cd $* && $(MAKE) clobber
 
 %.dependdir:
+	@$(PLATFORM_PREMAKE)
 	@cd $* && $(MAKE) depend
 
 

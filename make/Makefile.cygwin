@@ -2,6 +2,6 @@
 #
 
 EXE_SUFFIX=.exe
+PLATFORM_PREMAKE=rm -f $*/FILES
 
 -include $(CHAPEL_ROOT)/make/Makefile.gnu
-
