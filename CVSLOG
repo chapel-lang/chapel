@@ -40233,3 +40233,16 @@ Modified files:
 	chapel/test/trivial/deitz/demo/: sample2.chpl sample2.good 
 	chapel/test/types/seq/bradc/: length.modify.good 
 
+---------------------------------------------------------------------------
+
+07/21/05 13:40:16 -- roxana
+
+Log message:
+	Completed the handling of variables in the mangling scheme. Added the
+	nested variables handling. This was working for a while, but not tested
+	extensively. The whole scheme has to be tested more with the current
+	mangling turned off.
+
+Modified files:
+	chapel/compiler/symtab/: findCollidingNames.cpp 
+
