@@ -40256,3 +40256,29 @@ Log message:
 Modified files:
 	chapel/compiler/symtab/: findCollidingNames.cpp 
 
+---------------------------------------------------------------------------
+
+07/21/05 13:54:12 -- deitz
+
+Log message:
+	Added 8 default wrapper tests.  1 future.
+
+Added files:
+	chapel/test/functions/deitz/default/: test_default1.chpl 
+	                                      test_default1.good 
+	                                      test_default2.chpl 
+	                                      test_default2.good 
+	                                      test_default3-error.chpl 
+	                                      test_default3-error.good 
+	                                      test_default3.chpl 
+	                                      test_default3.good 
+	                                      test_default4-error.chpl 
+	                                      test_default4-error.future 
+	                                      test_default4-error.good 
+	                                      test_default4.chpl 
+	                                      test_default4.good 
+	                                      test_default5.chpl 
+	                                      test_default5.good 
+	                                      test_default6.chpl 
+	                                      test_default6.good 
+
