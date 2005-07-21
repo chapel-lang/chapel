@@ -35,7 +35,7 @@ Vec<Symbol*> gather_varsyms(Symbol* varsym) {
   Vec<Symbol*> varsyms;
   SymScope* scope = varsym->parentScope;
   while(scope && scope->type != SCOPE_MODULE) {
-    varsym->cname = copystring(varsym->name);
+    //varsym->cname = copystring(varsym->name);
     varsyms.add_exclusive(varsym);
     scope = scope->parent;
   }
@@ -52,12 +52,12 @@ void FindCollidingNames::processSymbol(Symbol* sym) {
       fnsyms.add(sym);
     }
     if (dynamic_cast<TypeSymbol*>(sym)) {
-      sym->cname = copystring(sym->name);
+      //sym->cname = copystring(sym->name);
       typesyms.add(sym); 
     }
     if (dynamic_cast<VarSymbol*>(sym)) {
       if (sym->parentScope->type == SCOPE_MODULE) {
-        sym->cname = copystring(sym->name);
+        //sym->cname = copystring(sym->name);
         globalvars.add(sym);
       }
       Vec<Symbol*> varsyms = gather_varsyms(sym);
