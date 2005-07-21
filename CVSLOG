@@ -40216,3 +40216,20 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 	chapel/compiler/analysis/: analysis.cpp pattern.cpp 
 
+---------------------------------------------------------------------------
+
+07/21/05 13:32:58 -- deitz
+
+Log message:
+	Added support for builtin function 'length' on strings.
+	
+	Modified demo/sample2.chpl to use a string that can be passed in to
+	the command line.
+
+Modified files:
+	chapel/compiler/parser/: prelude.chpl 
+	chapel/runtime/include/: chpltypes.h 
+	chapel/runtime/src/: chpltypes.c 
+	chapel/test/trivial/deitz/demo/: sample2.chpl sample2.good 
+	chapel/test/types/seq/bradc/: length.modify.good 
+
