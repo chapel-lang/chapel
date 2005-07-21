@@ -40396,3 +40396,23 @@ Log message:
 Modified files:
 	chapel/runtime/include/: seq.h 
 
+---------------------------------------------------------------------------
+
+07/21/05 16:22:26 -- bradc
+
+Log message:
+	This is an extremely cosmetic change that I've had in mind
+	for some time, and which seemed like it might be nice for
+	the demo.  Made it so that when the --print-commands flag
+	is used, a few additional lines are printed indicating
+	when files are being code generated and beautified (the
+	commands that were being printed were doing things like
+	renaming these files, so this makes the narrative of
+	what's going on slightly clearer from the file system
+	point-of-view).
+
+Modified files:
+	chapel/compiler/backend/: beautify.cpp 
+	chapel/compiler/passes/: codegen.cpp 
+	chapel/compiler/util/: mysystem.cpp 
+
