@@ -40149,3 +40149,41 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: findEnclosingScopeVarUses.cpp 
 
+---------------------------------------------------------------------------
+
+07/21/05 12:24:52 -- deitz
+
+Log message:
+	Removed IndexType, DomainType, ArrayType, and TupleType.  Removed
+	ArrayRef.  Removed some associated code.  Removed four passes.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp stmt.cpp symbol.cpp 
+	                      type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: alist.h baseAST.h expr.h symbol.h 
+	                          symtab.h type.h 
+	chapel/compiler/main/: driver.cpp passlist.cpp passlist.h 
+	chapel/compiler/passes/: filesToAST.cpp 
+	chapel/compiler/symtab/: resolveTypes.cpp resolveTypes.h 
+	                         symtab.cpp 
+	chapel/compiler/traversals/: Makefile.share inlineFunctions.cpp 
+	                             insertAnonymousTypes.cpp 
+	                             insertAnonymousTypes.h 
+	                             insertVariableInitializations.cpp 
+	                             preAnalysisHacks.cpp 
+	                             removeNamedParameters.cpp 
+	                             resolveModuleUses.cpp 
+	                             resolveSymbols.cpp 
+	                             specializeParenOpExprs.cpp 
+	                             verifyASTType.cpp 
+Added files:
+	chapel/test/classes/deitz/suite1/: .cvsignore 
+Removed files:
+	chapel/compiler/traversals/: insertAnonymousDomains.cpp 
+	                             insertAnonymousDomains.h 
+	                             insertElidedLoops.cpp 
+	                             insertElidedLoops.h 
+	                             insertIndexType.cpp 
+	                             insertIndexType.h 
+
