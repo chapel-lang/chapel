@@ -1,0 +1,6 @@
+test_default4-error.chpl:25: error: ambiguous call 'foo'
+note: candidates are:
+test_default3-error.chpl:1: foo
+test_default3-error.chpl:5: foo
+test_default3-error.chpl:9: foo
+fail: fatal error, program does not type
