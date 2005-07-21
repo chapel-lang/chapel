@@ -231,6 +231,7 @@ VarSymbol*
 VarSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   VarSymbol* newVarSymbol = 
     new VarSymbol(copystring(name), type, varClass, consClass);
+  newVarSymbol->cname = copystring(cname);
   newVarSymbol->aspect = aspect;
   newVarSymbol->noDefaultInit = noDefaultInit;
   return newVarSymbol;
@@ -356,6 +357,7 @@ ParamSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   if (typeVariable)
     ps->typeVariable = typeVariable;
   ps->isGeneric = isGeneric;
+  ps->cname = copystring(cname);
   return ps;
 }
 
@@ -442,6 +444,7 @@ TypeSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
       dynamic_cast<StructuralType*>(new_type)) {
     stype->structScope->setContext(NULL, new_type_symbol);
   }
+  new_type_symbol->cname = copystring(cname);
   return new_type_symbol;
 }
 
@@ -571,6 +574,7 @@ FnSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   if (body != NULL && new_body == NULL) {
     INT_FATAL(body, "function body was not a BlockStmt!?");
   }
+  copy->cname = copystring(cname);
   return Symboltable::finishFnDef(copy, new_body, exportMe);
 }
 
