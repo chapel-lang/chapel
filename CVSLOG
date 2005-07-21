@@ -40282,3 +40282,37 @@ Added files:
 	                                      test_default6.chpl 
 	                                      test_default6.good 
 
+---------------------------------------------------------------------------
+
+07/21/05 14:22:34 -- deitz
+
+Log message:
+	Added 10 named parameter and named and default value parameter tests,
+	3 futures.
+
+Added files:
+	chapel/test/functions/deitz/defaultnamed/: 
+	                                           test_defaultnamed1.chpl 
+	                                           test_defaultnamed1.future 
+	                                           test_defaultnamed1.good 
+	                                           test_defaultnamed2.chpl 
+	                                           test_defaultnamed2.future 
+	                                           test_defaultnamed2.good 
+	                                           test_defaultnamed3.chpl 
+	                                           test_defaultnamed3.good 
+	chapel/test/functions/deitz/named/: test_named1.chpl 
+	                                    test_named1.good 
+	                                    test_named2.chpl 
+	                                    test_named2.good 
+	                                    test_named3-error.chpl 
+	                                    test_named3-error.good 
+	                                    test_named3.chpl 
+	                                    test_named3.good 
+	                                    test_named4.chpl 
+	                                    test_named4.good 
+	                                    test_named5.chpl 
+	                                    test_named5.good 
+	                                    test_named6-error.chpl 
+	                                    test_named6-error.future 
+	                                    test_named6-error.good 
+
