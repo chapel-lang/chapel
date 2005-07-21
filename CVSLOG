@@ -40139,3 +40139,13 @@ Added files:
 	chapel/compiler/passes/: preAnalysisCleanup.cpp 
 	                         preAnalysisCleanup.h 
 
+---------------------------------------------------------------------------
+
+07/21/05 12:22:44 -- mjoyner
+
+Log message:
+	Fixed bug that was counting nested function var uses found inside of nested function definitions as variables that needed to be added to the argument list.
+
+Modified files:
+	chapel/compiler/traversals/: findEnclosingScopeVarUses.cpp 
+
