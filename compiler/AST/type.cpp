@@ -28,7 +28,8 @@ Type::Type(astType_t astType, Expr* init_defaultVal) :
   defaultConstructor(NULL),
   asymbol(NULL),
   parentType(NULL),
-  metaType(NULL)
+  metaType(NULL),
+  isGeneric(false)
 { }
 
 

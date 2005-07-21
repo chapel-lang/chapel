@@ -40,6 +40,7 @@ class Type : public BaseAST {
   Type* parentType;
   Vec<FnSymbol*> methods;
   Type *metaType;
+  bool isGeneric;
 
   Type(astType_t astType, Expr* init_defaultVal);
   COPY_DEF(Type);

@@ -4,6 +4,7 @@ PASSES_SRCS = \
 	createEntryPoint.cpp \
 	filesToAST.cpp \
 	pass.cpp \
+	preAnalysisCleanup.cpp \
 	printProgram.cpp \
 	renameCSymbols.cpp \
 	runAnalysis.cpp \

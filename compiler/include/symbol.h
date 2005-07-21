@@ -68,6 +68,7 @@ class Symbol : public BaseAST {
   virtual Symbol* getSymbol(void);
   virtual Type* typeInfo(void);
   int nestingDepth();
+  FnSymbol *nestingParent(int i);
   //RED comparison functions for e.g. sorting and searching
   virtual bool lessThan(Symbol* s1, Symbol* s2);
   virtual bool equalWith(Symbol* s1, Symbol* s2);
@@ -169,6 +170,7 @@ class FnSymbol : public Symbol {
   bool retRef;
   Expr *whereExpr;
   bool noparens;
+  bool isGeneric;
 
   //bool lessThan(FnSymbol* s1, FnSymbol* s2);
   //bool equalWith(FnSymbol* s1, FnSymbol* s2);

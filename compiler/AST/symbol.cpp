@@ -553,7 +553,8 @@ FnSymbol::FnSymbol(char* init_name, Symbol* init_typeBinding) :
   typeBinding(init_typeBinding),
   fnClass(FN_FUNCTION),
   whereExpr(NULL),
-  noparens(false)
+  noparens(false),
+  isGeneric(false)
 {
   Symboltable::define(this);
   method_type = NON_METHOD;
@@ -604,6 +605,7 @@ FnSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   copy->_getter = _getter; // If it is a cloned class we probably want this
   copy->_setter = _setter; //  to point to the new member, but how do we do that
   copy->_this = _this;
+  copy->isGeneric = isGeneric;
   AList<DefExpr>* new_formals =
     dynamic_cast<AList<DefExpr>*>(CLONE_INTERNAL(formals));
   Symboltable::continueFnDef(copy, new_formals, retType, retRef,
@@ -1104,6 +1106,22 @@ int Symbol::nestingDepth() {
     s = s->defPoint->parentStmt->parentSymbol;
   }
   return d;
+}
+
+
+FnSymbol *Symbol::nestingParent(int i) {
+  if (!defPoint) // labels
+    return 0;
+  if (!defPoint->parentStmt) // entry point
+    return 0;
+  Symbol *s = defPoint->parentStmt->parentSymbol;
+  while (s->astType == SYMBOL_FN) {
+    i--;
+    if (i >= 0)
+      return dynamic_cast<FnSymbol*>(s);
+    s = s->defPoint->parentStmt->parentSymbol;
+  }
+  return 0;
 }
 
 

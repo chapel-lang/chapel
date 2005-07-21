@@ -74,6 +74,8 @@ PassInfo passlist[] = {
   RUN(Verify, ""), // this is a sanity check
   RUN(PreAnalysisHacks, ""),
   RUN(Verify, ""), // this is a sanity check
+  RUN(PreAnalysisCleanup, ""),
+  RUN(Verify, ""), // this is a sanity check
   RUN(RunAnalysis, ""),
  
   // passes to capture analysis information in the AST

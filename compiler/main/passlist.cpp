@@ -5,6 +5,7 @@
 #include "../passes/printProgram.h"
 #include "../passes/renameCSymbols.h"
 #include "../passes/runAnalysis.h"
+#include "../passes/preAnalysisCleanup.h"
 
 #include "../symtab/codegenOne.h"
 #include "../symtab/computeVisibleFunctions.h"
@@ -110,6 +111,7 @@ REGISTER(LegalizeCNames);
 REGISTER(FindCollidingNames); //RED: find colliding names and resolve that
 REGISTER(PostAnalysisCleanup);
 REGISTER(PreAnalysisHacks);
+REGISTER(PreAnalysisCleanup);
 REGISTER(PrintAST);        // BLC: pretty-prints all or part of the AST
 REGISTER(PrintProgram);    // BLC: pretty-prints the whole program
 REGISTER(PrintSymtab);
