@@ -38,14 +38,14 @@ function write(f : foo) {
   write("/)");
 }
 
-var f : foo of integer;
+var f : foo(integer);
 
 f.append(1);
 f.append(2);
 
 writeln(f);
 
-var g : foo of string;
+var g : foo(string);
 
 g.append("one");
 g.append("two");

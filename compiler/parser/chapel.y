@@ -1042,7 +1042,7 @@ type:
     }
 | non_tuple_lvalue TOF variable_expr
     {
-      $$ = new ParenOpExpr($1, new AList<Expr>($3));
+      $$ = new ParenOpExpr($1, new AList<Expr>(new NamedExpr("elt_type", $3)));
     }
 | tuple_multiplier TSTAR variable_expr
     {

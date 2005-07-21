@@ -1,12 +1,12 @@
 class _seqNode {
-  type _elementType;
+  type elt_type;
 
-  var _element : _elementType;
+  var _element : elt_type;
   var _next : _seqNode;
 }
 
 record seq {
-  type _elementType;
+  type elt_type;
 
   var _length : integer;
   var _first : _seqNode;
@@ -33,7 +33,7 @@ record seq {
     return _length;
 
   function reverse {
-    var new_seq : seq(_elementType);
+    var new_seq : seq(elt_type);
     var tmp = _first;
     while (tmp != nil) {
       new_seq._prepend(tmp._element);
@@ -42,8 +42,8 @@ record seq {
     return new_seq;     
   }
 
-  function _append(e : _elementType) {
-    var new : _seqNode = _seqNode(_elementType);
+  function _append(e : elt_type) {
+    var new : _seqNode = _seqNode(elt_type);
     new._element = e;
     if _length > 0 {
       _last._next = new;
@@ -56,8 +56,8 @@ record seq {
     return this;
   }
 
-  function _prepend(e : _elementType) {
-    var new : _seqNode = _seqNode(_elementType);
+  function _prepend(e : elt_type) {
+    var new : _seqNode = _seqNode(elt_type);
     new._element = e;
     if _length > 0 {
       new._next = _first;
@@ -84,7 +84,7 @@ record seq {
   }
 
   function _copy() {
-    var new : seq(_elementType);
+    var new : seq(elt_type);
     var tmp : _seqNode = _first;
     while tmp != nil {
       new = new._append(tmp._element);

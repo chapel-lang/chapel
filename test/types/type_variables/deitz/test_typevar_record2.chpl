@@ -1,6 +1,6 @@
 record foo {
-  type t;
-  var x : t;
+  type elt_type;
+  var x : elt_type;
   function print() {
     writeln(x);
   }
