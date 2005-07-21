@@ -40187,3 +40187,14 @@ Removed files:
 	                             insertIndexType.cpp 
 	                             insertIndexType.h 
 
+---------------------------------------------------------------------------
+
+07/21/05 12:26:49 -- mjoyner
+
+Log message:
+	Removing these 2 future tests since we now pass them.
+
+Removed files:
+	chapel/test/functions/deitz/nested/: test_nested2.future 
+	                                     test_nested4.future 
+
