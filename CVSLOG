@@ -40352,3 +40352,36 @@ Modified files:
 	chapel/compiler/make/: Makefile.compiler.foot 
 	chapel/make/: Makefile.cygwin 
 
+---------------------------------------------------------------------------
+
+07/21/05 15:25:41 -- deitz
+
+Log message:
+	Renamed type variable in seq record to "elt_type" as in the Spec.
+	
+	Changed parsing of OF so that
+	
+	  var s : foo of integer
+	
+	is equivalent to
+	
+	  var s : foo(elt_type=integer)
+	
+	rather than
+	
+	  var s : foo(integer)
+	
+	as it was before.
+	
+	Reworked impacted tests.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/modules/standard/: _chpl_seq.chpl 
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_typevar_record2.chpl 
+	                                         test_typevar_record3.chpl 
+	                                         test_typevar_record4.chpl 
+	                                         test_typevar_record5.chpl 
+	                                         test_typevar_record6.chpl 
+
