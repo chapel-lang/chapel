@@ -40333,3 +40333,22 @@ Added files:
 	chapel/test/functions/deitz/nested/: test_nested5.chpl 
 	                                     test_nested5.good 
 
+---------------------------------------------------------------------------
+
+07/21/05 15:17:40 -- bradc
+
+Log message:
+	Have had a long-standing problem on my cygwin build with
+	the presence of the FILES files that we store in the
+	compiler directory -- for some reason the Makefiles trip
+	over these in an ugly way.  Put a little platform-dependent
+	hook into the make process so that FILES files would be
+	removed on cygwin during the build in order to prepare
+	for the demo.  Will continue to try to sort out why this
+	is a problem in the background in hopes of removing the
+	hook (which shouldn't affect anyone except cygwin users).
+
+Modified files:
+	chapel/compiler/make/: Makefile.compiler.foot 
+	chapel/make/: Makefile.cygwin 
+
