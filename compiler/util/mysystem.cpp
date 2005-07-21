@@ -10,7 +10,11 @@ int mysystem(const char* command, char* description, int ignorestatus) {
     printf("%s\n\n", command);
   }
 
-  int status = system(command);
+  int status = 0;
+
+  if (command[0] != '#') {
+    status = system(command);
+  }
 
   if (status == -1) {
     fail("system() fork failed");
