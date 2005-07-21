@@ -341,9 +341,9 @@ Matcher::build_positional_map(MPosition &app, int nactuals, Vec<Fun *> **funs) {
       fpp.push(1);
       for (int i = 0; i < unused_acpps.n; i++) {
         MPosition *fcpp = cannonicalize_mposition(fpp);
-        if (fcpps_for_fcnps.set_in(fcpp)) {
+        while (fcpps_for_fcnps.set_in(fcpp)) {
           fpp.inc();
-          continue;
+          fcpp = cannonicalize_mposition(fpp);
         }
         m->actual_to_formal_position.put(unused_acpps.v[i], fcpp);
         m->formal_to_actual_position.put(fcpp, unused_acpps.v[i]);

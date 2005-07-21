@@ -663,13 +663,15 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
       wrapperActuals->insertAtTail(new Variable(wrapperFormal->sym));
     }
   }
-  wrapperBody->insertAtTail(new ExprStmt(new FnCall(new Variable(this), 
-                                                    wrapperActuals)));
 
+  Expr* fn_call = new ParenOpExpr(new Variable(this), wrapperActuals);
+  if (function_returns_void(this)) {
+    wrapperBody->insertAtTail(new ExprStmt(fn_call));
+  } else {
+    wrapperBody->insertAtTail(new ReturnStmt(fn_call));
+  }
   wrapperBlock = Symboltable::finishCompoundStmt(wrapperBlock, wrapperBody);
-
-  DefExpr* defExpr = new DefExpr(Symboltable::finishFnDef(wrapperFn,
-                                                          wrapperBlock));
+  DefExpr* defExpr = new DefExpr(Symboltable::finishFnDef(wrapperFn, wrapperBlock));
   defPoint->parentStmt->insertBefore(new ExprStmt(defExpr));
   Symboltable::setCurrentScope(saveScope);
   return wrapperFn;
@@ -755,22 +757,21 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_actuals) {
   wrapper_fn->fnClass = fnClass;
 
   AList<DefExpr>* wrapper_formals = new AList<DefExpr>();
-  for (int i = 0; i < formals_to_actuals->n - 1; i++) {
+  for (int i = 0; i < formals_to_actuals->n; i++) {
     DefExpr* tmp = formals->first();
-    for (int j = 0; j < formals_to_actuals->n - 1; j++) {
+    for (int j = 0; j < formals_to_actuals->n; j++) {
       if (formals_to_actuals->v[i].key == formals_to_actuals->v[j].value) {
         wrapper_formals->insertAtTail(new DefExpr(tmp->sym->copy()));
       }
       tmp = formals->next();
     }
   }
-
   Symboltable::continueFnDef(wrapper_fn, wrapper_formals, retType, retRef);
 
   AList<Expr>* actuals = new AList<Expr>();
-  for (int i = 0; i < formals_to_actuals->n - 1; i++) {
+  for (int i = 0; i < formals_to_actuals->n; i++) {
     DefExpr* tmp = wrapper_formals->first();
-    for (int j = 0; j < formals_to_actuals->n - 1; j++) {
+    for (int j = 0; j < formals_to_actuals->n; j++) {
       if (formals_to_actuals->v[i].value == formals_to_actuals->v[j].key) {
         actuals->insertAtTail(new Variable(tmp->sym));
       }
@@ -778,9 +779,14 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_actuals) {
     }
   }
 
-  Stmt* fn_call = new ExprStmt(new ParenOpExpr(new Variable(this), actuals));
-  BlockStmt* body = new BlockStmt(new AList<Stmt>(fn_call));
-  DefExpr* def_expr = new DefExpr(Symboltable::finishFnDef(wrapper_fn, body));
+  Expr* fn_call = new ParenOpExpr(new Variable(this), actuals);
+  AList<Stmt>* body = new AList<Stmt>();
+  if (function_returns_void(this)) {
+    body->insertAtTail(new ExprStmt(fn_call));
+  } else {
+    body->insertAtTail(new ReturnStmt(fn_call));
+  }
+  DefExpr* def_expr = new DefExpr(Symboltable::finishFnDef(wrapper_fn, new BlockStmt(body)));
   defPoint->parentStmt->insertBefore(new ExprStmt(def_expr));
   Symboltable::setCurrentScope(save_scope);
   return wrapper_fn;

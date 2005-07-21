@@ -543,14 +543,18 @@ ACallbacks::order_wrapper(Match *m) {
     return NULL;
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(m->fun->sym->asymbol->symbol);
   Map<Symbol *, Symbol *> formal_to_actual;
-  for (int i = 0; i < m->formal_to_actual_position.n; i++)
-    if (m->formal_to_actual_position.v[i].key) {
-      Sym *sym1 = m->fun->arg_syms.get(m->formal_to_actual_position.v[i].key);
-      Symbol *symbol1 = dynamic_cast<Symbol*>(sym1->asymbol->symbol);
-      Sym *sym2 = m->fun->arg_syms.get(m->formal_to_actual_position.v[i].value);
-      Symbol *symbol2 = dynamic_cast<Symbol*>(sym2->asymbol->symbol);   
+  forv_MPosition(p, m->fun->positional_arg_positions) {
+    Sym *sym1 = m->fun->arg_syms.get(p);
+    MPosition *acp = m->formal_to_actual_position.get(p);
+    MPosition *p2 = acp ? acp : p;
+    Sym *sym2 = m->fun->arg_syms.get(p2);
+    Symbol *symbol1 = dynamic_cast<Symbol*>(sym1->asymbol->symbol);
+    Symbol *symbol2 = dynamic_cast<Symbol*>(sym2->asymbol->symbol);   
+    if (symbol1 || symbol2) {
+      assert(symbol1 && symbol2);
       formal_to_actual.put(symbol1, symbol2);
     }
+  }
   FnSymbol *f = fndef->order_wrapper(&formal_to_actual);
   Fun *fun = install_new_function(f, fndef);
   fun->wraps = m->fun;
@@ -1240,7 +1244,7 @@ make_const(Sym *type, char *c, Immediate *imm) {
 
 static Sym *
 constructor_name(Type *t) {
-  return make_symbol(t->defaultConstructor->asymbol->sym->name);
+  return t->defaultConstructor->asymbol->sym;
 }
 
 static Sym *
@@ -2001,6 +2005,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
         rval = new_sym();
         rval->ast = s->ainfo;
         Sym *told_rval = new_sym();
+        told_rval->ast = s->ainfo;
         if1_move(if1, &s->ainfo->code, old_rval, told_rval, s->ainfo);
         if (f_equal_method) {
           Code *c = if1_send(if1, &s->ainfo->code, 4, 1, make_symbol("="), method_token,
