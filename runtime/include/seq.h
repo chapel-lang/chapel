@@ -3,7 +3,7 @@
 
 #define _FOR_S(e, s, type, uid)                                         \
   type _##uid;                                                          \
-  for (_##uid = s->_first, e = _##uid->_element;                        \
+  for (_##uid = s->_first, e = (_##uid != nil) ? _##uid->_element : e;  \
        _##uid != nil;                                                   \
        _##uid = _##uid->_next, e = (_##uid != nil) ? _##uid->_element : e)
 
