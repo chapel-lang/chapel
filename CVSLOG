@@ -40122,3 +40122,20 @@ Added files:
 	                                     test_nested4.future 
 	                                     test_nested4.good 
 
+---------------------------------------------------------------------------
+
+07/20/05 17:12:28 -- jplevyak
+
+Log message:
+	Add new pass preAnalysisCleanup.  Currently this computes the
+	FnSymbol::isGeneric and Type::isGeneric flags.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/include/: symbol.h type.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/passes/: Makefile.share 
+Added files:
+	chapel/compiler/passes/: preAnalysisCleanup.cpp 
+	                         preAnalysisCleanup.h 
+
