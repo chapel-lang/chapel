@@ -40385,3 +40385,14 @@ Modified files:
 	                                         test_typevar_record5.chpl 
 	                                         test_typevar_record6.chpl 
 
+---------------------------------------------------------------------------
+
+07/21/05 15:41:27 -- deitz
+
+Log message:
+	Fixed a bug in the runtime support code for iterating over sequences
+	in which iterating over an empty sequence resulted in a seg fault.
+
+Modified files:
+	chapel/runtime/include/: seq.h 
+
