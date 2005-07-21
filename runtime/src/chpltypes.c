@@ -140,3 +140,8 @@ _boolean _chpl_string_notequal(_string x, _string y) {
     return false;
   }
 }
+
+
+_integer64 _chpl_string_length(_string x) {
+  return strlen(x);
+}

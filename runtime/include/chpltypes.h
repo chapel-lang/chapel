@@ -36,5 +36,6 @@ _string _chpl_string_select(_string x, int low, int high);
 _string _chpl_string_strided_select(_string x, int low, int high, int stride);
 _boolean _chpl_string_equal(_string x, _string y);
 _boolean _chpl_string_notequal(_string x, _string y);
+_integer64 _chpl_string_length(_string x);
 
 #endif

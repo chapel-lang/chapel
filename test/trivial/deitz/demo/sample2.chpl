@@ -1,19 +1,19 @@
-var original = "shuffle me please";
+config var phrase : string = "shuffle me please";
+const n = length(phrase);
 
-writeln("original: ", original);
-
-var shuffled = original(1..17 by 2) + original(2..17 by 2);
-
-writeln("shuffled: ", shuffled);
+var encoded = phrase(1..n by 2) + phrase(2..n by 2);
 
 var decoder : seq of integer;
+for i in 1..n/2 do
+  decoder = decoder # (/ i, n/2 + n mod 2 + i /);
+if n mod 2 == 1 then
+  decoder = decoder # (/ n/2 + 1 /);
 
-for i in 1..9 do
-  decoder = decoder # (/ i, 9 + i /);
-
-writeln("decoder:  ", decoder);
-
-write("decoded:  ");
+var decoded : string;
 for i in decoder do
-  write(shuffled(i));
-writeln();
+  decoded = decoded + encoded(i);
+
+writeln("phrase:   ", phrase);
+writeln("encoded:  ", encoded);
+writeln("decoder:  ", decoder);
+writeln("decoded:  ", decoded);

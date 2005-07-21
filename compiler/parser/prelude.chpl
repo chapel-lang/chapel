@@ -295,6 +295,11 @@ function ==(a : string, b : string) : boolean { }
 pragma "rename _chpl_string_notequal"
 function !=(a : string, b : string) : boolean { }
 
+pragma "rename _chpl_string_length"
+function length(a : string) : integer {
+  return __primitive("coerce", integer, a);
+}
+
 function _chpl_malloc(number, size, description: string);
 function _chpl_calloc(number, size, description: string);
 function _chpl_free(memory);
