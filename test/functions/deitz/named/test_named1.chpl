@@ -1,0 +1,10 @@
+function foo(i : integer, j : integer, k : integer) {
+  writeln("foo of ", i, ", ", j, ", ", k);
+}
+
+foo(i = 1, j = 2, k = 3);
+foo(i = 1, k = 2, j = 3);
+foo(j = 1, i = 2, k = 3);
+foo(j = 1, k = 2, i = 3);
+foo(k = 1, i = 2, j = 3);
+foo(k = 1, j = 2, i = 3);

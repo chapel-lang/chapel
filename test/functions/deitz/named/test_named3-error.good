@@ -1,0 +1,9 @@
+test_named3-error.chpl:23: unresolved call 'foo'
+note: candidates are:
+test_named3-error.chpl:3: foo, i : int64, j : int64, k : int64
+test_named3-error.chpl:7: foo, l : int64, m : int64, n : int64
+test_named3-error.chpl:23: illegal call argument type expression illegal: ( int64 ) 
+test_named3-error.chpl:23: illegal call argument type expression illegal: ( int64 ) 
+test_named3-error.chpl:23: illegal call argument type expression illegal: ( int64 ) 
+test_named3-error.chpl:23: expression has no type
+fail: fatal error, program does not type
