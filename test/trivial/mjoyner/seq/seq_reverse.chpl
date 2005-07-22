@@ -6,9 +6,9 @@ function main() {
 
 
   /* reverse the sequences */
-  var rev_seq1 = seq1.reverse();
-  var rev_seq2 = sequ2.reverse();
-  var rev_seq3 = seq3.reverse();
+  var rev_seq1 = reverse(seq1);
+  var rev_seq2 = reverse(sequ2);
+  var rev_seq3 = reverse(seq3);
 
   writeln("sequence 1 is ", seq1);
   writeln("the reverse of sequence 1 is ", rev_seq1); 

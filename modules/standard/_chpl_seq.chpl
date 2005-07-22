@@ -32,16 +32,6 @@ record seq {
   function length : integer
     return _length;
 
-  function reverse {
-    var new = (/ /);
-    var tmp = _first;
-    while (tmp != nil) {
-      new._prepend_in_place(tmp._element);
-      tmp  = tmp._next;    
-    }
-    return new;     
-  }
-
   function _append(e : elt_type)
     return this._copy()._append_in_place(e);
 
@@ -102,6 +92,16 @@ record seq {
     return new;
   }
 
+  function _reverse() {
+    var new = (/ /);
+    var tmp = _first;
+    while (tmp != nil) {
+      new = new._prepend_in_place(tmp._element);
+      tmp  = tmp._next;    
+    }
+    return new;     
+  }
+
   iterator _for() {
     var tmp : _seqNode = _first;
     while tmp != nil {
@@ -121,6 +121,13 @@ record seq {
 
 function #(s1 : seq, s2 : seq) {
   return s1._concat(s2);
+}
+
+function reverse(s : seq, dim : integer = 1) {
+  if (dim != 1) {
+    halt("reverse(:seq, dim=1) only implemented for dim 1");
+  }
+  return s._reverse();
 }
 
 function write(s : seq) {
