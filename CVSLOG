@@ -40637,3 +40637,23 @@ Modified files:
 	chapel/test/types/seq/bradc/: length.modify.good 
 	chapel/test/types/seq/deitz/: test_seq_reverse1.chpl 
 
+---------------------------------------------------------------------------
+
+07/22/05 16:37:25 -- roxana
+
+Log message:
+	Cleaned up some tests, their futures, and good files in an attempt to
+	understand what is working and not. The reported error is:
+	
+	assert fa.cpp:146: v->sym->global_scope
+	fail: seg fault
+
+Modified files:
+	chapel/test/domains/roxana/: test_hash_table2.chpl 
+	                             test_hash_table1.good 
+	                             test_hash_table1.future 
+	                             test_hash_table1.chpl 
+	                             test_hash_table2.good 
+	                             test_hash_table2.future 
+	                             test_hash_table.future 
+
