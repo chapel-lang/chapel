@@ -40657,3 +40657,14 @@ Modified files:
 	                             test_hash_table2.future 
 	                             test_hash_table.future 
 
+---------------------------------------------------------------------------
+
+07/22/05 16:53:44 -- jplevyak
+
+Log message:
+	Updated the future with better information.
+
+Modified files:
+	chapel/test/domains/roxana/: test_hash_table1.future 
+	                             test_hash_table2.future 
+
