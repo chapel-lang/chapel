@@ -61,7 +61,7 @@ void UpdateSymbols::preProcessSymbol(Symbol* sym) {
       BaseAST *b = updateMap->get(p->typeVariable);
       if (b) {
         if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(b)) {
-          if (ts->type->astType != TYPE_VARIABLE)
+          if (ts->definition->astType != TYPE_VARIABLE)
             p->isGeneric = 0;
           p->typeVariable = ts;
         } else {

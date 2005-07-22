@@ -1018,7 +1018,7 @@ function:
   fname
     { $$ = new FnSymbol($1); }
 | identifier TDOT fname
-    { $$ = new FnSymbol($3, new UnresolvedSymbol($1)); }
+    { $$ = new FnSymbol($3, new TypeSymbol($1, NULL)); }
 ;
 
 

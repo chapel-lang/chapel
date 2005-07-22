@@ -44,6 +44,7 @@ class Symbol : public BaseAST {
 
   ASymbol *asymbol;
   Symbol* overload; // Overloading (functions only, FnSymbol/ForwardingSymbol)
+  bool isUnresolved;
 
   Symbol(astType_t astType = SYMBOL, char* init_name = NULL, 
          Type* init_type = dtUnknown, bool init_exportMe = true);
@@ -138,6 +139,8 @@ class ParamSymbol : public Symbol {
 
 class TypeSymbol : public Symbol {
  public:
+  Type *definition;
+
   TypeSymbol(char* init_name, Type* init_definition);
   COPY_DEF(TypeSymbol);
   TypeSymbol* clone(Map<BaseAST*,BaseAST*>* map);
@@ -162,7 +165,7 @@ class FnSymbol : public Symbol {
   Symbol* _setter; /* the variable this function sets if it is a setter */
   Symbol* _getter; /* the variable this function gets if it is a getter */
   BlockStmt* body;
-  Symbol* typeBinding;
+  TypeSymbol* typeBinding;
   _method_type method_type;
   SymScope* paramScope;
   fnType fnClass;
@@ -175,7 +178,7 @@ class FnSymbol : public Symbol {
   //bool equalWith(FnSymbol* s1, FnSymbol* s2);
   //bool greaterThan(FnSymbol* s1, FnSymbol* s2);
   
-  FnSymbol(char* init_name, Symbol* init_typeBinding = NULL);
+  FnSymbol(char* init_name, TypeSymbol* init_typeBinding = NULL);
   FnSymbol(){};
   COPY_DEF(FnSymbol);
   void continueDef(AList<DefExpr>* init_formals, Type* init_retType, 
@@ -263,6 +266,8 @@ class LabelSymbol : public Symbol {
   LabelSymbol(char* init_name);
   virtual void codegenDef(FILE* outfile);
 };
+
+TypeSymbol *new_UnresolvedTypeSymbol(char *init_name);
 
 extern Symbol *gNil;
 

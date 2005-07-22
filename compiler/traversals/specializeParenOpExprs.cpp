@@ -109,8 +109,8 @@ void SpecializeParenOpExprs::postProcessExpr(Expr* expr) {
   Expr* paren_replacement = NULL;
   if (ParenOpExpr* paren = dynamic_cast<ParenOpExpr*>(expr)) {
     if (Variable* baseVar = dynamic_cast<Variable*>(paren->baseExpr)) {
-      if (StructuralType* ctype = dynamic_cast<StructuralType*>(baseVar->var->type)) {
-        if (dynamic_cast<TypeSymbol*>(baseVar->var)) {
+      if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(baseVar->var)) {
+        if (StructuralType* ctype = dynamic_cast<StructuralType*>(ts->definition)) {
           if (ctype->defaultConstructor) {
             paren_replacement = new ParenOpExpr(new Variable(new UnresolvedSymbol(ctype->defaultConstructor->name)), paren->argList);
           } else {

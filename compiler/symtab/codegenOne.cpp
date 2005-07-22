@@ -33,14 +33,14 @@ void CodegenOne::run(ModuleList* moduleList) {
     typeSymbol->codegenPrototype(outfile);
   }
   forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {
-    if (dynamic_cast<EnumType*>(typeSymbol->type) ||
-        dynamic_cast<UserType*>(typeSymbol->type)) {
+    if (dynamic_cast<EnumType*>(typeSymbol->definition) ||
+        dynamic_cast<UserType*>(typeSymbol->definition)) {
       typeSymbol->codegenDef(outfile);
     }
   }
   forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {
-    if (!dynamic_cast<EnumType*>(typeSymbol->type) &&
-        !dynamic_cast<UserType*>(typeSymbol->type)) {
+    if (!dynamic_cast<EnumType*>(typeSymbol->definition) &&
+        !dynamic_cast<UserType*>(typeSymbol->definition)) {
       typeSymbol->codegenDef(outfile);
     }
   }

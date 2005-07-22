@@ -243,7 +243,7 @@ Symbol* Symboltable::lookupFromScope(char* name, SymScope* scope,
       }
       if (fn->typeBinding) {
         StructuralType* structuralType =
-          dynamic_cast<StructuralType*>(fn->typeBinding->type);
+          dynamic_cast<StructuralType*>(fn->typeBinding->definition);
         if (structuralType) {
           Symbol* sym = lookupInScope(name, structuralType->structScope);
           if (sym) {

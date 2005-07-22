@@ -30,10 +30,13 @@ Type::Type(astType_t astType, Expr* init_defaultVal) :
   parentType(NULL),
   metaType(NULL),
   isGeneric(false)
-{ }
+{ 
+  if (astType != TYPE_META)
+    metaType = new MetaType(this);
+}
 
 
-void Type::addSymbol(Symbol* newsymbol) {
+void Type::addSymbol(TypeSymbol* newsymbol) {
   symbol = newsymbol;
 }
 
@@ -51,16 +54,6 @@ Type *Type::instantiate_generic(Map<BaseAST *, BaseAST *> &substitutions) {
       return t;
   }
   return 0;
-}
-
-
-Type *Type::getMetaType() {
-  if (astType == TYPE_META) {
-    INT_FATAL(this, "Attempt to get MetaMeta Type");
-  }
-  if (metaType)
-    return metaType;
-  return metaType = new MetaType(this);
 }
 
 
@@ -634,7 +627,7 @@ void StructuralType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this,
 
   DefExpr* ptmp = arguments->first();
   forv_Vec(TypeSymbol, tmp, types) {
-    if (dynamic_cast<VariableType*>(tmp->type)) {
+    if (dynamic_cast<VariableType*>(tmp->definition)) {
       if (analyzeAST) {
         // Have type variable in class and type variable in parameter
         // Should I do anything with these?
@@ -1068,7 +1061,7 @@ Type *find_or_make_sum_type(Vec<Type *> *types) {
   lub_cache.put(new_sum_type);
   char* name = glomstrings(2, "_sum_type", intstring(uid++));
   SymScope* saveScope = Symboltable::setCurrentScope(commonModule->modScope);
-  Symbol* sym = new TypeSymbol(name, new_sum_type);
+  TypeSymbol* sym = new TypeSymbol(name, new_sum_type);
   new_sum_type->addSymbol(sym);
   Symboltable::setCurrentScope(saveScope);
   return new_sum_type;
@@ -1086,9 +1079,9 @@ void NilType::codegen(FILE* outfile) {
 
 Type *getMetaType(Type *t) {
   if (t)
-    return t->getMetaType();
+    return t->metaType;
   else
-    return dtAny->getMetaType();
+    return dtAny->metaType;
 }
 
 void findInternalTypes(void) {

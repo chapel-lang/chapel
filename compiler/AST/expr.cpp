@@ -511,8 +511,11 @@ void Variable::traverseExpr(Traversal* traversal) {
 Type* Variable::typeInfo(void) {
   if (ParamSymbol* paramSymbol = dynamic_cast<ParamSymbol*>(var)) {
     if (paramSymbol->intent == PARAM_TYPE) {
-      return paramSymbol->typeVariable->type;
+      return paramSymbol->typeVariable->definition;
     }
+  }
+  if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(var)) {
+    return ts->definition;
   }
   return var->type;
 }
@@ -630,8 +633,8 @@ void DefExpr::print(FILE* outfile) {
   if (dynamic_cast<FnSymbol*>(sym)) {
     sym->printDef(outfile);
     return;
-  } else if (dynamic_cast<TypeSymbol*>(sym)) {
-    sym->type->printDef(outfile);
+  } else if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(sym)) {
+    ts->definition->printDef(outfile);
   } else if (dynamic_cast<VarSymbol*>(sym)) {
     sym->printDef(outfile);
   }
@@ -967,8 +970,11 @@ Type* MemberAccess::typeInfo(void) {
   } else if (StructuralType* ctype =
              dynamic_cast<StructuralType*>(base->typeInfo())) {
     Symbol* sym = Symboltable::lookupInScope(member->name, ctype->structScope);
-    if (sym && sym->type) {
-      return sym->type;
+    if (sym) {
+      if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(sym))
+        return ts->definition;
+      else
+        return sym->type;
     }
   }
   return dtUnknown;
@@ -2096,18 +2102,22 @@ void WithExpr::codegen(FILE* outfile) {
   INT_FATAL(this, "Unexpected call to WithExpr::codegen");
 }
 
+static StructuralType *
+getStructuralType(Symbol *s) {
+  if (!s)
+    return NULL;
+  if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(s))
+    return dynamic_cast<StructuralType*>(ts->definition);
+  return NULL;
+}
 
 StructuralType* WithExpr::getStruct(void) {
   if (Variable* var = dynamic_cast<Variable*>(expr)) {
-    if (StructuralType* result = 
-        dynamic_cast<StructuralType*>(var->var->type)) {
+    if (StructuralType *result = getStructuralType(var->var))
       return result;
-    } else if (UnresolvedSymbol* unresolved = 
-             dynamic_cast<UnresolvedSymbol*>(var->var)) {
-      if (StructuralType* result = 
-          dynamic_cast<StructuralType*>(Symboltable::lookup(unresolved->name)->type)) {
+    else if (UnresolvedSymbol* unresolved = dynamic_cast<UnresolvedSymbol*>(var->var)) {
+      if (StructuralType *result =  getStructuralType(Symboltable::lookup(unresolved->name)))
         return result;
-      }
     }
   }
   INT_FATAL(this, "Cannot find StructuralType in WithExpr");

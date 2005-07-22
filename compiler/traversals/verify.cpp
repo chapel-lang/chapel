@@ -52,9 +52,17 @@ void Verify::run(ModuleList* moduleList) {
   forv_Vec(Symbol, sym, *syms) {
     verifyParentScope(sym);
     verifyDefPoint(sym);
-    if (dynamic_cast<TypeSymbol*>(sym)) {
-      if (sym->type->symbol != sym) {
-        INT_FATAL(sym, "TypeSymbol::type::symbol is not TypeSymbol");
+    if (!sym->isUnresolved) {
+      if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(sym)) {
+        if (ts->type->astType != TYPE_META) {
+          INT_FATAL(sym, "TypeSymbol::type is not a MetaType");
+        }
+        if (ts->definition->symbol != sym) {
+          INT_FATAL(sym, "TypeSymbol::definition->symbol is not TypeSymbol");
+        }
+        if (ts->definition->metaType != sym->type) {
+          INT_FATAL(sym, "TypeSymbol::definition->meta_type is not TypeSymbol::type");
+        }
       }
     }
   }
@@ -95,7 +103,7 @@ static void verifyParentScope(Symbol* sym) {
   /**
    **  Unresolved symbols have no scope
    **/
-  if (dynamic_cast<UnresolvedSymbol*>(sym)) {
+  if (sym->isUnresolved) {
     return;
   }
 
@@ -131,7 +139,7 @@ static void verifyParentScope(Symbol* sym) {
  **  Verify that Symbol::defPoint is correct
  **/
 static void verifyDefPoint(Symbol* sym) {
-  if (dynamic_cast<UnresolvedSymbol*>(sym) ||
+  if (sym->isUnresolved ||
       dynamic_cast<LabelSymbol*>(sym) ||
       dynamic_cast<TypeSymbol*>(sym) ||
       dynamic_cast<ForwardingSymbol*>(sym) ||

@@ -37,7 +37,7 @@ ScopeResolveSymbols::ScopeResolveSymbols() {
 
 void ScopeResolveSymbols::postProcessExpr(Expr* expr) {
   if (Variable* sym_use = dynamic_cast<Variable*>(expr)) {
-    if (dynamic_cast<UnresolvedSymbol*>(sym_use->var)) {
+    if (sym_use->var->isUnresolved) {
       SymScope* currentScope = Symboltable::getCurrentScope();
       char* name = sym_use->var->name;
       

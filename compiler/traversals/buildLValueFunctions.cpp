@@ -66,7 +66,7 @@ void BuildLValueFunctions::preProcessStmt(Stmt* stmt) {
   fn->formals->insertAtTail(new DefExpr(lvalue));
   replace_return(fn->body, lvalue);
   if (old_fn->typeBinding) {
-    old_fn->typeBinding->type->methods.add(fn);
+    old_fn->typeBinding->definition->methods.add(fn);
     fn->typeBinding = old_fn->typeBinding;
   }
   Symboltable::setCurrentScope(saveScope);

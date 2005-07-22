@@ -451,7 +451,7 @@ static Type *
 Sym_to_Type(Sym *s) {
   if (Type *t = dynamic_cast<Type*>(s->asymbol->symbol))
     return t;
-  return (dynamic_cast<TypeSymbol*>(s->asymbol->symbol))->type;
+  return (dynamic_cast<TypeSymbol*>(s->asymbol->symbol))->definition;
 }
 
 static Expr *
@@ -508,7 +508,7 @@ ACallbacks::instantiate(Sym *s, Map<Sym *, Sym *> &substitutions) {
   if (tt) {
     Type *type = NULL;
     if (ParamSymbol *p = dynamic_cast<ParamSymbol*>(s->asymbol->symbol))
-      type = (p->isGeneric && p->typeVariable) ? p->typeVariable->type : 0;
+      type = (p->isGeneric && p->typeVariable) ? p->typeVariable->definition : 0;
     else
       type = dynamic_cast<Type*>(s->asymbol->symbol);
     if (!type)
@@ -517,7 +517,7 @@ ACallbacks::instantiate(Sym *s, Map<Sym *, Sym *> &substitutions) {
     form_SymSym(ss, substitutions) {
       if (ParamSymbol *p = dynamic_cast<ParamSymbol*>(ss->key->asymbol->symbol)) {
         if (p->isGeneric && p->typeVariable)
-          subs.put(p->typeVariable->type, Sym_to_Type(ss->value));
+          subs.put(p->typeVariable->definition, Sym_to_Type(ss->value));
         else
           subs.put(p, get_constant_Expr(ss->value));
       } else
@@ -533,7 +533,7 @@ Sym *
 ACallbacks::formal_to_generic(Sym *s) {
   ParamSymbol *p = dynamic_cast<ParamSymbol*>(s->asymbol->symbol);
   if (p->isGeneric && p->typeVariable)
-    return p->typeVariable->type->asymbol->sym;
+    return p->typeVariable->definition->asymbol->sym;
   return s;
 }
 
@@ -616,10 +616,10 @@ ACallbacks::instantiate_generic(Match *m) {
     ParamSymbol *p = dynamic_cast<ParamSymbol*>(s->key->asymbol->symbol);
     if (!t)
       if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(s->key->asymbol->symbol))
-        t = ts->type;
+        t = ts->definition;
     if (!t)
       if (p && p->isGeneric && p->typeVariable)
-        t = p->typeVariable->type;
+        t = p->typeVariable->definition;
     if (t)
       substitutions.put(t, Sym_to_Type(s->value));
     else
@@ -649,7 +649,7 @@ ASymbol::clone(CloneCallback *callback) {
     for (int i = 0; i < clone_map.n; i++)
       if (clone_map.v[i].key)
         callback->clone(clone_map.v[i].key, clone_map.v[i].value);
-    Sym *new_type = c->context->smap.get(old_type_symbol->type->asymbol->sym);
+    Sym *new_type = c->context->smap.get(old_type_symbol->definition->asymbol->sym);
     if (!new_type_symbol->asymbol) // SHOULD BE ASSERT
       callback->clone(old_type_symbol, new_type_symbol);
     new_type->meta_type = new_type_symbol->asymbol->sym;
@@ -808,7 +808,7 @@ build_symbols(Vec<BaseAST *> &syms) {
         }
         case SYMBOL_TYPE: {
           TypeSymbol *t = dynamic_cast<TypeSymbol*>(s);
-          if (t->type->astType == TYPE_VARIABLE)
+          if (t->definition->astType == TYPE_VARIABLE)
             t->asymbol->sym->must_specialize = sym_anyclass;
           break;
         }
@@ -1850,9 +1850,9 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
         default: break;
         case SYMBOL_TYPE: 
           if (parent && parent->astType == EXPR_MEMBERACCESS)
-            sym = ((TypeSymbol*)sym->asymbol->symbol)->type->asymbol->sym->meta_type;
+            sym = ((TypeSymbol*)sym->asymbol->symbol)->definition->asymbol->sym->meta_type;
           else
-            sym = ((TypeSymbol*)sym->asymbol->symbol)->type->asymbol->sym;
+            sym = ((TypeSymbol*)sym->asymbol->symbol)->definition->asymbol->sym;
           break;
       }
       s->ainfo->sym = sym;
@@ -2356,8 +2356,8 @@ build_classes(Vec<BaseAST *> &syms) {
     forv_Vec(Symbol, tmp, c->fields)
       csym->has.add(tmp->asymbol->sym);
     forv_Vec(TypeSymbol, tmp, c->types) if (tmp)
-      if (tmp->type->astType == TYPE_USER || 
-          (fnewvardef && tmp->type->astType == TYPE_VARIABLE))
+      if (tmp->definition->astType == TYPE_USER || 
+          (fnewvardef && tmp->definition->astType == TYPE_VARIABLE))
         csym->has.add(tmp->asymbol->sym);
   }
   build_patterns(syms);
@@ -2420,7 +2420,7 @@ finalize_function(Fun *fun) {
   char *name = fun->sym->has.v[0]->name;
   assert(name);
   FnSymbol *fs = dynamic_cast<FnSymbol*>(fun->sym->asymbol->symbol);
-  if (fs->typeBinding && fs->typeBinding->type) {
+  if (fs->typeBinding) {
     if (is_reference_type(fs->typeBinding->asymbol->symbol)) {
       if (fs->method_type != NON_METHOD) {
         add_to_universal_lookup_cache(name, fun);
@@ -2916,7 +2916,7 @@ to_AST_type(Sym *type) {
   if (!btype) {
     TypeSymbol *ts = dynamic_cast<TypeSymbol *>(atype);
     if (ts)
-      btype = ts->type;
+      btype = ts->definition;
   }
 #ifdef COMPLETE_TYPING
   assert(btype);
@@ -2928,6 +2928,8 @@ to_AST_type(Sym *type) {
 
 Type *
 type_info(BaseAST *a, Symbol *s) {
+  if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(a))
+    return ts->type;
   AST *ast = 0;
   Sym *sym = 0;
   ast_sym_info(a, s, &ast, &sym);
@@ -3046,14 +3048,14 @@ type_is_used(TypeSymbol *t) {
     if (t->asymbol) {
       if (!t->asymbol->sym->is_meta_type)
         return false;
-      if (is_scalar_type(t->type) 
-          || t->type->asymbol->sym->is_builtin
-          || t->type == dtNil
-          || t->type == dtUnknown
-          || t->type->astType == TYPE_SUM 
-          || t->type->astType == TYPE_VARIABLE
-          || (t->type->astType == TYPE_USER && 
-              type_is_used(dynamic_cast<TypeSymbol*>(dynamic_cast<UserType*>(t->type)->defType->symbol))))
+      if (is_scalar_type(t->definition) 
+          || t->definition->asymbol->sym->is_builtin
+          || t->definition == dtNil
+          || t->definition == dtUnknown
+          || t->definition->astType == TYPE_SUM 
+          || t->definition->astType == TYPE_VARIABLE
+          || (t->definition->astType == TYPE_USER && 
+              type_is_used(dynamic_cast<TypeSymbol*>(dynamic_cast<UserType*>(t->definition)->defType->symbol))))
         return true;
       int res = t->asymbol->sym->meta_type->creators.n != 0;
       return res;
@@ -3152,8 +3154,8 @@ function_returns_void(FnSymbol *fn) {
 
 Type *
 element_type_info(TypeSymbol *t) {
-  if (t->type->asymbol && t->type->asymbol->sym && t->type->asymbol->sym->element)
-    return to_AST_type(t->type->asymbol->sym->element->type);
+  if (t->definition->asymbol && t->definition->asymbol->sym && t->definition->asymbol->sym->element)
+    return to_AST_type(t->definition->asymbol->sym->element->type);
   else
     return dtUnknown;  // analysis not run
 }

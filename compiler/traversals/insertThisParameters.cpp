@@ -31,11 +31,12 @@ void InsertThisParameters::preProcessExpr(Expr* expr) {
   /***
    *** Resolve typeBinding
    ***/
-  if (dynamic_cast<UnresolvedSymbol*>(fn->typeBinding)) {
+  if (fn->typeBinding && fn->typeBinding->isUnresolved) {
     Symbol* typeBindingSymbol = Symboltable::lookup(fn->typeBinding->name);
-    if (dynamic_cast<TypeSymbol*>(typeBindingSymbol)) {
-      Type* typeBinding = typeBindingSymbol->type;
-      fn->typeBinding = typeBindingSymbol;
+    assert(!typeBindingSymbol->isUnresolved);
+    if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(typeBindingSymbol)) {
+      Type* typeBinding = ts->definition;
+      fn->typeBinding = ts;
       if (fn->fnClass != FN_CONSTRUCTOR) {
         fn->method_type = SECONDARY_METHOD;
       }
@@ -55,12 +56,12 @@ void InsertThisParameters::preProcessExpr(Expr* expr) {
       SymScope* saveScope = Symboltable::setCurrentScope(fn->body->body->first()->parentScope);
       fn->body->body->reset(); // reset iteration
       DefExpr* this_decl = Symboltable::defineSingleVarDef(copystring("this"),
-                                                           typeSym->type,
+                                                           typeSym->definition,
                                                            NULL,
                                                            VAR_NORMAL,
                                                            VAR_VAR);
       fn->_this = dynamic_cast<VarSymbol*>(this_decl->sym);
-      fn->retType = typeSym->type;
+      fn->retType = typeSym->definition;
       dynamic_cast<VarSymbol*>(fn->_this)->noDefaultInit = true;
       fn->body->body->insertAtHead(new ExprStmt(this_decl));
       char* description = glomstrings(2, "instance of class ", typeSym->name);
@@ -78,11 +79,11 @@ void InsertThisParameters::preProcessExpr(Expr* expr) {
       Symboltable::setCurrentScope(saveScope);
 
       // fix type variables, associate by name
-      if (StructuralType* structType = dynamic_cast<StructuralType*>(typeSym->type)) {
+      if (StructuralType* structType = dynamic_cast<StructuralType*>(typeSym->definition)) {
         for_alist(DefExpr, arg, fn->formals) {
           if (dynamic_cast<ParamSymbol*>(arg->sym)->isGeneric) {
             forv_Vec(TypeSymbol, tmp, structType->types) {
-              if (VariableType* variableType = dynamic_cast<VariableType*>(tmp->type)) {
+              if (VariableType* variableType = dynamic_cast<VariableType*>(tmp->definition)) {
                 if (!strcmp(tmp->name, arg->sym->name)) {
                   arg->sym->type = variableType->type;
                   dynamic_cast<ParamSymbol*>(arg->sym)->isGeneric = true;
@@ -95,7 +96,7 @@ void InsertThisParameters::preProcessExpr(Expr* expr) {
       }
     } else {
       SymScope* saveScope = Symboltable::setCurrentScope(fn->paramScope);
-      ParamSymbol* this_insert = new ParamSymbol(PARAM_REF, "this", typeSym->type);
+      ParamSymbol* this_insert = new ParamSymbol(PARAM_REF, "this", typeSym->definition);
       Symboltable::setCurrentScope(saveScope);
       fn->formals->insertAtHead(new DefExpr(this_insert));
       fn->_this = this_insert;

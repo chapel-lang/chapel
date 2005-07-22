@@ -11,7 +11,7 @@ checkGeneric(BaseAST *ast) {
     case EXPR_VARIABLE: {
       Variable *v = dynamic_cast<Variable *>(ast);
       if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(v->var))
-        if (ts->type->astType == TYPE_VARIABLE || ts->type->isGeneric)
+        if (ts->definition->astType == TYPE_VARIABLE || ts->definition->isGeneric)
           return 1;
       break;
     }

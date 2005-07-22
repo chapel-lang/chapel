@@ -118,6 +118,14 @@ void HtmlView::postProcessStmt(Stmt* stmt) {
   output();
 }
 
+StructuralType *
+structuralTypeSymbol(Symbol *s) {
+  if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(s))
+    if (StructuralType *st = dynamic_cast<StructuralType*>(ts->definition))
+      return st;
+  return NULL;
+}
+
 void HtmlView::preProcessExpr(Expr* expr) {
   if (dynamic_cast<MemberAccess*>(expr)) {
     return;
@@ -133,8 +141,7 @@ void HtmlView::preProcessExpr(Expr* expr) {
       write("<B>function ");
       html_print_fnsymbol(fn);
       write("</B><UL>\n");
-    } else if (dynamic_cast<TypeSymbol*>(e->sym) &&
-               dynamic_cast<StructuralType*>(e->sym->type)) {
+    } else if (structuralTypeSymbol(e->sym)) {
       write("<UL CLASS =\"mktree\">\n");
       write("<LI><B>type ");
       html_print_symbol(e->sym, true);
@@ -216,7 +223,7 @@ void HtmlView::postProcessExpr(Expr* expr) {
 }
 
 void HtmlView::html_print_symbol(Symbol* sym, bool def) {
-  if (!dynamic_cast<UnresolvedSymbol*>(sym)) {
+  if (!sym->isUnresolved) {
     if (def)
       write("<A NAME=\"SYM%d\">", sym->id);
     else
@@ -231,7 +238,7 @@ void HtmlView::html_print_symbol(Symbol* sym, bool def) {
   }
   write("%s", sym->name);
   write("</FONT>");
-  if (!dynamic_cast<UnresolvedSymbol*>(sym)) {
+  if (!sym->isUnresolved) {
     write("<FONT COLOR=\"grey\">[%ld]</FONT>", sym->id);
   }
   write("</A>");

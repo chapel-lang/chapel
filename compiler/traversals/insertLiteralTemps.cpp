@@ -182,7 +182,7 @@ static void createTupleBaseType(int size) {
   for (int i = 1; i <= size; i++) {
     DefExpr* def = 
       Symboltable::defineSingleVarDef(glomstrings(2, "_f", intstring(i)),
-                                      types.v[i-1]->type,
+                                      types.v[i-1]->definition,
                                       NULL,
                                       VAR_NORMAL,
                                       VAR_VAR);

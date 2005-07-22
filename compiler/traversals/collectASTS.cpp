@@ -22,6 +22,6 @@ void collect_asts(Vec<BaseAST*>* asts, FnSymbol* function) {
   collect_symbols((Vec<Symbol*> *)&syms, function);
   forv_BaseAST(s, syms)
     if (s->astType == SYMBOL_TYPE)
-      asts->add(((TypeSymbol*)s)->type);
+      asts->add(((TypeSymbol*)s)->definition);
   asts->append(syms);
 }

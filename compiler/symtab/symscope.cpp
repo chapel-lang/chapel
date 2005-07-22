@@ -283,9 +283,9 @@ void SymScope::codegen(FILE* outfile, char* separator) {
 void SymScope::codegenFunctions(FILE* outfile) {
   forv_Vec(Symbol, sym, symbols) {
     for (Symbol* tmp = sym; tmp; tmp = tmp->overload) {
-      if (dynamic_cast<TypeSymbol*>(tmp)) {
-        tmp->type->codegenStringToType(codefile);
-        tmp->type->codegenConfigVarRoutines(codefile);
+      if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(tmp)) {
+        ts->definition->codegenStringToType(codefile);
+        ts->definition->codegenConfigVarRoutines(codefile);
       }
     }
   }
@@ -344,14 +344,14 @@ void SymScope::setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions) {
   forv_Vec(Symbol, sym, symbols) {
     if (sym) {
       if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(sym->getSymbol())) {
-        if (!dynamic_cast<ClassType*>(typeSym->type)) {
-          forv_Vec(FnSymbol, method, typeSym->type->methods) {
+        if (!dynamic_cast<ClassType*>(typeSym->definition)) {
+          forv_Vec(FnSymbol, method, typeSym->definition->methods) {
             while (method) {
               addVisibleFunctionsHelper(&visibleFunctions, method);
               method = dynamic_cast<FnSymbol*>(method->overload);
             }
           }
-          FnSymbol* constructor = typeSym->type->defaultConstructor;
+          FnSymbol* constructor = typeSym->definition->defaultConstructor;
           while (constructor) {
             addVisibleFunctionsHelper(&visibleFunctions, constructor);
             constructor = dynamic_cast<FnSymbol*>(constructor->overload);

@@ -33,7 +33,7 @@ class SymScope;
 
 class Type : public BaseAST {
  public:
-  Symbol* symbol;
+  TypeSymbol* symbol;
   Expr* defaultVal;
   FnSymbol *defaultConstructor;
   ASymbol *asymbol;
@@ -44,9 +44,8 @@ class Type : public BaseAST {
 
   Type(astType_t astType, Expr* init_defaultVal);
   COPY_DEF(Type);
-  void addSymbol(Symbol* newSymbol);
+  void addSymbol(TypeSymbol* newSymbol);
   Type *instantiate_generic(Map<BaseAST *, BaseAST *> &substitutions);
-  Type *getMetaType();
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void traverse(Traversal* traversal, bool atTop = true);
@@ -299,5 +298,6 @@ int is_Scalar_Type(Type *t);
 int is_Reference_Type(Type *t);
 int is_Value_Type(Type *t);
 Type *getMetaType(Type *t);
+
 
 #endif

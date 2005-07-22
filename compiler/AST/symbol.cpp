@@ -179,6 +179,7 @@ UnresolvedSymbol::UnresolvedSymbol(char* init_name, char* init_cname) :
   if (init_cname) {
     cname = init_cname;
   }
+  isUnresolved = 1;
 }
 
 
@@ -429,36 +430,39 @@ void ParamSymbol::codegenDef(FILE* outfile) {
 }
 
 TypeSymbol::TypeSymbol(char* init_name, Type* init_definition) :
-  Symbol(SYMBOL_TYPE, init_name, init_definition)
+  Symbol(SYMBOL_TYPE, init_name, init_definition ? init_definition->metaType : NULL), 
+  definition(init_definition)
 {
-  Symboltable::define(this);
+  if (definition)
+    Symboltable::define(this);
+  else
+    isUnresolved = true;
 }
-
 
 TypeSymbol*
 TypeSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  Type* new_type = COPY_INTERNAL(type);
-  TypeSymbol* new_type_symbol = new TypeSymbol(copystring(name), new_type);
-  new_type->addSymbol(new_type_symbol);
+  Type* new_definition = COPY_INTERNAL(definition);
+  TypeSymbol* new_definition_symbol = new TypeSymbol(copystring(name), new_definition);
+  new_definition->addSymbol(new_definition_symbol);
   if (StructuralType* stype =
-      dynamic_cast<StructuralType*>(new_type)) {
-    stype->structScope->setContext(NULL, new_type_symbol);
+      dynamic_cast<StructuralType*>(new_definition)) {
+    stype->structScope->setContext(NULL, new_definition_symbol);
   }
-  new_type_symbol->cname = copystring(cname);
-  return new_type_symbol;
+  new_definition_symbol->cname = copystring(cname);
+  return new_definition_symbol;
 }
 
 
 TypeSymbol* TypeSymbol::clone(Map<BaseAST*,BaseAST*>* map) {
   static int uid = 1; // Unique ID for cloned classes
-  StructuralType* old_class_type = dynamic_cast<StructuralType*>(type);
+  StructuralType* old_class_type = dynamic_cast<StructuralType*>(definition);
   if (!old_class_type) {
     INT_FATAL(this, "Attempt to clone non-class type");
   }
   SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
   TypeSymbol* clone = copy(true, map);
-  if (ClassType* newClassType = dynamic_cast<ClassType*>(clone->type)) {
-    ClassType* oldClassType = dynamic_cast<ClassType*>(type);
+  if (ClassType* newClassType = dynamic_cast<ClassType*>(clone->definition)) {
+    ClassType* oldClassType = dynamic_cast<ClassType*>(definition);
     if (!oldClassType) {
       INT_FATAL(this, "Cloning of ClassType went horribly wrong");
     }
@@ -466,7 +470,7 @@ TypeSymbol* TypeSymbol::clone(Map<BaseAST*,BaseAST*>* map) {
   }
   clone->cname = glomstrings(3, clone->cname, "_clone_", intstring(uid++));
   DefExpr* new_def_expr = new DefExpr(clone);
-  StructuralType* new_class_type = dynamic_cast<StructuralType*>(clone->type);
+  StructuralType* new_class_type = dynamic_cast<StructuralType*>(clone->definition);
   new_class_type->structScope->setContext(NULL, clone, new_def_expr);
   defPoint->parentStmt->insertBefore(new ExprStmt(new_def_expr));
   Symboltable::setCurrentScope(save_scope);
@@ -475,12 +479,16 @@ TypeSymbol* TypeSymbol::clone(Map<BaseAST*,BaseAST*>* map) {
 
 
 void TypeSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  type->replaceChild(old_ast, new_ast);
+  if (old_ast == type)
+    type = dynamic_cast<Type*>(new_ast);
+  else
+    definition->replaceChild(old_ast, new_ast);
 }
 
 
 void TypeSymbol::traverseDefSymbol(Traversal* traversal) {
-  TRAVERSE_DEF(type, traversal, false);
+  TRAVERSE(type, traversal, false);
+  TRAVERSE_DEF(definition, traversal, false);
 }
 
 
@@ -488,7 +496,7 @@ void TypeSymbol::codegenPrototype(FILE* outfile) {
   if (isDead) {
     return;
   }
-  type->codegenPrototype(outfile);
+  definition->codegenPrototype(outfile);
 }
 
 
@@ -497,11 +505,11 @@ void TypeSymbol::codegenDef(FILE* outfile) {
     return;
   }
 
-  type->codegenDef(outfile);
+  definition->codegenDef(outfile);
 }
 
 
-FnSymbol::FnSymbol(char* init_name, Symbol* init_typeBinding) :
+FnSymbol::FnSymbol(char* init_name, TypeSymbol* init_typeBinding) :
   Symbol(SYMBOL_FN, init_name, new FnType()),
   formals(NULL),
   retType(NULL),
@@ -643,8 +651,8 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
     ParamSymbol* newFormal = dynamic_cast<ParamSymbol*>(formal->sym->copy());
     wrapperFormals->insertAtTail(new DefExpr(newFormal));
     Symbol* coercionSubstitution = coercion_substitutions->get(formal->sym);
-    if (coercionSubstitution) {
-      newFormal->type = coercionSubstitution->type;
+    if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(coercionSubstitution)) {
+      newFormal->type = ts->definition;
     }
   }
   Symboltable::continueFnDef(wrapperFn, wrapperFormals, retType, retRef);
@@ -878,18 +886,18 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
     SymScope* save_scope = Symboltable::setCurrentScope(typeSym->parentScope);
     clone = typeSym->clone(map);
     instantiate_add_subs(substitutions, map);
-    StructuralType* cloneType = dynamic_cast<StructuralType*>(clone->type);
+    StructuralType* cloneType = dynamic_cast<StructuralType*>(clone->definition);
     Vec<TypeSymbol *> types;
     types.move(cloneType->types);
     for (int i = 0; i < types.n; i++) {
-      if (types.v[i] && substitutions->get(types.v[i]->type)) {
+      if (types.v[i] && substitutions->get(types.v[i]->definition)) {
         types.v[i]->defPoint->parentStmt->remove();
         types.v[i]->parentScope->remove(types.v[i]);
       } else
         cloneType->types.add(types.v[i]);
     }
     instantiate_update_expr(substitutions, clone->defPoint, map);
-    substitutions->put(typeSym->type, clone->type);
+    substitutions->put(typeSym->definition, clone->definition);
     Symboltable::setCurrentScope(save_scope);
 
     Vec<FnSymbol*> functions;
@@ -922,12 +930,12 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
           copy = fnClone;
         }
         if (fn->typeBinding == typeSym) {
-          clone->type->methods.add(fnClone);
+          clone->definition->methods.add(fnClone);
           fnClone->typeBinding = clone;
           fnClone->method_type = fn->method_type;
         }
-        if (typeSym->type->defaultConstructor == fn) {
-          clone->type->defaultConstructor = fnClone;
+        if (typeSym->definition->defaultConstructor == fn) {
+          clone->definition->defaultConstructor = fnClone;
         }
       } else {
         //printf("  not instantiating %s\n", fn->cname);

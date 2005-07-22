@@ -31,7 +31,7 @@ static void build_constructor(StructuralType* structType) {
 
   if (analyzeAST) {
     forv_Vec(TypeSymbol, tmp, structType->types) {
-      if (VariableType *tv = dynamic_cast<VariableType*>(tmp->type)) {
+      if (VariableType *tv = dynamic_cast<VariableType*>(tmp->definition)) {
         char* name = tmp->name;
         Type* type = tv->type;
         ParamSymbol* arg = new ParamSymbol(PARAM_BLANK, name, type);
@@ -343,8 +343,8 @@ void BuildClassConstructorsEtc::postProcessExpr(Expr* expr) {
     if (TypeSymbol* sym = dynamic_cast<TypeSymbol*>(defExpr->sym)) {
       SymScope* newScope = sym->parentScope->getModule()->modScope;
       SymScope* saveScope = Symboltable::setCurrentScope(newScope);
-      buildDefaultIOFunctions(sym->type);
-      if (StructuralType* type = dynamic_cast<StructuralType*>(sym->type)) {
+      buildDefaultIOFunctions(sym->definition);
+      if (StructuralType* type = dynamic_cast<StructuralType*>(sym->definition)) {
         if (type->defaultConstructor) { /*** already done ***/
           return;
         }
