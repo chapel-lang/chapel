@@ -61,6 +61,7 @@ nil             return TNIL;
 not             return TNOT;
 of              return TOF;
 or              return TOR;
+ordered         return TORDERED;
 otherwise       return TOTHERWISE;
 out             return TOUT;
 parameter       return TPARAMETER;

@@ -88,7 +88,17 @@ void HtmlView::preProcessStmt(Stmt* stmt) {
   } else if (dynamic_cast<WhileLoopStmt*>(stmt)) {
     write("<B>while</B> ");
   } else if (ForLoopStmt* s = dynamic_cast<ForLoopStmt*>(stmt)) {
-    write("<B>%s</B> ", s->forall ? "forall" : "for");
+    switch (s->forLoopStmtTag) {
+    case FORLOOPSTMT_FOR:
+      write("<B>for</B> ");
+      break;
+    case FORLOOPSTMT_ORDEREDFORALL:
+      write("<B>ordered forall</B> ");
+      break;
+    case FORLOOPSTMT_FORALL:
+      write("<B>forall</B> ");
+      break;
+    }
   } else if (dynamic_cast<ReturnStmt*>(stmt)) {
     write("<B>return</B> ");
   } else {

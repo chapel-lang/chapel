@@ -1627,48 +1627,39 @@ void SimpleSeqExpr::codegen(FILE* outfile) {
   fprintf(outfile, "This is SimpleSeqExpr's codegen.\n");
 }
 
-
-ForallExpr::ForallExpr(AList<Expr>* init_domains, AList<DefExpr>* init_indices,
-                       Expr* init_forallExpr) :
+ForallExpr::ForallExpr(AList<DefExpr>* initIndices,
+                       AList<Expr>* initIterators,
+                       Expr* initInnerExpr,
+                       SymScope* initIndexScope) :
   Expr(EXPR_FORALL),
-  domains(init_domains),
-  indices(init_indices),
-  forallExpr(init_forallExpr),
-  indexScope(NULL)
+  indices(initIndices),
+  iterators(initIterators),
+  innerExpr(initInnerExpr),
+  indexScope(initIndexScope)
 { }
-
-
-void ForallExpr::setForallExpr(Expr* exp) {
-  forallExpr = exp;
-}
-
-
-void ForallExpr::setIndexScope(SymScope* init_indexScope) {
-  indexScope = init_indexScope;
-}
 
 
 ForallExpr*
 ForallExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   Symboltable::pushScope(SCOPE_FORALLEXPR);
-  ForallExpr* _this =
-    new ForallExpr(COPY_INTERNAL(domains),
-                   CLONE_INTERNAL(indices),
-                   COPY_INTERNAL(forallExpr));
-  SymScope* scope = Symboltable::popScope();
-  scope->setContext(NULL, NULL, forallExpr);
-  _this->setIndexScope(scope);
+  AList<DefExpr>* indicesCopy = CLONE_INTERNAL(indices);
+  AList<Expr>* iteratorsCopy = CLONE_INTERNAL(iterators);
+  Expr* innerExprCopy = CLONE_INTERNAL(innerExpr);
+  SymScope* indexScopeCopy = Symboltable::popScope();
+  ForallExpr* _this =  new ForallExpr(indicesCopy, iteratorsCopy,
+                                      innerExprCopy, indexScopeCopy);
+  _this->indexScope->setContext(NULL, NULL, _this);
   return _this;
 }
 
 
 void ForallExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == domains) {
-    domains = dynamic_cast<AList<Expr>*>(new_ast);
+  if (old_ast == iterators) {
+    iterators = dynamic_cast<AList<Expr>*>(new_ast);
   } else if (old_ast == indices) {
     indices = dynamic_cast<AList<DefExpr>*>(new_ast);
-  } else if (old_ast == forallExpr) {
-    forallExpr = dynamic_cast<Expr*>(new_ast);
+  } else if (old_ast == innerExpr) {
+    innerExpr = dynamic_cast<Expr*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in ForallExpr::replaceChild");
   }
@@ -1676,16 +1667,16 @@ void ForallExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 void ForallExpr::traverseExpr(Traversal* traversal) {
-  SymScope* prevScope = NULL;
+  SymScope* saveScope = NULL;
 
-  domains->traverse(traversal, false);
+  TRAVERSE(iterators, traversal, false);
   if (indexScope) {
-    prevScope = Symboltable::setCurrentScope(indexScope);
+    saveScope = Symboltable::setCurrentScope(indexScope);
   }
-  indices->traverse(traversal, false);
-  TRAVERSE(forallExpr, traversal, false);
-  if (indexScope) {
-    Symboltable::setCurrentScope(prevScope);
+  TRAVERSE(indices, traversal, false);
+  TRAVERSE(innerExpr, traversal, false);
+  if (saveScope) {
+    Symboltable::setCurrentScope(saveScope);
   }
 }
 
@@ -1699,20 +1690,18 @@ void ForallExpr::print(FILE* outfile) {
   fprintf(outfile, "[");
   if (!indices->isEmpty()) {
     indices->print(outfile);
-    fprintf(outfile, ":");
+    fprintf(outfile, " in ");
   }
-  domains->print(outfile);
+  iterators->print(outfile);
   fprintf(outfile, "]");
-  if (forallExpr) {
-    fprintf(outfile, " ");
-    forallExpr->print(outfile);
-  }
+  fprintf(outfile, " ");
+  innerExpr->print(outfile);
 }
 
 
 void ForallExpr::codegen(FILE* outfile) {
-  if (domains->length() == 1) {
-    domains->codegen(outfile);
+  if (iterators->length() == 1) {
+    iterators->codegen(outfile);
   } else {
     INT_FATAL(this, "Don't know how to codegen lists of domains yet");
   }

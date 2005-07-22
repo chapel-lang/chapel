@@ -117,22 +117,29 @@ class WhileLoopStmt : public Stmt {
 };
 
 
+enum ForLoopStmtTag {
+  FORLOOPSTMT_FOR,           // for ... do
+  FORLOOPSTMT_ORDEREDFORALL, // ordered forall ... do
+  FORLOOPSTMT_FORALL         // forall .. do
+};
+
+
 class ForLoopStmt : public Stmt {
  public:
-  BlockStmt* block;
-  bool forall;
-  AList<DefExpr>* indices; // DefExpr* containing local index variables
-  Expr* domain;
-
+  ForLoopStmtTag forLoopStmtTag;
+  AList<DefExpr>* indices;
+  AList<Expr>* iterators;
+  BlockStmt* innerStmt;
   SymScope* indexScope;
 
-  ForLoopStmt(bool init_forall, AList<DefExpr>* init_indices, Expr* init_domain,
-              BlockStmt* init_block);
+  ForLoopStmt(ForLoopStmtTag initForLoopStmtTag,
+              AList<DefExpr>* initIndices,
+              AList<Expr>* initIterators,
+              BlockStmt* initInnerStmt = NULL,
+              SymScope* initIndexScope = NULL);
   COPY_DEF(ForLoopStmt);
-  void setIndexScope(SymScope* init_indexScope);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseStmt(Traversal* traversal);
-
   void print(FILE* outfile);
   void codegenStmt(FILE* outfile);
 };

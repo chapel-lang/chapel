@@ -1437,14 +1437,14 @@ static int
 gen_for(BaseAST *a) {
   ForLoopStmt *s = dynamic_cast<ForLoopStmt*>(a);
   Code *body = 0;
-  if1_gen(if1, &body, s->block->ainfo->code);
+  if1_gen(if1, &body, s->innerStmt->ainfo->code);
   Vec<Symbol*> indices;
   Vec<DefExpr*> indexDefs;
   s->indices->getElements(indexDefs);
   forv_Vec(DefExpr, indexDef, indexDefs)
     indices.add(indexDef->sym);
   Vec<Expr*> domains;
-  domains.add(s->domain);
+  domains.add(s->iterators->only());
   return gen_forall_internal(s->ainfo, body, indices, domains);
 }
 
@@ -2083,14 +2083,14 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       s->ainfo->rval = new_sym();
       s->ainfo->rval->ast = s->ainfo;
       Vec<Expr *> domains;
-      s->domains->getElements(domains);
+      s->iterators->getElements(domains);
       Vec<Symbol *> indices;
       Vec<DefExpr*> indexdefs;
       s->indices->getElements(indexdefs);
       forv_Vec(DefExpr, def_expr, indexdefs) {
         indices.add(def_expr->sym);
       }
-      if (s->forallExpr) { // forall expression
+      if (s->innerExpr) { // forall expression
         Code *body = 0;
         forv_Vec(Expr, d, domains)
           if1_gen(if1, &body, d->ainfo->code);

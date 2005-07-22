@@ -571,19 +571,16 @@ ForallExpr* Symboltable::startForallExpr(AList<Expr>* domainExpr,
   // HACK: this is a poor assumption -- that all index variables are
   // integers
 
-  return new ForallExpr(domainExpr, indices);
+  return new ForallExpr(indices, domainExpr);
 }
 
 
 ForallExpr* Symboltable::finishForallExpr(ForallExpr* forallExpr, 
                                           Expr* argExpr) {
-  if (argExpr) {
-    forallExpr->setForallExpr(argExpr);
-  }
+  forallExpr->innerExpr = argExpr;
   SymScope* forallScope = Symboltable::popScope();
   forallScope->setContext(NULL, NULL, forallExpr);
-  forallExpr->setIndexScope(forallScope);
-
+  forallExpr->indexScope = forallScope;
   return forallExpr;
 }
 
@@ -671,8 +668,10 @@ DefExpr* Symboltable::defineStructType(char* name, // NULL = anonymous
 }
 
 
-ForLoopStmt* Symboltable::startForLoop(bool forall, AList<Symbol>* indices, 
-                                       Expr* domain) {
+ForLoopStmt* 
+Symboltable::startForLoop(ForLoopStmtTag forLoopStmtTag,
+                          AList<Symbol>* indices, 
+                          Expr* iterator) {
   Symboltable::pushScope(SCOPE_FORLOOP);
   AList<VarSymbol>* indexVars = symsToVars(indices, dtInteger);
   AList<DefExpr>* defExpr = new AList<DefExpr>();
@@ -681,22 +680,22 @@ ForLoopStmt* Symboltable::startForLoop(bool forall, AList<Symbol>* indices,
     defExpr->insertAtTail(new DefExpr(var));
     var = indexVars->popHead();
   }
-  ForLoopStmt* for_loop_stmt = new ForLoopStmt(forall, defExpr, domain, NULL);
-  return for_loop_stmt;
+  return
+    new ForLoopStmt(forLoopStmtTag, defExpr, new AList<Expr>(iterator));
 }
 
 
 ForLoopStmt* Symboltable::finishForLoop(ForLoopStmt* forstmt, Stmt* body) {
   if (BlockStmt* blockStmt = dynamic_cast<BlockStmt*>(body)) {
-    forstmt->block = blockStmt;
+    forstmt->innerStmt = blockStmt;
   } else {
-    forstmt->block = Symboltable::startCompoundStmt();
-    forstmt->block = Symboltable::finishCompoundStmt(forstmt->block, new AList<Stmt>(body));
+    forstmt->innerStmt = Symboltable::startCompoundStmt();
+    forstmt->innerStmt = Symboltable::finishCompoundStmt(forstmt->innerStmt,
+                                                     new AList<Stmt>(body));
   }
 
-  SymScope* forScope = Symboltable::popScope();
-  forScope->setContext(forstmt);
-  forstmt->setIndexScope(forScope);
+  forstmt->indexScope = Symboltable::popScope();
+  forstmt->indexScope->setContext(forstmt);
 
   return forstmt;
 }

@@ -480,25 +480,21 @@ class SimpleSeqExpr : public Expr {
 
 class ForallExpr : public Expr {
  public:
-  AList<Expr>* domains;
   AList<DefExpr>* indices;
-  Expr* forallExpr;
-
+  AList<Expr>* iterators;
+  Expr* innerExpr;
   SymScope* indexScope;
 
-  ForallExpr(AList<Expr>* init_domains, 
-             AList<DefExpr>* init_indices = new AList<DefExpr>(),
-             Expr* init_forallExpr = NULL);
+  ForallExpr(AList<DefExpr>* initIndices,
+             AList<Expr>* initIterators,
+             Expr* initInnerExpr = NULL,
+             SymScope* initIndexScope = NULL);
   COPY_DEF(ForallExpr);
-  void setForallExpr(Expr* exp);
-  void setIndexScope(SymScope* init_indexScope);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
-
-  Type* typeInfo(void);
-
   void print(FILE* outfile);
   void codegen(FILE* outfile);
+  Type* typeInfo(void);
 };
 
 void initExpr(void);

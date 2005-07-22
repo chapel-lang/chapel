@@ -380,45 +380,38 @@ void WhileLoopStmt::codegenStmt(FILE* outfile) {
 }
 
 
-ForLoopStmt::ForLoopStmt(bool init_forall,
-                         AList<DefExpr>* init_indices,
-                         Expr* init_domain,
-                         BlockStmt* init_block) :
+ForLoopStmt::ForLoopStmt(ForLoopStmtTag initForLoopStmtTag,
+                         AList<DefExpr>* initIndices,
+                         AList<Expr>* initIterators, 
+                         BlockStmt* initInnerStmt,
+                         SymScope* initIndexScope) :
   Stmt(STMT_FORLOOP),
-  block(init_block),
-  forall(init_forall),
-  indices(init_indices),
-  domain(init_domain),
-  indexScope(NULL)
+  forLoopStmtTag(initForLoopStmtTag),
+  indices(initIndices),
+  iterators(initIterators),
+  innerStmt(initInnerStmt),
+  indexScope(initIndexScope)
 { }
-
-
-void ForLoopStmt::setIndexScope(SymScope* init_indexScope) {
-  indexScope = init_indexScope;
-}
 
 
 ForLoopStmt*
 ForLoopStmt::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   Symboltable::pushScope(SCOPE_FORLOOP);
-  AList<DefExpr>* indices_copy = CLONE_INTERNAL(indices);
-  Expr* domain_copy = COPY_INTERNAL(domain);
-  BlockStmt* block_copy = CLONE_INTERNAL(block);
-  SymScope* index_scope = Symboltable::popScope();
-  ForLoopStmt* for_loop_stmt_copy =
-    new ForLoopStmt(forall, indices_copy, domain_copy, block_copy);
-  for_loop_stmt_copy->setIndexScope(index_scope);
-  return for_loop_stmt_copy;
+  AList<DefExpr>* indicesCopy = CLONE_INTERNAL(indices);
+  AList<Expr>* iteratorsCopy = CLONE_INTERNAL(iterators);
+  BlockStmt* innerStmtCopy = CLONE_INTERNAL(innerStmt);
+  return new ForLoopStmt(forLoopStmtTag, indicesCopy, iteratorsCopy,
+                         innerStmtCopy, Symboltable::popScope());
 }
 
 
 void ForLoopStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == indices) {
     indices = dynamic_cast<AList<DefExpr>*>(new_ast);
-  } else if (old_ast == domain) {
-    domain = dynamic_cast<Expr*>(new_ast);
-  } else if (old_ast == block) {
-    block = dynamic_cast<BlockStmt*>(new_ast);
+  } else if (old_ast == iterators) {
+    iterators = dynamic_cast<AList<Expr>*>(new_ast);
+  } else if (old_ast == innerStmt) {
+    innerStmt = dynamic_cast<BlockStmt*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in ForLoopStmt::replaceChild");
   }
@@ -426,129 +419,67 @@ void ForLoopStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 void ForLoopStmt::traverseStmt(Traversal* traversal) {
-  SymScope* prevScope = NULL;
+  SymScope* saveScope = NULL;
 
-  TRAVERSE(domain, traversal, false);
+  TRAVERSE(iterators, traversal, false);
   if (indexScope) {
-    prevScope = Symboltable::setCurrentScope(indexScope);
+    saveScope = Symboltable::setCurrentScope(indexScope);
   }
-  indices->traverse(traversal, false);
-  TRAVERSE(block, traversal, false);
-  if (indexScope) {
-    Symboltable::setCurrentScope(prevScope);
+  TRAVERSE(indices, traversal, false);
+  TRAVERSE(innerStmt, traversal, false);
+  if (saveScope) {
+    Symboltable::setCurrentScope(saveScope);
   }
 }
 
 
 void ForLoopStmt::print(FILE* outfile) {
-  fprintf(outfile, "for");
-  if (forall) {
-    fprintf(outfile, "all");
+  switch (forLoopStmtTag) {
+  case FORLOOPSTMT_FOR:
+    fprintf(outfile, "for ");
+    break;
+  case FORLOOPSTMT_ORDEREDFORALL:
+    fprintf(outfile, "ordered forall ");
+    break;
+  case FORLOOPSTMT_FORALL:
+    fprintf(outfile, "forall ");
+    break;
   }
-  fprintf(outfile, " ");
   indices->print(outfile);
   fprintf(outfile, " in ");
-  domain->print(outfile);
-  fprintf(outfile, " ");
-  block->print(outfile);
+  iterators->print(outfile);
+  innerStmt->print(outfile);
 }
 
 
 void ForLoopStmt::codegenStmt(FILE* outfile) {
-  DefExpr* indices_def = indices->first();
+  DefExpr* index = indices->first();
 
-  if (domain->typeInfo()->symbol &&
-      !strcmp(domain->typeInfo()->symbol->name, "seq")) {
-    fprintf(outfile, "{\n");
-    indices_def->sym->codegenDef(outfile);
-    fprintf(outfile, "_FOR");
-    if (forall) {
-      fprintf(outfile, "ALL");
-    }
-    fprintf(outfile, "_S(");
-    indices_def->sym->codegen(outfile);
-    fprintf(outfile, ", ");
-    domain->codegen(outfile);
-    fprintf(outfile, ", ");
-    StructuralType* seqType = dynamic_cast<StructuralType*>(domain->typeInfo());
-    fprintf(outfile, "%s", seqType->fields.v[1]->type->symbol->cname);
-    fprintf(outfile, ", ");
-    fprintf(outfile, "%ld", id);
-    fprintf(outfile, ") {\n");
-    block->codegen(outfile);
-    fprintf(outfile, "\n");
-    fprintf(outfile, "}\n");
-    fprintf(outfile, "}\n");
-    return;
-  }
-
-  DefExpr* aVar = indices->first();
   fprintf(outfile, "{\n");
-  int rank = 0;
-  
-    // is it a challenge that we may not know the domain exprs at that point?
-    while (aVar) {
-      aVar->sym->codegenDef(outfile);
-      rank++;
-
-      aVar = indices->next();
-    }
-    fprintf(outfile, "\n");
-  
-    aVar = indices->first();
-
-    Tuple* tuple = dynamic_cast<Tuple*>(domain);
-
-    SimpleSeqExpr* seq = (tuple)
-      ? dynamic_cast<SimpleSeqExpr*>(tuple->exprs->first())
-      : dynamic_cast<SimpleSeqExpr*>(domain);
-
-    if (seq) {
-      for (int i=0; i<rank; i++) {
-        fprintf(outfile, "_FOR");
-        if (forall) {
-          fprintf(outfile, "ALL");
-        }
-        fprintf(outfile, "_DIM");
-        fprintf(outfile, "(");
-        aVar->sym->codegen(outfile);
-        fprintf(outfile, ", ");
-        seq->lo->codegen(outfile);
-        fprintf(outfile, ", ");
-        seq->hi->codegen(outfile);
-        fprintf(outfile, ", ");
-        seq->str->codegen(outfile);
-        fprintf(outfile, ") {\n");
-
-        aVar = indices->next();
-        if (tuple) {
-          seq = dynamic_cast<SimpleSeqExpr*>(tuple->exprs->next());
-        }
-      }
-    }
-    else {
-      for (int i=0; i<rank; i++) {
-        fprintf(outfile, "_FOR");
-        if (forall) {
-          fprintf(outfile, "ALL");
-        }
-        fprintf(outfile, "(");
-        aVar->sym->codegen(outfile);
-        fprintf(outfile, ", ");
-        domain->codegen(outfile);
-        fprintf(outfile, ", %d) {\n", i);
-
-        aVar = indices->next();
-      }
-    }
-  
-  block->codegen(outfile);
-  fprintf(outfile, "\n");
-
-  for (int i=0; i<rank; i++) {
-    fprintf(outfile, "}\n");
+  index->sym->codegenDef(outfile);
+  switch (forLoopStmtTag) {
+  case FORLOOPSTMT_FOR:
+    fprintf(outfile, "_FOR_S(");
+    break;
+  case FORLOOPSTMT_ORDEREDFORALL:
+    fprintf(outfile, "_FORALL_S(");
+    break;
+  case FORLOOPSTMT_FORALL:
+    fprintf(outfile, "_FORALL_S(");
+    break;
   }
-  
+  index->sym->codegen(outfile);
+  fprintf(outfile, ", ");
+  iterators->only()->codegen(outfile);
+  fprintf(outfile, ", ");
+  StructuralType* seqType = dynamic_cast<StructuralType*>(iterators->only()->typeInfo());
+  fprintf(outfile, "%s", seqType->fields.v[1]->type->symbol->cname);
+  fprintf(outfile, ", ");
+  fprintf(outfile, "%ld", id);
+  fprintf(outfile, ") {\n");
+  innerStmt->codegen(outfile);
+  fprintf(outfile, "\n");
+  fprintf(outfile, "}\n");
   fprintf(outfile, "}\n");
 }
 

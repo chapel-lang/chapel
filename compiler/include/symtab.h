@@ -86,7 +86,8 @@ class Symboltable {
 
   static DefExpr* defineStructType(char* name, Type* type,
                                    SymScope* scope, AList<Stmt>* def);
-  static ForLoopStmt* startForLoop(bool forall, AList<Symbol>* indices, 
+  static ForLoopStmt* startForLoop(ForLoopStmtTag forLoopStmtTag,
+                                   AList<Symbol>* indices, 
                                    Expr* domain);
   static ForLoopStmt* finishForLoop(ForLoopStmt* forstmt, Stmt* body);
 

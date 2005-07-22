@@ -383,8 +383,8 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     goto LStmtCommon;
   case STMT_FORLOOP:
     AST_ADD_LIST(ForLoopStmt, indices, DefExpr);
-    AST_ADD_CHILD(ForLoopStmt, domain);
-    AST_ADD_CHILD(ForLoopStmt, block);
+    AST_ADD_LIST(ForLoopStmt, iterators, Expr);
+    AST_ADD_CHILD(ForLoopStmt, innerStmt);
     goto LStmtCommon;
   case STMT_COND:
     AST_ADD_CHILD(CondStmt, condExpr);
@@ -461,9 +461,9 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     AST_ADD_CHILD(CondExpr, elseExpr);
     goto LExprCommon;
   case EXPR_FORALL:
-    AST_ADD_LIST(ForallExpr, domains, Expr);
     AST_ADD_LIST(ForallExpr, indices, Expr);
-    AST_ADD_CHILD(ForallExpr, forallExpr);
+    AST_ADD_LIST(ForallExpr, iterators, Expr);
+    AST_ADD_CHILD(ForallExpr, innerExpr);
     goto LExprCommon;
   case EXPR_SIZEOF:
     AST_ADD_CHILD(SizeofExpr, variable);

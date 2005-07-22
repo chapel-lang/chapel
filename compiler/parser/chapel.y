@@ -22,6 +22,7 @@
   paramType pt;
   blockStmtType blktype;
   fnType ft;
+  ForLoopStmtTag flstag;
 
   Expr* pexpr;
   DefExpr* pdefexpr;
@@ -75,6 +76,7 @@
 %token TMODULE
 %token TNIL
 %token TOF
+%token TORDERED
 %token TOTHERWISE
 %token TOUT
 %token TPRAGMA
@@ -131,8 +133,9 @@
 %type <pt> formal_tag
 %type <ft> fn_tag
 %type <blktype> atomic_cobegin
+%type <flstag> for_loop_stmt_tag
 
-%type <boolval> fortype fnretref
+%type <boolval> fnretref
 
 %type <pch> identifier fname opt_identifier
 %type <pch> pragma
@@ -338,11 +341,13 @@ return_stmt:
 ;
 
 
-fortype:
+for_loop_stmt_tag:
   TFOR
-    { $$ = false; }
+    { $$ = FORLOOPSTMT_FOR; }
+| TORDERED TFORALL
+    { $$ = FORLOOPSTMT_ORDEREDFORALL; }
 | TFORALL
-    { $$ = true; }
+    { $$ = FORLOOPSTMT_FORALL; }
 ;
 
 
@@ -362,25 +367,25 @@ indexlist:
 
 
 forloop:
-  fortype indexlist TIN expr
+  for_loop_stmt_tag indexlist TIN expr
     { 
       $<pforloopstmt>$ = Symboltable::startForLoop($1, $2, $4);
     }
-                             block_stmt
+                                       block_stmt
     { 
       $$ = Symboltable::finishForLoop($<pforloopstmt>5, $6);
     }
-| fortype indexlist TIN expr
+| for_loop_stmt_tag indexlist TIN expr
     { 
       $<pforloopstmt>$ = Symboltable::startForLoop($1, $2, $4);
     }
-                             TDO stmt
+                                       TDO stmt
     { 
       $$ = Symboltable::finishForLoop($<pforloopstmt>5, $7);
     }
 | TLSBR indexlist TIN expr TRSBR
     { 
-      $<pforloopstmt>$ = Symboltable::startForLoop(true, $2, $4);
+      $<pforloopstmt>$ = Symboltable::startForLoop(FORLOOPSTMT_FORALL, $2, $4);
     }
                                  stmt
     { 

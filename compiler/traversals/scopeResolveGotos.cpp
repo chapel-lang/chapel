@@ -37,7 +37,7 @@ void ScopeResolveGotos::preProcessStmt(Stmt* stmt) {
       loop_block = loop->block;
     }
     if (ForLoopStmt* loop = dynamic_cast<ForLoopStmt*>(stmt)) {
-      loop_block = loop->block;
+      loop_block = loop->innerStmt;
     }
 
     if (!loop_block) {
