@@ -40491,3 +40491,17 @@ Removed files:
 	                            test_myseq_record3.future 
 	                            test_record_in_function1.future 
 
+---------------------------------------------------------------------------
+
+07/22/05 10:08:59 -- deitz
+
+Log message:
+	Broke the demo trio code into one that is cloned and one that is
+	instantiated.  The cloned one has a future.  It looks like a coercion
+	wrapper is being made for writing out an integer.
+
+Added files:
+	chapel/test/trivial/deitz/demo/: sample1a.chpl sample1a.future 
+	                                 sample1a.good sample1b.chpl 
+	                                 sample1b.good 
+
