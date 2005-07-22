@@ -40564,3 +40564,13 @@ Removed files:
 	chapel/test/types/seq/bradc/: returnSeq2.future 
 	chapel/test/types/seq/deitz/: test_seq4.future 
 
+---------------------------------------------------------------------------
+
+07/22/05 15:01:30 -- jplevyak
+
+Log message:
+	new future
+
+Added files:
+	chapel/test/classes/deitz/: test_myseq_record2.future 
+
