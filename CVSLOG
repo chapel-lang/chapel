@@ -40518,3 +40518,49 @@ Added files:
 	                            test_method9a.future 
 	                            test_method9a.good 
 
+---------------------------------------------------------------------------
+
+07/22/05 14:58:44 -- deitz
+
+Log message:
+	REGRESSIONS UPDATE NOTE:
+	  Trading 2 regressions for 1: trivial/mjoyner/seq/seq_reverse,
+	  types/seq/deitz/test_seq_reverse1 now work;
+	  classes/deitz/test_nested_record2 now fails.
+	
+	Reworked the sequence implementation so that appending, prepending,
+	and concatenating copy the sequence.  Eventually we'll want to
+	optimize this, but for the time being this is a safer implementation.
+	
+	Removed two futures.
+	
+	Added two new tests, to test a tuple with an inferred type and to test
+	a clone function in an instantiated class that returns the constructor
+	using the same type variable.
+
+Modified files:
+	chapel/compiler/symtab/: reconstructIterators.cpp 
+	chapel/compiler/traversals/: insertLiteralTemps.cpp 
+	                             preAnalysisHacks.cpp 
+	chapel/modules/standard/: _chpl_seq.chpl 
+	chapel/test/: REGRESSIONS 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/types/seq/bradc/: length.modify.good 
+	chapel/test/types/seq/deitz/: test_seq_return1.chpl 
+Added files:
+	chapel/test/functions/deitz/default/: .cvsignore 
+	chapel/test/functions/deitz/defaultnamed/: .cvsignore 
+	chapel/test/functions/deitz/named/: .cvsignore 
+	chapel/test/functions/deitz/nested/: .cvsignore 
+	chapel/test/trivial/deitz/demo/: .cvsignore 
+	chapel/test/types/tuple/deitz/: test_tuple_simple1a.chpl 
+	                                test_tuple_simple1a.good 
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_typevar_class10.chpl 
+	                                         test_typevar_class10.good 
+Removed files:
+	chapel/test/types/seq/bradc/: returnSeq2.future 
+	chapel/test/types/seq/deitz/: test_seq4.future 
+
