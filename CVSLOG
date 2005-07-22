@@ -40416,3 +40416,26 @@ Modified files:
 	chapel/compiler/passes/: codegen.cpp 
 	chapel/compiler/util/: mysystem.cpp 
 
+---------------------------------------------------------------------------
+
+07/22/05 09:04:55 -- deitz
+
+Log message:
+	Renamed fields of ForallExpr and ForLoopStmt to make them more
+	consistent.  Cleaned up their implementations.  The field Expr* domain
+	and AList<Expr>* domains is now AList<Expr>* iterators in both of
+	them.  It is a list to allow for zippered iteration.
+	
+	The ForLoopStmt's bool forall flag is now an enum called
+	forLoopStmtTag that says whether it is a for, forall, or ordered
+	forall.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp stmt.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: expr.h stmt.h symtab.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: htmlview.cpp preAnalysisHacks.cpp 
+	                             scopeResolveGotos.cpp 
+
