@@ -40584,3 +40584,38 @@ Log message:
 Added files:
 	chapel/test/classes/deitz/: test_myseq_record3.future 
 
+---------------------------------------------------------------------------
+
+07/22/05 15:27:46 -- jplevyak
+
+Log message:
+	TypeSymbol::type used to be the type which the symbol defined
+	rather than the type of the symbol itself which would be
+	a MetaType.
+	
+	This large change introduces TypeSymbol::definition which is
+	now the type defined by the symbol, and makes TypeSymbol::type
+	the MetaType (which is also accessible from Type::meta_type).
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: symbol.h type.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: preAnalysisCleanup.cpp 
+	chapel/compiler/symtab/: codegenOne.cpp 
+	                         computeVisibleFunctions.cpp flatten.cpp 
+	                         insertDefaultInitVariables.cpp 
+	                         removeDeadSymbols.cpp symscope.cpp 
+	                         symtab.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             buildLValueFunctions.cpp 
+	                             collectASTS.cpp 
+	                             expandClassWiths.cpp htmlview.cpp 
+	                             insertLiteralTemps.cpp 
+	                             insertThisParameters.cpp 
+	                             instantiate.cpp 
+	                             scopeResolveSymbols.cpp 
+	                             specializeParenOpExprs.cpp 
+	                             updateSymbols.cpp verify.cpp 
+
