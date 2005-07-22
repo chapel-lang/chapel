@@ -1,3 +1,4 @@
-Steve?
+?
 
-fail: Type without defaultVal or defaultConstructor
+fail: seg fault
+assert fa.cpp:146: v->sym->global_scope

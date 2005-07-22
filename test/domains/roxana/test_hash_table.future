@@ -1,5 +1,4 @@
 ??
-"fail: Type without defaultVal or defaultConstructor"
-It seems that type parameterazation does not work. Also setters for arrays 
-seem to be a problem. By any means let me know if there is something wrong with 
-the code itself. 
+
+assert fa.cpp:146: v->sym->global_scope
+fail: seg fault

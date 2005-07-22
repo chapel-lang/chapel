@@ -1,7 +1,4 @@
-??
+?
 
-"fail: Type without defaultVal or defaultConstructor"
-
-I figure is the same problem as in the test_array_basic2.future: "We need to generate a 
-setter for assignment to array elements. The I (john) can put the coercion to integer in 
-that setter."
+fail: seg fault
+assert fa.cpp:146: v->sym->global_scope

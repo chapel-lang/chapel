@@ -4,14 +4,12 @@ class HashTable {
   
   function Init(s : integer) {
     size = s;
-    [i in 1..size] table(i) = 0;
+    for i in 1..size do
+      table(i) = 0;
   }
 }  
 
-var size : integer;
-writeln("Enter table size");
-read(size);
-writeln("Size is: ", size);
+var size : integer = 10;
   
 var ht : HashTable = HashTable();
 ht.Init(size);
