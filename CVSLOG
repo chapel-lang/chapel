@@ -40451,3 +40451,18 @@ Added files:
 	chapel/test/trivial/deitz/: test_var_decl_coerce.chpl 
 	                            test_var_decl_coerce.good 
 
+---------------------------------------------------------------------------
+
+07/22/05 09:46:07 -- deitz
+
+Log message:
+	Added another working seq of class test.  Added a future seq of record
+	test.
+
+Added files:
+	chapel/test/types/seq/deitz/: test_seq_class2.chpl 
+	                              test_seq_class2.good 
+	                              test_seq_record1.chpl 
+	                              test_seq_record1.future 
+	                              test_seq_record1.good 
+
