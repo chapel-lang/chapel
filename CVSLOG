@@ -40477,3 +40477,17 @@ Removed files:
 	chapel/test/types/complex/jplevyak/: complex-1.future 
 	                                     complex-2.future 
 
+---------------------------------------------------------------------------
+
+07/22/05 09:55:51 -- deitz
+
+Log message:
+	Removed five futures that now work and should work.
+
+Removed files:
+	chapel/test/classes/deitz/: test_anon_record1.future 
+	                            test_anon_record2.future 
+	                            test_anon_record3.future 
+	                            test_myseq_record3.future 
+	                            test_record_in_function1.future 
+
