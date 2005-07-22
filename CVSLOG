@@ -40466,3 +40466,14 @@ Added files:
 	                              test_seq_record1.future 
 	                              test_seq_record1.good 
 
+---------------------------------------------------------------------------
+
+07/22/05 09:49:50 -- deitz
+
+Log message:
+	Removed two futures that now work and should work.
+
+Removed files:
+	chapel/test/types/complex/jplevyak/: complex-1.future 
+	                                     complex-2.future 
+
