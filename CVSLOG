@@ -40439,3 +40439,15 @@ Modified files:
 	chapel/compiler/traversals/: htmlview.cpp preAnalysisHacks.cpp 
 	                             scopeResolveGotos.cpp 
 
+---------------------------------------------------------------------------
+
+07/22/05 09:22:25 -- deitz
+
+Log message:
+	Added a simple test case that initializes a variable declared as a
+	float with an integer and make sure it prints out a float.
+
+Added files:
+	chapel/test/trivial/deitz/: test_var_decl_coerce.chpl 
+	                            test_var_decl_coerce.good 
+
