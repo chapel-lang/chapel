@@ -40619,3 +40619,21 @@ Modified files:
 	                             specializeParenOpExprs.cpp 
 	                             updateSymbols.cpp verify.cpp 
 
+---------------------------------------------------------------------------
+
+07/22/05 15:45:47 -- deitz
+
+Log message:
+	Changed seq method reverse into a function (as in the Spec) that takes
+	a second optional argument dim (which must be one for the current
+	implementation since we only support rank one sequences).
+
+Modified files:
+	chapel/modules/standard/: _chpl_seq.chpl 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/trivial/mjoyner/seq/: seq_reverse.chpl 
+	chapel/test/types/seq/bradc/: length.modify.good 
+	chapel/test/types/seq/deitz/: test_seq_reverse1.chpl 
+
