@@ -1,4 +1,66 @@
-?
+deitz
+
+The problem here is with the default wrapper:
+
+class HashTable {
+  var size : integer;
+  var table : _data(integer, size);
+
+  function Init(s : integer) {
+    size = s;
+    for i in 1..size do
+      table(i) = 0;
+  }
+}
+
+
+var size : integer = 10;
+
+var ht : HashTable = HashTable();
+ht.Init(size);
+
+
+is resulting in a default wrapper for _construct_HashTable
+which is attempting to build _data by providing the
+"size" instance variable.
+
+There are two problems with this:
+
+1. the code which is supposed to convert bare instance
+variables into MemberAccess (or better yet ParenOp) Exprs
+is not being run on the wrapper.
+
+2. The "size" variable is not yet initialized because
+   the constructor for HashTable (in which the "size" variable
+   is scoped) hasn't been called yet, and indeed can't be called
+   because _data is needed to call it !
+
+This code is going to require some work in the front end as is.
+
+john
+
+See the default wrapper below:
+
+(SYMBOL (var "_construct_HashTable" 4681) :TYPE_KIND FUN :TYPE (var
+"_construct_HashTable" 4681) :HAS ((var "_construct_HashTable" 4691)) :RET (temp
+4683) :CONT (temp 4682) :GLOBAL true :CODE
+ (CONC
+  (MOVE (const "0" 2335) (temp 4685))
+  (MOVE (temp 4685) (var "_default_param_temp_size" 4680))
+  (SEND (FUTURE (temp 4688)) (var "_construct__data" 3832) (var "int64" 44) (var
+"size" 852))
+  (SEND (FUTURE (temp 4689)) (var "__primitive" 0) (var "chapel_defexpr" 29)
+(var "unknown" 35) (temp 4688))
+  (MOVE (temp 4689) (var "_default_param_temp_table" 4679))
+  (MOVE (var "nil" 70) (temp 4687))
+  (MOVE (temp 4687) (var "_default_param_temp_table" 4679))
+  (SEND (FUTURE (temp 4690)) (var "_construct_HashTable" 1552) (var
+"_default_param_temp_size" 4680) (var "_default_param_temp_table" 4679))
+  (MOVE (temp 4690) (temp 4683))
+  (GOTO 366)
+  (LABEL 366)
+  (SEND (var "reply" 1) (temp 4682) (temp 4683))))
+
 
 fail: seg fault
 assert fa.cpp:146: v->sym->global_scope
