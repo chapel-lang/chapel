@@ -40505,3 +40505,16 @@ Added files:
 	                                 sample1a.good sample1b.chpl 
 	                                 sample1b.good 
 
+---------------------------------------------------------------------------
+
+07/22/05 11:29:58 -- deitz
+
+Log message:
+	Added two tests, one future, of calling a method from within a method.
+
+Added files:
+	chapel/test/classes/deitz/: test_method9.chpl test_method9.good 
+	                            test_method9a.chpl 
+	                            test_method9a.future 
+	                            test_method9a.good 
+
