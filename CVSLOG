@@ -40574,3 +40574,13 @@ Log message:
 Added files:
 	chapel/test/classes/deitz/: test_myseq_record2.future 
 
+---------------------------------------------------------------------------
+
+07/22/05 15:03:41 -- jplevyak
+
+Log message:
+	new future
+
+Added files:
+	chapel/test/classes/deitz/: test_myseq_record3.future 
+
