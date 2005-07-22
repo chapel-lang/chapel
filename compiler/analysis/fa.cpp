@@ -2863,9 +2863,13 @@ collect_setter_confluences(Vec<AVar *> &setter_confluences, Vec<AVar *> &setter_
 }
 
 static int
-split_css(Vec<AVar *> &starters) {
+split_css(Vec<AVar *> &astarters) {
   int analyze_again = 0;
   // build starter sets, groups of starters for the same CreationSet
+  Vec<AVar *> starters;
+  forv_AVar(av, astarters)
+    if (!is_es_cs_recursive(av->creation_set))
+      starters.add(av);
   while (starters.n) {
     CreationSet *cs = starters.v[0]->creation_set;
     if (is_es_cs_recursive(cs))
