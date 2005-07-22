@@ -40668,3 +40668,13 @@ Modified files:
 	chapel/test/domains/roxana/: test_hash_table1.future 
 	                             test_hash_table2.future 
 
+---------------------------------------------------------------------------
+
+07/22/05 16:55:11 -- jplevyak
+
+Log message:
+	Fix a possible endless loop during analysis from a for converted to a while.
+
+Modified files:
+	chapel/compiler/analysis/: fa.cpp 
+
