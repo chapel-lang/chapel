@@ -23,18 +23,13 @@ linux and general regressions
   been instantiated so that the test would pass for all parameters.
   (deitz/bradc)
 
-[Error matching compiler output for trivial/mjoyner/seq/seq_reverse]
-[Error matching compiler output for types/seq/deitz/test_seq_reverse1]
 [Error matching compiler output for types/type_variables/deitz/test_typevar_record6]
 
   These are all caused by visibility problems with instantiated functions.
 
-[Error matching compiler output for classes/deitz/test_anon_record1]
-[Error matching compiler output for classes/deitz/test_anon_record3]
+[Error matching compiler output for classes/deitz/test_nested_record2]
 
-  Anonymous records are defined in functions and their methods are
-  nested functions.  These are not being handled well by
-  RemoveNestedFunctions.
+  Failing in DefaultCacheHashFns.
 
 ==========================
 linux valgrind regressions

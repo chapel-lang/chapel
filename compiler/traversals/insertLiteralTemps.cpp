@@ -70,7 +70,7 @@ static void replaceSequenceLiteral(SeqExpr* seqExpr) {
       new ParenOpExpr(
         new MemberAccess(
           new Variable(seq),
-          new UnresolvedSymbol("_append")),
+          new UnresolvedSymbol("_append_in_place")),
         new AList<Expr>(tmp->copy()));
     seqExpr->getStmt()->insertBefore(new ExprStmt(append));
   }

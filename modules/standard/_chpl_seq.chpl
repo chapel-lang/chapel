@@ -33,16 +33,25 @@ record seq {
     return _length;
 
   function reverse {
-    var new_seq : seq(elt_type);
+    var new = (/ /);
     var tmp = _first;
     while (tmp != nil) {
-      new_seq._prepend(tmp._element);
+      new._prepend_in_place(tmp._element);
       tmp  = tmp._next;    
     }
-    return new_seq;     
+    return new;     
   }
 
-  function _append(e : elt_type) {
+  function _append(e : elt_type)
+    return this._copy()._append_in_place(e);
+
+  function _prepend(e : elt_type)
+    return this._copy()._prepend_in_place(e);
+
+  function _concat(s : seq)
+    return this._copy()._concat_in_place(s);
+
+  function _append_in_place(e : elt_type) {
     var new : _seqNode = _seqNode(elt_type);
     new._element = e;
     if _length > 0 {
@@ -56,7 +65,7 @@ record seq {
     return this;
   }
 
-  function _prepend(e : elt_type) {
+  function _prepend_in_place(e : elt_type) {
     var new : _seqNode = _seqNode(elt_type);
     new._element = e;
     if _length > 0 {
@@ -70,7 +79,7 @@ record seq {
     return this;
   }
 
-  function _concat(s : seq) {
+  function _concat_in_place(s : seq) {
     if _length > 0 {
       _last._next = s._first;
       _last = s._last;
@@ -84,10 +93,10 @@ record seq {
   }
 
   function _copy() {
-    var new : seq(elt_type);
-    var tmp : _seqNode = _first;
+    var new = (/ /);
+    var tmp = _first;
     while tmp != nil {
-      new = new._append(tmp._element);
+      new = new._append_in_place(tmp._element);
       tmp = tmp._next;
     }
     return new;

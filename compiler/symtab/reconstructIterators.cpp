@@ -19,7 +19,7 @@ class ReconstructIteratorsHelper : public Traversal {
           new ParenOpExpr(
             new MemberAccess(
               new Variable(seq),
-              new UnresolvedSymbol("_append")),
+              new UnresolvedSymbol("_append_in_place")),
             new AList<Expr>(
               returnStmt->expr->copy()))));
       if (returnStmt->yield) {
