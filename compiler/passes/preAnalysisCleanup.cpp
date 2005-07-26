@@ -77,12 +77,29 @@ getSymbols(SymScope *scope, Vec<Symbol *> &symbols) {
   getSymbols(scope->sibling, symbols);
 }
 
+void 
+tagGenerics(Vec<BaseAST *> &asts) {
+  // set isGeneric
+  forv_BaseAST(s, asts)
+    if (FnSymbol *f = dynamic_cast<FnSymbol*>(s))
+      f->isGeneric = 0; // trust no one
+  int changed = 1;
+  while (changed) {
+    changed = 0;
+    forv_BaseAST(s, asts) {
+      if (FnSymbol *f = dynamic_cast<FnSymbol*>(s))
+        changed = tagGenerics(f) || changed;
+      if (Type *t = dynamic_cast<Type*>(s))
+        changed = tagGenerics(t) || changed;
+    }
+  }
+}
+
 void PreAnalysisCleanup::run(ModuleList* moduleList) {
   Vec<Stmt *> stmts;
   Vec<Symbol *> symbols;
-  Vec<Type *> types;
 
-  // Collect program
+  // Collect program stmts and symbols
   for (ModuleSymbol* mod = moduleList->first(); mod; mod = moduleList->next()) {
     for_alist(Stmt, s, mod->stmts)
       stmts.add(s);
@@ -90,21 +107,6 @@ void PreAnalysisCleanup::run(ModuleList* moduleList) {
   }
   for_alist(Stmt, s, RunAnalysis::entryStmtList)
     stmts.add(s);
-  forv_Symbol(s, symbols)
-    types.set_add(s->type);
-  types.set_to_vec();
 
-  // set isGeneric
-  forv_Symbol(s, symbols)
-    if (FnSymbol *f = dynamic_cast<FnSymbol*>(s))
-      f->isGeneric = 0; // trust no one
-  int changed = 1;
-  while (changed) {
-    changed = 0;
-    forv_Symbol(s, symbols)
-      if (FnSymbol *f = dynamic_cast<FnSymbol*>(s))
-        changed = tagGenerics(f) || changed;
-    forv_Type(t, types)
-      changed = tagGenerics(t) || changed;
-  }
+  tagGenerics(*(Vec<BaseAST*>*)&symbols);
 }

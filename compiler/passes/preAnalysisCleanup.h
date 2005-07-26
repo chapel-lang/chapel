@@ -9,4 +9,6 @@ class PreAnalysisCleanup : public Pass {
   void run(ModuleList* moduleList);
 };
 
+void tagGenerics(Vec<BaseAST *> &asts);
+
 #endif
