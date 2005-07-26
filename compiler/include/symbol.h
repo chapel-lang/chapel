@@ -173,6 +173,9 @@ class FnSymbol : public Symbol {
   Expr *whereExpr;
   bool noparens;
   bool isGeneric;
+  Vec<VariableType *> typeVariables;
+  FnSymbol *instantiatedFrom;
+  Map<BaseAST*,BaseAST*> substitutions;
 
   //bool lessThan(FnSymbol* s1, FnSymbol* s2);
   //bool equalWith(FnSymbol* s1, FnSymbol* s2);

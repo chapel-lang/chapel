@@ -10,5 +10,7 @@ class PreAnalysisCleanup : public Pass {
 };
 
 void tagGenerics(Vec<BaseAST *> &asts);
+int tagGenerics(FnSymbol *f);
+int tagGenerics(Type *t);
 
 #endif

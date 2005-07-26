@@ -13,6 +13,7 @@
 #include "../traversals/updateSymbols.h"
 #include "../symtab/collectFunctions.h"
 #include "../traversals/findTypeVariables.h"
+#include "../passes/preAnalysisCleanup.h"
 
 Symbol *gNil = 0;
 
@@ -523,7 +524,8 @@ FnSymbol::FnSymbol(char* init_name, TypeSymbol* init_typeBinding) :
   fnClass(FN_FUNCTION),
   whereExpr(NULL),
   noparens(false),
-  isGeneric(false)
+  isGeneric(false),
+  instantiatedFrom(NULL)
 {
   Symboltable::define(this);
   method_type = NON_METHOD;
@@ -906,6 +908,10 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
     substitutions->put(typeSym->definition, clone->definition);
     Symboltable::setCurrentScope(save_scope);
 
+    cloneType->instantiatedFrom = retType;
+    cloneType->substitutions.copy(*substitutions);
+    tagGenerics(cloneType);
+
     Vec<FnSymbol*> functions;
     collectFunctionsFromScope(typeSym->parentScope, &functions);
     
@@ -943,6 +949,9 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
         if (typeSym->definition->defaultConstructor == fn) {
           clone->definition->defaultConstructor = fnClone;
         }
+        fnClone->instantiatedFrom = fn;
+        fnClone->substitutions.copy(*substitutions);
+        tagGenerics(fnClone);
       } else {
         //printf("  not instantiating %s\n", fn->cname);
       }
@@ -959,6 +968,11 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
       glomstrings(3, defExpr->sym->cname, "_instantiate_", intstring(uid++));
     copy = dynamic_cast<FnSymbol*>(defExpr->sym);
     Symboltable::setCurrentScope(save_scope);
+
+    FnSymbol *newFn = dynamic_cast<FnSymbol*>(defExpr->sym);
+    newFn->instantiatedFrom = this;
+    newFn->substitutions.copy(*substitutions);
+    tagGenerics(newFn);
   }
 
   if (!copy) {

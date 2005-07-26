@@ -29,6 +29,7 @@ class FnCall;
 class CondStmt;
 class ASymbol;
 class SymScope;
+class VariableType;
 
 
 class Type : public BaseAST {
@@ -41,6 +42,9 @@ class Type : public BaseAST {
   Vec<FnSymbol*> methods;
   Type *metaType;
   bool isGeneric;
+  Vec<VariableType*> typeVariables;
+  Type *instantiatedFrom;
+  Map<BaseAST*,BaseAST*> substitutions;
 
   Type(astType_t astType, Expr* init_defaultVal);
   COPY_DEF(Type);

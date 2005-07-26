@@ -6,13 +6,20 @@
 
 
 static int
-checkGeneric(BaseAST *ast) {
+checkGeneric(BaseAST *ast, Vec<VariableType *> *typeVariables = 0) {
+  int result = 0;
   switch (ast->astType) {
     case EXPR_VARIABLE: {
       Variable *v = dynamic_cast<Variable *>(ast);
       if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(v->var))
-        if (ts->definition->astType == TYPE_VARIABLE || ts->definition->isGeneric)
-          return 1;
+        if (ts->definition->astType == TYPE_VARIABLE || ts->definition->isGeneric) {
+          if (!typeVariables)
+            return 1;
+          else {
+            typeVariables->set_add((VariableType*)ts->definition);
+            result = 1;
+          }
+        }
       break;
     }
     default: break;
@@ -22,49 +29,61 @@ checkGeneric(BaseAST *ast) {
     Vec<BaseAST *> asts;
     get_ast_children(ast, asts);
     forv_BaseAST(a, asts)
-      if (checkGeneric(a))
-        return 1;
+      if (checkGeneric(a, typeVariables)) {
+        if (!typeVariables)
+          return 1;
+        else
+          result = 1;
+      }
   }
-  return 0;
+  return result;
 }
 
-static int
+int
 tagGenerics(FnSymbol *f) {
-  if (f->isGeneric)
-    return 0;
   int changed = 0;
-  if (f->whereExpr || checkGeneric(f->body)) {
+  Vec<VariableType *> typeVariables;
+  if (f->whereExpr || checkGeneric(f->body, &typeVariables)) {
     changed = !f->isGeneric || changed;
     f->isGeneric = 1; 
     if (int i = f->nestingDepth()) {
       for (int j = 1; j <= i; i++) {
         FnSymbol *ff = f->nestingParent(i);
         changed = !ff->isGeneric || changed;
+        typeVariables.set_to_vec();
+        qsort(typeVariables.v, typeVariables.n, sizeof(typeVariables.v[0]), compar_baseast);
         ff->isGeneric = 1;
+        ff->typeVariables.move(typeVariables);
       }
     }
   }
   return changed;
 }
 
-static int
+int
 tagGenerics(Type *t) {
-  if (t->isGeneric)
-    return 0;
+  Vec<VariableType *> typeVariables;
   forv_Vec(FnSymbol, fn, t->methods)
     if (fn->isGeneric)
-      goto Lgeneric;
+      typeVariables.set_union(fn->typeVariables);
   if (StructuralType *st = dynamic_cast<StructuralType *>(t)) {
     forv_Vec(Symbol, s, st->fields)
       assert(!dynamic_cast<TypeSymbol*>(s)); // play it safe
-    forv_Vec(TypeSymbol, s, st->types)
-      if (s->type->astType == TYPE_VARIABLE || s->type->isGeneric)
-        goto Lgeneric;
+    forv_Vec(TypeSymbol, s, st->types) {
+      if (s->definition->astType == TYPE_VARIABLE) 
+        typeVariables.set_add((VariableType*)s->definition);
+      else
+        if (s->definition->isGeneric)
+          typeVariables.set_union(s->definition->typeVariables);
+    }    
   }
-  return 0;
- Lgeneric:
-  t->isGeneric = 1;
-  return 1;
+  if (typeVariables.n) {
+    typeVariables.set_to_vec();
+    qsort(typeVariables.v, typeVariables.n, sizeof(typeVariables.v[0]), compar_baseast);
+    t->isGeneric = 1;
+    t->typeVariables.move(typeVariables);
+  }
+  return typeVariables.n != 0;
 }
 
 static void
@@ -88,9 +107,11 @@ tagGenerics(Vec<BaseAST *> &asts) {
     changed = 0;
     forv_BaseAST(s, asts) {
       if (FnSymbol *f = dynamic_cast<FnSymbol*>(s))
-        changed = tagGenerics(f) || changed;
+        if (!f->isGeneric)
+          changed = tagGenerics(f) || changed;
       if (Type *t = dynamic_cast<Type*>(s))
-        changed = tagGenerics(t) || changed;
+        if (!t->isGeneric)
+          changed = tagGenerics(t) || changed;
     }
   }
 }
@@ -107,6 +128,5 @@ void PreAnalysisCleanup::run(ModuleList* moduleList) {
   }
   for_alist(Stmt, s, RunAnalysis::entryStmtList)
     stmts.add(s);
-
   tagGenerics(*(Vec<BaseAST*>*)&symbols);
 }

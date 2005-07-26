@@ -29,7 +29,8 @@ Type::Type(astType_t astType, Expr* init_defaultVal) :
   asymbol(NULL),
   parentType(NULL),
   metaType(NULL),
-  isGeneric(false)
+  isGeneric(false),
+  instantiatedFrom(NULL)
 { 
   if (astType != TYPE_META)
     metaType = new MetaType(this);
