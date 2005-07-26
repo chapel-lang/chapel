@@ -16,6 +16,7 @@
 
 Symbol *gNil = 0;
 
+#define DUPLICATE_INSTANTIATION_CACHE 1
 
 Symbol::Symbol(astType_t astType, char* init_name, Type* init_type, 
                bool init_exportMe) :
@@ -28,7 +29,8 @@ Symbol::Symbol(astType_t astType, char* init_name, Type* init_type,
   keepLive(false),
   defPoint(NULL),
   asymbol(0),
-  overload(NULL)
+  overload(NULL),
+  isUnresolved(false)
 {}
 
 
@@ -179,7 +181,7 @@ UnresolvedSymbol::UnresolvedSymbol(char* init_name, char* init_cname) :
   if (init_cname) {
     cname = init_cname;
   }
-  isUnresolved = 1;
+  isUnresolved = true;
 }
 
 
@@ -834,6 +836,7 @@ instantiate_add_subs(Map<BaseAST*,BaseAST*>* substitutions, Map<BaseAST*,BaseAST
 }
 
 
+#ifdef DUPLICATE_INSTANTIATION_CACHE
 /** This is a quick cache implementation that isn't perfect **/
 class Inst : public gc {
  public:
@@ -843,10 +846,12 @@ class Inst : public gc {
 };
 
 static Vec<Inst*>* icache = NULL;
+#endif
 
 FnSymbol* 
 FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
                               Map<BaseAST*,BaseAST*>* substitutions) {
+#ifdef DUPLICATE_INSTANTIATION_CACHE
   if (!icache) {
     icache = new Vec<Inst*>();
   } else {
@@ -875,6 +880,7 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
   inst->fn = this;
   inst->subs = new Map<BaseAST*,BaseAST*>();
   inst->subs->copy(*substitutions);
+#endif
 
   FnSymbol* copy = NULL;
   static int uid = 1; // Unique ID for cloned functions
@@ -959,8 +965,10 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
     INT_FATAL(this, "Instantiation error");
   }
 
+#ifdef DUPLICATE_INSTANTIATION_CACHE
   inst->newfn = copy;
   icache->add(inst);
+#endif
 
   //printf("finished instantiating %s\n", cname);
   

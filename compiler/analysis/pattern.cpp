@@ -538,7 +538,7 @@ class DefaultCacheHashFns  {
     return 1;
   }
 };
-class DefaultCache { public: HashMap<Vec<MPosition*> *, DefaultCacheHashFns, Fun *> cache; };
+class DefaultCache : public gc { public: HashMap<Vec<MPosition*> *, DefaultCacheHashFns, Fun *> cache; };
 
 Fun *
 Matcher::build(Match *m, Vec<Fun *> &matches) {
@@ -548,7 +548,7 @@ Matcher::build(Match *m, Vec<Fun *> &matches) {
     if (!c) c = f->generic_cache = new GenericCache;
     if (!(f = c->cache.get(&m->generic_substitutions))) {
       f = if1->callback->instantiate_generic(m);
-      c->cache.put(&m->generic_substitutions, f);
+      c->cache.put(new GenericMap(m->generic_substitutions), f);
     }
     m->fun = f;
   }
@@ -558,7 +558,7 @@ Matcher::build(Match *m, Vec<Fun *> &matches) {
     if (!c) c = f->default_cache = new DefaultCache;
     if (!(f = c->cache.get(&m->default_args))) {
       f = if1->callback->default_wrapper(m);
-      c->cache.put(&m->default_args, f);
+      c->cache.put(new Vec<MPosition*>(m->default_args), f);
     }
     m->fun = f;
   }
@@ -567,7 +567,7 @@ Matcher::build(Match *m, Vec<Fun *> &matches) {
     if (!c) c = f->coercion_cache = new CoercionCache;
     if (!(f = c->cache.get(&m->coercion_substitutions))) {
       f = if1->callback->coercion_wrapper(m);
-      c->cache.put(&m->coercion_substitutions, f);
+      c->cache.put(new CoercionMap(m->coercion_substitutions), f);
     }
     m->fun = f;
   }
@@ -584,7 +584,7 @@ Matcher::build(Match *m, Vec<Fun *> &matches) {
     if (!c) c = f->order_cache = new OrderCache;
     if (!(f = c->cache.get(&m->order_substitutions))) {
       f = if1->callback->order_wrapper(m);
-      c->cache.put(&m->order_substitutions, f);
+      c->cache.put(new OrderMap(m->order_substitutions), f);
     }
     m->fun = f;
   } else

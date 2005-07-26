@@ -251,8 +251,8 @@ Vec<C>::move(Vec<C> &vv)  {
   n = vv.n;
   i = vv.i;
   v = vv.v;
-  if (vv.v == vv.e) { 
-    memcpy(e, vv.e, sizeof(e));
+  if (vv.v == &vv.e[0]) { 
+    memcpy(e, &vv.e[0], sizeof(e));
     v = e;
   }
   vv.clear();
@@ -262,8 +262,8 @@ template <class C> inline void
 Vec<C>::copy(const Vec<C> &vv)  {
   n = vv.n;
   i = vv.i;
-  if (vv.v == vv.e) { 
-    memcpy(e, vv.e, sizeof(e));
+  if (vv.v == &vv.e[0]) { 
+    memcpy(e, &vv.e[0], sizeof(e));
     v = e;
   } else {
     if (vv.v) 
@@ -290,7 +290,7 @@ template <class C> inline void
 Vec<C>::addx() {
   if (v == e) {
     v = (C*)MALLOC(VEC_INITIAL_SIZE * sizeof(C));
-    memcpy(v, e, n * sizeof(C));
+    memcpy(v, &e[0], n * sizeof(C));
   } else {
     if ((n & (VEC_INITIAL_SIZE -1)) == 0) {
       int l = n, nl = (1 + VEC_INITIAL_SHIFT);
