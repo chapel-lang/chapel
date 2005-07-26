@@ -40678,3 +40678,18 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+07/25/05 19:25:58 -- jplevyak
+
+Log message:
+	Fixed a memory bug dealing with the default parameter cache.
+	Cleaned up some of the references to pointers to embedded arrays in vec.h.
+	Added an #ifdef to disable the instantiation cache in symbol.cpp as
+	  there is already a cache in pattern.cpp that I needed to test.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: pattern.cpp 
+	chapel/compiler/include/: vec.h 
+
