@@ -40704,3 +40704,18 @@ Modified files:
 	chapel/compiler/passes/: preAnalysisCleanup.cpp 
 	                         preAnalysisCleanup.h 
 
+---------------------------------------------------------------------------
+
+07/26/05 12:40:36 -- jplevyak
+
+Log message:
+	Store the substitutions and a pointer to the pre-image (instantiatedFrom)
+	in FnSymbol and Type.  This is to support unifying an instantiated type
+	and the generic type.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/include/: symbol.h type.h 
+	chapel/compiler/passes/: preAnalysisCleanup.cpp 
+	                         preAnalysisCleanup.h 
+
