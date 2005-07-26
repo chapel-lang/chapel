@@ -40693,3 +40693,14 @@ Modified files:
 	chapel/compiler/analysis/: pattern.cpp 
 	chapel/compiler/include/: vec.h 
 
+---------------------------------------------------------------------------
+
+07/26/05 08:42:54 -- jplevyak
+
+Log message:
+	Add external interface for tagging generics
+
+Modified files:
+	chapel/compiler/passes/: preAnalysisCleanup.cpp 
+	                         preAnalysisCleanup.h 
+
