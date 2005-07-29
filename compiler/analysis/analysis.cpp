@@ -2044,19 +2044,6 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       if1_add_send_result(if1, send, s->ainfo->rval);
       break;
     }
-    case EXPR_SIMPLESEQ: {
-      SimpleSeqExpr *s = dynamic_cast<SimpleSeqExpr *>(ast);
-      s->ainfo->rval = new_sym();
-      s->ainfo->rval->ast = s->ainfo;
-      if1_gen(if1, &s->ainfo->code, s->lo->ainfo->code);
-      if1_gen(if1, &s->ainfo->code, s->hi->ainfo->code);
-      if1_gen(if1, &s->ainfo->code, s->str->ainfo->code);
-      Code *send = if1_send(if1, &s->ainfo->code, 5, 1, sym_primitive, expr_simple_seq_symbol, 
-                            s->lo->ainfo->rval, s->hi->ainfo->rval, s->str->ainfo->rval, 
-                            s->ainfo->rval);
-      send->ast = s->ainfo;
-      break;
-    }
     case EXPR_LET: {
       LetExpr *s = dynamic_cast<LetExpr *>(ast);
       DefExpr* def_expr = s->symDefs->first();

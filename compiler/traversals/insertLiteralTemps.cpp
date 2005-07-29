@@ -78,22 +78,6 @@ static void replaceSequenceLiteral(SeqExpr* seqExpr) {
 }
 
 
-static void replaceArithmeticSequenceLiteral(SimpleSeqExpr* literal) {
-  if (literal->parentExpr && dynamic_cast<ForallExpr*>(literal->parentExpr)) {
-    return;
-  }
-  if (literal->parentExpr && dynamic_cast<Tuple*>(literal->parentExpr)) {
-    return;
-  }
-  AList<Expr>* argList = new AList<Expr>();
-  argList->insertAtTail(literal->lo->copy());
-  argList->insertAtTail(literal->hi->copy());
-  argList->insertAtTail(literal->str->copy());
-  Expr* baseExpr = new Variable(new UnresolvedSymbol("_aseq"));
-  literal->replace(new ParenOpExpr(baseExpr, argList));
-}
-
-
 static void replaceTupleLiteral(Tuple* tuple) {
   AList<Expr>* argList = new AList<Expr>();
   for_alist(Expr, expr, tuple->exprs) {
@@ -237,9 +221,7 @@ static void createTupleBaseType(int size) {
 
 
 void InsertLiteralTemps::postProcessExpr(Expr* expr) {
-  if (SimpleSeqExpr* literal = dynamic_cast<SimpleSeqExpr*>(expr)) {
-    replaceArithmeticSequenceLiteral(literal);
-  } else if (SeqExpr* literal = dynamic_cast<SeqExpr*>(expr)) {
+  if (SeqExpr* literal = dynamic_cast<SeqExpr*>(expr)) {
     replaceSequenceLiteral(literal);
   } else if (ComplexLiteral* literal = dynamic_cast<ComplexLiteral*>(expr)) {
     replaceComplexLiteral(literal);

@@ -1280,7 +1280,12 @@ reduction:
 range:
   expr TDOTDOT expr
     {
-      $$ = new SimpleSeqExpr($1, $3);
+      AList<Expr>* argList = new AList<Expr>();
+      argList->insertAtTail($1);
+      argList->insertAtTail($3);
+      argList->insertAtTail(new IntLiteral("1", 1));
+      Expr* baseExpr = new Variable(new UnresolvedSymbol("_aseq"));
+      $$ = new ParenOpExpr(baseExpr, argList);
     }
 ;
 

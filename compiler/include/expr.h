@@ -459,25 +459,6 @@ class SeqExpr : public Expr {
 };
 
 
-class SimpleSeqExpr : public Expr {
- public:
-  Expr* lo;
-  Expr* hi;
-  Expr* str;
-
-  SimpleSeqExpr(Expr* init_lo, Expr* init_hi, 
-                Expr* init_str = new IntLiteral("1", 1));
-  COPY_DEF(SimpleSeqExpr);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseExpr(Traversal* traversal);
-
-  Type* typeInfo(void);
-
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-};
-
-
 class ForallExpr : public Expr {
  public:
   AList<DefExpr>* indices;

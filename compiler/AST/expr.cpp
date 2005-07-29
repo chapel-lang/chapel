@@ -1576,63 +1576,6 @@ void SeqExpr::codegen(FILE* outfile) {
 }
 
 
-SimpleSeqExpr::SimpleSeqExpr(Expr* init_lo, Expr* init_hi, Expr* init_str) :
-  Expr(EXPR_SIMPLESEQ),
-  lo(init_lo),
-  hi(init_hi),
-  str(init_str) 
-{ }
-
-
-SimpleSeqExpr*
-SimpleSeqExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new SimpleSeqExpr(COPY_INTERNAL(lo),
-                           COPY_INTERNAL(hi),
-                           COPY_INTERNAL(str));
-}
-
-
-void SimpleSeqExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == lo) {
-    lo = dynamic_cast<Expr*>(new_ast);
-  } else if (old_ast == hi) {
-    hi = dynamic_cast<Expr*>(new_ast);
-  } else if (old_ast == str) {
-    str = dynamic_cast<Expr*>(new_ast);
-  } else {
-    INT_FATAL(this, "Unexpected case in CastExpr::replaceChild");
-  }
-}
-
-
-void SimpleSeqExpr::traverseExpr(Traversal* traversal) {
-  TRAVERSE(lo, traversal, false);
-  TRAVERSE(hi, traversal, false);
-  TRAVERSE(str, traversal, false);
-}
-
-
-Type* SimpleSeqExpr::typeInfo(void) {
-  return dtUnknown;
-}
-
-
-void SimpleSeqExpr::print(FILE* outfile) {
-  lo->print(outfile);
-  printf("..");
-  hi->print(outfile);
-  if (str->isComputable() && str->typeInfo() == dtInteger && 
-      str->intVal() != 1) {
-    printf(" by ");
-    str->print(outfile);
-  }
-}
-
-
-void SimpleSeqExpr::codegen(FILE* outfile) {
-  fprintf(outfile, "This is SimpleSeqExpr's codegen.\n");
-}
-
 ForallExpr::ForallExpr(AList<DefExpr>* initIndices,
                        AList<Expr>* initIterators,
                        Expr* initInnerExpr,
