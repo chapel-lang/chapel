@@ -40754,3 +40754,26 @@ Modified files:
 	chapel/compiler/traversals/: insertLiteralTemps.cpp 
 	                             verifyASTType.cpp 
 
+---------------------------------------------------------------------------
+
+07/29/05 16:16:52 -- deitz
+
+Log message:
+	Removed Expr methods intVal and precedence as these will need to be
+	substantively revisited after BinOp, UnOp, AssignOp, and ParenOpExpr
+	are unified into CallExpr.
+	
+	Futurized test/types/enum/deitz/test_enum5 because this test
+	initializes an enum symbol with an expression, in this case, -1.  Do
+	we need a way to compute this value?  Should we require that all enum
+	symbols be 'param' integers?  This is not so easy to compute since
+	unary minus can be overloaded.  In general, we do need a way to fold
+	constants and params.  How should we do this?
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: expr.h 
+Added files:
+	chapel/test/types/enum/deitz/: test_enum5.future 
+
