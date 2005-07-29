@@ -153,9 +153,9 @@
 
 %type <pstmt> select_stmt label_stmt goto_stmt break_stmt continue_stmt
 %type <pstmt> usertype_decl type_decl fn_decl struct_decl mod_decl
-%type <pstmt> function_body_single_stmt 
+%type <pstmt> function_body_single_stmt empty_stmt
 %type <pstmt> assign_stmt if_stmt return_stmt loop forloop whileloop enum_decl
-%type <pstmt> stmt call_stmt noop_stmt decl typevar_decl
+%type <pstmt> stmt call_stmt decl typevar_decl
 %type <pstmtls> decl_ls stmt_ls modulebody program
 %type <pstmtls> var_decl var_decl_inner var_decl_inner_ls record_inner_var_ls
 %type <pblockstmt> function_body_stmt block_stmt
@@ -228,7 +228,7 @@ stmt_ls:
 
 
 function_body_single_stmt:
-  noop_stmt
+  empty_stmt
 | if_stmt
 | select_stmt
 | loop
@@ -245,7 +245,7 @@ function_body_stmt:
 
 
 stmt:
-  noop_stmt
+  empty_stmt
 | label_stmt
 | goto_stmt
 | break_stmt
@@ -263,12 +263,6 @@ stmt:
     { $$ = $1; }
 | error
     { printf("syntax error"); exit(1); }
-;
-
-
-noop_stmt:
-  TSEMI
-    { $$ = new NoOpStmt(); }
 ;
 
 
@@ -325,6 +319,14 @@ block_stmt:
     {
       $$ = Symboltable::finishCompoundStmt($<pblockstmt>3, $4);
       $$->blockType = $1;
+    }
+;
+
+
+empty_stmt:
+  TSEMI
+    {
+      $$ = Symboltable::finishCompoundStmt(Symboltable::startCompoundStmt(), NULL);
     }
 ;
 

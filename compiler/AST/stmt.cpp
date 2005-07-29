@@ -119,27 +119,6 @@ void Stmt::callReplaceChild(BaseAST* new_ast) {
 }
 
 
-NoOpStmt::NoOpStmt(void) :
-  Stmt(STMT_NOOP)
-{}
-
-
-NoOpStmt*
-NoOpStmt::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new NoOpStmt();
-}
-
-
-void NoOpStmt::print(FILE* outfile) {
-  fprintf(outfile, ";");
-}
-
-
-void NoOpStmt::codegenStmt(FILE* outfile) {
-  //  fprintf(outfile, "{}\n");
-}
-
-
 ExprStmt::ExprStmt(Expr* initExpr) :
   Stmt(STMT_EXPR),
   expr(initExpr) 

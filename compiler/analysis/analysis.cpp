@@ -1750,7 +1750,6 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       c->ast = s->ainfo;
       break;
     }
-    case STMT_NOOP: break;
     case STMT_EXPR:
       if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(ast)) {
         if (DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr)) {

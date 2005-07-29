@@ -47,13 +47,12 @@ void ScopeResolveGotos::preProcessStmt(Stmt* stmt) {
     FindBreakOrContinue* traversal = new FindBreakOrContinue();
     loop_block->body->traverse(traversal, true);
     if (traversal->found) {
-      NoOpStmt* noop_stmt = new NoOpStmt();
-      stmt->replace(noop_stmt);
-
+      BlockStmt* block_stmt = new BlockStmt(new AList<Stmt>());
+      stmt->replace(block_stmt);
       char* label_name = glomstrings(2, "_loop_label_", intstring(uid++));
       LabelSymbol* label_symbol = new LabelSymbol(label_name);
       LabelStmt* label_stmt = new LabelStmt(label_symbol, stmt);
-      noop_stmt->replace(label_stmt);
+      block_stmt->replace(label_stmt);
       currentLoop = label_stmt;
       return;
     }

@@ -38,16 +38,6 @@ class Stmt : public BaseAST {
 #define forv_Stmt(_p, _v) forv_Vec(Stmt, _p, _v)
 
 
-class NoOpStmt : public Stmt {
- public:
-  NoOpStmt(void);
-  COPY_DEF(NoOpStmt);
-
-  void print(FILE* outfile);
-  void codegenStmt(FILE* outfile);
-};
-
-
 class ExprStmt : public Stmt {
  public:
   Expr* expr;

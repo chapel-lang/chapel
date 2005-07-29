@@ -727,7 +727,7 @@ bool StructuralType::hasDefaultWriteFunction(void) {
 
 
 AList<Stmt>* StructuralType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
-  AList<Stmt>* body = new AList<Stmt>(new NoOpStmt());
+  AList<Stmt>* body = new AList<Stmt>();
   if (dynamic_cast<ClassType*>(this)) {
     Expr* write = new Variable(new UnresolvedSymbol("write"));
     AList<Stmt>* writeNil = new AList<Stmt>(new ExprStmt(new ParenOpExpr(write, new AList<Expr>(new StringLiteral("nil")))));

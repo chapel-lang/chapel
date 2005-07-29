@@ -10,7 +10,7 @@
 
 static Stmt* basic_default_init_stmt(Stmt* stmt, VarSymbol* var, Type* type) {
   if (var->noDefaultInit && var->type != dtString) {
-    return new NoOpStmt();
+    return NULL;
   } else if (type->defaultVal) {
     Expr* lhs = new Variable(var);
     Expr* rhs = type->defaultVal->copy();
@@ -24,7 +24,7 @@ static Stmt* basic_default_init_stmt(Stmt* stmt, VarSymbol* var, Type* type) {
     return new ExprStmt(init_expr);
   } else {
     INT_FATAL(var, "Failed to insert default initialization");
-    return new NoOpStmt();
+    return NULL;
   }
 }
 
@@ -54,7 +54,9 @@ static void insert_config_init(Stmt* stmt, VarSymbol* var, Type* type) {
 static void insert_basic_init(Stmt* stmt, VarSymbol* var, Type* type) {
   if (!is_Scalar_Type(type) || !var->defPoint->init) {
     if (!var->defPoint->exprType) { // SJD: UGH
-      stmt->insertBefore(basic_default_init_stmt(stmt, var, type));
+      if (Stmt* init_stmt = basic_default_init_stmt(stmt, var, type)) {
+        stmt->insertBefore(init_stmt);
+      }
     }
   }
 

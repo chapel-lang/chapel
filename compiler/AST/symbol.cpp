@@ -1273,7 +1273,7 @@ void ModuleSymbol::createInitFn(void) {
   definition = globstmts;
   BlockStmt* initFunBody;
   if (initstmts->isEmpty()) {
-    initFunBody = new BlockStmt(new AList<Stmt>(new NoOpStmt()));
+    initFunBody = new BlockStmt(new AList<Stmt>());
   } else {
     initFunBody = new BlockStmt(initstmts);
   }

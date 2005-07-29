@@ -35,7 +35,7 @@ void InlineFunctions::postProcessExpr(Expr* expr) {
         else {
           //inlined function
           fn_call->parentStmt->insertBefore(inlined_body);
-          fn_call->parentStmt->replace(new NoOpStmt());
+          fn_call->parentStmt->remove();
         }
       }
     }

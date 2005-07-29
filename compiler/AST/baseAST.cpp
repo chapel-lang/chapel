@@ -272,7 +272,6 @@ int compar_baseast(const void *ai, const void *aj) {
 
 char* astTypeName[AST_TYPE_END+1] = {
   "Stmt",
-  "NoOpStmt",
   "ExprStmt",
   "ReturnStmt",
   "BlockStmt",
@@ -366,8 +365,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
   case STMT:
   LStmtCommon:
     break;
-  case STMT_NOOP:
-    goto LStmtCommon;
   case STMT_EXPR:
   LExprStmtCommon:
     AST_ADD_CHILD(ExprStmt, expr);

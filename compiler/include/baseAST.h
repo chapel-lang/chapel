@@ -13,7 +13,6 @@ class SymScope;
  **/
 enum astType_t {
   STMT = 0,
-  STMT_NOOP,
   STMT_EXPR,
   STMT_RETURN,
   STMT_BLOCK,

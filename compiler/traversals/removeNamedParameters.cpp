@@ -9,7 +9,7 @@ void RemoveNamedParameters::postProcessExpr(Expr* expr) {
 
   if (VarInitExpr* var_init = dynamic_cast<VarInitExpr*>(expr)) {
     if (var_init->typeInfo() == dtVoid) {
-      var_init->parentStmt->replace(new NoOpStmt());
+      var_init->parentStmt->remove();
     } else {
       if (var_init->typeInfo()->defaultVal) {
         var_init->replace(var_init->typeInfo()->defaultVal->copy());

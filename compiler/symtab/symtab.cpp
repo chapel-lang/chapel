@@ -70,7 +70,7 @@ void Symboltable::doneParsingPreludes(void) {
   commonModule->setModScope(currentScope);
   commonModule->modScope->setContext(NULL, commonModule, NULL);
 
-  commonModule->stmts->insertAtTail(new NoOpStmt());
+  commonModule->stmts->insertAtTail(new BlockStmt(new AList<Stmt>()));
 
   registerModule(commonModule);
 
