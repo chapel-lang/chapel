@@ -40719,3 +40719,22 @@ Modified files:
 	chapel/compiler/passes/: preAnalysisCleanup.cpp 
 	                         preAnalysisCleanup.h 
 
+---------------------------------------------------------------------------
+
+07/29/05 15:20:03 -- deitz
+
+Log message:
+	Removed NoOpStmt.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h stmt.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: inlineFunctions.cpp 
+	                             insertVariableInitializations.cpp 
+	                             removeNamedParameters.cpp 
+	                             scopeResolveGotos.cpp 
+	                             verifyASTType.cpp 
+
