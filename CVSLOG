@@ -40738,3 +40738,19 @@ Modified files:
 	                             scopeResolveGotos.cpp 
 	                             verifyASTType.cpp 
 
+---------------------------------------------------------------------------
+
+07/29/05 15:45:05 -- deitz
+
+Log message:
+	Removed SimpleSeqExpr.  Arithmetic sequences are now formed into
+	constructor calls to _aseq at parse time.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h expr.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/traversals/: insertLiteralTemps.cpp 
+	                             verifyASTType.cpp 
+
