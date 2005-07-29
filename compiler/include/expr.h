@@ -15,24 +15,6 @@ extern char* cUnOp[];
 extern char* cBinOp[];
 extern char* cGetsOp[];
 
-enum precedenceType {
-  PREC_LOWEST = 0,
-  PREC_LOGOR,
-  PREC_LOGAND,
-  PREC_BITOR,
-  PREC_BITXOR,
-  PREC_BITAND,
-  PREC_EQUALITY,
-  PREC_COMPARE,
-  PREC_BITS,
-  PREC_PLUSMINUS,
-  PREC_MULTDIV,
-  PREC_UNOP, 
-  PREC_EXP,
-  PREC_HIGHEST
-};
-
-
 /************* IF CHANGING THIS, change cUnOp as well... *****************/
 enum unOpType {
   UNOP_PLUS = 0,
@@ -117,9 +99,7 @@ class Expr : public BaseAST {
   virtual bool isParam(void);
   
   virtual bool isConst(void);
-  virtual long intVal(void);
   virtual int rank(void);
-  virtual precedenceType precedence(void);
 
   virtual void printCfgInitString(FILE* outfile);
 
@@ -166,7 +146,6 @@ class IntLiteral : public Literal {
 
   IntLiteral(char* init_str, int init_val);
   COPY_DEF(IntLiteral);
-  long intVal(void);
 
   Type* typeInfo(void);
 
@@ -224,7 +203,6 @@ class UnOp : public Expr {
   UnOp(unOpType init_type, Expr* op);
   COPY_DEF(UnOp);
   bool isComputable(void);
-  long intVal(void);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
@@ -233,7 +211,6 @@ class UnOp : public Expr {
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
-  precedenceType precedence(void);
 };
 
 
@@ -252,7 +229,6 @@ class BinOp : public Expr {
   bool isComputable(void);
   void print(FILE* outfile);
   void codegen(FILE* outfile);
-  precedenceType precedence(void);
 };
 
 
@@ -266,7 +242,6 @@ class AssignOp : public BinOp {
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
-  precedenceType precedence(void);
 };
 
 
@@ -305,7 +280,6 @@ class Variable : public Expr {
   virtual bool isConst(void);
   virtual bool isParam(void);
   virtual bool isComputable();
-  virtual long intVal(void);
   void print(FILE* outfile);
   void codegen(FILE* outfile);
 };

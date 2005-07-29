@@ -61,30 +61,6 @@ char* cGetsOp[NUM_GETS_OPS] = {
 };
 
 
-// Never change the ordering of this, since it's indexed using the 
-// binOpType enumeration.
-
-static precedenceType binOpPrecedence[NUM_BINOPS] = {
-  PREC_PLUSMINUS,     // BINOP_PLUS
-  PREC_PLUSMINUS,     // BINOP_MINUS
-  PREC_MULTDIV,       // BINOP_MULT
-  PREC_MULTDIV,       // BINOP_DIV
-  PREC_MULTDIV,       // BINOP_MOD
-  PREC_EQUALITY,      // BINOP_EQUAL
-  PREC_COMPARE,       // BINOP_LEQUAL
-  PREC_COMPARE,       // BINOP_GEQUAL
-  PREC_COMPARE,       // BINOP_GTHAN
-  PREC_COMPARE,       // BINOP_LTHAN
-  PREC_EQUALITY,      // BINOP_NEQUAL
-  PREC_BITAND,        // BINOP_BITAND
-  PREC_BITOR,         // BINOP_BITOR
-  PREC_BITXOR,        // BINOP_BITXOR
-  PREC_LOGAND,        // BINOP_LOGAND
-  PREC_LOGOR,         // BINOP_LOGOR
-  PREC_EXP            // BINOP_EXP
-};
-
-
 Expr::Expr(astType_t astType) :
   BaseAST(astType),
   parentSymbol(NULL),
@@ -168,22 +144,10 @@ bool Expr::isParam(void){
   return this->isComputable();  
 }
 
-long Expr::intVal(void) {
-  INT_FATAL(this, "intVal() called on non-computable/non-int expression");
-
-  return 0;
-}
-
-
 int Expr::rank(void) {
   Type* exprType = this->typeInfo();
 
   return exprType->rank();
-}
-
-precedenceType Expr::precedence(void) {
-  return PREC_LOWEST;
-
 }
 
 
@@ -356,11 +320,6 @@ IntLiteral::IntLiteral(char* init_str, int init_val) :
 IntLiteral*
 IntLiteral::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   return new IntLiteral(copystring(str), val);
-}
-
-
-long IntLiteral::intVal(void) {
-  return val;
 }
 
 
@@ -537,22 +496,6 @@ bool Variable::isComputable(void){
 }
 
 
-long Variable::intVal(void) {
-  Expr* initExpr = var->defPoint->init->expr;
-  if (isParam() || (isConst() && initExpr->isComputable())) {
-    //    fprintf(stderr, "%s is a parameter with value %ld\n", var->name, initExpr->intVal());
-    return initExpr->intVal();
-  }
-  if (isComputable()) {
-    INT_FATAL(this, "isComputable() returns true, but not sure how to find "
-              "intVal");
-  } else {
-    INT_FATAL(this, "intVal() called on non-computable Variable\n");
-  }
-  return -999;
-}
-
-
 void Variable::print(FILE* outfile) {
   var->print(outfile);
 }
@@ -667,21 +610,6 @@ bool UnOp::isComputable(void) {
 }
 
 
-long UnOp::intVal(void) {
-  switch (type) {
-  case UNOP_PLUS:
-    return operand->intVal();
-  case UNOP_MINUS:
-    return -operand->intVal();
-  case UNOP_LOGNOT:
-    return !operand->intVal();
-  default:
-    INT_FATAL(this, "intVal() called on non-computable/non-int unary expression");
-    return 0;
-  }
-}
-
-
 void UnOp::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == operand) {
     operand = dynamic_cast<Expr*>(new_ast);
@@ -711,11 +639,6 @@ void UnOp::codegen(FILE* outfile) {
 
 Type* UnOp::typeInfo(void) {
   return operand->typeInfo();
-}
-
-
-precedenceType UnOp::precedence(void) {
-  return PREC_UNOP;
 }
 
 
@@ -806,23 +729,7 @@ void BinOp::print(FILE* outfile) {
 }
 
 void BinOp::codegen(FILE* outfile) {
-  bool parensRequired =
-    parentExpr ? precedence() <= parentExpr->precedence() : true;
-
-  /** Use parens in these cases too **/
-  if (parentExpr &&
-      (parentExpr->precedence() == PREC_BITOR ||
-       parentExpr->precedence() == PREC_BITXOR ||
-       parentExpr->precedence() == PREC_BITAND ||
-       parentExpr->precedence() == PREC_LOGOR ||
-       parentExpr->precedence() == PREC_LOGAND)) {
-    parensRequired = true;
-  }
-
-  if (parensRequired) {
-    fprintf(outfile, "(");
-  }
-
+  fprintf(outfile, "(");
   if (type == BINOP_EXP) {
     fprintf(outfile, "pow(");
     left->codegen(outfile);
@@ -834,16 +741,9 @@ void BinOp::codegen(FILE* outfile) {
     fprintf(outfile, "%s", cBinOp[type]);
     right->codegen(outfile);
   }
-
-  if (parensRequired) {
-    fprintf(outfile, ")");
-  } 
+  fprintf(outfile, ")");
 }
 
-
-precedenceType BinOp::precedence(void) {
-  return binOpPrecedence[this->type];
-}
 
 AssignOp::AssignOp(getsOpType init_type, Expr* l, Expr* r) :
   BinOp(BINOP_OTHER, l, r),
@@ -920,11 +820,6 @@ void AssignOp::codegen(FILE* outfile) {
       fprintf(outfile, "*");
     right->codegen(outfile);
   }
-}
-
-
-precedenceType AssignOp::precedence(void) {
- return PREC_LOWEST;
 }
 
 

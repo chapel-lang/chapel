@@ -910,8 +910,13 @@ build_type(Type *t, bool make_default = true) {
       int i = 0;
       forv_Vec(DefExpr, def, elements) {
         Sym *ss = def->sym->asymbol->sym;
-        if (def->init && def->init->isConst() && def->init->typeInfo() == dtInteger)
-          i = def->init->intVal();
+        if (def->init) {
+          if (IntLiteral* intLiteral = dynamic_cast<IntLiteral*>(def->init->expr)) {
+            i = intLiteral->val;
+          } else {
+            USR_FATAL(def->init, "Enum symbols can only be initialized to integer literals currently.");
+          }
+        }
         build_enum_element(t->asymbol->sym, ss, i);
         t->asymbol->sym->has.add(ss);
         i++;
