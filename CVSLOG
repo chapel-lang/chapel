@@ -40867,3 +40867,14 @@ Modified files:
 Added files:
 	chapel/test/types/enum/deitz/: test_enum6.future 
 
+---------------------------------------------------------------------------
+
+08/01/05 12:21:24 -- deitz
+
+Log message:
+	Fixed a minor bug I let slip through in which uninitialized params
+	were flagged as being initialized with variables.
+
+Modified files:
+	chapel/compiler/traversals/: checkSemantics.cpp 
+
