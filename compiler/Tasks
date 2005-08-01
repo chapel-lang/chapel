@@ -1,0 +1,143 @@
+======
+TODOS:
+======
+
+Implementation List
+-------------------
+
+1 = highest priority
+2 = medium priority
+3 = lowest (domans and arrays)
+4 = long-term
+
+
+Priority 1 Tasks
+----------------
+* Remove NoOpStmt -- replace with empty block statement - complete
+
+* Rename DefaultVal to DefaultValue, Insert symbols for every
+  primitive literal, change DefaultValue to a VarSymbol
+
+* Attach a Type* type to Expr and remove typeInfo()
+
+* Remove BinOp, UnOp, AssignOp.  Rename ParenOpExpr, CallExpr - complete
+
+* Change all Exprs to have Expr on the end.  Standardize names of
+  classes
+
+* Remove FnCall
+
+* Remove UserInitExpr
+
+* Replace VarInitExpr with some symbol sentinel
+
+* Change WithExpr and UseExpr into functions
+
+* Remove CastLikeExpr
+
+* Remove SizeofExpr
+
+* Remove MemberAccessExpr.  This will be eliminated pre-analysis
+  anyway.  Store it as a CallExpr of a function named '.'
+
+* Convert VarSymbol::aspect into a Cast expression and remove it
+
+* (Roxana) Remove Type::getType()
+
+* (John) get rid of nondeterminism introduced by hashing-on-pointers
+   structures (and try to capture an instance of front-end
+   nondeterminism to eliminate it as well)
+
+* restructure verify pass; build out verify() routines on AST classes
+
+* unify union types and sum types (?)
+
+* rename "implements" to something else.  Move to class header?
+
+* remove ForwardingSymbol (?)
+
+* add PrimitiveType class -- move integers, floats, strings, and such
+  here
+
+* implement class inheritance
+
+* implement constructed classes
+
+
+Priority 2 Tasks
+----------------
+
+* Implement MemberAccess Setter Getter transform in AST.
+
+* Restructure FnSymbol/FnType to reflect division into implementation,
+  type, prototype, signature.  Store signatures as degenerate function
+  type.
+
+* Implement record passing by reference and insert explicit copies in
+  and out of functions when necessary -- eliminate PARAM_REF(?)
+
+* remove error reporting from low-level code -- propagate errors to
+  high-level
+
+* for ?t make DefExpr::exprType a DefExpr
+
+* create dispatch hierarchy and subtype hierarchy (classes appear in
+  both; value types only appear in the subtype hierarchy)
+
+* implement nil to behave as we discussed
+
+* implement visibility of methods/nested functions correctly (if we're
+  in a method, function names bind to methods; if we're in a function,
+  binds to functions?  Or maybe I'm summarizing this incorrectly...see
+  discussion above)
+
+* (Steve) go through compiler passes and sort through, unify, refactor
+
+
+
+Priority 3 Tasks
+----------------
+
+* Implement the forIterator/forallIterator function.
+
+* implement domains and arrays
+
+
+Priority 4 Tasks
+----------------
+
+* Unify compiler switches.
+
+* unify error reporting systems
+
+4C explore Doxygen -- or have someone else (Cameron?) do it for us.
+
+* add gcov/gperf abilities into nightly testing
+
+* Chapel mode for emacs
+
+* record literals
+
+* get rid of UserType after instantiation?
+
+* implement function closures ("x => f(1)")
+
+* implement primitives of different widths
+
+* add some sort of "noinit" keyword to the language to specify that
+  types and variables should be left uninitialized when declared
+
+* implement topological sorting of symbols (ensuring that functions
+  don't use default values too early, e.g.)
+
+* implement class constructors so that all members are initialized
+  with default values to prevent against read-before-write problems.
+
+* support assignment to value members in a class type specification
+  (between the colon and equals) -- maybe generate a warning for this
+  case indicating that the expression will be evaluated, used as a
+  type constraint, and dropped on the floor?
+
+* (Brad) add delta summary information into testing mails sent out
+
+* (Brad) stop squelching core dumps when developer flag is used
