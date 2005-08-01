@@ -40981,3 +40981,14 @@ Modified files:
 	                             insertThisParameters.cpp 
 	                             specializeParenOpExprs.cpp 
 
+---------------------------------------------------------------------------
+
+08/01/05 16:59:59 -- mjoyner
+
+Log message:
+	Adding support to enable iterators to use nested functions instead of sequences.
+
+Added files:
+	chapel/compiler/traversals/: createNestedFuncIterators.h 
+	                             createNestedFuncIterators.cpp 
+
