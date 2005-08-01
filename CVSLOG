@@ -40828,3 +40828,14 @@ Modified files:
 	                           pattern.cpp 
 	chapel/compiler/include/: pnode.h vec.h 
 
+---------------------------------------------------------------------------
+
+08/01/05 10:20:52 -- jplevyak
+
+Log message:
+	Add constant folding of parameters and checking for overloading of +/- on
+	primitive types.
+
+Modified files:
+	chapel/compiler/: Tasks 
+
