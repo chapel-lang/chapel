@@ -40777,3 +40777,13 @@ Modified files:
 Added files:
 	chapel/test/types/enum/deitz/: test_enum5.future 
 
+---------------------------------------------------------------------------
+
+08/01/05 09:28:01 -- jplevyak
+
+Log message:
+	Task list from July 2005 Meeting
+
+Added files:
+	chapel/compiler/: Tasks 
+
