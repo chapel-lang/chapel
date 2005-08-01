@@ -40916,3 +40916,19 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: expr.cpp 
 
+---------------------------------------------------------------------------
+
+08/01/05 16:02:48 -- deitz
+
+Log message:
+	Added bool globals postFixup, postScopeResolution, and postAnalysis to
+	indicate where we are in compilation.  These are documented in
+	passlist.h as to where they are set.
+	
+	Made the pass Verify be called implicitly after Fixup.  Removed the
+	many Verify passes from the passlist.
+
+Modified files:
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp passlist.h runpasses.cpp 
+
