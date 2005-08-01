@@ -64,6 +64,7 @@ X Remove NoOpStmt -- replace with empty block statement - complete
 * (Steve) implement constructed classes, unify ClassType and RecordType under
   StructuredType into one type, call it ClassType or something simple
 
+* (Steve) compile-time (param) constant-folding
 
 Priority 2 Tasks
 ----------------
