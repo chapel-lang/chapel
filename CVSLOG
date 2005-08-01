@@ -40878,3 +40878,18 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: checkSemantics.cpp 
 
+---------------------------------------------------------------------------
+
+08/01/05 12:44:27 -- deitz
+
+Log message:
+	Fixed a small bug in parameter initialization code.  Futurized two
+	tests that require constant folding of parameters or determining that
+	expressions are parameters.
+
+Modified files:
+	chapel/compiler/traversals/: checkSemantics.cpp 
+Added files:
+	chapel/test/trivial/roxana/: test_param_decl1.future 
+	                             test_param_init.future 
+
