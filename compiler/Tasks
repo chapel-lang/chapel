@@ -13,19 +13,19 @@ Implementation List
 
 Priority 1 Tasks
 ----------------
-* Remove NoOpStmt -- replace with empty block statement - complete
+X Remove NoOpStmt -- replace with empty block statement - complete
 
 * Rename DefaultVal to DefaultValue, Insert symbols for every
   primitive literal, change DefaultValue to a VarSymbol
 
 * Attach a Type* type to Expr and remove typeInfo()
 
-* Remove BinOp, UnOp, AssignOp.  Rename ParenOpExpr, CallExpr - complete
+* (Steve) Remove BinOp, UnOp, AssignOp.  Rename ParenOpExpr, CallExpr
 
 * Change all Exprs to have Expr on the end.  Standardize names of
   classes
 
-* Remove FnCall
+* (Steve) Remove FnCall
 
 * Remove UserInitExpr
 
@@ -61,7 +61,8 @@ Priority 1 Tasks
 
 * implement class inheritance
 
-* implement constructed classes
+* implement constructed classes, unify ClassType and RecordType under
+  StructuredType into one type, call it ClassType or something simple
 
 
 Priority 2 Tasks
