@@ -40787,3 +40787,13 @@ Log message:
 Added files:
 	chapel/compiler/: Tasks 
 
+---------------------------------------------------------------------------
+
+08/01/05 09:42:01 -- deitz
+
+Log message:
+	Tagged a couple tasks in the Tasks file.  Elaborated on a couple.
+
+Modified files:
+	chapel/compiler/: Tasks 
+
