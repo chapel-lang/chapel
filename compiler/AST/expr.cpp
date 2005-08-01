@@ -130,19 +130,16 @@ Type* Expr::typeInfo(void) {
   return dtUnknown;
 }
 
-bool Expr::isComputable(void) {
-  return false;
-}
-
 
 bool Expr::isConst(void) {
   return false;
 }
 
-//Roxana: tells if an expression is a compile-time constant
+
 bool Expr::isParam(void){
-  return this->isComputable();  
+  return false;
 }
+
 
 int Expr::rank(void) {
   Type* exprType = this->typeInfo();
@@ -270,11 +267,6 @@ Literal*
 Literal::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   INT_FATAL(this, "Illegal call to Literal::copy");
   return NULL;
-}
-
-
-bool Literal::isComputable(void) {
-  return true;
 }
 
 
@@ -483,15 +475,9 @@ bool Variable::isConst(void) {
   return var->isConst();
 }
 
-//Roxana
+
 bool Variable::isParam(void){
-        return var->isParam();
-}
-//Roxana
-bool Variable::isComputable(void){
-  VarSymbol* vs = dynamic_cast<VarSymbol*>(var);
-  if (vs && vs->defPoint->init) return vs->defPoint->init->expr->isComputable();
-  return false;
+  return var->isParam();
 }
 
 
@@ -604,11 +590,6 @@ UnOp::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
 }
 
 
-bool UnOp::isComputable(void) {
-  return (operand->isComputable() && type != UNOP_BITNOT);
-}
-
-
 void UnOp::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == operand) {
     operand = dynamic_cast<Expr*>(new_ast);
@@ -653,13 +634,6 @@ BinOp::BinOp(binOpType init_type, Expr* l, Expr* r) :
 BinOp*
 BinOp::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   return new BinOp(type, COPY_INTERNAL(left), COPY_INTERNAL(right));
-}
-
-
-bool BinOp::isComputable(void) {
-  return (left->isComputable() && right->isComputable() && type != BINOP_BITAND 
-                                && type != BINOP_BITOR && type != BINOP_BITXOR);
-                                                        
 }
 
 

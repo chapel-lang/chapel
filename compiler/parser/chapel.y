@@ -519,8 +519,6 @@ enum_item:
     }
 | identifier TASSIGN expr
     {
-      if (!$3->isComputable())
-        USR_FATAL($3, "Enumerator value for %s must be integer parameter", $1);
       $$ = new DefExpr(new EnumSymbol($1), new UserInitExpr($3));
     }
 ;

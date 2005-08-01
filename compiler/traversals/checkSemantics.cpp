@@ -5,29 +5,11 @@ static void checkFnCall(FnCall* fncall) {
   
 }
 
-
 static void checkAssignOp(AssignOp* assign) {
-  if (assign->left->isConst()) {
+  if (assign->left->isConst() || assign->left->isParam()) {
     USR_FATAL(assign, "Assigning to a constant expression");
   }
 }
-
-//Roxana: added support for legal parameter initializers
-static void checkVar(Variable* var){
-  if (var->isParam()){
-    //printf("Parameter expression.\n");
-    VarSymbol* vs = dynamic_cast<VarSymbol*>(var->var);
-    if (vs){
-      //printf("Var symbol: %s.\n", vs->name);
-      Expr* init = vs->defPoint->init->expr;
-      if (!init->isComputable()){
-        //printf("Expression is computable.\n");
-        USR_FATAL(init, "Initializing parameter to a variable expression.");
-      }
-    }
-  }
-}
-
 
 void CheckSemantics::preProcessExpr(Expr* expr) {
   FnCall* fncall = dynamic_cast<FnCall*>(expr);
@@ -40,19 +22,13 @@ void CheckSemantics::preProcessExpr(Expr* expr) {
       checkAssignOp(assign);
     }
   }
-  Variable* var = dynamic_cast<Variable*>(expr);
-  if (var) {
-    //printf("Variable.\n");
-    checkVar(var);
-  }
-#if 0
+
   if (DefExpr* defExpr = dynamic_cast<DefExpr*>(expr)) {
-    if (VarSymbol* var = dynamic_cast<VarSymbol*>(defExpr->sym)) {
-      if (var->isParam() && !defExpr->init) {
-        USR_FATAL(defExpr, "No initializer for parameter");
+    if (defExpr->sym->isParam()) {
+      if (!dynamic_cast<IntLiteral*>(defExpr->init)) {
+        USR_FATAL(defExpr, "Initializing parameter to a variable expression.");
       }
     }
   }
-#endif
 }
 

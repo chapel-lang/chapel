@@ -15,6 +15,45 @@ extern char* cUnOp[];
 extern char* cBinOp[];
 extern char* cGetsOp[];
 
+/*
+enum OperatorTag {
+  UNOP_PLUS = 0,
+  UNOP_MINUS,
+  UNOP_LOGNOT,
+  UNOP_BITNOT,
+  BINOP_PLUS,
+  BINOP_MINUS,
+  BINOP_MULT,
+  BINOP_DIV,
+  BINOP_MOD,
+  BINOP_EQUAL,
+  BINOP_NEQUAL,
+  BINOP_LEQUAL,
+  BINOP_GEQUAL,
+  BINOP_LTHAN,
+  BINOP_GTHAN,
+  BINOP_BITAND,
+  BINOP_BITOR,
+  BINOP_BITXOR,
+  BINOP_LOGAND,
+  BINOP_LOGOR,
+  BINOP_EXP,
+  BINOP_SEQCAT,
+  BINOP_BY,
+  BINOP_SUBTYPE,
+  BINOP_NOTSUBTYPE,
+  GETS_NORM,
+  GETS_PLUS,
+  GETS_MINUS,
+  GETS_MULT,
+  GETS_DIV,
+  GETS_BITAND,
+  GETS_BITOR,
+  GETS_BITXOR,
+  GETS_SEQCAT
+};
+*/
+
 /************* IF CHANGING THIS, change cUnOp as well... *****************/
 enum unOpType {
   UNOP_PLUS = 0,
@@ -94,7 +133,6 @@ class Expr : public BaseAST {
   virtual void traverseExpr(Traversal* traversal);
 
   virtual Type* typeInfo(void);
-  virtual bool isComputable(void);
   
   virtual bool isParam(void);
   
@@ -121,7 +159,6 @@ class Literal : public Expr {
 
   Literal(astType_t astType, char* init_str);
   COPY_DEF(Literal);
-  bool isComputable(void);
 
   void print(FILE* outfile);
   void codegen(FILE* outfile);
@@ -202,7 +239,6 @@ class UnOp : public Expr {
 
   UnOp(unOpType init_type, Expr* op);
   COPY_DEF(UnOp);
-  bool isComputable(void);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
@@ -226,7 +262,6 @@ class BinOp : public Expr {
   void traverseExpr(Traversal* traversal);
 
   Type* typeInfo(void);
-  bool isComputable(void);
   void print(FILE* outfile);
   void codegen(FILE* outfile);
 };
@@ -279,7 +314,6 @@ class Variable : public Expr {
   Type* typeInfo(void);
   virtual bool isConst(void);
   virtual bool isParam(void);
-  virtual bool isComputable();
   void print(FILE* outfile);
   void codegen(FILE* outfile);
 };
