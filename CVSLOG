@@ -40811,3 +40811,20 @@ Modified files:
 	chapel/compiler/symtab/: insertDefaultInitVariables.cpp 
 	chapel/compiler/include/: type.h 
 
+---------------------------------------------------------------------------
+
+08/01/05 10:17:04 -- jplevyak
+
+Log message:
+	Add "Accum" class which uses a Set and a Vec to accumulate
+	  a set of things while preserving the order.
+	Fix a possible SEGV in on the logging code from accessing
+	  NULL elements of a set.
+	Sort the Symbols for instantiated code to eliminate another case
+	  of non-determinism.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp fa.cpp fun.cpp 
+	                           pattern.cpp 
+	chapel/compiler/include/: pnode.h vec.h 
+
