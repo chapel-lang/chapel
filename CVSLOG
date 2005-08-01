@@ -40893,3 +40893,13 @@ Added files:
 	chapel/test/trivial/roxana/: test_param_decl1.future 
 	                             test_param_init.future 
 
+---------------------------------------------------------------------------
+
+08/01/05 13:37:23 -- jplevyak
+
+Log message:
+	Grab SizeofExpr, CastExpr and "aspect"
+
+Modified files:
+	chapel/compiler/: Tasks 
+
