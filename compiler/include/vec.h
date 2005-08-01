@@ -20,7 +20,8 @@
 #define SET_MAX_SEQUENTIAL      5
 #define SET_INITIAL_INDEX       2
 
-template <class C> class Vec : public gc {
+template <class C> 
+class Vec : public gc {
  public:
   int           n;
   int           i;      // size index for sets
@@ -63,8 +64,8 @@ template <class C> class Vec : public gc {
   void reverse();
   C* end() { return v + n; }
   Vec<C>& operator=(Vec<C> &v) { this->copy(v); return *this; }
-  //RED: for things like quickSort
-  int length () {return n;}
+  // RED: for things like quickSort
+  int length () { return n; }
   void quickSort(int left, int right);
   
  private:
@@ -73,9 +74,15 @@ template <class C> class Vec : public gc {
   void addx();
 };
 
-//c -- class, p pointer to the first vec element of type c, v -- vector
+// c -- class, p -- pointer to elements of v, v -- vector
 #define forv_Vec(_c, _p, _v) if ((_v).n) for (_c *qq__##_p = (_c*)0, *_p = (_v).v[0]; \
                     ((intptr_t)(qq__##_p) < (_v).n) && ((_p = (_v).v[(intptr_t)qq__##_p]) || 1); qq__##_p = (_c*)(((intptr_t)qq__##_p) + 1))
+
+template <class C> class Accum : public gc { public:
+  Vec<C> asset;
+  Vec<C> asvec;
+  void add(C c) { if (asset.set_add(c)) asvec.add(c); }
+};
 
 // Intervals store sets in interval format (e.g. [1..10][12..12]).
 // Inclusion test is by binary search on intervals.
@@ -152,23 +159,22 @@ Vec<C>::clear() {
   i = 0;
 }
 
-//RED: quicksort
+// RED: quicksort
 template <class C> void Vec<C>::quickSort(int left, int right) {
   C pivot, temp;
   int l, r;
   if (left < right) {
     l = left; 
     r = right;
-    pivot = v[(l+r)>>1];
+    pivot = v[(l + r) >> 1];
     while (l <= r) {
       C vl = v[l];
       C vr = v[r];
-      //RED <, >, == operators for C have to be overloaded
-      //some awkward workaround instead
-      while (vl->lessThan(vl, pivot)) {l++; vl = v[l]; }
-      //while((v[l].operator<(pivot))) l++; 
-      while (vr->greaterThan(vr, pivot)) {r--; vr = v[r]; }
-    
+      // RED <, >, == operators for C have to be overloaded
+      // some awkward workaround instead
+      while (vl->lessThan(vl, pivot)) { l++; vl = v[l]; }
+      // while((v[l].operator<(pivot))) l++; 
+      while (vr->greaterThan(vr, pivot)) { r--; vr = v[r]; }
       if (l <= r ) {
         temp = v[r];
         v[r] = v[l];
@@ -177,7 +183,6 @@ template <class C> void Vec<C>::quickSort(int left, int right) {
         r--;
       }
     }
-  
     quickSort(left, r);
     quickSort(l, right);
   }

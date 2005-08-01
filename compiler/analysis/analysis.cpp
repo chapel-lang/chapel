@@ -407,6 +407,7 @@ install_new_function(FnSymbol *f, FnSymbol *old_f, Map<BaseAST*,BaseAST*> *map =
     syms.add(f->defPoint->parentStmt);
     funs.add(f);
   }
+  qsort(syms.v, syms.n, sizeof(syms.v[0]), compar_baseast);
   map_asts(syms);
   build_types(syms);
   build_symbols(syms);
@@ -534,7 +535,7 @@ ACallbacks::formal_to_generic(Sym *s) {
   ParamSymbol *p = dynamic_cast<ParamSymbol*>(s->asymbol->symbol);
   if (p->isGeneric && p->typeVariable)
     return p->typeVariable->definition->asymbol->sym;
-  return s;
+  return 0;
 }
 
 Fun *
@@ -613,10 +614,12 @@ ACallbacks::instantiate_generic(Match *m) {
   Map<BaseAST *, BaseAST *> substitutions;
   form_SymSym(s, m->generic_substitutions) {
     Type *t = dynamic_cast<Type*>(s->key->asymbol->symbol);
-    ParamSymbol *p = dynamic_cast<ParamSymbol*>(s->key->asymbol->symbol);
+#if 0
     if (!t)
       if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(s->key->asymbol->symbol))
         t = ts->definition;
+#endif
+    ParamSymbol *p = dynamic_cast<ParamSymbol*>(s->key->asymbol->symbol);
     if (!t)
       if (p && p->isGeneric && p->typeVariable)
         t = p->typeVariable->definition;

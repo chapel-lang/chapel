@@ -27,11 +27,9 @@ class PNode : public gc {
  public:
   Code *code;
   int id;
-  uint  is_dead : 1;
-        //variables this node assigns
-  Vec<Var *> lvals;
-  //variables this node reads
-  Vec<Var *> rvals;
+  uint is_dead : 1;
+  Vec<Var *> lvals; // variables this node assigns
+  Vec<Var *> rvals; // variables this node reads
   Vec<Var *> tvals;
 
   // Control-Flow Graph (CFG): cfg.cpp, ssu.cpp 
@@ -43,20 +41,15 @@ class PNode : public gc {
   Vec<PNode *> conc_pred;
 #endif
 
-  // Single-Entry Single-Exit Region (SESE): ssu.cpp
-  Region *region;
+  Region *region; // Single-Entry Single-Exit Region (SESE): ssu.cpp
 
   // Single-Static Value Functions
-  //MOVE nodes that logically follow this node
-  Vec<PNode *> phi;
-  //MOVE nodes that logically precede this node
-  Vec<PNode *> phy;
+  Vec<PNode *> phi; // MOVE nodes that logically follow this node
+  Vec<PNode *> phy; // MOVE nodes that logically precede this node
 
-  // Primitive
-  Prim *prim;
+  Prim *prim; // Primitive
 
-  // Callees
-  Callees *callees;
+  Callees *callees; // Callees
   Callees *next_callees;
 
   // Temporary Space
@@ -69,23 +62,17 @@ class PNode : public gc {
   Vec<Var *> lvals_set; // ssu.cpp
   Map<PNode *, int> cfg_pred_index;  // ssu.cpp, cg.cpp
 
-  // Dominators
-  Dom *dom; // dom.cpp
-  
-  // Cloning
-  Sym *creates;
+  Dom *dom; // Dominators dom.cpp 
+  Sym *creates; // Cloning
 
-  // inline.cpp
   float execution_frequency;
-  float false_branch_frequency;
+  float false_branch_frequency; // inline.cpp
 
-  // Constructors
   PNode(Code *c);
   PNode();
 };
 #define forv_PNode(_p, _v) forv_Vec(PNode, _p, _v)
 
-void collect_Vars_PNode(PNode *n, Vec<Var *> &vars);
 int compar_pnodes(const void *ai, const void *aj);
 
 typedef Vec<PNode *> VecPNode;

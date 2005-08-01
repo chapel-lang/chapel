@@ -77,14 +77,14 @@ Fun::collect_PNodes(Vec<PNode *> &v) {
         v.add(p);
 }
 
-void
-collect_Vars_PNode(PNode *n, Vec<Var *> &vars) {
+static void
+collect_Vars_PNode(PNode *n, Accum<Var *> &vars) {
   forv_Var(v, n->rvals)
-    vars.set_add(v);
+    vars.add(v);
   forv_Var(v, n->lvals)
-    vars.set_add(v);
+    vars.add(v);
   forv_Var(v, n->tvals)
-    vars.set_add(v);
+    vars.add(v);
   forv_PNode(p, n->phi)
     collect_Vars_PNode(p, vars);
   forv_PNode(p, n->phy)
@@ -92,8 +92,9 @@ collect_Vars_PNode(PNode *n, Vec<Var *> &vars) {
 }
 
 void
-Fun::collect_Vars(Vec<Var *> &vars, Vec<PNode *> *nodes) {
+Fun::collect_Vars(Vec<Var *> &avars, Vec<PNode *> *nodes) {
   Vec<PNode *> sv, v;
+  Accum<Var *> vars;
   if (!nodes) nodes = &v;
   if (!entry)
     return;
@@ -105,10 +106,10 @@ Fun::collect_Vars(Vec<Var *> &vars, Vec<PNode *> *nodes) {
         nodes->add(p);
   }
   forv_MPosition(p, positional_arg_positions)
-    vars.set_add(args.get(p));
+    vars.add(args.get(p));
   forv_Var(v, rets)
-    vars.set_add(v);
-  vars.set_to_vec();
+    vars.add(v);
+  avars.copy(vars.asvec);
 }
 
 static void

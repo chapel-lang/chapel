@@ -2082,7 +2082,7 @@ show_violations(FA *fa, FILE *fp) {
           fprintf(fp, " send:%d", v->send->var->sym->id);
         fprintf(fp, "\n");
         fprintf(fp, "note: candidates are:\n");
-        forv_Fun(f, *v->funs) {
+        forv_Fun(f, *v->funs) if (f) {
           show_fun(f, fp);
           fprintf(fp, "\n");
         }

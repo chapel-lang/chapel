@@ -652,6 +652,8 @@ unify_generic_type(Sym *formal, Sym *gtype, Sym *concrete_value, Map<Sym *, Sym 
   if (formal->is_generic) {
     if (gtype->specializers.set_in(concrete_type->meta_type)) {
       Sym *generic = if1->callback->formal_to_generic(formal);
+      if (!generic)
+        return 0;
       substitutions.put(generic, concrete_type);
       return 1;
     }
