@@ -7,6 +7,13 @@
 
 #define DEFAULT_SYSTEM_DIR      "."
 
+/***
+ ***  Compiler Phases
+ ***/
+extern bool postFixup;
+extern bool postScopeResolution;
+extern bool postAnalysis;
+
 extern FILE* html_index_file;
 
 // Begin temporary development flags

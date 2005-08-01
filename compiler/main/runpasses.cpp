@@ -63,24 +63,34 @@ static void runPass(char* passName, Pass* pass, char* args) {
             ((double)((stopTime.tv_sec*1e6+stopTime.tv_usec) - 
                       (startTime.tv_sec*1e6+startTime.tv_usec))) / 1e6);
   }
+  if (!strcmp(passName, "Fixup")) {
+    postFixup = true;
+  } else if (!strcmp(passName, "ScopeResolveSymbols")) {
+    postScopeResolution = true;
+  } else if (!strcmp(passName, "RemoveTypeVariableFormals")) {
+    postAnalysis = true;
+  }
+
+  if (postFixup) {
+    Verify* verify = new Verify();
+    verify->run(Symboltable::getModuleList(MODULES_ALL));
+  }
   if (fdump_html) {
     gettimeofday(&stopTime, &timezone);
-    if (strcmp(passName, "Verify")) {
-      fprintf(html_index_file, "<TR><TD>", passName);
-      if (!strcmp(passName, "RunAnalysis")) {
-        fprintf(html_index_file, "<A HREF=\"dump.html\">");
-      }
-      fprintf(html_index_file, "%s", passName);
-      int analysis_pass = !strcmp(passName, "RunAnalysis");
-      if (analysis_pass) {
-        fprintf(html_index_file, "</A>");
-      }
-      fprintf(html_index_file, "</TD><TD>", passName);
-      HtmlView* htmlview = new HtmlView(analysis_pass);
-      htmlview->setArgs(glomstrings(2, "html ", passName));
-      htmlview->run(Symboltable::getModuleList(MODULES_CODEGEN));
-      fprintf(html_index_file, "</TD></TR>", passName);
+    fprintf(html_index_file, "<TR><TD>", passName);
+    if (!strcmp(passName, "RunAnalysis")) {
+      fprintf(html_index_file, "<A HREF=\"dump.html\">");
     }
+    fprintf(html_index_file, "%s", passName);
+    int analysis_pass = !strcmp(passName, "RunAnalysis");
+    if (analysis_pass) {
+      fprintf(html_index_file, "</A>");
+    }
+    fprintf(html_index_file, "</TD><TD>", passName);
+    HtmlView* htmlview = new HtmlView(analysis_pass);
+    htmlview->setArgs(glomstrings(2, "html ", passName));
+    htmlview->run(Symboltable::getModuleList(MODULES_CODEGEN));
+    fprintf(html_index_file, "</TD></TR>", passName);
   }
 }
 
