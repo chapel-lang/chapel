@@ -82,7 +82,7 @@ static void build_constructor(StructuralType* structType) {
   DefExpr* def_expr = new DefExpr(fn->_this);
   stmts->insertAtTail(new ExprStmt(def_expr));
   char* description = glomstrings(2, "instance of class ", structType->symbol->name);
-  AList<Expr>* alloc_args = new AList<Expr>(new IntLiteral("1", 1));
+  AList<Expr>* alloc_args = new AList<Expr>(new IntLiteral(1));
   alloc_args->insertAtTail(new SizeofExpr(new Variable(fn->_this)));
   alloc_args->insertAtTail(new StringLiteral(description));
   Symbol* alloc_sym = Symboltable::lookupInternal("_chpl_malloc");

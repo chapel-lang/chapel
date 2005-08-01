@@ -1281,7 +1281,7 @@ range:
       AList<Expr>* argList = new AList<Expr>();
       argList->insertAtTail($1);
       argList->insertAtTail($3);
-      argList->insertAtTail(new IntLiteral("1", 1));
+      argList->insertAtTail(new IntLiteral(1));
       Expr* baseExpr = new Variable(new UnresolvedSymbol("_aseq"));
       $$ = new ParenOpExpr(baseExpr, argList);
     }
@@ -1290,7 +1290,7 @@ range:
 
 intliteral:
   INTLITERAL
-    { $$ = new IntLiteral(yytext, atol(yytext)); }
+    { $$ = new IntLiteral(yytext); }
 ;
 
 

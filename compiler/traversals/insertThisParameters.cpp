@@ -65,7 +65,7 @@ void InsertThisParameters::preProcessExpr(Expr* expr) {
       dynamic_cast<VarSymbol*>(fn->_this)->noDefaultInit = true;
       fn->body->body->insertAtHead(new ExprStmt(this_decl));
       char* description = glomstrings(2, "instance of class ", typeSym->name);
-      AList<Expr>* alloc_args = new AList<Expr>(new IntLiteral("1", 1));
+      AList<Expr>* alloc_args = new AList<Expr>(new IntLiteral(1));
       alloc_args->insertAtTail(new SizeofExpr(new Variable(fn->_this)));
       alloc_args->insertAtTail(new StringLiteral(description));
       Symbol* alloc_sym = Symboltable::lookupInternal("_chpl_malloc");

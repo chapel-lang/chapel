@@ -17,7 +17,7 @@ decomposeStmtFunction(ParenOpExpr* parenOpExpr, char* newFunctionName) {
 
 static ExprStmt* genExit(void) {
   Expr* rtexit = new Variable(new UnresolvedSymbol("exit"));
-  IntLiteral* exitZero = new IntLiteral("0", 0);
+  IntLiteral* exitZero = new IntLiteral(0);
   AList<Expr>* status = new AList<Expr>(exitZero);
   Expr* callRtexit = new ParenOpExpr(rtexit, status);
   return new ExprStmt(callRtexit);
@@ -40,7 +40,7 @@ static ExprStmt* genWrite(Literal* expression) {
 
 
 static ExprStmt* genIntWriteExpr(int newInt) {
-  IntLiteral* expression = new IntLiteral(intstring(newInt), newInt);
+  IntLiteral* expression = new IntLiteral(newInt);
   return genWrite(expression);
 }
 

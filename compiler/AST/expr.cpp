@@ -283,15 +283,28 @@ void Literal::codegen(FILE* outfile) {
 }
 
 
-BoolLiteral::BoolLiteral(char* init_str, bool init_val) :
-  Literal(EXPR_BOOLLITERAL, init_str),
-  val(init_val)
+BoolLiteral::BoolLiteral(char* initStr) :
+  Literal(EXPR_BOOLLITERAL, initStr)
+{
+  if (!strcmp(initStr, "true")) {
+    val = true;
+  } else if (!strcmp(initStr, "false")) {
+    val = false;
+  } else {
+    INT_FATAL("Bad call to BoolLiteral with String %s", initStr);
+  }
+}
+
+
+BoolLiteral::BoolLiteral(bool initVal) :
+  Literal(EXPR_BOOLLITERAL, initVal ? copystring("true") : copystring("false")),
+  val(initVal)
 {}
 
 
 BoolLiteral*
 BoolLiteral::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new BoolLiteral(copystring(str), val);
+  return new BoolLiteral(str);
 }
 
 
@@ -305,15 +318,21 @@ Type* BoolLiteral::typeInfo(void) {
 }
 
 
-IntLiteral::IntLiteral(char* init_str, int init_val) :
-  Literal(EXPR_INTLITERAL, init_str),
-  val(init_val) 
+IntLiteral::IntLiteral(char* initStr) :
+  Literal(EXPR_INTLITERAL, initStr),
+  val(atol(initStr)) 
+{}
+
+
+IntLiteral::IntLiteral(int initVal) :
+  Literal(EXPR_INTLITERAL, intstring(initVal)),
+  val(initVal) 
 {}
 
 
 IntLiteral*
 IntLiteral::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new IntLiteral(copystring(str), val);
+  return new IntLiteral(str);
 }
 
 

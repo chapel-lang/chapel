@@ -1252,7 +1252,7 @@ void ModuleSymbol::createInitFn(void) {
     // create a boolean variable to guard module initialization
     DefExpr* varDefExpr = Symboltable::defineSingleVarDef(runOnce,
                                                           dtBoolean,
-                                                          new BoolLiteral("true", true),
+                                                          new BoolLiteral(true),
                                                           VAR_NORMAL,
                                                           VAR_VAR);
     // insert its definition in the common module's init function
@@ -1264,7 +1264,7 @@ void ModuleSymbol::createInitFn(void) {
     // filtering)
     Expr* assignVar = new AssignOp(GETS_NORM, 
                                    new Variable(new UnresolvedSymbol(runOnce)), 
-                                   new BoolLiteral("false", false));
+                                   new BoolLiteral(false));
     definition->insertAtHead(new ExprStmt(assignVar));
   }
 

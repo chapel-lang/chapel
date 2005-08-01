@@ -123,7 +123,7 @@ static void replaceTupleLiteral2(Tuple* tuple) {
                                       new ParenOpExpr(
                                         new Variable(tmp),
                                         new AList<Expr>(
-                                          new IntLiteral(intstring(i), i))));
+                                          new IntLiteral(i))));
     tuple->getStmt()->insertAfter(new ExprStmt(assignOp));
     i++;
   }
@@ -180,7 +180,7 @@ static void createTupleBaseType(int size) {
       new ParamSymbol(PARAM_PARAMETER, "index", dtInteger);
     AList<DefExpr>* formals = new AList<DefExpr>(new DefExpr(paramSymbol));
     Expr* where = new BinOp(BINOP_EQUAL, new Variable(paramSymbol),
-                            new IntLiteral(intstring(i), i));
+                            new IntLiteral(i));
     Symboltable::continueFnDef(fn, formals, dtUnknown, true, where);
     AList<Stmt>* body = new AList<Stmt>(new ReturnStmt(new Variable(fields.v[i-1])));
     Symboltable::finishFnDef(fn, new BlockStmt(body));

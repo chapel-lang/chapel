@@ -469,10 +469,10 @@ get_constant_Expr(Sym *c) {
         switch (c->type->num_index) {
           default: fail("type unsupported in AST");
           case IF1_INT_TYPE_1:
-            e = new BoolLiteral(name, c->imm.v_bool);
+            e = new BoolLiteral(name);
             break;
           case IF1_INT_TYPE_64:
-            e = new IntLiteral(name, c->imm.v_int64);
+            e = new IntLiteral(name);
             break;
         }
         break;

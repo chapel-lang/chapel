@@ -169,7 +169,8 @@ class BoolLiteral : public Literal {
  public:
   bool val;
 
-  BoolLiteral(char* init_str, bool init_val);
+  BoolLiteral(char* initStr);
+  BoolLiteral(bool initVal);
   COPY_DEF(BoolLiteral);
   bool boolVal(void);
   
@@ -181,7 +182,8 @@ class IntLiteral : public Literal {
  public:
   long val;
 
-  IntLiteral(char* init_str, int init_val);
+  IntLiteral(char* initStr);
+  IntLiteral(int initVal);
   COPY_DEF(IntLiteral);
 
   Type* typeInfo(void);

@@ -880,7 +880,7 @@ FnCall* UnionType::buildSafeUnionAccessCall(unionCall type, Expr* base,
   args->insertAtTail(new Variable(Symboltable::lookupFromScope(id_tag, structScope)));
   if (type == UNION_CHECK) {
     args->insertAtTail(new StringLiteral(base->filename));
-    args->insertAtTail(new IntLiteral(intstring(base->lineno), base->lineno));
+    args->insertAtTail(new IntLiteral(base->lineno));
   }
   
   char* fnName = unionCallName[type];
@@ -985,9 +985,9 @@ void initTypes(void) {
   dtVoid = Symboltable::defineBuiltinType("void", "void", NULL);
 
   dtBoolean = Symboltable::defineBuiltinType("boolean", "_boolean",
-                                             new BoolLiteral("false", false));
+                                             new BoolLiteral(false));
   dtInteger = Symboltable::defineBuiltinType("integer", "_integer64",
-                                             new IntLiteral("0", 0));
+                                             new IntLiteral(0));
   dtFloat = Symboltable::defineBuiltinType("float", "_float64",
                                            new FloatLiteral("0.0", 0.0));
   // We should eventually point this to the new complex
