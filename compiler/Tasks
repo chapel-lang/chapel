@@ -94,6 +94,8 @@ Priority 2 Tasks
 
 * (Steve) go through compiler passes and sort through, unify, refactor
 
+* implement constant folding for "parameter" and check that +,- etc. are
+  not overloaded for primitive types (e.g. integer)
 
 
 Priority 3 Tasks
