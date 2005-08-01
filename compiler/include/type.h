@@ -75,7 +75,7 @@ class Type : public BaseAST {
   virtual bool implementedUsingCVals(void);
   
   //RED: facility to treat a type like other than this, if needed.
-  virtual Type* getType();
+  //virtual Type* getType();
 
   virtual bool hasDefaultWriteFunction(void);
   virtual AList<Stmt>* buildDefaultWriteFunctionBody(ParamSymbol* arg);

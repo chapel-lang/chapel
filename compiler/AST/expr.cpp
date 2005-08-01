@@ -236,7 +236,6 @@ Stmt* Expr::getStmt() {
 void Expr::codegenCastToString(FILE* outfile) {
   Type* exprType = typeInfo();
   // BLC: could we fold this into typeInfo somehow?
-  exprType = exprType->getType();
   if (exprType == dtString) {
     codegen(outfile);
   } else {
@@ -783,8 +782,8 @@ Expr::isRef(void) {
 
 void AssignOp::codegen(FILE* outfile) {
   bool string_init = false;
-  Type* leftType = left->typeInfo()->getType();
-  Type* rightType = right->typeInfo()->getType();
+  Type* leftType = left->typeInfo();
+  Type* rightType = right->typeInfo();
   if (leftType == dtString) {
     if (FnCall* fn_call = dynamic_cast<FnCall*>(right)) {
       if (Variable* fn_var = dynamic_cast<Variable*>(fn_call->baseExpr)) {

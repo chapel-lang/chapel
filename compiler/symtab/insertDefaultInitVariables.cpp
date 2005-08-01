@@ -44,9 +44,7 @@ void InsertDefaultInitVariables::processSymbol(Symbol* sym) {
       }
 
       char* temp_name = glomstrings(3, "_init_", sym->name, intstring(uid++));
-      //RED -- initialization for index types.
-      //Type* temp_type = sym->type;
-      Type* temp_type = ts->definition->getType();
+      Type* temp_type = ts->definition;
       Expr* temp_init = ts->definition->defaultVal->copy();
 
       Symbol* parent_symbol = sym->defPoint->parentStmt->parentSymbol;

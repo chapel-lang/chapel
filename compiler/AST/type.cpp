@@ -228,11 +228,6 @@ bool Type::implementedUsingCVals(void) {
  }
 }
 
-Type* Type::getType(){
-  return this;
-}
-
-
 bool Type::hasDefaultWriteFunction(void) {
   return false;
 }
