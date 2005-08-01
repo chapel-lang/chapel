@@ -40903,3 +40903,16 @@ Log message:
 Modified files:
 	chapel/compiler/: Tasks 
 
+---------------------------------------------------------------------------
+
+08/01/05 14:53:48 -- deitz
+
+Log message:
+	Added a line of code to deal with the case when a string is copied and
+	the type (which used to be accessed via Type::getType()) is a UserType.
+	
+	Back to four regressions as in the REGRESSIONS file.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+
