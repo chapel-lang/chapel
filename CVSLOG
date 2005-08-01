@@ -40839,3 +40839,15 @@ Log message:
 Modified files:
 	chapel/compiler/: Tasks 
 
+---------------------------------------------------------------------------
+
+08/01/05 10:22:25 -- roxana
+
+Log message:
+	Removed some more getType related code -- my search
+	somehow overlooked those.
+
+Modified files:
+	chapel/compiler/include/: type.h 
+	chapel/compiler/AST/: type.cpp 
+
