@@ -40851,3 +40851,19 @@ Modified files:
 	chapel/compiler/include/: type.h 
 	chapel/compiler/AST/: type.cpp 
 
+---------------------------------------------------------------------------
+
+08/01/05 10:25:03 -- deitz
+
+Log message:
+	Removed isComputable functionality in preparation for unifying UnOp,
+	BinOp and AssignOp.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/traversals/: checkSemantics.cpp 
+Added files:
+	chapel/test/types/enum/deitz/: test_enum6.future 
+
