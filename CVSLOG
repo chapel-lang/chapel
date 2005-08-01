@@ -40797,3 +40797,17 @@ Log message:
 Modified files:
 	chapel/compiler/: Tasks 
 
+---------------------------------------------------------------------------
+
+08/01/05 10:12:40 -- roxana
+
+Log message:
+	Removed getType() from the compiler. It took longer to run
+	the tests than doing this.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp type.cpp 
+	chapel/test/domains/roxana/: test_hash_table1.chpl 
+	chapel/compiler/symtab/: insertDefaultInitVariables.cpp 
+	chapel/compiler/include/: type.h 
+
