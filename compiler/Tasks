@@ -33,14 +33,14 @@ X Remove NoOpStmt -- replace with empty block statement - complete
 
 * Change WithExpr and UseExpr into functions
 
-* Remove CastLikeExpr
+* (John) Remove CastLikeExpr
 
-* Remove SizeofExpr
+* (John) Remove SizeofExpr
 
 * Remove MemberAccessExpr.  This will be eliminated pre-analysis
   anyway.  Store it as a CallExpr of a function named '.'
 
-* Convert VarSymbol::aspect into a Cast expression and remove it
+* (John) Convert VarSymbol::aspect into a Cast expression and remove it
 
 * (Roxana) Remove Type::getType()
 
