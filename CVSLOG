@@ -40932,3 +40932,14 @@ Modified files:
 	chapel/compiler/include/: driver.h 
 	chapel/compiler/main/: driver.cpp passlist.h runpasses.cpp 
 
+---------------------------------------------------------------------------
+
+08/01/05 16:21:00 -- deitz
+
+Log message:
+	Tagged creating verify routines, class inheritance, constructed
+	classes, and ClassType unification.
+
+Modified files:
+	chapel/compiler/: Tasks 
+
