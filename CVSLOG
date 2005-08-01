@@ -40943,3 +40943,13 @@ Log message:
 Modified files:
 	chapel/compiler/: Tasks 
 
+---------------------------------------------------------------------------
+
+08/01/05 16:23:43 -- deitz
+
+Log message:
+	Added and tagged the task to do compile-time-constant folding.
+
+Modified files:
+	chapel/compiler/: Tasks 
+
