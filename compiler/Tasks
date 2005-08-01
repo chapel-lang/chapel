@@ -18,7 +18,7 @@ X Remove NoOpStmt -- replace with empty block statement - complete
 * Rename DefaultVal to DefaultValue, Insert symbols for every
   primitive literal, change DefaultValue to a VarSymbol
 
-* Attach a Type* type to Expr and remove typeInfo()
+* (Roxana) Attach a Type* type to Expr and remove typeInfo()
 
 * (Steve) Remove BinOp, UnOp, AssignOp.  Rename ParenOpExpr, CallExpr
 
@@ -42,7 +42,7 @@ X Remove NoOpStmt -- replace with empty block statement - complete
 
 * (John) Convert VarSymbol::aspect into a Cast expression and remove it
 
-* (Roxana) Remove Type::getType()
+X (Roxana) Remove Type::getType() - complete
 
 * (John) get rid of nondeterminism introduced by hashing-on-pointers
    structures (and try to capture an instance of front-end
