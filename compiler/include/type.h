@@ -73,9 +73,6 @@ class Type : public BaseAST {
   virtual bool requiresCParamTmp(paramType intent);
   virtual bool blankIntentImpliesRef(void);
   virtual bool implementedUsingCVals(void);
-  
-  //RED: facility to treat a type like other than this, if needed.
-  //virtual Type* getType();
 
   virtual bool hasDefaultWriteFunction(void);
   virtual AList<Stmt>* buildDefaultWriteFunctionBody(ParamSymbol* arg);
@@ -133,8 +130,6 @@ class UserType : public Type {
   void printDef(FILE* outfile);
   void codegenDef(FILE* outfile);
   void codegenDefaultFormat(FILE* outfile, bool isRead);
-
-  Type* getType();
 };
 
 

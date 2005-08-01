@@ -490,11 +490,6 @@ void UserType::codegenDefaultFormat(FILE* outfile, bool isRead) {
 }
 
 
-Type* UserType::getType(void) {
-  return defType;
-}
-
-
 StructuralType::StructuralType(astType_t astType, Expr* init_defaultVal) :
   Type(astType, init_defaultVal),
   structScope(NULL),
