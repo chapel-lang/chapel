@@ -40963,3 +40963,21 @@ Log message:
 Modified files:
 	chapel/compiler/: Tasks 
 
+---------------------------------------------------------------------------
+
+08/01/05 16:42:18 -- deitz
+
+Log message:
+	A small change to allow IntLiterals and BoolLiterals to be constructed
+	out of either a string or an int or bool, not both.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             insertLiteralTemps.cpp 
+	                             insertThisParameters.cpp 
+	                             specializeParenOpExprs.cpp 
+
