@@ -41103,3 +41103,29 @@ Modified files:
 	chapel/compiler/AST/: expr.cpp 
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+08/02/05 16:01:10 -- shannon
+
+Log message:
+	Added a new standard module _chpl_file.chpl.
+	
+	At present the 'file' class contains four data members:
+	filename, mode, path, and fp (file pointer), and two
+	methods: open and close.
+	
+	Added a test to set the filename using the constructor
+	and to change the mode from its default value.
+
+Modified files:
+	chapel/compiler/parser/: prelude.chpl 
+	chapel/compiler/passes/: filesToAST.cpp 
+	chapel/compiler/traversals/: resolveModuleUses.cpp 
+	chapel/runtime/include/: chplio.h 
+	chapel/runtime/src/: chplio.c 
+Added files:
+	chapel/modules/standard/: _chpl_file.chpl 
+	chapel/test/types/file/: .cvsignore CLEANFILES 
+	                         initFilenameMode.chpl 
+	                         initFilenameMode.good 
+
