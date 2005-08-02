@@ -41055,3 +41055,36 @@ Modified files:
 	                             preAnalysisHacks.cpp 
 	                             processParameters.cpp 
 
+---------------------------------------------------------------------------
+
+08/02/05 15:00:37 -- deitz
+
+Log message:
+	Removed trivial setArgs routine from ParenOpExpr.
+	
+	Moved verify pass after html dump pass so that if there is an error in
+	verification and -t was used, the dump for that pass has printed.
+	
+	Changed some of the code (still commented out) to verify that every
+	symbol in the Symboltable was traversed in the tree.  The INT_FATAL is
+	still commented out and there are at least two bugs remaining.  I
+	fixed one.  See below.
+	
+	Problem 1.  ProcessParameters does what is known to be troublesome.
+	It replaces a parent to where it is in the traversal.  We need more of
+	a canonical form for where functions can appear so that this can be
+	simplified.
+	
+	Problem 2.  TransformLetExprs messes up the scopes of the let
+	variables that it moves.
+	
+	Fixed a bug in ReconstructIterators in which the temporary was
+	inserted in the wrong scope.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/main/: runpasses.cpp 
+	chapel/compiler/symtab/: reconstructIterators.cpp 
+	chapel/compiler/traversals/: processParameters.cpp verify.cpp 
+
