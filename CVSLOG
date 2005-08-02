@@ -41023,3 +41023,35 @@ Modified files:
 Removed files:
 	chapel/compiler/traversals/: verifyASTType.cpp verifyASTType.h 
 
+---------------------------------------------------------------------------
+
+08/02/05 13:09:57 -- jplevyak
+
+Log message:
+	Removed CastExprLike (CastExpr now adopts both behaviors).
+	Removed SizeofExpr (this is now a function).
+	Added replaceChild for Variable to allow the var to be replaced.
+	Removed newType = NULL in preAnalysisHacks since the expression
+	  will be interpreted by analysis.
+	Changed insertThisParameter and buildClassConstructors to
+	  use the new _chpl_alloc function to allocate StructuralTypes
+	Removed "typeof" which wasn't getting used anyway... now it uses CastExpr.
+	Added Stmt::noCodegen and Expr::noCodegen to get rid of all the
+	  ;\n pairs cluttering up the output files.
+	Added support for _chpl_alloc to low level codegen.
+	Modified type_is_used to be even more forgiving.
+	Added "pure_return" primitive.
+	Gave MetaTypes their own TypeSymbols (so that the field wasn't NULL)
+	  as a special case.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp stmt.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp cg.cpp fa.cpp fun.cpp 
+	chapel/compiler/etc/: c_runtime.h 
+	chapel/compiler/include/: alist.h baseAST.h expr.h fun.h stmt.h 
+	chapel/compiler/parser/: chapel.y prelude.chpl 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             insertThisParameters.cpp 
+	                             preAnalysisHacks.cpp 
+	                             processParameters.cpp 
+
