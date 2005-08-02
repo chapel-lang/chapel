@@ -6,6 +6,9 @@
 #include "domain.h"
 #include "error.h"
 
+
+CFILEPTR _NULLCFILEPTR = NULL;
+
 int _string_to_boolean(char* valueString, _boolean* val) {
   int validBoolean = 0;
 

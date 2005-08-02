@@ -6,6 +6,7 @@
 #include "symtab.h"
 #include "symscope.h"
 
+
 void ResolveModuleUses::preProcessExpr(Expr* expr) {
   SymScope* saveScope = NULL;
 
@@ -38,6 +39,7 @@ void ResolveModuleUses::preProcessExpr(Expr* expr) {
   }
 }
 
+
 void ResolveModuleUses::run(ModuleList* moduleList) {
   for (ModuleSymbol* mod = moduleList->first(); mod; mod = moduleList->next()) {
     if (mod->modtype == MOD_USER) {
@@ -46,6 +48,13 @@ void ResolveModuleUses::run(ModuleList* moduleList) {
           new UseExpr(
             new Variable(
               new UnresolvedSymbol("_chpl_complex")))));
+
+      mod->initFn->body->body->insertAtHead(
+        new ExprStmt(
+          new UseExpr(
+            new Variable(
+              new UnresolvedSymbol("_chpl_file")))));
+
       if (analyzeAST) {
         mod->initFn->body->body->insertAtHead(
           new ExprStmt(

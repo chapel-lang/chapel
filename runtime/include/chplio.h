@@ -22,6 +22,10 @@
 
 #define _default_string_length              256
 
+
+typedef FILE* CFILEPTR;
+extern CFILEPTR _NULLCFILEPTR;
+
 int _string_to_boolean(char* valueString, _boolean* val);
 
 void _chpl_write_boolean(_boolean val);

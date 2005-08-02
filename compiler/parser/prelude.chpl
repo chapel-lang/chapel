@@ -17,6 +17,18 @@ record pragma "codegen data" _data { -- a c array, basically
 
 -- I/O
 
+class CFILEPTR { 
+}
+
+const _NULLCFILEPTR : CFILEPTR;
+
+pragma "rename fopen" function _fopen(filename, mode : string) : CFILEPTR {
+  return CFILEPTR();
+}
+
+pragma "rename fclose" function _fclose(fp : CFILEPTR);
+
+
 pragma "rename _chpl_write_boolean" function write(x : boolean) : void {
          __primitive("write", x);
 }

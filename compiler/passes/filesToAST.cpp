@@ -27,6 +27,8 @@ void FilesToAST::run(ModuleList* moduleList) {
 
   ParseFile(glomstrings(2, chplroot, "/modules/standard/_chpl_complex.chpl"),
             MOD_STANDARD);
+  ParseFile(glomstrings(2, chplroot, "/modules/standard/_chpl_file.chpl"),
+            MOD_STANDARD);
   ParseFile(glomstrings(2, chplroot, "/modules/standard/_chpl_htuple.chpl"),
             MOD_STANDARD);
 
