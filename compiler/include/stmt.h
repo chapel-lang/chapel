@@ -49,6 +49,7 @@ class ExprStmt : public Stmt {
   void traverseStmt(Traversal* traversal);
 
   virtual void print(FILE* outfile);
+  virtual bool noCodegen();
   virtual void codegenStmt(FILE* outfile);
 };
 

@@ -44,7 +44,6 @@ static Sym *writeln_symbol = 0;
 static Sym *read_symbol = 0;
 static Sym *array_index_symbol = 0;
 static Sym *array_set_symbol = 0;
-static Sym *sizeof_symbol = 0;
 static Sym *cast_symbol = 0;
 static Sym *method_token = 0;
 static Sym *setter_token = 0;
@@ -788,8 +787,16 @@ is_reference_type(BaseAST *t) {
 }
 
 static int
-is_scalar_type(BaseAST *t) {
+is_scalar_type(BaseAST *at) {
+  Type *t = dynamic_cast<Type*>(at);
+  assert(t);
   return t != dtUnknown && (t->astType == TYPE_BUILTIN || t->astType == TYPE_ENUM);
+}
+
+static int
+is_scalar_type_symbol(BaseAST *at) {
+  TypeSymbol *ts = dynamic_cast<TypeSymbol*>(at);
+  return is_scalar_type(ts->definition);
 }
 
 static inline int
@@ -2110,19 +2117,12 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       CastExpr *s = dynamic_cast<CastExpr *>(ast);
       s->ainfo->rval = new_sym();
       s->ainfo->rval->ast = s->ainfo;
+      if (s->newType)
+        if1_gen(if1, &s->ainfo->code, s->newType->ainfo->code);
       if1_gen(if1, &s->ainfo->code, s->expr->ainfo->code);
+      Sym *typeval = s->newType ? s->newType->ainfo->rval : s->type->asymbol->sym;
       Code *send = if1_send(if1, &s->ainfo->code, 4, 1, sym_primitive, cast_symbol, 
-                            s->type->asymbol->sym->meta_type, s->expr->ainfo->rval, s->ainfo->rval);
-      send->ast = s->ainfo;
-      break;
-    }
-    case EXPR_CAST_LIKE: {
-      CastLikeExpr *s = dynamic_cast<CastLikeExpr *>(ast);
-      s->ainfo->rval = new_sym();
-      s->ainfo->rval->ast = s->ainfo;
-      if1_gen(if1, &s->ainfo->code, s->expr->ainfo->code);
-      Code *send = if1_send(if1, &s->ainfo->code, 4, 1, sym_primitive, cast_symbol, 
-                            s->variable->var->type->asymbol->sym->meta_type, s->expr->ainfo->rval, s->ainfo->rval);
+                            typeval, s->expr->ainfo->rval, s->ainfo->rval);
       send->ast = s->ainfo;
       break;
     }
@@ -2141,15 +2141,6 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
     case EXPR_TUPLE: 
       INT_FATAL(ast, "Tuple is removed before Analysis");
       break;
-    case EXPR_SIZEOF: {
-      SizeofExpr *s = dynamic_cast<SizeofExpr *>(ast);
-      s->ainfo->rval = new_sym();
-      s->ainfo->rval->ast = s->ainfo;
-      Code *send = if1_send(if1, &s->ainfo->code, 3, 1, sym_primitive, sizeof_symbol, 
-                            s->variable->var->type->asymbol->sym->meta_type, s->ainfo->rval);
-      send->ast = s->ainfo;
-      break;
-    }
     case EXPR_NAMED: {
       NamedExpr *s = dynamic_cast<NamedExpr *>(ast);
       s->ainfo->rval = new_sym();
@@ -2413,6 +2404,8 @@ finalize_function(Fun *fun) {
   int added = 0;
   char *name = fun->sym->has.v[0]->name;
   assert(name);
+  if (!strcmp("_chpl_alloc", name))
+    fun->is_external = 1;
   FnSymbol *fs = dynamic_cast<FnSymbol*>(fun->sym->asymbol->symbol);
   if (fs->typeBinding) {
     if (is_reference_type(fs->typeBinding->asymbol->symbol)) {
@@ -2442,9 +2435,8 @@ finalize_function(Fun *fun) {
   // check pragmas
   Sym *fn = fun->sym;
   FnSymbol *f = dynamic_cast<FnSymbol*>(fn->asymbol->symbol);
-  if (f->defPoint->hasPragma("test pragma")) {
-    printf("test pragma\n");
-  }
+  if (f->defPoint->parentStmt && f->defPoint->parentStmt->hasPragma("split unique"))
+    fun->split_unique = 1;
 }
 
 void
@@ -2465,7 +2457,6 @@ init_symbols() {
   expr_domain_symbol = make_symbol("expr_domain");
   expr_create_domain_symbol = make_symbol("expr_create_domain");
   expr_reduce_symbol = make_symbol("expr_reduce");
-  sizeof_symbol = make_symbol("sizeof");
   cast_symbol = make_symbol("cast");
   if (!applyGettersSetters) {
     method_token = make_symbol("__method");
@@ -2575,12 +2566,14 @@ cast_value(PNode *pn, EntrySet *es) {
   AVar *result = make_AVar(pn->lvals.v[0], es);
   AVar *t = make_AVar(pn->rvals.v[2], es);
   assert(pn->rvals.n == 4);
-  Sym *ts = t->var->sym->meta_type;
-  if (ts) {
-    if (ts->asymbol && is_scalar_type(ts->asymbol->symbol))
-      update_in(result, make_abstract_type(ts));
-    else
+  forv_CreationSet(cs, *t->out) {
+    Sym *ts = cs->sym;
+    if (ts->asymbol && is_scalar_type_symbol(ts->asymbol->symbol))
+      update_in(result, make_abstract_type(ts->meta_type));
+    else { 
+      assert(!"implemented");
       creation_point(result, ts);
+    }
   }
 }
 
@@ -2779,6 +2772,35 @@ chapel_defexpr(PNode *pn, EntrySet *es) {
   }
 }
 
+static void
+chpl_alloc(PNode *pn, EntrySet *es) {
+  AVar *tav = make_AVar(pn->rvals.v[2], es);
+  AVar *result = make_AVar(pn->lvals.v[0], es);
+  forv_CreationSet(cs, *tav->out) {
+    Sym *ts = cs->sym;
+    if (ts->is_meta_type) ts = ts->meta_type;
+    if (ts->asymbol && is_scalar_type(ts->asymbol->symbol))
+      ; // update_in(result, make_abstract_type(ts))  not permitted
+    else
+      creation_point(result, ts);
+  }
+}
+
+static void
+pure_return(PNode *pn, EntrySet *es) {
+  AVar *tav = make_AVar(pn->rvals.v[2], es);
+  AVar *result = make_AVar(pn->lvals.v[0], es);
+  forv_CreationSet(cs, *tav->out) {
+    Sym *ts = cs->sym;
+    if (ts->is_meta_type) ts = ts->meta_type;
+    if (ts->asymbol && is_scalar_type(ts->asymbol->symbol))
+      update_in(result, make_abstract_type(ts));
+    else
+      // creation_point(result, ts) not permitted
+      ;
+  }
+}
+
 int 
 ast_to_if1(Vec<AList<Stmt> *> &stmts) {
   Vec<BaseAST *> syms;
@@ -2801,6 +2823,7 @@ ast_to_if1(Vec<AList<Stmt> *> &stmts) {
   finalize_types(if1);
   if (build_functions(syms) < 0) return -1;
 #define REG(_n, _f) pdb->fa->primitive_transfer_functions.put(_n, new RegisteredPrim(_f));
+#define SREG(_n, _f) pdb->fa->primitive_transfer_functions.put(if1_cannonicalize_string(if1,_n), new RegisteredPrim(_f));
   REG(domain_start_index_symbol->name, domain_start_index);
   REG(domain_next_index_symbol->name, domain_next_index);
   REG(domain_valid_index_symbol->name, integer_result);
@@ -2808,7 +2831,6 @@ ast_to_if1(Vec<AList<Stmt> *> &stmts) {
   REG(expr_domain_symbol->name, expr_domain);
   REG(expr_create_domain_symbol->name, expr_create_domain);
   REG(expr_reduce_symbol->name, expr_reduce);
-  REG(sizeof_symbol->name, integer_result);
   REG(cast_symbol->name, cast_value);
   REG(write_symbol->name, write_transfer_function);
   REG(writeln_symbol->name, write_transfer_function);
@@ -2817,14 +2839,16 @@ ast_to_if1(Vec<AList<Stmt> *> &stmts) {
   REG(array_set_symbol->name, array_set);
   REG(make_seq_symbol->name, make_seq);
   REG(chapel_defexpr_symbol->name, chapel_defexpr);
-  REG(if1_cannonicalize_string(if1, "ptr_eq"), ptr_eq);
-  REG(if1_cannonicalize_string(if1, "ptr_neq"), ptr_neq);
-  REG(if1_cannonicalize_string(if1, "array_pointwise_op"), array_pointwise_op);
-  REG(if1_cannonicalize_string(if1, "string_op"), string_op);
-  REG(if1_cannonicalize_string(if1, "seqcat_seq"), seqcat_seq);
-  REG(if1_cannonicalize_string(if1, "seqcat_element"), seqcat_element);
-  REG(if1_cannonicalize_string(if1, "indextype_get"), indextype_get);
-  REG(if1_cannonicalize_string(if1, "indextype_set"), indextype_set);
+  SREG("ptr_eq", ptr_eq);
+  SREG("ptr_neq", ptr_neq);
+  SREG("array_pointwise_op", array_pointwise_op);
+  SREG("string_op", string_op);
+  SREG("seqcat_seq", seqcat_seq);
+  SREG("seqcat_element", seqcat_element);
+  SREG("indextype_get", indextype_get);
+  SREG("indextype_set", indextype_set);
+  SREG("chpl_alloc", chpl_alloc);
+  SREG("pure_return", pure_return);
   build_type_hierarchy();
   finalize_symbols(if1);
   finalize_types(if1);  // again to catch any new ones
@@ -2897,11 +2921,19 @@ ast_sym_info(BaseAST *a, Symbol *s, AST **ast, Sym **sym) {
 
 static Type *
 to_AST_type(Sym *type) {
+  if (type == sym_void || type == sym_void->meta_type)
+    return dtVoid;
 #ifdef COMPLETE_TYPING
   assert(type);
 #endif
   if (!type)
     return dtUnknown;
+  if (type->is_meta_type) {
+    if (type->meta_type->asymbol)
+      return ((Type*)(type->meta_type->asymbol->symbol))->metaType;
+    else
+      return dtUnknown;
+  }
   ASymbol *asymbol = type->asymbol;
   BaseAST *atype = asymbol->symbol;
   if (!atype)
@@ -3039,15 +3071,16 @@ function_is_used(FnSymbol *fn) {
 int
 type_is_used(TypeSymbol *t) {
   if (if1->callback) {
+    if (!dynamic_cast<StructuralType*>(t->definition))
+      return true;
     if (t->asymbol) {
-      if (!t->asymbol->sym->is_meta_type)
-        return false;
       if (is_scalar_type(t->definition) 
           || t->definition->asymbol->sym->is_builtin
           || t->definition == dtNil
           || t->definition == dtUnknown
           || t->definition->astType == TYPE_SUM 
           || t->definition->astType == TYPE_VARIABLE
+          || t->definition->astType == TYPE_META
           || (t->definition->astType == TYPE_USER && 
               type_is_used(dynamic_cast<TypeSymbol*>(dynamic_cast<UserType*>(t->definition)->defType->symbol))))
         return true;

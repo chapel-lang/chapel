@@ -987,6 +987,12 @@ MetaType::MetaType(Type* init_base) :
   Type(TYPE_META, NULL),
   base(init_base)
 {
+  static int uid = 1;
+  char* name = glomstrings(2, "_meta_type", intstring(uid++));
+  metaType = this;
+  symbol = new TypeSymbol(name, NULL);
+  symbol->definition = this;
+  symbol->type = this;
 }
 
 

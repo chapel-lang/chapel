@@ -148,6 +148,11 @@ int Expr::rank(void) {
 }
 
 
+FnSymbol *Expr::parentFunction() {
+  if (parentStmt) return parentStmt->parentFunction(); else return NULL; 
+}
+
+
 void Expr::printCfgInitString(FILE* outfile) {
   fprintf(outfile, "\"");
   print(outfile);
@@ -500,11 +505,19 @@ Variable::Variable(Symbol* init_var, ForwardingSymbol* init_forward) :
 {}
 
 
-void Variable::verify(void) {
+void 
+Variable::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (var == old_ast) {
+    old_ast = dynamic_cast<Symbol*>(new_ast);
+  }
+}
+
+
+void
+Variable::verify(void) {
   if (astType != EXPR_VARIABLE) {
     INT_FATAL(this, "Bad Variable::astType");
   }
-
   if (!var) {
     INT_FATAL(this, "Variable::var is NULL");
   }
@@ -1172,6 +1185,15 @@ void FnCall::codegen(FILE* outfile) {
       fprintf(outfile, "printError(message);\n");
       fprintf(outfile, "}\n");
       return;
+    } else if (variable->var == Symboltable::lookupInternal("_chpl_alloc")) {
+      Type *t = variable->parentFunction()->retType;
+#if 0
+      Type *t = dynamic_cast<Variable*>(argList->first())->var->type;
+      if (MetaType* mt = dynamic_cast<MetaType*>(t)) 
+        t = mt->base;
+#endif
+      fprintf(outfile, "(%s)_chpl_malloc(1, sizeof(_%s), \"\")", t->symbol->cname, t->symbol->cname);
+      return;
     }
   }
 
@@ -1295,61 +1317,6 @@ void Tuple::codegen(FILE* outfile) {
 }
 
 
-SizeofExpr::SizeofExpr(Variable* init_variable) :
-  Expr(EXPR_SIZEOF),
-  variable(init_variable)
-{}
-
-
-void SizeofExpr::verify() {
-  if (astType != EXPR_SIZEOF) {
-    INT_FATAL(this, "Bad SizeofExpr::astType");
-  }
-}
-
-
-SizeofExpr*
-SizeofExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new SizeofExpr(COPY_INTERNAL(variable));
-}
-
-
-void SizeofExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == variable) {
-    variable = dynamic_cast<Variable*>(new_ast);
-  } else {
-    INT_FATAL(this, "Unexpected case in SizeofExpr::replaceChild");
-  }
-}
-
-
-void SizeofExpr::traverseExpr(Traversal* traversal) {
-  TRAVERSE(variable, traversal, false);
-}
-
-
-Type* SizeofExpr::typeInfo(void) {
-  return dtInteger;
-}
-
-
-void SizeofExpr::print(FILE* outfile) {
-  fprintf(outfile, "sizeof(");
-  variable->typeInfo()->print(outfile);
-  fprintf(outfile, ")");
-}
-
-
-void SizeofExpr::codegen(FILE* outfile) {
-  fprintf(outfile, "sizeof(");
-  if (dynamic_cast<StructuralType*>(variable->typeInfo())) {
-    fprintf(outfile, "_");
-  }
-  variable->typeInfo()->codegen(outfile);
-  fprintf(outfile, ")");
-}
-
-
 CastExpr::CastExpr(Expr* initExpr, Expr* initNewType, Type* initType) :
   Expr(EXPR_CAST),
   expr(initExpr),
@@ -1418,65 +1385,6 @@ void CastExpr::codegen(FILE* outfile) {
     expr->codegen(outfile);
     fprintf(outfile, ")");
   }
-}
-
-
-CastLikeExpr::CastLikeExpr(Variable* init_variable, Expr* init_expr) :
-  Expr(EXPR_CAST_LIKE),
-  variable(init_variable),
-  expr(init_expr)
-{ }
-
-
-void CastLikeExpr::verify() {
-  if (astType != EXPR_CAST_LIKE) {
-    INT_FATAL(this, "Bad CastLikeExpr::astType");
-  }
-}
-
-
-CastLikeExpr*
-CastLikeExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new CastLikeExpr(COPY_INTERNAL(variable), COPY_INTERNAL(expr));
-}
-
-
-void CastLikeExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == expr) {
-    expr = dynamic_cast<Expr*>(new_ast);
-  } else if (old_ast == variable) {
-    variable = dynamic_cast<Variable*>(new_ast);
-  } else {
-    INT_FATAL(this, "Unexpected case in CastLikeExpr::replaceChild");
-  }
-}
-
-
-void CastLikeExpr::traverseExpr(Traversal* traversal) {
-  TRAVERSE(variable, traversal, false);
-  TRAVERSE(expr, traversal, false);
-}
-
-
-Type* CastLikeExpr::typeInfo(void) {
-  return variable->typeInfo();
-}
-
-
-void CastLikeExpr::print(FILE* outfile) {
-  variable->typeInfo()->print(outfile);
-  fprintf(outfile, "(");
-  expr->print(outfile);
-  fprintf(outfile, ")");
-}
-
-
-void CastLikeExpr::codegen(FILE* outfile) {
-  fprintf(outfile, "(");
-  variable->typeInfo()->codegen(outfile);
-  fprintf(outfile, ")(");
-  expr->codegen(outfile);
-  fprintf(outfile, ")");
 }
 
 

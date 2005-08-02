@@ -65,13 +65,11 @@ void InsertThisParameters::preProcessExpr(Expr* expr) {
       dynamic_cast<VarSymbol*>(fn->_this)->noDefaultInit = true;
       fn->body->body->insertAtHead(new ExprStmt(this_decl));
       char* description = glomstrings(2, "instance of class ", typeSym->name);
-      AList<Expr>* alloc_args = new AList<Expr>(new IntLiteral(1));
-      alloc_args->insertAtTail(new SizeofExpr(new Variable(fn->_this)));
+      AList<Expr>* alloc_args = new AList<Expr>( new Variable(typeSym));
       alloc_args->insertAtTail(new StringLiteral(description));
-      Symbol* alloc_sym = Symboltable::lookupInternal("_chpl_malloc");
-      Expr* alloc_call = new FnCall(new Variable(alloc_sym), alloc_args);
+      Symbol* alloc_sym = Symboltable::lookupInternal("_chpl_alloc");
+      Expr* alloc_rhs = new FnCall(new Variable(alloc_sym), alloc_args);
       Expr* alloc_lhs = new Variable(fn->_this);
-      Expr* alloc_rhs = new CastLikeExpr(new Variable(fn->_this), alloc_call);
       Expr* alloc_expr = new AssignOp(GETS_NORM, alloc_lhs, alloc_rhs);
       Stmt* alloc_stmt = new ExprStmt(alloc_expr);
       this_decl->parentStmt->insertAfter(alloc_stmt);

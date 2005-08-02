@@ -42,10 +42,8 @@ enum astType_t {
   EXPR_LET,
   EXPR_COND,
   EXPR_FORALL,
-  EXPR_SIZEOF,
   EXPR_PARENOP,
   EXPR_CAST,
-  EXPR_CAST_LIKE,
   EXPR_FNCALL,
   EXPR_MEMBERACCESS,
   EXPR_REDUCE,
@@ -139,6 +137,7 @@ class BaseAST : public gc {
   virtual void printDef(FILE* outfile);
   void println(FILE* outfile);
 
+  virtual bool noCodegen() { return false; }
   virtual void codegen(FILE* outfile);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);

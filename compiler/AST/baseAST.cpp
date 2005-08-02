@@ -301,10 +301,8 @@ char* astTypeName[AST_TYPE_END+1] = {
   "Let",
   "CondExpr",
   "Forall",
-  "Sizeof",
   "ParenOp",
   "Cast",
-  "CastLike",
   "FnCall",
   "MemberAccess",
   "Reduce",
@@ -456,9 +454,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     AST_ADD_LIST(ForallExpr, iterators, Expr);
     AST_ADD_CHILD(ForallExpr, innerExpr);
     goto LExprCommon;
-  case EXPR_SIZEOF:
-    AST_ADD_CHILD(SizeofExpr, variable);
-    goto LExprCommon;
   case EXPR_PARENOP:
   LParenOpCommon:
     AST_ADD_CHILD(ParenOpExpr, baseExpr);
@@ -468,10 +463,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     ADD_CHILD(CastExpr, type);
     AST_ADD_CHILD(CastExpr, newType);
     AST_ADD_CHILD(CastExpr, expr);
-    goto LExprCommon;
-  case EXPR_CAST_LIKE:
-    AST_ADD_CHILD(CastLikeExpr, variable);
-    AST_ADD_CHILD(CastLikeExpr, expr);
     goto LExprCommon;
   case EXPR_FNCALL:
     goto LParenOpCommon;

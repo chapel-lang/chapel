@@ -9,8 +9,10 @@
 #include "stmt.h"
 
 void Fun::init_fun() {
+  is_external = 0;
   nested_in = 0;
   clone_for_constants = 0;
+  split_unique = 0;
   vec_of_one = 0;
   execution_frequency = 0.0;
   fa_collected = 0;

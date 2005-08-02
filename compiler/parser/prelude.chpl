@@ -1,4 +1,4 @@
-function typeof(x) { }
+function sizeof(x) { return __primitive("pure_return", integer); }
 
 record pragma "codegen data" _data { -- a c array, basically
   type t;
@@ -300,10 +300,9 @@ function length(a : string) : integer {
   return __primitive("coerce", integer, a);
 }
 
-function _chpl_malloc(number, size, description: string);
-function _chpl_calloc(number, size, description: string);
-function _chpl_free(memory);
-function _chpl_realloc(memory, number, size, description: string);
+pragma "split unique"
+pragma "keep types"
+function _chpl_alloc(t, description:string) { return __primitive("chpl_alloc", t); }
 
 function _init_string() { return ""; }
 

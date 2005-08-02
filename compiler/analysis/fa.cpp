@@ -738,6 +738,8 @@ edge_constant_compatible_with_entry_set(AEdge *e, EntrySet *es) {
 static int
 entry_set_compatibility(AEdge *e, EntrySet *es) {
   int val = INT_MAX;
+  if (e->match->fun->split_unique)
+    return 0;
   if (!edge_nest_compatible_with_entry_set(e, es))
     return 0;
   switch (edge_type_compatible_with_entry_set(e, es)) {

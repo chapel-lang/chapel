@@ -349,6 +349,47 @@ static void do_phi_nodes(FILE *fp, PNode *n, int isucc) {
 }
 
 static void
+write_send(FILE *fp, FA *fa, Fun *f, PNode *n) {
+  if (n->lvals.n) {
+    assert(n->lvals.n == 1);
+    fprintf(fp, "%s = ", n->lvals.v[0]->cg_string);
+  }
+  // special cases
+  char *fname = n->rvals.v[0]->sym->name;
+  if (fname && !strcmp(fname, "_chpl_alloc")) {
+    fprintf(fp, "%s(%s, %s);\n", fname, n->lvals.v[0]->cg_string,
+            n->rvals.v[1]->sym->cg_string);
+    return;
+  }
+  // standard case
+  if (n->prim) {
+    fprintf(fp, "_CG_%s(", n->prim->name);
+    for (int i = 1; i < n->rvals.n; i++) {
+      if (i > 1) fprintf(fp, ", ");
+      fputs(n->rvals.v[i]->cg_string, fp);
+    }
+    fputs(");\n", fp);
+  } else {
+    Fun *target = get_target_fun(n, f);
+    fputs(target->cg_string, fp);
+    fputs("(", fp);
+    for (int i = 0; i < n->rvals.n; i++) {
+      if (i) fprintf(fp, ", ");
+      Sym *t = n->rvals.v[i]->type;
+      if (!i && t->type_kind == Type_FUN && !t->fun && t->has.n) {
+        char ss[4096];
+        sprintf(ss, "%s", n->rvals.v[0]->cg_string);
+        char *ee = ss + strlen(ss);
+        for (int i = 0; i < t->has.n; i++)
+          write_c_fun_arg(fp, ss, ee, t->has.v[i], i);
+      } else
+        fputs(n->rvals.v[i]->cg_string, fp);
+    }
+    fputs(");\n", fp);
+  }
+}
+
+static void
 write_c_pnode(FILE *fp, FA *fa, Fun *f, PNode *n, Vec<PNode *> &done) {
   if (n->code->kind == Code_LABEL)
     fprintf(fp, "L%d:;\n", n->code->label[0]->id);
@@ -373,35 +414,8 @@ write_c_pnode(FILE *fp, FA *fa, Fun *f, PNode *n, Vec<PNode *> &done) {
       if (n->prim)
         if (write_c_prim(fp, fa, f, n))
           break;
-      if (n->lvals.n) {
-        assert(n->lvals.n == 1);
-        fprintf(fp, "%s = ", n->lvals.v[0]->cg_string);
-      }
-      if (n->prim) {
-        fprintf(fp, "_CG_%s(", n->prim->name);
-        for (int i = 1; i < n->rvals.n; i++) {
-          if (i > 1) fprintf(fp, ", ");
-          fputs(n->rvals.v[i]->cg_string, fp);
-        }
-        fputs(");\n", fp);
-      } else {
-        Fun *target = get_target_fun(n, f);
-        fputs(target->cg_string, fp);
-        fputs("(", fp);
-        for (int i = 0; i < n->rvals.n; i++) {
-          if (i) fprintf(fp, ", ");
-          Sym *t = n->rvals.v[i]->type;
-          if (!i && t->type_kind == Type_FUN && !t->fun && t->has.n) {
-            char ss[4096];
-            sprintf(ss, "%s", n->rvals.v[0]->cg_string);
-            char *ee = ss + strlen(ss);
-            for (int i = 0; i < t->has.n; i++)
-              write_c_fun_arg(fp, ss, ee, t->has.v[i], i);
-          } else
-            fputs(n->rvals.v[i]->cg_string, fp);
-        }
-        fputs(");\n", fp);
-      }
+      write_send(fp, fa, f, n);
+      break;
     case Code_IF:
     case Code_GOTO:
       break;
@@ -716,7 +730,7 @@ cg_print_c(FILE *fp, FA *fa, Fun *init) {
       v->cg_string = dupstr(v->sym->name);
     }
   }
-  forv_Fun(f, fa->funs) if (f != init)
+  forv_Fun(f, fa->funs) if (f != init && !f->is_external)
     write_c(fp, fa, f);
   write_c(fp, fa, init, &globals);
   fprintf(fp, "\nint main(int argc, char *argv[]) {"

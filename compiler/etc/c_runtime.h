@@ -75,3 +75,4 @@ static inline int _CG_prim_primitive_write(_CG_symbol s, ...) {
 #define _CG_prim_primitive_sizeof(x) sizeof(x)
 #define _methodTokenType char
 #define _CG_prim_primitive_cast(type, x) (x)
+#define _chpl_alloc(_lvalue, _type) ((_type)GC_MALLOC(sizeof(*(_lvalue))))

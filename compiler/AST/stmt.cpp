@@ -163,6 +163,12 @@ void ExprStmt::codegenStmt(FILE* outfile) {
   fprintf(outfile, ";");
 }
 
+bool ExprStmt::noCodegen() {
+  if (expr)
+    return expr->noCodegen();
+  else
+    return false;
+}
 
 ReturnStmt::ReturnStmt(Expr* initExpr, bool init_yield) :
   ExprStmt(initExpr),
@@ -293,6 +299,7 @@ void BlockStmt::print(FILE* outfile) {
   }
   fprintf(outfile, "}");
 }
+
 
 void BlockStmt::codegenStmt(FILE* outfile) {
   fprintf(outfile, "{\n");

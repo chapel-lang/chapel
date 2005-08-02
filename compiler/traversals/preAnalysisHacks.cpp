@@ -38,12 +38,12 @@ void PreAnalysisHacks::postProcessExpr(Expr* expr) {
     }
   }
 
+
   if (CastExpr* castExpr = dynamic_cast<CastExpr*>(expr)) {
     if (castExpr->type == dtUnknown &&
         castExpr->newType &&
         castExpr->newType->typeInfo() != dtUnknown) {
       castExpr->type = castExpr->newType->typeInfo();
-      castExpr->newType = NULL;
     }
   }
 

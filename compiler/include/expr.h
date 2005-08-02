@@ -10,6 +10,7 @@
 class Stmt;
 class AInfo;
 class UserInitExpr;
+class FnSymbol;
 
 extern char* cUnOp[];
 extern char* cBinOp[];
@@ -135,11 +136,11 @@ class Expr : public BaseAST {
   virtual Type* typeInfo(void);
   
   virtual bool isParam(void);
-  
   virtual bool isConst(void);
   virtual int rank(void);
 
   virtual void printCfgInitString(FILE* outfile);
+  FnSymbol *parentFunction();
 
   static Expr* newPlusMinus(binOpType op, Expr* l, Expr* r);
 
@@ -308,6 +309,7 @@ class DefExpr : public Expr {
   Type* typeInfo(void);
 
   void print(FILE* outfile);
+  bool noCodegen() { return true; }
   void codegen(FILE* outfile);
 };
 
@@ -318,8 +320,9 @@ class Variable : public Expr {
   ForwardingSymbol* forward; // was this include by a use statement?
                              // if so, it might be renamed.
   Variable(Symbol* init_var, ForwardingSymbol* init_forward = NULL);
-  virtual void verify(void); 
   COPY_DEF(Variable);
+  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  virtual void verify(void); 
   void traverseExpr(Traversal* traversal);
 
   Type* typeInfo(void);
@@ -421,27 +424,9 @@ class CastExpr : public Expr {
   Expr* newType;
   Type* type;
 
-  CastExpr(Expr* initExpr, Expr* initNewType, Type* initType);
+  CastExpr(Expr* initExpr, Expr* initNewType, Type* initType = dtUnknown);
   virtual void verify(void); 
   COPY_DEF(CastExpr);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseExpr(Traversal* traversal);
-
-  Type* typeInfo(void);
-
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-};
-
-
-class CastLikeExpr : public Expr {
- public:
-  Variable* variable; // cast to type of this variable
-  Expr* expr;
-
-  CastLikeExpr(Variable* init_variable, Expr* init_expr);
-  virtual void verify(void); 
-  COPY_DEF(CastLikeExpr);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
 

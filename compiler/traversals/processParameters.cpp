@@ -15,6 +15,10 @@ static bool tmpRequired(ParamSymbol* formal, Expr* actual) {
   if (actual == NULL) { // if actual is elided, temp required
     return true;
   }
+  if (Variable *var = dynamic_cast<Variable*>(actual)) {
+    if (dynamic_cast<TypeSymbol*>(var->var))
+      return false;
+  }
   if (formal->type != dtUnknown) {
     return formal->requiresCTmp();
   } else {

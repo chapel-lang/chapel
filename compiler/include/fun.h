@@ -45,6 +45,7 @@ class Fun : public gc {
   Region *region;
 
   uint init_function : 1; // everything is global
+  uint is_external : 1;
 
   // cdb
   char *cdb_id;
@@ -55,6 +56,7 @@ class Fun : public gc {
   // fa
   uint fa_collected : 1;
   uint clone_for_constants : 1;
+  uint split_unique : 1; // must be split uniquely for each caller
   Vec<EntrySet *> ess;
   Vec<Var *> fa_Vars;
   Vec<Var *> fa_all_Vars;

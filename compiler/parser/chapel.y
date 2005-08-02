@@ -736,10 +736,7 @@ var_type:
     }
 | TLIKE expr
     {
-      $$ = new ParenOpExpr(
-             new Variable(
-               new UnresolvedSymbol("typeof")),
-             new AList<Expr>($2));
+      $$ = $2;
     }
 ;
 
@@ -1204,7 +1201,7 @@ expr:
 | reduction %prec TREDUCE
 | expr TCOLON type
     {
-      $$ = new CastExpr($1, $3, dtUnknown);
+      $$ = new CastExpr($1, $3);
     }
 | expr TCOLON STRINGLITERAL
   { 
