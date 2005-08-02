@@ -13,6 +13,8 @@
 #include "../traversals/updateSymbols.h"
 #include "../passes/runAnalysis.h"
 
+#define STEVE_COULD_YOU_CHECK_THIS 0
+
 
 char* cUnOp[NUM_UNOPS] = {
   "+",
@@ -1181,12 +1183,15 @@ void FnCall::codegen(FILE* outfile) {
       return;
     } else if (variable->var == Symboltable::lookupInternal("_chpl_alloc")) {
       Type *t = variable->parentFunction()->retType;
-#if 0
-      Type *t = dynamic_cast<Variable*>(argList->first())->var->type;
-      if (MetaType* mt = dynamic_cast<MetaType*>(t)) 
-        t = mt->base;
-#endif
+#if STEVE_COULD_YOU_CHECK_THIS
+      fprintf(outfile, "(%s)_chpl_malloc(1, sizeof(", t->symbol->cname);
+      t->codegen(outfile);
+      fprintf(outfile, "), ");
+      argList->get(2)->codegen(outfile);
+      fprintf(outfile, ")");
+#else
       fprintf(outfile, "(%s)_chpl_malloc(1, sizeof(_%s), \"\")", t->symbol->cname, t->symbol->cname);
+#endif
       return;
     }
   }

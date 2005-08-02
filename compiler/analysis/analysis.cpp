@@ -3073,20 +3073,9 @@ type_is_used(TypeSymbol *t) {
   if (if1->callback) {
     if (!dynamic_cast<StructuralType*>(t->definition))
       return true;
-    if (t->asymbol) {
-      if (is_scalar_type(t->definition) 
-          || t->definition->asymbol->sym->is_builtin
-          || t->definition == dtNil
-          || t->definition == dtUnknown
-          || t->definition->astType == TYPE_SUM 
-          || t->definition->astType == TYPE_VARIABLE
-          || t->definition->astType == TYPE_META
-          || (t->definition->astType == TYPE_USER && 
-              type_is_used(dynamic_cast<TypeSymbol*>(dynamic_cast<UserType*>(t->definition)->defType->symbol))))
-        return true;
-      int res = t->asymbol->sym->meta_type->creators.n != 0;
-      return res;
-    } else
+    if (t->asymbol)
+      return t->asymbol->sym->meta_type->creators.n != 0;
+    else
       return false;
   } else
     return true; // analysis not run   
