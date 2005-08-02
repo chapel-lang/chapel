@@ -74,13 +74,21 @@ void Verify::run(ModuleList* moduleList) {
   }
 
   forv_Vec(Symbol, sym, *syms) {
-    if (sym &&
-        sym->parentScope->type != SCOPE_INTRINSIC &&
-        !dynamic_cast<ModuleSymbol*>(sym) &&
-        !dynamic_cast<SumType*>(sym->type) &&
-        strcmp("__init_entryPoint", sym->name)) {
-      //      INT_FATAL(sym, "Symbol not in traversed DefExpr");
+    if (!sym ||
+        sym->parentScope->type == SCOPE_INTRINSIC ||
+        dynamic_cast<ModuleSymbol*>(sym) ||
+        dynamic_cast<ForwardingSymbol*>(sym) ||
+        !strcmp("__init_entryPoint", sym->name)) {
+      continue;
     }
+    TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(sym);
+    if (typeSym) {
+      if (dynamic_cast<VariableType*>(typeSym->definition) ||
+          dynamic_cast<SumType*>(typeSym->definition)) {
+        continue;
+      }
+    }
+    //    INT_FATAL(sym, "Symbol %s not in traversed DefExpr", sym->name);
   }
 }
 

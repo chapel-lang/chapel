@@ -378,7 +378,6 @@ class ParenOpExpr : public Expr {
   ParenOpExpr(Expr* init_base, AList<Expr>* init_arg = new AList<Expr>);
   virtual void verify(void); 
   COPY_DEF(ParenOpExpr);
-  void setArgs(AList<Expr>* init_arg);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);

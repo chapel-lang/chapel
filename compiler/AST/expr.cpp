@@ -1035,12 +1035,6 @@ void ParenOpExpr::verify() {
 }
 
 
-void ParenOpExpr::setArgs(AList<Expr>* init_arg) {
-  // assign new args
-  argList = init_arg;
-}
-
-
 ParenOpExpr*
 ParenOpExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   return new ParenOpExpr(COPY_INTERNAL(baseExpr), COPY_INTERNAL(argList));

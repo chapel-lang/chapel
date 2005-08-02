@@ -71,10 +71,6 @@ static void runPass(char* passName, Pass* pass, char* args) {
     postAnalysis = true;
   }
 
-  if (postFixup) {
-    Verify* verify = new Verify();
-    verify->run(Symboltable::getModuleList(MODULES_ALL));
-  }
   if (fdump_html) {
     gettimeofday(&stopTime, &timezone);
     fprintf(html_index_file, "<TR><TD>", passName);
@@ -91,6 +87,11 @@ static void runPass(char* passName, Pass* pass, char* args) {
     htmlview->setArgs(glomstrings(2, "html ", passName));
     htmlview->run(Symboltable::getModuleList(MODULES_CODEGEN));
     fprintf(html_index_file, "</TD></TR>", passName);
+  }
+
+  if (postFixup) {
+    Verify* verify = new Verify();
+    verify->run(Symboltable::getModuleList(MODULES_ALL));
   }
 }
 

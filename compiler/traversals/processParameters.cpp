@@ -95,7 +95,7 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
           return;
         }
 
-        fncall->setArgs(newActuals);
+        fncall->argList = newActuals;
 
         Stmt* origStmt = expr->getStmt();
         Stmt* newStmt = origStmt->copy();
