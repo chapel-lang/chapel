@@ -40992,3 +40992,15 @@ Added files:
 	chapel/compiler/traversals/: createNestedFuncIterators.h 
 	                             createNestedFuncIterators.cpp 
 
+---------------------------------------------------------------------------
+
+08/02/05 09:12:15 -- deitz
+
+Log message:
+	Changed task which said to change WithExpr and UseExpr into functions.
+	Instead these should be unified into one expressions, but not into
+	functions especially once they support their extended syntax.
+
+Modified files:
+	chapel/compiler/: Tasks 
+
