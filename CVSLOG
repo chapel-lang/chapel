@@ -41129,3 +41129,14 @@ Added files:
 	                         initFilenameMode.chpl 
 	                         initFilenameMode.good 
 
+---------------------------------------------------------------------------
+
+08/02/05 16:51:47 -- mjoyner
+
+Log message:
+	Iterators are now working with nested functions.  They need to be tested more before added to the passlist.
+
+Modified files:
+	chapel/compiler/traversals/: createNestedFuncIterators.h 
+	                             createNestedFuncIterators.cpp 
+
