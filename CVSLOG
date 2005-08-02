@@ -41088,3 +41088,18 @@ Modified files:
 	chapel/compiler/symtab/: reconstructIterators.cpp 
 	chapel/compiler/traversals/: processParameters.cpp verify.cpp 
 
+---------------------------------------------------------------------------
+
+08/02/05 15:42:34 -- jplevyak
+
+Log message:
+	Cleanup type_is_used.
+	Added an #ifdef to add the "description" string to the _chpl_malloc
+	call.  This results in a bad free().  I don't understand why
+	so I ifdef'd it out with the conditional: STEVE_COULD_YOU_CHECK_THIS.
+	Perhaps it should really go to Shannon.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+
