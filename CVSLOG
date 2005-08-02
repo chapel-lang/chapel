@@ -41004,3 +41004,22 @@ Log message:
 Modified files:
 	chapel/compiler/: Tasks 
 
+---------------------------------------------------------------------------
+
+08/02/05 10:25:50 -- deitz
+
+Log message:
+	Added verify functions to every BaseAST subclass which are executed
+	during verification (between every pass).  Folded in the tests of
+	astType performed in VerifyASTType.  These tests are now executed
+	between every pass rather than just before analysis.  Removed the pass
+	VerifyASTType.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: expr.h stmt.h symbol.h type.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/traversals/: Makefile.share 
+Removed files:
+	chapel/compiler/traversals/: verifyASTType.cpp verifyASTType.h 
+
