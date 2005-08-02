@@ -25,6 +25,11 @@ Stmt::Stmt(astType_t astType) :
 {}
 
 
+void Stmt::verify(void) {
+  INT_FATAL(this, "Stmt::verify() should never be called");
+}
+
+
 FnSymbol *Stmt::parentFunction() {
   ModuleSymbol *mod = dynamic_cast<ModuleSymbol*>(parentSymbol);
   if (mod)
@@ -69,11 +74,6 @@ void Stmt::codegen(FILE* outfile) {
 
 void Stmt::codegenStmt(FILE* outfile) {
   INT_FATAL(this, "codegenStmt not implemented for Stmt subclass");
-}
-
-
-void Stmt::verify(void) {
-
 }
 
 
@@ -125,6 +125,13 @@ ExprStmt::ExprStmt(Expr* initExpr) :
 { }
 
 
+void ExprStmt::verify() {
+  if (astType != STMT_EXPR) {
+    INT_FATAL(this, "Bad ExprStmt::astType");
+  }
+}
+
+
 ExprStmt*
 ExprStmt::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   return new ExprStmt(COPY_INTERNAL(expr));
@@ -162,6 +169,13 @@ ReturnStmt::ReturnStmt(Expr* initExpr, bool init_yield) :
   yield(init_yield)
 {
   astType = STMT_RETURN;
+}
+
+
+void ReturnStmt::verify() {
+  if (astType != STMT_RETURN) {
+    INT_FATAL(this, "Bad ReturnStmt::astType");
+  }
 }
 
 
@@ -207,6 +221,13 @@ BlockStmt::BlockStmt(AList<Stmt>* init_body, SymScope* init_scope,
   body(init_body),
   blkScope(init_scope)
 {}
+
+
+void BlockStmt::verify() {
+  if (astType != STMT_BLOCK) {
+    INT_FATAL(this, "Bad BlockStmt::astType");
+  }
+}
 
 
 void BlockStmt::addBody(AList<Stmt>* init_body) {
@@ -294,6 +315,13 @@ WhileLoopStmt::WhileLoopStmt(bool init_whileDo,
 { }
 
 
+void WhileLoopStmt::verify() {
+  if (astType != STMT_WHILELOOP) {
+    INT_FATAL(this, "Bad WhileLoopStmt::astType");
+  }
+}
+
+
 WhileLoopStmt* 
 WhileLoopStmt::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   return new WhileLoopStmt(isWhileDo,
@@ -371,6 +399,13 @@ ForLoopStmt::ForLoopStmt(ForLoopStmtTag initForLoopStmtTag,
   innerStmt(initInnerStmt),
   indexScope(initIndexScope)
 { }
+
+
+void ForLoopStmt::verify() {
+  if (astType != STMT_FORLOOP) {
+    INT_FATAL(this, "Bad ForLoopStmt::astType");
+  }
+}
 
 
 ForLoopStmt*
@@ -477,6 +512,33 @@ CondStmt::CondStmt(Expr*  init_condExpr,
 }
 
 
+void CondStmt::verify() {
+  if (astType != STMT_COND) {
+    INT_FATAL(this, "Bad CondStmt::astType");
+  }
+
+  if (!condExpr) {
+    INT_FATAL(this, "CondStmt has no condExpr");
+  }
+
+  if (!thenStmt) {
+    INT_FATAL(this, "CondStmt has no thenStmt");
+  }
+
+  if (condExpr->next || condExpr->prev) {
+    INT_FATAL(this, "CondStmt::condExpr is a list");
+  }
+
+  if (thenStmt->next || thenStmt->prev) {
+    INT_FATAL(this, "CondStmt::thenStmt is a list");
+  }
+
+  if (elseStmt && (elseStmt->next || elseStmt->prev)) {
+    INT_FATAL(this, "CondStmt::elseStmt is a list");
+  }
+}
+
+
 //// DANGER //// See note below
 void CondStmt::addElseStmt(BlockStmt* init_elseStmt) {
   if (elseStmt) {
@@ -504,29 +566,6 @@ void CondStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
     elseStmt = dynamic_cast<BlockStmt*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in CondStmt::replaceChild");
-  }
-}
-
-
-void CondStmt::verify(void) {
-  if (!condExpr) {
-    INT_FATAL(this, "CondStmt has no condExpr");
-  }
-
-  if (!thenStmt) {
-    INT_FATAL(this, "CondStmt has no thenStmt");
-  }
-
-  if (condExpr->next || condExpr->prev) {
-    INT_FATAL(this, "CondStmt::condExpr is a list");
-  }
-
-  if (thenStmt->next || thenStmt->prev) {
-    INT_FATAL(this, "CondStmt::thenStmt is a list");
-  }
-
-  if (elseStmt && (elseStmt->next || elseStmt->prev)) {
-    INT_FATAL(this, "CondStmt::elseStmt is a list");
   }
 }
 
@@ -568,6 +607,13 @@ WhenStmt::WhenStmt(AList<Expr>* init_caseExprs, BlockStmt* init_doStmt) :
   caseExprs(init_caseExprs),
   doStmt(init_doStmt)
 { }
+
+
+void WhenStmt::verify() {
+  if (astType != STMT_WHEN) {
+    INT_FATAL(this, "Bad WhenStmt::astType");
+  }
+}
 
 
 WhenStmt*
@@ -612,6 +658,13 @@ SelectStmt::SelectStmt(Expr* init_caseExpr, AList<WhenStmt>* init_whenStmts) :
   caseExpr(init_caseExpr),
   whenStmts(init_whenStmts)
 { }
+
+
+void SelectStmt::verify() {
+  if (astType != STMT_SELECT) {
+    INT_FATAL(this, "Bad SelectStmt::astType");
+  }
+}
 
 
 SelectStmt*
@@ -689,6 +742,13 @@ LabelStmt::LabelStmt(LabelSymbol* init_label, Stmt* init_stmt) :
 { }
 
 
+void LabelStmt::verify() {
+  if (astType != STMT_LABEL) {
+    INT_FATAL(this, "Bad LabelStmt::astType");
+  }
+}
+
+
 LabelStmt*
 LabelStmt::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   return new LabelStmt(label, COPY_INTERNAL(stmt));
@@ -748,6 +808,13 @@ GotoStmt::GotoStmt(gotoType init_goto_type, Symbol* init_label) :
   label(init_label),
   goto_type(init_goto_type)
 {
+}
+
+
+void GotoStmt::verify() {
+  if (astType != STMT_GOTO) {
+    INT_FATAL(this, "Bad GotoStmt::astType");
+  }
 }
 
 

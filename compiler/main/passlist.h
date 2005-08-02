@@ -40,7 +40,6 @@ PassInfo passlist[] = {
   RUN(EliminateReturns, ""),
 
   // passes to collect information for analysis
-  RUN(VerifyASTType, ""),
   RUN(ComputeVisibleFunctions, ""),
 
   // passes to run analysis

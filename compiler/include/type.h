@@ -47,6 +47,7 @@ class Type : public BaseAST {
   Map<BaseAST*,BaseAST*> substitutions;
 
   Type(astType_t astType, Expr* init_defaultVal);
+  virtual void verify(void); 
   COPY_DEF(Type);
   void addSymbol(TypeSymbol* newSymbol);
   Type *instantiate_generic(Map<BaseAST *, BaseAST *> &substitutions);
@@ -86,6 +87,7 @@ class Type : public BaseAST {
 class FnType : public Type {
  public:
   FnType(void);
+  virtual void verify(void); 
   virtual void codegen(FILE* outfile);
   virtual void codegenDef(FILE* outfile);
 };
@@ -96,6 +98,7 @@ class EnumType : public Type {
   AList<DefExpr>* constants; // EnumSymbols
 
   EnumType(AList<DefExpr>* init_constants);
+  virtual void verify(void); 
   COPY_DEF(EnumType);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
@@ -123,6 +126,7 @@ class UserType : public Type {
   UserType(Type* init_defType, Expr* init_defaultVal = NULL);
   UserType(Expr* init_defExpr, Expr* init_defaultVal = NULL);
   UserType(Expr* init_defExpr, Type* init_defType, Expr* init_defaultVal = NULL);
+  virtual void verify(void); 
   COPY_DEF(UserType);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseDefType(Traversal* traversal);
@@ -143,6 +147,7 @@ class StructuralType : public Type {
   Vec<TypeSymbol*> types;
 
   StructuralType(astType_t astType, Expr* init_defaultVal = NULL);
+  virtual void verify(void); 
   void addDeclarations(AList<Stmt>* newDeclarations,
                        Stmt* afterStmt = NULL);
   void setScope(SymScope* init_structScope);
@@ -173,6 +178,7 @@ class ClassType : public StructuralType {
  public:
   Vec<ClassType*> parentClasses;
   ClassType(astType_t astType = TYPE_CLASS);
+  virtual void verify(void); 
   COPY_DEF(ClassType);
   virtual void codegenStructName(FILE* outfile);
   virtual void ClassType::codegenMemberAccessOp(FILE* outfile);
@@ -186,6 +192,7 @@ class RecordType : public StructuralType {
  public:
   bool isPattern;
   RecordType(void);
+  virtual void verify(void); 
   COPY_DEF(RecordType);
 };
 
@@ -204,6 +211,7 @@ class UnionType : public StructuralType {
   EnumType* fieldSelector;
 
   UnionType();
+  virtual void verify(void); 
   COPY_DEF(UnionType);
 
   void buildFieldSelector(void);
@@ -226,6 +234,7 @@ class MetaType : public Type {
 
   void traverseDefType(Traversal* traversal);
   MetaType(Type* init_base);
+  virtual void verify(void); 
 };
 
 class SumType : public Type {
@@ -233,6 +242,7 @@ class SumType : public Type {
   Vec<Type*> components;
 
   SumType(Type* init_type);
+  virtual void verify(void); 
   void addType(Type* additionalType);
   virtual void codegenStructName(FILE* outfile);
   void codegenDef(FILE* outfile);
@@ -243,6 +253,7 @@ class VariableType : public Type {
   Type* type;
 
   VariableType(Type *init_type = NULL);
+  virtual void verify(void); 
   COPY_DEF(VariableType);
   void traverseDefType(Traversal* traversal);
   void codegen(FILE* outfile);
@@ -251,6 +262,7 @@ class VariableType : public Type {
 class NilType : public Type {
  public:
   NilType(void);
+  virtual void verify(void); 
   void codegen(FILE* outfile);
 };
 

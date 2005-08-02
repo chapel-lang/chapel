@@ -48,6 +48,7 @@ class Symbol : public BaseAST {
 
   Symbol(astType_t astType = SYMBOL, char* init_name = NULL, 
          Type* init_type = dtUnknown, bool init_exportMe = true);
+  virtual void verify(void); 
   void setParentScope(SymScope* init_parentScope);
   COPY_DEF(Symbol);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -81,6 +82,7 @@ class Symbol : public BaseAST {
 class UnresolvedSymbol : public Symbol {
  public:
   UnresolvedSymbol(char* init_name, char* init_cname = NULL);
+  virtual void verify(void); 
   COPY_DEF(UnresolvedSymbol);
 
   virtual void traverseDefSymbol(Traversal* traverse);
@@ -100,6 +102,7 @@ class VarSymbol : public Symbol {
   VarSymbol(char* init_name = NULL, Type* init_type = dtUnknown,
             varType init_varClass = VAR_NORMAL, 
             consType init_consClass = VAR_VAR);
+  virtual void verify(void); 
   COPY_DEF(VarSymbol);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void traverseDefSymbol(Traversal* traverse);
@@ -122,6 +125,7 @@ class ParamSymbol : public Symbol {
 
   ParamSymbol(paramType init_intent = PARAM_BLANK, char* init_name = NULL, 
               Type* init_type = dtUnknown);
+  virtual void verify(void); 
   COPY_DEF(ParamSymbol);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void traverseDefSymbol(Traversal* traverse);
@@ -142,6 +146,7 @@ class TypeSymbol : public Symbol {
   Type *definition;
 
   TypeSymbol(char* init_name, Type* init_definition);
+  virtual void verify(void); 
   COPY_DEF(TypeSymbol);
   TypeSymbol* clone(Map<BaseAST*,BaseAST*>* map);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -183,6 +188,7 @@ class FnSymbol : public Symbol {
   
   FnSymbol(char* init_name, TypeSymbol* init_typeBinding = NULL);
   FnSymbol(){};
+  virtual void verify(void); 
   COPY_DEF(FnSymbol);
   void continueDef(AList<DefExpr>* init_formals, Type* init_retType, 
                    bool isRef, Expr *whereExpr);
@@ -213,6 +219,7 @@ class FnSymbol : public Symbol {
 class EnumSymbol : public Symbol {
  public:
   EnumSymbol(char* init_name = NULL);
+  virtual void verify(void); 
   COPY_DEF(EnumSymbol);
   virtual void traverseDefSymbol(Traversal* traverse);
   void codegenDef(FILE* outfile);
@@ -240,6 +247,7 @@ class ModuleSymbol : public Symbol {
   Vec<SymScope*> usedBy;   // list of SymScopes that use this module
 
   ModuleSymbol(char* init_name = NULL, modType init_modtype = MOD_SENTINEL);
+  virtual void verify(void); 
   COPY_DEF(ModuleSymbol);
   void setModScope(SymScope* init_modScope);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -257,6 +265,7 @@ class ForwardingSymbol : public Symbol {
   Symbol* forward;
   bool renamed;
   ForwardingSymbol(Symbol* init_forward, char* rename = NULL);
+  virtual void verify(void); 
   virtual void codegenDef(FILE* outfile);
   virtual Type* typeInfo(void);
   virtual FnSymbol* getFnSymbol(void);
@@ -267,6 +276,7 @@ class ForwardingSymbol : public Symbol {
 class LabelSymbol : public Symbol {
  public:
   LabelSymbol(char* init_name);
+  virtual void verify(void); 
   virtual void codegenDef(FILE* outfile);
 };
 

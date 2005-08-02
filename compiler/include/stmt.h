@@ -25,11 +25,11 @@ class Stmt : public BaseAST {
   AInfo *ainfo;
 
   Stmt(astType_t astType = STMT);
+  virtual void verify(void);
   COPY_DEF(Stmt);
   void codegen(FILE* outfile);
   virtual void codegenStmt(FILE* outfile);
   virtual void callReplaceChild(BaseAST* new_ast);
-  virtual void verify(void);
   virtual void traverse(Traversal* traversal, bool atTop = true);
   virtual void traverseDef(Traversal* traversal, bool atTop = true);
   virtual void traverseStmt(Traversal* traversal);
@@ -43,6 +43,7 @@ class ExprStmt : public Stmt {
   Expr* expr;
 
   ExprStmt(Expr* initExpr);
+  virtual void verify(void);
   COPY_DEF(ExprStmt);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseStmt(Traversal* traversal);
@@ -56,6 +57,7 @@ class ReturnStmt : public ExprStmt {
  public:
   bool yield;
   ReturnStmt(Expr* initExpr, bool init_yield = false);
+  virtual void verify(void);
   COPY_DEF(ReturnStmt);
   void print(FILE* outfile);
   void codegenStmt(FILE* outfile);
@@ -79,6 +81,7 @@ class BlockStmt : public Stmt {
   BlockStmt::BlockStmt(AList<Stmt>* init_body = new AList<Stmt>(), 
                        SymScope* init_scope = NULL, 
                        blockStmtType init_blockType = BLOCK_NORMAL);
+  virtual void verify(void);
   COPY_DEF(BlockStmt);
   void addBody(AList<Stmt>* init_body);
   void setBlkScope(SymScope* init_blkScope);
@@ -97,6 +100,7 @@ class WhileLoopStmt : public Stmt {
   Expr* condition;
 
   WhileLoopStmt(bool init_whileDo, Expr* init_cond, BlockStmt* init_block);
+  virtual void verify(void);
   COPY_DEF(WhileLoopStmt);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -127,6 +131,7 @@ class ForLoopStmt : public Stmt {
               AList<Expr>* initIterators,
               BlockStmt* initInnerStmt = NULL,
               SymScope* initIndexScope = NULL);
+  virtual void verify(void);
   COPY_DEF(ForLoopStmt);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseStmt(Traversal* traversal);
@@ -143,10 +148,10 @@ class CondStmt : public Stmt {
 
   CondStmt(Expr* init_condExpr, BlockStmt* init_thenStmt, 
            BlockStmt* init_elseStmt = NULL);
+  virtual void verify(void);
   COPY_DEF(CondStmt);
   void addElseStmt(BlockStmt* init_elseStmt);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  virtual void verify(void);
   void traverseStmt(Traversal* traversal);
 
   void print(FILE* outfile);
@@ -160,6 +165,7 @@ class WhenStmt : public Stmt {
   BlockStmt* doStmt;
 
   WhenStmt(AList<Expr>* init_caseExprs = NULL, BlockStmt* init_doStmt = NULL);
+  virtual void verify(void);
   COPY_DEF(WhenStmt);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseStmt(Traversal* traversal);
@@ -174,6 +180,7 @@ class SelectStmt : public Stmt {
   AList<WhenStmt>* whenStmts;
 
   SelectStmt(Expr* init_caseExpr = NULL, AList<WhenStmt>* init_whenStmts = NULL);
+  virtual void verify(void);
   COPY_DEF(SelectStmt);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseStmt(Traversal* traversal);
@@ -188,6 +195,7 @@ class LabelStmt : public Stmt {
   Stmt* stmt;
   
   LabelStmt(LabelSymbol* init_label, Stmt* init_stmt);
+  virtual void verify(void);
   COPY_DEF(LabelStmt);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseStmt(Traversal* traversal);
@@ -212,6 +220,7 @@ class GotoStmt : public Stmt {
   GotoStmt(gotoType init_goto_type);
   GotoStmt(gotoType init_goto_type, char* init_label);
   GotoStmt(gotoType init_goto_type, Symbol* init_label);
+  virtual void verify(void);
   COPY_DEF(GotoStmt);
   void traverseStmt(Traversal* traversal);
   void print(FILE* outfile);

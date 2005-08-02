@@ -44,7 +44,6 @@ TRAVERSALS_SRCS = \
 	traversal.cpp \
 	updateSymbols.cpp \
         verify.cpp \
-	verifyASTType.cpp \
         view.cpp
 
 CVS_SRCS = $(TRAVERSALS_SRCS)

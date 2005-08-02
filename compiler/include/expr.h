@@ -158,6 +158,7 @@ class Literal : public Expr {
   char* str;
 
   Literal(astType_t astType, char* init_str);
+  virtual void verify(void); 
   COPY_DEF(Literal);
 
   void print(FILE* outfile);
@@ -171,6 +172,7 @@ class BoolLiteral : public Literal {
 
   BoolLiteral(char* initStr);
   BoolLiteral(bool initVal);
+  virtual void verify(void); 
   COPY_DEF(BoolLiteral);
   bool boolVal(void);
   
@@ -184,6 +186,7 @@ class IntLiteral : public Literal {
 
   IntLiteral(char* initStr);
   IntLiteral(int initVal);
+  virtual void verify(void); 
   COPY_DEF(IntLiteral);
 
   Type* typeInfo(void);
@@ -197,6 +200,7 @@ class FloatLiteral : public Literal {
   double val;
 
   FloatLiteral(char* init_str, double init_val);
+  virtual void verify(void); 
   COPY_DEF(FloatLiteral);
   virtual Type* typeInfo(void);
 };
@@ -210,6 +214,7 @@ class ComplexLiteral : public Literal {
 
   ComplexLiteral(char* init_str, double init_imag, double init_real = 0.0,
                  char* init_realStr = "");
+  virtual void verify(void); 
   COPY_DEF(ComplexLiteral);
   void addReal(FloatLiteral* init_real);
 
@@ -225,6 +230,7 @@ class ComplexLiteral : public Literal {
 class StringLiteral : public Literal {
  public:
   StringLiteral(char* init_val);
+  virtual void verify(void); 
   COPY_DEF(StringLiteral);
   Type* typeInfo(void);
 
@@ -240,6 +246,7 @@ class UnOp : public Expr {
   Expr* operand;
 
   UnOp(unOpType init_type, Expr* op);
+  virtual void verify(void); 
   COPY_DEF(UnOp);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -259,6 +266,7 @@ class BinOp : public Expr {
   Expr* right;
 
   BinOp(binOpType init_type, Expr* l, Expr* r);
+  virtual void verify(void); 
   COPY_DEF(BinOp);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
@@ -274,6 +282,7 @@ class AssignOp : public BinOp {
   getsOpType type;
 
   AssignOp(getsOpType init_type, Expr* l, Expr* r);
+  virtual void verify(void); 
   COPY_DEF(AssignOp);
   Type* typeInfo(void);
 
@@ -291,9 +300,9 @@ class DefExpr : public Expr {
   DefExpr(Symbol* initSym = NULL,
           UserInitExpr* initInit = NULL,
           Expr* initExprType = NULL);
+  virtual void verify(void); 
   COPY_DEF(DefExpr);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  virtual void verify(void); 
   void traverseExpr(Traversal* traversal);
 
   Type* typeInfo(void);
@@ -309,8 +318,8 @@ class Variable : public Expr {
   ForwardingSymbol* forward; // was this include by a use statement?
                              // if so, it might be renamed.
   Variable(Symbol* init_var, ForwardingSymbol* init_forward = NULL);
-  COPY_DEF(Variable);
   virtual void verify(void); 
+  COPY_DEF(Variable);
   void traverseExpr(Traversal* traversal);
 
   Type* typeInfo(void);
@@ -329,6 +338,7 @@ class MemberAccess : public Expr {
   int member_offset;
 
   MemberAccess(Expr* init_base, Symbol* init_member);
+  virtual void verify(void); 
   COPY_DEF(MemberAccess);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
@@ -347,6 +357,7 @@ class Tuple : public Expr {
   AList<Expr>* exprs;
 
   Tuple(AList<Expr>* init_exprs);
+  virtual void verify(void); 
   COPY_DEF(Tuple);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
@@ -362,8 +373,8 @@ class ParenOpExpr : public Expr {
   AList<Expr>* argList;
 
   ParenOpExpr(Expr* init_base, AList<Expr>* init_arg = new AList<Expr>);
-  COPY_DEF(ParenOpExpr);
   virtual void verify(void); 
+  COPY_DEF(ParenOpExpr);
   void setArgs(AList<Expr>* init_arg);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -377,6 +388,7 @@ class ParenOpExpr : public Expr {
 class FnCall : public ParenOpExpr {
  public:
   FnCall(Expr* init_base, AList<Expr>* init_arg = new AList<Expr>());
+  virtual void verify(void); 
   COPY_DEF(FnCall);
   Type* typeInfo(void);
 
@@ -391,6 +403,7 @@ class SizeofExpr : public Expr {
   Variable* variable;
 
   SizeofExpr(Variable* init_variable);
+  virtual void verify(void); 
   COPY_DEF(SizeofExpr);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
@@ -409,6 +422,7 @@ class CastExpr : public Expr {
   Type* type;
 
   CastExpr(Expr* initExpr, Expr* initNewType, Type* initType);
+  virtual void verify(void); 
   COPY_DEF(CastExpr);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
@@ -426,6 +440,7 @@ class CastLikeExpr : public Expr {
   Expr* expr;
 
   CastLikeExpr(Variable* init_variable, Expr* init_expr);
+  virtual void verify(void); 
   COPY_DEF(CastLikeExpr);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
@@ -446,6 +461,7 @@ class ReduceExpr : public Expr {
 
   ReduceExpr(Symbol* init_reduceType, Expr* init_argExpr, 
              bool init_isScan, AList<Expr>* init_redDim = new AList<Expr>());
+  virtual void verify(void); 
   COPY_DEF(ReduceExpr);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
@@ -460,6 +476,7 @@ class SeqExpr : public Expr {
   AList<Expr>* exprls;
 
   SeqExpr(AList<Expr>* init_exprls);
+  virtual void verify(void); 
   COPY_DEF(SeqExpr);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
@@ -480,6 +497,7 @@ class ForallExpr : public Expr {
              AList<Expr>* initIterators,
              Expr* initInnerExpr = NULL,
              SymScope* initIndexScope = NULL);
+  virtual void verify(void); 
   COPY_DEF(ForallExpr);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
@@ -499,6 +517,7 @@ class LetExpr : public Expr {
 
   LetExpr(AList<DefExpr>* init_symDefs = new AList<DefExpr>(), 
           Expr* init_innerExpr = NULL);
+  virtual void verify(void); 
   COPY_DEF(LetExpr);
   void setInnerExpr(Expr* expr);
   void setSymDefs(AList<Stmt>* stmts);
@@ -521,6 +540,7 @@ class CondExpr : public Expr {
   Expr* elseExpr;
 
   CondExpr(Expr* initCondExpr, Expr* initThenExpr, Expr* initElseExpr = NULL);
+  virtual void verify(void); 
   COPY_DEF(CondExpr);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
@@ -535,6 +555,7 @@ class NamedExpr : public Expr {
   char* name;
   Expr* actual;
   NamedExpr(char* init_name, Expr* init_actual);
+  virtual void verify(void); 
   COPY_DEF(NamedExpr);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
@@ -548,6 +569,7 @@ class VarInitExpr : public Expr {
  public:
   Expr* expr;
   VarInitExpr(Expr* init_expr);
+  virtual void verify(void); 
   COPY_DEF(VarInitExpr);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
@@ -561,6 +583,7 @@ class UserInitExpr : public Expr {
  public:
   Expr* expr;
   UserInitExpr(Expr* init_expr);
+  virtual void verify(void); 
   COPY_DEF(UserInitExpr);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
@@ -574,6 +597,7 @@ class UseExpr : public Expr {
  public:
   Expr* expr;
   UseExpr(Expr* init_expr);
+  virtual void verify(void); 
   COPY_DEF(UseExpr);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
@@ -588,6 +612,7 @@ class WithExpr : public Expr {
  public:
   Expr* expr;
   WithExpr(Expr* init_expr);
+  virtual void verify(void); 
   COPY_DEF(WithExpr);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);

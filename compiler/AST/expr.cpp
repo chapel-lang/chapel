@@ -78,7 +78,7 @@ Expr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
 
 
 void Expr::verify(void) {
-
+  INT_FATAL(this, "Expr::verify() should never be called");
 }
 
 
@@ -266,6 +266,11 @@ Literal::Literal(astType_t astType, char* init_str) :
 {}
 
 
+void Literal::verify() {
+  INT_FATAL(this, "Literal::verify() should never be called");
+}
+
+
 Literal*
 Literal::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   INT_FATAL(this, "Illegal call to Literal::copy");
@@ -302,6 +307,13 @@ BoolLiteral::BoolLiteral(bool initVal) :
 {}
 
 
+void BoolLiteral::verify() {
+  if (astType != EXPR_BOOLLITERAL) {
+    INT_FATAL(this, "Bad BoolLiteral::astType");
+  }
+}
+
+
 BoolLiteral*
 BoolLiteral::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   return new BoolLiteral(str);
@@ -328,6 +340,13 @@ IntLiteral::IntLiteral(int initVal) :
   Literal(EXPR_INTLITERAL, intstring(initVal)),
   val(initVal) 
 {}
+
+
+void IntLiteral::verify() {
+  if (astType != EXPR_INTLITERAL) {
+    INT_FATAL(this, "Bad IntLiteral::astType");
+  }
+}
 
 
 IntLiteral*
@@ -362,6 +381,13 @@ FloatLiteral::FloatLiteral(char* init_str, double init_val) :
 {}
 
 
+void FloatLiteral::verify() {
+  if (astType != EXPR_FLOATLITERAL) {
+    INT_FATAL(this, "Bad FloatLiteral::astType");
+  }
+}
+
+
 FloatLiteral*
 FloatLiteral::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   return new FloatLiteral(copystring(str), val);
@@ -380,6 +406,13 @@ ComplexLiteral::ComplexLiteral(char* init_str, double init_imag,
   imagVal(init_imag),
   realStr(init_realStr)
 {}
+
+
+void ComplexLiteral::verify() {
+  if (astType != EXPR_COMPLEXLITERAL) {
+    INT_FATAL(this, "Bad ComplexLiteral::astType");
+  }
+}
 
 
 void ComplexLiteral::addReal(FloatLiteral* init_real) {
@@ -425,6 +458,13 @@ StringLiteral::StringLiteral(char* init_val) :
 {}
 
 
+void StringLiteral::verify() {
+  if (astType != EXPR_STRINGLITERAL) {
+    INT_FATAL(this, "Bad StringLiteral::astType");
+  }
+}
+
+
 StringLiteral*
 StringLiteral::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   return new StringLiteral(copystring(str));
@@ -460,17 +500,20 @@ Variable::Variable(Symbol* init_var, ForwardingSymbol* init_forward) :
 {}
 
 
-Variable*
-Variable::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new Variable(var, forward);
-}
+void Variable::verify(void) {
+  if (astType != EXPR_VARIABLE) {
+    INT_FATAL(this, "Bad Variable::astType");
+  }
 
-
-void
-Variable::verify(void) {
   if (!var) {
     INT_FATAL(this, "Variable::var is NULL");
   }
+}
+
+
+Variable*
+Variable::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  return new Variable(var, forward);
 }
 
 
@@ -528,6 +571,23 @@ DefExpr::DefExpr(Symbol* initSym, UserInitExpr* initInit, Expr* initExprType) :
 }
 
 
+void DefExpr::verify(void) {
+  if (astType != EXPR_DEF) {
+    INT_FATAL(this, "Bad DefExpr::astType");
+  }
+
+  if (!sym) {
+    INT_FATAL(this, "DefExpr has no sym");
+  }
+
+  if (sym->next || sym->prev) {
+    INT_FATAL(this, "DefExpr::sym is a list");
+  }
+
+  sym->verify();
+}
+
+
 DefExpr*
 DefExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   return new DefExpr((clone) ? CLONE_INTERNAL(sym) : sym,
@@ -543,17 +603,6 @@ void DefExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
     exprType = dynamic_cast<Expr*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in DefExpr::replaceChild");
-  }
-}
-
-
-void DefExpr::verify(void) {
-  if (!sym) {
-    INT_FATAL(this, "DefExpr has no sym");
-  }
-
-  if (sym->next || sym->prev) {
-    INT_FATAL(this, "DefExpr::sym is a list");
   }
 }
 
@@ -606,6 +655,13 @@ UnOp::UnOp(unOpType init_type, Expr* op) :
 { }
 
 
+void UnOp::verify() {
+  if (astType != EXPR_UNOP) {
+    INT_FATAL(this, "Bad UnOp::astType");
+  }
+}
+
+
 UnOp*
 UnOp::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   return new UnOp(type, COPY_INTERNAL(operand));
@@ -650,6 +706,13 @@ BinOp::BinOp(binOpType init_type, Expr* l, Expr* r) :
   left(l),
   right(r)
 {
+}
+
+
+void BinOp::verify() {
+  if (astType != EXPR_BINOP) {
+    INT_FATAL(this, "Bad BinOp::astType");
+  }
 }
 
 
@@ -748,6 +811,13 @@ AssignOp::AssignOp(getsOpType init_type, Expr* l, Expr* r) :
 }
 
 
+void AssignOp::verify() {
+  if (astType != EXPR_ASSIGNOP) {
+    INT_FATAL(this, "Bad AssignOp::astType");
+  }
+}
+
+
 AssignOp*
 AssignOp::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   return new AssignOp(type, COPY_INTERNAL(left), COPY_INTERNAL(right));
@@ -825,6 +895,13 @@ MemberAccess::MemberAccess(Expr* init_base, Symbol* init_member) :
   member_type(0),
   member_offset(0)
 { 
+}
+
+
+void MemberAccess::verify() {
+  if (astType != EXPR_MEMBERACCESS) {
+    INT_FATAL(this, "Bad MemberAccess::astType");
+  }
 }
 
 
@@ -938,6 +1015,13 @@ ParenOpExpr::ParenOpExpr(Expr* init_base, AList<Expr>* init_arg) :
 {}
 
 
+void ParenOpExpr::verify() {
+  if (astType != EXPR_PARENOP) {
+    INT_FATAL(this, "Bad ParenOpExpr::astType");
+  }
+}
+
+
 void ParenOpExpr::setArgs(AList<Expr>* init_arg) {
   // assign new args
   argList = init_arg;
@@ -947,11 +1031,6 @@ void ParenOpExpr::setArgs(AList<Expr>* init_arg) {
 ParenOpExpr*
 ParenOpExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   return new ParenOpExpr(COPY_INTERNAL(baseExpr), COPY_INTERNAL(argList));
-}
-
-
-void
-ParenOpExpr::verify() {
 }
 
 
@@ -991,6 +1070,13 @@ FnCall::FnCall(Expr* init_base, AList<Expr>* init_arg) :
   ParenOpExpr(init_base, init_arg)
 {
   astType = EXPR_FNCALL;
+}
+
+
+void FnCall::verify() {
+  if (astType != EXPR_FNCALL) {
+    INT_FATAL(this, "Bad FnCall::astType");
+  }
 }
 
 
@@ -1170,6 +1256,13 @@ Tuple::Tuple(AList<Expr>* init_exprs) :
 { }
 
 
+void Tuple::verify() {
+  if (astType != EXPR_TUPLE) {
+    INT_FATAL(this, "Bad Tuple::astType");
+  }
+}
+
+
 Tuple*
 Tuple::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   return new Tuple(COPY_INTERNAL(exprs));
@@ -1206,6 +1299,13 @@ SizeofExpr::SizeofExpr(Variable* init_variable) :
   Expr(EXPR_SIZEOF),
   variable(init_variable)
 {}
+
+
+void SizeofExpr::verify() {
+  if (astType != EXPR_SIZEOF) {
+    INT_FATAL(this, "Bad SizeofExpr::astType");
+  }
+}
 
 
 SizeofExpr*
@@ -1256,6 +1356,13 @@ CastExpr::CastExpr(Expr* initExpr, Expr* initNewType, Type* initType) :
   newType(initNewType),
   type(initType)
 { }
+
+
+void CastExpr::verify() {
+  if (astType != EXPR_CAST) {
+    INT_FATAL(this, "Bad CastExpr::astType");
+  }
+}
 
 
 CastExpr*
@@ -1321,6 +1428,13 @@ CastLikeExpr::CastLikeExpr(Variable* init_variable, Expr* init_expr) :
 { }
 
 
+void CastLikeExpr::verify() {
+  if (astType != EXPR_CAST_LIKE) {
+    INT_FATAL(this, "Bad CastLikeExpr::astType");
+  }
+}
+
+
 CastLikeExpr*
 CastLikeExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   return new CastLikeExpr(COPY_INTERNAL(variable), COPY_INTERNAL(expr));
@@ -1377,6 +1491,13 @@ ReduceExpr::ReduceExpr(Symbol* init_reduceType, Expr* init_argExpr,
 { }
 
 
+void ReduceExpr::verify() {
+  if (astType != EXPR_REDUCE) {
+    INT_FATAL(this, "Bad ReduceExpr::astType");
+  }
+}
+
+
 ReduceExpr*
 ReduceExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   return new ReduceExpr(COPY_INTERNAL(reduceType),
@@ -1428,6 +1549,13 @@ SeqExpr::SeqExpr(AList<Expr>* init_exprls) :
 {}
 
 
+void SeqExpr::verify() {
+  if (astType != EXPR_SEQ) {
+    INT_FATAL(this, "Bad SeqExpr::astType");
+  }
+}
+
+
 SeqExpr*
 SeqExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   return new SeqExpr(COPY_INTERNAL(exprls));
@@ -1476,6 +1604,13 @@ ForallExpr::ForallExpr(AList<DefExpr>* initIndices,
   innerExpr(initInnerExpr),
   indexScope(initIndexScope)
 { }
+
+
+void ForallExpr::verify() {
+  if (astType != EXPR_FORALL) {
+    INT_FATAL(this, "Bad ForallExpr::astType");
+  }
+}
 
 
 ForallExpr*
@@ -1561,6 +1696,13 @@ LetExpr::LetExpr(AList<DefExpr>* init_symDefs, Expr* init_innerExpr) :
 { }
 
 
+void LetExpr::verify() {
+  if (astType != EXPR_LET) {
+    INT_FATAL(this, "Bad LetExpr::astType");
+  }
+}
+
+
 void LetExpr::setInnerExpr(Expr* expr) {
   innerExpr = expr;
 }
@@ -1644,6 +1786,13 @@ CondExpr::CondExpr(Expr* initCondExpr, Expr* initThenExpr, Expr* initElseExpr) :
 { }
 
 
+void CondExpr::verify() {
+  if (astType != EXPR_COND) {
+    INT_FATAL(this, "Bad CondExpr::astType");
+  }
+}
+
+
 CondExpr*
 CondExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   return new CondExpr(COPY_INTERNAL(condExpr),
@@ -1716,6 +1865,13 @@ NamedExpr::NamedExpr(char* init_name, Expr* init_actual) :
 { }
 
 
+void NamedExpr::verify() {
+  if (astType != EXPR_NAMED) {
+    INT_FATAL(this, "Bad NamedExpr::astType");
+  }
+}
+
+
 NamedExpr*
 NamedExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   return new NamedExpr(copystring(name), COPY_INTERNAL(actual));
@@ -1755,6 +1911,13 @@ VarInitExpr::VarInitExpr(Expr* init_expr) :
   Expr(EXPR_VARINIT),
   expr(init_expr)
 { }
+
+
+void VarInitExpr::verify() {
+  if (astType != EXPR_VARINIT) {
+    INT_FATAL(this, "Bad VarInitExpr::astType");
+  }
+}
 
 
 VarInitExpr*
@@ -1802,6 +1965,13 @@ UserInitExpr::UserInitExpr(Expr* init_expr) :
 { }
 
 
+void UserInitExpr::verify() {
+  if (astType != EXPR_USERINIT) {
+    INT_FATAL(this, "Bad UserInitExpr::astType");
+  }
+}
+
+
 UserInitExpr*
 UserInitExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   return new UserInitExpr(COPY_INTERNAL(expr));
@@ -1841,6 +2011,13 @@ UseExpr::UseExpr(Expr* init_expr) :
   Expr(EXPR_USE),
   expr(init_expr)
 { }
+
+
+void UseExpr::verify() {
+  if (astType != EXPR_USE) {
+    INT_FATAL(this, "Bad UseExpr::astType");
+  }
+}
 
 
 UseExpr*
@@ -1898,6 +2075,13 @@ WithExpr::WithExpr(Expr* init_expr) :
   Expr(EXPR_WITH),
   expr(init_expr)
 { }
+
+
+void WithExpr::verify() {
+  if (astType != EXPR_WITH) {
+    INT_FATAL(this, "Bad WithExpr::astType");
+  }
+}
 
 
 WithExpr*

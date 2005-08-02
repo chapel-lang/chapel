@@ -37,6 +37,13 @@ Type::Type(astType_t astType, Expr* init_defaultVal) :
 }
 
 
+void Type::verify(void) {
+  if (astType != TYPE) { // Should become INT_FATAL after Type is not used
+    INT_FATAL(this, "Bad Type::astType");
+  }
+}
+
+
 void Type::addSymbol(TypeSymbol* newsymbol) {
   symbol = newsymbol;
 }
@@ -253,6 +260,13 @@ FnType::FnType(void) :
 {}
 
 
+void FnType::verify(void) {
+  if (astType != TYPE_FN) {
+    INT_FATAL(this, "Bad FnType::astType");
+  }
+}
+
+
 void FnType::codegen(FILE* outfile) {
   INT_FATAL(this, "FnType is not yet implemented!\n");
 }
@@ -267,6 +281,13 @@ EnumType::EnumType(AList<DefExpr>* init_constants) :
   Type(TYPE_ENUM, new Variable(init_constants->first()->sym)),
   constants(init_constants)
 { }
+
+
+void EnumType::verify(void) {
+  if (astType != TYPE_ENUM) {
+    INT_FATAL(this, "Bad EnumType::astType");
+  }
+}
 
 
 EnumType*
@@ -440,6 +461,13 @@ UserType::UserType(Expr* init_defExpr, Type* init_defType, Expr* init_defaultVal
 {}
 
 
+void UserType::verify(void) {
+  if (astType != TYPE_USER) {
+    INT_FATAL(this, "Bad UserType::astType");
+  }
+}
+
+
 UserType*
 UserType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   UserType* copy = new UserType(COPY_INTERNAL(defExpr),
@@ -499,6 +527,13 @@ StructuralType::StructuralType(astType_t astType, Expr* init_defaultVal) :
   fields.clear();
   methods.clear();
   types.clear();
+}
+
+
+void StructuralType::verify(void) {
+  if (astType != TYPE_STRUCTURAL) {
+    INT_FATAL(this, "Bad StructuralType::astType");
+  }
 }
 
 
@@ -764,6 +799,13 @@ ClassType::ClassType(astType_t astType) :
 }
 
 
+void ClassType::verify(void) {
+  if (astType != TYPE_CLASS) {
+    INT_FATAL(this, "Bad ClassType::astType");
+  }
+}
+
+
 ClassType*
 ClassType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   ClassType* copy_type = new ClassType(astType);
@@ -800,6 +842,13 @@ RecordType::RecordType(void) :
 {}
 
 
+void RecordType::verify(void) {
+  if (astType != TYPE_RECORD) {
+    INT_FATAL(this, "Bad RecordType::astType");
+  }
+}
+
+
 RecordType*
 RecordType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   RecordType* copy_type = new RecordType();
@@ -820,6 +869,13 @@ UnionType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   UnionType* copy_type = new UnionType();
   copyGuts(copy_type, clone, map);
   return copy_type;
+}
+
+
+void UnionType::verify(void) {
+  if (astType != TYPE_UNION) {
+    INT_FATAL(this, "Bad UnionType::astType");
+  }
 }
 
 
@@ -933,6 +989,14 @@ MetaType::MetaType(Type* init_base) :
 {
 }
 
+
+void MetaType::verify(void) {
+  if (astType != TYPE_META) {
+    INT_FATAL(this, "Bad MetaType::astType");
+  }
+}
+
+
 void MetaType::traverseDefType(Traversal* traversal) {
   TRAVERSE(base, traversal, false);
 }
@@ -943,6 +1007,13 @@ SumType::SumType(Type* firstType) :
 {
   components.add(firstType);
 }
+
+void SumType::verify(void) {
+  if (astType != TYPE_SUM) {
+    INT_FATAL(this, "Bad SumType::astType");
+  }
+}
+
 
 void SumType::addType(Type* additionalType) {
   components.add(additionalType);
@@ -962,6 +1033,13 @@ VariableType::VariableType(Type *init_type) :
   Type(TYPE_VARIABLE, NULL), 
   type(init_type)
 {}
+
+
+void VariableType::verify(void) {
+  if (astType != TYPE_VARIABLE) {
+    INT_FATAL(this, "Bad VariableType::astType");
+  }
+}
 
 
 VariableType*
@@ -1062,6 +1140,13 @@ Type *find_or_make_sum_type(Vec<Type *> *types) {
 NilType::NilType(void) :
   Type(TYPE_NIL, NULL)
 {}
+
+
+void NilType::verify(void) {
+  if (astType != TYPE_NIL) {
+    INT_FATAL(this, "Bad NilType::astType");
+  }
+}
 
 
 void NilType::codegen(FILE* outfile) {

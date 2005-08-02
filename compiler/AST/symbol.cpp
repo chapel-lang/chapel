@@ -35,6 +35,11 @@ Symbol::Symbol(astType_t astType, char* init_name, Type* init_type,
 {}
 
 
+void Symbol::verify(void) {
+  INT_FATAL(this, "Symbol::verify() should never be called");
+}
+
+
 void Symbol::setParentScope(SymScope* init_parentScope) {
   parentScope = init_parentScope;
 }
@@ -186,6 +191,13 @@ UnresolvedSymbol::UnresolvedSymbol(char* init_name, char* init_cname) :
 }
 
 
+void UnresolvedSymbol::verify(void) {
+  if (astType != SYMBOL_UNRESOLVED) {
+    INT_FATAL(this, "Bad UnresolvedSymbol::astType");
+  }
+}
+
+
 void UnresolvedSymbol::codegen(FILE* outfile) {
   INT_FATAL(this, "ERROR:  Cannot codegen an unresolved symbol.");
 }
@@ -227,6 +239,13 @@ VarSymbol::VarSymbol(char* init_name,
     } else {
       Symboltable::define(this);
     }
+  }
+}
+
+
+void VarSymbol::verify(void) {
+  if (astType != SYMBOL_VAR) {
+    INT_FATAL(this, "Bad VarSymbol::astType");
   }
 }
 
@@ -355,6 +374,13 @@ ParamSymbol::ParamSymbol(paramType init_intent, char* init_name,
 }
 
 
+void ParamSymbol::verify(void) {
+  if (astType != SYMBOL_PARAM) {
+    INT_FATAL(this, "Bad ParamSymbol::astType");
+  }
+}
+
+
 ParamSymbol*
 ParamSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   ParamSymbol *ps = new ParamSymbol(intent, copystring(name), type);
@@ -441,6 +467,16 @@ TypeSymbol::TypeSymbol(char* init_name, Type* init_definition) :
   else
     isUnresolved = true;
 }
+
+
+void TypeSymbol::verify(void) {
+  if (astType != SYMBOL_TYPE) {
+    INT_FATAL(this, "Bad TypeSymbol::astType");
+  }
+
+  definition->verify();
+}
+
 
 TypeSymbol*
 TypeSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
@@ -530,6 +566,14 @@ FnSymbol::FnSymbol(char* init_name, TypeSymbol* init_typeBinding) :
   Symboltable::define(this);
   method_type = NON_METHOD;
 }
+
+
+void FnSymbol::verify(void) {
+  if (astType != SYMBOL_FN) {
+    INT_FATAL(this, "Bad FnSymbol::astType");
+  }
+}
+
 
 void FnSymbol::continueDef(AList<DefExpr>* init_formals, Type* init_retType, bool isRef, Expr *init_whereExpr) {
   formals = init_formals;
@@ -1129,6 +1173,13 @@ EnumSymbol::EnumSymbol(char* init_name) :
 }
 
 
+void EnumSymbol::verify(void) {
+  if (astType != SYMBOL_ENUM) {
+    INT_FATAL(this, "Bad EnumSymbol::astType");
+  }
+}
+
+
 EnumSymbol*
 EnumSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   return new EnumSymbol(copystring(name));
@@ -1149,6 +1200,13 @@ ModuleSymbol::ModuleSymbol(char* init_name, modType init_modtype) :
   modScope(NULL)
 {
   uses.clear();
+}
+
+
+void ModuleSymbol::verify(void) {
+  if (astType != SYMBOL_MODULE) {
+    INT_FATAL(this, "Bad ModuleSymbol::astType");
+  }
 }
 
 
@@ -1316,6 +1374,13 @@ LabelSymbol::LabelSymbol(char* init_name) :
 }
 
 
+void LabelSymbol::verify(void) {
+  if (astType != SYMBOL_LABEL) {
+    INT_FATAL(this, "Bad LabelSymbol::astType");
+  }
+}
+
+
 void LabelSymbol::codegenDef(FILE* outfile) { }
 
 
@@ -1329,6 +1394,13 @@ ForwardingSymbol::ForwardingSymbol(Symbol* init_forward, char* rename) :
     cname = copystring(forward->cname);
   }
   Symboltable::define(this);
+}
+
+
+void ForwardingSymbol::verify(void) {
+  if (astType != SYMBOL_FORWARDING) {
+    INT_FATAL(this, "Bad ForwardingSymbol::astType");
+  }
 }
 
 
