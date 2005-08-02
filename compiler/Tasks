@@ -31,7 +31,7 @@ X Remove NoOpStmt -- replace with empty block statement - complete
 
 * Replace VarInitExpr with some symbol sentinel
 
-* Change WithExpr and UseExpr into functions
+* Unify WithExpr and UseExpr which have similar forms
 
 * (John) Remove CastLikeExpr
 
