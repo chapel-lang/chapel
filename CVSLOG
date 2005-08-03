@@ -41179,3 +41179,22 @@ Modified files:
 	chapel/compiler/: Tasks 
 	chapel/compiler/analysis/: analysis.cpp clone.cpp 
 
+---------------------------------------------------------------------------
+
+08/03/05 11:53:25 -- jplevyak
+
+Log message:
+	Removed "aspect", now using CastExpr.
+	Add CastExpr for default parameters where the
+	  intent is not OUT or INOUT and where the type is specified.
+	Made is_Value_Type, is_Scalar_Type and is_Reference_Type
+	  all deref UserType
+	  Made a similar change in analysis.cpp for is_reference_type(Sym*) etc.
+	Modified cast_value primitive to obey the semantics of CastExpr.
+	Modified coerce to defref UserType
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp cg.cpp fa.cpp 
+	chapel/compiler/include/: fa.h symbol.h 
+
