@@ -41236,3 +41236,13 @@ Modified files:
 	                             insertVariableInitializations.cpp 
 	                             resolveSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+08/03/05 13:59:30 -- jplevyak
+
+Log message:
+	Updated tasks for "aspect" and UserInitExpr
+
+Modified files:
+	chapel/compiler/: Tasks 
+
