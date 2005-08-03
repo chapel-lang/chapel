@@ -41140,3 +41140,29 @@ Modified files:
 	chapel/compiler/traversals/: createNestedFuncIterators.h 
 	                             createNestedFuncIterators.cpp 
 
+---------------------------------------------------------------------------
+
+08/02/05 17:04:58 -- deitz
+
+Log message:
+	Removed ForwardingSymbol.  Much cleaner.  Module use still lacks
+	generality, however.  There are no uses of uses, no renaming, ...
+	
+	Uses are now associated with a scope and not a module.
+	
+	Updated a few .goods that changed when Shannon changed the prelude.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp symbol.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h expr.h symbol.h symscope.h 
+	chapel/compiler/symtab/: symscope.cpp symtab.cpp 
+	chapel/compiler/traversals/: resolveModuleUses.cpp 
+	                             scopeResolveSymbols.cpp verify.cpp 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/flowanalysis/newast/: enum.good sum_type-1.good 
+	                                  sum_type-2.good 
+	chapel/test/types/seq/bradc/: length.modify.good 
+
