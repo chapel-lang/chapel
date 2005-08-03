@@ -855,7 +855,7 @@ make_entry_set(AEdge *e, EntrySet *split = 0) {
     e->to->split = split;
 }
 
-static void
+void
 flow_var_type_permit(AVar *v, AType *t) {
   if (!v->restrict)
     v->restrict = t;
@@ -909,6 +909,22 @@ set_container(AVar *av, AVar *container) {
   av->container = container;
   if (av->lvalue)
     av->lvalue->container = container;
+}
+
+void
+fill_tvals(Fun *fn, PNode *p, int n) {
+  p->tvals.fill(n);
+  for (int i = 0; i < n; i++) {
+    if (!p->tvals.v[i]) {
+      Sym *s = new_Sym();
+      s->function_scope = 1;
+      s->in = fn->sym;
+      p->tvals.v[i] = new Var(s);
+      p->tvals.v[i]->is_internal = 1;
+      s->var = p->tvals.v[i];
+      fn->fa_all_Vars.add(p->tvals.v[i]);
+    }
+  }
 }
 
 void

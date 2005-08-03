@@ -221,7 +221,6 @@ VarSymbol::VarSymbol(char* init_name,
   Symbol(SYMBOL_VAR, init_name, init_type),
   varClass(init_varClass),
   consClass(init_consClass),
-  aspect(NULL),
   noDefaultInit(false)
 {
   if (name) { // ensure this is not a sentinel
@@ -255,7 +254,6 @@ VarSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   VarSymbol* newVarSymbol = 
     new VarSymbol(copystring(name), type, varClass, consClass);
   newVarSymbol->cname = copystring(cname);
-  newVarSymbol->aspect = aspect;
   newVarSymbol->noDefaultInit = noDefaultInit;
   return newVarSymbol;
 }
@@ -757,15 +755,13 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
   }
   Symboltable::continueFnDef(wrapper_fn, wrapper_formals, retType, retRef, COPY(whereExpr));
   AList<Stmt>* wrapper_body = new AList<Stmt>();
-  Vec<VarSymbol*> temps;
+  Vec<Expr*> temps;
   for_alist_backward(DefExpr, formal, formals) {
     if (defaults->set_in(formal->sym)) {
       char* temp_name = glomstrings(2, "_default_param_temp_", formal->sym->name);
       VarSymbol* temp_symbol = new VarSymbol(temp_name, formal->sym->type);
       // mark default parameters as being of the nominal type of the corresponding
       // non-default parameter.
-      if (formal->sym->type != dtUnknown)
-        temp_symbol->aspect = formal->sym->type;
       DefExpr* temp_def_expr =
         new DefExpr(temp_symbol,
                     (dynamic_cast<ParamSymbol*>(formal->sym)->intent == PARAM_OUT)
@@ -775,14 +771,19 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
                     ? formal->sym->defPoint->exprType->copy()
                     : NULL);
       wrapper_body->insertAtHead(new ExprStmt(temp_def_expr));
-      temps.add(temp_symbol);
+      ParamSymbol *ps = dynamic_cast<ParamSymbol*>(formal->sym);
+      if (formal->sym->type != dtUnknown &&
+          ps->intent != PARAM_OUT && ps->intent != PARAM_INOUT)
+        temps.add(new CastExpr(new Variable(temp_symbol), NULL, formal->sym->type));
+      else
+        temps.add(new Variable(temp_symbol));
     }
   }
   AList<Expr>* actuals = new AList<Expr>();
   DefExpr* wrapper_formal = wrapper_formals->first();
   for_alist(DefExpr, formal, formals) {
     if (defaults->set_in(formal->sym)) {
-      actuals->insertAtTail(new Variable(temps.pop()));
+      actuals->insertAtTail(temps.pop());
     } else {
       actuals->insertAtTail(new Variable(wrapper_formal->sym));
       wrapper_formal = wrapper_formals->next();

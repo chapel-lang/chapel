@@ -622,6 +622,8 @@ void StructuralType::traverseDefType(Traversal* traversal) {
 
 int
 is_Scalar_Type(Type *t) {
+  if (UserType *ut = dynamic_cast<UserType*>(t))
+    return is_Scalar_Type(ut->defType);
   return t && t != dtUnknown && t != dtString && 
     (t->astType == TYPE_BUILTIN || t->astType == TYPE_ENUM);
 }
@@ -629,12 +631,16 @@ is_Scalar_Type(Type *t) {
 
 int
 is_Value_Type(Type *t) {
+  if (UserType *ut = dynamic_cast<UserType*>(t))
+    return is_Value_Type(ut->defType);
   return t->astType == TYPE_RECORD || t->astType == TYPE_UNION;
 }
 
 
 int
 is_Reference_Type(Type *t) {
+  if (UserType *ut = dynamic_cast<UserType*>(t))
+    return is_Reference_Type(ut->defType);
   return t && (dynamic_cast<StructuralType*>(t) || t->astType == TYPE_SUM);
 }
 

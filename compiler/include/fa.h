@@ -301,8 +301,10 @@ int symbol_info(Var *v, Vec<Sym *> &symbols);
 AType *make_AType(CreationSet *cs);
 AType *make_AType(Vec<CreationSet *> &css);
 AType *make_abstract_type(Sym *s);
+void fill_tvals(Fun *fn, PNode *p, int n);
 void update_in(AVar *v, AType *t);
 void flow_vars(AVar *v, AVar *vv);
+void flow_var_type_permit(AVar *v, AType *t);
 CreationSet *creation_point(AVar *v, Sym *s);
 void prim_make(PNode *p, EntrySet *es, Sym *kind, int start = 1, int ref = 0);
 void type_violation(ATypeViolation_kind akind, AVar *av, AType *type, AVar *send,

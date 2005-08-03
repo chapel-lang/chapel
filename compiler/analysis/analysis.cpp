@@ -282,6 +282,13 @@ close_symbols(Vec<AList<Stmt> *> &stmts, Vec<BaseAST *> &syms) {
   }
 }
 
+static Sym *
+base_type(Sym *s) {
+  if (UserType *t = dynamic_cast<UserType*>(s->asymbol->symbol))
+    return base_type(t->defType->asymbol->sym);
+  return s;
+}
+
 static void
 set_global_scope(Sym *s) {
   s->function_scope = 0;
@@ -782,14 +789,18 @@ build_enum_element(Sym *enum_sym, Sym *element_sym, int i) {
 }
 
 static int
-is_reference_type(BaseAST *t) {
+is_reference_type(BaseAST *at) {
+  Type *t = dynamic_cast<Type*>(at);
+  if (UserType *ut = dynamic_cast<UserType*>(t))
+    return is_reference_type(ut->defType);
   return (t && (t->astType == TYPE_NIL || t->astType == TYPE_CLASS));
 }
 
 static int
 is_scalar_type(BaseAST *at) {
   Type *t = dynamic_cast<Type*>(at);
-  assert(t);
+  if (UserType *ut = dynamic_cast<UserType*>(t))
+    return is_scalar_type(ut->defType);
   return t != dtUnknown && (t->astType == TYPE_BUILTIN || t->astType == TYPE_ENUM);
 }
 
@@ -810,12 +821,6 @@ build_symbols(Vec<BaseAST *> &syms) {
     Symbol *s = dynamic_cast<Symbol *>(ss);
     if (s) { 
       switch (s->astType) {
-        case SYMBOL_VAR: {
-          VarSymbol *v = dynamic_cast<VarSymbol*>(s);
-          if (v->aspect)
-            v->asymbol->sym->aspect = unalias_type(v->aspect->asymbol->sym);
-          break;
-        }
         case SYMBOL_TYPE: {
           TypeSymbol *t = dynamic_cast<TypeSymbol*>(s);
           if (t->definition->astType == TYPE_VARIABLE)
@@ -1274,7 +1279,7 @@ static int
 gen_one_defexpr(VarSymbol *var, DefExpr *def) {
   Type *type = var->type;
 #ifdef MAKE_USER_TYPE_BE_DEFINITION
-  if (type->astType == TYPE_USER)
+  while (type->astType == TYPE_USER)
     type = ((UserType*)type)->defType;
 #endif
   Sym *s = var->asymbol->sym;
@@ -1353,7 +1358,7 @@ gen_one_defexpr(VarSymbol *var, DefExpr *def) {
     if (is_scalar_type(type)) {
       if1_gen(if1, &ast->code, init->ainfo->code);
       if (type != init->typeInfo())
-        val = gen_coerce(val, s->type, &ast->code, ast);
+        val = gen_coerce(val, base_type(type->asymbol->sym), &ast->code, ast);
       if1_move(if1, &ast->code, val, ast->sym, ast);
     } else if (!var->noDefaultInit && !is_reference_type(type) && type != dtUnknown) {
       Sym *old_val = val;
@@ -2035,7 +2040,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
         show_error("assignment to non-lvalue", s->ainfo);
       if (symbol && symbol->type && is_scalar_type(symbol->type) &&
           !operator_equal && symbol->type != s->right->typeInfo())
-        rval = gen_coerce(rval, type, &s->ainfo->code, s->ainfo);
+        rval = gen_coerce(rval, base_type(type), &s->ainfo->code, s->ainfo);
       if1_move(if1, &s->ainfo->code, rval, s->ainfo->rval, s->ainfo);
       if (!symbol || symbol->type == dtUnknown || !operator_equal)
         if1_move(if1, &s->ainfo->code, s->ainfo->rval, s->left->ainfo->sym, s->ainfo);
@@ -2103,7 +2108,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       s->ainfo->rval = new_sym();
       s->ainfo->rval->ast = s->ainfo;
       if (s->type)
-        s->ainfo->rval->aspect = s->type->asymbol->sym;
+        s->ainfo->rval->aspect = base_type(s->type->asymbol->sym);
       if (s->newType)
         if1_gen(if1, &s->ainfo->code, s->newType->ainfo->code);
       if1_gen(if1, &s->ainfo->code, s->expr->ainfo->code);
@@ -2549,18 +2554,26 @@ integer_result(PNode *pn, EntrySet *es) {
 
 static void
 cast_value(PNode *pn, EntrySet *es) {
-  AVar *result = make_AVar(pn->lvals.v[0], es);
-  AVar *t = make_AVar(pn->rvals.v[2], es);
   assert(pn->rvals.n == 4);
-  forv_CreationSet(cs, *t->out) {
+  AVar *result = make_AVar(pn->lvals.v[0], es);
+  AVar *type = make_AVar(pn->rvals.v[2], es);
+  AVar *val = make_AVar(pn->rvals.v[3], es);
+  fill_tvals(es->fun, pn, 1);
+  AVar *tmp = make_AVar(pn->tvals.v[0], es);
+  flow_vars(tmp, result);
+  forv_CreationSet(cs, *type->out) {
     Sym *ts = cs->sym;
-    if (ts->asymbol && is_scalar_type_symbol(ts->asymbol->symbol))
-      update_in(result, make_abstract_type(ts->meta_type));
-    else { 
-      assert(!"implemented");
-      creation_point(result, ts);
-    }
+    if (ts->asymbol && is_scalar_type_symbol(ts->type->asymbol->symbol))
+      update_in(result, make_abstract_type(base_type(ts->meta_type)));
   }
+  Vec<CreationSet *> css;
+  forv_CreationSet(cs, *val->out) {
+    Sym *ts = cs->sym;
+    if (ts->asymbol && !is_scalar_type(ts->type->asymbol->symbol))
+      css.add(cs);
+  }
+  flow_var_type_permit(tmp, make_AType(css));
+  flow_vars(val, tmp);
 }
 
 static void

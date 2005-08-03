@@ -490,7 +490,7 @@ write_c(FILE *fp, FA *fa, Fun *f, Vec<Var *> *globals = 0) {
   forv_Var(v, vars)
     if (Var_is_local(v->sym->var, f))
       v->cg_string = v->sym->var->cg_string = NULL;
-  forv_Var(v, vars) {
+  forv_Var(v, vars) if (!v->is_internal) {
     if (Var_is_local(v->sym->var, f)) {
       if (v->sym->var->cg_string) {
         v->cg_string = v->sym->var->cg_string;

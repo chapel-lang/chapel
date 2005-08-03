@@ -1377,7 +1377,10 @@ void CastExpr::codegen(FILE* outfile) {
     expr->codegenCastToString(outfile);
   } else {
     fprintf(outfile, "(");
-    type->codegen(outfile);
+    if (is_Scalar_Type(type))
+      type->codegen(outfile);
+    else
+      fprintf(outfile, "void*"); // this type not fixed up form cloning
     fprintf(outfile, ")(");
     expr->codegen(outfile);
     fprintf(outfile, ")");
