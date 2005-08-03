@@ -27,7 +27,7 @@ X Remove NoOpStmt -- replace with empty block statement - complete
 
 * (Steve) Remove FnCall
 
-* Remove UserInitExpr
+X Remove UserInitExpr
 
 * Replace VarInitExpr with some symbol sentinel
 
@@ -40,7 +40,7 @@ X (John) Remove SizeofExpr - complete
 * Remove MemberAccessExpr.  This will be eliminated pre-analysis
   anyway.  Store it as a CallExpr of a function named '.'
 
-* (John) Convert VarSymbol::aspect into a Cast expression and remove it
+X (John) Convert VarSymbol::aspect into a Cast expression and remove it
 
 X (Roxana) Remove Type::getType() - complete
 
