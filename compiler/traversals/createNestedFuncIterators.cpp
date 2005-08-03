@@ -15,16 +15,14 @@ class InsertNestedFuncInIterator : public Traversal {
   }
 
   void postProcessExpr(Expr* expr) {
-    //replace seq append call in iterator with call to nested function
+    //replace seq yield call in iterator with call to nested function
     if (FnCall* fc = dynamic_cast<FnCall*>(expr)) {
       FnSymbol* fn_sym = fc->findFnSymbol();
-      if (!strcmp(fn_sym->name, "_append_in_place")) {
+      if (!strcmp(fn_sym->name, "_yield")) {
         AList<Expr>* new_arg_list = getNewArgList(fc->argList);
         FnCall* fn_call = new FnCall(new Variable(_fn_call_sym), new_arg_list->copy());
         fc->replace(fn_call);
-      
       }
-      
     }
   }
 
@@ -36,7 +34,7 @@ class InsertNestedFuncInIterator : public Traversal {
   
   AList<Expr>* getNewArgList (AList<Expr>* old_arg_list) {
     AList<Expr>* new_arg_list = old_arg_list->copy();
-    //first argument to seq append is the sequence, second is the element 
+    //first argument to seq yield is the sequence, second is the element 
     //returned to the old iterator for loop
     new_arg_list->popHead();
     //add local var uses of enclosing scope found in loop body that 
@@ -55,8 +53,12 @@ void CreateNestedFuncIterators::postProcessExpr(Expr* expr) {
       FnSymbol* fn_sym = dynamic_cast<FnSymbol*>(variable->var);
       ForLoopStmt* fls = dynamic_cast<ForLoopStmt*>(paren_op->parentStmt);
       //found iterator
-        if (fn_sym && (fn_sym->fnClass == FN_ITERATOR) && fls && 
-            (fn_sym->paramScope->getModule()->modtype == MOD_USER)) {
+      if (fn_sym && (fn_sym->fnClass == FN_ITERATOR) && fls && 
+          (fn_sym->paramScope->getModule()->modtype == MOD_USER)) {
+        //visit the body of the iterator forloop first to transform
+        //inner iterator for loops first
+        fls->innerStmt->traverse(this);
+          
         //copy iterator function def
         Vec<Symbol*>* encl_scope_var_uses = getEnclosingScopeVarUses(fls);
         FnSymbol* func_it_sym = copyIteratorDef(fn_sym);

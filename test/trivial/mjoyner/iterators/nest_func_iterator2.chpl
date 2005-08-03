@@ -1,0 +1,22 @@
+iterator basic() : integer {
+  var i : integer;
+  while i < 10 {
+    yield i * 4;
+    i += 1;
+  }
+}
+
+
+
+function main() {
+var x : integer = 5;
+  for i in basic() {
+    writeln(i+x);
+  } 
+
+  for j in basic() {
+     var y : integer = 4;
+     x = 3;
+     writeln(j + y + x);
+  }
+}

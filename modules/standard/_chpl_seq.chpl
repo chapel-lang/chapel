@@ -55,6 +55,10 @@ record seq {
     return this;
   }
 
+  function _yield(e: elt_type) {
+    this._append_in_place(e);
+  } 
+
   function _prepend_in_place(e : elt_type) {
     var new : _seqNode = _seqNode(elt_type);
     new._element = e;
