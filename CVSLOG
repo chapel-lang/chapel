@@ -41246,3 +41246,19 @@ Log message:
 Modified files:
 	chapel/compiler/: Tasks 
 
+---------------------------------------------------------------------------
+
+08/03/05 14:04:33 -- jplevyak
+
+Log message:
+	Sorted tasks so that untaken ones are at the top and completed
+	ones are at the bottom.
+	
+	Also, moved MemberAccess elimination to stage 2 to coincide with
+	  MemberAccess => getter/setter tranform since otherwise large
+	  amounts of code in analysis.cpp will have to be rewritten only
+	  to be deleted in stage 2.
+
+Modified files:
+	chapel/compiler/: Tasks 
+
