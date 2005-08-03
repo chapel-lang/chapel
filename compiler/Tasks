@@ -13,36 +13,29 @@ Implementation List
 
 Priority 1 Tasks
 ----------------
-X Remove NoOpStmt -- replace with empty block statement - complete
 
 * Rename DefaultVal to DefaultValue, Insert symbols for every
   primitive literal, change DefaultValue to a VarSymbol
 
-* (Roxana) Attach a Type* type to Expr and remove typeInfo()
-
-* (Steve) Remove BinOp, UnOp, AssignOp.  Rename ParenOpExpr, CallExpr
-
 * Change all Exprs to have Expr on the end.  Standardize names of
   classes
-
-* (Steve) Remove FnCall
-
-X Remove UserInitExpr
 
 * Replace VarInitExpr with some symbol sentinel
 
 * Unify WithExpr and UseExpr which have similar forms
 
-X (John) Remove CastLikeExpr - complete
+* add PrimitiveType class -- move integers, floats, strings, and such
+  here
 
-X (John) Remove SizeofExpr - complete
+* unify union types and sum types (?)
 
-* Remove MemberAccessExpr.  This will be eliminated pre-analysis
-  anyway.  Store it as a CallExpr of a function named '.'
+* remove ForwardingSymbol (?)
 
-X (John) Convert VarSymbol::aspect into a Cast expression and remove it
+* (Roxana) Attach a Type* type to Expr and remove typeInfo()
 
-X (Roxana) Remove Type::getType() - complete
+* (Steve) Remove BinOp, UnOp, AssignOp.  Rename ParenOpExpr, CallExpr
+
+* (Steve) Remove FnCall
 
 * (John) get rid of nondeterminism introduced by hashing-on-pointers
    structures (and try to capture an instance of front-end
@@ -50,14 +43,7 @@ X (Roxana) Remove Type::getType() - complete
 
 * (Steve) restructure verify pass; build out verify() routines on AST classes
 
-* unify union types and sum types (?)
-
 * (Steve) rename "implements" to something else.  Move to class header?
-
-* remove ForwardingSymbol (?)
-
-* add PrimitiveType class -- move integers, floats, strings, and such
-  here
 
 * (Steve) implement class inheritance
 
@@ -66,10 +52,24 @@ X (Roxana) Remove Type::getType() - complete
 
 * (Steve) compile-time (param) constant-folding
 
+X Remove NoOpStmt -- replace with empty block statement - complete
+
+X Remove UserInitExpr
+
+X (John) Remove CastLikeExpr - complete
+
+X (John) Remove SizeofExpr - complete
+
+X (John) Convert VarSymbol::aspect into a Cast expression and remove it
+
+X (Roxana) Remove Type::getType() - complete
+
 Priority 2 Tasks
 ----------------
 
 * Implement MemberAccess Setter Getter transform in AST.
+  Remove MemberAccessExpr.  This will be eliminated pre-analysis
+  anyway.  Store it as a CallExpr of a function named '.'
 
 * Restructure FnSymbol/FnType to reflect division into implementation,
   type, prototype, signature.  Store signatures as degenerate function
