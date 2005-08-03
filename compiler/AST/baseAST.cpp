@@ -292,7 +292,6 @@ char* astTypeName[AST_TYPE_END+1] = {
   "StringLiteral",
   "Variable",
   "VarInit",
-  "UserInit",
   "DefExpr",
   "UnOp",
   "BinOp",
@@ -417,9 +416,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     goto LExprCommon;
   case EXPR_USE:
   case EXPR_WITH:
-  case EXPR_USERINIT:
-    AST_ADD_CHILD(UserInitExpr, expr);
-    goto LExprCommon;
   case EXPR_DEF:
     ADD_CHILD(DefExpr, sym);
     AST_ADD_CHILD(DefExpr, init);

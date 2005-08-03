@@ -466,7 +466,8 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
   // Resolve default constructors
   if (DefExpr* defExpr = dynamic_cast<DefExpr*>(expr)) {
     Vec<FnSymbol*> fns;
-    call_info(defExpr, fns);
+    call_info(defExpr, defExpr->initAssign, CALL_INFO_FIND_ASSIGN);
+    call_info(defExpr, fns, CALL_INFO_FIND_NON_ASSIGN);
     if (fns.n == 1) {
       defExpr->sym->type->defaultConstructor = fns.v[0];
     } if (fns.n > 1) {

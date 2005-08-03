@@ -37,16 +37,16 @@ static void build_constructor(StructuralType* structType) {
         ParamSymbol* arg = new ParamSymbol(PARAM_BLANK, name, type);
         arg->isGeneric = true;
         arg->typeVariable = dynamic_cast<TypeSymbol*>(tv->symbol);
-        args->insertAtTail(new DefExpr(arg, new UserInitExpr(new Variable(dtUnknown->symbol))));
+        args->insertAtTail(new DefExpr(arg, new Variable(dtUnknown->symbol)));
       }
     }
 
     forv_Vec(Symbol, tmp, structType->fields) {
       char* name = tmp->name;
       Type* type = tmp->type;
-      UserInitExpr* init = (tmp->defPoint->init) 
+      Expr* init = (tmp->defPoint->init) 
         ? tmp->defPoint->init->copy()
-        : new UserInitExpr(new VarInitExpr(new Variable(tmp)));
+        : new VarInitExpr(new Variable(tmp));
       Expr* exprType = (tmp->defPoint->exprType)
         ? tmp->defPoint->exprType->copy()
         : NULL;
@@ -70,10 +70,10 @@ static void build_constructor(StructuralType* structType) {
 
   for_alist(DefExpr, param, args) {
     if (param->sym->defPoint->init) {
-      if (VarInitExpr* varInitExpr = dynamic_cast<VarInitExpr*>(param->sym->defPoint->init->expr)) {
+      if (VarInitExpr* varInitExpr = dynamic_cast<VarInitExpr*>(param->sym->defPoint->init)) {
         if (Variable* variable = dynamic_cast<Variable*>(varInitExpr->expr)) {
           param->sym->defPoint->init =
-            new UserInitExpr(new VarInitExpr(new MemberAccess(new Variable(fn->_this), variable->var)));
+            new VarInitExpr(new MemberAccess(new Variable(fn->_this), variable->var));
         }
       }
     }

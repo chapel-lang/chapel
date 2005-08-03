@@ -569,7 +569,7 @@ void Variable::codegen(FILE* outfile) {
 }
 
 
-DefExpr::DefExpr(Symbol* initSym, UserInitExpr* initInit, Expr* initExprType) :
+DefExpr::DefExpr(Symbol* initSym, Expr* initInit, Expr* initExprType) :
   Expr(EXPR_DEF),
   sym(initSym),
   init(initInit),
@@ -611,7 +611,7 @@ DefExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
 
 void DefExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == init) {
-    init = dynamic_cast<UserInitExpr*>(new_ast);
+    init = dynamic_cast<Expr*>(new_ast);
   } else if (old_ast == exprType) {
     exprType = dynamic_cast<Expr*>(new_ast);
   } else {
@@ -1865,53 +1865,6 @@ void VarInitExpr::codegen(FILE* outfile) {
   fprintf(outfile, "/*** VarInit of ");
   expr->codegen(outfile);
   fprintf(outfile, "**/");
-}
-
-UserInitExpr::UserInitExpr(Expr* init_expr) :
-  Expr(EXPR_USERINIT),
-  expr(init_expr)
-{ }
-
-
-void UserInitExpr::verify() {
-  if (astType != EXPR_USERINIT) {
-    INT_FATAL(this, "Bad UserInitExpr::astType");
-  }
-}
-
-
-UserInitExpr*
-UserInitExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new UserInitExpr(COPY_INTERNAL(expr));
-}
-
-
-void UserInitExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == expr) {
-    expr = dynamic_cast<Expr*>(new_ast);
-  } else {
-    INT_FATAL(this, "Unexpected case in UserInitExpr::replaceChild");
-  }
-}
-
-
-void UserInitExpr::traverseExpr(Traversal* traversal) {
-  TRAVERSE(expr, traversal, false);
-}
-
-
-Type* UserInitExpr::typeInfo(void) {
-  return expr->typeInfo();
-}
-
-
-void UserInitExpr::print(FILE* outfile) {
-  expr->print(outfile);
-}
-
-
-void UserInitExpr::codegen(FILE* outfile) {
-  expr->codegen(outfile);
 }
 
 

@@ -37,7 +37,7 @@ static void insert_config_init(Stmt* stmt, VarSymbol* var, Type* type) {
   // Need a traversal to change complex literals into complex variable
   // temporaries for function calls.
 
-  Expr* init_expr = var->defPoint->init ? var->defPoint->init->expr : type->defaultVal;
+  Expr* init_expr = var->defPoint->init ? var->defPoint->init : type->defaultVal;
   AList<Expr>* args = new AList<Expr>(new Variable(var));
   args->insertAtTail(new Variable(type->symbol));
   args->insertAtTail(new StringLiteral(copystring(var->name)));
@@ -69,9 +69,24 @@ static void insert_basic_init(Stmt* stmt, VarSymbol* var, Type* type) {
 
   if (var->defPoint->init) {
     Expr* lhs = new Variable(var);
-    Expr* rhs = var->defPoint->init->expr->copy();
-    Expr* init_expr = new AssignOp(GETS_NORM, lhs, rhs);
-    stmt->insertBefore(new ExprStmt(init_expr));
+    Expr* rhs = var->defPoint->init->copy();
+    if (var->defPoint->initAssign.n) {
+      if (var->defPoint->initAssign.n != 1) {
+        INT_FATAL(var->defPoint, "Unable to resolve initialization assignment");
+      }
+      AList<Expr>* assign_arguments = new AList<Expr>(lhs);
+      assign_arguments->insertAtTail(rhs);
+#ifdef OVERLOADED_ASSIGNMENT_FIXED
+      Expr *init_expr = new FnCall(new Variable(var->defPoint->initAssign.v[0]),
+                                   assign_arguments);
+#else
+      Expr *init_expr = new AssignOp(GETS_NORM, lhs, rhs);
+#endif
+      stmt->insertBefore(new ExprStmt(init_expr));
+    } else {
+      Expr* init_expr = new AssignOp(GETS_NORM, lhs, rhs);
+      stmt->insertBefore(new ExprStmt(init_expr));
+    }
   }
 }
 

@@ -459,16 +459,16 @@ static AList<VarSymbol>* symsToVars(AList<Symbol>* idents, Type* type) {
 DefExpr*
 Symboltable::defineParam(paramType tag, char* ident, Expr* type, Expr* init) {
   ParamSymbol* paramSymbol = new ParamSymbol(tag, ident, dtUnknown);
-  UserInitExpr* userInitExpr = init ? new UserInitExpr(init) : NULL;
-  return new DefExpr(paramSymbol, userInitExpr, type);
+  Expr* userInit = init ? init : NULL;
+  return new DefExpr(paramSymbol, userInit, type);
 }
 
 
 AList<Stmt>*
 Symboltable::defineVarDef1(char* ident, Expr* type, Expr* init) {
   VarSymbol* varSymbol = new VarSymbol(ident, dtUnknown, VAR_NORMAL, VAR_VAR);
-  UserInitExpr* userInitExpr = init ? new UserInitExpr(init) : NULL;
-  return new AList<Stmt>(new ExprStmt(new DefExpr(varSymbol, userInitExpr, type)));
+  Expr* userInit = init ? init : NULL;
+  return new AList<Stmt>(new ExprStmt(new DefExpr(varSymbol, userInit, type)));
 }
 
 
@@ -496,8 +496,8 @@ DefExpr* Symboltable::defineSingleVarDef(char* name, Type* type,
                                          Expr* init, varType vartag, 
                                          consType constag) {
   VarSymbol* var = new VarSymbol(name, type, vartag, constag);
-  UserInitExpr* userInitExpr = init ? new UserInitExpr(init) : NULL;
-  return new DefExpr(var, userInitExpr);
+  Expr* userInit = init ? init : NULL;
+  return new DefExpr(var, userInit);
 }
 
 

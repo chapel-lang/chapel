@@ -519,7 +519,7 @@ enum_item:
     }
 | identifier TASSIGN expr
     {
-      $$ = new DefExpr(new EnumSymbol($1), new UserInitExpr($3));
+      $$ = new DefExpr(new EnumSymbol($1), $3);
     }
 ;
 

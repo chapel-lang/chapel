@@ -22,10 +22,10 @@ void PostAnalysisCleanup::processSymbol(Symbol* sym) {
    ***/
   if (dynamic_cast<NilType*>(sym->type)) {
     if (sym->defPoint && sym->defPoint->init) {
-      if (VarInitExpr* init = dynamic_cast<VarInitExpr*>(sym->defPoint->init->expr)) {
+      if (VarInitExpr* init = dynamic_cast<VarInitExpr*>(sym->defPoint->init)) {
         FnSymbol* constructor = dynamic_cast<FnSymbol*>(sym->defPoint->parentSymbol);
         resolveDefaultConstructorParameters(sym, constructor, init);
-        sym->defPoint->init->replace(new UserInitExpr(new VarInitExpr(new Variable(sym))));
+        sym->defPoint->init->replace(new VarInitExpr(new Variable(sym)));
       }
     }
   }

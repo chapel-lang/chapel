@@ -926,7 +926,7 @@ build_type(Type *t, bool make_default = true) {
       forv_Vec(DefExpr, def, elements) {
         Sym *ss = def->sym->asymbol->sym;
         if (def->init) {
-          if (IntLiteral* intLiteral = dynamic_cast<IntLiteral*>(def->init->expr)) {
+          if (IntLiteral* intLiteral = dynamic_cast<IntLiteral*>(def->init)) {
             i = intLiteral->val;
           } else {
             USR_FATAL(def->init, "Enum symbols can only be initialized to integer literals currently.");
@@ -1363,13 +1363,13 @@ gen_one_defexpr(VarSymbol *var, DefExpr *def) {
     } else if (!var->noDefaultInit && !is_reference_type(type) && type != dtUnknown) {
       Sym *old_val = val;
       val = new_sym();
-      val->ast = init->ainfo;
+      val->ast = ast;
       if (f_equal_method) {
-        Code *c = if1_send(if1, &init->ainfo->code, 4, 1, make_symbol("="), method_token, ast->sym, old_val, val);
-        c->ast = init->ainfo;
+        Code *c = if1_send(if1, &ast->code, 4, 1, make_symbol("="), method_token, ast->sym, old_val, val);
+        c->ast = ast;
       } else {
-        Code *c = if1_send(if1, &init->ainfo->code, 3, 1, make_symbol("="), ast->sym, old_val, val);
-        c->ast = init->ainfo;
+        Code *c = if1_send(if1, &ast->code, 3, 1, make_symbol("="), ast->sym, old_val, val);
+        c->ast = ast;
       }
       if1_gen(if1, &ast->code, init->ainfo->code);
     } else {
@@ -1891,12 +1891,6 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
         if1_move(if1, &s->ainfo->code, sym_nil, s->ainfo->rval, s->ainfo);
         s->ainfo->rval->aspect = t->asymbol->sym;
       }
-      break;
-    }
-    case EXPR_USERINIT: {
-      UserInitExpr *s = dynamic_cast<UserInitExpr*>(ast);
-      s->ainfo->code = s->expr->ainfo->code;
-      s->ainfo->rval = s->expr->ainfo->rval;
       break;
     }
     case EXPR_DEF: break;
@@ -3005,6 +2999,11 @@ is_operator_name(char *name) {
   return false;
 }
 
+static int
+is_assign(char *name) {
+  return (name[0] == '=' && !name[1]);
+}
+
 int
 call_info(Expr* a, Vec<FnSymbol *> &fns, int find_type) {
   FnSymbol* f = a->getStmt()->parentFunction();
@@ -3024,12 +3023,20 @@ call_info(Expr* a, Vec<FnSymbol *> &fns, int find_type) {
       forv_Fun(f, *ff) {
         FnSymbol *fs = dynamic_cast<FnSymbol *>(f->sym->asymbol->symbol);
         assert(fs);
-        if (find_type == CALL_INFO_FIND_OPERATOR) {
-          if (!is_operator_name(fs->name))
-            continue;
-        } else if (find_type == CALL_INFO_FIND_FUNCTION) {
-          if (is_operator_name(fs->name))
-            continue;
+        switch (find_type) {
+          case CALL_INFO_FIND_SINGLE: break;
+          case CALL_INFO_FIND_OPERATOR: 
+            if (!is_operator_name(fs->name)) continue;
+            break;
+          case CALL_INFO_FIND_FUNCTION:
+            if (is_operator_name(fs->name)) continue;
+            break;
+          case CALL_INFO_FIND_ASSIGN:
+            if (!is_assign(fs->name)) continue;
+            break;
+          case CALL_INFO_FIND_NON_ASSIGN:
+           if (is_assign(fs->name)) continue;
+            break;
         }
         if (found_pn && found_pn != pn)
           fail("bad call to call_info");

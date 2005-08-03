@@ -91,13 +91,20 @@ int function_is_used(FnSymbol *fn);
 int type_is_used(TypeSymbol *fn);
 int AST_is_used(BaseAST *a, Symbol *s = 0);  
 int function_returns_void(FnSymbol *fn);
-enum { CALL_INFO_FIND_SINGLE, CALL_INFO_FIND_OPERATOR, CALL_INFO_FIND_FUNCTION };
-int call_info(Expr *a, Vec<FnSymbol *> &fns, int find_type = CALL_INFO_FIND_SINGLE);
 int constant_info(BaseAST *a, Vec<Expr *> &constants, Symbol *s = 0);
 float execution_frequency_info(Expr *);
 float execution_frequency_info(FnSymbol *);
 void resolve_member_access(Expr *e, int *offset, Type **type); 
 void resolve_member(StructuralType *t, VarSymbol *v, int *offset, Type **type); 
 void structural_subtypes(Type *t, Vec<Type *> subtypes);
+
+enum { CALL_INFO_FIND_SINGLE, 
+       CALL_INFO_FIND_OPERATOR,  //  >  these find disjoint sets
+       CALL_INFO_FIND_FUNCTION,  // / 
+       CALL_INFO_FIND_ASSIGN,    //  >  these find disjoint sets
+       CALL_INFO_FIND_NON_ASSIGN // /  
+};
+int call_info(Expr *a, Vec<FnSymbol *> &fns, int find_type = CALL_INFO_FIND_SINGLE);
+
 
 #endif

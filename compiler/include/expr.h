@@ -9,7 +9,6 @@
 
 class Stmt;
 class AInfo;
-class UserInitExpr;
 class FnSymbol;
 
 extern char* cUnOp[];
@@ -295,11 +294,12 @@ class AssignOp : public BinOp {
 class DefExpr : public Expr {
  public:
   Symbol* sym;
-  UserInitExpr* init;
+  Expr* init;
   Expr* exprType;
+  Vec<FnSymbol *> initAssign;
 
   DefExpr(Symbol* initSym = NULL,
-          UserInitExpr* initInit = NULL,
+          Expr* initInit = NULL,
           Expr* initExprType = NULL);
   virtual void verify(void); 
   COPY_DEF(DefExpr);
@@ -553,20 +553,6 @@ class VarInitExpr : public Expr {
   VarInitExpr(Expr* init_expr);
   virtual void verify(void); 
   COPY_DEF(VarInitExpr);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseExpr(Traversal* traversal);
-  Type* typeInfo(void);
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-};
-
-
-class UserInitExpr : public Expr {
- public:
-  Expr* expr;
-  UserInitExpr(Expr* init_expr);
-  virtual void verify(void); 
-  COPY_DEF(UserInitExpr);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
   Type* typeInfo(void);
