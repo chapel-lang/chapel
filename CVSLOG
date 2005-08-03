@@ -41288,3 +41288,13 @@ Added files:
 	                                        nest_func_iterator5.chpl 
 	                                        nest_func_iterator5.good 
 
+---------------------------------------------------------------------------
+
+08/03/05 16:52:52 -- mjoyner
+
+Log message:
+	Changed results of this test that was based on line numbers of files that have been modified.
+
+Modified files:
+	chapel/test/types/seq/bradc/: length.modify.good 
+
