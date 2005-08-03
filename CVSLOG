@@ -41198,3 +41198,41 @@ Modified files:
 	chapel/compiler/analysis/: analysis.cpp cg.cpp fa.cpp 
 	chapel/compiler/include/: fa.h symbol.h 
 
+---------------------------------------------------------------------------
+
+08/03/05 12:05:03 -- jplevyak
+
+Log message:
+	Roxana's changes:
+	  Removed UserInitVar
+	  Removed dereferences of the UserInitVar::expr field
+	John's changes:
+	  - Added Vec<FnSymbol*> initAssign to DefExpr
+	    store the resolutions from resolveSymbols to
+	      insertVariableInitializations
+	**** NOTE *****
+	   The code in insertVariableInitialization is
+	   not complete.  It depends on record assignment functions resolving
+	   correctly (which they currently don't).
+	   There is an ifdef OVERLOADED_ASSIGNMENT_FIXED
+	   which should be turned on when that is fixed to complete the change.
+	  - Added 2 new CALL_INFO_FIND types:
+	       CALL_INFO_FIND_ASSIGN,    //  >  these find disjoint sets
+	       CALL_INFO_FIND_NON_ASSIGN // /
+	  - used the above in resolveSymbols to differentiate the
+	    potentially overloaded = of the "DefExpr::init" value to the
+	      new variable from the constuctor, both of which are
+	      resolved on the DefExpr.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: analysis.h baseAST.h expr.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: postAnalysisCleanup.cpp symtab.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             checkSemantics.cpp 
+	                             createConfigVarTable.cpp 
+	                             insertVariableInitializations.cpp 
+	                             resolveSymbols.cpp 
+
