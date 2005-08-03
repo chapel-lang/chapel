@@ -37,6 +37,8 @@ class SymScope : public gc {
   SymScope* child;
   SymScope* sibling;
 
+  Vec<ModuleSymbol*> uses; // modules used by this scope
+
   Vec<Symbol*> symbols;
 
   Map<char*,Vec<FnSymbol*>*> visibleFunctions;

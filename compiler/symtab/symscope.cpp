@@ -25,6 +25,7 @@ SymScope::SymScope(scopeType init_type) :
   sibling(NULL)
 {
   symbols.clear();
+  uses.clear();
   visibleFunctions.clear();
 }
 
@@ -321,19 +322,30 @@ addVisibleFunctionsHelper(Map<char*,Vec<FnSymbol*>*>* visibleFunctions,
 }
 
 
-static void
-addVisibleFunctions(Map<char*,Vec<FnSymbol*>*>* visibleFunctions,
-                    Symbol* sym) {
-  if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
-    if (!fn->typeBinding) {
-      addVisibleFunctionsHelper(visibleFunctions, fn);
+static void addVisibleFunctions(Map<char*,Vec<FnSymbol*>*>* visibleFunctions,
+                                Symbol* symbol) {
+  for (Symbol* sym = symbol; sym; sym = sym->overload) {
+    if (sym) {
+      if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(sym->getSymbol())) {
+        if (!dynamic_cast<ClassType*>(typeSym->definition)) {
+          forv_Vec(FnSymbol, method, typeSym->definition->methods) {
+            while (method) {
+              addVisibleFunctionsHelper(visibleFunctions, method);
+              method = dynamic_cast<FnSymbol*>(method->overload);
+            }
+          }
+          FnSymbol* constructor = typeSym->definition->defaultConstructor;
+          while (constructor) {
+            addVisibleFunctionsHelper(visibleFunctions, constructor);
+            constructor = dynamic_cast<FnSymbol*>(constructor->overload);
+          }
+        }
+      } else if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
+        if (!fn->typeBinding) {
+          addVisibleFunctionsHelper(visibleFunctions, fn);
+        }
+      }
     }
-  }
-  if (sym->overload) {
-    addVisibleFunctions(visibleFunctions, sym->overload);
-  }
-  if (ForwardingSymbol* forward = dynamic_cast<ForwardingSymbol*>(sym)) {
-    addVisibleFunctions(visibleFunctions, forward->forward);
   }
 }
 
@@ -342,24 +354,12 @@ void SymScope::setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions) {
   visibleFunctions.clear();
 
   forv_Vec(Symbol, sym, symbols) {
-    if (sym) {
-      if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(sym->getSymbol())) {
-        if (!dynamic_cast<ClassType*>(typeSym->definition)) {
-          forv_Vec(FnSymbol, method, typeSym->definition->methods) {
-            while (method) {
-              addVisibleFunctionsHelper(&visibleFunctions, method);
-              method = dynamic_cast<FnSymbol*>(method->overload);
-            }
-          }
-          FnSymbol* constructor = typeSym->definition->defaultConstructor;
-          while (constructor) {
-            addVisibleFunctionsHelper(&visibleFunctions, constructor);
-            constructor = dynamic_cast<FnSymbol*>(constructor->overload);
-          }
-        }
-      } else {
-        addVisibleFunctions(&visibleFunctions, sym);
-      }
+    addVisibleFunctions(&visibleFunctions, sym);
+  }
+
+  forv_Vec(ModuleSymbol, module, uses) {
+    forv_Vec(Symbol, sym, module->modScope->symbols) {
+      addVisibleFunctions(&visibleFunctions, sym);
     }
   }
 

@@ -71,15 +71,7 @@ void ScopeResolveSymbols::postProcessExpr(Expr* expr) {
       if (sym_resolve) {
         check_legal_overload(sym_resolve);
         if (!dynamic_cast<FnSymbol*>(sym_resolve)) {
-          if (ForwardingSymbol* forward =
-              dynamic_cast<ForwardingSymbol*>(sym_resolve)) {
-            if (!dynamic_cast<FnSymbol*>(forward->forward)) {
-              sym_use->var = forward->forward;
-              sym_use->forward = forward;
-            }
-          } else {
-            sym_use->var = sym_resolve;
-          }
+          sym_use->var = sym_resolve;
         }
       } else {
         USR_FATAL(expr, "Symbol '%s' is not defined", name);

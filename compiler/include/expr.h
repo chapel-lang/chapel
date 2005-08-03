@@ -317,9 +317,7 @@ class DefExpr : public Expr {
 class Variable : public Expr {
  public:
   Symbol* var;
-  ForwardingSymbol* forward; // was this include by a use statement?
-                             // if so, it might be renamed.
-  Variable(Symbol* init_var, ForwardingSymbol* init_forward = NULL);
+  Variable(Symbol* init_var);
   COPY_DEF(Variable);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void verify(void); 

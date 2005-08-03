@@ -199,16 +199,6 @@ void Symboltable::defineInScope(Symbol* sym, SymScope* scope) {
   } else {
     scope->insert(sym);
   }
-  if (!dynamic_cast<ForwardingSymbol*>(sym)) { // don't forward forwarding
-    if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(scope->symContext)) {
-      // Top level definition, add forwarding symbols to resolved uses
-      forv_Vec(SymScope, scope, mod->usedBy) {
-        SymScope* saveScope = Symboltable::setCurrentScope(scope);
-        new ForwardingSymbol(sym);
-        Symboltable::setCurrentScope(saveScope);
-      }
-    }
-  }
 }
 
 
@@ -250,6 +240,12 @@ Symbol* Symboltable::lookupFromScope(char* name, SymScope* scope,
             return sym;
           }
         }
+      }
+    }
+    forv_Vec(ModuleSymbol, module, scope->uses) {
+      Symbol* sym = lookupInScope(name, module->modScope);
+      if (sym) {
+        return sym;
       }
     }
     scope = scope->parent;

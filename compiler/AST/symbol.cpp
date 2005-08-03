@@ -1198,9 +1198,7 @@ ModuleSymbol::ModuleSymbol(char* init_name, modType init_modtype) :
   stmts(new AList<Stmt>),
   initFn(NULL),
   modScope(NULL)
-{
-  uses.clear();
-}
+{ }
 
 
 void ModuleSymbol::verify(void) {
@@ -1234,10 +1232,6 @@ void ModuleSymbol::codegenDef(void) {
   fprintf(codefile, "#include \"_chpl_header.h\"\n");
   fprintf(codefile, "#include \"_CommonModule.h\"\n");
   fprintf(codefile, "#include \"_CommonModule-internal.h\"\n");
-
-  forv_Vec(ModuleSymbol, use, uses) {
-    fprintf(codefile, "#include \"%s.h\"\n", use->name);
-  }
 
   fprintf(codefile, "#include \"%s\"\n", extheadfileinfo.filename);
   fprintf(codefile, "#include \"%s\"\n", intheadfileinfo.filename);
@@ -1382,41 +1376,3 @@ void LabelSymbol::verify(void) {
 
 
 void LabelSymbol::codegenDef(FILE* outfile) { }
-
-
-ForwardingSymbol::ForwardingSymbol(Symbol* init_forward, char* rename) :
-  Symbol(SYMBOL_FORWARDING, rename, NULL),
-  forward(init_forward),
-  renamed(rename != NULL)
-{
-  if (!rename) {
-    name = copystring(forward->name);
-    cname = copystring(forward->cname);
-  }
-  Symboltable::define(this);
-}
-
-
-void ForwardingSymbol::verify(void) {
-  if (astType != SYMBOL_FORWARDING) {
-    INT_FATAL(this, "Bad ForwardingSymbol::astType");
-  }
-}
-
-
-void ForwardingSymbol::codegenDef(FILE* outfile) { }
-
-
-FnSymbol* ForwardingSymbol::getFnSymbol(void) {
-  return forward->getFnSymbol();
-}
-
-
-Symbol* ForwardingSymbol::getSymbol(void) {
-  return forward->getSymbol();
-}
-
-
-Type* ForwardingSymbol::typeInfo(void) {
-  return forward->typeInfo();
-}

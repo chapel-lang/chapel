@@ -43,7 +43,7 @@ class Symbol : public BaseAST {
   DefExpr* defPoint; // Point of definition
 
   ASymbol *asymbol;
-  Symbol* overload; // Overloading (functions only, FnSymbol/ForwardingSymbol)
+  Symbol* overload;
   bool isUnresolved;
 
   Symbol(astType_t astType = SYMBOL, char* init_name = NULL, 
@@ -243,9 +243,6 @@ class ModuleSymbol : public Symbol {
 
   SymScope* modScope;
 
-  Vec<ModuleSymbol*> uses;
-  Vec<SymScope*> usedBy;   // list of SymScopes that use this module
-
   ModuleSymbol(char* init_name = NULL, modType init_modtype = MOD_SENTINEL);
   virtual void verify(void); 
   COPY_DEF(ModuleSymbol);
@@ -257,19 +254,6 @@ class ModuleSymbol : public Symbol {
   void codegenDef(void);
   void createInitFn(void);
   bool isFileModule(void);
-};
-
-
-class ForwardingSymbol : public Symbol {
- public:
-  Symbol* forward;
-  bool renamed;
-  ForwardingSymbol(Symbol* init_forward, char* rename = NULL);
-  virtual void verify(void); 
-  virtual void codegenDef(FILE* outfile);
-  virtual Type* typeInfo(void);
-  virtual FnSymbol* getFnSymbol(void);
-  virtual Symbol* getSymbol(void);
 };
 
 

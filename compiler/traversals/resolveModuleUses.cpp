@@ -8,9 +8,9 @@
 
 
 void ResolveModuleUses::preProcessExpr(Expr* expr) {
-  SymScope* saveScope = NULL;
+ SymScope* saveScope = NULL;
 
-  if (UseExpr* useExpr = dynamic_cast<UseExpr*>(expr)) {
+ if (UseExpr* useExpr = dynamic_cast<UseExpr*>(expr)) {
     ModuleSymbol* module = useExpr->getModule();
 
     if (!module) {
@@ -22,20 +22,14 @@ void ResolveModuleUses::preProcessExpr(Expr* expr) {
         Symboltable::setCurrentScope(Symboltable::getCurrentModule()->modScope);
     }
 
-    forv_Vec(Symbol, sym, module->modScope->symbols) {
-      if (!dynamic_cast<ForwardingSymbol*>(sym)) {
-        new ForwardingSymbol(sym);
-      }
-    }
-
     FnCall* callInitFn = new FnCall(new Variable(module->initFn));
     useExpr->parentStmt->insertBefore(new ExprStmt(callInitFn));
-    module->usedBy.add(Symboltable::getCurrentScope());
-    Symboltable::getCurrentModule()->uses.add(module);
+    Symboltable::getCurrentScope()->uses.add(module);
 
     if (saveScope) {
       Symboltable::setCurrentScope(saveScope);
     }
+
   }
 }
 

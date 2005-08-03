@@ -500,10 +500,9 @@ void StringLiteral::printCfgInitString(FILE* outfile) {
 }
 
 
-Variable::Variable(Symbol* init_var, ForwardingSymbol* init_forward) :
+Variable::Variable(Symbol* init_var) :
   Expr(EXPR_VARIABLE),
-  var(init_var),
-  forward(init_forward)
+  var(init_var)
 {}
 
 
@@ -528,13 +527,12 @@ Variable::verify(void) {
 
 Variable*
 Variable::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new Variable(var, forward);
+  return new Variable(var);
 }
 
 
 void Variable::traverseExpr(Traversal* traversal) {
   TRAVERSE(var, traversal, false);
-  // Should we traverse forward?  I don't know.  --SJD
 }
 
 

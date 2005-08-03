@@ -320,7 +320,6 @@ char* astTypeName[AST_TYPE_END+1] = {
   "FnSymbol",
   "EnumSymbol",
   "LabelSymbol",
-  "ForwardingSymbol",
 
   "Type",
   "BuiltinType",
@@ -412,7 +411,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     goto LExprCommon;
   case EXPR_VARIABLE:
     ADD_CHILD(Variable, var);
-    ADD_CHILD(Variable, forward);
     goto LExprCommon;
   case EXPR_VARINIT:
     AST_ADD_CHILD(VarInitExpr, expr);
@@ -506,7 +504,7 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     ADD_CHILD(FnSymbol, _getter);
     AST_ADD_CHILD(FnSymbol, whereExpr);
     goto LSymbolCommon;
-  case SYMBOL_ENUM: case SYMBOL_LABEL: case SYMBOL_FORWARDING:
+  case SYMBOL_ENUM: case SYMBOL_LABEL:
     goto LSymbolCommon;
   case TYPE:
   LTypeCommon:

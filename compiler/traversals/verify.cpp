@@ -77,7 +77,6 @@ void Verify::run(ModuleList* moduleList) {
     if (!sym ||
         sym->parentScope->type == SCOPE_INTRINSIC ||
         dynamic_cast<ModuleSymbol*>(sym) ||
-        dynamic_cast<ForwardingSymbol*>(sym) ||
         !strcmp("__init_entryPoint", sym->name)) {
       continue;
     }
@@ -150,7 +149,6 @@ static void verifyDefPoint(Symbol* sym) {
   if (sym->isUnresolved ||
       dynamic_cast<LabelSymbol*>(sym) ||
       dynamic_cast<TypeSymbol*>(sym) ||
-      dynamic_cast<ForwardingSymbol*>(sym) ||
       dynamic_cast<SumType*>(sym->type)) {     // SJD: REMOVE
     return;
   }

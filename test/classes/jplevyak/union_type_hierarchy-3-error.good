@@ -1,4 +1,5 @@
 _chpl_complex.chpl:11: write, x : complex
+_chpl_file.chpl:18: write, val : file
 _chpl_htuple.chpl:32: write, val : _htuple
 _chpl_seq.chpl:144: write, s : seq
 _chpl_seq.chpl:191: write, s : _aseq
@@ -6,26 +7,27 @@ _chpl_seq.chpl:6: write, val : _seqNode
 fail: fatal error, program does not type
 note: candidates are:
 note: candidates are:
-prelude.chpl:113: write, val : reduction
-prelude.chpl:116: write, val : sum
-prelude.chpl:119: write, val : max
-prelude.chpl:122: write, val : min
-prelude.chpl:125: write, val : maxloc
-prelude.chpl:128: write, val : minloc
-prelude.chpl:137: write, val : timer
+prelude.chpl:125: write, val : reduction
+prelude.chpl:128: write, val : sum
+prelude.chpl:131: write, val : max
+prelude.chpl:134: write, val : min
+prelude.chpl:137: write, val : maxloc
+prelude.chpl:140: write, val : minloc
+prelude.chpl:149: write, val : timer
 prelude.chpl:16: write, val : _data
-prelude.chpl:183: write, val : _methodTokenType
-prelude.chpl:188: write, val : _seq
-prelude.chpl:191: write, val : Index
-prelude.chpl:212: write, val : Array
-prelude.chpl:215: write, val : Domain
-prelude.chpl:225: write, val : Tuple
-prelude.chpl:22: write, x : bool
-prelude.chpl:25: write, x : int64
-prelude.chpl:28: write, x : float64
-prelude.chpl:31: write, x : complex64
-prelude.chpl:34: write, x : string
-prelude.chpl:37: write, x : null
+prelude.chpl:195: write, val : _methodTokenType
+prelude.chpl:200: write, val : _seq
+prelude.chpl:203: write, val : Index
+prelude.chpl:21: write, val : CFILEPTR
+prelude.chpl:224: write, val : Array
+prelude.chpl:227: write, val : Domain
+prelude.chpl:237: write, val : Tuple
+prelude.chpl:34: write, x : bool
+prelude.chpl:37: write, x : int64
+prelude.chpl:40: write, x : float64
+prelude.chpl:43: write, x : complex64
+prelude.chpl:46: write, x : string
+prelude.chpl:49: write, x : null
 union_type_hierarchy-3-error.chpl:12: f, a : C
 union_type_hierarchy-3-error.chpl:16: expression has no type
 union_type_hierarchy-3-error.chpl:16: expression has no type
