@@ -41166,3 +41166,16 @@ Modified files:
 	                                  sum_type-2.good 
 	chapel/test/types/seq/bradc/: length.modify.good 
 
+---------------------------------------------------------------------------
+
+08/02/05 17:48:48 -- jplevyak
+
+Log message:
+	Removed some cruft about EXPR_SEQ.
+	Change CastExpr to set the "aspect".
+	sort global variables before writing them to the anlysis log.
+
+Modified files:
+	chapel/compiler/: Tasks 
+	chapel/compiler/analysis/: analysis.cpp clone.cpp 
+
