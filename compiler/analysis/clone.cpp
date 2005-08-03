@@ -921,6 +921,7 @@ log_test_fa(FA *fa) {
     }
   }
   gvars.set_to_vec();
+  qsort(gvars.v, gvars.n, sizeof(gvars.v[0]), compar_vars);
   log(LOG_TEST_FA, "globals\n");
   forv_Var(v, gvars)
     if ((!v->sym->is_constant || !v->sym->constant) && 

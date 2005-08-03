@@ -2041,24 +2041,9 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
         if1_move(if1, &s->ainfo->code, s->ainfo->rval, s->left->ainfo->sym, s->ainfo);
       break;
     }
-    case EXPR_SEQ: {
+    case EXPR_SEQ:
       INT_FATAL(ast, "Sequence literals are eliminated before analysis");
-      SeqExpr *s = dynamic_cast<SeqExpr *>(ast);
-      s->ainfo->sym = s->ainfo->rval = new_sym();
-      s->ainfo->rval->ast = s->ainfo;
-      Vec<Expr *> args;
-      s->exprls->getElements(args);
-      forv_Vec(Expr, a, args)
-        if1_gen(if1, &s->ainfo->code, a->ainfo->code);
-      Code *send = if1_send1(if1, &s->ainfo->code);
-      send->ast = s->ainfo;
-      if1_add_send_arg(if1, send, sym_primitive);
-      if1_add_send_arg(if1, send, make_seq_symbol);
-      forv_Vec(Expr, a, args)
-        if1_add_send_arg(if1, send, a->ainfo->rval);
-      if1_add_send_result(if1, send, s->ainfo->rval);
       break;
-    }
     case EXPR_LET: {
       LetExpr *s = dynamic_cast<LetExpr *>(ast);
       DefExpr* def_expr = s->symDefs->first();
@@ -2117,6 +2102,8 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       CastExpr *s = dynamic_cast<CastExpr *>(ast);
       s->ainfo->rval = new_sym();
       s->ainfo->rval->ast = s->ainfo;
+      if (s->type)
+        s->ainfo->rval->aspect = s->type->asymbol->sym;
       if (s->newType)
         if1_gen(if1, &s->ainfo->code, s->newType->ainfo->code);
       if1_gen(if1, &s->ainfo->code, s->expr->ainfo->code);

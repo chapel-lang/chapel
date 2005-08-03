@@ -33,9 +33,9 @@ X Remove NoOpStmt -- replace with empty block statement - complete
 
 * Unify WithExpr and UseExpr which have similar forms
 
-* (John) Remove CastLikeExpr
+X (John) Remove CastLikeExpr - complete
 
-* (John) Remove SizeofExpr
+X (John) Remove SizeofExpr - complete
 
 * Remove MemberAccessExpr.  This will be eliminated pre-analysis
   anyway.  Store it as a CallExpr of a function named '.'
