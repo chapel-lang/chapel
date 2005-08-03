@@ -41262,3 +41262,29 @@ Log message:
 Modified files:
 	chapel/compiler/: Tasks 
 
+---------------------------------------------------------------------------
+
+08/03/05 16:37:32 -- mjoyner
+
+Log message:
+	Added support for iterators to use nested function definition.  The nested function calls inside the iterator function are inlined by default. Also added are several test cases.
+
+Modified files:
+	chapel/compiler/symtab/: reconstructIterators.cpp 
+	chapel/modules/standard/: _chpl_seq.chpl 
+	chapel/compiler/traversals/: createNestedFuncIterators.cpp 
+	                             Makefile.share 
+	chapel/compiler/main/: passlist.h passlist.cpp 
+Added files:
+	chapel/test/trivial/mjoyner/iterators/: .cvsignore 
+	                                        nest_func_iterator1.chpl 
+	                                        nest_func_iterator1.good 
+	                                        nest_func_iterator2.chpl 
+	                                        nest_func_iterator2.good 
+	                                        nest_func_iterator3.chpl 
+	                                        nest_func_iterator3.good 
+	                                        nest_func_iterator4.chpl 
+	                                        nest_func_iterator4.good 
+	                                        nest_func_iterator5.chpl 
+	                                        nest_func_iterator5.good 
+
