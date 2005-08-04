@@ -266,8 +266,6 @@ void Expr::codegenCastToString(FILE* outfile) {
       fprintf(outfile, "integer");
     } else if (exprType == dtFloat) {
       fprintf(outfile, "float");
-    } else if (exprType == dtComplex) {
-      fprintf(outfile, "complex");
     } else {
       INT_FATAL(this, "Unexpected type case in codegenCastToString");
     }
@@ -416,35 +414,6 @@ FloatLiteral::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
 
 Type* FloatLiteral::typeInfo(void) {
   return dtFloat;
-}
-
-
-ComplexLiteral::ComplexLiteral(char* init_str, double init_val) : 
-  Literal(EXPR_COMPLEXLITERAL, init_str),
-  val(init_val)
-{}
-
-
-void ComplexLiteral::verify() {
-  if (astType != EXPR_COMPLEXLITERAL) {
-    INT_FATAL(this, "Bad ComplexLiteral::astType");
-  }
-}
-
-
-ComplexLiteral*
-ComplexLiteral::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new ComplexLiteral(copystring(str), val);
-}
-
-
-Type* ComplexLiteral::typeInfo(void) {
-  return dtComplex;
-}
-
-
-void ComplexLiteral::print(FILE* outfile) {
-  fprintf(outfile, "%si", str);
 }
 
 

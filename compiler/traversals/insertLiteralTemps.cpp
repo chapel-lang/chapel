@@ -90,19 +90,6 @@ static void replaceTupleLiteral2(Tuple* tuple) {
 }
 
 
-static void replaceComplexLiteral(ComplexLiteral* complexLiteral) {
-  // remove i, why is this here anyway?  --SJD
-  complexLiteral->str[strlen(complexLiteral->str)-1] = '\0';
-  complexLiteral->replace(
-    new ParenOpExpr(
-      new Variable(
-        new UnresolvedSymbol("complex")),
-      new AList<Expr>(
-        new FloatLiteral(complexLiteral->str,
-                         complexLiteral->val))));
-}
-
-
 static void createTupleBaseType(int size) {
   char *name = glomstrings(2, "_tuple", intstring(size));
   if (Symboltable::lookupInScope(name, commonModule->modScope)) {
@@ -180,17 +167,12 @@ static void createTupleBaseType(int size) {
 
 
 void InsertLiteralTemps::postProcessExpr(Expr* expr) {
-  if (ComplexLiteral* literal = dynamic_cast<ComplexLiteral*>(expr)) {
-    replaceComplexLiteral(literal);
-  } else if (ParenOpExpr* seqCat = dynamic_cast<ParenOpExpr*>(expr)) {
+  if (ParenOpExpr* seqCat = dynamic_cast<ParenOpExpr*>(expr)) {
     if (seqCat->opTag == OP_SEQCAT) {
       handleBasicSequenceAppendPrependOperations(seqCat);
     }
   } else if (Tuple* literal = dynamic_cast<Tuple*>(expr)) {
     createTupleBaseType(literal->exprs->length());
-    if (dynamic_cast<ForLoopStmt*>(literal->parentStmt)) {
-      return;  // HACK for domains
-    }
     if (ParenOpExpr* call = dynamic_cast<ParenOpExpr*>(literal->parentExpr)) {
       if (call->get(1) == literal) {
         replaceTupleLiteral2(literal); // Handle destructuring

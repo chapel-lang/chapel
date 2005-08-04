@@ -491,12 +491,7 @@ get_constant_Expr(Sym *c) {
         }
         break;
       case IF1_NUM_KIND_COMPLEX:
-        switch (c->type->num_index) {
-          default: fail("type unsupported in AST");
-          case IF1_FLOAT_TYPE_64:
-            e = new ComplexLiteral(name, c->imm.v_complex64.i);
-            break;
-        }
+        INT_FATAL(e, "Uh Oh Steve");
         break;
     }
   } else if (c->type == sym_string) {
@@ -1844,9 +1839,6 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       s->ainfo->rval = c;
       break;
     }
-    case EXPR_COMPLEXLITERAL:
-      INT_FATAL(ast, "ComplexLiteral encountered in analysis");
-      break;
     case EXPR_STRINGLITERAL: {
       StringLiteral *s = dynamic_cast<StringLiteral*>(ast);
       char *str = if1_cannonicalize_string(if1, s->str);

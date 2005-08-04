@@ -151,18 +151,6 @@ class FloatLiteral : public Literal {
 };
 
 
-class ComplexLiteral : public Literal {
- public:
-  double val;
-
-  ComplexLiteral(char* init_str, double init_val);
-  virtual void verify(void); 
-  COPY_DEF(ComplexLiteral);
-  Type* typeInfo(void);
-  virtual void print(FILE* outfile);
-};
-
-
 class StringLiteral : public Literal {
  public:
   StringLiteral(char* init_val);

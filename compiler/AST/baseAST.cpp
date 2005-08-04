@@ -288,7 +288,6 @@ char* astTypeName[AST_TYPE_END+1] = {
   "BoolLiteral",
   "IntLiteral",
   "FloatLiteral",
-  "ComplexLiteral",
   "StringLiteral",
   "Variable",
   "VarInit",
@@ -400,7 +399,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
   case EXPR_BOOLLITERAL:
   case EXPR_INTLITERAL:
   case EXPR_FLOATLITERAL:
-  case EXPR_COMPLEXLITERAL:
   case EXPR_STRINGLITERAL:
     goto LExprCommon;
   case EXPR_VARIABLE:

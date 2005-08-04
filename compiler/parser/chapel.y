@@ -1317,7 +1317,14 @@ literal:
 | FLOATLITERAL
     { $$ = new FloatLiteral(yytext, atof(yytext)); }
 | COMPLEXLITERAL
-    { $$ = new ComplexLiteral(yytext, atof(yytext)); }
+    {
+      yytext[strlen(yytext)-1] = '\0';
+      $$ = new ParenOpExpr(
+             new Variable(
+               new UnresolvedSymbol("complex")),
+             new AList<Expr>(
+               new FloatLiteral(yytext, atof(yytext))));
+    }
 | STRINGLITERAL
     { $$ = new StringLiteral($1); }
 ;
