@@ -41310,3 +41310,13 @@ Modified files:
 	                               record_type_hierarchy-3-error.good 
 	                               union_type_hierarchy-3-error.good 
 
+---------------------------------------------------------------------------
+
+08/04/05 08:52:05 -- jplevyak
+
+Log message:
+	Fix valgrind failures.  Incorrect update of get_ast_children().
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp 
+
