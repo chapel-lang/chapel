@@ -41533,3 +41533,18 @@ Log message:
 Modified files:
 	chapel/compiler/: Tasks 
 
+---------------------------------------------------------------------------
+
+08/04/05 14:08:51 -- mjoyner
+
+Log message:
+	Added a report inlining flag (use: --report-inlining) that will print out all the functions that were inlined.
+	
+	Also turned on the support for iterators with nested functions.
+
+Modified files:
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp passlist.h 
+	chapel/compiler/traversals/: inlineFunctions.cpp 
+	                             createNestedFuncIterators.cpp 
+
