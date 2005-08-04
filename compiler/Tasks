@@ -29,13 +29,7 @@ Priority 1 Tasks
 
 * unify union types and sum types (?)
 
-* remove ForwardingSymbol (?)
-
 * (Roxana) Attach a Type* type to Expr and remove typeInfo()
-
-* (Steve) Remove BinOp, UnOp, AssignOp.  Rename ParenOpExpr, CallExpr
-
-* (Steve) Remove FnCall
 
 * (John) get rid of nondeterminism introduced by hashing-on-pointers
    structures (and try to capture an instance of front-end
@@ -63,6 +57,12 @@ X (John) Remove SizeofExpr - complete
 X (John) Convert VarSymbol::aspect into a Cast expression and remove it
 
 X (Roxana) Remove Type::getType() - complete
+
+X (Steve) remove ForwardingSymbol (?)
+
+X (Steve) Remove BinOp, UnOp, AssignOp.  Rename ParenOpExpr, CallExpr
+
+X (Steve) Remove FnCall
 
 Priority 2 Tasks
 ----------------
