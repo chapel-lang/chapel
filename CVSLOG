@@ -41331,3 +41331,84 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: resolveModuleUses.cpp 
 
+---------------------------------------------------------------------------
+
+08/04/05 10:55:58 -- deitz
+
+Log message:
+	Removed UnOp, BinOp, AssignOp, and FnCall, folding them into ParenOpExpr.
+	
+	Added an opTag field to ParenOpExpr which is used if it is a builtin
+	operator after analysis.  It is used before analysis as well for both
+	builtin and non-builtin operators.
+	
+	Added a second form of constructing a ParenOpExpr which takes an OpTag
+	(enum) and one or two arguments.
+	
+	Added stub functions for +=, etc. to get past scopeResolveSymbols.
+	How should these actually be handled?
+	
+	Added overloaded functions for unary operators.  These are not
+	currently working.  Actually, the code for resolving operators is a
+	little shaky.  These changes should make it easier.
+	
+	Added another AList constructor for initializing a list with two
+	elements.  So lists can now be set up to initially contain zero, one,
+	or two elements.  This is especially useful for binary operators which
+	have lists of two elements, but also turns out to be fairly common.
+	Perhaps it should even be extended and combined to make one
+	constructor with a number of arguments that have default values.
+	
+	Changed += and *= in the sequence module to use assignment separate
+	from + and * because of some problems.  Futurized
+	test/functions/bradc/intents-classes.chpl which fails because of a
+	problem resolving the op= functions when applied to a member access.
+	Is something like x.a += ...
+	
+	Added a function to complex
+	
+	  function +(x : float, y : complex)
+	
+	so we can handle literals of the form 1.2 + 3.4i.  I agree that this
+	should use a coercion wrapper, but that isn't working yet.  Changed
+	the complex to be constructed imaginary first which allows for the
+	common case of complex(2.3) being equivalent to 2.3i.  Simplified
+	ComplexLiteral to just hold the complex part.  Removed special folding
+	of + and - expressions into the complex literal.  This can be done
+	still, but must be done later anyway.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp stmt.cpp symbol.cpp 
+	                      type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: alist.h baseAST.h expr.h type.h 
+	chapel/compiler/parser/: chapel.y prelude.chpl 
+	chapel/compiler/passes/: createEntryPoint.cpp 
+	chapel/compiler/symtab/: insertOutParameterInitializations.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             buildLValueFunctions.cpp 
+	                             checkSemantics.cpp 
+	                             createNestedFuncIterators.cpp 
+	                             eliminateReturns.cpp 
+	                             findLeafFunctions.cpp 
+	                             findUnknownTypes.cpp htmlview.cpp 
+	                             inlineFunctions.cpp 
+	                             inlineFunctions.h 
+	                             insertFunctionTemps.cpp 
+	                             insertLiteralTemps.cpp 
+	                             insertThisParameters.cpp 
+	                             insertUnionChecks.cpp 
+	                             insertVariableInitializations.cpp 
+	                             processParameters.cpp 
+	                             removeNamedParameters.cpp 
+	                             replaceReturns.cpp 
+	                             resolveModuleUses.cpp 
+	                             resolveSymbols.cpp 
+	                             specializeParenOpExprs.cpp 
+	chapel/modules/standard/: _chpl_complex.chpl _chpl_seq.chpl 
+	chapel/runtime/include/: chpltypes.h 
+	chapel/test/memory/shannon/: printFinalMemStat.good 
+	chapel/test/types/seq/bradc/: length.modify.good 
+Added files:
+	chapel/test/functions/bradc/: intents-classes.future 
+
