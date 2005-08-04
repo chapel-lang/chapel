@@ -415,7 +415,11 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     AST_ADD_CHILD(VarInitExpr, expr);
     goto LExprCommon;
   case EXPR_USE:
+    ADD_CHILD(UseExpr, expr);
+    goto LExprCommon;
   case EXPR_WITH:
+    ADD_CHILD(WithExpr, expr);
+    goto LExprCommon;
   case EXPR_DEF:
     ADD_CHILD(DefExpr, sym);
     AST_ADD_CHILD(DefExpr, init);
