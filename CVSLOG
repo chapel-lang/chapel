@@ -41298,3 +41298,15 @@ Log message:
 Modified files:
 	chapel/test/types/seq/bradc/: length.modify.good 
 
+---------------------------------------------------------------------------
+
+08/03/05 17:05:13 -- mjoyner
+
+Log message:
+	Modified files that were depending on specific error line numbers of specific files that have since changed.
+
+Modified files:
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+
