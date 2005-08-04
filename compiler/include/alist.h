@@ -22,6 +22,7 @@ class AList : public BaseAST {
   // constructors
   AList();
   AList(elemType*);
+  AList(elemType*, elemType*);
   void clear(void);
 
   // copy routines
@@ -124,6 +125,24 @@ AList<elemType>::AList(elemType* initList) :
   clear();
   if (initList) {
     insertAtHead(initList);
+  }
+}
+
+
+template <class elemType>
+AList<elemType>::AList(elemType* initList1, elemType* initList2) :
+  BaseAST(LIST),
+  head(new elemType()),
+  tail(new elemType()),
+  cursor(NULL),
+  debugNestedTraversals(false)
+{
+  clear();
+  if (initList1) {
+    insertAtTail(initList1);
+  }
+  if (initList2) {
+    insertAtTail(initList2);
   }
 }
 

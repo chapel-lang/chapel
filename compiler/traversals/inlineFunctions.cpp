@@ -10,7 +10,10 @@ void InlineFunctions::postProcessExpr(Expr* expr) {
   if (no_inline)
     return;
   //function call
-  if (FnCall* fn_call = dynamic_cast<FnCall*>(expr)) {
+  if (ParenOpExpr* fn_call = dynamic_cast<ParenOpExpr*>(expr)) {
+    if (fn_call->isPrimitive() || fn_call->opTag != OP_NONE) {
+      return;
+    }
     //for now, only leaf getter/setter functions will be inlined 
     FnSymbol* fn_sym = fn_call->findFnSymbol(); 
     if (fn_sym->hasPragma("inline") && isCodegened(fn_sym)) { 
@@ -72,7 +75,7 @@ bool InlineFunctions::isTypeVar(ParamSymbol* p_sym) {
   return (p_sym->typeVariable != NULL);
 }
 
-Map<BaseAST*,BaseAST*>* InlineFunctions::createFormalToActualArgMappings(FnCall* fn_call, AList<DefExpr>* formal_params) {
+Map<BaseAST*,BaseAST*>* InlineFunctions::createFormalToActualArgMappings(ParenOpExpr* fn_call, AList<DefExpr>* formal_params) {
   Expr* curr_arg;
   DefExpr* curr_param;
   AList<Expr>* actual_args = fn_call->argList;
@@ -114,7 +117,7 @@ Map<BaseAST*,BaseAST*>* InlineFunctions::createFormalToActualArgMappings(FnCall*
       //copy temp back to actual arg if formal param out
     if (param_intent_out)
       if (Variable* v = dynamic_cast<Variable*>(curr_arg))
-      fn_call->parentStmt->insertAfter(new ExprStmt(new AssignOp(GETS_NORM, new Variable(v->var), new Variable(temp_def->sym))));
+        fn_call->parentStmt->insertAfter(new ExprStmt(new ParenOpExpr(OP_GETSNORM, new Variable(v->var), new Variable(temp_def->sym))));
     
 
     curr_arg = actual_args->next();

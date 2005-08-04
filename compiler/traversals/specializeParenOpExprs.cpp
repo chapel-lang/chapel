@@ -78,7 +78,7 @@ void SpecializeParenOpExprs::postProcessStmt(Stmt* stmt) {
                       "expression; you've given it %d.", length);
           }
           Expr* test = parenOpExpr->argList->only();
-          Expr* notTest = new UnOp(UNOP_LOGNOT, test->copy());
+          Expr* notTest = new ParenOpExpr(OP_LOGNOT, test->copy());
           Stmt* assertIfStmt = new CondStmt(notTest, thenStmt);
           parenOpExpr->parentStmt->insertBefore(assertIfStmt);
           parenOpExpr->parentStmt->remove();          
@@ -118,7 +118,7 @@ void SpecializeParenOpExprs::postProcessExpr(Expr* expr) {
           }
         }
       } else if (dynamic_cast<FnSymbol*>(baseVar->var)) {
-        paren_replacement = new FnCall(baseVar, paren->argList);
+        paren_replacement = new ParenOpExpr(baseVar, paren->argList);
       }
     }
   }

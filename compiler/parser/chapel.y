@@ -16,7 +16,7 @@
   char* pch;
   Vec<char*>* vpch;
 
-  getsOpType got;
+  OpTag ot;
   varType vt;
   consType ct;
   paramType pt;
@@ -129,7 +129,7 @@
 %type <vt> config_static
 %type <ct> var_const_param
  
-%type <got> assign_op_tag
+%type <ot> assign_op_tag
 %type <pt> formal_tag
 %type <ft> fn_tag
 %type <blktype> atomic_cobegin
@@ -934,6 +934,8 @@ fname:
   { $$ = "**"; } 
 | TAND
   { $$ = "and"; } 
+| TNOT
+  { $$ = "not"; }
 | TOR
   { $$ = "or"; } 
 | TSEQCAT
@@ -963,49 +965,51 @@ whereexpr:
 | TTYPE identifier
     { $$ = new DefExpr(new TypeSymbol($2, new VariableType)); }
 | TNOT whereexpr
-    { $$ = new UnOp(UNOP_LOGNOT, $2); }
+    { $$ = new ParenOpExpr(OP_LOGNOT, $2); }
 | TBNOT whereexpr
-    { $$ = new UnOp(UNOP_BITNOT, $2); }
+    { $$ = new ParenOpExpr(OP_BITNOT, $2); }
 | whereexpr TPLUS whereexpr
-    { $$ = Expr::newPlusMinus(BINOP_PLUS, $1, $3); }
+    { $$ = new ParenOpExpr(OP_PLUS, $1, $3); }
 | whereexpr TMINUS whereexpr
-    { $$ = Expr::newPlusMinus(BINOP_MINUS, $1, $3); }
+    { $$ = new ParenOpExpr(OP_MINUS, $1, $3); }
 | whereexpr TSTAR whereexpr
-    { $$ = new BinOp(BINOP_MULT, $1, $3); }
+    { $$ = new ParenOpExpr(OP_MULT, $1, $3); }
 | whereexpr TDIVIDE whereexpr
-    { $$ = new BinOp(BINOP_DIV, $1, $3); }
+    { $$ = new ParenOpExpr(OP_DIV, $1, $3); }
 | whereexpr TMOD whereexpr
-    { $$ = new BinOp(BINOP_MOD, $1, $3); }
+    { $$ = new ParenOpExpr(OP_MOD, $1, $3); }
 | whereexpr TEQUAL whereexpr
-    { $$ = new BinOp(BINOP_EQUAL, $1, $3); }
+    { $$ = new ParenOpExpr(OP_EQUAL, $1, $3); }
 | whereexpr TNOTEQUAL whereexpr
-    { $$ = new BinOp(BINOP_NEQUAL, $1, $3); }
+    { $$ = new ParenOpExpr(OP_NEQUAL, $1, $3); }
 | whereexpr TLESSEQUAL whereexpr
-    { $$ = new BinOp(BINOP_LEQUAL, $1, $3); }
+    { $$ = new ParenOpExpr(OP_LEQUAL, $1, $3); }
 | whereexpr TGREATEREQUAL whereexpr
-    { $$ = new BinOp(BINOP_GEQUAL, $1, $3); }
+    { $$ = new ParenOpExpr(OP_GEQUAL, $1, $3); }
 | whereexpr TLESS whereexpr
-    { $$ = new BinOp(BINOP_LTHAN, $1, $3); }
+    { $$ = new ParenOpExpr(OP_LTHAN, $1, $3); }
 | whereexpr TGREATER whereexpr
-    { $$ = new BinOp(BINOP_GTHAN, $1, $3); }
+    { $$ = new ParenOpExpr(OP_GTHAN, $1, $3); }
 | whereexpr TBAND whereexpr
-    { $$ = new BinOp(BINOP_BITAND, $1, $3); }
+    { $$ = new ParenOpExpr(OP_BITAND, $1, $3); }
 | whereexpr TBOR whereexpr
-    { $$ = new BinOp(BINOP_BITOR, $1, $3); }
+    { $$ = new ParenOpExpr(OP_BITOR, $1, $3); }
 | whereexpr TBXOR whereexpr
-    { $$ = new BinOp(BINOP_BITXOR, $1, $3); }
-| whereexpr TAND whereexpr
-    { $$ = new BinOp(BINOP_LOGAND, $1, $3); }
+    { $$ = new ParenOpExpr(OP_BITXOR, $1, $3); }
 | whereexpr TCOMMA whereexpr
-    { $$ = new BinOp(BINOP_LOGAND, $1, $3); }
+    { $$ = new ParenOpExpr(OP_LOGAND, $1, $3); }
 | whereexpr TOR whereexpr
-    { $$ = new BinOp(BINOP_LOGOR, $1, $3); }
+    { $$ = new ParenOpExpr(OP_LOGOR, $1, $3); }
 | whereexpr TEXP whereexpr
-    { $$ = new BinOp(BINOP_EXP, $1, $3); }
+    { $$ = new ParenOpExpr(OP_EXP, $1, $3); }
+| whereexpr TSEQCAT whereexpr
+    { $$ = new ParenOpExpr(OP_SEQCAT, $1, $3); }
+| whereexpr TBY whereexpr
+    { $$ = new ParenOpExpr(OP_BY, $1, $3); }
 | whereexpr TCOLON whereexpr
-    { $$ = new BinOp(BINOP_SUBTYPE, $1, $3); }
+    { $$ = new ParenOpExpr(OP_SUBTYPE, $1, $3); }
 | whereexpr TNOTCOLON whereexpr
-    { $$ = new BinOp(BINOP_NOTSUBTYPE, $1, $3); }
+    { $$ = new ParenOpExpr(OP_NOTSUBTYPE, $1, $3); }
 | class_record_union pragma_ls opt_identifier TLCBR decl_ls TRCBR
     { $$ = NULL; }
 ;
@@ -1082,29 +1086,29 @@ pragma:
 
 assign_op_tag:
   TASSIGN
-    { $$ = GETS_NORM; }
+    { $$ = OP_GETSNORM; }
 | TASSIGNPLUS
-    { $$ = GETS_PLUS; }
+    { $$ = OP_GETSPLUS; }
 | TASSIGNMINUS
-    { $$ = GETS_MINUS; }
+    { $$ = OP_GETSMINUS; }
 | TASSIGNMULTIPLY
-    { $$ = GETS_MULT; }
+    { $$ = OP_GETSMULT; }
 | TASSIGNDIVIDE
-    { $$ = GETS_DIV; }
+    { $$ = OP_GETSDIV; }
 | TASSIGNBAND
-    { $$ = GETS_BITAND; }
+    { $$ = OP_GETSBITAND; }
 | TASSIGNBOR
-    { $$ = GETS_BITOR; }
+    { $$ = OP_GETSBITOR; }
 | TASSIGNBXOR
-    { $$ = GETS_BITXOR; }
+    { $$ = OP_GETSBITXOR; }
 | TASSIGNSEQCAT
-    { $$ = GETS_SEQCAT; }
+    { $$ = OP_GETSSEQCAT; }
 ;
 
 
 assign_expr:
   lvalue assign_op_tag expr
-    { $$ = new AssignOp($2, $1, $3); }
+    { $$ = new ParenOpExpr($2, $1, $3); }
 ;
 
 
@@ -1217,51 +1221,51 @@ expr:
 | forallExpr expr %prec TRSBR
     { $$ = Symboltable::finishForallExpr($1, $2); }
 | TPLUS expr %prec TUPLUS
-    { $$ = new UnOp(UNOP_PLUS, $2); }
+    { $$ = new ParenOpExpr(OP_UNPLUS, $2); }
 | TMINUS expr %prec TUMINUS
-    { $$ = new UnOp(UNOP_MINUS, $2); }
+    { $$ = new ParenOpExpr(OP_UNMINUS, $2); }
 | TNOT expr
-    { $$ = new UnOp(UNOP_LOGNOT, $2); }
+    { $$ = new ParenOpExpr(OP_LOGNOT, $2); }
 | TBNOT expr
-    { $$ = new UnOp(UNOP_BITNOT, $2); }
+    { $$ = new ParenOpExpr(OP_BITNOT, $2); }
 | expr TPLUS expr
-    { $$ = Expr::newPlusMinus(BINOP_PLUS, $1, $3); }
+    { $$ = new ParenOpExpr(OP_PLUS, $1, $3); }
 | expr TMINUS expr
-    { $$ = Expr::newPlusMinus(BINOP_MINUS, $1, $3); }
+    { $$ = new ParenOpExpr(OP_MINUS, $1, $3); }
 | expr TSTAR expr
-    { $$ = new BinOp(BINOP_MULT, $1, $3); }
+    { $$ = new ParenOpExpr(OP_MULT, $1, $3); }
 | expr TDIVIDE expr
-    { $$ = new BinOp(BINOP_DIV, $1, $3); }
+    { $$ = new ParenOpExpr(OP_DIV, $1, $3); }
 | expr TMOD expr
-    { $$ = new BinOp(BINOP_MOD, $1, $3); }
+    { $$ = new ParenOpExpr(OP_MOD, $1, $3); }
 | expr TEQUAL expr
-    { $$ = new BinOp(BINOP_EQUAL, $1, $3); }
+    { $$ = new ParenOpExpr(OP_EQUAL, $1, $3); }
 | expr TNOTEQUAL expr
-    { $$ = new BinOp(BINOP_NEQUAL, $1, $3); }
+    { $$ = new ParenOpExpr(OP_NEQUAL, $1, $3); }
 | expr TLESSEQUAL expr
-    { $$ = new BinOp(BINOP_LEQUAL, $1, $3); }
+    { $$ = new ParenOpExpr(OP_LEQUAL, $1, $3); }
 | expr TGREATEREQUAL expr
-    { $$ = new BinOp(BINOP_GEQUAL, $1, $3); }
+    { $$ = new ParenOpExpr(OP_GEQUAL, $1, $3); }
 | expr TLESS expr
-    { $$ = new BinOp(BINOP_LTHAN, $1, $3); }
+    { $$ = new ParenOpExpr(OP_LTHAN, $1, $3); }
 | expr TGREATER expr
-    { $$ = new BinOp(BINOP_GTHAN, $1, $3); }
+    { $$ = new ParenOpExpr(OP_GTHAN, $1, $3); }
 | expr TBAND expr
-    { $$ = new BinOp(BINOP_BITAND, $1, $3); }
+    { $$ = new ParenOpExpr(OP_BITAND, $1, $3); }
 | expr TBOR expr
-    { $$ = new BinOp(BINOP_BITOR, $1, $3); }
+    { $$ = new ParenOpExpr(OP_BITOR, $1, $3); }
 | expr TBXOR expr
-    { $$ = new BinOp(BINOP_BITXOR, $1, $3); }
+    { $$ = new ParenOpExpr(OP_BITXOR, $1, $3); }
 | expr TAND expr
-    { $$ = new BinOp(BINOP_LOGAND, $1, $3); }
+    { $$ = new ParenOpExpr(OP_LOGAND, $1, $3); }
 | expr TOR expr
-    { $$ = new BinOp(BINOP_LOGOR, $1, $3); }
+    { $$ = new ParenOpExpr(OP_LOGOR, $1, $3); }
 | expr TEXP expr
-    { $$ = new BinOp(BINOP_EXP, $1, $3); }
+    { $$ = new ParenOpExpr(OP_EXP, $1, $3); }
 | expr TSEQCAT expr
-    { $$ = new BinOp(BINOP_SEQCAT, $1, $3); }
+    { $$ = new ParenOpExpr(OP_SEQCAT, $1, $3); }
 | expr TBY expr
-    { $$ = new BinOp(BINOP_BY, $1, $3); }
+    { $$ = new ParenOpExpr(OP_BY, $1, $3); }
 ;
 
 reduction:

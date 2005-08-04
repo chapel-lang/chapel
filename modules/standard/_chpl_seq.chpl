@@ -51,7 +51,7 @@ record seq {
       _first = new;
       _last = new;
     }
-    _length += 1;
+    _length = _length + 1;
     return this;
   }
 
@@ -69,7 +69,7 @@ record seq {
       _first = new;
       _last = new;
     }
-    _length += 1;
+    _length = _length + 1;
     return this;
   }
 
@@ -77,7 +77,7 @@ record seq {
     if _length > 0 {
       _last._next = s._first;
       _last = s._last;
-      _length += s._length;
+      _length = _length + s._length;
     } else {
       _first = s._first;
       _last = s._last;
@@ -159,7 +159,7 @@ record _aseq {
     var i = _low;
     while i <= _high {
       yield i;
-      i += _stride;
+      i = i + _stride;
     }
   }
 
@@ -167,7 +167,7 @@ record _aseq {
     var i = _low;
     while i <= _high {
       yield i;
-      i += _stride;
+      i = i + _stride;
     }
   }
 
@@ -180,7 +180,7 @@ record _aseq {
 
 function by(s : _aseq, i : integer) {
   var tmp = s;
-  tmp._stride *= i;
+  tmp._stride = tmp._stride * i;
   return tmp;
 }
 

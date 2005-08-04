@@ -16,11 +16,11 @@ class InsertNestedFuncInIterator : public Traversal {
 
   void postProcessExpr(Expr* expr) {
     //replace seq yield call in iterator with call to nested function
-    if (FnCall* fc = dynamic_cast<FnCall*>(expr)) {
+    if (ParenOpExpr* fc = dynamic_cast<ParenOpExpr*>(expr)) {
       FnSymbol* fn_sym = fc->findFnSymbol();
       if (!strcmp(fn_sym->name, "_yield")) {
         AList<Expr>* new_arg_list = getNewArgList(fc->argList);
-        FnCall* fn_call = new FnCall(new Variable(_fn_call_sym), new_arg_list->copy());
+        ParenOpExpr* fn_call = new ParenOpExpr(new Variable(_fn_call_sym), new_arg_list->copy());
         fc->replace(fn_call);
       }
     }
@@ -65,7 +65,7 @@ void CreateNestedFuncIterators::postProcessExpr(Expr* expr) {
         AList<DefExpr>* encl_var_formals = addEnclVarFormals(func_it_sym, encl_scope_var_uses, new Map<BaseAST*,BaseAST*>());
         //insert nested function created using the body of the iterator loop
         
-        ParenOpExpr* new_func_call = new FnCall(new Variable(func_it_sym), paren_op->argList->copy());
+        ParenOpExpr* new_func_call = new ParenOpExpr(new Variable(func_it_sym), paren_op->argList->copy());
         addFuncActuals(new_func_call, encl_scope_var_uses);
         paren_op->parentStmt->insertBefore(new ExprStmt(new_func_call));
         //place body of for loop in a nested function definition

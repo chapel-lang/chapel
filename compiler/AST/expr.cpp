@@ -16,41 +16,78 @@
 #define STEVE_COULD_YOU_CHECK_THIS 0
 
 
-char* cUnOp[NUM_UNOPS] = {
+char* opCString[] = {
+  "",
+
   "+",
   "-",
   "!",
-  "~"
-};
+  "~",
 
-
-char* cBinOp[NUM_BINOPS] = {
   "+",
   "-",
   "*",
   "/",
   "%",
   "==",
+  "!=",
   "<=",
   ">=",
-  ">",
   "<",
-  "!=",
+  ">",
   "&",
   "|",
   "^",
   "&&",
   "||",
-  "**",
+  " _exponent_ ",
+  " _sequence_concat_ ",
+  " _by_ ",
+  " _subtype_ ",
+  " _notsubtype_ ",
 
-  "#",
-  " by ",
-
-  "???"
+  "=",
+  "+=",
+  "-=",
+  "*=",
+  "/=",
+  "&=",
+  "|=",
+  "^=",
+  " _sequence_concat_assign_ "
 };
 
 
-char* cGetsOp[NUM_GETS_OPS] = {
+char* opChplString[] = {
+  "",
+
+  "+",
+  "-",
+  "not",
+  "~",
+
+  "+",
+  "-",
+  "*",
+  "/",
+  "mod",
+  "==",
+  "!=",
+  "<=",
+  ">=",
+  "<",
+  ">",
+  "&",
+  "|",
+  "^",
+  "and",
+  "or",
+  "**",
+  "#",
+  "by",
+  ":",
+  "!:",
+
   "=",
   "+=",
   "-=",
@@ -161,28 +198,6 @@ void Expr::printCfgInitString(FILE* outfile) {
   fprintf(outfile, "\"");
 }
 
-// BLC: Currently, this only handles simple real +/- imag cases
-Expr* Expr::newPlusMinus(binOpType op, Expr* l, Expr* r) {
-  if ((typeid(*l) == typeid(FloatLiteral) || typeid(*l) == typeid(IntLiteral))
-      && typeid(*r) == typeid(ComplexLiteral)) {
-    ComplexLiteral* rcomplex = dynamic_cast<ComplexLiteral*>(r);
-    FloatLiteral* lfloat = dynamic_cast<FloatLiteral*>(l);
-    if (lfloat == NULL) {
-      Literal* llit = dynamic_cast<Literal*>(l);
-      lfloat = new FloatLiteral(glomstrings(2, llit->str, ".0"), 
-                                atof(llit->str));
-    }
-    if (rcomplex->realVal == 0.0) {
-      rcomplex->addReal(lfloat);
-      if (op == BINOP_MINUS) {
-        rcomplex->negateImag();
-      }
-      return rcomplex;
-    }
-  }
-  return new BinOp(op, l, r);
-}
-
 
 typedef enum _EXPR_RW { expr_r, expr_w, expr_rw } EXPR_RW;
 
@@ -195,13 +210,13 @@ static EXPR_RW expr_read_written(Expr* expr) {
     if (dynamic_cast<Tuple*>(parent)) {
       return expr_read_written(parent);
     }
-    if (AssignOp* assignment = dynamic_cast<AssignOp*>(parent)) {
-      if (assignment->left == expr) {
+    if (ParenOpExpr* parenOpExpr = dynamic_cast<ParenOpExpr*>(parent)) {
+      if (parenOpExpr->opTag >= OP_GETSNORM && parenOpExpr->get(1) == expr) {
         return expr_w;
       }
     }
-    if (FnCall* fn_call = dynamic_cast<FnCall*>(parent)) {
-      if (typeid(*fn_call) == typeid(FnCall)) {
+    if (ParenOpExpr* fn_call = dynamic_cast<ParenOpExpr*>(parent)) {
+      if (fn_call->opTag == OP_NONE) {
         FnSymbol* fn = fn_call->findFnSymbol();
         DefExpr* formal = fn->formals->first();
         for_alist(Expr, actual, fn_call->argList) {
@@ -406,12 +421,9 @@ Type* FloatLiteral::typeInfo(void) {
 }
 
 
-ComplexLiteral::ComplexLiteral(char* init_str, double init_imag, 
-                               double init_real, char* init_realStr) :
+ComplexLiteral::ComplexLiteral(char* init_str, double init_val) : 
   Literal(EXPR_COMPLEXLITERAL, init_str),
-  realVal(init_real),
-  imagVal(init_imag),
-  realStr(init_realStr)
+  val(init_val)
 {}
 
 
@@ -422,25 +434,9 @@ void ComplexLiteral::verify() {
 }
 
 
-void ComplexLiteral::addReal(FloatLiteral* init_real) {
-  if (realVal != 0.0) {
-    INT_FATAL(this, "adding real component to non-zero real component");
-  } else {
-    realVal = init_real->val;
-    realStr = copystring(init_real->str);
-  }
-}
-
-
 ComplexLiteral*
 ComplexLiteral::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new ComplexLiteral(copystring(str), imagVal,
-                            realVal, copystring(realStr));
-}
-
-
-void ComplexLiteral::negateImag(void) {
-  imagVal = -imagVal;
+  return new ComplexLiteral(copystring(str), val);
 }
 
 
@@ -450,13 +446,7 @@ Type* ComplexLiteral::typeInfo(void) {
 
 
 void ComplexLiteral::print(FILE* outfile) {
-  fprintf(outfile, "%s + %s", realStr, str);
-  
-}
-
-
-void ComplexLiteral::codegen(FILE* outfile) {
-  INT_FATAL(this, "codegen() called on a complex literal");
+  fprintf(outfile, "%si", str);
 }
 
 
@@ -661,246 +651,6 @@ void DefExpr::print(FILE* outfile) {
 void DefExpr::codegen(FILE* outfile) { /** noop **/ }
 
 
-UnOp::UnOp(unOpType init_type, Expr* op) :
-  Expr(EXPR_UNOP),
-  type(init_type),
-  operand(op) 
-{ }
-
-
-void UnOp::verify() {
-  if (astType != EXPR_UNOP) {
-    INT_FATAL(this, "Bad UnOp::astType");
-  }
-}
-
-
-UnOp*
-UnOp::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new UnOp(type, COPY_INTERNAL(operand));
-}
-
-
-void UnOp::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == operand) {
-    operand = dynamic_cast<Expr*>(new_ast);
-  } else {
-    INT_FATAL(this, "Unexpected case in UnOp::replaceChild");
-  }
-}
-
-
-void UnOp::traverseExpr(Traversal* traversal) {
-  TRAVERSE(operand, traversal, false);
-}
-
-
-void UnOp::print(FILE* outfile) {
-  fprintf(outfile, "(%s", cUnOp[type]);
-  operand->print(outfile);
-  fprintf(outfile, ")");
-}
-
-
-void UnOp::codegen(FILE* outfile) {
-  fprintf(outfile, "%s", cUnOp[type]);
-  operand->codegen(outfile);
-}
-
-
-Type* UnOp::typeInfo(void) {
-  return operand->typeInfo();
-}
-
-
-BinOp::BinOp(binOpType init_type, Expr* l, Expr* r) :
-  Expr(EXPR_BINOP),
-  type(init_type),
-  left(l),
-  right(r)
-{
-}
-
-
-void BinOp::verify() {
-  if (astType != EXPR_BINOP) {
-    INT_FATAL(this, "Bad BinOp::astType");
-  }
-}
-
-
-BinOp*
-BinOp::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new BinOp(type, COPY_INTERNAL(left), COPY_INTERNAL(right));
-}
-
-
-void BinOp::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == left) {
-    left = dynamic_cast<Expr*>(new_ast);
-  } else if (old_ast == right) {
-    right = dynamic_cast<Expr*>(new_ast);
-  } else {
-    INT_FATAL(this, "Unexpected case in BinOp::replaceChild");
-  }
-}
-
-
-void BinOp::traverseExpr(Traversal* traversal) {
-  TRAVERSE(left, traversal, false);
-  TRAVERSE(right, traversal, false);
-}
-
-
-Type* BinOp::typeInfo(void) {
-  Type* leftType = left->typeInfo();
-  Type* rightType = right->typeInfo();
-
-  switch (type) {
-  case BINOP_PLUS:
-  case BINOP_MINUS:
-  case BINOP_MULT:
-  case BINOP_DIV:
-  case BINOP_MOD:
-  case BINOP_BITAND:
-  case BINOP_BITOR:
-  case BINOP_BITXOR:
-  case BINOP_EXP:
-  case BINOP_SEQCAT:
-    if (leftType == rightType) {
-      return leftType;
-    } else {
-      return dtUnknown;
-    }
-  case BINOP_EQUAL:
-  case BINOP_LEQUAL:
-  case BINOP_GEQUAL:
-  case BINOP_GTHAN:
-  case BINOP_LTHAN:
-  case BINOP_NEQUAL:
-  case BINOP_LOGAND:
-  case BINOP_LOGOR:
-    return dtBoolean;
-  case BINOP_BY:
-    return dtUnknown;
-  case BINOP_OTHER:
-  case NUM_BINOPS:
-  default:
-    INT_FATAL(this, "Unexpected case in BinOp::typeInfo()");
-    return dtUnknown;
-  }
-}
-
-void BinOp::print(FILE* outfile) {
-  fprintf(outfile, "(");
-  left->print(outfile);
-  fprintf(outfile, "%s", cBinOp[type]);
-  right->print(outfile);
-  fprintf(outfile, ")");
-}
-
-void BinOp::codegen(FILE* outfile) {
-  fprintf(outfile, "(");
-  if (type == BINOP_EXP) {
-    fprintf(outfile, "pow(");
-    left->codegen(outfile);
-    fprintf(outfile, ", ");
-    right->codegen(outfile);
-    fprintf(outfile, ")");
-  } else {
-    left->codegen(outfile);
-    fprintf(outfile, "%s", cBinOp[type]);
-    right->codegen(outfile);
-  }
-  fprintf(outfile, ")");
-}
-
-
-AssignOp::AssignOp(getsOpType init_type, Expr* l, Expr* r) :
-  BinOp(BINOP_OTHER, l, r),
-  type(init_type)
-{
-  astType = EXPR_ASSIGNOP;
-}
-
-
-void AssignOp::verify() {
-  if (astType != EXPR_ASSIGNOP) {
-    INT_FATAL(this, "Bad AssignOp::astType");
-  }
-}
-
-
-AssignOp*
-AssignOp::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new AssignOp(type, COPY_INTERNAL(left), COPY_INTERNAL(right));
-}
-
-
-Type* AssignOp::typeInfo(void) {
-  return dtVoid; // These are always top-level in Chapel
-}
-
-
-void AssignOp::print(FILE* outfile) {
-  left->print(outfile);
-  fprintf(outfile, " %s ", cGetsOp[type]);
-  right->print(outfile);
-}
-
-
-bool
-Expr::isRef(void) {
-  if (Variable* var = dynamic_cast<Variable*>(this))
-    if (VarSymbol* vs = dynamic_cast<VarSymbol*>(var->var))
-      if (vs->varClass == VAR_REF)
-        return true;
-  return false;
-}
-
-
-void AssignOp::codegen(FILE* outfile) {
-  bool string_init = false;
-  Type* leftType = left->typeInfo();
-  Type* rightType = right->typeInfo();
-  if (leftType == dtString) {
-    if (FnCall* fn_call = dynamic_cast<FnCall*>(right)) {
-      if (Variable* fn_var = dynamic_cast<Variable*>(fn_call->baseExpr)) {
-        if (fn_var->var == dtString->defaultConstructor) {
-          string_init = true;
-        }
-      }
-    }
-    if (string_init) {
-      left->codegen(outfile);
-      fprintf(outfile, " %s ", cGetsOp[type]);
-      right->codegen(outfile);
-    } else {
-      fprintf(outfile, "_copy_string(&(");
-      left->codegen(outfile);
-      fprintf(outfile, "), ");
-      right->codegenCastToString(outfile);
-      fprintf(outfile, ")");
-    }
-  } else if ((leftType == dtInteger || leftType == dtFloat) && rightType == dtNil) {
-    left->codegen(outfile);
-    fprintf(outfile, " %s (", cGetsOp[type]);
-    leftType->codegen(outfile);
-    fprintf(outfile, ")(intptr_t)");
-    right->codegen(outfile);
-  } else {
-    left->codegen(outfile);
-    fprintf(outfile, " %s ", cGetsOp[type]);
-    bool left_ref = left->isRef(), right_ref = right->isRef();
-    if (left_ref && !right_ref)
-      fprintf(outfile, "&");
-    if (right_ref && !left_ref)
-      fprintf(outfile, "*");
-    right->codegen(outfile);
-  }
-}
-
-
 MemberAccess::MemberAccess(Expr* init_base, Symbol* init_member) :
   Expr(EXPR_MEMBERACCESS),
   base(init_base),
@@ -976,19 +726,6 @@ void MemberAccess::print(FILE* outfile) {
 void MemberAccess::codegen(FILE* outfile) {
     StructuralType* base_type = dynamic_cast<StructuralType*>(base->typeInfo());
     if (member_type) {
-//       if (!base_type)
-//         goto Lreftype;
-//       switch (base_type->astType) {
-//         default: 
-//           // (*((T*)(((char*)(&(p)))+offset)))
-//           fprintf(outfile, "(*((");
-//           member_type->codegen(outfile);
-//           fprintf(outfile, "*)(((char*)(%s(", base->isRef() ? "" : "&");
-//           base->codegen(outfile);
-//           fprintf(outfile, ")))+%d)))",member_offset);
-//           break;
-//         case TYPE_CLASS:
-//           Lreftype:
       if (dynamic_cast<UnionType*>(base_type)) {
         // (*((T*)(((char*)(p->_chpl_union)))))
         fprintf(outfile, "(*((");
@@ -1004,16 +741,6 @@ void MemberAccess::codegen(FILE* outfile) {
         base->codegen(outfile);
         fprintf(outfile, "))+%d)))",member_offset);
       }
-//           break;
-//         case TYPE_UNION:
-
-//           fprintf(outfile, "(*((");
-//           member_type->codegen(outfile);
-//           fprintf(outfile, "*)(((char*)(%s(", base->isRef() ? "" : "&");
-//           base->codegen(outfile);
-//           fprintf(outfile, ")._chpl_union)))))");
-//           break;
-//       }
     } else {
       base->codegen(outfile);
       base_type->codegenMemberAccessOp(outfile);
@@ -1021,11 +748,21 @@ void MemberAccess::codegen(FILE* outfile) {
     }
 }
 
-ParenOpExpr::ParenOpExpr(Expr* init_base, AList<Expr>* init_arg) :
+ParenOpExpr::ParenOpExpr(Expr* initBase, AList<Expr>* initArgs) :
   Expr(EXPR_PARENOP),
-  baseExpr(init_base),
-  argList(init_arg) 
+  baseExpr(initBase),
+  argList(initArgs),
+  opTag(OP_NONE)
 {}
+
+
+ParenOpExpr::ParenOpExpr(OpTag initOpTag, Expr* arg1, Expr* arg2) :
+  Expr(EXPR_PARENOP),
+  baseExpr(new Variable(new UnresolvedSymbol(copystring(opChplString[initOpTag])))),
+  opTag(initOpTag)
+{
+  argList = new AList<Expr>(arg1, arg2);
+}
 
 
 void ParenOpExpr::verify() {
@@ -1037,7 +774,9 @@ void ParenOpExpr::verify() {
 
 ParenOpExpr*
 ParenOpExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new ParenOpExpr(COPY_INTERNAL(baseExpr), COPY_INTERNAL(argList));
+  ParenOpExpr* _this = new ParenOpExpr(COPY_INTERNAL(baseExpr), COPY_INTERNAL(argList));
+  _this->opTag = opTag;
+  return _this;
 }
 
 
@@ -1068,53 +807,106 @@ void ParenOpExpr::print(FILE* outfile) {
 }
 
 
-void ParenOpExpr::codegen(FILE* outfile) {
-  INT_FATAL(this, "ParenOpExprs must be resolved before codegen");
+Expr* ParenOpExpr::get(int index) {
+  return argList->get(index);
 }
 
 
-FnCall::FnCall(Expr* init_base, AList<Expr>* init_arg) :
-  ParenOpExpr(init_base, init_arg)
-{
-  astType = EXPR_FNCALL;
-}
-
-
-void FnCall::verify() {
-  if (astType != EXPR_FNCALL) {
-    INT_FATAL(this, "Bad FnCall::astType");
+FnSymbol* ParenOpExpr::findFnSymbol(void) {
+  FnSymbol* fn = NULL;
+  if (Variable* variable = dynamic_cast<Variable*>(baseExpr)) {
+    fn = dynamic_cast<FnSymbol*>(variable->var);
   }
+  if (!fn) {
+    INT_FATAL(this, "Cannot find FnSymbol in ParenOpExpr");
+  }
+  return fn;
 }
 
 
-Type* FnCall::typeInfo(void) {
+Type* ParenOpExpr::typeInfo(void) {
   if (analyzeAST && !RunAnalysis::runCount) {
     return dtUnknown;
+  }
+
+  if (opTag != OP_NONE) {
+    if (OP_ISLOGICAL(opTag)) {
+      return dtBoolean;
+    } else if (OP_ISUNARYOP(opTag)) {
+      return get(1)->typeInfo();
+    } else if (OP_ISBINARYOP(opTag)) {
+      if (opTag == OP_BY) {
+        return dtUnknown;
+      }
+      return get(1)->typeInfo();
+    } else {
+      return dtVoid;
+    }
   }
 
   return findFnSymbol()->retType;
 }
 
 
-FnCall*
-FnCall::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new FnCall(COPY_INTERNAL(baseExpr), COPY_INTERNAL(argList));
-}
+void ParenOpExpr::codegen(FILE* outfile) {
 
+  if (opTag != OP_NONE) {
+    if (OP_ISASSIGNOP(opTag)) {
 
-FnSymbol* FnCall::findFnSymbol(void) {
-  FnSymbol* fn = NULL;
-  if (Variable* variable = dynamic_cast<Variable*>(baseExpr)) {
-    fn = dynamic_cast<FnSymbol*>(variable->var);
+      bool string_init = false;
+      Type* leftType = get(1)->typeInfo();
+      Type* rightType = get(2)->typeInfo();
+      if (leftType == dtString) {
+        if (ParenOpExpr* fn_call = dynamic_cast<ParenOpExpr*>(get(2))) {
+          if (Variable* fn_var = dynamic_cast<Variable*>(fn_call->baseExpr)) {
+            if (fn_var->var == dtString->defaultConstructor) {
+              string_init = true;
+            }
+          }
+        }
+        if (string_init) {
+          get(1)->codegen(outfile);
+          fprintf(outfile, " %s ", opCString[opTag]);
+          get(2)->codegen(outfile);
+        } else {
+          fprintf(outfile, "_copy_string(&(");
+          get(1)->codegen(outfile);
+          fprintf(outfile, "), ");
+          get(2)->codegenCastToString(outfile);
+          fprintf(outfile, ")");
+        }
+      } else if ((leftType == dtInteger || leftType == dtFloat) && rightType == dtNil) {
+        get(1)->codegen(outfile);
+        fprintf(outfile, " %s (", opCString[opTag]);
+        leftType->codegen(outfile);
+        fprintf(outfile, ")(intptr_t)");
+        get(2)->codegen(outfile);
+      } else {
+        get(1)->codegen(outfile);
+        fprintf(outfile, " %s ", opCString[opTag]);
+        get(2)->codegen(outfile);
+      }
+    } else if (OP_ISBINARYOP(opTag)) {
+      if (opTag == OP_EXP) {
+        fprintf(outfile, "pow");
+      }
+      fprintf(outfile, "(");
+      get(1)->codegen(outfile);
+      if (opTag == OP_EXP) {
+        fprintf(outfile, ", ");
+      } else {
+        fprintf(outfile, "%s", opCString[opTag]);
+      }
+      get(2)->codegen(outfile);
+      fprintf(outfile, ")");
+    } else if (OP_ISUNARYOP(opTag)) {
+      fprintf(outfile, "%s", opCString[opTag]);
+      get(1)->codegen(outfile);
+    } else {
+      INT_FATAL(this, "operator not handled in ParenOpExpr::codegen");
+    }
+    return;
   }
-  if (!fn) {
-    INT_FATAL(this, "Cannot find FnSymbol in FnCall");
-  }
-  return fn;
-}
-
-
-void FnCall::codegen(FILE* outfile) {
 
   // This is Kludge until unions and enums have write functions
 
@@ -1179,7 +971,7 @@ void FnCall::codegen(FILE* outfile) {
       fprintf(outfile, "printError(message);\n");
       fprintf(outfile, "}\n");
       return;
-    } else if (variable->var == Symboltable::lookupInternal("_chpl_alloc")) {
+    } else if (!(strcmp(variable->var->name, "_chpl_alloc"))) {
       Type *t = variable->parentFunction()->retType;
 #if STEVE_COULD_YOU_CHECK_THIS
       fprintf(outfile, "(%s)_chpl_malloc(1, sizeof(", t->symbol->cname);
@@ -1266,6 +1058,16 @@ void FnCall::codegen(FILE* outfile) {
     }
   }
   fprintf(outfile, ")");
+}
+
+
+bool ParenOpExpr::isPrimitive(void) {
+  if (Variable* variable = dynamic_cast<Variable*>(baseExpr)) {
+    if (!strcmp(variable->var->name, "__primitive")) {
+      return true;
+    }
+  }
+  return false;
 }
 
 

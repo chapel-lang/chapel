@@ -11,7 +11,7 @@
 class InlineFunctions : public Traversal {
   bool _ok_to_inline;
   DefExpr* createTempVariable(Type* type, Expr* init = NULL);
-  Map<BaseAST*,BaseAST*>* createFormalToActualArgMappings(FnCall* fn_call, AList<DefExpr>* formal_params);
+  Map<BaseAST*,BaseAST*>* createFormalToActualArgMappings(ParenOpExpr* fn_call, AList<DefExpr>* formal_params);
 public:
   void postProcessExpr(Expr* expr);
   bool isFormalParamOut(ParamSymbol* p_sym);

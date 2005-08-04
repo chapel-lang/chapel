@@ -253,6 +253,11 @@ pragma "builtin" function and(a : Array, b : Array) { return __primitive("array_
 pragma "builtin" function or(a : Array, b : Array) { return __primitive("array_pointwise_op", a, b); }
 pragma "builtin" function **(a : Array, b : Array) { return __primitive("array_pointwise_op", a, b); }
 
+pragma "builtin" function -(a : numeric) { return a; } -- needs to be primitive
+pragma "builtin" function +(a : numeric) { return a; } -- needs to be primitive
+pragma "builtin" function ~(a : numeric) { return a; } -- needs to be primitive
+pragma "builtin" function not(a : numeric) { return a; } -- needs to be primitive
+
 pragma "builtin" function +(a : numeric, b : numeric) { return __primitive(a, "+", b); }
 pragma "builtin" function -(a : numeric, b : numeric) { return __primitive(a, "-", b); }
 pragma "builtin" function *(a : numeric, b : numeric) { return __primitive(a, "*", b); }
@@ -272,6 +277,15 @@ pragma "builtin" function or(a : numeric, b : numeric) { return __primitive(a, "
 pragma "builtin" function **(a : numeric, b : numeric) { return __primitive(a, "**", b); }
 pragma "builtin" function ==(a : object, b : object) { return __primitive("ptr_eq", a, b); }
 pragma "builtin" function !=(a : object, b : object) { return __primitive("ptr_neq", a, b); }
+
+pragma "builtin" function -=() {}
+pragma "builtin" function +=() {}
+pragma "builtin" function *=() {}
+pragma "builtin" function /=() {}
+pragma "builtin" function &=() {}
+pragma "builtin" function |=() {}
+pragma "builtin" function ^=() {}
+pragma "builtin" function #=() {}
 
 pragma "builtin" function Index.=(b : integer) { return __primitive("indextype_set", this, b); }
 pragma "builtin" function integer.=(b : Index) { return __primitive("indextype_get", b); }
@@ -314,6 +328,7 @@ function length(a : string) : integer {
 
 pragma "split unique"
 pragma "keep types"
+pragma "rename _chpl_alloc"
 function _chpl_alloc(t, description:string) { return __primitive("chpl_alloc", t); }
 
 function _init_string() { return ""; }

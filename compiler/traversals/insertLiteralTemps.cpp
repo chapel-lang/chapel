@@ -15,24 +15,24 @@
 static bool notSequenceType(Type* type) {
   return type == dtInteger || type == dtString;
 }
-static void handleBasicSequenceAppendPrependOperations(BinOp* binOp) {
-  Type* leftType = binOp->left->typeInfo();
-  Type* rightType = binOp->right->typeInfo();
+static void handleBasicSequenceAppendPrependOperations(ParenOpExpr* seqCat) {
+  Type* leftType = seqCat->get(1)->typeInfo();
+  Type* rightType = seqCat->get(2)->typeInfo();
 
   if (notSequenceType(leftType) && notSequenceType(rightType)) {
-    INT_FATAL(binOp, "Bad # operation");
+    INT_FATAL(seqCat, "Bad # operation");
   }
 
   if (notSequenceType(leftType)) {
-    binOp->replace(new ParenOpExpr(
-                     new MemberAccess(binOp->right->copy(),
+    seqCat->replace(new ParenOpExpr(
+                     new MemberAccess(seqCat->get(2)->copy(),
                        new UnresolvedSymbol("_prepend")),
-                     new AList<Expr>(binOp->left->copy())));
+                     new AList<Expr>(seqCat->get(1)->copy())));
   } else if (notSequenceType(rightType)) {
-    binOp->replace(new ParenOpExpr(
-                     new MemberAccess(binOp->left->copy(),
+    seqCat->replace(new ParenOpExpr(
+                     new MemberAccess(seqCat->get(1)->copy(),
                        new UnresolvedSymbol("_append")),
-                     new AList<Expr>(binOp->right->copy())));
+                     new AList<Expr>(seqCat->get(2)->copy())));
   }
 }
 
@@ -119,7 +119,7 @@ static void replaceTupleLiteral2(Tuple* tuple) {
   Symbol* tmp = def->sym;
   int i = 1;
   for_alist(Expr, expr, tuple->exprs) {
-    AssignOp* assignOp = new AssignOp(GETS_NORM, expr->copy(),
+    ParenOpExpr* assignOp = new ParenOpExpr(OP_GETSNORM, expr->copy(),
                                       new ParenOpExpr(
                                         new Variable(tmp),
                                         new AList<Expr>(
@@ -132,16 +132,15 @@ static void replaceTupleLiteral2(Tuple* tuple) {
 
 
 static void replaceComplexLiteral(ComplexLiteral* complexLiteral) {
-  AList<Expr>* argList = new AList<Expr>();
-  FloatLiteral* realPart = new FloatLiteral(complexLiteral->realStr,
-                                            complexLiteral->realVal);
-  argList->insertAtTail(realPart);
   // remove i, why is this here anyway?  --SJD
   complexLiteral->str[strlen(complexLiteral->str)-1] = '\0';
-  FloatLiteral* imagPart = new FloatLiteral(complexLiteral->str,
-                                            complexLiteral->imagVal);
-  argList->insertAtTail(imagPart);
-  complexLiteral->replace(new ParenOpExpr(new Variable(new UnresolvedSymbol("complex")), argList));
+  complexLiteral->replace(
+    new ParenOpExpr(
+      new Variable(
+        new UnresolvedSymbol("complex")),
+      new AList<Expr>(
+        new FloatLiteral(complexLiteral->str,
+                         complexLiteral->val))));
 }
 
 
@@ -179,8 +178,9 @@ static void createTupleBaseType(int size) {
     ParamSymbol* paramSymbol =
       new ParamSymbol(PARAM_PARAMETER, "index", dtInteger);
     AList<DefExpr>* formals = new AList<DefExpr>(new DefExpr(paramSymbol));
-    Expr* where = new BinOp(BINOP_EQUAL, new Variable(paramSymbol),
-                            new IntLiteral(i));
+    Expr* where = new ParenOpExpr(OP_EQUAL, 
+                                  new Variable(paramSymbol),
+                                  new IntLiteral(i));
     Symboltable::continueFnDef(fn, formals, dtUnknown, true, where);
     AList<Stmt>* body = new AList<Stmt>(new ReturnStmt(new Variable(fields.v[i-1])));
     Symboltable::finishFnDef(fn, new BlockStmt(body));
@@ -225,17 +225,17 @@ void InsertLiteralTemps::postProcessExpr(Expr* expr) {
     replaceSequenceLiteral(literal);
   } else if (ComplexLiteral* literal = dynamic_cast<ComplexLiteral*>(expr)) {
     replaceComplexLiteral(literal);
-  } else if (BinOp* binOp = dynamic_cast<BinOp*>(expr)) {
-    if (binOp->type == BINOP_SEQCAT) {
-      handleBasicSequenceAppendPrependOperations(binOp);
+  } else if (ParenOpExpr* seqCat = dynamic_cast<ParenOpExpr*>(expr)) {
+    if (seqCat->opTag == OP_SEQCAT) {
+      handleBasicSequenceAppendPrependOperations(seqCat);
     }
   } else if (Tuple* literal = dynamic_cast<Tuple*>(expr)) {
     createTupleBaseType(literal->exprs->length());
     if (dynamic_cast<ForLoopStmt*>(literal->parentStmt)) {
       return;  // HACK for domains
     }
-    if (AssignOp* assignOp = dynamic_cast<AssignOp*>(literal->parentExpr)) {
-      if (assignOp->left == literal) {
+    if (ParenOpExpr* call = dynamic_cast<ParenOpExpr*>(literal->parentExpr)) {
+      if (call->get(1) == literal) {
         replaceTupleLiteral2(literal); // Handle destructuring
         return;
       }

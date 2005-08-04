@@ -200,6 +200,7 @@ void UnresolvedSymbol::verify(void) {
 
 void UnresolvedSymbol::codegen(FILE* outfile) {
   INT_FATAL(this, "ERROR:  Cannot codegen an unresolved symbol.");
+  fprintf(outfile, "%s /* unresolved */ ", name);
 }
 
 
@@ -1315,9 +1316,9 @@ void ModuleSymbol::createInitFn(void) {
     // insert a set to false at the beginning of the current module's
     // definition (we'll wrap it in a conditional just below, after
     // filtering)
-    Expr* assignVar = new AssignOp(GETS_NORM, 
-                                   new Variable(new UnresolvedSymbol(runOnce)), 
-                                   new BoolLiteral(false));
+    Expr* assignVar = new ParenOpExpr(OP_GETSNORM,
+                                      new Variable(new UnresolvedSymbol(runOnce)),
+                                      new BoolLiteral(false));
     definition->insertAtHead(new ExprStmt(assignVar));
   }
 

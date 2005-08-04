@@ -88,20 +88,19 @@ ResolveSymbols::ResolveSymbols() {
 }
 
 
-binOpType
-gets_to_binop(getsOpType i) {
+OpTag gets_to_op(OpTag i) {
   switch (i) {
-    case GETS_PLUS: return BINOP_PLUS;
-    case GETS_MINUS: return BINOP_MINUS;
-    case GETS_MULT: return BINOP_MULT;
-    case GETS_DIV: return BINOP_DIV;
-    case GETS_BITAND: return BINOP_BITAND;
-    case GETS_BITOR: return BINOP_BITOR;
-    case GETS_BITXOR: return BINOP_BITXOR;
+    case OP_GETSPLUS: return OP_PLUS;
+    case OP_GETSMINUS: return OP_MINUS;
+    case OP_GETSMULT: return OP_MULT;
+    case OP_GETSDIV: return OP_DIV;
+    case OP_GETSBITAND: return OP_BITAND;
+    case OP_GETSBITOR: return OP_BITOR;
+    case OP_GETSBITXOR: return OP_BITXOR;
     default: 
-      assert(!"bogus case");
+      INT_FATAL("Unable to convert OpTag");
   }
-  return BINOP_PLUS;
+  return OP_PLUS;
 }
 
 
@@ -210,7 +209,8 @@ resolve_no_analysis(Expr *expr) {
     if (!strcmp("this", fns.e[0]->name)) {
       arguments->insertAtHead(paren->baseExpr->copy());
     }
-    Expr* new_expr = new FnCall(function, arguments);
+    ParenOpExpr* new_expr = new ParenOpExpr(function, arguments);
+    new_expr->opTag = paren->opTag;
     expr->replace(new_expr);
     expr = new_expr;
   }
@@ -235,7 +235,7 @@ resolve_no_analysis(Expr *expr) {
         if (dynamic_cast<FnSymbol*>(member_access->member)) {
           Expr* arguments = member_access->base->copy();
           Expr* function = new Variable(member_access->member);
-          Expr *new_expr = new FnCall(function, new AList<Expr>(arguments));
+          ParenOpExpr *new_expr = new ParenOpExpr(function, new AList<Expr>(arguments));
           expr->replace(new_expr);
           expr = new_expr;
         }
@@ -249,7 +249,7 @@ resolve_no_analysis(Expr *expr) {
 
 
 static Expr *
-resolve_binary_operator(BinOp *op, FnSymbol *resolved = 0) {
+resolve_binary_operator(ParenOpExpr *op, FnSymbol *resolved = 0) {
   Expr *expr = op;
   Vec<FnSymbol*> fns;
   if (resolved)
@@ -266,9 +266,9 @@ resolve_binary_operator(BinOp *op, FnSymbol *resolved = 0) {
     if (fns.e[0]->defPoint->parentStmt->hasPragma("builtin")) {
       return expr;
     }
-    AList<Expr>* args = new AList<Expr>(op->left->copy());
-    args->insertAtTail(op->right->copy());
-    FnCall *new_expr = new FnCall(new Variable(fns.e[0]), args);
+    AList<Expr>* args = new AList<Expr>(op->get(1)->copy());
+    args->insertAtTail(op->get(2)->copy());
+    ParenOpExpr *new_expr = new ParenOpExpr(new Variable(fns.e[0]), args);
     expr->replace(new_expr);
     expr = new_expr;
   }
@@ -282,143 +282,124 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
     return;
   }
 
-  // Resolve FnCalls
-  if (typeid(*expr) == typeid(ParenOpExpr)) {
-    ParenOpExpr* paren = dynamic_cast<ParenOpExpr*>(expr);
-    if (Variable* variable = dynamic_cast<Variable*>(paren->baseExpr)) {
-      if (!strcmp(variable->var->name, "__primitive")) {
-        return;
-      }
-    }
-    AssignOp *assign = dynamic_cast<AssignOp*>(paren->parentExpr);
-    if (!assign || assign->left != expr) {
-      Vec<FnSymbol*> fns;
-      call_info(paren, fns);
-      if (fns.n == 0) { // for 0-ary (ParenOpExpr(MemberAccess))
-        call_info(paren->baseExpr, fns);
-      }
-      if (fns.n == 0) { // for set function
-        if (paren->parentExpr && paren->parentExpr->astType == EXPR_ASSIGNOP) {
-          Vec<FnSymbol*> fns2;
-          call_info(paren->parentExpr, fns2);
-          if (fns2.n == 1 && !strcmp(fns2.v[0]->name, "set")) {
-            // handle this case in AssignOp below
-            return;
-          }
-        }
-      }
-      if (fns.n != 1) {
-        // HACK: Special case where write(:nilType) requires dynamic
-        // dispatch; Take the other one.
-        if (fns.n == 2 && !strcmp(fns.e[1]->name, "write") &&
-            fns.e[1]->formals->only()->sym->type->astType == TYPE_NIL) {
-        } else if (fns.n == 2 && !strcmp(fns.e[0]->name, "write") &&
-                   fns.e[0]->formals->only()->sym->type->astType == TYPE_NIL) {
-          fns.v[0] = fns.v[1];
-        } else {
-          INT_FATAL(expr, "Unable to resolve function");
+  // Resolve ParenOpExprs
+  if (ParenOpExpr* paren = dynamic_cast<ParenOpExpr*>(expr)) {
+    if (paren->opTag < OP_GETSNORM) {
+      if (Variable* variable = dynamic_cast<Variable*>(paren->baseExpr)) {
+        if (!strcmp(variable->var->name, "__primitive")) {
           return;
         }
       }
+      ParenOpExpr *assign = dynamic_cast<ParenOpExpr*>(paren->parentExpr);
+      if (!assign || assign->opTag < OP_GETSNORM ||  assign->get(1) != expr) {
+        Vec<FnSymbol*> fns;
+        call_info(paren, fns);
+        if (fns.n == 0) { // for 0-ary (ParenOpExpr(MemberAccess))
+          call_info(paren->baseExpr, fns);
+        }
+        if (fns.n == 0) { // for set function
+          if (assign && assign->opTag >= OP_GETSNORM) {
+            Vec<FnSymbol*> fns2;
+            call_info(paren->parentExpr, fns2);
+            if (fns2.n == 1 && !strcmp(fns2.v[0]->name, "set")) {
+              // handle this case below
+              return;
+            }
+          }
+        }
+        if (fns.n != 1) {
+          // HACK: Special case where write(:nilType) requires dynamic
+          // dispatch; Take the other one.
+          if (fns.n == 2 && !strcmp(fns.e[1]->name, "write") &&
+              fns.e[1]->formals->only()->sym->type->astType == TYPE_NIL) {
+          } else if (fns.n == 2 && !strcmp(fns.e[0]->name, "write") &&
+                     fns.e[0]->formals->only()->sym->type->astType == TYPE_NIL) {
+            fns.v[0] = fns.v[1];
+          } else {
+            if (OP_ISUNARYOP(paren->opTag)) {
+              return;
+            }
+            if (OP_ISBINARYOP(paren->opTag)) {
+              return;
+            }
+            INT_FATAL(expr, "Unable to resolve function");
+            return;
+          }
+        }
 
-      AList<Expr>* arguments = copy_argument_list(paren);
-      Expr* function = new Variable(fns.e[0]);
-      if (!strcmp("this", fns.e[0]->name)) {
-        arguments->insertAtHead(paren->baseExpr->copy());
+        AList<Expr>* arguments = copy_argument_list(paren);
+        Expr* function = new Variable(fns.e[0]);
+        if (!strcmp("this", fns.e[0]->name)) {
+          arguments->insertAtHead(paren->baseExpr->copy());
+        }
+        ParenOpExpr *new_expr = new ParenOpExpr(function, arguments);
+        if (fns.e[0]->defPoint->parentStmt->hasPragma("builtin")) {
+          new_expr->opTag = paren->opTag;
+        }
+        expr->replace(new_expr);
+        expr = new_expr;
       }
-      Expr *new_expr = new FnCall(function, arguments);
-      expr->replace(new_expr);
-      expr = new_expr;
     }
   }
 
   // Resolve AssignOp to members or setter functions
-  if (AssignOp* aop = dynamic_cast<AssignOp*>(expr)) {
-    if (typeid(*aop->left) == typeid(ParenOpExpr)) {
-      ParenOpExpr* paren = dynamic_cast<ParenOpExpr*>(aop->left);
-      Vec<FnSymbol*> fns;
-      call_info(aop, fns);
-      if (fns.n == 1) {
-        Expr* function = new Variable(fns.e[0]);
-        AList<Expr>* arguments = new AList<Expr>();
-        if (!strcmp("=this", fns.e[0]->name))
-          arguments->insertAtTail(paren->baseExpr->copy());
-        arguments->add(copy_argument_list(paren));
-        arguments->insertAtTail(aop->right->copy());
-        Expr *new_expr = new FnCall(function, arguments);
-        aop->replace(new_expr);
-        expr = new_expr;
-      } else {
-        INT_FATAL(expr, "Unable to resolve setter function");
-      }
-    } else if (MemberAccess* member_access = dynamic_cast<MemberAccess*>(aop->left)) {
-      resolve_member_access(aop, &member_access->member_offset, 
-                            &member_access->member_type);
-      if (member_access->member_offset < 0) {
-        Vec<FnSymbol *> op_fns, assign_fns;
-        call_info(aop, op_fns, CALL_INFO_FIND_OPERATOR);
-        call_info(aop, assign_fns, CALL_INFO_FIND_FUNCTION);
-        if (op_fns.n > 1 || assign_fns.n != 1) 
-          INT_FATAL(expr, "Unable to resolve member access");
-        FnSymbol *f_op = op_fns.n ? op_fns.v[0] : 0;
-        FnSymbol *f_assign = assign_fns.v[0];
-        Expr *rhs = aop->right->copy();
-        if (f_op) {
-          if (!is_builtin(f_op)) {
-            AList<Expr>* op_arguments = new AList<Expr>(member_access->copy());
-            op_arguments->insertAtTail(rhs);
-            Expr* op_function = new Variable(f_op);
-            rhs = new FnCall(op_function, op_arguments);
-          } else {
-            rhs = resolve_binary_operator(
-              new BinOp(gets_to_binop(aop->type), aop->left, aop->right),
-              f_op);
+  if (ParenOpExpr* aop = dynamic_cast<ParenOpExpr*>(expr)) {
+    if (aop->opTag >= OP_GETSNORM) {
+      if (typeid(*aop->get(1)) == typeid(ParenOpExpr)) {
+        ParenOpExpr* paren = dynamic_cast<ParenOpExpr*>(aop->get(1));
+        Vec<FnSymbol*> fns;
+        call_info(aop, fns);
+        if (fns.n == 1) {
+          Expr* function = new Variable(fns.e[0]);
+          AList<Expr>* arguments = new AList<Expr>();
+          if (!strcmp("=this", fns.e[0]->name))
+            arguments->insertAtTail(paren->baseExpr->copy());
+          arguments->add(copy_argument_list(paren));
+          arguments->insertAtTail(aop->get(2)->copy());
+          ParenOpExpr *new_expr = new ParenOpExpr(function, arguments);
+          new_expr->opTag = paren->opTag;
+          aop->replace(new_expr);
+          expr = new_expr;
+        } else {
+          INT_FATAL(expr, "Unable to resolve setter function");
+        }
+      } else if (MemberAccess* member_access = dynamic_cast<MemberAccess*>(aop->get(1))) {
+        resolve_member_access(aop, &member_access->member_offset, 
+                              &member_access->member_type);
+        if (member_access->member_offset < 0) {
+          Vec<FnSymbol *> op_fns, assign_fns;
+          call_info(aop, op_fns, CALL_INFO_FIND_OPERATOR);
+          call_info(aop, assign_fns, CALL_INFO_FIND_FUNCTION);
+          if (op_fns.n > 1 || assign_fns.n != 1) 
+            INT_FATAL(expr, "Unable to resolve member access");
+          FnSymbol *f_op = op_fns.n ? op_fns.v[0] : 0;
+          FnSymbol *f_assign = assign_fns.v[0];
+          Expr *rhs = aop->get(2)->copy();
+          if (f_op) {
+            if (!is_builtin(f_op)) {
+              AList<Expr>* op_arguments = new AList<Expr>(member_access->copy());
+              op_arguments->insertAtTail(rhs);
+              Expr* op_function = new Variable(f_op);
+              rhs = new ParenOpExpr(op_function, op_arguments);
+            } else {
+              rhs = resolve_binary_operator(new ParenOpExpr(gets_to_op(aop->opTag), aop->get(1)->copy(), aop->get(2)->copy()), f_op);
+            }
           }
-        }
-        AList<Expr>* assign_arguments = new AList<Expr>(member_access->base->copy());
-        assign_arguments->insertAtTail(rhs);
-        Expr* assign_function = new Variable(f_assign);
-        Expr *new_expr = new FnCall(assign_function, assign_arguments);
-        expr->replace(new_expr);
-        if (aop->left->astType == EXPR_MEMBERACCESS) {
-          expr = aop->left;
-        }
-      } else {
-        if (StructuralType* struct_scope =
-            dynamic_cast<StructuralType*>(member_access->base->typeInfo())) {
-          member_access->member = 
-            Symboltable::lookupInScope(member_access->member->name,
-                                       struct_scope->structScope);
-        }
-      }
-    } else if (f_equal_method) {
-      Vec<FnSymbol *> op_fns, assign_fns;
-      call_info(aop, op_fns, CALL_INFO_FIND_OPERATOR);
-      call_info(aop, assign_fns, CALL_INFO_FIND_FUNCTION);
-      if (op_fns.n || assign_fns.n) {
-        FnSymbol *f_op = op_fns.n ? op_fns.v[0] : 0;
-        FnSymbol *f_assign = assign_fns.n ? assign_fns.v[0] : 0;
-        Expr *rhs = aop->right->copy();
-        if (f_op) {
-          if (!is_builtin(f_op)) {
-            AList<Expr>* op_arguments = new AList<Expr>(member_access->copy());
-            op_arguments->insertAtTail(rhs);
-            Expr* op_function = new Variable(f_op);
-            Expr *new_rhs = new FnCall(op_function, op_arguments);
-            rhs->replace(new_rhs);
-          } else {
-            rhs = resolve_binary_operator(
-              new BinOp(gets_to_binop(aop->type), aop->left, aop->right),
-              f_op);
-          }
-        }
-        if (f_assign) {
-          AList<Expr>* assign_arguments = new AList<Expr>(aop->left->copy());
+          AList<Expr>* assign_arguments = new AList<Expr>(member_access->base->copy());
           assign_arguments->insertAtTail(rhs);
           Expr* assign_function = new Variable(f_assign);
-          Expr *new_expr = new FnCall(assign_function, assign_arguments);
+          ParenOpExpr *new_expr = new ParenOpExpr(assign_function, assign_arguments);
           expr->replace(new_expr);
-          expr = new_expr;
+          if (aop->get(1)->astType == EXPR_MEMBERACCESS) {
+            expr = aop->get(1);
+          }
+        } else {
+          if (StructuralType* struct_scope =
+              dynamic_cast<StructuralType*>(member_access->base->typeInfo())) {
+            member_access->member = 
+              Symboltable::lookupInScope(member_access->member->name,
+                                         struct_scope->structScope);
+          }
         }
       }
     }
@@ -436,8 +417,8 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
     }
     if (dynamic_cast<VarInitExpr*>(expr->parentExpr))
       return;
-    if (AssignOp* aop = dynamic_cast<AssignOp*>(expr->parentExpr))
-      if (aop->left == expr)
+    if (ParenOpExpr* aop = dynamic_cast<ParenOpExpr*>(expr->parentExpr))
+      if (aop->opTag >= OP_GETSNORM && aop->get(1) == expr)
         return;
 
     resolve_member_access(member_access, &member_access->member_offset,
@@ -448,8 +429,8 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
       if (fns.n == 1) {
         Expr* arguments = member_access->base->copy();
         Expr* function = new Variable(fns.v[0]);
-        Expr *new_expr = new FnCall(function, new AList<Expr>(arguments));
-        expr->replace(new FnCall(function, new AList<Expr>(arguments->copy())));
+        Expr *new_expr = new ParenOpExpr(function, new AList<Expr>(arguments));
+        expr->replace(new ParenOpExpr(function, new AList<Expr>(arguments->copy())));
         expr = new_expr;
       } else
         INT_FATAL(expr, "Unable to resolve member access");
@@ -473,7 +454,7 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
     } if (fns.n > 1) {
       INT_FATAL(expr, "Unable to resolve default constructor");
     } else if (defExpr->exprType) {
-      if (FnCall *fc = dynamic_cast<FnCall*>(defExpr->exprType))
+      if (ParenOpExpr *fc = dynamic_cast<ParenOpExpr*>(defExpr->exprType))
         if (Variable *v = dynamic_cast<Variable*>(fc->baseExpr))
           if (FnSymbol *fn = dynamic_cast<FnSymbol*>(v->var))
             defExpr->sym->type->defaultConstructor = fn;
@@ -483,9 +464,9 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
   mangle_overloaded_operator_function_names(expr);
 
   // Resolve overloaded binary operators 
-  if (dynamic_cast<BinOp*>(expr)) {
-    if (typeid(BinOp) == typeid(*expr)) { // SJD: WANT TO REMOVE
-      expr = resolve_binary_operator(dynamic_cast<BinOp*>(expr));
-    }
-  }
+//   if (dynamic_cast<BinOp*>(expr)) {
+//     if (typeid(BinOp) == typeid(*expr)) { // SJD: WANT TO REMOVE
+//       expr = resolve_binary_operator(dynamic_cast<BinOp*>(expr));
+//     }
+//   }
 }

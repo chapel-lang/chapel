@@ -293,16 +293,12 @@ char* astTypeName[AST_TYPE_END+1] = {
   "Variable",
   "VarInit",
   "DefExpr",
-  "UnOp",
-  "BinOp",
-  "AssignOp",
   "Seq",
   "Let",
   "CondExpr",
   "Forall",
   "ParenOp",
   "Cast",
-  "FnCall",
   "MemberAccess",
   "Reduce",
   "Tuple",
@@ -425,16 +421,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     AST_ADD_CHILD(DefExpr, init);
     AST_ADD_CHILD(DefExpr, exprType);
     goto LExprCommon;
-  case EXPR_UNOP:
-    AST_ADD_CHILD(UnOp, operand);
-    goto LExprCommon;
-  case EXPR_BINOP:
-  LBinOpCommon:
-    AST_ADD_CHILD(BinOp, left);
-    AST_ADD_CHILD(BinOp, right);
-    goto LExprCommon;
-  case EXPR_ASSIGNOP:
-    goto LBinOpCommon;
   case EXPR_SEQ:
     AST_ADD_LIST(SeqExpr, exprls, Expr);
     goto LExprCommon;
@@ -453,7 +439,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     AST_ADD_CHILD(ForallExpr, innerExpr);
     goto LExprCommon;
   case EXPR_PARENOP:
-  LParenOpCommon:
     AST_ADD_CHILD(ParenOpExpr, baseExpr);
     AST_ADD_LIST(ParenOpExpr, argList, Expr);
     goto LExprCommon;
@@ -462,8 +447,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     AST_ADD_CHILD(CastExpr, newType);
     AST_ADD_CHILD(CastExpr, expr);
     goto LExprCommon;
-  case EXPR_FNCALL:
-    goto LParenOpCommon;
   case EXPR_MEMBERACCESS:
     AST_ADD_CHILD(MemberAccess, base);
     ADD_CHILD(MemberAccess, member);

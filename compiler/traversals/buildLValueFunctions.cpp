@@ -17,7 +17,7 @@ handle_return_expr(Expr *e, Symbol *lvalue) {
                              new BlockStmt(handle_return_expr(ce->thenExpr, lvalue)),
                              new BlockStmt(handle_return_expr(ce->elseExpr, lvalue)));
     else
-      newStmt = new ExprStmt(new AssignOp(GETS_NORM, e, new Variable(lvalue)));
+      newStmt = new ExprStmt(new ParenOpExpr(OP_GETSNORM, e, new Variable(lvalue)));
   return new AList<Stmt>(newStmt);
 }
 

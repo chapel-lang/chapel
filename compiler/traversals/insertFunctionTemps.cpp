@@ -16,8 +16,10 @@ static void collect(Expr* expr, Vec<BaseAST*>* asts) {
       data = init_data;
     }
     void postProcessExpr(Expr* expr) {
-      if (dynamic_cast<FnCall*>(expr)) {
-        data->add(expr);
+      if (ParenOpExpr* paren = dynamic_cast<ParenOpExpr*>(expr)) {
+        if (paren->opTag == OP_NONE) {
+          data->add(expr);
+        }
       }
     }
   };
@@ -56,9 +58,9 @@ void InsertFunctionTemps::postProcessStmt(Stmt* stmt) {
     stmt->replace(blockStmt);
     SymScope* saveScope = Symboltable::setCurrentScope(blockStmt->blkScope);
     forv_Vec(BaseAST, ast, functions) {
-      FnCall* function = dynamic_cast<FnCall*>(ast);
+      ParenOpExpr* function = dynamic_cast<ParenOpExpr*>(ast);
       if (!function) {
-        INT_FATAL(ast, "FnCall expected");
+        INT_FATAL(ast, "ParenOpExpr expected");
       }
       // The following conditional keeps us from inserting function
       // temps if we are in an expression that has a different scope

@@ -68,9 +68,9 @@ void InsertThisParameters::preProcessExpr(Expr* expr) {
       AList<Expr>* alloc_args = new AList<Expr>( new Variable(typeSym));
       alloc_args->insertAtTail(new StringLiteral(description));
       Symbol* alloc_sym = Symboltable::lookupInternal("_chpl_alloc");
-      Expr* alloc_rhs = new FnCall(new Variable(alloc_sym), alloc_args);
+      Expr* alloc_rhs = new ParenOpExpr(new Variable(alloc_sym), alloc_args);
       Expr* alloc_lhs = new Variable(fn->_this);
-      Expr* alloc_expr = new AssignOp(GETS_NORM, alloc_lhs, alloc_rhs);
+      Expr* alloc_expr = new ParenOpExpr(OP_GETSNORM, alloc_lhs, alloc_rhs);
       Stmt* alloc_stmt = new ExprStmt(alloc_expr);
       this_decl->parentStmt->insertAfter(alloc_stmt);
       fn->body->body->insertAtTail(new ReturnStmt(new Variable(fn->_this)));

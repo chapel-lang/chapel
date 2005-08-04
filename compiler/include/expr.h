@@ -11,110 +11,58 @@ class Stmt;
 class AInfo;
 class FnSymbol;
 
-extern char* cUnOp[];
-extern char* cBinOp[];
-extern char* cGetsOp[];
-
-/*
-enum OperatorTag {
-  UNOP_PLUS = 0,
-  UNOP_MINUS,
-  UNOP_LOGNOT,
-  UNOP_BITNOT,
-  BINOP_PLUS,
-  BINOP_MINUS,
-  BINOP_MULT,
-  BINOP_DIV,
-  BINOP_MOD,
-  BINOP_EQUAL,
-  BINOP_NEQUAL,
-  BINOP_LEQUAL,
-  BINOP_GEQUAL,
-  BINOP_LTHAN,
-  BINOP_GTHAN,
-  BINOP_BITAND,
-  BINOP_BITOR,
-  BINOP_BITXOR,
-  BINOP_LOGAND,
-  BINOP_LOGOR,
-  BINOP_EXP,
-  BINOP_SEQCAT,
-  BINOP_BY,
-  BINOP_SUBTYPE,
-  BINOP_NOTSUBTYPE,
-  GETS_NORM,
-  GETS_PLUS,
-  GETS_MINUS,
-  GETS_MULT,
-  GETS_DIV,
-  GETS_BITAND,
-  GETS_BITOR,
-  GETS_BITXOR,
-  GETS_SEQCAT
+enum OpTag {
+  OP_NONE,
+  OP_UNPLUS,
+  OP_UNMINUS,
+  OP_LOGNOT,
+  OP_BITNOT,
+  OP_PLUS,
+  OP_MINUS,
+  OP_MULT,
+  OP_DIV,
+  OP_MOD,
+  OP_EQUAL,
+  OP_NEQUAL,
+  OP_LEQUAL,
+  OP_GEQUAL,
+  OP_LTHAN,
+  OP_GTHAN,
+  OP_BITAND,
+  OP_BITOR,
+  OP_BITXOR,
+  OP_LOGAND,
+  OP_LOGOR,
+  OP_EXP,
+  OP_SEQCAT,
+  OP_BY,
+  OP_SUBTYPE,
+  OP_NOTSUBTYPE,
+  OP_GETSNORM,
+  OP_GETSPLUS,
+  OP_GETSMINUS,
+  OP_GETSMULT,
+  OP_GETSDIV,
+  OP_GETSBITAND,
+  OP_GETSBITOR,
+  OP_GETSBITXOR,
+  OP_GETSSEQCAT
 };
-*/
 
-/************* IF CHANGING THIS, change cUnOp as well... *****************/
-enum unOpType {
-  UNOP_PLUS = 0,
-  UNOP_MINUS,
-  UNOP_LOGNOT,
-  UNOP_BITNOT,
+#define OP_ISASSIGNOP(op) (op >= OP_GETSNORM)
+#define OP_ISBINARYOP(op) (op >= OP_PLUS && op <= OP_NOTSUBTYPE)
+#define OP_ISUNARYOP(op) (op >= OP_UNPLUS && op <= OP_BITNOT)
 
-  NUM_UNOPS
-};
-/************* IF CHANGING THIS, change cUnOp as well... *****************/
-
-
-/************* IF CHANGING THIS, change cBinOp as well... *****************/
-enum binOpType {
-  BINOP_PLUS = 0,
-  BINOP_MINUS,
-  BINOP_MULT,
-  BINOP_DIV,
-  BINOP_MOD,
-  BINOP_EQUAL,
-  BINOP_LEQUAL,
-  BINOP_GEQUAL,
-  BINOP_GTHAN,
-  BINOP_LTHAN,
-  BINOP_NEQUAL,
-  BINOP_BITAND,
-  BINOP_BITOR,
-  BINOP_BITXOR,
-  BINOP_LOGAND,
-  BINOP_LOGOR,
-  BINOP_EXP,
-
-  BINOP_SEQCAT,
-  BINOP_BY,
-
-  BINOP_SUBTYPE,
-  BINOP_NOTSUBTYPE,
-
-  BINOP_OTHER,
-  
-  NUM_BINOPS
-};
-/************* IF CHANGING THIS, change cBinOp as well... *****************/
-
-
-/************* IF CHANGING THIS, change cGetsOp as well... *****************/
-enum getsOpType {
-  GETS_NORM = 0,
-  GETS_PLUS,
-  GETS_MINUS,
-  GETS_MULT,
-  GETS_DIV,
-  GETS_BITAND,
-  GETS_BITOR,
-  GETS_BITXOR,
-  GETS_SEQCAT,
-
-  NUM_GETS_OPS
-};
-/************* IF CHANGING THIS, change cGetsOp as well... *****************/
-
+#define OP_ISLOGICAL(op) \
+  ((op == OP_LOGNOT) ||  \
+   (op == OP_EQUAL)  ||  \
+   (op == OP_NEQUAL) ||  \
+   (op == OP_LEQUAL) ||  \
+   (op == OP_GEQUAL) ||  \
+   (op == OP_LTHAN)  ||  \
+   (op == OP_GTHAN)  ||  \
+   (op == OP_LOGAND) ||  \
+   (op == OP_LOGOR))
 
 class Expr : public BaseAST {
  public:
@@ -141,8 +89,6 @@ class Expr : public BaseAST {
   virtual void printCfgInitString(FILE* outfile);
   FnSymbol *parentFunction();
 
-  static Expr* newPlusMinus(binOpType op, Expr* l, Expr* r);
-
   bool isRead(void);
   bool isWritten(void);
   bool isRef(void);
@@ -161,8 +107,8 @@ class Literal : public Expr {
   virtual void verify(void); 
   COPY_DEF(Literal);
 
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
+  virtual void print(FILE* outfile);
+  virtual void codegen(FILE* outfile);
 };
 
 
@@ -208,22 +154,13 @@ class FloatLiteral : public Literal {
 
 class ComplexLiteral : public Literal {
  public:
-  double realVal;
-  double imagVal;
-  char* realStr;
+  double val;
 
-  ComplexLiteral(char* init_str, double init_imag, double init_real = 0.0,
-                 char* init_realStr = "");
+  ComplexLiteral(char* init_str, double init_val);
   virtual void verify(void); 
   COPY_DEF(ComplexLiteral);
-  void addReal(FloatLiteral* init_real);
-
-  void negateImag(void);
-
   Type* typeInfo(void);
-
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
+  virtual void print(FILE* outfile);
 };
 
 
@@ -237,57 +174,6 @@ class StringLiteral : public Literal {
   void print(FILE* outfile);
   void codegen(FILE* outfile);
   void printCfgInitString(FILE* outfile);
-};
-
-
-class UnOp : public Expr {
- public:
-  unOpType type;
-  Expr* operand;
-
-  UnOp(unOpType init_type, Expr* op);
-  virtual void verify(void); 
-  COPY_DEF(UnOp);
-
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseExpr(Traversal* traversal);
-
-  Type* typeInfo(void);
-
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-};
-
-
-class BinOp : public Expr {
- public:
-  binOpType type;
-  Expr* left;
-  Expr* right;
-
-  BinOp(binOpType init_type, Expr* l, Expr* r);
-  virtual void verify(void); 
-  COPY_DEF(BinOp);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseExpr(Traversal* traversal);
-
-  Type* typeInfo(void);
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-};
-
-
-class AssignOp : public BinOp {
- public:
-  getsOpType type;
-
-  AssignOp(getsOpType init_type, Expr* l, Expr* r);
-  virtual void verify(void); 
-  COPY_DEF(AssignOp);
-  Type* typeInfo(void);
-
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
 };
 
 
@@ -372,8 +258,10 @@ class ParenOpExpr : public Expr {
  public:
   Expr* baseExpr;
   AList<Expr>* argList;
+  OpTag opTag;
 
-  ParenOpExpr(Expr* init_base, AList<Expr>* init_arg = new AList<Expr>);
+  ParenOpExpr(Expr* initBase, AList<Expr>* initArgs = new AList<Expr>);
+  ParenOpExpr(OpTag initOpTag, Expr* arg1, Expr* arg2 = NULL);
   virtual void verify(void); 
   COPY_DEF(ParenOpExpr);
 
@@ -382,19 +270,11 @@ class ParenOpExpr : public Expr {
 
   virtual void print(FILE* outfile);
   virtual void codegen(FILE* outfile);
-};
 
-
-class FnCall : public ParenOpExpr {
- public:
-  FnCall(Expr* init_base, AList<Expr>* init_arg = new AList<Expr>());
-  virtual void verify(void); 
-  COPY_DEF(FnCall);
-  Type* typeInfo(void);
-
+  Expr* ParenOpExpr::get(int index);
   FnSymbol* findFnSymbol(void);
-
-  void codegen(FILE* outfile);
+  Type* typeInfo(void);
+  bool isPrimitive(void);
 };
 
 

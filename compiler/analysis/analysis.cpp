@@ -494,7 +494,7 @@ get_constant_Expr(Sym *c) {
         switch (c->type->num_index) {
           default: fail("type unsupported in AST");
           case IF1_FLOAT_TYPE_64:
-            e = new ComplexLiteral(name, c->imm.v_complex64.r, c->imm.v_complex64.i);
+            e = new ComplexLiteral(name, c->imm.v_complex64.i);
             break;
         }
         break;
@@ -1531,31 +1531,31 @@ is_this_member_access(BaseAST *a) {
 }
 
 static Sym *
-gen_assign_op(AssignOp *s) {
+gen_assign_op(ParenOpExpr *s) {
   s->ainfo->rval = new_sym();
   s->ainfo->rval->ast = s->ainfo;
-  s->ainfo->sym = s->left->ainfo->sym;
-  if1_gen(if1, &s->ainfo->code, s->right->ainfo->code);
+  s->ainfo->sym = s->get(1)->ainfo->sym;
+  if1_gen(if1, &s->ainfo->code, s->get(2)->ainfo->code);
   Sym *op = 0;
-  Sym *rval = s->right->ainfo->rval;
-  switch (s->type) {
+  Sym *rval = s->get(2)->ainfo->rval;
+  switch (s->opTag) {
     default: assert(!"case");
-    case GETS_NORM: op = 0; break;
-    case GETS_PLUS: op = make_symbol("+"); break;
-    case GETS_MINUS: op = make_symbol("-"); break;
-    case GETS_MULT: op = make_symbol("*"); break;
-    case GETS_DIV: op = make_symbol("/"); break;
-    case GETS_BITAND: op = make_symbol("&"); break;
-    case GETS_BITOR: op = make_symbol("|"); break;
-    case GETS_BITXOR: op = make_symbol("^"); break;
-    case GETS_SEQCAT: op = make_symbol("#"); break;
+    case OP_GETSNORM: op = 0; break;
+    case OP_GETSPLUS: op = make_symbol("+"); break;
+    case OP_GETSMINUS: op = make_symbol("-"); break;
+    case OP_GETSMULT: op = make_symbol("*"); break;
+    case OP_GETSDIV: op = make_symbol("/"); break;
+    case OP_GETSBITAND: op = make_symbol("&"); break;
+    case OP_GETSBITOR: op = make_symbol("|"); break;
+    case OP_GETSBITXOR: op = make_symbol("^"); break;
+    case OP_GETSSEQCAT: op = make_symbol("#"); break;
   }
   if (op) {
     Sym *old_rval = rval;
     rval = new_sym();
     rval->ast = s->ainfo;
     Code *c = if1_send(if1, &s->ainfo->code, 3, 1, op,
-                       s->left->ainfo->rval, old_rval, rval);
+                       s->get(1)->ainfo->rval, old_rval, rval);
     c->ast = s->ainfo;
   } else {
     Sym *old_rval = rval;
@@ -1567,7 +1567,7 @@ gen_assign_op(AssignOp *s) {
 }
 
 static int
-gen_set_member(MemberAccess *ma, AssignOp *base_ast) {
+gen_set_member(MemberAccess *ma, ParenOpExpr *base_ast) {
   FnSymbol *fn = ma->getStmt()->parentFunction();
   AInfo *ast = base_ast->ainfo;
   int equal = !fn || (!fn->_setter && (fn->fnClass != FN_CONSTRUCTOR || !is_this_member_access(ma)));
@@ -1651,7 +1651,7 @@ gen_paren_op(ParenOpExpr *s, Expr *rhs = 0, AInfo *ast = 0) {
   }
   astType_t base_symbol = undef_or_fn_expr(s->baseExpr);
   Sym *base = NULL;
-  char *n = s->baseExpr->ainfo->sym->name;
+  char *n = s->baseExpr->ainfo->rval->name;
   if (n && !strcmp(n, "__primitive")) {
     if (args.n > 0 && dynamic_cast<StringLiteral*>(args.v[0]) &&
         if1->primitives->prim_map[0][0].get(
@@ -1844,15 +1844,9 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       s->ainfo->rval = c;
       break;
     }
-    case EXPR_COMPLEXLITERAL: {
-      ComplexLiteral *s = dynamic_cast<ComplexLiteral*>(ast);
-      Immediate imm;
-      imm.v_complex64.r = s->realVal;
-      imm.v_complex64.i = s->imagVal;
-      Sym *c = make_const(sym_complex64, s->str, &imm);
-      s->ainfo->rval = c;
+    case EXPR_COMPLEXLITERAL:
+      INT_FATAL(ast, "ComplexLiteral encountered in analysis");
       break;
-    }
     case EXPR_STRINGLITERAL: {
       StringLiteral *s = dynamic_cast<StringLiteral*>(ast);
       char *str = if1_cannonicalize_string(if1, s->str);
@@ -1894,60 +1888,6 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       break;
     }
     case EXPR_DEF: break;
-    case EXPR_UNOP: {
-      UnOp *s = dynamic_cast<UnOp*>(ast);
-      s->ainfo->rval = new_sym();
-      s->ainfo->rval->ast = s->ainfo;
-      if1_gen(if1, &s->ainfo->code, s->operand->ainfo->code);
-      Sym *op = 0;
-      switch (s->type) {
-        default: assert(!"case");
-        case UNOP_PLUS: op = make_symbol("+"); break;
-        case UNOP_MINUS: op = make_symbol("-"); break;
-        case UNOP_LOGNOT: op = make_symbol("!"); break;
-        case UNOP_BITNOT: op = make_symbol("~"); break;
-      }
-      
-      Code *c = if1_send(if1, &s->ainfo->code, 3, 1, sym_operator, op, 
-                         s->operand->ainfo->rval, s->ainfo->rval);
-      c->ast = s->ainfo;
-      break;
-    }
-    case EXPR_BINOP: {
-      BinOp *s = dynamic_cast<BinOp*>(ast);
-      s->ainfo->rval = new_sym();
-      s->ainfo->rval->ast = s->ainfo;
-      if1_gen(if1, &s->ainfo->code, s->left->ainfo->code);
-      if1_gen(if1, &s->ainfo->code, s->right->ainfo->code);
-      Sym *op = 0;
-      switch (s->type) {
-        default: assert(!"case");
-        case BINOP_SEQCAT: op = make_symbol("#"); break;
-        case BINOP_PLUS: op = make_symbol("+"); break;
-        case BINOP_MINUS: op = make_symbol("-"); break;
-        case BINOP_MULT: op = make_symbol("*"); break;
-        case BINOP_DIV: op = make_symbol("/"); break;
-        case BINOP_MOD: op = make_symbol("mod"); break;
-        case BINOP_EQUAL: op = make_symbol("=="); break;
-        case BINOP_LEQUAL: op = make_symbol("<="); break;
-        case BINOP_GEQUAL: op = make_symbol(">="); break;
-        case BINOP_GTHAN: op = make_symbol(">"); break;
-        case BINOP_LTHAN: op = make_symbol("<"); break;
-        case BINOP_NEQUAL: op = make_symbol("!="); break;
-        case BINOP_BITAND: op = make_symbol("&"); break;
-        case BINOP_BITOR: op = make_symbol("|"); break;
-        case BINOP_BITXOR: op = make_symbol("^"); break;
-        case BINOP_LOGAND: op = make_symbol("and"); break;
-        case BINOP_LOGOR: op = make_symbol("or"); break;
-        case BINOP_EXP: op = make_symbol("**"); break;
-        case BINOP_BY: op = make_symbol("by"); break;
-      }
-      Code *c = if1_send(if1, &s->ainfo->code, 3, 1, op,
-                         s->left->ainfo->rval, s->right->ainfo->rval,
-                         s->ainfo->rval);
-      c->ast = s->ainfo;
-      break;
-    }
     case EXPR_MEMBERACCESS: {
       MemberAccess *s = dynamic_cast<MemberAccess*>(ast);
       FnSymbol *fn = s->getStmt()->parentFunction();
@@ -1968,76 +1908,6 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       c->ast = s->ainfo;
       c->partial = Partial_NEVER;
       s->ainfo->send = c;
-      break;
-    }
-    case EXPR_ASSIGNOP: {
-      AssignOp *s = dynamic_cast<AssignOp*>(ast);
-      if (s->left->astType == EXPR_TUPLE) {
-        if (gen_destruct(dynamic_cast<Tuple*>(s->left), s->right, s) < 0)
-          return -1;
-        break;
-      }
-      if (s->left->astType == EXPR_MEMBERACCESS) {
-        if (gen_set_member(dynamic_cast<MemberAccess*>(s->left), s) < 0)
-          return -1;
-        break;
-      }
-      if (s->left->astType == EXPR_FNCALL ||
-          s->left->astType == EXPR_PARENOP) 
-      {
-        if (gen_paren_op(dynamic_cast<ParenOpExpr*>(s->left), s->right, s->ainfo) < 0)
-          return -1;
-        break;
-      }
-      if1_gen(if1, &s->ainfo->code, s->left->ainfo->code);
-      Sym *rval = gen_assign_op(s);
-      Variable *variable = dynamic_cast<Variable*>(s->left);
-      Symbol *symbol = variable ? dynamic_cast<Symbol *>(variable->var) : 0;
-      Sym *type = symbol ? symbol->type->asymbol->sym->type : 0;
-      FnSymbol *f = s->getStmt()->parentFunction();
-      int constructor_assignment = 0;
-      int getter_setter = f->_setter || f->_getter;
-      if (f->fnClass == FN_CONSTRUCTOR) {
-        MemberAccess *m = dynamic_cast<MemberAccess*>(s->left);
-        if (m) {
-          Variable *v = dynamic_cast<Variable*>(m->base);
-          if (v) {
-            if (v->var->isThis())
-              constructor_assignment = 1;
-          }
-        }
-      }
-      VarSymbol *vs = variable ? dynamic_cast<VarSymbol*>(variable->var) : 0;
-      int operator_equal = 
-        !(constructor_assignment || getter_setter ||
-          (vs && vs->noDefaultInit) ||
-          (symbol && (symbol->type == dtUnknown && !symbol->defPoint->init)) ||
-          (symbol && (symbol->isThis() || (symbol && scalar_or_reference(symbol->type)))));
-      if (operator_equal) {
-        Sym *old_rval = rval;
-        rval = new_sym();
-        rval->ast = s->ainfo;
-        Sym *told_rval = new_sym();
-        told_rval->ast = s->ainfo;
-        if1_move(if1, &s->ainfo->code, old_rval, told_rval, s->ainfo);
-        if (f_equal_method) {
-          Code *c = if1_send(if1, &s->ainfo->code, 4, 1, make_symbol("="), method_token,
-                             s->left->ainfo->rval, told_rval, rval);
-          c->ast = s->ainfo;
-        } else {
-          Code *c = if1_send(if1, &s->ainfo->code, 3, 1, make_symbol("="), 
-                             s->left->ainfo->rval, told_rval, rval);
-          c->ast = s->ainfo;
-        }
-      }
-      if (!s->left->ainfo->sym)
-        show_error("assignment to non-lvalue", s->ainfo);
-      if (symbol && symbol->type && is_scalar_type(symbol->type) &&
-          !operator_equal && symbol->type != s->right->typeInfo())
-        rval = gen_coerce(rval, base_type(type), &s->ainfo->code, s->ainfo);
-      if1_move(if1, &s->ainfo->code, rval, s->ainfo->rval, s->ainfo);
-      if (!symbol || symbol->type == dtUnknown || !operator_equal)
-        if1_move(if1, &s->ainfo->code, s->ainfo->rval, s->left->ainfo->sym, s->ainfo);
       break;
     }
     case EXPR_SEQ:
@@ -2092,8 +1962,130 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       }
       break;
     }
-    case EXPR_FNCALL:
     case EXPR_PARENOP:
+      ParenOpExpr* unOp = dynamic_cast<ParenOpExpr*>(ast);
+      if ((unOp->opTag != OP_NONE) && unOp->argList->length() == 1) {
+        unOp->ainfo->rval = new_sym();
+        unOp->ainfo->rval->ast = unOp->ainfo;
+        if1_gen(if1, &unOp->ainfo->code, unOp->get(1)->ainfo->code);
+        Sym *op = 0;
+        switch (unOp->opTag) {
+          default: assert(!"case");
+          case OP_UNPLUS: op = make_symbol("+"); break;
+          case OP_UNMINUS: op = make_symbol("-"); break;
+          case OP_LOGNOT: op = make_symbol("!"); break;
+          case OP_BITNOT: op = make_symbol("~"); break;
+        }
+        Code *c = if1_send(if1, &unOp->ainfo->code, 3, 1, sym_operator, op, 
+                           unOp->get(1)->ainfo->rval, unOp->ainfo->rval);
+        c->ast = unOp->ainfo;
+        break;
+      }
+      ParenOpExpr* binOp = dynamic_cast<ParenOpExpr*>(ast);
+      if (binOp->opTag != OP_NONE && binOp->opTag < OP_GETSNORM) {
+        binOp->ainfo->rval = new_sym();
+        binOp->ainfo->rval->ast = binOp->ainfo;
+        if1_gen(if1, &binOp->ainfo->code, binOp->get(1)->ainfo->code);
+        if1_gen(if1, &binOp->ainfo->code, binOp->get(2)->ainfo->code);
+        Sym *op = 0;
+        switch (binOp->opTag) {
+          default: assert(!"case");
+          case OP_SEQCAT: op = make_symbol("#"); break;
+          case OP_PLUS: op = make_symbol("+"); break;
+          case OP_MINUS: op = make_symbol("-"); break;
+          case OP_MULT: op = make_symbol("*"); break;
+          case OP_DIV: op = make_symbol("/"); break;
+          case OP_MOD: op = make_symbol("mod"); break;
+          case OP_EQUAL: op = make_symbol("=="); break;
+          case OP_LEQUAL: op = make_symbol("<="); break;
+          case OP_GEQUAL: op = make_symbol(">="); break;
+          case OP_GTHAN: op = make_symbol(">"); break;
+          case OP_LTHAN: op = make_symbol("<"); break;
+          case OP_NEQUAL: op = make_symbol("!="); break;
+          case OP_BITAND: op = make_symbol("&"); break;
+          case OP_BITOR: op = make_symbol("|"); break;
+          case OP_BITXOR: op = make_symbol("^"); break;
+          case OP_LOGAND: op = make_symbol("and"); break;
+          case OP_LOGOR: op = make_symbol("or"); break;
+          case OP_EXP: op = make_symbol("**"); break;
+          case OP_BY: op = make_symbol("by"); break;
+        }
+        Code *c = if1_send(if1, &binOp->ainfo->code, 3, 1, op,
+                           binOp->get(1)->ainfo->rval, binOp->get(2)->ainfo->rval,
+                           binOp->ainfo->rval);
+        c->ast = binOp->ainfo;
+        break;
+      }
+      /*** Handle assignment ***/
+      ParenOpExpr* assignOp = dynamic_cast<ParenOpExpr*>(ast);
+      if (assignOp->opTag != OP_NONE && assignOp->opTag >= OP_GETSNORM) {
+        if (assignOp->get(1)->astType == EXPR_TUPLE) {
+          if (gen_destruct(dynamic_cast<Tuple*>(assignOp->get(1)), assignOp->get(2), assignOp) < 0)
+            return -1;
+          break;
+        }
+        if (assignOp->get(1)->astType == EXPR_MEMBERACCESS) {
+          if (gen_set_member(dynamic_cast<MemberAccess*>(assignOp->get(1)), assignOp) < 0)
+            return -1;
+          break;
+        }
+        if (assignOp->get(1)->astType == EXPR_PARENOP) 
+          {
+            if (gen_paren_op(dynamic_cast<ParenOpExpr*>(assignOp->get(1)), assignOp->get(2), assignOp->ainfo) < 0)
+              return -1;
+            break;
+          }
+        if1_gen(if1, &assignOp->ainfo->code, assignOp->get(1)->ainfo->code);
+        Sym *rval = gen_assign_op(assignOp);
+        Variable *variable = dynamic_cast<Variable*>(assignOp->get(1));
+        Symbol *symbol = variable ? dynamic_cast<Symbol *>(variable->var) : 0;
+        Sym *type = symbol ? symbol->type->asymbol->sym->type : 0;
+        FnSymbol *f = assignOp->getStmt()->parentFunction();
+        int constructor_assignment = 0;
+        int getter_setter = f->_setter || f->_getter;
+        if (f->fnClass == FN_CONSTRUCTOR) {
+          MemberAccess *m = dynamic_cast<MemberAccess*>(assignOp->get(1));
+          if (m) {
+            Variable *v = dynamic_cast<Variable*>(m->base);
+            if (v) {
+              if (v->var->isThis())
+                constructor_assignment = 1;
+            }
+          }
+        }
+        VarSymbol *vs = variable ? dynamic_cast<VarSymbol*>(variable->var) : 0;
+        int operator_equal = 
+          !(constructor_assignment || getter_setter ||
+            (vs && vs->noDefaultInit) ||
+            (symbol && (symbol->type == dtUnknown && !symbol->defPoint->init)) ||
+            (symbol && (symbol->isThis() || (symbol && scalar_or_reference(symbol->type)))));
+        if (operator_equal) {
+          Sym *old_rval = rval;
+          rval = new_sym();
+          rval->ast = assignOp->ainfo;
+          Sym *told_rval = new_sym();
+          told_rval->ast = assignOp->ainfo;
+          if1_move(if1, &assignOp->ainfo->code, old_rval, told_rval, assignOp->ainfo);
+          if (f_equal_method) {
+            Code *c = if1_send(if1, &assignOp->ainfo->code, 4, 1, make_symbol("="), method_token,
+                               assignOp->get(1)->ainfo->rval, told_rval, rval);
+            c->ast = assignOp->ainfo;
+          } else {
+            Code *c = if1_send(if1, &assignOp->ainfo->code, 3, 1, make_symbol("="), 
+                               assignOp->get(1)->ainfo->rval, told_rval, rval);
+            c->ast = assignOp->ainfo;
+          }
+        }
+        if (!assignOp->get(1)->ainfo->sym)
+          show_error("assignment to non-lvalue", assignOp->ainfo);
+        if (symbol && symbol->type && is_scalar_type(symbol->type) &&
+            !operator_equal && symbol->type != assignOp->get(2)->typeInfo())
+          rval = gen_coerce(rval, base_type(type), &assignOp->ainfo->code, assignOp->ainfo);
+        if1_move(if1, &assignOp->ainfo->code, rval, assignOp->ainfo->rval, assignOp->ainfo);
+        if (!symbol || symbol->type == dtUnknown || !operator_equal)
+          if1_move(if1, &assignOp->ainfo->code, assignOp->ainfo->rval, assignOp->get(1)->ainfo->sym, assignOp->ainfo);
+        break;
+      }
       if (gen_paren_op(dynamic_cast<ParenOpExpr *>(ast)) < 0)
         return -1;
       break;
@@ -2182,20 +2174,20 @@ fun_where_equal_constant(FnSymbol *f, Variable *v, Literal *c) {
 
 static void
 fun_where_clause(FnSymbol *f, Expr *w) {
-  BinOp *op = dynamic_cast<BinOp*>(w);
+  ParenOpExpr *op = dynamic_cast<ParenOpExpr*>(w);
   if (!op)
     return;
-  if (op->type == BINOP_LOGAND) {
-    fun_where_clause(f, op->left);
-    fun_where_clause(f, op->right);
-  } if (op->type == BINOP_EQUAL) {
+  if (op->opTag == OP_LOGAND) {
+    fun_where_clause(f, op->get(1));
+    fun_where_clause(f, op->get(2));
+  } if (op->opTag == OP_EQUAL) {
     Literal *c = 0;
     Variable *v = 0;
-    if ((c = dynamic_cast<Literal*>(op->left)) && 
-        (v = dynamic_cast<Variable*>(op->right))) 
+    if ((c = dynamic_cast<Literal*>(op->get(1))) && 
+        (v = dynamic_cast<Variable*>(op->get(2)))) 
       fun_where_equal_constant(f, v, c);
-    else if ((c = dynamic_cast<Literal*>(op->right)) &&
-             (v = dynamic_cast<Variable*>(op->left))) 
+    else if ((c = dynamic_cast<Literal*>(op->get(2))) &&
+             (v = dynamic_cast<Variable*>(op->get(1)))) 
       fun_where_equal_constant(f, v, c);
   }
 }

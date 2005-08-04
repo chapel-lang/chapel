@@ -25,7 +25,7 @@ class ParamSymbol;
 class FnSymbol;
 class Expr;
 class DefExpr;
-class FnCall;
+class ParenOpExpr;
 class CondStmt;
 class ASymbol;
 class SymScope;
@@ -215,7 +215,7 @@ class UnionType : public StructuralType {
   COPY_DEF(UnionType);
 
   void buildFieldSelector(void);
-  FnCall* buildSafeUnionAccessCall(unionCall type, Expr* base, Symbol* field);
+  ParenOpExpr* buildSafeUnionAccessCall(unionCall type, Expr* base, Symbol* field);
   void buildConstructorBody(AList<Stmt>* stmts, Symbol* _this, 
                             AList<DefExpr>* arguments);
 

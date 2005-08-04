@@ -163,12 +163,6 @@ void HtmlView::preProcessExpr(Expr* expr) {
     write("<FONT COLOR=\"lightblue\">'%s'</FONT>", e->str);
   } else if (Variable* e = dynamic_cast<Variable*>(expr)) {
     html_print_symbol(e->var, false);
-  } else if (AssignOp* e = dynamic_cast<AssignOp*>(expr)) {
-    write("(%s", cGetsOp[e->type]);
-  } else if (BinOp* e = dynamic_cast<BinOp*>(expr)) {
-    write("(%s", cBinOp[e->type]);
-  } else if (UnOp* e = dynamic_cast<UnOp*>(expr)) {
-    write("(%s", cUnOp[e->type]);
   } else {
     write("(%s", astTypeName[expr->astType]);
   }
@@ -197,7 +191,7 @@ void HtmlView::postProcessExpr(Expr* expr) {
   } else {
     write(")");
   }
-  if (show_analysis_info && expr->parentSymbol && expr->astType != EXPR_FNCALL) {
+  if (show_analysis_info && expr->parentSymbol && expr->astType != EXPR_PARENOP) {
     Vec<FnSymbol *> fns, allfns;
     call_info(expr, fns, CALL_INFO_FIND_OPERATOR);
     allfns.append(fns);

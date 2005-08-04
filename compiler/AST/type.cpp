@@ -652,7 +652,7 @@ void StructuralType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this,
       continue;
     Expr* lhs = new MemberAccess(new Variable(_this), tmp);
     Expr* varInitExpr = new VarInitExpr(new MemberAccess(new Variable(_this), tmp));
-    Expr* assign_expr = new AssignOp(GETS_NORM, lhs, varInitExpr);
+    Expr* assign_expr = new ParenOpExpr(OP_GETSNORM, lhs, varInitExpr);
     Stmt* assign_stmt = new ExprStmt(assign_expr);
     stmts->insertAtTail(assign_stmt);
   }
@@ -680,7 +680,7 @@ void StructuralType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this,
       }
     }
     if (rhs) {
-      Expr* assign_expr = new AssignOp(GETS_NORM, lhs, rhs);
+      Expr* assign_expr = new ParenOpExpr(OP_GETSNORM, lhs, rhs);
       Stmt* assign_stmt = new ExprStmt(assign_expr);
       stmts->insertAtTail(assign_stmt);
     }
@@ -765,7 +765,7 @@ AList<Stmt>* StructuralType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
     writeNil->insertAtTail(new ReturnStmt(NULL));
     BlockStmt* blockStmt = new BlockStmt(writeNil);
     Symbol* nil = Symboltable::lookupInternal("nil", SCOPE_INTRINSIC);
-    Expr* argIsNil = new BinOp(BINOP_EQUAL, new Variable(arg), new Variable(nil));
+    Expr* argIsNil = new ParenOpExpr(OP_EQUAL, new Variable(arg), new Variable(nil));
     body->insertAtTail(new CondStmt(argIsNil, blockStmt));
   }
 
@@ -935,8 +935,8 @@ static char* unionCallName[NUM_UNION_CALLS] = {
 };
 
 
-FnCall* UnionType::buildSafeUnionAccessCall(unionCall type, Expr* base, 
-                                            Symbol* field) {
+ParenOpExpr* UnionType::buildSafeUnionAccessCall(unionCall type, Expr* base, 
+                                                 Symbol* field) {
   AList<Expr>* args = new AList<Expr>(base->copy());
   char* id_tag = buildFieldSelectorName(this, field);
   args->insertAtTail(new Variable(Symboltable::lookupFromScope(id_tag, structScope)));
@@ -946,7 +946,7 @@ FnCall* UnionType::buildSafeUnionAccessCall(unionCall type, Expr* base,
   }
   
   char* fnName = unionCallName[type];
-  return new FnCall(new Variable(Symboltable::lookupInternal(fnName)), args);
+  return new ParenOpExpr(new Variable(Symboltable::lookupInternal(fnName)), args);
 }
 
 
@@ -955,8 +955,8 @@ void UnionType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this,
   AList<Expr>* args = new AList<Expr>(new Variable(_this));
   Expr* arg2 = new Variable(fieldSelector->constants->first()->sym);
   args->insertAtTail(arg2);
-  FnCall* init_function = 
-    new FnCall(new Variable(Symboltable::lookupInternal("_UNION_SET")), args);
+  ParenOpExpr* init_function = 
+    new ParenOpExpr(new Variable(Symboltable::lookupInternal("_UNION_SET")), args);
   ExprStmt* init_stmt = new ExprStmt(init_function);
   stmts->insertAtTail(init_stmt);
 }
@@ -1083,7 +1083,7 @@ void initTypes(void) {
   // We should eventually point this to the new complex
   dtComplex =
     Symboltable::defineBuiltinType("complex", "_complex128",
-                                   new ComplexLiteral("0.0i", 0.0, 0.0, "0.0"));
+                                   new FloatLiteral("0.0", 0.0));
   dtString = Symboltable::defineBuiltinType("string", "_string", NULL);
   dtNumeric = Symboltable::defineBuiltinType("numeric", "_numeric", NULL);
   dtAny = Symboltable::defineBuiltinType("any", "_any", NULL);
