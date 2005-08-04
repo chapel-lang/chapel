@@ -1,8 +1,8 @@
 _chpl_complex.chpl:11: write, x : complex
 _chpl_file.chpl:18: write, val : file
 _chpl_htuple.chpl:32: write, val : _htuple
-_chpl_seq.chpl:144: write, s : seq
-_chpl_seq.chpl:191: write, s : _aseq
+_chpl_seq.chpl:148: write, s : seq
+_chpl_seq.chpl:195: write, s : _aseq
 _chpl_seq.chpl:6: write, val : _seqNode
 fail: fatal error, program does not type
 note: candidates are:
