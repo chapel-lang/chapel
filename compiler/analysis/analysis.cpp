@@ -1910,9 +1910,6 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       s->ainfo->send = c;
       break;
     }
-    case EXPR_SEQ:
-      INT_FATAL(ast, "Sequence literals are eliminated before analysis");
-      break;
     case EXPR_LET: {
       LetExpr *s = dynamic_cast<LetExpr *>(ast);
       DefExpr* def_expr = s->symDefs->first();

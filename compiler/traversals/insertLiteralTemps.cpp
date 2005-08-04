@@ -37,47 +37,6 @@ static void handleBasicSequenceAppendPrependOperations(ParenOpExpr* seqCat) {
 }
 
 
-static void replaceSequenceLiteral(SeqExpr* seqExpr) {
-  static int uid = 1;
-  if (!analyzeAST) {
-    INT_FATAL(seqExpr, "Analysis required for sequences");
-  }
-  char* name = glomstrings(2, "_seq_temp_", intstring(uid++));
-  DefExpr* def = Symboltable::defineSingleVarDef(name,
-                                                 dtUnknown,
-                                                 NULL,
-                                                 VAR_NORMAL,
-                                                 VAR_VAR);
-  Type* elt_type = dtUnknown;
-  if (seqExpr->exprls->length() > 0) {
-    elt_type = seqExpr->exprls->representative()->typeInfo();
-    if (!elt_type->symbol) {
-      elt_type = dtUnknown;
-    }
-  }
-  def->exprType =
-    new ParenOpExpr(
-      new Variable(
-        new UnresolvedSymbol("seq")),
-      new AList<Expr>(
-        new Variable(elt_type->symbol)));
-
-  seqExpr->getStmt()->insertBefore(new ExprStmt(def));
-
-  Symbol* seq = def->sym;
-  for_alist(Expr, tmp, seqExpr->exprls) {
-    Expr* append =
-      new ParenOpExpr(
-        new MemberAccess(
-          new Variable(seq),
-          new UnresolvedSymbol("_append_in_place")),
-        new AList<Expr>(tmp->copy()));
-    seqExpr->getStmt()->insertBefore(new ExprStmt(append));
-  }
-  seqExpr->replace(new Variable(seq));
-}
-
-
 static void replaceTupleLiteral(Tuple* tuple) {
   AList<Expr>* argList = new AList<Expr>();
   for_alist(Expr, expr, tuple->exprs) {
@@ -221,9 +180,7 @@ static void createTupleBaseType(int size) {
 
 
 void InsertLiteralTemps::postProcessExpr(Expr* expr) {
-  if (SeqExpr* literal = dynamic_cast<SeqExpr*>(expr)) {
-    replaceSequenceLiteral(literal);
-  } else if (ComplexLiteral* literal = dynamic_cast<ComplexLiteral*>(expr)) {
+  if (ComplexLiteral* literal = dynamic_cast<ComplexLiteral*>(expr)) {
     replaceComplexLiteral(literal);
   } else if (ParenOpExpr* seqCat = dynamic_cast<ParenOpExpr*>(expr)) {
     if (seqCat->opTag == OP_SEQCAT) {

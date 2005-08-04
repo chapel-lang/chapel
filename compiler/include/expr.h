@@ -70,7 +70,6 @@ class Expr : public BaseAST {
   Stmt* parentStmt;
   Expr* parentExpr;
   AInfo *ainfo;
-  FnSymbol *resolved;
 
   Expr(astType_t astType = EXPR);
   COPY_DEF(Expr);
@@ -311,21 +310,6 @@ class ReduceExpr : public Expr {
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
 
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-};
-
-
-class SeqExpr : public Expr {
- public:
-  AList<Expr>* exprls;
-
-  SeqExpr(AList<Expr>* init_exprls);
-  virtual void verify(void); 
-  COPY_DEF(SeqExpr);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseExpr(Traversal* traversal);
-  Type* typeInfo(void);
   void print(FILE* outfile);
   void codegen(FILE* outfile);
 };

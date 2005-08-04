@@ -1247,57 +1247,6 @@ void ReduceExpr::codegen(FILE* outfile) {
 }
 
 
-SeqExpr::SeqExpr(AList<Expr>* init_exprls) :
-  Expr(EXPR_SEQ),
-  exprls(init_exprls)
-{}
-
-
-void SeqExpr::verify() {
-  if (astType != EXPR_SEQ) {
-    INT_FATAL(this, "Bad SeqExpr::astType");
-  }
-}
-
-
-SeqExpr*
-SeqExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new SeqExpr(COPY_INTERNAL(exprls));
-}
-
-
-void SeqExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == exprls) {
-    exprls = dynamic_cast<AList<Expr>*>(new_ast);
-  } else {
-    INT_FATAL(this, "Unexpected case in MemberAccess::replaceChild");
-  }
-}
-
-
-void SeqExpr::traverseExpr(Traversal* traversal) {
-  exprls->traverse(traversal, false);
-}
-
-
-Type* SeqExpr::typeInfo(void) {
-  INT_FATAL(this, "SeqExpr::typeInfo not implemented");
-  return NULL;
-}
-
-
-void SeqExpr::print(FILE* outfile) {
-  printf("(/ ");
-  exprls->print(outfile);
-  printf(" /)");
-}
-
-
-void SeqExpr::codegen(FILE* outfile) {
-  INT_FATAL(this, "Unanticipated call to SeqExpr::codegen");
-}
-
-
 ForallExpr::ForallExpr(AList<DefExpr>* initIndices,
                        AList<Expr>* initIterators,
                        Expr* initInnerExpr,

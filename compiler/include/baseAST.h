@@ -34,7 +34,6 @@ enum astType_t {
   EXPR_VARIABLE,
   EXPR_VARINIT,
   EXPR_DEF,
-  EXPR_SEQ,
   EXPR_LET,
   EXPR_COND,
   EXPR_FORALL,

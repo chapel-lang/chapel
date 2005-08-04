@@ -1180,7 +1180,24 @@ atom:
 
 seq_expr:
   TSEQBEGIN expr_ls TSEQEND
-    { $$ = new SeqExpr($2); }
+    {
+      Expr* seqLiteral = 
+        new ParenOpExpr(
+          new Variable(
+            new UnresolvedSymbol("seq")),
+          new AList<Expr>(
+            new Variable(dtUnknown->symbol)));
+      for_alist(Expr, element, $2) {
+        element->remove();
+        seqLiteral =
+          new ParenOpExpr(
+            new MemberAccess(
+              seqLiteral,
+              new UnresolvedSymbol("_append_in_place")),
+            new AList<Expr>(element));
+      }
+      $$ = seqLiteral;
+    }
 ;
 
 
