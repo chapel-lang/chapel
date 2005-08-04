@@ -16,7 +16,7 @@ class ReconstructIteratorsHelper : public Traversal {
     if (ReturnStmt* returnStmt = dynamic_cast<ReturnStmt*>(stmt)) {
       returnStmt->insertBefore(
         new ExprStmt(
-          new ParenOpExpr(
+          new CallExpr(
             new MemberAccess(
               new Variable(seq),
               new UnresolvedSymbol("_yield")),
@@ -48,7 +48,7 @@ void ReconstructIterators::processSymbol(Symbol* sym) {
                                                  NULL,
                                                  VAR_NORMAL,
                                                  VAR_VAR);
-  def->exprType = new ParenOpExpr(
+  def->exprType = new CallExpr(
                     new Variable(
                       new UnresolvedSymbol("seq")),
                     new AList<Expr>(

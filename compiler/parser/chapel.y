@@ -702,7 +702,7 @@ record_tuple_inner_type:
     {
       Symboltable::popScope();
       char *tupleName = glomstrings(2, "_tuple", intstring($1->length()));
-      $$ = new ParenOpExpr(
+      $$ = new CallExpr(
              new Variable(new UnresolvedSymbol(tupleName)), $1);
     }
 ;
@@ -965,51 +965,51 @@ whereexpr:
 | TTYPE identifier
     { $$ = new DefExpr(new TypeSymbol($2, new VariableType)); }
 | TNOT whereexpr
-    { $$ = new ParenOpExpr(OP_LOGNOT, $2); }
+    { $$ = new CallExpr(OP_LOGNOT, $2); }
 | TBNOT whereexpr
-    { $$ = new ParenOpExpr(OP_BITNOT, $2); }
+    { $$ = new CallExpr(OP_BITNOT, $2); }
 | whereexpr TPLUS whereexpr
-    { $$ = new ParenOpExpr(OP_PLUS, $1, $3); }
+    { $$ = new CallExpr(OP_PLUS, $1, $3); }
 | whereexpr TMINUS whereexpr
-    { $$ = new ParenOpExpr(OP_MINUS, $1, $3); }
+    { $$ = new CallExpr(OP_MINUS, $1, $3); }
 | whereexpr TSTAR whereexpr
-    { $$ = new ParenOpExpr(OP_MULT, $1, $3); }
+    { $$ = new CallExpr(OP_MULT, $1, $3); }
 | whereexpr TDIVIDE whereexpr
-    { $$ = new ParenOpExpr(OP_DIV, $1, $3); }
+    { $$ = new CallExpr(OP_DIV, $1, $3); }
 | whereexpr TMOD whereexpr
-    { $$ = new ParenOpExpr(OP_MOD, $1, $3); }
+    { $$ = new CallExpr(OP_MOD, $1, $3); }
 | whereexpr TEQUAL whereexpr
-    { $$ = new ParenOpExpr(OP_EQUAL, $1, $3); }
+    { $$ = new CallExpr(OP_EQUAL, $1, $3); }
 | whereexpr TNOTEQUAL whereexpr
-    { $$ = new ParenOpExpr(OP_NEQUAL, $1, $3); }
+    { $$ = new CallExpr(OP_NEQUAL, $1, $3); }
 | whereexpr TLESSEQUAL whereexpr
-    { $$ = new ParenOpExpr(OP_LEQUAL, $1, $3); }
+    { $$ = new CallExpr(OP_LEQUAL, $1, $3); }
 | whereexpr TGREATEREQUAL whereexpr
-    { $$ = new ParenOpExpr(OP_GEQUAL, $1, $3); }
+    { $$ = new CallExpr(OP_GEQUAL, $1, $3); }
 | whereexpr TLESS whereexpr
-    { $$ = new ParenOpExpr(OP_LTHAN, $1, $3); }
+    { $$ = new CallExpr(OP_LTHAN, $1, $3); }
 | whereexpr TGREATER whereexpr
-    { $$ = new ParenOpExpr(OP_GTHAN, $1, $3); }
+    { $$ = new CallExpr(OP_GTHAN, $1, $3); }
 | whereexpr TBAND whereexpr
-    { $$ = new ParenOpExpr(OP_BITAND, $1, $3); }
+    { $$ = new CallExpr(OP_BITAND, $1, $3); }
 | whereexpr TBOR whereexpr
-    { $$ = new ParenOpExpr(OP_BITOR, $1, $3); }
+    { $$ = new CallExpr(OP_BITOR, $1, $3); }
 | whereexpr TBXOR whereexpr
-    { $$ = new ParenOpExpr(OP_BITXOR, $1, $3); }
+    { $$ = new CallExpr(OP_BITXOR, $1, $3); }
 | whereexpr TCOMMA whereexpr
-    { $$ = new ParenOpExpr(OP_LOGAND, $1, $3); }
+    { $$ = new CallExpr(OP_LOGAND, $1, $3); }
 | whereexpr TOR whereexpr
-    { $$ = new ParenOpExpr(OP_LOGOR, $1, $3); }
+    { $$ = new CallExpr(OP_LOGOR, $1, $3); }
 | whereexpr TEXP whereexpr
-    { $$ = new ParenOpExpr(OP_EXP, $1, $3); }
+    { $$ = new CallExpr(OP_EXP, $1, $3); }
 | whereexpr TSEQCAT whereexpr
-    { $$ = new ParenOpExpr(OP_SEQCAT, $1, $3); }
+    { $$ = new CallExpr(OP_SEQCAT, $1, $3); }
 | whereexpr TBY whereexpr
-    { $$ = new ParenOpExpr(OP_BY, $1, $3); }
+    { $$ = new CallExpr(OP_BY, $1, $3); }
 | whereexpr TCOLON whereexpr
-    { $$ = new ParenOpExpr(OP_SUBTYPE, $1, $3); }
+    { $$ = new CallExpr(OP_SUBTYPE, $1, $3); }
 | whereexpr TNOTCOLON whereexpr
-    { $$ = new ParenOpExpr(OP_NOTSUBTYPE, $1, $3); }
+    { $$ = new CallExpr(OP_NOTSUBTYPE, $1, $3); }
 | class_record_union pragma_ls opt_identifier TLCBR decl_ls TRCBR
     { $$ = NULL; }
 ;
@@ -1048,7 +1048,7 @@ type:
     }
 | non_tuple_lvalue TOF variable_expr
     {
-      $$ = new ParenOpExpr($1, new AList<Expr>(new NamedExpr("elt_type", $3)));
+      $$ = new CallExpr($1, new AList<Expr>(new NamedExpr("elt_type", $3)));
     }
 | tuple_multiplier TSTAR variable_expr
     {
@@ -1056,7 +1056,7 @@ type:
       argList->insertAtTail($3);
       argList->insertAtTail($1);
       Expr* baseExpr = new Variable(new UnresolvedSymbol("_htuple"));
-      $$ = new ParenOpExpr(baseExpr, argList);
+      $$ = new CallExpr(baseExpr, argList);
     }
 ;
 
@@ -1108,7 +1108,7 @@ assign_op_tag:
 
 assign_expr:
   lvalue assign_op_tag expr
-    { $$ = new ParenOpExpr($2, $1, $3); }
+    { $$ = new CallExpr($2, $1, $3); }
 ;
 
 
@@ -1149,7 +1149,7 @@ tuple_paren_expr:
 
 parenop_expr:
   non_tuple_lvalue TLP expr_ls TRP
-    { $$ = new ParenOpExpr($1, $3); }
+    { $$ = new CallExpr($1, $3); }
 ;
 
 
@@ -1182,7 +1182,7 @@ seq_expr:
   TSEQBEGIN expr_ls TSEQEND
     {
       Expr* seqLiteral = 
-        new ParenOpExpr(
+        new CallExpr(
           new Variable(
             new UnresolvedSymbol("seq")),
           new AList<Expr>(
@@ -1190,7 +1190,7 @@ seq_expr:
       for_alist(Expr, element, $2) {
         element->remove();
         seqLiteral =
-          new ParenOpExpr(
+          new CallExpr(
             new MemberAccess(
               seqLiteral,
               new UnresolvedSymbol("_append_in_place")),
@@ -1230,7 +1230,7 @@ expr:
       new Variable(new UnresolvedSymbol("_tostring"));
     AList<Expr>* args = new AList<Expr>($1);
     args->insertAtTail(new StringLiteral($3));
-    $$ = new ParenOpExpr(_tostring, args);
+    $$ = new CallExpr(_tostring, args);
   }
 | range %prec TDOTDOT
 | if_expr
@@ -1238,51 +1238,51 @@ expr:
 | forallExpr expr %prec TRSBR
     { $$ = Symboltable::finishForallExpr($1, $2); }
 | TPLUS expr %prec TUPLUS
-    { $$ = new ParenOpExpr(OP_UNPLUS, $2); }
+    { $$ = new CallExpr(OP_UNPLUS, $2); }
 | TMINUS expr %prec TUMINUS
-    { $$ = new ParenOpExpr(OP_UNMINUS, $2); }
+    { $$ = new CallExpr(OP_UNMINUS, $2); }
 | TNOT expr
-    { $$ = new ParenOpExpr(OP_LOGNOT, $2); }
+    { $$ = new CallExpr(OP_LOGNOT, $2); }
 | TBNOT expr
-    { $$ = new ParenOpExpr(OP_BITNOT, $2); }
+    { $$ = new CallExpr(OP_BITNOT, $2); }
 | expr TPLUS expr
-    { $$ = new ParenOpExpr(OP_PLUS, $1, $3); }
+    { $$ = new CallExpr(OP_PLUS, $1, $3); }
 | expr TMINUS expr
-    { $$ = new ParenOpExpr(OP_MINUS, $1, $3); }
+    { $$ = new CallExpr(OP_MINUS, $1, $3); }
 | expr TSTAR expr
-    { $$ = new ParenOpExpr(OP_MULT, $1, $3); }
+    { $$ = new CallExpr(OP_MULT, $1, $3); }
 | expr TDIVIDE expr
-    { $$ = new ParenOpExpr(OP_DIV, $1, $3); }
+    { $$ = new CallExpr(OP_DIV, $1, $3); }
 | expr TMOD expr
-    { $$ = new ParenOpExpr(OP_MOD, $1, $3); }
+    { $$ = new CallExpr(OP_MOD, $1, $3); }
 | expr TEQUAL expr
-    { $$ = new ParenOpExpr(OP_EQUAL, $1, $3); }
+    { $$ = new CallExpr(OP_EQUAL, $1, $3); }
 | expr TNOTEQUAL expr
-    { $$ = new ParenOpExpr(OP_NEQUAL, $1, $3); }
+    { $$ = new CallExpr(OP_NEQUAL, $1, $3); }
 | expr TLESSEQUAL expr
-    { $$ = new ParenOpExpr(OP_LEQUAL, $1, $3); }
+    { $$ = new CallExpr(OP_LEQUAL, $1, $3); }
 | expr TGREATEREQUAL expr
-    { $$ = new ParenOpExpr(OP_GEQUAL, $1, $3); }
+    { $$ = new CallExpr(OP_GEQUAL, $1, $3); }
 | expr TLESS expr
-    { $$ = new ParenOpExpr(OP_LTHAN, $1, $3); }
+    { $$ = new CallExpr(OP_LTHAN, $1, $3); }
 | expr TGREATER expr
-    { $$ = new ParenOpExpr(OP_GTHAN, $1, $3); }
+    { $$ = new CallExpr(OP_GTHAN, $1, $3); }
 | expr TBAND expr
-    { $$ = new ParenOpExpr(OP_BITAND, $1, $3); }
+    { $$ = new CallExpr(OP_BITAND, $1, $3); }
 | expr TBOR expr
-    { $$ = new ParenOpExpr(OP_BITOR, $1, $3); }
+    { $$ = new CallExpr(OP_BITOR, $1, $3); }
 | expr TBXOR expr
-    { $$ = new ParenOpExpr(OP_BITXOR, $1, $3); }
+    { $$ = new CallExpr(OP_BITXOR, $1, $3); }
 | expr TAND expr
-    { $$ = new ParenOpExpr(OP_LOGAND, $1, $3); }
+    { $$ = new CallExpr(OP_LOGAND, $1, $3); }
 | expr TOR expr
-    { $$ = new ParenOpExpr(OP_LOGOR, $1, $3); }
+    { $$ = new CallExpr(OP_LOGOR, $1, $3); }
 | expr TEXP expr
-    { $$ = new ParenOpExpr(OP_EXP, $1, $3); }
+    { $$ = new CallExpr(OP_EXP, $1, $3); }
 | expr TSEQCAT expr
-    { $$ = new ParenOpExpr(OP_SEQCAT, $1, $3); }
+    { $$ = new CallExpr(OP_SEQCAT, $1, $3); }
 | expr TBY expr
-    { $$ = new ParenOpExpr(OP_BY, $1, $3); }
+    { $$ = new CallExpr(OP_BY, $1, $3); }
 ;
 
 reduction:
@@ -1301,7 +1301,7 @@ range:
       argList->insertAtTail($3);
       argList->insertAtTail(new IntLiteral(1));
       Expr* baseExpr = new Variable(new UnresolvedSymbol("_aseq"));
-      $$ = new ParenOpExpr(baseExpr, argList);
+      $$ = new CallExpr(baseExpr, argList);
     }
 ;
 
@@ -1319,7 +1319,7 @@ literal:
 | COMPLEXLITERAL
     {
       yytext[strlen(yytext)-1] = '\0';
-      $$ = new ParenOpExpr(
+      $$ = new CallExpr(
              new Variable(
                new UnresolvedSymbol("complex")),
              new AList<Expr>(

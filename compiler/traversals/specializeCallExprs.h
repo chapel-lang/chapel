@@ -3,7 +3,7 @@
 
 #include "traversal.h"
 
-class SpecializeParenOpExprs : public Traversal {
+class SpecializeCallExprs : public Traversal {
  public:
   void postProcessExpr(Expr* expr);
   void postProcessStmt(Stmt* stmt);

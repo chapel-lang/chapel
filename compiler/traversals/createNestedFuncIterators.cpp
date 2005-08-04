@@ -16,11 +16,11 @@ class InsertNestedFuncInIterator : public Traversal {
 
   void postProcessExpr(Expr* expr) {
     //replace seq yield call in iterator with call to nested function
-    if (ParenOpExpr* fc = dynamic_cast<ParenOpExpr*>(expr)) {
+    if (CallExpr* fc = dynamic_cast<CallExpr*>(expr)) {
       FnSymbol* fn_sym = fc->findFnSymbol();
       if (!strcmp(fn_sym->name, "_yield")) {
         AList<Expr>* new_arg_list = getNewArgList(fc->argList);
-        ParenOpExpr* fn_call = new ParenOpExpr(new Variable(_fn_call_sym), new_arg_list->copy());
+        CallExpr* fn_call = new CallExpr(new Variable(_fn_call_sym), new_arg_list->copy());
         fc->replace(fn_call);
       }
     }
@@ -48,7 +48,7 @@ class InsertNestedFuncInIterator : public Traversal {
 
 
 void CreateNestedFuncIterators::postProcessExpr(Expr* expr) {
-  if (ParenOpExpr* paren_op = dynamic_cast<ParenOpExpr*>(expr)) 
+  if (CallExpr* paren_op = dynamic_cast<CallExpr*>(expr)) 
     if (Variable* variable = dynamic_cast<Variable*>(paren_op->baseExpr)){
       FnSymbol* fn_sym = dynamic_cast<FnSymbol*>(variable->var);
       ForLoopStmt* fls = dynamic_cast<ForLoopStmt*>(paren_op->parentStmt);
@@ -65,7 +65,7 @@ void CreateNestedFuncIterators::postProcessExpr(Expr* expr) {
         AList<DefExpr>* encl_var_formals = addEnclVarFormals(func_it_sym, encl_scope_var_uses, new Map<BaseAST*,BaseAST*>());
         //insert nested function created using the body of the iterator loop
         
-        ParenOpExpr* new_func_call = new ParenOpExpr(new Variable(func_it_sym), paren_op->argList->copy());
+        CallExpr* new_func_call = new CallExpr(new Variable(func_it_sym), paren_op->argList->copy());
         addFuncActuals(new_func_call, encl_scope_var_uses);
         paren_op->parentStmt->insertBefore(new ExprStmt(new_func_call));
         //place body of for loop in a nested function definition
@@ -123,7 +123,7 @@ AList<DefExpr>* CreateNestedFuncIterators::addEnclVarFormals(FnSymbol* fn_sym, V
   }
 }
 
-void CreateNestedFuncIterators::addFuncActuals(ParenOpExpr* paren_op, Vec<Symbol*>* encl_scope_var_uses) {
+void CreateNestedFuncIterators::addFuncActuals(CallExpr* paren_op, Vec<Symbol*>* encl_scope_var_uses) {
   //build iterator function actuals list
   forv_Vec(Symbol, sym, *encl_scope_var_uses) {
     if (sym) 

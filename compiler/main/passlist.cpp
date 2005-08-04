@@ -52,7 +52,7 @@
 #include "../traversals/scopeResolveGotos.h"
 #include "../traversals/scopeResolveSymbols.h"
 #include "../traversals/simpleNestedFunctionMove.h"
-#include "../traversals/specializeParenOpExprs.h"
+#include "../traversals/specializeCallExprs.h"
 #include "../traversals/removeNamedParameters.h"
 #include "../traversals/removeNestedFunctions.h"
 #include "../traversals/resolveModuleUses.h"
@@ -126,7 +126,7 @@ REGISTER(RunAnalysis);
 REGISTER(ScopeResolveGotos);
 REGISTER(ScopeResolveSymbols);
 REGISTER(SimpleNestedFunctionMove);
-REGISTER(SpecializeParenOpExprs);
+REGISTER(SpecializeCallExprs);
 REGISTER(TestGetStuff);
 REGISTER(TransformLetExprs);
 REGISTER(Verify);

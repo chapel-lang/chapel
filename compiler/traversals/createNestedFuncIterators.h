@@ -16,7 +16,7 @@ public :
   Vec<Symbol*>* getEnclosingScopeVarUses(ForLoopStmt* fls);
   AList<DefExpr>* addEnclVarFormals(FnSymbol* fn_sym, Vec<Symbol*>* encl_scope_var_uses,
                                     Map<BaseAST*,BaseAST*>* update_map);
-  void addFuncActuals(ParenOpExpr* paren_op, Vec<Symbol*>* encl_scope_var_uses);
+  void addFuncActuals(CallExpr* paren_op, Vec<Symbol*>* encl_scope_var_uses);
 };
 
 #endif

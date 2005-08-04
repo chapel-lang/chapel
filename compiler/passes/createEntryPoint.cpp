@@ -7,10 +7,10 @@
 #include "symtab.h"
 
 
-static ExprStmt* buildParenOpExprStmt(FnSymbol* fn) {
+static ExprStmt* buildCallExprStmt(FnSymbol* fn) {
   Variable* variable = new Variable(fn);
   variable->lineno = -1;
-  ParenOpExpr* fnCall = new ParenOpExpr(variable);
+  CallExpr* fnCall = new CallExpr(variable);
   fnCall->lineno = -1;
   ExprStmt* exprStmt = new ExprStmt(fnCall);
   exprStmt->lineno = -1;
@@ -61,8 +61,8 @@ void CreateEntryPoint::run(ModuleList* moduleList) {
   // add prelude initialization code to the entry point
   // BLC: This assumes there is some useful init code in the preludes;
   // is there?
-  entryPoint->insertAtTail(buildParenOpExprStmt(prelude->initFn));
-  entryPoint->insertAtTail(buildParenOpExprStmt(commonModule->initFn));
+  entryPoint->insertAtTail(buildCallExprStmt(prelude->initFn));
+  entryPoint->insertAtTail(buildCallExprStmt(commonModule->initFn));
 
   // find main function if it exists; create one if not
   FnSymbol* mainFn = FnSymbol::mainFn;
@@ -91,11 +91,11 @@ void CreateEntryPoint::run(ModuleList* moduleList) {
     }
     mainBody = mainFn->body;
   }
-  mainBody->body->insertAtHead(buildParenOpExprStmt(mainModule->initFn));
-  mainBody->body->insertAtHead(buildParenOpExprStmt(commonModule->initFn));
+  mainBody->body->insertAtHead(buildCallExprStmt(mainModule->initFn));
+  mainBody->body->insertAtHead(buildCallExprStmt(commonModule->initFn));
 
   // add a call to main to the entry point's body
-  ExprStmt* mainCallStmt = buildParenOpExprStmt(mainFn);
+  ExprStmt* mainCallStmt = buildCallExprStmt(mainFn);
   entryPoint->insertAtTail(mainCallStmt);
 
    // create the new entry point module

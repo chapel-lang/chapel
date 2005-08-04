@@ -7,7 +7,7 @@
 void PreAnalysisHacks::postProcessStmt(Stmt* stmt) {
   if (ForLoopStmt* loop = dynamic_cast<ForLoopStmt*>(stmt)) {
     loop->iterators->only()->replace(
-      new ParenOpExpr(
+      new CallExpr(
         new MemberAccess(
           loop->iterators->only()->copy(),
           new UnresolvedSymbol("_forall")),

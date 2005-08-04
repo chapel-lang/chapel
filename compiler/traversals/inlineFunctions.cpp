@@ -10,7 +10,7 @@ void InlineFunctions::postProcessExpr(Expr* expr) {
   if (no_inline)
     return;
   //function call
-  if (ParenOpExpr* fn_call = dynamic_cast<ParenOpExpr*>(expr)) {
+  if (CallExpr* fn_call = dynamic_cast<CallExpr*>(expr)) {
     if (fn_call->isPrimitive() || fn_call->opTag != OP_NONE) {
       return;
     }
@@ -75,7 +75,7 @@ bool InlineFunctions::isTypeVar(ParamSymbol* p_sym) {
   return (p_sym->typeVariable != NULL);
 }
 
-Map<BaseAST*,BaseAST*>* InlineFunctions::createFormalToActualArgMappings(ParenOpExpr* fn_call, AList<DefExpr>* formal_params) {
+Map<BaseAST*,BaseAST*>* InlineFunctions::createFormalToActualArgMappings(CallExpr* fn_call, AList<DefExpr>* formal_params) {
   Expr* curr_arg;
   DefExpr* curr_param;
   AList<Expr>* actual_args = fn_call->argList;
@@ -117,7 +117,7 @@ Map<BaseAST*,BaseAST*>* InlineFunctions::createFormalToActualArgMappings(ParenOp
       //copy temp back to actual arg if formal param out
     if (param_intent_out)
       if (Variable* v = dynamic_cast<Variable*>(curr_arg))
-        fn_call->parentStmt->insertAfter(new ExprStmt(new ParenOpExpr(OP_GETSNORM, new Variable(v->var), new Variable(temp_def->sym))));
+        fn_call->parentStmt->insertAfter(new ExprStmt(new CallExpr(OP_GETSNORM, new Variable(v->var), new Variable(temp_def->sym))));
     
 
     curr_arg = actual_args->next();

@@ -28,7 +28,7 @@ static bool tmpRequired(ParamSymbol* formal, Expr* actual) {
 
 
 void ProcessParameters::postProcessExpr(Expr* expr) {
-  if (ParenOpExpr* fncall = dynamic_cast<ParenOpExpr*>(expr)) {
+  if (CallExpr* fncall = dynamic_cast<CallExpr*>(expr)) {
     if (fncall->opTag != OP_NONE) {
       return;
     }
@@ -97,7 +97,7 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
       if (formal && actual) {
         while (formal) {
           if (dynamic_cast<ParamSymbol*>(formal->sym)->requiresCopyBack() && actual) {
-            Expr* copyBack = new ParenOpExpr(OP_GETSNORM, actual->copy(),
+            Expr* copyBack = new CallExpr(OP_GETSNORM, actual->copy(),
                                              newActual->copy());
             ExprStmt* copyBackStmt = new ExprStmt(copyBack);
             body->insertAtTail(copyBackStmt);

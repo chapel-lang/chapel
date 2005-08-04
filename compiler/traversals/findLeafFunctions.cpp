@@ -11,7 +11,7 @@ void FindLeafFunctions::preProcessExpr(Expr* expr) {
   }
   //leaf functions cannot have function calls 
   else {
-    ParenOpExpr* fn_call = dynamic_cast<ParenOpExpr*>(expr);
+    CallExpr* fn_call = dynamic_cast<CallExpr*>(expr);
     if (fn_call)
       _inside_leaf_func = false;
   }

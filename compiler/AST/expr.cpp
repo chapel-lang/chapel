@@ -208,12 +208,12 @@ static EXPR_RW expr_read_written(Expr* expr) {
     if (dynamic_cast<Tuple*>(parent)) {
       return expr_read_written(parent);
     }
-    if (ParenOpExpr* parenOpExpr = dynamic_cast<ParenOpExpr*>(parent)) {
+    if (CallExpr* parenOpExpr = dynamic_cast<CallExpr*>(parent)) {
       if (parenOpExpr->opTag >= OP_GETSNORM && parenOpExpr->get(1) == expr) {
         return expr_w;
       }
     }
-    if (ParenOpExpr* fn_call = dynamic_cast<ParenOpExpr*>(parent)) {
+    if (CallExpr* fn_call = dynamic_cast<CallExpr*>(parent)) {
       if (fn_call->opTag == OP_NONE) {
         FnSymbol* fn = fn_call->findFnSymbol();
         DefExpr* formal = fn->formals->first();
@@ -715,16 +715,16 @@ void MemberAccess::codegen(FILE* outfile) {
     }
 }
 
-ParenOpExpr::ParenOpExpr(Expr* initBase, AList<Expr>* initArgs) :
-  Expr(EXPR_PARENOP),
+CallExpr::CallExpr(Expr* initBase, AList<Expr>* initArgs) :
+  Expr(EXPR_CALL),
   baseExpr(initBase),
   argList(initArgs),
   opTag(OP_NONE)
 {}
 
 
-ParenOpExpr::ParenOpExpr(OpTag initOpTag, Expr* arg1, Expr* arg2) :
-  Expr(EXPR_PARENOP),
+CallExpr::CallExpr(OpTag initOpTag, Expr* arg1, Expr* arg2) :
+  Expr(EXPR_CALL),
   baseExpr(new Variable(new UnresolvedSymbol(copystring(opChplString[initOpTag])))),
   opTag(initOpTag)
 {
@@ -732,39 +732,39 @@ ParenOpExpr::ParenOpExpr(OpTag initOpTag, Expr* arg1, Expr* arg2) :
 }
 
 
-void ParenOpExpr::verify() {
-  if (astType != EXPR_PARENOP) {
-    INT_FATAL(this, "Bad ParenOpExpr::astType");
+void CallExpr::verify() {
+  if (astType != EXPR_CALL) {
+    INT_FATAL(this, "Bad CallExpr::astType");
   }
 }
 
 
-ParenOpExpr*
-ParenOpExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  ParenOpExpr* _this = new ParenOpExpr(COPY_INTERNAL(baseExpr), COPY_INTERNAL(argList));
+CallExpr*
+CallExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  CallExpr* _this = new CallExpr(COPY_INTERNAL(baseExpr), COPY_INTERNAL(argList));
   _this->opTag = opTag;
   return _this;
 }
 
 
-void ParenOpExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+void CallExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == baseExpr) {
     baseExpr = dynamic_cast<Expr*>(new_ast);
   } else if (old_ast == argList) {
     argList = dynamic_cast<AList<Expr>*>(new_ast);
   } else {
-    INT_FATAL(this, "Unexpected case in ParenOpExpr::replaceChild");
+    INT_FATAL(this, "Unexpected case in CallExpr::replaceChild");
   }
 }
 
 
-void ParenOpExpr::traverseExpr(Traversal* traversal) {
+void CallExpr::traverseExpr(Traversal* traversal) {
   TRAVERSE(baseExpr, traversal, false);
   argList->traverse(traversal, false);
 }
 
 
-void ParenOpExpr::print(FILE* outfile) {
+void CallExpr::print(FILE* outfile) {
   baseExpr->print(outfile);
   fprintf(outfile, "(");
   if (argList) {
@@ -774,24 +774,24 @@ void ParenOpExpr::print(FILE* outfile) {
 }
 
 
-Expr* ParenOpExpr::get(int index) {
+Expr* CallExpr::get(int index) {
   return argList->get(index);
 }
 
 
-FnSymbol* ParenOpExpr::findFnSymbol(void) {
+FnSymbol* CallExpr::findFnSymbol(void) {
   FnSymbol* fn = NULL;
   if (Variable* variable = dynamic_cast<Variable*>(baseExpr)) {
     fn = dynamic_cast<FnSymbol*>(variable->var);
   }
   if (!fn) {
-    INT_FATAL(this, "Cannot find FnSymbol in ParenOpExpr");
+    INT_FATAL(this, "Cannot find FnSymbol in CallExpr");
   }
   return fn;
 }
 
 
-Type* ParenOpExpr::typeInfo(void) {
+Type* CallExpr::typeInfo(void) {
   if (analyzeAST && !RunAnalysis::runCount) {
     return dtUnknown;
   }
@@ -815,7 +815,7 @@ Type* ParenOpExpr::typeInfo(void) {
 }
 
 
-void ParenOpExpr::codegen(FILE* outfile) {
+void CallExpr::codegen(FILE* outfile) {
 
   if (opTag != OP_NONE) {
     if (OP_ISASSIGNOP(opTag)) {
@@ -824,7 +824,7 @@ void ParenOpExpr::codegen(FILE* outfile) {
       Type* leftType = get(1)->typeInfo();
       Type* rightType = get(2)->typeInfo();
       if (leftType == dtString) {
-        if (ParenOpExpr* fn_call = dynamic_cast<ParenOpExpr*>(get(2))) {
+        if (CallExpr* fn_call = dynamic_cast<CallExpr*>(get(2))) {
           if (Variable* fn_var = dynamic_cast<Variable*>(fn_call->baseExpr)) {
             if (fn_var->var == dtString->defaultConstructor) {
               string_init = true;
@@ -870,7 +870,7 @@ void ParenOpExpr::codegen(FILE* outfile) {
       fprintf(outfile, "%s", opCString[opTag]);
       get(1)->codegen(outfile);
     } else {
-      INT_FATAL(this, "operator not handled in ParenOpExpr::codegen");
+      INT_FATAL(this, "operator not handled in CallExpr::codegen");
     }
     return;
   }
@@ -1024,7 +1024,7 @@ void ParenOpExpr::codegen(FILE* outfile) {
 }
 
 
-bool ParenOpExpr::isPrimitive(void) {
+bool CallExpr::isPrimitive(void) {
   if (Variable* variable = dynamic_cast<Variable*>(baseExpr)) {
     if (!strcmp(variable->var->name, "__primitive")) {
       return true;

@@ -55,7 +55,7 @@ void RemoveNestedFunctions::postProcessStmt(Stmt* stmt) {
 }
 
 void RemoveNestedFunctions::postProcessExpr(Expr* expr) {
-  if (ParenOpExpr* paren_op = dynamic_cast<ParenOpExpr*>(expr)) {
+  if (CallExpr* paren_op = dynamic_cast<CallExpr*>(expr)) {
     if (Variable* v = dynamic_cast<Variable*>(paren_op->baseExpr))
       if (FnSymbol* fn_sym = dynamic_cast<FnSymbol*>(v->var)) {
         Vec<Symbol*>* encl_func_var_uses = _nested_func_args_map->get(fn_sym);
@@ -100,7 +100,7 @@ void RemoveNestedFunctions::addNestedFuncFormals(Expr* expr, Vec<Symbol*>* encl_
   } 
 }
 
-void RemoveNestedFunctions::addNestedFuncActuals(ParenOpExpr* paren_op, Vec<Symbol*>* encl_var_uses, FnSymbol* old_func_sym) {
+void RemoveNestedFunctions::addNestedFuncActuals(CallExpr* paren_op, Vec<Symbol*>* encl_var_uses, FnSymbol* old_func_sym) {
   //build nested function actuals list
   forv_Vec(Symbol, sym, *encl_var_uses) {
     if (sym) 

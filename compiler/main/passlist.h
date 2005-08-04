@@ -44,7 +44,7 @@ PassInfo passlist[] = {
 
   // passes to run analysis
   RUN(Instantiate, ""),
-  RUN(SpecializeParenOpExprs, ""),
+  RUN(SpecializeCallExprs, ""),
   RUN(PreAnalysisHacks, ""),
   RUN(PreAnalysisCleanup, ""),
   RUN(RunAnalysis, ""),

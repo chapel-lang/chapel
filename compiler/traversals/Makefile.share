@@ -39,7 +39,7 @@ TRAVERSALS_SRCS = \
         scopeResolveGotos.cpp \
 	scopeResolveSymbols.cpp \
         simpleNestedFunctionMove.cpp \
-	specializeParenOpExprs.cpp \
+	specializeCallExprs.cpp \
 	testGetStuff.cpp \
 	transformLetExprs.cpp \
 	traversal.cpp \

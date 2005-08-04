@@ -241,16 +241,16 @@ class Tuple : public Expr {
 };
 
 
-class ParenOpExpr : public Expr {
+class CallExpr : public Expr {
  public:
   Expr* baseExpr;
   AList<Expr>* argList;
   OpTag opTag;
 
-  ParenOpExpr(Expr* initBase, AList<Expr>* initArgs = new AList<Expr>);
-  ParenOpExpr(OpTag initOpTag, Expr* arg1, Expr* arg2 = NULL);
+  CallExpr(Expr* initBase, AList<Expr>* initArgs = new AList<Expr>);
+  CallExpr(OpTag initOpTag, Expr* arg1, Expr* arg2 = NULL);
   virtual void verify(void); 
-  COPY_DEF(ParenOpExpr);
+  COPY_DEF(CallExpr);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
@@ -258,7 +258,7 @@ class ParenOpExpr : public Expr {
   virtual void print(FILE* outfile);
   virtual void codegen(FILE* outfile);
 
-  Expr* ParenOpExpr::get(int index);
+  Expr* CallExpr::get(int index);
   FnSymbol* findFnSymbol(void);
   Type* typeInfo(void);
   bool isPrimitive(void);

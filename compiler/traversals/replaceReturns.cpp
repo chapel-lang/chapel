@@ -9,7 +9,7 @@ void ReplaceReturns::postProcessStmt(Stmt* stmt) {
   if (ReturnStmt* ret_stmt = dynamic_cast<ReturnStmt*>(stmt)) {
     //replace return with an assignment to temporary variable
     ret_stmt->replace(new ExprStmt(
-                        new ParenOpExpr(OP_GETSNORM,
+                        new CallExpr(OP_GETSNORM,
                                         new Variable(_sym),
                                         ret_stmt->expr)));
   }

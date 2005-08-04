@@ -85,9 +85,9 @@ static void build_constructor(StructuralType* structType) {
   AList<Expr>* alloc_args = new AList<Expr>( new Variable(structType->symbol));
   alloc_args->insertAtTail(new StringLiteral(description));
   Symbol* alloc_sym = Symboltable::lookupInternal("_chpl_alloc");
-  Expr* alloc_rhs = new ParenOpExpr(new Variable(alloc_sym), alloc_args);
+  Expr* alloc_rhs = new CallExpr(new Variable(alloc_sym), alloc_args);
   Expr* alloc_lhs = new Variable(fn->_this);
-  Expr* alloc_expr = new ParenOpExpr(OP_GETSNORM, alloc_lhs, alloc_rhs);
+  Expr* alloc_expr = new CallExpr(OP_GETSNORM, alloc_lhs, alloc_rhs);
   Stmt* alloc_stmt = new ExprStmt(alloc_expr);
   stmts->insertAtTail(alloc_stmt);
   structType->buildConstructorBody(stmts, fn->_this, args);
@@ -154,7 +154,7 @@ static void build_setters_and_getters(StructuralType* structType) {
     Symboltable::continueFnDef(setter_fn, args, dtVoid);
     Expr* setter_lhs = new MemberAccess(new Variable(setter_this), tmp);
     Expr* setter_rhs = new Variable(setter_arg);
-    Expr* setter_assignment = new ParenOpExpr(OP_GETSNORM, setter_lhs, setter_rhs);
+    Expr* setter_assignment = new CallExpr(OP_GETSNORM, setter_lhs, setter_rhs);
     BlockStmt* setter_stmt = new BlockStmt(new AList<Stmt>(new ExprStmt(setter_assignment)));
     DefExpr* setter_def_expr = new DefExpr(
       Symboltable::finishFnDef(setter_fn, setter_stmt));
@@ -190,8 +190,8 @@ static void build_record_equality_function(StructuralType* structType) {
     Expr* left = new MemberAccess(new Variable(arg1), tmp);
     Expr* right = new MemberAccess(new Variable(arg2), tmp);
     cond = (cond)
-      ? new ParenOpExpr(OP_LOGAND, cond, new ParenOpExpr(OP_EQUAL, left, right))
-      : new ParenOpExpr(OP_EQUAL, left, right);
+      ? new CallExpr(OP_LOGAND, cond, new CallExpr(OP_EQUAL, left, right))
+      : new CallExpr(OP_EQUAL, left, right);
   }
   BlockStmt* retStmt = new BlockStmt(new AList<Stmt>(new ReturnStmt(cond)));
   DefExpr* def = new DefExpr(Symboltable::finishFnDef(fn, retStmt));
@@ -216,8 +216,8 @@ static void build_record_inequality_function(StructuralType* structType) {
     Expr* left = new MemberAccess(new Variable(arg1), tmp);
     Expr* right = new MemberAccess(new Variable(arg2), tmp);
     cond = (cond)
-      ? new ParenOpExpr(OP_LOGOR, cond, new ParenOpExpr(OP_NEQUAL, left, right))
-      : new ParenOpExpr(OP_NEQUAL, left, right);
+      ? new CallExpr(OP_LOGOR, cond, new CallExpr(OP_NEQUAL, left, right))
+      : new CallExpr(OP_NEQUAL, left, right);
   }
   BlockStmt* retStmt = new BlockStmt(new AList<Stmt>(new ReturnStmt(cond)));
   DefExpr* def = new DefExpr(Symboltable::finishFnDef(fn, retStmt));
@@ -255,7 +255,7 @@ static void build_record_assignment_function(StructuralType* structType) {
   forv_Vec(Symbol, tmp, structType->fields) {
     Expr* left = new MemberAccess(new Variable(_arg1), tmp);
     Expr* right = new MemberAccess(new Variable(arg2), tmp);
-    Expr* assign_expr = new ParenOpExpr(OP_GETSNORM, left, right);
+    Expr* assign_expr = new CallExpr(OP_GETSNORM, left, right);
     body->insertAtTail(new ExprStmt(assign_expr));
   }
   

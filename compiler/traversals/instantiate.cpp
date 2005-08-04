@@ -11,7 +11,7 @@ Instantiate::postProcessExpr(Expr* expr) {
   if (!instantiate) {
     return;
   }
-  if (ParenOpExpr* parenOpExpr = dynamic_cast<ParenOpExpr*>(expr)) {
+  if (CallExpr* parenOpExpr = dynamic_cast<CallExpr*>(expr)) {
     if (Variable* variable = dynamic_cast<Variable*>(parenOpExpr->baseExpr)) {
       if (TypeSymbol* typeSymbol = dynamic_cast<TypeSymbol*>(variable->var)) {
         if (FnSymbol* constructor = dynamic_cast<FnSymbol*>(typeSymbol->definition->defaultConstructor)) {
@@ -49,7 +49,7 @@ Instantiate::postProcessExpr(Expr* expr) {
           FnSymbol* new_constructor = constructor->instantiate_generic(&map, &substitutions);
           if (DefExpr* defExpr = dynamic_cast<DefExpr*>(parenOpExpr->parentExpr)) {
             if (defExpr->exprType == parenOpExpr) {
-              defExpr->exprType = NULL; //->replace(new ParenOpExpr(new Variable(new_constructor), new AList<Expr>()));
+              defExpr->exprType = NULL; //->replace(new CallExpr(new Variable(new_constructor), new AList<Expr>()));
               defExpr->sym->type = new_constructor->retType;
             }
           }

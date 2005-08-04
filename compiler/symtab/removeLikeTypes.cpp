@@ -7,7 +7,7 @@ void RemoveLikeTypes::processSymbol(Symbol* sym) {
     return;
   }
   Expr* expr = sym->defPoint->exprType;
-  if (ParenOpExpr* parenOpExpr = dynamic_cast<ParenOpExpr*>(expr)) {
+  if (CallExpr* parenOpExpr = dynamic_cast<CallExpr*>(expr)) {
     if (Variable* variable = dynamic_cast<Variable*>(parenOpExpr->baseExpr)) {
       if (!strcmp("typeof", variable->var->name)) {
         sym->type = parenOpExpr->argList->only()->typeInfo();

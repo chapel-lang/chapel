@@ -1,4 +1,4 @@
-#include "specializeParenOpExprs.h"
+#include "specializeCallExprs.h"
 #include "expr.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -6,10 +6,10 @@
 
 
 static void
-decomposeStmtFunction(ParenOpExpr* parenOpExpr, char* newFunctionName) {
+decomposeStmtFunction(CallExpr* parenOpExpr, char* newFunctionName) {
   for (Expr* arg = parenOpExpr->argList->first(); arg; arg = parenOpExpr->argList->next()) {
     Variable* function = new Variable(new UnresolvedSymbol(newFunctionName));
-    Stmt* replacement = new ExprStmt(new ParenOpExpr(function, new AList<Expr>(arg->copy())));
+    Stmt* replacement = new ExprStmt(new CallExpr(function, new AList<Expr>(arg->copy())));
     parenOpExpr->parentStmt->insertBefore(replacement);
   }
 }
@@ -19,14 +19,14 @@ static ExprStmt* genExit(void) {
   Expr* rtexit = new Variable(new UnresolvedSymbol("exit"));
   IntLiteral* exitZero = new IntLiteral(0);
   AList<Expr>* status = new AList<Expr>(exitZero);
-  Expr* callRtexit = new ParenOpExpr(rtexit, status);
+  Expr* callRtexit = new CallExpr(rtexit, status);
   return new ExprStmt(callRtexit);
 }
 
 
 static ExprStmt* genWriteln(void) {
   Expr* writeln = new Variable(new UnresolvedSymbol("writeln"));
-  Expr* callWriteln = new ParenOpExpr(writeln);
+  Expr* callWriteln = new CallExpr(writeln);
   return new ExprStmt(callWriteln);
 }
 
@@ -34,7 +34,7 @@ static ExprStmt* genWriteln(void) {
 static ExprStmt* genWrite(Literal* expression) {
   Expr* write = new Variable(new UnresolvedSymbol("write"));
   AList<Expr>* msg = new AList<Expr>(expression);
-  Expr* writeMsg = new ParenOpExpr(write, msg);
+  Expr* writeMsg = new CallExpr(write, msg);
   return new ExprStmt(writeMsg);
 }
 
@@ -51,9 +51,9 @@ static ExprStmt* genStringWriteExpr(char* newString) {
 }
 
 
-void SpecializeParenOpExprs::postProcessStmt(Stmt* stmt) {
+void SpecializeCallExprs::postProcessStmt(Stmt* stmt) {
   if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {
-    if (ParenOpExpr* parenOpExpr = dynamic_cast<ParenOpExpr*>(exprStmt->expr)) {
+    if (CallExpr* parenOpExpr = dynamic_cast<CallExpr*>(exprStmt->expr)) {
       if (Variable* baseVar = dynamic_cast<Variable*>(parenOpExpr->baseExpr)) {
         if (strcmp(baseVar->var->name, "assert") == 0) {
           BlockStmt* thenStmt = Symboltable::startCompoundStmt();
@@ -78,7 +78,7 @@ void SpecializeParenOpExprs::postProcessStmt(Stmt* stmt) {
                       "expression; you've given it %d.", length);
           }
           Expr* test = parenOpExpr->argList->only();
-          Expr* notTest = new ParenOpExpr(OP_LOGNOT, test->copy());
+          Expr* notTest = new CallExpr(OP_LOGNOT, test->copy());
           Stmt* assertIfStmt = new CondStmt(notTest, thenStmt);
           parenOpExpr->parentStmt->insertBefore(assertIfStmt);
           parenOpExpr->parentStmt->remove();          
@@ -105,20 +105,20 @@ void SpecializeParenOpExprs::postProcessStmt(Stmt* stmt) {
 }
 
 
-void SpecializeParenOpExprs::postProcessExpr(Expr* expr) {
+void SpecializeCallExprs::postProcessExpr(Expr* expr) {
   Expr* paren_replacement = NULL;
-  if (ParenOpExpr* paren = dynamic_cast<ParenOpExpr*>(expr)) {
+  if (CallExpr* paren = dynamic_cast<CallExpr*>(expr)) {
     if (Variable* baseVar = dynamic_cast<Variable*>(paren->baseExpr)) {
       if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(baseVar->var)) {
         if (StructuralType* ctype = dynamic_cast<StructuralType*>(ts->definition)) {
           if (ctype->defaultConstructor) {
-            paren_replacement = new ParenOpExpr(new Variable(new UnresolvedSymbol(ctype->defaultConstructor->name)), paren->argList);
+            paren_replacement = new CallExpr(new Variable(new UnresolvedSymbol(ctype->defaultConstructor->name)), paren->argList);
           } else {
             INT_FATAL(expr, "structural type has no default constructor");
           }
         }
       } else if (dynamic_cast<FnSymbol*>(baseVar->var)) {
-        paren_replacement = new ParenOpExpr(baseVar, paren->argList);
+        paren_replacement = new CallExpr(baseVar, paren->argList);
       }
     }
   }

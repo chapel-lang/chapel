@@ -6,7 +6,7 @@
 
 
 void RemoveTypeVariableActuals::preProcessExpr(Expr* expr) {
-  if (ParenOpExpr* call = dynamic_cast<ParenOpExpr*>(expr)) {
+  if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
     if (Variable* variable = dynamic_cast<Variable*>(call->baseExpr)) {
       if (variable->var->defPoint && 
           variable->var->defPoint->parentStmt->hasPragma("keep types")) {

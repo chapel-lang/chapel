@@ -14,13 +14,13 @@ static Stmt* basic_default_init_stmt(Stmt* stmt, VarSymbol* var, Type* type) {
   } else if (type->defaultVal) {
     Expr* lhs = new Variable(var);
     Expr* rhs = type->defaultVal->copy();
-    Expr* init_expr = new ParenOpExpr(OP_GETSNORM, lhs, rhs);
+    Expr* init_expr = new CallExpr(OP_GETSNORM, lhs, rhs);
     return new ExprStmt(init_expr);
   } else if (type->defaultConstructor) {
     Expr* lhs = new Variable(var);
     Expr* constructor_variable = new Variable(type->defaultConstructor);
-    Expr* rhs = new ParenOpExpr(constructor_variable);
-    Expr* init_expr = new ParenOpExpr(OP_GETSNORM, lhs, rhs);
+    Expr* rhs = new CallExpr(constructor_variable);
+    Expr* init_expr = new CallExpr(OP_GETSNORM, lhs, rhs);
     return new ExprStmt(init_expr);
   } else {
     INT_FATAL(var, "Failed to insert default initialization");
@@ -43,8 +43,8 @@ static void insert_config_init(Stmt* stmt, VarSymbol* var, Type* type) {
   args->insertAtTail(new StringLiteral(copystring(var->name)));
   args->insertAtTail(new StringLiteral(var->parentScope->symContext->name));
   Symbol* init_config = Symboltable::lookupInternal("_INIT_CONFIG");
-  ParenOpExpr* call = new ParenOpExpr(new Variable(init_config), args);
-  Expr* assign = new ParenOpExpr(OP_GETSNORM, new Variable(var), init_expr->copy());
+  CallExpr* call = new CallExpr(new Variable(init_config), args);
+  Expr* assign = new CallExpr(OP_GETSNORM, new Variable(var), init_expr->copy());
   ExprStmt* assign_stmt = new ExprStmt(assign);
   CondStmt* cond_stmt = new CondStmt(call, new BlockStmt(new AList<Stmt>(assign_stmt)));
   stmt->insertBefore(cond_stmt);
@@ -63,7 +63,7 @@ static void insert_basic_init(Stmt* stmt, VarSymbol* var, Type* type) {
   if (var->defPoint->exprType) {
     Expr* lhs = new Variable(var);
     Expr* rhs = var->defPoint->exprType->copy();
-    Expr* init_expr = new ParenOpExpr(OP_GETSNORM, lhs, rhs);
+    Expr* init_expr = new CallExpr(OP_GETSNORM, lhs, rhs);
     stmt->insertBefore(new ExprStmt(init_expr));
   }
 
@@ -75,14 +75,14 @@ static void insert_basic_init(Stmt* stmt, VarSymbol* var, Type* type) {
         INT_FATAL(var->defPoint, "Unable to resolve initialization assignment");
       }
 #ifdef OVERLOADED_ASSIGNMENT_FIXED
-      Expr *init_expr = new ParenOpExpr(new Variable(var->defPoint->initAssign.v[0]),
+      Expr *init_expr = new CallExpr(new Variable(var->defPoint->initAssign.v[0]),
                                         new AList<Expr>(lhs, rhs));
 #else
-      Expr *init_expr = new ParenOpExpr(OP_GETSNORM, lhs, rhs);
+      Expr *init_expr = new CallExpr(OP_GETSNORM, lhs, rhs);
 #endif
       stmt->insertBefore(new ExprStmt(init_expr));
     } else {
-      Expr* init_expr = new ParenOpExpr(OP_GETSNORM, lhs, rhs);
+      Expr* init_expr = new CallExpr(OP_GETSNORM, lhs, rhs);
       stmt->insertBefore(new ExprStmt(init_expr));
     }
   }

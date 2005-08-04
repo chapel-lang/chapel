@@ -10,7 +10,7 @@
 #include "stringutil.h"
 
 
-static AList<Expr>* copy_argument_list(ParenOpExpr* expr) {
+static AList<Expr>* copy_argument_list(CallExpr* expr) {
   AList<Expr>* args = new AList<Expr>();
   MemberAccess* member_access = dynamic_cast<MemberAccess*>(expr->baseExpr);
   if (member_access) {
@@ -21,7 +21,7 @@ static AList<Expr>* copy_argument_list(ParenOpExpr* expr) {
 }
 
 
-static void call_info_noanalysis(ParenOpExpr* expr, Vec<FnSymbol*>& fns) {
+static void call_info_noanalysis(CallExpr* expr, Vec<FnSymbol*>& fns) {
   char* name;
   if (Variable* variable = dynamic_cast<Variable*>(expr->baseExpr)) {
     name = variable->var->name;
@@ -197,8 +197,8 @@ mangle_overloaded_operator_function_names(Expr *expr) {
 static void
 resolve_no_analysis(Expr *expr) {
 
-  if (expr->astType == EXPR_PARENOP) {
-    ParenOpExpr* paren = dynamic_cast<ParenOpExpr*>(expr);
+  if (expr->astType == EXPR_CALL) {
+    CallExpr* paren = dynamic_cast<CallExpr*>(expr);
     Vec<FnSymbol*> fns;
     call_info_noanalysis(paren, fns);
     if (fns.n != 1) {
@@ -209,7 +209,7 @@ resolve_no_analysis(Expr *expr) {
     if (!strcmp("this", fns.e[0]->name)) {
       arguments->insertAtHead(paren->baseExpr->copy());
     }
-    ParenOpExpr* new_expr = new ParenOpExpr(function, arguments);
+    CallExpr* new_expr = new CallExpr(function, arguments);
     new_expr->opTag = paren->opTag;
     expr->replace(new_expr);
     expr = new_expr;
@@ -217,9 +217,9 @@ resolve_no_analysis(Expr *expr) {
 
   if (MemberAccess* member_access = dynamic_cast<MemberAccess*>(expr)) {
     /***
-     *** Resolve methods with arguments at ParenOpExpr
+     *** Resolve methods with arguments at CallExpr
      ***/
-    if (ParenOpExpr* paren_op = dynamic_cast<ParenOpExpr*>(expr->parentExpr)) {
+    if (CallExpr* paren_op = dynamic_cast<CallExpr*>(expr->parentExpr)) {
       if (paren_op->baseExpr == expr) {
         return;
       }
@@ -235,7 +235,7 @@ resolve_no_analysis(Expr *expr) {
         if (dynamic_cast<FnSymbol*>(member_access->member)) {
           Expr* arguments = member_access->base->copy();
           Expr* function = new Variable(member_access->member);
-          ParenOpExpr *new_expr = new ParenOpExpr(function, new AList<Expr>(arguments));
+          CallExpr *new_expr = new CallExpr(function, new AList<Expr>(arguments));
           expr->replace(new_expr);
           expr = new_expr;
         }
@@ -249,7 +249,7 @@ resolve_no_analysis(Expr *expr) {
 
 
 static Expr *
-resolve_binary_operator(ParenOpExpr *op, FnSymbol *resolved = 0) {
+resolve_binary_operator(CallExpr *op, FnSymbol *resolved = 0) {
   Expr *expr = op;
   Vec<FnSymbol*> fns;
   if (resolved)
@@ -268,7 +268,7 @@ resolve_binary_operator(ParenOpExpr *op, FnSymbol *resolved = 0) {
     }
     AList<Expr>* args = new AList<Expr>(op->get(1)->copy());
     args->insertAtTail(op->get(2)->copy());
-    ParenOpExpr *new_expr = new ParenOpExpr(new Variable(fns.e[0]), args);
+    CallExpr *new_expr = new CallExpr(new Variable(fns.e[0]), args);
     expr->replace(new_expr);
     expr = new_expr;
   }
@@ -282,19 +282,19 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
     return;
   }
 
-  // Resolve ParenOpExprs
-  if (ParenOpExpr* paren = dynamic_cast<ParenOpExpr*>(expr)) {
+  // Resolve CallExprs
+  if (CallExpr* paren = dynamic_cast<CallExpr*>(expr)) {
     if (paren->opTag < OP_GETSNORM) {
       if (Variable* variable = dynamic_cast<Variable*>(paren->baseExpr)) {
         if (!strcmp(variable->var->name, "__primitive")) {
           return;
         }
       }
-      ParenOpExpr *assign = dynamic_cast<ParenOpExpr*>(paren->parentExpr);
+      CallExpr *assign = dynamic_cast<CallExpr*>(paren->parentExpr);
       if (!assign || assign->opTag < OP_GETSNORM ||  assign->get(1) != expr) {
         Vec<FnSymbol*> fns;
         call_info(paren, fns);
-        if (fns.n == 0) { // for 0-ary (ParenOpExpr(MemberAccess))
+        if (fns.n == 0) { // for 0-ary (CallExpr(MemberAccess))
           call_info(paren->baseExpr, fns);
         }
         if (fns.n == 0) { // for set function
@@ -332,7 +332,7 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
         if (!strcmp("this", fns.e[0]->name)) {
           arguments->insertAtHead(paren->baseExpr->copy());
         }
-        ParenOpExpr *new_expr = new ParenOpExpr(function, arguments);
+        CallExpr *new_expr = new CallExpr(function, arguments);
         if (fns.e[0]->defPoint->parentStmt->hasPragma("builtin")) {
           new_expr->opTag = paren->opTag;
         }
@@ -343,10 +343,10 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
   }
 
   // Resolve AssignOp to members or setter functions
-  if (ParenOpExpr* aop = dynamic_cast<ParenOpExpr*>(expr)) {
+  if (CallExpr* aop = dynamic_cast<CallExpr*>(expr)) {
     if (aop->opTag >= OP_GETSNORM) {
-      if (typeid(*aop->get(1)) == typeid(ParenOpExpr)) {
-        ParenOpExpr* paren = dynamic_cast<ParenOpExpr*>(aop->get(1));
+      if (typeid(*aop->get(1)) == typeid(CallExpr)) {
+        CallExpr* paren = dynamic_cast<CallExpr*>(aop->get(1));
         Vec<FnSymbol*> fns;
         call_info(aop, fns);
         if (fns.n == 1) {
@@ -356,7 +356,7 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
             arguments->insertAtTail(paren->baseExpr->copy());
           arguments->add(copy_argument_list(paren));
           arguments->insertAtTail(aop->get(2)->copy());
-          ParenOpExpr *new_expr = new ParenOpExpr(function, arguments);
+          CallExpr *new_expr = new CallExpr(function, arguments);
           new_expr->opTag = paren->opTag;
           aop->replace(new_expr);
           expr = new_expr;
@@ -380,15 +380,15 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
               AList<Expr>* op_arguments = new AList<Expr>(member_access->copy());
               op_arguments->insertAtTail(rhs);
               Expr* op_function = new Variable(f_op);
-              rhs = new ParenOpExpr(op_function, op_arguments);
+              rhs = new CallExpr(op_function, op_arguments);
             } else {
-              rhs = resolve_binary_operator(new ParenOpExpr(gets_to_op(aop->opTag), aop->get(1)->copy(), aop->get(2)->copy()), f_op);
+              rhs = resolve_binary_operator(new CallExpr(gets_to_op(aop->opTag), aop->get(1)->copy(), aop->get(2)->copy()), f_op);
             }
           }
           AList<Expr>* assign_arguments = new AList<Expr>(member_access->base->copy());
           assign_arguments->insertAtTail(rhs);
           Expr* assign_function = new Variable(f_assign);
-          ParenOpExpr *new_expr = new ParenOpExpr(assign_function, assign_arguments);
+          CallExpr *new_expr = new CallExpr(assign_function, assign_arguments);
           expr->replace(new_expr);
           if (aop->get(1)->astType == EXPR_MEMBERACCESS) {
             expr = aop->get(1);
@@ -408,16 +408,16 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
   // Resolve MemberAccesses
   if (MemberAccess* member_access = dynamic_cast<MemberAccess*>(expr)) {
     /***
-     *** Resolve methods with arguments at ParenOpExpr
+     *** Resolve methods with arguments at CallExpr
      ***/
-    if (ParenOpExpr* paren_op = dynamic_cast<ParenOpExpr*>(expr->parentExpr)) {
+    if (CallExpr* paren_op = dynamic_cast<CallExpr*>(expr->parentExpr)) {
       if (paren_op->baseExpr == expr) {
         return;
       }
     }
     if (dynamic_cast<VarInitExpr*>(expr->parentExpr))
       return;
-    if (ParenOpExpr* aop = dynamic_cast<ParenOpExpr*>(expr->parentExpr))
+    if (CallExpr* aop = dynamic_cast<CallExpr*>(expr->parentExpr))
       if (aop->opTag >= OP_GETSNORM && aop->get(1) == expr)
         return;
 
@@ -429,8 +429,8 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
       if (fns.n == 1) {
         Expr* arguments = member_access->base->copy();
         Expr* function = new Variable(fns.v[0]);
-        Expr *new_expr = new ParenOpExpr(function, new AList<Expr>(arguments));
-        expr->replace(new ParenOpExpr(function, new AList<Expr>(arguments->copy())));
+        Expr *new_expr = new CallExpr(function, new AList<Expr>(arguments));
+        expr->replace(new CallExpr(function, new AList<Expr>(arguments->copy())));
         expr = new_expr;
       } else
         INT_FATAL(expr, "Unable to resolve member access");
@@ -454,7 +454,7 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
     } if (fns.n > 1) {
       INT_FATAL(expr, "Unable to resolve default constructor");
     } else if (defExpr->exprType) {
-      if (ParenOpExpr *fc = dynamic_cast<ParenOpExpr*>(defExpr->exprType))
+      if (CallExpr *fc = dynamic_cast<CallExpr*>(defExpr->exprType))
         if (Variable *v = dynamic_cast<Variable*>(fc->baseExpr))
           if (FnSymbol *fn = dynamic_cast<FnSymbol*>(v->var))
             defExpr->sym->type->defaultConstructor = fn;

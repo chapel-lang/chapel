@@ -17,7 +17,7 @@
 // Utilities for building write functions
 static void addWriteStmt(AList<Stmt>* body, Expr* arg) {
   Expr* write = new Variable(new UnresolvedSymbol("write"));
-  body->insertAtTail(new ExprStmt(new ParenOpExpr(write, new AList<Expr>(arg))));
+  body->insertAtTail(new ExprStmt(new CallExpr(write, new AList<Expr>(arg))));
 }
 
 
@@ -426,7 +426,7 @@ bool EnumType::hasDefaultWriteFunction(void) {
 
 
 AList<Stmt>* EnumType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
-  return new AList<Stmt>(new ExprStmt(new ParenOpExpr(new Variable(Symboltable::lookupInternal("_EnumWriteStopgap")), new AList<Expr>(new Variable(arg)))));
+  return new AList<Stmt>(new ExprStmt(new CallExpr(new Variable(Symboltable::lookupInternal("_EnumWriteStopgap")), new AList<Expr>(new Variable(arg)))));
 }
 
 
@@ -436,7 +436,7 @@ bool EnumType::hasDefaultReadFunction(void) {
 
 
 AList<Stmt>* EnumType::buildDefaultReadFunctionBody(ParamSymbol* arg) {
-  return new AList<Stmt>(new ExprStmt(new ParenOpExpr(new Variable(Symboltable::lookupInternal("_EnumReadStopgap")), new AList<Expr>(new Variable(arg)))));
+  return new AList<Stmt>(new ExprStmt(new CallExpr(new Variable(Symboltable::lookupInternal("_EnumReadStopgap")), new AList<Expr>(new Variable(arg)))));
 }
 
 
@@ -652,7 +652,7 @@ void StructuralType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this,
       continue;
     Expr* lhs = new MemberAccess(new Variable(_this), tmp);
     Expr* varInitExpr = new VarInitExpr(new MemberAccess(new Variable(_this), tmp));
-    Expr* assign_expr = new ParenOpExpr(OP_GETSNORM, lhs, varInitExpr);
+    Expr* assign_expr = new CallExpr(OP_GETSNORM, lhs, varInitExpr);
     Stmt* assign_stmt = new ExprStmt(assign_expr);
     stmts->insertAtTail(assign_stmt);
   }
@@ -680,7 +680,7 @@ void StructuralType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this,
       }
     }
     if (rhs) {
-      Expr* assign_expr = new ParenOpExpr(OP_GETSNORM, lhs, rhs);
+      Expr* assign_expr = new CallExpr(OP_GETSNORM, lhs, rhs);
       Stmt* assign_stmt = new ExprStmt(assign_expr);
       stmts->insertAtTail(assign_stmt);
     }
@@ -761,11 +761,11 @@ AList<Stmt>* StructuralType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
   AList<Stmt>* body = new AList<Stmt>();
   if (dynamic_cast<ClassType*>(this)) {
     Expr* write = new Variable(new UnresolvedSymbol("write"));
-    AList<Stmt>* writeNil = new AList<Stmt>(new ExprStmt(new ParenOpExpr(write, new AList<Expr>(new StringLiteral("nil")))));
+    AList<Stmt>* writeNil = new AList<Stmt>(new ExprStmt(new CallExpr(write, new AList<Expr>(new StringLiteral("nil")))));
     writeNil->insertAtTail(new ReturnStmt(NULL));
     BlockStmt* blockStmt = new BlockStmt(writeNil);
     Symbol* nil = Symboltable::lookupInternal("nil", SCOPE_INTRINSIC);
-    Expr* argIsNil = new ParenOpExpr(OP_EQUAL, new Variable(arg), new Variable(nil));
+    Expr* argIsNil = new CallExpr(OP_EQUAL, new Variable(arg), new Variable(nil));
     body->insertAtTail(new CondStmt(argIsNil, blockStmt));
   }
 
@@ -935,7 +935,7 @@ static char* unionCallName[NUM_UNION_CALLS] = {
 };
 
 
-ParenOpExpr* UnionType::buildSafeUnionAccessCall(unionCall type, Expr* base, 
+CallExpr* UnionType::buildSafeUnionAccessCall(unionCall type, Expr* base, 
                                                  Symbol* field) {
   AList<Expr>* args = new AList<Expr>(base->copy());
   char* id_tag = buildFieldSelectorName(this, field);
@@ -946,7 +946,7 @@ ParenOpExpr* UnionType::buildSafeUnionAccessCall(unionCall type, Expr* base,
   }
   
   char* fnName = unionCallName[type];
-  return new ParenOpExpr(new Variable(Symboltable::lookupInternal(fnName)), args);
+  return new CallExpr(new Variable(Symboltable::lookupInternal(fnName)), args);
 }
 
 
@@ -955,8 +955,8 @@ void UnionType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this,
   AList<Expr>* args = new AList<Expr>(new Variable(_this));
   Expr* arg2 = new Variable(fieldSelector->constants->first()->sym);
   args->insertAtTail(arg2);
-  ParenOpExpr* init_function = 
-    new ParenOpExpr(new Variable(Symboltable::lookupInternal("_UNION_SET")), args);
+  CallExpr* init_function = 
+    new CallExpr(new Variable(Symboltable::lookupInternal("_UNION_SET")), args);
   ExprStmt* init_stmt = new ExprStmt(init_function);
   stmts->insertAtTail(init_stmt);
 }
@@ -985,7 +985,7 @@ bool UnionType::hasDefaultWriteFunction(void) {
 
 
 AList<Stmt>* UnionType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
-  return new AList<Stmt>(new ExprStmt(new ParenOpExpr(new Variable(Symboltable::lookupInternal("_UnionWriteStopgap")), new AList<Expr>(new Variable(arg)))));
+  return new AList<Stmt>(new ExprStmt(new CallExpr(new Variable(Symboltable::lookupInternal("_UnionWriteStopgap")), new AList<Expr>(new Variable(arg)))));
 }
 
 

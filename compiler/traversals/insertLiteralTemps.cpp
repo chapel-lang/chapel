@@ -15,7 +15,7 @@
 static bool notSequenceType(Type* type) {
   return type == dtInteger || type == dtString;
 }
-static void handleBasicSequenceAppendPrependOperations(ParenOpExpr* seqCat) {
+static void handleBasicSequenceAppendPrependOperations(CallExpr* seqCat) {
   Type* leftType = seqCat->get(1)->typeInfo();
   Type* rightType = seqCat->get(2)->typeInfo();
 
@@ -24,12 +24,12 @@ static void handleBasicSequenceAppendPrependOperations(ParenOpExpr* seqCat) {
   }
 
   if (notSequenceType(leftType)) {
-    seqCat->replace(new ParenOpExpr(
+    seqCat->replace(new CallExpr(
                      new MemberAccess(seqCat->get(2)->copy(),
                        new UnresolvedSymbol("_prepend")),
                      new AList<Expr>(seqCat->get(1)->copy())));
   } else if (notSequenceType(rightType)) {
-    seqCat->replace(new ParenOpExpr(
+    seqCat->replace(new CallExpr(
                      new MemberAccess(seqCat->get(1)->copy(),
                        new UnresolvedSymbol("_append")),
                      new AList<Expr>(seqCat->get(2)->copy())));
@@ -46,7 +46,7 @@ static void replaceTupleLiteral(Tuple* tuple) {
     argList->insertAtTail(expr->copy());
   }
   tuple->replace(
-    new ParenOpExpr(
+    new CallExpr(
       new Variable(
         new UnresolvedSymbol(
           glomstrings(2, "_tuple", intstring(tuple->exprs->length())))),
@@ -64,7 +64,7 @@ static void replaceTupleLiteral2(Tuple* tuple) {
   for_alist(Expr, expr, tuple->exprs) {
     argList->insertAtTail(expr->copy());
   }
-  Expr* init = new ParenOpExpr(
+  Expr* init = new CallExpr(
                  new Variable(
                    new UnresolvedSymbol(
                      glomstrings(2, "_tuple", intstring(tuple->exprs->length())))),
@@ -78,8 +78,8 @@ static void replaceTupleLiteral2(Tuple* tuple) {
   Symbol* tmp = def->sym;
   int i = 1;
   for_alist(Expr, expr, tuple->exprs) {
-    ParenOpExpr* assignOp = new ParenOpExpr(OP_GETSNORM, expr->copy(),
-                                      new ParenOpExpr(
+    CallExpr* assignOp = new CallExpr(OP_GETSNORM, expr->copy(),
+                                      new CallExpr(
                                         new Variable(tmp),
                                         new AList<Expr>(
                                           new IntLiteral(i))));
@@ -124,7 +124,7 @@ static void createTupleBaseType(int size) {
     ParamSymbol* paramSymbol =
       new ParamSymbol(PARAM_PARAMETER, "index", dtInteger);
     AList<DefExpr>* formals = new AList<DefExpr>(new DefExpr(paramSymbol));
-    Expr* where = new ParenOpExpr(OP_EQUAL, 
+    Expr* where = new CallExpr(OP_EQUAL, 
                                   new Variable(paramSymbol),
                                   new IntLiteral(i));
     Symboltable::continueFnDef(fn, formals, dtUnknown, true, where);
@@ -155,7 +155,7 @@ static void createTupleBaseType(int size) {
   args->insertAtTail(new StringLiteral(copystring(")")));
   Stmt* writeBody =
     new ExprStmt(
-      new ParenOpExpr(
+      new CallExpr(
         new Variable(
           new UnresolvedSymbol("write")),
         args));
@@ -167,13 +167,13 @@ static void createTupleBaseType(int size) {
 
 
 void InsertLiteralTemps::postProcessExpr(Expr* expr) {
-  if (ParenOpExpr* seqCat = dynamic_cast<ParenOpExpr*>(expr)) {
+  if (CallExpr* seqCat = dynamic_cast<CallExpr*>(expr)) {
     if (seqCat->opTag == OP_SEQCAT) {
       handleBasicSequenceAppendPrependOperations(seqCat);
     }
   } else if (Tuple* literal = dynamic_cast<Tuple*>(expr)) {
     createTupleBaseType(literal->exprs->length());
-    if (ParenOpExpr* call = dynamic_cast<ParenOpExpr*>(literal->parentExpr)) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(literal->parentExpr)) {
       if (call->get(1) == literal) {
         replaceTupleLiteral2(literal); // Handle destructuring
         return;
@@ -181,7 +181,7 @@ void InsertLiteralTemps::postProcessExpr(Expr* expr) {
     }
     replaceTupleLiteral(literal);
   } else if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
-    if (ParenOpExpr* parenOpExpr = dynamic_cast<ParenOpExpr*>(def->exprType)) {
+    if (CallExpr* parenOpExpr = dynamic_cast<CallExpr*>(def->exprType)) {
       if (Variable* variable = dynamic_cast<Variable*>(parenOpExpr->baseExpr)) {
         if (!strncmp(variable->var->name, "_tuple", 6)) {
           createTupleBaseType(parenOpExpr->argList->length());

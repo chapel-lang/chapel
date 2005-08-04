@@ -33,7 +33,7 @@ void InsertOutParameterInitializations::processSymbol(Symbol* sym) {
 
   BlockStmt* body = fn->body;
 
-  Expr* assignExpr = new ParenOpExpr(OP_GETSNORM, new Variable(arg), arg->defPoint->init->copy());
+  Expr* assignExpr = new CallExpr(OP_GETSNORM, new Variable(arg), arg->defPoint->init->copy());
   Stmt* initStmt = new ExprStmt(assignExpr);
   body->body->insertAtHead(initStmt);
 }

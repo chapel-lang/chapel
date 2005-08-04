@@ -723,7 +723,7 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
     }
   }
 
-  Expr* fn_call = new ParenOpExpr(new Variable(this), wrapperActuals);
+  Expr* fn_call = new CallExpr(new Variable(this), wrapperActuals);
   if (function_returns_void(this)) {
     wrapperBody->insertAtTail(new ExprStmt(fn_call));
   } else {
@@ -790,7 +790,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
       wrapper_formal = wrapper_formals->next();
     }
   }
-  ParenOpExpr* fn_call = new ParenOpExpr(new Variable(this), actuals);
+  CallExpr* fn_call = new CallExpr(new Variable(this), actuals);
   if (function_returns_void(this)) {
     wrapper_body->insertAtTail(new ExprStmt(fn_call));
   } else {
@@ -841,7 +841,7 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_actuals) {
     }
   }
 
-  Expr* fn_call = new ParenOpExpr(new Variable(this), actuals);
+  Expr* fn_call = new CallExpr(new Variable(this), actuals);
   AList<Stmt>* body = new AList<Stmt>();
   if (function_returns_void(this)) {
     body->insertAtTail(new ExprStmt(fn_call));
@@ -1316,7 +1316,7 @@ void ModuleSymbol::createInitFn(void) {
     // insert a set to false at the beginning of the current module's
     // definition (we'll wrap it in a conditional just below, after
     // filtering)
-    Expr* assignVar = new ParenOpExpr(OP_GETSNORM,
+    Expr* assignVar = new CallExpr(OP_GETSNORM,
                                       new Variable(new UnresolvedSymbol(runOnce)),
                                       new BoolLiteral(false));
     definition->insertAtHead(new ExprStmt(assignVar));

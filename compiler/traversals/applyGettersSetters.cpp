@@ -20,7 +20,7 @@ void ApplyGettersSetters::postProcessExpr(Expr* expr) {
     return;
   }
   if (MemberAccess* memberAccess = dynamic_cast<MemberAccess*>(expr)) {
-    if (ParenOpExpr* parenOpExpr = dynamic_cast<ParenOpExpr*>(memberAccess->parentExpr)) {
+    if (CallExpr* parenOpExpr = dynamic_cast<CallExpr*>(memberAccess->parentExpr)) {
       if (parenOpExpr->baseExpr == memberAccess) {
         return;
       }
@@ -29,19 +29,19 @@ void ApplyGettersSetters::postProcessExpr(Expr* expr) {
     arguments->insertAtTail(new Variable(Symboltable::lookupInternal("_methodToken")));
     arguments->insertAtTail(memberAccess->base->copy());
     Expr* replacement =
-      new ParenOpExpr(
+      new CallExpr(
         new Variable(
           new UnresolvedSymbol(memberAccess->member->name)),
         arguments);
     expr->replace(replacement);
   }
-  if (ParenOpExpr* parenOpExpr = dynamic_cast<ParenOpExpr*>(expr)) {
+  if (CallExpr* parenOpExpr = dynamic_cast<CallExpr*>(expr)) {
     if (MemberAccess* memberAccess = dynamic_cast<MemberAccess*>(parenOpExpr->baseExpr)) {
       AList<Expr>* arguments = parenOpExpr->argList->copy();
       arguments->insertAtHead(memberAccess->base->copy());
       arguments->insertAtHead(new Variable(Symboltable::lookupInternal("_methodToken")));
       Expr* replacement =
-        new ParenOpExpr(
+        new CallExpr(
           new Variable(
             new UnresolvedSymbol(memberAccess->member->name)),
           arguments);

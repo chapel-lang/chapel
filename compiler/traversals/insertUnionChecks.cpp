@@ -10,7 +10,7 @@
 
 static ExprStmt* buildCheckStmt(UnionType* unionType, unionCall type, 
                                 MemberAccess* accessExpr) {
-  ParenOpExpr* fnCall = unionType->buildSafeUnionAccessCall(type,
+  CallExpr* fnCall = unionType->buildSafeUnionAccessCall(type,
                                                        accessExpr->base,
                                                        accessExpr->member);
   

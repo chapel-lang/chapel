@@ -18,7 +18,7 @@ public :
   static FnSymbol* hasEnclosingFunction(DefExpr* fn_def);
   Vec<Symbol*>* getEnclosingFuncVarUses(FnSymbol* fn_sym);
   void addNestedFuncFormals(Expr* expr, Vec<Symbol*>* encl_var_uses, FnSymbol* old_func_sym);
-  void addNestedFuncActuals(ParenOpExpr* paren_op, Vec<Symbol*>* encl_var_uses, FnSymbol* old_func_sym);
+  void addNestedFuncActuals(CallExpr* paren_op, Vec<Symbol*>* encl_var_uses, FnSymbol* old_func_sym);
 };
 
 #endif

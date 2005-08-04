@@ -1526,7 +1526,7 @@ is_this_member_access(BaseAST *a) {
 }
 
 static Sym *
-gen_assign_op(ParenOpExpr *s) {
+gen_assign_op(CallExpr *s) {
   s->ainfo->rval = new_sym();
   s->ainfo->rval->ast = s->ainfo;
   s->ainfo->sym = s->get(1)->ainfo->sym;
@@ -1562,7 +1562,7 @@ gen_assign_op(ParenOpExpr *s) {
 }
 
 static int
-gen_set_member(MemberAccess *ma, ParenOpExpr *base_ast) {
+gen_set_member(MemberAccess *ma, CallExpr *base_ast) {
   FnSymbol *fn = ma->getStmt()->parentFunction();
   AInfo *ast = base_ast->ainfo;
   int equal = !fn || (!fn->_setter && (fn->fnClass != FN_CONSTRUCTOR || !is_this_member_access(ma)));
@@ -1603,7 +1603,7 @@ gen_get_member(MemberAccess *ma) {
 }
 
 static int
-gen_paren_op(ParenOpExpr *s, Expr *rhs = 0, AInfo *ast = 0) {
+gen_paren_op(CallExpr *s, Expr *rhs = 0, AInfo *ast = 0) {
   if (!ast)
     ast = s->ainfo;
   MemberAccess *ma = dynamic_cast<MemberAccess*>(s->baseExpr);
@@ -1951,8 +1951,8 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       }
       break;
     }
-    case EXPR_PARENOP:
-      ParenOpExpr* unOp = dynamic_cast<ParenOpExpr*>(ast);
+    case EXPR_CALL:
+      CallExpr* unOp = dynamic_cast<CallExpr*>(ast);
       if ((unOp->opTag != OP_NONE) && unOp->argList->length() == 1) {
         unOp->ainfo->rval = new_sym();
         unOp->ainfo->rval->ast = unOp->ainfo;
@@ -1970,7 +1970,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
         c->ast = unOp->ainfo;
         break;
       }
-      ParenOpExpr* binOp = dynamic_cast<ParenOpExpr*>(ast);
+      CallExpr* binOp = dynamic_cast<CallExpr*>(ast);
       if (binOp->opTag != OP_NONE && binOp->opTag < OP_GETSNORM) {
         binOp->ainfo->rval = new_sym();
         binOp->ainfo->rval->ast = binOp->ainfo;
@@ -2006,7 +2006,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
         break;
       }
       /*** Handle assignment ***/
-      ParenOpExpr* assignOp = dynamic_cast<ParenOpExpr*>(ast);
+      CallExpr* assignOp = dynamic_cast<CallExpr*>(ast);
       if (assignOp->opTag != OP_NONE && assignOp->opTag >= OP_GETSNORM) {
         if (assignOp->get(1)->astType == EXPR_TUPLE) {
           if (gen_destruct(dynamic_cast<Tuple*>(assignOp->get(1)), assignOp->get(2), assignOp) < 0)
@@ -2018,9 +2018,9 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
             return -1;
           break;
         }
-        if (assignOp->get(1)->astType == EXPR_PARENOP) 
+        if (assignOp->get(1)->astType == EXPR_CALL) 
           {
-            if (gen_paren_op(dynamic_cast<ParenOpExpr*>(assignOp->get(1)), assignOp->get(2), assignOp->ainfo) < 0)
+            if (gen_paren_op(dynamic_cast<CallExpr*>(assignOp->get(1)), assignOp->get(2), assignOp->ainfo) < 0)
               return -1;
             break;
           }
@@ -2075,7 +2075,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
           if1_move(if1, &assignOp->ainfo->code, assignOp->ainfo->rval, assignOp->get(1)->ainfo->sym, assignOp->ainfo);
         break;
       }
-      if (gen_paren_op(dynamic_cast<ParenOpExpr *>(ast)) < 0)
+      if (gen_paren_op(dynamic_cast<CallExpr *>(ast)) < 0)
         return -1;
       break;
     case EXPR_CAST: {
@@ -2163,7 +2163,7 @@ fun_where_equal_constant(FnSymbol *f, Variable *v, Literal *c) {
 
 static void
 fun_where_clause(FnSymbol *f, Expr *w) {
-  ParenOpExpr *op = dynamic_cast<ParenOpExpr*>(w);
+  CallExpr *op = dynamic_cast<CallExpr*>(w);
   if (!op)
     return;
   if (op->opTag == OP_LOGAND) {
