@@ -299,7 +299,6 @@ char* astTypeName[AST_TYPE_END+1] = {
   "Cast",
   "MemberAccess",
   "Reduce",
-  "Tuple",
   "NamedExpr",
   "WithExpr",
   "UseExpr",
@@ -450,9 +449,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     ADD_CHILD(ReduceExpr, reduceType);
     AST_ADD_LIST(ReduceExpr, redDim, Expr);
     AST_ADD_CHILD(ReduceExpr, argExpr);
-    goto LExprCommon;
-  case EXPR_TUPLE:
-    AST_ADD_LIST(Tuple, exprs, Expr);
     goto LExprCommon;
   case EXPR_NAMED:
     AST_ADD_CHILD(NamedExpr, actual);

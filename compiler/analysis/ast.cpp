@@ -137,7 +137,12 @@ compute_single_structural_type_hierarchy(Vec<Sym *> types, int is_union) {
     if (by_size.v[i]) {
       forv_Sym(s, *by_size.v[i]) {
         for (int j = i; j < by_size.n; j++) {
-          forv_Sym(ss, *by_size.v[j]) {
+          // SJD: John, I just added the below conditional to keep
+          // from seg-faulting on:
+          //   test/types/tuple/jplevyak/tuple_index-1.chpl
+          //   test/types/tuple/jplevyak/tuple_index-2.chpl
+          // Is there a deeper problem?  Is this okay?
+          if (by_size.v[j]) forv_Sym(ss, *by_size.v[j]) {
             if (s != ss) {
               if (!E(s)->some_difference(*E(ss))) {
                 if (!is_union) {

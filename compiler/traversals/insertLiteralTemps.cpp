@@ -37,56 +37,28 @@ static void handleBasicSequenceAppendPrependOperations(CallExpr* seqCat) {
 }
 
 
-static void replaceTupleLiteral(Tuple* tuple) {
-  AList<Expr>* argList = new AList<Expr>();
-  for_alist(Expr, expr, tuple->exprs) {
-    argList->insertAtTail(new Variable(dtUnknown->symbol));
-  }
-  for_alist(Expr, expr, tuple->exprs) {
-    argList->insertAtTail(expr->copy());
-  }
-  tuple->replace(
-    new CallExpr(
-      new Variable(
-        new UnresolvedSymbol(
-          glomstrings(2, "_tuple", intstring(tuple->exprs->length())))),
-      argList));
-}
-
-
-static void replaceTupleLiteral2(Tuple* tuple) {
+static void destructureTuple(CallExpr* tuple) {
   static int uid = 1;
-  char* name = glomstrings(2, "_tuple_temp_", intstring(uid++));
-  AList<Expr>* argList = new AList<Expr>();
-  for_alist(Expr, expr, tuple->exprs) {
-    argList->insertAtTail(new Variable(dtUnknown->symbol));
-  }
-  for_alist(Expr, expr, tuple->exprs) {
-    argList->insertAtTail(expr->copy());
-  }
-  Expr* init = new CallExpr(
-                 new Variable(
-                   new UnresolvedSymbol(
-                     glomstrings(2, "_tuple", intstring(tuple->exprs->length())))),
-                 argList);
+  char* name = glomstrings(2, "_tuple_tmp_", intstring(uid++));
   DefExpr* def = Symboltable::defineSingleVarDef(name,
                                                  dtUnknown,
-                                                 init,
+                                                 NULL,
                                                  VAR_NORMAL,
                                                  VAR_VAR);
-  tuple->getStmt()->insertBefore(new ExprStmt(def));
-  Symbol* tmp = def->sym;
+  tuple->parentStmt->insertBefore(new ExprStmt(def));
   int i = 1;
-  for_alist(Expr, expr, tuple->exprs) {
-    CallExpr* assignOp = new CallExpr(OP_GETSNORM, expr->copy(),
-                                      new CallExpr(
-                                        new Variable(tmp),
-                                        new AList<Expr>(
-                                          new IntLiteral(i))));
-    tuple->getStmt()->insertAfter(new ExprStmt(assignOp));
-    i++;
+  for_alist(Expr, expr, tuple->argList) {
+    if (NamedExpr* namedExpr = dynamic_cast<NamedExpr*>(expr)) {
+      tuple->parentStmt->insertAfter(
+        new ExprStmt(
+          new CallExpr(OP_GETSNORM, namedExpr->actual->copy(),
+            new CallExpr(
+              new Variable(def->sym),
+              new AList<Expr>(
+                new IntLiteral(i++))))));
+    }
   }
-  tuple->replace(new Variable(tmp));
+  tuple->replace(new Variable(def->sym));
 }
 
 
@@ -167,24 +139,27 @@ static void createTupleBaseType(int size) {
 
 
 void InsertLiteralTemps::postProcessExpr(Expr* expr) {
-  if (CallExpr* seqCat = dynamic_cast<CallExpr*>(expr)) {
-    if (seqCat->opTag == OP_SEQCAT) {
-      handleBasicSequenceAppendPrependOperations(seqCat);
+  if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
+    if (call->opTag == OP_SEQCAT) {
+      handleBasicSequenceAppendPrependOperations(call);
     }
-  } else if (Tuple* literal = dynamic_cast<Tuple*>(expr)) {
-    createTupleBaseType(literal->exprs->length());
-    if (CallExpr* call = dynamic_cast<CallExpr*>(literal->parentExpr)) {
-      if (call->get(1) == literal) {
-        replaceTupleLiteral2(literal); // Handle destructuring
-        return;
-      }
-    }
-    replaceTupleLiteral(literal);
-  } else if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
-    if (CallExpr* parenOpExpr = dynamic_cast<CallExpr*>(def->exprType)) {
-      if (Variable* variable = dynamic_cast<Variable*>(parenOpExpr->baseExpr)) {
-        if (!strncmp(variable->var->name, "_tuple", 6)) {
-          createTupleBaseType(parenOpExpr->argList->length());
+    if (Variable* variable = dynamic_cast<Variable*>(call->baseExpr)) {
+      if (!strncmp(variable->var->name, "_tuple", 6)) {
+        createTupleBaseType(call->argList->length());
+        if (call->argList->length() / 2 > 1) {
+          createTupleBaseType(call->argList->length() / 2); // while
+                                                            // we
+                                                            // instantiated
+                                                            // on
+                                                            // dtUnknown
+        }
+        if (call->parentExpr) {
+          if (CallExpr* parent = dynamic_cast<CallExpr*>(call->parentExpr)) {
+            if (OP_ISASSIGNOP(parent->opTag) && parent->get(1) == call) {
+              destructureTuple(call); // Handle destructuring
+              return;
+            }
+          }
         }
       }
     }

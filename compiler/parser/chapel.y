@@ -1141,7 +1141,23 @@ tuple_paren_expr:
       if ($2->length() == 1) {
         $$ = $2->popHead();
       } else {
-        $$ = new Tuple($2);
+        AList<Expr>* argList = new AList<Expr>();
+        int size = 0;
+        for_alist(Expr, expr, $2) {
+          argList->insertAtTail(new Variable(dtUnknown->symbol));
+        }
+        for_alist(Expr, expr, $2) {
+          argList->insertAtTail(
+            new NamedExpr(
+              glomstrings(2, "_f", intstring(++size)),
+              expr->copy()));
+        }
+        $$ =
+          new CallExpr(
+            new Variable(
+              new UnresolvedSymbol(
+                glomstrings(2, "_tuple", intstring(size)))),
+            argList);
       }
     }
 ;

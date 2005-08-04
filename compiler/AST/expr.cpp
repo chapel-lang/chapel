@@ -205,9 +205,6 @@ static EXPR_RW expr_read_written(Expr* expr) {
     if (dynamic_cast<MemberAccess*>(parent)) {
       return expr_read_written(parent);
     }
-    if (dynamic_cast<Tuple*>(parent)) {
-      return expr_read_written(parent);
-    }
     if (CallExpr* parenOpExpr = dynamic_cast<CallExpr*>(parent)) {
       if (parenOpExpr->opTag >= OP_GETSNORM && parenOpExpr->get(1) == expr) {
         return expr_w;
@@ -1031,51 +1028,6 @@ bool CallExpr::isPrimitive(void) {
     }
   }
   return false;
-}
-
-
-Tuple::Tuple(AList<Expr>* init_exprs) :
-  Expr(EXPR_TUPLE),
-  exprs(init_exprs)
-{ }
-
-
-void Tuple::verify() {
-  if (astType != EXPR_TUPLE) {
-    INT_FATAL(this, "Bad Tuple::astType");
-  }
-}
-
-
-Tuple*
-Tuple::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new Tuple(COPY_INTERNAL(exprs));
-}
-
-
-void Tuple::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == exprs) {
-    exprs = dynamic_cast<AList<Expr>*>(new_ast);
-  } else {
-    INT_FATAL(this, "Unexpected case in Tuple::replaceChild");
-  }
-}
-
-
-void Tuple::traverseExpr(Traversal* traversal) {
-  exprs->traverse(traversal, false);
-}
-
-
-void Tuple::print(FILE* outfile) {
-  fprintf(outfile, "(");
-  exprs->print(outfile);
-  fprintf(outfile, ")");
-}
-
-
-void Tuple::codegen(FILE* outfile) {
-  INT_FATAL(this, "can't codegen tuples yet");
 }
 
 

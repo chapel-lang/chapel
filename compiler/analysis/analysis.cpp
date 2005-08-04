@@ -1480,38 +1480,6 @@ undef_or_fn_expr(Expr *ast) {
   return (astType_t)0;
 }
 
-static Sym *
-gen_destruct_sym(Tuple *e, AST *ast) {
-  Sym *s = new_sym();
-  s->is_pattern = 1;
-  s->must_implement_and_specialize(sym_tuple);
-  Vec<Expr *> exprs;
-  e->exprs->getElements(exprs);
-  forv_Expr(ee, exprs) {
-    if (ee->astType == EXPR_TUPLE)
-      s->has.add(gen_destruct_sym(dynamic_cast<Tuple*>(ee), ast));
-    else {
-      if (ee->astType != EXPR_VARIABLE)
-        show_error("non-variable or tuple in destructuring assignment", ast);
-      else {
-        s->has.add(dynamic_cast<Variable*>(ee)->var->asymbol->sym);
-      }
-    }
-  }
-  return s;
-}
-
-static int
-gen_destruct(Tuple *left, Expr *right, Expr *base_ast) {
-  AInfo *ast = base_ast->ainfo;
-  ast->rval = gen_destruct_sym(left, ast);
-  ast->rval->ast = ast;
-  if1_gen(if1, &ast->code, right->ainfo->code);
-  Code *s = if1_send(if1, &ast->code, 2, 1, sym_destruct, right->ainfo->rval, ast->rval);
-  s->ast = ast;
-  return 0;
-}
-
 static int
 is_this_member_access(BaseAST *a) {
   MemberAccess *ma = dynamic_cast<MemberAccess*>(a);
@@ -2008,11 +1976,6 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       /*** Handle assignment ***/
       CallExpr* assignOp = dynamic_cast<CallExpr*>(ast);
       if (assignOp->opTag != OP_NONE && assignOp->opTag >= OP_GETSNORM) {
-        if (assignOp->get(1)->astType == EXPR_TUPLE) {
-          if (gen_destruct(dynamic_cast<Tuple*>(assignOp->get(1)), assignOp->get(2), assignOp) < 0)
-            return -1;
-          break;
-        }
         if (assignOp->get(1)->astType == EXPR_MEMBERACCESS) {
           if (gen_set_member(dynamic_cast<MemberAccess*>(assignOp->get(1)), assignOp) < 0)
             return -1;
@@ -2105,9 +2068,6 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       send->ast = s->ainfo;
       break;
     }
-    case EXPR_TUPLE: 
-      INT_FATAL(ast, "Tuple is removed before Analysis");
-      break;
     case EXPR_NAMED: {
       NamedExpr *s = dynamic_cast<NamedExpr *>(ast);
       s->ainfo->rval = new_sym();

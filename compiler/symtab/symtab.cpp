@@ -509,12 +509,7 @@ static AList<DefExpr>* exprToIndexSymbols(AList<Expr>* expr,
     for (Expr* tmp = expr->first(); tmp; tmp = expr->next()) {
       Variable* varTmp = dynamic_cast<Variable*>(tmp);
       if (!varTmp) {
-        Tuple* tupTmp = dynamic_cast<Tuple*>(tmp);
-        if (!tupTmp) {
-          USR_FATAL(tmp, "Index variable expected");
-        } else {
-          return exprToIndexSymbols(tupTmp->exprs, domain, indices);
-        }
+        INT_FATAL(tmp, "Error");
       } else {
         // SJD: It is my thought that dtInteger should be dtUnknown. Then
         // analysis can figure it out based on the type of the "domain"

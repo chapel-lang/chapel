@@ -226,21 +226,6 @@ class MemberAccess : public Expr {
 };
 
 
-class Tuple : public Expr {
- public:
-  AList<Expr>* exprs;
-
-  Tuple(AList<Expr>* init_exprs);
-  virtual void verify(void); 
-  COPY_DEF(Tuple);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseExpr(Traversal* traversal);
-
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-};
-
-
 class CallExpr : public Expr {
  public:
   Expr* baseExpr;
