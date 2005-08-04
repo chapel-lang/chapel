@@ -41523,3 +41523,13 @@ Removed files:
 	chapel/compiler/traversals/: specializeParenOpExprs.cpp 
 	                             specializeParenOpExprs.h 
 
+---------------------------------------------------------------------------
+
+08/04/05 13:46:58 -- deitz
+
+Log message:
+	Updated task list with completed tasks.
+
+Modified files:
+	chapel/compiler/: Tasks 
+
