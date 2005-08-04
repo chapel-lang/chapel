@@ -41458,3 +41458,18 @@ Modified files:
 	chapel/compiler/traversals/: insertLiteralTemps.cpp 
 	chapel/test/types/seq/bradc/: length.modify.good 
 
+---------------------------------------------------------------------------
+
+08/04/05 13:26:40 -- deitz
+
+Log message:
+	Removed ComplexLiteral.  It didn't exist for very long anyway.  It is
+	now translated into a constructor call of the complex record earlier.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h expr.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/traversals/: insertLiteralTemps.cpp 
+
