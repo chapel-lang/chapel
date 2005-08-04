@@ -41320,3 +41320,14 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: baseAST.cpp 
 
+---------------------------------------------------------------------------
+
+08/04/05 08:58:47 -- shannon
+
+Log message:
+	Small refactor of the 'run' method: pulled duplicate code
+	out to a function.
+
+Modified files:
+	chapel/compiler/traversals/: resolveModuleUses.cpp 
+
