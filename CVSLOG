@@ -41422,3 +41422,19 @@ Log message:
 Modified files:
 	chapel/compiler/include/: expr.h 
 
+---------------------------------------------------------------------------
+
+08/04/05 11:59:28 -- deitz
+
+Log message:
+	Fixed the _chpl_malloc bug that Shannon tracked down and removed the
+	#if that John put in.
+	
+	The problem was that the sizeof was now being taken of the pointer,
+	not the struct.  In the un #defed code, an underscore was put in front
+	of the name of the type, as that is what we want to take the sizeof
+	for malloc purposes.  I put it back in.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+
