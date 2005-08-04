@@ -278,23 +278,6 @@ class ParenOpExpr : public Expr {
 };
 
 
-class SizeofExpr : public Expr {
- public:
-  Variable* variable;
-
-  SizeofExpr(Variable* init_variable);
-  virtual void verify(void); 
-  COPY_DEF(SizeofExpr);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseExpr(Traversal* traversal);
-  
-  Type* typeInfo(void);
-
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-};
-
-
 class CastExpr : public Expr {
  public:
   Expr* expr;
