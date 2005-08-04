@@ -13,8 +13,6 @@
 #include "../traversals/updateSymbols.h"
 #include "../passes/runAnalysis.h"
 
-#define STEVE_COULD_YOU_CHECK_THIS 0
-
 
 char* opCString[] = {
   "",
@@ -973,15 +971,11 @@ void ParenOpExpr::codegen(FILE* outfile) {
       return;
     } else if (!(strcmp(variable->var->name, "_chpl_alloc"))) {
       Type *t = variable->parentFunction()->retType;
-#if STEVE_COULD_YOU_CHECK_THIS
-      fprintf(outfile, "(%s)_chpl_malloc(1, sizeof(", t->symbol->cname);
+      fprintf(outfile, "(%s)_chpl_malloc(1, sizeof(_", t->symbol->cname);
       t->codegen(outfile);
       fprintf(outfile, "), ");
       argList->get(2)->codegen(outfile);
       fprintf(outfile, ")");
-#else
-      fprintf(outfile, "(%s)_chpl_malloc(1, sizeof(_%s), \"\")", t->symbol->cname, t->symbol->cname);
-#endif
       return;
     }
   }
