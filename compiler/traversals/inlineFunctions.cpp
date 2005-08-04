@@ -14,8 +14,10 @@ void InlineFunctions::postProcessExpr(Expr* expr) {
     if (fn_call->isPrimitive() || fn_call->opTag != OP_NONE) {
       return;
     }
-    //for now, only leaf getter/setter functions will be inlined 
     FnSymbol* fn_sym = fn_call->findFnSymbol(); 
+    //copy pragmas from function definition stmt to its function symbol
+    fn_sym->copyPragmas(fn_sym->defPoint->parentStmt->pragmas);
+    //inline function
     if (fn_sym->hasPragma("inline") && isCodegened(fn_sym)) { 
       _ok_to_inline = true;
       //map formal parameters to actual arguments
