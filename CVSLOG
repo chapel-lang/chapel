@@ -41589,3 +41589,13 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: ast.cpp 
 
+---------------------------------------------------------------------------
+
+08/04/05 16:50:35 -- mjoyner
+
+Log message:
+	Added line that ensures that pragmas have been copied to function symbol for uniformity sake.  Currently, pragmas sometime appear on the function symbol and sometime appear on the function definition statement.
+
+Modified files:
+	chapel/compiler/traversals/: inlineFunctions.cpp 
+
