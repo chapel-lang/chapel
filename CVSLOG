@@ -41438,3 +41438,23 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: expr.cpp 
 
+---------------------------------------------------------------------------
+
+08/04/05 12:22:04 -- deitz
+
+Log message:
+	Removed SeqExpr.  Sequence literals are now parsed into calls to the
+	sequence constructor with appends tacked on.  This still relies on
+	instantiated a record with dtUnknown which we don't believe will work
+	in the long-term.  That's okay regarding this change.
+	
+	Removed Expr::resolved since it hasn't been used for a long time.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h expr.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/traversals/: insertLiteralTemps.cpp 
+	chapel/test/types/seq/bradc/: length.modify.good 
+
