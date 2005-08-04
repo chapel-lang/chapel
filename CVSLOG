@@ -41473,3 +41473,53 @@ Modified files:
 	chapel/compiler/parser/: chapel.y 
 	chapel/compiler/traversals/: insertLiteralTemps.cpp 
 
+---------------------------------------------------------------------------
+
+08/04/05 13:44:48 -- deitz
+
+Log message:
+	Renamed ParenOpExpr CallExpr.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h expr.h type.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: createEntryPoint.cpp 
+	chapel/compiler/symtab/: insertOutParameterInitializations.cpp 
+	                         reconstructIterators.cpp 
+	                         removeLikeTypes.cpp 
+	chapel/compiler/traversals/: Makefile.share 
+	                             applyGettersSetters.cpp 
+	                             buildClassConstructorsEtc.cpp 
+	                             buildLValueFunctions.cpp 
+	                             checkSemantics.cpp 
+	                             createNestedFuncIterators.cpp 
+	                             createNestedFuncIterators.h 
+	                             eliminateReturns.cpp 
+	                             findLeafFunctions.cpp 
+	                             findUnknownTypes.cpp htmlview.cpp 
+	                             inlineFunctions.cpp 
+	                             inlineFunctions.h 
+	                             insertFunctionTemps.cpp 
+	                             insertLiteralTemps.cpp 
+	                             insertThisParameters.cpp 
+	                             insertUnionChecks.cpp 
+	                             insertVariableInitializations.cpp 
+	                             instantiate.cpp 
+	                             preAnalysisHacks.cpp 
+	                             processParameters.cpp 
+	                             removeNamedParameters.cpp 
+	                             removeNestedFunctions.cpp 
+	                             removeNestedFunctions.h 
+	                             replaceReturns.cpp 
+	                             resolveModuleUses.cpp 
+	                             resolveSymbols.cpp 
+Added files:
+	chapel/compiler/traversals/: specializeCallExprs.cpp 
+	                             specializeCallExprs.h 
+Removed files:
+	chapel/compiler/traversals/: specializeParenOpExprs.cpp 
+	                             specializeParenOpExprs.h 
+
