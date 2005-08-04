@@ -34,32 +34,29 @@ void ResolveModuleUses::preProcessExpr(Expr* expr) {
 }
 
 
+static ExprStmt* genModuleUse(char* moduleName) {
+  Expr* moduleUse = new UseExpr(new Variable(new UnresolvedSymbol(moduleName)));
+  return new ExprStmt(moduleUse);
+
+}
+
+
 void ResolveModuleUses::run(ModuleList* moduleList) {
   for (ModuleSymbol* mod = moduleList->first(); mod; mod = moduleList->next()) {
+    ExprStmt* moduleUse;
     if (mod->modtype == MOD_USER) {
-      mod->initFn->body->body->insertAtHead(
-        new ExprStmt(
-          new UseExpr(
-            new Variable(
-              new UnresolvedSymbol("_chpl_complex")))));
+      moduleUse = genModuleUse("_chpl_complex");
+      mod->initFn->body->body->insertAtHead(moduleUse);
 
-      mod->initFn->body->body->insertAtHead(
-        new ExprStmt(
-          new UseExpr(
-            new Variable(
-              new UnresolvedSymbol("_chpl_file")))));
-
+      moduleUse = genModuleUse("_chpl_file");
+      mod->initFn->body->body->insertAtHead(moduleUse);
+      
       if (analyzeAST) {
-        mod->initFn->body->body->insertAtHead(
-          new ExprStmt(
-            new UseExpr(
-              new Variable(
-                new UnresolvedSymbol("_chpl_htuple")))));
-        mod->initFn->body->body->insertAtHead(
-          new ExprStmt(
-            new UseExpr(
-              new Variable(
-                new UnresolvedSymbol("_chpl_seq")))));
+        moduleUse = genModuleUse("_chpl_htuple");
+        mod->initFn->body->body->insertAtHead(moduleUse);
+
+        moduleUse = genModuleUse("_chpl_seq");
+        mod->initFn->body->body->insertAtHead(moduleUse);
       }
     }
   }
