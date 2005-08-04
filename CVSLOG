@@ -41412,3 +41412,13 @@ Modified files:
 Added files:
 	chapel/test/functions/bradc/: intents-classes.future 
 
+---------------------------------------------------------------------------
+
+08/04/05 11:06:48 -- deitz
+
+Log message:
+	Removed SizeofExpr class prototype.
+
+Modified files:
+	chapel/compiler/include/: expr.h 
+
