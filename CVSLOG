@@ -41577,3 +41577,15 @@ Added files:
 	chapel/test/types/tuple/deitz/: test_tuple_swap.chpl 
 	                                test_tuple_swap.good 
 
+---------------------------------------------------------------------------
+
+08/04/05 16:14:45 -- jplevyak
+
+Log message:
+	Removed comment for me... no: there was no deaper problem, just
+	a bug.  The Vec is fill()'d with NULLs, so some buckets could be empty.
+	The patch that Steve put in is spot on.
+
+Modified files:
+	chapel/compiler/analysis/: ast.cpp 
+
