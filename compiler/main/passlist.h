@@ -59,7 +59,7 @@ PassInfo passlist[] = {
   RUN(RemoveTypeVariableFormals, ""), // postAnalysis = true
 
   //passed to canonicalize AST
-  //RUN(CreateNestedFuncIterators, ""),
+  RUN(CreateNestedFuncIterators, ""),
   
   RUN(SimpleNestedFunctionMove, ""),
   RUN(RemoveNestedFunctions, ""),

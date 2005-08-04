@@ -17,8 +17,8 @@ class InsertNestedFuncInIterator : public Traversal {
   void postProcessExpr(Expr* expr) {
     //replace seq yield call in iterator with call to nested function
     if (CallExpr* fc = dynamic_cast<CallExpr*>(expr)) {
-      FnSymbol* fn_sym = fc->findFnSymbol();
-      if (!strcmp(fn_sym->name, "_yield")) {
+     if (Variable*  v = dynamic_cast<Variable*>(fc->baseExpr))
+      if (!strcmp(v->var->name, "_yield")) {
         AList<Expr>* new_arg_list = getNewArgList(fc->argList);
         CallExpr* fn_call = new CallExpr(new Variable(_fn_call_sym), new_arg_list->copy());
         fc->replace(fn_call);

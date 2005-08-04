@@ -6,7 +6,7 @@
 #include "replaceReturns.h"
 
 void InlineFunctions::postProcessExpr(Expr* expr) {
-  //no inlining compiler flag was used
+  //no inlining compiler flag was set on the command-line
   if (no_inline)
     return;
   //function call
@@ -40,6 +40,9 @@ void InlineFunctions::postProcessExpr(Expr* expr) {
           fn_call->parentStmt->insertBefore(inlined_body);
           fn_call->parentStmt->remove();
         }
+        //report inlining compiler flag was set of the command-line
+        if (report_inlining)
+          printf("chapel compiler: reporting inlining, %s function was inlined \n", fn_sym->name);
       }
     }
   }
