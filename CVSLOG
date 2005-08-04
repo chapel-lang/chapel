@@ -41548,3 +41548,32 @@ Modified files:
 	chapel/compiler/traversals/: inlineFunctions.cpp 
 	                             createNestedFuncIterators.cpp 
 
+---------------------------------------------------------------------------
+
+08/04/05 15:46:24 -- deitz
+
+Log message:
+	Removed Tuple (the Expr subclass for Tuple literals).  This was
+	removed early enough to just get rid of it.
+	
+	Removed code for destructuring tuples in analysis.  This has not been
+	used for a while as destructuring is done in the high-level.
+	
+	Made a fix to analysis/ast.cpp to keep two tests from starting to
+	seg-fault.  John, please see my comment in analysis/ast.cpp and make
+	sure this is an okay change.  If not, we can futurize these tests if
+	something deeper is going on.
+	
+	Added a test case to test '(i, j) = (j, i)' which swaps two integers.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp 
+	chapel/compiler/analysis/: analysis.cpp ast.cpp 
+	chapel/compiler/include/: baseAST.h expr.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: insertLiteralTemps.cpp 
+Added files:
+	chapel/test/types/tuple/deitz/: test_tuple_swap.chpl 
+	                                test_tuple_swap.good 
+
