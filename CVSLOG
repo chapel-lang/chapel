@@ -41642,3 +41642,16 @@ Modified files:
 	                             removeNamedParameters.cpp 
 	                             resolveSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+08/05/05 08:52:36 -- jplevyak
+
+Log message:
+	Stop testing the low level code generator.
+	This is becoming burdensome to maintain given all
+	  the changes and I don't believe it is worth the
+	  effort any longer.
+
+Added files:
+	chapel/test/lowlevelcg/jplevyak/: NOTEST 
+
