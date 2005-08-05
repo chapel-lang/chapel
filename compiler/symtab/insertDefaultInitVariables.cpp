@@ -25,16 +25,16 @@ void InsertDefaultInitVariables::processSymbol(Symbol* sym) {
 
 
   if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(sym)) {
-    if (ts->definition->defaultVal) {
+    if (ts->definition->defaultValue) {
       if (UserType* userType = dynamic_cast<UserType*>(ts->definition)) {
         if (userType->defType == dtUnknown &&
             userType->defExpr &&
             userType->defExpr->typeInfo() != dtUnknown) {
           userType->defType = userType->defExpr->typeInfo();
           userType->defExpr = NULL;
-          if (!userType->defaultVal) {
-            if (userType->defType->defaultVal) {
-              userType->defaultVal = userType->defType->defaultVal->copy();
+          if (!userType->defaultValue) {
+            if (userType->defType->defaultValue) {
+              userType->defaultValue = userType->defType->defaultValue->copy();
               fixup(userType->symbol->defPoint);
             } else {
               userType->defaultConstructor = userType->defType->defaultConstructor;
@@ -45,7 +45,7 @@ void InsertDefaultInitVariables::processSymbol(Symbol* sym) {
 
       char* temp_name = glomstrings(3, "_init_", sym->name, intstring(uid++));
       Type* temp_type = ts->definition;
-      Expr* temp_init = ts->definition->defaultVal->copy();
+      Expr* temp_init = ts->definition->defaultValue->copy();
 
       Symbol* parent_symbol = sym->defPoint->parentStmt->parentSymbol;
       Symbol* outer_symbol = sym;
@@ -69,7 +69,7 @@ void InsertDefaultInitVariables::processSymbol(Symbol* sym) {
         insert_point->insertBefore(new ExprStmt(def));
       }
       VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym);
-      ts->definition->defaultVal->replace(new Variable(var));
+      ts->definition->defaultValue->replace(new Variable(var));
       var->noDefaultInit = true;
     }
   }

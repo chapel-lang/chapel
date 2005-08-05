@@ -24,7 +24,7 @@ static void addWriteStmt(AList<Stmt>* body, Expr* arg) {
 Type::Type(astType_t astType, Expr* init_defaultVal) :
   BaseAST(astType),
   symbol(NULL),
-  defaultVal(init_defaultVal),
+  defaultValue(init_defaultVal),
   defaultConstructor(NULL),
   asymbol(NULL),
   parentType(NULL),
@@ -66,8 +66,8 @@ Type *Type::instantiate_generic(Map<BaseAST *, BaseAST *> &substitutions) {
 
 
 void Type::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == defaultVal) {
-    defaultVal = dynamic_cast<Expr*>(new_ast);
+  if (old_ast == defaultValue) {
+    defaultValue = dynamic_cast<Expr*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in Type::replaceChild");
   }
@@ -117,7 +117,7 @@ void Type::traverseType(Traversal* traversal) {
 
 
 void Type::traverseDefType(Traversal* traversal) {
-  TRAVERSE(defaultVal, traversal, false);
+  TRAVERSE(defaultValue, traversal, false);
 }
 
 
@@ -299,8 +299,8 @@ EnumType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
 
 
 void EnumType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == defaultVal) {
-    defaultVal = dynamic_cast<Expr*>(new_ast);
+  if (old_ast == defaultValue) {
+    defaultValue = dynamic_cast<Expr*>(new_ast);
   } else if (old_ast == constants) {
     constants = dynamic_cast<AList<DefExpr>*>(new_ast);
   } else {
@@ -311,7 +311,7 @@ void EnumType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 void EnumType::traverseDefType(Traversal* traversal) {
   TRAVERSE(constants, traversal, false);
-  TRAVERSE(defaultVal, traversal, false);
+  TRAVERSE(defaultValue, traversal, false);
 }
 
 
@@ -472,15 +472,15 @@ UserType*
 UserType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   UserType* copy = new UserType(COPY_INTERNAL(defExpr),
                                 COPY_INTERNAL(defType),
-                                COPY_INTERNAL(defaultVal));
+                                COPY_INTERNAL(defaultValue));
   copy->addSymbol(symbol);
   return copy;
 }
 
 
 void UserType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == defaultVal) {
-    defaultVal = dynamic_cast<Expr*>(new_ast);
+  if (old_ast == defaultValue) {
+    defaultValue = dynamic_cast<Expr*>(new_ast);
   } else if (old_ast == defExpr) {
     defExpr = dynamic_cast<Expr*>(new_ast);
   } else {
@@ -492,7 +492,7 @@ void UserType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 void UserType::traverseDefType(Traversal* traversal) {
   TRAVERSE(defExpr, traversal, false);
   TRAVERSE(defType, traversal, false);
-  TRAVERSE(defaultVal, traversal, false);
+  TRAVERSE(defaultValue, traversal, false);
 }
 
 
@@ -597,8 +597,8 @@ void StructuralType::setScope(SymScope* init_structScope) {
 
 
 void StructuralType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == defaultVal) {
-    defaultVal = dynamic_cast<Expr*>(new_ast);
+  if (old_ast == defaultValue) {
+    defaultValue = dynamic_cast<Expr*>(new_ast);
   } else if (old_ast == declarationList) {
     declarationList = dynamic_cast<AList<Stmt>*>(new_ast);
   } else {
@@ -613,7 +613,7 @@ void StructuralType::traverseDefType(Traversal* traversal) {
     prevScope = Symboltable::setCurrentScope(structScope);
   }
   declarationList->traverse(traversal, false);
-  TRAVERSE(defaultVal, traversal, false);
+  TRAVERSE(defaultValue, traversal, false);
   if (structScope) {
     Symboltable::setCurrentScope(prevScope);
   }
@@ -646,8 +646,8 @@ is_Reference_Type(Type *t) {
 
 static Expr *
 init_expr(Type *t) {
-  if (t->defaultVal)
-    return t->defaultVal->copy();
+  if (t->defaultValue)
+    return t->defaultValue->copy();
   else if (t->defaultConstructor)
     return new CallExpr(new Variable(t->defaultConstructor));
   else

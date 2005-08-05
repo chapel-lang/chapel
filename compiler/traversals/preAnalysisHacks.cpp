@@ -63,9 +63,9 @@ void PreAnalysisHacks::postProcessType(Type* type) {
         userType->defExpr && check_type(userType->defExpr->typeInfo())) {
       userType->defType = userType->defExpr->typeInfo();
       userType->defExpr = NULL;
-      if (!userType->defaultVal) {
-        if (userType->defType->defaultVal) {
-          userType->defaultVal = userType->defType->defaultVal->copy();
+      if (!userType->defaultValue) {
+        if (userType->defType->defaultValue) {
+          userType->defaultValue = userType->defType->defaultValue->copy();
           fixup(userType->symbol->defPoint);
         } else {
           userType->defaultConstructor = userType->defType->defaultConstructor;

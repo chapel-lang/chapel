@@ -35,7 +35,7 @@ class VariableType;
 class Type : public BaseAST {
  public:
   TypeSymbol* symbol;
-  Expr* defaultVal;
+  Expr* defaultValue;
   FnSymbol *defaultConstructor;
   ASymbol *asymbol;
   Type* parentType;

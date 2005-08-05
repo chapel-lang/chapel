@@ -14,8 +14,8 @@ void RemoveNamedParameters::postProcessExpr(Expr* expr) {
         def->init->parentStmt->remove();
       else if (Variable *var = dynamic_cast<Variable*>(def->init)) {
         if (var->var == gNil) {
-          if (type->defaultVal)
-            def->init->replace(type->defaultVal->copy());
+          if (type->defaultValue)
+            def->init->replace(type->defaultValue->copy());
           else if (type->defaultConstructor)
             def->init->replace(new CallExpr(new Variable(type->defaultConstructor)));
           else if (analyzeAST) {
@@ -33,8 +33,8 @@ void RemoveNamedParameters::postProcessExpr(Expr* expr) {
       if (!is_Reference_Type(type)) {
         if (Variable *var = dynamic_cast<Variable*>(rhs)) {
           if (var->var == gNil) {
-            if (type->defaultVal)
-              rhs->replace(type->defaultVal->copy());
+            if (type->defaultValue)
+              rhs->replace(type->defaultValue->copy());
             else if (type->defaultConstructor)
               rhs->replace(new CallExpr(new Variable(type->defaultConstructor)));
             else if (analyzeAST) {

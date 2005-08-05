@@ -1260,7 +1260,7 @@ void ForallExpr::codegen(FILE* outfile) {
 
 
 void initExpr(void) {
-  dtNil->defaultVal = new Variable(gNil);
+  dtNil->defaultValue = new Variable(gNil);
 }
 
 

@@ -477,7 +477,7 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
   case TYPE:
   LTypeCommon:
     ADD_CHILD(Type, symbol);
-    ADD_CHILD(Type, defaultVal);
+    ADD_CHILD(Type, defaultValue);
     ADD_CHILD(Type, defaultConstructor);
     ADD_CHILD(Type, parentType);
     ADD_CHILD(Type, metaType);

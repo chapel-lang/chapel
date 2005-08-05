@@ -14,13 +14,14 @@ Implementation List
 Priority 1 Tasks
 ----------------
 
-* Rename DefaultVal to DefaultValue, Insert symbols for every
-  primitive literal, change DefaultValue to a VarSymbol
+X (Roxana) Rename DefaultVal to DefaultValue - complete
+
+* Insert symbols for every primitive literal, change DefaultValue to a VarSymbol
 
 * Change all Exprs to have Expr on the end.  Standardize names of
   classes
 
-* Replace VarInitExpr with some symbol sentinel
+X (John) Replace VarInitExpr with some symbol sentinel - complete
 
 * Unify WithExpr and UseExpr which have similar forms
 
@@ -48,7 +49,7 @@ Priority 1 Tasks
 
 X Remove NoOpStmt -- replace with empty block statement - complete
 
-X Remove UserInitExpr
+X (Roxana) Remove UserInitExpr - complete
 
 X (John) Remove CastLikeExpr - complete
 

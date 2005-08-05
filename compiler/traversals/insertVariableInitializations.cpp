@@ -11,9 +11,9 @@
 static Stmt* basic_default_init_stmt(Stmt* stmt, VarSymbol* var, Type* type) {
   if (var->noDefaultInit && var->type != dtString) {
     return NULL;
-  } else if (type->defaultVal) {
+  } else if (type->defaultValue) {
     Expr* lhs = new Variable(var);
-    Expr* rhs = type->defaultVal->copy();
+    Expr* rhs = type->defaultValue->copy();
     Expr* init_expr = new CallExpr(OP_GETSNORM, lhs, rhs);
     return new ExprStmt(init_expr);
   } else if (type->defaultConstructor) {
@@ -37,7 +37,7 @@ static void insert_config_init(Stmt* stmt, VarSymbol* var, Type* type) {
   // Need a traversal to change complex literals into complex variable
   // temporaries for function calls.
 
-  Expr* init_expr = var->defPoint->init ? var->defPoint->init : type->defaultVal;
+  Expr* init_expr = var->defPoint->init ? var->defPoint->init : type->defaultValue;
   AList<Expr>* args = new AList<Expr>(new Variable(var));
   args->insertAtTail(new Variable(type->symbol));
   args->insertAtTail(new StringLiteral(copystring(var->name)));

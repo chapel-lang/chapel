@@ -880,13 +880,13 @@ build_patterns(Vec<BaseAST *> &syms) {
 
 static Sym *
 get_defaultVal(Type *t) {
-  Variable *v = dynamic_cast<Variable*>(t->defaultVal);
+  Variable *v = dynamic_cast<Variable*>(t->defaultValue);
   if (v)
     return v->var->asymbol->sym;
-  assert(dynamic_cast<Literal*>(t->defaultVal));
-  if (!t->defaultVal->ainfo->sym)
-    gen_if1(t->defaultVal);
-  return t->defaultVal->ainfo->rval;
+  assert(dynamic_cast<Literal*>(t->defaultValue));
+  if (!t->defaultValue->ainfo->sym)
+    gen_if1(t->defaultValue);
+  return t->defaultValue->ainfo->rval;
 }
 
 static Sym *
@@ -896,7 +896,7 @@ build_type(Type *t, bool make_default = true) {
     t->symbol->asymbol->sym->meta_type = t->asymbol->sym;
   }
   make_meta_type(t->asymbol->sym);
-  if (make_default && t->defaultVal)
+  if (make_default && t->defaultValue)
     get_defaultVal(t);
   switch (t->astType) {
     default: assert(!"case");
@@ -2663,7 +2663,7 @@ chapel_defexpr(PNode *pn, EntrySet *es) {
       else
         update_in(result, make_AType(tt));
     } else {
-      if (type->defaultVal) {
+      if (type->defaultValue) {
         Sym *val = get_defaultVal(type);
         Var *v = val->var;
         if (!v)
@@ -2686,7 +2686,7 @@ chapel_defexpr(PNode *pn, EntrySet *es) {
         } else
           update_in(result, make_AType(tt));
       } else
-        fail("Type without defaultVal or defaultConstructor");
+        fail("Type without defaultValue or defaultConstructor");
     }
   }
 }
@@ -2736,7 +2736,7 @@ ast_to_if1(Vec<AList<Stmt> *> &stmts) {
     method_token = Symboltable::lookupInternal("_methodToken")->asymbol->sym;
   if1_set_primitive_types(if1);
   forv_Type(t, types)
-    if (t->defaultVal)
+    if (t->defaultValue)
       get_defaultVal(t);
   build_classes(syms);
   finalize_types(if1);
