@@ -41655,3 +41655,24 @@ Log message:
 Added files:
 	chapel/test/lowlevelcg/jplevyak/: NOTEST 
 
+---------------------------------------------------------------------------
+
+08/05/05 08:54:37 -- mjoyner
+
+Log message:
+	Added tests that test inlining with an explicit pragma "inline" in the program and with different intents.  Also added tests that show the output when the compiler flag --report-inlining is enabled.
+
+Added files:
+	chapel/test/trivial/mjoyner/inlinefunc/: .cvsignore 
+	                                         inlfunc1.chpl 
+	                                         inlfunc1.good 
+	                                         inlfunc1_report.chpl 
+	                                         inlfunc1_report.compopts 
+	                                         inlfunc1_report.good 
+	                                         inlfunc2.chpl 
+	                                         inlfunc2.good 
+	                                         inlfunc2_report.chpl 
+	                                         inlfunc2_report.compopts 
+	                                         inlfunc2_report.good 
+	chapel/test/trivial/mjoyner/nestedfndef/: .cvsignore 
+
