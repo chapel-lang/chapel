@@ -41694,3 +41694,19 @@ Modified files:
 	chapel/compiler/symtab/: insertDefaultInitVariables.cpp 
 	chapel/compiler/include/: type.h 
 
+---------------------------------------------------------------------------
+
+08/05/05 12:30:52 -- jplevyak
+
+Log message:
+	Added CALL_INFO_FIND_ALL to find all the target funtions for
+	a particular Expr, even if the Expr (like DefExpr) may have
+	2 unrelated target functions (e.g. an overloaded = as well as
+	a constructor for a DefExpr of a Record).  Use this is now used
+	for HTML output.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: analysis.h 
+	chapel/compiler/traversals/: htmlview.cpp 
+
