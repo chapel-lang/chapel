@@ -367,20 +367,6 @@ class NamedExpr : public Expr {
 };
 
 
-class VarInitExpr : public Expr {
- public:
-  Expr* expr;
-  VarInitExpr(Expr* init_expr);
-  virtual void verify(void); 
-  COPY_DEF(VarInitExpr);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseExpr(Traversal* traversal);
-  Type* typeInfo(void);
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-};
-
-
 class UseExpr : public Expr {
  public:
   Expr* expr;

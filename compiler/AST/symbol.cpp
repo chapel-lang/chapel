@@ -16,6 +16,7 @@
 #include "../passes/preAnalysisCleanup.h"
 
 Symbol *gNil = 0;
+Symbol *gUnspecified = 0;
 
 #define DUPLICATE_INSTANTIATION_CACHE 1
 
@@ -1378,3 +1379,9 @@ void LabelSymbol::verify(void) {
 
 
 void LabelSymbol::codegenDef(FILE* outfile) { }
+
+void
+initSymbol() {
+  gNil = Symboltable::defineSingleVarDef("nil", dtNil, NULL, VAR_NORMAL, VAR_CONST)->sym;
+  gUnspecified = Symboltable::defineSingleVarDef("_", dtUnknown, NULL, VAR_NORMAL, VAR_CONST)->sym;
+}

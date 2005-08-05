@@ -255,6 +255,8 @@ void Expr::codegenCastToString(FILE* outfile) {
   }
   if (exprType == dtString) {
     codegen(outfile);
+  } else if (exprType == dtNil) {
+    fprintf(outfile, "\"\"");
   } else {
     fprintf(outfile, "_chpl_tostring_");
     if (exprType == dtBoolean) {
@@ -1258,7 +1260,6 @@ void ForallExpr::codegen(FILE* outfile) {
 
 
 void initExpr(void) {
-  gNil = Symboltable::defineSingleVarDef("nil", dtNil, NULL, VAR_NORMAL, VAR_CONST)->sym;
   dtNil->defaultVal = new Variable(gNil);
 }
 
@@ -1478,59 +1479,6 @@ void NamedExpr::print(FILE* outfile) {
 
 void NamedExpr::codegen(FILE* outfile) {
   INT_FATAL(this, "NamedExpr::codegen not implemented");
-}
-
-
-VarInitExpr::VarInitExpr(Expr* init_expr) :
-  Expr(EXPR_VARINIT),
-  expr(init_expr)
-{ }
-
-
-void VarInitExpr::verify() {
-  if (astType != EXPR_VARINIT) {
-    INT_FATAL(this, "Bad VarInitExpr::astType");
-  }
-}
-
-
-VarInitExpr*
-VarInitExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new VarInitExpr(COPY_INTERNAL(expr));
-}
-
-
-void VarInitExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == expr) {
-    expr = dynamic_cast<Expr*>(new_ast);
-  } else {
-    INT_FATAL(this, "Unexpected case in VarInitExpr::replaceChild");
-  }
-}
-
-
-void VarInitExpr::traverseExpr(Traversal* traversal) {
-  TRAVERSE(expr, traversal, false);
-}
-
-
-Type* VarInitExpr::typeInfo(void) {
-  return expr->typeInfo();
-}
-
-
-void VarInitExpr::print(FILE* outfile) {
-  fprintf(outfile, "DefaultInit(");
-  expr->print(outfile);
-  fprintf(outfile, ")");
-}
-
-
-void VarInitExpr::codegen(FILE* outfile) {
-  INT_FATAL(this, "Unanticipated call to VarInitExpr::codegen");
-  fprintf(outfile, "/*** VarInit of ");
-  expr->codegen(outfile);
-  fprintf(outfile, "**/");
 }
 
 

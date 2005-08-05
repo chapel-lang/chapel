@@ -16,9 +16,6 @@ void ApplyGettersSetters::postProcessExpr(Expr* expr) {
   if (fn && (fn->_setter || fn->_getter || fn->fnClass == FN_CONSTRUCTOR)) {
     return;
   }
-  if (dynamic_cast<VarInitExpr*>(expr->parentExpr)) {
-    return;
-  }
   if (MemberAccess* memberAccess = dynamic_cast<MemberAccess*>(expr)) {
     if (CallExpr* parenOpExpr = dynamic_cast<CallExpr*>(memberAccess->parentExpr)) {
       if (parenOpExpr->baseExpr == memberAccess) {

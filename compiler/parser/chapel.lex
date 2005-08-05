@@ -83,6 +83,8 @@ while           return TWHILE;
 with            return TWITH;
 yield           return TYIELD;
 
+"_"             return TUNSPECIFIED;
+
 "="             return TASSIGN;
 "+="            return TASSIGNPLUS;
 "-="            return TASSIGNMINUS;

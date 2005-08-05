@@ -46,7 +46,7 @@ static void build_constructor(StructuralType* structType) {
       Type* type = tmp->type;
       Expr* init = (tmp->defPoint->init) 
         ? tmp->defPoint->init->copy()
-        : new VarInitExpr(new Variable(tmp));
+        : new Variable(gNil);
       Expr* exprType = (tmp->defPoint->exprType)
         ? tmp->defPoint->exprType->copy()
         : NULL;
@@ -67,17 +67,6 @@ static void build_constructor(StructuralType* structType) {
   AList<Stmt>* stmts = new AList<Stmt>;
   fn->_this = new VarSymbol("this", structType);
   dynamic_cast<VarSymbol*>(fn->_this)->noDefaultInit = true;
-
-  for_alist(DefExpr, param, args) {
-    if (param->sym->defPoint->init) {
-      if (VarInitExpr* varInitExpr = dynamic_cast<VarInitExpr*>(param->sym->defPoint->init)) {
-        if (Variable* variable = dynamic_cast<Variable*>(varInitExpr->expr)) {
-          param->sym->defPoint->init =
-            new VarInitExpr(new MemberAccess(new Variable(fn->_this), variable->var));
-        }
-      }
-    }
-  }
 
   DefExpr* def_expr = new DefExpr(fn->_this);
   stmts->insertAtTail(new ExprStmt(def_expr));

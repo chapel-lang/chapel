@@ -232,7 +232,8 @@ compile_all(void) {
 
   if (noTestLangFiles) {
     Symboltable::init();
-    initTypes(); // BLC : clean these up
+    initType(); // BLC : clean these up
+    initSymbol();
     initExpr();
     FnSymbol::init();
     testInputFiles(arg_state.nfile_arguments, arg_state.file_argument);

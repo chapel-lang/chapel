@@ -97,6 +97,8 @@
 %token TWITH
 %token TYIELD
 
+%token TUNSPECIFIED
+
 %token TIDENT
 %token INTLITERAL FLOATLITERAL COMPLEXLITERAL
 %token <pch> STRINGLITERAL
@@ -1231,6 +1233,8 @@ expr:
   atom
 | TNIL
     { $$ = new Variable(Symboltable::lookupInternal("nil", SCOPE_INTRINSIC)); }
+| TUNSPECIFIED
+    { $$ = new Variable(Symboltable::lookupInternal("_", SCOPE_INTRINSIC)); }
 | TLET
     { $<pexpr>$ = Symboltable::startLetExpr(); }
        var_decl_inner_ls TIN expr

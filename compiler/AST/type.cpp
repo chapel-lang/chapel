@@ -644,14 +644,23 @@ is_Reference_Type(Type *t) {
   return t && (dynamic_cast<StructuralType*>(t) || t->astType == TYPE_SUM);
 }
 
+static Expr *
+init_expr(Type *t) {
+  if (t->defaultVal)
+    return t->defaultVal->copy();
+  else if (t->defaultConstructor)
+    return new CallExpr(new Variable(t->defaultConstructor));
+  else
+    return new Variable(gNil);
+}
 
 void StructuralType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this, 
                                           AList<DefExpr>* arguments) {
   forv_Vec(Symbol, tmp, fields) {
     if (is_Scalar_Type(tmp->type))
       continue;
+    Expr* varInitExpr = init_expr(tmp->type);
     Expr* lhs = new MemberAccess(new Variable(_this), tmp);
-    Expr* varInitExpr = new VarInitExpr(new MemberAccess(new Variable(_this), tmp));
     Expr* assign_expr = new CallExpr(OP_GETSNORM, lhs, varInitExpr);
     Stmt* assign_stmt = new ExprStmt(assign_expr);
     stmts->insertAtTail(assign_stmt);
@@ -673,8 +682,7 @@ void StructuralType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this,
     if (analyzeAST) {
       rhs = new Variable(ptmp->sym);
     } else {
-      Expr* varInitExpr = new VarInitExpr(new MemberAccess(new Variable(_this), tmp));
-      rhs = tmp->defPoint->init ? tmp->defPoint->init->copy() : varInitExpr;
+      rhs = tmp->defPoint->init ? tmp->defPoint->init->copy() : new Variable(gNil);
       if (tmp->defPoint->init) {
         tmp->defPoint->init->remove();
       }
@@ -1069,7 +1077,7 @@ void VariableType::traverseDefType(Traversal* traversal) {
 }
 
 
-void initTypes(void) {
+void initType(void) {
   // define built-in types
   dtUnknown = Symboltable::defineBuiltinType("???", "???", NULL);
   dtVoid = Symboltable::defineBuiltinType("void", "void", NULL);

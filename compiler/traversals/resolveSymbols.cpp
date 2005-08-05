@@ -415,8 +415,6 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
         return;
       }
     }
-    if (dynamic_cast<VarInitExpr*>(expr->parentExpr))
-      return;
     if (CallExpr* aop = dynamic_cast<CallExpr*>(expr->parentExpr))
       if (aop->opTag >= OP_GETSNORM && aop->get(1) == expr)
         return;

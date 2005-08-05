@@ -290,7 +290,6 @@ char* astTypeName[AST_TYPE_END+1] = {
   "FloatLiteral",
   "StringLiteral",
   "Variable",
-  "VarInit",
   "DefExpr",
   "Let",
   "CondExpr",
@@ -402,9 +401,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     goto LExprCommon;
   case EXPR_VARIABLE:
     ADD_CHILD(Variable, var);
-    goto LExprCommon;
-  case EXPR_VARINIT:
-    AST_ADD_CHILD(VarInitExpr, expr);
     goto LExprCommon;
   case EXPR_USE:
     ADD_CHILD(UseExpr, expr);

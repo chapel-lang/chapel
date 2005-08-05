@@ -7,16 +7,41 @@ void RemoveNamedParameters::postProcessExpr(Expr* expr) {
     named_expr->replace(named_expr->actual->copy());
   }
 
-  if (VarInitExpr* var_init = dynamic_cast<VarInitExpr*>(expr)) {
-    if (var_init->typeInfo() == dtVoid) {
-      var_init->parentStmt->remove();
-    } else {
-      if (var_init->typeInfo()->defaultVal) {
-        var_init->replace(var_init->typeInfo()->defaultVal->copy());
-      } else if (var_init->typeInfo()->defaultConstructor) {
-        var_init->replace(new CallExpr(new Variable(var_init->typeInfo()->defaultConstructor)));
-      } else if (analyzeAST) {
-        INT_FATAL(expr, "VarInitExpr has no default initialization");
+  if (DefExpr* def = dynamic_cast<DefExpr*>(expr))
+    if (def->init) {
+      Type *type = def->sym->type;
+      if (type == dtVoid)
+        def->init->parentStmt->remove();
+      else if (Variable *var = dynamic_cast<Variable*>(def->init)) {
+        if (var->var == gNil) {
+          if (type->defaultVal)
+            def->init->replace(type->defaultVal->copy());
+          else if (type->defaultConstructor)
+            def->init->replace(new CallExpr(new Variable(type->defaultConstructor)));
+          else if (analyzeAST) {
+            INT_FATAL(expr, "nil assigned to Type with no default initialization");
+          }
+        }
+      }
+    }
+
+  if (CallExpr* p = dynamic_cast<CallExpr*>(expr)) {
+    if (p->opTag == OP_GETSNORM) {
+      Expr *lhs = p->get(1);
+      Expr *rhs = p->get(2);
+      Type *type = lhs->typeInfo();
+      if (!is_Reference_Type(type)) {
+        if (Variable *var = dynamic_cast<Variable*>(rhs)) {
+          if (var->var == gNil) {
+            if (type->defaultVal)
+              rhs->replace(type->defaultVal->copy());
+            else if (type->defaultConstructor)
+              rhs->replace(new CallExpr(new Variable(type->defaultConstructor)));
+            else if (analyzeAST) {
+              INT_FATAL(expr, "nil assigned to Type with no default initialization");
+            }
+          }
+        }
       }
     }
   }
