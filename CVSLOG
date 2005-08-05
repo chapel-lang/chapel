@@ -41676,3 +41676,21 @@ Added files:
 	                                         inlfunc2_report.good 
 	chapel/test/trivial/mjoyner/nestedfndef/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+08/05/05 10:40:28 -- roxana
+
+Log message:
+	Renamed defaultVal to defaultValue.
+
+Modified files:
+	chapel/compiler/traversals/: removeNamedParameters.cpp 
+	                             preAnalysisHacks.cpp 
+	                             insertVariableInitializations.cpp 
+	                             processParameters.cpp 
+	chapel/compiler/AST/: expr.cpp type.cpp baseAST.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/: Tasks 
+	chapel/compiler/symtab/: insertDefaultInitVariables.cpp 
+	chapel/compiler/include/: type.h 
+
