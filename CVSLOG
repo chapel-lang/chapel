@@ -41599,3 +41599,16 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: inlineFunctions.cpp 
 
+---------------------------------------------------------------------------
+
+08/04/05 17:21:16 -- deitz
+
+Log message:
+	Made the destructuring of tuples more recursive to handle things like
+	'(i, (j, k)) = ...'.  These tests now fail because of support for an
+	instantiated record of an instantiated record.  Updated the future.
+
+Modified files:
+	chapel/compiler/traversals/: insertLiteralTemps.cpp 
+	chapel/test/types/tuple/jplevyak/: destruct-2.future 
+
