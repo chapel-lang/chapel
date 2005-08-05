@@ -57,6 +57,7 @@ static void destructureTuple(CallExpr* tuple) {
               new AList<Expr>(
                 new IntLiteral(i++))))));
     }
+    TRAVERSE(tuple->parentStmt->next, new InsertLiteralTemps(), true);
   }
   tuple->replace(new Variable(def->sym));
 }
