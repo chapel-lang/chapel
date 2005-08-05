@@ -1,0 +1,7 @@
+chapel compiler: reporting inlining, _construct_Foo function was inlined 
+chapel compiler: reporting inlining, =y function was inlined 
+chapel compiler: reporting inlining, leaf function was inlined 
+1
+22
+33
+4
