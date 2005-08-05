@@ -192,16 +192,13 @@ void HtmlView::postProcessExpr(Expr* expr) {
     write(")");
   }
   if (show_analysis_info && expr->parentSymbol && expr->astType != EXPR_CALL) {
-    Vec<FnSymbol *> fns, allfns;
-    call_info(expr, fns, CALL_INFO_FIND_OPERATOR);
-    allfns.append(fns);
-    call_info(expr, fns, CALL_INFO_FIND_FUNCTION);
-    allfns.append(fns);
-    if (allfns.n) {
+    Vec<FnSymbol *> fns;
+    call_info(expr, fns, CALL_INFO_FIND_ALL);
+    if (fns.n) {
       write(" calls: ");
-      for (int i = 0; i < allfns.n; i++) {
+      for (int i = 0; i < fns.n; i++) {
         if (i > 0) write(" ");
-        html_print_symbol(allfns.v[i], false);
+        html_print_symbol(fns.v[i], false);
       }
     }
   }

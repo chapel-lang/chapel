@@ -99,6 +99,7 @@ void resolve_member(StructuralType *t, VarSymbol *v, int *offset, Type **type);
 void structural_subtypes(Type *t, Vec<Type *> subtypes);
 
 enum { CALL_INFO_FIND_SINGLE, 
+       CALL_INFO_FIND_ALL,       // for HTML output
        CALL_INFO_FIND_OPERATOR,  //  >  these find disjoint sets
        CALL_INFO_FIND_FUNCTION,  // / 
        CALL_INFO_FIND_ASSIGN,    //  >  these find disjoint sets

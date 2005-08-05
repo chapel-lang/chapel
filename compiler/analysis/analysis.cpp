@@ -2951,6 +2951,7 @@ call_info(Expr* a, Vec<FnSymbol *> &fns, int find_type) {
         assert(fs);
         switch (find_type) {
           case CALL_INFO_FIND_SINGLE: break;
+          case CALL_INFO_FIND_ALL: break;
           case CALL_INFO_FIND_OPERATOR: 
             if (!is_operator_name(fs->name)) continue;
             break;
@@ -2964,7 +2965,7 @@ call_info(Expr* a, Vec<FnSymbol *> &fns, int find_type) {
            if (is_assign(fs->name)) continue;
             break;
         }
-        if (found_pn && found_pn != pn)
+        if (found_pn && found_pn != pn && find_type != CALL_INFO_FIND_ALL)
           fail("bad call to call_info");
         found_pn = pn;
         fns.add(fs);
