@@ -19,10 +19,10 @@ Priority 1 Tasks
 * Change all Exprs to have Expr on the end.  Standardize names of
   classes
 
-* add PrimitiveType class -- move integers, floats, strings, and such
-  here
-
 * unify union types and sum types (?)
+
+* (John) add PrimitiveType class -- move integers, floats, strings, and such
+  here
 
 * (Roxana) Attach a Type* type to Expr and remove typeInfo()
 
