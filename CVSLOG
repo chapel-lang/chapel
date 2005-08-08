@@ -41833,3 +41833,30 @@ Modified files:
 	                             resolveSymbols.cpp 
 	                             specializeCallExprs.cpp 
 
+---------------------------------------------------------------------------
+
+08/08/05 12:59:05 -- deitz
+
+Log message:
+	Unified WithExpr and UseExpr into new ImportExpr.  I also added fields
+	to eventually store the more complex uses of these language constructs.
+	
+	Unified ExpandClassWiths and ResolveModuleUses into ProcessImportExprs.
+
+Modified files:
+	chapel/compiler/: Tasks 
+	chapel/compiler/AST/: baseAST.cpp expr.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h expr.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/traversals/: Makefile.share 
+Added files:
+	chapel/compiler/traversals/: processImportExprs.cpp 
+	                             processImportExprs.h 
+Removed files:
+	chapel/compiler/traversals/: expandClassWiths.cpp 
+	                             expandClassWiths.h 
+	                             resolveModuleUses.cpp 
+	                             resolveModuleUses.h 
+
