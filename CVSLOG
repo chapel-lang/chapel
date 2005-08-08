@@ -41924,3 +41924,14 @@ Modified files:
 Added files:
 	chapel/doc/developer/: internal-errors.txt 
 
+---------------------------------------------------------------------------
+
+08/08/05 15:51:30 -- jplevyak
+
+Log message:
+	Grab nil change, low-level error reporting and getter/setter from the
+	Priority 2 list.
+
+Modified files:
+	chapel/compiler/: Tasks 
+
