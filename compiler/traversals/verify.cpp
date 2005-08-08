@@ -25,7 +25,14 @@ void Verify::preProcessStmt(Stmt* stmt){
 
   if (LabelStmt* labelStmt = dynamic_cast<LabelStmt*>(stmt)) {
     if (!removeVerifySymbol(syms, labelStmt->label)) {
-      INT_FATAL(labelStmt, "Label not in Symboltable");
+      INT_FATAL(stmt, "Label not in Symboltable");
+    }
+  }
+
+  if (!stmt->prev || !stmt->next) {
+    if (!dynamic_cast<BlockStmt*>(stmt) &&
+        !dynamic_cast<LabelStmt*>(stmt->parentStmt)) {
+      INT_FATAL(stmt, "Statement is not in a list");
     }
   }
 }
