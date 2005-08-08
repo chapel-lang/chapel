@@ -14,16 +14,10 @@ Implementation List
 Priority 1 Tasks
 ----------------
 
-X (Roxana) Rename DefaultVal to DefaultValue - complete
-
 * Insert symbols for every primitive literal, change DefaultValue to a VarSymbol
 
 * Change all Exprs to have Expr on the end.  Standardize names of
   classes
-
-X (John) Replace VarInitExpr with some symbol sentinel - complete
-
-* Unify WithExpr and UseExpr which have similar forms
 
 * add PrimitiveType class -- move integers, floats, strings, and such
   here
@@ -36,6 +30,8 @@ X (John) Replace VarInitExpr with some symbol sentinel - complete
    structures (and try to capture an instance of front-end
    nondeterminism to eliminate it as well)
 
+* (Steve) Unify WithExpr and UseExpr which have similar forms
+
 * (Steve) restructure verify pass; build out verify() routines on AST classes
 
 * (Steve) rename "implements" to something else.  Move to class header?
@@ -47,7 +43,7 @@ X (John) Replace VarInitExpr with some symbol sentinel - complete
 
 * (Steve) compile-time (param) constant-folding
 
-X Remove NoOpStmt -- replace with empty block statement - complete
+X (Steve) Remove NoOpStmt -- replace with empty block statement - complete
 
 X (Roxana) Remove UserInitExpr - complete
 
@@ -64,6 +60,10 @@ X (Steve) remove ForwardingSymbol (?)
 X (Steve) Remove BinOp, UnOp, AssignOp.  Rename ParenOpExpr, CallExpr
 
 X (Steve) Remove FnCall
+
+X (John) Replace VarInitExpr with some symbol sentinel - complete
+
+X (Roxana) Rename DefaultVal to DefaultValue - complete
 
 Priority 2 Tasks
 ----------------
