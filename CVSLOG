@@ -41961,3 +41961,18 @@ Modified files:
 	chapel/compiler/traversals/: checkSemantics.cpp 
 	chapel/test/trivial/roxana/: test_param_decl3.good 
 
+---------------------------------------------------------------------------
+
+08/08/05 16:40:33 -- deitz
+
+Log message:
+	Simplified code generation for record methods now that they are
+	references like classes.
+	
+	This fixes regressions domains/roxana/test_hash_table3 and
+	types/type_variables/deitz/test_datablock3.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/include/: type.h 
+
