@@ -41710,3 +41710,13 @@ Modified files:
 	chapel/compiler/include/: analysis.h 
 	chapel/compiler/traversals/: htmlview.cpp 
 
+---------------------------------------------------------------------------
+
+08/08/05 09:31:39 -- deitz
+
+Log message:
+	Updated task list, tagged unifying WithExpr and UseExpr.
+
+Modified files:
+	chapel/compiler/: Tasks 
+
