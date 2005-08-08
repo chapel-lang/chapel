@@ -41892,3 +41892,13 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+08/08/05 14:26:00 -- jplevyak
+
+Log message:
+	update with completion of PrimitiveType
+
+Modified files:
+	chapel/compiler/: Tasks 
+
