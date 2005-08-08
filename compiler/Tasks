@@ -21,14 +21,7 @@ Priority 1 Tasks
 
 * unify union types and sum types (?)
 
-* (John) add PrimitiveType class -- move integers, floats, strings, and such
-  here
-
 * (Roxana) Attach a Type* type to Expr and remove typeInfo()
-
-* (John) get rid of nondeterminism introduced by hashing-on-pointers
-   structures (and try to capture an instance of front-end
-   nondeterminism to eliminate it as well)
 
 * (Steve) restructure verify pass; build out verify() routines on AST classes
 
@@ -40,6 +33,13 @@ Priority 1 Tasks
   StructuredType into one type, call it ClassType or something simple
 
 * (Steve) compile-time (param) constant-folding
+
+* (John) get rid of nondeterminism introduced by hashing-on-pointers
+   structures (and try to capture an instance of front-end
+   nondeterminism to eliminate it as well)
+
+X (John) add PrimitiveType class -- move integers, floats, strings, and such
+  here
 
 X (Steve) Remove NoOpStmt -- replace with empty block statement - complete
 
