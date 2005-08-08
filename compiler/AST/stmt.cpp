@@ -122,7 +122,11 @@ void Stmt::callReplaceChild(BaseAST* new_ast) {
 ExprStmt::ExprStmt(Expr* initExpr) :
   Stmt(STMT_EXPR),
   expr(initExpr) 
-{ }
+{
+  if (expr && expr->parentSymbol) {
+    INT_FATAL(this, "ExprStmt initialized with expr already in tree");
+  }
+}
 
 
 void ExprStmt::verify() {

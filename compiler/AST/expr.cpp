@@ -537,6 +537,12 @@ DefExpr::DefExpr(Symbol* initSym, Expr* initInit, Expr* initExprType) :
   if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
     fn->paramScope->setContext(NULL, fn, this);
   }
+  if (init && init->parentSymbol) {
+    INT_FATAL(this, "DefExpr initialized with init already in tree");
+  }
+  if (exprType && exprType->parentSymbol) {
+    INT_FATAL(this, "DefExpr initialized with exprType already in tree");
+  }
 }
 
 

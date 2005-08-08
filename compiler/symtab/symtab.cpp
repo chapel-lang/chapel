@@ -496,8 +496,7 @@ DefExpr* Symboltable::defineSingleVarDef(char* name, Type* type,
                                          Expr* init, varType vartag, 
                                          consType constag) {
   VarSymbol* var = new VarSymbol(name, type, vartag, constag);
-  Expr* userInit = init ? init : NULL;
-  return new DefExpr(var, userInit);
+  return new DefExpr(var, init);
 }
 
 
