@@ -41720,3 +41720,13 @@ Log message:
 Modified files:
 	chapel/compiler/: Tasks 
 
+---------------------------------------------------------------------------
+
+08/08/05 11:58:39 -- jplevyak
+
+Log message:
+	Grab PrimitiveType change
+
+Modified files:
+	chapel/compiler/: Tasks 
+
