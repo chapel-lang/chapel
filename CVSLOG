@@ -41860,3 +41860,15 @@ Removed files:
 	                             resolveModuleUses.cpp 
 	                             resolveModuleUses.h 
 
+---------------------------------------------------------------------------
+
+08/08/05 14:20:31 -- deitz
+
+Log message:
+	Added verification to make sure that all statements, except for
+	BlockStmts and statements in LabelStmts, are in lists.  LabelStmts
+	should probably be cleaned up.
+
+Modified files:
+	chapel/compiler/traversals/: verify.cpp 
+
