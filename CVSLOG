@@ -41872,3 +41872,23 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: verify.cpp 
 
+---------------------------------------------------------------------------
+
+08/08/05 14:24:45 -- jplevyak
+
+Log message:
+	Removed NilType, use of Type for TYPE_BUILTIN.
+	Added PrimitiveType and used this for integer, float, nil etc.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h symtab.h type.h 
+	chapel/compiler/passes/: filesToAST.cpp 
+	chapel/compiler/symtab/: resolveTypes.cpp symtab.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             resolveSymbols.cpp 
+	chapel/runtime/include/: chpltypes.h 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
