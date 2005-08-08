@@ -41902,3 +41902,25 @@ Log message:
 Modified files:
 	chapel/compiler/: Tasks 
 
+---------------------------------------------------------------------------
+
+08/08/05 14:48:30 -- deitz
+
+Log message:
+	Added a new error message to flag the case where someone doesn't copy
+	or remove an expression or statement from the AST before inserting it
+	into another part of the AST.  This is only caught in limited cases
+	right now.
+	
+	Added documentation file compiler/doc/internal-errors.txt which will
+	eventually contain more information on the internal errors and things
+	that may have happened to generate them.  Feel free to add to this
+	file as you run into internal errors and understand what they mean or
+	what they were caused by.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp 
+	chapel/compiler/symtab/: symtab.cpp 
+Added files:
+	chapel/doc/developer/: internal-errors.txt 
+
