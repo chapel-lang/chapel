@@ -68,7 +68,12 @@ X (Steve) Unify WithExpr and UseExpr which have similar forms
 Priority 2 Tasks
 ----------------
 
-* Implement MemberAccess Setter Getter transform in AST.
+* (John) implement nil to behave as we discussed
+
+* (John/Steve) remove error reporting from low-level code -- propagate errors to
+  high-level (I'll take a first cut at the analysis changes -- john)
+
+* (John) Implement MemberAccess Setter Getter transform in AST.
   Remove MemberAccessExpr.  This will be eliminated pre-analysis
   anyway.  Store it as a CallExpr of a function named '.'
 
@@ -79,15 +84,10 @@ Priority 2 Tasks
 * Implement record passing by reference and insert explicit copies in
   and out of functions when necessary -- eliminate PARAM_REF(?)
 
-* remove error reporting from low-level code -- propagate errors to
-  high-level
-
 * for ?t make DefExpr::exprType a DefExpr
 
 * create dispatch hierarchy and subtype hierarchy (classes appear in
   both; value types only appear in the subtype hierarchy)
-
-* implement nil to behave as we discussed
 
 * implement visibility of methods/nested functions correctly (if we're
   in a method, function names bind to methods; if we're in a function,
