@@ -30,8 +30,7 @@ ResolveTypes::ResolveTypes() {
 static bool types_match(Type* super, Type* sub) {
   if (sub == super) {
     return true;
-  } else if (dynamic_cast<ClassType*>(super) &&
-             dynamic_cast<NilType*>(sub)) {
+  } else if (dynamic_cast<ClassType*>(super) && sub == dtNil) {
     return true;
   } else if (ClassType* superClass = dynamic_cast<ClassType*>(super)) {
     if (ClassType* subClass = dynamic_cast<ClassType*>(sub)) {

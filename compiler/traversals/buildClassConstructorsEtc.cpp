@@ -221,7 +221,7 @@ static void build_record_assignment_function(ClassType* structType) {
     : new ParamSymbol(PARAM_BLANK, "_arg1", structType);
   AList<DefExpr>* args = new AList<DefExpr>(new DefExpr(_arg1));
   ParamSymbol* arg2 = new ParamSymbol(PARAM_BLANK, "_arg2",
-    (analyzeAST) ? dtUnknown : structType);
+    (analyzeAST) ? ((Type*)dtUnknown) : ((Type*)structType));
   args->insertAtTail(new DefExpr(arg2));
   Type *ret_type = analyzeAST ? dtUnknown : dtVoid;
   Symboltable::continueFnDef(fn, args, ret_type);

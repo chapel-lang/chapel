@@ -576,8 +576,12 @@ ForallExpr* Symboltable::finishForallExpr(ForallExpr* forallExpr,
 }
 
 
-Type* Symboltable::defineBuiltinType(char* name, char* cname, Expr* init) {
-  Type* newType = new Type(TYPE_BUILTIN, init);
+PrimitiveType* Symboltable::definePrimitiveType(char* name, char* cname, Expr *initExpr) {
+  return dynamic_cast<PrimitiveType*>(defineBuiltinType(name, cname, new PrimitiveType(initExpr)));
+}
+
+
+Type* Symboltable::defineBuiltinType(char* name, char* cname, Type *newType) {
   TypeSymbol* sym = new TypeSymbol(name, newType);
   sym->cname = copystring(cname);
   newType->addSymbol(sym);

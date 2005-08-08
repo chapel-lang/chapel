@@ -141,7 +141,6 @@ void Type::codegen(FILE* outfile) {
   symbol->codegen(outfile);
 }
 
-
 void Type::codegenDef(FILE* outfile) {
   INT_FATAL(this, "Don't know how to codegenDef() for all types yet");
 }
@@ -251,6 +250,18 @@ bool Type::hasDefaultReadFunction(void) {
 
 AList<Stmt>* Type::buildDefaultReadFunctionBody(ParamSymbol* arg) {
   return new AList<Stmt>();
+}
+
+
+PrimitiveType::PrimitiveType(Expr *initExpr) :
+  Type(TYPE_PRIMITIVE, initExpr)
+{}
+
+
+void PrimitiveType::verify(void) {
+  if (astType != TYPE_PRIMITIVE) {
+    INT_FATAL(this, "Bad PrimitiveType::astType");
+  }
 }
 
 
@@ -641,8 +652,13 @@ int
 is_Scalar_Type(Type *t) {
   if (UserType *ut = dynamic_cast<UserType*>(t))
     return is_Scalar_Type(ut->defType);
-  return t && t != dtUnknown && t != dtString && 
-    (t->astType == TYPE_BUILTIN || t->astType == TYPE_ENUM);
+  return t && 
+    t != dtUnknown && 
+    t != dtString && 
+    t != dtNil && 
+    t != dtAny && 
+    t != dtObject && 
+    (t->astType == TYPE_PRIMITIVE || t->astType == TYPE_ENUM);
 }
 
 
@@ -659,12 +675,14 @@ int
 is_Reference_Type(Type *t) {
   if (UserType *ut = dynamic_cast<UserType*>(t))
     return is_Reference_Type(ut->defType);
+  if (!t)
+    return false;
+  if (t == dtNil || t->astType == TYPE_SUM)
+    return true;
   ClassType* ct = dynamic_cast<ClassType*>(t);
-  return (t && 
-          (t->astType == TYPE_SUM ||
-           (ct &&
-            (ct->classTag == CLASS_CLASS ||
-             ct->classTag == CLASS_VALUECLASS))));
+  return (ct &&
+          (ct->classTag == CLASS_CLASS ||
+           ct->classTag == CLASS_VALUECLASS));
 }
 
 static Expr *
@@ -944,11 +962,9 @@ void MetaType::traverseDefType(Traversal* traversal) {
   TRAVERSE(base, traversal, false);
 }
 
-SumType::SumType(Type* firstType) :
-  Type(TYPE_SUM, new Variable(Symboltable::lookupInternal("nil",
-                                                          SCOPE_INTRINSIC)))
+SumType::SumType() :
+  Type(TYPE_SUM, new Variable(Symboltable::lookupInternal("nil", SCOPE_INTRINSIC)))
 {
-  components.add(firstType);
 }
 
 void SumType::verify(void) {
@@ -1001,34 +1017,22 @@ void VariableType::traverseDefType(Traversal* traversal) {
 
 
 void initType(void) {
-  // define built-in types
-  dtUnknown = Symboltable::defineBuiltinType("???", "???", NULL);
-  dtVoid = Symboltable::defineBuiltinType("void", "void", NULL);
+  dtUnknown = Symboltable::definePrimitiveType("???", "???");
+  dtVoid = Symboltable::definePrimitiveType("void", "void");
+  dtNil = Symboltable::definePrimitiveType("_nilType", "_nilType");
 
-  dtBoolean = Symboltable::defineBuiltinType("boolean", "_boolean",
-                                             new BoolLiteral(false));
-  dtInteger = Symboltable::defineBuiltinType("integer", "_integer64",
-                                             new IntLiteral(0));
-  dtFloat = Symboltable::defineBuiltinType("float", "_float64",
-                                           new FloatLiteral("0.0", 0.0));
-  // We should eventually point this to the new complex
-  dtComplex =
-    Symboltable::defineBuiltinType("complex", "_complex128",
-                                   new FloatLiteral("0.0", 0.0));
-  dtString = Symboltable::defineBuiltinType("string", "_string", NULL);
-  dtNumeric = Symboltable::defineBuiltinType("numeric", "_numeric", NULL);
-  dtAny = Symboltable::defineBuiltinType("any", "_any", NULL);
-  dtObject = Symboltable::defineBuiltinType("object", "_object", NULL);
-  dtLocale = Symboltable::defineBuiltinType("locale", "_locale", NULL);
+  dtBoolean = Symboltable::definePrimitiveType("boolean", "_boolean", new BoolLiteral(false));
+  dtInteger = Symboltable::definePrimitiveType("integer", "_integer64", new IntLiteral(0));
+  dtFloat = Symboltable::definePrimitiveType("float", "_float64", new FloatLiteral("0.0", 0.0));
+  // This should point to the complex type defined in modules/standard/_chpl_complex.chpl
+  dtComplex = Symboltable::definePrimitiveType("complex", "_complex128", new FloatLiteral("0.0", 0.0));
+  dtString = Symboltable::definePrimitiveType("string", "_string");
 
-  // define dtNil.  This doesn't reuse the above because it's a
-  // different subclass of Type.  Could come up with a more clever
-  // way to generalize
-  dtNil = new NilType();
-  TypeSymbol* sym = new TypeSymbol("_nilType", dtNil);
-  sym->cname = copystring("_nilType");
-  dtNil->addSymbol(sym);
-  builtinTypes.add(dtNil);
+  dtNumeric = Symboltable::definePrimitiveType("numeric", "_numeric");
+  dtAny = Symboltable::definePrimitiveType("any", "_any");
+  dtObject = Symboltable::definePrimitiveType("object", "_object");
+
+  dtLocale = Symboltable::definePrimitiveType("locale", "_locale", NULL);
 }
 
 // you can use something like the following cache to 
@@ -1064,8 +1068,8 @@ Type *find_or_make_sum_type(Vec<Type *> *types) {
     INT_FATAL("Trying to create sum_type of less than 2 types");
   }
   qsort(types->v, types->n, sizeof(types->v[0]), compar_baseast);
-  SumType* new_sum_type = new SumType(types->v[0]);
-  for (int i = 1; i < types->n; i++)
+  SumType* new_sum_type = new SumType;
+  for (int i = 0; i < types->n; i++)
     new_sum_type->addType(types->v[i]);
   SumType *old_type = lub_cache.get(new_sum_type);
   if (old_type)
@@ -1079,22 +1083,6 @@ Type *find_or_make_sum_type(Vec<Type *> *types) {
   return new_sum_type;
 }
 
-
-NilType::NilType(void) :
-  Type(TYPE_NIL, NULL)
-{}
-
-
-void NilType::verify(void) {
-  if (astType != TYPE_NIL) {
-    INT_FATAL(this, "Bad NilType::astType");
-  }
-}
-
-
-void NilType::codegen(FILE* outfile) {
-  fprintf(outfile, "void* ");
-}
 
 Type *getMetaType(Type *t) {
   if (t)

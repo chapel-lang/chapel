@@ -307,9 +307,9 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
           // HACK: Special case where write(:nilType) requires dynamic
           // dispatch; Take the other one.
           if (fns.n == 2 && !strcmp(fns.e[1]->name, "write") &&
-              fns.e[1]->formals->only()->sym->type->astType == TYPE_NIL) {
+              fns.e[1]->formals->only()->sym->type == dtNil) {
           } else if (fns.n == 2 && !strcmp(fns.e[0]->name, "write") &&
-                     fns.e[0]->formals->only()->sym->type->astType == TYPE_NIL) {
+                     fns.e[0]->formals->only()->sym->type == dtNil) {
             fns.v[0] = fns.v[1];
           } else {
             if (OP_ISUNARYOP(paren->opTag)) {

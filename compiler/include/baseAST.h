@@ -53,7 +53,7 @@ enum astType_t {
   SYMBOL_LABEL,
 
   TYPE,
-  TYPE_BUILTIN,
+  TYPE_PRIMITIVE,
   TYPE_FN,
   TYPE_ENUM,
   TYPE_USER,
@@ -61,7 +61,6 @@ enum astType_t {
   TYPE_META,
   TYPE_SUM,
   TYPE_VARIABLE,
-  TYPE_NIL,
 
   LIST,
 

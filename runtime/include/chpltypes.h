@@ -1,7 +1,8 @@
 #ifndef _chpltypes_H_
 #define _chpltypes_H_
 
-extern void* nil;
+typedef void* _nilType;
+extern _nilType nil;
 
 typedef enum __boolean {
   false = 0,

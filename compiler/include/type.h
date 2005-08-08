@@ -215,7 +215,7 @@ class SumType : public Type {
  public:
   Vec<Type*> components;
 
-  SumType(Type* init_type);
+  SumType();
   virtual void verify(void); 
   void addType(Type* additionalType);
   virtual void codegenStructName(FILE* outfile);
@@ -233,11 +233,10 @@ class VariableType : public Type {
   void codegen(FILE* outfile);
 };
 
-class NilType : public Type {
+class PrimitiveType : public Type {
  public:
-  NilType(void);
+  PrimitiveType(Expr *init_defaultVal = NULL);
   virtual void verify(void); 
-  void codegen(FILE* outfile);
 };
 
 
@@ -246,23 +245,25 @@ class NilType : public Type {
 #endif
 
 // null-ish types
-TYPE_EXTERN Type* dtUnknown;
-TYPE_EXTERN Type* dtVoid;
-TYPE_EXTERN Type* dtNil;
+TYPE_EXTERN PrimitiveType* dtUnknown;
+TYPE_EXTERN PrimitiveType* dtVoid;
+TYPE_EXTERN PrimitiveType* dtNil;
 
-// built-in types
-TYPE_EXTERN Type* dtBoolean;
-TYPE_EXTERN Type* dtInteger;
-TYPE_EXTERN Type* dtFloat;
-TYPE_EXTERN Type* dtComplex;
-TYPE_EXTERN Type* dtString;
+// primitive types
+TYPE_EXTERN PrimitiveType* dtBoolean;
+TYPE_EXTERN PrimitiveType* dtInteger;
+TYPE_EXTERN PrimitiveType* dtFloat;
+TYPE_EXTERN PrimitiveType* dtComplex;
+TYPE_EXTERN PrimitiveType* dtString;
 
+// internal types
 TYPE_EXTERN Type* dtTuple;
 TYPE_EXTERN Type* dtIndex;
 TYPE_EXTERN Type* dtDomain;
 TYPE_EXTERN Type* dtArray;
 void findInternalTypes(void);
 
+// sum-ish types
 TYPE_EXTERN Type* dtAny;
 TYPE_EXTERN Type* dtNumeric;
 TYPE_EXTERN Type* dtObject;

@@ -899,10 +899,9 @@ build_type(Type *t, bool make_default = true) {
     case TYPE:
       t->asymbol->sym->type_kind = Type_UNKNOWN;
       break;
-    case TYPE_BUILTIN:
-      if (t == dtUnknown) {
+    case TYPE_PRIMITIVE:
+      if (t == dtUnknown)
         t->asymbol->sym->type_kind = Type_UNKNOWN;
-      }
       break;
     case TYPE_FN:
       t->asymbol->sym->type_kind = Type_FUN;
@@ -966,8 +965,6 @@ build_type(Type *t, bool make_default = true) {
       tt->asymbol->sym->meta_type->type = tt->asymbol->sym;
       break;
     }
-    case TYPE_NIL:
-      break;
   }
   if (t->parentType)
     t->asymbol->sym->must_implement_and_specialize(t->parentType->asymbol->sym);
@@ -1306,9 +1303,6 @@ gen_one_defexpr(VarSymbol *var, DefExpr *def) {
         break;
         // ruled out by conditionals above
       case TYPE_ENUM:
-      case TYPE_BUILTIN: 
-      case TYPE_NIL:
-        // do not make it to analysis
       case TYPE_SUM:
       default:
         assert(!"impossible");
@@ -2065,7 +2059,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
   case SYMBOL_ENUM:
   case SYMBOL_LABEL:
   case TYPE:
-  case TYPE_BUILTIN:
+  case TYPE_PRIMITIVE:
   case TYPE_FN:
   case TYPE_ENUM:
   case TYPE_USER:
@@ -2073,7 +2067,6 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
   case TYPE_META:
   case TYPE_SUM:
   case TYPE_VARIABLE:
-  case TYPE_NIL:
   case AST_TYPE_END:
   case LIST:
     assert(!"case");

@@ -312,7 +312,7 @@ char* astTypeName[AST_TYPE_END+1] = {
   "LabelSymbol",
 
   "Type",
-  "BuiltinType",
+  "PrimitiveType",
   "FnType",
   "EnumType",
   "UserType",
@@ -320,7 +320,6 @@ char* astTypeName[AST_TYPE_END+1] = {
   "MetaType",
   "SumType",
   "VariableType",
-  "NilType",
 
   "List",
 
@@ -475,7 +474,7 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     ADD_CHILD(Type, parentType);
     ADD_CHILD(Type, metaType);
     break;
-  case TYPE_BUILTIN:
+  case TYPE_PRIMITIVE:
   case TYPE_FN:
     goto LTypeCommon;
   case TYPE_ENUM:
@@ -501,8 +500,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     goto LTypeCommon;
   case TYPE_VARIABLE:
     ADD_CHILD(VariableType, type);
-    goto LTypeCommon;
-  case TYPE_NIL:
     goto LTypeCommon;
   case AST_TYPE_END: break;
   case LIST: 

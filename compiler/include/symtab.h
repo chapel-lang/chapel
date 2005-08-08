@@ -73,8 +73,8 @@ class Symboltable {
                                      AList<Expr>* indexExpr = new AList<Expr>());
   static ForallExpr* finishForallExpr(ForallExpr* indexExpr, 
                                       Expr* argExpr = NULL);
-  // REPLACED  static EnumSymbol* Symboltable::defineEnumList(Symbol* symList);
-  static Type* Symboltable::defineBuiltinType(char* name, char* cname, Expr* init);
+  static PrimitiveType* Symboltable::definePrimitiveType(char* name, char* cname, Expr* initExpr = NULL);
+  static Type* Symboltable::defineBuiltinType(char* name, char* cname, Type* newType);
   static FnSymbol* startFnDef(FnSymbol* fnsym, bool noparens = false);
   static void continueFnDef(FnSymbol* fnsym, AList<DefExpr>* formals, 
                             Type* retType, bool isRef = false, Expr *whereExp = NULL);
