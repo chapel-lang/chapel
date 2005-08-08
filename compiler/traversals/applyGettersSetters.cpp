@@ -25,11 +25,7 @@ void ApplyGettersSetters::postProcessExpr(Expr* expr) {
     AList<Expr>* arguments = new AList<Expr>();
     arguments->insertAtTail(new Variable(Symboltable::lookupInternal("_methodToken")));
     arguments->insertAtTail(memberAccess->base->copy());
-    Expr* replacement =
-      new CallExpr(
-        new Variable(
-          new UnresolvedSymbol(memberAccess->member->name)),
-        arguments);
+    Expr* replacement = new CallExpr(memberAccess->member->name, arguments);
     expr->replace(replacement);
   }
   if (CallExpr* parenOpExpr = dynamic_cast<CallExpr*>(expr)) {
@@ -37,11 +33,7 @@ void ApplyGettersSetters::postProcessExpr(Expr* expr) {
       AList<Expr>* arguments = parenOpExpr->argList->copy();
       arguments->insertAtHead(memberAccess->base->copy());
       arguments->insertAtHead(new Variable(Symboltable::lookupInternal("_methodToken")));
-      Expr* replacement =
-        new CallExpr(
-          new Variable(
-            new UnresolvedSymbol(memberAccess->member->name)),
-          arguments);
+      Expr* replacement = new CallExpr(memberAccess->member->name, arguments);
       expr->replace(replacement);
     }
   }

@@ -20,7 +20,7 @@ class InsertNestedFuncInIterator : public Traversal {
      if (Variable*  v = dynamic_cast<Variable*>(fc->baseExpr))
       if (!strcmp(v->var->name, "_yield")) {
         AList<Expr>* new_arg_list = getNewArgList(fc->argList);
-        CallExpr* fn_call = new CallExpr(new Variable(_fn_call_sym), new_arg_list->copy());
+        CallExpr* fn_call = new CallExpr(_fn_call_sym, new_arg_list->copy());
         fc->replace(fn_call);
       }
     }
@@ -65,7 +65,7 @@ void CreateNestedFuncIterators::postProcessExpr(Expr* expr) {
         AList<DefExpr>* encl_var_formals = addEnclVarFormals(func_it_sym, encl_scope_var_uses, new Map<BaseAST*,BaseAST*>());
         //insert nested function created using the body of the iterator loop
         
-        CallExpr* new_func_call = new CallExpr(new Variable(func_it_sym), paren_op->argList->copy());
+        CallExpr* new_func_call = new CallExpr(func_it_sym, paren_op->argList->copy());
         addFuncActuals(new_func_call, encl_scope_var_uses);
         paren_op->parentStmt->insertBefore(new ExprStmt(new_func_call));
         //place body of for loop in a nested function definition

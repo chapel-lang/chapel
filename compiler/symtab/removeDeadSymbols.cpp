@@ -26,7 +26,7 @@ void RemoveDeadSymbols::processSymbol(Symbol* sym) {
   if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(sym)) {
     if (!type_is_used(typeSym)) {
       markAsDeadAndExtract(sym);
-      if (StructuralType* structuralType = dynamic_cast<StructuralType*>(typeSym->definition)) {
+      if (ClassType* structuralType = dynamic_cast<ClassType*>(typeSym->definition)) {
         Symboltable::removeScope(structuralType->structScope);
       }
     }

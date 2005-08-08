@@ -35,6 +35,8 @@ void InsertFunctionTemps::postProcessStmt(Stmt* stmt) {
     exprs.add(exprStmt->expr);
   } else if (WhileLoopStmt* whileStmt = dynamic_cast<WhileLoopStmt*>(stmt)) {
     exprs.add(whileStmt->condition);
+  } else if (ForLoopStmt* forStmt = dynamic_cast<ForLoopStmt*>(stmt)) {
+    exprs.add(forStmt->iterators->only());
   } else if (CondStmt* condStmt = dynamic_cast<CondStmt*>(stmt)) {
     exprs.add(condStmt->condExpr);
   } else if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {

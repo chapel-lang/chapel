@@ -205,11 +205,10 @@ resolve_no_analysis(Expr *expr) {
       INT_FATAL(expr, "Unable to resolve function without analysis");
     }
     AList<Expr>* arguments = copy_argument_list(paren);
-    Expr* function = new Variable(fns.e[0]);
     if (!strcmp("this", fns.e[0]->name)) {
       arguments->insertAtHead(paren->baseExpr->copy());
     }
-    CallExpr* new_expr = new CallExpr(function, arguments);
+    CallExpr* new_expr = new CallExpr(fns.e[0], arguments);
     new_expr->opTag = paren->opTag;
     expr->replace(new_expr);
     expr = new_expr;
@@ -225,17 +224,16 @@ resolve_no_analysis(Expr *expr) {
       }
     }
     if (dynamic_cast<UnresolvedSymbol*>(member_access->member)) {
-      StructuralType* struct_scope =
-        dynamic_cast<StructuralType*>(member_access->base->typeInfo());
+      ClassType* struct_scope =
+        dynamic_cast<ClassType*>(member_access->base->typeInfo());
       if (struct_scope) {
         member_access->member = 
           Symboltable::lookupInScope(member_access->member->name,
                                      struct_scope->structScope);
 
         if (dynamic_cast<FnSymbol*>(member_access->member)) {
-          Expr* arguments = member_access->base->copy();
-          Expr* function = new Variable(member_access->member);
-          CallExpr *new_expr = new CallExpr(function, new AList<Expr>(arguments));
+          CallExpr *new_expr = new CallExpr(member_access->member,
+                                            member_access->base->copy());
           expr->replace(new_expr);
           expr = new_expr;
         }
@@ -266,9 +264,7 @@ resolve_binary_operator(CallExpr *op, FnSymbol *resolved = 0) {
     if (fns.e[0]->defPoint->parentStmt->hasPragma("builtin")) {
       return expr;
     }
-    AList<Expr>* args = new AList<Expr>(op->get(1)->copy());
-    args->insertAtTail(op->get(2)->copy());
-    CallExpr *new_expr = new CallExpr(new Variable(fns.e[0]), args);
+    CallExpr *new_expr = new CallExpr(fns.e[0], op->copy());
     expr->replace(new_expr);
     expr = new_expr;
   }
@@ -328,11 +324,10 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
         }
 
         AList<Expr>* arguments = copy_argument_list(paren);
-        Expr* function = new Variable(fns.e[0]);
         if (!strcmp("this", fns.e[0]->name)) {
           arguments->insertAtHead(paren->baseExpr->copy());
         }
-        CallExpr *new_expr = new CallExpr(function, arguments);
+        CallExpr *new_expr = new CallExpr(fns.e[0], arguments);
         if (fns.e[0]->defPoint->parentStmt->hasPragma("builtin")) {
           new_expr->opTag = paren->opTag;
         }
@@ -350,13 +345,12 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
         Vec<FnSymbol*> fns;
         call_info(aop, fns);
         if (fns.n == 1) {
-          Expr* function = new Variable(fns.e[0]);
           AList<Expr>* arguments = new AList<Expr>();
           if (!strcmp("=this", fns.e[0]->name))
             arguments->insertAtTail(paren->baseExpr->copy());
           arguments->add(copy_argument_list(paren));
           arguments->insertAtTail(aop->get(2)->copy());
-          CallExpr *new_expr = new CallExpr(function, arguments);
+          CallExpr *new_expr = new CallExpr(fns.e[0], arguments);
           new_expr->opTag = paren->opTag;
           aop->replace(new_expr);
           expr = new_expr;
@@ -377,10 +371,7 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
           Expr *rhs = aop->get(2)->copy();
           if (f_op) {
             if (!is_builtin(f_op)) {
-              AList<Expr>* op_arguments = new AList<Expr>(member_access->copy());
-              op_arguments->insertAtTail(rhs);
-              Expr* op_function = new Variable(f_op);
-              rhs = new CallExpr(op_function, op_arguments);
+              rhs = new CallExpr(f_op, member_access->copy(), rhs);
             } else {
               rhs = resolve_binary_operator(new CallExpr(gets_to_op(aop->opTag), aop->get(1)->copy(), aop->get(2)->copy()), f_op);
             }
@@ -394,8 +385,8 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
             expr = aop->get(1);
           }
         } else {
-          if (StructuralType* struct_scope =
-              dynamic_cast<StructuralType*>(member_access->base->typeInfo())) {
+          if (ClassType* struct_scope =
+              dynamic_cast<ClassType*>(member_access->base->typeInfo())) {
             member_access->member = 
               Symboltable::lookupInScope(member_access->member->name,
                                          struct_scope->structScope);
@@ -425,16 +416,14 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
       Vec<FnSymbol *> fns;
       call_info(member_access, fns);
       if (fns.n == 1) {
-        Expr* arguments = member_access->base->copy();
-        Expr* function = new Variable(fns.v[0]);
-        Expr *new_expr = new CallExpr(function, new AList<Expr>(arguments));
-        expr->replace(new CallExpr(function, new AList<Expr>(arguments->copy())));
+        Expr *new_expr = new CallExpr(fns.v[0], member_access->base->copy());
+        expr->replace(new CallExpr(fns.v[0], member_access->base->copy()));
         expr = new_expr;
       } else
         INT_FATAL(expr, "Unable to resolve member access");
     } else {
-      if (StructuralType* struct_scope =
-          dynamic_cast<StructuralType*>(member_access->base->typeInfo())) {
+      if (ClassType* struct_scope =
+          dynamic_cast<ClassType*>(member_access->base->typeInfo())) {
         member_access->member = 
           Symboltable::lookupInScope(member_access->member->name,
                                      struct_scope->structScope);

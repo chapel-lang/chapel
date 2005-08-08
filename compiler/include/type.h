@@ -137,24 +137,46 @@ class UserType : public Type {
 };
 
 
-class StructuralType : public Type {
+enum ClassTag {
+  CLASS_CLASS,
+  CLASS_VALUECLASS,
+  CLASS_RECORD,
+  CLASS_UNION
+};
+
+enum unionCall {
+  UNION_SET = 0,
+  UNION_CHECK,
+  UNION_CHECK_QUIET,
+
+  NUM_UNION_CALLS
+};
+
+class ClassType : public Type {
  public:
+  ClassTag classTag;
   SymScope* structScope;
   AList<Stmt>* declarationList;
-  StructuralType* parentStruct;
+  ClassType* parentStruct;
+
+  Vec<ClassType*> parentClasses;
+  bool isPattern;
+  EnumType* fieldSelector;
 
   Vec<Symbol*> fields;
   Vec<TypeSymbol*> types;
 
-  StructuralType(astType_t astType, Expr* init_defaultVal = NULL);
+  ClassType(ClassTag initClassTag);
   virtual void verify(void); 
+  COPY_DEF(ClassType);
   void addDeclarations(AList<Stmt>* newDeclarations,
                        Stmt* afterStmt = NULL);
   void setScope(SymScope* init_structScope);
-  void copyGuts(StructuralType* copy_type, bool clone, Map<BaseAST*,BaseAST*>* map);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseDefType(Traversal* traversal);
+
+  bool isNominalType();
 
   virtual void buildConstructorBody(AList<Stmt>* stmts, Symbol* _this, 
                                     AList<DefExpr>* arguments);
@@ -171,60 +193,12 @@ class StructuralType : public Type {
 
   virtual bool hasDefaultWriteFunction(void);
   virtual AList<Stmt>* buildDefaultWriteFunctionBody(ParamSymbol* arg);
-};
+
+  void ClassType::buildFieldSelector(void);
+  CallExpr* ClassType::buildSafeUnionAccessCall(unionCall type, Expr* base, 
+                                                Symbol* field);
 
 
-class ClassType : public StructuralType {
- public:
-  Vec<ClassType*> parentClasses;
-  ClassType(astType_t astType = TYPE_CLASS);
-  virtual void verify(void); 
-  COPY_DEF(ClassType);
-  virtual void codegenStructName(FILE* outfile);
-  virtual void ClassType::codegenMemberAccessOp(FILE* outfile);
-
-  virtual bool blankIntentImpliesRef(void);
-  virtual bool implementedUsingCVals(void);
-};
-
-
-class RecordType : public StructuralType {
- public:
-  bool isPattern;
-  RecordType(void);
-  virtual void verify(void); 
-  COPY_DEF(RecordType);
-};
-
-
-enum unionCall {
-  UNION_SET = 0,
-  UNION_CHECK,
-  UNION_CHECK_QUIET,
-
-  NUM_UNION_CALLS
-};
-
-
-class UnionType : public StructuralType {
- public:
-  EnumType* fieldSelector;
-
-  UnionType();
-  virtual void verify(void); 
-  COPY_DEF(UnionType);
-
-  void buildFieldSelector(void);
-  CallExpr* buildSafeUnionAccessCall(unionCall type, Expr* base, Symbol* field);
-  void buildConstructorBody(AList<Stmt>* stmts, Symbol* _this, 
-                            AList<DefExpr>* arguments);
-
-  void codegenStartDefFields(FILE* outfile);
-  void codegenStopDefFields(FILE* outfile);
-  void codegenMemberAccessOp(FILE* outfile);
-
-  virtual bool hasDefaultWriteFunction(void);
-  virtual AList<Stmt>* buildDefaultWriteFunctionBody(ParamSymbol* arg);
 };
 
 

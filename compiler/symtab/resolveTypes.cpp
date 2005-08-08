@@ -30,12 +30,14 @@ ResolveTypes::ResolveTypes() {
 static bool types_match(Type* super, Type* sub) {
   if (sub == super) {
     return true;
-  } else if (dynamic_cast<StructuralType*>(super) &&
+  } else if (dynamic_cast<ClassType*>(super) &&
              dynamic_cast<NilType*>(sub)) {
     return true;
   } else if (ClassType* superClass = dynamic_cast<ClassType*>(super)) {
     if (ClassType* subClass = dynamic_cast<ClassType*>(sub)) {
-      if (subClass->parentClasses.in(superClass)) {
+      if (superClass->isNominalType() &&
+          subClass->isNominalType() &&
+          subClass->parentClasses.in(superClass)) {
         return true;
       }
     }

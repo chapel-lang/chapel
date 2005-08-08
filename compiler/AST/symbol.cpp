@@ -145,7 +145,7 @@ bool Symbol::greaterThan(Symbol* s1, Symbol* s2) {
 
 void Symbol::codegen(FILE* outfile) {
   if (hasPragma("codegen data")) {
-    StructuralType* dataType = dynamic_cast<StructuralType*>(type);
+    ClassType* dataType = dynamic_cast<ClassType*>(type);
     dataType->methods.v[0]->retType->codegen(outfile);
     fprintf(outfile, "*", cname);
   } else {
@@ -483,8 +483,8 @@ TypeSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   Type* new_definition = COPY_INTERNAL(definition);
   TypeSymbol* new_definition_symbol = new TypeSymbol(copystring(name), new_definition);
   new_definition->addSymbol(new_definition_symbol);
-  if (StructuralType* stype =
-      dynamic_cast<StructuralType*>(new_definition)) {
+  if (ClassType* stype =
+      dynamic_cast<ClassType*>(new_definition)) {
     stype->structScope->setContext(NULL, new_definition_symbol);
   }
   new_definition_symbol->cname = copystring(cname);
@@ -494,7 +494,7 @@ TypeSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
 
 TypeSymbol* TypeSymbol::clone(Map<BaseAST*,BaseAST*>* map) {
   static int uid = 1; // Unique ID for cloned classes
-  StructuralType* old_class_type = dynamic_cast<StructuralType*>(definition);
+  ClassType* old_class_type = dynamic_cast<ClassType*>(definition);
   if (!old_class_type) {
     INT_FATAL(this, "Attempt to clone non-class type");
   }
@@ -509,7 +509,7 @@ TypeSymbol* TypeSymbol::clone(Map<BaseAST*,BaseAST*>* map) {
   }
   clone->cname = glomstrings(3, clone->cname, "_clone_", intstring(uid++));
   DefExpr* new_def_expr = new DefExpr(clone);
-  StructuralType* new_class_type = dynamic_cast<StructuralType*>(clone->definition);
+  ClassType* new_class_type = dynamic_cast<ClassType*>(clone->definition);
   new_class_type->structScope->setContext(NULL, clone, new_def_expr);
   defPoint->parentStmt->insertBefore(new ExprStmt(new_def_expr));
   Symboltable::setCurrentScope(save_scope);
@@ -724,7 +724,7 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
     }
   }
 
-  Expr* fn_call = new CallExpr(new Variable(this), wrapperActuals);
+  Expr* fn_call = new CallExpr(this, wrapperActuals);
   if (function_returns_void(this)) {
     wrapperBody->insertAtTail(new ExprStmt(fn_call));
   } else {
@@ -791,7 +791,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
       wrapper_formal = wrapper_formals->next();
     }
   }
-  CallExpr* fn_call = new CallExpr(new Variable(this), actuals);
+  CallExpr* fn_call = new CallExpr(this, actuals);
   if (function_returns_void(this)) {
     wrapper_body->insertAtTail(new ExprStmt(fn_call));
   } else {
@@ -842,7 +842,7 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_actuals) {
     }
   }
 
-  Expr* fn_call = new CallExpr(new Variable(this), actuals);
+  Expr* fn_call = new CallExpr(this, actuals);
   AList<Stmt>* body = new AList<Stmt>();
   if (function_returns_void(this)) {
     body->insertAtTail(new ExprStmt(fn_call));
@@ -941,7 +941,7 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
     SymScope* save_scope = Symboltable::setCurrentScope(typeSym->parentScope);
     clone = typeSym->clone(map);
     instantiate_add_subs(substitutions, map);
-    StructuralType* cloneType = dynamic_cast<StructuralType*>(clone->definition);
+    ClassType* cloneType = dynamic_cast<ClassType*>(clone->definition);
     Vec<TypeSymbol *> types;
     types.move(cloneType->types);
     for (int i = 0; i < types.n; i++) {
@@ -1318,8 +1318,8 @@ void ModuleSymbol::createInitFn(void) {
     // definition (we'll wrap it in a conditional just below, after
     // filtering)
     Expr* assignVar = new CallExpr(OP_GETSNORM,
-                                      new Variable(new UnresolvedSymbol(runOnce)),
-                                      new BoolLiteral(false));
+                                   new Variable(new UnresolvedSymbol(runOnce)),
+                                   new BoolLiteral(false));
     definition->insertAtHead(new ExprStmt(assignVar));
   }
 

@@ -66,7 +66,7 @@ tagGenerics(Type *t) {
   forv_Vec(FnSymbol, fn, t->methods)
     if (fn->isGeneric)
       typeVariables.set_union(fn->typeVariables);
-  if (StructuralType *st = dynamic_cast<StructuralType *>(t)) {
+  if (ClassType *st = dynamic_cast<ClassType *>(t)) {
     forv_Vec(Symbol, s, st->fields)
       assert(!dynamic_cast<TypeSymbol*>(s)); // play it safe
     forv_Vec(TypeSymbol, s, st->types) {

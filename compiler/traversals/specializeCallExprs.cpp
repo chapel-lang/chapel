@@ -6,36 +6,26 @@
 
 
 static void
-decomposeStmtFunction(CallExpr* parenOpExpr, char* newFunctionName) {
-  for (Expr* arg = parenOpExpr->argList->first(); arg; arg = parenOpExpr->argList->next()) {
-    Variable* function = new Variable(new UnresolvedSymbol(newFunctionName));
-    Stmt* replacement = new ExprStmt(new CallExpr(function, new AList<Expr>(arg->copy())));
-    parenOpExpr->parentStmt->insertBefore(replacement);
+decomposeStmtFunction(CallExpr* call, char* newFunctionName) {
+  for_alist(Expr, arg, call->argList) {
+    call->parentStmt->insertBefore
+      (new ExprStmt(new CallExpr(newFunctionName, arg->copy())));
   }
 }
 
 
 static ExprStmt* genExit(void) {
-  Expr* rtexit = new Variable(new UnresolvedSymbol("exit"));
-  IntLiteral* exitZero = new IntLiteral(0);
-  AList<Expr>* status = new AList<Expr>(exitZero);
-  Expr* callRtexit = new CallExpr(rtexit, status);
-  return new ExprStmt(callRtexit);
+  return new ExprStmt(new CallExpr("exit", new IntLiteral(0)));
 }
 
 
 static ExprStmt* genWriteln(void) {
-  Expr* writeln = new Variable(new UnresolvedSymbol("writeln"));
-  Expr* callWriteln = new CallExpr(writeln);
-  return new ExprStmt(callWriteln);
+  return new ExprStmt(new CallExpr("writeln"));
 }
 
 
 static ExprStmt* genWrite(Literal* expression) {
-  Expr* write = new Variable(new UnresolvedSymbol("write"));
-  AList<Expr>* msg = new AList<Expr>(expression);
-  Expr* writeMsg = new CallExpr(write, msg);
-  return new ExprStmt(writeMsg);
+  return new ExprStmt(new CallExpr("write", expression));
 }
 
 
@@ -53,8 +43,8 @@ static ExprStmt* genStringWriteExpr(char* newString) {
 
 void SpecializeCallExprs::postProcessStmt(Stmt* stmt) {
   if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {
-    if (CallExpr* parenOpExpr = dynamic_cast<CallExpr*>(exprStmt->expr)) {
-      if (Variable* baseVar = dynamic_cast<Variable*>(parenOpExpr->baseExpr)) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(exprStmt->expr)) {
+      if (Variable* baseVar = dynamic_cast<Variable*>(call->baseExpr)) {
         if (strcmp(baseVar->var->name, "assert") == 0) {
           BlockStmt* thenStmt = Symboltable::startCompoundStmt();
 
@@ -72,32 +62,32 @@ void SpecializeCallExprs::postProcessStmt(Stmt* stmt) {
           thenBody->insertAtTail(genExit());
 
           thenStmt = Symboltable::finishCompoundStmt(thenStmt, thenBody);
-          int length = parenOpExpr->argList->length();
+          int length = call->argList->length();
           if (length != 1) {
-            USR_FATAL(parenOpExpr->argList, "Assert takes exactly one "
+            USR_FATAL(call->argList, "Assert takes exactly one "
                       "expression; you've given it %d.", length);
           }
-          Expr* test = parenOpExpr->argList->only();
+          Expr* test = call->argList->only();
           Expr* notTest = new CallExpr(OP_LOGNOT, test->copy());
           Stmt* assertIfStmt = new CondStmt(notTest, thenStmt);
-          parenOpExpr->parentStmt->insertBefore(assertIfStmt);
-          parenOpExpr->parentStmt->remove();          
+          call->parentStmt->insertBefore(assertIfStmt);
+          call->parentStmt->remove();          
 
         } else if (strcmp(baseVar->var->name, "halt") == 0) {
-          decomposeStmtFunction(parenOpExpr, "write");
-          parenOpExpr->parentStmt->insertBefore(genWriteln());
-          parenOpExpr->parentStmt->insertBefore(genExit());
-          parenOpExpr->parentStmt->remove();
+          decomposeStmtFunction(call, "write");
+          call->parentStmt->insertBefore(genWriteln());
+          call->parentStmt->insertBefore(genExit());
+          call->parentStmt->remove();
         } else if (strcmp(baseVar->var->name, "read") == 0) {
-          decomposeStmtFunction(parenOpExpr, "read");
-          parenOpExpr->parentStmt->remove();
+          decomposeStmtFunction(call, "read");
+          call->parentStmt->remove();
         } else if (strcmp(baseVar->var->name, "write") == 0) {
-          decomposeStmtFunction(parenOpExpr, "write");
-          parenOpExpr->parentStmt->remove();
+          decomposeStmtFunction(call, "write");
+          call->parentStmt->remove();
         } else if (strcmp(baseVar->var->name, "writeln") == 0) {
-          decomposeStmtFunction(parenOpExpr, "write");
-          parenOpExpr->parentStmt->insertBefore(genWriteln());
-          parenOpExpr->parentStmt->remove();
+          decomposeStmtFunction(call, "write");
+          call->parentStmt->insertBefore(genWriteln());
+          call->parentStmt->remove();
         }
       }
     }
@@ -106,24 +96,19 @@ void SpecializeCallExprs::postProcessStmt(Stmt* stmt) {
 
 
 void SpecializeCallExprs::postProcessExpr(Expr* expr) {
-  Expr* paren_replacement = NULL;
   if (CallExpr* paren = dynamic_cast<CallExpr*>(expr)) {
     if (Variable* baseVar = dynamic_cast<Variable*>(paren->baseExpr)) {
       if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(baseVar->var)) {
-        if (StructuralType* ctype = dynamic_cast<StructuralType*>(ts->definition)) {
+        if (ClassType* ctype = dynamic_cast<ClassType*>(ts->definition)) {
           if (ctype->defaultConstructor) {
-            paren_replacement = new CallExpr(new Variable(new UnresolvedSymbol(ctype->defaultConstructor->name)), paren->argList);
+            expr->replace(
+              new CallExpr(ctype->defaultConstructor->name, paren->argList));
           } else {
             INT_FATAL(expr, "structural type has no default constructor");
           }
         }
-      } else if (dynamic_cast<FnSymbol*>(baseVar->var)) {
-        paren_replacement = new CallExpr(baseVar, paren->argList);
       }
     }
-  }
-  if (paren_replacement) {
-    expr->replace(paren_replacement);
   }
 }
 

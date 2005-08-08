@@ -98,7 +98,7 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
         while (formal) {
           if (dynamic_cast<ParamSymbol*>(formal->sym)->requiresCopyBack() && actual) {
             Expr* copyBack = new CallExpr(OP_GETSNORM, actual->copy(),
-                                             newActual->copy());
+                                          newActual->copy());
             ExprStmt* copyBackStmt = new ExprStmt(copyBack);
             body->insertAtTail(copyBackStmt);
           }

@@ -48,11 +48,7 @@ void ReconstructIterators::processSymbol(Symbol* sym) {
                                                  NULL,
                                                  VAR_NORMAL,
                                                  VAR_VAR);
-  def->exprType = new CallExpr(
-                    new Variable(
-                      new UnresolvedSymbol("seq")),
-                    new AList<Expr>(
-                      new Variable(elt_type)));
+  def->exprType = new CallExpr("seq", new Variable(elt_type));
   Symbol* seq = def->sym;
 
   fn->body->body->insertAtHead(new ExprStmt(def));

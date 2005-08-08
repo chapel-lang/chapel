@@ -118,10 +118,10 @@ void HtmlView::postProcessStmt(Stmt* stmt) {
   output();
 }
 
-StructuralType *
+ClassType *
 structuralTypeSymbol(Symbol *s) {
   if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(s))
-    if (StructuralType *st = dynamic_cast<StructuralType*>(ts->definition))
+    if (ClassType *st = dynamic_cast<ClassType*>(ts->definition))
       return st;
   return NULL;
 }
@@ -176,7 +176,7 @@ void HtmlView::postProcessExpr(Expr* expr) {
   } else if (DefExpr* e = dynamic_cast<DefExpr*>(expr)) {
     if (dynamic_cast<FnSymbol*>(e->sym) || 
         (dynamic_cast<TypeSymbol*>(e->sym) &&
-         dynamic_cast<StructuralType*>(e->sym->type))) {
+         dynamic_cast<ClassType*>(e->sym->type))) {
       write("</UL>\n");
       if (FnSymbol* fn = dynamic_cast<FnSymbol*>(e->sym)) {
         for (BaseAST* tmp = fn->copyFrom; tmp; tmp = tmp->copyFrom) {

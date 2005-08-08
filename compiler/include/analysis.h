@@ -20,7 +20,7 @@ class Stmt;
 class ASTCopyContext;
 class Sym;
 class TypeSymbol;
-class StructuralType;
+class ClassType;
 class VarSymbol;
 
 class ACallbacks : public Callbacks {
@@ -95,7 +95,7 @@ int constant_info(BaseAST *a, Vec<Expr *> &constants, Symbol *s = 0);
 float execution_frequency_info(Expr *);
 float execution_frequency_info(FnSymbol *);
 void resolve_member_access(Expr *e, int *offset, Type **type); 
-void resolve_member(StructuralType *t, VarSymbol *v, int *offset, Type **type); 
+void resolve_member(ClassType *t, VarSymbol *v, int *offset, Type **type); 
 void structural_subtypes(Type *t, Vec<Type *> subtypes);
 
 enum { CALL_INFO_FIND_SINGLE, 

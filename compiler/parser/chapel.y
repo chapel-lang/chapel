@@ -554,11 +554,11 @@ enum_decl:
 
 class_record_union:
   TCLASS
-    { $$ = new ClassType(); }
+    { $$ = new ClassType(CLASS_CLASS); }
 | TRECORD
-    { $$ = new RecordType(); }
+    { $$ = new ClassType(CLASS_RECORD); }
 | TUNION
-    { $$ = new UnionType(); }
+    { $$ = new ClassType(CLASS_UNION); }
 ;
 
 
@@ -698,14 +698,13 @@ record_tuple_inner_type:
   record_inner_var_ls TRP
     {
       SymScope *scope = Symboltable::popScope();
-      $$ = Symboltable::defineStructType(glomstrings(2, "_anon_record", intstring(anon_record_uid++)), new RecordType(), scope, $1);
+      $$ = Symboltable::defineStructType(glomstrings(2, "_anon_record", intstring(anon_record_uid++)), new ClassType(CLASS_RECORD), scope, $1);
     }
 | tuple_inner_type_ls TRP
     {
       Symboltable::popScope();
       char *tupleName = glomstrings(2, "_tuple", intstring($1->length()));
-      $$ = new CallExpr(
-             new Variable(new UnresolvedSymbol(tupleName)), $1);
+      $$ = new CallExpr(tupleName, $1);
     }
 ;
 
@@ -718,7 +717,7 @@ record_tuple_type:
                 decl_ls TRCBR
     {
       SymScope *scope = Symboltable::popScope();
-      $$ = Symboltable::defineStructType(glomstrings(2, "_anon_record", intstring(anon_record_uid++)), new RecordType(), scope, $4);
+      $$ = Symboltable::defineStructType(glomstrings(2, "_anon_record", intstring(anon_record_uid++)), new ClassType(CLASS_RECORD), scope, $4);
     }
 | TLP
     {
@@ -831,12 +830,12 @@ formal:
     }
 | TLP formal_ls TRP
     {
-      RecordType *t = new RecordType();
+      ClassType *t = new ClassType(CLASS_RECORD);
       // NOTE:
       //   change DefExpr into ExprStmt because functions take 
       //   a list of DefExpr but records take a list of Stmt
       // NOTE:
-      //   this RecordType has members which are ParamSymbols
+      //   this record has members which are ParamSymbols
       AList<Stmt> *stmts = new AList<Stmt>;
       for_alist(DefExpr, x, $2) {
         stmts->insertAtTail(new ExprStmt(x));
@@ -1050,15 +1049,11 @@ type:
     }
 | non_tuple_lvalue TOF variable_expr
     {
-      $$ = new CallExpr($1, new AList<Expr>(new NamedExpr("elt_type", $3)));
+      $$ = new CallExpr($1, new NamedExpr("elt_type", $3));
     }
 | tuple_multiplier TSTAR variable_expr
     {
-      AList<Expr>* argList = new AList<Expr>();
-      argList->insertAtTail($3);
-      argList->insertAtTail($1);
-      Expr* baseExpr = new Variable(new UnresolvedSymbol("_htuple"));
-      $$ = new CallExpr(baseExpr, argList);
+      $$ = new CallExpr("_htuple", $3, $1);
     }
 ;
 
@@ -1154,12 +1149,7 @@ tuple_paren_expr:
               glomstrings(2, "_f", intstring(++size)),
               expr->copy()));
         }
-        $$ =
-          new CallExpr(
-            new Variable(
-              new UnresolvedSymbol(
-                glomstrings(2, "_tuple", intstring(size)))),
-            argList);
+        $$ = new CallExpr(glomstrings(2, "_tuple", intstring(size)), argList);
       }
     }
 ;
@@ -1199,12 +1189,7 @@ atom:
 seq_expr:
   TSEQBEGIN expr_ls TSEQEND
     {
-      Expr* seqLiteral = 
-        new CallExpr(
-          new Variable(
-            new UnresolvedSymbol("seq")),
-          new AList<Expr>(
-            new Variable(dtUnknown->symbol)));
+      Expr* seqLiteral = new CallExpr("seq", new Variable(dtUnknown->symbol));
       for_alist(Expr, element, $2) {
         element->remove();
         seqLiteral =
@@ -1246,11 +1231,7 @@ expr:
     }
 | expr TCOLON STRINGLITERAL
   { 
-    Variable* _tostring =
-      new Variable(new UnresolvedSymbol("_tostring"));
-    AList<Expr>* args = new AList<Expr>($1);
-    args->insertAtTail(new StringLiteral($3));
-    $$ = new CallExpr(_tostring, args);
+    $$ = new CallExpr("_tostring", $1, new StringLiteral($3));
   }
 | range %prec TDOTDOT
 | if_expr
@@ -1316,12 +1297,7 @@ reduction:
 range:
   expr TDOTDOT expr
     {
-      AList<Expr>* argList = new AList<Expr>();
-      argList->insertAtTail($1);
-      argList->insertAtTail($3);
-      argList->insertAtTail(new IntLiteral(1));
-      Expr* baseExpr = new Variable(new UnresolvedSymbol("_aseq"));
-      $$ = new CallExpr(baseExpr, argList);
+      $$ = new CallExpr("_aseq", $1, $3, new IntLiteral(1));
     }
 ;
 
@@ -1339,11 +1315,7 @@ literal:
 | COMPLEXLITERAL
     {
       yytext[strlen(yytext)-1] = '\0';
-      $$ = new CallExpr(
-             new Variable(
-               new UnresolvedSymbol("complex")),
-             new AList<Expr>(
-               new FloatLiteral(yytext, atof(yytext))));
+      $$ = new CallExpr("complex", new FloatLiteral(yytext, atof(yytext)));
     }
 | STRINGLITERAL
     { $$ = new StringLiteral($1); }

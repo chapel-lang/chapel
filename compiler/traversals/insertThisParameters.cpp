@@ -15,7 +15,7 @@ void InsertThisParameters::preProcessExpr(Expr* expr) {
    *** Mangle type names in class types
    ***/
   if (dynamic_cast<TypeSymbol*>(defExpr->sym)) {
-    if (StructuralType* classType = dynamic_cast<StructuralType*>(defExpr->sym->type)) {
+    if (ClassType* classType = dynamic_cast<ClassType*>(defExpr->sym->type)) {
       forv_Vec(TypeSymbol, type, classType->types) {
         type->cname = glomstrings(4, "_", classType->symbol->cname, "_", type->cname);
       }
@@ -65,10 +65,9 @@ void InsertThisParameters::preProcessExpr(Expr* expr) {
       dynamic_cast<VarSymbol*>(fn->_this)->noDefaultInit = true;
       fn->body->body->insertAtHead(new ExprStmt(this_decl));
       char* description = glomstrings(2, "instance of class ", typeSym->name);
-      AList<Expr>* alloc_args = new AList<Expr>( new Variable(typeSym));
-      alloc_args->insertAtTail(new StringLiteral(description));
-      Symbol* alloc_sym = Symboltable::lookupInternal("_chpl_alloc");
-      Expr* alloc_rhs = new CallExpr(new Variable(alloc_sym), alloc_args);
+      Expr* alloc_rhs = new CallExpr(Symboltable::lookupInternal("_chpl_alloc"),
+                                     new Variable(typeSym),
+                                     new StringLiteral(description));
       Expr* alloc_lhs = new Variable(fn->_this);
       Expr* alloc_expr = new CallExpr(OP_GETSNORM, alloc_lhs, alloc_rhs);
       Stmt* alloc_stmt = new ExprStmt(alloc_expr);
@@ -77,7 +76,7 @@ void InsertThisParameters::preProcessExpr(Expr* expr) {
       Symboltable::setCurrentScope(saveScope);
 
       // fix type variables, associate by name
-      if (StructuralType* structType = dynamic_cast<StructuralType*>(typeSym->definition)) {
+      if (ClassType* structType = dynamic_cast<ClassType*>(typeSym->definition)) {
         for_alist(DefExpr, arg, fn->formals) {
           if (dynamic_cast<ParamSymbol*>(arg->sym)->isGeneric) {
             forv_Vec(TypeSymbol, tmp, structType->types) {

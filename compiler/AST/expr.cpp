@@ -663,8 +663,8 @@ Type* MemberAccess::typeInfo(void) {
     return member_type;
   } else if (member->type != dtUnknown) {
     return member->type;
-  } else if (StructuralType* ctype =
-             dynamic_cast<StructuralType*>(base->typeInfo())) {
+  } else if (ClassType* ctype =
+             dynamic_cast<ClassType*>(base->typeInfo())) {
     Symbol* sym = Symboltable::lookupInScope(member->name, ctype->structScope);
     if (sym) {
       if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(sym))
@@ -690,9 +690,9 @@ void MemberAccess::print(FILE* outfile) {
 
 
 void MemberAccess::codegen(FILE* outfile) {
-    StructuralType* base_type = dynamic_cast<StructuralType*>(base->typeInfo());
+    ClassType* base_type = dynamic_cast<ClassType*>(base->typeInfo());
     if (member_type) {
-      if (dynamic_cast<UnionType*>(base_type)) {
+      if (base_type && base_type->classTag == CLASS_UNION) {
         // (*((T*)(((char*)(p->_chpl_union)))))
         fprintf(outfile, "(*((");
         member_type->codegen(outfile);
@@ -722,12 +722,56 @@ CallExpr::CallExpr(Expr* initBase, AList<Expr>* initArgs) :
 {}
 
 
+CallExpr::CallExpr(Expr* initBase, Expr* arg1, Expr* arg2,
+                   Expr* arg3, Expr* arg4) :
+  Expr(EXPR_CALL),
+  baseExpr(initBase),
+  opTag(OP_NONE)
+{
+  argList = new AList<Expr>(arg1, arg2, arg3, arg4);
+}
+
+
 CallExpr::CallExpr(OpTag initOpTag, Expr* arg1, Expr* arg2) :
   Expr(EXPR_CALL),
   baseExpr(new Variable(new UnresolvedSymbol(copystring(opChplString[initOpTag])))),
   opTag(initOpTag)
 {
   argList = new AList<Expr>(arg1, arg2);
+}
+
+
+CallExpr::CallExpr(char* name, AList<Expr>* initArgs) :
+  Expr(EXPR_CALL),
+  baseExpr(new Variable(new UnresolvedSymbol(copystring(name)))),
+  argList(initArgs),
+  opTag(OP_NONE)
+{}
+
+
+CallExpr::CallExpr(char* name, Expr* arg1, Expr* arg2, Expr* arg3, Expr* arg4) :
+  Expr(EXPR_CALL),
+  baseExpr(new Variable(new UnresolvedSymbol(copystring(name)))),
+  opTag(OP_NONE)
+{
+  argList = new AList<Expr>(arg1, arg2, arg3, arg4);
+}
+
+
+CallExpr::CallExpr(Symbol* fn, AList<Expr>* initArgs) :
+  Expr(EXPR_CALL),
+  baseExpr(new Variable(fn)),
+  argList(initArgs),
+  opTag(OP_NONE)
+{}
+
+
+CallExpr::CallExpr(Symbol* fn, Expr* arg1, Expr* arg2, Expr* arg3, Expr* arg4) :
+  Expr(EXPR_CALL),
+  baseExpr(new Variable(fn)),
+  opTag(OP_NONE)
+{
+  argList = new AList<Expr>(arg1, arg2, arg3, arg4);
 }
 
 
@@ -882,7 +926,7 @@ void CallExpr::codegen(FILE* outfile) {
 
   if (Variable* variable = dynamic_cast<Variable*>(baseExpr)) {
     if (variable->var == Symboltable::lookupInternal("_UnionWriteStopgap")) {
-      UnionType* unionType = dynamic_cast<UnionType*>(argList->only()->typeInfo());
+      ClassType* unionType = dynamic_cast<ClassType*>(argList->only()->typeInfo());
       fprintf(outfile, "if (_UNION_CHECK_QUIET(val, _%s_union_id__uninitialized)) {\n",
               unionType->symbol->cname);
       fprintf(outfile, "_chpl_write_string(\"(uninitialized)\");\n");
@@ -975,7 +1019,7 @@ void CallExpr::codegen(FILE* outfile) {
   if (Variable* variable = dynamic_cast<Variable*>(baseExpr)) {
     if (!strcmp(variable->var->cname, "_data_alloc")) {
       Variable* variable = dynamic_cast<Variable*>(argList->representative());
-      StructuralType* classType = dynamic_cast<StructuralType*>(variable->var->type);
+      ClassType* classType = dynamic_cast<ClassType*>(variable->var->type);
       classType->fields.v[0]->type->codegen(outfile);
       fprintf(outfile, ", ");
     }
@@ -1594,24 +1638,24 @@ void WithExpr::codegen(FILE* outfile) {
   INT_FATAL(this, "Unexpected call to WithExpr::codegen");
 }
 
-static StructuralType *
-getStructuralType(Symbol *s) {
+static ClassType *
+getClassType(Symbol *s) {
   if (!s)
     return NULL;
   if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(s))
-    return dynamic_cast<StructuralType*>(ts->definition);
+    return dynamic_cast<ClassType*>(ts->definition);
   return NULL;
 }
 
-StructuralType* WithExpr::getStruct(void) {
+ClassType* WithExpr::getStruct(void) {
   if (Variable* var = dynamic_cast<Variable*>(expr)) {
-    if (StructuralType *result = getStructuralType(var->var))
+    if (ClassType *result = getClassType(var->var))
       return result;
     else if (UnresolvedSymbol* unresolved = dynamic_cast<UnresolvedSymbol*>(var->var)) {
-      if (StructuralType *result =  getStructuralType(Symboltable::lookup(unresolved->name)))
+      if (ClassType *result =  getClassType(Symboltable::lookup(unresolved->name)))
         return result;
     }
   }
-  INT_FATAL(this, "Cannot find StructuralType in WithExpr");
+  INT_FATAL(this, "Cannot find ClassType in WithExpr");
   return NULL;
 }

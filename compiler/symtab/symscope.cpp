@@ -327,7 +327,8 @@ static void addVisibleFunctions(Map<char*,Vec<FnSymbol*>*>* visibleFunctions,
   for (Symbol* sym = symbol; sym; sym = sym->overload) {
     if (sym) {
       if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(sym->getSymbol())) {
-        if (!dynamic_cast<ClassType*>(typeSym->definition)) {
+        ClassType* classType = dynamic_cast<ClassType*>(typeSym->definition);
+        if (!(classType && classType->isNominalType())) {
           forv_Vec(FnSymbol, method, typeSym->definition->methods) {
             while (method) {
               addVisibleFunctionsHelper(visibleFunctions, method);

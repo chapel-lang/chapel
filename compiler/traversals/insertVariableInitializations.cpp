@@ -43,7 +43,7 @@ static void insert_config_init(Stmt* stmt, VarSymbol* var, Type* type) {
   args->insertAtTail(new StringLiteral(copystring(var->name)));
   args->insertAtTail(new StringLiteral(var->parentScope->symContext->name));
   Symbol* init_config = Symboltable::lookupInternal("_INIT_CONFIG");
-  CallExpr* call = new CallExpr(new Variable(init_config), args);
+  CallExpr* call = new CallExpr(init_config, args);
   Expr* assign = new CallExpr(OP_GETSNORM, new Variable(var), init_expr->copy());
   ExprStmt* assign_stmt = new ExprStmt(assign);
   CondStmt* cond_stmt = new CondStmt(call, new BlockStmt(new AList<Stmt>(assign_stmt)));
@@ -75,8 +75,8 @@ static void insert_basic_init(Stmt* stmt, VarSymbol* var, Type* type) {
         INT_FATAL(var->defPoint, "Unable to resolve initialization assignment");
       }
 #ifdef OVERLOADED_ASSIGNMENT_FIXED
-      Expr *init_expr = new CallExpr(new Variable(var->defPoint->initAssign.v[0]),
-                                        new AList<Expr>(lhs, rhs));
+      Expr *init_expr = new CallExpr(var->defPoint->initAssign.v[0],
+                                     new AList<Expr>(lhs, rhs));
 #else
       Expr *init_expr = new CallExpr(OP_GETSNORM, lhs, rhs);
 #endif

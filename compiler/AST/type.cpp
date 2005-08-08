@@ -16,8 +16,7 @@
 
 // Utilities for building write functions
 static void addWriteStmt(AList<Stmt>* body, Expr* arg) {
-  Expr* write = new Variable(new UnresolvedSymbol("write"));
-  body->insertAtTail(new ExprStmt(new CallExpr(write, new AList<Expr>(arg))));
+  body->insertAtTail(new ExprStmt(new CallExpr("write", arg)));
 }
 
 
@@ -426,7 +425,8 @@ bool EnumType::hasDefaultWriteFunction(void) {
 
 
 AList<Stmt>* EnumType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
-  return new AList<Stmt>(new ExprStmt(new CallExpr(new Variable(Symboltable::lookupInternal("_EnumWriteStopgap")), new AList<Expr>(new Variable(arg)))));
+  return new AList<Stmt>(new ExprStmt(new CallExpr("_EnumWriteStopgap",
+                                                   new Variable(arg))));
 }
 
 
@@ -436,7 +436,8 @@ bool EnumType::hasDefaultReadFunction(void) {
 
 
 AList<Stmt>* EnumType::buildDefaultReadFunctionBody(ParamSymbol* arg) {
-  return new AList<Stmt>(new ExprStmt(new CallExpr(new Variable(Symboltable::lookupInternal("_EnumReadStopgap")), new AList<Expr>(new Variable(arg)))));
+  return new AList<Stmt>(new ExprStmt(new CallExpr("_EnumReadStopgap",
+                                                   new Variable(arg))));
 }
 
 
@@ -518,27 +519,35 @@ void UserType::codegenDefaultFormat(FILE* outfile, bool isRead) {
 }
 
 
-StructuralType::StructuralType(astType_t astType, Expr* init_defaultVal) :
-  Type(astType, init_defaultVal),
+ClassType::ClassType(ClassTag initClassTag) :
+  Type(TYPE_CLASS, NULL),
+  classTag(initClassTag),
   structScope(NULL),
   declarationList(new AList<Stmt>()),
   parentStruct(NULL)
 {
+  if (classTag == CLASS_CLASS) {
+    defaultValue = new Variable(Symboltable::lookupInternal("nil", SCOPE_INTRINSIC));
+  }
   fields.clear();
   methods.clear();
   types.clear();
+  parentClasses.clear();
+  isPattern = false;
+  fieldSelector = NULL;
 }
 
 
-void StructuralType::verify(void) {
-  if (astType != TYPE_STRUCTURAL) {
-    INT_FATAL(this, "Bad StructuralType::astType");
+void ClassType::verify(void) {
+  if (astType != TYPE_CLASS) {
+    INT_FATAL(this, "Bad ClassType::astType");
   }
 }
 
 
-void StructuralType::copyGuts(StructuralType* copy_type, bool clone, 
-                              Map<BaseAST*,BaseAST*>* map) {
+ClassType*
+ClassType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  ClassType* copy_type = new ClassType(classTag);
   Symboltable::pushScope(SCOPE_CLASS);
   AList<Stmt>* new_decls = new AList<Stmt>();
   for (Stmt* old_decls = declarationList->first();
@@ -555,10 +564,12 @@ void StructuralType::copyGuts(StructuralType* copy_type, bool clone,
   copy_type->addDeclarations(new_decls);
   SymScope* copy_scope = Symboltable::popScope();
   copy_type->setScope(copy_scope);
+  copy_type->isPattern = isPattern;
+  return copy_type;
 }
 
 
-void StructuralType::addDeclarations(AList<Stmt>* newDeclarations, 
+void ClassType::addDeclarations(AList<Stmt>* newDeclarations, 
                                      Stmt* beforeStmt) {
   Stmt* tmp = newDeclarations->first();
   while (tmp) {
@@ -591,12 +602,12 @@ void StructuralType::addDeclarations(AList<Stmt>* newDeclarations,
 }
 
 
-void StructuralType::setScope(SymScope* init_structScope) {
+void ClassType::setScope(SymScope* init_structScope) {
   structScope = init_structScope;
 }
 
 
-void StructuralType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+void ClassType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == defaultValue) {
     defaultValue = dynamic_cast<Expr*>(new_ast);
   } else if (old_ast == declarationList) {
@@ -607,7 +618,7 @@ void StructuralType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 }
 
 
-void StructuralType::traverseDefType(Traversal* traversal) {
+void ClassType::traverseDefType(Traversal* traversal) {
   SymScope* prevScope = NULL;
   if (structScope) {
     prevScope = Symboltable::setCurrentScope(structScope);
@@ -617,6 +628,12 @@ void StructuralType::traverseDefType(Traversal* traversal) {
   if (structScope) {
     Symboltable::setCurrentScope(prevScope);
   }
+}
+
+
+bool
+ClassType::isNominalType() {
+  return classTag == CLASS_CLASS || classTag == CLASS_VALUECLASS;
 }
 
 
@@ -633,7 +650,8 @@ int
 is_Value_Type(Type *t) {
   if (UserType *ut = dynamic_cast<UserType*>(t))
     return is_Value_Type(ut->defType);
-  return t->astType == TYPE_RECORD || t->astType == TYPE_UNION;
+  ClassType* ct = dynamic_cast<ClassType*>(t);
+  return ct && (ct->classTag == CLASS_RECORD || ct->classTag == CLASS_UNION);
 }
 
 
@@ -641,7 +659,12 @@ int
 is_Reference_Type(Type *t) {
   if (UserType *ut = dynamic_cast<UserType*>(t))
     return is_Reference_Type(ut->defType);
-  return t && (dynamic_cast<StructuralType*>(t) || t->astType == TYPE_SUM);
+  ClassType* ct = dynamic_cast<ClassType*>(t);
+  return (t && 
+          (t->astType == TYPE_SUM ||
+           (ct &&
+            (ct->classTag == CLASS_CLASS ||
+             ct->classTag == CLASS_VALUECLASS))));
 }
 
 static Expr *
@@ -649,13 +672,23 @@ init_expr(Type *t) {
   if (t->defaultValue)
     return t->defaultValue->copy();
   else if (t->defaultConstructor)
-    return new CallExpr(new Variable(t->defaultConstructor));
+    return new CallExpr(t->defaultConstructor);
   else
     return new Variable(gNil);
 }
 
-void StructuralType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this, 
+void ClassType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this, 
                                           AList<DefExpr>* arguments) {
+  if (classTag == CLASS_UNION) {
+    AList<Expr>* args = new AList<Expr>(new Variable(_this));
+    Expr* arg2 = new Variable(fieldSelector->constants->first()->sym);
+    args->insertAtTail(arg2);
+    CallExpr* init_function = new CallExpr(Symboltable::lookupInternal("_UNION_SET"), args);
+    ExprStmt* init_stmt = new ExprStmt(init_function);
+    stmts->insertAtTail(init_stmt);
+    return;
+  }
+
   forv_Vec(Symbol, tmp, fields) {
     if (is_Scalar_Type(tmp->type))
       continue;
@@ -699,12 +732,22 @@ void StructuralType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this,
 }
 
 
-void StructuralType::codegenStartDefFields(FILE* outfile) {}
+void ClassType::codegenStartDefFields(FILE* outfile) {
+  if (classTag == CLASS_UNION) {
+    fieldSelector->codegen(outfile);
+    fprintf(outfile, " _chpl_union_tag;\n");
+    fprintf(outfile, "union {\n");
+  }
+}
 
-void StructuralType::codegenStopDefFields(FILE* outfile) {}
+void ClassType::codegenStopDefFields(FILE* outfile) {
+  if (classTag == CLASS_UNION) {
+    fprintf(outfile, "} _chpl_union;\n");
+  }
+}
 
 
-void StructuralType::codegenDef(FILE* outfile) {
+void ClassType::codegenDef(FILE* outfile) {
   fprintf(outfile, "struct __");
   symbol->codegen(outfile);
   fprintf(outfile, " {\n");
@@ -728,7 +771,7 @@ void StructuralType::codegenDef(FILE* outfile) {
 }
 
 
-void StructuralType::codegenStructName(FILE* outfile) {
+void ClassType::codegenStructName(FILE* outfile) {
   fprintf(outfile, "_");
   symbol->codegen(outfile);
   fprintf(outfile,", *");
@@ -736,7 +779,7 @@ void StructuralType::codegenStructName(FILE* outfile) {
 }
 
 
-void StructuralType::codegenPrototype(FILE* outfile) {
+void ClassType::codegenPrototype(FILE* outfile) {
   fprintf(outfile, "typedef struct __");
   symbol->codegen(outfile);
   fprintf(outfile, " ");
@@ -745,31 +788,39 @@ void StructuralType::codegenPrototype(FILE* outfile) {
 }
 
 
-void StructuralType::codegenMemberAccessOp(FILE* outfile) {
-  fprintf(outfile, "->");
+void ClassType::codegenMemberAccessOp(FILE* outfile) {
+  if (classTag == CLASS_UNION) {
+    fprintf(outfile, "->_chpl_union.");
+  } else {
+    fprintf(outfile, "->");
+  }
 }
 
 
-bool StructuralType::blankIntentImpliesRef(void) {
+bool ClassType::blankIntentImpliesRef(void) {
   return false;
 }
 
 
-bool StructuralType::implementedUsingCVals(void) {
+bool ClassType::implementedUsingCVals(void) {
   return false;
 }
 
 
-bool StructuralType::hasDefaultWriteFunction(void) {
+bool ClassType::hasDefaultWriteFunction(void) {
   return true;
 }
 
 
-AList<Stmt>* StructuralType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
+AList<Stmt>* ClassType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
+  if (classTag == CLASS_UNION) {
+    return new AList<Stmt>(new ExprStmt(new CallExpr("_UnionWriteStopgap",
+                                                     new Variable(arg))));
+  }
   AList<Stmt>* body = new AList<Stmt>();
-  if (dynamic_cast<ClassType*>(this)) {
-    Expr* write = new Variable(new UnresolvedSymbol("write"));
-    AList<Stmt>* writeNil = new AList<Stmt>(new ExprStmt(new CallExpr(write, new AList<Expr>(new StringLiteral("nil")))));
+  if (classTag == CLASS_CLASS) {
+    AList<Stmt>* writeNil =
+      new AList<Stmt>(new ExprStmt(new CallExpr("write", new StringLiteral("nil"))));
     writeNil->insertAtTail(new ReturnStmt(NULL));
     BlockStmt* blockStmt = new BlockStmt(writeNil);
     Symbol* nil = Symboltable::lookupInternal("nil", SCOPE_INTRINSIC);
@@ -777,7 +828,7 @@ AList<Stmt>* StructuralType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
     body->insertAtTail(new CondStmt(argIsNil, blockStmt));
   }
 
-  if (dynamic_cast<ClassType*>(this)) {
+  if (classTag == CLASS_CLASS) {
     addWriteStmt(body, new StringLiteral("{"));
   } else {
     addWriteStmt(body, new StringLiteral("("));
@@ -794,107 +845,18 @@ AList<Stmt>* StructuralType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
     first = false;
   }
 
-  if (dynamic_cast<ClassType*>(this)) {
+  if (classTag == CLASS_CLASS) {
     addWriteStmt(body, new StringLiteral("}"));
   } else {
     addWriteStmt(body, new StringLiteral(")"));
   }
 
   return body;
-}
+ }
 
 
-ClassType::ClassType(astType_t astType) :
-  StructuralType(astType, 
-                 new Variable(Symboltable::lookupInternal("nil", 
-                                                          SCOPE_INTRINSIC)))
-{
-  parentClasses.clear();
-}
-
-
-void ClassType::verify(void) {
-  if (astType != TYPE_CLASS) {
-    INT_FATAL(this, "Bad ClassType::astType");
-  }
-}
-
-
-ClassType*
-ClassType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  ClassType* copy_type = new ClassType(astType);
-  copyGuts(copy_type, clone, map);
-  return copy_type;
-}
-
-
-void ClassType::codegenStructName(FILE* outfile) {
-  fprintf(outfile, "_");
-  symbol->codegen(outfile);
-  fprintf(outfile,", *");
-  symbol->codegen(outfile);
-}
-
-
-void ClassType::codegenMemberAccessOp(FILE* outfile) {
-  fprintf(outfile, "->");
-}
-
-
-bool ClassType::blankIntentImpliesRef(void) {
-  return false;  // BLC: it does, but not for the pointer that we're passing in
-}
-
-
-bool ClassType::implementedUsingCVals(void) {
-  return false;
-}
-
-
-RecordType::RecordType(void) :
-  StructuralType(TYPE_RECORD), isPattern(false)
-{}
-
-
-void RecordType::verify(void) {
-  if (astType != TYPE_RECORD) {
-    INT_FATAL(this, "Bad RecordType::astType");
-  }
-}
-
-
-RecordType*
-RecordType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  RecordType* copy_type = new RecordType();
-  copyGuts(copy_type, clone, map);
-  copy_type->isPattern = isPattern;
-  return copy_type;
-}
-
-
-UnionType::UnionType(void) :
-  StructuralType(TYPE_UNION),
-  fieldSelector(NULL)
-{}
-
-
-UnionType*
-UnionType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  UnionType* copy_type = new UnionType();
-  copyGuts(copy_type, clone, map);
-  return copy_type;
-}
-
-
-void UnionType::verify(void) {
-  if (astType != TYPE_UNION) {
-    INT_FATAL(this, "Bad UnionType::astType");
-  }
-}
-
-
-static char* buildFieldSelectorName(UnionType* unionType, Symbol* field, 
-                                    bool enumName = false) {
+static char* buildFieldSelectorName(ClassType* classType, Symbol* field, 
+                                   bool enumName = false) {
   char* fieldName;
   if (field) {
     fieldName = field->name;
@@ -905,11 +867,11 @@ static char* buildFieldSelectorName(UnionType* unionType, Symbol* field,
       fieldName = "_uninitialized";
     }
   }
-  return glomstrings(4, "_", unionType->symbol->name, "_union_id_", fieldName);
+  return glomstrings(4, "_", classType->symbol->name, "_union_id_", fieldName);
 }
 
 
-void UnionType::buildFieldSelector(void) {
+void ClassType::buildFieldSelector(void) {
   AList<DefExpr>* id_list = new AList<DefExpr>();
 
   /* build list of enum symbols */
@@ -943,7 +905,7 @@ static char* unionCallName[NUM_UNION_CALLS] = {
 };
 
 
-CallExpr* UnionType::buildSafeUnionAccessCall(unionCall type, Expr* base, 
+CallExpr* ClassType::buildSafeUnionAccessCall(unionCall type, Expr* base, 
                                                  Symbol* field) {
   AList<Expr>* args = new AList<Expr>(base->copy());
   char* id_tag = buildFieldSelectorName(this, field);
@@ -954,46 +916,7 @@ CallExpr* UnionType::buildSafeUnionAccessCall(unionCall type, Expr* base,
   }
   
   char* fnName = unionCallName[type];
-  return new CallExpr(new Variable(Symboltable::lookupInternal(fnName)), args);
-}
-
-
-void UnionType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this, 
-                                     AList<DefExpr>* arguments) {
-  AList<Expr>* args = new AList<Expr>(new Variable(_this));
-  Expr* arg2 = new Variable(fieldSelector->constants->first()->sym);
-  args->insertAtTail(arg2);
-  CallExpr* init_function = 
-    new CallExpr(new Variable(Symboltable::lookupInternal("_UNION_SET")), args);
-  ExprStmt* init_stmt = new ExprStmt(init_function);
-  stmts->insertAtTail(init_stmt);
-}
-
-
-void UnionType::codegenStartDefFields(FILE* outfile) {
-  fieldSelector->codegen(outfile);
-  fprintf(outfile, " _chpl_union_tag;\n");
-  fprintf(outfile, "union {\n");
-}
-
-
-void UnionType::codegenStopDefFields(FILE* outfile) {
-  fprintf(outfile, "} _chpl_union;\n");
-}
-
-
-void UnionType::codegenMemberAccessOp(FILE* outfile) {
-  fprintf(outfile, "->_chpl_union.");
-}
-
-
-bool UnionType::hasDefaultWriteFunction(void) {
-  return true;
-}
-
-
-AList<Stmt>* UnionType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
-  return new AList<Stmt>(new ExprStmt(new CallExpr(new Variable(Symboltable::lookupInternal("_UnionWriteStopgap")), new AList<Expr>(new Variable(arg)))));
+  return new CallExpr(Symboltable::lookupInternal(fnName), args);
 }
 
 

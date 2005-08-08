@@ -232,8 +232,17 @@ class CallExpr : public Expr {
   AList<Expr>* argList;
   OpTag opTag;
 
-  CallExpr(Expr* initBase, AList<Expr>* initArgs = new AList<Expr>);
+  CallExpr(Expr* initBase, AList<Expr>* initArgs);
+  CallExpr(Expr* initBase, Expr* arg1 = NULL, Expr* arg2 = NULL,
+           Expr* arg3 = NULL, Expr* arg4 = NULL);
   CallExpr(OpTag initOpTag, Expr* arg1, Expr* arg2 = NULL);
+  CallExpr(char* name, AList<Expr>* initArgs);
+  CallExpr(char* name, Expr* arg1 = NULL, Expr* arg2 = NULL,
+           Expr* arg3 = NULL, Expr* arg4 = NULL);
+  CallExpr(Symbol* fn, AList<Expr>* initArgs);
+  CallExpr(Symbol* fn, Expr* arg1 = NULL, Expr* arg2 = NULL,
+           Expr* arg3 = NULL, Expr* arg4 = NULL);
+
   virtual void verify(void); 
   COPY_DEF(CallExpr);
 
@@ -243,7 +252,7 @@ class CallExpr : public Expr {
   virtual void print(FILE* outfile);
   virtual void codegen(FILE* outfile);
 
-  Expr* CallExpr::get(int index);
+  Expr* get(int index);
   FnSymbol* findFnSymbol(void);
   Type* typeInfo(void);
   bool isPrimitive(void);
@@ -393,7 +402,7 @@ class WithExpr : public Expr {
   Type* typeInfo(void);
   void print(FILE* outfile);
   void codegen(FILE* outfile);
-  StructuralType* getStruct(void);
+  ClassType* getStruct(void);
 };
 
 

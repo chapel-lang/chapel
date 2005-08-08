@@ -10,7 +10,7 @@
 #include "../traversals/fixup.h"
 
 
-static void build_constructor(StructuralType* structType) {
+static void build_constructor(ClassType* structType) {
   Symbol* tmp = Symboltable::lookupInCurrentScope("initialize");
   while (tmp) {
     if (FnSymbol* userDefaultFn = dynamic_cast<FnSymbol*>(tmp)) {
@@ -71,10 +71,9 @@ static void build_constructor(StructuralType* structType) {
   DefExpr* def_expr = new DefExpr(fn->_this);
   stmts->insertAtTail(new ExprStmt(def_expr));
   char* description = glomstrings(2, "instance of class ", structType->symbol->name);
-  AList<Expr>* alloc_args = new AList<Expr>( new Variable(structType->symbol));
-  alloc_args->insertAtTail(new StringLiteral(description));
-  Symbol* alloc_sym = Symboltable::lookupInternal("_chpl_alloc");
-  Expr* alloc_rhs = new CallExpr(new Variable(alloc_sym), alloc_args);
+  Expr* alloc_rhs = new CallExpr(Symboltable::lookupInternal("_chpl_alloc"),
+                                 new Variable(structType->symbol),
+                                 new StringLiteral(description));
   Expr* alloc_lhs = new Variable(fn->_this);
   Expr* alloc_expr = new CallExpr(OP_GETSNORM, alloc_lhs, alloc_rhs);
   Stmt* alloc_stmt = new ExprStmt(alloc_expr);
@@ -94,15 +93,14 @@ static void build_constructor(StructuralType* structType) {
 }
 
 
-static void build_union_id_enum(StructuralType* structType) {
-  UnionType* unionType = dynamic_cast<UnionType*>(structType);
-  if (unionType) {
-    unionType->buildFieldSelector();
+static void build_union_id_enum(ClassType* structType) {
+  if (structType->classTag == CLASS_UNION) {
+    structType->buildFieldSelector();
   }
 }
 
 
-static void build_getter(StructuralType* structType, Symbol *tmp) {
+static void build_getter(ClassType* structType, Symbol *tmp) {
   FnSymbol* getter_fn = Symboltable::startFnDef(new FnSymbol(tmp->name));
   getter_fn->addPragma("inline");
   getter_fn->cname =
@@ -126,7 +124,7 @@ static void build_getter(StructuralType* structType, Symbol *tmp) {
   getter_fn->_this = getter_this;
 }
 
-static void build_setters_and_getters(StructuralType* structType) {
+static void build_setters_and_getters(ClassType* structType) {
   forv_Vec(Symbol, tmp, structType->fields) {
     char* setter_name = glomstrings(2, "=", tmp->name);
     FnSymbol* setter_fn = Symboltable::startFnDef(new FnSymbol(setter_name));
@@ -163,11 +161,7 @@ static void build_setters_and_getters(StructuralType* structType) {
 }
 
 
-static void build_record_equality_function(StructuralType* structType) {
-  if (dynamic_cast<ClassType*>(structType)) {
-    return;
-  }
-
+static void build_record_equality_function(ClassType* structType) {
   FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("=="));
   ParamSymbol* arg1 = new ParamSymbol(PARAM_BLANK, "_arg1", structType);
   AList<DefExpr>* args = new AList<DefExpr>(new DefExpr(arg1));
@@ -188,11 +182,7 @@ static void build_record_equality_function(StructuralType* structType) {
 }
 
 
-static void build_record_inequality_function(StructuralType* structType) {
-  if (dynamic_cast<ClassType*>(structType)) {
-    return;
-  }
-
+static void build_record_inequality_function(ClassType* structType) {
   FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("!="));
 
   ParamSymbol* arg1 = new ParamSymbol(PARAM_BLANK, "_arg1", structType);
@@ -214,11 +204,7 @@ static void build_record_inequality_function(StructuralType* structType) {
 }
 
 
-static void build_record_assignment_function(StructuralType* structType) {
-  if (dynamic_cast<ClassType*>(structType)) {
-    return;
-  }
-
+static void build_record_assignment_function(ClassType* structType) {
   Symbol* tmp = Symboltable::lookupInCurrentScope("=");
   while (tmp) {
     if (FnSymbol* assignFn = dynamic_cast<FnSymbol*>(tmp)) {
@@ -262,13 +248,15 @@ static void build_record_assignment_function(StructuralType* structType) {
 }
 
 
-void buildDefaultStructuralTypeMethods(StructuralType* structuralType) {
+void buildDefaultClassTypeMethods(ClassType* structuralType) {
   build_setters_and_getters(structuralType);
   build_union_id_enum(structuralType);
   build_constructor(structuralType);
-  build_record_equality_function(structuralType);
-  build_record_inequality_function(structuralType);
-  build_record_assignment_function(structuralType);
+  if (structuralType->classTag == CLASS_RECORD) {
+    build_record_equality_function(structuralType);
+    build_record_inequality_function(structuralType);
+    build_record_assignment_function(structuralType);
+  }
 }
 
 
@@ -331,11 +319,11 @@ void BuildClassConstructorsEtc::postProcessExpr(Expr* expr) {
       SymScope* newScope = sym->parentScope->getModule()->modScope;
       SymScope* saveScope = Symboltable::setCurrentScope(newScope);
       buildDefaultIOFunctions(sym->definition);
-      if (StructuralType* type = dynamic_cast<StructuralType*>(sym->definition)) {
+      if (ClassType* type = dynamic_cast<ClassType*>(sym->definition)) {
         if (type->defaultConstructor) { /*** already done ***/
           return;
         }
-        buildDefaultStructuralTypeMethods(type);
+        buildDefaultClassTypeMethods(type);
       }
       Symboltable::setCurrentScope(saveScope);
     }

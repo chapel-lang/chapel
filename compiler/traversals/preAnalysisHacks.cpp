@@ -10,8 +10,7 @@ void PreAnalysisHacks::postProcessStmt(Stmt* stmt) {
       new CallExpr(
         new MemberAccess(
           loop->iterators->only()->copy(),
-          new UnresolvedSymbol("_forall")),
-        new AList<Expr>()));
+          new UnresolvedSymbol("_forall"))));
   }
 }
 

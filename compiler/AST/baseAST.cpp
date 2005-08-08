@@ -317,10 +317,7 @@ char* astTypeName[AST_TYPE_END+1] = {
   "FnType",
   "EnumType",
   "UserType",
-  "StructuralType",
   "ClassType",
-  "RecordType",
-  "UnionType",
   "MetaType",
   "SumType",
   "VariableType",
@@ -492,21 +489,14 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     AST_ADD_CHILD(UserType, defExpr);
     ADD_CHILD(UserType, defType);
     goto LTypeCommon;
-  case TYPE_STRUCTURAL:
-  LStructuralTypeCommon:
-    ADD_LIST(StructuralType, declarationList, Stmt);
-    ADD_CHILD(StructuralType, parentStruct);
-    ADD_VEC(StructuralType, fields, Symbol);
-    ADD_VEC(StructuralType, types, TypeSymbol);
-    goto LTypeCommon;
   case TYPE_CLASS:
+    ADD_LIST(ClassType, declarationList, Stmt);
+    ADD_CHILD(ClassType, parentStruct);
+    ADD_VEC(ClassType, fields, Symbol);
+    ADD_VEC(ClassType, types, TypeSymbol);
+    ADD_CHILD(ClassType, fieldSelector);
     ADD_VEC(ClassType, parentClasses, ClassType);
-    goto LStructuralTypeCommon;
-  case TYPE_RECORD:
-    goto LStructuralTypeCommon;
-  case TYPE_UNION:
-    ADD_CHILD(UnionType, fieldSelector);
-    goto LStructuralTypeCommon;
+    goto LTypeCommon;
   case TYPE_META:
     ADD_CHILD(MetaType, base);
     goto LTypeCommon;

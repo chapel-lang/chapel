@@ -8,27 +8,28 @@
 #include "stringutil.h"
 
 
-static ExprStmt* buildCheckStmt(UnionType* unionType, unionCall type, 
+static ExprStmt* buildCheckStmt(ClassType* classType, unionCall type, 
                                 MemberAccess* accessExpr) {
-  CallExpr* fnCall = unionType->buildSafeUnionAccessCall(type,
-                                                       accessExpr->base,
-                                                       accessExpr->member);
-  
+  CallExpr* fnCall = classType->buildSafeUnionAccessCall(type,
+                                                         accessExpr->base,
+                                                         accessExpr->member);
   return new ExprStmt(fnCall);
 }
 
 
 void InsertUnionChecks::preProcessExpr(Expr* expr) {
   if (MemberAccess* unionExpr = dynamic_cast<MemberAccess*>(expr)) {
-    if (UnionType* unionType = 
-        dynamic_cast<UnionType*>(unionExpr->base->typeInfo())) {
-      if (expr->isWritten()) {
-        ExprStmt* testStmt = buildCheckStmt(unionType, UNION_SET, unionExpr);
-        expr->parentStmt->insertAfter(testStmt);
-      }
-      if (expr->isRead()) {
-        ExprStmt* testStmt = buildCheckStmt(unionType, UNION_CHECK, unionExpr);
-        expr->parentStmt->insertBefore(testStmt);
+    if (ClassType* unionType = 
+        dynamic_cast<ClassType*>(unionExpr->base->typeInfo())) {
+      if (unionType->classTag == CLASS_UNION) {
+        if (expr->isWritten()) {
+          ExprStmt* testStmt = buildCheckStmt(unionType, UNION_SET, unionExpr);
+          expr->parentStmt->insertAfter(testStmt);
+        }
+        if (expr->isRead()) {
+          ExprStmt* testStmt = buildCheckStmt(unionType, UNION_CHECK, unionExpr);
+          expr->parentStmt->insertBefore(testStmt);
+        }
       }
     }
   }

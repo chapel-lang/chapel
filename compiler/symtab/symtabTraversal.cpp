@@ -46,6 +46,6 @@ void SymtabTraversal::run(FnSymbol* function) {
 }
 
 void SymtabTraversal::run(Type* type) {
-  if (StructuralType *st = dynamic_cast<StructuralType*>(type))
+  if (ClassType *st = dynamic_cast<ClassType*>(type))
     Symboltable::traverseFromScope(this, st->structScope);
 }

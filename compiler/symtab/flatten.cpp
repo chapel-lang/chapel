@@ -23,7 +23,7 @@ void Flatten::processSymbol(Symbol* sym) {
       fn->defPoint->parentStmt->remove();
       fn->parentScope->remove(fn);
       Symboltable::removeScope(fn->paramScope);
-      StructuralType* structuralType = dynamic_cast<StructuralType*>(fn->typeBinding->definition);
+      ClassType* structuralType = dynamic_cast<ClassType*>(fn->typeBinding->definition);
       for (int i = 0; i < structuralType->methods.n; i++) {
         if (structuralType->methods.v[i] == fn) {
           structuralType->methods.v[i] = newFn;

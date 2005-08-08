@@ -19,17 +19,19 @@ GetClassMethods::GetClassMethods(Vec<FnSymbol*>* init_classMethods) {
 void GetClassMethods::processSymbol(Symbol* sym) {
   if (TypeSymbol* type_sym = dynamic_cast<TypeSymbol*>(sym)) {
     if (ClassType* class_type = dynamic_cast<ClassType*>(type_sym->definition)) {
-      forv_Vec(FnSymbol, method, class_type->methods) {
-        for (Symbol* tmp = method; tmp; tmp = tmp->overload) {
-          FnSymbol* method = tmp->getFnSymbol();
-          classMethods->add(method);
+      if (class_type->classTag == CLASS_CLASS) {
+        forv_Vec(FnSymbol, method, class_type->methods) {
+          for (Symbol* tmp = method; tmp; tmp = tmp->overload) {
+            FnSymbol* method = tmp->getFnSymbol();
+            classMethods->add(method);
+          }
         }
-      }
-      for (Symbol* tmp = class_type->defaultConstructor;
-           tmp;
-           tmp = tmp->overload) {
-        FnSymbol* constructor = tmp->getFnSymbol();
-        classMethods->add(constructor);
+        for (Symbol* tmp = class_type->defaultConstructor;
+             tmp;
+             tmp = tmp->overload) {
+          FnSymbol* constructor = tmp->getFnSymbol();
+          classMethods->add(constructor);
+        }
       }
     }
   }

@@ -785,18 +785,14 @@ build_enum_element(Sym *enum_sym, Sym *element_sym, int i) {
 
 static int
 is_reference_type(BaseAST *at) {
-  Type *t = dynamic_cast<Type*>(at);
-  if (UserType *ut = dynamic_cast<UserType*>(t))
-    return is_reference_type(ut->defType);
-  return (t && (t->astType == TYPE_NIL || t->astType == TYPE_CLASS));
+  return is_Reference_Type(dynamic_cast<Type*>(at));
 }
 
 static int
 is_scalar_type(BaseAST *at) {
-  Type *t = dynamic_cast<Type*>(at);
-  if (UserType *ut = dynamic_cast<UserType*>(t))
-    return is_scalar_type(ut->defType);
-  return t != dtUnknown && (t->astType == TYPE_BUILTIN || t->astType == TYPE_ENUM);
+  if (at == dtString)
+    return true; // EXCEPTION: the low level treats strings as scalars!
+  return is_Scalar_Type(dynamic_cast<Type*>(at));
 }
 
 static int
@@ -824,7 +820,7 @@ build_symbols(Vec<BaseAST *> &syms) {
         }
         case SYMBOL_PARAM: {
           ParamSymbol *p = dynamic_cast<ParamSymbol*>(s);
-          RecordType *rt = dynamic_cast<RecordType*>(p->type);
+          ClassType *rt = dynamic_cast<ClassType*>(p->type);
           if (rt && rt->isPattern) {
             p->asymbol->sym->is_pattern = 1;
             forv_Sym(s, rt->asymbol->sym->has)
@@ -866,7 +862,7 @@ build_patterns(Vec<BaseAST *> &syms) {
       switch (s->astType) {
         case SYMBOL_PARAM: {
           ParamSymbol *p = dynamic_cast<ParamSymbol*>(s);
-          RecordType *rt = dynamic_cast<RecordType*>(p->type);
+          ClassType *rt = dynamic_cast<ClassType*>(p->type);
           if (rt && rt->isPattern) {
             forv_Sym(s, rt->asymbol->sym->has)
               p->asymbol->sym->has.add(s);
@@ -940,14 +936,14 @@ build_type(Type *t, bool make_default = true) {
       break;
     }
     case TYPE_CLASS:
-    case TYPE_RECORD:
-    case TYPE_UNION: 
     {
-      StructuralType *tt = dynamic_cast<StructuralType*>(t);
+      ClassType *tt = dynamic_cast<ClassType*>(t);
       t->asymbol->sym->type_kind = Type_RECORD;
-      if (t->astType == TYPE_RECORD || t->astType == TYPE_UNION)
+      if (tt->classTag == CLASS_RECORD ||
+          tt->classTag == CLASS_UNION ||
+          tt->classTag == CLASS_VALUECLASS)
         t->asymbol->sym->is_value_class = 1;
-      if (t->astType == TYPE_UNION)
+      if (tt->classTag == CLASS_UNION)
         t->asymbol->sym->is_union_class = 1;
       if (tt->parentStruct)
         t->asymbol->sym->inherits_add(tt->parentStruct->asymbol->sym);
@@ -1311,18 +1307,15 @@ gen_one_defexpr(VarSymbol *var, DefExpr *def) {
         // ruled out by conditionals above
       case TYPE_ENUM:
       case TYPE_BUILTIN: 
-      case TYPE_CLASS:
       case TYPE_NIL:
         // do not make it to analysis
       case TYPE_SUM:
-      case TYPE_STRUCTURAL:
       default:
         assert(!"impossible");
         goto Lstandard; 
       case TYPE_USER:
         goto Lstandard;
-      case TYPE_RECORD:
-      case TYPE_UNION:
+      case TYPE_CLASS:
       {
         int is_this = f && f->_this == var;
         if (!is_this)
@@ -2077,10 +2070,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
   case TYPE_FN:
   case TYPE_ENUM:
   case TYPE_USER:
-  case TYPE_STRUCTURAL:
   case TYPE_CLASS:
-  case TYPE_RECORD:
-  case TYPE_UNION:
   case TYPE_META:
   case TYPE_SUM:
   case TYPE_VARIABLE:
@@ -2239,15 +2229,13 @@ build_function(FnSymbol *f) {
 
 static void
 build_classes(Vec<BaseAST *> &syms) {
-  Vec<StructuralType *> classes;
+  Vec<ClassType *> classes;
   forv_BaseAST(s, syms)
-    if (s->astType == TYPE_CLASS || 
-        s->astType == TYPE_RECORD || 
-        s->astType == TYPE_UNION)
-      classes.add(dynamic_cast<StructuralType*>(s)); 
+    if (s->astType == TYPE_CLASS)
+      classes.add(dynamic_cast<ClassType*>(s)); 
   if (verbose_level > 1)
     printf("build_classes: %d classes\n", classes.n);
-  forv_Vec(StructuralType, c, classes) {
+  forv_Vec(ClassType, c, classes) {
     Sym *csym = c->asymbol->sym;
     forv_Vec(Symbol, tmp, c->fields)
       csym->has.add(tmp->asymbol->sym);
@@ -3004,7 +2992,7 @@ function_is_used(FnSymbol *fn) {
 int
 type_is_used(TypeSymbol *t) {
   if (if1->callback) {
-    if (!dynamic_cast<StructuralType*>(t->definition))
+    if (!dynamic_cast<ClassType*>(t->definition))
       return true;
     if (t->asymbol)
       return t->asymbol->sym->meta_type->creators.n != 0;
@@ -3082,7 +3070,7 @@ resolve_member_access(Expr *e, int *offset, Type **type) {
 }
 
 void
-resolve_member(StructuralType *t, VarSymbol *v, int *offset, Type **type) {
+resolve_member(ClassType *t, VarSymbol *v, int *offset, Type **type) {
   member_info(t->asymbol->sym, v->name, offset, type);
 }
 

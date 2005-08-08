@@ -22,7 +22,7 @@ void ResolveModuleUses::preProcessExpr(Expr* expr) {
         Symboltable::setCurrentScope(Symboltable::getCurrentModule()->modScope);
     }
 
-    CallExpr* callInitFn = new CallExpr(new Variable(module->initFn));
+    CallExpr* callInitFn = new CallExpr(module->initFn);
     useExpr->parentStmt->insertBefore(new ExprStmt(callInitFn));
     Symboltable::getCurrentScope()->uses.add(module);
 

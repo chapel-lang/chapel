@@ -232,8 +232,8 @@ Symbol* Symboltable::lookupFromScope(char* name, SymScope* scope,
         INT_FATAL("Cannot find function from SCOPE_PARAM");
       }
       if (fn->typeBinding) {
-        StructuralType* structuralType =
-          dynamic_cast<StructuralType*>(fn->typeBinding->definition);
+        ClassType* structuralType =
+          dynamic_cast<ClassType*>(fn->typeBinding->definition);
         if (structuralType) {
           Symbol* sym = lookupInScope(name, structuralType->structScope);
           if (sym) {
@@ -643,10 +643,10 @@ DefExpr* Symboltable::defineStructType(char* name, // NULL = anonymous
                                        Type* type,
                                        SymScope* scope,
                                        AList<Stmt>* def) {
-  StructuralType* structType = dynamic_cast<StructuralType*>(type);
+  ClassType* structType = dynamic_cast<ClassType*>(type);
 
   if (!structType) {
-    INT_FATAL(type, "defineStructType called on non StructuralType");
+    INT_FATAL(type, "defineStructType called on non ClassType");
   }
 
   TypeSymbol* sym = new TypeSymbol(name, structType);

@@ -52,10 +52,8 @@ static void destructureTuple(CallExpr* tuple) {
       tuple->parentStmt->insertAfter(
         new ExprStmt(
           new CallExpr(OP_GETSNORM, namedExpr->actual->copy(),
-            new CallExpr(
-              new Variable(def->sym),
-              new AList<Expr>(
-                new IntLiteral(i++))))));
+            new CallExpr(name,
+              new IntLiteral(i++)))));
     }
     TRAVERSE(tuple->parentStmt->next, new InsertLiteralTemps(), true);
   }
@@ -98,15 +96,15 @@ static void createTupleBaseType(int size) {
       new ParamSymbol(PARAM_PARAMETER, "index", dtInteger);
     AList<DefExpr>* formals = new AList<DefExpr>(new DefExpr(paramSymbol));
     Expr* where = new CallExpr(OP_EQUAL, 
-                                  new Variable(paramSymbol),
-                                  new IntLiteral(i));
+                               new Variable(paramSymbol),
+                               new IntLiteral(i));
     Symboltable::continueFnDef(fn, formals, dtUnknown, true, where);
     AList<Stmt>* body = new AList<Stmt>(new ReturnStmt(new Variable(fields.v[i-1])));
     Symboltable::finishFnDef(fn, new BlockStmt(body));
     decls->insertAtTail(new ExprStmt(new DefExpr(fn)));
   }
   SymScope *scope = Symboltable::popScope();
-  DefExpr* def = Symboltable::defineStructType(name, new RecordType(), scope, decls);
+  DefExpr* def = Symboltable::defineStructType(name, new ClassType(CLASS_RECORD), scope, decls);
   commonModule->stmts->insertAtHead(new ExprStmt(def));
   FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("write"));
   ParamSymbol* paramSymbol =
@@ -126,12 +124,7 @@ static void createTupleBaseType(int size) {
                                         new UnresolvedSymbol(glomstrings(2, "_f", intstring(i)))));
   }
   args->insertAtTail(new StringLiteral(copystring(")")));
-  Stmt* writeBody =
-    new ExprStmt(
-      new CallExpr(
-        new Variable(
-          new UnresolvedSymbol("write")),
-        args));
+  Stmt* writeBody = new ExprStmt(new CallExpr("write", args));
   AList<Stmt>* body = new AList<Stmt>(writeBody);
   Symboltable::finishFnDef(fn, new BlockStmt(body));
   commonModule->stmts->insertAtTail(new ExprStmt(new DefExpr(fn)));

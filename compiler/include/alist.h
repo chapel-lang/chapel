@@ -23,6 +23,8 @@ class AList : public BaseAST {
   AList();
   AList(elemType*);
   AList(elemType*, elemType*);
+  AList(elemType*, elemType*, elemType*);
+  AList(elemType*, elemType*, elemType*, elemType*);
   void clear(void);
 
   // copy routines
@@ -115,7 +117,7 @@ AList<elemType>::AList() :
 
 
 template <class elemType>
-AList<elemType>::AList(elemType* initList) :
+AList<elemType>::AList(elemType* elem1) :
   BaseAST(LIST),
   head(new elemType()),
   tail(new elemType()),
@@ -123,14 +125,12 @@ AList<elemType>::AList(elemType* initList) :
   debugNestedTraversals(false)
 {
   clear();
-  if (initList) {
-    insertAtHead(initList);
-  }
+  if (elem1) insertAtTail(elem1);
 }
 
 
 template <class elemType>
-AList<elemType>::AList(elemType* initList1, elemType* initList2) :
+AList<elemType>::AList(elemType* elem1, elemType* elem2) :
   BaseAST(LIST),
   head(new elemType()),
   tail(new elemType()),
@@ -138,12 +138,40 @@ AList<elemType>::AList(elemType* initList1, elemType* initList2) :
   debugNestedTraversals(false)
 {
   clear();
-  if (initList1) {
-    insertAtTail(initList1);
-  }
-  if (initList2) {
-    insertAtTail(initList2);
-  }
+  if (elem1) insertAtTail(elem1);
+  if (elem2) insertAtTail(elem2);
+}
+
+
+template <class elemType>
+AList<elemType>::AList(elemType* elem1, elemType* elem2, elemType* elem3) :
+  BaseAST(LIST),
+  head(new elemType()),
+  tail(new elemType()),
+  cursor(NULL),
+  debugNestedTraversals(false)
+{
+  clear();
+  if (elem1) insertAtTail(elem1);
+  if (elem2) insertAtTail(elem2);
+  if (elem3) insertAtTail(elem3);
+}
+
+
+template <class elemType>
+AList<elemType>::AList(elemType* elem1, elemType* elem2,
+                       elemType* elem3, elemType* elem4) :
+  BaseAST(LIST),
+  head(new elemType()),
+  tail(new elemType()),
+  cursor(NULL),
+  debugNestedTraversals(false)
+{
+  clear();
+  if (elem1) insertAtTail(elem1);
+  if (elem2) insertAtTail(elem2);
+  if (elem3) insertAtTail(elem3);
+  if (elem4) insertAtTail(elem4);
 }
 
 

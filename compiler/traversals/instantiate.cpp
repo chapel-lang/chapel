@@ -49,7 +49,7 @@ Instantiate::postProcessExpr(Expr* expr) {
           FnSymbol* new_constructor = constructor->instantiate_generic(&map, &substitutions);
           if (DefExpr* defExpr = dynamic_cast<DefExpr*>(parenOpExpr->parentExpr)) {
             if (defExpr->exprType == parenOpExpr) {
-              defExpr->exprType = NULL; //->replace(new CallExpr(new Variable(new_constructor), new AList<Expr>()));
+              defExpr->exprType = NULL; //->replace(new CallExpr(new_constructor));
               defExpr->sym->type = new_constructor->retType;
             }
           }
