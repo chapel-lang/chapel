@@ -16,10 +16,10 @@ Priority 1 Tasks
 
 * Insert symbols for every primitive literal, change DefaultValue to a VarSymbol
 
-* Change all Exprs to have Expr on the end.  Standardize names of
-  classes
+* (Steve) Change all Exprs to have Expr on the end.  Standardize names
+  of classes
 
-* unify union types and sum types (?)
+* (Steve) unify union types and sum types (?)
 
 * (Roxana) Attach a Type* type to Expr and remove typeInfo()
 
