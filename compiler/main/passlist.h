@@ -20,14 +20,13 @@ PassInfo passlist[] = {
   RUN(Fixup, ""), // postFixup = true
 
   // passes to normalize the basic AST
-  RUN(ExpandClassWiths, ""),
+  RUN(ProcessImportExprs, ""),
   RUN(InsertAnonymousTypes, ""),
   RUN(InsertLiteralTemps, ""),
   RUN(BuildLValueFunctions, ""),
   RUN(ReconstructIterators, ""),
   RUN(InsertThisParameters, ""),
   RUN(Flatten, ""),
-  RUN(ResolveModuleUses, ""),
   RUN(ScopeResolveSymbols, ""), // postScopeResolution = true
   RUN(ScopeResolveGotos, ""),
   RUN(RenameOverloadedFunctions, ""),

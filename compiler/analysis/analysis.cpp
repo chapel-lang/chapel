@@ -2054,8 +2054,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       s->ainfo->rval->arg_name = if1_cannonicalize_string(if1, s->name);
       break;
     }
-  case EXPR_WITH: break;
-  case EXPR_USE: break;
+  case EXPR_IMPORT: break;
   case SYMBOL:
   case SYMBOL_UNRESOLVED:
   case SYMBOL_MODULE:

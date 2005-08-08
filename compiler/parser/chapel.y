@@ -639,9 +639,9 @@ typevar_decl:
 
 decl:
   TWITH lvalue TSEMI
-    { $$ = new ExprStmt(new WithExpr($2)); }
+    { $$ = new ExprStmt(new ImportExpr(IMPORT_WITH, $2)); }
 | TUSE lvalue TSEMI
-    { $$ = new ExprStmt(new UseExpr($2)); }
+    { $$ = new ExprStmt(new ImportExpr(IMPORT_USE, $2)); }
 | TWHERE whereexpr TSEMI
     { $$ = new ExprStmt($2); }
 | type_decl

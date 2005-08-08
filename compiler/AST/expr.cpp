@@ -1526,58 +1526,61 @@ void NamedExpr::codegen(FILE* outfile) {
 }
 
 
-UseExpr::UseExpr(Expr* init_expr) :
-  Expr(EXPR_USE),
-  expr(init_expr)
-{ }
+ImportExpr::ImportExpr(ImportTag initImportTag, Expr* initExpr) :
+  Expr(EXPR_IMPORT),
+  importTag(initImportTag),
+  expr(initExpr)
+{
+  version = NULL;
+  only = false;
+  renameList = NULL;
+  exceptList = NULL;
+}
 
 
-void UseExpr::verify() {
-  if (astType != EXPR_USE) {
-    INT_FATAL(this, "Bad UseExpr::astType");
+void ImportExpr::verify() {
+  if (astType != EXPR_IMPORT) {
+    INT_FATAL(this, "Bad ImportExpr::astType");
   }
 }
 
 
-UseExpr*
-UseExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new UseExpr(COPY_INTERNAL(expr));
+ImportExpr*
+ImportExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  ImportExpr* _this = new ImportExpr(importTag, COPY_INTERNAL(expr));
+  return _this;
 }
 
 
-void UseExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+void ImportExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == expr) {
     expr = dynamic_cast<Expr*>(new_ast);
   } else {
-    INT_FATAL(this, "Unexpected case in UseExpr::replaceChild");
+    INT_FATAL(this, "Unexpected case in ImportExpr::replaceChild");
   }
 }
 
 
-void UseExpr::traverseExpr(Traversal* traversal) {
+void ImportExpr::traverseExpr(Traversal* traversal) {
   TRAVERSE(expr, traversal, false);
 }
 
 
-Type* UseExpr::typeInfo(void) {
-  return expr->typeInfo();
+Type* ImportExpr::typeInfo(void) {
+  return dtVoid;
 }
 
 
-void UseExpr::print(FILE* outfile) {
-  fprintf(outfile, "use ");
+void ImportExpr::print(FILE* outfile) {
+  fprintf(outfile, importTag == IMPORT_WITH ? "with " : "use ");
   expr->print(outfile);
 }
 
 
-void UseExpr::codegen(FILE* outfile) {
-  fprintf(outfile, "/* use ");
-  expr->codegen(outfile);
-  fprintf(outfile, " */");
-}
+void ImportExpr::codegen(FILE* outfile) { }
 
 
-ModuleSymbol* UseExpr::getModule(void) {
+ModuleSymbol* ImportExpr::getModule(void) {
   if (Variable* variable = dynamic_cast<Variable*>(expr)) {
     if (Symbol* symbol = variable->var) {
       if (ModuleSymbol* module =
@@ -1590,54 +1593,6 @@ ModuleSymbol* UseExpr::getModule(void) {
 }
 
 
-WithExpr::WithExpr(Expr* init_expr) :
-  Expr(EXPR_WITH),
-  expr(init_expr)
-{ }
-
-
-void WithExpr::verify() {
-  if (astType != EXPR_WITH) {
-    INT_FATAL(this, "Bad WithExpr::astType");
-  }
-}
-
-
-WithExpr*
-WithExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new WithExpr(COPY_INTERNAL(expr));
-}
-
-
-void WithExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == expr) {
-    expr = dynamic_cast<Expr*>(new_ast);
-  } else {
-    INT_FATAL(this, "Unexpected case in WithExpr::replaceChild");
-  }
-}
-
-
-void WithExpr::traverseExpr(Traversal* traversal) {
-  TRAVERSE(expr, traversal, false);
-}
-
-
-Type* WithExpr::typeInfo(void) {
-  return expr->typeInfo();
-}
-
-
-void WithExpr::print(FILE* outfile) {
-  fprintf(outfile, "with ");
-  expr->print(outfile);
-}
-
-
-void WithExpr::codegen(FILE* outfile) {
-  INT_FATAL(this, "Unexpected call to WithExpr::codegen");
-}
-
 static ClassType *
 getClassType(Symbol *s) {
   if (!s)
@@ -1647,7 +1602,7 @@ getClassType(Symbol *s) {
   return NULL;
 }
 
-ClassType* WithExpr::getStruct(void) {
+ClassType* ImportExpr::getStruct(void) {
   if (Variable* var = dynamic_cast<Variable*>(expr)) {
     if (ClassType *result = getClassType(var->var))
       return result;
@@ -1656,6 +1611,6 @@ ClassType* WithExpr::getStruct(void) {
         return result;
     }
   }
-  INT_FATAL(this, "Cannot find ClassType in WithExpr");
+  INT_FATAL(this, "Cannot find ClassType in ImportExpr");
   return NULL;
 }

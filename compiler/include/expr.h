@@ -376,32 +376,29 @@ class NamedExpr : public Expr {
 };
 
 
-class UseExpr : public Expr {
+enum ImportTag {
+  IMPORT_WITH,
+  IMPORT_USE
+};
+
+
+class ImportExpr : public Expr {
  public:
-  Expr* expr;
-  UseExpr(Expr* init_expr);
+  ImportTag importTag;          // true -> with, false -> use
+  Expr* expr;                   // Module or class withed or used
+  char* version;                // Module version
+  bool only;                    // only on renameList
+  Map<char*,char*>* renameList; // only clause
+  Vec<char*>* exceptList;       // except clause
+  ImportExpr(ImportTag initImportTag, Expr* initExpr);
   virtual void verify(void); 
-  COPY_DEF(UseExpr);
+  COPY_DEF(ImportExpr);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
   Type* typeInfo(void);
   void print(FILE* outfile);
   void codegen(FILE* outfile);
   ModuleSymbol* getModule(void);
-};
-
-
-class WithExpr : public Expr {
- public:
-  Expr* expr;
-  WithExpr(Expr* init_expr);
-  virtual void verify(void); 
-  COPY_DEF(WithExpr);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseExpr(Traversal* traversal);
-  Type* typeInfo(void);
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
   ClassType* getStruct(void);
 };
 

@@ -30,8 +30,6 @@ Priority 1 Tasks
    structures (and try to capture an instance of front-end
    nondeterminism to eliminate it as well)
 
-* (Steve) Unify WithExpr and UseExpr which have similar forms
-
 * (Steve) restructure verify pass; build out verify() routines on AST classes
 
 * (Steve) rename "implements" to something else.  Move to class header?
@@ -64,6 +62,8 @@ X (Steve) Remove FnCall
 X (John) Replace VarInitExpr with some symbol sentinel - complete
 
 X (Roxana) Rename DefaultVal to DefaultValue - complete
+
+X (Steve) Unify WithExpr and UseExpr which have similar forms
 
 Priority 2 Tasks
 ----------------

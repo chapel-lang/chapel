@@ -32,7 +32,6 @@
 #include "../traversals/createNestedFuncIterators.h"
 #include "../traversals/buildLValueFunctions.h"
 #include "../traversals/eliminateReturns.h"
-#include "../traversals/expandClassWiths.h"
 #include "../traversals/findUnknownTypes.h"
 #include "../traversals/findUnresolvedSymbols.h"
 #include "../traversals/fixup.h"
@@ -48,6 +47,7 @@
 #include "../traversals/instantiate.h"
 #include "../traversals/preAnalysisHacks.h"
 #include "../traversals/printAST.h"
+#include "../traversals/processImportExprs.h"
 #include "../traversals/processParameters.h"
 #include "../traversals/scopeResolveGotos.h"
 #include "../traversals/scopeResolveSymbols.h"
@@ -55,7 +55,6 @@
 #include "../traversals/specializeCallExprs.h"
 #include "../traversals/removeNamedParameters.h"
 #include "../traversals/removeNestedFunctions.h"
-#include "../traversals/resolveModuleUses.h"
 #include "../traversals/resolveSymbols.h"
 #include "../traversals/testGetStuff.h"
 #include "../traversals/transformLetExprs.h"
@@ -84,7 +83,6 @@ REGISTER(CreateNestedFuncIterators);
 REGISTER(DummyPass);
 REGISTER(BuildLValueFunctions);
 REGISTER(EliminateReturns);
-REGISTER(ExpandClassWiths);
 REGISTER(FindUnresolvedSymbols);
 REGISTER(FilesToAST);
 REGISTER(Fixup);
@@ -109,6 +107,7 @@ REGISTER(PreAnalysisCleanup);
 REGISTER(PrintAST);        // BLC: pretty-prints all or part of the AST
 REGISTER(PrintProgram);    // BLC: pretty-prints the whole program
 REGISTER(PrintSymtab);
+REGISTER(ProcessImportExprs);
 REGISTER(ProcessParameters); // BLC: handle parameter intents
 REGISTER(ReconstructIterators);
 REGISTER(RemoveDeadSymbols);
@@ -119,7 +118,6 @@ REGISTER(RemoveTypeVariableActuals);
 REGISTER(RemoveTypeVariableFormals);
 REGISTER(RenameCSymbols);  // BLC: rename symbols for C codegen
 REGISTER(RenameOverloadedFunctions);
-REGISTER(ResolveModuleUses);
 REGISTER(ResolveSymbols);       // SJD: Resolve symbols after analysis
 REGISTER(ResolveTypes);
 REGISTER(RunAnalysis);

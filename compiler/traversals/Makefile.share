@@ -11,7 +11,6 @@ TRAVERSALS_SRCS = \
         createNestedFuncIterators.cpp \
         buildLValueFunctions.cpp \
         eliminateReturns.cpp \
-	expandClassWiths.cpp \
         findEnclosingScopeVarUses.cpp \
         findLeafFunctions.cpp \
         findTypeVariables.cpp \
@@ -30,11 +29,11 @@ TRAVERSALS_SRCS = \
         instantiate.cpp \
         preAnalysisHacks.cpp \
 	printAST.cpp \
+        processImportExprs.cpp \
 	processParameters.cpp \
 	removeNamedParameters.cpp \
         removeNestedFunctions.cpp \
         replaceReturns.cpp \
-        resolveModuleUses.cpp \
 	resolveSymbols.cpp \
         scopeResolveGotos.cpp \
 	scopeResolveSymbols.cpp \
