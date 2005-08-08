@@ -41730,3 +41730,106 @@ Log message:
 Modified files:
 	chapel/compiler/: Tasks 
 
+---------------------------------------------------------------------------
+
+08/08/05 12:12:00 -- deitz
+
+Log message:
+	Removed StructuralType, RecordType, and UnionType, unifying their
+	functionality into ClassType.  UnionType is quite different and will
+	be moved out of this eventually.  As further justification for this
+	unification, for documentation purposes, note that RecordType and
+	ClassType are handled identically almost everywhere and that there
+	member functions which used to be different have been the same more
+	recently.
+	
+	Added many new overloaded constructors for CallExpr to make it easier
+	to build up CallExprs in the compiler.  I got rid of alot of
+	long-winded code idioms this way.  See example below.
+	
+	The constructors are:
+	
+	GENERAL
+	-------
+	
+	General baseExpr and argList
+	 CallExpr(Expr* initBase, AList<Expr>* initArgs);
+	
+	General baseExpr and up to four arguments to avoid putting the
+	arguments into an AList
+	 CallExpr(Expr* initBase, Expr* arg1 = NULL, Expr* arg2 = NULL,
+	          Expr* arg3 = NULL, Expr* arg4 = NULL);
+	
+	Operator baseExpr and up to two arguments
+	 CallExpr(OpTag initOpTag, Expr* arg1, Expr* arg2 = NULL);
+	
+	BEFORE ANALYSIS
+	---------------
+	  These avoid creating a new Variable of a new UnresolvedSymbol
+	
+	Unresolved function name and argList
+	 CallExpr(char* name, AList<Expr>* initArgs);
+	
+	Unresolved function name and up to four arguments
+	 CallExpr(char* name, Expr* arg1 = NULL, Expr* arg2 = NULL,
+	          Expr* arg3 = NULL, Expr* arg4 = NULL);
+	
+	AFTER ANALYSIS
+	--------------
+	  These avoid creating a new Variable
+	
+	FnSymbol baseExpr and argList
+	 CallExpr(Symbol* fn, AList<Expr>* initArgs);
+	
+	FnSymbol baseExpr and up to four arguments
+	 CallExpr(Symbol* fn, Expr* arg1 = NULL, Expr* arg2 = NULL,
+	          Expr* arg3 = NULL, Expr* arg4 = NULL);
+	
+	For example, the code:
+	
+	!   Expr* rtexit = new Variable(new UnresolvedSymbol("exit"));
+	!   IntLiteral* exitZero = new IntLiteral(0);
+	!   AList<Expr>* status = new AList<Expr>(exitZero);
+	!   Expr* callRtexit = new CallExpr(rtexit, status);
+	!   return new ExprStmt(callRtexit);
+	
+	becomes:
+	
+	!   return new ExprStmt(new CallExpr("exit", new IntLiteral(0)));
+	
+	Made it so that ALists can be constructed empty or with up to four
+	elements, previously two.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp stmt.cpp symbol.cpp 
+	                      type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: alist.h analysis.h baseAST.h expr.h 
+	                          type.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: preAnalysisCleanup.cpp 
+	chapel/compiler/symtab/: computeVisibleFunctions.cpp flatten.cpp 
+	                         reconstructIterators.cpp 
+	                         removeDeadSymbols.cpp resolveTypes.cpp 
+	                         symscope.cpp symtab.cpp 
+	                         symtabTraversal.cpp 
+	chapel/compiler/traversals/: applyGettersSetters.cpp 
+	                             buildClassConstructorsEtc.cpp 
+	                             buildClassConstructorsEtc.h 
+	                             createNestedFuncIterators.cpp 
+	                             expandClassWiths.cpp htmlview.cpp 
+	                             inlineFunctions.cpp 
+	                             insertFunctionTemps.cpp 
+	                             insertLiteralTemps.cpp 
+	                             insertThisParameters.cpp 
+	                             insertUnionChecks.cpp 
+	                             insertVariableInitializations.cpp 
+	                             instantiate.cpp 
+	                             preAnalysisHacks.cpp 
+	                             processParameters.cpp 
+	                             removeNamedParameters.cpp 
+	                             replaceReturns.cpp 
+	                             resolveModuleUses.cpp 
+	                             resolveSymbols.cpp 
+	                             specializeCallExprs.cpp 
+
