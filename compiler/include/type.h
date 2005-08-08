@@ -70,9 +70,7 @@ class Type : public BaseAST {
   virtual void codegenConfigVarRoutines(FILE* outfile);
   virtual void codegenDefaultFormat(FILE* outfile, bool isRead);
 
-  virtual bool outParamNeedsPtr(void);
   virtual bool requiresCParamTmp(paramType intent);
-  virtual bool blankIntentImpliesRef(void);
   virtual bool implementedUsingCVals(void);
 
   virtual bool hasDefaultWriteFunction(void);
@@ -188,7 +186,6 @@ class ClassType : public Type {
   virtual void codegenPrototype(FILE* outfile);
   virtual void codegenMemberAccessOp(FILE* outfile);
 
-  virtual bool blankIntentImpliesRef(void);
   virtual bool implementedUsingCVals(void);
 
   virtual bool hasDefaultWriteFunction(void);

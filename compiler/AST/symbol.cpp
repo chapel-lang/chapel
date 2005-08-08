@@ -145,7 +145,8 @@ bool Symbol::greaterThan(Symbol* s1, Symbol* s2) {
 
 void Symbol::codegen(FILE* outfile) {
   if (hasPragma("codegen data")) {
-    ClassType* dataType = dynamic_cast<ClassType*>(type);
+    TypeSymbol* typeSymbol = dynamic_cast<TypeSymbol*>(this);
+    ClassType* dataType = dynamic_cast<ClassType*>(typeSymbol->definition);
     dataType->methods.v[0]->retType->codegen(outfile);
     fprintf(outfile, "*", cname);
   } else {
@@ -412,16 +413,13 @@ void ParamSymbol::printDef(FILE* outfile) {
 
 
 bool ParamSymbol::requiresCPtr(void) {
-  return (((intent == PARAM_OUT || intent == PARAM_INOUT || 
-            (intent == PARAM_REF && !is_Reference_Type(type))) && 
-           type->outParamNeedsPtr()) ||
-          (intent == PARAM_BLANK && type->blankIntentImpliesRef()));
+  return (intent == PARAM_OUT || intent == PARAM_INOUT || 
+          (intent == PARAM_REF && type->astType == TYPE_PRIMITIVE));
 }
 
 
 bool ParamSymbol::requiresCopyBack(void) {
-  return ((intent == PARAM_OUT || intent == PARAM_INOUT) &&
-          type->outParamNeedsPtr());
+  return intent == PARAM_OUT || intent == PARAM_INOUT;
 }
 
 

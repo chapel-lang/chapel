@@ -174,18 +174,9 @@ void Type::codegenDefaultFormat(FILE* outfile, bool isRead) {
 }
 
 
-bool Type::outParamNeedsPtr(void) {
-  return true;
-}
-
-
 bool Type::requiresCParamTmp(paramType intent) {
   if (intent == PARAM_BLANK) {
-    if (blankIntentImpliesRef()) {
-      intent = PARAM_REF;
-    } else {
-      intent = PARAM_CONST;
-    }
+    intent = PARAM_CONST;
   }
   switch (intent) {
   case PARAM_BLANK:
@@ -215,11 +206,6 @@ bool Type::requiresCParamTmp(paramType intent) {
     INT_FATAL(this, "case not handled in requiresCParamTmp");
     return false;
   }
-}
-
-
-bool Type::blankIntentImpliesRef(void) {
-  return false;
 }
 
 
@@ -812,11 +798,6 @@ void ClassType::codegenMemberAccessOp(FILE* outfile) {
   } else {
     fprintf(outfile, "->");
   }
-}
-
-
-bool ClassType::blankIntentImpliesRef(void) {
-  return false;
 }
 
 
