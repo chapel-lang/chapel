@@ -41935,3 +41935,16 @@ Log message:
 Modified files:
 	chapel/compiler/: Tasks 
 
+---------------------------------------------------------------------------
+
+08/08/05 16:12:43 -- deitz
+
+Log message:
+	Grabbed phase one tasks for unifying union type and sum type and for
+	renaming expressions.  Should Variable be called VariableExpr or
+	SymbolExpr to make it end in Expr?  Everything else already does,
+	except for MemberAccess, which will soon be eliminated.
+
+Modified files:
+	chapel/compiler/: Tasks 
+
