@@ -1,1 +1,1 @@
-Error: No initializer for parameter (test_param_decl3.chpl:1)
+Error: Top-level params must be initialized. (test_param_decl3.chpl:1)
