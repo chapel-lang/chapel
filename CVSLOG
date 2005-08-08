@@ -41948,3 +41948,16 @@ Log message:
 Modified files:
 	chapel/compiler/: Tasks 
 
+---------------------------------------------------------------------------
+
+08/08/05 16:39:27 -- deitz
+
+Log message:
+	Added an error message to flag uninitialized params in functions.
+	
+	This fixes regression trivial/roxana/test_param_decl3.
+
+Modified files:
+	chapel/compiler/traversals/: checkSemantics.cpp 
+	chapel/test/trivial/roxana/: test_param_decl3.good 
+
