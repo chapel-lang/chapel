@@ -471,7 +471,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     ADD_CHILD(Type, symbol);
     ADD_CHILD(Type, defaultValue);
     ADD_CHILD(Type, defaultConstructor);
-    ADD_CHILD(Type, parentType);
     ADD_CHILD(Type, metaType);
     break;
   case TYPE_PRIMITIVE:
@@ -486,11 +485,9 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     goto LTypeCommon;
   case TYPE_CLASS:
     ADD_LIST(ClassType, declarationList, Stmt);
-    ADD_CHILD(ClassType, parentStruct);
     ADD_VEC(ClassType, fields, Symbol);
     ADD_VEC(ClassType, types, TypeSymbol);
     ADD_CHILD(ClassType, fieldSelector);
-    ADD_VEC(ClassType, parentClasses, ClassType);
     goto LTypeCommon;
   case TYPE_META:
     ADD_CHILD(MetaType, base);

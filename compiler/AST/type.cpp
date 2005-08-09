@@ -26,11 +26,12 @@ Type::Type(astType_t astType, Expr* init_defaultVal) :
   defaultValue(init_defaultVal),
   defaultConstructor(NULL),
   asymbol(NULL),
-  parentType(NULL),
   metaType(NULL),
   isGeneric(false),
   instantiatedFrom(NULL)
 { 
+  typeParents.clear();
+  dispatchParents.clear();
   if (astType != TYPE_META)
     metaType = new MetaType(this);
 }
@@ -520,8 +521,7 @@ ClassType::ClassType(ClassTag initClassTag) :
   Type(TYPE_CLASS, NULL),
   classTag(initClassTag),
   structScope(NULL),
-  declarationList(new AList<Stmt>()),
-  parentStruct(NULL)
+  declarationList(new AList<Stmt>())
 {
   if (classTag == CLASS_CLASS) {
     defaultValue = new Variable(Symboltable::lookupInternal("nil", SCOPE_INTRINSIC));
@@ -529,7 +529,6 @@ ClassType::ClassType(ClassTag initClassTag) :
   fields.clear();
   methods.clear();
   types.clear();
-  parentClasses.clear();
   isPattern = false;
   fieldSelector = NULL;
 }

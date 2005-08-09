@@ -34,11 +34,13 @@ class VariableType;
 
 class Type : public BaseAST {
  public:
+  Vec<Type*> typeParents;     // type hierarchy
+  Vec<Type*> dispatchParents; // dispatch hierarchy
+
   TypeSymbol* symbol;
   Expr* defaultValue;
   FnSymbol *defaultConstructor;
   ASymbol *asymbol;
-  Type* parentType;
   Vec<FnSymbol*> methods;
   Type *metaType;
   bool isGeneric;
@@ -155,9 +157,6 @@ class ClassType : public Type {
   ClassTag classTag;
   SymScope* structScope;
   AList<Stmt>* declarationList;
-  ClassType* parentStruct;
-
-  Vec<ClassType*> parentClasses;
   bool isPattern;
   EnumType* fieldSelector;
 

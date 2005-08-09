@@ -503,7 +503,7 @@ TypeSymbol* TypeSymbol::clone(Map<BaseAST*,BaseAST*>* map) {
     if (!oldClassType) {
       INT_FATAL(this, "Cloning of ClassType went horribly wrong");
     }
-    newClassType->parentClasses.add(oldClassType);
+    newClassType->typeParents.add(oldClassType);
   }
   clone->cname = glomstrings(3, clone->cname, "_clone_", intstring(uid++));
   DefExpr* new_def_expr = new DefExpr(clone);

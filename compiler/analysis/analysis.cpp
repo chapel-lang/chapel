@@ -948,9 +948,10 @@ build_type(Type *t, bool make_default = true) {
         t->asymbol->sym->is_value_class = 1;
       if (tt->classTag == CLASS_UNION)
         t->asymbol->sym->is_union_class = 1;
-      if (tt->parentStruct)
-        t->asymbol->sym->inherits_add(tt->parentStruct->asymbol->sym);
-      else
+      if (tt->dispatchParents.n > 0) {
+        forv_Vec(Type, ttt, tt->dispatchParents)
+          t->asymbol->sym->inherits_add(ttt->asymbol->sym);
+      } else
         t->asymbol->sym->inherits_add(sym_object);
       if (t->asymbol->sym == sym_sequence)
         t->asymbol->sym->element = new_sym();
@@ -970,8 +971,9 @@ build_type(Type *t, bool make_default = true) {
       break;
     }
   }
-  if (t->parentType)
-    t->asymbol->sym->must_implement_and_specialize(t->parentType->asymbol->sym);
+  // Note: Rewrite using new typeParents or dispatchParents vectors
+  //  if (t->parentType)
+  //    t->asymbol->sym->must_implement_and_specialize(t->parentType->asymbol->sym);
   return t->asymbol->sym;
 }
 

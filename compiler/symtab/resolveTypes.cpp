@@ -36,7 +36,7 @@ static bool types_match(Type* super, Type* sub) {
     if (ClassType* subClass = dynamic_cast<ClassType*>(sub)) {
       if (superClass->isNominalType() &&
           subClass->isNominalType() &&
-          subClass->parentClasses.in(superClass)) {
+          subClass->typeParents.in(superClass)) {
         return true;
       }
     }
