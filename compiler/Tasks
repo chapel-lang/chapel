@@ -143,6 +143,6 @@ Priority 4 Tasks
   case indicating that the expression will be evaluated, used as a
   type constraint, and dropped on the floor?
 
-* (Brad) add delta summary information into testing mails sent out
+X (Brad) add delta summary information into testing mails sent out
 
-* (Brad) stop squelching core dumps when developer flag is used
+X (Brad) stop squelching core dumps when developer flag is used

@@ -82,7 +82,7 @@ show_error(char *str, Var *v, ...) {
 }
 #else
 bool ignore_errors = 0;
-bool developer = 0;
+bool developer = false;
 void get_version(char *) {}
 #endif
 
@@ -291,17 +291,19 @@ void printProblem(BaseAST* ast, char *fmt, ...) {
 
 
 static void handleInterrupt(int sig) {
-  fail("received interrupt");
+  INT_FATAL("received interrupt");
 }
 
 static void handleSegFault(int sig) {
-  fail("seg fault");
+  INT_FATAL("seg fault");
 }
 
 
 void startCatchingSignals(void) {
-  signal(SIGINT, handleInterrupt);
-  signal(SIGSEGV, handleSegFault);
+  if (!developer) {
+    signal(SIGINT, handleInterrupt);
+    signal(SIGSEGV, handleSegFault);
+  }
 }
 
 

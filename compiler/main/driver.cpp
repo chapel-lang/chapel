@@ -281,11 +281,11 @@ int
 main(int argc, char *argv[]) {
   if (pre_malloc)
     (void)MALLOC(pre_malloc);
-  startCatchingSignals();
   
   compute_program_name_loc(argv[0], &(arg_state.program_name),
                            &(arg_state.program_loc));
   process_args(&arg_state, argc, argv);
+  startCatchingSignals();
   if (arg_state.nfile_arguments < 1)
     help(&arg_state, NULL);
   if (rungdb)
