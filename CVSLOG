@@ -41998,3 +41998,14 @@ Modified files:
 	chapel/test/flowanalysis/jplevyak/constants/: COMPOPTS 
 	chapel/test/parsing/jplevyak/: COMPOPTS 
 
+---------------------------------------------------------------------------
+
+08/09/05 09:24:07 -- deitz
+
+Log message:
+	Builtin _data structure is a 0-based array.  Fixed an off-by-one error
+	in new valgrind regression.
+
+Modified files:
+	chapel/test/domains/roxana/: test_hash_table3.chpl 
+
