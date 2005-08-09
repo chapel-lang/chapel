@@ -42022,3 +42022,14 @@ Log message:
 Modified files:
 	chapel/runtime/src/: chpltypes.c 
 
+---------------------------------------------------------------------------
+
+08/09/05 10:42:57 -- bradc
+
+Log message:
+	Changed nightly script to append number of new failures
+	to the subject line of the mail it sends out.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
