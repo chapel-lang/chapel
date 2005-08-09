@@ -42033,3 +42033,89 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+08/09/05 11:35:26 -- jplevyak
+
+Log message:
+	Complete reporting of low level errors.
+	
+	USE:
+	
+	  chpl --analysis-errors ...
+	
+	This blocks analysis from reporting errors and instead populates
+	a data structure:
+	
+	extern Vec<AError *> analysis_errors;
+	
+	defined in analysis.h
+	
+	There are 8 types of errors:
+	
+	enum AError_kind {
+	  AERROR_CALL_ARGUMENT,         // all types of a call argument not handled
+	  AERROR_DISPATCH_AMBIGUITY,    // call is ambiguous (fills "funs")
+	  AERROR_MEMBER,                // no member with that "name"
+	  AERROR_DESTRUCT,              // unable to destructure expression type
+	  AERROR_NOTYPE,                // unable to type variable
+	  AERROR_BOXING,                // primitive missmatch (e.g. integer AND float)
+	  AERROR_MISMATCH_OFFSETS,      // offset mismatch for field names
+	  AERROR_BAD_STATE              // called with bad arguments/data
+	};
+	
+	And each is represented by this data structure:
+	
+	class AError : public gc { public:
+	  AError_kind kind;
+	  AVar *call;
+	  AType *type;
+	  AVar *avar;
+	  Vec<FnSymbol *> funs;
+	
+	  void get_member_names(Vec<char *> &names);
+	  void get_types(Vec<Type *> &types);
+	  static BaseAST *get_BaseAST(AVar *aavar);      // Symbol or Types
+	  static BaseAST *get_def_BaseAST(AVar *acall);  // calling or defining Expr or Stmt
+	  static void get_callers(AVar *acall, Vec<AVar *> &callers);
+	
+	  AError(AError_kind akind, AVar *acall = NULL, AType *atype = NULL, AVar *avar = NULL);
+	};
+	
+	The methods provide a way to access the inforamation provided in terms
+	of front-end data structures.  NOTE: call, type, avar may be NULL
+	in which case that information is not provided.
+	
+	From the "call" member, one can retrieve the call tree (get_callers) as
+	well as the calling Expr (get_def_BaseAST).
+	
+	From the "avar" member, one can retrieve the Symbol or Type (get_BaseAST) and
+	sometimes the defining Expr.
+	
+	From "type" one can retrieve the set of Types.
+	
+	For AERROR_MEMBER it it is also possible to retrieve the set of member names
+	(typically 1).
+	
+	Also removed some extraneous cruft in the "fail" error messages.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp fa.cpp 
+	chapel/compiler/include/: analysis.h callbacks.h driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/flowanalysis/jplevyak/: badcall.good 
+	                                    badprimitive.good 
+	                                    badreturn.good 
+	                                    dispatch3.good 
+	chapel/test/functions/deitz/default/: test_default3-error.good 
+	chapel/test/functions/deitz/named/: test_named3-error.good 
+	chapel/test/functions/jplevyak/: equal_method-1.compopts 
+	chapel/test/parsing/jplevyak/: module.good 
+	chapel/test/types/seq/bradc/: length.modify.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+	chapel/test/types/type_variables/jplevyak/: where-2-error.good 
+
