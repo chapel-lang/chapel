@@ -42169,3 +42169,18 @@ Log message:
 Modified files:
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+08/09/05 13:32:43 -- deitz
+
+Log message:
+	Fixed a small bug in the let transformation in which the old let scope
+	was accidentally left in the AST.
+	
+	This was caught by a test in verify that I still have commented out.
+	The test makes sure that all of the symbols in the Symboltable (with
+	some exceptions) have DefExprs in the AST that is actually traversed.
+
+Modified files:
+	chapel/compiler/traversals/: transformLetExprs.cpp 
+
