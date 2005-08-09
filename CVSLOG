@@ -42206,3 +42206,16 @@ Log message:
 Modified files:
 	chapel/compiler/: Tasks 
 
+---------------------------------------------------------------------------
+
+08/09/05 14:44:24 -- jplevyak
+
+Log message:
+	Add .future for the last regressions...
+	This is a known problem with instantiation which wil
+	  be fixed in the next round of work on that feature.
+
+Added files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_typevar_record6.future 
+
