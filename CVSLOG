@@ -42196,3 +42196,13 @@ Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 	chapel/compiler/include/: analysis.h 
 
+---------------------------------------------------------------------------
+
+08/09/05 13:42:36 -- jplevyak
+
+Log message:
+	Update "nil" and low level error tasks.
+
+Modified files:
+	chapel/compiler/: Tasks 
+
