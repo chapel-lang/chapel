@@ -136,17 +136,6 @@ $mailer = $ENV{'CHPL_MAILER'};
 if ($mailer eq "") {
     $mailer = "Mail";
 }
-if ($debug == 1) {
-    $mailsubject = "Chapel: Debug Results ($platform)";
-} else {
-    $mailsubject = "Chapel: Nightly Results ($platform)";
-}
-
-if ($debug == 1) {
-    $mailcommand = "| $mailer -s \"$mailsubject \" $debugmail";
-} else {
-    $mailcommand = "| $mailer -s \"$mailsubject \" chapel_dev\@cray.com";
-}
 
 
 $somethingfailed = 0;
@@ -255,7 +244,7 @@ if ($stdstatus == 0) {
     $stdsummary = "standard run: failed";
 }
 
-if ($valgrind == 1 && $vgrstatus == 0) {
+if ($vgrstatus == 0) {
     `cat $rawvgrsummary | grep -v "^.END" | grep -v "^.Test Summary" | sort > $sortedvgrsummary`;
     
     $oldvgrsummary = `grep Summary: $prevvgrsummary`; chomp($oldvgrsummary);
@@ -305,6 +294,31 @@ if ($stdstatus == 0) {
 #
 # send mail
 #
+$newfailures = "???";
+$newvgrfailures = "???";
+if ($stdstatus == 0) {
+    $newfailures = `comm -13 $prevstdsummary $sortedstdsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | wc -l`; chomp($newfailures);
+}
+if ($vgrstatus == 0) {
+    $newvgrfailures = `comm -13 $prevvgrsummary $sortedvgrsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | wc -l`; chomp($newvgrfailures);
+    $shortstatus = "$newfailures/$newvgrfailures new failures";
+} elsif ($stdstatus == 0) {
+    $shortstatus = "$newfailures new failures";
+} else {
+    $shortstatus = "build/test failed";
+}
+if ($debug == 1) {
+    $mailsubject = "Chapel: Debug Results ($platform): $shortstatus";
+} else {
+    $mailsubject = "Chapel: Nightly Results ($platform): $shortstatus";
+}
+
+if ($debug == 1) {
+    $mailcommand = "| $mailer -s \"$mailsubject \" $debugmail";
+} else {
+    $mailcommand = "| $mailer -s \"$mailsubject \" chapel_dev\@cray.com";
+}
+
 open(MAIL, $mailcommand);
 
 print MAIL "=== Summary ==========================================================\n";
