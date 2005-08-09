@@ -42159,3 +42159,13 @@ Modified files:
 	chapel/compiler/include/: type.h 
 	chapel/compiler/symtab/: resolveTypes.cpp 
 
+---------------------------------------------------------------------------
+
+08/09/05 13:16:25 -- deitz
+
+Log message:
+	Updated REGRESSIONS file.  There is currently one regression.
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+
