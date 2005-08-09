@@ -42119,3 +42119,16 @@ Modified files:
 	                                         test_clone_class1b.good 
 	chapel/test/types/type_variables/jplevyak/: where-2-error.good 
 
+---------------------------------------------------------------------------
+
+08/09/05 12:47:58 -- bradc
+
+Log message:
+	Quick change to disable the compiler from catching signals
+	when the developer flag is on.
+
+Modified files:
+	chapel/compiler/: Tasks 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/util/: misc.cpp 
+
