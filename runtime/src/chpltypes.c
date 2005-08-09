@@ -100,7 +100,7 @@ _string _chpl_string_concat(_string x, _string y) {
 _string
 _chpl_string_strided_select(_string x, int low, int high, int stride) {
   _string result =
-    _chpl_malloc((high - low + 1), sizeof(char), "_chpl_string_strided_select temp");
+    _chpl_malloc((high - low + 2), sizeof(char), "_chpl_string_strided_select temp");
   _string src = x + low - 1;
   _string dst = result;
   while (src - x <= high - 1) {
