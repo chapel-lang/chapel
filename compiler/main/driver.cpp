@@ -57,8 +57,6 @@ bool ignore_errors = false;
 bool _adhoc_to_uniform_mangling = false;
 int fnewvardef = 0;
 int fdce_if1 = 1;
-int finline = 0;
-int fsimple_inline = 0;
 int fgraph = 0;
 int fgraph_constants = 0;
 int fgraph_frequencies = 0;
@@ -77,30 +75,28 @@ static ArgumentDescription arg_desc[] = {
  {"passlist", ' ', "Passlist Filename", "P", passlist_filename, "CHPL_PASSLIST", NULL},
  {"sysdir", 'S', "System Directory", "P", system_dir, "CHPL_SYSTEM_DIR", NULL},
  {"scoping", ' ', "Scoping Test", "T", &scoping_test, "CHPL_SCOPING_TEST", NULL},
- {"dce_if1", ' ', "Dead Code Elimination on IF1", "T", &fdce_if1, "CHPL_DCE_IF1", NULL},
- {"print-call-depth", 'C', "Print Call Depth", "I", &print_call_depth, "CHPL_PRINT_CALL_DEPTH", NULL},
- {"constants_per_var", ' ', "# of Constants per Var", "I", &num_constants_per_variable, 
+ {"if1-dce", ' ', "Dead Code Elimination on IF1", "T", &fdce_if1, "CHPL_DCE_IF1", NULL},
+ {"print-call-depth", 'C', "Print Calls to this Depth", "I", &print_call_depth, "CHPL_PRINT_CALL_DEPTH", NULL},
+ {"constant-limit", ' ', "# of Constants Propagated", "I", &num_constants_per_variable, 
   "CHPL_CONSTANTS_PER_VARIABLE", NULL},
  {"devel", ' ', "Developer Compile", "F", &developer, "CHPL_DEVELOPER", NULL},
- {"ignore_errors", ' ', "Attempt to ignore errors", "F", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
- {"inline", ' ', "Inlining", "T", &finline, "CHPL_INLINE", NULL},
- {"simple_inline", ' ', "Simple Inlining", "T", &fsimple_inline, "CHPL_SIMPLE_INLINE", NULL},
+ {"ignore-errors", ' ', "Attempt to ignore errors", "F", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
  {"html", 't', "Dump Program in HTML", "T", &fdump_html, "CHPL_HTML", NULL},
- {"lowlevel_cg", 'g', "Low Level Code Generation", "T", &fcg, "CHPL_CG", NULL},
+ {"lowlevel-cg", 'g', "Low Level Code Generation", "T", &fcg, "CHPL_CG", NULL},
  {"graph", 'G', "Dump Program Graphs", "T", &fgraph, "CHPL_GRAPH", NULL},
- {"graph_var", ' ', "Limit Graph to Var", "S80", graph_var, "CHPL_GRAPH_VAR", NULL},
- {"graph_fun", ' ', "Limit Graph to Fun", "S80", graph_fun, "CHPL_GRAPH_FUN", NULL},
- {"graph_vcg", ' ', "VCG Output", "T", &fgraph_vcg, "CHPL_GRAPHVCG", NULL},
- {"graph_constants", ' ', "Graph Constants", "T", &fgraph_constants, 
+ {"graph-var", ' ', "Limit Graph to Var", "S80", graph_var, "CHPL_GRAPH_VAR", NULL},
+ {"graph-fun", ' ', "Limit Graph to Fun", "S80", graph_fun, "CHPL_GRAPH_FUN", NULL},
+ {"graph-vcg", ' ', "VCG Output", "T", &fgraph_vcg, "CHPL_GRAPHVCG", NULL},
+ {"graph-constants", ' ', "Graph Constants", "T", &fgraph_constants, 
   "CHPL_GRAPH_CONSTANTS", NULL},
  {"graph_frequencies", ' ', "Graph Frequencies", "T", &fgraph_frequencies, 
   "CHPL_GRAPH_FREQUENCIES", NULL},
- {"log_dir", ' ', "Log Directory", "P", log_dir, "CHPL_LOG_DIR", NULL},
+ {"log-dir", ' ', "Log Directory", "P", log_dir, "CHPL_LOG_DIR", NULL},
  {"log", 'd', "Debug Logging Flags", "S512", log_flags, "CHPL_LOG_FLAGS", log_flags_arg},
  {"cg-cpp-lines", ' ', "Generate #line directives", "F", &printCppLineno, "CHPL_CG_CPP_LINES", NULL},
  {"cg-chpl-lineno", ' ', "Generate chpl input line numbers", "F", &printChplLineno, "CHPL_CG_CHPL_LINENO", NULL},
- {"", 'l', "Library linkage", "P", libraryFilename, "CHPL_LIB_NAME", handleLibrary},
- {"", 'L', "Library search path", "P", libraryFilename, "CHPL_LIB_PATH", handleLibPath},
+ {"lib-linkage", 'l', "Library linkage", "P", libraryFilename, "CHPL_LIB_NAME", handleLibrary},
+ {"lib-search-path", 'L', "Library search path", "P", libraryFilename, "CHPL_LIB_PATH", handleLibPath},
  {"output", 'o', "Name of Executable Output", "P", executableFilename, "CHPL_EXE_NAME", NULL},
  {"savec", ' ', "Save Intermediate C Code", "P", saveCDir, "CHPL_SAVEC_DIR", NULL},
  {"gdb", ' ', "Run compiler in gdb", "F", &rungdb, NULL, NULL},
@@ -114,11 +110,11 @@ static ArgumentDescription arg_desc[] = {
  {"no-codegen", ' ', "Suppress code generation", "F", &suppressCodegen, "CHPL_NO_CODEGEN", NULL},
  {"newvardef", ' ', "New Var Def code", "T", &fnewvardef, "CHPL_NEWVARDEF", NULL},
  {"equal_method", ' ', "= is a method", "T", &f_equal_method, "CHPL_EQUAL_METHOD", NULL},
- {"parser_verbose_np", ' ', "Parser Verbose Non-Prelude", "+", 
+ {"parser-verbose-np", ' ', "Parser Verbose Non-Prelude", "+", 
   &parser_verbose_non_prelude, "CHPL_PARSER_VERBOSE_NON_PRELUDE", NULL},
- {"parser_verbose", 'V', "Parser Verbose Level", "+", &d_verbose_level, 
+ {"parser-verbose", 'V', "Parser Verbose Level", "+", &d_verbose_level, 
    "CHPL_PARSER_VERBOSE", NULL},
- {"parser_debug", 'D', "Parser Debug Level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},
+ {"parser-debug", 'D', "Parser Debug Level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},
  {"verbose", 'v', "Verbose Level", "+", &verbose_level, "CHPL_VERBOSE", NULL},
  {"print-commands", ' ', "Print Subprocess Commands", "F", &printSystemCommands, 
   "CHPL_PRINT_COMMANDS", NULL},
@@ -209,10 +205,6 @@ do_analysis(char *fn) {
   frequency_estimation(fa);
   if (fgraph)
     graph(fa, fn, !fgraph_vcg ? GraphViz : VCG);
-  if (finline)
-    inline_calls(fa);
-  else if (fsimple_inline)
-    simple_inline_calls(fa);
   if (fdump_html)
     dump_html(fa, fn);
   if (fcg) {

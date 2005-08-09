@@ -1429,7 +1429,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
                 (s = meta_apply(cs1->sym->meta_type, cs2->sym->meta_type)))
               update_in(result, make_abstract_type(s));
             else
-              type_violation(ATypeViolation_SEND_ARGUMENT, a1, a1->out, result, 0);
+              type_violation(ATypeViolation_SEND_ARGUMENT, a1, a1->out, result);
         break;
       }
       case P_prim_destruct: {

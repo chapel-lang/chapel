@@ -30,6 +30,8 @@
   (_c > 'Z' && _c < 'a') || (_c > 'z')) &&            \
    _c != '_'&& _c != '?' && _c != '$')                \
 
+Vec<AError *> analysis_errors;
+
 class LabelMap : public Map<char *, Stmt *> {};
 
 static Sym *domain_start_index_symbol = 0;
@@ -70,6 +72,7 @@ class ScopeLookupCache : public Map<char *, Vec<Fun *> *> {};
 static ScopeLookupCache universal_lookup_cache;
 static int finalized_symbols = 0;
 static Map<Sym *, Expr *> constant_cache;
+
 
 struct TraverseASTs {
   Vec<BaseAST *> asts;
@@ -343,8 +346,10 @@ ACallbacks::make_LUB_type(Sym *t) {
     if (b) {
       if (!basic)
         basic = b;
-      else if (basic != b)
+      else if (basic != b) {
+        
         fail("mixed primitive types");
+      }
     }
     Type *ttt = dynamic_cast<Type *>(s->asymbol->symbol);
     if (ttt)
@@ -3008,7 +3013,20 @@ AST_is_used(BaseAST *a, Symbol *s) {
   return sym->type != 0;
 }
 
-static void
+// more C++ boilerplate clutter
+AError::AError(AError_kind akind, AVar *acall, AType *atype, AVar *aavar) :
+  kind(akind), call(acall), type(atype), avar(aavar)
+{
+}
+
+int 
+analysis_error(AError_kind akind, AVar *acall, AType *atype, AVar *aavar) {
+  AError *ae = new AError(akind, acall, atype, aavar);
+  analysis_errors.add(ae);
+  return -1;
+}
+
+static int
 member_info(Sym *t, char *name, int *offset, Type **type) {
   int oresult = -1;
   Vec<Sym *> iv_type;
@@ -3024,7 +3042,7 @@ member_info(Sym *t, char *name, int *offset, Type **type) {
       AVar *iv = cs->var_map.get(name);
       if (iv) {
         if (oresult >= 0 && oresult != iv->ivar_offset)
-          fail("missmatched member offsets");
+          return analysis_error(AERROR_MISMATCH_OFFSETS);
         oresult = iv->ivar_offset;
         iv_type.set_add(iv->type);
       }
@@ -3041,43 +3059,49 @@ member_info(Sym *t, char *name, int *offset, Type **type) {
       tmp = concrete_type_set_to_type(iv_type);
     *type = dynamic_cast<Type *>(tmp->asymbol->symbol);
   }
+  return 0;
 }
 
-void
+int
 resolve_member_access(Expr *e, int *offset, Type **type) {
   *offset = -1;
   *type = 0;
   if (e->ainfo->pnodes.n < 1)
-    return;
+    return analysis_error(AERROR_BAD_STATE);
   PNode *pn = e->ainfo->pnodes.v[0];
   if (pn->code->kind != Code_SEND)
-    return;
+    return analysis_error(AERROR_BAD_STATE);
   if (pn->rvals.n < 4)
-    return;
+    return analysis_error(AERROR_BAD_STATE);
   if (pn->rvals.v[0]->sym != sym_operator)
-    return;
+    return analysis_error(AERROR_BAD_STATE);
   Sym *obj_type = pn->rvals.v[1]->type;
   char *sel = pn->rvals.v[3]->sym->name;
-  member_info(obj_type, sel, offset, type);
+  return member_info(obj_type, sel, offset, type);
 }
 
-void
+int
 resolve_member(ClassType *t, VarSymbol *v, int *offset, Type **type) {
-  member_info(t->asymbol->sym, v->name, offset, type);
+  return member_info(t->asymbol->sym, v->name, offset, type);
 }
 
-void
+int
 structural_subtypes(Type *t, Vec<Type *> subtypes) {
+  if (!t->asymbol)
+    return -1;
   subtypes.clear();
   Sym *s = t->asymbol->sym;
   forv_Sym(ss, s->specializers) if (ss) {
     Type *tt = dynamic_cast<Type *>(ss->asymbol->symbol); assert(tt);
     subtypes.add(tt);
   }
+  return 0;
 }
 
 int
 function_returns_void(FnSymbol *fn) {
+  if (!fn->asymbol)
+    return -1;
   return !fn->asymbol->sym->fun_returns_value;
 }
 
@@ -3093,7 +3117,7 @@ float
 execution_frequence_info(Expr *expr) {
   AST *ast = expr->ainfo;
   if (!ast)
-    return -1; // this code is not known to analysis    
+    return -1.0; // this code is not known to analysis    
   float freq = 0.0;
   forv_PNode(pn, ast->pnodes) {
     if (pn->code->kind != Code_SEND)
