@@ -41976,3 +41976,25 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp type.cpp 
 	chapel/compiler/include/: type.h 
 
+---------------------------------------------------------------------------
+
+08/08/05 17:27:07 -- jplevyak
+
+Log message:
+	Changed lots of options to use the new "--lower-case-with-dash" standard.
+	Removed old -finline and -fsimple-inline options.
+	Added more error handling in analysis.
+	Added prototypes and structures for the new "low level passes back
+	  erorrs" interface (not yet completed).  Those interested can look
+	  in analysis.h to see what I am planning on doing.  The abstract
+	  variables AVar and AType will have accessor functions to pull out
+	  information for reporting errors.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp clone.cpp fa.cpp 
+	chapel/compiler/include/: analysis.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/test/flowanalysis/jplevyak/config/: COMPOPTS 
+	chapel/test/flowanalysis/jplevyak/constants/: COMPOPTS 
+	chapel/test/parsing/jplevyak/: COMPOPTS 
+
