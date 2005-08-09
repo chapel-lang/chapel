@@ -42009,3 +42009,16 @@ Log message:
 Modified files:
 	chapel/test/domains/roxana/: test_hash_table3.chpl 
 
+---------------------------------------------------------------------------
+
+08/09/05 09:32:17 -- deitz
+
+Log message:
+	Fixed off-by-one under-allocation bug in _chpl_string_strided_select
+	runtime routine.  This fixes valgrind regression of:
+	
+	  types/string/deitz/test_string_select1
+
+Modified files:
+	chapel/runtime/src/: chpltypes.c 
+
