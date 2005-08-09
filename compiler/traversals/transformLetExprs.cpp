@@ -37,6 +37,7 @@ void TransformLetExprs::doTransformation(void) {
     BlockStmt* blockStmt = Symboltable::startCompoundStmt();
     Expr* innerCopy = letExpr->innerExpr->copy(false, NULL, &lets);
     letExpr->replace(innerCopy);
+    Symboltable::removeScope(letExpr->letScope);
     Map<BaseAST*,BaseAST*>* map = new Map<BaseAST*,BaseAST*>();
     AList<Stmt>* defStmts = new AList<Stmt>();
     for_alist(DefExpr, defExpr, letExpr->symDefs) {
