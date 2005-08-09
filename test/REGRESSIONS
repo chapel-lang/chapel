@@ -14,22 +14,9 @@
 linux and general regressions
 =============================
 
-[Error matching program output for trivial/roxana/test_param_decl3]
-
-  Parameters need to be initialized in certain contexts (e.g., global
-  variables), we should check for this context in checkSemantics (the
-  old check is commented out).  Or, we could make class/function
-  instantiation set up a new initializer for the parameter after its
-  been instantiated so that the test would pass for all parameters.
-  (deitz/bradc)
-
 [Error matching compiler output for types/type_variables/deitz/test_typevar_record6]
 
   These are all caused by visibility problems with instantiated functions.
-
-[Error matching compiler output for classes/deitz/test_nested_record2]
-
-  Failing in DefaultCacheHashFns.
 
 ==========================
 linux valgrind regressions
