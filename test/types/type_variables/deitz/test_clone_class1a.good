@@ -1,4 +1,4 @@
-fail: fatal error, program does not type
+fail: program does not type
 test_clone_class1a.chpl:10: expression has mixed basic types:( null int64 float64 ) 
 test_clone_class1a.chpl:14: expression has mixed basic types:( null int64 float64 ) 
 test_clone_class1a.chpl:1: class foo:: 'x' has mixed basic types:( null int64 float64 ) 

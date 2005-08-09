@@ -8,4 +8,4 @@ _chpl_seq.chpl:178: length, __method, this : _aseq
 prelude.chpl:327: length, a : string
 length.modify.chpl:8: illegal call argument type expression illegal: ( int64 ) 
 length.modify.chpl:8: expression has no type
-fail: fatal error, program does not type
+fail: program does not type

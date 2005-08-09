@@ -55,7 +55,7 @@ int debugParserLevel = 0;
 bool developer = false;
 bool ignore_errors = false;
 bool _adhoc_to_uniform_mangling = false;
-int fnewvardef = 0;
+int fnewvardef = 1;
 int fdce_if1 = 1;
 int fgraph = 0;
 int fgraph_constants = 0;
@@ -68,8 +68,10 @@ char system_dir[FILENAME_MAX] = DEFAULT_SYSTEM_DIR;
 int print_call_depth = 2;
 int scoping_test = 0;
 int f_equal_method = 0;
+int fanalysis_errors = 0;
 
 static ArgumentDescription arg_desc[] = {
+ {"analysis-errors", ' ', "Pass Back Analysis Errors", "T", &fanalysis_errors, "CHPL_ANALYSIS_ERRORS", NULL},
  {"premalloc", 'm', "Pre-Malloc", "I", &pre_malloc, "CHPL_PRE_MALLOC", NULL},
  {"prelude", 'p', "Prelude Filename", "P", prelude_filename, "CHPL_PRELUDE", NULL},
  {"passlist", ' ', "Passlist Filename", "P", passlist_filename, "CHPL_PASSLIST", NULL},
@@ -89,7 +91,7 @@ static ArgumentDescription arg_desc[] = {
  {"graph-vcg", ' ', "VCG Output", "T", &fgraph_vcg, "CHPL_GRAPHVCG", NULL},
  {"graph-constants", ' ', "Graph Constants", "T", &fgraph_constants, 
   "CHPL_GRAPH_CONSTANTS", NULL},
- {"graph_frequencies", ' ', "Graph Frequencies", "T", &fgraph_frequencies, 
+ {"graph-frequencies", ' ', "Graph Frequencies", "T", &fgraph_frequencies, 
   "CHPL_GRAPH_FREQUENCIES", NULL},
  {"log-dir", ' ', "Log Directory", "P", log_dir, "CHPL_LOG_DIR", NULL},
  {"log", 'd', "Debug Logging Flags", "S512", log_flags, "CHPL_LOG_FLAGS", log_flags_arg},
@@ -103,13 +105,13 @@ static ArgumentDescription arg_desc[] = {
  {"noanalysis", ' ', "Skip analysis of AST", "f", &analyzeAST, NULL, NULL},
  {"no-inline", ' ', "No inlining of functions" , "F", &no_inline, NULL, NULL},
  {"report-inlining", ' ', "Print inlined functions", "F", &report_inlining, NULL, NULL},
- {"checkAnalysisTypeinfo", ' ', "Check result of type_info and return_type_info", "F", &checkAnalysisTypeinfo, NULL, NULL},
- {"apply-getters-setters", ' ', "Apply getters and setters preanalysis", "F", &applyGettersSetters, NULL, NULL},
+ {"check-typeinfo", ' ', "Check result of type_info and return_type_info", "F", &checkAnalysisTypeinfo, NULL, NULL},
+ {"getters-setters", ' ', "Apply getters and setters preanalysis", "F", &applyGettersSetters, NULL, NULL},
  {"instantiate", ' ', "Instantiate before analysis", "F", &instantiate, NULL, NULL},
  {"tmpMangling", ' ', "Name mangling toggle", "F", &_adhoc_to_uniform_mangling, "CHPL_ADHOC_TO_UNIFORMA_MANGLING", NULL},
  {"no-codegen", ' ', "Suppress code generation", "F", &suppressCodegen, "CHPL_NO_CODEGEN", NULL},
  {"newvardef", ' ', "New Var Def code", "T", &fnewvardef, "CHPL_NEWVARDEF", NULL},
- {"equal_method", ' ', "= is a method", "T", &f_equal_method, "CHPL_EQUAL_METHOD", NULL},
+ {"equal-method", ' ', "= is a method", "T", &f_equal_method, "CHPL_EQUAL_METHOD", NULL},
  {"parser-verbose-np", ' ', "Parser Verbose Non-Prelude", "+", 
   &parser_verbose_non_prelude, "CHPL_PARSER_VERBOSE_NON_PRELUDE", NULL},
  {"parser-verbose", 'V', "Parser Verbose Level", "+", &d_verbose_level, 
@@ -183,12 +185,12 @@ do_analysis(char *fn) {
   if1_finalize(if1);
   if1_write_log();
   if (!fdce_if1)
-    fail("unable to translate dead code... terminating");
+    fail("unable to translate dead code");
   Sym *init = if1_get_builtin(if1, "init");
   for (int i = 0; i < if1->allclosures.n; i++) {
     Fun *f = new Fun(if1->allclosures.v[i], if1->allclosures.v[i] == init);
     if (!f)
-      fail("fatal error, IF1 invalid");
+      fail("IF1 invalid");
     pdb->add(f);
   }
   FA *fa = pdb->fa;
@@ -197,7 +199,7 @@ do_analysis(char *fn) {
   if (clone(fa, if1->top->fun) < 0)
     goto Lfail;
   if (mark_dead_code(fa, if1->top->fun) < 0)
-    fail("fatal error, dead code detection failed");
+    fail("dead code detection failed");
   if (logging(LOG_TEST_FA))
     log_test_fa(fa);
   forv_Fun(f, fa->funs)
@@ -213,7 +215,7 @@ do_analysis(char *fn) {
   }
   return;
  Lfail:
-  fail("fatal error, program does not type");
+  fail("program does not type");
 }
 
 static void

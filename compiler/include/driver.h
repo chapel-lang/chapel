@@ -20,6 +20,8 @@ extern FILE* html_index_file;
 extern bool checkAnalysisTypeinfo;
 extern bool applyGettersSetters;
 extern bool instantiate;
+extern int fanalysis_errors;
+extern int scoping_test;
 // End temporary development flags
 
 extern int fdump_html;
@@ -41,7 +43,6 @@ extern bool analyzeAST;
 extern int debugParserLevel;
 extern bool suppressCodegen;
 extern bool developer;
-extern int scoping_test;
 
 extern bool ignore_errors;
 

@@ -67,6 +67,7 @@ static void build_types(Vec<BaseAST *> &syms, Vec<Type *> *types = NULL);
 static void build_classes(Vec<BaseAST *> &syms);
 static int gen_if1(BaseAST *ast, BaseAST *parent = 0);
 static void finalize_function(Fun *fun);
+static Type * to_AST_type(Sym *type);
 
 class ScopeLookupCache : public Map<char *, Vec<Fun *> *> {};
 static ScopeLookupCache universal_lookup_cache;
@@ -233,7 +234,7 @@ AnalysisCloneCallback::clone(BaseAST* old_ast, BaseAST* new_ast) {
       context->smap.put(old_s->asymbol->sym, new_s->asymbol->sym);
     }
   } else
-    assert(!"clone of Type unsupported");
+    fail("clone of Type unsupported");
 }
 
 AST *
@@ -346,10 +347,8 @@ ACallbacks::make_LUB_type(Sym *t) {
     if (b) {
       if (!basic)
         basic = b;
-      else if (basic != b) {
-        
+      else if (basic != b)
         fail("mixed primitive types");
-      }
     }
     Type *ttt = dynamic_cast<Type *>(s->asymbol->symbol);
     if (ttt)
@@ -432,7 +431,7 @@ install_new_function(FnSymbol *f, FnSymbol *old_f, Map<BaseAST*,BaseAST*> *map =
   finalize_types(if1);
   forv_Vec(FnSymbol, f, funs) {
     if (init_function(f) < 0 || build_function(f) < 0) 
-      assert(!"unable to instantiate generic/wrapper");
+      fail("unable to instantiate generic/wrapper");
     if1_finalize_closure(if1, f->asymbol->sym);
   }
   build_type_hierarchy();
@@ -1310,7 +1309,7 @@ gen_one_defexpr(VarSymbol *var, DefExpr *def) {
       case TYPE_ENUM:
       case TYPE_SUM:
       default:
-        assert(!"impossible");
+        fail("unexpected non-scalar non-reference Type");
         goto Lstandard; 
       case TYPE_USER:
         goto Lstandard;
@@ -2344,6 +2343,79 @@ ACallbacks::finalize_functions() {
     finalize_function(fun);
 }
 
+// C++ boilerplate clutter
+AError::AError(AError_kind akind, AVar *acall, AType *atype, AVar *aavar) :
+  kind(akind), call(acall), type(atype), avar(aavar)
+{
+}
+
+void
+AError::get_member_names(Vec<char *> &names) {
+  forv_CreationSet(cs, *type)
+    names.add(cs->sym->name);
+}
+
+void
+AError::get_types(Vec<Type *> &types) {
+  forv_CreationSet(cs, *type)
+    types.set_add(to_AST_type(cs->sym->type));
+  types.set_to_vec();
+  qsort(types.v, types.n, sizeof(types.v[0]), compar_baseast);
+}
+
+void
+AError::get_callers(AVar *call, Vec<AVar *> &callers) {
+  if (call->contour_is_entry_set) {
+    EntrySet *es = (EntrySet*)call->contour;
+    AEdge **last = es->edges.last();
+    for (AEdge **x = es->edges.first(); x < last; x++) if (*x)
+      callers.set_add(make_AVar((*x)->pnode->lvals.v[0], (*x)->from));
+    callers.set_to_vec();
+  }
+}
+
+BaseAST *
+AError::get_def_BaseAST(AVar *acall) {
+  if (acall->var->def && acall->var->def->code && acall->var->def->code->ast)
+    return ((AInfo*)acall->var->def->code->ast)->xast;
+  return NULL;
+}
+
+BaseAST *
+AError::get_BaseAST(AVar *acall) {
+  if (acall->var->sym->asymbol)
+    return acall->var->sym->asymbol->symbol;
+  return NULL;
+}
+
+int 
+analysis_error(AError_kind akind, AVar *acall, AType *atype, AVar *aavar) {
+  AError *ae = new AError(akind, acall, atype, aavar);
+  analysis_errors.add(ae);
+  return -1;
+}
+
+void
+ACallbacks::report_analysis_errors(Vec<ATypeViolation*> &type_violations) {
+  forv_ATypeViolation(v, type_violations) {
+    switch (v->kind) {
+      case ATypeViolation_PRIMITIVE_ARGUMENT:
+      case ATypeViolation_SEND_ARGUMENT:
+        analysis_error(AERROR_CALL_ARGUMENT, v->send, v->type, v->av); break;
+      case ATypeViolation_DISPATCH_AMBIGUITY:
+        analysis_error(AERROR_CALL_ARGUMENT, v->send, v->type, v->av); break;
+      case ATypeViolation_MEMBER:
+        analysis_error(AERROR_CALL_ARGUMENT, v->send, v->type, v->av); break;
+      case ATypeViolation_MATCH:
+        analysis_error(AERROR_CALL_ARGUMENT, v->send, v->type, v->av); break;
+      case ATypeViolation_NOTYPE:
+        analysis_error(AERROR_CALL_ARGUMENT, v->send, v->type, v->av); break;
+      case ATypeViolation_BOXING:
+        analysis_error(AERROR_CALL_ARGUMENT, v->send, v->type, v->av); break;
+    }
+  }
+}
+
 static void
 init_symbols() {
   domain_start_index_symbol = make_symbol("domain_start_index");
@@ -3011,19 +3083,6 @@ AST_is_used(BaseAST *a, Symbol *s) {
   if (!sym->var)
     return 0;
   return sym->type != 0;
-}
-
-// more C++ boilerplate clutter
-AError::AError(AError_kind akind, AVar *acall, AType *atype, AVar *aavar) :
-  kind(akind), call(acall), type(atype), avar(aavar)
-{
-}
-
-int 
-analysis_error(AError_kind akind, AVar *acall, AType *atype, AVar *aavar) {
-  AError *ae = new AError(akind, acall, atype, aavar);
-  analysis_errors.add(ae);
-  return -1;
 }
 
 static int

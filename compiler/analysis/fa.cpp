@@ -1411,10 +1411,10 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
         char *name = p->rvals.v[1]->sym->name;
         if (!name) name = p->rvals.v[1]->sym->constant;
         if (!name)
-          fail("fatal error, bad primitive transfer function");
+          fail("bad primitive transfer function");
         RegisteredPrim *rp = fa->primitive_transfer_functions.get(name);
         if (!rp)
-          fail("fatal error, undefined primitive transfer function '%s'", 
+          fail("undefined primitive transfer function '%s'", 
                p->rvals.v[1]->sym->name);
         rp->fn(p, es);
         break;
@@ -3112,7 +3112,10 @@ FA::analyze(Fun *top) {
   } while (extend_analysis());
   set_void_lub_types_to_void();
   remove_null_types();
-  show_violations(fa, stderr);
+  if (!fanalysis_errors)
+    show_violations(fa, stderr);
+  else
+    if1->callback->report_analysis_errors(type_violations);
   return type_violations.n ? -1 : 0;
 }
 

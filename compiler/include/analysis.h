@@ -36,6 +36,7 @@ public:
   Fun *coercion_wrapper(Match *);
   Fun *default_wrapper(Match *);
   Fun *instantiate_generic(Match *);
+  void report_analysis_errors(Vec<ATypeViolation*> &type_violations);
 };
 
 class CloneCallback : public gc {
@@ -103,7 +104,11 @@ class AError : public gc { public:
   AVar *avar;
   Vec<FnSymbol *> funs;
   
-  void get_member_names(Vec<char *> names);
+  void get_member_names(Vec<char *> &names);
+  void get_types(Vec<Type *> &types);
+  static BaseAST *get_BaseAST(AVar *aavar);      // Symbol or Types
+  static BaseAST *get_def_BaseAST(AVar *acall);  // calling or defining Expr or Stmt
+  static void get_callers(AVar *acall, Vec<AVar *> &callers);
 
   AError(AError_kind akind, AVar *acall = NULL, AType *atype = NULL, AVar *avar = NULL);
 };

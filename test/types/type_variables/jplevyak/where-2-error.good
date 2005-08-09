@@ -4,4 +4,4 @@ note: candidates are:
 where-2-error.chpl:4: f, t @ numeric, y
 where-2-error.chpl:7: illegal call argument type expression illegal: ( int64 ) 
 where-2-error.chpl:7: expression has no type
-fail: fatal error, program does not type
+fail: program does not type

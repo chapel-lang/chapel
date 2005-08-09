@@ -4,7 +4,7 @@
 __init::self(assign2.v:1) ( C (assign2.v:1) )
 badprimitive.v:1: illegal primitive argument type 'a' illegal: ( string ) 
 f::c2(assign2.v:3) ( C (assign2.v:1) )
-fail: fatal error, program does not type
+fail: program does not type
 function __init assign2.v:1
 function __init assign2.v:1
 function f assign2.v:3

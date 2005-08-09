@@ -6,7 +6,7 @@ dispatch3.v:2: _ : f, ( x : int32, y : anynum) : tuple
 dispatch3.v:3: error: ambiguous call 'f'
 f::x(dispatch2.v:2) ( float64 )
 f::x(dispatch2.v:3) ( int32 )
-fail: fatal error, program does not type
+fail: program does not type
 function __init dispatch2.v:1
 function f dispatch2.v:2
 function f dispatch2.v:3

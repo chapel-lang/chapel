@@ -6,4 +6,4 @@ test_named3-error.chpl:23: illegal call argument type expression illegal: ( int6
 test_named3-error.chpl:23: illegal call argument type expression illegal: ( int64 ) 
 test_named3-error.chpl:23: illegal call argument type expression illegal: ( int64 ) 
 test_named3-error.chpl:23: expression has no type
-fail: fatal error, program does not type
+fail: program does not type

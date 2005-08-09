@@ -1,9 +1,13 @@
 #ifndef _callbacks_H_
 #define _callbacks_H_
 
+#include "vec.h"
+#include "map.h"
+
 class Sym;
 class Match;
 class Fun;
+class ATypeViolation;
 
 class Callbacks : public gc {
 public:
@@ -16,6 +20,7 @@ public:
   virtual Fun* coercion_wrapper(Match *) { return 0; }
   virtual Fun* default_wrapper(Match *) { return 0; }
   virtual Fun* instantiate_generic(Match *) { return 0; }
+  virtual void report_analysis_errors(Vec<ATypeViolation*> &type_violations) { }
 };
 
 #endif
