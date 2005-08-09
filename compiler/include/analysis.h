@@ -106,6 +106,7 @@ class AError : public gc { public:
   
   void get_member_names(Vec<char *> &names);
   void get_types(Vec<Type *> &types);
+  static AType *get_type(AVar *aavar);
   static BaseAST *get_BaseAST(AVar *aavar);      // Symbol or Types
   static BaseAST *get_def_BaseAST(AVar *acall);  // calling or defining Expr or Stmt
   static void get_callers(AVar *acall, Vec<AVar *> &callers);

@@ -2357,6 +2357,11 @@ AError::get_member_names(Vec<char *> &names) {
     names.add(cs->sym->name);
 }
 
+AType *
+AError::get_type(AVar *aavar) {
+  return aavar->out;
+}
+
 void
 AError::get_types(Vec<Type *> &types) {
   forv_CreationSet(cs, *type)
