@@ -68,10 +68,8 @@ X (Steve) Unify WithExpr and UseExpr which have similar forms
 Priority 2 Tasks
 ----------------
 
-* (John) implement nil to behave as we discussed
-
-* (John/Steve) remove error reporting from low-level code -- propagate errors to
-  high-level (I'll take a first cut at the analysis changes -- john)
+* (Steve/John*) remove error reporting from low-level code -- propagate errors to
+  high-level (*I've done a first cut at the analysis changes -- john)
 
 * (John) Implement MemberAccess Setter Getter transform in AST.
   Remove MemberAccessExpr.  This will be eliminated pre-analysis
@@ -98,6 +96,9 @@ Priority 2 Tasks
 
 * implement constant folding for "parameter" and check that +,- etc. are
   not overloaded for primitive types (e.g. integer)
+
+X (John) implement nil to behave as we discussed
+
 
 
 Priority 3 Tasks
