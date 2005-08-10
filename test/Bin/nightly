@@ -298,9 +298,11 @@ $newfailures = "???";
 $newvgrfailures = "???";
 if ($stdstatus == 0) {
     $newfailures = `comm -13 $prevstdsummary $sortedstdsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | wc -l`; chomp($newfailures);
+    $newfailures += 0;
 }
 if ($vgrstatus == 0) {
     $newvgrfailures = `comm -13 $prevvgrsummary $sortedvgrsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | wc -l`; chomp($newvgrfailures);
+    $newvgrfailures += 0;
     $shortstatus = "$newfailures/$newvgrfailures new failures";
 } elsif ($stdstatus == 0) {
     $shortstatus = "$newfailures new failures";
