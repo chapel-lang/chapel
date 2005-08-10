@@ -42360,3 +42360,17 @@ Removed files:
 	chapel/compiler/AST/: moduleList.cpp 
 	chapel/compiler/include/: moduleList.h 
 
+---------------------------------------------------------------------------
+
+08/10/05 13:32:01 -- deitz
+
+Log message:
+	Fixed .good for Mack's tests that make sure inlining fired.  Since the
+	name of the setters has changed, the names printed out for which
+	functions were inlined changed.  However, the functions are still
+	inlined so this is good.
+
+Modified files:
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+
