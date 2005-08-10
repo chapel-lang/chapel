@@ -42434,3 +42434,13 @@ Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 	chapel/compiler/main/: passlist.h 
 
+---------------------------------------------------------------------------
+
+08/10/05 15:55:32 -- jplevyak
+
+Log message:
+	Removed dead variable
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
