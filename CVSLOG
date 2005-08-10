@@ -42406,3 +42406,18 @@ Modified files:
 	                             buildLValueFunctions.cpp 
 	                             insertThisParameters.cpp 
 
+---------------------------------------------------------------------------
+
+08/10/05 15:09:27 -- deitz
+
+Log message:
+	Removed blank constructors from Symbol since they are never nor should
+	never be used.  You must specify a name, for example, to create a
+	VarSymbol.
+	
+	Removed unused Module type MOD_SENTINEL.
+
+Modified files:
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/symtab/: symtab.cpp 
+
