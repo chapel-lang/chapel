@@ -42298,3 +42298,13 @@ Removed files:
 	chapel/compiler/traversals/: applyGettersSetters.cpp 
 	                             applyGettersSetters.h 
 
+---------------------------------------------------------------------------
+
+08/10/05 11:54:25 -- jplevyak
+
+Log message:
+	Delete accidental checkin.
+
+Removed files:
+	chapel/compiler/passes/: applyGettersSetters.cpp.~1.8.~ 
+
