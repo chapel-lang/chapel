@@ -94,27 +94,23 @@ void InsertThisParameters::preProcessExpr(Expr* expr) {
     } else {
       SymScope* saveScope = Symboltable::setCurrentScope(fn->paramScope);
       ParamSymbol* this_insert = new ParamSymbol(PARAM_REF, "this", typeSym->definition);
-      Symboltable::setCurrentScope(saveScope);
       fn->formals->insertAtHead(new DefExpr(this_insert));
       fn->_this = this_insert;
       bool isThisMethod = !strcmp(fn->name, "this");
-      if (applyGettersSetters) {
-        SymScope* saveScope = Symboltable::setCurrentScope(fn->paramScope);
-        if (!isThisMethod) {
-          TypeSymbol *methodTypeSymbol = dynamic_cast<TypeSymbol*>(Symboltable::lookupInternal("_methodTokenType"));
-          ParamSymbol* token_dummy = new ParamSymbol(PARAM_REF, "_methodTokenDummy",
-                                                     methodTypeSymbol->definition);
-          fn->formals->insertAtHead(new DefExpr(token_dummy));
-        }
-        if (fn->isSetter) {
-          TypeSymbol *setterTypeSymbol = dynamic_cast<TypeSymbol*>(Symboltable::lookupInternal("_setterTokenType"));
-          ParamSymbol* setter_dummy = new ParamSymbol(PARAM_REF, "_setterTokenDummy", 
-                                                      setterTypeSymbol->definition);
-          int len = fn->formals->length();
-          fn->formals->get(len)->insertBefore(new DefExpr(setter_dummy));
-        }
-        Symboltable::setCurrentScope(saveScope);
+      if (!isThisMethod) {
+        TypeSymbol *methodTypeSymbol = dynamic_cast<TypeSymbol*>(Symboltable::lookupInternal("_methodTokenType"));
+        ParamSymbol* token_dummy = new ParamSymbol(PARAM_REF, "_methodTokenDummy",
+                                                   methodTypeSymbol->definition);
+        fn->formals->insertAtHead(new DefExpr(token_dummy));
       }
+      if (fn->isSetter) {
+        TypeSymbol *setterTypeSymbol = dynamic_cast<TypeSymbol*>(Symboltable::lookupInternal("_setterTokenType"));
+        ParamSymbol* setter_dummy = new ParamSymbol(PARAM_REF, "_setterTokenDummy", 
+                                                    setterTypeSymbol->definition);
+        int len = fn->formals->length();
+        fn->formals->get(len)->insertBefore(new DefExpr(setter_dummy));
+      }
+      Symboltable::setCurrentScope(saveScope);
     }
   }
 }

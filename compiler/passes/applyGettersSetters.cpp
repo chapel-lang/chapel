@@ -5,12 +5,12 @@
 #include "symtab.h"
 
 
-#define REPLACE(_x) { \
+#define REPLACE(_x) do { \
       BaseAST* replacement = _x; \
       ast->replace(replacement); \
       ast = replacement; \
       goto Ldone; \
-}
+} while (0)
 
 static OpTag
 gets_to_non(OpTag t) {
@@ -63,12 +63,18 @@ process(BaseAST* ast) {
     }
     REPLACE(new CallExpr(memberAccess->member->name, arguments));
   } 
-  if (assign && call) {
-    AList<Expr>* arguments = call->argList->copy();
-    arguments->insertAtTail(new Variable(Symboltable::lookupInternal("_setterToken")));
-    arguments->insertAtTail(assign->argList->get(2)->copy());
-    REPLACE(new CallExpr(call->baseExpr->copy(), arguments));
-  }
+  if (assign) {
+    Expr *rhs = assign->argList->get(2)->copy();
+    if (assign->opTag != OP_GETSNORM)
+      rhs = new CallExpr(gets_to_non(assign->opTag), assign->argList->get(1)->copy(), rhs);
+    if (call) {
+      AList<Expr>* arguments = call->argList->copy();
+      arguments->insertAtTail(new Variable(Symboltable::lookupInternal("_setterToken")));
+      arguments->insertAtTail(rhs);
+      REPLACE(new CallExpr(call->baseExpr->copy(), arguments));
+    } else
+      REPLACE(new CallExpr(OP_GETSNORM, assign->argList->get(1)->copy(), rhs));
+  } 
  Ldone:
   // top down, on the modified AST
   Vec<BaseAST *> asts;
@@ -78,8 +84,6 @@ process(BaseAST* ast) {
 }
 
 void ApplyGettersSetters::run(Vec<ModuleSymbol*>* modules) {
-  if (!applyGettersSetters)
-    return;
   Vec<Symbol *> symbols;
   forv_Vec(ModuleSymbol, mod, *modules)
     getSymbols(mod->modScope, symbols);

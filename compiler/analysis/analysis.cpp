@@ -1491,33 +1491,9 @@ gen_assign_op(CallExpr *s) {
   s->ainfo->rval->ast = s->ainfo;
   s->ainfo->sym = s->get(1)->ainfo->sym;
   if1_gen(if1, &s->ainfo->code, s->get(2)->ainfo->code);
-  Sym *op = 0;
-  Sym *rval = s->get(2)->ainfo->rval;
-  switch (s->opTag) {
-    default: assert(!"case");
-    case OP_GETSNORM: op = 0; break;
-    case OP_GETSPLUS: op = make_symbol("+"); break;
-    case OP_GETSMINUS: op = make_symbol("-"); break;
-    case OP_GETSMULT: op = make_symbol("*"); break;
-    case OP_GETSDIV: op = make_symbol("/"); break;
-    case OP_GETSBITAND: op = make_symbol("&"); break;
-    case OP_GETSBITOR: op = make_symbol("|"); break;
-    case OP_GETSBITXOR: op = make_symbol("^"); break;
-    case OP_GETSSEQCAT: op = make_symbol("#"); break;
-  }
-  if (op) {
-    Sym *old_rval = rval;
-    rval = new_sym();
-    rval->ast = s->ainfo;
-    Code *c = if1_send(if1, &s->ainfo->code, 3, 1, op,
-                       s->get(1)->ainfo->rval, old_rval, rval);
-    c->ast = s->ainfo;
-  } else {
-    Sym *old_rval = rval;
-    rval = new_sym();
-    rval->ast = s->ainfo;
-    if1_move(if1, &s->ainfo->code, old_rval, rval, s->ainfo);
-  }
+  Sym *rval = new_sym();
+  rval->ast = s->ainfo;
+  if1_move(if1, &s->ainfo->code, s->get(2)->ainfo->rval, rval, s->ainfo);
   return rval;
 }
 
@@ -1526,21 +1502,14 @@ gen_set_member(MemberAccess *ma, CallExpr *base_ast) {
   FnSymbol *fn = ma->getStmt()->parentFunction();
   AInfo *ast = base_ast->ainfo;
   int equal = !fn || (!fn->_setter && (fn->fnClass != FN_CONSTRUCTOR || !is_this_member_access(ma)));
+  assert(!equal);
   ast->rval = new_sym();
   ast->rval->ast = base_ast->ainfo;
   if1_gen(if1, &ast->code, ma->ainfo->code);
   Sym *rhs = gen_assign_op(base_ast);
-  Code *c = 0;
-  if (equal) {
-    assert(!applyGettersSetters);
-    Sym *selector = make_symbol(ma->member->asymbol->sym->name);
-    c = if1_send(if1, &ast->code, 5, 1, selector, method_token, 
-                 ma->base->ainfo->rval, setter_token, rhs, ast->rval);
-  } else {
-    Sym *selector = make_symbol(ma->member->asymbol->sym->name);
-    c = if1_send(if1, &ast->code, 5, 1, sym_operator, ma->base->ainfo->rval, 
-                 make_symbol(".="), selector, rhs, ast->rval);
-  }
+  Sym *selector = make_symbol(ma->member->asymbol->sym->name);
+  Code *c = if1_send(if1, &ast->code, 5, 1, sym_operator, ma->base->ainfo->rval, 
+                     make_symbol(".="), selector, rhs, ast->rval);
   c->ast = ast;
   c->partial = Partial_NEVER;
   return 0;
@@ -1564,20 +1533,17 @@ gen_get_member(MemberAccess *ma) {
 }
 
 static int
-gen_paren_op(CallExpr *s, Expr *rhs = 0, AInfo *ast = 0) {
-  if (!ast)
-    ast = s->ainfo;
+gen_paren_op(CallExpr *s) {
+  AInfo *ast = s->ainfo;
   MemberAccess *ma = dynamic_cast<MemberAccess*>(s->baseExpr);
   if (ma) {
-    if (!rhs) {
-      if (!s->argList) {
-        ast->rval = s->baseExpr->ainfo->rval;
-        ast->code = s->baseExpr->ainfo->code;
-        s->baseExpr->ainfo->send->partial = Partial_NEVER;
-        return 0;
-      } else
-        s->baseExpr->ainfo->send->partial = Partial_ALWAYS;
-    }
+    if (!s->argList) {
+      ast->rval = s->baseExpr->ainfo->rval;
+      ast->code = s->baseExpr->ainfo->code;
+      s->baseExpr->ainfo->send->partial = Partial_NEVER;
+      return 0;
+    } else
+      s->baseExpr->ainfo->send->partial = Partial_ALWAYS;
   }
   ast->rval = new_sym();
   ast->rval->ast = ast;
@@ -1587,24 +1553,9 @@ gen_paren_op(CallExpr *s, Expr *rhs = 0, AInfo *ast = 0) {
   if (args.n == 1 && !args.v[0])
     args.n--;
   Vec<Sym *> rvals;
-  if (rhs) {
-    Variable *v = dynamic_cast<Variable*>(s->baseExpr);
-    assert(!applyGettersSetters);
-    if (v && v->var->astType == SYMBOL_UNRESOLVED) {
-      rvals.add(make_symbol(s->baseExpr->ainfo->sym->name));
-      rvals.add(setter_token);
-    } else {
-      rvals.add(s->baseExpr->ainfo->rval);
-      rvals.add(setter_token);
-    }
-  }
   forv_Vec(Expr, a, args) {
     if1_gen(if1, &ast->code, a->ainfo->code);
     rvals.add(a->ainfo->rval);
-  }
-  if (rhs) {
-    if1_gen(if1, &ast->code, rhs->ainfo->code);
-    rvals.add(rhs->ainfo->rval);
   }
   astType_t base_symbol = undef_or_fn_expr(s->baseExpr);
   Sym *base = NULL;
@@ -1625,14 +1576,11 @@ gen_paren_op(CallExpr *s, Expr *rhs = 0, AInfo *ast = 0) {
       base = sym_primitive;
   } else if (base_symbol == SYMBOL_UNRESOLVED) {
     assert(n);
-    if (!rhs)
-      base = make_symbol(n);
+    base = make_symbol(n);
   } else if (base_symbol == SYMBOL_FN)
     base = dynamic_cast<FnSymbol*>(dynamic_cast<Variable*>(s->baseExpr)->var)->asymbol->sym;
-  else {
-    if (!rhs)
-      base = s->baseExpr->ainfo->rval;
-  }
+  else
+    base = s->baseExpr->ainfo->rval;
   Code *send = if1_send1(if1, &ast->code);
   send->ast = ast;
   if (base)
@@ -1952,20 +1900,14 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
         c->ast = binOp->ainfo;
         break;
       }
-      /*** Handle assignment ***/
       CallExpr* assignOp = dynamic_cast<CallExpr*>(ast);
-      if (assignOp->opTag != OP_NONE && assignOp->opTag >= OP_GETSNORM) {
+      if (assignOp->opTag == OP_GETSNORM) {
         if (assignOp->get(1)->astType == EXPR_MEMBERACCESS) {
           if (gen_set_member(dynamic_cast<MemberAccess*>(assignOp->get(1)), assignOp) < 0)
             return -1;
           break;
         }
-        if (assignOp->get(1)->astType == EXPR_CALL) 
-          {
-            if (gen_paren_op(dynamic_cast<CallExpr*>(assignOp->get(1)), assignOp->get(2), assignOp->ainfo) < 0)
-              return -1;
-            break;
-          }
+        // handle assignment
         if1_gen(if1, &assignOp->ainfo->code, assignOp->get(1)->ainfo->code);
         Sym *rval = gen_assign_op(assignOp);
         Variable *variable = dynamic_cast<Variable*>(assignOp->get(1));
@@ -2131,12 +2073,6 @@ gen_fun(FnSymbol *f) {
     if (is_Sym_OUT(args.v[0]->asymbol->sym))
       out_args.add(args.v[0]->asymbol->sym);
     as[iarg++] = args.v[0]->asymbol->sym;
-    if (!applyGettersSetters) {
-      Sym *s = new_sym(setter_token->name);
-      s->ast = ast;
-      s->must_specialize = setter_token;
-      as[iarg++] = s;
-    }
   } else if (strcmp(f->asymbol->sym->name, "this") == 0) {
     if (is_Sym_OUT(args.v[0]->asymbol->sym))
       out_args.add(args.v[0]->asymbol->sym);
@@ -2149,12 +2085,6 @@ gen_fun(FnSymbol *f) {
     s->ast = ast;
     s->must_specialize = make_symbol(s->name);
     as[iarg++] = s;
-    if (!applyGettersSetters && f->method_type != NON_METHOD) {
-      Sym *s = new_sym(method_token->name);
-      s->ast = ast;
-      s->must_specialize = method_token;
-      as[iarg++] = s;
-    }
     if (f->method_type != NON_METHOD) {
       // this
       if (args.n) {
@@ -2162,12 +2092,6 @@ gen_fun(FnSymbol *f) {
           out_args.add(args.v[0]->asymbol->sym);
         as[iarg++] = args.v[0]->asymbol->sym;
       }
-    }
-    if (!applyGettersSetters && setter) {
-      Sym *s = new_sym(setter_token->name);
-      s->ast = ast;
-      s->must_specialize = setter_token;
-      as[iarg++] = s;
     }
     if (f->method_type == NON_METHOD) {
       if (args.n) {
@@ -2436,10 +2360,6 @@ init_symbols() {
   expr_create_domain_symbol = make_symbol("expr_create_domain");
   expr_reduce_symbol = make_symbol("expr_reduce");
   cast_symbol = make_symbol("cast");
-  if (!applyGettersSetters) {
-    method_token = make_symbol("__method");
-    setter_token = make_symbol("__setter");
-  }
   make_seq_symbol = make_symbol("make_seq");
   chapel_defexpr_symbol = make_symbol("chapel_defexpr");
   write_symbol = make_symbol("write");
@@ -2798,10 +2718,8 @@ ast_to_if1(Vec<AList<Stmt> *> &stmts) {
   Vec<Type *> types;
   build_types(syms, &types);
   build_symbols(syms);
-  if (applyGettersSetters) {
-    method_token = Symboltable::lookupInternal("_methodToken")->asymbol->sym;
-    setter_token = Symboltable::lookupInternal("_setterToken")->asymbol->sym;
-  }
+  method_token = Symboltable::lookupInternal("_methodToken")->asymbol->sym;
+  setter_token = Symboltable::lookupInternal("_setterToken")->asymbol->sym;
   if1_set_primitive_types(if1);
   forv_Type(t, types)
     if (t->defaultValue)

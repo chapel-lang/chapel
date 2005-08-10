@@ -47,7 +47,6 @@ int parser_verbose_non_prelude = 0;
 static bool rungdb = false;
 static int pre_malloc = 0;
 bool checkAnalysisTypeinfo = false;
-bool applyGettersSetters = true;
 bool instantiate = false;
 bool analyzeAST = true;
 bool suppressCodegen = false;
@@ -106,7 +105,6 @@ static ArgumentDescription arg_desc[] = {
  {"no-inline", ' ', "No inlining of functions" , "F", &no_inline, NULL, NULL},
  {"report-inlining", ' ', "Print inlined functions", "F", &report_inlining, NULL, NULL},
  {"check-typeinfo", ' ', "Check result of type_info and return_type_info", "F", &checkAnalysisTypeinfo, NULL, NULL},
- {"getters-setters", ' ', "Apply getters and setters preanalysis", "F", &applyGettersSetters, NULL, NULL},
  {"instantiate", ' ', "Instantiate before analysis", "F", &instantiate, NULL, NULL},
  {"tmpMangling", ' ', "Name mangling toggle", "F", &_adhoc_to_uniform_mangling, "CHPL_ADHOC_TO_UNIFORMA_MANGLING", NULL},
  {"no-codegen", ' ', "Suppress code generation", "F", &suppressCodegen, "CHPL_NO_CODEGEN", NULL},

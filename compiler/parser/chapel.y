@@ -991,21 +991,11 @@ function:
   fname
     { $$ = new FnSymbol($1); }
 | TASSIGN identifier
-    {  
-      if (applyGettersSetters)
-        $$ = new FnSymbol($2, NULL, true);
-      else
-       $$ = new FnSymbol(glomstrings(2, "=", $2), NULL, true);
-    }
+    { $$ = new FnSymbol($2, NULL, true); }
 | identifier TDOT fname
     { $$ = new FnSymbol($3, new TypeSymbol($1, NULL)); }
 | identifier TDOT TASSIGN identifier
-    {
-      if (applyGettersSetters)
-        $$ = new FnSymbol($4, new TypeSymbol($1, NULL), true); 
-      else
-        $$ = new FnSymbol(glomstrings(2, "=", $4), new TypeSymbol($1, NULL), true); 
-    }
+    { $$ = new FnSymbol($4, new TypeSymbol($1, NULL), true); }
 ;
 
 
