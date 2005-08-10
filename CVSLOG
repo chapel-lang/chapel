@@ -42318,3 +42318,45 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: applyGettersSetters.cpp 
 
+---------------------------------------------------------------------------
+
+08/10/05 13:18:37 -- deitz
+
+Log message:
+	Tucked ModuleSymbols into three different Vecs, one of those that are
+	codegened, one of those that are user modules, and one including them
+	all.  Removed the ModuleList code that used an AList to store modules.
+	Now symbols don't appear in ALists at all.  This simplifies some code
+	that I plan to simplify further.
+
+Modified files:
+	chapel/compiler/AST/: Makefile.share baseAST.cpp expr.cpp 
+	chapel/compiler/include/: symtab.h 
+	chapel/compiler/main/: runpasses.cpp 
+	chapel/compiler/passes/: applyGettersSetters.cpp 
+	                         applyGettersSetters.h buildBinary.cpp 
+	                         buildBinary.h codegen.cpp codegen.h 
+	                         createEntryPoint.cpp createEntryPoint.h 
+	                         filesToAST.cpp filesToAST.h pass.cpp 
+	                         pass.h preAnalysisCleanup.cpp 
+	                         preAnalysisCleanup.h printProgram.cpp 
+	                         printProgram.h renameCSymbols.cpp 
+	                         renameCSymbols.h runAnalysis.cpp 
+	                         runAnalysis.h 
+	chapel/compiler/symtab/: codegenOne.cpp codegenOne.h 
+	                         findCollidingNames.cpp 
+	                         findCollidingNames.h printSymtab.cpp 
+	                         printSymtab.h symtab.cpp 
+	                         symtabTraversal.cpp symtabTraversal.h 
+	chapel/compiler/traversals/: checkIDs.cpp checkIDs.h fixup.cpp 
+	                             fixup.h htmlview.cpp htmlview.h 
+	                             processImportExprs.cpp 
+	                             processImportExprs.h 
+	                             transformLetExprs.cpp 
+	                             transformLetExprs.h traversal.cpp 
+	                             traversal.h verify.cpp verify.h 
+	                             view.cpp view.h 
+Removed files:
+	chapel/compiler/AST/: moduleList.cpp 
+	chapel/compiler/include/: moduleList.h 
+
