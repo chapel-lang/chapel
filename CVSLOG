@@ -42421,3 +42421,16 @@ Modified files:
 	chapel/compiler/include/: symbol.h 
 	chapel/compiler/symtab/: symtab.cpp 
 
+---------------------------------------------------------------------------
+
+08/10/05 15:54:58 -- jplevyak
+
+Log message:
+	Remove more extraneous code.  Move applyGettersSetters to be
+	right before analysis since some of the Hacks were inserting things
+	which needed to be converted.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/main/: passlist.h 
+
