@@ -23,18 +23,11 @@ Fixup::Fixup(bool init_verifyParents) :
  **   the one is the init function and the other is the module
  **/
 static bool EQparentSymbol(Symbol* sym1, Symbol* sym2) {
-  if (sym1 == sym2) {
-    return true;
-  }
   ModuleSymbol* mod1 = dynamic_cast<ModuleSymbol*>(sym1);
-  if (mod1 && mod1->initFn == sym2) {
-    return true;
-  }
   ModuleSymbol* mod2 = dynamic_cast<ModuleSymbol*>(sym2);
-  if (mod2 && mod2->initFn == sym1) {
-    return true;
-  }
-  return false;
+  return ((sym1 == sym2) ||
+          (mod1 && mod1->initFn == sym2) ||
+          (mod2 && mod2->initFn == sym1));
 }
 
 

@@ -197,6 +197,9 @@ void UnresolvedSymbol::verify(void) {
   if (astType != SYMBOL_UNRESOLVED) {
     INT_FATAL(this, "Bad UnresolvedSymbol::astType");
   }
+  if (prev || next) {
+    INT_FATAL(this, "Symbol is in AList");
+  }
 }
 
 
@@ -227,10 +230,6 @@ VarSymbol::VarSymbol(char* init_name,
   noDefaultInit(false)
 {
   if (name) { // ensure this is not a sentinel
-#ifdef NUMBER_VAR_SYMBOLS_UNIQUELY
-    static int uid = 0;
-    cname = glomstrings(4, name, "__", intstring(uid++), "__");
-#endif
     /** SJD hack because __init_fn is not set up with a scope **/
     if (Symbol* init_fn = Symboltable::getCurrentScope()->symContext) {
       if (!strncmp("__init_", init_fn->name, 7)) {
@@ -248,6 +247,9 @@ VarSymbol::VarSymbol(char* init_name,
 void VarSymbol::verify(void) {
   if (astType != SYMBOL_VAR) {
     INT_FATAL(this, "Bad VarSymbol::astType");
+  }
+  if (prev || next) {
+    INT_FATAL(this, "Symbol is in AList");
   }
 }
 
@@ -379,6 +381,9 @@ void ParamSymbol::verify(void) {
   if (astType != SYMBOL_PARAM) {
     INT_FATAL(this, "Bad ParamSymbol::astType");
   }
+  if (prev || next) {
+    INT_FATAL(this, "Symbol is in AList");
+  }
 }
 
 
@@ -471,7 +476,9 @@ void TypeSymbol::verify(void) {
   if (astType != SYMBOL_TYPE) {
     INT_FATAL(this, "Bad TypeSymbol::astType");
   }
-
+  if (prev || next) {
+    INT_FATAL(this, "Symbol is in AList");
+  }
   definition->verify();
 }
 
@@ -569,6 +576,9 @@ FnSymbol::FnSymbol(char* init_name, TypeSymbol* init_typeBinding) :
 void FnSymbol::verify(void) {
   if (astType != SYMBOL_FN) {
     INT_FATAL(this, "Bad FnSymbol::astType");
+  }
+  if (prev || next) {
+    INT_FATAL(this, "Symbol is in AList");
   }
 }
 
@@ -1178,6 +1188,9 @@ void EnumSymbol::verify(void) {
   if (astType != SYMBOL_ENUM) {
     INT_FATAL(this, "Bad EnumSymbol::astType");
   }
+  if (prev || next) {
+    INT_FATAL(this, "Symbol is in AList");
+  }
 }
 
 
@@ -1205,6 +1218,9 @@ ModuleSymbol::ModuleSymbol(char* init_name, modType init_modtype) :
 void ModuleSymbol::verify(void) {
   if (astType != SYMBOL_MODULE) {
     INT_FATAL(this, "Bad ModuleSymbol::astType");
+  }
+  if (prev || next) {
+    INT_FATAL(this, "Symbol is in AList");
   }
 }
 
@@ -1372,6 +1388,9 @@ LabelSymbol::LabelSymbol(char* init_name) :
 void LabelSymbol::verify(void) {
   if (astType != SYMBOL_LABEL) {
     INT_FATAL(this, "Bad LabelSymbol::astType");
+  }
+  if (prev || next) {
+    INT_FATAL(this, "Symbol is in AList");
   }
 }
 

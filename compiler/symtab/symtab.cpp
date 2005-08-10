@@ -448,13 +448,6 @@ DefExpr* Symboltable::finishModuleDef(ModuleSymbol* mod, AList<Stmt>* def) {
   return defExpr;
 }
 
-static AList<VarSymbol>* symsToVars(AList<Symbol>* idents, Type* type) {
-  AList<VarSymbol>* vlist = new AList<VarSymbol>();
-  for_alist(Symbol, ident, idents) {
-    vlist->insertAtTail(new VarSymbol(ident->name, type, VAR_NORMAL, VAR_VAR));
-  }
-  return vlist;
-}
 
 DefExpr*
 Symboltable::defineParam(paramType tag, char* ident, Expr* type, Expr* init) {
@@ -500,35 +493,6 @@ DefExpr* Symboltable::defineSingleVarDef(char* name, Type* type,
 }
 
 
-/* Converts expressions like i and j in [(i,j) in D] to symbols */
-static AList<DefExpr>* exprToIndexSymbols(AList<Expr>* expr,
-                                          AList<Expr>* domain, 
-                                          AList<VarSymbol>* indices = new AList<VarSymbol>()) {
-  if (expr) {
-    for (Expr* tmp = expr->first(); tmp; tmp = expr->next()) {
-      Variable* varTmp = dynamic_cast<Variable*>(tmp);
-      if (!varTmp) {
-        INT_FATAL(tmp, "Error");
-      } else {
-        // SJD: It is my thought that dtInteger should be dtUnknown. Then
-        // analysis can figure it out based on the type of the "domain"
-        // which may not be a domain but an array or a sequence too.
-        indices->insertAtTail(new VarSymbol(varTmp->var->name, dtInteger));
-      }
-    }
-  }
-  AList<DefExpr>* defExprs = new AList<DefExpr>();
-  if (!indices->isEmpty()) {
-    VarSymbol* var = indices->popHead();
-    while (var) {
-      defExprs->insertAtTail(new DefExpr(var));
-      var = indices->popHead();
-    }
-  }
-  return defExprs;
-}
-
-
 Expr* Symboltable::startLetExpr(void) {
   Symboltable::pushScope(SCOPE_LETEXPR);
   return new LetExpr();
@@ -553,25 +517,59 @@ Expr* Symboltable::finishLetExpr(Expr* let_expr, AList<Stmt>* stmts,
 }
 
 
-ForallExpr* Symboltable::startForallExpr(AList<Expr>* domainExpr, 
-                                         AList<Expr>* indexExpr) {
-  Symboltable::pushScope(SCOPE_FORALLEXPR);
-  
-  AList<DefExpr>* indices = exprToIndexSymbols(indexExpr, domainExpr);
-  // HACK: this is a poor assumption -- that all index variables are
-  // integers
-
-  return new ForallExpr(indices, domainExpr);
+static AList<DefExpr>* exprToIndexSymbols(AList<Expr>* indices) {
+  AList<DefExpr>* defExprs = new AList<DefExpr>();
+  for_alist(Expr, tmp, indices) {
+    Variable* varTmp = dynamic_cast<Variable*>(tmp);
+    if (!varTmp) {
+      INT_FATAL(tmp, "Error, Variable expected in index list");
+    } else {
+      // Hack: set to integer
+      defExprs->insertAtTail(
+        new DefExpr(
+          new VarSymbol(varTmp->var->name, dtInteger)));
+    }
+  }
+  return defExprs;
 }
 
 
-ForallExpr* Symboltable::finishForallExpr(ForallExpr* forallExpr, 
-                                          Expr* argExpr) {
-  forallExpr->innerExpr = argExpr;
-  SymScope* forallScope = Symboltable::popScope();
-  forallScope->setContext(NULL, NULL, forallExpr);
-  forallExpr->indexScope = forallScope;
-  return forallExpr;
+ForallExpr* Symboltable::startForallExpr(AList<Expr>* indices, 
+                                         AList<Expr>* iterators) {
+  Symboltable::pushScope(SCOPE_FORALLEXPR);
+  return new ForallExpr(exprToIndexSymbols(indices), iterators);
+}
+
+
+ForallExpr* Symboltable::finishForallExpr(ForallExpr* expr, 
+                                          Expr* innerExpr) {
+  expr->innerExpr = innerExpr;
+  expr->indexScope = Symboltable::popScope();
+  expr->indexScope->setContext(NULL, NULL, expr);
+  return expr;
+}
+
+
+ForLoopStmt* 
+Symboltable::startForLoop(ForLoopStmtTag forLoopStmtTag,
+                          AList<Expr>* indices, 
+                          AList<Expr>* iterators) {
+  Symboltable::pushScope(SCOPE_FORLOOP);
+  return new ForLoopStmt(forLoopStmtTag, exprToIndexSymbols(indices), iterators);
+}
+
+
+ForLoopStmt* Symboltable::finishForLoop(ForLoopStmt* stmt, Stmt* innerStmt) {
+  if (BlockStmt* blockStmt = dynamic_cast<BlockStmt*>(innerStmt)) {
+    stmt->innerStmt = blockStmt;
+  } else {
+    stmt->innerStmt = Symboltable::startCompoundStmt();
+    stmt->innerStmt = Symboltable::finishCompoundStmt(stmt->innerStmt,
+                                                      new AList<Stmt>(innerStmt));
+  }
+  stmt->indexScope = Symboltable::popScope();
+  stmt->indexScope->setContext(stmt);
+  return stmt;
 }
 
 
@@ -659,39 +657,6 @@ DefExpr* Symboltable::defineStructType(char* name, // NULL = anonymous
   structType->setScope(scope);
   structType->addDeclarations(def);
   return defExpr;
-}
-
-
-ForLoopStmt* 
-Symboltable::startForLoop(ForLoopStmtTag forLoopStmtTag,
-                          AList<Symbol>* indices, 
-                          Expr* iterator) {
-  Symboltable::pushScope(SCOPE_FORLOOP);
-  AList<VarSymbol>* indexVars = symsToVars(indices, dtInteger);
-  AList<DefExpr>* defExpr = new AList<DefExpr>();
-  VarSymbol* var = indexVars->popHead();
-  while (var) {
-    defExpr->insertAtTail(new DefExpr(var));
-    var = indexVars->popHead();
-  }
-  return
-    new ForLoopStmt(forLoopStmtTag, defExpr, new AList<Expr>(iterator));
-}
-
-
-ForLoopStmt* Symboltable::finishForLoop(ForLoopStmt* forstmt, Stmt* body) {
-  if (BlockStmt* blockStmt = dynamic_cast<BlockStmt*>(body)) {
-    forstmt->innerStmt = blockStmt;
-  } else {
-    forstmt->innerStmt = Symboltable::startCompoundStmt();
-    forstmt->innerStmt = Symboltable::finishCompoundStmt(forstmt->innerStmt,
-                                                     new AList<Stmt>(body));
-  }
-
-  forstmt->indexScope = Symboltable::popScope();
-  forstmt->indexScope->setContext(forstmt);
-
-  return forstmt;
 }
 
 

@@ -44,8 +44,6 @@
   AList<Stmt>* pstmtls;
   AList<WhenStmt>* pwhenstmtls;
   AList<DefExpr>* pdefexprls;
-  AList<EnumSymbol>* penumsymls;
-  AList<Symbol>* psymls;
 }
 
 %token TATOMIC
@@ -169,8 +167,6 @@
 %type <pexpr> record_tuple_inner_type
 %type <ptype> class_record_union
 
-%type <psym> ident_symbol
-%type <psymls> indexes indexlist
 %type <pfnsym> function
 
 /* These are declared in increasing order of precedence. */
@@ -355,23 +351,8 @@ for_loop_stmt_tag:
 ;
 
 
-indexes:
-  ident_symbol
-    { $$ = new AList<Symbol>($1); }
-| indexes TCOMMA ident_symbol
-    { $1->insertAtTail($3); }
-;
-
-
-indexlist:
-  indexes
-| TLP indexes TRP
-  { $$ = $2; }
-;
-
-
 forloop:
-  for_loop_stmt_tag indexlist TIN expr
+  for_loop_stmt_tag nonempty_expr_ls TIN nonempty_expr_ls
     { 
       $<pforloopstmt>$ = Symboltable::startForLoop($1, $2, $4);
     }
@@ -379,7 +360,7 @@ forloop:
     { 
       $$ = Symboltable::finishForLoop($<pforloopstmt>5, $6);
     }
-| for_loop_stmt_tag indexlist TIN expr
+| for_loop_stmt_tag nonempty_expr_ls TIN nonempty_expr_ls
     { 
       $<pforloopstmt>$ = Symboltable::startForLoop($1, $2, $4);
     }
@@ -387,7 +368,7 @@ forloop:
     { 
       $$ = Symboltable::finishForLoop($<pforloopstmt>5, $7);
     }
-| TLSBR indexlist TIN expr TRSBR
+| TLSBR nonempty_expr_ls TIN nonempty_expr_ls TRSBR
     { 
       $<pforloopstmt>$ = Symboltable::startForLoop(FORLOOPSTMT_FORALL, $2, $4);
     }
@@ -685,14 +666,6 @@ var_const_param:
     { $$ = VAR_PARAM; }
 ;
         
-ident_symbol:
-  pragma_ls identifier
-    { 
-      $$ = new Symbol(SYMBOL, $2);
-      $$->copyPragmas(*$1);
-    } 
-;
-
 
 record_tuple_inner_type:
   record_inner_var_ls TRP
@@ -1059,10 +1032,8 @@ type:
 
 
 forallExpr:
-  TLSBR nonempty_expr_ls TRSBR
-    { $$ = Symboltable::startForallExpr($2); }
-| TLSBR nonempty_expr_ls TIN nonempty_expr_ls TRSBR
-    { $$ = Symboltable::startForallExpr($4, $2); }
+  TLSBR nonempty_expr_ls TIN nonempty_expr_ls TRSBR
+    { $$ = Symboltable::startForallExpr($2, $4); }
 ;
 
 

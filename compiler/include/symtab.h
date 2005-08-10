@@ -69,10 +69,6 @@ class Symboltable {
                                                   Expr* init,
                                                   varType vartag,
                                                   consType constag);
-  static ForallExpr* startForallExpr(AList<Expr>* domainExpr, 
-                                     AList<Expr>* indexExpr = new AList<Expr>());
-  static ForallExpr* finishForallExpr(ForallExpr* indexExpr, 
-                                      Expr* argExpr = NULL);
   static PrimitiveType* Symboltable::definePrimitiveType(char* name, char* cname, Expr* initExpr = NULL);
   static Type* Symboltable::defineBuiltinType(char* name, char* cname, Type* newType);
   static FnSymbol* startFnDef(FnSymbol* fnsym, bool noparens = false);
@@ -86,10 +82,14 @@ class Symboltable {
 
   static DefExpr* defineStructType(char* name, Type* type,
                                    SymScope* scope, AList<Stmt>* def);
+  static ForallExpr* startForallExpr(AList<Expr>* indices, 
+                                     AList<Expr>* iterators);
+  static ForallExpr* finishForallExpr(ForallExpr* expr, 
+                                      Expr* innerExpr = NULL);
   static ForLoopStmt* startForLoop(ForLoopStmtTag forLoopStmtTag,
-                                   AList<Symbol>* indices, 
-                                   Expr* domain);
-  static ForLoopStmt* finishForLoop(ForLoopStmt* forstmt, Stmt* body);
+                                   AList<Expr>* indices,
+                                   AList<Expr>* iterators);
+  static ForLoopStmt* finishForLoop(ForLoopStmt* stmt, Stmt* innerStmt);
 
   static void print(FILE* outfile = stderr);
   static void dump(FILE* outfile = stderr);

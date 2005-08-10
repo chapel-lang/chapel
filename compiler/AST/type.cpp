@@ -38,9 +38,7 @@ Type::Type(astType_t astType, Expr* init_defaultVal) :
 
 
 void Type::verify(void) {
-  if (astType != TYPE) { // Should become INT_FATAL after Type is not used
-    INT_FATAL(this, "Bad Type::astType");
-  }
+  INT_FATAL(this, "Type::verify() should never be called");
 }
 
 
@@ -249,6 +247,9 @@ void PrimitiveType::verify(void) {
   if (astType != TYPE_PRIMITIVE) {
     INT_FATAL(this, "Bad PrimitiveType::astType");
   }
+  if (prev || next) {
+    INT_FATAL(this, "Type is in AList");
+  }
 }
 
 
@@ -260,6 +261,9 @@ FnType::FnType(void) :
 void FnType::verify(void) {
   if (astType != TYPE_FN) {
     INT_FATAL(this, "Bad FnType::astType");
+  }
+  if (prev || next) {
+    INT_FATAL(this, "Type is in AList");
   }
 }
 
@@ -283,6 +287,9 @@ EnumType::EnumType(AList<DefExpr>* init_constants) :
 void EnumType::verify(void) {
   if (astType != TYPE_ENUM) {
     INT_FATAL(this, "Bad EnumType::astType");
+  }
+  if (prev || next) {
+    INT_FATAL(this, "Type is in AList");
   }
 }
 
@@ -464,6 +471,9 @@ void UserType::verify(void) {
   if (astType != TYPE_USER) {
     INT_FATAL(this, "Bad UserType::astType");
   }
+  if (prev || next) {
+    INT_FATAL(this, "Type is in AList");
+  }
 }
 
 
@@ -537,6 +547,9 @@ ClassType::ClassType(ClassTag initClassTag) :
 void ClassType::verify(void) {
   if (astType != TYPE_CLASS) {
     INT_FATAL(this, "Bad ClassType::astType");
+  }
+  if (prev || next) {
+    INT_FATAL(this, "Type is in AList");
   }
 }
 
@@ -935,6 +948,9 @@ void MetaType::verify(void) {
   if (astType != TYPE_META) {
     INT_FATAL(this, "Bad MetaType::astType");
   }
+  if (prev || next) {
+    INT_FATAL(this, "Type is in AList");
+  }
 }
 
 
@@ -950,6 +966,9 @@ SumType::SumType() :
 void SumType::verify(void) {
   if (astType != TYPE_SUM) {
     INT_FATAL(this, "Bad SumType::astType");
+  }
+  if (prev || next) {
+    INT_FATAL(this, "Type is in AList");
   }
 }
 
@@ -977,6 +996,9 @@ VariableType::VariableType(Type *init_type) :
 void VariableType::verify(void) {
   if (astType != TYPE_VARIABLE) {
     INT_FATAL(this, "Bad VariableType::astType");
+  }
+  if (prev || next) {
+    INT_FATAL(this, "Type is in AList");
   }
 }
 
