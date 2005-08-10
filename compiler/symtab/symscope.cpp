@@ -404,3 +404,14 @@ void SymScope::printVisibleFunctions() {
     }
   }
 }
+
+
+void
+getSymbols(SymScope *scope, Vec<Symbol *> &symbols) {
+  if (!scope) return;
+  forv_Symbol(sym, scope->symbols)
+    for (Symbol *s = sym; s; s = s->overload)
+      symbols.set_add(s);
+  getSymbols(scope->child, symbols);
+  getSymbols(scope->sibling, symbols);
+}

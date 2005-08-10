@@ -1,4 +1,5 @@
 PASSES_SRCS = \
+        applyGettersSetters.cpp \
 	buildBinary.cpp \
 	codegen.cpp \
 	createEntryPoint.cpp \

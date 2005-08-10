@@ -24,6 +24,8 @@ void RemoveTypeVariableActuals::preProcessExpr(Expr* expr) {
             arg->remove();
         } else if (var_arg->var == Symboltable::lookupInternal("_methodToken")) {
           arg->remove();
+        } else if (var_arg->var == Symboltable::lookupInternal("_setterToken")) {
+          arg->remove();
         }
       }
       arg = next_arg;
@@ -43,6 +45,10 @@ void RemoveTypeVariableFormals::preProcessSymbol(Symbol* sym) {
         formal->remove();
       } else if (formal->sym->type->symbol ==
                  Symboltable::lookupInternal("_methodTokenType")) {
+        formal->sym->parentScope->remove(formal->sym);
+        formal->remove();
+      } else if (formal->sym->type->symbol ==
+                 Symboltable::lookupInternal("_setterTokenType")) {
         formal->sym->parentScope->remove(formal->sym);
         formal->remove();
       }

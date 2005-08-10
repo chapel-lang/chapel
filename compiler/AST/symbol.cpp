@@ -553,7 +553,7 @@ void TypeSymbol::codegenDef(FILE* outfile) {
 }
 
 
-FnSymbol::FnSymbol(char* init_name, TypeSymbol* init_typeBinding) :
+FnSymbol::FnSymbol(char* init_name, TypeSymbol* init_typeBinding, bool init_isSetter) :
   Symbol(SYMBOL_FN, init_name, new FnType()),
   formals(NULL),
   retType(NULL),
@@ -565,6 +565,7 @@ FnSymbol::FnSymbol(char* init_name, TypeSymbol* init_typeBinding) :
   fnClass(FN_FUNCTION),
   whereExpr(NULL),
   noparens(false),
+  isSetter(init_isSetter),
   isGeneric(false),
   instantiatedFrom(NULL)
 {
@@ -621,7 +622,7 @@ FnSymbol* FnSymbol::getFnSymbol(void) {
 FnSymbol*
 FnSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   char* copy_name = copystring(name);
-  FnSymbol* copy = new FnSymbol(copy_name, typeBinding);
+  FnSymbol* copy = new FnSymbol(copy_name, typeBinding, isSetter);
   copy->method_type = method_type;
   copy->fnClass = fnClass;
   Symboltable::startFnDef(copy);

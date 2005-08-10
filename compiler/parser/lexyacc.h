@@ -8,6 +8,7 @@
 #include "symbol.h"
 #include "symtab.h"
 #include "type.h"
+#include "driver.h"
 #include "yy.h"
 
 #endif

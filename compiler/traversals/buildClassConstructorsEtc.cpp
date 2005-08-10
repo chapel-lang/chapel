@@ -109,7 +109,10 @@ static void build_getter(ClassType* structType, Symbol *tmp) {
   ParamSymbol* getter_this = new ParamSymbol(PARAM_REF, "this", structType);
   AList<DefExpr>* getter_args = new AList<DefExpr>(new DefExpr(getter_this));
   if (applyGettersSetters) {
-    getter_args->insertAtHead(new DefExpr(new ParamSymbol(PARAM_REF, "_methodTokenDummy", Symboltable::lookupInternal("_methodTokenType")->type)));
+    TypeSymbol *methodTypeSymbol = 
+      dynamic_cast<TypeSymbol*>(Symboltable::lookupInternal("_methodTokenType"));
+    getter_args->insertAtHead(new DefExpr(new ParamSymbol(PARAM_REF, "_methodTokenDummy", 
+                                                          methodTypeSymbol->definition)));
   }
   Symboltable::continueFnDef(getter_fn, getter_args, tmp->type);
   Expr* getter_expr = new MemberAccess(new Variable(getter_this), tmp);
@@ -126,7 +129,7 @@ static void build_getter(ClassType* structType, Symbol *tmp) {
 
 static void build_setters_and_getters(ClassType* structType) {
   forv_Vec(Symbol, tmp, structType->fields) {
-    char* setter_name = glomstrings(2, "=", tmp->name);
+    char* setter_name = applyGettersSetters ? tmp->name : glomstrings(2, "=", tmp->name);
     FnSymbol* setter_fn = Symboltable::startFnDef(new FnSymbol(setter_name));
     setter_fn->addPragma("inline");
     setter_fn->cname = glomstrings(4, "_", structType->symbol->name, "_set_", tmp->name);
@@ -134,7 +137,15 @@ static void build_setters_and_getters(ClassType* structType) {
     ParamSymbol* setter_this = new ParamSymbol(PARAM_REF, "this", structType);
     AList<DefExpr>* args = new AList<DefExpr>(new DefExpr(setter_this));
     if (applyGettersSetters) {
-      args->insertAtHead(new DefExpr(new ParamSymbol(PARAM_REF, "_methodTokenDummy", Symboltable::lookupInternal("_methodTokenType")->type)));
+      TypeSymbol *methodTypeSymbol = 
+        dynamic_cast<TypeSymbol*>(Symboltable::lookupInternal("_methodTokenType"));
+      args->insertAtHead(new DefExpr(new ParamSymbol(PARAM_REF, "_methodTokenDummy", 
+                                                     methodTypeSymbol->definition)));
+      TypeSymbol *setterTypeSymbol = 
+        dynamic_cast<TypeSymbol*>(Symboltable::lookupInternal("_setterTokenType"));
+      args->insertAtTail(new DefExpr(new ParamSymbol(PARAM_REF, "_setterTokenDummy", 
+                                                     setterTypeSymbol->definition)));
+
     }
     ParamSymbol* setter_arg = new ParamSymbol(PARAM_BLANK, "_arg", tmp->type);
     args->insertAtTail(new DefExpr(setter_arg));

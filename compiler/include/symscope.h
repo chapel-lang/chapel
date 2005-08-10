@@ -76,6 +76,8 @@ class SymScope : public gc {
   ModuleSymbol* SymScope::getModule();
   void setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions);
   void printVisibleFunctions();
-};
+}; 
+
+void getSymbols(SymScope *scope, Vec<Symbol *> &symbols);
 
 #endif

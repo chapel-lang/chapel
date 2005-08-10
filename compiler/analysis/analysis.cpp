@@ -49,7 +49,6 @@ static Sym *array_set_symbol = 0;
 static Sym *cast_symbol = 0;
 static Sym *method_token = 0;
 static Sym *setter_token = 0;
-static Sym *set_symbol = 0;
 static Sym *make_seq_symbol = 0;
 static Sym *chapel_defexpr_symbol = 0;
 
@@ -1533,6 +1532,7 @@ gen_set_member(MemberAccess *ma, CallExpr *base_ast) {
   Sym *rhs = gen_assign_op(base_ast);
   Code *c = 0;
   if (equal) {
+    assert(!applyGettersSetters);
     Sym *selector = make_symbol(ma->member->asymbol->sym->name);
     c = if1_send(if1, &ast->code, 5, 1, selector, method_token, 
                  ma->base->ainfo->rval, setter_token, rhs, ast->rval);
@@ -1589,6 +1589,7 @@ gen_paren_op(CallExpr *s, Expr *rhs = 0, AInfo *ast = 0) {
   Vec<Sym *> rvals;
   if (rhs) {
     Variable *v = dynamic_cast<Variable*>(s->baseExpr);
+    assert(!applyGettersSetters);
     if (v && v->var->astType == SYMBOL_UNRESOLVED) {
       rvals.add(make_symbol(s->baseExpr->ainfo->sym->name));
       rvals.add(setter_token);
@@ -2130,10 +2131,12 @@ gen_fun(FnSymbol *f) {
     if (is_Sym_OUT(args.v[0]->asymbol->sym))
       out_args.add(args.v[0]->asymbol->sym);
     as[iarg++] = args.v[0]->asymbol->sym;
-    Sym *s = new_sym(setter_token->name);
-    s->ast = ast;
-    s->must_specialize = setter_token;
-    as[iarg++] = s;
+    if (!applyGettersSetters) {
+      Sym *s = new_sym(setter_token->name);
+      s->ast = ast;
+      s->must_specialize = setter_token;
+      as[iarg++] = s;
+    }
   } else if (strcmp(f->asymbol->sym->name, "this") == 0) {
     if (is_Sym_OUT(args.v[0]->asymbol->sym))
       out_args.add(args.v[0]->asymbol->sym);
@@ -2160,7 +2163,7 @@ gen_fun(FnSymbol *f) {
         as[iarg++] = args.v[0]->asymbol->sym;
       }
     }
-    if (setter) {
+    if (!applyGettersSetters && setter) {
       Sym *s = new_sym(setter_token->name);
       s->ast = ast;
       s->must_specialize = setter_token;
@@ -2437,7 +2440,6 @@ init_symbols() {
     method_token = make_symbol("__method");
     setter_token = make_symbol("__setter");
   }
-  set_symbol = make_symbol("=this");
   make_seq_symbol = make_symbol("make_seq");
   chapel_defexpr_symbol = make_symbol("chapel_defexpr");
   write_symbol = make_symbol("write");
@@ -2796,8 +2798,10 @@ ast_to_if1(Vec<AList<Stmt> *> &stmts) {
   Vec<Type *> types;
   build_types(syms, &types);
   build_symbols(syms);
-  if (applyGettersSetters)
+  if (applyGettersSetters) {
     method_token = Symboltable::lookupInternal("_methodToken")->asymbol->sym;
+    setter_token = Symboltable::lookupInternal("_setterToken")->asymbol->sym;
+  }
   if1_set_primitive_types(if1);
   forv_Type(t, types)
     if (t->defaultValue)

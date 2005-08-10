@@ -1,5 +1,4 @@
 TRAVERSALS_SRCS = \
-	applyGettersSetters.cpp \
 	applyThisParameters.cpp \
 	buildClassConstructorsEtc.cpp \
 	checkIDs.cpp \

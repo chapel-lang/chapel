@@ -196,6 +196,12 @@ record _methodTokenType {
 
 var _methodToken : _methodTokenType;
 
+record _setterTokenType {
+  var _setterTokenTypeFieldDummy : integer;
+}
+
+var _setterToken : _setterTokenType;
+
 class _seq { -- this is no longer necessary
 }
 

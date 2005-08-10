@@ -1,6 +1,4 @@
 fail: program does not type
-test_clone_class1b.chpl:10: expression has mixed basic types:( null int64 float64 ) 
-test_clone_class1b.chpl:14: expression has mixed basic types:( null int64 float64 ) 
 test_clone_class1b.chpl:1: class foo:: 'x' has mixed basic types:( null int64 float64 ) 
 test_clone_class1b.chpl:4: expression has mixed basic types:( null int64 float64 ) 
 test_clone_class1b.chpl:6: '_retval' has mixed basic types:( null int64 float64 ) 

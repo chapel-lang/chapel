@@ -1,7 +1,7 @@
 /******************************************************************************
  *** Apply This Parameter
  ***
- *** This traversal changes all references to variables and functions
+ *** This pass changes all references to variables and functions
  *** defined in a class within the definitions of bound functions.
  *** They are changed to MemberAccess objects where the base is "this"
  *** and the member is the variable or function.

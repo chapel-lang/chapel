@@ -176,6 +176,7 @@ class FnSymbol : public Symbol {
   bool retRef;
   Expr *whereExpr;
   bool noparens;
+  bool isSetter;
   bool isGeneric;
   Vec<VariableType *> typeVariables;
   FnSymbol *instantiatedFrom;
@@ -185,7 +186,7 @@ class FnSymbol : public Symbol {
   //bool equalWith(FnSymbol* s1, FnSymbol* s2);
   //bool greaterThan(FnSymbol* s1, FnSymbol* s2);
   
-  FnSymbol(char* init_name, TypeSymbol* init_typeBinding = NULL);
+  FnSymbol(char* init_name, TypeSymbol* init_typeBinding = NULL, bool isSetter = false);
   FnSymbol(){};
   virtual void verify(void); 
   COPY_DEF(FnSymbol);

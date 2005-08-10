@@ -1,3 +1,4 @@
+#include "../passes/applyGettersSetters.h"
 #include "../passes/buildBinary.h"
 #include "../passes/codegen.h"
 #include "../passes/createEntryPoint.h"
@@ -22,7 +23,6 @@
 #include "../symtab/renameOverloadedFunctions.h"
 #include "../symtab/resolveTypes.h"
 
-#include "../traversals/applyGettersSetters.h"
 #include "../traversals/applyThisParameters.h"
 #include "../traversals/buildClassConstructorsEtc.h"
 #include "../traversals/checkIDs.h"

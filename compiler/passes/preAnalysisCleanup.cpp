@@ -86,16 +86,6 @@ tagGenerics(Type *t) {
   return typeVariables.n != 0;
 }
 
-static void
-getSymbols(SymScope *scope, Vec<Symbol *> &symbols) {
-  if (!scope) return;
-  forv_Symbol(sym, scope->symbols)
-    for (Symbol *s = sym; s; s = s->overload)
-      symbols.add(s);
-  getSymbols(scope->child, symbols);
-  getSymbols(scope->sibling, symbols);
-}
-
 void 
 tagGenerics(Vec<BaseAST *> &asts) {
   // set isGeneric
@@ -126,6 +116,8 @@ void PreAnalysisCleanup::run(ModuleList* moduleList) {
       stmts.add(s);
     getSymbols(mod->modScope, symbols);
   }
+  symbols.set_to_vec();
+  qsort(symbols.v, symbols.n, sizeof(symbols.v[0]), compar_baseast);
   for_alist(Stmt, s, RunAnalysis::entryStmtList)
     stmts.add(s);
   tagGenerics(*(Vec<BaseAST*>*)&symbols);

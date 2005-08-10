@@ -56,12 +56,21 @@ void BuildLValueFunctions::preProcessStmt(Stmt* stmt) {
   fn->retRef = false;
   fn->retType = dtVoid;
   def_expr->exprType = NULL;
-  fn->name = glomstrings(2, "=", old_fn->name);
+  if (applyGettersSetters)
+    fn->name = old_fn->name;
+  else
+    fn->name = glomstrings(2, "=", old_fn->name);
   fn->cname = glomstrings(2, "_setter_", old_fn->cname);
   Symboltable::undefineInScope(fn, fn->parentScope);
   Symboltable::defineInScope(fn, fn->parentScope);
   old_expr_stmt->insertAfter(expr_stmt);
   Symboltable::setCurrentScope(fn->paramScope);
+  if (applyGettersSetters) {
+      TypeSymbol *setterTypeSymbol = 
+        dynamic_cast<TypeSymbol*>(Symboltable::lookupInternal("_setterTokenType"));
+      fn->formals->insertAtTail(new DefExpr(new ParamSymbol(PARAM_REF, "_setterTokenDummy", 
+                                                            setterTypeSymbol->definition)));
+  }
   ParamSymbol* lvalue = new ParamSymbol(PARAM_BLANK, "_lvalue", old_fn->retType);
   fn->formals->insertAtTail(new DefExpr(lvalue));
   replace_return(fn->body, lvalue);
