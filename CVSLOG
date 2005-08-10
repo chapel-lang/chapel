@@ -42254,3 +42254,47 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+08/10/05 11:53:49 -- jplevyak
+
+Log message:
+	--setters-getters now defaults to ON.
+	Setters and getters are now applied in the front-end.  The
+	flag and a lot of vestigial code remain, but I am going to clean that up.
+	
+	There are 2 regressions: both in inlining reports, likely because the
+	pattern matching for inlining is failing.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: symbol.h symscope.h 
+	chapel/compiler/main/: driver.cpp passlist.cpp 
+	chapel/compiler/parser/: chapel.y lexyacc.h prelude.chpl 
+	chapel/compiler/passes/: Makefile.share pass.cpp 
+	                         preAnalysisCleanup.cpp 
+	                         preAnalysisCleanup.h 
+	chapel/compiler/symtab/: symscope.cpp 
+	chapel/compiler/traversals/: Makefile.share 
+	                             applyThisParameters.h 
+	                             buildClassConstructorsEtc.cpp 
+	                             buildLValueFunctions.cpp 
+	                             findUnknownTypes.cpp 
+	                             insertThisParameters.cpp 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/flowanalysis/newast/: sum_type-1.good 
+	                                  sum_type-2.good 
+	chapel/test/types/seq/bradc/: length.modify.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+Added files:
+	chapel/compiler/passes/: applyGettersSetters.cpp 
+	                         applyGettersSetters.cpp.~1.8.~ 
+	                         applyGettersSetters.h 
+Removed files:
+	chapel/compiler/traversals/: applyGettersSetters.cpp 
+	                             applyGettersSetters.h 
+
