@@ -42386,3 +42386,23 @@ Modified files:
 	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
 	                                         inlfunc2_report.good 
 
+---------------------------------------------------------------------------
+
+08/10/05 14:45:30 -- jplevyak
+
+Log message:
+	Remove the applyGettersSetters option and remove some obsolete code.
+	Fixed applyGettersSetters to also convert all assign+op (+=) to + then =.
+	At some point we can come up with a new solution, but this works for now.
+	(thought it isn't atomic).
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: applyGettersSetters.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             buildLValueFunctions.cpp 
+	                             insertThisParameters.cpp 
+
