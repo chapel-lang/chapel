@@ -41,8 +41,8 @@ static void registerModule(ModuleSymbol* mod) {
   case MOD_INTERNAL:
     allModules.add(mod);
     break;
-  case MOD_SENTINEL:
-    INT_FATAL(mod, "Should never try to register a sentinel module");
+  default:
+    INT_FATAL(mod, "Unable to register module");
   }
 }
 

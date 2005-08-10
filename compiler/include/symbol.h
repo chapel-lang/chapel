@@ -46,7 +46,7 @@ class Symbol : public BaseAST {
   Symbol* overload;
   bool isUnresolved;
 
-  Symbol(astType_t astType = SYMBOL, char* init_name = NULL, 
+  Symbol(astType_t astType, char* init_name, 
          Type* init_type = dtUnknown, bool init_exportMe = true);
   virtual void verify(void); 
   void setParentScope(SymScope* init_parentScope);
@@ -98,7 +98,7 @@ class VarSymbol : public Symbol {
   bool noDefaultInit;
 
   //changed isconstant flag to reflect var, const, param: 0, 1, 2
-  VarSymbol(char* init_name = NULL, Type* init_type = dtUnknown,
+  VarSymbol(char* init_name, Type* init_type = dtUnknown,
             varType init_varClass = VAR_NORMAL, 
             consType init_consClass = VAR_VAR);
   virtual void verify(void); 
@@ -122,7 +122,7 @@ class ParamSymbol : public Symbol {
   TypeSymbol *typeVariable;
   bool isGeneric;
 
-  ParamSymbol(paramType init_intent = PARAM_BLANK, char* init_name = NULL, 
+  ParamSymbol(paramType init_intent, char* init_name, 
               Type* init_type = dtUnknown);
   virtual void verify(void); 
   COPY_DEF(ParamSymbol);
@@ -187,7 +187,6 @@ class FnSymbol : public Symbol {
   //bool greaterThan(FnSymbol* s1, FnSymbol* s2);
   
   FnSymbol(char* init_name, TypeSymbol* init_typeBinding = NULL, bool isSetter = false);
-  FnSymbol(){};
   virtual void verify(void); 
   COPY_DEF(FnSymbol);
   void continueDef(AList<DefExpr>* init_formals, Type* init_retType, 
@@ -218,7 +217,7 @@ class FnSymbol : public Symbol {
 
 class EnumSymbol : public Symbol {
  public:
-  EnumSymbol(char* init_name = NULL);
+  EnumSymbol(char* init_name);
   virtual void verify(void); 
   COPY_DEF(EnumSymbol);
   virtual void traverseDefSymbol(Traversal* traverse);
@@ -230,8 +229,7 @@ enum modType {
   MOD_INTERNAL, // intrinsic, prelude (no codegen)
   MOD_STANDARD, // standard modules require codegen, e.g., _chpl_complex
   MOD_COMMON,   // a module above the scope of the user modules (codegen)
-  MOD_USER,
-  MOD_SENTINEL  // used only for AList heads/tails
+  MOD_USER
 };
 
 
@@ -243,7 +241,7 @@ class ModuleSymbol : public Symbol {
 
   SymScope* modScope;
 
-  ModuleSymbol(char* init_name = NULL, modType init_modtype = MOD_SENTINEL);
+  ModuleSymbol(char* init_name, modType init_modtype);
   virtual void verify(void); 
   COPY_DEF(ModuleSymbol);
   void setModScope(SymScope* init_modScope);
