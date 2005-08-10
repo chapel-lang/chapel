@@ -1,6 +1,6 @@
-chapel compiler: reporting inlining, _construct_Foo function was inlined 
-chapel compiler: reporting inlining, x function was inlined 
-chapel compiler: reporting inlining, y function was inlined 
-chapel compiler: reporting inlining, z function was inlined 
-chapel compiler: reporting inlining, y function was inlined 
+chapel compiler: reporting inlining, _construct_Foo_default_params_wrapper_3 function was inlined
+chapel compiler: reporting inlining, _Foo_set_x function was inlined
+chapel compiler: reporting inlining, _Foo_set_y function was inlined
+chapel compiler: reporting inlining, _Foo_set_z function was inlined
+chapel compiler: reporting inlining, _Foo_get_y function was inlined
 2

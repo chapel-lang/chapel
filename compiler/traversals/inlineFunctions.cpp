@@ -44,7 +44,7 @@ void InlineFunctions::postProcessExpr(Expr* expr) {
         }
         //report inlining compiler flag was set of the command-line
         if (report_inlining)
-          printf("chapel compiler: reporting inlining, %s function was inlined \n", fn_sym->name);
+          printf("chapel compiler: reporting inlining, %s function was inlined\n", fn_sym->cname);
       }
     }
   }
