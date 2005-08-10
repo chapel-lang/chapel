@@ -1516,23 +1516,6 @@ gen_set_member(MemberAccess *ma, CallExpr *base_ast) {
 }
 
 static int
-gen_get_member(MemberAccess *ma) {
-  AInfo *ast = ma->ainfo;
-  ast->rval = new_sym();
-  ast->rval->ast = ast;
-  ast->sym = ast->rval;
-  if1_gen(if1, &ast->code, ma->base->ainfo->code);
-  char *sel = ma->member->asymbol->sym->name;
-  Sym *selector = make_symbol(sel);
-  Code *c = if1_send(if1, &ast->code, 3, 1, selector, method_token,
-                     ma->base->ainfo->rval, ast->rval);
-  c->ast = ast;
-  c->partial = Partial_NEVER;
-  ma->ainfo->send = c;
-  return 0;
-}
-
-static int
 gen_paren_op(CallExpr *s) {
   AInfo *ast = s->ainfo;
   MemberAccess *ma = dynamic_cast<MemberAccess*>(s->baseExpr);
@@ -1777,12 +1760,6 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
     case EXPR_DEF: break;
     case EXPR_MEMBERACCESS: {
       MemberAccess *s = dynamic_cast<MemberAccess*>(ast);
-      FnSymbol *fn = s->getStmt()->parentFunction();
-      if (!fn->_getter && !fn->_setter && (fn->fnClass != FN_CONSTRUCTOR || !is_this_member_access(ast))) {
-        if (gen_get_member(s) < 0)
-          return -1;
-        break;
-      }
       s->ainfo->rval = new_sym();
       s->ainfo->rval->ast = s->ainfo;
       s->ainfo->sym = s->ainfo->rval;
@@ -1848,58 +1825,6 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
     }
     case EXPR_CALL:
       CallExpr* unOp = dynamic_cast<CallExpr*>(ast);
-      if ((unOp->opTag != OP_NONE) && unOp->argList->length() == 1) {
-        unOp->ainfo->rval = new_sym();
-        unOp->ainfo->rval->ast = unOp->ainfo;
-        if1_gen(if1, &unOp->ainfo->code, unOp->get(1)->ainfo->code);
-        Sym *op = 0;
-        switch (unOp->opTag) {
-          default: assert(!"case");
-          case OP_UNPLUS: op = make_symbol("+"); break;
-          case OP_UNMINUS: op = make_symbol("-"); break;
-          case OP_LOGNOT: op = make_symbol("!"); break;
-          case OP_BITNOT: op = make_symbol("~"); break;
-        }
-        Code *c = if1_send(if1, &unOp->ainfo->code, 3, 1, sym_operator, op, 
-                           unOp->get(1)->ainfo->rval, unOp->ainfo->rval);
-        c->ast = unOp->ainfo;
-        break;
-      }
-      CallExpr* binOp = dynamic_cast<CallExpr*>(ast);
-      if (binOp->opTag != OP_NONE && binOp->opTag < OP_GETSNORM) {
-        binOp->ainfo->rval = new_sym();
-        binOp->ainfo->rval->ast = binOp->ainfo;
-        if1_gen(if1, &binOp->ainfo->code, binOp->get(1)->ainfo->code);
-        if1_gen(if1, &binOp->ainfo->code, binOp->get(2)->ainfo->code);
-        Sym *op = 0;
-        switch (binOp->opTag) {
-          default: assert(!"case");
-          case OP_SEQCAT: op = make_symbol("#"); break;
-          case OP_PLUS: op = make_symbol("+"); break;
-          case OP_MINUS: op = make_symbol("-"); break;
-          case OP_MULT: op = make_symbol("*"); break;
-          case OP_DIV: op = make_symbol("/"); break;
-          case OP_MOD: op = make_symbol("mod"); break;
-          case OP_EQUAL: op = make_symbol("=="); break;
-          case OP_LEQUAL: op = make_symbol("<="); break;
-          case OP_GEQUAL: op = make_symbol(">="); break;
-          case OP_GTHAN: op = make_symbol(">"); break;
-          case OP_LTHAN: op = make_symbol("<"); break;
-          case OP_NEQUAL: op = make_symbol("!="); break;
-          case OP_BITAND: op = make_symbol("&"); break;
-          case OP_BITOR: op = make_symbol("|"); break;
-          case OP_BITXOR: op = make_symbol("^"); break;
-          case OP_LOGAND: op = make_symbol("and"); break;
-          case OP_LOGOR: op = make_symbol("or"); break;
-          case OP_EXP: op = make_symbol("**"); break;
-          case OP_BY: op = make_symbol("by"); break;
-        }
-        Code *c = if1_send(if1, &binOp->ainfo->code, 3, 1, op,
-                           binOp->get(1)->ainfo->rval, binOp->get(2)->ainfo->rval,
-                           binOp->ainfo->rval);
-        c->ast = binOp->ainfo;
-        break;
-      }
       CallExpr* assignOp = dynamic_cast<CallExpr*>(ast);
       if (assignOp->opTag == OP_GETSNORM) {
         if (assignOp->get(1)->astType == EXPR_MEMBERACCESS) {

@@ -32,7 +32,6 @@ PassInfo passlist[] = {
   RUN(RenameOverloadedFunctions, ""),
   RUN(BuildClassConstructorsEtc, ""),
   RUN(ApplyThisParameters, ""),
-  RUN(ApplyGettersSetters, ""),
   RUN(RemoveLikeTypes, ""),
   RUN(InsertDefaultInitVariables, ""),
   RUN(InsertOutParameterInitializations, ""),
@@ -45,6 +44,7 @@ PassInfo passlist[] = {
   RUN(Instantiate, ""),
   RUN(SpecializeCallExprs, ""),
   RUN(PreAnalysisHacks, ""),
+  RUN(ApplyGettersSetters, ""),
   RUN(PreAnalysisCleanup, ""),
   RUN(RunAnalysis, ""),
  
