@@ -42308,3 +42308,13 @@ Log message:
 Removed files:
 	chapel/compiler/passes/: applyGettersSetters.cpp.~1.8.~ 
 
+---------------------------------------------------------------------------
+
+08/10/05 12:01:03 -- jplevyak
+
+Log message:
+	Fix GCC error discrepency: missing unreachable return.
+
+Modified files:
+	chapel/compiler/passes/: applyGettersSetters.cpp 
+
