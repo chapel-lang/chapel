@@ -16,7 +16,7 @@
 static OpTag
 gets_to_non(OpTag t) {
   switch (t) {
-    default: assert(!"case"); break;
+    default: break;
     case OP_GETSPLUS: return OP_PLUS;
     case OP_GETSMINUS: return OP_MINUS;
     case OP_GETSMULT: return OP_MULT;
@@ -26,6 +26,8 @@ gets_to_non(OpTag t) {
     case OP_GETSBITXOR: return OP_BITXOR;
     case OP_GETSSEQCAT: return OP_SEQCAT;
   }
+  assert(!"case");
+  return OP_NONE;
 }
   
 static void 
