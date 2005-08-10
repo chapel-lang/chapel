@@ -42242,3 +42242,15 @@ Modified files:
 	chapel/compiler/symtab/: symtab.cpp 
 	chapel/compiler/traversals/: fixup.cpp 
 
+---------------------------------------------------------------------------
+
+08/10/05 11:49:32 -- bradc
+
+Log message:
+	Small change to the nightly script to remove extra spaces
+	from the subject line on platforms where wc -l returns
+	right-justified output.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
