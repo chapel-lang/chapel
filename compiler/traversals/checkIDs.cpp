@@ -25,7 +25,7 @@ void CheckIDs::preProcessType(Type* type) {
 }
 
 
-void CheckIDs::run(ModuleList* moduleList) {
+void CheckIDs::run(Vec<ModuleSymbol*>* modules) {
   long numids = BaseAST::getNumIDs();
 
   astlist = (BaseAST**)MALLOC(numids * sizeof(BaseAST*));
@@ -33,7 +33,7 @@ void CheckIDs::run(ModuleList* moduleList) {
     astlist[i] = NULL;
   }
 
-  Traversal::run(moduleList);
+  Traversal::run(modules);
 
   for (long i=0; i<numids; i++) {
     if (!astlist[i]) {

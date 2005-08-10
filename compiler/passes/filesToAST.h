@@ -9,7 +9,7 @@ extern ModuleSymbol* prelude;
 extern ModuleSymbol* seqModule;
 
 class FilesToAST : public Pass {
-  void run(ModuleList* moduleList);
+  virtual void run(Vec<ModuleSymbol*>* modules);
 };
 
 #endif

@@ -11,7 +11,7 @@ class CreateEntryPoint : public Pass {
   AList<Stmt>* entryPoint;
 
   CreateEntryPoint(void);
-  void run(ModuleList* moduleList);
+  virtual void run(Vec<ModuleSymbol*>* modules);
 };
 
 #endif

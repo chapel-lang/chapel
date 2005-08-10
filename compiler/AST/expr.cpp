@@ -550,15 +550,9 @@ void DefExpr::verify(void) {
   if (astType != EXPR_DEF) {
     INT_FATAL(this, "Bad DefExpr::astType");
   }
-
   if (!sym) {
     INT_FATAL(this, "DefExpr has no sym");
   }
-
-  if (sym->next || sym->prev) {
-    INT_FATAL(this, "DefExpr::sym is a list");
-  }
-
   sym->verify();
 }
 

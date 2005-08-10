@@ -1,4 +1,3 @@
-#include "moduleList.h"
 #include <typeinfo>
 #include "view.h"
 #include "stmt.h"
@@ -14,12 +13,10 @@ View::View(bool initNumberSymbols) {
   numberSymbols = initNumberSymbols;
 }
 
-void View::run(ModuleList* moduleList) {
-  ModuleSymbol* mod = moduleList->first();
-  while (mod) {
+void View::run(Vec<ModuleSymbol*>* modules) {
+  forv_Vec(ModuleSymbol, mod, *modules) {
     printf("\nMODULE: %s\n", mod->name);
     mod->startTraversal(this);
-    mod = moduleList->next();
   }
   printf("\n\n");
 }

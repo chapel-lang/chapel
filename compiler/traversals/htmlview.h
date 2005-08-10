@@ -12,7 +12,7 @@ class HtmlView : public Traversal {
   char html_string[2048];
   int pos;
   int show_analysis_info;
-  virtual void run(ModuleList* moduleList);
+  virtual void run(Vec<ModuleSymbol*>* modules);
   virtual void preProcessStmt(Stmt* stmt);
   virtual void postProcessStmt(Stmt* stmt);
   virtual void preProcessExpr(Expr* expr);

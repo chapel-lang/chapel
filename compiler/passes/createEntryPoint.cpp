@@ -1,7 +1,6 @@
 #include "createEntryPoint.h"
 #include "expr.h"
 #include "filesToAST.h"
-#include "moduleList.h"
 #include "runAnalysis.h"
 #include "stmt.h"
 #include "symtab.h"
@@ -18,11 +17,10 @@ static ExprStmt* buildCallExprStmt(FnSymbol* fn) {
 }
 
 
-static ModuleSymbol* findUniqueUserModule(ModuleList* moduleList) {
+static ModuleSymbol* findUniqueUserModule(Vec<ModuleSymbol*>* modules) {
   ModuleSymbol* userModule = NULL;
 
-  ModuleSymbol* mod = moduleList->first();
-  while (mod) {
+  forv_Vec(ModuleSymbol, mod, *modules) {
     if (mod->modtype == MOD_USER) {
       if (userModule == NULL) {
         userModule = mod;
@@ -30,7 +28,6 @@ static ModuleSymbol* findUniqueUserModule(ModuleList* moduleList) {
         return NULL;  // two user modules defined
       }
     }
-    mod = moduleList->next();
   }
   return userModule;
 }
@@ -41,7 +38,7 @@ CreateEntryPoint::CreateEntryPoint(void) :
 {}
 
 
-void CreateEntryPoint::run(ModuleList* moduleList) {
+void CreateEntryPoint::run(Vec<ModuleSymbol*>* modules) {
   currentLineno = -1;
 
   // SJD: Can't do this when dtString is defined because
@@ -49,7 +46,7 @@ void CreateEntryPoint::run(ModuleList* moduleList) {
   dtString->defaultConstructor =
     dynamic_cast<FnSymbol*>(Symboltable::lookupInternal("_init_string"));
 
-  for (ModuleSymbol* mod = moduleList->first(); mod; mod = moduleList->next()) {
+  forv_Vec(ModuleSymbol, mod, *modules) {
     if (mod->modtype == MOD_INTERNAL || 
         !ModuleDefContainsOnlyNestedModules(mod->stmts)) {
       SymScope* saveScope = Symboltable::setCurrentScope(mod->modScope);
@@ -69,7 +66,7 @@ void CreateEntryPoint::run(ModuleList* moduleList) {
   BlockStmt* mainBody;
   ModuleSymbol* mainModule;
   if (!mainFn) {
-    mainModule = findUniqueUserModule(moduleList);
+    mainModule = findUniqueUserModule(modules);
     if (mainModule) {
       SymScope* saveScope = Symboltable::getCurrentScope();
       Symboltable::setCurrentScope(mainModule->modScope);

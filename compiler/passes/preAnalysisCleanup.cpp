@@ -1,4 +1,3 @@
-#include "moduleList.h"
 #include "runAnalysis.h"
 #include "preAnalysisCleanup.h"
 #include "symbol.h"
@@ -106,12 +105,12 @@ tagGenerics(Vec<BaseAST *> &asts) {
   }
 }
 
-void PreAnalysisCleanup::run(ModuleList* moduleList) {
+void PreAnalysisCleanup::run(Vec<ModuleSymbol*>* modules) {
   Vec<Stmt *> stmts;
   Vec<Symbol *> symbols;
 
   // Collect program stmts and symbols
-  for (ModuleSymbol* mod = moduleList->first(); mod; mod = moduleList->next()) {
+  forv_Vec(ModuleSymbol, mod, *modules) {
     for_alist(Stmt, s, mod->stmts)
       stmts.add(s);
     getSymbols(mod->modScope, symbols);

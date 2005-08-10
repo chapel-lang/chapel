@@ -2,7 +2,6 @@
 #include "baseAST.h"
 #include "expr.h"
 #include "map.h"
-#include "moduleList.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"

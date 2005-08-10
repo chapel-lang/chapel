@@ -11,7 +11,7 @@ class View : public Traversal {
   int indent;
   bool numberSymbols;
   View::View(bool initNumberSymbols = false);
-  virtual void run(ModuleList* moduleList);
+  virtual void run(Vec<ModuleSymbol*>* modules);
   virtual void preProcessStmt(Stmt* stmt);
   virtual void postProcessStmt(Stmt* stmt);
   virtual void preProcessExpr(Expr* expr);

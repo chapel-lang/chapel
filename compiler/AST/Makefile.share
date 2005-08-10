@@ -2,7 +2,6 @@ AST_SRCS = \
 	alist.cpp \
 	baseAST.cpp \
 	expr.cpp \
-	moduleList.cpp \
 	stmt.cpp \
 	symbol.cpp \
 	type.cpp \

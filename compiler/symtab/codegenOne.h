@@ -10,7 +10,7 @@ class CodegenOne : public SymtabTraversal {
   Vec<VarSymbol*> varSymbols;
   CodegenOne();
   void processSymbol(Symbol* sym);
-  void run(ModuleList* moduleList = NULL);
+  virtual void run(Vec<ModuleSymbol*>* modules = NULL);
 };
 
 #endif

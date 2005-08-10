@@ -67,9 +67,9 @@ void FindCollidingNames::processSymbol(Symbol* sym) {
   }
 }
 
-void FindCollidingNames::run(ModuleList* moduleList) {
+void FindCollidingNames::run(Vec<ModuleSymbol*>* modules) {
   if (_adhoc_to_uniform_mangling) {
-    SymtabTraversal::run(moduleList);  
+    SymtabTraversal::run(modules);  
     fnsyms.quickSort(0, fnsyms.length()-1);
     typesyms.quickSort(0, typesyms.length()-1);
     globalvars.quickSort(0, globalvars.length()-1);

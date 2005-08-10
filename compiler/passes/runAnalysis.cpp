@@ -3,7 +3,6 @@
 #include "driver.h"
 #include "filesToAST.h"
 #include "if1.h"
-#include "moduleList.h"
 #include "runAnalysis.h"
 #include "symbol.h"
 #include "symtab.h"
@@ -12,17 +11,14 @@ int RunAnalysis::runCount = 0;
 int RunAnalysis::isRunning = 0;
 AList<Stmt>* RunAnalysis::entryStmtList = NULL;
 
-void RunAnalysis::run(ModuleList* moduleList) {
+void RunAnalysis::run(Vec<ModuleSymbol*>* modules) {
   if (analyzeAST) {
     RunAnalysis::isRunning = 1;
     if1->callback = new ACallbacks;
     init_ast();
     Vec<AList<Stmt> *> stmts;
-    ModuleSymbol* mod = moduleList->first();
-    while (mod) {
+    forv_Vec(ModuleSymbol, mod, *modules) {
       stmts.add(mod->stmts);
-
-      mod = moduleList->next();
     }
     stmts.add(entryStmtList);
     AST_to_IF1(stmts);
@@ -30,12 +26,10 @@ void RunAnalysis::run(ModuleList* moduleList) {
     // I'm just passing in the first non-internal module's filename
     // JBP: that's fine, it is only used for debug, HTML and low level cg files
     char* firstUserModuleName = NULL;
-    mod = moduleList->first();
-    while (mod && (mod->modtype != MOD_USER)) {
-      mod = moduleList->next();
-    }
-    if (mod) {
-      firstUserModuleName = mod->filename;
+    forv_Vec(ModuleSymbol, mod, *modules) {
+      if (mod->modtype == MOD_USER) {
+        firstUserModuleName = mod->filename;
+      }
     }
     //driver:do_analysis
     do_analysis(firstUserModuleName);

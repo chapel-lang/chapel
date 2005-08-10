@@ -2,7 +2,6 @@
 #include "codegen.h"
 #include "driver.h"
 #include "files.h"
-#include "moduleList.h"
 #include "mysystem.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -10,25 +9,23 @@
 #include "../traversals/createConfigVarTable.h"
 
 
-void Codegen::run(ModuleList* moduleList) {
+void Codegen::run(Vec<ModuleSymbol*>* modules) {
   if (suppressCodegen) {
     return;
   }
 
-  openMakefile(moduleList->filename, system_dir);
+  openMakefile(modules->v[0]->filename, system_dir);
 
   CreateConfigVarTable* createConfigVarTable = new CreateConfigVarTable();
-  createConfigVarTable->run(moduleList);
+  createConfigVarTable->run(modules);
   createConfigVarTable->closeCFile();
 
-  ModuleSymbol* currentModule = moduleList->first();
-  while (currentModule) {
+  forv_Vec(ModuleSymbol, currentModule, *modules) {
     if (currentModule->modtype != MOD_INTERNAL) {
       mysystem(glomstrings(2, "# codegen-ing module", currentModule->name),
                "generating comment for --print-commands option");
       currentModule->codegenDef();
     }
-    currentModule = moduleList->next();
   }
 
   closeMakefile();

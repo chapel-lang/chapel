@@ -2,7 +2,6 @@
 #include <typeinfo>
 #include "fixup.h"
 #include "expr.h"
-#include "moduleList.h"
 #include "stmt.h"
 #include "symtab.h"
 
@@ -162,13 +161,11 @@ void Fixup::postProcessSymbol(Symbol* sym) {
 }
 
 
-void Fixup::run(ModuleList* moduleList) {
-  ModuleSymbol* mod = moduleList->first();
-  while (mod) {
+void Fixup::run(Vec<ModuleSymbol*>* modules) {
+  forv_Vec(ModuleSymbol, mod, *modules) {
     parentSymbols.add(mod);
     mod->startTraversal(this);
     parentSymbols.pop();
-    mod = moduleList->next();
   }
 }
 

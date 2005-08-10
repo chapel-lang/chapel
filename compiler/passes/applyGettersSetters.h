@@ -5,7 +5,7 @@
 
 class ApplyGettersSetters : public Pass {
  public:
-  void run(ModuleList *moduleList);
+  void run(Vec<ModuleSymbol*>* modules);
 };
 
 #endif

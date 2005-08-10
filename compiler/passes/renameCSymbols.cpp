@@ -2,7 +2,7 @@
 #include "symbol.h"
 
 
-void RenameCSymbols::run(ModuleList* moduleList) {
+void RenameCSymbols::run(Vec<ModuleSymbol*>* modules) {
   // BLC: we could/should rename other things here as well -- types,
   // overloaded function names?  reserved C words?
 

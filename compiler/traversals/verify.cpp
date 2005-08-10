@@ -3,7 +3,6 @@
 #include "verify.h"
 #include "fixup.h"
 #include "expr.h"
-#include "moduleList.h"
 #include "stmt.h"
 #include "symbol.h"
 #include "type.h"
@@ -49,9 +48,9 @@ void Verify::preProcessExpr(Expr* expr){
 }
 
 
-void Verify::run(ModuleList* moduleList) {
+void Verify::run(Vec<ModuleSymbol*>* modules) {
   Fixup* fixup = new Fixup(true);
-  fixup->run(moduleList);
+  fixup->run(modules);
 
   syms = new Vec<Symbol*>();
   collect_symbols(syms);
@@ -74,10 +73,8 @@ void Verify::run(ModuleList* moduleList) {
     }
   }
 
-  ModuleSymbol* mod = moduleList->first();
-  while (mod) {
+  forv_Vec(ModuleSymbol, mod, *modules) {
     mod->startTraversal(this);
-    mod = moduleList->next();
   }
 
   forv_Vec(Symbol, sym, *syms) {

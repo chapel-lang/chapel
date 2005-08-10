@@ -20,7 +20,7 @@ class Fixup : public Traversal {
   virtual void postProcessExpr(Expr* expr);
   virtual void preProcessSymbol(Symbol* sym);
   virtual void postProcessSymbol(Symbol* sym);
-  void run(ModuleList* moduleList);
+  virtual void run(Vec<ModuleSymbol*>* modules);
 };
 
 void fixup(BaseAST* ast);

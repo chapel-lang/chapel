@@ -26,8 +26,8 @@ void CodegenOne::processSymbol(Symbol* sym) {
 }
 
 
-void CodegenOne::run(ModuleList* moduleList) {
-  SymtabTraversal::run(moduleList);
+void CodegenOne::run(Vec<ModuleSymbol*>* modules) {
+  SymtabTraversal::run(modules);
   FILE* outfile = openCFile("_chpl_header.h");
   forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {
     typeSymbol->codegenPrototype(outfile);

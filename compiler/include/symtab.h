@@ -28,7 +28,7 @@ class Symboltable {
   static SymScope* getCurrentScope(void);
   static SymScope* setCurrentScope(SymScope* newScope);
   static ModuleSymbol* getCurrentModule(void);
-  static ModuleList* getModuleList(moduleSet modules);
+  static Vec<ModuleSymbol*>* getModules(moduleSet modules);
   static FnSymbol* getCurrentFn(void);
 
   static void undefineInScope(Symbol* sym, SymScope* scope);

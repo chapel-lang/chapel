@@ -10,7 +10,7 @@ class Verify : public Traversal {
   Verify();
   virtual void preProcessStmt(Stmt* stmt);
   virtual void preProcessExpr(Expr* expr);
-  void run(ModuleList* moduleList);
+  virtual void run(Vec<ModuleSymbol*>* modules);
 };
 
 #endif

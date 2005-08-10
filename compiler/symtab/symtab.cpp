@@ -2,7 +2,6 @@
 #include "driver.h"
 #include "expr.h"
 #include "misc.h"
-#include "moduleList.h"
 #include "printSymtab.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -28,15 +27,19 @@ static ModuleSymbol* currentModule = NULL;
 
 ModuleSymbol* commonModule = NULL;
 
-static ModuleList* moduleList = new ModuleList();
+static Vec<ModuleSymbol*> allModules;     // Contains all modules
+static Vec<ModuleSymbol*> codegenModules; // Contains codegened modules
+static Vec<ModuleSymbol*> userModules;    // Contains user modules
 
 static void registerModule(ModuleSymbol* mod) {
   switch (mod->modtype) {
-  case MOD_INTERNAL:
+  case MOD_USER:
+    userModules.add(mod);
   case MOD_STANDARD:
   case MOD_COMMON:
-  case MOD_USER:
-    moduleList->insertAtTail(mod);
+    codegenModules.add(mod);
+  case MOD_INTERNAL:
+    allModules.add(mod);
     break;
   case MOD_SENTINEL:
     INT_FATAL(mod, "Should never try to register a sentinel module");
@@ -169,15 +172,16 @@ ModuleSymbol* Symboltable::getCurrentModule(void) {
 }
 
 
-ModuleList* Symboltable::getModuleList(moduleSet whichModules) {
-  moduleList->filter = whichModules;
+Vec<ModuleSymbol*>* Symboltable::getModules(moduleSet whichModules) {
   switch (whichModules) {
   case MODULES_ALL:
+    return &allModules;
   case MODULES_CODEGEN:
+    return &codegenModules;
   case MODULES_USER:
-    return moduleList;
+    return &userModules;
   default:
-    INT_FATAL("Unexpected case in getModuleList: %d\n", whichModules);
+    INT_FATAL("Unexpected case in getModules: %d\n", whichModules);
     return NULL;
   }
 }

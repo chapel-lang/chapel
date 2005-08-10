@@ -5,7 +5,7 @@
 
 class BuildBinary : public Pass {
  public:
-  void run(ModuleList* moduleList);
+  virtual void run(Vec<ModuleSymbol*>* modules);
 };
 
 #endif

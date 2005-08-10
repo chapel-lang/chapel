@@ -1,5 +1,4 @@
 #include "applyGettersSetters.h"
-#include "moduleList.h"
 #include "expr.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -78,11 +77,11 @@ process(BaseAST* ast) {
     process(a);
 }
 
-void ApplyGettersSetters::run(ModuleList* moduleList) {
+void ApplyGettersSetters::run(Vec<ModuleSymbol*>* modules) {
   if (!applyGettersSetters)
     return;
   Vec<Symbol *> symbols;
-  for (ModuleSymbol* mod = moduleList->first(); mod; mod = moduleList->next())
+  forv_Vec(ModuleSymbol, mod, *modules)
     getSymbols(mod->modScope, symbols);
   symbols.set_to_vec();
   qsort(symbols.v, symbols.n, sizeof(symbols.v[0]), compar_baseast);

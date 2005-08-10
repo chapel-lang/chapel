@@ -10,7 +10,7 @@
 ModuleSymbol* prelude = NULL;
 ModuleSymbol* seqModule = NULL;
 
-void FilesToAST::run(ModuleList* moduleList) {
+void FilesToAST::run(Vec<ModuleSymbol*>* modules) {
   // parse prelude
   Symboltable::parsePrelude();
   char* chplroot = sysdirToChplRoot(system_dir);

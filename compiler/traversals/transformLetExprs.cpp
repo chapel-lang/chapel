@@ -20,8 +20,8 @@ void TransformLetExprs::postProcessExpr(Expr* expr) {
 }
 
 
-void TransformLetExprs::run(ModuleList* moduleList) {
-  Traversal::run(moduleList);
+void TransformLetExprs::run(Vec<ModuleSymbol*>* modules) {
+  Traversal::run(modules);
   doTransformation();
 }
 

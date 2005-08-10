@@ -27,7 +27,7 @@ class Traversal : public Pass {
   virtual void preProcessType(Type* type);
   virtual void postProcessType(Type* type);
 
-  virtual void run(ModuleList* moduleList);
+  virtual void run(Vec<ModuleSymbol*>* modules);
 };
 
 #define TRAVERSE(link, traversal, atTop) \

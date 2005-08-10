@@ -6,13 +6,13 @@ PrintSymtab::PrintSymtab(FILE* init_outfile) :
 {}
 
 
-void PrintSymtab::run(ModuleList* moduleList) {
+void PrintSymtab::run(Vec<ModuleSymbol*>* modules) {
   if (strcmp(args, "user") == 0) {
     whichModules = MODULES_USER;
   } else if (strcmp(args, "common") == 0) {
     whichModules = MODULES_CODEGEN;
   }
-  SymtabTraversal::run(moduleList);
+  SymtabTraversal::run(modules);
 }
 
  

@@ -6,7 +6,7 @@
 class ProcessImportExprs : public Traversal {
 public:
   void postProcessExpr(Expr* expr);
-  void run(ModuleList* moduleList);
+  virtual void run(Vec<ModuleSymbol*>* modules);
 };
 
 #endif

@@ -56,7 +56,7 @@ static void runPass(char* passName, Pass* pass, char* args) {
     fflush(stderr);
     gettimeofday(&startTime, &timezone);
   }
-  pass->run(Symboltable::getModuleList(pass->whichModules));
+  pass->run(Symboltable::getModules(pass->whichModules));
   if (printPasses) {
     gettimeofday(&stopTime, &timezone);
     fprintf(stderr, "%8.3f seconds\n",  
@@ -85,13 +85,13 @@ static void runPass(char* passName, Pass* pass, char* args) {
     fprintf(html_index_file, "</TD><TD>", passName);
     HtmlView* htmlview = new HtmlView(analysis_pass);
     htmlview->setArgs(glomstrings(2, "html ", passName));
-    htmlview->run(Symboltable::getModuleList(MODULES_CODEGEN));
+    htmlview->run(Symboltable::getModules(MODULES_CODEGEN));
     fprintf(html_index_file, "</TD></TR>", passName);
   }
 
   if (postFixup) {
     Verify* verify = new Verify();
-    verify->run(Symboltable::getModuleList(MODULES_ALL));
+    verify->run(Symboltable::getModules(MODULES_ALL));
   }
 }
 

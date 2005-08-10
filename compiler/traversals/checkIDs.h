@@ -12,7 +12,7 @@ class CheckIDs : public Traversal {
   void preProcessSymbol(Symbol* symbol);
   void preProcessType(Type* type);
 
-  void run(ModuleList* moduleList);
+  virtual void run(Vec<ModuleSymbol*>* modules);
 };
 
 #endif

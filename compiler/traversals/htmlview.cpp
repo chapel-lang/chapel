@@ -1,5 +1,4 @@
 #include <stdarg.h>
-#include "moduleList.h"
 #include <typeinfo>
 #include "htmlview.h"
 #include "stmt.h"
@@ -41,15 +40,14 @@ void HtmlView::output() {
   html_string[0] = '\0';
 }
 
-void HtmlView::run(ModuleList* moduleList) {
+void HtmlView::run(Vec<ModuleSymbol*>* modules) {
   static int uid = 1;
   char* filename;
   if (!strncmp(args, "html ", 5)) {
     html = copystring(args+5);
 
   }
-  ModuleSymbol* mod = moduleList->first();
-  while (mod) {
+  forv_Vec(ModuleSymbol, mod, *modules) {
     filename = glomstrings(5, "pass", intstring(uid), "_module_", mod->name, ".html");
     fprintf(html_index_file, "&nbsp;&nbsp;<a href=\"%s\">%s</a>\n", filename, mod->name);
     html_file = fopen(glomstrings(2, log_dir, filename), "w");
@@ -73,7 +71,6 @@ void HtmlView::run(ModuleList* moduleList) {
     write("</HTML>\n");
     output();
     fclose(html_file);
-    mod = moduleList->next();
   }
   uid++;
 }

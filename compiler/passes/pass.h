@@ -3,9 +3,9 @@
 
 #include "chplalloc.h"
 #include "chplenum.h"
+#include "vec.h"
 
 class ModuleSymbol;
-class ModuleList;
 
 class Pass : public gc {
  public:
@@ -15,12 +15,12 @@ class Pass : public gc {
   Pass(void);
 
   void setArgs(char* init_args);
-  virtual void run(ModuleList* moduleList) = 0;
+  virtual void run(Vec<ModuleSymbol*>* modules) = 0;
 };
 
 class DummyPass : public Pass {
  public:
-  virtual void run(ModuleList* moduleList);
+  virtual void run(Vec<ModuleSymbol*>* modules);
 };
 
 #endif

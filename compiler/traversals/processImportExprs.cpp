@@ -1,6 +1,5 @@
 #include "processImportExprs.h"
 #include "expr.h"
-#include "moduleList.h"
 #include "symtab.h"
 
 
@@ -49,8 +48,8 @@ static ExprStmt* genModuleUse(char* moduleName) {
 }
 
 
-void ProcessImportExprs::run(ModuleList* moduleList) {
-  for_alist(ModuleSymbol, mod, moduleList) {
+void ProcessImportExprs::run(Vec<ModuleSymbol*>* modules) {
+  forv_Vec(ModuleSymbol, mod, *modules) {
     ExprStmt* moduleUse;
     if (mod->modtype == MOD_USER) {
       moduleUse = genModuleUse("_chpl_complex");
@@ -63,5 +62,5 @@ void ProcessImportExprs::run(ModuleList* moduleList) {
       mod->initFn->body->body->insertAtHead(moduleUse);
     }
   }
-  Traversal::run(moduleList);
+  Traversal::run(modules);
 }

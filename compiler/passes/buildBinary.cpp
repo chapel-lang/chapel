@@ -2,7 +2,7 @@
 #include "driver.h"
 #include "files.h"
 
-void BuildBinary::run(ModuleList* moduleList) {
+void BuildBinary::run(Vec<ModuleSymbol*>* modules) {
   if (!suppressCodegen) {
     makeBinary();
   }
