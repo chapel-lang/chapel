@@ -42374,3 +42374,15 @@ Modified files:
 	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
 	                                         inlfunc2_report.good 
 
+---------------------------------------------------------------------------
+
+08/10/05 13:40:44 -- mjoyner
+
+Log message:
+	Small change to print out inlined c function names to help distinguish between getters and setters.
+
+Modified files:
+	chapel/compiler/traversals/: inlineFunctions.cpp 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+
