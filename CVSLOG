@@ -42219,3 +42219,26 @@ Added files:
 	chapel/test/types/type_variables/deitz/: 
 	                                         test_typevar_record6.future 
 
+---------------------------------------------------------------------------
+
+08/10/05 10:48:04 -- deitz
+
+Log message:
+	Simplified parsing and construction of ForLoopStmt and ForallExpr,
+	prior a mess, in a successful effort to remove the last AList of
+	symbols or types.  Exception: ModuleSymbols are in an AList.
+	
+	Added verification to keep symbols and types from being in ALists.
+	Unlike Exprs and Stmts, these can be used multiple times in the
+	program structure so it is best to keep them in Vecs.
+	
+	I also added verification to make sure Type is never used (only
+	subclasses of it) now that John built up the PrimitiveType.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/include/: symtab.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: fixup.cpp 
+
