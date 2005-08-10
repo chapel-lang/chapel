@@ -1824,7 +1824,6 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       break;
     }
     case EXPR_CALL:
-      CallExpr* unOp = dynamic_cast<CallExpr*>(ast);
       CallExpr* assignOp = dynamic_cast<CallExpr*>(ast);
       if (assignOp->opTag == OP_GETSNORM) {
         if (assignOp->get(1)->astType == EXPR_MEMBERACCESS) {
