@@ -228,6 +228,15 @@ BlockStmt::BlockStmt(AList<Stmt>* init_body, SymScope* init_scope,
 {}
 
 
+BlockStmt::BlockStmt(Stmt* init_body, SymScope* init_scope,
+                     blockStmtType init_blockType) :
+  Stmt(STMT_BLOCK),
+  blockType(init_blockType),
+  body(new AList<Stmt>(init_body)),
+  blkScope(init_scope)
+{}
+
+
 void BlockStmt::verify() {
   if (astType != STMT_BLOCK) {
     INT_FATAL(this, "Bad BlockStmt::astType");

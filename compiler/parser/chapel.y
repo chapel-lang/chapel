@@ -237,7 +237,7 @@ function_body_single_stmt:
 
 function_body_stmt:
   function_body_single_stmt
-    { $$ = new BlockStmt(new AList<Stmt>($1)); }
+    { $$ = new BlockStmt($1); }
 | block_stmt
 ;
 
@@ -267,7 +267,7 @@ stmt:
 label_stmt:
   TLABEL identifier stmt
     { $$ = new LabelStmt(new LabelSymbol($2), 
-                         new BlockStmt(new AList<Stmt>($3))); }
+                         new BlockStmt($3)); }
 ;
 
 
@@ -411,18 +411,18 @@ if_stmt:
   TIF expr block_stmt %prec TNOELSE
     { $$ = new CondStmt($2, dynamic_cast<BlockStmt*>($3)); }
 | TIF expr TTHEN stmt %prec TNOELSE
-    { $$ = new CondStmt($2, new BlockStmt(new AList<Stmt>($4))); }
+    { $$ = new CondStmt($2, new BlockStmt($4)); }
 | TIF expr block_stmt TELSE stmt
-    { $$ = new CondStmt($2, dynamic_cast<BlockStmt*>($3), new BlockStmt(new AList<Stmt>($5))); }
+    { $$ = new CondStmt($2, dynamic_cast<BlockStmt*>($3), new BlockStmt($5)); }
 | TIF expr TTHEN stmt TELSE stmt
-    { $$ = new CondStmt($2, new BlockStmt(new AList<Stmt>($4)), new BlockStmt(new AList<Stmt>($6))); }
+    { $$ = new CondStmt($2, new BlockStmt($4), new BlockStmt($6)); }
 ;
 
 
 when_stmt:
   TWHEN nonempty_expr_ls TDO stmt
     {
-      $$ = new WhenStmt($2, new BlockStmt(new AList<Stmt>($4)));
+      $$ = new WhenStmt($2, new BlockStmt($4));
     }
 | TWHEN nonempty_expr_ls block_stmt
     {
@@ -430,7 +430,7 @@ when_stmt:
     }
 | TOTHERWISE stmt
     {
-      $$ = new WhenStmt(new AList<Expr>(), new BlockStmt(new AList<Stmt>($2)));
+      $$ = new WhenStmt(new AList<Expr>(), new BlockStmt($2));
     }
 ;
 

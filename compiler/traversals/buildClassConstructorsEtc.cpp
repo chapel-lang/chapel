@@ -114,8 +114,7 @@ static void build_getter(ClassType* structType, Symbol *tmp) {
                                                         methodTypeSymbol->definition)));
   Symboltable::continueFnDef(getter_fn, getter_args, tmp->type);
   Expr* getter_expr = new MemberAccess(new Variable(getter_this), tmp);
-  BlockStmt* getter_return =
-    new BlockStmt(new AList<Stmt>(new ReturnStmt(getter_expr)));
+  BlockStmt* getter_return = new BlockStmt(new ReturnStmt(getter_expr));
   DefExpr* getter_def_expr = 
     new DefExpr(Symboltable::finishFnDef(getter_fn, getter_return));
   structType->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(getter_def_expr));
@@ -149,7 +148,7 @@ static void build_setters_and_getters(ClassType* structType) {
     Expr* setter_lhs = new MemberAccess(new Variable(setter_this), tmp);
     Expr* setter_rhs = new Variable(setter_arg);
     Expr* setter_assignment = new CallExpr(OP_GETSNORM, setter_lhs, setter_rhs);
-    BlockStmt* setter_stmt = new BlockStmt(new AList<Stmt>(new ExprStmt(setter_assignment)));
+    BlockStmt* setter_stmt = new BlockStmt(new ExprStmt(setter_assignment));
     DefExpr* setter_def_expr = new DefExpr(
       Symboltable::finishFnDef(setter_fn, setter_stmt));
     structType->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(setter_def_expr));
@@ -183,7 +182,7 @@ static void build_record_equality_function(ClassType* structType) {
       ? new CallExpr(OP_LOGAND, cond, new CallExpr(OP_EQUAL, left, right))
       : new CallExpr(OP_EQUAL, left, right);
   }
-  BlockStmt* retStmt = new BlockStmt(new AList<Stmt>(new ReturnStmt(cond)));
+  BlockStmt* retStmt = new BlockStmt(new ReturnStmt(cond));
   DefExpr* def = new DefExpr(Symboltable::finishFnDef(fn, retStmt));
   structType->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def));
 }
@@ -205,7 +204,7 @@ static void build_record_inequality_function(ClassType* structType) {
       ? new CallExpr(OP_LOGOR, cond, new CallExpr(OP_NEQUAL, left, right))
       : new CallExpr(OP_NEQUAL, left, right);
   }
-  BlockStmt* retStmt = new BlockStmt(new AList<Stmt>(new ReturnStmt(cond)));
+  BlockStmt* retStmt = new BlockStmt(new ReturnStmt(cond));
   DefExpr* def = new DefExpr(Symboltable::finishFnDef(fn, retStmt));
   structType->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def));
 }

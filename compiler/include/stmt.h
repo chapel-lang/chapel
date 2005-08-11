@@ -82,6 +82,9 @@ class BlockStmt : public Stmt {
   BlockStmt::BlockStmt(AList<Stmt>* init_body = new AList<Stmt>(), 
                        SymScope* init_scope = NULL, 
                        blockStmtType init_blockType = BLOCK_NORMAL);
+  BlockStmt::BlockStmt(Stmt* init_body,
+                       SymScope* init_scope = NULL, 
+                       blockStmtType init_blockType = BLOCK_NORMAL);
   virtual void verify(void);
   COPY_DEF(BlockStmt);
   void addBody(AList<Stmt>* init_body);

@@ -1334,7 +1334,7 @@ void ModuleSymbol::createInitFn(void) {
   definition = globstmts;
   BlockStmt* initFunBody;
   if (initstmts->isEmpty()) {
-    initFunBody = new BlockStmt(new AList<Stmt>());
+    initFunBody = new BlockStmt();
   } else {
     initFunBody = new BlockStmt(initstmts);
   }
@@ -1348,8 +1348,7 @@ void ModuleSymbol::createInitFn(void) {
           new Variable(
             new UnresolvedSymbol(runOnce))), 
         new BlockStmt(
-          new AList<Stmt>(
-            new ReturnStmt(NULL))));
+          new ReturnStmt(NULL)));
     initFunBody->body->insertAtHead(testRun);
   }
 

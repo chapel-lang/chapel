@@ -47,7 +47,7 @@ void ScopeResolveGotos::preProcessStmt(Stmt* stmt) {
     FindBreakOrContinue* traversal = new FindBreakOrContinue();
     loop_block->body->traverse(traversal, true);
     if (traversal->found) {
-      BlockStmt* block_stmt = new BlockStmt(new AList<Stmt>());
+      BlockStmt* block_stmt = new BlockStmt();
       stmt->replace(block_stmt);
       char* label_name = glomstrings(2, "_loop_label_", intstring(uid++));
       LabelSymbol* label_symbol = new LabelSymbol(label_name);
