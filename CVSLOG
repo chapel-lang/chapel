@@ -42524,3 +42524,30 @@ Added files:
 	                            test_use_before_def3.chpl 
 	                            test_use_before_def3.good 
 
+---------------------------------------------------------------------------
+
+08/11/05 15:23:24 -- deitz
+
+Log message:
+	Added the ability to construct a BlockStmt by passing it a single
+	statement not in a list of statements.  Such a statement is then put
+	into a list of statements.  This gets rid of many one statement list
+	creations throughout the code.  For example,
+	
+	  BlockStmt* setter_stmt =
+	    new BlockStmt(new AList<Stmt>(new ExprStmt(setter_assignment)));
+	
+	becomes
+	
+	  BlockStmt* setter_stmt = new BlockStmt(new ExprStmt(setter_assignment));
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp symbol.cpp 
+	chapel/compiler/include/: stmt.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             eliminateReturns.cpp 
+	                             insertVariableInitializations.cpp 
+	                             scopeResolveGotos.cpp 
+
