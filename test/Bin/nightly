@@ -294,6 +294,8 @@ if ($stdstatus == 0) {
 #
 # send mail
 #
+$futuremarker = "^Future";
+
 $newfailures = "???";
 $newvgrfailures = "???";
 if ($stdstatus == 0) {
@@ -329,7 +331,6 @@ print MAIL "$stdsummary\n";
 print MAIL "$vgrsummary\n";
 print MAIL "======================================================================\n";
 print MAIL "\n";
-$futuremarker = "^Future";
 
 if ($stdstatus == 0) {
     print MAIL "--- New Errors (standard) --------------------------------------------\n";
