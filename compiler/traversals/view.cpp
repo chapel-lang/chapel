@@ -8,9 +8,10 @@
 #include "stringutil.h"
 #include "log.h"
 
-View::View(bool initNumberSymbols) {
+View::View(bool initNumberSymbols, int initMarkAST) {
   indent = 0;
   numberSymbols = initNumberSymbols;
+  markAST = initMarkAST;
 }
 
 void View::run(Vec<ModuleSymbol*>* modules) {
@@ -26,7 +27,11 @@ void View::preProcessStmt(Stmt* stmt) {
   for (int i = 0; i < indent; i++) {
     printf(" ");
   }
-  printf("(%s", astTypeName[stmt->astType]);
+  printf("(");
+  if (stmt->id == markAST) {
+    printf("***");
+  }
+  printf("%s", astTypeName[stmt->astType]);
   indent += 2;
 }
 
@@ -41,6 +46,9 @@ void View::preProcessExpr(Expr* expr) {
     printf(" ");
   }
   printf("(");
+  if (expr->id == markAST) {
+    printf("***");
+  }
   printf("%s", astTypeName[expr->astType]);
   if (IntLiteral* e = dynamic_cast<IntLiteral*>(expr)) {
     printf(" %ld", e->val);
@@ -57,6 +65,9 @@ void View::postProcessExpr(Expr* expr) {
 
 void View::preProcessSymbol(Symbol* sym) {
   printf(" '");
+  if (sym->id == markAST) {
+    printf("*** ");
+  }
   if (dynamic_cast<FnSymbol*>(sym)) {
     printf("fn ");
   } else if (dynamic_cast<ParamSymbol*>(sym)) {
@@ -97,6 +108,12 @@ void print_view(BaseAST* ast) {
 
 void nprint_view(BaseAST* ast) {
   TRAVERSE(ast, new View(true), true);
+  printf("\n\n");
+  fflush(stdout);
+}
+
+void mark_view(BaseAST* ast, long id) {
+  TRAVERSE(ast, new View(false, id), true);
   printf("\n\n");
   fflush(stdout);
 }

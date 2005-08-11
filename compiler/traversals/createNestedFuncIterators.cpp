@@ -125,9 +125,11 @@ AList<DefExpr>* CreateNestedFuncIterators::addEnclVarFormals(FnSymbol* fn_sym, V
 
 void CreateNestedFuncIterators::addFuncActuals(CallExpr* paren_op, Vec<Symbol*>* encl_scope_var_uses) {
   //build iterator function actuals list
-  forv_Vec(Symbol, sym, *encl_scope_var_uses) {
-    if (sym) 
-      paren_op->argList->insertAtTail(new Variable(sym));
+  if (encl_scope_var_uses) {
+    forv_Vec(Symbol, sym, *encl_scope_var_uses) {
+      if (sym) 
+        paren_op->argList->insertAtTail(new Variable(sym));
+    }
   }
 }
 

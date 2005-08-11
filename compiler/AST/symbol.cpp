@@ -230,16 +230,7 @@ VarSymbol::VarSymbol(char* init_name,
   noDefaultInit(false)
 {
   if (name) { // ensure this is not a sentinel
-    /** SJD hack because __init_fn is not set up with a scope **/
-    if (Symbol* init_fn = Symboltable::getCurrentScope()->symContext) {
-      if (!strncmp("__init_", init_fn->name, 7)) {
-        Symboltable::defineInScope(this, Symboltable::getCurrentScope()->parent);
-      } else {
-        Symboltable::define(this);
-      }
-    } else {
-      Symboltable::define(this);
-    }
+    Symboltable::define(this);
   }
 }
 
@@ -1347,15 +1338,21 @@ void ModuleSymbol::createInitFn(void) {
   } else {
     initFunBody = new BlockStmt(initstmts);
   }
-  
+  initFunBody->blkScope = modScope;
   if (runOnce) {
-    // wrap initializer function body in conditional
-    Stmt* testRun = new CondStmt(new Variable(new UnresolvedSymbol(runOnce)), 
-                                 initFunBody);
-    // and replace it
-    initFunBody = new BlockStmt(new AList<Stmt>(testRun));
+    // put conditional in front of body
+    Stmt* testRun =
+      new CondStmt(
+        new CallExpr(
+          OP_LOGNOT,
+          new Variable(
+            new UnresolvedSymbol(runOnce))), 
+        new BlockStmt(
+          new AList<Stmt>(
+            new ReturnStmt(NULL))));
+    initFunBody->body->insertAtHead(testRun);
   }
-                    
+
   DefExpr* initFunDef = Symboltable::defineFunction(fnName, NULL, 
                                                     dtVoid, initFunBody, 
                                                     true);
@@ -1369,7 +1366,7 @@ void ModuleSymbol::createInitFn(void) {
     initFunBody->parentSymbol = initFn;
   }
 
-  definition->insertAtTail(new ExprStmt(initFunDef));
+  definition->insertAtHead(new ExprStmt(initFunDef));
 
   stmts = definition;
 }

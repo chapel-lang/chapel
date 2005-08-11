@@ -422,12 +422,7 @@ DefExpr* Symboltable::finishModuleDef(ModuleSymbol* mod, AList<Stmt>* def) {
 
   if (!empty) {
     registerModule(mod);
-
-    // define the module's init function.  This should arguably go
-    // in the module's scope, but that doesn't currently seem to
-    // work.
     mod->stmts->add(def);
-    // mod->createInitFn();
 
     // pop the module's scope
     if (mod->modtype != MOD_INTERNAL) {

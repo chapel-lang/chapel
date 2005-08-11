@@ -10,7 +10,8 @@ class View : public Traversal {
  public:
   int indent;
   bool numberSymbols;
-  View::View(bool initNumberSymbols = false);
+  long markAST;
+  View::View(bool initNumberSymbols = false, int initMarkAST = -1);
   virtual void run(Vec<ModuleSymbol*>* modules);
   virtual void preProcessStmt(Stmt* stmt);
   virtual void postProcessStmt(Stmt* stmt);
@@ -24,5 +25,6 @@ class View : public Traversal {
 
 extern void print_view(BaseAST* ast);
 extern void nprint_view(BaseAST* ast);
+extern void mark_view(BaseAST* ast, long id);
 
 #endif

@@ -1,0 +1,1 @@
+Error: Variable 'x' used before it is defined (test_use_before_def3.chpl:3)

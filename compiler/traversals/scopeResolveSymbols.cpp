@@ -38,32 +38,25 @@ ScopeResolveSymbols::ScopeResolveSymbols() {
 void ScopeResolveSymbols::postProcessExpr(Expr* expr) {
   if (Variable* sym_use = dynamic_cast<Variable*>(expr)) {
     if (sym_use->var->isUnresolved) {
-      SymScope* currentScope = Symboltable::getCurrentScope();
       char* name = sym_use->var->name;
       
       if (!strcmp(name, "__primitive")) {
         return;
       }
 
-      VarSymbol* sym_in_scope =
-        dynamic_cast<VarSymbol*>(Symboltable::lookupInCurrentScope(name));
-      
-      if (sym_in_scope) {
-        Vec<VarSymbol*>* sym_defs = defList->get(currentScope);
-        if (!sym_defs || !sym_defs->set_in(sym_in_scope)) {
-          USR_FATAL(expr, "Variable '%s' used before it is defined", name);
-        }
-      }
-      
       Symbol* sym_resolve = Symboltable::lookup(name);
-      
+
+      // Check VarSymbols are defined before used
       if (VarSymbol* var_resolve = dynamic_cast<VarSymbol*>(sym_resolve)) {
-        ModuleSymbol* mod =
-          dynamic_cast<ModuleSymbol*>(var_resolve->parentScope->symContext);
-        if (mod && currentScope == mod->initFn->body->blkScope) {
-          Vec<VarSymbol*>* sym_defs = defList->get(currentScope);
-          if (!sym_defs || !sym_defs->set_in(var_resolve)) {
-            USR_FATAL(expr, "Variable '%s' used before it is defined", name);
+        // If it is not an access of a member in a class
+        if (var_resolve->parentScope->type != SCOPE_CLASS) {
+          // And if it is not imported from a different module
+          if (var_resolve->parentScope->getModule() ==
+              Symboltable::getCurrentScope()->getModule()) {
+            Vec<VarSymbol*>* sym_defs = defList->get(var_resolve->parentScope);
+            if (!sym_defs || !sym_defs->set_in(var_resolve)) {
+              USR_FATAL(expr, "Variable '%s' used before it is defined", name);
+            }
           }
         }
       }

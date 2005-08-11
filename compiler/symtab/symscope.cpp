@@ -271,10 +271,12 @@ void SymScope::print(FILE* outfile, bool tableOrder) {
 }
 
 void SymScope::codegen(FILE* outfile, char* separator) {
-  forv_Vec(Symbol, sym, symbols) {
-    for (Symbol* tmp = sym; tmp; tmp = tmp->overload) {
-      if (!dynamic_cast<TypeSymbol*>(tmp)) {
-        tmp->codegenDef(outfile);
+  if (type > SCOPE_MODULE) { // Because initFn has modScope
+    forv_Vec(Symbol, sym, symbols) {
+      for (Symbol* tmp = sym; tmp; tmp = tmp->overload) {
+        if (!dynamic_cast<TypeSymbol*>(tmp)) {
+          tmp->codegenDef(outfile);
+        }
       }
     }
   }

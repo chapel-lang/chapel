@@ -22,21 +22,13 @@ void ProcessImportExprs::postProcessExpr(Expr* expr) {
   }
 
   if (importExpr->importTag == IMPORT_USE) {
-    SymScope* saveScope = NULL;
     ModuleSymbol* module = importExpr->getModule();
     if (!module) {
       INT_FATAL(expr, "ImportExpr has no module");
     }
-    if (Symboltable::getCurrentModule()->initFn == importExpr->parentSymbol) {
-      saveScope = 
-        Symboltable::setCurrentScope(Symboltable::getCurrentModule()->modScope);
-    }
-    CallExpr* callInitFn = new CallExpr(new Variable(module->initFn));
+    CallExpr* callInitFn = new CallExpr(module->initFn);
     importExpr->parentStmt->insertBefore(new ExprStmt(callInitFn));
-    Symboltable::getCurrentScope()->uses.add(module);
-    if (saveScope) {
-      Symboltable::setCurrentScope(saveScope);
-    }
+    importExpr->parentScope->uses.add(module);
   }
 }
 
