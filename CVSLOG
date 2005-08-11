@@ -42470,3 +42470,57 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+08/11/05 14:59:02 -- deitz
+
+Log message:
+	Made the scope of the initFn be the scope of the module.  The initFn
+	of a module contains code in the top-level of the module.  Currently,
+	variable declarations and other statements are put in this function.
+	Can we remove this initFn and just use the body of a module instead?
+	
+	Reworked the testRun code which makes sure an init function of a user
+	module is only run once.  Instead of inserting a block statement
+	around the body, it now inserts a block statement of a return
+	statement at the top.  This keeps it simpler.
+	
+	I moved the init function to the top of the module definition so that
+	it is traversed before all other functions.  This makes sure global
+	variables are defined before they are used.  Again, getting rid of the
+	initFn would simplify things.
+	
+	Added code to prevent codegening the module scope when codegening the
+	scope of the initFn.
+	
+	Added a line to createNestedFuncIterators so that it works even when
+	there are no encl_scope_var_uses.  Mack, this is a simple change that
+	I needed to make to allow functions/deitz/test_iterator2.chpl to
+	continue to work.  I'm not sure why this only came up now.
+	
+	Fixed a bug in reporting use before defs of variables in which a large
+	class of such errors were missed.  Simplified the code in the process.
+	
+	Added three use before def tests, all of which now work.
+	
+	Added a new debug function mark_view(BaseAST*, long) which works
+	similarly to print_view(BaseAST*) but also takes an AST id.  It marks
+	the AST.  So to see where an Expr is in a Stmt, you can write
+	something like mark_view(expr->parentStmt, expr->id).  The expression
+	is marked with three stars.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/symtab/: symscope.cpp symtab.cpp 
+	chapel/compiler/traversals/: createNestedFuncIterators.cpp 
+	                             processImportExprs.cpp 
+	                             scopeResolveSymbols.cpp view.cpp 
+	                             view.h 
+Added files:
+	chapel/test/trivial/deitz/: test_use_before_def1.chpl 
+	                            test_use_before_def1.good 
+	                            test_use_before_def2.chpl 
+	                            test_use_before_def2.good 
+	                            test_use_before_def3.chpl 
+	                            test_use_before_def3.good 
+
