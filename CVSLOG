@@ -42444,3 +42444,16 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+08/11/05 11:26:36 -- deitz
+
+Log message:
+	Added test of mutually recursive nested functions and future that Mack
+	and I were discussing.
+
+Added files:
+	chapel/test/functions/deitz/nested/: test_nested6.chpl 
+	                                     test_nested6.future 
+	                                     test_nested6.good 
+
