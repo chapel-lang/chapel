@@ -42457,3 +42457,16 @@ Added files:
 	                                     test_nested6.future 
 	                                     test_nested6.good 
 
+---------------------------------------------------------------------------
+
+08/11/05 12:55:58 -- bradc
+
+Log message:
+	Quick fix for the mis-reported number of new errors that
+	showed up last night in the nightly regression testing
+	mail.  Have not yet changed to a different format as
+	proposed by Steve & John.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
