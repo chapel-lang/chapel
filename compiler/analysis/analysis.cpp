@@ -793,14 +793,17 @@ is_reference_type(BaseAST *at) {
 
 static int
 is_scalar_type(BaseAST *at) {
-  if (at == dtString)
+  Type *t = dynamic_cast<Type*>(at);
+  assert(t);
+  if (t == dtString)
     return true; // EXCEPTION: the low level treats strings as scalars!
-  return is_Scalar_Type(dynamic_cast<Type*>(at));
+  return is_Scalar_Type(t);
 }
 
 static int
 is_scalar_type_symbol(BaseAST *at) {
   TypeSymbol *ts = dynamic_cast<TypeSymbol*>(at);
+  assert(ts);
   return is_scalar_type(ts->definition);
 }
 
@@ -1486,7 +1489,7 @@ is_this_member_access(BaseAST *a) {
 }
 
 static Sym *
-gen_assign_op(CallExpr *s) {
+gen_assign_rhs(CallExpr *s) {
   s->ainfo->rval = new_sym();
   s->ainfo->rval->ast = s->ainfo;
   s->ainfo->sym = s->get(1)->ainfo->sym;
@@ -1506,7 +1509,7 @@ gen_set_member(MemberAccess *ma, CallExpr *base_ast) {
   ast->rval = new_sym();
   ast->rval->ast = base_ast->ainfo;
   if1_gen(if1, &ast->code, ma->ainfo->code);
-  Sym *rhs = gen_assign_op(base_ast);
+  Sym *rhs = gen_assign_rhs(base_ast);
   Sym *selector = make_symbol(ma->member->asymbol->sym->name);
   Code *c = if1_send(if1, &ast->code, 5, 1, sym_operator, ma->base->ainfo->rval, 
                      make_symbol(".="), selector, rhs, ast->rval);
@@ -1518,16 +1521,6 @@ gen_set_member(MemberAccess *ma, CallExpr *base_ast) {
 static int
 gen_paren_op(CallExpr *s) {
   AInfo *ast = s->ainfo;
-  MemberAccess *ma = dynamic_cast<MemberAccess*>(s->baseExpr);
-  if (ma) {
-    if (!s->argList) {
-      ast->rval = s->baseExpr->ainfo->rval;
-      ast->code = s->baseExpr->ainfo->code;
-      s->baseExpr->ainfo->send->partial = Partial_NEVER;
-      return 0;
-    } else
-      s->baseExpr->ainfo->send->partial = Partial_ALWAYS;
-  }
   ast->rval = new_sym();
   ast->rval->ast = ast;
   if1_gen(if1, &ast->code, s->baseExpr->ainfo->code);
@@ -1624,6 +1617,66 @@ gen_select(BaseAST *a) {
     if1_gen(if1, &s->ainfo->code, x->ainfo->code);
   }
   if1_label(if1, &s->ainfo->code, s->ainfo, l);
+  return 0;
+}
+
+static int
+gen_assignment(CallExpr *assign) {
+  // handle assignment
+  if1_gen(if1, &assign->ainfo->code, assign->get(1)->ainfo->code);
+  Sym *rval = gen_assign_rhs(assign);
+  Variable *lhs_var = dynamic_cast<Variable*>(assign->get(1));
+  Symbol *lhs_symbol = lhs_var ? dynamic_cast<Symbol *>(lhs_var->var) : 0;
+  Sym *type = lhs_symbol ? lhs_symbol->type->asymbol->sym->type : 0;
+  FnSymbol *f = assign->parentFunction();
+  int constructor_assignment = 0;
+  if (f->fnClass == FN_CONSTRUCTOR) {
+    if (MemberAccess *m = dynamic_cast<MemberAccess*>(assign->get(1))) {
+      if (Variable *v = dynamic_cast<Variable*>(m->base)) {
+        if (v->var->isThis())
+          constructor_assignment = 1;
+      }
+    }
+  }
+  VarSymbol *lhs_var_symbol = lhs_var ? dynamic_cast<VarSymbol*>(lhs_var->var) : 0;
+  // reasons to not overload an assignment
+  //  - in constructor, setter or getter
+  //  - symbol is noDefaultInit
+  //  - symbol has no declared type and no initializer (i.e. var x; x = ....)
+  //  - symbol is "this" or known to be a scalar or reference!
+  int operator_equal = 
+    !(constructor_assignment || f->_setter || f->_getter ||
+      (lhs_var_symbol && lhs_var_symbol->noDefaultInit) ||
+      (lhs_symbol && (lhs_symbol->type == dtUnknown && !lhs_symbol->defPoint->init)) ||
+//      (lhs_symbol && lhs_symbol->isThis())
+      (lhs_symbol && (lhs_symbol->isThis() || scalar_or_reference(lhs_symbol->type)))
+      )
+    ;
+  if (operator_equal) {
+    Sym *old_rval = rval;
+    rval = new_sym();
+    rval->ast = assign->ainfo;
+    Sym *told_rval = new_sym();
+    told_rval->ast = assign->ainfo;
+    if1_move(if1, &assign->ainfo->code, old_rval, told_rval, assign->ainfo);
+    if (f_equal_method) {
+      Code *c = if1_send(if1, &assign->ainfo->code, 4, 1, make_symbol("="), method_token,
+                         assign->get(1)->ainfo->rval, told_rval, rval);
+      c->ast = assign->ainfo;
+    } else {
+      Code *c = if1_send(if1, &assign->ainfo->code, 3, 1, make_symbol("="), 
+                         assign->get(1)->ainfo->rval, told_rval, rval);
+      c->ast = assign->ainfo;
+    }
+  }
+  if (!assign->get(1)->ainfo->sym)
+    show_error("assignment to non-lvalue", assign->ainfo);
+  if (lhs_symbol && lhs_symbol->type && is_scalar_type(lhs_symbol->type) &&
+      !operator_equal && lhs_symbol->type != assign->get(2)->typeInfo())
+    rval = gen_coerce(rval, base_type(type), &assign->ainfo->code, assign->ainfo);
+  if1_move(if1, &assign->ainfo->code, rval, assign->ainfo->rval, assign->ainfo);
+  if (!lhs_symbol || lhs_symbol->type == dtUnknown || !operator_equal)
+    if1_move(if1, &assign->ainfo->code, assign->ainfo->rval, assign->get(1)->ainfo->sym, assign->ainfo);
   return 0;
 }
 
@@ -1823,69 +1876,19 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       }
       break;
     }
-    case EXPR_CALL:
-      CallExpr* assignOp = dynamic_cast<CallExpr*>(ast);
-      if (assignOp->opTag == OP_GETSNORM) {
-        if (assignOp->get(1)->astType == EXPR_MEMBERACCESS) {
-          if (gen_set_member(dynamic_cast<MemberAccess*>(assignOp->get(1)), assignOp) < 0)
-            return -1;
+    case EXPR_CALL: {
+      CallExpr* call = dynamic_cast<CallExpr*>(ast);
+      if (call->opTag == OP_GETSNORM) {
+        if (call->get(1)->astType == EXPR_MEMBERACCESS) {
+          if (gen_set_member(dynamic_cast<MemberAccess*>(call->get(1)), call) < 0) return -1;
           break;
         }
-        // handle assignment
-        if1_gen(if1, &assignOp->ainfo->code, assignOp->get(1)->ainfo->code);
-        Sym *rval = gen_assign_op(assignOp);
-        Variable *variable = dynamic_cast<Variable*>(assignOp->get(1));
-        Symbol *symbol = variable ? dynamic_cast<Symbol *>(variable->var) : 0;
-        Sym *type = symbol ? symbol->type->asymbol->sym->type : 0;
-        FnSymbol *f = assignOp->getStmt()->parentFunction();
-        int constructor_assignment = 0;
-        int getter_setter = f->_setter || f->_getter;
-        if (f->fnClass == FN_CONSTRUCTOR) {
-          MemberAccess *m = dynamic_cast<MemberAccess*>(assignOp->get(1));
-          if (m) {
-            Variable *v = dynamic_cast<Variable*>(m->base);
-            if (v) {
-              if (v->var->isThis())
-                constructor_assignment = 1;
-            }
-          }
-        }
-        VarSymbol *vs = variable ? dynamic_cast<VarSymbol*>(variable->var) : 0;
-        int operator_equal = 
-          !(constructor_assignment || getter_setter ||
-            (vs && vs->noDefaultInit) ||
-            (symbol && (symbol->type == dtUnknown && !symbol->defPoint->init)) ||
-            (symbol && (symbol->isThis() || (symbol && scalar_or_reference(symbol->type)))));
-        if (operator_equal) {
-          Sym *old_rval = rval;
-          rval = new_sym();
-          rval->ast = assignOp->ainfo;
-          Sym *told_rval = new_sym();
-          told_rval->ast = assignOp->ainfo;
-          if1_move(if1, &assignOp->ainfo->code, old_rval, told_rval, assignOp->ainfo);
-          if (f_equal_method) {
-            Code *c = if1_send(if1, &assignOp->ainfo->code, 4, 1, make_symbol("="), method_token,
-                               assignOp->get(1)->ainfo->rval, told_rval, rval);
-            c->ast = assignOp->ainfo;
-          } else {
-            Code *c = if1_send(if1, &assignOp->ainfo->code, 3, 1, make_symbol("="), 
-                               assignOp->get(1)->ainfo->rval, told_rval, rval);
-            c->ast = assignOp->ainfo;
-          }
-        }
-        if (!assignOp->get(1)->ainfo->sym)
-          show_error("assignment to non-lvalue", assignOp->ainfo);
-        if (symbol && symbol->type && is_scalar_type(symbol->type) &&
-            !operator_equal && symbol->type != assignOp->get(2)->typeInfo())
-          rval = gen_coerce(rval, base_type(type), &assignOp->ainfo->code, assignOp->ainfo);
-        if1_move(if1, &assignOp->ainfo->code, rval, assignOp->ainfo->rval, assignOp->ainfo);
-        if (!symbol || symbol->type == dtUnknown || !operator_equal)
-          if1_move(if1, &assignOp->ainfo->code, assignOp->ainfo->rval, assignOp->get(1)->ainfo->sym, assignOp->ainfo);
+        if (gen_assignment(call) < 0) return -1;
         break;
       }
-      if (gen_paren_op(dynamic_cast<CallExpr *>(ast)) < 0)
-        return -1;
+      if (gen_paren_op(call) < 0) return -1;
       break;
+    }
     case EXPR_CAST: {
       CastExpr *s = dynamic_cast<CastExpr *>(ast);
       s->ainfo->rval = new_sym();
@@ -2393,14 +2396,27 @@ cast_value(PNode *pn, EntrySet *es) {
   flow_vars(tmp, result);
   forv_CreationSet(cs, *type->out) {
     Sym *ts = cs->sym;
-    if (ts->asymbol && is_scalar_type_symbol(ts->type->asymbol->symbol))
-      update_in(result, make_abstract_type(base_type(ts->meta_type)));
+    if (ts->type->asymbol) {
+      if (ts->type->is_meta_type) {
+        if (is_scalar_type_symbol(ts->type->asymbol->symbol))
+          update_in(result, make_abstract_type(base_type(ts->meta_type)));
+      } else {
+        if (is_scalar_type(ts->type->asymbol->symbol))
+          update_in(result, make_abstract_type(base_type(ts)));
+      }
+    }
   }
   Vec<CreationSet *> css;
   forv_CreationSet(cs, *val->out) {
     Sym *ts = cs->sym;
-    if (ts->asymbol && !is_scalar_type(ts->type->asymbol->symbol))
-      css.add(cs);
+    if (ts->type->asymbol) {
+      if (ts->type->is_meta_type) {
+        if (!is_scalar_type(ts->type->meta_type->asymbol->symbol))
+          css.add(cs);
+      } else
+        if (!is_scalar_type(ts->type->asymbol->symbol))
+          css.add(cs);
+    }
   }
   flow_var_type_permit(tmp, make_AType(css));
   flow_vars(val, tmp);
