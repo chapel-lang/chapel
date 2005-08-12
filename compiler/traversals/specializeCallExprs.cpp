@@ -14,8 +14,22 @@ decomposeStmtFunction(CallExpr* call, char* newFunctionName) {
 }
 
 
-static ExprStmt* genExit(void) {
-  return new ExprStmt(new CallExpr("exit", new IntLiteral(0)));
+static Stmt* genExit(FnSymbol *fnSym) {
+  BlockStmt* body = fnSym->body;
+  SymScope* fnScope = body->blkScope;
+  SymScope* prevScope = Symboltable::setCurrentScope(fnScope);
+  ExprStmt *c = new ExprStmt(new CallExpr("exit", new IntLiteral(0)));
+  Symbol* retvalSym = Symboltable::lookupInCurrentScope("_retval");
+  if (retvalSym) {
+    BlockStmt *b = new BlockStmt(c);
+    Variable* newRetExpr = new Variable(retvalSym);
+    ReturnStmt *newRetStmt = new ReturnStmt(newRetExpr);
+    c->insertAfter(newRetStmt);
+    Symboltable::setCurrentScope(prevScope);
+    return b;
+  }
+  Symboltable::setCurrentScope(prevScope);
+  return c;
 }
 
 
@@ -59,7 +73,7 @@ void SpecializeCallExprs::postProcessStmt(Stmt* stmt) {
           ExprStmt* writeFailed = genStringWriteExpr(" failed***");
           thenBody->insertAtTail(writeFailed);
           thenBody->insertAtTail(genWriteln());
-          thenBody->insertAtTail(genExit());
+          thenBody->insertAtTail(genExit(call->parentFunction()));
 
           thenStmt = Symboltable::finishCompoundStmt(thenStmt, thenBody);
           int length = call->argList->length();
@@ -76,7 +90,7 @@ void SpecializeCallExprs::postProcessStmt(Stmt* stmt) {
         } else if (strcmp(baseVar->var->name, "halt") == 0) {
           decomposeStmtFunction(call, "write");
           call->parentStmt->insertBefore(genWriteln());
-          call->parentStmt->insertBefore(genExit());
+          call->parentStmt->insertBefore(genExit(call->parentFunction()));
           call->parentStmt->remove();
         } else if (strcmp(baseVar->var->name, "read") == 0) {
           decomposeStmtFunction(call, "read");

@@ -299,6 +299,14 @@ pragma "builtin" function any.=(b : any) { return b; }
 
 pragma "builtin" function =(a : Index, b : integer) { return __primitive("indextype_set", a, b); }
 pragma "builtin" function =(a : integer, b : Index) { return __primitive("indextype_get", b); }
+
+pragma "builtin" function =(a : numeric, b : numeric) { 
+  return __primitive("cast", a, b);
+}
+pragma "builtin" function =(a : string, b : numeric) { 
+  return __primitive("pure_return", string);
+}
+
 pragma "builtin" function =(a : any, b : any) { return b; }
 
 pragma "rename _chpl_string_index"

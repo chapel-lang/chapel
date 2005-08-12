@@ -14,7 +14,6 @@ record _htuple {
       when 3 do return _elements2;
     }
     halt("Tuple indexed out of bounds, current tuple size limited to 3");
-    return _elements0;
   }
 }
 

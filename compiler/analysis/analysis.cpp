@@ -739,7 +739,7 @@ map_baseast(BaseAST *s) {
         s->asymbol->sym->clone_for_constants = 1;
       }
     }
-    if (verbose_level > 1 && sym->name)
+    if (verbose_level > 2 && sym->name)
       printf("map_asts: found Symbol '%s'\n", sym->name);
   } else {
     Type *t = dynamic_cast<Type *>(s);
@@ -771,7 +771,7 @@ map_baseast(BaseAST *s) {
 
 static void
 map_asts(Vec<BaseAST *> &syms) {
-  if (verbose_level > 1)
+  if (verbose_level > 2)
     printf("map_asts: %d\n", syms.n);
   forv_BaseAST(s, syms)
     map_baseast(s);
@@ -1643,14 +1643,12 @@ gen_assignment(CallExpr *assign) {
   //  - in constructor, setter or getter
   //  - symbol is noDefaultInit
   //  - symbol has no declared type and no initializer (i.e. var x; x = ....)
-  //  - symbol is "this" or known to be a scalar or reference!
+  //  - symbol is "this"
   int operator_equal = 
     !(constructor_assignment || f->_setter || f->_getter ||
       (lhs_var_symbol && lhs_var_symbol->noDefaultInit) ||
       (lhs_symbol && (lhs_symbol->type == dtUnknown && !lhs_symbol->defPoint->init)) ||
-//      (lhs_symbol && lhs_symbol->isThis())
-      (lhs_symbol && (lhs_symbol->isThis() || scalar_or_reference(lhs_symbol->type)))
-      )
+      (lhs_symbol && lhs_symbol->isThis()))
     ;
   if (operator_equal) {
     Sym *old_rval = rval;
@@ -1675,8 +1673,7 @@ gen_assignment(CallExpr *assign) {
       !operator_equal && lhs_symbol->type != assign->get(2)->typeInfo())
     rval = gen_coerce(rval, base_type(type), &assign->ainfo->code, assign->ainfo);
   if1_move(if1, &assign->ainfo->code, rval, assign->ainfo->rval, assign->ainfo);
-  if (!lhs_symbol || lhs_symbol->type == dtUnknown || !operator_equal)
-    if1_move(if1, &assign->ainfo->code, assign->ainfo->rval, assign->get(1)->ainfo->sym, assign->ainfo);
+  if1_move(if1, &assign->ainfo->code, assign->ainfo->rval, assign->get(1)->ainfo->sym, assign->ainfo);
   return 0;
 }
 
@@ -2052,7 +2049,7 @@ gen_fun(FnSymbol *f) {
 static int
 init_function(FnSymbol *f) {
   Sym *s = f->asymbol->sym;
-  if (verbose_level > 1 && f->name)
+  if (verbose_level > 2 && f->name)
     printf("build_functions: %s\n", f->name);
   if (s->name && !strcmp("__init_entryPoint", s->name)) {
     if1_set_builtin(if1, s, "init");
@@ -2085,7 +2082,7 @@ build_classes(Vec<BaseAST *> &syms) {
   forv_BaseAST(s, syms)
     if (s->astType == TYPE_CLASS)
       classes.add(dynamic_cast<ClassType*>(s)); 
-  if (verbose_level > 1)
+  if (verbose_level > 2)
     printf("build_classes: %d classes\n", classes.n);
   forv_Vec(ClassType, c, classes) {
     Sym *csym = c->asymbol->sym;
@@ -2321,10 +2318,10 @@ print_ast(BaseAST *a) {
 static void
 print_baseast(BaseAST *a, Vec<BaseAST *> &asts) {
   if (!asts.set_add(a)) {
-    printf("(%d *)", (int)a->astType);
+    printf("(%s *)", astTypeName[a->astType]);
     return;
   }
-  printf("(%d", (int)a->astType);
+  printf("(%s", astTypeName[a->astType]);
   GET_AST_CHILDREN(a, getStuff);
   if (getStuff.asts.n)
     printf(" ");
@@ -2342,7 +2339,7 @@ print_one_baseast(BaseAST *a) {
 
 static void
 debug_new_ast(Vec<AList<Stmt> *> &stmts, Vec<BaseAST *> &syms) {
-  if (verbose_level > 1) {
+  if (verbose_level > 2) {
     forv_Vec(AList<Stmt>*, list, stmts) {
       Stmt* s = list->first();
       while (s) {
@@ -2356,7 +2353,7 @@ debug_new_ast(Vec<AList<Stmt> *> &stmts, Vec<BaseAST *> &syms) {
         print_ast(dynamic_cast<FnSymbol*>(def_expr->sym)->body);
       } else {
         Type *t = dynamic_cast<Type*>(s); 
-        if (t) 
+        if (t && t->symbol)
           printf("Type: %s cname %s\n", t->symbol->name, t->symbol->cname); 
       }
     }
