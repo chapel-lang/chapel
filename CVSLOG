@@ -42575,3 +42575,25 @@ Modified files:
 	                             findEnclosingScopeVarUses.cpp 
 	                             removeNestedFunctions.cpp 
 
+---------------------------------------------------------------------------
+
+08/12/05 13:17:46 -- jplevyak
+
+Log message:
+	Changed genExit to include a return from the function if _retval exists
+	  (i.e. there are any other returns in the function).
+	  Analysis assumes that execution continues, and was finding that some
+	    functions returned "void" (had paths which didn't return a value).
+	Changed -vv so that it now produces only the most interesting additional
+	Added overloaded = for numerics and for strings assigned from numerics.
+	Enabled overloading for scalars and reference types.
+	Made sure that the result of overloaded = was copied back to the LHS
+	  symbol - necessary to get the overloading of numerics to work correctly.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/parser/: prelude.chpl 
+	chapel/compiler/traversals/: specializeCallExprs.cpp 
+	chapel/modules/standard/: _chpl_htuple.chpl 
+	chapel/test/types/seq/bradc/: length.modify.good 
+
