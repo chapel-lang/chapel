@@ -10,13 +10,11 @@
 
 class CreateNestedFuncIterators : public Traversal {
 public :
-  void postProcessExpr(Expr* expr);
-  DefExpr* copyLoopBodyToNestedFuncDef(ForLoopStmt* fls, Vec<Symbol*>* encl_scope_var_uses);
+  void postProcessStmt(Stmt* stmt);
+  DefExpr* copyLoopBodyToNestedFuncDef(ForLoopStmt* fls, FnSymbol* iterator_sym);
   FnSymbol* copyIteratorDef(FnSymbol* old_iterato1r_sym);
-  Vec<Symbol*>* getEnclosingScopeVarUses(ForLoopStmt* fls);
-  AList<DefExpr>* addEnclVarFormals(FnSymbol* fn_sym, Vec<Symbol*>* encl_scope_var_uses,
-                                    Map<BaseAST*,BaseAST*>* update_map);
-  void addFuncActuals(CallExpr* paren_op, Vec<Symbol*>* encl_scope_var_uses);
+  AList<Expr>* getIteratorCallsHelper(AList<Expr>* iterator_list, AList<Expr>* user_iterator_list);
+  DefExpr* copyFuncHelper(char* new_name, AList<DefExpr>* copy_formals, BlockStmt* copy_body);
 };
 
 #endif
