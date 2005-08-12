@@ -42551,3 +42551,14 @@ Modified files:
 	                             insertVariableInitializations.cpp 
 	                             scopeResolveGotos.cpp 
 
+---------------------------------------------------------------------------
+
+08/11/05 17:36:39 -- jplevyak
+
+Log message:
+	Reorganized some of the code assocaited with handling of
+	assignment in preparation for a rewrite.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
