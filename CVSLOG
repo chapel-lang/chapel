@@ -42562,3 +42562,16 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+08/12/05 09:45:01 -- mjoyner
+
+Log message:
+	Factored out code for traversal that creates nested function definitions for iterators so that it relies a lot more on the removeNestedFunctions traversal.
+
+Modified files:
+	chapel/compiler/traversals/: createNestedFuncIterators.cpp 
+	                             createNestedFuncIterators.h 
+	                             findEnclosingScopeVarUses.cpp 
+	                             removeNestedFunctions.cpp 
+
