@@ -42671,3 +42671,75 @@ Added files:
 	                                   writeunion.future 
 	                                   writeunion.good 
 
+---------------------------------------------------------------------------
+
+08/12/05 18:17:21 -- bradc
+
+Log message:
+	A bunch of changes related to lexing/tokens:
+	
+	* Cleaned up the lexer by moving most of the complicated
+	  code (to eat strings and comments) into a helper file,
+	  processTokens.cpp.
+	
+	* Added support for C++-style single-line comments // like this
+	
+	* Renamed the COMPLEXLITERAL token to be IMAGLITERAL
+	
+	* Added some flags that support counting of Chapel tokens
+	  and breaking the input file into tokens:
+	
+	  --count-tokens: Counts the number of tokens in the
+	                  Chapel code files listed on the
+	                  command line and prints the number
+	                  of tokens to stderr.
+	
+	  --print-tokens: Breaks the input stream up into
+	                  tokens and prints stats such as
+	                  the number of code lines, blank
+	                  lines, and comment lines in the
+	                  user's code, as well as the number
+	                  of tokens, tokens per line, and
+	                  a histogram of token usage
+	
+	  This is functionality that was supported in our C++ token
+	  counting utility in the util/ directory, but which we
+	  didn't have supported for Chapel, so to a large extent,
+	  this was just moving the code over and cleaning it up a
+	  bit.  The print-tokens functionality could stand to be
+	  broken into different levels of verbosity, but for now
+	  you just get everything.  The count tokens functionality
+	  is meant to be used to add token count numbers for the
+	  standard modules and preludes to our nightly code size,
+	  and also to measure code size for future talks.
+	
+	* Added three tests to test these flags in
+	  compflags/bradc/tokenflags.
+	
+	* Added the ability to squelch the execution of a single test
+	  (rather than the whole directory) using a foo.noexec file
+	  for a test named foo.chpl.
+
+Modified files:
+	chapel/compiler/include/: yy.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/parser/: Makefile.share chapel.lex chapel.y 
+	                         lexyacc.h parser.cpp 
+	chapel/compiler/passes/: filesToAST.cpp 
+	chapel/test/: start_test sub_test 
+Added files:
+	chapel/compiler/include/: countTokens.h 
+	chapel/compiler/parser/: countTokens.cpp processTokens.cpp 
+	                         processTokens.h 
+	chapel/test/compflags/bradc/tokenflags/: .cvsignore 
+	                                         tokentest.chpl 
+	                                         tokentest.good 
+	                                         tokentest2.chpl 
+	                                         tokentest2.compopts 
+	                                         tokentest2.good 
+	                                         tokentest2.noexec 
+	                                         tokentest3.chpl 
+	                                         tokentest3.compopts 
+	                                         tokentest3.good 
+	                                         tokentest3.noexec 
+
