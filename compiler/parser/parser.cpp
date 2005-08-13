@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include "countTokens.h"
 #include "files.h"
 #include "parser.h"
 #include "stringutil.h"
@@ -38,7 +39,13 @@ ModuleSymbol* ParseFile(char* filename, modType moduletype) {
   yyin = openInputFile(filename);
   
   yystmtlist = NULL;
+  if (moduletype == MOD_USER) {
+    startCountingFileTokens(filename);
+  }
   yyparse();
+  if (moduletype == MOD_USER) {
+    stopCountingFileTokens();
+  }
 
   closeInputFile(yyin);
 

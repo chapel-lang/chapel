@@ -5,6 +5,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "symtab.h"
+#include "countTokens.h"
 #include "yy.h"
 
 ModuleSymbol* prelude = NULL;
@@ -42,6 +43,7 @@ void FilesToAST::run(Vec<ModuleSymbol*>* modules) {
   while (inputFilename = nthFilename(filenum++)) {
     ParseFile(inputFilename, MOD_USER);
   }
+  finishCountingTokens();
 
   Symboltable::doneParsingUserFiles();
 }

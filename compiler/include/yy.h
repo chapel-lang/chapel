@@ -20,11 +20,14 @@ extern "C" {
   int yyparse(void);
   void yyerror(const char* str);
   int yywrap(void);
+  int getNextYYChar();
+
 #ifdef __cplusplus
 }
 #endif
 
 extern int yylex(void);
 extern int yydebug;
+
 
 #endif

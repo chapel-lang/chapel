@@ -178,11 +178,17 @@ foreach chplsrc ($testsrc)
 	set futuretest = ""
     endif
 
+    if (-r ./$execfile.noexec) then
+        set executebin = "no";
+    else
+        set executebin = $execute;
+    endif
+
     echo \[Executing: \"$valgrndcomp$compiler $compopts $chplsrc $lastcompopts \< $compstdin\"\]
     $timedexec $timeout "$valgrndcomp$compiler $compopts $chplsrc $lastcompopts" < "$compstdin" >& $complog
 	
 
-    if ( $status != 0 || $execute == "no") then
+    if ( $status != 0 || $executebin == "no") then
 	# Compile unsuccessful
 	# Compare compiler output with expected program output
 	if ( "$catfiles" != "") then

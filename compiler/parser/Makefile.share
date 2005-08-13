@@ -1,5 +1,7 @@
 PARSER_SRCS = \
+	countTokens.cpp \
 	parser.cpp \
+	processTokens.cpp \
 
 C_SRCS = \
 	yy.c \

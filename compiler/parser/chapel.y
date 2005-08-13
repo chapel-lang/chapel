@@ -98,7 +98,7 @@
 %token TUNSPECIFIED
 
 %token TIDENT
-%token INTLITERAL FLOATLITERAL COMPLEXLITERAL
+%token INTLITERAL FLOATLITERAL IMAGLITERAL
 %token <pch> STRINGLITERAL
 
 %token TASSIGN
@@ -1285,7 +1285,7 @@ literal:
   intliteral
 | FLOATLITERAL
     { $$ = new FloatLiteral(yytext, atof(yytext)); }
-| COMPLEXLITERAL
+| IMAGLITERAL
     {
       yytext[strlen(yytext)-1] = '\0';
       $$ = new CallExpr("complex", new FloatLiteral(yytext, atof(yytext)));
