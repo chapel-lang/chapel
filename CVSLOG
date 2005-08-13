@@ -42610,3 +42610,64 @@ Modified files:
 	                               record_type_hierarchy-3-error.good 
 	                               union_type_hierarchy-3-error.good 
 
+---------------------------------------------------------------------------
+
+08/12/05 18:16:25 -- bradc
+
+Log message:
+	Added several tests that have been sitting in my directory
+	for quite awhile:
+	
+	* Working tests:
+	
+	  - classes/bradc/records/namecheck.chpl : makes sure that
+	    a record constructor can be used with actuals that are
+	    the same names as the formals.
+	
+	  - classes/bradc/unions/assign1a.chpl : makes sure union
+	    assignment works
+	
+	* Future tests:
+	
+	  - classes/bradc/callMethodOnClass.chpl : calling a method
+	    on a class (rather than an instance of a class) really
+	    throws off the compiler rather than generating a
+	    reasonable error message.  I did this accidentally and
+	    couldn't figure out what the compiler was complaining
+	    about.  This isn't high priority, but I wanted a
+	    placeholder for it.
+	
+	  - classes/bradc/unions/assign.chpl
+	  - classes/bradc/unions/writeunion.chpl : these don't work
+	    because writing of unions currently seems broken (for
+	    what appears to be a fairly simple reason -- they are
+	    passed to a procedure as a pointer but dereferenced as
+	    a value)
+	
+	  - classes/bradc/unions/stringunion.chpl : this doesn't
+	    work because assigning to string fields in a union is
+	    complicated since we can't assume that the field was
+	    a reallocatable pointer before assigning it.  It would
+	    seem that in order to make this work, we'd have to
+	    allocate the string every time it was assigned and free
+	    it every time the union was assigned (doing something
+	    smart when the string is reassigned twice in a row?)
+
+Modified files:
+	chapel/test/classes/bradc/records/: .cvsignore 
+Added files:
+	chapel/test/classes/bradc/: callMethodOnClass.chpl 
+	                            callMethodOnClass.future 
+	                            callMethodOnClass.good 
+	chapel/test/classes/bradc/records/: namecheck.chpl 
+	                                    namecheck.good 
+	chapel/test/classes/bradc/unions/: assign.chpl assign.future 
+	                                   assign.good assign1a.chpl 
+	                                   assign1a.good 
+	                                   stringunion.chpl 
+	                                   stringunion.future 
+	                                   stringunion.good 
+	                                   writeunion.chpl 
+	                                   writeunion.future 
+	                                   writeunion.good 
+
