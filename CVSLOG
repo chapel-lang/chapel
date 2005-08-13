@@ -42597,3 +42597,16 @@ Modified files:
 	chapel/modules/standard/: _chpl_htuple.chpl 
 	chapel/test/types/seq/bradc/: length.modify.good 
 
+---------------------------------------------------------------------------
+
+08/12/05 17:58:26 -- bradc
+
+Log message:
+	Updating line numbers based on John's change to
+	_chpl_htuple.chpl earlier.
+
+Modified files:
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+
