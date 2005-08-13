@@ -1,0 +1,7 @@
+???
+
+String fields of unions are tricky because in general we can't assume
+that there will be a legal string pointer there.  It seems that any
+write to a string field of a union will have to do a malloc and that
+any write to a different field where the old field was a string will
+have to do a free.

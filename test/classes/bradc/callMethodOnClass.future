@@ -1,0 +1,4 @@
+???
+
+This should generate an error message due to the attempt to call a
+method on a class.
