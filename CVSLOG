@@ -42873,3 +42873,13 @@ Removed files:
 	                                         thread_leak_test.c 
 	                                         trace_test.c 
 
+---------------------------------------------------------------------------
+
+08/15/05 13:27:40 -- bradc
+
+Log message:
+	Removing .future for test that's now working.
+
+Removed files:
+	chapel/test/types/seq/bradc/: hashEquals.future 
+
