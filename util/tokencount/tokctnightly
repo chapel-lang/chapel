@@ -86,6 +86,9 @@ mysystem("cd $compdir/util && $tokctr $allcppfiles > ../util.ntoks");
 mysystem("cd $compdir/vparser && $tokctr $allcppfiles > ../vparser.ntoks");
 mysystem("cd $tmpdir/chapel/runtime && $tokctr $allcppfiles > runtime.ntoks");
 
+mysystem("cd $chapeldir && make third-party comprt", "making compiler", 1, 1);
+mysystem("$compdir/chpl --count-tokens $compdir/parser/*.chpl $chapeldir/modules/standard/*.chpl >& $compdir/chpcode.ntoks");
+
 $asttoks = `cat $compdir/AST.ntoks`; chomp($asttoks);
 $adttoks = `cat $compdir/adt.ntoks`; chomp($adttoks);
 $analysistoks = `cat $compdir/analysis.ntoks`; chomp($analysistoks);
@@ -99,6 +102,7 @@ $traversalstoks = `cat $compdir/traversals.ntoks`; chomp($traversalstoks);
 $utiltoks = `cat $compdir/util.ntoks`; chomp($utiltoks);
 $vparsertoks = `cat $compdir/vparser.ntoks`; chomp($vparsertoks);
 $runtimetoks = `cat $tmpdir/chapel/runtime/runtime.ntoks`; chomp($runtimetoks);
+$chpcodetoks = `cat $compdir/chpcode.ntoks`; chomp($chpcodetoks);
 
 if ($asttoks == "") {
     $asttoks = 0;
@@ -139,6 +143,9 @@ if ($vparsertoks == "") {
 if ($runtimetoks == "") {
     $runtimetoks = 0;
 }
+if ($chpcodetoks == "") {
+    $chpcodetoks = 0;
+}
 $comptoks = 0;
 $fetoks = 0;
 
@@ -172,6 +179,8 @@ emit($tot);
 $tot += $includetoks;
 emit($tot);
 $tot += $runtimetoks;
+emit($tot);
+$tot += $chpcodetoks;
 emit($tot);
 
 `echo -n "\n" >> $statfile`;
