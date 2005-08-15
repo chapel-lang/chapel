@@ -42883,3 +42883,15 @@ Log message:
 Removed files:
 	chapel/test/types/seq/bradc/: hashEquals.future 
 
+---------------------------------------------------------------------------
+
+08/15/05 13:29:14 -- bradc
+
+Log message:
+	Made the nightly token-counter also count the number of
+	tokens in the modules/standard/*.chpl and parser/*.chpl
+	directories.
+
+Modified files:
+	chapel/util/tokencount/: tokctnightly 
+
