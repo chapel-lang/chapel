@@ -42914,3 +42914,13 @@ Added files:
 	chapel/test/types/file/: unableToOpenFile.chpl 
 	                         unableToOpenFile.good 
 
+---------------------------------------------------------------------------
+
+08/16/05 10:56:21 -- bradc
+
+Log message:
+	Removing another future for a test that is now working.
+
+Removed files:
+	chapel/test/functions/bradc/: intents-classes.future 
+
