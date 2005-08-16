@@ -2,12 +2,16 @@ class file {
   var filename : string = "";
   var mode : string = "r";
   var path : string = ".";
-  var fp : CFILEPTR;
+  var fp : CFILEPTR = _NULLCFILEPTR;
 
   function open {
-    fp = _fopen(filename, mode);
+    if (fp != _NULLCFILEPTR) {
+      this.close;
+    }
+    var fullFilename = path + "/" + filename;
+    fp = _fopen(fullFilename, mode);            
     if (fp == _NULLCFILEPTR) {
-      halt("Unable to open \"", filename, "\"");
+      halt("Unable to open \"", fullFilename, "\"");
     }
   }
 
