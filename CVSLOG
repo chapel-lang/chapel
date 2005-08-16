@@ -42924,3 +42924,55 @@ Log message:
 Removed files:
 	chapel/test/functions/bradc/: intents-classes.future 
 
+---------------------------------------------------------------------------
+
+08/16/05 11:58:54 -- bradc
+
+Log message:
+	Checking in an evolution of four tests, some of which
+	work, some of which don't.  The original motivating
+	test declared an uninitialized instance of a class, like:
+	
+	     class C { ... }
+	
+	     var c: C;
+	
+	Upon assigning c to other variables declared
+	to be of type C, an error would occur, which intuitively
+	seems wrong to me:
+	
+	      var d: C;
+	
+	      d = c;
+	
+	As noted in the .future, I suspect that this relates to
+	the discussion of implementing nils that we had during
+	the last implementors meeting and/or the ability to
+	dispatch on nil (all of which I suspect isn't handled
+	yet).  If I'm misremembering what we decided and/or doing
+	something illegal, let me know.
+	
+	declClassType.chpl exhibits this problem and assigns the
+	  future to john for now.
+	declClassType1a.chpl is a variation in which the instance
+	  variable is initialized to be an instance of C(), which
+	  causes the test to work
+	declClassType1b.chpl is a variation of that in which the
+	  instance variable is assigned back to nil before it is
+	  assigned to d.  This works, which is nice, but seems
+	  inconsistent
+	declClassType1c.chpl is like the original code except that
+	  c is explicitly assigned to be nil.
+
+Added files:
+	chapel/test/classes/bradc/: declClassType.chpl 
+	                            declClassType.future 
+	                            declClassType.good 
+	                            declClassType1a.chpl 
+	                            declClassType1a.good 
+	                            declClassType1b.chpl 
+	                            declClassType1b.good 
+	                            declClassType1c.chpl 
+	                            declClassType1c.future 
+	                            declClassType1c.good 
+
