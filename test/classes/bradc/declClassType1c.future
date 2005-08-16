@@ -1,0 +1,16 @@
+jplevyak
+
+Superficially, it seems as though the declared type of the
+class is ignored.  I suspect that this relates to the
+discussion we had of handling nil and passing it to functions
+that we had during your visit (though this is a slightly
+special case since it's a setter so from the user's point of
+view, it doesn't appear to be a function call).
+
+Interestingly, note that version 1b which starts out assigning the
+variable a legal instance and then reassigns it to nil does
+work...  This seems somewhat surprising to me (though I was happy that
+it worked).
+
+If these tests reflect a misunderstanding on my part, let me know and
+I'll fix them up.
