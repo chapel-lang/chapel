@@ -42895,3 +42895,22 @@ Log message:
 Modified files:
 	chapel/util/tokencount/: tokctnightly 
 
+---------------------------------------------------------------------------
+
+08/16/05 08:52:19 -- shannon
+
+Log message:
+	Initialized the file pointer member in the
+	file class to null.  Added error checking to
+	the open function to quietly close the file
+	if it's already open.  Added the path to the
+	filename in the open function call to _fopen
+	and the error message printed if _fopen fails.
+	Added a test for an open that fails.
+
+Modified files:
+	chapel/modules/standard/: _chpl_file.chpl 
+Added files:
+	chapel/test/types/file/: unableToOpenFile.chpl 
+	                         unableToOpenFile.good 
+
