@@ -65,7 +65,12 @@ void PreAnalysisHacks::postProcessType(Type* type) {
       if (!userType->defaultValue) {
         if (userType->defType->defaultValue) {
           userType->defaultValue = userType->defType->defaultValue->copy();
-          fixup(userType->symbol->defPoint);
+          ASTContext context;
+          context.parentScope = userType->symbol->defPoint->parentScope;
+          context.parentSymbol = userType->symbol;
+          context.parentStmt = NULL;
+          context.parentExpr = NULL;
+          insertHelper(userType->defaultValue, context);
         } else {
           userType->defaultConstructor = userType->defType->defaultConstructor;
         }

@@ -8,12 +8,13 @@
 class Fixup : public Traversal {
  public:
   bool verifyParents;
+  bool insertHelper;  // true fixup on inserts, false fixup on removes
   Vec<Expr*> parentExprs;
   Vec<Stmt*> parentStmts;
   Vec<Symbol*> parentSymbols;
   Vec<Symbol*> defSymbols;
 
-  Fixup::Fixup(bool init_verifyParents = false);
+  Fixup::Fixup(bool initVerifyParents = false, bool initInsertHelper = true);
   virtual void preProcessStmt(Stmt* stmt);
   virtual void postProcessStmt(Stmt* stmt);
   virtual void preProcessExpr(Expr* expr);
@@ -25,5 +26,7 @@ class Fixup : public Traversal {
 
 void fixup(BaseAST* ast);
 void fixup(BaseAST* ast, BaseAST* ref);
+void removeHelper(BaseAST* ast);
+void insertHelper(BaseAST* ast, ASTContext context);
 
 #endif

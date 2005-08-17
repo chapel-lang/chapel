@@ -193,13 +193,19 @@ void Symboltable::undefineInScope(Symbol* sym, SymScope* scope) {
 
 
 void Symboltable::defineInScope(Symbol* sym, SymScope* scope) {
-  Symbol* overload = Symboltable::lookupInScope(sym->name, scope);
-  if (overload) {
-    while (overload->overload) {
-      overload = overload->overload;
+  Symbol* tmp = Symboltable::lookupInScope(sym->name, scope);
+  if (tmp) {
+    if (tmp == sym) {
+      INT_FATAL(sym, "Attempt to define symbol %s twice", sym->name);
     }
-    overload->overload = sym;
-    sym->setParentScope(overload->parentScope);
+    while (tmp->overload) {
+      tmp = tmp->overload;
+      if (tmp == sym) {
+        INT_FATAL(sym, "Attempt to define symbol %s twice", sym->name);
+      }
+    }
+    tmp->overload = sym;
+    sym->setParentScope(tmp->parentScope);
   } else {
     scope->insert(sym);
   }
@@ -301,29 +307,6 @@ TypeSymbol* Symboltable::lookupInternalType(char* name) {
     INT_FATAL("lookupInternalType failed");
   }
   return retsym;
-}
-
-
-BlockStmt* Symboltable::startCompoundStmt(void) {
-  scopeType type = SCOPE_LOCAL;
-  if (currentScope->type == SCOPE_PARAM) {
-    type = SCOPE_FUNCTION;
-  }
-
-  Symboltable::pushScope(type);
-  return new BlockStmt();
-}
-
-
-BlockStmt* Symboltable::finishCompoundStmt(BlockStmt* blkStmt, 
-                                           AList<Stmt>* body) {
-  blkStmt->addBody(body);
-
-  SymScope* stmtScope = Symboltable::popScope();
-  stmtScope->setContext(blkStmt);
-  blkStmt->setBlkScope(stmtScope);
-
-  return blkStmt;
 }
 
 
@@ -492,30 +475,6 @@ DefExpr* Symboltable::defineSingleVarDef(char* name, Type* type,
 }
 
 
-Expr* Symboltable::startLetExpr(void) {
-  Symboltable::pushScope(SCOPE_LETEXPR);
-  return new LetExpr();
-}
-
-
-Expr* Symboltable::finishLetExpr(Expr* let_expr, AList<Stmt>* stmts, 
-                                 Expr* inner_expr) {
-  LetExpr* let = dynamic_cast<LetExpr*>(let_expr);
-
-  if (!let) {
-    INT_FATAL(let_expr, "LetExpr expected");
-  }
-
-  let->setSymDefs(stmts);
-  let->setInnerExpr(inner_expr);
-
-  SymScope* let_scope = Symboltable::popScope();
-  let_scope->setContext(NULL, NULL, let);
-  let->setLetScope(let_scope);
-  return let;
-}
-
-
 static AList<DefExpr>* exprToIndexSymbols(AList<Expr>* indices) {
   AList<DefExpr>* defExprs = new AList<DefExpr>();
   for_alist(Expr, tmp, indices) {
@@ -533,42 +492,22 @@ static AList<DefExpr>* exprToIndexSymbols(AList<Expr>* indices) {
 }
 
 
-ForallExpr* Symboltable::startForallExpr(AList<Expr>* indices, 
-                                         AList<Expr>* iterators) {
-  Symboltable::pushScope(SCOPE_FORALLEXPR);
-  return new ForallExpr(exprToIndexSymbols(indices), iterators);
-}
-
-
-ForallExpr* Symboltable::finishForallExpr(ForallExpr* expr, 
+ForallExpr* Symboltable::defineForallExpr(AList<Expr>* indices, 
+                                          AList<Expr>* iterators,
                                           Expr* innerExpr) {
-  expr->innerExpr = innerExpr;
-  expr->indexScope = Symboltable::popScope();
-  expr->indexScope->setContext(NULL, NULL, expr);
-  return expr;
+  return new ForallExpr(exprToIndexSymbols(indices), iterators, innerExpr);
 }
 
 
 ForLoopStmt* 
-Symboltable::startForLoop(ForLoopStmtTag forLoopStmtTag,
-                          AList<Expr>* indices, 
-                          AList<Expr>* iterators) {
-  Symboltable::pushScope(SCOPE_FORLOOP);
-  return new ForLoopStmt(forLoopStmtTag, exprToIndexSymbols(indices), iterators);
-}
-
-
-ForLoopStmt* Symboltable::finishForLoop(ForLoopStmt* stmt, Stmt* innerStmt) {
-  if (BlockStmt* blockStmt = dynamic_cast<BlockStmt*>(innerStmt)) {
-    stmt->innerStmt = blockStmt;
-  } else {
-    stmt->innerStmt = Symboltable::startCompoundStmt();
-    stmt->innerStmt = Symboltable::finishCompoundStmt(stmt->innerStmt,
-                                                      new AList<Stmt>(innerStmt));
-  }
-  stmt->indexScope = Symboltable::popScope();
-  stmt->indexScope->setContext(stmt);
-  return stmt;
+Symboltable::defineForLoop(ForLoopStmtTag forLoopStmtTag,
+                           AList<Expr>* indices, 
+                           AList<Expr>* iterators,
+                           BlockStmt* innerStmt) {
+  return new ForLoopStmt(forLoopStmtTag,
+                         exprToIndexSymbols(indices),
+                         iterators,
+                         innerStmt);
 }
 
 
@@ -579,6 +518,7 @@ PrimitiveType* Symboltable::definePrimitiveType(char* name, char* cname, Expr *i
 
 Type* Symboltable::defineBuiltinType(char* name, char* cname, Type *newType) {
   TypeSymbol* sym = new TypeSymbol(name, newType);
+  Symboltable::defineInScope(sym, rootScope);
   sym->cname = copystring(cname);
   newType->addSymbol(sym);
 
@@ -588,60 +528,49 @@ Type* Symboltable::defineBuiltinType(char* name, char* cname, Type *newType) {
 }
 
 
-FnSymbol* Symboltable::startFnDef(FnSymbol* fnsym, bool noparens) {
-  if (noparens) {
-    if (getCurrentScope()->type != SCOPE_CLASS &&
-        fnsym->typeBinding == NULL) {
-      USR_FATAL(fnsym, 
-                "Non-member functions must have parenthesized argument lists");
-    }
-  }
-
-  Symboltable::pushScope(SCOPE_PARAM);
-
+FnSymbol* Symboltable::startFnDef(FnSymbol* fnsym) {
   return fnsym;
 }
 
 
 void Symboltable::continueFnDef(FnSymbol* fnsym, AList<DefExpr>* formals, 
                                 Type* retType, bool isRef, Expr *whereExpr) {
-  fnsym->continueDef(formals, retType, isRef, whereExpr);
-  Symboltable::pushScope(SCOPE_FUNCTION);
+  fnsym->formals = formals;
+  fnsym->retType = retType;
+  fnsym->retRef = isRef;
+  fnsym->whereExpr = whereExpr;
 }
 
 
-FnSymbol* Symboltable::finishFnDef(FnSymbol* fnsym, BlockStmt* blockBody, 
-                                   bool isExtern) {
-  SymScope* fnScope = Symboltable::popScope();
-  SymScope* paramScope = Symboltable::popScope();
-  if (fnScope->type != SCOPE_FUNCTION ||
-      paramScope->type != SCOPE_PARAM) {
-    INT_FATAL(fnsym, "Scopes not popped correctly on finishFnDef");
+FnSymbol* Symboltable::finishFnDef(FnSymbol* fnsym, BlockStmt* blockBody) {
+  fnsym->body = blockBody;
+  if (strcmp(fnsym->name, "main") == 0 && fnsym->formals->isEmpty()) {
+    if (!FnSymbol::mainFn) {
+      FnSymbol::mainFn = fnsym;
+      fnsym->parentScope = Symboltable::getCurrentScope(); // Yuck, SJD
+      fnsym->cname = copystring("_chpl_main");
+    } else {
+      USR_FATAL(fnsym, "main multiply defined -- first occurrence at %s",
+                FnSymbol::mainFn->stringLoc());
+    }
   }
-  if (blockBody->blkScope == NULL) {
-    blockBody->blkScope = fnScope;
-  }
-  fnsym->finishDef(blockBody, paramScope, isExtern);
-  paramScope->setContext(NULL, fnsym, NULL);
   return fnsym;
 }
 
 
 DefExpr* Symboltable::defineFunction(char* name, AList<DefExpr>* formals, 
-                                     Type* retType, BlockStmt* body, 
-                                     bool isExtern) {
+                                     Type* retType, BlockStmt* body) {
   if (formals == NULL) {
     formals = new AList<DefExpr>();
   }
   FnSymbol* fnsym = startFnDef(new FnSymbol(name));
   continueFnDef(fnsym, formals, retType);
-  return new DefExpr(finishFnDef(fnsym, body, isExtern));
+  return new DefExpr(finishFnDef(fnsym, body));
 }
 
 
 DefExpr* Symboltable::defineStructType(char* name, // NULL = anonymous
                                        Type* type,
-                                       SymScope* scope,
                                        AList<Stmt>* def) {
   ClassType* structType = dynamic_cast<ClassType*>(type);
 
@@ -652,8 +581,6 @@ DefExpr* Symboltable::defineStructType(char* name, // NULL = anonymous
   TypeSymbol* sym = new TypeSymbol(name, structType);
   structType->addSymbol(sym);
   DefExpr* defExpr = new DefExpr(sym);
-  scope->setContext(NULL, sym, defExpr);
-  structType->setScope(scope);
   structType->addDeclarations(def);
   return defExpr;
 }

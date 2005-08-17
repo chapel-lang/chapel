@@ -42,8 +42,7 @@ static void insert_config_init(Stmt* stmt, VarSymbol* var, Type* type) {
   args->insertAtTail(new Variable(type->symbol));
   args->insertAtTail(new StringLiteral(copystring(var->name)));
   args->insertAtTail(new StringLiteral(var->parentScope->symContext->name));
-  Symbol* init_config = Symboltable::lookupInternal("_INIT_CONFIG");
-  CallExpr* call = new CallExpr(init_config, args);
+  CallExpr* call = new CallExpr(initConfigFn, args);
   Expr* assign = new CallExpr(OP_GETSNORM, new Variable(var), init_expr->copy());
   ExprStmt* assign_stmt = new ExprStmt(assign);
   CondStmt* cond_stmt = new CondStmt(call, new BlockStmt(assign_stmt));

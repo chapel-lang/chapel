@@ -5,6 +5,8 @@
 
 class Symbol;
 class Type;
+class Stmt;
+class Expr;
 class Traversal;
 class SymScope;
 
@@ -92,6 +94,13 @@ extern char* astTypeName[];
 #define CLONE(c) (c ? c->copy(true) : NULL)
 #define CLONE_INTERNAL(c) (c ? c->copy(true, map, NULL, true) : NULL)
 
+typedef struct _ASTContext {
+  SymScope* parentScope;
+  Symbol* parentSymbol;
+  Stmt* parentStmt;
+  Expr* parentExpr;
+} ASTContext;
+
 class BaseAST : public gc {
  public:
   astType_t astType;    // BaseAST subclass
@@ -127,6 +136,8 @@ class BaseAST : public gc {
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void callReplaceChild(BaseAST* new_ast);
+
+  virtual ASTContext getContext(void);
 
   void remove(void);
   void replace(BaseAST* new_ast);

@@ -37,7 +37,6 @@ class Symbol : public BaseAST {
   char* name;
   char* cname; // Name of symbol for generating C code
   Type* type;
-  bool exportMe;
   bool isDead;
   bool keepLive;
   DefExpr* defPoint; // Point of definition
@@ -46,8 +45,7 @@ class Symbol : public BaseAST {
   Symbol* overload;
   bool isUnresolved;
 
-  Symbol(astType_t astType, char* init_name, 
-         Type* init_type = dtUnknown, bool init_exportMe = true);
+  Symbol(astType_t astType, char* init_name, Type* init_type = dtUnknown);
   virtual void verify(void); 
   void setParentScope(SymScope* init_parentScope);
   COPY_DEF(Symbol);
@@ -189,10 +187,6 @@ class FnSymbol : public Symbol {
   FnSymbol(char* init_name, TypeSymbol* init_typeBinding = NULL, bool isSetter = false);
   virtual void verify(void); 
   COPY_DEF(FnSymbol);
-  void continueDef(AList<DefExpr>* init_formals, Type* init_retType, 
-                   bool isRef, Expr *whereExpr);
-  void finishDef(BlockStmt* init_body, SymScope* init_paramScope, 
-                 bool init_exportMe=true);
   virtual FnSymbol* getFnSymbol(void);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void traverseDefSymbol(Traversal* traverse);

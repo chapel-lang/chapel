@@ -20,13 +20,11 @@ Symbol *gUnspecified = 0;
 
 #define DUPLICATE_INSTANTIATION_CACHE 1
 
-Symbol::Symbol(astType_t astType, char* init_name, Type* init_type, 
-               bool init_exportMe) :
+Symbol::Symbol(astType_t astType, char* init_name, Type* init_type) :
   BaseAST(astType),
   name(init_name),
   cname(name),
   type(init_type),
-  exportMe(init_exportMe),
   isDead(false),
   keepLive(false),
   defPoint(NULL),
@@ -228,11 +226,7 @@ VarSymbol::VarSymbol(char* init_name,
   varClass(init_varClass),
   consClass(init_consClass),
   noDefaultInit(false)
-{
-  if (name) { // ensure this is not a sentinel
-    Symboltable::define(this);
-  }
-}
+{ }
 
 
 void VarSymbol::verify(void) {
@@ -360,9 +354,6 @@ ParamSymbol::ParamSymbol(paramType init_intent, char* init_name,
   typeVariable(NULL),
   isGeneric(false)
 {
-  if (name) {  // ensure this is not a sentinel
-    Symboltable::define(this);
-  }
   if (intent == PARAM_PARAMETER || intent == PARAM_TYPE)
     isGeneric = true;
 }
@@ -456,9 +447,7 @@ TypeSymbol::TypeSymbol(char* init_name, Type* init_definition) :
   Symbol(SYMBOL_TYPE, init_name, init_definition ? init_definition->metaType : NULL), 
   definition(init_definition)
 {
-  if (definition)
-    Symboltable::define(this);
-  else
+  if (!definition)
     isUnresolved = true;
 }
 
@@ -479,10 +468,6 @@ TypeSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   Type* new_definition = COPY_INTERNAL(definition);
   TypeSymbol* new_definition_symbol = new TypeSymbol(copystring(name), new_definition);
   new_definition->addSymbol(new_definition_symbol);
-  if (ClassType* stype =
-      dynamic_cast<ClassType*>(new_definition)) {
-    stype->structScope->setContext(NULL, new_definition_symbol);
-  }
   new_definition_symbol->cname = copystring(cname);
   return new_definition_symbol;
 }
@@ -505,8 +490,6 @@ TypeSymbol* TypeSymbol::clone(Map<BaseAST*,BaseAST*>* map) {
   }
   clone->cname = glomstrings(3, clone->cname, "_clone_", intstring(uid++));
   DefExpr* new_def_expr = new DefExpr(clone);
-  ClassType* new_class_type = dynamic_cast<ClassType*>(clone->definition);
-  new_class_type->structScope->setContext(NULL, clone, new_def_expr);
   defPoint->parentStmt->insertBefore(new ExprStmt(new_def_expr));
   Symboltable::setCurrentScope(save_scope);
   return clone;
@@ -553,16 +536,16 @@ FnSymbol::FnSymbol(char* init_name, TypeSymbol* init_typeBinding, bool init_isSe
   _getter(NULL),
   body(NULL),
   typeBinding(init_typeBinding),
+  method_type(NON_METHOD),
+  paramScope(NULL),
   fnClass(FN_FUNCTION),
+  retRef(false),
   whereExpr(NULL),
   noparens(false),
   isSetter(init_isSetter),
   isGeneric(false),
   instantiatedFrom(NULL)
-{
-  Symboltable::define(this);
-  method_type = NON_METHOD;
-}
+{ }
 
 
 void FnSymbol::verify(void) {
@@ -571,36 +554,6 @@ void FnSymbol::verify(void) {
   }
   if (prev || next) {
     INT_FATAL(this, "Symbol is in AList");
-  }
-}
-
-
-void FnSymbol::continueDef(AList<DefExpr>* init_formals, Type* init_retType, bool isRef, Expr *init_whereExpr) {
-  formals = init_formals;
-  retType = init_retType;
-  retRef = isRef;
-  whereExpr = init_whereExpr;
-}
-
-
-void FnSymbol::finishDef(BlockStmt* init_body, SymScope* init_paramScope,
-                         bool init_exportMe) {
-  body = init_body;
-  exportMe = init_exportMe;
-  paramScope = init_paramScope;
-
-  if (strcmp(name, "main") == 0 && 
-      (parentScope->type == SCOPE_MODULE || 
-       parentScope->type == SCOPE_POSTPARSE) &&
-      formals->isEmpty()) {
-    if (!mainFn) {
-      mainFn = this;
-      exportMe = true;
-      cname = copystring("_chpl_main");
-    } else {
-      USR_FATAL(this, "main multiply defined -- first occurrence at %s",
-                mainFn->stringLoc());
-    }
   }
 }
 
@@ -631,7 +584,7 @@ FnSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
     INT_FATAL(body, "function body was not a BlockStmt!?");
   }
   copy->cname = copystring(cname);
-  return Symboltable::finishFnDef(copy, new_body, exportMe);
+  return Symboltable::finishFnDef(copy, new_body);
 }
 
 
@@ -705,8 +658,6 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
   }
   Symboltable::continueFnDef(wrapperFn, wrapperFormals, retType, retRef);
 
-  BlockStmt* wrapperBlock = Symboltable::startCompoundStmt();
-
   AList<Stmt>* wrapperBody = new AList<Stmt>();
   AList<Expr>* wrapperActuals = new AList<Expr>();
   for (DefExpr* formal = formals->first(), *wrapperFormal = wrapperFormals->first(); 
@@ -730,7 +681,7 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
   } else {
     wrapperBody->insertAtTail(new ReturnStmt(fn_call));
   }
-  wrapperBlock = Symboltable::finishCompoundStmt(wrapperBlock, wrapperBody);
+  BlockStmt* wrapperBlock = new BlockStmt(wrapperBody);
   DefExpr* defExpr = new DefExpr(Symboltable::finishFnDef(wrapperFn, wrapperBlock));
   defPoint->parentStmt->insertBefore(new ExprStmt(defExpr));
   Symboltable::setCurrentScope(saveScope);
@@ -947,7 +898,6 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
     for (int i = 0; i < types.n; i++) {
       if (types.v[i] && substitutions->get(types.v[i]->definition)) {
         types.v[i]->defPoint->parentStmt->remove();
-        types.v[i]->parentScope->remove(types.v[i]);
       } else
         cloneType->types.add(types.v[i]);
     }
@@ -1058,9 +1008,6 @@ void FnSymbol::printDef(FILE* outfile) {
 
 
 void FnSymbol::codegenHeader(FILE* outfile) {
-  if (!exportMe && !parentScope->commonModuleIsFirst()) {
-    fprintf(outfile, "static ");
-  }
   if (retType == dtUnknown) {
     retType = return_type_info(this);
     INT_WARNING(this, "return type unknown, calling analysis late");
@@ -1172,7 +1119,6 @@ EnumSymbol::EnumSymbol(char* init_name) :
   Symbol(SYMBOL_ENUM, init_name)
 {
   type = dtInteger;
-  Symboltable::define(this);
 }
 
 
@@ -1353,20 +1299,9 @@ void ModuleSymbol::createInitFn(void) {
   }
 
   DefExpr* initFunDef = Symboltable::defineFunction(fnName, NULL, 
-                                                    dtVoid, initFunBody, 
-                                                    true);
-  initFn = dynamic_cast<FnSymbol*>(initFunDef->sym);
-  {
-    Stmt* initstmt = initstmts->first();
-    while (initstmt) {
-      initstmt->parentSymbol = initFn;
-      initstmt = initstmts->next();
-    }
-    initFunBody->parentSymbol = initFn;
-  }
-
+                                                    dtVoid, initFunBody);
   definition->insertAtHead(new ExprStmt(initFunDef));
-
+  initFn = dynamic_cast<FnSymbol*>(initFunDef->sym);
   stmts = definition;
 }
 
@@ -1377,9 +1312,8 @@ bool ModuleSymbol::isFileModule(void) {
 
 
 LabelSymbol::LabelSymbol(char* init_name) :
-  Symbol(SYMBOL_LABEL, init_name, NULL) {
-  Symboltable::define(this);
-}
+  Symbol(SYMBOL_LABEL, init_name, NULL)
+{ }
 
 
 void LabelSymbol::verify(void) {
@@ -1397,5 +1331,7 @@ void LabelSymbol::codegenDef(FILE* outfile) { }
 void
 initSymbol() {
   gNil = Symboltable::defineSingleVarDef("nil", dtNil, NULL, VAR_NORMAL, VAR_CONST)->sym;
+  Symboltable::define(gNil);
   gUnspecified = Symboltable::defineSingleVarDef("_", dtUnknown, NULL, VAR_NORMAL, VAR_CONST)->sym;
+  Symboltable::define(gUnspecified);
 }

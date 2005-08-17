@@ -1,4 +1,3 @@
- called from 15 in __init_codegen_test at _chpl_complex.chpl:-1
 ::a(codegen_test.chpl:8) ( int64 )
 ::x(codegen_test.chpl:1) ( int64 )
 ::y(codegen_test.chpl:3) ( int64 )

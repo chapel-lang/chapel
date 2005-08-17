@@ -87,6 +87,7 @@ static void runPass(char* passName, Pass* pass, char* args) {
     htmlview->setArgs(glomstrings(2, "html ", passName));
     htmlview->run(Symboltable::getModules(MODULES_CODEGEN));
     fprintf(html_index_file, "</TD></TR>", passName);
+    fflush(html_index_file);
   }
 
   if (postFixup) {

@@ -168,7 +168,6 @@ class ClassType : public Type {
   COPY_DEF(ClassType);
   void addDeclarations(AList<Stmt>* newDeclarations,
                        Stmt* afterStmt = NULL);
-  void setScope(SymScope* init_structScope);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseDefType(Traversal* traversal);
@@ -273,6 +272,10 @@ TYPE_EXTERN Type* dtLocale;
 // vector of built-in types
 TYPE_EXTERN Vec<Type*> builtinTypes;
 
+TYPE_EXTERN FnSymbol* initConfigFn;
+TYPE_EXTERN FnSymbol* unionSetFn;
+TYPE_EXTERN FnSymbol* unionCheckFn;
+TYPE_EXTERN FnSymbol* unionQuietCheckFn;
 
 void initType(void);
 Type *find_or_make_sum_type(Vec<Type *> *types);

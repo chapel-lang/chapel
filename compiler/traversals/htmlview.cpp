@@ -10,9 +10,8 @@
 #include "log.h"
 
 HtmlView::HtmlView(int ashow_analysis_info) 
-  : show_analysis_info(ashow_analysis_info) 
-{
-}
+  : show_analysis_info(ashow_analysis_info)
+{ }
 
 char* strrstr(const char* s, const char* s2) {
   char* result = strstr(s, s2);
@@ -160,6 +159,11 @@ void HtmlView::preProcessExpr(Expr* expr) {
     write("<FONT COLOR=\"lightblue\">'%s'</FONT>", e->str);
   } else if (Variable* e = dynamic_cast<Variable*>(expr)) {
     html_print_symbol(e->var, false);
+  } else if (CallExpr* e = dynamic_cast<CallExpr*>(expr)) {
+    write("(");
+    if (e->opTag == OP_NONE) {
+      write("<B>call</B> ");
+    }
   } else {
     write("(%s", astTypeName[expr->astType]);
   }

@@ -912,7 +912,7 @@ log_test_fa(FA *fa) {
           f->sym->filename(), f->sym->log_line());
       forv_CallPoint(cp, f->called) {
         Fun *ff = cp->fun;
-        if (cp->pnode->code->line() > 0)
+        if (cp->pnode->code->line() > 0 && ff->log_line() > 0)
           log(LOG_TEST_FA, " called from %d in %s at %s:%d\n", 
               cp->pnode->code->log_line(),
               ff->sym->name ? ff->sym->name : "<anonymous>",

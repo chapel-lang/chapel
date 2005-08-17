@@ -74,12 +74,17 @@ void SymScope::remove(Symbol* sym) {
     if (symbols.v[i]) {
       if (symbols.v[i] == sym) {
         symbols.v[i] = sym->overload;
+        table.del(sym->name);
+        if (symbols.v[i])
+          table.put(sym->name, symbols.v[i]);
+        sym->overload = NULL;
         return;
       } else {
         Symbol* tmp = symbols.v[i];
         while (tmp->overload) {
           if (tmp->overload == sym) {
             tmp->overload = sym->overload;
+            sym->overload = NULL;
             return;
           }
           tmp = tmp->overload;
@@ -231,25 +236,24 @@ void SymScope::printHeader(FILE* outfile) {
 
 void SymScope::printSymbols(FILE* outfile, bool tableOrder) {
   char* indent = indentStr();
-
+  Vec<Symbol*> tableOrderSymbols;
+  Vec<Symbol*>* psymbols;
   if (tableOrder) {
-    int i;
-    Vec<Symbol*> symlist;
-
-    table.get_values(symlist);
-    for (i=0; i<symlist.n; i++) {
-      fprintf(outfile, "%s", indent);
-      symlist.v[i]->print(outfile);
-      fprintf(outfile, "\n");
-    }
+    table.get_values(tableOrderSymbols);
+    psymbols = &tableOrderSymbols;
   } else {
-    if (!isEmpty()) {
+    psymbols = &symbols;
+  }
+  forv_Vec(Symbol, sym, *psymbols) {
+    if (sym) {
       fprintf(outfile, "%s", indent);
-      forv_Vec(Symbol, sym, symbols) {
-        sym->print(outfile);
-        fprintf(outfile, "L\n%s", indent);
+      sym->print(outfile);
+      fprintf(outfile, " (");
+      for (Symbol* tmp = sym; tmp; tmp = tmp->overload) {
+        fprintf(outfile, "%s", tmp->cname);
+        if (tmp->overload) fprintf(outfile, ", ");
       }
-      fprintf(outfile, "\n");
+      fprintf(outfile, ")\n");
     }
   }
 }

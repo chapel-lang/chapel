@@ -10,8 +10,9 @@ static void markAsDeadAndExtract(Symbol* sym) {
   sym->isDead = true;
   if (sym->defPoint) {
     sym->defPoint->parentStmt->remove();
+  } else {
+    sym->parentScope->remove(sym);
   }
-  sym->parentScope->remove(sym);
 }
 
 
@@ -26,14 +27,10 @@ void RemoveDeadSymbols::processSymbol(Symbol* sym) {
   if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(sym)) {
     if (!type_is_used(typeSym)) {
       markAsDeadAndExtract(sym);
-      if (ClassType* structuralType = dynamic_cast<ClassType*>(typeSym->definition)) {
-        Symboltable::removeScope(structuralType->structScope);
-      }
     }
   } else if (FnSymbol* fnSym = dynamic_cast<FnSymbol*>(sym)) {
     if (!function_is_used(fnSym)) {
       markAsDeadAndExtract(sym);
-      Symboltable::removeScope(fnSym->paramScope);
     }
   }
 }

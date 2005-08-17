@@ -1,3 +1,4 @@
+module test_mod {
 var m = 5;
 var n = 2;
 var o = 10;
@@ -18,3 +19,4 @@ writeln("test: o mod m");
 writeln("expected answer = 0");
 answer = o mod m;
 writeln("actual answer = ", answer);
+}

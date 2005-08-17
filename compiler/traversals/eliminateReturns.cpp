@@ -2,6 +2,7 @@
 #include "eliminateReturns.h"
 #include "stmt.h"
 #include "symtab.h"
+#include "stringutil.h"
 
 EliminateReturns::EliminateReturns(void) {
   whichModules = MODULES_CODEGEN;
@@ -20,8 +21,9 @@ static bool alreadyProcessedThisReturn(Expr* retExpr, Symbol* retval) {
 
 
 void EliminateReturns::preProcessStmt(Stmt* stmt) {
-  if (typeid(*stmt) == typeid(ReturnStmt)) {
-    ReturnStmt* retStmt = dynamic_cast<ReturnStmt*>(stmt);
+  static int uid = 1;
+
+  if (ReturnStmt* retStmt = dynamic_cast<ReturnStmt*>(stmt)) {
     Expr* retExpr = retStmt->expr;
 
     if (retExpr == NULL) {
@@ -46,8 +48,6 @@ void EliminateReturns::preProcessStmt(Stmt* stmt) {
     if (fnScope == NULL) {
       INT_FATAL(body, "Block body has NULL blkScope");
     }
-    SymScope* prevScope = Symboltable::setCurrentScope(fnScope);
-
     Symbol* retvalSym = Symboltable::lookupInCurrentScope("_retval");
     VarSymbol* retval = dynamic_cast<VarSymbol*>(retvalSym);
     if (retval == NULL) {
@@ -57,11 +57,11 @@ void EliminateReturns::preProcessStmt(Stmt* stmt) {
                                                            VAR_NORMAL,
                                                            VAR_VAR);
       retval = dynamic_cast<VarSymbol*>(retValDef->sym);
+      retval->cname = glomstrings(3, retval->name, "_", intstring(uid++));
       retval->noDefaultInit = true;
       body->body->insertAtHead(new ExprStmt(retValDef));
     } else {
       if (alreadyProcessedThisReturn(retExpr, retval)) {
-        Symboltable::setCurrentScope(prevScope);
         return;
       }
     }
@@ -74,8 +74,6 @@ void EliminateReturns::preProcessStmt(Stmt* stmt) {
     Variable* newRetExpr = new Variable(retval);
     ReturnStmt *newRetStmt = new ReturnStmt(newRetExpr);
     assignStmt->insertAfter(newRetStmt);
-    
-    Symboltable::setCurrentScope(prevScope);
   }
 }
 

@@ -68,7 +68,6 @@ void CreateNestedFuncIterators::postProcessStmt(Stmt* stmt) {
       //found user iterator call
       if(!user_iter_call_list->isEmpty()) {
         //remove iterator for loop
-        Symboltable::removeScope(fls->indexScope);
         fls->remove();
       }
     }
@@ -129,9 +128,8 @@ DefExpr* CreateNestedFuncIterators::copyFuncHelper(char* new_name, AList<DefExpr
   }
   //copy body for new function definition
   Symboltable::continueFnDef(fn, func_formals, dtVoid);
-  BlockStmt* fn_body = Symboltable::startCompoundStmt();
   AList<Stmt>* stmts = copy_body->body->copy(true, update_map);
-  fn_body = Symboltable::finishCompoundStmt(fn_body, stmts);
+  BlockStmt* fn_body = new BlockStmt(stmts);
   DefExpr* func_def = new DefExpr(Symboltable::finishFnDef(fn, fn_body));
   return func_def;
 }

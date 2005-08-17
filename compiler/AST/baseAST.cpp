@@ -108,6 +108,13 @@ void BaseAST::callReplaceChild(BaseAST* new_ast) {
 }
 
 
+ASTContext BaseAST::getContext(void) {
+  ASTContext context;
+  INT_FATAL(this, "Unexpected call to BaseAST::getContext()");
+  return context;
+}
+
+
 void BaseAST::remove(void) {
   if (prev || next) {
     if (!prev || !next) {
@@ -120,6 +127,7 @@ void BaseAST::remove(void) {
   } else {
     callReplaceChild(NULL);
   }
+  removeHelper(this);
 }
 
 
@@ -140,7 +148,9 @@ void BaseAST::replace(BaseAST* new_ast) {
   } else {
     callReplaceChild(new_ast);
   }
-  fixup(new_ast, this);
+  ASTContext context = getContext();
+  removeHelper(this);
+  insertHelper(new_ast, context);
 }
 
 
@@ -156,7 +166,7 @@ void BaseAST::insertBefore(BaseAST* new_ast) {
   } else {
     INT_FATAL(this, "Ill-formed list in BaseAST::insertBefore");
   }
-  fixup(new_ast, this);
+  insertHelper(new_ast, getContext());
 }
 
 
@@ -172,7 +182,7 @@ void BaseAST::insertAfter(BaseAST* new_ast) {
   } else {
     INT_FATAL(this, "Ill-formed list in BaseAST::insertAfter");
   }
-  fixup(new_ast, this);
+  insertHelper(new_ast, getContext());
 }
 
 

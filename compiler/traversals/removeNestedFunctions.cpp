@@ -1,4 +1,3 @@
-
 #include "removeNestedFunctions.h"
 #include "symscope.h"
 #include "symtab.h"
@@ -45,8 +44,6 @@ void RemoveNestedFunctions::postProcessStmt(Stmt* stmt) {
           module_stmts->insertAtTail(fn_copy);
      
           expr_stmt->remove();
-          fn_sym->parentScope->remove(fn_sym);
-          Symboltable::removeScope(fn_sym->paramScope);
           Symboltable::setCurrentScope(saveScope);
         }
       }

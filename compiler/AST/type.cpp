@@ -534,7 +534,7 @@ ClassType::ClassType(ClassTag initClassTag) :
   declarationList(new AList<Stmt>())
 {
   if (classTag == CLASS_CLASS) {
-    defaultValue = new Variable(Symboltable::lookupInternal("nil", SCOPE_INTRINSIC));
+    defaultValue = new Variable(gNil);
   }
   fields.clear();
   methods.clear();
@@ -557,7 +557,6 @@ void ClassType::verify(void) {
 ClassType*
 ClassType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   ClassType* copy_type = new ClassType(classTag);
-  Symboltable::pushScope(SCOPE_CLASS);
   AList<Stmt>* new_decls = new AList<Stmt>();
   for (Stmt* old_decls = declarationList->first();
        old_decls;
@@ -571,8 +570,6 @@ ClassType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
     }
   }
   copy_type->addDeclarations(new_decls);
-  SymScope* copy_scope = Symboltable::popScope();
-  copy_type->setScope(copy_scope);
   copy_type->isPattern = isPattern;
   return copy_type;
 }
@@ -611,11 +608,6 @@ void ClassType::addDeclarations(AList<Stmt>* newDeclarations,
 }
 
 
-void ClassType::setScope(SymScope* init_structScope) {
-  structScope = init_structScope;
-}
-
-
 void ClassType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == defaultValue) {
     defaultValue = dynamic_cast<Expr*>(new_ast);
@@ -632,7 +624,7 @@ void ClassType::traverseDefType(Traversal* traversal) {
   if (structScope) {
     prevScope = Symboltable::setCurrentScope(structScope);
   }
-  declarationList->traverse(traversal, false);
+  TRAVERSE(declarationList, traversal, false);
   TRAVERSE(defaultValue, traversal, false);
   if (structScope) {
     Symboltable::setCurrentScope(prevScope);
@@ -909,13 +901,6 @@ void ClassType::buildFieldSelector(void) {
 }
 
 
-static char* unionCallName[NUM_UNION_CALLS] = {
-  "_UNION_SET",
-  "_UNION_CHECK",
-  "_UNION_CHECK_QUIET"
-};
-
-
 CallExpr* ClassType::buildSafeUnionAccessCall(unionCall type, Expr* base, 
                                                  Symbol* field) {
   AList<Expr>* args = new AList<Expr>(base->copy());
@@ -926,8 +911,17 @@ CallExpr* ClassType::buildSafeUnionAccessCall(unionCall type, Expr* base,
     args->insertAtTail(new IntLiteral(base->lineno));
   }
   
-  char* fnName = unionCallName[type];
-  return new CallExpr(Symboltable::lookupInternal(fnName), args);
+  switch (type) {
+  case UNION_SET:
+    return new CallExpr(unionSetFn, args);
+  case UNION_CHECK:
+    return new CallExpr(unionCheckFn, args);
+  case UNION_CHECK_QUIET:
+    return new CallExpr(unionQuietCheckFn, args);
+  default:
+    INT_FATAL(this, "Unable to build safe union access call");
+  }
+  return NULL;
 }
 
 
@@ -1080,6 +1074,7 @@ Type *find_or_make_sum_type(Vec<Type *> *types) {
   char* name = glomstrings(2, "_sum_type", intstring(uid++));
   SymScope* saveScope = Symboltable::setCurrentScope(commonModule->modScope);
   TypeSymbol* sym = new TypeSymbol(name, new_sum_type);
+  Symboltable::define(sym);
   new_sum_type->addSymbol(sym);
   Symboltable::setCurrentScope(saveScope);
   return new_sum_type;
@@ -1098,4 +1093,18 @@ void findInternalTypes(void) {
   dtIndex = Symboltable::lookupInternalType("Index")->type;
   dtDomain = Symboltable::lookupInternalType("Domain")->type;
   dtArray = Symboltable::lookupInternalType("Array")->type;
+  dtSequence = Symboltable::lookupInternalType("_seq")->type;
+  // SJD: Can't do this when dtString is defined because
+  // prelude hasn't been made yet.  Need to do it after.
+  dtString->defaultConstructor =
+    dynamic_cast<FnSymbol*>(Symboltable::lookupInternal("_init_string"));
+  initConfigFn =
+    dynamic_cast<FnSymbol*>(Symboltable::lookupInternal("_INIT_CONFIG"));
+  unionSetFn =
+    dynamic_cast<FnSymbol*>(Symboltable::lookupInternal("_UNION_SET"));
+  unionCheckFn =
+    dynamic_cast<FnSymbol*>(Symboltable::lookupInternal("_UNION_CHECK"));
+  unionQuietCheckFn =
+    dynamic_cast<FnSymbol*>(Symboltable::lookupInternal("_UNION_CHECK_QUIET"));
+
 }

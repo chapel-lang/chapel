@@ -1,5 +1,5 @@
-::answer(mod.chpl:4) ( int64 )
-::m(mod.chpl:1) ( int64 )
-::n(mod.chpl:2) ( int64 )
-::o(mod.chpl:3) ( int64 )
+::answer(mod.chpl:5) ( int64 )
+::m(mod.chpl:2) ( int64 )
+::n(mod.chpl:3) ( int64 )
+::o(mod.chpl:4) ( int64 )
 globals

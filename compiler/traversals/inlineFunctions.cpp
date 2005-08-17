@@ -16,7 +16,8 @@ void InlineFunctions::postProcessExpr(Expr* expr) {
     }
     FnSymbol* fn_sym = fn_call->findFnSymbol(); 
     //copy pragmas from function definition stmt to its function symbol
-    fn_sym->copyPragmas(fn_sym->defPoint->parentStmt->pragmas);
+    if (fn_sym->defPoint->parentStmt)
+      fn_sym->copyPragmas(fn_sym->defPoint->parentStmt->pragmas);
     //inline function
     if (fn_sym->hasPragma("inline") && isCodegened(fn_sym)) { 
       _ok_to_inline = true;
@@ -52,7 +53,7 @@ void InlineFunctions::postProcessExpr(Expr* expr) {
 
 bool InlineFunctions::isCodegened(FnSymbol* fn_sym) {
   //do not inline methods that are not codegened (e.g. prelude)
-  ModuleSymbol* mod_sym = fn_sym->paramScope->getModule();
+  ModuleSymbol* mod_sym = fn_sym->parentScope->getModule();
   return (!fn_sym->hasPragma("no codegen") && (mod_sym->modtype != MOD_INTERNAL));  
 }
 

@@ -41,11 +41,6 @@ CreateEntryPoint::CreateEntryPoint(void) :
 void CreateEntryPoint::run(Vec<ModuleSymbol*>* modules) {
   currentLineno = -1;
 
-  // SJD: Can't do this when dtString is defined because
-  // prelude hasn't been made yet.  Need to do it after.
-  dtString->defaultConstructor =
-    dynamic_cast<FnSymbol*>(Symboltable::lookupInternal("_init_string"));
-
   forv_Vec(ModuleSymbol, mod, *modules) {
     if (mod->modtype == MOD_INTERNAL || 
         !ModuleDefContainsOnlyNestedModules(mod->stmts)) {
@@ -72,8 +67,7 @@ void CreateEntryPoint::run(Vec<ModuleSymbol*>* modules) {
       Symboltable::setCurrentScope(mainModule->modScope);
       mainBody = new BlockStmt();
       DefExpr* maindef = Symboltable::defineFunction("main", NULL, 
-                                                         dtVoid, mainBody, 
-                                                         true);
+                                                     dtVoid, mainBody);
       Symboltable::setCurrentScope(saveScope);
       mainModule->stmts->insertAtTail(new ExprStmt(maindef));
       mainFn = dynamic_cast<FnSymbol*>(maindef->sym);

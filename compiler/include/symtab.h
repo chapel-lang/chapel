@@ -50,11 +50,6 @@ class Symboltable {
                                 scopeType scope = SCOPE_PRELUDE);
   static TypeSymbol* lookupInternalType(char* name);
 
-  static Expr* startLetExpr(void);
-  static Expr* finishLetExpr(Expr* let_expr, AList<Stmt>* stmts, 
-                             Expr* inner_expr);
-  static BlockStmt* startCompoundStmt(void);
-  static BlockStmt* finishCompoundStmt(BlockStmt* blkstmt, AList<Stmt>* body);
   static ModuleSymbol* startModuleDef(char* name, modType modtype = MOD_USER);
   static DefExpr* finishModuleDef(ModuleSymbol* mod, AList<Stmt>* def);
   static DefExpr* Symboltable::defineParam(paramType tag, char* ident,
@@ -71,25 +66,21 @@ class Symboltable {
                                                   consType constag);
   static PrimitiveType* Symboltable::definePrimitiveType(char* name, char* cname, Expr* initExpr = NULL);
   static Type* Symboltable::defineBuiltinType(char* name, char* cname, Type* newType);
-  static FnSymbol* startFnDef(FnSymbol* fnsym, bool noparens = false);
+  static FnSymbol* startFnDef(FnSymbol* fnsym);
   static void continueFnDef(FnSymbol* fnsym, AList<DefExpr>* formals, 
                             Type* retType, bool isRef = false, Expr *whereExp = NULL);
-  static FnSymbol* finishFnDef(FnSymbol* fnsym, BlockStmt* body, 
-                               bool isExtern = true);
+  static FnSymbol* finishFnDef(FnSymbol* fnsym, BlockStmt* body);
   static DefExpr* defineFunction(char* name, AList<DefExpr>* formals, 
-                                 Type* retType, BlockStmt* body, 
-                                 bool isExtern = false);
+                                 Type* retType, BlockStmt* body);
 
-  static DefExpr* defineStructType(char* name, Type* type,
-                                   SymScope* scope, AList<Stmt>* def);
-  static ForallExpr* startForallExpr(AList<Expr>* indices, 
-                                     AList<Expr>* iterators);
-  static ForallExpr* finishForallExpr(ForallExpr* expr, 
-                                      Expr* innerExpr = NULL);
-  static ForLoopStmt* startForLoop(ForLoopStmtTag forLoopStmtTag,
+  static DefExpr* defineStructType(char* name, Type* type, AList<Stmt>* def);
+  static ForallExpr* defineForallExpr(AList<Expr>* indices, 
+                                      AList<Expr>* iterators,
+                                      Expr* innerExpr);
+  static ForLoopStmt* defineForLoop(ForLoopStmtTag forLoopStmtTag,
                                    AList<Expr>* indices,
-                                   AList<Expr>* iterators);
-  static ForLoopStmt* finishForLoop(ForLoopStmt* stmt, Stmt* innerStmt);
+                                   AList<Expr>* iterators,
+                                   BlockStmt* innerStmt);
 
   static void print(FILE* outfile = stderr);
   static void dump(FILE* outfile = stderr);

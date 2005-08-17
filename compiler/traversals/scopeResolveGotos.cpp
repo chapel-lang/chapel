@@ -72,7 +72,7 @@ void ScopeResolveGotos::preProcessStmt(Stmt* stmt) {
     }
   } else if (dynamic_cast<UnresolvedSymbol*>(goto_stmt->label)) {
     Symbol* new_symbol = Symboltable::lookup(goto_stmt->label->name);
-    if (typeid(*new_symbol) == typeid(LabelSymbol)) {
+    if (dynamic_cast<LabelSymbol*>(new_symbol)) {
       goto_stmt->label = new_symbol;
     } else {
       INT_FATAL(stmt, "Unable to resolve goto label");

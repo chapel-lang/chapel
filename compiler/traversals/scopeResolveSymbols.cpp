@@ -36,6 +36,16 @@ ScopeResolveSymbols::ScopeResolveSymbols() {
 
 
 void ScopeResolveSymbols::postProcessExpr(Expr* expr) {
+
+  // This should be moved to a check semantics post-resolve/pre-analysis
+  if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
+    if (Variable* baseExpr = dynamic_cast<Variable*>(call->baseExpr)) {
+      if (dynamic_cast<ModuleSymbol*>(baseExpr->var)) {
+        USR_FATAL(call, "Illegal call of module %s", baseExpr->var->name);
+      }
+    }
+  }
+
   if (Variable* sym_use = dynamic_cast<Variable*>(expr)) {
     if (sym_use->var->isUnresolved) {
       char* name = sym_use->var->name;

@@ -25,10 +25,9 @@ handle_return_expr(Expr *e, Symbol *lvalue) {
 static void
 replace_return(BaseAST *ast, Symbol *lvalue) {
   if (ReturnStmt *ret = dynamic_cast<ReturnStmt *>(ast)) {
-    Symboltable::pushScope(SCOPE_LOCAL);
     AList<Stmt> *body = handle_return_expr(ret->expr, lvalue);
     body->insertAtTail(new ReturnStmt(NULL));
-    ast = new BlockStmt(body, Symboltable::popScope());
+    ast = new BlockStmt(body);
     ret->replace((Stmt*)ast);
     return;
   }
@@ -58,8 +57,6 @@ void BuildLValueFunctions::preProcessStmt(Stmt* stmt) {
   def_expr->exprType = NULL;
   fn->name = old_fn->name;
   fn->cname = glomstrings(2, "_setter_", old_fn->cname);
-  Symboltable::undefineInScope(fn, fn->parentScope);
-  Symboltable::defineInScope(fn, fn->parentScope);
   old_expr_stmt->insertAfter(expr_stmt);
   Symboltable::setCurrentScope(fn->paramScope);
   TypeSymbol *setterTypeSymbol = 

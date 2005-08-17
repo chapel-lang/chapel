@@ -152,6 +152,16 @@ void Expr::traverseExpr(Traversal* traversal) {
 }
 
 
+ASTContext Expr::getContext(void) {
+  ASTContext context;
+  context.parentScope = parentScope;
+  context.parentSymbol = parentSymbol;
+  context.parentStmt = parentStmt;
+  context.parentExpr = parentExpr;
+  return context;
+}
+
+
 void Expr::callReplaceChild(BaseAST* new_ast) {
   if (parentExpr) {
     parentExpr->replaceChild(this, new_ast);
@@ -533,9 +543,6 @@ DefExpr::DefExpr(Symbol* initSym, Expr* initInit, Expr* initExprType) :
 {
   if (sym) {
     sym->defPoint = this;
-  }
-  if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
-    fn->paramScope->setContext(NULL, fn, this);
   }
   if (init && init->parentSymbol) {
     INT_FATAL(this, "DefExpr initialized with init already in tree");
@@ -925,7 +932,7 @@ void CallExpr::codegen(FILE* outfile) {
   ///
 
   if (Variable* variable = dynamic_cast<Variable*>(baseExpr)) {
-    if (variable->var == Symboltable::lookupInternal("_UnionWriteStopgap")) {
+    if (!strcmp(variable->var->name, "_UnionWriteStopgap")) {
       ClassType* unionType = dynamic_cast<ClassType*>(argList->only()->typeInfo());
       fprintf(outfile, "if (_UNION_CHECK_QUIET(val, _%s_union_id__uninitialized)) {\n",
               unionType->symbol->cname);
@@ -953,7 +960,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, "_chpl_write_string(\"impossible\"); exit(0);\n");
       fprintf(outfile, "}\n");
       return;
-    } else if (variable->var == Symboltable::lookupInternal("_EnumWriteStopgap")) {
+    } else if (!strcmp(variable->var->name, "_EnumWriteStopgap")) {
       EnumType* enumType = dynamic_cast<EnumType*>(argList->only()->typeInfo());
       fprintf(outfile, "switch (val) {\n");
       for_alist(DefExpr, constant, enumType->constants) {
@@ -965,7 +972,7 @@ void CallExpr::codegen(FILE* outfile) {
       }
       fprintf(outfile, "}\n");
       return;
-    } else if (variable->var == Symboltable::lookupInternal("_EnumReadStopgap")) {
+    } else if (!strcmp(variable->var->name, "_EnumReadStopgap")) {
       EnumType* enumType = dynamic_cast<EnumType*>(argList->only()->typeInfo());
       fprintf(outfile, "char* inputString = NULL;\n");
       fprintf(outfile, "_chpl_read_string(&inputString);\n");
@@ -981,7 +988,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, "printError(message);\n");
       fprintf(outfile, "}\n");
       return;
-    } else if (!(strcmp(variable->var->name, "_chpl_alloc"))) {
+    } else if (!strcmp(variable->var->name, "_chpl_alloc")) {
       Type *t = variable->parentFunction()->retType;
       fprintf(outfile, "(%s)_chpl_malloc(1, sizeof(_", t->symbol->cname);
       t->codegen(outfile);
@@ -1216,13 +1223,12 @@ void ReduceExpr::codegen(FILE* outfile) {
 
 ForallExpr::ForallExpr(AList<DefExpr>* initIndices,
                        AList<Expr>* initIterators,
-                       Expr* initInnerExpr,
-                       SymScope* initIndexScope) :
+                       Expr* initInnerExpr) :
   Expr(EXPR_FORALL),
   indices(initIndices),
   iterators(initIterators),
   innerExpr(initInnerExpr),
-  indexScope(initIndexScope)
+  indexScope(NULL)
 { }
 
 
@@ -1235,15 +1241,9 @@ void ForallExpr::verify() {
 
 ForallExpr*
 ForallExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  Symboltable::pushScope(SCOPE_FORALLEXPR);
-  AList<DefExpr>* indicesCopy = CLONE_INTERNAL(indices);
-  AList<Expr>* iteratorsCopy = CLONE_INTERNAL(iterators);
-  Expr* innerExprCopy = CLONE_INTERNAL(innerExpr);
-  SymScope* indexScopeCopy = Symboltable::popScope();
-  ForallExpr* _this =  new ForallExpr(indicesCopy, iteratorsCopy,
-                                      innerExprCopy, indexScopeCopy);
-  _this->indexScope->setContext(NULL, NULL, _this);
-  return _this;
+  return new ForallExpr(CLONE_INTERNAL(indices),
+                        CLONE_INTERNAL(iterators),
+                        CLONE_INTERNAL(innerExpr));
 }
 
 
@@ -1262,16 +1262,13 @@ void ForallExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 void ForallExpr::traverseExpr(Traversal* traversal) {
   SymScope* saveScope = NULL;
-
-  TRAVERSE(iterators, traversal, false);
-  if (indexScope) {
+  if (indexScope)
     saveScope = Symboltable::setCurrentScope(indexScope);
-  }
   TRAVERSE(indices, traversal, false);
+  TRAVERSE(iterators, traversal, false);
   TRAVERSE(innerExpr, traversal, false);
-  if (saveScope) {
+  if (saveScope)
     Symboltable::setCurrentScope(saveScope);
-  }
 }
 
 
@@ -1302,7 +1299,6 @@ void ForallExpr::codegen(FILE* outfile) {
 }
 
 
-
 void initExpr(void) {
   dtNil->defaultValue = new Variable(gNil);
 }
@@ -1311,7 +1307,8 @@ void initExpr(void) {
 LetExpr::LetExpr(AList<DefExpr>* init_symDefs, Expr* init_innerExpr) :
   Expr(EXPR_LET),
   symDefs(init_symDefs),
-  innerExpr(init_innerExpr)
+  innerExpr(init_innerExpr),
+  letScope(NULL)
 { }
 
 
@@ -1322,40 +1319,9 @@ void LetExpr::verify() {
 }
 
 
-void LetExpr::setInnerExpr(Expr* expr) {
-  innerExpr = expr;
-}
-
-
-void LetExpr::setSymDefs(AList<Stmt>* stmts) {
-  if (!symDefs->isEmpty()) {
-    INT_FATAL(this, "Setting symDefs, but it wasn't empty");
-  }
-  for_alist(Stmt, stmt, stmts) {
-    if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {
-      if (DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr)) {
-        symDefs->insertAtTail(defExpr->copy());
-      } else {
-        INT_FATAL(this, "Error in LetExpr::setSymDefs");
-      }
-    } else {
-      INT_FATAL(this, "Error in LetExpr::setSymDefs");
-    }
-  }
-}
-
-
-void LetExpr::setLetScope(SymScope* init_letScope) {
-  letScope = init_letScope;
-}
-
-
 LetExpr*
 LetExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  LetExpr* _this = new LetExpr(COPY_INTERNAL(symDefs),
-                               COPY_INTERNAL(innerExpr));
-  _this->setLetScope(letScope);
-  return _this;
+  return new LetExpr(CLONE_INTERNAL(symDefs), CLONE_INTERNAL(innerExpr));
 }
 
 
@@ -1371,10 +1337,13 @@ void LetExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 void LetExpr::traverseExpr(Traversal* traversal) {
-  SymScope* saveScope = Symboltable::setCurrentScope(letScope);
-  symDefs->traverse(traversal, false);
+  SymScope* saveScope = NULL;
+  if (letScope)
+    saveScope = Symboltable::setCurrentScope(letScope);
+  TRAVERSE(symDefs, traversal, false);
   TRAVERSE(innerExpr, traversal, false);
-  Symboltable::setCurrentScope(saveScope);
+  if (saveScope)
+    Symboltable::setCurrentScope(saveScope);
 }
 
 

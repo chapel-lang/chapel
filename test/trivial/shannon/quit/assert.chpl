@@ -1,3 +1,4 @@
+module test_assert { // SJD: inserted to avoid name conflict with module
 var x : integer = 1;
 
 while (x) {
@@ -6,3 +7,4 @@ while (x) {
 }
 
 writeln("This should never print.");
+}

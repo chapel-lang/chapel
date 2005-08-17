@@ -60,8 +60,6 @@ void SpecializeCallExprs::postProcessStmt(Stmt* stmt) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(exprStmt->expr)) {
       if (Variable* baseVar = dynamic_cast<Variable*>(call->baseExpr)) {
         if (strcmp(baseVar->var->name, "assert") == 0) {
-          BlockStmt* thenStmt = Symboltable::startCompoundStmt();
-
           ExprStmt* writeAssert = genStringWriteExpr("***Error:  Assertion at ");
           AList<Stmt>* thenBody = new AList<Stmt>(writeAssert);
           ExprStmt* writeFilename = genStringWriteExpr(stmt->filename);
@@ -74,8 +72,7 @@ void SpecializeCallExprs::postProcessStmt(Stmt* stmt) {
           thenBody->insertAtTail(writeFailed);
           thenBody->insertAtTail(genWriteln());
           thenBody->insertAtTail(genExit(call->parentFunction()));
-
-          thenStmt = Symboltable::finishCompoundStmt(thenStmt, thenBody);
+          BlockStmt* thenStmt = new BlockStmt(thenBody);
           int length = call->argList->length();
           if (length != 1) {
             USR_FATAL(call->argList, "Assert takes exactly one "

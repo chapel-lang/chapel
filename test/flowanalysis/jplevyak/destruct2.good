@@ -1,4 +1,3 @@
- called from 0 in operator at prelude.v:0
  called from 3 in __init at destruct2.v:1
 __init::self(destruct2.v:1) ( A (destruct2.v:1) )
 function __init destruct2.v:1

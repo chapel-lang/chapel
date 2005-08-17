@@ -78,7 +78,7 @@ class Expr : public BaseAST {
   virtual void traverse(Traversal* traversal, bool atTop = true);
   virtual void traverseDef(Traversal* traversal, bool atTop = true);
   virtual void traverseExpr(Traversal* traversal);
-
+  virtual ASTContext getContext(void);
   virtual Type* typeInfo(void);
   
   virtual bool isParam(void);
@@ -306,8 +306,7 @@ class ForallExpr : public Expr {
 
   ForallExpr(AList<DefExpr>* initIndices,
              AList<Expr>* initIterators,
-             Expr* initInnerExpr = NULL,
-             SymScope* initIndexScope = NULL);
+             Expr* initInnerExpr);
   virtual void verify(void); 
   COPY_DEF(ForallExpr);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -323,22 +322,14 @@ class LetExpr : public Expr {
  public:
   AList<DefExpr>* symDefs;
   Expr* innerExpr;
-
   SymScope* letScope;
 
-  LetExpr(AList<DefExpr>* init_symDefs = new AList<DefExpr>(), 
-          Expr* init_innerExpr = NULL);
+  LetExpr(AList<DefExpr>* init_symDefs, Expr* init_innerExpr);
   virtual void verify(void); 
   COPY_DEF(LetExpr);
-  void setInnerExpr(Expr* expr);
-  void setSymDefs(AList<Stmt>* stmts);
-  void setLetScope(SymScope* init_letScope);
-
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
-
   Type* typeInfo(void);
-
   void print(FILE* outfile);
   void codegen(FILE* outfile);
 };

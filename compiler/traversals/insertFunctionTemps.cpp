@@ -32,19 +32,19 @@ void InsertFunctionTemps::postProcessStmt(Stmt* stmt) {
 
   Vec<Expr*> exprs;
   if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {
-    exprs.add(exprStmt->expr);
+    if (DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr)) {
+      if (dynamic_cast<VarSymbol*>(defExpr->sym)) {
+        exprs.add(defExpr);
+      }
+    } else {
+      exprs.add(exprStmt->expr);
+    }
   } else if (WhileLoopStmt* whileStmt = dynamic_cast<WhileLoopStmt*>(stmt)) {
     exprs.add(whileStmt->condition);
   } else if (ForLoopStmt* forStmt = dynamic_cast<ForLoopStmt*>(stmt)) {
     exprs.add(forStmt->iterators->only());
   } else if (CondStmt* condStmt = dynamic_cast<CondStmt*>(stmt)) {
     exprs.add(condStmt->condExpr);
-  } else if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {
-    if (DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr)) {
-      if (dynamic_cast<VarSymbol*>(defExpr->sym)) {
-        exprs.add(defExpr);
-      }
-    }
   }
 
   Vec<BaseAST*> functions;
@@ -53,12 +53,6 @@ void InsertFunctionTemps::postProcessStmt(Stmt* stmt) {
     collect(expr, &functions);
   }
   if (functions.n >= 2) {
-    BlockStmt* blockStmt = Symboltable::startCompoundStmt();
-    Stmt* copyStmt = stmt->copy(false, NULL, &functions);
-    blockStmt = Symboltable::finishCompoundStmt(blockStmt, 
-                                                new AList<Stmt>(copyStmt));
-    stmt->replace(blockStmt);
-    SymScope* saveScope = Symboltable::setCurrentScope(blockStmt->blkScope);
     forv_Vec(BaseAST, ast, functions) {
       CallExpr* function = dynamic_cast<CallExpr*>(ast);
       if (!function) {
@@ -69,21 +63,20 @@ void InsertFunctionTemps::postProcessStmt(Stmt* stmt) {
       // (and will therefore need to be normalized first).  For
       // example, let expressions.  For these, we call
       // InsertFunctionTemps again on the body of the let expression.
-      if (function->parentScope == copyStmt->parentScope) {
+      if (function->parentScope == stmt->parentScope) {
         if (function->typeInfo() != dtVoid) {
           char* temp_name = glomstrings(2, "_fntemp_", intstring(uid++));
-          Expr* temp_init = function->copy(false, NULL, &functions);
           Type* temp_type = function->typeInfo();
           DefExpr* defExpr =
             Symboltable::defineSingleVarDef(temp_name, temp_type,
-                                            temp_init, VAR_NORMAL, VAR_VAR);
-          copyStmt->insertBefore(new ExprStmt(defExpr));
+                                            NULL, VAR_NORMAL, VAR_VAR);
+          stmt->insertBefore(new ExprStmt(defExpr));
+          stmt->insertBefore(new ExprStmt(new CallExpr(OP_GETSNORM, new Variable(defExpr->sym), function->copy(false, NULL, &functions))));
           VarSymbol* var = dynamic_cast<VarSymbol*>(defExpr->sym);
           var->noDefaultInit = true;
           function->replace(new Variable(var));
         }
       }
     }
-    Symboltable::setCurrentScope(saveScope);
   }
 }

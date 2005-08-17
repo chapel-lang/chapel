@@ -19,8 +19,6 @@ void FilesToAST::run(Vec<ModuleSymbol*>* modules) {
   char* preludePath = glomstrings(2, parserPath, "/prelude.chpl");
   prelude = ParseFile(preludePath, MOD_INTERNAL);
 
-  findInternalTypes();
-
   // parse user files
   Symboltable::doneParsingPreludes();
 
@@ -35,7 +33,6 @@ void FilesToAST::run(Vec<ModuleSymbol*>* modules) {
 
   seqModule = ParseFile(glomstrings(2, chplroot, "/modules/standard/_chpl_seq.chpl"),
                         MOD_STANDARD);
-  dtSequence = Symboltable::lookupInternalType("_seq")->type;
 
   int filenum = 0;
   char* inputFilename = NULL;

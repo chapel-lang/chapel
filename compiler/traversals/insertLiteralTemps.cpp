@@ -67,7 +67,6 @@ static void createTupleBaseType(int size) {
     return;
   }
   SymScope* saveScope = Symboltable::setCurrentScope(commonModule->modScope);
-  Symboltable::pushScope(SCOPE_CLASS);
   AList<Stmt>* decls = new AList<Stmt>();
   Vec<TypeSymbol*> types;
   Vec<VarSymbol*> fields;
@@ -103,8 +102,7 @@ static void createTupleBaseType(int size) {
     Symboltable::finishFnDef(fn, new BlockStmt(body));
     decls->insertAtTail(new ExprStmt(new DefExpr(fn)));
   }
-  SymScope *scope = Symboltable::popScope();
-  DefExpr* def = Symboltable::defineStructType(name, new ClassType(CLASS_RECORD), scope, decls);
+  DefExpr* def = Symboltable::defineStructType(name, new ClassType(CLASS_RECORD), decls);
   commonModule->stmts->insertAtHead(new ExprStmt(def));
   FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("write"));
   ParamSymbol* paramSymbol =

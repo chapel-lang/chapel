@@ -1,4 +1,3 @@
- called from 0 in operator at prelude.v:0
  called from 4 in __init at assign2.v:1
 __init::self(assign2.v:1) ( C (assign2.v:1) )
 badreturn.v:2: 'q' has no type

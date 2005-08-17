@@ -3,18 +3,17 @@
 #include "stmt.h"
 
 
-
-void SimpleNestedFunctionMove::postProcessExpr(Expr* expr) {
-  if (DefExpr* defExpr = dynamic_cast<DefExpr*>(expr)) {
-    if(dynamic_cast<FnSymbol*>(defExpr->sym)){
-      //nested function 
-      if (FnSymbol* encl_func = RemoveNestedFunctions::hasEnclosingFunction(defExpr)) {
-        Stmt* nested_func_copy = defExpr->parentStmt->copy();
-        BlockStmt* encl_function_block = encl_func->body;
-        //move nested function definition to the front of the block
-        encl_function_block->body->insertAtHead(nested_func_copy);
-        defExpr->parentStmt->remove();
-      } 
+void SimpleNestedFunctionMove::postProcessStmt(Stmt* stmt) {
+  if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {
+    if (DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr)) {
+      if(dynamic_cast<FnSymbol*>(defExpr->sym)){
+        //nested function 
+        if (FnSymbol* encl_func = RemoveNestedFunctions::hasEnclosingFunction(defExpr)) {
+          //move nested function definition to the front of the block
+          stmt->remove();
+          encl_func->body->body->insertAtHead(stmt);
+        }
+      }
     }
   }
 }

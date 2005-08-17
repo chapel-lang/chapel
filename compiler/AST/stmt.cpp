@@ -110,6 +110,16 @@ void Stmt::traverseStmt(Traversal* traversal) {
 }
 
 
+ASTContext Stmt::getContext(void) {
+  ASTContext context;
+  context.parentScope = parentScope;
+  context.parentSymbol = parentSymbol;
+  context.parentStmt = parentStmt;
+  context.parentExpr = NULL;
+  return context;
+}
+
+
 void Stmt::callReplaceChild(BaseAST* new_ast) {
   if (parentStmt) {
     parentStmt->replaceChild(this, new_ast);
@@ -219,21 +229,19 @@ void ReturnStmt::codegenStmt(FILE* outfile) {
 }
 
 
-BlockStmt::BlockStmt(AList<Stmt>* init_body, SymScope* init_scope,
-                     blockStmtType init_blockType) :
+BlockStmt::BlockStmt(AList<Stmt>* init_body, blockStmtType init_blockType) :
   Stmt(STMT_BLOCK),
   blockType(init_blockType),
   body(init_body),
-  blkScope(init_scope)
+  blkScope(NULL)
 {}
 
 
-BlockStmt::BlockStmt(Stmt* init_body, SymScope* init_scope,
-                     blockStmtType init_blockType) :
+BlockStmt::BlockStmt(Stmt* init_body, blockStmtType init_blockType) :
   Stmt(STMT_BLOCK),
   blockType(init_blockType),
   body(new AList<Stmt>(init_body)),
-  blkScope(init_scope)
+  blkScope(NULL)
 {}
 
 
@@ -244,28 +252,9 @@ void BlockStmt::verify() {
 }
 
 
-void BlockStmt::addBody(AList<Stmt>* init_body) {
-  if (body->isEmpty()) {
-    body->add(init_body);
-  } else {
-    INT_FATAL(this, "Adding a body to a for loop that already has one");
-  }
-}
-
-
-void BlockStmt::setBlkScope(SymScope* init_blkScope) {
-  blkScope = init_blkScope;
-}
-
-
 BlockStmt*
 BlockStmt::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  Symboltable::pushScope(SCOPE_LOCAL);
-  AList<Stmt>* body_copy = CLONE_INTERNAL(body);
-  SymScope* block_scope = Symboltable::popScope();
-  BlockStmt* block_copy = new BlockStmt(body_copy, block_scope);
-  block_scope->setContext(block_copy);
-  return block_copy;
+  return new BlockStmt(CLONE_INTERNAL(body), blockType);
 }
 
 
@@ -279,14 +268,12 @@ void BlockStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 void BlockStmt::traverseStmt(Traversal* traversal) {
-  SymScope* prevScope = NULL;
-  if (blkScope) {
-    prevScope = Symboltable::setCurrentScope(blkScope);
-  }
-  body->traverse(traversal, false);
-  if (blkScope) {
-    Symboltable::setCurrentScope(prevScope);
-  }
+  SymScope* saveScope = NULL;
+  if (blkScope)
+    saveScope = Symboltable::setCurrentScope(blkScope);
+  TRAVERSE(body, traversal, false);
+  if (saveScope)
+    Symboltable::setCurrentScope(saveScope);
 }
 
 
@@ -405,14 +392,13 @@ void WhileLoopStmt::codegenStmt(FILE* outfile) {
 ForLoopStmt::ForLoopStmt(ForLoopStmtTag initForLoopStmtTag,
                          AList<DefExpr>* initIndices,
                          AList<Expr>* initIterators, 
-                         BlockStmt* initInnerStmt,
-                         SymScope* initIndexScope) :
+                         BlockStmt* initInnerStmt) :
   Stmt(STMT_FORLOOP),
   forLoopStmtTag(initForLoopStmtTag),
   indices(initIndices),
   iterators(initIterators),
   innerStmt(initInnerStmt),
-  indexScope(initIndexScope)
+  indexScope(NULL)
 { }
 
 
@@ -425,12 +411,10 @@ void ForLoopStmt::verify() {
 
 ForLoopStmt*
 ForLoopStmt::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  Symboltable::pushScope(SCOPE_FORLOOP);
-  AList<DefExpr>* indicesCopy = CLONE_INTERNAL(indices);
-  AList<Expr>* iteratorsCopy = CLONE_INTERNAL(iterators);
-  BlockStmt* innerStmtCopy = CLONE_INTERNAL(innerStmt);
-  return new ForLoopStmt(forLoopStmtTag, indicesCopy, iteratorsCopy,
-                         innerStmtCopy, Symboltable::popScope());
+  return new ForLoopStmt(forLoopStmtTag,
+                         CLONE_INTERNAL(indices),
+                         CLONE_INTERNAL(iterators),
+                         CLONE_INTERNAL(innerStmt));
 }
 
 
@@ -449,16 +433,13 @@ void ForLoopStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 void ForLoopStmt::traverseStmt(Traversal* traversal) {
   SymScope* saveScope = NULL;
-
-  TRAVERSE(iterators, traversal, false);
-  if (indexScope) {
+  if (indexScope)
     saveScope = Symboltable::setCurrentScope(indexScope);
-  }
   TRAVERSE(indices, traversal, false);
+  TRAVERSE(iterators, traversal, false);
   TRAVERSE(innerStmt, traversal, false);
-  if (saveScope) {
+  if (saveScope)
     Symboltable::setCurrentScope(saveScope);
-  }
 }
 
 

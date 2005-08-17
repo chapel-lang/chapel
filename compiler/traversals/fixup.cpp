@@ -6,8 +6,9 @@
 #include "symtab.h"
 
 
-Fixup::Fixup(bool init_verifyParents) :
-  verifyParents(init_verifyParents)
+Fixup::Fixup(bool initVerifyParents, bool initInsertHelper) :
+  verifyParents(initVerifyParents),
+  insertHelper(initInsertHelper)
 {
   parentExprs.add(NULL);
   parentStmts.add(NULL);
@@ -37,7 +38,7 @@ void Fixup::preProcessStmt(Stmt* stmt) {
       INT_FATAL(stmt, "Stmt's parentScope is incorrect");
     }
   } else {
-    stmt->parentScope = parentScope;
+    stmt->parentScope = insertHelper ? parentScope : NULL;
   }
 
   if (verifyParents && !stmt->parentSymbol) {
@@ -50,7 +51,7 @@ void Fixup::preProcessStmt(Stmt* stmt) {
       INT_FATAL(stmt, "Stmt's parentSymbol is incorrect");
     }
   } else {
-    stmt->parentSymbol = parentSymbol;
+    stmt->parentSymbol = insertHelper ? parentSymbol : NULL;
   }
 
   Stmt* parentStmt = parentStmts.v[parentStmts.n-1];
@@ -63,7 +64,42 @@ void Fixup::preProcessStmt(Stmt* stmt) {
       INT_FATAL(stmt, "Stmt's parentStmt's parentSymbol is incorrect");
     }
   } else {
-    stmt->parentStmt = parentStmt;
+    stmt->parentStmt = insertHelper ? parentStmt : NULL;
+  }
+
+  if (LabelStmt* labelStmt = dynamic_cast<LabelStmt*>(stmt)) {
+    if (!verifyParents) {
+      if (insertHelper) {
+        Symboltable::define(labelStmt->label);
+      } else {
+        labelStmt->label->parentScope->remove(labelStmt->label);
+      }
+    }
+  }
+
+  if (BlockStmt* blockStmt = dynamic_cast<BlockStmt*>(stmt)) {
+    if (!verifyParents) {
+      if (insertHelper) {
+        if (blockStmt->blkScope &&
+            blockStmt->blkScope->type > SCOPE_MODULE) {
+          INT_FATAL(blockStmt, "Unexpected scope in BlockStmt");
+        }
+        if (!blockStmt->blkScope) {
+          Symboltable::pushScope(SCOPE_LOCAL);
+        }
+      }
+    }
+  }
+
+  if (ForLoopStmt* forStmt = dynamic_cast<ForLoopStmt*>(stmt)) {
+    if (!verifyParents) {
+      if (insertHelper) {
+        if (forStmt->indexScope) {
+          INT_FATAL(forStmt, "Unexpected scope in ForStmt");
+        }
+        Symboltable::pushScope(SCOPE_FORLOOP);
+      }
+    }
   }
 
   parentStmts.add(stmt);
@@ -71,6 +107,32 @@ void Fixup::preProcessStmt(Stmt* stmt) {
 
 
 void Fixup::postProcessStmt(Stmt* stmt) {
+  if (BlockStmt* blockStmt = dynamic_cast<BlockStmt*>(stmt)) {
+    if (!verifyParents) {
+      if (insertHelper) {
+        if (!blockStmt->blkScope) {
+          blockStmt->blkScope = Symboltable::popScope();
+          blockStmt->blkScope->setContext(blockStmt);
+        }
+      } else {
+        Symboltable::removeScope(blockStmt->blkScope);
+        blockStmt->blkScope = NULL;
+      }
+    }
+  }
+
+  if (ForLoopStmt* forStmt = dynamic_cast<ForLoopStmt*>(stmt)) {
+    if (!verifyParents) {
+      if (insertHelper) {
+        forStmt->indexScope = Symboltable::popScope();
+        forStmt->indexScope->setContext(forStmt);
+      } else {
+        Symboltable::removeScope(forStmt->indexScope);
+        forStmt->indexScope = NULL;
+      }
+    }
+  }
+
   parentStmts.pop();
 }
 
@@ -82,7 +144,7 @@ void Fixup::preProcessExpr(Expr* expr) {
       INT_FATAL(expr, "Expr's parentScope is incorrect");
     }
   } else {
-    expr->parentScope = parentScope;
+    expr->parentScope = insertHelper ? parentScope : NULL;
   }
 
   if (verifyParents && !expr->parentSymbol) {
@@ -95,7 +157,7 @@ void Fixup::preProcessExpr(Expr* expr) {
       INT_FATAL(expr, "Expr's parentSymbol is incorrect");
     }
   } else {
-    expr->parentSymbol = parentSymbol;
+    expr->parentSymbol = insertHelper ? parentSymbol : NULL;
   }
 
   Stmt* parentStmt = parentStmts.v[parentStmts.n-1];
@@ -108,7 +170,7 @@ void Fixup::preProcessExpr(Expr* expr) {
       INT_FATAL(expr, "Expr's parentStmt's parentSymbol is incorrect");
     }
   } else {
-    expr->parentStmt = parentStmt;
+    expr->parentStmt = insertHelper ? parentStmt : NULL;
   }
 
   Expr* parentExpr = parentExprs.v[parentExprs.n-1];
@@ -124,11 +186,65 @@ void Fixup::preProcessExpr(Expr* expr) {
       INT_FATAL(expr, "Expr's parentExpr's parentSymbol is incorrect");
     }
   } else {
-    expr->parentExpr = parentExpr;
+    expr->parentExpr = insertHelper ? parentExpr : NULL;
   }
 
   if (DefExpr* def_expr = dynamic_cast<DefExpr*>(expr)) {
+    if (!verifyParents) {
+      if (def_expr->sym && !def_expr->sym->isUnresolved) {
+        if (insertHelper) {
+          Symboltable::define(def_expr->sym);
+        } else {
+          def_expr->sym->parentScope->remove(def_expr->sym);
+        }
+      }
+    }
     defSymbols.add(def_expr->sym);
+
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def_expr->sym)) {
+      if (!verifyParents) {
+        if (insertHelper) {
+          if (fn->paramScope) {
+            INT_FATAL(fn, "Unexpected scope in FnSymbol");
+          }
+          Symboltable::pushScope(SCOPE_PARAM);
+        }
+      }
+    }
+    if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(def_expr->sym)) {
+      if (ClassType* type = dynamic_cast<ClassType*>(typeSym->definition)) {
+        if (!verifyParents) {
+          if (insertHelper) {
+            if (type->structScope) {
+              INT_FATAL(typeSym, "Unexpected scope in FnSymbol");
+            }
+            Symboltable::pushScope(SCOPE_CLASS);
+          }
+        }
+      }
+    }
+  }
+
+  if (LetExpr* letExpr = dynamic_cast<LetExpr*>(expr)) {
+    if (!verifyParents) {
+      if (insertHelper) {
+        if (letExpr->letScope) {
+          INT_FATAL(letExpr, "Unexpected scope in Let Expr");
+        }
+        Symboltable::pushScope(SCOPE_LETEXPR);
+      }
+    }
+  }
+
+  if (ForallExpr* forallExpr = dynamic_cast<ForallExpr*>(expr)) {
+    if (!verifyParents) {
+      if (insertHelper) {
+        if (forallExpr->indexScope) {
+          INT_FATAL(forallExpr, "Unexpected scope in Forall Expr");
+        }
+        Symboltable::pushScope(SCOPE_FORALLEXPR);
+      }
+    }
   }
 
   parentExprs.add(expr);
@@ -139,6 +255,58 @@ void Fixup::postProcessExpr(Expr* expr) {
   if (dynamic_cast<DefExpr*>(expr)) {
     defSymbols.pop();
   }
+
+  if (LetExpr* letExpr = dynamic_cast<LetExpr*>(expr)) {
+    if (!verifyParents) {
+      if (insertHelper) {
+        letExpr->letScope = Symboltable::popScope();
+        letExpr->letScope->setContext(NULL, NULL, letExpr);
+      } else {
+        Symboltable::removeScope(letExpr->letScope);
+        letExpr->letScope = NULL;
+      }
+    }
+  }
+
+  if (ForallExpr* forallExpr = dynamic_cast<ForallExpr*>(expr)) {
+    if (!verifyParents) {
+      if (insertHelper) {
+        forallExpr->indexScope = Symboltable::popScope();
+        forallExpr->indexScope->setContext(NULL, NULL, forallExpr);
+      } else {
+        Symboltable::removeScope(forallExpr->indexScope);
+        forallExpr->indexScope = NULL;
+      }
+    }
+  }
+
+  if (DefExpr* defExpr = dynamic_cast<DefExpr*>(expr)) {
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(defExpr->sym)) {
+      if (!verifyParents) {
+        if (insertHelper) {
+          fn->paramScope = Symboltable::popScope();
+          fn->paramScope->setContext(NULL, fn, NULL);
+        } else {
+          Symboltable::removeScope(fn->paramScope);
+          fn->paramScope = NULL;
+        }
+      }
+    }
+    if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(defExpr->sym)) {
+      if (ClassType* type = dynamic_cast<ClassType*>(typeSym->definition)) {
+        if (!verifyParents) {
+          if (insertHelper) {
+            type->structScope = Symboltable::popScope();
+            type->structScope->setContext(NULL, typeSym, NULL);
+          } else {
+            Symboltable::removeScope(type->structScope);
+            type->structScope = NULL;
+          }
+        }
+      }
+    }
+  }
+
   parentExprs.pop();
 }
 
@@ -167,6 +335,8 @@ void Fixup::run(Vec<ModuleSymbol*>* modules) {
     mod->startTraversal(this);
     parentSymbols.pop();
   }
+  if (!verifyParents)
+    findInternalTypes();
 }
 
 
@@ -195,6 +365,46 @@ void fixup(BaseAST* ast, BaseAST* ref) {
     ast->parentScope = ref->parentScope;
     if (ast->parentScope == NULL) {
       ast->parentScope = Symboltable::getCurrentScope();
+    }
+    TRAVERSE(ast, fixup, true);
+  }
+}
+
+
+void insertHelper(BaseAST* ast, ASTContext context) {
+  if (context.parentSymbol) {
+    Fixup* fixup = new Fixup();
+    fixup->parentSymbols.add(context.parentSymbol);
+    fixup->parentStmts.add(context.parentStmt);
+    fixup->parentExprs.add(context.parentExpr);
+    ast->parentScope = context.parentScope;
+    if (ast->parentScope == NULL) {
+      ast->parentScope = Symboltable::getCurrentScope();
+    }
+    TRAVERSE(ast, fixup, true);
+  }  
+}
+
+
+void removeHelper(BaseAST* ast) {
+  Symbol* parentSymbol = NULL;
+  Stmt* parentStmt = NULL;
+  Expr* parentExpr = NULL;
+  if (Stmt* stmt = dynamic_cast<Stmt*>(ast)) {
+    parentStmt = stmt->parentStmt;
+    parentSymbol = stmt->parentSymbol;
+  } else if (Expr* expr = dynamic_cast<Expr*>(ast)) {
+    parentExpr = expr->parentExpr;
+    parentStmt = expr->parentStmt;
+    parentSymbol = expr->parentSymbol;
+  }
+  if (parentSymbol) {
+    Fixup* fixup = new Fixup(false, false);
+    fixup->parentSymbols.add(parentSymbol);
+    fixup->parentStmts.add(parentStmt);
+    fixup->parentExprs.add(parentExpr);
+    if (!ast->parentScope) {
+      INT_FATAL(ast, "Removing AST without scope");
     }
     TRAVERSE(ast, fixup, true);
   }

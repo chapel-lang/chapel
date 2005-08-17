@@ -63,7 +63,6 @@ static void build_constructor(ClassType* structType) {
 
   Symboltable::continueFnDef(fn, args, structType);
 
-  BlockStmt* body = Symboltable::startCompoundStmt();
   AList<Stmt>* stmts = new AList<Stmt>;
   fn->_this = new VarSymbol("this", structType);
   dynamic_cast<VarSymbol*>(fn->_this)->noDefaultInit = true;
@@ -81,9 +80,8 @@ static void build_constructor(ClassType* structType) {
   structType->buildConstructorBody(stmts, fn->_this, args);
 
   stmts->insertAtTail(new ReturnStmt(new Variable(fn->_this)));
-  body = Symboltable::finishCompoundStmt(body, stmts);
-  DefExpr* fn_def =
-    new DefExpr(Symboltable::finishFnDef(fn, body));
+  BlockStmt* body = new BlockStmt(stmts);
+  DefExpr* fn_def = new DefExpr(Symboltable::finishFnDef(fn, body));
   structType->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(fn_def));
   structType->methods.add(fn);
   if (structType->symbol->hasPragma("codegen data")) {
@@ -232,7 +230,6 @@ static void build_record_assignment_function(ClassType* structType) {
   Type *ret_type = analyzeAST ? dtUnknown : dtVoid;
   Symboltable::continueFnDef(fn, args, ret_type);
   AList<Stmt>* body = new AList<Stmt>();
-  Symboltable::pushScope(SCOPE_LOCAL);
   forv_Vec(Symbol, tmp, structType->fields) {
     Expr* left = new MemberAccess(new Variable(_arg1), tmp);
     Expr* right = new MemberAccess(new Variable(arg2), tmp);
@@ -242,7 +239,7 @@ static void build_record_assignment_function(ClassType* structType) {
   
   if (analyzeAST)
     body->insertAtTail(new ReturnStmt(new Variable(arg2)));
-  BlockStmt* block_stmt = new BlockStmt(body, Symboltable::popScope());
+  BlockStmt* block_stmt = new BlockStmt(body);
   DefExpr* def = new DefExpr(Symboltable::finishFnDef(fn, block_stmt));
   structType->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def));
   if (f_equal_method) {
@@ -285,9 +282,8 @@ static void buildDefaultIOFunctions(Type* type) {
       fn->cname = glomstrings(3, "_auto_", type->symbol->name, "_write");
       ParamSymbol* arg = new ParamSymbol(PARAM_BLANK, "val", type);
       Symboltable::continueFnDef(fn, new AList<DefExpr>(new DefExpr(arg)), dtVoid);
-      Symboltable::pushScope(SCOPE_LOCAL);
       AList<Stmt>* body = type->buildDefaultWriteFunctionBody(arg);
-      BlockStmt* block_stmt = new BlockStmt(body, Symboltable::popScope());
+      BlockStmt* block_stmt = new BlockStmt(body);
       DefExpr* def = new DefExpr(Symboltable::finishFnDef(fn, block_stmt));
       type->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def));
     }
@@ -309,9 +305,8 @@ static void buildDefaultIOFunctions(Type* type) {
       fn->cname = glomstrings(3, "_auto_", type->symbol->name, "_read");
       ParamSymbol* arg = new ParamSymbol(PARAM_INOUT, "val", type);
       Symboltable::continueFnDef(fn, new AList<DefExpr>(new DefExpr(arg)), dtVoid);
-      Symboltable::pushScope(SCOPE_LOCAL);
       AList<Stmt>* body = type->buildDefaultReadFunctionBody(arg);
-      BlockStmt* block_stmt = new BlockStmt(body, Symboltable::popScope());
+      BlockStmt* block_stmt = new BlockStmt(body);
       DefExpr* def = new DefExpr(Symboltable::finishFnDef(fn, block_stmt));
       type->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def));
     }

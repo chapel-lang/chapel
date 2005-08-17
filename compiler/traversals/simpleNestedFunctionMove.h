@@ -6,6 +6,6 @@
 
 class SimpleNestedFunctionMove : public Traversal {
 public:
-  void postProcessExpr(Expr* expr);
+  void postProcessStmt(Stmt* stmt);
 };
 #endif 

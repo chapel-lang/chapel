@@ -149,7 +149,6 @@
 %type <pexprls> expr_ls nonempty_expr_ls tuple_inner_type_ls
 %type <pdefexpr> formal enum_item
 %type <pdefexprls> formal_ls opt_formal_ls enum_ls
-%type <pforallexpr> forallExpr
 
 %type <pstmt> select_stmt label_stmt goto_stmt break_stmt continue_stmt
 %type <pstmt> usertype_decl type_decl fn_decl struct_decl mod_decl
@@ -309,14 +308,9 @@ atomic_cobegin:
 
 
 block_stmt:
-  atomic_cobegin TLCBR
+  atomic_cobegin TLCBR stmt_ls TRCBR
     {
-      $<pblockstmt>$ = Symboltable::startCompoundStmt();
-    }
-                       stmt_ls TRCBR
-    {
-      $$ = Symboltable::finishCompoundStmt($<pblockstmt>3, $4);
-      $$->blockType = $1;
+      $$ = new BlockStmt($3, $1);
     }
 ;
 
@@ -324,7 +318,7 @@ block_stmt:
 empty_stmt:
   TSEMI
     {
-      $$ = Symboltable::finishCompoundStmt(Symboltable::startCompoundStmt(), NULL);
+      $$ = new BlockStmt();
     }
 ;
 
@@ -352,52 +346,34 @@ for_loop_stmt_tag:
 
 
 forloop:
-  for_loop_stmt_tag nonempty_expr_ls TIN nonempty_expr_ls
-    { 
-      $<pforloopstmt>$ = Symboltable::startForLoop($1, $2, $4);
+  for_loop_stmt_tag nonempty_expr_ls TIN nonempty_expr_ls block_stmt
+    {
+      $$ = Symboltable::defineForLoop($1, $2, $4, $5);
     }
-                                       block_stmt
+| for_loop_stmt_tag nonempty_expr_ls TIN nonempty_expr_ls TDO stmt
     { 
-      $$ = Symboltable::finishForLoop($<pforloopstmt>5, $6);
+      $$ = Symboltable::defineForLoop($1, $2, $4, new BlockStmt($6));
     }
-| for_loop_stmt_tag nonempty_expr_ls TIN nonempty_expr_ls
+| TLSBR nonempty_expr_ls TIN nonempty_expr_ls TRSBR stmt
     { 
-      $<pforloopstmt>$ = Symboltable::startForLoop($1, $2, $4);
-    }
-                                       TDO stmt
-    { 
-      $$ = Symboltable::finishForLoop($<pforloopstmt>5, $7);
-    }
-| TLSBR nonempty_expr_ls TIN nonempty_expr_ls TRSBR
-    { 
-      $<pforloopstmt>$ = Symboltable::startForLoop(FORLOOPSTMT_FORALL, $2, $4);
-    }
-                                 stmt
-    { 
-      $$ = Symboltable::finishForLoop($<pforloopstmt>6, $7);
+      $$ = Symboltable::defineForLoop(FORLOOPSTMT_FORALL, $2, $4, new BlockStmt($6));
     }
 ;
 
 
 whileloop:
-TWHILE expr TDO 
+TWHILE expr TDO stmt
     {
-      $<pblockstmt>$ = Symboltable::startCompoundStmt();
+      $$ = new WhileLoopStmt(true, $2, new BlockStmt($4));
     }
-                stmt
+| TDO stmt TWHILE expr TSEMI
     {
-      $$ = new WhileLoopStmt(true, $2, Symboltable::finishCompoundStmt($<pblockstmt>4, new AList<Stmt>($5)));
-    }
-| TDO
-    {
-      $<pblockstmt>$ = Symboltable::startCompoundStmt();
-    }
-      stmt TWHILE expr TSEMI
-    {
-      $$ = new WhileLoopStmt(false, $5, Symboltable::finishCompoundStmt($<pblockstmt>2, new AList<Stmt>($3)));
+      $$ = new WhileLoopStmt(false, $4, new BlockStmt($2));
     }
 | TWHILE expr block_stmt
-    { $$ = new WhileLoopStmt(true, $2, $3); }
+    {
+      $$ = new WhileLoopStmt(true, $2, $3);
+    }
 ;
 
 
@@ -409,11 +385,11 @@ loop:
 
 if_stmt:
   TIF expr block_stmt %prec TNOELSE
-    { $$ = new CondStmt($2, dynamic_cast<BlockStmt*>($3)); }
+    { $$ = new CondStmt($2, $3); }
 | TIF expr TTHEN stmt %prec TNOELSE
     { $$ = new CondStmt($2, new BlockStmt($4)); }
 | TIF expr block_stmt TELSE stmt
-    { $$ = new CondStmt($2, dynamic_cast<BlockStmt*>($3), new BlockStmt($5)); }
+    { $$ = new CondStmt($2, $3, new BlockStmt($5)); }
 | TIF expr TTHEN stmt TELSE stmt
     { $$ = new CondStmt($2, new BlockStmt($4), new BlockStmt($6)); }
 ;
@@ -474,23 +450,16 @@ mod_decl:
 
 
 fn_decl:
-  fn_tag function
+  fn_tag function opt_formal_ls fnretref fnrettype where function_body_stmt
     {
-      $<pfnsym>$ = Symboltable::startFnDef($2);
-      $<pfnsym>$->fnClass = $1;
-    }
-                  opt_formal_ls fnretref fnrettype where
-    {
-      if (!$4) {
-        $4 = new AList<DefExpr>();
-        $<pfnsym>3->noparens = true;
+      $2->fnClass = $1;
+      if (!$3) {
+        $3 = new AList<DefExpr>();
+        $2->noparens = true;
       }
-      Symboltable::continueFnDef($<pfnsym>3, $4, dtUnknown, $5, $7);
-    }
-                                                         function_body_stmt
-    {
-      DefExpr* def = new DefExpr(Symboltable::finishFnDef($<pfnsym>3, $9), NULL, $6);
-      $$ = new ExprStmt(def);
+      Symboltable::continueFnDef($2, $3, dtUnknown, $4, $6);
+      $2 = Symboltable::finishFnDef($2, $7);
+      $$ = new ExprStmt(new DefExpr($2, NULL, $5));
     }
 ;
 
@@ -544,14 +513,9 @@ class_record_union:
 
 
 struct_decl:
-  class_record_union pragma_ls identifier TLCBR
+  class_record_union pragma_ls identifier TLCBR decl_ls TRCBR
     {
-      Symboltable::pushScope(SCOPE_CLASS);
-    }
-                                                decl_ls TRCBR
-    {
-      SymScope *scope = Symboltable::popScope();
-      DefExpr* def = Symboltable::defineStructType($3, $1, scope, $6);
+      DefExpr* def = Symboltable::defineStructType($3, $1, $5);
       def->sym->copyPragmas(*$2);
       $$ = new ExprStmt(def);
     }
@@ -670,12 +634,10 @@ var_const_param:
 record_tuple_inner_type:
   record_inner_var_ls TRP
     {
-      SymScope *scope = Symboltable::popScope();
-      $$ = Symboltable::defineStructType(glomstrings(2, "_anon_record", intstring(anon_record_uid++)), new ClassType(CLASS_RECORD), scope, $1);
+      $$ = Symboltable::defineStructType(glomstrings(2, "_anon_record", intstring(anon_record_uid++)), new ClassType(CLASS_RECORD), $1);
     }
 | tuple_inner_type_ls TRP
     {
-      Symboltable::popScope();
       char *tupleName = glomstrings(2, "_tuple", intstring($1->length()));
       $$ = new CallExpr(tupleName, $1);
     }
@@ -683,22 +645,13 @@ record_tuple_inner_type:
 
 
 record_tuple_type:
-  TRECORD TLCBR
+  TRECORD TLCBR decl_ls TRCBR
     {
-      Symboltable::pushScope(SCOPE_CLASS);
+      $$ = Symboltable::defineStructType(glomstrings(2, "_anon_record", intstring(anon_record_uid++)), new ClassType(CLASS_RECORD), $3);
     }
-                decl_ls TRCBR
+| TLP record_tuple_inner_type
     {
-      SymScope *scope = Symboltable::popScope();
-      $$ = Symboltable::defineStructType(glomstrings(2, "_anon_record", intstring(anon_record_uid++)), new ClassType(CLASS_RECORD), scope, $4);
-    }
-| TLP
-    {
-      Symboltable::pushScope(SCOPE_CLASS);
-    }
-      record_tuple_inner_type
-    {
-      $$ = $3;
+      $$ = $2;
     }
 ;
 
@@ -813,7 +766,7 @@ formal:
       for_alist(DefExpr, x, $2) {
         stmts->insertAtTail(new ExprStmt(x));
       }
-      Symboltable::defineStructType(NULL, t, Symboltable::getCurrentScope(), stmts);
+      Symboltable::defineStructType(NULL, t, stmts);
       $$ = Symboltable::defineParam(PARAM_IN, "<anonymous>", NULL, NULL);
       $$->sym->type = t;
       t->isPattern = true;
@@ -1033,12 +986,6 @@ type:
 ;
 
 
-forallExpr:
-  TLSBR nonempty_expr_ls TIN nonempty_expr_ls TRSBR
-    { $$ = Symboltable::startForallExpr($2, $4); }
-;
-
-
 pragma_ls:
     { $$ = new Vec<char*>(); }
 | pragma_ls pragma
@@ -1190,13 +1137,18 @@ if_expr:
 expr: 
   atom
 | TNIL
-    { $$ = new Variable(Symboltable::lookupInternal("nil", SCOPE_INTRINSIC)); }
+    { $$ = new Variable(gNil); }
 | TUNSPECIFIED
-    { $$ = new Variable(Symboltable::lookupInternal("_", SCOPE_INTRINSIC)); }
-| TLET
-    { $<pexpr>$ = Symboltable::startLetExpr(); }
-       var_decl_inner_ls TIN expr
-    { $$ = Symboltable::finishLetExpr($<pexpr>2, $3, $5); }
+    { $$ = new Variable(gUnspecified); }
+| TLET var_decl_inner_ls TIN expr
+    {
+      AList<DefExpr>* symDefs = new AList<DefExpr>();
+      for_alist(Stmt, stmt, $2) {
+        ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt);
+        symDefs->insertAtTail(dynamic_cast<DefExpr*>(exprStmt->expr));
+      }
+      $$ = new LetExpr(symDefs, $4);
+    }
 | reduction %prec TREDUCE
 | expr TCOLON type
     {
@@ -1209,8 +1161,8 @@ expr:
 | range %prec TDOTDOT
 | if_expr
 | seq_expr
-| forallExpr expr %prec TRSBR
-    { $$ = Symboltable::finishForallExpr($1, $2); }
+| TLSBR nonempty_expr_ls TIN nonempty_expr_ls TRSBR expr %prec TRSBR
+    { $$ = Symboltable::defineForallExpr($2, $4, $6); }
 | TPLUS expr %prec TUPLUS
     { $$ = new CallExpr(OP_UNPLUS, $2); }
 | TMINUS expr %prec TUMINUS
@@ -1302,6 +1254,7 @@ identifier:
 
 
 opt_identifier:
+  /* empty */
     { $$ = NULL; }
 | identifier
 ;

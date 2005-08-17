@@ -33,6 +33,7 @@ class Stmt : public BaseAST {
   virtual void traverse(Traversal* traversal, bool atTop = true);
   virtual void traverseDef(Traversal* traversal, bool atTop = true);
   virtual void traverseStmt(Traversal* traversal);
+  virtual ASTContext getContext(void);
   FnSymbol* parentFunction();
 };
 #define forv_Stmt(_p, _v) forv_Vec(Stmt, _p, _v)
@@ -76,22 +77,16 @@ class BlockStmt : public Stmt {
  public:
   blockStmtType blockType;
   AList<Stmt>* body;
-
   SymScope* blkScope;
 
   BlockStmt::BlockStmt(AList<Stmt>* init_body = new AList<Stmt>(), 
-                       SymScope* init_scope = NULL, 
                        blockStmtType init_blockType = BLOCK_NORMAL);
   BlockStmt::BlockStmt(Stmt* init_body,
-                       SymScope* init_scope = NULL, 
                        blockStmtType init_blockType = BLOCK_NORMAL);
   virtual void verify(void);
   COPY_DEF(BlockStmt);
-  void addBody(AList<Stmt>* init_body);
-  void setBlkScope(SymScope* init_blkScope);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseStmt(Traversal* traversal);
-
   void print(FILE* outfile);
   void codegenStmt(FILE* outfile);
 };
@@ -133,8 +128,7 @@ class ForLoopStmt : public Stmt {
   ForLoopStmt(ForLoopStmtTag initForLoopStmtTag,
               AList<DefExpr>* initIndices,
               AList<Expr>* initIterators,
-              BlockStmt* initInnerStmt = NULL,
-              SymScope* initIndexScope = NULL);
+              BlockStmt* initInnerStmt);
   virtual void verify(void);
   COPY_DEF(ForLoopStmt);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
