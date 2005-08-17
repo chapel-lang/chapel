@@ -43035,3 +43035,34 @@ Added files:
 	chapel/test/ssca/ssca2/: ssca2.blc-hack.chpl ssca2.blc.chpl 
 	                         ssca2.blc.init.chpl ssca2.origpar.chpl 
 
+---------------------------------------------------------------------------
+
+08/17/05 13:31:42 -- bradc
+
+Log message:
+	During a particularly dull phone conference, I started
+	dinking around with implementing the HPC Challenge
+	random access benchmark in Chapel for fun, based on
+	the web specification at:
+	
+	    http://icl.cs.utk.edu/projectsfiles/hpcc/RandomAccess/
+	
+	I'm not certain that I'm generating the pseudo-random
+	inputs appropriately, but otherwise, I think this is on
+	the right track.  There are three versions, corresponding
+	to the three ways that they say it should be written:
+	
+	- randomaccess-local.chpl : a uni-locale implementation
+	- randomaccess-redundant.chpl : the same implementation
+	    run on all locales simultaneously (mmmaybe... depending
+	    on how you interpret "forall l in Locales ...")
+	- randomaccess-distributed.chpl : the main version one
+	    would care about in which the table is spread across
+	    all the processors (in this example, using the UMA
+	    distribution).
+
+Added files:
+	chapel/test/hpcc/: NOTEST README randomaccess-distributed.chpl 
+	                   randomaccess-local.chpl 
+	                   randomaccess-redundant.chpl 
+
