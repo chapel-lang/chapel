@@ -43021,3 +43021,17 @@ Modified files:
 	                               record_type_hierarchy-3-error.good 
 	                               union_type_hierarchy-3-error.good 
 
+---------------------------------------------------------------------------
+
+08/17/05 13:27:32 -- bradc
+
+Log message:
+	These are some variations on SSCA2 that I was working on for
+	readability, compilability before the MS5 benchmark, but which
+	have been languishing unchanged in my directory for awhile now.
+	Checking them in for safekeeping.
+
+Added files:
+	chapel/test/ssca/ssca2/: ssca2.blc-hack.chpl ssca2.blc.chpl 
+	                         ssca2.blc.init.chpl ssca2.origpar.chpl 
+
