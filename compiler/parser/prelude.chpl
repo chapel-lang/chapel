@@ -20,7 +20,7 @@ record pragma "codegen data" _data { -- a c array, basically
 class CFILEPTR { 
 }
 
-const _NULLCFILEPTR : CFILEPTR;
+const _NULLCFILEPTR : CFILEPTR = CFILEPTR();
 
 pragma "rename fopen" function _fopen(filename, mode : string) : CFILEPTR {
   return CFILEPTR();
