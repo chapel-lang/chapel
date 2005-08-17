@@ -43066,3 +43066,230 @@ Added files:
 	                   randomaccess-local.chpl 
 	                   randomaccess-redundant.chpl 
 
+---------------------------------------------------------------------------
+
+08/17/05 15:22:05 -- deitz
+
+Log message:
+	With this change, the symboltable is now built when things are added
+	to the AST and destroyed when things are removed from the AST.  This
+	simplifies parsing and maintenance in non-trivial ways including the
+	ability to build up new Stmts and Exprs without pushing or popping
+	scopes (which was done in the old Symboltable::start* and
+	Symboltable::finish* routines), the ability to build new symbols
+	without saving and restoring scopes, and the ability to remove
+	something from the AST and insert it elsewhere without having to copy
+	it.  Much/some of the old code still exists, but I will remove it
+	shortly.  For example, statements involving prevScope or saveScope and
+	a call to Symboltable::setCurrentScope are not really doing anything
+	anymore (except when in the traverse routines).  As an exception to
+	this change, module symbols are still handled the old way.
+	
+	Details follow.  Test changes are highlighted at the bottom.
+	
+	I added a new struct called ASTContext which contains a pointer to a
+	parentScope, parentSymbol, parentStmt, and parentExpr.  This is used
+	for calling into Fixup (which is now the InsertHelper, RemoveHelper,
+	and Verifier).  I will work on breaking these up and renaming them
+	shortly.
+	
+	To explain, Fixup is used to set the parent pointers when something is
+	inserted into the AST.  It is called on the whole AST near the top of
+	the pass list after parsing.  Then when anything is inserted into the
+	AST or replaces something that is in the AST, the parent pointers will
+	be set.  To determine whether a Stmt or an Expr is in the tree, you
+	can look at the parentSymbol.  If it is true, the Stmt/Expr is part of
+	the tree.
+	
+	Fixup is now also used for building up scopes.  So nothing has a scope
+	until it is inserted into the tree.  That's a big simplification on
+	how things are built-up and maintained.
+	
+	In addition, when something is removed from the tree, Fixup is now
+	used to remove the parent pointers and remove the scopes and symbols
+	from the scopes.
+	
+	I cleaned the constructors, traverse, and copy routines, and removed
+	the Symboltable functions (or simplified them) for the following
+	Stmts, Exprs, Symbols, and Types: ForallExpr, LetExpr, BlockStmt,
+	ForLoopStmt, FnSymbol, and ClassType.  These, along with ModuleSymbol,
+	have scopes which are now setup during Fixup (when inserted into the
+	tree).  They no longer need to be handled during creation.
+	
+	I added function calls, which act like the old fixup function, called
+	removeHelper and insertHelper.  They call Fixup upon insertion or
+	removal from the AST.  They use the context of something already in
+	the tree (which can be obtained with the BaseAST::getContext()
+	routine).
+	
+	When replace is used on the AST, removeHelper is called on the Stmt or
+	Expr that is replaced and insertHelper is then called on the Stmt or
+	Expr that did the replacing.
+	
+	I removed the exportMe variable on Symbol which has fallen into
+	disuse.  This functionality is now handled in ScopeResolveSymbols.
+	
+	I added pointers to the INIT_CONFIG, UNION_SET, UNION_CHECK, and
+	UNION_QUIET_CHECK functions in the prelude.  These are found earlier.
+	They are removed as dead and should be handled differently.
+	
+	I moved the traversal of the iterators of a for expression or
+	statement into the scope of the for expression or statement.  So
+	something like
+	
+	  var i : domain;
+	  for i in i { ... }
+	
+	which used to grab the domain i as the iterator will now grab the
+	index i.  I think this is a good thing.  I'm not sure why the
+	iterators were traversed before the for scope was entered, but this
+	was deliberately set up that way so I'll point out this change.
+	
+	Previously symbols were defined in the symboltable when they were
+	constructed.  They are now defined in the symboltable when they are
+	inserted into the AST via a DefExpr during Fixup.
+	
+	I disabled printing in some of John's analysis logging if the line
+	numbers are less than or equal to zero.  This changed some
+	flowanalysis tests.
+	
+	I added flushing of the html view index.html file so that even if
+	compilation crashses, the index file is visible and can be used for
+	debugging.
+	
+	Parsing is much simpler with this change.  There are no more execution
+	blocks within yacc rules, except for modules.
+	
+	I fixed a major bug in removing symbols from the symboltable scope in
+	which they were never removed from the table and so could still be
+	looked up.  With this change, removed things are actually removed.
+	This led to cleaning up a few bugs here and there.
+	
+	I fixed up printing out the symbols in a scope so that if the symbol
+	is overloaded the overloaded symbols are printed too.  This is done in
+	the list of cnames printed after the name.
+	
+	I put in a check to catch trying to define the same symbol twice.
+	
+	Rewrote ProcessParameters and TransformLetExprs pretty much from
+	scratch.  These are now much shorter.  One change is that they don't
+	insert BlockStmts which they used to.  When we get to a more canonical
+	form, we can start to do this.  The reason I stopped was because the
+	scopes are now correct and so things stopped working when we generated
+	the code:
+	
+	If
+	
+	  var x = foo(y);
+	  writeln(x);
+	
+	becomes
+	
+	  {
+	    temp = y;
+	    var x = foo(temp);
+	    y = temp;
+	  }
+	  writeln(x);
+	
+	we have a problem since in the generated code, x would be out of
+	scope.
+	
+	Added a check to make sure the user doesn't try to call a module.
+	
+	============
+	TEST CHANGES
+	============
+	
+	Modified Shannon's multiple module execflag tests to "use" the
+	multiple modules.  I also modified one of Brad's tests to do the same
+	thing.  When these tests were written, it wasn't yet possible to use a
+	module.  All the functions in the unused modules were being marked as
+	dead which eliminated the config variables in the other modules.  A
+	good question is should we allow users to set dead config vars on the
+	command line?
+	
+	Added a module to Shannon's tests named mod.chpl, halt.chpl,
+	assert.chpl, and exit.chpl.  Because these files are the names of the
+	modules, they were eliding the calls to the builtin functions of the
+	same name.  I added a good error message to inform the user that she
+	can't call a module and a new test (trivial/deitz/exit) to test this
+	error message.
+	
+	I also added a simple scope test of block scopes.
+	
+	I futurized test/classes/deitz/test_type_in_class1.  This tests nested
+	classes which should not yet be working, but used to.  I also
+	futurized test/trivial/jplevyak/goto-2.  This has a scoping problem
+	because all LabelStmts contain a BlockStmt.  I wonder if this is
+	necessary.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp stmt.cpp symbol.cpp 
+	                      type.cpp 
+	chapel/compiler/analysis/: clone.cpp 
+	chapel/compiler/include/: baseAST.h expr.h stmt.h symbol.h 
+	                          symtab.h type.h 
+	chapel/compiler/main/: runpasses.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: createEntryPoint.cpp filesToAST.cpp 
+	chapel/compiler/symtab/: flatten.cpp removeDeadSymbols.cpp 
+	                         symscope.cpp symtab.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             buildLValueFunctions.cpp 
+	                             createNestedFuncIterators.cpp 
+	                             eliminateReturns.cpp 
+	                             findUnknownTypes.cpp fixup.cpp 
+	                             fixup.h htmlview.cpp 
+	                             inlineFunctions.cpp 
+	                             insertAnonymousTypes.cpp 
+	                             insertFunctionTemps.cpp 
+	                             insertLiteralTemps.cpp 
+	                             insertVariableInitializations.cpp 
+	                             preAnalysisHacks.cpp 
+	                             processParameters.cpp 
+	                             removeNestedFunctions.cpp 
+	                             scopeResolveGotos.cpp 
+	                             scopeResolveSymbols.cpp 
+	                             simpleNestedFunctionMove.cpp 
+	                             simpleNestedFunctionMove.h 
+	                             specializeCallExprs.cpp 
+	                             transformLetExprs.cpp 
+	                             transformLetExprs.h 
+	chapel/test/execflags/shannon/configs/: 
+	                                        configVarTwoModsNoneSpecified.chpl 
+	chapel/test/execflags/shannon/configs/help/: 
+	                                             configVarModStrings1.chpl 
+	                                             configVarModStrings2.chpl 
+	                                             configVarSetOver.chpl 
+	                                             configVarSetTwoTypes.chpl 
+	                                             configVarTwoModules.chpl 
+	chapel/test/flowanalysis/jplevyak/: assign1.good assign2.good 
+	                                    badcall.good 
+	                                    badprimitive.good 
+	                                    badreturn.good classvar.good 
+	                                    cs4.good cs5.good cs6.good 
+	                                    destruct2.good 
+	                                    destruct3.good 
+	                                    memberfun.good 
+	                                    memberfun2.good 
+	                                    structtype.good 
+	chapel/test/flowanalysis/newast/: chain.good codegen_test.good 
+	                                  enum.good globalref.good 
+	                                  mod.chpl mod.good 
+	                                  multiple_return.good 
+	                                  mutrec.good noargs.good 
+	                                  onearg.good sum_type-1.good 
+	                                  sum_type-2.good 
+	                                  usebeforedef.good 
+	chapel/test/modules/bradc/manymodules/: manymodules.chpl 
+	                                        manymodules.good 
+	chapel/test/trivial/shannon/: mod.chpl 
+	chapel/test/trivial/shannon/quit/: assert.chpl assert.good 
+	                                   exit.chpl halt.chpl 
+Added files:
+	chapel/test/classes/deitz/: test_type_in_class1.future 
+	chapel/test/trivial/deitz/: exit.chpl exit.good test_scope3.chpl 
+	                            test_scope3.good 
+	chapel/test/trivial/jplevyak/: goto-2.future 
+
