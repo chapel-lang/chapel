@@ -42989,3 +42989,22 @@ Log message:
 Added files:
 	chapel/compiler/traversals/: removeLiterals.h removeLiterals.cpp 
 
+---------------------------------------------------------------------------
+
+08/17/05 07:25:33 -- shannon
+
+Log message:
+	Initialized the _NULLCFILEPTR variable with a
+	call to the class's constructor.  Added error
+	checking to the file class for attempting to
+	close a file that isn't open, and added a test
+	for this.
+
+Modified files:
+	chapel/compiler/parser/: prelude.chpl 
+	chapel/modules/standard/: _chpl_file.chpl 
+	chapel/test/types/file/: unableToOpenFile.good 
+Added files:
+	chapel/test/types/file/: closedWithoutOpen.chpl 
+	                         closedWithoutOpen.good 
+
