@@ -42976,3 +42976,16 @@ Added files:
 	                            declClassType1c.future 
 	                            declClassType1c.good 
 
+---------------------------------------------------------------------------
+
+08/16/05 18:25:29 -- roxana
+
+Log message:
+	This pass replaces literal expressions with symbols. It is not used
+	yet, since it requires changes in analysis which are not clear.
+	It is useful just to be able to use the patch which I am going
+	to send to illustrate the problems I am running into.
+
+Added files:
+	chapel/compiler/traversals/: removeLiterals.h removeLiterals.cpp 
+
