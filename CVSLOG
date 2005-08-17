@@ -43008,3 +43008,16 @@ Added files:
 	chapel/test/types/file/: closedWithoutOpen.chpl 
 	                         closedWithoutOpen.good 
 
+---------------------------------------------------------------------------
+
+08/17/05 10:30:26 -- shannon
+
+Log message:
+	Updated the .goods to reflect the changes I made
+	yesterday to the _chpl_file module.
+
+Modified files:
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+
