@@ -117,7 +117,5 @@ void PreAnalysisCleanup::run(Vec<ModuleSymbol*>* modules) {
   }
   symbols.set_to_vec();
   qsort(symbols.v, symbols.n, sizeof(symbols.v[0]), compar_baseast);
-  for_alist(Stmt, s, RunAnalysis::entryStmtList)
-    stmts.add(s);
   tagGenerics(*(Vec<BaseAST*>*)&symbols);
 }

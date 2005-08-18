@@ -25,5 +25,7 @@
 
 typedef void *_seq;
 
+#define __init_prelude()
+
 #endif
 

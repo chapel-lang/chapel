@@ -9,7 +9,6 @@
 
 int RunAnalysis::runCount = 0;
 int RunAnalysis::isRunning = 0;
-AList<Stmt>* RunAnalysis::entryStmtList = NULL;
 
 void RunAnalysis::run(Vec<ModuleSymbol*>* modules) {
   if (analyzeAST) {
@@ -20,7 +19,6 @@ void RunAnalysis::run(Vec<ModuleSymbol*>* modules) {
     forv_Vec(ModuleSymbol, mod, *modules) {
       stmts.add(mod->stmts);
     }
-    stmts.add(entryStmtList);
     AST_to_IF1(stmts);
     // BLC: John, what filename should be passed in for multiple modules?
     // I'm just passing in the first non-internal module's filename

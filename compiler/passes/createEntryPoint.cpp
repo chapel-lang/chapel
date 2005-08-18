@@ -33,11 +33,6 @@ static ModuleSymbol* findUniqueUserModule(Vec<ModuleSymbol*>* modules) {
 }
 
 
-CreateEntryPoint::CreateEntryPoint(void) :
-  entryPoint(new AList<Stmt>())
-{}
-
-
 void CreateEntryPoint::run(Vec<ModuleSymbol*>* modules) {
   currentLineno = -1;
 
@@ -47,12 +42,6 @@ void CreateEntryPoint::run(Vec<ModuleSymbol*>* modules) {
       mod->createInitFn();
     }
   }
-
-  // add prelude initialization code to the entry point
-  // BLC: This assumes there is some useful init code in the preludes;
-  // is there?
-  entryPoint->insertAtTail(buildCallExprStmt(prelude->initFn));
-  entryPoint->insertAtTail(buildCallExprStmt(commonModule->initFn));
 
   // find main function if it exists; create one if not
   FnSymbol* mainFn = FnSymbol::mainFn;
@@ -79,16 +68,5 @@ void CreateEntryPoint::run(Vec<ModuleSymbol*>* modules) {
   }
   mainBody->body->insertAtHead(buildCallExprStmt(mainModule->initFn));
   mainBody->body->insertAtHead(buildCallExprStmt(commonModule->initFn));
-
-  // add a call to main to the entry point's body
-  ExprStmt* mainCallStmt = buildCallExprStmt(mainFn);
-  entryPoint->insertAtTail(mainCallStmt);
-
-   // create the new entry point module
-  ModuleSymbol* entry = new ModuleSymbol("entryPoint", MOD_INTERNAL);
-  entry->stmts->add(entryPoint);
-  entry->createInitFn();
-  entryPoint = entry->stmts;
-
-  RunAnalysis::entryStmtList = entry->stmts;
+  mainBody->body->insertAtHead(buildCallExprStmt(prelude->initFn));
 }

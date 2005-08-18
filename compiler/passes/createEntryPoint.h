@@ -4,15 +4,9 @@
 #include "alist.h"
 #include "pass.h"
 
-class Stmt;
-
 class CreateEntryPoint : public Pass {
  public:
-  AList<Stmt>* entryPoint;
-
-  CreateEntryPoint(void);
   virtual void run(Vec<ModuleSymbol*>* modules);
 };
 
 #endif
-

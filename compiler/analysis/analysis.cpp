@@ -2051,7 +2051,7 @@ init_function(FnSymbol *f) {
   Sym *s = f->asymbol->sym;
   if (verbose_level > 2 && f->name)
     printf("build_functions: %s\n", f->name);
-  if (s->name && !strcmp("__init_entryPoint", s->name)) {
+  if (f == FnSymbol::mainFn) {
     if1_set_builtin(if1, s, "init");
     sym_init = s;
   }

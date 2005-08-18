@@ -54,7 +54,6 @@ void Verify::run(Vec<ModuleSymbol*>* modules) {
 
   syms = new Vec<Symbol*>();
   collect_symbols(syms);
-
   forv_Vec(Symbol, sym, *syms) {
     verifyParentScope(sym);
     verifyDefPoint(sym);
@@ -80,8 +79,7 @@ void Verify::run(Vec<ModuleSymbol*>* modules) {
   forv_Vec(Symbol, sym, *syms) {
     if (!sym ||
         sym->parentScope->type == SCOPE_INTRINSIC ||
-        dynamic_cast<ModuleSymbol*>(sym) ||
-        !strcmp("__init_entryPoint", sym->name)) {
+        dynamic_cast<ModuleSymbol*>(sym)) {
       continue;
     }
     TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(sym);

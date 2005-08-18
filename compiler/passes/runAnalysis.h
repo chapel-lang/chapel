@@ -10,7 +10,6 @@ class RunAnalysis : public Pass {
  public:
   static int isRunning;
   static int runCount;
-  static AList<Stmt>* entryStmtList;
   virtual void run(Vec<ModuleSymbol*>* modules);
 };
 
