@@ -43397,3 +43397,32 @@ Added files:
 	                         openStdout.chpl openStdout.good 
 	                         stdioFilenames.chpl stdioFilenames.good 
 
+---------------------------------------------------------------------------
+
+08/18/05 14:34:57 -- deitz
+
+Log message:
+	Changed LabelStmt so that the field
+	
+	  LabelSymbol* label
+	
+	is now
+	
+	  DefExpr* defLabel
+	
+	Removed special-cased code to handle this symbol definition.  It is
+	now handled with all the other DefExpr symbol definitions.
+	
+	As a side effect, this change fixes a bug (that didn't yet show up) in
+	which if a label were in a cloned function, the label symbol would not
+	be cloned.  This could have been fixed without this change, but the
+	uniformity is a better way of making this fix.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp stmt.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: stmt.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/traversals/: fixup.cpp scopeResolveGotos.cpp 
+	                             verify.cpp 
+
