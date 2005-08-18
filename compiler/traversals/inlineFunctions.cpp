@@ -60,13 +60,9 @@ bool InlineFunctions::isCodegened(FnSymbol* fn_sym) {
 DefExpr* InlineFunctions::createTempVariable(Type* type, Expr* init) {
   static int id = 1;
   char* temp_name =  glomstrings(2, "_inline_temp_", intstring(id++));
-  DefExpr* temp_def = Symboltable::defineSingleVarDef(temp_name,
-                                                      type,
-                                                      init,
-                                                      VAR_NORMAL,
-                                                      VAR_VAR);
-  dynamic_cast<VarSymbol*>(temp_def->sym)->noDefaultInit = true;
-  return temp_def;
+  VarSymbol* temp = new VarSymbol(temp_name, type);
+  temp->noDefaultInit = true;
+  return new DefExpr(temp, init);
 }
 
 bool InlineFunctions::isFormalParamOut(ParamSymbol* p_sym) {

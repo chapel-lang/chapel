@@ -59,11 +59,6 @@ class Symboltable {
                                                  Expr* init);
   static void Symboltable::defineVarDef2(AList<Stmt>* stmts, varType vartag, 
                                          consType constag);
-  static DefExpr* Symboltable::defineSingleVarDef(char* name, 
-                                                  Type* type,
-                                                  Expr* init,
-                                                  varType vartag,
-                                                  consType constag);
   static PrimitiveType* Symboltable::definePrimitiveType(char* name, char* cname, Expr* initExpr = NULL);
   static Type* Symboltable::defineBuiltinType(char* name, char* cname, Type* newType);
   static FnSymbol* startFnDef(FnSymbol* fnsym);

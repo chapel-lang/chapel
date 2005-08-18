@@ -67,12 +67,9 @@ void InsertFunctionTemps::postProcessStmt(Stmt* stmt) {
         if (function->typeInfo() != dtVoid) {
           char* temp_name = glomstrings(2, "_fntemp_", intstring(uid++));
           Type* temp_type = function->typeInfo();
-          DefExpr* defExpr =
-            Symboltable::defineSingleVarDef(temp_name, temp_type,
-                                            NULL, VAR_NORMAL, VAR_VAR);
-          stmt->insertBefore(new ExprStmt(defExpr));
-          stmt->insertBefore(new ExprStmt(new CallExpr(OP_GETSNORM, new Variable(defExpr->sym), function->copy(false, NULL, &functions))));
-          VarSymbol* var = dynamic_cast<VarSymbol*>(defExpr->sym);
+          VarSymbol* var = new VarSymbol(temp_name, temp_type);
+          stmt->insertBefore(new ExprStmt(new DefExpr(var)));
+          stmt->insertBefore(new ExprStmt(new CallExpr(OP_GETSNORM, new Variable(var), function->copy(false, NULL, &functions))));
           var->noDefaultInit = true;
           function->replace(new Variable(var));
         }

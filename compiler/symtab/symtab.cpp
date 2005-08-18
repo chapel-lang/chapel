@@ -467,14 +467,6 @@ void Symboltable::defineVarDef2(AList<Stmt>* stmts, varType vartag, consType con
 }
 
 
-DefExpr* Symboltable::defineSingleVarDef(char* name, Type* type, 
-                                         Expr* init, varType vartag, 
-                                         consType constag) {
-  VarSymbol* var = new VarSymbol(name, type, vartag, constag);
-  return new DefExpr(var, init);
-}
-
-
 static AList<DefExpr>* exprToIndexSymbols(AList<Expr>* indices) {
   AList<DefExpr>* defExprs = new AList<DefExpr>();
   for_alist(Expr, tmp, indices) {

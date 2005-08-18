@@ -1257,11 +1257,8 @@ void ModuleSymbol::createInitFn(void) {
     runOnce = glomstrings(3, "__run_", name, "_firsttime");
     SymScope* saveScope = Symboltable::setCurrentScope(commonModule->modScope);
     // create a boolean variable to guard module initialization
-    DefExpr* varDefExpr = Symboltable::defineSingleVarDef(runOnce,
-                                                          dtBoolean,
-                                                          new BoolLiteral(true),
-                                                          VAR_NORMAL,
-                                                          VAR_VAR);
+    DefExpr* varDefExpr = new DefExpr(new VarSymbol(runOnce, dtBoolean),
+                                      new BoolLiteral(true));
     // insert its definition in the common module's init function
     commonModule->initFn->body->body->insertAtHead(new ExprStmt(varDefExpr));
     Symboltable::setCurrentScope(saveScope);
@@ -1330,8 +1327,8 @@ void LabelSymbol::codegenDef(FILE* outfile) { }
 
 void
 initSymbol() {
-  gNil = Symboltable::defineSingleVarDef("nil", dtNil, NULL, VAR_NORMAL, VAR_CONST)->sym;
+  gNil = new VarSymbol("nil", dtNil, VAR_NORMAL, VAR_CONST);
   Symboltable::define(gNil);
-  gUnspecified = Symboltable::defineSingleVarDef("_", dtUnknown, NULL, VAR_NORMAL, VAR_CONST)->sym;
+  gUnspecified = new VarSymbol("_", dtUnknown, VAR_NORMAL, VAR_CONST);
   Symboltable::define(gUnspecified);
 }

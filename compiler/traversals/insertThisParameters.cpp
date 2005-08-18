@@ -55,12 +55,8 @@ void InsertThisParameters::preProcessExpr(Expr* expr) {
     if (fn->fnClass == FN_CONSTRUCTOR) {
       SymScope* saveScope = Symboltable::setCurrentScope(fn->body->body->first()->parentScope);
       fn->body->body->reset(); // reset iteration
-      DefExpr* this_decl = Symboltable::defineSingleVarDef(copystring("this"),
-                                                           typeSym->definition,
-                                                           NULL,
-                                                           VAR_NORMAL,
-                                                           VAR_VAR);
-      fn->_this = dynamic_cast<VarSymbol*>(this_decl->sym);
+      fn->_this = new VarSymbol("this", typeSym->definition);
+      DefExpr* this_decl = new DefExpr(fn->_this);
       fn->retType = typeSym->definition;
       dynamic_cast<VarSymbol*>(fn->_this)->noDefaultInit = true;
       fn->body->body->insertAtHead(new ExprStmt(this_decl));

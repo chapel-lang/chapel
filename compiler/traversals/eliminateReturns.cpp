@@ -51,15 +51,10 @@ void EliminateReturns::preProcessStmt(Stmt* stmt) {
     Symbol* retvalSym = Symboltable::lookupInCurrentScope("_retval");
     VarSymbol* retval = dynamic_cast<VarSymbol*>(retvalSym);
     if (retval == NULL) {
-      DefExpr* retValDef = Symboltable::defineSingleVarDef("_retval", 
-                                                           retType, 
-                                                           NULL, 
-                                                           VAR_NORMAL,
-                                                           VAR_VAR);
-      retval = dynamic_cast<VarSymbol*>(retValDef->sym);
+      retval = new VarSymbol("_retval", retType);
       retval->cname = glomstrings(3, retval->name, "_", intstring(uid++));
       retval->noDefaultInit = true;
-      body->body->insertAtHead(new ExprStmt(retValDef));
+      body->body->insertAtHead(new ExprStmt(new DefExpr(retval)));
     } else {
       if (alreadyProcessedThisReturn(retExpr, retval)) {
         return;

@@ -40,11 +40,7 @@ static void handleBasicSequenceAppendPrependOperations(CallExpr* seqCat) {
 static void destructureTuple(CallExpr* tuple) {
   static int uid = 1;
   char* name = glomstrings(2, "_tuple_tmp_", intstring(uid++));
-  DefExpr* def = Symboltable::defineSingleVarDef(name,
-                                                 dtUnknown,
-                                                 NULL,
-                                                 VAR_NORMAL,
-                                                 VAR_VAR);
+  DefExpr* def = new DefExpr(new VarSymbol(name));
   tuple->parentStmt->insertBefore(new ExprStmt(def));
   int i = 1;
   for_alist(Expr, expr, tuple->argList) {
@@ -66,7 +62,6 @@ static void createTupleBaseType(int size) {
   if (Symboltable::lookupInScope(name, commonModule->modScope)) {
     return;
   }
-  SymScope* saveScope = Symboltable::setCurrentScope(commonModule->modScope);
   AList<Stmt>* decls = new AList<Stmt>();
   Vec<TypeSymbol*> types;
   Vec<VarSymbol*> fields;
@@ -79,12 +74,8 @@ static void createTupleBaseType(int size) {
     types.add(typeSymbol);
   }
   for (int i = 1; i <= size; i++) {
-    DefExpr* def = 
-      Symboltable::defineSingleVarDef(glomstrings(2, "_f", intstring(i)),
-                                      types.v[i-1]->definition,
-                                      NULL,
-                                      VAR_NORMAL,
-                                      VAR_VAR);
+    DefExpr* def = new DefExpr(new VarSymbol(glomstrings(2, "_f", intstring(i)),
+                                             types.v[i-1]->definition));
     decls->insertAtTail(new ExprStmt(def));
     VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym);
     fields.add(var);
@@ -126,7 +117,6 @@ static void createTupleBaseType(int size) {
   AList<Stmt>* body = new AList<Stmt>(writeBody);
   Symboltable::finishFnDef(fn, new BlockStmt(body));
   commonModule->stmts->insertAtTail(new ExprStmt(new DefExpr(fn)));
-  Symboltable::setCurrentScope(saveScope);
 }
 
 

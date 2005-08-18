@@ -15,14 +15,12 @@ InsertDefaultInitVariables::InsertDefaultInitVariables() {
 void InsertDefaultInitVariables::processSymbol(Symbol* sym) {
   static int uid = 1;
 
-
   // No type, no default init
-  if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym)) {
-    if (var->type == dtUnknown && !var->defPoint->exprType) {
-      var->noDefaultInit = true;
+  if (VarSymbol* vs = dynamic_cast<VarSymbol*>(sym)) {
+    if (vs->type == dtUnknown && !vs->defPoint->exprType) {
+      vs->noDefaultInit = true;
     }
   }
-
 
   if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(sym)) {
     if (ts->definition->defaultValue) {
@@ -53,24 +51,16 @@ void InsertDefaultInitVariables::processSymbol(Symbol* sym) {
         parent_symbol = parent_symbol->defPoint->parentStmt->parentSymbol;
         outer_symbol = outer_symbol->defPoint->parentStmt->parentSymbol;
       }
-
-      SymScope* saveScope =
-        Symboltable::setCurrentScope(outer_symbol->parentScope);
-      DefExpr* def = Symboltable::defineSingleVarDef(temp_name,
-                                                     temp_type,
-                                                     temp_init,
-                                                     VAR_NORMAL,
-                                                     VAR_VAR);
-      Symboltable::setCurrentScope(saveScope);
+      VarSymbol* temp = new VarSymbol(temp_name, temp_type);
+      DefExpr* def = new DefExpr(temp, temp_init);
       if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(parent_symbol)) {
         mod->initFn->body->body->insertAtHead(new ExprStmt(def));
       } else {
         Stmt* insert_point = outer_symbol->defPoint->parentStmt;
         insert_point->insertBefore(new ExprStmt(def));
       }
-      VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym);
-      ts->definition->defaultValue->replace(new Variable(var));
-      var->noDefaultInit = true;
+      ts->definition->defaultValue->replace(new Variable(temp));
+      temp->noDefaultInit = true;
     }
   }
 }
