@@ -8,6 +8,15 @@
 
 
 CFILEPTR _NULLCFILEPTR = NULL;
+CFILEPTR _STDINCFILEPTR;
+CFILEPTR _STDOUTCFILEPTR;
+CFILEPTR _STDERRCFILEPTR;
+
+void initChplio(void) {
+  _STDINCFILEPTR = stdin;
+  _STDOUTCFILEPTR = stdout;
+  _STDERRCFILEPTR = stderr;  
+}
 
 int _string_to_boolean(char* valueString, _boolean* val) {
   int validBoolean = 0;

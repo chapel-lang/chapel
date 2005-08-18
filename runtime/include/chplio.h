@@ -25,6 +25,11 @@
 
 typedef FILE* CFILEPTR;
 extern CFILEPTR _NULLCFILEPTR;
+extern CFILEPTR _STDINCFILEPTR;
+extern CFILEPTR _STDOUTCFILEPTR;
+extern CFILEPTR _STDERRCFILEPTR;
+
+void initChplio(void);
 
 int _string_to_boolean(char* valueString, _boolean* val);
 
@@ -40,7 +45,6 @@ void _chpl_read_boolean(_boolean* val);
 void _chpl_read_integer(_integer64* val);
 void _chpl_read_float(_float64* val);
 void _chpl_read_string(_string* val);
-
 
 void _chpl_read_complex(_complex128** val);
 

@@ -1,4 +1,5 @@
 #include "arg.h"
+#include "chplio.h"
 #include "chplmem.h"
 #include "chplrt.h"
 
@@ -9,6 +10,7 @@ int main(int argc, char* argv[]) {
   parseArgs(argc, argv);
   initMemTable();
   CreateConfigVarTable();
+  initChplio();
 
   resetMemStat();
   _chpl_main();

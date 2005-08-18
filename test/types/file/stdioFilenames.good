@@ -1,0 +1,3 @@
+fin.filename  = stdin
+fout.filename = stdout
+ferr.filename = stderr
