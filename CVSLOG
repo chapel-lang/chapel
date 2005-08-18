@@ -43315,3 +43315,22 @@ Modified files:
 	                             insertThisParameters.cpp 
 	                             removeLiterals.cpp 
 
+---------------------------------------------------------------------------
+
+08/18/05 11:05:29 -- deitz
+
+Log message:
+	Removed no-longer-used calls to Symboltable::setCurrentScope which is
+	now almost only called in the traverse routines.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/passes/: createEntryPoint.cpp 
+	chapel/compiler/symtab/: flatten.cpp reconstructIterators.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             buildLValueFunctions.cpp 
+	                             createNestedFuncIterators.cpp 
+	                             insertThisParameters.cpp 
+	                             removeLiterals.cpp 
+	                             removeNestedFunctions.cpp 
+
