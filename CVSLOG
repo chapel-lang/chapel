@@ -43426,3 +43426,26 @@ Modified files:
 	chapel/compiler/traversals/: fixup.cpp scopeResolveGotos.cpp 
 	                             verify.cpp 
 
+---------------------------------------------------------------------------
+
+08/18/05 14:51:43 -- mjoyner
+
+Log message:
+	Added support for mutually recursive nested functions.  Removed a mutually recursive future test and added an additional one.
+	
+	Also added a small change to inline function traversal to ensure that pragmas can be gathered from the function symbol.  Sometimes they are attached to the function symbol and sometimes they are attached to the function definition statement. Now the inline function traversal only has to look in one place to determine if a function should be inlined.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/traversals/: findEnclosingScopeVarUses.cpp 
+	                             findEnclosingScopeVarUses.h 
+	                             inlineFunctions.cpp 
+	                             removeNestedFunctions.cpp 
+	                             removeNestedFunctions.h 
+Added files:
+	chapel/test/functions/mjoyner/nested/: .cvsignore 
+	                                       mutual_recursive.chpl 
+	                                       mutual_recursive.good 
+Removed files:
+	chapel/test/functions/deitz/nested/: test_nested6.future 
+
