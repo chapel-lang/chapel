@@ -1194,7 +1194,7 @@ define_labels(BaseAST *ast, LabelMap *labelmap) {
           // handled below
           break;
       }
-      labelmap->put(if1_cannonicalize_string(if1, dynamic_cast<LabelStmt*>(stmt)->label->name), target);
+      labelmap->put(if1_cannonicalize_string(if1, dynamic_cast<LabelStmt*>(stmt)->defLabel->sym->name), target);
       break;
     }
     case STMT_WHILELOOP:

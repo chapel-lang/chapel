@@ -22,12 +22,6 @@ Verify::Verify() :
 void Verify::preProcessStmt(Stmt* stmt){
   stmt->verify();
 
-  if (LabelStmt* labelStmt = dynamic_cast<LabelStmt*>(stmt)) {
-    if (!removeVerifySymbol(syms, labelStmt->label)) {
-      INT_FATAL(stmt, "Label not in Symboltable");
-    }
-  }
-
   if (!stmt->prev || !stmt->next) {
     if (!dynamic_cast<BlockStmt*>(stmt) &&
         !dynamic_cast<LabelStmt*>(stmt->parentStmt)) {
@@ -149,7 +143,6 @@ static void verifyParentScope(Symbol* sym) {
  **/
 static void verifyDefPoint(Symbol* sym) {
   if (sym->isUnresolved ||
-      dynamic_cast<LabelSymbol*>(sym) ||
       dynamic_cast<TypeSymbol*>(sym) ||
       dynamic_cast<SumType*>(sym->type)) {     // SJD: REMOVE
     return;

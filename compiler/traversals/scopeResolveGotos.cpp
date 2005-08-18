@@ -51,7 +51,7 @@ void ScopeResolveGotos::preProcessStmt(Stmt* stmt) {
       stmt->replace(block_stmt);
       char* label_name = glomstrings(2, "_loop_label_", intstring(uid++));
       LabelSymbol* label_symbol = new LabelSymbol(label_name);
-      LabelStmt* label_stmt = new LabelStmt(label_symbol, stmt);
+      LabelStmt* label_stmt = new LabelStmt(new DefExpr(label_symbol), stmt);
       block_stmt->replace(label_stmt);
       currentLoop = label_stmt;
       return;
@@ -68,7 +68,7 @@ void ScopeResolveGotos::preProcessStmt(Stmt* stmt) {
     if (!currentLoop) {
       USR_FATAL(stmt, "break or continue is not in a loop");
     } else {
-      goto_stmt->label = currentLoop->label;
+      goto_stmt->label = currentLoop->defLabel->sym;
     }
   } else if (dynamic_cast<UnresolvedSymbol*>(goto_stmt->label)) {
     Symbol* new_symbol = Symboltable::lookup(goto_stmt->label->name);

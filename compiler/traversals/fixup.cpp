@@ -67,16 +67,6 @@ void Fixup::preProcessStmt(Stmt* stmt) {
     stmt->parentStmt = insertHelper ? parentStmt : NULL;
   }
 
-  if (LabelStmt* labelStmt = dynamic_cast<LabelStmt*>(stmt)) {
-    if (!verifyParents) {
-      if (insertHelper) {
-        Symboltable::define(labelStmt->label);
-      } else {
-        labelStmt->label->parentScope->remove(labelStmt->label);
-      }
-    }
-  }
-
   if (BlockStmt* blockStmt = dynamic_cast<BlockStmt*>(stmt)) {
     if (!verifyParents) {
       if (insertHelper) {

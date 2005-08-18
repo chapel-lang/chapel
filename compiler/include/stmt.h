@@ -189,10 +189,10 @@ class SelectStmt : public Stmt {
 
 class LabelStmt : public Stmt {
  public:
-  LabelSymbol* label;
+  DefExpr* defLabel;
   Stmt* stmt;
   
-  LabelStmt(LabelSymbol* init_label, Stmt* init_stmt);
+  LabelStmt(DefExpr* initDefLabel, Stmt* initStmt);
   virtual void verify(void);
   COPY_DEF(LabelStmt);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);

@@ -388,7 +388,7 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     AST_ADD_LIST(SelectStmt, whenStmts, WhenStmt);
     goto LStmtCommon;
   case STMT_LABEL:
-    ADD_CHILD(LabelStmt, label);
+    AST_ADD_CHILD(LabelStmt, defLabel);
     AST_ADD_CHILD(LabelStmt, stmt);
     goto LStmtCommon;
   case STMT_GOTO:

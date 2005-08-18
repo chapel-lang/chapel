@@ -731,10 +731,10 @@ void SelectStmt::codegenStmt(FILE* outfile) {
 }
 
 
-LabelStmt::LabelStmt(LabelSymbol* init_label, Stmt* init_stmt) :
+LabelStmt::LabelStmt(DefExpr* initDefLabel, Stmt* initStmt) :
   Stmt(STMT_LABEL),
-  label(init_label),
-  stmt(init_stmt)
+  defLabel(initDefLabel),
+  stmt(initStmt)
 { }
 
 
@@ -747,13 +747,15 @@ void LabelStmt::verify() {
 
 LabelStmt*
 LabelStmt::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new LabelStmt(label, COPY_INTERNAL(stmt));
+  return new LabelStmt(COPY_INTERNAL(defLabel), COPY_INTERNAL(stmt));
 }
 
 
 void LabelStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == stmt) {
     stmt = dynamic_cast<Stmt*>(new_ast);
+  } else if (old_ast == defLabel) {
+    defLabel = dynamic_cast<DefExpr*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in LabelStmt::replaceChild");
   }
@@ -761,24 +763,24 @@ void LabelStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 void LabelStmt::traverseStmt(Traversal* traversal) {
-  TRAVERSE_DEF(label, traversal, false);
+  TRAVERSE(defLabel, traversal, false);
   TRAVERSE(stmt, traversal, false);
 }
 
 
 void LabelStmt::print(FILE* outfile) {
   fprintf(outfile, "label ");
-  label->print(outfile);
+  defLabel->print(outfile);
   fprintf(outfile, " ");
   stmt->print(outfile);
 }
 
 
 void LabelStmt::codegenStmt(FILE* outfile) {
-  label->codegen(outfile);
+  defLabel->sym->codegen(outfile);
   fprintf(outfile, ":;\n");
   stmt->codegenStmt(outfile);
-  label->codegen(outfile);
+  defLabel->sym->codegen(outfile);
   fprintf(outfile, "_post:;\n");
 }
 
