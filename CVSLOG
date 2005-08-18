@@ -43449,3 +43449,51 @@ Added files:
 Removed files:
 	chapel/test/functions/deitz/nested/: test_nested6.future 
 
+---------------------------------------------------------------------------
+
+08/18/05 15:16:27 -- deitz
+
+Log message:
+	Renamed Variable to SymExpr.
+	
+	Renamed ParamSymbol::typeVariable to ParamSymbol::variableTypeSymbol
+	though maybe there is a shorter name for this.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h expr.h symbol.h type.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: applyGettersSetters.cpp 
+	                         createEntryPoint.cpp 
+	                         preAnalysisCleanup.cpp 
+	chapel/compiler/symtab/: insertDefaultInitVariables.cpp 
+	                         insertOutParameterInitializations.cpp 
+	                         reconstructIterators.cpp 
+	                         removeLikeTypes.cpp symtab.cpp 
+	chapel/compiler/traversals/: applyThisParameters.cpp 
+	                             buildClassConstructorsEtc.cpp 
+	                             buildLValueFunctions.cpp 
+	                             createNestedFuncIterators.cpp 
+	                             eliminateReturns.cpp 
+	                             findEnclosingScopeVarUses.cpp 
+	                             findEnclosingScopeVarUses.h 
+	                             findUnknownTypes.cpp htmlview.cpp 
+	                             inlineFunctions.cpp 
+	                             insertAnonymousTypes.cpp 
+	                             insertFunctionTemps.cpp 
+	                             insertLiteralTemps.cpp 
+	                             insertThisParameters.cpp 
+	                             insertVariableInitializations.cpp 
+	                             instantiate.cpp 
+	                             processImportExprs.cpp 
+	                             processParameters.cpp 
+	                             removeLiterals.cpp 
+	                             removeNamedParameters.cpp 
+	                             removeNestedFunctions.cpp 
+	                             replaceReturns.cpp 
+	                             resolveSymbols.cpp 
+	                             scopeResolveSymbols.cpp 
+	                             specializeCallExprs.cpp 
+	                             updateSymbols.cpp 
+
