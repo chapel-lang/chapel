@@ -43293,3 +43293,25 @@ Added files:
 	                            test_scope3.good 
 	chapel/test/trivial/jplevyak/: goto-2.future 
 
+---------------------------------------------------------------------------
+
+08/18/05 09:14:23 -- deitz
+
+Log message:
+	Removed Symoltable::defineSingleVarDef as this function was no longer
+	good usage.  Better to create the VarSymbol and then the DefExpr, as
+	this is all that is going on now, especially since in most cases the
+	VarSymbol was then used via a dynamic cast.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symtab.h 
+	chapel/compiler/symtab/: insertDefaultInitVariables.cpp 
+	                         reconstructIterators.cpp symtab.cpp 
+	chapel/compiler/traversals/: eliminateReturns.cpp 
+	                             inlineFunctions.cpp 
+	                             insertFunctionTemps.cpp 
+	                             insertLiteralTemps.cpp 
+	                             insertThisParameters.cpp 
+	                             removeLiterals.cpp 
+
