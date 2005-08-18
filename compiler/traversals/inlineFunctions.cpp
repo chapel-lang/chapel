@@ -14,38 +14,39 @@ void InlineFunctions::postProcessExpr(Expr* expr) {
     if (fn_call->isPrimitive() || fn_call->opTag != OP_NONE) {
       return;
     }
-    FnSymbol* fn_sym = fn_call->findFnSymbol(); 
     //copy pragmas from function definition stmt to its function symbol
-    if (fn_sym->defPoint->parentStmt)
-      fn_sym->copyPragmas(fn_sym->defPoint->parentStmt->pragmas);
-    //inline function
-    if (fn_sym->hasPragma("inline") && isCodegened(fn_sym)) { 
-      _ok_to_inline = true;
-      //map formal parameters to actual arguments
-      Map<BaseAST*,BaseAST*>* formal_to_actual_arg_map = createFormalToActualArgMappings(fn_call, fn_sym->formals); 
-      //inline body if it is ok to do so even after examining the actual arguments
-      if (_ok_to_inline) {
-        Stmt* inlined_body = fn_sym->body->copy(true,formal_to_actual_arg_map,NULL);
-        ReplaceReturns* rep_returns;
-        if (fn_sym->retType && (fn_sym->retType != dtVoid)) {
-          DefExpr* temp_def = createTempVariable(fn_sym->retType);
-          fn_call->parentStmt->insertBefore(new ExprStmt(temp_def));
-          //replace all returns in the inlined function body 
-          //with an assignment the return expression
-          rep_returns = new ReplaceReturns(temp_def->sym);
-          inlined_body->traverse(rep_returns);
-          //inlined function
-          fn_call->parentStmt->insertBefore(inlined_body);
-          fn_call->replace(new Variable(temp_def->sym));
+    if (FnSymbol* fn_sym = fn_call->findFnSymbol()) {
+      if (Stmt* def_stmt = fn_sym->defPoint->parentStmt)
+        fn_sym->copyPragmas(def_stmt->pragmas);
+      //inline function
+      if (fn_sym->hasPragma("inline") && isCodegened(fn_sym)) { 
+        _ok_to_inline = true;
+        //map formal parameters to actual arguments
+        Map<BaseAST*,BaseAST*>* formal_to_actual_arg_map = createFormalToActualArgMappings(fn_call, fn_sym->formals); 
+        //inline body if it is ok to do so even after examining the actual arguments
+        if (_ok_to_inline) {
+          Stmt* inlined_body = fn_sym->body->copy(true,formal_to_actual_arg_map,NULL);
+          ReplaceReturns* rep_returns;
+          if (fn_sym->retType && (fn_sym->retType != dtVoid)) {
+            DefExpr* temp_def = createTempVariable(fn_sym->retType);
+            fn_call->parentStmt->insertBefore(new ExprStmt(temp_def));
+            //replace all returns in the inlined function body 
+            //with an assignment the return expression
+            rep_returns = new ReplaceReturns(temp_def->sym);
+            inlined_body->traverse(rep_returns);
+            //inlined function
+            fn_call->parentStmt->insertBefore(inlined_body);
+            fn_call->replace(new Variable(temp_def->sym));
+          }
+          else {
+            //inlined function
+            fn_call->parentStmt->insertBefore(inlined_body);
+            fn_call->parentStmt->remove();
+          }
+          //report inlining compiler flag was set of the command-line
+          if (report_inlining)
+            printf("chapel compiler: reporting inlining, %s function was inlined\n", fn_sym->cname);
         }
-        else {
-          //inlined function
-          fn_call->parentStmt->insertBefore(inlined_body);
-          fn_call->parentStmt->remove();
-        }
-        //report inlining compiler flag was set of the command-line
-        if (report_inlining)
-          printf("chapel compiler: reporting inlining, %s function was inlined\n", fn_sym->cname);
       }
     }
   }

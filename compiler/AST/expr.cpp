@@ -833,10 +833,13 @@ FnSymbol* CallExpr::findFnSymbol(void) {
   FnSymbol* fn = NULL;
   if (Variable* variable = dynamic_cast<Variable*>(baseExpr)) {
     fn = dynamic_cast<FnSymbol*>(variable->var);
+    if (!fn)
+      if(dynamic_cast<UnresolvedSymbol*>(variable->var))
+        return NULL;
   }
   if (!fn) {
     INT_FATAL(this, "Cannot find FnSymbol in CallExpr");
-  }
+    }
   return fn;
 }
 

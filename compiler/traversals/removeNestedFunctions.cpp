@@ -17,9 +17,7 @@ void RemoveNestedFunctions::preProcessStmt(Stmt* stmt) {
       if (FnSymbol* fn_sym = dynamic_cast<FnSymbol*>(defExpr->sym))
         //nested function definition
         if (hasEnclosingFunction(defExpr)) {
-          Vec<Symbol*>* encl_func_var_uses = getEnclosingFuncVarUses(fn_sym);
-          //store nested function actual arg info
-          _nested_func_args_map->put(fn_sym, encl_func_var_uses);
+          findEnclScopeVarUses(fn_sym, _nested_func_args_map, new Vec<FnSymbol*>());
         }
   }
 }
@@ -40,7 +38,6 @@ void RemoveNestedFunctions::postProcessStmt(Stmt* stmt) {
           //add formal parameters to copied nested function
           addNestedFuncFormals(fn_copy->expr, encl_func_var_uses, fn_sym);
           module_stmts->insertAtTail(fn_copy);
-
           expr_stmt->remove();
         }
       }
@@ -50,14 +47,22 @@ void RemoveNestedFunctions::postProcessStmt(Stmt* stmt) {
 
 void RemoveNestedFunctions::postProcessExpr(Expr* expr) {
   if (CallExpr* paren_op = dynamic_cast<CallExpr*>(expr)) {
-    if (Variable* v = dynamic_cast<Variable*>(paren_op->baseExpr))
-      if (FnSymbol* fn_sym = dynamic_cast<FnSymbol*>(v->var)) {
-        Vec<Symbol*>* encl_func_var_uses = _nested_func_args_map->get(fn_sym);
-        //nested function call
-        if (encl_func_var_uses)
-          addNestedFuncActuals(paren_op, encl_func_var_uses, fn_sym);
-      } 
-  }
+    if (FnSymbol* fn_sym = paren_op->findFnSymbol()) {
+      Vec<Symbol*>* encl_func_var_uses = _nested_func_args_map->get(fn_sym);
+      //nested function call
+      if (encl_func_var_uses)
+        addNestedFuncActuals(paren_op, encl_func_var_uses, fn_sym);
+    }
+  } 
+}
+
+void RemoveNestedFunctions::findEnclScopeVarUses(FnSymbol* fn_sym, Map<FnSymbol*,Vec<Symbol*>*>* nested_func_args_map, Vec<FnSymbol*>* in_process_fns) {
+  Vec<Symbol*>* encl_func_var_uses = nested_func_args_map->get(fn_sym);
+  in_process_fns->add(fn_sym);
+  encl_func_var_uses = getEnclosingFuncVarUses(fn_sym, nested_func_args_map,in_process_fns);
+  //store nested function actual arg info
+  nested_func_args_map->put(fn_sym, encl_func_var_uses);
+  in_process_fns->pop();
 }
 
 FnSymbol* RemoveNestedFunctions::hasEnclosingFunction(DefExpr* fn_def) {
@@ -65,9 +70,9 @@ FnSymbol* RemoveNestedFunctions::hasEnclosingFunction(DefExpr* fn_def) {
   return NULL;
 }
 
-Vec<Symbol*>* RemoveNestedFunctions::getEnclosingFuncVarUses(FnSymbol* fn_sym) {
-  FindEnclosingScopeVarUses* fesv = new FindEnclosingScopeVarUses(fn_sym->parentScope);
-  fn_sym->body->traverse(fesv);
+Vec<Symbol*>* RemoveNestedFunctions::getEnclosingFuncVarUses(FnSymbol* fn_sym, Map<FnSymbol*,Vec<Symbol*>*>* nested_func_args_map, Vec<FnSymbol*>* in_process_fns) {
+  FindEnclosingScopeVarUses* fesv = new FindEnclosingScopeVarUses(fn_sym->parentScope, nested_func_args_map, in_process_fns);
+  fn_sym->defPoint->parentStmt->traverse(fesv);
   return fesv->getVarUses();
 }
 
@@ -96,12 +101,16 @@ void RemoveNestedFunctions::addNestedFuncFormals(Expr* expr, Vec<Symbol*>* encl_
 }
 
 void RemoveNestedFunctions::addNestedFuncActuals(CallExpr* paren_op, Vec<Symbol*>* encl_var_uses, FnSymbol* old_func_sym) {
-  //build nested function actuals list
-  forv_Vec(Symbol, sym, *encl_var_uses) {
-    if (sym) 
-      paren_op->argList->insertAtTail(new Variable(sym));
-  }
   //replace original nested function call with call to non-nested function
   FnSymbol* new_func_sym = _nested_func_sym_map->get(old_func_sym);
-  paren_op->baseExpr->replace(new Variable(new_func_sym));
+  
+  //already moved the nested function out
+  if (new_func_sym) {
+    //build nested function actuals list
+    forv_Vec(Symbol, sym, *encl_var_uses) {
+      if (sym) 
+        paren_op->argList->insertAtTail(new Variable(sym));
+    } 
+    paren_op->baseExpr->replace(new Variable(new_func_sym));
+  }
 }
