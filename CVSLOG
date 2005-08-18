@@ -43369,3 +43369,31 @@ Modified files:
 	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
 	                                         inlfunc2_report.good 
 
+---------------------------------------------------------------------------
+
+08/18/05 14:00:54 -- shannon
+
+Log message:
+	Added the stdin, stdout, and stderr files to the file module.
+	Added a test that assigns each of these to a file and writes out
+	its filename, a test that tries to close stdin, and a test that
+	tries to open stdout.
+	
+	Unfortunately I've introduced three test regressions.  Darn.
+
+Modified files:
+	chapel/compiler/parser/: prelude.chpl 
+	chapel/modules/standard/: _chpl_file.chpl 
+	chapel/runtime/include/: chplio.h 
+	chapel/runtime/src/: chplio.c main.c 
+	chapel/test/: REGRESSIONS 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/memory/shannon/: freedMalloc.good 
+	                             reallocZeroSize.good 
+Added files:
+	chapel/test/types/file/: closeStdin.chpl closeStdin.good 
+	                         openStdout.chpl openStdout.good 
+	                         stdioFilenames.chpl stdioFilenames.good 
+
