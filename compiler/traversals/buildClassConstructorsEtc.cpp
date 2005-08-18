@@ -36,8 +36,8 @@ static void build_constructor(ClassType* structType) {
         Type* type = tv->type;
         ParamSymbol* arg = new ParamSymbol(PARAM_BLANK, name, type);
         arg->isGeneric = true;
-        arg->typeVariable = dynamic_cast<TypeSymbol*>(tv->symbol);
-        args->insertAtTail(new DefExpr(arg, new Variable(dtUnknown->symbol)));
+        arg->variableTypeSymbol = dynamic_cast<TypeSymbol*>(tv->symbol);
+        args->insertAtTail(new DefExpr(arg, new SymExpr(dtUnknown->symbol)));
       }
     }
 
@@ -46,7 +46,7 @@ static void build_constructor(ClassType* structType) {
       Type* type = tmp->type;
       Expr* init = (tmp->defPoint->init) 
         ? tmp->defPoint->init->copy()
-        : new Variable(gNil);
+        : new SymExpr(gNil);
       Expr* exprType = (tmp->defPoint->exprType)
         ? tmp->defPoint->exprType->copy()
         : NULL;
@@ -71,15 +71,15 @@ static void build_constructor(ClassType* structType) {
   stmts->insertAtTail(new ExprStmt(def_expr));
   char* description = glomstrings(2, "instance of class ", structType->symbol->name);
   Expr* alloc_rhs = new CallExpr(Symboltable::lookupInternal("_chpl_alloc"),
-                                 new Variable(structType->symbol),
+                                 new SymExpr(structType->symbol),
                                  new StringLiteral(description));
-  Expr* alloc_lhs = new Variable(fn->_this);
+  Expr* alloc_lhs = new SymExpr(fn->_this);
   Expr* alloc_expr = new CallExpr(OP_GETSNORM, alloc_lhs, alloc_rhs);
   Stmt* alloc_stmt = new ExprStmt(alloc_expr);
   stmts->insertAtTail(alloc_stmt);
   structType->buildConstructorBody(stmts, fn->_this, args);
 
-  stmts->insertAtTail(new ReturnStmt(new Variable(fn->_this)));
+  stmts->insertAtTail(new ReturnStmt(new SymExpr(fn->_this)));
   BlockStmt* body = new BlockStmt(stmts);
   DefExpr* fn_def = new DefExpr(Symboltable::finishFnDef(fn, body));
   structType->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(fn_def));
@@ -111,7 +111,7 @@ static void build_getter(ClassType* structType, Symbol *tmp) {
   getter_args->insertAtHead(new DefExpr(new ParamSymbol(PARAM_REF, "_methodTokenDummy", 
                                                         methodTypeSymbol->definition)));
   Symboltable::continueFnDef(getter_fn, getter_args, tmp->type);
-  Expr* getter_expr = new MemberAccess(new Variable(getter_this), tmp);
+  Expr* getter_expr = new MemberAccess(new SymExpr(getter_this), tmp);
   BlockStmt* getter_return = new BlockStmt(new ReturnStmt(getter_expr));
   DefExpr* getter_def_expr = 
     new DefExpr(Symboltable::finishFnDef(getter_fn, getter_return));
@@ -143,8 +143,8 @@ static void build_setters_and_getters(ClassType* structType) {
     ParamSymbol* setter_arg = new ParamSymbol(PARAM_BLANK, "_arg", tmp->type);
     args->insertAtTail(new DefExpr(setter_arg));
     Symboltable::continueFnDef(setter_fn, args, dtVoid);
-    Expr* setter_lhs = new MemberAccess(new Variable(setter_this), tmp);
-    Expr* setter_rhs = new Variable(setter_arg);
+    Expr* setter_lhs = new MemberAccess(new SymExpr(setter_this), tmp);
+    Expr* setter_rhs = new SymExpr(setter_arg);
     Expr* setter_assignment = new CallExpr(OP_GETSNORM, setter_lhs, setter_rhs);
     BlockStmt* setter_stmt = new BlockStmt(new ExprStmt(setter_assignment));
     DefExpr* setter_def_expr = new DefExpr(
@@ -174,8 +174,8 @@ static void build_record_equality_function(ClassType* structType) {
   Symboltable::continueFnDef(fn, args, dtBoolean);
   Expr* cond = NULL;
   forv_Vec(Symbol, tmp, structType->fields) {
-    Expr* left = new MemberAccess(new Variable(arg1), tmp);
-    Expr* right = new MemberAccess(new Variable(arg2), tmp);
+    Expr* left = new MemberAccess(new SymExpr(arg1), tmp);
+    Expr* right = new MemberAccess(new SymExpr(arg2), tmp);
     cond = (cond)
       ? new CallExpr(OP_LOGAND, cond, new CallExpr(OP_EQUAL, left, right))
       : new CallExpr(OP_EQUAL, left, right);
@@ -196,8 +196,8 @@ static void build_record_inequality_function(ClassType* structType) {
   Symboltable::continueFnDef(fn, args, dtBoolean);
   Expr* cond = NULL;
   forv_Vec(Symbol, tmp, structType->fields) {
-    Expr* left = new MemberAccess(new Variable(arg1), tmp);
-    Expr* right = new MemberAccess(new Variable(arg2), tmp);
+    Expr* left = new MemberAccess(new SymExpr(arg1), tmp);
+    Expr* right = new MemberAccess(new SymExpr(arg2), tmp);
     cond = (cond)
       ? new CallExpr(OP_LOGOR, cond, new CallExpr(OP_NEQUAL, left, right))
       : new CallExpr(OP_NEQUAL, left, right);
@@ -231,14 +231,14 @@ static void build_record_assignment_function(ClassType* structType) {
   Symboltable::continueFnDef(fn, args, ret_type);
   AList<Stmt>* body = new AList<Stmt>();
   forv_Vec(Symbol, tmp, structType->fields) {
-    Expr* left = new MemberAccess(new Variable(_arg1), tmp);
-    Expr* right = new MemberAccess(new Variable(arg2), tmp);
+    Expr* left = new MemberAccess(new SymExpr(_arg1), tmp);
+    Expr* right = new MemberAccess(new SymExpr(arg2), tmp);
     Expr* assign_expr = new CallExpr(OP_GETSNORM, left, right);
     body->insertAtTail(new ExprStmt(assign_expr));
   }
   
   if (analyzeAST)
-    body->insertAtTail(new ReturnStmt(new Variable(arg2)));
+    body->insertAtTail(new ReturnStmt(new SymExpr(arg2)));
   BlockStmt* block_stmt = new BlockStmt(body);
   DefExpr* def = new DefExpr(Symboltable::finishFnDef(fn, block_stmt));
   structType->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def));

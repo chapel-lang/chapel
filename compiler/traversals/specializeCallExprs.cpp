@@ -22,7 +22,7 @@ static Stmt* genExit(FnSymbol *fnSym) {
   Symbol* retvalSym = Symboltable::lookupInCurrentScope("_retval");
   if (retvalSym) {
     BlockStmt *b = new BlockStmt(c);
-    Variable* newRetExpr = new Variable(retvalSym);
+    SymExpr* newRetExpr = new SymExpr(retvalSym);
     ReturnStmt *newRetStmt = new ReturnStmt(newRetExpr);
     c->insertAfter(newRetStmt);
     Symboltable::setCurrentScope(prevScope);
@@ -58,7 +58,7 @@ static ExprStmt* genStringWriteExpr(char* newString) {
 void SpecializeCallExprs::postProcessStmt(Stmt* stmt) {
   if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(exprStmt->expr)) {
-      if (Variable* baseVar = dynamic_cast<Variable*>(call->baseExpr)) {
+      if (SymExpr* baseVar = dynamic_cast<SymExpr*>(call->baseExpr)) {
         if (strcmp(baseVar->var->name, "assert") == 0) {
           ExprStmt* writeAssert = genStringWriteExpr("***Error:  Assertion at ");
           AList<Stmt>* thenBody = new AList<Stmt>(writeAssert);
@@ -108,7 +108,7 @@ void SpecializeCallExprs::postProcessStmt(Stmt* stmt) {
 
 void SpecializeCallExprs::postProcessExpr(Expr* expr) {
   if (CallExpr* paren = dynamic_cast<CallExpr*>(expr)) {
-    if (Variable* baseVar = dynamic_cast<Variable*>(paren->baseExpr)) {
+    if (SymExpr* baseVar = dynamic_cast<SymExpr*>(paren->baseExpr)) {
       if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(baseVar->var)) {
         if (ClassType* ctype = dynamic_cast<ClassType*>(ts->definition)) {
           if (ctype->defaultConstructor) {

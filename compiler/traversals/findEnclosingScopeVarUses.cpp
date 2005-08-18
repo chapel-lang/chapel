@@ -36,7 +36,7 @@ void FindEnclosingScopeVarUses::postProcessStmt(Stmt* stmt) {
 
 void FindEnclosingScopeVarUses::preProcessExpr(Expr* expr) {
   //is this an enclosing var use
-  if (Variable* v = dynamic_cast<Variable*>(expr)) {
+  if (SymExpr* v = dynamic_cast<SymExpr*>(expr)) {
     checkIfEnclVar(v);
   }
   //get enclosing variables in function call and propagate up
@@ -47,7 +47,7 @@ void FindEnclosingScopeVarUses::preProcessExpr(Expr* expr) {
 
 Vec<Symbol*>* FindEnclosingScopeVarUses::getVarUses() {return _curr_var_uses_vec;}
 
-void FindEnclosingScopeVarUses::checkIfEnclVar(Variable* v) {
+void FindEnclosingScopeVarUses::checkIfEnclVar(SymExpr* v) {
   Symbol* sym = NULL;
   if (VarSymbol* v_sym = dynamic_cast<VarSymbol*>(v->var))
     sym = v_sym;

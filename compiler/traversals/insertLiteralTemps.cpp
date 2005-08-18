@@ -53,7 +53,7 @@ static void destructureTuple(CallExpr* tuple) {
     }
     TRAVERSE(tuple->parentStmt->next, new InsertLiteralTemps(), true);
   }
-  tuple->replace(new Variable(def->sym));
+  tuple->replace(new SymExpr(def->sym));
 }
 
 
@@ -86,10 +86,10 @@ static void createTupleBaseType(int size) {
       new ParamSymbol(PARAM_PARAMETER, "index", dtInteger);
     AList<DefExpr>* formals = new AList<DefExpr>(new DefExpr(paramSymbol));
     Expr* where = new CallExpr(OP_EQUAL, 
-                               new Variable(paramSymbol),
+                               new SymExpr(paramSymbol),
                                new IntLiteral(i));
     Symboltable::continueFnDef(fn, formals, dtUnknown, true, where);
-    AList<Stmt>* body = new AList<Stmt>(new ReturnStmt(new Variable(fields.v[i-1])));
+    AList<Stmt>* body = new AList<Stmt>(new ReturnStmt(new SymExpr(fields.v[i-1])));
     Symboltable::finishFnDef(fn, new BlockStmt(body));
     decls->insertAtTail(new ExprStmt(new DefExpr(fn)));
   }
@@ -101,7 +101,7 @@ static void createTupleBaseType(int size) {
   AList<DefExpr>* formals =
     new AList<DefExpr>(new DefExpr(paramSymbol,
                                    NULL,
-                                   new Variable(new UnresolvedSymbol(name))));
+                                   new SymExpr(new UnresolvedSymbol(name))));
   Symboltable::continueFnDef(fn, formals, dtUnknown, false, NULL);
   AList<Expr>* args = new AList<Expr>();
   args->insertAtTail(new StringLiteral(copystring("(")));
@@ -109,7 +109,7 @@ static void createTupleBaseType(int size) {
     if (i != 1) {
       args->insertAtTail(new StringLiteral(copystring(", ")));
     }
-    args->insertAtTail(new MemberAccess(new Variable(new UnresolvedSymbol("val")),
+    args->insertAtTail(new MemberAccess(new SymExpr(new UnresolvedSymbol("val")),
                                         new UnresolvedSymbol(glomstrings(2, "_f", intstring(i)))));
   }
   args->insertAtTail(new StringLiteral(copystring(")")));
@@ -125,7 +125,7 @@ void InsertLiteralTemps::postProcessExpr(Expr* expr) {
     if (call->opTag == OP_SEQCAT) {
       handleBasicSequenceAppendPrependOperations(call);
     }
-    if (Variable* variable = dynamic_cast<Variable*>(call->baseExpr)) {
+    if (SymExpr* variable = dynamic_cast<SymExpr*>(call->baseExpr)) {
       if (!strncmp(variable->var->name, "_tuple", 6)) {
         createTupleBaseType(call->argList->length());
         if (call->argList->length() / 2 > 1) {

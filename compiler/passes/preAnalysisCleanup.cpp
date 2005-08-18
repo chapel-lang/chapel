@@ -5,17 +5,17 @@
 
 
 static int
-checkGeneric(BaseAST *ast, Vec<VariableType *> *typeVariables = 0) {
+checkGeneric(BaseAST *ast, Vec<VariableType *> *variableTypeSymbols = 0) {
   int result = 0;
   switch (ast->astType) {
-    case EXPR_VARIABLE: {
-      Variable *v = dynamic_cast<Variable *>(ast);
+    case EXPR_SYM: {
+      SymExpr* v = dynamic_cast<SymExpr* >(ast);
       if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(v->var))
         if (ts->definition->astType == TYPE_VARIABLE || ts->definition->isGeneric) {
-          if (!typeVariables)
+          if (!variableTypeSymbols)
             return 1;
           else {
-            typeVariables->set_add((VariableType*)ts->definition);
+            variableTypeSymbols->set_add((VariableType*)ts->definition);
             result = 1;
           }
         }
@@ -28,8 +28,8 @@ checkGeneric(BaseAST *ast, Vec<VariableType *> *typeVariables = 0) {
     Vec<BaseAST *> asts;
     get_ast_children(ast, asts);
     forv_BaseAST(a, asts)
-      if (checkGeneric(a, typeVariables)) {
-        if (!typeVariables)
+      if (checkGeneric(a, variableTypeSymbols)) {
+        if (!variableTypeSymbols)
           return 1;
         else
           result = 1;
@@ -41,18 +41,18 @@ checkGeneric(BaseAST *ast, Vec<VariableType *> *typeVariables = 0) {
 int
 tagGenerics(FnSymbol *f) {
   int changed = 0;
-  Vec<VariableType *> typeVariables;
-  if (f->whereExpr || checkGeneric(f->body, &typeVariables)) {
+  Vec<VariableType *> variableTypeSymbols;
+  if (f->whereExpr || checkGeneric(f->body, &variableTypeSymbols)) {
     changed = !f->isGeneric || changed;
     f->isGeneric = 1; 
     if (int i = f->nestingDepth()) {
       for (int j = 1; j <= i; i++) {
         FnSymbol *ff = f->nestingParent(i);
         changed = !ff->isGeneric || changed;
-        typeVariables.set_to_vec();
-        qsort(typeVariables.v, typeVariables.n, sizeof(typeVariables.v[0]), compar_baseast);
+        variableTypeSymbols.set_to_vec();
+        qsort(variableTypeSymbols.v, variableTypeSymbols.n, sizeof(variableTypeSymbols.v[0]), compar_baseast);
         ff->isGeneric = 1;
-        ff->typeVariables.move(typeVariables);
+        ff->variableTypeSymbols.move(variableTypeSymbols);
       }
     }
   }
@@ -61,28 +61,28 @@ tagGenerics(FnSymbol *f) {
 
 int
 tagGenerics(Type *t) {
-  Vec<VariableType *> typeVariables;
+  Vec<VariableType *> variableTypeSymbols;
   forv_Vec(FnSymbol, fn, t->methods)
     if (fn->isGeneric)
-      typeVariables.set_union(fn->typeVariables);
+      variableTypeSymbols.set_union(fn->variableTypeSymbols);
   if (ClassType *st = dynamic_cast<ClassType *>(t)) {
     forv_Vec(Symbol, s, st->fields)
       assert(!dynamic_cast<TypeSymbol*>(s)); // play it safe
     forv_Vec(TypeSymbol, s, st->types) {
       if (s->definition->astType == TYPE_VARIABLE) 
-        typeVariables.set_add((VariableType*)s->definition);
+        variableTypeSymbols.set_add((VariableType*)s->definition);
       else
         if (s->definition->isGeneric)
-          typeVariables.set_union(s->definition->typeVariables);
+          variableTypeSymbols.set_union(s->definition->variableTypeSymbols);
     }    
   }
-  if (typeVariables.n) {
-    typeVariables.set_to_vec();
-    qsort(typeVariables.v, typeVariables.n, sizeof(typeVariables.v[0]), compar_baseast);
+  if (variableTypeSymbols.n) {
+    variableTypeSymbols.set_to_vec();
+    qsort(variableTypeSymbols.v, variableTypeSymbols.n, sizeof(variableTypeSymbols.v[0]), compar_baseast);
     t->isGeneric = 1;
-    t->typeVariables.move(typeVariables);
+    t->variableTypeSymbols.move(variableTypeSymbols);
   }
-  return typeVariables.n != 0;
+  return variableTypeSymbols.n != 0;
 }
 
 void 

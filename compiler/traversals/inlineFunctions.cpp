@@ -36,7 +36,7 @@ void InlineFunctions::postProcessExpr(Expr* expr) {
             inlined_body->traverse(rep_returns);
             //inlined function
             fn_call->parentStmt->insertBefore(inlined_body);
-            fn_call->replace(new Variable(temp_def->sym));
+            fn_call->replace(new SymExpr(temp_def->sym));
           }
           else {
             //inlined function
@@ -79,7 +79,7 @@ bool InlineFunctions::isFormalParamRef(ParamSymbol* p_sym) {
 }
 
 bool InlineFunctions::isTypeVar(ParamSymbol* p_sym) {
-  return (p_sym->typeVariable != NULL);
+  return (p_sym->variableTypeSymbol != NULL);
 }
 
 Map<BaseAST*,BaseAST*>* InlineFunctions::createFormalToActualArgMappings(CallExpr* fn_call, AList<DefExpr>* formal_params) {
@@ -99,9 +99,9 @@ Map<BaseAST*,BaseAST*>* InlineFunctions::createFormalToActualArgMappings(CallExp
     bool typeVar = isTypeVar(dynamic_cast<ParamSymbol*>(curr_param->sym)); 
     //do not inline the function call if an argument is a ref to a expression that is no
     //a variable
-    Variable* variable;
+    SymExpr* variable;
     if (param_ref || typeVar) {
-      variable = dynamic_cast<Variable*>(curr_arg);
+      variable = dynamic_cast<SymExpr*>(curr_arg);
       if (!variable) {
         _ok_to_inline = false;
         return NULL;
@@ -123,8 +123,8 @@ Map<BaseAST*,BaseAST*>* InlineFunctions::createFormalToActualArgMappings(CallExp
       
       //copy temp back to actual arg if formal param out
     if (param_intent_out)
-      if (Variable* v = dynamic_cast<Variable*>(curr_arg))
-        fn_call->parentStmt->insertAfter(new ExprStmt(new CallExpr(OP_GETSNORM, new Variable(v->var), new Variable(temp_def->sym))));
+      if (SymExpr* v = dynamic_cast<SymExpr*>(curr_arg))
+        fn_call->parentStmt->insertAfter(new ExprStmt(new CallExpr(OP_GETSNORM, new SymExpr(v->var), new SymExpr(temp_def->sym))));
     
 
     curr_arg = actual_args->next();

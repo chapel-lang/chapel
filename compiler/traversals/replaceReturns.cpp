@@ -10,7 +10,7 @@ void ReplaceReturns::postProcessStmt(Stmt* stmt) {
     //replace return with an assignment to temporary variable
     ret_stmt->replace(new ExprStmt(
                         new CallExpr(OP_GETSNORM,
-                                     new Variable(_sym),
+                                     new SymExpr(_sym),
                                      ret_stmt->expr)));
   }
 }

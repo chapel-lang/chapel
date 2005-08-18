@@ -500,7 +500,7 @@ get_constant_Expr(Sym *c) {
   } else if (c->type == sym_string) {
     e = new StringLiteral(c->name);
   } else if (c->is_fun || c->is_symbol) {
-    e = new Variable(dynamic_cast<Symbol*>(c->asymbol->symbol));
+    e = new SymExpr(dynamic_cast<Symbol*>(c->asymbol->symbol));
   } else
     fail("type unsupported by get_constant_Expr");
   constant_cache.put(c, e);
@@ -513,7 +513,7 @@ ACallbacks::instantiate(Sym *s, Map<Sym *, Sym *> &substitutions) {
   if (tt) {
     Type *type = NULL;
     if (ParamSymbol *p = dynamic_cast<ParamSymbol*>(s->asymbol->symbol))
-      type = (p->isGeneric && p->typeVariable) ? p->typeVariable->definition : 0;
+      type = (p->isGeneric && p->variableTypeSymbol) ? p->variableTypeSymbol->definition : 0;
     else
       type = dynamic_cast<Type*>(s->asymbol->symbol);
     if (!type)
@@ -521,8 +521,8 @@ ACallbacks::instantiate(Sym *s, Map<Sym *, Sym *> &substitutions) {
     Map<BaseAST *, BaseAST *> subs;
     form_SymSym(ss, substitutions) {
       if (ParamSymbol *p = dynamic_cast<ParamSymbol*>(ss->key->asymbol->symbol)) {
-        if (p->isGeneric && p->typeVariable)
-          subs.put(p->typeVariable->definition, Sym_to_Type(ss->value));
+        if (p->isGeneric && p->variableTypeSymbol)
+          subs.put(p->variableTypeSymbol->definition, Sym_to_Type(ss->value));
         else
           subs.put(p, get_constant_Expr(ss->value));
       } else
@@ -537,8 +537,8 @@ ACallbacks::instantiate(Sym *s, Map<Sym *, Sym *> &substitutions) {
 Sym *
 ACallbacks::formal_to_generic(Sym *s) {
   ParamSymbol *p = dynamic_cast<ParamSymbol*>(s->asymbol->symbol);
-  if (p->isGeneric && p->typeVariable)
-    return p->typeVariable->definition->asymbol->sym;
+  if (p->isGeneric && p->variableTypeSymbol)
+    return p->variableTypeSymbol->definition->asymbol->sym;
   return 0;
 }
 
@@ -625,8 +625,8 @@ ACallbacks::instantiate_generic(Match *m) {
 #endif
     ParamSymbol *p = dynamic_cast<ParamSymbol*>(s->key->asymbol->symbol);
     if (!t)
-      if (p && p->isGeneric && p->typeVariable)
-        t = p->typeVariable->definition;
+      if (p && p->isGeneric && p->variableTypeSymbol)
+        t = p->variableTypeSymbol->definition;
     if (t)
       substitutions.put(t, Sym_to_Type(s->value));
     else
@@ -846,8 +846,8 @@ build_symbols(Vec<BaseAST *> &syms) {
             }
           }
 #if 0
-          if (!p->isGeneric && p->typeVariable) {
-            TypeSymbol *ts = dynamic_cast<TypeSymbol*>(p->typeVariable);
+          if (!p->isGeneric && p->variableTypeSymbol) {
+            TypeSymbol *ts = dynamic_cast<TypeSymbol*>(p->variableTypeSymbol);
             s->asymbol->sym->must_implement = ts->asymbol->sym;
           }
           assert(p->isGeneric || p->typeVarible);
@@ -882,7 +882,7 @@ build_patterns(Vec<BaseAST *> &syms) {
 
 static Sym *
 get_defaultVal(Type *t) {
-  Variable *v = dynamic_cast<Variable*>(t->defaultValue);
+  SymExpr* v = dynamic_cast<SymExpr*>(t->defaultValue);
   if (v)
     return v->var->asymbol->sym;
   assert(dynamic_cast<Literal*>(t->defaultValue));
@@ -1468,8 +1468,8 @@ gen_cond(AInfo *ast, AInfo *xcond, AInfo *xthen, AInfo *xelse) {
 
 static astType_t
 undef_or_fn_expr(Expr *ast) {
-  if (ast->astType == EXPR_VARIABLE) { 
-    Variable *v = dynamic_cast<Variable *>(ast);
+  if (ast->astType == EXPR_SYM) { 
+    SymExpr* v = dynamic_cast<SymExpr* >(ast);
     return v->var->astType;
   }
   return (astType_t)0;
@@ -1480,7 +1480,7 @@ is_this_member_access(BaseAST *a) {
   MemberAccess *ma = dynamic_cast<MemberAccess*>(a);
   if (!ma)
     return 0;
-  Variable *v = dynamic_cast<Variable*>(ma->base);
+  SymExpr* v = dynamic_cast<SymExpr*>(ma->base);
   if (!v)
     return 0;
   if (v->var->isThis())
@@ -1554,7 +1554,7 @@ gen_paren_op(CallExpr *s) {
     assert(n);
     base = make_symbol(n);
   } else if (base_symbol == SYMBOL_FN)
-    base = dynamic_cast<FnSymbol*>(dynamic_cast<Variable*>(s->baseExpr)->var)->asymbol->sym;
+    base = dynamic_cast<FnSymbol*>(dynamic_cast<SymExpr*>(s->baseExpr)->var)->asymbol->sym;
   else
     base = s->baseExpr->ainfo->rval;
   Code *send = if1_send1(if1, &ast->code);
@@ -1625,14 +1625,14 @@ gen_assignment(CallExpr *assign) {
   // handle assignment
   if1_gen(if1, &assign->ainfo->code, assign->get(1)->ainfo->code);
   Sym *rval = gen_assign_rhs(assign);
-  Variable *lhs_var = dynamic_cast<Variable*>(assign->get(1));
+  SymExpr* lhs_var = dynamic_cast<SymExpr*>(assign->get(1));
   Symbol *lhs_symbol = lhs_var ? dynamic_cast<Symbol *>(lhs_var->var) : 0;
   Sym *type = lhs_symbol ? lhs_symbol->type->asymbol->sym->type : 0;
   FnSymbol *f = assign->parentFunction();
   int constructor_assignment = 0;
   if (f->fnClass == FN_CONSTRUCTOR) {
     if (MemberAccess *m = dynamic_cast<MemberAccess*>(assign->get(1))) {
-      if (Variable *v = dynamic_cast<Variable*>(m->base)) {
+      if (SymExpr* v = dynamic_cast<SymExpr*>(m->base)) {
         if (v->var->isThis())
           constructor_assignment = 1;
       }
@@ -1791,8 +1791,8 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       s->ainfo->rval = c;
       break;
     }
-    case EXPR_VARIABLE: {
-      Variable *s = dynamic_cast<Variable*>(ast);
+    case EXPR_SYM: {
+      SymExpr* s = dynamic_cast<SymExpr*>(ast);
       Sym *sym = s->var->asymbol->sym;
       switch (sym->asymbol->symbol->astType) {
         default: break;
@@ -1949,7 +1949,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
 }
 
 static void
-fun_where_equal_constant(FnSymbol *f, Variable *v, Literal *c) {
+fun_where_equal_constant(FnSymbol *f, SymExpr* v, Literal *c) {
   if (ParamSymbol *s = dynamic_cast<ParamSymbol*>(v->var)) {
     if (!s->isGeneric) {
       show_error("where constraint on non-generic %s", f->body->ainfo, s->name);
@@ -1971,12 +1971,12 @@ fun_where_clause(FnSymbol *f, Expr *w) {
     fun_where_clause(f, op->get(2));
   } if (op->opTag == OP_EQUAL) {
     Literal *c = 0;
-    Variable *v = 0;
+    SymExpr* v = 0;
     if ((c = dynamic_cast<Literal*>(op->get(1))) && 
-        (v = dynamic_cast<Variable*>(op->get(2)))) 
+        (v = dynamic_cast<SymExpr*>(op->get(2)))) 
       fun_where_equal_constant(f, v, c);
     else if ((c = dynamic_cast<Literal*>(op->get(2))) &&
-             (v = dynamic_cast<Variable*>(op->get(1)))) 
+             (v = dynamic_cast<SymExpr*>(op->get(1)))) 
       fun_where_equal_constant(f, v, c);
   }
 }

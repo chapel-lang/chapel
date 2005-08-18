@@ -117,7 +117,7 @@ class VarSymbol : public Symbol {
 class ParamSymbol : public Symbol {
  public:
   paramType intent;
-  TypeSymbol *typeVariable;
+  TypeSymbol *variableTypeSymbol;
   bool isGeneric;
 
   ParamSymbol(paramType init_intent, char* init_name, 
@@ -176,7 +176,7 @@ class FnSymbol : public Symbol {
   bool noparens;
   bool isSetter;
   bool isGeneric;
-  Vec<VariableType *> typeVariables;
+  Vec<VariableType *> variableTypeSymbols;
   FnSymbol *instantiatedFrom;
   Map<BaseAST*,BaseAST*> substitutions;
 

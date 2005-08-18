@@ -10,8 +10,7 @@ EliminateReturns::EliminateReturns(void) {
 
 
 static bool alreadyProcessedThisReturn(Expr* retExpr, Symbol* retval) {
-  if (typeid(*retExpr) == typeid(Variable)) {
-    Variable* retVar = dynamic_cast<Variable*>(retExpr);
+  if (SymExpr* retVar = dynamic_cast<SymExpr*>(retExpr)) {
     if (retVar->var == retval) {
       return true;
     }
@@ -61,12 +60,12 @@ void EliminateReturns::preProcessStmt(Stmt* stmt) {
       }
     }
 
-    Variable* retVar = new Variable(retval);
+    SymExpr* retVar = new SymExpr(retval);
     CallExpr* assignRetVar = new CallExpr(OP_GETSNORM, retVar, retExpr->copy());
     ExprStmt* assignStmt = new ExprStmt(assignRetVar);
     BlockStmt *retBlock = new BlockStmt(assignStmt);
     retStmt->replace(retBlock);
-    Variable* newRetExpr = new Variable(retval);
+    SymExpr* newRetExpr = new SymExpr(retval);
     ReturnStmt *newRetStmt = new ReturnStmt(newRetExpr);
     assignStmt->insertAfter(newRetStmt);
   }

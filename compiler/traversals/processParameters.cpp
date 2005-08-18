@@ -12,7 +12,7 @@ ProcessParameters::ProcessParameters(void) {
 
 
 static bool tmpRequired(ParamSymbol* formal, Expr* actual) {
-  if (Variable *var = dynamic_cast<Variable*>(actual)) {
+  if (SymExpr* var = dynamic_cast<SymExpr*>(actual)) {
     if (dynamic_cast<TypeSymbol*>(var->var))
       return false;
   }
@@ -50,9 +50,9 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
         tmp->noDefaultInit = true;
         DefExpr* tmp_def = new DefExpr(tmp, init);
         stmt->insertBefore(new ExprStmt(tmp_def));
-        actual->replace(new Variable(tmp));
+        actual->replace(new SymExpr(tmp));
         if (formal->requiresCopyBack()) {
-          stmt->insertAfter(new ExprStmt(new CallExpr(OP_GETSNORM, actual, new Variable(tmp))));
+          stmt->insertAfter(new ExprStmt(new CallExpr(OP_GETSNORM, actual, new SymExpr(tmp))));
         }
       }
       formal_def = fn->formals->next();

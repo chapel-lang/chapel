@@ -466,14 +466,14 @@ void StringLiteral::printCfgInitString(FILE* outfile) {
 }
 
 
-Variable::Variable(Symbol* init_var) :
-  Expr(EXPR_VARIABLE),
+SymExpr::SymExpr(Symbol* init_var) :
+  Expr(EXPR_SYM),
   var(init_var)
 {}
 
 
 void 
-Variable::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+SymExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (var == old_ast) {
     old_ast = dynamic_cast<Symbol*>(new_ast);
   }
@@ -481,31 +481,31 @@ Variable::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 void
-Variable::verify(void) {
-  if (astType != EXPR_VARIABLE) {
-    INT_FATAL(this, "Bad Variable::astType");
+SymExpr::verify(void) {
+  if (astType != EXPR_SYM) {
+    INT_FATAL(this, "Bad SymExpr::astType");
   }
   if (!var) {
-    INT_FATAL(this, "Variable::var is NULL");
+    INT_FATAL(this, "SymExpr::var is NULL");
   }
 }
 
 
-Variable*
-Variable::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new Variable(var);
+SymExpr*
+SymExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  return new SymExpr(var);
 }
 
 
-void Variable::traverseExpr(Traversal* traversal) {
+void SymExpr::traverseExpr(Traversal* traversal) {
   TRAVERSE(var, traversal, false);
 }
 
 
-Type* Variable::typeInfo(void) {
+Type* SymExpr::typeInfo(void) {
   if (ParamSymbol* paramSymbol = dynamic_cast<ParamSymbol*>(var)) {
     if (paramSymbol->intent == PARAM_TYPE) {
-      return paramSymbol->typeVariable->definition;
+      return paramSymbol->variableTypeSymbol->definition;
     }
   }
   if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(var)) {
@@ -515,22 +515,22 @@ Type* Variable::typeInfo(void) {
 }
 
 
-bool Variable::isConst(void) {
+bool SymExpr::isConst(void) {
   return var->isConst();
 }
 
 
-bool Variable::isParam(void){
+bool SymExpr::isParam(void){
   return var->isParam();
 }
 
 
-void Variable::print(FILE* outfile) {
+void SymExpr::print(FILE* outfile) {
   var->print(outfile);
 }
 
 
-void Variable::codegen(FILE* outfile) {
+void SymExpr::codegen(FILE* outfile) {
   var->codegen(outfile);
 }
 
@@ -741,7 +741,7 @@ CallExpr::CallExpr(Expr* initBase, Expr* arg1, Expr* arg2,
 
 CallExpr::CallExpr(OpTag initOpTag, Expr* arg1, Expr* arg2) :
   Expr(EXPR_CALL),
-  baseExpr(new Variable(new UnresolvedSymbol(copystring(opChplString[initOpTag])))),
+  baseExpr(new SymExpr(new UnresolvedSymbol(copystring(opChplString[initOpTag])))),
   opTag(initOpTag)
 {
   argList = new AList<Expr>(arg1, arg2);
@@ -750,7 +750,7 @@ CallExpr::CallExpr(OpTag initOpTag, Expr* arg1, Expr* arg2) :
 
 CallExpr::CallExpr(char* name, AList<Expr>* initArgs) :
   Expr(EXPR_CALL),
-  baseExpr(new Variable(new UnresolvedSymbol(copystring(name)))),
+  baseExpr(new SymExpr(new UnresolvedSymbol(copystring(name)))),
   argList(initArgs),
   opTag(OP_NONE)
 {}
@@ -758,7 +758,7 @@ CallExpr::CallExpr(char* name, AList<Expr>* initArgs) :
 
 CallExpr::CallExpr(char* name, Expr* arg1, Expr* arg2, Expr* arg3, Expr* arg4) :
   Expr(EXPR_CALL),
-  baseExpr(new Variable(new UnresolvedSymbol(copystring(name)))),
+  baseExpr(new SymExpr(new UnresolvedSymbol(copystring(name)))),
   opTag(OP_NONE)
 {
   argList = new AList<Expr>(arg1, arg2, arg3, arg4);
@@ -767,7 +767,7 @@ CallExpr::CallExpr(char* name, Expr* arg1, Expr* arg2, Expr* arg3, Expr* arg4) :
 
 CallExpr::CallExpr(Symbol* fn, AList<Expr>* initArgs) :
   Expr(EXPR_CALL),
-  baseExpr(new Variable(fn)),
+  baseExpr(new SymExpr(fn)),
   argList(initArgs),
   opTag(OP_NONE)
 {}
@@ -775,7 +775,7 @@ CallExpr::CallExpr(Symbol* fn, AList<Expr>* initArgs) :
 
 CallExpr::CallExpr(Symbol* fn, Expr* arg1, Expr* arg2, Expr* arg3, Expr* arg4) :
   Expr(EXPR_CALL),
-  baseExpr(new Variable(fn)),
+  baseExpr(new SymExpr(fn)),
   opTag(OP_NONE)
 {
   argList = new AList<Expr>(arg1, arg2, arg3, arg4);
@@ -831,7 +831,7 @@ Expr* CallExpr::get(int index) {
 
 FnSymbol* CallExpr::findFnSymbol(void) {
   FnSymbol* fn = NULL;
-  if (Variable* variable = dynamic_cast<Variable*>(baseExpr)) {
+  if (SymExpr* variable = dynamic_cast<SymExpr*>(baseExpr)) {
     fn = dynamic_cast<FnSymbol*>(variable->var);
     if (!fn)
       if(dynamic_cast<UnresolvedSymbol*>(variable->var))
@@ -878,7 +878,7 @@ void CallExpr::codegen(FILE* outfile) {
       Type* rightType = get(2)->typeInfo();
       if (leftType == dtString) {
         if (CallExpr* fn_call = dynamic_cast<CallExpr*>(get(2))) {
-          if (Variable* fn_var = dynamic_cast<Variable*>(fn_call->baseExpr)) {
+          if (SymExpr* fn_var = dynamic_cast<SymExpr*>(fn_call->baseExpr)) {
             if (fn_var->var == dtString->defaultConstructor) {
               string_init = true;
             }
@@ -934,7 +934,7 @@ void CallExpr::codegen(FILE* outfile) {
   /// BEGIN KLUDGE
   ///
 
-  if (Variable* variable = dynamic_cast<Variable*>(baseExpr)) {
+  if (SymExpr* variable = dynamic_cast<SymExpr*>(baseExpr)) {
     if (!strcmp(variable->var->name, "_UnionWriteStopgap")) {
       ClassType* unionType = dynamic_cast<ClassType*>(argList->only()->typeInfo());
       fprintf(outfile, "if (_UNION_CHECK_QUIET(val, _%s_union_id__uninitialized)) {\n",
@@ -1013,7 +1013,7 @@ void CallExpr::codegen(FILE* outfile) {
   // runtime support for read, config, tostring require a cast of the
   // compiler produced complex type to the runtime complex type;
   // eventually there should be no runtime complex type
-  if (Variable* variable = dynamic_cast<Variable*>(baseExpr)) {
+  if (SymExpr* variable = dynamic_cast<SymExpr*>(baseExpr)) {
     if (!strcmp(variable->var->cname, "_chpl_tostring_complex")) {
       fprintf(outfile, "*(_complex128*)");
     } else if (!strcmp(variable->var->cname, "_chpl_read_complex")) {
@@ -1026,9 +1026,9 @@ void CallExpr::codegen(FILE* outfile) {
     }
   }
 
-  if (Variable* variable = dynamic_cast<Variable*>(baseExpr)) {
+  if (SymExpr* variable = dynamic_cast<SymExpr*>(baseExpr)) {
     if (!strcmp(variable->var->cname, "_data_alloc")) {
-      Variable* variable = dynamic_cast<Variable*>(argList->representative());
+      SymExpr* variable = dynamic_cast<SymExpr*>(argList->representative());
       ClassType* classType = dynamic_cast<ClassType*>(variable->var->type);
       classType->fields.v[0]->type->codegen(outfile);
       fprintf(outfile, ", ");
@@ -1049,7 +1049,7 @@ void CallExpr::codegen(FILE* outfile) {
 
       bool ampersand = dynamic_cast<ParamSymbol*>(formals->sym)->requiresCPtr();
       bool star = false;
-      if (Variable *v = dynamic_cast<Variable*>(actuals))
+      if (SymExpr* v = dynamic_cast<SymExpr*>(actuals))
         if (VarSymbol *vs = dynamic_cast<VarSymbol*>(v->var))
           if (vs->varClass == VAR_REF) {
             if (ampersand)
@@ -1078,7 +1078,7 @@ void CallExpr::codegen(FILE* outfile) {
 
 
 bool CallExpr::isPrimitive(void) {
-  if (Variable* variable = dynamic_cast<Variable*>(baseExpr)) {
+  if (SymExpr* variable = dynamic_cast<SymExpr*>(baseExpr)) {
     if (!strcmp(variable->var->name, "__primitive")) {
       return true;
     }
@@ -1303,7 +1303,7 @@ void ForallExpr::codegen(FILE* outfile) {
 
 
 void initExpr(void) {
-  dtNil->defaultValue = new Variable(gNil);
+  dtNil->defaultValue = new SymExpr(gNil);
 }
 
 
@@ -1553,7 +1553,7 @@ void ImportExpr::codegen(FILE* outfile) { }
 
 
 ModuleSymbol* ImportExpr::getModule(void) {
-  if (Variable* variable = dynamic_cast<Variable*>(expr)) {
+  if (SymExpr* variable = dynamic_cast<SymExpr*>(expr)) {
     if (Symbol* symbol = variable->var) {
       if (ModuleSymbol* module =
           dynamic_cast<ModuleSymbol*>(Symboltable::lookup(symbol->name))) {
@@ -1575,7 +1575,7 @@ getClassType(Symbol *s) {
 }
 
 ClassType* ImportExpr::getStruct(void) {
-  if (Variable* var = dynamic_cast<Variable*>(expr)) {
+  if (SymExpr* var = dynamic_cast<SymExpr*>(expr)) {
     if (ClassType *result = getClassType(var->var))
       return result;
     else if (UnresolvedSymbol* unresolved = dynamic_cast<UnresolvedSymbol*>(var->var)) {

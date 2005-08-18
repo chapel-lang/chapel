@@ -23,7 +23,7 @@ static AList<Expr>* copy_argument_list(CallExpr* expr) {
 
 static void call_info_noanalysis(CallExpr* expr, Vec<FnSymbol*>& fns) {
   char* name;
-  if (Variable* variable = dynamic_cast<Variable*>(expr->baseExpr)) {
+  if (SymExpr* variable = dynamic_cast<SymExpr*>(expr->baseExpr)) {
     name = variable->var->name;
   } else if (MemberAccess* member_access = dynamic_cast<MemberAccess*>(expr->baseExpr)) {
     name = member_access->member->name;
@@ -281,7 +281,7 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
   // Resolve CallExprs
   if (CallExpr* paren = dynamic_cast<CallExpr*>(expr)) {
     if (paren->opTag < OP_GETSNORM) {
-      if (Variable* variable = dynamic_cast<Variable*>(paren->baseExpr)) {
+      if (SymExpr* variable = dynamic_cast<SymExpr*>(paren->baseExpr)) {
         if (!strcmp(variable->var->name, "__primitive")) {
           return;
         }
@@ -378,7 +378,7 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
           }
           AList<Expr>* assign_arguments = new AList<Expr>(member_access->base->copy());
           assign_arguments->insertAtTail(rhs);
-          Expr* assign_function = new Variable(f_assign);
+          Expr* assign_function = new SymExpr(f_assign);
           CallExpr *new_expr = new CallExpr(assign_function, assign_arguments);
           expr->replace(new_expr);
           if (aop->get(1)->astType == EXPR_MEMBERACCESS) {
@@ -442,7 +442,7 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
       INT_FATAL(expr, "Unable to resolve default constructor");
     } else if (defExpr->exprType) {
       if (CallExpr *fc = dynamic_cast<CallExpr*>(defExpr->exprType))
-        if (Variable *v = dynamic_cast<Variable*>(fc->baseExpr))
+        if (SymExpr* v = dynamic_cast<SymExpr*>(fc->baseExpr))
           if (FnSymbol *fn = dynamic_cast<FnSymbol*>(v->var))
             defExpr->sym->type->defaultConstructor = fn;
     }

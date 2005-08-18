@@ -157,7 +157,7 @@ void HtmlView::preProcessExpr(Expr* expr) {
     }
   } else if (Literal* e = dynamic_cast<Literal*>(expr)) {
     write("<FONT COLOR=\"lightblue\">'%s'</FONT>", e->str);
-  } else if (Variable* e = dynamic_cast<Variable*>(expr)) {
+  } else if (SymExpr* e = dynamic_cast<SymExpr*>(expr)) {
     html_print_symbol(e->var, false);
   } else if (CallExpr* e = dynamic_cast<CallExpr*>(expr)) {
     write("(");
@@ -188,7 +188,7 @@ void HtmlView::postProcessExpr(Expr* expr) {
       write("</UL>\n");
     }
   } else if (dynamic_cast<Literal*>(expr)) {
-  } else if (dynamic_cast<Variable*>(expr)) {
+  } else if (dynamic_cast<SymExpr*>(expr)) {
   } else {
     write(")");
   }
@@ -254,7 +254,7 @@ void HtmlView::html_print_symbol(Symbol* sym, bool def) {
         if (i > 0) write(", ");
         if (Literal *l = dynamic_cast<Literal *>(constants.v[i]))
           write("<FONT COLOR=\"lightblue\">'%s'</FONT>", l->str);
-        else if (Variable *v = dynamic_cast<Variable *>(constants.v[i]))          
+        else if (SymExpr* v = dynamic_cast<SymExpr* >(constants.v[i]))          
           html_print_symbol(v->var, false);
         else 
           INT_FATAL("bad constant");

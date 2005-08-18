@@ -59,7 +59,7 @@ void InsertDefaultInitVariables::processSymbol(Symbol* sym) {
         Stmt* insert_point = outer_symbol->defPoint->parentStmt;
         insert_point->insertBefore(new ExprStmt(def));
       }
-      ts->definition->defaultValue->replace(new Variable(temp));
+      ts->definition->defaultValue->replace(new SymExpr(temp));
       temp->noDefaultInit = true;
     }
   }

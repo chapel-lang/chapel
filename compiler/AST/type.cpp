@@ -279,7 +279,7 @@ void FnType::codegenDef(FILE* outfile) {
 
 
 EnumType::EnumType(AList<DefExpr>* init_constants) :
-  Type(TYPE_ENUM, new Variable(init_constants->first()->sym)),
+  Type(TYPE_ENUM, new SymExpr(init_constants->first()->sym)),
   constants(init_constants)
 { }
 
@@ -431,7 +431,7 @@ bool EnumType::hasDefaultWriteFunction(void) {
 
 AList<Stmt>* EnumType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
   return new AList<Stmt>(new ExprStmt(new CallExpr("_EnumWriteStopgap",
-                                                   new Variable(arg))));
+                                                   new SymExpr(arg))));
 }
 
 
@@ -442,7 +442,7 @@ bool EnumType::hasDefaultReadFunction(void) {
 
 AList<Stmt>* EnumType::buildDefaultReadFunctionBody(ParamSymbol* arg) {
   return new AList<Stmt>(new ExprStmt(new CallExpr("_EnumReadStopgap",
-                                                   new Variable(arg))));
+                                                   new SymExpr(arg))));
 }
 
 
@@ -534,7 +534,7 @@ ClassType::ClassType(ClassTag initClassTag) :
   declarationList(new AList<Stmt>())
 {
   if (classTag == CLASS_CLASS) {
-    defaultValue = new Variable(gNil);
+    defaultValue = new SymExpr(gNil);
   }
   fields.clear();
   methods.clear();
@@ -682,14 +682,14 @@ init_expr(Type *t) {
   else if (t->defaultConstructor)
     return new CallExpr(t->defaultConstructor);
   else
-    return new Variable(gNil);
+    return new SymExpr(gNil);
 }
 
 void ClassType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this, 
                                           AList<DefExpr>* arguments) {
   if (classTag == CLASS_UNION) {
-    AList<Expr>* args = new AList<Expr>(new Variable(_this));
-    Expr* arg2 = new Variable(fieldSelector->constants->first()->sym);
+    AList<Expr>* args = new AList<Expr>(new SymExpr(_this));
+    Expr* arg2 = new SymExpr(fieldSelector->constants->first()->sym);
     args->insertAtTail(arg2);
     CallExpr* init_function = new CallExpr(Symboltable::lookupInternal("_UNION_SET"), args);
     ExprStmt* init_stmt = new ExprStmt(init_function);
@@ -701,7 +701,7 @@ void ClassType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this,
     if (is_Scalar_Type(tmp->type))
       continue;
     Expr* varInitExpr = init_expr(tmp->type);
-    Expr* lhs = new MemberAccess(new Variable(_this), tmp);
+    Expr* lhs = new MemberAccess(new SymExpr(_this), tmp);
     Expr* assign_expr = new CallExpr(OP_GETSNORM, lhs, varInitExpr);
     Stmt* assign_stmt = new ExprStmt(assign_expr);
     stmts->insertAtTail(assign_stmt);
@@ -718,12 +718,12 @@ void ClassType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this,
     }
   }
   forv_Vec(Symbol, tmp, fields) {
-    Expr* lhs = new MemberAccess(new Variable(_this), tmp);
+    Expr* lhs = new MemberAccess(new SymExpr(_this), tmp);
     Expr* rhs = NULL;
     if (analyzeAST) {
-      rhs = new Variable(ptmp->sym);
+      rhs = new SymExpr(ptmp->sym);
     } else {
-      rhs = tmp->defPoint->init ? tmp->defPoint->init->copy() : new Variable(gNil);
+      rhs = tmp->defPoint->init ? tmp->defPoint->init->copy() : new SymExpr(gNil);
       if (tmp->defPoint->init) {
         tmp->defPoint->init->remove();
       }
@@ -818,7 +818,7 @@ bool ClassType::hasDefaultWriteFunction(void) {
 AList<Stmt>* ClassType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
   if (classTag == CLASS_UNION) {
     return new AList<Stmt>(new ExprStmt(new CallExpr("_UnionWriteStopgap",
-                                                     new Variable(arg))));
+                                                     new SymExpr(arg))));
   }
   AList<Stmt>* body = new AList<Stmt>();
   if (classTag == CLASS_CLASS) {
@@ -827,7 +827,7 @@ AList<Stmt>* ClassType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
     writeNil->insertAtTail(new ReturnStmt(NULL));
     BlockStmt* blockStmt = new BlockStmt(writeNil);
     Symbol* nil = Symboltable::lookupInternal("nil", SCOPE_INTRINSIC);
-    Expr* argIsNil = new CallExpr(OP_EQUAL, new Variable(arg), new Variable(nil));
+    Expr* argIsNil = new CallExpr(OP_EQUAL, new SymExpr(arg), new SymExpr(nil));
     body->insertAtTail(new CondStmt(argIsNil, blockStmt));
   }
 
@@ -844,7 +844,7 @@ AList<Stmt>* ClassType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
     }
     addWriteStmt(body, new StringLiteral(tmp->name));
     addWriteStmt(body, new StringLiteral(" = "));
-    addWriteStmt(body, new MemberAccess(new Variable(arg), tmp));
+    addWriteStmt(body, new MemberAccess(new SymExpr(arg), tmp));
     first = false;
   }
 
@@ -905,7 +905,7 @@ CallExpr* ClassType::buildSafeUnionAccessCall(unionCall type, Expr* base,
                                                  Symbol* field) {
   AList<Expr>* args = new AList<Expr>(base->copy());
   char* id_tag = buildFieldSelectorName(this, field);
-  args->insertAtTail(new Variable(Symboltable::lookupFromScope(id_tag, structScope)));
+  args->insertAtTail(new SymExpr(Symboltable::lookupFromScope(id_tag, structScope)));
   if (type == UNION_CHECK) {
     args->insertAtTail(new StringLiteral(base->filename));
     args->insertAtTail(new IntLiteral(base->lineno));
@@ -953,7 +953,7 @@ void MetaType::traverseDefType(Traversal* traversal) {
 }
 
 SumType::SumType() :
-  Type(TYPE_SUM, new Variable(Symboltable::lookupInternal("nil", SCOPE_INTRINSIC)))
+  Type(TYPE_SUM, new SymExpr(Symboltable::lookupInternal("nil", SCOPE_INTRINSIC)))
 {
 }
 

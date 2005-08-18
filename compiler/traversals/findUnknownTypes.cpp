@@ -7,7 +7,7 @@
 
 void RemoveTypeVariableActuals::preProcessExpr(Expr* expr) {
   if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
-    if (Variable* variable = dynamic_cast<Variable*>(call->baseExpr)) {
+    if (SymExpr* variable = dynamic_cast<SymExpr*>(call->baseExpr)) {
       if (variable->var->defPoint &&
           variable->var->defPoint->parentStmt &&
           variable->var->defPoint->parentStmt->hasPragma("keep types")) {
@@ -17,11 +17,11 @@ void RemoveTypeVariableActuals::preProcessExpr(Expr* expr) {
     Expr* arg = call->argList->first();
     while (arg) {
       Expr* next_arg = call->argList->next();
-      if (Variable* var_arg = dynamic_cast<Variable*>(arg)) {
+      if (SymExpr* var_arg = dynamic_cast<SymExpr*>(arg)) {
         if (dynamic_cast<TypeSymbol*>(var_arg->var)) {
           arg->remove();
         } else if (ParamSymbol *p = dynamic_cast<ParamSymbol*>(var_arg->var)) {
-          if (p->typeVariable)
+          if (p->variableTypeSymbol)
             arg->remove();
         } else if (var_arg->var == Symboltable::lookupInternal("_methodToken")) {
           arg->remove();
@@ -42,7 +42,7 @@ void RemoveTypeVariableFormals::preProcessSymbol(Symbol* sym) {
       return;
     }
     for_alist(DefExpr, formal, fn->formals) {
-      if (dynamic_cast<ParamSymbol*>(formal->sym)->typeVariable) {
+      if (dynamic_cast<ParamSymbol*>(formal->sym)->variableTypeSymbol) {
         formal->remove();
       } else if (formal->sym->type->symbol ==
                  Symboltable::lookupInternal("_methodTokenType")) {

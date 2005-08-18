@@ -19,8 +19,8 @@ void insertSymbolForLiteral(Expr* prim) {
   if (dynamic_cast<Literal*>(prim)){
     if (Symbol* sym = Symboltable::lookupInScope(((Literal*)prim)->str, commonModule->modScope)) {
       if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym)) {
-        Variable* new_var = new Variable(var);
-        //prim->replace(new Variable(var));
+        SymExpr* new_var = new SymExpr(var);
+        //prim->replace(new SymExpr(var));
         prim->replace(new_var);
         prim = new_var;
         return;
@@ -40,8 +40,8 @@ void insertSymbolForLiteral(Expr* prim) {
     Stmt* initStmt = new ExprStmt(defExpr);
     commonModule->initFn->body->body->insertAtHead(initStmt);
     VarSymbol* var = dynamic_cast<VarSymbol*>(defExpr->sym);
-    Variable* new_var = new Variable(var);
-    //prim->replace(new Variable(var));
+    SymExpr* new_var = new SymExpr(var);
+    //prim->replace(new SymExpr(var));
     prim->replace(new_var);
     prim = new_var;
   }

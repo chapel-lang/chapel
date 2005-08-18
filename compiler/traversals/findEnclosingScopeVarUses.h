@@ -20,7 +20,7 @@ public:
   void preProcessStmt(Stmt* stmt);
   void postProcessStmt(Stmt* stmt);
   Vec<Symbol*>* getVarUses();
-  void checkIfEnclVar(Variable* var);
+  void checkIfEnclVar(SymExpr* var);
   void computeNestFuncEnclScopeVarUses(FnSymbol* fn_sym);
   Vec<Symbol*>* removeCurrScopeVars(FnSymbol* fn_sym);
 };

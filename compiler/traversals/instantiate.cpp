@@ -12,7 +12,7 @@ Instantiate::postProcessExpr(Expr* expr) {
     return;
   }
   if (CallExpr* parenOpExpr = dynamic_cast<CallExpr*>(expr)) {
-    if (Variable* variable = dynamic_cast<Variable*>(parenOpExpr->baseExpr)) {
+    if (SymExpr* variable = dynamic_cast<SymExpr*>(parenOpExpr->baseExpr)) {
       if (TypeSymbol* typeSymbol = dynamic_cast<TypeSymbol*>(variable->var)) {
         if (FnSymbol* constructor = dynamic_cast<FnSymbol*>(typeSymbol->definition->defaultConstructor)) {
           Map<BaseAST*,BaseAST*> substitutions;
@@ -20,13 +20,13 @@ Instantiate::postProcessExpr(Expr* expr) {
           for_alist(Expr, actual, parenOpExpr->argList) {
             ParamSymbol* formalArg = dynamic_cast<ParamSymbol*>(formal->sym);
             if (formalArg->isGeneric) {
-              if (formalArg->typeVariable) {
-                if (Variable* variable = dynamic_cast<Variable*>(actual)) {
+              if (formalArg->variableTypeSymbol) {
+                if (SymExpr* variable = dynamic_cast<SymExpr*>(actual)) {
                   if (TypeSymbol* actualArg = dynamic_cast<TypeSymbol*>(variable->var)) {
                     if (dynamic_cast<VariableType*>(actualArg->definition)) {
                       return;
                     }
-                    substitutions.put(formalArg->typeVariable->definition, actualArg->definition);
+                    substitutions.put(formalArg->variableTypeSymbol->definition, actualArg->definition);
                   }
                   else {
                     return;

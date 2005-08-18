@@ -750,7 +750,7 @@ formal:
       TypeSymbol* new_type_symbol = new TypeSymbol(name, new_type);
       new_type->addSymbol(new_type_symbol);
       ps->type = getMetaType(NULL);
-      ps->typeVariable = new_type_symbol;
+      ps->variableTypeSymbol = new_type_symbol;
       $$ = defExpr;
     }
 | TLP formal_ls TRP
@@ -960,7 +960,7 @@ tuple_multiplier:
 variable_expr:
   identifier
     {
-      $$ = new Variable(new UnresolvedSymbol($1));
+      $$ = new SymExpr(new UnresolvedSymbol($1));
     }
 ;
 
@@ -1060,7 +1060,7 @@ tuple_paren_expr:
         AList<Expr>* argList = new AList<Expr>();
         int size = 0;
         for_alist(Expr, expr, $2) {
-          argList->insertAtTail(new Variable(dtUnknown->symbol));
+          argList->insertAtTail(new SymExpr(dtUnknown->symbol));
         }
         for_alist(Expr, expr, $2) {
           argList->insertAtTail(
@@ -1108,7 +1108,7 @@ atom:
 seq_expr:
   TSEQBEGIN expr_ls TSEQEND
     {
-      Expr* seqLiteral = new CallExpr("seq", new Variable(dtUnknown->symbol));
+      Expr* seqLiteral = new CallExpr("seq", new SymExpr(dtUnknown->symbol));
       for_alist(Expr, element, $2) {
         element->remove();
         seqLiteral =
@@ -1136,9 +1136,9 @@ if_expr:
 expr: 
   atom
 | TNIL
-    { $$ = new Variable(gNil); }
+    { $$ = new SymExpr(gNil); }
 | TUNSPECIFIED
-    { $$ = new Variable(gUnspecified); }
+    { $$ = new SymExpr(gUnspecified); }
 | TLET var_decl_inner_ls TIN expr
     {
       AList<DefExpr>* symDefs = new AList<DefExpr>();

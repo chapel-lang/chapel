@@ -61,13 +61,13 @@ void InsertThisParameters::preProcessExpr(Expr* expr) {
       fn->body->body->insertAtHead(new ExprStmt(this_decl));
       char* description = glomstrings(2, "instance of class ", typeSym->name);
       Expr* alloc_rhs = new CallExpr(Symboltable::lookupInternal("_chpl_alloc"),
-                                     new Variable(typeSym),
+                                     new SymExpr(typeSym),
                                      new StringLiteral(description));
-      Expr* alloc_lhs = new Variable(fn->_this);
+      Expr* alloc_lhs = new SymExpr(fn->_this);
       Expr* alloc_expr = new CallExpr(OP_GETSNORM, alloc_lhs, alloc_rhs);
       Stmt* alloc_stmt = new ExprStmt(alloc_expr);
       this_decl->parentStmt->insertAfter(alloc_stmt);
-      fn->body->body->insertAtTail(new ReturnStmt(new Variable(fn->_this)));
+      fn->body->body->insertAtTail(new ReturnStmt(new SymExpr(fn->_this)));
 
       // fix type variables, associate by name
       if (ClassType* structType = dynamic_cast<ClassType*>(typeSym->definition)) {
@@ -78,7 +78,7 @@ void InsertThisParameters::preProcessExpr(Expr* expr) {
                 if (!strcmp(tmp->name, arg->sym->name)) {
                   arg->sym->type = variableType->type;
                   dynamic_cast<ParamSymbol*>(arg->sym)->isGeneric = true;
-                  dynamic_cast<ParamSymbol*>(arg->sym)->typeVariable = tmp;
+                  dynamic_cast<ParamSymbol*>(arg->sym)->variableTypeSymbol = tmp;
                 }
               }
             }

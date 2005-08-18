@@ -6,7 +6,7 @@
 
 
 void ApplyThisParameters::postProcessExpr(Expr* expr) {
-  if (Variable* member = dynamic_cast<Variable*>(expr)) {
+  if (SymExpr* member = dynamic_cast<SymExpr*>(expr)) {
     if (member->parentStmt &&
         member->parentStmt->parentFunction() &&
         member->parentStmt->parentFunction()->typeBinding) {
@@ -24,7 +24,7 @@ void ApplyThisParameters::postProcessExpr(Expr* expr) {
         if (dynamic_cast<TypeSymbol*>(member->var)) {
           return;
         }
-        Variable* base = new Variable(currentFunction->_this);
+        SymExpr* base = new SymExpr(currentFunction->_this);
         MemberAccess* memberAccess = new MemberAccess(base, member->var);
         memberAccess->lineno = expr->lineno;
         memberAccess->filename = expr->filename;

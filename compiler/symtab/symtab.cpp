@@ -470,7 +470,7 @@ void Symboltable::defineVarDef2(AList<Stmt>* stmts, varType vartag, consType con
 static AList<DefExpr>* exprToIndexSymbols(AList<Expr>* indices) {
   AList<DefExpr>* defExprs = new AList<DefExpr>();
   for_alist(Expr, tmp, indices) {
-    Variable* varTmp = dynamic_cast<Variable*>(tmp);
+    SymExpr* varTmp = dynamic_cast<SymExpr*>(tmp);
     if (!varTmp) {
       INT_FATAL(tmp, "Error, Variable expected in index list");
     } else {

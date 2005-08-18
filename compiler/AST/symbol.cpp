@@ -351,7 +351,7 @@ ParamSymbol::ParamSymbol(paramType init_intent, char* init_name,
                          Type* init_type) :
   Symbol(SYMBOL_PARAM, init_name, init_type),
   intent(init_intent),
-  typeVariable(NULL),
+  variableTypeSymbol(NULL),
   isGeneric(false)
 {
   if (intent == PARAM_PARAMETER || intent == PARAM_TYPE)
@@ -372,8 +372,8 @@ void ParamSymbol::verify(void) {
 ParamSymbol*
 ParamSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   ParamSymbol *ps = new ParamSymbol(intent, copystring(name), type);
-  if (typeVariable)
-    ps->typeVariable = typeVariable;
+  if (variableTypeSymbol)
+    ps->variableTypeSymbol = variableTypeSymbol;
   ps->isGeneric = isGeneric;
   ps->cname = copystring(cname);
   return ps;
@@ -387,7 +387,7 @@ void ParamSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 void ParamSymbol::traverseDefSymbol(Traversal* traversal) {
   TRAVERSE(type, traversal, false);
-  TRAVERSE(typeVariable, traversal, false);
+  TRAVERSE(variableTypeSymbol, traversal, false);
 }
 
 
@@ -657,11 +657,11 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
     if (coercionSubstitution) {
       char* tempName = glomstrings(2, "_coercion_temp_", formal->sym->name);
       VarSymbol* temp = new VarSymbol(tempName, formal->sym->type);
-      DefExpr* tempDefExpr = new DefExpr(temp, new Variable(wrapperFormal->sym));
+      DefExpr* tempDefExpr = new DefExpr(temp, new SymExpr(wrapperFormal->sym));
       wrapperBody->insertAtTail(new ExprStmt(tempDefExpr));
-      wrapperActuals->insertAtTail(new Variable(temp));
+      wrapperActuals->insertAtTail(new SymExpr(temp));
     } else {
-      wrapperActuals->insertAtTail(new Variable(wrapperFormal->sym));
+      wrapperActuals->insertAtTail(new SymExpr(wrapperFormal->sym));
     }
   }
 
@@ -715,9 +715,9 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
       ParamSymbol *ps = dynamic_cast<ParamSymbol*>(formal->sym);
       if (formal->sym->type != dtUnknown &&
           ps->intent != PARAM_OUT && ps->intent != PARAM_INOUT)
-        temps.add(new CastExpr(new Variable(temp_symbol), NULL, formal->sym->type));
+        temps.add(new CastExpr(new SymExpr(temp_symbol), NULL, formal->sym->type));
       else
-        temps.add(new Variable(temp_symbol));
+        temps.add(new SymExpr(temp_symbol));
     }
   }
   AList<Expr>* actuals = new AList<Expr>();
@@ -726,7 +726,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
     if (defaults->set_in(formal->sym)) {
       actuals->insertAtTail(temps.pop());
     } else {
-      actuals->insertAtTail(new Variable(wrapper_formal->sym));
+      actuals->insertAtTail(new SymExpr(wrapper_formal->sym));
       wrapper_formal = wrapper_formals->next();
     }
   }
@@ -773,7 +773,7 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_actuals) {
     DefExpr* tmp = wrapper_formals->first();
     for (int j = 0; j < formals_to_actuals->n; j++) {
       if (formals_to_actuals->v[i].value == formals_to_actuals->v[j].key) {
-        actuals->insertAtTail(new Variable(tmp->sym));
+        actuals->insertAtTail(new SymExpr(tmp->sym));
       }
       tmp = wrapper_formals->next();
     }
@@ -1244,7 +1244,7 @@ void ModuleSymbol::createInitFn(void) {
     // definition (we'll wrap it in a conditional just below, after
     // filtering)
     Expr* assignVar = new CallExpr(OP_GETSNORM,
-                                   new Variable(new UnresolvedSymbol(runOnce)),
+                                   new SymExpr(new UnresolvedSymbol(runOnce)),
                                    new BoolLiteral(false));
     definition->insertAtHead(new ExprStmt(assignVar));
   }
@@ -1265,7 +1265,7 @@ void ModuleSymbol::createInitFn(void) {
       new CondStmt(
         new CallExpr(
           OP_LOGNOT,
-          new Variable(
+          new SymExpr(
             new UnresolvedSymbol(runOnce))), 
         new BlockStmt(
           new ReturnStmt(NULL)));

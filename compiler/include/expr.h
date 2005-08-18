@@ -187,11 +187,11 @@ class DefExpr : public Expr {
 };
 
 
-class Variable : public Expr {
+class SymExpr : public Expr {
  public:
   Symbol* var;
-  Variable(Symbol* init_var);
-  COPY_DEF(Variable);
+  SymExpr(Symbol* init_var);
+  COPY_DEF(SymExpr);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void verify(void); 
   void traverseExpr(Traversal* traversal);

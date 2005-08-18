@@ -15,7 +15,7 @@ class InsertNestedFuncInIterator : public Traversal {
   void postProcessExpr(Expr* expr) {
     //replace seq yield call in iterator with call to nested function
     if (CallExpr* fc = dynamic_cast<CallExpr*>(expr)) {
-     if (Variable*  v = dynamic_cast<Variable*>(fc->baseExpr))
+     if (SymExpr*  v = dynamic_cast<SymExpr*>(fc->baseExpr))
       if (!strcmp(v->var->name, "_yield")) {
         AList<Expr>* new_arg_list = getNewArgList(fc->argList);
         CallExpr* fn_call = new CallExpr(_fn_call_sym, new_arg_list->copy());
@@ -54,7 +54,7 @@ void CreateNestedFuncIterators::postProcessStmt(Stmt* stmt) {
         fls->insertBefore(new ExprStmt(new DefExpr(func_it_sym)));
         
         //insert nested function created using the body of the iterator loop   
-        CallExpr* new_func_call = new CallExpr(new Variable(func_it_sym), paren_op->argList->copy());
+        CallExpr* new_func_call = new CallExpr(new SymExpr(func_it_sym), paren_op->argList->copy());
         fls->insertBefore(new ExprStmt(new_func_call));
         
         //place body of for loop in a nested function definition
@@ -77,7 +77,7 @@ AList<Expr>* CreateNestedFuncIterators::getIteratorCallsHelper(AList<Expr>* iter
   //create list of user iterators
   for_alist(Expr, iterator, iterator_list) {
     if (CallExpr* paren_op = dynamic_cast<CallExpr*>(iterator)){
-      if (Variable* variable = dynamic_cast<Variable*>(paren_op->baseExpr)){
+      if (SymExpr* variable = dynamic_cast<SymExpr*>(paren_op->baseExpr)){
         FnSymbol* fn_sym = dynamic_cast<FnSymbol*>(variable->var);
         if (fn_sym->paramScope->getModule()->modtype == MOD_USER)
           user_iterator_list->insertAtTail(paren_op->copy());

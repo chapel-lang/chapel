@@ -50,15 +50,15 @@ process(BaseAST* ast) {
     if (rhs && assign->opTag != OP_GETSNORM) {
       AList<Expr>* arguments = call ? call->argList->copy() : new AList<Expr>;
       arguments->insertAtHead(memberAccess->base->copy());
-      arguments->insertAtHead(new Variable(Symboltable::lookupInternal("_methodToken")));
+      arguments->insertAtHead(new SymExpr(Symboltable::lookupInternal("_methodToken")));
       Expr *lhs = new CallExpr(memberAccess->member->name, arguments);
       rhs = new CallExpr(gets_to_non(assign->opTag), lhs, rhs);
     }
     AList<Expr>* arguments = call ? call->argList->copy() : new AList<Expr>;
     arguments->insertAtHead(memberAccess->base->copy());
-    arguments->insertAtHead(new Variable(Symboltable::lookupInternal("_methodToken")));
+    arguments->insertAtHead(new SymExpr(Symboltable::lookupInternal("_methodToken")));
     if (rhs) {
-      arguments->insertAtTail(new Variable(Symboltable::lookupInternal("_setterToken")));
+      arguments->insertAtTail(new SymExpr(Symboltable::lookupInternal("_setterToken")));
       arguments->insertAtTail(rhs);
     }
     REPLACE(new CallExpr(memberAccess->member->name, arguments));
@@ -69,7 +69,7 @@ process(BaseAST* ast) {
       rhs = new CallExpr(gets_to_non(assign->opTag), assign->argList->get(1)->copy(), rhs);
     if (call) {
       AList<Expr>* arguments = call->argList->copy();
-      arguments->insertAtTail(new Variable(Symboltable::lookupInternal("_setterToken")));
+      arguments->insertAtTail(new SymExpr(Symboltable::lookupInternal("_setterToken")));
       arguments->insertAtTail(rhs);
       REPLACE(new CallExpr(call->baseExpr->copy(), arguments));
     } else

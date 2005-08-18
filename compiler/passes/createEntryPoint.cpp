@@ -7,7 +7,7 @@
 
 
 static ExprStmt* buildCallExprStmt(FnSymbol* fn) {
-  Variable* variable = new Variable(fn);
+  SymExpr* variable = new SymExpr(fn);
   variable->lineno = -1;
   CallExpr* fnCall = new CallExpr(variable);
   fnCall->lineno = -1;

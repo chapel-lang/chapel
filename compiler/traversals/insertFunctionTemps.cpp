@@ -69,9 +69,9 @@ void InsertFunctionTemps::postProcessStmt(Stmt* stmt) {
           Type* temp_type = function->typeInfo();
           VarSymbol* var = new VarSymbol(temp_name, temp_type);
           stmt->insertBefore(new ExprStmt(new DefExpr(var)));
-          stmt->insertBefore(new ExprStmt(new CallExpr(OP_GETSNORM, new Variable(var), function->copy(false, NULL, &functions))));
+          stmt->insertBefore(new ExprStmt(new CallExpr(OP_GETSNORM, new SymExpr(var), function->copy(false, NULL, &functions))));
           var->noDefaultInit = true;
-          function->replace(new Variable(var));
+          function->replace(new SymExpr(var));
         }
       }
     }

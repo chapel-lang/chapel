@@ -109,8 +109,8 @@ void RemoveNestedFunctions::addNestedFuncActuals(CallExpr* paren_op, Vec<Symbol*
     //build nested function actuals list
     forv_Vec(Symbol, sym, *encl_var_uses) {
       if (sym) 
-        paren_op->argList->insertAtTail(new Variable(sym));
+        paren_op->argList->insertAtTail(new SymExpr(sym));
     } 
-    paren_op->baseExpr->replace(new Variable(new_func_sym));
+    paren_op->baseExpr->replace(new SymExpr(new_func_sym));
   }
 }

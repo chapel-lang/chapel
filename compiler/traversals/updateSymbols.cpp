@@ -29,7 +29,7 @@ UpdateSymbols::UpdateSymbols(Map<BaseAST*,BaseAST*>* init_updateMap,
   
 
 void UpdateSymbols::preProcessExpr(Expr* expr) {
-  if (Variable* sym_expr = dynamic_cast<Variable*>(expr)) {
+  if (SymExpr* sym_expr = dynamic_cast<SymExpr*>(expr)) {
     Expr* newExpr = dynamic_cast<Expr*>(updateMap->get(sym_expr->var));
     if (newExpr) {
       sym_expr->replace(newExpr->copy(false, copyMap));
@@ -57,13 +57,13 @@ void UpdateSymbols::preProcessSymbol(Symbol* sym) {
     XSUB(fn->_getter, Symbol*);
   }
   if (ParamSymbol* p = dynamic_cast<ParamSymbol*>(sym)) {
-    if (p->isGeneric && p->typeVariable) {
-      BaseAST *b = updateMap->get(p->typeVariable);
+    if (p->isGeneric && p->variableTypeSymbol) {
+      BaseAST *b = updateMap->get(p->variableTypeSymbol);
       if (b) {
         if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(b)) {
           if (ts->definition->astType != TYPE_VARIABLE)
             p->isGeneric = 0;
-          p->typeVariable = ts;
+          p->variableTypeSymbol = ts;
         } else {
           INT_FATAL("Major error in UpdateSymbols");
         }

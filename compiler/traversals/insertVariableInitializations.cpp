@@ -12,13 +12,13 @@ static Stmt* basic_default_init_stmt(Stmt* stmt, VarSymbol* var, Type* type) {
   if (var->noDefaultInit && var->type != dtString) {
     return NULL;
   } else if (type->defaultValue) {
-    Expr* lhs = new Variable(var);
+    Expr* lhs = new SymExpr(var);
     Expr* rhs = type->defaultValue->copy();
     Expr* init_expr = new CallExpr(OP_GETSNORM, lhs, rhs);
     return new ExprStmt(init_expr);
   } else if (type->defaultConstructor) {
-    Expr* lhs = new Variable(var);
-    Expr* constructor_variable = new Variable(type->defaultConstructor);
+    Expr* lhs = new SymExpr(var);
+    Expr* constructor_variable = new SymExpr(type->defaultConstructor);
     Expr* rhs = new CallExpr(constructor_variable);
     Expr* init_expr = new CallExpr(OP_GETSNORM, lhs, rhs);
     return new ExprStmt(init_expr);
@@ -38,12 +38,12 @@ static void insert_config_init(Stmt* stmt, VarSymbol* var, Type* type) {
   // temporaries for function calls.
 
   Expr* init_expr = var->defPoint->init ? var->defPoint->init : type->defaultValue;
-  AList<Expr>* args = new AList<Expr>(new Variable(var));
-  args->insertAtTail(new Variable(type->symbol));
+  AList<Expr>* args = new AList<Expr>(new SymExpr(var));
+  args->insertAtTail(new SymExpr(type->symbol));
   args->insertAtTail(new StringLiteral(copystring(var->name)));
   args->insertAtTail(new StringLiteral(var->parentScope->symContext->name));
   CallExpr* call = new CallExpr(initConfigFn, args);
-  Expr* assign = new CallExpr(OP_GETSNORM, new Variable(var), init_expr->copy());
+  Expr* assign = new CallExpr(OP_GETSNORM, new SymExpr(var), init_expr->copy());
   ExprStmt* assign_stmt = new ExprStmt(assign);
   CondStmt* cond_stmt = new CondStmt(call, new BlockStmt(assign_stmt));
   stmt->insertBefore(cond_stmt);
@@ -60,14 +60,14 @@ static void insert_basic_init(Stmt* stmt, VarSymbol* var, Type* type) {
   }
 
   if (var->defPoint->exprType) {
-    Expr* lhs = new Variable(var);
+    Expr* lhs = new SymExpr(var);
     Expr* rhs = var->defPoint->exprType->copy();
     Expr* init_expr = new CallExpr(OP_GETSNORM, lhs, rhs);
     stmt->insertBefore(new ExprStmt(init_expr));
   }
 
   if (var->defPoint->init) {
-    Expr* lhs = new Variable(var);
+    Expr* lhs = new SymExpr(var);
     Expr* rhs = var->defPoint->init->copy();
     if (var->defPoint->initAssign.n) {
       if (var->defPoint->initAssign.n != 1) {

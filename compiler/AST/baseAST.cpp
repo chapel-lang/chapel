@@ -298,15 +298,15 @@ char* astTypeName[AST_TYPE_END+1] = {
   "IntLiteral",
   "FloatLiteral",
   "StringLiteral",
-  "Variable",
+  "SymExpr",
   "DefExpr",
-  "Let",
+  "LetExpr",
   "CondExpr",
-  "Forall",
+  "ForallExpr",
   "CallExpr",
-  "Cast",
+  "CastExpr",
   "MemberAccess",
-  "Reduce",
+  "ReduceExpr",
   "NamedExpr",
   "ImportExpr",
 
@@ -403,8 +403,8 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
   case EXPR_FLOATLITERAL:
   case EXPR_STRINGLITERAL:
     goto LExprCommon;
-  case EXPR_VARIABLE:
-    ADD_CHILD(Variable, var);
+  case EXPR_SYM:
+    ADD_CHILD(SymExpr, var);
     goto LExprCommon;
   case EXPR_IMPORT:
     ADD_CHILD(ImportExpr, expr);
@@ -461,7 +461,7 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
   case SYMBOL_VAR: 
     goto LSymbolCommon;
   case SYMBOL_PARAM: 
-    ADD_CHILD(ParamSymbol, typeVariable);
+    ADD_CHILD(ParamSymbol, variableTypeSymbol);
     goto LSymbolCommon;
   case SYMBOL_TYPE: goto LSymbolCommon;
   case SYMBOL_FN:

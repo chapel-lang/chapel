@@ -34,7 +34,7 @@ void ProcessImportExprs::postProcessExpr(Expr* expr) {
 
 
 static ExprStmt* genModuleUse(char* moduleName) {
-  Expr* moduleUse = new ImportExpr(IMPORT_USE, new Variable(new UnresolvedSymbol(moduleName)));
+  Expr* moduleUse = new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol(moduleName)));
   return new ExprStmt(moduleUse);
 
 }
