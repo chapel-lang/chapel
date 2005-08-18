@@ -43334,3 +43334,38 @@ Modified files:
 	                             removeLiterals.cpp 
 	                             removeNestedFunctions.cpp 
 
+---------------------------------------------------------------------------
+
+08/18/05 13:14:54 -- deitz
+
+Log message:
+	With this checkin, I simplified some code in the CreateEntryPoint pass
+	that I never understood...until now.
+	
+	Removed fake entry module which was made to pass analysis where the
+	program started.  We now use the main function to do this.
+	Coincidentally, this is where the program actually starts!  This
+	eliminates some cruft that was once necessary but is no longer.
+	
+	Because the main function now calls the init function of the prelude
+	module, I added a macro to make this a noop in the runtime by
+	#defining __init_prelude() to be nothing.
+	
+	This removes RunAnalysis::entryStmtList which is no longer necessary.
+	It only was so that it could point to the entry module code which was
+	not otherwise traversed.
+	
+	Updated .goods for inlining reporting since the mangle numbers changed
+	on the functions being inlined.  Should these print out the function
+	name rather than the function cname to avoid this sensitivity.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/passes/: createEntryPoint.cpp createEntryPoint.h 
+	                         preAnalysisCleanup.cpp runAnalysis.cpp 
+	                         runAnalysis.h 
+	chapel/compiler/traversals/: verify.cpp 
+	chapel/runtime/include/: stdchpl.h 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+
