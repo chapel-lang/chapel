@@ -29,7 +29,6 @@ void insertSymbolForLiteral(Expr* prim) {
       return;
     }
   
-    SymScope* save_scope = Symboltable::setCurrentScope(commonModule->modScope);
     VarSymbol* var = new VarSymbol(//glomstrings(2, "_tmp_lit_", intstring(uid++)),
                                                  ((Literal*)prim)->str,
                                                  //glomstrings(3, intstring(uid++), "_", prim->str),
@@ -45,7 +44,6 @@ void insertSymbolForLiteral(Expr* prim) {
     //prim->replace(new Variable(var));
     prim->replace(new_var);
     prim = new_var;
-    Symboltable::setCurrentScope(save_scope);
   }
 }
 

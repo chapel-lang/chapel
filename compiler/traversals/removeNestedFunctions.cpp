@@ -32,19 +32,16 @@ void RemoveNestedFunctions::postProcessStmt(Stmt* stmt) {
         //nested function definition
         if(hasEnclosingFunction(defExpr)) {
           Vec<Symbol*>* encl_func_var_uses = _nested_func_args_map->get(fn_sym);
-                 
+
           //add to global scope
           ModuleSymbol* curr_module = fn_sym->paramScope->getModule();
           AList<Stmt>* module_stmts = curr_module->stmts;
-          SymScope* saveScope = Symboltable::setCurrentScope(curr_module->modScope);
-          
           ExprStmt* fn_copy = expr_stmt->copy(true);
           //add formal parameters to copied nested function
           addNestedFuncFormals(fn_copy->expr, encl_func_var_uses, fn_sym);
           module_stmts->insertAtTail(fn_copy);
-     
+
           expr_stmt->remove();
-          Symboltable::setCurrentScope(saveScope);
         }
       }
     } 
@@ -80,7 +77,6 @@ void RemoveNestedFunctions::addNestedFuncFormals(Expr* expr, Vec<Symbol*>* encl_
       //update old nested function symbol to new function symbol map
       _nested_func_sym_map->put(old_func_sym, fn_sym);
       Map<BaseAST*,BaseAST*>* update_map = new Map<BaseAST*,BaseAST*>();
-      SymScope* saveScope = Symboltable::setCurrentScope(fn_sym->paramScope);
       forv_Vec(Symbol, sym, *encl_var_uses) {
         if (sym) {
           //create formal and add to nested function
@@ -91,7 +87,6 @@ void RemoveNestedFunctions::addNestedFuncFormals(Expr* expr, Vec<Symbol*>* encl_
           update_map->put(sym, formal->sym);
         }
       }
-      Symboltable::setCurrentScope(saveScope);
       
       //not empty, added formals to nested function definition, perform symbol mapping
       if (encl_var_uses->n)

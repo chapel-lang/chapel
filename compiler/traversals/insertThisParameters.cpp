@@ -53,7 +53,6 @@ void InsertThisParameters::preProcessExpr(Expr* expr) {
   if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(fn->typeBinding)) {
     fn->cname = glomstrings(4, "_", typeSym->cname, "_", fn->cname);
     if (fn->fnClass == FN_CONSTRUCTOR) {
-      SymScope* saveScope = Symboltable::setCurrentScope(fn->body->body->first()->parentScope);
       fn->body->body->reset(); // reset iteration
       fn->_this = new VarSymbol("this", typeSym->definition);
       DefExpr* this_decl = new DefExpr(fn->_this);
@@ -69,7 +68,6 @@ void InsertThisParameters::preProcessExpr(Expr* expr) {
       Stmt* alloc_stmt = new ExprStmt(alloc_expr);
       this_decl->parentStmt->insertAfter(alloc_stmt);
       fn->body->body->insertAtTail(new ReturnStmt(new Variable(fn->_this)));
-      Symboltable::setCurrentScope(saveScope);
 
       // fix type variables, associate by name
       if (ClassType* structType = dynamic_cast<ClassType*>(typeSym->definition)) {
@@ -88,7 +86,6 @@ void InsertThisParameters::preProcessExpr(Expr* expr) {
         }
       }
     } else {
-      SymScope* saveScope = Symboltable::setCurrentScope(fn->paramScope);
       ParamSymbol* this_insert = new ParamSymbol(PARAM_REF, "this", typeSym->definition);
       fn->formals->insertAtHead(new DefExpr(this_insert));
       fn->_this = this_insert;
@@ -106,7 +103,6 @@ void InsertThisParameters::preProcessExpr(Expr* expr) {
         int len = fn->formals->length();
         fn->formals->get(len)->insertBefore(new DefExpr(setter_dummy));
       }
-      Symboltable::setCurrentScope(saveScope);
     }
   }
 }

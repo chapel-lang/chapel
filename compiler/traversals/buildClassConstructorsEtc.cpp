@@ -317,8 +317,6 @@ static void buildDefaultIOFunctions(Type* type) {
 void BuildClassConstructorsEtc::postProcessExpr(Expr* expr) {
   if (DefExpr* defExpr = dynamic_cast<DefExpr*>(expr)) {
     if (TypeSymbol* sym = dynamic_cast<TypeSymbol*>(defExpr->sym)) {
-      SymScope* newScope = sym->parentScope->getModule()->modScope;
-      SymScope* saveScope = Symboltable::setCurrentScope(newScope);
       buildDefaultIOFunctions(sym->definition);
       if (ClassType* type = dynamic_cast<ClassType*>(sym->definition)) {
         if (type->defaultConstructor) { /*** already done ***/
@@ -326,7 +324,6 @@ void BuildClassConstructorsEtc::postProcessExpr(Expr* expr) {
         }
         buildDefaultClassTypeMethods(type);
       }
-      Symboltable::setCurrentScope(saveScope);
     }
   }
 }

@@ -474,24 +474,19 @@ TypeSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
 
 
 TypeSymbol* TypeSymbol::clone(Map<BaseAST*,BaseAST*>* map) {
-  static int uid = 1; // Unique ID for cloned classes
-  ClassType* old_class_type = dynamic_cast<ClassType*>(definition);
-  if (!old_class_type) {
+  static int uid = 1;
+  ClassType* originalClass = dynamic_cast<ClassType*>(definition);
+  if (!originalClass) {
     INT_FATAL(this, "Attempt to clone non-class type");
   }
-  SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
   TypeSymbol* clone = copy(true, map);
-  if (ClassType* newClassType = dynamic_cast<ClassType*>(clone->definition)) {
-    ClassType* oldClassType = dynamic_cast<ClassType*>(definition);
-    if (!oldClassType) {
-      INT_FATAL(this, "Cloning of ClassType went horribly wrong");
-    }
-    newClassType->typeParents.add(oldClassType);
+  ClassType* newClass = dynamic_cast<ClassType*>(clone->definition);
+  if (!newClass) {
+    INT_FATAL(this, "Class cloning went horribly wrong");
   }
+  newClass->typeParents.add(originalClass);
   clone->cname = glomstrings(3, clone->cname, "_clone_", intstring(uid++));
-  DefExpr* new_def_expr = new DefExpr(clone);
-  defPoint->parentStmt->insertBefore(new ExprStmt(new_def_expr));
-  Symboltable::setCurrentScope(save_scope);
+  defPoint->parentStmt->insertBefore(new ExprStmt(new DefExpr(clone)));
   return clone;
 }
 
@@ -619,18 +614,14 @@ void FnSymbol::traverseDefSymbol(Traversal* traversal) {
 
 
 FnSymbol* FnSymbol::clone(Map<BaseAST*,BaseAST*>* map) {
-  static int uid = 1; // Unique ID for cloned functions
-  SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
+  static int uid = 1;
   Stmt* copyStmt = defPoint->parentStmt->copy(true, map, NULL);
   ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(copyStmt);
   DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr);
-  defExpr->sym->cname =
-    glomstrings(3, cname, "_clone_", intstring(uid++));
+  defExpr->sym->cname = glomstrings(3, cname, "_clone_", intstring(uid++));
   defPoint->parentStmt->insertAfter(copyStmt);
-  Symboltable::setCurrentScope(save_scope);
   TRAVERSE(copyStmt, new ClearTypes(), true);
-  TRAVERSE(defPoint, new ClearTypes(), true); // only do this until
-                                              // uncloned is not used
+  TRAVERSE(defPoint, new ClearTypes(), true);
   return dynamic_cast<FnSymbol*>(defExpr->sym);
 }
 
@@ -639,7 +630,6 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
   static int uid = 1; // Unique ID for wrapped functions
   currentLineno = lineno;
   currentFilename = filename;
-  SymScope* saveScope = Symboltable::setCurrentScope(parentScope);
   FnSymbol* wrapperFn = new FnSymbol(name);
   wrapperFn->cname = glomstrings(3, cname, "_coercion_wrapper_", intstring(uid++));
   wrapperFn = Symboltable::startFnDef(wrapperFn);
@@ -684,7 +674,6 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
   BlockStmt* wrapperBlock = new BlockStmt(wrapperBody);
   DefExpr* defExpr = new DefExpr(Symboltable::finishFnDef(wrapperFn, wrapperBlock));
   defPoint->parentStmt->insertBefore(new ExprStmt(defExpr));
-  Symboltable::setCurrentScope(saveScope);
   return wrapperFn;
 }
 
@@ -693,7 +682,6 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
   static int uid = 1; // Unique ID for wrapped functions
   currentLineno = lineno;
   currentFilename = filename;
-  SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
   FnSymbol* wrapper_fn = Symboltable::startFnDef(new FnSymbol(name));
   wrapper_fn->addPragma("inline");
   wrapper_fn->method_type = method_type;
@@ -753,7 +741,6 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
   ExprStmt* wrapper_stmt = new ExprStmt(wrapper_expr);
   wrapper_stmt->copyPragmas(defPoint->parentStmt->pragmas);
   defPoint->parentStmt->insertAfter(wrapper_stmt);
-  Symboltable::setCurrentScope(save_scope);
   return dynamic_cast<FnSymbol*>(wrapper_expr->sym);
 }
 
@@ -762,7 +749,6 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_actuals) {
   static int uid = 1; // Unique ID for wrapped functions
   currentLineno = lineno;
   currentFilename = filename;
-  SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
   FnSymbol* wrapper_fn = new FnSymbol(name);
   wrapper_fn->addPragma("inline");
   wrapper_fn->cname = glomstrings(3, cname, "_ord_wrapper_", intstring(uid++));
@@ -802,7 +788,6 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_actuals) {
   }
   DefExpr* def_expr = new DefExpr(Symboltable::finishFnDef(wrapper_fn, new BlockStmt(body)));
   defPoint->parentStmt->insertBefore(new ExprStmt(def_expr));
-  Symboltable::setCurrentScope(save_scope);
   return wrapper_fn;
 }
 
@@ -889,7 +874,6 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
   TypeSymbol* clone = NULL;
   if (fnClass == FN_CONSTRUCTOR) {
     TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(retType->symbol);
-    SymScope* save_scope = Symboltable::setCurrentScope(typeSym->parentScope);
     clone = typeSym->clone(map);
     instantiate_add_subs(substitutions, map);
     ClassType* cloneType = dynamic_cast<ClassType*>(clone->definition);
@@ -903,7 +887,6 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
     }
     instantiate_update_expr(substitutions, clone->defPoint, map);
     substitutions->put(typeSym->definition, clone->definition);
-    Symboltable::setCurrentScope(save_scope);
 
     cloneType->instantiatedFrom = retType;
     cloneType->substitutions.copy(*substitutions);
@@ -924,7 +907,6 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
     forv_Vec(FnSymbol, fn, functions) {
       if (functionContainsAnyAST(fn, &genericParameters)) {
         //printf("  instantiating %s\n", fn->cname);
-        SymScope* save_scope = Symboltable::setCurrentScope(fn->parentScope);
         Stmt* fnStmt = fn->defPoint->parentStmt->copy(true, map);
         ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(fnStmt);
         DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr);
@@ -933,7 +915,6 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
         fn->defPoint->parentStmt->insertBefore(fnStmt);
         instantiate_add_subs(substitutions, map);
         instantiate_update_expr(substitutions, defExpr, map);
-        Symboltable::setCurrentScope(save_scope);
         FnSymbol* fnClone = dynamic_cast<FnSymbol*>(defExpr->sym);
         if (fn == this) {
           copy = fnClone;
@@ -954,7 +935,6 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
       }
     }
   } else {
-    SymScope* save_scope = Symboltable::setCurrentScope(parentScope);
     Stmt* fnStmt = defPoint->parentStmt->copy(true, map);
     ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(fnStmt);
     DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr);
@@ -964,7 +944,6 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
     defExpr->sym->cname =
       glomstrings(3, defExpr->sym->cname, "_instantiate_", intstring(uid++));
     copy = dynamic_cast<FnSymbol*>(defExpr->sym);
-    Symboltable::setCurrentScope(save_scope);
 
     FnSymbol *newFn = dynamic_cast<FnSymbol*>(defExpr->sym);
     newFn->instantiatedFrom = this;
@@ -1255,13 +1234,11 @@ void ModuleSymbol::createInitFn(void) {
   char* runOnce = NULL;
   if (modtype == MOD_USER) {
     runOnce = glomstrings(3, "__run_", name, "_firsttime");
-    SymScope* saveScope = Symboltable::setCurrentScope(commonModule->modScope);
     // create a boolean variable to guard module initialization
     DefExpr* varDefExpr = new DefExpr(new VarSymbol(runOnce, dtBoolean),
                                       new BoolLiteral(true));
     // insert its definition in the common module's init function
     commonModule->initFn->body->body->insertAtHead(new ExprStmt(varDefExpr));
-    Symboltable::setCurrentScope(saveScope);
  
     // insert a set to false at the beginning of the current module's
     // definition (we'll wrap it in a conditional just below, after

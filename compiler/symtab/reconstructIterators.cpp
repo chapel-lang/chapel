@@ -39,8 +39,6 @@ void ReconstructIterators::processSymbol(Symbol* sym) {
     return;
   }
 
-  SymScope* saveScope = Symboltable::setCurrentScope(fn->body->blkScope);
-
   Symbol* elt_type = dtUnknown->symbol;
 
   Symbol* seq = new VarSymbol("_seq_result");
@@ -51,5 +49,4 @@ void ReconstructIterators::processSymbol(Symbol* sym) {
   fn->body->body->insertAtTail(new ReturnStmt(new Variable(seq)));
   fn->retType = dtUnknown;
   fn->defPoint->exprType = NULL;
-  Symboltable::setCurrentScope(saveScope);
 }

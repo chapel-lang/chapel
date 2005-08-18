@@ -44,9 +44,7 @@ void CreateEntryPoint::run(Vec<ModuleSymbol*>* modules) {
   forv_Vec(ModuleSymbol, mod, *modules) {
     if (mod->modtype == MOD_INTERNAL || 
         !ModuleDefContainsOnlyNestedModules(mod->stmts)) {
-      SymScope* saveScope = Symboltable::setCurrentScope(mod->modScope);
       mod->createInitFn();
-      Symboltable::setCurrentScope(saveScope);
     }
   }
 
@@ -63,12 +61,9 @@ void CreateEntryPoint::run(Vec<ModuleSymbol*>* modules) {
   if (!mainFn) {
     mainModule = findUniqueUserModule(modules);
     if (mainModule) {
-      SymScope* saveScope = Symboltable::getCurrentScope();
-      Symboltable::setCurrentScope(mainModule->modScope);
       mainBody = new BlockStmt();
       DefExpr* maindef = Symboltable::defineFunction("main", NULL, 
                                                      dtVoid, mainBody);
-      Symboltable::setCurrentScope(saveScope);
       mainModule->stmts->insertAtTail(new ExprStmt(maindef));
       mainFn = dynamic_cast<FnSymbol*>(maindef->sym);
     } else {

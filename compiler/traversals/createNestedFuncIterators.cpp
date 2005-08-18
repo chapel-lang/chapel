@@ -94,14 +94,11 @@ DefExpr* CreateNestedFuncIterators::copyLoopBodyToNestedFuncDef(ForLoopStmt* fls
   //create a nested function definition
   static int id = 1; 
   char* func_name =  glomstrings(2, "_nested_func_", intstring(id++));
-  SymScope* saveScope = Symboltable::setCurrentScope(iterator_sym->body->blkScope); 
   DefExpr* nested_func = copyFuncHelper(func_name, fls->indices, fls->innerStmt);
   iterator_sym->body->body->insertAtTail(new ExprStmt(nested_func));
   //to inline these nested function calls in the iterator, uncomment next line
   nested_func->sym->addPragma("inline");
   
-  //restore scope
-  Symboltable::setCurrentScope(saveScope);
   return nested_func;
 }
 

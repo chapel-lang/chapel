@@ -48,7 +48,6 @@ void BuildLValueFunctions::preProcessStmt(Stmt* stmt) {
   FnSymbol *old_fn = dynamic_cast<FnSymbol*>(old_def_expr->sym);
   if (!old_fn || !old_fn->retRef)
     return;
-  SymScope* saveScope = Symboltable::setCurrentScope(old_fn->parentScope);
   ExprStmt *expr_stmt = old_expr_stmt->copy(true);
   DefExpr *def_expr = dynamic_cast<DefExpr*>(expr_stmt->expr);
   FnSymbol *fn = dynamic_cast<FnSymbol*>(def_expr->sym);
@@ -58,7 +57,6 @@ void BuildLValueFunctions::preProcessStmt(Stmt* stmt) {
   fn->name = old_fn->name;
   fn->cname = glomstrings(2, "_setter_", old_fn->cname);
   old_expr_stmt->insertAfter(expr_stmt);
-  Symboltable::setCurrentScope(fn->paramScope);
   TypeSymbol *setterTypeSymbol = 
     dynamic_cast<TypeSymbol*>(Symboltable::lookupInternal("_setterTokenType"));
   fn->formals->insertAtTail(new DefExpr(new ParamSymbol(PARAM_REF, "_setterTokenDummy", 
@@ -70,7 +68,6 @@ void BuildLValueFunctions::preProcessStmt(Stmt* stmt) {
     old_fn->typeBinding->definition->methods.add(fn);
     fn->typeBinding = old_fn->typeBinding;
   }
-  Symboltable::setCurrentScope(saveScope);
 }
 
 
