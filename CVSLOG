@@ -43628,3 +43628,14 @@ Modified files:
 	                             resolveSymbols.cpp 
 	                             transformLetExprs.cpp verify.cpp 
 
+---------------------------------------------------------------------------
+
+08/19/05 15:32:47 -- deitz
+
+Log message:
+	Added a verification test to make sure that the symbol defined by a
+	LabelStmt is a LabelSymbol.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp 
+
