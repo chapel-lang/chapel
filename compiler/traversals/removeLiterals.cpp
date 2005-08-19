@@ -25,17 +25,17 @@ void insertSymbolForLiteral(Expr* prim) {
         prim = new_var;
         return;
       }
-      else INT_FATAL(prim, "This should not happen\n");
+      else INT_FATAL(prim, "This should not happen.\n");
       return;
     }
-  
-    VarSymbol* var = new VarSymbol(//glomstrings(2, "_tmp_lit_", intstring(uid++)),
+ 
+    VarSymbol* var_sym = new VarSymbol(//glomstrings(2, "_tmp_lit_", intstring(uid++)),
                                                  ((Literal*)prim)->str,
                                                  //glomstrings(3, intstring(uid++), "_", prim->str),
                                                  prim->typeInfo());
     //RED: this is problematic; it means that the literal expressions will not fully disappear before
     //analysis, which leads to problems in analysis -- see gen_if1 in analysis.cpp
-    DefExpr* defExpr = new DefExpr(var, prim->copy());
+    DefExpr* defExpr = new DefExpr(var_sym, prim->copy());
 
     Stmt* initStmt = new ExprStmt(defExpr);
     commonModule->initFn->body->body->insertAtHead(initStmt);
