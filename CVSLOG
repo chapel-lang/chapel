@@ -43639,3 +43639,73 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: stmt.cpp 
 
+---------------------------------------------------------------------------
+
+08/19/05 15:57:59 -- deitz
+
+Log message:
+	Fixed module use so that nested module uses and recursive module uses
+	work.  This involved changing the implementation of looking up symbols
+	in the symboltable and computing the visible functions at each scope.
+	
+	I added a new module called _chpl_standard.chpl that uses the other
+	modules in modules/standard.  These are all modules that contain
+	Chapel code that is included with every Chapel program.  To add a new
+	module you just have to add a use statement in this module and also
+	add it to the parsing pass so that it is parsed in.  Hopefully we can
+	change how it is handled in this last step eventually.
+	
+	I added a call to resetMemStat() at the end of _chpl_standard.chpl to
+	reset the memory statistics right before the user code is about to be
+	executed.  Here is how the programs start out (currently):
+	
+	calls main()             -- in runtime/src/main.c
+	  calls _chpl_main()     -- in generated code (main function)
+	    uses prelude module  -- in compiler/parser/prelude.chpl
+	    calls prelude init
+	    uses common module   -- in generated code
+	    calls common module init
+	    uses standard module -- in modules/standard/_chpl_standard.chpl
+	    calls standard module init
+	      uses complex       -- in modules/standard/_chpl_complex.chpl
+	      calls complex module init
+	      uses file          -- in modules/standard/_chpl_file.chpl
+	      calls file module init
+	      etc.               -- in    "   /   "    /_chpl_etc..chpl
+	      calls etc. module init
+	      calls resetMemStat -- in runtime/src/chplmem.c
+	    calls main user's module init
+	    executes code user has in their main function
+	
+	This fixes the regression for memory/shannon/printFinalMemStat, but
+	not for memory/shannon/memmaxExceedsLineno or
+	memory/shannon/memstatPrint.
+	
+	I fixed the regression for test/types/seq/bradc/length.modify which
+	failed because the line numbers in the prelude changed.
+	
+	I futurized four tests for John to take a look at when he gets back:
+	
+	  test/arrays/deitz/test_array_class_trial1
+	  test/arrays/deitz/test_array_class_trial2
+	  test/arrays/deitz/test_array_class_trial4a
+	  test/arrays/deitz/test_array_class_trial5a
+
+Modified files:
+	chapel/compiler/include/: symtab.h 
+	chapel/compiler/parser/: prelude.chpl 
+	chapel/compiler/passes/: filesToAST.cpp 
+	chapel/compiler/symtab/: symscope.cpp symtab.cpp 
+	chapel/compiler/traversals/: processImportExprs.cpp 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/flowanalysis/newast/: enum.good 
+	chapel/test/types/seq/bradc/: length.modify.good 
+Added files:
+	chapel/modules/standard/: _chpl_standard.chpl 
+	chapel/test/arrays/deitz/: test_array_class_trial1.future 
+	                           test_array_class_trial2.future 
+	                           test_array_class_trial4a.future 
+	                           test_array_class_trial5a.future 
+
