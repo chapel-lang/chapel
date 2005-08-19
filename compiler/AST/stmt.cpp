@@ -801,6 +801,10 @@ void LabelStmt::verify() {
   if (astType != STMT_LABEL) {
     INT_FATAL(this, "Bad LabelStmt::astType");
   }
+
+  if (!defLabel || !dynamic_cast<LabelSymbol*>(defLabel->sym)) {
+    INT_FATAL(this, "LabelStmt does not define a LabelSymbol");
+  }
 }
 
 
