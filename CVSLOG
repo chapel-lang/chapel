@@ -43497,3 +43497,17 @@ Modified files:
 	                             specializeCallExprs.cpp 
 	                             updateSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+08/18/05 18:35:03 -- roxana
+
+Log message:
+	An updated version of the remove literals pass (it did not compile after
+	Steve's search and replace pass). Also, I remembered why literals were
+	named using the str -- a poor trick to avoid creating new symbols for the
+	same literal. This should eventually be done with hashing on types and
+	representation as John suggested.
+
+Modified files:
+	chapel/compiler/traversals/: removeLiterals.cpp 
+
