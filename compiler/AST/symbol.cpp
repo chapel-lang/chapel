@@ -1267,8 +1267,7 @@ void ModuleSymbol::createInitFn(void) {
           OP_LOGNOT,
           new SymExpr(
             new UnresolvedSymbol(runOnce))), 
-        new BlockStmt(
-          new ReturnStmt(NULL)));
+        new ReturnStmt(NULL));
     initFunBody->body->insertAtHead(testRun);
   }
 

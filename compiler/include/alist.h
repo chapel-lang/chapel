@@ -1,6 +1,13 @@
 #ifndef _CHPL_LIST_H_
 #define _CHPL_LIST_H_
 
+// Lists for use with Stmts and Exprs (only)
+
+#define ExprList AList<Expr>
+#define DefExprList AList<DefExpr>
+#define StmtList AList<Stmt>
+#define WhenStmtList AList<WhenStmt>
+
 #include <stdio.h>
 #include "baseAST.h"
 #include "chplalloc.h"
@@ -49,12 +56,18 @@ class AList : public BaseAST {
   elemType* only(void); // return the single element in a list
   elemType* get(int index); // get the index-th element in a list
 
-  // add element(s) before an insertion point or at beginning of list
+  // add element(s) at beginning of list
   void insertAtHead(elemType* newElem);
+  void insertAtHead(AList<elemType>* newList);
 
   // add element(s) at end of list
   void insertAtTail(elemType* newElem);
-  void add(AList<elemType>* newList); 
+  void insertAtTail(AList<elemType>* newList);
+
+  // helper routines for insertAfter/insertBefore
+  bool isList(void);
+  void insertBeforeListHelper(BaseAST* ast);
+  void insertAfterListHelper(BaseAST* ast);
 
   // pop front of list off and return it
   elemType* popHead(void);
@@ -308,36 +321,61 @@ elemType* AList<elemType>::get(int index) {
 
 template <class elemType>
 void AList<elemType>::insertAtHead(elemType* newElem) {
+  if (newElem->parentSymbol) {
+    INT_FATAL(newElem, "Argument is already in AST in AList::insertAtHead");
+  }
   head->next->insertBefore(newElem);
 }
 
 
 template <class elemType>
+void AList<elemType>::insertAtHead(AList<elemType>* newList) {
+  if (newList->parentSymbol) {
+    INT_FATAL(newList, "Argument is already in AST in AList::insertAtHead");
+  }
+  head->next->insertBefore(newList);
+}
+
+
+template <class elemType>
 void AList<elemType>::insertAtTail(elemType* newElem) {
+  if (newElem->parentSymbol) {
+    INT_FATAL(newElem, "Argument is already in AST in AList::insertAtTail");
+  }
   tail->prev->insertAfter(newElem);
 }
 
 
 template <class elemType>
-void AList<elemType>::add(AList<elemType>* newList) {
-  if (newList->isEmpty()) {
-    return;
+void AList<elemType>::insertAtTail(AList<elemType>* newList) {
+  if (newList->parentSymbol) {
+    INT_FATAL(newList, "Argument is already in AST in AList::insertAtTail");
   }
-  if (isEmpty()) {
-    // adopt newList's nodes and size
-    head->next = newList->head->next;
-    tail->prev = newList->tail->prev;
-    head->next->prev = head;
-    tail->prev->next = tail;
-  } else {
-    elemType* node = newList->popHead();
-    while (node) {
-      insertAtTail(node);
-      node = newList->popHead();
-    }
+  tail->prev->insertAfter(newList);
+}
+
+
+template <class elemType>
+bool AList<elemType>::isList(void) {
+  return true;
+}
+
+
+template <class elemType>
+void AList<elemType>::insertBeforeListHelper(BaseAST* ast) {
+  for_alist(elemType, elem, this) {
+    elem->remove();
+    ast->insertBefore(elem);
   }
-  // empty newList
-  newList->clear();
+}
+
+
+template <class elemType>
+void AList<elemType>::insertAfterListHelper(BaseAST* ast) {
+  for_alist_backward(elemType, elem, this) {
+    elem->remove();
+    ast->insertAfter(elem);
+  }
 }
 
 

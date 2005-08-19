@@ -26,11 +26,9 @@
 
   Expr* pexpr;
   DefExpr* pdefexpr;
-  ForallExpr* pforallexpr;
 
   Stmt* pstmt;
   WhenStmt* pwhenstmt;
-  ForLoopStmt* pforloopstmt;
   BlockStmt* pblockstmt;
 
   Type* ptype;
@@ -144,7 +142,7 @@
 %type <pexpr> parenop_expr memberaccess_expr non_tuple_lvalue lvalue
 %type <pexpr> tuple_paren_expr atom expr expr_list_item
 %type <pexpr> literal range seq_expr where whereexpr
-%type <pexpr> tuple_multiplier intliteral variable_expr
+%type <pexpr> tuple_multiplier variable_expr
 %type <pexpr> reduction opt_init_expr assign_expr if_expr
 %type <pexprls> expr_ls nonempty_expr_ls tuple_inner_type_ls
 %type <pdefexpr> formal enum_item
@@ -153,7 +151,7 @@
 %type <pstmt> select_stmt label_stmt goto_stmt break_stmt continue_stmt
 %type <pstmt> usertype_decl type_decl fn_decl struct_decl mod_decl
 %type <pstmt> function_body_single_stmt empty_stmt
-%type <pstmt> assign_stmt if_stmt return_stmt loop forloop whileloop enum_decl
+%type <pstmt> assign_stmt if_stmt return_stmt for_stmt while_stmt enum_decl
 %type <pstmt> stmt call_stmt decl typevar_decl
 %type <pstmtls> decl_ls stmt_ls modulebody program
 %type <pstmtls> var_decl var_decl_inner var_decl_inner_ls record_inner_var_ls
@@ -219,7 +217,7 @@ stmt_ls:
 | stmt_ls pragma_ls var_decl
     { 
       $3->copyPragmas(*$2);
-      $1->add($3);
+      $1->insertAtTail($3);
     }
 ;
 
@@ -228,7 +226,8 @@ function_body_single_stmt:
   empty_stmt
 | if_stmt
 | select_stmt
-| loop
+| for_stmt
+| while_stmt
 | call_stmt
 | return_stmt
 ;
@@ -251,7 +250,8 @@ stmt:
 | assign_stmt
 | if_stmt
 | select_stmt
-| loop
+| for_stmt
+| while_stmt
 | call_stmt
 | lvalue TSEMI
     { $$ = new ExprStmt($1); }
@@ -344,7 +344,7 @@ for_loop_stmt_tag:
 ;
 
 
-forloop:
+for_stmt:
   for_loop_stmt_tag nonempty_expr_ls TIN nonempty_expr_ls block_stmt
     {
       $$ = Symboltable::defineForLoop($1, $2, $4, $5);
@@ -360,14 +360,14 @@ forloop:
 ;
 
 
-whileloop:
+while_stmt:
 TWHILE expr TDO stmt
     {
-      $$ = new WhileLoopStmt(true, $2, new BlockStmt($4));
+      $$ = new WhileLoopStmt(true, $2, $4);
     }
 | TDO stmt TWHILE expr TSEMI
     {
-      $$ = new WhileLoopStmt(false, $4, new BlockStmt($2));
+      $$ = new WhileLoopStmt(false, $4, $2);
     }
 | TWHILE expr block_stmt
     {
@@ -376,28 +376,22 @@ TWHILE expr TDO stmt
 ;
 
 
-loop:
-  forloop
-| whileloop
-;
-
-
 if_stmt:
   TIF expr block_stmt %prec TNOELSE
     { $$ = new CondStmt($2, $3); }
 | TIF expr TTHEN stmt %prec TNOELSE
-    { $$ = new CondStmt($2, new BlockStmt($4)); }
+    { $$ = new CondStmt($2, $4); }
 | TIF expr block_stmt TELSE stmt
-    { $$ = new CondStmt($2, $3, new BlockStmt($5)); }
+    { $$ = new CondStmt($2, $3, $5); }
 | TIF expr TTHEN stmt TELSE stmt
-    { $$ = new CondStmt($2, new BlockStmt($4), new BlockStmt($6)); }
+    { $$ = new CondStmt($2, $4, $6); }
 ;
 
 
 when_stmt:
   TWHEN nonempty_expr_ls TDO stmt
     {
-      $$ = new WhenStmt($2, new BlockStmt($4));
+      $$ = new WhenStmt($2, $4);
     }
 | TWHEN nonempty_expr_ls block_stmt
     {
@@ -405,7 +399,7 @@ when_stmt:
     }
 | TOTHERWISE stmt
     {
-      $$ = new WhenStmt(new AList<Expr>(), new BlockStmt($2));
+      $$ = new WhenStmt(new AList<Expr>(), $2);
     }
 ;
 
@@ -524,7 +518,7 @@ struct_decl:
 var_decl_inner:
   identifier opt_var_type opt_init_expr
     {
-      $$ = Symboltable::defineVarDef1($1, $2, $3);
+      $$ = new AList<Stmt>(new ExprStmt(new DefExpr(new VarSymbol($1), $3, $2)));
     }
 ;
 
@@ -533,7 +527,7 @@ var_decl_inner_ls:
   var_decl_inner
 | var_decl_inner_ls TCOMMA var_decl_inner
     {
-      $1->add($3);
+      $1->insertAtTail($3);
       $$ = $1;
     }
 ;
@@ -542,7 +536,7 @@ var_decl_inner_ls:
 var_decl:
   config_static var_const_param var_decl_inner_ls TSEMI
     {
-      Symboltable::defineVarDef2($3, $1, $2);
+      setVarSymbolAttributes($3, $1, $2);
       $$ = $3;
     }
 ;
@@ -601,11 +595,13 @@ decl_ls:
     {
       $3->copyPragmas(*$2);
       $1->insertAtTail($3);
+      $$ = $1;
     }
 | decl_ls pragma_ls var_decl
     {
       $3->copyPragmas(*$2);
-      $1->add($3);
+      $1->insertAtTail($3);
+      $$ = $1;
     }
 ;
 
@@ -708,11 +704,11 @@ tuple_inner_type_ls:
 record_inner_var_ls:
   identifier var_type opt_init_expr
     {
-      $$ = Symboltable::defineVarDef1($1, $2, $3);
+      $$ = new AList<Stmt>(new ExprStmt(new DefExpr(new VarSymbol($1), $3, $2)));
     }
 | record_inner_var_ls TCOMMA identifier var_type
     {
-      $1->add(Symboltable::defineVarDef1($3, $4, NULL));
+      $1->insertAtTail(new ExprStmt(new DefExpr(new VarSymbol($3), NULL, $4)));
       $$ = $1;
     }
 ;
@@ -952,7 +948,8 @@ function:
 
 
 tuple_multiplier:
-  intliteral
+  INTLITERAL
+    { $$ = new IntLiteral(yytext); }
 /* | non_tuple_lvalue */
 ;
 
@@ -1226,14 +1223,9 @@ range:
 ;
 
 
-intliteral:
+literal:
   INTLITERAL
     { $$ = new IntLiteral(yytext); }
-;
-
-
-literal:
-  intliteral
 | FLOATLITERAL
     { $$ = new FloatLiteral(yytext, atof(yytext)); }
 | IMAGLITERAL

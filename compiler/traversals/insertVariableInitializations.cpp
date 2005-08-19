@@ -45,7 +45,7 @@ static void insert_config_init(Stmt* stmt, VarSymbol* var, Type* type) {
   CallExpr* call = new CallExpr(initConfigFn, args);
   Expr* assign = new CallExpr(OP_GETSNORM, new SymExpr(var), init_expr->copy());
   ExprStmt* assign_stmt = new ExprStmt(assign);
-  CondStmt* cond_stmt = new CondStmt(call, new BlockStmt(assign_stmt));
+  CondStmt* cond_stmt = new CondStmt(call, assign_stmt);
   stmt->insertBefore(cond_stmt);
 }
 

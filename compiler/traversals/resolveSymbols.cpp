@@ -16,7 +16,7 @@ static AList<Expr>* copy_argument_list(CallExpr* expr) {
   if (member_access) {
     args->insertAtTail(member_access->base->copy());
   }
-  args->add(expr->argList->copy());
+  args->insertAtTail(expr->argList->copy());
   return args;
 }
 
@@ -348,7 +348,7 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
           AList<Expr>* arguments = new AList<Expr>();
           if (!strcmp("=this", fns.e[0]->name))
             arguments->insertAtTail(paren->baseExpr->copy());
-          arguments->add(copy_argument_list(paren));
+          arguments->insertAtTail(copy_argument_list(paren));
           arguments->insertAtTail(aop->get(2)->copy());
           CallExpr *new_expr = new CallExpr(fns.e[0], arguments);
           new_expr->opTag = paren->opTag;

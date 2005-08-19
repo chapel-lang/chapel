@@ -66,7 +66,6 @@ enum OpTag {
 
 class Expr : public BaseAST {
  public:
-  Symbol* parentSymbol;
   Stmt* parentStmt;
   Expr* parentExpr;
   AInfo *ainfo;
@@ -80,7 +79,7 @@ class Expr : public BaseAST {
   virtual void traverseExpr(Traversal* traversal);
   virtual ASTContext getContext(void);
   virtual Type* typeInfo(void);
-  
+
   virtual bool isParam(void);
   virtual bool isConst(void);
   virtual int rank(void);

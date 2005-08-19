@@ -54,11 +54,6 @@ class Symboltable {
   static DefExpr* finishModuleDef(ModuleSymbol* mod, AList<Stmt>* def);
   static DefExpr* Symboltable::defineParam(paramType tag, char* ident,
                                            Expr* type, Expr* init);
-  static AList<Stmt>* Symboltable::defineVarDef1(char* ident,
-                                                 Expr* type, 
-                                                 Expr* init);
-  static void Symboltable::defineVarDef2(AList<Stmt>* stmts, varType vartag, 
-                                         consType constag);
   static PrimitiveType* Symboltable::definePrimitiveType(char* name, char* cname, Expr* initExpr = NULL);
   static Type* Symboltable::defineBuiltinType(char* name, char* cname, Type* newType);
   static FnSymbol* startFnDef(FnSymbol* fnsym);
@@ -82,5 +77,9 @@ class Symboltable {
 };
 
 bool ModuleDefContainsOnlyNestedModules(AList<Stmt>* def);
+
+void setVarSymbolAttributes(AList<Stmt>* stmts,
+                            varType vartag,
+                            consType constag);
 
 #endif

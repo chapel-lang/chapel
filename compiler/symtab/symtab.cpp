@@ -405,7 +405,7 @@ DefExpr* Symboltable::finishModuleDef(ModuleSymbol* mod, AList<Stmt>* def) {
 
   if (!empty) {
     registerModule(mod);
-    mod->stmts->add(def);
+    mod->stmts->insertAtTail(def);
 
     // pop the module's scope
     if (mod->modtype != MOD_INTERNAL) {
@@ -439,30 +439,19 @@ Symboltable::defineParam(paramType tag, char* ident, Expr* type, Expr* init) {
 }
 
 
-AList<Stmt>*
-Symboltable::defineVarDef1(char* ident, Expr* type, Expr* init) {
-  VarSymbol* varSymbol = new VarSymbol(ident, dtUnknown, VAR_NORMAL, VAR_VAR);
-  Expr* userInit = init ? init : NULL;
-  return new AList<Stmt>(new ExprStmt(new DefExpr(varSymbol, userInit, type)));
-}
-
-
-void Symboltable::defineVarDef2(AList<Stmt>* stmts, varType vartag, consType constag) {
+void
+setVarSymbolAttributes(AList<Stmt>* stmts, varType vartag, consType constag) {
   for_alist(Stmt, stmt, stmts) {
     if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {
       if (DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr)) {
         if (VarSymbol* var = dynamic_cast<VarSymbol*>(defExpr->sym)) {
           var->consClass = constag;
           var->varClass = vartag;
-        } else {
-          INT_FATAL(stmt, "Expected VarSymbol in Symboltable::defineVarDef2");
+          continue;
         }
-      } else {
-        INT_FATAL(stmt, "Expected DefExpr in Symboltable::defineVarDef2");
       }
-    } else {
-      INT_FATAL(stmt, "Expected ExprStmt in Symboltable::defineVarDef2");
     }
+    INT_FATAL(stmt, "Major error in setVarSymbolAttributes");
   }
 }
 

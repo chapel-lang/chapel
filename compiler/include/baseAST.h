@@ -110,6 +110,7 @@ class BaseAST : public gc {
   BaseAST* next;        // List next pointer
 
   SymScope* parentScope;
+  Symbol* parentSymbol;
 
   char* filename;       // filename of location
   int lineno;           // line number of location
@@ -143,6 +144,11 @@ class BaseAST : public gc {
   void replace(BaseAST* new_ast);
   void insertBefore(BaseAST* new_ast);
   void insertAfter(BaseAST* new_ast);
+
+  // Helper routines for insertAfter/insertBefore
+  virtual bool isList(void);
+  virtual void insertBeforeListHelper(BaseAST* ast);
+  virtual void insertAfterListHelper(BaseAST* ast);
 
 // need to put this as default value to copy for new interface
 //    new Map<BaseAST*,BaseAST*>();

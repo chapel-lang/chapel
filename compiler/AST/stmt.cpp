@@ -19,7 +19,6 @@ bool justStartedGeneratingFunction = false;
 
 Stmt::Stmt(astType_t astType) :
   BaseAST(astType),
-  parentSymbol(NULL),
   parentStmt(NULL),
   ainfo(NULL)
 {}
@@ -317,6 +316,26 @@ WhileLoopStmt::WhileLoopStmt(bool init_whileDo,
 { }
 
 
+WhileLoopStmt::WhileLoopStmt(bool init_whileDo,
+                             Expr* init_cond,
+                             Stmt* init_block) :
+  Stmt(STMT_WHILELOOP),
+  block(new BlockStmt(init_block)),
+  isWhileDo(init_whileDo),
+  condition(init_cond)
+{ }
+
+
+WhileLoopStmt::WhileLoopStmt(bool init_whileDo,
+                             Expr* init_cond,
+                             AList<Stmt>* init_block) :
+  Stmt(STMT_WHILELOOP),
+  block(new BlockStmt(init_block)),
+  isWhileDo(init_whileDo),
+  condition(init_cond)
+{ }
+
+
 void WhileLoopStmt::verify() {
   if (astType != STMT_WHILELOOP) {
     INT_FATAL(this, "Bad WhileLoopStmt::astType");
@@ -494,18 +513,44 @@ void ForLoopStmt::codegenStmt(FILE* outfile) {
 }
 
 
-CondStmt::CondStmt(Expr*  init_condExpr,
-                   BlockStmt* init_thenStmt, 
-                   BlockStmt* init_elseStmt) :
+CondStmt::CondStmt(Expr* iCondExpr, BlockStmt* iThenStmt, BlockStmt* iElseStmt) :
   Stmt(STMT_COND),
-  condExpr(init_condExpr),
-  thenStmt(init_thenStmt),
-  elseStmt(init_elseStmt)
-{
-  if (condExpr->next || condExpr->prev) {
-    INT_FATAL(this, "condExpr is in a list");
-  }
-}
+  condExpr(iCondExpr),
+  thenStmt(iThenStmt),
+  elseStmt(iElseStmt)
+{ }
+
+
+CondStmt::CondStmt(Expr* iCondExpr, Stmt* iThenStmt, BlockStmt* iElseStmt) :
+  Stmt(STMT_COND),
+  condExpr(iCondExpr),
+  thenStmt(new BlockStmt(iThenStmt)),
+  elseStmt(iElseStmt)
+{ }
+
+
+CondStmt::CondStmt(Expr* iCondExpr, Stmt* iThenStmt, Stmt* iElseStmt) :
+  Stmt(STMT_COND),
+  condExpr(iCondExpr),
+  thenStmt(new BlockStmt(iThenStmt)),
+  elseStmt(new BlockStmt(iElseStmt))
+{ }
+
+
+CondStmt::CondStmt(Expr* iCondExpr, AList<Stmt>* iThenStmt, BlockStmt* iElseStmt) :
+  Stmt(STMT_COND),
+  condExpr(iCondExpr),
+  thenStmt(new BlockStmt(iThenStmt)),
+  elseStmt(iElseStmt)
+{ }
+
+
+CondStmt::CondStmt(Expr* iCondExpr, AList<Stmt>* iThenStmt, AList<Stmt>* iElseStmt) :
+  Stmt(STMT_COND),
+  condExpr(iCondExpr),
+  thenStmt(new BlockStmt(iThenStmt)),
+  elseStmt(new BlockStmt(iElseStmt))
+{ }
 
 
 void CondStmt::verify() {
@@ -602,6 +647,20 @@ WhenStmt::WhenStmt(AList<Expr>* init_caseExprs, BlockStmt* init_doStmt) :
   Stmt(STMT_WHEN),
   caseExprs(init_caseExprs),
   doStmt(init_doStmt)
+{ }
+
+
+WhenStmt::WhenStmt(AList<Expr>* init_caseExprs, Stmt* init_doStmt) :
+  Stmt(STMT_WHEN),
+  caseExprs(init_caseExprs),
+  doStmt(new BlockStmt(init_doStmt))
+{ }
+
+
+WhenStmt::WhenStmt(AList<Expr>* init_caseExprs, AList<Stmt>* init_doStmt) :
+  Stmt(STMT_WHEN),
+  caseExprs(init_caseExprs),
+  doStmt(new BlockStmt(init_doStmt))
 { }
 
 

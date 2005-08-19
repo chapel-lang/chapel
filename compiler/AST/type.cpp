@@ -599,11 +599,9 @@ void ClassType::addDeclarations(AList<Stmt>* newDeclarations,
     tmp = newDeclarations->next();
   }
   if (beforeStmt) {
-    while (Stmt* tmp = newDeclarations->popHead()) {
-      beforeStmt->insertBefore(tmp);
-    }
+    beforeStmt->insertBefore(newDeclarations);
   } else {
-    declarationList->add(newDeclarations);
+    declarationList->insertAtTail(newDeclarations);
   }
 }
 

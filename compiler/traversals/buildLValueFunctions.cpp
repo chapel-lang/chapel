@@ -14,8 +14,8 @@ handle_return_expr(Expr *e, Symbol *lvalue) {
   if (e)
     if (CondExpr *ce = dynamic_cast<CondExpr *>(e))
       newStmt = new CondStmt(ce->condExpr, 
-                             new BlockStmt(handle_return_expr(ce->thenExpr, lvalue)),
-                             new BlockStmt(handle_return_expr(ce->elseExpr, lvalue)));
+                             handle_return_expr(ce->thenExpr, lvalue),
+                             handle_return_expr(ce->elseExpr, lvalue));
     else
       newStmt = new ExprStmt(new CallExpr(OP_GETSNORM, e, new SymExpr(lvalue)));
   return new AList<Stmt>(newStmt);
@@ -25,7 +25,7 @@ handle_return_expr(Expr *e, Symbol *lvalue) {
 static void
 replace_return(BaseAST *ast, Symbol *lvalue) {
   if (ReturnStmt *ret = dynamic_cast<ReturnStmt *>(ast)) {
-    AList<Stmt> *body = handle_return_expr(ret->expr, lvalue);
+    AList<Stmt> *body = handle_return_expr(ret->expr->copy(), lvalue);
     body->insertAtTail(new ReturnStmt(NULL));
     ast = new BlockStmt(body);
     ret->replace((Stmt*)ast);

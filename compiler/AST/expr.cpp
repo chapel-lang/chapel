@@ -100,7 +100,6 @@ char* opChplString[] = {
 
 Expr::Expr(astType_t astType) :
   BaseAST(astType),
-  parentSymbol(NULL),
   parentStmt(NULL),
   parentExpr(NULL),
   ainfo(NULL)

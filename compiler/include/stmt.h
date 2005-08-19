@@ -20,7 +20,6 @@ class AInfo;
 
 class Stmt : public BaseAST {
  public:
-  Symbol* parentSymbol;
   Stmt* parentStmt;
   AInfo *ainfo;
 
@@ -99,6 +98,8 @@ class WhileLoopStmt : public Stmt {
   Expr* condition;
 
   WhileLoopStmt(bool init_whileDo, Expr* init_cond, BlockStmt* init_block);
+  WhileLoopStmt(bool init_whileDo, Expr* init_cond, Stmt* init_block);
+  WhileLoopStmt(bool init_whileDo, Expr* init_cond, AList<Stmt>* init_block);
   virtual void verify(void);
   COPY_DEF(WhileLoopStmt);
 
@@ -144,8 +145,11 @@ class CondStmt : public Stmt {
   BlockStmt* thenStmt;
   BlockStmt* elseStmt;
 
-  CondStmt(Expr* init_condExpr, BlockStmt* init_thenStmt, 
-           BlockStmt* init_elseStmt = NULL);
+  CondStmt(Expr* iCondExpr, BlockStmt* iThenStmt, BlockStmt* iElseStmt = NULL);
+  CondStmt(Expr* iCondExpr, Stmt* iThenStmt, BlockStmt* iElseStmt = NULL);
+  CondStmt(Expr* iCondExpr, Stmt* iThenStmt, Stmt* iElseStmt);
+  CondStmt(Expr* iCondExpr, AList<Stmt>* iThenStmt, BlockStmt* iElseStmt = NULL);
+  CondStmt(Expr* iCondExpr, AList<Stmt>* iThenStmt, AList<Stmt>* iElseStmt);
   virtual void verify(void);
   COPY_DEF(CondStmt);
   void addElseStmt(BlockStmt* init_elseStmt);
@@ -163,6 +167,8 @@ class WhenStmt : public Stmt {
   BlockStmt* doStmt;
 
   WhenStmt(AList<Expr>* init_caseExprs = NULL, BlockStmt* init_doStmt = NULL);
+  WhenStmt(AList<Expr>* init_caseExprs, Stmt* init_doStmt);
+  WhenStmt(AList<Expr>* init_caseExprs, AList<Stmt>* init_doStmt);
   virtual void verify(void);
   COPY_DEF(WhenStmt);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);

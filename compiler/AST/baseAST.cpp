@@ -33,6 +33,7 @@ BaseAST::BaseAST(astType_t type) :
   prev(NULL),
   next(NULL),
   parentScope(NULL),
+  parentSymbol(NULL),
   filename(yyfilename), 
   lineno(yylineno),
   traversalInfo(NULL),
@@ -132,6 +133,9 @@ void BaseAST::remove(void) {
 
 
 void BaseAST::replace(BaseAST* new_ast) {
+  if (new_ast->parentSymbol) {
+    INT_FATAL(new_ast, "Argument is already in AST in BaseAST::replace");
+  }
   if (new_ast->prev || new_ast->next) {
     INT_FATAL(new_ast, "Argument is in a list in BaseAST::replace");
   }
@@ -154,35 +158,68 @@ void BaseAST::replace(BaseAST* new_ast) {
 }
 
 
+bool BaseAST::isList(void) {
+  return false;
+}
+
+
+void BaseAST::insertBeforeListHelper(BaseAST* ast) {
+  INT_FATAL(this, "Illegal call to insertAfterListHelper");
+}
+
+
+void BaseAST::insertAfterListHelper(BaseAST* ast) {
+  INT_FATAL(this, "Illegal call to insertAfterListHelper");
+}
+
+
 void BaseAST::insertBefore(BaseAST* new_ast) {
+  if (new_ast->parentSymbol) {
+    INT_FATAL(new_ast, "Argument is already in AST in BaseAST::insertBefore");
+  }
+  if (isList()) {
+    INT_FATAL(this, "Cannot call insertBefore on a list, use insertAtHead");
+  }
+  if (!prev) {
+    INT_FATAL(this, "Cannot call insertBefore on BaseAST not in a list");
+  }
   if (new_ast->prev || new_ast->next) {
     INT_FATAL(new_ast, "Argument is in a list in BaseAST::insertBefore");
   }
-  if (prev) {
+  if (new_ast->isList()) {
+    new_ast->insertBeforeListHelper(this);
+  } else {
     new_ast->prev = prev;
     new_ast->next = this;
     prev->next = new_ast;
     prev = new_ast;
-  } else {
-    INT_FATAL(this, "Ill-formed list in BaseAST::insertBefore");
+    insertHelper(new_ast, getContext());
   }
-  insertHelper(new_ast, getContext());
 }
 
 
 void BaseAST::insertAfter(BaseAST* new_ast) {
+  if (new_ast->parentSymbol) {
+    INT_FATAL(new_ast, "Argument is already in AST in BaseAST::insertAfter");
+  }
+  if (isList()) {
+    INT_FATAL(this, "Cannot call insertAfter on a list, use insertAtTail");
+  }
+  if (!next) {
+    INT_FATAL(this, "Cannot call insertAfter on BaseAST not in a list");
+  }
   if (new_ast->prev || new_ast->next) {
     INT_FATAL(new_ast, "Argument is in a list in BaseAST::insertAfter");
   }
-  if (next) {
+  if (new_ast->isList()) {
+    new_ast->insertAfterListHelper(this);
+  } else {
     new_ast->prev = this;
     new_ast->next = next;
     next->prev = new_ast;
     next = new_ast;
-  } else {
-    INT_FATAL(this, "Ill-formed list in BaseAST::insertAfter");
+    insertHelper(new_ast, getContext());
   }
-  insertHelper(new_ast, getContext());
 }
 
 

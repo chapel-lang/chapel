@@ -12,7 +12,7 @@ void TransformLetExprs::postProcessExpr(Expr* expr) {
   static int uid = 1;
   if (LetExpr* letExpr = dynamic_cast<LetExpr*>(expr)) {
     Stmt* stmt = letExpr->parentStmt;
-    letExpr->replace(letExpr->innerExpr);
+    letExpr->replace(letExpr->innerExpr->copy());
     for_alist(DefExpr, def, letExpr->symDefs) {
       def->sym->cname = glomstrings(3, def->sym->cname, "_let_", intstring(uid++));
       stmt->insertBefore(new ExprStmt(def));

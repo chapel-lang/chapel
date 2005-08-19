@@ -35,6 +35,14 @@ void Verify::preProcessExpr(Expr* expr){
   expr->verify();
 
   if (DefExpr* defExpr = dynamic_cast<DefExpr*>(expr)) {
+    if (defExpr->sym->parentSymbol) {
+      INT_FATAL(defExpr->sym, "Symbol has parentSymbol set");
+    }
+    if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(defExpr->sym)) {
+      if (typeSym->definition->parentSymbol) {
+        INT_FATAL(typeSym->definition, "Type has parentSymbol set");
+      }
+    }
     if (!removeVerifySymbol(syms, defExpr->sym)) {
       INT_FATAL(defExpr, "Symbol in DefExpr not in Symboltable");
     }
