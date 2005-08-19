@@ -43511,3 +43511,120 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: removeLiterals.cpp 
 
+---------------------------------------------------------------------------
+
+08/19/05 13:00:23 -- deitz
+
+Log message:
+	DOCUMENTATION NOTE: Below I wrote some documentation on how the AST
+	part of this compiler works and the routines that should be used for
+	manipulating it.  Please read it and let me know if it is unclear
+	and/or incorrect.
+	
+	Added the ability to insert elements in an AList before or after a
+	point in the AList or at the head or tail of an AList using the AST
+	manipulation routines called insertBefore, insertAfter, insertAtHead,
+	and insertAtTail.  This change paves the way to improved parsing.
+	
+	Removed the add() function on AList as this is now accomplished with
+	the overloaded insertAtTail.
+	
+	Added quicker error checking to ensure that, among other things,
+	nothing that is in the AST is added to the AST.  Fixed two spots where
+	this was done, in TransformLetExprs and BuildLValueFunctions.
+	
+	Added overloaded constructors for WhileLoopStmt, CondStmt, and
+	WhenStmt to allow for the automatic creation of BlockStmts when Stmts
+	or lists of Stmts are used in the constructor call.  Removed excessive
+	calls of new BlockStmt().
+	
+	Removed now-poorly-abstracted function defineVarDef1 (which also had a
+	pretty non-descriptive name).  Renamed defineVarDef2 to
+	setVarSymbolAttributes which takes a list of ExprStmts of DefExprs of
+	VarSymbols and sets the varType and consType fields of them.  This is
+	used in parsing since tags like 'config' and 'var' are parsed before
+	the list of variable definitions.
+	
+	Cleaned up the parser in a few superficial ways.
+	
+	+---------+
+	| The AST |
+	+---------+
+	
+	In the beginning, there is no AST.  The FilesToAST pass then parses
+	the files and creates Stmts and Exprs along with Symbols and Types
+	that are all linked together.  These are rooted at several
+	ModuleSymbols which contain the modules that have been parsed.  At
+	this point, the Stmts and Exprs are free and not part of what I will
+	call the AST for the rest of this article.
+	
+	The CreateEntryPoint pass then adds a main function if one does not
+	exist.  This I believe is in the wrong place and should be moved below
+	the next pass.  The next pass is currently called Fixup.  It perhaps
+	should be folded into the parsing as a call to InsertHelper.
+	
+	Fixup inserts all of the module symbols and the statements and
+	expressions rooted from them into the AST.  Fixup sets the back
+	pointers including parentSymbol, parentStmt, and parentExpr.  With my
+	checkin two days ago, Fixup also created the Symboltable by creating
+	and filling the Scopes where necessary and defining the symbols into
+	these scopes.  (A current exception is the module scope.)
+	
+	After Fixup, the AST is in good shape.  Now it is fair to refer to
+	Stmts and Exprs that are in the AST and ones that are not in the AST.
+	When you build up a new Stmt it is not in the AST until you insert it
+	into the AST using one of several routines that I will document here.
+	Stmts and Exprs that are not in the AST do not have the parentSymbol
+	field set on them.  This is a back pointer along with parentStmt,
+	parentExpr, and parentScope that points to its parents in the AST.
+	
+	To modify the AST and/or add to it, there are 6 routines:
+	
+	  BaseAST::remove()
+	    This removes a given part of the AST from the AST.  It can then be
+	    reinserted elsewhere (as of two days ago).
+	
+	  BaseAST::replace(BaseAST*)
+	    This removes 'this' from the AST and then inserts the argument in
+	    the same place.
+	
+	  BaseAST::insertBefore(BaseAST*)
+	  BaseAST::insertAfter(BaseAST*)
+	    This inserts the argument before/after 'this' which must be in an
+	    AList.  It also can be used to insert the elements of an AList
+	    before/after 'this' if the argument is itself an AList.
+	
+	  AList<elemtype>::insertAtHead(elemtype*)
+	  AList<elemtype>::insertAtTail(elemtype*)
+	  AList<elemtype>::insertAtHead(AList<elemtype>*)
+	  AList<elemtype>::insertAtTail(AList<elemtype>*)
+	    This inserts the argument at the head/tail of 'this' or, if the
+	    argument is an AList, then it inserts the elements in the argument
+	    AList at the head/tail of 'this'.
+	
+	These routines build up the AST by calling the InsertHelper (currently
+	Fixup) traversal which sets back pointers, builds scopes, and defines
+	symbols.
+	
+	These routines can be used with Stmts and Exprs only.  There are no
+	aliases of Stmts and Exprs (not counting back pointers, etc.) in the
+	AST.  Copies must be made.  This can be done easily by using the
+	copy() method on Stmts or Exprs.
+	
+	Symbols and Types can be referenced multiple times in the AST and
+	indeed should be.  SymExpr identifies a use of a Symbol and DefExpr
+	identifies a definition of a new Symbol.  Symbols should not appear in
+	more than one DefExpr.
+
+Modified files:
+	chapel/compiler/AST/: alist.cpp baseAST.cpp expr.cpp stmt.cpp 
+	                      symbol.cpp type.cpp 
+	chapel/compiler/include/: alist.h baseAST.h expr.h stmt.h 
+	                          symtab.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: buildLValueFunctions.cpp 
+	                             insertVariableInitializations.cpp 
+	                             resolveSymbols.cpp 
+	                             transformLetExprs.cpp verify.cpp 
+
