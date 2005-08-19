@@ -329,29 +329,52 @@ addVisibleFunctionsHelper(Map<char*,Vec<FnSymbol*>*>* visibleFunctions,
 
 
 static void addVisibleFunctions(Map<char*,Vec<FnSymbol*>*>* visibleFunctions,
-                                Symbol* symbol) {
-  for (Symbol* sym = symbol; sym; sym = sym->overload) {
-    if (sym) {
-      if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(sym->getSymbol())) {
-        ClassType* classType = dynamic_cast<ClassType*>(typeSym->definition);
-        if (!(classType && classType->isNominalType())) {
-          forv_Vec(FnSymbol, method, typeSym->definition->methods) {
-            while (method) {
-              addVisibleFunctionsHelper(visibleFunctions, method);
-              method = dynamic_cast<FnSymbol*>(method->overload);
-            }
-          }
-          FnSymbol* constructor = typeSym->definition->defaultConstructor;
-          while (constructor) {
-            addVisibleFunctionsHelper(visibleFunctions, constructor);
-            constructor = dynamic_cast<FnSymbol*>(constructor->overload);
-          }
-        }
-      } else if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
-        if (!fn->typeBinding) {
-          addVisibleFunctionsHelper(visibleFunctions, fn);
+                                Symbol* sym) {
+  if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(sym->getSymbol())) {
+    ClassType* classType = dynamic_cast<ClassType*>(typeSym->definition);
+    if (!(classType && classType->isNominalType())) {
+      forv_Vec(FnSymbol, method, typeSym->definition->methods) {
+        while (method) {
+          addVisibleFunctionsHelper(visibleFunctions, method);
+          method = dynamic_cast<FnSymbol*>(method->overload);
         }
       }
+      FnSymbol* constructor = typeSym->definition->defaultConstructor;
+      while (constructor) {
+        addVisibleFunctionsHelper(visibleFunctions, constructor);
+        constructor = dynamic_cast<FnSymbol*>(constructor->overload);
+      }
+    }
+  } else if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
+    if (!fn->typeBinding) {
+      addVisibleFunctionsHelper(visibleFunctions, fn);
+    }
+  }
+}
+
+
+static void
+getDefinedFunctions(SymScope* scope,
+                    Map<char*,Vec<FnSymbol*>*>* visibleFunctions,
+                    Vec<SymScope*>* scopesAlreadyVisited = NULL) {
+  if (scopesAlreadyVisited && scopesAlreadyVisited->set_in(scope)) {
+    return;
+  }
+
+  forv_Vec(Symbol, symbol, scope->symbols) {
+    for (Symbol* sym = symbol; sym; sym = sym->overload) {
+      addVisibleFunctions(visibleFunctions, sym);
+    }
+  }
+
+  if (scope->uses.n) {
+    if (!scopesAlreadyVisited)
+      scopesAlreadyVisited = new Vec<SymScope*>();
+    scopesAlreadyVisited->set_add(scope);
+    forv_Vec(ModuleSymbol, module, scope->uses) {
+      getDefinedFunctions(module->modScope,
+                          visibleFunctions,
+                          scopesAlreadyVisited);
     }
   }
 }
@@ -360,15 +383,7 @@ static void addVisibleFunctions(Map<char*,Vec<FnSymbol*>*>* visibleFunctions,
 void SymScope::setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions) {
   visibleFunctions.clear();
 
-  forv_Vec(Symbol, sym, symbols) {
-    addVisibleFunctions(&visibleFunctions, sym);
-  }
-
-  forv_Vec(ModuleSymbol, module, uses) {
-    forv_Vec(Symbol, sym, module->modScope->symbols) {
-      addVisibleFunctions(&visibleFunctions, sym);
-    }
-  }
+  getDefinedFunctions(this, &visibleFunctions);
 
   if (type == SCOPE_INTRINSIC) {
     //

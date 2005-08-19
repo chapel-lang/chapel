@@ -44,13 +44,7 @@ void ProcessImportExprs::run(Vec<ModuleSymbol*>* modules) {
   forv_Vec(ModuleSymbol, mod, *modules) {
     ExprStmt* moduleUse;
     if (mod->modtype == MOD_USER) {
-      moduleUse = genModuleUse("_chpl_complex");
-      mod->initFn->body->body->insertAtHead(moduleUse);
-      moduleUse = genModuleUse("_chpl_file");
-      mod->initFn->body->body->insertAtHead(moduleUse);
-      moduleUse = genModuleUse("_chpl_htuple");
-      mod->initFn->body->body->insertAtHead(moduleUse);
-      moduleUse = genModuleUse("_chpl_seq");
+      moduleUse = genModuleUse("_chpl_standard");
       mod->initFn->body->body->insertAtHead(moduleUse);
     }
   }

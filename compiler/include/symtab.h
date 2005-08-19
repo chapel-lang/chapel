@@ -39,7 +39,7 @@ class Symboltable {
       lookupInScope only checks the passed scope
       lookupFromScope checks the passed scope and then moves up the scopes
   **/
-  static Symbol* lookupInScope(char* name, SymScope* scope);
+  static Symbol* lookupInScope(char* name, SymScope* scope, Vec<SymScope*>* scopesAlreadyVisited = NULL);
   static Symbol* lookupFromScope(char* name, SymScope* scope, 
                                  bool genError = false);
 

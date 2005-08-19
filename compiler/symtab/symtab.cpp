@@ -217,11 +217,31 @@ void Symboltable::define(Symbol* sym) {
 }
 
 
-Symbol* Symboltable::lookupInScope(char* name, SymScope* scope) {
+Symbol* Symboltable::lookupInScope(char* name,
+                                   SymScope* scope,
+                                   Vec<SymScope*>* scopesAlreadyVisited) {
   if (scope == NULL) {
     INT_FATAL("NULL scope passed to lookupInScope()");
   }
-  return scope->table.get(name);
+
+  if (scopesAlreadyVisited && scopesAlreadyVisited->set_in(scope)) {
+    return NULL;
+  }
+
+  Symbol* sym = scope->table.get(name);
+  if (!sym) {
+    if (scope->uses.n) {
+      if (!scopesAlreadyVisited)
+        scopesAlreadyVisited = new Vec<SymScope*>();
+      scopesAlreadyVisited->set_add(scope);
+      forv_Vec(ModuleSymbol, module, scope->uses) {
+        sym = lookupInScope(name, module->modScope, scopesAlreadyVisited);
+        if (sym)
+          break;
+      }
+    }
+  }
+  return sym;
 }
 
 
@@ -250,12 +270,6 @@ Symbol* Symboltable::lookupFromScope(char* name, SymScope* scope,
             return sym;
           }
         }
-      }
-    }
-    forv_Vec(ModuleSymbol, module, scope->uses) {
-      Symbol* sym = lookupInScope(name, module->modScope);
-      if (sym) {
-        return sym;
       }
     }
     scope = scope->parent;
