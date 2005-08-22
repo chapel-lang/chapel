@@ -43774,3 +43774,20 @@ Modified files:
 	chapel/compiler/symtab/: insertOutParameterInitializations.cpp 
 	                         removeDeadSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+08/22/05 16:54:42 -- jplevyak
+
+Log message:
+	Remove kludge for dealing with the old issue of instantiated functions
+	not appearing in the dispatch tables.
+	This fixes test_named_default_gotcha.chpl, however it results in
+	two new futures, both for SEGV in codegen.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/traversals/: collectASTS.cpp 
+Added files:
+	chapel/test/domains/roxana/: test_hash_table3.future 
+	chapel/test/types/type_variables/deitz/: test_datablock3.future 
+
