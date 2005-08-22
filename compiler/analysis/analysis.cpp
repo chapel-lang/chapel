@@ -22,6 +22,7 @@
 
 #define VARARG_END     0ll
 #define MAKE_USER_TYPE_BE_DEFINITION       1
+// #define NO_COERCE_PRIMITIVES                 1
 //#define USE_SCOPE_LOOKUP_CACHE                  1
 //#define MINIMIZED_MEMORY 1  // minimize the memory used by Sym's... needs valgrind checking for safety
 
@@ -1627,7 +1628,6 @@ gen_assignment(CallExpr *assign) {
   Sym *rval = gen_assign_rhs(assign);
   SymExpr* lhs_var = dynamic_cast<SymExpr*>(assign->get(1));
   Symbol *lhs_symbol = lhs_var ? dynamic_cast<Symbol *>(lhs_var->var) : 0;
-  Sym *type = lhs_symbol ? lhs_symbol->type->asymbol->sym->type : 0;
   FnSymbol *f = assign->parentFunction();
   int constructor_assignment = 0;
   if (f->fnClass == FN_CONSTRUCTOR) {
@@ -1650,6 +1650,9 @@ gen_assignment(CallExpr *assign) {
       (lhs_symbol && (lhs_symbol->type == dtUnknown && !lhs_symbol->defPoint->init)) ||
       (lhs_symbol && lhs_symbol->isThis()))
     ;
+#ifdef NO_COERCE_PRIMITIVES
+  operator_equal = operator_equal || (lhs_symbol && lhs_symbol->defPoint->init);
+#endif
   if (operator_equal) {
     Sym *old_rval = rval;
     rval = new_sym();
@@ -1669,9 +1672,12 @@ gen_assignment(CallExpr *assign) {
   }
   if (!assign->get(1)->ainfo->sym)
     show_error("assignment to non-lvalue", assign->ainfo);
+#ifndef NO_COERCE_PRIMITIVES
+  Sym *type = lhs_symbol ? lhs_symbol->type->asymbol->sym->type : 0;
   if (lhs_symbol && lhs_symbol->type && is_scalar_type(lhs_symbol->type) &&
       !operator_equal && lhs_symbol->type != assign->get(2)->typeInfo())
     rval = gen_coerce(rval, base_type(type), &assign->ainfo->code, assign->ainfo);
+#endif
   if1_move(if1, &assign->ainfo->code, rval, assign->ainfo->rval, assign->ainfo);
   if1_move(if1, &assign->ainfo->code, assign->ainfo->rval, assign->get(1)->ainfo->sym, assign->ainfo);
   return 0;
@@ -2389,8 +2395,7 @@ cast_value(PNode *pn, EntrySet *es) {
   AVar *type = make_AVar(pn->rvals.v[2], es);
   AVar *val = make_AVar(pn->rvals.v[3], es);
   fill_tvals(es->fun, pn, 1);
-  AVar *tmp = make_AVar(pn->tvals.v[0], es);
-  flow_vars(tmp, result);
+  AVar *val_tmp = make_AVar(pn->tvals.v[0], es);
   forv_CreationSet(cs, *type->out) {
     Sym *ts = cs->sym;
     if (ts->type->asymbol) {
@@ -2403,20 +2408,21 @@ cast_value(PNode *pn, EntrySet *es) {
       }
     }
   }
-  Vec<CreationSet *> css;
+  Vec<CreationSet *> val_css;
   forv_CreationSet(cs, *val->out) {
     Sym *ts = cs->sym;
     if (ts->type->asymbol) {
       if (ts->type->is_meta_type) {
         if (!is_scalar_type(ts->type->meta_type->asymbol->symbol))
-          css.add(cs);
+          val_css.add(cs);
       } else
         if (!is_scalar_type(ts->type->asymbol->symbol))
-          css.add(cs);
+          val_css.add(cs);
     }
   }
-  flow_var_type_permit(tmp, make_AType(css));
-  flow_vars(val, tmp);
+  flow_var_type_permit(val_tmp, make_AType(val_css));
+  flow_vars(val, val_tmp);
+  flow_vars(val_tmp, result);
 }
 
 static void
