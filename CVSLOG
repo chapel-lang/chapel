@@ -43791,3 +43791,13 @@ Added files:
 	chapel/test/domains/roxana/: test_hash_table3.future 
 	chapel/test/types/type_variables/deitz/: test_datablock3.future 
 
+---------------------------------------------------------------------------
+
+08/22/05 16:57:56 -- jplevyak
+
+Log message:
+	remove 'fixed' future
+
+Removed files:
+	chapel/test/functions/deitz/: test_named_default_gotcha.future 
+
