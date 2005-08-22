@@ -155,8 +155,6 @@ Vec<Fun *> *
 AInfo::visible_functions(Sym *arg0) {
   if (arg0->fun) {
     Fun *f = arg0->fun;
-    while (f->wraps)
-      f = f->wraps;
     if (!arg0->fun->vec_of_one) {
       arg0->fun->vec_of_one = new Vec<Fun *>;
       arg0->fun->vec_of_one->add(f);
@@ -444,15 +442,14 @@ install_new_function(FnSymbol *f, FnSymbol *old_f, Map<BaseAST*,BaseAST*> *map =
     pdb->add(fun);
   }
   forv_BaseAST(ast, syms) {
-    if (Symbol *s = dynamic_cast<Symbol *>(ast)) {
+    if (Symbol *s = dynamic_cast<Symbol *>(ast))
       initialize_Sym_for_fa(s->asymbol->sym);
-      if (map)
-        if (FnSymbol *fs = dynamic_cast<FnSymbol *>(s)) {
-          build_patterns(pdb->fa, fs->asymbol->sym->fun);
-          finalize_function(fs->asymbol->sym->fun);
-        }
-    } else if (Type *t = dynamic_cast<Type *>(ast))
+    else if (Type *t = dynamic_cast<Type *>(ast))
       initialize_Sym_for_fa(t->asymbol->sym);
+  }
+  forv_Vec(FnSymbol, f, funs) {
+    build_patterns(pdb->fa, f->asymbol->sym->fun);
+    finalize_function(f->asymbol->sym->fun);
   }
   if1_write_log();
   return f->asymbol->sym->fun;
