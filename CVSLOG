@@ -43734,3 +43734,16 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+08/22/05 14:28:05 -- deitz
+
+Log message:
+	New future simplifies Shannon's bug found this morning in the
+	interaction between the order wrapper and the default wrapper.
+
+Added files:
+	chapel/test/functions/deitz/: test_named_default_gotcha.chpl 
+	                              test_named_default_gotcha.future 
+	                              test_named_default_gotcha.good 
+
