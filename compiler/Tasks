@@ -16,14 +16,9 @@ Priority 1 Tasks
 
 * Insert symbols for every primitive literal, change DefaultValue to a VarSymbol
 
-* (Steve) Change all Exprs to have Expr on the end.  Standardize names
-  of classes
-
 * (Steve) unify union types and sum types (?)
 
 * (Roxana) Attach a Type* type to Expr and remove typeInfo()
-
-* (Steve) restructure verify pass; build out verify() routines on AST classes
 
 * (Steve) rename "implements" to something else.  Move to class header?
 
@@ -37,6 +32,11 @@ Priority 1 Tasks
 * (John) get rid of nondeterminism introduced by hashing-on-pointers
    structures (and try to capture an instance of front-end
    nondeterminism to eliminate it as well)
+
+X (Steve) restructure verify pass; build out verify() routines on AST classes
+
+X (Steve) Change all Exprs to have Expr on the end.  Standardize names
+  of classes
 
 X (John) add PrimitiveType class -- move integers, floats, strings, and such
   here

@@ -548,7 +548,7 @@ ACallbacks::order_wrapper(Match *m) {
   if (!m->fun->ast) 
     return NULL;
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(m->fun->sym->asymbol->symbol);
-  Map<Symbol *, Symbol *> formal_to_actual;
+  Map<Symbol *, Symbol *> formals_to_formals;
   forv_MPosition(p, m->fun->positional_arg_positions) {
     Sym *sym1 = m->fun->arg_syms.get(p);
     MPosition *acp = m->formal_to_actual_position.get(p);
@@ -558,10 +558,10 @@ ACallbacks::order_wrapper(Match *m) {
     Symbol *symbol2 = dynamic_cast<Symbol*>(sym2->asymbol->symbol);   
     if (symbol1 || symbol2) {
       assert(symbol1 && symbol2);
-      formal_to_actual.put(symbol1, symbol2);
+      formals_to_formals.put(symbol2, symbol1);
     }
   }
-  FnSymbol *f = fndef->order_wrapper(&formal_to_actual);
+  FnSymbol *f = fndef->order_wrapper(&formals_to_formals);
   Fun *fun = install_new_function(f, fndef);
   fun->wraps = m->fun;
   return fun;

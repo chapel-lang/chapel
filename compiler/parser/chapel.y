@@ -448,7 +448,7 @@ fn_decl:
       $2->fnClass = $1;
       if (!$3) {
         $3 = new AList<DefExpr>();
-        $2->noparens = true;
+        $2->noParens = true;
       }
       Symboltable::continueFnDef($2, $3, dtUnknown, $4, $6);
       $2 = Symboltable::finishFnDef($2, $7);
@@ -939,11 +939,17 @@ function:
   fname
     { $$ = new FnSymbol($1); }
 | TASSIGN identifier
-    { $$ = new FnSymbol($2, NULL, true); }
+    {
+      $$ = new FnSymbol($2);
+      $$->isSetter = true;
+    }
 | identifier TDOT fname
     { $$ = new FnSymbol($3, new TypeSymbol($1, NULL)); }
 | identifier TDOT TASSIGN identifier
-    { $$ = new FnSymbol($4, new TypeSymbol($1, NULL), true); }
+    {
+      $$ = new FnSymbol($4, new TypeSymbol($1, NULL));
+      $$->isSetter = true;
+    }
 ;
 
 

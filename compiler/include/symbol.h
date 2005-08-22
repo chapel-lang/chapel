@@ -37,8 +37,6 @@ class Symbol : public BaseAST {
   char* name;
   char* cname; // Name of symbol for generating C code
   Type* type;
-  bool isDead;
-  bool keepLive;
   DefExpr* defPoint; // Point of definition
 
   ASymbol *asymbol;
@@ -161,21 +159,22 @@ typedef enum __method_type {
 
 class FnSymbol : public Symbol {
  public:
+  TypeSymbol* typeBinding;
   AList<DefExpr>* formals;
   Type* retType;
-  Symbol* _this;
-  Symbol* _setter; /* the variable this function sets if it is a setter */
-  Symbol* _getter; /* the variable this function gets if it is a getter */
-  BlockStmt* body;
-  TypeSymbol* typeBinding;
-  _method_type method_type;
-  SymScope* paramScope;
-  fnType fnClass;
-  bool retRef;
   Expr *whereExpr;
-  bool noparens;
+  BlockStmt* body;
+  fnType fnClass;
+  bool noParens;
+  bool retRef;
+
+  SymScope* paramScope;
   bool isSetter;
   bool isGeneric;
+  Symbol* _this;
+  Symbol* _setter; // the variable this function sets if it is a setter
+  Symbol* _getter; // the variable this function gets if it is a getter
+  _method_type method_type;
   Vec<VariableType *> variableTypeSymbols;
   FnSymbol *instantiatedFrom;
   Map<BaseAST*,BaseAST*> substitutions;
@@ -184,7 +183,16 @@ class FnSymbol : public Symbol {
   //bool equalWith(FnSymbol* s1, FnSymbol* s2);
   //bool greaterThan(FnSymbol* s1, FnSymbol* s2);
   
-  FnSymbol(char* init_name, TypeSymbol* init_typeBinding = NULL, bool isSetter = false);
+  FnSymbol(char* initName,
+           TypeSymbol* initTypeBinding = NULL,
+           AList<DefExpr>* initFormals = NULL,
+           Type* initRetType = NULL,
+           Expr* initWhereExpr = NULL,
+           BlockStmt* initBody = NULL,
+           fnType initFnClass = FN_FUNCTION,
+           bool initNoParens = false,
+           bool initRetRef = false);
+           
   virtual void verify(void); 
   COPY_DEF(FnSymbol);
   virtual FnSymbol* getFnSymbol(void);
@@ -192,9 +200,9 @@ class FnSymbol : public Symbol {
   virtual void traverseDefSymbol(Traversal* traverse);
 
   FnSymbol* clone(Map<BaseAST*,BaseAST*>* map);
-  FnSymbol* order_wrapper(Map<Symbol *, Symbol *> *formals_to_actuals);
-  FnSymbol* coercion_wrapper(Map<Symbol *, Symbol *> *coercion_substitutions);
-  FnSymbol* default_wrapper(Vec<Symbol *> *defaults);
+  FnSymbol* order_wrapper(Map<Symbol*,Symbol*>* formals_to_formals);
+  FnSymbol* coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitutions);
+  FnSymbol* default_wrapper(Vec<Symbol*>* defaults);
   FnSymbol* instantiate_generic(Map<BaseAST*,BaseAST*>* copyMap,
                                 Map<BaseAST*,BaseAST*>* substitutions);
 

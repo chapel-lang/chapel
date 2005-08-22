@@ -25,8 +25,6 @@ Symbol::Symbol(astType_t astType, char* init_name, Type* init_type) :
   name(init_name),
   cname(name),
   type(init_type),
-  isDead(false),
-  keepLive(false),
   defPoint(NULL),
   asymbol(0),
   overload(NULL),
@@ -506,39 +504,40 @@ void TypeSymbol::traverseDefSymbol(Traversal* traversal) {
 
 
 void TypeSymbol::codegenPrototype(FILE* outfile) {
-  if (isDead) {
-    return;
-  }
   definition->codegenPrototype(outfile);
 }
 
 
 void TypeSymbol::codegenDef(FILE* outfile) {
-  if (isDead) {
-    return;
-  }
-
   definition->codegenDef(outfile);
 }
 
 
-FnSymbol::FnSymbol(char* init_name, TypeSymbol* init_typeBinding, bool init_isSetter) :
-  Symbol(SYMBOL_FN, init_name, new FnType()),
-  formals(NULL),
-  retType(NULL),
+FnSymbol::FnSymbol(char* initName,
+                   TypeSymbol* initTypeBinding,
+                   AList<DefExpr>* initFormals,
+                   Type* initRetType,
+                   Expr* initWhereExpr,
+                   BlockStmt* initBody,
+                   fnType initFnClass,
+                   bool initNoParens,
+                   bool initRetRef) :
+  Symbol(SYMBOL_FN, initName, new FnType()),
+  typeBinding(initTypeBinding),
+  formals(initFormals),
+  retType(initRetType),
+  whereExpr(initWhereExpr),
+  body(initBody),
+  fnClass(initFnClass),
+  noParens(initNoParens),
+  retRef(initRetRef),
+  paramScope(NULL),
+  isSetter(false),
+  isGeneric(false),
   _this(NULL),
   _setter(NULL),
   _getter(NULL),
-  body(NULL),
-  typeBinding(init_typeBinding),
   method_type(NON_METHOD),
-  paramScope(NULL),
-  fnClass(FN_FUNCTION),
-  retRef(false),
-  whereExpr(NULL),
-  noparens(false),
-  isSetter(init_isSetter),
-  isGeneric(false),
   instantiatedFrom(NULL)
 { }
 
@@ -560,26 +559,25 @@ FnSymbol* FnSymbol::getFnSymbol(void) {
 
 FnSymbol*
 FnSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  char* copy_name = copystring(name);
-  FnSymbol* copy = new FnSymbol(copy_name, typeBinding, isSetter);
-  copy->method_type = method_type;
-  copy->fnClass = fnClass;
-  Symboltable::startFnDef(copy);
-  copy->_getter = _getter; // If it is a cloned class we probably want this
-  copy->_setter = _setter; //  to point to the new member, but how do we do that
-  copy->_this = _this;
+  FnSymbol* copy = new FnSymbol(name,
+                                typeBinding,
+                                CLONE_INTERNAL(formals),
+                                retType,
+                                CLONE_INTERNAL(whereExpr),
+                                CLONE_INTERNAL(body),
+                                fnClass,
+                                noParens,
+                                retRef);
+  copy->cname = cname;
+  copy->isSetter = isSetter;
   copy->isGeneric = isGeneric;
-  AList<DefExpr>* new_formals =
-    dynamic_cast<AList<DefExpr>*>(CLONE_INTERNAL(formals));
-  Symboltable::continueFnDef(copy, new_formals, retType, retRef,
-                             CLONE_INTERNAL(whereExpr));
-  BlockStmt* new_body = 
-    dynamic_cast<BlockStmt*>(CLONE_INTERNAL(body));
-  if (body != NULL && new_body == NULL) {
-    INT_FATAL(body, "function body was not a BlockStmt!?");
-  }
-  copy->cname = copystring(cname);
-  return Symboltable::finishFnDef(copy, new_body);
+  copy->_this = _this;
+  copy->_setter = _setter;
+  copy->_getter = _getter; // If it is a cloned class we probably want
+                           // this to point to the new member, but how
+                           // do we do that
+  copy->method_type = method_type;
+  return copy;
 }
 
 
@@ -745,49 +743,34 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
 }
 
 
-FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_actuals) {
-  static int uid = 1; // Unique ID for wrapped functions
+FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_formals) {
+  static int uid = 1;
   currentLineno = lineno;
   currentFilename = filename;
-  FnSymbol* wrapper_fn = new FnSymbol(name);
-  wrapper_fn->addPragma("inline");
-  wrapper_fn->cname = glomstrings(3, cname, "_ord_wrapper_", intstring(uid++));
-  wrapper_fn = Symboltable::startFnDef(wrapper_fn);
-  wrapper_fn->method_type = method_type;
-  wrapper_fn->fnClass = fnClass;
+
+  Map<Symbol*,Symbol*> old_to_new;
+  for_alist(DefExpr, formal, formals) {
+    old_to_new.put(formal->sym, formal->sym->copy());
+  }
 
   AList<DefExpr>* wrapper_formals = new AList<DefExpr>();
-  for (int i = 0; i < formals_to_actuals->n; i++) {
-    DefExpr* tmp = formals->first();
-    for (int j = 0; j < formals_to_actuals->n; j++) {
-      if (formals_to_actuals->v[i].key == formals_to_actuals->v[j].value) {
-        wrapper_formals->insertAtTail(new DefExpr(tmp->sym->copy()));
-      }
-      tmp = formals->next();
-    }
-  }
-  Symboltable::continueFnDef(wrapper_fn, wrapper_formals, retType, retRef);
-
-  AList<Expr>* actuals = new AList<Expr>();
-  for (int i = 0; i < formals_to_actuals->n; i++) {
-    DefExpr* tmp = wrapper_formals->first();
-    for (int j = 0; j < formals_to_actuals->n; j++) {
-      if (formals_to_actuals->v[i].value == formals_to_actuals->v[j].key) {
-        actuals->insertAtTail(new SymExpr(tmp->sym));
-      }
-      tmp = wrapper_formals->next();
-    }
+  AList<Expr>* wrapper_actuals = new AList<Expr>();
+  for_alist(DefExpr, formal, formals) {
+    wrapper_formals->insertAtTail(new DefExpr(old_to_new.get(formals_to_formals->get(formal->sym))));
+    wrapper_actuals->insertAtTail(new SymExpr(old_to_new.get(formal->sym)));
   }
 
-  Expr* fn_call = new CallExpr(this, actuals);
-  AList<Stmt>* body = new AList<Stmt>();
-  if (function_returns_void(this)) {
-    body->insertAtTail(new ExprStmt(fn_call));
-  } else {
-    body->insertAtTail(new ReturnStmt(fn_call));
-  }
-  DefExpr* def_expr = new DefExpr(Symboltable::finishFnDef(wrapper_fn, new BlockStmt(body)));
-  defPoint->parentStmt->insertBefore(new ExprStmt(def_expr));
+  Stmt* stmt = (function_returns_void(this))
+    ? new ExprStmt(new CallExpr(this, wrapper_actuals))
+    : new ReturnStmt(new CallExpr(this, wrapper_actuals));
+
+  FnSymbol* wrapper_fn = new FnSymbol(name, typeBinding, wrapper_formals,
+                                      retType, NULL, new BlockStmt(stmt),
+                                      fnClass, noParens, retRef);
+  wrapper_fn->method_type = method_type;
+  wrapper_fn->cname = glomstrings(3, cname, "_order_wrap", intstring(uid++));
+  wrapper_fn->addPragma("inline");
+  defPoint->parentStmt->insertBefore(new ExprStmt(new DefExpr(wrapper_fn)));
   return wrapper_fn;
 }
 
@@ -1032,28 +1015,26 @@ void FnSymbol::codegenDef(FILE* outfile) {
     }
   }
 
-  if (!isDead) {
-    if (fnClass == FN_CONSTRUCTOR) {
-      fprintf(outfile, "/* constructor */\n");
-    }
-
-    codegenHeader(outfile);
-
-    // while these braces seem like they should be extraneous since
-    // all function bodies are BlockStmts, it turns out that they are
-    // not because in C the function's parameter scope is the same as
-    // its local variable scope; so if we have a parameter and a local
-    // variable of name x (as in trivial/bradc/vardecls1b.chpl), these
-    // extra braces are required to make the generated code work out.
-    fprintf(outfile, " {\n");
-    inFunction = true;
-    justStartedGeneratingFunction = true;
-    body->codegen(outfile);
-    inFunction = false;
-    fprintf(outfile, "\n");
-    fprintf(outfile, "}\n");
-    fprintf(outfile, "\n\n");
+  if (fnClass == FN_CONSTRUCTOR) {
+    fprintf(outfile, "/* constructor */\n");
   }
+
+  codegenHeader(outfile);
+
+  // while these braces seem like they should be extraneous since
+  // all function bodies are BlockStmts, it turns out that they are
+  // not because in C the function's parameter scope is the same as
+  // its local variable scope; so if we have a parameter and a local
+  // variable of name x (as in trivial/bradc/vardecls1b.chpl), these
+  // extra braces are required to make the generated code work out.
+  fprintf(outfile, " {\n");
+  inFunction = true;
+  justStartedGeneratingFunction = true;
+  body->codegen(outfile);
+  inFunction = false;
+  fprintf(outfile, "\n");
+  fprintf(outfile, "}\n");
+  fprintf(outfile, "\n\n");
 }
 
 FnSymbol* FnSymbol::mainFn;

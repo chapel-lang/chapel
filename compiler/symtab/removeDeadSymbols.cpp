@@ -7,7 +7,6 @@
 
 
 static void markAsDeadAndExtract(Symbol* sym) {
-  sym->isDead = true;
   if (sym->defPoint) {
     sym->defPoint->parentStmt->remove();
   } else {
@@ -20,10 +19,6 @@ void RemoveDeadSymbols::processSymbol(Symbol* sym) {
   if (sym->parentScope->type == SCOPE_INTRINSIC) {
     return;
   }
-  if (sym->keepLive) {
-    return;
-  }
-
   if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(sym)) {
     if (!type_is_used(typeSym)) {
       markAsDeadAndExtract(sym);
