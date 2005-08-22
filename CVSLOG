@@ -43709,3 +43709,17 @@ Added files:
 	                           test_array_class_trial4a.future 
 	                           test_array_class_trial5a.future 
 
+---------------------------------------------------------------------------
+
+08/22/05 09:40:26 -- deitz
+
+Log message:
+	Enabled verification check to make sure that every symbol found in the
+	Symboltable is also traversed in the AST via a DefExpr.  This was
+	something that I had in place for a long time but was unable to make
+	work.  Exceptions are module symbols, symbols in the intrinsic scope,
+	type symbols for sum types and variable types.
+
+Modified files:
+	chapel/compiler/traversals/: verify.cpp 
+
