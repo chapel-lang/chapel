@@ -43747,3 +43747,30 @@ Added files:
 	                              test_named_default_gotcha.future 
 	                              test_named_default_gotcha.good 
 
+---------------------------------------------------------------------------
+
+08/22/05 14:40:59 -- deitz
+
+Log message:
+	Greatly simplfied the order wrapper code.  I changed the mapping
+	analysis passes to a formals to formals mapping instead of a formals
+	to actuals mapping which lets us use the 'get' method on the map.  The
+	two formals are the formals in the original function and the formals
+	in the wrapper function.
+	
+	Started to simplify the code used to create FnSymbols and functions in
+	general.  This involved beefing up the FnSymbol constructor and not
+	using Symboltable::start,continue,finish in some but not all places in
+	the code.
+	
+	Removed isDead and keepLive from Symbol as these are no longer used.
+
+Modified files:
+	chapel/compiler/: Tasks 
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: insertOutParameterInitializations.cpp 
+	                         removeDeadSymbols.cpp 
+
