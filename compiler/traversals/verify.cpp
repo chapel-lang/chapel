@@ -91,7 +91,7 @@ void Verify::run(Vec<ModuleSymbol*>* modules) {
         continue;
       }
     }
-    //    INT_FATAL(sym, "Symbol %s not in traversed DefExpr", sym->name);
+    INT_FATAL(sym, "Symbol %s not in traversed DefExpr", sym->name);
   }
 }
 
