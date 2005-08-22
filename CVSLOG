@@ -43723,3 +43723,14 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: verify.cpp 
 
+---------------------------------------------------------------------------
+
+08/22/05 11:33:34 -- jplevyak
+
+Log message:
+	Add option to remove manual coercion of primitive types
+	(will be handled by overloaded = in the future).
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
