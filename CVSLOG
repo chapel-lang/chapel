@@ -43890,3 +43890,54 @@ Modified files:
 Added files:
 	chapel/compiler/analysis/: reportErrors.cpp 
 
+---------------------------------------------------------------------------
+
+08/23/05 14:37:13 -- deitz
+
+Log message:
+	Implemented initial high-level support for inheritance as in
+	
+	  class C { ... }
+	  class D : C { ... }
+	
+	Added three error tests and one correct test.
+	
+	The types and fields in the super class are added to the top of the
+	sub class.
+	
+	Added a new traversal BuildClassHierarchy that adds the fields in
+	super classes to the sub classes and sets the sub classes's
+	typeParents fields to contain the super classes.
+	
+	This traversal should also change classes into value classes or
+	constructed classes if they inherit from class value (as opposed to
+	class object).  This should involve moving object into the prelude,
+	adding value to the prelude, and making all classes inherit from
+	object during the BuildClassHierarchy traversal.
+	
+	Added CLASS_VALUECLASS where necessary (sometimes where CLASS_CLASS
+	was referenced, sometimes where CLASS_RECORD was referenced).
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: computeVisibleFunctions.cpp 
+	                         resolveTypes.cpp 
+	chapel/compiler/traversals/: Makefile.share 
+	                             buildClassConstructorsEtc.cpp 
+	                             buildClassConstructorsEtc.h 
+	                             inlineFunctions.cpp 
+Added files:
+	chapel/compiler/traversals/: buildClassHierarchy.cpp 
+	                             buildClassHierarchy.h 
+	chapel/test/classes/deitz/inherit/: test_inherit1.chpl 
+	                                    test_inherit1.good 
+	                                    test_inherit_error1.chpl 
+	                                    test_inherit_error1.good 
+	                                    test_inherit_error2.chpl 
+	                                    test_inherit_error2.good 
+	                                    test_inherit_error3.chpl 
+	                                    test_inherit_error3.good 
+
