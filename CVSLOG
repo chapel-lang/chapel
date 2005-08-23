@@ -43846,3 +43846,14 @@ Modified files:
 Added files:
 	chapel/compiler/traversals/: astHelpers.cpp 
 
+---------------------------------------------------------------------------
+
+08/23/05 09:42:10 -- deitz
+
+Log message:
+	Added a test which I thought would build a sum type but does not.
+
+Added files:
+	chapel/test/classes/deitz/: test_sum_type1.chpl 
+	                            test_sum_type1.good 
+
