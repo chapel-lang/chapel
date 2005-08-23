@@ -625,128 +625,96 @@ FnSymbol* FnSymbol::clone(Map<BaseAST*,BaseAST*>* map) {
 
 
 FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitutions) {
-  static int uid = 1; // Unique ID for wrapped functions
-  currentLineno = lineno;
-  currentFilename = filename;
-  FnSymbol* wrapperFn = new FnSymbol(name);
-  wrapperFn->cname = glomstrings(3, cname, "_coercion_wrapper_", intstring(uid++));
-  wrapperFn = Symboltable::startFnDef(wrapperFn);
-  wrapperFn->method_type = method_type;
-  wrapperFn->fnClass = fnClass;
-  wrapperFn->addPragma("inline");
+  static int uid = 1;
 
-  AList<DefExpr>* wrapperFormals = new AList<DefExpr>();
-  for (DefExpr* formal = formals->first(); formal; formal = formals->next()) {
-    ParamSymbol* newFormal = dynamic_cast<ParamSymbol*>(formal->sym->copy());
-    wrapperFormals->insertAtTail(new DefExpr(newFormal));
+  AList<DefExpr>* wrapper_formals = new AList<DefExpr>();
+  AList<Expr>* wrapper_actuals = new AList<Expr>();
+  BlockStmt* wrapper_body = new BlockStmt();
+  for_alist(DefExpr, formal, formals) {
+    Symbol* newFormal = formal->sym->copy();
+    wrapper_formals->insertAtTail(new DefExpr(newFormal));
     Symbol* coercionSubstitution = coercion_substitutions->get(formal->sym);
     if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(coercionSubstitution)) {
       newFormal->type = ts->definition;
-    }
-  }
-  Symboltable::continueFnDef(wrapperFn, wrapperFormals, retType, retRef);
-
-  AList<Stmt>* wrapperBody = new AList<Stmt>();
-  AList<Expr>* wrapperActuals = new AList<Expr>();
-  for (DefExpr* formal = formals->first(), *wrapperFormal = wrapperFormals->first(); 
-       formal; 
-       formal = formals->next(), wrapperFormal = wrapperFormals->next()) {
-    Symbol* coercionSubstitution = coercion_substitutions->get(formal->sym);
-    if (coercionSubstitution) {
       char* tempName = glomstrings(2, "_coercion_temp_", formal->sym->name);
       VarSymbol* temp = new VarSymbol(tempName, formal->sym->type);
-      DefExpr* tempDefExpr = new DefExpr(temp, new SymExpr(wrapperFormal->sym));
-      wrapperBody->insertAtTail(new ExprStmt(tempDefExpr));
-      wrapperActuals->insertAtTail(new SymExpr(temp));
+      DefExpr* tempDefExpr = new DefExpr(temp, new SymExpr(newFormal));
+      wrapper_body->body->insertAtTail(new ExprStmt(tempDefExpr));
+      wrapper_actuals->insertAtTail(new SymExpr(temp));
     } else {
-      wrapperActuals->insertAtTail(new SymExpr(wrapperFormal->sym));
+      wrapper_actuals->insertAtTail(new SymExpr(newFormal));
     }
   }
 
-  Expr* fn_call = new CallExpr(this, wrapperActuals);
+  Expr* fn_call = new CallExpr(this, wrapper_actuals);
   if (function_returns_void(this)) {
-    wrapperBody->insertAtTail(new ExprStmt(fn_call));
+    wrapper_body->body->insertAtTail(new ExprStmt(fn_call));
   } else {
-    wrapperBody->insertAtTail(new ReturnStmt(fn_call));
+    wrapper_body->body->insertAtTail(new ReturnStmt(fn_call));
   }
-  BlockStmt* wrapperBlock = new BlockStmt(wrapperBody);
-  DefExpr* defExpr = new DefExpr(Symboltable::finishFnDef(wrapperFn, wrapperBlock));
-  defPoint->parentStmt->insertBefore(new ExprStmt(defExpr));
-  return wrapperFn;
+
+  FnSymbol* wrapper_fn = new FnSymbol(name, typeBinding, wrapper_formals,
+                                      retType, NULL, wrapper_body,
+                                      fnClass, noParens, retRef);
+  wrapper_fn->method_type = method_type;
+  wrapper_fn->cname = glomstrings(3, cname, "_coerce_wrap", intstring(uid++));
+  wrapper_fn->addPragma("inline");
+  defPoint->parentStmt->insertAfter(new ExprStmt(new DefExpr(wrapper_fn)));
+  defPoint->parentStmt->next->copyPragmas(defPoint->parentStmt->pragmas);
+  reset_file_info(wrapper_fn->defPoint->parentStmt, lineno, filename);
+  return wrapper_fn;
 }
 
 
 FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
-  static int uid = 1; // Unique ID for wrapped functions
-  currentLineno = lineno;
-  currentFilename = filename;
-  FnSymbol* wrapper_fn = Symboltable::startFnDef(new FnSymbol(name));
-  wrapper_fn->addPragma("inline");
-  wrapper_fn->method_type = method_type;
-  wrapper_fn->fnClass = fnClass;
-  wrapper_fn->cname =
-    glomstrings(3, cname, "_default_params_wrapper_", intstring(uid++));
+  static int uid = 1;
+
   AList<DefExpr>* wrapper_formals = new AList<DefExpr>();
+  AList<Expr>* wrapper_actuals = new AList<Expr>();
+  BlockStmt* wrapper_body = new BlockStmt();
   for_alist(DefExpr, formal, formals) {
     if (!defaults->set_in(formal->sym)) {
-      wrapper_formals->insertAtTail(formal->copy(true));
-    }
-  }
-  Symboltable::continueFnDef(wrapper_fn, wrapper_formals, retType, retRef, COPY(whereExpr));
-  AList<Stmt>* wrapper_body = new AList<Stmt>();
-  Vec<Expr*> temps;
-  for_alist_backward(DefExpr, formal, formals) {
-    if (defaults->set_in(formal->sym)) {
-      char* temp_name = glomstrings(2, "_default_param_temp_", formal->sym->name);
-      VarSymbol* temp_symbol = new VarSymbol(temp_name, formal->sym->type);
-      // mark default parameters as being of the nominal type of the corresponding
-      // non-default parameter.
-      DefExpr* temp_def_expr =
-        new DefExpr(temp_symbol,
-                    (dynamic_cast<ParamSymbol*>(formal->sym)->intent == PARAM_OUT)
-                    ? NULL
-                    : formal->sym->defPoint->init->copy(),
-                    (formal->sym->defPoint->exprType)
-                    ? formal->sym->defPoint->exprType->copy()
-                    : NULL);
-      wrapper_body->insertAtHead(new ExprStmt(temp_def_expr));
-      ParamSymbol *ps = dynamic_cast<ParamSymbol*>(formal->sym);
-      if (formal->sym->type != dtUnknown &&
-          ps->intent != PARAM_OUT && ps->intent != PARAM_INOUT)
-        temps.add(new CastExpr(new SymExpr(temp_symbol), NULL, formal->sym->type));
-      else
-        temps.add(new SymExpr(temp_symbol));
-    }
-  }
-  AList<Expr>* actuals = new AList<Expr>();
-  DefExpr* wrapper_formal = wrapper_formals->first();
-  for_alist(DefExpr, formal, formals) {
-    if (defaults->set_in(formal->sym)) {
-      actuals->insertAtTail(temps.pop());
+      Symbol* newFormal = formal->sym->copy();
+      wrapper_formals->insertAtTail(new DefExpr(newFormal));
+      wrapper_actuals->insertAtTail(new SymExpr(newFormal));
     } else {
-      actuals->insertAtTail(new SymExpr(wrapper_formal->sym));
-      wrapper_formal = wrapper_formals->next();
+      paramType formal_intent = dynamic_cast<ParamSymbol*>(formal->sym)->intent;
+      char* temp_name = glomstrings(2, "_default_temp_", formal->sym->name);
+      VarSymbol* temp = new VarSymbol(temp_name, formal->sym->type);
+      Expr* temp_init = NULL;
+      if (formal_intent != PARAM_OUT)
+        temp_init = formal->sym->defPoint->init->copy();
+      wrapper_body->body->insertAtHead(new ExprStmt(new DefExpr(temp, temp_init)));
+
+      if (formal->sym->type != dtUnknown &&
+          formal_intent != PARAM_OUT &&
+          formal_intent != PARAM_INOUT)
+        wrapper_actuals->insertAtTail(new CastExpr(new SymExpr(temp), NULL, formal->sym->type));
+      else
+        wrapper_actuals->insertAtTail(new SymExpr(temp));
     }
   }
-  CallExpr* fn_call = new CallExpr(this, actuals);
-  if (function_returns_void(this)) {
-    wrapper_body->insertAtTail(new ExprStmt(fn_call));
-  } else {
-    wrapper_body->insertAtTail(new ReturnStmt(fn_call));
-  }
-  Symboltable::finishFnDef(wrapper_fn, new BlockStmt(wrapper_body));
-  DefExpr* wrapper_expr = new DefExpr(wrapper_fn);
-  ExprStmt* wrapper_stmt = new ExprStmt(wrapper_expr);
-  wrapper_stmt->copyPragmas(defPoint->parentStmt->pragmas);
-  defPoint->parentStmt->insertAfter(wrapper_stmt);
-  return dynamic_cast<FnSymbol*>(wrapper_expr->sym);
+
+  wrapper_body->body->insertAtTail(
+    function_returns_void(this)
+      ? new ExprStmt(new CallExpr(this, wrapper_actuals))
+      : new ReturnStmt(new CallExpr(this, wrapper_actuals)));
+
+  FnSymbol* wrapper_fn = new FnSymbol(name, typeBinding, wrapper_formals,
+                                      retType, NULL, wrapper_body,
+                                      fnClass, noParens, retRef);
+  wrapper_fn->method_type = method_type;
+  wrapper_fn->cname = glomstrings(3, cname, "_default_wrap", intstring(uid++));
+  wrapper_fn->addPragma("inline");
+  defPoint->parentStmt->insertAfter(new ExprStmt(new DefExpr(wrapper_fn)));
+  defPoint->parentStmt->next->copyPragmas(defPoint->parentStmt->pragmas);
+  reset_file_info(wrapper_fn->defPoint->parentStmt, lineno, filename);
+  return wrapper_fn;
 }
 
 
 FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_formals) {
   static int uid = 1;
-  currentLineno = lineno;
-  currentFilename = filename;
 
   Map<Symbol*,Symbol*> old_to_new;
   for_alist(DefExpr, formal, formals) {
@@ -771,6 +739,7 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_formals) {
   wrapper_fn->cname = glomstrings(3, cname, "_order_wrap", intstring(uid++));
   wrapper_fn->addPragma("inline");
   defPoint->parentStmt->insertBefore(new ExprStmt(new DefExpr(wrapper_fn)));
+  reset_file_info(wrapper_fn->defPoint->parentStmt, lineno, filename);
   return wrapper_fn;
 }
 

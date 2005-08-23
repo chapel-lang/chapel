@@ -1,4 +1,4 @@
-chapel compiler: reporting inlining, _construct_Foo_default_params_wrapper_1 function was inlined
+chapel compiler: reporting inlining, _construct_Foo_default_wrap1 function was inlined
 chapel compiler: reporting inlining, _Foo_set_y function was inlined
 chapel compiler: reporting inlining, leaf function was inlined
 1
