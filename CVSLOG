@@ -43816,3 +43816,33 @@ Removed files:
 	chapel/test/domains/roxana/: test_hash_table3.future 
 	chapel/test/types/type_variables/deitz/: test_datablock3.future 
 
+---------------------------------------------------------------------------
+
+08/23/05 09:22:33 -- deitz
+
+Log message:
+	Greatly simplified the default and coercion wrapper codes.  These are
+	much easier to write now that the symboltable construction is
+	decoupled from the AST construction because there are no constraints
+	on the order in which things must be built up.  Thus if it is easier
+	to build up the formals and the body of a function at the same time,
+	it is now possible.
+	
+	Added two new functions, clear_file_info(BaseAST*) and
+	reset_file_info(BaseAST*, int lineno, char* filename), that use a
+	traversal to clear or reset the line number and file name of a part of
+	the AST.  The code for this traversal is in a new file
+	traversals/astHelpers.cpp which is meant to contain AST utility
+	functions that may involve traversals.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: baseAST.h 
+	chapel/compiler/traversals/: Makefile.share 
+	chapel/test/flowanalysis/newast/: sum_type-1.good 
+	                                  sum_type-2.good 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+Added files:
+	chapel/compiler/traversals/: astHelpers.cpp 
+
