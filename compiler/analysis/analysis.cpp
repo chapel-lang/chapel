@@ -2256,6 +2256,8 @@ analysis_error(AError_kind akind, AVar *acall, AType *atype, AVar *aavar) {
   return -1;
 }
 
+extern void reportAnalysisErrors(Vec<AError*>* analysis_errors);
+
 void
 ACallbacks::report_analysis_errors(Vec<ATypeViolation*> &type_violations) {
   forv_ATypeViolation(v, type_violations) {
@@ -2275,6 +2277,7 @@ ACallbacks::report_analysis_errors(Vec<ATypeViolation*> &type_violations) {
         analysis_error(AERROR_CALL_ARGUMENT, v->send, v->type, v->av); break;
     }
   }
+  reportAnalysisErrors(&analysis_errors);
 }
 
 static void

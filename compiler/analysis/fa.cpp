@@ -3112,10 +3112,9 @@ FA::analyze(Fun *top) {
   } while (extend_analysis());
   set_void_lub_types_to_void();
   remove_null_types();
-  if (!fanalysis_errors)
-    show_violations(fa, stderr);
-  else
+  if (fanalysis_errors)
     if1->callback->report_analysis_errors(type_violations);
+  show_violations(fa, stderr);
   return type_violations.n ? -1 : 0;
 }
 
