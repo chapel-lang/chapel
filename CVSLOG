@@ -43801,3 +43801,18 @@ Log message:
 Removed files:
 	chapel/test/functions/deitz/: test_named_default_gotcha.future 
 
+---------------------------------------------------------------------------
+
+08/22/05 17:24:45 -- deitz
+
+Log message:
+	Fixed recent futurizeds and removed .futures.  The prelude _data is a
+	little fragile but after instantiation is robustified this can
+	probably be made more secure.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+Removed files:
+	chapel/test/domains/roxana/: test_hash_table3.future 
+	chapel/test/types/type_variables/deitz/: test_datablock3.future 
+
