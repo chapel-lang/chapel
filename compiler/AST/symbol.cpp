@@ -143,7 +143,7 @@ void Symbol::codegen(FILE* outfile) {
   if (hasPragma("codegen data")) {
     TypeSymbol* typeSymbol = dynamic_cast<TypeSymbol*>(this);
     ClassType* dataType = dynamic_cast<ClassType*>(typeSymbol->definition);
-    dataType->methods.v[0]->retType->codegen(outfile);
+    dataType->fields.v[1]->type->codegen(outfile);
     fprintf(outfile, "*", cname);
   } else {
     fprintf(outfile, "%s", cname);
