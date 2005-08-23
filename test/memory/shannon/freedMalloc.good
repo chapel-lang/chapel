@@ -6,31 +6,6 @@
 Size:    Number:  Total:   Address:    Description:
 (bytes)           (bytes)  
 ================================================================================
-4        3        12       0xnnnnnnnn  stringlist buffer in _glom_strings
-1        6        6        0xnnnnnnnn  _glom_strings result
-1        2        2        0xnnnnnnnn  _glom_strings result
-1        5        5        0xnnnnnnnn  _glom_strings result
-1        23       23       0xnnnnnnnn  _glom_strings result
-16       1        16       0xnnnnnnnn  instance of class file
-1        6        6        0xnnnnnnnn  _glom_strings result
-1        2        2        0xnnnnnnnn  _glom_strings result
-1        5        5        0xnnnnnnnn  _glom_strings result
-1        7        7        0xnnnnnnnn  _glom_strings result
-1        2        2        0xnnnnnnnn  _glom_strings result
-1        5        5        0xnnnnnnnn  _glom_strings result
-1        23       23       0xnnnnnnnn  _glom_strings result
-16       1        16       0xnnnnnnnn  instance of class file
-1        7        7        0xnnnnnnnn  _glom_strings result
-1        2        2        0xnnnnnnnn  _glom_strings result
-1        5        5        0xnnnnnnnn  _glom_strings result
-1        7        7        0xnnnnnnnn  _glom_strings result
-1        2        2        0xnnnnnnnn  _glom_strings result
-1        5        5        0xnnnnnnnn  _glom_strings result
-1        23       23       0xnnnnnnnn  _glom_strings result
-16       1        16       0xnnnnnnnn  instance of class file
-1        7        7        0xnnnnnnnn  _glom_strings result
-1        2        2        0xnnnnnnnn  _glom_strings result
-1        5        5        0xnnnnnnnn  _glom_strings result
 8        1        8        0xnnnnnnnn  _integer64
 8        1        8        0xnnnnnnnn  _float64
 
@@ -43,30 +18,5 @@ And this is the memory hash table after the integer variable has been freed:
 Size:    Number:  Total:   Address:    Description:
 (bytes)           (bytes)  
 ================================================================================
-4        3        12       0xnnnnnnnn  stringlist buffer in _glom_strings
-1        6        6        0xnnnnnnnn  _glom_strings result
-1        2        2        0xnnnnnnnn  _glom_strings result
-1        5        5        0xnnnnnnnn  _glom_strings result
-1        23       23       0xnnnnnnnn  _glom_strings result
-16       1        16       0xnnnnnnnn  instance of class file
-1        6        6        0xnnnnnnnn  _glom_strings result
-1        2        2        0xnnnnnnnn  _glom_strings result
-1        5        5        0xnnnnnnnn  _glom_strings result
-1        7        7        0xnnnnnnnn  _glom_strings result
-1        2        2        0xnnnnnnnn  _glom_strings result
-1        5        5        0xnnnnnnnn  _glom_strings result
-1        23       23       0xnnnnnnnn  _glom_strings result
-16       1        16       0xnnnnnnnn  instance of class file
-1        7        7        0xnnnnnnnn  _glom_strings result
-1        2        2        0xnnnnnnnn  _glom_strings result
-1        5        5        0xnnnnnnnn  _glom_strings result
-1        7        7        0xnnnnnnnn  _glom_strings result
-1        2        2        0xnnnnnnnn  _glom_strings result
-1        5        5        0xnnnnnnnn  _glom_strings result
-1        23       23       0xnnnnnnnn  _glom_strings result
-16       1        16       0xnnnnnnnn  instance of class file
-1        7        7        0xnnnnnnnn  _glom_strings result
-1        2        2        0xnnnnnnnn  _glom_strings result
-1        5        5        0xnnnnnnnn  _glom_strings result
 8        1        8        0xnnnnnnnn  _float64
 

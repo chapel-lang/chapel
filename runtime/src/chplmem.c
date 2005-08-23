@@ -47,8 +47,12 @@ static unsigned hash(void* memAlloc) {
 
 
 static int memstat = 0;
-static int memtrack = 0;
+static int memstatSet = 0;
 static int memthreshold = 0;
+static int memtrace = 0;
+static int memtraceSet = 0;
+static int memtrack = 0;
+static int memtrackSet = 0;
 static _integer64 memmaxValue = 0;
 static _integer64 memthresholdValue = 0;
 static FILE* memlog = NULL;
@@ -73,13 +77,13 @@ void setMemmax(_integer64 value) {
 
 
 void setMemstat(void) {
-  memstat = 1;
-  memtrack = 1;
+  memstatSet = 1;
+  memtrackSet = 1;
 }
 
 
 void setMemtrack(void) {
-  memtrack = 1;
+  memtrackSet = 1;
 }
 
 
@@ -94,6 +98,7 @@ void setMemthreshold(_integer64 value) {
 
 
 void setMemtrace(char* memlogname) {
+  memtraceSet = 1;
   if (memlogname) {
     memlog = fopen(memlogname, "w");
     if (!memlog) {
@@ -132,6 +137,14 @@ void resetMemStat(void) {
   totalMem = 0;
   maxMem = 0;
 }
+
+
+void startTrackingMem(void) {
+    memstat = memstatSet;
+    memtrack = memtrackSet;
+    memtrace = memtraceSet;
+}
+
 
 static int alreadyPrintingStat = 0;
 
@@ -270,13 +283,40 @@ static void installMemory(void* memAlloc, size_t number, size_t size,
 }
 
 
+static memTableEntry* removeBucketEntry(void* address) {
+  unsigned hashValue = hash(address);    
+  memTableEntry* thisBucketEntry = memTable[hashValue];
+  memTableEntry* deletedBucket = NULL;
+    
+  if (thisBucketEntry->memAlloc == address) {
+    memTable[hashValue] = thisBucketEntry->nextInBucket;
+    deletedBucket = thisBucketEntry;
+  } else {
+    for (thisBucketEntry = memTable[hashValue]; 
+         thisBucketEntry != NULL; 
+         thisBucketEntry = thisBucketEntry->nextInBucket) {
+
+      memTableEntry* nextBucketEntry = thisBucketEntry->nextInBucket;
+        
+      if (nextBucketEntry->memAlloc == address) {
+        thisBucketEntry->nextInBucket = nextBucketEntry->nextInBucket;
+        deletedBucket = nextBucketEntry;
+      }
+    }
+  }
+  if (deletedBucket == NULL) {
+    printInternalError("Hash table entry has disappeared unexpectedly!");
+  }
+  return deletedBucket;
+}
+
+
 static void updateMemory(memTableEntry* memEntry, void* oldAddress, 
                          void* newAddress, size_t number, size_t size) {
-  unsigned oldHashValue = hash(oldAddress);
   unsigned newHashValue = hash(newAddress);
 
   /* Rehash on the new memory location.  */
-  memTable[oldHashValue] = memEntry->nextInBucket;
+  removeBucketEntry(oldAddress);
   memEntry->nextInBucket = memTable[newHashValue];
   memTable[newHashValue] = memEntry;
 
@@ -306,25 +346,7 @@ static void removeMemory(void* memAlloc) {
     }
 
     /* Remove the entry from the bucket list. */
-    unsigned hashValue = hash(memAlloc);    
-    memTableEntry* thisBucketEntry = memTable[hashValue];
-    
-    if (thisBucketEntry->memAlloc == memAlloc) {
-      memTable[hashValue] = thisBucketEntry->nextInBucket;
-    } else {
-      for (thisBucketEntry = memTable[hashValue]; 
-           thisBucketEntry != NULL; 
-           thisBucketEntry = thisBucketEntry->nextInBucket) {
-
-        memTableEntry* nextBucketEntry = thisBucketEntry->nextInBucket;
-        
-        if (nextBucketEntry->memAlloc == memAlloc) {
-          thisBucketEntry->nextInBucket = nextBucketEntry->nextInBucket;
-          thisBucketEntry = nextBucketEntry;
-          break;
-        }
-      }
-    }
+    memTableEntry* thisBucketEntry = removeBucketEntry(memAlloc);
     free(thisBucketEntry->description);
     free(thisBucketEntry);
   } else {
@@ -367,7 +389,7 @@ void* _chpl_malloc(size_t number, size_t size, char* description) {
   void* memAlloc = malloc(chunk);
   confirm(memAlloc, description);
 
-  if (memlog) {
+  if (memtrace) {
     printToMemLog(number, size, description, "malloc", memAlloc, NULL);
   }
   if (memtrack) {
@@ -384,7 +406,7 @@ void* _chpl_calloc(size_t number, size_t size, char* description) {
   void* memAlloc = calloc(number, size);
   confirm(memAlloc, description);
 
-  if (memlog) {
+  if (memtrace) {
     printToMemLog(number, size, description, "calloc", memAlloc, NULL);
   }
 
@@ -450,7 +472,7 @@ void* _chpl_realloc(void* memAlloc, size_t number, size_t size,
       increaseMemStat(newChunk);
     }
   }
-  if (memlog) {
+  if (memtrace) {
     printToMemLog(number, size, description, "realloc", memAlloc, 
                   moreMemAlloc);
   }

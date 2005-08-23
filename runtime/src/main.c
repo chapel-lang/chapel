@@ -11,8 +11,6 @@ int main(int argc, char* argv[]) {
   initMemTable();
   CreateConfigVarTable();
   initChplio();
-
-  resetMemStat();
   _chpl_main();
   printFinalMemStat();
 

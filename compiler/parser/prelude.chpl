@@ -176,7 +176,7 @@ function _chpl_memtest_reallocZeroSize();
 function _chpl_memtest_mallocOutOfMemory();
 function _chpl_memtest_reallocOutOfMemory();
 
-function resetMemStat();
+function startTrackingMem();
 
 function _complex_read_hack(inout x) {
   __primitive("read", x);

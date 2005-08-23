@@ -5,9 +5,11 @@
 #include "arg.h"
 #include "chpltypes.h"
 
+
 void initMemTable(void);
 void printMemTable(_integer64 threshold);
 void resetMemStat(void);
+void startTrackingMem(void);
 void printMemStat(void);
 void printFinalMemStat(void);
 
