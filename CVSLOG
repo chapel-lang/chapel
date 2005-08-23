@@ -43868,3 +43868,25 @@ Log message:
 Added files:
 	chapel/test/classes/jplevyak/: sum_type-3.chpl sum_type-3.good 
 
+---------------------------------------------------------------------------
+
+08/23/05 12:18:35 -- deitz
+
+Log message:
+	Added skeleton code for reporting high-level error messages based on
+	analysis error flags.  Use --analysis-errors to get the high-level
+	messages, which will currently just say "High-level error message".
+	It will also print out the analysis messages and will continue to do
+	so unless it feels it has printed out good enough errors, at least for
+	a while.
+	
+	Added error macro USR_FATAL_CONT which prints out a fatal error but
+	does not stop until a USR_FATAL or INT_FATAL is detected.
+
+Modified files:
+	chapel/compiler/analysis/: Makefile.share analysis.cpp fa.cpp 
+	chapel/compiler/include/: misc.h 
+	chapel/compiler/util/: misc.cpp 
+Added files:
+	chapel/compiler/analysis/: reportErrors.cpp 
+
