@@ -43973,3 +43973,15 @@ Added files:
 	                                    test_inherit2.future 
 	                                    test_inherit2.good 
 
+---------------------------------------------------------------------------
+
+08/23/05 14:57:11 -- deitz
+
+Log message:
+	Added bad function call test to work on high-level errors.
+
+Added files:
+	chapel/test/functions/deitz/: test_bad_function.chpl 
+	                              test_bad_function.future 
+	                              test_bad_function.good 
+
