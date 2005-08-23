@@ -43941,3 +43941,23 @@ Added files:
 	                                    test_inherit_error3.chpl 
 	                                    test_inherit_error3.good 
 
+---------------------------------------------------------------------------
+
+08/23/05 14:47:53 -- shannon
+
+Log message:
+	Changed memory tracing to only handle user code, and
+	fixed a bug with removing a bucket from a list in
+	memtable.
+
+Modified files:
+	chapel/compiler/parser/: prelude.chpl 
+	chapel/modules/standard/: _chpl_standard.chpl 
+	chapel/runtime/include/: chplmem.h 
+	chapel/runtime/src/: chplmem.c main.c 
+	chapel/test/memory/shannon/: configVarFile.good freedMalloc.good 
+	                             memmaxExceeds.execopts 
+	                             memmaxExceedsLineno.execopts 
+	                             memstatPrint.chpl memstatPrint.good 
+	                             reallocZeroSize.good 
+
