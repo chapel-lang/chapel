@@ -144,7 +144,7 @@
 %type <pexpr> literal range seq_expr where whereexpr
 %type <pexpr> tuple_multiplier variable_expr
 %type <pexpr> reduction opt_init_expr assign_expr if_expr
-%type <pexprls> expr_ls nonempty_expr_ls tuple_inner_type_ls
+%type <pexprls> expr_ls nonempty_expr_ls tuple_inner_type_ls opt_inherit_ls
 %type <pdefexpr> formal enum_item
 %type <pdefexprls> formal_ls opt_formal_ls enum_ls
 
@@ -505,11 +505,24 @@ class_record_union:
 ;
 
 
-struct_decl:
-  class_record_union pragma_ls identifier TLCBR decl_ls TRCBR
+opt_inherit_ls:
+  /* empty */
     {
-      DefExpr* def = Symboltable::defineStructType($3, $1, $5);
+      $$ = new AList<Expr>();
+    }
+| TCOLON nonempty_expr_ls
+    {
+      $$ = $2;
+    }
+;
+
+
+struct_decl:
+  class_record_union pragma_ls identifier opt_inherit_ls TLCBR decl_ls TRCBR
+    {
+      DefExpr* def = Symboltable::defineStructType($3, $1, $6);
       def->sym->copyPragmas(*$2);
+      dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(def->sym)->definition)->inherits = $4;
       $$ = new ExprStmt(def);
     }
 ;

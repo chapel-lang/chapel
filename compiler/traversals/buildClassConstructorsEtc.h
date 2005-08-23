@@ -9,6 +9,4 @@ class BuildClassConstructorsEtc : public Traversal {
   void postProcessExpr(Expr* expr);
 };
 
-void buildDefaultClassTypeMethods(ClassType* structuralType);
-
 #endif

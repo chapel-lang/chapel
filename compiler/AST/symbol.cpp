@@ -482,7 +482,6 @@ TypeSymbol* TypeSymbol::clone(Map<BaseAST*,BaseAST*>* map) {
   if (!newClass) {
     INT_FATAL(this, "Class cloning went horribly wrong");
   }
-  newClass->typeParents.add(originalClass);
   clone->cname = glomstrings(3, clone->cname, "_clone_", intstring(uid++));
   defPoint->parentStmt->insertBefore(new ExprStmt(new DefExpr(clone)));
   return clone;

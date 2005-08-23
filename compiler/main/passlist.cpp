@@ -25,6 +25,7 @@
 
 #include "../traversals/applyThisParameters.h"
 #include "../traversals/buildClassConstructorsEtc.h"
+#include "../traversals/buildClassHierarchy.h"
 #include "../traversals/checkIDs.h"
 #include "../traversals/checkSemantics.h"
 #include "../traversals/checkTypeInfo.h"
@@ -71,6 +72,8 @@ REGISTER(ApplyGettersSetters);
 REGISTER(ApplyThisParameters);
 REGISTER(BuildBinary);
 REGISTER(BuildClassConstructorsEtc);
+REGISTER(BuildClassHierarchy);
+REGISTER(BuildLValueFunctions);
 REGISTER(CheckIDs);
 REGISTER(CheckSemantics);
 REGISTER(CheckTypeInfo);
@@ -81,7 +84,6 @@ REGISTER(CreateConfigVarTable);
 REGISTER(CreateEntryPoint);
 REGISTER(CreateNestedFuncIterators);
 REGISTER(DummyPass);
-REGISTER(BuildLValueFunctions);
 REGISTER(EliminateReturns);
 REGISTER(FindUnresolvedSymbols);
 REGISTER(FilesToAST);

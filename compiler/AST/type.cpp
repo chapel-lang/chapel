@@ -531,9 +531,11 @@ ClassType::ClassType(ClassTag initClassTag) :
   Type(TYPE_CLASS, NULL),
   classTag(initClassTag),
   structScope(NULL),
-  declarationList(new AList<Stmt>())
+  declarationList(new AList<Stmt>()),
+  inherits(new AList<Expr>())
 {
-  if (classTag == CLASS_CLASS) {
+  if (classTag == CLASS_CLASS) { // set defaultValue to nil to keep it
+                                 // from being constructed
     defaultValue = new SymExpr(gNil);
   }
   fields.clear();
@@ -577,31 +579,37 @@ ClassType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
 
 void ClassType::addDeclarations(AList<Stmt>* newDeclarations, 
                                      Stmt* beforeStmt) {
-  Stmt* tmp = newDeclarations->first();
-  while (tmp) {
-    ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(tmp);
-    DefExpr* defExpr = exprStmt ? dynamic_cast<DefExpr*>(exprStmt->expr) : NULL;
-    if (defExpr) {
-      if (FnSymbol* sym = dynamic_cast<FnSymbol*>(defExpr->sym)) {
-        sym->typeBinding = this->symbol;
-        if (sym->fnClass != FN_CONSTRUCTOR) {
-          sym->method_type = PRIMARY_METHOD;
+  for_alist(Stmt, stmt, newDeclarations) {
+    if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {
+      if (DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr)) {
+        if (FnSymbol* fn = dynamic_cast<FnSymbol*>(defExpr->sym)) {
+          fn->typeBinding = this->symbol;
+          if (fn->fnClass != FN_CONSTRUCTOR) {
+            fn->method_type = PRIMARY_METHOD;
+          }
+          methods.add(fn);
         }
-        methods.add(sym);
-      } else if (TypeSymbol* sym = dynamic_cast<TypeSymbol*>(defExpr->sym)) {
-        types.add(sym);
-      } else if (VarSymbol* sym = dynamic_cast<VarSymbol*>(defExpr->sym)) {
-        fields.add(sym);
-      } else if (ParamSymbol* sym = dynamic_cast<ParamSymbol*>(defExpr->sym)) {
-        fields.add(sym);
       }
     }
-    tmp = newDeclarations->next();
   }
   if (beforeStmt) {
     beforeStmt->insertBefore(newDeclarations);
   } else {
     declarationList->insertAtTail(newDeclarations);
+  }
+  types.clear();
+  fields.clear();
+  for_alist(Stmt, stmt, declarationList) {
+    if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {
+      if (DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr)) {
+        if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(defExpr->sym)) {
+          types.add(ts);
+        } else if (dynamic_cast<VarSymbol*>(defExpr->sym) ||
+                   dynamic_cast<ParamSymbol*>(defExpr->sym)) {
+          fields.add(defExpr->sym);
+        }
+      }
+    }
   }
 }
 
@@ -611,6 +619,8 @@ void ClassType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
     defaultValue = dynamic_cast<Expr*>(new_ast);
   } else if (old_ast == declarationList) {
     declarationList = dynamic_cast<AList<Stmt>*>(new_ast);
+  } else if (old_ast == inherits) {
+    inherits = dynamic_cast<AList<Expr>*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in Type::replaceChild");
   }
@@ -622,6 +632,7 @@ void ClassType::traverseDefType(Traversal* traversal) {
   if (structScope) {
     prevScope = Symboltable::setCurrentScope(structScope);
   }
+  TRAVERSE(inherits, traversal, false);
   TRAVERSE(declarationList, traversal, false);
   TRAVERSE(defaultValue, traversal, false);
   if (structScope) {
@@ -655,7 +666,9 @@ is_Value_Type(Type *t) {
   if (UserType *ut = dynamic_cast<UserType*>(t))
     return is_Value_Type(ut->defType);
   ClassType* ct = dynamic_cast<ClassType*>(t);
-  return ct && (ct->classTag == CLASS_RECORD || ct->classTag == CLASS_UNION);
+  return ct && (ct->classTag == CLASS_RECORD
+                || ct->classTag == CLASS_UNION
+                || ct->classTag == CLASS_VALUECLASS);
 }
 
 
@@ -669,8 +682,7 @@ is_Reference_Type(Type *t) {
     return true;
   ClassType* ct = dynamic_cast<ClassType*>(t);
   return (ct &&
-          (ct->classTag == CLASS_CLASS ||
-           ct->classTag == CLASS_VALUECLASS));
+          (ct->classTag == CLASS_CLASS));
 }
 
 static Expr *
@@ -829,7 +841,7 @@ AList<Stmt>* ClassType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
     body->insertAtTail(new CondStmt(argIsNil, blockStmt));
   }
 
-  if (classTag == CLASS_CLASS) {
+  if (classTag == CLASS_CLASS || classTag == CLASS_VALUECLASS) {
     addWriteStmt(body, new StringLiteral("{"));
   } else {
     addWriteStmt(body, new StringLiteral("("));
@@ -846,7 +858,7 @@ AList<Stmt>* ClassType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
     first = false;
   }
 
-  if (classTag == CLASS_CLASS) {
+  if (classTag == CLASS_CLASS || classTag == CLASS_VALUECLASS) {
     addWriteStmt(body, new StringLiteral("}"));
   } else {
     addWriteStmt(body, new StringLiteral(")"));

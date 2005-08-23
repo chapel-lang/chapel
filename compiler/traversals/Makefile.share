@@ -2,6 +2,7 @@ TRAVERSALS_SRCS = \
 	applyThisParameters.cpp \
         astHelpers.cpp \
 	buildClassConstructorsEtc.cpp \
+        buildClassHierarchy.cpp \
 	checkIDs.cpp \
 	checkSemantics.cpp \
 	checkTypeInfo.cpp \

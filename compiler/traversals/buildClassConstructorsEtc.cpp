@@ -251,11 +251,12 @@ static void build_record_assignment_function(ClassType* structType) {
 }
 
 
-void buildDefaultClassTypeMethods(ClassType* structuralType) {
+static void buildDefaultClassTypeMethods(ClassType* structuralType) {
   build_setters_and_getters(structuralType);
   build_union_id_enum(structuralType);
   build_constructor(structuralType);
-  if (structuralType->classTag == CLASS_RECORD) {
+  if (structuralType->classTag == CLASS_RECORD ||
+      structuralType->classTag == CLASS_VALUECLASS) {
     build_record_equality_function(structuralType);
     build_record_inequality_function(structuralType);
     build_record_assignment_function(structuralType);

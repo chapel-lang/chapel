@@ -72,7 +72,8 @@ bool InlineFunctions::isFormalParamOut(ParamSymbol* p_sym) {
 
 bool InlineFunctions::isFormalParamRef(ParamSymbol* p_sym) {
   ClassType* classType = dynamic_cast<ClassType*>(p_sym->type);
-  if (classType && classType->classTag == CLASS_CLASS) {
+  if (classType && (classType->classTag == CLASS_CLASS ||
+                    classType->classTag == CLASS_VALUECLASS))  {
     return true;
   }
   return p_sym->intent == PARAM_REF;

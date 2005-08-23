@@ -27,6 +27,7 @@ PassInfo passlist[] = {
   RUN(ReconstructIterators, ""),
   RUN(InsertThisParameters, ""),
   RUN(Flatten, ""),
+  RUN(BuildClassHierarchy, ""),
   RUN(ScopeResolveSymbols, ""), // postScopeResolution = true
   RUN(ScopeResolveGotos, ""),
   RUN(RenameOverloadedFunctions, ""),

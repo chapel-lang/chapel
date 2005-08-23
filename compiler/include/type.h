@@ -160,6 +160,8 @@ class ClassType : public Type {
   bool isPattern;
   EnumType* fieldSelector;
 
+  AList<Expr>* inherits; // used from parsing, sets typeParents
+
   Vec<Symbol*> fields;
   Vec<TypeSymbol*> types;
 
