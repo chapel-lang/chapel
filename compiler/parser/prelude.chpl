@@ -1,3 +1,6 @@
+class object { }
+class value { }
+
 function sizeof(x) { return __primitive("pure_return", integer); }
 
 record pragma "codegen data" _data { -- a c array, basically

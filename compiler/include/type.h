@@ -160,7 +160,7 @@ class ClassType : public Type {
   bool isPattern;
   EnumType* fieldSelector;
 
-  AList<Expr>* inherits; // used from parsing, sets typeParents
+  AList<Expr>* inherits; // used from parsing, sets dispatchParents
 
   Vec<Symbol*> fields;
   Vec<TypeSymbol*> types;
@@ -263,7 +263,8 @@ void findInternalTypes(void);
 // sum-ish types
 TYPE_EXTERN Type* dtAny;
 TYPE_EXTERN Type* dtNumeric;
-TYPE_EXTERN Type* dtObject;
+TYPE_EXTERN ClassType* dtObject;
+TYPE_EXTERN ClassType* dtValue;
 
 // abstract base types
 TYPE_EXTERN Type* dtSequence;

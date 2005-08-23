@@ -34,9 +34,11 @@ static void addClassToHierarchy(ClassType* ct,
       alreadySeen->add(ct);
       addClassToHierarchy(pt, alreadySeen);
     }
-    ct->typeParents.add(pt);
+    ct->dispatchParents.add(pt);
     ct->addDeclarations(pt->declarationList->copy(true), ct->declarationList->first());
   }
+  if (ct->dispatchParents.n == 0 && ct != dtObject)
+    ct->dispatchParents.add(dtObject);
   ct->inherits = NULL;
 }
 

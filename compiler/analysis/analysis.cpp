@@ -951,8 +951,7 @@ build_type(Type *t, bool make_default = true) {
       if (tt->dispatchParents.n > 0) {
         forv_Vec(Type, ttt, tt->dispatchParents)
           t->asymbol->sym->inherits_add(ttt->asymbol->sym);
-      } else
-        t->asymbol->sym->inherits_add(sym_object);
+      }
       if (t->asymbol->sym == sym_sequence)
         t->asymbol->sym->element = new_sym();
       break;

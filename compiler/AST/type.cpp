@@ -656,7 +656,6 @@ is_Scalar_Type(Type *t) {
     t != dtString && 
     t != dtNil && 
     t != dtAny && 
-    t != dtObject && 
     (t->astType == TYPE_PRIMITIVE || t->astType == TYPE_ENUM);
 }
 
@@ -1036,8 +1035,6 @@ void initType(void) {
 
   dtNumeric = Symboltable::definePrimitiveType("numeric", "_numeric");
   dtAny = Symboltable::definePrimitiveType("any", "_any");
-  dtObject = Symboltable::definePrimitiveType("object", "_object");
-
   dtLocale = Symboltable::definePrimitiveType("locale", "_locale", NULL);
 }
 
@@ -1099,11 +1096,17 @@ Type *getMetaType(Type *t) {
 }
 
 void findInternalTypes(void) {
+  dtObject = dynamic_cast<ClassType*>(Symboltable::lookupInternalType("object")->definition);
+  dtValue = dynamic_cast<ClassType*>(Symboltable::lookupInternalType("value")->definition);
+
+  // These should all be eliminated.  Note they almost are since they
+  // are MetaTypes, not the types in the prelude.
   dtTuple = Symboltable::lookupInternalType("Tuple")->type;
   dtIndex = Symboltable::lookupInternalType("Index")->type;
   dtDomain = Symboltable::lookupInternalType("Domain")->type;
   dtArray = Symboltable::lookupInternalType("Array")->type;
   dtSequence = Symboltable::lookupInternalType("_seq")->type;
+
   // SJD: Can't do this when dtString is defined because
   // prelude hasn't been made yet.  Need to do it after.
   dtString->defaultConstructor =
