@@ -43985,3 +43985,13 @@ Added files:
 	                              test_bad_function.future 
 	                              test_bad_function.good 
 
+---------------------------------------------------------------------------
+
+08/23/05 14:58:45 -- deitz
+
+Log message:
+	Updated task list
+
+Modified files:
+	chapel/compiler/: Tasks 
+
