@@ -118,6 +118,9 @@ class Setters : public Vec<AVar *> {
 };
 #define forv_Setters(_p, _v) forv_Vec(Setters, _p, _v)
 
+typedef MapElem<void *, int> MarkElem;
+typedef Map<void *, int> MarkMap;
+
 class AVar : public gc {
  public:
   Var                           *var;
@@ -126,12 +129,14 @@ class AVar : public gc {
   Vec<AVar *>                   forward;
   Vec<AVar *>                   backward;
   AVar                          *lvalue;
+  AType                         *gen;
   AType                         *in;
   AType                         *out;
   AType                         *restrict;
   AVar                          *container;
   Setters                       *setters;
   Setters                       *setter_class;
+  MarkMap                       *mark_map;
   CreationSet                   *creation_set;
   Sym                           *type;
   int                           ivar_offset;
@@ -302,7 +307,7 @@ AType *make_AType(CreationSet *cs);
 AType *make_AType(Vec<CreationSet *> &css);
 AType *make_abstract_type(Sym *s);
 void fill_tvals(Fun *fn, PNode *p, int n);
-void update_in(AVar *v, AType *t);
+void update_gen(AVar *v, AType *t);
 void flow_vars(AVar *v, AVar *vv);
 void flow_var_type_permit(AVar *v, AType *t);
 CreationSet *creation_point(AVar *v, Sym *s);

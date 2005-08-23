@@ -54,10 +54,10 @@ static int application(PNode *p, EntrySet *es, AVar *fun, CreationSet *s, Vec<AV
                        Partial_kind partial);
 
 AVar::AVar(Var *v, void *acontour) : 
-  var(v), contour(acontour), lvalue(0), in(bottom_type), out(bottom_type), 
-  restrict(0), container(0), setters(0), setter_class(0), creation_set(0), type(0),
-  ivar_offset(0), in_send_worklist(0), contour_is_entry_set(0), is_lvalue(0),
-  is_dead(0)
+  var(v), contour(acontour), lvalue(0), gen(0), in(bottom_type), out(bottom_type), 
+  restrict(0), container(0), setters(0), setter_class(0), mark_map(0),
+  creation_set(0), type(0), ivar_offset(0), in_send_worklist(0), contour_is_entry_set(0), 
+  is_lvalue(0), is_dead(0)
 {
   id = avar_id++;
 }
@@ -208,6 +208,18 @@ update_in(AVar *v, AType *t) {
   }
 }
 
+void
+update_gen(AVar *v, AType *t) {
+  if (v->gen) {
+    AType *tt = type_union(v->gen, t);
+    if (tt == v->gen)
+      return;
+    v->gen = tt;
+  } else
+    v->gen = t;
+  update_in(v, v->gen);
+}
+
 static void
 flow_var_to_var(AVar *a, AVar *b) {
   if (a == b)
@@ -287,7 +299,7 @@ creation_point(AVar *v, Sym *s) {
  Ldone:
   if (v->contour_is_entry_set)
     ((EntrySet*)v->contour)->creates.set_add(cs);
-  update_in(v, make_AType(cs));
+  update_gen(v, make_AType(cs));
   return cs;
 }
 
@@ -624,28 +636,60 @@ edge_nest_compatible_with_entry_set(AEdge *e, EntrySet *es) {
   return 1;
 }
 
+static int 
+different_marked_args_types(AVar *a1, AVar *a2, int offset, AVar *basis = 0) {
+  Vec<void *> syms1, syms2;
+  AVar *basis1 = basis ? basis : a2;
+  if (a1->mark_map) {
+    form_Map(MarkElem, x, *a1->mark_map) {
+      if (basis1->mark_map) {
+        int m = basis1->mark_map->get(x->key);
+        if (m && m - offset == x->value)
+          syms1.set_add(x->key);
+      }
+    }
+  }
+  if (a2->mark_map) {
+    form_Map(MarkElem, x, *a2->mark_map) {
+      if (basis) {
+        if (basis->mark_map) {
+          int m = basis->mark_map->get(x->key);
+          if (m && m - offset == x->value)
+            syms2.set_add(x->key);
+        }
+      } else
+        syms2.set_add(x->key);
+    }
+  }
+  return syms1.some_disjunction(syms2);
+}
+
 static int
-edge_type_compatible_with_entry_set(AEdge *e, EntrySet *es) {
+edge_type_compatible_with_entry_set(AEdge *e, EntrySet *es, int fmark = 0) {
   assert(e->args.n && es->args.n);
   if (!es->split) {
     forv_MPosition(p, e->match->fun->positional_arg_positions) {
       AVar *es_arg = es->args.get(p), *e_arg = e->args.get(p);
       if (!e_arg)
         continue;
-      // always split the "new" method... should generalize this
-      if (p->pos.n == 1 && p->pos.v[0] == int2Position(2) && es->fun->sym == sym_new_object) {
-        if (es_arg->out != e_arg->out)
-          return -1;
+      if (!fmark) {
+        if (e_arg->out != es_arg->out)
+          return 0;
       } else
-        if (es_arg->out != e_arg->out)
+        if (different_marked_args_types(e_arg, es_arg, 2))
           return 0;
     }
     if (es->rets.n != e->rets.n)
       return 0;
     for (int i = 0; i < e->rets.n; i++) {
-      if (es->rets.v[i]->lvalue && e->rets.v[i]->lvalue)
-        if (es->rets.v[i]->lvalue->out != e->rets.v[i]->lvalue->out)
-          return 0;
+      if (es->rets.v[i]->lvalue && e->rets.v[i]->lvalue) {
+        if (!fmark) {
+          if (es->rets.v[i]->lvalue->out != e->rets.v[i]->lvalue->out)
+            return 0;
+        } else
+          if (different_marked_args_types(es->rets.v[i]->lvalue, e->rets.v[i]->lvalue, 1))
+            return 0;
+      }
     }
   } else {
     AEdge **last = es->edges.last();
@@ -658,15 +702,28 @@ edge_type_compatible_with_entry_set(AEdge *e, EntrySet *es) {
         AVar *ee_arg = ee->args.get(p);
         if (!e_arg || !ee_arg)
           continue;
-        if (ee_arg->out != e_arg->out)
-          return 0;
+        if (!fmark) {
+          if (ee_arg->out != e_arg->out)
+            return 0;
+        } else {
+          AVar *es_arg = es->args.get(p);
+          if (different_marked_args_types(ee_arg, e_arg, 2, es_arg))
+            return 0;
+        }
       }
       if (e->rets.n != ee->rets.n)
         return 0;
       for (int i = 0; i < e->rets.n; i++) {
-        if (ee->rets.v[i]->lvalue && e->rets.v[i]->lvalue)
-          if (ee->rets.v[i]->lvalue->out != e->rets.v[i]->lvalue->out)
-            return 0;
+        if (ee->rets.v[i]->lvalue && e->rets.v[i]->lvalue) {
+          if (!fmark) {
+            if (ee->rets.v[i]->lvalue->out != e->rets.v[i]->lvalue->out)
+              return 0;
+          } else {
+            if (different_marked_args_types(ee->rets.v[i]->lvalue, e->rets.v[i]->lvalue, 1,
+                                            es->rets.v[i]->lvalue))
+              return 0;
+          }
+        }
       }
     }
   }
@@ -849,7 +906,9 @@ make_entry_set(AEdge *e, EntrySet *split = 0) {
   if (e->to) return;
   if (check_split(e)) return;
   if (check_es_db(e)) return;
-  EntrySet *es = find_best_entry_set(e, split);
+  EntrySet *es = 0;
+  if (!split)
+    es = find_best_entry_set(e, split);
   set_entry_set(e, es);
   if (!es)
     e->to->split = split;
@@ -887,13 +946,13 @@ add_var_constraint(AVar *av) {
   if (s->type && !s->is_pattern) {
     if (s->is_external && 
         (s->type->num_kind || s->type == sym_string || s == sym_nil))
-      update_in(av, s->type->abstract_type);
+      update_gen(av, s->type->abstract_type);
     if (s->is_constant) // for constants, the abstract type is the concrete type
-      update_in(av, make_abstract_type(s));
+      update_gen(av, make_abstract_type(s));
     if (s->is_symbol || s->is_fun) 
-      update_in(av, make_abstract_type(s));
+      update_gen(av, make_abstract_type(s));
     if (s->type_kind != Type_NONE)
-      update_in(av, make_abstract_type(s->meta_type));
+      update_gen(av, make_abstract_type(s->meta_type));
   }
 }
 
@@ -1095,8 +1154,8 @@ add_send_constraints(EntrySet *es) {
           ii = -p->prim->nrets -1; // last
         switch (p->prim->ret_types[ii]) {
           case PRIM_TYPE_ANY: break;
-          case PRIM_TYPE_BOOL: update_in(make_AVar(p->lvals.v[i], es), bool_type); break;
-          case PRIM_TYPE_SIZE: update_in(make_AVar(p->lvals.v[i], es), size_type); break;
+          case PRIM_TYPE_BOOL: update_gen(make_AVar(p->lvals.v[i], es), bool_type); break;
+          case PRIM_TYPE_SIZE: update_gen(make_AVar(p->lvals.v[i], es), size_type); break;
           case PRIM_TYPE_ANY_NUM_AB:
           case PRIM_TYPE_A: {
             for (int j = start; j < p->rvals.n; j++)
@@ -1396,7 +1455,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
     }
     for (int i = 0; i < p->lvals.n; i++) {
       if (p->prim->ret_types[i] == PRIM_TYPE_ANY_NUM_AB)
-        update_in(make_AVar(p->lvals.v[i], es), type_num_fold(p->prim, a->out, b->out));
+        update_gen(make_AVar(p->lvals.v[i], es), type_num_fold(p->prim, a->out, b->out));
       if (p->prim->ret_types[i] == PRIM_TYPE_A)
         flow_vars(a, make_AVar(p->lvals.v[i], es));
     }
@@ -1427,7 +1486,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
           forv_CreationSet(cs2, *a2->out)
             if (cs1->sym->is_meta_type && cs2->sym->is_meta_type && 
                 (s = meta_apply(cs1->sym->meta_type, cs2->sym->meta_type)))
-              update_in(result, make_abstract_type(s));
+              update_gen(result, make_abstract_type(s));
             else
               type_violation(ATypeViolation_SEND_ARGUMENT, a1, a1->out, result);
         break;
@@ -1579,7 +1638,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
             flow_vars(rhs, result);
           } else {
             if (sym_anynum->specializers.in(cs->sym->type))
-              update_in(result, cs->sym->type->abstract_type);
+              update_gen(result, cs->sym->type->abstract_type);
             else
               type_violation(ATypeViolation_MATCH, lhs, make_AType(cs), result);
           }
@@ -1610,9 +1669,9 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
           if (cs->sym->type == p->rvals.v[1]->sym)
             css.set_add(cs);
         if (css.n)
-          update_in(result, make_AType(css));
+          update_gen(result, make_AType(css));
         else if (s->type->num_kind || s->type == sym_string || s->type->is_symbol)
-          update_in(result, s->abstract_type);
+          update_gen(result, s->abstract_type);
         break;
       }
       case P_prim_cast: {
@@ -1725,7 +1784,7 @@ refresh_top_edge(AEdge *e) {
   AVar *av = make_AVar(sym_init->var, e->to);
   e->args.put(cp, av);
   e->filtered_args.put(cp, av);
-  update_in(av, av->var->sym->abstract_type);
+  update_gen(av, av->var->sym->abstract_type);
 }
 
 static AEdge *
@@ -2581,6 +2640,23 @@ collect_es_type_confluences(Vec<AVar *> &type_confluences) {
 }
 
 static void
+collect_es_marked_type_confluences(Vec<AVar *> &type_confluences, Accum<AVar *> &acc) {
+  type_confluences.clear();
+  forv_AVar(xav, acc.asvec) {
+    for (AVar *av = xav; av; av = av->lvalue)
+      forv_AVar(x, av->backward) if (x) {
+        if (!x->out->n)
+          continue;
+        if (different_marked_args_types(x, av, 1)) {
+          type_confluences.set_add(av);
+          break;
+        }
+      }
+  }
+  type_confluences.set_to_vec();
+}
+
+static void
 collect_cs_type_confluences(Vec<AVar *> &type_confluences) {
   type_confluences.clear();
   forv_CreationSet(cs, fa->css) {
@@ -2608,7 +2684,7 @@ collect_cs_type_confluences(Vec<AVar *> &type_confluences) {
 }
 
 static int
-split_entry_set(AVar *av, int fsetters = 0) {
+split_entry_set(AVar *av, int fsetters, int fmark = 0) {
   EntrySet *es = (EntrySet*)av->contour;
   if (!fsetters ? is_es_recursive(es) : is_es_cs_recursive(es))
     return 0;
@@ -2620,7 +2696,7 @@ split_entry_set(AVar *av, int fsetters = 0) {
       continue;
     nedges++;
     if (!fsetters) {
-      if (!edge_type_compatible_with_entry_set(*ee, es))
+      if (!edge_type_compatible_with_entry_set(*ee, es, fmark))
         do_edges.add(*ee);
     } else
       if (!edge_sset_compatible_with_entry_set(*ee, es))
@@ -2640,22 +2716,100 @@ split_entry_set(AVar *av, int fsetters = 0) {
   return split;
 }
 
+static void
+build_type_mark(AVar *av, CreationSet *cs, Vec<AVar *> &avset, int mark = 1) {
+  Sym *tt = cs->sym->type;
+  int m = av->mark_map ? av->mark_map->get(tt) : 0;
+  if (!m) {
+    if (!av->out->type->set_in(cs->sym->type->abstract_type->v[0]))
+      return;
+    if (!av->mark_map)
+      av->mark_map = new MarkMap;
+    av->mark_map->put(tt, mark);
+  } else if (m > mark)
+    av->mark_map->put(tt, mark);
+  else if (m <= mark)
+    return;
+  forv_AVar(y, av->forward) if (y)
+    build_type_mark(y, cs, avset, mark + 1);
+}
+
+// To handle recursion, mark value*AVar distances from the nearest 
+// AVar generating the value.  Dataflow is considered to be only
+// from lower to higher distances for the purpose of splitting.
+static void
+build_type_marks(AVar *av, Accum<AVar *> &acc) {
+  // collect all contributing nodes
+  acc.add(av);
+  forv_AVar(x, acc.asvec) {
+    forv_AVar(y, x->backward) if (y)
+      acc.add(y);
+  }
+  // mark them
+  forv_AVar(x, acc.asvec) {
+    if (x->gen)
+      forv_CreationSet(s, *x->gen) if (s) 
+        build_type_mark(x, s, acc.asset);
+  }
+}
+
+static void
+clear_marks(Accum <AVar *> &acc) {
+  forv_AVar(x, acc.asvec)
+    x->mark_map = 0;
+}
+
+static int
+split_with_type_marks(AVar *av) {
+  int analyze_again = 0;
+  Accum<AVar *> acc;
+  build_type_marks(av, acc);
+  Vec<AVar *> confluences;
+  collect_es_marked_type_confluences(confluences, acc);
+  forv_AVar(av, confluences) {
+    if (av->contour_is_entry_set) {
+      if (!av->is_lvalue) {
+        if (av->var->is_formal) {
+          if (split_entry_set(av, 0, 1))
+            analyze_again = 1;
+        }
+      } else {
+        AVar *aav = unique_AVar(av->var, av->contour);
+        if (is_return_value(aav)) {
+          if (split_entry_set(aav, 0, 1))
+            analyze_again = 1;
+        }
+      }
+    }
+  }
+  clear_marks(acc);
+  return analyze_again;
+}
+
 static int
 split_ess_type(Vec<AVar *> &confluences) {
   int analyze_again = 0;
   forv_AVar(av, confluences) {
     if (av->contour_is_entry_set) {
       if (!av->is_lvalue) {
-        if (av->var->is_formal)
+        if (av->var->is_formal) {
           if (split_entry_set(av, 0))
+            analyze_again = 1;
+        } else
+          if (split_with_type_marks(av))
             analyze_again = 1;
       } else {
         AVar *aav = unique_AVar(av->var, av->contour);
-        if (is_return_value(aav))
+        if (is_return_value(aav)) {
           if (split_entry_set(aav, 0))
             analyze_again = 1;
+        } else
+          if (split_with_type_marks(av))
+            analyze_again = 1;
       }
-    }
+    } else
+      if (split_with_type_marks(av))
+        analyze_again = 1;
   }
   return analyze_again;
 }
@@ -2682,6 +2836,7 @@ split_ess_setters(Vec<AVar *> &confluences) {
 
 static void
 clear_avar(AVar *av) {
+  av->gen = 0;
   av->in = bottom_type;
   av->out = bottom_type;
   av->setters = 0;

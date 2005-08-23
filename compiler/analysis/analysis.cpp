@@ -21,8 +21,8 @@
 #include "clone.h"
 
 #define VARARG_END     0ll
-#define MAKE_USER_TYPE_BE_DEFINITION       1
-// #define NO_COERCE_PRIMITIVES                 1
+#define MAKE_USER_TYPE_BE_DEFINITION            1
+#define NO_COERCE_PRIMITIVES                    1
 //#define USE_SCOPE_LOOKUP_CACHE                  1
 //#define MINIMIZED_MEMORY 1  // minimize the memory used by Sym's... needs valgrind checking for safety
 
@@ -2370,7 +2370,7 @@ static void
 domain_start_index(PNode *pn, EntrySet *es) {
   forv_Var(v, pn->lvals) {
     AVar *index = make_AVar(v, es);
-    update_in(index, make_abstract_type(sym_int));
+    update_gen(index, make_abstract_type(sym_int));
   }
 }
 
@@ -2378,14 +2378,14 @@ static void
 domain_next_index(PNode *pn, EntrySet *es) {
   forv_Var(v, pn->lvals) {
     AVar *index = make_AVar(v, es);
-    update_in(index, make_abstract_type(sym_int));
+    update_gen(index, make_abstract_type(sym_int));
   }
 }
 
 static void
 integer_result(PNode *pn, EntrySet *es) {
   AVar *result = make_AVar(pn->lvals.v[0], es);
-  update_in(result, make_abstract_type(sym_int));
+  update_gen(result, make_abstract_type(sym_int));
 }
 
 static void
@@ -2401,10 +2401,10 @@ cast_value(PNode *pn, EntrySet *es) {
     if (ts->type->asymbol) {
       if (ts->type->is_meta_type) {
         if (is_scalar_type_symbol(ts->type->asymbol->symbol))
-          update_in(result, make_abstract_type(base_type(ts->meta_type)));
+          update_gen(result, make_abstract_type(base_type(ts->meta_type)));
       } else {
         if (is_scalar_type(ts->type->asymbol->symbol))
-          update_in(result, make_abstract_type(base_type(ts)));
+          update_gen(result, make_abstract_type(base_type(ts)));
       }
     }
   }
@@ -2440,7 +2440,7 @@ expr_simple_seq(PNode *pn, EntrySet *es) {
   AVar *container = make_AVar(pn->lvals.v[0], es);
   CreationSet *cs = creation_point(container, sym_sequence);
   AVar *element = get_element_avar(cs);
-  update_in(element,  make_abstract_type(sym_int));
+  update_gen(element,  make_abstract_type(sym_int));
 }
 
 static void
@@ -2452,13 +2452,13 @@ expr_create_domain(PNode *pn, EntrySet *es) {
 static void
 write_transfer_function(PNode *pn, EntrySet *es) {
   AVar *result = make_AVar(pn->lvals.v[0], es);
-  update_in(result, make_abstract_type(sym_int));
+  update_gen(result, make_abstract_type(sym_int));
 }
 
 static void
 read_transfer_function(PNode *pn, EntrySet *es) {
   AVar *result = make_AVar(pn->lvals.v[0], es);
-  update_in(result, make_abstract_type(sym_int));
+  update_gen(result, make_abstract_type(sym_int));
 }
 
 static void
@@ -2482,7 +2482,7 @@ array_set(PNode *pn, EntrySet *es) {
     if (a->sym->element) {
       if (a->sym->element->type && a->sym->element->type->asymbol 
           && is_scalar_type(a->sym->element->type->asymbol->symbol))
-        update_in(get_element_avar(a), make_abstract_type(a->sym->element->type));
+        update_gen(get_element_avar(a), make_abstract_type(a->sym->element->type));
       else
         flow_vars(val, get_element_avar(a));
     }
@@ -2493,13 +2493,13 @@ array_set(PNode *pn, EntrySet *es) {
 static void
 ptr_eq(PNode *pn, EntrySet *es) {
   AVar *result = make_AVar(pn->lvals.v[0], es);
-  update_in(result, make_abstract_type(sym_int));
+  update_gen(result, make_abstract_type(sym_int));
 }
 
 static void
 ptr_neq(PNode *pn, EntrySet *es) {
   AVar *result = make_AVar(pn->lvals.v[0], es);
-  update_in(result, make_abstract_type(sym_int));
+  update_gen(result, make_abstract_type(sym_int));
 }
 
 static void
@@ -2512,7 +2512,7 @@ array_pointwise_op(PNode *pn, EntrySet *es) {
 static void
 string_op(PNode *pn, EntrySet *es) {
   AVar* result = make_AVar(pn->lvals.v[0], es);
-  update_in(result, make_abstract_type(sym_string));
+  update_gen(result, make_abstract_type(sym_string));
 }
 
 static void
@@ -2524,7 +2524,7 @@ make_seq(PNode *pn, EntrySet *es) {
     AVar *av = make_AVar(pn->rvals.v[i], es);
     flow_vars(av, element);
   }
-  update_in(result, make_AType(cs));
+  update_gen(result, make_AType(cs));
 }
 
 static void
@@ -2590,7 +2590,7 @@ chapel_defexpr(PNode *pn, EntrySet *es) {
       if (!type_expr)
         creation_point(result, type_sym);
       else
-        update_in(result, make_AType(tt));
+        update_gen(result, make_AType(tt));
     } else {
       if (type->defaultValue) {
         Sym *val = get_defaultVal(type);
@@ -2609,11 +2609,11 @@ chapel_defexpr(PNode *pn, EntrySet *es) {
           AVar *cavar = make_AVar(cvar, es);
           AType *ctype = make_abstract_type(c);
           CreationSet *cs = ctype->v[0];
-          update_in(cavar, ctype);
+          update_gen(cavar, ctype);
           Vec<AVar *> args;
           function_dispatch(pn, es, cavar, cs, args, Partial_NEVER);
         } else
-          update_in(result, make_AType(tt));
+          update_gen(result, make_AType(tt));
       } else
         fail("Type without defaultValue or defaultConstructor");
     }
@@ -2628,7 +2628,7 @@ chpl_alloc(PNode *pn, EntrySet *es) {
     Sym *ts = cs->sym;
     if (ts->is_meta_type) ts = ts->meta_type;
     if (ts->asymbol && is_scalar_type(ts->asymbol->symbol))
-      ; // update_in(result, make_abstract_type(ts))  not permitted
+      ; // update_gen(result, make_abstract_type(ts))  not permitted
     else
       creation_point(result, ts);
   }
@@ -2642,7 +2642,7 @@ pure_return(PNode *pn, EntrySet *es) {
     Sym *ts = cs->sym;
     if (ts->is_meta_type) ts = ts->meta_type;
     if (ts->asymbol && is_scalar_type(ts->asymbol->symbol))
-      update_in(result, make_abstract_type(ts));
+      update_gen(result, make_abstract_type(ts));
     else
       // creation_point(result, ts) not permitted
       ;

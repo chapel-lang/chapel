@@ -1964,7 +1964,7 @@ finalize_symbols(IF1 *i) {
 static void
 print_transfer_function(PNode *pn, EntrySet *es) {
   AVar *result = make_AVar(pn->lvals.v[0], es);
-  update_in(result, make_abstract_type(sym_int));
+  update_gen(result, make_abstract_type(sym_int));
 }
 
 static void
@@ -2016,4 +2016,5 @@ ast_gen_if1(IF1 *i, Vec<ParseAST *> &av) {
 }
 
 void PCallbacks::finalize_functions() {
+  sym_new_object->fun->split_unique = 1;
 }
