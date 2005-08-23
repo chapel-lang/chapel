@@ -44035,3 +44035,41 @@ Modified files:
 	chapel/compiler/include/: fa.h 
 	chapel/compiler/vparser/: parse_ast.cpp 
 
+---------------------------------------------------------------------------
+
+08/23/05 16:28:22 -- deitz
+
+Log message:
+	Added class 'object' and class 'value' to the prelude.  Made dtObject
+	point to this class.  It is no longer a PrimitiveType.
+	
+	Fixed a bug in BuildClassHierarchy in which the parent class was added
+	to the typeParents vector rather than the dispatchParents vector.
+	
+	Made all classes that don't inherit from any class inherit from class
+	'object' (except of course for 'object' itself).
+	
+	Removed analysis.cpp code to add dtObject as a super class of classes
+	that don't have super classes since this is done before analysis now.
+	
+	Removed future for test/classes/deitz/inherit/test_inherit2.
+	
+	Added dynamic dispatch future test_inherit3.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/parser/: prelude.chpl 
+	chapel/compiler/traversals/: buildClassHierarchy.cpp 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/types/seq/bradc/: length.modify.good 
+Added files:
+	chapel/test/classes/deitz/inherit/: test_inherit3.chpl 
+	                                    test_inherit3.future 
+	                                    test_inherit3.good 
+Removed files:
+	chapel/test/classes/deitz/inherit/: test_inherit2.future 
+
