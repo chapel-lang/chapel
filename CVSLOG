@@ -43995,3 +43995,43 @@ Log message:
 Modified files:
 	chapel/compiler/: Tasks 
 
+---------------------------------------------------------------------------
+
+08/23/05 15:45:55 -- jplevyak
+
+Log message:
+	This checkin add a significant improvement to the ability of analysis
+	to deal with global variables and non-SSA/SSU variables (which unfortunately
+	make up most of the variables in a Chapel program).
+	
+	1. separate out the "gen" (generation) of data flow values from
+	   the "in" (incoming) "out" (outgoing) and "restrict" (flow through
+	   restriction) sets.
+	
+	   in the future this could be used to "reflow" portions of the graph
+	   rather than reevaluating the constriants based on the IF1 representation,
+	   but for now that is not done.
+	
+	2. when confluences of data flow information (types) occur (other than
+	   at function arguments which are handled straightforwardly), all
+	   sources of the inforation (types) are numbered from the sources.
+	   This turns the (possibly cyclic) data flow graph into a DAG.  Confluences
+	   are recomputed on the DAG and the appropriate (abstract) cloning is
+	   done.
+	
+	3. Always force a new entry-set on a split... this may be less efficient
+	   than it could be; I'll be tracking this.   This alternative is to group
+	   "compatible" subsets.
+	
+	4. Do no coerce primitives assignments, instead use the overloaded = operator.
+	
+	This last change results in a single regression: type_var_fun-1.chpl which
+	is caused by _retval not being initialized.  This is likely a problem with
+	noDefaultInit (which I don't think should be set for _retval) or pssibly
+	with generic instantiation (which this test uses).   I am looking into it.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp fa.cpp 
+	chapel/compiler/include/: fa.h 
+	chapel/compiler/vparser/: parse_ast.cpp 
+
