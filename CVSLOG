@@ -43961,3 +43961,15 @@ Modified files:
 	                             memstatPrint.chpl memstatPrint.good 
 	                             reallocZeroSize.good 
 
+---------------------------------------------------------------------------
+
+08/23/05 14:55:24 -- deitz
+
+Log message:
+	Added inheritance future.
+
+Added files:
+	chapel/test/classes/deitz/inherit/: test_inherit2.chpl 
+	                                    test_inherit2.future 
+	                                    test_inherit2.good 
+
