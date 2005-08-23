@@ -43857,3 +43857,14 @@ Added files:
 	chapel/test/classes/deitz/: test_sum_type1.chpl 
 	                            test_sum_type1.good 
 
+---------------------------------------------------------------------------
+
+08/23/05 10:18:01 -- jplevyak
+
+Log message:
+	example of sum types in action.  To see what is happening
+	use --no-inline and --savec
+
+Added files:
+	chapel/test/classes/jplevyak/: sum_type-3.chpl sum_type-3.good 
+
