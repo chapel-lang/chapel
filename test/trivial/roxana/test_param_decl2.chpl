@@ -1,3 +1,3 @@
 var t : integer;
-parameter h = t;
+param h = t;
 write(h);

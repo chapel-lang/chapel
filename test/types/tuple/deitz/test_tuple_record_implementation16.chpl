@@ -3,10 +3,10 @@ record mytuple {
   type t2;
   var f1 : t1;
   var f2 : t2;
-  function this(parameter i : integer) var where i == 1 {
+  function this(param i : integer) var where i == 1 {
     return f1;
   }
-  function this(parameter i : integer) var where i == 2 {
+  function this(param i : integer) var where i == 2 {
     return f2;
   }
 }

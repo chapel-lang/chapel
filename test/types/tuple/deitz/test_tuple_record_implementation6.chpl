@@ -3,7 +3,7 @@ record mytuple {
   var field2 : float;
 }
 
-function foo(parameter i : integer, t : mytuple) {
+function foo(param i : integer, t : mytuple) {
   return 1;
 }
 

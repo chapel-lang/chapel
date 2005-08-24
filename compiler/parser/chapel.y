@@ -52,7 +52,7 @@
 %token TCONFIG
 %token TCONST
 %token TCONSTRUCTOR
-%token TPARAMETER
+%token TPARAM
 %token TCONTINUE
 %token TDO
 %token TDOMAIN
@@ -634,7 +634,7 @@ var_const_param:
     { $$ = VAR_VAR; }
 | TCONST
     { $$ = VAR_CONST; }
-| TPARAMETER
+| TPARAM
     { $$ = VAR_PARAM; }
 ;
         
@@ -738,7 +738,7 @@ formal_tag:
     { $$ = PARAM_OUT; }
 | TCONST
     { $$ = PARAM_CONST; }
-| TPARAMETER
+| TPARAM
     { $$ = PARAM_PARAMETER; }
 ;
 

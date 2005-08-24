@@ -10,7 +10,7 @@ class Foo {
 function main() {
   var f : Foo = Foo();
   /* setter method will be created, temporary should not be created for f
-   * since formal parameter this will be a ref */
+   * since formal param this will be a ref */
   f.y = 1;
  
   /* this method should be inlined because of the pragma "inline"
@@ -24,7 +24,7 @@ function main() {
   
   /* temporaries should be created for all four variables and 
    * there should be two copy back assignments created for variable 
-   * two and three since the formal parameter at that position is out */ 
+   * two and three since the formal param at that position is out */ 
   bar(one, two, three, four);
   writeln(one);
   writeln(two);

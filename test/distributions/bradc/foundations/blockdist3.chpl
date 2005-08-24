@@ -1,7 +1,7 @@
 type locale: integer;
 type indexType: integer;
 
-parameter rank: integer = 1;
+param rank: integer = 1;
 
 config const myNumLocales: integer = 4;
 config const n: integer = 10;

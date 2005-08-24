@@ -9,7 +9,7 @@ var x : MyDomainInfo = MyDomainInfo();
 writeln(x);
 
 class MyDomain {
-  parameter rank : integer;
+  param rank : integer;
   var info : _data = _data(MyDomainInfo);
   function init() {
     info.alloc(rank, "domain info");
@@ -44,7 +44,7 @@ class MyArrayInfo {
 class MyArray {
   type elementType;
   type domainType;
-  parameter rank : integer;
+  param rank : integer;
   var _domain : domainType;
   var info : _data = _data(MyArrayInfo);
   var data : _data = _data(elementType);

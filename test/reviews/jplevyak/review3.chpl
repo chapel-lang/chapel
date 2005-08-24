@@ -19,8 +19,8 @@ var fp2 = new FParams; fp2.z1 = 3;   fp2.z2 = 4;
 
 function FParams::f(p1, p2) { return z1 * p1 + z2 * p2; }
 
-var params1 = (2.34, (3.45, 4.56),    g1);
-var params2 = (2,    (3,    4,    5), g2);
+var parameters1 = (2.34, (3.45, 4.56),    g1);
+var parameters2 = (2,    (3,    4,    5), g2);
 
-compute(v1, v2, v3, 2, 4, fp1, params1);
-compute(v1, v2, v3, 2, 4, fp2, params2);
+compute(v1, v2, v3, 2, 4, fp1, parameters1);
+compute(v1, v2, v3, 2, 4, fp2, parameters2);

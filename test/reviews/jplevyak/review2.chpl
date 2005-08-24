@@ -1,7 +1,7 @@
 function modify1(p1, p2, (c1, c2, c3)) { return (c1 * p1 + c2 * p2) / c3; }
 function modify2(p1, p2, (c1, c2, c3)) { return (c1 * p1 - c2 * p2) / c3; }
-var params1 = (2.34, (3.45, 4.56, 5),    modify1);
-var params2 = (2,    (3,    4,    5.67), modify2);
+var parameters1 = (2.34, (3.45, 4.56, 5),    modify1);
+var parameters2 = (2,    (3,    4,    5.67), modify2);
 
 class Operate { var z1, z2; }
 function do_op(p1, p2, o:Operate) { return o.z1 * p1 + o.z2 * p2; }
@@ -17,5 +17,5 @@ function merge(a1, a2, result, i, end, o, (c0, p, fn)) {
   while (i <= end) do
     result(i) = c0 * fn(a1(i), a2(i), p) + do_op(a1(i), a2(i), o);
 }
-merge(v1, v2, v3, 2, 4, op1, params1);
-merge(v1, v2, v3, 2, 4, op2, params2);
+merge(v1, v2, v3, 2, 4, op1, parameters1);
+merge(v1, v2, v3, 2, 4, op2, parameters2);

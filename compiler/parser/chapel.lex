@@ -74,7 +74,7 @@ or              processToken(TOR);
 ordered         processToken(TORDERED);
 otherwise       processToken(TOTHERWISE);
 out             processToken(TOUT);
-parameter       processToken(TPARAMETER);
+param           processToken(TPARAM);
 pragma          processToken(TPRAGMA);
 record          processToken(TRECORD);
 reduce          processToken(TREDUCE);

@@ -1,4 +1,4 @@
-parameter del = -1000000;
+param del = -1000000;
 
 class HashTable {
   type T;  

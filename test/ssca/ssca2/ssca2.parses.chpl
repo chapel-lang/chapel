@@ -117,7 +117,7 @@ class Subgraph {
   -- holds count of edges between vertex pairs
   var weights : [AdjD] seq of wtype;
 /* TMP
--- BLC: This relies on parameter destructuring, which doesn't parse
+-- BLC: This relies on param destructuring, which doesn't parse
 --      yet
 
   constructor EndPoints.EndPoints ( (s,e) : index(AdjD)) {

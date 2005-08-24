@@ -6,7 +6,7 @@ record mydomain_info {
 }
 
 class mydomain {
-  parameter rank : integer;
+  param rank : integer;
   var info0 : mydomain_info;
   var info1 : mydomain_info;
   var info2 : mydomain_info;

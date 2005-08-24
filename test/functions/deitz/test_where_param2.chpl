@@ -1,9 +1,9 @@
-function foo(parameter i : integer) {
+function foo(param i : integer) {
   where i == 1;
   writeln("Alpha");
 }
 
-function foo(parameter i : integer) {
+function foo(param i : integer) {
   where i == 2;
   writeln("Beta");
 }

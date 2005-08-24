@@ -6,7 +6,7 @@ record MyDomainInfo {
 }
 
 class MyDomain {
-  parameter rank : integer;
+  param rank : integer;
   var info : _data(MyDomainInfo, rank);
   function dimInit(d : integer, low, high, stride) {
     info(d-1).low = low;

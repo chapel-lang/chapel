@@ -2,7 +2,7 @@ use _chpl_seq;
 
 record _htuple {
   type _elementType;
-  parameter _size : integer;
+  param _size : integer;
 --  var _elements : _data(_elementType, _size);
   var _elements0 : _elementType;
   var _elements1 : _elementType;
