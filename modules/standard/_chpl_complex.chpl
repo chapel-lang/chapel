@@ -1,13 +1,11 @@
-pragma "rename _chpl_complex" record complex {
-  var _im : float;
-  var _re : float;
-  function imag var : float { return _im; }
-  function real var : float { return _re; }
+pragma "rename _chpl_complex" class complex : value {
+  var real : float;
+  var imag : float;
 }
 
 pragma "rename _chpl_write_complex"
 function write(x : complex) {
-  write(x._re, " + ", x._im, "i");
+  write(x.real, " + ", x.imag, "i");
 }
 
 pragma "no codegen"
@@ -23,20 +21,19 @@ function _tostring(x : complex, format : string) : string {
 }
 
 function +(x : complex, y : complex)
-  return complex(x._im + y._im, x._re + y._re);
+  return complex(x.real + y.real, x.imag + y.imag);
 
 function +(x : float, y : complex)
-  return complex(y._im, x + y._re);
+  return complex(x + y.real, y.imag);
 
 function -(x : complex, y : complex)
-  return complex(x._im - y._im, x._re - y._re);
+  return complex(x.real - y.real, x.imag - y.imag);
 
 function *(x : complex, y : complex)
-  return complex(x._im*y._re + x._re*y._im,
-                 x._re*y._re - x._im*y._im);
+  return complex(x.real*y.real - x.imag*y.imag,
+                 x.imag*y.real + x.real*y.imag);
 
 function /(x : complex, y : complex)
-  return let d = y._re*y._re + y._im*y._im in
-    complex((x._im*y._re - x._re*y._im)/d,
-            (x._re*y._re + x._im*y._im)/d);
-
+  return let d = y.real*y.real + y.imag*y.imag in
+    complex((x.real*y.real + x.imag*y.imag)/d,
+            (x.imag*y.real - x.real*y.imag)/d);

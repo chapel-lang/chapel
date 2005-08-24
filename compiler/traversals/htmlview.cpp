@@ -156,9 +156,15 @@ void HtmlView::preProcessExpr(Expr* expr) {
       html_print_symbol(e->sym, true);
     }
   } else if (Literal* e = dynamic_cast<Literal*>(expr)) {
-    write("<FONT COLOR=\"lightblue\">'%s'</FONT>", e->str);
+    if (dynamic_cast<StringLiteral*>(e)) {
+      write("<FONT COLOR=\"lightblue\">'%s'</FONT>", e->str);
+    } else {
+      write("<FONT COLOR=\"lightblue\">%s</FONT>", e->str);
+    }
   } else if (SymExpr* e = dynamic_cast<SymExpr*>(expr)) {
     html_print_symbol(e->var, false);
+  } else if (NamedExpr* e = dynamic_cast<NamedExpr*>(expr)) {
+    write("(%s = ", e->name);
   } else if (CallExpr* e = dynamic_cast<CallExpr*>(expr)) {
     write("(");
     if (e->opTag == OP_NONE) {

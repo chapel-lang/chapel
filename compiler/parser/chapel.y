@@ -1250,7 +1250,7 @@ literal:
 | IMAGLITERAL
     {
       yytext[strlen(yytext)-1] = '\0';
-      $$ = new CallExpr("complex", new FloatLiteral(yytext, atof(yytext)));
+      $$ = new CallExpr("complex", new FloatLiteral("0.0", 0.0), new FloatLiteral(yytext, atof(yytext)));
     }
 | STRINGLITERAL
     { $$ = new StringLiteral($1); }

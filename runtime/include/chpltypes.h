@@ -14,8 +14,8 @@ typedef long long _integer64;
 typedef double _float64;
 
 typedef struct __complex128 {
-  _float64 im;
   _float64 re;
+  _float64 im;
 } _complex128;
 
 typedef char* _string;
