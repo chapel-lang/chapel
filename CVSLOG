@@ -44285,3 +44285,16 @@ Log message:
 Modified files:
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+08/24/05 14:00:52 -- deitz
+
+Log message:
+	Added test approximating how I want to change tuples and tuple
+	literals, to avoid instantiating on dtUnknown.
+
+Added files:
+	chapel/test/types/type_variables/deitz/: test_tuplelike1.chpl 
+	                                         test_tuplelike1.future 
+	                                         test_tuplelike1.good 
+
