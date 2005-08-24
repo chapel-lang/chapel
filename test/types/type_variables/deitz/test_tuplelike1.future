@@ -1,0 +1,5 @@
+jplevyak
+
+Fails even without last two lines.
+
+This test approximates how I want to stop instantiating on dtUnknown.  By making a separate record for tuple literals that don't have type variables but are initialized.  Since they don't change, no problem.  Then to assign them to actual tuples, we just use overloaded assignment which assigns by field name.
