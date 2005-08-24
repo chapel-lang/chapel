@@ -44240,3 +44240,24 @@ Modified files:
 	chapel/compiler/AST/: expr.cpp 
 	chapel/compiler/analysis/: analysis.cpp sym.cpp 
 
+---------------------------------------------------------------------------
+
+08/24/05 13:36:00 -- bradc
+
+Log message:
+	A minor change that has been sitting on my laptop for awhile.
+	Modified Steve's munging of identifier names in codegenOne.cpp
+	by the module name so that if there is a single user module,
+	the symbols will not be munged.  This makes the output of a
+	single-module test easier to read and less sensitive to the
+	filename (when the modulename is taken from the filename).
+	Standard module identifier names are still munged, for better
+	or worse.  In order to turn that off, we'd have to rename
+	stdin/stdout using some other mechanism, but this was lower
+	priority to me personally.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/symtab/: codegenOne.cpp 
+
