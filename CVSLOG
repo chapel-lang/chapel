@@ -44261,3 +44261,13 @@ Modified files:
 	chapel/compiler/include/: symbol.h 
 	chapel/compiler/symtab/: codegenOne.cpp 
 
+---------------------------------------------------------------------------
+
+08/24/05 13:47:20 -- jplevyak
+
+Log message:
+	Fix a potential SEGV in a debug routine.
+
+Modified files:
+	chapel/compiler/analysis/: fa.cpp 
+
