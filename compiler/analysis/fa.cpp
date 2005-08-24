@@ -1826,6 +1826,7 @@ show_type(Vec<CreationSet *> &t, FILE *fp) {
       s = s->type;
     type.set_add(s);
   }
+  type.set_to_vec();
   qsort(type.v, type.n, sizeof(type.v[0]), compar_syms);
   fprintf(fp, "( ");
   forv_Sym(s, type) if (s) {
