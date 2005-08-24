@@ -44122,3 +44122,13 @@ Added files:
 	                                  test_complex6.chpl 
 	                                  test_complex6.good 
 
+---------------------------------------------------------------------------
+
+08/23/05 17:40:21 -- jplevyak
+
+Log message:
+	Remove unused #define #ifdef combo
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
