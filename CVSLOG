@@ -44073,3 +44073,52 @@ Added files:
 Removed files:
 	chapel/test/classes/deitz/inherit/: test_inherit2.future 
 
+---------------------------------------------------------------------------
+
+08/23/05 17:32:29 -- deitz
+
+Log message:
+	REGRESSIONS
+	-----------
+	  test/types/complex/deitz/test_complex5.chpl
+	  test/types/complex/deitz/test_complex6.chpl
+	
+	This is a small change and I can't make any connection between the two
+	regressions above.  John, can you take a look at this.  I'll continue
+	to look and let you know if I find something as soon as I do if I do.
+	
+	Added support for value classes.  This is implemented by inheriting
+	from the special class 'value'.  Value classes are different than
+	classes in that they are automatically constructed (like records) and
+	they overload assignment (like records).  They are different than
+	records in that they allow inheritance (like classes) and are
+	nominally typed (like classes).
+	
+	A class with classTag CLASS_CLASS is changed to a value class with
+	classTag CLASS_VALUECLASS in BuildClassHierarchy if it is or inherits
+	from class 'value'.
+	
+	Added a user-level warning which says that a program looks like it
+	requires dynamic dispatch.  This warning immediately precedes an
+	internal error that says a function could not be resolved.
+	
+	Added two value class tests.
+	
+	Added two more complex tests.
+	
+	Updated task list.
+
+Modified files:
+	chapel/compiler/: Tasks 
+	chapel/compiler/traversals/: buildClassHierarchy.cpp 
+	                             resolveSymbols.cpp 
+Added files:
+	chapel/test/classes/deitz/inherit/: test_value1.chpl 
+	                                    test_value1.good 
+	                                    test_value2.chpl 
+	                                    test_value2.good 
+	chapel/test/types/complex/deitz/: test_complex5.chpl 
+	                                  test_complex5.good 
+	                                  test_complex6.chpl 
+	                                  test_complex6.good 
+
