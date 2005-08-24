@@ -1,5 +1,4 @@
 ::_retval(multiple_return.chpl:3) ( int64 )
-::_retval(multiple_return.chpl:5) ( int64 )
 ::a(multiple_return.chpl:1) ( int64 )
 ::b(multiple_return.chpl:1) ( int64 )
 ::c(multiple_return.chpl:1) ( int64 )

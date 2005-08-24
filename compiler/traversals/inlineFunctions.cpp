@@ -5,6 +5,16 @@
 #include "symtab.h"
 #include "replaceReturns.h"
 
+class UniqueInlinedLabels : public Traversal {
+   void postProcessStmt(Stmt* stmt) {
+    static int id = 1;
+    if (LabelStmt* label_stmt = dynamic_cast<LabelStmt*>(stmt)) {
+      if (LabelSymbol* label_sym = dynamic_cast<LabelSymbol*>(label_stmt->defLabel->sym))
+        label_sym->cname = glomstrings(3, label_sym->cname, "_inlcopy_", intstring(id++));
+    }
+  }
+};
+
 void InlineFunctions::postProcessExpr(Expr* expr) {
   //no inlining compiler flag was set on the command-line
   if (no_inline)
@@ -26,6 +36,8 @@ void InlineFunctions::postProcessExpr(Expr* expr) {
         //inline body if it is ok to do so even after examining the actual arguments
         if (_ok_to_inline) {
           Stmt* inlined_body = fn_sym->body->copy(true,formal_to_actual_arg_map,NULL);
+          //ensure that inlined labels are unique
+          inlined_body->traverse(new UniqueInlinedLabels());
           ReplaceReturns* rep_returns;
           if (fn_sym->retType && (fn_sym->retType != dtVoid)) {
             DefExpr* temp_def = createTempVariable(fn_sym->retType);
@@ -40,9 +52,11 @@ void InlineFunctions::postProcessExpr(Expr* expr) {
           }
           else {
             //inlined function
+            inlined_body->traverse(new ReplaceReturns(NULL));
             fn_call->parentStmt->insertBefore(inlined_body);
             fn_call->parentStmt->remove();
           }
+          inlined_body->traverse(this);
           //report inlining compiler flag was set of the command-line
           if (report_inlining)
             printf("chapel compiler: reporting inlining, %s function was inlined\n", fn_sym->cname);

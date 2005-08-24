@@ -106,9 +106,11 @@ FnSymbol* CreateNestedFuncIterators::copyIteratorDef(FnSymbol* old_iterator_sym)
   static int it_id = 1;
   char* func_name = glomstrings(2, old_iterator_sym->name, intstring(it_id++));
   DefExpr* func_def = copyFuncHelper(func_name, old_iterator_sym->formals, old_iterator_sym->body);
-  
+  FnSymbol* fn_sym = dynamic_cast<FnSymbol*>(func_def->sym); 
+  fn_sym->copyPragmas(old_iterator_sym->defPoint->parentStmt->pragmas);
+
   //return new_func_sym;
-  return dynamic_cast<FnSymbol*>(func_def->sym);
+  return fn_sym;
 }
 
 DefExpr* CreateNestedFuncIterators::copyFuncHelper(char* new_name, AList<DefExpr>* copy_formals, BlockStmt* copy_body) {

@@ -6,6 +6,8 @@
 
 EliminateReturns::EliminateReturns(void) {
   whichModules = MODULES_CODEGEN;
+  uid = 1;
+  label_ret_map = new Map<Symbol*,LabelSymbol*>();
 }
 
 
@@ -20,19 +22,22 @@ static bool alreadyProcessedThisReturn(Expr* retExpr, Symbol* retval) {
 
 
 void EliminateReturns::preProcessStmt(Stmt* stmt) {
-  static int uid = 1;
 
   if (ReturnStmt* retStmt = dynamic_cast<ReturnStmt*>(stmt)) {
     Expr* retExpr = retStmt->expr;
 
+     //    fprintf(stderr, "\n\n\nFound a return statement: ");
+    //    retStmt->println(stderr);
+    FnSymbol* fnSym = retStmt->parentFunction();
+       
     if (retExpr == NULL) {
+      //replace all returns except the last one in a function with a goto
+      if (!isLastStmtInFunc(retStmt, fnSym->body)) {
+        replaceRetWithGoto(retStmt, fnSym);
+      }
       return;
     }
 
-    //    fprintf(stderr, "\n\n\nFound a return statement: ");
-    //    retStmt->println(stderr);
-
-    FnSymbol* fnSym = retStmt->parentFunction();
     if (fnSym == NULL) {
       INT_FATAL(stmt, "Return statement doesn't have parent function");
     }
@@ -47,7 +52,8 @@ void EliminateReturns::preProcessStmt(Stmt* stmt) {
     if (fnScope == NULL) {
       INT_FATAL(body, "Block body has NULL blkScope");
     }
-    Symbol* retvalSym = Symboltable::lookupInCurrentScope("_retval");
+    //Symbol* retvalSym = Symboltable::lookupInCurrentScope("_retval");
+    Symbol* retvalSym = Symboltable::lookupInScope("_retval", fnScope);
     VarSymbol* retval = dynamic_cast<VarSymbol*>(retvalSym);
     if (retval == NULL) {
       retval = new VarSymbol("_retval", retType);
@@ -56,6 +62,9 @@ void EliminateReturns::preProcessStmt(Stmt* stmt) {
       body->body->insertAtHead(new ExprStmt(new DefExpr(retval)));
     } else {
       if (alreadyProcessedThisReturn(retExpr, retval)) {
+        //replace all returns except the last one in a function with a goto
+        if (!isLastStmtInFunc(retStmt, fnSym->body))
+          replaceRetWithGoto(retStmt, fnSym);
         return;
       }
     }
@@ -68,8 +77,46 @@ void EliminateReturns::preProcessStmt(Stmt* stmt) {
     SymExpr* newRetExpr = new SymExpr(retval);
     ReturnStmt *newRetStmt = new ReturnStmt(newRetExpr);
     assignStmt->insertAfter(newRetStmt);
+    
+    //replace all returns except the last one in a function with a goto
+    if (!isLastStmtInFunc(newRetStmt, fnSym->body)) {
+      replaceRetWithGoto(newRetStmt, fnSym);
+    }
+      
   }
 }
+
+bool EliminateReturns::isLastStmtInFunc(ReturnStmt* ret_stmt, BlockStmt* block) {
+  Stmt* last_stmt = block->body->last();
+  if (BlockStmt* block_stmt = dynamic_cast<BlockStmt*>(last_stmt))
+    return isLastStmtInFunc(ret_stmt, block_stmt);
+  else
+    return (ret_stmt == last_stmt);
+}
+
+void EliminateReturns::replaceRetWithGoto(ReturnStmt* ret_stmt, FnSymbol* fn_sym) {
+  LabelSymbol* label_sym = label_ret_map->get(fn_sym);
+  GotoStmt* goto_stmt = new GotoStmt(goto_normal, label_sym);
+  //already created label
+  if (label_sym)
+    //replace return goto   
+    ret_stmt->replace(goto_stmt);
+  //create label
+  else {
+    createLabelWithRetAtFuncEnd(ret_stmt, fn_sym);
+    replaceRetWithGoto(ret_stmt, fn_sym);
+  }
+}
+
+void EliminateReturns::createLabelWithRetAtFuncEnd(ReturnStmt* ret_stmt, FnSymbol* fn_sym) {
+  LabelSymbol* label_sym = new LabelSymbol("_end_fn_label");
+  label_sym->cname = glomstrings(3, label_sym->name, "_", intstring(uid++));
+  label_ret_map->put(fn_sym, label_sym);
+  
+  fn_sym->body->body->insertAtTail(new LabelStmt(new DefExpr(label_sym), new BlockStmt())); 
+  fn_sym->body->body->insertAtTail(ret_stmt->copy());
+}
+
 
 
 

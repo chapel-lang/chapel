@@ -1248,7 +1248,9 @@ int ModuleSymbol::numUserModules(Vec<ModuleSymbol*>* moduleList) {
 
 LabelSymbol::LabelSymbol(char* init_name) :
   Symbol(SYMBOL_LABEL, init_name, NULL)
-{ }
+{ 
+ 
+}
 
 
 void LabelSymbol::verify(void) {
@@ -1260,6 +1262,12 @@ void LabelSymbol::verify(void) {
   }
 }
 
+LabelSymbol* 
+LabelSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  LabelSymbol* copy = new LabelSymbol(copystring(name));
+  copy->cname = copystring(cname);
+  return copy;
+}
 
 void LabelSymbol::codegenDef(FILE* outfile) { }
 

@@ -1,6 +1,7 @@
 #include "updateSymbols.h"
 #include "expr.h"
 #include "symbol.h"
+#include "stmt.h"
 #include "stringutil.h"
 
 UpdateSymbols::UpdateSymbols(Map<BaseAST*,BaseAST*>* init_updateMap,
@@ -43,6 +44,11 @@ void UpdateSymbols::preProcessExpr(Expr* expr) {
   } else if (MemberAccess* memberAccess = dynamic_cast<MemberAccess*>(expr)) {
     XSUB(memberAccess->member, Symbol*);
   }
+}
+
+void UpdateSymbols::preProcessStmt(Stmt* stmt) {
+  if (GotoStmt* goto_stmt = dynamic_cast<GotoStmt*>(stmt))
+    XSUB(goto_stmt->label, LabelSymbol*);
 }
 
 

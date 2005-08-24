@@ -263,6 +263,7 @@ class LabelSymbol : public Symbol {
  public:
   LabelSymbol(char* init_name);
   virtual void verify(void); 
+  COPY_DEF(LabelSymbol);
   virtual void codegenDef(FILE* outfile);
 };
 
