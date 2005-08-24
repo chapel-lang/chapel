@@ -44390,3 +44390,35 @@ Modified files:
 	                             updateSymbols.cpp view.cpp 
 	chapel/test/trivial/roxana/: test_param_decl2.good 
 
+---------------------------------------------------------------------------
+
+08/24/05 16:51:52 -- mjoyner
+
+Log message:
+	Added compiler support to transform all functions so that there is only one return.  That return is the last statement in the program.  I also made modifications to the code to ensure that there is only one _retval created per function.  This makes the c codegened functions look cleaner.  I also added some additional support for labels.
+	
+	I added several test cases to show the support for one return functions.  I also
+	 added test cases that demonstrate we can inline iterators by adding a pragma "inline" to them.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/traversals/: createNestedFuncIterators.cpp 
+	                             eliminateReturns.cpp 
+	                             eliminateReturns.h 
+	                             inlineFunctions.cpp 
+	                             replaceReturns.cpp 
+	                             updateSymbols.cpp updateSymbols.h 
+	chapel/test/flowanalysis/newast/: multiple_return.good 
+Added files:
+	chapel/test/functions/mjoyner/labelret/: .cvsignore label1.chpl 
+	                                         label1.good label2.chpl 
+	                                         label2.good label3.chpl 
+	                                         label3.good label4.chpl 
+	                                         label4.good label5.chpl 
+	                                         label5.good 
+	chapel/test/trivial/mjoyner/iterators/: nest_func_iterator6.chpl 
+	                                        nest_func_iterator6.good 
+	                                        nest_func_iterator7.chpl 
+	                                        nest_func_iterator7.good 
+
