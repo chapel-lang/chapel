@@ -514,7 +514,7 @@ ACallbacks::instantiate(Sym *s, Map<Sym *, Sym *> &substitutions) {
   Sym *tt = substitutions.get(s);
   if (tt) {
     Type *type = NULL;
-    if (ParamSymbol *p = dynamic_cast<ParamSymbol*>(s->asymbol->symbol))
+    if (ArgSymbol *p = dynamic_cast<ArgSymbol*>(s->asymbol->symbol))
       type = (p->isGeneric && p->variableTypeSymbol) ? p->variableTypeSymbol->definition : 0;
     else
       type = dynamic_cast<Type*>(s->asymbol->symbol);
@@ -522,7 +522,7 @@ ACallbacks::instantiate(Sym *s, Map<Sym *, Sym *> &substitutions) {
       return 0;
     Map<BaseAST *, BaseAST *> subs;
     form_SymSym(ss, substitutions) {
-      if (ParamSymbol *p = dynamic_cast<ParamSymbol*>(ss->key->asymbol->symbol)) {
+      if (ArgSymbol *p = dynamic_cast<ArgSymbol*>(ss->key->asymbol->symbol)) {
         if (p->isGeneric && p->variableTypeSymbol)
           subs.put(p->variableTypeSymbol->definition, Sym_to_Type(ss->value));
         else
@@ -538,7 +538,7 @@ ACallbacks::instantiate(Sym *s, Map<Sym *, Sym *> &substitutions) {
 
 Sym *
 ACallbacks::formal_to_generic(Sym *s) {
-  ParamSymbol *p = dynamic_cast<ParamSymbol*>(s->asymbol->symbol);
+  ArgSymbol *p = dynamic_cast<ArgSymbol*>(s->asymbol->symbol);
   if (p->isGeneric && p->variableTypeSymbol)
     return p->variableTypeSymbol->definition->asymbol->sym;
   return 0;
@@ -625,7 +625,7 @@ ACallbacks::instantiate_generic(Match *m) {
       if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(s->key->asymbol->symbol))
         t = ts->definition;
 #endif
-    ParamSymbol *p = dynamic_cast<ParamSymbol*>(s->key->asymbol->symbol);
+    ArgSymbol *p = dynamic_cast<ArgSymbol*>(s->key->asymbol->symbol);
     if (!t)
       if (p && p->isGeneric && p->variableTypeSymbol)
         t = p->variableTypeSymbol->definition;
@@ -715,8 +715,7 @@ map_baseast(BaseAST *s) {
           sym->asymbol->sym->global_scope = 1;
           break;
         case SCOPE_LETEXPR:
-        case SCOPE_PARAM:
-        case SCOPE_FUNCTION:
+        case SCOPE_ARG:
         case SCOPE_LOCAL:
         case SCOPE_FORLOOP:
         case SCOPE_FORALLEXPR:
@@ -727,14 +726,14 @@ map_baseast(BaseAST *s) {
           break;
       }
     }
-    if (sym->astType == SYMBOL_PARAM) {
-      ParamSymbol *s = dynamic_cast<ParamSymbol *>(sym);
+    if (sym->astType == SYMBOL_ARG) {
+      ArgSymbol *s = dynamic_cast<ArgSymbol *>(sym);
       switch (s->intent) {
         default: break;
-        case PARAM_IN: sym->asymbol->sym->intent = Sym_IN; break;
-        case PARAM_INOUT: sym->asymbol->sym->intent = Sym_INOUT; break;
-        case PARAM_OUT: sym->asymbol->sym->intent = Sym_OUT; break;
-        case PARAM_CONST: sym->asymbol->sym->is_read_only = 1; break;
+        case INTENT_IN: sym->asymbol->sym->intent = Sym_IN; break;
+        case INTENT_INOUT: sym->asymbol->sym->intent = Sym_INOUT; break;
+        case INTENT_OUT: sym->asymbol->sym->intent = Sym_OUT; break;
+        case INTENT_CONST: sym->asymbol->sym->is_read_only = 1; break;
       }
       // handle pragmas
       if (sym->hasPragma("clone_for_constants")) {
@@ -826,8 +825,8 @@ build_symbols(Vec<BaseAST *> &syms) {
             t->asymbol->sym->must_specialize = sym_anyclass;
           break;
         }
-        case SYMBOL_PARAM: {
-          ParamSymbol *p = dynamic_cast<ParamSymbol*>(s);
+        case SYMBOL_ARG: {
+          ArgSymbol *p = dynamic_cast<ArgSymbol*>(s);
           ClassType *rt = dynamic_cast<ClassType*>(p->type);
           if (rt && rt->isPattern) {
             p->asymbol->sym->is_pattern = 1;
@@ -868,8 +867,8 @@ build_patterns(Vec<BaseAST *> &syms) {
     Symbol *s = dynamic_cast<Symbol *>(ss);
     if (s) { 
       switch (s->astType) {
-        case SYMBOL_PARAM: {
-          ParamSymbol *p = dynamic_cast<ParamSymbol*>(s);
+        case SYMBOL_ARG: {
+          ArgSymbol *p = dynamic_cast<ArgSymbol*>(s);
           ClassType *rt = dynamic_cast<ClassType*>(p->type);
           if (rt && rt->isPattern) {
             forv_Sym(s, rt->asymbol->sym->has)
@@ -1925,7 +1924,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
   case SYMBOL_UNRESOLVED:
   case SYMBOL_MODULE:
   case SYMBOL_VAR:
-  case SYMBOL_PARAM:
+  case SYMBOL_ARG:
   case SYMBOL_TYPE:
   case SYMBOL_FN:
   case SYMBOL_ENUM:
@@ -1949,7 +1948,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
 
 static void
 fun_where_equal_constant(FnSymbol *f, SymExpr* v, Literal *c) {
-  if (ParamSymbol *s = dynamic_cast<ParamSymbol*>(v->var)) {
+  if (ArgSymbol *s = dynamic_cast<ArgSymbol*>(v->var)) {
     if (!s->isGeneric) {
       show_error("where constraint on non-generic %s", f->body->ainfo, s->name);
       return;
@@ -1984,10 +1983,10 @@ static int
 gen_fun(FnSymbol *f) {
   Sym *fn = f->asymbol->sym;
   AInfo* ast = f->defPoint->ainfo;
-  Vec<ParamSymbol *> args;
+  Vec<ArgSymbol *> args;
   Vec<Sym *> out_args;
   for_alist(DefExpr, formal, f->formals) {
-    args.add(dynamic_cast<ParamSymbol*>(formal->sym));
+    args.add(dynamic_cast<ArgSymbol*>(formal->sym));
   }
   Sym *as[args.n + 4];
   int iarg = 0;
@@ -2137,7 +2136,7 @@ handle_argument(Sym *s, char *name, Fun *fun, int added, MPosition &p) {
   }
   // record default argument positions
   if (s->asymbol->symbol) {
-    ParamSymbol *symbol = dynamic_cast<ParamSymbol*>(s->asymbol->symbol);
+    ArgSymbol *symbol = dynamic_cast<ArgSymbol*>(s->asymbol->symbol);
     if (symbol && symbol->defPoint->init) {
       assert(symbol->defPoint->init->ainfo);
       fun->default_args.put(cannonicalize_mposition(p), symbol->defPoint->init->ainfo);

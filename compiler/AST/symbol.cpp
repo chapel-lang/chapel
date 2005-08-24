@@ -281,14 +281,13 @@ void VarSymbol::printDef(FILE* outfile) {
 
 bool VarSymbol::initializable(void) {
   switch (parentScope->type) {
-  case SCOPE_FUNCTION:
   case SCOPE_LOCAL:
   case SCOPE_MODULE:
     return true;
   case SCOPE_INTRINSIC:
   case SCOPE_PRELUDE:
   case SCOPE_POSTPARSE:
-  case SCOPE_PARAM:
+  case SCOPE_ARG:
   case SCOPE_FORLOOP:
   case SCOPE_FORALLEXPR:
   case SCOPE_CLASS:
@@ -335,31 +334,33 @@ void VarSymbol::codegenDef(FILE* outfile) {
 }
 
 
-static char* paramTypeNames[NUM_PARAM_TYPES] = {
+static char* intentTagNames[NUM_INTENT_TYPES] = {
   "",
   "in",
   "inout",
   "out",
   "const",
-  "ref"
+  "ref",
+  "param",
+  "type"
 };
 
 
-ParamSymbol::ParamSymbol(paramType init_intent, char* init_name, 
+ArgSymbol::ArgSymbol(intentTag init_intent, char* init_name, 
                          Type* init_type) :
-  Symbol(SYMBOL_PARAM, init_name, init_type),
+  Symbol(SYMBOL_ARG, init_name, init_type),
   intent(init_intent),
   variableTypeSymbol(NULL),
   isGeneric(false)
 {
-  if (intent == PARAM_PARAMETER || intent == PARAM_TYPE)
+  if (intent == INTENT_PARAM || intent == INTENT_TYPE)
     isGeneric = true;
 }
 
 
-void ParamSymbol::verify(void) {
-  if (astType != SYMBOL_PARAM) {
-    INT_FATAL(this, "Bad ParamSymbol::astType");
+void ArgSymbol::verify(void) {
+  if (astType != SYMBOL_ARG) {
+    INT_FATAL(this, "Bad ArgSymbol::astType");
   }
   if (prev || next) {
     INT_FATAL(this, "Symbol is in AList");
@@ -367,9 +368,9 @@ void ParamSymbol::verify(void) {
 }
 
 
-ParamSymbol*
-ParamSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  ParamSymbol *ps = new ParamSymbol(intent, copystring(name), type);
+ArgSymbol*
+ArgSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+  ArgSymbol *ps = new ArgSymbol(intent, copystring(name), type);
   if (variableTypeSymbol)
     ps->variableTypeSymbol = variableTypeSymbol;
   ps->isGeneric = isGeneric;
@@ -378,48 +379,48 @@ ParamSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
 }
 
 
-void ParamSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+void ArgSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   type->replaceChild(old_ast, new_ast);
 }
 
 
-void ParamSymbol::traverseDefSymbol(Traversal* traversal) {
+void ArgSymbol::traverseDefSymbol(Traversal* traversal) {
   TRAVERSE(type, traversal, false);
   TRAVERSE(variableTypeSymbol, traversal, false);
 }
 
 
-void ParamSymbol::printDef(FILE* outfile) {
-  fprintf(outfile, "%s ", paramTypeNames[intent]);
+void ArgSymbol::printDef(FILE* outfile) {
+  fprintf(outfile, "%s ", intentTagNames[intent]);
   Symbol::print(outfile);
   fprintf(outfile, ": ");
   type->print(outfile);
 }
 
 
-bool ParamSymbol::requiresCPtr(void) {
-  return (intent == PARAM_OUT || intent == PARAM_INOUT || 
-          (intent == PARAM_REF && type->astType == TYPE_PRIMITIVE));
+bool ArgSymbol::requiresCPtr(void) {
+  return (intent == INTENT_OUT || intent == INTENT_INOUT || 
+          (intent == INTENT_REF && type->astType == TYPE_PRIMITIVE));
 }
 
 
-bool ParamSymbol::requiresCopyBack(void) {
-  return intent == PARAM_OUT || intent == PARAM_INOUT;
+bool ArgSymbol::requiresCopyBack(void) {
+  return intent == INTENT_OUT || intent == INTENT_INOUT;
 }
 
 
-bool ParamSymbol::requiresCTmp(void) {
+bool ArgSymbol::requiresCTmp(void) {
   return type->requiresCParamTmp(intent);
 }
 
 
-bool ParamSymbol::isConst(void) {
-  // TODO: need to also handle case of PARAM_BLANK for scalar types
-  return (intent == PARAM_CONST); 
+bool ArgSymbol::isConst(void) {
+  // TODO: need to also handle case of INTENT_BLANK for scalar types
+  return (intent == INTENT_CONST); 
 }
 
 
-void ParamSymbol::codegen(FILE* outfile) {
+void ArgSymbol::codegen(FILE* outfile) {
   bool requiresDeref = requiresCPtr();
  
   if (requiresDeref) {
@@ -432,7 +433,7 @@ void ParamSymbol::codegen(FILE* outfile) {
 }
 
 
-void ParamSymbol::codegenDef(FILE* outfile) {
+void ArgSymbol::codegenDef(FILE* outfile) {
   type->codegen(outfile);
   if (requiresCPtr()) {
     fprintf(outfile, "* const");
@@ -530,7 +531,7 @@ FnSymbol::FnSymbol(char* initName,
   fnClass(initFnClass),
   noParens(initNoParens),
   retRef(initRetRef),
-  paramScope(NULL),
+  argScope(NULL),
   isSetter(false),
   isGeneric(false),
   _this(NULL),
@@ -596,15 +597,15 @@ void FnSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 void FnSymbol::traverseDefSymbol(Traversal* traversal) {
   SymScope* saveScope = NULL;
 
-  if (paramScope) {
-    saveScope = Symboltable::setCurrentScope(paramScope);
+  if (argScope) {
+    saveScope = Symboltable::setCurrentScope(argScope);
   }
   TRAVERSE(formals, traversal, false);
   TRAVERSE(type, traversal, false);
   TRAVERSE(body, traversal, false);
   TRAVERSE(retType, traversal, false);
   TRAVERSE(whereExpr, traversal, false);
-  if (paramScope) {
+  if (argScope) {
     Symboltable::setCurrentScope(saveScope);
   }
 }
@@ -677,17 +678,17 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
       wrapper_formals->insertAtTail(new DefExpr(newFormal));
       wrapper_actuals->insertAtTail(new SymExpr(newFormal));
     } else {
-      paramType formal_intent = dynamic_cast<ParamSymbol*>(formal->sym)->intent;
+      intentTag formal_intent = dynamic_cast<ArgSymbol*>(formal->sym)->intent;
       char* temp_name = glomstrings(2, "_default_temp_", formal->sym->name);
       VarSymbol* temp = new VarSymbol(temp_name, formal->sym->type);
       Expr* temp_init = NULL;
-      if (formal_intent != PARAM_OUT)
+      if (formal_intent != INTENT_OUT)
         temp_init = formal->sym->defPoint->init->copy();
       wrapper_body->body->insertAtHead(new ExprStmt(new DefExpr(temp, temp_init)));
 
       if (formal->sym->type != dtUnknown &&
-          formal_intent != PARAM_OUT &&
-          formal_intent != PARAM_INOUT)
+          formal_intent != INTENT_OUT &&
+          formal_intent != INTENT_INOUT)
         wrapper_actuals->insertAtTail(new CastExpr(new SymExpr(temp), NULL, formal->sym->type));
       else
         wrapper_actuals->insertAtTail(new SymExpr(temp));
@@ -851,7 +852,7 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
       if (VariableType *t = dynamic_cast<VariableType*>(substitutions->v[i].key)) {
         genericParameters.set_add(t);
         genericParameters.set_add(t->symbol);
-      } else if (ParamSymbol *s = dynamic_cast<ParamSymbol*>(substitutions->v[i].key))
+      } else if (ArgSymbol *s = dynamic_cast<ArgSymbol*>(substitutions->v[i].key))
         if (s->isGeneric)
           genericParameters.set_add(s);
 

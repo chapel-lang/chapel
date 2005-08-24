@@ -194,10 +194,10 @@ void Fixup::preProcessExpr(Expr* expr) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def_expr->sym)) {
       if (!verifyParents) {
         if (insertHelper) {
-          if (fn->paramScope) {
+          if (fn->argScope) {
             INT_FATAL(fn, "Unexpected scope in FnSymbol");
           }
-          Symboltable::pushScope(SCOPE_PARAM);
+          Symboltable::pushScope(SCOPE_ARG);
         }
       }
     }
@@ -274,11 +274,11 @@ void Fixup::postProcessExpr(Expr* expr) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(defExpr->sym)) {
       if (!verifyParents) {
         if (insertHelper) {
-          fn->paramScope = Symboltable::popScope();
-          fn->paramScope->setContext(NULL, fn, NULL);
+          fn->argScope = Symboltable::popScope();
+          fn->argScope->setContext(NULL, fn, NULL);
         } else {
-          Symboltable::removeScope(fn->paramScope);
-          fn->paramScope = NULL;
+          Symboltable::removeScope(fn->argScope);
+          fn->argScope = NULL;
         }
       }
     }

@@ -173,15 +173,15 @@ void Type::codegenDefaultFormat(FILE* outfile, bool isRead) {
 }
 
 
-bool Type::requiresCParamTmp(paramType intent) {
-  if (intent == PARAM_BLANK) {
-    intent = PARAM_CONST;
+bool Type::requiresCParamTmp(intentTag intent) {
+  if (intent == INTENT_BLANK) {
+    intent = INTENT_CONST;
   }
   switch (intent) {
-  case PARAM_BLANK:
-    INT_FATAL(this, "should never have reached PARAM_BLANK case");
-  case PARAM_CONST:
-  case PARAM_IN:
+  case INTENT_BLANK:
+    INT_FATAL(this, "should never have reached INTENT_BLANK case");
+  case INTENT_CONST:
+  case INTENT_IN:
     // if these are implemented using C's pass-by-value, then C
     // effectively puts in the temp for us
     if (implementedUsingCVals()) {
@@ -189,17 +189,17 @@ bool Type::requiresCParamTmp(paramType intent) {
     } else {
       return true;
     }
-  case PARAM_INOUT:
+  case INTENT_INOUT:
     // here a temp is probably always needed in order to avoid
     // affecting the original value
-  case PARAM_OUT:
+  case INTENT_OUT:
     // and here it's needed to set up the default value of the type
     return true;
-  case PARAM_REF:
+  case INTENT_REF:
     // here, a temp should never be needed
     return false;
-  case PARAM_PARAMETER:
-  case PARAM_TYPE:
+  case INTENT_PARAM:
+  case INTENT_TYPE:
     return false;  // Should never be encountered EVENTUALLY
   default:
     INT_FATAL(this, "case not handled in requiresCParamTmp");
@@ -223,7 +223,7 @@ bool Type::hasDefaultWriteFunction(void) {
 }
 
 
-AList<Stmt>* Type::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
+AList<Stmt>* Type::buildDefaultWriteFunctionBody(ArgSymbol* arg) {
   return new AList<Stmt>();
 }
 
@@ -233,7 +233,7 @@ bool Type::hasDefaultReadFunction(void) {
 }
 
 
-AList<Stmt>* Type::buildDefaultReadFunctionBody(ParamSymbol* arg) {
+AList<Stmt>* Type::buildDefaultReadFunctionBody(ArgSymbol* arg) {
   return new AList<Stmt>();
 }
 
@@ -429,7 +429,7 @@ bool EnumType::hasDefaultWriteFunction(void) {
 }
 
 
-AList<Stmt>* EnumType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
+AList<Stmt>* EnumType::buildDefaultWriteFunctionBody(ArgSymbol* arg) {
   return new AList<Stmt>(new ExprStmt(new CallExpr("_EnumWriteStopgap",
                                                    new SymExpr(arg))));
 }
@@ -440,7 +440,7 @@ bool EnumType::hasDefaultReadFunction(void) {
 }
 
 
-AList<Stmt>* EnumType::buildDefaultReadFunctionBody(ParamSymbol* arg) {
+AList<Stmt>* EnumType::buildDefaultReadFunctionBody(ArgSymbol* arg) {
   return new AList<Stmt>(new ExprStmt(new CallExpr("_EnumReadStopgap",
                                                    new SymExpr(arg))));
 }
@@ -605,7 +605,7 @@ void ClassType::addDeclarations(AList<Stmt>* newDeclarations,
         if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(defExpr->sym)) {
           types.add(ts);
         } else if (dynamic_cast<VarSymbol*>(defExpr->sym) ||
-                   dynamic_cast<ParamSymbol*>(defExpr->sym)) {
+                   dynamic_cast<ArgSymbol*>(defExpr->sym)) {
           fields.add(defExpr->sym);
         }
       }
@@ -824,7 +824,7 @@ bool ClassType::hasDefaultWriteFunction(void) {
 }
 
 
-AList<Stmt>* ClassType::buildDefaultWriteFunctionBody(ParamSymbol* arg) {
+AList<Stmt>* ClassType::buildDefaultWriteFunctionBody(ArgSymbol* arg) {
   if (classTag == CLASS_UNION) {
     return new AList<Stmt>(new ExprStmt(new CallExpr("_UnionWriteStopgap",
                                                      new SymExpr(arg))));

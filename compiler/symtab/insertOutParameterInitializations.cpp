@@ -19,16 +19,16 @@ void InsertOutParameterInitializations::processSymbol(Symbol* sym) {
     }
   }
 
-  ParamSymbol* arg = dynamic_cast<ParamSymbol*>(sym);
+  ArgSymbol* arg = dynamic_cast<ArgSymbol*>(sym);
 
-  if (!arg || !arg->defPoint->init || arg->intent != PARAM_OUT) {
+  if (!arg || !arg->defPoint->init || arg->intent != INTENT_OUT) {
     return;
   }
 
   FnSymbol* fn = dynamic_cast<FnSymbol*>(arg->defPoint->parentSymbol);
 
   if (!fn) {
-    INT_FATAL(sym, "Could not find function for ParamSymbol");
+    INT_FATAL(sym, "Could not find function for ArgSymbol");
   }
 
   BlockStmt* body = fn->body;

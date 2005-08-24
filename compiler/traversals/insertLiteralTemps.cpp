@@ -82,11 +82,11 @@ static void createTupleBaseType(int size) {
   }
   for (int i = 1; i <= size; i++) {
     FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("this"));
-    ParamSymbol* paramSymbol =
-      new ParamSymbol(PARAM_PARAMETER, "index", dtInteger);
-    AList<DefExpr>* formals = new AList<DefExpr>(new DefExpr(paramSymbol));
+    ArgSymbol* argSymbol =
+      new ArgSymbol(INTENT_PARAM, "index", dtInteger);
+    AList<DefExpr>* formals = new AList<DefExpr>(new DefExpr(argSymbol));
     Expr* where = new CallExpr(OP_EQUAL, 
-                               new SymExpr(paramSymbol),
+                               new SymExpr(argSymbol),
                                new IntLiteral(i));
     Symboltable::continueFnDef(fn, formals, dtUnknown, true, where);
     AList<Stmt>* body = new AList<Stmt>(new ReturnStmt(new SymExpr(fields.v[i-1])));
@@ -96,10 +96,10 @@ static void createTupleBaseType(int size) {
   DefExpr* def = Symboltable::defineStructType(name, new ClassType(CLASS_RECORD), decls);
   commonModule->stmts->insertAtHead(new ExprStmt(def));
   FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("write"));
-  ParamSymbol* paramSymbol =
-    new ParamSymbol(PARAM_BLANK, "val", dtUnknown);
+  ArgSymbol* argSymbol =
+    new ArgSymbol(INTENT_BLANK, "val", dtUnknown);
   AList<DefExpr>* formals =
-    new AList<DefExpr>(new DefExpr(paramSymbol,
+    new AList<DefExpr>(new DefExpr(argSymbol,
                                    NULL,
                                    new SymExpr(new UnresolvedSymbol(name))));
   Symboltable::continueFnDef(fn, formals, dtUnknown, false, NULL);

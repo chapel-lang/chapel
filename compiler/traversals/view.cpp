@@ -70,7 +70,7 @@ void View::preProcessSymbol(Symbol* sym) {
   }
   if (dynamic_cast<FnSymbol*>(sym)) {
     printf("fn ");
-  } else if (dynamic_cast<ParamSymbol*>(sym)) {
+  } else if (dynamic_cast<ArgSymbol*>(sym)) {
     printf("arg ");
   } else if (dynamic_cast<TypeSymbol*>(sym)) {
     printf("type ");

@@ -51,7 +51,7 @@ void FindEnclosingScopeVarUses::checkIfEnclVar(SymExpr* v) {
   Symbol* sym = NULL;
   if (VarSymbol* v_sym = dynamic_cast<VarSymbol*>(v->var))
     sym = v_sym;
-  else if (ParamSymbol* p_sym = dynamic_cast<ParamSymbol*>(v->var))
+  else if (ArgSymbol* p_sym = dynamic_cast<ArgSymbol*>(v->var))
     sym = p_sym; 
   if (sym) {
     //variable defined in enclosing function scope
@@ -97,7 +97,7 @@ Vec<Symbol*>* FindEnclosingScopeVarUses::removeCurrScopeVars(FnSymbol* fn_sym) {
   Vec<Symbol*>* new_encl_var_uses = new Vec<Symbol*>();
   forv_Symbol(symbol, *_curr_var_uses_vec) {
     if (!fn_sym->body->blkScope->symbols.in(symbol) && 
-        !fn_sym->paramScope->symbols.in(symbol))
+        !fn_sym->argScope->symbols.in(symbol))
       new_encl_var_uses->add_exclusive(symbol);
   }
   //update map

@@ -189,11 +189,8 @@ void SymScope::printHeader(FILE* outfile) {
   case SCOPE_MODULE:
     fprintf(outfile, "module");
     break;
-  case SCOPE_PARAM:
-    fprintf(outfile, "parameters");
-    break;
-  case SCOPE_FUNCTION:
-    fprintf(outfile, "function");
+  case SCOPE_ARG:
+    fprintf(outfile, "formal arguments");
     break;
   case SCOPE_LOCAL:
     fprintf(outfile, "local");

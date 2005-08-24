@@ -21,7 +21,7 @@ void InlineFunctions::postProcessExpr(Expr* expr) {
       //inline function
       if (fn_sym->hasPragma("inline") && isCodegened(fn_sym)) { 
         _ok_to_inline = true;
-        //map formal parameters to actual arguments
+        //map formal arguments to actual arguments
         Map<BaseAST*,BaseAST*>* formal_to_actual_arg_map = createFormalToActualArgMappings(fn_call, fn_sym->formals); 
         //inline body if it is ok to do so even after examining the actual arguments
         if (_ok_to_inline) {
@@ -66,43 +66,43 @@ DefExpr* InlineFunctions::createTempVariable(Type* type, Expr* init) {
   return new DefExpr(temp, init);
 }
 
-bool InlineFunctions::isFormalParamOut(ParamSymbol* p_sym) {
-  return ((p_sym->intent == PARAM_INOUT) || (p_sym->intent == PARAM_OUT));
+bool InlineFunctions::isFormalArgOut(ArgSymbol* p_sym) {
+  return ((p_sym->intent == INTENT_INOUT) || (p_sym->intent == INTENT_OUT));
 }
 
-bool InlineFunctions::isFormalParamRef(ParamSymbol* p_sym) {
+bool InlineFunctions::isFormalArgRef(ArgSymbol* p_sym) {
   ClassType* classType = dynamic_cast<ClassType*>(p_sym->type);
   if (classType && (classType->classTag == CLASS_CLASS ||
                     classType->classTag == CLASS_VALUECLASS))  {
     return true;
   }
-  return p_sym->intent == PARAM_REF;
+  return p_sym->intent == INTENT_REF;
 }
 
-bool InlineFunctions::isTypeVar(ParamSymbol* p_sym) {
+bool InlineFunctions::isTypeVar(ArgSymbol* p_sym) {
   return (p_sym->variableTypeSymbol != NULL);
 }
 
-Map<BaseAST*,BaseAST*>* InlineFunctions::createFormalToActualArgMappings(CallExpr* fn_call, AList<DefExpr>* formal_params) {
-  Expr* curr_arg;
-  DefExpr* curr_param;
+Map<BaseAST*,BaseAST*>* InlineFunctions::createFormalToActualArgMappings(CallExpr* fn_call, AList<DefExpr>* formal_args) {
+  Expr* curr_actual;
+  DefExpr* curr_formal;
   AList<Expr>* actual_args = fn_call->argList;
   
   if (actual_args) {
-    curr_arg = actual_args->first();
-    curr_param = formal_params->first();
+    curr_actual = actual_args->first();
+    curr_formal = formal_args->first();
   }
   //go through all the actual arguments
   Map<BaseAST*,BaseAST*>* formal_to_actual_arg_map = new Map<BaseAST*,BaseAST*>();
-  while(curr_arg) {
-    bool param_ref = isFormalParamRef(dynamic_cast<ParamSymbol*>(curr_param->sym));
-    bool param_intent_out = isFormalParamOut(dynamic_cast<ParamSymbol*>(curr_param->sym));
-    bool typeVar = isTypeVar(dynamic_cast<ParamSymbol*>(curr_param->sym)); 
+  while(curr_actual) {
+    bool arg_ref = isFormalArgRef(dynamic_cast<ArgSymbol*>(curr_formal->sym));
+    bool arg_intent_out = isFormalArgOut(dynamic_cast<ArgSymbol*>(curr_formal->sym));
+    bool typeVar = isTypeVar(dynamic_cast<ArgSymbol*>(curr_formal->sym)); 
     //do not inline the function call if an argument is a ref to a expression that is no
     //a variable
     SymExpr* variable;
-    if (param_ref || typeVar) {
-      variable = dynamic_cast<SymExpr*>(curr_arg);
+    if (arg_ref || typeVar) {
+      variable = dynamic_cast<SymExpr*>(curr_actual);
       if (!variable) {
         _ok_to_inline = false;
         return NULL;
@@ -111,25 +111,25 @@ Map<BaseAST*,BaseAST*>* InlineFunctions::createFormalToActualArgMappings(CallExp
     
     //create temporary variable and initialize it with the actual argument 
     DefExpr* temp_def;
-    if (!param_ref && !typeVar) {
-      temp_def = createTempVariable(curr_arg->typeInfo(), curr_arg->copy());
+    if (!arg_ref && !typeVar) {
+      temp_def = createTempVariable(curr_actual->typeInfo(), curr_actual->copy());
       fn_call->parentStmt->insertBefore(new ExprStmt(temp_def));
-      //map variable of param symbol to temp symbol so that when copy is passed the map, it
-      //will replace the formal parameter symbol with the temp symbol                               
-      formal_to_actual_arg_map->put(curr_param->sym, temp_def->sym);
+      //map variable of arg symbol to temp symbol so that when copy is passed the map, it
+      //will replace the formal arg symbol with the temp symbol                               
+      formal_to_actual_arg_map->put(curr_formal->sym, temp_def->sym);
     }
-    //since a temporary variable was not created, map the actual argument to the formal parameter
+    //since a temporary variable was not created, map the actual argument to the formal argument
     else 
-      formal_to_actual_arg_map->put(curr_param->sym, variable->var);
+      formal_to_actual_arg_map->put(curr_formal->sym, variable->var);
       
-      //copy temp back to actual arg if formal param out
-    if (param_intent_out)
-      if (SymExpr* v = dynamic_cast<SymExpr*>(curr_arg))
+      //copy temp back to actual arg if formal arg out
+    if (arg_intent_out)
+      if (SymExpr* v = dynamic_cast<SymExpr*>(curr_actual))
         fn_call->parentStmt->insertAfter(new ExprStmt(new CallExpr(OP_GETSNORM, new SymExpr(v->var), new SymExpr(temp_def->sym))));
     
 
-    curr_arg = actual_args->next();
-    curr_param = formal_params->next();
+    curr_actual = actual_args->next();
+    curr_formal = formal_args->next();
   }
   return formal_to_actual_arg_map;
 }

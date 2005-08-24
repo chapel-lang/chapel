@@ -47,7 +47,7 @@ void InsertThisParameters::preProcessExpr(Expr* expr) {
   }
   
   /***
-   *** Mangle code-generation name and insert this as first parameter
+   *** Mangle code-generation name and insert this as first argument
    ***/
   
   if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(fn->typeBinding)) {
@@ -72,13 +72,13 @@ void InsertThisParameters::preProcessExpr(Expr* expr) {
       // fix type variables, associate by name
       if (ClassType* structType = dynamic_cast<ClassType*>(typeSym->definition)) {
         for_alist(DefExpr, arg, fn->formals) {
-          if (dynamic_cast<ParamSymbol*>(arg->sym)->isGeneric) {
+          if (dynamic_cast<ArgSymbol*>(arg->sym)->isGeneric) {
             forv_Vec(TypeSymbol, tmp, structType->types) {
               if (VariableType* variableType = dynamic_cast<VariableType*>(tmp->definition)) {
                 if (!strcmp(tmp->name, arg->sym->name)) {
                   arg->sym->type = variableType->type;
-                  dynamic_cast<ParamSymbol*>(arg->sym)->isGeneric = true;
-                  dynamic_cast<ParamSymbol*>(arg->sym)->variableTypeSymbol = tmp;
+                  dynamic_cast<ArgSymbol*>(arg->sym)->isGeneric = true;
+                  dynamic_cast<ArgSymbol*>(arg->sym)->variableTypeSymbol = tmp;
                 }
               }
             }
@@ -86,19 +86,19 @@ void InsertThisParameters::preProcessExpr(Expr* expr) {
         }
       }
     } else {
-      ParamSymbol* this_insert = new ParamSymbol(PARAM_REF, "this", typeSym->definition);
+      ArgSymbol* this_insert = new ArgSymbol(INTENT_REF, "this", typeSym->definition);
       fn->formals->insertAtHead(new DefExpr(this_insert));
       fn->_this = this_insert;
       bool isThisMethod = !strcmp(fn->name, "this");
       if (!isThisMethod) {
         TypeSymbol *methodTypeSymbol = dynamic_cast<TypeSymbol*>(Symboltable::lookupInternal("_methodTokenType"));
-        ParamSymbol* token_dummy = new ParamSymbol(PARAM_REF, "_methodTokenDummy",
+        ArgSymbol* token_dummy = new ArgSymbol(INTENT_REF, "_methodTokenDummy",
                                                    methodTypeSymbol->definition);
         fn->formals->insertAtHead(new DefExpr(token_dummy));
       }
       if (fn->isSetter) {
         TypeSymbol *setterTypeSymbol = dynamic_cast<TypeSymbol*>(Symboltable::lookupInternal("_setterTokenType"));
-        ParamSymbol* setter_dummy = new ParamSymbol(PARAM_REF, "_setterTokenDummy", 
+        ArgSymbol* setter_dummy = new ArgSymbol(INTENT_REF, "_setterTokenDummy", 
                                                     setterTypeSymbol->definition);
         int len = fn->formals->length();
         fn->formals->get(len)->insertBefore(new DefExpr(setter_dummy));

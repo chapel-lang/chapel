@@ -256,10 +256,10 @@ Symbol* Symboltable::lookupFromScope(char* name, SymScope* scope,
     if (sym) {
       return sym;
     }
-    if (scope->type == SCOPE_PARAM) {
+    if (scope->type == SCOPE_ARG) {
       FnSymbol* fn = dynamic_cast<FnSymbol*>(scope->symContext);
       if (!fn) {
-        INT_FATAL("Cannot find function from SCOPE_PARAM");
+        INT_FATAL("Cannot find function from SCOPE_ARG");
       }
       if (fn->typeBinding) {
         ClassType* structuralType =
@@ -446,10 +446,10 @@ DefExpr* Symboltable::finishModuleDef(ModuleSymbol* mod, AList<Stmt>* def) {
 
 
 DefExpr*
-Symboltable::defineParam(paramType tag, char* ident, Expr* type, Expr* init) {
-  ParamSymbol* paramSymbol = new ParamSymbol(tag, ident, dtUnknown);
+Symboltable::defineParam(intentTag tag, char* ident, Expr* type, Expr* init) {
+  ArgSymbol* argSymbol = new ArgSymbol(tag, ident, dtUnknown);
   Expr* userInit = init ? init : NULL;
-  return new DefExpr(paramSymbol, userInit, type);
+  return new DefExpr(argSymbol, userInit, type);
 }
 
 

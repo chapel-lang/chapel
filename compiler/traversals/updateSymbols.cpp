@@ -56,7 +56,7 @@ void UpdateSymbols::preProcessSymbol(Symbol* sym) {
     XSUB(fn->_setter, Symbol*);
     XSUB(fn->_getter, Symbol*);
   }
-  if (ParamSymbol* p = dynamic_cast<ParamSymbol*>(sym)) {
+  if (ArgSymbol* p = dynamic_cast<ArgSymbol*>(sym)) {
     if (p->isGeneric && p->variableTypeSymbol) {
       BaseAST *b = updateMap->get(p->variableTypeSymbol);
       if (b) {

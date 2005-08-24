@@ -11,7 +11,7 @@ PostAnalysisCleanup::PostAnalysisCleanup() {
 
 
 void PostAnalysisCleanup::processSymbol(Symbol* sym) {
-  if (dynamic_cast<ParamSymbol*>(sym) && sym->defPoint->init) {
+  if (dynamic_cast<ArgSymbol*>(sym) && sym->defPoint->init) {
     sym->defPoint->init->remove();
   }
 }

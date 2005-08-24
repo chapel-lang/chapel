@@ -27,10 +27,10 @@ void PreAnalysisHacks::postProcessExpr(Expr* expr) {
         fn->retType = def_expr->exprType->typeInfo();
         def_expr->exprType = NULL;
       }
-    } else if (ParamSymbol* param = dynamic_cast<ParamSymbol*>(def_expr->sym)) {
-      if (param->intent == PARAM_TYPE && 
+    } else if (ArgSymbol* arg = dynamic_cast<ArgSymbol*>(def_expr->sym)) {
+      if (arg->intent == INTENT_TYPE && 
           def_expr->exprType && check_type(def_expr->exprType->typeInfo())) {
-        param->type = getMetaType(def_expr->exprType->typeInfo());
+        arg->type = getMetaType(def_expr->exprType->typeInfo());
       }
     } else if (def_expr->sym->type == dtUnknown && 
                def_expr->exprType && check_type(def_expr->exprType->typeInfo())) {

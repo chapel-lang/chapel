@@ -351,7 +351,7 @@ char* astTypeName[AST_TYPE_END+1] = {
   "UnresolvedSymbol",
   "ModuleSymbol",
   "VarSymbol",
-  "ParamSymbol",
+  "ArgSymbol",
   "TypeSymbol",
   "FnSymbol",
   "EnumSymbol",
@@ -497,8 +497,8 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     goto LSymbolCommon;
   case SYMBOL_VAR: 
     goto LSymbolCommon;
-  case SYMBOL_PARAM: 
-    ADD_CHILD(ParamSymbol, variableTypeSymbol);
+  case SYMBOL_ARG: 
+    ADD_CHILD(ArgSymbol, variableTypeSymbol);
     goto LSymbolCommon;
   case SYMBOL_TYPE: goto LSymbolCommon;
   case SYMBOL_FN:

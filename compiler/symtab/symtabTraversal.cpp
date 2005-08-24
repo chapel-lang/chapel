@@ -39,7 +39,7 @@ void SymtabTraversal::run(Vec<ModuleSymbol*>* modules) {
 
 
 void SymtabTraversal::run(FnSymbol* function) {
-  Symboltable::traverseFromScope(this, function->paramScope);
+  Symboltable::traverseFromScope(this, function->argScope);
 }
 
 void SymtabTraversal::run(Type* type) {

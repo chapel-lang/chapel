@@ -18,7 +18,7 @@ Instantiate::postProcessExpr(Expr* expr) {
           Map<BaseAST*,BaseAST*> substitutions;
           DefExpr* formal = constructor->formals->first();
           for_alist(Expr, actual, parenOpExpr->argList) {
-            ParamSymbol* formalArg = dynamic_cast<ParamSymbol*>(formal->sym);
+            ArgSymbol* formalArg = dynamic_cast<ArgSymbol*>(formal->sym);
             if (formalArg->isGeneric) {
               if (formalArg->variableTypeSymbol) {
                 if (SymExpr* variable = dynamic_cast<SymExpr*>(actual)) {

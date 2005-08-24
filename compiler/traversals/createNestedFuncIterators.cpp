@@ -79,7 +79,7 @@ AList<Expr>* CreateNestedFuncIterators::getIteratorCallsHelper(AList<Expr>* iter
     if (CallExpr* paren_op = dynamic_cast<CallExpr*>(iterator)){
       if (SymExpr* variable = dynamic_cast<SymExpr*>(paren_op->baseExpr)){
         FnSymbol* fn_sym = dynamic_cast<FnSymbol*>(variable->var);
-        if (fn_sym->paramScope->getModule()->modtype == MOD_USER)
+        if (fn_sym->argScope->getModule()->modtype == MOD_USER)
           user_iterator_list->insertAtTail(paren_op->copy());
       }
       //check arglist for user iterators
@@ -119,9 +119,9 @@ DefExpr* CreateNestedFuncIterators::copyFuncHelper(char* new_name, AList<DefExpr
   //copy formals for new function definition
   Map<BaseAST*,BaseAST*>* update_map = new Map<BaseAST*,BaseAST*>();
   for_alist(DefExpr, def, copy_formals) {
-    ParamSymbol* param = new ParamSymbol(PARAM_BLANK, def->sym->name, def->sym->type);
-    func_formals->insertAtTail(new DefExpr(param));
-    update_map->put(def->sym,param);
+    ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, def->sym->name, def->sym->type);
+    func_formals->insertAtTail(new DefExpr(arg));
+    update_map->put(def->sym,arg);
   }
   //copy body for new function definition
   Symboltable::continueFnDef(fn, func_formals, dtVoid);

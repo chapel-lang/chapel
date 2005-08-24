@@ -19,7 +19,7 @@
   OpTag ot;
   varType vt;
   consType ct;
-  paramType pt;
+  intentTag pt;
   blockStmtType blktype;
   fnType ft;
   ForLoopStmtTag flstag;
@@ -729,17 +729,17 @@ record_inner_var_ls:
 
 formal_tag:
   /* nothing */
-    { $$ = PARAM_BLANK; }
+    { $$ = INTENT_BLANK; }
 | TIN
-    { $$ = PARAM_IN; }
+    { $$ = INTENT_IN; }
 | TINOUT
-    { $$ = PARAM_INOUT; }
+    { $$ = INTENT_INOUT; }
 | TOUT
-    { $$ = PARAM_OUT; }
+    { $$ = INTENT_OUT; }
 | TCONST
-    { $$ = PARAM_CONST; }
+    { $$ = INTENT_CONST; }
 | TPARAM
-    { $$ = PARAM_PARAMETER; }
+    { $$ = INTENT_PARAM; }
 ;
 
 
@@ -751,9 +751,9 @@ formal:
     }
 | TTYPE pragma_ls identifier opt_var_type opt_init_expr
     {
-      DefExpr* defExpr = Symboltable::defineParam(PARAM_TYPE, $3, $4, $5);
+      DefExpr* defExpr = Symboltable::defineParam(INTENT_TYPE, $3, $4, $5);
       defExpr->sym->copyPragmas(*$2);
-      ParamSymbol* ps = dynamic_cast<ParamSymbol*>(defExpr->sym);
+      ArgSymbol* ps = dynamic_cast<ArgSymbol*>(defExpr->sym);
       char *name = glomstrings(2, "__type_variable_", ps->name);
       VariableType* new_type = new VariableType(getMetaType(NULL));
       TypeSymbol* new_type_symbol = new TypeSymbol(name, new_type);
@@ -769,13 +769,13 @@ formal:
       //   change DefExpr into ExprStmt because functions take 
       //   a list of DefExpr but records take a list of Stmt
       // NOTE:
-      //   this record has members which are ParamSymbols
+      //   this record has members which are ArgSymbols
       AList<Stmt> *stmts = new AList<Stmt>;
       for_alist(DefExpr, x, $2) {
         stmts->insertAtTail(new ExprStmt(x));
       }
       Symboltable::defineStructType(NULL, t, stmts);
-      $$ = Symboltable::defineParam(PARAM_IN, "<anonymous>", NULL, NULL);
+      $$ = Symboltable::defineParam(INTENT_IN, "<anonymous>", NULL, NULL);
       $$->sym->type = t;
       t->isPattern = true;
     }

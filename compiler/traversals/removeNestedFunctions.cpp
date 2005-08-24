@@ -32,10 +32,10 @@ void RemoveNestedFunctions::postProcessStmt(Stmt* stmt) {
           Vec<Symbol*>* encl_func_var_uses = _nested_func_args_map->get(fn_sym);
 
           //add to global scope
-          ModuleSymbol* curr_module = fn_sym->paramScope->getModule();
+          ModuleSymbol* curr_module = fn_sym->argScope->getModule();
           AList<Stmt>* module_stmts = curr_module->stmts;
           ExprStmt* fn_copy = expr_stmt->copy(true);
-          //add formal parameters to copied nested function
+          //add formal arguments to copied nested function
           addNestedFuncFormals(fn_copy->expr, encl_func_var_uses, fn_sym);
           module_stmts->insertAtTail(fn_copy);
           expr_stmt->remove();
@@ -85,7 +85,7 @@ void RemoveNestedFunctions::addNestedFuncFormals(Expr* expr, Vec<Symbol*>* encl_
       forv_Vec(Symbol, sym, *encl_var_uses) {
         if (sym) {
           //create formal and add to nested function
-          DefExpr* formal = Symboltable::defineParam(PARAM_BLANK,sym->name,NULL,NULL);
+          DefExpr* formal = Symboltable::defineParam(INTENT_BLANK,sym->name,NULL,NULL);
           formal->sym->type = sym->type;
           fn_sym->formals->insertAtTail(formal);
           //will need to perform an update to map enclosing variables to formals

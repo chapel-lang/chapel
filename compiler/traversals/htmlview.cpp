@@ -148,7 +148,7 @@ void HtmlView::preProcessExpr(Expr* expr) {
     } else if (dynamic_cast<VarSymbol*>(e->sym)) {
       write("<B>var</B> ");
       html_print_symbol(e->sym, true);
-    } else if (dynamic_cast<ParamSymbol*>(e->sym)) {
+    } else if (dynamic_cast<ArgSymbol*>(e->sym)) {
       write("<B>arg</B> ");
       html_print_symbol(e->sym, true);
     } else {

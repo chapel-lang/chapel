@@ -21,7 +21,7 @@ class Symbol;
 class EnumSymbol;
 class VarSymbol;
 class TypeSymbol;
-class ParamSymbol;
+class ArgSymbol;
 class FnSymbol;
 class Expr;
 class DefExpr;
@@ -72,13 +72,13 @@ class Type : public BaseAST {
   virtual void codegenConfigVarRoutines(FILE* outfile);
   virtual void codegenDefaultFormat(FILE* outfile, bool isRead);
 
-  virtual bool requiresCParamTmp(paramType intent);
+  virtual bool requiresCParamTmp(intentTag intent);
   virtual bool implementedUsingCVals(void);
 
   virtual bool hasDefaultWriteFunction(void);
-  virtual AList<Stmt>* buildDefaultWriteFunctionBody(ParamSymbol* arg);
+  virtual AList<Stmt>* buildDefaultWriteFunctionBody(ArgSymbol* arg);
   virtual bool hasDefaultReadFunction(void);
-  virtual AList<Stmt>* buildDefaultReadFunctionBody(ParamSymbol* arg);
+  virtual AList<Stmt>* buildDefaultReadFunctionBody(ArgSymbol* arg);
 };
 
 #define forv_Type(_p, _v) forv_Vec(Type, _p, _v)
@@ -112,9 +112,9 @@ class EnumType : public Type {
   bool implementedUsingCVals(void);
 
   virtual bool hasDefaultWriteFunction(void);
-  virtual AList<Stmt>* buildDefaultWriteFunctionBody(ParamSymbol* arg);
+  virtual AList<Stmt>* buildDefaultWriteFunctionBody(ArgSymbol* arg);
   virtual bool hasDefaultReadFunction(void);
-  virtual AList<Stmt>* buildDefaultReadFunctionBody(ParamSymbol* arg);
+  virtual AList<Stmt>* buildDefaultReadFunctionBody(ArgSymbol* arg);
 };
 
 
@@ -189,7 +189,7 @@ class ClassType : public Type {
   virtual bool implementedUsingCVals(void);
 
   virtual bool hasDefaultWriteFunction(void);
-  virtual AList<Stmt>* buildDefaultWriteFunctionBody(ParamSymbol* arg);
+  virtual AList<Stmt>* buildDefaultWriteFunctionBody(ArgSymbol* arg);
 
   void ClassType::buildFieldSelector(void);
   CallExpr* ClassType::buildSafeUnionAccessCall(unionCall type, Expr* base, 

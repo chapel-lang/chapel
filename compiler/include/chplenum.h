@@ -7,17 +7,17 @@ enum moduleSet {
   MODULES_ALL = 0x15
 };
 
-enum paramType {
-  PARAM_BLANK = 0,
-  PARAM_IN,
-  PARAM_INOUT,
-  PARAM_OUT,
-  PARAM_CONST,
-  PARAM_REF,
-  PARAM_PARAMETER,
-  PARAM_TYPE,
+enum intentTag {
+  INTENT_BLANK = 0,
+  INTENT_IN,
+  INTENT_INOUT,
+  INTENT_OUT,
+  INTENT_CONST,
+  INTENT_REF,
+  INTENT_PARAM,
+  INTENT_TYPE,
 
-  NUM_PARAM_TYPES
+  NUM_INTENT_TYPES
 };
 
 #endif

@@ -11,7 +11,7 @@ ProcessParameters::ProcessParameters(void) {
 }
 
 
-static bool tmpRequired(ParamSymbol* formal, Expr* actual) {
+static bool tmpRequired(ArgSymbol* formal, Expr* actual) {
   if (SymExpr* var = dynamic_cast<SymExpr*>(actual)) {
     if (dynamic_cast<TypeSymbol*>(var->var))
       return false;
@@ -34,13 +34,13 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
     FnSymbol* fn = call->findFnSymbol();
     DefExpr* formal_def = fn->formals->first();
     for_alist(Expr, actual, call->argList) {
-      ParamSymbol* formal = dynamic_cast<ParamSymbol*>(formal_def->sym);
+      ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formal_def->sym);
       if (!formal || !actual) {
         INT_FATAL(expr, "Formal/actual mismatch in ProcessParameters");
       }
       if (tmpRequired(formal, actual)) {
         Expr* init = NULL;
-        if (formal->intent != PARAM_OUT) {
+        if (formal->intent != INTENT_OUT) {
           init = actual->copy();
         } else {
           init = COPY(formal->type->defaultValue);

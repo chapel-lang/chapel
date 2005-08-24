@@ -112,16 +112,16 @@ class VarSymbol : public Symbol {
 };
 
 
-class ParamSymbol : public Symbol {
+class ArgSymbol : public Symbol {
  public:
-  paramType intent;
+  intentTag intent;
   TypeSymbol *variableTypeSymbol;
   bool isGeneric;
 
-  ParamSymbol(paramType init_intent, char* init_name, 
+  ArgSymbol(intentTag init_intent, char* init_name, 
               Type* init_type = dtUnknown);
   virtual void verify(void); 
-  COPY_DEF(ParamSymbol);
+  COPY_DEF(ArgSymbol);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void traverseDefSymbol(Traversal* traverse);
 
@@ -168,7 +168,7 @@ class FnSymbol : public Symbol {
   bool noParens;
   bool retRef;
 
-  SymScope* paramScope;
+  SymScope* argScope;
   bool isSetter;
   bool isGeneric;
   Symbol* _this;

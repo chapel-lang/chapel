@@ -52,7 +52,7 @@ class Symboltable {
 
   static ModuleSymbol* startModuleDef(char* name, modType modtype = MOD_USER);
   static DefExpr* finishModuleDef(ModuleSymbol* mod, AList<Stmt>* def);
-  static DefExpr* Symboltable::defineParam(paramType tag, char* ident,
+  static DefExpr* Symboltable::defineParam(intentTag tag, char* ident,
                                            Expr* type, Expr* init);
   static PrimitiveType* Symboltable::definePrimitiveType(char* name, char* cname, Expr* initExpr = NULL);
   static Type* Symboltable::defineBuiltinType(char* name, char* cname, Type* newType);

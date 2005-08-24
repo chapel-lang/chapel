@@ -225,11 +225,11 @@ static EXPR_RW expr_read_written(Expr* expr) {
         DefExpr* formal = fn->formals->first();
         for_alist(Expr, actual, fn_call->argList) {
           if (actual == expr) {
-            if (ParamSymbol* formal_param = dynamic_cast<ParamSymbol*>(formal->sym)) {
-              if (formal_param->intent == PARAM_OUT) {
+            if (ArgSymbol* formal_param = dynamic_cast<ArgSymbol*>(formal->sym)) {
+              if (formal_param->intent == INTENT_OUT) {
                 return expr_w;
               }
-              else if (formal_param->intent == PARAM_INOUT) {
+              else if (formal_param->intent == INTENT_INOUT) {
                 return expr_rw;
               }
             }
@@ -506,9 +506,9 @@ void SymExpr::traverseExpr(Traversal* traversal) {
 
 
 Type* SymExpr::typeInfo(void) {
-  if (ParamSymbol* paramSymbol = dynamic_cast<ParamSymbol*>(var)) {
-    if (paramSymbol->intent == PARAM_TYPE) {
-      return paramSymbol->variableTypeSymbol->definition;
+  if (ArgSymbol* argSymbol = dynamic_cast<ArgSymbol*>(var)) {
+    if (argSymbol->intent == INTENT_TYPE) {
+      return argSymbol->variableTypeSymbol->definition;
     }
   }
   if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(var)) {
@@ -590,8 +590,8 @@ void DefExpr::traverseExpr(Traversal* traversal) {
   SymScope* saveScope = NULL;
   TRAVERSE(init, traversal, false);
   if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
-    if (fn->paramScope) {
-      saveScope = Symboltable::setCurrentScope(fn->paramScope);
+    if (fn->argScope) {
+      saveScope = Symboltable::setCurrentScope(fn->argScope);
     }
   }
   TRAVERSE(exprType, traversal, false);
@@ -1050,7 +1050,7 @@ void CallExpr::codegen(FILE* outfile) {
         fprintf(outfile, ", ");
       }
 
-      bool ampersand = dynamic_cast<ParamSymbol*>(formals->sym)->requiresCPtr();
+      bool ampersand = dynamic_cast<ArgSymbol*>(formals->sym)->requiresCPtr();
       bool star = false;
       if (SymExpr* v = dynamic_cast<SymExpr*>(actuals))
         if (VarSymbol *vs = dynamic_cast<VarSymbol*>(v->var))

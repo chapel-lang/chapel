@@ -11,8 +11,7 @@ enum scopeType {
   SCOPE_PRELUDE = -2,
   SCOPE_POSTPARSE = -1,
   SCOPE_MODULE = 0,           // less is all modules
-  SCOPE_PARAM,
-  SCOPE_FUNCTION,
+  SCOPE_ARG,
   SCOPE_LOCAL,
   SCOPE_FORLOOP,
   SCOPE_FORALLEXPR,
