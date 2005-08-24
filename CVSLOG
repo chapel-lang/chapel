@@ -44196,3 +44196,22 @@ Added files:
 	                              varIntTypedSetInConstructor.chpl 
 	                              varIntTypedSetInConstructor.good 
 
+---------------------------------------------------------------------------
+
+08/24/05 11:39:50 -- deitz
+
+Log message:
+	Add a future of a class with a type variable where in the constructor
+	it sets the field and the type variable should be inferred.  I think.
+	
+	This seg faults with the -t in analysis dump_html.  John, can you take
+	a look at that.
+	
+	The other problem seems to be in ProcessParameters and I'm not sure
+	what is the problem yet.
+
+Added files:
+	chapel/test/types/type_variables/deitz/: test_infer_class1.chpl 
+	                                         test_infer_class1.future 
+	                                         test_infer_class1.good 
+
