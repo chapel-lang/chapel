@@ -44271,3 +44271,17 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+08/24/05 13:50:02 -- shannon
+
+Log message:
+	Removed three regressions:
+	
+	 [Error matching program output for memory/shannon/memmaxExceedsLineno]
+	 [Error matching program output for memory/shannon/memstatPrint]
+	 [Error matching program output for memory/shannon/printFinalMemStat]
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+
