@@ -44174,3 +44174,25 @@ Modified files:
 	                               record_type_hierarchy-3-error.good 
 	                               union_type_hierarchy-3-error.good 
 
+---------------------------------------------------------------------------
+
+08/24/05 11:29:08 -- shannon
+
+Log message:
+	Added a working test and a future.  The working test
+	sets a typed integer variable in the class constructor.
+	The future test fails to correctly set in the
+	constructor a variable that isn't typed in the class.
+	
+	This may be the same problem that Steve noted with
+	Default/Order wrappers in his future test checkin
+	earlier.
+
+Added files:
+	chapel/test/classes/shannon/: .cvsignore 
+	                              varIntSetInConstructor.chpl 
+	                              varIntSetInConstructor.future 
+	                              varIntSetInConstructor.good 
+	                              varIntTypedSetInConstructor.chpl 
+	                              varIntTypedSetInConstructor.good 
+
