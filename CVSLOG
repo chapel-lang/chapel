@@ -44298,3 +44298,58 @@ Added files:
 	                                         test_tuplelike1.future 
 	                                         test_tuplelike1.good 
 
+---------------------------------------------------------------------------
+
+08/24/05 15:59:08 -- deitz
+
+Log message:
+	Changed parameter to param at the language level.
+
+Modified files:
+	chapel/compiler/parser/: chapel.lex chapel.y prelude.chpl 
+	chapel/modules/standard/: _chpl_htuple.chpl 
+	chapel/test/Share/: constant-folding-1.chpl 
+	chapel/test/arrays/deitz/: test_array_class1.chpl 
+	                           test_array_class2.chpl 
+	                           test_domain1.chpl test_domain2.chpl 
+	                           test_domain2D.chpl test_domain3.chpl 
+	chapel/test/distributions/bradc/foundations/: blockdist1.chpl 
+	                                              blockdist2.chpl 
+	                                              blockdist3.chpl 
+	chapel/test/domains/bradc/: paramRank.chpl 
+	chapel/test/domains/roxana/: test_hash_table.chpl 
+	chapel/test/functions/deitz/: test_where_param1.chpl 
+	                              test_where_param2.chpl 
+	                              test_where_param3.chpl 
+	chapel/test/reviews/jplevyak/: review1.chpl review2.chpl 
+	                               review3.chpl 
+	chapel/test/ssca/ssca2/: ssca2.parses.chpl 
+	                         ssca2.typedarrays.chpl 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc2.chpl 
+	                                         inlfunc2_report.chpl 
+	chapel/test/trivial/roxana/: test_param_decl.chpl 
+	                             test_param_decl1.chpl 
+	                             test_param_decl2.chpl 
+	                             test_param_decl3.chpl 
+	                             test_param_init.chpl 
+	chapel/test/types/tuple/deitz/: 
+	                                test_tuple_record_implementation1.chpl 
+	                                test_tuple_record_implementation10.chpl 
+	                                test_tuple_record_implementation11.chpl 
+	                                test_tuple_record_implementation12.chpl 
+	                                test_tuple_record_implementation13.chpl 
+	                                test_tuple_record_implementation14.chpl 
+	                                test_tuple_record_implementation15.chpl 
+	                                test_tuple_record_implementation16.chpl 
+	                                test_tuple_record_implementation2.chpl 
+	                                test_tuple_record_implementation3.chpl 
+	                                test_tuple_record_implementation4.chpl 
+	                                test_tuple_record_implementation5.chpl 
+	                                test_tuple_record_implementation6.chpl 
+	                                test_tuple_record_implementation7.chpl 
+	                                test_tuple_record_implementation8.chpl 
+	                                test_tuple_record_implementation9.chpl 
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_paramvar_class1.chpl 
+	                                         test_paramvar_function1.chpl 
+
