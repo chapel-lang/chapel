@@ -44132,3 +44132,20 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+08/24/05 11:00:39 -- deitz
+
+Log message:
+	Default/Order wrapper future.  This test fails because the function
+	that the first wrapper calls is changed because of the second function
+	call.  I'm not sure what is happening.  I believe it is related to the
+	bug Shannon found before, but since that is fixed, this must be a
+	little different.  John, can you take a look?
+
+Added files:
+	chapel/test/functions/deitz/defaultnamed/: 
+	                                           test_defaultnamed4.future 
+	                                           test_defaultnamed4.good 
+	                                           test_defaultnamed4.chpl 
+
