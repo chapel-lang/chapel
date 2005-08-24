@@ -44149,3 +44149,28 @@ Added files:
 	                                           test_defaultnamed4.good 
 	                                           test_defaultnamed4.chpl 
 
+---------------------------------------------------------------------------
+
+08/24/05 11:24:12 -- deitz
+
+Log message:
+	Changed the complex record in the standard complex module to be a
+	complex value class.  Removed _re and _im field indirection, renaming
+	them real and imag and removing the real and imag var functions.
+	
+	Flipped the order of real and imag in the complex class so that real
+	comes first.
+	
+	Improved Html output to print out the name in a NamedExpr (used for
+	pass by name) and to only print apostrophes around string literals.
+	All literals are light blue.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/traversals/: htmlview.cpp 
+	chapel/modules/standard/: _chpl_complex.chpl 
+	chapel/runtime/include/: chpltypes.h 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+
