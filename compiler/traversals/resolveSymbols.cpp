@@ -318,6 +318,8 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
             if (OP_ISBINARYOP(paren->opTag)) {
               return;
             }
+            USR_WARNING(expr, "It looks like this program requires dynamic"
+                        "dispatch, which is not yet supported");
             INT_FATAL(expr, "Unable to resolve function");
             return;
           }

@@ -20,14 +20,14 @@ Priority 1 Tasks
 
 * (Roxana) Attach a Type* type to Expr and remove typeInfo()
 
-* (Steve) implement constructed classes, unify ClassType and RecordType under
-  StructuredType into one type, call it ClassType or something simple
-
 * (Steve) compile-time (param) constant-folding
 
 * (John) get rid of nondeterminism introduced by hashing-on-pointers
    structures (and try to capture an instance of front-end
    nondeterminism to eliminate it as well)
+
+X (Steve) implement constructed classes, unify ClassType and RecordType under
+  StructuredType into one type, call it ClassType or something simple
 
 X (Steve) rename "implements" to something else.  Move to class header?
 
