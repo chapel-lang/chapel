@@ -471,12 +471,17 @@ get_constant_Expr(Sym *c) {
     sprint(name, c->imm, c->type);
     switch (c->type->num_kind) {
       default: fail("type unsupported in AST");
-      case IF1_NUM_KIND_INT:
+      case IF1_NUM_KIND_UINT:
         switch (c->type->num_index) {
           default: fail("type unsupported in AST");
           case IF1_INT_TYPE_1:
             e = new BoolLiteral(name);
             break;
+        }
+        break;
+      case IF1_NUM_KIND_INT:
+        switch (c->type->num_index) {
+          default: fail("type unsupported in AST");
           case IF1_INT_TYPE_64:
             e = new IntLiteral(name);
             break;
@@ -495,7 +500,7 @@ get_constant_Expr(Sym *c) {
         break;
     }
   } else if (c->type == sym_string) {
-    e = new StringLiteral(c->name);
+    e = new StringLiteral(c->constant);
   } else if (c->is_fun || c->is_symbol) {
     e = new SymExpr(dynamic_cast<Symbol*>(c->asymbol->symbol));
   } else

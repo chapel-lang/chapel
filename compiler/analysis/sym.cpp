@@ -212,6 +212,8 @@ sprint(char *str, Immediate &imm, Sym *type) {
       break;
     case IF1_NUM_KIND_UINT: {
       switch (type->num_index) {
+        case IF1_INT_TYPE_1: 
+          res = sprintf(str, "%u", imm.v_bool); break;
         case IF1_INT_TYPE_8: 
           res = sprintf(str, "%u", imm.v_uint8); break;
         case IF1_INT_TYPE_16:

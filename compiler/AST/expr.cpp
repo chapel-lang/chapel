@@ -321,6 +321,10 @@ BoolLiteral::BoolLiteral(char* initStr) :
     val = true;
   } else if (!strcmp(initStr, "false")) {
     val = false;
+  } else if (!strcmp(initStr, "1")) {
+    val = true;
+  } else if (!strcmp(initStr, "0")) {
+    val = false;
   } else {
     INT_FATAL("Bad call to BoolLiteral with String %s", initStr);
   }
