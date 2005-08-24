@@ -44353,3 +44353,40 @@ Modified files:
 	                                         test_paramvar_class1.chpl 
 	                                         test_paramvar_function1.chpl 
 
+---------------------------------------------------------------------------
+
+08/24/05 16:05:35 -- deitz
+
+Log message:
+	Renamed ParamSymbol to ArgSymbol (SYMBOL_PARAM to SYMBOL_ARG), renamed
+	paramType to intentTag (and PARAM_INOUT, ... to INTENT_INOUT, ...),
+	renamed paramScope to argScope.
+	
+	Made some other related renaming changes.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: baseAST.h chplenum.h symbol.h 
+	                          symscope.h symtab.h type.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: insertOutParameterInitializations.cpp 
+	                         postAnalysisCleanup.cpp symscope.cpp 
+	                         symtab.cpp symtabTraversal.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             buildLValueFunctions.cpp 
+	                             checkSemantics.cpp 
+	                             createNestedFuncIterators.cpp 
+	                             findEnclosingScopeVarUses.cpp 
+	                             findUnknownTypes.cpp fixup.cpp 
+	                             htmlview.cpp inlineFunctions.cpp 
+	                             inlineFunctions.h 
+	                             insertLiteralTemps.cpp 
+	                             insertThisParameters.cpp 
+	                             instantiate.cpp 
+	                             preAnalysisHacks.cpp 
+	                             processParameters.cpp 
+	                             removeNestedFunctions.cpp 
+	                             updateSymbols.cpp view.cpp 
+	chapel/test/trivial/roxana/: test_param_decl2.good 
+
