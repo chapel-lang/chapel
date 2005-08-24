@@ -44215,3 +44215,15 @@ Added files:
 	                                         test_infer_class1.future 
 	                                         test_infer_class1.good 
 
+---------------------------------------------------------------------------
+
+08/24/05 11:47:02 -- deitz
+
+Log message:
+	Added second class type variable inference test case, for discussion also.
+
+Added files:
+	chapel/test/types/type_variables/deitz/: test_infer_class2.chpl 
+	                                         test_infer_class2.future 
+	                                         test_infer_class2.good 
+
