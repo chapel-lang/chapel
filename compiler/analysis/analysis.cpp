@@ -22,7 +22,6 @@
 
 #define VARARG_END     0ll
 #define MAKE_USER_TYPE_BE_DEFINITION            1
-#define NO_COERCE_PRIMITIVES                    1
 //#define USE_SCOPE_LOOKUP_CACHE                  1
 //#define MINIMIZED_MEMORY 1  // minimize the memory used by Sym's... needs valgrind checking for safety
 
@@ -1646,9 +1645,8 @@ gen_assignment(CallExpr *assign) {
       (lhs_symbol && (lhs_symbol->type == dtUnknown && !lhs_symbol->defPoint->init)) ||
       (lhs_symbol && lhs_symbol->isThis()))
     ;
-#ifdef NO_COERCE_PRIMITIVES
+  // always overload assignment if the variable was initalized
   operator_equal = operator_equal || (lhs_symbol && lhs_symbol->defPoint->init);
-#endif
   if (operator_equal) {
     Sym *old_rval = rval;
     rval = new_sym();
@@ -1668,12 +1666,6 @@ gen_assignment(CallExpr *assign) {
   }
   if (!assign->get(1)->ainfo->sym)
     show_error("assignment to non-lvalue", assign->ainfo);
-#ifndef NO_COERCE_PRIMITIVES
-  Sym *type = lhs_symbol ? lhs_symbol->type->asymbol->sym->type : 0;
-  if (lhs_symbol && lhs_symbol->type && is_scalar_type(lhs_symbol->type) &&
-      !operator_equal && lhs_symbol->type != assign->get(2)->typeInfo())
-    rval = gen_coerce(rval, base_type(type), &assign->ainfo->code, assign->ainfo);
-#endif
   if1_move(if1, &assign->ainfo->code, rval, assign->ainfo->rval, assign->ainfo);
   if1_move(if1, &assign->ainfo->code, assign->ainfo->rval, assign->get(1)->ainfo->sym, assign->ainfo);
   return 0;
