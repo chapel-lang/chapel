@@ -44227,3 +44227,16 @@ Added files:
 	                                         test_infer_class2.future 
 	                                         test_infer_class2.good 
 
+---------------------------------------------------------------------------
+
+08/24/05 12:03:08 -- jplevyak
+
+Log message:
+	Fix a couple bugs in -t HTML output in the handling of
+	Literals... which are obsolete as soon as the other
+	checking gets done.  sigh.... what a waste.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/analysis/: analysis.cpp sym.cpp 
+
