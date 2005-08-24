@@ -19,13 +19,6 @@ linux and general regressions
   These are all caused by visibility problems with instantiated functions.
 
 
-[Error matching program output for memory/shannon/memmaxExceedsLineno]
-[Error matching program output for memory/shannon/memstatPrint]
-[Error matching program output for memory/shannon/printFinalMemStat]
-
-  I think the stdin, stdout, and stderr files are being allocated after 
-  the memstat variables are reset.
-
 ==========================
 linux valgrind regressions
 ==========================
