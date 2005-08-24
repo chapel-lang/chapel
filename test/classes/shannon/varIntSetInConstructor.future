@@ -1,0 +1,6 @@
+plevyak/deitz
+
+When the variable in the class is typed, the constructor
+correctly updates the value.  However, when the variable
+is not typed, only the first variable's value changes when 
+set in the constructor.
