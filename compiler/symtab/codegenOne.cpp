@@ -27,6 +27,7 @@ void CodegenOne::processSymbol(Symbol* sym) {
 
 
 void CodegenOne::run(Vec<ModuleSymbol*>* modules) {
+  bool oneUserModule = (ModuleSymbol::numUserModules(modules) == 1);
   SymtabTraversal::run(modules);
   FILE* outfile = openCFile("_chpl_header.h");
   forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {
@@ -48,10 +49,13 @@ void CodegenOne::run(Vec<ModuleSymbol*>* modules) {
     fnSymbol->codegenPrototype(outfile);
   }
   forv_Vec(VarSymbol, varSymbol, varSymbols) {
-    // Mangle global variable cname
-    varSymbol->cname =
-      glomstrings(3, varSymbol->parentScope->getModule()->cname,
-                  "_", varSymbol->cname);
+    ModuleSymbol* parentMod = varSymbol->parentScope->getModule();
+    if (parentMod->modtype != MOD_USER || !oneUserModule) {
+      // Mangle global variable cname if this is from a chapel module
+      // or there is more than one user module
+      varSymbol->cname =
+        glomstrings(3, parentMod->cname, "_", varSymbol->cname);
+    }
     varSymbol->codegenDef(outfile);
   }
   closeCFile(outfile);

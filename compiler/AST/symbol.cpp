@@ -1233,6 +1233,18 @@ bool ModuleSymbol::isFileModule(void) {
 }
 
 
+int ModuleSymbol::numUserModules(Vec<ModuleSymbol*>* moduleList) {
+  int numUserModules = 0;
+  forv_Vec(ModuleSymbol, mod, *moduleList) {
+    if (mod->modtype == MOD_USER) {
+      numUserModules++;
+    }
+  }
+
+  return numUserModules;
+}
+
+
 LabelSymbol::LabelSymbol(char* init_name) :
   Symbol(SYMBOL_LABEL, init_name, NULL)
 { }

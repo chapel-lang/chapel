@@ -254,6 +254,8 @@ class ModuleSymbol : public Symbol {
   void codegenDef(void);
   void createInitFn(void);
   bool isFileModule(void);
+
+  static int numUserModules(Vec<ModuleSymbol*>* moduleList);
 };
 
 
