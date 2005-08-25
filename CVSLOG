@@ -44510,3 +44510,203 @@ Log message:
 Modified files:
 	chapel/compiler/parser/: chapel.y 
 
+---------------------------------------------------------------------------
+
+08/25/05 14:50:14 -- bradc
+
+Log message:
+	This was meant to be a minor change that turned into a
+	cascading list of small but valuable modifications.
+	The high-level points are:
+	
+	* eliminated unnecessary string parameter temps (most
+	  notably for printing out strings, where each printed
+	  resulted in a mess of code).
+	
+	* improved our semantic checking of assigning to
+	  constants.  Previously, a number of cases related to
+	  classes, records, and blank parameter intents were
+	  slipping through the cracks.
+	
+	* with Mack's help, fixed a bug in
+	  createNestedFuncIterators.h and
+	  createNestedFunctions.cpp in which all arguments were
+	  being created with INTENT_BLANK.
+	
+	* some cosmetic changes related to strings and memory
+	  tracking
+	
+	* updated a bunch of tests related to these changes,
+	  and added some new ones to lock these features in.
+	
+	Two new regressions that revealed a pre-existing bug,
+	which change #3 above revealed.  Mack is working on
+	fixing these:
+	
+	       functions/deitz/nested/test_nested6.chpl
+	       functions/mjoyner/nested/mutual_recursive.chpl
+	
+	More details below...
+	
+	Passing strings
+	---------------
+	Found that we were inserting temps for parameters
+	passed by blank intent, which shouldn't be necessary
+	if the parameter truly isn't being assigned to.
+	Since most strings were passed by blank intent,
+	this got rid of most of the problems we were having.
+	
+	Assigning to Constants
+	----------------------
+	Strengthened the isConst() method on MemberAccesses to
+	handle a few cases in a specialized manner:
+	
+	- classes: see if the member is constant;  it doesn't
+	           matter whether or not the base expression
+	           is since it only refers to the reference.
+	- records, unions, value classes: if either the base
+	           expression or the member expression is
+	           constant, the expression is constant.
+	- sum types: if any of the types that make up the sum
+	           type are constant by the above definition,
+	           the expression is.
+	
+	Also, made INTENT_BLANK get treated as const for
+	ArgSymbols.
+	
+	Also, tightened up semantic check to apply to all
+	assignment operators, not just a naked = .
+	
+	Argument intents for nested functions and iterators
+	---------------------------------------------------
+	For arguments created to implement the passing of
+	state into a nested function, gave them INTENT_INOUT
+	so that modifications to the parameter would be
+	reflected at the callsite.
+	
+	For arguments that passed an iterator's indices into
+	a function, made these INTENT_BLANK to reflect the
+	fact that the user should not be able to modify
+	them.
+	
+	For iterator arguments that are made into function
+	arguments, inherited their intents from the original
+	arguments (previously they were all being set to
+	INTENT_BLANK).
+	
+	Cosmetic string changes
+	-----------------------
+	Changed init_string() from _glom_strings(1, "") to
+	a call to _chpl_calloc() so that we could generate
+	a specialized memory log message for this case.
+	Previously, it resulted in a lot of memory log
+	entries that were hard to identify as string
+	initializations since they looked like glom_strings
+	calls (and particularly useless ones :)
+	
+	Changed the string copy routine to not call
+	glomstrings when creating its allocation description,
+	because this in turn resulted in memory allocation
+	and deallocation and generally cluttered up the
+	memory log.
+	
+	Test changes
+	------------
+	* fixed my defaultParam and intents tests which were
+	  modifying parameters with blank intent, apparently
+	  because I was losing my mind when I wrote them.
+	
+	* made copies of a couple of the original defaultParam
+	  and intents tests to make sure that the error was
+	  properly reported now.
+	
+	* added a test of string intents, since they are
+	  implemented via a pointer, and could break in the
+	  future as people mess with argument temps and
+	  intents.
+	
+	* updated future for
+	  functions/jplevyak/intent-8-error.chpl, because it
+	  always takes me five minutes to remember why this
+	  is a future.
+	
+	* updated Shannon's memmaxExceeds test because it
+	  relied on a bunch of string temps to be created
+	  which I eliminated.  Switched the test to use
+	  class constructors to allocate too much memory.
+	
+	* did the same for memmaxExceedsLineno, because the
+	  line number we report is not helpful.
+	
+	* created a new test memmaxExceedsLineno2 that
+	  tests the line number feature using a long string,
+	  which keeps a good memmaxExceeds test in the system.
+	
+	* updated memstatPrint to also use a class constructor
+	  and string reallocation as a way to get interesting
+	  and predictable max and current string lengths.
+	
+	* similarly for printFinalMemStat, but also eliminated
+	  other types that resulted in dynamic allocation for
+	  fear that they wouldn't always and that this would
+	  become a fragile test.
+	
+	* added a test printMemTable2 that prints the memtable
+	  for some class constructors, since the original
+	  printMemTable has been out of commision.
+	
+	* added two new variations of Mack's nest_func_iterator2a
+	  test to lock in the changes we made to his code.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/traversals/: checkSemantics.cpp 
+	                             createNestedFuncIterators.cpp 
+	                             createNestedFuncIterators.h 
+	                             removeNestedFunctions.cpp 
+	chapel/runtime/include/: chpltypes.h 
+	chapel/runtime/src/: chpltypes.c 
+	chapel/test/: REGRESSIONS 
+	chapel/test/functions/bradc/: defaultParam.chpl 
+	                              defaultParam.good 
+	                              defaultParam2.chpl 
+	                              defaultParam2.good 
+	                              defaultParamWithReturn.chpl 
+	                              defaultParamWithReturn.good 
+	                              intents-classes2.chpl 
+	                              intents-classes2.good 
+	                              intents-classes3.chpl 
+	                              intents-classes3.good 
+	                              intents-classes4.chpl 
+	                              intents-classes4.good intents.chpl 
+	                              intents.good 
+	chapel/test/functions/jplevyak/: intent-8-error.future 
+	chapel/test/memory/shannon/: configVarFile.good 
+	                             memmaxExceeds.chpl 
+	                             memmaxExceedsLineno.chpl 
+	                             memmaxExceedsLineno.good 
+	                             memstatPrint.chpl memstatPrint.good 
+	                             printFinalMemStat.chpl 
+	                             printFinalMemStat.good 
+Added files:
+	chapel/test/classes/deitz/inherit/: .cvsignore 
+	chapel/test/functions/bradc/: intents-classes2-error.chpl 
+	                              intents-classes2-error.good 
+	                              intents-error.chpl 
+	                              intents-error.good 
+	                              intents-strings.chpl 
+	                              intents-strings.good 
+	chapel/test/memory/shannon/: memmaxExceedsLineno.future 
+	                             memmaxExceedsLineno2.chpl 
+	                             memmaxExceedsLineno2.compopts 
+	                             memmaxExceedsLineno2.execopts 
+	                             memmaxExceedsLineno2.good 
+	                             printMemTable2.chpl 
+	                             printMemTable2.execopts 
+	                             printMemTable2.good 
+	chapel/test/trivial/mjoyner/iterators/: 
+	                                        nest_func_iterator2a.chpl 
+	                                        nest_func_iterator2a.good 
+	                                        nest_func_iterator2b.chpl 
+	                                        nest_func_iterator2b.good 
+
