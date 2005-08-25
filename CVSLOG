@@ -44449,3 +44449,17 @@ Added files:
 	chapel/test/functions/jplevyak/: type_var_fun-1.future 
 	chapel/test/trivial/deitz/demo/: sample1.future sample1b.future 
 
+---------------------------------------------------------------------------
+
+08/25/05 11:11:18 -- deitz
+
+Log message:
+	Added a new future, for myself, that shows a problem with parsing of
+	statements, particularly var declaration statements.  I intend to fix
+	this soon but don't want to lose this.
+
+Added files:
+	chapel/test/trivial/deitz/: test_parse_stmt.chpl 
+	                            test_parse_stmt.future 
+	                            test_parse_stmt.good 
+
