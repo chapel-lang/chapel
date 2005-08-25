@@ -809,7 +809,7 @@ is_scalar_type_symbol(BaseAST *at) {
 }
 
 static inline int
-scalar_or_reference(Type *t) {
+is_scalar_or_reference_type(Type *t) {
   return is_scalar_type(t) || is_reference_type(t);
 }
 
@@ -941,8 +941,7 @@ build_type(Type *t, bool make_default = true) {
       t->asymbol->sym->alias = tt->defType->asymbol->sym;
       break;
     }
-    case TYPE_CLASS:
-    {
+    case TYPE_CLASS: {
       ClassType *tt = dynamic_cast<ClassType*>(t);
       t->asymbol->sym->type_kind = Type_RECORD;
       if (tt->classTag == CLASS_RECORD ||
@@ -1263,14 +1262,6 @@ constructor_name(Type *t) {
   return t->defaultConstructor->asymbol->sym;
 }
 
-static Sym *
-gen_coerce(Sym *s, Sym *type, Code **c, AST *ast) {
-  Sym *ret = new_sym();
-  Code *send = if1_send(if1, c, 3, 1, sym_coerce, type, s, ret);
-  send->ast = ast;
-  return ret;
-}
-
 static int
 gen_one_defexpr(VarSymbol *var, DefExpr *def) {
   Type *type = var->type;
@@ -1302,68 +1293,50 @@ gen_one_defexpr(VarSymbol *var, DefExpr *def) {
       s->must_implement = unalias_type(type->asymbol->sym);
   }
   Expr *init = def->init;
-  FnSymbol *f = def->parentStmt->parentFunction();
-  if (type != dtUnknown && s->is_var && !scalar_or_reference(type)) {
-    switch (type->astType) { 
-      case TYPE_VARIABLE:
-      case TYPE_META:
-        type = dtUnknown;  // as yet unknown
-        break;
-        // ruled out by conditionals above
-      case TYPE_ENUM:
-      case TYPE_SUM:
-      default:
-        fail("unexpected non-scalar non-reference Type");
-        goto Lstandard; 
-      case TYPE_USER:
-        goto Lstandard;
-      case TYPE_CLASS:
-      {
-        int is_this = f && f->_this == var;
-        if (!is_this)
-          goto Lstandard;
-        break;
-      }
+  switch (type->astType) { 
+    case TYPE_VARIABLE:
+    case TYPE_META:
+      type = dtUnknown;  // as yet unknown
+      break;
+    default:
+      break;
+  }
+  int no_default_init = var->noDefaultInit 
+    || (init && (is_reference_type(type) || (is_scalar_type(type) && type == init->typeInfo())));
+  if (!no_default_init) {
+    Sym *tmp = new_sym();
+    tmp->ast = ast;
+    if (def->exprType)
+      if1_gen(if1, &ast->code, def->exprType->ainfo->code);
+    Code *c = if1_send(if1, &ast->code, 3, 1, sym_primitive,
+                       chapel_defexpr_symbol, type->asymbol->sym, tmp);
+    if (def->exprType)
+      if1_add_send_arg(if1, c, def->exprType->ainfo->rval);
+    if1_move(if1, &ast->code, tmp, s, ast);
+    c->ast = ast;
+    if (SymExpr *e = dynamic_cast<SymExpr*>(init)) {
+      if (e->var == gNil)
+        init = NULL;
     }
-  } else if (!init || def->exprType) {
-    // THIS IS THE STANDARD CODE
-  Lstandard:
-    if (!var->noDefaultInit) {
-      Sym *tmp = new_sym();
-      tmp->ast = ast;
-      if (def->exprType)
-        if1_gen(if1, &ast->code, def->exprType->ainfo->code);
-      Code *c = if1_send(if1, &ast->code, 3, 1, sym_primitive,
-                         chapel_defexpr_symbol, type->asymbol->sym, tmp);
-      if (def->exprType)
-        if1_add_send_arg(if1, c, def->exprType->ainfo->rval);
-      if1_move(if1, &ast->code, tmp, s, ast);
-      c->ast = ast;
-    } else if (type == dtUnknown)
-      if1_move(if1, &ast->code, sym_nil, ast->sym, ast);
+      
   }
   if (init) {
-    // THIS IS THE STANDARD CODE
+    if1_gen(if1, &ast->code, init->ainfo->code);
     Sym *val = init->ainfo->rval;
-    if (is_scalar_type(type)) {
-      if1_gen(if1, &ast->code, init->ainfo->code);
-      if (type != init->typeInfo())
-        val = gen_coerce(val, base_type(type->asymbol->sym), &ast->code, ast);
+    if (no_default_init)
       if1_move(if1, &ast->code, val, ast->sym, ast);
-    } else if (!var->noDefaultInit && !is_reference_type(type) && type != dtUnknown) {
+    else {
       Sym *old_val = val;
       val = new_sym();
       val->ast = ast;
       if (f_equal_method) {
-        Code *c = if1_send(if1, &ast->code, 4, 1, make_symbol("="), method_token, ast->sym, old_val, val);
+        Code *c = if1_send(if1, &ast->code, 4, 1, make_symbol("="), method_token, 
+                           ast->sym, old_val, val);
         c->ast = ast;
       } else {
         Code *c = if1_send(if1, &ast->code, 3, 1, make_symbol("="), ast->sym, old_val, val);
         c->ast = ast;
       }
-      if1_gen(if1, &ast->code, init->ainfo->code);
-    } else {
-      if1_gen(if1, &ast->code, init->ainfo->code);
       if1_move(if1, &ast->code, val, ast->sym, ast);
     }
   }
@@ -2609,6 +2582,8 @@ chapel_defexpr(PNode *pn, EntrySet *es) {
           function_dispatch(pn, es, cavar, cs, args, Partial_NEVER);
         } else
           update_gen(result, make_AType(tt));
+      } else if (type == dtUnknown) {
+        update_gen(result, make_abstract_type(sym_null));
       } else
         fail("Type without defaultValue or defaultConstructor");
     }

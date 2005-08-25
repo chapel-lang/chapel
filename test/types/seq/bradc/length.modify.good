@@ -1,6 +1,6 @@
 length.modify.chpl:8: illegal call argument type '_methodToken' illegal: ( _methodTokenType ) 
 length.modify.chpl:8: illegal call argument type '_setterToken' illegal: ( _setterTokenType ) 
-length.modify.chpl:8: illegal call argument type 's' illegal: ( null seq seq ) 
+length.modify.chpl:8: illegal call argument type 's' illegal: ( seq seq ) 
 length.modify.chpl:8: unresolved call 'length'
 note: candidates are:
 _chpl_seq.chpl:33: length, _methodTokenDummy : _methodTokenType, this : seq

@@ -876,8 +876,13 @@ Matcher::find_best_matches(Vec<AVar *> &args, Vec<CreationSet *> &csargs,
     find_best_cs_match(csargs, app, matches, result, top_level);
   else {
     csargs.fill(iarg + 1);
-    forv_CreationSet(cs, *args.v[iarg]->out) if (cs) {
-      csargs.v[iarg] = cs;
+    if (args.v[iarg]->out->n) {
+      forv_CreationSet(cs, *args.v[iarg]->out) if (cs) {
+        csargs.v[iarg] = cs;
+        find_best_matches(args, csargs, matches, app, result, top_level, iarg + 1);
+      }
+    } else {
+      csargs.v[iarg] = make_abstract_type(sym_unknown)->v[0];
       find_best_matches(args, csargs, matches, app, result, top_level, iarg + 1);
     }
   }
