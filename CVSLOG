@@ -44433,3 +44433,19 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: htmlview.cpp 
 
+---------------------------------------------------------------------------
+
+08/25/05 10:06:52 -- jplevyak
+
+Log message:
+	Cleanup of handling of DefExpr.  The special cases are now clearer.
+	Removed coercions in DefExpr, and use overloaded = instead.
+	Improved handling of OUT parameters with untyped arguements.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp pattern.cpp 
+	chapel/test/types/seq/bradc/: length.modify.good 
+Added files:
+	chapel/test/functions/jplevyak/: type_var_fun-1.future 
+	chapel/test/trivial/deitz/demo/: sample1.future sample1b.future 
+
