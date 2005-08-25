@@ -5,6 +5,34 @@
 #define _num_h_
 
 #include "extern.h"
+#include "chpltypes.h"
+
+class Immediate { public:
+  unsigned int const_kind : 4;
+  unsigned int num_index : 3;
+  union {
+    bool v_bool;
+    uint8 v_uint8;
+    int8 v_int8;
+    uint16 v_uint16;
+    int16 v_int16;
+    uint32 v_uint32;
+    int32 v_int32;
+    uint64 v_uint64;
+    int64 v_int64;
+    float32 v_float32;
+    float64 v_float64;
+    complex32 v_complex32;
+    complex64 v_complex64;
+    char *v_string;
+  };
+  Immediate& operator=(const Immediate&);
+  Immediate();
+};
+
+enum IF1_num_kind {
+  IF1_NUM_KIND_NONE, IF1_NUM_KIND_UINT, IF1_NUM_KIND_INT, IF1_NUM_KIND_FLOAT, IF1_NUM_KIND_COMPLEX
+};
 
 enum IF1_int_type { 
   IF1_INT_TYPE_1, IF1_INT_TYPE_8, IF1_INT_TYPE_16, IF1_INT_TYPE_32, IF1_INT_TYPE_64, 
