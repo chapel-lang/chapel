@@ -44737,3 +44737,16 @@ Log message:
 Modified files:
 	chapel/compiler/include/: num.h sym.h 
 
+---------------------------------------------------------------------------
+
+08/25/05 16:44:56 -- shannon
+
+Log message:
+	Forgot to include the future, and committed the wrong
+	output as good.  Woops.
+
+Modified files:
+	chapel/test/classes/shannon/: overloadedFunction.good 
+Added files:
+	chapel/test/classes/shannon/: overloadedFunction.future 
+
