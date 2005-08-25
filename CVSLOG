@@ -44422,3 +44422,14 @@ Added files:
 	                                        nest_func_iterator7.chpl 
 	                                        nest_func_iterator7.good 
 
+---------------------------------------------------------------------------
+
+08/25/05 09:04:50 -- jplevyak
+
+Log message:
+	Add "calls" information to the HTML view (was disabled in the
+	move from ParanOps).
+
+Modified files:
+	chapel/compiler/traversals/: htmlview.cpp 
+
