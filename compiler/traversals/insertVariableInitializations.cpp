@@ -43,7 +43,7 @@ static void insert_config_init(Stmt* stmt, VarSymbol* var, Type* type) {
   args->insertAtTail(new StringLiteral(copystring(var->name)));
   args->insertAtTail(new StringLiteral(var->parentScope->symContext->name));
   CallExpr* call = new CallExpr(initConfigFn, args);
-  Expr* assign = new CallExpr(OP_GETSNORM, new SymExpr(var), init_expr->copy());
+  Expr* assign = new CallExpr(OP_GETSNORM, var, init_expr->copy());
   ExprStmt* assign_stmt = new ExprStmt(assign);
   CondStmt* cond_stmt = new CondStmt(call, assign_stmt);
   stmt->insertBefore(cond_stmt);
@@ -75,7 +75,7 @@ static void insert_basic_init(Stmt* stmt, VarSymbol* var, Type* type) {
       }
 #ifdef OVERLOADED_ASSIGNMENT_FIXED
       Expr *init_expr = new CallExpr(var->defPoint->initAssign.v[0],
-                                     new AList<Expr>(lhs, rhs));
+                                     lhs, rhs);
 #else
       Expr *init_expr = new CallExpr(OP_GETSNORM, lhs, rhs);
 #endif

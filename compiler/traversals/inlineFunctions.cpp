@@ -139,7 +139,7 @@ Map<BaseAST*,BaseAST*>* InlineFunctions::createFormalToActualArgMappings(CallExp
       //copy temp back to actual arg if formal arg out
     if (arg_intent_out)
       if (SymExpr* v = dynamic_cast<SymExpr*>(curr_actual))
-        fn_call->parentStmt->insertAfter(new ExprStmt(new CallExpr(OP_GETSNORM, new SymExpr(v->var), new SymExpr(temp_def->sym))));
+        fn_call->parentStmt->insertAfter(new ExprStmt(new CallExpr(OP_GETSNORM, v->var, temp_def->sym)));
     
 
     curr_actual = actual_args->next();

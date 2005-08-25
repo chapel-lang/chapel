@@ -27,12 +27,12 @@ static void handleBasicSequenceAppendPrependOperations(CallExpr* seqCat) {
     seqCat->replace(new CallExpr(
                      new MemberAccess(seqCat->get(2)->copy(),
                        new UnresolvedSymbol("_prepend")),
-                     new AList<Expr>(seqCat->get(1)->copy())));
+                     seqCat->get(1)->copy()));
   } else if (notSequenceType(rightType)) {
     seqCat->replace(new CallExpr(
                      new MemberAccess(seqCat->get(1)->copy(),
                        new UnresolvedSymbol("_append")),
-                     new AList<Expr>(seqCat->get(2)->copy())));
+                     seqCat->get(2)->copy()));
   }
 }
 
@@ -86,7 +86,7 @@ static void createTupleBaseType(int size) {
       new ArgSymbol(INTENT_PARAM, "index", dtInteger);
     AList<DefExpr>* formals = new AList<DefExpr>(new DefExpr(argSymbol));
     Expr* where = new CallExpr(OP_EQUAL, 
-                               new SymExpr(argSymbol),
+                               argSymbol,
                                new IntLiteral(i));
     Symboltable::continueFnDef(fn, formals, dtUnknown, true, where);
     AList<Stmt>* body = new AList<Stmt>(new ReturnStmt(new SymExpr(fields.v[i-1])));

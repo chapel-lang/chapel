@@ -1124,7 +1124,7 @@ atom:
 seq_expr:
   TSEQBEGIN expr_ls TSEQEND
     {
-      Expr* seqLiteral = new CallExpr("seq", new SymExpr(dtUnknown->symbol));
+      Expr* seqLiteral = new CallExpr("seq", dtUnknown->symbol);
       for_alist(Expr, element, $2) {
         element->remove();
         seqLiteral =
@@ -1132,7 +1132,7 @@ seq_expr:
             new MemberAccess(
               seqLiteral,
               new UnresolvedSymbol("_append_in_place")),
-            new AList<Expr>(element));
+            element);
       }
       $$ = seqLiteral;
     }

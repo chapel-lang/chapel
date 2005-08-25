@@ -231,17 +231,11 @@ class CallExpr : public Expr {
   AList<Expr>* argList;
   OpTag opTag;
 
-  CallExpr(Expr* initBase, AList<Expr>* initArgs);
-  CallExpr(Expr* initBase, Expr* arg1 = NULL, Expr* arg2 = NULL,
-           Expr* arg3 = NULL, Expr* arg4 = NULL);
-  CallExpr(OpTag initOpTag, Expr* arg1, Expr* arg2 = NULL);
-  CallExpr(char* name, AList<Expr>* initArgs);
-  CallExpr(char* name, Expr* arg1 = NULL, Expr* arg2 = NULL,
-           Expr* arg3 = NULL, Expr* arg4 = NULL);
-  CallExpr(Symbol* fn, AList<Expr>* initArgs);
-  CallExpr(Symbol* fn, Expr* arg1 = NULL, Expr* arg2 = NULL,
-           Expr* arg3 = NULL, Expr* arg4 = NULL);
-
+  CallExpr(BaseAST* base, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
+           BaseAST* arg3 = NULL, BaseAST* arg4 = NULL);
+  CallExpr(OpTag initOpTag, BaseAST* arg1, BaseAST* arg2 = NULL);
+  CallExpr(char* name, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
+           BaseAST* arg3 = NULL, BaseAST* arg4 = NULL);
   virtual void verify(void); 
   COPY_DEF(CallExpr);
 

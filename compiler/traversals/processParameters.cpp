@@ -52,7 +52,7 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
         stmt->insertBefore(new ExprStmt(tmp_def));
         actual->replace(new SymExpr(tmp));
         if (formal->requiresCopyBack()) {
-          stmt->insertAfter(new ExprStmt(new CallExpr(OP_GETSNORM, actual, new SymExpr(tmp))));
+          stmt->insertAfter(new ExprStmt(new CallExpr(OP_GETSNORM, actual, tmp)));
         }
       }
       formal_def = fn->formals->next();

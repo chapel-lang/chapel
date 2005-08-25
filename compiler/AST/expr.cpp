@@ -724,64 +724,65 @@ void MemberAccess::codegen(FILE* outfile) {
     }
 }
 
-CallExpr::CallExpr(Expr* initBase, AList<Expr>* initArgs) :
-  Expr(EXPR_CALL),
-  baseExpr(initBase),
-  argList(initArgs),
-  opTag(OP_NONE)
-{}
 
-
-CallExpr::CallExpr(Expr* initBase, Expr* arg1, Expr* arg2,
-                   Expr* arg3, Expr* arg4) :
-  Expr(EXPR_CALL),
-  baseExpr(initBase),
-  opTag(OP_NONE)
-{
-  argList = new AList<Expr>(arg1, arg2, arg3, arg4);
+static void callExprHelper(CallExpr* callExpr, BaseAST* arg) {
+  if (!arg)
+    return;
+  if (Symbol* a = dynamic_cast<Symbol*>(arg)) {
+    callExpr->argList->insertAtTail(new SymExpr(a));
+  } else if (Expr* a = dynamic_cast<Expr*>(arg)) {
+    callExpr->argList->insertAtTail(a);
+  } else if (AList<Expr>* a = dynamic_cast<AList<Expr>*>(arg)) {
+    callExpr->argList->insertAtTail(a);
+  } else {
+    INT_FATAL(callExpr, "Bad argList in CallExpr constructor");
+  }
 }
 
 
-CallExpr::CallExpr(OpTag initOpTag, Expr* arg1, Expr* arg2) :
+CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
+                   BaseAST* arg3, BaseAST* arg4) :
   Expr(EXPR_CALL),
-  baseExpr(new SymExpr(new UnresolvedSymbol(copystring(opChplString[initOpTag])))),
+  baseExpr(NULL),
+  argList(new AList<Expr>()),
+  opTag(OP_NONE)
+{
+  if (Symbol* b = dynamic_cast<Symbol*>(base)) {
+    baseExpr = new SymExpr(b);
+  } else if (Expr* b = dynamic_cast<Expr*>(base)) {
+    baseExpr = b;
+  } else {
+    INT_FATAL(this, "Bad baseExpr in CallExpr constructor");
+  }
+  callExprHelper(this, arg1);
+  callExprHelper(this, arg2);
+  callExprHelper(this, arg3);
+  callExprHelper(this, arg4);
+}
+
+
+CallExpr::CallExpr(OpTag initOpTag, BaseAST* arg1, BaseAST* arg2) :
+  Expr(EXPR_CALL),
+  baseExpr(new SymExpr(new UnresolvedSymbol(opChplString[initOpTag]))),
+  argList(new AList<Expr>()),
   opTag(initOpTag)
 {
-  argList = new AList<Expr>(arg1, arg2);
+  callExprHelper(this, arg1);
+  callExprHelper(this, arg2);
 }
 
 
-CallExpr::CallExpr(char* name, AList<Expr>* initArgs) :
+CallExpr::CallExpr(char* name, BaseAST* arg1, BaseAST* arg2,
+                   BaseAST* arg3, BaseAST* arg4) :
   Expr(EXPR_CALL),
-  baseExpr(new SymExpr(new UnresolvedSymbol(copystring(name)))),
-  argList(initArgs),
-  opTag(OP_NONE)
-{}
-
-
-CallExpr::CallExpr(char* name, Expr* arg1, Expr* arg2, Expr* arg3, Expr* arg4) :
-  Expr(EXPR_CALL),
-  baseExpr(new SymExpr(new UnresolvedSymbol(copystring(name)))),
+  baseExpr(new SymExpr(new UnresolvedSymbol(name))),
+  argList(new AList<Expr>()),
   opTag(OP_NONE)
 {
-  argList = new AList<Expr>(arg1, arg2, arg3, arg4);
-}
-
-
-CallExpr::CallExpr(Symbol* fn, AList<Expr>* initArgs) :
-  Expr(EXPR_CALL),
-  baseExpr(new SymExpr(fn)),
-  argList(initArgs),
-  opTag(OP_NONE)
-{}
-
-
-CallExpr::CallExpr(Symbol* fn, Expr* arg1, Expr* arg2, Expr* arg3, Expr* arg4) :
-  Expr(EXPR_CALL),
-  baseExpr(new SymExpr(fn)),
-  opTag(OP_NONE)
-{
-  argList = new AList<Expr>(arg1, arg2, arg3, arg4);
+  callExprHelper(this, arg1);
+  callExprHelper(this, arg2);
+  callExprHelper(this, arg3);
+  callExprHelper(this, arg4);
 }
 
 

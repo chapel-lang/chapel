@@ -17,7 +17,7 @@ handle_return_expr(Expr *e, Symbol *lvalue) {
                              handle_return_expr(ce->thenExpr, lvalue),
                              handle_return_expr(ce->elseExpr, lvalue));
     else
-      newStmt = new ExprStmt(new CallExpr(OP_GETSNORM, e, new SymExpr(lvalue)));
+      newStmt = new ExprStmt(new CallExpr(OP_GETSNORM, e, lvalue));
   return new AList<Stmt>(newStmt);
 }
 

@@ -54,7 +54,7 @@ void CreateNestedFuncIterators::postProcessStmt(Stmt* stmt) {
         fls->insertBefore(new ExprStmt(new DefExpr(func_it_sym)));
         
         //insert nested function created using the body of the iterator loop   
-        CallExpr* new_func_call = new CallExpr(new SymExpr(func_it_sym), paren_op->argList->copy());
+        CallExpr* new_func_call = new CallExpr(func_it_sym, paren_op->argList->copy());
         fls->insertBefore(new ExprStmt(new_func_call));
         
         //place body of for loop in a nested function definition

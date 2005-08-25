@@ -430,8 +430,7 @@ bool EnumType::hasDefaultWriteFunction(void) {
 
 
 AList<Stmt>* EnumType::buildDefaultWriteFunctionBody(ArgSymbol* arg) {
-  return new AList<Stmt>(new ExprStmt(new CallExpr("_EnumWriteStopgap",
-                                                   new SymExpr(arg))));
+  return new AList<Stmt>(new ExprStmt(new CallExpr("_EnumWriteStopgap", arg)));
 }
 
 
@@ -441,8 +440,7 @@ bool EnumType::hasDefaultReadFunction(void) {
 
 
 AList<Stmt>* EnumType::buildDefaultReadFunctionBody(ArgSymbol* arg) {
-  return new AList<Stmt>(new ExprStmt(new CallExpr("_EnumReadStopgap",
-                                                   new SymExpr(arg))));
+  return new AList<Stmt>(new ExprStmt(new CallExpr("_EnumReadStopgap", arg)));
 }
 
 
@@ -697,10 +695,7 @@ init_expr(Type *t) {
 void ClassType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this, 
                                           AList<DefExpr>* arguments) {
   if (classTag == CLASS_UNION) {
-    AList<Expr>* args = new AList<Expr>(new SymExpr(_this));
-    Expr* arg2 = new SymExpr(fieldSelector->constants->first()->sym);
-    args->insertAtTail(arg2);
-    CallExpr* init_function = new CallExpr(Symboltable::lookupInternal("_UNION_SET"), args);
+    CallExpr* init_function = new CallExpr(Symboltable::lookupInternal("_UNION_SET"), _this, fieldSelector->constants->first()->sym);
     ExprStmt* init_stmt = new ExprStmt(init_function);
     stmts->insertAtTail(init_stmt);
     return;
@@ -826,8 +821,7 @@ bool ClassType::hasDefaultWriteFunction(void) {
 
 AList<Stmt>* ClassType::buildDefaultWriteFunctionBody(ArgSymbol* arg) {
   if (classTag == CLASS_UNION) {
-    return new AList<Stmt>(new ExprStmt(new CallExpr("_UnionWriteStopgap",
-                                                     new SymExpr(arg))));
+    return new AList<Stmt>(new ExprStmt(new CallExpr("_UnionWriteStopgap", arg)));
   }
   AList<Stmt>* body = new AList<Stmt>();
   if (classTag == CLASS_CLASS) {
@@ -836,7 +830,7 @@ AList<Stmt>* ClassType::buildDefaultWriteFunctionBody(ArgSymbol* arg) {
     writeNil->insertAtTail(new ReturnStmt(NULL));
     BlockStmt* blockStmt = new BlockStmt(writeNil);
     Symbol* nil = Symboltable::lookupInternal("nil", SCOPE_INTRINSIC);
-    Expr* argIsNil = new CallExpr(OP_EQUAL, new SymExpr(arg), new SymExpr(nil));
+    Expr* argIsNil = new CallExpr(OP_EQUAL, arg, nil);
     body->insertAtTail(new CondStmt(argIsNil, blockStmt));
   }
 

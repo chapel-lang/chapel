@@ -20,8 +20,7 @@ class ReconstructIteratorsHelper : public Traversal {
             new MemberAccess(
               new SymExpr(seq),
               new UnresolvedSymbol("_yield")),
-            new AList<Expr>(
-              returnStmt->expr->copy()))));
+            returnStmt->expr->copy())));
       if (returnStmt->yield) {
         returnStmt->remove();
       } else {
@@ -42,7 +41,7 @@ void ReconstructIterators::processSymbol(Symbol* sym) {
   Symbol* elt_type = dtUnknown->symbol;
 
   Symbol* seq = new VarSymbol("_seq_result");
-  DefExpr* def = new DefExpr(seq, NULL, new CallExpr("seq", new SymExpr(elt_type)));
+  DefExpr* def = new DefExpr(seq, NULL, new CallExpr("seq", elt_type));
 
   fn->body->body->insertAtHead(new ExprStmt(def));
   TRAVERSE(fn->body, new ReconstructIteratorsHelper(seq), true);
