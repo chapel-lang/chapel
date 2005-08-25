@@ -1,3 +1,35 @@
+/*** Chapel Parser
+
+NOTES
+-----
+
+block_stmt and parsed_block_stmt
+
+In many cases, to facilitate parsing, a block statement or a statement
+that would cause no ambiguities if it too were in that context, are
+required.  For example,
+
+  function name(formals) : type ...
+  if (expr) ...
+  while (expr) ...
+
+Here "..." a block statement is required.  However, some other
+statements are also allowed.  These are marked by requiring, instead
+of a block statement, a parsed_block_stmt, which includes block_stmt.
+Parsed block statements include return statements so for example
+
+  function name(formals) : type return x;
+
+is allowed.
+
+Here is an example of the ambiguity:
+
+  while x(i);
+
+  Is this [while x] (i); or [while x(i)] ;
+
+***/
+
 %{
 
 #include <stdio.h>
@@ -150,12 +182,12 @@
 
 %type <pstmt> select_stmt label_stmt goto_stmt break_stmt continue_stmt
 %type <pstmt> usertype_decl type_decl fn_decl struct_decl mod_decl
-%type <pstmt> function_body_single_stmt empty_stmt
-%type <pstmt> assign_stmt if_stmt return_stmt for_stmt while_stmt enum_decl
+%type <pstmt> parsed_block_single_stmt empty_stmt
+%type <pstmt> assign_stmt if_stmt return_stmt for_stmt while_do_stmt do_while_stmt enum_decl
 %type <pstmt> stmt call_stmt decl typevar_decl
 %type <pstmtls> decl_ls stmt_ls modulebody program
 %type <pstmtls> var_decl var_decl_inner var_decl_inner_ls record_inner_var_ls
-%type <pblockstmt> function_body_stmt block_stmt
+%type <pblockstmt> parsed_block_stmt block_stmt
 %type <pwhenstmt> when_stmt
 %type <pwhenstmtls> when_stmt_ls
 
@@ -222,19 +254,23 @@ stmt_ls:
 ;
 
 
-function_body_single_stmt:
+parsed_block_single_stmt:
   empty_stmt
+| label_stmt
+| goto_stmt
+| break_stmt
+| continue_stmt
 | if_stmt
 | select_stmt
 | for_stmt
-| while_stmt
+| while_do_stmt
 | call_stmt
 | return_stmt
 ;
 
 
-function_body_stmt:
-  function_body_single_stmt
+parsed_block_stmt:
+  parsed_block_single_stmt
     { $$ = new BlockStmt($1); }
 | block_stmt
 ;
@@ -251,7 +287,8 @@ stmt:
 | if_stmt
 | select_stmt
 | for_stmt
-| while_stmt
+| while_do_stmt
+| do_while_stmt
 | call_stmt
 | lvalue TSEMI
     { $$ = new ExprStmt($1); }
@@ -345,7 +382,7 @@ for_loop_stmt_tag:
 
 
 for_stmt:
-  for_loop_stmt_tag nonempty_expr_ls TIN nonempty_expr_ls block_stmt
+  for_loop_stmt_tag nonempty_expr_ls TIN nonempty_expr_ls parsed_block_stmt
     {
       $$ = Symboltable::defineForLoop($1, $2, $4, $5);
     }
@@ -360,28 +397,32 @@ for_stmt:
 ;
 
 
-while_stmt:
+while_do_stmt:
 TWHILE expr TDO stmt
     {
       $$ = new WhileLoopStmt(true, $2, $4);
     }
-| TDO stmt TWHILE expr TSEMI
-    {
-      $$ = new WhileLoopStmt(false, $4, $2);
-    }
-| TWHILE expr block_stmt
+| TWHILE expr parsed_block_stmt
     {
       $$ = new WhileLoopStmt(true, $2, $3);
     }
 ;
 
 
+do_while_stmt:
+TDO stmt TWHILE expr TSEMI
+    {
+      $$ = new WhileLoopStmt(false, $4, $2);
+    }
+;
+
+
 if_stmt:
-  TIF expr block_stmt %prec TNOELSE
+  TIF expr parsed_block_stmt %prec TNOELSE
     { $$ = new CondStmt($2, $3); }
 | TIF expr TTHEN stmt %prec TNOELSE
     { $$ = new CondStmt($2, $4); }
-| TIF expr block_stmt TELSE stmt
+| TIF expr parsed_block_stmt TELSE stmt
     { $$ = new CondStmt($2, $3, $5); }
 | TIF expr TTHEN stmt TELSE stmt
     { $$ = new CondStmt($2, $4, $6); }
@@ -393,7 +434,7 @@ when_stmt:
     {
       $$ = new WhenStmt($2, $4);
     }
-| TWHEN nonempty_expr_ls block_stmt
+| TWHEN nonempty_expr_ls parsed_block_stmt
     {
       $$ = new WhenStmt($2, $3);
     }
@@ -443,7 +484,7 @@ mod_decl:
 
 
 fn_decl:
-  fn_tag function opt_formal_ls fnretref fnrettype where function_body_stmt
+  fn_tag function opt_formal_ls fnretref fnrettype where parsed_block_stmt
     {
       $2->fnClass = $1;
       if (!$3) {
