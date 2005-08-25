@@ -14,6 +14,6 @@ back at callsite, a is: 10
 back at callsite, b is: 301
 
 in callblank, x is: 400
-re-assigned to be: 401
+y assigned to be: 401
 back at callsite, a is: 10
 back at callsite, b is: 401

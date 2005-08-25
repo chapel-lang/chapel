@@ -33,10 +33,9 @@ function callinout(inout x: pair) {
 
 function callblank(x: pair) {
   writeln("in callblank, x is: ", x.a, " ", x.b);
-  x = pair();
   x.a = 14;
   x.b = 6.7;
-  writeln("re-assigned to be new instance: ", x.a, " ", x.b);
+  writeln("re-assigned to be: ", x.a, " ", x.b);
 }
 
 

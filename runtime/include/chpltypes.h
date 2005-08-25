@@ -20,8 +20,7 @@ typedef struct __complex128 {
 
 typedef char* _string;
 
-#define _init_string() \
-  _glom_strings(1, "")
+#define _init_string() _chpl_calloc(1, sizeof(char), "_init_string")
 
 void _copy_string(_string* lhs, _string rhs);
 char* _glom_strings(int numstrings, ...);

@@ -22,6 +22,8 @@ function callinout(inout x: integer) {
 
 function callblank(x: integer) {
   writeln("in callblank, x is: ", x);
+  x += 1;
+  writeln("re-assigned to be: ", x);
 }
 
 

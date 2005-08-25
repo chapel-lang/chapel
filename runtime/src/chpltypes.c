@@ -54,9 +54,7 @@ char* _glom_strings(int numstrings, ...) {
 
 
 void _copy_string(_string* lhs, _string rhs) {
-  char* description = _glom_strings(3, "string copy of \"", rhs, "\"");
-  *lhs = (char*)_chpl_realloc(*lhs, (strlen(rhs)+1), sizeof(char), description);
-  _chpl_free(description);
+  *lhs = (char*)_chpl_realloc(*lhs, (strlen(rhs)+1), sizeof(char), "string copy");
 
   strcpy(*lhs, rhs);
 }

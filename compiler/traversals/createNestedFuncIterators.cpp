@@ -94,7 +94,7 @@ DefExpr* CreateNestedFuncIterators::copyLoopBodyToNestedFuncDef(ForLoopStmt* fls
   //create a nested function definition
   static int id = 1; 
   char* func_name =  glomstrings(2, "_nested_func_", intstring(id++));
-  DefExpr* nested_func = copyFuncHelper(func_name, fls->indices, fls->innerStmt);
+  DefExpr* nested_func = copyFuncHelper(func_name, fls->indices, fls->innerStmt, false);
   iterator_sym->body->body->insertAtTail(new ExprStmt(nested_func));
   //to inline these nested function calls in the iterator, uncomment next line
   nested_func->sym->addPragma("inline");
@@ -105,7 +105,7 @@ DefExpr* CreateNestedFuncIterators::copyLoopBodyToNestedFuncDef(ForLoopStmt* fls
 FnSymbol* CreateNestedFuncIterators::copyIteratorDef(FnSymbol* old_iterator_sym) {
   static int it_id = 1;
   char* func_name = glomstrings(2, old_iterator_sym->name, intstring(it_id++));
-  DefExpr* func_def = copyFuncHelper(func_name, old_iterator_sym->formals, old_iterator_sym->body);
+  DefExpr* func_def = copyFuncHelper(func_name, old_iterator_sym->formals, old_iterator_sym->body, true);
   FnSymbol* fn_sym = dynamic_cast<FnSymbol*>(func_def->sym); 
   fn_sym->copyPragmas(old_iterator_sym->defPoint->parentStmt->pragmas);
 
@@ -113,7 +113,7 @@ FnSymbol* CreateNestedFuncIterators::copyIteratorDef(FnSymbol* old_iterator_sym)
   return fn_sym;
 }
 
-DefExpr* CreateNestedFuncIterators::copyFuncHelper(char* new_name, AList<DefExpr>* copy_formals, BlockStmt* copy_body) {
+DefExpr* CreateNestedFuncIterators::copyFuncHelper(char* new_name, AList<DefExpr>* copy_formals, BlockStmt* copy_body, bool inheritIntents) {
   //create a function definition
   FnSymbol* fn = Symboltable::startFnDef(new FnSymbol(new_name));
   AList<DefExpr>* func_formals = new AList<DefExpr>();
@@ -121,7 +121,15 @@ DefExpr* CreateNestedFuncIterators::copyFuncHelper(char* new_name, AList<DefExpr
   //copy formals for new function definition
   Map<BaseAST*,BaseAST*>* update_map = new Map<BaseAST*,BaseAST*>();
   for_alist(DefExpr, def, copy_formals) {
-    ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, def->sym->name, def->sym->type);
+    intentTag intent = INTENT_BLANK;
+    if (inheritIntents) {
+      ArgSymbol* arg = dynamic_cast<ArgSymbol*>(def->sym);
+      if (arg == NULL) {
+        INT_FATAL(def->sym, "unexpected element in copy_formals list");
+      }
+      intent = arg->intent;
+    }
+    ArgSymbol* arg = new ArgSymbol(intent, def->sym->name, def->sym->type);
     func_formals->insertAtTail(new DefExpr(arg));
     update_map->put(def->sym,arg);
   }

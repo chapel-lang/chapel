@@ -14,9 +14,25 @@
 linux and general regressions
 =============================
 
-[Error matching compiler output for types/type_variables/deitz/test_typevar_record6]
+functions/deitz/nested/test_nested6.chpl:
+functions/mjoyner/nested/mutual_recursive.chpl:
 
-  These are all caused by visibility problems with instantiated functions.
+  when dealing with mutually recursive nested functions, Mack inserts
+  actual parameters that referred to a non-local variable rather than
+  the local actual parameters (mjoyner)
+
+classes/shannon/varIntTypedSetInConstructor
+functions/deitz/test_named_default_gotcha
+
+  These tests bop in and out of failure at random due to a 
+  nondeterministic bug in call-by-parameter-name passing (???)
+
+
+trivial/mjoyner/seq/seq_index1.chpl
+
+  This seems to have started regressing with one of John's two
+  morning 08/25/2005 checkins (jplevyak)
+
 
 
 ==========================

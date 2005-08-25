@@ -1,4 +1,5 @@
 class C {
+  var t: integer;
   var u: integer;
   var v: integer;
   var w: integer;
@@ -8,5 +9,6 @@ class C {
 }
 
 var c = C();
+var d = C();
 
-writeln("Shouldn't get here if --memmax is less than 48");
+_chpl_memtest_printMemTable();

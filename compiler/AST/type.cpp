@@ -181,6 +181,9 @@ bool Type::requiresCParamTmp(intentTag intent) {
   case INTENT_BLANK:
     INT_FATAL(this, "should never have reached INTENT_BLANK case");
   case INTENT_CONST:
+    // if something's passed by const it won't be modified and
+    // won't need a temp?
+    return false;
   case INTENT_IN:
     // if these are implemented using C's pass-by-value, then C
     // effectively puts in the temp for us

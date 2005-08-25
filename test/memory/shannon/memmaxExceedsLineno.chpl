@@ -1,5 +1,12 @@
-var m = 5;
-var n = 2;
+class C {
+  var u: integer;
+  var v: integer;
+  var w: integer;
+  var x: integer;
+  var y: integer;
+  var z: integer;
+}
 
-m *= n;
-writeln("m = ", m);
+var c = C();
+
+writeln("Shouldn't get here if --memmax is less than 48");

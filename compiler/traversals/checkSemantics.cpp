@@ -5,7 +5,7 @@
 
 void CheckSemantics::preProcessExpr(Expr* expr) {
   if (CallExpr* parenOpExpr = dynamic_cast<CallExpr*>(expr)) {
-    if (parenOpExpr->opTag >= OP_GETSNORM) {
+    if (OP_ISASSIGNOP(parenOpExpr->opTag)) {
       if (parenOpExpr->get(1)->isConst() || parenOpExpr->get(1)->isParam()) {
         USR_FATAL(parenOpExpr, "Assigning to a constant expression");
       }

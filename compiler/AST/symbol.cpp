@@ -415,8 +415,7 @@ bool ArgSymbol::requiresCTmp(void) {
 
 
 bool ArgSymbol::isConst(void) {
-  // TODO: need to also handle case of INTENT_BLANK for scalar types
-  return (intent == INTENT_CONST); 
+  return (intent == INTENT_CONST || intent == INTENT_BLANK); 
 }
 
 

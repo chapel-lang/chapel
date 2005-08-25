@@ -687,8 +687,33 @@ Type* MemberAccess::typeInfo(void) {
 }
 
 
+static bool memberAccessConstHelper(Type* baseType, MemberAccess* expr) {
+  ClassType* classtype = dynamic_cast<ClassType*>(baseType);
+  
+  if (classtype) {
+    bool isTrueClass = (classtype->classTag == CLASS_CLASS);
+    if (isTrueClass) {
+      return expr->member->isConst();
+    } else {
+      return (expr->base->isConst() || expr->member->isConst());
+    }
+  } else if (SumType* sumtype = dynamic_cast<SumType*>(baseType)) {
+    forv_Vec(Type, type, sumtype->components) {
+      if (memberAccessConstHelper(type, expr)) {
+        return true;
+      }
+    }
+    return false;
+  } else {
+    INT_FATAL(expr, "Unexpected base expression type in MemberAccess");
+    return false;
+  }
+}
+
+
 bool MemberAccess::isConst(void) {
-  return (base->isConst() && member->isConst());
+  Type* baseType = base->typeInfo();
+  return memberAccessConstHelper(baseType, this);
 }
 
 

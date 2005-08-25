@@ -74,15 +74,6 @@ function callblank(x: pair) {
   } else {
     writeln("a and x differ on the way in");
   }
-  x = pair();
-  x.a = 14;
-  x.b = 6.7;
-  if (x == a) {
-    writeln("a and x are the same on the way out");
-  } else {
-    writeln("a and x differ on the way out");
-  }
-  writeln("re-assigned to be new instance: ", x.a, " ", x.b);
 }
 
 

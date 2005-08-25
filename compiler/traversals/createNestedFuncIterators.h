@@ -14,7 +14,7 @@ public :
   DefExpr* copyLoopBodyToNestedFuncDef(ForLoopStmt* fls, FnSymbol* iterator_sym);
   FnSymbol* copyIteratorDef(FnSymbol* old_iterato1r_sym);
   AList<Expr>* getIteratorCallsHelper(AList<Expr>* iterator_list, AList<Expr>* user_iterator_list);
-  DefExpr* copyFuncHelper(char* new_name, AList<DefExpr>* copy_formals, BlockStmt* copy_body);
+  DefExpr* copyFuncHelper(char* new_name, AList<DefExpr>* copy_formals, BlockStmt* copy_body, bool inheritIntents);
 };
 
 #endif

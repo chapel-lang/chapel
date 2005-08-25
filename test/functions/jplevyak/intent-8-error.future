@@ -1,2 +1,7 @@
-bradc
-(need to work on intents more)
+???
+
+Need to put in a semantic check (maybe in processParameters) that
+ensures that out and inout arguments are passed expressions with
+lvalues.  Ideally, this could be implemented using a nice isLValue()
+method on the expression class hierarchy.
+
