@@ -44492,3 +44492,21 @@ Modified files:
 	                             insertVariableInitializations.cpp 
 	                             processParameters.cpp 
 
+---------------------------------------------------------------------------
+
+08/25/05 14:24:31 -- deitz
+
+Log message:
+	Added support for allowing a set of statements (called
+	parsed_block_stmt in the parser) to be used whereever a block
+	statement used to be required.  This was already done for function
+	bodies, but was not done for other things.  For example
+	
+	  while (expr) block_stmt;
+	
+	used to require a block_stmt, but now works for the same set of
+	statements that are allowed in function bodies.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+
