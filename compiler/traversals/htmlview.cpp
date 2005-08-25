@@ -198,7 +198,7 @@ void HtmlView::postProcessExpr(Expr* expr) {
   } else {
     write(")");
   }
-  if (show_analysis_info && expr->parentSymbol && expr->astType != EXPR_CALL) {
+  if (show_analysis_info && expr->parentSymbol) {
     Vec<FnSymbol *> fns;
     call_info(expr, fns, CALL_INFO_FIND_ALL);
     if (fns.n) {
