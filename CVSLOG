@@ -44463,3 +44463,32 @@ Added files:
 	                            test_parse_stmt.future 
 	                            test_parse_stmt.good 
 
+---------------------------------------------------------------------------
+
+08/25/05 13:33:20 -- deitz
+
+Log message:
+	Improved CallExpr constructor.  You can now construct a new CallExpr
+	with a baseExpr as the first argument and up to four arguments as the
+	2nd through 5th arguments.  The baseExpr can be an Expr, a string, or
+	an opTag.  If it is a string, it is converted into a SymExpr of an
+	UnresolvedSymbol of the string.  If it is an opTag, it is an operator
+	CallExpr.  The arguments can be a list of Exprs, a single Expr, or a
+	Symbol.  If it is a Symbol it is stuck in a SymExpr.
+	
+	Simplified some CallExpr constructor calls.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp type.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: insertOutParameterInitializations.cpp 
+	                         reconstructIterators.cpp 
+	chapel/compiler/traversals/: buildLValueFunctions.cpp 
+	                             createNestedFuncIterators.cpp 
+	                             inlineFunctions.cpp 
+	                             insertFunctionTemps.cpp 
+	                             insertLiteralTemps.cpp 
+	                             insertVariableInitializations.cpp 
+	                             processParameters.cpp 
+
