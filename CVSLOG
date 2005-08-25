@@ -44710,3 +44710,19 @@ Added files:
 	                                        nest_func_iterator2b.chpl 
 	                                        nest_func_iterator2b.good 
 
+---------------------------------------------------------------------------
+
+08/25/05 16:36:38 -- shannon
+
+Log message:
+	Added a future for an overloaded function call where
+	the first function has a single float argument and the
+	second function has three arguments, the third an integer.
+	
+	When this function is called with a single integer argument,
+	a call to the float function is made.
+
+Added files:
+	chapel/test/classes/shannon/: overloadedFunction.chpl 
+	                              overloadedFunction.good 
+
