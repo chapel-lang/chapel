@@ -44726,3 +44726,14 @@ Added files:
 	chapel/test/classes/shannon/: overloadedFunction.chpl 
 	                              overloadedFunction.good 
 
+---------------------------------------------------------------------------
+
+08/25/05 16:39:07 -- jplevyak
+
+Log message:
+	Move "Immediate" class to include/num.h to support
+	binary constant Symbols.
+
+Modified files:
+	chapel/compiler/include/: num.h sym.h 
+
