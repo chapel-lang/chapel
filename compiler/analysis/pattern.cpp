@@ -486,7 +486,7 @@ Matcher::build_Match(Fun *f, Match *m) {
   match_map.put(f, mm);
   // actuals
   form_MPositionAVar(x, m->actuals)
-    mm->actuals.put(to_actual(x->key, m), x->value);
+    mm->actuals.put(x->key, x->value);
   mm->partial = m->partial;
 }
 
@@ -540,6 +540,50 @@ class DefaultCacheHashFns  {
 };
 class DefaultCache : public gc { public: HashMap<Vec<MPosition*> *, DefaultCacheHashFns, Fun *> cache; };
 
+// using the default map, compute a mapping from old formals to new formals
+// then use this map to update the actuals_to_formals and formals_to_actuals maps
+static void
+fixup_actual_formal_maps_for_defaults(Match *m) {
+  Map<MPosition *, MPosition *> formal_to_formal;
+  forv_MPosition(p, m->fun->positional_arg_positions) {
+    // if that formal position (or any above) nolonger exists, skip it
+    MPosition tmp(*p), newp;
+    for (int i = p->pos.n; i <= 0; i--) {
+      tmp.pos.n = i;
+      tmp.cp = 0; // not cannonical
+      if (m->default_args.in(cannonicalize_mposition(tmp)))
+        goto Lskip;
+    }
+    // at each level, count those before which nolonger exist and
+    // subtract from newp
+    for (int i = 0; i < p->pos.n; i++) {
+      int offset = 0;
+      tmp.copy(*p);
+      tmp.pos.n = i + 1;
+      for (int j = 0; j < Position2int(p->pos.v[i]); j++) {
+        tmp.pos.v[i] = int2Position(j + 1);
+        tmp.cp = 0; // not cannonical
+        if (m->default_args.in(cannonicalize_mposition(tmp)))
+          offset++;
+      }
+      newp.push(int2Position(Position2int(p->pos.v[i]) - offset));
+    }
+    formal_to_formal.put(p, cannonicalize_mposition(newp));
+  Lskip:;
+  }
+  Map<MPosition *, MPosition *> a2f, f2a;
+  a2f.move(m->actual_to_formal_position);
+  f2a.move(m->formal_to_actual_position);
+  form_MPositionMPosition(x, a2f) {
+    if (MPosition *y = formal_to_formal.get(x->value))
+      m->actual_to_formal_position.put(x->key, y);
+  }
+  form_MPositionMPosition(x, f2a) {
+    if (MPosition *y = formal_to_formal.get(x->key))
+      m->formal_to_actual_position.put(y, x->value);
+  }
+}
+
 Fun *
 Matcher::build(Match *m, Vec<Fun *> &matches) {
   Fun *f = m->fun, *orig_f = f;
@@ -560,6 +604,7 @@ Matcher::build(Match *m, Vec<Fun *> &matches) {
       f = if1->callback->default_wrapper(m);
       c->cache.put(new Vec<MPosition*>(m->default_args), f);
     }
+    fixup_actual_formal_maps_for_defaults(m);
     m->fun = f;
   }
   if (m->coercion_substitutions.n) {
