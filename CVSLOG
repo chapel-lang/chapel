@@ -44779,3 +44779,21 @@ Modified files:
 	chapel/compiler/parser/: chapel.y 
 	chapel/compiler/symtab/: symtab.cpp 
 
+---------------------------------------------------------------------------
+
+08/26/05 08:35:28 -- jplevyak
+
+Log message:
+	Fix bug which determined whether or not an order wrapper
+	should be constructed.   I believe this hides (and therefore
+	seems to resolve) some regressions because unnecessary order
+	wrappers (which are not handled correctly because of a separate
+	bug related to visibility) are no longer created.  Also,
+	the .good file for test_defaultnamed3 seems to have gotten corrupted,
+	so I fixed it.
+
+Modified files:
+	chapel/compiler/analysis/: pattern.cpp 
+	chapel/test/functions/deitz/defaultnamed/: 
+	                                           test_defaultnamed3.good 
+
