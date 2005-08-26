@@ -44881,3 +44881,16 @@ Modified files:
 	chapel/compiler/traversals/: removeNestedFunctions.cpp 
 	                             removeNestedFunctions.h 
 
+---------------------------------------------------------------------------
+
+08/26/05 11:39:44 -- deitz
+
+Log message:
+	Robustified the CondStmt constructor to take either a BlockStmt, Stmt,
+	or AList<Stmt> to initialize its thenStmt and elseStmt.  The elseStmt
+	is optional.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp 
+	chapel/compiler/include/: stmt.h 
+
