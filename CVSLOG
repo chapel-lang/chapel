@@ -44750,3 +44750,21 @@ Modified files:
 Added files:
 	chapel/test/classes/shannon/: overloadedFunction.future 
 
+---------------------------------------------------------------------------
+
+08/25/05 17:20:55 -- deitz
+
+Log message:
+	Rearranged chapel.y and started to add documentation, in preparation
+	for statement parsing change.
+	
+	Added support for statement-level expressions, evaluated for side
+	effects, and a test case.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp 
+	chapel/compiler/parser/: chapel.y 
+Added files:
+	chapel/test/trivial/deitz/: test_expr_stmt.chpl 
+	                            test_expr_stmt.good 
+
