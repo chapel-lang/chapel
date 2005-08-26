@@ -44797,3 +44797,16 @@ Modified files:
 	chapel/test/functions/deitz/defaultnamed/: 
 	                                           test_defaultnamed3.good 
 
+---------------------------------------------------------------------------
+
+08/26/05 08:44:33 -- jplevyak
+
+Log message:
+	Remove some .futures for tests which succeed and seem to do so for
+	the right reasons (test_class_trial5a is succeeding because of blind luck).
+
+Removed files:
+	chapel/test/arrays/deitz/: test_array_class_trial1.future 
+	                           test_array_class_trial2.future 
+	                           test_array_class_trial4a.future 
+
