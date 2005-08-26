@@ -44858,3 +44858,15 @@ Log message:
 Removed files:
 	chapel/test/classes/shannon/: varIntSetInConstructor.future 
 
+---------------------------------------------------------------------------
+
+08/26/05 10:33:26 -- jplevyak
+
+Log message:
+	Update .good file and remove .future
+
+Modified files:
+	chapel/test/functions/deitz/default/: test_default4-error.good 
+Removed files:
+	chapel/test/functions/deitz/default/: test_default4-error.future 
+
