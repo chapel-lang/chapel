@@ -513,44 +513,33 @@ void ForLoopStmt::codegenStmt(FILE* outfile) {
 }
 
 
-CondStmt::CondStmt(Expr* iCondExpr, BlockStmt* iThenStmt, BlockStmt* iElseStmt) :
+CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
   Stmt(STMT_COND),
   condExpr(iCondExpr),
-  thenStmt(iThenStmt),
-  elseStmt(iElseStmt)
-{ }
-
-
-CondStmt::CondStmt(Expr* iCondExpr, Stmt* iThenStmt, BlockStmt* iElseStmt) :
-  Stmt(STMT_COND),
-  condExpr(iCondExpr),
-  thenStmt(new BlockStmt(iThenStmt)),
-  elseStmt(iElseStmt)
-{ }
-
-
-CondStmt::CondStmt(Expr* iCondExpr, Stmt* iThenStmt, Stmt* iElseStmt) :
-  Stmt(STMT_COND),
-  condExpr(iCondExpr),
-  thenStmt(new BlockStmt(iThenStmt)),
-  elseStmt(new BlockStmt(iElseStmt))
-{ }
-
-
-CondStmt::CondStmt(Expr* iCondExpr, AList<Stmt>* iThenStmt, BlockStmt* iElseStmt) :
-  Stmt(STMT_COND),
-  condExpr(iCondExpr),
-  thenStmt(new BlockStmt(iThenStmt)),
-  elseStmt(iElseStmt)
-{ }
-
-
-CondStmt::CondStmt(Expr* iCondExpr, AList<Stmt>* iThenStmt, AList<Stmt>* iElseStmt) :
-  Stmt(STMT_COND),
-  condExpr(iCondExpr),
-  thenStmt(new BlockStmt(iThenStmt)),
-  elseStmt(new BlockStmt(iElseStmt))
-{ }
+  thenStmt(NULL),
+  elseStmt(NULL)
+{
+  if (BlockStmt* s = dynamic_cast<BlockStmt*>(iThenStmt)) {
+    thenStmt = s;
+  } else if (Stmt* s = dynamic_cast<Stmt*>(iThenStmt)) {
+    thenStmt = new BlockStmt(s);
+  } else if (AList<Stmt>* s = dynamic_cast<AList<Stmt>*>(iThenStmt)) {
+    thenStmt = new BlockStmt(s);
+  } else {
+    INT_FATAL(iThenStmt, "Bad then-stmt passed to CondStmt constructor");
+  }
+  if (!iElseStmt)
+    return;
+  if (BlockStmt* s = dynamic_cast<BlockStmt*>(iElseStmt)) {
+    elseStmt = s;
+  } else if (Stmt* s = dynamic_cast<Stmt*>(iElseStmt)) {
+    elseStmt = new BlockStmt(s);
+  } else if (AList<Stmt>* s = dynamic_cast<AList<Stmt>*>(iElseStmt)) {
+    elseStmt = new BlockStmt(s);
+  } else {
+    INT_FATAL(iElseStmt, "Bad else-stmt passed to CondStmt constructor");
+  }
+}
 
 
 void CondStmt::verify() {

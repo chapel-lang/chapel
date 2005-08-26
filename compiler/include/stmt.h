@@ -145,11 +145,7 @@ class CondStmt : public Stmt {
   BlockStmt* thenStmt;
   BlockStmt* elseStmt;
 
-  CondStmt(Expr* iCondExpr, BlockStmt* iThenStmt, BlockStmt* iElseStmt = NULL);
-  CondStmt(Expr* iCondExpr, Stmt* iThenStmt, BlockStmt* iElseStmt = NULL);
-  CondStmt(Expr* iCondExpr, Stmt* iThenStmt, Stmt* iElseStmt);
-  CondStmt(Expr* iCondExpr, AList<Stmt>* iThenStmt, BlockStmt* iElseStmt = NULL);
-  CondStmt(Expr* iCondExpr, AList<Stmt>* iThenStmt, AList<Stmt>* iElseStmt);
+  CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt = NULL);
   virtual void verify(void);
   COPY_DEF(CondStmt);
   void addElseStmt(BlockStmt* init_elseStmt);
