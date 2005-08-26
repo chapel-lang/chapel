@@ -18,4 +18,3 @@ function main() {
   d.doit;
   writeln(d);
 }
-o
