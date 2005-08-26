@@ -44870,3 +44870,14 @@ Modified files:
 Removed files:
 	chapel/test/functions/deitz/default/: test_default4-error.future 
 
+---------------------------------------------------------------------------
+
+08/26/05 10:48:48 -- mjoyner
+
+Log message:
+	Fixed mutual recursive nested function bug.  The traversal now uses an iterative approach to determine the enclosing function variable uses for each nested function.
+
+Modified files:
+	chapel/compiler/traversals/: removeNestedFunctions.cpp 
+	                             removeNestedFunctions.h 
+
