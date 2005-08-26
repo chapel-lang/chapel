@@ -572,12 +572,11 @@ Matcher::build(Match *m, Vec<Fun *> &matches) {
     m->fun = f;
   }
   int order_change = 0;
-  form_MPositionMPosition(p, m->formal_to_actual_position) {
-    if (p->key->is_positional() && p->value->is_positional()) {
-      if (p->key != p->value)
-        order_change = 1;
-      m->order_substitutions.put(p->key, p->value);
-    }
+  forv_MPosition(p, m->fun->positional_arg_positions) {
+    MPosition *acp = to_actual(p, m);
+    if (p != acp)
+      order_change = 1;
+    m->order_substitutions.put(p, acp);
   }
   if (order_change) {
     OrderCache *c = f->order_cache;
