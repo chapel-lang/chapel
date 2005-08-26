@@ -44904,3 +44904,14 @@ Log message:
 Modified files:
 	chapel/test/functions/deitz/: test_return1.future 
 
+---------------------------------------------------------------------------
+
+08/26/05 15:16:51 -- jplevyak
+
+Log message:
+	Fixup the actual->formal map after default wrapper construction.
+	This fixes some .futures if the CALLER_CACHE is disable.
+
+Modified files:
+	chapel/compiler/analysis/: pattern.cpp 
+
