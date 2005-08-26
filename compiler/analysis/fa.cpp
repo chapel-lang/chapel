@@ -610,11 +610,11 @@ same_eq_classes(Setters *s, Setters *ss) {
   if (!s || !ss)
     return 0;
   Vec<Setters *> sc1, sc2;
-  forv_AVar(av, *s) {
+  forv_AVar(av, *s) if (av) {
     assert(av->setter_class);
     sc1.set_add(av->setter_class);
   }
-  forv_AVar(av, *ss) {
+  forv_AVar(av, *ss) if (av) {
     assert(av->setter_class);
     sc2.set_add(av->setter_class);
   }
@@ -3071,8 +3071,10 @@ split_css(Vec<AVar *> &astarters) {
       cs->defs.set_difference(compatible_set, new_defs);
       if (new_defs.n) {
         cs->defs.move(new_defs);
+        cs->defs.set_to_vec();
         CreationSet *new_cs = new CreationSet(cs);
         new_cs->defs.move(compatible_set);
+        new_cs->defs.set_to_vec();
         forv_AVar(v, new_cs->defs)
           v->creation_set = new_cs;
         new_cs->split = cs;

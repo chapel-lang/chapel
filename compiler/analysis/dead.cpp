@@ -99,7 +99,7 @@ mark_live_avars(FA *fa) {
                 mark_live_avar(av);
             }
           }
-          forv_CreationSet(cs, *av->out) {
+          forv_CreationSet(cs, *av->out) if (cs) {
             forv_AVar(iv, cs->vars) {
               if (!iv->is_dead)
                 mark_live_avar(av);

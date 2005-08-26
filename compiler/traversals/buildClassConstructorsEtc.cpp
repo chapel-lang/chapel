@@ -140,7 +140,7 @@ static void build_setters_and_getters(ClassType* structType) {
     args->insertAtTail(new DefExpr(new ArgSymbol(INTENT_REF, "_setterTokenDummy", 
                                                    setterTypeSymbol->definition)));
 
-    ArgSymbol* setter_arg = new ArgSymbol(INTENT_BLANK, "_arg", tmp->type);
+    ArgSymbol* setter_arg = new ArgSymbol(INTENT_BLANK, "_arg", dtUnknown);
     args->insertAtTail(new DefExpr(setter_arg));
     Symboltable::continueFnDef(setter_fn, args, dtVoid);
     Expr* setter_lhs = new MemberAccess(new SymExpr(setter_this), tmp);
