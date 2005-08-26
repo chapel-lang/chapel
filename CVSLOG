@@ -44894,3 +44894,13 @@ Modified files:
 	chapel/compiler/AST/: stmt.cpp 
 	chapel/compiler/include/: stmt.h 
 
+---------------------------------------------------------------------------
+
+08/26/05 14:13:44 -- jplevyak
+
+Log message:
+	update .future to reflect e-mail discussion
+
+Modified files:
+	chapel/test/functions/deitz/: test_return1.future 
+
