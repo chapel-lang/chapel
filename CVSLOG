@@ -44826,3 +44826,15 @@ Modified files:
 Removed files:
 	chapel/test/classes/bradc/: declClassType.future 
 
+---------------------------------------------------------------------------
+
+08/26/05 10:14:01 -- jplevyak
+
+Log message:
+	Fix typo in test case and remove .future.
+
+Modified files:
+	chapel/test/classes/bradc/: declClassType1c.chpl 
+Removed files:
+	chapel/test/classes/bradc/: declClassType1c.future 
+
