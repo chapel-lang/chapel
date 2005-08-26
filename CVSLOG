@@ -44768,3 +44768,14 @@ Added files:
 	chapel/test/trivial/deitz/: test_expr_stmt.chpl 
 	                            test_expr_stmt.good 
 
+---------------------------------------------------------------------------
+
+08/25/05 17:30:43 -- deitz
+
+Log message:
+	Cleaned parsing of type variable formal arguments.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: symtab.cpp 
+
