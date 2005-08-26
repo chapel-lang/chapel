@@ -582,19 +582,6 @@ formal:
       $$ = Symboltable::defineParam($1, $3, $4, $5);
       $$->sym->copyPragmas(*$2);
     }
-| TTYPE pragma_ls identifier opt_var_type opt_init_expr
-    {
-      DefExpr* defExpr = Symboltable::defineParam(INTENT_TYPE, $3, $4, $5);
-      defExpr->sym->copyPragmas(*$2);
-      ArgSymbol* ps = dynamic_cast<ArgSymbol*>(defExpr->sym);
-      char *name = glomstrings(2, "__type_variable_", ps->name);
-      VariableType* new_type = new VariableType(getMetaType(NULL));
-      TypeSymbol* new_type_symbol = new TypeSymbol(name, new_type);
-      new_type->addSymbol(new_type_symbol);
-      ps->type = getMetaType(NULL);
-      ps->variableTypeSymbol = new_type_symbol;
-      $$ = defExpr;
-    }
 | TLP formal_ls TRP
     {
       ClassType *t = new ClassType(CLASS_RECORD);
@@ -1342,6 +1329,8 @@ formal_tag:
     { $$ = INTENT_CONST; }
 | TPARAM
     { $$ = INTENT_PARAM; }
+| TTYPE
+    { $$ = INTENT_TYPE; }
 ;
 
 

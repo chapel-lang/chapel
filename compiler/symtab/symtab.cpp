@@ -448,8 +448,15 @@ DefExpr* Symboltable::finishModuleDef(ModuleSymbol* mod, AList<Stmt>* def) {
 DefExpr*
 Symboltable::defineParam(intentTag tag, char* ident, Expr* type, Expr* init) {
   ArgSymbol* argSymbol = new ArgSymbol(tag, ident, dtUnknown);
-  Expr* userInit = init ? init : NULL;
-  return new DefExpr(argSymbol, userInit, type);
+  if (tag == INTENT_TYPE) {
+    char *name = glomstrings(2, "__type_variable_", argSymbol->name);
+    VariableType* new_type = new VariableType(getMetaType(NULL));
+    TypeSymbol* new_type_symbol = new TypeSymbol(name, new_type);
+    new_type->addSymbol(new_type_symbol);
+    argSymbol->type = getMetaType(NULL);
+    argSymbol->variableTypeSymbol = new_type_symbol;
+  }
+  return new DefExpr(argSymbol, init, type);
 }
 
 
