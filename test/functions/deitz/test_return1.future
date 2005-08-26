@@ -1,3 +1,4 @@
-jplevyak
+deitz
 
-function does not type, is this because not all paths have a return?
+This function should result in some sort of error
+reported.
