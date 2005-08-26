@@ -44838,3 +44838,13 @@ Modified files:
 Removed files:
 	chapel/test/classes/bradc/: declClassType1c.future 
 
+---------------------------------------------------------------------------
+
+08/26/05 10:18:48 -- jplevyak
+
+Log message:
+	Remove a .future for a test which is working (for the right reasons).
+
+Removed files:
+	chapel/test/classes/deitz/: test_type_in_class3.future 
+
