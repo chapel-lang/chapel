@@ -44848,3 +44848,13 @@ Log message:
 Removed files:
 	chapel/test/classes/deitz/: test_type_in_class3.future 
 
+---------------------------------------------------------------------------
+
+08/26/05 10:20:39 -- jplevyak
+
+Log message:
+	Removed a future.  Test is working.
+
+Removed files:
+	chapel/test/classes/shannon/: varIntSetInConstructor.future 
+
