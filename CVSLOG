@@ -44810,3 +44810,19 @@ Removed files:
 	                           test_array_class_trial2.future 
 	                           test_array_class_trial4a.future 
 
+---------------------------------------------------------------------------
+
+08/26/05 10:11:47 -- jplevyak
+
+Log message:
+	Setters now do not require the RHS to be of the same type as the
+	instance variable.  The coercion goes on inside the setter, and
+	besides, this was giving problems when trying to set class reference
+	typed things to NULL (which).
+
+Modified files:
+	chapel/compiler/analysis/: dead.cpp fa.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+Removed files:
+	chapel/test/classes/bradc/: declClassType.future 
+
