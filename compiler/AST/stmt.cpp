@@ -858,7 +858,7 @@ GotoStmt::GotoStmt(gotoType init_goto_type) :
 
 GotoStmt::GotoStmt(gotoType init_goto_type, char* init_label) :
   Stmt(STMT_GOTO),
-  label(new UnresolvedSymbol(init_label)),
+  label(init_label ? new UnresolvedSymbol(init_label) : NULL),
   goto_type(init_goto_type)
 {
 }

@@ -1,19 +1,30 @@
 /*** Chapel Parser
 
+***********
+CONVENTIONS
+***********
+
+opt -- optional
+ls -- list, as in a list of expressions or statements
+expr -- expression
+stmt -- statement
+type -- type, parsed as an expression
+
+*****
 NOTES
------
+*****
 
-block_stmt and parsed_block_stmt
+What is parsed_block_stmt?
 
-In many cases, to facilitate parsing, a block statement or a statement
-that would cause no ambiguities if it too were in that context, are
-required.  For example,
+  In many cases, to facilitate parsing, a block statement or a
+statement that would cause no ambiguities if it too were in that
+context, are required.  For example,
 
   function name(formals) : type ...
   if (expr) ...
   while (expr) ...
 
-Here "..." a block statement is required.  However, some other
+  Here "..." a block statement is required.  However, some other
 statements are also allowed.  These are marked by requiring, instead
 of a block statement, a parsed_block_stmt, which includes block_stmt.
 Parsed block statements include return statements so for example
@@ -26,9 +37,10 @@ Here is an example of the ambiguity:
 
   while x(i);
 
-  Is this [while x] (i); or [while x(i)] ;
+Is this "while x"(i); or "while x(i)";?
 
 ***/
+
 
 %{
 
@@ -156,14 +168,14 @@ Here is an example of the ambiguity:
 %token TLCBR
 %token TRCBR
 
-%type <vt> config_static
-%type <ct> var_const_param
+%type <vt> var_state_tag
+%type <ct> var_const_tag
  
 %type <ot> assign_op_tag
 %type <pt> formal_tag
 %type <ft> fn_tag
 %type <blktype> atomic_cobegin
-%type <flstag> for_loop_stmt_tag
+%type <flstag> for_stmt_tag
 
 %type <boolval> fnretref
 
@@ -171,30 +183,31 @@ Here is an example of the ambiguity:
 %type <pch> pragma
 %type <vpch> pragma_ls
 
-%type <pexpr> parenop_expr memberaccess_expr non_tuple_lvalue lvalue
-%type <pexpr> tuple_paren_expr atom expr expr_list_item
-%type <pexpr> literal range seq_expr where whereexpr
-%type <pexpr> tuple_multiplier variable_expr
-%type <pexpr> reduction opt_init_expr assign_expr if_expr
-%type <pexprls> expr_ls nonempty_expr_ls tuple_inner_type_ls opt_inherit_ls
-%type <pdefexpr> formal enum_item
-%type <pdefexprls> formal_ls opt_formal_ls enum_ls
-
 %type <pstmt> select_stmt label_stmt goto_stmt break_stmt continue_stmt
-%type <pstmt> usertype_decl type_decl fn_decl struct_decl mod_decl
+%type <pstmt> typedef_decl_stmt fn_decl_stmt class_decl_stmt mod_decl_stmt
 %type <pstmt> parsed_block_single_stmt empty_stmt
-%type <pstmt> assign_stmt if_stmt return_stmt for_stmt while_do_stmt do_while_stmt enum_decl
-%type <pstmt> stmt call_stmt decl typevar_decl
-%type <pstmtls> decl_ls stmt_ls modulebody program
-%type <pstmtls> var_decl var_decl_inner var_decl_inner_ls record_inner_var_ls
+%type <pstmt> assign_stmt if_stmt return_stmt yield_stmt for_stmt while_do_stmt do_while_stmt enum_decl_stmt
+%type <pstmt> stmt call_stmt expr_stmt decl_stmt typevar_decl_stmt
+%type <pstmt> with_stmt use_stmt where_stmt
+%type <pstmtls> var_decl_stmt var_decl_inner var_decl_inner_ls record_inner_type_ls
+%type <pstmtls> decl_stmt_ls stmt_ls program
 %type <pblockstmt> parsed_block_stmt block_stmt
 %type <pwhenstmt> when_stmt
 %type <pwhenstmtls> when_stmt_ls
 
+%type <pexpr> parenop_expr memberaccess_expr non_tuple_lvalue lvalue
+%type <pexpr> tuple_paren_expr atom expr expr_list_item opt_expr
+%type <pexpr> literal range seq_expr where whereexpr
+%type <pexpr> tuple_multiplier variable_expr top_level_expr
+%type <pexpr> reduction opt_init_expr if_expr
+%type <pexprls> expr_ls nonempty_expr_ls tuple_inner_type_ls opt_inherit_expr_ls
+%type <pdefexpr> formal enum_item
+%type <pdefexprls> formal_ls opt_formal_ls enum_ls
+
 %type <pexpr> opt_var_type var_type fnrettype
 %type <pexpr> type record_tuple_type
 %type <pexpr> record_tuple_inner_type
-%type <ptype> class_record_union
+%type <ptype> class_tag
 
 %type <pfnsym> function
 
@@ -228,14 +241,12 @@ Here is an example of the ambiguity:
 %% 
 
 
-program: modulebody
+program: stmt_ls
     { yystmtlist = $$; }
 ;
 
 
-modulebody: 
-  stmt_ls
-;
+/** STATEMENTS ***************************************************************/
 
 
 stmt_ls:
@@ -246,11 +257,35 @@ stmt_ls:
       $3->copyPragmas(*$2);
       $1->insertAtTail($3);
     }
-| stmt_ls pragma_ls var_decl
+| stmt_ls pragma_ls var_decl_stmt
     { 
       $3->copyPragmas(*$2);
       $1->insertAtTail($3);
     }
+;
+
+
+stmt:
+  empty_stmt
+| label_stmt
+| goto_stmt
+| break_stmt
+| continue_stmt
+| call_stmt
+| expr_stmt
+| if_stmt
+| for_stmt
+| while_do_stmt
+| do_while_stmt
+| select_stmt
+| return_stmt
+| yield_stmt
+| assign_stmt
+| block_stmt
+    { $$ = $1; }
+| decl_stmt
+| error
+    { printf("syntax error"); exit(1); }
 ;
 
 
@@ -260,12 +295,13 @@ parsed_block_single_stmt:
 | goto_stmt
 | break_stmt
 | continue_stmt
+| call_stmt
 | if_stmt
 | select_stmt
 | for_stmt
 | while_do_stmt
-| call_stmt
 | return_stmt
+| yield_stmt
 ;
 
 
@@ -276,27 +312,9 @@ parsed_block_stmt:
 ;
 
 
-stmt:
-  empty_stmt
-| label_stmt
-| goto_stmt
-| break_stmt
-| continue_stmt
-| decl
-| assign_stmt
-| if_stmt
-| select_stmt
-| for_stmt
-| while_do_stmt
-| do_while_stmt
-| call_stmt
-| lvalue TSEMI
-    { $$ = new ExprStmt($1); }
-| return_stmt
-| block_stmt
-    { $$ = $1; }
-| error
-    { printf("syntax error"); exit(1); }
+empty_stmt:
+  TSEMI
+    { $$ = new BlockStmt(); }
 ;
 
 
@@ -313,18 +331,14 @@ goto_stmt:
 
 
 break_stmt:
-  TBREAK identifier TSEMI
+  TBREAK opt_identifier TSEMI
     { $$ = new GotoStmt(goto_break, $2); }
-| TBREAK TSEMI
-    { $$ = new GotoStmt(goto_break); }
 ;
 
 
 continue_stmt:
-  TCONTINUE identifier TSEMI
+  TCONTINUE opt_identifier TSEMI
     { $$ = new GotoStmt(goto_continue, $2); }
-| TCONTINUE TSEMI
-    { $$ = new GotoStmt(goto_continue); }
 ;
 
 
@@ -334,59 +348,30 @@ call_stmt:
 ;
 
 
-atomic_cobegin:
-    { $$ = BLOCK_NORMAL; }
-| TATOMIC
-    { $$ = BLOCK_ATOMIC; }
-| TCOBEGIN
-    { $$ = BLOCK_COBEGIN; }
+expr_stmt:
+  top_level_expr TSEMI
+    { $$ = new ExprStmt($1); }
 ;
 
 
-block_stmt:
-  atomic_cobegin TLCBR stmt_ls TRCBR
-    {
-      $$ = new BlockStmt($3, $1);
-    }
-;
-
-
-empty_stmt:
-  TSEMI
-    {
-      $$ = new BlockStmt();
-    }
-;
-
-
-return_stmt:
-  TRETURN TSEMI
-    { $$ = new ReturnStmt(NULL); }
-| TRETURN expr TSEMI
-    { $$ = new ReturnStmt($2); }
-| TYIELD TSEMI
-    { $$ = new ReturnStmt(NULL, true); }
-| TYIELD expr TSEMI
-    { $$ = new ReturnStmt($2, true); }
-;
-
-
-for_loop_stmt_tag:
-  TFOR
-    { $$ = FORLOOPSTMT_FOR; }
-| TORDERED TFORALL
-    { $$ = FORLOOPSTMT_ORDEREDFORALL; }
-| TFORALL
-    { $$ = FORLOOPSTMT_FORALL; }
+if_stmt:
+  TIF expr parsed_block_stmt            %prec TNOELSE
+    { $$ = new CondStmt($2, $3); }
+| TIF expr TTHEN stmt                   %prec TNOELSE
+    { $$ = new CondStmt($2, $4); }
+| TIF expr parsed_block_stmt TELSE stmt
+    { $$ = new CondStmt($2, $3, $5); }
+| TIF expr TTHEN stmt TELSE stmt
+    { $$ = new CondStmt($2, $4, $6); }
 ;
 
 
 for_stmt:
-  for_loop_stmt_tag nonempty_expr_ls TIN nonempty_expr_ls parsed_block_stmt
+  for_stmt_tag nonempty_expr_ls TIN nonempty_expr_ls parsed_block_stmt
     {
       $$ = Symboltable::defineForLoop($1, $2, $4, $5);
     }
-| for_loop_stmt_tag nonempty_expr_ls TIN nonempty_expr_ls TDO stmt
+| for_stmt_tag nonempty_expr_ls TIN nonempty_expr_ls TDO stmt
     { 
       $$ = Symboltable::defineForLoop($1, $2, $4, new BlockStmt($6));
     }
@@ -417,16 +402,24 @@ TDO stmt TWHILE expr TSEMI
 ;
 
 
-if_stmt:
-  TIF expr parsed_block_stmt %prec TNOELSE
-    { $$ = new CondStmt($2, $3); }
-| TIF expr TTHEN stmt %prec TNOELSE
-    { $$ = new CondStmt($2, $4); }
-| TIF expr parsed_block_stmt TELSE stmt
-    { $$ = new CondStmt($2, $3, $5); }
-| TIF expr TTHEN stmt TELSE stmt
-    { $$ = new CondStmt($2, $4, $6); }
+select_stmt:
+  TSELECT expr TLCBR when_stmt_ls TRCBR
+    {
+      $$ = new SelectStmt($2, $4);
+    }
 ;
+
+
+when_stmt_ls:
+  /* empty */
+    {
+      $$ = new AList<WhenStmt>();
+    }
+| when_stmt_ls when_stmt
+    {
+      $1->insertAtTail($2);
+    }
+; 
 
 
 when_stmt:
@@ -445,45 +438,97 @@ when_stmt:
 ;
 
 
-when_stmt_ls:
-  /* empty */
-    {
-      $$ = new AList<WhenStmt>();
-    }
-| when_stmt_ls when_stmt
-    {
-      $1->insertAtTail($2);
-    }
-; 
+return_stmt:
+  TRETURN opt_expr TSEMI
+    { $$ = new ReturnStmt($2); }
+;
 
 
-select_stmt:
-  TSELECT expr TLCBR when_stmt_ls TRCBR
-    {
-      $$ = new SelectStmt($2, $4);
-    }
+yield_stmt:
+  TYIELD opt_expr TSEMI
+    { $$ = new ReturnStmt($2, true); }
 ;
 
 
 assign_stmt:
-  assign_expr TSEMI
-    { $$ = new ExprStmt($1); }
+  lvalue assign_op_tag expr TSEMI
+    {
+      $$ = new ExprStmt(new CallExpr($2, $1, $3));
+    }
 ;
 
 
-mod_decl:
+block_stmt:
+  atomic_cobegin TLCBR stmt_ls TRCBR
+    {
+      $$ = new BlockStmt($3, $1);
+    }
+;
+
+
+/** DECLARATION STATEMENTS ***************************************************/
+
+
+decl_stmt_ls:
+  /* empty */
+    { $$ = new AList<Stmt>(); }
+| decl_stmt_ls pragma_ls decl_stmt
+    {
+      $3->copyPragmas(*$2);
+      $1->insertAtTail($3);
+    }
+| decl_stmt_ls pragma_ls var_decl_stmt
+    {
+      $3->copyPragmas(*$2);
+      $1->insertAtTail($3);
+    }
+;
+
+
+decl_stmt:
+  with_stmt
+| use_stmt
+| where_stmt
+| mod_decl_stmt
+| fn_decl_stmt
+| class_decl_stmt
+| enum_decl_stmt
+| typedef_decl_stmt
+| typevar_decl_stmt
+;
+
+
+with_stmt:
+  TWITH lvalue TSEMI
+    { $$ = new ExprStmt(new ImportExpr(IMPORT_WITH, $2)); }
+;
+
+
+use_stmt:
+  TUSE lvalue TSEMI
+    { $$ = new ExprStmt(new ImportExpr(IMPORT_USE, $2)); }
+;
+
+
+where_stmt:
+  TWHERE whereexpr TSEMI
+    { $$ = new ExprStmt($2); }
+;
+
+
+mod_decl_stmt:
   TMODULE identifier
     {
       $<pmodsym>$ = Symboltable::startModuleDef($2);
     }
-                     TLCBR modulebody TRCBR
+                     TLCBR stmt_ls TRCBR
     {
       $$ = new ExprStmt(Symboltable::finishModuleDef($<pmodsym>3, $5));
     }
 ;
 
 
-fn_decl:
+fn_decl_stmt:
   fn_tag function opt_formal_ls fnretref fnrettype where parsed_block_stmt
     {
       $2->fnClass = $1;
@@ -498,289 +543,36 @@ fn_decl:
 ;
 
 
-enum_item:
-  identifier
-    {
-      $$ = new DefExpr(new EnumSymbol($1));
-    }
-| identifier TASSIGN expr
-    {
-      $$ = new DefExpr(new EnumSymbol($1), $3);
-    }
+fn_tag:
+  TFUNCTION
+    { $$ = FN_FUNCTION; }
+| TCONSTRUCTOR
+    { $$ = FN_CONSTRUCTOR; }
+| TITERATOR
+    { $$ = FN_ITERATOR; }
 ;
 
 
-enum_ls:
-  enum_item
+opt_formal_ls:
+  { $$ = NULL; }
+| TLP formal_ls TRP
+  { $$ = $2; }
+;
+
+
+formal_ls:
+  /* empty */
+    {
+      $$ = new AList<DefExpr>();
+    }
+| formal
     {
       $$ = new AList<DefExpr>($1);
     }
-| enum_ls TCOMMA enum_item
-    {
-      $1->insertAtTail($3);
-      $$ = $1;
-    }
-;
-
-
-enum_decl:
-  TENUM pragma_ls identifier TLCBR enum_ls TRCBR TSEMI
-    {
-      EnumType* pdt = new EnumType($5);
-      TypeSymbol* pst = new TypeSymbol($3, pdt);
-      pst->copyPragmas(*$2);
-      pdt->addSymbol(pst);
-      DefExpr* def_expr = new DefExpr(pst);
-      $$ = new ExprStmt(def_expr);
-    }
-;
-
-
-class_record_union:
-  TCLASS
-    { $$ = new ClassType(CLASS_CLASS); }
-| TRECORD
-    { $$ = new ClassType(CLASS_RECORD); }
-| TUNION
-    { $$ = new ClassType(CLASS_UNION); }
-;
-
-
-opt_inherit_ls:
-  /* empty */
-    {
-      $$ = new AList<Expr>();
-    }
-| TCOLON nonempty_expr_ls
-    {
-      $$ = $2;
-    }
-;
-
-
-struct_decl:
-  class_record_union pragma_ls identifier opt_inherit_ls TLCBR decl_ls TRCBR
-    {
-      DefExpr* def = Symboltable::defineStructType($3, $1, $6);
-      def->sym->copyPragmas(*$2);
-      dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(def->sym)->definition)->inherits = $4;
-      $$ = new ExprStmt(def);
-    }
-;
-
-
-var_decl_inner:
-  identifier opt_var_type opt_init_expr
-    {
-      $$ = new AList<Stmt>(new ExprStmt(new DefExpr(new VarSymbol($1), $3, $2)));
-    }
-;
-
-
-var_decl_inner_ls:
-  var_decl_inner
-| var_decl_inner_ls TCOMMA var_decl_inner
-    {
-      $1->insertAtTail($3);
-      $$ = $1;
-    }
-;
-
-
-var_decl:
-  config_static var_const_param var_decl_inner_ls TSEMI
-    {
-      setVarSymbolAttributes($3, $1, $2);
-      $$ = $3;
-    }
-;
-
-type_decl:
-  usertype_decl
-| typevar_decl
-| enum_decl
-| struct_decl
-;
-
-
-usertype_decl:
-  TTYPE pragma_ls identifier TCOLON type opt_init_expr TSEMI
-    {
-      UserType* newtype = new UserType($5, $6);
-      TypeSymbol* typeSym = new TypeSymbol($3, newtype);
-      typeSym->copyPragmas(*$2);
-      newtype->addSymbol(typeSym);
-      DefExpr* def_expr = new DefExpr(typeSym);
-      $$ = new ExprStmt(def_expr);
-    }
-;
-
-
-typevar_decl:
-  TTYPE pragma_ls identifier TSEMI
-    {
-      VariableType* new_type = new VariableType(getMetaType(0));
-      TypeSymbol* new_symbol = new TypeSymbol($3, new_type);
-      new_symbol->copyPragmas(*$2);
-      new_type->addSymbol(new_symbol);
-      DefExpr* def_expr = new DefExpr(new_symbol);
-      $$ = new ExprStmt(def_expr);
-    }
-;
-
-
-decl:
-  TWITH lvalue TSEMI
-    { $$ = new ExprStmt(new ImportExpr(IMPORT_WITH, $2)); }
-| TUSE lvalue TSEMI
-    { $$ = new ExprStmt(new ImportExpr(IMPORT_USE, $2)); }
-| TWHERE whereexpr TSEMI
-    { $$ = new ExprStmt($2); }
-| type_decl
-| fn_decl
-| mod_decl
-;
-
-
-decl_ls:
-  /* empty */
-    { $$ = new AList<Stmt>(); }
-| decl_ls pragma_ls decl
-    {
-      $3->copyPragmas(*$2);
-      $1->insertAtTail($3);
-      $$ = $1;
-    }
-| decl_ls pragma_ls var_decl
-    {
-      $3->copyPragmas(*$2);
-      $1->insertAtTail($3);
-      $$ = $1;
-    }
-;
-
-
-config_static:
-  /* nothing */
-    { $$ = VAR_NORMAL; }
-| TCONFIG
-    { $$ = VAR_CONFIG; }
-| TSTATIC
-    { $$ = VAR_STATE; }
-;
-
-
-var_const_param:
-  TVAR
-    { $$ = VAR_VAR; }
-| TCONST
-    { $$ = VAR_CONST; }
-| TPARAM
-    { $$ = VAR_PARAM; }
-;
-        
-
-record_tuple_inner_type:
-  record_inner_var_ls TRP
-    {
-      $$ = Symboltable::defineStructType(glomstrings(2, "_anon_record", intstring(anon_record_uid++)), new ClassType(CLASS_RECORD), $1);
-    }
-| tuple_inner_type_ls TRP
-    {
-      char *tupleName = glomstrings(2, "_tuple", intstring($1->length()));
-      $$ = new CallExpr(tupleName, $1);
-    }
-;
-
-
-record_tuple_type:
-  TRECORD TLCBR decl_ls TRCBR
-    {
-      $$ = Symboltable::defineStructType(glomstrings(2, "_anon_record", intstring(anon_record_uid++)), new ClassType(CLASS_RECORD), $3);
-    }
-| TLP record_tuple_inner_type
-    {
-      $$ = $2;
-    }
-;
-
-
-var_type:
-  TCOLON type
-    {
-      $$ = $2;
-    }
-| TLIKE expr
-    {
-      $$ = $2;
-    }
-;
-
-
-fnrettype:
-  /* empty */
-    { $$ = NULL; }
-| TCOLON type
-    { $$ = $2; }
-;
-
-
-opt_var_type:
-  /* nothing */
-    {
-      $$ = NULL;
-    }
-| var_type
-;
-
-
-opt_init_expr:
-  /* nothing */
-    { $$ = NULL; }
-| TASSIGN expr
-    { $$ = $2; }
-;
-
-
-tuple_inner_type_ls:
-  lvalue
-    {
-      $$ = new AList<Expr>($1);
-    }
-| tuple_inner_type_ls TCOMMA lvalue
+| formal_ls TCOMMA formal
     { 
       $1->insertAtTail($3);
-      $$ = $1;
     }
-;
-
-
-record_inner_var_ls:
-  identifier var_type opt_init_expr
-    {
-      $$ = new AList<Stmt>(new ExprStmt(new DefExpr(new VarSymbol($1), $3, $2)));
-    }
-| record_inner_var_ls TCOMMA identifier var_type
-    {
-      $1->insertAtTail(new ExprStmt(new DefExpr(new VarSymbol($3), NULL, $4)));
-      $$ = $1;
-    }
-;
-
-
-formal_tag:
-  /* nothing */
-    { $$ = INTENT_BLANK; }
-| TIN
-    { $$ = INTENT_IN; }
-| TINOUT
-    { $$ = INTENT_INOUT; }
-| TOUT
-    { $$ = INTENT_OUT; }
-| TCONST
-    { $$ = INTENT_CONST; }
-| TPARAM
-    { $$ = INTENT_PARAM; }
 ;
 
 
@@ -822,29 +614,6 @@ formal:
     }
 ;
 
-
-formal_ls:
-  /* empty */
-    {
-      $$ = new AList<DefExpr>();
-    }
-| formal
-    {
-      $$ = new AList<DefExpr>($1);
-    }
-| formal_ls TCOMMA formal
-    { 
-      $1->insertAtTail($3);
-      $$ = $1;
-    }
-;
-
-
-opt_formal_ls:
-  { $$ = NULL; }
-| TLP formal_ls TRP
-  { $$ = $2; }
-;
 
 fnretref:
   /* empty */
@@ -918,15 +687,6 @@ fname:
   { $$ = "by"; } 
   ;
 
-fn_tag:
-  TFUNCTION
-    { $$ = FN_FUNCTION; }
-| TCONSTRUCTOR
-    { $$ = FN_CONSTRUCTOR; }
-| TITERATOR
-    { $$ = FN_ITERATOR; }
-;
-
 where:
   /* empty */
     { $$ = NULL; }
@@ -984,7 +744,7 @@ whereexpr:
     { $$ = new CallExpr(OP_SUBTYPE, $1, $3); }
 | whereexpr TNOTCOLON whereexpr
     { $$ = new CallExpr(OP_NOTSUBTYPE, $1, $3); }
-| class_record_union pragma_ls opt_identifier TLCBR decl_ls TRCBR
+| class_tag pragma_ls opt_identifier TLCBR decl_stmt_ls TRCBR
     { $$ = NULL; }
 ;
 
@@ -1003,6 +763,237 @@ function:
     {
       $$ = new FnSymbol($4, new TypeSymbol($1, NULL));
       $$->isSetter = true;
+    }
+;
+
+
+class_decl_stmt:
+  class_tag pragma_ls identifier opt_inherit_expr_ls TLCBR decl_stmt_ls TRCBR
+    {
+      DefExpr* def = Symboltable::defineStructType($3, $1, $6);
+      def->sym->copyPragmas(*$2);
+      dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(def->sym)->definition)->inherits = $4;
+      $$ = new ExprStmt(def);
+    }
+;
+
+
+class_tag:
+  TCLASS
+    { $$ = new ClassType(CLASS_CLASS); }
+| TRECORD
+    { $$ = new ClassType(CLASS_RECORD); }
+| TUNION
+    { $$ = new ClassType(CLASS_UNION); }
+;
+
+
+opt_inherit_expr_ls:
+  /* empty */
+    {
+      $$ = new AList<Expr>();
+    }
+| TCOLON nonempty_expr_ls
+    {
+      $$ = $2;
+    }
+;
+
+
+enum_decl_stmt:
+  TENUM pragma_ls identifier TLCBR enum_ls TRCBR TSEMI
+    {
+      EnumType* pdt = new EnumType($5);
+      TypeSymbol* pst = new TypeSymbol($3, pdt);
+      pst->copyPragmas(*$2);
+      pdt->addSymbol(pst);
+      DefExpr* def_expr = new DefExpr(pst);
+      $$ = new ExprStmt(def_expr);
+    }
+;
+
+
+enum_ls:
+  enum_item
+    {
+      $$ = new AList<DefExpr>($1);
+    }
+| enum_ls TCOMMA enum_item
+    {
+      $1->insertAtTail($3);
+    }
+;
+
+
+enum_item:
+  identifier
+    {
+      $$ = new DefExpr(new EnumSymbol($1));
+    }
+| identifier TASSIGN expr
+    {
+      $$ = new DefExpr(new EnumSymbol($1), $3);
+    }
+;
+
+
+typedef_decl_stmt:
+  TTYPE pragma_ls identifier TCOLON type opt_init_expr TSEMI
+    {
+      UserType* newtype = new UserType($5, $6);
+      TypeSymbol* typeSym = new TypeSymbol($3, newtype);
+      typeSym->copyPragmas(*$2);
+      newtype->addSymbol(typeSym);
+      DefExpr* def_expr = new DefExpr(typeSym);
+      $$ = new ExprStmt(def_expr);
+    }
+;
+
+
+typevar_decl_stmt:
+  TTYPE pragma_ls identifier TSEMI
+    {
+      VariableType* new_type = new VariableType(getMetaType(0));
+      TypeSymbol* new_symbol = new TypeSymbol($3, new_type);
+      new_symbol->copyPragmas(*$2);
+      new_type->addSymbol(new_symbol);
+      DefExpr* def_expr = new DefExpr(new_symbol);
+      $$ = new ExprStmt(def_expr);
+    }
+;
+
+
+var_decl_stmt:
+  var_state_tag var_const_tag var_decl_inner_ls TSEMI
+    {
+      setVarSymbolAttributes($3, $1, $2);
+      $$ = $3;
+    }
+;
+
+
+var_state_tag:
+  /* nothing */
+    { $$ = VAR_NORMAL; }
+| TCONFIG
+    { $$ = VAR_CONFIG; }
+| TSTATIC
+    { $$ = VAR_STATE; }
+;
+
+
+var_const_tag:
+  TVAR
+    { $$ = VAR_VAR; }
+| TCONST
+    { $$ = VAR_CONST; }
+| TPARAM
+    { $$ = VAR_PARAM; }
+;
+
+
+var_decl_inner_ls:
+  var_decl_inner
+| var_decl_inner_ls TCOMMA var_decl_inner
+    {
+      $1->insertAtTail($3);
+    }
+;
+
+
+var_decl_inner:
+  identifier opt_var_type opt_init_expr
+    {
+      $$ = new AList<Stmt>(new ExprStmt(new DefExpr(new VarSymbol($1), $3, $2)));
+    }
+;
+
+
+/** TYPES ********************************************************************/
+
+
+record_tuple_inner_type:
+  record_inner_type_ls TRP
+    {
+      $$ = Symboltable::defineStructType(glomstrings(2, "_anon_record", intstring(anon_record_uid++)), new ClassType(CLASS_RECORD), $1);
+    }
+| tuple_inner_type_ls TRP
+    {
+      char *tupleName = glomstrings(2, "_tuple", intstring($1->length()));
+      $$ = new CallExpr(tupleName, $1);
+    }
+;
+
+
+record_tuple_type:
+  TRECORD TLCBR decl_stmt_ls TRCBR
+    {
+      $$ = Symboltable::defineStructType(glomstrings(2, "_anon_record", intstring(anon_record_uid++)), new ClassType(CLASS_RECORD), $3);
+    }
+| TLP record_tuple_inner_type
+    {
+      $$ = $2;
+    }
+;
+
+
+var_type:
+  TCOLON type
+    {
+      $$ = $2;
+    }
+| TLIKE expr
+    {
+      $$ = $2;
+    }
+;
+
+
+fnrettype:
+  /* empty */
+    { $$ = NULL; }
+| TCOLON type
+    { $$ = $2; }
+;
+
+
+opt_var_type:
+  /* nothing */
+    {
+      $$ = NULL;
+    }
+| var_type
+;
+
+
+opt_init_expr:
+  /* nothing */
+    { $$ = NULL; }
+| TASSIGN expr
+    { $$ = $2; }
+;
+
+
+tuple_inner_type_ls:
+  lvalue
+    {
+      $$ = new AList<Expr>($1);
+    }
+| tuple_inner_type_ls TCOMMA lvalue
+    { 
+      $1->insertAtTail($3);
+    }
+;
+
+
+record_inner_type_ls:
+  identifier var_type opt_init_expr
+    {
+      $$ = new AList<Stmt>(new ExprStmt(new DefExpr(new VarSymbol($1), $3, $2)));
+    }
+| record_inner_type_ls TCOMMA identifier var_type
+    {
+      $1->insertAtTail(new ExprStmt(new DefExpr(new VarSymbol($3), NULL, $4)));
     }
 ;
 
@@ -1057,34 +1048,6 @@ pragma:
 ;
 
 
-assign_op_tag:
-  TASSIGN
-    { $$ = OP_GETSNORM; }
-| TASSIGNPLUS
-    { $$ = OP_GETSPLUS; }
-| TASSIGNMINUS
-    { $$ = OP_GETSMINUS; }
-| TASSIGNMULTIPLY
-    { $$ = OP_GETSMULT; }
-| TASSIGNDIVIDE
-    { $$ = OP_GETSDIV; }
-| TASSIGNBAND
-    { $$ = OP_GETSBITAND; }
-| TASSIGNBOR
-    { $$ = OP_GETSBITOR; }
-| TASSIGNBXOR
-    { $$ = OP_GETSBITXOR; }
-| TASSIGNSEQCAT
-    { $$ = OP_GETSSEQCAT; }
-;
-
-
-assign_expr:
-  lvalue assign_op_tag expr
-    { $$ = new CallExpr($2, $1, $3); }
-;
-
-
 expr_ls:
   /* empty */
     { $$ = new AList<Expr>(); }
@@ -1096,7 +1059,6 @@ expr_list_item:
   identifier TASSIGN expr
     { $$ = new NamedExpr($1, $3); }
 | expr
-    { $$ = $1; }
 ;
 
 
@@ -1190,7 +1152,21 @@ if_expr:
 ;
 
 
-expr: 
+opt_expr:
+  /* empty */
+    { $$ = NULL; }
+| expr
+;
+
+
+expr:
+  top_level_expr
+| TLSBR nonempty_expr_ls TIN nonempty_expr_ls TRSBR expr %prec TRSBR
+    { $$ = Symboltable::defineForallExpr($2, $4, $6); }
+;
+
+
+top_level_expr: 
   atom
 | TNIL
     { $$ = new SymExpr(gNil); }
@@ -1217,8 +1193,6 @@ expr:
 | range %prec TDOTDOT
 | if_expr
 | seq_expr
-| TLSBR nonempty_expr_ls TIN nonempty_expr_ls TRSBR expr %prec TRSBR
-    { $$ = Symboltable::defineForallExpr($2, $4, $6); }
 | TPLUS expr %prec TUPLUS
     { $$ = new CallExpr(OP_UNPLUS, $2); }
 | TMINUS expr %prec TUMINUS
@@ -1308,6 +1282,66 @@ opt_identifier:
   /* empty */
     { $$ = NULL; }
 | identifier
+;
+
+
+/** TAGS *********************************************************************/
+
+
+atomic_cobegin:
+    { $$ = BLOCK_NORMAL; }
+| TATOMIC
+    { $$ = BLOCK_ATOMIC; }
+| TCOBEGIN
+    { $$ = BLOCK_COBEGIN; }
+;
+
+
+assign_op_tag:
+  TASSIGN
+    { $$ = OP_GETSNORM; }
+| TASSIGNPLUS
+    { $$ = OP_GETSPLUS; }
+| TASSIGNMINUS
+    { $$ = OP_GETSMINUS; }
+| TASSIGNMULTIPLY
+    { $$ = OP_GETSMULT; }
+| TASSIGNDIVIDE
+    { $$ = OP_GETSDIV; }
+| TASSIGNBAND
+    { $$ = OP_GETSBITAND; }
+| TASSIGNBOR
+    { $$ = OP_GETSBITOR; }
+| TASSIGNBXOR
+    { $$ = OP_GETSBITXOR; }
+| TASSIGNSEQCAT
+    { $$ = OP_GETSSEQCAT; }
+;
+
+
+for_stmt_tag:
+  TFOR
+    { $$ = FORLOOPSTMT_FOR; }
+| TORDERED TFORALL
+    { $$ = FORLOOPSTMT_ORDEREDFORALL; }
+| TFORALL
+    { $$ = FORLOOPSTMT_FORALL; }
+;
+
+
+formal_tag:
+  /* nothing */
+    { $$ = INTENT_BLANK; }
+| TIN
+    { $$ = INTENT_IN; }
+| TINOUT
+    { $$ = INTENT_INOUT; }
+| TOUT
+    { $$ = INTENT_OUT; }
+| TCONST
+    { $$ = INTENT_CONST; }
+| TPARAM
+    { $$ = INTENT_PARAM; }
 ;
 
 
