@@ -44943,3 +44943,37 @@ Modified files:
 	chapel/compiler/traversals/: htmlview.cpp preAnalysisHacks.cpp 
 	                             view.cpp 
 
+---------------------------------------------------------------------------
+
+08/29/05 10:33:21 -- deitz
+
+Log message:
+	Reworked storage of visible functions in preparation for changing from
+	creating them in a single call to ComputeVisibleFunctions to a more
+	maintainable way of adding to them when a function is added.  This
+	will eventually allow us to add functions created during analysis to
+	the current set of visible functions.  Visible functions are no longer
+	replicated in the children scopes, but are accessed instead via a
+	getVisibleFunctions method on SymScope that returns a Vec of all
+	FnSymbols that are visible at that point.
+	
+	Note that visible functions are still computed and nothing
+	semantically has changed yet.
+	
+	Removed some support for resolving functions without analysis as it is
+	very out-of-date and would need to be pretty much redone if it is to
+	be used again.  This removal acknowledges that --noanalysis has not
+	been working for a long time.
+	
+	Removed Symboltable::define now that it is not used except by the
+	compiler infrastructure during Fixup (and for a few exceptions).  It
+	is now used directly as a method call on the scope.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/include/: symscope.h symtab.h 
+	chapel/compiler/symtab/: symscope.cpp symtab.cpp 
+	chapel/compiler/traversals/: fixup.cpp resolveSymbols.cpp 
+	chapel/test/types/seq/bradc/: length.modify.good 
+
