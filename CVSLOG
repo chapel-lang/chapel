@@ -44977,3 +44977,37 @@ Modified files:
 	chapel/compiler/traversals/: fixup.cpp resolveSymbols.cpp 
 	chapel/test/types/seq/bradc/: length.modify.good 
 
+---------------------------------------------------------------------------
+
+08/29/05 14:17:24 -- deitz
+
+Log message:
+	All but removed the stmt field of a LabelStmt.  The LabelStmt now just
+	defines a LabelSymbol.  Should it really just be an ExprStmt of a
+	DefExpr of a LabelSymbol since there is nothing really special about
+	it anymore?
+	
+	Labels are now parsed as two statements: the LabelStmt followed by the
+	stmt it is attached to.
+	
+	The stmt is current still part of LabelStmt, but it is always an empty
+	BlockStmt.  I haven't tried to clean up the analysis if1 translation
+	of this yet and thus did not remove this field.
+	
+	Cleaned up ScopeResolveGotos so that the gotos are correct.  They no
+	longer rely on attaching _post to break gotos during codegen or
+	defining this _post label after a label statement.
+	
+	Removed futures for two now-working tests.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp 
+	chapel/compiler/include/: stmt.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/traversals/: eliminateReturns.cpp 
+	                             scopeResolveGotos.cpp 
+	                             scopeResolveGotos.h 
+Removed files:
+	chapel/test/trivial/deitz/: test_parse_stmt.future 
+	chapel/test/trivial/jplevyak/: goto-2.future 
+
