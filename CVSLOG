@@ -44915,3 +44915,31 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: pattern.cpp 
 
+---------------------------------------------------------------------------
+
+08/29/05 09:33:23 -- deitz
+
+Log message:
+	Changed how statements are parsed.  All statements are now parsed as
+	lists of statements whether they are single Chapel statements or not.
+	That is when a single statement is parsed, it is put into a list of
+	that single statement.  This fixes a bug in how variable declaration
+	statements were only allowed to be parsed in the context of a list of
+	statements.  This is because a single Chapel variable declaration
+	statement actually creates a list of ExprStmts of DefExprs.
+	
+	Improved the html view facility to print out more keywords and
+	distinguish between different types of GotoStmts (goto, break,
+	continue) and to print out the label.
+	
+	Added a line in PreAnalysisHacks to collapse BlockStmt where the only
+	thing in the BlockStmt is another BlockStmt.
+	
+	Added a flush line to the view facility so that it finishes writing to
+	stdout even if a seg fault occurs later on in compilation.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/traversals/: htmlview.cpp preAnalysisHacks.cpp 
+	                             view.cpp 
+
