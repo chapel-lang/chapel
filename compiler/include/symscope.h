@@ -25,7 +25,7 @@ class ScopeLookupCache;
 class SymScope : public gc {
  public:
   scopeType type;
-  
+
   ScopeLookupCache *lookupCache;
 
   Stmt* stmtContext;  // statement context
@@ -51,12 +51,8 @@ class SymScope : public gc {
 
   bool isEmpty(void);
 
-  void insert(Symbol* sym);
-  void remove(Symbol* sym);
-
-  Symbol* findEnclosingSymContext();
-  Stmt* findEnclosingStmtContext();
-  Expr* findEnclosingExprContext();
+  void define(Symbol* sym);
+  void undefine(Symbol* sym);
 
   void print(FILE* outfile = stdout, bool tableOrder = false);
 

@@ -9,9 +9,9 @@
 #include "files.h"
 
 #define OPERATOR_CHAR(_c) \
-(((_c > ' ' && _c < '0') || (_c > '9' && _c < 'A') || \
-  (_c > 'Z' && _c < 'a') || (_c > 'z')) &&            \
-   _c != '_'&& _c != '?' && _c != '$')                \
+  (((_c > ' ' && _c < '0') || (_c > '9' && _c < 'A') || \
+    (_c > 'Z' && _c < 'a') || (_c > 'z')) &&            \
+   _c != '_'&& _c != '?' && _c != '$')                  \
 
 
 SymScope::SymScope(scopeType init_type) :
@@ -62,7 +62,7 @@ bool SymScope::isEmpty(void) {
 }
 
 
-void SymScope::insert(Symbol* sym) {
+void SymScope::define(Symbol* sym) {
   Symbol* tmp = Symboltable::lookupInScope(sym->name, this);
   if (tmp) {
     if (tmp == sym) {
@@ -84,7 +84,7 @@ void SymScope::insert(Symbol* sym) {
 }
 
 
-void SymScope::remove(Symbol* sym) {
+void SymScope::undefine(Symbol* sym) {
   for (int i = 0; i < symbols.n; i++) {
     if (symbols.v[i]) {
       if (symbols.v[i] == sym) {
@@ -121,45 +121,6 @@ ModuleSymbol* SymScope::getModule() {
   }
 
   return parent->getModule();
-}
-
-
-Symbol* SymScope::findEnclosingSymContext() {
-  if (symContext) {
-    return symContext;
-  }
-  else if (parent == NULL) {
-    return NULL;
-  }
-  else {
-    return parent->findEnclosingSymContext();
-  }
-}
-
-
-Stmt* SymScope::findEnclosingStmtContext() {
-  if (stmtContext) {
-    return stmtContext;
-  }
-  else if (parent == NULL) {
-    return NULL;
-  }
-  else {
-    return parent->findEnclosingStmtContext();
-  }
-}
-
-
-Expr* SymScope::findEnclosingExprContext() {
-  if (exprContext) {
-    return exprContext;
-  }
-  else if (parent == NULL) {
-    return NULL;
-  }
-  else {
-    return parent->findEnclosingExprContext();
-  }
 }
 
 
@@ -331,7 +292,8 @@ bool SymScope::commonModuleIsFirst() {
 static void
 addVisibleFunctionsHelper(Map<char*,Vec<FnSymbol*>*>* visibleFunctions,
                           FnSymbol* fn) {
-  int is_setter = (fn->name[0] == '=' && !OPERATOR_CHAR(fn->name[1]));
+  int is_setter = (fn->name[0] == '=' && !OPERATOR_CHAR(fn->name[1]) &&
+                   fn->name[1] != '\0');
   char *n = if1_cannonicalize_string(if1, fn->name + (is_setter ? 1 : 0));
   Vec<FnSymbol*>* fs = visibleFunctions->get(n);
   if (!fs) fs = new Vec<FnSymbol*>;
@@ -340,50 +302,28 @@ addVisibleFunctionsHelper(Map<char*,Vec<FnSymbol*>*>* visibleFunctions,
 }
 
 
-static void addVisibleFunctions(Map<char*,Vec<FnSymbol*>*>* visibleFunctions,
-                                Symbol* sym) {
-  if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(sym->getSymbol())) {
-    ClassType* classType = dynamic_cast<ClassType*>(typeSym->definition);
-    if (!(classType && classType->isNominalType())) {
-      forv_Vec(FnSymbol, method, typeSym->definition->methods) {
-        while (method) {
-          addVisibleFunctionsHelper(visibleFunctions, method);
-          method = dynamic_cast<FnSymbol*>(method->overload);
-        }
-      }
-      FnSymbol* constructor = typeSym->definition->defaultConstructor;
-      while (constructor) {
-        addVisibleFunctionsHelper(visibleFunctions, constructor);
-        constructor = dynamic_cast<FnSymbol*>(constructor->overload);
-      }
-    }
-  } else if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
-    if (!fn->typeBinding) {
-      addVisibleFunctionsHelper(visibleFunctions, fn);
-    }
-  }
-}
-
-
 void SymScope::setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions) {
-  visibleFunctions.clear();
-
   forv_Vec(Symbol, symbol, symbols) {
     for (Symbol* sym = symbol; sym; sym = sym->overload) {
-      addVisibleFunctions(&visibleFunctions, sym);
-    }
-  }
-
-  if (type == SCOPE_INTRINSIC) {
-    //
-    // Include class methods and constructors in intrinsic
-    //
-    forv_Vec(FnSymbol, fn, *moreVisibleFunctions) {
-      char *n = if1_cannonicalize_string(if1, fn->name);
-      Vec<FnSymbol*> *fs = visibleFunctions.get(n);
-      if (!fs) fs = new Vec<FnSymbol*>;
-      fs->add(fn);
-      visibleFunctions.put(n, fs);
+      if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
+        if (fn->typeBinding) {
+          if (ClassType* ct = dynamic_cast<ClassType*>(fn->typeBinding->definition)) {
+            if (ct->isNominalType()) {
+              addVisibleFunctionsHelper(&rootScope->visibleFunctions, fn);
+              continue;
+            }
+          }
+        }
+        if (fn->fnClass == FN_CONSTRUCTOR) {
+          if (ClassType* ct = dynamic_cast<ClassType*>(fn->retType)) {
+            if (ct->isNominalType()) {
+              addVisibleFunctionsHelper(&rootScope->visibleFunctions, fn);
+              continue;
+            }
+          }
+        }
+        addVisibleFunctionsHelper(&visibleFunctions, fn);
+      }
     }
   }
 }
@@ -419,7 +359,7 @@ void SymScope::printVisibleFunctions() {
       forv_Vec(FnSymbol, fn, *fs) {
         if (fn) {
           fn->print(stdout);
-          printf("\n");
+          printf(" %ld\n", fn->id);
         }
       }
     }

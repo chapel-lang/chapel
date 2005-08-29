@@ -380,7 +380,7 @@ DefExpr* Symboltable::finishModuleDef(ModuleSymbol* mod, AList<Stmt>* def) {
       } else {
         // for now, define all modules in the prelude scope, since
         // they can't be nested
-        preludeScope->insert(mod);
+        preludeScope->define(mod);
       }
     }
   }
@@ -490,7 +490,7 @@ PrimitiveType* Symboltable::definePrimitiveType(char* name, char* cname, Expr *i
 
 Type* Symboltable::defineBuiltinType(char* name, char* cname, Type *newType) {
   TypeSymbol* sym = new TypeSymbol(name, newType);
-  rootScope->insert(sym);
+  rootScope->define(sym);
   sym->cname = copystring(cname);
   newType->addSymbol(sym);
 

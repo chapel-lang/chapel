@@ -183,9 +183,9 @@ void Fixup::preProcessExpr(Expr* expr) {
     if (!verifyParents) {
       if (def_expr->sym && !def_expr->sym->isUnresolved) {
         if (insertHelper) {
-          def_expr->parentScope->insert(def_expr->sym);
+          def_expr->parentScope->define(def_expr->sym);
         } else {
-          def_expr->sym->parentScope->remove(def_expr->sym);
+          def_expr->sym->parentScope->undefine(def_expr->sym);
         }
       }
     }

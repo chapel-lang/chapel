@@ -1077,7 +1077,7 @@ Type *find_or_make_sum_type(Vec<Type *> *types) {
   lub_cache.put(new_sum_type);
   char* name = glomstrings(2, "_sum_type", intstring(uid++));
   TypeSymbol* sym = new TypeSymbol(name, new_sum_type);
-  commonModule->modScope->insert(sym); // SJD: Yuck, sum types should
+  commonModule->modScope->define(sym); // SJD: Yuck, sum types should
                                        // have a DefExpr and be
                                        // inserted
   new_sum_type->addSymbol(sym);

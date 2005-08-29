@@ -10,7 +10,7 @@ static void markAsDeadAndExtract(Symbol* sym) {
   if (sym->defPoint) {
     sym->defPoint->parentStmt->remove();
   } else {
-    sym->parentScope->remove(sym);
+    sym->parentScope->undefine(sym);
   }
 }
 
