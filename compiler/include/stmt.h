@@ -194,7 +194,7 @@ class LabelStmt : public Stmt {
   DefExpr* defLabel;
   Stmt* stmt;
   
-  LabelStmt(DefExpr* initDefLabel, Stmt* initStmt);
+  LabelStmt(DefExpr* initDefLabel);
   virtual void verify(void);
   COPY_DEF(LabelStmt);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);

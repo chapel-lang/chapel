@@ -779,10 +779,10 @@ void SelectStmt::codegenStmt(FILE* outfile) {
 }
 
 
-LabelStmt::LabelStmt(DefExpr* initDefLabel, Stmt* initStmt) :
+LabelStmt::LabelStmt(DefExpr* initDefLabel) :
   Stmt(STMT_LABEL),
   defLabel(initDefLabel),
-  stmt(initStmt)
+  stmt(new BlockStmt())
 { }
 
 
@@ -799,7 +799,9 @@ void LabelStmt::verify() {
 
 LabelStmt*
 LabelStmt::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new LabelStmt(COPY_INTERNAL(defLabel), COPY_INTERNAL(stmt));
+  LabelStmt* ls = new LabelStmt(COPY_INTERNAL(defLabel));
+  ls->stmt = COPY_INTERNAL(stmt);
+  return ls;
 }
 
 
@@ -832,8 +834,6 @@ void LabelStmt::codegenStmt(FILE* outfile) {
   defLabel->sym->codegen(outfile);
   fprintf(outfile, ":;\n");
   stmt->codegenStmt(outfile);
-  defLabel->sym->codegen(outfile);
-  fprintf(outfile, "_post:;\n");
 }
 
 
@@ -899,8 +899,5 @@ void GotoStmt::print(FILE* outfile) {
 void GotoStmt::codegenStmt(FILE* outfile) {
   fprintf(outfile, "goto ");
   label->codegen(outfile);
-  if (goto_type == goto_break) {
-    fprintf(outfile, "_post");
-  }
   fprintf(outfile, ";\n");
 }

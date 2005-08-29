@@ -6,7 +6,8 @@
 
 class ScopeResolveGotos : public Traversal {
  public:
-  LabelStmt* currentLoop;
+  LabelStmt* preCurrentLoop;
+  LabelStmt* postCurrentLoop;
   ScopeResolveGotos();
   void preProcessStmt(Stmt* stmt);
 };

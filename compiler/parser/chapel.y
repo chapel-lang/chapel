@@ -323,7 +323,10 @@ empty_stmt:
 
 label_stmt:
   TLABEL identifier stmt
-    { $$ = new AList<Stmt>(new LabelStmt(new DefExpr(new LabelSymbol($2)), new BlockStmt($3))); }
+    {
+      $3->insertAtHead(new LabelStmt(new DefExpr(new LabelSymbol($2))));
+      $$ = $3;
+    }
 ;
 
 
