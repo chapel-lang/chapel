@@ -45011,3 +45011,27 @@ Removed files:
 	chapel/test/trivial/deitz/: test_parse_stmt.future 
 	chapel/test/trivial/jplevyak/: goto-2.future 
 
+---------------------------------------------------------------------------
+
+08/29/05 16:43:14 -- deitz
+
+Log message:
+	Cleaned up how visible functions are computed (though they are still
+	computed and then not updated).  They are now much tighter.  The
+	visibility of many non-global functions were previously global.
+	
+	Renamed SymScope::insert and SymScope::remove to SymScope::define and
+	SymScope::undefine (used by the infrastructure when DefExprs of
+	Symbols are added to or removed from the AST).  These terms better
+	describe what is happening and unify them with the other uses of
+	remove.
+	
+	Removed unused SymScope methods findEnclosing*Context.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/include/: symscope.h 
+	chapel/compiler/symtab/: removeDeadSymbols.cpp symscope.cpp 
+	                         symtab.cpp 
+	chapel/compiler/traversals/: fixup.cpp 
+
