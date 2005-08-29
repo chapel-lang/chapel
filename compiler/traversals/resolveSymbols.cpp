@@ -21,68 +21,6 @@ static AList<Expr>* copy_argument_list(CallExpr* expr) {
 }
 
 
-static void call_info_noanalysis(CallExpr* expr, Vec<FnSymbol*>& fns) {
-  char* name;
-  if (SymExpr* variable = dynamic_cast<SymExpr*>(expr->baseExpr)) {
-    name = variable->var->name;
-  } else if (MemberAccess* member_access = dynamic_cast<MemberAccess*>(expr->baseExpr)) {
-    name = member_access->member->name;
-  } else {
-    INT_FATAL(expr, "Unable to resolve function without analysis");
-  }
-  SymScope* scope = Symboltable::getCurrentScope();
-  Vec<FnSymbol*> candidates;
-  for (int i = 0; i < scope->visibleFunctions.n; i++) {
-    Vec<FnSymbol*>* fs = scope->visibleFunctions.v[i].value;
-    if (fs) {
-      forv_Vec(FnSymbol, fn, *fs) {
-        if (fn && !strcmp(fn->name, name)) {
-          candidates.add(fn);
-        }
-      }
-    }
-  }
-  if (candidates.n == 1) {
-    fns.add(candidates.v[0]);
-    return;
-  }
-  if (candidates.n == 2 && candidates.v[0] == candidates.v[1]) {
-    fns.add(candidates.v[0]);
-    return;
-  }
-  FnSymbol* candidate = NULL;
-  forv_Vec(FnSymbol*, fn, candidates) {
-    DefExpr* formals = fn->formals->first();
-    AList<Expr>* actualList = copy_argument_list(expr);
-    Expr* actuals = actualList->first();
-    bool match = true;
-    while (actuals && formals) {
-      if (actuals->typeInfo() != formals->sym->type) {
-        match = false;
-        break;
-      }
-      actuals = actualList->next();
-      formals = fn->formals->next();
-    }
-    if (actuals || formals) {
-      match = false;
-    }
-    if (match) {
-      if (candidate != NULL && candidate != fn) {
-        if (strncmp("_construct", fn->name, 10)) {
-          INT_FATAL(expr, "Unable to resolve function");
-        }
-      }
-      candidate = fn;
-    }
-  }
-  if (!candidate) {
-    INT_FATAL(expr, "Unable to resolve function");
-  }
-  fns.add(candidate);
-}
-
-
 ResolveSymbols::ResolveSymbols() {
   //  whichModules = MODULES_CODEGEN;
 }
@@ -194,57 +132,6 @@ mangle_overloaded_operator_function_names(Expr *expr) {
   }
 }
 
-static void
-resolve_no_analysis(Expr *expr) {
-
-  if (expr->astType == EXPR_CALL) {
-    CallExpr* paren = dynamic_cast<CallExpr*>(expr);
-    Vec<FnSymbol*> fns;
-    call_info_noanalysis(paren, fns);
-    if (fns.n != 1) {
-      INT_FATAL(expr, "Unable to resolve function without analysis");
-    }
-    AList<Expr>* arguments = copy_argument_list(paren);
-    if (!strcmp("this", fns.e[0]->name)) {
-      arguments->insertAtHead(paren->baseExpr->copy());
-    }
-    CallExpr* new_expr = new CallExpr(fns.e[0], arguments);
-    new_expr->opTag = paren->opTag;
-    expr->replace(new_expr);
-    expr = new_expr;
-  }
-
-  if (MemberAccess* member_access = dynamic_cast<MemberAccess*>(expr)) {
-    /***
-     *** Resolve methods with arguments at CallExpr
-     ***/
-    if (CallExpr* paren_op = dynamic_cast<CallExpr*>(expr->parentExpr)) {
-      if (paren_op->baseExpr == expr) {
-        return;
-      }
-    }
-    if (dynamic_cast<UnresolvedSymbol*>(member_access->member)) {
-      ClassType* struct_scope =
-        dynamic_cast<ClassType*>(member_access->base->typeInfo());
-      if (struct_scope) {
-        member_access->member = 
-          Symboltable::lookupInScope(member_access->member->name,
-                                     struct_scope->structScope);
-
-        if (dynamic_cast<FnSymbol*>(member_access->member)) {
-          CallExpr *new_expr = new CallExpr(member_access->member,
-                                            member_access->base->copy());
-          expr->replace(new_expr);
-          expr = new_expr;
-        }
-      } else {
-        INT_FATAL(expr, "Cannot resolve MemberAccess");
-      }
-    }
-  }
-  mangle_overloaded_operator_function_names(expr);
-}
-
 
 static Expr *
 resolve_binary_operator(CallExpr *op, FnSymbol *resolved = 0) {
@@ -273,10 +160,6 @@ resolve_binary_operator(CallExpr *op, FnSymbol *resolved = 0) {
 
 
 void ResolveSymbols::postProcessExpr(Expr* expr) {
-  if (!analyzeAST) {
-    resolve_no_analysis(expr);
-    return;
-  }
 
   // Resolve CallExprs
   if (CallExpr* paren = dynamic_cast<CallExpr*>(expr)) {

@@ -172,11 +172,11 @@ AInfo::visible_functions(Sym *arg0) {
   if (sym_cache && (v = sym_cache->get(name))) 
     return v;
 #endif
-  Vec<FnSymbol *> *fss = scope->visibleFunctions.get(name);
+  Vec<FnSymbol *> fss;
+  scope->getVisibleFunctions(&fss, name);
   v = new Vec<Fun *>;
-  if (fss)
-    forv_Vec(FnSymbol, x, *fss)
-      v->set_add(x->asymbol->sym->fun);
+  forv_Vec(FnSymbol, x, fss)
+    v->set_add(x->asymbol->sym->fun);
   Vec<Fun *> *universal = universal_lookup_cache.get(name);
   if (universal)
     v->set_union(*universal);

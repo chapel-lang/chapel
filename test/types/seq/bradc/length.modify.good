@@ -3,9 +3,9 @@ length.modify.chpl:8: illegal call argument type '_setterToken' illegal: ( _sett
 length.modify.chpl:8: illegal call argument type 's' illegal: ( seq seq ) 
 length.modify.chpl:8: unresolved call 'length'
 note: candidates are:
+prelude.chpl:348: length, a : string
 _chpl_seq.chpl:33: length, _methodTokenDummy : _methodTokenType, this : seq
 _chpl_seq.chpl:178: length, _methodTokenDummy : _methodTokenType, this : _aseq
-prelude.chpl:348: length, a : string
 length.modify.chpl:8: illegal call argument type expression illegal: ( int64 ) 
 length.modify.chpl:8: expression has no type
 fail: program does not type

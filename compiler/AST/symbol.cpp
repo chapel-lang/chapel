@@ -1273,7 +1273,7 @@ void LabelSymbol::codegenDef(FILE* outfile) { }
 void
 initSymbol() {
   gNil = new VarSymbol("nil", dtNil, VAR_NORMAL, VAR_CONST);
-  Symboltable::define(gNil);
+  rootScope->insert(gNil); // SJD: Should intrinsics have DefExprs?
   gUnspecified = new VarSymbol("_", dtUnknown, VAR_NORMAL, VAR_CONST);
-  Symboltable::define(gUnspecified);
+  rootScope->insert(gUnspecified); // SJD: Should intrinsics have DefExprs?
 }

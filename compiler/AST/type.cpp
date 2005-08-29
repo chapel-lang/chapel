@@ -1076,11 +1076,11 @@ Type *find_or_make_sum_type(Vec<Type *> *types) {
     return old_type;
   lub_cache.put(new_sum_type);
   char* name = glomstrings(2, "_sum_type", intstring(uid++));
-  SymScope* saveScope = Symboltable::setCurrentScope(commonModule->modScope);
   TypeSymbol* sym = new TypeSymbol(name, new_sum_type);
-  Symboltable::define(sym);
+  commonModule->modScope->insert(sym); // SJD: Yuck, sum types should
+                                       // have a DefExpr and be
+                                       // inserted
   new_sum_type->addSymbol(sym);
-  Symboltable::setCurrentScope(saveScope);
   return new_sum_type;
 }
 

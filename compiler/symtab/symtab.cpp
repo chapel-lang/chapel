@@ -19,8 +19,8 @@ enum parsePhaseType {
 static parsePhaseType parsePhase = PARSING_PRE;
 
 
-static SymScope* rootScope = NULL;
-static SymScope* preludeScope = NULL;
+SymScope* rootScope = NULL;
+SymScope* preludeScope = NULL;
 static SymScope* postludeScope = NULL;
 static SymScope* currentScope = NULL;
 static ModuleSymbol* currentModule = NULL;
@@ -184,36 +184,6 @@ Vec<ModuleSymbol*>* Symboltable::getModules(moduleSet whichModules) {
     INT_FATAL("Unexpected case in getModules: %d\n", whichModules);
     return NULL;
   }
-}
-
-
-void Symboltable::undefineInScope(Symbol* sym, SymScope* scope) {
-  scope->remove(sym); // overload logic there, for some reason
-}
-
-
-void Symboltable::defineInScope(Symbol* sym, SymScope* scope) {
-  Symbol* tmp = Symboltable::lookupInScope(sym->name, scope);
-  if (tmp) {
-    if (tmp == sym) {
-      INT_FATAL(sym, "Attempt to define symbol %s twice", sym->name);
-    }
-    while (tmp->overload) {
-      tmp = tmp->overload;
-      if (tmp == sym) {
-        INT_FATAL(sym, "Attempt to define symbol %s twice", sym->name);
-      }
-    }
-    tmp->overload = sym;
-    sym->setParentScope(tmp->parentScope);
-  } else {
-    scope->insert(sym);
-  }
-}
-
-
-void Symboltable::define(Symbol* sym) {
-  defineInScope(sym, currentScope);
 }
 
 
@@ -410,7 +380,7 @@ DefExpr* Symboltable::finishModuleDef(ModuleSymbol* mod, AList<Stmt>* def) {
       } else {
         // for now, define all modules in the prelude scope, since
         // they can't be nested
-        defineInScope(mod, preludeScope);
+        preludeScope->insert(mod);
       }
     }
   }
@@ -520,7 +490,7 @@ PrimitiveType* Symboltable::definePrimitiveType(char* name, char* cname, Expr *i
 
 Type* Symboltable::defineBuiltinType(char* name, char* cname, Type *newType) {
   TypeSymbol* sym = new TypeSymbol(name, newType);
-  Symboltable::defineInScope(sym, rootScope);
+  rootScope->insert(sym);
   sym->cname = copystring(cname);
   newType->addSymbol(sym);
 

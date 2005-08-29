@@ -63,9 +63,24 @@ bool SymScope::isEmpty(void) {
 
 
 void SymScope::insert(Symbol* sym) {
-  table.put(sym->name, sym);
-  sym->setParentScope(this);
-  symbols.add(sym);
+  Symbol* tmp = Symboltable::lookupInScope(sym->name, this);
+  if (tmp) {
+    if (tmp == sym) {
+      INT_FATAL(sym, "Attempt to define symbol %s twice", sym->name);
+    }
+    while (tmp->overload) {
+      tmp = tmp->overload;
+      if (tmp == sym) {
+        INT_FATAL(sym, "Attempt to define symbol %s twice", sym->name);
+      }
+    }
+    tmp->overload = sym;
+    sym->setParentScope(tmp->parentScope);
+  } else {
+    table.put(sym->name, sym);
+    sym->setParentScope(this);
+    symbols.add(sym);
+  }
 }
 
 
@@ -350,37 +365,14 @@ static void addVisibleFunctions(Map<char*,Vec<FnSymbol*>*>* visibleFunctions,
 }
 
 
-static void
-getDefinedFunctions(SymScope* scope,
-                    Map<char*,Vec<FnSymbol*>*>* visibleFunctions,
-                    Vec<SymScope*>* scopesAlreadyVisited = NULL) {
-  if (scopesAlreadyVisited && scopesAlreadyVisited->set_in(scope)) {
-    return;
-  }
-
-  forv_Vec(Symbol, symbol, scope->symbols) {
-    for (Symbol* sym = symbol; sym; sym = sym->overload) {
-      addVisibleFunctions(visibleFunctions, sym);
-    }
-  }
-
-  if (scope->uses.n) {
-    if (!scopesAlreadyVisited)
-      scopesAlreadyVisited = new Vec<SymScope*>();
-    scopesAlreadyVisited->set_add(scope);
-    forv_Vec(ModuleSymbol, module, scope->uses) {
-      getDefinedFunctions(module->modScope,
-                          visibleFunctions,
-                          scopesAlreadyVisited);
-    }
-  }
-}
-
-
 void SymScope::setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions) {
   visibleFunctions.clear();
 
-  getDefinedFunctions(this, &visibleFunctions);
+  forv_Vec(Symbol, symbol, symbols) {
+    for (Symbol* sym = symbol; sym; sym = sym->overload) {
+      addVisibleFunctions(&visibleFunctions, sym);
+    }
+  }
 
   if (type == SCOPE_INTRINSIC) {
     //
@@ -393,19 +385,30 @@ void SymScope::setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions) {
       fs->add(fn);
       visibleFunctions.put(n, fs);
     }
-  } else if (parent) {
-    //
-    // Include parent scope's visible functions
-    //
-    for (int i = 0; i < parent->visibleFunctions.n; i++) {
-      Vec<FnSymbol *> *fs = visibleFunctions.get(parent->visibleFunctions.v[i].key);
-      if (!fs)
-        fs = parent->visibleFunctions.v[i].value;
-      else
-        fs->append(*parent->visibleFunctions.v[i].value);
-      visibleFunctions.put(parent->visibleFunctions.v[i].key, fs);
-    }
   }
+}
+
+
+void SymScope::getVisibleFunctions(Vec<FnSymbol*>* allVisibleFunctions,
+                                   char* name,
+                                   bool recursed) {
+
+  // to avoid infinite loop because of cyclic module uses
+  static Vec<SymScope*> visited;
+  if (!recursed)
+    visited.clear();
+  if (visited.set_in(this))
+    return;
+  visited.set_add(this);
+
+  Vec<FnSymbol*>* fs = visibleFunctions.get(name);
+  if (fs)
+    allVisibleFunctions->append(*fs);
+  forv_Vec(ModuleSymbol, module, uses) {
+    module->modScope->getVisibleFunctions(allVisibleFunctions, name, true);
+  }
+  if (parent)
+    parent->getVisibleFunctions(allVisibleFunctions, name, true);
 }
 
 

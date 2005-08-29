@@ -7,7 +7,8 @@
 #include "symbol.h"
 #include "symscope.h"
 
-
+extern SymScope* rootScope;
+extern SymScope* preludeScope;
 extern ModuleSymbol* commonModule;
 
 class Symboltable {
@@ -30,10 +31,6 @@ class Symboltable {
   static ModuleSymbol* getCurrentModule(void);
   static Vec<ModuleSymbol*>* getModules(moduleSet modules);
   static FnSymbol* getCurrentFn(void);
-
-  static void undefineInScope(Symbol* sym, SymScope* scope);
-  static void defineInScope(Symbol* sym, SymScope* scope);
-  static void define(Symbol* sym);
 
   /** SJD: These are the lookup's to use--
       lookupInScope only checks the passed scope
