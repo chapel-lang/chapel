@@ -20,6 +20,7 @@ void View::run(Vec<ModuleSymbol*>* modules) {
     mod->startTraversal(this);
   }
   printf("\n\n");
+  fflush(stdout);
 }
 
 void View::preProcessStmt(Stmt* stmt) {

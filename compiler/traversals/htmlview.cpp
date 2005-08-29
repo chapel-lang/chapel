@@ -81,8 +81,20 @@ void HtmlView::preProcessStmt(Stmt* stmt) {
   write("<DL>\n");
   if (dynamic_cast<BlockStmt*>(stmt)) {
     write("{");
+  } else if (GotoStmt* s = dynamic_cast<GotoStmt*>(stmt)) {
+    switch (s->goto_type) {
+    case goto_normal: write("<B>goto</B> "); break;
+    case goto_break: write("<B>break</B> "); break;
+    case goto_continue: write("<B>continue</B> "); break;
+    }
+    if (s->label)
+      html_print_symbol(s->label, true);
   } else if (dynamic_cast<WhileLoopStmt*>(stmt)) {
     write("<B>while</B> ");
+  } else if (dynamic_cast<CondStmt*>(stmt)) {
+    write("<B>if</B> ");
+  } else if (dynamic_cast<LabelStmt*>(stmt)) {
+    write("<B>label</B> ");
   } else if (ForLoopStmt* s = dynamic_cast<ForLoopStmt*>(stmt)) {
     switch (s->forLoopStmtTag) {
     case FORLOOPSTMT_FOR:
@@ -169,6 +181,12 @@ void HtmlView::preProcessExpr(Expr* expr) {
     write("(");
     if (e->opTag == OP_NONE) {
       write("<B>call</B> ");
+    }
+  } else if (ImportExpr* e = dynamic_cast<ImportExpr*>(expr)) {
+    if (e->importTag == IMPORT_WITH) {
+      write("<B>with</B>");
+    } else {
+      write("<B>use</B>");
     }
   } else {
     write("(%s", astTypeName[expr->astType]);

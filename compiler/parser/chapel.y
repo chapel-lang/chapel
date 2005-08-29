@@ -183,17 +183,30 @@ Is this "while x"(i); or "while x(i)";?
 %type <pch> pragma
 %type <vpch> pragma_ls
 
-%type <pstmt> select_stmt label_stmt goto_stmt break_stmt continue_stmt
-%type <pstmt> typedef_decl_stmt fn_decl_stmt class_decl_stmt mod_decl_stmt
-%type <pstmt> parsed_block_single_stmt empty_stmt
-%type <pstmt> assign_stmt if_stmt return_stmt yield_stmt for_stmt while_do_stmt do_while_stmt enum_decl_stmt
-%type <pstmt> stmt call_stmt expr_stmt decl_stmt typevar_decl_stmt
-%type <pstmt> with_stmt use_stmt where_stmt
-%type <pstmtls> var_decl_stmt var_decl_inner var_decl_inner_ls record_inner_type_ls
-%type <pstmtls> decl_stmt_ls stmt_ls program
+%type <pstmtls> program
+%type <pstmtls> stmt_ls decl_stmt_ls
+
+%type <pstmtls> stmt empty_stmt label_stmt goto_stmt break_stmt continue_stmt
+%type <pstmtls> call_stmt expr_stmt if_stmt for_stmt while_do_stmt do_while_stmt
+%type <pstmtls> select_stmt return_stmt yield_stmt assign_stmt decl_stmt
+
+%type <pstmtls> typedef_decl_stmt fn_decl_stmt class_decl_stmt mod_decl_stmt
+%type <pstmtls> typevar_decl_stmt enum_decl_stmt with_stmt use_stmt where_stmt
+
+%type <pstmtls> var_decl_stmt var_decl_stmt_inner var_decl_stmt_inner_ls
+
+
+%type <pstmtls> parsed_block_single_stmt
 %type <pblockstmt> parsed_block_stmt block_stmt
+
 %type <pwhenstmt> when_stmt
 %type <pwhenstmtls> when_stmt_ls
+
+%type <pexpr> opt_var_type var_type fnrettype
+%type <pexpr> type record_tuple_type
+%type <pexpr> record_tuple_inner_type
+%type <pstmtls> record_inner_type_ls
+%type <ptype> class_tag
 
 %type <pexpr> parenop_expr memberaccess_expr non_tuple_lvalue lvalue
 %type <pexpr> tuple_paren_expr atom expr expr_list_item opt_expr
@@ -203,11 +216,6 @@ Is this "while x"(i); or "while x(i)";?
 %type <pexprls> expr_ls nonempty_expr_ls tuple_inner_type_ls opt_inherit_expr_ls
 %type <pdefexpr> formal enum_item
 %type <pdefexprls> formal_ls opt_formal_ls enum_ls
-
-%type <pexpr> opt_var_type var_type fnrettype
-%type <pexpr> type record_tuple_type
-%type <pexpr> record_tuple_inner_type
-%type <ptype> class_tag
 
 %type <pfnsym> function
 
@@ -254,12 +262,7 @@ stmt_ls:
     { $$ = new AList<Stmt>(); }
 | stmt_ls pragma_ls stmt
     { 
-      $3->copyPragmas(*$2);
-      $1->insertAtTail($3);
-    }
-| stmt_ls pragma_ls var_decl_stmt
-    { 
-      $3->copyPragmas(*$2);
+      $3->first()->copyPragmas(*$2);
       $1->insertAtTail($3);
     }
 ;
@@ -282,7 +285,7 @@ stmt:
 | yield_stmt
 | assign_stmt
 | block_stmt
-    { $$ = $1; }
+    { $$ = new AList<Stmt>($1); }
 | decl_stmt
 | error
     { printf("syntax error"); exit(1); }
@@ -314,70 +317,70 @@ parsed_block_stmt:
 
 empty_stmt:
   TSEMI
-    { $$ = new BlockStmt(); }
+    { $$ = new AList<Stmt>(new BlockStmt()); }
 ;
 
 
 label_stmt:
   TLABEL identifier stmt
-    { $$ = new LabelStmt(new DefExpr(new LabelSymbol($2)), new BlockStmt($3)); }
+    { $$ = new AList<Stmt>(new LabelStmt(new DefExpr(new LabelSymbol($2)), new BlockStmt($3))); }
 ;
 
 
 goto_stmt:
   TGOTO identifier TSEMI
-    { $$ = new GotoStmt(goto_normal, $2); }
+    { $$ = new AList<Stmt>(new GotoStmt(goto_normal, $2)); }
 ;
 
 
 break_stmt:
   TBREAK opt_identifier TSEMI
-    { $$ = new GotoStmt(goto_break, $2); }
+    { $$ = new AList<Stmt>(new GotoStmt(goto_break, $2)); }
 ;
 
 
 continue_stmt:
   TCONTINUE opt_identifier TSEMI
-    { $$ = new GotoStmt(goto_continue, $2); }
+    { $$ = new AList<Stmt>(new GotoStmt(goto_continue, $2)); }
 ;
 
 
 call_stmt:
   TCALL lvalue TSEMI
-    { $$ = new ExprStmt($2); }
+    { $$ = new AList<Stmt>(new ExprStmt($2)); }
 ;
 
 
 expr_stmt:
   top_level_expr TSEMI
-    { $$ = new ExprStmt($1); }
+    { $$ = new AList<Stmt>(new ExprStmt($1)); }
 ;
 
 
 if_stmt:
   TIF expr parsed_block_stmt            %prec TNOELSE
-    { $$ = new CondStmt($2, $3); }
+    { $$ = new AList<Stmt>(new CondStmt($2, $3)); }
 | TIF expr TTHEN stmt                   %prec TNOELSE
-    { $$ = new CondStmt($2, $4); }
+    { $$ = new AList<Stmt>(new CondStmt($2, $4)); }
 | TIF expr parsed_block_stmt TELSE stmt
-    { $$ = new CondStmt($2, $3, $5); }
+    { $$ = new AList<Stmt>(new CondStmt($2, $3, $5)); }
 | TIF expr TTHEN stmt TELSE stmt
-    { $$ = new CondStmt($2, $4, $6); }
+    { $$ = new AList<Stmt>(new CondStmt($2, $4, $6)); }
 ;
 
 
 for_stmt:
   for_stmt_tag nonempty_expr_ls TIN nonempty_expr_ls parsed_block_stmt
     {
-      $$ = Symboltable::defineForLoop($1, $2, $4, $5);
+      $$ = new AList<Stmt>(Symboltable::defineForLoop($1, $2, $4, $5));
     }
 | for_stmt_tag nonempty_expr_ls TIN nonempty_expr_ls TDO stmt
     { 
-      $$ = Symboltable::defineForLoop($1, $2, $4, new BlockStmt($6));
+      $$ = new AList<Stmt>(Symboltable::defineForLoop($1, $2, $4, new BlockStmt($6)));
     }
 | TLSBR nonempty_expr_ls TIN nonempty_expr_ls TRSBR stmt
     { 
-      $$ = Symboltable::defineForLoop(FORLOOPSTMT_FORALL, $2, $4, new BlockStmt($6));
+      $$ = new AList<Stmt>(Symboltable::defineForLoop(FORLOOPSTMT_FORALL, $2, $4, new BlockStmt($6)));
     }
 ;
 
@@ -385,11 +388,11 @@ for_stmt:
 while_do_stmt:
 TWHILE expr TDO stmt
     {
-      $$ = new WhileLoopStmt(true, $2, $4);
+      $$ = new AList<Stmt>(new WhileLoopStmt(true, $2, $4));
     }
 | TWHILE expr parsed_block_stmt
     {
-      $$ = new WhileLoopStmt(true, $2, $3);
+      $$ = new AList<Stmt>(new WhileLoopStmt(true, $2, $3));
     }
 ;
 
@@ -397,7 +400,7 @@ TWHILE expr TDO stmt
 do_while_stmt:
 TDO stmt TWHILE expr TSEMI
     {
-      $$ = new WhileLoopStmt(false, $4, $2);
+      $$ = new AList<Stmt>(new WhileLoopStmt(false, $4, $2));
     }
 ;
 
@@ -405,7 +408,7 @@ TDO stmt TWHILE expr TSEMI
 select_stmt:
   TSELECT expr TLCBR when_stmt_ls TRCBR
     {
-      $$ = new SelectStmt($2, $4);
+      $$ = new AList<Stmt>(new SelectStmt($2, $4));
     }
 ;
 
@@ -440,20 +443,20 @@ when_stmt:
 
 return_stmt:
   TRETURN opt_expr TSEMI
-    { $$ = new ReturnStmt($2); }
+    { $$ = new AList<Stmt>(new ReturnStmt($2)); }
 ;
 
 
 yield_stmt:
   TYIELD opt_expr TSEMI
-    { $$ = new ReturnStmt($2, true); }
+    { $$ = new AList<Stmt>(new ReturnStmt($2, true)); }
 ;
 
 
 assign_stmt:
   lvalue assign_op_tag expr TSEMI
     {
-      $$ = new ExprStmt(new CallExpr($2, $1, $3));
+      $$ = new AList<Stmt>(new ExprStmt(new CallExpr($2, $1, $3)));
     }
 ;
 
@@ -474,12 +477,7 @@ decl_stmt_ls:
     { $$ = new AList<Stmt>(); }
 | decl_stmt_ls pragma_ls decl_stmt
     {
-      $3->copyPragmas(*$2);
-      $1->insertAtTail($3);
-    }
-| decl_stmt_ls pragma_ls var_decl_stmt
-    {
-      $3->copyPragmas(*$2);
+      $3->first()->copyPragmas(*$2);
       $1->insertAtTail($3);
     }
 ;
@@ -495,24 +493,25 @@ decl_stmt:
 | enum_decl_stmt
 | typedef_decl_stmt
 | typevar_decl_stmt
+| var_decl_stmt
 ;
 
 
 with_stmt:
   TWITH lvalue TSEMI
-    { $$ = new ExprStmt(new ImportExpr(IMPORT_WITH, $2)); }
+    { $$ = new AList<Stmt>(new ExprStmt(new ImportExpr(IMPORT_WITH, $2))); }
 ;
 
 
 use_stmt:
   TUSE lvalue TSEMI
-    { $$ = new ExprStmt(new ImportExpr(IMPORT_USE, $2)); }
+    { $$ = new AList<Stmt>(new ExprStmt(new ImportExpr(IMPORT_USE, $2))); }
 ;
 
 
 where_stmt:
   TWHERE whereexpr TSEMI
-    { $$ = new ExprStmt($2); }
+    { $$ = new AList<Stmt>(new ExprStmt($2)); }
 ;
 
 
@@ -523,7 +522,7 @@ mod_decl_stmt:
     }
                      TLCBR stmt_ls TRCBR
     {
-      $$ = new ExprStmt(Symboltable::finishModuleDef($<pmodsym>3, $5));
+      $$ = new AList<Stmt>(new ExprStmt(Symboltable::finishModuleDef($<pmodsym>3, $5)));
     }
 ;
 
@@ -538,7 +537,7 @@ fn_decl_stmt:
       }
       Symboltable::continueFnDef($2, $3, dtUnknown, $4, $6);
       $2 = Symboltable::finishFnDef($2, $7);
-      $$ = new ExprStmt(new DefExpr($2, NULL, $5));
+      $$ = new AList<Stmt>(new ExprStmt(new DefExpr($2, NULL, $5)));
     }
 ;
 
@@ -760,7 +759,7 @@ class_decl_stmt:
       DefExpr* def = Symboltable::defineStructType($3, $1, $6);
       def->sym->copyPragmas(*$2);
       dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(def->sym)->definition)->inherits = $4;
-      $$ = new ExprStmt(def);
+      $$ = new AList<Stmt>(new ExprStmt(def));
     }
 ;
 
@@ -795,7 +794,7 @@ enum_decl_stmt:
       pst->copyPragmas(*$2);
       pdt->addSymbol(pst);
       DefExpr* def_expr = new DefExpr(pst);
-      $$ = new ExprStmt(def_expr);
+      $$ = new AList<Stmt>(new ExprStmt(def_expr));
     }
 ;
 
@@ -832,7 +831,7 @@ typedef_decl_stmt:
       typeSym->copyPragmas(*$2);
       newtype->addSymbol(typeSym);
       DefExpr* def_expr = new DefExpr(typeSym);
-      $$ = new ExprStmt(def_expr);
+      $$ = new AList<Stmt>(new ExprStmt(def_expr));
     }
 ;
 
@@ -845,13 +844,13 @@ typevar_decl_stmt:
       new_symbol->copyPragmas(*$2);
       new_type->addSymbol(new_symbol);
       DefExpr* def_expr = new DefExpr(new_symbol);
-      $$ = new ExprStmt(def_expr);
+      $$ = new AList<Stmt>(new ExprStmt(def_expr));
     }
 ;
 
 
 var_decl_stmt:
-  var_state_tag var_const_tag var_decl_inner_ls TSEMI
+  var_state_tag var_const_tag var_decl_stmt_inner_ls TSEMI
     {
       setVarSymbolAttributes($3, $1, $2);
       $$ = $3;
@@ -879,16 +878,16 @@ var_const_tag:
 ;
 
 
-var_decl_inner_ls:
-  var_decl_inner
-| var_decl_inner_ls TCOMMA var_decl_inner
+var_decl_stmt_inner_ls:
+  var_decl_stmt_inner
+| var_decl_stmt_inner_ls TCOMMA var_decl_stmt_inner
     {
       $1->insertAtTail($3);
     }
 ;
 
 
-var_decl_inner:
+var_decl_stmt_inner:
   identifier opt_var_type opt_init_expr
     {
       $$ = new AList<Stmt>(new ExprStmt(new DefExpr(new VarSymbol($1), $3, $2)));
@@ -1159,7 +1158,7 @@ top_level_expr:
     { $$ = new SymExpr(gNil); }
 | TUNSPECIFIED
     { $$ = new SymExpr(gUnspecified); }
-| TLET var_decl_inner_ls TIN expr
+| TLET var_decl_stmt_inner_ls TIN expr
     {
       AList<DefExpr>* symDefs = new AList<DefExpr>();
       for_alist(Stmt, stmt, $2) {

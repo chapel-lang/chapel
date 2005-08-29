@@ -12,6 +12,16 @@ void PreAnalysisHacks::postProcessStmt(Stmt* stmt) {
           loop->iterators->only()->copy(),
           new UnresolvedSymbol("_forall"))));
   }
+  if (BlockStmt* blockStmt = dynamic_cast<BlockStmt*>(stmt)) {
+    if (dynamic_cast<CondStmt*>(blockStmt->parentStmt)) {
+      if (blockStmt->body->length() == 1) {
+        if (BlockStmt* inner = dynamic_cast<BlockStmt*>(blockStmt->body->only())) {
+          inner->remove();
+          blockStmt->replace(inner);
+        }
+      }
+    }
+  }
 }
 
 static int
