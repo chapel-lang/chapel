@@ -45095,3 +45095,21 @@ Modified files:
 	chapel/compiler/include/: symscope.h 
 	chapel/compiler/symtab/: symscope.cpp 
 
+---------------------------------------------------------------------------
+
+08/30/05 11:16:58 -- deitz
+
+Log message:
+	Unified stmtContext, symContext, and exprContext into astParent.  It
+	points to the spot in the AST that the scope is related.  I named it
+	parent to indicate that it is a back pointer.  I collapsed these to
+	clean up a small amount of code because it was always the case that
+	exactly one was set.
+
+Modified files:
+	chapel/compiler/include/: symscope.h 
+	chapel/compiler/passes/: createEntryPoint.cpp 
+	chapel/compiler/symtab/: symscope.cpp symtab.cpp 
+	chapel/compiler/traversals/: createConfigVarTable.cpp fixup.cpp 
+	                             insertVariableInitializations.cpp 
+
