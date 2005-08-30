@@ -45113,3 +45113,60 @@ Modified files:
 	chapel/compiler/traversals/: createConfigVarTable.cpp fixup.cpp 
 	                             insertVariableInitializations.cpp 
 
+---------------------------------------------------------------------------
+
+08/30/05 13:17:48 -- jplevyak
+
+Log message:
+	Convert Literals -> Symbols.
+	- Added new hash table to store unique constant Symbols.
+	- Changed defaultValue to be a Symbol
+	- Changed UserType to have a defaultExpr to compliment the
+	   defaultValue, this is updated in insertDefaultInitVariables
+	- Removed all Literals and references to them
+	- error messages a couple .good files changes slightly
+	- Used if1 hash table to uniquify constant strings
+	- added new functions "get_int" and "get_string" on Expr to grab
+	    any constants if possible.
+	- Changed VarSymbol::print to print out the immediate portion instead
+	    of the name for constants
+	- Added new functions new_FloatSymbol (returning Symbol)
+	   new_FloatLiteral  (returning Expr) and the like for other
+	   primitive types.
+	- Note: while primitive Complex numbers are supported up to
+	    the runtime, they are not yet used.  If there is interest
+	    we could enable them through codegen.
+	- lots of other little changes to get all the tests to work
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: analysis.cpp ast.cpp fa.cpp if1.cpp 
+	                           sym.cpp 
+	chapel/compiler/backend/: dump.cpp graph.cpp 
+	chapel/compiler/include/: ast.h baseAST.h expr.h if1.h num.h 
+	                          sym.h symbol.h symtab.h type.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: insertDefaultInitVariables.cpp 
+	                         symtab.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             checkSemantics.cpp htmlview.cpp 
+	                             insertLiteralTemps.cpp 
+	                             insertThisParameters.cpp 
+	                             insertVariableInitializations.cpp 
+	                             preAnalysisHacks.cpp 
+	                             processParameters.cpp 
+	                             removeLiterals.cpp 
+	                             removeNamedParameters.cpp 
+	                             specializeCallExprs.cpp verify.cpp 
+	                             view.cpp 
+	chapel/compiler/vparser/: parse_ast.cpp 
+	chapel/test/flowanalysis/newast/: enum.good sum_type-1.good 
+	                                  sum_type-2.good 
+	chapel/test/types/seq/bradc/: length.modify.good 
+	chapel/test/types/type_variables/jplevyak/: where-2-error.good 
+Added files:
+	chapel/test/types/seq/bradc/: length.modify.prediff 
+	chapel/test/types/type_variables/jplevyak/: 
+	                                            where-2-error.prediff 
+
