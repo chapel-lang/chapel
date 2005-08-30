@@ -167,11 +167,11 @@ void HtmlView::preProcessExpr(Expr* expr) {
       write("<B>def</B> ");
       html_print_symbol(e->sym, true);
     }
-  } else if (Literal* e = dynamic_cast<Literal*>(expr)) {
-    if (dynamic_cast<StringLiteral*>(e)) {
-      write("<FONT COLOR=\"lightblue\">'%s'</FONT>", e->str);
+  } else if (VarSymbol* e = get_constant(expr)) {
+    if (e->immediate->const_kind == IF1_CONST_KIND_STRING) {
+      write("<FONT COLOR=\"lightblue\">'%s'</FONT>", e->immediate->v_string);
     } else {
-      write("<FONT COLOR=\"lightblue\">%s</FONT>", e->str);
+      write("<FONT COLOR=\"lightblue\">%s</FONT>", e->name);
     }
   } else if (SymExpr* e = dynamic_cast<SymExpr*>(expr)) {
     html_print_symbol(e->var, false);
@@ -211,7 +211,6 @@ void HtmlView::postProcessExpr(Expr* expr) {
       }
       write("</UL>\n");
     }
-  } else if (dynamic_cast<Literal*>(expr)) {
   } else if (dynamic_cast<SymExpr*>(expr)) {
   } else {
     write(")");
@@ -276,8 +275,9 @@ void HtmlView::html_print_symbol(Symbol* sym, bool def) {
         write(" constant: ");
       for (int i = 0; i < constants.n; i++) {
         if (i > 0) write(", ");
-        if (Literal *l = dynamic_cast<Literal *>(constants.v[i]))
-          write("<FONT COLOR=\"lightblue\">'%s'</FONT>", l->str);
+        char *s;
+        if (get_string(constants.v[i], &s))
+          write("<FONT COLOR=\"lightblue\">'%s'</FONT>", s);
         else if (SymExpr* v = dynamic_cast<SymExpr* >(constants.v[i]))          
           html_print_symbol(v->var, false);
         else 

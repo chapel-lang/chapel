@@ -15,7 +15,7 @@ void RemoveNamedParameters::postProcessExpr(Expr* expr) {
       else if (SymExpr* var = dynamic_cast<SymExpr*>(def->init)) {
         if (var->var == gNil) {
           if (type->defaultValue)
-            def->init->replace(type->defaultValue->copy());
+            def->init->replace(new SymExpr(type->defaultValue));
           else if (type->defaultConstructor)
             def->init->replace(new CallExpr(type->defaultConstructor));
           else if (analyzeAST) {
@@ -34,7 +34,7 @@ void RemoveNamedParameters::postProcessExpr(Expr* expr) {
         if (SymExpr* var = dynamic_cast<SymExpr*>(rhs)) {
           if (var->var == gNil) {
             if (type->defaultValue)
-              rhs->replace(type->defaultValue->copy());
+              rhs->replace(new SymExpr(type->defaultValue));
             else if (type->defaultConstructor)
               rhs->replace(new CallExpr(type->defaultConstructor));
             else if (analyzeAST) {

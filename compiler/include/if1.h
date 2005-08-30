@@ -13,11 +13,6 @@ class Primitives;
 
 extern char *builtin_strings[];
 
-class ImmHashFns { public:
-  static unsigned int hash(Immediate *);
-  static int equal(Immediate *, Immediate *);
-};
-
 class IF1 : public gc {
  public:
   StringChainHash       strings;                // unique strings

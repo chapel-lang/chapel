@@ -205,13 +205,13 @@ unalias_type(Sym *s) {
 }
 
 int 
-sprint(char *str, Immediate &imm, Sym *type) {
+sprint_imm(char *str, Immediate &imm) {
   int res = -1;
-  switch (type->num_kind) {
+  switch (imm.const_kind) {
     case IF1_NUM_KIND_NONE:
       break;
     case IF1_NUM_KIND_UINT: {
-      switch (type->num_index) {
+      switch (imm.num_index) {
         case IF1_INT_TYPE_1: 
           res = sprintf(str, "%u", imm.v_bool); break;
         case IF1_INT_TYPE_8: 
@@ -227,7 +227,7 @@ sprint(char *str, Immediate &imm, Sym *type) {
       break;
     }
     case IF1_NUM_KIND_INT: {
-      switch (type->num_index) {
+      switch (imm.num_index) {
         case IF1_INT_TYPE_8: 
           res = sprintf(str, "%d", imm.v_int8); break;
         case IF1_INT_TYPE_16:
@@ -241,23 +241,35 @@ sprint(char *str, Immediate &imm, Sym *type) {
       break;
     }
     case IF1_NUM_KIND_FLOAT:
-      switch (type->num_index) {
+      switch (imm.num_index) {
         case IF1_FLOAT_TYPE_32:
-          res = sprintf(str, "%f", imm.v_float32); break;
+          res = sprintf(str, "%g", imm.v_float32); break;
         case IF1_FLOAT_TYPE_64:
-          res = sprintf(str, "%f", imm.v_float64); break;
+          res = sprintf(str, "%g", imm.v_float64); break;
         default: assert(!"case");
       }
+      break;
+    case IF1_NUM_KIND_COMPLEX:
+      switch (imm.num_index) {
+        case IF1_FLOAT_TYPE_32:
+          res = sprintf(str, "(%g,%g)", imm.v_complex32.r, imm.v_complex32.i); break;
+        case IF1_FLOAT_TYPE_64:
+          res = sprintf(str, "(%g,%g)", imm.v_complex64.r, imm.v_complex64.i); break;
+        default: assert(!"case");
+      }
+      break;
+    case IF1_CONST_KIND_STRING:
+      res = sprintf(str, "%s", imm.v_string); break;
       break;
   }
   return res;
 }
 
 int 
-print(FILE *fp, Immediate &imm, Sym *type) {
+print_imm(FILE *fp, Immediate &imm) {
   char str[80];
   int res;
-  if ((res = sprint(str, imm, type) >= 0))
+  if ((res = sprint_imm(str, imm) >= 0))
     fprintf(fp, str);
   return res;
 }
@@ -358,24 +370,3 @@ Sym::coerce_to(Sym *to) {
   return NULL;
 }
 
-Immediate& Immediate::operator=(const Immediate& imm) {
-  memcpy(this, &imm, sizeof(imm));
-  return *this;
-}
-
-Immediate::Immediate() {
-  memset(this, 0, sizeof(*this));
-}
-
-unsigned int
-ImmHashFns::hash(Immediate *imm) {
-  unsigned int h = 0;
-  for (int i = 0; i < (int)(sizeof(*imm)/sizeof(unsigned int)); i++)
-    h = h + open_hash_multipliers[i] * ((unsigned int*)imm)[i];
-  return h;
-}
-
-int
-ImmHashFns::equal(Immediate *imm1, Immediate *imm2) {
-  return !memcmp(imm1, imm2, sizeof(*imm1));
-}

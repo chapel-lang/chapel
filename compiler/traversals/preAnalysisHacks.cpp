@@ -68,13 +68,13 @@ void PreAnalysisHacks::postProcessExpr(Expr* expr) {
 
 void PreAnalysisHacks::postProcessType(Type* type) {
   if (UserType* userType = dynamic_cast<UserType*>(type)) {
-    if (userType->defType == dtUnknown && 
-        userType->defExpr && check_type(userType->defExpr->typeInfo())) {
-      userType->defType = userType->defExpr->typeInfo();
-      userType->defExpr = NULL;
+    if (userType->underlyingType == dtUnknown && 
+        userType->typeExpr && check_type(userType->typeExpr->typeInfo())) {
+      userType->underlyingType = userType->typeExpr->typeInfo();
+      userType->typeExpr = NULL;
       if (!userType->defaultValue) {
-        if (userType->defType->defaultValue) {
-          userType->defaultValue = userType->defType->defaultValue->copy();
+        if (userType->underlyingType->defaultValue) {
+          userType->defaultValue = userType->underlyingType->defaultValue;
           ASTContext context;
           context.parentScope = userType->symbol->defPoint->parentScope;
           context.parentSymbol = userType->symbol;
@@ -82,7 +82,7 @@ void PreAnalysisHacks::postProcessType(Type* type) {
           context.parentExpr = NULL;
           insertHelper(userType->defaultValue, context);
         } else {
-          userType->defaultConstructor = userType->defType->defaultConstructor;
+          userType->defaultConstructor = userType->underlyingType->defaultConstructor;
         }
       }
     }

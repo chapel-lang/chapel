@@ -96,73 +96,6 @@ class Expr : public BaseAST {
 };
 #define forv_Expr(_p, _v) forv_Vec(Expr, _p, _v)
 
-
-class Literal : public Expr {
- public:
-  char* str;
-
-  Literal(astType_t astType, char* init_str);
-  virtual void verify(void); 
-  COPY_DEF(Literal);
-
-  virtual void print(FILE* outfile);
-  virtual void codegen(FILE* outfile);
-};
-
-
-class BoolLiteral : public Literal {
- public:
-  bool val;
-
-  BoolLiteral(char* initStr);
-  BoolLiteral(bool initVal);
-  virtual void verify(void); 
-  COPY_DEF(BoolLiteral);
-  bool boolVal(void);
-  
-  Type* typeInfo(void);
-};
-
-
-class IntLiteral : public Literal {
- public:
-  long val;
-
-  IntLiteral(char* initStr);
-  IntLiteral(int initVal);
-  virtual void verify(void); 
-  COPY_DEF(IntLiteral);
-
-  Type* typeInfo(void);
-
-  void codegen(FILE* outfile);
-};
-
-
-class FloatLiteral : public Literal {
- public:
-  double val;
-
-  FloatLiteral(char* init_str, double init_val);
-  virtual void verify(void); 
-  COPY_DEF(FloatLiteral);
-  virtual Type* typeInfo(void);
-};
-
-
-class StringLiteral : public Literal {
- public:
-  StringLiteral(char* init_val);
-  virtual void verify(void); 
-  COPY_DEF(StringLiteral);
-  Type* typeInfo(void);
-
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-  void printCfgInitString(FILE* outfile);
-};
-
-
 class DefExpr : public Expr {
  public:
   Symbol* sym;
@@ -386,5 +319,14 @@ class ImportExpr : public Expr {
   ClassType* getStruct(void);
 };
 
+Expr *new_BoolLiteral(bool b);
+Expr *new_IntLiteral(char *);
+Expr *new_IntLiteral(int i);
+Expr *new_FloatLiteral(char *n, double d);
+Expr *new_StringLiteral(char *str);
+
+bool get_int(Expr *e, long *i); // false is failure
+bool get_string(Expr *e, char **s); // false is failure
+VarSymbol *get_constant(Expr *e);
 
 #endif

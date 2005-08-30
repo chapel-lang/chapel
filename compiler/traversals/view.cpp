@@ -51,10 +51,12 @@ void View::preProcessExpr(Expr* expr) {
     printf("***");
   }
   printf("%s", astTypeName[expr->astType]);
-  if (IntLiteral* e = dynamic_cast<IntLiteral*>(expr)) {
-    printf(" %ld", e->val);
-  } else if (StringLiteral* e = dynamic_cast<StringLiteral*>(expr)) {
-    printf(" \"%s\"", e->str);
+  long i;
+  char *str;
+  if (get_int(expr, &i)) {
+    printf(" %ld", i);
+  } else if (get_string(expr, &str)) {
+    printf(" \"%s\"", str);
   }
   indent += 2;
 }

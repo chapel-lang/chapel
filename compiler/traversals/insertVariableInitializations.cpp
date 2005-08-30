@@ -13,7 +13,7 @@ static Stmt* basic_default_init_stmt(Stmt* stmt, VarSymbol* var, Type* type) {
     return NULL;
   } else if (type->defaultValue) {
     Expr* lhs = new SymExpr(var);
-    Expr* rhs = type->defaultValue->copy();
+    Expr* rhs = new SymExpr(type->defaultValue);
     Expr* init_expr = new CallExpr(OP_GETSNORM, lhs, rhs);
     return new ExprStmt(init_expr);
   } else if (type->defaultConstructor) {
@@ -37,11 +37,11 @@ static void insert_config_init(Stmt* stmt, VarSymbol* var, Type* type) {
   // Need a traversal to change complex literals into complex variable
   // temporaries for function calls.
 
-  Expr* init_expr = var->defPoint->init ? var->defPoint->init : type->defaultValue;
+  Expr* init_expr = var->defPoint->init ? var->defPoint->init : new SymExpr(type->defaultValue);
   AList<Expr>* args = new AList<Expr>(new SymExpr(var));
   args->insertAtTail(new SymExpr(type->symbol));
-  args->insertAtTail(new StringLiteral(copystring(var->name)));
-  args->insertAtTail(new StringLiteral(dynamic_cast<Symbol*>(var->parentScope->astParent)->name));
+  args->insertAtTail(new_StringLiteral(copystring(var->name)));
+  args->insertAtTail(new_StringLiteral(dynamic_cast<Symbol*>(var->parentScope->astParent)->name));
   CallExpr* call = new CallExpr(initConfigFn, args);
   Expr* assign = new CallExpr(OP_GETSNORM, var, init_expr->copy());
   ExprStmt* assign_stmt = new ExprStmt(assign);

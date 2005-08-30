@@ -45,5 +45,6 @@ void init_ast();
 void finalize_types(IF1 *);
 void make_meta_type(Sym *s);
 void build_type_hierarchy();
+void compute_type_size(Sym *s);
 
 #endif

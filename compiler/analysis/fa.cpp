@@ -1469,6 +1469,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
       case P_prim_primitive: {
         char *name = p->rvals.v[1]->sym->name;
         if (!name) name = p->rvals.v[1]->sym->constant;
+        if (!name) name = p->rvals.v[1]->sym->imm.v_string;
         if (!name)
           fail("bad primitive transfer function");
         RegisteredPrim *rp = fa->primitive_transfer_functions.get(name);
@@ -1927,7 +1928,7 @@ fa_dump_var_types(AVar *av, FILE *fp, int verbose = verbose_level) {
       fprintf(fp, "\"%s\" ", v->sym->constant);
     else {
       fprintf(fp, "\"");
-      print(fp, v->sym->imm, v->sym->type);
+      print_imm(fp, v->sym->imm);
       fprintf(fp, "\" ");
     }
   }
@@ -2267,7 +2268,7 @@ log_var_types(Var *v, Fun *f) {
       log(LOG_TEST_FA, "\"%s\" ", s->constant);
     else if (s->is_constant) {
       char c[128];
-      sprint(c, s->imm, s->type);
+      sprint_imm(c, s->imm);
       log(LOG_TEST_FA, "\"%s\" ", c);
     }
     if (s->log_line())

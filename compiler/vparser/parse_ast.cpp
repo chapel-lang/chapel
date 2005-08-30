@@ -124,7 +124,7 @@ dump_ast_tree(FILE *fp, Fun *f, ParseAST *a, int indent = 0) {
         fprintf(fp, " constant %s", a->sym->constant);
       else {
         fprintf(fp, " constant ");
-        print(fp, a->sym->imm, a->sym->type);
+        print_imm(fp, a->sym->imm);
       }
     } else if (a->sym->is_symbol)
       fprintf(fp, " symbol %s", a->sym->name);
@@ -151,7 +151,7 @@ dump_ast_tree(FILE *fp, Fun *f, ParseAST *a, int indent = 0) {
       fprintf(fp, " constants {");
       forv_Sym(s, consts) {
         fprintf(fp, " ");
-        print(fp, s->imm, s->type);
+        print_imm(fp, s->imm);
       }
       fprintf(fp, " }");
     }

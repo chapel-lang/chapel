@@ -635,7 +635,7 @@ print_syms(FILE *fp, Vec<Sym *> *syms, int start = 0) {
         fprintf(fp, " :CONSTANT %s", (char*)s->constant);
       else {
         fprintf(fp, " :CONSTANT ");
-        print(fp, s->imm, s->type);
+        print_imm(fp, s->imm);
       }
     }
     if (s->aspect) {
@@ -915,8 +915,8 @@ if1_dump(FILE *fp, Code *code) {
   if1_dump_code(fp, code, 0);
 }
 
-int pp(Immediate &imm, Sym *type) {
-  return print(stdout, imm, type);
+int pp(Immediate &imm) {
+  return print_imm(stdout, imm);
 }
 
 char *

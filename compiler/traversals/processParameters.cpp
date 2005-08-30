@@ -43,7 +43,7 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
         if (formal->intent != INTENT_OUT) {
           init = actual->copy();
         } else {
-          init = COPY(formal->type->defaultValue);
+          init = formal->type->defaultValue ? new SymExpr(formal->type->defaultValue) : NULL;
         }
         char* tmp_name = glomstrings(2, "_argtmp", intstring(uid++));
         VarSymbol* tmp = new VarSymbol(tmp_name, formal->type);

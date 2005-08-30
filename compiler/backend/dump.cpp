@@ -166,7 +166,7 @@ dump_var_type(FILE *fp, Var *v, int i) {
     fprintf(fp, " constants {");
     forv_Sym(s, consts) {
       fprintf(fp, " ");
-      print(fp, s->imm, s->type);
+      print_imm(fp, s->imm);
     }
     fprintf(fp, " }");
   }

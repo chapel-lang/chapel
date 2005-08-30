@@ -36,7 +36,6 @@ static void handleBasicSequenceAppendPrependOperations(CallExpr* seqCat) {
   }
 }
 
-
 static void destructureTuple(CallExpr* tuple) {
   static int uid = 1;
   char* name = glomstrings(2, "_tuple_tmp_", intstring(uid++));
@@ -49,13 +48,12 @@ static void destructureTuple(CallExpr* tuple) {
         new ExprStmt(
           new CallExpr(OP_GETSNORM, namedExpr->actual->copy(),
             new CallExpr(name,
-              new IntLiteral(i++)))));
+              new_IntLiteral(i++)))));
     }
     TRAVERSE(tuple->parentStmt->next, new InsertLiteralTemps(), true);
   }
   tuple->replace(new SymExpr(def->sym));
 }
-
 
 static void createTupleBaseType(int size) {
   char *name = glomstrings(2, "_tuple", intstring(size));
@@ -87,7 +85,7 @@ static void createTupleBaseType(int size) {
     AList<DefExpr>* formals = new AList<DefExpr>(new DefExpr(argSymbol));
     Expr* where = new CallExpr(OP_EQUAL, 
                                argSymbol,
-                               new IntLiteral(i));
+                               new_IntLiteral(i));
     Symboltable::continueFnDef(fn, formals, dtUnknown, true, where);
     AList<Stmt>* body = new AList<Stmt>(new ReturnStmt(new SymExpr(fields.v[i-1])));
     Symboltable::finishFnDef(fn, new BlockStmt(body));
@@ -104,21 +102,20 @@ static void createTupleBaseType(int size) {
                                    new SymExpr(new UnresolvedSymbol(name))));
   Symboltable::continueFnDef(fn, formals, dtUnknown, false, NULL);
   AList<Expr>* args = new AList<Expr>();
-  args->insertAtTail(new StringLiteral(copystring("(")));
+  args->insertAtTail(new_StringLiteral(copystring("(")));
   for (int i = 1; i <= size; i++) {
     if (i != 1) {
-      args->insertAtTail(new StringLiteral(copystring(", ")));
+      args->insertAtTail(new_StringLiteral(copystring(", ")));
     }
     args->insertAtTail(new MemberAccess(new SymExpr(new UnresolvedSymbol("val")),
                                         new UnresolvedSymbol(glomstrings(2, "_f", intstring(i)))));
   }
-  args->insertAtTail(new StringLiteral(copystring(")")));
+  args->insertAtTail(new_StringLiteral(copystring(")")));
   Stmt* writeBody = new ExprStmt(new CallExpr("write", args));
   AList<Stmt>* body = new AList<Stmt>(writeBody);
   Symboltable::finishFnDef(fn, new BlockStmt(body));
   commonModule->stmts->insertAtTail(new ExprStmt(new DefExpr(fn)));
 }
-
 
 void InsertLiteralTemps::postProcessExpr(Expr* expr) {
   if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {

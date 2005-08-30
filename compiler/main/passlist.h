@@ -44,6 +44,7 @@ PassInfo passlist[] = {
   RUN(PreAnalysisHacks, ""),
   RUN(ApplyGettersSetters, ""),
   RUN(PreAnalysisCleanup, ""),
+  
   RUN(RunAnalysis, ""),
  
   // passes to capture analysis information in the AST

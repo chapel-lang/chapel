@@ -1,3 +1,4 @@
+#include "geysa.h"
 #include <string.h>
 #include <typeinfo>
 #include "verify.h"
@@ -122,6 +123,12 @@ static void verifyParentScope(Symbol* sym) {
     return;
   }
 
+  /** 
+   **  Symbol is a constant
+   **/
+  if(strcmp(sym->name, "") == 0) { 
+    return;
+  }
   Symbol* match = Symboltable::lookupInScope(sym->name, sym->parentScope);
 
   /**

@@ -330,11 +330,6 @@ char* astTypeName[AST_TYPE_END+1] = {
   "GotoStmt",
 
   "Expr",
-  "Literal",
-  "BoolLiteral",
-  "IntLiteral",
-  "FloatLiteral",
-  "StringLiteral",
   "SymExpr",
   "DefExpr",
   "LetExpr",
@@ -434,12 +429,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
   case EXPR:
     LExprCommon:
     break;
-  case EXPR_LITERAL:
-  case EXPR_BOOLLITERAL:
-  case EXPR_INTLITERAL:
-  case EXPR_FLOATLITERAL:
-  case EXPR_STRINGLITERAL:
-    goto LExprCommon;
   case EXPR_SYM:
     ADD_CHILD(SymExpr, var);
     goto LExprCommon;
@@ -526,8 +515,9 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     ADD_LIST(EnumType, constants, DefExpr);
     goto LTypeCommon;
   case TYPE_USER:
-    AST_ADD_CHILD(UserType, defExpr);
-    ADD_CHILD(UserType, defType);
+    AST_ADD_CHILD(UserType, typeExpr);
+    AST_ADD_CHILD(UserType, defaultExpr);
+    ADD_CHILD(UserType, underlyingType);
     goto LTypeCommon;
   case TYPE_CLASS:
     ADD_LIST(ClassType, declarationList, Stmt);

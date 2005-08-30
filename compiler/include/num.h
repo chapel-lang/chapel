@@ -4,10 +4,11 @@
 #ifndef _num_h_
 #define _num_h_
 
+#include "geysa.h"
 #include "extern.h"
 #include "chpltypes.h"
 
-class Immediate { public:
+class Immediate : public gc { public:
   unsigned int const_kind : 4;
   unsigned int num_index : 3;
   union {
@@ -30,8 +31,17 @@ class Immediate { public:
   Immediate();
 };
 
+class ImmHashFns { public:
+  static unsigned int hash(Immediate *);
+  static int equal(Immediate *, Immediate *);
+};
+
 enum IF1_num_kind {
   IF1_NUM_KIND_NONE, IF1_NUM_KIND_UINT, IF1_NUM_KIND_INT, IF1_NUM_KIND_FLOAT, IF1_NUM_KIND_COMPLEX
+};
+
+enum IF1_const_kind {
+  IF1_CONST_KIND_STRING = IF1_NUM_KIND_COMPLEX + 1, IF1_CONST_KIND_SYMBOL
 };
 
 enum IF1_int_type { 
@@ -57,4 +67,26 @@ EXTERN int float_type_precision[8] EXTERN_INIT(CPP_IS_LAME);
 EXTERN char *num_kind_string[4][8] EXTERN_INIT(CPP_IS_LAME);
 #undef CPP_IS_LAME
 
+inline Immediate& Immediate::operator=(const Immediate& imm) {
+  memcpy(this, &imm, sizeof(imm));
+  return *this;
+}
+
+inline Immediate::Immediate() {
+  memset(this, 0, sizeof(*this));
+}
+
+inline unsigned int
+ImmHashFns::hash(Immediate *imm) {
+  unsigned int h = 0;
+  for (int i = 0; i < (int)(sizeof(*imm)/sizeof(unsigned int)); i++)
+    h = h + open_hash_multipliers[i] * ((unsigned int*)imm)[i];
+  return h;
+}
+
+inline int
+ImmHashFns::equal(Immediate *imm1, Immediate *imm2) {
+  return !memcmp(imm1, imm2, sizeof(*imm1));
+}
 #endif
+

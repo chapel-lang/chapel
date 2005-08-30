@@ -1,5 +1,6 @@
 #include <typeinfo>
 #include <string.h>
+#include "num.h"
 #include "analysis.h"
 #include "expr.h"
 #include "fa.h"
@@ -260,7 +261,7 @@ void Expr::codegenCastToString(FILE* outfile) {
   Type* exprType = typeInfo();
   // BLC: could we fold this into typeInfo somehow?
   while (UserType* userType = dynamic_cast<UserType*>(exprType)) {
-    exprType = userType->defType;
+    exprType = userType->underlyingType;
   }
   if (exprType == dtString) {
     codegen(outfile);
@@ -283,189 +284,6 @@ void Expr::codegenCastToString(FILE* outfile) {
     exprType->codegenDefaultFormat(outfile, false);
     fprintf(outfile, ")");
   }
-}
-
-
-Literal::Literal(astType_t astType, char* init_str) :
-  Expr(astType),
-  str(copystring(init_str))
-{}
-
-
-void Literal::verify() {
-  INT_FATAL(this, "Literal::verify() should never be called");
-}
-
-
-Literal*
-Literal::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  INT_FATAL(this, "Illegal call to Literal::copy");
-  return NULL;
-}
-
-
-void Literal::print(FILE* outfile) {
-  fprintf(outfile, "%s", str);
-}
-
-
-void Literal::codegen(FILE* outfile) {
-  fprintf(outfile, "%s", str);
-}
-
-
-BoolLiteral::BoolLiteral(char* initStr) :
-  Literal(EXPR_BOOLLITERAL, initStr)
-{
-  if (!strcmp(initStr, "true")) {
-    val = true;
-  } else if (!strcmp(initStr, "false")) {
-    val = false;
-  } else if (!strcmp(initStr, "1")) {
-    val = true;
-  } else if (!strcmp(initStr, "0")) {
-    val = false;
-  } else {
-    INT_FATAL("Bad call to BoolLiteral with String %s", initStr);
-  }
-}
-
-
-BoolLiteral::BoolLiteral(bool initVal) :
-  Literal(EXPR_BOOLLITERAL, initVal ? copystring("true") : copystring("false")),
-  val(initVal)
-{}
-
-
-void BoolLiteral::verify() {
-  if (astType != EXPR_BOOLLITERAL) {
-    INT_FATAL(this, "Bad BoolLiteral::astType");
-  }
-}
-
-
-BoolLiteral*
-BoolLiteral::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new BoolLiteral(str);
-}
-
-
-bool BoolLiteral::boolVal(void) {
-  return val;
-}
-
-
-Type* BoolLiteral::typeInfo(void) {
-  return dtBoolean;
-}
-
-
-IntLiteral::IntLiteral(char* initStr) :
-  Literal(EXPR_INTLITERAL, initStr),
-  val(atol(initStr)) 
-{}
-
-
-IntLiteral::IntLiteral(int initVal) :
-  Literal(EXPR_INTLITERAL, intstring(initVal)),
-  val(initVal) 
-{}
-
-
-void IntLiteral::verify() {
-  if (astType != EXPR_INTLITERAL) {
-    INT_FATAL(this, "Bad IntLiteral::astType");
-  }
-}
-
-
-IntLiteral*
-IntLiteral::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new IntLiteral(str);
-}
-
-
-Type* IntLiteral::typeInfo(void) {
-  return dtInteger;
-}
-
-
-void IntLiteral::codegen(FILE* outfile) {
-  // This is special cased to ensure that we don't generate C octal
-  // literals accidentally
-  int len = strlen(str);
-  int i;
-  for (i=0; i<len; i++) {
-    if (str[i] != '0') {
-      fprintf(outfile, "%s", str+i);
-      return;
-    }
-  }
-  fprintf(outfile, "0");
-}
-
-
-FloatLiteral::FloatLiteral(char* init_str, double init_val) :
-  Literal(EXPR_FLOATLITERAL, init_str),
-  val(init_val) 
-{}
-
-
-void FloatLiteral::verify() {
-  if (astType != EXPR_FLOATLITERAL) {
-    INT_FATAL(this, "Bad FloatLiteral::astType");
-  }
-}
-
-
-FloatLiteral*
-FloatLiteral::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new FloatLiteral(copystring(str), val);
-}
-
-
-Type* FloatLiteral::typeInfo(void) {
-  return dtFloat;
-}
-
-
-StringLiteral::StringLiteral(char* init_val) :
-  Literal(EXPR_STRINGLITERAL, init_val)
-{}
-
-
-void StringLiteral::verify() {
-  if (astType != EXPR_STRINGLITERAL) {
-    INT_FATAL(this, "Bad StringLiteral::astType");
-  }
-}
-
-
-StringLiteral*
-StringLiteral::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new StringLiteral(copystring(str));
-}
-
-
-Type* StringLiteral::typeInfo(void) {
-  return dtString;
-}
-
-
-void StringLiteral::print(FILE* outfile) {
-  fprintf(outfile, "\"%s\"", str);
-}
-
-
-void StringLiteral::codegen(FILE* outfile) {
-  fprintf(outfile, "\"%s\"", str);
-}
-
-
-void StringLiteral::printCfgInitString(FILE* outfile) {
-  fprintf(outfile, "\"");
-  fprintf(outfile, "%s", str);
-  fprintf(outfile, "\"");
 }
 
 
@@ -1332,7 +1150,7 @@ void ForallExpr::codegen(FILE* outfile) {
 
 
 void initExpr(void) {
-  dtNil->defaultValue = new SymExpr(gNil);
+  dtNil->defaultValue = gNil;
 }
 
 
@@ -1603,7 +1421,8 @@ getClassType(Symbol *s) {
   return NULL;
 }
 
-ClassType* ImportExpr::getStruct(void) {
+ClassType* 
+ImportExpr::getStruct(void) {
   if (SymExpr* var = dynamic_cast<SymExpr*>(expr)) {
     if (ClassType *result = getClassType(var->var))
       return result;
@@ -1615,3 +1434,75 @@ ClassType* ImportExpr::getStruct(void) {
   INT_FATAL(this, "Cannot find ClassType in ImportExpr");
   return NULL;
 }
+
+Expr *
+new_BoolLiteral(bool b) {
+  return new SymExpr(new_BoolSymbol(b));
+}
+
+Expr *
+new_IntLiteral(char *l) {
+  return new SymExpr(new_IntSymbol(atoi(l)));
+}
+
+Expr *
+new_IntLiteral(int i) {
+  return new SymExpr(new_IntSymbol(i));
+}
+
+Expr *
+new_FloatLiteral(char *n, double d) {
+  return new SymExpr(new_FloatSymbol(n, d));
+}
+
+Expr *
+new_StringLiteral(char *s) {
+  return new SymExpr(new_StringSymbol(s));
+}
+
+bool 
+get_int(Expr *e, long *i) {
+  if (e) {
+    if (SymExpr *l = dynamic_cast<SymExpr*>(e)) {
+      if (VarSymbol *v = dynamic_cast<VarSymbol*>(l->var)) {
+        if (v->immediate &&
+            v->immediate->const_kind == IF1_NUM_KIND_INT &&
+            v->immediate->num_index == IF1_INT_TYPE_64) {
+          *i = v->immediate->v_int64;
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+bool 
+get_string(Expr *e, char **s) {
+  if (e) {
+    if (SymExpr *l = dynamic_cast<SymExpr*>(e)) {
+      if (VarSymbol *v = dynamic_cast<VarSymbol*>(l->var)) {
+        if (v->immediate && v->immediate->const_kind == IF1_CONST_KIND_STRING) {
+          *s = v->immediate->v_string;
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+VarSymbol * 
+get_constant(Expr *e) {
+  if (e) {
+    if (SymExpr *l = dynamic_cast<SymExpr*>(e)) {
+      if (VarSymbol *v = dynamic_cast<VarSymbol*>(l->var)) {
+        if (v->immediate != 0)
+          return v;
+      }
+    }
+  }
+  return 0;
+}
+
+

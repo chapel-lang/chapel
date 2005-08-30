@@ -369,21 +369,26 @@ make_meta_types(IF1 *i) {
  }
 }
 
+void
+compute_type_size(Sym *s) {
+  if (s->type_kind || s->is_constant || s->is_symbol) {
+    Sym *type = s->type;
+    if (!type) 
+      return; // wait till after finalize_symbols
+    if (type->is_symbol || type->type_kind == Type_TAGGED) {
+      type = unalias_type(sym_int);
+      s->size = if1_numeric_size(if1, type);
+    } else if (type->num_kind)
+      s->size = if1_numeric_size(if1, type);
+    else
+      s->size = if1->pointer_size;
+  }
+}
+
 static void
 compute_type_sizes(IF1 *i) {
-  for (int x = finalized_types; x < i->allsyms.n; x++) {
-    Sym *s = i->allsyms.v[x];
-    if (s->type_kind || s->is_constant || s->is_symbol) {
-      Sym *type = s->type;
-      if (type->is_symbol || type->type_kind == Type_TAGGED) {
-        type = unalias_type(sym_int);
-        s->size = if1_numeric_size(i, type);
-      } else if (type->num_kind)
-        s->size = if1_numeric_size(i, type);
-      else
-        s->size = i->pointer_size;
-    }
-  }
+  for (int x = finalized_types; x < i->allsyms.n; x++)
+    compute_type_size(i->allsyms.v[x]);
 }
 
 void

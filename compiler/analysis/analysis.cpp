@@ -286,7 +286,7 @@ close_symbols(Vec<AList<Stmt> *> &stmts, Vec<BaseAST *> &syms) {
 static Sym *
 base_type(Sym *s) {
   if (UserType *t = dynamic_cast<UserType*>(s->asymbol->symbol))
-    return base_type(t->defType->asymbol->sym);
+    return base_type(t->underlyingType->asymbol->sym);
   return s;
 }
 
@@ -321,6 +321,22 @@ new_ASymbol(Symbol *symbol, int basic = 0) {
     s->sym = new Sym;
   s->sym->asymbol = s;
   if1_register_sym(if1, s->sym, name);
+  s->symbol = symbol;
+  return s;
+}
+
+static ASymbol *
+new_ASymbol(Symbol *symbol, Sym *sym) {
+  char *name = 0;
+  if (symbol)
+    name = symbol->name;
+  ASymbol *s = sym->asymbol;
+  if (!s)
+    s = sym->asymbol = new ASymbol;
+  assert(!s->symbol || s->symbol == symbol);
+  assert(!s->sym || s->sym == sym);
+  s->sym = sym;
+  s->sym->asymbol = s;  
   s->symbol = symbol;
   return s;
 }
@@ -390,8 +406,11 @@ finalize_symbols(IF1 *i) {
         Sym *t = v->type->asymbol->sym;
         if (t->num_kind)
           s->type = t;
+        if (s->is_constant)
+          s->type = t;
       }
     }
+    compute_type_size(s);
   }
   finalized_symbols = i->allsyms.n;
 }
@@ -431,9 +450,9 @@ install_new_function(FnSymbol *f, FnSymbol *old_f, Map<BaseAST*,BaseAST*> *map =
       fail("unable to instantiate generic/wrapper");
     if1_finalize_closure(if1, f->asymbol->sym);
   }
+  finalize_symbols(if1);
   build_type_hierarchy();
   build_classes(syms);
-  finalize_symbols(if1);
   finalize_types(if1);
   forv_Vec(FnSymbol, f, funs) {
     Fun *fun = new Fun(f->asymbol->sym);
@@ -466,45 +485,7 @@ get_constant_Expr(Sym *c) {
   Expr *e = constant_cache.get(c);
   if (e)
     return e;
-  if (c->type && c->type->num_kind) {
-    char name[256];
-    sprint(name, c->imm, c->type);
-    switch (c->type->num_kind) {
-      default: fail("type unsupported in AST");
-      case IF1_NUM_KIND_UINT:
-        switch (c->type->num_index) {
-          default: fail("type unsupported in AST");
-          case IF1_INT_TYPE_1:
-            e = new BoolLiteral(name);
-            break;
-        }
-        break;
-      case IF1_NUM_KIND_INT:
-        switch (c->type->num_index) {
-          default: fail("type unsupported in AST");
-          case IF1_INT_TYPE_64:
-            e = new IntLiteral(name);
-            break;
-        }
-        break;
-      case IF1_NUM_KIND_FLOAT:
-        switch (c->type->num_index) {
-          default: fail("type unsupported in AST");
-          case IF1_FLOAT_TYPE_64:
-            e = new FloatLiteral(name, c->imm.v_int64);
-            break;
-        }
-        break;
-      case IF1_NUM_KIND_COMPLEX:
-        INT_FATAL(e, "Uh Oh Steve");
-        break;
-    }
-  } else if (c->type == sym_string) {
-    e = new StringLiteral(c->constant);
-  } else if (c->is_fun || c->is_symbol) {
-    e = new SymExpr(dynamic_cast<Symbol*>(c->asymbol->symbol));
-  } else
-    fail("type unsupported by get_constant_Expr");
+  e = new SymExpr(dynamic_cast<Symbol*>(c->asymbol->symbol));  
   constant_cache.put(c, e);
   return e;
 }
@@ -694,36 +675,63 @@ map_type(Type *t) {
   }
 }
 
+VarSymbol *
+is_literal(Symbol* sym) {
+  if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym))
+    if (var->immediate)
+      return var;
+  return 0;
+}
+
+Sym *
+map_const(IF1 *p, Immediate *imm) {
+  Sym *sym = p->constants.get(imm);
+  if (sym)
+    return sym;
+  sym = new_Sym();
+  sym->is_constant = 1;
+  sym->meta_type = sym;
+  sym->imm = *imm;
+  p->constants.put(&sym->imm, sym);
+  return sym;
+}
+
 static void
 map_baseast(BaseAST *s) {
   Symbol *sym = dynamic_cast<Symbol *>(s);
   if (sym) {
     if (sym->asymbol)
       return;
-    int basic = (s->astType != SYMBOL_FN) && (s->astType != SYMBOL_ENUM);
-    sym->asymbol = new_ASymbol(sym, basic);
-    sym->asymbol->symbol = sym;
-    if (!sym->parentScope) {
-      sym->asymbol->sym->global_scope = 1;
+    if (VarSymbol *var = is_literal(sym)) {
+      Sym *s = map_const(if1, var->immediate);
+      sym->asymbol = new_ASymbol(sym, s);
     } else {
-      switch (sym->parentScope->type) {
-        default: assert(0);
-        case SCOPE_INTRINSIC:
-        case SCOPE_PRELUDE:
-        case SCOPE_MODULE:
-        case SCOPE_POSTPARSE:
-          sym->asymbol->sym->global_scope = 1;
-          break;
-        case SCOPE_LETEXPR:
-        case SCOPE_ARG:
-        case SCOPE_LOCAL:
-        case SCOPE_FORLOOP:
-        case SCOPE_FORALLEXPR:
-          sym->asymbol->sym->function_scope = 1;
-          sym->asymbol->sym->nesting_depth = sym->nestingDepth();
-          break;
-        case SCOPE_CLASS: // handled as the symbols appears in code
-          break;
+      int basic = (s->astType != SYMBOL_FN) && (s->astType != SYMBOL_ENUM);
+      sym->asymbol = new_ASymbol(sym, basic);
+      sym->asymbol->symbol = sym;
+    
+      if (!sym->parentScope) {
+        sym->asymbol->sym->global_scope = 1;
+      } else {
+        switch (sym->parentScope->type) {
+          default: assert(0);
+          case SCOPE_INTRINSIC:
+          case SCOPE_PRELUDE:
+          case SCOPE_MODULE:
+          case SCOPE_POSTPARSE:
+            sym->asymbol->sym->global_scope = 1;
+            break;
+          case SCOPE_LETEXPR:
+          case SCOPE_ARG:
+          case SCOPE_LOCAL:
+          case SCOPE_FORLOOP:
+          case SCOPE_FORALLEXPR:
+            sym->asymbol->sym->function_scope = 1;
+            sym->asymbol->sym->nesting_depth = sym->nestingDepth();
+            break;
+          case SCOPE_CLASS: // handled as the symbols appears in code
+            break;
+        }
       }
     }
     if (sym->astType == SYMBOL_ARG) {
@@ -883,13 +891,7 @@ build_patterns(Vec<BaseAST *> &syms) {
 
 static Sym *
 get_defaultVal(Type *t) {
-  SymExpr* v = dynamic_cast<SymExpr*>(t->defaultValue);
-  if (v)
-    return v->var->asymbol->sym;
-  assert(dynamic_cast<Literal*>(t->defaultValue));
-  if (!t->defaultValue->ainfo->sym)
-    gen_if1(t->defaultValue);
-  return t->defaultValue->ainfo->rval;
+  return t->defaultValue->asymbol->sym;
 }
 
 static Sym *
@@ -919,15 +921,12 @@ build_type(Type *t, bool make_default = true) {
       t->asymbol->sym->inherits_add(sym_enum_element);
       Vec<DefExpr *> elements;
       tt->constants->getElements(elements);
-      int i = 0;
+      long i = 0;
       forv_Vec(DefExpr, def, elements) {
         Sym *ss = def->sym->asymbol->sym;
-        if (def->init) {
-          if (IntLiteral* intLiteral = dynamic_cast<IntLiteral*>(def->init)) {
-            i = intLiteral->val;
-          } else {
-            USR_FATAL(def->init, "Enum symbols can only be initialized to integer literals currently.");
-          }
+        if (def->init && !get_int(def->init, &i)) {
+          USR_FATAL(def->init, 
+                    "Enum symbols can only be initialized to integer literals currently.");
         }
         build_enum_element(t->asymbol->sym, ss, i);
         t->asymbol->sym->has.add(ss);
@@ -938,7 +937,7 @@ build_type(Type *t, bool make_default = true) {
     case TYPE_USER: {
       UserType *tt = dynamic_cast<UserType*>(t);
       t->asymbol->sym->type_kind = Type_ALIAS;
-      t->asymbol->sym->alias = tt->defType->asymbol->sym;
+      t->asymbol->sym->alias = tt->underlyingType->asymbol->sym;
       break;
     }
     case TYPE_CLASS: {
@@ -1251,13 +1250,6 @@ make_symbol(char *name) {
 }
 
 static Sym *
-make_const(Sym *type, char *c, Immediate *imm) {
-  Sym *s = if1_const(if1, type, c, imm);
-  s->global_scope = 1;
-  return s;
-}
-
-static Sym *
 constructor_name(Type *t) {
   return t->defaultConstructor->asymbol->sym;
 }
@@ -1267,7 +1259,7 @@ gen_one_defexpr(VarSymbol *var, DefExpr *def) {
   Type *type = var->type;
 #ifdef MAKE_USER_TYPE_BE_DEFINITION
   while (type->astType == TYPE_USER)
-    type = ((UserType*)type)->defType;
+    type = ((UserType*)type)->underlyingType;
 #endif
   Sym *s = var->asymbol->sym;
   AInfo *ast = def->ainfo;
@@ -1504,22 +1496,21 @@ gen_paren_op(CallExpr *s) {
   Vec<Sym *> rvals;
   forv_Vec(Expr, a, args) {
     if1_gen(if1, &ast->code, a->ainfo->code);
+    assert(a->ainfo->rval);
     rvals.add(a->ainfo->rval);
   }
   astType_t base_symbol = undef_or_fn_expr(s->baseExpr);
   Sym *base = NULL;
-  char *n = s->baseExpr->ainfo->rval->name;
+  char *n = s->baseExpr->ainfo->rval->name, *str;
   if (n && !strcmp(n, "__primitive")) {
-    if (args.n > 0 && dynamic_cast<StringLiteral*>(args.v[0]) &&
-        if1->primitives->prim_map[0][0].get(
-          if1_cannonicalize_string(if1, dynamic_cast<StringLiteral*>(args.v[0])->str))) 
+    if (args.n > 0 && get_string(args.v[0], &str) &&
+        if1->primitives->prim_map[0][0].get(if1_cannonicalize_string(if1, str)))
     {
-      rvals.v[0] = if1_get_builtin(if1, dynamic_cast<StringLiteral*>(args.v[0])->str);
+      rvals.v[0] = if1_get_builtin(if1, str);
       base = 0;
-    } else if (args.n == 3 && dynamic_cast<StringLiteral*>(args.v[1]) &&
-               if1->primitives->prim_map[1][1].get(
-                 if1_cannonicalize_string(if1, dynamic_cast<StringLiteral*>(args.v[1])->str))) {
-      rvals.v[1] = make_symbol(rvals.v[1]->constant);
+    } else if (args.n == 3 && get_string(args.v[1], &str) &&
+               if1->primitives->prim_map[1][1].get(if1_cannonicalize_string(if1, str))) {
+      rvals.v[1] = make_symbol(str);
       base = sym_operator;
     } else
       base = sym_primitive;
@@ -1697,6 +1688,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       if (s->expr) {
         fn->fun_returns_value = 1;
         if1_gen(if1, &s->ainfo->code, s->expr->ainfo->code);
+        if (s->expr->ainfo->rval == NULL) s->expr->print(stdout);
         if1_move(if1, &s->ainfo->code, s->expr->ainfo->rval, fn->ret, s->ainfo);
       } else 
         if1_move(if1, &s->ainfo->code, sym_void, fn->ret, s->ainfo);
@@ -1726,40 +1718,6 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       Expr *s = dynamic_cast<Expr*>(ast);
       assert(!ast); 
       s->ainfo->rval = sym_nil;
-      break;
-    }
-    case EXPR_LITERAL: assert(!"case"); break;
-    case EXPR_BOOLLITERAL: {
-      BoolLiteral *s = dynamic_cast<BoolLiteral*>(ast);
-      Immediate imm;
-      imm.v_bool = s->val;
-      Sym *c = make_const(sym_bool, s->str, &imm);
-      s->ainfo->rval = c;
-      break;
-    }
-    case EXPR_INTLITERAL: {
-      IntLiteral *s = dynamic_cast<IntLiteral*>(ast);
-      Immediate imm;
-      imm.v_int64 = s->val;
-      Sym *c = make_const(sym_int64, s->str, &imm);
-      s->ainfo->rval = c;
-      break;
-    }
-    case EXPR_FLOATLITERAL: {
-      FloatLiteral *s = dynamic_cast<FloatLiteral*>(ast);
-      Immediate imm;
-      imm.v_float64 = s->val;
-      Sym *c = make_const(sym_float64, s->str, &imm);
-      s->ainfo->rval = c;
-      break;
-    }
-    case EXPR_STRINGLITERAL: {
-      StringLiteral *s = dynamic_cast<StringLiteral*>(ast);
-      char *str = if1_cannonicalize_string(if1, s->str);
-      Immediate imm;
-      imm.v_string = str;
-      Sym *c = make_const(sym_string, str, &imm);
-      s->ainfo->rval = c;
       break;
     }
     case EXPR_SYM: {
@@ -1920,15 +1878,14 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
 }
 
 static void
-fun_where_equal_constant(FnSymbol *f, SymExpr* v, Literal *c) {
+fun_where_equal_constant(FnSymbol *f, SymExpr* v, VarSymbol *c) {
   if (ArgSymbol *s = dynamic_cast<ArgSymbol*>(v->var)) {
     if (!s->isGeneric) {
       show_error("where constraint on non-generic %s", f->body->ainfo, s->name);
       return;
     }
-    gen_if1(c);
-    s->asymbol->sym->must_implement = c->ainfo->rval;
-    s->asymbol->sym->must_specialize =  c->ainfo->rval;
+    s->asymbol->sym->must_implement = c->asymbol->sym;
+    s->asymbol->sym->must_specialize =  c->asymbol->sym;
   }
 }
 
@@ -1941,13 +1898,11 @@ fun_where_clause(FnSymbol *f, Expr *w) {
     fun_where_clause(f, op->get(1));
     fun_where_clause(f, op->get(2));
   } if (op->opTag == OP_EQUAL) {
-    Literal *c = 0;
+    VarSymbol *c = 0;
     SymExpr* v = 0;
-    if ((c = dynamic_cast<Literal*>(op->get(1))) && 
-        (v = dynamic_cast<SymExpr*>(op->get(2)))) 
+    if ((c = get_constant(op->get(1))) && (v = dynamic_cast<SymExpr*>(op->get(2)))) 
       fun_where_equal_constant(f, v, c);
-    else if ((c = dynamic_cast<Literal*>(op->get(2))) &&
-             (v = dynamic_cast<SymExpr*>(op->get(1)))) 
+    else if ((c = get_constant(op->get(2))) && (v = dynamic_cast<SymExpr*>(op->get(1)))) 
       fun_where_equal_constant(f, v, c);
   }
 }
@@ -2667,8 +2622,8 @@ ast_to_if1(Vec<AList<Stmt> *> &stmts) {
   SREG("indextype_set", indextype_set);
   SREG("chpl_alloc", chpl_alloc);
   SREG("pure_return", pure_return);
-  build_type_hierarchy();
   finalize_symbols(if1);
+  build_type_hierarchy();
   finalize_types(if1);  // again to catch any new ones
   return 0;
 }

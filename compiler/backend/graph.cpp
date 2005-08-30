@@ -273,7 +273,7 @@ graph_var_node(FILE *fp, Var *v, int options = 0) {
       strcat(id, " {");
       forv_Sym(s, consts) {
         strcat(id, " ");
-        sprint(id + strlen(id), s->imm, s->type);
+        sprint_imm(id + strlen(id), s->imm);
       }
       strcat(id, " }");
     }
@@ -353,7 +353,7 @@ graph_avar_node(FILE *fp, AVar *av) {
     strcat(label, " {");
     forv_Sym(s, consts) {
       strcat(label, " ");
-      sprint(label + strlen(label), s->imm, s->type);
+      sprint_imm(label + strlen(label), s->imm);
     }
     strcat(label, " }");
   }

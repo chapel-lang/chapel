@@ -38,7 +38,7 @@ class Type : public BaseAST {
   Vec<Type*> dispatchParents; // dispatch hierarchy
 
   TypeSymbol* symbol;
-  Expr* defaultValue;
+  Symbol* defaultValue;
   FnSymbol *defaultConstructor;
   ASymbol *asymbol;
   Vec<FnSymbol*> methods;
@@ -48,7 +48,7 @@ class Type : public BaseAST {
   Type *instantiatedFrom;
   Map<BaseAST*,BaseAST*> substitutions;
 
-  Type(astType_t astType, Expr* init_defaultVal);
+  Type(astType_t astType, Symbol* init_defaultVal);
   virtual void verify(void); 
   COPY_DEF(Type);
   void addSymbol(TypeSymbol* newSymbol);
@@ -120,12 +120,13 @@ class EnumType : public Type {
 
 class UserType : public Type {
  public:
-  Expr* defExpr;
-  Type* defType;
+  Expr* typeExpr;               
+  Type* underlyingType;         
+  Expr* defaultExpr;            
 
-  UserType(Type* init_defType, Expr* init_defaultVal = NULL);
-  UserType(Expr* init_defExpr, Expr* init_defaultVal = NULL);
-  UserType(Expr* init_defExpr, Type* init_defType, Expr* init_defaultVal = NULL);
+  UserType(Type* init_underlyingType, Expr* init_defaultExpr = NULL);
+  UserType(Expr* init_typeExpr, Expr* init_defaultExpr = NULL);
+  UserType(Expr* init_typeExpr, Type* init_underlyingType, Expr* init_defaultExpr = NULL);
   virtual void verify(void); 
   COPY_DEF(UserType);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -232,7 +233,7 @@ class VariableType : public Type {
 
 class PrimitiveType : public Type {
  public:
-  PrimitiveType(Expr *init_defaultVal = NULL);
+  PrimitiveType(Symbol *init_defaultVal = NULL);
   virtual void verify(void); 
 };
 

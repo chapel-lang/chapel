@@ -20,7 +20,7 @@ static void addWriteStmt(AList<Stmt>* body, Expr* arg) {
 }
 
 
-Type::Type(astType_t astType, Expr* init_defaultVal) :
+Type::Type(astType_t astType, Symbol* init_defaultVal) :
   BaseAST(astType),
   symbol(NULL),
   defaultValue(init_defaultVal),
@@ -65,7 +65,7 @@ Type *Type::instantiate_generic(Map<BaseAST *, BaseAST *> &substitutions) {
 
 void Type::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == defaultValue) {
-    defaultValue = dynamic_cast<Expr*>(new_ast);
+    defaultValue = dynamic_cast<Symbol*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in Type::replaceChild");
   }
@@ -241,8 +241,8 @@ AList<Stmt>* Type::buildDefaultReadFunctionBody(ArgSymbol* arg) {
 }
 
 
-PrimitiveType::PrimitiveType(Expr *initExpr) :
-  Type(TYPE_PRIMITIVE, initExpr)
+PrimitiveType::PrimitiveType(Symbol *init) :
+  Type(TYPE_PRIMITIVE, init)
 {}
 
 
@@ -282,7 +282,7 @@ void FnType::codegenDef(FILE* outfile) {
 
 
 EnumType::EnumType(AList<DefExpr>* init_constants) :
-  Type(TYPE_ENUM, new SymExpr(init_constants->first()->sym)),
+  Type(TYPE_ENUM, init_constants->first()->sym),
   constants(init_constants)
 { }
 
@@ -307,7 +307,7 @@ EnumType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
 
 void EnumType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == defaultValue) {
-    defaultValue = dynamic_cast<Expr*>(new_ast);
+    defaultValue = dynamic_cast<Symbol*>(new_ast);
   } else if (old_ast == constants) {
     constants = dynamic_cast<AList<DefExpr>*>(new_ast);
   } else {
@@ -447,24 +447,27 @@ AList<Stmt>* EnumType::buildDefaultReadFunctionBody(ArgSymbol* arg) {
 }
 
 
-UserType::UserType(Type* init_defType, Expr* init_defaultVal) :
-  Type(TYPE_USER, init_defaultVal),
-  defExpr(NULL),
-  defType(init_defType)
+UserType::UserType(Type* init_underlyingType, Expr* init_defaultExpr) :
+  Type(TYPE_USER, NULL),
+  typeExpr(NULL),
+  underlyingType(init_underlyingType),
+  defaultExpr(NULL)
 {}
 
 
-UserType::UserType(Expr* init_defExpr, Expr* init_defaultVal) :
-  Type(TYPE_USER, init_defaultVal),
-  defExpr(init_defExpr),
-  defType(dtUnknown)
+UserType::UserType(Expr* init_typeExpr, Expr* init_defaultExpr) :
+  Type(TYPE_USER, NULL),
+  typeExpr(init_typeExpr),
+  underlyingType(dtUnknown),
+  defaultExpr(init_defaultExpr)
 {}
 
 
-UserType::UserType(Expr* init_defExpr, Type* init_defType, Expr* init_defaultVal) :
-  Type(TYPE_USER, init_defaultVal),
-  defExpr(init_defExpr),
-  defType(init_defType)
+UserType::UserType(Expr* init_typeExpr, Type* init_underlyingType, Expr* init_defaultExpr) :
+  Type(TYPE_USER, NULL),
+  typeExpr(init_typeExpr),
+  underlyingType(init_underlyingType),
+  defaultExpr(init_defaultExpr)
 {}
 
 
@@ -480,9 +483,9 @@ void UserType::verify(void) {
 
 UserType*
 UserType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  UserType* copy = new UserType(COPY_INTERNAL(defExpr),
-                                COPY_INTERNAL(defType),
-                                COPY_INTERNAL(defaultValue));
+  UserType* copy = new UserType(COPY_INTERNAL(typeExpr),
+                                COPY_INTERNAL(underlyingType),
+                                COPY_INTERNAL(defaultExpr));
   copy->addSymbol(symbol);
   return copy;
 }
@@ -490,9 +493,9 @@ UserType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
 
 void UserType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == defaultValue) {
-    defaultValue = dynamic_cast<Expr*>(new_ast);
-  } else if (old_ast == defExpr) {
-    defExpr = dynamic_cast<Expr*>(new_ast);
+    defaultValue = dynamic_cast<Symbol*>(new_ast);
+  } else if (old_ast == defaultExpr) {
+    defaultExpr = dynamic_cast<Expr*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in Type::replaceChild");
   }
@@ -500,8 +503,9 @@ void UserType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 void UserType::traverseDefType(Traversal* traversal) {
-  TRAVERSE(defExpr, traversal, false);
-  TRAVERSE(defType, traversal, false);
+  TRAVERSE(typeExpr, traversal, false);
+  TRAVERSE(underlyingType, traversal, false);
+  TRAVERSE(defaultExpr, traversal, false);
   TRAVERSE(defaultValue, traversal, false);
 }
 
@@ -510,13 +514,13 @@ void UserType::printDef(FILE* outfile) {
   fprintf(outfile, "type ");
   symbol->print(outfile);
   fprintf(outfile, " = ");
-  defExpr->print(outfile);
+  defaultExpr->print(outfile);
 }
 
 
 void UserType::codegenDef(FILE* outfile) {
   fprintf(outfile, "typedef ");
-  defType->codegen(outfile);
+  underlyingType->codegen(outfile);
   fprintf(outfile, " ");
   symbol->codegen(outfile);
   fprintf(outfile, ";\n");
@@ -524,7 +528,7 @@ void UserType::codegenDef(FILE* outfile) {
 
 
 void UserType::codegenDefaultFormat(FILE* outfile, bool isRead) {
-  defType->codegenDefaultFormat(outfile, isRead);
+  underlyingType->codegenDefaultFormat(outfile, isRead);
 }
 
 
@@ -537,7 +541,7 @@ ClassType::ClassType(ClassTag initClassTag) :
 {
   if (classTag == CLASS_CLASS) { // set defaultValue to nil to keep it
                                  // from being constructed
-    defaultValue = new SymExpr(gNil);
+    defaultValue = gNil;
   }
   fields.clear();
   methods.clear();
@@ -617,7 +621,7 @@ void ClassType::addDeclarations(AList<Stmt>* newDeclarations,
 
 void ClassType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == defaultValue) {
-    defaultValue = dynamic_cast<Expr*>(new_ast);
+    defaultValue = dynamic_cast<Symbol*>(new_ast);
   } else if (old_ast == declarationList) {
     declarationList = dynamic_cast<AList<Stmt>*>(new_ast);
   } else if (old_ast == inherits) {
@@ -651,7 +655,7 @@ ClassType::isNominalType() {
 int
 is_Scalar_Type(Type *t) {
   if (UserType *ut = dynamic_cast<UserType*>(t))
-    return is_Scalar_Type(ut->defType);
+    return is_Scalar_Type(ut->underlyingType);
   return t && 
     t != dtUnknown && 
     t != dtString && 
@@ -664,7 +668,7 @@ is_Scalar_Type(Type *t) {
 int
 is_Value_Type(Type *t) {
   if (UserType *ut = dynamic_cast<UserType*>(t))
-    return is_Value_Type(ut->defType);
+    return is_Value_Type(ut->underlyingType);
   ClassType* ct = dynamic_cast<ClassType*>(t);
   return ct && (ct->classTag == CLASS_RECORD
                 || ct->classTag == CLASS_UNION
@@ -675,7 +679,7 @@ is_Value_Type(Type *t) {
 int
 is_Reference_Type(Type *t) {
   if (UserType *ut = dynamic_cast<UserType*>(t))
-    return is_Reference_Type(ut->defType);
+    return is_Reference_Type(ut->underlyingType);
   if (!t)
     return false;
   if (t == dtNil || t->astType == TYPE_SUM)
@@ -688,7 +692,7 @@ is_Reference_Type(Type *t) {
 static Expr *
 init_expr(Type *t) {
   if (t->defaultValue)
-    return t->defaultValue->copy();
+    return new SymExpr(t->defaultValue);
   else if (t->defaultConstructor)
     return new CallExpr(t->defaultConstructor);
   else
@@ -829,7 +833,7 @@ AList<Stmt>* ClassType::buildDefaultWriteFunctionBody(ArgSymbol* arg) {
   AList<Stmt>* body = new AList<Stmt>();
   if (classTag == CLASS_CLASS) {
     AList<Stmt>* writeNil =
-      new AList<Stmt>(new ExprStmt(new CallExpr("write", new StringLiteral("nil"))));
+      new AList<Stmt>(new ExprStmt(new CallExpr("write", new_StringLiteral("nil"))));
     writeNil->insertAtTail(new ReturnStmt(NULL));
     BlockStmt* blockStmt = new BlockStmt(writeNil);
     Symbol* nil = Symboltable::lookupInternal("nil", SCOPE_INTRINSIC);
@@ -838,26 +842,26 @@ AList<Stmt>* ClassType::buildDefaultWriteFunctionBody(ArgSymbol* arg) {
   }
 
   if (classTag == CLASS_CLASS || classTag == CLASS_VALUECLASS) {
-    addWriteStmt(body, new StringLiteral("{"));
+    addWriteStmt(body, new_StringLiteral("{"));
   } else {
-    addWriteStmt(body, new StringLiteral("("));
+    addWriteStmt(body, new_StringLiteral("("));
   }
 
   bool first = true;
   forv_Vec(Symbol, tmp, fields) {
     if (!first) {
-      addWriteStmt(body, new StringLiteral(", "));
+      addWriteStmt(body, new_StringLiteral(", "));
     }
-    addWriteStmt(body, new StringLiteral(tmp->name));
-    addWriteStmt(body, new StringLiteral(" = "));
+    addWriteStmt(body, new_StringLiteral(tmp->name));
+    addWriteStmt(body, new_StringLiteral(" = "));
     addWriteStmt(body, new MemberAccess(new SymExpr(arg), tmp));
     first = false;
   }
 
   if (classTag == CLASS_CLASS || classTag == CLASS_VALUECLASS) {
-    addWriteStmt(body, new StringLiteral("}"));
+    addWriteStmt(body, new_StringLiteral("}"));
   } else {
-    addWriteStmt(body, new StringLiteral(")"));
+    addWriteStmt(body, new_StringLiteral(")"));
   }
 
   return body;
@@ -913,8 +917,8 @@ CallExpr* ClassType::buildSafeUnionAccessCall(unionCall type, Expr* base,
   char* id_tag = buildFieldSelectorName(this, field);
   args->insertAtTail(new SymExpr(Symboltable::lookupFromScope(id_tag, structScope)));
   if (type == UNION_CHECK) {
-    args->insertAtTail(new StringLiteral(base->filename));
-    args->insertAtTail(new IntLiteral(base->lineno));
+    args->insertAtTail(new_StringLiteral(base->filename));
+    args->insertAtTail(new_IntLiteral(base->lineno));
   }
   
   switch (type) {
@@ -959,7 +963,7 @@ void MetaType::traverseDefType(Traversal* traversal) {
 }
 
 SumType::SumType() :
-  Type(TYPE_SUM, new SymExpr(Symboltable::lookupInternal("nil", SCOPE_INTRINSIC)))
+  Type(TYPE_SUM, gNil)
 {
 }
 
@@ -1023,11 +1027,11 @@ void initType(void) {
   dtVoid = Symboltable::definePrimitiveType("void", "void");
   dtNil = Symboltable::definePrimitiveType("_nilType", "_nilType");
 
-  dtBoolean = Symboltable::definePrimitiveType("boolean", "_boolean", new BoolLiteral(false));
-  dtInteger = Symboltable::definePrimitiveType("integer", "_integer64", new IntLiteral(0));
-  dtFloat = Symboltable::definePrimitiveType("float", "_float64", new FloatLiteral("0.0", 0.0));
+  dtBoolean = Symboltable::definePrimitiveType("boolean", "_boolean", new_BoolSymbol(false));
+  dtInteger = Symboltable::definePrimitiveType("integer", "_integer64", new_IntSymbol(0));
+  dtFloat = Symboltable::definePrimitiveType("float", "_float64", new_FloatSymbol("0.0", 0.0));
   // This should point to the complex type defined in modules/standard/_chpl_complex.chpl
-  dtComplex = Symboltable::definePrimitiveType("complex", "_complex128", new FloatLiteral("0.0", 0.0));
+  dtComplex = Symboltable::definePrimitiveType("complex", "_complex128", new_ComplexSymbol("_MAKE_COMPLEX64(0.0,0.0)", 0.0, 0.0));
   dtString = Symboltable::definePrimitiveType("string", "_string");
 
   dtNumeric = Symboltable::definePrimitiveType("numeric", "_numeric");

@@ -14,7 +14,7 @@ void CheckSemantics::preProcessExpr(Expr* expr) {
 
   if (DefExpr* defExpr = dynamic_cast<DefExpr*>(expr)) {
     if (defExpr->sym->isParam()) {
-      if (defExpr->init && !dynamic_cast<IntLiteral*>(defExpr->init)) {
+      if (defExpr->init && !get_constant(defExpr->init)) {
         USR_FATAL(defExpr, "Initializing param to a variable expression.");
       }
       if (!defExpr->init && dynamic_cast<FnSymbol*>(defExpr->parentSymbol) &&

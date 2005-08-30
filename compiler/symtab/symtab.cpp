@@ -478,10 +478,13 @@ Symboltable::defineForLoop(ForLoopStmtTag forLoopStmtTag,
 }
 
 
-PrimitiveType* Symboltable::definePrimitiveType(char* name, char* cname, Expr *initExpr) {
-  return dynamic_cast<PrimitiveType*>(defineBuiltinType(name, cname, new PrimitiveType(initExpr)));
+PrimitiveType* Symboltable::definePrimitiveType(char* name, char* cname, Symbol *initSymbol) {
+  PrimitiveType *t = 
+    dynamic_cast<PrimitiveType*>(defineBuiltinType(name, cname, new PrimitiveType(initSymbol)));
+  if (initSymbol)
+    initSymbol->type = t; // little chicken and the egg problem
+  return t;
 }
-
 
 Type* Symboltable::defineBuiltinType(char* name, char* cname, Type *newType) {
   TypeSymbol* sym = new TypeSymbol(name, newType);

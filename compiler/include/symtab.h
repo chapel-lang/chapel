@@ -51,7 +51,7 @@ class Symboltable {
   static DefExpr* finishModuleDef(ModuleSymbol* mod, AList<Stmt>* def);
   static DefExpr* Symboltable::defineParam(intentTag tag, char* ident,
                                            Expr* type, Expr* init);
-  static PrimitiveType* Symboltable::definePrimitiveType(char* name, char* cname, Expr* initExpr = NULL);
+  static PrimitiveType* Symboltable::definePrimitiveType(char* name, char* cname, Symbol* initSymbol = NULL);
   static Type* Symboltable::defineBuiltinType(char* name, char* cname, Type* newType);
   static FnSymbol* startFnDef(FnSymbol* fnsym);
   static void continueFnDef(FnSymbol* fnsym, AList<DefExpr>* formals, 

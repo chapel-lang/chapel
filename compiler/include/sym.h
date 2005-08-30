@@ -22,10 +22,6 @@ class CloneCallback;
 class Sym;
 class ASymbol;
 
-enum IF1_const_kind {
-  IF1_CONST_KIND_STRING = IF1_NUM_KIND_COMPLEX + 1, IF1_CONST_KIND_SYMBOL
-};
-
 enum Type_kind {
   Type_NONE,            // Sym is not a type
   Type_UNKNOWN,         // type is not given (e.g. type parameter, forward decl)
@@ -175,8 +171,8 @@ Sym *unalias_type(Sym *s);
 Sym *meta_apply(Sym *fn, Sym *arg);
 
 void convert_constant_to_immediate(Sym *sym);
-int print(FILE *fp, Immediate &imm, Sym *type);
-int sprint(char *s, Immediate &imm, Sym *type);
+int print_imm(FILE *fp, Immediate &imm);
+int sprint_imm(char *s, Immediate &imm);
 int compar_syms(const void *ai, const void *aj);
 void coerce_numeric(Sym *s, Sym *t, Immediate *im);
 

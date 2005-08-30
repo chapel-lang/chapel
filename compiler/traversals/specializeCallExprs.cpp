@@ -18,7 +18,7 @@ static Stmt* genExit(FnSymbol *fnSym) {
   BlockStmt* body = fnSym->body;
   SymScope* fnScope = body->blkScope;
   SymScope* prevScope = Symboltable::setCurrentScope(fnScope);
-  ExprStmt *c = new ExprStmt(new CallExpr("exit", new IntLiteral(0)));
+  ExprStmt *c = new ExprStmt(new CallExpr("exit", new_IntLiteral(0)));
   Symbol* retvalSym = Symboltable::lookupInCurrentScope("_retval");
   if (retvalSym) {
     BlockStmt *b = new BlockStmt(c);
@@ -38,19 +38,19 @@ static ExprStmt* genWriteln(void) {
 }
 
 
-static ExprStmt* genWrite(Literal* expression) {
+static ExprStmt* genWrite(Expr* expression) {
   return new ExprStmt(new CallExpr("write", expression));
 }
 
 
 static ExprStmt* genIntWriteExpr(int newInt) {
-  IntLiteral* expression = new IntLiteral(newInt);
+  Expr* expression = new_IntLiteral(newInt);
   return genWrite(expression);
 }
 
 
 static ExprStmt* genStringWriteExpr(char* newString) {
-  StringLiteral* expression = new StringLiteral(newString);
+  Expr* expression = new_StringLiteral(newString);
   return genWrite(expression);
 }
 

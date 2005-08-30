@@ -1,4 +1,5 @@
 #include <typeinfo>
+#include "if1.h"
 #include "analysis.h"
 #include "files.h"
 #include "misc.h"
@@ -254,6 +255,14 @@ void VarSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 void VarSymbol::traverseDefSymbol(Traversal* traversal) {
   TRAVERSE(type, traversal, false);
+}
+
+
+void VarSymbol::print(FILE* outfile) {
+  if (immediate)
+    print_imm(outfile, *immediate);
+  else
+    fprintf(outfile, "%s", name);
 }
 
 
@@ -1185,7 +1194,7 @@ void ModuleSymbol::createInitFn(void) {
     runOnce = glomstrings(3, "__run_", name, "_firsttime");
     // create a boolean variable to guard module initialization
     DefExpr* varDefExpr = new DefExpr(new VarSymbol(runOnce, dtBoolean),
-                                      new BoolLiteral(true));
+                                      new_BoolLiteral(true));
     // insert its definition in the common module's init function
     commonModule->initFn->body->body->insertAtHead(new ExprStmt(varDefExpr));
  
@@ -1194,7 +1203,7 @@ void ModuleSymbol::createInitFn(void) {
     // filtering)
     Expr* assignVar = new CallExpr(OP_GETSNORM,
                                    new SymExpr(new UnresolvedSymbol(runOnce)),
-                                   new BoolLiteral(false));
+                                   new_BoolLiteral(false));
     definition->insertAtHead(new ExprStmt(assignVar));
   }
 
@@ -1276,4 +1285,100 @@ initSymbol() {
   rootScope->define(gNil); // SJD: Should intrinsics have DefExprs?
   gUnspecified = new VarSymbol("_", dtUnknown, VAR_NORMAL, VAR_CONST);
   rootScope->define(gUnspecified); // SJD: Should intrinsics have DefExprs?
+}
+
+static int literal_id = 1;
+HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
+
+Symbol *new_StringSymbol(char *str) {
+  Immediate imm;
+  imm.const_kind = IF1_CONST_KIND_STRING;
+  imm.v_string = if1_cannonicalize_string(if1, str);
+  VarSymbol *s = uniqueConstantsHash.get(&imm);
+  if (s)
+    return s;
+  s = new VarSymbol(glomstrings(2, "_literal_", intstring(literal_id++)), dtString);
+  int l = strlen(str);
+  char *n = (char*)MALLOC(l + 3);
+  strcpy(n + 1, str);
+  n[0]='\"';
+  n[l+1]='\"';
+  n[l+2]=0;
+  s->cname = n;
+  s->immediate = new Immediate;
+  *s->immediate = imm;
+  uniqueConstantsHash.put(s->immediate, s);
+  return s;
+}
+
+Symbol *new_BoolSymbol(bool b) {
+  Immediate imm;
+  imm.v_bool = b;
+  imm.const_kind = IF1_NUM_KIND_UINT;
+  imm.num_index = IF1_INT_TYPE_1;
+  VarSymbol *s = uniqueConstantsHash.get(&imm);
+  if (s)
+    return s;
+  s = new VarSymbol(glomstrings(2, "_literal_", intstring(literal_id++)), dtBoolean);
+  if (b)
+    s->cname = "true";
+  else
+    s->cname = "false";
+  s->immediate = new Immediate;
+  *s->immediate = imm;
+  uniqueConstantsHash.put(s->immediate, s);
+  return s;
+}
+
+Symbol *new_IntSymbol(long b) {
+  Immediate imm;
+  imm.v_int64 = b;
+  imm.const_kind = IF1_NUM_KIND_INT;
+  imm.num_index = IF1_INT_TYPE_64;
+  VarSymbol *s = uniqueConstantsHash.get(&imm);
+  if (s)
+    return s;
+  s = new VarSymbol(glomstrings(2, "_literal_", intstring(literal_id++)), dtInteger);
+  char n[80];
+  sprintf(n, "%ld", b);
+  s->cname = dupstr(n);
+  s->immediate = new Immediate;
+  *s->immediate = imm;
+  uniqueConstantsHash.put(s->immediate, s);
+  return s;
+}
+
+Symbol *new_FloatSymbol(char *n, double b) {
+  (void)n;
+  Immediate imm;
+  imm.v_float64 = b;
+  imm.const_kind = IF1_NUM_KIND_FLOAT;
+  imm.num_index = IF1_FLOAT_TYPE_64;
+  VarSymbol *s = uniqueConstantsHash.get(&imm);
+  if (s)
+    return s;
+  s = new VarSymbol(glomstrings(2, "_literal_", intstring(literal_id++)), dtFloat);
+  s->immediate = new Immediate;
+  s->cname = dupstr(n);
+  *s->immediate = imm;
+  uniqueConstantsHash.put(s->immediate, s);
+  return s;
+}
+
+Symbol *new_ComplexSymbol(char *n, double r, double i) {
+  (void)n;
+  Immediate imm;
+  imm.v_complex64.r = r;
+  imm.v_complex64.i = i;
+  imm.const_kind = IF1_NUM_KIND_COMPLEX;
+  imm.num_index = IF1_FLOAT_TYPE_64;
+  VarSymbol *s = uniqueConstantsHash.get(&imm);
+  if (s)
+    return s;
+  s = new VarSymbol(glomstrings(2, "_literal_", intstring(literal_id++)), dtComplex);
+  s->immediate = new Immediate;
+  s->cname = dupstr(n);
+  *s->immediate = imm;
+  uniqueConstantsHash.put(s->immediate, s);
+  return s;
 }

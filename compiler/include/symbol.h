@@ -5,13 +5,14 @@
 #include "baseAST.h"
 #include "analysis.h"
 #include "type.h"
+#include "num.h"
 
 class DefExpr;
 class Stmt;
 class BlockStmt;
 class ASymbol;
 class SymScope;
-class MPosition;
+class Immediate;
 
 enum fnType {
   FN_FUNCTION,
@@ -57,7 +58,7 @@ class Symbol : public BaseAST {
   virtual bool isParam(void);
   bool isThis(void);
 
-  void print(FILE* outfile);
+  virtual void print(FILE* outfile);
   virtual void printDef(FILE* outfile);
   virtual void codegen(FILE* outfile);
   virtual void codegenDef(FILE* outfile);
@@ -91,6 +92,7 @@ class VarSymbol : public Symbol {
  public:
   varType varClass;
   consType consClass;
+  Immediate *immediate;
   bool noDefaultInit;
 
   //changed isconstant flag to reflect var, const, param: 0, 1, 2
@@ -108,6 +110,7 @@ class VarSymbol : public Symbol {
   bool isParam(void);
   virtual void codegenDef(FILE* outfile);
 
+  void print(FILE* outfile);
   void printDef(FILE* outfile);
 };
 
@@ -269,6 +272,15 @@ class LabelSymbol : public Symbol {
 
 void initSymbol();
 TypeSymbol *new_UnresolvedTypeSymbol(char *init_name);
+
+Symbol *new_StringSymbol(char *s);
+Symbol *new_BoolSymbol(bool b);
+Symbol *new_IntSymbol(long b);
+Symbol *new_FloatSymbol(char *n, double b);
+Symbol *new_ComplexSymbol(char *n, double r, double i);
+
+extern HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
+extern StringChainHash uniqueStringHash;
 
 extern Symbol *gNil;
 extern Symbol *gUnspecified;

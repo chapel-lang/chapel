@@ -62,7 +62,7 @@ void InsertThisParameters::preProcessExpr(Expr* expr) {
       char* description = glomstrings(2, "instance of class ", typeSym->name);
       Expr* alloc_rhs = new CallExpr(Symboltable::lookupInternal("_chpl_alloc"),
                                      new SymExpr(typeSym),
-                                     new StringLiteral(description));
+                                     new_StringLiteral(description));
       Expr* alloc_lhs = new SymExpr(fn->_this);
       Expr* alloc_expr = new CallExpr(OP_GETSNORM, alloc_lhs, alloc_rhs);
       Stmt* alloc_stmt = new ExprStmt(alloc_expr);

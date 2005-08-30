@@ -1,6 +1,4 @@
 ::B(enum.chpl:1) ( classVals )
-::S(enum.chpl:1) ( classVals )
-::_init_classVals3(enum.chpl:1) ( classVals )
 ::val(enum.chpl:1) ( classVals )
 ::x(enum.chpl:3) ( classVals )
 ::y(enum.chpl:7) ( int64 )

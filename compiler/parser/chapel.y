@@ -989,7 +989,7 @@ record_inner_type_ls:
 
 tuple_multiplier:
   INTLITERAL
-    { $$ = new IntLiteral(yytext); }
+    { $$ = new_IntLiteral(yytext); }
 /* | non_tuple_lvalue */
 ;
 
@@ -1177,7 +1177,7 @@ top_level_expr:
     }
 | expr TCOLON STRINGLITERAL
   { 
-    $$ = new CallExpr("_tostring", $1, new StringLiteral($3));
+    $$ = new CallExpr("_tostring", $1, new_StringLiteral($3));
   }
 | range %prec TDOTDOT
 | if_expr
@@ -1241,23 +1241,23 @@ reduction:
 range:
   expr TDOTDOT expr
     {
-      $$ = new CallExpr("_aseq", $1, $3, new IntLiteral(1));
+      $$ = new CallExpr("_aseq", $1, $3, new_IntLiteral(1));
     }
 ;
 
 
 literal:
   INTLITERAL
-    { $$ = new IntLiteral(yytext); }
+    { $$ = new_IntLiteral(yytext); }
 | FLOATLITERAL
-    { $$ = new FloatLiteral(yytext, atof(yytext)); }
+    { $$ = new_FloatLiteral(yytext, atof(yytext)); }
 | IMAGLITERAL
     {
       yytext[strlen(yytext)-1] = '\0';
-      $$ = new CallExpr("complex", new FloatLiteral("0.0", 0.0), new FloatLiteral(yytext, atof(yytext)));
+      $$ = new CallExpr("complex", new_FloatLiteral("0.0", 0.0), new_FloatLiteral(yytext, atof(yytext)));
     }
 | STRINGLITERAL
-    { $$ = new StringLiteral($1); }
+    { $$ = new_StringLiteral($1); }
 ;
 
 
