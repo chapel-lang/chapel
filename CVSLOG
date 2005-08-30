@@ -45035,3 +45035,17 @@ Modified files:
 	                         symtab.cpp 
 	chapel/compiler/traversals/: fixup.cpp 
 
+---------------------------------------------------------------------------
+
+08/30/05 09:21:06 -- deitz
+
+Log message:
+	Continued cleanup of visible functions.  All functions with any formal
+	arguments of class type (not record) are now globally visible.  Set
+	the stage for the more incremental approach.
+
+Modified files:
+	chapel/compiler/include/: symscope.h 
+	chapel/compiler/symtab/: computeVisibleFunctions.cpp 
+	                         computeVisibleFunctions.h symscope.cpp 
+
