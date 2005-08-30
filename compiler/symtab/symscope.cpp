@@ -6,12 +6,42 @@
 #include "symtabTraversal.h"
 #include "if1.h"
 #include "../passes/filesToAST.h"
+#include "../passes/runAnalysis.h"
 #include "files.h"
+
+#define DO_NOT_COMPUTE_VISIBLE_FUNCTIONS_DURING_ANALYSIS
 
 #define OPERATOR_CHAR(_c) \
   (((_c > ' ' && _c < '0') || (_c > '9' && _c < 'A') || \
     (_c > 'Z' && _c < 'a') || (_c > 'z')) &&            \
    _c != '_'&& _c != '?' && _c != '$')                  \
+
+
+static bool
+isGloballyVisible(FnSymbol* fn) {
+  if (fn->typeBinding) {
+    if (ClassType* ct = dynamic_cast<ClassType*>(fn->typeBinding->definition)) {
+      if (ct->isNominalType()) {
+        return true;
+      }
+    }
+  }
+  for_alist(DefExpr, def, fn->formals) {
+    if (ClassType* ct = dynamic_cast<ClassType*>(def->sym->type)) {
+      if (ct->isNominalType()) {
+        return true;
+      }
+    }
+  }
+  if (fn->fnClass == FN_CONSTRUCTOR) {
+    if (ClassType* ct = dynamic_cast<ClassType*>(fn->retType)) {
+      if (ct->isNominalType()) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
 
 
 SymScope::SymScope(scopeType init_type) :
@@ -81,10 +111,21 @@ void SymScope::define(Symbol* sym) {
     sym->setParentScope(this);
     symbols.add(sym);
   }
+  if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
+    if (isGloballyVisible(fn)) {
+      rootScope->addVisibleFunction(fn);
+    } else {
+      addVisibleFunction(fn);
+    }
+  }
 }
 
 
 void SymScope::undefine(Symbol* sym) {
+  if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
+    rootScope->removeVisibleFunction(fn);
+    removeVisibleFunction(fn);
+  }
   for (int i = 0; i < symbols.n; i++) {
     if (symbols.v[i]) {
       if (symbols.v[i] == sym) {
@@ -289,56 +330,30 @@ bool SymScope::commonModuleIsFirst() {
 }
 
 
-static bool
-isGloballyVisible(FnSymbol* fn) {
-  if (fn->typeBinding) {
-    if (ClassType* ct = dynamic_cast<ClassType*>(fn->typeBinding->definition)) {
-      if (ct->isNominalType()) {
-        return true;
-      }
-    }
-  }
-  for_alist(DefExpr, def, fn->formals) {
-    if (ClassType* ct = dynamic_cast<ClassType*>(def->sym->type)) {
-      if (ct->isNominalType()) {
-        return true;
-      }
-    }
-  }
-  if (fn->fnClass == FN_CONSTRUCTOR) {
-    if (ClassType* ct = dynamic_cast<ClassType*>(fn->retType)) {
-      if (ct->isNominalType()) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-
-static void
-addVisibleFunctionsHelper(Map<char*,Vec<FnSymbol*>*>* visibleFunctions,
-                          FnSymbol* fn) {
+void SymScope::addVisibleFunction(FnSymbol* fn) {
+#ifdef DO_NOT_COMPUTE_VISIBLE_FUNCTIONS_DURING_ANALYSIS
+  if (RunAnalysis::isRunning)
+    return;
+#endif
   int is_setter = (fn->name[0] == '=' && !OPERATOR_CHAR(fn->name[1]) &&
                    fn->name[1] != '\0');
-  char *n = if1_cannonicalize_string(if1, fn->name + (is_setter ? 1 : 0));
-  Vec<FnSymbol*>* fs = visibleFunctions->get(n);
+  char* n = if1_cannonicalize_string(if1, fn->name + (is_setter ? 1 : 0));
+  Vec<FnSymbol*>* fs = visibleFunctions.get(n);
   if (!fs) fs = new Vec<FnSymbol*>;
   fs->add(fn);
-  visibleFunctions->put(n, fs);
+  visibleFunctions.put(n, fs);
 }
 
 
-void SymScope::setVisibleFunctions(FnSymbol* fn) {
-  forv_Vec(Symbol, symbol, symbols) {
-    for (Symbol* sym = symbol; sym; sym = sym->overload) {
-      if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
-        if (isGloballyVisible(fn)) {
-          addVisibleFunctionsHelper(&rootScope->visibleFunctions, fn);
-        } else {
-          addVisibleFunctionsHelper(&visibleFunctions, fn);
-        }
-      }
+void SymScope::removeVisibleFunction(FnSymbol* fn) {
+  int is_setter = (fn->name[0] == '=' && !OPERATOR_CHAR(fn->name[1]) &&
+                   fn->name[1] != '\0');
+  char* n = if1_cannonicalize_string(if1, fn->name + (is_setter ? 1 : 0));
+  Vec<FnSymbol*>* fs = visibleFunctions.get(n);
+  if (!fs) return;
+  for (int i = 0; i < fs->n; i++) {
+    if (fs->v[i] == fn) {
+      fs->v[i] = NULL;
     }
   }
 }

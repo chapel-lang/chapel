@@ -130,11 +130,6 @@ void Symboltable::pushScope(scopeType type) {
   }
   newScope->parent = currentScope;
 
-  if (currentScope->visibleFunctions.n > 0) {
-    // visibleFunctions already computed
-    newScope->setVisibleFunctions(NULL);
-  }
-
   currentScope = newScope;
 }
 

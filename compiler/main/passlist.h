@@ -38,9 +38,6 @@ PassInfo passlist[] = {
   RUN(InsertOutParameterInitializations, ""),
   RUN(EliminateReturns, ""),
 
-  // passes to collect information for analysis
-  RUN(ComputeVisibleFunctions, ""),
-
   // passes to run analysis
   RUN(Instantiate, ""),
   RUN(SpecializeCallExprs, ""),
