@@ -1068,9 +1068,6 @@ tuple_paren_expr:
         AList<Expr>* argList = new AList<Expr>();
         int size = 0;
         for_alist(Expr, expr, $2) {
-          argList->insertAtTail(new SymExpr(dtUnknown->symbol));
-        }
-        for_alist(Expr, expr, $2) {
           argList->insertAtTail(
             new NamedExpr(
               glomstrings(2, "_f", intstring(++size)),

@@ -125,13 +125,6 @@ void InsertLiteralTemps::postProcessExpr(Expr* expr) {
     if (SymExpr* variable = dynamic_cast<SymExpr*>(call->baseExpr)) {
       if (!strncmp(variable->var->name, "_tuple", 6)) {
         createTupleBaseType(call->argList->length());
-        if (call->argList->length() / 2 > 1) {
-          createTupleBaseType(call->argList->length() / 2); // while
-                                                            // we
-                                                            // instantiated
-                                                            // on
-                                                            // dtUnknown
-        }
         if (call->parentExpr) {
           if (CallExpr* parent = dynamic_cast<CallExpr*>(call->parentExpr)) {
             if (OP_ISASSIGNOP(parent->opTag) && parent->get(1) == call) {

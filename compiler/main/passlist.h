@@ -39,10 +39,10 @@ PassInfo passlist[] = {
   RUN(EliminateReturns, ""),
 
   // passes to run analysis
-  RUN(Instantiate, ""),
   RUN(SpecializeCallExprs, ""),
   RUN(PreAnalysisHacks, ""),
   RUN(ApplyGettersSetters, ""),
+  RUN(Instantiate, ""),
   RUN(PreAnalysisCleanup, ""),
   
   RUN(RunAnalysis, ""),
