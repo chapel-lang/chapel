@@ -320,16 +320,6 @@ void SymScope::codegenFunctions(FILE* outfile) {
 }
 
 
-// hack to avoid static on commonModule until module use is supported
-bool SymScope::commonModuleIsFirst() {
-  if (type == SCOPE_MODULE) {
-    return commonModule->modScope == this;
-  } else {
-    return parent->commonModuleIsFirst();
-  }
-}
-
-
 void SymScope::addVisibleFunction(FnSymbol* fn) {
 #ifdef DO_NOT_COMPUTE_VISIBLE_FUNCTIONS_DURING_ANALYSIS
   if (RunAnalysis::isRunning)
