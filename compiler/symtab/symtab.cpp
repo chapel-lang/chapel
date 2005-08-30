@@ -71,14 +71,14 @@ void Symboltable::doneParsingPreludes(void) {
   commonModule = new ModuleSymbol("_CommonModule", MOD_COMMON);
   Symboltable::pushScope(SCOPE_MODULE);
   commonModule->setModScope(currentScope);
-  commonModule->modScope->setContext(NULL, commonModule, NULL);
+  commonModule->modScope->astParent = commonModule;
 
   commonModule->stmts->insertAtTail(new BlockStmt());
 
   registerModule(commonModule);
 
   prelude->modScope = preludeScope;          // SJD: Why here?
-  preludeScope->symContext = prelude;
+  preludeScope->astParent = prelude;
 }
 
 
@@ -222,7 +222,7 @@ Symbol* Symboltable::lookupFromScope(char* name, SymScope* scope,
       return sym;
     }
     if (scope->type == SCOPE_ARG) {
-      FnSymbol* fn = dynamic_cast<FnSymbol*>(scope->symContext);
+      FnSymbol* fn = dynamic_cast<FnSymbol*>(scope->astParent);
       if (!fn) {
         INT_FATAL("Cannot find function from SCOPE_ARG");
       }
@@ -389,7 +389,7 @@ DefExpr* Symboltable::finishModuleDef(ModuleSymbol* mod, AList<Stmt>* def) {
     // pop the module's scope
     if (mod->modtype != MOD_INTERNAL) {
       SymScope* modScope = Symboltable::popScope();
-      modScope->setContext(NULL, mod, defExpr);
+      modScope->astParent = mod;
       mod->setModScope(modScope);
     }
 

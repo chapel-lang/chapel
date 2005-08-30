@@ -102,7 +102,7 @@ void Fixup::postProcessStmt(Stmt* stmt) {
       if (insertHelper) {
         if (!blockStmt->blkScope) {
           blockStmt->blkScope = Symboltable::popScope();
-          blockStmt->blkScope->setContext(blockStmt);
+          blockStmt->blkScope->astParent = blockStmt;
         }
       } else {
         Symboltable::removeScope(blockStmt->blkScope);
@@ -115,7 +115,7 @@ void Fixup::postProcessStmt(Stmt* stmt) {
     if (!verifyParents) {
       if (insertHelper) {
         forStmt->indexScope = Symboltable::popScope();
-        forStmt->indexScope->setContext(forStmt);
+        forStmt->indexScope->astParent = forStmt;
       } else {
         Symboltable::removeScope(forStmt->indexScope);
         forStmt->indexScope = NULL;
@@ -250,7 +250,7 @@ void Fixup::postProcessExpr(Expr* expr) {
     if (!verifyParents) {
       if (insertHelper) {
         letExpr->letScope = Symboltable::popScope();
-        letExpr->letScope->setContext(NULL, NULL, letExpr);
+        letExpr->letScope->astParent = letExpr;
       } else {
         Symboltable::removeScope(letExpr->letScope);
         letExpr->letScope = NULL;
@@ -262,7 +262,7 @@ void Fixup::postProcessExpr(Expr* expr) {
     if (!verifyParents) {
       if (insertHelper) {
         forallExpr->indexScope = Symboltable::popScope();
-        forallExpr->indexScope->setContext(NULL, NULL, forallExpr);
+        forallExpr->indexScope->astParent = forallExpr;
       } else {
         Symboltable::removeScope(forallExpr->indexScope);
         forallExpr->indexScope = NULL;
@@ -275,7 +275,7 @@ void Fixup::postProcessExpr(Expr* expr) {
       if (!verifyParents) {
         if (insertHelper) {
           fn->argScope = Symboltable::popScope();
-          fn->argScope->setContext(NULL, fn, NULL);
+          fn->argScope->astParent = fn;
         } else {
           Symboltable::removeScope(fn->argScope);
           fn->argScope = NULL;
@@ -287,7 +287,7 @@ void Fixup::postProcessExpr(Expr* expr) {
         if (!verifyParents) {
           if (insertHelper) {
             type->structScope = Symboltable::popScope();
-            type->structScope->setContext(NULL, typeSym, NULL);
+            type->structScope->astParent = typeSym;
           } else {
             Symboltable::removeScope(type->structScope);
             type->structScope = NULL;

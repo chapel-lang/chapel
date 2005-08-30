@@ -23,7 +23,7 @@ void CreateConfigVarTable::processSymbol(Symbol* symbol) {
   VarSymbol* var = dynamic_cast<VarSymbol*>(symbol);
 
   if (var && var->varClass == VAR_CONFIG) {
-    char* moduleName = var->parentScope->symContext->name;
+    char* moduleName = dynamic_cast<Symbol*>(var->parentScope->astParent)->name;
     fprintf(codefile, "installConfigVar(\"%s\", ", var->name);
     var->defPoint->init->printCfgInitString(codefile);
     fprintf(codefile, ", \"%s\");\n", moduleName);

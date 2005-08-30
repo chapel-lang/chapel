@@ -60,7 +60,7 @@ void CreateEntryPoint::run(Vec<ModuleSymbol*>* modules) {
     }
   } else {
     // tack call to main fn module's init call onto main fn's body
-    mainModule = dynamic_cast<ModuleSymbol*>(mainFn->parentScope->symContext);
+    mainModule = dynamic_cast<ModuleSymbol*>(mainFn->parentScope->astParent);
     if (!mainModule) {
       INT_FATAL(mainFn, "main function's parent scope wasn't a module scope");
     }

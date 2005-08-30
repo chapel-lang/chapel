@@ -47,9 +47,7 @@ isGloballyVisible(FnSymbol* fn) {
 SymScope::SymScope(scopeType init_type) :
   type(init_type),
   lookupCache(NULL),
-  stmtContext(NULL),
-  symContext(NULL),
-  exprContext(NULL),
+  astParent(NULL),
   parent(NULL),
   child(NULL),
   sibling(NULL)
@@ -60,10 +58,8 @@ SymScope::SymScope(scopeType init_type) :
 }
 
 
-void SymScope::setContext(Stmt* stmt, Symbol* sym, Expr* expr) {
-  stmtContext = stmt;
-  symContext = sym;
-  exprContext = expr;
+void SymScope::setASTParent(BaseAST* ast) {
+  astParent = ast;
 }
 
 
@@ -154,7 +150,7 @@ void SymScope::undefine(Symbol* sym) {
 
 ModuleSymbol* SymScope::getModule() {
   if (type <= SCOPE_MODULE) {
-    return dynamic_cast<ModuleSymbol*>(symContext);
+    return dynamic_cast<ModuleSymbol*>(astParent);
   }
 
   if (!parent) {
@@ -228,18 +224,12 @@ void SymScope::printHeader(FILE* outfile) {
     fprintf(outfile, "post parsing");
     break;
   }
-  BaseAST* scopeLoc = NULL;
-  if (symContext) {
+  if (Symbol* symParent = dynamic_cast<Symbol*>(astParent)) {
     fprintf(outfile, " ");
-    symContext->print(outfile);
-    scopeLoc = symContext;
-  } else if (exprContext) {
-    scopeLoc = exprContext;
-  } else if (stmtContext) {
-    scopeLoc = stmtContext;
+    symParent->print(outfile);
   }
-  if (scopeLoc) {
-    fprintf(outfile, " (%s)", scopeLoc->stringLoc());
+  if (astParent) {
+    fprintf(outfile, " (%s)", astParent->stringLoc());
   }
   fprintf(outfile, "\n");
 

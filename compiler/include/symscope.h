@@ -28,9 +28,7 @@ class SymScope : public gc {
 
   ScopeLookupCache *lookupCache;
 
-  Stmt* stmtContext;  // statement context
-  Symbol* symContext; // symbol context
-  Expr* exprContext;  // expression context
+  BaseAST* astParent; // back pointer to AST
 
   SymScope* parent;
   SymScope* child;
@@ -45,7 +43,7 @@ class SymScope : public gc {
   ChainHashMap<char*, StringHashFns, Symbol*> table;
 
   SymScope(scopeType init_type);
-  void setContext(Stmt* stmt, Symbol* sym = NULL, Expr* expr = NULL);
+  void setASTParent(BaseAST* ast);
 
   void traverse(SymtabTraversal* traversal);
 
