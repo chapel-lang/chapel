@@ -289,6 +289,33 @@ bool SymScope::commonModuleIsFirst() {
 }
 
 
+static bool
+isGloballyVisible(FnSymbol* fn) {
+  if (fn->typeBinding) {
+    if (ClassType* ct = dynamic_cast<ClassType*>(fn->typeBinding->definition)) {
+      if (ct->isNominalType()) {
+        return true;
+      }
+    }
+  }
+  for_alist(DefExpr, def, fn->formals) {
+    if (ClassType* ct = dynamic_cast<ClassType*>(def->sym->type)) {
+      if (ct->isNominalType()) {
+        return true;
+      }
+    }
+  }
+  if (fn->fnClass == FN_CONSTRUCTOR) {
+    if (ClassType* ct = dynamic_cast<ClassType*>(fn->retType)) {
+      if (ct->isNominalType()) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+
 static void
 addVisibleFunctionsHelper(Map<char*,Vec<FnSymbol*>*>* visibleFunctions,
                           FnSymbol* fn) {
@@ -302,27 +329,15 @@ addVisibleFunctionsHelper(Map<char*,Vec<FnSymbol*>*>* visibleFunctions,
 }
 
 
-void SymScope::setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions) {
+void SymScope::setVisibleFunctions(FnSymbol* fn) {
   forv_Vec(Symbol, symbol, symbols) {
     for (Symbol* sym = symbol; sym; sym = sym->overload) {
       if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
-        if (fn->typeBinding) {
-          if (ClassType* ct = dynamic_cast<ClassType*>(fn->typeBinding->definition)) {
-            if (ct->isNominalType()) {
-              addVisibleFunctionsHelper(&rootScope->visibleFunctions, fn);
-              continue;
-            }
-          }
+        if (isGloballyVisible(fn)) {
+          addVisibleFunctionsHelper(&rootScope->visibleFunctions, fn);
+        } else {
+          addVisibleFunctionsHelper(&visibleFunctions, fn);
         }
-        if (fn->fnClass == FN_CONSTRUCTOR) {
-          if (ClassType* ct = dynamic_cast<ClassType*>(fn->retType)) {
-            if (ct->isNominalType()) {
-              addVisibleFunctionsHelper(&rootScope->visibleFunctions, fn);
-              continue;
-            }
-          }
-        }
-        addVisibleFunctionsHelper(&visibleFunctions, fn);
       }
     }
   }

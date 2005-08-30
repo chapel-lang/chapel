@@ -69,7 +69,7 @@ class SymScope : public gc {
 
   bool commonModuleIsFirst();
   ModuleSymbol* SymScope::getModule();
-  void setVisibleFunctions(Vec<FnSymbol*>* moreVisibleFunctions);
+  void setVisibleFunctions(FnSymbol* fn);
   void printVisibleFunctions();
 
   void getVisibleFunctions(Vec<FnSymbol*>* allVisibleFunctions, char* name,
