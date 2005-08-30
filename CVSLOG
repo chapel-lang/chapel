@@ -45170,3 +45170,24 @@ Added files:
 	chapel/test/types/type_variables/jplevyak/: 
 	                                            where-2-error.prediff 
 
+---------------------------------------------------------------------------
+
+08/30/05 16:48:24 -- deitz
+
+Log message:
+	Rearrangements of pre-analysis instantiation and parsing of tuple and
+	sequence types.
+
+Modified files:
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: reconstructIterators.cpp 
+	chapel/compiler/traversals/: insertLiteralTemps.cpp 
+	                             instantiate.cpp 
+	                             preAnalysisHacks.cpp 
+	chapel/test/types/seq/deitz/: test_seq_tuple3.chpl 
+Added files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_typevar_class2a.chpl 
+	                                         test_typevar_class2a.good 
+
