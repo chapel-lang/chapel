@@ -45049,3 +45049,38 @@ Modified files:
 	chapel/compiler/symtab/: computeVisibleFunctions.cpp 
 	                         computeVisibleFunctions.h symscope.cpp 
 
+---------------------------------------------------------------------------
+
+08/30/05 10:15:03 -- deitz
+
+Log message:
+	Made the computation of visible functions incremental so that when a
+	function is added to a scope it is added to the visible function table
+	as well.  If it is globally visible, it is added to the rootScope,
+	otherwise it is added to the scope where it is defined.  The
+	getVisibleFunctions method returns a vector of all visible functions
+	at a particular place in the AST.
+	
+	Removed ComputeVisibleFunctions pass as it is no longer necessary.
+	
+	Added a #define to the top of symscope.cpp
+	
+	  #define DO_NOT_COMPUTE_VISIBLE_FUNCTIONS_DURING_ANALYSIS
+	
+	that prevents functions from being added to the visible function lists
+	during analysis.  This keeps wrappers and instantiated functions from
+	being added to the list.  This leads to ambiguities otherwise.
+	
+	John, is this because you are caching these separately because they
+	were never added to the visible functions or because of the problems
+	we once discussed with an instantiated function and the generic both
+	applying to some function calls.
+
+Modified files:
+	chapel/compiler/include/: symscope.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/symtab/: Makefile.share symscope.cpp symtab.cpp 
+Removed files:
+	chapel/compiler/symtab/: computeVisibleFunctions.cpp 
+	                         computeVisibleFunctions.h 
+
