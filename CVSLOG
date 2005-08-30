@@ -45084,3 +45084,14 @@ Removed files:
 	chapel/compiler/symtab/: computeVisibleFunctions.cpp 
 	                         computeVisibleFunctions.h 
 
+---------------------------------------------------------------------------
+
+08/30/05 10:17:45 -- deitz
+
+Log message:
+	Removed now-unused old-hack function commonModuleIsFirst.
+
+Modified files:
+	chapel/compiler/include/: symscope.h 
+	chapel/compiler/symtab/: symscope.cpp 
+
