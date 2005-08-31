@@ -637,15 +637,15 @@ edge_nest_compatible_with_entry_set(AEdge *e, EntrySet *es) {
 }
 
 static int 
-different_marked_args_types(AVar *a1, AVar *a2, int offset, AVar *basis = 0) {
-  Vec<void *> syms1, syms2;
+different_marked_args(AVar *a1, AVar *a2, int offset, AVar *basis = 0) {
+  Vec<void *> marks1, marks2;
   AVar *basis1 = basis ? basis : a2;
   if (a1->mark_map) {
     form_Map(MarkElem, x, *a1->mark_map) {
       if (basis1->mark_map) {
         int m = basis1->mark_map->get(x->key);
         if (m && m - offset == x->value)
-          syms1.set_add(x->key);
+          marks1.set_add(x->key);
       }
     }
   }
@@ -655,13 +655,13 @@ different_marked_args_types(AVar *a1, AVar *a2, int offset, AVar *basis = 0) {
         if (basis->mark_map) {
           int m = basis->mark_map->get(x->key);
           if (m && m - offset == x->value)
-            syms2.set_add(x->key);
+            marks2.set_add(x->key);
         }
       } else
-        syms2.set_add(x->key);
+        marks2.set_add(x->key);
     }
   }
-  return syms1.some_disjunction(syms2);
+  return marks1.some_disjunction(marks2);
 }
 
 static int
@@ -676,7 +676,7 @@ edge_type_compatible_with_entry_set(AEdge *e, EntrySet *es, int fmark = 0) {
         if (e_arg->out != es_arg->out)
           return 0;
       } else
-        if (different_marked_args_types(e_arg, es_arg, 2))
+        if (different_marked_args(e_arg, es_arg, 2))
           return 0;
     }
     if (es->rets.n != e->rets.n)
@@ -687,7 +687,7 @@ edge_type_compatible_with_entry_set(AEdge *e, EntrySet *es, int fmark = 0) {
           if (es->rets.v[i]->lvalue->out != e->rets.v[i]->lvalue->out)
             return 0;
         } else
-          if (different_marked_args_types(es->rets.v[i]->lvalue, e->rets.v[i]->lvalue, 1))
+          if (different_marked_args(es->rets.v[i]->lvalue, e->rets.v[i]->lvalue, 1))
             return 0;
       }
     }
@@ -707,7 +707,7 @@ edge_type_compatible_with_entry_set(AEdge *e, EntrySet *es, int fmark = 0) {
             return 0;
         } else {
           AVar *es_arg = es->args.get(p);
-          if (different_marked_args_types(ee_arg, e_arg, 2, es_arg))
+          if (different_marked_args(ee_arg, e_arg, 2, es_arg))
             return 0;
         }
       }
@@ -719,8 +719,8 @@ edge_type_compatible_with_entry_set(AEdge *e, EntrySet *es, int fmark = 0) {
             if (ee->rets.v[i]->lvalue->out != e->rets.v[i]->lvalue->out)
               return 0;
           } else {
-            if (different_marked_args_types(ee->rets.v[i]->lvalue, e->rets.v[i]->lvalue, 1,
-                                            es->rets.v[i]->lvalue))
+            if (different_marked_args(ee->rets.v[i]->lvalue, e->rets.v[i]->lvalue, 1,
+                                      es->rets.v[i]->lvalue))
               return 0;
           }
         }
@@ -2642,14 +2642,14 @@ collect_es_type_confluences(Vec<AVar *> &type_confluences) {
 }
 
 static void
-collect_es_marked_type_confluences(Vec<AVar *> &type_confluences, Accum<AVar *> &acc) {
+collect_es_marked_confluences(Vec<AVar *> &type_confluences, Accum<AVar *> &acc) {
   type_confluences.clear();
   forv_AVar(xav, acc.asvec) {
     for (AVar *av = xav; av; av = av->lvalue)
       forv_AVar(x, av->backward) if (x) {
         if (!x->out->n)
           continue;
-        if (different_marked_args_types(x, av, 1)) {
+        if (different_marked_args(x, av, 1)) {
           type_confluences.set_add(av);
           break;
         }
@@ -2756,6 +2756,39 @@ build_type_marks(AVar *av, Accum<AVar *> &acc) {
 }
 
 static void
+build_setter_mark(AVar *av, AVar *x, Vec<AVar *> &avset, int mark = 1) {
+  int m = av->mark_map ? av->mark_map->get(x) : 0;
+  if (!m) {
+    if (!av->setters->set_in(x))
+      return;
+    if (!av->mark_map)
+      av->mark_map = new MarkMap;
+    av->mark_map->put(x, mark);
+  } else if (m > mark)
+    av->mark_map->put(x, mark);
+  else if (m <= mark)
+    return;
+  forv_AVar(y, av->backward) if (y)
+    build_setter_mark(y, x, avset, mark + 1);
+}
+
+static void
+build_setter_marks(AVar *av, Accum<AVar *> &acc) {
+  // collect all contributing nodes
+  acc.add(av);
+  forv_AVar(x, acc.asvec) {
+    forv_AVar(y, x->forward) 
+      if (y && y->setters && y->setters->some_intersection(*av->setters))
+        acc.add(y);
+  }
+  // mark them
+  forv_AVar(x, acc.asvec) {
+    if (x->setters->in(x))
+      build_setter_mark(x, x, acc.asset);
+  }
+}
+
+static void
 clear_marks(Accum <AVar *> &acc) {
   forv_AVar(x, acc.asvec)
     x->mark_map = 0;
@@ -2763,11 +2796,11 @@ clear_marks(Accum <AVar *> &acc) {
 
 static int
 split_with_type_marks(AVar *av) {
-  int analyze_again = 0;
   Accum<AVar *> acc;
   build_type_marks(av, acc);
   Vec<AVar *> confluences;
-  collect_es_marked_type_confluences(confluences, acc);
+  collect_es_marked_confluences(confluences, acc);
+  int analyze_again = 0;
   forv_AVar(av, confluences) {
     if (av->contour_is_entry_set) {
       if (!av->is_lvalue) {
@@ -2779,6 +2812,33 @@ split_with_type_marks(AVar *av) {
         AVar *aav = unique_AVar(av->var, av->contour);
         if (is_return_value(aav)) {
           if (split_entry_set(aav, 0, 1))
+            analyze_again = 1;
+        }
+      }
+    }
+  }
+  clear_marks(acc);
+  return analyze_again;
+}
+
+static int
+split_with_setter_marks(AVar *av) {
+  Accum<AVar *> acc;
+  build_setter_marks(av, acc);
+  Vec<AVar *> confluences;
+  collect_es_marked_confluences(confluences, acc);
+  int analyze_again = 0;
+  forv_AVar(av, confluences) {
+    if (av->contour_is_entry_set) {
+      if (!av->is_lvalue) {
+        AVar *aav = unique_AVar(av->var, av->contour);
+        if (is_return_value(aav)) {
+          if (split_entry_set(aav, 0, 1))
+            analyze_again = 1;
+        }
+      } else {
+        if (av->var->is_formal) {
+          if (split_entry_set(av, 0, 1))
             analyze_again = 1;
         }
       }
@@ -2822,16 +2882,24 @@ split_ess_setters(Vec<AVar *> &confluences) {
   forv_AVar(av, confluences) {
     if (av->contour_is_entry_set) {
       if (!av->is_lvalue) {
-        if (is_return_value(av))
+        if (is_return_value(av)) {
           if (split_entry_set(av, 1))
+            analyze_again = 1;
+        } else
+          if (split_with_setter_marks(av))
             analyze_again = 1;
       } else {
         AVar *aav = unique_AVar(av->var, av->contour);
-        if (aav->var->is_formal)
+        if (aav->var->is_formal) {
           if (split_entry_set(aav, 1))
             analyze_again = 1;
+        } else
+          if (split_with_setter_marks(av))
+            analyze_again = 1;
       }
-    }
+    } else
+      if (split_with_setter_marks(av))
+        analyze_again = 1;
   }
   return analyze_again;
 }
