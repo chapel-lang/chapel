@@ -45191,3 +45191,42 @@ Added files:
 	                                         test_typevar_class2a.chpl 
 	                                         test_typevar_class2a.good 
 
+---------------------------------------------------------------------------
+
+08/30/05 17:13:08 -- jplevyak
+
+Log message:
+	Changed defexpr handling so that the constructor
+	result is not written to the LHS until after the
+	possibly overloaded assignment.
+	Modified the set of overloaded = functions so that
+	they only dispatch on the LHS.  This is in preparation
+	for making overloaded = be a member function (so that
+	it works correctly with records).
+	These changes exposed a couple problems with the "seq"
+	record:  1) the lack of visibility of the overloaded
+	= functions for records and 2) the way seq
+	literals are being instantiated with dtUnknown.
+	So those tests are futurized.  Since the seq generic
+	and the instantiation code are both incomplete, that
+	these tests were working at all was just luck.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/compiler/parser/: prelude.chpl 
+Added files:
+	chapel/test/trivial/mjoyner/seq/: seq_index1.future 
+	                                  seq_reverse.future 
+	chapel/test/types/seq/bradc/: hashEquals.future length.future 
+	                              length.modify.future 
+	                              returnSeq.future returnSeq2.future 
+	chapel/test/types/seq/deitz/: test_seq1.future test_seq1a.future 
+	                              test_seq1b.future 
+	                              test_seq1d.future test_seq2.future 
+	                              test_seq3.future test_seq4.future 
+	                              test_seq5.future test_seq6.future 
+	                              test_seq7.future test_seq8.future 
+	                              test_seq_class1.future 
+	                              test_seq_class2.future 
+	                              test_seq_reverse1.future 
+
