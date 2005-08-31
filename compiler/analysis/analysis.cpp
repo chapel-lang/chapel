@@ -1295,22 +1295,23 @@ gen_one_defexpr(VarSymbol *var, DefExpr *def) {
   }
   int no_default_init = var->noDefaultInit 
     || (init && (is_reference_type(type) || (is_scalar_type(type) && type == init->typeInfo())));
+  Sym *lhs = s;
   if (!no_default_init) {
-    Sym *tmp = new_sym();
-    tmp->ast = ast;
+    lhs = new_sym();
+    lhs->ast = ast;
     if (def->exprType)
       if1_gen(if1, &ast->code, def->exprType->ainfo->code);
     Code *c = if1_send(if1, &ast->code, 3, 1, sym_primitive,
-                       chapel_defexpr_symbol, type->asymbol->sym, tmp);
+                       chapel_defexpr_symbol, type->asymbol->sym, lhs);
+    c->ast = ast;
     if (def->exprType)
       if1_add_send_arg(if1, c, def->exprType->ainfo->rval);
-    if1_move(if1, &ast->code, tmp, s, ast);
-    c->ast = ast;
     if (SymExpr *e = dynamic_cast<SymExpr*>(init)) {
       if (e->var == gNil)
         init = NULL;
     }
-      
+    if (!init)
+      if1_move(if1, &ast->code, lhs, s, ast);
   }
   if (init) {
     if1_gen(if1, &ast->code, init->ainfo->code);
@@ -1323,10 +1324,10 @@ gen_one_defexpr(VarSymbol *var, DefExpr *def) {
       val->ast = ast;
       if (f_equal_method) {
         Code *c = if1_send(if1, &ast->code, 4, 1, make_symbol("="), method_token, 
-                           ast->sym, old_val, val);
+                           lhs, old_val, val);
         c->ast = ast;
       } else {
-        Code *c = if1_send(if1, &ast->code, 3, 1, make_symbol("="), ast->sym, old_val, val);
+        Code *c = if1_send(if1, &ast->code, 3, 1, make_symbol("="), lhs, old_val, val);
         c->ast = ast;
       }
       if1_move(if1, &ast->code, val, ast->sym, ast);
@@ -2319,7 +2320,7 @@ cast_value(PNode *pn, EntrySet *es) {
   AVar *val = make_AVar(pn->rvals.v[3], es);
   fill_tvals(es->fun, pn, 1);
   AVar *val_tmp = make_AVar(pn->tvals.v[0], es);
-  forv_CreationSet(cs, *type->out) {
+  forv_CreationSet(cs, *type->out) if (cs) {
     Sym *ts = cs->sym;
     if (ts->type->asymbol) {
       if (ts->type->is_meta_type) {
@@ -2332,7 +2333,7 @@ cast_value(PNode *pn, EntrySet *es) {
     }
   }
   Vec<CreationSet *> val_css;
-  forv_CreationSet(cs, *val->out) {
+  forv_CreationSet(cs, *val->out) if (cs) {
     Sym *ts = cs->sym;
     if (ts->type->asymbol) {
       if (ts->type->is_meta_type) {
