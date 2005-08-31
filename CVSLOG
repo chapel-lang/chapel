@@ -45268,3 +45268,28 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+08/31/05 10:47:18 -- deitz
+
+Log message:
+	Implemented visibility of methods and functions so that the method
+	wins out in the context of a method, i.e., 'this' is applied to the
+	function call when in a method if it can be a method (by name).  See
+	test/classes/deitz/test_method_call1.chpl for an example.  Also see
+	test/classes/deitz/test_method_call2.chpl for an example of an error
+	stemming from this simplification.
+	
+	Updated task list.
+	
+	Added two test cases to lock this change in.
+
+Modified files:
+	chapel/compiler/: Tasks 
+	chapel/compiler/traversals/: applyThisParameters.cpp 
+Added files:
+	chapel/test/classes/deitz/: test_method_call1.chpl 
+	                            test_method_call1.good 
+	                            test_method_call2.chpl 
+	                            test_method_call2.good 
+
