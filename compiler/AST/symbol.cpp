@@ -224,6 +224,7 @@ VarSymbol::VarSymbol(char* init_name,
   Symbol(SYMBOL_VAR, init_name, init_type),
   varClass(init_varClass),
   consClass(init_consClass),
+  immediate(NULL),
   noDefaultInit(false)
 { }
 
