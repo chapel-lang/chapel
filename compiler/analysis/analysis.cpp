@@ -1609,7 +1609,7 @@ gen_assignment(CallExpr *assign) {
   //  - symbol has no declared type and no initializer (i.e. var x; x = ....)
   //  - symbol is "this"
   int operator_equal = 
-    !(constructor_assignment || f->_setter || f->_getter ||
+    !(constructor_assignment || 
       (lhs_var_symbol && lhs_var_symbol->noDefaultInit) ||
       (lhs_symbol && (lhs_symbol->type == dtUnknown && !lhs_symbol->defPoint->init)) ||
       (lhs_symbol && lhs_symbol->isThis()))
