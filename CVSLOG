@@ -45293,3 +45293,13 @@ Added files:
 	                            test_method_call2.chpl 
 	                            test_method_call2.good 
 
+---------------------------------------------------------------------------
+
+08/31/05 14:06:52 -- jplevyak
+
+Log message:
+	Extend data flow recursion handling to cover setters (data polymorphism).
+
+Modified files:
+	chapel/compiler/analysis/: fa.cpp 
+
