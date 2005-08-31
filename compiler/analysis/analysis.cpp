@@ -1474,7 +1474,6 @@ gen_set_member(MemberAccess *ma, CallExpr *base_ast) {
   assert(!equal);
   ast->rval = new_sym();
   ast->rval->ast = base_ast->ainfo;
-  if1_gen(if1, &ast->code, ma->ainfo->code);
   Sym *rhs = gen_assign_rhs(base_ast);
   Sym *selector = make_symbol(ma->member->asymbol->sym->name);
   Code *c = if1_send(if1, &ast->code, 5, 1, sym_operator, ma->base->ainfo->rval, 
