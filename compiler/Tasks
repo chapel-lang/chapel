@@ -87,15 +87,15 @@ Priority 2 Tasks
 * create dispatch hierarchy and subtype hierarchy (classes appear in
   both; value types only appear in the subtype hierarchy)
 
-* implement visibility of methods/nested functions correctly (if we're
-  in a method, function names bind to methods; if we're in a function,
-  binds to functions?  Or maybe I'm summarizing this incorrectly...see
-  discussion above)
-
 * (Steve) go through compiler passes and sort through, unify, refactor
 
 * implement constant folding for "parameter" and check that +,- etc. are
   not overloaded for primitive types (e.g. integer)
+
+X (Steve) implement visibility of methods/nested functions correctly
+  (if we're in a method, function names bind to methods; if we're in a
+  function, binds to functions?  Or maybe I'm summarizing this
+  incorrectly...see discussion above)
 
 X (John) implement nil to behave as we discussed
 
