@@ -45230,3 +45230,13 @@ Added files:
 	                              test_seq_class2.future 
 	                              test_seq_reverse1.future 
 
+---------------------------------------------------------------------------
+
+08/30/05 18:05:01 -- jplevyak
+
+Log message:
+	Allow overloaded assignment in setters and getters.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
