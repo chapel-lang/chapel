@@ -45240,3 +45240,15 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+08/30/05 19:44:00 -- jplevyak
+
+Log message:
+	Remove unnecessary IF1 member access as part of setters.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
