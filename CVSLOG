@@ -45252,3 +45252,19 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+08/31/05 09:27:43 -- bradc
+
+Log message:
+	Fixed initialization omission that was resulting in valgrind
+	failures last night (by the time I diagnosed the problem, it
+	was too easy not to fix).
+	
+	Also, an update to the REGRESSIONS file that I made a few days
+	ago and believe is still accurate.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/test/: REGRESSIONS 
+
