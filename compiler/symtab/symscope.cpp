@@ -9,8 +9,6 @@
 #include "../passes/runAnalysis.h"
 #include "files.h"
 
-#define DO_NOT_COMPUTE_VISIBLE_FUNCTIONS_DURING_ANALYSIS
-
 #define OPERATOR_CHAR(_c) \
   (((_c > ' ' && _c < '0') || (_c > '9' && _c < 'A') || \
     (_c > 'Z' && _c < 'a') || (_c > 'z')) &&            \
@@ -311,10 +309,8 @@ void SymScope::codegenFunctions(FILE* outfile) {
 
 
 void SymScope::addVisibleFunction(FnSymbol* fn) {
-#ifdef DO_NOT_COMPUTE_VISIBLE_FUNCTIONS_DURING_ANALYSIS
   if (RunAnalysis::isRunning)
     return;
-#endif
   int is_setter = (fn->name[0] == '=' && !OPERATOR_CHAR(fn->name[1]) &&
                    fn->name[1] != '\0');
   char* n = if1_cannonicalize_string(if1, fn->name + (is_setter ? 1 : 0));

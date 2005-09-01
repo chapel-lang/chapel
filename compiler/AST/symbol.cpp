@@ -888,6 +888,17 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
         if (typeSym->definition->defaultConstructor == fn) {
           clone->definition->defaultConstructor = fnClone;
         }
+        // WARNING: this type of iterator is not reentrant, do not
+        //          use if nesting is possible -jbp
+        for (DefExpr* formal = fnClone->formals->first(); formal; 
+             formal = fnClone->formals->next()) {
+          if (ArgSymbol *ps = dynamic_cast<ArgSymbol *>(formal->sym)) {
+            if (TypeSymbol *ts = dynamic_cast<TypeSymbol *>(ps->variableTypeSymbol)) {
+              if (ts->definition->astType != TYPE_VARIABLE)
+                ps->type = ts->type;
+            }
+          }
+        }
         fnClone->instantiatedFrom = fn;
         fnClone->substitutions.copy(*substitutions);
         tagGenerics(fnClone);

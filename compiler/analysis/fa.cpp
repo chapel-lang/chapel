@@ -13,7 +13,7 @@
 #include "clone.h"
 
 // Caching of callees fails in the presence of generics
-#define CACHE_CALLEES           1
+// #define CACHE_CALLEES           1
 
 static int avar_id = 1;
 static int creation_set_id = 1;
