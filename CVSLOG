@@ -45303,3 +45303,22 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+09/01/05 16:49:29 -- jplevyak
+
+Log message:
+	Enable COMPUTE_VISIBLE_FUNCTIONS_DURING_ANALYSIS
+	Disable caching of visible functions in anlaysis (doesn't handle generics)
+	Fixed a bug in preAnlaysisHack where the types of literal tuples were
+	  bein inserted in the wrong order.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: fa.cpp 
+	chapel/compiler/symtab/: symscope.cpp 
+	chapel/compiler/traversals/: preAnalysisHacks.cpp 
+Added files:
+	chapel/test/types/tuple/deitz/: test_tuple_simple5.future 
+	chapel/test/types/tuple/jplevyak/: tuple_index-2.future 
+
