@@ -201,7 +201,7 @@ bintar:
 
 clean:
 	\rm -f *.o core *.core *.gmon *.d_parser.c *.a $(EXEC_FILES)
-	(cd python;make clean)
+	(cd python;$(MAKE) clean)
 
 depend:
 	mkdep $(CFLAGS) $(ALL_SRCS)
