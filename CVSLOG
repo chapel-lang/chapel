@@ -45322,3 +45322,15 @@ Added files:
 	chapel/test/types/tuple/deitz/: test_tuple_simple5.future 
 	chapel/test/types/tuple/jplevyak/: tuple_index-2.future 
 
+---------------------------------------------------------------------------
+
+09/02/05 10:09:39 -- bradc
+
+Log message:
+	Changed an invocation of make to $(MAKE) in the
+	dparser Makefile to avoid problems when "make"
+	isn't the appropriate thing to use.
+
+Modified files:
+	chapel/third-party/dparser/d/: Makefile 
+
