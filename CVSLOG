@@ -45334,3 +45334,31 @@ Log message:
 Modified files:
 	chapel/third-party/dparser/d/: Makefile 
 
+---------------------------------------------------------------------------
+
+09/06/05 13:00:51 -- jplevyak
+
+Log message:
+	Removed dependencies on dparser.  DParser is nolonger built.
+	The files are still present, including the 2 directories
+	  third-party/dparser
+	  compiler/vparser
+	But they shouldn't be necessary.
+
+Modified files:
+	chapel/compiler/: Makefile 
+	chapel/compiler/analysis/: inline.cpp prim_data.dat 
+	chapel/compiler/analysis/make_prims/: Makefile make_prims.cpp 
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: Makefile driver.cpp 
+	chapel/compiler/make/: Makefile.compiler.head 
+	chapel/compiler/test/: Makefile 
+	chapel/compiler/util/: Makefile misc.cpp 
+	chapel/third-party/: Makefile 
+Added files:
+	chapel/test/dispatch/jplevyak/: NOTEST 
+	chapel/test/flowanalysis/jplevyak/: NOTEST 
+	chapel/test/flowanalysis/jplevyak/constants/: NOTEST 
+	chapel/test/flowanalysis/jplevyak/loop/: NOTEST 
+	chapel/test/parsing/jplevyak/: NOTEST 
+
