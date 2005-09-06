@@ -5,11 +5,6 @@
 COMPILER_ROOT = ..
 COMPILER_SUBDIR = test
 
-#
-# This directory uses dparser
-# 
-USE_DPARSER = 1
-
 # 
 # some files in this directory (list.test.cpp) need the
 # -Wno-invalid-offsetof flag

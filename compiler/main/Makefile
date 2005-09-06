@@ -1,8 +1,6 @@
 COMPILER_ROOT = ..
 COMPILER_SUBDIR = main
 
-USE_DPARSER = 1
-
 #
 # standard header
 #

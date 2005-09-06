@@ -21,19 +21,6 @@ CFLAGS += -I. -I$(COMPILER_ROOT)/include/$(PLATFORM) -I$(COMPILER_ROOT)/include
 
 
 #
-# add dparser stuff
-#
-ifdef USE_DPARSER
-CFLAGS += -I$(D_PARSER_INC_DIR)
-ifdef USE_GC
-LIBS += -L$(D_PARSER_LIB_DIR) -ldparse_gc
-else
-LIBS += $(D_PARSER_LIB_DIR)/libdparse.a
-endif
-endif
-
-
-#
 # add gc-related stuff
 #
 ifdef USE_GC

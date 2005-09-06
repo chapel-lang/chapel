@@ -27,16 +27,13 @@ extern int fdump_html;
 extern int f_equal_method;
 extern int fnewvardef;
 extern int fdce_if1;
-extern int finline;
 extern int fgraph;
 extern int fgraph_constants;
 extern int fgraph_frequencies;
 extern bool no_inline;
 extern bool report_inlining;
-extern char prelude_filename[FILENAME_MAX];
 extern char system_dir[FILENAME_MAX];
 extern int print_call_depth;
-extern int parser_verbose_non_prelude;
 
 extern bool analyzeAST;
 extern int debugParserLevel;

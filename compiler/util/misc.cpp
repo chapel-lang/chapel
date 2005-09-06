@@ -5,9 +5,6 @@
 #include "../main/version.h"
 #include "files.h"
 #include "geysa.h"
-#include "../vparser/parse_structs.h"
-#include "dparse.h"
-#include "dparse_tables.h"
 #include "ast.h"
 #include "if1.h"
 #include "var.h"
@@ -32,25 +29,6 @@ clean_exit(int status) {
   }
   cleanup();
   exit(status);
-}
-
-
-char *
-loc_string(d_loc_t &l) {
-  char nstr[1024];
-  snprintf(nstr, 1023, "%s:%d", l.pathname, l.line);
-  return dupstr(nstr);
-}
-
-int
-show_error(char *str, d_loc_t &loc, ...) {
-  char nstr[1024];
-  va_list ap;
-  va_start(ap, loc);
-  snprintf(nstr, 1023, "%s:%d: %s\n", loc.pathname, loc.line, str);
-  vfprintf(stderr, nstr, ap);
-  va_end(ap);
-  return -1;
 }
 
 int

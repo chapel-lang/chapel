@@ -39,12 +39,9 @@ bool postScopeResolution = false;
 bool postAnalysis = false;
 
 int fdump_html = 0;
-char prelude_filename[FILENAME_MAX] = "prelude";
 static char passlist_filename[FILENAME_MAX] = "";
 static char libraryFilename[FILENAME_MAX] = "";
 static char log_flags[512] = "";
-extern int d_verbose_level;
-int parser_verbose_non_prelude = 0;
 static bool rungdb = false;
 static int pre_malloc = 0;
 bool checkAnalysisTypeinfo = false;
@@ -73,7 +70,6 @@ int fanalysis_errors = 0;
 static ArgumentDescription arg_desc[] = {
  {"analysis-errors", ' ', "Pass Back Analysis Errors", "T", &fanalysis_errors, "CHPL_ANALYSIS_ERRORS", NULL},
  {"premalloc", 'm', "Pre-Malloc", "I", &pre_malloc, "CHPL_PRE_MALLOC", NULL},
- {"prelude", 'p', "Prelude Filename", "P", prelude_filename, "CHPL_PRELUDE", NULL},
  {"passlist", ' ', "Passlist Filename", "P", passlist_filename, "CHPL_PASSLIST", NULL},
  {"sysdir", 'S', "System Directory", "P", system_dir, "CHPL_SYSTEM_DIR", NULL},
  {"scoping", ' ', "Scoping Test", "T", &scoping_test, "CHPL_SCOPING_TEST", NULL},
@@ -111,10 +107,6 @@ static ArgumentDescription arg_desc[] = {
  {"no-codegen", ' ', "Suppress code generation", "F", &suppressCodegen, "CHPL_NO_CODEGEN", NULL},
  {"newvardef", ' ', "New Var Def code", "T", &fnewvardef, "CHPL_NEWVARDEF", NULL},
  {"equal-method", ' ', "= is a method", "T", &f_equal_method, "CHPL_EQUAL_METHOD", NULL},
- {"parser-verbose-np", ' ', "Parser Verbose Non-Prelude", "+", 
-  &parser_verbose_non_prelude, "CHPL_PARSER_VERBOSE_NON_PRELUDE", NULL},
- {"parser-verbose", 'V', "Parser Verbose Level", "+", &d_verbose_level, 
-   "CHPL_PARSER_VERBOSE", NULL},
  {"parser-debug", 'D', "Parser Debug Level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},
  {"count-tokens", ' ', "Count Tokens", "F", &countTokens, "CHPL_COUNT_TOKENS", NULL},
  {"print-tokens", ' ', "Print Tokens", "F", &printTokens, "CHPL_PRINT_TOKENS", NULL},
@@ -221,23 +213,14 @@ do_analysis(char *fn) {
 
 static void
 compile_all(void) {
-  bool noTestLangFiles = true;
-  for (int i = 0; i < arg_state.nfile_arguments; i++) 
-    if (is_test_lang(arg_state.file_argument[i])) noTestLangFiles = false;
-
-  if (noTestLangFiles) {
-    Symboltable::init();
-    initType(); // BLC : clean these up
-    initSymbol();
-    initExpr();
-    FnSymbol::init();
-    testInputFiles(arg_state.nfile_arguments, arg_state.file_argument);
-    runPasses(passlist_filename);
-  } else
-    for (int i = 0; i < arg_state.nfile_arguments; i++)
-      if (compile_one_test_file(arg_state.file_argument[i])) break;
+  Symboltable::init();
+  initType(); // BLC : clean these up
+  initSymbol();
+  initExpr();
+  FnSymbol::init();
+  testInputFiles(arg_state.nfile_arguments, arg_state.file_argument);
+  runPasses(passlist_filename);
 }
-
 
 static void
 init_system() {

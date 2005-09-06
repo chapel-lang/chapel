@@ -5,7 +5,6 @@
 COMPILER_ROOT=.
 COMPILER_SUBDIR = .
 
-USE_DPARSER=1
 
 
 #
@@ -23,7 +22,6 @@ SUBDIRS = \
 	test \
 	traversals \
 	util \
-	vparser \
 
 #
 # include standard header for compiler
@@ -44,7 +42,6 @@ include passes/Makefile.include
 include symtab/Makefile.include
 include traversals/Makefile.include
 include util/Makefile.include
-include vparser/Makefile.include
 
 CVS_SRCS = 
 
@@ -60,7 +57,6 @@ CHPL_OBJS = \
 	$(SYMTAB_OBJS) \
 	$(TRAVERSALS_OBJS) \
 	$(UTIL_OBJS) \
-	$(VPARSER_OBJS) \
 
 EXECS = $(CHPL)
 

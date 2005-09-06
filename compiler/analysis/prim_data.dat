@@ -1,20 +1,16 @@
-/* -*-Mode: c++;-*-
-*/
-
-/* primitive descriptions
-
-  VARIABLE - compiler variable holding the primitive descritor
-  NAME - string used by if1_set_builtin to associate this primitive with a Sym
-  #ARGUMENTS - number of arguments, -N means variable but at least N
-  POSITION - position of the primitve within the call
-  (optional) #RESULTS - number of results, -N means variable but at least N default is 1
-  ARGUMENT_TYPES - types of arguments for vararg, last repeats
-  RETURN_TYPES - type of return variable, often ANY which is handled directly in fa.cpp
-
-  optional arguments:
-    nonfunctional - (can't be dead code eliminated if their lvals aren't used)
-    
-*/
+// primitive descriptions
+//
+//  VARIABLE - compiler variable holding the primitive descritor
+//  NAME - string used by if1_set_builtin to associate this primitive with a Sym
+//  #ARGUMENTS - number of arguments, -N means variable but at least N
+//  POSITION - position of the primitve within the call
+//  (optional) #RESULTS - number of results, -N means variable but at least N default is 1
+//  ARGUMENT_TYPES - types of arguments for vararg, last repeats
+//  RETURN_TYPES - type of return variable, often ANY which is handled directly in fa.cpp
+//
+//  optional arguments:
+//    nonfunctional - (can't be dead code eliminated if their lvals aren't used)
+//    
 prim_operator "operator" -2 0 {PRIM_TYPE_ANY} {PRIM_TYPE_ANY} ;
 prim_period "." 3 1 {PRIM_TYPE_ANY, PRIM_TYPE_SYMBOL} {PRIM_TYPE_ANY} nonfunctional;
 prim_setter ".=" 4 1 {PRIM_TYPE_ANY, PRIM_TYPE_SYMBOL, PRIM_TYPE_ANY} {PRIM_TYPE_ANY} nonfunctional;
