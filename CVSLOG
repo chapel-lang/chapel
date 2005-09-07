@@ -45362,3 +45362,13 @@ Added files:
 	chapel/test/flowanalysis/jplevyak/loop/: NOTEST 
 	chapel/test/parsing/jplevyak/: NOTEST 
 
+---------------------------------------------------------------------------
+
+09/06/05 20:17:27 -- jplevyak
+
+Log message:
+	Fix a problem which shows up with the gcc-3.3.4 compiler.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
