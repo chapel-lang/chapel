@@ -45393,3 +45393,16 @@ Log message:
 Removed files:
 	chapel/test/trivial/deitz/demo/: sample1.future sample1b.future 
 
+---------------------------------------------------------------------------
+
+09/07/05 09:35:34 -- jplevyak
+
+Log message:
+	Fixed a number of potentially sources of non-determinism, including
+	one major one during enqueuing which I believe was the source of
+	the recent failure.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp fa.cpp pattern.cpp 
+	chapel/compiler/include/: fa.h vec.h 
+
