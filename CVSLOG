@@ -45695,3 +45695,31 @@ Log message:
 Modified files:
 	chapel/compiler/: Makefile 
 
+---------------------------------------------------------------------------
+
+09/07/05 15:54:27 -- jplevyak
+
+Log message:
+	Use "typedef" for typedefs instead of "type".
+	Added the syntax for the ability to use ": expr" to constrain type variables.
+	Added the syntax for the ability to use ?t.
+	
+	function f(a : ?t : C) : t {
+	}
+	
+	now means a function which takes an argument which must be a subtype
+	of C and which returns something of the same type.
+
+Modified files:
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/test/classes/deitz/: test_class_in_usertype.chpl 
+	                            test_type_in_class2.chpl 
+	                            test_type_in_class3.chpl 
+	                            test_type_in_class4.chpl 
+	chapel/test/trivial/bradc/: defaultinit2.chpl 
+	chapel/test/trivial/shannon/: readWriteUserType.chpl 
+	chapel/test/types/tuple/deitz/: 
+	                                test_tuple_record_implementation4.chpl 
+	chapel/test/types/typedefs/bradc/: localType.chpl 
+	                                   localType2.chpl 
+
