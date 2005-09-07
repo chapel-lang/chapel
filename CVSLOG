@@ -45372,3 +45372,14 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+09/07/05 09:15:33 -- jplevyak
+
+Log message:
+	remove future for working test
+
+Removed files:
+	chapel/test/trivial/jplevyak/: 
+	                               variables_in_nested_function-2.future 
+
