@@ -242,7 +242,7 @@ void
 Matcher::find_arg_matches(AVar *a, MPosition &ap, MPosition *acp, MPosition *acpp, 
                           Vec<Fun *> **local_matches, int recurse, int out_of_position)
 {
-  a->arg_of_send.set_add(send);
+  a->arg_of_send.add(send);
   if (!all_positions || all_positions->set_in(acp)) {
     Vec<Fun *> funs;
     if (!a->out->n) {

@@ -259,9 +259,9 @@ close_symbols(Vec<AList<Stmt> *> &stmts, Vec<BaseAST *> &syms) {
       stmt = a->next();
     }
   }
-  forv_BaseAST(s, syms) if (s) {
+  forv_BaseAST(s, syms) {
     GET_ALL_CHILDREN(s, getStuff);
-    forv_BaseAST(ss, getStuff.asts) if (ss) {
+    forv_BaseAST(ss, getStuff.asts) {
       assert(ss);
       if (set.set_add(ss))
         syms.add(ss);
@@ -434,6 +434,7 @@ install_new_function(FnSymbol *f, FnSymbol *old_f, Map<BaseAST*,BaseAST*> *map =
     funs.add(f);
   }
   qsort(syms.v, syms.n, sizeof(syms.v[0]), compar_baseast);
+  qsort(funs.v, funs.n, sizeof(funs.v[0]), compar_funs);
   map_asts(syms);
   build_types(syms);
   build_symbols(syms);
@@ -2319,7 +2320,7 @@ cast_value(PNode *pn, EntrySet *es) {
   AVar *val = make_AVar(pn->rvals.v[3], es);
   fill_tvals(es->fun, pn, 1);
   AVar *val_tmp = make_AVar(pn->tvals.v[0], es);
-  forv_CreationSet(cs, *type->out) if (cs) {
+  forv_CreationSet(cs, type->out->sorted) {
     Sym *ts = cs->sym;
     if (ts->type->asymbol) {
       if (ts->type->is_meta_type) {
@@ -2332,7 +2333,7 @@ cast_value(PNode *pn, EntrySet *es) {
     }
   }
   Vec<CreationSet *> val_css;
-  forv_CreationSet(cs, *val->out) if (cs) {
+  forv_CreationSet(cs, val->out->sorted) {
     Sym *ts = cs->sym;
     if (ts->type->asymbol) {
       if (ts->type->is_meta_type) {
@@ -2389,7 +2390,7 @@ array_index(PNode *pn, EntrySet *es) {
   AVar *result = make_AVar(pn->lvals.v[0], es);
   AVar *array = make_AVar(pn->rvals.v[2], es);
   set_container(result, array);
-  forv_CreationSet(a, *array->out) if (a) {
+  forv_CreationSet(a, array->out->sorted) {
     if (a->sym->element)
       flow_vars(get_element_avar(a), result);
   }
@@ -2401,7 +2402,7 @@ array_set(PNode *pn, EntrySet *es) {
   AVar *array = make_AVar(pn->rvals.v[2], es);
   AVar *val = make_AVar(pn->rvals.v[pn->rvals.n-1], es);
   set_container(result, array);
-  forv_CreationSet(a, *array->out) if (a) {
+  forv_CreationSet(a, array->out->sorted) {
     if (a->sym->element) {
       if (a->sym->element->type && a->sym->element->type->asymbol 
           && is_scalar_type(a->sym->element->type->asymbol->symbol))
@@ -2455,9 +2456,9 @@ seqcat_seq(PNode *pn, EntrySet *es) {
   AVar *result = make_AVar(pn->lvals.v[0], es);
   AVar *s1 = make_AVar(pn->rvals.v[2], es);
   AVar *s2 = make_AVar(pn->rvals.v[2], es);
-  forv_CreationSet(a, *s1->out) if (a) {
+  forv_CreationSet(a, s1->out->sorted) {
     AVar *ea = get_element_avar(a);
-    forv_CreationSet(b, *s2->out) if (b) {
+    forv_CreationSet(b, s2->out->sorted) {
       AVar *eb = get_element_avar(b);
       flow_vars(eb, ea);
     }
@@ -2470,7 +2471,7 @@ seqcat_element(PNode *pn, EntrySet *es) {
   AVar *result = make_AVar(pn->lvals.v[0], es);
   AVar *s1 = make_AVar(pn->rvals.v[2], es);
   AVar *s2 = make_AVar(pn->rvals.v[2], es);
-  forv_CreationSet(a, *s1->out) if (a) {
+  forv_CreationSet(a, s1->out->sorted) {
     AVar *ea = get_element_avar(a);
     flow_vars(s2, ea);
   }
@@ -2481,7 +2482,7 @@ static void
 indextype_get(PNode *pn, EntrySet *es) {
   AVar *result = make_AVar(pn->lvals.v[0], es);
   AVar *i = make_AVar(pn->rvals.v[2], es);
-  forv_CreationSet(a, *i->out) if (a) {
+  forv_CreationSet(a, i->out->sorted) {
     AVar *ea = get_element_avar(a);
     flow_vars(ea, result);
   }
@@ -2492,7 +2493,7 @@ indextype_set(PNode *pn, EntrySet *es) {
   AVar *result = make_AVar(pn->lvals.v[0], es);
   AVar *i = make_AVar(pn->rvals.v[2], es);
   AVar *x = make_AVar(pn->rvals.v[3], es);
-  forv_CreationSet(a, *i->out) if (a) {
+  forv_CreationSet(a, i->out->sorted) {
     AVar *ea = get_element_avar(a);
     flow_vars(x, ea);
   }
@@ -2506,7 +2507,7 @@ chapel_defexpr(PNode *pn, EntrySet *es) {
   int type_expr = pn->rvals.n > 3;
   if (type_expr)
     tav = make_AVar(pn->rvals.v[3], es);
-  forv_CreationSet(tt, *tav->out) if (tt) {
+  forv_CreationSet(tt, tav->out->sorted) {
     Sym *type_sym = !type_expr ? tt->sym->meta_type : tt->sym;
     Type *type = dynamic_cast<Type*>(type_sym->asymbol ? type_sym->asymbol->symbol : 0);
     if (!type) {
@@ -2951,6 +2952,7 @@ structural_subtypes(Type *t, Vec<Type *> subtypes) {
     Type *tt = dynamic_cast<Type *>(ss->asymbol->symbol); assert(tt);
     subtypes.add(tt);
   }
+  qsort(subtypes.v, subtypes.n, sizeof(subtypes.v[0]), compar_syms);
   return 0;
 }
 

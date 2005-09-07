@@ -82,6 +82,7 @@ template <class C> class Accum : public gc { public:
   Vec<C> asset;
   Vec<C> asvec;
   void add(C c) { if (asset.set_add(c)) asvec.add(c); }
+  void clear() { asset.clear(); asvec.clear(); }
 };
 
 // Intervals store sets in interval format (e.g. [1..10][12..12]).

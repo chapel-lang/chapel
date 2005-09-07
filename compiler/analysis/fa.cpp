@@ -179,7 +179,7 @@ make_AType(Vec<CreationSet *> &css) {
 AType *
 AType::constants() {
   AType *t = new AType();
-  forv_CreationSet(cs, *this)
+  forv_CreationSet(cs, this->sorted)
     if (cs->sym->constant)
       t->set_add(cs);
   return type_cannonicalize(t);
@@ -196,7 +196,7 @@ update_in(AVar *v, AType *t) {
     if (tt != v->out) {
       assert(tt != top_type);
       v->out = tt;
-      forv_AVar(vv, v->arg_of_send) if (vv) {
+      forv_AVar(vv, v->arg_of_send.asvec) {
         if (!vv->in_send_worklist) {
           vv->in_send_worklist = 1;
           send_worklist.enqueue(vv);
@@ -348,13 +348,49 @@ type_num_fold(Prim *p, AType *a, AType *b) {
   if ((ff = type_fold_cache.get(&f)))
     return ff->result;
   AType *r = new AType();
-  forv_CreationSet(cs, *a) if (cs)
+  forv_CreationSet(cs, a->sorted)
     r->set_add(cs->sym->type->abstract_type->v[0]);
-  forv_CreationSet(cs, *b) if (cs)
+  forv_CreationSet(cs, b->sorted)
     r->set_add(cs->sym->type->abstract_type->v[0]);
   r = type_cannonicalize(r)->top;
   type_fold_cache.put(new ATypeFold(p, a, b, r));
   return r;
+}
+
+void
+qsort_creationsets(CreationSet **left, CreationSet **right) {
+ Lagain:
+  if (right - left < 5) {
+    for (CreationSet **y = right - 1; y > left; y--) {
+      for (CreationSet **x = left; x < y; x++) {
+        if (x[0]->id > x[1]->id) {
+          CreationSet *t = x[0];
+          x[0] = x[1];
+          x[1] = t;
+        } 
+      } 
+    }
+  } else {
+    CreationSet  **i = left + 1, **j = right - 1;
+    CreationSet *x = *left;
+    for (;;) {
+      while (x->id < (*j)->id) j--;
+      while (i < j && (*i)->id < x->id) i++;
+      if (i >= j) break;
+      CreationSet *t = *i;
+      *i = *j;
+      *j = t;
+      i++; j--;
+    }
+    if (j == right - 1) {
+      *left = *(right - 1);
+      *(right - 1) = x;
+      right--;
+      goto Lagain;
+    }
+    if (left < j) qsort_creationsets(left, j + 1);
+    if (j + 2 < right) qsort_creationsets(j + 1, right);
+  }
 }
 
 void
@@ -427,7 +463,7 @@ type_cannonicalize(AType *t) {
     t->set_union(t->sorted);
   }
   if (t->sorted.n > 1)
-    qsort_pointers((void**)&t->sorted.v[0], (void**)t->sorted.end());
+    qsort_creationsets(&t->sorted.v[0], t->sorted.end());
   unsigned int h = 0;
   for (int i = 0; i < t->sorted.n; i++)
     h = (uint)(intptr_t)t->sorted.v[i] * open_hash_multipliers[i % 256];
@@ -924,7 +960,7 @@ flow_var_type_permit(AVar *v, AType *t) {
   if (tt != v->out) {
     assert(tt != top_type);
     v->out = tt;
-    forv_AVar(vv, v->arg_of_send) if (vv) {
+    forv_AVar(vv, v->arg_of_send.asvec) {
       if (!vv->in_send_worklist) {
         vv->in_send_worklist = 1;
         send_worklist.enqueue(vv);
@@ -1065,7 +1101,7 @@ vector_elems(int rank, PNode *p, AVar *ae, AVar *elem, AVar *container, int n = 
       if (cs->sym != sym_tuple)
         flow_vars(e, elem);
       else {
-        e->arg_of_send.set_add(container);
+        e->arg_of_send.add(container);
         forv_AVar(av, cs->vars)
           vector_elems(rank - 1, p, av, elem, container, n+1);
       }
@@ -1161,7 +1197,7 @@ add_send_constraints(EntrySet *es) {
             for (int j = start; j < p->rvals.n; j++)
               if (j - start != p->prim->pos) {
                 AVar *av = make_AVar(p->rvals.v[j], es), *res = make_AVar(p->lvals.v[0], es);
-                av->arg_of_send.set_add(res);
+                av->arg_of_send.add(res);
               }
             break;
           }
@@ -1263,10 +1299,10 @@ partial_application(PNode *p, EntrySet *es, CreationSet *cs, Vec<AVar *> args, P
   AVar *result = make_AVar(p->lvals.v[0], es);
   AVar *fun = cs->vars.v[0];
   for (int i = cs->vars.n - 1; i >= 1; i--) {
-    cs->vars.v[i]->arg_of_send.set_add(result);
+    cs->vars.v[i]->arg_of_send.add(result);
     args.add(cs->vars.v[i]);
   }
-  fun->arg_of_send.set_add(result);
+  fun->arg_of_send.add(result);
   return all_applications(p, es, fun, args, partial);
 }
 
@@ -1422,11 +1458,11 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
     Vec<AVar *> args;
     for (int i = p->rvals.n - 1; i > 0; i--) {
       AVar *av = make_AVar(p->rvals.v[i], es);
-      av->arg_of_send.set_add(result);
+      av->arg_of_send.add(result);
       args.add(av);
     }
     AVar *a0 = make_AVar(p->rvals.v[0], es);
-    a0->arg_of_send.set_add(result);
+    a0->arg_of_send.add(result);
     if (all_applications(p, es, a0, args, (Partial_kind)p->code->partial) > 0)
       make_closure(result);
   } else {
@@ -1462,7 +1498,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
     AVar *result = p->lvals.n ? make_AVar(p->lvals.v[0], es) : 0;
     if (result)
       for (int i = 0; i < p->rvals.n; i++)
-        make_AVar(p->rvals.v[i], es)->arg_of_send.set_add(result);
+        make_AVar(p->rvals.v[i], es)->arg_of_send.add(result);
     // specifics
     switch (p->prim->index) {
       default: break;
@@ -1497,7 +1533,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
         for (int i = 0; i < p->lvals.n; i++) {
           AVar *av = make_AVar(p->rvals.v[i + 1], es);
           destruct(av, p->lvals.v[i], es, result);
-          av->arg_of_send.set_add(result);
+          av->arg_of_send.add(result);
         }
         break;
       }
@@ -1508,7 +1544,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
         AVar *vec = make_AVar(p->rvals.v[1], es);
         AVar *index = make_AVar(p->rvals.v[2], es);
         set_container(result, vec);
-        forv_CreationSet(cs, *vec->out) if (cs) {
+        forv_CreationSet(cs, vec->out->sorted) {
           if (sym_tuple->specializers.set_in(cs->sym->type)) {
             int i;
             if (get_tuple_index(index, &i, cs->vars.n))
@@ -1985,31 +2021,15 @@ show_illegal_type(FILE *fp, ATypeViolation *v) {
 }
 
 static int
-compar_edge_pos(const void *aa, const void *bb) {
+compar_edge_id(const void *aa, const void *bb) {
   AEdge *a = (*(AEdge**)aa);
   AEdge *b = (*(AEdge**)bb);
-  if (!a->pnode || !b->pnode)
-    return 0;
-  AST *aast = a->pnode->code->ast;
-  AST *bast = b->pnode->code->ast;
-  if (!aast || !bast) {
-    if (bast) return -1;
-    if (aast) return 1;
-    return 0;
-  }
-  if (!aast->pathname() || !bast->pathname()) {
-    if (bast->pathname()) return -1;
-    if (aast->pathname()) return 1;
-  } else {
-    int x = strcmp(aast->pathname(), bast->pathname());
-    if (x) return x;
-  }
-  int i = aast->line();
-  int j = bast->line();
-  int x = (i > j) ? 1 : ((i < j) ? -1 : 0);
-  if (x)
-    return x;
-  return 0;
+  int i = 0, j = 0;
+  if (a->pnode && a->pnode->lvals.n)
+    i = make_AVar(a->pnode->lvals.v[0], a->to)->id;
+  if (b->pnode && b->pnode->lvals.n)
+    j = make_AVar(b->pnode->lvals.v[0], b->to)->id;
+  return (i > j) ? 1 : ((i < j) ? -1 : 0);
 }
 
 static void
@@ -2030,7 +2050,7 @@ show_call_tree(FILE *fp, PNode *p, EntrySet *es, int depth = 0) {
   AEdge **last = es->edges.last();
   for (AEdge **x = es->edges.first(); x < last; x++) if (*x)
     edges.add(*x);
-  qsort(edges.v, edges.n, sizeof(edges.v[0]), compar_edge_pos);
+  qsort(edges.v, edges.n, sizeof(edges.v[0]), compar_edge_id);
   forv_AEdge(e, edges)
     show_call_tree(fp, e->pnode, e->from, depth);
 }
@@ -2039,19 +2059,26 @@ void
 show_avar_call_tree(FILE *fp, AVar *av) {
   EntrySet *es = (EntrySet*)av->contour;
   AEdge **last = es->edges.last();
+  Vec<AEdge*> edges;
   for (AEdge **x = es->edges.first(); x < last; x++) if (*x)
-    show_call_tree(fp, (*x)->pnode, (*x)->from, 1);
+    edges.add(*x);
+  qsort(edges.v, edges.n, sizeof(edges.v[0]), compar_edge_id);
+  forv_AEdge(e, edges)
+    show_call_tree(fp, e->pnode, e->from, 1);
 }
 
 static void
 show_candidates(FILE *fp, PNode *pn, Sym *arg0) {
-  Vec<Fun *> *funs = pn->code->ast->visible_functions(arg0);
-  if (funs && funs->n) {
-    fprintf(fp, "note: candidates are:\n");
-    forv_Fun(f, *funs) if (f) {
-      show_fun(f, fp);
-      fprintf(fp, "\n");
-    }
+  Vec<Fun *> *pfuns = pn->code->ast->visible_functions(arg0);
+  if (!pfuns)
+    return;
+  Vec<Fun *> funs(*pfuns);
+  funs.set_to_vec();
+  qsort(funs.v, funs.n, sizeof(funs.v[0]), compar_funs);
+  fprintf(fp, "note: candidates are:\n");
+  forv_Fun(f, funs) {
+    show_fun(f, fp);
+    fprintf(fp, "\n");
   }
 }
 

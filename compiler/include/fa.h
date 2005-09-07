@@ -144,7 +144,7 @@ class AVar : public gc {
   uint                          contour_is_entry_set:1;
   uint                          is_lvalue:1;
   uint                          is_dead:1;
-  Vec<AVar *>                   arg_of_send;
+  Accum<AVar *>                 arg_of_send;
   Link<AVar>                    send_worklist_link;
 
   AVar(Var *v, void *acontour);
