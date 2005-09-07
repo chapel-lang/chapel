@@ -45406,3 +45406,247 @@ Modified files:
 	chapel/compiler/analysis/: analysis.cpp fa.cpp pattern.cpp 
 	chapel/compiler/include/: fa.h vec.h 
 
+---------------------------------------------------------------------------
+
+09/07/05 15:24:30 -- bradc
+
+Log message:
+	This checkin builds on John's change from yesterday
+	by deleting the sources in the vparser/ and dparser/
+	directories, and removing one stray #include that is
+	no longer necessary.
+
+Modified files:
+	chapel/compiler/analysis/: inline.cpp 
+Removed files:
+	chapel/compiler/vparser/: FILES Makefile Makefile.include 
+	                          Makefile.share ast_cf.cpp ast_kinds.h 
+	                          c.g grammar.cpp parse.cpp 
+	                          parse_ast.cpp parse_ast.h 
+	                          parse_structs.h prelude.v scope.cpp 
+	                          scope.h v.g v.g.h v.g_incs.cpp 
+	chapel/compiler/vparser/cast/: Makefile cast.cpp 
+	chapel/third-party/dparser/: .cvsignore Makefile 
+	chapel/third-party/dparser/d/: .cvsignore CHANGES COPYRIGHT 
+	                               Makefile README UPGRADING arg.c 
+	                               arg.h baseline d.h dparse.h 
+	                               dparse_tables.h dsymtab.h 
+	                               faq.html gram.c gram.h gramgram.h 
+	                               grammar.g grammar.g.c index.html 
+	                               lex.c lex.h lr.c lr.h 
+	                               make_dparser.1 make_dparser.c 
+	                               make_dparser.cat manual.html 
+	                               mkdparse.c mkdparse.h my.c my.g 
+	                               parse.c parse.h parser_tests 
+	                               read_binary.c read_binary.h 
+	                               sample.g sample.g.d_parser.h 
+	                               sample_parser.c scan.c scan.h 
+	                               symtab.c test_parser.c util.c 
+	                               util.h version.c write_tables.c 
+	                               write_tables.h 
+	chapel/third-party/dparser/d/python/: Makefile README dparser.i 
+	                                      dparser.py dparser_wrap.c 
+	                                      index.html make_tables.c 
+	                                      py_dparser_manual.html 
+	                                      pydparser.c pydparser.h 
+	                                      setup.py 
+	chapel/third-party/dparser/d/python/contrib/: 
+	                                              dparserpy-syntax_error.py 
+	                                              dparserpy.el 
+	chapel/third-party/dparser/d/python/tests/: test.py test2.py 
+	                                            test3.py test4.py 
+	                                            test5.py test6.py 
+	                                            test7.py test8.py 
+	chapel/third-party/dparser/d/tests/: 3 ansic.test.g 
+	                                     ansic.test.g.1 
+	                                     ansic.test.g.1.check 
+	                                     ansic.test.g.2 
+	                                     ansic.test.g.2.check 
+	                                     g1.test.g g1.test.g.1 
+	                                     g1.test.g.1.check 
+	                                     g10.test.g g10.test.g.1 
+	                                     g10.test.g.1.check 
+	                                     g11.test.g g11.test.g.1 
+	                                     g11.test.g.1.check 
+	                                     g11.test.g.2 
+	                                     g11.test.g.2.check 
+	                                     g11.test.g.3 
+	                                     g11.test.g.3.check 
+	                                     g12.test.g g12.test.g.1 
+	                                     g12.test.g.1.check 
+	                                     g13.test.g g13.test.g.1 
+	                                     g13.test.g.1.check 
+	                                     g14.test.g g14.test.g.1 
+	                                     g14.test.g.1.check 
+	                                     g15.test.g g15.test.g.1 
+	                                     g15.test.g.1.check 
+	                                     g16.test.g g16.test.g.1 
+	                                     g16.test.g.1.check 
+	                                     g17.test.g g17.test.g.1 
+	                                     g17.test.g.1.check 
+	                                     g18.test.g g18.test.g.1 
+	                                     g18.test.g.1.check 
+	                                     g19.test.g g19.test.g.1 
+	                                     g19.test.g.1.check 
+	                                     g2.test.g g2.test.g.1 
+	                                     g2.test.g.1.check 
+	                                     g20.test.g g20.test.g.1 
+	                                     g20.test.g.1.check 
+	                                     g21.test.g g21.test.g.1 
+	                                     g21.test.g.1.check 
+	                                     g22.test.g g22.test.g.1 
+	                                     g22.test.g.1.check 
+	                                     g23.test.g g23.test.g.1 
+	                                     g23.test.g.1.check 
+	                                     g24.test.g g24.test.g.1 
+	                                     g24.test.g.1.check 
+	                                     g25.test.g g25.test.g.1 
+	                                     g25.test.g.1.check 
+	                                     g26.test.g g26.test.g.1 
+	                                     g26.test.g.1.check 
+	                                     g27.test.g g27.test.g.1 
+	                                     g27.test.g.1.check 
+	                                     g28.test.g g28.test.g.1 
+	                                     g28.test.g.1.check 
+	                                     g28.test.g.2 
+	                                     g28.test.g.2.check 
+	                                     g29.test.g g29.test.g.1 
+	                                     g29.test.g.1.check 
+	                                     g3.test.g g3.test.g.1 
+	                                     g3.test.g.1.check 
+	                                     g30.test.g g30.test.g.1 
+	                                     g30.test.g.1.check 
+	                                     g31.test.g g31.test.g.1 
+	                                     g31.test.g.1.check 
+	                                     g32.test.g g32.test.g.1 
+	                                     g32.test.g.1.check 
+	                                     g33.test.g g33.test.g.1 
+	                                     g33.test.g.1.check 
+	                                     g34.test.g g34.test.g.1 
+	                                     g34.test.g.1.check 
+	                                     g35.test.g g35.test.g.1 
+	                                     g35.test.g.1.check 
+	                                     g36.test.g g36.test.g.1 
+	                                     g36.test.g.1.check 
+	                                     g37.test.g g37.test.g.1 
+	                                     g37.test.g.1.check 
+	                                     g38.test.g g38.test.g.1 
+	                                     g38.test.g.1.check 
+	                                     g38.test.g.1.flags 
+	                                     g38.test.g.flags g39.test.g 
+	                                     g39.test.g.1 
+	                                     g39.test.g.1.check 
+	                                     g4.test.g g4.test.g.1 
+	                                     g4.test.g.1.check 
+	                                     g40.test.g g40.test.g.1 
+	                                     g40.test.g.1.check 
+	                                     g41.test.g g41.test.g.1 
+	                                     g41.test.g.1.check 
+	                                     g41.test.g.1.flags 
+	                                     g41.test.g.flags 
+	                                     g42.include.g g42.test.g 
+	                                     g42.test.g.1 
+	                                     g42.test.g.1.check 
+	                                     g43.test.g g43.test.g.1 
+	                                     g43.test.g.1.check 
+	                                     g43.test.g.2 
+	                                     g43.test.g.2.check 
+	                                     g43.test.g.2.flags 
+	                                     g43.test.g.3 
+	                                     g43.test.g.3.check 
+	                                     g43.test.g.3.flags 
+	                                     g44.test.g g44.test.g.1 
+	                                     g44.test.g.1.check 
+	                                     g45.test.g g45.test.g.1 
+	                                     g45.test.g.1.check 
+	                                     g46.test.g g46.test.g.1 
+	                                     g46.test.g.1.check 
+	                                     g5.test.g g5.test.g.1 
+	                                     g5.test.g.1.check g6.test.g 
+	                                     g6.test.g.1 
+	                                     g6.test.g.1.check g7.test.g 
+	                                     g7.test.g.1 
+	                                     g7.test.g.1.check 
+	                                     g7.test.g.2 
+	                                     g7.test.g.2.check g8.test.g 
+	                                     g8.test.g.1 
+	                                     g8.test.g.1.check g9.test.g 
+	                                     g9.test.g.1 
+	                                     g9.test.g.1.check 
+	                                     python.test.g 
+	                                     python.test.g.1 
+	                                     python.test.g.1.check 
+	                                     sample.test.g 
+	                                     sample.test.g.0 
+	                                     sample.test.g.0.check 
+	                                     sample.test.g.1 
+	                                     sample.test.g.1.check 
+	                                     sample.test.g.10 
+	                                     sample.test.g.10.check 
+	                                     sample.test.g.11 
+	                                     sample.test.g.11.check 
+	                                     sample.test.g.12 
+	                                     sample.test.g.12.check 
+	                                     sample.test.g.13 
+	                                     sample.test.g.13.check 
+	                                     sample.test.g.14 
+	                                     sample.test.g.14.check 
+	                                     sample.test.g.15 
+	                                     sample.test.g.15.check 
+	                                     sample.test.g.16 
+	                                     sample.test.g.16.check 
+	                                     sample.test.g.17 
+	                                     sample.test.g.17.check 
+	                                     sample.test.g.18 
+	                                     sample.test.g.18.check 
+	                                     sample.test.g.19 
+	                                     sample.test.g.19.check 
+	                                     sample.test.g.2 
+	                                     sample.test.g.2.check 
+	                                     sample.test.g.20 
+	                                     sample.test.g.20.check 
+	                                     sample.test.g.21 
+	                                     sample.test.g.21.check 
+	                                     sample.test.g.22 
+	                                     sample.test.g.22.check 
+	                                     sample.test.g.23 
+	                                     sample.test.g.23.check 
+	                                     sample.test.g.24 
+	                                     sample.test.g.24.check 
+	                                     sample.test.g.25 
+	                                     sample.test.g.25.check 
+	                                     sample.test.g.26 
+	                                     sample.test.g.26.check 
+	                                     sample.test.g.27 
+	                                     sample.test.g.27.check 
+	                                     sample.test.g.28 
+	                                     sample.test.g.28.check 
+	                                     sample.test.g.29 
+	                                     sample.test.g.29.check 
+	                                     sample.test.g.3 
+	                                     sample.test.g.3.check 
+	                                     sample.test.g.30 
+	                                     sample.test.g.30.check 
+	                                     sample.test.g.31 
+	                                     sample.test.g.31.check 
+	                                     sample.test.g.32 
+	                                     sample.test.g.32.check 
+	                                     sample.test.g.33 
+	                                     sample.test.g.33.check 
+	                                     sample.test.g.4 
+	                                     sample.test.g.4.check 
+	                                     sample.test.g.5 
+	                                     sample.test.g.5.check 
+	                                     sample.test.g.6 
+	                                     sample.test.g.6.check 
+	                                     sample.test.g.7 
+	                                     sample.test.g.7.check 
+	                                     sample.test.g.8 
+	                                     sample.test.g.8.check 
+	                                     sample.test.g.9 
+	                                     sample.test.g.9.check 
+	chapel/third-party/dparser/d/verilog/: Makefile README ambig.c 
+	                                       main.c verilog.g 
+	                                       verilog_tests vparse.c 
+	                                       vparse.h 
+
