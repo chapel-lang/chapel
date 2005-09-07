@@ -45383,3 +45383,13 @@ Removed files:
 	chapel/test/trivial/jplevyak/: 
 	                               variables_in_nested_function-2.future 
 
+---------------------------------------------------------------------------
+
+09/07/05 09:32:14 -- jplevyak
+
+Log message:
+	Removed two futures for tests which are working for the right reasons.
+
+Removed files:
+	chapel/test/trivial/deitz/demo/: sample1.future sample1b.future 
+
