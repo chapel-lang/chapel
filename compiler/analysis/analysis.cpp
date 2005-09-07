@@ -882,8 +882,8 @@ build_patterns(Vec<BaseAST *> &syms) {
             forv_Sym(s, rt->asymbol->sym->has)
               p->asymbol->sym->has.add(s);
           }
-          default: break;
         }
+        default: break;
       }
     }
   }
