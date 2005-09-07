@@ -45650,3 +45650,38 @@ Removed files:
 	                                       verilog_tests vparse.c 
 	                                       vparse.h 
 
+---------------------------------------------------------------------------
+
+09/07/05 15:28:02 -- deitz
+
+Log message:
+	Removed pass FindCollidingNames and folded pass LegalizeCNames into
+	CodegenOne.  CodegenOne now renames cnames based on the rename pragma,
+	and changes ? to Q and - to _ when in a symbol name.  In addition, it
+	mangles the name if it is not unique.  That is, if two symbols in the
+	program share the same cname, one is mangled to avoid the conflict.
+	This can be strengthened later to only mangle it if they are in nested
+	scopes (and can thus possibly conflict).  Eventually it should mark
+	them as conflicted and put in hooks for gdb to make it possible to
+	debug the Chapel.
+	
+	This change makes it impossible to introduce subtle bugs that are not
+	found because two names match even if the symbols don't.
+	
+	Removed extra name mangling for symbols in different modules.
+	
+	Changed BaseAST::remove to work when 'this' is NULL and, for
+	convenience, to return 'this.'
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp 
+	chapel/compiler/include/: baseAST.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/symtab/: Makefile.share codegenOne.cpp 
+	                         codegenOne.h symtab.cpp 
+	chapel/compiler/traversals/: insertVariableInitializations.cpp 
+Removed files:
+	chapel/compiler/symtab/: findCollidingNames.cpp 
+	                         findCollidingNames.h legalizeCNames.cpp 
+	                         legalizeCNames.h 
+
