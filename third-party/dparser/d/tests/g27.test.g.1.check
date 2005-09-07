@@ -1,5 +1,0 @@
-[(b)(B)(b)]
-[]
-[(b)]
-40 states 15 scans 7 shifts 29 reductions 0 compares 0 ambiguities
-(( a ( b  B  b ))( a )( a  b ))

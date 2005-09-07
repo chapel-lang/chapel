@@ -1,3 +1,0 @@
-ref Sym 'a' line 1: not found
-24 states 10 scans 6 shifts 14 reductions 0 compares 0 ambiguities
-(( 1  + ( --  a )) ; )

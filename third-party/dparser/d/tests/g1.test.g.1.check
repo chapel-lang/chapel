@@ -1,6 +1,0 @@
-speculative e-reduce A
-final e-reduce A
-final e-reduce A
-final e-reduce A
-14 states 6 scans 5 shifts 4 reductions 0 compares 0 ambiguities
-((( x  b ) b ) b )

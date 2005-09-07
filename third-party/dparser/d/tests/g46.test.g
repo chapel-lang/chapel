@@ -1,2 +1,0 @@
-
-A : "foo/bar" "barrel";

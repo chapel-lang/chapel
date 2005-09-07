@@ -1,7 +1,0 @@
-ref Sym 'x' line 1: not found
-ref Sym 'y' line 1: not found
-ref Sym 'z' line 1: not found
-ref Sym 'd' line 1: not found
-ref Sym 'e' line 1: not found
-33 states 19 scans 11 shifts 18 reductions 0 compares 0 ambiguities
-(( x  ?  y  : ( z  ?  d  :  e )) ; )

@@ -1,4 +1,0 @@
-ref Sym 'a' line 1: not found
-ref Sym 'b' line 1: not found
-19 states 10 scans 6 shifts 9 reductions 0 compares 0 ambiguities
-(( do  a  while  b ) ; )

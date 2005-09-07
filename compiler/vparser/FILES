@@ -1,4 +1,0 @@
-ast_cf.cpp	: constant folding an parse_ast (parser)
-parse.cpp	: parser helper functions (parser)
-parse_ast.cpp	: parser AST (parser)
-scope.cpp	: scopes for parsing (parser)

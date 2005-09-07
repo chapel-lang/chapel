@@ -1,3 +1,0 @@
-ansic.test.g.1:2: syntax error after '&'
-153 states 59 scans 58 shifts 97 reductions 0 compares 0 ambiguities
-(( int ((( i )( = ((((((((((((( 1 )))))))))))))))) ; )( int ((( j )( = ((((((((((((( 2 )))))))))))))))) ; ))

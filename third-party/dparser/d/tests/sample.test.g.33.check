@@ -1,4 +1,0 @@
-ref Sym 'x' line 1: not found
-ref Sym 'h' line 1: not found
-29 states 16 scans 8 shifts 14 reductions 0 compares 0 ambiguities
-(( for  ( ( x  =  1 ) )  h ) ; )

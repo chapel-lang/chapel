@@ -1,7 +1,0 @@
-1
-1
-2
-2
-1
-52 states 24 scans 16 shifts 33 reductions 0 compares 0 ambiguities
-((( a  :  1 ) ; )( a  ; )( { ((( a  :  2 ) ; )( a  ; )) } )( a  ; ))

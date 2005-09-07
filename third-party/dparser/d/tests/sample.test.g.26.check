@@ -1,9 +1,0 @@
-ref Sym 'x' line 1: not found
-ref Sym 'y' line 1: not found
-ref Sym 'y' line 1: not found
-ref Sym 'z' line 1: not found
-ref Sym 'z' line 1: not found
-ref Sym 'zz' line 1: not found
-ref Sym 'zzz' line 1: not found
-51 states 32 scans 20 shifts 26 reductions 0 compares 0 ambiguities
-(( if  (  x  )  y  else ( if  (  y  )  z  else ( if  (  z  )  zz  else  zzz ))) ; )
