@@ -11,7 +11,7 @@ function readDefaultVal(): integer {
 }
 
 function foo() {
-  type myfoointeger: integer = readDefaultVal();
+  typedef myfoointeger: integer = readDefaultVal();
   var x: myfoointeger;
   var y: myfoointeger;
   writeln("x is: ", x);

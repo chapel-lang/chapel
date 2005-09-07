@@ -1,4 +1,4 @@
-type mytuple : integer = 12;
+typedef mytuple : integer = 12;
 
 function foo(t : mytuple, param i : integer) where i == 1 {
   return 1;

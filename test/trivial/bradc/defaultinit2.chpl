@@ -1,8 +1,8 @@
-type myboolean: boolean = true;
-type myinteger: integer = 1;
-type myfloat: float = 2.3;
-type mycomplex: complex = 4.5 + 6.7i;
-type mystring: string = "empty";
+typedef myboolean: boolean = true;
+typedef myinteger: integer = 1;
+typedef myfloat: float = 2.3;
+typedef mycomplex: complex = 4.5 + 6.7i;
+typedef mystring: string = "empty";
 
 var a: myboolean;
 var b: myinteger;

@@ -127,6 +127,7 @@ Is this "while x"(i); or "while x(i)";?
 %token TSTATIC
 %token TTHEN
 %token TTYPE
+%token TTYPEDEF
 %token TUNION
 %token TUSE
 %token TVAL
@@ -202,7 +203,7 @@ Is this "while x"(i); or "while x(i)";?
 %type <pwhenstmt> when_stmt
 %type <pwhenstmtls> when_stmt_ls
 
-%type <pexpr> opt_var_type var_type fnrettype
+%type <pexpr> opt_var_type var_type fnrettype opt_formal_var_type formal_var_type formal_type
 %type <pexpr> type record_tuple_type
 %type <pexpr> record_tuple_inner_type
 %type <pstmtls> record_inner_type_ls
@@ -374,73 +375,49 @@ if_stmt:
 
 for_stmt:
   for_stmt_tag nonempty_expr_ls TIN nonempty_expr_ls parsed_block_stmt
-    {
-      $$ = new AList<Stmt>(Symboltable::defineForLoop($1, $2, $4, $5));
-    }
+    { $$ = new AList<Stmt>(Symboltable::defineForLoop($1, $2, $4, $5)); }
 | for_stmt_tag nonempty_expr_ls TIN nonempty_expr_ls TDO stmt
-    { 
-      $$ = new AList<Stmt>(Symboltable::defineForLoop($1, $2, $4, new BlockStmt($6)));
-    }
+    { $$ = new AList<Stmt>(Symboltable::defineForLoop($1, $2, $4, new BlockStmt($6))); }
 | TLSBR nonempty_expr_ls TIN nonempty_expr_ls TRSBR stmt
-    { 
-      $$ = new AList<Stmt>(Symboltable::defineForLoop(FORLOOPSTMT_FORALL, $2, $4, new BlockStmt($6)));
-    }
+    { $$ = new AList<Stmt>(Symboltable::defineForLoop(FORLOOPSTMT_FORALL, $2, $4, new BlockStmt($6))); }
 ;
 
 
 while_do_stmt:
 TWHILE expr TDO stmt
-    {
-      $$ = new AList<Stmt>(new WhileLoopStmt(true, $2, $4));
-    }
+    { $$ = new AList<Stmt>(new WhileLoopStmt(true, $2, $4)); }
 | TWHILE expr parsed_block_stmt
-    {
-      $$ = new AList<Stmt>(new WhileLoopStmt(true, $2, $3));
-    }
+    { $$ = new AList<Stmt>(new WhileLoopStmt(true, $2, $3)); }
 ;
 
 
 do_while_stmt:
 TDO stmt TWHILE expr TSEMI
-    {
-      $$ = new AList<Stmt>(new WhileLoopStmt(false, $4, $2));
-    }
+    { $$ = new AList<Stmt>(new WhileLoopStmt(false, $4, $2)); }
 ;
 
 
 select_stmt:
   TSELECT expr TLCBR when_stmt_ls TRCBR
-    {
-      $$ = new AList<Stmt>(new SelectStmt($2, $4));
-    }
+    { $$ = new AList<Stmt>(new SelectStmt($2, $4)); }
 ;
 
 
 when_stmt_ls:
   /* empty */
-    {
-      $$ = new AList<WhenStmt>();
-    }
+    { $$ = new AList<WhenStmt>(); }
 | when_stmt_ls when_stmt
-    {
-      $1->insertAtTail($2);
-    }
+    { $1->insertAtTail($2); }
 ; 
 
 
 when_stmt:
   TWHEN nonempty_expr_ls TDO stmt
-    {
-      $$ = new WhenStmt($2, $4);
-    }
+    { $$ = new WhenStmt($2, $4); }
 | TWHEN nonempty_expr_ls parsed_block_stmt
-    {
-      $$ = new WhenStmt($2, $3);
-    }
+    { $$ = new WhenStmt($2, $3); }
 | TOTHERWISE stmt
-    {
-      $$ = new WhenStmt(new AList<Expr>(), $2);
-    }
+    { $$ = new WhenStmt(new AList<Expr>(), $2); }
 ;
 
 
@@ -564,22 +541,16 @@ opt_formal_ls:
 
 formal_ls:
   /* empty */
-    {
-      $$ = new AList<DefExpr>();
-    }
+    { $$ = new AList<DefExpr>(); }
 | formal
-    {
-      $$ = new AList<DefExpr>($1);
-    }
+    { $$ = new AList<DefExpr>($1); }
 | formal_ls TCOMMA formal
-    { 
-      $1->insertAtTail($3);
-    }
+    { $1->insertAtTail($3); }
 ;
 
 
 formal:
-  formal_tag pragma_ls identifier opt_var_type opt_init_expr
+  formal_tag pragma_ls identifier opt_formal_var_type opt_init_expr
     {
       $$ = Symboltable::defineParam($1, $3, $4, $5);
       $$->sym->copyPragmas(*$2);
@@ -685,8 +656,13 @@ where:
 
 whereexpr: 
   atom
-| TTYPE identifier
-    { $$ = new DefExpr(new TypeSymbol($2, new VariableType)); }
+| TTYPE identifier opt_var_type TCOMMA whereexpr
+    { 
+      VariableType* new_type = new VariableType(getMetaType(0));
+      TypeSymbol* new_symbol = new TypeSymbol($2, new_type);
+      new_type->addSymbol(new_symbol);
+      $$ = new DefExpr(new_symbol, NULL, $3);
+    }
 | TNOT whereexpr
     { $$ = new CallExpr(OP_LOGNOT, $2); }
 | TBNOT whereexpr
@@ -779,13 +755,9 @@ class_tag:
 
 opt_inherit_expr_ls:
   /* empty */
-    {
-      $$ = new AList<Expr>();
-    }
+    { $$ = new AList<Expr>(); }
 | TCOLON nonempty_expr_ls
-    {
-      $$ = $2;
-    }
+    { $$ = $2; }
 ;
 
 
@@ -804,30 +776,22 @@ enum_decl_stmt:
 
 enum_ls:
   enum_item
-    {
-      $$ = new AList<DefExpr>($1);
-    }
+    { $$ = new AList<DefExpr>($1); }
 | enum_ls TCOMMA enum_item
-    {
-      $1->insertAtTail($3);
-    }
+    { $1->insertAtTail($3); }
 ;
 
 
 enum_item:
   identifier
-    {
-      $$ = new DefExpr(new EnumSymbol($1));
-    }
+    { $$ = new DefExpr(new EnumSymbol($1)); }
 | identifier TASSIGN expr
-    {
-      $$ = new DefExpr(new EnumSymbol($1), $3);
-    }
+    { $$ = new DefExpr(new EnumSymbol($1), $3); }
 ;
 
 
 typedef_decl_stmt:
-  TTYPE pragma_ls identifier TCOLON type opt_init_expr TSEMI
+  TTYPEDEF pragma_ls identifier TCOLON type opt_init_expr TSEMI
     {
       UserType* newtype = new UserType($5, $6);
       TypeSymbol* typeSym = new TypeSymbol($3, newtype);
@@ -840,13 +804,13 @@ typedef_decl_stmt:
 
 
 typevar_decl_stmt:
-  TTYPE pragma_ls identifier TSEMI
+  TTYPE pragma_ls identifier opt_var_type TSEMI
     {
       VariableType* new_type = new VariableType(getMetaType(0));
       TypeSymbol* new_symbol = new TypeSymbol($3, new_type);
       new_symbol->copyPragmas(*$2);
       new_type->addSymbol(new_symbol);
-      DefExpr* def_expr = new DefExpr(new_symbol);
+      DefExpr* def_expr = new DefExpr(new_symbol, NULL, $4);
       $$ = new AList<Stmt>(new ExprStmt(def_expr));
     }
 ;
@@ -928,13 +892,9 @@ record_tuple_type:
 
 var_type:
   TCOLON type
-    {
-      $$ = $2;
-    }
+    { $$ = $2; }
 | TLIKE expr
-    {
-      $$ = $2;
-    }
+    { $$ = $2; }
 ;
 
 
@@ -948,10 +908,23 @@ fnrettype:
 
 opt_var_type:
   /* nothing */
-    {
-      $$ = NULL;
-    }
+    { $$ = NULL; }
 | var_type
+;
+
+
+formal_var_type:
+  TCOLON formal_type
+    { $$ = $2; }
+| TLIKE expr
+    { $$ = $2; }
+;
+
+
+opt_formal_var_type:
+  /* nothing */
+    { $$ = NULL; }
+| formal_var_type
 ;
 
 
@@ -965,25 +938,17 @@ opt_init_expr:
 
 tuple_inner_type_ls:
   lvalue
-    {
-      $$ = new AList<Expr>($1);
-    }
+    { $$ = new AList<Expr>($1); }
 | tuple_inner_type_ls TCOMMA lvalue
-    { 
-      $1->insertAtTail($3);
-    }
+    { $1->insertAtTail($3); }
 ;
 
 
 record_inner_type_ls:
   identifier var_type opt_init_expr
-    {
-      $$ = new AList<Stmt>(new ExprStmt(new DefExpr(new VarSymbol($1), $3, $2)));
-    }
+    { $$ = new AList<Stmt>(new ExprStmt(new DefExpr(new VarSymbol($1), $3, $2))); }
 | record_inner_type_ls TCOMMA identifier var_type
-    {
-      $1->insertAtTail(new ExprStmt(new DefExpr(new VarSymbol($3), NULL, $4)));
-    }
+    { $1->insertAtTail(new ExprStmt(new DefExpr(new VarSymbol($3), NULL, $4))); }
 ;
 
 
@@ -996,9 +961,7 @@ tuple_multiplier:
 
 variable_expr:
   identifier
-    {
-      $$ = new SymExpr(new UnresolvedSymbol($1));
-    }
+    { $$ = new SymExpr(new UnresolvedSymbol($1)); }
 ;
 
 
@@ -1007,27 +970,27 @@ type:
 | memberaccess_expr
 | parenop_expr
 | record_tuple_type
-| TQUESTION identifier
-    {
-      INT_FATAL("Not yet handling ?type construct");
-    }
 | non_tuple_lvalue TOF variable_expr
-    {
-      $$ = new CallExpr($1, new NamedExpr("elt_type", $3));
-    }
+    { $$ = new CallExpr($1, new NamedExpr("elt_type", $3)); }
 | tuple_multiplier TSTAR variable_expr
-    {
-      $$ = new CallExpr("_htuple", $3, $1);
-    }
+    { $$ = new CallExpr("_htuple", $3, $1); }
 ;
 
+formal_type:
+  type
+| TQUESTION identifier opt_var_type
+    { 
+      VariableType* new_type = new VariableType(getMetaType(0));
+      TypeSymbol* new_symbol = new TypeSymbol($2, new_type);
+      new_type->addSymbol(new_symbol);
+      $$ = new DefExpr(new_symbol, NULL, $3);
+    }
+;
 
 pragma_ls:
     { $$ = new Vec<char*>(); }
 | pragma_ls pragma
-    {
-      $1->add($2);
-    }
+    { $1->add($2); }
 ;
 
 
@@ -1130,9 +1093,7 @@ seq_expr:
 
 if_expr:
   TLP TIF expr TTHEN expr TELSE expr TRP
-    {
-      $$ = new CondExpr($3, $5, $7);
-    }
+    { $$ = new CondExpr($3, $5, $7); }
 | TLP TIF expr TTHEN expr TRP
     { $$ = new CondExpr($3, $5); }
 ;
@@ -1237,9 +1198,7 @@ reduction:
 
 range:
   expr TDOTDOT expr
-    {
-      $$ = new CallExpr("_aseq", $1, $3, new_IntLiteral(1));
-    }
+    { $$ = new CallExpr("_aseq", $1, $3, new_IntLiteral(1)); }
 ;
 
 

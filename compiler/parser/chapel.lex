@@ -84,6 +84,7 @@ select          processToken(TSELECT);
 static          processToken(TSTATIC);
 then            processToken(TTHEN);
 type            processToken(TTYPE);
+typedef         processToken(TTYPEDEF);
 union           processToken(TUNION);
 use             processToken(TUSE);
 var             processToken(TVAR);

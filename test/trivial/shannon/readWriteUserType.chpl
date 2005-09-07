@@ -1,13 +1,13 @@
-type newInteger:  integer;
+typedef newInteger:  integer;
 var  myInteger:   newInteger;
 
-type newFloat:    float;
+typedef newFloat:    float;
 var  myFloat:     newFloat;
 
-type newBoolean:  boolean;
+typedef newBoolean:  boolean;
 var  myBoolean:   newBoolean;
 
-type newComplex:  complex;
+typedef newComplex:  complex;
 var  myComplex:   newComplex;
 
 write("Enter an integer: ");

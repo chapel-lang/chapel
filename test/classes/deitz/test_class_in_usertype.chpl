@@ -2,7 +2,7 @@ record foo {
   var x : integer = 2;
 }
 
-type myfoo : foo;
+typedef myfoo : foo;
 
 var f : myfoo;
 

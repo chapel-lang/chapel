@@ -1,5 +1,5 @@
 class node {
-  type element_type : integer;
+  typedef element_type : integer;
   var element : element_type;
 }
 
