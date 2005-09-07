@@ -80,8 +80,7 @@ $(CHPL): $(PLATFORM)/$(CHPL)
 $(PLATFORM)/$(CHPL): $(PLATFORM_DIR) $(CHPL_OBJS)
 	$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(LIBS)
 	@echo "Updating TAGS..."
-	@etags 	$(D_PARSER_SRC_DIR)/*.h $(D_PARSER_SRC_DIR)/*.c \
-		$(GC_SRC_DIR)/*.h $(GC_SRC_DIR)/*.c \
+	@etags 	$(GC_SRC_DIR)/*.h $(GC_SRC_DIR)/*.c \
 		$(GC_SRC_DIR)/*/*.h $(GC_SRC_DIR)/*/*.c \
 		$(ALL_SRCS) */*.h
 	-@(which ebrowse > /dev/null 2>&1 && echo "Updating BROWSE..." && ebrowse $(ALL_SRCS) */*.h) || echo "ebrowse not available"
