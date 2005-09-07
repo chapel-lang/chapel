@@ -5,6 +5,7 @@
 
 class CodegenOne : public SymtabTraversal {
  public:
+  ChainHashMap<char*, StringHashFns, int> cnames;
   Vec<TypeSymbol*> typeSymbols;
   Vec<FnSymbol*> fnSymbols;
   Vec<VarSymbol*> varSymbols;

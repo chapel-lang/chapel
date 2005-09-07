@@ -518,7 +518,6 @@ FnSymbol* Symboltable::finishFnDef(FnSymbol* fnsym, BlockStmt* blockBody) {
     if (!FnSymbol::mainFn) {
       FnSymbol::mainFn = fnsym;
       fnsym->parentScope = Symboltable::getCurrentScope(); // Yuck, SJD
-      fnsym->cname = copystring("_chpl_main");
     } else {
       USR_FATAL(fnsym, "main multiply defined -- first occurrence at %s",
                 FnSymbol::mainFn->stringLoc());

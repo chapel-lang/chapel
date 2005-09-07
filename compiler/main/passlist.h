@@ -75,11 +75,7 @@ PassInfo passlist[] = {
   RUN(InlineFunctions, ""),
   RUN(InsertVariableInitializations, ""),
   RUN(InsertUnionChecks, ""),
-  RUN(LegalizeCNames, ""), 
 
-  //RED: pass to resolve name conflicts due to overloading
-  RUN(FindCollidingNames, ""),
-  
   // passes to generate code and compile
   RUN(CodegenOne, ""), // codegen types and function prototypes
   RUN(Codegen, ""),

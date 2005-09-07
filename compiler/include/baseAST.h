@@ -135,7 +135,7 @@ class BaseAST : public gc {
 
   virtual ASTContext getContext(void);
 
-  void remove(void);
+  BaseAST* remove(void);
   void replace(BaseAST* new_ast);
   void insertBefore(BaseAST* new_ast);
   void insertAfter(BaseAST* new_ast);

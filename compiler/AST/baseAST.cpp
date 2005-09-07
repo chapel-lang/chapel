@@ -116,7 +116,9 @@ ASTContext BaseAST::getContext(void) {
 }
 
 
-void BaseAST::remove(void) {
+BaseAST* BaseAST::remove(void) {
+  if (!this)
+    return this;
   if (prev || next) {
     if (!prev || !next) {
       INT_FATAL("Ill-formed list in BaseAST::remove");
@@ -129,6 +131,7 @@ void BaseAST::remove(void) {
     callReplaceChild(NULL);
   }
   removeHelper(this);
+  return this;
 }
 
 

@@ -12,8 +12,6 @@
 #include "../symtab/flatten.h"
 #include "../symtab/insertDefaultInitVariables.h"
 #include "../symtab/insertOutParameterInitializations.h"
-#include "../symtab/legalizeCNames.h"
-#include "../symtab/findCollidingNames.h"
 #include "../symtab/postAnalysisCleanup.h"
 #include "../symtab/printSymtab.h"
 #include "../symtab/reconstructIterators.h"
@@ -100,8 +98,6 @@ REGISTER(InsertThisParameters);
 REGISTER(InsertUnionChecks);     // SJD: Insert runtime type checks for unions
 REGISTER(InsertVariableInitializations);
 REGISTER(Instantiate);
-REGISTER(LegalizeCNames);
-REGISTER(FindCollidingNames); //RED: find colliding names and resolve that
 REGISTER(PostAnalysisCleanup);
 REGISTER(PreAnalysisHacks);
 REGISTER(PreAnalysisCleanup);
