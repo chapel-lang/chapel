@@ -45685,3 +45685,13 @@ Removed files:
 	                         findCollidingNames.h legalizeCNames.cpp 
 	                         legalizeCNames.h 
 
+---------------------------------------------------------------------------
+
+09/07/05 15:31:16 -- jplevyak
+
+Log message:
+	Remove DParser from TAGS building
+
+Modified files:
+	chapel/compiler/: Makefile 
+
