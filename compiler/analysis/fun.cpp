@@ -8,7 +8,10 @@
 #include "region.h"
 #include "stmt.h"
 
+static int fun_id = 1;
+
 void Fun::init_fun() {
+  id = fun_id++;
   is_external = 0;
   nested_in = 0;
   clone_for_constants = 0;

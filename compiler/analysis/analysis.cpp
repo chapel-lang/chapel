@@ -395,6 +395,8 @@ static void
 finalize_symbols(IF1 *i) {
   for (int x = finalized_symbols; x < i->allsyms.n; x++) {
     Sym *s = i->allsyms.v[x];
+    if (s->is_constant)
+      make_meta_type(s);
     if (s->is_constant || s->is_symbol)
       set_global_scope(s);
     else
@@ -691,7 +693,6 @@ map_const(IF1 *p, Immediate *imm) {
     return sym;
   sym = new_Sym();
   sym->is_constant = 1;
-  sym->meta_type = sym;
   sym->imm = *imm;
   p->constants.put(&sym->imm, sym);
   return sym;
@@ -791,7 +792,7 @@ static void
 build_enum_element(Sym *enum_sym, Sym *element_sym, int i) {
   element_sym->inherits_add(enum_sym);
   element_sym->type = enum_sym;
-  element_sym->meta_type = element_sym;
+  element_sym->meta_type = enum_sym->meta_type;
   element_sym->imm.v_int64 = i;
   element_sym->is_constant = 1;
 }
@@ -2318,20 +2319,35 @@ cast_value(PNode *pn, EntrySet *es) {
   AVar *result = make_AVar(pn->lvals.v[0], es);
   AVar *type = make_AVar(pn->rvals.v[2], es);
   AVar *val = make_AVar(pn->rvals.v[3], es);
-  fill_tvals(es->fun, pn, 1);
-  AVar *val_tmp = make_AVar(pn->tvals.v[0], es);
+  fill_tvals(es->fun, pn, 2);
+
+  AVar *type_tmp = make_AVar(pn->tvals.v[0], es);
+  Vec<CreationSet *> type_css;
   forv_CreationSet(cs, type->out->sorted) {
     Sym *ts = cs->sym;
     if (ts->type->asymbol) {
       if (ts->type->is_meta_type) {
-        if (is_scalar_type_symbol(ts->type->asymbol->symbol))
-          update_gen(result, make_abstract_type(base_type(ts->meta_type)));
+        if (is_scalar_type_symbol(ts->type->asymbol->symbol)) {
+          AType *btype = make_abstract_type(base_type(ts->meta_type));
+          CreationSet *bcs = btype->v[0];
+          update_in(result, btype);
+          type_css.add(bcs);
+        }
       } else {
-        if (is_scalar_type(ts->type->asymbol->symbol))
-          update_gen(result, make_abstract_type(base_type(ts)));
+        if (is_scalar_type(ts->type->asymbol->symbol)) {
+          AType *btype = make_abstract_type(base_type(ts));
+          CreationSet *bcs = btype->v[0];
+          update_in(result, btype);
+          type_css.add(bcs);
+        }
       }
     }
   }
+  flow_var_type_permit(type_tmp, make_AType(type_css));
+  flow_vars(type, type_tmp);
+  flow_vars(type_tmp, result);
+
+  AVar *val_tmp = make_AVar(pn->tvals.v[1], es);
   Vec<CreationSet *> val_css;
   forv_CreationSet(cs, val->out->sorted) {
     Sym *ts = cs->sym;

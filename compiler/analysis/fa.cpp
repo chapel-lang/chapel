@@ -1675,7 +1675,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
             flow_vars(rhs, result);
           } else {
             if (sym_anynum->specializers.in(cs->sym->type))
-              update_gen(result, cs->sym->type->abstract_type);
+              update_in(result, cs->sym->type->abstract_type);
             else
               type_violation(ATypeViolation_MATCH, lhs, make_AType(cs), result);
           }
@@ -2844,7 +2844,6 @@ split_with_type_marks(AVar *av) {
       }
     }
   }
-  clear_marks(acc);
   return analyze_again;
 }
 
@@ -2942,6 +2941,7 @@ clear_avar(AVar *av) {
   av->backward.clear();
   av->forward.clear();
   av->arg_of_send.clear();
+  av->mark_map = 0;
   if (av->lvalue)
     clear_avar(av->lvalue);
 }

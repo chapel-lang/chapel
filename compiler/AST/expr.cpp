@@ -421,6 +421,13 @@ void DefExpr::traverseExpr(Traversal* traversal) {
 
 
 Type* DefExpr::typeInfo(void) {
+  if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(sym)) {
+    if (VariableType *tv = dynamic_cast<VariableType*>(ts->definition)) {
+      MetaType *mt = dynamic_cast<MetaType*>(tv->type);
+      return mt->base;
+    } else
+      return ts->definition;
+  }
   return sym->type;
 }
 

@@ -308,6 +308,7 @@ AType *make_AType(Vec<CreationSet *> &css);
 AType *make_abstract_type(Sym *s);
 void fill_tvals(Fun *fn, PNode *p, int n);
 void update_gen(AVar *v, AType *t);
+void update_in(AVar *v, AType *t);
 void flow_vars(AVar *v, AVar *vv);
 void flow_var_type_permit(AVar *v, AType *t);
 CreationSet *creation_point(AVar *v, Sym *s);

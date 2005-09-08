@@ -92,7 +92,6 @@ unalias_syms(IF1 *i) {
 
 static void
 implement(Sym *s, Sym *ss, Vec<Sym *> &types) {
-  assert(s != ss);
   s->implementors.set_add(ss);
   types.set_add(s);
   types.set_add(ss);
@@ -237,9 +236,9 @@ build_type_hierarchy() {
   }
   // map subtyping and subclassing to meta_types
   forv_Sym(s, types) if (s && !s->is_meta_type) {
-    forv_Sym(ss, s->implementors) if (ss && s != ss)
+    forv_Sym(ss, s->implementors) if (ss && s->meta_type != ss->meta_type)
       implement(s->meta_type, ss->meta_type, meta_types);
-    forv_Sym(ss, s->specializers) if (ss && s != ss)
+    forv_Sym(ss, s->specializers) if (ss && s->meta_type != ss->meta_type)
       specialize(s->meta_type, ss->meta_type, meta_types);
   }
   forv_Sym(s, types) if (s) {
@@ -347,6 +346,10 @@ void
 make_meta_type(Sym *s) {
   if (!s->meta_type)
     s->meta_type = new_Sym();
+  if (s->is_constant && !s->meta_type) {
+    s->meta_type = s->type->meta_type;
+    return;
+  }
   s->meta_type->is_meta_type = 1;
   s->meta_type->in = s->in;
   s->meta_type->name = s->name;
