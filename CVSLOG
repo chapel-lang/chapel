@@ -45742,3 +45742,20 @@ Added files:
 	                                            question_mark-1.future 
 	                                            question_mark-1.good 
 
+---------------------------------------------------------------------------
+
+09/08/05 16:04:24 -- jplevyak
+
+Log message:
+	I used to copy out the inherited instance variables, but now
+	that is done in the front-end.  Fix issue by disabling that
+	code.
+	Added 2 tests so show that inheritence works!
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp ast.cpp 
+	chapel/compiler/include/: ast.h 
+Added files:
+	chapel/test/classes/jplevyak/: inherit-1.chpl inherit-1.good 
+	                               inherit-2.chpl inherit-2.good 
+
