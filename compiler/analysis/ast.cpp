@@ -395,9 +395,10 @@ compute_type_sizes(IF1 *i) {
 }
 
 void
-finalize_types(IF1 *i) {
+finalize_types(IF1 *i, int import_included_ivars) {
   unalias_syms(i);
-  include_instance_variables(i);
+  if (import_included_ivars)
+    include_instance_variables(i);
 #define S(_n) sym_##_n = unalias_type(sym_##_n);
 #include "builtin_symbols.h"
 #undef S

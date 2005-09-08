@@ -42,7 +42,7 @@ class AST : public gc {
 
 void build_module(Sym *sym, Sym *init);
 void init_ast();
-void finalize_types(IF1 *);
+void finalize_types(IF1 *, int import_included_ivars = true);
 void make_meta_type(Sym *s);
 void build_type_hierarchy();
 void compute_type_size(Sym *s);

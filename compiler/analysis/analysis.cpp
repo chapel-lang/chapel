@@ -447,7 +447,7 @@ install_new_function(FnSymbol *f, FnSymbol *old_f, Map<BaseAST*,BaseAST*> *map =
         new_t->asymbol->sym->instantiates = t->asymbol->sym;
       }
   }
-  finalize_types(if1);
+  finalize_types(if1, false);
   forv_Vec(FnSymbol, f, funs) {
     if (init_function(f) < 0 || build_function(f) < 0) 
       fail("unable to instantiate generic/wrapper");
@@ -456,7 +456,7 @@ install_new_function(FnSymbol *f, FnSymbol *old_f, Map<BaseAST*,BaseAST*> *map =
   finalize_symbols(if1);
   build_type_hierarchy();
   build_classes(syms);
-  finalize_types(if1);
+  finalize_types(if1, false);
   forv_Vec(FnSymbol, f, funs) {
     Fun *fun = new Fun(f->asymbol->sym);
     build_arg_positions(fun);
@@ -2610,7 +2610,7 @@ ast_to_if1(Vec<AList<Stmt> *> &stmts) {
     if (t->defaultValue)
       get_defaultVal(t);
   build_classes(syms);
-  finalize_types(if1);
+  finalize_types(if1, false);
   if (build_functions(syms) < 0) return -1;
 #define REG(_n, _f) pdb->fa->primitive_transfer_functions.put(_n, new RegisteredPrim(_f));
 #define SREG(_n, _f) pdb->fa->primitive_transfer_functions.put(if1_cannonicalize_string(if1,_n), new RegisteredPrim(_f));
@@ -2641,7 +2641,7 @@ ast_to_if1(Vec<AList<Stmt> *> &stmts) {
   SREG("pure_return", pure_return);
   finalize_symbols(if1);
   build_type_hierarchy();
-  finalize_types(if1);  // again to catch any new ones
+  finalize_types(if1, false);  // again to catch any new ones
   return 0;
 }
 
