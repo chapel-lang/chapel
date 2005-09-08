@@ -45759,3 +45759,27 @@ Added files:
 	chapel/test/classes/jplevyak/: inherit-1.chpl inherit-1.good 
 	                               inherit-2.chpl inherit-2.good 
 
+---------------------------------------------------------------------------
+
+09/08/05 16:28:29 -- jplevyak
+
+Log message:
+	Fix up a number of tests and future files which where
+	incorrect or stale.
+
+Modified files:
+	chapel/test/arrays/deitz/: test_domain1.future 
+	                           test_domain2.future 
+	                           test_domain2D.future 
+	                           test_record_of_record_instantiated.future 
+	                           test_record_of_record_instantiated2.future 
+	chapel/test/classes/deitz/suite1/: test2.chpl test4.chpl 
+	chapel/test/domains/roxana/: test_index_expr1.future 
+	chapel/test/trivial/deitz/demo/: sample1a.good 
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_typevar_record5.future 
+	                                         test_typevar_record6.future 
+Removed files:
+	chapel/test/classes/deitz/suite1/: test2.future test4.future 
+	chapel/test/trivial/deitz/demo/: sample1a.future 
+
