@@ -45723,3 +45723,22 @@ Modified files:
 	chapel/test/types/typedefs/bradc/: localType.chpl 
 	                                   localType2.chpl 
 
+---------------------------------------------------------------------------
+
+09/08/05 15:30:01 -- jplevyak
+
+Log message:
+	Question mark indicated type variables in functions work through
+	analysis: function f(a : ?t) : t.
+	Fixed? Fun::id not initialized valgrind error.
+	Added new test for ?t in functions, fails in codegen.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/analysis/: analysis.cpp ast.cpp fa.cpp fun.cpp 
+	chapel/compiler/include/: fa.h 
+Added files:
+	chapel/test/types/type_variables/jplevyak/: question_mark-1.chpl 
+	                                            question_mark-1.future 
+	                                            question_mark-1.good 
+
