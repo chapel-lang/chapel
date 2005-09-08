@@ -1,3 +1,0 @@
-jplevyak
-
-It looks like a coercion wrapper is being made for the write(t1.sum()) line which returns an integer.
