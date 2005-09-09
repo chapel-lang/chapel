@@ -45807,3 +45807,19 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+09/09/05 11:49:00 -- deitz
+
+Log message:
+	Removed working future tests that work for good reasons.
+
+Removed files:
+	chapel/test/classes/bradc/records/: twoRecords.future 
+	chapel/test/classes/deitz/: test_method9a.future 
+	chapel/test/functions/deitz/defaultnamed/: 
+	                                           test_defaultnamed1.future 
+	                                           test_defaultnamed4.future 
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_instantiate1.future 
+
