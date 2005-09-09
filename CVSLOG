@@ -45783,3 +45783,17 @@ Removed files:
 	chapel/test/classes/deitz/suite1/: test2.future test4.future 
 	chapel/test/trivial/deitz/demo/: sample1a.future 
 
+---------------------------------------------------------------------------
+
+09/08/05 18:37:27 -- bradc
+
+Log message:
+	Reminded by John's checkin yesterday, removed
+	dparser-related rules and variables from the
+	compiler Makefile framework.
+
+Modified files:
+	chapel/compiler/analysis/make_prims/: Makefile 
+	chapel/compiler/make/: Makefile.compiler.foot 
+	chapel/make/: Makefile.base 
+
