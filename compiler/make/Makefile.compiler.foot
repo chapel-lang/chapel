@@ -35,9 +35,6 @@ echocompilerdir:
 # pattern-based rules
 #
 
-%.g.d_parser.cpp: %.g
-	$(MAKE_DPARSER) $(MAKE_DPARSER_FLAGS) $<
-
 $(PLATFORM)/%.test.nogc.o: %.test.cpp $(PLATFORM_DIR)
 	$(CXX) -c -DTEST_LIB $(CXXFLAGS) -o $@ $<
 

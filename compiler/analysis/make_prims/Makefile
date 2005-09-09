@@ -5,8 +5,6 @@
 COMPILER_ROOT = ../..
 COMPILER_SUBDIR = analysis/make_prims
 
-USE_DPARSER = 1
-
 #
 # standard header
 #
