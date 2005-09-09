@@ -45843,3 +45843,34 @@ Modified files:
 	chapel/test/Bin/: nightly 
 	chapel/third-party/: Makefile 
 
+---------------------------------------------------------------------------
+
+09/09/05 12:21:24 -- shannon
+
+Log message:
+	Added the fwrite function for integers and the isOpen method
+	to the _chpl_file module.  Renamed the decomposeStmtFunction
+	function in specializeCallExprs to decomposeIOCall, and added
+	the  decomposeFileIOCall function.  Added tests to write an
+	integer to a file and to stdout, to fail to write to an unopened
+	file, and to write multiple integers to a file.
+
+Modified files:
+	chapel/compiler/parser/: prelude.chpl 
+	chapel/compiler/traversals/: specializeCallExprs.cpp 
+	chapel/modules/standard/: _chpl_file.chpl 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/types/file/: .cvsignore CLEANFILES 
+Added files:
+	chapel/test/types/file/: fwriteIntFile.catfiles 
+	                         fwriteIntFile.chpl fwriteIntFile.good 
+	                         fwriteIntStdout.chpl 
+	                         fwriteIntStdout.good 
+	                         fwriteIntUnopenedFile.chpl 
+	                         fwriteIntUnopenedFile.good 
+	                         fwriteMultipleInts.catfiles 
+	                         fwriteMultipleInts.chpl 
+	                         fwriteMultipleInts.good 
+
