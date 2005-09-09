@@ -436,7 +436,7 @@ install_new_function(FnSymbol *f, FnSymbol *old_f, Map<BaseAST*,BaseAST*> *map =
     funs.add(f);
   }
   qsort(syms.v, syms.n, sizeof(syms.v[0]), compar_baseast);
-  qsort(funs.v, funs.n, sizeof(funs.v[0]), compar_funs);
+  qsort(funs.v, funs.n, sizeof(funs.v[0]), compar_baseast);
   map_asts(syms);
   build_types(syms);
   build_symbols(syms);
