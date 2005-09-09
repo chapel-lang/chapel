@@ -1,3 +1,0 @@
-jplevyak
-
-This test fails only with both function calls.  If you remove the second function call, the first one is handled correctly.
