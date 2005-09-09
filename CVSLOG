@@ -45874,3 +45874,81 @@ Added files:
 	                         fwriteMultipleInts.chpl 
 	                         fwriteMultipleInts.good 
 
+---------------------------------------------------------------------------
+
+09/09/05 14:12:51 -- deitz
+
+Log message:
+	Got preinstantiation working so that we instantiate fully what we can
+	instantiate fully before analysis.  It lacks robustness.
+	
+	Ensured more pragmas are copied during cloning and instantiation.
+	
+	Turned preinstantiation on by default.  Use --nopreinstantiation to
+	turn it off.
+	
+	Removed 29 .future files to enable 29 future tests.  Removed two
+	future tests that just didn't make enough sense to keep.
+	
+	Minor bug fixes to scopes and where things are defined.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp 
+	chapel/compiler/include/: driver.h symbol.h symtab.h 
+	chapel/compiler/main/: driver.cpp passlist.cpp 
+	chapel/compiler/parser/: prelude.chpl 
+	chapel/compiler/symtab/: symscope.cpp symtab.cpp 
+	chapel/compiler/traversals/: findTypeVariables.cpp 
+	                             findTypeVariables.h instantiate.cpp 
+	                             preAnalysisHacks.cpp 
+	chapel/modules/standard/: _chpl_seq.chpl 
+	chapel/runtime/include/: array.h 
+	chapel/test/arrays/deitz/: test_array_class_trial5.chpl 
+	                           test_array_class_trial5a.chpl 
+	                           test_domain3.chpl 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/domains/roxana/: test_hash_table3.chpl 
+	chapel/test/flowanalysis/newast/: enum.good 
+	chapel/test/trivial/deitz/demo/: sample2.chpl 
+	chapel/test/types/type_variables/deitz/: test_datablock3.chpl 
+	                                         test_myseq0.chpl 
+	                                         test_myseq1.chpl 
+	                                         test_myseq2.chpl 
+	                                         test_typevar_class8.chpl 
+	                                         test_typevar_class9.chpl 
+	                                         test_typevar_record3.chpl 
+	                                         test_typevar_record4.chpl 
+Removed files:
+	chapel/compiler/traversals/: removeLiterals.cpp removeLiterals.h 
+	chapel/test/arrays/deitz/: test_array_class_trial5a.future 
+	                           test_array_class_trial5b.future 
+	                           test_record_of_record_instantiated.future 
+	                           test_record_of_record_instantiated2.future 
+	chapel/test/classes/deitz/: test_myseq_record2.chpl 
+	                            test_myseq_record2.future 
+	                            test_myseq_record2.good 
+	                            test_myseq_record3.chpl 
+	                            test_myseq_record3.future 
+	                            test_myseq_record3.good 
+	chapel/test/trivial/mjoyner/seq/: seq_index1.future 
+	                                  seq_reverse.future 
+	chapel/test/types/seq/bradc/: hashEquals.future length.future 
+	                              returnSeq.future returnSeq2.future 
+	chapel/test/types/seq/deitz/: test_seq1.future test_seq1a.future 
+	                              test_seq1b.future 
+	                              test_seq1d.future test_seq2.future 
+	                              test_seq3.future test_seq4.future 
+	                              test_seq5.future test_seq6.future 
+	                              test_seq7.future test_seq8.future 
+	                              test_seq_class1.future 
+	                              test_seq_class2.future 
+	                              test_seq_reverse1.future 
+	                              test_seq_tuple.future 
+	chapel/test/types/tuple/bradc/: returnTuple.future 
+	chapel/test/types/tuple/deitz/: test_tuple_simple5.future 
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_foo_instantiated1.future 
+	                                         test_infer_class2.future 
+
