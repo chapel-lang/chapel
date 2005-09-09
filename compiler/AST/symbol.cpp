@@ -628,7 +628,12 @@ FnSymbol* FnSymbol::clone(Map<BaseAST*,BaseAST*>* map) {
   Stmt* copyStmt = defPoint->parentStmt->copy(true, map, NULL);
   ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(copyStmt);
   DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr);
-  defExpr->sym->cname = glomstrings(3, cname, "_clone_", intstring(uid++));
+  // BLC: we don't want to rename any clones that we build in the
+  // prelude, because they likely refer to external functions for
+  // which clones will not be built
+  if (defPoint->parentScope->type != SCOPE_PRELUDE) {
+    defExpr->sym->cname = glomstrings(3, cname, "_clone_", intstring(uid++));
+  }
   defPoint->parentStmt->insertAfter(copyStmt);
   TRAVERSE(copyStmt, new ClearTypes(), true);
   TRAVERSE(defPoint, new ClearTypes(), true);
