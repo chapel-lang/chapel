@@ -45797,3 +45797,13 @@ Modified files:
 	chapel/compiler/make/: Makefile.compiler.foot 
 	chapel/make/: Makefile.base 
 
+---------------------------------------------------------------------------
+
+09/09/05 08:11:13 -- jplevyak
+
+Log message:
+	Fix valgrind errors: used wrong compfn with qsort.
+
+Modified files:
+	chapel/compiler/analysis/: analysis.cpp 
+
