@@ -45823,3 +45823,23 @@ Removed files:
 	chapel/test/types/type_variables/deitz/: 
 	                                         test_instantiate1.future 
 
+---------------------------------------------------------------------------
+
+09/09/05 11:56:25 -- bradc
+
+Log message:
+	In cleaning up the top-level Makefile, realized that
+	the "nogc" option for the third-party directory was
+	no longer necessary, since it was used to make dparser
+	without GC.  Removed rules related to this and updated
+	the nightly scripts that run the valgrind test.
+	
+	Now, to make a GC-less compiler, you should only need
+	to do "make nogc" from the top-level or compiler
+	directories.
+
+Modified files:
+	./: Makefile 
+	chapel/test/Bin/: nightly 
+	chapel/third-party/: Makefile 
+
