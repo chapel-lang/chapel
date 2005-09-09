@@ -1,4 +1,5 @@
-_test_filename.txt
+_test_fwriteIntFile.txt
+_test_fwriteMultipleInts.txt
 output
 *.tmp
 a.out

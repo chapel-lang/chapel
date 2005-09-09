@@ -37,9 +37,15 @@ pragma "rename fclose" function _fclose(fp : CFILEPTR);
 pragma "rename _chpl_write_boolean" function write(x : boolean) : void {
          __primitive("write", x);
 }
+
+function fprintf(fp: CFILEPTR, fmt: string, val) : integer {
+         __primitive("write", val);
+}
+
 pragma "rename _chpl_write_integer" function write(x : integer) : void {
          __primitive("write", x);
 }
+
 pragma "rename _chpl_write_float" function write(x : float) : void {
          __primitive("write", x);
 }

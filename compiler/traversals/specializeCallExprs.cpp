@@ -5,11 +5,23 @@
 #include "symtab.h"
 
 
+
 static void
-decomposeStmtFunction(CallExpr* call, char* newFunctionName) {
+decomposeIOCall(CallExpr* call, char* newFunctionName) {
   for_alist(Expr, arg, call->argList) {
     call->parentStmt->insertBefore
       (new ExprStmt(new CallExpr(newFunctionName, arg->copy())));
+  }
+}
+
+
+static void
+decomposeFileIOCall(CallExpr* call, char* newFunctionName) {
+  Expr* outfile = call->argList->popHead();
+  for_alist(Expr, arg, call->argList) {
+    call->parentStmt->insertBefore
+      (new ExprStmt(new CallExpr(newFunctionName, outfile->copy(), 
+                                 arg->copy())));
   }
 }
 
@@ -83,20 +95,22 @@ void SpecializeCallExprs::postProcessStmt(Stmt* stmt) {
           Stmt* assertIfStmt = new CondStmt(notTest, thenStmt);
           call->parentStmt->insertBefore(assertIfStmt);
           call->parentStmt->remove();          
-
+        } else if (strcmp(baseVar->var->name, "fwrite") == 0) {
+          decomposeFileIOCall(call, "fwrite");
+          call->parentStmt->remove();
         } else if (strcmp(baseVar->var->name, "halt") == 0) {
-          decomposeStmtFunction(call, "write");
+          decomposeIOCall(call, "write");
           call->parentStmt->insertBefore(genWriteln());
           call->parentStmt->insertBefore(genExit(call->parentFunction()));
           call->parentStmt->remove();
         } else if (strcmp(baseVar->var->name, "read") == 0) {
-          decomposeStmtFunction(call, "read");
+          decomposeIOCall(call, "read");
           call->parentStmt->remove();
         } else if (strcmp(baseVar->var->name, "write") == 0) {
-          decomposeStmtFunction(call, "write");
+          decomposeIOCall(call, "write");
           call->parentStmt->remove();
         } else if (strcmp(baseVar->var->name, "writeln") == 0) {
-          decomposeStmtFunction(call, "write");
+          decomposeIOCall(call, "write");
           call->parentStmt->insertBefore(genWriteln());
           call->parentStmt->remove();
         }

@@ -21,6 +21,14 @@ class file {
     }
   }
 
+  function isOpen: boolean {
+    var openStatus: boolean = false;
+    if (fp != _NULLCFILEPTR) {
+      openStatus = true;
+    }
+    return openStatus;
+  }
+
   function close {
     if (fp == _STDINCFILEPTR or fp == _STDOUTCFILEPTR or  
         fp == _STDERRCFILEPTR) {
@@ -36,10 +44,20 @@ class file {
   }
 }
 
-
 const stdin  : file = file(filename = "stdin",  mode = "r", path = "/dev", 
                            fp = _STDINCFILEPTR);
 const stdout : file = file(filename = "stdout", mode = "w", path = "/dev", 
                            fp = _STDOUTCFILEPTR);
 const stderr : file = file(filename = "stderr", mode = "w", path = "/dev", 
                            fp = _STDERRCFILEPTR);
+
+
+pragma "rename _chpl_fwrite_integer"
+function fwrite(f: file = stdout, val: integer) {
+  if (f.isOpen) {
+    fprintf(f.fp, "%lld", val);
+  } else {
+    var fullFilename = f.path + "/" + f.filename;
+    halt("You must open \"", fullFilename, "\" before writing to it.");    
+  }
+}
