@@ -45952,3 +45952,31 @@ Removed files:
 	                                         test_foo_instantiated1.future 
 	                                         test_infer_class2.future 
 
+---------------------------------------------------------------------------
+
+09/09/05 14:14:42 -- bradc
+
+Log message:
+	A small change so that clones of functions in
+	prelude.chpl (read: clones of functions that
+	we don't codegen the definitions of) do not
+	create a new cname for the function.  This
+	allows us to prototype C varargs functions
+	like fprintf() for a fixed number of parameters
+	of unknown type, clone them for analysis, but
+	have all calls to such functions still be to
+	the same C function.
+	
+	Steve points out that once the no-codegen
+	pragma is better supported, this would be
+	a better thing to use to make this
+	determination rather than the fact that
+	it is part of a specific module (this
+	would also allow us to move the prototype
+	of fprintf out of prelude.chpl and into
+	_chpl_file.chpl, which makes more
+	structural sense).
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
