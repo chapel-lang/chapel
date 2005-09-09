@@ -2,15 +2,15 @@ class _seqNode {
   type elt_type;
 
   var _element : elt_type;
-  var _next : _seqNode;
+  var _next : _seqNode(elt_type);
 }
 
-record seq {
+class seq : value {
   type elt_type;
 
   var _length : integer;
-  var _first : _seqNode;
-  var _last : _seqNode;
+  var _first : _seqNode of elt_type;
+  var _last : _seqNode of elt_type;
 
   function this(i : integer) var {
     var start_index : integer = 1;
@@ -42,7 +42,7 @@ record seq {
     return this._copy()._concat_in_place(s);
 
   function _append_in_place(e : elt_type) {
-    var new : _seqNode = _seqNode(elt_type);
+    var new = _seqNode(elt_type);
     new._element = e;
     if _length > 0 {
       _last._next = new;
@@ -60,7 +60,7 @@ record seq {
   } 
 
   function _prepend_in_place(e : elt_type) {
-    var new : _seqNode = _seqNode(elt_type);
+    var new = _seqNode(elt_type);
     new._element = e;
     if _length > 0 {
       new._next = _first;
@@ -87,7 +87,7 @@ record seq {
   }
 
   function _copy() {
-    var new = (/ /);
+    var new : seq of elt_type;
     var tmp = _first;
     while tmp != nil {
       new = new._append_in_place(tmp._element);
@@ -97,7 +97,7 @@ record seq {
   }
 
   function _reverse() {
-    var new = (/ /);
+    var new : seq of elt_type;
     var tmp = _first;
     while (tmp != nil) {
       new = new._prepend_in_place(tmp._element);
@@ -106,16 +106,16 @@ record seq {
     return new;     
   }
 
-  iterator _for() {
-    var tmp : _seqNode = _first;
+  iterator _for() : elt_type {
+    var tmp = _first;
     while tmp != nil {
       yield tmp._element;
       tmp = tmp._next;
     }
   }
 
-  iterator _forall() {
-    var tmp : _seqNode = _first;
+  iterator _forall() : elt_type {
+    var tmp = _first;
     while tmp != nil {
       yield tmp._element;
       tmp = tmp._next;
@@ -140,7 +140,7 @@ function write(s : seq) {
   while tmp != nil {
     write(tmp._element);
     tmp = tmp._next;
-    if (tmp != nil) {
+    if tmp != nil {
       write(", ");
     }
   }
@@ -155,7 +155,7 @@ record _aseq {
   var _high : integer;
   var _stride : integer;
 
-  iterator _for() {
+  iterator _for() : integer {
     var i = _low;
     while i <= _high {
       yield i;
@@ -163,7 +163,7 @@ record _aseq {
     }
   }
 
-  iterator _forall() {
+  iterator _forall() : integer {
     var i = _low;
     while i <= _high {
       yield i;

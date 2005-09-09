@@ -882,9 +882,8 @@ void CallExpr::codegen(FILE* outfile) {
 
   if (SymExpr* variable = dynamic_cast<SymExpr*>(baseExpr)) {
     if (!strcmp(variable->var->cname, "_data_alloc")) {
-      SymExpr* variable = dynamic_cast<SymExpr*>(argList->representative());
-      ClassType* classType = dynamic_cast<ClassType*>(variable->var->type);
-      classType->fields.v[0]->type->codegen(outfile);
+      ClassType* ct = dynamic_cast<ClassType*>(dynamic_cast<FnSymbol*>(variable->var)->typeBinding->definition);
+      ct->fields.v[1]->type->codegen(outfile);
       fprintf(outfile, ", ");
     }
   }

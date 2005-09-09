@@ -185,7 +185,7 @@ Vec<ModuleSymbol*>* Symboltable::getModules(moduleSet whichModules) {
 Symbol* Symboltable::lookupInScope(char* name,
                                    SymScope* scope,
                                    Vec<SymScope*>* scopesAlreadyVisited) {
-  if (scope == NULL) {
+  if (!scope) {
     INT_FATAL("NULL scope passed to lookupInScope()");
   }
 
@@ -210,12 +210,10 @@ Symbol* Symboltable::lookupInScope(char* name,
 }
 
 
-Symbol* Symboltable::lookupFromScope(char* name, SymScope* scope,
-                                     bool genError) {
+Symbol* Symboltable::lookupFromScope(char* name, SymScope* scope) {
   if (!scope) {
     INT_FATAL("NULL scope passed to lookupFromScope()");
   }
-
   while (scope != NULL) {
     Symbol* sym = lookupInScope(name, scope);
     if (sym) {
@@ -239,17 +237,12 @@ Symbol* Symboltable::lookupFromScope(char* name, SymScope* scope,
     }
     scope = scope->parent;
   }
-
-  if (genError && strcmp(name, "__primitive") != 0) {
-    INT_FATAL("lookupFromScope failed for %s", name);
-  }
-
   return NULL;
 }
 
 
-Symbol* Symboltable::lookup(char* name, bool genError) {
-  return lookupFromScope(name, currentScope, genError);
+Symbol* Symboltable::lookup(char* name) {
+  return lookupFromScope(name, currentScope);
 }
 
 

@@ -1,5 +1,0 @@
-deitz
-
-the problem is that instantiate_generic for constructors is not
-building the "this" setter or getter for tupleXX when cloned which
-means the generic versions are being found and ambiguity

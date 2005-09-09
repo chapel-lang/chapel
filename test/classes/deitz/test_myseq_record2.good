@@ -1,3 +1,0 @@
-{length = 3, first = {element = 1, next = {element = 2, next = {element = 3, next = nil}}}, last = {element = 3, next = nil}}
-{length = 3, first = {element = 4, next = {element = 5, next = {element = 6, next = nil}}}, last = {element = 6, next = nil}}
-{length = 6, first = {element = 1, next = {element = 2, next = {element = 3, next = {element = 4, next = {element = 5, next = {element = 6, next = nil}}}}}}, last = {element = 6, next = nil}}

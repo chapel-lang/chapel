@@ -1,17 +1,17 @@
 class node {
   type t;
   var element : t;
-  var next : node;
+  var next : node(t);
 }
 
 record foo {
   type t;
   var length : integer;
-  var first : node;
-  var last : node;
+  var first : node(t);
+  var last : node(t);
 
   function append(e : t) {
-   var new : node = node(t);
+   var new : node(t) = node(t);
     new.element = e;
     if length > 0 {
       last.next = new;
@@ -25,7 +25,7 @@ record foo {
   }
 
   function prepend(e : t) {
-    var new : node = node(t);
+    var new : node(t) = node(t);
     new.element = e;
     if length > 0 {
       new.next = first;

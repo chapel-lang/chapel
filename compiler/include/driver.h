@@ -18,7 +18,7 @@ extern FILE* html_index_file;
 
 // Begin temporary development flags
 extern bool checkAnalysisTypeinfo;
-extern bool instantiate;
+extern bool preinstantiate;
 extern int fanalysis_errors;
 extern int scoping_test;
 // End temporary development flags

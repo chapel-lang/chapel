@@ -87,7 +87,7 @@ bool SymScope::isEmpty(void) {
 
 
 void SymScope::define(Symbol* sym) {
-  Symbol* tmp = Symboltable::lookupInScope(sym->name, this);
+  Symbol* tmp = table.get(sym->name);
   if (tmp) {
     if (tmp == sym) {
       INT_FATAL(sym, "Attempt to define symbol %s twice", sym->name);

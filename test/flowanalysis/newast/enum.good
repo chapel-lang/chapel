@@ -2,4 +2,5 @@
 ::val(enum.chpl:1) ( classVals )
 ::x(enum.chpl:3) ( classVals )
 ::y(enum.chpl:7) ( int64 )
+function write enum.chpl:1
 globals

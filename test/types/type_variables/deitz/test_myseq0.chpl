@@ -1,14 +1,14 @@
 class myseq_node {
   type elementType;
   var element : elementType;
-  var next : myseq_node;
+  var next : myseq_node(elementType);
 }
 
 class myseq {
   type elementType;
   var length : integer;
-  var first : myseq_node;
-  var last : myseq_node;
+  var first : myseq_node(elementType);
+  var last : myseq_node(elementType);
 
   function append(e : elementType) {
     first = myseq_node(elementType = elementType);
@@ -22,7 +22,7 @@ class myseq {
   }
 }
 
-var s : myseq = myseq(integer);
+var s : myseq(integer) = myseq(integer);
 
 s.append(2);
 

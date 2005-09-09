@@ -10,8 +10,7 @@ class FindVariableType : public Traversal {
   Vec<BaseAST*>* asts;
   bool found;
   FindVariableType(Vec<BaseAST*>* init_asts);
-  void preProcessSymbol(Symbol* symbol);
-  void preProcessType(Type* type);
+  void preProcessExpr(Expr* expr);
 };
 
 bool

@@ -5,13 +5,13 @@ class bar {
 
 class foo {
   type t;
-  var x : bar = bar(t);
+  var x : bar(t) = bar(t);
   function print() {
     writeln(x.y);
   }
 }
 
-var f : foo = foo(t = integer);
+var f : foo(t=integer) = foo(t = integer);
 
 f.x.y = 12;
 

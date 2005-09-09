@@ -8,14 +8,19 @@ FindVariableType::FindVariableType(Vec<BaseAST*>* init_asts) {
   asts = init_asts;
 }
 
-void FindVariableType::preProcessSymbol(Symbol* symbol) {
-  if (asts->set_in(symbol))
-    found = true;
-}
-
-void FindVariableType::preProcessType(Type* type) {
-  if (asts->set_in(type))
-    found = true;
+void FindVariableType::preProcessExpr(Expr* expr) {
+  if (SymExpr* e = dynamic_cast<SymExpr*>(expr)) {
+    if (asts->set_in(e->var))
+      found = true;
+    if (e->var->type && asts->set_in(e->var->type))
+      found = true;
+  }
+  if (DefExpr* e = dynamic_cast<DefExpr*>(expr)) {
+    if (asts->set_in(e->sym))
+      found = true;
+    if (e->sym->type && asts->set_in(e->sym->type))
+      found = true;
+  }
 }
 
 bool functionContainsAnyAST(FnSymbol* fn, Vec<BaseAST*>* asts_set) {

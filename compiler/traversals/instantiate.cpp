@@ -9,7 +9,7 @@
 
 void
 Instantiate::postProcessExpr(Expr* expr) {
-  if (!instantiate) {
+  if (!preinstantiate) {
     return;
   }
   if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
@@ -36,7 +36,13 @@ Instantiate::postProcessExpr(Expr* expr) {
           bool sub = false;
           if (formalArg->isGeneric) {
             if (formalArg->variableTypeSymbol) {
-              if (SymExpr* variable = dynamic_cast<SymExpr*>(actual)) {
+              Expr* actualactual = actual;
+              if (NamedExpr* namedExpr = dynamic_cast<NamedExpr*>(actual)) {
+                if (!strcmp(namedExpr->name, formalArg->name)) {
+                  actualactual = namedExpr->actual;
+                }
+              }
+              if (SymExpr* variable = dynamic_cast<SymExpr*>(actualactual)) {
                 if (TypeSymbol* actualArg = dynamic_cast<TypeSymbol*>(variable->var)) {
                   if (!dynamic_cast<VariableType*>(actualArg->definition)) {
                     substitutions.put(formalArg->variableTypeSymbol->definition, actualArg->definition);
@@ -45,8 +51,16 @@ Instantiate::postProcessExpr(Expr* expr) {
                 }
               }
             } else {
-              substitutions.put(formalArg, actual);
-              sub = true;
+              Expr* actualactual = actual;
+              if (NamedExpr* namedExpr = dynamic_cast<NamedExpr*>(actual)) {
+                if (!strcmp(namedExpr->name, formalArg->name)) {
+                  actualactual = namedExpr->actual;
+                }
+              }
+              if (SymExpr* symExpr = dynamic_cast<SymExpr*>(actualactual)) {
+                substitutions.put(formalArg, symExpr->var);
+                sub = true;
+              }
             }
           }
           if (!sub)
@@ -54,13 +68,23 @@ Instantiate::postProcessExpr(Expr* expr) {
           formal = fn->formals->next();
         }
         if (substitutions.n) {
-          Map<BaseAST*,BaseAST*> map;
-          FnSymbol* new_fn = fn->instantiate_generic(&map, &substitutions);
-          if (newActuals->length() == 0) {
-            call->replace(new SymExpr(new_fn->retType->symbol));
-          } else {
-            call->replace(new CallExpr(new_fn, newActuals));
+          FnSymbol* new_fn = fn->preinstantiate_generic(&substitutions);
+          for_alist(DefExpr, formalDef, new_fn->formals) {
+            ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
+            if (formal->isGeneric || formal->variableTypeSymbol) {
+              formalDef->remove();
+            }
           }
+          bool handled = false;
+          if (DefExpr* parentDef = dynamic_cast<DefExpr*>(call->parentExpr)) {
+            if (parentDef->exprType == call) {
+              parentDef->sym->type = new_fn->retType;
+              call->remove();
+              handled = true;
+            }
+          }
+          if (!handled)
+            call->replace(new CallExpr(new_fn, newActuals));
         }
       }
     }

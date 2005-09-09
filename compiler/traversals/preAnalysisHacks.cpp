@@ -82,6 +82,20 @@ void PreAnalysisHacks::postProcessExpr(Expr* expr) {
       }
     }
   }
+
+  if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
+    if (SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr)) {
+      if (!strncmp(base->var->name, "_construct_seq", 14)) {
+        if (MemberAccess* pbase = dynamic_cast<MemberAccess*>(expr->parentExpr)) {
+          if (!strncmp(pbase->member->name, "_append_in_place", 16)) {
+            if (CallExpr* pcall = dynamic_cast<CallExpr*>(pbase->parentExpr)) {
+              call->argList->only()->replace(new SymExpr(pcall->argList->last()->typeInfo()->symbol));
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 void PreAnalysisHacks::postProcessType(Type* type) {

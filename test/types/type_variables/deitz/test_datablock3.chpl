@@ -1,5 +1,7 @@
 var d : _data(integer, 3);
 
+d.alloc(3, "description");
+
 d(0) = 1;
 d(1) = 2;
 d(2) = 3;

@@ -39,7 +39,6 @@
 #include "../traversals/insertAnonymousTypes.h"
 #include "../traversals/insertFunctionTemps.h"
 #include "../traversals/insertLiteralTemps.h"
-#include "../traversals/removeLiterals.h"
 #include "../traversals/insertThisParameters.h"
 #include "../traversals/insertUnionChecks.h"
 #include "../traversals/insertVariableInitializations.h"

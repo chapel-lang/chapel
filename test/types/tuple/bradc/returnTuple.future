@@ -1,4 +1,0 @@
-???
-
-It seems that when returning an anonymous tuple type,
-parentSymbols aren't set up properly??

@@ -7,7 +7,7 @@ record pragma "codegen data" _data { -- a c array, basically
   type t;
   param size : integer;
   var _data_dummy : t;
-  pragma "rename _data_this" function this(i : integer) : t {
+  pragma "rename _data_get" function this(i : integer) : t {
     return _data_dummy;
     -- return __primitive("array_index", this, i);
   }

@@ -1,8 +1,0 @@
-deitz
-
-overloaded assignment of records do not appear
-in the visible functions lists and hence do
-not resolve.  This combined with using dtUnknown
-as an argument to the "seq" generic results in
-C struct = C struct where the 2 structs are
-not the same and this error.

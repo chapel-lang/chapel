@@ -208,6 +208,7 @@ class FnSymbol : public Symbol {
   FnSymbol* default_wrapper(Vec<Symbol*>* defaults);
   FnSymbol* instantiate_generic(Map<BaseAST*,BaseAST*>* copyMap,
                                 Map<BaseAST*,BaseAST*>* substitutions);
+  FnSymbol* preinstantiate_generic(Map<BaseAST*,BaseAST*>* substitutions);
 
   void codegenHeader(FILE* outfile);
   void codegenPrototype(FILE* outfile);
