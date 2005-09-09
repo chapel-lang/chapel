@@ -5,8 +5,6 @@ include $(CHAPEL_ROOT)/make/Makefile.base
 
 all: $(THIRD_GC_DIRNAME)
 
-nogc: FORCE
-
 clean:
 	cd $(THIRD_GC_DIRNAME) && $(MAKE) clean
 

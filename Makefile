@@ -7,14 +7,15 @@ include $(CHAPEL_ROOT)/make/Makefile.base
 
 all:
 	@echo No default target defined
-	@echo "Try make-ing 'compiler', 'runtime', 'third-party', or 'everything' to build stuff"
-	@echo "          ...'clean' or 'clobber' to clean up"
-	@echo "          ...'test' to run regression tests"
+	@echo "Try make-ing 'compiler', 'runtime', 'comprt' 'third-party', or 'everything'"
+	@echo "              to build stuff"
+	@echo "         ... 'depend' to build dependences for the compiler and runtime"
+	@echo "         ... 'nogc' to build a version of the compiler without GC (suitable "
+	@echo "              for valgrind)"
+	@echo "         ... 'clean' or 'clobber' to clean up"
+	@echo "         ... 'test' to run regression tests"
 
-everything: third-party compiler runtime
-
-nogc: FORCE
-	cd compiler && $(MAKE) nogc
+everything: third-party comprt
 
 comprt: compiler runtime
 
@@ -24,14 +25,14 @@ compiler: FORCE
 runtime: FORCE
 	cd runtime && $(MAKE)
 
+nogc: FORCE
+	cd compiler && $(MAKE) nogc
+
 test: FORCE
 	cd test && start_test
 
 third-party: FORCE
 	cd third-party && $(MAKE)
-
-third-party-nogc: FORCE
-	cd third-party && $(MAKE) nogc
 
 clean: FORCE
 	cd compiler && $(MAKE) clean
