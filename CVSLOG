@@ -45980,3 +45980,22 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+09/09/05 16:23:20 -- deitz
+
+Log message:
+	Made _data a class instead of a record and made the size be a variable
+	instead of a param.  Fixed a naming bug in instantiation in which the
+	instantiated function's cname became meaningless.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp 
+	chapel/compiler/parser/: prelude.chpl 
+	chapel/runtime/include/: array.h 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/domains/roxana/: test_hash_table3.chpl 
+	chapel/test/types/type_variables/deitz/: test_datablock3.chpl 
+
