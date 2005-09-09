@@ -1,6 +1,4 @@
-var d : _data(integer, 3);
-
-d.alloc(3, "description");
+var d : _data(integer) = _data(integer, 3);
 
 d(0) = 1;
 d(1) = 2;

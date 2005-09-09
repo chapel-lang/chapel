@@ -1022,7 +1022,7 @@ FnSymbol::preinstantiate_generic(Map<BaseAST*,BaseAST*>* substitutions) {
 
       fclones.add(fclone);
       fclone->instantiatedFrom = fn;
-      fclone->cname = glomstrings(3, clone->cname, "_inst_", intstring(uid++));
+      fclone->cname = glomstrings(3, fn->cname, "_inst_", intstring(uid++));
       fn->defPoint->parentStmt->insertBefore(new ExprStmt(new DefExpr(fclone)));
       fn->defPoint->parentStmt->prev->copyPragmas(fn->defPoint->parentStmt->pragmas);
       TRAVERSE(fclone, new UpdateSymbols(substitutions), true);

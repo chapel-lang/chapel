@@ -3,9 +3,9 @@ class value { }
 
 function sizeof(x) { return __primitive("pure_return", integer); }
 
-record pragma "codegen data" _data { -- a c array, basically
+class pragma "codegen data" _data { -- a c array, basically
   type t;
-  param size : integer;
+  var size : integer;
   var _data_dummy : t;
   pragma "rename _data_get" function this(i : integer) : t {
     return _data_dummy;
@@ -15,7 +15,6 @@ record pragma "codegen data" _data { -- a c array, basically
     _data_dummy = val;
     -- return __primitive("array_set", this, i, val);
   }
-  pragma "rename _data_alloc" function alloc(size, description) {  }
 }
 
 -- I/O
