@@ -45999,3 +45999,15 @@ Modified files:
 	chapel/test/domains/roxana/: test_hash_table3.chpl 
 	chapel/test/types/type_variables/deitz/: test_datablock3.chpl 
 
+---------------------------------------------------------------------------
+
+09/10/05 12:56:17 -- jplevyak
+
+Log message:
+	Add an indirection link for prim_data.h from include to analysis.
+
+Modified files:
+	chapel/compiler/include/: prim.h 
+Added files:
+	chapel/compiler/include/: prim_data.h 
+
