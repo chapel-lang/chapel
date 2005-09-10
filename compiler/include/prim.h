@@ -63,6 +63,6 @@ class RegisteredPrim : public gc {
     : fn(afn), is_functional(is_func) {}
 };
 
-#include "../analysis/prim_data.h"
+#include "prim_data.h"
 
 #endif
