@@ -52,6 +52,17 @@ const stderr : file = file(filename = "stderr", mode = "w", path = "/dev",
                            fp = _STDERRCFILEPTR);
 
 
+pragma "rename _chpl_fwriteln"
+function fwriteln(f: file = stdout) {
+  if (f.isOpen) {
+    fprintf(f.fp, "%s", "\n");
+  } else {
+    var fullFilename = f.path + "/" + f.filename;
+    halt("You must open \"", fullFilename, "\" before writing to it.");    
+  }
+}
+
+
 pragma "rename _chpl_fwrite_integer"
 function fwrite(f: file = stdout, val: integer) {
   if (f.isOpen) {

@@ -50,6 +50,11 @@ static ExprStmt* genWriteln(void) {
 }
 
 
+static ExprStmt* genFwriteln(Expr* outfile) {
+  return new ExprStmt(new CallExpr("fwriteln", outfile->copy()));
+}
+
+
 static ExprStmt* genWrite(Expr* expression) {
   return new ExprStmt(new CallExpr("write", expression));
 }
@@ -97,6 +102,11 @@ void SpecializeCallExprs::postProcessStmt(Stmt* stmt) {
           call->parentStmt->remove();          
         } else if (strcmp(baseVar->var->name, "fwrite") == 0) {
           decomposeFileIOCall(call, "fwrite");
+          call->parentStmt->remove();
+        } else if (strcmp(baseVar->var->name, "fwriteln") == 0) {
+          Expr* outfile = call->argList->first();
+          decomposeFileIOCall(call, "fwrite");
+          call->parentStmt->insertBefore(genFwriteln(outfile));
           call->parentStmt->remove();
         } else if (strcmp(baseVar->var->name, "halt") == 0) {
           decomposeIOCall(call, "write");
