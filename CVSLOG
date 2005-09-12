@@ -46011,3 +46011,19 @@ Modified files:
 Added files:
 	chapel/compiler/include/: prim_data.h 
 
+---------------------------------------------------------------------------
+
+09/12/05 15:01:12 -- shannon
+
+Log message:
+	Added the fwriteln function, and another test.
+
+Modified files:
+	chapel/compiler/traversals/: specializeCallExprs.cpp 
+	chapel/modules/standard/: _chpl_file.chpl 
+	chapel/test/types/file/: .cvsignore CLEANFILES 
+Added files:
+	chapel/test/types/file/: fwritelnIntFile.catfiles 
+	                         fwritelnIntFile.chpl 
+	                         fwritelnIntFile.good 
+
