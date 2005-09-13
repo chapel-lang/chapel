@@ -46089,3 +46089,15 @@ Removed files:
 	                          pattern.h pdb.h pnode.h prim.h 
 	                          prim_data.h sym.h var.h 
 
+---------------------------------------------------------------------------
+
+09/13/05 12:21:11 -- jplevyak
+
+Log message:
+	A bit more of the previous reorg.
+
+Added files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+Removed files:
+	chapel/compiler/analysis/: analysis.cpp 
+
