@@ -46027,3 +46027,65 @@ Added files:
 	                         fwritelnIntFile.chpl 
 	                         fwritelnIntFile.good 
 
+---------------------------------------------------------------------------
+
+09/13/05 12:12:39 -- jplevyak
+
+Log message:
+	Reorganization to compartmentalize analysis and the front end.
+	analysis - directory now contains the interface code
+	include/analysis.h - the only file required by the front end
+	ifa/ifa.h - the public interface to the analysis code
+	ifa - directory now contains the iterative flow analysis core
+	All the internal IFA headers and files are now in compiler/ifa.
+
+Modified files:
+	chapel/compiler/: Makefile 
+	chapel/compiler/AST/: expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/adt/: vec.cpp 
+	chapel/compiler/analysis/: Makefile Makefile.share analysis.cpp 
+	chapel/compiler/backend/: Makefile Makefile.share 
+	chapel/compiler/include/: analysis.h driver.h expr.h misc.h 
+	                          num.h stmt.h 
+	chapel/compiler/main/: driver.cpp runpasses.cpp 
+	chapel/compiler/passes/: runAnalysis.cpp 
+	chapel/compiler/symtab/: symscope.cpp 
+	chapel/compiler/test/: Makefile 
+	chapel/compiler/traversals/: checkTypeInfo.cpp instantiate.cpp 
+	chapel/compiler/util/: Makefile misc.cpp 
+Added files:
+	chapel/compiler/ifa/: Makefile Makefile.include Makefile.share 
+	                      TODO ast.cpp ast.h builtin.cpp builtin.h 
+	                      builtin_symbols.h cdb.cpp cdb.h cfg.cpp 
+	                      cg.cpp cg.h clone.cpp clone.h code.h 
+	                      dead.cpp dead.h dom.cpp dom.h fa.cpp fa.h 
+	                      fun.cpp fun.h graph.cpp graph.h html.cpp 
+	                      html.h if1.cpp if1.h ifa.cpp ifa.h 
+	                      inline.cpp inline.h loop.cpp loop.h 
+	                      pattern.cpp pattern.h pdb.cpp pdb.h 
+	                      pnode.cpp pnode.h prim.cpp prim.h 
+	                      prim_data.cpp prim_data.dat prim_data.h 
+	                      prim_data_incs.cpp prim_data_incs.h 
+	                      region.cpp region.h ssu.cpp ssu.h sym.cpp 
+	                      sym.h var.cpp var.h 
+	chapel/compiler/ifa/make_prims/: Makefile make_prims.cpp 
+Removed files:
+	chapel/compiler/analysis/: FILES TODO ast.cpp builtin.cpp 
+	                           cdb.cpp cdb.h cfg.cpp cg.cpp 
+	                           clone.cpp dead.cpp dom.cpp fa.cpp 
+	                           fun.cpp if1.cpp inline.cpp loop.cpp 
+	                           pattern.cpp pdb.cpp pnode.cpp 
+	                           prim.cpp prim_data.dat 
+	                           prim_data_incs.cpp prim_data_incs.h 
+	                           region.cpp region.h reportErrors.cpp 
+	                           ssu.cpp ssu.h sym.cpp var.cpp 
+	chapel/compiler/analysis/make_prims/: Makefile make_prims.cpp 
+	                                      make_prims.g 
+	chapel/compiler/backend/: dump.cpp graph.cpp 
+	chapel/compiler/include/: ast.h builtin.h builtin_symbols.h 
+	                          callbacks.h cg.h clone.h code.h dead.h 
+	                          dom.h dump.h fa.h fun.h grammar.h 
+	                          graph.h if1.h inline.h loop.h parse.h 
+	                          pattern.h pdb.h pnode.h prim.h 
+	                          prim_data.h sym.h var.h 
+
