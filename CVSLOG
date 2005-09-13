@@ -46111,3 +46111,14 @@ Log message:
 Added files:
 	chapel/compiler/analysis/: chapel_ifa.h 
 
+---------------------------------------------------------------------------
+
+09/13/05 12:28:34 -- jplevyak
+
+Log message:
+	Itegrate reportAnalysisErrors int chapel_ifa.cpp
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: Makefile.share 
+
