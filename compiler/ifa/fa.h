@@ -285,11 +285,12 @@ class FA : public gc {
   bool no_unused_instance_variables;
   int array_index_base;
   int tuple_index_base;
+  int num_constants_per_variable;
 
   FA(PDB *apdb) : pdb(apdb), cdb(0), patterns(0), top_edge(0),
     method_token(0), setter_token(0), permit_boxing(0),
     no_unused_instance_variables(0),
-    array_index_base(0), tuple_index_base(0) {}
+    array_index_base(0), tuple_index_base(0), num_constants_per_variable(1) {}
 
   int analyze(Fun *f);
   int concretize();
@@ -298,9 +299,9 @@ class FA : public gc {
 AVar *make_AVar(Var *, EntrySet *);
 AVar *get_element_avar(CreationSet *);
 Sym *coerce_num(Sym *, Sym *);
-Sym *type_info(AST *a, Sym *s = 0);
-void call_info(Fun *f, AST *a, Vec<Fun *> &funs);
-int constant_info(AST *a, Vec<Sym *> &constants, Sym *s);
+Sym *type_info(IFAAST *a, Sym *s = 0);
+void call_info(Fun *f, IFAAST *a, Vec<Fun *> &funs);
+int constant_info(IFAAST *a, Vec<Sym *> &constants, Sym *s);
 int constant_info(Var *v, Vec<Sym *> &constants);
 int symbol_info(Var *v, Vec<Sym *> &symbols);
 AType *make_AType(CreationSet *cs);
@@ -346,7 +347,5 @@ extern AType *fun_symbol_type;
 extern AType *anyclass_type;
 
 extern int analysis_pass;
-
-EXTERN int num_constants_per_variable EXTERN_INIT(DEFAULT_NUM_CONSTANTS_PER_VARIABLE);
 
 #endif

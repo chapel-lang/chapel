@@ -1,34 +1,8 @@
 ANALYSIS_SRCS = \
-	analysis.cpp \
-	ast.cpp \
-	builtin.cpp \
-	cdb.cpp \
-	cfg.cpp \
-	cg.cpp \
-	clone.cpp \
-	dead.cpp \
-	dom.cpp \
-	fa.cpp \
-	fun.cpp \
-	if1.cpp \
-	inline.cpp \
-	loop.cpp \
-	pattern.cpp \
-	pdb.cpp \
-	pnode.cpp \
-	prim.cpp \
-	region.cpp \
-        reportErrors.cpp \
-	ssu.cpp \
-	sym.cpp \
-	var.cpp \
-
-ANALYSIS_GEN_SRCS = \
-	prim_data.cpp
+	chapel_ifa.cpp \
 
 CVS_SRCS = $(ANALYSIS_SRCS)
-SRCS = $(CVS_SRCS) $(ANALYSIS_GEN_SRCS)
+SRCS = $(CVS_SRCS) 
 
 ANALYSIS_OBJS = \
-	$(ANALYSIS_GEN_SRCS:%.cpp=$(ANALYSIS_OBJDIR)/%.$(OBJ_SUFFIX)) \
 	$(ANALYSIS_SRCS:%.cpp=$(ANALYSIS_OBJDIR)/%.$(OBJ_SUFFIX)) \

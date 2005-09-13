@@ -1,24 +1,13 @@
 #define EXTERN
 #include "geysa.h"
-#include "parse.h"
-#include "if1.h"
 #include "analysis.h"
 #include "arg.h"
-#include "cg.h"
-#include "clone.h"
 #include "countTokens.h"
-#include "dead.h"
-#include "dom.h"
 #include "driver.h"
-#include "dump.h"
 #include "files.h"
-#include "fa.h"
-#include "fun.h"
-#include "graph.h"
-#include "inline.h"
+#include "../ifa/ifa.h"
 #include "misc.h"
 #include "mysystem.h"
-#include "pdb.h"
 #include "runpasses.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -66,6 +55,7 @@ int print_call_depth = 2;
 int scoping_test = 0;
 int f_equal_method = 0;
 int fanalysis_errors = 0;
+int num_constants_per_variable = 1;
 
 static ArgumentDescription arg_desc[] = {
  {"analysis-errors", ' ', "Pass Back Analysis Errors", "T", &fanalysis_errors, "CHPL_ANALYSIS_ERRORS", NULL},
@@ -82,9 +72,7 @@ static ArgumentDescription arg_desc[] = {
  {"html", 't', "Dump Program in HTML", "T", &fdump_html, "CHPL_HTML", NULL},
  {"lowlevel-cg", 'g', "Low Level Code Generation", "T", &fcg, "CHPL_CG", NULL},
  {"graph", 'G', "Dump Program Graphs", "T", &fgraph, "CHPL_GRAPH", NULL},
- {"graph-var", ' ', "Limit Graph to Var", "S80", graph_var, "CHPL_GRAPH_VAR", NULL},
- {"graph-fun", ' ', "Limit Graph to Fun", "S80", graph_fun, "CHPL_GRAPH_FUN", NULL},
- {"graph-vcg", ' ', "VCG Output", "T", &fgraph_vcg, "CHPL_GRAPHVCG", NULL},
+ {"graph-format", ' ', "GraphViz = 0, VCG = 1", "I", &fgraph_vcg, "CHPL_GRAPHFORMAT", NULL},
  {"graph-constants", ' ', "Graph Constants", "T", &fgraph_constants, 
   "CHPL_GRAPH_CONSTANTS", NULL},
  {"graph-frequencies", ' ', "Graph Frequencies", "T", &fgraph_frequencies, 
@@ -172,43 +160,19 @@ static void handleLibPath(ArgumentState* arg_state, char* arg_unused) {
   addLibInfo(glomstrings(2, "-L", libraryFilename));
 }
 
-
 void
 do_analysis(char *fn) {
-  if1_finalize(if1);
-  if1_write_log();
-  if (!fdce_if1)
-    fail("unable to translate dead code");
-  Sym *init = if1_get_builtin(if1, "init");
-  for (int i = 0; i < if1->allclosures.n; i++) {
-    Fun *f = new Fun(if1->allclosures.v[i], if1->allclosures.v[i] == init);
-    if (!f)
-      fail("IF1 invalid");
-    pdb->add(f);
-  }
-  FA *fa = pdb->fa;
-  if (fa->analyze(if1->top->fun) < 0)
-    goto Lfail;
-  if (clone(fa, if1->top->fun) < 0)
-    goto Lfail;
-  if (mark_dead_code(fa, if1->top->fun) < 0)
-    fail("dead code detection failed");
-  if (logging(LOG_TEST_FA))
-    log_test_fa(fa);
-  forv_Fun(f, fa->funs)
-    build_forward_cfg_dominators(f);
-  frequency_estimation(fa);
+  if (ifa_analyze() < 0)
+    fail("program does not type");
   if (fgraph)
-    graph(fa, fn, !fgraph_vcg ? GraphViz : VCG);
+    ifa_graph(fn, !fgraph_vcg ? GraphViz : VCG);
   if (fdump_html)
-    dump_html(fa, fn);
+    ifa_html(fn);
   if (fcg) {
-    cg_write_c(fa, if1->top->fun,  fn);
-    cg_compile(fn);
+    ifa_cg(fn);
+    ifa_compile(fn);
   }
   return;
- Lfail:
-  fail("program does not type");
 }
 
 static void
@@ -224,8 +188,6 @@ compile_all(void) {
 
 static void
 init_system() {
-  new IF1;
-  new PDB(if1);
   char cwd[FILENAME_MAX];
   if (system_dir[0] == '.' && (!system_dir[1] || system_dir[1] == '/')) {
     getcwd(cwd, FILENAME_MAX);
@@ -265,7 +227,6 @@ int
 main(int argc, char *argv[]) {
   if (pre_malloc)
     (void)MALLOC(pre_malloc);
-  
   compute_program_name_loc(argv[0], &(arg_state.program_name),
                            &(arg_state.program_loc));
   process_args(&arg_state, argc, argv);
@@ -277,6 +238,7 @@ main(int argc, char *argv[]) {
   if (fdump_html || strcmp(log_flags, "") || fgraph)
     init_logs();
   init_system();
+  init_chapel_ifa();
   compile_all();
   free_args(&arg_state);
   clean_exit(0);

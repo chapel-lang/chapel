@@ -1,4 +1,5 @@
 #include "geysa.h"
+#include "ifa.h"
 #include "pattern.h"
 #include "prim.h"
 #include "if1.h"
@@ -9,13 +10,11 @@
 #include "fa.h"
 #include "ast.h"
 #include "var.h"
-#include "callbacks.h"
-#include "analysis.h"
 
 #define MERGE_UNIONS  1  // merge unions which use different sets of elements
 
 #define BAD_NAME ((char*)-1)
-#define BAD_AST ((AST*)-1)
+#define BAD_AST ((IFAAST*)-1)
 
 static FA *fa = 0;
 
@@ -555,7 +554,7 @@ compute_member_types(Vec<CreationSet *> *eqcss, int incomplete = 0) {
 
 // sets cs->sym to the new concrete symbol
 static int
-define_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
+define_concrete_types(CSSS &css_sets) {
   CSSS css_sets_local;
   // for those only used in one way, do not clone
   for (int i = 0; i < css_sets.n; i++) {
@@ -612,9 +611,9 @@ define_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
       if (sym == sym_tuple || sym == sym_function) {
         // tuples use record type
         char *name = 0;
-        AST *ast = 0;
+        IFAAST *ast = 0;
         int abstract = eqcss->n == 1 && eqcss->v[0]->defs.n == 0;
-        Sym *s = abstract ? sym->copy() : sym->clone(&callback);
+        Sym *s = abstract ? sym->copy() : sym->clone();
         s->type_kind = sym == sym_tuple ? Type_RECORD : Type_FUN;
         s->incomplete = 1;
         forv_CreationSet(cs, *eqcss) if (cs) {
@@ -649,7 +648,7 @@ define_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
             cs->type = sym;
         } else {
           int abstract = eqcss->n == 1 && eqcss->v[0]->defs.n == 0;
-          Sym *s = abstract ? sym->copy() : sym->clone(&callback);
+          Sym *s = abstract ? sym->copy() : sym->clone();
           char *name = 0;
           s->type_kind = sym->type_kind;
           s->incomplete = 1;
@@ -757,7 +756,7 @@ concretize_var_type(Var *v) {
 }
 
 static int
-resolve_concrete_types(CSSS &css_sets, AnalysisCloneCallback &callback) {
+resolve_concrete_types(CSSS &css_sets) {
   for (int i = 0; i < css_sets.n; i++) {
     Vec<CreationSet *> *eqcss = css_sets.v[i];
     forv_CreationSet(cs, *eqcss) if (cs) {
@@ -812,11 +811,8 @@ build_concrete_types() {
   forv_CreationSet(cs, fa->css)
     css_sets.set_add(cs->equiv);
   css_sets.set_to_vec();
-  AnalysisCloneCallback callback;
-  ASTCopyContext context;
-  callback.context = &context;
-  if (define_concrete_types(css_sets, callback) < 0) return -1;
-  if (resolve_concrete_types(css_sets, callback) < 0) return -1;
+  if (define_concrete_types(css_sets) < 0) return -1;
+  if (resolve_concrete_types(css_sets) < 0) return -1;
   return 0;
 }
 

@@ -7,9 +7,9 @@
 
 static int finalized_types = 0;
 
-void AST::dump(FILE *fp, Fun *f) { }
+void IFAAST::dump(FILE *fp, Fun *f) { }
 
-void AST::graph(FILE *fp) { }
+void IFAAST::graph(FILE *fp) { }
 
 void
 build_module(Sym *sym, Sym *fun) {
@@ -26,7 +26,8 @@ new_builtin_symbol(Sym *&sym, char *name, char *builtin_name = 0) {
   if1_set_builtin(if1, sym, n);
 }
 
-void init_ast() {
+void init_ast(IFACallbacks *callbacks) {
+  if1->callback = callbacks;
   new_builtin_symbol(sym_primitive, "__primitive", "primitive");
   new_builtin_symbol(sym_reply, "reply");
   new_builtin_symbol(sym_make_tuple, "__make_tuple", "make_tuple");

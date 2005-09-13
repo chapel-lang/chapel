@@ -1,0 +1,36 @@
+IFA_SRCS = \
+	ast.cpp \
+	builtin.cpp \
+	cdb.cpp \
+	cfg.cpp \
+	cg.cpp \
+	clone.cpp \
+	dead.cpp \
+	dom.cpp \
+	fa.cpp \
+	fun.cpp \
+	graph.cpp \
+	html.cpp \
+	ifa.cpp \
+	if1.cpp \
+	inline.cpp \
+	loop.cpp \
+	pattern.cpp \
+	pdb.cpp \
+	pnode.cpp \
+	prim.cpp \
+	region.cpp \
+        reportErrors.cpp \
+	ssu.cpp \
+	sym.cpp \
+	var.cpp \
+
+IFA_GEN_SRCS = \
+	prim_data.cpp
+
+CVS_SRCS = $(IFA_SRCS)
+SRCS = $(CVS_SRCS) $(IFA_GEN_SRCS)
+
+IFA_OBJS = \
+	$(IFA_GEN_SRCS:%.cpp=$(IFA_OBJDIR)/%.$(OBJ_SUFFIX)) \
+	$(IFA_SRCS:%.cpp=$(IFA_OBJDIR)/%.$(OBJ_SUFFIX)) \

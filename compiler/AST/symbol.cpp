@@ -1,5 +1,4 @@
 #include <typeinfo>
-#include "if1.h"
 #include "analysis.h"
 #include "files.h"
 #include "misc.h"
@@ -7,8 +6,6 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "symtab.h"
-#include "sym.h"
-#include "fun.h"
 #include "../traversals/buildClassConstructorsEtc.h"
 #include "../traversals/clearTypes.h"
 #include "../traversals/updateSymbols.h"
@@ -263,7 +260,7 @@ void VarSymbol::traverseDefSymbol(Traversal* traversal) {
 
 void VarSymbol::print(FILE* outfile) {
   if (immediate)
-    print_imm(outfile, *immediate);
+    fprint_imm(outfile, *immediate);
   else
     fprintf(outfile, "%s", name);
 }
@@ -1424,7 +1421,7 @@ HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
 Symbol *new_StringSymbol(char *str) {
   Immediate imm;
   imm.const_kind = IF1_CONST_KIND_STRING;
-  imm.v_string = if1_cannonicalize_string(if1, str);
+  imm.v_string = cannonicalize_string(str);
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   if (s)
     return s;

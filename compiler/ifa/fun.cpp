@@ -6,7 +6,6 @@
 #include "ast.h"
 #include "var.h"
 #include "region.h"
-#include "stmt.h"
 
 static int fun_id = 1;
 

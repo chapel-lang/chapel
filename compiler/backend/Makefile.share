@@ -1,7 +1,5 @@
 BACKEND_SRCS = \
 	beautify.cpp \
-	dump.cpp \
-	graph.cpp \
 
 CVS_SRCS = $(BACKEND_SRCS)
 SRCS = $(CVS_SRCS)

@@ -5,7 +5,6 @@
 /* UnionFind by Tarjan (adapted) */
 
 #include "geysa.h"
-#include "pattern.h"
 
 uint prime2[] = {
   1, 3, 7, 13, 31, 61, 127, 251, 509, 1021, 2039, 4093, 8191,

@@ -5,7 +5,7 @@
 #include "type.h"
 #include "expr.h"
 #include "stmt.h"
-#include "if1.h"
+#include "analysis.h"
 
 void
 Instantiate::postProcessExpr(Expr* expr) {
@@ -16,7 +16,7 @@ Instantiate::postProcessExpr(Expr* expr) {
     if (SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr)) {
       Vec<FnSymbol*> functions;
       FnSymbol* fn = NULL;
-      expr->parentScope->getVisibleFunctions(&functions, if1_cannonicalize_string(if1, base->var->name));
+      expr->parentScope->getVisibleFunctions(&functions, cannonicalize_string(base->var->name));
       forv_Vec(FnSymbol, f, functions) {
         if (f && !f->instantiatedFrom) {
           if (!fn) {

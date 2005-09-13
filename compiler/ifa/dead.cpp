@@ -1,4 +1,5 @@
 #include "geysa.h"
+#include "ifa.h"
 #include "pattern.h"
 #include "prim.h"
 #include "if1.h"
@@ -9,7 +10,6 @@
 #include "fa.h"
 #include "ast.h"
 #include "var.h"
-#include "callbacks.h"
 
 static int mark_live_avars_again = 0;
 

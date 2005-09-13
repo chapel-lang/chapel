@@ -35,7 +35,7 @@ class Fun : public gc {
  public:
   int id;
   Sym *sym;
-  AST *ast;
+  IFAAST *ast;
   Fun *nested_in;
   Vec<Fun*> nested;
   
@@ -75,7 +75,7 @@ class Fun : public gc {
   Map<MPosition *, Var*> args;
   Vec<Var *> rets;
   Vec<MPosition *> out_positions;
-  Map<MPosition *, AST *> default_args;
+  Map<MPosition *, IFAAST *> default_args;
   Vec<MPosition *> generic_args;
   CoercionCache *coercion_cache;
   GenericCache *generic_cache;

@@ -1,14 +1,13 @@
 #ifndef _analysis_H_
 #define _analysis_H_
 
-#include "ast.h"
-#include "callbacks.h"
 #include "chplalloc.h"
 #include "alist.h"
+#include "vec.h"
+#include "map.h"
+#include "../ifa/ifa.h"
 
 class Symbol;
-class UnresolvedSymbol;
-class MemberAccess;
 class BaseAST;
 class Expr;
 class Label;
@@ -25,66 +24,9 @@ class VarSymbol;
 class AVar;
 class AType;
 
-class ACallbacks : public Callbacks {
-public:
-  void finalize_functions();
-  Sym *make_LUB_type(Sym *);
-  Sym *instantiate(Sym *, Map<Sym *, Sym *> &substitutions);
-  Sym *formal_to_generic(Sym*);
-  Sym *new_Sym(char *name = 0);
-  Fun *order_wrapper(Match *);
-  Fun *coercion_wrapper(Match *);
-  Fun *default_wrapper(Match *);
-  Fun *instantiate_generic(Match *);
-  void report_analysis_errors(Vec<ATypeViolation*> &type_violations);
-};
-
-class CloneCallback : public gc {
- public:
-  virtual void clone(BaseAST* old_ast, BaseAST* new_ast) = 0;
-};
-
-class AnalysisCloneCallback : public CloneCallback {
- public:
-  ASTCopyContext *context;
-  void clone(BaseAST* old_ast, BaseAST* new_ast);
-  AnalysisCloneCallback() : context(0) {}
-};
-
-class ASymbol : public gc {
- public:
-  // Sym interface
-  Sym *clone(CloneCallback *);
-  char *pathname();
-  int line();
-  int log_line();
-  int ast_id();
-  ASymbol *copy();
-
-  BaseAST *symbol;
-  Sym *sym;
-
-  ASymbol();
-};
-
-class AInfo : public AST {
- public:
-  // AST interface
-  char *pathname();
-  int line();
-  Sym *symbol();  
-  AST *copy_tree(ASTCopyContext* context);
-  AST *copy_node(ASTCopyContext* context);
-  Vec<Fun *> *visible_functions(Sym *arg0);
-
-  BaseAST *xast;        // pointer to shadowed BaseAST
-  Code *code;           // IF1 Code (including children)
-  Code *send;           // used for 0-arity parenops
-  Label *label[2];      // before and after for loops (continue,break)
-  Sym *sym, *rval;      // IF1 Syms
-
-  AInfo();
-};
+class ASymbol;
+class AAST;
+class ACallbacks;
 
 enum AError_kind {
   AERROR_CALL_ARGUMENT,         // all types of a call argument not handled
@@ -114,6 +56,8 @@ class AError : public gc { public:
   AError(AError_kind akind, AVar *acall = NULL, AType *atype = NULL, AVar *avar = NULL);
 };
 
+void init_chapel_ifa();
+char *cannonicalize_string(char *);
 int AST_to_IF1(Vec<AList<Stmt> *> &stmts);  // -1 == error(s)
 Type *type_info(BaseAST *a, Symbol *s = 0);     // NULL == error(s)
 Type *return_type_info(FnSymbol *fn);           // NULL == error(s)

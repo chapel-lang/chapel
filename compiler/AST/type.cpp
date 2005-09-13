@@ -7,7 +7,6 @@
 #include "symbol.h"
 #include "symtab.h"
 #include "type.h"
-#include "sym.h"
 #include "../traversals/fixup.h"
 #include "../traversals/updateSymbols.h"
 #include "../traversals/collectASTS.h"

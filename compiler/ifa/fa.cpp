@@ -454,7 +454,7 @@ type_cannonicalize(AType *t) {
       nonconsts.set_add(cs);
     t->sorted.add(cs);
   }
-  if (consts > num_constants_per_variable)
+  if (consts > fa->num_constants_per_variable)
     rebuild = 1;
   if (rebuild) {
     t->sorted.clear();
@@ -1964,7 +1964,7 @@ fa_dump_var_types(AVar *av, FILE *fp, int verbose = verbose_level) {
       fprintf(fp, "\"%s\" ", v->sym->constant);
     else {
       fprintf(fp, "\"");
-      print_imm(fp, v->sym->imm);
+      fprint_imm(fp, v->sym->imm);
       fprintf(fp, "\" ");
     }
   }
@@ -2087,9 +2087,9 @@ compar_tv(const void *aa, const void *bb) {
   int i, j, x;
   ATypeViolation *a = (*(ATypeViolation**)aa);
   ATypeViolation *b = (*(ATypeViolation**)bb);
-  AST *aast = a->send ? a->send->var->def->code->ast : 0;
+  IFAAST *aast = a->send ? a->send->var->def->code->ast : 0;
   if (!aast) aast = a->av->var->sym->ast;
-  AST *bast = b->send ? b->send->var->def->code->ast : 0;
+  IFAAST *bast = b->send ? b->send->var->def->code->ast : 0;
   if (!bast) bast = b->av->var->sym->ast;
   if (!aast || !bast) {
     if (bast) return -1;
@@ -3373,7 +3373,7 @@ FA::analyze(Fun *top) {
 }
 
 static Var *
-info_var(AST *a, Sym *s) {
+info_var(IFAAST *a, Sym *s) {
   if (!s)
     s = a->symbol();
   if (!s)
@@ -3396,21 +3396,21 @@ info_var(AST *a, Sym *s) {
   return 0;
 }
 
-// Given an AST node and a Sym, find the Sym which
+// Given an IFAAST node and a Sym, find the Sym which
 // corresponds to the concrete (post-cloning) type of the
-// variable corresponding to the Sym at that AST node.
+// variable corresponding to the Sym at that IFAAST node.
 Sym *
-type_info(AST *a, Sym *s) {
+type_info(IFAAST *a, Sym *s) {
   Var *v = info_var(a, s);
   if (v)
     return v->type;
   return 0;
 }
 
-// Given a function and an AST node, return the set of
-// functions which could be called from that AST node.
+// Given a function and an IFAAST node, return the set of
+// functions which could be called from that IFAAST node.
 void
-call_info(Fun *f, AST *a, Vec<Fun *> &funs) {
+call_info(Fun *f, IFAAST *a, Vec<Fun *> &funs) {
   funs.clear();
   forv_PNode(n, a->pnodes) {
     Vec<Fun *> *ff = f->calls.get(n);
@@ -3440,12 +3440,12 @@ constant_info(Var *v, Vec<Sym *> &constants) {
   return constants.n;
 }
 
-// Given an AST node and a Sym, find the set of
+// Given an IFAAST node and a Sym, find the set of
 // constants which could arrive at that point.
 // make sure that there is not some dominating
 // non-constant type.
 int
-constant_info(AST *a, Vec<Sym *> &constants, Sym *s) {
+constant_info(IFAAST *a, Vec<Sym *> &constants, Sym *s) {
   constants.clear();
   Var *v = info_var(a, s);
   if (v)

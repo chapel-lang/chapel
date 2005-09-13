@@ -8,6 +8,7 @@
 #include "num.h"
 #include "vec.h"
 #include "map.h"
+#include "ifa.h"
 
 class Var;
 class Fun;
@@ -18,9 +19,7 @@ class Scope;
 class AST;
 class Code;
 class LabelMap;
-class CloneCallback;
 class Sym;
-class ASymbol;
 
 enum Type_kind {
   Type_NONE,            // Sym is not a type
@@ -46,11 +45,7 @@ enum Sym_Intent {
 }; 
 #define is_Sym_OUT(_x) ((_x)->intent == Sym_OUT)
 
-#define CPP_IS_LAME {                                                   \
-  "NONE", "UNKNOWN", "LUB", "GLB", "PRODUCT", "RECORD", "VECTOR",       \
-  "FUN", "REF", "TAGGED", "PRIMITIVE", "APPLICATION", "VARIABLE", "ALIAS"}
-EXTERN char *type_kind_string[] EXTERN_INIT(CPP_IS_LAME);
-#undef CPP_IS_LAME
+extern char *type_kind_string[];
 
 #define CLEAR_VARIABLE(_m) memset(&(_m),0,sizeof(_m))
 
@@ -63,9 +58,9 @@ class BasicSym : public gc {
   Sym                   *aspect;                // masquarade as type (e.g. superclass)
   Sym                   *must_specialize;       // dispatch constraints
   Sym                   *must_implement;        // type checking constraints
-  AST                   *ast;                   // AST node which defined this symbol
+  IFAAST                *ast;                   // AST node which defined this symbol
   Var                   *var;                   // used by fa.cpp
-  ASymbol               *asymbol;               // front end interface object
+  IFASymbol             *asymbol;               // front end interface object
   int                   nesting_depth;          // nested function depth
   char                  *cg_string;             // used by cg.cpp
 
@@ -155,7 +150,7 @@ class Sym : public BasicSym {
   int                   log_line();             // squelch line numbers of prelude in log
   char                  *filename();
   int                   ast_id();
-  Sym *                 clone(CloneCallback *);
+  Sym *                 clone();
 
   void                  copy_values(Sym *);
   void                  inherits_add(Sym *);
@@ -171,8 +166,6 @@ Sym *unalias_type(Sym *s);
 Sym *meta_apply(Sym *fn, Sym *arg);
 
 void convert_constant_to_immediate(Sym *sym);
-int print_imm(FILE *fp, Immediate &imm);
-int sprint_imm(char *s, Immediate &imm);
 int compar_syms(const void *ai, const void *aj);
 void coerce_numeric(Sym *s, Sym *t, Immediate *im);
 

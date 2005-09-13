@@ -32,7 +32,7 @@ clean_exit(int status) {
 }
 
 int
-show_error(char *str, AST *a, ...) {
+show_error(char *str, IFAAST *a, ...) {
   char nstr[1024];
   va_list ap;
   va_start(ap, a);
@@ -213,7 +213,7 @@ void printProblem(char *fmt, ...) {
 }
 
 
-void printProblem(AST* ast, char *fmt, ...) {
+void printProblem(IFAAST* ast, char *fmt, ...) {
   va_list args;
   int usrlineno = 0;
   char *usrfilename = NULL;

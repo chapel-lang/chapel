@@ -3,7 +3,10 @@
 #include "if1.h"
 #include "fa.h"
 #include "builtin.h"
-#include "analysis.h"
+
+char *type_kind_string[] = {
+  "NONE", "UNKNOWN", "LUB", "GLB", "PRODUCT", "RECORD", "VECTOR",
+  "FUN", "REF", "TAGGED", "PRIMITIVE", "APPLICATION", "VARIABLE", "ALIAS"};
 
 BasicSym::BasicSym(void) :
   name(NULL),
@@ -131,13 +134,10 @@ Sym::copy_values(Sym *s) {
 }
 
 Sym *
-Sym::clone(CloneCallback *callback) {
-  AnalysisCloneCallback *c = dynamic_cast<AnalysisCloneCallback *>(callback);
+Sym::clone() {
   if (asymbol)
-    return asymbol->clone(callback);
+    return asymbol->clone();
   Sym *new_sym = copy();
-  if (callback)
-    c->context->smap.put(this, new_sym);
   return new_sym;
 }
 
@@ -266,7 +266,7 @@ sprint_imm(char *str, Immediate &imm) {
 }
 
 int 
-print_imm(FILE *fp, Immediate &imm) {
+fprint_imm(FILE *fp, Immediate &imm) {
   char str[80];
   int res;
   if ((res = sprint_imm(str, imm) >= 0))

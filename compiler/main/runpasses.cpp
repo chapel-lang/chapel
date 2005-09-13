@@ -4,7 +4,6 @@
 #include "files.h"
 #include "misc.h"
 #include "log.h"
-#include "dump.h"
 #include "runpasses.h"
 #include "stringutil.h"
 #include "symtab.h"
@@ -147,6 +146,26 @@ static void parsePassFile(char* passfilename) {
     }
   } while (readPass == 1 && !readLastPass);
   closeInputFile(passfile);
+}
+
+
+void dump_index_header(FILE* f) {
+  fprintf(f, "<HTML>\n");
+  fprintf(f, "<HEAD>\n");
+  fprintf(f, "<TITLE> Compilation Dump </TITLE>\n");
+  fprintf(f, "<SCRIPT SRC=\"%s/etc/www/mktree.js\" LANGUAGE=\"JavaScript\"></SCRIPT>", 
+         system_dir);
+  fprintf(f, "<LINK REL=\"stylesheet\" HREF=\"%s/etc/www/mktree.css\">", 
+         system_dir);
+  fprintf(f, "</HEAD>\n");
+  fprintf(f, "<div style=\"text-align: center;\"><big><big><span style=\"font-weight: bold;\">");
+  fprintf(f, "Compilation Dump<br><br></span></big></big>\n");
+  fprintf(f, "<div style=\"text-align: left;\">\n\n");
+}
+
+
+void dump_index_footer(FILE* f) {
+  fprintf(f, "</HTML>\n");
 }
 
 

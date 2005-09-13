@@ -88,5 +88,9 @@ inline int
 ImmHashFns::equal(Immediate *imm1, Immediate *imm2) {
   return !memcmp(imm1, imm2, sizeof(*imm1));
 }
+
+int fprint_imm(FILE *fp, Immediate &imm);
+int sprint_imm(char *s, Immediate &imm);
+
 #endif
 

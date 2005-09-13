@@ -8,7 +8,7 @@
 #include "symbol.h"
 
 class Stmt;
-class AInfo;
+class AAST;
 class FnSymbol;
 
 enum OpTag {
@@ -68,7 +68,7 @@ class Expr : public BaseAST {
  public:
   Stmt* parentStmt;
   Expr* parentExpr;
-  AInfo *ainfo;
+  AAST *ainfo;
 
   Expr(astType_t astType = EXPR);
   COPY_DEF(Expr);

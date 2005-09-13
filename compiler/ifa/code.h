@@ -17,9 +17,7 @@ enum Code_kind {
 
 enum Partial_kind { Partial_OK = 0, Partial_NEVER = 1, Partial_ALWAYS = 2 };
 
-#define CPP_IS_LAME { "SUB", "MOVE", "SEND", "IF", "LABEL", "GOTO", "SEQ", "CONC", "NOP" }
-EXTERN char *code_string[] EXTERN_INIT(CPP_IS_LAME);
-#undef CPP_IS_LAME
+extern char *code_string[];
 
 class Code;
 void testme(Code *);
@@ -33,7 +31,7 @@ class Code : public gc {
   Vec<Sym *>    lvals;
   Label         *label[2];
   Vec<Code *>   sub;
-  AST           *ast;
+  IFAAST        *ast;
   Prim          *prim;
 
   char          *pathname();

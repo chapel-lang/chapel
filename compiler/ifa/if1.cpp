@@ -12,6 +12,8 @@ char *builtin_strings[] = {
 #undef S
 };
 
+char *code_string[] = { "SUB", "MOVE", "SEND", "IF", "LABEL", "GOTO", "SEQ", "CONC", "NOP" };
+
 static int mark_sym_live(Sym *s);
 
 IF1 *if1 = 0;
@@ -170,7 +172,7 @@ if1_conc(IF1 *p, Code **c, Code *cc) {
 }
 
 Code *
-if1_move(IF1 *p, Code **c, Sym *a, Sym *b, AST *ast) {
+if1_move(IF1 *p, Code **c, Sym *a, Sym *b, IFAAST *ast) {
   Code *cc = new Code(Code_MOVE);
   assert(a && b);
   cc->rvals.add(a);
@@ -204,7 +206,7 @@ if1_alloc_label(IF1 *p) {
 }
 
 Label *
-if1_label(IF1 *p, Code **c, AST *ast, Label *l) {
+if1_label(IF1 *p, Code **c, IFAAST *ast, Label *l) {
   Code *cc = new Code(Code_LABEL);
   cc->ast = ast;
   if (!l)
@@ -284,7 +286,7 @@ void if1_add_send_result(IF1 *p, Code *c, Sym *r) {
 }
 
 Code *
-if1_if_goto(IF1 *p, Code **c, Sym *ifcond, AST *ast) {
+if1_if_goto(IF1 *p, Code **c, Sym *ifcond, IFAAST *ast) {
   Code *cc = new Code(Code_IF);
   cc->ast = ast;
   assert(ifcond);
@@ -303,14 +305,14 @@ if1_set_goto(IF1 *p, Code *g, Label *label) {
 }
 
 void
-if1_if_label_true(IF1 *p, Code *ifcode, Label *label, AST *ast) {
+if1_if_label_true(IF1 *p, Code *ifcode, Label *label, IFAAST *ast) {
   assert(ifcode->kind == Code_IF);
   ifcode->label[0] = label;
   ifcode->ast = ast;
 }
 
 void
-if1_if_label_false(IF1 *p, Code *ifcode, Label *label, AST *ast) {
+if1_if_label_false(IF1 *p, Code *ifcode, Label *label, IFAAST *ast) {
   assert(ifcode->kind == Code_IF);
   ifcode->label[1] = label;
   ifcode->ast = ast;
@@ -318,7 +320,7 @@ if1_if_label_false(IF1 *p, Code *ifcode, Label *label, AST *ast) {
 
 Code *
 if1_if(IF1 *p, Code **c, Code *ifcond, Sym *ifcondvar, 
-       Code *ifif, Sym *if_var, Code *ifelse, Sym *else_var, Sym *r, AST *ast) 
+       Code *ifif, Sym *if_var, Code *ifelse, Sym *else_var, Sym *r, IFAAST *ast) 
 {
   Code *if_code, *if_goto;
   if1_gen(p, c, ifcond);
@@ -343,7 +345,7 @@ if1_if(IF1 *p, Code **c, Code *ifcond, Sym *ifcondvar,
 
 Code *
 if1_loop(IF1 *p, Code **t, Label *cont, Label *brk, Sym *cond_var, 
-         Code *before, Code *cond, Code *after, Code *body, AST *ast)
+         Code *before, Code *cond, Code *after, Code *body, IFAAST *ast)
 {
   Code *if_goto;
   int do_while = before == body;
@@ -635,7 +637,7 @@ print_syms(FILE *fp, Vec<Sym *> *syms, int start = 0) {
         fprintf(fp, " :CONSTANT %s", (char*)s->constant);
       else {
         fprintf(fp, " :CONSTANT ");
-        print_imm(fp, s->imm);
+        fprint_imm(fp, s->imm);
       }
     }
     if (s->aspect) {
@@ -916,7 +918,7 @@ if1_dump(FILE *fp, Code *code) {
 }
 
 int pp(Immediate &imm) {
-  return print_imm(stdout, imm);
+  return fprint_imm(stdout, imm);
 }
 
 char *

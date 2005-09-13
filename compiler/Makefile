@@ -13,6 +13,7 @@ COMPILER_SUBDIR = .
 SUBDIRS = \
 	AST \
 	adt \
+	ifa \
 	analysis \
 	backend \
 	main \
@@ -34,6 +35,7 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.head
 #
 include AST/Makefile.include
 include adt/Makefile.include
+include ifa/Makefile.include
 include analysis/Makefile.include
 include backend/Makefile.include
 include main/Makefile.include
@@ -49,6 +51,7 @@ CHPL = chpl$(CHPL_MUNGE)$(EXE_SUFFIX)
 CHPL_OBJS = \
 	$(AST_OBJS) \
 	$(ADT_OBJS) \
+	$(IFA_OBJS) \
 	$(ANALYSIS_OBJS) \
 	$(BACKEND_OBJS) \
 	$(MAIN_OBJS) \

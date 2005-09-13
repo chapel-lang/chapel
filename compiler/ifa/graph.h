@@ -1,8 +1,9 @@
 #ifndef _graph_H_
 #define _graph_H_
 
+#include "ifa.h"
 
-enum GraphType { GraphViz, VCG };
+class FA;
 
 void graph(FA *fa, char *fn, int graph_type = VCG);
 

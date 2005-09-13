@@ -1,5 +1,6 @@
 COMPILER_ROOT = ..
 COMPILER_SUBDIR = util
+CFLAGS += -I$(COMPILER_ROOT)/ifa
 
 #
 # standard header

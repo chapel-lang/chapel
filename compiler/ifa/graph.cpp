@@ -1,5 +1,4 @@
 #include "geysa.h"
-#include "driver.h"
 #include "fa.h"
 #include "dom.h"
 #include "loop.h"

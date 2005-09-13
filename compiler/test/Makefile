@@ -4,6 +4,7 @@
 
 COMPILER_ROOT = ..
 COMPILER_SUBDIR = test
+CFLAGS += -I../ifa
 
 # 
 # some files in this directory (list.test.cpp) need the

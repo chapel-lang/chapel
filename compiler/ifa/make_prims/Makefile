@@ -3,7 +3,7 @@
 #
 
 COMPILER_ROOT = ../..
-COMPILER_SUBDIR = analysis/make_prims
+COMPILER_SUBDIR = ifa/make_prims
 
 #
 # standard header

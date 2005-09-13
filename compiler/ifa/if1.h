@@ -6,10 +6,10 @@
 #include "sym.h"
 #include "code.h"
 #include "num.h"
-#include "callbacks.h"
 
 class Scope;
 class Primitives;
+class IFACallbacks;
 
 extern char *builtin_strings[];
 
@@ -28,7 +28,7 @@ class IF1 : public gc {
   Sym                   *complex_types[IF1_FLOAT_TYPE_NUM];
   Sym                   *top;                   // main function
   Primitives            *primitives;
-  Callbacks             *callback;
+  IFACallbacks           *callback;
   int                   pointer_size;           // defaults to sizeof(void *)
   
   IF1();
@@ -45,28 +45,28 @@ Code    *if1_nop(IF1 *p, Code **c);
 void    if1_gen(IF1 *p, Code **t, Code *a);
 void    if1_seq(IF1 *p, Code **t, Code *a);
 void    if1_conc(IF1 *p, Code **t, Code *a);
-Code    *if1_move(IF1 *p, Code **c, Sym *a, Sym *b, AST *ast = 0);
+Code    *if1_move(IF1 *p, Code **c, Sym *a, Sym *b, IFAAST *ast = 0);
 Code    *if1_goto(IF1 *p, Code **t, Label *label = 0);
 Label   *if1_alloc_label(IF1 *p);
-Label   *if1_label(IF1 *p, Code **code, AST *ast = 0, Label *l = 0);
+Label   *if1_label(IF1 *p, Code **code, IFAAST *ast = 0, Label *l = 0);
 Sym     *if1_operator(IF1 *p, Code **t, Sym *a1, Sym *a2, Sym *a3); 
 Code    *if1_send(IF1 *p, Code **c, int args, int results, ...);
 Code    *if1_send1(IF1 *p, Code **c);
 void    if1_add_send_arg(IF1 *p, Code *c, Sym *a);
 void    if1_add_send_result(IF1 *p, Code *c, Sym *r);
-Code    *if1_if_goto(IF1 *p, Code **t, Sym *ifcond, AST *ast = 0);
+Code    *if1_if_goto(IF1 *p, Code **t, Sym *ifcond, IFAAST *ast = 0);
 void    if1_set_goto(IF1 *p, Code *go, Label *label);
-void    if1_if_label_true(IF1 *p, Code *ifcode, Label *l, AST *ast = 0);
-void    if1_if_label_false(IF1 *p, Code *ifcode, Label *l, AST *ast = 0);
+void    if1_if_label_true(IF1 *p, Code *ifcode, Label *l, IFAAST *ast = 0);
+void    if1_if_label_false(IF1 *p, Code *ifcode, Label *l, IFAAST *ast = 0);
 Code    *if1_if(IF1 *p, Code **t, 
                 Code *ifcond, Sym *ifcond_var,
                 Code *ifif, Sym *if_var, 
                 Code *ifthen, Sym *then_var, 
-                Sym *result, AST *ast = 0);
+                Sym *result, IFAAST *ast = 0);
 Code    *if1_loop(IF1 *p, Code **t, 
                   Label *cont, Label *brk,
                   Sym *cond_var, Code *before, 
-                  Code *cond, Code *after, Code *body, AST *ast = 0);
+                  Code *cond, Code *after, Code *body, IFAAST *ast = 0);
 Sym     *if1_closure(IF1 *p, Sym *f, Code *c, int nargs, Sym **args);
 
 void    if1_set_int_type(IF1 *p, Sym *t, int signd, int size);

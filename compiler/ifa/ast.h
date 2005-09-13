@@ -7,6 +7,7 @@
 #include "chplalloc.h"
 #include "map.h"
 #include "vec.h"
+#include "ifa.h"
 
 class Fun;
 class PNode;
@@ -25,23 +26,8 @@ class ASTCopyContext : public gc {
   ASTCopyContext() : nmap(0), vmap(0) {}
 };
 
-class AST : public gc {
- public:
-  Vec<PNode *> pnodes;
-
-  virtual char *pathname() = 0;
-  virtual int line() = 0;
-  virtual Sym *symbol() = 0;
-  virtual Vec<Fun *> *visible_functions(Sym *arg0) { return NULL; }
-  virtual AST *copy_tree(ASTCopyContext* context) = 0;
-  virtual AST *copy_node(ASTCopyContext* context) = 0;
-  virtual void dump(FILE *fp, Fun *f);
-  virtual void graph(FILE *fp);
-};
-#define forv_AST(_x, _v) forv_Vec(AST, _x, _v)
-
 void build_module(Sym *sym, Sym *init);
-void init_ast();
+void init_ast(IFACallbacks *callbacks);
 void finalize_types(IF1 *, int import_included_ivars = true);
 void make_meta_type(Sym *s);
 void build_type_hierarchy();

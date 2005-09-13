@@ -2,7 +2,6 @@
 #include "analysis.h"
 #include "driver.h"
 #include "filesToAST.h"
-#include "if1.h"
 #include "runAnalysis.h"
 #include "symbol.h"
 #include "symtab.h"
@@ -13,8 +12,6 @@ int RunAnalysis::isRunning = 0;
 void RunAnalysis::run(Vec<ModuleSymbol*>* modules) {
   if (analyzeAST) {
     RunAnalysis::isRunning = 1;
-    if1->callback = new ACallbacks;
-    init_ast();
     Vec<AList<Stmt> *> stmts;
     forv_Vec(ModuleSymbol, mod, *modules) {
       stmts.add(mod->stmts);

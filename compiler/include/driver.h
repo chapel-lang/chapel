@@ -39,6 +39,7 @@ extern bool analyzeAST;
 extern int debugParserLevel;
 extern bool suppressCodegen;
 extern bool developer;
+extern int num_constants_per_variable;
 
 extern bool ignore_errors;
 

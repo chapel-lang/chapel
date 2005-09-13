@@ -16,12 +16,12 @@ extern bool justStartedGeneratingFunction;
 
 class Expr;
 class DefExpr;
-class AInfo;
+class AAST;
 
 class Stmt : public BaseAST {
  public:
   Stmt* parentStmt;
-  AInfo *ainfo;
+  AAST *ainfo;
 
   Stmt(astType_t astType = STMT);
   virtual void verify(void);
