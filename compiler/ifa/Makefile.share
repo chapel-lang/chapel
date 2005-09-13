@@ -20,7 +20,6 @@ IFA_SRCS = \
 	pnode.cpp \
 	prim.cpp \
 	region.cpp \
-        reportErrors.cpp \
 	ssu.cpp \
 	sym.cpp \
 	var.cpp \

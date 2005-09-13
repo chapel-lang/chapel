@@ -2204,7 +2204,13 @@ analysis_error(AError_kind akind, AVar *acall, AType *atype, AVar *aavar) {
   return -1;
 }
 
-extern void reportAnalysisErrors(Vec<AError*>* analysis_errors);
+void reportAnalysisErrors(Vec<AError*>* analysis_errors) {
+  USR_WARNING("Analysis errors detected, scroll down for analysis messages");
+  forv_Vec(AError, error, *analysis_errors) {
+    USR_FATAL_CONT("High-level error message");
+  }
+  USR_WARNING("Analysis messages follow");
+}
 
 void
 ACallbacks::report_analysis_errors(Vec<ATypeViolation*> &type_violations) {
