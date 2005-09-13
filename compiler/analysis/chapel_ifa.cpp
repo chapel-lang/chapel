@@ -27,7 +27,7 @@
 //#define USE_SCOPE_LOOKUP_CACHE                  1
 //#define MINIMIZED_MEMORY 1  // minimize the memory used by Sym's... needs valgrind checking for safety
 
-#define SYMBOL(_x) (((ChapelASymbol*)(_x)->asymbol)->symbol)
+#define SYMBOL(_x) (((ASymbol*)(_x)->asymbol)->symbol)
 
 #define OPERATOR_CHAR(_c) \
 (((_c > ' ' && _c < '0') || (_c > '9' && _c < 'A') || \
@@ -89,6 +89,10 @@ static ScopeLookupCache universal_lookup_cache;
 static int finalized_symbols = 0;
 static Map<Sym *, Expr *> constant_cache;
 
+void
+init_chapel_ifa() {
+  ifa_init(new ACallbacks);
+}
 
 struct TraverseASTs {
   Vec<BaseAST *> asts;
@@ -101,7 +105,7 @@ struct TraverseASTs {
   TraverseASTs _x;\
   get_ast_children(_s, _x.asts);
 
-ChapelASymbol::ChapelASymbol() : symbol(0) {
+ASymbol::ASymbol() : symbol(0) {
 }
 
 char *
@@ -110,7 +114,7 @@ cannonicalize_string(char *s) {
 }
 
 char* 
-ChapelASymbol::pathname() {
+ASymbol::pathname() {
   if (symbol && symbol->filename)
     return symbol->filename;
   else
@@ -118,7 +122,7 @@ ChapelASymbol::pathname() {
 }
 
 int 
-ChapelASymbol::line() {
+ASymbol::line() {
   if (symbol && symbol->lineno)
     return symbol->lineno;
   else
@@ -126,7 +130,7 @@ ChapelASymbol::line() {
 }
 
 int 
-ChapelASymbol::log_line() {
+ASymbol::log_line() {
   if (symbol && symbol->parentScope) {
     ModuleSymbol *m = symbol->parentScope->getModule();
     if (m && m->modtype == MOD_USER)
@@ -136,43 +140,43 @@ ChapelASymbol::log_line() {
 }
 
 int 
-ChapelASymbol::ast_id() {
+ASymbol::ast_id() {
   if (symbol)
     return symbol->id;
   else
     return 0;
 }
 
-AInfo::AInfo() : xast(0), code(0), sym(0), rval(0) {
+AAST::AAST() : xast(0), code(0), sym(0), rval(0) {
   label[0] = label[1] = 0;
 }
 
 char
-*AInfo::pathname() { 
+*AAST::pathname() { 
   return xast->filename;
 }
 
 int
-AInfo::line() {
+AAST::line() {
   return xast->lineno;
 }
 
 Sym *
-AInfo::symbol() {
+AAST::symbol() {
   if (rval) return rval;
   return sym;
 }
 
-AST*
-AInfo::copy_node(ASTCopyContext* context) {
-  AInfo *a = new AInfo(*this);
+IFAAST*
+AAST::copy_node(ASTCopyContext* context) {
+  AAST *a = new AAST(*this);
   for (int i = 0; i < a->pnodes.n; i++)
     a->pnodes.v[i] = context->nmap->get(a->pnodes.v[i]);
   return a;
 }
 
 Vec<Fun *> *
-AInfo::visible_functions(Sym *arg0) {
+AAST::visible_functions(Sym *arg0) {
   if (arg0->fun) {
     Fun *f = arg0->fun;
     if (!arg0->fun->vec_of_one) {
@@ -214,13 +218,13 @@ AnalysisCloneCallback::clone(BaseAST* old_ast, BaseAST* new_ast) {
   if (isSomeStmt(new_ast->astType)) {
     Stmt *new_s = dynamic_cast<Stmt*>(new_ast), *old_s = dynamic_cast<Stmt*>(old_ast);
     if (old_s->ainfo) {
-      new_s->ainfo = (AInfo*)old_s->ainfo->copy_node(context);
+      new_s->ainfo = (AAST*)old_s->ainfo->copy_node(context);
       new_s->ainfo->xast = new_s;
     }
   } else if (isSomeExpr(new_ast->astType)) {
     Expr *new_e = dynamic_cast<Expr*>(new_ast), *old_e = dynamic_cast<Expr*>(old_ast);
     if (old_e->ainfo) {
-      new_e->ainfo = (AInfo*)old_e->ainfo->copy_node(context);
+      new_e->ainfo = (AAST*)old_e->ainfo->copy_node(context);
       new_e->ainfo->xast = new_e;
     }
   } else if (isSomeSymbol(new_ast->astType)) {
@@ -251,8 +255,8 @@ AnalysisCloneCallback::clone(BaseAST* old_ast, BaseAST* new_ast) {
     fail("clone of Type unsupported");
 }
 
-AST *
-AInfo::copy_tree(ASTCopyContext* context) {
+IFAAST *
+AAST::copy_tree(ASTCopyContext* context) {
   AnalysisCloneCallback callback;
   callback.context = context;
   Map<BaseAST*,BaseAST*> clone_map;
@@ -313,21 +317,21 @@ set_global_scope(Sym *s) {
   s->global_scope = 1;
 }
 
-static ChapelASymbol *
-new_ChapelASymbol(char *name) {
-  ChapelASymbol *s = new ChapelASymbol;
+static ASymbol *
+new_ASymbol(char *name) {
+  ASymbol *s = new ASymbol;
   s->sym = new Sym;
   s->sym->asymbol = s;
   if1_register_sym(if1, s->sym, name);
   return s;
 }
 
-static ChapelASymbol *
-new_ChapelASymbol(Symbol *symbol, int basic = 0) {
+static ASymbol *
+new_ASymbol(Symbol *symbol, int basic = 0) {
   char *name = 0;
   if (symbol)
     name = symbol->name;
-  ChapelASymbol *s = new ChapelASymbol;
+  ASymbol *s = new ASymbol;
   if (basic)
 #ifdef MINIMIZED_MEMORY
     s->sym = (Sym*)new BasicSym;
@@ -342,14 +346,14 @@ new_ChapelASymbol(Symbol *symbol, int basic = 0) {
   return s;
 }
 
-static ChapelASymbol *
-new_ChapelASymbol(Symbol *symbol, Sym *sym) {
+static ASymbol *
+new_ASymbol(Symbol *symbol, Sym *sym) {
   char *name = 0;
   if (symbol)
     name = symbol->name;
-  ChapelASymbol *s = (ChapelASymbol*)sym->asymbol;
+  ASymbol *s = (ASymbol*)sym->asymbol;
   if (!s) {
-    s = new ChapelASymbol;
+    s = new ASymbol;
     sym->asymbol = s;
   }
   assert(!s->symbol || s->symbol == symbol);
@@ -361,8 +365,8 @@ new_ChapelASymbol(Symbol *symbol, Sym *sym) {
 }
 
 ASymbol * 
-ChapelASymbol::copy() {
-  ChapelASymbol *s = new ChapelASymbol;
+ASymbol::copy() {
+  ASymbol *s = new ASymbol;
   s->sym = sym->copy();
   s->sym->asymbol = s;
   if (s->sym->type_kind != Type_NONE)
@@ -395,10 +399,10 @@ ACallbacks::make_LUB_type(Sym *t) {
   if (tt->asymbol)
     return tt->asymbol->sym;
   make_meta_type(t);
-  tt->symbol->asymbol = t->meta_type->asymbol;
+  tt->symbol->asymbol = (ASymbol*)t->meta_type->asymbol;
   tt->symbol->asymbol->sym = t->meta_type;
   SYMBOL(tt->symbol) = tt->symbol;
-  tt->asymbol = t->asymbol;
+  tt->asymbol = (ASymbol*)t->asymbol;
   tt->asymbol->sym = t;
   SYMBOL(tt) = tt;
   assert(tt->asymbol->sym->type_kind == Type_LUB);
@@ -407,7 +411,7 @@ ACallbacks::make_LUB_type(Sym *t) {
 
 Sym *
 ACallbacks::new_Sym(char *name) {
-  return new_ChapelASymbol(name)->sym;
+  return new_ASymbol(name)->sym;
 }
 
 static void
@@ -646,7 +650,7 @@ ACallbacks::instantiate_generic(Match *m) {
 }
 
 Sym *
-ChapelASymbol::clone() {
+ASymbol::clone() {
   if (!symbol) { // internal to analysis
     Sym *s = copy()->sym;
     return s;
@@ -679,7 +683,7 @@ ChapelASymbol::clone() {
 
 static Sym *
 new_sym(char *name = 0, int global = 0) {
-  Sym *s = new_ChapelASymbol(name)->sym;
+  Sym *s = new_ASymbol(name)->sym;
   if (!global)
     s->function_scope = 1;
   else
@@ -690,10 +694,10 @@ new_sym(char *name = 0, int global = 0) {
 static void
 map_type(Type *t) {
   if (t->symbol) {
-    t->asymbol = new_ChapelASymbol(t->symbol->name);
+    t->asymbol = new_ASymbol(t->symbol->name);
     SYMBOL(t) = t;
   } else {
-    t->asymbol = new_ChapelASymbol("<anonymous>");
+    t->asymbol = new_ASymbol("<anonymous>");
     SYMBOL(t) = t;
   }
 }
@@ -726,10 +730,10 @@ map_baseast(BaseAST *s) {
       return;
     if (VarSymbol *var = is_literal(sym)) {
       Sym *s = map_const(if1, var->immediate);
-      sym->asymbol = new_ChapelASymbol(sym, s);
+      sym->asymbol = new_ASymbol(sym, s);
     } else {
       int basic = (s->astType != SYMBOL_FN) && (s->astType != SYMBOL_ENUM);
-      sym->asymbol = new_ChapelASymbol(sym, basic);
+      sym->asymbol = new_ASymbol(sym, basic);
       SYMBOL(sym) = sym;
     
       if (!sym->parentScope) {
@@ -783,14 +787,14 @@ map_baseast(BaseAST *s) {
       if (e) {
         if (e->ainfo)
           return;
-        e->ainfo = new AInfo;
+        e->ainfo = new AAST;
         e->ainfo->xast = e;
       } else {
         Stmt *st = dynamic_cast<Stmt *>(s);
         if (st) {
           if (st->ainfo)
             return;
-          st->ainfo = new AInfo;
+          st->ainfo = new AAST;
           st->ainfo->xast = s;
         } else {
           INT_FATAL(s, "Unexpected AST type in map_baseast: %s\n", astTypeName[s->astType]);
@@ -1284,7 +1288,7 @@ gen_one_defexpr(VarSymbol *var, DefExpr *def) {
     type = ((UserType*)type)->underlyingType;
 #endif
   Sym *s = var->asymbol->sym;
-  AInfo *ast = def->ainfo;
+  AAST *ast = def->ainfo;
   ast->sym = s;
   s->ast = ast;
   s->is_var = 1;
@@ -1386,7 +1390,7 @@ gen_while(BaseAST *a) {
 }
 
 static int
-gen_forall_internal(AInfo *ainfo, Code *body, Vec<Symbol*> &indices, Vec<Expr*> &domains) {
+gen_forall_internal(AAST *ainfo, Code *body, Vec<Symbol*> &indices, Vec<Expr*> &domains) {
   // setup code: evaluate domains and get starting indices
   Code *setup_code = 0, *send;
   forv_Expr(d, domains)
@@ -1447,7 +1451,7 @@ gen_for(BaseAST *a) {
 }
 
 static int
-gen_cond(AInfo *ast, AInfo *xcond, AInfo *xthen, AInfo *xelse) {
+gen_cond(AAST *ast, AAST *xcond, AAST *xthen, AAST *xelse) {
   if1_if(if1, &ast->code, xcond->code, xcond->rval, 
          xthen->code, xthen->rval, xelse ? xelse->code : 0, 
          xelse ? xelse->rval : 0, ast->rval, ast);
@@ -1491,7 +1495,7 @@ gen_assign_rhs(CallExpr *s) {
 static int
 gen_set_member(MemberAccess *ma, CallExpr *base_ast) {
   FnSymbol *fn = ma->getStmt()->parentFunction();
-  AInfo *ast = base_ast->ainfo;
+  AAST *ast = base_ast->ainfo;
   int equal = !fn || (!fn->_setter && (fn->fnClass != FN_CONSTRUCTOR || !is_this_member_access(ma)));
   assert(!equal);
   ast->rval = new_sym();
@@ -1507,7 +1511,7 @@ gen_set_member(MemberAccess *ma, CallExpr *base_ast) {
 
 static int
 gen_paren_op(CallExpr *s) {
-  AInfo *ast = s->ainfo;
+  AAST *ast = s->ainfo;
   ast->rval = new_sym();
   ast->rval->ast = ast;
   if1_gen(if1, &ast->code, s->baseExpr->ainfo->code);
@@ -1772,7 +1776,6 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
                          s->ainfo->rval);
       c->ast = s->ainfo;
       c->partial = Partial_NEVER;
-      s->ainfo->send = c;
       break;
     }
     case EXPR_LET: {
@@ -1932,7 +1935,7 @@ fun_where_clause(FnSymbol *f, Expr *w) {
 static int
 gen_fun(FnSymbol *f) {
   Sym *fn = f->asymbol->sym;
-  AInfo* ast = f->defPoint->ainfo;
+  AAST* ast = f->defPoint->ainfo;
   Vec<ArgSymbol *> args;
   Vec<Sym *> out_args;
   for_alist(DefExpr, formal, f->formals) {
@@ -2004,7 +2007,7 @@ init_function(FnSymbol *f) {
     sym_init = s;
   }
   s->cont = new_sym();
-  AInfo* ast = f->defPoint->ainfo;
+  AAST* ast = f->defPoint->ainfo;
   s->cont->ast = ast;
   s->ret = new_sym();
   s->ret->ast = ast;
@@ -2016,7 +2019,7 @@ init_function(FnSymbol *f) {
 static int
 build_function(FnSymbol *f) {
   if (define_labels(f->body, f->asymbol->sym->labelmap) < 0) return -1;
-  AInfo* ast = f->defPoint->ainfo;
+  AAST* ast = f->defPoint->ainfo;
   Label *return_label = ast->label[0] = if1_alloc_label(if1);
   if (resolve_labels(f->body, f->asymbol->sym->labelmap, return_label) < 0) return -1;
   if (gen_if1(f->body) < 0) return -1;
@@ -2140,7 +2143,6 @@ ACallbacks::finalize_functions() {
   pdb->fa->method_token = unique_AVar(new Var(method_token), GLOBAL_CONTOUR);
   pdb->fa->array_index_base = 1;
   pdb->fa->tuple_index_base = 1;
-  pdb->fa->num_constants_per_variable = num_constants_per_variable;
   forv_Fun(fun, pdb->funs)
     finalize_function(fun);
 }
@@ -2184,7 +2186,7 @@ AError::get_callers(AVar *call, Vec<AVar *> &callers) {
 BaseAST *
 AError::get_def_BaseAST(AVar *acall) {
   if (acall->var->def && acall->var->def->code && acall->var->def->code->ast)
-    return ((AInfo*)acall->var->def->code->ast)->xast;
+    return ((AAST*)acall->var->def->code->ast)->xast;
   return NULL;
 }
 
@@ -2202,13 +2204,7 @@ analysis_error(AError_kind akind, AVar *acall, AType *atype, AVar *aavar) {
   return -1;
 }
 
-void reportAnalysisErrors(Vec<AError*>* analysis_errors) {
-  USR_WARNING("Analysis errors detected, scroll down for analysis messages");
-  forv_Vec(AError, error, *analysis_errors) {
-    USR_FATAL_CONT("High-level error message");
-  }
-  USR_WARNING("Analysis messages follow");
-}
+extern void reportAnalysisErrors(Vec<AError*>* analysis_errors);
 
 void
 ACallbacks::report_analysis_errors(Vec<ATypeViolation*> &type_violations) {
@@ -2701,7 +2697,7 @@ print_AST_Expr_types(BaseAST *ast) {
 void 
 print_AST_types() {
   forv_Fun(f, pdb->fa->funs) {
-    AInfo *a = dynamic_cast<AInfo *>(f->ast);
+    AAST *a = dynamic_cast<AAST *>(f->ast);
     DefExpr* defExpr = dynamic_cast<DefExpr*>(a->xast);
     FnSymbol* fn = dynamic_cast<FnSymbol*>(defExpr->sym);
     print_AST_Expr_types(fn->body);
@@ -2709,7 +2705,7 @@ print_AST_types() {
 }
 
 static void
-ast_sym_info(BaseAST *a, Symbol *s, AST **ast, Sym **sym) {
+ast_sym_info(BaseAST *a, Symbol *s, IFAAST **ast, Sym **sym) {
   *ast = 0;
   *sym = 0;
   if (a) {
@@ -2751,7 +2747,7 @@ to_AST_type(Sym *type) {
     else
       return dtUnknown;
   }
-  ChapelASymbol *asymbol = (ChapelASymbol*)type->asymbol;
+  ASymbol *asymbol = (ASymbol*)type->asymbol;
   BaseAST *atype = asymbol->symbol;
   if (!atype)
     atype = SYMBOL(asymbol->sym->meta_type);
@@ -2773,7 +2769,7 @@ Type *
 type_info(BaseAST *a, Symbol *s) {
   if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(a))
     return ts->type;
-  AST *ast = 0;
+  IFAAST *ast = 0;
   Sym *sym = 0;
   ast_sym_info(a, s, &ast, &sym);
   Sym *type = 0;
@@ -2835,7 +2831,7 @@ call_info(Expr* a, Vec<FnSymbol *> &fns, int find_type) {
   if (!f) // this is not executable code
     return -1;
   Fun *fun = f->asymbol->sym->fun;
-  AST *ast = a->ainfo;
+  IFAAST *ast = a->ainfo;
   if (!ast)
     return -1; // this code is not known to analysis
   PNode *found_pn = NULL;
@@ -2876,7 +2872,7 @@ call_info(Expr* a, Vec<FnSymbol *> &fns, int find_type) {
 int 
 constant_info(BaseAST *a, Vec<Expr *> &constants, Symbol *s) {
   constants.clear();
-  AST *ast = 0;
+  IFAAST *ast = 0;
   Sym *sym = 0;
   ast_sym_info(a, s, &ast, &sym);
   if (!ast && !sym)
@@ -2914,7 +2910,7 @@ type_is_used(TypeSymbol *t) {
 
 int
 AST_is_used(BaseAST *a, Symbol *s) {
-  AST *ast = 0;
+  IFAAST *ast = 0;
   Sym *sym = 0;
   ast_sym_info(a, s, &ast, &sym);
   if (ast && !type_info(ast, sym))
@@ -3016,7 +3012,7 @@ element_type_info(TypeSymbol *t) {
 
 float
 execution_frequence_info(Expr *expr) {
-  AST *ast = expr->ainfo;
+  IFAAST *ast = expr->ainfo;
   if (!ast)
     return -1.0; // this code is not known to analysis    
   float freq = 0.0;
