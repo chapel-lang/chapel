@@ -46101,3 +46101,13 @@ Added files:
 Removed files:
 	chapel/compiler/analysis/: analysis.cpp 
 
+---------------------------------------------------------------------------
+
+09/13/05 12:23:46 -- jplevyak
+
+Log message:
+	one more file
+
+Added files:
+	chapel/compiler/analysis/: chapel_ifa.h 
+
