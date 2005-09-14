@@ -6,6 +6,7 @@
 #include "vec.h"
 #include "map.h"
 #include "../ifa/ifa.h"
+#include "../ifa/num.h"
 
 class Symbol;
 class BaseAST;

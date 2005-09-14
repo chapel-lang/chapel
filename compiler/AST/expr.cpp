@@ -1,6 +1,5 @@
 #include <typeinfo>
 #include <string.h>
-#include "num.h"
 #include "analysis.h"
 #include "expr.h"
 #include "misc.h"

@@ -5,7 +5,6 @@
 #include "baseAST.h"
 #include "analysis.h"
 #include "type.h"
-#include "num.h"
 
 class DefExpr;
 class Stmt;
