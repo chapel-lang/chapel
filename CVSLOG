@@ -46209,3 +46209,15 @@ Removed files:
 	                             test_hash_table.good 
 	                             test_hash_table1.chpl 
 
+---------------------------------------------------------------------------
+
+09/14/05 16:18:33 -- roxana
+
+Log message:
+	Corrected one misplaced file.
+
+Added files:
+	chapel/test/domains/roxana/index/: test_index_assign.chpl 
+Removed files:
+	chapel/test/domains/roxana/helper/: test_index_assign.chpl 
+
