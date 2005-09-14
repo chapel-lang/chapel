@@ -46137,3 +46137,75 @@ Added files:
 Removed files:
 	chapel/compiler/include/: num.h 
 
+---------------------------------------------------------------------------
+
+09/14/05 16:16:06 -- roxana
+
+Log message:
+	Reorganized my domains tests. Added a sketch of  domain
+	classes specification which is incomplete. The main problem
+	is with specifying storage for indices within a class. This can
+	go away once _data is fortified.
+
+Added files:
+	chapel/test/domains/roxana/helper/: test_hash_table1.good 
+	                                    test_hash_table3.good 
+	                                    test_hash_table2.good 
+	                                    test_hash_table.future 
+	                                    test_hash_table3.chpl 
+	                                    test_index_assign.chpl 
+	                                    test_hash_table1.future 
+	                                    test_hash_table.good 
+	                                    test_hash_table.chpl 
+	                                    test_hash_table1.chpl 
+	                                    test_hash_table2.chpl 
+	                                    test_hash_table2.future 
+	chapel/test/domains/roxana/index/: test_index_expr0.good 
+	                                   test_index_expr2.good 
+	                                   test_index_expr2.future 
+	                                   test_index_expr0.chpl 
+	                                   test_index_assign.future 
+	                                   test_index_expr1.good 
+	                                   test_index_expr1.chpl 
+	                                   test_index_expr.good 
+	                                   test_index_expr2.chpl 
+	                                   test_index_expr0.compopts 
+	                                   test_index_expr.future 
+	                                   test_index_expr2.compopts 
+	                                   test_index_expr0.future 
+	                                   test_index_expr.chpl 
+	                                   test_index_expr1.future 
+	                                   test_index_assign.good 
+	chapel/test/domains/roxana/classes/: test_domain_class.future 
+	                                     test_domain_class.chpl 
+	                                     test_domain_class.good 
+Removed files:
+	chapel/test/domains/roxana/: test_index_expr2.chpl 
+	                             test_hash_table.future 
+	                             test_index_assign.good 
+	                             test_index_assign.chpl 
+	                             test_hash_table.chpl 
+	                             test_hash_table2.good 
+	                             test_index_expr2.good 
+	                             test_index_expr1.future 
+	                             test_index_expr0.good 
+	                             test_index_expr.chpl 
+	                             test_hash_table1.good 
+	                             test_index_expr0.future 
+	                             test_hash_table3.good 
+	                             test_index_expr.future 
+	                             test_index_assign.future 
+	                             test_index_expr2.future 
+	                             test_index_expr0.chpl 
+	                             test_hash_table2.future 
+	                             test_hash_table3.chpl 
+	                             test_index_expr1.good 
+	                             test_hash_table2.chpl 
+	                             test_index_expr1.chpl 
+	                             test_hash_table1.future 
+	                             test_index_expr2.compopts 
+	                             test_index_expr.good 
+	                             test_index_expr0.compopts 
+	                             test_hash_table.good 
+	                             test_hash_table1.chpl 
+
