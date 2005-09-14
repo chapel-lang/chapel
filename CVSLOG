@@ -46122,3 +46122,18 @@ Modified files:
 	chapel/compiler/analysis/: chapel_ifa.cpp 
 	chapel/compiler/ifa/: Makefile.share 
 
+---------------------------------------------------------------------------
+
+09/14/05 15:02:16 -- jplevyak
+
+Log message:
+	Move num.h into ifa (which is where it came from in the first place).
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/include/: analysis.h symbol.h 
+Added files:
+	chapel/compiler/ifa/: num.h 
+Removed files:
+	chapel/compiler/include/: num.h 
+
