@@ -46247,3 +46247,57 @@ Added files:
 	                         fwritelnStringFile.chpl 
 	                         fwritelnStringFile.good 
 
+---------------------------------------------------------------------------
+
+09/15/05 15:29:53 -- jplevyak
+
+Log message:
+	Added a "partialTag" to CallExpr which permits partial applications
+	  the values are PARTIAL_OK, PARTIAL_ALWAYS and PARTIAL_NEVER.
+	
+	The above flag is used to handle the case of x.y(1) where x.y is
+	an object (e.g. an array).  The solution is to first call
+	x.y if it is available (e.g. if we want to use the member variable
+	as a function or array) and otherwise build a closure which is
+	invoked next.  The handling in resolveSymbols is specific
+	to just this special case (e.g. where we have CallExpr(CallExpr(...), ...).
+	To recognize that there is a closure involved.  While analysis can
+	handle general closures, resolveSymbols can't (yet) and neither
+	can code generation.  For this special case I undo the transform
+	where a trivial closure would be generated.
+	
+	Fixed bug where "instantiatedFrom" was not being updated during
+	  preinstantiation.
+	Fixed an issue where the "instantiateFrom" field was not being
+	  copied into the analysis data structures for pre-instantied types.
+	Pass along the ParitalTag field to analysis.
+	Instantiation builds a specializes relationship in the dispatch
+	  hierarchy, but instantiation related types are ignored with
+	  respect to building the structural type hierarchy.
+	Fixed a bug which was building the structural type hierarchy after
+	  the closure of the "specializes" relationship was computed.
+	Fixed a bug whereby the "pattern" flag was not being checked before
+	  recursing into the pattern matching code during dispatch in
+	  analysis.
+	Fixed a bug in printing out strings where I was using fprintf which
+	  was failing for "%s".
+	Fixed new_class_trial1.chpl:
+	  constructs of the form x.y(1) need not be written x.y()(1), though
+	  the latter is still legal.
+	Added a future for test_tuple_simple5 where a problem with
+	  instantiation of "this" and/or visibility is causing the
+	  test to fail (I think this is a known issue).
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: ast.cpp fa.cpp pattern.cpp sym.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/passes/: applyGettersSetters.cpp 
+	chapel/compiler/traversals/: resolveSymbols.cpp 
+	chapel/test/classes/deitz/: test_method_call2.good 
+Added files:
+	chapel/test/functions/jplevyak/: call_mapping-2.chpl 
+	                                 call_mapping-2.good 
+	chapel/test/types/tuple/deitz/: test_tuple_simple5.future 
+
