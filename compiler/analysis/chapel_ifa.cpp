@@ -418,6 +418,14 @@ static void
 finalize_symbols(IF1 *i) {
   for (int x = finalized_symbols; x < i->allsyms.n; x++) {
     Sym *s = i->allsyms.v[x];
+    if (SYMBOL(s)) {
+      if (Type* type = dynamic_cast<Type*>(SYMBOL(s))) {
+        if (type->instantiatedFrom) {
+          assert(!s->instantiates || s->instantiates == type->instantiatedFrom->asymbol->sym);
+          s->instantiates = type->instantiatedFrom->asymbol->sym;
+        }
+      }
+    }
     if (s->is_constant)
       make_meta_type(s);
     if (s->is_constant || s->is_symbol)
@@ -1509,6 +1517,16 @@ gen_set_member(MemberAccess *ma, CallExpr *base_ast) {
   return 0;
 }
 
+static Sym *
+make_temp(Sym *s, AAST *ast) {
+  if (1 || s->function_scope)
+    return s;
+  Sym *tmp = new_sym();
+  tmp->ast = ast;
+  if1_move(if1, &ast->code, s, tmp, ast);
+  return tmp;
+}
+
 static int
 gen_paren_op(CallExpr *s) {
   AAST *ast = s->ainfo;
@@ -1547,14 +1565,19 @@ gen_paren_op(CallExpr *s) {
     base = dynamic_cast<FnSymbol*>(dynamic_cast<SymExpr*>(s->baseExpr)->var)->asymbol->sym;
   else
     base = s->baseExpr->ainfo->rval;
+  int need_temps = s->partialTag != PARTIAL_NEVER;
+  Vec<Sym*> trvals;
+  if (base)
+    trvals.add(need_temps ? make_temp(base, ast) : base);
+  forv_Sym(r, rvals)
+    trvals.add(need_temps ? make_temp(r, ast) : r);
   Code *send = if1_send1(if1, &ast->code);
   send->ast = ast;
-  if (base)
-    if1_add_send_arg(if1, send, base);
-  forv_Sym(r, rvals)
+  forv_Sym(r, trvals)
     if1_add_send_arg(if1, send, r);
   if1_add_send_result(if1, send, ast->rval);
-  send->partial = Partial_NEVER;
+  send->partial = s->partialTag == PARTIAL_OK ? Partial_OK :
+    (s->partialTag == PARTIAL_NEVER ? Partial_NEVER : Partial_ALWAYS);
   ast->sym = ast->rval;
   return 0;
 }

@@ -158,7 +158,6 @@ resolve_binary_operator(CallExpr *op, FnSymbol *resolved = 0) {
   return expr;
 }
 
-
 void ResolveSymbols::postProcessExpr(Expr* expr) {
 
   // Resolve CallExprs
@@ -176,16 +175,6 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
         if (fns.n == 0) { // for 0-ary (CallExpr(MemberAccess))
           call_info(paren->baseExpr, fns);
         }
-        if (fns.n == 0) { // for set function
-          if (assign && assign->opTag >= OP_GETSNORM) {
-            Vec<FnSymbol*> fns2;
-            call_info(paren->parentExpr, fns2);
-            if (fns2.n == 1 && !strcmp(fns2.v[0]->name, "set")) {
-              // handle this case below
-              return;
-            }
-          }
-        }
         if (fns.n != 1) {
           // HACK: Special case where write(:nilType) requires dynamic
           // dispatch; Take the other one.
@@ -201,6 +190,8 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
             if (OP_ISBINARYOP(paren->opTag)) {
               return;
             }
+            if (paren->partialTag != PARTIAL_NEVER)
+              return;
             USR_WARNING(expr, "It looks like this program requires dynamic"
                         "dispatch, which is not yet supported");
             INT_FATAL(expr, "Unable to resolve function");
@@ -209,8 +200,23 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
         }
 
         AList<Expr>* arguments = copy_argument_list(paren);
+        // HACK: to handle special case for a.x(1) translation
+        Expr *baseExpr = paren->baseExpr;
+        if (CallExpr* basecall = dynamic_cast<CallExpr*>(paren->baseExpr)) {
+          if (basecall->partialTag != PARTIAL_NEVER) {
+            Vec<FnSymbol*> fns;
+            call_info(basecall, fns);
+            if (fns.n == 0) { // for 0-ary (CallExpr(MemberAccess))
+              call_info(paren->baseExpr, fns);
+            }
+            if (fns.n == 0) {
+              baseExpr = basecall->baseExpr;
+              arguments->insertAtHead(basecall->argList->copy());
+            }
+          }
+        }
         if (!strcmp("this", fns.e[0]->name)) {
-          arguments->insertAtHead(paren->baseExpr->copy());
+          arguments->insertAtHead(baseExpr->copy());
         }
         CallExpr *new_expr = new CallExpr(fns.e[0], arguments);
         if (fns.e[0]->defPoint->parentStmt->hasPragma("builtin")) {

@@ -11,6 +11,12 @@ class Stmt;
 class AAST;
 class FnSymbol;
 
+enum PartialTag {
+  PARTIAL_OK,
+  PARTIAL_NEVER,
+  PARTIAL_ALWAYS
+};
+
 enum OpTag {
   OP_NONE,
   OP_UNPLUS,
@@ -163,6 +169,7 @@ class CallExpr : public Expr {
   Expr* baseExpr;
   AList<Expr>* argList;
   OpTag opTag;
+  PartialTag partialTag;
 
   CallExpr(BaseAST* base, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
            BaseAST* arg3 = NULL, BaseAST* arg4 = NULL);

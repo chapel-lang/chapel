@@ -113,6 +113,14 @@ implement_and_specialize(Sym *s, Sym *ss, Vec<Sym *> &types) {
   specialize(s, ss, types);
 }
 
+static int
+related(Sym *x, Sym *y) {
+  return (x == y || 
+          x->instantiates == y ||
+          y->instantiates == x ||
+          (x->instantiates && x->instantiates == y->instantiates));
+}
+
 #define E(_x) ((Vec<void *>*)(_x)->temp)
 
 static void 
@@ -138,8 +146,13 @@ compute_single_structural_type_hierarchy(Vec<Sym *> types, int is_union) {
       forv_Sym(s, *by_size.v[i]) {
         for (int j = i; j < by_size.n; j++) {
           if (by_size.v[j]) forv_Sym(ss, *by_size.v[j]) {
-            if (s != ss) {
+            if (!related(s, ss)) {
               if (!E(s)->some_difference(*E(ss))) {
+                for (int ii = 0; ii < s->has.n; ii++)
+                  for (int jj = 0; jj < ss->has.n; jj++)
+                    if (s->has.v[ii]->name == ss->has.v[jj]->name &&
+                        s->has.v[ii]->type != ss->has.v[jj]->type)
+                      goto Lskip;
                 if (!is_union) {
                   if (s->specializers.set_add(ss))
                     ss->dispatch_order.add(s);
@@ -147,6 +160,7 @@ compute_single_structural_type_hierarchy(Vec<Sym *> types, int is_union) {
                   if (ss->specializers.set_add(s))
                     s->dispatch_order.add(ss);
                 }
+              Lskip:;
               }
             }
           }
@@ -158,7 +172,7 @@ compute_single_structural_type_hierarchy(Vec<Sym *> types, int is_union) {
   if (by_size.n && by_size.v[0]) {
     forv_Sym(s, *by_size.v[0]) {
       forv_Sym(ss, types) {
-        if (s != ss)
+        if (!related(s, ss))
           if (s->specializers.set_add(ss))
             ss->dispatch_order.add(s);
       }
@@ -168,6 +182,7 @@ compute_single_structural_type_hierarchy(Vec<Sym *> types, int is_union) {
   forv_Sym(s, types)
     s->temp = 0;
 }
+#undef E
 
 static void 
 compute_structural_type_hierarchy(Vec<Sym *> types) {
@@ -246,6 +261,8 @@ build_type_hierarchy() {
     s->implementors.set_add(s);
     s->specializers.set_add(s);
   }
+  // compute structural type hierarchy
+  compute_structural_type_hierarchy(types);
   // compute implementors closure
   int changed = 1;
   while (changed) {
@@ -266,7 +283,6 @@ build_type_hierarchy() {
       }
     }
   }
-  compute_structural_type_hierarchy(types);
 }
 
 static void

@@ -47,21 +47,40 @@ process(BaseAST* ast) {
   BaseAST *base = call ? call->baseExpr : (assign ? assign->get(1) : ast);
   if (MemberAccess* memberAccess = dynamic_cast<MemberAccess*>(base)) {
     Expr *rhs = assign ? assign->argList->get(2)->copy() : 0;
+    // build the RHS operator expression
     if (rhs && assign->opTag != OP_GETSNORM) {
+      CallExpr *lhs = new CallExpr(memberAccess->member->name, 
+                                   new SymExpr(Symboltable::lookupInternal("_methodToken")),
+                                   memberAccess->base->copy());
+      if (call && !call->argList->isEmpty()) {
+        lhs->partialTag = PARTIAL_OK;
+        lhs = new CallExpr(lhs, call->argList->copy());
+      }
+      rhs = new CallExpr(gets_to_non(assign->opTag), lhs, rhs);
+    }
+    // build the main accessor/setter
+    if ((call && !call->argList->isEmpty())) {
+      CallExpr *lhs = new CallExpr(memberAccess->member->name, 
+                                   new SymExpr(Symboltable::lookupInternal("_methodToken")),
+                                   memberAccess->base->copy());
+      lhs->partialTag = PARTIAL_OK;
+      AList<Expr>* arguments = call ? call->argList->copy() : new AList<Expr>;
+      if (rhs) {
+        arguments->insertAtTail(new SymExpr(Symboltable::lookupInternal("_setterToken")));
+        arguments->insertAtTail(rhs);
+      }
+      lhs = new CallExpr(lhs, arguments);
+      REPLACE(lhs);
+    } else {
       AList<Expr>* arguments = call ? call->argList->copy() : new AList<Expr>;
       arguments->insertAtHead(memberAccess->base->copy());
       arguments->insertAtHead(new SymExpr(Symboltable::lookupInternal("_methodToken")));
-      Expr *lhs = new CallExpr(memberAccess->member->name, arguments);
-      rhs = new CallExpr(gets_to_non(assign->opTag), lhs, rhs);
+      if (rhs) {
+        arguments->insertAtTail(new SymExpr(Symboltable::lookupInternal("_setterToken")));
+        arguments->insertAtTail(rhs);
+      }
+      REPLACE(new CallExpr(memberAccess->member->name, arguments));
     }
-    AList<Expr>* arguments = call ? call->argList->copy() : new AList<Expr>;
-    arguments->insertAtHead(memberAccess->base->copy());
-    arguments->insertAtHead(new SymExpr(Symboltable::lookupInternal("_methodToken")));
-    if (rhs) {
-      arguments->insertAtTail(new SymExpr(Symboltable::lookupInternal("_setterToken")));
-      arguments->insertAtTail(rhs);
-    }
-    REPLACE(new CallExpr(memberAccess->member->name, arguments));
   } 
   if (assign) {
     Expr *rhs = assign->argList->get(2)->copy();

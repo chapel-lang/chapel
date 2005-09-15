@@ -980,6 +980,8 @@ FnSymbol::preinstantiate_generic(Map<BaseAST*,BaseAST*>* substitutions) {
   substitutions->put(retType, clone->definition);
 
   ClassType* cloneType = dynamic_cast<ClassType*>(clone->definition);
+  cloneType->instantiatedFrom = retType;
+
   Vec<TypeSymbol *> types;
   types.move(cloneType->types);
   for (int i = 0; i < types.n; i++) {

@@ -53,13 +53,18 @@ static Vec<ATypeViolation *> type_violations;
 static int application(PNode *p, EntrySet *es, AVar *fun, CreationSet *s, Vec<AVar *> &args, 
                        Partial_kind partial);
 
+static int 
+get_avar_id() {
+  return avar_id++;
+}
+
 AVar::AVar(Var *v, void *acontour) : 
   var(v), contour(acontour), lvalue(0), gen(0), in(bottom_type), out(bottom_type), 
   restrict(0), container(0), setters(0), setter_class(0), mark_map(0),
   creation_set(0), type(0), ivar_offset(0), in_send_worklist(0), contour_is_entry_set(0), 
   is_lvalue(0), is_dead(0)
 {
-  id = avar_id++;
+  id = get_avar_id();
 }
 
 AType::AType(AType &a) {
@@ -134,8 +139,7 @@ compar_creation_sets(const void *ai, const void *aj) {
 
 AVar *
 make_AVar(Var *v, EntrySet *es) {
-  if (v->sym->function_scope) {
-    assert(!v->sym->global_scope);
+  if (v->sym->function_scope || v->is_internal) {
     if (es->fun && es->fun->sym->nesting_depth && v->sym->nesting_depth &&
         v->sym->nesting_depth != es->fun->sym->nesting_depth + 1) {
       assert(es->fun->sym->nesting_depth >= v->sym->nesting_depth);
@@ -1285,6 +1289,7 @@ make_AEdge(Match *m, PNode *p, EntrySet *from) {
 static int
 all_applications(PNode *p, EntrySet *es, AVar *a0, Vec<AVar *> &args, Partial_kind partial) {
   int incomplete = -2;
+  a0->arg_of_send.add(make_AVar(p->lvals.v[0], es));
   forv_CreationSet(cs, *a0->out) if (cs)
     switch (application(p, es, a0, cs, args, partial)) {
       case -1: if (incomplete < 0) incomplete = -1; break;
@@ -1302,7 +1307,6 @@ partial_application(PNode *p, EntrySet *es, CreationSet *cs, Vec<AVar *> args, P
     cs->vars.v[i]->arg_of_send.add(result);
     args.add(cs->vars.v[i]);
   }
-  fun->arg_of_send.add(result);
   return all_applications(p, es, fun, args, partial);
 }
 
@@ -1462,7 +1466,6 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
       args.add(av);
     }
     AVar *a0 = make_AVar(p->rvals.v[0], es);
-    a0->arg_of_send.add(result);
     if (all_applications(p, es, a0, args, (Partial_kind)p->code->partial) > 0)
       make_closure(result);
   } else {
@@ -1788,6 +1791,8 @@ analyze_edge(AEdge *e) {
     flow_vars(filtered, formal);
     if (p->pos.n > 1)
       set_container(filtered, get_filtered(e, p->up, e->to->args.get(p->up)));
+    else if (!actual->contour_is_entry_set && actual->contour != GLOBAL_CONTOUR) // closure
+      set_container(filtered, make_AVar(e->pnode->rvals.v[0], e->from));
   }
   creation_point(make_AVar(e->match->fun->sym->cont->var, e->to), sym_continuation);
   for (int i = 0; i < e->pnode->lvals.n; i++)

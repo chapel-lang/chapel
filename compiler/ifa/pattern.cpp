@@ -261,12 +261,22 @@ Matcher::find_arg_matches(AVar *a, MPosition &ap, MPosition *acp, MPosition *acp
           sym = a->var->sym->aspect;
         }
         Vec<Sym *> done;
-        Vec<Fun *> new_funs, *new_funs_p = &new_funs;
+        Vec<Fun *> new_funs;
         if (!pattern_match_sym(sym, acp, *local_matches, new_funs, out_of_position, done))
           continue;
         update_match_map(a, cs, acp, acpp, new_funs);
-        if (recurse && cs->vars.n) // for recursive ap == app !!
-          find_all_matches(cs, cs->vars, &new_funs_p, ap, out_of_position);
+        if (recurse && cs->vars.n) { // for recursive ap == app !! 
+          Vec<Fun *> rec_funs, tfuns, *rec_funs_p = &rec_funs;
+          tfuns.move(new_funs);
+          forv_Fun(f, tfuns) if (f) {
+            if (f->arg_syms.get(to_formal(acpp, match_map.get(f)))->is_pattern)
+              rec_funs.set_add(f);
+            else
+              new_funs.set_add(f);
+          }
+          find_all_matches(cs, cs->vars, &rec_funs_p, ap, out_of_position);
+          funs.set_union(rec_funs);
+        }
         funs.set_union(new_funs);
       }
     }
@@ -406,6 +416,10 @@ subsumes(Match *x, Match *y, MPosition &app, int nargs) {
     if (xtype == ytype)
       goto Lnext;
     if (xtype->specializers.set_in(ytype)) {
+      if (ytype->specializers.set_in(xtype)) {
+        result = 0;
+        goto Lreturn;
+      }
       if (result >= 0)
         result = 1;
       else {
@@ -413,6 +427,10 @@ subsumes(Match *x, Match *y, MPosition &app, int nargs) {
         goto Lreturn;
       }
     } else if (ytype->specializers.set_in(xtype)) {
+      if (xtype->specializers.set_in(ytype)) {
+        result = 0;
+        goto Lreturn;
+      }
       if (result <= 0)
         result = -1;
       else {

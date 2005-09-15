@@ -592,7 +592,8 @@ CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
   Expr(EXPR_CALL),
   baseExpr(NULL),
   argList(new AList<Expr>()),
-  opTag(OP_NONE)
+  opTag(OP_NONE),
+  partialTag(PARTIAL_NEVER)
 {
   if (Symbol* b = dynamic_cast<Symbol*>(base)) {
     baseExpr = new SymExpr(b);
@@ -612,7 +613,8 @@ CallExpr::CallExpr(OpTag initOpTag, BaseAST* arg1, BaseAST* arg2) :
   Expr(EXPR_CALL),
   baseExpr(new SymExpr(new UnresolvedSymbol(opChplString[initOpTag]))),
   argList(new AList<Expr>()),
-  opTag(initOpTag)
+  opTag(initOpTag),
+  partialTag(PARTIAL_NEVER)
 {
   callExprHelper(this, arg1);
   callExprHelper(this, arg2);
@@ -624,7 +626,8 @@ CallExpr::CallExpr(char* name, BaseAST* arg1, BaseAST* arg2,
   Expr(EXPR_CALL),
   baseExpr(new SymExpr(new UnresolvedSymbol(name))),
   argList(new AList<Expr>()),
-  opTag(OP_NONE)
+  opTag(OP_NONE),
+  partialTag(PARTIAL_NEVER)
 {
   callExprHelper(this, arg1);
   callExprHelper(this, arg2);
@@ -644,6 +647,7 @@ CallExpr*
 CallExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   CallExpr* _this = new CallExpr(COPY_INTERNAL(baseExpr), COPY_INTERNAL(argList));
   _this->opTag = opTag;
+  _this->partialTag = partialTag;
   return _this;
 }
 

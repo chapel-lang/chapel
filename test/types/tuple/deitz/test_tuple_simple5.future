@@ -1,0 +1,8 @@
+deitz
+
+I believe this has to do with the problem with the "this" function
+not being instantiated/visible correctly.
+
+The "ambiguity" is betwen the same function, one instantiated through
+analysis directly from the version built in Flatten, and the other
+from the one built in "Instantiate" from the one built in "Flatten".

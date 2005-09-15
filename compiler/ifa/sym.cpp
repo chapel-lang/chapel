@@ -270,7 +270,7 @@ fprint_imm(FILE *fp, Immediate &imm) {
   char str[80];
   int res;
   if ((res = sprint_imm(str, imm) >= 0))
-    fprintf(fp, str);
+    fputs(str, fp);
   return res;
 }
 
