@@ -1,3 +1,1 @@
-_test_fwriteIntFile.txt
-_test_fwriteMultipleInts.txt
-_test_fwritelnIntFile.txt
+_test_fwrite*.txt

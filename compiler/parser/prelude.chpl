@@ -33,9 +33,6 @@ pragma "rename fopen" function _fopen(filename, mode : string) : CFILEPTR {
 
 pragma "rename fclose" function _fclose(fp : CFILEPTR);
 
-pragma "rename _chpl_write_boolean" function write(x : boolean) : void {
-         __primitive("write", x);
-}
 
 function fprintf(fp: CFILEPTR, fmt: string, val) : integer {
          __primitive("write", val);
@@ -44,15 +41,17 @@ function fprintf(fp: CFILEPTR, fmt: string, val) : integer {
 pragma "rename _chpl_write_integer" function write(x : integer) : void {
          __primitive("write", x);
 }
-
 pragma "rename _chpl_write_float" function write(x : float) : void {
+         __primitive("write", x);
+}
+pragma "rename _chpl_write_string" function write(x : string) : void {
+         __primitive("write", x);
+}
+pragma "rename _chpl_write_boolean" function write(x : boolean) : void {
          __primitive("write", x);
 }
 pragma "rename _chpl_write_complex" function write(x : complex) : void {
                 __primitive("write", x);
-}
-pragma "rename _chpl_write_string" function write(x : string) : void {
-         __primitive("write", x);
 }
 pragma "rename _chpl_write_nil" function write(x : _nilType) : void {
          __primitive("write", x);

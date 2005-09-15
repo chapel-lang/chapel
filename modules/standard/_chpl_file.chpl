@@ -52,13 +52,18 @@ const stderr : file = file(filename = "stderr", mode = "w", path = "/dev",
                            fp = _STDERRCFILEPTR);
 
 
+function fopenError(f: file) {
+  var fullFilename = f.path + "/" + f.filename;
+  halt("You must open \"", fullFilename, "\" before writing to it.");    
+}
+
+
 pragma "rename _chpl_fwriteln"
 function fwriteln(f: file = stdout) {
   if (f.isOpen) {
     fprintf(f.fp, "%s", "\n");
   } else {
-    var fullFilename = f.path + "/" + f.filename;
-    halt("You must open \"", fullFilename, "\" before writing to it.");    
+    fopenError(f);
   }
 }
 
@@ -68,7 +73,40 @@ function fwrite(f: file = stdout, val: integer) {
   if (f.isOpen) {
     fprintf(f.fp, "%lld", val);
   } else {
-    var fullFilename = f.path + "/" + f.filename;
-    halt("You must open \"", fullFilename, "\" before writing to it.");    
+    fopenError(f);
+  }
+}
+
+
+pragma "rename _chpl_fwrite_float"
+function fwrite(f: file = stdout, val: float) {
+  if (f.isOpen) {
+    fprintf(f.fp, "%lg", val);
+  } else {
+    fopenError(f);
+  }
+}
+
+
+pragma "rename _chpl_fwrite_string"
+function fwrite(f: file = stdout, val: string) {
+  if (f.isOpen) {
+    fprintf(f.fp, "%s", val);
+  } else {
+    fopenError(f);
+  }
+}
+
+
+pragma "rename _chpl_fwrite_boolean"
+function fwrite(f: file = stdout, val: boolean) {
+  if (f.isOpen) {
+    if (val == true) {
+      fprintf(f.fp, "%s", "true");
+    } else {
+      fprintf(f.fp, "%s", "false");
+    }
+  } else {
+    fopenError(f);
   }
 }
