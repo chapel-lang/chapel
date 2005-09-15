@@ -46301,3 +46301,29 @@ Added files:
 	                                 call_mapping-2.good 
 	chapel/test/types/tuple/deitz/: test_tuple_simple5.future 
 
+---------------------------------------------------------------------------
+
+09/15/05 15:37:31 -- deitz
+
+Log message:
+	Fixed a bug in which the exprType of an iterator was lost when it was
+	reconstructed rather than set to a sequence.
+	
+	Fixed a bug in which the exprType of a return temp was not set correctly.
+	
+	Fixed a bug in which constructor calls did not preinstantiate types.
+	
+	Added new_class_trial1, a test for arithmetic domains.
+
+Modified files:
+	chapel/compiler/symtab/: reconstructIterators.cpp 
+	chapel/compiler/traversals/: eliminateReturns.cpp 
+	                             instantiate.cpp 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+Added files:
+	chapel/test/arrays/deitz/: new_class_trial1.chpl 
+	                           new_class_trial1.future 
+	                           new_class_trial1.good 
+
