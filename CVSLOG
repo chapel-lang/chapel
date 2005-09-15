@@ -46221,3 +46221,29 @@ Added files:
 Removed files:
 	chapel/test/domains/roxana/helper/: test_index_assign.chpl 
 
+---------------------------------------------------------------------------
+
+09/15/05 11:48:15 -- shannon
+
+Log message:
+	Added the fwrite function for floats, strings, and booleans,
+	as well as a number of tests.
+
+Modified files:
+	chapel/compiler/parser/: prelude.chpl 
+	chapel/modules/standard/: _chpl_file.chpl 
+	chapel/test/types/file/: .cvsignore CLEANFILES 
+Added files:
+	chapel/test/types/file/: fwritelnBooleanFile.catfiles 
+	                         fwritelnBooleanFile.chpl 
+	                         fwritelnBooleanFile.good 
+	                         fwritelnFloatFile.catfiles 
+	                         fwritelnFloatFile.chpl 
+	                         fwritelnFloatFile.good 
+	                         fwritelnIntFloatString.catfiles 
+	                         fwritelnIntFloatString.chpl 
+	                         fwritelnIntFloatString.good 
+	                         fwritelnStringFile.catfiles 
+	                         fwritelnStringFile.chpl 
+	                         fwritelnStringFile.good 
+
