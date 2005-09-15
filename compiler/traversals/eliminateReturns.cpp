@@ -59,7 +59,10 @@ void EliminateReturns::preProcessStmt(Stmt* stmt) {
       retval = new VarSymbol("_retval", retType);
       retval->cname = glomstrings(3, retval->name, "_", intstring(uid++));
       retval->noDefaultInit = true;
-      body->body->insertAtHead(new ExprStmt(new DefExpr(retval)));
+      DefExpr* retDef = new DefExpr(retval);
+      if (fnSym->defPoint->exprType)
+        retDef->exprType = fnSym->defPoint->exprType->copy();
+      body->body->insertAtHead(new ExprStmt(retDef));
     } else {
       if (alreadyProcessedThisReturn(retExpr, retval)) {
         //replace all returns except the last one in a function with a goto
