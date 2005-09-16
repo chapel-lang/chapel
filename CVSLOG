@@ -46351,3 +46351,52 @@ Modified files:
 Removed files:
 	chapel/test/types/seq/deitz/: test_seq_tuple3.future 
 
+---------------------------------------------------------------------------
+
+09/16/05 16:14:23 -- deitz
+
+Log message:
+	Moved CreateEntryPoint after Fixup.  This is a good step forward in
+	orthogonalizing the compiler.  Moving this pass after fixup now
+	de-special-cases creating the init function for modules and the main
+	function for the program.  More cleanup will follow.
+	
+	This is a small step towards creating a class init function.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: alist.h symbol.h 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/passes/: createEntryPoint.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	chapel/test/flowanalysis/jplevyak/config/: configVar.good 
+	chapel/test/flowanalysis/newast/: arithmetic_ops.good 
+	                                  assignment_expr.good 
+	                                  bitwise_assignment.good 
+	                                  bitwise_negation.good 
+	                                  bitwise_ops.good chain.good 
+	                                  codegen_test.good 
+	                                  compSampler.good 
+	                                  conditional.good 
+	                                  danglingelse.good deadvar.good 
+	                                  declprintdom.good 
+	                                  declprintint.good 
+	                                  declprintint2.good enum.good 
+	                                  equality_ops.good 
+	                                  globalref.good 
+	                                  logical_and.good 
+	                                  logical_not.good mod.good 
+	                                  multiple_return.good 
+	                                  mutrec.good noargs.good 
+	                                  octalliteral.good onearg.good 
+	                                  pareninit.good printempty.good 
+	                                  printstring.good 
+	                                  relational_ops.good 
+	                                  sum_type-1.good 
+	                                  sum_type-2.good 
+	                                  unary_plusMinus.good 
+	                                  usebeforedef.good var.good 
+	                                  var2.good whileLoop.good 
+	                                  writen.good writetwo.good 
+	chapel/test/trivial/shannon/: readWriteEnum.chpl 
+
