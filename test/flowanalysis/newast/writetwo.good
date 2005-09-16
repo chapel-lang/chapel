@@ -1,1 +1,3 @@
+function __init_writetwo writetwo.chpl:2
+function main writetwo.chpl:2
 globals

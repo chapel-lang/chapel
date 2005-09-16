@@ -1,7 +1,11 @@
  called from 13 in bar at mutrec.chpl:17
+ called from 19 in __init_mutrec at mutrec.chpl:20
+ called from 20 in __init_mutrec at mutrec.chpl:20
  called from 4 in foo at mutrec.chpl:8
 ::a(mutrec.chpl:1) ( int64 )
 ::a(mutrec.chpl:10) ( int64 )
+function __init_mutrec mutrec.chpl:20
 function bar mutrec.chpl:10
 function foo mutrec.chpl:1
+function main mutrec.chpl:17
 globals

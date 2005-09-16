@@ -6,4 +6,6 @@
 ::f(conditional.chpl:7) ( int64 )
 ::g(conditional.chpl:8) ( int64 )
 ::h(conditional.chpl:9) ( int64 )
+function __init_conditional conditional.chpl:114
+function main conditional.chpl:114
 globals

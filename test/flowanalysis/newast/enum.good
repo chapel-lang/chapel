@@ -1,6 +1,9 @@
+ called from 5 in __init_enum at enum.chpl:9
 ::B(enum.chpl:1) ( classVals )
 ::val(enum.chpl:1) ( classVals )
 ::x(enum.chpl:3) ( classVals )
 ::y(enum.chpl:7) ( int64 )
+function __init_enum enum.chpl:9
+function main enum.chpl:1
 function write enum.chpl:1
 globals

@@ -534,16 +534,15 @@ void AList<elemType>::filter(bool filter(elemType*),
     falseElems = new AList<elemType>();
   }
 
-  elemType* node = popHead();
-  while (node) {
+  _for_all_elems(node) {
+    node->remove();
     if (filter(node)) {
       trueElems->insertAtTail(node);
     } else {
       falseElems->insertAtTail(node);
     }
-
-    node = popHead();
   }
+
   clear();
 }
 

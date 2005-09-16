@@ -3,4 +3,6 @@
 ::n(relational_ops.chpl:2) ( int64 )
 ::o(relational_ops.chpl:3) ( int64 )
 ::p(relational_ops.chpl:4) ( int64 )
+function __init_relational_ops relational_ops.chpl:58
+function main relational_ops.chpl:58
 globals

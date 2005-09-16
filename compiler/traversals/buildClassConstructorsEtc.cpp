@@ -10,6 +10,11 @@
 #include "../traversals/fixup.h"
 
 
+// static void build_class_init_function(ClassType* classType) {
+
+// }
+
+
 static void build_constructor(ClassType* structType) {
   Symbol* tmp = Symboltable::lookupInCurrentScope("initialize");
   while (tmp) {

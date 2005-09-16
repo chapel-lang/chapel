@@ -1,6 +1,10 @@
+ called from 10 in __init_chain at chain.chpl:11
+ called from 11 in __init_chain at chain.chpl:11
  called from 3 in foo at chain.chpl:4
 ::a(chain.chpl:1) ( int64 )
 ::a(chain.chpl:6) ( int64 )
+function __init_chain chain.chpl:11
 function bar chain.chpl:6
 function foo chain.chpl:1
+function main chain.chpl:8
 globals

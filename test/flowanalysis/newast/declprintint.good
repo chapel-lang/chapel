@@ -1,2 +1,4 @@
 ::myvariable(declprintint.chpl:1) ( int64 )
+function __init_declprintint declprintint.chpl:3
+function main declprintint.chpl:3
 globals

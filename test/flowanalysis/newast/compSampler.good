@@ -2,4 +2,6 @@
 ::m(compSampler.chpl:1) ( int64 )
 ::n(compSampler.chpl:2) ( int64 )
 ::o(compSampler.chpl:3) ( int64 )
+function __init_compSampler compSampler.chpl:35
+function main compSampler.chpl:35
 globals

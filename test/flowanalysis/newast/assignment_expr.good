@@ -1,4 +1,6 @@
 ::m(assignment_expr.chpl:1) ( int64 )
 ::n(assignment_expr.chpl:2) ( int64 )
 ::o(assignment_expr.chpl:3) ( int64 )
+function __init_assignment_expr assignment_expr.chpl:15
+function main assignment_expr.chpl:15
 globals

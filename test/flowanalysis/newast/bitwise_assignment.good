@@ -1,3 +1,5 @@
 ::m(bitwise_assignment.chpl:1) ( int64 )
 ::n(bitwise_assignment.chpl:2) ( int64 )
+function __init_bitwise_assignment bitwise_assignment.chpl:25
+function main bitwise_assignment.chpl:25
 globals

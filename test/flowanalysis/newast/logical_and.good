@@ -1,4 +1,6 @@
 ::answer(logical_and.chpl:3) ( int64 )
 ::o(logical_and.chpl:1) ( int64 )
 ::p(logical_and.chpl:2) ( int64 )
+function __init_logical_and logical_and.chpl:12
+function main logical_and.chpl:12
 globals

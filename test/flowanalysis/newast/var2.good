@@ -1,2 +1,4 @@
 ::x(var2.chpl:1) ( int64 )
+function __init_var2 var2.chpl:3
+function main var2.chpl:3
 globals

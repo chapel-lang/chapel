@@ -1,1 +1,3 @@
+function __init_printstring printstring.chpl:1
+function main printstring.chpl:1
 globals

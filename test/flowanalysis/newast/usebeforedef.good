@@ -1,3 +1,6 @@
+ called from 1 in __init_usebeforedef at usebeforedef.chpl:5
 ::a(usebeforedef.chpl:3) ( int64 )
+function __init_usebeforedef usebeforedef.chpl:5
 function foo usebeforedef.chpl:3
+function main usebeforedef.chpl:5
 globals

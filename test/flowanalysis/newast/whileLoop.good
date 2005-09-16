@@ -1,2 +1,4 @@
 ::i(whileLoop.chpl:1) ( int64 )
+function __init_whileLoop whileLoop.chpl:23
+function main whileLoop.chpl:23
 globals

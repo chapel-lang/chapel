@@ -1,1 +1,3 @@
+function __init_printempty printempty.chpl:3
+function main printempty.chpl:3
 globals
