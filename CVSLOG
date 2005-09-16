@@ -46327,3 +46327,14 @@ Added files:
 	                           new_class_trial1.future 
 	                           new_class_trial1.good 
 
+---------------------------------------------------------------------------
+
+09/15/05 17:31:03 -- jplevyak
+
+Log message:
+	Fix SEGV in code which handles determining type warnings for
+	  unhandled argumnet types in the presence of closures.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
