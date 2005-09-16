@@ -46338,3 +46338,16 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+09/16/05 16:06:49 -- deitz
+
+Log message:
+	Removed working test's .future file and update its .good file.  This
+	test prints out a sequence of tuples.
+
+Modified files:
+	chapel/test/types/seq/deitz/: test_seq_tuple3.good 
+Removed files:
+	chapel/test/types/seq/deitz/: test_seq_tuple3.future 
+
