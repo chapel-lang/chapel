@@ -2393,24 +2393,29 @@ collect_argument_type_violations() {
             }
           }
         } else {
-          AEdge *base_e = 0;
+          Vec<AVar *> actuals;
           form_Map(FunAEdgeMapElem, me, *m) {
-            base_e = me->value;
-            break;
+            form_MPositionAVar(x, me->value->args)
+              if (x->key->is_positional())
+                actuals.set_add(x->value);
           }
-          form_MPositionAVar(x, base_e->args) {
-            if (!x->key->is_positional())
-              continue;
-            AVar *av = x->value;
+          forv_AVar(av, actuals) if (av) {
             AType *t = av->out;
             form_Map(FunAEdgeMapElem, me, *m) {
               AEdge *e = me->value;
               if (!from->out_edges.set_in(e))
                 continue;
-              MPosition *pp = e->match->actual_to_formal_position.get(x->key), 
-                *p = pp ? pp : x->key;
-              AVar *filtered = e->filtered_args.get(p);
-              t = type_diff(t, filtered->out);
+              form_MPositionAVar(x, me->value->args) {
+                if (x->value != av)
+                  continue;
+                if (!x->key->is_positional())
+                  continue;
+                MPosition *pp = e->match->actual_to_formal_position.get(x->key), 
+                  *p = pp ? pp : x->key;
+                AVar *filtered = e->filtered_args.get(p);
+                if (filtered)
+                  t = type_diff(t, filtered->out);
+              }
             }
             if (!empty_type_minus_partial_applications(t)) {
               t = type_minus_partial_applications(t);
