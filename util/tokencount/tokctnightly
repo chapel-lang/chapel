@@ -75,6 +75,7 @@ mysystem("cd $compdir && rm -f */*.g.d_parser.cpp vparser/cast_code.cpp analysis
 mysystem("cd $compdir/AST && $tokctr $allcppfiles > ../AST.ntoks");
 mysystem("cd $compdir/adt && $tokctr $allcppfiles > ../adt.ntoks");
 mysystem("cd $compdir/analysis && $tokctr $allcppfiles > ../analysis.ntoks");
+mysystem("cd $compdir/ifa && $tokctr $allcppfiles > ../ifa.ntoks");
 mysystem("cd $compdir/backend && $tokctr $allcppfiles > ../backend.ntoks");
 mysystem("cd $compdir/include && $tokctr $allcppfiles > ../include.ntoks");
 mysystem("cd $compdir/main && $tokctr $allcppfiles > ../main.ntoks");
@@ -92,6 +93,7 @@ mysystem("$compdir/chpl --count-tokens $compdir/parser/*.chpl $chapeldir/modules
 $asttoks = `cat $compdir/AST.ntoks`; chomp($asttoks);
 $adttoks = `cat $compdir/adt.ntoks`; chomp($adttoks);
 $analysistoks = `cat $compdir/analysis.ntoks`; chomp($analysistoks);
+$ifatoks = `cat $compdir/ifa.ntoks`; chomp($ifatoks);
 $backendtoks = `cat $compdir/backend.ntoks`; chomp($backendtoks);
 $includetoks = `cat $compdir/include.ntoks`; chomp($includetoks);
 $maintoks = `cat $compdir/main.ntoks`; chomp($maintoks);
@@ -113,6 +115,10 @@ if ($adttoks == "") {
 if ($analysistoks == "") {
     $analysistoks = 0;
 }
+if ($ifatoks == "") {
+    $ifatoks = 0;
+}
+$analysistoks += $ifatoks;
 if ($backendtoks == "") {
     $backendtoks = 0;
 }
