@@ -46617,3 +46617,19 @@ Log message:
 Modified files:
 	chapel/test/arrays/deitz/: new_class_trial1.chpl 
 
+---------------------------------------------------------------------------
+
+09/19/05 15:15:38 -- deitz
+
+Log message:
+	Removed RenameOverloadedFunctions pass altogether as this
+	functionality is now handled by the mangling in codegenOne.  This is
+	appropriate for user overload functions.
+
+Modified files:
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/symtab/: Makefile.share codegenOne.cpp 
+Removed files:
+	chapel/compiler/symtab/: renameOverloadedFunctions.cpp 
+	                         renameOverloadedFunctions.h 
+
