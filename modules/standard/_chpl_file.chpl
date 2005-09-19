@@ -1,3 +1,5 @@
+use _chpl_complex;
+
 class file {
   var filename : string = "";
   var mode : string = "r";
@@ -106,6 +108,19 @@ function fwrite(f: file = stdout, val: boolean) {
     } else {
       fprintf(f.fp, "%s", "false");
     }
+  } else {
+    fopenError(f);
+  }
+}
+
+
+pragma "rename _chpl_fwrite_complex"
+function fwrite(f: file = stdout, val: complex) {
+  if (f.isOpen) {
+    fprintf(f.fp, "%lg", val.real);
+    fprintf(f.fp, "%s", " + ");
+    fprintf(f.fp, "%lg", val.imag);
+    fprintf(f.fp, "%s", "i");
   } else {
     fopenError(f);
   }

@@ -51,7 +51,7 @@ pragma "rename _chpl_write_boolean" function write(x : boolean) : void {
          __primitive("write", x);
 }
 pragma "rename _chpl_write_complex" function write(x : complex) : void {
-                __primitive("write", x);
+         __primitive("write", x);
 }
 pragma "rename _chpl_write_nil" function write(x : _nilType) : void {
          __primitive("write", x);
