@@ -244,7 +244,7 @@ void BaseAST::postCopy(BaseAST* copy,
   copy->copyFrom = this;
   copy->lineno = lineno;
   copy->filename = filename;
-  copy->copyPragmas(pragmas);
+  copy->addPragmas(&pragmas);
   if (!RunAnalysis::isRunning) {
     Expr* expr = dynamic_cast<Expr*>(this);
     Expr* exprCopy = dynamic_cast<Expr*>(copy);
@@ -298,13 +298,21 @@ char* BaseAST::hasPragma(char* str) {
 
 
 void BaseAST::addPragma(char* str) {
-  pragmas.add(copystring(str));
+  if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(this)) {
+    exprStmt->expr->addPragma(str);
+  } else if (DefExpr* defExpr = dynamic_cast<DefExpr*>(this)) {
+    defExpr->sym->addPragma(str);
+  } else {
+    pragmas.add(copystring(str));
+  }
 }
 
 
-void BaseAST::copyPragmas(Vec<char*> srcPragmas) {
-  forv_Vec(char, srcPragma, srcPragmas) {
-    addPragma(srcPragma);
+void BaseAST::addPragmas(Vec<char*>* srcPragmas) {
+  if (srcPragmas) {
+    forv_Vec(char, srcPragma, *srcPragmas) {
+      addPragma(srcPragma);
+    }
   }
 }
 

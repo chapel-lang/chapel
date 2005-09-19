@@ -470,7 +470,7 @@ AList<elemType>::copy(bool clone,
   newList->copyFrom = this;
   newList->lineno = lineno;
   newList->filename = filename;
-  newList->copyPragmas(pragmas);
+  newList->addPragmas(&pragmas);
   if (!internal) {
     if (update_list) {
       for (int j = 0; j < update_list->n; j++) {

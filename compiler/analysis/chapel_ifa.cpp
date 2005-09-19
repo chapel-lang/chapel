@@ -2157,7 +2157,7 @@ finalize_function(Fun *fun) {
   // check pragmas
   Sym *fn = fun->sym;
   FnSymbol *f = dynamic_cast<FnSymbol*>(SYMBOL(fn));
-  if (f->defPoint->parentStmt && f->defPoint->parentStmt->hasPragma("split unique"))
+  if (f->hasPragma("split unique"))
     fun->split_unique = 1;
 }
 

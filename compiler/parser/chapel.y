@@ -263,7 +263,7 @@ stmt_ls:
     { $$ = new AList<Stmt>(); }
 | stmt_ls pragma_ls stmt
     { 
-      $3->first()->copyPragmas(*$2);
+      $3->first()->addPragmas($2);
       $1->insertAtTail($3);
     }
 ;
@@ -457,7 +457,7 @@ decl_stmt_ls:
     { $$ = new AList<Stmt>(); }
 | decl_stmt_ls pragma_ls decl_stmt
     {
-      $3->first()->copyPragmas(*$2);
+      $3->first()->addPragmas($2);
       $1->insertAtTail($3);
     }
 ;
@@ -553,7 +553,7 @@ formal:
   formal_tag pragma_ls identifier opt_formal_var_type opt_init_expr
     {
       $$ = Symboltable::defineParam($1, $3, $4, $5);
-      $$->sym->copyPragmas(*$2);
+      $$->sym->addPragmas($2);
     }
 | TLP formal_ls TRP
     {
@@ -736,7 +736,7 @@ class_decl_stmt:
   class_tag pragma_ls identifier opt_inherit_expr_ls TLCBR decl_stmt_ls TRCBR
     {
       DefExpr* def = Symboltable::defineStructType($3, $1, $6);
-      def->sym->copyPragmas(*$2);
+      def->sym->addPragmas($2);
       dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(def->sym)->definition)->inherits = $4;
       $$ = new AList<Stmt>(new ExprStmt(def));
     }
@@ -766,7 +766,7 @@ enum_decl_stmt:
     {
       EnumType* pdt = new EnumType($5);
       TypeSymbol* pst = new TypeSymbol($3, pdt);
-      pst->copyPragmas(*$2);
+      pst->addPragmas($2);
       pdt->addSymbol(pst);
       DefExpr* def_expr = new DefExpr(pst);
       $$ = new AList<Stmt>(new ExprStmt(def_expr));
@@ -795,7 +795,7 @@ typedef_decl_stmt:
     {
       UserType* newtype = new UserType($5, $6);
       TypeSymbol* typeSym = new TypeSymbol($3, newtype);
-      typeSym->copyPragmas(*$2);
+      typeSym->addPragmas($2);
       newtype->addSymbol(typeSym);
       DefExpr* def_expr = new DefExpr(typeSym);
       $$ = new AList<Stmt>(new ExprStmt(def_expr));
@@ -808,7 +808,7 @@ typevar_decl_stmt:
     {
       VariableType* new_type = new VariableType(getMetaType(0));
       TypeSymbol* new_symbol = new TypeSymbol($3, new_type);
-      new_symbol->copyPragmas(*$2);
+      new_symbol->addPragmas($2);
       new_type->addSymbol(new_symbol);
       DefExpr* def_expr = new DefExpr(new_symbol, NULL, $4);
       $$ = new AList<Stmt>(new ExprStmt(def_expr));
@@ -1016,9 +1016,9 @@ expr_list_item:
 
 nonempty_expr_ls:
   pragma_ls expr_list_item
-    { $2->copyPragmas(*$1); $$ = new AList<Expr>($2); }
+    { $2->addPragmas($1); $$ = new AList<Expr>($2); }
 | nonempty_expr_ls TCOMMA pragma_ls expr_list_item
-    { $4->copyPragmas(*$3); $1->insertAtTail($4); }
+    { $4->addPragmas($3); $1->insertAtTail($4); }
 ;
 
 

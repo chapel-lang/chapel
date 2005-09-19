@@ -8,9 +8,7 @@
 void RemoveTypeVariableActuals::preProcessExpr(Expr* expr) {
   if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
     if (SymExpr* variable = dynamic_cast<SymExpr*>(call->baseExpr)) {
-      if (variable->var->defPoint &&
-          variable->var->defPoint->parentStmt &&
-          variable->var->defPoint->parentStmt->hasPragma("keep types")) {
+      if (variable->var->hasPragma("keep types")) {
         return;
       }
     }
@@ -37,8 +35,7 @@ void RemoveTypeVariableActuals::preProcessExpr(Expr* expr) {
 
 void RemoveTypeVariableFormals::preProcessSymbol(Symbol* sym) {
   if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
-    if (fn->defPoint->parentStmt &&
-        fn->defPoint->parentStmt->hasPragma("keep types")) {
+    if (fn->hasPragma("keep types")) {
       return;
     }
     for_alist(DefExpr, formal, fn->formals) {

@@ -24,10 +24,7 @@ void InlineFunctions::postProcessExpr(Expr* expr) {
     if (fn_call->isPrimitive() || fn_call->opTag != OP_NONE) {
       return;
     }
-    //copy pragmas from function definition stmt to its function symbol
     if (FnSymbol* fn_sym = fn_call->findFnSymbol()) {
-      if (Stmt* def_stmt = fn_sym->defPoint->parentStmt)
-        fn_sym->copyPragmas(def_stmt->pragmas);
       //inline function
       if (fn_sym->hasPragma("inline") && isCodegened(fn_sym)) { 
         _ok_to_inline = true;

@@ -90,8 +90,8 @@ static void build_constructor(ClassType* structType) {
   structType->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(fn_def));
   structType->methods.add(fn);
   if (structType->symbol->hasPragma("codegen data")) {
-    fn->defPoint->parentStmt->addPragma("rename _data_construct");
-    fn->defPoint->parentStmt->addPragma("keep types");
+    fn->addPragma("rename _data_construct");
+    fn->addPragma("keep types");
   }
 }
 

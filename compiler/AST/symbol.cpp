@@ -493,7 +493,7 @@ TypeSymbol* TypeSymbol::clone(Map<BaseAST*,BaseAST*>* map) {
   }
   clone->cname = glomstrings(3, clone->cname, "_clone_", intstring(uid++));
   defPoint->parentStmt->insertBefore(new ExprStmt(new DefExpr(clone)));
-  clone->copyPragmas(pragmas);
+  clone->addPragmas(&pragmas);
   return clone;
 }
 
@@ -634,7 +634,7 @@ FnSymbol* FnSymbol::clone(Map<BaseAST*,BaseAST*>* map) {
   defPoint->parentStmt->insertAfter(copyStmt);
   TRAVERSE(copyStmt, new ClearTypes(), true);
   TRAVERSE(defPoint, new ClearTypes(), true);
-  defPoint->parentStmt->next->copyPragmas(defPoint->parentStmt->pragmas);
+  defExpr->sym->addPragmas(&pragmas);
   return dynamic_cast<FnSymbol*>(defExpr->sym);
 }
 
@@ -675,7 +675,7 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
   wrapper_fn->cname = glomstrings(3, cname, "_coerce_wrap", intstring(uid++));
   wrapper_fn->addPragma("inline");
   defPoint->parentStmt->insertAfter(new ExprStmt(new DefExpr(wrapper_fn)));
-  defPoint->parentStmt->next->copyPragmas(defPoint->parentStmt->pragmas);
+  wrapper_fn->addPragmas(&pragmas);
   reset_file_info(wrapper_fn->defPoint->parentStmt, lineno, filename);
   return wrapper_fn;
 }
@@ -722,7 +722,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
   wrapper_fn->cname = glomstrings(3, cname, "_default_wrap", intstring(uid++));
   wrapper_fn->addPragma("inline");
   defPoint->parentStmt->insertAfter(new ExprStmt(new DefExpr(wrapper_fn)));
-  defPoint->parentStmt->next->copyPragmas(defPoint->parentStmt->pragmas);
+  wrapper_fn->addPragmas(&pragmas);
   reset_file_info(wrapper_fn->defPoint->parentStmt, lineno, filename);
   return wrapper_fn;
 }
@@ -1023,7 +1023,7 @@ FnSymbol::preinstantiate_generic(Map<BaseAST*,BaseAST*>* substitutions) {
       fclone->instantiatedFrom = fn;
       fclone->cname = glomstrings(3, fn->cname, "_inst_", intstring(uid++));
       fn->defPoint->parentStmt->insertBefore(new ExprStmt(new DefExpr(fclone)));
-      fn->defPoint->parentStmt->prev->copyPragmas(fn->defPoint->parentStmt->pragmas);
+      fclone->addPragmas(&fn->pragmas);
       TRAVERSE(fclone, new UpdateSymbols(substitutions), true);
 
       if (fn == this)
@@ -1104,23 +1104,16 @@ void FnSymbol::codegenHeader(FILE* outfile) {
 
 
 void FnSymbol::codegenPrototype(FILE* outfile) {
-  if (defPoint && defPoint->parentStmt) {
-    if (defPoint->parentStmt->hasPragma("no codegen")) {
-      return;
-    }
-  }
-
+  if (hasPragma("no codegen"))
+    return;
   codegenHeader(outfile);
   fprintf(outfile, ";\n");
 }
 
 
 void FnSymbol::codegenDef(FILE* outfile) {
-  if (defPoint && defPoint->parentStmt) {
-    if (defPoint->parentStmt->hasPragma("no codegen")) {
-      return;
-    }
-  }
+  if (hasPragma("no codegen"))
+    return;
 
   if (fnClass == FN_CONSTRUCTOR) {
     fprintf(outfile, "/* constructor */\n");

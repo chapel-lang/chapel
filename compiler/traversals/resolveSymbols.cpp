@@ -44,7 +44,7 @@ OpTag gets_to_op(OpTag i) {
 
 static int
 is_builtin(FnSymbol *fn) {
-  if (fn->defPoint->parentStmt->hasPragma("builtin")) {
+  if (fn->hasPragma("builtin")) {
     return 1;
   }
   return 0;
@@ -148,7 +148,7 @@ resolve_binary_operator(CallExpr *op, FnSymbol *resolved = 0) {
       INT_FATAL(expr, "Trouble resolving operator");
     }
   } else {
-    if (fns.e[0]->defPoint->parentStmt->hasPragma("builtin")) {
+    if (fns.e[0]->hasPragma("builtin")) {
       return expr;
     }
     CallExpr *new_expr = new CallExpr(fns.e[0], op->copy());
@@ -219,7 +219,7 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
           arguments->insertAtHead(baseExpr->copy());
         }
         CallExpr *new_expr = new CallExpr(fns.e[0], arguments);
-        if (fns.e[0]->defPoint->parentStmt->hasPragma("builtin")) {
+        if (fns.e[0]->hasPragma("builtin")) {
           new_expr->opTag = paren->opTag;
         }
         expr->replace(new_expr);

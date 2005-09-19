@@ -155,7 +155,7 @@ class BaseAST : public gc {
 
   char* hasPragma(char* str);
   void addPragma(char* str);
-  void copyPragmas(Vec<char*> srcPragmas);
+  void addPragmas(Vec<char*>* srcPragmas);
 };
 
 #define forv_BaseAST(_p, _v) forv_Vec(BaseAST, _p, _v)

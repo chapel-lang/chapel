@@ -9,11 +9,8 @@
 
 
 static void applyRenamePragma(Symbol* sym) {
-  if (sym->defPoint && sym->defPoint->parentStmt) {
-    if (char* pragma = sym->defPoint->parentStmt->hasPragma("rename")) {
-      sym->cname = copystring(pragma+7);
-    }
-  }
+  if (char* pragma = sym->hasPragma("rename"))
+    sym->cname = copystring(pragma+7);
 }
 
 
@@ -29,7 +26,7 @@ static void legalizeCName(Symbol* sym) {
 
 
 CodegenOne::CodegenOne() {
-  FnSymbol::mainFn->defPoint->parentStmt->addPragma("rename _chpl_main");
+  FnSymbol::mainFn->addPragma("rename _chpl_main");
   cnames.put("stdin", 1);
   cnames.put("stdout", 1);
   cnames.put("stderr", 1);
