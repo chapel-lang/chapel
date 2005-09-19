@@ -46474,3 +46474,32 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+09/19/05 13:27:09 -- deitz
+
+Log message:
+	This is a checkin to checkpoint some work that I have not had time to
+	look at for a little while.
+	
+	Added support for creating basic blocks from the AST.  A FnSymbol now
+	has a Vec<BasicBlock*>* of its basic blocks that can be constructed
+	with the support function buildBasicBlocks(FnSymbol*) and viewed witth
+	the support function printBasicBlocks(FnSymbol*).
+	
+	Added a pass called CopyPropagation that currently does nothing more
+	than create all a function's basic blocks.
+
+Modified files:
+	chapel/compiler/AST/: Makefile.share symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/symtab/: Makefile.share 
+	chapel/compiler/traversals/: view.cpp view.h 
+Added files:
+	chapel/compiler/AST/: bb.cpp 
+	chapel/compiler/include/: bb.h 
+	chapel/compiler/symtab/: copyPropagation.cpp copyPropagation.h 
+Removed files:
+	chapel/compiler/AST/: alist.cpp 
+
