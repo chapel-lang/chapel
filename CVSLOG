@@ -46584,3 +46584,13 @@ Log message:
 Modified files:
 	chapel/util/tokencount/: tokctnightly 
 
+---------------------------------------------------------------------------
+
+09/19/05 14:29:45 -- bradc
+
+Log message:
+	Bug fix in ssca2 algorithm.
+
+Modified files:
+	chapel/test/ssca/ssca2/: ssca2.blc.chpl 
+
