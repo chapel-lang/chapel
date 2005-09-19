@@ -7,16 +7,16 @@ class adomain : value {
   var alignment : _data(integer) = _data(integer, 2);
 
   function set(dim : integer, x : _aseq) {
-    low()(dim) = x._low;
-    high()(dim) = x._high;
-    stride()(dim) = x._stride;
-    alignment()(dim) = x._low;
+    low(dim) = x._low;
+    high(dim) = x._high;
+    stride(dim) = x._stride;
+    alignment(dim) = x._low;
   }
 
   iterator _forall(dim : integer) : integer {
-    var alow : integer = low()(dim);
-    var ahigh : integer = high()(dim);
-    var astride : integer = stride()(dim);
+    var alow : integer = low(dim);
+    var ahigh : integer = high(dim);
+    var astride : integer = stride(dim);
     forall i in alow..ahigh by astride do
       yield i;
   }
