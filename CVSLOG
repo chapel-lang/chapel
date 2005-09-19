@@ -46418,3 +46418,19 @@ Modified files:
 	chapel/compiler/main/: driver.cpp passlist.h runpasses.cpp 
 	chapel/compiler/passes/: filesToAST.cpp 
 
+---------------------------------------------------------------------------
+
+09/19/05 10:14:08 -- shannon
+
+Log message:
+	Added the fwrite function for complex variables,
+	and a test.
+
+Modified files:
+	chapel/compiler/parser/: prelude.chpl 
+	chapel/modules/standard/: _chpl_file.chpl 
+Added files:
+	chapel/test/types/file/: fwritelnComplexFile.catfiles 
+	                         fwritelnComplexFile.chpl 
+	                         fwritelnComplexFile.good 
+
