@@ -222,7 +222,7 @@ function kernel3(startEdges, subGraphEdgeLength: integer) {
       }
 --      subgraph.E += newEdges;
       forall e in newEdges {
-        subgraph.E += newEdges;
+        subgraph.E += e;
       }
 --      frontier += [(v1, v2) in newEdges] v2;
       forall (v1, v2) in newEdges {
