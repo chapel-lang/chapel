@@ -23,7 +23,6 @@ static void handleLibPath(ArgumentState* arg_state, char* arg_unused);
 
 FILE* html_index_file = NULL;
 
-bool postFixup = false;
 bool postScopeResolution = false;
 bool postAnalysis = false;
 

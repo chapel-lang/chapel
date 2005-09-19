@@ -16,7 +16,6 @@ PassInfo passlist[] = {
 
   // passes to create the basic AST
   RUN(FilesToAST, ""),
-  RUN(Fixup, ""), // postFixup = true
   RUN(CreateEntryPoint, ""),
 
   // passes to normalize the basic AST

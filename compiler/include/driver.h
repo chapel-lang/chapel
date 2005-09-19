@@ -10,7 +10,6 @@
 /***
  ***  Compiler Phases
  ***/
-extern bool postFixup;
 extern bool postScopeResolution;
 extern bool postAnalysis;
 

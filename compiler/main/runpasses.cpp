@@ -62,9 +62,7 @@ static void runPass(char* passName, Pass* pass, char* args) {
             ((double)((stopTime.tv_sec*1e6+stopTime.tv_usec) - 
                       (startTime.tv_sec*1e6+startTime.tv_usec))) / 1e6);
   }
-  if (!strcmp(passName, "Fixup")) {
-    postFixup = true;
-  } else if (!strcmp(passName, "ScopeResolveSymbols")) {
+  if (!strcmp(passName, "ScopeResolveSymbols")) {
     postScopeResolution = true;
   } else if (!strcmp(passName, "RemoveTypeVariableFormals")) {
     postAnalysis = true;
@@ -89,10 +87,8 @@ static void runPass(char* passName, Pass* pass, char* args) {
     fflush(html_index_file);
   }
 
-  if (postFixup) {
-    Verify* verify = new Verify();
-    verify->run(Symboltable::getModules(MODULES_ALL));
-  }
+  Verify* verify = new Verify();
+  verify->run(Symboltable::getModules(MODULES_ALL));
 }
 
 

@@ -7,6 +7,7 @@
 #include "symtab.h"
 #include "countTokens.h"
 #include "yy.h"
+#include "../traversals/fixup.h"
 
 ModuleSymbol* prelude = NULL;
 ModuleSymbol* seqModule = NULL;
@@ -46,4 +47,7 @@ void FilesToAST::run(Vec<ModuleSymbol*>* modules) {
   finishCountingTokens();
 
   Symboltable::doneParsingUserFiles();
+
+  Pass* fixup = new Fixup();
+  fixup->run(Symboltable::getModules(MODULES_ALL));
 }
