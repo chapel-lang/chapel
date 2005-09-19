@@ -46546,3 +46546,18 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: instantiate.cpp 
 
+---------------------------------------------------------------------------
+
+09/19/05 14:24:17 -- bradc
+
+Log message:
+	Applied a similar "no-munge" rule to overloaded functions
+	in the prelude as my last check-in to preserve the cnames
+	of functions defined in the prelude.  As with that check-in,
+	this might eventually be changed to be based on the "no
+	codegen" pragma (or an extern keyword?) rather than the fact
+	that it's defined in the prelude...
+
+Modified files:
+	chapel/compiler/symtab/: renameOverloadedFunctions.cpp 
+
