@@ -46561,3 +46561,13 @@ Log message:
 Modified files:
 	chapel/compiler/symtab/: renameOverloadedFunctions.cpp 
 
+---------------------------------------------------------------------------
+
+09/19/05 14:25:58 -- jplevyak
+
+Log message:
+	Minor performance fix (remove invarient code from a loop).
+
+Modified files:
+	chapel/compiler/ifa/: dead.cpp 
+
