@@ -52,7 +52,7 @@ Instantiate::postProcessExpr(Expr* expr) {
               } else if (CallExpr* call = dynamic_cast<CallExpr*>(actualactual)) {
                 if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->baseExpr)) {
                   if (FnSymbol* cfn = dynamic_cast<FnSymbol*>(symExpr->var)) {
-                    if (cfn->fnClass = FN_CONSTRUCTOR) {
+                    if (cfn->fnClass == FN_CONSTRUCTOR) {
                       substitutions.put(formalArg->variableTypeSymbol->definition, cfn->retType);
                     }
                   }
