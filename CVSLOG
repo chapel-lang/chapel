@@ -46434,3 +46434,30 @@ Added files:
 	                         fwritelnComplexFile.chpl 
 	                         fwritelnComplexFile.good 
 
+---------------------------------------------------------------------------
+
+09/19/05 13:25:41 -- deitz
+
+Log message:
+	Pragmas on ExprStmts are now moved to the expr field.  Pragmas on
+	DefExprs are now moved to the sym field.  This cleaned up a bunch of
+	code that looked or copied the pragmas on the ->defPoint->parentStmt
+	to get around this problem.
+	
+	Changed copyPragmas to addPragmas as this is a more accurate name.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp symbol.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: alist.h baseAST.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: codegenOne.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             createNestedFuncIterators.cpp 
+	                             findUnknownTypes.cpp 
+	                             inlineFunctions.cpp 
+	                             resolveSymbols.cpp 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+
