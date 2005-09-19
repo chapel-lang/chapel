@@ -21,11 +21,11 @@ mark_all_dead(FA *fa) {
     forv_Var(v, f->fa_all_Vars)
       for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].key)
         v->avars.v[i].value->is_dead = 1;
-    forv_Sym(s, fa->pdb->if1->allsyms)
-      if (s->var)
-        for (int i = 0; i < s->var->avars.n; i++) if (s->var->avars.v[i].key)
-          s->var->avars.v[i].value->is_dead = 1;
   }
+  forv_Sym(s, fa->pdb->if1->allsyms)
+    if (s->var)
+      for (int i = 0; i < s->var->avars.n; i++) if (s->var->avars.v[i].key)
+        s->var->avars.v[i].value->is_dead = 1;
 }
 
 static void
