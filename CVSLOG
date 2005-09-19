@@ -46503,3 +46503,35 @@ Added files:
 Removed files:
 	chapel/compiler/AST/: alist.cpp 
 
+---------------------------------------------------------------------------
+
+09/19/05 13:59:58 -- jplevyak
+
+Log message:
+	Differentiate member functions which take 0 arguments but require
+	  parens from those which do not.  This is necessary to handle
+	  the new_class_trial1.chpl test case.
+	
+	new_class_trial1.chpl now works through analysis BUT
+	  *** it causes an explosion in InlineFunctions (recursive inlining???)
+	  *** when --no-inline is set it fails in codegen because of duplicate
+	      "this" variables.  Might have something to do with nested functions.
+	
+	Set FnSymbol::noParens for getters and setters (should have been set).
+	
+	When PARTIAL_OK is set in the case of x.f as part of x.f(1,2),
+	  then return a partial for x.f if x.f is has noParens == true.
+	
+	  For new_class_trail1 this permits us to differentiate between the
+	    iterator _forall() function (which needs to be returned as a partial
+	    application) from a _forall instance variable (which would be
+	    eagerly evaluated.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: fun.cpp fun.h pattern.cpp 
+	chapel/compiler/include/: symbol.h vec.h 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	chapel/test/classes/deitz/: test_method_call2.good 
+
