@@ -46594,3 +46594,16 @@ Log message:
 Modified files:
 	chapel/test/ssca/ssca2/: ssca2.blc.chpl 
 
+---------------------------------------------------------------------------
+
+09/19/05 14:30:09 -- bradc
+
+Log message:
+	Added some missing .cvsignores.
+
+Added files:
+	chapel/compiler/ifa/make_prims/: .cvsignore 
+	chapel/test/domains/roxana/classes/: .cvsignore 
+	chapel/test/domains/roxana/helper/: .cvsignore 
+	chapel/test/domains/roxana/index/: .cvsignore 
+
