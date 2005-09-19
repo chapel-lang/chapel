@@ -46633,3 +46633,16 @@ Removed files:
 	chapel/compiler/symtab/: renameOverloadedFunctions.cpp 
 	                         renameOverloadedFunctions.h 
 
+---------------------------------------------------------------------------
+
+09/19/05 16:07:30 -- deitz
+
+Log message:
+	Added an overloaded assignment test that fails in analysis.  This code
+	tries to overload assignment between two records.
+
+Added files:
+	chapel/test/functions/deitz/: test_assign1.chpl 
+	                              test_assign1.future 
+	                              test_assign1.good 
+
