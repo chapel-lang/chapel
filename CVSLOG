@@ -46461,3 +46461,16 @@ Modified files:
 	                               record_type_hierarchy-3-error.good 
 	                               union_type_hierarchy-3-error.good 
 
+---------------------------------------------------------------------------
+
+09/19/05 13:26:25 -- deitz
+
+Log message:
+	Removed a couple lines of grossly inefficient and totally useless code
+	in preinstantiation resulting in an order of magnitude speedup of this
+	pass.  This should fix the major slowdown we have been experiencing
+	lately.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
