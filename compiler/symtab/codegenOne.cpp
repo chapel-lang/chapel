@@ -27,6 +27,7 @@ static void legalizeCName(Symbol* sym) {
 
 CodegenOne::CodegenOne() {
   FnSymbol::mainFn->addPragma("rename _chpl_main");
+  cnames.put("main", 1);
   cnames.put("stdin", 1);
   cnames.put("stdout", 1);
   cnames.put("stderr", 1);

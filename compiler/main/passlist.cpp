@@ -18,7 +18,6 @@
 #include "../symtab/reconstructIterators.h"
 #include "../symtab/removeDeadSymbols.h"
 #include "../symtab/removeLikeTypes.h"
-#include "../symtab/renameOverloadedFunctions.h"
 #include "../symtab/resolveTypes.h"
 
 #include "../traversals/applyThisParameters.h"
@@ -115,7 +114,6 @@ REGISTER(RemoveNestedFunctions);
 REGISTER(RemoveTypeVariableActuals);
 REGISTER(RemoveTypeVariableFormals);
 REGISTER(RenameCSymbols);  // BLC: rename symbols for C codegen
-REGISTER(RenameOverloadedFunctions);
 REGISTER(ResolveSymbols);       // SJD: Resolve symbols after analysis
 REGISTER(ResolveTypes);
 REGISTER(RunAnalysis);

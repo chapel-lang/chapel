@@ -29,7 +29,6 @@ PassInfo passlist[] = {
   RUN(BuildClassHierarchy, ""),
   RUN(ScopeResolveSymbols, ""), // postScopeResolution = true
   RUN(ScopeResolveGotos, ""),
-  RUN(RenameOverloadedFunctions, ""),
   RUN(BuildClassConstructorsEtc, ""),
   RUN(ApplyThisParameters, ""),
   RUN(RemoveLikeTypes, ""),
