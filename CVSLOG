@@ -46535,3 +46535,14 @@ Modified files:
 	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
 	chapel/test/classes/deitz/: test_method_call2.good 
 
+---------------------------------------------------------------------------
+
+09/19/05 14:19:33 -- deitz
+
+Log message:
+	Checking in a minor fix that John made for pre-instantiation where an
+	= should have been an ==.
+
+Modified files:
+	chapel/compiler/traversals/: instantiate.cpp 
+
