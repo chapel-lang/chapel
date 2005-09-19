@@ -46571,3 +46571,16 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: dead.cpp 
 
+---------------------------------------------------------------------------
+
+09/19/05 14:29:01 -- bradc
+
+Log message:
+	Updated nightly token-counting script to reflect
+	the splitting of analysis into analysis+ifa (both
+	directories are currently counted as "analysis"
+	as far as the plots go).
+
+Modified files:
+	chapel/util/tokencount/: tokctnightly 
+
