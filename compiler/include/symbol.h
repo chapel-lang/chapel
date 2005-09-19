@@ -68,10 +68,6 @@ class Symbol : public BaseAST {
   virtual Type* typeInfo(void);
   int nestingDepth();
   FnSymbol *nestingParent(int i);
-  //RED comparison functions for e.g. sorting and searching
-  virtual bool lessThan(Symbol* s1, Symbol* s2);
-  virtual bool equalWith(Symbol* s1, Symbol* s2);
-  virtual bool greaterThan(Symbol* s1, Symbol* s2);
 };
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
 
@@ -181,13 +177,8 @@ class FnSymbol : public Symbol {
   Vec<VariableType *> variableTypeSymbols;
   FnSymbol *instantiatedFrom;
   Map<BaseAST*,BaseAST*> substitutions;
-
   Vec<BasicBlock*>* basicBlocks;
 
-  //bool lessThan(FnSymbol* s1, FnSymbol* s2);
-  //bool equalWith(FnSymbol* s1, FnSymbol* s2);
-  //bool greaterThan(FnSymbol* s1, FnSymbol* s2);
-  
   FnSymbol(char* initName,
            TypeSymbol* initTypeBinding = NULL,
            AList<DefExpr>* initFormals = NULL,

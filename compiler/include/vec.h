@@ -160,35 +160,6 @@ Vec<C>::clear() {
   i = 0;
 }
 
-// RED: quicksort
-template <class C> void Vec<C>::quickSort(int left, int right) {
-  C pivot, temp;
-  int l, r;
-  if (left < right) {
-    l = left; 
-    r = right;
-    pivot = v[(l + r) >> 1];
-    while (l <= r) {
-      C vl = v[l];
-      C vr = v[r];
-      // RED <, >, == operators for C have to be overloaded
-      // some awkward workaround instead
-      while (vl->lessThan(vl, pivot)) { l++; vl = v[l]; }
-      // while((v[l].operator<(pivot))) l++; 
-      while (vr->greaterThan(vr, pivot)) { r--; vr = v[r]; }
-      if (l <= r ) {
-        temp = v[r];
-        v[r] = v[l];
-        v[l] = temp;
-        l++;
-        r--;
-      }
-    }
-    quickSort(left, r);
-    quickSort(l, right);
-  }
-}
-
 template <class C> inline void
 Vec<C>::set_clear() {
   memset(v, 0, n * sizeof(C));

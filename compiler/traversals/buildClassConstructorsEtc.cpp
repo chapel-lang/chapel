@@ -125,6 +125,7 @@ static void build_getter(ClassType* structType, Symbol *tmp) {
   getter_fn->method_type = PRIMARY_METHOD;
   getter_fn->typeBinding = structType->symbol;
   getter_fn->_this = getter_this;
+  getter_fn->noParens = true;
 }
 
 static void build_setters_and_getters(ClassType* structType) {
@@ -159,6 +160,7 @@ static void build_setters_and_getters(ClassType* structType) {
     setter_fn->method_type = PRIMARY_METHOD;
     setter_fn->typeBinding = structType->symbol;
     setter_fn->_this = setter_this;
+    setter_fn->noParens = true;
 
     build_getter(structType, tmp);
   }

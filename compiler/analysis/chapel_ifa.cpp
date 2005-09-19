@@ -1338,6 +1338,7 @@ gen_one_defexpr(VarSymbol *var, DefExpr *def) {
     Code *c = if1_send(if1, &ast->code, 3, 1, sym_primitive,
                        chapel_defexpr_symbol, type->asymbol->sym, lhs);
     c->ast = ast;
+    c->partial = Partial_NEVER;
     if (def->exprType)
       if1_add_send_arg(if1, c, def->exprType->ainfo->rval);
     if (SymExpr *e = dynamic_cast<SymExpr*>(init)) {
@@ -1360,9 +1361,11 @@ gen_one_defexpr(VarSymbol *var, DefExpr *def) {
         Code *c = if1_send(if1, &ast->code, 4, 1, make_symbol("="), method_token, 
                            lhs, old_val, val);
         c->ast = ast;
+        c->partial = Partial_NEVER;
       } else {
         Code *c = if1_send(if1, &ast->code, 3, 1, make_symbol("="), lhs, old_val, val);
         c->ast = ast;
+        c->partial = Partial_NEVER;
       }
       if1_move(if1, &ast->code, val, ast->sym, ast);
     }
@@ -1404,6 +1407,7 @@ gen_forall_internal(AAST *ainfo, Code *body, Vec<Symbol*> &indices, Vec<Expr*> &
   forv_Expr(d, domains)
     if1_gen(if1, &setup_code, d->ainfo->code);
   send = if1_send(if1, &setup_code, 2, 0, sym_primitive, domain_start_index_symbol);
+  send->partial = Partial_NEVER;
   forv_Expr(d, domains)
     if1_add_send_arg(if1, send, d->ainfo->rval);
   forv_Symbol(i, indices)
@@ -1420,6 +1424,7 @@ gen_forall_internal(AAST *ainfo, Code *body, Vec<Symbol*> &indices, Vec<Expr*> &
   forv_Symbol( i, indices)
     if1_add_send_arg(if1, send, i->asymbol->sym);
   send->ast = ainfo;
+  send->partial = Partial_NEVER;
 
   // next index code
   send = if1_send(if1, &body, 2, 0, sym_primitive, domain_next_index_symbol);
@@ -1430,6 +1435,7 @@ gen_forall_internal(AAST *ainfo, Code *body, Vec<Symbol*> &indices, Vec<Expr*> &
   forv_Symbol( i, indices)
     if1_add_send_result(if1, send, i->asymbol->sym);
   send->ast = ainfo;
+  send->partial = Partial_NEVER;
 
   if (!ainfo->label[0])
     ainfo->label[0] = if1_alloc_label(if1);
@@ -1594,12 +1600,14 @@ gen_when(WhenStmt *s, SelectStmt *ss, Label *l) {
     Code *c = if1_send(if1, &s->ainfo->code, 3, 1, make_symbol("=="),
                        ss->caseExpr->ainfo->rval, x->ainfo->rval, tmp);
     c->ast = s->ainfo;
+    c->partial = Partial_NEVER;
     if (!cond)
       cond = tmp;
     else {
       Sym *new_cond = new_sym();
       c = if1_send(if1, &s->ainfo->code, 4, 1, sym_operator, cond, make_symbol("&&"), tmp, new_cond);
       c->ast = s->ainfo;
+      c->partial = Partial_NEVER;
       cond = new_cond;
     }
   }
@@ -1675,10 +1683,12 @@ gen_assignment(CallExpr *assign) {
       Code *c = if1_send(if1, &assign->ainfo->code, 4, 1, make_symbol("="), method_token,
                          assign->get(1)->ainfo->rval, told_rval, rval);
       c->ast = assign->ainfo;
+      c->partial = Partial_NEVER;
     } else {
       Code *c = if1_send(if1, &assign->ainfo->code, 3, 1, make_symbol("="), 
                          assign->get(1)->ainfo->rval, told_rval, rval);
       c->ast = assign->ainfo;
+      c->partial = Partial_NEVER;
     }
   }
   if (!assign->get(1)->ainfo->sym)
@@ -1847,6 +1857,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
         forv_Vec(Expr, d, domains)
           if1_add_send_arg(if1, send, d->ainfo->rval);
         send->ast = s->ainfo;
+        send->partial = Partial_NEVER;
       }
       break;
     }
@@ -1876,6 +1887,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       Code *send = if1_send(if1, &s->ainfo->code, 4, 1, sym_primitive, cast_symbol, 
                             typeval, s->expr->ainfo->rval, s->ainfo->rval);
       send->ast = s->ainfo;
+      send->partial = Partial_NEVER;
       break;
     }
     case EXPR_REDUCE: {
@@ -1888,6 +1900,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
                             s->reduceType->asymbol->sym, s->redDim->only()->ainfo->rval, 
                             s->argExpr->ainfo->rval, s->ainfo->rval);
       send->ast = s->ainfo;
+      send->partial = Partial_NEVER;
       break;
     }
     case EXPR_NAMED: {
@@ -2012,6 +2025,7 @@ gen_fun(FnSymbol *f) {
   forv_Sym(r, out_args)
     if1_add_send_arg(if1, c, r);
   c->ast = ast;
+  c->partial = Partial_NEVER;
   if1_closure(if1, fn, body, iarg, as);
   fn->ast = ast;
   if (f->_this && f->fnClass != FN_CONSTRUCTOR)
@@ -2129,6 +2143,8 @@ finalize_function(Fun *fun) {
   if (!strcmp("_chpl_alloc", name))
     fun->is_external = 1;
   FnSymbol *fs = dynamic_cast<FnSymbol*>(SYMBOL(fun->sym));
+  if (fs->noParens)
+    fun->eager_evaluation = 1;
   if (fs->typeBinding) {
     if (is_reference_type(SYMBOL(fs->typeBinding))) {
       if (fs->method_type != NON_METHOD) {

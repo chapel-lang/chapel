@@ -12,6 +12,7 @@ static int fun_id = 1;
 void Fun::init_fun() {
   id = fun_id++;
   is_external = 0;
+  eager_evaluation = 0;
   nested_in = 0;
   clone_for_constants = 0;
   split_unique = 0;

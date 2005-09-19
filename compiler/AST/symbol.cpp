@@ -127,17 +127,6 @@ void Symbol::print(FILE* outfile) {
   fprintf(outfile, "%s", name);
 }
 
-bool Symbol::lessThan(Symbol* s1, Symbol* s2) { 
-    return strcmp(s1->name, s2->name) < 0;
-}    
-
-bool Symbol::equalWith(Symbol* s1, Symbol* s2) { 
-    return strcmp(s1->name, s2->name) == 0;
-}    
-
-bool Symbol::greaterThan(Symbol* s1, Symbol* s2) { 
-    return strcmp(s1->name, s2->name) > 0;
-}    
 
 void Symbol::codegen(FILE* outfile) {
   if (hasPragma("codegen data")) {
