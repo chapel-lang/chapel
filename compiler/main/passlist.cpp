@@ -9,6 +9,7 @@
 #include "../passes/preAnalysisCleanup.h"
 
 #include "../symtab/codegenOne.h"
+#include "../symtab/copyPropagation.h"
 #include "../symtab/flatten.h"
 #include "../symtab/insertDefaultInitVariables.h"
 #include "../symtab/insertOutParameterInitializations.h"
@@ -76,6 +77,7 @@ REGISTER(CheckSemantics);
 REGISTER(CheckTypeInfo);
 REGISTER(Codegen);
 REGISTER(CodegenOne);
+REGISTER(CopyPropagation);
 REGISTER(CreateConfigVarTable);
 REGISTER(CreateEntryPoint);
 REGISTER(CreateNestedFuncIterators);

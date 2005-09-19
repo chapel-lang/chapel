@@ -1,6 +1,6 @@
 AST_SRCS = \
-	alist.cpp \
 	baseAST.cpp \
+        bb.cpp \
 	expr.cpp \
 	stmt.cpp \
 	symbol.cpp \

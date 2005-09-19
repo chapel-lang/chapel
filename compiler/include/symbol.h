@@ -12,6 +12,7 @@ class BlockStmt;
 class ASymbol;
 class SymScope;
 class Immediate;
+class BasicBlock;
 
 enum fnType {
   FN_FUNCTION,
@@ -180,6 +181,8 @@ class FnSymbol : public Symbol {
   Vec<VariableType *> variableTypeSymbols;
   FnSymbol *instantiatedFrom;
   Map<BaseAST*,BaseAST*> substitutions;
+
+  Vec<BasicBlock*>* basicBlocks;
 
   //bool lessThan(FnSymbol* s1, FnSymbol* s2);
   //bool equalWith(FnSymbol* s1, FnSymbol* s2);

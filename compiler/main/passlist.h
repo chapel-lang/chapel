@@ -75,6 +75,8 @@ PassInfo passlist[] = {
   RUN(InsertVariableInitializations, ""),
   RUN(InsertUnionChecks, ""),
 
+  RUN(CopyPropagation, ""),
+
   // passes to generate code and compile
   RUN(CodegenOne, ""), // codegen types and function prototypes
   RUN(Codegen, ""),
