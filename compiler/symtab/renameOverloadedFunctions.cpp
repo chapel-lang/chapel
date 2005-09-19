@@ -1,3 +1,4 @@
+#include "expr.h"
 #include "renameOverloadedFunctions.h"
 #include "stringutil.h"
 
@@ -8,6 +9,12 @@ static bool shouldRenameOverload(Symbol* fn) {
     return false;
   }
   if (fn == FnSymbol::mainFn) {
+    return false;
+  }
+  // BLC: we don't want to rename any overloads that we build in the
+  // prelude, because they likely refer to external functions for
+  // which clones will not be built
+  if (fn->defPoint->parentScope->type == SCOPE_PRELUDE) {
     return false;
   }
   return true;
