@@ -46400,3 +46400,21 @@ Modified files:
 	                                  writen.good writetwo.good 
 	chapel/test/trivial/shannon/: readWriteEnum.chpl 
 
+---------------------------------------------------------------------------
+
+09/19/05 09:15:23 -- deitz
+
+Log message:
+	Removed Fixup from the passlist.  It was the second pass, right after
+	parsing.  It is now done in parsing to the modules that come in.  It
+	is also done when things are put into the AST, though then to only the
+	new things that are added.
+	
+	Removed special-casing to not call verify until the fixup pass has
+	run.  Removed postFixup global since it is now always true.
+
+Modified files:
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp passlist.h runpasses.cpp 
+	chapel/compiler/passes/: filesToAST.cpp 
+
