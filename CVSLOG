@@ -46607,3 +46607,13 @@ Added files:
 	chapel/test/domains/roxana/helper/: .cvsignore 
 	chapel/test/domains/roxana/index/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+09/19/05 14:35:03 -- deitz
+
+Log message:
+	Updated test by removing some now unnecessary () on getters and setters.
+
+Modified files:
+	chapel/test/arrays/deitz/: new_class_trial1.chpl 
+
