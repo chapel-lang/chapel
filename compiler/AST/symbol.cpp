@@ -1015,8 +1015,6 @@ FnSymbol::preinstantiate_generic(Map<BaseAST*,BaseAST*>* substitutions) {
             sub = true;
           }
         }
-        if (!sub)
-          substitutions->put(map.v[i].key, map.v[i].value);
       }
 
       fclones.add(fclone);
