@@ -46719,3 +46719,41 @@ Removed files:
 	chapel/test/trivial/mjoyner/seq/: seq_index2.future 
 	chapel/test/types/type_variables/jplevyak/: where-3.future 
 
+---------------------------------------------------------------------------
+
+09/20/05 12:35:28 -- deitz
+
+Log message:
+	Cleaned InlineFunctions.
+	
+	Made hasPragma utility look at the module.  So if the module has a
+	pragma, that pragma applies to everything in that module.  Do we want
+	to do it this way for all pragmas or should only some pragmas apply to
+	lexically enclosed scopes.  Should it just be modules, or should
+	function pragmas apply to everything in that function too?
+	
+	Added BaseAST::getModule() utility to determine what module something
+	is defined in.
+	
+	Added ArgSymbol::isCopyOut() to determine if it is copied back (out or
+	inout argument) and ArgSymbol::isRef() to determine if the argument is
+	passed by reference.
+	
+	Named inline temps using more descriptive names such as _inline_foo
+	for the result of inlining function foo.  Removed mangling at this
+	point as it is taken care of later.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp symbol.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: baseAST.h expr.h symbol.h 
+	chapel/compiler/traversals/: Makefile.share 
+	                             createNestedFuncIterators.cpp 
+	                             inlineFunctions.cpp 
+	                             inlineFunctions.h 
+	                             processImportExprs.cpp 
+	                             removeNestedFunctions.cpp 
+	                             scopeResolveSymbols.cpp 
+Removed files:
+	chapel/compiler/traversals/: replaceReturns.cpp replaceReturns.h 
+
