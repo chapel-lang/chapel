@@ -4,9 +4,10 @@ record C {
 
 record D {
   var j : integer = 3;
-  function =(c : C) {
-    j = c.i;
-  }
+}
+
+function =(d : D, c : C) {
+  d.j = c.i;
 }
 
 var c : C;
