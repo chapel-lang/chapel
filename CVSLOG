@@ -46661,3 +46661,28 @@ Removed files:
 	chapel/compiler/traversals/: findLeafFunctions.cpp 
 	                             findLeafFunctions.h 
 
+---------------------------------------------------------------------------
+
+09/20/05 09:44:50 -- deitz
+
+Log message:
+	Added support for applying pragmas to a file module by putting a
+	pragma on an empty first statement in the module.  For example,
+	
+	  pragma "no codegen";
+	
+	is now the first line in the prelude module.
+	
+	Moved the prelude module to modules/standard/prelude.chpl.
+
+Modified files:
+	chapel/compiler/parser/: parser.cpp 
+	chapel/compiler/passes/: filesToAST.cpp filesToAST.h 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+Added files:
+	chapel/modules/standard/: prelude.chpl 
+Removed files:
+	chapel/compiler/parser/: prelude.chpl 
+
