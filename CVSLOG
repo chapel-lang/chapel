@@ -46697,3 +46697,13 @@ Log message:
 Modified files:
 	chapel/test/functions/deitz/: test_assign1.chpl 
 
+---------------------------------------------------------------------------
+
+09/20/05 12:24:26 -- bradc
+
+Log message:
+	Removing two compiler-generated files.
+
+Removed files:
+	chapel/compiler/ifa/: prim_data.cpp prim_data.h 
+
