@@ -46646,3 +46646,18 @@ Added files:
 	                              test_assign1.future 
 	                              test_assign1.good 
 
+---------------------------------------------------------------------------
+
+09/20/05 09:15:56 -- deitz
+
+Log message:
+	Removed unused FindLeafFunctions traversal.
+
+Modified files:
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/traversals/: Makefile.share 
+	                             createNestedFuncIterators.cpp 
+Removed files:
+	chapel/compiler/traversals/: findLeafFunctions.cpp 
+	                             findLeafFunctions.h 
+
