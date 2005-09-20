@@ -13,7 +13,6 @@ TRAVERSALS_SRCS = \
         buildLValueFunctions.cpp \
         eliminateReturns.cpp \
         findEnclosingScopeVarUses.cpp \
-        findLeafFunctions.cpp \
         findTypeVariables.cpp \
 	findUnknownTypes.cpp \
 	findUnresolvedSymbols.cpp \

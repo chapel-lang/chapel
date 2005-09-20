@@ -1,5 +1,4 @@
 #include "createNestedFuncIterators.h"
-#include "findEnclosingScopeVarUses.h"
 #include "stringutil.h"
 #include "symtab.h"
 #include "symscope.h"
