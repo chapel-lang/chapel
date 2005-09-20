@@ -22,7 +22,7 @@ void ProcessImportExprs::postProcessExpr(Expr* expr) {
   }
 
   if (importExpr->importTag == IMPORT_USE) {
-    ModuleSymbol* module = importExpr->getModule();
+    ModuleSymbol* module = importExpr->getImportedModule();
     if (!module) {
       INT_FATAL(expr, "ImportExpr has no module");
     }

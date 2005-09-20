@@ -61,7 +61,7 @@ void ScopeResolveSymbols::postProcessExpr(Expr* expr) {
         // If it is not an access of a member in a class
         if (var_resolve->parentScope->type != SCOPE_CLASS) {
           // And if it is not imported from a different module
-          if (var_resolve->parentScope->getModule() ==
+          if (var_resolve->getModule() ==
               Symboltable::getCurrentScope()->getModule()) {
             Vec<VarSymbol*>* sym_defs = defList->get(var_resolve->parentScope);
             if (!sym_defs || !sym_defs->set_in(var_resolve)) {

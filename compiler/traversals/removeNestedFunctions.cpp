@@ -24,7 +24,7 @@ void RemoveNestedFunctions::postProcessStmt(Stmt* stmt) {
           Vec<Symbol*>* encl_func_var_uses = _nested_func_args_map->get(fn_sym);
 
           //add to global scope
-          ModuleSymbol* curr_module = fn_sym->argScope->getModule();
+          ModuleSymbol* curr_module = fn_sym->getModule();
           AList<Stmt>* module_stmts = curr_module->stmts;
           ExprStmt* fn_copy = expr_stmt->copy(true);
           //add formal arguments to copied nested function

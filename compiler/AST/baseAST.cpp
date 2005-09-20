@@ -5,6 +5,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "symscope.h"
 #include "type.h"
 #include "yy.h"
 #include "../passes/runAnalysis.h"
@@ -289,10 +290,11 @@ void BaseAST::printLoc(FILE* outfile) {
 
 char* BaseAST::hasPragma(char* str) {
   forv_Vec(char, pragma, pragmas) {
-    if (!strncmp(pragma, str, strlen(str))) {
+    if (!strncmp(pragma, str, strlen(str)))
       return pragma;
-    }
   }
+  if (!dynamic_cast<ModuleSymbol*>(this) && getModule())
+    return getModule()->hasPragma(str);
   return NULL;
 }
 
@@ -314,6 +316,11 @@ void BaseAST::addPragmas(Vec<char*>* srcPragmas) {
       addPragma(srcPragma);
     }
   }
+}
+
+
+ModuleSymbol* BaseAST::getModule() {
+  return (parentScope) ? parentScope->getModule() : NULL;
 }
 
 

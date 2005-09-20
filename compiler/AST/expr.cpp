@@ -1406,7 +1406,7 @@ void ImportExpr::print(FILE* outfile) {
 void ImportExpr::codegen(FILE* outfile) { }
 
 
-ModuleSymbol* ImportExpr::getModule(void) {
+ModuleSymbol* ImportExpr::getImportedModule(void) {
   if (SymExpr* variable = dynamic_cast<SymExpr*>(expr)) {
     if (Symbol* symbol = variable->var) {
       if (ModuleSymbol* module =

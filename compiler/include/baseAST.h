@@ -4,6 +4,7 @@
 #include "map.h"
 
 class Symbol;
+class ModuleSymbol;
 class Type;
 class Stmt;
 class Expr;
@@ -156,6 +157,8 @@ class BaseAST : public gc {
   char* hasPragma(char* str);
   void addPragma(char* str);
   void addPragmas(Vec<char*>* srcPragmas);
+
+  ModuleSymbol* getModule();
 };
 
 #define forv_BaseAST(_p, _v) forv_Vec(BaseAST, _p, _v)

@@ -131,8 +131,8 @@ ASymbol::line() {
 
 int 
 ASymbol::log_line() {
-  if (symbol && symbol->parentScope) {
-    ModuleSymbol *m = symbol->parentScope->getModule();
+  if (symbol) {
+    ModuleSymbol *m = symbol->getModule();
     if (m && m->modtype == MOD_USER)
       return symbol->lineno;
   }

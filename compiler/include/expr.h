@@ -322,7 +322,7 @@ class ImportExpr : public Expr {
   Type* typeInfo(void);
   void print(FILE* outfile);
   void codegen(FILE* outfile);
-  ModuleSymbol* getModule(void);
+  ModuleSymbol* getImportedModule(void);
   ClassType* getStruct(void);
 };
 

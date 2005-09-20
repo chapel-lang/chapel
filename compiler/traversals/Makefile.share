@@ -33,7 +33,6 @@ TRAVERSALS_SRCS = \
 	processParameters.cpp \
 	removeNamedParameters.cpp \
         removeNestedFunctions.cpp \
-        replaceReturns.cpp \
 	resolveSymbols.cpp \
         scopeResolveGotos.cpp \
 	scopeResolveSymbols.cpp \

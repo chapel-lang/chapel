@@ -78,7 +78,7 @@ AList<Expr>* CreateNestedFuncIterators::getIteratorCallsHelper(AList<Expr>* iter
     if (CallExpr* paren_op = dynamic_cast<CallExpr*>(iterator)){
       if (SymExpr* variable = dynamic_cast<SymExpr*>(paren_op->baseExpr)){
         FnSymbol* fn_sym = dynamic_cast<FnSymbol*>(variable->var);
-        if (fn_sym->argScope->getModule()->modtype == MOD_USER)
+        if (fn_sym->getModule()->modtype == MOD_USER)
           user_iterator_list->insertAtTail(paren_op->copy());
       }
       //check arglist for user iterators

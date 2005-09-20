@@ -3,148 +3,85 @@
 #include "inlineFunctions.h"
 #include "stringutil.h"
 #include "symtab.h"
-#include "replaceReturns.h"
 
-class UniqueInlinedLabels : public Traversal {
-   void postProcessStmt(Stmt* stmt) {
-    static int id = 1;
-    if (LabelStmt* label_stmt = dynamic_cast<LabelStmt*>(stmt)) {
-      if (LabelSymbol* label_sym = dynamic_cast<LabelSymbol*>(label_stmt->defLabel->sym))
-        label_sym->cname = glomstrings(3, label_sym->cname, "_inlcopy_", intstring(id++));
+
+class ReplaceReturns : public Traversal {
+ public:
+  Symbol* sym;
+
+  ReplaceReturns(Symbol* iSym = NULL) : sym(iSym) { }
+
+  void ReplaceReturns::postProcessStmt(Stmt* stmt) {
+    if (ReturnStmt* s = dynamic_cast<ReturnStmt*>(stmt)) {
+      if (sym)
+        s->replace(new ExprStmt(new CallExpr(OP_GETSNORM, sym, s->expr)));
+      else
+        s->remove();
     }
   }
 };
 
+
+static void mapFormalsToActuals(CallExpr* call, Map<BaseAST*,BaseAST*>* map) {
+  FnSymbol* fn = call->findFnSymbol();
+  Expr* actual = call->argList->first();
+  for_alist(DefExpr, formalDef, fn->formals) {
+    ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
+    if (formal->isRef()) {
+      if (SymExpr* symExpr = dynamic_cast<SymExpr*>(actual)) {
+        map->put(formal, symExpr->var);
+      } else {
+        INT_FATAL("Illegal reference actual encountered in inlining");
+      }
+    } else {
+      char* temp_name =  glomstrings(2, "_inline_temp_", formal->cname);
+      VarSymbol* temp = new VarSymbol(temp_name, actual->typeInfo());
+      temp->noDefaultInit = true;
+      call->parentStmt->insertBefore
+        (new ExprStmt(new DefExpr(temp, actual->copy())));
+      if (formal->isCopyOut())
+        call->parentStmt->insertAfter
+          (new ExprStmt(new CallExpr(OP_GETSNORM, actual->copy(), temp)));
+      map->put(formal, temp);
+    }
+    actual = call->argList->next();
+  }
+}
+
+
 void InlineFunctions::postProcessExpr(Expr* expr) {
-  //no inlining compiler flag was set on the command-line
   if (no_inline)
     return;
-  //function call
-  if (CallExpr* fn_call = dynamic_cast<CallExpr*>(expr)) {
-    if (fn_call->isPrimitive() || fn_call->opTag != OP_NONE) {
-      return;
-    }
-    if (FnSymbol* fn_sym = fn_call->findFnSymbol()) {
-      //inline function
-      if (fn_sym->hasPragma("inline") && isCodegened(fn_sym)) { 
-        _ok_to_inline = true;
-        //map formal arguments to actual arguments
-        Map<BaseAST*,BaseAST*>* formal_to_actual_arg_map = createFormalToActualArgMappings(fn_call, fn_sym->formals); 
-        //inline body if it is ok to do so even after examining the actual arguments
-        if (_ok_to_inline) {
-          Stmt* inlined_body = fn_sym->body->copy(true,formal_to_actual_arg_map,NULL);
-          //ensure that inlined labels are unique
-          inlined_body->traverse(new UniqueInlinedLabels());
-          ReplaceReturns* rep_returns;
-          if (fn_sym->retType && (fn_sym->retType != dtVoid)) {
-            DefExpr* temp_def = createTempVariable(fn_sym->retType);
-            fn_call->parentStmt->insertBefore(new ExprStmt(temp_def));
-            //replace all returns in the inlined function body 
-            //with an assignment the return expression
-            rep_returns = new ReplaceReturns(temp_def->sym);
-            inlined_body->traverse(rep_returns);
-            //inlined function
-            fn_call->parentStmt->insertBefore(inlined_body);
-            fn_call->replace(new SymExpr(temp_def->sym));
-          }
-          else {
-            //inlined function
-            inlined_body->traverse(new ReplaceReturns(NULL));
-            fn_call->parentStmt->insertBefore(inlined_body);
-            fn_call->parentStmt->remove();
-          }
-          inlined_body->traverse(this);
-          //report inlining compiler flag was set of the command-line
-          if (report_inlining)
-            printf("chapel compiler: reporting inlining, %s function was inlined\n", fn_sym->cname);
-        }
-      }
-    }
+
+  CallExpr* call = dynamic_cast<CallExpr*>(expr);
+
+  if (!call || call->isPrimitive() || call->opTag != OP_NONE)
+    return;
+
+  FnSymbol* fn = call->findFnSymbol();
+
+  if (!fn || !fn->hasPragma("inline") || fn->hasPragma("no codegen"))
+    return;
+
+  Map<BaseAST*,BaseAST*> map;
+  mapFormalsToActuals(call, &map);
+
+  Stmt* inlined_body = fn->body->copy(true,&map);
+  if (fn->retType != dtVoid) {
+    char* temp_name = glomstrings(2, "_inline_", fn->cname);
+    VarSymbol* temp = new VarSymbol(temp_name, fn->retType);
+    temp->noDefaultInit = true;
+    TRAVERSE(inlined_body, new ReplaceReturns(temp), true);
+    call->parentStmt->insertBefore(new ExprStmt(new DefExpr(temp)));
+    call->parentStmt->insertBefore(inlined_body);
+    call->replace(new SymExpr(temp));
+  } else {
+    TRAVERSE(inlined_body, new ReplaceReturns(), true);
+    call->parentStmt->insertBefore(inlined_body);
+    call->parentStmt->remove();
   }
+  TRAVERSE(inlined_body, this, true);
+  if (report_inlining)
+    printf("chapel compiler: reporting inlining"
+           ", %s function was inlined\n", fn->cname);
 }
-
-bool InlineFunctions::isCodegened(FnSymbol* fn_sym) {
-  //do not inline methods that are not codegened (e.g. prelude)
-  ModuleSymbol* mod_sym = fn_sym->parentScope->getModule();
-  return (!fn_sym->hasPragma("no codegen") && (mod_sym->modtype != MOD_INTERNAL));  
-}
-
-DefExpr* InlineFunctions::createTempVariable(Type* type, Expr* init) {
-  static int id = 1;
-  char* temp_name =  glomstrings(2, "_inline_temp_", intstring(id++));
-  VarSymbol* temp = new VarSymbol(temp_name, type);
-  temp->noDefaultInit = true;
-  return new DefExpr(temp, init);
-}
-
-bool InlineFunctions::isFormalArgOut(ArgSymbol* p_sym) {
-  return ((p_sym->intent == INTENT_INOUT) || (p_sym->intent == INTENT_OUT));
-}
-
-bool InlineFunctions::isFormalArgRef(ArgSymbol* p_sym) {
-  ClassType* classType = dynamic_cast<ClassType*>(p_sym->type);
-  if (classType && (classType->classTag == CLASS_CLASS ||
-                    classType->classTag == CLASS_VALUECLASS))  {
-    return true;
-  }
-  return p_sym->intent == INTENT_REF;
-}
-
-bool InlineFunctions::isTypeVar(ArgSymbol* p_sym) {
-  return (p_sym->variableTypeSymbol != NULL);
-}
-
-Map<BaseAST*,BaseAST*>* InlineFunctions::createFormalToActualArgMappings(CallExpr* fn_call, AList<DefExpr>* formal_args) {
-  Expr* curr_actual;
-  DefExpr* curr_formal;
-  AList<Expr>* actual_args = fn_call->argList;
-  
-  if (actual_args) {
-    curr_actual = actual_args->first();
-    curr_formal = formal_args->first();
-  }
-  //go through all the actual arguments
-  Map<BaseAST*,BaseAST*>* formal_to_actual_arg_map = new Map<BaseAST*,BaseAST*>();
-  while(curr_actual) {
-    bool arg_ref = isFormalArgRef(dynamic_cast<ArgSymbol*>(curr_formal->sym));
-    bool arg_intent_out = isFormalArgOut(dynamic_cast<ArgSymbol*>(curr_formal->sym));
-    bool typeVar = isTypeVar(dynamic_cast<ArgSymbol*>(curr_formal->sym)); 
-    //do not inline the function call if an argument is a ref to a expression that is no
-    //a variable
-    SymExpr* variable;
-    if (arg_ref || typeVar) {
-      variable = dynamic_cast<SymExpr*>(curr_actual);
-      if (!variable) {
-        _ok_to_inline = false;
-        return NULL;
-      }
-    }
-    
-    //create temporary variable and initialize it with the actual argument 
-    DefExpr* temp_def;
-    if (!arg_ref && !typeVar) {
-      temp_def = createTempVariable(curr_actual->typeInfo(), curr_actual->copy());
-      fn_call->parentStmt->insertBefore(new ExprStmt(temp_def));
-      //map variable of arg symbol to temp symbol so that when copy is passed the map, it
-      //will replace the formal arg symbol with the temp symbol                               
-      formal_to_actual_arg_map->put(curr_formal->sym, temp_def->sym);
-    }
-    //since a temporary variable was not created, map the actual argument to the formal argument
-    else 
-      formal_to_actual_arg_map->put(curr_formal->sym, variable->var);
-      
-      //copy temp back to actual arg if formal arg out
-    if (arg_intent_out)
-      if (SymExpr* v = dynamic_cast<SymExpr*>(curr_actual))
-        fn_call->parentStmt->insertAfter(new ExprStmt(new CallExpr(OP_GETSNORM, v->var, temp_def->sym)));
-    
-
-    curr_actual = actual_args->next();
-    curr_formal = formal_args->next();
-  }
-  return formal_to_actual_arg_map;
-}
-
-
-
-
