@@ -46707,3 +46707,15 @@ Log message:
 Removed files:
 	chapel/compiler/ifa/: prim_data.cpp prim_data.h 
 
+---------------------------------------------------------------------------
+
+09/20/05 12:29:58 -- jplevyak
+
+Log message:
+	Remove futures for tests working for the right reasons.
+
+Removed files:
+	chapel/test/functions/deitz/: test_typeconstraint1.future 
+	chapel/test/trivial/mjoyner/seq/: seq_index2.future 
+	chapel/test/types/type_variables/jplevyak/: where-3.future 
+
