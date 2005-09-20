@@ -46819,3 +46819,13 @@ Removed files:
 	chapel/test/functions/deitz/defaultnamed/: 
 	                                           test_defaultnamed2.future 
 
+---------------------------------------------------------------------------
+
+09/20/05 16:30:42 -- jplevyak
+
+Log message:
+	update .future : 2 args with same name is a syntactic error.
+
+Modified files:
+	chapel/test/functions/deitz/named/: test_named6-error.future 
+
