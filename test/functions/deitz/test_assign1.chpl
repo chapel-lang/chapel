@@ -8,6 +8,7 @@ record D {
 
 function =(d : D, c : C) {
   d.j = c.i;
+  return d;
 }
 
 var c : C;

@@ -1,1 +1,4 @@
-jplevyak
+deitz
+
+I believe the problem stems from the fact that
+the overloaded = is not being used (codegen?).

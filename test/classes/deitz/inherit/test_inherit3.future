@@ -1,3 +1,14 @@
-deitz/jplevyak
+deitz
 
-dynamic dispatch
+The problem here is that accessors are being created
+for instance variables which are copied from the partent.
+
+Maybe this should be the case for "with", but probably
+not for inheritance.  
+
+Since the variable is both a C and a D at various
+times within the "foo" function the access can be
+either the one created for for C or D and hence the
+dispatch.  If the accessors are inherited (rather than
+duplicated) then cloning would know that a single
+function would suffice and there would be no dispatch.
