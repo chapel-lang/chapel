@@ -46805,3 +46805,17 @@ Modified files:
 	chapel/test/functions/deitz/: test_assign1.chpl 
 	                              test_assign1.future 
 
+---------------------------------------------------------------------------
+
+09/20/05 16:27:53 -- jplevyak
+
+Log message:
+	Fix incorrect .good file and remove future
+
+Modified files:
+	chapel/test/functions/deitz/defaultnamed/: 
+	                                           test_defaultnamed2.good 
+Removed files:
+	chapel/test/functions/deitz/defaultnamed/: 
+	                                           test_defaultnamed2.future 
+
