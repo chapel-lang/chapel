@@ -46686,3 +46686,14 @@ Added files:
 Removed files:
 	chapel/compiler/parser/: prelude.chpl 
 
+---------------------------------------------------------------------------
+
+09/20/05 11:05:11 -- deitz
+
+Log message:
+	Changed = into a function in my recent overloaded assignment test.  It
+	fails for a different reason now.
+
+Modified files:
+	chapel/test/functions/deitz/: test_assign1.chpl 
+
