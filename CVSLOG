@@ -46789,3 +46789,19 @@ Modified files:
 Removed files:
 	chapel/test/types/tuple/deitz/: test_tuple_simple5.future 
 
+---------------------------------------------------------------------------
+
+09/20/05 16:25:19 -- jplevyak
+
+Log message:
+	Update several .future files to reflect my understanding of the
+	situation.  Steve: if you think I should work on any of these
+	change the name and add a note, or send me some mail and I'll
+	grab them by changing the .future.
+
+Modified files:
+	chapel/test/arrays/deitz/: new_class_trial1.future 
+	chapel/test/classes/deitz/inherit/: test_inherit3.future 
+	chapel/test/functions/deitz/: test_assign1.chpl 
+	                              test_assign1.future 
+
