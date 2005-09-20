@@ -1,4 +1,0 @@
-???
-
-Writing unions doesn't currently seem to work because they're
-dereferenced by value rather than reference.

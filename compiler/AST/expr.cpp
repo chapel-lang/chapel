@@ -800,16 +800,16 @@ void CallExpr::codegen(FILE* outfile) {
                 unionType->symbol->cname, field->name);
         fprintf(outfile, "_chpl_write_string(\"(%s = \");\n", field->name);
         if (field->type == dtInteger) {
-          fprintf(outfile, "_chpl_write_integer(val._chpl_union.%s);\n",
+          fprintf(outfile, "_chpl_write_integer(val->_chpl_union.%s);\n",
                   field->cname);
         } else if (field->type == dtFloat) {
-          fprintf(outfile, "_chpl_write_float(val._chpl_union.%s);\n",
+          fprintf(outfile, "_chpl_write_float(val->_chpl_union.%s);\n",
                   field->cname);
         } else if (field->type == dtString) {
-          fprintf(outfile, "_chpl_write_string(val._chpl_union.%s);\n",
+          fprintf(outfile, "_chpl_write_string(val->_chpl_union.%s);\n",
                   field->cname);
         } else if (field->type == dtBoolean) {
-          fprintf(outfile, "_chpl_write_boolean(val._chpl_union.%s);\n",
+          fprintf(outfile, "_chpl_write_boolean(val->_chpl_union.%s);\n",
                   field->cname);
         }
         fprintf(outfile, "_chpl_write_string(\")\");\n");
