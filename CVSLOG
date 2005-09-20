@@ -46757,3 +46757,19 @@ Modified files:
 Removed files:
 	chapel/compiler/traversals/: replaceReturns.cpp replaceReturns.h 
 
+---------------------------------------------------------------------------
+
+09/20/05 13:08:39 -- jplevyak
+
+Log message:
+	Fixed a bug in writing of unions.  Union arguments are pointers now.
+	Removed the futures for the newly passing tests.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+Removed files:
+	chapel/test/arrays/deitz/: test_domain2.future 
+	chapel/test/classes/bradc/: writeunion-workaround.future 
+	chapel/test/classes/bradc/unions/: assign.future 
+	                                   writeunion.future 
+
