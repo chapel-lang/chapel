@@ -1,3 +1,5 @@
+pragma "no codegen";
+
 class object { }
 class value { }
 

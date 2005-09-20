@@ -10,15 +10,13 @@
 #include "../traversals/fixup.h"
 
 ModuleSymbol* prelude = NULL;
-ModuleSymbol* seqModule = NULL;
 
 void FilesToAST::run(Vec<ModuleSymbol*>* modules) {
   // parse prelude
   Symboltable::parsePrelude();
   char* chplroot = sysdirToChplRoot(system_dir);
-  char* parserPath = glomstrings(2, chplroot, "/compiler/parser");
-  char* preludePath = glomstrings(2, parserPath, "/prelude.chpl");
-  prelude = ParseFile(preludePath, MOD_INTERNAL);
+  prelude = ParseFile(glomstrings(2, chplroot, "/modules/standard/prelude.chpl"),
+                      MOD_INTERNAL);
 
   // parse user files
   Symboltable::doneParsingPreludes();
@@ -32,8 +30,8 @@ void FilesToAST::run(Vec<ModuleSymbol*>* modules) {
   ParseFile(glomstrings(2, chplroot, "/modules/standard/_chpl_htuple.chpl"),
             MOD_STANDARD);
 
-  seqModule = ParseFile(glomstrings(2, chplroot, "/modules/standard/_chpl_seq.chpl"),
-                        MOD_STANDARD);
+  ParseFile(glomstrings(2, chplroot, "/modules/standard/_chpl_seq.chpl"),
+            MOD_STANDARD);
 
   ParseFile(glomstrings(2, chplroot, "/modules/standard/_chpl_standard.chpl"),
             MOD_STANDARD);

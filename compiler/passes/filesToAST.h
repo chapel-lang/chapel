@@ -6,7 +6,6 @@
 class Stmt;
 
 extern ModuleSymbol* prelude;
-extern ModuleSymbol* seqModule;
 
 class FilesToAST : public Pass {
   virtual void run(Vec<ModuleSymbol*>* modules);

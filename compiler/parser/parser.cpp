@@ -51,6 +51,12 @@ ModuleSymbol* ParseFile(char* filename, modType moduletype) {
 
   Symboltable::finishModuleDef(newModule, yystmtlist);
 
+  if (BlockStmt* first = dynamic_cast<BlockStmt*>(newModule->stmts->first())) {
+    if (first->body->isEmpty()) {
+      newModule->addPragmas(&first->pragmas);
+    }
+  }
+
   yyfilename = "<internal>";
   yylineno = -1;
 
