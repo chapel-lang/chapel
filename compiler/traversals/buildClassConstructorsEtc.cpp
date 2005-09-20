@@ -245,7 +245,7 @@ static void build_record_assignment_function(ClassType* structType) {
   }
   
   if (analyzeAST)
-    body->insertAtTail(new ReturnStmt(new SymExpr(arg2)));
+    body->insertAtTail(new ReturnStmt(new SymExpr(_arg1)));
   BlockStmt* block_stmt = new BlockStmt(body);
   DefExpr* def = new DefExpr(Symboltable::finishFnDef(fn, block_stmt));
   structType->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def));
