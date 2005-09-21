@@ -46893,3 +46893,13 @@ Removed files:
 	chapel/test/functions/deitz/: test_where_param2.future 
 	chapel/test/functions/jplevyak/: equal_method-1.future 
 
+---------------------------------------------------------------------------
+
+09/21/05 15:35:55 -- jplevyak
+
+Log message:
+	remove --equal-method since we are not going to use it any more
+
+Removed files:
+	chapel/test/functions/jplevyak/: equal_method-1.compopts 
+
