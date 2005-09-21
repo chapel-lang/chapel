@@ -1,5 +1,5 @@
-plevyak/deitz
+shannon
 
-The call to foo with a single integer argument should 
-call the foo function with three arguments, the third an 
-integer.
+This test is in error.  Arguments are matched
+positionally to the first argument which wasn't
+provided by name.
