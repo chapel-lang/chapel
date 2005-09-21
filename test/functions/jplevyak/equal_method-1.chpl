@@ -1,7 +1,8 @@
 record foo { var a : integer;  }
 pragma "rename _foo_eq"
-function foo.=(b) {
-  a = b.a + 10;
+function =(x : foo, b) {
+  x.a = b.a + 10;
+  return x;
 }
 var x : foo = foo();
 var y : foo = foo();
