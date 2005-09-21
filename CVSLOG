@@ -46829,3 +46829,20 @@ Log message:
 Modified files:
 	chapel/test/functions/deitz/named/: test_named6-error.future 
 
+---------------------------------------------------------------------------
+
+09/21/05 14:36:20 -- jplevyak
+
+Log message:
+	Fix overloaded =, including uses in initialization.
+	Make 2 .futures because of an issue with using
+	  noDefaultInit == true for "var x = y".
+
+Modified files:
+	chapel/compiler/traversals/: insertVariableInitializations.cpp 
+	                             resolveSymbols.cpp 
+	chapel/test/functions/jplevyak/: equal-9.chpl 
+Added files:
+	chapel/test/functions/jplevyak/: equal-8.future 
+	chapel/test/types/seq/bradc/: returnSeq2.future 
+
