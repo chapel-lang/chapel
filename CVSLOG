@@ -46863,3 +46863,18 @@ Removed files:
 	chapel/test/classes/bradc/records/: assignRecord2.future 
 	chapel/test/functions/deitz/: test_assign1.future 
 
+---------------------------------------------------------------------------
+
+09/21/05 14:55:11 -- jplevyak
+
+Log message:
+	Update a bunch of .futures
+
+Modified files:
+	chapel/test/types/seq/deitz/: test_seq_record1.future 
+	                              test_seq_tuple2.future 
+	chapel/test/types/tuple/deitz/: test_tuple_function1.good 
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_infer_class1.future 
+	chapel/test/types/type_variables/jplevyak/: construct-1.future 
+
