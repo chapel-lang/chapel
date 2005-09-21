@@ -50,6 +50,15 @@ static void insert_config_init(Stmt* stmt, VarSymbol* var, Type* type) {
 }
 
 
+static int
+is_builtin(FnSymbol *fn) {
+  if (fn->hasPragma("builtin")) {
+    return 1;
+  }
+  return 0;
+}
+
+
 static void insert_basic_init(Stmt* stmt, VarSymbol* var, Type* type) {
   if (!is_Scalar_Type(type) || !var->defPoint->init) {
     if (!var->defPoint->exprType) { // SJD: UGH
@@ -73,12 +82,13 @@ static void insert_basic_init(Stmt* stmt, VarSymbol* var, Type* type) {
       if (var->defPoint->initAssign.n != 1) {
         INT_FATAL(var->defPoint, "Unable to resolve initialization assignment");
       }
-#ifdef OVERLOADED_ASSIGNMENT_FIXED
-      Expr *init_expr = new CallExpr(var->defPoint->initAssign.v[0],
-                                     lhs, rhs);
-#else
-      Expr *init_expr = new CallExpr(OP_GETSNORM, lhs, rhs);
-#endif
+      FnSymbol *f = var->defPoint->initAssign.v[0];
+      Expr *init_expr = NULL;
+      if (!is_builtin(f)) {
+        init_expr = new CallExpr(f, lhs, rhs);
+      } else {
+        init_expr = new CallExpr(OP_GETSNORM, lhs, rhs);
+      }
       stmt->insertBefore(new ExprStmt(init_expr));
     } else {
       Expr* init_expr = new CallExpr(OP_GETSNORM, lhs, rhs);

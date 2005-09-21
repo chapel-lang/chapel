@@ -148,10 +148,10 @@ resolve_binary_operator(CallExpr *op, FnSymbol *resolved = 0) {
       INT_FATAL(expr, "Trouble resolving operator");
     }
   } else {
-    if (fns.e[0]->hasPragma("builtin")) {
+    if (fns.v[0]->hasPragma("builtin")) {
       return expr;
     }
-    CallExpr *new_expr = new CallExpr(fns.e[0], op->copy());
+    CallExpr *new_expr = new CallExpr(fns.v[0], op->copy());
     expr->replace(new_expr);
     expr = new_expr;
   }
@@ -178,10 +178,10 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
         if (fns.n != 1) {
           // HACK: Special case where write(:nilType) requires dynamic
           // dispatch; Take the other one.
-          if (fns.n == 2 && !strcmp(fns.e[1]->name, "write") &&
-              fns.e[1]->formals->only()->sym->type == dtNil) {
-          } else if (fns.n == 2 && !strcmp(fns.e[0]->name, "write") &&
-                     fns.e[0]->formals->only()->sym->type == dtNil) {
+          if (fns.n == 2 && !strcmp(fns.v[1]->name, "write") &&
+              fns.v[1]->formals->only()->sym->type == dtNil) {
+          } else if (fns.n == 2 && !strcmp(fns.v[0]->name, "write") &&
+                     fns.v[0]->formals->only()->sym->type == dtNil) {
             fns.v[0] = fns.v[1];
           } else {
             if (OP_ISUNARYOP(paren->opTag)) {
@@ -215,11 +215,11 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
             }
           }
         }
-        if (!strcmp("this", fns.e[0]->name)) {
+        if (!strcmp("this", fns.v[0]->name)) {
           arguments->insertAtHead(baseExpr->copy());
         }
-        CallExpr *new_expr = new CallExpr(fns.e[0], arguments);
-        if (fns.e[0]->hasPragma("builtin")) {
+        CallExpr *new_expr = new CallExpr(fns.v[0], arguments);
+        if (fns.v[0]->hasPragma("builtin")) {
           new_expr->opTag = paren->opTag;
         }
         expr->replace(new_expr);
@@ -231,17 +231,38 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
   // Resolve AssignOp to members or setter functions
   if (CallExpr* aop = dynamic_cast<CallExpr*>(expr)) {
     if (aop->opTag >= OP_GETSNORM) {
-      if (typeid(*aop->get(1)) == typeid(CallExpr)) {
-        CallExpr* paren = dynamic_cast<CallExpr*>(aop->get(1));
+      if (SymExpr* var = dynamic_cast<SymExpr*>(aop->get(1))) {
+        Vec<FnSymbol*> fns;
+        call_info(aop, fns);
+        int notbuiltin = 0;
+        forv_Vec(FnSymbol, f, fns) {
+          if (!is_builtin(fns.v[0])) {
+            notbuiltin = 1;
+          }
+        }
+        if (!notbuiltin) {
+          return;
+        }
+        if (fns.n == 1) {
+          CallExpr *new_expr = new CallExpr(fns.v[0], var->copy(), aop->get(2)->copy());
+          aop->replace(new_expr);
+          expr = new_expr;
+        } else {
+          if (!fns.n) {
+            return;
+          }
+          INT_FATAL(expr, "Unable to resolve setter function");
+        }
+      } else if (CallExpr* paren = dynamic_cast<CallExpr*>(aop->get(1))) {
         Vec<FnSymbol*> fns;
         call_info(aop, fns);
         if (fns.n == 1) {
           AList<Expr>* arguments = new AList<Expr>();
-          if (!strcmp("=this", fns.e[0]->name))
+          if (!strcmp("=this", fns.v[0]->name))
             arguments->insertAtTail(paren->baseExpr->copy());
           arguments->insertAtTail(copy_argument_list(paren));
           arguments->insertAtTail(aop->get(2)->copy());
-          CallExpr *new_expr = new CallExpr(fns.e[0], arguments);
+          CallExpr *new_expr = new CallExpr(fns.v[0], arguments);
           new_expr->opTag = paren->opTag;
           aop->replace(new_expr);
           expr = new_expr;

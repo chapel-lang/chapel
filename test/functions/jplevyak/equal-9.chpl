@@ -1,6 +1,7 @@
 record foo { var a : integer;  }
 function =(a : foo, b) {
   a.a = b.a + 10;
+  return a;
 }
 var x : foo = foo();
 var y : foo = foo();
