@@ -1,5 +1,10 @@
-deitz/jplevyak
+deitz
 
-seg fault with -t in analysis dump html
+What does it mean to leave off the 't' parameter?  
+Seems like this test is in error.  Seems like it
+should be class { var  f : ?t; } or somesuch.
 
-failure in ProcessParameters otherwise
+A "naive" interpretation would be to take the default
+for t (dtAny???) and then try to coerce the integer
+into a dtAny... which wouldn't work.
+

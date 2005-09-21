@@ -1,3 +1,11 @@
+deitz
+
+I think we decided that this should be an error, reported after
+analysis.... also I think there is now an alternative syntax which
+is not yet implemented... 
+
+----------
+
 jplevyak
 
 What should the semantics be.  Since we can coerce an integer to a
