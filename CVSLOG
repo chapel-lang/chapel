@@ -46903,3 +46903,13 @@ Log message:
 Removed files:
 	chapel/test/functions/jplevyak/: equal_method-1.compopts 
 
+---------------------------------------------------------------------------
+
+09/21/05 15:40:07 -- jplevyak
+
+Log message:
+	update .future
+
+Modified files:
+	chapel/test/types/seq/deitz/: test_seq9.future 
+
