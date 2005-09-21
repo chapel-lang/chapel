@@ -46846,3 +46846,20 @@ Added files:
 	chapel/test/functions/jplevyak/: equal-8.future 
 	chapel/test/types/seq/bradc/: returnSeq2.future 
 
+---------------------------------------------------------------------------
+
+09/21/05 14:42:18 -- jplevyak
+
+Log message:
+	Remove a bunch of futures which were fixed by the last checkin.
+	Change the attribution on overloadedFunction.future as I consider
+	it an erroneous test case (haven't gotten a repsonse to the constrary).
+
+Modified files:
+	chapel/test/classes/shannon/: overloadedFunction.future 
+Removed files:
+	chapel/test/classes/bradc/: writerecord.future 
+	                            writerecord1a.future 
+	chapel/test/classes/bradc/records/: assignRecord2.future 
+	chapel/test/functions/deitz/: test_assign1.future 
+
