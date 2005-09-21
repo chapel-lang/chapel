@@ -46878,3 +46878,18 @@ Modified files:
 	                                         test_infer_class1.future 
 	chapel/test/types/type_variables/jplevyak/: construct-1.future 
 
+---------------------------------------------------------------------------
+
+09/21/05 15:06:08 -- jplevyak
+
+Log message:
+	Fix 2 tests and remove 2 futures.
+
+Modified files:
+	chapel/test/functions/deitz/: test_where_param2.chpl 
+	chapel/test/functions/jplevyak/: equal_method-1.chpl 
+	                                 equal_method-1.good 
+Removed files:
+	chapel/test/functions/deitz/: test_where_param2.future 
+	chapel/test/functions/jplevyak/: equal_method-1.future 
+
