@@ -46983,3 +46983,16 @@ Removed files:
 	                             simpleNestedFunctionMove.h 
 	chapel/test/arrays/deitz/: new_class_trial1.future 
 
+---------------------------------------------------------------------------
+
+09/22/05 16:30:44 -- jplevyak
+
+Log message:
+	Fixed .good file and removed .future.
+	Overloaded = is now used for the initialization portion of DefExprs.
+
+Modified files:
+	chapel/test/functions/jplevyak/: equal-9.good 
+Removed files:
+	chapel/test/functions/jplevyak/: equal-9.future 
+
