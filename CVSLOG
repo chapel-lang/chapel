@@ -46996,3 +46996,15 @@ Modified files:
 Removed files:
 	chapel/test/functions/jplevyak/: equal-9.future 
 
+---------------------------------------------------------------------------
+
+09/22/05 16:43:15 -- jplevyak
+
+Log message:
+	Fix .good file and remove .future
+
+Modified files:
+	chapel/test/types/type_variables/deitz/: test_tuplelike1.good 
+Removed files:
+	chapel/test/types/type_variables/deitz/: test_tuplelike1.future 
+
