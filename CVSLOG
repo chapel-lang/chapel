@@ -47008,3 +47008,18 @@ Modified files:
 Removed files:
 	chapel/test/types/type_variables/deitz/: test_tuplelike1.future 
 
+---------------------------------------------------------------------------
+
+09/22/05 16:56:25 -- preston
+
+Log message:
+	added a few trivial test cases, my first!
+
+Added files:
+	chapel/test/trivial/preston/: aliasing.chpl aliasing.good 
+	                              boundfunction.chpl 
+	                              boundfunction.good curry.chpl 
+	                              curry.future curry.good gcd.chpl 
+	                              gcd.good if.chpl if.good 
+	                              tuple.chpl tuple.good 
+
