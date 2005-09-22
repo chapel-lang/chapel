@@ -46913,3 +46913,13 @@ Log message:
 Modified files:
 	chapel/test/types/seq/deitz/: test_seq9.future 
 
+---------------------------------------------------------------------------
+
+09/22/05 11:08:54 -- deitz
+
+Log message:
+	Updated Roxana's hash table test with some comments.  It now works.
+
+Modified files:
+	chapel/test/domains/roxana/helper/: test_hash_table2.chpl 
+
