@@ -1,141 +1,71 @@
 #include "createNestedFuncIterators.h"
 #include "stringutil.h"
-#include "symtab.h"
-#include "symscope.h"
+#include "stmt.h"
+#include "expr.h"
 
-class InsertNestedFuncInIterator : public Traversal {
-  public :
-  FnSymbol* _fn_call_sym;
+//
+// changes yields to copy of body of for loop, changes returns to
+// return nothing
+//
+class UpdateIteratorYield : public Traversal {
+public:
+  FnSymbol* fn;
 
-  InsertNestedFuncInIterator(FnSymbol* fn_call_sym) {
-    _fn_call_sym = fn_call_sym;
-  }
+  UpdateIteratorYield(FnSymbol* iFn) : fn(iFn) { }
 
+  // Changes yields to calls to function
   void postProcessExpr(Expr* expr) {
-    //replace seq yield call in iterator with call to nested function
-    if (CallExpr* fc = dynamic_cast<CallExpr*>(expr)) {
-     if (SymExpr*  v = dynamic_cast<SymExpr*>(fc->baseExpr))
-      if (!strcmp(v->var->name, "_yield")) {
-        AList<Expr>* new_arg_list = getNewArgList(fc->argList);
-        CallExpr* fn_call = new CallExpr(_fn_call_sym, new_arg_list->copy());
-        fc->replace(fn_call);
+    if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
+      if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->baseExpr)) {
+        if (!strcmp(symExpr->var->name, "_yield")) {
+          call->argList->first()->remove();
+          call->replace(new CallExpr(fn, call->argList));
+        }
       }
     }
   }
 
+  // Changes returns to return nothing
   void postProcessStmt(Stmt* stmt) {
     if (ReturnStmt* ret = dynamic_cast<ReturnStmt*>(stmt))
-      //iterator now has a void return
       if (ret->expr)
         ret->expr->remove();  
-  }
-  
-  AList<Expr>* getNewArgList (AList<Expr>* old_arg_list) {
-    AList<Expr>* new_arg_list = old_arg_list->copy();
-    //first argument to seq yield is the sequence, second is the element 
-    //returned to the old iterator for loop
-    new_arg_list->popHead();
-   
-    return new_arg_list;
   }
 };
 
 
+static void
+addVarToFormals(FnSymbol* fn, Symbol* sym) {
+  Map<BaseAST*,BaseAST*> update_map;
+  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, sym->name, sym->type);
+  fn->formals->insertAtTail(new DefExpr(arg));
+  update_map.put(sym, arg);
+  fn->body->traverse(new UpdateSymbols(&update_map));
+}
+
+
 void CreateNestedFuncIterators::postProcessStmt(Stmt* stmt) {
-    if (ForLoopStmt* fls = dynamic_cast<ForLoopStmt*>(stmt)) {
-      AList<Expr>* user_iter_call_list = getIteratorCallsHelper(fls->iterators,new AList<Expr>());
-      //found user iterator calls
-      for_alist(Expr, expr, user_iter_call_list) {
-        //copy iterator function def
-        CallExpr* paren_op = dynamic_cast<CallExpr*>(expr);
-        FnSymbol* user_iter_fn_sym = paren_op->findFnSymbol();
-        FnSymbol* func_it_sym = copyIteratorDef(user_iter_fn_sym);
-        fls->insertBefore(new ExprStmt(new DefExpr(func_it_sym)));
-        
-        //insert nested function created using the body of the iterator loop   
-        CallExpr* new_func_call = new CallExpr(func_it_sym, paren_op->argList->copy());
-        fls->insertBefore(new ExprStmt(new_func_call));
-        
-        //place body of for loop in a nested function definition
-        DefExpr* nested_func_def = copyLoopBodyToNestedFuncDef(fls, func_it_sym);
-        FnSymbol* fn_call_sym = dynamic_cast<FnSymbol*>(nested_func_def->sym);
-        
-        //replace calls to seq append in iterator body with nested function call
-        func_it_sym->body->traverse(new InsertNestedFuncInIterator(fn_call_sym));
-        
-      }
-      //found user iterator call
-      if(!user_iter_call_list->isEmpty()) {
-        //remove iterator for loop
-        fls->remove();
+  if (ForLoopStmt* fls = dynamic_cast<ForLoopStmt*>(stmt)) {
+    if (fls->iterators->length() > 1) // no zippered iterators
+      return;
+    CallExpr* iteratorCall = dynamic_cast<CallExpr*>(fls->iterators->only());
+    if (CallExpr* t = dynamic_cast<CallExpr*>(iteratorCall->argList->only())) {
+      if (t->findFnSymbol()->fnClass == FN_ITERATOR) {
+        iteratorCall = t;
       }
     }
-}
-
-AList<Expr>* CreateNestedFuncIterators::getIteratorCallsHelper(AList<Expr>* iterator_list, AList<Expr>* user_iterator_list) {
-  //create list of user iterators
-  for_alist(Expr, iterator, iterator_list) {
-    if (CallExpr* paren_op = dynamic_cast<CallExpr*>(iterator)){
-      if (SymExpr* variable = dynamic_cast<SymExpr*>(paren_op->baseExpr)){
-        FnSymbol* fn_sym = dynamic_cast<FnSymbol*>(variable->var);
-        if (fn_sym->getModule()->modtype == MOD_USER)
-          user_iterator_list->insertAtTail(paren_op->copy());
-      }
-      //check arglist for user iterators
-      getIteratorCallsHelper(paren_op->argList, user_iterator_list);
-    }
+    FnSymbol* iterator = iteratorCall->findFnSymbol()->copy(true);
+    iterator->retType = dtVoid;
+    iterator->addPragma("inline");
+    FnSymbol* body = new FnSymbol("loop_body");
+    body->addPragma("inline");
+    body->formals = new AList<DefExpr>();
+    body->body = fls->innerStmt->copy();
+    body->retType = dtVoid;
+    fls->insertBefore(new ExprStmt(new DefExpr(body)));
+    fls->insertBefore(new ExprStmt(new DefExpr(iterator)));
+    addVarToFormals(body, fls->indices->only()->sym);
+    TRAVERSE(iterator, new UpdateIteratorYield(body), true);
+    fls->replace(new ExprStmt(new CallExpr(iterator, iteratorCall->argList)));
   }
-  return user_iterator_list;
-}
-
-
-DefExpr* CreateNestedFuncIterators::copyLoopBodyToNestedFuncDef(ForLoopStmt* fls, FnSymbol* iterator_sym) {
-  //create a nested function definition
-  static int id = 1; 
-  char* func_name =  glomstrings(2, "_nested_func_", intstring(id++));
-  DefExpr* nested_func = copyFuncHelper(func_name, fls->indices, fls->innerStmt, false);
-  iterator_sym->body->body->insertAtTail(new ExprStmt(nested_func));
-  //to inline these nested function calls in the iterator, uncomment next line
-  nested_func->sym->addPragma("inline");
-  
-  return nested_func;
-}
-
-FnSymbol* CreateNestedFuncIterators::copyIteratorDef(FnSymbol* old_iterator_sym) {
-  static int it_id = 1;
-  char* func_name = glomstrings(2, old_iterator_sym->name, intstring(it_id++));
-  DefExpr* func_def = copyFuncHelper(func_name, old_iterator_sym->formals, old_iterator_sym->body, true);
-  FnSymbol* fn_sym = dynamic_cast<FnSymbol*>(func_def->sym); 
-  fn_sym->addPragmas(&old_iterator_sym->pragmas);
-
-  //return new_func_sym;
-  return fn_sym;
-}
-
-DefExpr* CreateNestedFuncIterators::copyFuncHelper(char* new_name, AList<DefExpr>* copy_formals, BlockStmt* copy_body, bool inheritIntents) {
-  //create a function definition
-  FnSymbol* fn = Symboltable::startFnDef(new FnSymbol(new_name));
-  AList<DefExpr>* func_formals = new AList<DefExpr>();
-  
-  //copy formals for new function definition
-  Map<BaseAST*,BaseAST*>* update_map = new Map<BaseAST*,BaseAST*>();
-  for_alist(DefExpr, def, copy_formals) {
-    intentTag intent = INTENT_BLANK;
-    if (inheritIntents) {
-      ArgSymbol* arg = dynamic_cast<ArgSymbol*>(def->sym);
-      if (arg == NULL) {
-        INT_FATAL(def->sym, "unexpected element in copy_formals list");
-      }
-      intent = arg->intent;
-    }
-    ArgSymbol* arg = new ArgSymbol(intent, def->sym->name, def->sym->type);
-    func_formals->insertAtTail(new DefExpr(arg));
-    update_map->put(def->sym,arg);
-  }
-  //copy body for new function definition
-  Symboltable::continueFnDef(fn, func_formals, dtVoid);
-  AList<Stmt>* stmts = copy_body->body->copy(true, update_map);
-  BlockStmt* fn_body = new BlockStmt(stmts);
-  DefExpr* func_def = new DefExpr(Symboltable::finishFnDef(fn, fn_body));
-  return func_def;
 }

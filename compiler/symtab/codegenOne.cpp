@@ -66,6 +66,16 @@ void CodegenOne::processSymbol(Symbol* sym) {
 
 
 void CodegenOne::run(Vec<ModuleSymbol*>* modules) {
+
+  // Remove functions not used (misses mutual recursion)
+  compute_call_sites();
+  Vec<FnSymbol*> all_functions;
+  collect_functions(&all_functions);
+  forv_Vec(FnSymbol, fn, all_functions) {
+    if (fn->calledBy->n == 0 && FnSymbol::mainFn != fn)
+      fn->defPoint->parentStmt->remove();
+  }
+
   SymtabTraversal::run(modules);
   FILE* outfile = openCFile("_chpl_header.h");
   forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {

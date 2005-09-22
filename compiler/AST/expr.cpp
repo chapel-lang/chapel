@@ -193,7 +193,7 @@ int Expr::rank(void) {
 
 
 FnSymbol *Expr::parentFunction() {
-  if (parentStmt) return parentStmt->parentFunction(); else return NULL; 
+  return (parentStmt) ? parentStmt->parentFunction() : NULL; 
 }
 
 

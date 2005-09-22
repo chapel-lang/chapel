@@ -180,6 +180,8 @@ class FnSymbol : public Symbol {
   FnSymbol *instantiatedFrom;
   Map<BaseAST*,BaseAST*> substitutions;
   Vec<BasicBlock*>* basicBlocks;
+  Vec<CallExpr*>* calledBy;
+  Vec<CallExpr*>* calls;
 
   FnSymbol(char* initName,
            TypeSymbol* initTypeBinding = NULL,

@@ -12,7 +12,6 @@ TRAVERSALS_SRCS = \
         createNestedFuncIterators.cpp \
         buildLValueFunctions.cpp \
         eliminateReturns.cpp \
-        findEnclosingScopeVarUses.cpp \
         findTypeVariables.cpp \
 	findUnknownTypes.cpp \
 	findUnresolvedSymbols.cpp \
@@ -36,7 +35,6 @@ TRAVERSALS_SRCS = \
 	resolveSymbols.cpp \
         scopeResolveGotos.cpp \
 	scopeResolveSymbols.cpp \
-        simpleNestedFunctionMove.cpp \
 	specializeCallExprs.cpp \
 	testGetStuff.cpp \
 	transformLetExprs.cpp \

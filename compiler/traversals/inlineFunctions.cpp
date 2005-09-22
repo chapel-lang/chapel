@@ -85,3 +85,8 @@ void InlineFunctions::postProcessExpr(Expr* expr) {
     printf("chapel compiler: reporting inlining"
            ", %s function was inlined\n", fn->cname);
 }
+
+
+void InlineFunctions::run(Vec<ModuleSymbol*>* modules) {
+  Traversal::run(modules);
+}

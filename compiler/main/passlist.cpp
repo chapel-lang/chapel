@@ -52,7 +52,6 @@
 #include "../traversals/resolveSymbols.h"
 #include "../traversals/scopeResolveGotos.h"
 #include "../traversals/scopeResolveSymbols.h"
-#include "../traversals/simpleNestedFunctionMove.h"
 #include "../traversals/specializeCallExprs.h"
 #include "../traversals/testGetStuff.h"
 #include "../traversals/transformLetExprs.h"
@@ -119,7 +118,6 @@ REGISTER(ResolveTypes);
 REGISTER(RunAnalysis);
 REGISTER(ScopeResolveGotos);
 REGISTER(ScopeResolveSymbols);
-REGISTER(SimpleNestedFunctionMove);
 REGISTER(SpecializeCallExprs);
 REGISTER(TestGetStuff);
 REGISTER(TransformLetExprs);

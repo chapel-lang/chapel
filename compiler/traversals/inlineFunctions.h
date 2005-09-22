@@ -11,5 +11,6 @@
 class InlineFunctions : public Traversal {
 public:
   void postProcessExpr(Expr* expr);
+  void run(Vec<ModuleSymbol*>* modules);
 };
 #endif

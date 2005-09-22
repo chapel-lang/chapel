@@ -55,7 +55,6 @@ PassInfo passlist[] = {
   RUN(RemoveTypeVariableFormals, ""), // postAnalysis = true
 
   RUN(CreateNestedFuncIterators, ""),
-  RUN(SimpleNestedFunctionMove, ""),
   RUN(RemoveNestedFunctions, ""),
 
   // check the program's semantics

@@ -160,7 +160,17 @@ void HtmlView::preProcessExpr(Expr* expr) {
     } else if (dynamic_cast<VarSymbol*>(e->sym)) {
       write("<B>var</B> ");
       html_print_symbol(e->sym, true);
-    } else if (dynamic_cast<ArgSymbol*>(e->sym)) {
+    } else if (ArgSymbol* s = dynamic_cast<ArgSymbol*>(e->sym)) {
+      switch (s->intent) {
+      case INTENT_IN: write("<B>in</B> "); break;
+      case INTENT_INOUT: write("<B>inout</B> "); break;
+      case INTENT_OUT: write("<B>out</B> "); break;
+      case INTENT_CONST: write("<B>const</B> "); break;
+      case INTENT_REF: write("<B>ref</B> "); break;
+      case INTENT_PARAM: write("<B>param</B> "); break;
+      case INTENT_TYPE: write("<B>type</B> "); break;
+      default: break;
+      }
       write("<B>arg</B> ");
       html_print_symbol(e->sym, true);
     } else {
