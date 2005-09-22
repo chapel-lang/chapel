@@ -46923,3 +46923,63 @@ Log message:
 Modified files:
 	chapel/test/domains/roxana/helper/: test_hash_table2.chpl 
 
+---------------------------------------------------------------------------
+
+09/22/05 16:29:24 -- deitz
+
+Log message:
+	Cleaned RemoveNestedFunctions.  The main change is that it is now
+	fully implemented using iteration over the call graph to determine
+	which local variables are outer variables.
+	
+	This constitutes a major change to how nested functions are removed.
+	It simplifies a number of things that Mack and I discussed but that he
+	ran out of time to implement.  It also takes advantage of the more
+	stable AST by moving rather than copying and deleting the nested
+	function.
+	
+	Also substantially reworked createNestedFuncIterators.  This used to
+	use its own copy routines, etc.  It is now much shorter and more
+	robust.  This fixes the future new_class_trial1.
+	
+	Added a new function call compute_call_sites that adds to a FnSymbol a
+	vec of every CallExpr that calls that function and a vec of every
+	CallExpr that is inside it.  These are named 'calledBy' and 'calls.'
+	
+	Removed SimpleNestedMove as it is no longer necessary to move nested
+	functions to the first statement in a function.
+	
+	Minor improvements to htmlview to print out the intents of formals.
+	
+	Updated the .good file for new_class_trial1.  It is still a future
+	because it still blows up in inlining when for statements are changed
+	into nested function iterators.
+	
+	Added a working test of inout parameters.
+	
+	Added to CodegenOne a few lines of code to remove all functions that
+	are never called.  (This does not eliminate all dead functions, e.g.,
+	recursion.)  This eliminates functions that have been completely
+	inlined.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/include/: baseAST.h symbol.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/symtab/: codegenOne.cpp 
+	chapel/compiler/traversals/: Makefile.share astHelpers.cpp 
+	                             createNestedFuncIterators.cpp 
+	                             htmlview.cpp inlineFunctions.cpp 
+	                             inlineFunctions.h 
+	                             removeNestedFunctions.cpp 
+	                             removeNestedFunctions.h 
+	chapel/test/arrays/deitz/: new_class_trial1.good 
+Added files:
+	chapel/test/functions/deitz/: test_inout1.chpl test_inout1.good 
+Removed files:
+	chapel/compiler/traversals/: findEnclosingScopeVarUses.cpp 
+	                             findEnclosingScopeVarUses.h 
+	                             simpleNestedFunctionMove.cpp 
+	                             simpleNestedFunctionMove.h 
+	chapel/test/arrays/deitz/: new_class_trial1.future 
+
