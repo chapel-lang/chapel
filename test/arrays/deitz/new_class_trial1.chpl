@@ -37,10 +37,10 @@ function write(x : adomain) {
   for i in 0..hi {
     if not first then
       write(", ");
-    write(x.low()(i));
+    write(x.low(i));
     write("..");
-    write(x.high()(i));
-    var str = x.stride()(i);
+    write(x.high(i));
+    var str = x.stride(i);
     if (str != 1) then
       write(" by ", str);
     first = false;
