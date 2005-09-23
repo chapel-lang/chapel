@@ -57,64 +57,114 @@ static void destructureTuple(CallExpr* tuple) {
 
 static void createTupleBaseType(int size) {
   char *name = glomstrings(2, "_tuple", intstring(size));
-  if (Symboltable::lookupInScope(name, commonModule->modScope)) {
+
+  if (Symboltable::lookupInScope(name, commonModule->modScope))
     return;
-  }
+
   AList<Stmt>* decls = new AList<Stmt>();
-  Vec<TypeSymbol*> types;
+
+  // Build type declarations
+  Vec<Type*> types;
+  for (int i = 1; i <= size; i++) {
+    char* typeName = glomstrings(2, "_t", intstring(i));
+    VariableType* type = new VariableType(getMetaType(0));
+    TypeSymbol* typeSymbol = new TypeSymbol(typeName, type);
+    type->addSymbol(typeSymbol);
+    decls->insertAtTail(new ExprStmt(new DefExpr(typeSymbol)));
+    types.add(type);
+  }
+
+  // Build field declarations
   Vec<VarSymbol*> fields;
   for (int i = 1; i <= size; i++) {
-    VariableType* variableType = new VariableType(getMetaType(0));
-    TypeSymbol* typeSymbol =
-      new TypeSymbol(glomstrings(2, "_t", intstring(i)), variableType);
-    variableType->addSymbol(typeSymbol);
-    decls->insertAtTail(new ExprStmt(new DefExpr(typeSymbol)));
-    types.add(typeSymbol);
+    char* fieldName = glomstrings(2, "_f", intstring(i));
+    VarSymbol* field = new VarSymbol(fieldName, types.v[i-1]);
+    decls->insertAtTail(new ExprStmt(new DefExpr(field)));
+    fields.add(field);
   }
+
+  // Build this methods
   for (int i = 1; i <= size; i++) {
-    DefExpr* def = new DefExpr(new VarSymbol(glomstrings(2, "_f", intstring(i)),
-                                             types.v[i-1]->definition));
-    decls->insertAtTail(new ExprStmt(def));
-    VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym);
-    fields.add(var);
-  }
-  for (int i = 1; i <= size; i++) {
-    FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("this"));
-    ArgSymbol* argSymbol =
-      new ArgSymbol(INTENT_PARAM, "index", dtInteger);
-    AList<DefExpr>* formals = new AList<DefExpr>(new DefExpr(argSymbol));
-    Expr* where = new CallExpr(OP_EQUAL, 
-                               argSymbol,
-                               new_IntLiteral(i));
-    Symboltable::continueFnDef(fn, formals, dtUnknown, true, where);
-    AList<Stmt>* body = new AList<Stmt>(new ReturnStmt(new SymExpr(fields.v[i-1])));
-    Symboltable::finishFnDef(fn, new BlockStmt(body));
+    FnSymbol* fn = new FnSymbol("this");
+    ArgSymbol* arg = new ArgSymbol(INTENT_PARAM, "index", dtInteger);
+    fn->formals = new AList<DefExpr>(new DefExpr(arg));
+    fn->whereExpr = new CallExpr(OP_EQUAL, arg, new_IntLiteral(i));
+    fn->retType = dtUnknown;
+    fn->retRef = true;
+    fn->body = new BlockStmt(new ReturnStmt(new SymExpr(fields.v[i-1])));
     decls->insertAtTail(new ExprStmt(new DefExpr(fn)));
   }
-  DefExpr* def = Symboltable::defineStructType(name, new ClassType(CLASS_RECORD), decls);
-  commonModule->stmts->insertAtHead(new ExprStmt(def));
-  FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("write"));
-  ArgSymbol* argSymbol =
-    new ArgSymbol(INTENT_BLANK, "val", dtUnknown);
-  AList<DefExpr>* formals =
-    new AList<DefExpr>(new DefExpr(argSymbol,
-                                   NULL,
-                                   new SymExpr(new UnresolvedSymbol(name))));
-  Symboltable::continueFnDef(fn, formals, dtUnknown, false, NULL);
-  AList<Expr>* args = new AList<Expr>();
-  args->insertAtTail(new_StringLiteral(copystring("(")));
+
+  // Build tuple
+  ClassType* tupleType = new ClassType(CLASS_RECORD);
+  TypeSymbol* tupleSym = new TypeSymbol(name, tupleType);
+  tupleType->addSymbol(tupleSym);
+  tupleType->addDeclarations(decls);
+  commonModule->stmts->insertAtHead(new ExprStmt(new DefExpr(tupleSym)));
+
+  // Build write function
+  FnSymbol* writeFn = new FnSymbol("write");
+  ArgSymbol* writeArg = new ArgSymbol(INTENT_BLANK, "val", tupleType);
+  writeFn->formals = new AList<DefExpr>(new DefExpr(writeArg));
+  writeFn->retType = dtUnknown;
+  AList<Expr>* actuals = new AList<Expr>();
+  actuals->insertAtTail(new_StringLiteral(copystring("(")));
   for (int i = 1; i <= size; i++) {
-    if (i != 1) {
-      args->insertAtTail(new_StringLiteral(copystring(", ")));
-    }
-    args->insertAtTail(new MemberAccess(new SymExpr(new UnresolvedSymbol("val")),
-                                        new UnresolvedSymbol(glomstrings(2, "_f", intstring(i)))));
+    if (i != 1)
+      actuals->insertAtTail(new_StringLiteral(copystring(", ")));
+    actuals->insertAtTail(
+      new MemberAccess(
+        new SymExpr(
+          new UnresolvedSymbol("val")),
+        new UnresolvedSymbol(glomstrings(2, "_f", intstring(i)))));
   }
-  args->insertAtTail(new_StringLiteral(copystring(")")));
-  Stmt* writeBody = new ExprStmt(new CallExpr("write", args));
-  AList<Stmt>* body = new AList<Stmt>(writeBody);
-  Symboltable::finishFnDef(fn, new BlockStmt(body));
-  commonModule->stmts->insertAtTail(new ExprStmt(new DefExpr(fn)));
+  actuals->insertAtTail(new_StringLiteral(copystring(")")));
+  writeFn->body = new BlockStmt(new ExprStmt(new CallExpr("write", actuals)));
+  commonModule->stmts->insertAtTail(new ExprStmt(new DefExpr(writeFn)));
+
+  // Build htuple = tuple function
+  {
+    FnSymbol* assignFn = new FnSymbol("=");
+    TypeSymbol* htuple =
+      dynamic_cast<TypeSymbol*>(Symboltable::lookup("_htuple"));
+    ArgSymbol* htupleArg = 
+      new ArgSymbol(INTENT_BLANK, "_htuple", htuple->definition);
+    ArgSymbol* tupleArg = new ArgSymbol(INTENT_BLANK, "val", tupleType);
+    assignFn->formals = new AList<DefExpr>(new DefExpr(htupleArg),
+                                           new DefExpr(tupleArg));
+    assignFn->retType = dtUnknown;
+    assignFn->body = new BlockStmt();
+    for (int i = 1; i <= size; i++) {
+      assignFn->body->body->insertAtTail(
+        new ExprStmt(
+          new CallExpr(OP_GETSNORM,
+            new CallExpr(htupleArg, new_IntLiteral(i)),
+            new CallExpr(tupleArg, new_IntLiteral(i)))));
+    }
+    assignFn->body->body->insertAtTail(new ReturnStmt(new SymExpr(htupleArg)));
+    commonModule->stmts->insertAtTail(new ExprStmt(new DefExpr(assignFn)));
+  }
+
+  // Build tuple = _ function
+//   {
+//     FnSymbol* assignFn = new FnSymbol("=");
+//     ArgSymbol* tupleArg = new ArgSymbol(INTENT_BLANK, "tuple", tupleType);
+//     ArgSymbol* secondArg = new ArgSymbol(INTENT_BLANK, "val", dtUnknown);
+//     assignFn->formals = new AList<DefExpr>(new DefExpr(tupleArg),
+//                                            new DefExpr(secondArg));
+//     assignFn->retType = dtUnknown;
+//     assignFn->body = new BlockStmt();
+//     for (int i = 1; i <= size; i++) {
+//       assignFn->body->body->insertAtTail(
+//         new ExprStmt(
+//           new CallExpr(OP_GETSNORM,
+//             new CallExpr(tupleArg, new_IntLiteral(i)),
+//             new CallExpr(secondArg, new_IntLiteral(i)))));
+//     }
+//     assignFn->body->body->insertAtTail(new ReturnStmt(new SymExpr(tupleArg)));
+//     commonModule->stmts->insertAtTail(new ExprStmt(new DefExpr(assignFn)));
+//   }
+
 }
 
 void InsertLiteralTemps::postProcessExpr(Expr* expr) {

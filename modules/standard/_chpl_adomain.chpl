@@ -1,5 +1,6 @@
 use _chpl_seq;
 use _chpl_data;
+use _chpl_htuple;
 
 record _adomain_info {
   var _low : integer;
@@ -8,6 +9,7 @@ record _adomain_info {
   var _alignment : integer;
 }
 
+pragma "instantiate multidimensional iterator"
 class _adomain : value {
   param rank : integer;
 

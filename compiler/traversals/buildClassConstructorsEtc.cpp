@@ -216,14 +216,13 @@ static void build_record_inequality_function(ClassType* structType) {
 
 
 static void build_record_assignment_function(ClassType* structType) {
-  Symbol* tmp = Symboltable::lookupInCurrentScope("=");
-  while (tmp) {
-    if (FnSymbol* assignFn = dynamic_cast<FnSymbol*>(tmp)) {
-      if (assignFn->formals->first()->sym->type == structType) {
+  Vec<FnSymbol*> fns;
+  collect_functions(&fns);
+
+  forv_Vec(FnSymbol, fn, fns) {
+    if (!strcmp(fn->name, "="))
+      if (fn->formals->first()->sym->type == structType)
         return;
-      }
-    }
-    tmp = tmp->overload;
   }
 
   FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("="));

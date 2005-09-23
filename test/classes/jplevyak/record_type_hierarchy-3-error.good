@@ -1,12 +1,12 @@
-_chpl_adomain.chpl:28: write, val : _tuple2
-_chpl_adomain.chpl:28: write, val : _tuple2
-_chpl_adomain.chpl:51: write, x : _adomain
-_chpl_adomain.chpl:9: write, val : _adomain_info
+_chpl_adomain.chpl:10: write, val : _adomain_info
+_chpl_adomain.chpl:29: write, val : _tuple2
+_chpl_adomain.chpl:29: write, val : _tuple2
+_chpl_adomain.chpl:52: write, x : _adomain
 _chpl_complex.chpl:9: write, x : complex
 _chpl_data.chpl:48: write, val : _fdata
 _chpl_data.chpl:55: write, val : _fdata
 _chpl_file.chpl:47: write, val : file
-_chpl_htuple.chpl:23: write, val : _htuple
+_chpl_htuple.chpl:30: write, val : _htuple
 _chpl_seq.chpl:137: write, s : seq
 _chpl_seq.chpl:137: write, s : seq
 _chpl_seq.chpl:148: write, s : seq

@@ -11,7 +11,6 @@
 #include "../traversals/updateSymbols.h"
 #include "../traversals/instantiate.h"
 #include "../traversals/buildClassHierarchy.h"
-#include "../symtab/collectFunctions.h"
 #include "../traversals/findTypeVariables.h"
 #include "../passes/preAnalysisCleanup.h"
 
@@ -852,7 +851,7 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
     tagGenerics(cloneType);
 
     Vec<FnSymbol*> functions;
-    collectFunctionsFromScope(typeSym->parentScope, &functions);
+    collect_functions(&functions);
     
     Vec<BaseAST*> genericParameters;
     for (int i = 0; i < substitutions->n; i++)
@@ -995,7 +994,7 @@ FnSymbol::preinstantiate_generic(Map<BaseAST*,BaseAST*>* substitutions) {
   }
 
   Vec<FnSymbol*> functions;
-  collectFunctionsFromScope(clone->parentScope, &functions);
+  collect_functions(&functions);
 
   Vec<BaseAST*> ov;
   ov.add(retType->symbol);
