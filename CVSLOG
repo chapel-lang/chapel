@@ -47056,3 +47056,21 @@ Added files:
 	                           test__adomain1.future 
 	                           test__adomain1.good 
 
+---------------------------------------------------------------------------
+
+09/23/05 09:12:24 -- deitz
+
+Log message:
+	Fixed a bug in the instantiation cache in which it made incorrect matches.
+	
+	Increased the size of the html view string.
+	
+	Updated .goods of two tests I should have updated yesterday.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/traversals/: htmlview.cpp htmlview.h 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+
