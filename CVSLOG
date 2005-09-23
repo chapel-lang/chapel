@@ -47128,3 +47128,13 @@ Log message:
 Removed files:
 	chapel/test/types/tuple/deitz/: test_tuple_function1.future 
 
+---------------------------------------------------------------------------
+
+09/23/05 15:22:48 -- jplevyak
+
+Log message:
+	Ensure that new MetaTypes appear in the clone map.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+
