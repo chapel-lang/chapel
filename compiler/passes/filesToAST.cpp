@@ -29,10 +29,12 @@ void FilesToAST::run(Vec<ModuleSymbol*>* modules) {
             MOD_STANDARD);
   ParseFile(glomstrings(2, chplroot, "/modules/standard/_chpl_htuple.chpl"),
             MOD_STANDARD);
-
+  ParseFile(glomstrings(2, chplroot, "/modules/standard/_chpl_adomain.chpl"),
+            MOD_STANDARD);
+  ParseFile(glomstrings(2, chplroot, "/modules/standard/_chpl_data.chpl"),
+            MOD_STANDARD);
   ParseFile(glomstrings(2, chplroot, "/modules/standard/_chpl_seq.chpl"),
             MOD_STANDARD);
-
   ParseFile(glomstrings(2, chplroot, "/modules/standard/_chpl_standard.chpl"),
             MOD_STANDARD);
 

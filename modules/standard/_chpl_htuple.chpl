@@ -1,31 +1,23 @@
 use _chpl_seq;
+use _chpl_data;
 
-record _htuple {
-  type _elementType;
-  param _size : integer;
---  var _elements : _data(_elementType, _size);
-  var _elements0 : _elementType;
-  var _elements1 : _elementType;
-  var _elements2 : _elementType;
-  function this(i : integer) var : _elementType{
-    select i {
-      when 1 do return _elements0;
-      when 2 do return _elements1;
-      when 3 do return _elements2;
-    }
-    halt("Tuple indexed out of bounds, current tuple size limited to 3");
+class _htuple : value {
+  type elt_type;
+  param size : integer;
+  var elements : _fdata(elt_type); -- should be size
+  function this(i : integer) var : elt_type {
+    if i < 1 or i > size then
+      halt("tuple indexing out-of-bounds error");
+    return elements(i-1);
   }
 }
 
 function write(val : _htuple) {
   write("(");
-  var first = true;
-  for i in 1..val._size {
-    if not first {
-      write(", ");
-    }
+  for i in 1..val.size-1 {
     write(val(i));
-    first = false;
+    write(", ");
   }
+  write(val(val.size));
   write(")");
 }
