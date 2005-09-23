@@ -9,7 +9,7 @@ class HtmlView : public Traversal {
   int indent;
   char* html;
   FILE* html_file;
-  char html_string[2048];
+  char html_string[4096];
   int pos;
   int show_analysis_info;
   virtual void run(Vec<ModuleSymbol*>* modules);

@@ -804,10 +804,9 @@ static bool subs_match(Map<BaseAST*,BaseAST*>* s1,
                        Map<BaseAST*,BaseAST*>* s2) {
   if (s1->n != s2->n)
     return false;
-  for (int i = 0; i < s1->n; i++) {
-    if (s1->v[0].key != s2->v[0].key || s1->v[0].value != s2->v[0].value)
+  for (int i = 0; i < s1->n; i++)
+    if (s1->v[i].key != s2->v[i].key || s1->v[i].value != s2->v[i].value)
       return false;
-  }
   return true;
 }
 

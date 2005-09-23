@@ -29,7 +29,7 @@ void HtmlView::write(char* fmt, ...) {
   va_start(args, fmt);
   vsprintf(html_string+strlen(html_string), fmt, args);
   va_end(args);
-  if (strlen(html_string) > 2048-128) {
+  if (strlen(html_string) > 4096-128) {
     INT_FATAL("HtmlView string too small");
   }
 }
