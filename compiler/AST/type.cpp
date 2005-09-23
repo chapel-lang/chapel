@@ -299,6 +299,10 @@ void EnumType::verify(void) {
 EnumType*
 EnumType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   EnumType* copy = new EnumType(CLONE_INTERNAL(constants));
+  if (map) {
+    map->put(metaType, copy->metaType);
+    map->put(metaType->symbol, copy->metaType->symbol);
+  }
   copy->addSymbol(symbol);
   return copy;
 }
@@ -485,6 +489,10 @@ UserType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   UserType* copy = new UserType(COPY_INTERNAL(typeExpr),
                                 COPY_INTERNAL(underlyingType),
                                 COPY_INTERNAL(defaultExpr));
+  if (map) { 
+    map->put(metaType, copy->metaType);
+    map->put(metaType->symbol, copy->metaType->symbol);
+  }
   copy->addSymbol(symbol);
   return copy;
 }
@@ -563,6 +571,10 @@ void ClassType::verify(void) {
 ClassType*
 ClassType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   ClassType* copy_type = new ClassType(classTag);
+  if (map) {
+    map->put(metaType, copy_type->metaType);
+    map->put(metaType->symbol, copy_type->metaType->symbol);
+  }
   AList<Stmt>* new_decls = new AList<Stmt>();
   for (Stmt* old_decls = declarationList->first();
        old_decls;
@@ -1008,7 +1020,12 @@ void VariableType::verify(void) {
 
 VariableType*
 VariableType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new VariableType(type);
+  VariableType *copy = new VariableType(type);
+  if (map) { 
+    map->put(metaType, copy->metaType);
+    map->put(metaType->symbol, copy->metaType->symbol);
+  }
+  return copy;
 }
 
 
