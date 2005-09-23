@@ -47074,3 +47074,47 @@ Modified files:
 	                               record_type_hierarchy-3-error.good 
 	                               union_type_hierarchy-3-error.good 
 
+---------------------------------------------------------------------------
+
+09/23/05 13:44:00 -- deitz
+
+Log message:
+	Made instantiation and preinstantiation instantiate all functions that
+	contain an instantiated type, not just functions in the scope of the
+	instantiated type.  This is necessary because of module use.
+	
+	We now only build the assignment function for a record if an
+	assignment function for it cannot be found anywhere, not just in its
+	scope.
+	
+	We now build an htuple assignment function from a tuple and I added an
+	htuple general assignment function.  This lets us assign tuples to
+	homogeneous tuples.  I didn't have luck adding a tuple assignment
+	function yet, so we can't assign a homogeneous tuple to a regular
+	tuple.
+	
+	Performance note.  We should probably keep track of all the functions
+	in a program rather than calling collect_functions everytime we need
+	to look at them.
+	
+	Added four more homogeneous tuple test cases.  One future.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             insertLiteralTemps.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_htuple.chpl 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+Added files:
+	chapel/test/types/tuple/deitz/: test_htuple2.chpl 
+	                                test_htuple2.good 
+	                                test_htuple3.chpl 
+	                                test_htuple3.good 
+	                                test_htuple4.chpl 
+	                                test_htuple4.future 
+	                                test_htuple4.good 
+	                                test_htuple5.chpl 
+	                                test_htuple5.good 
+
