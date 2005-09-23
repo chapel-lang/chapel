@@ -47033,3 +47033,26 @@ Log message:
 Modified files:
 	chapel/test/arrays/deitz/: new_class_trial1.chpl 
 
+---------------------------------------------------------------------------
+
+09/22/05 17:25:50 -- deitz
+
+Log message:
+	Added a fake data module supporting vector data up to size 16 with
+	0-based indexing.
+	
+	Reimplemented the homogeneous tuple using this fake data.
+	
+	Added a preliminary domain class using this fake data.
+	
+	Added a future test case that fails resolving symbols from analysis.
+
+Modified files:
+	chapel/compiler/passes/: filesToAST.cpp 
+	chapel/modules/standard/: _chpl_htuple.chpl _chpl_standard.chpl 
+Added files:
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_data.chpl 
+	chapel/test/arrays/deitz/: test__adomain1.chpl 
+	                           test__adomain1.future 
+	                           test__adomain1.good 
+
