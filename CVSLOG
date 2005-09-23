@@ -47023,3 +47023,13 @@ Added files:
 	                              gcd.good if.chpl if.good 
 	                              tuple.chpl tuple.good 
 
+---------------------------------------------------------------------------
+
+09/22/05 17:05:14 -- deitz
+
+Log message:
+	Removed extra () no longer necessary in this test.
+
+Modified files:
+	chapel/test/arrays/deitz/: new_class_trial1.chpl 
+
