@@ -47138,3 +47138,52 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: type.cpp 
 
+---------------------------------------------------------------------------
+
+09/26/05 10:01:09 -- deitz
+
+Log message:
+	Changed glomstrings to stringcat.  Changed copystring to stringcpy.
+	To make them more like the C standard string routines, but with more
+	copying and automatic allocation.
+	
+	Also stringcat does not need a number to say how many arguments it
+	should be passed, but has a maximum of five.  There is better
+	compile-time usage checking now.  So
+	
+	  glomstrings(3, "hello", " ", "world")
+	
+	is now
+	
+	  strcat("hello", " ", "world").
+	
+	Noticed this morning that I should have used defualt arguments rather
+	than creating multiple functions.  Will change this eventually.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp stmt.cpp symbol.cpp 
+	                      type.cpp 
+	chapel/compiler/backend/: beautify.cpp 
+	chapel/compiler/include/: stringutil.h 
+	chapel/compiler/main/: arg.cpp driver.cpp runpasses.cpp 
+	chapel/compiler/parser/: chapel.lex chapel.y parser.cpp 
+	chapel/compiler/passes/: codegen.cpp createEntryPoint.cpp 
+	                         filesToAST.cpp pass.cpp 
+	chapel/compiler/symtab/: codegenOne.cpp flatten.cpp 
+	                         insertDefaultInitVariables.cpp 
+	                         symtab.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             buildLValueFunctions.cpp 
+	                             eliminateReturns.cpp htmlview.cpp 
+	                             inlineFunctions.cpp 
+	                             insertFunctionTemps.cpp 
+	                             insertLiteralTemps.cpp 
+	                             insertThisParameters.cpp 
+	                             insertVariableInitializations.cpp 
+	                             processParameters.cpp 
+	                             resolveSymbols.cpp 
+	                             scopeResolveGotos.cpp 
+	                             scopeResolveSymbols.cpp 
+	                             transformLetExprs.cpp 
+	chapel/compiler/util/: files.cpp stringutil.cpp 
+
