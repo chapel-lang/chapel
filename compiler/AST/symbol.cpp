@@ -550,7 +550,9 @@ FnSymbol::FnSymbol(char* initName,
   _getter(NULL),
   method_type(NON_METHOD),
   instantiatedFrom(NULL),
-  basicBlocks(NULL)
+  basicBlocks(NULL),
+  calledBy(NULL),
+  calls(NULL)
 { }
 
 
