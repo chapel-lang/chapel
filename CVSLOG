@@ -47187,3 +47187,14 @@ Modified files:
 	                             transformLetExprs.cpp 
 	chapel/compiler/util/: files.cpp stringutil.cpp 
 
+---------------------------------------------------------------------------
+
+09/26/05 11:18:48 -- jplevyak
+
+Log message:
+	Initialize FnSymbol::calledBy and FnSymbol::calls fields to
+	fix valgrind errors.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
