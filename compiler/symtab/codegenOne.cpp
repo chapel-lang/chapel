@@ -10,7 +10,7 @@
 
 static void applyRenamePragma(Symbol* sym) {
   if (char* pragma = sym->hasPragma("rename"))
-    sym->cname = copystring(pragma+7);
+    sym->cname = stringcpy(pragma+7);
 }
 
 
@@ -36,7 +36,7 @@ CodegenOne::CodegenOne() {
 
 void CodegenOne::processSymbol(Symbol* sym) {
   if (sym->name == sym->cname)
-    sym->cname = copystring(sym->name);
+    sym->cname = stringcpy(sym->name);
 
   applyRenamePragma(sym);
 
@@ -47,7 +47,7 @@ void CodegenOne::processSymbol(Symbol* sym) {
 
   if (!dynamic_cast<ArgSymbol*>(sym) && sym->parentScope->type != SCOPE_CLASS) {
     if (cnames.get(sym->cname)) {
-      sym->cname = glomstrings(4, "_", intstring(sym->id), "_", sym->cname);
+      sym->cname = stringcat("_", intstring(sym->id), "_", sym->cname);
     } else {
       cnames.put(sym->cname, 1);
     }

@@ -58,7 +58,7 @@ void Stmt::codegen(FILE* outfile) {
       if (strcmp(filename, priorFilename) != 0 ||  
           justStartedGeneratingFunction) {
         fprintf(outfile, "_chpl_input_filename = \"%s\";\n", filename);
-        priorFilename = copystring(filename);
+        priorFilename = stringcpy(filename);
         justStartedGeneratingFunction = false;
       }
       if (lineno != priorLineno) {

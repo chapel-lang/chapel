@@ -45,7 +45,7 @@ static void runPass(char* passName, Pass* pass, char* args) {
   struct timeval stopTime;
   struct timezone timezone;
 
-  currentTraversal = copystring(passName);
+  currentTraversal = stringcpy(passName);
   pass->setArgs(args);
   if (fdump_html) {
     gettimeofday(&startTime, &timezone);
@@ -81,7 +81,7 @@ static void runPass(char* passName, Pass* pass, char* args) {
     }
     fprintf(html_index_file, "</TD><TD>", passName);
     HtmlView* htmlview = new HtmlView(analysis_pass);
-    htmlview->setArgs(glomstrings(2, "html ", passName));
+    htmlview->setArgs(stringcat("html ", passName));
     htmlview->run(Symboltable::getModules(MODULES_CODEGEN));
     fprintf(html_index_file, "</TD></TR>", passName);
     fflush(html_index_file);
@@ -167,7 +167,7 @@ void dump_index_footer(FILE* f) {
 
 void runPasses(char* passfilename) {
   if (fdump_html) {
-    html_index_file = fopen(glomstrings(2, log_dir, "index.html"), "w");
+    html_index_file = fopen(stringcat(log_dir, "index.html"), "w");
     dump_index_header(html_index_file);
     fprintf(html_index_file, "<TABLE CELLPADDING=\"0\" CELLSPACING=\"0\">");
   }

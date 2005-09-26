@@ -26,11 +26,11 @@ static void build_constructor(ClassType* structType) {
     }
     tmp = tmp->overload;
   }
-  char* name = glomstrings(2, "_construct_", structType->symbol->name);
+  char* name = stringcat("_construct_", structType->symbol->name);
   FnSymbol* fn = Symboltable::startFnDef(new FnSymbol(name));
   structType->defaultConstructor = fn;
   fn->fnClass = FN_CONSTRUCTOR;
-  fn->cname = glomstrings(2, "_construct_", structType->symbol->cname);
+  fn->cname = stringcat("_construct_", structType->symbol->cname);
 
   AList<DefExpr>* args = new AList<DefExpr>();
 
@@ -74,7 +74,7 @@ static void build_constructor(ClassType* structType) {
 
   DefExpr* def_expr = new DefExpr(fn->_this);
   stmts->insertAtTail(new ExprStmt(def_expr));
-  char* description = glomstrings(2, "instance of class ", structType->symbol->name);
+  char* description = stringcat("instance of class ", structType->symbol->name);
   Expr* alloc_rhs = new CallExpr(Symboltable::lookupInternal("_chpl_alloc"),
                                  new SymExpr(structType->symbol),
                                  new_StringLiteral(description));
@@ -107,7 +107,7 @@ static void build_getter(ClassType* structType, Symbol *tmp) {
   FnSymbol* getter_fn = Symboltable::startFnDef(new FnSymbol(tmp->name));
   getter_fn->addPragma("inline");
   getter_fn->cname =
-    glomstrings(4, "_", structType->symbol->cname, "_get_", tmp->cname);
+    stringcat("_", structType->symbol->cname, "_get_", tmp->cname);
   getter_fn->_getter = tmp;
   ArgSymbol* getter_this = new ArgSymbol(INTENT_REF, "this", structType);
   AList<DefExpr>* getter_args = new AList<DefExpr>(new DefExpr(getter_this));
@@ -133,7 +133,7 @@ static void build_setters_and_getters(ClassType* structType) {
     char* setter_name = tmp->name;
     FnSymbol* setter_fn = Symboltable::startFnDef(new FnSymbol(setter_name));
     setter_fn->addPragma("inline");
-    setter_fn->cname = glomstrings(4, "_", structType->symbol->name, "_set_", tmp->name);
+    setter_fn->cname = stringcat("_", structType->symbol->name, "_set_", tmp->name);
     setter_fn->_setter = tmp;
     ArgSymbol* setter_this = new ArgSymbol(INTENT_REF, "this", structType);
     AList<DefExpr>* args = new AList<DefExpr>(new DefExpr(setter_this));
@@ -279,14 +279,14 @@ static void buildDefaultIOFunctions(Type* type) {
           write->getFnSymbol()->formals->length() == 1 &&
           write->getFnSymbol()->formals->only()->sym->type == type) {
         userWriteDefined = true;
-        write->cname = glomstrings(3, "_user_", type->symbol->name, "_write");
+        write->cname = stringcat("_user_", type->symbol->name, "_write");
         break;
       }
       write = write->overload;
     }
     if (!userWriteDefined) {
       FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("write"));
-      fn->cname = glomstrings(3, "_auto_", type->symbol->name, "_write");
+      fn->cname = stringcat("_auto_", type->symbol->name, "_write");
       ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "val", type);
       Symboltable::continueFnDef(fn, new AList<DefExpr>(new DefExpr(arg)), dtVoid);
       AList<Stmt>* body = type->buildDefaultWriteFunctionBody(arg);
@@ -302,14 +302,14 @@ static void buildDefaultIOFunctions(Type* type) {
     while (read) {
       if (read->getFnSymbol() && read->getFnSymbol()->formals->only()->sym->type == type) {
         userReadDefined = true;
-        read->cname = glomstrings(3, "_user_", type->symbol->name, "_read");
+        read->cname = stringcat("_user_", type->symbol->name, "_read");
         break;
       }
       read = read->overload;
     }
     if (!userReadDefined) {
       FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("read"));
-      fn->cname = glomstrings(3, "_auto_", type->symbol->name, "_read");
+      fn->cname = stringcat("_auto_", type->symbol->name, "_read");
       ArgSymbol* arg = new ArgSymbol(INTENT_INOUT, "val", type);
       Symboltable::continueFnDef(fn, new AList<DefExpr>(new DefExpr(arg)), dtVoid);
       AList<Stmt>* body = type->buildDefaultReadFunctionBody(arg);

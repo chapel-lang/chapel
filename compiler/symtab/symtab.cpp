@@ -407,7 +407,7 @@ DefExpr*
 Symboltable::defineParam(intentTag tag, char* ident, Expr* type, Expr* init) {
   ArgSymbol* argSymbol = new ArgSymbol(tag, ident, dtUnknown);
   if (tag == INTENT_TYPE) {
-    char *name = glomstrings(2, "__type_variable_", argSymbol->name);
+    char *name = stringcat("__type_variable_", argSymbol->name);
     VariableType* new_type = new VariableType(getMetaType(NULL));
     TypeSymbol* new_type_symbol = new TypeSymbol(name, new_type);
     new_type->addSymbol(new_type_symbol);
@@ -482,7 +482,7 @@ PrimitiveType* Symboltable::definePrimitiveType(char* name, char* cname, Symbol 
 Type* Symboltable::defineBuiltinType(char* name, char* cname, Type *newType) {
   TypeSymbol* sym = new TypeSymbol(name, newType);
   rootScope->define(sym);
-  sym->cname = copystring(cname);
+  sym->cname = stringcpy(cname);
   newType->addSymbol(sym);
 
   builtinTypes.add(newType);

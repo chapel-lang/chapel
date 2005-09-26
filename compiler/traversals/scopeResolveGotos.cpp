@@ -46,19 +46,19 @@ void ScopeResolveGotos::preProcessStmt(Stmt* stmt) {
     }
 
     if (LabelStmt* labelStmt = dynamic_cast<LabelStmt*>(loop_block->parentStmt->prev)) {
-      LabelSymbol* post_label_symbol = new LabelSymbol(glomstrings(2, "_post", labelStmt->defLabel->sym->name));
+      LabelSymbol* post_label_symbol = new LabelSymbol(stringcat("_post", labelStmt->defLabel->sym->name));
       loop_block->parentStmt->insertAfter(new LabelStmt(new DefExpr(post_label_symbol)));
     }
 
     FindBreakOrContinue* traversal = new FindBreakOrContinue();
     loop_block->body->traverse(traversal, true);
     if (traversal->found) {
-      char* label_name = glomstrings(2, "_loop_label_", intstring(uid++));
+      char* label_name = stringcat("_loop_label_", intstring(uid++));
       LabelSymbol* label_symbol = new LabelSymbol(label_name);
       LabelStmt* label_stmt = new LabelStmt(new DefExpr(label_symbol));
       stmt->insertBefore(label_stmt);
       preCurrentLoop = label_stmt;
-      label_name = glomstrings(2, "_post", label_name);
+      label_name = stringcat("_post", label_name);
       label_symbol = new LabelSymbol(label_name);
       label_stmt = new LabelStmt(new DefExpr(label_symbol));
       stmt->insertAfter(label_stmt);
@@ -88,7 +88,7 @@ void ScopeResolveGotos::preProcessStmt(Stmt* stmt) {
   } else if (dynamic_cast<UnresolvedSymbol*>(goto_stmt->label)) {
     char* label_name = goto_stmt->label->name;
     if (goto_stmt->goto_type == goto_break) {
-      label_name = glomstrings(2, "_post", label_name);
+      label_name = stringcat("_post", label_name);
     }
     Symbol* new_symbol = Symboltable::lookup(label_name);
     if (dynamic_cast<LabelSymbol*>(new_symbol)) {

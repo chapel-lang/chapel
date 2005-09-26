@@ -195,7 +195,7 @@ void UnresolvedSymbol::codegen(FILE* outfile) {
 
 UnresolvedSymbol*
 UnresolvedSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new UnresolvedSymbol(copystring(name));
+  return new UnresolvedSymbol(stringcpy(name));
 }
 
 
@@ -229,8 +229,8 @@ void VarSymbol::verify(void) {
 VarSymbol*
 VarSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   VarSymbol* newVarSymbol = 
-    new VarSymbol(copystring(name), type, varClass, consClass);
-  newVarSymbol->cname = copystring(cname);
+    new VarSymbol(stringcpy(name), type, varClass, consClass);
+  newVarSymbol->cname = stringcpy(cname);
   newVarSymbol->noDefaultInit = noDefaultInit;
   return newVarSymbol;
 }
@@ -367,11 +367,11 @@ void ArgSymbol::verify(void) {
 
 ArgSymbol*
 ArgSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  ArgSymbol *ps = new ArgSymbol(intent, copystring(name), type);
+  ArgSymbol *ps = new ArgSymbol(intent, stringcpy(name), type);
   if (variableTypeSymbol)
     ps->variableTypeSymbol = variableTypeSymbol;
   ps->isGeneric = isGeneric;
-  ps->cname = copystring(cname);
+  ps->cname = stringcpy(cname);
   return ps;
 }
 
@@ -475,9 +475,9 @@ void TypeSymbol::verify(void) {
 TypeSymbol*
 TypeSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   Type* new_definition = COPY_INTERNAL(definition);
-  TypeSymbol* new_definition_symbol = new TypeSymbol(copystring(name), new_definition);
+  TypeSymbol* new_definition_symbol = new TypeSymbol(stringcpy(name), new_definition);
   new_definition->addSymbol(new_definition_symbol);
-  new_definition_symbol->cname = copystring(cname);
+  new_definition_symbol->cname = stringcpy(cname);
   return new_definition_symbol;
 }
 
@@ -493,7 +493,7 @@ TypeSymbol* TypeSymbol::clone(Map<BaseAST*,BaseAST*>* map) {
   if (!newClass) {
     INT_FATAL(this, "Class cloning went horribly wrong");
   }
-  clone->cname = glomstrings(3, clone->cname, "_clone_", intstring(uid++));
+  clone->cname = stringcat(clone->cname, "_clone_", intstring(uid++));
   defPoint->parentStmt->insertBefore(new ExprStmt(new DefExpr(clone)));
   clone->addPragmas(&pragmas);
   return clone;
@@ -632,7 +632,7 @@ FnSymbol* FnSymbol::clone(Map<BaseAST*,BaseAST*>* map) {
   // prelude, because they likely refer to external functions for
   // which clones will not be built
   if (defPoint->parentScope->type != SCOPE_PRELUDE) {
-    defExpr->sym->cname = glomstrings(3, cname, "_clone_", intstring(uid++));
+    defExpr->sym->cname = stringcat(cname, "_clone_", intstring(uid++));
   }
   defPoint->parentStmt->insertAfter(copyStmt);
   TRAVERSE(copyStmt, new ClearTypes(), true);
@@ -654,7 +654,7 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
     Symbol* coercionSubstitution = coercion_substitutions->get(formal->sym);
     if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(coercionSubstitution)) {
       newFormal->type = ts->definition;
-      char* tempName = glomstrings(2, "_coercion_temp_", formal->sym->name);
+      char* tempName = stringcat("_coercion_temp_", formal->sym->name);
       VarSymbol* temp = new VarSymbol(tempName, formal->sym->type);
       DefExpr* tempDefExpr = new DefExpr(temp, new SymExpr(newFormal));
       wrapper_body->body->insertAtTail(new ExprStmt(tempDefExpr));
@@ -675,7 +675,7 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
                                       retType, NULL, wrapper_body,
                                       fnClass, noParens, retRef);
   wrapper_fn->method_type = method_type;
-  wrapper_fn->cname = glomstrings(3, cname, "_coerce_wrap", intstring(uid++));
+  wrapper_fn->cname = stringcat(cname, "_coerce_wrap", intstring(uid++));
   wrapper_fn->addPragma("inline");
   defPoint->parentStmt->insertAfter(new ExprStmt(new DefExpr(wrapper_fn)));
   wrapper_fn->addPragmas(&pragmas);
@@ -697,7 +697,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
       wrapper_actuals->insertAtTail(new SymExpr(newFormal));
     } else {
       intentTag formal_intent = dynamic_cast<ArgSymbol*>(formal->sym)->intent;
-      char* temp_name = glomstrings(2, "_default_temp_", formal->sym->name);
+      char* temp_name = stringcat("_default_temp_", formal->sym->name);
       VarSymbol* temp = new VarSymbol(temp_name, formal->sym->type);
       Expr* temp_init = NULL;
       if (formal_intent != INTENT_OUT)
@@ -722,7 +722,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
                                       retType, NULL, wrapper_body,
                                       fnClass, noParens, retRef);
   wrapper_fn->method_type = method_type;
-  wrapper_fn->cname = glomstrings(3, cname, "_default_wrap", intstring(uid++));
+  wrapper_fn->cname = stringcat(cname, "_default_wrap", intstring(uid++));
   wrapper_fn->addPragma("inline");
   defPoint->parentStmt->insertAfter(new ExprStmt(new DefExpr(wrapper_fn)));
   wrapper_fn->addPragmas(&pragmas);
@@ -754,7 +754,7 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_formals) {
                                       retType, NULL, new BlockStmt(stmt),
                                       fnClass, noParens, retRef);
   wrapper_fn->method_type = method_type;
-  wrapper_fn->cname = glomstrings(3, cname, "_order_wrap", intstring(uid++));
+  wrapper_fn->cname = stringcat(cname, "_order_wrap", intstring(uid++));
   wrapper_fn->addPragma("inline");
   defPoint->parentStmt->insertBefore(new ExprStmt(new DefExpr(wrapper_fn)));
   reset_file_info(wrapper_fn->defPoint->parentStmt, lineno, filename);
@@ -869,7 +869,7 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
         ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(fnStmt);
         DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr);
         defExpr->sym->cname =
-          glomstrings(3, defExpr->sym->cname, "_instantiate_", intstring(uid++));
+          stringcat(defExpr->sym->cname, "_instantiate_", intstring(uid++));
         fn->defPoint->parentStmt->insertBefore(fnStmt);
         instantiate_add_subs(substitutions, map);
         instantiate_update_expr(substitutions, defExpr, map);
@@ -911,7 +911,7 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
     instantiate_add_subs(substitutions, map);
     instantiate_update_expr(substitutions, defExpr, map);
     defExpr->sym->cname =
-      glomstrings(3, defExpr->sym->cname, "_instantiate_", intstring(uid++));
+      stringcat(defExpr->sym->cname, "_instantiate_", intstring(uid++));
     copy = dynamic_cast<FnSymbol*>(defExpr->sym);
 
     FnSymbol *newFn = dynamic_cast<FnSymbol*>(defExpr->sym);
@@ -1021,7 +1021,7 @@ FnSymbol::preinstantiate_generic(Map<BaseAST*,BaseAST*>* substitutions) {
 
       fclones.add(fclone);
       fclone->instantiatedFrom = fn;
-      fclone->cname = glomstrings(3, fn->cname, "_inst_", intstring(uid++));
+      fclone->cname = stringcat(fn->cname, "_inst_", intstring(uid++));
       fn->defPoint->parentStmt->insertBefore(new ExprStmt(new DefExpr(fclone)));
       fclone->addPragmas(&fn->pragmas);
       TRAVERSE(fclone, new UpdateSymbols(substitutions), true);
@@ -1194,7 +1194,7 @@ void EnumSymbol::verify(void) {
 
 EnumSymbol*
 EnumSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new EnumSymbol(copystring(name));
+  return new EnumSymbol(stringcpy(name));
 }
 
 
@@ -1323,8 +1323,8 @@ void LabelSymbol::verify(void) {
 
 LabelSymbol* 
 LabelSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  LabelSymbol* copy = new LabelSymbol(copystring(name));
-  copy->cname = copystring(cname);
+  LabelSymbol* copy = new LabelSymbol(stringcpy(name));
+  copy->cname = stringcpy(cname);
   return copy;
 }
 
@@ -1348,7 +1348,7 @@ Symbol *new_StringSymbol(char *str) {
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   if (s)
     return s;
-  s = new VarSymbol(glomstrings(2, "_literal_", intstring(literal_id++)), dtString);
+  s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), dtString);
   int l = strlen(str);
   char *n = (char*)MALLOC(l + 3);
   strcpy(n + 1, str);
@@ -1370,7 +1370,7 @@ Symbol *new_BoolSymbol(bool b) {
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   if (s)
     return s;
-  s = new VarSymbol(glomstrings(2, "_literal_", intstring(literal_id++)), dtBoolean);
+  s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), dtBoolean);
   if (b)
     s->cname = "true";
   else
@@ -1389,7 +1389,7 @@ Symbol *new_IntSymbol(long b) {
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   if (s)
     return s;
-  s = new VarSymbol(glomstrings(2, "_literal_", intstring(literal_id++)), dtInteger);
+  s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), dtInteger);
   char n[80];
   sprintf(n, "%ld", b);
   s->cname = dupstr(n);
@@ -1408,7 +1408,7 @@ Symbol *new_FloatSymbol(char *n, double b) {
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   if (s)
     return s;
-  s = new VarSymbol(glomstrings(2, "_literal_", intstring(literal_id++)), dtFloat);
+  s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), dtFloat);
   s->immediate = new Immediate;
   s->cname = dupstr(n);
   *s->immediate = imm;
@@ -1426,7 +1426,7 @@ Symbol *new_ComplexSymbol(char *n, double r, double i) {
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   if (s)
     return s;
-  s = new VarSymbol(glomstrings(2, "_literal_", intstring(literal_id++)), dtComplex);
+  s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), dtComplex);
   s->immediate = new Immediate;
   s->cname = dupstr(n);
   *s->immediate = imm;

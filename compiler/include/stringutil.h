@@ -1,9 +1,18 @@
 #ifndef _stringutil_H_
 #define _stringutil_H_
 
-char* glomstrings(int numstrings, ...);
-char* copystring(char* str);
+int stringlen(const char* s1);
+int stringlen(const char* s1, const char* s2);
+int stringlen(const char* s1, const char* s2, const char* s3);
+int stringlen(const char* s1, const char* s2, const char* s3, const char* s4);
+int stringlen(const char* s1, const char* s2, const char* s3, const char* s4, const char* s5);
+
+char* stringcpy(const char* s1);
+char* stringcat(const char* s1, const char* s2);
+char* stringcat(const char* s1, const char* s2, const char* s3);
+char* stringcat(const char* s1, const char* s2, const char* s3, const char* s4);
+char* stringcat(const char* s1, const char* s2, const char* s3, const char* s4, const char* s5);
+
 char* intstring(int i);
 
 #endif
-

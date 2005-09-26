@@ -151,12 +151,12 @@ help(ArgumentState *arg_state, char *arg_unused) {
 }
 
 static void handleLibrary(ArgumentState* arg_state, char* arg_unused) {
-  addLibInfo(glomstrings(2, "-l", libraryFilename));
+  addLibInfo(stringcat("-l", libraryFilename));
 }
 
 
 static void handleLibPath(ArgumentState* arg_state, char* arg_unused) {
-  addLibInfo(glomstrings(2, "-L", libraryFilename));
+  addLibInfo(stringcat("-L", libraryFilename));
 }
 
 void
@@ -199,7 +199,7 @@ init_system() {
 
 static void
 compute_program_name_loc(char* orig_argv0, char** name, char** loc) {
-  char* argv0 = copystring(orig_argv0);
+  char* argv0 = stringcpy(orig_argv0);
   char* lastslash = strrchr(argv0, '/');
   if (lastslash == NULL) {
     *name = argv0;
@@ -216,7 +216,7 @@ compute_program_name_loc(char* orig_argv0, char** name, char** loc) {
 
 void runCompilerInGDB(int argc, char* argv[]) {
   char* gdbCommandFilename = createGDBFile(argc, argv);
-  char* command = glomstrings(4, "gdb -q ", argv[0]," -x ", gdbCommandFilename);
+  char* command = stringcat("gdb -q ", argv[0]," -x ", gdbCommandFilename);
   int status = mysystem(command, "running gdb", 0);
 
   clean_exit(status);

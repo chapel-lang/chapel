@@ -868,11 +868,11 @@ var_decl_stmt_inner:
 record_tuple_inner_type:
   record_inner_type_ls TRP
     {
-      $$ = Symboltable::defineStructType(glomstrings(2, "_anon_record", intstring(anon_record_uid++)), new ClassType(CLASS_RECORD), $1);
+      $$ = Symboltable::defineStructType(stringcat("_anon_record", intstring(anon_record_uid++)), new ClassType(CLASS_RECORD), $1);
     }
 | tuple_inner_type_ls TRP
     {
-      char *tupleName = glomstrings(2, "_tuple", intstring($1->length()));
+      char *tupleName = stringcat("_tuple", intstring($1->length()));
       $$ = new CallExpr(tupleName, $1);
     }
 ;
@@ -881,7 +881,7 @@ record_tuple_inner_type:
 record_tuple_type:
   TRECORD TLCBR decl_stmt_ls TRCBR
     {
-      $$ = Symboltable::defineStructType(glomstrings(2, "_anon_record", intstring(anon_record_uid++)), new ClassType(CLASS_RECORD), $3);
+      $$ = Symboltable::defineStructType(stringcat("_anon_record", intstring(anon_record_uid++)), new ClassType(CLASS_RECORD), $3);
     }
 | TLP record_tuple_inner_type
     {
@@ -996,7 +996,7 @@ pragma_ls:
 
 pragma:
   TPRAGMA STRINGLITERAL
-{ $$ = copystring($2); }
+{ $$ = stringcpy($2); }
 ;
 
 
@@ -1033,10 +1033,10 @@ tuple_paren_expr:
         for_alist(Expr, expr, $2) {
           argList->insertAtTail(
             new NamedExpr(
-              glomstrings(2, "_f", intstring(++size)),
+              stringcat("_f", intstring(++size)),
               expr->copy()));
         }
-        $$ = new CallExpr(glomstrings(2, "_tuple", intstring(size)), argList);
+        $$ = new CallExpr(stringcat("_tuple", intstring(size)), argList);
       }
     }
 ;
@@ -1219,7 +1219,7 @@ literal:
 
 identifier:
   TIDENT
-    { $$ = copystring(yytext); }
+    { $$ = stringcpy(yytext); }
 ;
 
 

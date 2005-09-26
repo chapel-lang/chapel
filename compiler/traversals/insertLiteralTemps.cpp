@@ -38,7 +38,7 @@ static void handleBasicSequenceAppendPrependOperations(CallExpr* seqCat) {
 
 static void destructureTuple(CallExpr* tuple) {
   static int uid = 1;
-  char* name = glomstrings(2, "_tuple_tmp_", intstring(uid++));
+  char* name = stringcat("_tuple_tmp_", intstring(uid++));
   DefExpr* def = new DefExpr(new VarSymbol(name));
   tuple->parentStmt->insertBefore(new ExprStmt(def));
   int i = 1;
@@ -56,7 +56,7 @@ static void destructureTuple(CallExpr* tuple) {
 }
 
 static void createTupleBaseType(int size) {
-  char *name = glomstrings(2, "_tuple", intstring(size));
+  char *name = stringcat("_tuple", intstring(size));
 
   if (Symboltable::lookupInScope(name, commonModule->modScope))
     return;
@@ -66,7 +66,7 @@ static void createTupleBaseType(int size) {
   // Build type declarations
   Vec<Type*> types;
   for (int i = 1; i <= size; i++) {
-    char* typeName = glomstrings(2, "_t", intstring(i));
+    char* typeName = stringcat("_t", intstring(i));
     VariableType* type = new VariableType(getMetaType(0));
     TypeSymbol* typeSymbol = new TypeSymbol(typeName, type);
     type->addSymbol(typeSymbol);
@@ -77,7 +77,7 @@ static void createTupleBaseType(int size) {
   // Build field declarations
   Vec<VarSymbol*> fields;
   for (int i = 1; i <= size; i++) {
-    char* fieldName = glomstrings(2, "_f", intstring(i));
+    char* fieldName = stringcat("_f", intstring(i));
     VarSymbol* field = new VarSymbol(fieldName, types.v[i-1]);
     decls->insertAtTail(new ExprStmt(new DefExpr(field)));
     fields.add(field);
@@ -108,17 +108,17 @@ static void createTupleBaseType(int size) {
   writeFn->formals = new AList<DefExpr>(new DefExpr(writeArg));
   writeFn->retType = dtUnknown;
   AList<Expr>* actuals = new AList<Expr>();
-  actuals->insertAtTail(new_StringLiteral(copystring("(")));
+  actuals->insertAtTail(new_StringLiteral(stringcpy("(")));
   for (int i = 1; i <= size; i++) {
     if (i != 1)
-      actuals->insertAtTail(new_StringLiteral(copystring(", ")));
+      actuals->insertAtTail(new_StringLiteral(stringcpy(", ")));
     actuals->insertAtTail(
       new MemberAccess(
         new SymExpr(
           new UnresolvedSymbol("val")),
-        new UnresolvedSymbol(glomstrings(2, "_f", intstring(i)))));
+        new UnresolvedSymbol(stringcat("_f", intstring(i)))));
   }
-  actuals->insertAtTail(new_StringLiteral(copystring(")")));
+  actuals->insertAtTail(new_StringLiteral(stringcpy(")")));
   writeFn->body = new BlockStmt(new ExprStmt(new CallExpr("write", actuals)));
   commonModule->stmts->insertAtTail(new ExprStmt(new DefExpr(writeFn)));
 

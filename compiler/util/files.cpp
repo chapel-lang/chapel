@@ -30,7 +30,7 @@ static char** libFlag = NULL;
 
 
 char* sysdirToChplRoot(char* systemDir) {
-  char* chplroot = copystring(systemDir);
+  char* chplroot = stringcpy(systemDir);
   char* compilerSubdir = strstr(chplroot, "compiler");
   if (!compilerSubdir) {
     INT_FATAL("Can't convert systemDir to chapel root");
@@ -43,7 +43,7 @@ char* sysdirToChplRoot(char* systemDir) {
     }
   } while (anotherCompilerSubdir);
   if (compilerSubdir == chplroot) {
-    chplroot = copystring(".");
+    chplroot = stringcpy(".");
   } else {
     *(compilerSubdir-1) = '\0';
   }
@@ -59,7 +59,7 @@ void addLibInfo(char* libName) {
     libSpace = 2*numLibFlags;
     libFlag = (char**)REALLOC(libFlag, libSpace*sizeof(char*));
   }
-  libFlag[numLibFlags-1] = copystring(libName);
+  libFlag[numLibFlags-1] = stringcpy(libName);
 }
 
 
@@ -86,7 +86,7 @@ static void createTmpDir(void) {
       userid = passwdinfo->pw_name;
     }
 
-    tmpdirname = glomstrings(4, tmpdirprefix, userid, mypidstr, tmpdirsuffix);
+    tmpdirname = stringcat(tmpdirprefix, userid, mypidstr, tmpdirsuffix);
 
     intDirName = tmpdirname;
     commandExplanation = "making temporary directory";
@@ -97,7 +97,7 @@ static void createTmpDir(void) {
 
   const char* mkdircommand = "mkdir ";
   const char* redirect = " > /dev/null 2>&1";
-  const char* command = glomstrings(3, mkdircommand, intDirName, redirect);
+  const char* command = stringcat(mkdircommand, intDirName, redirect);
 
   mysystem(command, commandExplanation, 1);
 }
@@ -119,7 +119,7 @@ void deleteTmpDir(void) {
       INT_FATAL("tmp directory name looks fishy");
     }
     const char* rmdircommand = "rm -r ";
-    char* command = glomstrings(2, rmdircommand, tmpdirname);
+    char* command = stringcat(rmdircommand, tmpdirname);
 
     mysystem(command, "removing temporary directory");
     tmpdirname = NULL;
@@ -137,7 +137,7 @@ static char* genIntFilename(char* filename) {
     createTmpDir();    
   }
 
-  char* newfilename = glomstrings(3, intDirName, slash, filename);
+  char* newfilename = stringcat(intDirName, slash, filename);
 
   return newfilename;
 }
@@ -151,7 +151,7 @@ static char* stripdirectories(char* filename) {
   } else {
     filenamebase++;
   }
-  char* strippedname = copystring(filenamebase);
+  char* strippedname = stringcpy(filenamebase);
 
   return strippedname;
 }
@@ -163,9 +163,9 @@ void genCFilenames(char* modulename, char** outfilename,
   static char* extheadsuffix = ".h";
   static char* intheadsuffix = "-internal.h";
 
-  *outfilename = glomstrings(2, modulename, outfilesuffix);
-  *extheadfilename = glomstrings(2, modulename, extheadsuffix);
-  *intheadfilename = glomstrings(2, modulename, intheadsuffix);
+  *outfilename = stringcat(modulename, outfilesuffix);
+  *extheadfilename = stringcat(modulename, extheadsuffix);
+  *intheadfilename = stringcat(modulename, intheadsuffix);
 }
 
 
@@ -175,7 +175,7 @@ static FILE* openfile(char* outfilename, char* mode = "w") {
   outfile = fopen(outfilename, mode);
   if (outfile == NULL) {
     char* errorstr = "opening ";
-    char* errormsg = glomstrings(4, errorstr, outfilename, ": ", 
+    char* errormsg = stringcat(errorstr, outfilename, ": ", 
                                  strerror(errno));
 
     fail(errormsg);
@@ -188,7 +188,7 @@ static FILE* openfile(char* outfilename, char* mode = "w") {
 static void closefile(FILE* thefile) {
   if (fclose(thefile) != 0) {
     char* errorstr = "closing file: ";
-    char* errormsg = glomstrings(2, errorstr, strerror(errno));
+    char* errormsg = stringcat(errorstr, strerror(errno));
 
     fail(errormsg);
   }
@@ -206,7 +206,7 @@ void closefile(fileinfo* thefile) {
 
 
 static void genIfndef(FILE* outfile, char* filename) {
-  char* macroname = copystring(filename);
+  char* macroname = stringcpy(filename);
   char* dot;
   do {
     dot = strchr(macroname, '.');
@@ -282,7 +282,7 @@ void closeCFiles(fileinfo* outfile,
 fileinfo* openTmpFile(char* tmpfilename) {
   fileinfo* newfile = (fileinfo*)MALLOC(sizeof(fileinfo));
 
-  newfile->filename = copystring(tmpfilename);
+  newfile->filename = stringcpy(tmpfilename);
   newfile->pathname = genIntFilename(tmpfilename);
   openfile(newfile, "w");
 
@@ -296,7 +296,7 @@ static void genMakefileHeader(char* srcfilename, char* systemDir) {
   // BLC: This condtitional is done so that cp won't complain if
   // the source and destination are the same file
   if (strcmp(executableFilename, intExeFilename) == 0) {
-    intExeFilename = glomstrings(2, intExeFilename, ".tmp");
+    intExeFilename = stringcat(intExeFilename, ".tmp");
   }
   // BLC: We generate a TMPBINNAME which is the name that will be used
   // by the C compiler in creating the executable, and is in the
@@ -352,7 +352,7 @@ void testInputFiles(int numFilenames, char* filename[]) {
   for (i=0; i<numFilenames; i++) {
     FILE* testfile = openInputFile(filename[i]);
     closeInputFile(testfile);
-    inputFilenames[i] = copystring(filename[i]);
+    inputFilenames[i] = stringcpy(filename[i]);
   }
   inputFilenames[i] = NULL;
 }
@@ -405,7 +405,7 @@ char* createGDBFile(int argc, char* argv[]) {
 
 void makeBinary(void) {
   const char* gmakeflags = printSystemCommands ? "-f " : "-s -f ";
-  char* command = glomstrings(4, "make ", gmakeflags, intDirName, 
+  char* command = stringcat("make ", gmakeflags, intDirName, 
                               "/Makefile");
   mysystem(command, "compiling generated source");
 }

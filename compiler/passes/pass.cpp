@@ -10,7 +10,7 @@ Pass::Pass(void) :
 
 
 void Pass::setArgs(char* init_args) {
-  args = copystring(init_args);
+  args = stringcpy(init_args);
 }
 
 

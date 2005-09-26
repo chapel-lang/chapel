@@ -52,7 +52,7 @@ static bool stmtIsGlob(Stmt* stmt) {
 
 
 static void createInitFn(ModuleSymbol* mod) {
-  char* fnName = glomstrings(2, "__init_", mod->name);
+  char* fnName = stringcat("__init_", mod->name);
   AList<Stmt>* globstmts = NULL;
   AList<Stmt>* initstmts = NULL;
   AList<Stmt>* definition = mod->stmts;
@@ -60,7 +60,7 @@ static void createInitFn(ModuleSymbol* mod) {
   // BLC: code to run user modules once only
   char* runOnce = NULL;
   if (mod->modtype == MOD_USER) {
-    runOnce = glomstrings(3, "__run_", mod->name, "_firsttime");
+    runOnce = stringcat("__run_", mod->name, "_firsttime");
     // create a boolean variable to guard module initialization
     DefExpr* varDefExpr = new DefExpr(new VarSymbol(runOnce, dtBoolean),
                                       new_BoolLiteral(true));

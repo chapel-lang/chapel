@@ -13,7 +13,7 @@ int yylineno;
 
 
 static char* filenameToModulename(char* filename) {
-  char* modulename = copystring(filename);
+  char* modulename = stringcpy(filename);
   char* lastslash = strrchr(modulename, '/');
   if (lastslash) {
     modulename = lastslash+1;

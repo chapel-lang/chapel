@@ -45,7 +45,7 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
         } else {
           init = formal->type->defaultValue ? new SymExpr(formal->type->defaultValue) : NULL;
         }
-        char* tmp_name = glomstrings(2, "_argtmp", intstring(uid++));
+        char* tmp_name = stringcat("_argtmp", intstring(uid++));
         VarSymbol* tmp = new VarSymbol(tmp_name, formal->type);
         tmp->noDefaultInit = true;
         DefExpr* tmp_def = new DefExpr(tmp, init);

@@ -44,11 +44,11 @@ BaseAST::BaseAST(astType_t type) :
   checkid(id);
   if (lineno == -1) {
     if (currentTraversal) {
-      traversalInfo = copystring(currentTraversal);
+      traversalInfo = stringcpy(currentTraversal);
     }
     if (currentLineno && currentFilename) {
       lineno = currentLineno;
-      filename = copystring(currentFilename);
+      filename = stringcpy(currentFilename);
     }
   }
 }
@@ -279,7 +279,7 @@ char* BaseAST::stringLoc(void) {
   char tmpBuff[tmpBuffSize];
 
   snprintf(tmpBuff, tmpBuffSize, "%s:%d", filename, lineno);
-  return copystring(tmpBuff);
+  return stringcpy(tmpBuff);
 }
 
 
@@ -305,7 +305,7 @@ void BaseAST::addPragma(char* str) {
   } else if (DefExpr* defExpr = dynamic_cast<DefExpr*>(this)) {
     defExpr->sym->addPragma(str);
   } else {
-    pragmas.add(copystring(str));
+    pragmas.add(stringcpy(str));
   }
 }
 

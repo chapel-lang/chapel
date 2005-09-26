@@ -20,7 +20,7 @@ static void check_legal_overload(Symbol* sym) {
       for (Symbol* tmp = sym->overload; tmp; tmp = tmp->overload) {
         if (!tmp->getFnSymbol()) {
           redefinitionLocations =
-            glomstrings(3, redefinitionLocations, "\n  ", tmp->stringLoc());
+            stringcat(redefinitionLocations, "\n  ", tmp->stringLoc());
         }
       }
       USR_FATAL(sym, "'%s' has multiple definitions, redefined at:%s",

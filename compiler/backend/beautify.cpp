@@ -174,7 +174,7 @@ void beautify(fileinfo* origfile) {
   char* znptr;
   fileinfo* tmpfile;
 
-  mysystem(glomstrings(2, "# beautifying ", origfile->filename),
+  mysystem(stringcat("# beautifying ", origfile->filename),
            "generating comment for --print-commands option");
 
   zline = -1;
@@ -262,7 +262,7 @@ void beautify(fileinfo* origfile) {
   closefile(tmpfile);
   closefile(origfile);
 
-  command = glomstrings(4, "mv ", tmpfile->pathname, " ", origfile->pathname);
+  command = stringcat("mv ", tmpfile->pathname, " ", origfile->pathname);
   mysystem(command, "moving beautified file");
   
   if (justification.n != 0) {

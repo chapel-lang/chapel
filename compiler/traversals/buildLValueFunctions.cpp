@@ -55,7 +55,7 @@ void BuildLValueFunctions::preProcessStmt(Stmt* stmt) {
   fn->retType = dtVoid;
   def_expr->exprType = NULL;
   fn->name = old_fn->name;
-  fn->cname = glomstrings(2, "_setter_", old_fn->cname);
+  fn->cname = stringcat("_setter_", old_fn->cname);
   old_expr_stmt->insertAfter(expr_stmt);
   TypeSymbol *setterTypeSymbol = 
     dynamic_cast<TypeSymbol*>(Symboltable::lookupInternal("_setterTokenType"));

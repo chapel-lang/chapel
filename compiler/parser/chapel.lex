@@ -24,7 +24,7 @@
 
 #define processStringLiteral(q)     \
   yylval.pch = eatStringLiteral(q); \
-  countToken(glomstrings(3, q, yylval.pch, q)); \
+  countToken(stringcat(q, yylval.pch, q)); \
   return(STRINGLITERAL)
 
 

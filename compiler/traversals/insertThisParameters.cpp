@@ -17,7 +17,7 @@ void InsertThisParameters::preProcessExpr(Expr* expr) {
   if (dynamic_cast<TypeSymbol*>(defExpr->sym)) {
     if (ClassType* classType = dynamic_cast<ClassType*>(defExpr->sym->type)) {
       forv_Vec(TypeSymbol, type, classType->types) {
-        type->cname = glomstrings(4, "_", classType->symbol->cname, "_", type->cname);
+        type->cname = stringcat("_", classType->symbol->cname, "_", type->cname);
       }
     }
   }
@@ -51,7 +51,7 @@ void InsertThisParameters::preProcessExpr(Expr* expr) {
    ***/
   
   if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(fn->typeBinding)) {
-    fn->cname = glomstrings(4, "_", typeSym->cname, "_", fn->cname);
+    fn->cname = stringcat("_", typeSym->cname, "_", fn->cname);
     if (fn->fnClass == FN_CONSTRUCTOR) {
       fn->body->body->reset(); // reset iteration
       fn->_this = new VarSymbol("this", typeSym->definition);
@@ -59,7 +59,7 @@ void InsertThisParameters::preProcessExpr(Expr* expr) {
       fn->retType = typeSym->definition;
       dynamic_cast<VarSymbol*>(fn->_this)->noDefaultInit = true;
       fn->body->body->insertAtHead(new ExprStmt(this_decl));
-      char* description = glomstrings(2, "instance of class ", typeSym->name);
+      char* description = stringcat("instance of class ", typeSym->name);
       Expr* alloc_rhs = new CallExpr(Symboltable::lookupInternal("_chpl_alloc"),
                                      new SymExpr(typeSym),
                                      new_StringLiteral(description));

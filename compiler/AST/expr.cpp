@@ -1319,7 +1319,7 @@ void NamedExpr::verify() {
 
 NamedExpr*
 NamedExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
-  return new NamedExpr(copystring(name), COPY_INTERNAL(actual));
+  return new NamedExpr(stringcpy(name), COPY_INTERNAL(actual));
 }
 
 

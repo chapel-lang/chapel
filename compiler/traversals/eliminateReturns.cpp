@@ -57,7 +57,7 @@ void EliminateReturns::preProcessStmt(Stmt* stmt) {
     VarSymbol* retval = dynamic_cast<VarSymbol*>(retvalSym);
     if (retval == NULL) {
       retval = new VarSymbol("_retval", retType);
-      retval->cname = glomstrings(3, retval->name, "_", intstring(uid++));
+      retval->cname = stringcat(retval->name, "_", intstring(uid++));
       retval->noDefaultInit = true;
       DefExpr* retDef = new DefExpr(retval);
       if (fnSym->defPoint->exprType)
@@ -113,7 +113,7 @@ void EliminateReturns::replaceRetWithGoto(ReturnStmt* ret_stmt, FnSymbol* fn_sym
 
 void EliminateReturns::createLabelWithRetAtFuncEnd(ReturnStmt* ret_stmt, FnSymbol* fn_sym) {
   LabelSymbol* label_sym = new LabelSymbol("_end_fn_label");
-  label_sym->cname = glomstrings(3, label_sym->name, "_", intstring(uid++));
+  label_sym->cname = stringcat(label_sym->name, "_", intstring(uid++));
   label_ret_map->put(fn_sym, label_sym);
   
   fn_sym->body->body->insertAtTail(new LabelStmt(new DefExpr(label_sym))); 

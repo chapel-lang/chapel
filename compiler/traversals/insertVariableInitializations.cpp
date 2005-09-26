@@ -40,7 +40,7 @@ static void insert_config_init(Stmt* stmt, VarSymbol* var, Type* type) {
   Expr* init_expr = var->defPoint->init ? var->defPoint->init : new SymExpr(type->defaultValue);
   AList<Expr>* args = new AList<Expr>(new SymExpr(var));
   args->insertAtTail(new SymExpr(type->symbol));
-  args->insertAtTail(new_StringLiteral(copystring(var->name)));
+  args->insertAtTail(new_StringLiteral(stringcpy(var->name)));
   args->insertAtTail(new_StringLiteral(dynamic_cast<Symbol*>(var->parentScope->astParent)->name));
   CallExpr* call = new CallExpr(initConfigFn, args);
   Expr* assign = new CallExpr(OP_GETSNORM, var, init_expr->copy());

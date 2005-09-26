@@ -34,7 +34,7 @@ static void mapFormalsToActuals(CallExpr* call, Map<BaseAST*,BaseAST*>* map) {
         INT_FATAL("Illegal reference actual encountered in inlining");
       }
     } else {
-      char* temp_name =  glomstrings(2, "_inline_temp_", formal->cname);
+      char* temp_name =  stringcat("_inline_temp_", formal->cname);
       VarSymbol* temp = new VarSymbol(temp_name, actual->typeInfo());
       temp->noDefaultInit = true;
       call->parentStmt->insertBefore
@@ -68,7 +68,7 @@ void InlineFunctions::postProcessExpr(Expr* expr) {
 
   Stmt* inlined_body = fn->body->copy(true,&map);
   if (fn->retType != dtVoid) {
-    char* temp_name = glomstrings(2, "_inline_", fn->cname);
+    char* temp_name = stringcat("_inline_", fn->cname);
     VarSymbol* temp = new VarSymbol(temp_name, fn->retType);
     temp->noDefaultInit = true;
     TRAVERSE(inlined_body, new ReplaceReturns(temp), true);

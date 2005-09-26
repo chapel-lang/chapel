@@ -59,66 +59,66 @@ static void mangle_overloaded_operator_function_names(FnSymbol* fn) {
   }
 
   if (!strcmp(fn->name, "=")) {
-    fn->cname = glomstrings(2, "_assign", intstring(uid++));
+    fn->cname = stringcat("_assign", intstring(uid++));
   }
   else if (!strcmp(fn->name, "+")) {
-    fn->cname = glomstrings(2, "_plus", intstring(uid++));
+    fn->cname = stringcat("_plus", intstring(uid++));
   }
   else if (!strcmp(fn->name, "#")) {
-    fn->cname = glomstrings(2, "_pound", intstring(uid++));
+    fn->cname = stringcat("_pound", intstring(uid++));
   }
   else if (!strcmp(fn->name, "-")) {
-    fn->cname = glomstrings(2, "_minus", intstring(uid++));
+    fn->cname = stringcat("_minus", intstring(uid++));
   }
   else if (!strcmp(fn->name, "*")) {
-    fn->cname = glomstrings(2, "_times", intstring(uid++));
+    fn->cname = stringcat("_times", intstring(uid++));
   }
   else if (!strcmp(fn->name, "/")) {
-    fn->cname = glomstrings(2, "_div", intstring(uid++));
+    fn->cname = stringcat("_div", intstring(uid++));
   }
   else if (!strcmp(fn->name, "mod")) {
-    fn->cname = glomstrings(2, "_mod", intstring(uid++));
+    fn->cname = stringcat("_mod", intstring(uid++));
   }
   else if (!strcmp(fn->name, "==")) {
-    fn->cname = glomstrings(2, "_eq", intstring(uid++));
+    fn->cname = stringcat("_eq", intstring(uid++));
   }
   else if (!strcmp(fn->name, "!=")) {
-    fn->cname = glomstrings(2, "_ne", intstring(uid++));
+    fn->cname = stringcat("_ne", intstring(uid++));
   }
   else if (!strcmp(fn->name, "<=")) {
-    fn->cname = glomstrings(2, "_le", intstring(uid++));
+    fn->cname = stringcat("_le", intstring(uid++));
   }
   else if (!strcmp(fn->name, ">=")) {
-    fn->cname = glomstrings(2, "_ge", intstring(uid++));
+    fn->cname = stringcat("_ge", intstring(uid++));
   }
   else if (!strcmp(fn->name, "<")) {
-    fn->cname = glomstrings(2, "_lt", intstring(uid++));
+    fn->cname = stringcat("_lt", intstring(uid++));
   }
   else if (!strcmp(fn->name, ">")) {
-    fn->cname = glomstrings(2, "_gt", intstring(uid++));
+    fn->cname = stringcat("_gt", intstring(uid++));
   }
   else if (!strcmp(fn->name, "&")) {
-    fn->cname = glomstrings(2, "_bitand", intstring(uid++));
+    fn->cname = stringcat("_bitand", intstring(uid++));
   }
   else if (!strcmp(fn->name, "|")) {
-    fn->cname = glomstrings(2, "_bitor", intstring(uid++));
+    fn->cname = stringcat("_bitor", intstring(uid++));
   }
   else if (!strcmp(fn->name, "^")) {
-    fn->cname = glomstrings(2, "_xor", intstring(uid++));
+    fn->cname = stringcat("_xor", intstring(uid++));
   }
   else if (!strcmp(fn->name, "and")) {
-    fn->cname = glomstrings(2, "_and", intstring(uid++));
+    fn->cname = stringcat("_and", intstring(uid++));
   }
   else if (!strcmp(fn->name, "or")) {
-    fn->cname = glomstrings(2, "_or", intstring(uid++));
+    fn->cname = stringcat("_or", intstring(uid++));
   }
   else if (!strcmp(fn->name, "**")) {
-    fn->cname = glomstrings(2, "_exponent", intstring(uid++));
+    fn->cname = stringcat("_exponent", intstring(uid++));
   }
   else if (!strcmp(fn->name, "by")) {
-    fn->cname = glomstrings(2, "_by", intstring(uid++));
+    fn->cname = stringcat("_by", intstring(uid++));
   } else if (*fn->name == '=') {
-    fn->cname = glomstrings(4, "_assign", intstring(uid++), "_", fn->name+1);
+    fn->cname = stringcat("_assign", intstring(uid++), "_", fn->name+1);
   }
 }
 

@@ -22,7 +22,7 @@ void Codegen::run(Vec<ModuleSymbol*>* modules) {
 
   forv_Vec(ModuleSymbol, currentModule, *modules) {
     if (currentModule->modtype != MOD_INTERNAL) {
-      mysystem(glomstrings(2, "# codegen-ing module", currentModule->name),
+      mysystem(stringcat("# codegen-ing module", currentModule->name),
                "generating comment for --print-commands option");
       currentModule->codegenDef();
     }

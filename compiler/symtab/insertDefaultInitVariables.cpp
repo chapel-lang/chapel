@@ -30,7 +30,7 @@ void InsertDefaultInitVariables::processSymbol(Symbol* sym) {
         userType->underlyingType = userType->typeExpr->typeInfo();
         userType->typeExpr = NULL;
         if (userType->defaultExpr) {
-          char* temp_name = glomstrings(3, "_init_", sym->name, intstring(uid++));
+          char* temp_name = stringcat("_init_", sym->name, intstring(uid++));
           Type* temp_type = userType;
           Expr *temp_init = userType->defaultExpr->copy();
           Symbol* parent_symbol = sym->defPoint->parentStmt->parentSymbol;

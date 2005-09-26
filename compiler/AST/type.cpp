@@ -891,7 +891,7 @@ static char* buildFieldSelectorName(ClassType* classType, Symbol* field,
       fieldName = "_uninitialized";
     }
   }
-  return glomstrings(4, "_", classType->symbol->name, "_union_id_", fieldName);
+  return stringcat("_", classType->symbol->name, "_union_id_", fieldName);
 }
 
 
@@ -951,7 +951,7 @@ MetaType::MetaType(Type* init_base) :
   base(init_base)
 {
   static int uid = 1;
-  char* name = glomstrings(2, "_meta_type", intstring(uid++));
+  char* name = stringcat("_meta_type", intstring(uid++));
   metaType = this;
   symbol = new TypeSymbol(name, NULL);
   symbol->definition = this;
@@ -1095,7 +1095,7 @@ Type *find_or_make_sum_type(Vec<Type *> *types) {
   if (old_type)
     return old_type;
   lub_cache.put(new_sum_type);
-  char* name = glomstrings(2, "_sum_type", intstring(uid++));
+  char* name = stringcat("_sum_type", intstring(uid++));
   TypeSymbol* sym = new TypeSymbol(name, new_sum_type);
   commonModule->modScope->define(sym); // SJD: Yuck, sum types should
                                        // have a DefExpr and be

@@ -5,49 +5,59 @@
 #include "misc.h"
 #include "stringutil.h"
 
-char* glomstrings(int numstrings, ...) {
-  int i;
-
-  char** stringlist = (char**)MALLOC(numstrings * sizeof(char*));
-  va_list ap;
-  va_start(ap, numstrings);
-  for (i=0; i<numstrings; i++) {
-    stringlist[i] = va_arg(ap, char*);
-  }
-  va_end(ap);
-
-  unsigned int totlen = 0;
-  for (i=0; i<numstrings; i++) {
-    totlen += strlen(stringlist[i]);
-  }
-
-  char* newstring = (char*)MALLOC((totlen + 1)*sizeof(char));
-  newstring[0] = '\0';
-  for (i=0; i<numstrings; i++) {
-    strcat(newstring, stringlist[i]);
-  }
-
-  if (strlen(newstring) > totlen) {
-    INT_FATAL("glomstrings() buffer overflow");
-  }
-
-  return newstring;
+int stringlen(const char* s1) {
+  return strlen(s1);
 }
 
-
-char* copystring(char* str) {
-  return glomstrings(1, str);
+int stringlen(const char* s1, const char* s2) {
+  return strlen(s1) + strlen(s2);
 }
 
+int stringlen(const char* s1, const char* s2, const char* s3) {
+  return stringlen(s1, s2) + strlen(s3);
+}
+
+int stringlen(const char* s1, const char* s2, const char* s3, const char* s4) {
+  return stringlen(s1, s2, s3) + strlen(s4);
+}
+
+int stringlen(const char* s1, const char* s2, const char* s3, const char* s4, const char* s5) {
+  return stringlen(s1, s2, s3, s4) + strlen(s5);
+}
+
+char* stringcpy(const char* s1) {
+  char* s = (char*)MALLOC(stringlen(s1) + 1);
+  sprintf(s, "%s", s1);
+  return s;
+}
+
+char* stringcat(const char* s1, const char* s2) {
+  char* s = (char*)MALLOC(stringlen(s1, s2) + 1);
+  sprintf(s, "%s%s", s1, s2);
+  return s;
+}
+
+char* stringcat(const char* s1, const char* s2, const char* s3) {
+  char* s = (char*)MALLOC(stringlen(s1, s2, s3) + 1);
+  sprintf(s, "%s%s%s", s1, s2, s3);
+  return s;
+}
+
+char* stringcat(const char* s1, const char* s2, const char* s3, const char* s4) {
+  char* s = (char*)MALLOC(stringlen(s1, s2, s3, s4) + 1);
+  sprintf(s, "%s%s%s%s", s1, s2, s3, s4);
+  return s;
+}
+
+char* stringcat(const char* s1, const char* s2, const char* s3, const char* s4, const char* s5) {
+  char* s = (char*)MALLOC(stringlen(s1, s2, s3, s4, s5) + 1);
+  sprintf(s, "%s%s%s%s%s", s1, s2, s3, s4, s5);
+  return s;
+}
 
 char* intstring(int i) {
-  const size_t size = 64;
-  char scratch[size];
-  size_t charsWritten = snprintf(scratch, size, "%d", i);
-
-  if (charsWritten > size) {
+  char buf[64];
+  if (sprintf(buf, "%d", i) > 63)
     INT_FATAL("intstring() buffer overflow");
-  }
-
-  return glomstrings(1, scratch);
+  return stringcpy(buf);
 }

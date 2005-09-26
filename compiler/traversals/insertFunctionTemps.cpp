@@ -65,7 +65,7 @@ void InsertFunctionTemps::postProcessStmt(Stmt* stmt) {
       // InsertFunctionTemps again on the body of the let expression.
       if (function->parentScope == stmt->parentScope) {
         if (function->typeInfo() != dtVoid) {
-          char* temp_name = glomstrings(2, "_fntemp_", intstring(uid++));
+          char* temp_name = stringcat("_fntemp_", intstring(uid++));
           Type* temp_type = function->typeInfo();
           VarSymbol* var = new VarSymbol(temp_name, temp_type);
           stmt->insertBefore(new ExprStmt(new DefExpr(var)));
