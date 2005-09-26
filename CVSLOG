@@ -47212,3 +47212,23 @@ Modified files:
 	chapel/compiler/AST/: expr.cpp type.cpp 
 	chapel/test/flowanalysis/newast/: enum.good 
 
+---------------------------------------------------------------------------
+
+09/26/05 15:43:15 -- roxana
+
+Log message:
+	Cleaned-up the test directory. Removed the futures for the
+	working tests. Updated the future for test/domains/roxana/helper/test_hash_table.chpl.
+	Can anyone tell why is failing by saying that the "program does
+	not type"?
+
+Modified files:
+	chapel/test/domains/roxana/helper/: test_hash_table1.chpl 
+	                                    test_hash_table1.good 
+	                                    test_hash_table2.good 
+	                                    test_hash_table.future 
+	                                    test_hash_table.chpl 
+Removed files:
+	chapel/test/domains/roxana/helper/: test_hash_table2.future 
+	                                    test_hash_table1.future 
+
