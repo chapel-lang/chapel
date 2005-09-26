@@ -47198,3 +47198,17 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+09/26/05 14:52:25 -- shannon
+
+Log message:
+	Removed the special casing of the write function for
+	enumerated types, instead automatically building the
+	function in the AST like for every other type if no
+	write function is provided by the user.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp type.cpp 
+	chapel/test/flowanalysis/newast/: enum.good 
+
