@@ -436,7 +436,15 @@ bool EnumType::hasDefaultWriteFunction(void) {
 
 
 AList<Stmt>* EnumType::buildDefaultWriteFunctionBody(ArgSymbol* arg) {
-  return new AList<Stmt>(new ExprStmt(new CallExpr("_EnumWriteStopgap", arg)));
+  AList<WhenStmt>* selectWhenStmts = new AList<WhenStmt>();
+  for_alist(DefExpr, constant, this->constants) {
+    Expr* constantName = new_StringLiteral(constant->sym->name);
+    ExprStmt* IOCall = new ExprStmt(new CallExpr("write", constantName));
+    AList<Expr>* whenExpr = new AList<Expr>(new SymExpr(constant->sym));
+    WhenStmt* thisWhenStmt = new WhenStmt(whenExpr, IOCall);
+    selectWhenStmts->insertAtTail(thisWhenStmt);
+  }
+  return new AList<Stmt>(new SelectStmt(new SymExpr(arg), selectWhenStmts));
 }
 
 

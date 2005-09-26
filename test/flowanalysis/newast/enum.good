@@ -1,5 +1,11 @@
  called from 5 in __init_enum at enum.chpl:9
+::A(enum.chpl:1) ( classVals )
 ::B(enum.chpl:1) ( classVals )
+::C(enum.chpl:1) ( classVals )
+::D(enum.chpl:1) ( classVals )
+::O(enum.chpl:1) ( classVals )
+::S(enum.chpl:1) ( classVals )
+::W(enum.chpl:1) ( classVals )
 ::val(enum.chpl:1) ( classVals )
 ::x(enum.chpl:3) ( classVals )
 ::y(enum.chpl:7) ( int64 )

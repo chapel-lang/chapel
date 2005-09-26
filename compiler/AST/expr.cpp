@@ -818,18 +818,6 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, "_chpl_write_string(\"impossible\"); exit(0);\n");
       fprintf(outfile, "}\n");
       return;
-    } else if (!strcmp(variable->var->name, "_EnumWriteStopgap")) {
-      EnumType* enumType = dynamic_cast<EnumType*>(argList->only()->typeInfo());
-      fprintf(outfile, "switch (val) {\n");
-      for_alist(DefExpr, constant, enumType->constants) {
-        fprintf(outfile, "case ");
-        constant->sym->codegen(outfile);
-        fprintf(outfile, ":\n");
-        fprintf(outfile, "_chpl_write_string(\"%s\");\n", constant->sym->name);
-        fprintf(outfile, "break;\n");
-      }
-      fprintf(outfile, "}\n");
-      return;
     } else if (!strcmp(variable->var->name, "_EnumReadStopgap")) {
       EnumType* enumType = dynamic_cast<EnumType*>(argList->only()->typeInfo());
       fprintf(outfile, "char* inputString = NULL;\n");
