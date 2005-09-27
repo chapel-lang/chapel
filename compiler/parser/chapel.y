@@ -1076,7 +1076,7 @@ atom:
 seq_expr:
   TSEQBEGIN expr_ls TSEQEND
     {
-      Expr* seqLiteral = new CallExpr("seq", dtUnknown->symbol);
+      Expr* seqLiteral = new CallExpr("seq");
       for_alist(Expr, element, $2) {
         element->remove();
         seqLiteral =

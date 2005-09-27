@@ -44,7 +44,7 @@ void ReconstructIterators::processSymbol(Symbol* sym) {
   } else if (fn->defPoint->exprType != NULL) {
     seqType = fn->defPoint->exprType->copy();
   } else {
-    seqType = new SymExpr(dtUnknown->symbol);
+    INT_FATAL(fn, "Unable to infer type of iterator");
   }
 
   Symbol* seq = new VarSymbol("_seq_result");

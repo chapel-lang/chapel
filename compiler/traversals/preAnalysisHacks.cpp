@@ -89,7 +89,7 @@ void PreAnalysisHacks::postProcessExpr(Expr* expr) {
         if (MemberAccess* pbase = dynamic_cast<MemberAccess*>(expr->parentExpr)) {
           if (!strncmp(pbase->member->name, "_append_in_place", 16)) {
             if (CallExpr* pcall = dynamic_cast<CallExpr*>(pbase->parentExpr)) {
-              call->argList->only()->replace(new SymExpr(pcall->argList->last()->typeInfo()->symbol));
+              call->argList->insertAtHead(new SymExpr(pcall->argList->last()->typeInfo()->symbol));
             }
           }
         }
