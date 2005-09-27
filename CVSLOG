@@ -47252,3 +47252,13 @@ Modified files:
 	                             insertThisParameters.cpp 
 	                             instantiate.cpp updateSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+09/27/05 10:25:15 -- jplevyak
+
+Log message:
+	disable printing of dead avars with -vv
+
+Modified files:
+	chapel/compiler/ifa/: dead.cpp 
+
