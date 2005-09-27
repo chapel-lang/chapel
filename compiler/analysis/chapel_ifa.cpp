@@ -4,7 +4,6 @@
 #include "chapel_ifa.h"
 #include "expr.h"
 #include "files.h"
-#include "../traversals/getstuff.h"
 #include "baseAST.h"
 #include "misc.h"
 #include "stmt.h"
@@ -21,6 +20,7 @@
 #include "pattern.h"
 #include "clone.h"
 #include "ast.h"
+#include "../passes/preAnalysisCleanup.h"
 
 #define VARARG_END     0ll
 #define MAKE_USER_TYPE_BE_DEFINITION            1
@@ -448,6 +448,16 @@ finalize_symbols(IF1 *i) {
   finalized_symbols = i->allsyms.n;
 }
 
+static Sym *
+BaseAST_to_Sym(BaseAST *b) {
+  if (Symbol *s = dynamic_cast<Symbol *>(b))
+    return s->asymbol->sym;
+  if (Type *t = dynamic_cast<Type *>(b))
+    return t->asymbol->sym;
+  assert(!"BaseAST_to_Sym");
+  return 0;
+}
+
 // map is not NULL when f is a constuctor for a generic type
 static Fun *
 install_new_function(FnSymbol *f, FnSymbol *old_f, Map<BaseAST*,BaseAST*> *map = NULL) {
@@ -466,6 +476,7 @@ install_new_function(FnSymbol *f, FnSymbol *old_f, Map<BaseAST*,BaseAST*> *map =
     syms.add(f->defPoint->parentStmt);
     funs.add(f);
   }
+  tagGenerics(syms);
   qsort(syms.v, syms.n, sizeof(syms.v[0]), compar_baseast);
   qsort(funs.v, funs.n, sizeof(funs.v[0]), compar_baseast);
   map_asts(syms);
@@ -476,6 +487,13 @@ install_new_function(FnSymbol *f, FnSymbol *old_f, Map<BaseAST*,BaseAST*> *map =
       if (Type *t = dynamic_cast<Type *>(map->v[i].key)) {
         Type *new_t = dynamic_cast<Type *>(map->v[i].value);
         new_t->asymbol->sym->instantiates = t->asymbol->sym;
+        for (int i; i < new_t->substitutions.n; i++) if (new_t->substitutions.v[i].key) {
+          Sym *value = BaseAST_to_Sym(new_t->substitutions.v[i].value);
+          // don't map yourself
+          if (value != new_t->asymbol->sym)
+            new_t->asymbol->sym->substitutions.put(
+              BaseAST_to_Sym(new_t->substitutions.v[i].key), value);
+        }
       }
   }
   finalize_types(if1, false);
@@ -529,16 +547,18 @@ ACallbacks::instantiate(Sym *s, Map<Sym *, Sym *> &substitutions) {
   Sym *tt = substitutions.get(s);
   if (tt) {
     Type *type = NULL;
-    if (ArgSymbol *p = dynamic_cast<ArgSymbol*>(SYMBOL(s)))
-      type = (p->isGeneric && p->genericSymbol) ? dynamic_cast<TypeSymbol*>(p->genericSymbol)->definition : 0;
-    else
+    if (ArgSymbol *p = dynamic_cast<ArgSymbol*>(SYMBOL(s))) {
+      if (p->isGeneric && p->genericSymbol)
+        if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(p->genericSymbol))
+          type = ts->definition;
+    } else
       type = dynamic_cast<Type*>(SYMBOL(s));
     if (!type)
       return 0;
     Map<BaseAST *, BaseAST *> subs;
     form_SymSym(ss, substitutions) {
       if (ArgSymbol *p = dynamic_cast<ArgSymbol*>(SYMBOL(ss->key))) {
-        if (p->isGeneric && p->genericSymbol)
+        if (p->isGeneric && p->genericSymbol && p->genericSymbol->astType == SYMBOL_TYPE)
           subs.put(dynamic_cast<TypeSymbol*>(p->genericSymbol)->definition, Sym_to_Type(ss->value));
         else
           subs.put(p, get_constant_Expr(ss->value));
@@ -554,9 +574,11 @@ ACallbacks::instantiate(Sym *s, Map<Sym *, Sym *> &substitutions) {
 Sym *
 ACallbacks::formal_to_generic(Sym *s) {
   ArgSymbol *p = dynamic_cast<ArgSymbol*>(SYMBOL(s));
-  if (p->isGeneric && p->genericSymbol)
+  if (!p->isGeneric || !p->genericSymbol)
+    return 0;
+  if ( p->genericSymbol->astType == SYMBOL_TYPE)
     return dynamic_cast<TypeSymbol*>(p->genericSymbol)->definition->asymbol->sym;
-  return 0;
+  return p->genericSymbol->asymbol->sym;
 }
 
 Fun *
@@ -636,13 +658,14 @@ ACallbacks::instantiate_generic(Match *m) {
   form_SymSym(s, m->generic_substitutions) {
     Type *t = dynamic_cast<Type*>(SYMBOL(s->key));
 #if 0
+    // treat type variables as ?t
     if (!t)
       if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(SYMBOL(s->key)))
         t = ts->definition;
 #endif
     ArgSymbol *p = dynamic_cast<ArgSymbol*>(SYMBOL(s->key));
     if (!t)
-      if (p && p->isGeneric && p->genericSymbol)
+      if (p && p->isGeneric && p->genericSymbol && p->genericSymbol->astType == SYMBOL_TYPE)
         t = dynamic_cast<TypeSymbol*>(p->genericSymbol)->definition;
     if (t)
       substitutions.put(t, Sym_to_Type(s->value));
@@ -888,6 +911,10 @@ build_symbols(Vec<BaseAST *> &syms) {
                 s->asymbol->sym->must_implement = s->type->asymbol->sym;
             }
           }
+#if XX
+          if (p->type->isGeneric)
+            p->asymbol->sym->is_generic = 1;
+#endif
 #if 0
           if (!p->isGeneric && p->variableTypeSymbol) {
             TypeSymbol *ts = dynamic_cast<TypeSymbol*>(p->variableTypeSymbol);
@@ -2170,6 +2197,8 @@ finalize_function(Fun *fun) {
       }
     }
   }
+  if (fs->isGeneric)
+    fun->is_generic = 1;
   // check pragmas
   Sym *fn = fun->sym;
   FnSymbol *f = dynamic_cast<FnSymbol*>(SYMBOL(fn));
