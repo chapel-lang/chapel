@@ -47232,3 +47232,23 @@ Removed files:
 	chapel/test/domains/roxana/helper/: test_hash_table2.future 
 	                                    test_hash_table1.future 
 
+---------------------------------------------------------------------------
+
+09/26/05 19:46:14 -- jplevyak
+
+Log message:
+	First part of converting ArgSymbol::typeVariableSymbol to genericSymbol
+	for use with Parametesr: a simple name change.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: fa.cpp fun.cpp fun.h sym.h 
+	chapel/compiler/include/: symbol.h type.h 
+	chapel/compiler/passes/: preAnalysisCleanup.cpp 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             findUnknownTypes.cpp 
+	                             insertThisParameters.cpp 
+	                             instantiate.cpp updateSymbols.cpp 
+
