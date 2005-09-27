@@ -63,13 +63,13 @@ void UpdateSymbols::preProcessSymbol(Symbol* sym) {
     XSUB(fn->_getter, Symbol*);
   }
   if (ArgSymbol* p = dynamic_cast<ArgSymbol*>(sym)) {
-    if (p->isGeneric && p->variableTypeSymbol) {
-      BaseAST *b = updateMap->get(p->variableTypeSymbol);
+    if (p->isGeneric && p->genericSymbol) {
+      BaseAST *b = updateMap->get(p->genericSymbol);
       if (b) {
         if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(b)) {
           if (ts->definition->astType != TYPE_VARIABLE)
             p->isGeneric = 0;
-          p->variableTypeSymbol = ts;
+          p->genericSymbol = ts;
         } else {
           INT_FATAL("Major error in UpdateSymbols");
         }

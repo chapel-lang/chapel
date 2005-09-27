@@ -505,7 +505,7 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
   case SYMBOL_VAR: 
     goto LSymbolCommon;
   case SYMBOL_ARG: 
-    ADD_CHILD(ArgSymbol, variableTypeSymbol);
+    ADD_CHILD(ArgSymbol, genericSymbol);
     goto LSymbolCommon;
   case SYMBOL_TYPE: goto LSymbolCommon;
   case SYMBOL_FN:

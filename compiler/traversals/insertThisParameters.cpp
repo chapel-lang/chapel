@@ -78,7 +78,7 @@ void InsertThisParameters::preProcessExpr(Expr* expr) {
                 if (!strcmp(tmp->name, arg->sym->name)) {
                   arg->sym->type = variableType->type;
                   dynamic_cast<ArgSymbol*>(arg->sym)->isGeneric = true;
-                  dynamic_cast<ArgSymbol*>(arg->sym)->variableTypeSymbol = tmp;
+                  dynamic_cast<ArgSymbol*>(arg->sym)->genericSymbol = tmp;
                 }
               }
             }

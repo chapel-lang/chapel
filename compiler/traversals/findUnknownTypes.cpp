@@ -19,7 +19,7 @@ void RemoveTypeVariableActuals::preProcessExpr(Expr* expr) {
         if (dynamic_cast<TypeSymbol*>(var_arg->var)) {
           arg->remove();
         } else if (ArgSymbol *p = dynamic_cast<ArgSymbol*>(var_arg->var)) {
-          if (p->variableTypeSymbol)
+          if (p->genericSymbol)
             arg->remove();
         } else if (var_arg->var == Symboltable::lookupInternal("_methodToken")) {
           arg->remove();
@@ -39,7 +39,7 @@ void RemoveTypeVariableFormals::preProcessSymbol(Symbol* sym) {
       return;
     }
     for_alist(DefExpr, formal, fn->formals) {
-      if (dynamic_cast<ArgSymbol*>(formal->sym)->variableTypeSymbol) {
+      if (dynamic_cast<ArgSymbol*>(formal->sym)->genericSymbol) {
         formal->remove();
       } else if (formal->sym->type->symbol ==
                  Symboltable::lookupInternal("_methodTokenType")) {

@@ -530,7 +530,7 @@ ACallbacks::instantiate(Sym *s, Map<Sym *, Sym *> &substitutions) {
   if (tt) {
     Type *type = NULL;
     if (ArgSymbol *p = dynamic_cast<ArgSymbol*>(SYMBOL(s)))
-      type = (p->isGeneric && p->variableTypeSymbol) ? p->variableTypeSymbol->definition : 0;
+      type = (p->isGeneric && p->genericSymbol) ? dynamic_cast<TypeSymbol*>(p->genericSymbol)->definition : 0;
     else
       type = dynamic_cast<Type*>(SYMBOL(s));
     if (!type)
@@ -538,8 +538,8 @@ ACallbacks::instantiate(Sym *s, Map<Sym *, Sym *> &substitutions) {
     Map<BaseAST *, BaseAST *> subs;
     form_SymSym(ss, substitutions) {
       if (ArgSymbol *p = dynamic_cast<ArgSymbol*>(SYMBOL(ss->key))) {
-        if (p->isGeneric && p->variableTypeSymbol)
-          subs.put(p->variableTypeSymbol->definition, Sym_to_Type(ss->value));
+        if (p->isGeneric && p->genericSymbol)
+          subs.put(dynamic_cast<TypeSymbol*>(p->genericSymbol)->definition, Sym_to_Type(ss->value));
         else
           subs.put(p, get_constant_Expr(ss->value));
       } else
@@ -554,8 +554,8 @@ ACallbacks::instantiate(Sym *s, Map<Sym *, Sym *> &substitutions) {
 Sym *
 ACallbacks::formal_to_generic(Sym *s) {
   ArgSymbol *p = dynamic_cast<ArgSymbol*>(SYMBOL(s));
-  if (p->isGeneric && p->variableTypeSymbol)
-    return p->variableTypeSymbol->definition->asymbol->sym;
+  if (p->isGeneric && p->genericSymbol)
+    return dynamic_cast<TypeSymbol*>(p->genericSymbol)->definition->asymbol->sym;
   return 0;
 }
 
@@ -642,8 +642,8 @@ ACallbacks::instantiate_generic(Match *m) {
 #endif
     ArgSymbol *p = dynamic_cast<ArgSymbol*>(SYMBOL(s->key));
     if (!t)
-      if (p && p->isGeneric && p->variableTypeSymbol)
-        t = p->variableTypeSymbol->definition;
+      if (p && p->isGeneric && p->genericSymbol)
+        t = dynamic_cast<TypeSymbol*>(p->genericSymbol)->definition;
     if (t)
       substitutions.put(t, Sym_to_Type(s->value));
     else

@@ -412,7 +412,7 @@ Symboltable::defineParam(intentTag tag, char* ident, Expr* type, Expr* init) {
     TypeSymbol* new_type_symbol = new TypeSymbol(name, new_type);
     new_type->addSymbol(new_type_symbol);
     argSymbol->type = getMetaType(NULL);
-    argSymbol->variableTypeSymbol = new_type_symbol;
+    argSymbol->genericSymbol = new_type_symbol;
   }
   return new DefExpr(argSymbol, init, type);
 }

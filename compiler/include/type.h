@@ -44,7 +44,7 @@ class Type : public BaseAST {
   Vec<FnSymbol*> methods;
   Type *metaType;
   bool isGeneric;
-  Vec<VariableType*> variableTypeSymbols;
+  Vec<Symbol*> genericSymbols;
   Type *instantiatedFrom;
   Map<BaseAST*,BaseAST*> substitutions;
 

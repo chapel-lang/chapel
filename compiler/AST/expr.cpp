@@ -323,7 +323,7 @@ void SymExpr::traverseExpr(Traversal* traversal) {
 Type* SymExpr::typeInfo(void) {
   if (ArgSymbol* argSymbol = dynamic_cast<ArgSymbol*>(var)) {
     if (argSymbol->intent == INTENT_TYPE) {
-      return argSymbol->variableTypeSymbol->definition;
+      return dynamic_cast<TypeSymbol*>(argSymbol->genericSymbol)->definition;
     }
   }
   if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(var)) {

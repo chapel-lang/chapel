@@ -347,7 +347,7 @@ ArgSymbol::ArgSymbol(intentTag init_intent, char* init_name,
                          Type* init_type) :
   Symbol(SYMBOL_ARG, init_name, init_type),
   intent(init_intent),
-  variableTypeSymbol(NULL),
+  genericSymbol(NULL),
   isGeneric(false)
 {
   if (intent == INTENT_PARAM || intent == INTENT_TYPE)
@@ -368,8 +368,8 @@ void ArgSymbol::verify(void) {
 ArgSymbol*
 ArgSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
   ArgSymbol *ps = new ArgSymbol(intent, stringcpy(name), type);
-  if (variableTypeSymbol)
-    ps->variableTypeSymbol = variableTypeSymbol;
+  if (genericSymbol)
+    ps->genericSymbol = genericSymbol;
   ps->isGeneric = isGeneric;
   ps->cname = stringcpy(cname);
   return ps;
@@ -383,7 +383,7 @@ void ArgSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 void ArgSymbol::traverseDefSymbol(Traversal* traversal) {
   TRAVERSE(type, traversal, false);
-  TRAVERSE(variableTypeSymbol, traversal, false);
+  TRAVERSE(genericSymbol, traversal, false);
 }
 
 
@@ -892,7 +892,7 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
         for (DefExpr* formal = fnClone->formals->first(); formal; 
              formal = fnClone->formals->next()) {
           if (ArgSymbol *ps = dynamic_cast<ArgSymbol *>(formal->sym)) {
-            if (TypeSymbol *ts = dynamic_cast<TypeSymbol *>(ps->variableTypeSymbol)) {
+            if (TypeSymbol *ts = dynamic_cast<TypeSymbol *>(ps->genericSymbol)) {
               if (ts->definition->astType != TYPE_VARIABLE)
                 ps->type = ts->type;
             }

@@ -41,7 +41,7 @@ static void build_constructor(ClassType* structType) {
         Type* type = tv->type;
         ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, name, type);
         arg->isGeneric = true;
-        arg->variableTypeSymbol = dynamic_cast<TypeSymbol*>(tv->symbol);
+        arg->genericSymbol = dynamic_cast<TypeSymbol*>(tv->symbol);
         args->insertAtTail(new DefExpr(arg, new SymExpr(dtUnknown->symbol)));
       }
     }

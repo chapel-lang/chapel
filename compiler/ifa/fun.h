@@ -45,7 +45,8 @@ class Fun : public gc {
   Region *region;
 
   uint init_function : 1; // everything is global
-  uint eager_evaluation : 1; // everything is global
+  uint is_generic : 1;
+  uint eager_evaluation : 1;
   uint is_external : 1;
 
   // cdb

@@ -35,7 +35,7 @@ Instantiate::postProcessExpr(Expr* expr) {
           ArgSymbol* formalArg = dynamic_cast<ArgSymbol*>(formal->sym);
           bool sub = false;
           if (formalArg->isGeneric) {
-            if (formalArg->variableTypeSymbol) {
+            if (formalArg->genericSymbol) {
               Expr* actualactual = actual;
               if (NamedExpr* namedExpr = dynamic_cast<NamedExpr*>(actual)) {
                 if (!strcmp(namedExpr->name, formalArg->name)) {
@@ -45,15 +45,19 @@ Instantiate::postProcessExpr(Expr* expr) {
               if (SymExpr* variable = dynamic_cast<SymExpr*>(actualactual)) {
                 if (TypeSymbol* actualArg = dynamic_cast<TypeSymbol*>(variable->var)) {
                   if (!dynamic_cast<VariableType*>(actualArg->definition)) {
-                    substitutions.put(formalArg->variableTypeSymbol->definition, actualArg->definition);
-                    sub = true;
+                    if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(formalArg->genericSymbol)) {
+                      substitutions.put(ts->definition, actualArg->definition);
+                      sub = true;
+                    }
                   }
                 }
               } else if (CallExpr* call = dynamic_cast<CallExpr*>(actualactual)) {
                 if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->baseExpr)) {
                   if (FnSymbol* cfn = dynamic_cast<FnSymbol*>(symExpr->var)) {
                     if (cfn->fnClass == FN_CONSTRUCTOR) {
-                      substitutions.put(formalArg->variableTypeSymbol->definition, cfn->retType);
+                      if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(formalArg->genericSymbol)) {
+                        substitutions.put(ts->definition, cfn->retType);
+                      }
                     }
                   }
                 }
@@ -79,7 +83,7 @@ Instantiate::postProcessExpr(Expr* expr) {
           FnSymbol* new_fn = fn->preinstantiate_generic(&substitutions);
           for_alist(DefExpr, formalDef, new_fn->formals) {
             ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
-            if (formal->isGeneric || formal->variableTypeSymbol) {
+            if (formal->isGeneric || formal->genericSymbol) {
               formalDef->remove();
             }
           }

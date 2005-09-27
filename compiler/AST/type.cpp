@@ -1013,7 +1013,9 @@ void SumType::codegenStructName(FILE* outfile) {
 VariableType::VariableType(Type *init_type) :
   Type(TYPE_VARIABLE, NULL), 
   type(init_type)
-{}
+{
+  isGeneric = true;
+}
 
 
 void VariableType::verify(void) {

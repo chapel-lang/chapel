@@ -114,7 +114,7 @@ class VarSymbol : public Symbol {
 class ArgSymbol : public Symbol {
  public:
   intentTag intent;
-  TypeSymbol *variableTypeSymbol;
+  Symbol *genericSymbol;
   bool isGeneric;
 
   ArgSymbol(intentTag init_intent, char* init_name, 
@@ -176,7 +176,7 @@ class FnSymbol : public Symbol {
   Symbol* _setter; // the variable this function sets if it is a setter
   Symbol* _getter; // the variable this function gets if it is a getter
   _method_type method_type;
-  Vec<VariableType *> variableTypeSymbols;
+  Vec<Symbol *> genericSymbols;
   FnSymbol *instantiatedFrom;
   Map<BaseAST*,BaseAST*> substitutions;
   Vec<BasicBlock*>* basicBlocks;

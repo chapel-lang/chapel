@@ -983,6 +983,7 @@ flow_var_type_permit(AVar *v, Sym *s) {
 void
 add_var_constraint(AVar *av) {
   Sym *s = av->var->sym;
+  assert(s->type_kind != Type_VARIABLE);
   if (s->type && !s->is_pattern) {
     if (s->is_external && 
         (s->type->num_kind || s->type == sym_string || s == sym_nil))
@@ -1365,7 +1366,6 @@ function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> 
       if (!p->next_callees)
         p->next_callees = new Callees;
       Fun *f = m->fun;
-      while (f->wraps) f = f->wraps;
       p->next_callees->funs.set_add(f);
 #endif
     }
