@@ -47262,3 +47262,13 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: dead.cpp 
 
+---------------------------------------------------------------------------
+
+09/27/05 13:43:12 -- jplevyak
+
+Log message:
+	Cleanup handling of "genericSymbol".
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+
