@@ -47272,3 +47272,18 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: chapel_ifa.cpp 
 
+---------------------------------------------------------------------------
+
+09/27/05 16:07:35 -- deitz
+
+Log message:
+	Removed all potential for instantiating the sequence class over
+	dtUnknown.  As a current limitation, iterators now must explicitly
+	tell what type they are returning.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: reconstructIterators.cpp 
+	chapel/compiler/traversals/: preAnalysisHacks.cpp 
+	chapel/test/arrays/deitz/: test_domain2.chpl 
+
