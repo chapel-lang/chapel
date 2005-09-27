@@ -156,7 +156,7 @@ mark_dead_code(FA *fa, Fun *top) {
     mark_live_avars(fa);
     mark_live_pnodes(fa);
   } while (mark_live_avars_again);
-  if (verbose_level > 1)
+  if (verbose_level > 2)
     print_dead(fa);
   return 0;
 }
