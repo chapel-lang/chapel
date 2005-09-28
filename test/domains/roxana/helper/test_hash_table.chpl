@@ -7,7 +7,7 @@ class HashTable {
   var del : T;
   var null : T;
    
-  var table: _data(T) = _data(T, 20);
+  var table: _fdata(T) = _fdata(T, 20);
     
   function h1(k : integer) : integer {
     return k mod size;

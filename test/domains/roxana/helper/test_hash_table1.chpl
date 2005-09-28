@@ -3,7 +3,7 @@ class HashTable {
   type T;
   --var size: integer;
   --var dummy : T;
-  var table : _data(T) = _data(T, 20);
+  var table : _fdata(T) = _fdata(T, 20);
 }  
 
 var s : integer = 10;

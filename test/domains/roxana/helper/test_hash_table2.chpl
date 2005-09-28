@@ -1,6 +1,6 @@
 class HashTable { 
   var size : integer;
-  var table: _data(integer) = _data(integer, 20); -- limitation
+  var table: _fdata(integer) = _fdata(integer, 20); -- limitation
     -- you currently cannot use 'size' here
     -- eventually you may be able to especially if size is a param
 }  
