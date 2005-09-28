@@ -47327,3 +47327,16 @@ Modified files:
 Added files:
 	chapel/test/domains/roxana/helper/: test_hash_table1.future 
 
+---------------------------------------------------------------------------
+
+09/28/05 08:38:33 -- jplevyak
+
+Log message:
+	Forgot to 'cvs add' these files.
+
+Added files:
+	chapel/test/classes/bradc/: writeunion-workaround.future 
+	chapel/test/classes/deitz/: test_union_method1.future 
+	                            test_union_method2.future 
+	                            test_union_method3.future 
+
