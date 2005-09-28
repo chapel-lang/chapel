@@ -47340,3 +47340,22 @@ Added files:
 	                            test_union_method2.future 
 	                            test_union_method3.future 
 
+---------------------------------------------------------------------------
+
+09/28/05 10:55:15 -- roxana
+
+Log message:
+	Updated some tests in my test directory. test_hash_table1.chpl
+	behaves strange: it seems to matter if the type parameter
+	is the first field in a class -- is this normal?
+
+Modified files:
+	chapel/test/domains/roxana/helper/: test_hash_table1.chpl 
+	                                    test_hash_table1.good 
+	                                    test_hash_table1.future 
+	                                    test_hash_table.chpl 
+Added files:
+	chapel/test/domains/roxana/helper/: test_hash_table1a.good 
+	                                    test_hash_table1a.chpl 
+	                                    test_hash_table1a.future 
+
