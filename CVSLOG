@@ -47370,3 +47370,19 @@ Log message:
 Modified files:
 	chapel/test/domains/roxana/helper/: test_hash_table2.good 
 
+---------------------------------------------------------------------------
+
+09/28/05 11:34:01 -- roxana
+
+Log message:
+	Replaced _data with _fdata per Steve's request.
+
+Modified files:
+	chapel/test/domains/roxana/helper/: test_hash_table3.chpl 
+	                                    test_hash_table1.chpl 
+	                                    test_hash_table1.good 
+	                                    test_hash_table2.chpl 
+	                                    test_hash_table3.good 
+	                                    test_hash_table1a.chpl 
+	                                    test_hash_table.chpl 
+
