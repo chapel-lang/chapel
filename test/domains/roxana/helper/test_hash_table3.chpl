@@ -4,6 +4,8 @@ var s : integer = 10;
 var table : _data(integer) = _data(integer, s);
 
 for i in 1..s {
-  table(i-1) = i;
+  if (table(i-1) == 0) {
+    table(i-1) = i;
+  }
   writeln(table(i-1));
 }

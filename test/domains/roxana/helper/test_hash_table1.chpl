@@ -1,21 +1,20 @@
 class HashTable { 
   var size : integer;
-  --var table : _data(integer, size);
-  var table : _data(integer) = _data(integer, 20);
-  
-  function Init(s : integer) {
-    size = s;
-    for i in 1..size do
-      table(i-1) = 0;
-  }
+  type T;
+  var dummy : T;
+  var table : _data(T) = _data(T, 20);
 }  
 
 var size : integer = 10;
   
-var ht : HashTable = HashTable();
-ht.size = size;
-ht.Init(size);
---writeln(ht);
-for i in 1..size do {
-  writeln(ht.table(i-1));
+var ht : HashTable = HashTable(integer, size, 0);
+
+for i in 1..ht.size do {
+  ht.table(i-1) = i-1;
+}
+
+for i in 1..ht.size do {
+  if(ht.table(i-1) == ht.dummy) {
+    writeln(ht.table(i-1));
+  }
 }

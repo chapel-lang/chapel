@@ -3,59 +3,44 @@
 
 class HashTable {
   type T;  
-  var del : T;
   var size : integer;
-  --var table : [1..size] T;
-  --var table : _data(T, size);
+  --var del: T;
+  var del : T;
+  var null : T;
+   
+  --var table: _data(T) = _data(T, 20);
   var table: _data(T) = _data(T, 20);
-  
-  function KeyToInt(k : T) : integer {
- 	/*typeselect(T) {
- 	  when k : integer do return k;
- 	  otherwise return 0;
- 	} 
- 	return k;*/
- 	return 0;
-  }
-  
-  function h1(k : T) : integer {
-    k = KeyToInt(k);
+    
+  function h1(k : integer) : integer {
     return k mod size;
   }
   
-  function h2(k : T) : integer {
-    k = KeyToInt(k);
+  function Init() {
+    if (null) {
+      for i in 1..size do
+        table(i-1) = null;
+    }
+    else {
+      --halt
+      writeln("You should have set a null value");
+    }
+  }    
+  
+  function h2(k : integer) : integer {
     return (1 + k mod (size - 1));
   }
   
-  /*function Init(s : integer) {
-    size = s;
-    --[i in 1..size] table(i-1) = nil;
-    for i in 1..size do
-      table(i-1) = nil;
-  }*/
-
-  function h(k : T, i : integer) : integer {
-    k = KeyToInt(k);
+  function h(k : integer, i : integer) : integer {
     return ((h1(k) + i*h2(k)) mod size);
   }
   
-  function Insert(k : T) : integer {
+  function Insert(k: integer, v : T) : integer {
     var j : integer = -1;
     var i : integer = 0;
     while (i < size){
       j = h(k, i);
-      /*if (table(j) == nil or table(j) == del) {
-        table(j) = k;
-        return j;
-      }*/
-      if (table(j) == nil) {
-        table(j) = k;
-        return j;
-      }
-
-      if (table(j) == del) {
-        table(j) = k;
+      if (table(j) == null or table(j) == del) {
+        table(j) = v;
         return j;
       }
       i += 1;
@@ -64,7 +49,7 @@ class HashTable {
     return -1;
   }
   
-  function Remove(k : T) : HashTable {
+  function Remove(k : integer) : HashTable {
     var j : integer = Search(k);
     if (j == -1) {
       writeln("The key you want to delete is not in the table!");
@@ -74,12 +59,12 @@ class HashTable {
     return this;
   }
   
-  function Search (k : T) : integer {
+  function Search (k : integer) : integer {
     var i : integer = 0;
     var j : integer = -1;
     while ((i < size) or (table(j) == nil)) {
       j = h(k, i);
-      if (table(j) == k){
+      if (j == k){
         return j;
       }    
       i += 1;
@@ -96,24 +81,31 @@ class HashTable {
   
   var size = 10;
   
-  var ht : HashTable = HashTable(integer);
+  var ht : HashTable = HashTable(integer, size);
   --ht.Init(size);
   
   var del : integer;
   writeln("Enter a <deleted key> value.");
   read(del);
   
+  var null : integer;
+  writeln("Enter a <null key> value.");
+  read(null);
+  
   ht.del = del;
+  ht.null = null;
 
+  ht.Init();
+  
   var i : integer = 0;
-  var k : integer;
+  var v : integer;
   
   while(i < size) {
-    writeln("Enter a key to insert");
-    read(k);
-    --if (k == ht.del)
+    writeln("Enter an element to insert");
+    read(v);
+    --if (v == ht.del)
 	--  halt("You cannot insert a key with the same value as the deleted key.");
-    ht.Insert(k);
+    ht.Insert(i, v);
     i += 1;
   }  
   --writeln(ht);
