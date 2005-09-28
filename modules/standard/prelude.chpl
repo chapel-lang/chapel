@@ -321,6 +321,7 @@ pragma "builtin" function =(a : string, b : any) {
   return __primitive("pure_return", string);
 }
 
+pragma "split unique"
 pragma "builtin" function =(a : any, b : any) { return b; }
 
 pragma "rename _chpl_string_index"

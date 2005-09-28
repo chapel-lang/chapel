@@ -1720,8 +1720,16 @@ gen_assignment(CallExpr *assign) {
   }
   if (!assign->get(1)->ainfo->sym)
     show_error("assignment to non-lvalue", assign->ainfo);
-  if1_move(if1, &assign->ainfo->code, rval, assign->ainfo->rval, assign->ainfo);
-  if1_move(if1, &assign->ainfo->code, assign->ainfo->rval, assign->get(1)->ainfo->sym, assign->ainfo);
+  if (MemberAccess *ma = dynamic_cast<MemberAccess*>(assign->get(1))) {
+    Sym *selector = make_symbol(ma->member->asymbol->sym->name);
+    Code *c = if1_send(if1, &assign->ainfo->code, 5, 1, sym_operator, ma->base->ainfo->rval, 
+                       make_symbol(".="), selector, rval, assign->ainfo->rval);
+    c->ast = assign->ainfo;
+    c->partial = Partial_NEVER;
+  } else {
+    if1_move(if1, &assign->ainfo->code, rval, assign->ainfo->rval, assign->ainfo);
+    if1_move(if1, &assign->ainfo->code, assign->ainfo->rval, assign->get(1)->ainfo->sym, assign->ainfo);
+  }
   return 0;
 }
 
@@ -1891,7 +1899,9 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
     case EXPR_CALL: {
       CallExpr* call = dynamic_cast<CallExpr*>(ast);
       if (call->opTag == OP_GETSNORM) {
-        if (call->get(1)->astType == EXPR_MEMBERACCESS) {
+        FnSymbol *f = call->parentFunction();
+        int is_member = call->get(1)->astType == EXPR_MEMBERACCESS;
+        if (f->fnClass == FN_CONSTRUCTOR && is_member) {
           if (gen_set_member(dynamic_cast<MemberAccess*>(call->get(1)), call) < 0) return -1;
           break;
         }
