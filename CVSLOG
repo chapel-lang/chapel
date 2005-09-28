@@ -47386,3 +47386,13 @@ Modified files:
 	                                    test_hash_table1a.chpl 
 	                                    test_hash_table.chpl 
 
+---------------------------------------------------------------------------
+
+09/28/05 15:04:17 -- jplevyak
+
+Log message:
+	Cleanup ArgSymbol handling
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+
