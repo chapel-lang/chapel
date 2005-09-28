@@ -1,2 +1,2 @@
-test_hash_table1.chpl:17: expression has mixed basic types:( bool int64 ) 
-fail: program does not type
+jplevyak?
+assert chapel_ifa.cpp:457: !"BaseAST_to_Sym"

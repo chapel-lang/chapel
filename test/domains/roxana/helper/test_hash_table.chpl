@@ -4,11 +4,9 @@
 class HashTable {
   type T;  
   var size : integer;
-  --var del: T;
   var del : T;
   var null : T;
    
-  --var table: _data(T) = _data(T, 20);
   var table: _data(T) = _data(T, 20);
     
   function h1(k : integer) : integer {
@@ -62,7 +60,7 @@ class HashTable {
   function Search (k : integer) : integer {
     var i : integer = 0;
     var j : integer = -1;
-    while ((i < size) or (table(j) == nil)) {
+    while ((i < size) or (table(j) == null)) {
       j = h(k, i);
       if (j == k){
         return j;
@@ -79,10 +77,7 @@ class HashTable {
   --read(size);
   --writeln("Size is: ", size);
   
-  var size = 10;
-  
-  var ht : HashTable = HashTable(integer, size);
-  --ht.Init(size);
+  var s: integer = 10;
   
   var del : integer;
   writeln("Enter a <deleted key> value.");
@@ -92,15 +87,14 @@ class HashTable {
   writeln("Enter a <null key> value.");
   read(null);
   
-  ht.del = del;
-  ht.null = null;
-
+  var ht : HashTable(T=integer) = HashTable(T=integer, size=s, del=del, null=null);
+  
   ht.Init();
   
   var i : integer = 0;
   var v : integer;
   
-  while(i < size) {
+  while(i < s) {
     writeln("Enter an element to insert");
     read(v);
     --if (v == ht.del)
@@ -109,7 +103,7 @@ class HashTable {
     i += 1;
   }  
   --writeln(ht);
-
+  
   for i in 1..ht.size do {
     writeln(ht.table(i-1));
   }
