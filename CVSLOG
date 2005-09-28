@@ -47313,3 +47313,17 @@ Added files:
 Removed files:
 	chapel/test/arrays/deitz/: test__adomain1.future 
 
+---------------------------------------------------------------------------
+
+09/27/05 17:26:55 -- roxana
+
+Log message:
+	A new test and a future.
+
+Modified files:
+	chapel/test/domains/roxana/helper/: test_hash_table3.chpl 
+	                                    test_hash_table1.chpl 
+	                                    test_hash_table.chpl 
+Added files:
+	chapel/test/domains/roxana/helper/: test_hash_table1.future 
+
