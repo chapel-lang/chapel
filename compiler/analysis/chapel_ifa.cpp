@@ -791,20 +791,6 @@ map_baseast(BaseAST *s) {
         }
       }
     }
-    if (sym->astType == SYMBOL_ARG) {
-      ArgSymbol *s = dynamic_cast<ArgSymbol *>(sym);
-      switch (s->intent) {
-        default: break;
-        case INTENT_IN: sym->asymbol->sym->intent = Sym_IN; break;
-        case INTENT_INOUT: sym->asymbol->sym->intent = Sym_INOUT; break;
-        case INTENT_OUT: sym->asymbol->sym->intent = Sym_OUT; break;
-        case INTENT_CONST: sym->asymbol->sym->is_read_only = 1; break;
-      }
-      // handle pragmas
-      if (sym->hasPragma("clone_for_constants")) {
-        s->asymbol->sym->clone_for_constants = 1;
-      }
-    }
     if (verbose_level > 2 && sym->name)
       printf("map_asts: found Symbol '%s'\n", sym->name);
   } else {
@@ -892,6 +878,16 @@ build_symbols(Vec<BaseAST *> &syms) {
         }
         case SYMBOL_ARG: {
           ArgSymbol *p = dynamic_cast<ArgSymbol*>(s);
+          Sym *psym = s->asymbol->sym;
+          switch (p->intent) {
+            default: break;
+            case INTENT_IN: psym->intent = Sym_IN; break;
+            case INTENT_INOUT: psym->intent = Sym_INOUT; break;
+            case INTENT_OUT: psym->intent = Sym_OUT; break;
+            case INTENT_CONST: psym->is_read_only = 1; break;
+          }
+          if (p->hasPragma("clone_for_constants"))
+            psym->clone_for_constants = 1;
           ClassType *rt = dynamic_cast<ClassType*>(p->type);
           if (rt && rt->isPattern) {
             p->asymbol->sym->is_pattern = 1;
@@ -911,17 +907,6 @@ build_symbols(Vec<BaseAST *> &syms) {
                 s->asymbol->sym->must_implement = s->type->asymbol->sym;
             }
           }
-#if XX
-          if (p->type->isGeneric)
-            p->asymbol->sym->is_generic = 1;
-#endif
-#if 0
-          if (!p->isGeneric && p->variableTypeSymbol) {
-            TypeSymbol *ts = dynamic_cast<TypeSymbol*>(p->variableTypeSymbol);
-            s->asymbol->sym->must_implement = ts->asymbol->sym;
-          }
-          assert(p->isGeneric || p->typeVarible);
-#endif
           break;
         }
         default: break;
