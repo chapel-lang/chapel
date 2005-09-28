@@ -47287,3 +47287,29 @@ Modified files:
 	chapel/compiler/traversals/: preAnalysisHacks.cpp 
 	chapel/test/arrays/deitz/: test_domain2.chpl 
 
+---------------------------------------------------------------------------
+
+09/27/05 17:06:14 -- jplevyak
+
+Log message:
+	Implement use of operator = in setters.
+	Add a "split unique" tag to operator = in the prelude to
+	  patch around the problem with recursive generic instantiation.
+	Futurize union tests.
+	Remove future for test_adomain1.chpl
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: fa.cpp 
+	chapel/modules/standard/: prelude.chpl 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+Added files:
+	chapel/test/classes/bradc/unions/: assign.future assign1a.future 
+	                                   writeunion.future 
+	chapel/test/classes/deitz/: test_union1.future 
+	                            test_union2.future 
+	                            test_union4.future 
+Removed files:
+	chapel/test/arrays/deitz/: test__adomain1.future 
+
