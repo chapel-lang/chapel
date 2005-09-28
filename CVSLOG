@@ -47359,3 +47359,14 @@ Added files:
 	                                    test_hash_table1a.chpl 
 	                                    test_hash_table1a.future 
 
+---------------------------------------------------------------------------
+
+09/28/05 11:24:31 -- roxana
+
+Log message:
+	Updated good files to address regressions -- per John's
+	observation.
+
+Modified files:
+	chapel/test/domains/roxana/helper/: test_hash_table2.good 
+
