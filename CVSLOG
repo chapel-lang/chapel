@@ -47406,3 +47406,15 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: pattern.cpp 
 
+---------------------------------------------------------------------------
+
+09/29/05 12:58:50 -- jplevyak
+
+Log message:
+	update .good file and remove future
+
+Modified files:
+	chapel/test/classes/bradc/records/: assignRecord3.good 
+Removed files:
+	chapel/test/classes/bradc/records/: assignRecord3.future 
+
