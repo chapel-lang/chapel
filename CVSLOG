@@ -47396,3 +47396,13 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: chapel_ifa.cpp 
 
+---------------------------------------------------------------------------
+
+09/29/05 12:56:26 -- jplevyak
+
+Log message:
+	Interm commit for work on generic instantiation.
+
+Modified files:
+	chapel/compiler/ifa/: pattern.cpp 
+
