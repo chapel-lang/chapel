@@ -9,6 +9,8 @@
 #include "var.h"
 #include "ast.h"
 
+//#define CHECK_INSTANTIATION     1
+
 // Key to names of position variables
 //  ABCD 
 //   A = a | f, actual or formal (MANDITORY)
@@ -26,6 +28,7 @@ class Matcher {
  public:
   AVar *send;
   AVar *arg0;
+  IFAAST *ast;
   Partial_kind partial;
   Vec<Match *> *matches;
   MatchMap match_map;
@@ -204,6 +207,7 @@ Matcher::Matcher(AVar *asend, AVar *aarg0, Partial_kind apartial, Vec<Match *> *
     partial_matches = new Vec<Fun *>(*all_matches);
   else
     partial_matches = 0;
+  ast = asend->var->def->code->ast;
 }
 
 void
@@ -481,7 +485,7 @@ Matcher::set_filters(Vec<CreationSet *> &csargs, MPosition &app, Vec<Fun *> &mat
               if (m_type->specializers.set_in(actual->aspect))
                 newt.set_add(cs);
             } else 
-              if (m_type->specializers.set_in(cs->sym->type))
+              if (m_type == cs->sym || m_type->specializers.set_in(cs->sym->type))
                 newt.set_add(cs);
           }
           if (!newt.n)
@@ -498,10 +502,11 @@ Matcher::set_filters(Vec<CreationSet *> &csargs, MPosition &app, Vec<Fun *> &mat
 
 void
 Matcher::build_Match(Fun *f, Match *m) {
-  if (match_map.get(f))
-    return;
-  Match *mm = new Match(f);
-  match_map.put(f, mm);
+  Match *mm = match_map.get(f);
+  if (!mm) {
+    mm = new Match(f);
+    match_map.put(f, mm);
+  }
   // actuals
   form_MPositionAVar(x, m->actuals)
     mm->actuals.put(x->key, x->value);
@@ -664,6 +669,10 @@ Matcher::instantiation_wrappers_and_partial_application(Vec<Fun *> &matches) {
     f = build(m, matches);
     if (!m->partial)
       complete.set_add(f);
+#ifdef CHECK_INSTANTIATION
+    if (f->is_generic)
+      fail("instantiation failure for function '%s'", f->sym->name ? f->sym->name : "<unknown>");
+#endif
     new_matches.set_add(f);
   }
   complete.set_to_vec();
@@ -709,8 +718,76 @@ Matcher::covers_formals(Fun *f, Vec<CreationSet *> &csargs, MPosition &p, int to
   return result;
 }
 
+#if XX
+
 static int
-unify_generic_type(Sym *formal, Sym *gtype, Sym *concrete_value, Map<Sym *, Sym *> &substitutions) {
+make_generic_substitution(IFAAST *ast, Sym *generic, Sym *sub, Map<Sym *, Sym *> &substitutions) {
+  assert(generic != sub);
+  assert(sub);
+  if (sub->instantiates == generic) {
+    for (int i = 0; i < sub->substitutions.n; i++)
+      if (!make_generic_substitution(ast, 
+                                     sub->substitutions.v[i].key, 
+                                     sub->substitutions.v[i].value, 
+                                     substitutions))
+        return 0;
+    return 1;
+  }
+  Sym *old = substitutions.get(generic);    
+  if (old && old != sub) {
+    show_error("conflicting generic variable substitutions", ast);
+    return 0;
+  }
+  substitutions.put(generic, sub);
+  return 1;
+}
+
+static int
+unify_generic_type(Sym *formal, Sym *gtype, Sym *concrete_value, Map<Sym *, Sym *> &substitutions,
+                   IFAAST *ast) 
+{
+  Sym *concrete_type = concrete_value->type;
+  if (concrete_type == sym_null)
+    return 0;
+  if (formal->is_generic) {
+    if (gtype == concrete_value)
+      return 1;
+    if (concrete_type->is_meta_type) {
+      if (!gtype->is_meta_type)
+        return 0;
+      Sym *generic = if1->callback->formal_to_generic(formal);
+      if (!generic)
+        return 1;
+     if (gtype->specializers.set_in(concrete_type))
+        return make_generic_substitution(ast, generic, concrete_value->meta_type, 
+                                         substitutions);
+      return 0;
+    }
+    if (gtype->specializers.set_in(concrete_type)) {
+      if (gtype->is_meta_type)
+        return 0;
+      Sym *generic = if1->callback->formal_to_generic(formal);
+      if (!generic)
+        return 1;
+      return make_generic_substitution(ast, generic, concrete_type, substitutions);
+    }
+    return 0;
+  }
+  if (gtype == concrete_type)
+    return 1;
+#if 0
+  // treat type variables as ?t
+  if (gtype->type_kind == Type_VARIABLE)
+    return make_generic_substitution(ast, gtype, concrete_type, substitutions);
+#endif
+  return 0;
+}
+
+#else
+
+static int
+unify_generic_type(Sym *formal, Sym *gtype, Sym *concrete_value, Map<Sym *, Sym *> &substitutions,
+                   IFAAST *ast) {
   Sym *concrete_type = concrete_value->type;
   if (concrete_type->is_meta_type)
     concrete_type = concrete_type->meta_type;
@@ -742,6 +819,7 @@ unify_generic_type(Sym *formal, Sym *gtype, Sym *concrete_value, Map<Sym *, Sym 
   }
   return 0;
 }
+#endif
 
 static Sym *
 get_generic_type(Sym *formal) {
@@ -751,10 +829,14 @@ get_generic_type(Sym *formal) {
       return formal_type;
     return formal->type;
   }
+#if XX
+#else
+  // treat type variables as ?t
   if (formal_type && formal_type->type_kind == Type_VARIABLE)
     return formal_type;
   if (formal->type && formal->type->type_kind == Type_VARIABLE)
     return formal->type;
+#endif
   return 0;
 }
 
@@ -773,9 +855,13 @@ instantiate_formal_types(Match *m) {
 }
 
 static int
-generic_substitutions(Match **am, MPosition &app, Vec<CreationSet*> args) {
+generic_substitutions(Match **am, MPosition &app, Vec<CreationSet*> &args, IFAAST *ast) {
   MPosition local_app(app);
   Match *m = *am;
+#if XX
+  if (!m->fun->is_generic)
+    return 1;
+#endif
   local_app.push(1);
   for (int i = 0; i < args.n; i++) {
     MPosition *acpp = cannonicalize_mposition(local_app);
@@ -786,12 +872,17 @@ generic_substitutions(Match **am, MPosition &app, Vec<CreationSet*> args) {
     Sym *formal = m->fun->arg_syms.get(fcpp);
     Sym *generic_type = get_generic_type(formal);
     if (generic_type) {
-      if (!unify_generic_type(formal, generic_type, concrete_type, m->generic_substitutions))
+      if (!unify_generic_type(formal, generic_type, concrete_type, m->generic_substitutions, ast))
         return 0;
       instantiate_formal_types(m);
     }
     local_app.inc();
   }
+#ifdef CHECK_INSTANTIATION
+  if (!m->generic_substitutions.n)
+    fail("unification failure for generic function '%s'", 
+         m->fun->sym->name ? m->fun->sym->name : "<unknown>");
+#endif
   return 1;
 }
 
@@ -876,7 +967,7 @@ Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &app,
   Vec<Match *> applicable;
   // record generic substitutions and point-wise applications
   for (int i = 0; i < unsubsumed.n; i++) {
-    if (!generic_substitutions(&unsubsumed.v[i], app, csargs))
+    if (!generic_substitutions(&unsubsumed.v[i], app, csargs, ast))
       continue;
     coercion_uses(&unsubsumed.v[i], app, csargs);
     applicable.add(unsubsumed.v[i]);
