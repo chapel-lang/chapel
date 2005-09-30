@@ -47441,3 +47441,16 @@ Log message:
 Modified files:
 	chapel/test/domains/roxana/helper/: test_hash_table.chpl 
 
+---------------------------------------------------------------------------
+
+09/30/05 15:28:09 -- jplevyak
+
+Log message:
+	Reorganize isntantiation to share some code and to fix
+	some correctness and preformance issues. (phase1)
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: alist.h symbol.h 
+	chapel/compiler/symtab/: symtab.cpp 
+
