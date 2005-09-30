@@ -17,8 +17,6 @@
 Symbol *gNil = 0;
 Symbol *gUnspecified = 0;
 
-#define DUPLICATE_INSTANTIATION_CACHE 1
-
 Symbol::Symbol(astType_t astType, char* init_name, Type* init_type) :
   BaseAST(astType),
   name(init_name),
@@ -817,7 +815,6 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
                               Map<BaseAST*,BaseAST*>* substitutions) {
   static int uid = 1;
 
-#ifdef DUPLICATE_INSTANTIATION_CACHE
   static Vec<Inst*>* icache = new Vec<Inst*>();
   forv_Vec(Inst, tmp, *icache)
     if (tmp->fn == this && subs_match(substitutions, tmp->subs))
@@ -826,7 +823,6 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
   inst->fn = this;
   inst->subs = new Map<BaseAST*,BaseAST*>();
   inst->subs->copy(*substitutions);
-#endif
 
   FnSymbol* copy = NULL;
   currentLineno = lineno;
@@ -899,7 +895,7 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
           }
         }
         fnClone->instantiatedFrom = fn;
-        fnClone->substitutions.copy(*substitutions);
+        fnClone->substitutions.copy(*inst->subs);
         tagGenerics(fnClone);
       } else {
         //printf("  not instantiating %s\n", fn->cname);
@@ -918,7 +914,7 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
 
     FnSymbol *newFn = dynamic_cast<FnSymbol*>(defExpr->sym);
     newFn->instantiatedFrom = this;
-    newFn->substitutions.copy(*substitutions);
+    newFn->substitutions.copy(*inst->subs);
     tagGenerics(newFn);
   }
 
@@ -1011,18 +1007,11 @@ FnSymbol::preinstantiate_generic(Map<BaseAST*,BaseAST*>* substitutions) {
       map.clear();
       FnSymbol* fclone = fn->copy(true, &map);
 
-      for (int i = 0; i < map.n; i++) {
-        bool sub = false;
-        for (int j = 0; j < substitutions->n; j++) {
-          if (map.v[i].key == substitutions->v[j].key) {
-            substitutions->put(map.v[i].value, substitutions->v[j].value);
-            sub = true;
-          }
-        }
-      }
+      for (int j = 0; j < substitutions->n; j++)
+        if (BaseAST *value = map.get(substitutions->v[j].key))
+          substitutions->put(value, substitutions->v[j].value);
 
       fclones.add(fclone);
-      fclone->instantiatedFrom = fn;
       fclone->cname = stringcat(fn->cname, "_inst_", intstring(uid++));
       fn->defPoint->parentStmt->insertBefore(new ExprStmt(new DefExpr(fclone)));
       fclone->addPragmas(&fn->pragmas);
@@ -1040,6 +1029,9 @@ FnSymbol::preinstantiate_generic(Map<BaseAST*,BaseAST*>* substitutions) {
       if (retType->defaultConstructor == fn) {
         cloneType->defaultConstructor = fclone;
       }
+      fclone->instantiatedFrom = fn;
+      fclone->substitutions.copy(*inst->subs);
+      tagGenerics(fclone);
     }
   }
 

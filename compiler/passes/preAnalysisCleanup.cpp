@@ -71,14 +71,18 @@ tagGenerics(FnSymbol *f) {
   if (genericFunctionArg(f, genericSymbols) || checkGeneric(f->body, &genericSymbols)) {
     changed = !f->isGeneric || changed;
     f->isGeneric = 1; 
+    f->genericSymbols.copy(genericSymbols);
+    f->genericSymbols.set_to_vec();
+    qsort(f->genericSymbols.v, f->genericSymbols.n, sizeof(genericSymbols.v[0]), compar_baseast);
     if (int i = f->nestingDepth()) {
       for (int j = 1; j <= i; i++) {
         FnSymbol *ff = f->nestingParent(i);
         changed = !ff->isGeneric || changed;
-        genericSymbols.set_to_vec();
-        qsort(genericSymbols.v, genericSymbols.n, sizeof(genericSymbols.v[0]), compar_baseast);
+        genericSymbols.set_union(ff->genericSymbols);
+        ff->genericSymbols.copy(genericSymbols);
+        ff->genericSymbols.set_to_vec();
+        qsort(ff->genericSymbols.v, ff->genericSymbols.n, sizeof(genericSymbols.v[0]), compar_baseast);
         ff->isGeneric = 1;
-        ff->genericSymbols.move(genericSymbols);
       }
     }
   }

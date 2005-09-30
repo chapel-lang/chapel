@@ -263,6 +263,9 @@ build_type_hierarchy() {
   }
   // compute structural type hierarchy
   compute_structural_type_hierarchy(types);
+
+  // ***** CONVERT THESE TO USE implements and specializes and a worklist!
+
   // compute implementors closure
   int changed = 1;
   while (changed) {

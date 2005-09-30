@@ -425,6 +425,10 @@ finalize_symbols(IF1 *i) {
           s->instantiates = type->instantiatedFrom->asymbol->sym;
         }
       }
+      if (FnSymbol* fn = dynamic_cast<FnSymbol*>(SYMBOL(s))) {
+        if (fn->instantiatedFrom)
+          s->instantiates = fn->instantiatedFrom->asymbol->sym;
+      }
     }
     if (s->is_constant)
       make_meta_type(s);
