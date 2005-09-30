@@ -60,7 +60,7 @@ class HashTable {
   function Search (k : integer) : integer {
     var i : integer = 0;
     var j : integer = -1;
-    while ((i < size) or (table(j) == null)) {
+    while ((i < size) and (table(j) != null)) {
       j = h(k, i);
       if (j == k){
         return j;
