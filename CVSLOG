@@ -47418,3 +47418,16 @@ Modified files:
 Removed files:
 	chapel/test/classes/bradc/records/: assignRecord3.future 
 
+---------------------------------------------------------------------------
+
+09/30/05 11:58:37 -- jplevyak
+
+Log message:
+	Fixup FnSymbol::substitutions.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: ast.cpp 
+	chapel/compiler/passes/: preAnalysisCleanup.cpp 
+
