@@ -47431,3 +47431,13 @@ Modified files:
 	chapel/compiler/ifa/: ast.cpp 
 	chapel/compiler/passes/: preAnalysisCleanup.cpp 
 
+---------------------------------------------------------------------------
+
+09/30/05 14:14:40 -- roxana
+
+Log message:
+	Some test update.
+
+Modified files:
+	chapel/test/domains/roxana/helper/: test_hash_table.chpl 
+
