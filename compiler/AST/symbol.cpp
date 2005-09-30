@@ -17,6 +17,51 @@
 Symbol *gNil = 0;
 Symbol *gUnspecified = 0;
 
+static int instantiate_function_id = 1;
+static int clone_type_id = 1;
+static int clone_function_id = 1;
+static int default_wrapper_id = 1;
+static int order_wrapper_id = 1;
+static int coercion_wrapper_id = 1;
+
+/** This is a quick cache implementation that isn't perfect **/
+class Inst : public gc {
+ public:
+  FnSymbol* fn;
+  FnSymbol* newfn;
+  Map<BaseAST*,BaseAST*>* subs;
+};
+
+static Vec<Inst*>* icache = new Vec<Inst*>();
+
+static bool 
+subs_match(ASTMap* s1, ASTMap* s2) {
+  form_Map(ASTMapElem, e, *s1)
+    if (s2->get(e->key) != e->value)
+      return false;
+  form_Map(ASTMapElem, e, *s2)
+    if (s1->get(e->key) != e->value)
+      return false;
+  return true;
+}
+
+static FnSymbol *
+check_icache(FnSymbol *fn, ASTMap *substitutions) {
+  forv_Vec(Inst, tmp, *icache)
+    if (tmp->fn == fn && subs_match(substitutions, tmp->subs))
+      return tmp->newfn;
+  return NULL;
+}
+
+static void
+add_icache(FnSymbol *newfn) {
+  Inst* inst = new Inst();
+  inst->fn = newfn->instantiatedFrom;
+  inst->subs = new Map<BaseAST*,BaseAST*>(newfn->substitutions);
+  inst->newfn = newfn;
+  icache->add(inst);
+}
+
 Symbol::Symbol(astType_t astType, char* init_name, Type* init_type) :
   BaseAST(astType),
   name(init_name),
@@ -481,7 +526,6 @@ TypeSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
 
 
 TypeSymbol* TypeSymbol::clone(Map<BaseAST*,BaseAST*>* map) {
-  static int uid = 1;
   ClassType* originalClass = dynamic_cast<ClassType*>(definition);
   if (!originalClass) {
     INT_FATAL(this, "Attempt to clone non-class type");
@@ -491,7 +535,7 @@ TypeSymbol* TypeSymbol::clone(Map<BaseAST*,BaseAST*>* map) {
   if (!newClass) {
     INT_FATAL(this, "Class cloning went horribly wrong");
   }
-  clone->cname = stringcat(clone->cname, "_clone_", intstring(uid++));
+  clone->cname = stringcat(clone->cname, "_clone_", intstring(clone_type_id++));
   defPoint->parentStmt->insertBefore(new ExprStmt(new DefExpr(clone)));
   clone->addPragmas(&pragmas);
   return clone;
@@ -624,7 +668,6 @@ void FnSymbol::traverseDefSymbol(Traversal* traversal) {
 
 
 FnSymbol* FnSymbol::clone(Map<BaseAST*,BaseAST*>* map) {
-  static int uid = 1;
   Stmt* copyStmt = defPoint->parentStmt->copy(true, map, NULL);
   ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(copyStmt);
   DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr);
@@ -632,7 +675,7 @@ FnSymbol* FnSymbol::clone(Map<BaseAST*,BaseAST*>* map) {
   // prelude, because they likely refer to external functions for
   // which clones will not be built
   if (defPoint->parentScope->type != SCOPE_PRELUDE) {
-    defExpr->sym->cname = stringcat(cname, "_clone_", intstring(uid++));
+    defExpr->sym->cname = stringcat(cname, "_clone_", intstring(clone_function_id++));
   }
   defPoint->parentStmt->insertAfter(copyStmt);
   TRAVERSE(copyStmt, new ClearTypes(), true);
@@ -643,8 +686,6 @@ FnSymbol* FnSymbol::clone(Map<BaseAST*,BaseAST*>* map) {
 
 
 FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitutions) {
-  static int uid = 1;
-
   AList<DefExpr>* wrapper_formals = new AList<DefExpr>();
   AList<Expr>* wrapper_actuals = new AList<Expr>();
   BlockStmt* wrapper_body = new BlockStmt();
@@ -675,7 +716,7 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
                                       retType, NULL, wrapper_body,
                                       fnClass, noParens, retRef);
   wrapper_fn->method_type = method_type;
-  wrapper_fn->cname = stringcat(cname, "_coerce_wrap", intstring(uid++));
+  wrapper_fn->cname = stringcat(cname, "_coerce_wrap", intstring(coercion_wrapper_id++));
   wrapper_fn->addPragma("inline");
   defPoint->parentStmt->insertAfter(new ExprStmt(new DefExpr(wrapper_fn)));
   wrapper_fn->addPragmas(&pragmas);
@@ -685,8 +726,6 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
 
 
 FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
-  static int uid = 1;
-
   AList<DefExpr>* wrapper_formals = new AList<DefExpr>();
   AList<Expr>* wrapper_actuals = new AList<Expr>();
   BlockStmt* wrapper_body = new BlockStmt();
@@ -722,7 +761,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
                                       retType, NULL, wrapper_body,
                                       fnClass, noParens, retRef);
   wrapper_fn->method_type = method_type;
-  wrapper_fn->cname = stringcat(cname, "_default_wrap", intstring(uid++));
+  wrapper_fn->cname = stringcat(cname, "_default_wrap", intstring(default_wrapper_id++));
   wrapper_fn->addPragma("inline");
   defPoint->parentStmt->insertAfter(new ExprStmt(new DefExpr(wrapper_fn)));
   wrapper_fn->addPragmas(&pragmas);
@@ -732,8 +771,6 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
 
 
 FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_formals) {
-  static int uid = 1;
-
   Map<Symbol*,Symbol*> old_to_new;
   for_alist(DefExpr, formal, formals) {
     old_to_new.put(formal->sym, formal->sym->copy());
@@ -754,7 +791,7 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_formals) {
                                       retType, NULL, new BlockStmt(stmt),
                                       fnClass, noParens, retRef);
   wrapper_fn->method_type = method_type;
-  wrapper_fn->cname = stringcat(cname, "_order_wrap", intstring(uid++));
+  wrapper_fn->cname = stringcat(cname, "_order_wrap", intstring(order_wrapper_id++));
   wrapper_fn->addPragma("inline");
   defPoint->parentStmt->insertBefore(new ExprStmt(new DefExpr(wrapper_fn)));
   reset_file_info(wrapper_fn->defPoint->parentStmt, lineno, filename);
@@ -791,39 +828,39 @@ instantiate_add_subs(Map<BaseAST*,BaseAST*>* substitutions, Map<BaseAST*,BaseAST
 }
 
 
-/** This is a quick cache implementation that isn't perfect **/
-class Inst : public gc {
- public:
-  FnSymbol* fn;
-  FnSymbol* newfn;
-  Map<BaseAST*,BaseAST*>* subs;
-};
-
-static bool subs_match(Map<BaseAST*,BaseAST*>* s1,
-                       Map<BaseAST*,BaseAST*>* s2) {
-  if (s1->n != s2->n)
-    return false;
-  for (int i = 0; i < s1->n; i++)
-    if (s1->v[i].key != s2->v[i].key || s1->v[i].value != s2->v[i].value)
-      return false;
-  return true;
+static FnSymbol *
+instantiate_function(FnSymbol *fn, ASTMap *all_subs, ASTMap *generic_subs, ASTMap *map) {
+  Stmt* fnStmt = fn->defPoint->parentStmt->copy(true, map);
+  ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(fnStmt);
+  DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr);
+  defExpr->sym->cname =
+    stringcat(defExpr->sym->cname, "_instantiate_", intstring(instantiate_function_id++));
+  fn->defPoint->parentStmt->insertBefore(fnStmt);
+  instantiate_add_subs(all_subs, map);
+  instantiate_update_expr(all_subs, defExpr, map);
+  FnSymbol* fnClone = dynamic_cast<FnSymbol*>(defExpr->sym);
+  fnClone->instantiatedFrom = fn;
+  fnClone->substitutions.copy(*generic_subs);
+  tagGenerics(fnClone);
+  // WARNING: NON-REENTRANT iterator, do not use if nesting is possible
+  for (DefExpr* formal = fnClone->formals->first(); formal; 
+       formal = fnClone->formals->next()) {
+    if (ArgSymbol *ps = dynamic_cast<ArgSymbol *>(formal->sym)) {
+      if (TypeSymbol *ts = dynamic_cast<TypeSymbol *>(ps->genericSymbol)) {
+        if (ts->definition->astType != TYPE_VARIABLE)
+          ps->type = ts->type;
+      }
+    }
+  }
+  return fnClone;
 }
 
 
 FnSymbol* 
-FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
-                              Map<BaseAST*,BaseAST*>* substitutions) {
-  static int uid = 1;
-
-  static Vec<Inst*>* icache = new Vec<Inst*>();
-  forv_Vec(Inst, tmp, *icache)
-    if (tmp->fn == this && subs_match(substitutions, tmp->subs))
-      return tmp->newfn;
-  Inst* inst = new Inst();
-  inst->fn = this;
-  inst->subs = new Map<BaseAST*,BaseAST*>();
-  inst->subs->copy(*substitutions);
-
+FnSymbol::instantiate_generic(ASTMap* map, ASTMap* generic_substitutions) {
+  if (FnSymbol* cached = check_icache(this, generic_substitutions))
+    return cached;
+  ASTMap substitutions(*generic_substitutions);
   FnSymbol* copy = NULL;
   currentLineno = lineno;
   currentFilename = filename;
@@ -831,47 +868,38 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
   if (fnClass == FN_CONSTRUCTOR) {
     TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(retType->symbol);
     clone = typeSym->clone(map);
-    instantiate_add_subs(substitutions, map);
+    instantiate_add_subs(&substitutions, map);
     ClassType* cloneType = dynamic_cast<ClassType*>(clone->definition);
     Vec<TypeSymbol *> types;
     types.move(cloneType->types);
     for (int i = 0; i < types.n; i++) {
-      if (types.v[i] && substitutions->get(types.v[i]->definition)) {
+      if (types.v[i] && substitutions.get(types.v[i]->definition)) {
         types.v[i]->defPoint->parentStmt->remove();
       } else
         cloneType->types.add(types.v[i]);
     }
-    instantiate_update_expr(substitutions, clone->defPoint, map);
-    substitutions->put(typeSym->definition, clone->definition);
+    instantiate_update_expr(&substitutions, clone->defPoint, map);
+    substitutions.put(typeSym->definition, clone->definition);
 
     cloneType->instantiatedFrom = retType;
-    cloneType->substitutions.copy(*substitutions);
+    cloneType->substitutions.copy(*generic_substitutions);
     tagGenerics(cloneType);
 
     Vec<FnSymbol*> functions;
     collect_functions(&functions);
     
     Vec<BaseAST*> genericParameters;
-    for (int i = 0; i < substitutions->n; i++)
-      if (VariableType *t = dynamic_cast<VariableType*>(substitutions->v[i].key)) {
+    for (int i = 0; i < substitutions.n; i++)
+      if (VariableType *t = dynamic_cast<VariableType*>(substitutions.v[i].key)) {
         genericParameters.set_add(t);
         genericParameters.set_add(t->symbol);
-      } else if (ArgSymbol *s = dynamic_cast<ArgSymbol*>(substitutions->v[i].key))
+      } else if (ArgSymbol *s = dynamic_cast<ArgSymbol*>(substitutions.v[i].key))
         if (s->isGeneric)
           genericParameters.set_add(s);
 
     forv_Vec(FnSymbol, fn, functions) {
       if (functionContainsAnyAST(fn, &genericParameters)) {
-        //printf("  instantiating %s\n", fn->cname);
-        Stmt* fnStmt = fn->defPoint->parentStmt->copy(true, map);
-        ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(fnStmt);
-        DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr);
-        defExpr->sym->cname =
-          stringcat(defExpr->sym->cname, "_instantiate_", intstring(uid++));
-        fn->defPoint->parentStmt->insertBefore(fnStmt);
-        instantiate_add_subs(substitutions, map);
-        instantiate_update_expr(substitutions, defExpr, map);
-        FnSymbol* fnClone = dynamic_cast<FnSymbol*>(defExpr->sym);
+        FnSymbol *fnClone = instantiate_function(fn, &substitutions, generic_substitutions, map);
         if (fn == this) {
           copy = fnClone;
         }
@@ -883,101 +911,50 @@ FnSymbol::instantiate_generic(Map<BaseAST*,BaseAST*>* map,
         if (typeSym->definition->defaultConstructor == fn) {
           clone->definition->defaultConstructor = fnClone;
         }
-        // WARNING: this type of iterator is not reentrant, do not
-        //          use if nesting is possible -jbp
-        for (DefExpr* formal = fnClone->formals->first(); formal; 
-             formal = fnClone->formals->next()) {
-          if (ArgSymbol *ps = dynamic_cast<ArgSymbol *>(formal->sym)) {
-            if (TypeSymbol *ts = dynamic_cast<TypeSymbol *>(ps->genericSymbol)) {
-              if (ts->definition->astType != TYPE_VARIABLE)
-                ps->type = ts->type;
-            }
-          }
-        }
-        fnClone->instantiatedFrom = fn;
-        fnClone->substitutions.copy(*inst->subs);
-        tagGenerics(fnClone);
-      } else {
-        //printf("  not instantiating %s\n", fn->cname);
       }
     }
   } else {
-    Stmt* fnStmt = defPoint->parentStmt->copy(true, map);
-    ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(fnStmt);
-    DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr);
-    defPoint->parentStmt->insertBefore(fnStmt);
-    instantiate_add_subs(substitutions, map);
-    instantiate_update_expr(substitutions, defExpr, map);
-    defExpr->sym->cname =
-      stringcat(defExpr->sym->cname, "_instantiate_", intstring(uid++));
-    copy = dynamic_cast<FnSymbol*>(defExpr->sym);
-
-    FnSymbol *newFn = dynamic_cast<FnSymbol*>(defExpr->sym);
-    newFn->instantiatedFrom = this;
-    newFn->substitutions.copy(*inst->subs);
-    tagGenerics(newFn);
+    copy = instantiate_function(this, &substitutions, generic_substitutions, map);
   }
-
   if (!copy) {
     INT_FATAL(this, "Instantiation error");
   }
-
-#ifdef DUPLICATE_INSTANTIATION_CACHE
-  inst->newfn = copy;
-  icache->add(inst);
-#endif
-
-  //printf("finished instantiating %s\n", cname);
-  
+  add_icache(copy);
   return copy;
 }
 
 
 FnSymbol* 
-FnSymbol::preinstantiate_generic(Map<BaseAST*,BaseAST*>* substitutions) {
+FnSymbol::preinstantiate_generic(Map<BaseAST*,BaseAST*>* generic_substitutions) {
   if (fnClass != FN_CONSTRUCTOR) {
     INT_FATAL(this, "preinstantiate not called on constructor");
   }
+  if (FnSymbol* cached = check_icache(this, generic_substitutions))
+    return cached;
+  ASTMap substitutions(*generic_substitutions);
 
-  static int uid = 1;
-  static Vec<Inst*>* icache = new Vec<Inst*>();
-
-  forv_Vec(Inst, tmp, *icache)
-    if (tmp->fn == this && subs_match(substitutions, tmp->subs))
-      return tmp->newfn;
-
-  Inst* inst = new Inst();
-  inst->fn = this;
-  inst->subs = new Map<BaseAST*,BaseAST*>();
-  inst->subs->copy(*substitutions);
-
-  for (int i = 0; i < substitutions->n; i++) {
-    if (Type* t1 = dynamic_cast<Type*>(substitutions->v[i].key)) {
-      Type* t2 = dynamic_cast<Type*>(substitutions->v[i].value);
-      substitutions->put(t1->symbol, t2->symbol);
+  // map TypeSymbols corresponding to Type->Type mappings
+  for (int i = 0; i < substitutions.n; i++) {
+    if (Type* t1 = dynamic_cast<Type*>(substitutions.v[i].key)) {
+      Type* t2 = dynamic_cast<Type*>(substitutions.v[i].value);
+      substitutions.put(t1->symbol, t2->symbol);
     }
   }
 
   Map<BaseAST*,BaseAST*> map;
   TypeSymbol* clone = retType->symbol->clone(&map);
 
-  for (int i = 0; i < map.n; i++) {
-    bool sub = false;
-    for (int j = 0; j < substitutions->n; j++) {
-      if (map.v[i].key == substitutions->v[j].key) {
-        substitutions->put(map.v[i].value, substitutions->v[j].value);
-        sub = true;
-      }
-    }
-    if (!sub)
-      substitutions->put(map.v[i].key, map.v[i].value);
-  }
+  for (int i = 0; i < map.n; i++)
+    if (BaseAST *value = substitutions.get(map.v[i].key))
+      substitutions.put(map.v[i].value, value);
+    else
+      substitutions.put(map.v[i].key, map.v[i].value);
 
-  TRAVERSE(clone, new UpdateSymbols(substitutions), true);
+  TRAVERSE(clone, new UpdateSymbols(&substitutions), true);
   TRAVERSE(clone->defPoint, new BuildClassHierarchy(), true);
 
-  substitutions->put(retType->symbol, clone);
-  substitutions->put(retType, clone->definition);
+  substitutions.put(retType->symbol, clone);
+  substitutions.put(retType, clone->definition);
 
   ClassType* cloneType = dynamic_cast<ClassType*>(clone->definition);
   cloneType->instantiatedFrom = retType;
@@ -985,7 +962,7 @@ FnSymbol::preinstantiate_generic(Map<BaseAST*,BaseAST*>* substitutions) {
   Vec<TypeSymbol *> types;
   types.move(cloneType->types);
   for (int i = 0; i < types.n; i++) {
-    if (types.v[i] && substitutions->get(types.v[i]->definition)) {
+    if (types.v[i] && substitutions.get(types.v[i]->definition)) {
       types.v[i]->defPoint->parentStmt->remove();
     } else
       cloneType->types.add(types.v[i]);
@@ -999,7 +976,6 @@ FnSymbol::preinstantiate_generic(Map<BaseAST*,BaseAST*>* substitutions) {
   ov.add(retType);
 
   FnSymbol* newfn = NULL;
-
   Vec<FnSymbol*> fclones;
 
   forv_Vec(FnSymbol, fn, functions) {
@@ -1007,15 +983,15 @@ FnSymbol::preinstantiate_generic(Map<BaseAST*,BaseAST*>* substitutions) {
       map.clear();
       FnSymbol* fclone = fn->copy(true, &map);
 
-      for (int j = 0; j < substitutions->n; j++)
-        if (BaseAST *value = map.get(substitutions->v[j].key))
-          substitutions->put(value, substitutions->v[j].value);
+      for (int j = 0; j < substitutions.n; j++)
+        if (BaseAST *value = map.get(substitutions.v[j].key))
+          substitutions.put(value, substitutions.v[j].value);
 
       fclones.add(fclone);
-      fclone->cname = stringcat(fn->cname, "_inst_", intstring(uid++));
+      fclone->cname = stringcat(fn->cname, "_inst_", intstring(instantiate_function_id++));
       fn->defPoint->parentStmt->insertBefore(new ExprStmt(new DefExpr(fclone)));
       fclone->addPragmas(&fn->pragmas);
-      TRAVERSE(fclone, new UpdateSymbols(substitutions), true);
+      TRAVERSE(fclone, new UpdateSymbols(&substitutions), true);
 
       if (fn == this)
         newfn = fclone;
@@ -1030,16 +1006,15 @@ FnSymbol::preinstantiate_generic(Map<BaseAST*,BaseAST*>* substitutions) {
         cloneType->defaultConstructor = fclone;
       }
       fclone->instantiatedFrom = fn;
-      fclone->substitutions.copy(*inst->subs);
+      fclone->substitutions.copy(*generic_substitutions);
       tagGenerics(fclone);
     }
   }
 
   if (!newfn)
     INT_FATAL(this, "Preinstantiation error");
-
-  inst->newfn = newfn;
-  icache->add(inst);
+  
+  add_icache(newfn);
 
   TRAVERSE(clone, new Instantiate(), true);
   forv_Vec(FnSymbol, fclone, fclones) {

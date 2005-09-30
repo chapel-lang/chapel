@@ -33,6 +33,9 @@ enum consType {
   VAR_PARAM
 };
 
+typedef Map<BaseAST *, BaseAST *> ASTMap;
+typedef MapElem<BaseAST *, BaseAST *> ASTMapElem;
+
 class Symbol : public BaseAST {
  public:
   char* name;
@@ -144,7 +147,7 @@ class TypeSymbol : public Symbol {
   TypeSymbol(char* init_name, Type* init_definition);
   virtual void verify(void); 
   COPY_DEF(TypeSymbol);
-  TypeSymbol* clone(Map<BaseAST*,BaseAST*>* map);
+  TypeSymbol* clone(ASTMap* map);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void traverseDefSymbol(Traversal* traverse);
   virtual void codegenDef(FILE* outfile);
@@ -178,7 +181,7 @@ class FnSymbol : public Symbol {
   _method_type method_type;
   Vec<Symbol *> genericSymbols;
   FnSymbol *instantiatedFrom;
-  Map<BaseAST*,BaseAST*> substitutions;
+  ASTMap substitutions;
   Vec<BasicBlock*>* basicBlocks;
   Vec<CallExpr*>* calledBy;
   Vec<CallExpr*>* calls;
@@ -199,13 +202,13 @@ class FnSymbol : public Symbol {
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void traverseDefSymbol(Traversal* traverse);
 
-  FnSymbol* clone(Map<BaseAST*,BaseAST*>* map);
+  FnSymbol* clone(ASTMap* map);
   FnSymbol* order_wrapper(Map<Symbol*,Symbol*>* formals_to_formals);
   FnSymbol* coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitutions);
   FnSymbol* default_wrapper(Vec<Symbol*>* defaults);
-  FnSymbol* instantiate_generic(Map<BaseAST*,BaseAST*>* copyMap,
-                                Map<BaseAST*,BaseAST*>* substitutions);
-  FnSymbol* preinstantiate_generic(Map<BaseAST*,BaseAST*>* substitutions);
+  FnSymbol* instantiate_generic(ASTMap* copyMap,
+                                ASTMap* substitutions);
+  FnSymbol* preinstantiate_generic(ASTMap* substitutions);
 
   void codegenHeader(FILE* outfile);
   void codegenPrototype(FILE* outfile);

@@ -23,7 +23,7 @@ class AList : public BaseAST {
  public:
   elemType* head;
   elemType* tail;
-  elemType* cursor;
+  elemType* cursor;      /* WARNING: NON-REENTRANT ITERATORS !!! */
   bool debugNestedTraversals;
 
   // constructors
@@ -215,6 +215,7 @@ int AList<elemType>::length(void) {
 }
 
 
+/* WARNING: NON-REENTRANT ITERATORS !!! */
 template <class elemType>
 elemType* AList<elemType>::first(void) {
   if (this == NULL) {
@@ -234,6 +235,7 @@ elemType* AList<elemType>::first(void) {
 }
 
 
+/* WARNING: NON-REENTRANT ITERATORS !!! */
 template <class elemType>
 elemType* AList<elemType>::next(void) {
   cursor = dynamic_cast<elemType*>(cursor->next);
@@ -244,6 +246,7 @@ elemType* AList<elemType>::next(void) {
 }
 
 
+/* WARNING: NON-REENTRANT ITERATORS !!! */
 template <class elemType>
 elemType* AList<elemType>::last(void) {
   if (this == NULL) {
@@ -263,6 +266,7 @@ elemType* AList<elemType>::last(void) {
 }
 
 
+/* WARNING: NON-REENTRANT ITERATORS !!! */
 template <class elemType>
 elemType* AList<elemType>::prev(void) {
   cursor = dynamic_cast<elemType*>(cursor->prev);
@@ -273,6 +277,7 @@ elemType* AList<elemType>::prev(void) {
 }
 
 
+/* WARNING: NON-REENTRANT ITERATORS !!! */
 template <class elemType>
 void AList<elemType>::reset(void) {
   cursor = NULL;

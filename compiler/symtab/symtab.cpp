@@ -413,7 +413,14 @@ Symboltable::defineParam(intentTag tag, char* ident, Expr* type, Expr* init) {
     new_type->addSymbol(new_type_symbol);
     argSymbol->type = getMetaType(NULL);
     argSymbol->genericSymbol = new_type_symbol;
+  } 
+#if 0
+  else if (tag == INTENT_PARAM) {
+    char *name = stringcat("__parameter_", argSymbol->name);
+    VarSymbol *varSymbol = new VarSymbol(name, dtUnknown, VAR_NORMAL, VAR_PARAM);
+    argSymbol->genericSymbol = varSymbol;
   }
+#endif
   return new DefExpr(argSymbol, init, type);
 }
 
