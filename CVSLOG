@@ -47488,3 +47488,14 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: expr.cpp symbol.cpp 
 
+---------------------------------------------------------------------------
+
+10/03/05 16:02:20 -- deitz
+
+Log message:
+	A test of nested tuple destructuring.
+
+Added files:
+	chapel/test/types/tuple/deitz/: test_destruct_nested.chpl 
+	                                test_destruct_nested.good 
+
