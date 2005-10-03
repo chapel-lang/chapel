@@ -47454,3 +47454,26 @@ Modified files:
 	chapel/compiler/include/: alist.h symbol.h 
 	chapel/compiler/symtab/: symtab.cpp 
 
+---------------------------------------------------------------------------
+
+10/03/05 11:16:03 -- deitz
+
+Log message:
+	Added a new flag --formal-temps to turn this change on as it causes
+	failure during analysis.
+	
+	Added a new pass, NormalizeFunctions, that inserts temporaries inside
+	all functions for all non-reference arguments to handle copying of
+	function calling.  No attempt to deal with out or inout arguments has
+	been made.  No attempt to deal with const argument checking has been
+	made.
+
+Modified files:
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp passlist.cpp passlist.h 
+	                       runpasses.cpp 
+	chapel/compiler/symtab/: Makefile.share 
+Added files:
+	chapel/compiler/symtab/: normalizeFunctions.cpp 
+	                         normalizeFunctions.h 
+
