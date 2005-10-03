@@ -437,12 +437,13 @@ void DefExpr::print(FILE* outfile) {
     ts->definition->printDef(outfile);
   } else if (dynamic_cast<VarSymbol*>(sym)) {
     sym->printDef(outfile);
+  } else {
+    sym->printDef(outfile);
   }
   if (init) {
     fprintf(outfile, " = ");
     init->print(outfile);
   }
-  fprintf(outfile, ";");
 }
 
 

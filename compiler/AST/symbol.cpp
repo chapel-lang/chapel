@@ -1030,7 +1030,7 @@ void FnSymbol::printDef(FILE* outfile) {
   print(outfile);
   fprintf(outfile, "(");
   if (formals) {
-    formals->print(outfile, ";\n");
+    formals->print(outfile, ", ");
   }
   fprintf(outfile, ")");
   if (retType == dtVoid) {
