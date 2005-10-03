@@ -47526,3 +47526,24 @@ Added files:
 	chapel/test/arrays/deitz/: test_domains_2D.chpl 
 	                           test_domains_2D.good 
 
+---------------------------------------------------------------------------
+
+10/03/05 16:47:51 -- deitz
+
+Log message:
+	Added compiler flag --no-index-hack to make it so the front end does
+	not say that every index in a for loop statement is of type dtInteger.
+	Its type should be taken from the iterator, and is now dtUnknown when
+	the flag --no-index-hack is used.
+	
+	Added a domain test case that relies on an index of tuple type.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+Added files:
+	chapel/test/arrays/deitz/: test_domains_2Da.chpl 
+	                           test_domains_2Da.future 
+	                           test_domains_2Da.good 
+
