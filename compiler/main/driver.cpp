@@ -33,6 +33,7 @@ static char log_flags[512] = "";
 static bool rungdb = false;
 static int pre_malloc = 0;
 bool formalTemps = false;
+bool indexHack = true;
 bool checkAnalysisTypeinfo = false;
 bool preinstantiate = true;
 bool analyzeAST = true;
@@ -89,6 +90,7 @@ static ArgumentDescription arg_desc[] = {
  {"noanalysis", ' ', "Skip analysis of AST", "f", &analyzeAST, NULL, NULL},
  {"no-inline", ' ', "No inlining of functions" , "F", &no_inline, NULL, NULL},
  {"report-inlining", ' ', "Print inlined functions", "F", &report_inlining, NULL, NULL},
+ {"no-index-hack", ' ', "Do not make index integer", "f", &indexHack, NULL, NULL},
  {"formal-temps", ' ', "Insert temps for formals", "F", &formalTemps, NULL, NULL},
  {"check-typeinfo", ' ', "Check result of type_info and return_type_info", "F", &checkAnalysisTypeinfo, NULL, NULL},
  {"nopreinstantiate", ' ', "Do not instantiate before analysis", "f", &preinstantiate, NULL, NULL},

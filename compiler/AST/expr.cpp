@@ -1515,10 +1515,11 @@ AList<DefExpr>* exprsToIndices(AList<Expr>* indices) {
     if (!varTmp) {
       INT_FATAL(tmp, "Error, Variable expected in index list");
     } else {
-      // Hack: set to integer
-      defExprs->insertAtTail(
-        new DefExpr(
-          new VarSymbol(varTmp->var->name, dtInteger)));
+      if (indexHack) {
+        defExprs->insertAtTail(new DefExpr(new VarSymbol(varTmp->var->name, dtInteger)));
+      } else {
+        defExprs->insertAtTail(new DefExpr(new VarSymbol(varTmp->var->name)));
+      }
     }
   }
   return defExprs;
