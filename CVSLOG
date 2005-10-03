@@ -47477,3 +47477,14 @@ Added files:
 	chapel/compiler/symtab/: normalizeFunctions.cpp 
 	                         normalizeFunctions.h 
 
+---------------------------------------------------------------------------
+
+10/03/05 12:00:01 -- bradc
+
+Log message:
+	Tried to clean up the print()-ing of
+	function formals a bit...
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp 
+
