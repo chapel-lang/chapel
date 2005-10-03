@@ -47499,3 +47499,30 @@ Added files:
 	chapel/test/types/tuple/deitz/: test_destruct_nested.chpl 
 	                                test_destruct_nested.good 
 
+---------------------------------------------------------------------------
+
+10/03/05 16:09:09 -- deitz
+
+Log message:
+	Cleaned up some AST construction code to make it easier to create AST.
+	
+	Added some support for arithmetic domains.  Added a new value class
+	for arithmetic domain literals.  Major limitations.
+	
+	Added one partial test case of a 2D domain.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: expr.h stmt.h symtab.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: preAnalysisHacks.cpp 
+	                             scopeResolveSymbols.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+Added files:
+	chapel/test/arrays/deitz/: test_domains_2D.chpl 
+	                           test_domains_2D.good 
+
