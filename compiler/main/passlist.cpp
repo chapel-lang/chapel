@@ -13,6 +13,7 @@
 #include "../symtab/flatten.h"
 #include "../symtab/insertDefaultInitVariables.h"
 #include "../symtab/insertOutParameterInitializations.h"
+#include "../symtab/normalizeFunctions.h"
 #include "../symtab/postAnalysisCleanup.h"
 #include "../symtab/printSymtab.h"
 #include "../symtab/reconstructIterators.h"
@@ -97,6 +98,7 @@ REGISTER(InsertThisParameters);
 REGISTER(InsertUnionChecks);     // SJD: Insert runtime type checks for unions
 REGISTER(InsertVariableInitializations);
 REGISTER(Instantiate);
+REGISTER(NormalizeFunctions);
 REGISTER(PostAnalysisCleanup);
 REGISTER(PreAnalysisHacks);
 REGISTER(PreAnalysisCleanup);

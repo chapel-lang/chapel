@@ -64,7 +64,7 @@ static void runPass(char* passName, Pass* pass, char* args) {
   }
   if (!strcmp(passName, "ScopeResolveSymbols")) {
     postScopeResolution = true;
-  } else if (!strcmp(passName, "RemoveTypeVariableFormals")) {
+  } else if (!strcmp(passName, "RunAnalysis")) {
     postAnalysis = true;
   }
 

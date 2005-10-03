@@ -6,6 +6,7 @@ SYMTAB_SRCS = \
         flatten.cpp \
         insertDefaultInitVariables.cpp \
         insertOutParameterInitializations.cpp \
+        normalizeFunctions.cpp \
         postAnalysisCleanup.cpp \
 	printSymtab.cpp \
         reconstructIterators.cpp \

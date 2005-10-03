@@ -35,6 +35,7 @@ PassInfo passlist[] = {
   RUN(InsertDefaultInitVariables, ""),
   RUN(InsertOutParameterInitializations, ""),
   RUN(EliminateReturns, ""),
+  RUN(NormalizeFunctions, ""),
 
   // passes to run analysis
   RUN(SpecializeCallExprs, ""),
@@ -43,7 +44,7 @@ PassInfo passlist[] = {
   RUN(Instantiate, ""),
   RUN(PreAnalysisCleanup, ""),
   
-  RUN(RunAnalysis, ""),
+  RUN(RunAnalysis, ""), // postAnalysis = true
  
   // passes to capture analysis information in the AST
   RUN(RemoveDeadSymbols, ""),
@@ -52,7 +53,7 @@ PassInfo passlist[] = {
   RUN(ResolveSymbols, ""),
   RUN(RemoveNamedParameters, ""),
   RUN(RemoveTypeVariableActuals, ""),
-  RUN(RemoveTypeVariableFormals, ""), // postAnalysis = true
+  RUN(RemoveTypeVariableFormals, ""),
 
   RUN(CreateNestedFuncIterators, ""),
   RUN(RemoveNestedFunctions, ""),
