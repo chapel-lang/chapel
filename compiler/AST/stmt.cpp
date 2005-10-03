@@ -411,14 +411,22 @@ void WhileLoopStmt::codegenStmt(FILE* outfile) {
 ForLoopStmt::ForLoopStmt(ForLoopStmtTag initForLoopStmtTag,
                          AList<DefExpr>* initIndices,
                          AList<Expr>* initIterators, 
-                         BlockStmt* initInnerStmt) :
+                         BaseAST* initInnerStmt) :
   Stmt(STMT_FORLOOP),
   forLoopStmtTag(initForLoopStmtTag),
   indices(initIndices),
   iterators(initIterators),
-  innerStmt(initInnerStmt),
+  innerStmt(NULL),
   indexScope(NULL)
-{ }
+{
+  if (BlockStmt* s = dynamic_cast<BlockStmt*>(initInnerStmt)) {
+    innerStmt = s;
+  } else if (Stmt* s = dynamic_cast<Stmt*>(initInnerStmt)) {
+    innerStmt = new BlockStmt(s);
+  } else if (AList<Stmt>* s = dynamic_cast<AList<Stmt>*>(initInnerStmt)) {
+    innerStmt = new BlockStmt(s);
+  }
+}
 
 
 void ForLoopStmt::verify() {

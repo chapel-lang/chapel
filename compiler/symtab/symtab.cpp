@@ -410,7 +410,6 @@ Symboltable::defineParam(intentTag tag, char* ident, Expr* type, Expr* init) {
     char *name = stringcat("__type_variable_", argSymbol->name);
     VariableType* new_type = new VariableType(getMetaType(NULL));
     TypeSymbol* new_type_symbol = new TypeSymbol(name, new_type);
-    new_type->addSymbol(new_type_symbol);
     argSymbol->type = getMetaType(NULL);
     argSymbol->genericSymbol = new_type_symbol;
   } 
@@ -442,42 +441,6 @@ setVarSymbolAttributes(AList<Stmt>* stmts, varType vartag, consType constag) {
 }
 
 
-static AList<DefExpr>* exprToIndexSymbols(AList<Expr>* indices) {
-  AList<DefExpr>* defExprs = new AList<DefExpr>();
-  for_alist(Expr, tmp, indices) {
-    SymExpr* varTmp = dynamic_cast<SymExpr*>(tmp);
-    if (!varTmp) {
-      INT_FATAL(tmp, "Error, Variable expected in index list");
-    } else {
-      // Hack: set to integer
-      defExprs->insertAtTail(
-        new DefExpr(
-          new VarSymbol(varTmp->var->name, dtInteger)));
-    }
-  }
-  return defExprs;
-}
-
-
-ForallExpr* Symboltable::defineForallExpr(AList<Expr>* indices, 
-                                          AList<Expr>* iterators,
-                                          Expr* innerExpr) {
-  return new ForallExpr(exprToIndexSymbols(indices), iterators, innerExpr);
-}
-
-
-ForLoopStmt* 
-Symboltable::defineForLoop(ForLoopStmtTag forLoopStmtTag,
-                           AList<Expr>* indices, 
-                           AList<Expr>* iterators,
-                           BlockStmt* innerStmt) {
-  return new ForLoopStmt(forLoopStmtTag,
-                         exprToIndexSymbols(indices),
-                         iterators,
-                         innerStmt);
-}
-
-
 PrimitiveType* Symboltable::definePrimitiveType(char* name, char* cname, Symbol *initSymbol) {
   PrimitiveType *t = 
     dynamic_cast<PrimitiveType*>(defineBuiltinType(name, cname, new PrimitiveType(initSymbol)));
@@ -490,7 +453,6 @@ Type* Symboltable::defineBuiltinType(char* name, char* cname, Type *newType) {
   TypeSymbol* sym = new TypeSymbol(name, newType);
   rootScope->define(sym);
   sym->cname = stringcpy(cname);
-  newType->addSymbol(sym);
 
   builtinTypes.add(newType);
 
@@ -548,7 +510,6 @@ DefExpr* Symboltable::defineStructType(char* name, // NULL = anonymous
   }
 
   TypeSymbol* sym = new TypeSymbol(name, structType);
-  structType->addSymbol(sym);
   DefExpr* defExpr = new DefExpr(sym);
   structType->addDeclarations(def);
   return defExpr;

@@ -67,6 +67,44 @@ void PreAnalysisHacks::postProcessExpr(Expr* expr) {
 
   if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
     if (SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr)) {
+      if (!strcmp(base->var->name, "domain")) {
+        if (call->argList->length() != 1)
+          USR_FATAL(call, "Domain type cannot yet be inferred");
+        if (call->argList->only()->typeInfo() != dtInteger)
+          USR_FATAL(call, "Non-arithmetic domains not yet supported");
+        base->replace(new SymExpr("_construct__adomain"));
+      }
+    }
+  }
+
+  if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
+    if (SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr)) {
+      if (!strcmp(base->var->name, "_construct__adomain_lit")) {
+        Stmt* stmt = call->parentStmt;
+        VarSymbol* _adomain_tmp = new VarSymbol("_adomain_tmp");
+        stmt->insertBefore(
+          new ExprStmt(
+            new DefExpr(_adomain_tmp, NULL,
+              new CallExpr(base->var,
+                new_IntLiteral(call->argList->length())))));
+        call->replace(new SymExpr(_adomain_tmp));
+        int dim = 1;
+        for_alist(Expr, arg, call->argList) {
+          stmt->insertBefore(
+            new ExprStmt(
+              new CallExpr(
+                new MemberAccess(
+                  new SymExpr(_adomain_tmp),
+                  new UnresolvedSymbol("_set")),
+                new_IntLiteral(dim), arg->copy())));
+          dim++;
+        }
+      }
+    }
+  }
+
+  if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
+    if (SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr)) {
       if (!strncmp(base->var->name, "_construct__tuple", 17)) {
         Expr *insertPoint = 0;
         for_alist(Expr, actual, call->argList) {

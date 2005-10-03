@@ -1,8 +1,10 @@
 _chpl_adomain.chpl:10: write, val : _adomain_info
-_chpl_adomain.chpl:29: write, val : _tuple2
-_chpl_adomain.chpl:29: write, val : _tuple2
-_chpl_adomain.chpl:52: write, x : _adomain
+_chpl_adomain.chpl:34: write, val : _tuple2
+_chpl_adomain.chpl:34: write, val : _tuple2
+_chpl_adomain.chpl:50: write, val : _adomain_lit
+_chpl_adomain.chpl:70: write, x : _adomain
 _chpl_complex.chpl:9: write, x : complex
+_chpl_data.chpl:48: write, val : _fdata
 _chpl_data.chpl:48: write, val : _fdata
 _chpl_data.chpl:55: write, val : _fdata
 _chpl_file.chpl:47: write, val : file

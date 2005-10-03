@@ -99,7 +99,6 @@ Is this "while x"(i); or "while x(i)";?
 %token TPARAM
 %token TCONTINUE
 %token TDO
-%token TDOMAIN
 %token TENUM
 %token TFOR
 %token TFORALL
@@ -375,11 +374,14 @@ if_stmt:
 
 for_stmt:
   for_stmt_tag nonempty_expr_ls TIN nonempty_expr_ls parsed_block_stmt
-    { $$ = new AList<Stmt>(Symboltable::defineForLoop($1, $2, $4, $5)); }
+    { $$ = new AList<Stmt>(new ForLoopStmt($1, exprsToIndices($2), $4, $5)); }
 | for_stmt_tag nonempty_expr_ls TIN nonempty_expr_ls TDO stmt
-    { $$ = new AList<Stmt>(Symboltable::defineForLoop($1, $2, $4, new BlockStmt($6))); }
+    { $$ = new AList<Stmt>(new ForLoopStmt($1, exprsToIndices($2), $4, $6)); }
 | TLSBR nonempty_expr_ls TIN nonempty_expr_ls TRSBR stmt
-    { $$ = new AList<Stmt>(Symboltable::defineForLoop(FORLOOPSTMT_FORALL, $2, $4, new BlockStmt($6))); }
+    {
+      $$ = new AList<Stmt>(
+             new ForLoopStmt(FORLOOPSTMT_FORALL, exprsToIndices($2), $4, $6));
+    }
 ;
 
 
@@ -660,7 +662,6 @@ whereexpr:
     { 
       VariableType* new_type = new VariableType(getMetaType(0));
       TypeSymbol* new_symbol = new TypeSymbol($2, new_type);
-      new_type->addSymbol(new_symbol);
       $$ = new DefExpr(new_symbol, NULL, $3);
     }
 | TNOT whereexpr
@@ -767,7 +768,6 @@ enum_decl_stmt:
       EnumType* pdt = new EnumType($5);
       TypeSymbol* pst = new TypeSymbol($3, pdt);
       pst->addPragmas($2);
-      pdt->addSymbol(pst);
       DefExpr* def_expr = new DefExpr(pst);
       $$ = new AList<Stmt>(new ExprStmt(def_expr));
     }
@@ -796,7 +796,6 @@ typedef_decl_stmt:
       UserType* newtype = new UserType($5, $6);
       TypeSymbol* typeSym = new TypeSymbol($3, newtype);
       typeSym->addPragmas($2);
-      newtype->addSymbol(typeSym);
       DefExpr* def_expr = new DefExpr(typeSym);
       $$ = new AList<Stmt>(new ExprStmt(def_expr));
     }
@@ -809,7 +808,6 @@ typevar_decl_stmt:
       VariableType* new_type = new VariableType(getMetaType(0));
       TypeSymbol* new_symbol = new TypeSymbol($3, new_type);
       new_symbol->addPragmas($2);
-      new_type->addSymbol(new_symbol);
       DefExpr* def_expr = new DefExpr(new_symbol, NULL, $4);
       $$ = new AList<Stmt>(new ExprStmt(def_expr));
     }
@@ -982,7 +980,6 @@ formal_type:
     { 
       VariableType* new_type = new VariableType(getMetaType(0));
       TypeSymbol* new_symbol = new TypeSymbol($2, new_type);
-      new_type->addSymbol(new_symbol);
       $$ = new DefExpr(new_symbol, NULL, $3);
     }
 ;
@@ -1109,7 +1106,9 @@ opt_expr:
 expr:
   top_level_expr
 | TLSBR nonempty_expr_ls TIN nonempty_expr_ls TRSBR expr %prec TRSBR
-    { $$ = Symboltable::defineForallExpr($2, $4, $6); }
+    { $$ = new ForallExpr(exprsToIndices($2), $4, $6); }
+| TLSBR nonempty_expr_ls TRSBR
+    { $$ = new CallExpr("_adomain_lit", $2); }
 ;
 
 

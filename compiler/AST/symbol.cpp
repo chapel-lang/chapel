@@ -501,6 +501,8 @@ TypeSymbol::TypeSymbol(char* init_name, Type* init_definition) :
 {
   if (!definition)
     isUnresolved = true;
+  else
+    definition->addSymbol(this);
 }
 
 

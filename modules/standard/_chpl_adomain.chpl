@@ -9,7 +9,8 @@ record _adomain_info {
   var _alignment : integer;
 }
 
-pragma "instantiate multidimensional iterator"
+pragma "instantiate multidimensional forall"
+pragma "instantiate multidimensional for"
 class _adomain : value {
   param rank : integer;
 
@@ -26,27 +27,44 @@ class _adomain : value {
     forall i in info(dim-1)._low..info(dim-1)._high by info(dim-1)._stride do
       yield i;
 
-  iterator _forall() : (integer, integer) {
-    forall i in _forall(1) {
-      forall j in _forall(2) {
+  iterator _for(dim : integer) : integer
+    for i in info(dim-1)._low..info(dim-1)._high by info(dim-1)._stride do
+      yield i;
+
+  iterator _forall() : (integer, integer)
+    forall i in _forall(1)
+      forall j in _forall(2)
         yield (i, j);
-      }
-    }
+}
+
+class _adomain_lit : value {
+  param rank : integer;
+
+  var info : _fdata(_aseq);
+
+  var dummy : integer;
+
+  function _set(dim : integer, x : _aseq) {
+    info(dim-1) = x;
   }
+}
+
+function =(x : _adomain, y : _adomain_lit) {
+  if x.rank != y.rank then
+    halt("Domain ranks do not match");
+  for dim in 1..x.rank do
+    x._set(dim, y.info(dim-1));
+  return x;
 }
 
 function write(x : _adomain) {
   write("[");
-  var first : boolean = true;
   for i in 0..x.rank-1 {
-    if not first then
+    if i > 0 then
       write(", ");
-    write(x.info(i)._low);
-    write("..");
-    write(x.info(i)._high);
-    if (x.info(i)._stride > 1) then
+    write(x.info(i)._low, "..", x.info(i)._high);
+    if x.info(i)._stride > 1 then
       write(" by ", x.info(i)._stride);
-    first = false;
   }
   write("]");
 }

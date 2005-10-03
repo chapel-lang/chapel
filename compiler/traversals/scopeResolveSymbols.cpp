@@ -77,6 +77,8 @@ void ScopeResolveSymbols::postProcessExpr(Expr* expr) {
           sym_use->var = sym_resolve;
         }
       } else {
+        if (!strcmp(name, "domain"))
+          return;
         USR_FATAL(expr, "Symbol '%s' is not defined", name);
       }
     }

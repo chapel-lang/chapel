@@ -50,7 +50,6 @@ const           processToken(TCONST);
 constructor     processToken(TCONSTRUCTOR);
 continue        processToken(TCONTINUE);
 do              processToken(TDO);
-domain          processToken(TDOMAIN);
 else            processToken(TELSE);
 enum            processToken(TENUM);
 for             processToken(TFOR);

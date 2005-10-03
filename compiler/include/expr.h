@@ -129,6 +129,7 @@ class SymExpr : public Expr {
  public:
   Symbol* var;
   SymExpr(Symbol* init_var);
+  SymExpr(char* init_var);
   COPY_DEF(SymExpr);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void verify(void); 
@@ -335,5 +336,6 @@ Expr *new_StringLiteral(char *str);
 bool get_int(Expr *e, long *i); // false is failure
 bool get_string(Expr *e, char **s); // false is failure
 VarSymbol *get_constant(Expr *e);
+AList<DefExpr>* exprsToIndices(AList<Expr>* indices);
 
 #endif

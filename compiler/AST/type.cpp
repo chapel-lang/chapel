@@ -920,7 +920,6 @@ void ClassType::buildFieldSelector(void) {
   EnumType* enum_type = new EnumType(id_list);
   char* enum_name = buildFieldSelectorName(this, NULL, true);
   TypeSymbol* enum_symbol = new TypeSymbol(enum_name, enum_type);
-  enum_type->addSymbol(enum_symbol);
 
   /* build definition of enum */
   DefExpr* def_expr = new DefExpr(enum_symbol);
@@ -1110,7 +1109,6 @@ Type *find_or_make_sum_type(Vec<Type *> *types) {
   commonModule->modScope->define(sym); // SJD: Yuck, sum types should
                                        // have a DefExpr and be
                                        // inserted
-  new_sum_type->addSymbol(sym);
   return new_sum_type;
 }
 

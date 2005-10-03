@@ -290,6 +290,12 @@ SymExpr::SymExpr(Symbol* init_var) :
 {}
 
 
+SymExpr::SymExpr(char* init_var) :
+  Expr(EXPR_SYM),
+  var(new UnresolvedSymbol(init_var))
+{}
+
+
 void 
 SymExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (var == old_ast) {
@@ -1502,3 +1508,18 @@ get_constant(Expr *e) {
 }
 
 
+AList<DefExpr>* exprsToIndices(AList<Expr>* indices) {
+  AList<DefExpr>* defExprs = new AList<DefExpr>();
+  for_alist(Expr, tmp, indices) {
+    SymExpr* varTmp = dynamic_cast<SymExpr*>(tmp);
+    if (!varTmp) {
+      INT_FATAL(tmp, "Error, Variable expected in index list");
+    } else {
+      // Hack: set to integer
+      defExprs->insertAtTail(
+        new DefExpr(
+          new VarSymbol(varTmp->var->name, dtInteger)));
+    }
+  }
+  return defExprs;
+}

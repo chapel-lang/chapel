@@ -59,13 +59,6 @@ class Symboltable {
                                  Type* retType, BlockStmt* body);
 
   static DefExpr* defineStructType(char* name, Type* type, AList<Stmt>* def);
-  static ForallExpr* defineForallExpr(AList<Expr>* indices, 
-                                      AList<Expr>* iterators,
-                                      Expr* innerExpr);
-  static ForLoopStmt* defineForLoop(ForLoopStmtTag forLoopStmtTag,
-                                   AList<Expr>* indices,
-                                   AList<Expr>* iterators,
-                                   BlockStmt* innerStmt);
 
   static void print(FILE* outfile = stderr);
   static void dump(FILE* outfile = stderr);

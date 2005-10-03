@@ -129,7 +129,7 @@ class ForLoopStmt : public Stmt {
   ForLoopStmt(ForLoopStmtTag initForLoopStmtTag,
               AList<DefExpr>* initIndices,
               AList<Expr>* initIterators,
-              BlockStmt* initInnerStmt);
+              BaseAST* initInnerStmt);
   virtual void verify(void);
   COPY_DEF(ForLoopStmt);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
