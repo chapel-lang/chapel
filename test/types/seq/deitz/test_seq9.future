@@ -1,4 +1,0 @@
-deitz
-
-The exprType is not seq(integer) or seq(string), but just seq which
-isn't legal..
