@@ -17,13 +17,6 @@
 Symbol *gNil = 0;
 Symbol *gUnspecified = 0;
 
-static int instantiate_function_id = 1;
-static int clone_type_id = 1;
-static int clone_function_id = 1;
-static int default_wrapper_id = 1;
-static int order_wrapper_id = 1;
-static int coercion_wrapper_id = 1;
-
 /** This is a quick cache implementation that isn't perfect **/
 class Inst : public gc {
  public:
@@ -537,7 +530,7 @@ TypeSymbol* TypeSymbol::clone(ASTMap* map) {
   if (!newClass) {
     INT_FATAL(this, "Class cloning went horribly wrong");
   }
-  clone->cname = stringcat(clone->cname, "_clone_", intstring(clone_type_id++));
+  clone->cname = stringcat("_clone_", clone->cname);
   defPoint->parentStmt->insertBefore(new ExprStmt(new DefExpr(clone)));
   clone->addPragmas(&pragmas);
   return clone;
@@ -677,7 +670,7 @@ FnSymbol* FnSymbol::clone(ASTMap* map) {
   // prelude, because they likely refer to external functions for
   // which clones will not be built
   if (defPoint->parentScope->type != SCOPE_PRELUDE) {
-    defExpr->sym->cname = stringcat(cname, "_clone_", intstring(clone_function_id++));
+    defExpr->sym->cname = stringcat("_clone_", cname);
   }
   defPoint->parentStmt->insertAfter(copyStmt);
   TRAVERSE(copyStmt, new ClearTypes(), true);
@@ -718,7 +711,7 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
                                       retType, NULL, wrapper_body,
                                       fnClass, noParens, retRef);
   wrapper_fn->method_type = method_type;
-  wrapper_fn->cname = stringcat(cname, "_coerce_wrap", intstring(coercion_wrapper_id++));
+  wrapper_fn->cname = stringcat("_coerce_wrap_", cname);
   wrapper_fn->addPragma("inline");
   defPoint->parentStmt->insertAfter(new ExprStmt(new DefExpr(wrapper_fn)));
   wrapper_fn->addPragmas(&pragmas);
@@ -763,7 +756,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
                                       retType, NULL, wrapper_body,
                                       fnClass, noParens, retRef);
   wrapper_fn->method_type = method_type;
-  wrapper_fn->cname = stringcat(cname, "_default_wrap", intstring(default_wrapper_id++));
+  wrapper_fn->cname = stringcat("_default_wrap_", cname);
   wrapper_fn->addPragma("inline");
   defPoint->parentStmt->insertAfter(new ExprStmt(new DefExpr(wrapper_fn)));
   wrapper_fn->addPragmas(&pragmas);
@@ -793,7 +786,7 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_formals) {
                                       retType, NULL, new BlockStmt(stmt),
                                       fnClass, noParens, retRef);
   wrapper_fn->method_type = method_type;
-  wrapper_fn->cname = stringcat(cname, "_order_wrap", intstring(order_wrapper_id++));
+  wrapper_fn->cname = stringcat("_order_wrap_", cname);
   wrapper_fn->addPragma("inline");
   defPoint->parentStmt->insertBefore(new ExprStmt(new DefExpr(wrapper_fn)));
   reset_file_info(wrapper_fn->defPoint->parentStmt, lineno, filename);
@@ -835,8 +828,7 @@ instantiate_function(FnSymbol *fn, ASTMap *all_subs, ASTMap *generic_subs, ASTMa
   Stmt* fnStmt = fn->defPoint->parentStmt->copy(true, map);
   ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(fnStmt);
   DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr);
-  defExpr->sym->cname =
-    stringcat(defExpr->sym->cname, "_instantiate_", intstring(instantiate_function_id++));
+  defExpr->sym->cname = stringcat("_inst_", defExpr->sym->cname);
   fn->defPoint->parentStmt->insertBefore(fnStmt);
   instantiate_add_subs(all_subs, map);
   instantiate_update_expr(all_subs, defExpr, map);
@@ -990,7 +982,7 @@ FnSymbol::preinstantiate_generic(ASTMap* generic_substitutions) {
           substitutions.put(value, substitutions.v[j].value);
 
       fclones.add(fclone);
-      fclone->cname = stringcat(fn->cname, "_inst_", intstring(instantiate_function_id++));
+      fclone->cname = stringcat("_inst_", fn->cname);
       fn->defPoint->parentStmt->insertBefore(new ExprStmt(new DefExpr(fclone)));
       fclone->addPragmas(&fn->pragmas);
       TRAVERSE(fclone, new UpdateSymbols(&substitutions), true);
