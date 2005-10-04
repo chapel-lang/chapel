@@ -47659,3 +47659,27 @@ Added files:
 	chapel/test/npb/: NOTEST mg.chpl 
 	chapel/test/npb/mg/: NOTEST mg-annotated.chpl mg-compilable.chpl 
 
+---------------------------------------------------------------------------
+
+10/04/05 15:30:39 -- deitz
+
+Log message:
+	Removed "clone" field from AST copy routines.  This field used to be
+	important when copying code where symbols also needed to be copied.
+	It is no longer necessary.  If you copy a DefExpr, you copy the
+	symbol.  This simplification is a positive side result of the
+	simplifications made to the Symboltable a while ago.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp stmt.cpp symbol.cpp 
+	                      type.cpp 
+	chapel/compiler/include/: alist.h baseAST.h 
+	chapel/compiler/symtab/: flatten.cpp 
+	chapel/compiler/traversals/: buildClassHierarchy.cpp 
+	                             buildLValueFunctions.cpp 
+	                             createNestedFuncIterators.cpp 
+	                             inlineFunctions.cpp 
+	                             insertFunctionTemps.cpp 
+	                             processImportExprs.cpp 
+	                             updateSymbols.cpp 
+
