@@ -47619,3 +47619,15 @@ Added files:
 	                                     rec_fun-3.chpl 
 	                                     rec_fun-3.good 
 
+---------------------------------------------------------------------------
+
+10/04/05 13:31:30 -- deitz
+
+Log message:
+	Removed some immature name mangling that is no longer necessary.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+
