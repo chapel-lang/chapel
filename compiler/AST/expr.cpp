@@ -1508,19 +1508,26 @@ get_constant(Expr *e) {
 }
 
 
-AList<DefExpr>* exprsToIndices(AList<Expr>* indices) {
-  AList<DefExpr>* defExprs = new AList<DefExpr>();
-  for_alist(Expr, tmp, indices) {
-    SymExpr* varTmp = dynamic_cast<SymExpr*>(tmp);
-    if (!varTmp) {
-      INT_FATAL(tmp, "Error, Variable expected in index list");
-    } else {
-      if (indexHack) {
-        defExprs->insertAtTail(new DefExpr(new VarSymbol(varTmp->var->name, dtInteger)));
-      } else {
-        defExprs->insertAtTail(new DefExpr(new VarSymbol(varTmp->var->name)));
-      }
-    }
+static void
+exprsToIndicesHelper(AList<DefExpr>* defs,
+                     Expr* index,
+                     Type* type,
+                     Expr* exprType = NULL) {
+  if (SymExpr* expr = dynamic_cast<SymExpr*>(index)) {
+    defs->insertAtTail
+      (new DefExpr(new VarSymbol(expr->var->name, type), NULL, exprType));
+  } else if (CastExpr* expr = dynamic_cast<CastExpr*>(index)) {
+    exprsToIndicesHelper(defs, expr->expr, expr->type, expr->newType);
+  } else {
+    INT_FATAL(index, "Error, Variable expected in index list");
   }
-  return defExprs;
+}
+
+
+AList<DefExpr>* exprsToIndices(AList<Expr>* indices) {
+  AList<DefExpr>* defs = new AList<DefExpr>();
+  for_alist(Expr, index, indices) {
+    exprsToIndicesHelper(defs, index, (indexHack) ? dtInteger : dtUnknown);
+  }
+  return defs;
 }
