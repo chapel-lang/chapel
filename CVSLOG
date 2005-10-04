@@ -47547,3 +47547,25 @@ Added files:
 	                           test_domains_2Da.future 
 	                           test_domains_2Da.good 
 
+---------------------------------------------------------------------------
+
+10/04/05 11:16:56 -- deitz
+
+Log message:
+	Added the ability to type index expressions as in
+	
+	  for i:(integer,integer) in D { writeln(i); }
+	
+	However, it seems analysis still treats it as an integer as the write
+	function in the body resolves to the integer version.  Added a test
+	and updated another test's future to John for work on typing indices
+	in for loops.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/test/arrays/deitz/: test_domains_2Da.future 
+Added files:
+	chapel/test/arrays/deitz/: test_domains_2Db.chpl 
+	                           test_domains_2Db.future 
+	                           test_domains_2Db.good 
+
