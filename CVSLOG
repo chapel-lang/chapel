@@ -47599,3 +47599,23 @@ Modified files:
 	                             removeNestedFunctions.cpp 
 	                             updateSymbols.cpp updateSymbols.h 
 
+---------------------------------------------------------------------------
+
+10/04/05 13:13:28 -- jplevyak
+
+Log message:
+	Improve handling of multi-level polymorphic recursive functions in analysis.
+	Add tests for handling of multi-level polymorphic recursive functions.
+	Add Map::map_union() function to map.h
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp fa.h pattern.cpp 
+	chapel/compiler/include/: map.h 
+Added files:
+	chapel/test/flowanalysis/recursion/: rec_fun-1.chpl 
+	                                     rec_fun-1.good 
+	                                     rec_fun-2.chpl 
+	                                     rec_fun-2.good 
+	                                     rec_fun-3.chpl 
+	                                     rec_fun-3.good 
+
