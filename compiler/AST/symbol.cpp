@@ -17,15 +17,16 @@
 Symbol *gNil = 0;
 Symbol *gUnspecified = 0;
 
-/** This is a quick cache implementation that isn't perfect **/
+/*** Instantiation Cache vvv ***/
 class Inst : public gc {
  public:
-  FnSymbol* fn;
-  FnSymbol* newfn;
+  Inst(FnSymbol* iOldFn, FnSymbol* iNewFn, ASTMap* iSubs) :
+    oldFn(iOldFn), newFn(iNewFn), subs(new ASTMap(*iSubs)) { }
+  FnSymbol* oldFn;
+  FnSymbol* newFn;
   ASTMap* subs;
 };
-
-static Vec<Inst*>* icache = new Vec<Inst*>();
+static Vec<Inst*> icache;
 
 static bool 
 subs_match(ASTMap* s1, ASTMap* s2) {
@@ -38,22 +39,19 @@ subs_match(ASTMap* s1, ASTMap* s2) {
   return true;
 }
 
-static FnSymbol *
-check_icache(FnSymbol *fn, ASTMap *substitutions) {
-  forv_Vec(Inst, tmp, *icache)
-    if (tmp->fn == fn && subs_match(substitutions, tmp->subs))
-      return tmp->newfn;
+static FnSymbol*
+check_icache(FnSymbol* fn, ASTMap* substitutions) {
+  forv_Vec(Inst, inst, icache)
+    if (inst->oldFn == fn && subs_match(substitutions, inst->subs))
+      return inst->newFn;
   return NULL;
 }
 
 static void
-add_icache(FnSymbol *newfn) {
-  Inst* inst = new Inst();
-  inst->fn = newfn->instantiatedFrom;
-  inst->subs = new ASTMap(newfn->substitutions);
-  inst->newfn = newfn;
-  icache->add(inst);
+add_icache(FnSymbol* newFn) {
+  icache.add(new Inst(newFn->instantiatedFrom, newFn, &newFn->substitutions));
 }
+/*** Instantiation Cache ^^^ ***/
 
 Symbol::Symbol(astType_t astType, char* init_name, Type* init_type) :
   BaseAST(astType),
