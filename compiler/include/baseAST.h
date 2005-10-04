@@ -74,7 +74,7 @@ extern char* astTypeName[];
 
 #define COPY_DEF(type)                                   \
   virtual type* copy(bool clone = false,                 \
-                     Map<BaseAST*,BaseAST*>* map = NULL, \
+                     Map<BaseAST*,BaseAST*>* map = NULL,    \
                      Vec<BaseAST*>* update_list = NULL,  \
                      bool internal = false) {            \
     preCopy(clone, map, update_list, internal);          \
@@ -147,7 +147,7 @@ class BaseAST : public gc {
   virtual void insertAfterListHelper(BaseAST* ast);
 
 // need to put this as default value to copy for new interface
-//    new Map<BaseAST*,BaseAST*>();
+//    new ASTMap();
   void preCopy(bool clone, Map<BaseAST*,BaseAST*>*& map, Vec<BaseAST*>* update_list, bool internal);
   void postCopy(BaseAST* copy, bool clone, Map<BaseAST*,BaseAST*>* map, Vec<BaseAST*>* update_list, bool internal);
 
@@ -160,6 +160,9 @@ class BaseAST : public gc {
 
   ModuleSymbol* getModule();
 };
+
+typedef Map<BaseAST*,BaseAST*> ASTMap;
+typedef MapElem<BaseAST*,BaseAST*> ASTMapElem;
 
 #define forv_BaseAST(_p, _v) forv_Vec(BaseAST, _p, _v)
 

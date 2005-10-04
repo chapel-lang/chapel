@@ -259,7 +259,7 @@ IFAAST *
 AAST::copy_tree(ASTCopyContext* context) {
   AnalysisCloneCallback callback;
   callback.context = context;
-  Map<BaseAST*,BaseAST*> clone_map;
+  ASTMap clone_map;
   DefExpr* def_expr = dynamic_cast<DefExpr*>(xast);
   FnSymbol* orig_fn = dynamic_cast<FnSymbol*>(def_expr->sym);
   FnSymbol *new_fn = orig_fn->clone(&clone_map);
@@ -464,7 +464,7 @@ BaseAST_to_Sym(BaseAST *b) {
 
 // map is not NULL when f is a constuctor for a generic type
 static Fun *
-install_new_function(FnSymbol *f, FnSymbol *old_f, Map<BaseAST*,BaseAST*> *map = NULL) {
+install_new_function(FnSymbol *f, FnSymbol *old_f, ASTMap *map = NULL) {
   Vec<BaseAST *> syms;
   Vec<FnSymbol *> funs;
   if (map) {
@@ -559,7 +559,7 @@ ACallbacks::instantiate(Sym *s, Map<Sym *, Sym *> &substitutions) {
       type = dynamic_cast<Type*>(SYMBOL(s));
     if (!type)
       return 0;
-    Map<BaseAST *, BaseAST *> subs;
+    ASTMap subs;
     form_SymSym(ss, substitutions) {
       if (ArgSymbol *p = dynamic_cast<ArgSymbol*>(SYMBOL(ss->key))) {
         if (p->isGeneric && p->genericSymbol && p->genericSymbol->astType == SYMBOL_TYPE)
@@ -658,7 +658,7 @@ Fun *
 ACallbacks::instantiate_generic(Match *m) {
   if (!m->fun->ast) 
     return NULL;
-  Map<BaseAST *, BaseAST *> substitutions;
+  ASTMap substitutions;
   form_SymSym(s, m->generic_substitutions) {
     Type *t = dynamic_cast<Type*>(SYMBOL(s->key));
 #if 0
@@ -677,7 +677,7 @@ ACallbacks::instantiate_generic(Match *m) {
       substitutions.put(p, get_constant_Expr(s->value));
   }
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(SYMBOL(m->fun->sym));
-  Map<BaseAST*,BaseAST*> map;
+  ASTMap map;
   FnSymbol *f = fndef->instantiate_generic(&map, &substitutions);
   Fun *fun = install_new_function(f, fndef, &map);
   fun->wraps = m->fun;
@@ -695,7 +695,7 @@ ASymbol::clone() {
     callback.context = &context;
     Type *type = dynamic_cast<Type*>(symbol);
     TypeSymbol *old_type_symbol = dynamic_cast<TypeSymbol*>(type->symbol);
-    Map<BaseAST*,BaseAST*> clone_map;
+    ASTMap clone_map;
     TypeSymbol *new_type_symbol = old_type_symbol->clone(&clone_map);
     assert(new_type_symbol);
     for (int i = 0; i < clone_map.n; i++)

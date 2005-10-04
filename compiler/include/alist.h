@@ -36,7 +36,7 @@ class AList : public BaseAST {
 
   // copy routines
   virtual AList<elemType>* copy(bool clone = false,
-                                Map<BaseAST*,BaseAST*>* map = NULL,
+                                ASTMap* map = NULL,
                                 Vec<BaseAST*>* update_list = NULL,
                                 bool internal = false);
 
@@ -453,7 +453,7 @@ void AList<elemType>::codegenDef(FILE* outfile, char* separator) {
 template <class elemType>
 AList<elemType>*
 AList<elemType>::copy(bool clone,
-                      Map<BaseAST*,BaseAST*>* map,
+                      ASTMap* map,
                       Vec<BaseAST*>* update_list,
                       bool internal) {
   if (isEmpty()) {
@@ -461,7 +461,7 @@ AList<elemType>::copy(bool clone,
   }
 
   if (!map) {
-    map = new Map<BaseAST*,BaseAST*>();
+    map = new ASTMap();
   }
 
   AList<elemType>* newList = new AList<elemType>();

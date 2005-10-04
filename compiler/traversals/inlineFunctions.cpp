@@ -22,7 +22,7 @@ class ReplaceReturns : public Traversal {
 };
 
 
-static void mapFormalsToActuals(CallExpr* call, Map<BaseAST*,BaseAST*>* map) {
+static void mapFormalsToActuals(CallExpr* call, ASTMap* map) {
   FnSymbol* fn = call->findFnSymbol();
   Expr* actual = call->argList->first();
   for_alist(DefExpr, formalDef, fn->formals) {
@@ -63,7 +63,7 @@ void InlineFunctions::postProcessExpr(Expr* expr) {
   if (!fn || !fn->hasPragma("inline") || fn->hasPragma("no codegen"))
     return;
 
-  Map<BaseAST*,BaseAST*> map;
+  ASTMap map;
   mapFormalsToActuals(call, &map);
 
   Stmt* inlined_body = fn->body->copy(true,&map);

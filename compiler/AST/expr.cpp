@@ -105,7 +105,7 @@ Expr::Expr(astType_t astType) :
 
 
 Expr*
-Expr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+Expr::copyInner(bool clone, ASTMap* map) {
   INT_FATAL(this, "Illegal call to Expr::copy");
   return NULL;
 }
@@ -316,7 +316,7 @@ SymExpr::verify(void) {
 
 
 SymExpr*
-SymExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+SymExpr::copyInner(bool clone, ASTMap* map) {
   return new SymExpr(var);
 }
 
@@ -389,7 +389,7 @@ void DefExpr::verify(void) {
 
 
 DefExpr*
-DefExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+DefExpr::copyInner(bool clone, ASTMap* map) {
   return new DefExpr((clone) ? CLONE_INTERNAL(sym) : sym,
                      COPY_INTERNAL(init),
                      COPY_INTERNAL(exprType));
@@ -474,7 +474,7 @@ void MemberAccess::verify() {
 
 
 MemberAccess*
-MemberAccess::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+MemberAccess::copyInner(bool clone, ASTMap* map) {
   MemberAccess* _this = new MemberAccess(COPY_INTERNAL(base), member);
   _this->member_type = member_type;
   _this->member_offset = member_offset;
@@ -651,7 +651,7 @@ void CallExpr::verify() {
 
 
 CallExpr*
-CallExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+CallExpr::copyInner(bool clone, ASTMap* map) {
   CallExpr* _this = new CallExpr(COPY_INTERNAL(baseExpr), COPY_INTERNAL(argList));
   _this->opTag = opTag;
   _this->partialTag = partialTag;
@@ -952,7 +952,7 @@ void CastExpr::verify() {
 
 
 CastExpr*
-CastExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+CastExpr::copyInner(bool clone, ASTMap* map) {
   return new CastExpr(COPY_INTERNAL(expr),
                       COPY_INTERNAL(newType),
                       type);
@@ -1029,7 +1029,7 @@ void ReduceExpr::verify() {
 
 
 ReduceExpr*
-ReduceExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+ReduceExpr::copyInner(bool clone, ASTMap* map) {
   return new ReduceExpr(COPY_INTERNAL(reduceType),
                         COPY_INTERNAL(argExpr),
                         isScan,
@@ -1092,7 +1092,7 @@ void ForallExpr::verify() {
 
 
 ForallExpr*
-ForallExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+ForallExpr::copyInner(bool clone, ASTMap* map) {
   return new ForallExpr(CLONE_INTERNAL(indices),
                         CLONE_INTERNAL(iterators),
                         CLONE_INTERNAL(innerExpr));
@@ -1172,7 +1172,7 @@ void LetExpr::verify() {
 
 
 LetExpr*
-LetExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+LetExpr::copyInner(bool clone, ASTMap* map) {
   return new LetExpr(CLONE_INTERNAL(symDefs), CLONE_INTERNAL(innerExpr));
 }
 
@@ -1234,7 +1234,7 @@ void CondExpr::verify() {
 
 
 CondExpr*
-CondExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+CondExpr::copyInner(bool clone, ASTMap* map) {
   return new CondExpr(COPY_INTERNAL(condExpr),
                       COPY_INTERNAL(thenExpr),
                       COPY_INTERNAL(elseExpr));
@@ -1313,7 +1313,7 @@ void NamedExpr::verify() {
 
 
 NamedExpr*
-NamedExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+NamedExpr::copyInner(bool clone, ASTMap* map) {
   return new NamedExpr(stringcpy(name), COPY_INTERNAL(actual));
 }
 
@@ -1367,7 +1367,7 @@ void ImportExpr::verify() {
 
 
 ImportExpr*
-ImportExpr::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+ImportExpr::copyInner(bool clone, ASTMap* map) {
   ImportExpr* _this = new ImportExpr(importTag, COPY_INTERNAL(expr));
   return _this;
 }

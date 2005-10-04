@@ -47,13 +47,13 @@ void Type::addSymbol(TypeSymbol* newsymbol) {
 
 
 Type*
-Type::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+Type::copyInner(bool clone, ASTMap* map) {
   INT_FATAL(this, "Illegal call to Type::copy");
   return NULL;
 }
 
 
-Type *Type::instantiate_generic(Map<BaseAST *, BaseAST *> &substitutions) {
+Type *Type::instantiate_generic(ASTMap &substitutions) {
   if (astType == TYPE_VARIABLE) {
     if (Type *t = dynamic_cast<Type*>(substitutions.get(this)))
       return t;
@@ -297,7 +297,7 @@ void EnumType::verify(void) {
 
 
 EnumType*
-EnumType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+EnumType::copyInner(bool clone, ASTMap* map) {
   EnumType* copy = new EnumType(CLONE_INTERNAL(constants));
   if (map) {
     map->put(metaType, copy->metaType);
@@ -493,7 +493,7 @@ void UserType::verify(void) {
 
 
 UserType*
-UserType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+UserType::copyInner(bool clone, ASTMap* map) {
   UserType* copy = new UserType(COPY_INTERNAL(typeExpr),
                                 COPY_INTERNAL(underlyingType),
                                 COPY_INTERNAL(defaultExpr));
@@ -577,7 +577,7 @@ void ClassType::verify(void) {
 
 
 ClassType*
-ClassType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+ClassType::copyInner(bool clone, ASTMap* map) {
   ClassType* copy_type = new ClassType(classTag);
   if (map) {
     map->put(metaType, copy_type->metaType);
@@ -1028,7 +1028,7 @@ void VariableType::verify(void) {
 
 
 VariableType*
-VariableType::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+VariableType::copyInner(bool clone, ASTMap* map) {
   VariableType *copy = new VariableType(type);
   if (map) { 
     map->put(metaType, copy->metaType);

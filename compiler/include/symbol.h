@@ -33,9 +33,6 @@ enum consType {
   VAR_PARAM
 };
 
-typedef Map<BaseAST *, BaseAST *> ASTMap;
-typedef MapElem<BaseAST *, BaseAST *> ASTMapElem;
-
 class Symbol : public BaseAST {
  public:
   char* name;

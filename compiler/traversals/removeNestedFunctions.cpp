@@ -45,7 +45,7 @@ public:
 
 static void
 addVarsToFormals(FnSymbol* fn, Vec<Symbol*>* vars) {
-  Map<BaseAST*,BaseAST*> update_map;
+  ASTMap update_map;
   forv_Vec(Symbol, sym, *vars) {
     if (sym) {
       ArgSymbol* arg = new ArgSymbol(INTENT_INOUT, sym->name, sym->type);

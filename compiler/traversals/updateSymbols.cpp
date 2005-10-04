@@ -4,8 +4,8 @@
 #include "stmt.h"
 #include "stringutil.h"
 
-UpdateSymbols::UpdateSymbols(Map<BaseAST*,BaseAST*>* init_updateMap,
-                             Map<BaseAST*,BaseAST*>* init_copyMap) {
+UpdateSymbols::UpdateSymbols(ASTMap* init_updateMap,
+                             ASTMap* init_copyMap) {
   changed = false;
   updateMap = init_updateMap;
   copyMap = init_copyMap;

@@ -29,7 +29,7 @@ class Inst : public gc {
  public:
   FnSymbol* fn;
   FnSymbol* newfn;
-  Map<BaseAST*,BaseAST*>* subs;
+  ASTMap* subs;
 };
 
 static Vec<Inst*>* icache = new Vec<Inst*>();
@@ -57,7 +57,7 @@ static void
 add_icache(FnSymbol *newfn) {
   Inst* inst = new Inst();
   inst->fn = newfn->instantiatedFrom;
-  inst->subs = new Map<BaseAST*,BaseAST*>(newfn->substitutions);
+  inst->subs = new ASTMap(newfn->substitutions);
   inst->newfn = newfn;
   icache->add(inst);
 }
@@ -85,7 +85,7 @@ void Symbol::setParentScope(SymScope* init_parentScope) {
 
 
 Symbol*
-Symbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+Symbol::copyInner(bool clone, ASTMap* map) {
   INT_FATAL(this, "Illegal call to Symbol::copy");
   return NULL;
 }
@@ -237,7 +237,7 @@ void UnresolvedSymbol::codegen(FILE* outfile) {
 
 
 UnresolvedSymbol*
-UnresolvedSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+UnresolvedSymbol::copyInner(bool clone, ASTMap* map) {
   return new UnresolvedSymbol(stringcpy(name));
 }
 
@@ -270,7 +270,7 @@ void VarSymbol::verify(void) {
 
 
 VarSymbol*
-VarSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+VarSymbol::copyInner(bool clone, ASTMap* map) {
   VarSymbol* newVarSymbol = 
     new VarSymbol(stringcpy(name), type, varClass, consClass);
   newVarSymbol->cname = stringcpy(cname);
@@ -409,7 +409,7 @@ void ArgSymbol::verify(void) {
 
 
 ArgSymbol*
-ArgSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+ArgSymbol::copyInner(bool clone, ASTMap* map) {
   ArgSymbol *ps = new ArgSymbol(intent, stringcpy(name), type);
   if (genericSymbol)
     ps->genericSymbol = genericSymbol;
@@ -518,7 +518,7 @@ void TypeSymbol::verify(void) {
 
 
 TypeSymbol*
-TypeSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+TypeSymbol::copyInner(bool clone, ASTMap* map) {
   Type* new_definition = COPY_INTERNAL(definition);
   TypeSymbol* new_definition_symbol = new TypeSymbol(stringcpy(name), new_definition);
   new_definition->addSymbol(new_definition_symbol);
@@ -527,7 +527,7 @@ TypeSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
 }
 
 
-TypeSymbol* TypeSymbol::clone(Map<BaseAST*,BaseAST*>* map) {
+TypeSymbol* TypeSymbol::clone(ASTMap* map) {
   ClassType* originalClass = dynamic_cast<ClassType*>(definition);
   if (!originalClass) {
     INT_FATAL(this, "Attempt to clone non-class type");
@@ -616,7 +616,7 @@ FnSymbol* FnSymbol::getFnSymbol(void) {
 
 
 FnSymbol*
-FnSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+FnSymbol::copyInner(bool clone, ASTMap* map) {
   FnSymbol* copy = new FnSymbol(name,
                                 typeBinding,
                                 CLONE_INTERNAL(formals),
@@ -669,7 +669,7 @@ void FnSymbol::traverseDefSymbol(Traversal* traversal) {
 }
 
 
-FnSymbol* FnSymbol::clone(Map<BaseAST*,BaseAST*>* map) {
+FnSymbol* FnSymbol::clone(ASTMap* map) {
   Stmt* copyStmt = defPoint->parentStmt->copy(true, map, NULL);
   ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(copyStmt);
   DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr);
@@ -802,9 +802,9 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_formals) {
 
 
 static bool
-instantiate_update_expr(Map<BaseAST*,BaseAST*>* substitutions, Expr* expr,
-                        Map<BaseAST*,BaseAST*>* copyMap) {
-  Map<BaseAST *, BaseAST *> map;
+instantiate_update_expr(ASTMap* substitutions, Expr* expr,
+                        ASTMap* copyMap) {
+  ASTMap map;
   map.copy(*substitutions);
   // for type variables, add TypeSymbols into the map as well
   for (int i = 0; i < substitutions->n; i++)
@@ -818,8 +818,8 @@ instantiate_update_expr(Map<BaseAST*,BaseAST*>* substitutions, Expr* expr,
 
 
 static void
-instantiate_add_subs(Map<BaseAST*,BaseAST*>* substitutions, Map<BaseAST*,BaseAST*>* map) {
-  Map<BaseAST *, BaseAST*> tmp;
+instantiate_add_subs(ASTMap* substitutions, ASTMap* map) {
+  ASTMap tmp;
   tmp.copy(*substitutions);
   for (int i = 0; i < tmp.n; i++) {
     if (tmp.v[i].key) {
@@ -927,7 +927,7 @@ FnSymbol::instantiate_generic(ASTMap* map, ASTMap* generic_substitutions) {
 
 
 FnSymbol* 
-FnSymbol::preinstantiate_generic(Map<BaseAST*,BaseAST*>* generic_substitutions) {
+FnSymbol::preinstantiate_generic(ASTMap* generic_substitutions) {
   if (fnClass != FN_CONSTRUCTOR) {
     INT_FATAL(this, "preinstantiate not called on constructor");
   }
@@ -943,7 +943,7 @@ FnSymbol::preinstantiate_generic(Map<BaseAST*,BaseAST*>* generic_substitutions) 
     }
   }
 
-  Map<BaseAST*,BaseAST*> map;
+  ASTMap map;
   TypeSymbol* clone = retType->symbol->clone(&map);
 
   for (int i = 0; i < map.n; i++)
@@ -1164,7 +1164,7 @@ void EnumSymbol::verify(void) {
 
 
 EnumSymbol*
-EnumSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+EnumSymbol::copyInner(bool clone, ASTMap* map) {
   return new EnumSymbol(stringcpy(name));
 }
 
@@ -1195,7 +1195,7 @@ void ModuleSymbol::verify(void) {
 
 
 ModuleSymbol*
-ModuleSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+ModuleSymbol::copyInner(bool clone, ASTMap* map) {
   INT_FATAL(this, "Illegal call to ModuleSymbol::copy");
   return NULL;
 }
@@ -1293,7 +1293,7 @@ void LabelSymbol::verify(void) {
 }
 
 LabelSymbol* 
-LabelSymbol::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+LabelSymbol::copyInner(bool clone, ASTMap* map) {
   LabelSymbol* copy = new LabelSymbol(stringcpy(name));
   copy->cname = stringcpy(cname);
   return copy;

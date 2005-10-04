@@ -16,7 +16,7 @@ void NormalizeFunctions::processSymbol(Symbol* sym) {
     return;
 
   Vec<DefExpr*> tempDefs;
-  Map<BaseAST*,BaseAST*> subs;
+  ASTMap subs;
 
   for_alist_backward(DefExpr, formalDef, fn->formals) {
     ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);

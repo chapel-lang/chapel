@@ -46,13 +46,13 @@ class Type : public BaseAST {
   bool isGeneric;
   Vec<Symbol*> genericSymbols;
   Type *instantiatedFrom;
-  Map<BaseAST*,BaseAST*> substitutions;
+  ASTMap substitutions;
 
   Type(astType_t astType, Symbol* init_defaultVal);
   virtual void verify(void); 
   COPY_DEF(Type);
   void addSymbol(TypeSymbol* newSymbol);
-  Type *instantiate_generic(Map<BaseAST *, BaseAST *> &substitutions);
+  Type *instantiate_generic(ASTMap &substitutions);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void traverse(Traversal* traversal, bool atTop = true);

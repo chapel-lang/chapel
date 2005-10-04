@@ -36,7 +36,7 @@ public:
 
 static void
 addVarToFormals(FnSymbol* fn, Symbol* sym) {
-  Map<BaseAST*,BaseAST*> update_map;
+  ASTMap update_map;
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, sym->name, sym->type);
   fn->formals->insertAtTail(new DefExpr(arg));
   update_map.put(sym, arg);

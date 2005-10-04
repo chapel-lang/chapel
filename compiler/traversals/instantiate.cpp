@@ -28,7 +28,7 @@ Instantiate::postProcessExpr(Expr* expr) {
         }
       }
       if (fn && fn->fnClass == FN_CONSTRUCTOR) {
-        Map<BaseAST*,BaseAST*> substitutions;
+        ASTMap substitutions;
         DefExpr* formal = fn->formals->first();
         AList<Expr>* newActuals = new AList<Expr>();
         for_alist(Expr, actual, call->argList) {

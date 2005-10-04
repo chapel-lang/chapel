@@ -55,7 +55,7 @@ BaseAST::BaseAST(astType_t type) :
 
 
 BaseAST*
-BaseAST::copyInner(bool clone, Map<BaseAST*,BaseAST*>* map) {
+BaseAST::copyInner(bool clone, ASTMap* map) {
   INT_FATAL(this, "copyInner not implemented for BaseAST subclass");
   return NULL;
 }
@@ -228,18 +228,18 @@ void BaseAST::insertAfter(BaseAST* new_ast) {
 
 
 void BaseAST::preCopy(bool clone,
-                      Map<BaseAST*,BaseAST*>*& map,
+                      ASTMap*& map,
                       Vec<BaseAST*>* update_list,
                       bool internal) {
   if (!map) {
-    map = new Map<BaseAST*,BaseAST*>();
+    map = new ASTMap();
   }
 }
 
 
 void BaseAST::postCopy(BaseAST* copy,
                        bool clone,
-                       Map<BaseAST*,BaseAST*>* map,
+                       ASTMap* map,
                        Vec<BaseAST*>* update_list,
                        bool internal) {
   copy->copyFrom = this;
