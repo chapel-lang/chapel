@@ -29,6 +29,7 @@ class CDB;
 class Patterns;
 class Match;
 class MPosition;
+class EntrySet;
 
 typedef MapElem<Fun *, AEdge *> FunAEdgeMapElem;
 typedef Map<Fun *, AEdge *> FunAEdgeMap;
@@ -55,22 +56,25 @@ class AType : public Vec<CreationSet *> {
 };
 #define forv_AType(_p, _v) forv_Vec(AType, _p, _v)
 
+typedef  MapElem<AEdge*, EntrySet*> MapElemAEdgeEntrySet;
+
 class EntrySet : public gc {
  public:
-  Fun                   *fun;
-  uint                  dfs_color : 2;
-  Map<MPosition*,AVar*> args;
-  Vec<AVar *>           rets;
-  EdgeHash              edges;
-  EdgeMap               out_edge_map;
-  Vec<EntrySet *>       display;
-  Vec<AEdge *>          out_edges;
-  Vec<AEdge *>          backedges;
-  Vec<AEdge *>          es_cs_backedges;
-  Vec<CreationSet *>    cs_backedges;
-  Vec<CreationSet *>    creates;
-  EntrySet              *split;
-  Vec<EntrySet *>       *equiv;         // clone.cpp
+  Fun                           *fun;
+  uint                          dfs_color : 2;
+  Map<MPosition*,AVar*>         args;
+  Vec<AVar *>                   rets;
+  EdgeHash                      edges;
+  EdgeMap                       out_edge_map;
+  Vec<CreationSet *>            creates;
+  Vec<EntrySet *>               display;
+  Vec<AEdge *>                  out_edges;
+  Vec<AEdge *>                  backedges;
+  Vec<AEdge *>                  es_cs_backedges;
+  Vec<CreationSet *>            cs_backedges;
+  EntrySet                      *split;
+  Map<AEdge *, EntrySet *>      pending_es_backedge_map;
+  Vec<EntrySet *>               *equiv;         // clone.cpp
 
   EntrySet(Fun *af): fun(af), equiv(0) {}
 };
@@ -158,13 +162,14 @@ class AEdge : public gc {
   Map<MPosition*,AVar*> args;
   Map<MPosition*,AVar*> filtered_args;
   Vec<AVar *>           rets;
+  Fun                   *fun;
   Match                 *match;
   uint                  in_edge_worklist : 1;
   uint                  es_backedge : 1;
   uint                  es_cs_backedge : 1;
   Link<AEdge>           edge_worklist_link;
 
-  AEdge() : from(0), to(0), pnode(0), match(0), in_edge_worklist(0) {}
+  AEdge() : from(0), to(0), pnode(0), fun(0), match(0), in_edge_worklist(0) {}
 };
 #define forv_AEdge(_p, _v) forv_Vec(AEdge, _p, _v)
 typedef MapElem<MPosition *, AVar *> MapMPositionAVar;

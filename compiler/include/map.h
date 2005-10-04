@@ -37,6 +37,7 @@ template <class K, class C> class Map : public Vec<MapElem<K,C> > {
   inline void get_keys(Vec<K> &keys);
   inline void get_keys_set(Vec<K> &keys);
   inline void get_values(Vec<C> &values);
+  inline void map_union(Map<K,C> &m);
 };
 
 template <class C> class HashFns {
@@ -189,6 +190,13 @@ Map<K,C>::get_values(Vec<C> &values) {
     if (v[i].key)
       values.set_add(v[i].value);
   values.set_to_vec();
+}
+
+template <class K, class C> inline void
+Map<K,C>::map_union(Map<K,C> &m) {
+  for (int i = 0; i < m.n; i++)
+    if (m.v[i].key)
+      put(m.v[i].key, m.v[i].value);
 }
 
 template <class K, class AHashFns, class C> inline MapElem<K,C> * 

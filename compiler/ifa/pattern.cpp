@@ -831,7 +831,6 @@ get_generic_type(Sym *formal) {
   }
 #if XX
 #else
-  // treat type variables as ?t
   if (formal_type && formal_type->type_kind == Type_VARIABLE)
     return formal_type;
   if (formal->type && formal->type->type_kind == Type_VARIABLE)

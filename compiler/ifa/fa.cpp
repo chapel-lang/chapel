@@ -12,8 +12,8 @@
 #include "var.h"
 #include "clone.h"
 
-// Caching of callees fails in the presence of generics
-// #define CACHE_CALLEES           1
+
+// #define CACHE_CALLEES           1 // Caching of callees fails in the presence of generics
 
 static int avar_id = 1;
 static int creation_set_id = 1;
@@ -917,13 +917,21 @@ find_best_entry_set(AEdge *e, EntrySet *split) {
 }
 
 static int
-check_split(AEdge *e) {
-  if (e->from && e->from->split) {
+check_split(AEdge *e)  {
+  if (!e->from)
+    return 0;
+  if (EntrySet *es = e->from->pending_es_backedge_map.get(e)) {
+    set_entry_set(e, es);
+    return 1;
+  }
+  if (e->from->split) {
     Map<Fun *, AEdge *> *m = e->from->split->out_edge_map.get(e->pnode);
     if (m) {
       for (int i = 0; i < m->n; i++)
         if (m->v[i].key == e->match->fun) {
-          if (e->match->fun->nested_in == e->from->fun) {
+          if (e->match->fun->split_unique) {
+            set_entry_set(e);
+          } else if (e->match->fun->nested_in == e->from->fun) {
             set_entry_set(e);
             e->to->split = m->v[i].value->to;
           } else
@@ -1255,8 +1263,7 @@ add_move_constraints(EntrySet *es) {
 }
 
 static AEdge *
-make_AEdge(Match *m, PNode *p, EntrySet *from) {
-  Fun *f = m->fun;
+get_AEdge(Fun *f, PNode *p, EntrySet *from) {
   Map<Fun *, AEdge *> *f2e = from->out_edge_map.get(p);
   if (!f2e)
     from->out_edge_map.put(p, (f2e = new Map<Fun *, AEdge *>()));
@@ -1265,7 +1272,14 @@ make_AEdge(Match *m, PNode *p, EntrySet *from) {
     f2e->put(f, (e = new AEdge()));
     e->pnode = p;
     e->from = from;
+    e->fun = f;
   }
+  return e;
+}
+
+static AEdge *
+make_AEdge(Match *m, PNode *p, EntrySet *from) {
+  AEdge *e = get_AEdge(m->fun, p, from);
   if (!e->match)
     e->match = m;
   else {
@@ -1493,8 +1507,18 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
       if (i - start < n - 1) iarg++;
     }
     for (int i = 0; i < p->lvals.n; i++) {
-      if (p->prim->ret_types[i] == PRIM_TYPE_ANY_NUM_AB)
-        update_gen(make_AVar(p->lvals.v[i], es), type_num_fold(p->prim, a->out, b->out));
+      if (p->prim->ret_types[i] == PRIM_TYPE_ANY_NUM_AB) {
+        AVar *res = make_AVar(p->lvals.v[i], es);
+        // connect the flows, but prevent values to pass
+        // so that splitting can attribute causality
+        fill_tvals(es->fun, p, p->lvals.n);
+        AVar *t = make_AVar(p->tvals.v[i], es);
+        flow_var_type_permit(t, bottom_type);
+        flow_vars(a, t);
+        flow_vars(b, t);
+        flow_vars(t, res);
+        update_in(res, type_num_fold(p->prim, a->out, b->out));
+      }
       if (p->prim->ret_types[i] == PRIM_TYPE_A)
         flow_vars(a, make_AVar(p->lvals.v[i], es));
     }
@@ -2629,7 +2653,7 @@ compute_recursive_entry_creation_sets() {
   mark_es_cs_backedges(fa->top_edge->to);
 }
 
-static int
+int
 is_es_recursive(EntrySet *es) {
   if (es->split)
     return es->split->backedges.n;
@@ -2637,10 +2661,28 @@ is_es_recursive(EntrySet *es) {
 }
 
 static int
+is_es_recursive(AEdge *e) {
+  EntrySet *es = e->from->split ? e->from->split : e->from;
+  forv_AEdge(ee, es->backedges)
+    if (ee->pnode == e->pnode && ee->fun == e->fun)
+      return 1;
+  return 0;
+}
+
+int
 is_es_cs_recursive(EntrySet *es) {
   if (es->split)
     return es->split->es_cs_backedges.n;
   return es->es_cs_backedges.n;
+}
+
+static int
+is_es_cs_recursive(AEdge *e) {
+  EntrySet *es = e->from->split ? e->from->split : e->from;
+  forv_AEdge(ee, es->es_cs_backedges)
+    if (ee->pnode == e->pnode && ee->fun == e->fun)
+      return 1;
+  return 0;
 }
 
 // make sure you take into account splits here!  what matters is the pre-split es/cs
@@ -2722,25 +2764,48 @@ collect_cs_type_confluences(Vec<AVar *> &confluences) {
   confluences.set_to_vec();
 }
 
+static void
+record_backedges(AEdge *e, EntrySet *es, Map<AEdge *, EntrySet *> &up_map) {
+  form_Map(MapElemAEdgeEntrySet, m, up_map) {
+    if (m->key->from == es)
+      e->to->pending_es_backedge_map.put(get_AEdge(m->key->fun, m->key->pnode, e->to), m->value);
+    else
+      e->to->pending_es_backedge_map.put(m->key, m->value);
+  }
+  Vec<AEdge *> *backedges = &es->backedges;
+  if (es->split)
+    backedges = &es->split->backedges;
+  forv_AEdge(ee, *backedges)
+    if (ee->from == es)
+      e->to->pending_es_backedge_map.put(get_AEdge(ee->fun, ee->pnode, e->to), e->to);
+    else
+      e->to->pending_es_backedge_map.put(ee, e->to);
+}
+
 static int
 split_entry_set(AVar *av, int fsetters, int fmark = 0) {
   EntrySet *es = (EntrySet*)av->contour;
-  if (!fsetters ? is_es_recursive(es) : is_es_cs_recursive(es))
-    return 0;
   Vec<AEdge *> do_edges;
-  int nedges = 0;
+  int nedges = 0, non_rec_edges = 0;
   AEdge **last = es->edges.last();
+  Map<AEdge *, EntrySet *> pending_es_backedge_map;
   for (AEdge **ee = es->edges.first(); ee < last; ee++) if (*ee) {
     if (!(*ee)->args.n) 
       continue;
     nedges++;
+    pending_es_backedge_map.map_union((*ee)->from->pending_es_backedge_map);
+    if (!fsetters ? is_es_recursive(*ee) : is_es_cs_recursive(*ee))
+      continue;
+    non_rec_edges++;
     if (!fsetters) {
       if (!edge_type_compatible_with_entry_set(*ee, es, fmark))
         do_edges.add(*ee);
     } else
       if (!edge_sset_compatible_with_entry_set(*ee, es))
         do_edges.add(*ee);
-  }
+  } 
+  if (non_rec_edges == 1 && nedges != do_edges.n) 
+    return 0;
   int first = do_edges.n == nedges ? 1 : 0;
   int split = 0;
   for (int i = first; i < do_edges.n; i++) {
@@ -2749,8 +2814,10 @@ split_entry_set(AVar *av, int fsetters, int fmark = 0) {
     e->filtered_args.clear();
     es->edges.del(e);
     make_entry_set(e, es);
-    if (e->to != es)
+    if (e->to != es) {
+      record_backedges(e, es, pending_es_backedge_map);
       split = 1;
+    }
   }
   return split;
 }
@@ -3310,7 +3377,6 @@ clear_splits() {
 
 static int
 extend_analysis() {
-  // initialize
   int analyze_again = 0;
   compute_recursive_entry_sets();
   compute_recursive_entry_creation_sets();
