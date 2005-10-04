@@ -47642,3 +47642,20 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+10/04/05 13:52:35 -- bradc
+
+Log message:
+	Added a new test directory for Chapel ports of the NAS
+	Parallel Benchmarks (NPB).  The organization of this
+	directory is to have our "best" version of each
+	benchmark in the top-level directory at any given time,
+	and to put variations in subdirectories named after the
+	benchmark.  So far, I've worked on MG, which I was asked
+	to clean up and annotate for a possible upcoming workshop.
+
+Added files:
+	chapel/test/npb/: NOTEST mg.chpl 
+	chapel/test/npb/mg/: NOTEST mg-annotated.chpl mg-compilable.chpl 
+
