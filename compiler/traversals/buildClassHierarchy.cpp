@@ -35,7 +35,7 @@ static void addClassToHierarchy(ClassType* ct,
       addClassToHierarchy(pt, alreadySeen);
     }
     ct->dispatchParents.add(pt);
-    ct->addDeclarations(pt->declarationList->copy(true), ct->declarationList->first());
+    ct->addDeclarations(pt->declarationList->copy(), ct->declarationList->first());
     if (pt->classTag == CLASS_VALUECLASS) {
       ct->classTag = CLASS_VALUECLASS;
       ct->defaultValue = NULL;

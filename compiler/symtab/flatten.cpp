@@ -12,7 +12,7 @@ void Flatten::processSymbol(Symbol* sym) {
       while (!dynamic_cast<ModuleSymbol*>(insertPoint->parentSymbol)) {
         insertPoint = insertPoint->parentSymbol->defPoint->parentStmt;
       }
-      ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(fn->defPoint->parentStmt->copy(true));
+      ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(fn->defPoint->parentStmt->copy());
       DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr);
       FnSymbol* newFn = dynamic_cast<FnSymbol*>(defExpr->sym);
       newFn->cname = stringcpy(fn->cname);

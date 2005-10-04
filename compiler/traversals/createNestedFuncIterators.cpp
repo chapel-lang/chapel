@@ -54,7 +54,7 @@ void CreateNestedFuncIterators::postProcessStmt(Stmt* stmt) {
         iteratorCall = t;
       }
     }
-    FnSymbol* iterator = iteratorCall->findFnSymbol()->copy(true);
+    FnSymbol* iterator = iteratorCall->findFnSymbol()->copy();
     iterator->retType = dtVoid;
     iterator->addPragma("inline");
     FnSymbol* body = new FnSymbol("loop_body");

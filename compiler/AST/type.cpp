@@ -47,7 +47,7 @@ void Type::addSymbol(TypeSymbol* newsymbol) {
 
 
 Type*
-Type::copyInner(bool clone, ASTMap* map) {
+Type::copyInner(ASTMap* map) {
   INT_FATAL(this, "Illegal call to Type::copy");
   return NULL;
 }
@@ -297,8 +297,8 @@ void EnumType::verify(void) {
 
 
 EnumType*
-EnumType::copyInner(bool clone, ASTMap* map) {
-  EnumType* copy = new EnumType(CLONE_INTERNAL(constants));
+EnumType::copyInner(ASTMap* map) {
+  EnumType* copy = new EnumType(COPY_INT(constants));
   if (map) {
     map->put(metaType, copy->metaType);
     map->put(metaType->symbol, copy->metaType->symbol);
@@ -493,10 +493,10 @@ void UserType::verify(void) {
 
 
 UserType*
-UserType::copyInner(bool clone, ASTMap* map) {
-  UserType* copy = new UserType(COPY_INTERNAL(typeExpr),
-                                COPY_INTERNAL(underlyingType),
-                                COPY_INTERNAL(defaultExpr));
+UserType::copyInner(ASTMap* map) {
+  UserType* copy = new UserType(COPY_INT(typeExpr),
+                                COPY_INT(underlyingType),
+                                COPY_INT(defaultExpr));
   if (map) { 
     map->put(metaType, copy->metaType);
     map->put(metaType->symbol, copy->metaType->symbol);
@@ -577,7 +577,7 @@ void ClassType::verify(void) {
 
 
 ClassType*
-ClassType::copyInner(bool clone, ASTMap* map) {
+ClassType::copyInner(ASTMap* map) {
   ClassType* copy_type = new ClassType(classTag);
   if (map) {
     map->put(metaType, copy_type->metaType);
@@ -592,7 +592,7 @@ ClassType::copyInner(bool clone, ASTMap* map) {
     if (defExpr && dynamic_cast<FnSymbol*>(defExpr->sym)) {
       copy_type->methods.add(dynamic_cast<FnSymbol*>(defExpr->sym));
     } else {
-      new_decls->insertAtTail(CLONE_INTERNAL(old_decls));
+      new_decls->insertAtTail(COPY_INT(old_decls));
     }
   }
   copy_type->addDeclarations(new_decls);
@@ -1028,7 +1028,7 @@ void VariableType::verify(void) {
 
 
 VariableType*
-VariableType::copyInner(bool clone, ASTMap* map) {
+VariableType::copyInner(ASTMap* map) {
   VariableType *copy = new VariableType(type);
   if (map) { 
     map->put(metaType, copy->metaType);

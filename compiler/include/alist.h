@@ -35,8 +35,7 @@ class AList : public BaseAST {
   void clear(void);
 
   // copy routines
-  virtual AList<elemType>* copy(bool clone = false,
-                                ASTMap* map = NULL,
+  virtual AList<elemType>* copy(ASTMap* map = NULL,
                                 Vec<BaseAST*>* update_list = NULL,
                                 bool internal = false);
 
@@ -452,8 +451,7 @@ void AList<elemType>::codegenDef(FILE* outfile, char* separator) {
 
 template <class elemType>
 AList<elemType>*
-AList<elemType>::copy(bool clone,
-                      ASTMap* map,
+AList<elemType>::copy(ASTMap* map,
                       Vec<BaseAST*>* update_list,
                       bool internal) {
   if (isEmpty()) {
@@ -466,7 +464,7 @@ AList<elemType>::copy(bool clone,
 
   AList<elemType>* newList = new AList<elemType>();
   _for_all_elems(node) {
-    elemType* newnode = COPY_INTERNAL(node);
+    elemType* newnode = COPY_INT(node);
     newnode->next = NULL;
     newnode->prev = NULL;
     newList->insertAtTail(newnode);

@@ -33,7 +33,7 @@ void UpdateSymbols::preProcessExpr(Expr* expr) {
   if (SymExpr* sym_expr = dynamic_cast<SymExpr*>(expr)) {
     Expr* newExpr = dynamic_cast<Expr*>(updateMap->get(sym_expr->var));
     if (newExpr) {
-      sym_expr->replace(newExpr->copy(false, copyMap));
+      sym_expr->replace(newExpr->copy(copyMap));
     } else {
       XSUB(sym_expr->var, Symbol*);
     }

@@ -48,7 +48,7 @@ void BuildLValueFunctions::preProcessStmt(Stmt* stmt) {
   FnSymbol *old_fn = dynamic_cast<FnSymbol*>(old_def_expr->sym);
   if (!old_fn || !old_fn->retRef)
     return;
-  ExprStmt *expr_stmt = old_expr_stmt->copy(true);
+  ExprStmt *expr_stmt = old_expr_stmt->copy();
   DefExpr *def_expr = dynamic_cast<DefExpr*>(expr_stmt->expr);
   FnSymbol *fn = dynamic_cast<FnSymbol*>(def_expr->sym);
   fn->retRef = false;

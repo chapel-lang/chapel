@@ -66,7 +66,7 @@ void InlineFunctions::postProcessExpr(Expr* expr) {
   ASTMap map;
   mapFormalsToActuals(call, &map);
 
-  Stmt* inlined_body = fn->body->copy(true,&map);
+  Stmt* inlined_body = fn->body->copy(&map);
   if (fn->retType != dtVoid) {
     char* temp_name = stringcat("_inline_", fn->cname);
     VarSymbol* temp = new VarSymbol(temp_name, fn->retType);

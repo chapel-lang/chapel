@@ -13,7 +13,7 @@ void ProcessImportExprs::postProcessExpr(Expr* expr) {
   if (importExpr->importTag == IMPORT_WITH) {
     if (TypeSymbol* symType = dynamic_cast<TypeSymbol*>(importExpr->parentSymbol)) {
       if (ClassType* class_type = dynamic_cast<ClassType*>(symType->definition)) {
-        AList<Stmt>* with_declarations = importExpr->getStruct()->declarationList->copy(true);
+        AList<Stmt>* with_declarations = importExpr->getStruct()->declarationList->copy();
         class_type->addDeclarations(with_declarations, importExpr->parentStmt);
         return;
       }

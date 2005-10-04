@@ -39,7 +39,7 @@ FnSymbol *Stmt::parentFunction() {
 
 
 Stmt*
-Stmt::copyInner(bool clone, ASTMap* map) {
+Stmt::copyInner(ASTMap* map) {
   INT_FATAL(this, "Illegal call to Stmt::copy");
   return NULL;
 }
@@ -146,8 +146,8 @@ void ExprStmt::verify() {
 
 
 ExprStmt*
-ExprStmt::copyInner(bool clone, ASTMap* map) {
-  return new ExprStmt(COPY_INTERNAL(expr));
+ExprStmt::copyInner(ASTMap* map) {
+  return new ExprStmt(COPY_INT(expr));
 }
 
 
@@ -199,8 +199,8 @@ void ReturnStmt::verify() {
 
 
 ReturnStmt*
-ReturnStmt::copyInner(bool clone, ASTMap* map) {
-  return new ReturnStmt(COPY_INTERNAL(expr));
+ReturnStmt::copyInner(ASTMap* map) {
+  return new ReturnStmt(COPY_INT(expr));
 }
 
 
@@ -252,8 +252,8 @@ void BlockStmt::verify() {
 
 
 BlockStmt*
-BlockStmt::copyInner(bool clone, ASTMap* map) {
-  return new BlockStmt(CLONE_INTERNAL(body), blockType);
+BlockStmt::copyInner(ASTMap* map) {
+  return new BlockStmt(COPY_INT(body), blockType);
 }
 
 
@@ -344,10 +344,8 @@ void WhileLoopStmt::verify() {
 
 
 WhileLoopStmt* 
-WhileLoopStmt::copyInner(bool clone, ASTMap* map) {
-  return new WhileLoopStmt(isWhileDo,
-                           COPY_INTERNAL(condition),
-                           COPY_INTERNAL(block));
+WhileLoopStmt::copyInner(ASTMap* map) {
+  return new WhileLoopStmt(isWhileDo, COPY_INT(condition), COPY_INT(block));
 }
 
 
@@ -437,11 +435,11 @@ void ForLoopStmt::verify() {
 
 
 ForLoopStmt*
-ForLoopStmt::copyInner(bool clone, ASTMap* map) {
+ForLoopStmt::copyInner(ASTMap* map) {
   return new ForLoopStmt(forLoopStmtTag,
-                         CLONE_INTERNAL(indices),
-                         CLONE_INTERNAL(iterators),
-                         CLONE_INTERNAL(innerStmt));
+                         COPY_INT(indices),
+                         COPY_INT(iterators),
+                         COPY_INT(innerStmt));
 }
 
 
@@ -588,10 +586,10 @@ void CondStmt::addElseStmt(BlockStmt* init_elseStmt) {
 
 
 CondStmt*
-CondStmt::copyInner(bool clone, ASTMap* map) {
-  return new CondStmt(COPY_INTERNAL(condExpr),
-                      COPY_INTERNAL(thenStmt),
-                      COPY_INTERNAL(elseStmt));
+CondStmt::copyInner(ASTMap* map) {
+  return new CondStmt(COPY_INT(condExpr),
+                      COPY_INT(thenStmt),
+                      COPY_INT(elseStmt));
 }
 
 
@@ -669,9 +667,8 @@ void WhenStmt::verify() {
 
 
 WhenStmt*
-WhenStmt::copyInner(bool clone, ASTMap* map) {
-  return new WhenStmt(COPY_INTERNAL(caseExprs),
-                      COPY_INTERNAL(doStmt));
+WhenStmt::copyInner(ASTMap* map) {
+  return new WhenStmt(COPY_INT(caseExprs), COPY_INT(doStmt));
 }
 
 
@@ -720,8 +717,8 @@ void SelectStmt::verify() {
 
 
 SelectStmt*
-SelectStmt::copyInner(bool clone, ASTMap* map) {
-  return new SelectStmt(COPY_INTERNAL(caseExpr), COPY_INTERNAL(whenStmts));
+SelectStmt::copyInner(ASTMap* map) {
+  return new SelectStmt(COPY_INT(caseExpr), COPY_INT(whenStmts));
 }
 
 
@@ -806,9 +803,9 @@ void LabelStmt::verify() {
 
 
 LabelStmt*
-LabelStmt::copyInner(bool clone, ASTMap* map) {
-  LabelStmt* ls = new LabelStmt(COPY_INTERNAL(defLabel));
-  ls->stmt = COPY_INTERNAL(stmt);
+LabelStmt::copyInner(ASTMap* map) {
+  LabelStmt* ls = new LabelStmt(COPY_INT(defLabel));
+  ls->stmt = COPY_INT(stmt);
   return ls;
 }
 
@@ -877,7 +874,7 @@ void GotoStmt::verify() {
 
 
 GotoStmt*
-GotoStmt::copyInner(bool clone, ASTMap* map) {
+GotoStmt::copyInner(ASTMap* map) {
   return new GotoStmt(goto_type, label);
 }
 
