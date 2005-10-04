@@ -47631,3 +47631,14 @@ Modified files:
 	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
 	                                         inlfunc2_report.good 
 
+---------------------------------------------------------------------------
+
+10/04/05 13:34:10 -- deitz
+
+Log message:
+	Minor cleanup of instantiation cache I'm checking in only because I
+	had time to test so far.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
