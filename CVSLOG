@@ -47683,3 +47683,14 @@ Modified files:
 	                             processImportExprs.cpp 
 	                             updateSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+10/04/05 15:42:24 -- bradc
+
+Log message:
+	Oops, forgot to add the generated prim_data files to
+	a .cvsignore when I removed them from the CVS repository.
+
+Added files:
+	chapel/compiler/ifa/: .cvsignore 
+
