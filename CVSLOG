@@ -47569,3 +47569,15 @@ Added files:
 	                           test_domains_2Db.future 
 	                           test_domains_2Db.good 
 
+---------------------------------------------------------------------------
+
+10/04/05 11:18:20 -- deitz
+
+Log message:
+	Updated .good and removed .future on working test.
+
+Modified files:
+	chapel/test/types/seq/deitz/: test_seq9.good 
+Removed files:
+	chapel/test/types/seq/deitz/: test_seq9.future 
+
