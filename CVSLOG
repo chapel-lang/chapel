@@ -47581,3 +47581,21 @@ Modified files:
 Removed files:
 	chapel/test/types/seq/deitz/: test_seq9.future 
 
+---------------------------------------------------------------------------
+
+10/04/05 11:45:39 -- deitz
+
+Log message:
+	Changed 'Map<BaseAST*,BaseAST*>' to 'ASTMap' every place possible.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp stmt.cpp symbol.cpp 
+	                      type.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: alist.h baseAST.h symbol.h type.h 
+	chapel/compiler/symtab/: normalizeFunctions.cpp 
+	chapel/compiler/traversals/: createNestedFuncIterators.cpp 
+	                             inlineFunctions.cpp instantiate.cpp 
+	                             removeNestedFunctions.cpp 
+	                             updateSymbols.cpp updateSymbols.h 
+
