@@ -181,7 +181,7 @@ void HtmlView::preProcessExpr(Expr* expr) {
     if (e->immediate->const_kind == IF1_CONST_KIND_STRING) {
       write("<FONT COLOR=\"lightblue\">'%s'</FONT>", e->immediate->v_string);
     } else {
-      write("<FONT COLOR=\"lightblue\">%s</FONT>", e->name);
+      write("<FONT COLOR=\"lightblue\">%s</FONT>", e->cname);
     }
   } else if (SymExpr* e = dynamic_cast<SymExpr*>(expr)) {
     html_print_symbol(e->var, false);

@@ -17,13 +17,13 @@ class adomain : value {
     var alow : integer = low(dim);
     var ahigh : integer = high(dim);
     var astride : integer = stride(dim);
-    forall i in alow..ahigh by astride do
+    forall i:integer in alow..ahigh by astride do
       yield i;
   }
 
   iterator _forall() : (integer, integer) {
-    for i in _forall(0) {
-      for j in _forall(1) {
+    for i:integer in _forall(0) {
+      for j:integer in _forall(1) {
         yield (i, j);
       }
     }
@@ -34,7 +34,7 @@ function write(x : adomain) {
   write("[");
   var first : boolean = true;
   var hi : integer = x.rank-1;
-  for i in 0..hi {
+  for i:integer in 0..hi {
     if not first then
       write(", ");
     write(x.low(i));

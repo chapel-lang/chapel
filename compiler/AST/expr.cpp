@@ -1518,7 +1518,7 @@ exprsToIndicesHelper(AList<DefExpr>* defs,
 AList<DefExpr>* exprsToIndices(AList<Expr>* indices) {
   AList<DefExpr>* defs = new AList<DefExpr>();
   for_alist(Expr, index, indices) {
-    exprsToIndicesHelper(defs, index, (indexHack) ? dtInteger : dtUnknown);
+    exprsToIndicesHelper(defs, index, dtUnknown);
   }
   return defs;
 }
