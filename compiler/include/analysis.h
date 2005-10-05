@@ -11,6 +11,7 @@
 class Symbol;
 class BaseAST;
 class Expr;
+class SymExpr;
 class Label;
 class Code;
 class Type;
@@ -67,7 +68,7 @@ int function_is_used(FnSymbol *fn);             // -1 == error(s)
 int type_is_used(TypeSymbol *fn);               // -1 == error(s)
 int AST_is_used(BaseAST *a, Symbol *s = 0);     // -1 == error(s)
 int function_returns_void(FnSymbol *fn);        // -1 == error(s)
-int constant_info(BaseAST *a, Vec<Expr *> &constants, Symbol *s = 0); // -1 == error(s)
+int constant_info(BaseAST *a, Vec<SymExpr *> &constants, Symbol *s = 0); // -1 == error(s)
 float execution_frequency_info(Expr *);         // -1.0 == error(s)
 float execution_frequency_info(FnSymbol *);     // -1.0 == error(s)
 int resolve_member_access(Expr *e, int *offset, Type **type);  // -1 == error(s)

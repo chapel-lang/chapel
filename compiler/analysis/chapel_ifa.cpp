@@ -84,7 +84,7 @@ static Type * to_AST_type(Sym *type);
 class ScopeLookupCache : public Map<char *, Vec<Fun *> *> {};
 static ScopeLookupCache universal_lookup_cache;
 static int finalized_symbols = 0;
-static Map<Sym *, Expr *> constant_cache;
+static Map<Sym *, SymExpr *> constant_cache;
 
 void
 init_chapel_ifa() {
@@ -533,9 +533,9 @@ Sym_to_Type(Sym *s) {
   return (dynamic_cast<TypeSymbol*>(SYMBOL(s)))->definition;
 }
 
-static Expr *
-get_constant_Expr(Sym *c) {
-  Expr *e = constant_cache.get(c);
+static SymExpr *
+get_constant_SymExpr(Sym *c) {
+  SymExpr *e = constant_cache.get(c);
   if (e)
     return e;
   e = new SymExpr(dynamic_cast<Symbol*>(SYMBOL(c)));  
@@ -562,7 +562,7 @@ ACallbacks::instantiate(Sym *s, Map<Sym *, Sym *> &substitutions) {
         if (p->isGeneric && p->genericSymbol && p->genericSymbol->astType == SYMBOL_TYPE)
           subs.put(dynamic_cast<TypeSymbol*>(p->genericSymbol)->definition, Sym_to_Type(ss->value));
         else
-          subs.put(p, get_constant_Expr(ss->value));
+          subs.put(p, get_constant_SymExpr(ss->value));
       } else
         subs.put(dynamic_cast<Type*>(SYMBOL(ss->key)), Sym_to_Type(ss->value));
     }
@@ -671,7 +671,7 @@ ACallbacks::instantiate_generic(Match *m) {
     if (t)
       substitutions.put(t, Sym_to_Type(s->value));
     else
-      substitutions.put(p, dynamic_cast<SymExpr*>(get_constant_Expr(s->value))->var);
+      substitutions.put(p, get_constant_SymExpr(s->value)->var);
   }
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(SYMBOL(m->fun->sym));
   ASTMap map;
@@ -2922,7 +2922,7 @@ call_info(Expr* a, Vec<FnSymbol *> &fns, int find_type) {
 }
 
 int 
-constant_info(BaseAST *a, Vec<Expr *> &constants, Symbol *s) {
+constant_info(BaseAST *a, Vec<SymExpr *> &constants, Symbol *s) {
   constants.clear();
   IFAAST *ast = 0;
   Sym *sym = 0;
@@ -2932,7 +2932,7 @@ constant_info(BaseAST *a, Vec<Expr *> &constants, Symbol *s) {
   Vec<Sym *> consts;
   constant_info(ast, consts, sym);
   forv_Sym(ss, consts)
-    constants.add(get_constant_Expr(ss));
+    constants.add(get_constant_SymExpr(ss));
   return constants.n;
 }
 

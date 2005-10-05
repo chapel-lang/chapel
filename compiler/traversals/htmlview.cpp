@@ -276,7 +276,7 @@ void HtmlView::html_print_symbol(Symbol* sym, bool def) {
     html_print_symbol(sym->type->symbol, false);
   }
   if (show_analysis_info) {
-    Vec<Expr *> constants;
+    Vec<SymExpr *> constants;
     constant_info(sym, constants);
     if (constants.n) {
       if (constants.n > 1)
