@@ -16,7 +16,6 @@ extern bool postAnalysis;
 extern FILE* html_index_file;
 
 // Begin temporary development flags
-extern bool indexHack;
 extern bool formalTemps;
 extern bool checkAnalysisTypeinfo;
 extern bool preinstantiate;
