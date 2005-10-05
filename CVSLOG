@@ -47885,3 +47885,14 @@ Added files:
 	chapel/test/types/tuple/deitz/: test_destruct.chpl 
 	                                test_destruct.good 
 
+---------------------------------------------------------------------------
+
+10/05/05 16:51:36 -- deitz
+
+Log message:
+	Removed --no-index-hack development flag.
+
+Modified files:
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+
