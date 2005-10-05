@@ -2686,11 +2686,10 @@ is_es_cs_recursive(AEdge *e) {
   return 0;
 }
 
-// make sure you take into account splits here!  what matters is the pre-split es/cs
-static int
+int
 is_es_cs_recursive(CreationSet *cs) {
   if (cs->split)
-    return cs->es_backedges.n;
+    return cs->split->es_backedges.n;
   return cs->es_backedges.n;
 }
 
@@ -2838,7 +2837,8 @@ build_type_mark(AVar *av, CreationSet *cs, Vec<AVar *> &avset, int mark = 1) {
   else if (m <= mark)
     return;
   forv_AVar(y, av->forward) if (y)
-    build_type_mark(y, cs, avset, mark + 1);
+    if (avset.set_in(y))
+      build_type_mark(y, cs, avset, mark + 1);
 }
 
 // To handle recursion, mark value*AVar distances from the nearest 
@@ -3188,12 +3188,12 @@ split_css(Vec<AVar *> &astarters) {
   // build starter sets, groups of starters for the same CreationSet
   Vec<AVar *> starters;
   forv_AVar(av, astarters)
-    if (!is_es_cs_recursive(av->creation_set))
+//    if (!is_es_cs_recursive(av->creation_set))
       starters.add(av);
   while (starters.n) {
     CreationSet *cs = starters.v[0]->creation_set;
-    if (is_es_cs_recursive(cs))
-      continue;
+//    if (is_es_cs_recursive(cs))
+//      continue;
     Vec<AVar *> save;
     Vec<AVar *> starter_set;
     forv_AVar(av, starters) {
