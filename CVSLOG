@@ -47694,3 +47694,37 @@ Log message:
 Added files:
 	chapel/compiler/ifa/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+10/04/05 17:00:21 -- jplevyak
+
+Log message:
+	Remove kludge for handling forall.
+	Added new functions which are used for building simple loops out of sequences.
+	For new sequence types, these functions (or something like them) will have
+	to be filled out.  Here are the functions for arithmetic sequences:
+	
+	function _forall_start(s : _aseq) {
+	  return s._low;
+	}
+	function _forall_index(s : _aseq, e) {
+	  return e;
+	}
+	function _forall_next(s : _aseq, e) {
+	  return e + s._stride;
+	}
+	function _forall_valid(s : _aseq, e) {
+	  return e < s._high;
+	}
+	
+	and a similar set exists for "seq".
+	
+	This fixes test_domain_2Dd.chpl
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/modules/standard/: _chpl_seq.chpl 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+
