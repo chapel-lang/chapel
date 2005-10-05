@@ -47749,3 +47749,21 @@ Log message:
 Removed files:
 	chapel/test/arrays/deitz/: test_domains_2Da.future 
 
+---------------------------------------------------------------------------
+
+10/04/05 17:13:39 -- deitz
+
+Log message:
+	For param instantiation, the param symbol is now mapped to a literal
+	symbol, not a SymExpr.  This simplifies some resulting code, in
+	particular, in the UpdateSymbols traversal.
+	
+	John, can you look at my changes to chapel_ifa.cpp.  I wouldn't be
+	surprised if this can be simplified now that instantiation is always
+	taking a map from symbols to symbols.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/traversals/: updateSymbols.cpp updateSymbols.h 
+
