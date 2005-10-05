@@ -47767,3 +47767,13 @@ Modified files:
 	chapel/compiler/analysis/: chapel_ifa.cpp 
 	chapel/compiler/traversals/: updateSymbols.cpp updateSymbols.h 
 
+---------------------------------------------------------------------------
+
+10/04/05 18:09:43 -- jplevyak
+
+Log message:
+	Add assert to verify an invariant of IF1 translation.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
