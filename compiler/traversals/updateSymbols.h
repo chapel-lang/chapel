@@ -15,11 +15,8 @@
  ***/
 class UpdateSymbols : public Traversal {
  public:
-  bool changed;
-  ASTMap* updateMap;
-  ASTMap* copyMap;
-  UpdateSymbols(ASTMap* init_updateMap,
-                ASTMap* init_copyMap = NULL);
+  ASTMap* map;
+  UpdateSymbols(ASTMap* iMap);
   void preProcessExpr(Expr* expr);
   void preProcessStmt(Stmt* stmt);
   void preProcessSymbol(Symbol* symbol);

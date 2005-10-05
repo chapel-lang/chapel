@@ -671,7 +671,7 @@ ACallbacks::instantiate_generic(Match *m) {
     if (t)
       substitutions.put(t, Sym_to_Type(s->value));
     else
-      substitutions.put(p, get_constant_Expr(s->value));
+      substitutions.put(p, dynamic_cast<SymExpr*>(get_constant_Expr(s->value))->var);
   }
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(SYMBOL(m->fun->sym));
   ASTMap map;

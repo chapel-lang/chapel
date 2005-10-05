@@ -792,9 +792,8 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_formals) {
 }
 
 
-static bool
-instantiate_update_expr(ASTMap* substitutions, Expr* expr,
-                        ASTMap* copyMap) {
+static void
+instantiate_update_expr(ASTMap* substitutions, Expr* expr) {
   ASTMap map;
   map.copy(*substitutions);
   // for type variables, add TypeSymbols into the map as well
@@ -802,9 +801,7 @@ instantiate_update_expr(ASTMap* substitutions, Expr* expr,
     if (Type *t = dynamic_cast<Type*>(substitutions->v[i].key))
       if (Type *tt = dynamic_cast<Type*>(substitutions->v[i].value))
         map.put(t->symbol, tt->symbol);
-  UpdateSymbols *updater = new UpdateSymbols(&map, copyMap);
-  TRAVERSE(expr, updater, true);
-  return updater->changed;
+  TRAVERSE(expr, new UpdateSymbols(&map), true);
 }
 
 
@@ -829,7 +826,7 @@ instantiate_function(FnSymbol *fn, ASTMap *all_subs, ASTMap *generic_subs, ASTMa
   defExpr->sym->cname = stringcat("_inst_", defExpr->sym->cname);
   fn->defPoint->parentStmt->insertBefore(fnStmt);
   instantiate_add_subs(all_subs, map);
-  instantiate_update_expr(all_subs, defExpr, map);
+  instantiate_update_expr(all_subs, defExpr);
   FnSymbol* fnClone = dynamic_cast<FnSymbol*>(defExpr->sym);
   fnClone->instantiatedFrom = fn;
   fnClone->substitutions.copy(*generic_subs);
@@ -868,7 +865,7 @@ FnSymbol::instantiate_generic(ASTMap* map, ASTMap* generic_substitutions) {
       } else
         cloneType->types.add(types.v[i]);
     }
-    instantiate_update_expr(&substitutions, clone->defPoint, map);
+    instantiate_update_expr(&substitutions, clone->defPoint);
     substitutions.put(typeSym->definition, clone->definition);
 
     cloneType->instantiatedFrom = retType;
