@@ -47738,3 +47738,14 @@ Log message:
 Removed files:
 	chapel/test/arrays/deitz/: test_domains_2Db.future 
 
+---------------------------------------------------------------------------
+
+10/04/05 17:12:56 -- deitz
+
+Log message:
+	Also removed future for other arithmetic 2D domain test.  This is great
+	progress.
+
+Removed files:
+	chapel/test/arrays/deitz/: test_domains_2Da.future 
+
