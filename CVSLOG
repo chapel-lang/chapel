@@ -47777,3 +47777,16 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+10/05/05 11:37:07 -- jplevyak
+
+Log message:
+	Constants are now SymExpr throughout chapel_ifa.cpp
+	constant_info() returns a Vec<SymExpr *> intead of Vec<Expr *>.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: analysis.h 
+	chapel/compiler/traversals/: htmlview.cpp 
+
