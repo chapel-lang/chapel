@@ -50,9 +50,6 @@ class AnalysisCloneCallback : public CloneCallback {
   AnalysisCloneCallback() : context(0) {}
 };
 
-static Sym *domain_start_index_symbol = 0;
-static Sym *domain_next_index_symbol = 0;
-static Sym *domain_valid_index_symbol = 0;
 static Sym *expr_simple_seq_symbol = 0;
 static Sym *expr_domain_symbol = 0;
 static Sym *expr_create_domain_symbol = 0;
@@ -1417,41 +1414,51 @@ gen_while(BaseAST *a) {
 }
 
 static int
-gen_forall_internal(AAST *ainfo, Code *body, Vec<Symbol*> &indices, Vec<Expr*> &domains) {
-  // setup code: evaluate domains and get starting indices
-  Code *setup_code = 0, *send;
-  forv_Expr(d, domains)
-    if1_gen(if1, &setup_code, d->ainfo->code);
-  send = if1_send(if1, &setup_code, 2, 0, sym_primitive, domain_start_index_symbol);
-  send->partial = Partial_NEVER;
-  forv_Expr(d, domains)
-    if1_add_send_arg(if1, send, d->ainfo->rval);
-  forv_Symbol(i, indices)
-    if1_add_send_result(if1, send, i->asymbol->sym);
-  send->ast = ainfo;
+gen_forall_internal(AAST *ainfo, Code *body, Vec<Symbol*> &indices, Vec<Expr*> &iterators) {
+  if (indices.n != 1)
+    fail("Forall without single indice");
+  if (iterators.n != 1)
+    fail("Forall without single iterator");
 
-  // loop condition code
+  // setup code: evaluate iterators and get loop variable
+  Code *setup_code = 0, *send;
+  Sym *indice = indices.v[0]->asymbol->sym;
+  if1_gen(if1, &setup_code, iterators.v[0]->ainfo->code);
+  Sym *iter = iterators.v[0]->ainfo->rval;
+  Sym *loop_var = new_sym();
+  loop_var->ast = ainfo;
+  Sym *ltmp = new_sym();
+  ltmp->ast = ainfo;
+  send = if1_send(if1, &setup_code, 2, 1, make_symbol("_forall_start"), 
+                  iter, ltmp);
+  send->ast = ainfo;
+  send->partial = Partial_NEVER;
+  if1_move(if1, &setup_code, ltmp, loop_var, ainfo);
+
+  // check for loop termination
   Code *condition_code = 0;
   Sym *condition_rval = new_sym();
-  send = if1_send(if1, &condition_code, 2, 1, sym_primitive, domain_valid_index_symbol,
-                  condition_rval);
-  forv_Expr(d, domains)
-    if1_add_send_arg(if1, send, d->ainfo->rval);
-  forv_Symbol( i, indices)
-    if1_add_send_arg(if1, send, i->asymbol->sym);
+  send = if1_send(if1, &condition_code, 3, 1, make_symbol("_forall_valid"), 
+                  iter, loop_var, condition_rval);
   send->ast = ainfo;
   send->partial = Partial_NEVER;
+  // get index
+  Sym *itmp = new_sym();
+  itmp->ast = ainfo;
+  send = if1_send(if1, &condition_code, 3, 1, make_symbol("_forall_index"), 
+                  iter, loop_var, itmp);
+  send->ast = ainfo;
+  send->partial = Partial_NEVER;
+  if1_move(if1, &condition_code, itmp, indice, ainfo);
 
   // next index code
-  send = if1_send(if1, &body, 2, 0, sym_primitive, domain_next_index_symbol);
-  forv_Expr(d, domains)
-    if1_add_send_arg(if1, send, d->ainfo->rval);
-  forv_Symbol( i, indices)
-    if1_add_send_arg(if1, send, i->asymbol->sym);
-  forv_Symbol( i, indices)
-    if1_add_send_result(if1, send, i->asymbol->sym);
+  Sym *ntmp = new_sym();
+  ntmp->ast = ainfo;
+  send = if1_send(if1, &body, 3, 1, make_symbol("_forall_next"), 
+                  iter, loop_var, ntmp);
   send->ast = ainfo;
   send->partial = Partial_NEVER;
+  if1_move(if1, &body, ntmp, loop_var, ainfo);
 
   if (!ainfo->label[0])
     ainfo->label[0] = if1_alloc_label(if1);
@@ -1475,9 +1482,9 @@ gen_for(BaseAST *a) {
   s->indices->getElements(indexDefs);
   forv_Vec(DefExpr, indexDef, indexDefs)
     indices.add(indexDef->sym);
-  Vec<Expr*> domains;
-  domains.add(s->iterators->only());
-  return gen_forall_internal(s->ainfo, body, indices, domains);
+  Vec<Expr*> iterators;
+  iterators.add(s->iterators->only());
+  return gen_forall_internal(s->ainfo, body, indices, iterators);
 }
 
 static int
@@ -2303,9 +2310,6 @@ ACallbacks::report_analysis_errors(Vec<ATypeViolation*> &type_violations) {
 
 static void
 init_symbols() {
-  domain_start_index_symbol = make_symbol("domain_start_index");
-  domain_next_index_symbol = make_symbol("domain_next_index");
-  domain_valid_index_symbol = make_symbol("domain_valid_index");
   expr_simple_seq_symbol = make_symbol("expr_simple_seq");
   expr_domain_symbol = make_symbol("expr_domain");
   expr_create_domain_symbol = make_symbol("expr_create_domain");
@@ -2385,28 +2389,6 @@ debug_new_ast(Vec<AList<Stmt> *> &stmts, Vec<BaseAST *> &syms) {
       }
     }
   }
-}
-
-static void
-domain_start_index(PNode *pn, EntrySet *es) {
-  forv_Var(v, pn->lvals) {
-    AVar *index = make_AVar(v, es);
-    update_gen(index, make_abstract_type(sym_int));
-  }
-}
-
-static void
-domain_next_index(PNode *pn, EntrySet *es) {
-  forv_Var(v, pn->lvals) {
-    AVar *index = make_AVar(v, es);
-    update_gen(index, make_abstract_type(sym_int));
-  }
-}
-
-static void
-integer_result(PNode *pn, EntrySet *es) {
-  AVar *result = make_AVar(pn->lvals.v[0], es);
-  update_gen(result, make_abstract_type(sym_int));
 }
 
 static void
@@ -2710,9 +2692,6 @@ ast_to_if1(Vec<AList<Stmt> *> &stmts) {
   if (build_functions(syms) < 0) return -1;
 #define REG(_n, _f) pdb->fa->primitive_transfer_functions.put(_n, new RegisteredPrim(_f));
 #define SREG(_n, _f) pdb->fa->primitive_transfer_functions.put(if1_cannonicalize_string(if1,_n), new RegisteredPrim(_f));
-  REG(domain_start_index_symbol->name, domain_start_index);
-  REG(domain_next_index_symbol->name, domain_next_index);
-  REG(domain_valid_index_symbol->name, integer_result);
   REG(expr_simple_seq_symbol->name, expr_simple_seq);
   REG(expr_domain_symbol->name, expr_domain);
   REG(expr_create_domain_symbol->name, expr_create_domain);

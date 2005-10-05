@@ -123,6 +123,19 @@ class seq : value {
   }
 }
 
+function _forall_start(s : seq) {
+  return s._first;
+}
+function _forall_index(s : seq, e) {
+  return e._element;
+}
+function _forall_next(s : seq, e) {
+  return e._next;
+}
+function _forall_valid(s : seq, e) {
+  return e != nil;
+}
+
 function #(s1 : seq, s2 : seq) {
   return s1._concat(s2);
 }
@@ -176,6 +189,19 @@ record _aseq {
       (if _stride > 0
         then (_high - _low + _stride) / _stride
         else (_low - _high + _stride) / _stride);
+}
+
+function _forall_start(s : _aseq) {
+  return s._low;
+}
+function _forall_index(s : _aseq, e) {
+  return e;
+}
+function _forall_next(s : _aseq, e) {
+  return e + s._stride;
+}
+function _forall_valid(s : _aseq, e) {
+  return e < s._high;
 }
 
 function by(s : _aseq, i : integer) {
