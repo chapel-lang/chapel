@@ -47790,3 +47790,58 @@ Modified files:
 	chapel/compiler/include/: analysis.h 
 	chapel/compiler/traversals/: htmlview.cpp 
 
+---------------------------------------------------------------------------
+
+10/05/05 15:11:54 -- deitz
+
+Log message:
+	Implemented support for a pragma "instantiate multidimensional
+	iterator" which is currently only used for arithmetic domains.  In the
+	Chapel module, we write an iterator for a given dimension.  During
+	preinstantiation (not instantiation yet), the compiler creates an
+	iterator that iterates over each dimension and returns a tuple of the
+	integers returned by the cross product of the dimension iterators.
+	
+	This adds support for arithmetic domains of rank other than two.
+	There is no support for 1D yet.  I added a test case for an arithmetic
+	domain of rank 5.  As a current limitation, somewhere else in the
+	code, we must instantiate a tuple of size equal to the rank of the
+	domain.  There are a number of ways I expect to remove this limitation
+	in the future.
+	
+	The function buildMultidimensionalIterator constructs this iterator
+	function at the time of preinstantiation.  Since most of the
+	pre-analysis transforms are done by this point, this should eventually
+	work during instantiation.  I noticed however that it was quite
+	difficult to construct code after all the early transforms are done.
+	It would be worthwhile to take some time to create functions for
+	building code that builds differently transformed code depending on
+	where in the compilation process we are.  One way of doing this is to
+	run the transforming compiler passes over new code up to where we
+	already are in the compiler.
+	
+	Removed handcoded test of _adomain as it is no longer appropriate.
+	
+	Note that domains are currently iterated over in column major order.
+	Updated 2D domain test goods to take this change into account.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/symtab/: reconstructIterators.cpp 
+	chapel/compiler/traversals/: htmlview.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	chapel/test/arrays/deitz/: test_domains_2D.chpl 
+	                           test_domains_2D.good 
+	                           test_domains_2Da.chpl 
+	                           test_domains_2Da.good 
+	                           test_domains_2Db.good 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+Added files:
+	chapel/test/arrays/deitz/: test_domains_5D.chpl 
+	                           test_domains_5D.good 
+Removed files:
+	chapel/test/arrays/deitz/: test__adomain1.chpl 
+	                           test__adomain1.good 
+
