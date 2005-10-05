@@ -47728,3 +47728,13 @@ Modified files:
 	                               record_type_hierarchy-3-error.good 
 	                               union_type_hierarchy-3-error.good 
 
+---------------------------------------------------------------------------
+
+10/04/05 17:01:35 -- jplevyak
+
+Log message:
+	Remove .future for working test.
+
+Removed files:
+	chapel/test/arrays/deitz/: test_domains_2Db.future 
+
