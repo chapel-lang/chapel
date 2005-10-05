@@ -192,6 +192,10 @@ void HtmlView::preProcessExpr(Expr* expr) {
     if (e->opTag == OP_NONE) {
       write("<B>call</B> ");
     }
+    if (e->partialTag == PARTIAL_OK)
+      write("(partial ok) ");
+    if (e->partialTag == PARTIAL_ALWAYS)
+      write("(partial always) ");
   } else if (ImportExpr* e = dynamic_cast<ImportExpr*>(expr)) {
     if (e->importTag == IMPORT_WITH) {
       write("<B>with</B>");

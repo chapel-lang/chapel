@@ -792,6 +792,64 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_formals) {
 }
 
 
+//  iterator _forall() : (integer, integer)
+//    forall i in _forall(1)
+//      forall j in _forall(2)
+//        yield (i, j);
+static void
+buildMultidimensionalIterator(ClassType* type, int rank) {
+
+  FnSymbol* _forall = new FnSymbol("_forall", type->symbol, NULL, dtUnknown);
+  _forall->fnClass = FN_ITERATOR;
+  ArgSymbol* _this = new ArgSymbol(INTENT_REF, "this", type);
+  _forall->_this = _this;
+  _forall->method_type = PRIMARY_METHOD;
+  _forall->formals = new AList<DefExpr>(new DefExpr(_this));
+
+  _forall->formals->insertAtHead(new DefExpr(new ArgSymbol(INTENT_REF, "_methodTokenDummy", dynamic_cast<TypeSymbol*>(Symboltable::lookupInternal("_methodTokenType"))->definition)));
+
+  _forall->body = new BlockStmt();
+
+  VarSymbol* _seq_result = new VarSymbol("_seq_result");
+  _forall->body->body->insertAtTail(new ExprStmt(new DefExpr(_seq_result)));
+  AList<Expr>* args = new AList<Expr>();
+  for (int i = 1; i <= rank; i++) {
+    args->insertAtTail(new SymExpr(dtInteger->symbol));
+  }
+  _seq_result->defPoint->exprType = new CallExpr("_construct_seq", new CallExpr(stringcat("_construct__tuple", intstring(rank)), args));
+
+  CallExpr* yield = new CallExpr(stringcat("_construct__tuple", intstring(rank)));
+  CallExpr* partial = new CallExpr("_yield", 
+                                   Symboltable::lookupInternal("_methodToken"),
+                                   _seq_result);
+  partial->partialTag = PARTIAL_OK;
+  Stmt* loop = new ExprStmt(new CallExpr(partial, yield));
+  for (int i = 1; i <= rank; i++) {
+    VarSymbol* index = new VarSymbol(stringcat("_i", intstring(i)), dtInteger);
+    CallExpr* partial = new CallExpr("_forall",
+                                     Symboltable::lookupInternal("_methodToken"),
+                                     _this);
+    partial->partialTag = PARTIAL_OK;
+    loop = new ForLoopStmt(FORLOOPSTMT_FORALL,
+             new AList<DefExpr>(new DefExpr(index)),
+             new AList<Expr>(
+               new CallExpr("_forall",
+                            Symboltable::lookupInternal("_methodToken"),
+                            new CallExpr(partial, new_IntLiteral(i)))),
+             loop);
+    yield->argList->insertAtHead(new SymExpr(dtInteger->symbol));
+    yield->argList->insertAtTail(new NamedExpr(stringcat("_f", intstring(i)), new SymExpr(index)));
+  }
+  _forall->body->body->insertAtTail(loop);
+
+  _forall->body->body->insertAtTail(new ReturnStmt(new SymExpr(_seq_result)));
+
+  type->symbol->defPoint->parentStmt->insertBefore
+    (new ExprStmt(new DefExpr(_forall))); //, NULL, _seq_result->defPoint->exprType->copy())));
+  TRAVERSE(_forall, new Instantiate(), true);
+}
+
+
 static void
 instantiate_update_expr(ASTMap* substitutions, Expr* expr) {
   ASTMap map;
@@ -1006,6 +1064,11 @@ FnSymbol::preinstantiate_generic(ASTMap* generic_substitutions) {
   TRAVERSE(clone, new Instantiate(), true);
   forv_Vec(FnSymbol, fclone, fclones) {
     TRAVERSE(fclone, new Instantiate(), true);
+  }
+
+  if (clone->hasPragma("instantiate multidimensional iterator")) {
+    int rank = (int)(dynamic_cast<VarSymbol*>(generic_substitutions->get(Symboltable::lookupInScope("rank", argScope)))->immediate->v_int64);
+    buildMultidimensionalIterator(cloneType, rank);
   }
 
   return newfn;

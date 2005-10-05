@@ -9,8 +9,7 @@ record _adomain_info {
   var _alignment : integer;
 }
 
-pragma "instantiate multidimensional forall"
-pragma "instantiate multidimensional for"
+pragma "instantiate multidimensional iterator"
 class _adomain : value {
   param rank : integer;
 
@@ -30,11 +29,6 @@ class _adomain : value {
   iterator _for(dim : integer) : integer
     for i in info(dim-1)._low..info(dim-1)._high by info(dim-1)._stride do
       yield i;
-
-  iterator _forall() : (integer, integer)
-    forall i in _forall(1)
-      forall j in _forall(2)
-        yield (i, j);
 }
 
 class _adomain_lit : value {

@@ -34,9 +34,8 @@ class ReconstructIteratorsHelper : public Traversal {
 void ReconstructIterators::processSymbol(Symbol* sym) {
   FnSymbol* fn = dynamic_cast<FnSymbol*>(sym);
 
-  if (!fn || fn->fnClass != FN_ITERATOR) {
+  if (!fn || fn->fnClass != FN_ITERATOR)
     return;
-  }
 
   Expr* seqType = NULL;
   if (fn->retType != dtUnknown) {
@@ -55,5 +54,5 @@ void ReconstructIterators::processSymbol(Symbol* sym) {
   fn->body->body->insertAtTail(new ReturnStmt(new SymExpr(seq)));
   fn->retType = dtUnknown;
   if (fn->defPoint->exprType)
-    fn->defPoint->exprType->replace(new CallExpr("seq", seqType->copy()));
+    fn->defPoint->exprType->replace(def->exprType->copy());
 }
