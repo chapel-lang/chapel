@@ -47845,3 +47845,43 @@ Removed files:
 	chapel/test/arrays/deitz/: test__adomain1.chpl 
 	                           test__adomain1.good 
 
+---------------------------------------------------------------------------
+
+10/05/05 16:47:32 -- deitz
+
+Log message:
+	Started working on the transform to change
+	
+	  forall i,j in D { ...
+	
+	to
+	
+	  forall tmp in D { var i = tmp(1); varj = tmp(2); ...
+	
+	This seems to result in ambiguous function resolution of the this
+	method on tuples.  I added two futures to check this out.
+	
+	Removed the index hack that set all indices to integers.  I had to
+	type a few indices in existing tests of mine.
+	
+	Improved the html compiler output to print out the literals for
+	integers and bools, rather than something like _literal_71 for 2, for
+	example.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/traversals/: htmlview.cpp insertLiteralTemps.cpp 
+	                             insertLiteralTemps.h 
+	chapel/test/arrays/deitz/: new_class_trial1.chpl 
+	chapel/test/trivial/deitz/demo/: sample2.chpl 
+	chapel/test/types/seq/deitz/: test_seq_tuple3.chpl 
+Added files:
+	chapel/test/arrays/deitz/: test_domains_2Dc.chpl 
+	                           test_domains_2Dc.future 
+	                           test_domains_2Dc.good 
+	                           test_domains_2Dd.chpl 
+	                           test_domains_2Dd.future 
+	                           test_domains_2Dd.good 
+	chapel/test/types/tuple/deitz/: test_destruct.chpl 
+	                                test_destruct.good 
+
