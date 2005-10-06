@@ -47896,3 +47896,13 @@ Modified files:
 	chapel/compiler/include/: driver.h 
 	chapel/compiler/main/: driver.cpp 
 
+---------------------------------------------------------------------------
+
+10/06/05 09:01:26 -- jplevyak
+
+Log message:
+	Add future for complex polymorphic recursive functions.
+
+Added files:
+	chapel/test/flowanalysis/recursion/: rec_fun-3.future 
+
