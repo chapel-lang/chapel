@@ -213,6 +213,9 @@ class FnSymbol : public Symbol {
 
   void printDef(FILE* outfile);
 
+  void insertAtHead(Stmt* stmt);
+  void insertAtTail(Stmt* stmt);
+
   static FnSymbol* mainFn;
   static void init(void);
 };

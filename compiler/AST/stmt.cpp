@@ -306,6 +306,18 @@ void BlockStmt::codegenStmt(FILE* outfile) {
 }
 
 
+void
+BlockStmt::insertAtHead(Stmt* stmt) {
+  body->insertAtHead(stmt);
+}
+
+
+void
+BlockStmt::insertAtTail(Stmt* stmt) {
+  body->insertAtTail(stmt);
+}
+
+
 WhileLoopStmt::WhileLoopStmt(bool init_whileDo,
                              Expr* init_cond,
                              BlockStmt* init_block) :

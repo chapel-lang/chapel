@@ -49,9 +49,9 @@ void ReconstructIterators::processSymbol(Symbol* sym) {
   Symbol* seq = new VarSymbol("_seq_result");
   DefExpr* def = new DefExpr(seq, NULL, new CallExpr("seq", seqType));
 
-  fn->body->body->insertAtHead(new ExprStmt(def));
+  fn->insertAtHead(new ExprStmt(def));
   TRAVERSE(fn->body, new ReconstructIteratorsHelper(seq), true);
-  fn->body->body->insertAtTail(new ReturnStmt(new SymExpr(seq)));
+  fn->insertAtTail(new ReturnStmt(new SymExpr(seq)));
   fn->retType = dtUnknown;
   if (fn->defPoint->exprType)
     fn->defPoint->exprType->replace(def->exprType->copy());

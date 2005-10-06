@@ -1,6 +1,7 @@
 #include "removeNestedFunctions.h"
 #include "symscope.h"
 #include "symtab.h"
+#include "astutil.h"
 #include "alist.h"
 
 

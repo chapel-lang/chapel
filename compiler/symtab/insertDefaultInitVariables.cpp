@@ -42,7 +42,7 @@ void InsertDefaultInitVariables::processSymbol(Symbol* sym) {
           VarSymbol* temp = new VarSymbol(temp_name, temp_type);
           DefExpr* def = new DefExpr(temp, temp_init);
           if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(parent_symbol)) {
-            mod->initFn->body->body->insertAtHead(new ExprStmt(def));
+            mod->initFn->insertAtHead(new ExprStmt(def));
           } else {
             Stmt* insert_point = outer_symbol->defPoint->parentStmt;
             insert_point->insertBefore(new ExprStmt(def));

@@ -6,6 +6,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "symtab.h"
+#include "astutil.h"
 #include "../traversals/buildClassConstructorsEtc.h"
 #include "../traversals/clearTypes.h"
 #include "../traversals/updateSymbols.h"
@@ -691,7 +692,7 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
       char* tempName = stringcat("_coercion_temp_", formal->sym->name);
       VarSymbol* temp = new VarSymbol(tempName, formal->sym->type);
       DefExpr* tempDefExpr = new DefExpr(temp, new SymExpr(newFormal));
-      wrapper_body->body->insertAtTail(new ExprStmt(tempDefExpr));
+      wrapper_body->insertAtTail(new ExprStmt(tempDefExpr));
       wrapper_actuals->insertAtTail(new SymExpr(temp));
     } else {
       wrapper_actuals->insertAtTail(new SymExpr(newFormal));
@@ -700,9 +701,9 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
 
   Expr* fn_call = new CallExpr(this, wrapper_actuals);
   if (function_returns_void(this)) {
-    wrapper_body->body->insertAtTail(new ExprStmt(fn_call));
+    wrapper_body->insertAtTail(new ExprStmt(fn_call));
   } else {
-    wrapper_body->body->insertAtTail(new ReturnStmt(fn_call));
+    wrapper_body->insertAtTail(new ReturnStmt(fn_call));
   }
 
   FnSymbol* wrapper_fn = new FnSymbol(name, typeBinding, wrapper_formals,
@@ -734,7 +735,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
       Expr* temp_init = NULL;
       if (formal_intent != INTENT_OUT)
         temp_init = formal->sym->defPoint->init->copy();
-      wrapper_body->body->insertAtHead(new ExprStmt(new DefExpr(temp, temp_init)));
+      wrapper_body->insertAtHead(new ExprStmt(new DefExpr(temp, temp_init)));
 
       if (formal->sym->type != dtUnknown &&
           formal_intent != INTENT_OUT &&
@@ -745,7 +746,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
     }
   }
 
-  wrapper_body->body->insertAtTail(
+  wrapper_body->insertAtTail(
     function_returns_void(this)
       ? new ExprStmt(new CallExpr(this, wrapper_actuals))
       : new ReturnStmt(new CallExpr(this, wrapper_actuals)));
@@ -811,7 +812,7 @@ buildMultidimensionalIterator(ClassType* type, int rank) {
   _forall->body = new BlockStmt();
 
   VarSymbol* _seq_result = new VarSymbol("_seq_result");
-  _forall->body->body->insertAtTail(new ExprStmt(new DefExpr(_seq_result)));
+  _forall->insertAtTail(new ExprStmt(new DefExpr(_seq_result)));
   AList<Expr>* args = new AList<Expr>();
   for (int i = 1; i <= rank; i++) {
     args->insertAtTail(new SymExpr(dtInteger->symbol));
@@ -840,9 +841,9 @@ buildMultidimensionalIterator(ClassType* type, int rank) {
     yield->argList->insertAtHead(new SymExpr(dtInteger->symbol));
     yield->argList->insertAtTail(new NamedExpr(stringcat("_f", intstring(i)), new SymExpr(index)));
   }
-  _forall->body->body->insertAtTail(loop);
+  _forall->insertAtTail(loop);
 
-  _forall->body->body->insertAtTail(new ReturnStmt(new SymExpr(_seq_result)));
+  _forall->insertAtTail(new ReturnStmt(new SymExpr(_seq_result)));
 
   type->symbol->defPoint->parentStmt->insertBefore
     (new ExprStmt(new DefExpr(_forall))); //, NULL, _seq_result->defPoint->exprType->copy())));
@@ -1155,6 +1156,19 @@ void FnSymbol::codegenDef(FILE* outfile) {
   fprintf(outfile, "}\n");
   fprintf(outfile, "\n\n");
 }
+
+
+void
+FnSymbol::insertAtHead(Stmt* stmt) {
+  body->insertAtHead(stmt);
+}
+
+
+void
+FnSymbol::insertAtTail(Stmt* stmt) {
+  body->insertAtTail(stmt);
+}
+
 
 FnSymbol* FnSymbol::mainFn;
 

@@ -135,13 +135,13 @@ static void createTupleBaseType(int size) {
     assignFn->retType = dtUnknown;
     assignFn->body = new BlockStmt();
     for (int i = 1; i <= size; i++) {
-      assignFn->body->body->insertAtTail(
+      assignFn->insertAtTail(
         new ExprStmt(
           new CallExpr(OP_GETSNORM,
             new CallExpr(htupleArg, new_IntLiteral(i)),
             new CallExpr(tupleArg, new_IntLiteral(i)))));
     }
-    assignFn->body->body->insertAtTail(new ReturnStmt(new SymExpr(htupleArg)));
+    assignFn->insertAtTail(new ReturnStmt(new SymExpr(htupleArg)));
     commonModule->stmts->insertAtTail(new ExprStmt(new DefExpr(assignFn)));
   }
 
@@ -155,13 +155,13 @@ static void createTupleBaseType(int size) {
 //     assignFn->retType = dtUnknown;
 //     assignFn->body = new BlockStmt();
 //     for (int i = 1; i <= size; i++) {
-//       assignFn->body->body->insertAtTail(
+//       assignFn->insertAtTail(
 //         new ExprStmt(
 //           new CallExpr(OP_GETSNORM,
 //             new CallExpr(tupleArg, new_IntLiteral(i)),
 //             new CallExpr(secondArg, new_IntLiteral(i)))));
 //     }
-//     assignFn->body->body->insertAtTail(new ReturnStmt(new SymExpr(tupleArg)));
+//     assignFn->insertAtTail(new ReturnStmt(new SymExpr(tupleArg)));
 //     commonModule->stmts->insertAtTail(new ExprStmt(new DefExpr(assignFn)));
 //   }
 
@@ -175,7 +175,7 @@ void InsertLiteralTemps::postProcessStmt(Stmt* stmt) {
       for_alist(DefExpr, indexDef, loop->indices) {
         indexDef->remove();
         indexDef->init = new CallExpr(indextmp, new_IntLiteral(i++));
-        loop->innerStmt->body->insertAtHead(new ExprStmt(indexDef));
+        loop->innerStmt->insertAtHead(new ExprStmt(indexDef));
       }
       loop->indices->insertAtTail(new DefExpr(indextmp));
     }

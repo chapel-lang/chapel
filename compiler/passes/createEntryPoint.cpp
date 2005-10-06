@@ -65,7 +65,7 @@ static void createInitFn(ModuleSymbol* mod) {
     DefExpr* varDefExpr = new DefExpr(new VarSymbol(runOnce, dtBoolean),
                                       new_BoolLiteral(true));
     // insert its definition in the common module's init function
-    commonModule->initFn->body->body->insertAtHead(new ExprStmt(varDefExpr));
+    commonModule->initFn->insertAtHead(new ExprStmt(varDefExpr));
  
     // insert a set to false at the beginning of the current module's
     // definition (we'll wrap it in a conditional just below, after
@@ -95,7 +95,7 @@ static void createInitFn(ModuleSymbol* mod) {
           new SymExpr(
             new UnresolvedSymbol(runOnce))), 
         new ReturnStmt(NULL));
-    initFunBody->body->insertAtHead(testRun);
+    initFunBody->insertAtHead(testRun);
   }
 
   DefExpr* initFunDef = Symboltable::defineFunction(fnName, NULL, 
@@ -139,7 +139,7 @@ void CreateEntryPoint::run(Vec<ModuleSymbol*>* modules) {
     }
     mainBody = mainFn->body;
   }
-  mainBody->body->insertAtHead(buildCallExprStmt(mainModule->initFn));
-  mainBody->body->insertAtHead(buildCallExprStmt(commonModule->initFn));
-  mainBody->body->insertAtHead(buildCallExprStmt(prelude->initFn));
+  mainBody->insertAtHead(buildCallExprStmt(mainModule->initFn));
+  mainBody->insertAtHead(buildCallExprStmt(commonModule->initFn));
+  mainBody->insertAtHead(buildCallExprStmt(prelude->initFn));
 }

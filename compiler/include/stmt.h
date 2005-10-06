@@ -88,6 +88,9 @@ class BlockStmt : public Stmt {
   void traverseStmt(Traversal* traversal);
   void print(FILE* outfile);
   void codegenStmt(FILE* outfile);
+
+  void insertAtHead(Stmt* stmt);
+  void insertAtTail(Stmt* stmt);
 };
 
 

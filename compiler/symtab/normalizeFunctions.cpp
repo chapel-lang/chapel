@@ -35,6 +35,6 @@ void NormalizeFunctions::processSymbol(Symbol* sym) {
   TRAVERSE(fn->body, new UpdateSymbols(&subs), true);
 
   forv_Vec(DefExpr, tempDef, tempDefs) {
-    fn->body->body->insertAtHead(new ExprStmt(tempDef));
+    fn->insertAtHead(new ExprStmt(tempDef));
   }
 }

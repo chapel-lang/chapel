@@ -1,19 +1,20 @@
-#include "traversal.h"
 #include "baseAST.h"
-#include "stmt.h"
 #include "expr.h"
+#include "stmt.h"
+#include "symbol.h"
+#include "type.h"
 #include "symtab.h"
+#include "../traversals/traversal.h"
 
 
+// utility routines for clearing and resetting lineno and filename
 class ClearFileInfo : public Traversal {
 public:
   int lineno;
   char* filename;
 
   ClearFileInfo(int iLineno = -1, char* iFilename = "<internal>") :
-    lineno(iLineno),
-    filename(iFilename)
-  { }
+    lineno(iLineno), filename(iFilename) { }
 
   void preProcessStmt(Stmt* stmt) {
     stmt->lineno = lineno;
@@ -23,9 +24,9 @@ public:
   void preProcessExpr(Expr* expr) {
     expr->lineno = lineno;
     expr->filename = filename;
-    if (DefExpr* defExpr = dynamic_cast<DefExpr*>(expr)) {
-      defExpr->sym->lineno = lineno;
-      defExpr->sym->filename = filename;
+    if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
+      def->sym->lineno = lineno;
+      def->sym->filename = filename;
     }
   }
 };
@@ -40,6 +41,8 @@ void reset_file_info(BaseAST* baseAST, int lineno, char* filename) {
   TRAVERSE(baseAST, new ClearFileInfo(lineno, filename), true);
 }
 
+
+// compute call sites FnSymbol::calls
 
 class ComputeCallSites : public Traversal {
  public:

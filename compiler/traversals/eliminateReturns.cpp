@@ -62,7 +62,7 @@ void EliminateReturns::preProcessStmt(Stmt* stmt) {
       DefExpr* retDef = new DefExpr(retval);
       if (fnSym->defPoint->exprType)
         retDef->exprType = fnSym->defPoint->exprType->copy();
-      body->body->insertAtHead(new ExprStmt(retDef));
+      body->insertAtHead(new ExprStmt(retDef));
     } else {
       if (alreadyProcessedThisReturn(retExpr, retval)) {
         //replace all returns except the last one in a function with a goto
@@ -116,8 +116,8 @@ void EliminateReturns::createLabelWithRetAtFuncEnd(ReturnStmt* ret_stmt, FnSymbo
   label_sym->cname = stringcat(label_sym->name, "_", intstring(uid++));
   label_ret_map->put(fn_sym, label_sym);
   
-  fn_sym->body->body->insertAtTail(new LabelStmt(new DefExpr(label_sym))); 
-  fn_sym->body->body->insertAtTail(ret_stmt->copy());
+  fn_sym->insertAtTail(new LabelStmt(new DefExpr(label_sym))); 
+  fn_sym->insertAtTail(ret_stmt->copy());
 }
 
 

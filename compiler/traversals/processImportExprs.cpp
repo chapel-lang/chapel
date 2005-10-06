@@ -45,7 +45,7 @@ void ProcessImportExprs::run(Vec<ModuleSymbol*>* modules) {
     ExprStmt* moduleUse;
     if (mod->modtype == MOD_USER) {
       moduleUse = genModuleUse("_chpl_standard");
-      mod->initFn->body->body->insertAtHead(moduleUse);
+      mod->initFn->insertAtHead(moduleUse);
     }
   }
   Traversal::run(modules);

@@ -4,6 +4,7 @@
 #include "expr.h"
 #include "symbol.h"
 #include "type.h"
+#include "astutil.h"
 #include "files.h"
 #include "stringutil.h"
 
