@@ -47982,3 +47982,21 @@ Added files:
 Removed files:
 	chapel/compiler/traversals/: astHelpers.cpp 
 
+---------------------------------------------------------------------------
+
+10/06/05 16:56:16 -- deitz
+
+Log message:
+	Moved collect_functions into astutil and reimplemented it using the
+	standard traversal.  This has the advantage of allowing one to find
+	only the functions in a given module or associated with any given AST,
+	as for nested functions.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp 
+	chapel/compiler/include/: astutil.h baseAST.h 
+	chapel/compiler/symtab/: Makefile.share copyPropagation.cpp 
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+Removed files:
+	chapel/compiler/symtab/: collectFunctions.cpp collectFunctions.h 
+
