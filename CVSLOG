@@ -47943,3 +47943,42 @@ Added files:
 	chapel/test/flowanalysis/recursion/: rec_obj-3.chpl 
 	                                     rec_obj-3.good 
 
+---------------------------------------------------------------------------
+
+10/06/05 15:40:14 -- deitz
+
+Log message:
+	A few rearrangements in preparation for fixing up the pre-analysis
+	post-scope-resolution passes.
+	
+	Added new spot in the AST directory include/astutil.h and
+	AST/astutil.cpp that will eventually contain a bunch of small
+	traversal/utility routines for dealing with the AST.  It currently
+	contains what used to be in traversals/astHelpers: a function to build
+	up the call graph and a function to clear line number and filename
+	information from some part of the AST.
+	
+	Added insertAtTail to BlockStmt and FnSymbol so that we can insert a
+	statement at the beginning of a function simply by saying
+	fn->insertAtHead(...) rather than fn->body->body->insertAtHead(...).
+
+Modified files:
+	chapel/compiler/AST/: Makefile.share stmt.cpp symbol.cpp 
+	chapel/compiler/include/: baseAST.h stmt.h symbol.h 
+	chapel/compiler/passes/: createEntryPoint.cpp 
+	chapel/compiler/symtab/: codegenOne.cpp 
+	                         insertDefaultInitVariables.cpp 
+	                         insertOutParameterInitializations.cpp 
+	                         normalizeFunctions.cpp 
+	                         reconstructIterators.cpp 
+	chapel/compiler/traversals/: Makefile.share eliminateReturns.cpp 
+	                             insertLiteralTemps.cpp 
+	                             insertThisParameters.cpp 
+	                             processImportExprs.cpp 
+	                             removeNestedFunctions.cpp 
+Added files:
+	chapel/compiler/AST/: astutil.cpp 
+	chapel/compiler/include/: astutil.h 
+Removed files:
+	chapel/compiler/traversals/: astHelpers.cpp 
+
