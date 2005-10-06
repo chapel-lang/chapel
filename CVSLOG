@@ -47919,3 +47919,16 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: graph.cpp 
 
+---------------------------------------------------------------------------
+
+10/06/05 14:56:55 -- jplevyak
+
+Log message:
+	Made it possible to dump the contour graph for each analysis pass.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp fa.h graph.cpp graph.h ifa.cpp 
+	                      ifa.h 
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+
