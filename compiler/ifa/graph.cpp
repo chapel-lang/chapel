@@ -1,5 +1,6 @@
 #include "geysa.h"
 #include "fa.h"
+#include "builtin.h"
 #include "dom.h"
 #include "loop.h"
 #include "graph.h"
@@ -12,9 +13,13 @@
 #include "var.h"
 
 #define G_BOX           (1<<0)
-#define G_BLUE          (1<<1)
-#define G_GREEN         (1<<2)
-#define G_RED           (1<<3)
+#define G_ELLIPSE       (1<<1)
+#define G_TRIANGLE      (1<<2)
+#define G_BLUE          (1<<3)
+#define G_GREEN         (1<<4)
+#define G_RED           (1<<5)
+#define G_ORANGE        (1<<6)
+#define G_PURPLE        (1<<7)
 
 // options to pnode print
 #define G_DOM           (1<<10)
@@ -29,8 +34,9 @@ static FILE *
 graph_start(char *fn, char *tag, char *name) {
   char hfn[512];
   strcpy(hfn, log_dir);
+  assert(log_dir[strlen(log_dir)-1] == '/');
   char *ffn = strrchr(fn, '/');
-  if (ffn) fn = ffn;
+  if (ffn) fn = ffn + 1;
   strcat(hfn, fn); 
   strcat(hfn, ".");
   strcat(hfn, tag);
@@ -64,25 +70,57 @@ graph_end(FILE *fp) {
   fclose(fp);
 }
 
+static void
+vcg_colors(FILE *fp, int options) {
+  if (options & G_BLUE)
+    fprintf(fp, " color: blue");
+  if (options & G_GREEN)
+    fprintf(fp, " color: green");
+  if (options & G_RED)
+    fprintf(fp, " color: red");
+  if (options & G_ORANGE)
+    fprintf(fp, " color: orange");
+  if (options & G_PURPLE)
+    fprintf(fp, " color: purple");
+}
+
+static void
+graphviz_colors(FILE *fp, int options) {
+  if (options & G_BLUE)
+    fprintf(fp, " color=blue");
+  if (options & G_GREEN)
+    fprintf(fp, " color=green");
+  if (options & G_RED)
+    fprintf(fp, " color=red");
+  if (options & G_ORANGE)
+    fprintf(fp, " color=orange");
+  if (options & G_PURPLE)
+    fprintf(fp, " color=purple");
+}
+
 void
 graph_node(FILE *fp, void *id, char *label, int options) {
   switch (graph_type) {
     case VCG:
       fprintf(fp, "node: {title:\"%p\" label:\"%s\"", id, label);
-      if (options & G_BLUE)
-        fprintf(fp, " color: blue");
-      if (options & G_GREEN)
-        fprintf(fp, " color: green");
+      if (options & G_BOX)
+        fprintf(fp, " shape:box");
+      if (options & G_ELLIPSE)
+        fprintf(fp, " shape:ellipse");
+      if (options & G_TRIANGLE)
+        fprintf(fp, " shape:triangle");
+      vcg_colors(fp, options);
       fprintf(fp, "}\n");
       break;
     case GraphViz:
       fprintf(fp, "n%p [label=\"%s\"", id, label);
       if (options & G_BOX)
         fprintf(fp, " shape=box");
-      if (options & G_BLUE)
-        fprintf(fp, " color=blue");
-      if (options & G_GREEN)
-        fprintf(fp, " color=green");
+      if (options & G_ELLIPSE)
+        fprintf(fp, " shape=ellipse");
+      if (options & G_TRIANGLE)
+        fprintf(fp, " shape=triangle");
+      graphviz_colors(fp, options);
       fprintf(fp, "];\n");
       break;
     default: assert(!"bad case");
@@ -91,25 +129,16 @@ graph_node(FILE *fp, void *id, char *label, int options) {
 
 void
 graph_edge(FILE *fp, void *a, void *b, int options) {
+  assert(a && b);
   switch (graph_type) {
     case VCG:
       fprintf(fp, "edge: {sourcename:\"%p\" targetname:\"%p\"", a, b);
-      if (options & G_BLUE)
-        fprintf(fp, " color: blue");
-      if (options & G_GREEN)
-        fprintf(fp, " color: green");
-      if (options & G_RED)
-        fprintf(fp, " color: red");
+      vcg_colors(fp, options);
       fprintf(fp, "}\n");
       break;
     case GraphViz:
       fprintf(fp, "n%p -> n%p [", a, b);
-      if (options & G_BLUE)
-        fprintf(fp, " color=blue");
-      if (options & G_GREEN)
-        fprintf(fp, " color=green");
-      if (options & G_RED)
-        fprintf(fp, " color=red");
+      graphviz_colors(fp, options);
       fprintf(fp, "];\n");
       break;
     default: assert(!"bad case");
@@ -385,9 +414,63 @@ graph_avars(FA *fa, char *fn) {
     graph_avar_node(fp, av);
   }
   forv_AVar(av, todo) if (av) {
-    forv_AVar(avv, av->forward)
+    forv_AVar(avv, av->forward) if (avv)
       graph_edge(fp, av, avv);
   }
+  graph_end(fp);
+}
+
+static void
+graph_es_node(FILE *fp, EntrySet *es) {
+  char label[80];
+  sprintf(label, "%s_%d", es->fun->sym->name ? es->fun->sym->name : "", 
+          es->fun->sym->id);
+  graph_node(fp, es, label, G_BLUE|G_BOX);
+}
+
+static void
+graph_cs_node(FILE *fp, CreationSet *cs) {
+  char label[80];
+  sprintf(label, "%s_%d", cs->sym->name ? cs->sym->name : 
+          (cs->sym->constant ? cs->sym->constant : ""), 
+          cs->sym->id);
+  graph_node(fp, cs, label, G_RED|G_ELLIPSE);
+  forv_AVar(ivar, cs->vars) {
+    sprintf(label, "%s_%d", ivar->var->sym->name ? ivar->var->sym->name : "", 
+            ivar->var->sym->id);
+    graph_node(fp, ivar, label, G_ORANGE|G_TRIANGLE);
+    graph_edge(fp, cs, ivar, G_ORANGE);
+  }
+}
+
+static void 
+graph_contours(FA *fa, char *fn) {
+  FILE *fp = graph_start(fn, "contours", "Analysis Contours");
+  Vec<CreationSet *> css_set;
+  forv_CreationSet(cs, fa->css) 
+    if (cs->sym != sym_continuation)
+      css_set.set_add(cs);
+  forv_EntrySet(es, fa->ess) 
+    graph_es_node(fp, es);
+  forv_CreationSet(cs, css_set) if (cs)
+    graph_cs_node(fp, cs);
+  forv_EntrySet(es, fa->ess)
+    forv_AEdge(e, es->out_edges) 
+      if (e && fa->ess_set.in(e->from) && fa->ess_set.in(e->to))
+        graph_edge(fp, e->from, e->to, G_BLUE);
+  forv_EntrySet(es, fa->ess)
+    forv_CreationSet(cs, es->creates)
+      if (css_set.in(cs))
+        graph_edge(fp, es, cs, G_PURPLE);
+  forv_CreationSet(cs, css_set) if (cs)
+    forv_EntrySet(es, cs->ess) if (es)
+      if (fa->ess_set.in(es))
+        graph_edge(fp, es, cs, G_GREEN);
+  forv_CreationSet(cs, css_set) if (cs)
+    forv_AVar(ivar, cs->vars)
+      forv_CreationSet(x, ivar->out->sorted) if (x)
+        if (css_set.in(x))
+          graph_edge(fp, ivar, x, G_RED);
   graph_end(fp);
 }
 
@@ -526,6 +609,7 @@ graph(FA *fa, char *fn, int agraph_type) {
   graph_dom(funs, fn);
   graph_loops(funs, fn);
   graph_avars(fa, fn);
+  graph_contours(fa, fn);
   graph_calls(fa, fn);
   graph_rec(fa, fn);
   graph_abstract_types(fa, fn);
