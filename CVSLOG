@@ -47906,3 +47906,16 @@ Log message:
 Added files:
 	chapel/test/flowanalysis/recursion/: rec_fun-3.future 
 
+---------------------------------------------------------------------------
+
+10/06/05 11:48:21 -- jplevyak
+
+Log message:
+	Added new graph of the contours created by analysis to support
+	  debugging of analysis of recursion.
+	Added new graph node shapes: triangles and ellipses
+	Added new graph colors: orange and purple
+
+Modified files:
+	chapel/compiler/ifa/: graph.cpp 
+
