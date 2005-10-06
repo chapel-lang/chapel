@@ -47932,3 +47932,14 @@ Modified files:
 	chapel/compiler/include/: driver.h 
 	chapel/compiler/main/: driver.cpp 
 
+---------------------------------------------------------------------------
+
+10/06/05 15:16:20 -- jplevyak
+
+Log message:
+	new tests for recursive polymorphic objects
+
+Added files:
+	chapel/test/flowanalysis/recursion/: rec_obj-3.chpl 
+	                                     rec_obj-3.good 
+
