@@ -46,6 +46,7 @@ int fdce_if1 = 1;
 int fgraph = 0;
 int fgraph_constants = 0;
 int fgraph_frequencies = 0;
+int fgraph_pass_contours = 0;
 int fgraph_vcg = 0;
 int fcg = 0;
 bool no_inline = false;
@@ -69,14 +70,16 @@ static ArgumentDescription arg_desc[] = {
   "CHPL_CONSTANTS_PER_VARIABLE", NULL},
  {"devel", ' ', "Developer Compile", "F", &developer, "CHPL_DEVELOPER", NULL},
  {"ignore-errors", ' ', "Attempt to ignore errors", "F", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
- {"html", 't', "Dump Program in HTML", "T", &fdump_html, "CHPL_HTML", NULL},
+ {"html", 't', "Write Program in HTML", "T", &fdump_html, "CHPL_HTML", NULL},
  {"lowlevel-cg", 'g', "Low Level Code Generation", "T", &fcg, "CHPL_CG", NULL},
- {"graph", 'G', "Dump Program Graphs", "T", &fgraph, "CHPL_GRAPH", NULL},
+ {"graph", 'G', "Write Program Graphs", "T", &fgraph, "CHPL_GRAPH", NULL},
  {"graph-format", ' ', "GraphViz = 0, VCG = 1", "I", &fgraph_vcg, "CHPL_GRAPHFORMAT", NULL},
  {"graph-constants", ' ', "Graph Constants", "T", &fgraph_constants, 
   "CHPL_GRAPH_CONSTANTS", NULL},
  {"graph-frequencies", ' ', "Graph Frequencies", "T", &fgraph_frequencies, 
   "CHPL_GRAPH_FREQUENCIES", NULL},
+ {"graph-contours", ' ', "Graph Analysis Pass Contours", "T", &fgraph_pass_contours, 
+  "CHPL_GRAPH_CONTOURS", NULL},
  {"log-dir", ' ', "Log Directory", "P", log_dir, "CHPL_LOG_DIR", NULL},
  {"log", 'd', "Debug Logging Flags", "S512", log_flags, "CHPL_LOG_FLAGS", log_flags_arg},
  {"cg-cpp-lines", ' ', "Generate #line directives", "F", &printCppLineno, "CHPL_CG_CPP_LINES", NULL},
@@ -163,10 +166,10 @@ static void handleLibPath(ArgumentState* arg_state, char* arg_unused) {
 
 void
 do_analysis(char *fn) {
-  if (ifa_analyze() < 0)
+  if (ifa_analyze(fn) < 0)
     fail("program does not type");
   if (fgraph)
-    ifa_graph(fn, !fgraph_vcg ? GraphViz : VCG);
+    ifa_graph(fn);
   if (fdump_html)
     ifa_html(fn);
   if (fcg) {
@@ -234,9 +237,10 @@ main(int argc, char *argv[]) {
   startCatchingSignals();
   if (arg_state.nfile_arguments < 1)
     help(&arg_state, NULL);
+  graph_type = !fgraph_vcg ? GraphViz : VCG;
   if (rungdb)
     runCompilerInGDB(argc, argv);
-  if (fdump_html || strcmp(log_flags, "") || fgraph)
+  if (fdump_html || strcmp(log_flags, ""))
     init_logs();
   init_system();
   init_chapel_ifa();

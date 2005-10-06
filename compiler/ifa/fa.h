@@ -274,6 +274,7 @@ class FA : public gc {
  public:
   PDB *pdb;
   CDB *cdb;
+  char *fn;
   Patterns *patterns;
   Vec<Fun *> funs;
   AEdge *top_edge;

@@ -11,6 +11,7 @@
 #include "ast.h"
 #include "var.h"
 #include "clone.h"
+#include "graph.h"
 
 
 // #define CACHE_CALLEES           1 // Caching of callees fails in the presence of generics
@@ -2373,6 +2374,12 @@ collect_results() {
   // print results
   if (verbose_level)
     fa_dump_types(fa, stdout);
+  if (fgraph_pass_contours) {
+    char fn[2048];
+    strcpy(fn, fa->fn);
+    sprintf(fn + strlen(fn), ".%d", analysis_pass);
+    graph_contours(fa, fn);
+  }
 }
 
 static int
@@ -3050,14 +3057,10 @@ struct ClearVarFn { static void F(Var *v) {
 static void 
 clear_results() {
   foreach_var<ClearVarFn>();
-  forv_Sym(s, fa->pdb->if1->allsyms) {
-    if ((s->type_kind || s->is_constant || s->is_symbol) && s->creators.n)
-      forv_CreationSet(cs, s->creators)
-        clear_cs(cs);
-  }
-  forv_Fun(f, fa->funs)
-    forv_EntrySet(es, f->ess) if (es)
-      clear_es(es);
+  forv_CreationSet(cs, fa->css)
+    clear_cs(cs);
+  forv_EntrySet(es, fa->ess)
+    clear_es(es);
   for (int i = 0; i < cannonical_setters.n; i++)
     forc_List(Setters *, x, cannonical_setters.v[i].value)
       x->car->eq_classes = NULL;

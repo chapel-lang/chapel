@@ -30,6 +30,7 @@ extern int fdce_if1;
 extern int fgraph;
 extern int fgraph_constants;
 extern int fgraph_frequencies;
+extern int fgraph_pass_contours;
 extern bool no_inline;
 extern bool report_inlining;
 extern char system_dir[FILENAME_MAX];

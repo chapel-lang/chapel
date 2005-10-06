@@ -27,8 +27,7 @@
 
 char graph_fun[80];
 char graph_var[80];
-
-static int graph_type = VCG;
+int graph_type = VCG;
 
 static FILE *
 graph_start(char *fn, char *tag, char *name) {
@@ -431,9 +430,12 @@ graph_es_node(FILE *fp, EntrySet *es) {
 static void
 graph_cs_node(FILE *fp, CreationSet *cs) {
   char label[80];
-  sprintf(label, "%s_%d", cs->sym->name ? cs->sym->name : 
-          (cs->sym->constant ? cs->sym->constant : ""), 
-          cs->sym->id);
+  if (cs->sym->is_constant)
+    sprint_imm(label, cs->sym->imm);
+  else
+    sprintf(label, "%s_%d", cs->sym->name ? cs->sym->name : 
+            (cs->sym->constant ? cs->sym->constant : ""), 
+            cs->sym->id);
   graph_node(fp, cs, label, G_RED|G_ELLIPSE);
   forv_AVar(ivar, cs->vars) {
     sprintf(label, "%s_%d", ivar->var->sym->name ? ivar->var->sym->name : "", 
@@ -443,13 +445,16 @@ graph_cs_node(FILE *fp, CreationSet *cs) {
   }
 }
 
-static void 
+#define NORM_CS(_cs) _cs // (_cs->sym->is_constant ? _cs->sym->type->abstract_type->v[0] : _cs)
+
+void 
 graph_contours(FA *fa, char *fn) {
+  init_logs();
   FILE *fp = graph_start(fn, "contours", "Analysis Contours");
   Vec<CreationSet *> css_set;
   forv_CreationSet(cs, fa->css) 
-    if (cs->sym != sym_continuation)
-      css_set.set_add(cs);
+    if (cs->sym != sym_continuation && !cs->sym->is_symbol)
+      css_set.set_add(NORM_CS(cs));
   forv_EntrySet(es, fa->ess) 
     graph_es_node(fp, es);
   forv_CreationSet(cs, css_set) if (cs)
@@ -460,17 +465,17 @@ graph_contours(FA *fa, char *fn) {
         graph_edge(fp, e->from, e->to, G_BLUE);
   forv_EntrySet(es, fa->ess)
     forv_CreationSet(cs, es->creates)
-      if (css_set.in(cs))
-        graph_edge(fp, es, cs, G_PURPLE);
+      if (css_set.in(NORM_CS(cs)))
+        graph_edge(fp, es, NORM_CS(cs), G_PURPLE);
   forv_CreationSet(cs, css_set) if (cs)
     forv_EntrySet(es, cs->ess) if (es)
       if (fa->ess_set.in(es))
-        graph_edge(fp, es, cs, G_GREEN);
+        graph_edge(fp, es, NORM_CS(cs), G_GREEN);
   forv_CreationSet(cs, css_set) if (cs)
     forv_AVar(ivar, cs->vars)
       forv_CreationSet(x, ivar->out->sorted) if (x)
-        if (css_set.in(x))
-          graph_edge(fp, ivar, x, G_RED);
+        if (css_set.in(NORM_CS(x)))
+          graph_edge(fp, ivar, NORM_CS(x), G_RED);
   graph_end(fp);
 }
 
@@ -591,8 +596,8 @@ graph_abstract_types(FA *fa, char *fn) {
 }
 
 void 
-graph(FA *fa, char *fn, int agraph_type) {
-  graph_type = agraph_type;
+graph(FA *fa, char *fn) {
+  init_logs();
   Vec<Fun *> tfuns, funs;
   tfuns.copy(fa->funs);
   qsort(tfuns.v, tfuns.n, sizeof(tfuns.v[0]), compar_fun_ids);

@@ -19,7 +19,7 @@ void ifa_init(IFACallbacks *callbacks) {
 }
 
 int
-ifa_analyze() {
+ifa_analyze(char *fn) {
   if1_finalize(if1);
   if1_write_log();
   if (!fdce_if1)
@@ -32,6 +32,7 @@ ifa_analyze() {
     pdb->add(f);
   }
   FA *fa = pdb->fa;
+  fa->fn = fn;
   if (fa->analyze(if1->top->fun) < 0)
     return -1;
   if (clone(fa, if1->top->fun) < 0)
@@ -47,8 +48,8 @@ ifa_analyze() {
 }
 
 void 
-ifa_graph(char *fn, int graph_type) {
-  graph(pdb->fa, fn, graph_type);
+ifa_graph(char *fn) {
+  graph(pdb->fa, fn);
 }
 
 void 

@@ -67,9 +67,10 @@ public:
 };
 
 void ifa_init(IFACallbacks *callbacks);
-int ifa_analyze();
+int ifa_analyze(char *fn);
 enum GraphType { GraphViz, VCG };
-void ifa_graph(char *fn, int graph_type);
+extern int graph_type;
+void ifa_graph(char *fn);
 void ifa_html(char *fn);
 void ifa_cg(char *fn);
 void ifa_compile(char *fn);
