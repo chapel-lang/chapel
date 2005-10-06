@@ -3,7 +3,6 @@
 #include "expr.h"
 #include "stmt.h"
 #include "bb.h"
-#include "collectFunctions.h"
 #include "symtab.h"
 #include "../traversals/view.h"
 

@@ -7,6 +7,26 @@
 #include "../traversals/traversal.h"
 
 
+class CollectFunctions : public Traversal {
+ public:
+  Vec<FnSymbol*>* fns;
+
+  CollectFunctions(Vec<FnSymbol*>* iFns) : fns(iFns) { }
+
+  void postProcessExpr(Expr* expr) {
+    if (DefExpr* def = dynamic_cast<DefExpr*>(expr))
+      if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def->sym))
+        fns->add(fn);
+  }
+};
+
+
+void collect_functions(Vec<FnSymbol*>* fns) {
+  CollectFunctions* traversal = new CollectFunctions(fns);
+  traversal->run(Symboltable::getModules(MODULES_ALL));
+}
+
+
 // utility routines for clearing and resetting lineno and filename
 class ClearFileInfo : public Traversal {
 public:

@@ -1,6 +1,5 @@
 SYMTAB_SRCS = \
         codegenOne.cpp \
-	collectFunctions.cpp \
 	collectSymbols.cpp \
         copyPropagation.cpp \
         flatten.cpp \

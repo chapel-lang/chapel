@@ -6,6 +6,7 @@
 #include "type.h"
 #include "expr.h"
 #include "stmt.h"
+#include "astutil.h"
 #include "stringutil.h"
 #include "../traversals/fixup.h"
 
