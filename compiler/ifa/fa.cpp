@@ -14,7 +14,7 @@
 #include "graph.h"
 
 
-// #define CACHE_CALLEES           1 // Caching of callees fails in the presence of generics
+//#define CACHE_CALLEES           1 // Caching of callees fails in the presence of generics
 
 static int avar_id = 1;
 static int creation_set_id = 1;
@@ -70,13 +70,11 @@ AVar::AVar(Var *v, void *acontour) :
 
 AType::AType(AType &a) {
   hash = 0;
-  top = 0;
   this->copy(a);
 }
 
 AType::AType(CreationSet *cs) {
   hash = 0;
-  top = 0;
   set_add(cs);
 }
 
@@ -346,18 +344,18 @@ type_num_fold(Prim *p, AType *a, AType *b) {
   (void) p; p = 0; // for now
   a = type_intersection(a, anynum_kind);
   b = type_intersection(b, anynum_kind);
-  if (a->n == 1 && b->n == 1)
-    return type_union(a->v[0]->sym->type->abstract_type, 
-                      b->v[0]->sym->type->abstract_type)->top;
   ATypeFold f(p, a, b), *ff;
   if ((ff = type_fold_cache.get(&f)))
     return ff->result;
   AType *r = new AType();
-  forv_CreationSet(cs, a->sorted)
-    r->set_add(cs->sym->type->abstract_type->v[0]);
-  forv_CreationSet(cs, b->sorted)
-    r->set_add(cs->sym->type->abstract_type->v[0]);
-  r = type_cannonicalize(r)->top;
+  forv_CreationSet(acs, a->sorted) {
+    Sym *atype = acs->sym->type;
+    forv_CreationSet(bcs, b->sorted) {
+      Sym *btype = bcs->sym->type;
+      r->set_add(coerce_num(atype, btype)->abstract_type->v[0]);
+    }
+  }
+  r = type_cannonicalize(r);
   type_fold_cache.put(new ATypeFold(p, a, b, r));
   return r;
 }
@@ -475,35 +473,6 @@ type_cannonicalize(AType *t) {
   t->hash = h ? h : h + 1; // 0 is empty
   AType *tt = cannonical_atypes.put(t);
   if (!tt) tt = t;
-  if (tt == t) {  // this one is new
-    // compute "top"
-    if (tt->sorted.n < 2)
-      tt->top = tt;
-    else {
-      Sym *s = NO_TOP;
-      forv_CreationSet(cs, tt->sorted) {
-        if (s == NO_TOP)
-          s = cs->sym;
-        if (s == cs->sym)
-          continue;
-        else if (!cs->defs.n) {
-          if (s->type->num_kind && cs->sym->type->num_kind)
-            s = coerce_num(s->type, cs->sym);
-          else
-            goto Ldone;
-        } else {
-        Ldone:
-          tt->top = top_type;
-          goto Ltop_done;
-        }
-      }
-      if (s == NO_TOP)
-        tt->top = bottom_type;
-      else
-        tt->top = s->abstract_type;
-    }
-  }
-  Ltop_done:;
   // compute "type" (without constants)
   if (consts)
     tt->type = make_AType(nonconsts);
@@ -1805,6 +1774,7 @@ analyze_edge(AEdge *e) {
     if (!x->key->is_positional())
       continue;
     MPosition *pp = e->match->actual_to_formal_position.get(x->key), *p = pp ? pp : x->key;
+    assert(p == x->key);
     AVar *actual = x->value, *formal = make_AVar(e->to->fun->args.get(p), e->to),
       *filtered = get_filtered(e, p, formal);
     AType *filter = e->match->formal_filters.get(p);

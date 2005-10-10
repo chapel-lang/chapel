@@ -95,12 +95,13 @@ class Patterns : public gc {
 class Match : public gc {
  public:
   Fun *fun;
+  Map<MPosition *, AType *> formal_filters; // formal -> type, positional-only and takes into account all arguments
+  Map<MPosition *, MPosition *> actual_to_formal_position;
+
   Map<MPosition *, AVar *> actuals;
   Map<MPosition *, Sym *> formal_dispatch_types;
   Map<MPosition *, AType *> actual_filters; // actual -> type, point-wise and includes named arguments
-  Map<MPosition *, AType *> formal_filters; // formal -> type, positional-only and takes into account all arguments
   Map<MPosition *, MPosition *> actual_named_to_positional;
-  Map<MPosition *, MPosition *> actual_to_formal_position;
   Map<MPosition *, MPosition *> formal_to_actual_position;
   Map<MPosition *, MPosition *> order_substitutions;  // formal position -> actual position
   Vec<MPosition *> default_args; // formal positions

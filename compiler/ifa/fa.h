@@ -41,7 +41,6 @@ typedef Vec<Vec<CreationSet *> *> CSSS;
 class AType : public Vec<CreationSet *> { 
  public:
   uint                  hash;
-  AType                 *top;
   AType                 *type;          // not including values (constants)
   Vec<CreationSet *>    sorted;
   Map<AType *, AType *> union_map;
@@ -50,7 +49,7 @@ class AType : public Vec<CreationSet *> {
 
   AType(CreationSet *cs);
   AType(AType &a);
-  AType() : hash(0), top(0) {}
+  AType() : hash(0) {}
 
   AType *constants();
 };

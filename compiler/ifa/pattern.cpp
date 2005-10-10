@@ -10,6 +10,7 @@
 #include "ast.h"
 
 //#define CHECK_INSTANTIATION     1
+//#define CHECK_CALLEE_CACHE      1
 
 // Key to names of position variables
 //  ABCD 
@@ -185,10 +186,13 @@ Matcher::Matcher(AVar *asend, AVar *aarg0, Partial_kind apartial, Vec<Match *> *
   all_matches = 0;
   
   // use summary information from previous analysis iterations to restrict the search
+#ifndef CHECK_CALLEE_CACHE
   if (send->var->def->callees) {
     all_matches = new Vec<Fun *>(send->var->def->callees->funs);
     all_positions = &send->var->def->callees->arg_positions;
-  } else {
+  } else 
+#endif
+  {
     if (aarg0->out->n == 1)
       all_matches = send->var->def->code->ast->visible_functions(aarg0->out->v[0]->sym);
     else {
@@ -1058,6 +1062,7 @@ void
 Matcher::cannonicalize_matches() {
   forv_Fun(f, *partial_matches) if (f) {
     Match *m = match_map.get(f);
+    // assert(m->fun == f);
     for (int i = 0; i < m->formal_filters.n; i++)
       if (m->formal_filters.v[i].key)
         m->formal_filters.v[i].value = make_AType(*m->formal_filters.v[i].value);
@@ -1089,6 +1094,14 @@ pattern_match(Vec<AVar *> &args, AVar *send, Partial_kind partial, Vec<Match *> 
       return 0;
   }
   matcher.cannonicalize_matches();
+#ifdef CHECK_CALLEE_CACHE
+  if (send->var->def->callees) {
+    Vec<Fun *> funs;
+    forv_Match(m, *matches)
+      funs.add(m->fun);
+    assert(!funs.some_difference(send->var->def->callees->funs));
+  }
+#endif
   return matches->n;
 }
 
