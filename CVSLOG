@@ -48165,3 +48165,14 @@ Modified files:
 	chapel/compiler/include/: baseAST.h 
 	chapel/compiler/traversals/: collectASTS.cpp 
 
+---------------------------------------------------------------------------
+
+10/10/05 15:42:58 -- deitz
+
+Log message:
+	Moved BuildLValueFunctions and ReconstructIterators later in the
+	passlist.
+
+Modified files:
+	chapel/compiler/main/: passlist.h 
+
