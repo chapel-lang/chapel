@@ -16,20 +16,28 @@ PassInfo passlist[] = {
 
   // passes to create the basic AST
   RUN(FilesToAST, ""),
+  RUN(NormalizeParsedAST, ""), // handles complicated parsing transforms
+  RUN(SemanticCheckI, ""), // post parsing semantic checks
+
   RUN(CreateEntryPoint, ""),
 
   // passes to normalize the basic AST
   RUN(ProcessImportExprs, ""),
-  RUN(InsertAnonymousTypes, ""),
   RUN(InsertLiteralTemps, ""),
   RUN(BuildLValueFunctions, ""),
   RUN(ReconstructIterators, ""),
   RUN(InsertThisParameters, ""),
   RUN(Flatten, ""),
   RUN(BuildClassHierarchy, ""),
+
+  // SCOPE RESOLUTION
   RUN(ScopeResolveSymbols, ""), // postScopeResolution = true
   RUN(ScopeResolveGotos, ""),
-  RUN(BuildClassConstructorsEtc, ""),
+
+  RUN(SemanticCheckII, ""), // post scope resolution semantic checks
+
+  RUN(BuildDefaultFunctions, ""),
+
   RUN(ApplyThisParameters, ""),
   RUN(RemoveLikeTypes, ""),
   RUN(InsertDefaultInitVariables, ""),
@@ -43,7 +51,8 @@ PassInfo passlist[] = {
   RUN(ApplyGettersSetters, ""),
   RUN(Instantiate, ""),
   RUN(PreAnalysisCleanup, ""),
-  
+
+  // ANALYSIS
   RUN(RunAnalysis, ""), // postAnalysis = true
  
   // passes to capture analysis information in the AST
@@ -55,11 +64,10 @@ PassInfo passlist[] = {
   RUN(RemoveTypeVariableActuals, ""),
   RUN(RemoveTypeVariableFormals, ""),
 
+  RUN(SemanticCheckIII, ""), // post analysis semantic checks
+
   RUN(CreateNestedFuncIterators, ""),
   RUN(RemoveNestedFunctions, ""),
-
-  // check the program's semantics
-  RUN(CheckSemantics, ""),
 
   // eventually, optimizations will go here
 

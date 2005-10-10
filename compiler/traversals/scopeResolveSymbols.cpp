@@ -7,45 +7,12 @@
 #include "../traversals/fixup.h"
 
 
-static void check_legal_overload(Symbol* sym) {
-  if (sym->overload) {
-    int count = 0;
-    for (Symbol* tmp = sym; tmp; tmp = tmp->overload) {
-      if (!tmp->getFnSymbol()) {
-        count++;
-      }
-    }
-    if (count >= 2) {
-      char* redefinitionLocations = "";
-      for (Symbol* tmp = sym->overload; tmp; tmp = tmp->overload) {
-        if (!tmp->getFnSymbol()) {
-          redefinitionLocations =
-            stringcat(redefinitionLocations, "\n  ", tmp->stringLoc());
-        }
-      }
-      USR_FATAL(sym, "'%s' has multiple definitions, redefined at:%s",
-                sym->name, redefinitionLocations);
-    }
-  }
-}
-
-
 ScopeResolveSymbols::ScopeResolveSymbols() {
   defList = new Map<SymScope*,Vec<VarSymbol*>*>();
 }
 
 
 void ScopeResolveSymbols::postProcessExpr(Expr* expr) {
-
-  // This should be moved to a check semantics post-resolve/pre-analysis
-  if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
-    if (SymExpr* baseExpr = dynamic_cast<SymExpr*>(call->baseExpr)) {
-      if (dynamic_cast<ModuleSymbol*>(baseExpr->var)) {
-        USR_FATAL(call, "Illegal call of module %s", baseExpr->var->name);
-      }
-    }
-  }
-
   if (SymExpr* sym_use = dynamic_cast<SymExpr*>(expr)) {
     if (sym_use->var->isUnresolved) {
       char* name = sym_use->var->name;
@@ -72,7 +39,6 @@ void ScopeResolveSymbols::postProcessExpr(Expr* expr) {
       }
 
       if (sym_resolve) {
-        check_legal_overload(sym_resolve);
         if (!dynamic_cast<FnSymbol*>(sym_resolve)) {
           sym_use->var = sym_resolve;
         }

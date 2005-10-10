@@ -1,3 +1,6 @@
+#include "baseAST.h"
+#include "symbol.h"
+
 // collect things in the AST and return them in vectors
 void collect_functions(Vec<FnSymbol*>* functions);
 

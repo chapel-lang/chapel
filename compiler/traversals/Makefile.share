@@ -1,9 +1,7 @@
 TRAVERSALS_SRCS = \
 	applyThisParameters.cpp \
-	buildClassConstructorsEtc.cpp \
         buildClassHierarchy.cpp \
 	checkIDs.cpp \
-	checkSemantics.cpp \
 	checkTypeInfo.cpp \
         clearTypes.cpp \
 	collectASTS.cpp \
@@ -18,7 +16,6 @@ TRAVERSALS_SRCS = \
 	getstuff.cpp \
         htmlview.cpp \
         inlineFunctions.cpp \
-	insertAnonymousTypes.cpp \
 	insertFunctionTemps.cpp \
         insertLiteralTemps.cpp \
 	insertThisParameters.cpp \

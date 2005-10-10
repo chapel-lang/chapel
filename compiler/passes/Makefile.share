@@ -1,14 +1,17 @@
 PASSES_SRCS = \
         applyGettersSetters.cpp \
 	buildBinary.cpp \
+        buildDefaultFunctions.cpp \
 	codegen.cpp \
 	createEntryPoint.cpp \
 	filesToAST.cpp \
+        normalizeParsedAST.cpp \
 	pass.cpp \
 	preAnalysisCleanup.cpp \
 	printProgram.cpp \
 	renameCSymbols.cpp \
 	runAnalysis.cpp \
+        semanticChecks.cpp
 
 CVS_SRCS = $(PASSES_SRCS)
 SRCS = $(CVS_SRCS)

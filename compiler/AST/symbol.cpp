@@ -7,7 +7,6 @@
 #include "symbol.h"
 #include "symtab.h"
 #include "astutil.h"
-#include "../traversals/buildClassConstructorsEtc.h"
 #include "../traversals/clearTypes.h"
 #include "../traversals/updateSymbols.h"
 #include "../traversals/instantiate.h"

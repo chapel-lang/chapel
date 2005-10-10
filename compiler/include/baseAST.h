@@ -173,6 +173,7 @@ void collect_symbols(Vec<Symbol*>* syms, Type* type);
 //   FnSymbol* function = ...;
 //   collect_symbols(&all_syms, function);
 
+void collect_asts(Vec<BaseAST*>* asts);
 void collect_asts(Vec<BaseAST*>* asts, FnSymbol* function);
 // USAGE:
 //   Vec<BaseAST*> all_asts;

@@ -1,12 +1,15 @@
 #include "../passes/applyGettersSetters.h"
 #include "../passes/buildBinary.h"
+#include "../passes/buildDefaultFunctions.h"
 #include "../passes/codegen.h"
 #include "../passes/createEntryPoint.h"
 #include "../passes/filesToAST.h"
+#include "../passes/normalizeParsedAST.h"
+#include "../passes/preAnalysisCleanup.h"
 #include "../passes/printProgram.h"
 #include "../passes/renameCSymbols.h"
 #include "../passes/runAnalysis.h"
-#include "../passes/preAnalysisCleanup.h"
+#include "../passes/semanticChecks.h"
 
 #include "../symtab/codegenOne.h"
 #include "../symtab/copyPropagation.h"
@@ -22,10 +25,8 @@
 #include "../symtab/resolveTypes.h"
 
 #include "../traversals/applyThisParameters.h"
-#include "../traversals/buildClassConstructorsEtc.h"
 #include "../traversals/buildClassHierarchy.h"
 #include "../traversals/checkIDs.h"
-#include "../traversals/checkSemantics.h"
 #include "../traversals/checkTypeInfo.h"
 #include "../traversals/createConfigVarTable.h"
 #include "../traversals/createNestedFuncIterators.h"
@@ -37,7 +38,6 @@
 #include "../traversals/getstuff.h"
 #include "../traversals/htmlview.h"
 #include "../traversals/inlineFunctions.h"
-#include "../traversals/insertAnonymousTypes.h"
 #include "../traversals/insertFunctionTemps.h"
 #include "../traversals/insertLiteralTemps.h"
 #include "../traversals/insertThisParameters.h"
@@ -68,11 +68,10 @@ START_PASSLIST_REGISTRATION
 REGISTER(ApplyGettersSetters);
 REGISTER(ApplyThisParameters);
 REGISTER(BuildBinary);
-REGISTER(BuildClassConstructorsEtc);
 REGISTER(BuildClassHierarchy);
+REGISTER(BuildDefaultFunctions);
 REGISTER(BuildLValueFunctions);
 REGISTER(CheckIDs);
-REGISTER(CheckSemantics);
 REGISTER(CheckTypeInfo);
 REGISTER(Codegen);
 REGISTER(CodegenOne);
@@ -89,7 +88,6 @@ REGISTER(Flatten);
 REGISTER(GetStuff);
 REGISTER(HtmlView);
 REGISTER(InlineFunctions);
-REGISTER(InsertAnonymousTypes);
 REGISTER(InsertDefaultInitVariables);
 REGISTER(InsertFunctionTemps);
 REGISTER(InsertLiteralTemps);
@@ -99,6 +97,7 @@ REGISTER(InsertUnionChecks);     // SJD: Insert runtime type checks for unions
 REGISTER(InsertVariableInitializations);
 REGISTER(Instantiate);
 REGISTER(NormalizeFunctions);
+REGISTER(NormalizeParsedAST);
 REGISTER(PostAnalysisCleanup);
 REGISTER(PreAnalysisHacks);
 REGISTER(PreAnalysisCleanup);
@@ -120,6 +119,9 @@ REGISTER(ResolveTypes);
 REGISTER(RunAnalysis);
 REGISTER(ScopeResolveGotos);
 REGISTER(ScopeResolveSymbols);
+REGISTER(SemanticCheckI);
+REGISTER(SemanticCheckII);
+REGISTER(SemanticCheckIII);
 REGISTER(SpecializeCallExprs);
 REGISTER(TestGetStuff);
 REGISTER(TransformLetExprs);
