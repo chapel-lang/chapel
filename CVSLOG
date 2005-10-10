@@ -48069,3 +48069,39 @@ Modified files:
 	chapel/compiler/main/: driver.cpp 
 	chapel/compiler/symtab/: normalizeFunctions.cpp 
 
+---------------------------------------------------------------------------
+
+10/10/05 13:13:51 -- deitz
+
+Log message:
+	Added support for forall-expressions as calls to nested iterators.
+	This means that something like
+	
+	  ... [i in D] i ...
+	
+	is translated to
+	
+	  iterator _forallexpr1()
+	    forall i in D
+	      yield i;
+	  ... _forallexpr1() ...
+	
+	Moved reconstructIterators after scope resolution.
+	
+	Fixed a bug in copying ReturnStmts in which yields would become
+	returns.
+	
+	Added a test of a forall expression:
+	  writeln([i:integer in 1..5] i);
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: normalizeParsedAST.cpp 
+	chapel/compiler/symtab/: reconstructIterators.cpp 
+	chapel/compiler/traversals/: htmlview.cpp resolveSymbols.cpp 
+Added files:
+	chapel/test/functions/deitz/: test_forallexpr1.chpl 
+	                              test_forallexpr1.good 
+
