@@ -2906,87 +2906,6 @@ clear_marks(Accum <AVar *> &acc) {
     x->mark_map = 0;
 }
 
-static int
-split_with_type_marks(AVar *av) {
-  Accum<AVar *> acc;
-  build_type_marks(av, acc);
-  Vec<AVar *> confluences;
-  collect_es_marked_confluences(confluences, acc);
-  int analyze_again = 0;
-  forv_AVar(av, confluences) {
-    if (av->contour_is_entry_set) {
-      if (!av->is_lvalue) {
-        if (av->var->is_formal) {
-          if (split_entry_set(av, 0, 1))
-            analyze_again = 1;
-        }
-      } else {
-        AVar *aav = unique_AVar(av->var, av->contour);
-        if (is_return_value(aav)) {
-          if (split_entry_set(aav, 0, 1))
-            analyze_again = 1;
-        }
-      }
-    }
-  }
-  return analyze_again;
-}
-
-static int
-split_with_setter_marks(AVar *av) {
-  Accum<AVar *> acc;
-  build_setter_marks(av, acc);
-  Vec<AVar *> confluences;
-  collect_es_marked_confluences(confluences, acc);
-  int analyze_again = 0;
-  forv_AVar(av, confluences) {
-    if (av->contour_is_entry_set) {
-      if (!av->is_lvalue) {
-        AVar *aav = unique_AVar(av->var, av->contour);
-        if (is_return_value(aav)) {
-          if (split_entry_set(aav, 0, 1))
-            analyze_again = 1;
-        }
-      } else {
-        if (av->var->is_formal) {
-          if (split_entry_set(av, 0, 1))
-            analyze_again = 1;
-        }
-      }
-    }
-  }
-  clear_marks(acc);
-  return analyze_again;
-}
-
-static int
-split_ess_setters(Vec<AVar *> &confluences) {
-  int analyze_again = 0;
-  forv_AVar(av, confluences) {
-    if (av->contour_is_entry_set) {
-      if (!av->is_lvalue) {
-        if (is_return_value(av)) {
-          if (split_entry_set(av, 1))
-            analyze_again = 1;
-        } else
-          if (split_with_setter_marks(av))
-            analyze_again = 1;
-      } else {
-        AVar *aav = unique_AVar(av->var, av->contour);
-        if (aav->var->is_formal) {
-          if (split_entry_set(aav, 1))
-            analyze_again = 1;
-        } else
-          if (split_with_setter_marks(av))
-            analyze_again = 1;
-      }
-    } else
-      if (split_with_setter_marks(av))
-        analyze_again = 1;
-  }
-  return analyze_again;
-}
-
 static void
 clear_avar(AVar *av) {
   av->gen = 0;
@@ -3130,119 +3049,23 @@ update_setter(AVar *av, AVar *s) {
 }
 
 static void
-collect_cs_setter_confluences(Vec<AVar *> &setters_confluences) {
-  setters_confluences.clear();
+collect_cs_marked_confluences(Vec<AVar *> &confluences) {
+  confluences.clear();
   forv_CreationSet(cs, fa->css) {
     forv_AVar(av, cs->vars) {
-      forv_AVar(x, av->forward) if (x) {
+      forv_AVar(x, av->backward) if (x) {
+        if (!x->mark_map)
+          continue;
         if (!av->contour_is_entry_set && av->contour != GLOBAL_CONTOUR) {
-          if (!same_eq_classes(av->setters, x->setters)) {
-            setters_confluences.set_add(av);
-            break;
-          }
-        }
-      }
-    }
-    if (cs->added_element_var) {
-      AVar *av = get_element_avar(cs);
-      forv_AVar(x, av->forward) if (x) {
-        if (!av->contour_is_entry_set && av->contour != GLOBAL_CONTOUR) {
-          if (!same_eq_classes(av->setters, x->setters)) {
-            setters_confluences.set_add(av);
+          if (different_marked_args(av, x, 1)) {
+            confluences.set_add(av);
             break;
           }
         }
       }
     }
   }
-  setters_confluences.set_to_vec();
-}
-
-static void
-collect_setter_confluences(Vec<AVar *> &setter_confluences, Vec<AVar *> &setter_starters) {
-  forv_EntrySet(es, fa->ess) {
-    forv_Var(v, es->fun->fa_all_Vars) {
-      AVar *xav = make_AVar(v, es);
-      for (AVar *av = xav; av; av = av->lvalue)
-        if (av->setters) {
-          forv_AVar(x, av->forward) if (x) {
-            if (x->setters && !same_eq_classes(av->setters, x->setters)) {
-              setter_confluences.set_add(av);
-              break;
-            }
-          }
-          if (av->creation_set) {
-            forv_AVar(s, *av->setters) if (s) {
-              assert(s->setter_class);
-              if (s->container->out->in(av->creation_set))
-                setter_starters.set_add(av);
-            }
-          }
-        }
-    }
-  }
-  setter_confluences.set_to_vec();
-  setter_starters.set_to_vec();
-}
-
-static int
-split_css(Vec<AVar *> &astarters) {
-  int analyze_again = 0;
-  // build starter sets, groups of starters for the same CreationSet
-  Vec<AVar *> starters;
-  forv_AVar(av, astarters)
-//    if (!is_es_cs_recursive(av->creation_set))
-      starters.add(av);
-  while (starters.n) {
-    CreationSet *cs = starters.v[0]->creation_set;
-//    if (is_es_cs_recursive(cs))
-//      continue;
-    Vec<AVar *> save;
-    Vec<AVar *> starter_set;
-    forv_AVar(av, starters) {
-      if (av->creation_set == cs)
-        starter_set.add(av);    
-      else
-        save.add(av);
-    }
-    starters.move(save);
-    while (starter_set.n > 1) {
-      AVar *av = starter_set.v[0];
-      Vec<AVar *> compatible_set;
-      forv_AVar(v, starter_set) {
-        if (same_eq_classes(v->setters, av->setters))
-          compatible_set.set_add(v);
-        else
-          save.add(v);
-      }
-      starter_set.move(save);
-      Vec<AVar *> new_defs;
-      cs->defs.set_difference(compatible_set, new_defs);
-      if (new_defs.n) {
-        cs->defs.move(new_defs);
-        cs->defs.set_to_vec();
-        CreationSet *new_cs = new CreationSet(cs);
-        new_cs->defs.move(compatible_set);
-        new_cs->defs.set_to_vec();
-        forv_AVar(v, new_cs->defs)
-          v->creation_set = new_cs;
-        new_cs->split = cs;
-        analyze_again = 1;
-      }
-    }
-  }
-  return analyze_again;
-}
-
-static int
-split_for_setters() {
-  Vec<AVar *> setter_confluences, setter_starters;
-  collect_setter_confluences(setter_confluences, setter_starters);
-  if (split_ess_setters(setter_confluences))
-    return 1;
-  if (split_css(setter_starters))
-    return 1;
-  return 0;
+  confluences.set_to_vec();
 }
 
 static void
@@ -3323,23 +3146,208 @@ analyze_confluence(AVar *av, int akind = AKIND_TYPE) {
 }
 
 static void
-collect_cs_marked_confluences(Vec<AVar *> &confluences) {
-  confluences.clear();
+collect_setter_confluences(Vec<AVar *> &setter_confluences, Vec<AVar *> &setter_starters) {
+  forv_EntrySet(es, fa->ess) {
+    forv_Var(v, es->fun->fa_all_Vars) {
+      AVar *xav = make_AVar(v, es);
+      for (AVar *av = xav; av; av = av->lvalue)
+        if (av->setters) {
+          forv_AVar(x, av->forward) if (x) {
+            if (x->setters && !same_eq_classes(av->setters, x->setters)) {
+              setter_confluences.set_add(av);
+              break;
+            }
+          }
+          if (av->creation_set) {
+            forv_AVar(s, *av->setters) if (s) {
+              assert(s->setter_class);
+              if (s->container->out->in(av->creation_set))
+                setter_starters.set_add(av);
+            }
+          }
+        }
+    }
+  }
+  setter_confluences.set_to_vec();
+  setter_starters.set_to_vec();
+}
+
+static int
+split_with_setter_marks(AVar *av) {
+  Accum<AVar *> acc;
+  build_setter_marks(av, acc);
+  Vec<AVar *> confluences;
+  collect_es_marked_confluences(confluences, acc);
+  int analyze_again = 0;
+  forv_AVar(av, confluences) {
+    if (av->contour_is_entry_set) {
+      if (!av->is_lvalue) {
+        AVar *aav = unique_AVar(av->var, av->contour);
+        if (is_return_value(aav)) {
+          if (split_entry_set(aav, 0, 1))
+            analyze_again = 1;
+        }
+      } else {
+        if (av->var->is_formal) {
+          if (split_entry_set(av, 0, 1))
+            analyze_again = 1;
+        }
+      }
+    }
+  }
+  clear_marks(acc);
+  return analyze_again;
+}
+
+static int
+split_ess_setters(Vec<AVar *> &confluences) {
+  int analyze_again = 0;
+  forv_AVar(av, confluences) {
+    if (av->contour_is_entry_set) {
+      if (!av->is_lvalue) {
+        if (is_return_value(av)) {
+          if (split_entry_set(av, 1))
+            analyze_again = 1;
+        } else
+          if (split_with_setter_marks(av))
+            analyze_again = 1;
+      } else {
+        AVar *aav = unique_AVar(av->var, av->contour);
+        if (aav->var->is_formal) {
+          if (split_entry_set(aav, 1))
+            analyze_again = 1;
+        } else
+          if (split_with_setter_marks(av))
+            analyze_again = 1;
+      }
+    } else
+      if (split_with_setter_marks(av))
+        analyze_again = 1;
+  }
+  return analyze_again;
+}
+
+static int
+split_css(Vec<AVar *> &astarters) {
+  int analyze_again = 0;
+  // build starter sets, groups of starters for the same CreationSet
+  Vec<AVar *> starters;
+  forv_AVar(av, astarters)
+//    if (!is_es_cs_recursive(av->creation_set))
+      starters.add(av);
+  while (starters.n) {
+    CreationSet *cs = starters.v[0]->creation_set;
+//    if (is_es_cs_recursive(cs))
+//      continue;
+    Vec<AVar *> save;
+    Vec<AVar *> starter_set;
+    forv_AVar(av, starters) {
+      if (av->creation_set == cs)
+        starter_set.add(av);    
+      else
+        save.add(av);
+    }
+    starters.move(save);
+    while (starter_set.n > 1) {
+      AVar *av = starter_set.v[0];
+      Vec<AVar *> compatible_set;
+      forv_AVar(v, starter_set) {
+        if (same_eq_classes(v->setters, av->setters))
+          compatible_set.set_add(v);
+        else
+          save.add(v);
+      }
+      starter_set.move(save);
+      Vec<AVar *> new_defs;
+      cs->defs.set_difference(compatible_set, new_defs);
+      if (new_defs.n) {
+        cs->defs.move(new_defs);
+        cs->defs.set_to_vec();
+        CreationSet *new_cs = new CreationSet(cs);
+        new_cs->defs.move(compatible_set);
+        new_cs->defs.set_to_vec();
+        forv_AVar(v, new_cs->defs)
+          v->creation_set = new_cs;
+        new_cs->split = cs;
+        analyze_again = 1;
+      }
+    }
+  }
+  return analyze_again;
+}
+
+static int
+split_for_setters() {
+  Vec<AVar *> setter_confluences, setter_starters;
+  collect_setter_confluences(setter_confluences, setter_starters);
+  if (split_ess_setters(setter_confluences))
+    return 1;
+  if (split_css(setter_starters))
+    return 1;
+  return 0;
+}
+
+static int
+split_with_type_marks(AVar *av) {
+  Accum<AVar *> acc;
+  build_type_marks(av, acc);
+  Vec<AVar *> confluences;
+  collect_es_marked_confluences(confluences, acc);
+  int analyze_again = 0;
+  forv_AVar(av, confluences) {
+    if (av->contour_is_entry_set) {
+      if (!av->is_lvalue) {
+        if (av->var->is_formal) {
+          if (split_entry_set(av, 0, 1))
+            analyze_again = 1;
+        }
+      } else {
+        AVar *aav = unique_AVar(av->var, av->contour);
+        if (is_return_value(aav)) {
+          if (split_entry_set(aav, 0, 1))
+            analyze_again = 1;
+        }
+      }
+    }
+  }
+  if (!analyze_again) {
+    collect_cs_marked_confluences(confluences);
+    forv_AVar(av, confluences)
+      analyze_confluence(av, AKIND_MARK);
+    if (split_for_setters())
+      analyze_again = 1;
+  }
+  clear_marks(acc);
+  return analyze_again;
+}
+
+static void
+collect_cs_setter_confluences(Vec<AVar *> &setters_confluences) {
+  setters_confluences.clear();
   forv_CreationSet(cs, fa->css) {
     forv_AVar(av, cs->vars) {
-      forv_AVar(x, av->backward) if (x) {
-        if (!x->mark_map)
-          continue;
+      forv_AVar(x, av->forward) if (x) {
         if (!av->contour_is_entry_set && av->contour != GLOBAL_CONTOUR) {
-          if (different_marked_args(av, x, 1)) {
-            confluences.set_add(av);
+          if (!same_eq_classes(av->setters, x->setters)) {
+            setters_confluences.set_add(av);
+            break;
+          }
+        }
+      }
+    }
+    if (cs->added_element_var) {
+      AVar *av = get_element_avar(cs);
+      forv_AVar(x, av->forward) if (x) {
+        if (!av->contour_is_entry_set && av->contour != GLOBAL_CONTOUR) {
+          if (!same_eq_classes(av->setters, x->setters)) {
+            setters_confluences.set_add(av);
             break;
           }
         }
       }
     }
   }
-  confluences.set_to_vec();
+  setters_confluences.set_to_vec();
 }
 
 static int
@@ -3360,13 +3368,6 @@ split_ess_type(Vec<AVar *> &confluences) {
     if (!split)
       split = split_with_type_marks(av);
     analyze_again = split || analyze_again;
-  }
-  if (!analyze_again) {
-    collect_cs_marked_confluences(confluences);
-    forv_AVar(av, confluences)
-      analyze_confluence(av, AKIND_MARK);
-    if (split_for_setters())
-      analyze_again = 1;
   }
   return analyze_again;
 }
