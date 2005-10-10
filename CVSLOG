@@ -48000,3 +48000,51 @@ Modified files:
 Removed files:
 	chapel/compiler/symtab/: collectFunctions.cpp collectFunctions.h 
 
+---------------------------------------------------------------------------
+
+10/10/05 09:16:00 -- deitz
+
+Log message:
+	Added 3 SemanticCheck passes to check the semantics of the program
+	after parsing, after scope resolution, and after analysis.  These
+	should be good places to check the program to make sure it makes sense
+	and, if it doesn't, to give descriptive error messages.  In addition,
+	the first semantic check pass is a good pass to let the user know what
+	is not implemented, e.g., zippered iteration.
+	
+	Moved the functionality in BuildClassConstructorsEtc to a new pass
+	called BuildDefaultFunctions.  This is a more descriptive name, as the
+	functions being built in this pass are default ones that would not be
+	built if the user defined one.
+	
+	Moved the functionality in insertAnonymousTypes to a new pass called
+	normalizeParsedAST.  This pass now currently moves anonymous record
+	type definitions into statements of their own.  It basically could
+	have been done in parsing, but is easier to do afterwards.  This pass
+	will eventually handle a few more things like this that are currently
+	in random passes.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: astutil.h baseAST.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/passes/: Makefile.share 
+	chapel/compiler/traversals/: Makefile.share collectASTS.cpp 
+	                             scopeResolveSymbols.cpp 
+	chapel/test/flowanalysis/newast/: sum_type-1.good 
+	                                  sum_type-2.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+Added files:
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	                         buildDefaultFunctions.h 
+	                         normalizeParsedAST.cpp 
+	                         normalizeParsedAST.h semanticChecks.cpp 
+	                         semanticChecks.h 
+Removed files:
+	chapel/compiler/traversals/: buildClassConstructorsEtc.cpp 
+	                             buildClassConstructorsEtc.h 
+	                             checkSemantics.cpp checkSemantics.h 
+	                             insertAnonymousTypes.cpp 
+	                             insertAnonymousTypes.h 
+
