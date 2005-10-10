@@ -192,8 +192,8 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
             }
             if (paren->partialTag != PARTIAL_NEVER)
               return;
-            USR_WARNING(expr, "It looks like this program requires dynamic"
-                        "dispatch, which is not yet supported");
+            if (fns.n > 1)
+              USR_WARNING(expr, "Dynamic dispatch not yet supported");
             INT_FATAL(expr, "Unable to resolve function");
             return;
           }

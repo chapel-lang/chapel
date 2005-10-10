@@ -50,6 +50,7 @@ Is this "while x"(i); or "while x(i)";?
 #include "lexyacc.h" // all #includes here, for make depend
 
   static int anon_record_uid = 1;
+  static int iterator_uid = 1;
 
 %}
 
@@ -1106,7 +1107,19 @@ opt_expr:
 expr:
   top_level_expr
 | TLSBR nonempty_expr_ls TIN nonempty_expr_ls TRSBR expr %prec TRSBR
-    { $$ = new ForallExpr(exprsToIndices($2), $4, $6); }
+    {
+      FnSymbol* forall_iterator =
+        new FnSymbol(stringcat("_forallexpr", intstring(iterator_uid++)));
+      forall_iterator->fnClass = FN_ITERATOR;
+      forall_iterator->retType = dtUnknown;
+      forall_iterator->body =
+        new BlockStmt(
+          new ForLoopStmt(FORLOOPSTMT_FORALL,
+                          exprsToIndices($2),
+                          $4,
+                          new ReturnStmt($6, true)));
+      $$ = new CallExpr(new DefExpr(forall_iterator));
+    }
 | TLSBR nonempty_expr_ls TRSBR
     { $$ = new CallExpr("_adomain_lit", $2); }
 ;

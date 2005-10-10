@@ -7,8 +7,10 @@
 
 
 // Move anonymous record definition into separate statement
-void normalize_anonymous_record(DefExpr* def) {
-  if (!strncmp("_anon_record", def->sym->name, 12)) {
+// Or move anonymous forall expression iterator into separate statement
+void normalize_anonymous_record_or_forall_expression(DefExpr* def) {
+  if ((!strncmp("_anon_record", def->sym->name, 12)) ||
+      (!strncmp("_forallexpr", def->sym->name, 11))) {
     Stmt* stmt = def->parentStmt;
     def->replace(new SymExpr(def->sym));
     stmt->insertBefore(new ExprStmt(def));
@@ -22,7 +24,7 @@ void NormalizeParsedAST::run(Vec<ModuleSymbol*>* modules) {
 
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* a = dynamic_cast<DefExpr*>(ast)) {
-      normalize_anonymous_record(a);
+      normalize_anonymous_record_or_forall_expression(a);
     }
   }
 }

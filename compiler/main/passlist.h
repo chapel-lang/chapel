@@ -16,16 +16,14 @@ PassInfo passlist[] = {
 
   // passes to create the basic AST
   RUN(FilesToAST, ""),
+  RUN(CreateEntryPoint, ""),
   RUN(NormalizeParsedAST, ""), // handles complicated parsing transforms
   RUN(SemanticCheckI, ""), // post parsing semantic checks
-
-  RUN(CreateEntryPoint, ""),
 
   // passes to normalize the basic AST
   RUN(ProcessImportExprs, ""),
   RUN(InsertLiteralTemps, ""),
   RUN(BuildLValueFunctions, ""),
-  RUN(ReconstructIterators, ""),
   RUN(InsertThisParameters, ""),
   RUN(Flatten, ""),
   RUN(BuildClassHierarchy, ""),
@@ -36,6 +34,7 @@ PassInfo passlist[] = {
 
   RUN(SemanticCheckII, ""), // post scope resolution semantic checks
 
+  RUN(ReconstructIterators, ""),
   RUN(BuildDefaultFunctions, ""),
 
   RUN(ApplyThisParameters, ""),

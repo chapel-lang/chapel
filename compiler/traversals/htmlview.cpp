@@ -107,8 +107,11 @@ void HtmlView::preProcessStmt(Stmt* stmt) {
       write("<B>forall</B> ");
       break;
     }
-  } else if (dynamic_cast<ReturnStmt*>(stmt)) {
-    write("<B>return</B> ");
+  } else if (ReturnStmt* s = dynamic_cast<ReturnStmt*>(stmt)) {
+    if (s->yield)
+      write("<B>yield</B> ");
+    else
+      write("<B>return</B> ");
   } else {
     write("%s", astTypeName[stmt->astType]);
   }

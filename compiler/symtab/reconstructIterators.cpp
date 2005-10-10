@@ -9,9 +9,7 @@
 class ReconstructIteratorsHelper : public Traversal {
  public:
   Symbol* seq;
-  ReconstructIteratorsHelper(Symbol* init_seq) {
-    seq = init_seq;
-  }
+  ReconstructIteratorsHelper(Symbol* iSeq) : seq(iSeq) { }
   void postProcessStmt(Stmt* stmt) {
     if (ReturnStmt* returnStmt = dynamic_cast<ReturnStmt*>(stmt)) {
       returnStmt->insertBefore(
@@ -31,6 +29,20 @@ class ReconstructIteratorsHelper : public Traversal {
 };
 
 
+class TypeInferIteratorsHelper : public Traversal {
+ public:
+  Type* type;
+  TypeInferIteratorsHelper() {
+    type = dtUnknown;
+  }
+  void postProcessStmt(Stmt* stmt) {
+    if (ReturnStmt* returnStmt = dynamic_cast<ReturnStmt*>(stmt))
+      if (returnStmt->expr)
+        type = returnStmt->expr->typeInfo();
+  }
+};
+
+
 void ReconstructIterators::processSymbol(Symbol* sym) {
   FnSymbol* fn = dynamic_cast<FnSymbol*>(sym);
 
@@ -40,14 +52,20 @@ void ReconstructIterators::processSymbol(Symbol* sym) {
   Expr* seqType = NULL;
   if (fn->retType != dtUnknown) {
     seqType = new SymExpr(fn->retType->symbol);
-  } else if (fn->defPoint->exprType != NULL) {
+  } else if (fn->defPoint->exprType) {
     seqType = fn->defPoint->exprType->copy();
   } else {
-    INT_FATAL(fn, "Unable to infer type of iterator");
+    TypeInferIteratorsHelper traversal;
+    TRAVERSE(fn, &traversal, true);
+    if (traversal.type != dtUnknown) {
+      seqType = new SymExpr(traversal.type->symbol);
+    } else {
+      INT_FATAL(fn, "Unable to infer type of iterator");
+    }
   }
 
   Symbol* seq = new VarSymbol("_seq_result");
-  DefExpr* def = new DefExpr(seq, NULL, new CallExpr("seq", seqType));
+  DefExpr* def = new DefExpr(seq, NULL, new CallExpr(Symboltable::lookup("seq"), seqType));
 
   fn->insertAtHead(new ExprStmt(def));
   TRAVERSE(fn->body, new ReconstructIteratorsHelper(seq), true);

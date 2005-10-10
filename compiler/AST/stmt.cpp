@@ -200,7 +200,7 @@ void ReturnStmt::verify() {
 
 ReturnStmt*
 ReturnStmt::copyInner(ASTMap* map) {
-  return new ReturnStmt(COPY_INT(expr));
+  return new ReturnStmt(COPY_INT(expr), yield);
 }
 
 
