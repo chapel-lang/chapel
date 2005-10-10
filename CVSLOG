@@ -48048,3 +48048,13 @@ Removed files:
 	                             insertAnonymousTypes.cpp 
 	                             insertAnonymousTypes.h 
 
+---------------------------------------------------------------------------
+
+10/10/05 12:00:01 -- jplevyak
+
+Log message:
+	Reorg of handling for polymorphic recursive objects.:w
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
