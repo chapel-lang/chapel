@@ -313,6 +313,8 @@ pragma "builtin" function any.=(b : any) { return b; }
 pragma "builtin" function =(a : Index, b : integer) { return __primitive("indextype_set", a, b); }
 pragma "builtin" function =(a : integer, b : Index) { return __primitive("indextype_get", b); }
 
+
+pragma "split unique"
 pragma "builtin" function =(a : numeric, b : any) { 
   return __primitive("cast", a, b);
 }
