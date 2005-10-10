@@ -48144,3 +48144,24 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+10/10/05 15:42:06 -- deitz
+
+Log message:
+	Simplified collect_asts.
+	
+	Using John's patch, started to switch instantiate_generic's analysis
+	interface over to using collect_asts rather than the copy map.  This
+	will enable transforms and constructions of new functions during
+	instantiation.  Currently, the copy map is used to find the new
+	functions and types, and then collect_asts is used to grab the new
+	stuff.  I ran tests with a little code to make sure they both found
+	the same new stuff, but I've pulled out those tests for this
+	intermediate checkin.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: baseAST.h 
+	chapel/compiler/traversals/: collectASTS.cpp 
+
