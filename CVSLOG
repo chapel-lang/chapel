@@ -48058,3 +48058,14 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+10/10/05 12:03:29 -- deitz
+
+Log message:
+	Checkin of John's patch to the --formal-temps flag.
+
+Modified files:
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/symtab/: normalizeFunctions.cpp 
+
