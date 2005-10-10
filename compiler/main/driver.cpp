@@ -92,7 +92,7 @@ static ArgumentDescription arg_desc[] = {
  {"noanalysis", ' ', "Skip analysis of AST", "f", &analyzeAST, NULL, NULL},
  {"no-inline", ' ', "No inlining of functions" , "F", &no_inline, NULL, NULL},
  {"report-inlining", ' ', "Print inlined functions", "F", &report_inlining, NULL, NULL},
- {"formal-temps", ' ', "Insert temps for formals", "F", &formalTemps, NULL, NULL},
+ {"formal-temps", ' ', "Insert temps for formals", "F", &formalTemps, "CHPL_FORMAL_TEMPS", NULL},
  {"check-typeinfo", ' ', "Check result of type_info and return_type_info", "F", &checkAnalysisTypeinfo, NULL, NULL},
  {"nopreinstantiate", ' ', "Do not instantiate before analysis", "f", &preinstantiate, NULL, NULL},
  {"tmpMangling", ' ', "Name mangling toggle", "F", &_adhoc_to_uniform_mangling, "CHPL_ADHOC_TO_UNIFORMA_MANGLING", NULL},

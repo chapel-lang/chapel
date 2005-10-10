@@ -15,6 +15,9 @@ void NormalizeFunctions::processSymbol(Symbol* sym) {
   if (!fn)
     return;
 
+  if (!strcmp("=", fn->name))
+    return;
+
   Vec<DefExpr*> tempDefs;
   ASTMap subs;
 
@@ -22,8 +25,13 @@ void NormalizeFunctions::processSymbol(Symbol* sym) {
     ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
     if (formal->intent == INTENT_REF ||
         formal->intent == INTENT_PARAM ||
-        formal->intent == INTENT_TYPE)
+        formal->intent == INTENT_TYPE ||
+        formal->genericSymbol)
       continue;
+    Type *type = formal->type;
+    if (type == dtAny || type == dtNumeric)
+      type = dtUnknown;
+    assert(!type->isGeneric);
     VarSymbol* temp = new VarSymbol(stringcat("_", formal->name), formal->type);
     DefExpr* tempDef = new DefExpr(temp, new SymExpr(formal));
     if (formalDef->exprType)
