@@ -48115,3 +48115,19 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp fa.h pattern.cpp pattern.h 
 
+---------------------------------------------------------------------------
+
+10/10/05 14:54:35 -- deitz
+
+Log message:
+	Removed ForallExpr Expr subclass as it is no longer used.  Forall
+	expressions are now handled as nested iterators with forall statement
+	bodies.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp symbol.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: baseAST.h expr.h symscope.h 
+	chapel/compiler/symtab/: symscope.cpp 
+	chapel/compiler/traversals/: fixup.cpp 
+
