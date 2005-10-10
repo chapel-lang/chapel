@@ -320,7 +320,6 @@ bool VarSymbol::initializable(void) {
   case SCOPE_POSTPARSE:
   case SCOPE_ARG:
   case SCOPE_FORLOOP:
-  case SCOPE_FORALLEXPR:
   case SCOPE_CLASS:
     return false;
   default:

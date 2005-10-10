@@ -226,17 +226,6 @@ void Fixup::preProcessExpr(Expr* expr) {
     }
   }
 
-  if (ForallExpr* forallExpr = dynamic_cast<ForallExpr*>(expr)) {
-    if (!verifyParents) {
-      if (insertHelper) {
-        if (forallExpr->indexScope) {
-          INT_FATAL(forallExpr, "Unexpected scope in Forall Expr");
-        }
-        Symboltable::pushScope(SCOPE_FORALLEXPR);
-      }
-    }
-  }
-
   parentExprs.add(expr);
 }
 
@@ -254,18 +243,6 @@ void Fixup::postProcessExpr(Expr* expr) {
       } else {
         Symboltable::removeScope(letExpr->letScope);
         letExpr->letScope = NULL;
-      }
-    }
-  }
-
-  if (ForallExpr* forallExpr = dynamic_cast<ForallExpr*>(expr)) {
-    if (!verifyParents) {
-      if (insertHelper) {
-        forallExpr->indexScope = Symboltable::popScope();
-        forallExpr->indexScope->astParent = forallExpr;
-      } else {
-        Symboltable::removeScope(forallExpr->indexScope);
-        forallExpr->indexScope = NULL;
       }
     }
   }

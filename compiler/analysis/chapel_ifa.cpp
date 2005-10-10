@@ -783,7 +783,6 @@ map_baseast(BaseAST *s) {
           case SCOPE_ARG:
           case SCOPE_LOCAL:
           case SCOPE_FORLOOP:
-          case SCOPE_FORALLEXPR:
             sym->asymbol->sym->function_scope = 1;
             sym->asymbol->sym->nesting_depth = sym->nestingDepth();
             break;
@@ -1860,36 +1859,6 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       s->ainfo->rval = new_sym();
       s->ainfo->rval->ast = s->ainfo;
       gen_cond(s->ainfo, s->condExpr->ainfo, s->thenExpr->ainfo, s->elseExpr->ainfo);
-      break;
-    }
-    case EXPR_FORALL: {
-      ForallExpr *s = dynamic_cast<ForallExpr *>(ast);
-      s->ainfo->rval = new_sym();
-      s->ainfo->rval->ast = s->ainfo;
-      Vec<Expr *> domains;
-      s->iterators->getElements(domains);
-      Vec<Symbol *> indices;
-      Vec<DefExpr*> indexdefs;
-      s->indices->getElements(indexdefs);
-      forv_Vec(DefExpr, def_expr, indexdefs) {
-        indices.add(def_expr->sym);
-      }
-      if (s->innerExpr) { // forall expression
-        Code *body = 0;
-        forv_Vec(Expr, d, domains)
-          if1_gen(if1, &body, d->ainfo->code);
-        if (gen_forall_internal(s->ainfo, body, indices, domains) < 0)
-          return -1;
-      } else {
-        forv_Vec(Expr, d, domains)
-          if1_gen(if1, &s->ainfo->code, d->ainfo->code);
-        Code *send = if1_send(if1, &s->ainfo->code, 2, 1, sym_primitive, expr_create_domain_symbol, 
-                              s->ainfo->rval);
-        forv_Vec(Expr, d, domains)
-          if1_add_send_arg(if1, send, d->ainfo->rval);
-        send->ast = s->ainfo;
-        send->partial = Partial_NEVER;
-      }
       break;
     }
     case EXPR_CALL: {

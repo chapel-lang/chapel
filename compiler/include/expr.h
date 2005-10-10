@@ -231,25 +231,6 @@ class ReduceExpr : public Expr {
 };
 
 
-class ForallExpr : public Expr {
- public:
-  AList<DefExpr>* indices;
-  AList<Expr>* iterators;
-  Expr* innerExpr;
-  SymScope* indexScope;
-
-  ForallExpr(AList<DefExpr>* initIndices,
-             AList<Expr>* initIterators,
-             Expr* initInnerExpr);
-  virtual void verify(void); 
-  COPY_DEF(ForallExpr);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseExpr(Traversal* traversal);
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-  Type* typeInfo(void);
-};
-
 void initExpr(void);
 
 class LetExpr : public Expr {
