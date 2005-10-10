@@ -48105,3 +48105,13 @@ Added files:
 	chapel/test/functions/deitz/: test_forallexpr1.chpl 
 	                              test_forallexpr1.good 
 
+---------------------------------------------------------------------------
+
+10/10/05 14:39:48 -- jplevyak
+
+Log message:
+	Fix a bug with the handling of automatic coercions at primitive operators.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp fa.h pattern.cpp pattern.h 
+
