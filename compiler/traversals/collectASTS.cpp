@@ -10,30 +10,24 @@ CollectASTs::CollectASTs(Vec<BaseAST*>* init_asts) {
 
 void CollectASTs::preProcessExpr(Expr* expr) {
   asts->add(expr);
+  if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
+    asts->add(def->sym);
+    if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(def->sym))
+      if (ts->definition)
+        asts->add(ts->definition);
+  }
 }
 
 void CollectASTs::preProcessStmt(Stmt* stmt) {
   asts->add(stmt);
 }
 
-void collect_asts(Vec<BaseAST*>* asts, FnSymbol* function) {
-  CollectASTs* traversal = new CollectASTs(asts);
-  TRAVERSE(function, traversal, true);
-  Vec<BaseAST *> syms;
-  collect_symbols((Vec<Symbol*> *)&syms, function);
-  forv_BaseAST(s, syms)
-    if (s->astType == SYMBOL_TYPE)
-      asts->add(((TypeSymbol*)s)->definition);
-  asts->append(syms);
+void collect_asts(Vec<BaseAST*>* asts, BaseAST* ast) {
+  TRAVERSE(ast, new CollectASTs(asts), true);
+  asts->add(ast);
 }
 
 void collect_asts(Vec<BaseAST*>* asts) {
   CollectASTs* traversal = new CollectASTs(asts);
   traversal->run(Symboltable::getModules(MODULES_ALL));
-  Vec<BaseAST *> syms;
-  collect_symbols((Vec<Symbol*> *)&syms);
-  forv_BaseAST(s, syms)
-    if (s->astType == SYMBOL_TYPE)
-      asts->add(((TypeSymbol*)s)->definition);
-  asts->append(syms);
 }

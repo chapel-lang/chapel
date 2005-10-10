@@ -459,43 +459,29 @@ BaseAST_to_Sym(BaseAST *b) {
   return 0;
 }
 
-// map is not NULL when f is a constuctor for a generic type
 static Fun *
-install_new_function(FnSymbol *f, FnSymbol *old_f, ASTMap *map = NULL) {
+install_new_asts(FnSymbol *f, Vec<FnSymbol *> &funs, Vec<Type *> &types) {
   Vec<BaseAST *> syms;
-  Vec<FnSymbol *> funs;
-  if (map) {
-    for (int i = 0; i < map->n; i++) if (map->v[i].key) {
-      syms.add(map->v[i].value);
-      if (FnSymbol *fs = dynamic_cast<FnSymbol *>(map->v[i].value))
-        funs.add(fs);
-    }
-  } else {
-    collect_asts(&syms, f);
-    syms.add(f);
-    syms.add(f->defPoint);
-    syms.add(f->defPoint->parentStmt);
-    funs.add(f);
+  forv_Vec(FnSymbol, f, funs) {
+    collect_asts(&syms, f->defPoint->parentStmt);
   }
-  tagGenerics(syms);
+  forv_Vec(Type, t, types) {
+    collect_asts(&syms, t->symbol->defPoint->parentStmt);
+  }
   qsort(syms.v, syms.n, sizeof(syms.v[0]), compar_baseast);
   qsort(funs.v, funs.n, sizeof(funs.v[0]), compar_baseast);
   map_asts(syms);
   build_types(syms);
   build_symbols(syms);
-  if (map) {
-    for (int i = 0; i < map->n; i++) if (map->v[i].key)
-      if (Type *t = dynamic_cast<Type *>(map->v[i].key)) {
-        Type *new_t = dynamic_cast<Type *>(map->v[i].value);
-        new_t->asymbol->sym->instantiates = t->asymbol->sym;
-        for (int i; i < new_t->substitutions.n; i++) if (new_t->substitutions.v[i].key) {
-          Sym *value = BaseAST_to_Sym(new_t->substitutions.v[i].value);
-          // don't map yourself
-          if (value != new_t->asymbol->sym)
-            new_t->asymbol->sym->substitutions.put(
-              BaseAST_to_Sym(new_t->substitutions.v[i].key), value);
-        }
-      }
+  forv_Vec(Type, new_t, types) {
+    new_t->asymbol->sym->instantiates = new_t->instantiatedFrom->asymbol->sym;
+    for (int i; i < new_t->substitutions.n; i++) if (new_t->substitutions.v[i].key) {
+      Sym *value = BaseAST_to_Sym(new_t->substitutions.v[i].value);
+      // don't map yourself
+      if (value != new_t->asymbol->sym)
+        new_t->asymbol->sym->substitutions.put(
+          BaseAST_to_Sym(new_t->substitutions.v[i].key), value);
+    }
   }
   finalize_types(if1, false);
   forv_Vec(FnSymbol, f, funs) {
@@ -524,6 +510,27 @@ install_new_function(FnSymbol *f, FnSymbol *old_f, ASTMap *map = NULL) {
   }
   if1_write_log();
   return f->asymbol->sym->fun;
+}
+
+static Fun *
+install_new_asts(FnSymbol *f) {
+  Vec<FnSymbol *> funs;
+  funs.add(f);
+  Vec<Type *> types;
+  return install_new_asts(f, funs, types);
+}
+
+static Fun *
+install_new_asts(FnSymbol *f, ASTMap &map) {
+  Vec<FnSymbol *> funs;
+  Vec<Type *> types;
+  for (int i = 0; i < map.n; i++) if (map.v[i].key) {
+    if (FnSymbol *fs = dynamic_cast<FnSymbol *>(map.v[i].value))
+      funs.add(fs);
+    if (Type *t = dynamic_cast<Type *>(map.v[i].value))
+      types.add(t);
+  }
+  return install_new_asts(f, funs, types);
 }
 
 static Type *
@@ -601,7 +608,7 @@ ACallbacks::order_wrapper(Match *m) {
     }
   }
   FnSymbol *f = fndef->order_wrapper(&formals_to_formals);
-  Fun *fun = install_new_function(f, fndef);
+  Fun *fun = install_new_asts(f);
   fun->wraps = m->fun;
   return fun;
 }
@@ -628,7 +635,7 @@ ACallbacks::coercion_wrapper(Match *m) {
   }
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(SYMBOL(m->fun->sym));
   FnSymbol *f = fndef->coercion_wrapper(&coercions);
-  Fun *fun = install_new_function(f, fndef);
+  Fun *fun = install_new_asts(f);
   fun->wraps = m->fun;
   return fun;
 }
@@ -646,7 +653,7 @@ ACallbacks::default_wrapper(Match *m) {
   }
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(SYMBOL(m->fun->sym));
   FnSymbol *f = fndef->default_wrapper(&defaults);
-  Fun *fun = install_new_function(f, fndef);
+  Fun *fun = install_new_asts(f);
   fun->wraps = m->fun;
   return fun;
 }
@@ -676,7 +683,7 @@ ACallbacks::instantiate_generic(Match *m) {
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(SYMBOL(m->fun->sym));
   ASTMap map;
   FnSymbol *f = fndef->instantiate_generic(&map, &substitutions);
-  Fun *fun = install_new_function(f, fndef, &map);
+  Fun *fun = install_new_asts(f, map);
   fun->wraps = m->fun;
   return fun;
 }
