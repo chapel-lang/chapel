@@ -48315,3 +48315,82 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+10/11/05 14:57:31 -- deitz
+
+Log message:
+	Simplified processing of types that use the like keyword.  Removed the
+	RemoveLikeTypes traversal which hadn't been doing anything for a
+	while, and tucked its functionality into PreAnalysisHacks.  Prior to
+	this checkin, like was basically ignored and parsed as a :, so one
+	could write
+	
+	  var x : integer;
+	  var y like x;
+	
+	or
+	
+	  var y : x;
+	
+	without impunity.  Currently that is still allowed, though I think its odd.
+	
+	Now like-types are parsed to create a special function typeof so
+	
+	  var y like x;
+	
+	becomes
+	
+	  var y : typeof(x);
+	
+	Then in preAnalysisHacks, we change this into the actual type if that
+	is known, so since x is an integer this becomes
+	
+	  var y : integer;
+	
+	If it is not known, we revert to the old way and change it into
+	
+	  var y : x;
+	
+	I did this so things like
+	
+	  var x like (1+2);
+	
+	keep working.
+	
+	This checkin also simplifies special handling of sequence literals by
+	transforming during parsing
+	
+	  (/ 1, 2, 3 /)
+	
+	into
+	
+	  seq(typeof(1)) # 1 # 2 # 3
+	
+	rather than
+	
+	  seq() # 1 # 2 # 3
+	
+	plus special handling later.
+	
+	Fixed a bug in preinstantiation removal of actual arguments that were
+	used only to instantiate.  It missed one.
+	
+	Also removed code to collapse block statements in conditional
+	statements.
+
+Modified files:
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/symtab/: Makefile.share 
+	chapel/compiler/traversals/: instantiate.cpp 
+	                             preAnalysisHacks.cpp 
+	chapel/modules/standard/: prelude.chpl 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+Removed files:
+	chapel/compiler/symtab/: removeLikeTypes.cpp removeLikeTypes.h 
+
