@@ -48282,3 +48282,25 @@ Modified files:
 	chapel/compiler/analysis/: chapel_ifa.cpp chapel_ifa.h 
 	chapel/compiler/ifa/: fa.cpp ifa.h pattern.cpp 
 
+---------------------------------------------------------------------------
+
+10/11/05 13:52:41 -- deitz
+
+Log message:
+	Fixed a small bug in the parsing of types using the 'of' keyword in
+	which the right argument had to be a variable-expression and could not
+	be a general type.  Now that types are parsed as expressions, this
+	became easier, allowing something like 'seq of seq of integer.'
+	
+	Added two small sequence of sequence tests that work.  The second one
+	even uses a nested forall loop with different typed indices to print
+	out all the leaf elements.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+Added files:
+	chapel/test/types/seq/deitz/: test_seq_of_seq.chpl 
+	                              test_seq_of_seq.good 
+	                              test_seq_of_seq2.chpl 
+	                              test_seq_of_seq2.good 
+
