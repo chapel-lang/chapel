@@ -4,8 +4,10 @@
 #include "stmt.h"
 #include "symtab.h"
 #include "stringutil.h"
+#include "filesToAST.h"
 
 
+static void build_chpl_main(Vec<ModuleSymbol*>* modules);
 static void build_constructor(ClassType* classType);
 static void build_union_id_enum(ClassType* classType);
 static void build_getter(ClassType* classType, Symbol *tmp);
@@ -18,6 +20,8 @@ static void buildDefaultIOFunctions(Type* type);
 
 
 void BuildDefaultFunctions::run(Vec<ModuleSymbol*>* modules) {
+  build_chpl_main(modules);
+
   Vec<Symbol*> syms;
   collect_symbols(&syms);
 
@@ -29,6 +33,73 @@ void BuildDefaultFunctions::run(Vec<ModuleSymbol*>* modules) {
       }
     }
   }
+}
+
+
+static ExprStmt* buildCallExprStmt(FnSymbol* fn) {
+  SymExpr* variable = new SymExpr(fn);
+  variable->lineno = -1;
+  CallExpr* fnCall = new CallExpr(variable);
+  fnCall->lineno = -1;
+  ExprStmt* exprStmt = new ExprStmt(fnCall);
+  exprStmt->lineno = -1;
+  return exprStmt;
+}
+
+
+static ModuleSymbol* findUniqueUserModule(Vec<ModuleSymbol*>* modules) {
+  ModuleSymbol* userModule = NULL;
+
+  forv_Vec(ModuleSymbol, mod, *modules) {
+    if (mod->modtype == MOD_USER) {
+      if (userModule == NULL) {
+        userModule = mod;
+      } else {
+        return NULL;  // two user modules defined
+      }
+    }
+  }
+  return userModule;
+}
+
+
+static void build_chpl_main(Vec<ModuleSymbol*>* modules) {
+  // find main function if it exists; create one if not
+  Vec<FnSymbol*> fns;
+  collect_functions(&fns);
+  forv_Vec(FnSymbol, fn, fns) {
+    if (!strcmp(fn->name, "main") && fn->formals->isEmpty()) {
+      if (!chpl_main) {
+        chpl_main = fn;
+      } else {
+        USR_FATAL(fn, "main multiply defined -- first occurrence at %s",
+                  chpl_main->stringLoc());
+      }
+    }
+  }
+
+  BlockStmt* mainBody;
+  ModuleSymbol* mainModule;
+  if (!chpl_main) {
+    mainModule = findUniqueUserModule(modules);
+    if (mainModule) {
+      mainBody = new BlockStmt();
+      chpl_main = new FnSymbol("main", NULL, new AList<DefExpr>(), dtVoid, NULL, mainBody);
+      mainModule->stmts->insertAtTail(new ExprStmt(new DefExpr(chpl_main)));
+    } else {
+      USR_FATAL("Code defines multiple modules but no main function.");
+    }
+  } else {
+    // tack call to main fn module's init call onto main fn's body
+    mainModule = dynamic_cast<ModuleSymbol*>(chpl_main->parentScope->astParent);
+    if (!mainModule) {
+      INT_FATAL(chpl_main, "main function's parent scope wasn't a module scope");
+    }
+    mainBody = chpl_main->body;
+  }
+  mainBody->insertAtHead(buildCallExprStmt(mainModule->initFn));
+  mainBody->insertAtHead(buildCallExprStmt(commonModule->initFn));
+  mainBody->insertAtHead(buildCallExprStmt(prelude->initFn));
 }
 
 
