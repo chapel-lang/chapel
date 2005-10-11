@@ -48258,3 +48258,27 @@ Modified files:
 	chapel/compiler/passes/: buildDefaultFunctions.cpp 
 	                         createEntryPoint.cpp 
 
+---------------------------------------------------------------------------
+
+10/11/05 13:27:09 -- jplevyak
+
+Log message:
+	Convert INTENT_PARAM into INTENT_BLANK for "parameters" after
+	  instantiation to prevent repeated instantiation.
+	Change the way wrappers are constructed so that a new
+	  Match structure is created for each Fun at each point
+	  during wrapper construction.
+	Change the way order_wrappers and default_wrappers are
+	  handled by updating the formal and actual maps as the
+	  wrappers are built.
+	Change the interfaces for building wrappers so that they
+	  no longer use a Match structure but instead take the
+	  maps and a Fun to build a wrapper on.
+	This fixes some issues on the path to enabling the
+	  callee cache.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp chapel_ifa.h 
+	chapel/compiler/ifa/: fa.cpp ifa.h pattern.cpp 
+
