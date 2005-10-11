@@ -80,7 +80,23 @@ Instantiate::postProcessExpr(Expr* expr) {
           formal = fn->formals->next();
         }
         if (substitutions.n) {
-          FnSymbol* new_fn = fn->preinstantiate_generic(&substitutions);
+
+          Vec<FnSymbol*> new_functions;
+          Vec<TypeSymbol*> new_types;
+          FnSymbol* new_fn = 
+            fn->instantiate_generic(&substitutions, &new_functions, &new_types);
+
+          if (!new_fn)
+            INT_FATAL(fn, "Preinstantiation error");
+
+          forv_Vec(TypeSymbol, type, new_types) {
+            TRAVERSE(type, new Instantiate(), true);
+          }
+
+          forv_Vec(FnSymbol, function, new_functions) {
+            TRAVERSE(function, new Instantiate(), true);
+          }
+
           for_alist(DefExpr, formalDef, new_fn->formals) {
             ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
             if (formal->isGeneric || formal->genericSymbol) {

@@ -208,7 +208,6 @@ class FnSymbol : public Symbol {
   FnSymbol* instantiate_generic(ASTMap* substitutions,
                                 Vec<FnSymbol*>* new_functions,
                                 Vec<TypeSymbol*>* new_types);
-  FnSymbol* preinstantiate_generic(ASTMap* substitutions);
 
   void codegenHeader(FILE* outfile);
   void codegenPrototype(FILE* outfile);

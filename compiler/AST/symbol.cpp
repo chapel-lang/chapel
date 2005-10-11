@@ -796,7 +796,7 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_formals) {
 //    forall i in _forall(1)
 //      forall j in _forall(2)
 //        yield (i, j);
-static void
+static FnSymbol*
 buildMultidimensionalIterator(ClassType* type, int rank) {
 
   FnSymbol* _forall = new FnSymbol("_forall", type->symbol, NULL, dtUnknown);
@@ -846,7 +846,7 @@ buildMultidimensionalIterator(ClassType* type, int rank) {
 
   type->symbol->defPoint->parentStmt->insertBefore
     (new ExprStmt(new DefExpr(_forall))); //, NULL, _seq_result->defPoint->exprType->copy())));
-  TRAVERSE(_forall, new Instantiate(), true);
+  return _forall;
 }
 
 
@@ -905,20 +905,21 @@ FnSymbol*
 FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
                               Vec<FnSymbol*>* new_functions,
                               Vec<TypeSymbol*>* new_types) {
-  ASTMap map;
   if (FnSymbol* cached = check_icache(this, generic_substitutions))
     return cached;
   ASTMap substitutions(*generic_substitutions);
-  FnSymbol* copy = NULL;
+  FnSymbol* newfn = NULL;
   currentLineno = lineno;
   currentFilename = filename;
-  TypeSymbol* clone = NULL;
+  ASTMap map;
   if (fnClass == FN_CONSTRUCTOR) {
-    TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(retType->symbol);
-    clone = typeSym->clone(&map);
+    TypeSymbol* clone = retType->symbol->clone(&map);
     new_types->add(clone);
     instantiate_add_subs(&substitutions, &map);
+
     ClassType* cloneType = dynamic_cast<ClassType*>(clone->definition);
+    cloneType->instantiatedFrom = retType;
+
     Vec<TypeSymbol *> types;
     types.move(cloneType->types);
     for (int i = 0; i < types.n; i++) {
@@ -927,10 +928,10 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
       } else
         cloneType->types.add(types.v[i]);
     }
-    instantiate_update_expr(&substitutions, clone->defPoint);
-    substitutions.put(typeSym->definition, clone->definition);
 
-    cloneType->instantiatedFrom = retType;
+    instantiate_update_expr(&substitutions, clone->defPoint);
+    substitutions.put(retType, clone->definition);
+
     cloneType->substitutions.copy(*generic_substitutions);
     tagGenerics(cloneType);
 
@@ -945,138 +946,42 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
       } else if (ArgSymbol *s = dynamic_cast<ArgSymbol*>(substitutions.v[i].key))
         if (s->isGeneric)
           genericParameters.set_add(s);
+    genericParameters.set_add(retType);
+    genericParameters.set_add(retType->symbol);
 
     forv_Vec(FnSymbol, fn, functions) {
       if (functionContainsAnyAST(fn, &genericParameters)) {
         FnSymbol *fnClone = instantiate_function(fn, &substitutions, generic_substitutions, &map);
         new_functions->add(fnClone);
         if (fn == this) {
-          copy = fnClone;
+          newfn = fnClone;
         }
-        if (fn->typeBinding == typeSym) {
-          clone->definition->methods.add(fnClone);
+        if (fn->typeBinding == retType->symbol) {
+          cloneType->methods.add(fnClone);
           fnClone->typeBinding = clone;
           fnClone->method_type = fn->method_type;
         }
-        if (typeSym->definition->defaultConstructor == fn) {
-          clone->definition->defaultConstructor = fnClone;
+        if (retType->defaultConstructor == fn) {
+          cloneType->defaultConstructor = fnClone;
         }
       }
     }
+
+    if (clone->hasPragma("instantiate multidimensional iterator")) {
+      Symbol* rank_sym = Symboltable::lookupInScope("rank", argScope);
+      BaseAST* rank_ast = generic_substitutions->get(rank_sym);
+      int rank = (int)(dynamic_cast<VarSymbol*>(rank_ast)->immediate->v_int64);
+      new_functions->add(buildMultidimensionalIterator(cloneType, rank));
+    }
+
   } else {
-    copy = instantiate_function(this, &substitutions, generic_substitutions, &map);
-    new_functions->add(copy);
+    newfn = instantiate_function(this, &substitutions, generic_substitutions, &map);
+    new_functions->add(newfn);
   }
-  if (!copy) {
+  if (!newfn) {
     INT_FATAL(this, "Instantiation error");
   }
-  add_icache(copy);
-  return copy;
-}
-
-
-FnSymbol* 
-FnSymbol::preinstantiate_generic(ASTMap* generic_substitutions) {
-  if (fnClass != FN_CONSTRUCTOR) {
-    INT_FATAL(this, "preinstantiate not called on constructor");
-  }
-  if (FnSymbol* cached = check_icache(this, generic_substitutions))
-    return cached;
-  ASTMap substitutions(*generic_substitutions);
-
-  // map TypeSymbols corresponding to Type->Type mappings
-  for (int i = 0; i < substitutions.n; i++) {
-    if (Type* t1 = dynamic_cast<Type*>(substitutions.v[i].key)) {
-      Type* t2 = dynamic_cast<Type*>(substitutions.v[i].value);
-      substitutions.put(t1->symbol, t2->symbol);
-    }
-  }
-
-  ASTMap map;
-  TypeSymbol* clone = retType->symbol->clone(&map);
-
-  for (int i = 0; i < map.n; i++)
-    if (BaseAST *value = substitutions.get(map.v[i].key))
-      substitutions.put(map.v[i].value, value);
-    else
-      substitutions.put(map.v[i].key, map.v[i].value);
-
-  TRAVERSE(clone, new UpdateSymbols(&substitutions), true);
-  TRAVERSE(clone->defPoint, new BuildClassHierarchy(), true);
-
-  substitutions.put(retType->symbol, clone);
-  substitutions.put(retType, clone->definition);
-
-  ClassType* cloneType = dynamic_cast<ClassType*>(clone->definition);
-  cloneType->instantiatedFrom = retType;
-
-  Vec<TypeSymbol *> types;
-  types.move(cloneType->types);
-  for (int i = 0; i < types.n; i++) {
-    if (types.v[i] && substitutions.get(types.v[i]->definition)) {
-      types.v[i]->defPoint->parentStmt->remove();
-    } else
-      cloneType->types.add(types.v[i]);
-  }
-
-  Vec<FnSymbol*> functions;
-  collect_functions(&functions);
-
-  Vec<BaseAST*> ov;
-  ov.add(retType->symbol);
-  ov.add(retType);
-
-  FnSymbol* newfn = NULL;
-  Vec<FnSymbol*> fclones;
-
-  forv_Vec(FnSymbol, fn, functions) {
-    if (functionContainsAnyAST(fn, &ov)) {
-      map.clear();
-      FnSymbol* fclone = fn->copy(&map);
-
-      for (int j = 0; j < substitutions.n; j++)
-        if (BaseAST *value = map.get(substitutions.v[j].key))
-          substitutions.put(value, substitutions.v[j].value);
-
-      fclones.add(fclone);
-      fclone->cname = stringcat("_inst_", fn->cname);
-      fn->defPoint->parentStmt->insertBefore(new ExprStmt(new DefExpr(fclone)));
-      fclone->addPragmas(&fn->pragmas);
-      TRAVERSE(fclone, new UpdateSymbols(&substitutions), true);
-
-      if (fn == this)
-        newfn = fclone;
-
-      if (fn->typeBinding == retType->symbol) {
-        cloneType->methods.add(fclone);
-        fclone->typeBinding = clone;
-        fclone->method_type = fn->method_type;
-      }
-
-      if (retType->defaultConstructor == fn) {
-        cloneType->defaultConstructor = fclone;
-      }
-      fclone->instantiatedFrom = fn;
-      fclone->substitutions.copy(*generic_substitutions);
-      tagGenerics(fclone);
-    }
-  }
-
-  if (!newfn)
-    INT_FATAL(this, "Preinstantiation error");
-  
   add_icache(newfn);
-
-  TRAVERSE(clone, new Instantiate(), true);
-  forv_Vec(FnSymbol, fclone, fclones) {
-    TRAVERSE(fclone, new Instantiate(), true);
-  }
-
-  if (clone->hasPragma("instantiate multidimensional iterator")) {
-    int rank = (int)(dynamic_cast<VarSymbol*>(generic_substitutions->get(Symboltable::lookupInScope("rank", argScope)))->immediate->v_int64);
-    buildMultidimensionalIterator(cloneType, rank);
-  }
-
   return newfn;
 }
 
