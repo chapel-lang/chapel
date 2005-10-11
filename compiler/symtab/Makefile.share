@@ -10,7 +10,6 @@ SYMTAB_SRCS = \
 	printSymtab.cpp \
         reconstructIterators.cpp \
 	removeDeadSymbols.cpp \
-	removeLikeTypes.cpp \
         resolveTypes.cpp \
 	symscope.cpp \
         symtab.cpp \

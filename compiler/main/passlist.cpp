@@ -21,7 +21,6 @@
 #include "../symtab/printSymtab.h"
 #include "../symtab/reconstructIterators.h"
 #include "../symtab/removeDeadSymbols.h"
-#include "../symtab/removeLikeTypes.h"
 #include "../symtab/resolveTypes.h"
 
 #include "../traversals/applyThisParameters.h"
@@ -108,7 +107,6 @@ REGISTER(ProcessImportExprs);
 REGISTER(ProcessParameters); // BLC: handle parameter intents
 REGISTER(ReconstructIterators);
 REGISTER(RemoveDeadSymbols);
-REGISTER(RemoveLikeTypes);
 REGISTER(RemoveNamedParameters);
 REGISTER(RemoveNestedFunctions);
 REGISTER(RemoveTypeVariableActuals);

@@ -3,6 +3,8 @@ pragma "no codegen";
 class object { }
 class value { }
 
+function typeof(x) { }
+
 function sizeof(x) { return __primitive("pure_return", integer); }
 
 class pragma "codegen data" _data { -- a c array, basically

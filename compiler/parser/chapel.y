@@ -895,7 +895,7 @@ var_type:
   TCOLON type
     { $$ = $2; }
 | TLIKE expr
-    { $$ = $2; }
+    { $$ = new CallExpr("typeof", $2); }
 ;
 
 
@@ -1076,7 +1076,8 @@ atom:
 seq_expr:
   TSEQBEGIN expr_ls TSEQEND
     {
-      Expr* seqLiteral = new CallExpr("seq");
+      Expr* seqType = new CallExpr("typeof", $2->first()->copy());
+      Expr* seqLiteral = new CallExpr("seq", seqType);
       for_alist(Expr, element, $2) {
         element->remove();
         seqLiteral =

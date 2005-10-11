@@ -39,7 +39,6 @@ PassInfo passlist[] = {
   RUN(BuildLValueFunctions, ""),
   RUN(ReconstructIterators, ""),
 
-  RUN(RemoveLikeTypes, ""),
   RUN(InsertDefaultInitVariables, ""),
   RUN(InsertOutParameterInitializations, ""),
   RUN(EliminateReturns, ""),

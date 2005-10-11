@@ -57,6 +57,7 @@ Instantiate::postProcessExpr(Expr* expr) {
                     if (cfn->fnClass == FN_CONSTRUCTOR) {
                       if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(formalArg->genericSymbol)) {
                         substitutions.put(ts->definition, cfn->retType);
+                        sub = true;
                       }
                     }
                   }

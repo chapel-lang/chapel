@@ -12,16 +12,6 @@ void PreAnalysisHacks::postProcessStmt(Stmt* stmt) {
           loop->iterators->only()->copy(),
           new UnresolvedSymbol("_forall"))));
   }
-  if (BlockStmt* blockStmt = dynamic_cast<BlockStmt*>(stmt)) {
-    if (dynamic_cast<CondStmt*>(blockStmt->parentStmt)) {
-      if (blockStmt->body->length() == 1) {
-        if (BlockStmt* inner = dynamic_cast<BlockStmt*>(blockStmt->body->only())) {
-          inner->remove();
-          blockStmt->replace(inner);
-        }
-      }
-    }
-  }
 }
 
 static int
@@ -30,6 +20,33 @@ check_type(Type *t) {
 }
 
 void PreAnalysisHacks::postProcessExpr(Expr* expr) {
+  if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
+    if (SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr)) {
+      if (!strcmp("typeof", base->var->name)) {
+        Type* type = call->argList->only()->typeInfo();
+        if (type != dtUnknown) {
+          call->replace(new SymExpr(type->symbol));
+        } else if (SymExpr* base = dynamic_cast<SymExpr*>(call->argList->only())) {
+          if (base->var->defPoint->exprType) {
+            call->replace(base->var->defPoint->exprType->copy());
+          } else {
+            // NOTE we remove the typeof function even if we can't
+            // resolve the type before analysis
+            Expr* arg = call->argList->only();
+            arg->remove();
+            call->replace(arg);
+          }
+        } else {
+          // NOTE we remove the typeof function even if we can't
+          // resolve the type before analysis
+          Expr* arg = call->argList->only();
+          arg->remove();
+          call->replace(arg);
+        }
+      }
+    }
+  }
+
   if (DefExpr* def_expr = dynamic_cast<DefExpr*>(expr)) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def_expr->sym)) {
       if (fn->retType == dtUnknown &&
@@ -115,20 +132,6 @@ void PreAnalysisHacks::postProcessExpr(Expr* expr) {
               call->argList->insertAtHead(insertPoint);
             } else
               insertPoint->insertAfter(new SymExpr(actualType->symbol));
-          }
-        }
-      }
-    }
-  }
-
-  if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
-    if (SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr)) {
-      if (!strncmp(base->var->name, "_construct_seq", 14)) {
-        if (MemberAccess* pbase = dynamic_cast<MemberAccess*>(expr->parentExpr)) {
-          if (!strncmp(pbase->member->name, "_append_in_place", 16)) {
-            if (CallExpr* pcall = dynamic_cast<CallExpr*>(pbase->parentExpr)) {
-              call->argList->insertAtHead(new SymExpr(pcall->argList->last()->typeInfo()->symbol));
-            }
           }
         }
       }
