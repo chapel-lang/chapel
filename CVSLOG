@@ -48431,3 +48431,14 @@ Added files:
 	                                      test_default9.future 
 	                                      test_default9.good 
 
+---------------------------------------------------------------------------
+
+10/11/05 16:42:46 -- deitz
+
+Log message:
+	Removed futures for working tests.
+
+Removed files:
+	chapel/test/arrays/deitz/: test_domains_2Dc.future 
+	                           test_domains_2Dd.future 
+
