@@ -48176,3 +48176,17 @@ Log message:
 Modified files:
 	chapel/compiler/main/: passlist.h 
 
+---------------------------------------------------------------------------
+
+10/11/05 09:10:50 -- deitz
+
+Log message:
+	Changed the interface of instantiate_generic so that it fills a Vec of
+	FnSymbols and TypeSymbols capturing the new functions and types,
+	rather than referring the copy map.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: symbol.h 
+
