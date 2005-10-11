@@ -48190,3 +48190,20 @@ Modified files:
 	chapel/compiler/analysis/: chapel_ifa.cpp 
 	chapel/compiler/include/: symbol.h 
 
+---------------------------------------------------------------------------
+
+10/11/05 09:11:33 -- deitz
+
+Log message:
+	Moved ApplyThisParameters earlier in the passlist in preparation for
+	folding it into ScopeResolveSymbols.
+	
+	Moved ForLoopStmt index destructuring out of InsertLiteralTemps and
+	into NormalizeParsedAST.
+
+Modified files:
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/passes/: normalizeParsedAST.cpp 
+	chapel/compiler/traversals/: insertLiteralTemps.cpp 
+	                             insertLiteralTemps.h 
+
