@@ -48207,3 +48207,25 @@ Modified files:
 	chapel/compiler/traversals/: insertLiteralTemps.cpp 
 	                             insertLiteralTemps.h 
 
+---------------------------------------------------------------------------
+
+10/11/05 09:12:29 -- deitz
+
+Log message:
+	Reworked initial handling of the main function.  It is no longer found
+	during parsing.
+	
+	Made the default return type of a newly constructed FnSymbol
+	dtUnknown, as we set it to that manually by default and not doing so
+	caused me to run into strange errors.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: createEntryPoint.cpp 
+	chapel/compiler/symtab/: codegenOne.cpp symtab.cpp 
+	chapel/compiler/traversals/: insertLiteralTemps.cpp 
+
