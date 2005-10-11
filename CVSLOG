@@ -48229,3 +48229,20 @@ Modified files:
 	chapel/compiler/symtab/: codegenOne.cpp symtab.cpp 
 	chapel/compiler/traversals/: insertLiteralTemps.cpp 
 
+---------------------------------------------------------------------------
+
+10/11/05 11:28:42 -- deitz
+
+Log message:
+	Removed preinstantiate_generic, unifying it with instantiate_generic.
+	The pre-instantiation pass now calls instantiate_generic.  This
+	removes duplicate instantatiation code.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/traversals/: instantiate.cpp 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+
