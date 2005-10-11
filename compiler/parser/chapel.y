@@ -971,7 +971,7 @@ type:
 | memberaccess_expr
 | parenop_expr
 | record_tuple_type
-| non_tuple_lvalue TOF variable_expr
+| non_tuple_lvalue TOF type
     { $$ = new CallExpr($1, new NamedExpr("elt_type", $3)); }
 | tuple_multiplier TSTAR variable_expr
     { $$ = new CallExpr("_htuple", $3, $1); }
