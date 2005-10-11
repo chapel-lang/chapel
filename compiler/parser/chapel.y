@@ -518,8 +518,10 @@ fn_decl_stmt:
         $3 = new AList<DefExpr>();
         $2->noParens = true;
       }
-      Symboltable::continueFnDef($2, $3, dtUnknown, $4, $6);
-      $2 = Symboltable::finishFnDef($2, $7);
+      $2->formals = $3;
+      $2->retRef = $4;
+      $2->whereExpr = $6;
+      $2->body = $7;
       $$ = new AList<Stmt>(new ExprStmt(new DefExpr($2, NULL, $5)));
     }
 ;
@@ -1111,7 +1113,6 @@ expr:
       FnSymbol* forall_iterator =
         new FnSymbol(stringcat("_forallexpr", intstring(iterator_uid++)));
       forall_iterator->fnClass = FN_ITERATOR;
-      forall_iterator->retType = dtUnknown;
       forall_iterator->body =
         new BlockStmt(
           new ForLoopStmt(FORLOOPSTMT_FORALL,

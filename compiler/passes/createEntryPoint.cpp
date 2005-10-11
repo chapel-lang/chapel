@@ -1,4 +1,5 @@
 #include "createEntryPoint.h"
+#include "astutil.h"
 #include "expr.h"
 #include "filesToAST.h"
 #include "runAnalysis.h"
@@ -117,27 +118,37 @@ void CreateEntryPoint::run(Vec<ModuleSymbol*>* modules) {
   }
 
   // find main function if it exists; create one if not
-  FnSymbol* mainFn = FnSymbol::mainFn;
+  Vec<FnSymbol*> fns;
+  collect_functions(&fns);
+  forv_Vec(FnSymbol, fn, fns) {
+    if (!strcmp(fn->name, "main") && fn->formals->isEmpty()) {
+      if (!chpl_main) {
+        chpl_main = fn;
+      } else {
+        USR_FATAL(fn, "main multiply defined -- first occurrence at %s",
+                  chpl_main->stringLoc());
+      }
+    }
+  }
+
   BlockStmt* mainBody;
   ModuleSymbol* mainModule;
-  if (!mainFn) {
+  if (!chpl_main) {
     mainModule = findUniqueUserModule(modules);
     if (mainModule) {
       mainBody = new BlockStmt();
-      DefExpr* maindef = Symboltable::defineFunction("main", NULL, 
-                                                     dtVoid, mainBody);
-      mainModule->stmts->insertAtTail(new ExprStmt(maindef));
-      mainFn = dynamic_cast<FnSymbol*>(maindef->sym);
+      chpl_main = new FnSymbol("main", NULL, new AList<DefExpr>(), dtVoid, NULL, mainBody);
+      mainModule->stmts->insertAtTail(new ExprStmt(new DefExpr(chpl_main)));
     } else {
       USR_FATAL("Code defines multiple modules but no main function.");
     }
   } else {
     // tack call to main fn module's init call onto main fn's body
-    mainModule = dynamic_cast<ModuleSymbol*>(mainFn->parentScope->astParent);
+    mainModule = dynamic_cast<ModuleSymbol*>(chpl_main->parentScope->astParent);
     if (!mainModule) {
-      INT_FATAL(mainFn, "main function's parent scope wasn't a module scope");
+      INT_FATAL(chpl_main, "main function's parent scope wasn't a module scope");
     }
-    mainBody = mainFn->body;
+    mainBody = chpl_main->body;
   }
   mainBody->insertAtHead(buildCallExprStmt(mainModule->initFn));
   mainBody->insertAtHead(buildCallExprStmt(commonModule->initFn));

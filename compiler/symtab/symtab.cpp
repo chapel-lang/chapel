@@ -476,15 +476,6 @@ void Symboltable::continueFnDef(FnSymbol* fnsym, AList<DefExpr>* formals,
 
 FnSymbol* Symboltable::finishFnDef(FnSymbol* fnsym, BlockStmt* blockBody) {
   fnsym->body = blockBody;
-  if (strcmp(fnsym->name, "main") == 0 && fnsym->formals->isEmpty()) {
-    if (!FnSymbol::mainFn) {
-      FnSymbol::mainFn = fnsym;
-      fnsym->parentScope = Symboltable::getCurrentScope(); // Yuck, SJD
-    } else {
-      USR_FATAL(fnsym, "main multiply defined -- first occurrence at %s",
-                FnSymbol::mainFn->stringLoc());
-    }
-  }
   return fnsym;
 }
 

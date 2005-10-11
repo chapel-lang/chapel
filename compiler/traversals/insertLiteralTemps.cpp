@@ -89,7 +89,6 @@ static void createTupleBaseType(int size) {
     ArgSymbol* arg = new ArgSymbol(INTENT_PARAM, "index", dtInteger);
     fn->formals = new AList<DefExpr>(new DefExpr(arg));
     fn->whereExpr = new CallExpr(OP_EQUAL, arg, new_IntLiteral(i));
-    fn->retType = dtUnknown;
     fn->retRef = true;
     fn->body = new BlockStmt(new ReturnStmt(new SymExpr(fields.v[i-1])));
     decls->insertAtTail(new ExprStmt(new DefExpr(fn)));
@@ -106,7 +105,6 @@ static void createTupleBaseType(int size) {
   FnSymbol* writeFn = new FnSymbol("write");
   ArgSymbol* writeArg = new ArgSymbol(INTENT_BLANK, "val", tupleType);
   writeFn->formals = new AList<DefExpr>(new DefExpr(writeArg));
-  writeFn->retType = dtUnknown;
   AList<Expr>* actuals = new AList<Expr>();
   actuals->insertAtTail(new_StringLiteral(stringcpy("(")));
   for (int i = 1; i <= size; i++) {
@@ -132,7 +130,6 @@ static void createTupleBaseType(int size) {
     ArgSymbol* tupleArg = new ArgSymbol(INTENT_BLANK, "val", tupleType);
     assignFn->formals = new AList<DefExpr>(new DefExpr(htupleArg),
                                            new DefExpr(tupleArg));
-    assignFn->retType = dtUnknown;
     assignFn->body = new BlockStmt();
     for (int i = 1; i <= size; i++) {
       assignFn->insertAtTail(
@@ -152,7 +149,6 @@ static void createTupleBaseType(int size) {
 //     ArgSymbol* secondArg = new ArgSymbol(INTENT_BLANK, "val", dtUnknown);
 //     assignFn->formals = new AList<DefExpr>(new DefExpr(tupleArg),
 //                                            new DefExpr(secondArg));
-//     assignFn->retType = dtUnknown;
 //     assignFn->body = new BlockStmt();
 //     for (int i = 1; i <= size; i++) {
 //       assignFn->insertAtTail(

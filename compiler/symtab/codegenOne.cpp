@@ -27,7 +27,7 @@ static void legalizeCName(Symbol* sym) {
 
 
 CodegenOne::CodegenOne() {
-  FnSymbol::mainFn->addPragma("rename _chpl_main");
+  chpl_main->addPragma("rename _chpl_main");
   cnames.put("main", 1);
   cnames.put("stdin", 1);
   cnames.put("stdout", 1);
@@ -73,7 +73,7 @@ void CodegenOne::run(Vec<ModuleSymbol*>* modules) {
   Vec<FnSymbol*> all_functions;
   collect_functions(&all_functions);
   forv_Vec(FnSymbol, fn, all_functions) {
-    if (fn->calledBy->n == 0 && FnSymbol::mainFn != fn)
+    if (fn->calledBy->n == 0 && chpl_main != fn)
       fn->defPoint->parentStmt->remove();
   }
 

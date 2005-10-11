@@ -6,6 +6,8 @@
 #include "analysis.h"
 #include "type.h"
 
+extern FnSymbol* chpl_main;
+
 class DefExpr;
 class Stmt;
 class BlockStmt;
@@ -186,7 +188,7 @@ class FnSymbol : public Symbol {
   FnSymbol(char* initName,
            TypeSymbol* initTypeBinding = NULL,
            AList<DefExpr>* initFormals = NULL,
-           Type* initRetType = NULL,
+           Type* initRetType = dtUnknown,
            Expr* initWhereExpr = NULL,
            BlockStmt* initBody = NULL,
            fnType initFnClass = FN_FUNCTION,
@@ -216,9 +218,6 @@ class FnSymbol : public Symbol {
 
   void insertAtHead(Stmt* stmt);
   void insertAtTail(Stmt* stmt);
-
-  static FnSymbol* mainFn;
-  static void init(void);
 };
 
 

@@ -14,6 +14,7 @@
 #include "../traversals/findTypeVariables.h"
 #include "../passes/preAnalysisCleanup.h"
 
+FnSymbol* chpl_main = NULL;
 Symbol *gNil = 0;
 Symbol *gUnspecified = 0;
 
@@ -1171,13 +1172,6 @@ FnSymbol::insertAtHead(Stmt* stmt) {
 void
 FnSymbol::insertAtTail(Stmt* stmt) {
   body->insertAtTail(stmt);
-}
-
-
-FnSymbol* FnSymbol::mainFn;
-
-void FnSymbol::init(void) {
-  mainFn = NULL;
 }
 
 
