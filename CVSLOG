@@ -48406,3 +48406,28 @@ Modified files:
 	chapel/test/arrays/deitz/: test_domains_2Dc.good 
 	                           test_domains_2Dd.good 
 
+---------------------------------------------------------------------------
+
+10/11/05 16:16:38 -- deitz
+
+Log message:
+	Added four more interesting tests of default values to functions.  Two
+	fail and are futures.  One of these is a nested function with a
+	default value set to a variable in the outer function.  The other has
+	a default value set to the value of a previous argument.
+	
+	The two that work set the default value to a variable at module scope.
+	One of these changes this default value between calls.
+
+Added files:
+	chapel/test/functions/deitz/default/: test_default7.chpl 
+	                                      test_default7.future 
+	                                      test_default7.good 
+	                                      test_default8.chpl 
+	                                      test_default8.good 
+	                                      test_default8a.chpl 
+	                                      test_default8a.good 
+	                                      test_default9.chpl 
+	                                      test_default9.future 
+	                                      test_default9.good 
+
