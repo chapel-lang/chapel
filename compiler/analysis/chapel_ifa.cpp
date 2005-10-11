@@ -460,20 +460,21 @@ BaseAST_to_Sym(BaseAST *b) {
 }
 
 static Fun *
-install_new_asts(FnSymbol *f, Vec<FnSymbol *> &funs, Vec<Type *> &types) {
+install_new_asts(FnSymbol *f, Vec<FnSymbol *> &funs, Vec<TypeSymbol *> &types) {
   Vec<BaseAST *> syms;
   forv_Vec(FnSymbol, f, funs) {
     collect_asts(&syms, f->defPoint->parentStmt);
   }
-  forv_Vec(Type, t, types) {
-    collect_asts(&syms, t->symbol->defPoint->parentStmt);
+  forv_Vec(TypeSymbol, t, types) {
+    collect_asts(&syms, t->defPoint->parentStmt);
   }
   qsort(syms.v, syms.n, sizeof(syms.v[0]), compar_baseast);
   qsort(funs.v, funs.n, sizeof(funs.v[0]), compar_baseast);
   map_asts(syms);
   build_types(syms);
   build_symbols(syms);
-  forv_Vec(Type, new_t, types) {
+  forv_Vec(TypeSymbol, new_ts, types) {
+    Type* new_t = new_ts->definition;
     new_t->asymbol->sym->instantiates = new_t->instantiatedFrom->asymbol->sym;
     for (int i; i < new_t->substitutions.n; i++) if (new_t->substitutions.v[i].key) {
       Sym *value = BaseAST_to_Sym(new_t->substitutions.v[i].value);
@@ -516,20 +517,7 @@ static Fun *
 install_new_asts(FnSymbol *f) {
   Vec<FnSymbol *> funs;
   funs.add(f);
-  Vec<Type *> types;
-  return install_new_asts(f, funs, types);
-}
-
-static Fun *
-install_new_asts(FnSymbol *f, ASTMap &map) {
-  Vec<FnSymbol *> funs;
-  Vec<Type *> types;
-  for (int i = 0; i < map.n; i++) if (map.v[i].key) {
-    if (FnSymbol *fs = dynamic_cast<FnSymbol *>(map.v[i].value))
-      funs.add(fs);
-    if (Type *t = dynamic_cast<Type *>(map.v[i].value))
-      types.add(t);
-  }
+  Vec<TypeSymbol *> types;
   return install_new_asts(f, funs, types);
 }
 
@@ -682,8 +670,10 @@ ACallbacks::instantiate_generic(Match *m) {
   }
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(SYMBOL(m->fun->sym));
   ASTMap map;
-  FnSymbol *f = fndef->instantiate_generic(&map, &substitutions);
-  Fun *fun = install_new_asts(f, map);
+  Vec<FnSymbol*> new_functions;
+  Vec<TypeSymbol*> new_types;
+  FnSymbol *f = fndef->instantiate_generic(&substitutions, &new_functions, &new_types);
+  Fun *fun = install_new_asts(f, new_functions, new_types);
   fun->wraps = m->fun;
   return fun;
 }

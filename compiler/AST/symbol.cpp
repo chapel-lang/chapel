@@ -900,8 +900,11 @@ instantiate_function(FnSymbol *fn, ASTMap *all_subs, ASTMap *generic_subs, ASTMa
 }
 
 
-FnSymbol* 
-FnSymbol::instantiate_generic(ASTMap* map, ASTMap* generic_substitutions) {
+FnSymbol*
+FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
+                              Vec<FnSymbol*>* new_functions,
+                              Vec<TypeSymbol*>* new_types) {
+  ASTMap map;
   if (FnSymbol* cached = check_icache(this, generic_substitutions))
     return cached;
   ASTMap substitutions(*generic_substitutions);
@@ -911,8 +914,9 @@ FnSymbol::instantiate_generic(ASTMap* map, ASTMap* generic_substitutions) {
   TypeSymbol* clone = NULL;
   if (fnClass == FN_CONSTRUCTOR) {
     TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(retType->symbol);
-    clone = typeSym->clone(map);
-    instantiate_add_subs(&substitutions, map);
+    clone = typeSym->clone(&map);
+    new_types->add(clone);
+    instantiate_add_subs(&substitutions, &map);
     ClassType* cloneType = dynamic_cast<ClassType*>(clone->definition);
     Vec<TypeSymbol *> types;
     types.move(cloneType->types);
@@ -943,7 +947,8 @@ FnSymbol::instantiate_generic(ASTMap* map, ASTMap* generic_substitutions) {
 
     forv_Vec(FnSymbol, fn, functions) {
       if (functionContainsAnyAST(fn, &genericParameters)) {
-        FnSymbol *fnClone = instantiate_function(fn, &substitutions, generic_substitutions, map);
+        FnSymbol *fnClone = instantiate_function(fn, &substitutions, generic_substitutions, &map);
+        new_functions->add(fnClone);
         if (fn == this) {
           copy = fnClone;
         }
@@ -958,7 +963,8 @@ FnSymbol::instantiate_generic(ASTMap* map, ASTMap* generic_substitutions) {
       }
     }
   } else {
-    copy = instantiate_function(this, &substitutions, generic_substitutions, map);
+    copy = instantiate_function(this, &substitutions, generic_substitutions, &map);
+    new_functions->add(copy);
   }
   if (!copy) {
     INT_FATAL(this, "Instantiation error");

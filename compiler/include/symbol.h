@@ -203,8 +203,9 @@ class FnSymbol : public Symbol {
   FnSymbol* order_wrapper(Map<Symbol*,Symbol*>* formals_to_formals);
   FnSymbol* coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitutions);
   FnSymbol* default_wrapper(Vec<Symbol*>* defaults);
-  FnSymbol* instantiate_generic(ASTMap* copyMap,
-                                ASTMap* substitutions);
+  FnSymbol* instantiate_generic(ASTMap* substitutions,
+                                Vec<FnSymbol*>* new_functions,
+                                Vec<TypeSymbol*>* new_types);
   FnSymbol* preinstantiate_generic(ASTMap* substitutions);
 
   void codegenHeader(FILE* outfile);
