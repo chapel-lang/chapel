@@ -48246,3 +48246,15 @@ Modified files:
 	                               record_type_hierarchy-3-error.good 
 	                               union_type_hierarchy-3-error.good 
 
+---------------------------------------------------------------------------
+
+10/11/05 12:50:23 -- deitz
+
+Log message:
+	Moved creation of chpl_main function into buildDefaultFunctions.  This
+	code identifies a main function if it exists, or builds one.
+
+Modified files:
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	                         createEntryPoint.cpp 
+
