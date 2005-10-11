@@ -18,6 +18,21 @@ void normalize_anonymous_record_or_forall_expression(DefExpr* def) {
 }
 
 
+// Destructure ForLoopStmt indices
+void destruct_for_indices(ForLoopStmt* stmt) {
+  if (stmt->indices->length() > 1) {
+    VarSymbol* indextmp = new VarSymbol("_index_temp");
+    int i = 1;
+    for_alist(DefExpr, indexDef, stmt->indices) {
+      indexDef->remove();
+      indexDef->init = new CallExpr(indextmp, new_IntLiteral(i++));
+      stmt->innerStmt->insertAtHead(new ExprStmt(indexDef));
+    }
+    stmt->indices->insertAtTail(new DefExpr(indextmp));
+  }
+}
+
+
 void NormalizeParsedAST::run(Vec<ModuleSymbol*>* modules) {
   Vec<BaseAST*> asts;
   collect_asts(&asts);
@@ -25,6 +40,8 @@ void NormalizeParsedAST::run(Vec<ModuleSymbol*>* modules) {
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* a = dynamic_cast<DefExpr*>(ast)) {
       normalize_anonymous_record_or_forall_expression(a);
+    } else if (ForLoopStmt* a = dynamic_cast<ForLoopStmt*>(ast)) {
+      destruct_for_indices(a);
     }
   }
 }

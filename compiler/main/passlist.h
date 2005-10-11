@@ -32,13 +32,13 @@ PassInfo passlist[] = {
   RUN(ScopeResolveGotos, ""),
 
   RUN(SemanticCheckII, ""), // post scope resolution semantic checks
+  RUN(ApplyThisParameters, ""),
 
   RUN(BuildDefaultFunctions, ""),
 
   RUN(BuildLValueFunctions, ""),
   RUN(ReconstructIterators, ""),
 
-  RUN(ApplyThisParameters, ""),
   RUN(RemoveLikeTypes, ""),
   RUN(InsertDefaultInitVariables, ""),
   RUN(InsertOutParameterInitializations, ""),

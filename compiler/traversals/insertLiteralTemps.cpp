@@ -167,21 +167,6 @@ static void createTupleBaseType(int size) {
 
 }
 
-void InsertLiteralTemps::postProcessStmt(Stmt* stmt) {
-  if (ForLoopStmt* loop = dynamic_cast<ForLoopStmt*>(stmt)) {
-    if (loop->indices->length() > 1) {
-      VarSymbol* indextmp = new VarSymbol("_index_temp");
-      int i = 1;
-      for_alist(DefExpr, indexDef, loop->indices) {
-        indexDef->remove();
-        indexDef->init = new CallExpr(indextmp, new_IntLiteral(i++));
-        loop->innerStmt->insertAtHead(new ExprStmt(indexDef));
-      }
-      loop->indices->insertAtTail(new DefExpr(indextmp));
-    }
-  }
-}
-
 void InsertLiteralTemps::postProcessExpr(Expr* expr) {
   if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
     if (call->opTag == OP_SEQCAT) {
