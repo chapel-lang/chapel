@@ -48304,3 +48304,14 @@ Added files:
 	                              test_seq_of_seq2.chpl 
 	                              test_seq_of_seq2.good 
 
+---------------------------------------------------------------------------
+
+10/11/05 14:25:58 -- jplevyak
+
+Log message:
+	Enable caching of callees.
+	This should greatly increase compilation speed.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
