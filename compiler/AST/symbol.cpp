@@ -895,6 +895,10 @@ instantiate_function(FnSymbol *fn, ASTMap *all_subs, ASTMap *generic_subs, ASTMa
         if (ts->definition->astType != TYPE_VARIABLE)
           ps->type = ts->type;
       }
+      if (all_subs->get(ps) && ps->intent == INTENT_PARAM) {
+        ps->intent = INTENT_BLANK;
+        ps->isGeneric = false;
+      }
     }
   }
   return fnClone;

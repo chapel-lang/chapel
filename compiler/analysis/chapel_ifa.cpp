@@ -578,16 +578,16 @@ ACallbacks::formal_to_generic(Sym *s) {
 }
 
 Fun *
-ACallbacks::order_wrapper(Match *m) {
-  if (!m->fun->ast) 
+ACallbacks::order_wrapper(Fun *f, Map<MPosition *, MPosition *> &substitutions) {
+  if (!f->ast) 
     return NULL;
-  FnSymbol *fndef = dynamic_cast<FnSymbol *>(SYMBOL(m->fun->sym));
+  FnSymbol *fndef = dynamic_cast<FnSymbol *>(SYMBOL(f->sym));
   Map<Symbol *, Symbol *> formals_to_formals;
-  forv_MPosition(p, m->fun->positional_arg_positions) {
-    Sym *sym1 = m->fun->arg_syms.get(p);
-    MPosition *acp = m->formal_to_actual_position.get(p);
+  forv_MPosition(p, f->positional_arg_positions) {
+    Sym *sym1 = f->arg_syms.get(p);
+    MPosition *acp = substitutions.get(p);
     MPosition *p2 = acp ? acp : p;
-    Sym *sym2 = m->fun->arg_syms.get(p2);
+    Sym *sym2 = f->arg_syms.get(p2);
     Symbol *symbol1 = dynamic_cast<Symbol*>(SYMBOL(sym1));
     Symbol *symbol2 = dynamic_cast<Symbol*>(SYMBOL(sym2));   
     if (symbol1 || symbol2) {
@@ -595,25 +595,25 @@ ACallbacks::order_wrapper(Match *m) {
       formals_to_formals.put(symbol2, symbol1);
     }
   }
-  FnSymbol *f = fndef->order_wrapper(&formals_to_formals);
-  Fun *fun = install_new_asts(f);
-  fun->wraps = m->fun;
+  FnSymbol *fsym = fndef->order_wrapper(&formals_to_formals);
+  Fun *fun = install_new_asts(fsym);
+  fun->wraps = f;
   return fun;
 }
 
 Fun *
-ACallbacks::coercion_wrapper(Match *m) {
-  if (!m->fun->ast) 
+ACallbacks::coercion_wrapper(Fun *f, Map<MPosition *, Sym *> &substitutions) {
+  if (!f->ast) 
     return NULL;
   Map<Symbol *, Symbol *> coercions;
-  forv_MPosition(p, m->fun->positional_arg_positions) {
-    Sym *sym = m->fun->arg_syms.get(p);
+  forv_MPosition(p, f->positional_arg_positions) {
+    Sym *sym = f->arg_syms.get(p);
     Symbol *symbol = sym->asymbol ? dynamic_cast<Symbol*>(SYMBOL(sym)) : 0;
     if (symbol) {
-      Sym *type_sym = m->coercion_substitutions.get(p);
+      Sym *type_sym = substitutions.get(p);
       if (type_sym) {
         Type *type = dynamic_cast<Type*>(SYMBOL(type_sym));
-        Sym *a = m->fun->arg_syms.get(p);
+        Sym *a = f->arg_syms.get(p);
         if (a->asymbol && SYMBOL(a)) {
           Symbol *aa = dynamic_cast<Symbol*>(SYMBOL(a));
           coercions.put(aa, type->symbol);
@@ -621,37 +621,37 @@ ACallbacks::coercion_wrapper(Match *m) {
       }
     }
   }
-  FnSymbol *fndef = dynamic_cast<FnSymbol *>(SYMBOL(m->fun->sym));
-  FnSymbol *f = fndef->coercion_wrapper(&coercions);
-  Fun *fun = install_new_asts(f);
-  fun->wraps = m->fun;
+  FnSymbol *fndef = dynamic_cast<FnSymbol *>(SYMBOL(f->sym));
+  FnSymbol *fsym = fndef->coercion_wrapper(&coercions);
+  Fun *fun = install_new_asts(fsym);
+  fun->wraps = f;
   return fun;
 }
 
 Fun *
-ACallbacks::default_wrapper(Match *m) {
-  if (!m->fun->ast) 
+ACallbacks::default_wrapper(Fun *f, Vec<MPosition *> &default_args) {
+  if (!f->ast) 
     return NULL;
   Vec<Symbol *> defaults;
-  forv_MPosition(p, m->default_args) {
-    Sym *sym = m->fun->arg_syms.get(p);
+  forv_MPosition(p, default_args) {
+    Sym *sym = f->arg_syms.get(p);
     Symbol *symbol = sym->asymbol ? dynamic_cast<Symbol*>(SYMBOL(sym)) : 0;
     if (symbol)
       defaults.set_add(symbol);
   }
-  FnSymbol *fndef = dynamic_cast<FnSymbol *>(SYMBOL(m->fun->sym));
-  FnSymbol *f = fndef->default_wrapper(&defaults);
-  Fun *fun = install_new_asts(f);
-  fun->wraps = m->fun;
+  FnSymbol *fndef = dynamic_cast<FnSymbol *>(SYMBOL(f->sym));
+  FnSymbol *fsym = fndef->default_wrapper(&defaults);
+  Fun *fun = install_new_asts(fsym);
+  fun->wraps = f;
   return fun;
 }
 
 Fun *
-ACallbacks::instantiate_generic(Match *m) {
-  if (!m->fun->ast) 
+ACallbacks::instantiate_generic(Fun *f, Map<Sym *, Sym *> &generic_substitutions) {
+  if (!f->ast) 
     return NULL;
   ASTMap substitutions;
-  form_SymSym(s, m->generic_substitutions) {
+  form_SymSym(s, generic_substitutions) {
     Type *t = dynamic_cast<Type*>(SYMBOL(s->key));
 #if 0
     // treat type variables as ?t
@@ -668,13 +668,13 @@ ACallbacks::instantiate_generic(Match *m) {
     else
       substitutions.put(p, get_constant_SymExpr(s->value)->var);
   }
-  FnSymbol *fndef = dynamic_cast<FnSymbol *>(SYMBOL(m->fun->sym));
+  FnSymbol *fndef = dynamic_cast<FnSymbol *>(SYMBOL(f->sym));
   ASTMap map;
   Vec<FnSymbol*> new_functions;
   Vec<TypeSymbol*> new_types;
-  FnSymbol *f = fndef->instantiate_generic(&substitutions, &new_functions, &new_types);
-  Fun *fun = install_new_asts(f, new_functions, new_types);
-  fun->wraps = m->fun;
+  FnSymbol *fsym = fndef->instantiate_generic(&substitutions, &new_functions, &new_types);
+  Fun *fun = install_new_asts(fsym, new_functions, new_types);
+  fun->wraps = f;
   return fun;
 }
 

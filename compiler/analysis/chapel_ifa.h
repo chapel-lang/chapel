@@ -20,10 +20,10 @@ public:
   Sym *instantiate(Sym *, Map<Sym *, Sym *> &substitutions);
   Sym *formal_to_generic(Sym*);
   Sym *new_Sym(char *name = 0);
-  Fun *order_wrapper(Match *);
-  Fun *coercion_wrapper(Match *);
-  Fun *default_wrapper(Match *);
-  Fun *instantiate_generic(Match *);
+  Fun *order_wrapper(Fun *, Map<MPosition *, MPosition *> &substitutions);
+  Fun *coercion_wrapper(Fun *, Map<MPosition *, Sym *> &substitutions);
+  Fun *default_wrapper(Fun *, Vec<MPosition *> &defaults);
+  Fun *instantiate_generic(Fun *, Map<Sym *, Sym *> &substitutions);
   void report_analysis_errors(Vec<ATypeViolation*> &type_violations);
 };
 

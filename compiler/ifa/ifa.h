@@ -13,6 +13,7 @@ class Fun;
 class ATypeViolation;
 class ASTCopyContext;
 class PNode;
+class MPosition;
 
 /*
   Interface object between analysis symbols (Sym) and front end symbols
@@ -59,10 +60,10 @@ public:
   virtual Sym *instantiate(Sym *, Map<Sym *, Sym *> &substitutions) { return 0; }
   virtual Sym *formal_to_generic(Sym *s) { return s; }
   virtual Sym *new_Sym(char *name) = 0;
-  virtual Fun* order_wrapper(Match *) { return 0; }
-  virtual Fun* coercion_wrapper(Match *) { return 0; }
-  virtual Fun* default_wrapper(Match *) { return 0; }
-  virtual Fun* instantiate_generic(Match *) { return 0; }
+  virtual Fun* order_wrapper(Fun *, Map<MPosition *, MPosition *> &substitutions) { return 0; }
+  virtual Fun* coercion_wrapper(Fun *, Map<MPosition *, Sym *> &substitutions) { return 0; }
+  virtual Fun* default_wrapper(Fun *, Vec<MPosition *> &defaults) { return 0; }
+  virtual Fun* instantiate_generic(Fun *, Map<Sym *, Sym*> &substitutions) { return 0; }
   virtual void report_analysis_errors(Vec<ATypeViolation*> &type_violations) { }
 };
 

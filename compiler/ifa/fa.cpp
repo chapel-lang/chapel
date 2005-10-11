@@ -1773,8 +1773,7 @@ analyze_edge(AEdge *e) {
   form_MPositionAVar(x, e->args) {
     if (!x->key->is_positional())
       continue;
-    MPosition *pp = e->match->actual_to_formal_position.get(x->key), *p = pp ? pp : x->key;
-    assert(p == x->key);
+    MPosition *p = x->key;
     AVar *actual = x->value, *formal = make_AVar(e->to->fun->args.get(p), e->to),
       *filtered = get_filtered(e, p, formal);
     AType *filter = e->match->formal_filters.get(p);
@@ -1796,8 +1795,7 @@ analyze_edge(AEdge *e) {
   int regular_rets = e->pnode->lvals.n;
   fill_rets(e->to, regular_rets + e->match->fun->out_positions.n);
   for (int o = 0; o < e->match->fun->out_positions.n; o++) {
-    MPosition *p = e->match->formal_to_actual_position.get(
-      e->match->fun->out_positions.v[o]);
+    MPosition *p = e->match->fun->out_positions.v[o];
     p = p ? p : e->match->fun->out_positions.v[o];
     AVar *actual = e->args.get(p);
     flow_vars(e->to->rets.v[o + regular_rets], actual);
@@ -2397,6 +2395,8 @@ collect_argument_type_violations() {
         } else {
           Vec<AVar *> actuals;
           form_Map(FunAEdgeMapElem, me, *m) {
+            if (!from->out_edges.set_in(me->value))
+              continue;
             form_MPositionAVar(x, me->value->args)
               if (x->key->is_positional())
                 actuals.set_add(x->value);
@@ -2412,8 +2412,7 @@ collect_argument_type_violations() {
                   continue;
                 if (!x->key->is_positional())
                   continue;
-                MPosition *pp = e->match->actual_to_formal_position.get(x->key), 
-                  *p = pp ? pp : x->key;
+                MPosition *p = x->key;
                 AVar *filtered = e->filtered_args.get(p);
                 if (filtered)
                   t = type_diff(t, filtered->out);

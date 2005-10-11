@@ -33,7 +33,7 @@ class Matcher {
   Partial_kind partial;
   Vec<Match *> *matches;
   MatchMap match_map;
-  Vec<Fun *> *all_matches, *partial_matches;
+  Vec<Fun *> *all_matches;
   Vec<MPosition *> *all_positions;
   Map<MPosition *, int> mapped_positions;
 
@@ -43,20 +43,21 @@ class Matcher {
   void update_match_map(AVar *, CreationSet *, MPosition *, MPosition *, Vec<Fun *> &);
   void find_arg_matches(AVar *, MPosition &, MPosition *, MPosition *, Vec<Fun *> **, int, int);
   void find_all_matches(CreationSet *, Vec<AVar *> &, Vec<Fun *> **, MPosition &, int);
-  void record_all_positions();
+  void record_all_positions(Vec<Fun *> &);
   void find_best_cs_match(Vec<CreationSet *> &, MPosition &p, Vec<Fun *> &, Vec<Fun *> &, int);
   void find_best_matches(Vec<AVar *> &, Vec<CreationSet *> &, Vec<Fun *> &, MPosition &, 
                          Vec<Fun *> &, int, int iarg = 0);
   int covers_formals(Fun *, Vec<CreationSet *> &, MPosition &, int);
-  void build_Match(Fun *, Match *);
+  Match *build_Match(Fun *, Match *);
   void instantiation_wrappers_and_partial_application(Vec<Fun *> &);
   Fun *build(Match *m, Vec<Fun *> &matches);
   void generic_arguments(Vec<CreationSet *> &, MPosition &, Vec<Fun *> &, int);
   void set_filters(Vec<CreationSet *> &, MPosition &, Vec<Fun *> &, int);
-  void cannonicalize_matches();
+  void cannonicalize_matches(Vec<Fun *> &);
 
   Matcher(AVar *send, AVar *arg0, Partial_kind partial, Vec<Match *> *matches);
 };
+
 
 static void log_dispatch_pattern_match(Matcher &);
 static void log_dispatch_cs_match(Matcher &matcher, Vec<CreationSet *> &csargs, 
@@ -207,10 +208,6 @@ Matcher::Matcher(AVar *asend, AVar *aarg0, Partial_kind apartial, Vec<Match *> *
     }
     all_positions = 0;
   }
-  if (all_matches)
-    partial_matches = new Vec<Fun *>(*all_matches);
-  else
-    partial_matches = 0;
   ast = asend->var->def->code->ast;
 }
 
@@ -504,17 +501,32 @@ Matcher::set_filters(Vec<CreationSet *> &csargs, MPosition &app, Vec<Fun *> &mat
   }
 }
 
-void
+Match *
 Matcher::build_Match(Fun *f, Match *m) {
   Match *mm = match_map.get(f);
   if (!mm) {
     mm = new Match(f);
     match_map.put(f, mm);
   }
-  // actuals
-  form_MPositionAVar(x, m->actuals)
-    mm->actuals.put(x->key, x->value);
-  mm->partial = m->partial;
+  assert(m != mm);
+  // NOTE: ensure handling is correct destructuring
+  mm->actuals.copy(m->actuals);
+  mm->formal_dispatch_types.copy(m->formal_dispatch_types);
+  mm->actual_filters.clear(); // not needed
+  form_MPositionAType(x, m->formal_filters) {
+    if (AType *t = mm->formal_filters.get(x->key))
+      t->set_union(*x->value);
+    else
+      mm->formal_filters.put(x->key, x->value);
+  }
+  mm->actual_named_to_positional.clear(); // not needed
+  mm->actual_to_formal_position.copy(m->actual_to_formal_position);
+  mm->formal_to_actual_position.copy(m->formal_to_actual_position);
+  mm->order_substitutions.copy(m->order_substitutions);
+  mm->default_args.copy(m->default_args);
+  mm->generic_substitutions.copy(m->generic_substitutions);
+  mm->coercion_substitutions.copy(m->coercion_substitutions);
+  return mm;
 }
 
 template <class C>
@@ -567,37 +579,8 @@ class DefaultCacheHashFns  {
 };
 class DefaultCache : public gc { public: HashMap<Vec<MPosition*> *, DefaultCacheHashFns, Fun *> cache; };
 
-// using the default map, compute a mapping from old formals to new formals
-// then use this map to update the actuals_to_formals and formals_to_actuals maps
 static void
-fixup_actual_formal_maps_for_defaults(Match *m) {
-  Map<MPosition *, MPosition *> formal_to_formal;
-  forv_MPosition(p, m->fun->positional_arg_positions) {
-    // if that formal position (or any above) nolonger exists, skip it
-    MPosition tmp(*p), newp;
-    for (int i = p->pos.n; i <= 0; i--) {
-      tmp.pos.n = i;
-      tmp.cp = 0; // not cannonical
-      if (m->default_args.in(cannonicalize_mposition(tmp)))
-        goto Lskip;
-    }
-    // at each level, count those before which nolonger exist and
-    // subtract from newp
-    for (int i = 0; i < p->pos.n; i++) {
-      int offset = 0;
-      tmp.copy(*p);
-      tmp.pos.n = i + 1;
-      for (int j = 0; j < Position2int(p->pos.v[i]); j++) {
-        tmp.pos.v[i] = int2Position(j + 1);
-        tmp.cp = 0; // not cannonical
-        if (m->default_args.in(cannonicalize_mposition(tmp)))
-          offset++;
-      }
-      newp.push(int2Position(Position2int(p->pos.v[i]) - offset));
-    }
-    formal_to_formal.put(p, cannonicalize_mposition(newp));
-  Lskip:;
-  }
+fixup_maps(Match *m, Map<MPosition *, MPosition *> &formal_to_formal) {
   Map<MPosition *, MPosition *> a2f, f2a;
   a2f.move(m->actual_to_formal_position);
   f2a.move(m->formal_to_actual_position);
@@ -609,42 +592,90 @@ fixup_actual_formal_maps_for_defaults(Match *m) {
     if (MPosition *y = formal_to_formal.get(x->key))
       m->formal_to_actual_position.put(y, x->value);
   }
+  Map<MPosition *, AType *> formal_filters;
+  formal_filters.move(m->formal_filters);
+  form_MPositionAType(x, formal_filters) {
+    if (MPosition *y = formal_to_formal.get(x->key))
+      m->formal_filters.put(y, x->value);
+  }
+}
+
+static void
+fixup_maps_for_defaults(Match *m, Fun *oldf, Vec<MPosition *> &defaults) {
+  Vec<MPosition *> defaults_set;
+  defaults_set.set_union(defaults);
+  Map<MPosition *, MPosition *> formal_to_formal;
+  forv_MPosition(p, oldf->positional_arg_positions) {
+    // if that formal position (or any above) nolonger exists, skip it
+    MPosition tmp(*p), newp;
+    for (int i = p->pos.n; i <= 0; i--) {
+      tmp.pos.n = i;
+      tmp.cp = 0; // not cannonical
+      if (defaults_set.in(cannonicalize_mposition(tmp)))
+        goto Lskip;
+    }
+    // at each level, count those before which nolonger exist and
+    // subtract from newp
+    for (int i = 0; i < p->pos.n; i++) {
+      int offset = 0;
+      tmp.copy(*p);
+      tmp.pos.n = i + 1;
+      for (int j = 0; j < Position2int(p->pos.v[i]); j++) {
+        tmp.pos.v[i] = int2Position(j + 1);
+        tmp.cp = 0; // not cannonical
+        if (defaults_set.in(cannonicalize_mposition(tmp)))
+          offset++;
+      }
+      newp.push(int2Position(Position2int(p->pos.v[i]) - offset));
+    }
+    formal_to_formal.put(p, cannonicalize_mposition(newp));
+  Lskip:;
+  }
+  fixup_maps(m, formal_to_formal);
 }
 
 Fun *
 Matcher::build(Match *m, Vec<Fun *> &matches) {
-  Fun *f = m->fun, *orig_f = f;
+  Fun *f = m->fun, *fnew;
   if (m->generic_substitutions.n) {
     GenericCache *c = f->generic_cache;
     if (!c) c = f->generic_cache = new GenericCache;
-    if (!(f = c->cache.get(&m->generic_substitutions))) {
-      f = if1->callback->instantiate_generic(m);
+    if (!(fnew = c->cache.get(&m->generic_substitutions))) {
+      f = if1->callback->instantiate_generic(f, m->generic_substitutions);
       c->cache.put(new GenericMap(m->generic_substitutions), f);
-    }
-    m->fun = f;
+    } else
+      f = fnew;
+    m->generic_substitutions.clear();
+    m = build_Match(f, m);
   }
   if (m->default_args.n) {
     qsort(m->default_args.v, m->default_args.n, sizeof(void*), compar_last_position);
     DefaultCache *c = f->default_cache;
+    Fun *oldf = f;
     if (!c) c = f->default_cache = new DefaultCache;
-    if (!(f = c->cache.get(&m->default_args))) {
-      f = if1->callback->default_wrapper(m);
+    if (!(fnew = c->cache.get(&m->default_args))) {
+      f = if1->callback->default_wrapper(f, m->default_args);
       c->cache.put(new Vec<MPosition*>(m->default_args), f);
-    }
-    fixup_actual_formal_maps_for_defaults(m);
-    m->fun = f;
+    } else
+      f = fnew;
+    Vec<MPosition *> defaults;
+    defaults.move(m->default_args);
+    m = build_Match(f, m);
+    fixup_maps_for_defaults(m, oldf, defaults);
   }
   if (m->coercion_substitutions.n) {
     CoercionCache *c = f->coercion_cache;
     if (!c) c = f->coercion_cache = new CoercionCache;
-    if (!(f = c->cache.get(&m->coercion_substitutions))) {
-      f = if1->callback->coercion_wrapper(m);
+    if (!(fnew = c->cache.get(&m->coercion_substitutions))) {
+      f = if1->callback->coercion_wrapper(f, m->coercion_substitutions);
       c->cache.put(new CoercionMap(m->coercion_substitutions), f);
-    }
-    m->fun = f;
+    } else
+      f = fnew;
+    m->coercion_substitutions.clear();
+    m = build_Match(f, m);
   }
   int order_change = 0;
-  forv_MPosition(p, m->fun->positional_arg_positions) {
+  forv_MPosition(p, f->positional_arg_positions) {
     MPosition *acp = to_actual(p, m);
     if (p != acp)
       order_change = 1;
@@ -653,15 +684,17 @@ Matcher::build(Match *m, Vec<Fun *> &matches) {
   if (order_change) {
     OrderCache *c = f->order_cache;
     if (!c) c = f->order_cache = new OrderCache;
-    if (!(f = c->cache.get(&m->order_substitutions))) {
-      f = if1->callback->order_wrapper(m);
+    if (!(fnew = c->cache.get(&m->order_substitutions))) {
+      f = if1->callback->order_wrapper(f, m->order_substitutions);
       c->cache.put(new OrderMap(m->order_substitutions), f);
-    }
-    m->fun = f;
+    } else
+      f = fnew;
+    Map<MPosition *, MPosition *> order_substitutions;
+    order_substitutions.move(m->order_substitutions);
+    m = build_Match(f, m);
+    fixup_maps(m, order_substitutions);
   } else
     m->order_substitutions.clear();
-  if (orig_f != m->fun)
-    build_Match(f, m);
   return f;
 }
 
@@ -1050,17 +1083,17 @@ Matcher::find_best_matches(Vec<AVar *> &args, Vec<CreationSet *> &csargs,
 }
 
 void
-Matcher::record_all_positions() {
+Matcher::record_all_positions(Vec<Fun *> &partial_matches) {
   if (!all_positions) {
     all_positions = new Vec<MPosition *>;
-    forv_Fun(f, *partial_matches) if (f)
+    forv_Fun(f, partial_matches) if (f)
       all_positions->set_union(f->arg_positions);
   }
 }
 
 void
-Matcher::cannonicalize_matches() {
-  forv_Fun(f, *partial_matches) if (f) {
+Matcher::cannonicalize_matches(Vec<Fun *> &partial_matches) {
+  forv_Fun(f, partial_matches) if (f) {
     Match *m = match_map.get(f);
     // assert(m->fun == f);
     for (int i = 0; i < m->formal_filters.n; i++)
@@ -1076,24 +1109,27 @@ Matcher::cannonicalize_matches() {
 int
 pattern_match(Vec<AVar *> &args, AVar *send, Partial_kind partial, Vec<Match *> *matches) {
   Matcher matcher(send, args.v[0], partial, matches);
+  Vec<Fun *> *partial_matches = NULL;
+  if (matcher.all_matches)
+    partial_matches = new Vec<Fun *>(*matcher.all_matches);
   log_dispatch_pattern_match(matcher);
   {
     MPosition app;
-    matcher.find_all_matches(0, args, &matcher.partial_matches, app, 0);
-    if (!matcher.partial_matches || !matcher.partial_matches->n)
+    matcher.find_all_matches(0, args, &partial_matches, app, 0);
+    if (!partial_matches || !partial_matches->n)
       return 0;
   }
-  matcher.record_all_positions();
+  matcher.record_all_positions(*partial_matches);
   {
     MPosition app;
     Vec<CreationSet *> csargs;
     Vec<Fun *> result;
-    matcher.find_best_matches(args, csargs, *matcher.partial_matches, app, result, 1);
-    matcher.partial_matches->copy(result);
-    if (!matcher.partial_matches->n)
+    matcher.find_best_matches(args, csargs, *partial_matches, app, result, 1);
+    partial_matches->move(result);
+    if (!partial_matches->n)
       return 0;
   }
-  matcher.cannonicalize_matches();
+  matcher.cannonicalize_matches(*partial_matches);
 #ifdef CHECK_CALLEE_CACHE
   if (send->var->def->callees) {
     Vec<Fun *> funs;
