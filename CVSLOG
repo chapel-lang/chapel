@@ -48394,3 +48394,15 @@ Modified files:
 Removed files:
 	chapel/compiler/symtab/: removeLikeTypes.cpp removeLikeTypes.h 
 
+---------------------------------------------------------------------------
+
+10/11/05 16:05:18 -- jplevyak
+
+Log message:
+	I believe these two tests are working... so long as we are not
+	expecting a zipper product.
+
+Modified files:
+	chapel/test/arrays/deitz/: test_domains_2Dc.good 
+	                           test_domains_2Dd.good 
+
