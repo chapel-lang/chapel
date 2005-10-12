@@ -722,19 +722,22 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
   AList<DefExpr>* wrapper_formals = new AList<DefExpr>();
   AList<Expr>* wrapper_actuals = new AList<Expr>();
   BlockStmt* wrapper_body = new BlockStmt();
+  ASTMap map;
   for_alist(DefExpr, formal, formals) {
     if (!defaults->set_in(formal->sym)) {
       Symbol* newFormal = formal->sym->copy();
+      map.put(formal->sym, newFormal);
       wrapper_formals->insertAtTail(new DefExpr(newFormal));
       wrapper_actuals->insertAtTail(new SymExpr(newFormal));
     } else {
       intentTag formal_intent = dynamic_cast<ArgSymbol*>(formal->sym)->intent;
       char* temp_name = stringcat("_default_temp_", formal->sym->name);
       VarSymbol* temp = new VarSymbol(temp_name, formal->sym->type);
+      map.put(formal->sym, temp);
       Expr* temp_init = NULL;
       if (formal_intent != INTENT_OUT)
         temp_init = formal->sym->defPoint->init->copy();
-      wrapper_body->insertAtHead(new ExprStmt(new DefExpr(temp, temp_init)));
+      wrapper_body->insertAtTail(new ExprStmt(new DefExpr(temp, temp_init)));
 
       if (formal->sym->type != dtUnknown &&
           formal_intent != INTENT_OUT &&
@@ -744,6 +747,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
         wrapper_actuals->insertAtTail(new SymExpr(temp));
     }
   }
+  TRAVERSE(wrapper_body, new UpdateSymbols(&map), true);
 
   wrapper_body->insertAtTail(
     function_returns_void(this)
