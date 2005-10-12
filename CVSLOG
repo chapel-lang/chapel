@@ -48536,3 +48536,18 @@ Added files:
 	chapel/test/classes/deitz/: test_class_construct.chpl 
 	                            test_class_construct.good 
 
+---------------------------------------------------------------------------
+
+10/12/05 16:59:46 -- deitz
+
+Log message:
+	Simplified front-end tuple construction similarly to sequence changes
+	yesterday.  It now uses the typeof function rather than special-casing
+	the type into an odd place.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/traversals/: insertLiteralTemps.cpp 
+	                             preAnalysisHacks.cpp 
+	chapel/test/arrays/deitz/: test_domain2.chpl 
+
