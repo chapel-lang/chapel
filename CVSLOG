@@ -48442,3 +48442,13 @@ Removed files:
 	chapel/test/arrays/deitz/: test_domains_2Dc.future 
 	                           test_domains_2Dd.future 
 
+---------------------------------------------------------------------------
+
+10/12/05 08:12:08 -- jplevyak
+
+Log message:
+	Remove future for working test.
+
+Removed files:
+	chapel/test/flowanalysis/recursion/: rec_fun-3.future 
+
