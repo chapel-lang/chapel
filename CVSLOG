@@ -48511,3 +48511,17 @@ Added files:
 Removed files:
 	chapel/test/functions/deitz/default/: test_default7.future 
 
+---------------------------------------------------------------------------
+
+10/12/05 13:55:29 -- jplevyak
+
+Log message:
+	Fix for default argument from nested function.
+	Problem was overly aggressive dead code elimination.
+	Removed .future
+
+Modified files:
+	chapel/compiler/ifa/: if1.cpp 
+Removed files:
+	chapel/test/functions/deitz/default/: test_default9.future 
+
