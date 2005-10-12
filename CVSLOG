@@ -48488,3 +48488,26 @@ Log message:
 Modified files:
 	chapel/test/functions/deitz/default/: test_default7.future 
 
+---------------------------------------------------------------------------
+
+10/12/05 10:26:21 -- deitz
+
+Log message:
+	Removed future for test of default value that refers to a previous
+	argument.  Added support to the default wrapper routine to deal with
+	this case.  Added four more similar tests that all work.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+Added files:
+	chapel/test/functions/deitz/default/: test_default7a.chpl 
+	                                      test_default7a.good 
+	                                      test_default7b.chpl 
+	                                      test_default7b.good 
+	                                      test_default7c.chpl 
+	                                      test_default7c.good 
+	                                      test_default7d.chpl 
+	                                      test_default7d.good 
+Removed files:
+	chapel/test/functions/deitz/default/: test_default7.future 
+
