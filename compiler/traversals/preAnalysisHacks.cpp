@@ -119,24 +119,6 @@ void PreAnalysisHacks::postProcessExpr(Expr* expr) {
       }
     }
   }
-
-  if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
-    if (SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr)) {
-      if (!strncmp(base->var->name, "_construct__tuple", 17)) {
-        Expr *insertPoint = 0;
-        for_alist(Expr, actual, call->argList) {
-          if (dynamic_cast<NamedExpr*>(actual)) {
-            Type* actualType = actual->typeInfo();
-            if (!insertPoint) {
-              insertPoint = new SymExpr(actualType->symbol);
-              call->argList->insertAtHead(insertPoint);
-            } else
-              insertPoint->insertAfter(new SymExpr(actualType->symbol));
-          }
-        }
-      }
-    }
-  }
 }
 
 void PreAnalysisHacks::postProcessType(Type* type) {

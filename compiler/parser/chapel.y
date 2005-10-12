@@ -1028,15 +1028,14 @@ tuple_paren_expr:
       if ($2->length() == 1) {
         $$ = $2->popHead();
       } else {
-        AList<Expr>* argList = new AList<Expr>();
-        int size = 0;
+        AList<Expr>* types = new AList<Expr>();
+        AList<Expr>* fields = new AList<Expr>();
+        char* tuple_name = stringcat("_tuple", intstring($2->length()));
         for_alist(Expr, expr, $2) {
-          argList->insertAtTail(
-            new NamedExpr(
-              stringcat("_f", intstring(++size)),
-              expr->copy()));
+          types->insertAtTail(new CallExpr("typeof", expr->copy()));
+          fields->insertAtTail(expr->copy());
         }
-        $$ = new CallExpr(stringcat("_tuple", intstring(size)), argList);
+        $$ = new CallExpr(tuple_name, types, fields);
       }
     }
 ;

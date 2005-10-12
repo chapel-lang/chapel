@@ -41,15 +41,15 @@ static void destructureTuple(CallExpr* tuple) {
   char* name = stringcat("_tuple_tmp_", intstring(uid++));
   DefExpr* def = new DefExpr(new VarSymbol(name));
   tuple->parentStmt->insertBefore(new ExprStmt(def));
-  int i = 1;
+  int start = tuple->argList->length()/2;
+  int i = 0;
   for_alist(Expr, expr, tuple->argList) {
-    if (NamedExpr* namedExpr = dynamic_cast<NamedExpr*>(expr)) {
-      tuple->parentStmt->insertAfter(
-        new ExprStmt(
-          new CallExpr(OP_GETSNORM, namedExpr->actual->copy(),
-            new CallExpr(name,
-              new_IntLiteral(i++)))));
-    }
+    if (++i <= start)
+      continue;
+    tuple->parentStmt->insertAfter(
+      new ExprStmt(
+        new CallExpr(OP_GETSNORM, expr->copy(),
+          new CallExpr(name, new_IntLiteral(i-start)))));
     TRAVERSE(tuple->parentStmt->next, new InsertLiteralTemps(), true);
   }
   tuple->replace(new SymExpr(def->sym));
@@ -170,7 +170,7 @@ void InsertLiteralTemps::postProcessExpr(Expr* expr) {
     }
     if (SymExpr* variable = dynamic_cast<SymExpr*>(call->baseExpr)) {
       if (!strncmp(variable->var->name, "_tuple", 6)) {
-        createTupleBaseType(call->argList->length());
+        createTupleBaseType(atoi(variable->var->name+6));
         if (call->parentExpr) {
           if (CallExpr* parent = dynamic_cast<CallExpr*>(call->parentExpr)) {
             if (OP_ISASSIGNOP(parent->opTag) && parent->get(1) == call) {

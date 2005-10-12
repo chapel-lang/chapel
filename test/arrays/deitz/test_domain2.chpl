@@ -82,8 +82,8 @@ writeln(D.dforall(2));
 writeln(D.dfor(1));
 writeln(D.dfor(2));
 
-for i in D.dfor(1) {
-  for j in D.dfor(2) {
+for i:integer in D.dfor(1) {
+  for j:integer in D.dfor(2) {
     var t = (i,j);
     writeln(t);
   }
