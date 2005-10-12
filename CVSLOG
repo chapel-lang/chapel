@@ -48525,3 +48525,14 @@ Modified files:
 Removed files:
 	chapel/test/functions/deitz/default/: test_default9.future 
 
+---------------------------------------------------------------------------
+
+10/12/05 15:22:54 -- deitz
+
+Log message:
+	Added simple test of writing the result of a call to a class constructor.
+
+Added files:
+	chapel/test/classes/deitz/: test_class_construct.chpl 
+	                            test_class_construct.good 
+
