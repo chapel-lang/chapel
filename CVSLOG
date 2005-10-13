@@ -48551,3 +48551,20 @@ Modified files:
 	                             preAnalysisHacks.cpp 
 	chapel/test/arrays/deitz/: test_domain2.chpl 
 
+---------------------------------------------------------------------------
+
+10/12/05 17:13:11 -- deitz
+
+Log message:
+	John, can you take a look at test/classes/deitz/test_this2.future
+	which is a simplification of my array test case.  It is a problem with
+	an expression like "c.d().x".
+
+Added files:
+	chapel/test/arrays/deitz/: test_array_2D.chpl 
+	                           test_array_2D.future 
+	                           test_array_2D.good 
+	chapel/test/classes/deitz/: test_this1.chpl test_this1.good 
+	                            test_this2.chpl test_this2.future 
+	                            test_this2.good 
+
