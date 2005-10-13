@@ -48671,3 +48671,13 @@ Modified files:
 Added files:
 	chapel/test/trivial/deitz/: test_forall.chpl test_forall.good 
 
+---------------------------------------------------------------------------
+
+10/13/05 15:16:18 -- deitz
+
+Log message:
+	Removed future for hand-coded 2D array test case.
+
+Removed files:
+	chapel/test/arrays/deitz/: test_array_2D.future 
+
