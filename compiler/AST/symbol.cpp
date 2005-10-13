@@ -820,7 +820,10 @@ buildMultidimensionalIterator(ClassType* type, int rank) {
   for (int i = 1; i <= rank; i++) {
     args->insertAtTail(new SymExpr(dtInteger->symbol));
   }
-  _seq_result->defPoint->exprType = new CallExpr("_construct_seq", new CallExpr(stringcat("_construct__tuple", intstring(rank)), args));
+  if (rank > 1)
+    _seq_result->defPoint->exprType = new CallExpr("_construct_seq", new CallExpr(stringcat("_construct__tuple", intstring(rank)), args));
+  else
+    _seq_result->defPoint->exprType = new CallExpr("_construct_seq", args);
 
   CallExpr* yield = new CallExpr(stringcat("_construct__tuple", intstring(rank)));
   CallExpr* partial = new CallExpr("_yield", 
@@ -841,9 +844,14 @@ buildMultidimensionalIterator(ClassType* type, int rank) {
                             Symboltable::lookupInternal("_methodToken"),
                             new CallExpr(partial, new_IntLiteral(i)))),
              loop);
-    yield->argList->insertAtHead(new SymExpr(dtInteger->symbol));
-    yield->argList->insertAtTail(new NamedExpr(stringcat("_f", intstring(i)), new SymExpr(index)));
+    if (rank > 1) {
+      yield->argList->insertAtHead(new SymExpr(dtInteger->symbol));
+      yield->argList->insertAtTail(new NamedExpr(stringcat("_f", intstring(i)), new SymExpr(index)));
+    } else {
+      yield->replace(new SymExpr(index));
+    }
   }
+
   _forall->insertAtTail(loop);
 
   _forall->insertAtTail(new ReturnStmt(new SymExpr(_seq_result)));
