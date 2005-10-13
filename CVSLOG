@@ -48598,3 +48598,14 @@ Modified files:
 	                                             configVarSetTwoTypes.cfghelp 
 	                                             configVarTwoModules.cfghelp 
 
+---------------------------------------------------------------------------
+
+10/13/05 11:30:59 -- jplevyak
+
+Log message:
+	Update handling of nested functions in analysis to use the new
+	"display" data structure.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
