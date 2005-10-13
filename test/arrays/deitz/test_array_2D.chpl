@@ -14,17 +14,17 @@ class myarray : value {
   var data : _fdata(elt_type);
 
   function myinit() {
-    info(rank-1).off = dom.info(rank-1).low;
+    info(rank-1).off = dom.info(rank-1)._low;
     info(rank-1).blk = 1;
-    var i : integer = rank - 2;
+    var i : integer = rank-2;
     while i >= 0 {
-      info(i).off = dom.info(i).low;
+      info(i).off = dom.info(i)._low;
       info(i).blk = info(i+1).blk *
-        ((dom.info(i+1).high - dom.info(i+1).low + 1) / dom.info(i+1).stride);
+        ((dom.info(i+1)._high - dom.info(i+1)._low + 1) / dom.info(i+1)._stride);
       i -= 1;
     }
     size = info(0).blk *
-      ((dom.info(1).high - dom.info(1).low + 1) / dom.info(1).stride);
+      ((dom.info(1)._high - dom.info(1)._low + 1) / dom.info(1)._stride);
   }
 
   function this(i : integer, j : integer) var : elt_type
@@ -35,8 +35,12 @@ class myarray : value {
 
 var d : domain(2) = [1..3, 1..3];
 
-var a : myarray(integer,2,d);
+var a : myarray(integer,2);
+a.dom = d;
 a.myinit();
 
 a(1,1) = 1;
+a(1,2) = 2;
 writeln(a(1,1));
+writeln(a(1,2));
+writeln(a(2,1));
