@@ -48631,3 +48631,19 @@ Removed files:
 	chapel/test/types/tuple/deitz/: test_tuple_of_tuples.future 
 	chapel/test/types/tuple/jplevyak/: tuple_index-2.future 
 
+---------------------------------------------------------------------------
+
+10/13/05 12:25:15 -- jplevyak
+
+Log message:
+	Fix a bug in cloning whereby an incomplete type could slip by.
+	Added an "id" field to EntrySets, built a general quicksort on
+	anything which has an "id" field.   Use this new function
+	in fa.cpp to remove non-determininsm.  Removed "null" from
+	the reduced type used for splitting in flow analysis.
+
+Modified files:
+	chapel/compiler/ifa/: clone.cpp fa.cpp fa.h 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
