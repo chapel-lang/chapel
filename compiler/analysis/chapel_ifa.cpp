@@ -2160,13 +2160,13 @@ finalize_function(Fun *fun) {
   }
   // check nesting
   if (fs->defPoint->parentStmt) {
-    if (!fun->nested_in) {
-      FnSymbol *fn = fs->defPoint->getStmt()->parentFunction();
-      if (fn) {
+    if (FnSymbol *fn = dynamic_cast<FnSymbol*>(fs->defPoint->parentSymbol)) {
+      if (!fun->nested_in) {
         fun->nested_in = fn->asymbol->sym->fun;
         if (fun->nested_in)
           fun->nested_in->nested.add(fun);
-      }
+      } else 
+        assert(fun->nested_in == fn->asymbol->sym->fun);
     }
   }
   if (fs->isGeneric)

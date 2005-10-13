@@ -243,18 +243,18 @@ sprint_imm(char *str, Immediate &imm) {
     case IF1_NUM_KIND_FLOAT:
       switch (imm.num_index) {
         case IF1_FLOAT_TYPE_32:
-          res = sprintf(str, "%g", imm.v_float32); break;
+          res = sprintf(str, "%#g", imm.v_float32); break;
         case IF1_FLOAT_TYPE_64:
-          res = sprintf(str, "%g", imm.v_float64); break;
+          res = sprintf(str, "%#g", imm.v_float64); break;
         default: assert(!"case");
       }
       break;
     case IF1_NUM_KIND_COMPLEX:
       switch (imm.num_index) {
         case IF1_FLOAT_TYPE_32:
-          res = sprintf(str, "(%g,%g)", imm.v_complex32.r, imm.v_complex32.i); break;
+          res = sprintf(str, "(%#g,%#g)", imm.v_complex32.r, imm.v_complex32.i); break;
         case IF1_FLOAT_TYPE_64:
-          res = sprintf(str, "(%g,%g)", imm.v_complex64.r, imm.v_complex64.i); break;
+          res = sprintf(str, "(%#g,%#g)", imm.v_complex64.r, imm.v_complex64.i); break;
         default: assert(!"case");
       }
       break;

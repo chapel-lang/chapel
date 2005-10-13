@@ -9,8 +9,8 @@ class HashTable {
 var s : integer = 10;
   
 --var ht : HashTable(T=integer) = HashTable(size=s, T=integer, dummy=0);
-var ht : HashTable(T=integer) = HashTable(size=s, T=integer);
---var ht : HashTable(T=integer) = HashTable(T=integer, size=s);
+--var ht : HashTable(T=integer) = HashTable(size=s, T=integer);
+var ht : HashTable(T=integer) = HashTable(T=integer, size=s);
 
 for i in 1..s do {
   ht.table(i-1) = i-1;
