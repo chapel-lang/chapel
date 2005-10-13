@@ -545,7 +545,7 @@ compute_member_types(Vec<CreationSet *> *eqcss, int incomplete = 0) {
         }
       }
       forv_CreationSet(x, *av->out->type) if (x)
-        t.set_add(to_concrete_type(x->sym));
+        t.set_add(to_concrete_type(x->type ? x->type : x->sym));
     }
     if (!(s->type = concrete_type_set_to_type(t))) return -1;
   }

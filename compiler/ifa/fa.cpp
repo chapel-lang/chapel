@@ -18,6 +18,7 @@
 
 static int avar_id = 1;
 static int creation_set_id = 1;
+static int entry_set_id = 1;
 int analysis_pass = 0;
 
 static FA *fa = 0;
@@ -129,10 +130,28 @@ CreationSet::CreationSet(CreationSet *cs) :
   sym->creators.add(this);
 }
 
+EntrySet::EntrySet(Fun *af) : fun(af), equiv(0) {
+  id = entry_set_id++;
+}
+
 int
 compar_creation_sets(const void *ai, const void *aj) {
   int i = (*(CreationSet**)ai)->id;
   int j = (*(CreationSet**)aj)->id;
+  return (i > j) ? 1 : ((i < j) ? -1 : 0);
+}
+
+int 
+compar_avars(const void *ai, const void *aj) {
+  int i = (*(AVar**)ai)->id;
+  int j = (*(AVar**)aj)->id;
+  return (i > j) ? 1 : ((i < j) ? -1 : 0);
+}
+
+int 
+compar_entry_sets(const void *ai, const void *aj) {
+  int i = (*(EntrySet**)ai)->id;
+  int j = (*(EntrySet**)aj)->id;
   return (i > j) ? 1 : ((i < j) ? -1 : 0);
 }
 
@@ -360,27 +379,27 @@ type_num_fold(Prim *p, AType *a, AType *b) {
   return r;
 }
 
-void
-qsort_creationsets(CreationSet **left, CreationSet **right) {
+template<class C> void
+qsort_by_id(C **left, C **right) {
  Lagain:
   if (right - left < 5) {
-    for (CreationSet **y = right - 1; y > left; y--) {
-      for (CreationSet **x = left; x < y; x++) {
+    for (C **y = right - 1; y > left; y--) {
+      for (C **x = left; x < y; x++) {
         if (x[0]->id > x[1]->id) {
-          CreationSet *t = x[0];
+          C *t = x[0];
           x[0] = x[1];
           x[1] = t;
         } 
       } 
     }
   } else {
-    CreationSet  **i = left + 1, **j = right - 1;
-    CreationSet *x = *left;
+    C  **i = left + 1, **j = right - 1;
+    C *x = *left;
     for (;;) {
       while (x->id < (*j)->id) j--;
       while (i < j && (*i)->id < x->id) i++;
       if (i >= j) break;
-      CreationSet *t = *i;
+      C *t = *i;
       *i = *j;
       *j = t;
       i++; j--;
@@ -391,9 +410,15 @@ qsort_creationsets(CreationSet **left, CreationSet **right) {
       right--;
       goto Lagain;
     }
-    if (left < j) qsort_creationsets(left, j + 1);
-    if (j + 2 < right) qsort_creationsets(j + 1, right);
+    if (left < j) qsort_by_id(left, j + 1);
+    if (j + 2 < right) qsort_by_id(j + 1, right);
   }
+}
+
+template<class C> void
+qsort_by_id(Vec<C *> &v) {
+  if (v.n > 1)
+    qsort_by_id(&v.v[0], v.end());
 }
 
 void
@@ -431,13 +456,12 @@ qsort_pointers(void **left, void **right) {
   }
 }
 
-#define NO_TOP ((Sym *)-1)
 AType *
 type_cannonicalize(AType *t) {
   assert(!t->sorted.n);
   assert(!t->union_map.n);
   assert(!t->intersection_map.n);
-  int consts = 0, rebuild = 0;
+  int consts = 0, rebuild = 0, nulls = 0;
   Vec<CreationSet *> nonconsts;
   forv_CreationSet(cs, *t) if (cs) {
     // strip out constants if the base type is included
@@ -453,8 +477,12 @@ type_cannonicalize(AType *t) {
       }
       consts++;
       nonconsts.set_add(base_cs);
-    } else
-      nonconsts.set_add(cs);
+    } else { 
+      if (cs->sym != sym_null)
+        nonconsts.set_add(cs);
+      else
+        nulls = 1;
+    }
     t->sorted.add(cs);
   }
   if (consts > fa->num_constants_per_variable)
@@ -466,7 +494,7 @@ type_cannonicalize(AType *t) {
     t->set_union(t->sorted);
   }
   if (t->sorted.n > 1)
-    qsort_creationsets(&t->sorted.v[0], t->sorted.end());
+    qsort_by_id(t->sorted);
   unsigned int h = 0;
   for (int i = 0; i < t->sorted.n; i++)
     h = (uint)(intptr_t)t->sorted.v[i] * open_hash_multipliers[i % 256];
@@ -474,13 +502,15 @@ type_cannonicalize(AType *t) {
   AType *tt = cannonical_atypes.put(t);
   if (!tt) tt = t;
   // compute "type" (without constants)
-  if (consts)
-    tt->type = make_AType(nonconsts);
-  else
-    tt->type = tt;
+  if (nonconsts.n) {
+    if (nulls || consts)
+      tt->type = make_AType(nonconsts);
+    else
+      tt->type = tt;
+  } else
+    tt->type = bottom_type;
   return tt;
 }
-#undef NO_TOP
 
 AType *
 type_union(AType *a, AType *b) {
@@ -1738,8 +1768,8 @@ collect_Vars_PNodes(Fun *f) {
   if (!f->entry)
     return;
   f->collect_Vars(f->fa_all_Vars, &f->fa_all_PNodes);
-  qsort(f->fa_all_Vars.v, f->fa_all_Vars.n, sizeof(f->fa_all_Vars.v[0]), compar_vars);
-  qsort(f->fa_all_PNodes.v, f->fa_all_PNodes.n, sizeof(f->fa_all_PNodes.v[0]), compar_pnodes);
+  qsort_by_id(f->fa_all_Vars);
+  qsort_by_id(f->fa_all_PNodes);
   forv_Var(v, f->fa_all_Vars)
     if (is_fa_Var(v))
       f->fa_Vars.add(v);
@@ -1867,7 +1897,7 @@ show_type(Vec<CreationSet *> &t, FILE *fp) {
     type.set_add(s);
   }
   type.set_to_vec();
-  qsort(type.v, type.n, sizeof(type.v[0]), compar_syms);
+  qsort_by_id(type);
   fprintf(fp, "( ");
   forv_Sym(s, type) if (s) {
     show_sym_name(s, fp);
@@ -2077,7 +2107,7 @@ show_candidates(FILE *fp, PNode *pn, Sym *arg0) {
     return;
   Vec<Fun *> funs(*pfuns);
   funs.set_to_vec();
-  qsort(funs.v, funs.n, sizeof(funs.v[0]), compar_funs);
+  qsort_by_id(funs);
   fprintf(fp, "note: candidates are:\n");
   forv_Fun(f, funs) {
     show_fun(f, fp);
@@ -2290,7 +2320,7 @@ log_var_types(Var *v, Fun *f) {
   forv_CreationSet(cs, css) if (cs)
     syms.set_add(cs->sym->type);
   syms.set_to_vec();
-  qsort(syms.v, syms.n, sizeof(syms.v[0]), compar_syms);
+  qsort_by_id(syms);
   forv_Sym(s, syms) {
     if (s->name)
       log(LOG_TEST_FA, "%s ", s->name);
@@ -2317,7 +2347,7 @@ collect_results() {
     fa->ess.add(es);
   }
   fa->funs.set_to_vec();
-  qsort(fa->funs.v, fa->funs.n, sizeof(fa->funs.v[0]), compar_funs);
+  qsort_by_id(fa->funs);
   fa->ess_set.move(entry_set_done);
   // collect css and css_set
   fa->css.clear();
@@ -2331,7 +2361,7 @@ collect_results() {
   }
   forv_CreationSet(cs, fa->css_set) if (cs) 
     fa->css.add(cs);
-  qsort(fa->css.v, fa->css.n, sizeof(fa->css.v[0]), compar_creation_sets);
+  qsort_by_id(fa->css);
   // collect callees
   forv_Fun(f, fa->funs) {
     forv_PNode(pnode, f->fa_send_PNodes) {
@@ -2525,6 +2555,7 @@ initialize() {
   if1->callback->finalize_functions();
   element_var = new Var(new_Sym("some element"));
   bottom_type = type_cannonicalize(new AType());
+  bottom_type->type = bottom_type;
   void_type = make_abstract_type(sym_void);
   unknown_type = make_abstract_type(sym_unknown);
   any_type = make_abstract_type(sym_any);
@@ -2674,8 +2705,8 @@ is_es_cs_recursive(CreationSet *cs) {
 }
 
 static void
-collect_es_type_confluences(Vec<AVar *> &type_confluences) {
-  type_confluences.clear();
+collect_es_type_confluences(Vec<AVar *> &confluences) {
+  confluences.clear();
   forv_EntrySet(es, fa->ess) {
     forv_Var(v, es->fun->fa_all_Vars) {
       AVar *xav = make_AVar(v, es);
@@ -2685,36 +2716,38 @@ collect_es_type_confluences(Vec<AVar *> &type_confluences) {
             continue;
           if (av->var->sym->clone_for_constants) {
             if (type_diff(av->in, x->out) != bottom_type) {
-              type_confluences.set_add(av);
+              confluences.set_add(av);
               break;
             }
           } else {
             if (type_diff(av->in->type, x->out->type) != bottom_type) {
-              type_confluences.set_add(av);
+              confluences.set_add(av);
               break;
             }
           }
         }
     }
   }
-  type_confluences.set_to_vec();
+  confluences.set_to_vec();
+  qsort_by_id(confluences);
 }
 
 static void
-collect_es_marked_confluences(Vec<AVar *> &type_confluences, Accum<AVar *> &acc) {
-  type_confluences.clear();
+collect_es_marked_confluences(Vec<AVar *> &confluences, Accum<AVar *> &acc) {
+  confluences.clear();
   forv_AVar(xav, acc.asvec) {
     for (AVar *av = xav; av; av = av->lvalue)
       forv_AVar(x, av->backward) if (x) {
         if (!x->out->n)
           continue;
         if (different_marked_args(x, av, 1)) {
-          type_confluences.set_add(av);
+          confluences.set_add(av);
           break;
         }
       }
   }
-  type_confluences.set_to_vec();
+  confluences.set_to_vec();
+  qsort_by_id(confluences);
 }
 
 static void
@@ -2742,6 +2775,7 @@ collect_cs_type_confluences(Vec<AVar *> &confluences) {
     }
   }
   confluences.set_to_vec();
+  qsort_by_id(confluences);
 }
 
 static void

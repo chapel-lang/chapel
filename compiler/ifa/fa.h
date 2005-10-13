@@ -60,6 +60,7 @@ typedef  MapElem<AEdge*, EntrySet*> MapElemAEdgeEntrySet;
 class EntrySet : public gc {
  public:
   Fun                           *fun;
+  int                           id;
   uint                          dfs_color : 2;
   Map<MPosition*,AVar*>         args;
   Vec<AVar *>                   rets;
@@ -75,7 +76,7 @@ class EntrySet : public gc {
   Map<AEdge *, EntrySet *>      pending_es_backedge_map;
   Vec<EntrySet *>               *equiv;         // clone.cpp
 
-  EntrySet(Fun *af): fun(af), equiv(0) {}
+  EntrySet(Fun *af);
 };
 #define forv_EntrySet(_p, _v) forv_Vec(EntrySet, _p, _v)
 
