@@ -48583,3 +48583,18 @@ Modified files:
 	chapel/compiler/ifa/: sym.cpp 
 	chapel/test/domains/roxana/helper/: test_hash_table1.chpl 
 
+---------------------------------------------------------------------------
+
+10/13/05 08:19:21 -- jplevyak
+
+Log message:
+	Didn't realize that the .good files were generated.
+	Checkin of corrected cfghelp files.
+
+Modified files:
+	chapel/test/execflags/shannon/configs/help/: 
+	                                             configVar-Dash.cfghelp 
+	                                             configVarSetOver.cfghelp 
+	                                             configVarSetTwoTypes.cfghelp 
+	                                             configVarTwoModules.cfghelp 
+
