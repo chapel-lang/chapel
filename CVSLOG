@@ -48609,3 +48609,25 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+10/13/05 11:58:11 -- deitz
+
+Log message:
+	Added support 1D domains.
+	
+	Added a test of a 1D domain.
+	
+	Removed four futures for tests that are now working.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+Added files:
+	chapel/test/arrays/deitz/: test_domains_1D.chpl 
+	                           test_domains_1D.good 
+Removed files:
+	chapel/test/types/seq/deitz/: test_seq8b.future 
+	                              test_seq_tuple2.future 
+	chapel/test/types/tuple/deitz/: test_tuple_of_tuples.future 
+	chapel/test/types/tuple/jplevyak/: tuple_index-2.future 
+
