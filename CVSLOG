@@ -48647,3 +48647,13 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+10/13/05 13:46:18 -- jplevyak
+
+Log message:
+	Functionalize compatibility functions for edges.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
