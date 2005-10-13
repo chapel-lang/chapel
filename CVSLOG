@@ -48657,3 +48657,17 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+10/13/05 15:15:49 -- deitz
+
+Log message:
+	Fixed a bug in my hand-coded 2D array test case and got it working.
+	
+	Added a simple test of a simple forall loop.
+
+Modified files:
+	chapel/test/arrays/deitz/: test_array_2D.chpl test_array_2D.good 
+Added files:
+	chapel/test/trivial/deitz/: test_forall.chpl test_forall.good 
+
