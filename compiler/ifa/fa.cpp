@@ -635,13 +635,17 @@ same_eq_classes(Setters *s, Setters *ss) {
 
 static int
 edge_nest_compatible_with_entry_set(AEdge *e, EntrySet *es) {
-  if (es->fun->nested_in != e->from->fun)
+  if (!es->fun->sym->nesting_depth)
     return 1;
-  AEdge **last = es->edges.last();
-  for (AEdge **pee = es->edges.first(); pee < last; pee++) if (*pee) {
-    AEdge *ee = *pee;
-    if (ee->from != e->from)
-      return 0;
+  if (es->fun->sym->nesting_depth >= e->from->fun->sym->nesting_depth) { // call down or same
+    if (es->display.n) 
+      for (int i = 0; i < e->from->display.n; i++)
+        if (es->display.v[i] != e->from->display.v[i])
+          return 0;
+  } else { // call up
+    if (es->display.n)                                                                for (int i = 0; i < es->fun->sym->nesting_depth; i++)
+        if (es->display.v[i] != e->from->display.v[i])
+          return 0;
   }
   return 1;
 }
