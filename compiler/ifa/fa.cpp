@@ -673,7 +673,8 @@ edge_nest_compatible_with_entry_set(AEdge *e, EntrySet *es) {
         if (es->display.v[i] != e->from->display.v[i])
           return 0;
   } else { // call up
-    if (es->display.n)                                                                for (int i = 0; i < es->fun->sym->nesting_depth; i++)
+    if (es->display.n)
+      for (int i = 0; i < es->fun->sym->nesting_depth; i++)
         if (es->display.v[i] != e->from->display.v[i])
           return 0;
   }
@@ -709,6 +710,41 @@ different_marked_args(AVar *a1, AVar *a2, int offset, AVar *basis = 0) {
 }
 
 static int
+edge_type_compatible_with_edge(AEdge *e, AEdge *ee, EntrySet *es, int fmark = 0) {
+  assert(e->args.n && ee->args.n);
+  forv_MPosition(p, e->match->fun->arg_positions) {
+    AVar *e_arg = e->args.get(p); 
+    AVar *ee_arg = ee->args.get(p);
+    if (!e_arg || !ee_arg)
+      continue;
+    if (!fmark) {
+      if (ee_arg->out->type->n && e_arg->out->type->n && ee_arg->out->type != e_arg->out->type)
+        return 0;
+    } else {
+      AVar *es_arg = es->args.get(p);
+      if (different_marked_args(ee_arg, e_arg, 2, es_arg))
+        return 0;
+    }
+  }
+  if (e->rets.n != ee->rets.n)
+    return 0;
+  for (int i = 0; i < e->rets.n; i++) {
+    if (ee->rets.v[i]->lvalue && e->rets.v[i]->lvalue) {
+      if (!fmark) {
+        if (ee->rets.v[i]->lvalue->out->type->n && e->rets.v[i]->lvalue->out->type->n &&
+            ee->rets.v[i]->lvalue->out->type != e->rets.v[i]->lvalue->out->type)
+          return 0;
+      } else {
+        if (different_marked_args(ee->rets.v[i]->lvalue, e->rets.v[i]->lvalue, 1,
+                                  es->rets.v[i]->lvalue))
+          return 0;
+      }
+    }
+  }
+  return 1;
+}
+
+static int
 edge_type_compatible_with_entry_set(AEdge *e, EntrySet *es, int fmark = 0) {
   assert(e->args.n && es->args.n);
   if (!es->split) {
@@ -717,7 +753,7 @@ edge_type_compatible_with_entry_set(AEdge *e, EntrySet *es, int fmark = 0) {
       if (!e_arg)
         continue;
       if (!fmark) {
-        if (e_arg->out != es_arg->out)
+        if (e_arg->out->type->n && es_arg->out->type->n && e_arg->out->type != es_arg->out->type)
           return 0;
       } else
         if (different_marked_args(e_arg, es_arg, 2))
@@ -728,7 +764,8 @@ edge_type_compatible_with_entry_set(AEdge *e, EntrySet *es, int fmark = 0) {
     for (int i = 0; i < e->rets.n; i++) {
       if (es->rets.v[i]->lvalue && e->rets.v[i]->lvalue) {
         if (!fmark) {
-          if (es->rets.v[i]->lvalue->out != e->rets.v[i]->lvalue->out)
+          if (es->rets.v[i]->lvalue->out->type->n && e->rets.v[i]->lvalue->out->type->n &&
+              es->rets.v[i]->lvalue->out->type != e->rets.v[i]->lvalue->out->type)
             return 0;
         } else
           if (different_marked_args(es->rets.v[i]->lvalue, e->rets.v[i]->lvalue, 1))
@@ -741,34 +778,8 @@ edge_type_compatible_with_entry_set(AEdge *e, EntrySet *es, int fmark = 0) {
       AEdge *ee = *pee;
       if (!ee->args.n)  
         continue;
-      forv_MPosition(p, e->match->fun->arg_positions) {
-        AVar *e_arg = e->args.get(p); 
-        AVar *ee_arg = ee->args.get(p);
-        if (!e_arg || !ee_arg)
-          continue;
-        if (!fmark) {
-          if (ee_arg->out != e_arg->out)
-            return 0;
-        } else {
-          AVar *es_arg = es->args.get(p);
-          if (different_marked_args(ee_arg, e_arg, 2, es_arg))
-            return 0;
-        }
-      }
-      if (e->rets.n != ee->rets.n)
+      if (!edge_type_compatible_with_edge(e, ee, es, fmark))
         return 0;
-      for (int i = 0; i < e->rets.n; i++) {
-        if (ee->rets.v[i]->lvalue && e->rets.v[i]->lvalue) {
-          if (!fmark) {
-            if (ee->rets.v[i]->lvalue->out != e->rets.v[i]->lvalue->out)
-              return 0;
-          } else {
-            if (different_marked_args(ee->rets.v[i]->lvalue, e->rets.v[i]->lvalue, 1,
-                                      es->rets.v[i]->lvalue))
-              return 0;
-          }
-        }
-      }
     }
   }
   return 1;
@@ -780,6 +791,23 @@ int sset_compatible(AVar *av1, AVar *av2) {
     return 0;
   if (av1->lvalue && av2->lvalue)
     if (!same_eq_classes(av1->lvalue->setters, av2->lvalue->setters))
+      return 0;
+  return 1;
+}
+
+static int
+edge_sset_compatible_with_edge(AEdge *e, AEdge *ee) {
+  assert(e->args.n && ee->args.n);
+  forv_MPosition(p, e->match->fun->arg_positions) {
+    AVar *eav = e->args.get(p), *eeav = ee->args.get(p);
+    if (eav && eeav)
+      if (!sset_compatible(eav, eeav))
+        return 0;
+  }
+  if (e->rets.n != ee->rets.n)
+    return 0;
+  for (int i = 0; i < e->rets.n; i++)
+    if (!sset_compatible(e->rets.v[i], ee->rets.v[i]))
       return 0;
   return 1;
 }
@@ -805,17 +833,8 @@ edge_sset_compatible_with_entry_set(AEdge *e, EntrySet *es) {
       AEdge *ee = *pee;
       if (!ee->args.n)  
         continue;
-      forv_MPosition(p, e->match->fun->arg_positions) {
-        AVar *eav = e->args.get(p), *eeav = ee->args.get(p);
-        if (eav && eeav)
-          if (!sset_compatible(eav, eeav))
-            return 0;
-      }
-      if (e->rets.n != ee->rets.n)
+      if (!edge_sset_compatible_with_edge(e, ee))
         return 0;
-      for (int i = 0; i < e->rets.n; i++)
-        if (!sset_compatible(ee->rets.v[i], ee->rets.v[i]))
-          return 0;
     }
   }
   return 1;
@@ -2712,7 +2731,7 @@ collect_es_type_confluences(Vec<AVar *> &confluences) {
       AVar *xav = make_AVar(v, es);
       for (AVar *av = xav; av; av = av->lvalue)
         forv_AVar(x, av->backward) if (x) {
-          if (!x->out->n)
+          if (!x->out->type->n)
             continue;
           if (av->var->sym->clone_for_constants) {
             if (type_diff(av->in, x->out) != bottom_type) {
@@ -2720,7 +2739,7 @@ collect_es_type_confluences(Vec<AVar *> &confluences) {
               break;
             }
           } else {
-            if (type_diff(av->in->type, x->out->type) != bottom_type) {
+            if (x->out->type->n && type_diff(av->in->type, x->out->type) != bottom_type) {
               confluences.set_add(av);
               break;
             }
