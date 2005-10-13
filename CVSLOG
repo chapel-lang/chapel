@@ -48568,3 +48568,18 @@ Added files:
 	                            test_this2.chpl test_this2.future 
 	                            test_this2.good 
 
+---------------------------------------------------------------------------
+
+10/12/05 17:21:36 -- jplevyak
+
+Log message:
+	Change output of floats to use printf("%#g".. to ensure that a "."
+	is printed for whole numbers so that they can be differentiated
+	visually from plain integers.
+	Fix the detection of nested functions as per Steve.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: sym.cpp 
+	chapel/test/domains/roxana/helper/: test_hash_table1.chpl 
+
