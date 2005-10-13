@@ -2,4 +2,4 @@ CONFIG VARS:
 ============
    x: 111 (default:  1)
   y?: i wanted to see it work again (default:  why not?)
-   z: 99.9 (default:  2.2)
+   z: 99.9 (default:  2.20000)
