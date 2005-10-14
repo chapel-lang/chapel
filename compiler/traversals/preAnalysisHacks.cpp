@@ -96,6 +96,22 @@ void PreAnalysisHacks::postProcessExpr(Expr* expr) {
 
   if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
     if (SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr)) {
+      if (!strcmp(base->var->name, "_construct__aarray")) {
+        if (DefExpr* def = dynamic_cast<DefExpr*>(call->parentExpr)) {
+          call->parentStmt->insertAfter(
+            new ExprStmt(new CallExpr(new MemberAccess(new SymExpr(def->sym), new UnresolvedSymbol("myinit")))));
+          call->parentStmt->insertAfter(
+            new ExprStmt(new CallExpr(OP_GETSNORM,
+                                      new MemberAccess(new SymExpr(def->sym), new UnresolvedSymbol("dom")),
+                                      call->argList->last()->copy())));
+          call->argList->last()->replace(new_IntLiteral(2));
+        }
+      }
+    }
+  }
+
+  if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
+    if (SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr)) {
       if (!strcmp(base->var->name, "_construct__adomain_lit")) {
         Stmt* stmt = call->parentStmt;
         VarSymbol* _adomain_tmp = new VarSymbol("_adomain_tmp");

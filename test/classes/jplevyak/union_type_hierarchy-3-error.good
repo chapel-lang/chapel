@@ -1,7 +1,11 @@
 _chpl_adomain.chpl:10: write, val : _adomain_info
 _chpl_adomain.chpl:44: write, val : _adomain_lit
 _chpl_adomain.chpl:64: write, x : _adomain
+_chpl_adomain.chpl:64: write, x : _adomain
+_chpl_adomain.chpl:69: write, val : _aarray_info
+_chpl_adomain.chpl:99: write, val : _aarray
 _chpl_complex.chpl:9: write, x : complex
+_chpl_data.chpl:55: write, val : _fdata
 _chpl_data.chpl:55: write, val : _fdata
 _chpl_data.chpl:55: write, val : _fdata
 _chpl_data.chpl:55: write, val : _fdata

@@ -975,6 +975,8 @@ type:
     { $$ = new CallExpr($1, new NamedExpr("elt_type", $3)); }
 | tuple_multiplier TSTAR variable_expr
     { $$ = new CallExpr("_htuple", $3, $1); }
+| TLSBR nonempty_expr_ls TRSBR type
+    { $$ = new CallExpr("_aarray", $4, $2); }
 ;
 
 formal_type:
