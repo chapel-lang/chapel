@@ -48872,3 +48872,13 @@ Modified files:
 	                                             configVarSetTwoTypes.cfghelp 
 	                                             configVarTwoModules.cfghelp 
 
+---------------------------------------------------------------------------
+
+10/14/05 14:32:43 -- jplevyak
+
+Log message:
+	More aggressive object contour sharing.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
