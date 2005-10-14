@@ -5,4 +5,4 @@ module1's config vars:
 
 module2's config vars:
   x: 88 (default:  2)
-  z: 8.8 (default:  2.20000)
+  z: 8.8 (default:  2.2)

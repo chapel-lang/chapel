@@ -204,6 +204,28 @@ unalias_type(Sym *s) {
   return s;
 }
 
+
+static int sprint_float_val(char* str, double val) {
+  int numchars = sprintf(str, "%g", val);
+  if (strchr(str, '.') == NULL && strchr(str, 'e') == NULL) {
+    strcat(str, ".0");
+    return numchars + 2;
+  } else {
+    return numchars;
+  }
+}
+
+static int sprint_complex_val(char* str, double real, double imm) {
+  int numchars = 0;
+  numchars += sprintf(str+numchars, "(");
+  numchars += sprint_float_val(str+numchars, real);
+  numchars += sprintf(str+numchars, ",");
+  numchars += sprint_float_val(str+numchars, imm);
+  numchars += sprintf(str+numchars, ")");
+  return numchars;
+}
+
+
 int 
 sprint_imm(char *str, Immediate &imm) {
   int res = -1;
@@ -243,18 +265,18 @@ sprint_imm(char *str, Immediate &imm) {
     case IF1_NUM_KIND_FLOAT:
       switch (imm.num_index) {
         case IF1_FLOAT_TYPE_32:
-          res = sprintf(str, "%#g", imm.v_float32); break;
+          res = sprint_float_val(str, imm.v_float32); break;
         case IF1_FLOAT_TYPE_64:
-          res = sprintf(str, "%#g", imm.v_float64); break;
+          res = sprint_float_val(str, imm.v_float64); break;
         default: assert(!"case");
       }
       break;
     case IF1_NUM_KIND_COMPLEX:
       switch (imm.num_index) {
-        case IF1_FLOAT_TYPE_32:
-          res = sprintf(str, "(%#g,%#g)", imm.v_complex32.r, imm.v_complex32.i); break;
+        case IF1_FLOAT_TYPE_32: 
+          res = sprint_complex_val(str, imm.v_complex32.r, imm.v_complex32.i); break;
         case IF1_FLOAT_TYPE_64:
-          res = sprintf(str, "(%#g,%#g)", imm.v_complex64.r, imm.v_complex64.i); break;
+          res = sprint_complex_val(str, imm.v_complex64.r, imm.v_complex64.i); break;
         default: assert(!"case");
       }
       break;

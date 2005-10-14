@@ -37,12 +37,14 @@ echocompilerdir:
 
 $(PLATFORM)/%.test.nogc.o: %.test.cpp $(PLATFORM_DIR)
 	$(CXX) -c -DTEST_LIB $(CXXFLAGS) -o $@ $<
+	@rm -f *.nogc.cpp
 
 $(PLATFORM)/%.test.o: %.test.cpp $(PLATFORM_DIR)
 	$(CXX) -c -DTEST_LIB $(CXXFLAGS) -o $@ $<
 
 $(PLATFORM)/%.nogc.o: %.cpp $(PLATFORM_DIR)
 	$(CXX) -c $(CXXFLAGS) -o $@ $<
+	@rm -f *.nogc.cpp
 
 %.nogcdepend: %.nogc.cpp $(PLATFORM_DIR)
 	@$(ECHO) -n $(PLATFORM)/ >> $(CVS_DEPENDS)

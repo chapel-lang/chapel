@@ -8,6 +8,7 @@
 
 class CreateConfigVarTable : public SymtabTraversal {
  public:
+  static bool running;
   fileinfo outfileinfo;
   fileinfo extheadfileinfo;
   fileinfo intheadfileinfo;
@@ -17,6 +18,8 @@ class CreateConfigVarTable : public SymtabTraversal {
   void processSymbol(Symbol* sym);
 
   void closeCFile(void);
+
+  virtual void run(Vec<ModuleSymbol*>* modules = NULL);
 };
 
 #endif

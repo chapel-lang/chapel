@@ -90,7 +90,6 @@ class Expr : public BaseAST {
   virtual bool isConst(void);
   virtual int rank(void);
 
-  virtual void printCfgInitString(FILE* outfile);
   FnSymbol *parentFunction();
 
   bool isRead(void);

@@ -106,10 +106,10 @@ class VarSymbol : public Symbol {
   bool isConst(void);
   //Roxana
   bool isParam(void);
-  virtual void codegenDef(FILE* outfile);
 
   void print(FILE* outfile);
   void printDef(FILE* outfile);
+  virtual void codegenDef(FILE* outfile);
 };
 
 

@@ -7,11 +7,12 @@
 #include "symbol.h"
 #include "symtab.h"
 #include "astutil.h"
-#include "../traversals/clearTypes.h"
-#include "../traversals/updateSymbols.h"
-#include "../traversals/instantiate.h"
 #include "../traversals/buildClassHierarchy.h"
+#include "../traversals/clearTypes.h"
+#include "../traversals/createConfigVarTable.h"
 #include "../traversals/findTypeVariables.h"
+#include "../traversals/instantiate.h"
+#include "../traversals/updateSymbols.h"
 #include "../passes/preAnalysisCleanup.h"
 
 FnSymbol* chpl_main = NULL;
@@ -152,10 +153,21 @@ bool Symbol::isConst(void) {
   return true;
 }
 
+
 //Roxana: not all symbols are parameter symbols
 bool Symbol::isParam(){
         return false;
 }
+
+
+bool Symbol::isThis(void) {
+  FnSymbol *f = dynamic_cast<FnSymbol*>(defPoint->parentSymbol);
+  if (!f || !f->_this)
+    return 0;
+  else
+    return f->_this == this;
+}
+
 
 void Symbol::print(FILE* outfile) {
   fprintf(outfile, "%s", name);
@@ -281,36 +293,6 @@ void VarSymbol::traverseDefSymbol(Traversal* traversal) {
 }
 
 
-void VarSymbol::print(FILE* outfile) {
-  if (immediate)
-    fprint_imm(outfile, *immediate);
-  else
-    fprintf(outfile, "%s", name);
-}
-
-
-void VarSymbol::printDef(FILE* outfile) {
-  if (varClass == VAR_CONFIG) {
-    fprintf(outfile, "config ");
-  }
-  if (varClass == VAR_STATE) {
-    fprintf(outfile, "state ");
-  }
-  //Roxana -- introduced various types of constness: const, param, nothing (var)
-  if (consClass == VAR_CONST) {
-    fprintf(outfile, "const ");
-  } else if (consClass == VAR_PARAM){
-        fprintf(outfile, "param");
-  }
-  else {
-    fprintf(outfile, "var ");
-  }
-  print(outfile);
-  fprintf(outfile, ": ");
-  type->print(outfile);
-}
-
-
 bool VarSymbol::initializable(void) {
   switch (parentScope->type) {
   case SCOPE_LOCAL:
@@ -339,14 +321,52 @@ bool VarSymbol::isParam(void){
   return (consClass == VAR_PARAM);
 }
 
-bool Symbol::isThis(void) {
-  FnSymbol *f = dynamic_cast<FnSymbol*>(defPoint->parentSymbol);
-  if (!f || !f->_this)
-    return 0;
-  else
-    return f->_this == this;
+
+void VarSymbol::print(FILE* outfile) {
+  if (immediate) {
+    bool isString = (immediate->const_kind == IF1_CONST_KIND_STRING);
+    if (isString) {
+      if (CreateConfigVarTable::running) {
+        fprintf(outfile, "\\\"");
+      } else {
+        fprintf(outfile, "\"");
+      }
+    }
+    fprint_imm(outfile, *immediate);
+    if (isString) {
+      if (CreateConfigVarTable::running) {
+        fprintf(outfile, "\\\"");
+      } else {
+        fprintf(outfile, "\"");
+      }
+    }
+  } else
+    Symbol::print(outfile);
 }
- 
+
+
+void VarSymbol::printDef(FILE* outfile) {
+  if (varClass == VAR_CONFIG) {
+    fprintf(outfile, "config ");
+  }
+  if (varClass == VAR_STATE) {
+    fprintf(outfile, "state ");
+  }
+  //Roxana -- introduced various types of constness: const, param, nothing (var)
+  if (consClass == VAR_CONST) {
+    fprintf(outfile, "const ");
+  } else if (consClass == VAR_PARAM){
+        fprintf(outfile, "param");
+  }
+  else {
+    fprintf(outfile, "var ");
+  }
+  print(outfile);
+  fprintf(outfile, ": ");
+  type->print(outfile);
+}
+
+
 void VarSymbol::codegenDef(FILE* outfile) {
   // need to ensure that this can be realized in C as a const, and
   // move its initializer here if it can be

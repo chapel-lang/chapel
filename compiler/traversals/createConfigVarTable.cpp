@@ -5,6 +5,8 @@
 #include "symscope.h"
 
 
+bool CreateConfigVarTable::running = false;
+
 CreateConfigVarTable::CreateConfigVarTable(void) {
   char* rtconfigFile = "rtconfig";
   openCFiles(rtconfigFile, &outfileinfo, &extheadfileinfo, &intheadfileinfo);
@@ -24,9 +26,9 @@ void CreateConfigVarTable::processSymbol(Symbol* symbol) {
 
   if (var && var->varClass == VAR_CONFIG) {
     char* moduleName = dynamic_cast<Symbol*>(var->parentScope->astParent)->name;
-    fprintf(codefile, "installConfigVar(\"%s\", ", var->name);
-    var->defPoint->init->printCfgInitString(codefile);
-    fprintf(codefile, ", \"%s\");\n", moduleName);
+    fprintf(codefile, "installConfigVar(\"%s\", \"", var->name);
+    var->defPoint->init->print(codefile);
+    fprintf(codefile, "\", \"%s\");\n", moduleName);
   }  
 }
 
@@ -45,4 +47,11 @@ void CreateConfigVarTable::closeCFile() {
   
   fprintf(codefile, "}\n");
   closeCFiles(&outfileinfo, &extheadfileinfo, &intheadfileinfo);
+}
+
+
+void CreateConfigVarTable::run(Vec<ModuleSymbol*>* modules) {
+  CreateConfigVarTable::running = true;
+  SymtabTraversal::run(modules);
+  CreateConfigVarTable::running = false;
 }

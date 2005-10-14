@@ -197,13 +197,6 @@ FnSymbol *Expr::parentFunction() {
 }
 
 
-void Expr::printCfgInitString(FILE* outfile) {
-  fprintf(outfile, "\"");
-  print(outfile);
-  fprintf(outfile, "\"");
-}
-
-
 typedef enum _EXPR_RW { expr_r, expr_w, expr_rw } EXPR_RW;
 
 static EXPR_RW expr_read_written(Expr* expr) {

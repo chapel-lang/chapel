@@ -4,5 +4,5 @@ module1's config vars:
   x: 9 (default:  1)
 
 module2's config vars:
-  x: 8.888 (default:  2.20000)
-  z: string set without module name (default:  this one doesn't require it)
+  x: 8.888 (default:  2.2)
+  z: string set without module name (default:  "this one doesn't require it")
