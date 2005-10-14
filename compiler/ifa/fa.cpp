@@ -2781,9 +2781,7 @@ collect_es_marked_confluences(Vec<AVar *> &confluences, Accum<AVar *> &acc) {
   confluences.clear();
   forv_AVar(xav, acc.asvec) {
     for (AVar *av = xav; av; av = av->lvalue)
-      forv_AVar(x, av->backward) if (x) {
-        if (!x->out->n)
-          continue;
+      forv_AVar(x, av->backward) if (x && x->mark_map) {
         if (different_marked_args(x, av, 1)) {
           confluences.set_add(av);
           break;
@@ -2809,7 +2807,7 @@ collect_cs_type_confluences(Vec<AVar *> &confluences) {
               break;
             }
           } else {
-            if (type_diff(av->in->type, x->out->type) != bottom_type) {
+            if (x->out->type->n && type_diff(av->in->type, x->out->type) != bottom_type) {
               confluences.set_add(av);
               break;
             }
@@ -3120,9 +3118,7 @@ collect_cs_marked_confluences(Vec<AVar *> &confluences) {
   confluences.clear();
   forv_CreationSet(cs, fa->css) {
     forv_AVar(av, cs->vars) {
-      forv_AVar(x, av->backward) if (x) {
-        if (!x->mark_map)
-          continue;
+      forv_AVar(x, av->backward) if (x && x->mark_map) {
         if (!av->contour_is_entry_set && av->contour != GLOBAL_CONTOUR) {
           if (different_marked_args(av, x, 1)) {
             confluences.set_add(av);
