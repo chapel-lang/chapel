@@ -48709,3 +48709,13 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+10/14/05 09:53:12 -- jplevyak
+
+Log message:
+	Make detection of mark confluences more conservative.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
