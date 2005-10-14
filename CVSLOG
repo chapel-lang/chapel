@@ -48695,3 +48695,17 @@ Modified files:
 	chapel/compiler/ifa/: clone.cpp graph.cpp 
 	chapel/compiler/include/: log.h 
 
+---------------------------------------------------------------------------
+
+10/14/05 09:20:08 -- jplevyak
+
+Log message:
+	New interfaces for make_entry_set fa_print_backward and new function
+	  show_atype which prints creation set ids.
+	Added print routiles for the "split" log.
+	Changed split_ess to not split creation sets in the same
+	  pass as entry sets.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
