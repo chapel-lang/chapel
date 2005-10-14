@@ -48759,3 +48759,14 @@ Added files:
 	chapel/test/arrays/deitz/: test_array_2Db.chpl 
 	                           test_array_2Db.good 
 
+---------------------------------------------------------------------------
+
+10/14/05 11:35:22 -- deitz
+
+Log message:
+	Removed future for test that now works because simple array
+	declarations are now being parsed.
+
+Removed files:
+	chapel/test/trivial/deitz/: test_scope2.future 
+
