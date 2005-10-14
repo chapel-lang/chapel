@@ -3125,7 +3125,7 @@ collect_cs_marked_confluences(Vec<AVar *> &confluences) {
     forv_AVar(av, cs->vars) {
       forv_AVar(x, av->backward) if (x && x->mark_map) {
         if (!av->contour_is_entry_set && av->contour != GLOBAL_CONTOUR) {
-          if (different_marked_args(av, x, 1)) {
+          if (different_marked_args(x, av, 1)) {
             confluences.set_add(av);
             break;
           }
