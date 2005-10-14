@@ -48719,3 +48719,13 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+10/14/05 10:31:00 -- jplevyak
+
+Log message:
+	Tighten up confluence code using DFS marks.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
