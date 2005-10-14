@@ -280,7 +280,6 @@ flow_vars_assign(AVar *rhs, AVar *lhs) {
     flow_var_to_var(rhs, lhs->lvalue);
 }
 
-
 // Initially create a unique creation set for each
 // variable (location in program text).
 CreationSet *
@@ -288,23 +287,28 @@ creation_point(AVar *v, Sym *s) {
   CreationSet *cs = v->creation_set;
   if (cs) {
     assert(cs->sym == s);
-    goto Ldone;
+    goto Lfound;
+  }
+  if (s == sym_function)
+    goto Lunique;
+  EntrySet *es = (EntrySet*)v->contour;
+  if ((void*)es == GLOBAL_CONTOUR)
+    es = 0;
+  if (es && es->split) {
+    AVar *oldv = make_AVar(v->var, es->split);
+    cs = oldv->creation_set;
+    if (cs) {
+      assert(cs->sym == s);
+      goto Lfound;
+    }
   }
   forv_CreationSet(x, s->creators) {
+    if (s->abstract_type && x == s->abstract_type->v[0])
+      continue;
     cs = x;
-    if (v->contour == GLOBAL_CONTOUR) {
-      if (cs->defs.n)
-        goto LnextCreationSet;
-    } else {
-      if (!cs->defs.n)
-        goto LnextCreationSet;
-      forv_AVar(av, cs->defs)
-        if (av->var != v->var)
-          goto LnextCreationSet;
-    }
     goto Lfound;
-  LnextCreationSet:;
   }
+ Lunique:
   // new creation set
   cs = new CreationSet(s);
   s->creators.add(cs);
@@ -317,9 +321,8 @@ creation_point(AVar *v, Sym *s) {
       cs->var_map.put(h->name, iv);
   }
  Lfound:
-  cs->defs.add(v);
   v->creation_set = cs;
- Ldone:
+  cs->defs.set_add(v);
   if (v->contour_is_entry_set)
     ((EntrySet*)v->contour)->creates.set_add(cs);
   update_gen(v, make_AType(cs));
@@ -3018,6 +3021,7 @@ clear_es(EntrySet *es) {
 
 static void
 clear_cs(CreationSet *cs) {
+  cs->defs.clear();      
   cs->ess.clear();      
   cs->es_backedges.clear();
   forv_AVar(v, cs->vars)
@@ -3327,10 +3331,8 @@ split_css(Vec<AVar *> &astarters) {
       cs->defs.set_difference(compatible_set, new_defs);
       if (new_defs.n) {
         cs->defs.move(new_defs);
-        cs->defs.set_to_vec();
         CreationSet *new_cs = new CreationSet(cs);
         new_cs->defs.move(compatible_set);
-        new_cs->defs.set_to_vec();
         forv_AVar(v, new_cs->defs)
           v->creation_set = new_cs;
         new_cs->split = cs;
