@@ -48813,3 +48813,62 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+10/14/05 14:07:24 -- bradc
+
+Log message:
+	I was sick of sitting in meetings all week, so used my
+	last half hour last night to finish up some superficial
+	changes that had been lingering in my directory.
+	
+	Improved pretty-printing of string literals (for debugging
+	via the print() method) to include quotes; also improved
+	printing of default values for config vars of type string
+	to include quotes.
+	
+	Copied the floating-point printing concept from the runtime
+	into John's printing of literals in sym.cpp to get rid of
+	extra trailing 0's caused by %#g.  2.2 should now print as
+	2.2 rather than 2.20000 and 2.0 should print as 2.0.  I think
+	this is an improvement, but have longer-term concerns about
+	printing literals using either of these methods because they
+	make no guarantees that all significant digits will get
+	printed out for floating point values.  We should be able
+	to get away with this for awhile, but eventually I suspect
+	we'll want to codegen user literals using the string they
+	fed us rather than converting it to floating point and then
+	back to text.  (computed Immediate floating point values
+	will have to be printed out with sufficient precision,
+	obviously, so there's a challenge there as well).
+	
+	Fixed up a bunch of .cfghelp files to match these two
+	changes.
+	
+	Implemented Steve's suggested improvement to the stringutil
+	functions by relying on default values rather than pure
+	overloading.
+	
+	Removed Expr::printCfgInitString -- it wasn't doing enough
+	anymore to be useful.
+	
+	Rearranged some symbol.cpp methods in order to match the
+	order in the symbol.h header file.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp 
+	chapel/compiler/ifa/: sym.cpp 
+	chapel/compiler/include/: expr.h stringutil.h symbol.h 
+	chapel/compiler/make/: Makefile.compiler.foot 
+	chapel/compiler/traversals/: createConfigVarTable.cpp 
+	                             createConfigVarTable.h 
+	chapel/compiler/util/: stringutil.cpp 
+	chapel/test/execflags/shannon/configs/help/: 
+	                                             configVar-Dash.cfghelp 
+	                                             configVarHelp.cfghelp 
+	                                             configVarModStrings1.cfghelp 
+	                                             configVarModStrings2.cfghelp 
+	                                             configVarSetOver.cfghelp 
+	                                             configVarSetTwoTypes.cfghelp 
+	                                             configVarTwoModules.cfghelp 
+
