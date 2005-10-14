@@ -48729,3 +48729,22 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+10/14/05 11:27:13 -- deitz
+
+Log message:
+	Added initial non-robust support for limited 2D arrays.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/traversals/: preAnalysisHacks.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	chapel/test/arrays/deitz/: test_array_2D.chpl 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+Added files:
+	chapel/test/arrays/deitz/: test_array_2Da.chpl 
+	                           test_array_2Da.good 
+
