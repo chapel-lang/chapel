@@ -48770,3 +48770,16 @@ Log message:
 Removed files:
 	chapel/test/trivial/deitz/: test_scope2.future 
 
+---------------------------------------------------------------------------
+
+10/14/05 11:55:53 -- jplevyak
+
+Log message:
+	Sort two more worklists to remove non-determinism.
+	DFS Marking covers everything reachable from nodes which
+	  generate values instead of just backward from the detected
+	  confluence so as to handle recursive dependencies.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
