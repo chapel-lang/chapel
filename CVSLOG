@@ -48803,3 +48803,13 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+10/14/05 13:48:49 -- jplevyak
+
+Log message:
+	Fix valgrind errors : uninitialized variable
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
