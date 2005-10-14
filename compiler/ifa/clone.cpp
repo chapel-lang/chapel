@@ -316,7 +316,7 @@ collect_ess_from_css(Vec<CreationSet *> &css, Vec<EntrySet *> &ess) {
   todo_css.set_to_vec();
   for (int i = 0; i < todo_css.n; i++) {
     CreationSet *cs = todo_css.v[i];
-    forv_AVar(av, cs->defs)
+    forv_AVar(av, cs->defs) if (av)
       if (av->contour_is_entry_set)
         ess.set_add((EntrySet*)av->contour);
       else if (av->contour != GLOBAL_CONTOUR)
@@ -601,7 +601,7 @@ define_concrete_types(CSSS &css_sets) {
     if (sym != (Sym*)-1) {
       AVar *def = 0;
       forv_CreationSet(cs, *eqcss) if (cs) {
-        forv_AVar(av, cs->defs) {
+        forv_AVar(av, cs->defs) if (av) {
           if (!def)
             def = av;
           else if (def != av)
@@ -626,8 +626,8 @@ define_concrete_types(CSSS &css_sets) {
           if (cs->defs.n != 1)
             ast = BAD_AST;
           else if (!ast)
-            ast = cs->defs.v[0]->var->def->code->ast;
-          else if (ast != cs->defs.v[0]->var->def->code->ast)
+            ast = cs->defs.first()->var->def->code->ast;
+          else if (ast != cs->defs.first()->var->def->code->ast)
             ast = BAD_AST;
           cs->type = s;
         }

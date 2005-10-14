@@ -422,7 +422,8 @@ graph_avars(FA *fa, char *fn) {
 static void
 graph_es_node(FILE *fp, EntrySet *es) {
   char label[80];
-  sprintf(label, "%s_%d", es->fun->sym->name ? es->fun->sym->name : "", 
+  sprintf(label, "%d:%s_%d", es->id, 
+          es->fun->sym->name ? es->fun->sym->name : "", 
           es->fun->sym->id);
   graph_node(fp, es, label, G_BLUE|G_BOX);
 }
@@ -433,7 +434,7 @@ graph_cs_node(FILE *fp, CreationSet *cs) {
   if (cs->sym->is_constant)
     sprint_imm(label, cs->sym->imm);
   else
-    sprintf(label, "%s_%d", cs->sym->name ? cs->sym->name : 
+    sprintf(label, "%d:%s_%d", cs->id, cs->sym->name ? cs->sym->name : 
             (cs->sym->constant ? cs->sym->constant : ""), 
             cs->sym->id);
   graph_node(fp, cs, label, G_RED|G_ELLIPSE);
