@@ -48681,3 +48681,17 @@ Log message:
 Removed files:
 	chapel/test/arrays/deitz/: test_array_2D.future 
 
+---------------------------------------------------------------------------
+
+10/14/05 08:40:59 -- jplevyak
+
+Log message:
+	Add entry and creation set id's to the contour graph.
+	Add a new log type 's' for "splitting".
+	Make it possible for CreationSet::defs to be a set instead
+	  of a vector.
+
+Modified files:
+	chapel/compiler/ifa/: clone.cpp graph.cpp 
+	chapel/compiler/include/: log.h 
+
