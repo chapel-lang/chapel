@@ -48783,3 +48783,13 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+10/14/05 12:52:21 -- jplevyak
+
+Log message:
+	Make the type marks specific to CreationSet (except for constants).
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
