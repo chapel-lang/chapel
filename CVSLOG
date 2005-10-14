@@ -48748,3 +48748,14 @@ Added files:
 	chapel/test/arrays/deitz/: test_array_2Da.chpl 
 	                           test_array_2Da.good 
 
+---------------------------------------------------------------------------
+
+10/14/05 11:27:48 -- deitz
+
+Log message:
+	Added one more 2D array test case.
+
+Added files:
+	chapel/test/arrays/deitz/: test_array_2Db.chpl 
+	                           test_array_2Db.good 
+
