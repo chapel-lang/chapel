@@ -48793,3 +48793,13 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+10/14/05 13:44:08 -- jplevyak
+
+Log message:
+	Cleanup marked confluence discovery a bit.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
