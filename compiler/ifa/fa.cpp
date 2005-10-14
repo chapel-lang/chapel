@@ -107,7 +107,8 @@ unique_AVar(Var *v, EntrySet *es) {
   return av;
 }
 
-CreationSet::CreationSet(Sym *s) : sym(s), clone_for_constants(0), added_element_var(0), atype(0), equiv(0) { 
+CreationSet::CreationSet(Sym *s) : sym(s), clone_for_constants(0), added_element_var(0), 
+                                   atype(0), equiv(0), type(0) { 
   id = creation_set_id++;
 }
 
