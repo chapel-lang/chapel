@@ -3177,13 +3177,14 @@ analyze_confluence(AVar *av, int akind = AKIND_TYPE) {
   Vec<AVar *> *dir = akind == AKIND_SETTER ? &av->forward : &av->backward;
   forv_AVar(x, *dir) if (x) {
     assert(x->contour_is_entry_set);
-    if (akind == AKIND_TYPE && !x->out) continue;
+    if (akind == AKIND_TYPE && !x->out->type->n) continue;
     if (akind == AKIND_MARK && !x->mark_map) continue;
     for (int i = 0; i < ss.n; i++) {
       forv_AVar(a, *ss.v[i]) if (a) {
-        if ((akind == AKIND_TYPE && a->out == x->out) || 
+        if ((akind == AKIND_TYPE && 
+             (!a->out->type->n || !x->out->type->n || a->out->type == x->out->type)) || 
             (akind == AKIND_SETTER && same_eq_classes(a->setters, x->setters)) ||
-            (akind == AKIND_MARK && !different_marked_args(a, x, 1))) 
+            (akind == AKIND_MARK && !different_marked_args(x, a, 1))) 
         {
           ss.v[i]->set_add(x);
           goto Ldone;
@@ -3265,7 +3266,7 @@ split_ess_setters(Vec<AVar *> &confluences) {
         if (is_return_value(av)) {
           if (split_entry_set(av, 1))
             analyze_again = 1;
-        } else
+        } else if (!analyze_again)
           if (split_with_setter_marks(av))
             analyze_again = 1;
       } else {
@@ -3273,11 +3274,11 @@ split_ess_setters(Vec<AVar *> &confluences) {
         if (aav->var->is_formal) {
           if (split_entry_set(aav, 1))
             analyze_again = 1;
-        } else
+        } else if (!analyze_again)
           if (split_with_setter_marks(av))
             analyze_again = 1;
       }
-    } else
+    } else if (!analyze_again)
       if (split_with_setter_marks(av))
         analyze_again = 1;
   }
@@ -3290,12 +3291,9 @@ split_css(Vec<AVar *> &astarters) {
   // build starter sets, groups of starters for the same CreationSet
   Vec<AVar *> starters;
   forv_AVar(av, astarters)
-//    if (!is_es_cs_recursive(av->creation_set))
-      starters.add(av);
+    starters.add(av);
   while (starters.n) {
     CreationSet *cs = starters.v[0]->creation_set;
-//    if (is_es_cs_recursive(cs))
-//      continue;
     Vec<AVar *> save;
     Vec<AVar *> starter_set;
     forv_AVar(av, starters) {
