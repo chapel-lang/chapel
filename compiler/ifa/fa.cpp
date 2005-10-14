@@ -685,12 +685,16 @@ static int
 different_marked_args(AVar *a1, AVar *a2, int offset, AVar *basis = 0) {
   Vec<void *> marks1, marks2;
   AVar *basis1 = basis ? basis : a2;
+  int found1 = 0, found2 = 0;
   if (a1->mark_map) {
     form_Map(MarkElem, x, *a1->mark_map) {
       if (basis1->mark_map) {
         int m = basis1->mark_map->get(x->key);
-        if (m && m - offset == x->value)
-          marks1.set_add(x->key);
+        if (m) {
+          found1 = 1;
+          if (m - offset == x->value)
+            marks1.set_add(x->key);
+        }
       }
     }
   }
@@ -699,14 +703,19 @@ different_marked_args(AVar *a1, AVar *a2, int offset, AVar *basis = 0) {
       if (basis) {
         if (basis->mark_map) {
           int m = basis->mark_map->get(x->key);
-          if (m && m - offset == x->value)
-            marks2.set_add(x->key);
+          if (m) {
+            found2 = 1;
+            if (m - offset == x->value)
+              marks2.set_add(x->key);
+          }
         }
-      } else
+      } else {
+        found2 = 1;
         marks2.set_add(x->key);
+      }
     }
   }
-  return marks1.some_disjunction(marks2);
+  return found1 && found2 && marks1.some_disjunction(marks2);
 }
 
 static int
