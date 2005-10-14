@@ -48882,3 +48882,13 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+10/14/05 16:14:26 -- jplevyak
+
+Log message:
+	Fixed a bug in detection of recursive object contours.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
