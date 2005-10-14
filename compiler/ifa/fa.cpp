@@ -2916,6 +2916,10 @@ build_type_marks(AVar *av, Accum<AVar *> &acc) {
     forv_AVar(y, x->backward) if (y)
       acc.add(y);
   }
+  forv_AVar(x, acc.asvec) {
+    forv_AVar(y, x->forward) if (y)
+      acc.add(y);
+  }
   // mark them
   forv_AVar(x, acc.asvec) {
     if (x->gen)
@@ -2947,6 +2951,11 @@ build_setter_marks(AVar *av, Accum<AVar *> &acc) {
   acc.add(av);
   forv_AVar(x, acc.asvec) {
     forv_AVar(y, x->forward) 
+      if (y && y->setters && y->setters->some_intersection(*av->setters))
+        acc.add(y);
+  }
+  forv_AVar(x, acc.asvec) {
+    forv_AVar(y, x->backward) 
       if (y && y->setters && y->setters->some_intersection(*av->setters))
         acc.add(y);
   }
@@ -3123,6 +3132,7 @@ collect_cs_marked_confluences(Vec<AVar *> &confluences) {
     }
   }
   confluences.set_to_vec();
+  qsort_by_id(confluences);
 }
 
 static void
@@ -3227,7 +3237,9 @@ collect_setter_confluences(Vec<AVar *> &setter_confluences, Vec<AVar *> &setter_
     }
   }
   setter_confluences.set_to_vec();
+  qsort_by_id(setter_confluences);
   setter_starters.set_to_vec();
+  qsort_by_id(setter_starters);
 }
 
 static int
