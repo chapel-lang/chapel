@@ -973,13 +973,15 @@ check_es_db(AEdge *e) {
 }
 
 static void 
-make_entry_set(AEdge *e, EntrySet *split = 0) {
+make_entry_set(AEdge *e, EntrySet *split = 0, EntrySet *preference = 0) {
   if (e->to) return;
   if (check_split(e)) return;
   if (check_es_db(e)) return;
   EntrySet *es = 0;
   if (!split)
     es = find_best_entry_set(e, split);
+  if (!es)
+    es = preference;
   set_entry_set(e, es);
   if (!es)
     e->to->split = split;
@@ -1969,8 +1971,19 @@ show_fun(Fun *f, FILE *fp) {
     fprintf(fp, " id:%d", f->sym->id);
 }
 
+static void
+show_atype(AType &t, FILE *fp) {
+  fprintf(fp, "( ");
+  forv_CreationSet(cs, t.sorted) if (cs) {
+    show_sym_name(cs->sym, fp);
+    fprintf(fp, " id:%d ", cs->id);
+  }
+  fprintf(fp, ") ");
+}
+
 void
-fa_print_backward(AVar *v, FILE *fp) {
+fa_print_backward(AVar *v, FILE *fp = 0) {
+  if (!fp) fp = stdout;
   Vec<AVar *> done, todo;
   todo.add(v);
   done.set_add(v);
@@ -1986,7 +1999,7 @@ fa_print_backward(AVar *v, FILE *fp) {
         fprintf(fp, "VAR %p\n", v->var);
     } else
       fprintf(fp, "AVAR %p\n", v);
-    show_type(*v->out, fp); fprintf(fp, "\n");
+    show_atype(*v->out, fp); fprintf(fp, "\n");
     forv_AVar(vv, v->backward) if (vv) {
       if (!done.set_in(vv)) {
         todo.add(vv);
@@ -2296,8 +2309,8 @@ show_violations(FA *fa, FILE *fp) {
     else if (v->av->contour_is_entry_set)
       show_avar_call_tree(fp, v->av);
     else if (v->av->contour != GLOBAL_CONTOUR)
-      show_call_tree(fp, ((CreationSet*)v->av->contour)->defs.v[0]->var->def,
-                     (EntrySet*)((CreationSet*)v->av->contour)->defs.v[0]->contour, 1);
+      show_call_tree(fp, ((CreationSet*)v->av->contour)->defs.first()->var->def,
+                     (EntrySet*)((CreationSet*)v->av->contour)->defs.first()->contour, 1);
   }
 }
 
@@ -2749,6 +2762,9 @@ collect_es_type_confluences(Vec<AVar *> &confluences) {
   }
   confluences.set_to_vec();
   qsort_by_id(confluences);
+  forv_AVar(x, confluences)
+    log(LOG_SPLITTING, "type confluences %s %d\n", 
+        x->var->sym->name ? x->var->sym->name : "", x->var->sym->id);
 }
 
 static void
@@ -2850,6 +2866,12 @@ split_entry_set(AVar *av, int fsetters, int fmark = 0) {
     if (e->to != es) {
       record_backedges(e, es, pending_es_backedge_map);
       split = 1;
+      log(LOG_SPLITTING, "SPLIT ES %d %s%s%s %d from %d -> %d\n", 
+          es->id,
+          fsetters ? "setters " : "",
+          fmark ? "marks " : "",
+          es->fun->sym->name ? es->fun->sym->name : "", es->fun->sym->id,
+          e->pnode->lvals.v[0]->sym->id, e->to->id);
     }
   }
   return split;
@@ -3296,6 +3318,9 @@ split_css(Vec<AVar *> &astarters) {
           v->creation_set = new_cs;
         new_cs->split = cs;
         analyze_again = 1;
+        log(LOG_SPLITTING, "SPLIT CS %d %s %d -> %d\n", cs->id,
+            cs->sym->name ? cs->sym->name : "", cs->sym->id, 
+            new_cs->id);
       }
     }
   }
@@ -3380,20 +3405,18 @@ static int
 split_ess_type(Vec<AVar *> &confluences) {
   int analyze_again = 0;
   forv_AVar(av, confluences) {
-    int split = 0;
     if (av->contour_is_entry_set) {
       if (!av->is_lvalue) {
         if (av->var->is_formal)
-          split = split_entry_set(av, 0);
+          analyze_again = split_entry_set(av, 0) || analyze_again; 
       } else {
         AVar *aav = unique_AVar(av->var, av->contour);
         if (is_return_value(aav))
-          split = split_entry_set(aav, 0);
+          analyze_again = split_entry_set(aav, 0) || analyze_again; 
       }
     }
-    if (!split)
-      split = split_with_type_marks(av);
-    analyze_again = split || analyze_again;
+    if (!analyze_again)
+      analyze_again = split_with_type_marks(av) || analyze_again;
   }
   return analyze_again;
 }
@@ -3440,6 +3463,7 @@ extend_analysis() {
   if (analyze_again) {
     ++analysis_pass;
     if (verbose_level) printf("extending analysis %d\n", analysis_pass);
+    log(LOG_SPLITTING, "======== pass %d ========\n", analysis_pass);
     clear_results();
     return 1;
   }
