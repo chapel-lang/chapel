@@ -2887,22 +2887,20 @@ split_entry_set(AVar *av, int fsetters, int fmark = 0) {
 }
 
 static void
-build_type_mark(AVar *av, CreationSet *cs, Vec<AVar *> &avset, int mark = 1) {
-  Sym *tt = cs->sym->type;
-  int m = av->mark_map ? av->mark_map->get(tt) : 0;
+build_type_mark(AVar *av, CreationSet *cs, int mark = 1) {
+  int m = av->mark_map ? av->mark_map->get(cs) : 0;
   if (!m) {
-    if (!av->out->type->set_in(cs->sym->type->abstract_type->v[0]))
+    if (!av->out->type->set_in(cs))
       return;
     if (!av->mark_map)
       av->mark_map = new MarkMap;
-    av->mark_map->put(tt, mark);
+    av->mark_map->put(cs, mark);
   } else if (m > mark)
-    av->mark_map->put(tt, mark);
+    av->mark_map->put(cs, mark);
   else if (m <= mark)
     return;
   forv_AVar(y, av->forward) if (y)
-    if (avset.set_in(y))
-      build_type_mark(y, cs, avset, mark + 1);
+    build_type_mark(y, cs, mark + 1);
 }
 
 // To handle recursion, mark value*AVar distances from the nearest 
@@ -2923,13 +2921,16 @@ build_type_marks(AVar *av, Accum<AVar *> &acc) {
   // mark them
   forv_AVar(x, acc.asvec) {
     if (x->gen)
-      forv_CreationSet(s, *x->gen) if (s) 
-        build_type_mark(x, s, acc.asset);
+      forv_CreationSet(s, *x->gen) if (s && s->sym != sym_null) {
+        if (s->sym != s->sym->type)
+          s = s->sym->type->abstract_type->v[0];
+        build_type_mark(x, s);
+      }
   }
 }
 
 static void
-build_setter_mark(AVar *av, AVar *x, Vec<AVar *> &avset, int mark = 1) {
+build_setter_mark(AVar *av, AVar *x, int mark = 1) {
   int m = av->mark_map ? av->mark_map->get(x) : 0;
   if (!m) {
     if (!av->setters->set_in(x))
@@ -2942,7 +2943,7 @@ build_setter_mark(AVar *av, AVar *x, Vec<AVar *> &avset, int mark = 1) {
   else if (m <= mark)
     return;
   forv_AVar(y, av->backward) if (y)
-    build_setter_mark(y, x, avset, mark + 1);
+    build_setter_mark(y, x, mark + 1);
 }
 
 static void
@@ -2962,7 +2963,7 @@ build_setter_marks(AVar *av, Accum<AVar *> &acc) {
   // mark them
   forv_AVar(x, acc.asvec) {
     if (x->setters->in(x))
-      build_setter_mark(x, x, acc.asset);
+      build_setter_mark(x, x);
   }
 }
 
