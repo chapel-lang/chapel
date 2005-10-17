@@ -48903,3 +48903,15 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+10/17/05 16:45:34 -- jplevyak
+
+Log message:
+	Group entry sets by compatibilty during splitting.
+	Fixed a bug whereby forced splitting of an entry sets was not correctly
+	recording the entry set which it was split.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
