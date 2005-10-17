@@ -48892,3 +48892,14 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+10/16/05 17:18:19 -- jplevyak
+
+Log message:
+	Fix jump over declaration which prevented compilation with
+	gcc 3.3.X.  Fixed initialization to squash valgrind errors.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
