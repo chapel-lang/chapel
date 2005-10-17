@@ -131,7 +131,7 @@ CreationSet::CreationSet(CreationSet *cs) :
   sym->creators.add(this);
 }
 
-EntrySet::EntrySet(Fun *af) : fun(af), equiv(0) {
+EntrySet::EntrySet(Fun *af) : fun(af), split(0), equiv(0) {
   id = entry_set_id++;
 }
 
@@ -285,13 +285,13 @@ flow_vars_assign(AVar *rhs, AVar *lhs) {
 CreationSet *
 creation_point(AVar *v, Sym *s) {
   CreationSet *cs = v->creation_set;
+  EntrySet *es = (EntrySet*)v->contour;
   if (cs) {
     assert(cs->sym == s);
     goto Lfound;
   }
   if (s == sym_function)
     goto Lunique;
-  EntrySet *es = (EntrySet*)v->contour;
   if ((void*)es == GLOBAL_CONTOUR)
     es = 0;
   if (es && es->split) {
