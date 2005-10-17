@@ -965,9 +965,7 @@ check_split(AEdge *e)  {
     if (m) {
       for (int i = 0; i < m->n; i++)
         if (m->v[i].key == e->match->fun) {
-          if (e->match->fun->split_unique) {
-            set_entry_set(e);
-          } else if (e->match->fun->nested_in == e->from->fun) {
+          if (e->match->fun->split_unique || e->match->fun->nested_in == e->from->fun) {
             set_entry_set(e);
             e->to->split = m->v[i].value->to;
           } else
@@ -2845,7 +2843,7 @@ record_backedges(AEdge *e, EntrySet *es, Map<AEdge *, EntrySet *> &up_map) {
 static int
 split_entry_set(AVar *av, int fsetters, int fmark = 0) {
   EntrySet *es = (EntrySet*)av->contour;
-  Vec<AEdge *> do_edges;
+  Vec<AEdge *> do_edges, stay_edges;
   int nedges = 0, non_rec_edges = 0;
   AEdge **last = es->edges.last();
   Map<AEdge *, EntrySet *> pending_es_backedge_map;
@@ -2860,30 +2858,69 @@ split_entry_set(AVar *av, int fsetters, int fmark = 0) {
     if (!fsetters) {
       if (!edge_type_compatible_with_entry_set(*ee, es, fmark))
         do_edges.add(*ee);
+      else
+        stay_edges.add(*ee);
     } else
       if (!edge_sset_compatible_with_entry_set(*ee, es))
         do_edges.add(*ee);
-  } 
+      else
+        stay_edges.add(*ee);
+  }
+  Vec<AEdge *> tedges;
+  tedges.move(tedges);
+  forv_AEdge(e, tedges) {
+    int compat = 1;
+    forv_AEdge(ee, stay_edges) {
+      if (!fsetters)
+        compat = edge_type_compatible_with_edge(e, ee, es, fmark) && compat;
+      else
+        compat = edge_sset_compatible_with_edge(e, ee) && compat;
+    }
+    if (compat)
+      stay_edges.add(e);
+    else
+      do_edges.add(e);
+  }
   if (non_rec_edges == 1 && nedges != do_edges.n) 
     return 0;
-  int first = do_edges.n == nedges ? 1 : 0;
   int split = 0;
-  for (int i = first; i < do_edges.n; i++) {
-    AEdge *e = do_edges.v[i];
-    e->to = 0;
-    e->filtered_args.clear();
-    es->edges.del(e);
-    make_entry_set(e, es);
-    if (e->to != es) {
-      record_backedges(e, es, pending_es_backedge_map);
-      split = 1;
-      log(LOG_SPLITTING, "SPLIT ES %d %s%s%s %d from %d -> %d\n", 
-          es->id,
-          fsetters ? "setters " : "",
-          fmark ? "marks " : "",
-          es->fun->sym->name ? es->fun->sym->name : "", es->fun->sym->id,
-          e->pnode->lvals.v[0]->sym->id, e->to->id);
+  while (do_edges.n) {
+    Vec<AEdge *> these_edges, next_edges;
+    AEdge *e = do_edges.v[0];
+    these_edges.add(e);
+    for (int i = 1; i < do_edges.n; i++) {
+      int compat = 0;
+      AEdge *ee = do_edges.v[i];
+      if (!fsetters)
+        compat = edge_type_compatible_with_edge(e, ee, es, fmark);
+      else
+        compat = edge_sset_compatible_with_edge(e, ee);
+      if (compat)
+        these_edges.add(ee);
+      else
+        next_edges.add(ee);
     }
+    if (!next_edges.n && !stay_edges.n)
+      return split;
+    forv_AEdge(x, these_edges) {
+      x->to = 0;
+      x->filtered_args.clear();
+      es->edges.del(x);
+    }
+    forv_AEdge(x, these_edges) {
+      make_entry_set(x, es, e->to);
+      if (x->to != es) {
+        record_backedges(e, es, pending_es_backedge_map);
+        split = 1;
+        log(LOG_SPLITTING, "SPLIT ES %d %s%s%s %d from %d -> %d\n", 
+            es->id,
+            fsetters ? "setters " : "",
+            fmark ? "marks " : "",
+            es->fun->sym->name ? es->fun->sym->name : "", es->fun->sym->id,
+            e->pnode->lvals.v[0]->sym->id, e->to->id);
+      }
+    }
+    do_edges.move(next_edges);
   }
   return split;
 }
