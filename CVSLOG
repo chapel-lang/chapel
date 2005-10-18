@@ -48915,3 +48915,21 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+10/18/05 10:23:22 -- deitz
+
+Log message:
+	Added two sequence of homogeneous tuple tests.  The first works.  The
+	second shows that the tuples are added to the sequence by reference,
+	not by value, so changing the tuple impacts the sequence.  I think I
+	have this working in my parallel change to get the --formal-temps flag
+	working, and I'm testing now.
+
+Added files:
+	chapel/test/types/seq/deitz/: test_seq_htuple1.chpl 
+	                              test_seq_htuple1.good 
+	                              test_seq_htuple2.chpl 
+	                              test_seq_htuple2.future 
+	                              test_seq_htuple2.good 
+
