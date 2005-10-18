@@ -7,5 +7,6 @@ class ApplyGettersSetters : public Pass {
  public:
   void run(Vec<ModuleSymbol*>* modules);
 };
+void apply_getters_setters(BaseAST* ast);
 
 #endif

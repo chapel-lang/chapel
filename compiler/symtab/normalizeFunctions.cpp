@@ -7,12 +7,17 @@
 #include "../traversals/updateSymbols.h"
 
 void NormalizeFunctions::processSymbol(Symbol* sym) {
-  if (!formalTemps)
-    return;
-
   FnSymbol* fn = dynamic_cast<FnSymbol*>(sym);
 
   if (!fn)
+    return;
+
+  insert_formal_temps(fn);
+}
+
+
+void insert_formal_temps(FnSymbol* fn) {
+  if (!formalTemps)
     return;
 
   if (!strcmp("=", fn->name))
@@ -23,15 +28,16 @@ void NormalizeFunctions::processSymbol(Symbol* sym) {
 
   for_alist_backward(DefExpr, formalDef, fn->formals) {
     ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
-    if (formal->intent == INTENT_REF ||
-        formal->intent == INTENT_PARAM ||
-        formal->intent == INTENT_TYPE ||
-        formal->genericSymbol)
+    if (formal->intent == INTENT_REF)
       continue;
     Type *type = formal->type;
     if (type == dtAny || type == dtNumeric)
       type = dtUnknown;
-    assert(!type->isGeneric);
+    if (formal->intent == INTENT_PARAM ||
+        formal->intent == INTENT_TYPE ||
+        formal->genericSymbol ||
+        type->isGeneric)
+      return;
     VarSymbol* temp = new VarSymbol(stringcat("_", formal->name), formal->type);
     DefExpr* tempDef = new DefExpr(temp, new SymExpr(formal));
     if (formalDef->exprType)
@@ -46,3 +52,4 @@ void NormalizeFunctions::processSymbol(Symbol* sym) {
     fn->insertAtHead(new ExprStmt(tempDef));
   }
 }
+

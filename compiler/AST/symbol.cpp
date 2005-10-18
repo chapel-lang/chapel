@@ -7,6 +7,7 @@
 #include "symbol.h"
 #include "symtab.h"
 #include "astutil.h"
+#include "../symtab/normalizeFunctions.h"
 #include "../traversals/buildClassHierarchy.h"
 #include "../traversals/clearTypes.h"
 #include "../traversals/createConfigVarTable.h"
@@ -14,6 +15,7 @@
 #include "../traversals/instantiate.h"
 #include "../traversals/updateSymbols.h"
 #include "../passes/preAnalysisCleanup.h"
+#include "../passes/applyGettersSetters.h"
 
 FnSymbol* chpl_main = NULL;
 Symbol *gNil = 0;
@@ -1013,6 +1015,9 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
   } else {
     newfn = instantiate_function(this, &substitutions, generic_substitutions, &map);
     new_functions->add(newfn);
+  }
+  forv_Vec(FnSymbol, new_function, *new_functions) {
+    insert_formal_temps(new_function);
   }
   if (!newfn) {
     INT_FATAL(this, "Instantiation error");

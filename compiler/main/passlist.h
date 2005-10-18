@@ -30,9 +30,9 @@ PassInfo passlist[] = {
   // SCOPE RESOLUTION
   RUN(ScopeResolveSymbols, ""), // postScopeResolution = true
   RUN(ScopeResolveGotos, ""),
+  RUN(ApplyThisParameters, ""),
 
   RUN(SemanticCheckII, ""), // post scope resolution semantic checks
-  RUN(ApplyThisParameters, ""),
 
   RUN(BuildDefaultFunctions, ""),
 

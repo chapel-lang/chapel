@@ -8,4 +8,6 @@ class NormalizeFunctions : public SymtabTraversal {
   void processSymbol(Symbol* sym);
 };
 
+void insert_formal_temps(FnSymbol* fn);
+
 #endif

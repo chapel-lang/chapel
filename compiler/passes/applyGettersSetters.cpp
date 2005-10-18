@@ -1,4 +1,5 @@
 #include "applyGettersSetters.h"
+#include "astutil.h"
 #include "expr.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -29,8 +30,8 @@ gets_to_non(OpTag t) {
   return OP_NONE;
 }
   
-static void 
-process(BaseAST* ast) {
+void 
+apply_getters_setters(BaseAST* ast) {
   // Most generally:
   //   x.f(1) += y ---> f(x, _mt, 1, _st, +(f(x,_mt, 1), y)
   // or
@@ -99,20 +100,16 @@ process(BaseAST* ast) {
   Vec<BaseAST *> asts;
   get_ast_children(ast, asts);
   forv_BaseAST(a, asts)
-    process(a);
+    apply_getters_setters(a);
 }
 
 void ApplyGettersSetters::run(Vec<ModuleSymbol*>* modules) {
-  Vec<Symbol *> symbols;
-  forv_Vec(ModuleSymbol, mod, *modules)
-    getSymbols(mod->modScope, symbols);
-  symbols.set_to_vec();
-  qsort(symbols.v, symbols.n, sizeof(symbols.v[0]), compar_baseast);
-  forv_Symbol(s, symbols)
-    if (FnSymbol *f = dynamic_cast<FnSymbol*>(s)) {
-      if (f->_setter || f->_getter || f->fnClass == FN_CONSTRUCTOR)
-        continue;
-      process(f->body);
+  Vec<FnSymbol*> fns;
+  collect_functions(&fns);
+  forv_Vec(FnSymbol, fn, fns) {
+    if (!(fn->_setter || fn->_getter || fn->fnClass == FN_CONSTRUCTOR)) {
+      apply_getters_setters(fn->body);
     }
+  }
 }
 
