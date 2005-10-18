@@ -48933,3 +48933,13 @@ Added files:
 	                              test_seq_htuple2.future 
 	                              test_seq_htuple2.good 
 
+---------------------------------------------------------------------------
+
+10/18/05 13:24:49 -- jplevyak
+
+Log message:
+	IF1 dumps print out constants for inline.
+
+Modified files:
+	chapel/compiler/ifa/: if1.cpp 
+
