@@ -394,6 +394,11 @@ if1_dump_sym(FILE *fp, Sym *s) {
             s->name, s->id);
   else if (s->constant)
     fprintf(fp, "(const \"%s\" %d)", (char*)s->constant, s->id);
+  else if (s->is_constant) {
+    fprintf(fp, "(const \"");
+    fprint_imm(fp, s->imm);
+    fprintf(fp, "\" %d)", s->id);
+  }
   else
     fprintf(fp, "(temp %d)", s->id);
 }
