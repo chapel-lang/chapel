@@ -48943,3 +48943,22 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: if1.cpp 
 
+---------------------------------------------------------------------------
+
+10/18/05 15:26:48 -- deitz
+
+Log message:
+	Improved putting in formal copy temps.  It is still disabled by
+	default, use --formal-temps.  This now does not put in a formal temp
+	for code that is generic.  It puts it in once the functions are
+	instantiated.  There are still a few assorted errors, and this will
+	break all inout and out intent codes.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/passes/: applyGettersSetters.cpp 
+	                         applyGettersSetters.h 
+	chapel/compiler/symtab/: normalizeFunctions.cpp 
+	                         normalizeFunctions.h 
+
