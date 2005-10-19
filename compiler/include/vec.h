@@ -64,7 +64,6 @@ class Vec : public gc {
   void reverse();
   C* end() { return v + n; }
   Vec<C>& operator=(Vec<C> &v) { this->copy(v); return *this; }
-  // RED: for things like quickSort
   int length () { return n; }
   void quickSort(int left, int right);
   
@@ -76,7 +75,7 @@ class Vec : public gc {
 
 // c -- class, p -- pointer to elements of v, v -- vector
 #define forv_Vec(_c, _p, _v) if ((_v).n) for (_c *qq__##_p = (_c*)0, *_p = (_v).v[0]; \
-                    ((intptr_t)(qq__##_p) < (_v).n) && ((_p = (_v).v[(intptr_t)qq__##_p]) || 1); qq__##_p = (_c*)(((intptr_t)qq__##_p) + 1))
+                    ((intptr_t)(qq__##_p) < (_v).length()) && ((_p = (_v).v[(intptr_t)qq__##_p]) || 1); qq__##_p = (_c*)(((intptr_t)qq__##_p) + 1))
 
 template <class C> class Accum : public gc { public:
   Vec<C> asset;

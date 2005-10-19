@@ -117,6 +117,7 @@ template <class C, class AHashFns, int N> class NBlockHash : public gc {
   C e[N];
 
   C* end() { return last(); }
+  int length() { return N * n; }
   inline C *first();
   inline C *last();
   inline C put(C c);
@@ -126,6 +127,8 @@ template <class C, class AHashFns, int N> class NBlockHash : public gc {
   inline int count();
   inline NBlockHash();
 };
+
+/* use forv_Vec on BlockHashs */
 
 #define DEFAULT_BLOCK_HASH_SIZE 4
 template <class C, class ABlockHashFns> class BlockHash : 

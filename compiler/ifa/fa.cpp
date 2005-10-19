@@ -786,9 +786,7 @@ edge_type_compatible_with_entry_set(AEdge *e, EntrySet *es, int fmark = 0) {
       }
     }
   } else {
-    AEdge **last = es->edges.last();
-    for (AEdge **pee = es->edges.first(); pee < last; pee++) if (*pee) {
-      AEdge *ee = *pee;
+    forv_AEdge(ee, es->edges) if (ee) {
       if (!ee->args.n)  
         continue;
       if (!edge_type_compatible_with_edge(e, ee, es, fmark))
@@ -841,9 +839,7 @@ edge_sset_compatible_with_entry_set(AEdge *e, EntrySet *es) {
       if (!sset_compatible(e->rets.v[i], es->rets.v[i]))
         return 0;
   } else {
-    AEdge **last = es->edges.last();
-    for (AEdge **pee = es->edges.first(); pee < last; pee++) if (*pee) {
-      AEdge *ee = *pee;
+    forv_AEdge(ee, es->edges) if (ee) {
       if (!ee->args.n)  
         continue;
       if (!edge_sset_compatible_with_edge(e, ee))
@@ -2123,9 +2119,8 @@ show_call_tree(FILE *fp, PNode *p, EntrySet *es, int depth = 0) {
 
   }
   Vec<AEdge*> edges;
-  AEdge **last = es->edges.last();
-  for (AEdge **x = es->edges.first(); x < last; x++) if (*x)
-    edges.add(*x);
+  forv_AEdge(e, es->edges) if (e)
+    edges.add(e);
   qsort(edges.v, edges.n, sizeof(edges.v[0]), compar_edge_id);
   forv_AEdge(e, edges)
     show_call_tree(fp, e->pnode, e->from, depth);
@@ -2134,10 +2129,9 @@ show_call_tree(FILE *fp, PNode *p, EntrySet *es, int depth = 0) {
 void
 show_avar_call_tree(FILE *fp, AVar *av) {
   EntrySet *es = (EntrySet*)av->contour;
-  AEdge **last = es->edges.last();
   Vec<AEdge*> edges;
-  for (AEdge **x = es->edges.first(); x < last; x++) if (*x)
-    edges.add(*x);
+  forv_AEdge(e, es->edges) if (e)
+    edges.add(e);
   qsort(edges.v, edges.n, sizeof(edges.v[0]), compar_edge_id);
   forv_AEdge(e, edges)
     show_call_tree(fp, e->pnode, e->from, 1);
@@ -2844,27 +2838,26 @@ static int
 split_entry_set(AVar *av, int fsetters, int fmark = 0) {
   EntrySet *es = (EntrySet*)av->contour;
   Vec<AEdge *> do_edges, stay_edges;
-  int nedges = 0, non_rec_edges = 0;
-  AEdge **last = es->edges.last();
   Map<AEdge *, EntrySet *> pending_es_backedge_map;
-  for (AEdge **ee = es->edges.first(); ee < last; ee++) if (*ee) {
-    if (!(*ee)->args.n) 
+  int nedges = 0, non_rec_edges = 0;
+  forv_AEdge(ee, es->edges) if (ee) {
+    if (!ee->args.n) 
       continue;
     nedges++;
-    pending_es_backedge_map.map_union((*ee)->from->pending_es_backedge_map);
-    if (!fsetters ? is_es_recursive(*ee) : is_es_cs_recursive(*ee))
+    pending_es_backedge_map.map_union(ee->from->pending_es_backedge_map);
+    if (!fsetters ? is_es_recursive(ee) : is_es_cs_recursive(ee))
       continue;
     non_rec_edges++;
     if (!fsetters) {
-      if (!edge_type_compatible_with_entry_set(*ee, es, fmark))
-        do_edges.add(*ee);
+      if (!edge_type_compatible_with_entry_set(ee, es, fmark))
+        do_edges.add(ee);
       else
-        stay_edges.add(*ee);
+        stay_edges.add(ee);
     } else
-      if (!edge_sset_compatible_with_entry_set(*ee, es))
-        do_edges.add(*ee);
+      if (!edge_sset_compatible_with_entry_set(ee, es))
+        do_edges.add(ee);
       else
-        stay_edges.add(*ee);
+        stay_edges.add(ee);
   }
   Vec<AEdge *> tedges;
   tedges.move(tedges);
@@ -3047,9 +3040,8 @@ clear_edge(AEdge *e) {
 
 static void
 clear_es(EntrySet *es) {
-  AEdge **last = es->edges.last();
-  for (AEdge **ee = es->edges.first(); ee < last; ee++) if (*ee)
-    clear_edge(*ee);
+  forv_AEdge(ee, es->edges) if (ee)
+    clear_edge(ee);
   es->out_edges.clear();
   es->backedges.clear();
   es->cs_backedges.clear();
