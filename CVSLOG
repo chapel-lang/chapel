@@ -48962,3 +48962,15 @@ Modified files:
 	chapel/compiler/symtab/: normalizeFunctions.cpp 
 	                         normalizeFunctions.h 
 
+---------------------------------------------------------------------------
+
+10/19/05 11:12:13 -- jplevyak
+
+Log message:
+	Mod forv_XXXX macro to work with BlockHash (which supports .del()).
+	Use new macro in place of verbose alternative.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+	chapel/compiler/include/: map.h vec.h 
+
