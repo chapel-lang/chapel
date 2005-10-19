@@ -1,3 +1,5 @@
+use _chpl_file;
+
 class _seqNode {
   type elt_type;
 
@@ -147,17 +149,17 @@ function reverse(s : seq, dim : integer = 1) {
   return s._reverse();
 }
 
-function write(s : seq) {
-  write("(/");
+function fwrite(f : file, s : seq) {
+  fwrite(f, "(/");
   var tmp = s._first;
   while tmp != nil {
-    write(tmp._element);
+    fwrite(f, tmp._element);
     tmp = tmp._next;
     if tmp != nil {
-      write(", ");
+      fwrite(f, ", ");
     }
   }
-  write("/)");
+  fwrite(f, "/)");
 }
 
 -- Arithmetic sequence
@@ -210,13 +212,13 @@ function by(s : _aseq, i : integer) {
   return tmp;
 }
 
-function write(s : _aseq) {
-  write(s._low);
-  write("..");
-  write(s._high);
+function fwrite(f : file, s : _aseq) {
+  fwrite(f, s._low);
+  fwrite(f, "..");
+  fwrite(f, s._high);
   if (s._stride > 1) {
-    write(" by ");
-    write(s._stride);
+    fwrite(f, " by ");
+    fwrite(f, s._stride);
   }
 }
 

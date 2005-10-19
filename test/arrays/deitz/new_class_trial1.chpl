@@ -30,22 +30,22 @@ class adomain : value {
   }
 }
 
-function write(x : adomain) {
-  write("[");
+function fwrite(f : file, x : adomain) {
+  fwrite(f, "[");
   var first : boolean = true;
   var hi : integer = x.rank-1;
   for i:integer in 0..hi {
     if not first then
-      write(", ");
-    write(x.low(i));
-    write("..");
-    write(x.high(i));
+      fwrite(f, ", ");
+    fwrite(f, x.low(i));
+    fwrite(f, "..");
+    fwrite(f, x.high(i));
     var str = x.stride(i);
     if (str != 1) then
-      write(" by ", str);
+      fwrite(f, " by ", str);
     first = false;
   }
-  write("]");
+  fwrite(f, "]");
 }
 
 var d : adomain(2);

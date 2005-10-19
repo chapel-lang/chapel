@@ -1,6 +1,7 @@
 #include "buildDefaultFunctions.h"
 #include "astutil.h"
 #include "expr.h"
+#include "../passes/filesToAST.h"
 #include "stmt.h"
 #include "symtab.h"
 #include "stringutil.h"
@@ -367,29 +368,36 @@ static void buildDefaultClassTypeMethods(ClassType* classType) {
 static void buildDefaultIOFunctions(Type* type) {
   if (type->hasDefaultWriteFunction()) {
     bool userWriteDefined = false;
-    Symbol* write = Symboltable::lookupInScope("write", type->symbol->parentScope);
-    while (write) {
-      if (write->getFnSymbol() && 
-          write->getFnSymbol()->formals->length() == 1 &&
-          write->getFnSymbol()->formals->only()->sym->type == type) {
+    Symbol* fwrite = Symboltable::lookupInScope("fwrite", type->symbol->parentScope);
+    TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(Symboltable::lookupInScope("file", fileModule->modScope));
+    while (fwrite) {
+      if (fwrite->getFnSymbol() && 
+          fwrite->getFnSymbol()->formals->length() == 2 &&
+          fwrite->getFnSymbol()->formals->first()->sym->type == fileType->definition &&
+          fwrite->getFnSymbol()->formals->get(2)->sym->type == type) {
         userWriteDefined = true;
-        write->cname = stringcat("_user_", type->symbol->name, "_write");
+        fwrite->cname = stringcat("_user_", type->symbol->name, "_fwrite");
         break;
       }
-      write = write->overload;
+      fwrite = fwrite->overload;
     }
     if (!userWriteDefined) {
-      FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("write"));
-      fn->cname = stringcat("_auto_", type->symbol->name, "_write");
+      FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("fwrite"));
+      fn->cname = stringcat("_auto_", type->symbol->name, "_fwrite");
+      if (fileType == NULL) {
+        INT_FATAL("Couldn't find file");
+      }
+      ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", fileType->definition);
       ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "val", type);
-      Symboltable::continueFnDef(fn, new AList<DefExpr>(new DefExpr(arg)), dtVoid);
-      AList<Stmt>* body = type->buildDefaultWriteFunctionBody(arg);
+      Symboltable::continueFnDef(fn, new AList<DefExpr>(new DefExpr(fileArg), new DefExpr(arg)), dtVoid);
+      AList<Stmt>* body = type->buildDefaultWriteFunctionBody(fileArg, arg);
       BlockStmt* block_stmt = new BlockStmt(body);
       DefExpr* def = new DefExpr(Symboltable::finishFnDef(fn, block_stmt));
       type->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def));
       reset_file_info(def, type->symbol->lineno, type->symbol->filename);
     }
   }
+
 
   if (type->hasDefaultReadFunction()) {
     bool userReadDefined = false;

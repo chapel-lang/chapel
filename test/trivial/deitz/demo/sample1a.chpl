@@ -7,8 +7,8 @@ class trio {
     return x1 + x2 + x3;
 }
 
-function write(t : trio) {
-  write("(", t.x1, " & ", t.x2, " & ", t.x3, ")");
+function fwrite(f : file, t : trio) {
+  fwrite(f, "(", t.x1, " & ", t.x2, " & ", t.x3, ")");
 }
 
 var t1 = trio(1, 2, 3);

@@ -6,10 +6,11 @@
 ::O(enum.chpl:1) ( classVals )
 ::S(enum.chpl:1) ( classVals )
 ::W(enum.chpl:1) ( classVals )
+::f(enum.chpl:1) ( file )
 ::val(enum.chpl:1) ( classVals )
 ::x(enum.chpl:3) ( classVals )
 ::y(enum.chpl:7) ( int64 )
 function __init_enum enum.chpl:9
+function fwrite enum.chpl:1
 function main enum.chpl:1
-function write enum.chpl:1
 globals

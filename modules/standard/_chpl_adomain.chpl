@@ -1,6 +1,7 @@
 use _chpl_seq;
 use _chpl_data;
 use _chpl_htuple;
+use _chpl_file;
 
 record _adomain_info {
   var _low : integer;
@@ -51,16 +52,16 @@ function =(x : _adomain, y : _adomain_lit) {
   return x;
 }
 
-function write(x : _adomain) {
-  write("[");
+function fwrite(f : file, x : _adomain) {
+  fwrite(f, "[");
   for i in 0..x.rank-1 {
     if i > 0 then
-      write(", ");
-    write(x.info(i)._low, "..", x.info(i)._high);
+      fwrite(f, ", ");
+    fwrite(f, x.info(i)._low, "..", x.info(i)._high);
     if x.info(i)._stride > 1 then
-      write(" by ", x.info(i)._stride);
+      fwrite(f, " by ", x.info(i)._stride);
   }
-  write("]");
+  fwrite(f, "]");
 }
 
 record _aarray_info {

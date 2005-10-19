@@ -3,6 +3,7 @@
 #include "analysis.h"
 #include "chplalloc.h"
 #include "expr.h"
+#include "../passes/filesToAST.h"
 #include "stmt.h"
 #include "symbol.h"
 #include "symtab.h"
@@ -178,10 +179,15 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
         if (fns.n != 1) {
           // HACK: Special case where write(:nilType) requires dynamic
           // dispatch; Take the other one.
-          if (fns.n == 2 && !strcmp(fns.v[1]->name, "write") &&
-              fns.v[1]->formals->only()->sym->type == dtNil) {
-          } else if (fns.n == 2 && !strcmp(fns.v[0]->name, "write") &&
-                     fns.v[0]->formals->only()->sym->type == dtNil) {
+          TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(Symboltable::lookupInScope("file", fileModule->modScope));
+
+          if (fns.n == 2 && !strcmp(fns.v[1]->name, "fwrite") &&
+              fns.v[1]->formals->first()->sym->type == fileType->definition && 
+              fns.v[1]->formals->get(2)->sym->type == dtNil) {
+            
+          } else if (fns.n == 2 && !strcmp(fns.v[0]->name, "fwrite") &&
+                     fns.v[0]->formals->first()->sym->type == fileType->definition && 
+                     fns.v[0]->formals->get(2)->sym->type == dtNil) {
             fns.v[0] = fns.v[1];
           } else {
             if (OP_ISUNARYOP(paren->opTag)) {

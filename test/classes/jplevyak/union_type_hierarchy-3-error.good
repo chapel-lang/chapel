@@ -1,54 +1,55 @@
-_chpl_adomain.chpl:10: write, val : _adomain_info
-_chpl_adomain.chpl:44: write, val : _adomain_lit
-_chpl_adomain.chpl:64: write, x : _adomain
-_chpl_adomain.chpl:64: write, x : _adomain
-_chpl_adomain.chpl:69: write, val : _aarray_info
-_chpl_adomain.chpl:99: write, val : _aarray
-_chpl_complex.chpl:9: write, x : complex
-_chpl_data.chpl:55: write, val : _fdata
-_chpl_data.chpl:55: write, val : _fdata
-_chpl_data.chpl:55: write, val : _fdata
-_chpl_data.chpl:55: write, val : _fdata
-_chpl_file.chpl:47: write, val : file
-_chpl_htuple.chpl:30: write, val : _htuple
-_chpl_seq.chpl:161: write, s : seq
-_chpl_seq.chpl:161: write, s : seq
-_chpl_seq.chpl:221: write, s : _aseq
-_chpl_seq.chpl:6: write, val : _seqNode
-_chpl_seq.chpl:6: write, val : _seqNode
+_chpl_adomain.chpl:100: fwrite, f : file, val : _aarray
+_chpl_adomain.chpl:11: fwrite, f : file, val : _adomain_info
+_chpl_adomain.chpl:45: fwrite, f : file, val : _adomain_lit
+_chpl_adomain.chpl:65: fwrite, f : file, x : _adomain
+_chpl_adomain.chpl:65: fwrite, f : file, x : _adomain
+_chpl_adomain.chpl:70: fwrite, f : file, val : _aarray_info
+_chpl_complex.chpl:11: fwrite, f : file, x : complex
+_chpl_data.chpl:56: fwrite, f : file, val : _fdata
+_chpl_data.chpl:56: fwrite, f : file, val : _fdata
+_chpl_data.chpl:56: fwrite, f : file, val : _fdata
+_chpl_data.chpl:56: fwrite, f : file, val : _fdata
+_chpl_file.chpl:112: fwrite, f : file, val : bool
+_chpl_file.chpl:125: fwrite, f : file, val : complex64
+_chpl_file.chpl:135: fwrite, f : file, x : null
+_chpl_file.chpl:45: fwrite, f : file, val : file
+_chpl_file.chpl:78: fwrite, f : file, val : int64
+_chpl_file.chpl:88: fwrite, f : file, val : float64
+_chpl_file.chpl:98: fwrite, f : file, val : string
+_chpl_htuple.chpl:31: fwrite, f : file, val : _htuple
+_chpl_seq.chpl:163: fwrite, f : file, s : seq
+_chpl_seq.chpl:163: fwrite, f : file, s : seq
+_chpl_seq.chpl:223: fwrite, f : file, s : _aseq
+_chpl_seq.chpl:8: fwrite, f : file, val : _seqNode
+_chpl_seq.chpl:8: fwrite, f : file, val : _seqNode
 fail: program does not type
 note: candidates are:
 note: candidates are:
-prelude.chpl:138: write, val : reduction
-prelude.chpl:141: write, val : sum
-prelude.chpl:144: write, val : max
-prelude.chpl:147: write, val : min
-prelude.chpl:150: write, val : maxloc
-prelude.chpl:153: write, val : minloc
-prelude.chpl:162: write, val : timer
-prelude.chpl:210: write, val : _methodTokenType
-prelude.chpl:216: write, val : _setterTokenType
-prelude.chpl:221: write, val : _seq
-prelude.chpl:224: write, val : Index
-prelude.chpl:22: write, val : _data
-prelude.chpl:245: write, val : Array
-prelude.chpl:248: write, val : Domain
-prelude.chpl:258: write, val : Tuple
-prelude.chpl:27: write, val : CFILEPTR
-prelude.chpl:3: write, val : object
-prelude.chpl:47: write, x : int64
-prelude.chpl:4: write, val : value
-prelude.chpl:50: write, x : float64
-prelude.chpl:53: write, x : string
-prelude.chpl:56: write, x : bool
-prelude.chpl:59: write, x : complex64
-prelude.chpl:62: write, x : null
+prelude.chpl:124: fwrite, f : file, val : reduction
+prelude.chpl:127: fwrite, f : file, val : sum
+prelude.chpl:130: fwrite, f : file, val : max
+prelude.chpl:133: fwrite, f : file, val : min
+prelude.chpl:136: fwrite, f : file, val : maxloc
+prelude.chpl:139: fwrite, f : file, val : minloc
+prelude.chpl:148: fwrite, f : file, val : timer
+prelude.chpl:196: fwrite, f : file, val : _methodTokenType
+prelude.chpl:202: fwrite, f : file, val : _setterTokenType
+prelude.chpl:207: fwrite, f : file, val : _seq
+prelude.chpl:210: fwrite, f : file, val : Index
+prelude.chpl:22: fwrite, f : file, val : _data
+prelude.chpl:231: fwrite, f : file, val : Array
+prelude.chpl:234: fwrite, f : file, val : Domain
+prelude.chpl:244: fwrite, f : file, val : Tuple
+prelude.chpl:27: fwrite, f : file, val : CFILEPTR
+prelude.chpl:3: fwrite, f : file, val : object
+prelude.chpl:4: fwrite, f : file, val : value
 union_type_hierarchy-3-error.chpl:12: f, a : C
 union_type_hierarchy-3-error.chpl:16: expression has no type
 union_type_hierarchy-3-error.chpl:16: expression has no type
 union_type_hierarchy-3-error.chpl:16: illegal call argument type 'b' illegal: ( D ) 
+union_type_hierarchy-3-error.chpl:16: illegal call argument type 'stdout' illegal: ( file ) 
 union_type_hierarchy-3-error.chpl:16: illegal call argument type expression illegal: ( ) 
 union_type_hierarchy-3-error.chpl:16: unresolved call 'f'
-union_type_hierarchy-3-error.chpl:16: unresolved call 'write'
-union_type_hierarchy-3-error.chpl:3: write, val : C
-union_type_hierarchy-3-error.chpl:8: write, val : D
+union_type_hierarchy-3-error.chpl:16: unresolved call 'fwrite'
+union_type_hierarchy-3-error.chpl:3: fwrite, f : file, val : C
+union_type_hierarchy-3-error.chpl:8: fwrite, f : file, val : D

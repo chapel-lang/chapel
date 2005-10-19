@@ -1,5 +1,6 @@
 #include "specializeCallExprs.h"
 #include "expr.h"
+#include "../passes/filesToAST.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symtab.h"
@@ -16,8 +17,7 @@ decomposeIOCall(CallExpr* call, char* newFunctionName) {
 
 
 static void
-decomposeFileIOCall(CallExpr* call, char* newFunctionName) {
-  Expr* outfile = call->argList->popHead();
+decomposeFileIOCall(CallExpr* call, char* newFunctionName, Expr* outfile) {
   for_alist(Expr, arg, call->argList) {
     call->parentStmt->insertBefore
       (new ExprStmt(new CallExpr(newFunctionName, outfile->copy(), 
@@ -45,30 +45,35 @@ static Stmt* genExit(FnSymbol *fnSym) {
 }
 
 
-static ExprStmt* genWriteln(void) {
-  return new ExprStmt(new CallExpr("writeln"));
-}
-
-
 static ExprStmt* genFwriteln(Expr* outfile) {
   return new ExprStmt(new CallExpr("fwriteln", outfile->copy()));
 }
 
 
-static ExprStmt* genWrite(Expr* expression) {
-  return new ExprStmt(new CallExpr("write", expression));
+static Symbol* findStdout(void) {
+  Symbol* stdout = Symboltable::lookupInScope("stdout", fileModule->modScope);
+  if (stdout == NULL) {
+    INT_FATAL("Couldn't find stdout");
+  }
+  return stdout;
+}
+
+
+static ExprStmt* genFwrite(Expr* expression) {
+  SymExpr* outfile = new SymExpr(findStdout());
+  return new ExprStmt(new CallExpr("fwrite", outfile, expression->copy()));
 }
 
 
 static ExprStmt* genIntWriteExpr(int newInt) {
   Expr* expression = new_IntLiteral(newInt);
-  return genWrite(expression);
+  return genFwrite(expression);
 }
 
 
 static ExprStmt* genStringWriteExpr(char* newString) {
   Expr* expression = new_StringLiteral(newString);
-  return genWrite(expression);
+  return genFwrite(expression);
 }
 
 
@@ -87,7 +92,8 @@ void SpecializeCallExprs::postProcessStmt(Stmt* stmt) {
           thenBody->insertAtTail(writeLinenumber);
           ExprStmt* writeFailed = genStringWriteExpr(" failed***");
           thenBody->insertAtTail(writeFailed);
-          thenBody->insertAtTail(genWriteln());
+          SymExpr* outfile = new SymExpr(findStdout());
+          thenBody->insertAtTail(genFwriteln(outfile));
           thenBody->insertAtTail(genExit(call->parentFunction()));
           BlockStmt* thenStmt = new BlockStmt(thenBody);
           int length = call->argList->length();
@@ -101,27 +107,31 @@ void SpecializeCallExprs::postProcessStmt(Stmt* stmt) {
           call->parentStmt->insertBefore(assertIfStmt);
           call->parentStmt->remove();          
         } else if (strcmp(baseVar->var->name, "fwrite") == 0) {
-          decomposeFileIOCall(call, "fwrite");
+          Expr* outfile = call->argList->popHead();
+          decomposeFileIOCall(call, "fwrite", outfile);
           call->parentStmt->remove();
         } else if (strcmp(baseVar->var->name, "fwriteln") == 0) {
-          Expr* outfile = call->argList->first();
-          decomposeFileIOCall(call, "fwrite");
+          Expr* outfile = call->argList->popHead();
+          decomposeFileIOCall(call, "fwrite", outfile);
           call->parentStmt->insertBefore(genFwriteln(outfile));
           call->parentStmt->remove();
         } else if (strcmp(baseVar->var->name, "halt") == 0) {
-          decomposeIOCall(call, "write");
-          call->parentStmt->insertBefore(genWriteln());
+          SymExpr* outfile = new SymExpr(findStdout());
+          decomposeFileIOCall(call, "fwrite", outfile);
+          call->parentStmt->insertBefore(genFwriteln(outfile));
           call->parentStmt->insertBefore(genExit(call->parentFunction()));
           call->parentStmt->remove();
         } else if (strcmp(baseVar->var->name, "read") == 0) {
           decomposeIOCall(call, "read");
           call->parentStmt->remove();
         } else if (strcmp(baseVar->var->name, "write") == 0) {
-          decomposeIOCall(call, "write");
+          SymExpr* outfile = new SymExpr(findStdout());
+          decomposeFileIOCall(call, "fwrite", outfile);
           call->parentStmt->remove();
         } else if (strcmp(baseVar->var->name, "writeln") == 0) {
-          decomposeIOCall(call, "write");
-          call->parentStmt->insertBefore(genWriteln());
+          SymExpr* outfile = new SymExpr(findStdout());
+          decomposeFileIOCall(call, "fwrite", outfile);
+          call->parentStmt->insertBefore(genFwriteln(outfile));
           call->parentStmt->remove();
         }
       }
@@ -146,4 +156,3 @@ void SpecializeCallExprs::postProcessExpr(Expr* expr) {
     }
   }
 }
-

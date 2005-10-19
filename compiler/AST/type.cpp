@@ -14,8 +14,12 @@
 
 
 // Utilities for building write functions
-static void addWriteStmt(AList<Stmt>* body, Expr* arg) {
-  body->insertAtTail(new ExprStmt(new CallExpr("write", arg)));
+static ExprStmt* genWriteStmt(ArgSymbol* fileArg, Expr* arg) {
+  return new ExprStmt(new CallExpr("fwrite", fileArg, arg));
+}
+
+static void addWriteStmt(AList<Stmt>* body, ArgSymbol* fileArg, Expr* arg) {
+  body->insertAtTail(genWriteStmt(fileArg, arg));
 }
 
 
@@ -225,7 +229,7 @@ bool Type::hasDefaultWriteFunction(void) {
 }
 
 
-AList<Stmt>* Type::buildDefaultWriteFunctionBody(ArgSymbol* arg) {
+AList<Stmt>* Type::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
   return new AList<Stmt>();
 }
 
@@ -435,11 +439,11 @@ bool EnumType::hasDefaultWriteFunction(void) {
 }
 
 
-AList<Stmt>* EnumType::buildDefaultWriteFunctionBody(ArgSymbol* arg) {
+AList<Stmt>* EnumType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
   AList<WhenStmt>* selectWhenStmts = new AList<WhenStmt>();
   for_alist(DefExpr, constant, this->constants) {
     Expr* constantName = new_StringLiteral(constant->sym->name);
-    ExprStmt* IOCall = new ExprStmt(new CallExpr("write", constantName));
+    ExprStmt* IOCall = genWriteStmt(fileArg, constantName);
     AList<Expr>* whenExpr = new AList<Expr>(new SymExpr(constant->sym));
     WhenStmt* thisWhenStmt = new WhenStmt(whenExpr, IOCall);
     selectWhenStmts->insertAtTail(thisWhenStmt);
@@ -845,42 +849,43 @@ bool ClassType::hasDefaultWriteFunction(void) {
 }
 
 
-AList<Stmt>* ClassType::buildDefaultWriteFunctionBody(ArgSymbol* arg) {
+AList<Stmt>* ClassType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
   if (classTag == CLASS_UNION) {
     return new AList<Stmt>(new ExprStmt(new CallExpr("_UnionWriteStopgap", arg)));
   }
+
   AList<Stmt>* body = new AList<Stmt>();
   if (classTag == CLASS_CLASS) {
-    AList<Stmt>* writeNil =
-      new AList<Stmt>(new ExprStmt(new CallExpr("write", new_StringLiteral("nil"))));
-    writeNil->insertAtTail(new ReturnStmt(NULL));
-    BlockStmt* blockStmt = new BlockStmt(writeNil);
+    AList<Stmt>* fwriteNil =
+      new AList<Stmt>(genWriteStmt(fileArg, new_StringLiteral("nil")));
+    fwriteNil->insertAtTail(new ReturnStmt(NULL));
+    BlockStmt* blockStmt = new BlockStmt(fwriteNil);
     Symbol* nil = Symboltable::lookupInternal("nil", SCOPE_INTRINSIC);
     Expr* argIsNil = new CallExpr(OP_EQUAL, arg, nil);
     body->insertAtTail(new CondStmt(argIsNil, blockStmt));
   }
 
   if (classTag == CLASS_CLASS || classTag == CLASS_VALUECLASS) {
-    addWriteStmt(body, new_StringLiteral("{"));
+    addWriteStmt(body, fileArg, new_StringLiteral("{"));
   } else {
-    addWriteStmt(body, new_StringLiteral("("));
+    addWriteStmt(body, fileArg, new_StringLiteral("("));
   }
 
   bool first = true;
   forv_Vec(Symbol, tmp, fields) {
     if (!first) {
-      addWriteStmt(body, new_StringLiteral(", "));
+      addWriteStmt(body, fileArg, new_StringLiteral(", "));
     }
-    addWriteStmt(body, new_StringLiteral(tmp->name));
-    addWriteStmt(body, new_StringLiteral(" = "));
-    addWriteStmt(body, new MemberAccess(new SymExpr(arg), tmp));
+    addWriteStmt(body, fileArg, new_StringLiteral(tmp->name));
+    addWriteStmt(body, fileArg, new_StringLiteral(" = "));
+    addWriteStmt(body, fileArg, new MemberAccess(new SymExpr(arg), tmp));
     first = false;
   }
 
   if (classTag == CLASS_CLASS || classTag == CLASS_VALUECLASS) {
-    addWriteStmt(body, new_StringLiteral("}"));
+    addWriteStmt(body, fileArg, new_StringLiteral("}"));
   } else {
-    addWriteStmt(body, new_StringLiteral(")"));
+    addWriteStmt(body, fileArg, new_StringLiteral(")"));
   }
 
   return body;
@@ -920,7 +925,7 @@ void ClassType::buildFieldSelector(void) {
   EnumType* enum_type = new EnumType(id_list);
   char* enum_name = buildFieldSelectorName(this, NULL, true);
   TypeSymbol* enum_symbol = new TypeSymbol(enum_name, enum_type);
-
+  
   /* build definition of enum */
   DefExpr* def_expr = new DefExpr(enum_symbol);
   symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def_expr));

@@ -4,8 +4,8 @@ record foo {
   var z : integer = 3;
 }
 
-function write(f : foo) {
-  write("(---", f.x, " ", f.y, " ", f.z, "---)");
+function fwrite(fp : file, f : foo) {
+  fwrite(fp, "(---", f.x, " ", f.y, " ", f.z, "---)");
 }
 
 var f : foo;

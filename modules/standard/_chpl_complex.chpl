@@ -1,11 +1,13 @@
+use _chpl_file;
+
 pragma "rename _chpl_complex" class complex : value {
   var real : float;
   var imag : float;
 }
 
-pragma "rename _chpl_write_complex"
-function write(x : complex) {
-  write(x.real, " + ", x.imag, "i");
+pragma "rename _chpl_fwrite_complex"
+function fwrite(f : file, x : complex) {
+  fwrite(f, x.real, " + ", x.imag, "i");
 }
 
 pragma "no codegen"

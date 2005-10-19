@@ -39,17 +39,17 @@ record foo {
   }
 }
 
-function write(f : foo) {
-  write("(/");
+function fwrite(fp : file, f : foo) {
+  fwrite(fp, "(/");
   var tmp = f.first;
   while tmp != nil {
-    write(tmp.element);
+    fwrite(fp, tmp.element);
     tmp = tmp.next;
     if (tmp != nil) {
-      write(", ");
+      fwrite(fp, ", ");
     }
   }
-  write("/)");
+  fwrite(fp, "/)");
 }
 
 var f : foo(integer);

@@ -6,6 +6,7 @@
 #include "expr.h"
 #include "stmt.h"
 #include "stringutil.h"
+#include "../passes/filesToAST.h"
 
 
 //
@@ -102,9 +103,11 @@ static void createTupleBaseType(int size) {
   commonModule->stmts->insertAtHead(new ExprStmt(new DefExpr(tupleSym)));
 
   // Build write function
-  FnSymbol* writeFn = new FnSymbol("write");
-  ArgSymbol* writeArg = new ArgSymbol(INTENT_BLANK, "val", tupleType);
-  writeFn->formals = new AList<DefExpr>(new DefExpr(writeArg));
+  FnSymbol* fwriteFn = new FnSymbol("fwrite");
+  TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(Symboltable::lookupInScope("file", fileModule->modScope));
+  ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", fileType->definition);
+  ArgSymbol* fwriteArg = new ArgSymbol(INTENT_BLANK, "val", tupleType);
+  fwriteFn->formals = new AList<DefExpr>(new DefExpr(fileArg), new DefExpr(fwriteArg));
   AList<Expr>* actuals = new AList<Expr>();
   actuals->insertAtTail(new_StringLiteral(stringcpy("(")));
   for (int i = 1; i <= size; i++) {
@@ -117,8 +120,9 @@ static void createTupleBaseType(int size) {
         new UnresolvedSymbol(stringcat("_f", intstring(i)))));
   }
   actuals->insertAtTail(new_StringLiteral(stringcpy(")")));
-  writeFn->body = new BlockStmt(new ExprStmt(new CallExpr("write", actuals)));
-  commonModule->stmts->insertAtTail(new ExprStmt(new DefExpr(writeFn)));
+  Expr* fwriteCall = new CallExpr("fwrite", new SymExpr(fileArg), actuals);
+  fwriteFn->body = new BlockStmt(new ExprStmt(fwriteCall));
+  commonModule->stmts->insertAtTail(new ExprStmt(new DefExpr(fwriteFn)));
 
   // Build htuple = tuple function
   {

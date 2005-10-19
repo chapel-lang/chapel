@@ -76,7 +76,7 @@ class Type : public BaseAST {
   virtual bool implementedUsingCVals(void);
 
   virtual bool hasDefaultWriteFunction(void);
-  virtual AList<Stmt>* buildDefaultWriteFunctionBody(ArgSymbol* arg);
+  virtual AList<Stmt>* buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
   virtual bool hasDefaultReadFunction(void);
   virtual AList<Stmt>* buildDefaultReadFunctionBody(ArgSymbol* arg);
 };
@@ -112,7 +112,7 @@ class EnumType : public Type {
   bool implementedUsingCVals(void);
 
   virtual bool hasDefaultWriteFunction(void);
-  virtual AList<Stmt>* buildDefaultWriteFunctionBody(ArgSymbol* arg);
+  virtual AList<Stmt>* buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
   virtual bool hasDefaultReadFunction(void);
   virtual AList<Stmt>* buildDefaultReadFunctionBody(ArgSymbol* arg);
 };
@@ -190,7 +190,7 @@ class ClassType : public Type {
   virtual bool implementedUsingCVals(void);
 
   virtual bool hasDefaultWriteFunction(void);
-  virtual AList<Stmt>* buildDefaultWriteFunctionBody(ArgSymbol* arg);
+  virtual AList<Stmt>* buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
 
   void ClassType::buildFieldSelector(void);
   CallExpr* ClassType::buildSafeUnionAccessCall(unionCall type, Expr* base, 

@@ -33,15 +33,8 @@ int _string_to_boolean(char* valueString, _boolean* val) {
   return validBoolean;
 }
 
-void _chpl_write_boolean(_boolean val) {
-  printf(val ? "true" : "false");
-}
 
-void _chpl_write_integer(_integer64 val) {
-  printf("%lld", val);
-}
-
-void _chpl_write_float(_float64 val) {
+void _chpl_fwrite_float_help(FILE* fp, _float64 val) {
   const int floatBuffLen = 1024;
   char buff[floatBuffLen];
   sprintf(buff, "%g", val);
@@ -50,18 +43,10 @@ void _chpl_write_float(_float64 val) {
     exit(1);
   }
   if (strchr(buff, '.') == NULL && strchr(buff, 'e') == NULL) {
-    printf("%s.0", buff);
+    fprintf(fp, "%s.0", buff);
   } else {
-    printf("%s", buff);
+    fprintf(fp, "%s", buff);
   }
-}
-
-void _chpl_write_string(_string val) {
-  printf("%s", val);
-}
-
-void _chpl_write_nil(void* val) {
-  printf("nil");
 }
 
 void _chpl_write_linefeed(void) {

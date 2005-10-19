@@ -10,6 +10,7 @@
 #include "../traversals/fixup.h"
 
 ModuleSymbol* prelude = NULL;
+ModuleSymbol* fileModule = NULL;
 
 void FilesToAST::run(Vec<ModuleSymbol*>* modules) {
   // parse prelude
@@ -25,7 +26,8 @@ void FilesToAST::run(Vec<ModuleSymbol*>* modules) {
 
   ParseFile(stringcat(chplroot, "/modules/standard/_chpl_complex.chpl"),
             MOD_STANDARD);
-  ParseFile(stringcat(chplroot, "/modules/standard/_chpl_file.chpl"),
+  fileModule = ParseFile(stringcat(chplroot, 
+            "/modules/standard/_chpl_file.chpl"),
             MOD_STANDARD);
   ParseFile(stringcat(chplroot, "/modules/standard/_chpl_htuple.chpl"),
             MOD_STANDARD);

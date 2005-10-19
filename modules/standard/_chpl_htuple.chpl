@@ -1,5 +1,6 @@
 use _chpl_seq;
 use _chpl_data;
+use _chpl_file;
 
 class _htuple : value {
   type elt_type;
@@ -19,12 +20,12 @@ function =(x : _htuple, y) {
   return x;
 }
 
-function write(val : _htuple) {
-  write("(");
+function fwrite(f : file, val : _htuple) {
+  fwrite(f, "(");
   for i in 1..val.size-1 {
-    write(val(i));
-    write(", ");
+    fwrite(f, val(i));
+    fwrite(f, ", ");
   }
-  write(val(val.size));
-  write(")");
+  fwrite(f, val(val.size));
+  fwrite(f, ")");
 }

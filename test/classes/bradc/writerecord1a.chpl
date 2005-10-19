@@ -2,17 +2,18 @@ record myrecord {
   var x: integer;
   var y: float;
 
-  function write(): void { 
-    write(x, " ", y);
+  function fwrite(): void { 
+    fwrite(f, x, " ", y);
   }
 }
 
-function write(a: myrecord) {
-  write(a.x, " ", a.y);
+function fwrite(f: file, a: myrecord) {
+  fwrite(f, a.x, " ", a.y);
 }
 
 var a: myrecord;
 var b: myrecord;
+var f: file = stdout;
 
 writeln("a is: ", a, ", b is: ", b);
 

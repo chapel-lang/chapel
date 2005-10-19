@@ -11,8 +11,8 @@ record mytuple {
   }
 }
 
-function write(val : mytuple) {
-  write("(", val.f1, ", ", val.f2, ")");
+function fwrite(f : file, val : mytuple) {
+  fwrite(f, "(", val.f1, ", ", val.f2, ")");
 }
 
 var t : mytuple(integer, float);

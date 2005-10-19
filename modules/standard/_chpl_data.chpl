@@ -1,6 +1,7 @@
 // Fake data, a stopgap measure to implementing domains and arrays
 
 use _chpl_seq;
+use _chpl_file;
 
 class _fdata : value {
   type elt_type;
@@ -45,11 +46,11 @@ class _fdata : value {
   }
 }
 
-function write(val : _fdata) {
-  write("[|");
+function fwrite(f : file, val : _fdata) {
+  fwrite(f, "[|");
   for i in 0..15 {
-    write(val(i));
-    write("|");
+    fwrite(f, val(i));
+    fwrite(f, "|");
   }
-  write("]");
+  fwrite(f, "]");
 }

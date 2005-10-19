@@ -3,8 +3,8 @@ class myclass {
   var y: float;
 }
 
-function write(c:myclass) {
-  write(c.x, " ", c.y);
+function fwrite(f:file, c:myclass) {
+  fwrite(f, c.x, " ", c.y);
 }
 
 var a: myclass = myclass();

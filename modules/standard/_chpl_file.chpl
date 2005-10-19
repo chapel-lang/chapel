@@ -1,5 +1,3 @@
-use _chpl_complex;
-
 class file {
   var filename : string = "";
   var mode : string = "r";
@@ -83,7 +81,7 @@ function fwrite(f: file = stdout, val: integer) {
 pragma "rename _chpl_fwrite_float"
 function fwrite(f: file = stdout, val: float) {
   if (f.isOpen) {
-    fprintf(f.fp, "%lg", val);
+     _chpl_fwrite_float_help(f.fp, val);
   } else {
     fopenError(f);
   }
@@ -124,4 +122,19 @@ function fwrite(f: file = stdout, val: complex) {
   } else {
     fopenError(f);
   }
+}
+
+
+pragma "rename _chpl_fwrite_nil" 
+function fwrite(f: file = stdout, x : _nilType) : void {
+  if (f.isOpen) {
+    fprintf(f.fp, "%s", "nil");
+  } else {
+    fopenError(f);
+  }
+}
+
+
+function write() {
+  halt("This should never be called.  All write calls should be converted to fwrites.");
 }
