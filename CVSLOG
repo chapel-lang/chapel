@@ -48974,3 +48974,58 @@ Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 	chapel/compiler/include/: map.h vec.h 
 
+---------------------------------------------------------------------------
+
+10/19/05 13:19:39 -- shannon
+
+Log message:
+	Added the ability to write enums and classes to a file.
+	With this change I was able to remove writes altogether,
+	such that if the write symbol is encountered it is changed
+	to a call to fwrite to stdout.
+	
+	I added a few tests.  There were a number of tests that
+	included user write functions which I've changed to fwrites.
+	I also changed the expected output when necessary.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	                         filesToAST.cpp filesToAST.h 
+	chapel/compiler/traversals/: insertLiteralTemps.cpp 
+	                             resolveSymbols.cpp 
+	                             specializeCallExprs.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_complex.chpl 
+	                          _chpl_data.chpl _chpl_file.chpl 
+	                          _chpl_htuple.chpl _chpl_seq.chpl 
+	                          prelude.chpl 
+	chapel/runtime/include/: chplio.h 
+	chapel/runtime/src/: chplio.c 
+	chapel/test/arrays/deitz/: new_class_trial1.chpl 
+	chapel/test/classes/bradc/: writeclass1a.chpl writerecord1a.chpl 
+	chapel/test/classes/deitz/: test_record_user_write.chpl 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/flowanalysis/newast/: enum.good 
+	chapel/test/trivial/deitz/demo/: sample1.chpl sample1a.chpl 
+	                                 sample1b.chpl 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+	chapel/test/types/tuple/deitz/: 
+	                                test_tuple_record_implementation16.chpl 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+	                                         test_typevar_record3.chpl 
+	                                         test_typevar_record4.chpl 
+Added files:
+	chapel/test/types/file/: fwriteSelectStmt.chpl 
+	                         fwriteSelectStmt.good 
+	                         fwritelnClassFile.catfiles 
+	                         fwritelnClassFile.chpl 
+	                         fwritelnClassFile.good 
+	                         fwritelnEnumFile.catfiles 
+	                         fwritelnEnumFile.chpl 
+	                         fwritelnEnumFile.good 
+
