@@ -49029,3 +49029,18 @@ Added files:
 	                         fwritelnEnumFile.chpl 
 	                         fwritelnEnumFile.good 
 
+---------------------------------------------------------------------------
+
+10/20/05 13:38:31 -- shannon
+
+Log message:
+	Update the expected output for four tests that I
+	missed with yesterday's commit.
+
+Modified files:
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
