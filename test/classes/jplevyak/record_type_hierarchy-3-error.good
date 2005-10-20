@@ -25,21 +25,21 @@ _chpl_seq.chpl:8: fwrite, f : file, val : _seqNode
 fail: program does not type
 note: candidates are:
 note: candidates are:
-prelude.chpl:124: fwrite, f : file, val : reduction
-prelude.chpl:127: fwrite, f : file, val : sum
-prelude.chpl:130: fwrite, f : file, val : max
-prelude.chpl:133: fwrite, f : file, val : min
-prelude.chpl:136: fwrite, f : file, val : maxloc
-prelude.chpl:139: fwrite, f : file, val : minloc
-prelude.chpl:148: fwrite, f : file, val : timer
-prelude.chpl:196: fwrite, f : file, val : _methodTokenType
-prelude.chpl:202: fwrite, f : file, val : _setterTokenType
-prelude.chpl:207: fwrite, f : file, val : _seq
-prelude.chpl:210: fwrite, f : file, val : Index
+prelude.chpl:123: fwrite, f : file, val : reduction
+prelude.chpl:126: fwrite, f : file, val : sum
+prelude.chpl:129: fwrite, f : file, val : max
+prelude.chpl:132: fwrite, f : file, val : min
+prelude.chpl:135: fwrite, f : file, val : maxloc
+prelude.chpl:138: fwrite, f : file, val : minloc
+prelude.chpl:147: fwrite, f : file, val : timer
+prelude.chpl:195: fwrite, f : file, val : _methodTokenType
+prelude.chpl:201: fwrite, f : file, val : _setterTokenType
+prelude.chpl:206: fwrite, f : file, val : _seq
+prelude.chpl:209: fwrite, f : file, val : Index
 prelude.chpl:22: fwrite, f : file, val : _data
-prelude.chpl:231: fwrite, f : file, val : Array
-prelude.chpl:234: fwrite, f : file, val : Domain
-prelude.chpl:244: fwrite, f : file, val : Tuple
+prelude.chpl:230: fwrite, f : file, val : Array
+prelude.chpl:233: fwrite, f : file, val : Domain
+prelude.chpl:243: fwrite, f : file, val : Tuple
 prelude.chpl:27: fwrite, f : file, val : CFILEPTR
 prelude.chpl:3: fwrite, f : file, val : object
 prelude.chpl:4: fwrite, f : file, val : value
