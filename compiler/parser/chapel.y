@@ -213,7 +213,7 @@ Is this "while x"(i); or "while x(i)";?
 %type <pexpr> tuple_paren_expr atom expr expr_list_item opt_expr
 %type <pexpr> literal range seq_expr where whereexpr
 %type <pexpr> tuple_multiplier variable_expr top_level_expr
-%type <pexpr> reduction opt_init_expr if_expr
+%type <pexpr> reduction opt_init_expr
 %type <pexprls> expr_ls nonempty_expr_ls tuple_inner_type_ls opt_inherit_expr_ls
 %type <pdefexpr> formal enum_item
 %type <pdefexprls> formal_ls opt_formal_ls enum_ls
@@ -225,6 +225,7 @@ Is this "while x"(i); or "while x(i)";?
 %left TNOELSE
 %left TELSE
 %left TCOMMA
+%left TIF
 %left TBY
 %left TCOLON
 %left TNOTCOLON
@@ -1093,14 +1094,6 @@ seq_expr:
 ;
 
 
-if_expr:
-  TLP TIF expr TTHEN expr TELSE expr TRP
-    { $$ = new CondExpr($3, $5, $7); }
-| TLP TIF expr TTHEN expr TRP
-    { $$ = new CondExpr($3, $5); }
-;
-
-
 opt_expr:
   /* empty */
     { $$ = NULL; }
@@ -1125,6 +1118,10 @@ expr:
     }
 | TLSBR nonempty_expr_ls TRSBR
     { $$ = new CallExpr("_adomain_lit", $2); }
+| TIF expr TTHEN expr TELSE expr
+    { $$ = new CondExpr($2, $4, $6); }
+| TIF expr TTHEN expr %prec TNOELSE
+    { $$ = new CondExpr($2, $4); }
 ;
 
 
@@ -1153,7 +1150,6 @@ top_level_expr:
     $$ = new CallExpr("_tostring", $1, new_StringLiteral($3));
   }
 | range %prec TDOTDOT
-| if_expr
 | seq_expr
 | TPLUS expr %prec TUPLUS
     { $$ = new CallExpr(OP_UNPLUS, $2); }
