@@ -49044,3 +49044,25 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+10/21/05 13:30:09 -- deitz
+
+Log message:
+	Removed the restriction requiring parentheses around conditional
+	expressions as suggested by Preston.  Statement level conditional
+	expressions are simply parsed as conditional statements.
+	
+	Added four tests for if expressions.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+Added files:
+	chapel/test/trivial/deitz/: test_if_expr.chpl test_if_expr.good 
+	                            test_if_expr2.chpl 
+	                            test_if_expr2.good 
+	                            test_if_expr3.chpl 
+	                            test_if_expr3.good 
+	                            test_if_expr4.chpl 
+	                            test_if_expr4.good 
+
