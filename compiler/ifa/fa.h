@@ -107,7 +107,6 @@ class SettersClasses : public Vec<Setters *> {
  public:
   uint                                  hash;
   Vec<Setters *>                        sorted;
-  BlockHash<Setters *, SettersHashFns>  used_by;
 };
 #define forv_SettersClasses(_p, _v) forv_Vec(SettersClasses, _p, _v)
 

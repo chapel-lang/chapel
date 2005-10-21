@@ -311,11 +311,9 @@ maybe_live(PNode *n, Var *v) {
 static int
 merge_live(PNode *n, PNode *p) {
   int changed = 0;
-  Var **s = p->live_vars->first(), **e = p->live_vars->last();
-  for (Var **v = s; v < e; v++)
-    if (*v)
-      if (!n->lvals_set.set_in(*v))
-        changed = !n->live_vars->put(*v);
+  forv_Var(v, *p->live_vars) if (v)
+    if (!n->lvals_set.set_in(v))
+      changed = !n->live_vars->put(v);
   return changed;
 }
 
