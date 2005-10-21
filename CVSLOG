@@ -49066,3 +49066,14 @@ Added files:
 	                            test_if_expr4.chpl 
 	                            test_if_expr4.good 
 
+---------------------------------------------------------------------------
+
+10/21/05 14:29:40 -- jplevyak
+
+Log message:
+	remove unused variable
+	use forv for BlockHash
+
+Modified files:
+	chapel/compiler/ifa/: fa.h ssu.cpp 
+
