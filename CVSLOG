@@ -49219,3 +49219,18 @@ Modified files:
 	                         normalizeParsedAST.cpp 
 	chapel/compiler/traversals/: htmlview.cpp 
 
+---------------------------------------------------------------------------
+
+10/27/05 14:45:35 -- jplevyak
+
+Log message:
+	Add LiteralType
+	Add ArgSymbol::isExactMatch (not currently used).
+	Use LiteralType for tuple indexing function.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: baseAST.h symbol.h type.h 
+	chapel/compiler/traversals/: insertLiteralTemps.cpp 
+
