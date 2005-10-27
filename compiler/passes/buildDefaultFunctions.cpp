@@ -9,13 +9,13 @@
 
 
 static void build_chpl_main(Vec<ModuleSymbol*>* modules);
-static void build_constructor(ClassType* classType);
-static void build_getter(ClassType* classType, Symbol *tmp);
-static void build_setters_and_getters(ClassType* classType);
-static void build_record_equality_function(ClassType* classType);
-static void build_record_inequality_function(ClassType* classType);
-static void build_record_assignment_function(ClassType* classType);
-static void buildDefaultClassTypeMethods(ClassType* classType);
+static void build_constructor(ClassType* ct);
+static void build_getter(ClassType* ct, Symbol *tmp);
+static void build_setters_and_getters(ClassType* ct);
+static void build_record_equality_function(ClassType* ct);
+static void build_record_inequality_function(ClassType* ct);
+static void build_record_assignment_function(ClassType* ct);
+static void buildDefaultClassTypeMethods(ClassType* ct);
 static void buildDefaultIOFunctions(Type* type);
 
 
@@ -103,6 +103,17 @@ static void build_chpl_main(Vec<ModuleSymbol*>* modules) {
 }
 
 
+static Expr *
+init_expr(Type *t) {
+  if (t->defaultValue)
+    return new SymExpr(t->defaultValue);
+  else if (t->defaultConstructor)
+    return new CallExpr(t->defaultConstructor);
+  else
+    return new SymExpr(gNil);
+}
+
+
 static FnSymbol* build_init(ClassType* ct) {
   FnSymbol* _init = new FnSymbol(stringcat("_init_", ct->symbol->name));
   ArgSymbol* _this = new ArgSymbol(INTENT_REF, "this", ct);
@@ -129,27 +140,27 @@ static FnSymbol* build_init(ClassType* ct) {
 }
 
 
-static void build_constructor(ClassType* classType) {
-  FnSymbol* _init = build_init(classType);
-  Symbol* tmp = Symboltable::lookupInScope("initialize", classType->symbol->parentScope);
+static void build_constructor(ClassType* ct) {
+  FnSymbol* _init = build_init(ct);
+  Symbol* tmp = Symboltable::lookupInScope("initialize", ct->symbol->parentScope);
   while (tmp) {
     if (FnSymbol* userDefaultFn = dynamic_cast<FnSymbol*>(tmp)) {
-      if (userDefaultFn->retType == classType) {
-        classType->defaultConstructor = userDefaultFn;
+      if (userDefaultFn->retType == ct) {
+        ct->defaultConstructor = userDefaultFn;
         return;
       }
     }
     tmp = tmp->overload;
   }
-  char* name = stringcat("_construct_", classType->symbol->name);
+  char* name = stringcat("_construct_", ct->symbol->name);
   FnSymbol* fn = new FnSymbol(name);
-  classType->defaultConstructor = fn;
+  ct->defaultConstructor = fn;
   fn->fnClass = FN_CONSTRUCTOR;
-  fn->cname = stringcat("_construct_", classType->symbol->cname);
+  fn->cname = stringcat("_construct_", ct->symbol->cname);
 
   AList<DefExpr>* args = new AList<DefExpr>();
 
-  forv_Vec(TypeSymbol, tmp, classType->types) {
+  forv_Vec(TypeSymbol, tmp, ct->types) {
     if (VariableType *tv = dynamic_cast<VariableType*>(tmp->definition)) {
       char* name = tmp->name;
       Type* type = tv->type;
@@ -160,7 +171,7 @@ static void build_constructor(ClassType* classType) {
     }
   }
 
-  forv_Vec(Symbol, tmp, classType->fields) {
+  forv_Vec(Symbol, tmp, ct->fields) {
     char* name = tmp->name;
     Type* type = tmp->type;
     Expr* init = (tmp->defPoint->init) 
@@ -178,17 +189,17 @@ static void build_constructor(ClassType* classType) {
     args->insertAtTail(defExpr);
   }
 
-  Symboltable::continueFnDef(fn, args, classType);
+  Symboltable::continueFnDef(fn, args, ct);
 
   AList<Stmt>* stmts = new AList<Stmt>;
-  fn->_this = new VarSymbol("this", classType);
+  fn->_this = new VarSymbol("this", ct);
   dynamic_cast<VarSymbol*>(fn->_this)->noDefaultInit = true;
 
   DefExpr* def_expr = new DefExpr(fn->_this);
   stmts->insertAtTail(new ExprStmt(def_expr));
-  char* description = stringcat("instance of class ", classType->symbol->name);
+  char* description = stringcat("instance of class ", ct->symbol->name);
   Expr* alloc_rhs = new CallExpr(Symboltable::lookupInternal("_chpl_alloc"),
-                                 new SymExpr(classType->symbol),
+                                 new SymExpr(ct->symbol),
                                  new_StringLiteral(description));
   Expr* alloc_lhs = new SymExpr(fn->_this);
   Expr* alloc_expr = new CallExpr(OP_GETSNORM, alloc_lhs, alloc_rhs);
@@ -196,28 +207,53 @@ static void build_constructor(ClassType* classType) {
   stmts->insertAtTail(alloc_stmt);
   stmts->insertAtTail(new ExprStmt(new CallExpr(_init, fn->_this, Symboltable::lookupInternal("_methodToken"))));
 
-  classType->buildConstructorBody(stmts, fn->_this, args);
+  forv_Vec(Symbol, tmp, ct->fields) {
+    if (is_Scalar_Type(tmp->type))
+      continue;
+    Expr* varInitExpr = init_expr(tmp->type);
+    Expr* lhs = new MemberAccess(new SymExpr(fn->_this), tmp);
+    Expr* assign_expr = new CallExpr(OP_GETSNORM, lhs, varInitExpr);
+    Stmt* assign_stmt = new ExprStmt(assign_expr);
+    stmts->insertAtTail(assign_stmt);
+  }
+
+  DefExpr* ptmp = args->first();
+  forv_Vec(TypeSymbol, tmp, ct->types) {
+    if (dynamic_cast<VariableType*>(tmp->definition)) {
+      // Have type variable in class and type variable in parameter
+      // Should I do anything with these?
+      ptmp = args->next();
+    }
+  }
+  forv_Vec(Symbol, tmp, ct->fields) {
+    Expr* lhs = new MemberAccess(new SymExpr(fn->_this), tmp);
+    Expr* rhs = new SymExpr(ptmp->sym);
+    Expr* assign_expr = new CallExpr(OP_GETSNORM, lhs, rhs);
+    Stmt* assign_stmt = new ExprStmt(assign_expr);
+    stmts->insertAtTail(assign_stmt);
+    ptmp = args->next();
+  }
 
   stmts->insertAtTail(new ReturnStmt(new SymExpr(fn->_this)));
   BlockStmt* body = new BlockStmt(stmts);
   DefExpr* fn_def = new DefExpr(Symboltable::finishFnDef(fn, body));
-  reset_file_info(fn_def, classType->symbol->lineno, classType->symbol->filename);
-  classType->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(fn_def));
-  classType->methods.add(fn);
-  if (classType->symbol->hasPragma("codegen data")) {
+  reset_file_info(fn_def, ct->symbol->lineno, ct->symbol->filename);
+  ct->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(fn_def));
+  ct->methods.add(fn);
+  if (ct->symbol->hasPragma("codegen data")) {
     fn->addPragma("rename _data_construct");
     fn->addPragma("keep types");
   }
 }
 
 
-static void build_getter(ClassType* classType, Symbol *tmp) {
+static void build_getter(ClassType* ct, Symbol *tmp) {
   FnSymbol* getter_fn = Symboltable::startFnDef(new FnSymbol(tmp->name));
   getter_fn->addPragma("inline");
   getter_fn->cname =
-    stringcat("_", classType->symbol->cname, "_get_", tmp->cname);
+    stringcat("_", ct->symbol->cname, "_get_", tmp->cname);
   getter_fn->_getter = tmp;
-  ArgSymbol* getter_this = new ArgSymbol(INTENT_REF, "this", classType);
+  ArgSymbol* getter_this = new ArgSymbol(INTENT_REF, "this", ct);
   AList<DefExpr>* getter_args = new AList<DefExpr>(new DefExpr(getter_this));
   getter_args->insertAtHead(new DefExpr(new ArgSymbol(INTENT_REF, "_methodTokenDummy", 
                                                       dtMethodToken)));
@@ -226,23 +262,23 @@ static void build_getter(ClassType* classType, Symbol *tmp) {
   BlockStmt* getter_return = new BlockStmt(new ReturnStmt(getter_expr));
   DefExpr* getter_def_expr = 
     new DefExpr(Symboltable::finishFnDef(getter_fn, getter_return));
-  classType->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(getter_def_expr));
+  ct->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(getter_def_expr));
   reset_file_info(getter_def_expr, tmp->lineno, tmp->filename);
-  classType->methods.add(getter_fn);
+  ct->methods.add(getter_fn);
   getter_fn->method_type = PRIMARY_METHOD;
-  getter_fn->typeBinding = classType->symbol;
+  getter_fn->typeBinding = ct->symbol;
   getter_fn->_this = getter_this;
   getter_fn->noParens = true;
 }
 
-static void build_setters_and_getters(ClassType* classType) {
-  forv_Vec(Symbol, tmp, classType->fields) {
+static void build_setters_and_getters(ClassType* ct) {
+  forv_Vec(Symbol, tmp, ct->fields) {
     char* setter_name = tmp->name;
     FnSymbol* setter_fn = Symboltable::startFnDef(new FnSymbol(setter_name));
     setter_fn->addPragma("inline");
-    setter_fn->cname = stringcat("_", classType->symbol->name, "_set_", tmp->name);
+    setter_fn->cname = stringcat("_", ct->symbol->name, "_set_", tmp->name);
     setter_fn->_setter = tmp;
-    ArgSymbol* setter_this = new ArgSymbol(INTENT_REF, "this", classType);
+    ArgSymbol* setter_this = new ArgSymbol(INTENT_REF, "this", ct);
     AList<DefExpr>* args = new AList<DefExpr>(new DefExpr(setter_this));
     args->insertAtHead(new DefExpr(new ArgSymbol(INTENT_REF, "_methodTokenDummy", 
                                                  dtMethodToken)));
@@ -258,33 +294,33 @@ static void build_setters_and_getters(ClassType* classType) {
     BlockStmt* setter_stmt = new BlockStmt(new ExprStmt(setter_assignment));
     DefExpr* setter_def_expr = new DefExpr(
       Symboltable::finishFnDef(setter_fn, setter_stmt));
-    classType->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(setter_def_expr));
+    ct->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(setter_def_expr));
     reset_file_info(setter_def_expr, tmp->lineno, tmp->filename);
-    classType->methods.add(setter_fn);
+    ct->methods.add(setter_fn);
     setter_fn->method_type = PRIMARY_METHOD;
-    setter_fn->typeBinding = classType->symbol;
+    setter_fn->typeBinding = ct->symbol;
     setter_fn->_this = setter_this;
     setter_fn->noParens = true;
 
-    build_getter(classType, tmp);
+    build_getter(ct, tmp);
   }
-  forv_Vec(TypeSymbol, tmp, classType->types) {
+  forv_Vec(TypeSymbol, tmp, ct->types) {
     if (tmp->type->astType == TYPE_USER || 
         (fnewvardef && tmp->type->astType == TYPE_VARIABLE))
-      build_getter(classType, tmp);
+      build_getter(ct, tmp);
   }
 }
 
 
-static void build_record_equality_function(ClassType* classType) {
+static void build_record_equality_function(ClassType* ct) {
   FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("=="));
-  ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", classType);
+  ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
   AList<DefExpr>* args = new AList<DefExpr>(new DefExpr(arg1));
-  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", classType);
+  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", ct);
   args->insertAtTail(new DefExpr(arg2));
   Symboltable::continueFnDef(fn, args, dtBoolean);
   Expr* cond = NULL;
-  forv_Vec(Symbol, tmp, classType->fields) {
+  forv_Vec(Symbol, tmp, ct->fields) {
     Expr* left = new MemberAccess(new SymExpr(arg1), tmp);
     Expr* right = new MemberAccess(new SymExpr(arg2), tmp);
     cond = (cond)
@@ -293,21 +329,21 @@ static void build_record_equality_function(ClassType* classType) {
   }
   BlockStmt* retStmt = new BlockStmt(new ReturnStmt(cond));
   DefExpr* def = new DefExpr(Symboltable::finishFnDef(fn, retStmt));
-  classType->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def));
-  reset_file_info(def, classType->symbol->lineno, classType->symbol->filename);
+  ct->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def));
+  reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
 }
 
 
-static void build_record_inequality_function(ClassType* classType) {
+static void build_record_inequality_function(ClassType* ct) {
   FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("!="));
 
-  ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", classType);
+  ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
   AList<DefExpr>* args = new AList<DefExpr>(new DefExpr(arg1));
-  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", classType);
+  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", ct);
   args->insertAtTail(new DefExpr(arg2));
   Symboltable::continueFnDef(fn, args, dtBoolean);
   Expr* cond = NULL;
-  forv_Vec(Symbol, tmp, classType->fields) {
+  forv_Vec(Symbol, tmp, ct->fields) {
     Expr* left = new MemberAccess(new SymExpr(arg1), tmp);
     Expr* right = new MemberAccess(new SymExpr(arg2), tmp);
     cond = (cond)
@@ -316,31 +352,31 @@ static void build_record_inequality_function(ClassType* classType) {
   }
   BlockStmt* retStmt = new BlockStmt(new ReturnStmt(cond));
   DefExpr* def = new DefExpr(Symboltable::finishFnDef(fn, retStmt));
-  classType->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def));
-  reset_file_info(def, classType->symbol->lineno, classType->symbol->filename);
+  ct->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def));
+  reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
 }
 
 
-static void build_record_assignment_function(ClassType* classType) {
+static void build_record_assignment_function(ClassType* ct) {
   Vec<FnSymbol*> fns;
   collect_functions(&fns);
 
   forv_Vec(FnSymbol, fn, fns) {
     if (!strcmp(fn->name, "="))
-      if (fn->formals->first()->sym->type == classType)
+      if (fn->formals->first()->sym->type == ct)
         return;
   }
 
   FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("="));
   ArgSymbol* _arg1 = 
-    f_equal_method ? new ArgSymbol(INTENT_REF, "this", classType)
-    : new ArgSymbol(INTENT_BLANK, "_arg1", classType);
+    f_equal_method ? new ArgSymbol(INTENT_REF, "this", ct)
+    : new ArgSymbol(INTENT_BLANK, "_arg1", ct);
   AList<DefExpr>* args = new AList<DefExpr>(new DefExpr(_arg1));
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtUnknown);
   args->insertAtTail(new DefExpr(arg2));
   Symboltable::continueFnDef(fn, args, dtUnknown);
   AList<Stmt>* body = new AList<Stmt>();
-  forv_Vec(Symbol, tmp, classType->fields) {
+  forv_Vec(Symbol, tmp, ct->fields) {
     Expr* left = new MemberAccess(new SymExpr(_arg1), tmp);
     Expr* right = new MemberAccess(new SymExpr(arg2), tmp);
     Expr* assign_expr = new CallExpr(OP_GETSNORM, left, right);
@@ -350,25 +386,24 @@ static void build_record_assignment_function(ClassType* classType) {
   body->insertAtTail(new ReturnStmt(new SymExpr(_arg1)));
   BlockStmt* block_stmt = new BlockStmt(body);
   DefExpr* def = new DefExpr(Symboltable::finishFnDef(fn, block_stmt));
-  classType->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def));
-  reset_file_info(def, classType->symbol->lineno, classType->symbol->filename);
+  ct->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def));
+  reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
   if (f_equal_method) {
-    classType->methods.add(fn);
+    ct->methods.add(fn);
     fn->method_type = PRIMARY_METHOD;
-    fn->typeBinding = classType->symbol;
+    fn->typeBinding = ct->symbol;
     fn->_this = _arg1;
   }
 }
 
 
-static void buildDefaultClassTypeMethods(ClassType* classType) {
-  build_setters_and_getters(classType);
-  build_constructor(classType);
-  if (classType->classTag == CLASS_RECORD ||
-      classType->classTag == CLASS_VALUECLASS) {
-    build_record_equality_function(classType);
-    build_record_inequality_function(classType);
-    build_record_assignment_function(classType);
+static void buildDefaultClassTypeMethods(ClassType* ct) {
+  build_setters_and_getters(ct);
+  build_constructor(ct);
+  if (ct->classTag == CLASS_RECORD || ct->classTag == CLASS_VALUECLASS) {
+    build_record_equality_function(ct);
+    build_record_inequality_function(ct);
+    build_record_assignment_function(ct);
   }
 }
 

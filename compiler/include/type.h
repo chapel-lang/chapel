@@ -192,8 +192,6 @@ class ClassType : public Type {
 
   bool isNominalType();
 
-  virtual void buildConstructorBody(AList<Stmt>* stmts, Symbol* _this, 
-                                    AList<DefExpr>* arguments);
   virtual void codegenDef(FILE* outfile);
   virtual void codegenStructName(FILE* outfile);
   virtual void codegenPrototype(FILE* outfile);

@@ -763,47 +763,6 @@ is_Reference_Type(Type *t) {
           (ct->classTag == CLASS_CLASS));
 }
 
-static Expr *
-init_expr(Type *t) {
-  if (t->defaultValue)
-    return new SymExpr(t->defaultValue);
-  else if (t->defaultConstructor)
-    return new CallExpr(t->defaultConstructor);
-  else
-    return new SymExpr(gNil);
-}
-
-void ClassType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this, 
-                                          AList<DefExpr>* arguments) {
-  forv_Vec(Symbol, tmp, fields) {
-    if (is_Scalar_Type(tmp->type))
-      continue;
-    Expr* varInitExpr = init_expr(tmp->type);
-    Expr* lhs = new MemberAccess(new SymExpr(_this), tmp);
-    Expr* assign_expr = new CallExpr(OP_GETSNORM, lhs, varInitExpr);
-    Stmt* assign_stmt = new ExprStmt(assign_expr);
-    stmts->insertAtTail(assign_stmt);
-  }
-
-  DefExpr* ptmp = arguments->first();
-  forv_Vec(TypeSymbol, tmp, types) {
-    if (dynamic_cast<VariableType*>(tmp->definition)) {
-      // Have type variable in class and type variable in parameter
-      // Should I do anything with these?
-      ptmp = arguments->next();
-    }
-  }
-  forv_Vec(Symbol, tmp, fields) {
-    Expr* lhs = new MemberAccess(new SymExpr(_this), tmp);
-    Expr* rhs = new SymExpr(ptmp->sym);
-    Expr* assign_expr = new CallExpr(OP_GETSNORM, lhs, rhs);
-    Stmt* assign_stmt = new ExprStmt(assign_expr);
-    stmts->insertAtTail(assign_stmt);
-    ptmp = arguments->next();
-  }
-}
-
-
 void ClassType::codegenDef(FILE* outfile) {
   fprintf(outfile, "struct __");
   symbol->codegen(outfile);
