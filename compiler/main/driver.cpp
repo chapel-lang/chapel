@@ -32,6 +32,7 @@ static char libraryFilename[FILENAME_MAX] = "";
 static char log_flags[512] = "";
 static bool rungdb = false;
 static int pre_malloc = 0;
+bool use_init_expr = false;
 bool formalTemps = false;
 bool checkAnalysisTypeinfo = false;
 bool preinstantiate = true;
@@ -92,6 +93,7 @@ static ArgumentDescription arg_desc[] = {
  {"no-infer", 'b', "Do not run analysis, inference", "F", &no_infer, NULL, NULL},
  {"no-inline", ' ', "No inlining of functions" , "F", &no_inline, NULL, NULL},
  {"report-inlining", ' ', "Print inlined functions", "F", &report_inlining, NULL, NULL},
+ {"use-init-expr", ' ', "Use InitExpr", "F", &use_init_expr, "CHPL_INIT_EXPR", NULL},
  {"formal-temps", ' ', "Insert temps for formals", "F", &formalTemps, "CHPL_FORMAL_TEMPS", NULL},
  {"check-typeinfo", ' ', "Check result of type_info and return_type_info", "F", &checkAnalysisTypeinfo, NULL, NULL},
  {"nopreinstantiate", ' ', "Do not instantiate before analysis", "f", &preinstantiate, NULL, NULL},

@@ -348,6 +348,7 @@ char* astTypeName[AST_TYPE_END+1] = {
   "Expr",
   "SymExpr",
   "DefExpr",
+  "InitExpr",
   "LetExpr",
   "CondExpr",
   "CallExpr",
@@ -454,6 +455,10 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     ADD_CHILD(DefExpr, sym);
     AST_ADD_CHILD(DefExpr, init);
     AST_ADD_CHILD(DefExpr, exprType);
+    goto LExprCommon;
+  case EXPR_INIT:
+    ADD_CHILD(InitExpr, sym);
+    AST_ADD_CHILD(InitExpr, type);
     goto LExprCommon;
   case EXPR_LET:
     AST_ADD_LIST(LetExpr, symDefs, DefExpr);

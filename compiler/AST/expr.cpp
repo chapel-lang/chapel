@@ -451,6 +451,57 @@ void DefExpr::print(FILE* outfile) {
 void DefExpr::codegen(FILE* outfile) { /** noop **/ }
 
 
+InitExpr::InitExpr(Symbol* iSym, Expr* iType) :
+  Expr(EXPR_INIT),
+  sym(iSym),
+  type(iType)
+{
+  if (!sym)
+    INT_FATAL(this, "InitExpr initialized with NULL symbol");
+  if (type && type->parentSymbol)
+    INT_FATAL(this, "InitExpr initialized with type already in tree");
+}
+
+
+void InitExpr::verify(void) {
+  if (astType != EXPR_INIT)
+    INT_FATAL(this, "Bad InitExpr::astType");
+}
+
+
+InitExpr*
+InitExpr::copyInner(ASTMap* map) {
+  return new InitExpr(sym, COPY_INT(type));
+}
+
+
+void InitExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == type) {
+    type = dynamic_cast<Expr*>(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in InitExpr::replaceChild");
+  }
+}
+
+
+void InitExpr::traverseExpr(Traversal* traversal) {
+  TRAVERSE(sym, traversal, false);
+  TRAVERSE(type, traversal, false);
+}
+
+
+Type* InitExpr::typeInfo(void) {
+  INT_FATAL(this, "Unexpected call to InitExpr::typeInfo()");
+  return dtUnknown;
+}
+
+
+void InitExpr::print(FILE* outfile) { /** noop **/ }
+
+
+void InitExpr::codegen(FILE* outfile) { /** noop **/ }
+
+
 MemberAccess::MemberAccess(Expr* init_base, Symbol* init_member) :
   Expr(EXPR_MEMBERACCESS),
   base(init_base),

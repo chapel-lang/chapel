@@ -1823,6 +1823,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       break;
     }
     case EXPR_DEF: break;
+    case EXPR_INIT: break;
     case EXPR_MEMBERACCESS: {
       MemberAccess *s = dynamic_cast<MemberAccess*>(ast);
       s->ainfo->rval = new_sym();

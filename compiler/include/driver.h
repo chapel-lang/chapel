@@ -16,6 +16,7 @@ extern bool postAnalysis;
 extern FILE* html_index_file;
 
 // Begin temporary development flags
+extern bool use_init_expr;
 extern bool no_infer;
 extern bool formalTemps;
 extern bool checkAnalysisTypeinfo;

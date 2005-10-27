@@ -33,6 +33,26 @@ void destruct_for_indices(ForLoopStmt* stmt) {
 }
 
 
+// Insert InitExprs for variable declarations
+// Insert initialization statements for variable declarations
+// Fields are handled when the class constructor and init function are built
+void insert_init_expr(DefExpr* def) {
+  if (dynamic_cast<ArgSymbol*>(def->sym)) {
+    def->parentFunction()->insertAtHead
+      (new ExprStmt(new InitExpr(def->sym,
+                                 def->exprType ? def->exprType->copy() : NULL)));
+  }
+
+  if (dynamic_cast<VarSymbol*>(def->sym)) {
+    if (dynamic_cast<TypeSymbol*>(def->parentSymbol))
+      return;
+    def->parentStmt->insertAfter
+      (new ExprStmt(new InitExpr(def->sym,
+                                 def->exprType ? def->exprType->copy() : NULL)));
+  }
+}
+
+
 void NormalizeParsedAST::run(Vec<ModuleSymbol*>* modules) {
   Vec<BaseAST*> asts;
   collect_asts(&asts);
@@ -40,6 +60,8 @@ void NormalizeParsedAST::run(Vec<ModuleSymbol*>* modules) {
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* a = dynamic_cast<DefExpr*>(ast)) {
       normalize_anonymous_record_or_forall_expression(a);
+      if (use_init_expr)
+        insert_init_expr(a);
     } else if (ForLoopStmt* a = dynamic_cast<ForLoopStmt*>(ast)) {
       destruct_for_indices(a);
     }

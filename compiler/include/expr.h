@@ -124,6 +124,25 @@ class DefExpr : public Expr {
 };
 
 
+class InitExpr : public Expr {
+ public:
+  Symbol* sym;
+  Expr* type;
+
+  InitExpr(Symbol* iSym, Expr* iType);
+  virtual void verify(void);
+  COPY_DEF(InitExpr);
+  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  void traverseExpr(Traversal* traversal);
+
+  Type* typeInfo(void);
+
+  void print(FILE* outfile);
+  bool noCodegen() { return true; }
+  void codegen(FILE* outfile);
+};
+
+
 class SymExpr : public Expr {
  public:
   Symbol* var;

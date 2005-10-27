@@ -610,7 +610,10 @@ FnSymbol::FnSymbol(char* initName,
   basicBlocks(NULL),
   calledBy(NULL),
   calls(NULL)
-{ }
+{
+  if (!body)
+    body = new BlockStmt();
+}
 
 
 void FnSymbol::verify(void) {

@@ -103,7 +103,34 @@ static void build_chpl_main(Vec<ModuleSymbol*>* modules) {
 }
 
 
+static FnSymbol* build_init(ClassType* ct) {
+  FnSymbol* _init = new FnSymbol(stringcat("_init_", ct->symbol->name));
+  ArgSymbol* _this = new ArgSymbol(INTENT_REF, "this", ct);
+  ArgSymbol* methodToken = new ArgSymbol(INTENT_REF, "_methodTokenDummy", dtMethodToken);
+  _init->formals = new AList<DefExpr>(new DefExpr(_this), new DefExpr(methodToken));
+
+  if (use_init_expr) {
+    forv_Vec(Symbol, field, ct->fields) {
+      _init->insertAtTail
+        (new ExprStmt(new InitExpr(field,
+                                   field->defPoint->exprType ?
+                                   field->defPoint->exprType->copy() : NULL)));
+    }
+  }
+
+  reset_file_info(_init, ct->symbol->lineno, ct->symbol->filename);
+  ct->symbol->defPoint->parentStmt->insertBefore
+    (new ExprStmt(new DefExpr(_init)));
+  ct->methods.add(_init);
+  _init->method_type = PRIMARY_METHOD;
+  _init->typeBinding = ct->symbol;
+  _init->_this = _this;
+  return _init;
+}
+
+
 static void build_constructor(ClassType* classType) {
+  FnSymbol* _init = build_init(classType);
   Symbol* tmp = Symboltable::lookupInScope("initialize", classType->symbol->parentScope);
   while (tmp) {
     if (FnSymbol* userDefaultFn = dynamic_cast<FnSymbol*>(tmp)) {
@@ -115,7 +142,7 @@ static void build_constructor(ClassType* classType) {
     tmp = tmp->overload;
   }
   char* name = stringcat("_construct_", classType->symbol->name);
-  FnSymbol* fn = Symboltable::startFnDef(new FnSymbol(name));
+  FnSymbol* fn = new FnSymbol(name);
   classType->defaultConstructor = fn;
   fn->fnClass = FN_CONSTRUCTOR;
   fn->cname = stringcat("_construct_", classType->symbol->cname);
@@ -167,6 +194,8 @@ static void build_constructor(ClassType* classType) {
   Expr* alloc_expr = new CallExpr(OP_GETSNORM, alloc_lhs, alloc_rhs);
   Stmt* alloc_stmt = new ExprStmt(alloc_expr);
   stmts->insertAtTail(alloc_stmt);
+  stmts->insertAtTail(new ExprStmt(new CallExpr(_init, fn->_this, Symboltable::lookupInternal("_methodToken"))));
+
   classType->buildConstructorBody(stmts, fn->_this, args);
 
   stmts->insertAtTail(new ReturnStmt(new SymExpr(fn->_this)));
