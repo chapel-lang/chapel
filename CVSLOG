@@ -49172,3 +49172,50 @@ Removed files:
 	                             insertUnionChecks.h 
 	chapel/runtime/include/: union.h 
 
+---------------------------------------------------------------------------
+
+10/27/05 14:17:11 -- deitz
+
+Log message:
+	Added InitExpr which will eventually contain the exprType field that
+	the DefExpr currently contains.  Enable its creation with
+	--use-init-expr.
+	
+	The InitExpr contains
+	  Symbol* sym
+	  Expr* type
+	
+	The type is a copy of the DefExpr::exprType.
+	The symbol is the same as the DefExpr::sym.
+	
+	I was going to use, instead of a Symbol, an expr, so we could use a
+	MemberAccess in the class init function, but this seems like an
+	unnecessary complication.
+	
+	The InitExpr for fields is in the init function of a class that is
+	called first thing by the constructor.  There should be some way to
+	relate the 'this' argument to the InitExprs.  Perhaps we should add a
+	new field to InitExpr that contains an optional 'this' symbol if it is
+	a field.
+	
+	John, I have this change disabled because even though analysis ignores
+	the InitExpr, we run into trouble resolving the type field if it
+	contains a CallExpr.
+	
+	The next step on my end is to create separate statements for doing the
+	initialization for variables.  That is, remove the init field from the
+	DefExpr.  I will not yet do this for ArgSymbols since that signals the
+	ability to create a default value wrapper.
+	
+	Also, should the InitExpr apply to ArgSymbols and if so, where should
+	it be?  Similar for FnSymbols and TypeSymbols.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp symbol.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: baseAST.h driver.h expr.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	                         normalizeParsedAST.cpp 
+	chapel/compiler/traversals/: htmlview.cpp 
+
