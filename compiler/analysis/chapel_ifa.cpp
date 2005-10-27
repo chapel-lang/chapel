@@ -1336,8 +1336,8 @@ gen_one_defexpr(VarSymbol *var, DefExpr *def) {
     default:
       break;
   }
-  int no_default_init = var->noDefaultInit 
-    || (init && (is_reference_type(type) || (is_scalar_type(type) && type == init->typeInfo())));
+  int no_default_init = var->noDefaultInit ;
+ // optimizations || (init && (is_reference_type(type) || (is_scalar_type(type) && type == init->typeInfo())));
   Sym *lhs = s;
   if (!no_default_init) {
     lhs = new_sym();
