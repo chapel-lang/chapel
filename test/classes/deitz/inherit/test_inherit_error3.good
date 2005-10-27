@@ -1,1 +1,1 @@
-Error: Illegal to inherit from record or union (test_inherit_error3.chpl:1)
+Error: Illegal to inherit from record (test_inherit_error3.chpl:1)

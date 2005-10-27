@@ -694,7 +694,6 @@ is_Value_Type(Type *t) {
     return is_Value_Type(ut->underlyingType);
   ClassType* ct = dynamic_cast<ClassType*>(t);
   return ct && (ct->classTag == CLASS_RECORD
-                || ct->classTag == CLASS_UNION
                 || ct->classTag == CLASS_VALUECLASS);
 }
 
@@ -724,13 +723,6 @@ init_expr(Type *t) {
 
 void ClassType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this, 
                                           AList<DefExpr>* arguments) {
-  if (classTag == CLASS_UNION) {
-    CallExpr* init_function = new CallExpr(Symboltable::lookupInternal("_UNION_SET"), _this, fieldSelector->constants->first()->sym);
-    ExprStmt* init_stmt = new ExprStmt(init_function);
-    stmts->insertAtTail(init_stmt);
-    return;
-  }
-
   forv_Vec(Symbol, tmp, fields) {
     if (is_Scalar_Type(tmp->type))
       continue;
@@ -760,26 +752,10 @@ void ClassType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this,
 }
 
 
-void ClassType::codegenStartDefFields(FILE* outfile) {
-  if (classTag == CLASS_UNION) {
-    fieldSelector->codegen(outfile);
-    fprintf(outfile, " _chpl_union_tag;\n");
-    fprintf(outfile, "union {\n");
-  }
-}
-
-void ClassType::codegenStopDefFields(FILE* outfile) {
-  if (classTag == CLASS_UNION) {
-    fprintf(outfile, "} _chpl_union;\n");
-  }
-}
-
-
 void ClassType::codegenDef(FILE* outfile) {
   fprintf(outfile, "struct __");
   symbol->codegen(outfile);
   fprintf(outfile, " {\n");
-  codegenStartDefFields(outfile);
   bool printedSomething = false; // BLC: this is to avoid empty structs, illegal in C
   for (Stmt* tmp = declarationList->first(); tmp; tmp = declarationList->next()) {
     if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(tmp)) {
@@ -794,7 +770,6 @@ void ClassType::codegenDef(FILE* outfile) {
   if (!printedSomething) {
     fprintf(outfile, "int _emptyStructPlaceholder;\n");
   }
-  codegenStopDefFields(outfile);
   fprintf(outfile, "};\n\n");
 }
 
@@ -817,11 +792,7 @@ void ClassType::codegenPrototype(FILE* outfile) {
 
 
 void ClassType::codegenMemberAccessOp(FILE* outfile) {
-  if (classTag == CLASS_UNION) {
-    fprintf(outfile, "->_chpl_union.");
-  } else {
-    fprintf(outfile, "->");
-  }
+  fprintf(outfile, "->");
 }
 
 
@@ -836,10 +807,6 @@ bool ClassType::hasDefaultWriteFunction(void) {
 
 
 AList<Stmt>* ClassType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
-  if (classTag == CLASS_UNION) {
-    return new AList<Stmt>(new ExprStmt(new CallExpr("_UnionWriteStopgap", arg)));
-  }
-
   AList<Stmt>* body = new AList<Stmt>();
   if (classTag == CLASS_CLASS) {
     AList<Stmt>* fwriteNil =
@@ -876,72 +843,6 @@ AList<Stmt>* ClassType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSym
 
   return body;
  }
-
-
-static char* buildFieldSelectorName(ClassType* classType, Symbol* field, 
-                                   bool enumName = false) {
-  char* fieldName;
-  if (field) {
-    fieldName = field->name;
-  } else {
-    if (enumName) {
-      fieldName = "";
-    } else {
-      fieldName = "_uninitialized";
-    }
-  }
-  return stringcat("_", classType->symbol->name, "_union_id_", fieldName);
-}
-
-
-void ClassType::buildFieldSelector(void) {
-  AList<DefExpr>* id_list = new AList<DefExpr>();
-
-  /* build list of enum symbols */
-  char* id_name = buildFieldSelectorName(this, NULL);
-  EnumSymbol* id_symbol = new EnumSymbol(id_name);
-  id_list->insertAtTail(new DefExpr(id_symbol));
-  forv_Vec(Symbol, tmp, fields) {
-    id_name = buildFieldSelectorName(this, tmp);
-    id_symbol = new EnumSymbol(id_name);
-    id_list->insertAtTail(new DefExpr(id_symbol));
-  }
-
-  /* build enum type */
-  EnumType* enum_type = new EnumType(id_list);
-  char* enum_name = buildFieldSelectorName(this, NULL, true);
-  TypeSymbol* enum_symbol = new TypeSymbol(enum_name, enum_type);
-  
-  /* build definition of enum */
-  DefExpr* def_expr = new DefExpr(enum_symbol);
-  symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def_expr));
-
-  fieldSelector = enum_type;
-}
-
-
-CallExpr* ClassType::buildSafeUnionAccessCall(unionCall type, Expr* base, 
-                                                 Symbol* field) {
-  AList<Expr>* args = new AList<Expr>(base->copy());
-  char* id_tag = buildFieldSelectorName(this, field);
-  args->insertAtTail(new SymExpr(Symboltable::lookupFromScope(id_tag, structScope)));
-  if (type == UNION_CHECK) {
-    args->insertAtTail(new_StringLiteral(base->filename));
-    args->insertAtTail(new_IntLiteral(base->lineno));
-  }
-  
-  switch (type) {
-  case UNION_SET:
-    return new CallExpr(unionSetFn, args);
-  case UNION_CHECK:
-    return new CallExpr(unionCheckFn, args);
-  case UNION_CHECK_QUIET:
-    return new CallExpr(unionQuietCheckFn, args);
-  default:
-    INT_FATAL(this, "Unable to build safe union access call");
-  }
-  return NULL;
-}
 
 
 MetaType::MetaType(Type* init_base) :
@@ -1132,11 +1033,4 @@ void findInternalTypes(void) {
     dynamic_cast<FnSymbol*>(Symboltable::lookupInternal("_init_string"));
   initConfigFn =
     dynamic_cast<FnSymbol*>(Symboltable::lookupInternal("_INIT_CONFIG"));
-  unionSetFn =
-    dynamic_cast<FnSymbol*>(Symboltable::lookupInternal("_UNION_SET"));
-  unionCheckFn =
-    dynamic_cast<FnSymbol*>(Symboltable::lookupInternal("_UNION_CHECK"));
-  unionQuietCheckFn =
-    dynamic_cast<FnSymbol*>(Symboltable::lookupInternal("_UNION_CHECK_QUIET"));
-
 }

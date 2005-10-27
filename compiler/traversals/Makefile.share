@@ -19,7 +19,6 @@ TRAVERSALS_SRCS = \
 	insertFunctionTemps.cpp \
         insertLiteralTemps.cpp \
 	insertThisParameters.cpp \
-	insertUnionChecks.cpp \
 	insertVariableInitializations.cpp \
         instantiate.cpp \
         preAnalysisHacks.cpp \

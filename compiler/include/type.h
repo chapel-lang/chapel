@@ -179,9 +179,6 @@ class ClassType : public Type {
 
   virtual void buildConstructorBody(AList<Stmt>* stmts, Symbol* _this, 
                                     AList<DefExpr>* arguments);
-
-  virtual void codegenStartDefFields(FILE* outfile);
-  virtual void codegenStopDefFields(FILE* outfile);
   virtual void codegenDef(FILE* outfile);
   virtual void codegenStructName(FILE* outfile);
   virtual void codegenPrototype(FILE* outfile);
@@ -191,12 +188,6 @@ class ClassType : public Type {
 
   virtual bool hasDefaultWriteFunction(void);
   virtual AList<Stmt>* buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
-
-  void ClassType::buildFieldSelector(void);
-  CallExpr* ClassType::buildSafeUnionAccessCall(unionCall type, Expr* base, 
-                                                Symbol* field);
-
-
 };
 
 

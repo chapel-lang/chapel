@@ -555,21 +555,12 @@ void MemberAccess::print(FILE* outfile) {
 void MemberAccess::codegen(FILE* outfile) {
     ClassType* base_type = dynamic_cast<ClassType*>(base->typeInfo());
     if (member_type) {
-      if (base_type && base_type->classTag == CLASS_UNION) {
-        // (*((T*)(((char*)(p->_chpl_union)))))
-        fprintf(outfile, "(*((");
-        member_type->codegen(outfile);
-        fprintf(outfile, "*)(&(");
-        base->codegen(outfile);
-        fprintf(outfile, "->_chpl_union))))");
-      } else {
-        // (*((T*)(((char*)(p))+offset)))
-        fprintf(outfile, "(*((");
-        member_type->codegen(outfile);
-        fprintf(outfile, "*)(((char*)(");
-        base->codegen(outfile);
-        fprintf(outfile, "))+%d)))",member_offset);
-      }
+      // (*((T*)(((char*)(p))+offset)))
+      fprintf(outfile, "(*((");
+      member_type->codegen(outfile);
+      fprintf(outfile, "*)(((char*)(");
+      base->codegen(outfile);
+      fprintf(outfile, "))+%d)))",member_offset);
     } else {
       base->codegen(outfile);
       base_type->codegenMemberAccessOp(outfile);
@@ -794,42 +785,12 @@ void CallExpr::codegen(FILE* outfile) {
     return;
   }
 
-  // This is Kludge until unions and enums have write functions
-
   ///
   /// BEGIN KLUDGE
   ///
 
   if (SymExpr* variable = dynamic_cast<SymExpr*>(baseExpr)) {
-    if (!strcmp(variable->var->name, "_UnionWriteStopgap")) {
-      ClassType* unionType = dynamic_cast<ClassType*>(argList->only()->typeInfo());
-      fprintf(outfile, "if (_UNION_CHECK_QUIET(val, _%s_union_id__uninitialized)) {\n",
-              unionType->symbol->cname);
-      fprintf(outfile, "_chpl_write_string(\"(uninitialized)\");\n");
-      forv_Vec(Symbol, field, unionType->fields) {
-        fprintf(outfile, "} else if (_UNION_CHECK_QUIET(val, _%s_union_id_%s)) {\n",
-                unionType->symbol->cname, field->name);
-        fprintf(outfile, "_chpl_write_string(\"(%s = \");\n", field->name);
-        if (field->type == dtInteger) {
-          fprintf(outfile, "_chpl_write_integer(val->_chpl_union.%s);\n",
-                  field->cname);
-        } else if (field->type == dtFloat) {
-          fprintf(outfile, "_chpl_write_float(val->_chpl_union.%s);\n",
-                  field->cname);
-        } else if (field->type == dtString) {
-          fprintf(outfile, "_chpl_write_string(val->_chpl_union.%s);\n",
-                  field->cname);
-        } else if (field->type == dtBoolean) {
-          fprintf(outfile, "_chpl_write_boolean(val->_chpl_union.%s);\n",
-                  field->cname);
-        }
-        fprintf(outfile, "_chpl_write_string(\")\");\n");
-      }
-      fprintf(outfile, "} else {\n");
-      fprintf(outfile, "_chpl_write_string(\"impossible\"); exit(0);\n");
-      fprintf(outfile, "}\n");
-      return;
-    } else if (!strcmp(variable->var->name, "_EnumReadStopgap")) {
+    if (!strcmp(variable->var->name, "_EnumReadStopgap")) {
       EnumType* enumType = dynamic_cast<EnumType*>(argList->only()->typeInfo());
       fprintf(outfile, "char* inputString = NULL;\n");
       fprintf(outfile, "_chpl_read_string(&inputString);\n");

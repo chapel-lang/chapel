@@ -87,7 +87,6 @@ PassInfo passlist[] = {
   RUN(ProcessParameters, ""),
   RUN(InlineFunctions, ""),
   RUN(InsertVariableInitializations, ""),
-  RUN(InsertUnionChecks, ""),
 
   RUN(CopyPropagation, ""),
 

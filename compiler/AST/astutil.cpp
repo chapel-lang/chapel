@@ -69,7 +69,11 @@ class ComputeCallSites : public Traversal {
   void preProcessExpr(Expr* expr) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
       if (call->findFnSymbol()) {
-        if (call->findFnSymbol()->calledBy) { // yuck, got some functions being called that are no longer in the tree, STOPGAP, this has to do with unions
+        if (call->findFnSymbol()->calledBy) { // yuck, got some
+                                              // functions being
+                                              // called that are no
+                                              // longer in the tree,
+                                              // e.g., _INIT_CONFIG
           call->findFnSymbol()->calledBy->add(call);
           call->parentFunction()->calls->add(call);
         }

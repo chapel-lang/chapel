@@ -10,7 +10,6 @@
 
 static void build_chpl_main(Vec<ModuleSymbol*>* modules);
 static void build_constructor(ClassType* classType);
-static void build_union_id_enum(ClassType* classType);
 static void build_getter(ClassType* classType, Symbol *tmp);
 static void build_setters_and_getters(ClassType* classType);
 static void build_record_equality_function(ClassType* classType);
@@ -183,13 +182,6 @@ static void build_constructor(ClassType* classType) {
 }
 
 
-static void build_union_id_enum(ClassType* classType) {
-  if (classType->classTag == CLASS_UNION) {
-    classType->buildFieldSelector();
-  }
-}
-
-
 static void build_getter(ClassType* classType, Symbol *tmp) {
   FnSymbol* getter_fn = Symboltable::startFnDef(new FnSymbol(tmp->name));
   getter_fn->addPragma("inline");
@@ -342,7 +334,6 @@ static void build_record_assignment_function(ClassType* classType) {
 
 static void buildDefaultClassTypeMethods(ClassType* classType) {
   build_setters_and_getters(classType);
-  build_union_id_enum(classType);
   build_constructor(classType);
   if (classType->classTag == CLASS_RECORD ||
       classType->classTag == CLASS_VALUECLASS) {

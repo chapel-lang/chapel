@@ -351,15 +351,10 @@ function _chpl_alloc(t, description:string) { return __primitive("chpl_alloc", t
 
 function _init_string() { return ""; }
 
-function _UNION_CHECK(u, tag, filename, lineno);
-function _UNION_SET(u, tag);
-function _UNION_CHECK_QUIET(u, tag): boolean;
-
 function _INIT_CONFIG(inout v, v_type, chapel_name, module_name);
 function _INIT_ARRAY(rank, arr, dom, elt_type);
 function _INIT_DOMAIN_DIM(dom, dim, lo, hi, str);
 
-function _UnionWriteStopgap(x) { }
 function _ArrayWriteStopgap(x) { }
 function _EnumReadStopgap(x) { }
 function _DomainWriteStopgap(x) { }

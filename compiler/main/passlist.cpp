@@ -41,7 +41,6 @@
 #include "../traversals/insertFunctionTemps.h"
 #include "../traversals/insertLiteralTemps.h"
 #include "../traversals/insertThisParameters.h"
-#include "../traversals/insertUnionChecks.h"
 #include "../traversals/insertVariableInitializations.h"
 #include "../traversals/instantiate.h"
 #include "../traversals/preAnalysisHacks.h"
@@ -94,7 +93,6 @@ REGISTER(InsertFunctionTemps);
 REGISTER(InsertLiteralTemps);
 REGISTER(InsertOutParameterInitializations);
 REGISTER(InsertThisParameters);
-REGISTER(InsertUnionChecks);     // SJD: Insert runtime type checks for unions
 REGISTER(InsertVariableInitializations);
 REGISTER(Instantiate);
 REGISTER(NormalizeFunctions);

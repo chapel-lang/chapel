@@ -26,10 +26,10 @@ static void addClassToHierarchy(ClassType* ct,
     ClassType* pt = dynamic_cast<ClassType*>(typeSymbol->definition);
     if (!pt)
       USR_FATAL(expr, "Illegal to inherit from something other than a class");
-    if (pt->classTag == CLASS_RECORD || pt->classTag == CLASS_UNION)
-      USR_FATAL(expr, "Illegal to inherit from record or union");
-    if (ct->classTag == CLASS_RECORD || ct->classTag == CLASS_UNION)
-      USR_FATAL(expr, "Illegal for record or union to inherit");
+    if (pt->classTag == CLASS_RECORD)
+      USR_FATAL(expr, "Illegal to inherit from record");
+    if (ct->classTag == CLASS_RECORD)
+      USR_FATAL(expr, "Illegal for record to inherit");
     if (pt->inherits) {
       alreadySeen->add(ct);
       addClassToHierarchy(pt, alreadySeen);
