@@ -49234,3 +49234,21 @@ Modified files:
 	chapel/compiler/include/: baseAST.h symbol.h type.h 
 	chapel/compiler/traversals/: insertLiteralTemps.cpp 
 
+---------------------------------------------------------------------------
+
+10/27/05 15:32:34 -- deitz
+
+Log message:
+	Moved construction of default constructor into same file rather than
+	in separate pieces and changed some names around.
+	
+	Preparing to add better support for user-defined constructors and to
+	factor some more things into the class init function.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	chapel/test/flowanalysis/newast/: sum_type-1.good 
+	                                  sum_type-2.good 
+
