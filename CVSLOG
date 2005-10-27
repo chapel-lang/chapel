@@ -49077,3 +49077,49 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.h ssu.cpp 
 
+---------------------------------------------------------------------------
+
+10/26/05 17:11:58 -- deitz
+
+Log message:
+	Implemented experimental function resolution/type instantiation pass
+	as an alternative to analysis pass.  Use the -b or --no-infer flags to
+	use this pass.  This is an intermediate checkin as it doesn't do any
+	instantiation yet.  It also doesn't do type coercions.  It does handle
+	default values and named argument passing.
+	
+	This checkin also cleans up other code in the compiler, including
+	elimination of the unmaintained analyzeAST flag (--no-analysis) and
+	simplification of the methodToken and setterToken type related code.
+	
+	Fixed a bug in Expr::parentFunction routine.
+	
+	Reimplemented function_returns_void function to be self-sufficient.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: analysis.h driver.h type.h 
+	chapel/compiler/main/: driver.cpp passlist.cpp passlist.h 
+	                       runpasses.cpp 
+	chapel/compiler/passes/: Makefile.share 
+	                         buildDefaultFunctions.cpp 
+	                         runAnalysis.cpp 
+	chapel/compiler/symtab/: resolveTypes.cpp 
+	chapel/compiler/traversals/: buildLValueFunctions.cpp 
+	                             findUnknownTypes.cpp 
+	                             insertThisParameters.cpp 
+	                             removeNamedParameters.cpp view.cpp 
+	chapel/modules/standard/: _chpl_file.chpl 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/functions/deitz/default/: test_default5.chpl 
+	                                      test_default8.chpl 
+	                                      test_default8a.chpl 
+	                                      test_default9.chpl 
+Added files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	                         functionResolution.h 
+	chapel/test/classes/deitz/: test_class1a.chpl test_class1a.good 
+
