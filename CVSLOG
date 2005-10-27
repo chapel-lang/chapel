@@ -49123,3 +49123,19 @@ Added files:
 	                         functionResolution.h 
 	chapel/test/classes/deitz/: test_class1a.chpl test_class1a.good 
 
+---------------------------------------------------------------------------
+
+10/27/05 10:45:49 -- shannon
+
+Log message:
+	Added the lookupInFileModuleScope method to the
+	Symboltable class.
+
+Modified files:
+	chapel/compiler/include/: symtab.h 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: insertLiteralTemps.cpp 
+	                             resolveSymbols.cpp 
+	                             specializeCallExprs.cpp 
+
