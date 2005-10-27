@@ -54,6 +54,7 @@ enum astType_t {
   TYPE_PRIMITIVE,
   TYPE_FN,
   TYPE_ENUM,
+  TYPE_LITERAL,
   TYPE_USER,
   TYPE_CLASS,
   TYPE_META,

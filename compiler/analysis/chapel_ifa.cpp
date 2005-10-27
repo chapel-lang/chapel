@@ -977,6 +977,12 @@ build_type(Type *t, bool make_default = true) {
       }
       break;
     }
+    case TYPE_LITERAL: {
+      LiteralType *tt = dynamic_cast<LiteralType*>(t);
+      t->asymbol->sym->type_kind = Type_ALIAS;
+      t->asymbol->sym->alias = tt->literal->asymbol->sym;
+      break;
+    }
     case TYPE_USER: {
       UserType *tt = dynamic_cast<UserType*>(t);
       t->asymbol->sym->type_kind = Type_ALIAS;
@@ -1926,6 +1932,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
   case TYPE_FN:
   case TYPE_ENUM:
   case TYPE_USER:
+  case TYPE_LITERAL:
   case TYPE_CLASS:
   case TYPE_META:
   case TYPE_SUM:

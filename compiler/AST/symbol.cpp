@@ -261,6 +261,7 @@ VarSymbol::VarSymbol(char* init_name,
   varClass(init_varClass),
   consClass(init_consClass),
   immediate(NULL),
+  literalType(NULL),
   noDefaultInit(false)
 { }
 
@@ -280,6 +281,8 @@ VarSymbol::copyInner(ASTMap* map) {
   VarSymbol* newVarSymbol = 
     new VarSymbol(stringcpy(name), type, varClass, consClass);
   newVarSymbol->cname = stringcpy(cname);
+  assert(!newVarSymbol->immediate);
+  assert(!newVarSymbol->literalType);
   newVarSymbol->noDefaultInit = noDefaultInit;
   return newVarSymbol;
 }
@@ -292,6 +295,7 @@ void VarSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 void VarSymbol::traverseDefSymbol(Traversal* traversal) {
   TRAVERSE(type, traversal, false);
+  TRAVERSE(literalType, traversal, false);
 }
 
 
@@ -404,7 +408,8 @@ ArgSymbol::ArgSymbol(intentTag init_intent, char* init_name,
   Symbol(SYMBOL_ARG, init_name, init_type),
   intent(init_intent),
   genericSymbol(NULL),
-  isGeneric(false)
+  isGeneric(false),
+  isExactMatch(false)
 {
   if (intent == INTENT_PARAM || intent == INTENT_TYPE)
     isGeneric = true;
@@ -427,6 +432,7 @@ ArgSymbol::copyInner(ASTMap* map) {
   if (genericSymbol)
     ps->genericSymbol = genericSymbol;
   ps->isGeneric = isGeneric;
+  ps->isExactMatch = isExactMatch;
   ps->cname = stringcpy(cname);
   return ps;
 }
@@ -1340,7 +1346,7 @@ initSymbol() {
 static int literal_id = 1;
 HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
 
-Symbol *new_StringSymbol(char *str) {
+VarSymbol *new_StringSymbol(char *str) {
   Immediate imm;
   imm.const_kind = IF1_CONST_KIND_STRING;
   imm.v_string = cannonicalize_string(str);
@@ -1361,7 +1367,7 @@ Symbol *new_StringSymbol(char *str) {
   return s;
 }
 
-Symbol *new_BoolSymbol(bool b) {
+VarSymbol *new_BoolSymbol(bool b) {
   Immediate imm;
   imm.v_bool = b;
   imm.const_kind = IF1_NUM_KIND_UINT;
@@ -1380,7 +1386,7 @@ Symbol *new_BoolSymbol(bool b) {
   return s;
 }
 
-Symbol *new_IntSymbol(long b) {
+VarSymbol *new_IntSymbol(long b) {
   Immediate imm;
   imm.v_int64 = b;
   imm.const_kind = IF1_NUM_KIND_INT;
@@ -1398,7 +1404,7 @@ Symbol *new_IntSymbol(long b) {
   return s;
 }
 
-Symbol *new_FloatSymbol(char *n, double b) {
+VarSymbol *new_FloatSymbol(char *n, double b) {
   (void)n;
   Immediate imm;
   imm.v_float64 = b;
@@ -1415,7 +1421,7 @@ Symbol *new_FloatSymbol(char *n, double b) {
   return s;
 }
 
-Symbol *new_ComplexSymbol(char *n, double r, double i) {
+VarSymbol *new_ComplexSymbol(char *n, double r, double i) {
   (void)n;
   Immediate imm;
   imm.v_complex64.r = r;

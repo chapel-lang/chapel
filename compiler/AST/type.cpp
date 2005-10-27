@@ -366,6 +366,7 @@ void EnumType::codegenDef(FILE* outfile) {
 }
 
 
+
 void EnumType::codegenStringToType(FILE* outfile) {
   fprintf(outfile, "int _convert_string_to_enum");
   symbol->codegen(outfile);
@@ -461,6 +462,57 @@ AList<Stmt>* EnumType::buildDefaultReadFunctionBody(ArgSymbol* arg) {
   return new AList<Stmt>(new ExprStmt(new CallExpr("_EnumReadStopgap", arg)));
 }
 
+
+LiteralType::LiteralType(VarSymbol* init_literal) :
+  Type(TYPE_LITERAL, NULL),
+  literal(init_literal)
+{ }
+
+
+void LiteralType::verify(void) {
+  if (astType != TYPE_LITERAL) {
+    INT_FATAL(this, "Bad LiteralType::astType");
+  }
+  if (prev || next) {
+    INT_FATAL(this, "Type is in AList");
+  }
+}
+
+
+LiteralType*
+LiteralType::copyInner(ASTMap* map) {
+  LiteralType* copy = new LiteralType(COPY_INT(literal));
+  if (map) {
+    map->put(metaType, copy->metaType);
+    map->put(metaType->symbol, copy->metaType->symbol);
+  }
+  copy->addSymbol(symbol);
+  return copy;
+}
+
+
+void LiteralType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == literal) {
+    literal = dynamic_cast<VarSymbol*>(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in Type::replaceChild");
+  }
+}
+
+
+void LiteralType::traverseDefType(Traversal* traversal) {
+  TRAVERSE(literal, traversal, false);
+}
+
+
+void LiteralType::printDef(FILE* outfile) {
+  literal->type->printDef(outfile);
+}
+
+
+void LiteralType::codegenDef(FILE* outfile) {
+  literal->type->codegenDef(outfile);
+}
 
 UserType::UserType(Type* init_underlyingType, Expr* init_defaultExpr) :
   Type(TYPE_USER, NULL),
@@ -1034,3 +1086,14 @@ void findInternalTypes(void) {
   initConfigFn =
     dynamic_cast<FnSymbol*>(Symboltable::lookupInternal("_INIT_CONFIG"));
 }
+
+
+LiteralType *
+new_LiteralType(VarSymbol *literal_var) {
+  assert(literal_var->immediate);
+  if (literal_var->literalType)
+    return literal_var->literalType;
+  literal_var->literalType = new LiteralType(literal_var);
+  return literal_var->literalType;
+}
+

@@ -118,6 +118,21 @@ class EnumType : public Type {
 };
 
 
+class LiteralType : public Type {
+ public:
+  VarSymbol *literal;
+  
+  LiteralType(VarSymbol *init_literal);
+  virtual void verify(void);
+  COPY_DEF(LiteralType);
+  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  void traverseDefType(Traversal* traversal);
+
+  void printDef(FILE* outfile);
+  void codegenDef(FILE* outfile);
+};
+
+
 class UserType : public Type {
  public:
   Expr* typeExpr;               
@@ -280,6 +295,6 @@ int is_Scalar_Type(Type *t);
 int is_Reference_Type(Type *t);
 int is_Value_Type(Type *t);
 Type *getMetaType(Type *t);
-
+LiteralType *new_LiteralType(VarSymbol *literal_var);
 
 #endif

@@ -91,6 +91,7 @@ class VarSymbol : public Symbol {
   varType varClass;
   consType consClass;
   Immediate *immediate;
+  LiteralType *literalType;
   bool noDefaultInit;
 
   //changed isconstant flag to reflect var, const, param: 0, 1, 2
@@ -118,6 +119,7 @@ class ArgSymbol : public Symbol {
   intentTag intent;
   Symbol *genericSymbol;
   bool isGeneric;
+  bool isExactMatch;
 
   ArgSymbol(intentTag init_intent, char* init_name, 
               Type* init_type = dtUnknown);
@@ -272,11 +274,11 @@ class LabelSymbol : public Symbol {
 void initSymbol();
 TypeSymbol *new_UnresolvedTypeSymbol(char *init_name);
 
-Symbol *new_StringSymbol(char *s);
-Symbol *new_BoolSymbol(bool b);
-Symbol *new_IntSymbol(long b);
-Symbol *new_FloatSymbol(char *n, double b);
-Symbol *new_ComplexSymbol(char *n, double r, double i);
+VarSymbol *new_StringSymbol(char *s);
+VarSymbol *new_BoolSymbol(bool b);
+VarSymbol *new_IntSymbol(long b);
+VarSymbol *new_FloatSymbol(char *n, double b);
+VarSymbol *new_ComplexSymbol(char *n, double r, double i);
 
 extern HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
 extern StringChainHash uniqueStringHash;
