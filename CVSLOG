@@ -49139,3 +49139,13 @@ Modified files:
 	                             resolveSymbols.cpp 
 	                             specializeCallExprs.cpp 
 
+---------------------------------------------------------------------------
+
+10/27/05 11:30:04 -- jplevyak
+
+Log message:
+	remove some now unnecessary  special cases for noDefaultInit
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+
