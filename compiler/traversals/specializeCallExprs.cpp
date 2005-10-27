@@ -51,7 +51,7 @@ static ExprStmt* genFwriteln(Expr* outfile) {
 
 
 static Symbol* findStdout(void) {
-  Symbol* stdout = Symboltable::lookupInScope("stdout", fileModule->modScope);
+  Symbol* stdout = Symboltable::lookupInFileModuleScope("stdout");
   if (stdout == NULL) {
     INT_FATAL("Couldn't find stdout");
   }

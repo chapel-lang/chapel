@@ -357,7 +357,7 @@ static void buildDefaultIOFunctions(Type* type) {
   if (type->hasDefaultWriteFunction()) {
     bool userWriteDefined = false;
     Symbol* fwrite = Symboltable::lookupInScope("fwrite", type->symbol->parentScope);
-    TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(Symboltable::lookupInScope("file", fileModule->modScope));
+    TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(Symboltable::lookupInFileModuleScope("file"));
     while (fwrite) {
       if (fwrite->getFnSymbol() && 
           fwrite->getFnSymbol()->formals->length() == 2 &&

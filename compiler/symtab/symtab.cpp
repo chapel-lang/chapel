@@ -210,6 +210,11 @@ Symbol* Symboltable::lookupInScope(char* name,
 }
 
 
+Symbol* Symboltable::lookupInFileModuleScope(char* name) {
+  return lookupInScope(name, fileModule->modScope);
+}
+
+
 Symbol* Symboltable::lookupFromScope(char* name, SymScope* scope) {
   if (!scope) {
     INT_FATAL("NULL scope passed to lookupFromScope()");

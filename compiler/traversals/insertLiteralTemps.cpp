@@ -104,7 +104,7 @@ static void createTupleBaseType(int size) {
 
   // Build write function
   FnSymbol* fwriteFn = new FnSymbol("fwrite");
-  TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(Symboltable::lookupInScope("file", fileModule->modScope));
+  TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(Symboltable::lookupInFileModuleScope("file"));
   ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", fileType->definition);
   ArgSymbol* fwriteArg = new ArgSymbol(INTENT_BLANK, "val", tupleType);
   fwriteFn->formals = new AList<DefExpr>(new DefExpr(fileArg), new DefExpr(fwriteArg));
