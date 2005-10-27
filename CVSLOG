@@ -49149,3 +49149,26 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: chapel_ifa.cpp 
 
+---------------------------------------------------------------------------
+
+10/27/05 11:47:10 -- deitz
+
+Log message:
+	Removed remaining code for supporting unions in the way we used to as
+	it was getting in the way and not adding anything.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp expr.cpp type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	chapel/compiler/traversals/: Makefile.share 
+	                             buildClassHierarchy.cpp 
+	chapel/modules/standard/: prelude.chpl 
+	chapel/runtime/include/: stdchpl.h 
+	chapel/test/classes/deitz/inherit/: test_inherit_error3.good 
+Removed files:
+	chapel/compiler/traversals/: insertUnionChecks.cpp 
+	                             insertUnionChecks.h 
+	chapel/runtime/include/: union.h 
+
