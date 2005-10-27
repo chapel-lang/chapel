@@ -16,6 +16,7 @@ extern bool postAnalysis;
 extern FILE* html_index_file;
 
 // Begin temporary development flags
+extern bool no_infer;
 extern bool formalTemps;
 extern bool checkAnalysisTypeinfo;
 extern bool preinstantiate;
@@ -36,7 +37,6 @@ extern bool report_inlining;
 extern char system_dir[FILENAME_MAX];
 extern int print_call_depth;
 
-extern bool analyzeAST;
 extern int debugParserLevel;
 extern bool suppressCodegen;
 extern bool developer;

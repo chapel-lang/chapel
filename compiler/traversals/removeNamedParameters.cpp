@@ -18,7 +18,7 @@ void RemoveNamedParameters::postProcessExpr(Expr* expr) {
             def->init->replace(new SymExpr(type->defaultValue));
           else if (type->defaultConstructor)
             def->init->replace(new CallExpr(type->defaultConstructor));
-          else if (analyzeAST) {
+          else {
             INT_FATAL(expr, "nil assigned to Type with no default initialization");
           }
         }
@@ -37,7 +37,7 @@ void RemoveNamedParameters::postProcessExpr(Expr* expr) {
               rhs->replace(new SymExpr(type->defaultValue));
             else if (type->defaultConstructor)
               rhs->replace(new CallExpr(type->defaultConstructor));
-            else if (analyzeAST) {
+            else {
               INT_FATAL(expr, "nil assigned to Type with no default initialization");
             }
           }

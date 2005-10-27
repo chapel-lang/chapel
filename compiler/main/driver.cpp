@@ -35,7 +35,7 @@ static int pre_malloc = 0;
 bool formalTemps = false;
 bool checkAnalysisTypeinfo = false;
 bool preinstantiate = true;
-bool analyzeAST = true;
+bool no_infer = false;
 bool suppressCodegen = false;
 int debugParserLevel = 0;
 bool developer = false;
@@ -89,7 +89,7 @@ static ArgumentDescription arg_desc[] = {
  {"output", 'o', "Name of Executable Output", "P", executableFilename, "CHPL_EXE_NAME", NULL},
  {"savec", ' ', "Save Intermediate C Code", "P", saveCDir, "CHPL_SAVEC_DIR", NULL},
  {"gdb", ' ', "Run compiler in gdb", "F", &rungdb, NULL, NULL},
- {"noanalysis", ' ', "Skip analysis of AST", "f", &analyzeAST, NULL, NULL},
+ {"no-infer", 'b', "Do not run analysis, inference", "F", &no_infer, NULL, NULL},
  {"no-inline", ' ', "No inlining of functions" , "F", &no_inline, NULL, NULL},
  {"report-inlining", ' ', "Print inlined functions", "F", &report_inlining, NULL, NULL},
  {"formal-temps", ' ', "Insert temps for formals", "F", &formalTemps, "CHPL_FORMAL_TEMPS", NULL},

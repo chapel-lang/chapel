@@ -744,32 +744,18 @@ void ClassType::buildConstructorBody(AList<Stmt>* stmts, Symbol* _this,
   DefExpr* ptmp = arguments->first();
   forv_Vec(TypeSymbol, tmp, types) {
     if (dynamic_cast<VariableType*>(tmp->definition)) {
-      if (analyzeAST) {
-        // Have type variable in class and type variable in parameter
-        // Should I do anything with these?
-        ptmp = arguments->next();
-      }
+      // Have type variable in class and type variable in parameter
+      // Should I do anything with these?
+      ptmp = arguments->next();
     }
   }
   forv_Vec(Symbol, tmp, fields) {
     Expr* lhs = new MemberAccess(new SymExpr(_this), tmp);
-    Expr* rhs = NULL;
-    if (analyzeAST) {
-      rhs = new SymExpr(ptmp->sym);
-    } else {
-      rhs = tmp->defPoint->init ? tmp->defPoint->init->copy() : new SymExpr(gNil);
-      if (tmp->defPoint->init) {
-        tmp->defPoint->init->remove();
-      }
-    }
-    if (rhs) {
-      Expr* assign_expr = new CallExpr(OP_GETSNORM, lhs, rhs);
-      Stmt* assign_stmt = new ExprStmt(assign_expr);
-      stmts->insertAtTail(assign_stmt);
-    }
-    if (analyzeAST) {
-      ptmp = arguments->next();
-    }
+    Expr* rhs = new SymExpr(ptmp->sym);
+    Expr* assign_expr = new CallExpr(OP_GETSNORM, lhs, rhs);
+    Stmt* assign_stmt = new ExprStmt(assign_expr);
+    stmts->insertAtTail(assign_stmt);
+    ptmp = arguments->next();
   }
 }
 
@@ -1126,6 +1112,9 @@ Type *getMetaType(Type *t) {
 }
 
 void findInternalTypes(void) {
+  dtMethodToken = Symboltable::lookupInternalType("_methodTokenType")->definition;
+  dtSetterToken = Symboltable::lookupInternalType("_setterTokenType")->definition;
+
   dtObject = dynamic_cast<ClassType*>(Symboltable::lookupInternalType("object")->definition);
   dtValue = dynamic_cast<ClassType*>(Symboltable::lookupInternalType("value")->definition);
 

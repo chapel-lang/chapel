@@ -57,10 +57,8 @@ void BuildLValueFunctions::preProcessStmt(Stmt* stmt) {
   fn->name = old_fn->name;
   fn->cname = stringcat("_setter_", old_fn->cname);
   old_expr_stmt->insertAfter(expr_stmt);
-  TypeSymbol *setterTypeSymbol = 
-    dynamic_cast<TypeSymbol*>(Symboltable::lookupInternal("_setterTokenType"));
   fn->formals->insertAtTail(new DefExpr(new ArgSymbol(INTENT_REF, "_setterTokenDummy", 
-                                                        setterTypeSymbol->definition)));
+                                                      dtSetterToken)));
   ArgSymbol* lvalue = new ArgSymbol(INTENT_BLANK, "_lvalue", old_fn->retType);
   fn->formals->insertAtTail(new DefExpr(lvalue));
   replace_return(fn->body, lvalue);

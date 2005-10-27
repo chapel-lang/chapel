@@ -91,15 +91,13 @@ void InsertThisParameters::preProcessExpr(Expr* expr) {
       fn->_this = this_insert;
       bool isThisMethod = !strcmp(fn->name, "this");
       if (!isThisMethod) {
-        TypeSymbol *methodTypeSymbol = dynamic_cast<TypeSymbol*>(Symboltable::lookupInternal("_methodTokenType"));
         ArgSymbol* token_dummy = new ArgSymbol(INTENT_REF, "_methodTokenDummy",
-                                                   methodTypeSymbol->definition);
+                                               dtMethodToken);
         fn->formals->insertAtHead(new DefExpr(token_dummy));
       }
       if (fn->isSetter) {
-        TypeSymbol *setterTypeSymbol = dynamic_cast<TypeSymbol*>(Symboltable::lookupInternal("_setterTokenType"));
         ArgSymbol* setter_dummy = new ArgSymbol(INTENT_REF, "_setterTokenDummy", 
-                                                    setterTypeSymbol->definition);
+                                                dtSetterToken);
         int len = fn->formals->length();
         fn->formals->get(len)->insertBefore(new DefExpr(setter_dummy));
       }

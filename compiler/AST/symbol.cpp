@@ -682,6 +682,25 @@ void FnSymbol::traverseDefSymbol(Traversal* traversal) {
 }
 
 
+static bool function_returns_void(FnSymbol* fn) {
+  if (fn->retType == dtVoid)
+    return true;
+
+  if (fn->retType != dtUnknown || fn->defPoint->exprType)
+    return false;
+
+  Vec<BaseAST*> asts;
+  collect_asts(&asts, fn);
+  forv_Vec(BaseAST, ast, asts) {
+    if (ReturnStmt* returnStmt = dynamic_cast<ReturnStmt*>(ast)) {
+      return !returnStmt->expr;
+    }
+  }
+
+  return true;
+}
+
+
 FnSymbol* FnSymbol::clone(ASTMap* map) {
   Stmt* copyStmt = defPoint->parentStmt->copy(map, NULL);
   ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(copyStmt);
@@ -832,7 +851,7 @@ buildMultidimensionalIterator(ClassType* type, int rank) {
   _forall->method_type = PRIMARY_METHOD;
   _forall->formals = new AList<DefExpr>(new DefExpr(_this));
 
-  _forall->formals->insertAtHead(new DefExpr(new ArgSymbol(INTENT_REF, "_methodTokenDummy", dynamic_cast<TypeSymbol*>(Symboltable::lookupInternal("_methodTokenType"))->definition)));
+  _forall->formals->insertAtHead(new DefExpr(new ArgSymbol(INTENT_REF, "_methodTokenDummy", dtMethodToken)));
 
   _forall->body = new BlockStmt();
 

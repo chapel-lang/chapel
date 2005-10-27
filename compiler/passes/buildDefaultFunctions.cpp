@@ -123,36 +123,33 @@ static void build_constructor(ClassType* classType) {
 
   AList<DefExpr>* args = new AList<DefExpr>();
 
-  if (analyzeAST) {
-    forv_Vec(TypeSymbol, tmp, classType->types) {
-      if (VariableType *tv = dynamic_cast<VariableType*>(tmp->definition)) {
-        char* name = tmp->name;
-        Type* type = tv->type;
-        ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, name, type);
-        arg->isGeneric = true;
-        arg->genericSymbol = dynamic_cast<TypeSymbol*>(tv->symbol);
-        args->insertAtTail(new DefExpr(arg, new SymExpr(dtUnknown->symbol)));
-      }
-    }
-
-    forv_Vec(Symbol, tmp, classType->fields) {
+  forv_Vec(TypeSymbol, tmp, classType->types) {
+    if (VariableType *tv = dynamic_cast<VariableType*>(tmp->definition)) {
       char* name = tmp->name;
-      Type* type = tmp->type;
-      Expr* init = (tmp->defPoint->init) 
-        ? tmp->defPoint->init->copy()
-        : new SymExpr(gNil);
-      Expr* exprType = (tmp->defPoint->exprType)
-        ? tmp->defPoint->exprType->copy()
-        : NULL;
-      if (tmp->defPoint->init) {
-        tmp->defPoint->init->remove();
-      }
-      VarSymbol *vtmp = dynamic_cast<VarSymbol*>(tmp);
-      ArgSymbol* arg = new ArgSymbol(
-        (vtmp && vtmp->consClass == VAR_PARAM) ? INTENT_PARAM : INTENT_BLANK, name, type);
-      DefExpr* defExpr = new DefExpr(arg, init, exprType);
-      args->insertAtTail(defExpr);
+      Type* type = tv->type;
+      ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, name, type);
+      arg->isGeneric = true;
+      arg->genericSymbol = dynamic_cast<TypeSymbol*>(tv->symbol);
+      args->insertAtTail(new DefExpr(arg, new SymExpr(dtUnknown->symbol)));
     }
+  }
+
+  forv_Vec(Symbol, tmp, classType->fields) {
+    char* name = tmp->name;
+    Type* type = tmp->type;
+    Expr* init = (tmp->defPoint->init) 
+      ? tmp->defPoint->init->copy()
+      : new SymExpr(gNil);
+    Expr* exprType = (tmp->defPoint->exprType)
+      ? tmp->defPoint->exprType->copy()
+      : NULL;
+    if (tmp->defPoint->init) {
+      tmp->defPoint->init->remove();
+    }
+    VarSymbol *vtmp = dynamic_cast<VarSymbol*>(tmp);
+    ArgSymbol* arg = new ArgSymbol((vtmp && vtmp->consClass == VAR_PARAM) ? INTENT_PARAM : INTENT_BLANK, name, type);
+    DefExpr* defExpr = new DefExpr(arg, init, exprType);
+    args->insertAtTail(defExpr);
   }
 
   Symboltable::continueFnDef(fn, args, classType);
@@ -201,10 +198,8 @@ static void build_getter(ClassType* classType, Symbol *tmp) {
   getter_fn->_getter = tmp;
   ArgSymbol* getter_this = new ArgSymbol(INTENT_REF, "this", classType);
   AList<DefExpr>* getter_args = new AList<DefExpr>(new DefExpr(getter_this));
-  TypeSymbol *methodTypeSymbol = 
-    dynamic_cast<TypeSymbol*>(Symboltable::lookupInternal("_methodTokenType"));
   getter_args->insertAtHead(new DefExpr(new ArgSymbol(INTENT_REF, "_methodTokenDummy", 
-                                                        methodTypeSymbol->definition)));
+                                                      dtMethodToken)));
   Symboltable::continueFnDef(getter_fn, getter_args, tmp->type);
   Expr* getter_expr = new MemberAccess(new SymExpr(getter_this), tmp);
   BlockStmt* getter_return = new BlockStmt(new ReturnStmt(getter_expr));
@@ -228,14 +223,10 @@ static void build_setters_and_getters(ClassType* classType) {
     setter_fn->_setter = tmp;
     ArgSymbol* setter_this = new ArgSymbol(INTENT_REF, "this", classType);
     AList<DefExpr>* args = new AList<DefExpr>(new DefExpr(setter_this));
-    TypeSymbol *methodTypeSymbol = 
-      dynamic_cast<TypeSymbol*>(Symboltable::lookupInternal("_methodTokenType"));
     args->insertAtHead(new DefExpr(new ArgSymbol(INTENT_REF, "_methodTokenDummy", 
-                                                   methodTypeSymbol->definition)));
-    TypeSymbol *setterTypeSymbol = 
-      dynamic_cast<TypeSymbol*>(Symboltable::lookupInternal("_setterTokenType"));
+                                                 dtMethodToken)));
     args->insertAtTail(new DefExpr(new ArgSymbol(INTENT_REF, "_setterTokenDummy", 
-                                                   setterTypeSymbol->definition)));
+                                                 dtSetterToken)));
 
     ArgSymbol* setter_arg = new ArgSymbol(INTENT_BLANK, "_arg", dtUnknown);
     args->insertAtTail(new DefExpr(setter_arg));
@@ -324,11 +315,9 @@ static void build_record_assignment_function(ClassType* classType) {
     f_equal_method ? new ArgSymbol(INTENT_REF, "this", classType)
     : new ArgSymbol(INTENT_BLANK, "_arg1", classType);
   AList<DefExpr>* args = new AList<DefExpr>(new DefExpr(_arg1));
-  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2",
-    (analyzeAST) ? ((Type*)dtUnknown) : ((Type*)classType));
+  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtUnknown);
   args->insertAtTail(new DefExpr(arg2));
-  Type *ret_type = analyzeAST ? dtUnknown : dtVoid;
-  Symboltable::continueFnDef(fn, args, ret_type);
+  Symboltable::continueFnDef(fn, args, dtUnknown);
   AList<Stmt>* body = new AList<Stmt>();
   forv_Vec(Symbol, tmp, classType->fields) {
     Expr* left = new MemberAccess(new SymExpr(_arg1), tmp);
@@ -336,9 +325,8 @@ static void build_record_assignment_function(ClassType* classType) {
     Expr* assign_expr = new CallExpr(OP_GETSNORM, left, right);
     body->insertAtTail(new ExprStmt(assign_expr));
   }
-  
-  if (analyzeAST)
-    body->insertAtTail(new ReturnStmt(new SymExpr(_arg1)));
+
+  body->insertAtTail(new ReturnStmt(new SymExpr(_arg1)));
   BlockStmt* block_stmt = new BlockStmt(body);
   DefExpr* def = new DefExpr(Symboltable::finishFnDef(fn, block_stmt));
   classType->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def));

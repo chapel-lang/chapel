@@ -44,16 +44,12 @@ class file {
   }
 }
 
-const stdin  : file = file(filename = "stdin",  mode = "r", path = "/dev", 
-                           fp = _STDINCFILEPTR);
-const stdout : file = file(filename = "stdout", mode = "w", path = "/dev", 
-                           fp = _STDOUTCFILEPTR);
-const stderr : file = file(filename = "stderr", mode = "w", path = "/dev", 
-                           fp = _STDERRCFILEPTR);
-
+const stdin  : file = file("stdin", "r", "/dev", _STDINCFILEPTR);
+const stdout : file = file("stdout", "w", "/dev", _STDOUTCFILEPTR);
+const stderr : file = file("stderr", "w", "/dev", _STDERRCFILEPTR);
 
 function fopenError(f: file) {
-  var fullFilename = f.path + "/" + f.filename;
+  var fullFilename:string = f.path + "/" + f.filename;
   halt("You must open \"", fullFilename, "\" before writing to it.");    
 }
 

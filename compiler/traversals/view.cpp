@@ -51,6 +51,11 @@ void View::preProcessExpr(Expr* expr) {
     printf("***");
   }
   printf("%s", astTypeName[expr->astType]);
+
+  if (NamedExpr* named = dynamic_cast<NamedExpr*>(expr)) {
+    printf(" \"%s\"", named->name);
+  }
+
   long i;
   char *str;
   if (get_int(expr, &i)) {

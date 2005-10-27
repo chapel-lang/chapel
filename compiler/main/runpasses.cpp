@@ -11,6 +11,8 @@
 
 bool printPasses = false;
 
+static bool skipFunctionResolution = false;
+
 struct PassInfo {
   char* name;
   char* args;
@@ -45,6 +47,15 @@ static void runPass(char* passName, Pass* pass, char* args) {
   struct timeval stopTime;
   struct timezone timezone;
 
+  if (no_infer) {
+    if (skipFunctionResolution) {
+      if (!strcmp(passName, "FunctionResolution"))
+        skipFunctionResolution = false;
+      return;
+    }
+  } else if (!strcmp(passName, "FunctionResolution"))
+    return;
+
   currentTraversal = stringcpy(passName);
   pass->setArgs(args);
   if (fdump_html) {
@@ -66,6 +77,8 @@ static void runPass(char* passName, Pass* pass, char* args) {
     postScopeResolution = true;
   } else if (!strcmp(passName, "RunAnalysis")) {
     postAnalysis = true;
+  } else if (!strcmp(passName, "FunctionResolution")) {
+    skipFunctionResolution = true;
   }
 
   if (fdump_html) {

@@ -193,7 +193,11 @@ int Expr::rank(void) {
 
 
 FnSymbol *Expr::parentFunction() {
-  return (parentStmt) ? parentStmt->parentFunction() : NULL; 
+  ModuleSymbol *mod = dynamic_cast<ModuleSymbol*>(parentSymbol);
+  if (mod)
+    return mod->initFn;
+  else
+    return dynamic_cast<FnSymbol*>(parentSymbol);
 }
 
 
@@ -489,6 +493,10 @@ void MemberAccess::traverseExpr(Traversal* traversal) {
 
 
 Type* MemberAccess::typeInfo(void) {
+  if (no_infer) {
+    return member->type;
+  }
+
   if (member_type != NULL && member_type != dtUnknown) {
     return member_type;
   } else if (member->type != dtUnknown) {
@@ -698,7 +706,7 @@ FnSymbol* CallExpr::findFnSymbol(void) {
 
 
 Type* CallExpr::typeInfo(void) {
-  if (analyzeAST && !RunAnalysis::runCount) {
+  if (!no_infer && !RunAnalysis::runCount) {
     return dtUnknown;
   }
 
@@ -717,7 +725,12 @@ Type* CallExpr::typeInfo(void) {
     }
   }
 
-  return findFnSymbol()->retType;
+  if (SymExpr* symExpr = dynamic_cast<SymExpr*>(baseExpr)) {
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(symExpr->var)) {
+      return fn->retType;
+    }
+  }
+  return dtUnknown;
 }
 
 
@@ -1109,7 +1122,7 @@ void LetExpr::traverseExpr(Traversal* traversal) {
 
 
 Type* LetExpr::typeInfo(void) {
-  if (analyzeAST && !RunAnalysis::runCount) {
+  if (!RunAnalysis::runCount) {
     return dtUnknown;
   }
 
@@ -1171,7 +1184,7 @@ void CondExpr::traverseExpr(Traversal* traversal) {
 
 // not yet implemented right
 Type* CondExpr::typeInfo(void) {
-  if (analyzeAST && !RunAnalysis::runCount) {
+  if (!RunAnalysis::runCount) {
     return dtUnknown;
   }
   return thenExpr->typeInfo();

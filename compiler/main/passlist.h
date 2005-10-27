@@ -44,24 +44,34 @@ PassInfo passlist[] = {
   RUN(EliminateReturns, ""),
   RUN(NormalizeFunctions, ""),
 
-  // passes to run analysis
   RUN(SpecializeCallExprs, ""),
   RUN(PreAnalysisHacks, ""),
   RUN(ApplyGettersSetters, ""),
+
+  // FunctionResolution instantiates types, resolves functions, and
+  // computes a very basic form of type inference.  It is run with the
+  // --no-infer or -b flag.  It replaces all the passes between its
+  // two calls in this passlist.
+  RUN(FunctionResolution, ""),
+
   RUN(Instantiate, ""),
   RUN(PreAnalysisCleanup, ""),
 
   // ANALYSIS
   RUN(RunAnalysis, ""), // postAnalysis = true
- 
+
   // passes to capture analysis information in the AST
   RUN(RemoveDeadSymbols, ""),
   RUN(ResolveTypes, ""),
   RUN(PostAnalysisCleanup, ""),
   RUN(ResolveSymbols, ""),
+
+  RUN(FunctionResolution, ""),
+
   RUN(RemoveNamedParameters, ""),
   RUN(RemoveTypeVariableActuals, ""),
   RUN(RemoveTypeVariableFormals, ""),
+
 
   RUN(SemanticCheckIII, ""), // post analysis semantic checks
 

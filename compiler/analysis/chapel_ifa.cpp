@@ -3013,13 +3013,6 @@ structural_subtypes(Type *t, Vec<Type *> subtypes) {
   return 0;
 }
 
-int
-function_returns_void(FnSymbol *fn) {
-  if (!fn->asymbol)
-    return -1;
-  return !fn->asymbol->sym->fun_returns_value;
-}
-
 Type *
 element_type_info(TypeSymbol *t) {
   if (t->definition->asymbol && t->definition->asymbol->sym && t->definition->asymbol->sym->element)

@@ -5,6 +5,7 @@ PASSES_SRCS = \
 	codegen.cpp \
 	createEntryPoint.cpp \
 	filesToAST.cpp \
+        functionResolution.cpp \
         normalizeParsedAST.cpp \
 	pass.cpp \
 	preAnalysisCleanup.cpp \

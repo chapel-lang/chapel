@@ -4,6 +4,7 @@
 #include "../passes/codegen.h"
 #include "../passes/createEntryPoint.h"
 #include "../passes/filesToAST.h"
+#include "../passes/functionResolution.h"
 #include "../passes/normalizeParsedAST.h"
 #include "../passes/preAnalysisCleanup.h"
 #include "../passes/printProgram.h"
@@ -84,6 +85,7 @@ REGISTER(FindUnresolvedSymbols);
 REGISTER(FilesToAST);
 REGISTER(Fixup);
 REGISTER(Flatten);
+REGISTER(FunctionResolution);
 REGISTER(GetStuff);
 REGISTER(HtmlView);
 REGISTER(InlineFunctions);

@@ -41,11 +41,9 @@ void RemoveTypeVariableFormals::preProcessSymbol(Symbol* sym) {
     for_alist(DefExpr, formal, fn->formals) {
       if (dynamic_cast<ArgSymbol*>(formal->sym)->genericSymbol) {
         formal->remove();
-      } else if (formal->sym->type->symbol ==
-                 Symboltable::lookupInternal("_methodTokenType")) {
+      } else if (formal->sym->type == dtMethodToken) {
         formal->remove();
-      } else if (formal->sym->type->symbol ==
-                 Symboltable::lookupInternal("_setterTokenType")) {
+      } else if (formal->sym->type == dtSetterToken) {
         formal->remove();
       }
     }
