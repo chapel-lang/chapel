@@ -179,16 +179,11 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
         if (fns.n != 1) {
           // HACK: Special case where write(:nilType) requires dynamic
           // dispatch; Take the other one.
-
-          //TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(Symboltable::lookupInScope("file", fileModule->modScope));
-
-          //shannon
           TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(Symboltable::lookupInFileModuleScope("file"));
-
           if (fns.n == 2 && !strcmp(fns.v[1]->name, "fwrite") &&
               fns.v[1]->formals->first()->sym->type == fileType->definition && 
               fns.v[1]->formals->get(2)->sym->type == dtNil) {
-            
+
           } else if (fns.n == 2 && !strcmp(fns.v[0]->name, "fwrite") &&
                      fns.v[0]->formals->first()->sym->type == fileType->definition && 
                      fns.v[0]->formals->get(2)->sym->type == dtNil) {

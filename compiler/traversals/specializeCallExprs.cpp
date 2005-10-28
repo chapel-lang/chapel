@@ -50,17 +50,9 @@ static ExprStmt* genFwriteln(Expr* outfile) {
 }
 
 
-static Symbol* findStdout(void) {
-  Symbol* stdout = Symboltable::lookupInFileModuleScope("stdout");
-  if (stdout == NULL) {
-    INT_FATAL("Couldn't find stdout");
-  }
-  return stdout;
-}
-
-
 static ExprStmt* genFwrite(Expr* expression) {
-  SymExpr* outfile = new SymExpr(findStdout());
+  Symbol* stdout = Symboltable::lookupInFileModuleScope("stdout");
+  SymExpr* outfile = new SymExpr(stdout);
   return new ExprStmt(new CallExpr("fwrite", outfile, expression->copy()));
 }
 
@@ -92,7 +84,8 @@ void SpecializeCallExprs::postProcessStmt(Stmt* stmt) {
           thenBody->insertAtTail(writeLinenumber);
           ExprStmt* writeFailed = genStringWriteExpr(" failed***");
           thenBody->insertAtTail(writeFailed);
-          SymExpr* outfile = new SymExpr(findStdout());
+          Symbol* stdout = Symboltable::lookupInFileModuleScope("stdout");
+          SymExpr* outfile = new SymExpr(stdout);
           thenBody->insertAtTail(genFwriteln(outfile));
           thenBody->insertAtTail(genExit(call->parentFunction()));
           BlockStmt* thenStmt = new BlockStmt(thenBody);
@@ -116,7 +109,8 @@ void SpecializeCallExprs::postProcessStmt(Stmt* stmt) {
           call->parentStmt->insertBefore(genFwriteln(outfile));
           call->parentStmt->remove();
         } else if (strcmp(baseVar->var->name, "halt") == 0) {
-          SymExpr* outfile = new SymExpr(findStdout());
+          Symbol* stdout = Symboltable::lookupInFileModuleScope("stdout");
+          SymExpr* outfile = new SymExpr(stdout);
           decomposeFileIOCall(call, "fwrite", outfile);
           call->parentStmt->insertBefore(genFwriteln(outfile));
           call->parentStmt->insertBefore(genExit(call->parentFunction()));
@@ -125,11 +119,13 @@ void SpecializeCallExprs::postProcessStmt(Stmt* stmt) {
           decomposeIOCall(call, "read");
           call->parentStmt->remove();
         } else if (strcmp(baseVar->var->name, "write") == 0) {
-          SymExpr* outfile = new SymExpr(findStdout());
+          Symbol* stdout = Symboltable::lookupInFileModuleScope("stdout");
+          SymExpr* outfile = new SymExpr(stdout);
           decomposeFileIOCall(call, "fwrite", outfile);
           call->parentStmt->remove();
         } else if (strcmp(baseVar->var->name, "writeln") == 0) {
-          SymExpr* outfile = new SymExpr(findStdout());
+          Symbol* stdout = Symboltable::lookupInFileModuleScope("stdout");
+          SymExpr* outfile = new SymExpr(stdout);
           decomposeFileIOCall(call, "fwrite", outfile);
           call->parentStmt->insertBefore(genFwriteln(outfile));
           call->parentStmt->remove();

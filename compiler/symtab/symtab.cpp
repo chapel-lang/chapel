@@ -210,8 +210,16 @@ Symbol* Symboltable::lookupInScope(char* name,
 }
 
 
+
 Symbol* Symboltable::lookupInFileModuleScope(char* name) {
-  return lookupInScope(name, fileModule->modScope);
+  if (fileModule == NULL) {
+    INT_FATAL("File module scope is NULL in lookupInFileModuleScope()");
+  }
+  Symbol* sym = lookupInScope(name, fileModule->modScope);
+  if (sym == NULL) {
+    INT_FATAL("Couldn't find '%s' in file module scope", name);
+  }
+  return sym;
 }
 
 

@@ -427,9 +427,6 @@ static void buildDefaultIOFunctions(Type* type) {
     if (!userWriteDefined) {
       FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("fwrite"));
       fn->cname = stringcat("_auto_", type->symbol->name, "_fwrite");
-      if (fileType == NULL) {
-        INT_FATAL("Couldn't find file");
-      }
       ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", fileType->definition);
       ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "val", type);
       Symboltable::continueFnDef(fn, new AList<DefExpr>(new DefExpr(fileArg), new DefExpr(arg)), dtVoid);
