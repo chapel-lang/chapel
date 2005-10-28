@@ -49292,3 +49292,20 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: chapel_ifa.cpp 
 
+---------------------------------------------------------------------------
+
+10/28/05 10:34:57 -- jplevyak
+
+Log message:
+	LiteralType is now correctly defined in the commonModule.
+	I am using a typedef for these for debugging purposes.
+	Also added support for "Exact Match" for instantiated
+	type variables.  Currently this is enabled for everything
+	(we can change this if we go to an explicit instantiation model).
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: pattern.cpp sym.cpp sym.h 
+	chapel/compiler/include/: type.h 
+
