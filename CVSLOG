@@ -49309,3 +49309,18 @@ Modified files:
 	chapel/compiler/ifa/: pattern.cpp sym.cpp sym.h 
 	chapel/compiler/include/: type.h 
 
+---------------------------------------------------------------------------
+
+10/28/05 11:03:57 -- jplevyak
+
+Log message:
+	Initialize a bunch of variables because "gcc -O2" complains about them
+	being "potentially uninitialized".
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/make_prims/: make_prims.cpp 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	                         functionResolution.cpp 
+	chapel/compiler/traversals/: scopeResolveGotos.cpp 
+
