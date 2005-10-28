@@ -49252,3 +49252,43 @@ Modified files:
 	chapel/test/flowanalysis/newast/: sum_type-1.good 
 	                                  sum_type-2.good 
 
+---------------------------------------------------------------------------
+
+10/28/05 09:05:04 -- jplevyak
+
+Log message:
+	Fix problem with InitExpr::type field not being analyzed.
+	
+	Note:
+	
+	  I think declarations without explicit types of the form:
+	
+	    var x = f();
+	
+	  are generating an InitExpr with a NULL "type" field.
+	
+	  I think that the "type" field should contain a copy of the
+	  initialization value (e.g. "f()").   The reason being that
+	  we want the type of x to be whatever the type of f() is.
+	
+	  If the InitExpr::type field is NULL, I would have to assign
+	  "nil" to "x" which would mean that code like:
+	
+	  var x = f();  // where f() returns a float
+	
+	  ...
+	
+	  x = 2;
+	
+	  would fail because the type of "x" before the assignment of the integer
+	  would be { float | Nil }, and overloaded = of (Nil, integer) is integer
+	  and overloaded = of (float, integer) is float so the result would be
+	  that x would be of type { float | integer | Nil } which mixes primitives.
+	
+	  Conversely if we make InitExpr::type be "f()", then the type of x
+	  before the assignment would be { float } so that the final type of
+	  x will be { float }.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+
