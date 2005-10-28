@@ -476,7 +476,7 @@ install_new_asts(FnSymbol *f, Vec<FnSymbol *> &funs, Vec<TypeSymbol *> &types) {
   forv_Vec(TypeSymbol, new_ts, types) {
     Type* new_t = new_ts->definition;
     new_t->asymbol->sym->instantiates = new_t->instantiatedFrom->asymbol->sym;
-    for (int i; i < new_t->substitutions.n; i++) if (new_t->substitutions.v[i].key) {
+    for (int i = 0; i < new_t->substitutions.n; i++) if (new_t->substitutions.v[i].key) {
       Sym *value = BaseAST_to_Sym(new_t->substitutions.v[i].value);
       // don't map yourself
       if (value != new_t->asymbol->sym)

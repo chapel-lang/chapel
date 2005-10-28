@@ -156,7 +156,7 @@ build_data(Vec<Line *> &lines) {
 
 int
 main(int argc, char *argv[]) {
-  int i, len = 0;
+  int i = 1, len = 0;
   char *buf = NULL;
   Vec<Line *> lines;
 

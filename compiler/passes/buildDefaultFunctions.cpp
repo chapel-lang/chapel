@@ -78,8 +78,8 @@ static void build_chpl_main(Vec<ModuleSymbol*>* modules) {
     }
   }
 
-  BlockStmt* mainBody;
-  ModuleSymbol* mainModule;
+  BlockStmt* mainBody = 0;
+  ModuleSymbol* mainModule = 0;
   if (!chpl_main) {
     mainModule = findUniqueUserModule(modules);
     if (mainModule) {

@@ -208,7 +208,7 @@ void resolve_call(CallExpr* call) {
     USR_FATAL(call, "Unresolved function call");
 
   bool ambiguous = false;
-  Vec<ArgSymbol*>* af_map;
+  Vec<ArgSymbol*>* af_map = 0;
   FnSymbol* best = NULL;
 
   for (int i = 0; i < af_maps.n; i++) {
