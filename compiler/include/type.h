@@ -130,6 +130,7 @@ class LiteralType : public Type {
 
   void printDef(FILE* outfile);
   void codegenDef(FILE* outfile);
+  virtual void codegenDefaultFormat(FILE* outfile, bool isRead);
 };
 
 

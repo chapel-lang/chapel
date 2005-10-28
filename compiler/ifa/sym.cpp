@@ -26,6 +26,7 @@ BasicSym::BasicSym(void) :
   is_lvalue(0),
   is_var(0),
   is_default_arg(0),
+  is_exact_match(0),
   is_module(0),
   is_fun(0),
   is_symbol(0),

@@ -968,6 +968,12 @@ Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &app,
       Sym *formal = m->fun->arg_syms.get(fcpp);
       Sym *formal_type = dispatch_type(formal);
       assert(formal_type);
+      if (formal->is_exact_match) {
+        if (csargs.v[i]->sym != formal_type) {
+          app.pop();
+          goto LnextFun;
+        }
+      }
       m->formal_dispatch_types.put(fcpp, formal_type);
       app.inc();
     }

@@ -70,6 +70,7 @@ class BasicSym : public gc {
   unsigned int          is_lvalue:1;            // Sym is an lvalue
   unsigned int          is_var:1;               // Sym is a variable (as opposed to let bound)
   unsigned int          is_default_arg:1;       // Sym is a default argument
+  unsigned int          is_exact_match:1;       // must_specialize/implement is must_BE_EXACT
   unsigned int          is_module:1;            // Sym is a module
   unsigned int          is_fun:1;               // Sym is a function
   unsigned int          is_symbol:1;            // Sym is a user level symbol

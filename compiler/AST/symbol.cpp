@@ -954,12 +954,18 @@ instantiate_function(FnSymbol *fn, ASTMap *all_subs, ASTMap *generic_subs, ASTMa
   for_alist(DefExpr, formal, fnClone->formals) {
     if (ArgSymbol *ps = dynamic_cast<ArgSymbol *>(formal->sym)) {
       if (TypeSymbol *ts = dynamic_cast<TypeSymbol *>(ps->genericSymbol)) {
-        if (ts->definition->astType != TYPE_VARIABLE)
+        if (ts->definition->astType != TYPE_VARIABLE) {
           ps->type = ts->type;
+          ps->isExactMatch = true;
+        }
       }
       if (all_subs->get(ps) && ps->intent == INTENT_PARAM) {
         ps->intent = INTENT_BLANK;
         ps->isGeneric = false;
+        if (VarSymbol *vs = dynamic_cast<VarSymbol*>(all_subs->get(ps))) {
+          if (vs->literalType)
+            ps->type = vs->literalType;
+        }
       }
     }
   }

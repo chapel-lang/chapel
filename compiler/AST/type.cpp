@@ -506,13 +506,25 @@ void LiteralType::traverseDefType(Traversal* traversal) {
 
 
 void LiteralType::printDef(FILE* outfile) {
-  literal->type->printDef(outfile);
+  fprintf(outfile, "type ");
+  symbol->print(outfile);
+  fprintf(outfile, " = ");
+  literal->print(outfile);
 }
 
 
 void LiteralType::codegenDef(FILE* outfile) {
-  literal->type->codegenDef(outfile);
+  fprintf(outfile, "typedef ");
+  literal->type->codegen(outfile);
+  fprintf(outfile, " ");
+  symbol->codegen(outfile);
+  fprintf(outfile, ";\n");
 }
+
+void LiteralType::codegenDefaultFormat(FILE* outfile, bool isRead) {
+  literal->type->codegenDefaultFormat(outfile, isRead);
+}
+
 
 UserType::UserType(Type* init_underlyingType, Expr* init_defaultExpr) :
   Type(TYPE_USER, NULL),
@@ -731,6 +743,8 @@ int
 is_Scalar_Type(Type *t) {
   if (UserType *ut = dynamic_cast<UserType*>(t))
     return is_Scalar_Type(ut->underlyingType);
+  if (LiteralType *lt = dynamic_cast<LiteralType*>(t))
+    return is_Scalar_Type(lt->literal->type);
   return t && 
     t != dtUnknown && 
     t != dtString && 
@@ -1049,10 +1063,16 @@ void findInternalTypes(void) {
 
 LiteralType *
 new_LiteralType(VarSymbol *literal_var) {
+  static int uid = 1;
   assert(literal_var->immediate);
   if (literal_var->literalType)
     return literal_var->literalType;
   literal_var->literalType = new LiteralType(literal_var);
+  char* name = stringcat("_literal_type", intstring(uid++));
+  TypeSymbol* sym = new TypeSymbol(name, literal_var->literalType);
+  literal_var->literalType->addSymbol(sym);
+  commonModule->stmts->insertAtTail(new ExprStmt(new DefExpr(sym)));
+  literal_var->literalType->defaultValue = literal_var;
   return literal_var->literalType;
 }
 

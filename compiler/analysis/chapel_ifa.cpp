@@ -304,8 +304,8 @@ close_symbols(Vec<AList<Stmt> *> &stmts, Vec<BaseAST *> &syms) {
 static Sym *
 base_type(Sym *s) {
   if (UserType *t = dynamic_cast<UserType*>(SYMBOL(s)))
-    return base_type(t->underlyingType->asymbol->sym);
-  return s;
+    return unalias_type(base_type(t->underlyingType->asymbol->sym));
+  return unalias_type(s);
 }
 
 static void
@@ -849,7 +849,7 @@ is_scalar_type(BaseAST *at) {
   return is_Scalar_Type(t);
 }
 
-static int
+int
 is_scalar_type_symbol(BaseAST *at) {
   TypeSymbol *ts = dynamic_cast<TypeSymbol*>(at);
   assert(ts);
@@ -893,6 +893,8 @@ build_symbols(Vec<BaseAST *> &syms) {
           }
           if (p->isGeneric)
             s->asymbol->sym->is_generic = 1;
+          if (p->isExactMatch)
+            s->asymbol->sym->is_exact_match = 1;
           if (s->type->astType == TYPE_META) {
             MetaType *t = dynamic_cast<MetaType*>(s->type);
             s->asymbol->sym->must_specialize = t->asymbol->sym;
@@ -2385,22 +2387,14 @@ cast_value(PNode *pn, EntrySet *es) {
   Vec<CreationSet *> type_css;
   forv_CreationSet(cs, type->out->sorted) {
     Sym *ts = cs->sym;
-    if (ts->type->asymbol) {
-      if (ts->type->is_meta_type) {
-        if (is_scalar_type_symbol(SYMBOL(ts->type))) {
-          AType *btype = make_abstract_type(base_type(ts->meta_type));
-          CreationSet *bcs = btype->v[0];
-          update_in(result, btype);
-          type_css.add(bcs);
-        }
-      } else {
-        if (is_scalar_type(SYMBOL(ts->type))) {
-          AType *btype = make_abstract_type(base_type(ts));
-          CreationSet *bcs = btype->v[0];
-          update_in(result, btype);
-          type_css.add(bcs);
-        }
-      }
+    Sym *type = ts;
+    if (type->is_meta_type)
+      type = base_type(ts->meta_type);
+    if (is_scalar_type(SYMBOL(type->type))) {
+      AType *btype = make_abstract_type(type);
+      CreationSet *bcs = btype->v[0];
+      update_in(result, btype);
+      type_css.add(bcs);
     }
   }
   flow_var_type_permit(type_tmp, make_AType(type_css));
