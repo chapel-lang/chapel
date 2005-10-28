@@ -49324,3 +49324,16 @@ Modified files:
 	                         functionResolution.cpp 
 	chapel/compiler/traversals/: scopeResolveGotos.cpp 
 
+---------------------------------------------------------------------------
+
+10/28/05 14:47:38 -- shannon
+
+Log message:
+	Minor refactoring and removed some commented-out code.
+
+Modified files:
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: resolveSymbols.cpp 
+	                             specializeCallExprs.cpp 
+
