@@ -49368,3 +49368,90 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: pattern.cpp 
 
+---------------------------------------------------------------------------
+
+10/31/05 14:15:57 -- deitz
+
+Log message:
+	Temporary regressions I'm looking into with another change to add a
+	primitive assignment operator:
+	
+	[Error executing program execflags/shannon/configs/configVarFile]
+	[Error executing program execflags/shannon/configs/configVarFileBadEnum]
+	[Error executing program execflags/shannon/configs/configVarFileGoodEnum]
+	[Error executing program execflags/shannon/configs/configVarFileStrings]
+	[Error executing program memory/shannon/configVarFile]
+	
+	Improved support for user constructors.  User-defined default
+	constructors, created as per the Spec by naming the constructor
+	'initialize,' are now supported similar to how the automatically
+	created default constructor is supported.  The default constructor for
+	a class is now defined with formal parameters taking the same names as
+	the fields in that class and put in the order in which the fields were
+	declared.  They all have default values equal to the initialization
+	given to the field or, if none is given, to the default value of the
+	type of the field.  The default constructor of a class is defined with
+	an empty body.
+	
+	This checkin implements the transformation that automatically inserts
+	assignments from formal arguments to fields with the same name.  So,
+	for example, a class with a user-defined constructor given by
+	
+	  class C {
+	    var i : integer = 12;
+	    function initialize(i : integer) { };
+	  }
+	
+	would have the constructor automatically changed to
+	
+	    function initialize(i : integer) { this.i = i; };
+	
+	All constructors have an alloc function inserted at their beginning to
+	a locally defined 'this' variable.  Additionally, a call to the
+	ClassType's init function is made where the InitExprs for the fields
+	live, and 'this' is returned.
+	
+	I think I left off default initialization of all the fields, though
+	this should presumably take place by the InitExpr??
+	
+	Note there is no support for user-defined constructors other than the
+	user-defined default constructor though this should be simple to fix
+	by adding support for calling constructors of a different name:
+	
+	  var c : C = C.create();
+	
+	Added a FnSymbol pointer to ClassType::initFn that points to that
+	class's init function.
+	
+	Moved BuildDefaultFunctions pass earlier in the compiler.  It is now
+	done before scope resolution leading to a recode of the conditions
+	with which we determine whether default functions should be created or
+	not.  Refactored this determination code.  This move simplifies the
+	creation of default functions substantially.
+	
+	Expanded insertAtHead and insertAtTail functions to allow a list of
+	statements to be inserted at the head or tail of BlockStmts and
+	FnSymbols.  Previously I'd expanded these to allow single statements
+	to be inserted at the head or tail of BlockStmts and FnSymbols.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: stmt.h symbol.h type.h 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	chapel/compiler/symtab/: codegenOne.cpp 
+	chapel/compiler/traversals/: insertThisParameters.cpp 
+	                             preAnalysisHacks.cpp 
+	                             scopeResolveSymbols.cpp 
+	chapel/modules/standard/: _chpl_file.chpl 
+	chapel/test/: REGRESSIONS 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/flowanalysis/newast/: sum_type-1.good 
+	                                  sum_type-2.good 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
