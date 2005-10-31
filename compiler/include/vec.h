@@ -48,6 +48,7 @@ class Vec : public gc {
   void set_disjunction(Vec<C> &v, Vec<C> &result);
   void set_difference(Vec<C> &v, Vec<C> &result);
   int set_count();
+  inline int count();
   inline C *in(C a);
   inline C *set_in(C a);
   inline C first();
@@ -180,6 +181,15 @@ Vec<C>::set_add(C a) {
       set_add_internal(*c);
   }
   return set_add_internal(a);
+}
+
+template <class C> inline int
+Vec<C>::count() {
+  int x = 0;
+  for (C *c = v; c < v + n; c++)
+    if (*c)
+      x++;
+  return x;
 }
 
 template <class C> inline C*

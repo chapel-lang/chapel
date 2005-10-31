@@ -260,8 +260,8 @@ Matcher::find_arg_matches(AVar *a, MPosition &ap, MPosition *acp, MPosition *acp
       forv_CreationSet(cs, *a->out) if (cs) {
         Sym *sym = cs->sym;
         if (a->var->sym->aspect) {
-          if (!a->var->sym->aspect->implementors.in(cs->sym) &&
-              (cs->sym != sym_null || !sym_object->implementors.set_in(a->var->sym->aspect)))
+          if (!a->var->sym->aspect->specializers.in(cs->sym) &&
+              (cs->sym != sym_null || !sym_object->specializers.set_in(a->var->sym->aspect)))
             continue;
           sym = a->var->sym->aspect;
         }
@@ -482,7 +482,7 @@ Matcher::set_filters(Vec<CreationSet *> &csargs, MPosition &app, Vec<Fun *> &mat
           Vec<CreationSet *> newt;
           forv_CreationSet(cs, *t) if (cs) {
             if (cs->sym == sym_null && actual->aspect &&
-                sym_object->implementors.set_in(actual->aspect)) {
+                sym_object->specializers.set_in(actual->aspect)) {
               if (m_type->specializers.set_in(actual->aspect))
                 newt.set_add(cs);
             } else 
@@ -1061,6 +1061,7 @@ Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &app,
   set_filters(csargs, app, matches, top_level);
   log(LOG_DISPATCH, "%d- destructure_level: %d matches: %d\n", send->var->sym->id, 
       app.pos.n, matches.n);
+  qsort_by_id(matches);
   log_dispatch_funs(*this, matches);
   result.set_union(matches);
 }
@@ -1099,9 +1100,11 @@ Matcher::record_all_positions(Vec<Fun *> &partial_matches) {
 
 void
 Matcher::cannonicalize_matches(Vec<Fun *> &partial_matches) {
-  forv_Fun(f, partial_matches) if (f) {
+  partial_matches.set_to_vec();
+  qsort_by_id(partial_matches);
+  forv_Fun(f, partial_matches) {
     Match *m = match_map.get(f);
-    // assert(m->fun == f);
+    assert(m->fun == f);
     for (int i = 0; i < m->formal_filters.n; i++)
       if (m->formal_filters.v[i].key)
         m->formal_filters.v[i].value = make_AType(*m->formal_filters.v[i].value);
@@ -1290,7 +1293,7 @@ build_arg_positions(FA *fa) {
 void log_dispatch_pattern_match(Matcher &matcher) {
   if (matcher.all_matches)
     log(LOG_DISPATCH, "%d- pass: %d visible: %d\n", 
-        matcher.send->var->sym->id, analysis_pass, matcher.all_matches->n);
+        matcher.send->var->sym->id, analysis_pass, matcher.all_matches->count());
   else
     log(LOG_DISPATCH, "%d- pass: %d visible: ALL\n", 
         matcher.send->var->sym->id, analysis_pass);
@@ -1301,7 +1304,7 @@ void log_dispatch_cs_match(Matcher &matcher, Vec<CreationSet *> &csargs,
 {
   if (!logging(LOG_DISPATCH)) return;
   log(LOG_DISPATCH, "%d- destructure_level: %d candidates: %d arguments: %d\n",
-      matcher.send->var->sym->id, app.pos.n, local_matches.n, csargs.n);
+      matcher.send->var->sym->id, app.pos.n, local_matches.count(), csargs.n);
   for (int i = 0; i < csargs.n; i++) {
     Sym *s = csargs.v[i]->sym;
     log(LOG_DISPATCH, "%d- arg %d : ", matcher.send->var->sym->id, i);
@@ -1319,7 +1322,7 @@ void log_dispatch_funs(Matcher &matcher, Vec<Fun *> &funs) {
   log(LOG_DISPATCH, "%d- candidates:\n", matcher.send->var->sym->id);
   if (funs.n > 10) {
     log(LOG_DISPATCH, "%d- too many candidates: %d:\n", matcher.send->var->sym->id,
-        funs.n);
+        funs.count());
     return;
   }
   for (int i = 0; i < funs.n; i++) {

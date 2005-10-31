@@ -5,10 +5,10 @@
 #include "if1.h"
 #include "pattern.h"
 
+static int type_hierarchy_built = 0;
 static int finalized_types = 0;
 
 void IFAAST::dump(FILE *fp, Fun *f) { }
-
 void IFAAST::graph(FILE *fp) { }
 
 void
@@ -93,6 +93,8 @@ unalias_syms(IF1 *i) {
 
 static void
 implement(Sym *s, Sym *ss, Vec<Sym *> &types) {
+  if (!ss->implements.in(s))
+    ss->implements.add(s);
   s->implementors.set_add(ss);
   types.set_add(s);
   types.set_add(ss);
@@ -101,6 +103,8 @@ implement(Sym *s, Sym *ss, Vec<Sym *> &types) {
 static void
 specialize(Sym *s, Sym *ss, Vec<Sym *> &types) {
   assert(s != ss);
+  if (!ss->specializes.in(s))
+    ss->specializes.add(s);
   if (s->specializers.set_add(ss))
     ss->dispatch_order.add(s);
   types.set_add(s);
@@ -199,17 +203,22 @@ compute_structural_type_hierarchy(Vec<Sym *> types) {
   compute_single_structural_type_hierarchy(union_types, 1);
 }
 
+void check_unique(Vec<void *> &v) {
+  Vec<void *> vv;
+  forv_Vec(void*, x, v) {
+    assert(vv.set_add(x));
+  }
+}
+
 void
 build_type_hierarchy() {
   Vec<Sym *> types, meta_types;
-  forv_Sym(s, if1->allsyms) {
-    s->specializers.clear();
-    s->implementors.clear();
-    s->dispatch_order.clear();
+  if (!type_hierarchy_built) {
+    implement_and_specialize(sym_unknown, sym_any, types);
+    implement_and_specialize(sym_object, sym_null, types);
   }
-  implement_and_specialize(sym_unknown, sym_any, types);
-  implement_and_specialize(sym_object, sym_null, types);
-  forv_Sym(s, if1->allsyms) {
+  for (int x = type_hierarchy_built; x < if1->allsyms.n; x++) {
+    Sym *s = if1->allsyms.v[x];
     // functions implement and specialize symbols (selectors) of the same name
     //   this permits overloading of selectors with multiple functions
     if (s->is_symbol)
@@ -263,29 +272,54 @@ build_type_hierarchy() {
   }
   // compute structural type hierarchy
   compute_structural_type_hierarchy(types);
-
-  // ***** CONVERT THESE TO USE implements and specializes and a worklist!
-
   // compute implementors closure
-  int changed = 1;
-  while (changed) {
-    changed = 0;
-    forv_Sym(s, types) if (s) {
-      forv_Sym(ss, s->implementors) if (ss) {
-        changed = s->implementors.set_union(ss->implementors) || changed;
+  Vec<Sym *> todo, changed, next_changed;
+  types.set_union(meta_types);
+  forv_Sym(s, types) if (s)
+    todo.set_union(s->implements); 
+  changed.copy(types);
+  while (todo.n) {
+    Vec<Sym *> now;
+    now.move(todo);
+    forv_Sym(s, now) if (s) {
+      int redo = 1;
+      while (redo) {
+        redo = 0;
+        forv_Sym(ss, s->implementors) if (ss && changed.set_in(ss)) {
+          if (s->implementors.set_union(ss->implementors)) {
+            todo.set_union(s->implements);
+            next_changed.set_add(s);
+            redo = 1;
+          }
+        }
       }
     }
+    changed.move(next_changed);
   }
   // compute specializers closure
-  changed = 1;
-  while (changed) {
-    changed = 0;
-    forv_Sym(s, types) if (s) {
-      forv_Sym(ss, s->specializers) if (ss) {
-        changed = s->specializers.set_union(ss->specializers) || changed;
+  forv_Sym(s, types) if (s)
+    todo.set_union(s->specializes); 
+  changed.copy(types);
+  while (todo.n) {
+    Vec<Sym *> now;
+    now.move(todo);
+    forv_Sym(s, now) if (s) {
+      int redo = 1;
+      while (redo) {
+        redo = 0;
+        forv_Sym(ss, s->specializers) if (ss && changed.set_in(ss)) {
+          if (s->specializers.set_union(ss->specializers)) {
+            todo.set_union(s->specializes);
+            next_changed.set_add(s);
+            redo = 1;
+          }
+        }
       }
     }
+    changed.move(next_changed);
   }
+
+  type_hierarchy_built = if1->allsyms.n;
 }
 
 static void
