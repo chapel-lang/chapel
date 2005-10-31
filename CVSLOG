@@ -49337,3 +49337,23 @@ Modified files:
 	chapel/compiler/traversals/: resolveSymbols.cpp 
 	                             specializeCallExprs.cpp 
 
+---------------------------------------------------------------------------
+
+10/31/05 11:51:58 -- jplevyak
+
+Log message:
+	The most time consuming part of analysis was building the type hiearchy.
+	This checkin incrementalizes building the type hierarchy.
+	Also:
+	  moved qsort_by_id into fa.h so it can be used by other source files
+	    (this is a template QSORT for anything with a ::id field)
+	  used qsort_by_id to fixup some non-determinism in pattern.cpp
+	  use the specialize relation instead of implements to determine
+	    whether or not NULL may be passed to a function
+	  add Vec::count() which counts the number of non-NULL things in a set
+	  use Vec::count() to eliminate non-determinins from the log.d file
+
+Modified files:
+	chapel/compiler/ifa/: ast.cpp fa.cpp fa.h pattern.cpp 
+	chapel/compiler/include/: vec.h 
+
