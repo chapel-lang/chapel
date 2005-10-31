@@ -49357,3 +49357,14 @@ Modified files:
 	chapel/compiler/ifa/: ast.cpp fa.cpp fa.h pattern.cpp 
 	chapel/compiler/include/: vec.h 
 
+---------------------------------------------------------------------------
+
+10/31/05 13:17:29 -- jplevyak
+
+Log message:
+	Shift from Vec::in() to Vec::set_in() (which is more efficient)
+	in a couple of cases.
+
+Modified files:
+	chapel/compiler/ifa/: pattern.cpp 
+
