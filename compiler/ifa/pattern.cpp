@@ -260,7 +260,7 @@ Matcher::find_arg_matches(AVar *a, MPosition &ap, MPosition *acp, MPosition *acp
       forv_CreationSet(cs, *a->out) if (cs) {
         Sym *sym = cs->sym;
         if (a->var->sym->aspect) {
-          if (!a->var->sym->aspect->specializers.in(cs->sym) &&
+          if (!a->var->sym->aspect->specializers.set_in(cs->sym) &&
               (cs->sym != sym_null || !sym_object->specializers.set_in(a->var->sym->aspect)))
             continue;
           sym = a->var->sym->aspect;
@@ -611,7 +611,7 @@ fixup_maps_for_defaults(Match *m, Fun *oldf, Vec<MPosition *> &defaults) {
     for (int i = p->pos.n; i <= 0; i--) {
       tmp.pos.n = i;
       tmp.cp = 0; // not cannonical
-      if (defaults_set.in(cannonicalize_mposition(tmp)))
+      if (defaults_set.set_in(cannonicalize_mposition(tmp)))
         goto Lskip;
     }
     // at each level, count those before which nolonger exist and
@@ -623,7 +623,7 @@ fixup_maps_for_defaults(Match *m, Fun *oldf, Vec<MPosition *> &defaults) {
       for (int j = 0; j < Position2int(p->pos.v[i]); j++) {
         tmp.pos.v[i] = int2Position(j + 1);
         tmp.cp = 0; // not cannonical
-        if (defaults_set.in(cannonicalize_mposition(tmp)))
+        if (defaults_set.set_in(cannonicalize_mposition(tmp)))
           offset++;
       }
       newp.push(int2Position(Position2int(p->pos.v[i]) - offset));
