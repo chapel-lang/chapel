@@ -91,6 +91,8 @@ class BlockStmt : public Stmt {
 
   void insertAtHead(Stmt* stmt);
   void insertAtTail(Stmt* stmt);
+  void insertAtHead(AList<Stmt>* stmt);
+  void insertAtTail(AList<Stmt>* stmt);
 };
 
 

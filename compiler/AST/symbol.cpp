@@ -1155,6 +1155,18 @@ FnSymbol::insertAtTail(Stmt* stmt) {
 }
 
 
+void
+FnSymbol::insertAtHead(AList<Stmt>* stmt) {
+  body->insertAtHead(stmt);
+}
+
+
+void
+FnSymbol::insertAtTail(AList<Stmt>* stmt) {
+  body->insertAtTail(stmt);
+}
+
+
 int Symbol::nestingDepth() {
   if (!defPoint) // labels
     return 0;

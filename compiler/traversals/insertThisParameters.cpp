@@ -52,40 +52,7 @@ void InsertThisParameters::preProcessExpr(Expr* expr) {
   
   if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(fn->typeBinding)) {
     fn->cname = stringcat("_", typeSym->cname, "_", fn->cname);
-    if (fn->fnClass == FN_CONSTRUCTOR) {
-      fn->body->body->reset(); // reset iteration
-      fn->_this = new VarSymbol("this", typeSym->definition);
-      DefExpr* this_decl = new DefExpr(fn->_this);
-      fn->retType = typeSym->definition;
-      dynamic_cast<VarSymbol*>(fn->_this)->noDefaultInit = true;
-      fn->insertAtHead(new ExprStmt(this_decl));
-      char* description = stringcat("instance of class ", typeSym->name);
-      Expr* alloc_rhs = new CallExpr(Symboltable::lookupInternal("_chpl_alloc"),
-                                     new SymExpr(typeSym),
-                                     new_StringLiteral(description));
-      Expr* alloc_lhs = new SymExpr(fn->_this);
-      Expr* alloc_expr = new CallExpr(OP_GETSNORM, alloc_lhs, alloc_rhs);
-      Stmt* alloc_stmt = new ExprStmt(alloc_expr);
-      this_decl->parentStmt->insertAfter(alloc_stmt);
-      fn->insertAtTail(new ReturnStmt(new SymExpr(fn->_this)));
-
-      // fix type variables, associate by name
-      if (ClassType* structType = dynamic_cast<ClassType*>(typeSym->definition)) {
-        for_alist(DefExpr, arg, fn->formals) {
-          if (dynamic_cast<ArgSymbol*>(arg->sym)->isGeneric) {
-            forv_Vec(TypeSymbol, tmp, structType->types) {
-              if (VariableType* variableType = dynamic_cast<VariableType*>(tmp->definition)) {
-                if (!strcmp(tmp->name, arg->sym->name)) {
-                  arg->sym->type = variableType->type;
-                  dynamic_cast<ArgSymbol*>(arg->sym)->isGeneric = true;
-                  dynamic_cast<ArgSymbol*>(arg->sym)->genericSymbol = tmp;
-                }
-              }
-            }
-          }
-        }
-      }
-    } else {
+    if (fn->fnClass != FN_CONSTRUCTOR) {
       ArgSymbol* this_insert = new ArgSymbol(INTENT_REF, "this", typeSym->definition);
       fn->formals->insertAtHead(new DefExpr(this_insert));
       fn->_this = this_insert;

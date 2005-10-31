@@ -182,6 +182,8 @@ class ClassType : public Type {
   Vec<Symbol*> fields;
   Vec<TypeSymbol*> types;
 
+  FnSymbol* initFn;
+
   ClassType(ClassTag initClassTag);
   virtual void verify(void); 
   COPY_DEF(ClassType);

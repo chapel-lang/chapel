@@ -4,6 +4,18 @@
 #include "symbol.h"
 #include "type.h"
 
+
+// static Expr *
+// init_expr(Type *t) {
+//   if (t->defaultValue)
+//     return new SymExpr(t->defaultValue);
+//   else if (t->defaultConstructor)
+//     return new CallExpr(t->defaultConstructor);
+//   else
+//     return new SymExpr(gNil);
+// }
+
+
 void PreAnalysisHacks::postProcessStmt(Stmt* stmt) {
   if (ForLoopStmt* loop = dynamic_cast<ForLoopStmt*>(stmt)) {
     loop->iterators->only()->replace(
@@ -135,6 +147,18 @@ void PreAnalysisHacks::postProcessExpr(Expr* expr) {
       }
     }
   }
+
+//   if (InitExpr* init = dynamic_cast<InitExpr*>(expr)) {
+//     if (dynamic_cast<TypeSymbol*>(init->sym->defPoint->parentSymbol)) {
+//       if (!is_Scalar_Type(init->sym->type)) {
+//         Expr* varInitExpr = init_expr(init->sym->type);
+//         Expr* lhs = new MemberAccess(new SymExpr(init->parentFunction()->_this), init->sym);
+//         Expr* assign_expr = new CallExpr(OP_GETSNORM, lhs, varInitExpr);
+//         Stmt* assign_stmt = new ExprStmt(assign_expr);
+//         init->parentStmt->insertAfter(assign_stmt);
+//       }
+//     }
+//   }
 }
 
 void PreAnalysisHacks::postProcessType(Type* type) {

@@ -318,6 +318,18 @@ BlockStmt::insertAtTail(Stmt* stmt) {
 }
 
 
+void
+BlockStmt::insertAtHead(AList<Stmt>* stmt) {
+  body->insertAtHead(stmt);
+}
+
+
+void
+BlockStmt::insertAtTail(AList<Stmt>* stmt) {
+  body->insertAtTail(stmt);
+}
+
+
 WhileLoopStmt::WhileLoopStmt(bool init_whileDo,
                              Expr* init_cond,
                              BlockStmt* init_block) :

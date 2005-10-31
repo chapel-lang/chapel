@@ -631,6 +631,7 @@ ClassType::ClassType(ClassTag initClassTag) :
   types.clear();
   isPattern = false;
   fieldSelector = NULL;
+  initFn = NULL;
 }
 
 

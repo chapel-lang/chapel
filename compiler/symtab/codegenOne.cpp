@@ -32,6 +32,8 @@ CodegenOne::CodegenOne() {
   cnames.put("stdin", 1);
   cnames.put("stdout", 1);
   cnames.put("stderr", 1);
+  cnames.put("fwrite", 1);
+  cnames.put("fread", 1);
 }
 
 

@@ -14,12 +14,13 @@
 linux and general regressions
 =============================
 
-trivial/mjoyner/seq/seq_index1.chpl
+[Error executing program execflags/shannon/configs/configVarFile]
+[Error executing program execflags/shannon/configs/configVarFileBadEnum]
+[Error executing program execflags/shannon/configs/configVarFileGoodEnum]
+[Error executing program execflags/shannon/configs/configVarFileStrings]
+[Error executing program memory/shannon/configVarFile]
 
-  This seems to have started regressing with one of John's two
-  morning 08/25/2005 checkins (jplevyak)
-
-
+I expect to be able to remove these regressions once we add support for a primitive assignment operator and remove special-casing of strings. --SJD
 
 ==========================
 linux valgrind regressions

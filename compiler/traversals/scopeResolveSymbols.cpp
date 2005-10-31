@@ -41,6 +41,11 @@ void ScopeResolveSymbols::postProcessExpr(Expr* expr) {
       if (sym_resolve) {
         if (!dynamic_cast<FnSymbol*>(sym_resolve)) {
           sym_use->var = sym_resolve;
+          if (ArgSymbol* arg = dynamic_cast<ArgSymbol*>(sym_resolve)) {
+            if (dynamic_cast<TypeSymbol*>(arg->genericSymbol)) {
+              sym_use->var = arg->genericSymbol;
+            }
+          }
         }
       } else {
         if (!strcmp(name, "domain"))

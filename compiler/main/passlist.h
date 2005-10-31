@@ -23,9 +23,12 @@ PassInfo passlist[] = {
   // passes to normalize the basic AST
   RUN(ProcessImportExprs, ""),
   RUN(InsertLiteralTemps, ""),
-  RUN(InsertThisParameters, ""),
   RUN(Flatten, ""),
   RUN(BuildClassHierarchy, ""),
+
+  RUN(BuildDefaultFunctions, ""),
+
+  RUN(InsertThisParameters, ""),
 
   // SCOPE RESOLUTION
   RUN(ScopeResolveSymbols, ""), // postScopeResolution = true
@@ -33,8 +36,6 @@ PassInfo passlist[] = {
   RUN(ApplyThisParameters, ""),
 
   RUN(SemanticCheckII, ""), // post scope resolution semantic checks
-
-  RUN(BuildDefaultFunctions, ""),
 
   RUN(BuildLValueFunctions, ""),
   RUN(ReconstructIterators, ""),

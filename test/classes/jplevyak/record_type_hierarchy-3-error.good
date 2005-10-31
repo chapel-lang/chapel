@@ -10,8 +10,7 @@ _chpl_data.chpl:56: fwrite, f : file, val : _fdata
 _chpl_data.chpl:56: fwrite, f : file, val : _fdata
 _chpl_data.chpl:56: fwrite, f : file, val : _fdata
 _chpl_file.chpl:108: fwrite, f : file, val : bool
-_chpl_file.chpl:121: fwrite, f : file, val : complex64
-_chpl_file.chpl:131: fwrite, f : file, x : null
+_chpl_file.chpl:118: fwrite, f : file, x : null
 _chpl_file.chpl:45: fwrite, f : file, val : file
 _chpl_file.chpl:74: fwrite, f : file, val : int64
 _chpl_file.chpl:84: fwrite, f : file, val : float64
