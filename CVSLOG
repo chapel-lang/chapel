@@ -49540,3 +49540,38 @@ Log message:
 Added files:
 	chapel/test/classes/deitz/: test_nil2.chpl test_nil2.good 
 
+---------------------------------------------------------------------------
+
+11/01/05 13:29:59 -- deitz
+
+Log message:
+	Added include/runtime.h to contain pointers to things in the Chapel
+	runtime context.  For example, I moved the ModuleSymbols prelude and
+	fileModule here, and added a ModuleSymbol tupleModule.  I added a
+	TypeSymbol htuple to point to _htuple in _chpl_tuple.  It turned out
+	that using lookup for this before the 'use' expressions were processed
+	was a problem.
+	
+	Removed InsertLiteralTemps.  I moved the functionality (which had
+	nothing to do with literal temps) into NormalizeParsedAST, which makes
+	sense because these are things that could happen during parsing, but
+	are complicated, and PreAnalysisHacks.  Moved code for destructuring
+	tuples and constructing tuple types into NormalizeParsedAST.  Moved
+	special-casing of the # operator to handle append and prepend into
+	PreAnalysisHacks.
+
+Modified files:
+	chapel/compiler/main/: Makefile.share passlist.cpp passlist.h 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	                         filesToAST.cpp filesToAST.h 
+	                         normalizeParsedAST.cpp 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: Makefile.share collectASTS.cpp 
+	                             preAnalysisHacks.cpp 
+Added files:
+	chapel/compiler/include/: runtime.h 
+	chapel/compiler/main/: runtime.cpp 
+Removed files:
+	chapel/compiler/traversals/: insertLiteralTemps.cpp 
+	                             insertLiteralTemps.h 
+
