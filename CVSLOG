@@ -49495,3 +49495,27 @@ Modified files:
 	                         normalizeParsedAST.cpp 
 	chapel/compiler/traversals/: preAnalysisHacks.cpp 
 
+---------------------------------------------------------------------------
+
+11/01/05 09:58:47 -- deitz
+
+Log message:
+	Refactored code to determine whether a default function is required.
+	
+	Removed special cname for getters and setters.
+	
+	Fixed legalizeCName before code generation to handle all of the
+	symbols that may show up in overloaded operators and removed
+	unnecessary mangling of overloaded operators.
+
+Modified files:
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	chapel/compiler/symtab/: codegenOne.cpp 
+	chapel/compiler/traversals/: resolveSymbols.cpp resolveSymbols.h 
+	chapel/modules/standard/: _chpl_seq.chpl 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+
