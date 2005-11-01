@@ -49468,3 +49468,16 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+10/31/05 16:37:32 -- deitz
+
+Log message:
+	Minor change to set InitExpr::type to be the init expression if no
+	type is given between the : and the =.
+
+Modified files:
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	                         normalizeParsedAST.cpp 
+	chapel/compiler/traversals/: insertVariableInitializations.cpp 
+
