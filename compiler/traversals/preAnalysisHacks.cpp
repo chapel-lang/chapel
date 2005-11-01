@@ -199,6 +199,9 @@ void PreAnalysisHacks::postProcessExpr(Expr* expr) {
           type = def->init->copy(); // new CallExpr("typeof", def->init->copy());
         def->parentFunction()->insertAtHead(new ExprStmt(new InitExpr(def->sym, type)));
       } else {
+        if (def->init)
+          def->parentStmt->insertAfter(new ExprStmt(new CallExpr(OP_GETSNORM, def->sym, def->init->copy())));
+
         Expr* type = NULL;
         if (def->exprType)
           type = def->exprType->copy();
