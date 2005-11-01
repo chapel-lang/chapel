@@ -49530,3 +49530,13 @@ Added files:
 	chapel/test/classes/deitz/: test_nil1.chpl test_nil1.future 
 	                            test_nil1.good 
 
+---------------------------------------------------------------------------
+
+11/01/05 10:48:04 -- deitz
+
+Log message:
+	Added a 'more complicated' nil test. This one works.
+
+Added files:
+	chapel/test/classes/deitz/: test_nil2.chpl test_nil2.good 
+
