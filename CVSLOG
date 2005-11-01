@@ -49575,3 +49575,14 @@ Removed files:
 	chapel/compiler/traversals/: insertLiteralTemps.cpp 
 	                             insertLiteralTemps.h 
 
+---------------------------------------------------------------------------
+
+11/01/05 13:44:30 -- deitz
+
+Log message:
+	Moved the init field of a variable into its own assignment statement
+	after the init expression if --use-init-expr is specified.
+
+Modified files:
+	chapel/compiler/traversals/: preAnalysisHacks.cpp 
+
