@@ -49519,3 +49519,14 @@ Modified files:
 	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
 	                                         inlfunc2_report.good 
 
+---------------------------------------------------------------------------
+
+11/01/05 10:44:09 -- deitz
+
+Log message:
+	Added future test showing a difficulty with nil.
+
+Added files:
+	chapel/test/classes/deitz/: test_nil1.chpl test_nil1.future 
+	                            test_nil1.good 
+
