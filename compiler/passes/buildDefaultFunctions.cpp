@@ -153,16 +153,16 @@ static void build_init(ClassType* ct) {
   ct->initFn = new FnSymbol(stringcat("_init_", ct->symbol->name));
   ct->initFn->formals = new AList<DefExpr>();
 
-  if (use_init_expr) {
-    forv_Vec(Symbol, field, ct->fields) {
-      Expr* type = NULL;
-      if (field->defPoint->exprType)
-        type = field->defPoint->exprType->copy();
-      else if (field->defPoint->init)
-        type = new CallExpr("typeof", field->defPoint->init->copy());
-      ct->initFn->insertAtTail(new ExprStmt(new InitExpr(field, type)));
-    }
-  }
+//   if (use_init_expr) {
+//     forv_Vec(Symbol, field, ct->fields) {
+//       Expr* type = NULL;
+//       if (field->defPoint->exprType)
+//         type = field->defPoint->exprType->copy();
+//       else if (field->defPoint->init)
+//         type = new CallExpr("typeof", field->defPoint->init->copy());
+//       ct->initFn->insertAtTail(new ExprStmt(new InitExpr(field, type)));
+//     }
+//   }
 
   reset_file_info(ct->initFn, ct->symbol->lineno, ct->symbol->filename);
   ct->symbol->defPoint->parentStmt->insertBefore

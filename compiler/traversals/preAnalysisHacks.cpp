@@ -148,17 +148,41 @@ void PreAnalysisHacks::postProcessExpr(Expr* expr) {
     }
   }
 
-//   if (InitExpr* init = dynamic_cast<InitExpr*>(expr)) {
-//     if (dynamic_cast<TypeSymbol*>(init->sym->defPoint->parentSymbol)) {
-//       if (!is_Scalar_Type(init->sym->type)) {
-//         Expr* varInitExpr = init_expr(init->sym->type);
-//         Expr* lhs = new MemberAccess(new SymExpr(init->parentFunction()->_this), init->sym);
-//         Expr* assign_expr = new CallExpr(OP_GETSNORM, lhs, varInitExpr);
-//         Stmt* assign_stmt = new ExprStmt(assign_expr);
-//         init->parentStmt->insertAfter(assign_stmt);
-//       }
-//     }
-//   }
+  if (use_init_expr) {
+    if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
+      if (dynamic_cast<TypeSymbol*>(def->parentSymbol)) {
+        ClassType* ct = dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(def->parentSymbol)->definition);
+        Expr* type = NULL;
+        if (def->exprType)
+          type = def->exprType->copy();
+        else if (def->init)
+          type = def->init->copy(); // new CallExpr("typeof", def->init->copy());
+        ct->initFn->insertAtTail(new ExprStmt(new InitExpr(def->sym, type)));
+      } else if (dynamic_cast<ModuleSymbol*>(def->parentSymbol)) {
+        ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(def->parentSymbol);
+        Expr* type = NULL;
+        if (def->exprType)
+          type = def->exprType->copy();
+        else if (def->init)
+          type = def->init->copy(); // new CallExpr("typeof", def->init->copy());
+        mod->initFn->insertAtHead(new ExprStmt(new InitExpr(def->sym, type)));
+      } else if (dynamic_cast<ArgSymbol*>(def->sym)) {
+        Expr* type = NULL;
+        if (def->exprType)
+          type = def->exprType->copy();
+        else if (def->init)
+          type = def->init->copy(); // new CallExpr("typeof", def->init->copy());
+        def->parentFunction()->insertAtHead(new ExprStmt(new InitExpr(def->sym, type)));
+      } else {
+        Expr* type = NULL;
+        if (def->exprType)
+          type = def->exprType->copy();
+        else if (def->init)
+          type = def->init->copy(); // new CallExpr("typeof", def->init->copy());
+        def->parentStmt->insertAfter(new ExprStmt(new InitExpr(def->sym, type)));
+      }
+    }
+  }
 }
 
 void PreAnalysisHacks::postProcessType(Type* type) {
