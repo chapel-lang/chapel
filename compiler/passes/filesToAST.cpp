@@ -8,9 +8,7 @@
 #include "countTokens.h"
 #include "yy.h"
 #include "../traversals/fixup.h"
-
-ModuleSymbol* prelude = NULL;
-ModuleSymbol* fileModule = NULL;
+#include "runtime.h"
 
 void FilesToAST::run(Vec<ModuleSymbol*>* modules) {
   // parse prelude
@@ -27,10 +25,11 @@ void FilesToAST::run(Vec<ModuleSymbol*>* modules) {
   ParseFile(stringcat(chplroot, "/modules/standard/_chpl_complex.chpl"),
             MOD_STANDARD);
   fileModule = ParseFile(stringcat(chplroot, 
-            "/modules/standard/_chpl_file.chpl"),
-            MOD_STANDARD);
-  ParseFile(stringcat(chplroot, "/modules/standard/_chpl_htuple.chpl"),
-            MOD_STANDARD);
+                                   "/modules/standard/_chpl_file.chpl"),
+                         MOD_STANDARD);
+  tupleModule = ParseFile(stringcat(chplroot,
+                                    "/modules/standard/_chpl_htuple.chpl"),
+                          MOD_STANDARD);
   ParseFile(stringcat(chplroot, "/modules/standard/_chpl_adomain.chpl"),
             MOD_STANDARD);
   ParseFile(stringcat(chplroot, "/modules/standard/_chpl_data.chpl"),
@@ -52,4 +51,7 @@ void FilesToAST::run(Vec<ModuleSymbol*>* modules) {
 
   Pass* fixup = new Fixup();
   fixup->run(Symboltable::getModules(MODULES_ALL));
+
+  htuple = dynamic_cast<TypeSymbol*>(Symboltable::lookupInScope("_htuple", tupleModule->modScope));
+
 }

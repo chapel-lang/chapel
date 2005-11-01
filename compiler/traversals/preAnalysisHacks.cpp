@@ -3,6 +3,7 @@
 #include "expr.h"
 #include "symbol.h"
 #include "type.h"
+#include "symtab.h"
 
 
 // static Expr *
@@ -32,6 +33,30 @@ check_type(Type *t) {
 }
 
 void PreAnalysisHacks::postProcessExpr(Expr* expr) {
+  if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
+    if (call->opTag == OP_SEQCAT) {
+      Type* leftType = call->get(1)->typeInfo();
+      Type* rightType = call->get(2)->typeInfo();
+
+      // assume dtUnknown may be sequence type, at least one should be
+      if (leftType != dtUnknown && rightType != dtUnknown)
+        INT_FATAL(call, "Bad # operation");
+
+      // if only one is, change to append or prepend
+      if (leftType != dtUnknown) {
+        call->replace(new CallExpr(
+                        new MemberAccess(call->get(2)->copy(),
+                          new UnresolvedSymbol("_prepend")),
+                        call->get(1)->copy()));
+      } else if (rightType != dtUnknown) {
+        call->replace(new CallExpr(
+                        new MemberAccess(call->get(1)->copy(),
+                          new UnresolvedSymbol("_append")),
+                        call->get(2)->copy()));
+      }
+    }
+  }
+
   if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
     if (SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr)) {
       if (!strcmp("typeof", base->var->name)) {

@@ -2,6 +2,7 @@ MAIN_SRCS = \
 	arg.cpp \
 	driver.cpp \
 	runpasses.cpp \
+        runtime.cpp \
 	version.cpp \
 
 CVS_SRCS = $(MAIN_SRCS)

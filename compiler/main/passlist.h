@@ -22,7 +22,6 @@ PassInfo passlist[] = {
 
   // passes to normalize the basic AST
   RUN(ProcessImportExprs, ""),
-  RUN(InsertLiteralTemps, ""),
   RUN(Flatten, ""),
   RUN(BuildClassHierarchy, ""),
 

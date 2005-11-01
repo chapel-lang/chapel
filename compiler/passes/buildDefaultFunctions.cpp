@@ -1,11 +1,11 @@
 #include "buildDefaultFunctions.h"
 #include "astutil.h"
 #include "expr.h"
-#include "../passes/filesToAST.h"
 #include "stmt.h"
 #include "symtab.h"
 #include "stringutil.h"
 #include "filesToAST.h"
+#include "runtime.h"
 
 
 static void build_chpl_main(Vec<ModuleSymbol*>* modules);

@@ -5,7 +5,6 @@
 
 CollectASTs::CollectASTs(Vec<BaseAST*>* init_asts) {
   asts = init_asts;
-  asts->clear();
 }
 
 void CollectASTs::preProcessExpr(Expr* expr) {

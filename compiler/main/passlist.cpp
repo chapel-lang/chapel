@@ -39,7 +39,6 @@
 #include "../traversals/htmlview.h"
 #include "../traversals/inlineFunctions.h"
 #include "../traversals/insertFunctionTemps.h"
-#include "../traversals/insertLiteralTemps.h"
 #include "../traversals/insertThisParameters.h"
 #include "../traversals/insertVariableInitializations.h"
 #include "../traversals/instantiate.h"
@@ -90,7 +89,6 @@ REGISTER(HtmlView);
 REGISTER(InlineFunctions);
 REGISTER(InsertDefaultInitVariables);
 REGISTER(InsertFunctionTemps);
-REGISTER(InsertLiteralTemps);
 REGISTER(InsertOutParameterInitializations);
 REGISTER(InsertThisParameters);
 REGISTER(InsertVariableInitializations);

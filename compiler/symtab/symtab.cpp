@@ -7,7 +7,8 @@
 #include "stringutil.h"
 #include "symtab.h"
 #include "yy.h"
-#include "../passes/filesToAST.h"
+#include "runtime.h"
+
 
 enum parsePhaseType {
   PARSING_PRE,
