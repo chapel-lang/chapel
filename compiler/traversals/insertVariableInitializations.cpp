@@ -120,20 +120,7 @@ void InsertVariableInitializations::postProcessStmt(Stmt* stmt) {
       }
       if (VarSymbol* var = dynamic_cast<VarSymbol*>(defExpr->sym)) {
         insert_init(stmt, var, var->type);
-//         defExpr->init->remove();
-//         defExpr->exprType->remove();
       }
     }
   }
-
-// Code to collapse unnecessary block statements
-//   if (BlockStmt* blockStmt = dynamic_cast<BlockStmt*>(stmt)) {
-//     if (blockStmt->next) {
-//       BlockStmt* placeHolder = new BlockStmt();
-//       blockStmt->insertBefore(placeHolder);
-//       blockStmt->remove();
-//       placeHolder->insertBefore(blockStmt->body);
-//       placeHolder->remove();
-//     }
-//   }
 }

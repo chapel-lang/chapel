@@ -155,10 +155,12 @@ static void build_init(ClassType* ct) {
 
   if (use_init_expr) {
     forv_Vec(Symbol, field, ct->fields) {
-      ct->initFn->insertAtTail
-        (new ExprStmt(new InitExpr(field,
-                                   field->defPoint->exprType ?
-                                   field->defPoint->exprType->copy() : NULL)));
+      Expr* type = NULL;
+      if (field->defPoint->exprType)
+        type = field->defPoint->exprType->copy();
+      else if (field->defPoint->init)
+        type = new CallExpr("typeof", field->defPoint->init->copy());
+      ct->initFn->insertAtTail(new ExprStmt(new InitExpr(field, type)));
     }
   }
 

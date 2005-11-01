@@ -37,18 +37,23 @@ void destruct_for_indices(ForLoopStmt* stmt) {
 // Insert initialization statements for variable declarations
 // Fields are handled when the class constructor and init function are built
 void insert_init_expr(DefExpr* def) {
-  if (dynamic_cast<ArgSymbol*>(def->sym)) {
-    def->parentFunction()->insertAtHead
-      (new ExprStmt(new InitExpr(def->sym,
-                                 def->exprType ? def->exprType->copy() : NULL)));
-  }
+  if (dynamic_cast<TypeSymbol*>(def->parentSymbol))
+    return;
 
-  if (dynamic_cast<VarSymbol*>(def->sym)) {
-    if (dynamic_cast<TypeSymbol*>(def->parentSymbol))
-      return;
-    def->parentStmt->insertAfter
-      (new ExprStmt(new InitExpr(def->sym,
-                                 def->exprType ? def->exprType->copy() : NULL)));
+  if (dynamic_cast<ArgSymbol*>(def->sym)) {
+    Expr* type = NULL;
+    if (def->exprType)
+      type = def->exprType->copy();
+    else if (def->init)
+      type = new CallExpr("typeof", def->init->copy());
+    def->parentFunction()->insertAtHead(new ExprStmt(new InitExpr(def->sym, type)));
+  } else {
+    Expr* type = NULL;
+    if (def->exprType)
+      type = def->exprType->copy();
+    else if (def->init)
+      type = new CallExpr("typeof", def->init->copy());
+    def->parentStmt->insertAfter(new ExprStmt(new InitExpr(def->sym, type)));
   }
 }
 
