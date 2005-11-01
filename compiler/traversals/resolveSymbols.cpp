@@ -22,11 +22,6 @@ static AList<Expr>* copy_argument_list(CallExpr* expr) {
 }
 
 
-ResolveSymbols::ResolveSymbols() {
-  //  whichModules = MODULES_CODEGEN;
-}
-
-
 OpTag gets_to_op(OpTag i) {
   switch (i) {
     case OP_GETSPLUS: return OP_PLUS;
@@ -49,88 +44,6 @@ is_builtin(FnSymbol *fn) {
     return 1;
   }
   return 0;
-}
-
-
-static void mangle_overloaded_operator_function_names(FnSymbol* fn) {
-  static int uid = 0;
-
-  if (is_builtin(fn)) {
-    return;
-  }
-
-  if (!strcmp(fn->name, "=")) {
-    fn->cname = stringcat("_assign", intstring(uid++));
-  }
-  else if (!strcmp(fn->name, "+")) {
-    fn->cname = stringcat("_plus", intstring(uid++));
-  }
-  else if (!strcmp(fn->name, "#")) {
-    fn->cname = stringcat("_pound", intstring(uid++));
-  }
-  else if (!strcmp(fn->name, "-")) {
-    fn->cname = stringcat("_minus", intstring(uid++));
-  }
-  else if (!strcmp(fn->name, "*")) {
-    fn->cname = stringcat("_times", intstring(uid++));
-  }
-  else if (!strcmp(fn->name, "/")) {
-    fn->cname = stringcat("_div", intstring(uid++));
-  }
-  else if (!strcmp(fn->name, "mod")) {
-    fn->cname = stringcat("_mod", intstring(uid++));
-  }
-  else if (!strcmp(fn->name, "==")) {
-    fn->cname = stringcat("_eq", intstring(uid++));
-  }
-  else if (!strcmp(fn->name, "!=")) {
-    fn->cname = stringcat("_ne", intstring(uid++));
-  }
-  else if (!strcmp(fn->name, "<=")) {
-    fn->cname = stringcat("_le", intstring(uid++));
-  }
-  else if (!strcmp(fn->name, ">=")) {
-    fn->cname = stringcat("_ge", intstring(uid++));
-  }
-  else if (!strcmp(fn->name, "<")) {
-    fn->cname = stringcat("_lt", intstring(uid++));
-  }
-  else if (!strcmp(fn->name, ">")) {
-    fn->cname = stringcat("_gt", intstring(uid++));
-  }
-  else if (!strcmp(fn->name, "&")) {
-    fn->cname = stringcat("_bitand", intstring(uid++));
-  }
-  else if (!strcmp(fn->name, "|")) {
-    fn->cname = stringcat("_bitor", intstring(uid++));
-  }
-  else if (!strcmp(fn->name, "^")) {
-    fn->cname = stringcat("_xor", intstring(uid++));
-  }
-  else if (!strcmp(fn->name, "and")) {
-    fn->cname = stringcat("_and", intstring(uid++));
-  }
-  else if (!strcmp(fn->name, "or")) {
-    fn->cname = stringcat("_or", intstring(uid++));
-  }
-  else if (!strcmp(fn->name, "**")) {
-    fn->cname = stringcat("_exponent", intstring(uid++));
-  }
-  else if (!strcmp(fn->name, "by")) {
-    fn->cname = stringcat("_by", intstring(uid++));
-  } else if (*fn->name == '=') {
-    fn->cname = stringcat("_assign", intstring(uid++), "_", fn->name+1);
-  }
-}
-
-
-static void
-mangle_overloaded_operator_function_names(Expr *expr) {
-  if (DefExpr* def_expr = dynamic_cast<DefExpr*>(expr)) {
-    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def_expr->sym)) {
-      mangle_overloaded_operator_function_names(fn);
-    }
-  }
 }
 
 
@@ -364,13 +277,4 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
             defExpr->sym->type->defaultConstructor = fn;
     }
   }
-
-  mangle_overloaded_operator_function_names(expr);
-
-  // Resolve overloaded binary operators 
-//   if (dynamic_cast<BinOp*>(expr)) {
-//     if (typeid(BinOp) == typeid(*expr)) { // SJD: WANT TO REMOVE
-//       expr = resolve_binary_operator(dynamic_cast<BinOp*>(expr));
-//     }
-//   }
 }

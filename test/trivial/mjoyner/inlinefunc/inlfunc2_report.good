@@ -1,11 +1,11 @@
-chapel compiler: reporting inlining, _file__file_get_fp function was inlined
-chapel compiler: reporting inlining, _file__file_get_path function was inlined
-chapel compiler: reporting inlining, _file__file_get_filename function was inlined
-chapel compiler: reporting inlining, _file__file_get_fp function was inlined
-chapel compiler: reporting inlining, _file__file_get_fp function was inlined
-chapel compiler: reporting inlining, _file__file_get_fp function was inlined
+chapel compiler: reporting inlining, _file_fp function was inlined
+chapel compiler: reporting inlining, _file_path function was inlined
+chapel compiler: reporting inlining, _file_filename function was inlined
+chapel compiler: reporting inlining, _file_fp function was inlined
+chapel compiler: reporting inlining, _file_fp function was inlined
+chapel compiler: reporting inlining, _file_fp function was inlined
 chapel compiler: reporting inlining, _default_wrap__Foo__construct_Foo function was inlined
-chapel compiler: reporting inlining, _Foo__Foo_set_y function was inlined
+chapel compiler: reporting inlining, _Foo_y function was inlined
 chapel compiler: reporting inlining, leaf function was inlined
 1
 22

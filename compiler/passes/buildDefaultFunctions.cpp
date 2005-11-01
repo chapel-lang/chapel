@@ -21,44 +21,55 @@ static void buildDefaultIOFunctions(Type* type);
 static void finishConstructor(FnSymbol* fn);
 
 
-// Looks for a function where
-//  function's name matches nameOfFunction
-//  function's number of formals matches numberOfFormals
-//  function's typeBinding matches typeBindingOfFunction if not NULL
-//  function's first formal's type's name matches typeNameOfFormal1 if not NULL
-//  function's second formal's type's name matches typeNameOfFormal1 if not NULL
+// function_exists returns true iff
+//  function's name matches name
+//  function's number of formals matches numFormals if not -1
+//  function's typeBinding matches typeBinding if not NULL
+//  function's first formal's type's name matches formalTypeName1 if not NULL
+//  function's second formal's type's name matches formalTypeName2 if not NULL
 
-static FnSymbol* function_exists(char* nameOfFunction,
-                                 int numberOfFormals = -1, // any number
-                                 Type* typeBindingOfFunction = NULL,
-                                 char* typeNameOfFormal1 = NULL,
-                                 char* typeNameOfFormal2 = NULL) {
+static bool type_name_match(char* name, Symbol* sym) {
+  if (!strcmp(name, sym->type->symbol->name))
+    return true;
+  SymExpr* symExpr = dynamic_cast<SymExpr*>(sym->defPoint->exprType);
+  if (symExpr && !strcmp(name, symExpr->var->name))
+    return true;
+  return false;
+}
+
+static FnSymbol* function_exists(char* name,
+                                 int numFormals = -1,
+                                 Type* typeBinding = NULL,
+                                 char* formalTypeName1 = NULL,
+                                 char* formalTypeName2 = NULL) {
   Vec<FnSymbol*> fns;
   collect_functions(&fns);
   FnSymbol* match = NULL;
   forv_Vec(FnSymbol, fn, fns) {
-    if (!strcmp(nameOfFunction, fn->name)) {
-      if (numberOfFormals == -1 || fn->formals->length() == numberOfFormals) {
-        if (!typeBindingOfFunction ||
-            typeBindingOfFunction == fn->typeBinding->definition) {
-          if (!typeNameOfFormal1 ||
-              (dynamic_cast<SymExpr*>(fn->formals->get(1)->exprType) &&
-               !strcmp(typeNameOfFormal1, dynamic_cast<SymExpr*>(fn->formals->get(1)->exprType)->var->name)) ||
-              (!strcmp(typeNameOfFormal1, fn->formals->get(1)->sym->type->symbol->name))) {
-            if (!typeNameOfFormal2 ||
-                (dynamic_cast<SymExpr*>(fn->formals->get(1)->exprType) &&
-                 !strcmp(typeNameOfFormal2, dynamic_cast<SymExpr*>(fn->formals->get(2)->exprType)->var->name)) ||
-                (!strcmp(typeNameOfFormal2, fn->formals->get(2)->sym->type->symbol->name))) {
-              if (!match) {
-                match = fn;
-              } else if (!strcmp("main", fn->name)) {
-                USR_FATAL(fn, "main multiply defined -- first occurrence at %s",
-                          match->stringLoc());
-              }
-            }
-          }
-        }
-      }
+    if (strcmp(name, fn->name))
+      continue;
+
+    if (numFormals != -1)
+      if (numFormals != fn->formals->length())
+        continue;
+
+    if (typeBinding)
+      if (typeBinding != fn->typeBinding->definition)
+        continue;
+
+    if (formalTypeName1)
+      if (!type_name_match(formalTypeName1, fn->formals->get(1)->sym))
+        continue;
+
+    if (formalTypeName2)
+      if (!type_name_match(formalTypeName2, fn->formals->get(2)->sym))
+        continue;
+
+    if (!match) {
+      match = fn;
+    } else if (!strcmp("main", fn->name)) {
+      USR_FATAL(fn, "main multiply defined -- first occurrence at %s",
+                match->stringLoc());
     }
   }
   return match;
@@ -286,15 +297,11 @@ finishConstructor(FnSymbol* fn) {
 static void build_getter(ClassType* ct, Symbol *field) {
   FnSymbol* fn = new FnSymbol(field->name);
   fn->addPragma("inline");
-  fn->cname = stringcat("_", ct->symbol->cname, "_get_", field->cname);
   fn->_getter = field;
   fn->retType = field->type;
   fn->formals = new AList<DefExpr>();
   fn->body = new BlockStmt(new ReturnStmt(new SymExpr(field->name)));
-  Expr* return_type = NULL;
-//   if (field->defPoint->exprType)
-//     return_type = field->defPoint->exprType->copy();
-  ct->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(new DefExpr(fn, NULL, return_type)));
+  ct->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(new DefExpr(fn)));
   reset_file_info(fn, field->lineno, field->filename);
   ct->methods.add(fn);
   fn->method_type = PRIMARY_METHOD;
@@ -306,7 +313,6 @@ static void build_getter(ClassType* ct, Symbol *field) {
 static void build_setter(ClassType* ct, Symbol* field) {
   FnSymbol* fn = new FnSymbol(field->name);
   fn->addPragma("inline");
-  fn->cname = stringcat("_", ct->symbol->name, "_set_", field->cname);
   fn->_setter = field;
   fn->retType = dtVoid;
 

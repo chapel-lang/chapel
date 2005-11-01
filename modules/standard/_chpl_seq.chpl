@@ -125,6 +125,13 @@ class seq : value {
   }
 }
 
+//function =(s1: seq, s2) {
+//  forall e in s2 do
+//    s1 = s1._append_in_place(e);
+//
+//  return s1;
+//}
+
 function _forall_start(s : seq) {
   return s._first;
 }

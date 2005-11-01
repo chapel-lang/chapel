@@ -15,13 +15,29 @@ static void applyRenamePragma(Symbol* sym) {
 }
 
 
+#define STRSUB(x)                               \
+  *ch = '\0';                                   \
+  sym->cname = stringcat(sym->cname, x, ch+1);  \
+  ch = sym->cname
+
 static void legalizeCName(Symbol* sym) {
   for (char* ch = sym->cname; *ch != '\0'; ch++) {
     switch (*ch) {
-    case '?': *ch = 'Q'; break;
-    case '-': *ch = '_'; break;
+    case '>': STRSUB("_GREATER_"); break;
+    case '<': STRSUB("_LESS_"); break;
+    case '=': STRSUB("_EQUAL_"); break;
+    case '*': STRSUB("_ASTERISK_"); break;
+    case '/': STRSUB("_SLASH_"); break;
+    case '+': STRSUB("_PLUS_"); break;
+    case '-': STRSUB("_HYPHEN_"); break;
+    case '^': STRSUB("_CARET_"); break;
+    case '&': STRSUB("_AMPERSAND_"); break;
+    case '|': STRSUB("_BAR_"); break;
+    case '!': STRSUB("_EXCLAMATION_"); break;
+    case '#': STRSUB("_POUND_"); break;
+    case '?': STRSUB("_QUESTION_"); break;
     default: break;
-    };
+    }
   }
 }
 
