@@ -319,7 +319,7 @@ if ($debug == 1) {
 if ($debug == 1) {
     $mailcommand = "| $mailer -s \"$mailsubject \" $debugmail";
 } else {
-    $mailcommand = "| $mailer -s \"$mailsubject \" chapel_dev\@cray.com";
+    $mailcommand = "| $mailer -s \"$mailsubject \" chapel_cronmail\@cray.com";
 }
 
 open(MAIL, $mailcommand);
