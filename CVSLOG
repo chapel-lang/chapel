@@ -49481,3 +49481,17 @@ Modified files:
 	                         normalizeParsedAST.cpp 
 	chapel/compiler/traversals/: insertVariableInitializations.cpp 
 
+---------------------------------------------------------------------------
+
+11/01/05 09:57:06 -- deitz
+
+Log message:
+	Moved insertion of all InitExprs to PreAnalysisHacks pass before
+	analysis.  This is a temporary setup so that we don't have to maintain
+	InitExprs throughout the passes before analysis.
+
+Modified files:
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	                         normalizeParsedAST.cpp 
+	chapel/compiler/traversals/: preAnalysisHacks.cpp 
+
