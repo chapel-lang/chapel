@@ -49455,3 +49455,16 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+10/31/05 16:06:06 -- bradc
+
+Log message:
+	Moved the mailing of nightly regression tests from
+	chapel_dev to chapel_cronmail -- a new alias designed
+	to distinguish between human discussion and automated
+	mailings for the purposes of filtering and archiving.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
