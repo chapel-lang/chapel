@@ -1048,7 +1048,6 @@ void findInternalTypes(void) {
   // These should all be eliminated.  Note they almost are since they
   // are MetaTypes, not the types in the prelude.
   dtTuple = Symboltable::lookupInternalType("Tuple")->type;
-  dtIndex = Symboltable::lookupInternalType("Index")->type;
   dtDomain = Symboltable::lookupInternalType("Domain")->type;
   dtArray = Symboltable::lookupInternalType("Array")->type;
   dtSequence = Symboltable::lookupInternalType("_seq")->type;

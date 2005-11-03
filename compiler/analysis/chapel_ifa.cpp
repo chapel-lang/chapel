@@ -65,7 +65,6 @@ static Sym *setter_token = 0;
 static Sym *make_seq_symbol = 0;
 static Sym *chapel_defexpr_symbol = 0;
 
-static Sym *sym_index = 0;
 static Sym *sym_domain = 0;
 static Sym *sym_array = 0;
 static Sym *sym_sequence = 0;
@@ -1188,7 +1187,6 @@ build_builtin_symbols() {
 
   builtin_Symbol(dtSequence, &sym_sequence, "sequence");
   builtin_Symbol(dtTuple, &sym_tuple, "tuple");
-  builtin_Symbol(dtIndex, &sym_index, "index");
   builtin_Symbol(dtDomain, &sym_domain, "domain");
   builtin_Symbol(dtArray, &sym_array, "array");
   builtin_Symbol(dtLocale, &sym_locale, "locale");

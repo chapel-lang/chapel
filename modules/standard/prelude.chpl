@@ -207,9 +207,6 @@ var _setterToken : _setterTokenType;
 class _seq { -- this is no longer necessary
 }
 
-class Index {
-}
-
 class Array {
   function this(i) {
     return __primitive("array_index", this, i);
@@ -295,14 +292,6 @@ pragma "builtin" function |=() {}
 pragma "builtin" function ^=() {}
 pragma "builtin" function #=() {}
 
-pragma "builtin" function Index.=(b : integer) { return __primitive("indextype_set", this, b); }
-pragma "builtin" function integer.=(b : Index) { return __primitive("indextype_get", b); }
-pragma "builtin" function any.=(b : any) { return b; }
-
-pragma "builtin" function =(a : Index, b : integer) { return __primitive("indextype_set", a, b); }
-pragma "builtin" function =(a : integer, b : Index) { return __primitive("indextype_get", b); }
-
-
 pragma "split unique"
 pragma "builtin" function =(a : numeric, b : any) { 
   return __primitive("cast", a, b);
@@ -313,7 +302,9 @@ pragma "builtin" function =(a : string, b : any) {
 }
 
 pragma "split unique"
-pragma "builtin" function =(a : any, b : any) { return b; }
+pragma "builtin" function =(a : any, b : any) { 
+  return b; 
+}
 
 pragma "rename _chpl_string_index"
 function string.this(i : integer) {
