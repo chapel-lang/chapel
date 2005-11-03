@@ -1,5 +1,5 @@
 _chpl_adomain.chpl:10: fwrite, f : file, val : _adomain_info
-_chpl_adomain.chpl:115: fwrite, f : file, val : _aarray
+_chpl_adomain.chpl:119: fwrite, f : file, x : _aarray
 _chpl_adomain.chpl:50: fwrite, f : file, val : _adomain_lit
 _chpl_adomain.chpl:70: fwrite, f : file, x : _adomain
 _chpl_adomain.chpl:70: fwrite, f : file, x : _adomain
@@ -15,7 +15,9 @@ _chpl_file.chpl:94: fwrite, f : file, val : string
 _chpl_htuple.chpl:30: fwrite, f : file, val : _htuple
 _chpl_seq.chpl:170: fwrite, f : file, s : seq
 _chpl_seq.chpl:170: fwrite, f : file, s : seq
+_chpl_seq.chpl:170: fwrite, f : file, s : seq
 _chpl_seq.chpl:230: fwrite, f : file, s : _aseq
+_chpl_seq.chpl:8: fwrite, f : file, val : _seqNode
 _chpl_seq.chpl:8: fwrite, f : file, val : _seqNode
 _chpl_seq.chpl:8: fwrite, f : file, val : _seqNode
 fail: program does not type
@@ -31,10 +33,9 @@ prelude.chpl:149: fwrite, f : file, val : timer
 prelude.chpl:197: fwrite, f : file, val : _methodTokenType
 prelude.chpl:203: fwrite, f : file, val : _setterTokenType
 prelude.chpl:208: fwrite, f : file, val : _seq
-prelude.chpl:211: fwrite, f : file, val : Index
-prelude.chpl:232: fwrite, f : file, val : Array
-prelude.chpl:235: fwrite, f : file, val : Domain
-prelude.chpl:245: fwrite, f : file, val : Tuple
+prelude.chpl:229: fwrite, f : file, val : Array
+prelude.chpl:232: fwrite, f : file, val : Domain
+prelude.chpl:242: fwrite, f : file, val : Tuple
 prelude.chpl:24: fwrite, f : file, val : _ddata
 prelude.chpl:24: fwrite, f : file, val : _ddata
 prelude.chpl:24: fwrite, f : file, val : _ddata
@@ -43,6 +44,8 @@ prelude.chpl:29: fwrite, f : file, val : CFILEPTR
 prelude.chpl:3: fwrite, f : file, val : object
 prelude.chpl:4: fwrite, f : file, val : value
 union_type_hierarchy-3-error.chpl:12: f, a : C
+union_type_hierarchy-3-error.chpl:12: fwrite, f : file, val : _tuple2
+union_type_hierarchy-3-error.chpl:12: fwrite, f : file, val : _tuple2
 union_type_hierarchy-3-error.chpl:16: expression has no type
 union_type_hierarchy-3-error.chpl:16: expression has no type
 union_type_hierarchy-3-error.chpl:16: illegal call argument type 'b' illegal: ( D ) 
