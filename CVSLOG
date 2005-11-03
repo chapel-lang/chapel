@@ -49612,3 +49612,15 @@ Modified files:
 	                                         test_clone_class1b.good 
 	                                         test_datablock3.chpl 
 
+---------------------------------------------------------------------------
+
+11/02/05 16:06:40 -- deitz
+
+Log message:
+	Added decent working 2D array test case (which relies on hacked
+	support for 2D array indexing).
+
+Added files:
+	chapel/test/arrays/deitz/: test_array_2Dc.chpl 
+	                           test_array_2Dc.good 
+
