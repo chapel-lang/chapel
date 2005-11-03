@@ -1,10 +1,10 @@
 class adomain : value {
   param rank : integer;
 
-  var low : _data(integer) = _data(integer, 2);
-  var high : _data(integer) = _data(integer, 2);
-  var stride : _data(integer) = _data(integer, 2);
-  var alignment : _data(integer) = _data(integer, 2);
+  var low : _ddata(integer) = _ddata(integer, 2);
+  var high : _ddata(integer) = _ddata(integer, 2);
+  var stride : _ddata(integer) = _ddata(integer, 2);
+  var alignment : _ddata(integer) = _ddata(integer, 2);
 
   function set(dim : integer, x : _aseq) {
     low(dim) = x._low;

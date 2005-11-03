@@ -1,13 +1,10 @@
-_chpl_adomain.chpl:100: fwrite, f : file, val : _aarray
-_chpl_adomain.chpl:11: fwrite, f : file, val : _adomain_info
-_chpl_adomain.chpl:45: fwrite, f : file, val : _adomain_lit
-_chpl_adomain.chpl:65: fwrite, f : file, x : _adomain
-_chpl_adomain.chpl:65: fwrite, f : file, x : _adomain
-_chpl_adomain.chpl:70: fwrite, f : file, val : _aarray_info
+_chpl_adomain.chpl:10: fwrite, f : file, val : _adomain_info
+_chpl_adomain.chpl:115: fwrite, f : file, val : _aarray
+_chpl_adomain.chpl:50: fwrite, f : file, val : _adomain_lit
+_chpl_adomain.chpl:70: fwrite, f : file, x : _adomain
+_chpl_adomain.chpl:70: fwrite, f : file, x : _adomain
+_chpl_adomain.chpl:75: fwrite, f : file, val : _aarray_info
 _chpl_complex.chpl:11: fwrite, f : file, x : complex
-_chpl_data.chpl:56: fwrite, f : file, val : _fdata
-_chpl_data.chpl:56: fwrite, f : file, val : _fdata
-_chpl_data.chpl:56: fwrite, f : file, val : _fdata
 _chpl_data.chpl:56: fwrite, f : file, val : _fdata
 _chpl_file.chpl:108: fwrite, f : file, val : bool
 _chpl_file.chpl:118: fwrite, f : file, x : null
@@ -15,7 +12,7 @@ _chpl_file.chpl:45: fwrite, f : file, val : file
 _chpl_file.chpl:74: fwrite, f : file, val : int64
 _chpl_file.chpl:84: fwrite, f : file, val : float64
 _chpl_file.chpl:94: fwrite, f : file, val : string
-_chpl_htuple.chpl:31: fwrite, f : file, val : _htuple
+_chpl_htuple.chpl:30: fwrite, f : file, val : _htuple
 _chpl_seq.chpl:170: fwrite, f : file, s : seq
 _chpl_seq.chpl:170: fwrite, f : file, s : seq
 _chpl_seq.chpl:230: fwrite, f : file, s : _aseq
@@ -24,22 +21,25 @@ _chpl_seq.chpl:8: fwrite, f : file, val : _seqNode
 fail: program does not type
 note: candidates are:
 note: candidates are:
-prelude.chpl:123: fwrite, f : file, val : reduction
-prelude.chpl:126: fwrite, f : file, val : sum
-prelude.chpl:129: fwrite, f : file, val : max
-prelude.chpl:132: fwrite, f : file, val : min
-prelude.chpl:135: fwrite, f : file, val : maxloc
-prelude.chpl:138: fwrite, f : file, val : minloc
-prelude.chpl:147: fwrite, f : file, val : timer
-prelude.chpl:195: fwrite, f : file, val : _methodTokenType
-prelude.chpl:201: fwrite, f : file, val : _setterTokenType
-prelude.chpl:206: fwrite, f : file, val : _seq
-prelude.chpl:209: fwrite, f : file, val : Index
-prelude.chpl:22: fwrite, f : file, val : _data
-prelude.chpl:230: fwrite, f : file, val : Array
-prelude.chpl:233: fwrite, f : file, val : Domain
-prelude.chpl:243: fwrite, f : file, val : Tuple
-prelude.chpl:27: fwrite, f : file, val : CFILEPTR
+prelude.chpl:125: fwrite, f : file, val : reduction
+prelude.chpl:128: fwrite, f : file, val : sum
+prelude.chpl:131: fwrite, f : file, val : max
+prelude.chpl:134: fwrite, f : file, val : min
+prelude.chpl:137: fwrite, f : file, val : maxloc
+prelude.chpl:140: fwrite, f : file, val : minloc
+prelude.chpl:149: fwrite, f : file, val : timer
+prelude.chpl:197: fwrite, f : file, val : _methodTokenType
+prelude.chpl:203: fwrite, f : file, val : _setterTokenType
+prelude.chpl:208: fwrite, f : file, val : _seq
+prelude.chpl:211: fwrite, f : file, val : Index
+prelude.chpl:232: fwrite, f : file, val : Array
+prelude.chpl:235: fwrite, f : file, val : Domain
+prelude.chpl:245: fwrite, f : file, val : Tuple
+prelude.chpl:24: fwrite, f : file, val : _ddata
+prelude.chpl:24: fwrite, f : file, val : _ddata
+prelude.chpl:24: fwrite, f : file, val : _ddata
+prelude.chpl:24: fwrite, f : file, val : _ddata
+prelude.chpl:29: fwrite, f : file, val : CFILEPTR
 prelude.chpl:3: fwrite, f : file, val : object
 prelude.chpl:4: fwrite, f : file, val : value
 union_type_hierarchy-3-error.chpl:12: f, a : C

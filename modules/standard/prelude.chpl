@@ -7,17 +7,19 @@ function typeof(x) { }
 
 function sizeof(x) { return __primitive("pure_return", integer); }
 
-class pragma "codegen data" _data { -- a c array, basically
-  type t;
+// dynamic data block class
+pragma "data class"
+class _ddata {
+  type elt_type;
   var size : integer;
-  var _data_dummy : t;
-  pragma "rename _data_get" function this(i : integer) : t {
-    return _data_dummy;
-    -- return __primitive("array_index", this, i);
+  pragma "data block" var _elt : elt_type;
+  pragma "rename _data_get"
+  function this(i : integer) : elt_type {
+    return _elt;
   }
-  pragma "rename _data_set" function =this(i : integer, val : t) : t {
-    _data_dummy = val;
-    -- return __primitive("array_set", this, i, val);
+  pragma "rename _data_set"
+  function =this(i : integer, val : elt_type) {
+    _elt = val;
   }
 }
 

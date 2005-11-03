@@ -1,11 +1,10 @@
 use _chpl_seq;
-use _chpl_data;
 use _chpl_file;
 
 class _htuple : value {
   type elt_type;
   param size : integer;
-  var elements : _fdata(elt_type); -- should contain size
+  var elements : _ddata(elt_type) = _ddata(elt_type, 8); -- should contain size
   function this(i : integer) var : elt_type {
     if i < 1 or i > size then
       halt("tuple indexing out-of-bounds error");

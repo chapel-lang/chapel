@@ -1,4 +1,4 @@
-var d : _data(integer) = _data(integer, 3);
+var d : _ddata(integer) = _ddata(integer, 3);
 
 d(0) = 1;
 d(1) = 2;

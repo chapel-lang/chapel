@@ -231,7 +231,7 @@ static void build_constructor(ClassType* ct) {
   reset_file_info(fn, ct->symbol->lineno, ct->symbol->filename);
   ct->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(new DefExpr(fn)));
   ct->methods.add(fn);
-  if (ct->symbol->hasPragma("codegen data")) {
+  if (ct->symbol->hasPragma("data class")) {
     fn->addPragma("rename _data_construct");
     fn->addPragma("keep types");
   }

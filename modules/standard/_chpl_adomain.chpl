@@ -1,5 +1,4 @@
 use _chpl_seq;
-use _chpl_data;
 use _chpl_htuple;
 use _chpl_file;
 
@@ -14,28 +13,34 @@ pragma "instantiate multidimensional iterator"
 class _adomain : value {
   param rank : integer;
 
-  var info : _fdata(_adomain_info);
+  var info : _ddata(_adomain_info) = _ddata(_adomain_info, 16);
 
   function _set(dim : integer, x : _aseq) {
-    info(dim-1)._low = x._low;
-    info(dim-1)._high = x._high;
-    info(dim-1)._stride = x._stride;
-    info(dim-1)._alignment = x._low;
+    var tmp : _adomain_info;
+    tmp._low = x._low;
+    tmp._high = x._high;
+    tmp._stride = x._stride;
+    tmp._alignment = x._low;
+    info(dim-1) = tmp;
   }
 
-  iterator _forall(dim : integer) : integer
-    forall i in info(dim-1)._low..info(dim-1)._high by info(dim-1)._stride do
+  iterator _forall(dim : integer) : integer {
+    var tmp : _adomain_info = info(dim-1);
+    forall i in tmp._low..tmp._high by tmp._stride do
       yield i;
+  }
 
-  iterator _for(dim : integer) : integer
-    for i in info(dim-1)._low..info(dim-1)._high by info(dim-1)._stride do
+  iterator _for(dim : integer) : integer {
+    var tmp : _adomain_info = info(dim-1);
+    for i in tmp._low..tmp._high by tmp._stride do
       yield i;
+  }
 }
 
 class _adomain_lit : value {
   param rank : integer;
 
-  var info : _fdata(_aseq);
+  var info : _ddata(_aseq) = _ddata(_aseq, 16);
 
   var dummy : integer;
 
@@ -75,26 +80,36 @@ class _aarray : value {
 
   var dom : _adomain(2);
 
-  var info : _fdata(_aarray_info);
+  var info : _ddata(_aarray_info) = _ddata(_aarray_info, 16);
   var size : integer;
-  var data : _fdata(elt_type);
+  var data : _ddata(elt_type) = _ddata(elt_type, 16);
 
   function myinit() {
-    info(rank-1)._off = dom.info(rank-1)._low;
-    info(rank-1)._blk = 1;
+    var dtmp : _adomain_info = dom.info(rank-1);
+    var tmp : _aarray_info;
+    tmp._off = dtmp._low;
+    tmp._blk = 1;
+    info(rank-1) = tmp;
     var i : integer = rank-2;
     while i >= 0 {
-      info(i)._off = dom.info(i)._low;
-      info(i)._blk = info(i+1)._blk *
-        ((dom.info(i+1)._high - dom.info(i+1)._low + 1) / dom.info(i+1)._stride);
+      var dtmp2 : _adomain_info = dom.info(i);
+      tmp._off = dtmp2._low;
+      var dtmp3 : _adomain_info = dom.info(i+1);
+      var tmp2 = info(i+1);
+      var tmp4 : _aarray_info;
+      tmp4._blk = tmp2._blk * ((dtmp3._high - dtmp3._low + 1) / dtmp3._stride);
+      info(i) = tmp4;
       i -= 1;
     }
-    size = info(0)._blk *
-      ((dom.info(1)._high - dom.info(1)._low + 1) / dom.info(1)._stride);
+    var dtmp4 : _adomain_info = dom.info(1);
+    var tmp3 = info(0);
+    size = tmp3._blk * ((dtmp4._high - dtmp4._low + 1) / dtmp4._stride);
   }
 
-  function this(i : integer, j : integer) var : elt_type
-    return data((i - info(0)._off) * info(0)._blk +
-                (j - info(1)._off) * info(1)._blk);
+  function this(i : integer, j : integer) var : elt_type {
+    var ind : integer = (i - info(0)._off) * info(0)._blk +
+                        (j - info(1)._off) * info(1)._blk;
+    return data(ind);
+  }
 
 }

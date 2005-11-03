@@ -1,7 +1,7 @@
 var s : integer = 10;
 --writeln("Enter table size");
 --read(s);
-var table : _fdata(integer) = _fdata(integer, s);
+var table : _ddata(integer) = _ddata(integer, s);
 
 for i in 1..s {
   if (table(i-1) == 0) {
