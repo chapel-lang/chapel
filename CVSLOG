@@ -49669,3 +49669,17 @@ Modified files:
 	chapel/compiler/analysis/: chapel_ifa.cpp 
 	chapel/modules/standard/: prelude.chpl 
 
+---------------------------------------------------------------------------
+
+11/03/05 07:27:01 -- jplevyak
+
+Log message:
+	Fixup line numbers related to changes in prelude.
+
+Modified files:
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
