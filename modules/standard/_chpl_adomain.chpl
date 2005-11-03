@@ -82,7 +82,7 @@ class _aarray : value {
 
   var info : _ddata(_aarray_info) = _ddata(_aarray_info, 16);
   var size : integer;
-  var data : _ddata(elt_type) = _ddata(elt_type, 16);
+  var data : _ddata(elt_type) = _ddata(elt_type, 128);
 
   function myinit() {
     var dtmp : _adomain_info = dom.info(rank-1);
@@ -113,3 +113,9 @@ class _aarray : value {
   }
 
 }
+
+function fwrite(f : file, x : _aarray) {
+  halt("Cannot write out arrays yet");
+}
+
+var _hack_x = (1, 2);
