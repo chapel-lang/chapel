@@ -49586,3 +49586,29 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: preAnalysisHacks.cpp 
 
+---------------------------------------------------------------------------
+
+11/02/05 16:03:18 -- deitz
+
+Log message:
+	Replaced usage of fake data class in homogeneous tuples, domains, and
+	arrays with use of real data class (renamed _ddata to suggest that
+	this is the dynamic data block class used for 1D vectors).  John, I
+	added a pragma "data block" to the field _elt to indicate that it is
+	storing a block of elements rather than just one.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_htuple.chpl 
+	                          prelude.chpl 
+	chapel/test/arrays/deitz/: new_class_trial1.chpl 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/domains/roxana/helper/: test_hash_table2.chpl 
+	                                    test_hash_table3.chpl 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+	                                         test_datablock3.chpl 
+
