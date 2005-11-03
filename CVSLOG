@@ -49624,3 +49624,36 @@ Added files:
 	chapel/test/arrays/deitz/: test_array_2Dc.chpl 
 	                           test_array_2Dc.good 
 
+---------------------------------------------------------------------------
+
+11/02/05 16:41:51 -- deitz
+
+Log message:
+	Removed the future for jacobi.chpl!!
+	
+	Increased the size of arrays so that they can now hold up to 128
+	elements.
+	
+	Added a write function for arrays that currently prints an error.
+	
+	Changed the domain initialization syntax in the jacobi test case so
+	that instead of writing:
+	
+	  var BigR : domain(2) = (0..n+1, 0..n+1);
+	
+	we write
+	
+	  var BigR : domain(2) = [0..n+1, 0..n+1];
+	
+	which is not the mandatory way of initializing domains.  That is the
+	only change I made to this test.
+	
+	Note that arrays are still limited to 2D but we're in position to
+	change this whenever the mood strikes.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	chapel/test/arrays/deitz/: jacobi.chpl 
+Removed files:
+	chapel/test/arrays/deitz/: jacobi.future 
+
