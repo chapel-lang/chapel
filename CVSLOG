@@ -49657,3 +49657,15 @@ Modified files:
 Removed files:
 	chapel/test/arrays/deitz/: jacobi.future 
 
+---------------------------------------------------------------------------
+
+11/02/05 17:42:53 -- jplevyak
+
+Log message:
+	Remove (dead) Index type.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/modules/standard/: prelude.chpl 
+
