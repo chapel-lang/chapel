@@ -49724,3 +49724,18 @@ Added files:
 	                         fwriteIntFailed.txt invalidMode.chpl 
 	                         invalidMode.good 
 
+---------------------------------------------------------------------------
+
+11/04/05 16:58:37 -- deitz
+
+Log message:
+	Changed how strings are copied so that we always malloc new memory
+	rather than trying to realloc it sometimes.  This introduces more
+	memory leaks in the runtime pertaining to strings.  There were already
+	memory leaks with strings declared within functions.
+	
+	This fixes the valgrind regressions.
+
+Modified files:
+	chapel/runtime/src/: chpltypes.c 
+
