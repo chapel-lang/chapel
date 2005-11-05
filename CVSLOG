@@ -49751,3 +49751,13 @@ Modified files:
 	chapel/compiler/passes/: buildDefaultFunctions.cpp 
 	                         functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+11/04/05 17:23:24 -- deitz
+
+Log message:
+	Fixed minor bug in -b function resolution code.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+
