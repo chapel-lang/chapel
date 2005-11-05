@@ -37,32 +37,34 @@ pragma "rename fopen" function _fopen(filename, mode : string) : CFILEPTR {
   return CFILEPTR();
 }
 
-pragma "rename fclose" function _fclose(fp : CFILEPTR);
+pragma "rename fclose" function _fclose(fp : CFILEPTR) : integer;
 
+const errno: integer;
+function strerror(errno: integer) : string {
+  return "";
+}
+
+pragma "rename _chpl_write_linefeed" function writeln() : void {
+         __primitive("writeln");
+}
 
 function fprintf(fp: CFILEPTR, fmt: string, val) : integer {
          __primitive("write", val);
 }
 
+function fscanf(fp: CFILEPTR, fmt: string, inout val) : integer {
+         __primitive("read", val);
+}
+
 function _chpl_fwrite_float_help(f: CFILEPTR, val: float) : void {
          __primitive("write", val);
 }
-pragma "rename _chpl_write_linefeed" function writeln() : void {
-         __primitive("writeln");
+
+function _chpl_fread_string_help(f: CFILEPTR, inout val: string) : void {
+         __primitive("read", val);
 }
-pragma "rename _chpl_read_boolean" function read(inout x : boolean) : void {
-         __primitive("read", x);
-}
-pragma "rename _chpl_read_integer" function read(inout x : integer) : void {
-         __primitive("read", x);
-}
-pragma "rename _chpl_read_float" function read(inout x : float) : void {
-         __primitive("read", x);
-}
+
 pragma "rename _chpl_read_complex" function read(inout x : complex) : void {
-         __primitive("read", x);
-}
-pragma "rename _chpl_read_string" function read(inout x : string) : void {
          __primitive("read", x);
 }
 

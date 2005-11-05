@@ -17,7 +17,7 @@ class file {
     fp = _fopen(fullFilename, mode);            
 
     if (fp == _NULLCFILEPTR) {
-      halt("Unable to open \"", fullFilename, "\".");
+      halt("Unable to open \"", fullFilename, "\": ", strerror(errno));
     }
   }
 
@@ -38,8 +38,11 @@ class file {
       var fullFilename = path + "/" + filename;
       halt("Trying to close \"", fullFilename, "\" which isn't open.");
     }
-
-    _fclose(fp);
+    var returnVal: integer = _fclose(fp);
+    if (returnVal < 0) {
+      var fullFilename = path + "/" + filename;
+      halt("The close of \"", fullFilename, "\" failed: ", strerror(errno));
+    }
     fp = _NULLCFILEPTR;
   }
 }
@@ -48,18 +51,51 @@ const stdin  : file = file("stdin", "r", "/dev", _STDINCFILEPTR);
 const stdout : file = file("stdout", "w", "/dev", _STDOUTCFILEPTR);
 const stderr : file = file("stderr", "w", "/dev", _STDERRCFILEPTR);
 
-function fopenError(f: file) {
+
+function fopenError(f: file, isRead: boolean) {
   var fullFilename:string = f.path + "/" + f.filename;
-  halt("You must open \"", fullFilename, "\" before writing to it.");    
+  if (isRead) {
+    halt("You must open \"", fullFilename, "\" before trying to read from it.");
+  } else {
+    halt("You must open \"", fullFilename, "\" before trying to write to it.");
+  }
+}
+
+
+function fprintfError() {
+  halt("Write failed: ", strerror(errno));
+}
+
+
+function fscanfError() {
+  halt("Read failed: ", strerror(errno));
 }
 
 
 pragma "rename _chpl_fwriteln"
 function fwriteln(f: file = stdout) {
   if (f.isOpen) {
-    fprintf(f.fp, "%s", "\n");
+    var returnVal: integer = fprintf(f.fp, "%s", "\n");
+    if (returnVal < 0) {
+      fprintfError();
+    } 
   } else {
-    fopenError(f);
+    fopenError(f, isRead = false);
+  }
+}
+
+
+pragma "rename _chpl_fread_integer" 
+function fread(f: file = stdin, inout val: integer) {
+  if (f.isOpen) {
+    var returnVal: integer = fscanf(f.fp, "%lld", val);
+    if (returnVal < 0) {
+      fscanfError();
+    } else if (returnVal == 0) {
+      halt("No integer was read.");
+    }
+  } else {
+    fopenError(f, isRead = true);
   }
 }
 
@@ -67,9 +103,29 @@ function fwriteln(f: file = stdout) {
 pragma "rename _chpl_fwrite_integer"
 function fwrite(f: file = stdout, val: integer) {
   if (f.isOpen) {
-    fprintf(f.fp, "%lld", val);
+    var returnVal: integer = fprintf(f.fp, "%lld", val);
+    if (returnVal < 0) {
+      fprintfError();
+    } else if (returnVal == 0) {
+      halt("No integer was written.");
+    }
   } else {
-    fopenError(f);
+    fopenError(f, isRead = false);
+  }
+}
+
+
+pragma "rename _chpl_fread_float"
+function fread(f: file = stdin, inout val: float) {
+  if (f.isOpen) {
+    var returnVal: integer = fscanf(f.fp, "%lg", val);
+    if (returnVal < 0) {
+      fscanfError();
+    } else if (returnVal == 0) {
+      halt("No float was read.");
+    }
+  } else {
+    fopenError(f, isRead = true);
   }
 }
 
@@ -79,7 +135,17 @@ function fwrite(f: file = stdout, val: float) {
   if (f.isOpen) {
      _chpl_fwrite_float_help(f.fp, val);
   } else {
-    fopenError(f);
+    fopenError(f, isRead = false);
+  }
+}
+
+
+pragma "rename _chpl_fread_string"
+function fread(f: file = stdin, inout val: string) {
+  if (f.isOpen) {
+    _chpl_fread_string_help(f.fp, val);
+  } else {
+    fopenError(f, isRead = true);
   }
 }
 
@@ -87,9 +153,30 @@ function fwrite(f: file = stdout, val: float) {
 pragma "rename _chpl_fwrite_string"
 function fwrite(f: file = stdout, val: string) {
   if (f.isOpen) {
-    fprintf(f.fp, "%s", val);
+    var returnVal: integer = fprintf(f.fp, "%s", val);
+    if (returnVal < 0) {
+      fprintfError();
+    } 
   } else {
-    fopenError(f);
+    fopenError(f, isRead = false);
+  }
+}
+
+
+pragma "rename _chpl_fread_boolean" 
+function fread(f: file = stdin, inout val: boolean) {
+  if (f.isOpen) {
+    var valString : string;
+    _chpl_fread_string_help(f.fp, valString);
+    if (valString == "true") {
+      val = true;
+    } else if (valString == "false") {
+      val = false;
+    } else {
+      halt("Not of boolean type.");
+    }
+  } else {
+    fopenError(f, isRead = true);
   }
 }
 
@@ -97,13 +184,17 @@ function fwrite(f: file = stdout, val: string) {
 pragma "rename _chpl_fwrite_boolean"
 function fwrite(f: file = stdout, val: boolean) {
   if (f.isOpen) {
+    var returnVal: integer;
     if (val == true) {
-      fprintf(f.fp, "%s", "true");
+      returnVal = fprintf(f.fp, "%s", "true");
     } else {
-      fprintf(f.fp, "%s", "false");
+      returnVal = fprintf(f.fp, "%s", "false");
+    }
+    if (returnVal < 0) { 
+      fprintfError();
     }
   } else {
-    fopenError(f);
+    fopenError(f, isRead = false);
   }
 }
 
@@ -111,9 +202,12 @@ function fwrite(f: file = stdout, val: boolean) {
 pragma "rename _chpl_fwrite_nil" 
 function fwrite(f: file = stdout, x : _nilType) : void {
   if (f.isOpen) {
-    fprintf(f.fp, "%s", "nil");
+    var returnVal: integer = fprintf(f.fp, "%s", "nil");
+    if (returnVal < 0) {
+      fprintfError();
+    }
   } else {
-    fopenError(f);
+    fopenError(f, isRead = false);
   }
 }
 

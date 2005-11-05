@@ -1,4 +1,5 @@
 _test_fwrite*.txt
+_test_fread*.txt
 output
 OUTPUT
 *.tmp

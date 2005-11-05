@@ -1,6 +1,7 @@
 #ifndef _stdchpl_H_
 #define _stdchpl_H_
 
+#include <errno.h>
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>

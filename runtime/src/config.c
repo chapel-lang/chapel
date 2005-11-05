@@ -441,7 +441,17 @@ int setInCommandLine_boolean(char* varName, _boolean* value,
   char* setValue = lookupSetValue(varName, moduleName);
 
   if (setValue) {
-    int validBoolean = _string_to_boolean(setValue, value);
+    int validBoolean = 0;
+    if (setValue) {
+      if (strcmp(setValue, "true") == 0) {
+        *value = true;
+        validBoolean = 1;
+      } else if (strcmp(setValue, "false") == 0) {
+        *value = false;
+        validBoolean = 1;
+      }
+    }
+
     if (validBoolean) {
       varSet = 1;
     } else {

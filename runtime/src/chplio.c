@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,67 +19,53 @@ void initChplio(void) {
   _STDERRCFILEPTR = stderr;  
 }
 
-int _string_to_boolean(char* valueString, _boolean* val) {
-  int validBoolean = 0;
 
-  if (valueString) {
-    if (strcmp(valueString, "true") == 0) {
-      *val = true;
-      validBoolean = 1;
-    } else if (strcmp(valueString, "false") == 0){
-      *val = false;
-      validBoolean = 1;
-    }
-  }
-  return validBoolean;
+static void printfError(void) {
+  char* message = _glom_strings(2, "Write failed: ", strerror(errno));
+  printError(message);
+}
+
+
+static void scanfError(void) {
+  char* message = _glom_strings(2, "Read failed: ", strerror(errno));
+  printError(message);
 }
 
 
 void _chpl_fwrite_float_help(FILE* fp, _float64 val) {
   const int floatBuffLen = 1024;
   char buff[floatBuffLen];
-  sprintf(buff, "%g", val);
+  int returnVal = 0;
+  returnVal = sprintf(buff, "%g", val);
+  if (returnVal < 0) {
+    printfError();
+  }
   if (strlen(buff) > floatBuffLen-1) {
     fprintf(stderr, "Error: float I/O buffer overrun\n");
     exit(1);
   }
   if (strchr(buff, '.') == NULL && strchr(buff, 'e') == NULL) {
-    fprintf(fp, "%s.0", buff);
+    returnVal = fprintf(fp, "%s.0", buff);
+    if (returnVal < 0) {
+      printfError();
+    }
   } else {
-    fprintf(fp, "%s", buff);
+    returnVal = fprintf(fp, "%s", buff);
+    if (returnVal < 0) {
+      printfError();
+    }
   }
 }
 
-void _chpl_write_linefeed(void) {
-  printf("\n");
-}
 
-void _chpl_read_boolean(_boolean* val) {
-  char* inputString = NULL;
-  int validBoolean = 0;
-
-  _chpl_read_string(&inputString);
-  validBoolean = _string_to_boolean(inputString, val);
-
-  if (!validBoolean) {
-    char* message = "Not of boolean type";
-    printError(message);
-  }
-}
-
-void _chpl_read_integer(_integer64* val) {
-  scanf("%lld", val);
-}
-
-void _chpl_read_float(_float64* val) {
-  scanf("%lg", val);
-}
-
-void _chpl_read_string(_string* val) {
+void _chpl_fread_string_help(FILE* fp, _string* val) {
   char localVal[_default_string_length];
   char dsl[1024];
-
-  scanf("%255s", localVal);
+  int returnVal = 0;
+  returnVal = fscanf(fp, "%255s", localVal);
+  if (returnVal < 0) {
+    scanfError();
+  }
   if (strlen(localVal) == (_default_string_length - 1)) {
     sprintf(dsl, "%d", _default_string_length);
     char* message = _glom_strings(2, "The maximum string length is ", dsl);

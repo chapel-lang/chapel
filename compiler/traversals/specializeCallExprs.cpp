@@ -99,6 +99,10 @@ void SpecializeCallExprs::postProcessStmt(Stmt* stmt) {
           Stmt* assertIfStmt = new CondStmt(notTest, thenStmt);
           call->parentStmt->insertBefore(assertIfStmt);
           call->parentStmt->remove();          
+        } else if (strcmp(baseVar->var->name, "fread") == 0) {
+          Expr* outfile = call->argList->popHead();
+          decomposeFileIOCall(call, "fread", outfile);
+          call->parentStmt->remove();
         } else if (strcmp(baseVar->var->name, "fwrite") == 0) {
           Expr* outfile = call->argList->popHead();
           decomposeFileIOCall(call, "fwrite", outfile);
