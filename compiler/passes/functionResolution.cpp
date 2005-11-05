@@ -77,7 +77,6 @@ add_candidate(Map<FnSymbol*,Vec<ArgSymbol*>*>* af_maps,
           fa_map.v[j] = actual;
           break;
         }
-        j++;
       }
       if (!match)
         return;
