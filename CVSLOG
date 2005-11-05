@@ -49683,3 +49683,44 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+11/04/05 16:18:30 -- shannon
+
+Log message:
+	Improved error reporting with the addition of the 'strerror'
+	function.  Added the fread function for integers, floats, strings,
+	and booleans, as well as a bunch of tests.  Updated the expected
+	output of some tests.
+
+Modified files:
+	chapel/compiler/traversals/: specializeCallExprs.cpp 
+	chapel/modules/standard/: _chpl_file.chpl prelude.chpl 
+	chapel/runtime/include/: chplio.h stdchpl.h 
+	chapel/runtime/src/: chplio.c config.c 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/types/file/: .cvsignore fwriteIntUnopenedFile.good 
+	                         unableToOpenFile.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+Added files:
+	chapel/test/types/file/: freadBoolean.chpl freadBoolean.good 
+	                         freadBoolean.txt freadIntFailed.chpl 
+	                         freadIntFailed.good freadIntFloat.chpl 
+	                         freadIntFloat.good freadIntFloat.txt 
+	                         freadIntUnopenedFile.chpl 
+	                         freadIntUnopenedFile.good 
+	                         freadNoFloat.chpl freadNoFloat.good 
+	                         freadNoFloat.txt freadNoInt.chpl 
+	                         freadNoInt.good freadNoInt.txt 
+	                         freadNotABoolean.chpl 
+	                         freadNotABoolean.good 
+	                         freadNotABoolean.txt freadString.chpl 
+	                         freadString.good freadString.txt 
+	                         fwriteIntFailed.chpl 
+	                         fwriteIntFailed.good 
+	                         fwriteIntFailed.txt invalidMode.chpl 
+	                         invalidMode.good 
+
