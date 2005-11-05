@@ -301,7 +301,10 @@ static void build_getter(ClassType* ct, Symbol *field) {
   fn->retType = field->type;
   fn->formals = new AList<DefExpr>();
   fn->body = new BlockStmt(new ReturnStmt(new SymExpr(field->name)));
-  ct->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(new DefExpr(fn)));
+  DefExpr* def = new DefExpr(fn);
+  if (no_infer && field->defPoint->exprType)
+    def->exprType = field->defPoint->exprType->copy();
+  ct->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def));
   reset_file_info(fn, field->lineno, field->filename);
   ct->methods.add(fn);
   fn->method_type = PRIMARY_METHOD;

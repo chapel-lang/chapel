@@ -5,25 +5,25 @@
 #include "symtab.h"
 #include "stringutil.h"
 
-bool is_strict_sub_dispatch(Type* sub, Type* type) {
-  if (sub != dtAny && type == dtAny)
+bool can_dispatch_ne(Type* actualType, Type* formalType) {
+  if (actualType != dtAny && formalType == dtAny)
     return true;
-  if ((type == dtNumeric && sub == dtBoolean) ||
-      (type == dtNumeric && sub == dtInteger) ||
-      (type == dtNumeric && sub == dtFloat))
+  if ((formalType == dtNumeric && actualType == dtBoolean) ||
+      (formalType == dtNumeric && actualType == dtInteger) ||
+      (formalType == dtNumeric && actualType == dtFloat))
     return true;
-  if ((type == dtFloat && sub == dtInteger) ||
-      (type == dtInteger && sub == dtBoolean))
+  if ((formalType == dtFloat && actualType == dtInteger) ||
+      (formalType == dtInteger && actualType == dtBoolean))
     return true; // need coercion wrapper
-  forv_Vec(Type, parent, sub->dispatchParents) {
-    if (parent == type || is_strict_sub_dispatch(parent, type))
+  forv_Vec(Type, parent, actualType->dispatchParents) {
+    if (parent == formalType || can_dispatch_ne(parent, formalType))
       return true;
   }
   return false;
 }
 
-bool is_sub_dispatch(Type* sub, Type* type) {
-  return (sub == type) || is_strict_sub_dispatch(sub, type);
+bool can_dispatch(Type* actualType, Type* formalType) {
+  return (actualType == formalType) || can_dispatch_ne(actualType, formalType);
 }
 
 Vec<FnSymbol*> fns; // live functions list
@@ -41,22 +41,107 @@ class ResolveCalls : public Traversal {
 };
 
 bool actual_formal_match(Expr* actual, ArgSymbol* formal) {
-  if (formal->isGeneric &&
-      dynamic_cast<TypeSymbol*>(formal->genericSymbol)) {
-    if (SymExpr* symExpr = dynamic_cast<SymExpr*>(actual)) {
-      if (/*TypeSymbol* ts =*/ dynamic_cast<TypeSymbol*>(symExpr->var)) {
-        return true; // need to instantiate
-      }
-    }
-  }
-  if (is_sub_dispatch(actual->typeInfo(), formal->type)) {
+  if (formal->intent == INTENT_TYPE ||
+      formal->type == dtUnknown)
     return true;
-  }
-  if (formal->type == dtUnknown) {
-    return true; // need to clone
-  }
+  if (NamedExpr* named = dynamic_cast<NamedExpr*>(actual))
+    actual = named->actual;
+  if (can_dispatch(actual->typeInfo(), formal->type))
+    return true;
   return false;
 }
+
+
+// Return actual-formal map if FnSymbol is viable candidate to call
+static void
+add_candidate(Map<FnSymbol*,Vec<ArgSymbol*>*>* af_maps,
+              CallExpr* call, FnSymbol* fn, bool inst = false) {
+  Vec<ArgSymbol*>* af_map = new Vec<ArgSymbol*>();
+  Vec<Expr*> fa_map;
+  for_alist(DefExpr, formalDef, fn->formals)
+    fa_map.add(NULL);
+  for_alist(Expr, actual, call->argList)
+    af_map->add(NULL);
+  int i = -1;
+  for_alist(Expr, actual, call->argList) {
+    i++;
+    if (NamedExpr* named = dynamic_cast<NamedExpr*>(actual)) {
+      bool match = false;
+      int j = -1;
+      for_alist(DefExpr, formalDef, fn->formals) {
+        ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
+        j++;
+        if (!strcmp(named->name, formalDef->sym->name)) {
+          match = true;
+          af_map->v[i] = formal;
+          fa_map.v[j] = actual;
+          break;
+        }
+        j++;
+      }
+      if (!match)
+        return;
+    }
+  }
+  i = -1;
+  for_alist(Expr, actual, call->argList) {
+    i++;
+    if (!dynamic_cast<NamedExpr*>(actual)) {
+      int j = -1;
+      bool match = false;
+      for_alist(DefExpr, formalDef, fn->formals) {
+        ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
+        j++;
+        if (!fa_map.v[j]) {
+          af_map->v[i] = formal;
+          fa_map.v[j] = actual;
+          match = true;
+          break;
+        }
+      }
+      if (!match)
+        return;
+    }
+  }
+
+  if (!inst) {
+    ASTMap subs;
+    int j = -1;
+    for_alist(DefExpr, formalDef, fn->formals) {
+      ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
+      j++;
+      if (formal->intent == INTENT_TYPE) {
+        Expr* actual = fa_map.v[j];
+        if (NamedExpr* named = dynamic_cast<NamedExpr*>(actual))
+          actual = named->actual;
+        TypeSymbol* ts = dynamic_cast<TypeSymbol*>(formal->genericSymbol);
+        if (!ts)
+          INT_FATAL(formalDef, "Unanticipated genericSymbol");
+        subs.put(ts->definition, actual->typeInfo());
+      }
+    }
+    if (subs.n) {
+      Vec<FnSymbol*> inst_fns;
+      Vec<TypeSymbol*> inst_ts;
+      FnSymbol* inst_fn = fn->instantiate_generic(&subs, &inst_fns, &inst_ts);
+      newFns.set_add(inst_fn);
+      add_candidate(af_maps, call, inst_fn, true);
+      return;
+    }
+  }
+
+  int j = -1;
+  for_alist(DefExpr, formalDef, fn->formals) {
+    ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
+    j++;
+    if (fa_map.v[j] && !actual_formal_match(fa_map.v[j], formal))
+      return;
+    if (!fa_map.v[j] && !formalDef->init)
+      return;
+  }
+  af_maps->put(fn, af_map);
+}
+                          
 
 void resolve_call(CallExpr* call) {
   SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr);
@@ -70,6 +155,15 @@ void resolve_call(CallExpr* call) {
   if (FnSymbol* fn = dynamic_cast<FnSymbol*>(base->var)) {
     resolve_function(fn);
     return; // return if already resolved
+  }
+
+  if (dynamic_cast<VarSymbol*>(base->var) ||
+      dynamic_cast<ArgSymbol*>(base->var)) {
+    CallExpr* newCall = new CallExpr("this", call->baseExpr->copy(),
+                                     call->argList->copy());
+    call->replace(newCall);
+    call = newCall;
+    base = dynamic_cast<SymExpr*>(call->baseExpr);
   }
 
   Vec<FnSymbol*> visibleFns; // visible function candidates
@@ -86,84 +180,7 @@ void resolve_call(CallExpr* call) {
   forv_Vec(FnSymbol, visibleFn, visibleFns) {
     if (!visibleFn)
       continue;
-    bool match = true;
-    Vec<ArgSymbol*>* af_map = new Vec<ArgSymbol*>();
-    Vec<Expr*> fa_map;
-    for_alist(DefExpr, formalDef, visibleFn->formals) {
-      fa_map.add(NULL);
-    }
-    for_alist(Expr, actual, call->argList) {
-      af_map->add(NULL);
-    }
-    int i = 0;
-    for_alist(Expr, actual, call->argList) {
-      if (NamedExpr* named = dynamic_cast<NamedExpr*>(actual)) {
-        bool name_match = false;
-        int j = 0;
-        for_alist(DefExpr, formalDef, visibleFn->formals) {
-          ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
-          if (!strcmp(named->name, formalDef->sym->name)) {
-            if (actual_formal_match(named->actual, formal)) {
-              name_match = true;
-              af_map->v[i] = formal;
-              fa_map.v[j] = actual;
-              break;
-            }
-          }
-          j++;
-        }
-        if (!name_match)
-          match = false;
-      }
-      i++;
-    }
-    if (!match)
-      continue;
-    i = 0;
-    for_alist(Expr, actual, call->argList) {
-      if (!dynamic_cast<NamedExpr*>(actual)) {
-        bool actual_match = false;
-        int j = -1;
-        for_alist(DefExpr, formalDef, visibleFn->formals) {
-          j++;
-          if (fa_map.v[j])
-            continue;
-          ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
-          if (actual_formal_match(actual, formal)) {
-            af_map->v[i] = formal;
-            fa_map.v[j] = actual;
-            actual_match = true;
-            break;
-          } else if (formalDef->init) {
-            // to be like current resolution
-            break;
-            // the above makes it necessary to use named parameters
-            // in order to use default values before actuals
-            // i.e. remove the above break and look at 
-            //  functions/deitz/default/test_default3.chpl
-            // Removing this break allows us to use a default value
-            // for a formal and move on to looking at the next formal
-            // possibly result in more ambiguities.
-            fa_map.v[i] = formalDef->init;
-          } else {
-            break;
-          }
-        }
-        if (!actual_match) {
-          match = false;
-          break;
-        }
-      }
-      i++;
-    }
-    int j = -1;
-    for_alist(DefExpr, formalDef, visibleFn->formals) {
-      j++;
-      if (!fa_map.v[j] && !formalDef->init)
-        match = false;
-    }
-    if (match)
-      af_maps.put(visibleFn, af_map);
+    add_candidate(&af_maps, call, visibleFn);
   }
 
   if (af_maps.n > 1) { // remove strictly worse matches
@@ -189,10 +206,13 @@ void resolve_call(CallExpr* call) {
         for_alist(Expr, actual, call->argList) {
           ArgSymbol* i_formal = af_maps.v[i].value->v[k];
           ArgSymbol* j_formal = af_maps.v[j].value->v[k];
-          if (is_strict_sub_dispatch(j_formal->type, i_formal->type))
-            j_better = true;
-          if (is_strict_sub_dispatch(i_formal->type, j_formal->type))
-            j_worse = true;
+          if (i_formal->intent != INTENT_TYPE &&
+              j_formal->intent != INTENT_TYPE) {
+            if (can_dispatch_ne(j_formal->type, i_formal->type))
+              j_better = true;
+            if (can_dispatch_ne(i_formal->type, j_formal->type))
+              j_worse = true;
+          }
           k++;
         }
 
@@ -281,13 +301,16 @@ void resolve_call(CallExpr* call) {
 
   // build coercion wrapper
   // NEED TO WRITE
-
-
-
   base->var = best;
   resolve_function(best);
   if (call->opTag != OP_NONE && !best->hasPragma("builtin"))
     call->opTag = OP_NONE;
+
+  if (DefExpr* def = dynamic_cast<DefExpr*>(call->parentExpr)) {
+    if (def->exprType == call) {
+      def->sym->type = best->retType;
+    }
+  }
 }
 
 void resolve_function(FnSymbol* fn) {
