@@ -152,13 +152,12 @@ void Symbol::traverseDefSymbol(Traversal* traversal) {
 
 
 bool Symbol::isConst(void) {
-  return true;
+  return false;
 }
 
 
-//Roxana: not all symbols are parameter symbols
 bool Symbol::isParam(){
-        return false;
+  return false;
 }
 
 
@@ -559,6 +558,8 @@ TypeSymbol* TypeSymbol::clone(ASTMap* map) {
   clone->cname = stringcat("_clone_", clone->cname);
   defPoint->parentStmt->insertBefore(new ExprStmt(new DefExpr(clone)));
   clone->addPragmas(&pragmas);
+  if (no_infer)
+    newClass->dispatchParents.copy(originalClass->dispatchParents);
   return clone;
 }
 

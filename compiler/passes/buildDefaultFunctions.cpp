@@ -250,11 +250,17 @@ finishConstructor(FnSymbol* fn) {
   Expr* alloc_rhs = new CallExpr(Symboltable::lookupInternal("_chpl_alloc"),
                                  ct->symbol,
                                  new_StringLiteral(description));
+  CallExpr* alloc_expr = new CallExpr(OP_GETSNORM, fn->_this, alloc_rhs);
+  if (no_infer) {
+    alloc_expr->baseExpr = new SymExpr("_move");
+    alloc_expr->opTag = OP_NONE;
+  }
+  Stmt* alloc_stmt = new ExprStmt(alloc_expr);
 
   AList<Stmt>* stmts = new AList<Stmt>();
 
   stmts->insertAtTail(new ExprStmt(new DefExpr(fn->_this)));
-  stmts->insertAtTail(new ExprStmt(new CallExpr(OP_GETSNORM, fn->_this, alloc_rhs)));
+  stmts->insertAtTail(alloc_stmt);
   stmts->insertAtTail(new ExprStmt(new CallExpr(ct->initFn, Symboltable::lookupInternal("_methodToken"), fn->_this)));
 
   // assign formals to fields by name

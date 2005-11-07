@@ -118,4 +118,4 @@ function fwrite(f : file, x : _aarray) {
   halt("Cannot write out arrays yet");
 }
 
-var _hack_x = (1, 2);
+var _hack_x : (integer, integer) = (1, 2);

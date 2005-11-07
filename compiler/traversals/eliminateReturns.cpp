@@ -29,6 +29,9 @@ void EliminateReturns::preProcessStmt(Stmt* stmt) {
      //    fprintf(stderr, "\n\n\nFound a return statement: ");
     //    retStmt->println(stderr);
     FnSymbol* fnSym = retStmt->parentFunction();
+
+    if (fnSym->fnClass == FN_CONSTRUCTOR)
+      return;
        
     if (retExpr == NULL) {
       //replace all returns except the last one in a function with a goto

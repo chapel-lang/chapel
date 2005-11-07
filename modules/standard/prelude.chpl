@@ -285,6 +285,8 @@ pragma "builtin" function **(a : numeric, b : numeric) { return __primitive(a, "
 pragma "builtin" function ==(a : object, b : object) { return __primitive("ptr_eq", a, b); }
 pragma "builtin" function !=(a : object, b : object) { return __primitive("ptr_neq", a, b); }
 
+pragma "builtin" function _move(a : any, b : any);
+
 pragma "builtin" function -=() {}
 pragma "builtin" function +=() {}
 pragma "builtin" function *=() {}

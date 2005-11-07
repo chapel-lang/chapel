@@ -107,7 +107,7 @@ void ApplyGettersSetters::run(Vec<ModuleSymbol*>* modules) {
   Vec<FnSymbol*> fns;
   collect_functions(&fns);
   forv_Vec(FnSymbol, fn, fns) {
-    if (!(fn->_setter || fn->_getter || fn->fnClass == FN_CONSTRUCTOR)) {
+    if (!(fn->_setter || fn->_getter || (!no_infer && fn->fnClass == FN_CONSTRUCTOR))) {
       apply_getters_setters(fn->body);
     }
   }

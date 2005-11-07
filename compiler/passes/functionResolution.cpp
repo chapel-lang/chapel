@@ -5,8 +5,11 @@
 #include "symtab.h"
 #include "stringutil.h"
 
+bool can_dispatch(Type* actualType, Type* formalType);
 bool can_dispatch_ne(Type* actualType, Type* formalType) {
   if (actualType != dtAny && formalType == dtAny)
+    return true;
+  if (actualType == dtNil)
     return true;
   if ((formalType == dtNumeric && actualType == dtBoolean) ||
       (formalType == dtNumeric && actualType == dtInteger) ||
@@ -16,7 +19,7 @@ bool can_dispatch_ne(Type* actualType, Type* formalType) {
       (formalType == dtInteger && actualType == dtBoolean))
     return true; // need coercion wrapper
   forv_Vec(Type, parent, actualType->dispatchParents) {
-    if (parent == formalType || can_dispatch_ne(parent, formalType))
+    if (parent == formalType || can_dispatch(parent, formalType))
       return true;
   }
   return false;
@@ -144,6 +147,12 @@ add_candidate(Map<FnSymbol*,Vec<ArgSymbol*>*>* af_maps,
 
 void resolve_call(CallExpr* call) {
   SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr);
+
+  if (!strcmp(base->var->name, "_move")) {
+    call->opTag = OP_GETSNORM;
+    call->baseExpr->replace(new SymExpr("="));
+    return;
+  }
 
   if (!strcmp(base->var->name, "__primitive")) // ignore __primitive
     return;
