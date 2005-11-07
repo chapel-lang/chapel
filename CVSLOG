@@ -49773,3 +49773,41 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: specializeCallExprs.cpp 
 
+---------------------------------------------------------------------------
+
+11/07/05 14:55:15 -- deitz
+
+Log message:
+	Made default to isConst() method return false rather than true.
+	
+	Updated dispatchParents on class cloning if --no-infer is used.
+	
+	Added special _move function for non-overloaded assignment with
+	--no-infer until we have non-overloaded assignment in the compiler.
+	
+	Improved --no-infer function resolution.  It still doesn't work with
+	tuples or param instantiation, but it now works on codes
+	out-of-the-box.
+	
+	Disabled EliminateReturns on constructors.
+	
+	Fixed bugs in a few type variable class tests.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/passes/: applyGettersSetters.cpp 
+	                         buildDefaultFunctions.cpp 
+	                         functionResolution.cpp 
+	chapel/compiler/traversals/: eliminateReturns.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl prelude.chpl 
+	chapel/test/flowanalysis/newast/: sum_type-1.good 
+	                                  sum_type-2.good 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+	                                         test_typevar_class1.chpl 
+	                                         test_typevar_class2.chpl 
+	                                         test_typevar_class3.chpl 
+	                                         test_typevar_class4.chpl 
+
