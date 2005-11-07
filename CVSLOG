@@ -49761,3 +49761,15 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+11/07/05 12:55:54 -- bradc
+
+Log message:
+	Renamed local symbols named "stdout", as they were
+	causing problems for the compilation of the compiler
+	on cygwin.  Called them "chplStdout" for now instead.
+
+Modified files:
+	chapel/compiler/traversals/: specializeCallExprs.cpp 
+
