@@ -49811,3 +49811,18 @@ Modified files:
 	                                         test_typevar_class3.chpl 
 	                                         test_typevar_class4.chpl 
 
+---------------------------------------------------------------------------
+
+11/07/05 15:01:09 -- deitz
+
+Log message:
+	Added a few class with string fields tests.  I added these a while ago
+	when we were dealing with the string initialization problems.  They
+	both currently work.
+
+Added files:
+	chapel/test/classes/deitz/: test_string_field.chpl 
+	                            test_string_field.good 
+	                            test_string_field2.chpl 
+	                            test_string_field2.good 
+
