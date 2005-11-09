@@ -49826,3 +49826,14 @@ Added files:
 	                            test_string_field2.chpl 
 	                            test_string_field2.good 
 
+---------------------------------------------------------------------------
+
+11/09/05 13:44:24 -- deitz
+
+Log message:
+	Fixed error in output file.  I don't know why it was working before.
+	This output file looks wrong to me.
+
+Modified files:
+	chapel/test/domains/roxana/helper/: test_hash_table3.good 
+
