@@ -49837,3 +49837,35 @@ Log message:
 Modified files:
 	chapel/test/domains/roxana/helper/: test_hash_table3.good 
 
+---------------------------------------------------------------------------
+
+11/09/05 16:58:07 -- deitz
+
+Log message:
+	Improved effectiveness of --no-infer function resolution so that it
+	now works on the sequence test cases.
+	
+	Fixed a bug in isParam() function in which literals were not
+	considered params.
+	
+	Implemented a default wrapper cache so that multiple identical default
+	wrappers are not created.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: runtime.h symbol.h 
+	chapel/compiler/main/: runtime.cpp 
+	chapel/compiler/passes/: applyGettersSetters.cpp 
+	                         buildDefaultFunctions.cpp 
+	                         filesToAST.cpp functionResolution.cpp 
+	                         normalizeParsedAST.cpp 
+	chapel/compiler/symtab/: reconstructIterators.cpp 
+	chapel/compiler/traversals/: eliminateReturns.cpp 
+	                             findUnknownTypes.cpp 
+	                             findUnknownTypes.h 
+	                             inlineFunctions.cpp 
+	                             insertVariableInitializations.cpp 
+	                             preAnalysisHacks.cpp 
+	                             processImportExprs.cpp 
+	chapel/modules/standard/: _chpl_seq.chpl 
+
