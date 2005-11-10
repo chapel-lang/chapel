@@ -4,6 +4,9 @@
 #include "stmt.h"
 #include "symtab.h"
 #include "stringutil.h"
+#include "runtime.h"
+
+void param_compute(Expr* expr);
 
 bool can_dispatch(Type* actualType, Type* formalType);
 bool can_dispatch_ne(Type* actualType, Type* formalType) {
@@ -120,6 +123,13 @@ add_candidate(Map<FnSymbol*,Vec<ArgSymbol*>*>* af_maps,
         if (!ts)
           INT_FATAL(formalDef, "Unanticipated genericSymbol");
         subs.put(ts->definition, actual->typeInfo());
+      } else if (formal->intent == INTENT_PARAM) {
+        Expr* actual = fa_map.v[j];
+        if (NamedExpr* named = dynamic_cast<NamedExpr*>(actual))
+          actual = named->actual;
+        if (SymExpr* symExpr = dynamic_cast<SymExpr*>(actual))
+          if (symExpr->var->isParam())
+            subs.put(formal, symExpr->var);
       }
     }
     if (subs.n) {
@@ -127,6 +137,19 @@ add_candidate(Map<FnSymbol*,Vec<ArgSymbol*>*>* af_maps,
       Vec<TypeSymbol*> inst_ts;
       FnSymbol* inst_fn = fn->instantiate_generic(&subs, &inst_fns, &inst_ts);
       newFns.set_add(inst_fn);
+      if (inst_fn->whereExpr) {
+        param_compute(inst_fn->whereExpr);
+        if (SymExpr* symExpr = dynamic_cast<SymExpr*>(inst_fn->whereExpr)) {
+          VarSymbol* param = dynamic_cast<VarSymbol*>(symExpr->var);
+          if (param != chpl_true && param != chpl_false)
+            INT_FATAL(fn, "Illegal where expression");
+          if (param == chpl_false)
+            return;
+        } else {
+          INT_FATAL(fn, "Illegal where expression");
+          return;
+        }
+      }
       add_candidate(af_maps, call, inst_fn, true);
       return;
     }
@@ -146,26 +169,47 @@ add_candidate(Map<FnSymbol*,Vec<ArgSymbol*>*>* af_maps,
                           
 
 void resolve_call(CallExpr* call) {
+  if (CallExpr* partial = dynamic_cast<CallExpr*>(call->baseExpr)) {
+    if (partial->typeInfo() == dtUnknown) {
+      call->baseExpr->replace(partial->baseExpr->copy());
+      call->argList->insertAtHead(partial->argList->copy());
+    }
+  }
+
   SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr);
 
-  if (!strcmp(base->var->name, "_move")) {
+  if (base && !strcmp(base->var->name, "_move")) {
     call->opTag = OP_GETSNORM;
-    call->baseExpr->replace(new SymExpr("="));
+    if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->argList->get(1))) {
+      if (symExpr->var->type == dtUnknown)
+        symExpr->var->type = call->argList->get(2)->typeInfo();
+    }
     return;
   }
 
-  if (!strcmp(base->var->name, "__primitive")) // ignore __primitive
+  if (base && !strcmp(base->var->name, "__primitive")) // ignore __primitive
     return;
 
-  if (!strcmp(base->var->name, "_chpl_alloc")) // resolve alloc immediately
+  if (base && !strcmp(base->var->name, "_chpl_alloc")) // resolve alloc immediately
     base->var = Symboltable::lookupInternal("_chpl_alloc");
 
-  if (FnSymbol* fn = dynamic_cast<FnSymbol*>(base->var)) {
-    resolve_function(fn);
-    return; // return if already resolved
+  if (base) {
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(base->var)) {
+      resolve_function(fn);
+      if (call->opTag != OP_NONE && !fn->hasPragma("builtin"))
+        call->opTag = OP_NONE;
+      
+      if (DefExpr* def = dynamic_cast<DefExpr*>(call->parentExpr)) {
+        if (def->exprType == call) {
+          def->sym->type = fn->retType;
+        }
+      }
+      return; // return if already resolved
+    }
   }
 
-  if (dynamic_cast<VarSymbol*>(base->var) ||
+  if (!base ||
+      dynamic_cast<VarSymbol*>(base->var) ||
       dynamic_cast<ArgSymbol*>(base->var)) {
     CallExpr* newCall = new CallExpr("this", call->baseExpr->copy(),
                                      call->argList->copy());
@@ -196,7 +240,7 @@ void resolve_call(CallExpr* call) {
       if (!af_maps.v[i].key)
         continue;
       for (int j = i + 1; j < af_maps.n; j++) {
-        if (!af_maps.v[j].key)
+        if (!af_maps.v[j].key || !af_maps.v[i].key)
           continue;
         bool j_better = false;
         bool j_worse = false;
@@ -232,8 +276,14 @@ void resolve_call(CallExpr* call) {
     }
   }
 
-  if (af_maps.n == 0)
-    USR_FATAL(call, "Unresolved function call");
+  if (af_maps.n == 0) {
+    if (call->partialTag == PARTIAL_OK)
+      return;
+    else {
+      USR_FATAL(call, "Unresolved function call");
+      return;
+    }
+  }
 
   bool ambiguous = false;
   Vec<ArgSymbol*>* af_map = 0;
@@ -250,8 +300,15 @@ void resolve_call(CallExpr* call) {
     }
   }
 
-  if (ambiguous)
-    USR_FATAL(call, "Ambiguous function call");
+  if (ambiguous) {
+    USR_FATAL_CONT(call, "Ambiguous function call, candidates are:");
+    for (int i = 0; i < af_maps.n; i++)
+      USR_FATAL_CONT(af_maps.v[i].key, "%s", af_maps.v[i].key->name);
+    USR_FATAL(call, "Unable to resolve function call");
+  }
+
+  if (call->partialTag == PARTIAL_OK && !best->noParens)
+    return;
 
   // build default_wrapper
   if (best->formals->length() > call->argList->length()) {
@@ -309,6 +366,31 @@ void resolve_call(CallExpr* call) {
 
   // build coercion wrapper
   // NEED TO WRITE
+
+  // clone underspecified functions not in prelude
+  if (best->parentScope != prelude->modScope) {
+    ASTMap formal_types;
+    Expr* actual = call->argList->first();
+    for_alist(DefExpr, formalDef, best->formals) {
+      ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
+      if (formal->type == dtAny ||
+          formal->type == dtUnknown ||
+          formal->type == dtNumeric) {
+        Expr* temp = actual;
+        if (NamedExpr* named = dynamic_cast<NamedExpr*>(temp))
+          temp = named->actual;
+        if (temp->typeInfo() == dtUnknown)
+          INT_FATAL(temp, "Cannot determine type of actual");
+        formal_types.put(formal, temp->typeInfo());
+      }
+      actual = call->argList->next();
+    }
+    if (formal_types.n) {
+      best = best->clone_generic(&formal_types);
+      newFns.set_add(best);
+    }
+  }
+
   base->var = best;
   resolve_function(best);
   if (call->opTag != OP_NONE && !best->hasPragma("builtin"))
@@ -325,15 +407,29 @@ void resolve_function(FnSymbol* fn) {
   if (fns.set_in(fn))
     return;
 
+  fns.set_add(fn);
+
+  if (fn->parentScope == prelude->modScope)
+    return;
+
+  TRAVERSE(fn->formals, new ResolveCalls(), true);
+
   for_alist(DefExpr, formalDef, fn->formals) {
     ArgSymbol* arg = dynamic_cast<ArgSymbol*>(formalDef->sym);
-    if (arg->type == dtUnknown || arg->isGeneric) {
+    if (arg->type == dtUnknown ||
+        arg->type == dtAny ||
+        arg->type == dtNumeric ||
+        arg->isGeneric) {
+      INT_FATAL(fn, "Generic function should have been cloned");
       return;
     }
   }
 
-  fns.set_add(fn);
-  TRAVERSE(fn, new ResolveCalls(), true);
+  TRAVERSE(fn->defPoint, new ResolveCalls(), true);
+
+  if (fn->fnClass == FN_CONSTRUCTOR)
+    TRAVERSE(fn->typeBinding->defPoint, new ResolveCalls(), true);
+
   resolve_return_type(fn);
 }
 
@@ -378,4 +474,34 @@ void resolve_return_type(FnSymbol* fn) {
     }
   }
   fn->retType = return_type;
+}
+
+static void
+param_reduce(CallExpr* call) {
+  if (call->argList->length() != 2)
+    return;
+  SymExpr* lsym = dynamic_cast<SymExpr*>(call->argList->get(1));
+  SymExpr* rsym = dynamic_cast<SymExpr*>(call->argList->get(2));
+  if (!lsym || !rsym)
+    return;
+  if (!lsym->isParam() || !rsym->isParam())
+    return;
+  if (call->opTag == OP_EQUAL) {
+    if (lsym->var == rsym->var)
+      call->replace(new SymExpr(chpl_true));
+    else
+      call->replace(new SymExpr(chpl_false));
+  }
+}
+
+class ParamCompute : public Traversal {
+  void ParamCompute::postProcessExpr(Expr* expr) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
+      param_reduce(call);
+    }
+  }
+};
+
+void param_compute(Expr* expr) {
+  TRAVERSE(expr, new ParamCompute(), false);
 }

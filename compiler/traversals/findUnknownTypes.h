@@ -4,7 +4,7 @@
 #include "traversal.h"
 
 class RemoveTypeVariableActuals : public Traversal {
-  void preProcessExpr(Expr* expr);
+  void postProcessExpr(Expr* expr);
 };
 
 class RemoveTypeVariableFormals : public Traversal {

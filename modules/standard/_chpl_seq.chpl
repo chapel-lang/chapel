@@ -213,8 +213,8 @@ function _forall_valid(s : _aseq, e) {
   return e < s._high;
 }
 
-function by(s : _aseq, i : integer) {
-  var tmp = s;
+function by(s : _aseq, i : integer) : _aseq {
+  var tmp : _aseq = s;
   tmp._stride = tmp._stride * i;
   return tmp;
 }

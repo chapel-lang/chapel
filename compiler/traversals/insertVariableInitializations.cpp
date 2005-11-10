@@ -69,10 +69,17 @@ static void insert_basic_init(Stmt* stmt, VarSymbol* var, Type* type) {
   }
 
   if (var->defPoint->exprType) {
-    Expr* lhs = new SymExpr(var);
-    Expr* rhs = var->defPoint->exprType->copy();
-    Expr* init_expr = new CallExpr(OP_GETSNORM, lhs, rhs);
-    stmt->insertBefore(new ExprStmt(init_expr));
+    if (no_infer && type->defaultValue) {
+      Expr* lhs = new SymExpr(var);
+      Expr* rhs = new SymExpr(type->defaultValue);
+      Expr* init_expr = new CallExpr(OP_GETSNORM, lhs, rhs);
+      stmt->insertBefore(new ExprStmt(init_expr));
+    } else {
+      Expr* lhs = new SymExpr(var);
+      Expr* rhs = var->defPoint->exprType->copy();
+      Expr* init_expr = new CallExpr(OP_GETSNORM, lhs, rhs);
+      stmt->insertBefore(new ExprStmt(init_expr));
+    }
   }
 
   if (var->defPoint->init) {

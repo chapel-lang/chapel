@@ -77,6 +77,10 @@ void EliminateReturns::preProcessStmt(Stmt* stmt) {
 
     SymExpr* retVar = new SymExpr(retval);
     CallExpr* assignRetVar = new CallExpr(OP_GETSNORM, retVar, retExpr->copy());
+    if (no_infer) {
+      assignRetVar = new CallExpr("_move", new SymExpr(retval), retExpr->copy());
+      assignRetVar->opTag = OP_GETSNORM;
+    }
     ExprStmt* assignStmt = new ExprStmt(assignRetVar);
     BlockStmt *retBlock = new BlockStmt(assignStmt);
     retStmt->replace(retBlock);

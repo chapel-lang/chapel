@@ -87,11 +87,21 @@ static void construct_tuple_type(int size) {
   // Build this methods
   for (int i = 1; i <= size; i++) {
     FnSymbol* fn = new FnSymbol("this");
-    ArgSymbol* arg = new ArgSymbol(INTENT_PARAM, "index", new_LiteralType(new_IntSymbol(i)));
-    fn->formals = new AList<DefExpr>(new DefExpr(arg));
+    if (no_infer) {
+      ArgSymbol* arg = new ArgSymbol(INTENT_PARAM, "index", dtInteger);
+      fn->formals = new AList<DefExpr>(new DefExpr(arg));
+      fn->whereExpr = new CallExpr(OP_EQUAL, arg, new_IntLiteral(i));
+    } else {
+      ArgSymbol* arg = new ArgSymbol(INTENT_PARAM, "index", new_LiteralType(new_IntSymbol(i)));
+      fn->formals = new AList<DefExpr>(new DefExpr(arg));
+    }
+
     fn->retRef = true;
     fn->body = new BlockStmt(new ReturnStmt(new SymExpr(fields.v[i-1])));
-    decls->insertAtTail(new ExprStmt(new DefExpr(fn)));
+    DefExpr* def = new DefExpr(fn);
+    if (no_infer)
+      def->exprType = new SymExpr(types.v[i-1]->symbol);
+    decls->insertAtTail(new ExprStmt(def));
   }
 
   // Build tuple

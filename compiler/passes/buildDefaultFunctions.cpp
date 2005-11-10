@@ -326,8 +326,11 @@ static void build_setter(ClassType* ct, Symbol* field) {
   fn->retType = dtVoid;
 
   fn->formals = new AList<DefExpr>(new DefExpr(new ArgSymbol(INTENT_REF, "_setterTokenDummy", dtSetterToken)));
-  ArgSymbol* fieldArg = new ArgSymbol(INTENT_BLANK, "_arg", dtUnknown);
-  fn->formals->insertAtTail(new DefExpr(fieldArg));
+  ArgSymbol* fieldArg = new ArgSymbol(INTENT_BLANK, "_arg", (no_infer) ? field->type : dtUnknown);
+  DefExpr* argDef = new DefExpr(fieldArg);
+  if (no_infer && field->defPoint->exprType)
+    argDef->exprType = field->defPoint->exprType->copy();
+  fn->formals->insertAtTail(argDef);
   fn->body->insertAtTail(new ExprStmt(new CallExpr(OP_GETSNORM, field, fieldArg)));
 
   ct->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(new DefExpr(fn)));
@@ -429,6 +432,8 @@ static void build_record_assignment_function(ClassType* ct) {
     fn->typeBinding = ct->symbol;
     fn->_this = _arg1;
   }
+  if (no_infer)
+    fn->retType = ct;
 }
 
 

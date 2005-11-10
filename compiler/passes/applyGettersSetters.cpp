@@ -42,8 +42,11 @@ apply_getters_setters(BaseAST* ast) {
   //         or a CallExpr without a MemberAccess
   CallExpr *call = dynamic_cast<CallExpr*>(ast), *assign = 0;
   if (call && OP_ISASSIGNOP(call->opTag)) {
-    assign = call;
-    call = dynamic_cast<CallExpr*>(assign->get(1));
+    SymExpr* symExpr = dynamic_cast<SymExpr*>(call->baseExpr);
+    if (!symExpr || strcmp(symExpr->var->name, "_move")) {
+      assign = call;
+      call = dynamic_cast<CallExpr*>(assign->get(1));
+    }
   }
   BaseAST *base = call ? call->baseExpr : (assign ? assign->get(1) : ast);
   if (MemberAccess* memberAccess = dynamic_cast<MemberAccess*>(base)) {

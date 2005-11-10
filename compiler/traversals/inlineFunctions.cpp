@@ -58,6 +58,9 @@ void InlineFunctions::postProcessExpr(Expr* expr) {
   if (!call || call->isPrimitive() || call->opTag != OP_NONE)
     return;
 
+  if (no_infer && dynamic_cast<DefExpr*>(call->parentExpr))
+    return;
+
   FnSymbol* fn = call->findFnSymbol();
 
   if (!fn || !fn->hasPragma("inline") || fn->hasPragma("no codegen"))

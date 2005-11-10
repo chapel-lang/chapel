@@ -12,4 +12,7 @@ extern ModuleSymbol* tupleModule;
 
 extern TypeSymbol* htuple;
 
+extern VarSymbol* chpl_true;
+extern VarSymbol* chpl_false;
+
 #endif

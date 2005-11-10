@@ -24,6 +24,14 @@ void PreAnalysisHacks::postProcessStmt(Stmt* stmt) {
         new MemberAccess(
           loop->iterators->only()->copy(),
           new UnresolvedSymbol("_forall"))));
+    if (no_infer) {
+      DefExpr* index = loop->indices->only();
+      Expr* type = loop->iterators->only()->copy();
+      type = new CallExpr(new MemberAccess(type, new UnresolvedSymbol("_last")));
+      type = new CallExpr(new MemberAccess(type, new UnresolvedSymbol("_element")));
+      if (!index->exprType)
+        index->replace(new DefExpr(index->sym, NULL, type));
+    }
   }
 }
 
@@ -168,6 +176,17 @@ void PreAnalysisHacks::postProcessExpr(Expr* expr) {
                   new UnresolvedSymbol("_set")),
                 new_IntLiteral(dim), arg->copy())));
           dim++;
+        }
+      }
+    }
+  }
+
+  if (no_infer) {
+    if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
+      if (def->sym->type == dtUnknown) {
+        if (def->init && !def->exprType) {
+          def->exprType = def->init->copy();
+          fixup(def->exprType, def->init);
         }
       }
     }

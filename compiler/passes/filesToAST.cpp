@@ -54,4 +54,8 @@ void FilesToAST::run(Vec<ModuleSymbol*>* modules) {
 
   htuple = dynamic_cast<TypeSymbol*>(Symboltable::lookupInScope("_htuple", tupleModule->modScope));
 
+  chpl_true = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("true", prelude->modScope));
+
+  chpl_false = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("false", prelude->modScope));
+
 }

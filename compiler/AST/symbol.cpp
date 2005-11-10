@@ -57,6 +57,44 @@ add_icache(FnSymbol* newFn) {
 }
 /*** Instantiation Cache ^^^ ***/
 
+
+/*** Default Wrapper Cache vvv ***/
+class DWCacheItem : public gc {
+ public:
+  DWCacheItem(FnSymbol* iOldFn, FnSymbol* iNewFn, Vec<Symbol*>* iDefaults) :
+    oldFn(iOldFn), newFn(iNewFn), defaults(new Vec<Symbol*>(*iDefaults)) { }
+  FnSymbol* oldFn;
+  FnSymbol* newFn;
+  Vec<Symbol*>* defaults;
+};
+static Vec<DWCacheItem*> dwcache;
+
+static bool 
+dw_match(Vec<Symbol*>* d1, Vec<Symbol*>* d2) {
+  forv_Vec(Symbol, d, *d1)
+    if (!d2->in(d))
+      return false;
+  forv_Vec(Symbol, d, *d2)
+    if (!d1->in(d))
+      return false;
+  return true;
+}
+
+static FnSymbol*
+check_dwcache(FnSymbol* fn, Vec<Symbol*>* defaults) {
+  forv_Vec(DWCacheItem, item, dwcache)
+    if (item->oldFn == fn && dw_match(defaults, item->defaults))
+      return item->newFn;
+  return NULL;
+}
+
+static void
+add_dwcache(FnSymbol* newFn, FnSymbol* oldFn, Vec<Symbol*>* defaults) {
+  dwcache.add(new DWCacheItem(oldFn, newFn, defaults));
+}
+/*** Default Wrapper Cache ^^^ ***/
+
+
 Symbol::Symbol(astType_t astType, char* init_name, Type* init_type) :
   BaseAST(astType),
   name(init_name),
@@ -316,14 +354,14 @@ bool VarSymbol::initializable(void) {
   return false;
 }
 
-//Roxana
+
 bool VarSymbol::isConst(void) {
   return (consClass == VAR_CONST);
 }
 
-//Roxana
+
 bool VarSymbol::isParam(void){
-  return (consClass == VAR_PARAM);
+  return (consClass == VAR_PARAM) || immediate;
 }
 
 
@@ -770,6 +808,9 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
 
 
 FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
+  if (FnSymbol* cached = check_dwcache(this, defaults))
+    return cached;
+
   AList<DefExpr>* wrapper_formals = new AList<DefExpr>();
   AList<Expr>* wrapper_actuals = new AList<Expr>();
   BlockStmt* wrapper_body = new BlockStmt();
@@ -786,9 +827,12 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
       VarSymbol* temp = new VarSymbol(temp_name, formal->sym->type);
       map.put(formal->sym, temp);
       Expr* temp_init = NULL;
+      Expr* temp_type = NULL;
       if (formal_intent != INTENT_OUT)
         temp_init = formal->sym->defPoint->init->copy();
-      wrapper_body->insertAtTail(new ExprStmt(new DefExpr(temp, temp_init)));
+      if (no_infer && formal->sym->defPoint->exprType)
+        temp_type = formal->sym->defPoint->exprType->copy();
+      wrapper_body->insertAtTail(new ExprStmt(new DefExpr(temp, temp_init, temp_type)));
 
       if (formal->sym->type != dtUnknown &&
           formal_intent != INTENT_OUT &&
@@ -814,6 +858,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
   defPoint->parentStmt->insertAfter(new ExprStmt(new DefExpr(wrapper_fn)));
   wrapper_fn->addPragmas(&pragmas);
   reset_file_info(wrapper_fn->defPoint->parentStmt, lineno, filename);
+  add_dwcache(wrapper_fn, this, defaults);
   return wrapper_fn;
 }
 
@@ -963,13 +1008,43 @@ instantiate_function(FnSymbol *fn, ASTMap *all_subs, ASTMap *generic_subs, ASTMa
       if (all_subs->get(ps) && ps->intent == INTENT_PARAM) {
         ps->intent = INTENT_BLANK;
         ps->isGeneric = false;
-        if (VarSymbol *vs = dynamic_cast<VarSymbol*>(all_subs->get(ps))) {
-          if (vs->literalType)
-            ps->type = vs->literalType;
+        if (!no_infer) {
+          if (VarSymbol *vs = dynamic_cast<VarSymbol*>(all_subs->get(ps))) {
+            if (vs->literalType)
+              ps->type = vs->literalType;
+          }
         }
       }
     }
   }
+  return fnClone;
+}
+
+
+FnSymbol*
+FnSymbol::clone_generic(ASTMap* formal_types) {
+  // use same cache as instantiate generic since they won't collide
+  if (FnSymbol* cached = check_icache(this, formal_types))
+    return cached;
+  Stmt* fnStmt = defPoint->parentStmt->copy();
+  ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(fnStmt);
+  DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr);
+  FnSymbol* fnClone = dynamic_cast<FnSymbol*>(defExpr->sym);
+  fnClone->cname = stringcat("_clone_", fnClone->cname);
+  defPoint->parentStmt->insertBefore(fnStmt);
+  DefExpr* oldFormalDef = formals->first();
+  for_alist(DefExpr, formalDef, fnClone->formals) {
+    ArgSymbol* oldFormal = dynamic_cast<ArgSymbol*>(oldFormalDef->sym);
+    ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
+    if (Type* type = dynamic_cast<Type*>(formal_types->get(oldFormal))) {
+      formal->type = type;
+      formalDef->exprType = NULL;
+    }
+    oldFormalDef = formals->next();
+  }
+  fnClone->instantiatedFrom = this;
+  fnClone->substitutions.copy(*formal_types);
+  add_icache(fnClone);
   return fnClone;
 }
 

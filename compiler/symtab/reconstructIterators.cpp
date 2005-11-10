@@ -49,6 +49,9 @@ void ReconstructIterators::processSymbol(Symbol* sym) {
   if (!fn || fn->fnClass != FN_ITERATOR)
     return;
 
+  if (Symboltable::lookupInScope("_seq_result", fn->body->blkScope))
+    return;
+
   Expr* seqType = NULL;
   if (fn->retType != dtUnknown) {
     seqType = new SymExpr(fn->retType->symbol);
@@ -73,4 +76,8 @@ void ReconstructIterators::processSymbol(Symbol* sym) {
   fn->retType = dtUnknown;
   if (fn->defPoint->exprType)
     fn->defPoint->exprType->replace(def->exprType->copy());
+  else if (no_infer) {
+    DefExpr* tmp = fn->defPoint;
+    tmp->replace(new DefExpr(fn, NULL, def->exprType->copy()));
+  }
 }
