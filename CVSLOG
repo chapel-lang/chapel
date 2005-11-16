@@ -49869,3 +49869,14 @@ Modified files:
 	                             processImportExprs.cpp 
 	chapel/modules/standard/: _chpl_seq.chpl 
 
+---------------------------------------------------------------------------
+
+11/16/05 12:39:50 -- jplevyak
+
+Log message:
+	Changes to get compilation working with GCC 4.0.X.
+
+Modified files:
+	chapel/compiler/include/: vec.h 
+	chapel/make/: Makefile.gnu 
+
