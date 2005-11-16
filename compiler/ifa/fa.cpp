@@ -1907,7 +1907,7 @@ show_sym(Sym *s, FILE *fp) {
   else if (s->constant)
     fprintf(fp, "\"%s\"", s->constant);
   else
-    fprintf(fp, "_", s->constant);
+    fprintf(fp, "_");
   if (s->type && s->type->name)
     fprintf(fp, " = %s", s->type->name);
   else if (s->must_implement && 
@@ -1918,7 +1918,7 @@ show_sym(Sym *s, FILE *fp) {
     fprintf(fp, " < ");
     show_sym_name(s->must_implement, fp);
   } else if (s->must_specialize && !s->must_specialize->is_symbol) {
-    fprintf(fp, " @ ", s->must_specialize);
+    fprintf(fp, " @ ");
     show_sym_name(s->must_specialize, fp);
   }
 }
