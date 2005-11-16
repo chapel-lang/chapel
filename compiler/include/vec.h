@@ -114,11 +114,11 @@ extern unsigned int prime2[];
 /* IMPLEMENTATION */
 
 template <class C> inline
-Vec<C>::Vec<C>() : n(0), i(0), v(0) {
+Vec<C>::Vec() : n(0), i(0), v(0) {
 }
 
 template <class C> inline
-Vec<C>::Vec<C>(const Vec<C> &vv) {
+Vec<C>::Vec(const Vec<C> &vv) {
   copy(vv);
 }
 

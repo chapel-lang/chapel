@@ -40,7 +40,8 @@ CFLAGS += -pg
 LDFLAGS += -pg
 endif
 
-CFLAGS += -Wall
+CFLAGS += -Wall -Wno-non-virtual-dtor
+
 
 
 # add error stuff
