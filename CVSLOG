@@ -49890,3 +49890,23 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+11/16/05 13:35:01 -- jplevyak
+
+Log message:
+	Change the way compilation on 64 bit linux machines works.
+	
+	As per our earlier discussions, we now default to 64 bit compilation
+	on 64 bit machines (running 64 bit versions of the OS).
+	
+	To compile 32-bit executables on 64-bit machines, use the option
+	
+	CHPL_BUILD_X86_64_AS_32=1
+
+Modified files:
+	chapel/third-party/boehmgc/: Makefile 
+	chapel/util/: platform 
+Added files:
+	chapel/make/: Makefile.linux64_32 
+
