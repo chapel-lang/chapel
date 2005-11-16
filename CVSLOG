@@ -49880,3 +49880,13 @@ Modified files:
 	chapel/compiler/include/: vec.h 
 	chapel/make/: Makefile.gnu 
 
+---------------------------------------------------------------------------
+
+11/16/05 13:32:54 -- jplevyak
+
+Log message:
+	fix format warning
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
