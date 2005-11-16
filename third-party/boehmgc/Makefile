@@ -9,11 +9,11 @@ all: $(PLATFORM_DIR) .lastbuild
 
 all-force: $(PLATFORM_DIR) FORCE
 	cd $(GC_DIRNAME); \
-	./configure --prefix='$(CURDIR)/$(PLATFORM)' --disable-threads; \
-	$(MAKE) clean; \
-	$(MAKE); \
-	$(MAKE) check; \
-	$(MAKE) install
+	$(CONFIGURE_PREFIX) ./configure --prefix='$(CURDIR)/$(PLATFORM)' --disable-threads; \
+	$(MAKE) $(MAKE_OPTIONS) clean; \
+	$(MAKE) $(MAKE_OPTIONS); \
+	$(MAKE) $(MAKE_OPTIONS) check; \
+	$(MAKE) $(MAKE_OPTIONS) install
 	cp .lastbuild.tmp .lastbuild
 
 clean:

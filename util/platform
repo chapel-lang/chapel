@@ -11,10 +11,12 @@ if ($platform eq "linux") {
     $machine = `uname -m`;
     chomp($machine);
     if ($machine eq "x86_64") {
-	$build64 = $ENV{'BUILD_X86_64'};
-	if ($build64 eq "1") {
+	$build64_32 = $ENV{'CHPL_BUILD_X86_64_AS_32'};
+	if ($build64_32 eq "1") {
+	    $platform = "linux64_32";
+	} else {
 	    $platform = "linux64";
-	}
+        }
     }
 }
 

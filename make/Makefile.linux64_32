@@ -1,0 +1,9 @@
+# Makefile.linux64: contains linux64-specific variables
+#
+
+CFLAGS += -m32
+LDFLAGS += -m32
+CONFIGURE_PREFIX=linux32 
+MAKE_OPTIONS="CC=gcc -m32"
+
+-include $(CHAPEL_ROOT)/make/Makefile.gnu
