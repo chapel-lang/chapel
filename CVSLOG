@@ -49910,3 +49910,17 @@ Modified files:
 Added files:
 	chapel/make/: Makefile.linux64_32 
 
+---------------------------------------------------------------------------
+
+11/16/05 14:56:01 -- jplevyak
+
+Log message:
+	Updated the compiler/Tasks file as per Brad's mail.
+	There are now no priorities though generally more
+	important things are at the top.  As before, grab things
+	by adding your name in paren's after the * and indicate
+	that something is complete by changing the * to a X.
+
+Modified files:
+	chapel/compiler/: Tasks 
+
