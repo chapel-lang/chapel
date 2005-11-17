@@ -92,7 +92,14 @@ class AList : public BaseAST {
               AList<elemType>*& falseElems);
 };
 
-#define for_alist(elemtype, node, list)               \
+#define for_alist(elemtype, node, list)  \
+  for (elemtype *node = (list) ? ((list)->head ? dynamic_cast<elemtype*>((list)->head->next) : NULL) : NULL,      \
+         *_alist_next = (node) ? dynamic_cast<elemtype*>((node)->next) : NULL;                  \
+       _alist_next;                                                                             \
+       node = _alist_next,                                                                      \
+         _alist_next = (node) ? dynamic_cast<elemtype*>((node)->next) : NULL)
+
+#define for_alist_nonreentrant(elemtype, node, list)  \
   for (elemtype *node = list->first(),                \
          *_alist_next = (node) ? list->next() : NULL; \
        node;                                          \
@@ -100,6 +107,13 @@ class AList : public BaseAST {
          _alist_next = (node) ? list->next() : NULL)
 
 #define for_alist_backward(elemtype, node, list)  \
+  for (elemtype *node = (list) ? ((list)->tail ? dynamic_cast<elemtype*>((list)->tail->prev) : NULL) : NULL,      \
+         *_alist_prev = (node) ? dynamic_cast<elemtype*>((node)->prev) : NULL;                  \
+       _alist_prev;                                                                             \
+       node = _alist_prev,                                                                      \
+         _alist_prev = (node) ? dynamic_cast<elemtype*>((node)->prev) : NULL)
+
+#define for_alist_backward_nonreentrant(elemtype, node, list)  \
   for (elemtype *node = list->last(),                 \
          *_alist_prev = (node) ? list->prev() : NULL; \
        node;                                          \
