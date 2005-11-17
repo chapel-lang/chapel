@@ -49934,3 +49934,16 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+11/17/05 13:49:00 -- jplevyak
+
+Log message:
+	Updated Task list
+	Changed for_alist to be reentrant.
+	Maintained the old versions as for_alist_nonreentrant.
+
+Modified files:
+	chapel/compiler/: Tasks 
+	chapel/compiler/include/: alist.h 
+
