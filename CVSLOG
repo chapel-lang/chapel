@@ -49924,3 +49924,13 @@ Log message:
 Modified files:
 	chapel/compiler/: Tasks 
 
+---------------------------------------------------------------------------
+
+11/16/05 19:21:32 -- jplevyak
+
+Log message:
+	Remove format mismatch warning
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
