@@ -49957,3 +49957,14 @@ Log message:
 Modified files:
 	chapel/compiler/: Tasks 
 
+---------------------------------------------------------------------------
+
+11/18/05 12:55:21 -- deitz
+
+Log message:
+	Marked task to change passlist to a list of function pointers.
+	Moved finished task to bottom.
+
+Modified files:
+	chapel/compiler/: Tasks 
+
