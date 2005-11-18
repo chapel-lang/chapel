@@ -25,7 +25,7 @@ TODOS:
 * document what needs to be done when new classes added to AST, new
    fields added to AST classes
 
-* (John) add means of iterating over ALists using an external cursor
+X (John) add means of iterating over ALists using an external cursor
    (re-entrant iterators) in addition to what we currently have.
    Rewrite for_alist macro to use re-entrant versions.
 
