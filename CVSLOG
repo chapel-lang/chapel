@@ -49947,3 +49947,13 @@ Modified files:
 	chapel/compiler/: Tasks 
 	chapel/compiler/include/: alist.h 
 
+---------------------------------------------------------------------------
+
+11/17/05 19:01:12 -- jplevyak
+
+Log message:
+	Complete reentrant for_alist macro
+
+Modified files:
+	chapel/compiler/: Tasks 
+
