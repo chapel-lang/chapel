@@ -66,7 +66,6 @@ class Vec : public gc {
   C* end() { return v + n; }
   Vec<C>& operator=(Vec<C> &v) { this->copy(v); return *this; }
   int length () { return n; }
-  void quickSort(int left, int right);
   
  private:
   void add_internal(C a);
