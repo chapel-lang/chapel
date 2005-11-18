@@ -49968,3 +49968,13 @@ Log message:
 Modified files:
 	chapel/compiler/: Tasks 
 
+---------------------------------------------------------------------------
+
+11/18/05 15:04:49 -- jplevyak
+
+Log message:
+	remove dead code
+
+Modified files:
+	chapel/compiler/include/: vec.h 
+
