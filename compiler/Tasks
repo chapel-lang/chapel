@@ -4,8 +4,8 @@ TODOS:
 
 * Read about Scala
 
-* switch passlist to list of function pointers; wrap current Pass
-   classes in functions
+* (Steve) switch passlist to list of function pointers; wrap current
+   Pass classes in functions
 
 * rewrite traverse() method to use get_ast_children -- keep public
    interface/use of Traversal the same, but change mechanism to be
@@ -24,10 +24,6 @@ TODOS:
 
 * document what needs to be done when new classes added to AST, new
    fields added to AST classes
-
-X (John) add means of iterating over ALists using an external cursor
-   (re-entrant iterators) in addition to what we currently have.
-   Rewrite for_alist macro to use re-entrant versions.
 
 * add support for allocating records as structs rather than
    pointers-to-structs (and flag/switch for switching back to current
@@ -167,3 +163,7 @@ X (John) add means of iterating over ALists using an external cursor
   (between the colon and equals) -- maybe generate a warning for this
   case indicating that the expression will be evaluated, used as a
   type constraint, and dropped on the floor?
+
+X (John) add means of iterating over ALists using an external cursor
+   (re-entrant iterators) in addition to what we currently have.
+   Rewrite for_alist macro to use re-entrant versions.
