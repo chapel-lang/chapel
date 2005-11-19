@@ -49978,3 +49978,13 @@ Log message:
 Modified files:
 	chapel/compiler/include/: vec.h 
 
+---------------------------------------------------------------------------
+
+11/18/05 17:30:56 -- jplevyak
+
+Log message:
+	New version (3.0.X) of valgrind support x86_64
+
+Modified files:
+	chapel/test/: sub_test 
+
