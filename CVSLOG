@@ -49988,3 +49988,114 @@ Log message:
 Modified files:
 	chapel/test/: sub_test 
 
+---------------------------------------------------------------------------
+
+11/18/05 17:32:12 -- deitz
+
+Log message:
+	Changed passes to functions.  The pass class still exists, but the
+	pass is called by a function which in many cases constructs a
+	Traversal or SymtabTraversal class and then calls its run function.
+	
+	Did a bit of work to maintain the two ways the passlist is handled,
+	either as an array or parsed by the compiler.  The latter mechanism
+	handles changing the passlist without relinking.  It requires the
+	registration of passes which would otherwise not be necessary.
+	
+	Removed the extra args field in the passlist.  Passes are simply
+	functions that take no arguments.  This args field was not used and is
+	less necessary now that passes use a lighter weight mechanism.
+
+Modified files:
+	chapel/compiler/: Tasks 
+	chapel/compiler/AST/: baseAST.cpp expr.cpp 
+	chapel/compiler/include/: driver.h symtab.h 
+	chapel/compiler/main/: driver.cpp passlist.cpp passlist.h 
+	                       runpasses.cpp runpasses.h 
+	chapel/compiler/passes/: Makefile.share applyGettersSetters.cpp 
+	                         applyGettersSetters.h 
+	                         buildDefaultFunctions.cpp 
+	                         buildDefaultFunctions.h codegen.cpp 
+	                         codegen.h createEntryPoint.cpp 
+	                         createEntryPoint.h filesToAST.cpp 
+	                         filesToAST.h functionResolution.cpp 
+	                         functionResolution.h 
+	                         normalizeParsedAST.cpp 
+	                         normalizeParsedAST.h pass.cpp pass.h 
+	                         preAnalysisCleanup.cpp 
+	                         preAnalysisCleanup.h printProgram.cpp 
+	                         printProgram.h runAnalysis.cpp 
+	                         runAnalysis.h semanticChecks.cpp 
+	                         semanticChecks.h 
+	chapel/compiler/symtab/: codegenOne.cpp codegenOne.h 
+	                         copyPropagation.cpp copyPropagation.h 
+	                         flatten.cpp flatten.h 
+	                         insertDefaultInitVariables.cpp 
+	                         insertDefaultInitVariables.h 
+	                         insertOutParameterInitializations.cpp 
+	                         insertOutParameterInitializations.h 
+	                         normalizeFunctions.cpp 
+	                         normalizeFunctions.h 
+	                         postAnalysisCleanup.cpp 
+	                         postAnalysisCleanup.h printSymtab.cpp 
+	                         printSymtab.h reconstructIterators.cpp 
+	                         reconstructIterators.h 
+	                         removeDeadSymbols.cpp 
+	                         removeDeadSymbols.h resolveTypes.cpp 
+	                         resolveTypes.h symscope.cpp symtab.cpp 
+	chapel/compiler/traversals/: Makefile.share 
+	                             applyThisParameters.cpp 
+	                             applyThisParameters.h 
+	                             buildClassHierarchy.cpp 
+	                             buildClassHierarchy.h 
+	                             buildLValueFunctions.cpp 
+	                             buildLValueFunctions.h 
+	                             createConfigVarTable.cpp 
+	                             createConfigVarTable.h 
+	                             createNestedFuncIterators.cpp 
+	                             createNestedFuncIterators.h 
+	                             eliminateReturns.cpp 
+	                             eliminateReturns.h 
+	                             findUnknownTypes.cpp 
+	                             findUnknownTypes.h fixup.cpp 
+	                             fixup.h getstuff.cpp getstuff.h 
+	                             htmlview.cpp htmlview.h 
+	                             inlineFunctions.cpp 
+	                             inlineFunctions.h 
+	                             insertFunctionTemps.cpp 
+	                             insertFunctionTemps.h 
+	                             insertThisParameters.cpp 
+	                             insertThisParameters.h 
+	                             insertVariableInitializations.cpp 
+	                             insertVariableInitializations.h 
+	                             instantiate.cpp instantiate.h 
+	                             preAnalysisHacks.cpp 
+	                             preAnalysisHacks.h printAST.cpp 
+	                             printAST.h processImportExprs.cpp 
+	                             processImportExprs.h 
+	                             processParameters.cpp 
+	                             processParameters.h 
+	                             removeNamedParameters.cpp 
+	                             removeNamedParameters.h 
+	                             removeNestedFunctions.cpp 
+	                             removeNestedFunctions.h 
+	                             resolveSymbols.cpp resolveSymbols.h 
+	                             scopeResolveGotos.cpp 
+	                             scopeResolveGotos.h 
+	                             scopeResolveSymbols.cpp 
+	                             scopeResolveSymbols.h 
+	                             specializeCallExprs.cpp 
+	                             specializeCallExprs.h 
+	                             transformLetExprs.cpp 
+	                             transformLetExprs.h verify.cpp 
+	                             verify.h view.cpp view.h 
+	chapel/test/compflags/bradc/passlist/: passlist.h test.good 
+Removed files:
+	chapel/compiler/passes/: buildBinary.cpp buildBinary.h 
+	                         renameCSymbols.cpp renameCSymbols.h 
+	chapel/compiler/traversals/: checkIDs.cpp checkIDs.h 
+	                             checkTypeInfo.cpp checkTypeInfo.h 
+	                             findUnresolvedSymbols.cpp 
+	                             findUnresolvedSymbols.h 
+	                             testGetStuff.cpp testGetStuff.h 
+
