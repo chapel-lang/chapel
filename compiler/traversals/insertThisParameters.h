@@ -17,4 +17,6 @@ class InsertThisParameters : public Traversal {
   void preProcessExpr(Expr* expr);
 };
 
+void insertThisParameters(void);
+
 #endif

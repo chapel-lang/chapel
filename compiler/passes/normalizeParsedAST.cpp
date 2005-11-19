@@ -174,7 +174,7 @@ static void construct_tuple_type(int size) {
 }
 
 
-void NormalizeParsedAST::run(Vec<ModuleSymbol*>* modules) {
+void normalizeParsedAST(void) {
   Vec<BaseAST*> asts;
   collect_asts(&asts);
 

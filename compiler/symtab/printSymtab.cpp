@@ -1,4 +1,5 @@
 #include "printSymtab.h"
+#include "symtab.h"
 
 
 PrintSymtab::PrintSymtab(FILE* init_outfile) :
@@ -7,11 +8,6 @@ PrintSymtab::PrintSymtab(FILE* init_outfile) :
 
 
 void PrintSymtab::run(Vec<ModuleSymbol*>* modules) {
-  if (strcmp(args, "user") == 0) {
-    whichModules = MODULES_USER;
-  } else if (strcmp(args, "common") == 0) {
-    whichModules = MODULES_CODEGEN;
-  }
   SymtabTraversal::run(modules);
 }
 
@@ -31,4 +27,10 @@ void PrintSymtab::postProcessScope(SymScope* scope) {
 void PrintSymtab::processSymbol(Symbol* sym) {
   char* indent = sym->parentScope->indentStr();
   fprintf(outfile, "%s%s\n", indent, sym->name);
+}
+
+
+void printSymtab(void) {
+  Pass* pass = new PrintSymtab();
+  pass->run(Symboltable::getModules(pass->whichModules));
 }

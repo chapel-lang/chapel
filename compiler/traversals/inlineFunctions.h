@@ -13,4 +13,7 @@ public:
   void postProcessExpr(Expr* expr);
   void run(Vec<ModuleSymbol*>* modules);
 };
+
+void inlineFunctions(void);
+
 #endif

@@ -12,4 +12,6 @@ class ScopeResolveGotos : public Traversal {
   void preProcessStmt(Stmt* stmt);
 };
 
+void scopeResolveGotos(void);
+
 #endif

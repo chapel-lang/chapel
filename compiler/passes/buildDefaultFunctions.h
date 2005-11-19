@@ -3,9 +3,6 @@
 
 #include "pass.h"
 
-class BuildDefaultFunctions : public Pass {
-public:
-  virtual void run(Vec<ModuleSymbol*>* modules);
-};
+void buildDefaultFunctions(void);
 
 #endif

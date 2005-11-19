@@ -21,4 +21,6 @@ class ScopeResolveSymbols : public Traversal {
   void postProcessExpr(Expr* expr);
 };
 
+void scopeResolveSymbols(void);
+
 #endif

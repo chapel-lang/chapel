@@ -13,4 +13,6 @@ class Verify : public Traversal {
   virtual void run(Vec<ModuleSymbol*>* modules);
 };
 
+void verify(void);
+
 #endif

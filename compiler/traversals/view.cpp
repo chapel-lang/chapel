@@ -130,3 +130,8 @@ void mark_view(BaseAST* ast, long id) {
   printf("\n\n");
   fflush(stdout);
 }
+
+void view(void) {
+  Pass* pass = new View();
+  pass->run(Symboltable::getModules(pass->whichModules));
+}

@@ -19,3 +19,9 @@ void TransformLetExprs::postProcessExpr(Expr* expr) {
     }
   }
 }
+
+
+void transformLetExprs(void) {
+  Pass* pass = new TransformLetExprs();
+  pass->run(Symboltable::getModules(pass->whichModules));
+}

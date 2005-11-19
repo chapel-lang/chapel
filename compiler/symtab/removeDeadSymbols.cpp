@@ -29,3 +29,9 @@ void RemoveDeadSymbols::processSymbol(Symbol* sym) {
     }
   }
 }
+
+
+void removeDeadSymbols(void) {
+  Pass* pass = new RemoveDeadSymbols();
+  pass->run(Symboltable::getModules(pass->whichModules));
+}

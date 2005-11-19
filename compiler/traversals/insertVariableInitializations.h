@@ -11,5 +11,7 @@ class InsertVariableInitializations : public Traversal {
   InsertVariableInitializations(void);
   void postProcessStmt(Stmt* stmt);
 };
+
+void insertVariableInitializations(void);
   
 #endif

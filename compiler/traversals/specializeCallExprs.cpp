@@ -156,3 +156,9 @@ void SpecializeCallExprs::postProcessExpr(Expr* expr) {
     }
   }
 }
+
+
+void specializeCallExprs(void) {
+  Pass* pass = new SpecializeCallExprs();
+  pass->run(Symboltable::getModules(pass->whichModules));
+}

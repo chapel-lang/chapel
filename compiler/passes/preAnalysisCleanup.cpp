@@ -138,13 +138,13 @@ tagGenerics(Vec<BaseAST *> &asts) {
   }
 }
 
-void PreAnalysisCleanup::run(Vec<ModuleSymbol*>* modules) {
+void preAnalysisCleanup(void) {
   Vec<Stmt *> stmts;
   Vec<Symbol *> symbols;
   Vec<BaseAST *> asts;
 
   // Collect program stmts and symbols
-  forv_Vec(ModuleSymbol, mod, *modules) {
+  forv_Vec(ModuleSymbol, mod, allModules) {
     for_alist(Stmt, s, mod->stmts)
       stmts.add(s);
     getSymbols(mod->modScope, symbols);

@@ -15,6 +15,6 @@ class PrintSymtab : public SymtabTraversal {
   void processSymbol(Symbol* sym);
 };
 
+void printSymtab(void);
 
 #endif
-

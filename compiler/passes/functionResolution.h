@@ -3,9 +3,6 @@
 
 #include "pass.h"
 
-class FunctionResolution : public Pass {
-public:
-  virtual void run(Vec<ModuleSymbol*>* modules);
-};
+void functionResolution(void);
 
 #endif

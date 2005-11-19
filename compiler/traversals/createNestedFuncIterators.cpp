@@ -2,6 +2,7 @@
 #include "stringutil.h"
 #include "stmt.h"
 #include "expr.h"
+#include "symtab.h"
 
 //
 // changes yields to copy of body of for loop, changes returns to
@@ -68,4 +69,9 @@ void CreateNestedFuncIterators::postProcessStmt(Stmt* stmt) {
     TRAVERSE(iterator, new UpdateIteratorYield(body), true);
     fls->replace(new ExprStmt(new CallExpr(iterator, iteratorCall->argList)));
   }
+}
+
+void createNestedFuncIterators(void) {
+  Pass* pass = new CreateNestedFuncIterators();
+  pass->run(Symboltable::getModules(pass->whichModules));
 }

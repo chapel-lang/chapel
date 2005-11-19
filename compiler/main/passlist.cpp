@@ -1,5 +1,4 @@
 #include "../passes/applyGettersSetters.h"
-#include "../passes/buildBinary.h"
 #include "../passes/buildDefaultFunctions.h"
 #include "../passes/codegen.h"
 #include "../passes/createEntryPoint.h"
@@ -8,7 +7,6 @@
 #include "../passes/normalizeParsedAST.h"
 #include "../passes/preAnalysisCleanup.h"
 #include "../passes/printProgram.h"
-#include "../passes/renameCSymbols.h"
 #include "../passes/runAnalysis.h"
 #include "../passes/semanticChecks.h"
 
@@ -26,14 +24,11 @@
 
 #include "../traversals/applyThisParameters.h"
 #include "../traversals/buildClassHierarchy.h"
-#include "../traversals/checkIDs.h"
-#include "../traversals/checkTypeInfo.h"
 #include "../traversals/createConfigVarTable.h"
 #include "../traversals/createNestedFuncIterators.h"
 #include "../traversals/buildLValueFunctions.h"
 #include "../traversals/eliminateReturns.h"
 #include "../traversals/findUnknownTypes.h"
-#include "../traversals/findUnresolvedSymbols.h"
 #include "../traversals/fixup.h"
 #include "../traversals/getstuff.h"
 #include "../traversals/htmlview.h"
@@ -52,7 +47,6 @@
 #include "../traversals/scopeResolveGotos.h"
 #include "../traversals/scopeResolveSymbols.h"
 #include "../traversals/specializeCallExprs.h"
-#include "../traversals/testGetStuff.h"
 #include "../traversals/transformLetExprs.h"
 #include "../traversals/verify.h"
 #include "../traversals/view.h"
@@ -63,64 +57,58 @@
    the pass above.  */
 
 START_PASSLIST_REGISTRATION
-REGISTER(ApplyGettersSetters);
-REGISTER(ApplyThisParameters);
-REGISTER(BuildBinary);
-REGISTER(BuildClassHierarchy);
-REGISTER(BuildDefaultFunctions);
-REGISTER(BuildLValueFunctions);
-REGISTER(CheckIDs);
-REGISTER(CheckTypeInfo);
-REGISTER(Codegen);
-REGISTER(CodegenOne);
-REGISTER(CopyPropagation);
-REGISTER(CreateConfigVarTable);
-REGISTER(CreateEntryPoint);
-REGISTER(CreateNestedFuncIterators);
-REGISTER(DummyPass);
-REGISTER(EliminateReturns);
-REGISTER(FindUnresolvedSymbols);
-REGISTER(FilesToAST);
-REGISTER(Fixup);
-REGISTER(Flatten);
-REGISTER(FunctionResolution);
-REGISTER(GetStuff);
-REGISTER(HtmlView);
-REGISTER(InlineFunctions);
-REGISTER(InsertDefaultInitVariables);
-REGISTER(InsertFunctionTemps);
-REGISTER(InsertOutParameterInitializations);
-REGISTER(InsertThisParameters);
-REGISTER(InsertVariableInitializations);
-REGISTER(Instantiate);
-REGISTER(NormalizeFunctions);
-REGISTER(NormalizeParsedAST);
-REGISTER(PostAnalysisCleanup);
-REGISTER(PreAnalysisHacks);
-REGISTER(PreAnalysisCleanup);
-REGISTER(PrintAST);        // BLC: pretty-prints all or part of the AST
-REGISTER(PrintProgram);    // BLC: pretty-prints the whole program
-REGISTER(PrintSymtab);
-REGISTER(ProcessImportExprs);
-REGISTER(ProcessParameters); // BLC: handle parameter intents
-REGISTER(ReconstructIterators);
-REGISTER(RemoveDeadSymbols);
-REGISTER(RemoveNamedParameters);
-REGISTER(RemoveNestedFunctions);
-REGISTER(RemoveTypeVariableActuals);
-REGISTER(RemoveTypeVariableFormals);
-REGISTER(RenameCSymbols);  // BLC: rename symbols for C codegen
-REGISTER(ResolveSymbols);       // SJD: Resolve symbols after analysis
-REGISTER(ResolveTypes);
-REGISTER(RunAnalysis);
-REGISTER(ScopeResolveGotos);
-REGISTER(ScopeResolveSymbols);
-REGISTER(SemanticCheckI);
-REGISTER(SemanticCheckII);
-REGISTER(SemanticCheckIII);
-REGISTER(SpecializeCallExprs);
-REGISTER(TestGetStuff);
-REGISTER(TransformLetExprs);
-REGISTER(Verify);
-REGISTER(View);
+REGISTER(applyGettersSetters);
+REGISTER(applyThisParameters);
+REGISTER(buildClassHierarchy);
+REGISTER(buildDefaultFunctions);
+REGISTER(buildLValueFunctions);
+REGISTER(codegen);
+REGISTER(codegenOne);
+REGISTER(copyPropagation);
+REGISTER(createConfigVarTable);
+REGISTER(createEntryPoint);
+REGISTER(createNestedFuncIterators);
+REGISTER(eliminateReturns);
+REGISTER(fixup);
+REGISTER(flatten);
+REGISTER(functionResolution);
+REGISTER(getStuff);
+REGISTER(htmlView);
+REGISTER(inlineFunctions);
+REGISTER(insertDefaultInitVariables);
+REGISTER(insertFunctionTemps);
+REGISTER(insertOutParameterInitializations);
+REGISTER(insertThisParameters);
+REGISTER(insertVariableInitializations);
+REGISTER(normalizeFunctions);
+REGISTER(normalizeParsedAST);
+REGISTER(parse);
+REGISTER(passlistTest);
+REGISTER(postAnalysisCleanup);
+REGISTER(preAnalysisHacks);
+REGISTER(preAnalysisCleanup);
+REGISTER(pre_instantiate);
+REGISTER(printAST);        // BLC: pretty-prints all or part of the AST
+REGISTER(printProgram);    // BLC: pretty-prints the whole program
+REGISTER(printSymtab);
+REGISTER(processImportExprs);
+REGISTER(processParameters); // BLC: handle parameter intents
+REGISTER(reconstructIterators);
+REGISTER(removeDeadSymbols);
+REGISTER(removeNamedParameters);
+REGISTER(removeNestedFunctions);
+REGISTER(removeTypeVariableActuals);
+REGISTER(removeTypeVariableFormals);
+REGISTER(resolveSymbols);       // SJD: Resolve symbols after analysis
+REGISTER(resolveTypes);
+REGISTER(runAnalysis);
+REGISTER(scopeResolveGotos);
+REGISTER(scopeResolveSymbols);
+REGISTER(semanticCheckI);
+REGISTER(semanticCheckII);
+REGISTER(semanticCheckIII);
+REGISTER(specializeCallExprs);
+REGISTER(transformLetExprs);
+REGISTER(verify);
+REGISTER(view);
 STOP_PASSLIST_REGISTRATION

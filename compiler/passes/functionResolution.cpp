@@ -433,7 +433,7 @@ void resolve_function(FnSymbol* fn) {
   resolve_return_type(fn);
 }
 
-void FunctionResolution::run(Vec<ModuleSymbol*>* modules) {
+void functionResolution(void) {
   fns.set_add(chpl_main);
   TRAVERSE(chpl_main, new ResolveCalls(), true);
 

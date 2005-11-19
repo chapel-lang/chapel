@@ -80,10 +80,10 @@ static void createInitFn(ModuleSymbol* mod) {
 }
 
 
-void CreateEntryPoint::run(Vec<ModuleSymbol*>* modules) {
+void createEntryPoint(void) {
   currentLineno = -1;
 
-  forv_Vec(ModuleSymbol, mod, *modules) {
+  forv_Vec(ModuleSymbol, mod, allModules) {
     if (mod->modtype == MOD_INTERNAL || 
         !ModuleDefContainsOnlyNestedModules(mod->stmts)) {
       createInitFn(mod);

@@ -24,6 +24,7 @@ class Fixup : public Traversal {
   virtual void run(Vec<ModuleSymbol*>* modules);
 };
 
+void fixup(void);
 void fixup(BaseAST* ast);
 void fixup(BaseAST* ast, BaseAST* ref);
 void removeHelper(BaseAST* ast);

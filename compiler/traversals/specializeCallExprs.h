@@ -9,4 +9,6 @@ class SpecializeCallExprs : public Traversal {
   void postProcessStmt(Stmt* stmt);
 };
 
+void specializeCallExprs(void);
+
 #endif

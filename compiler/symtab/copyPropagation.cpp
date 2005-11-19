@@ -20,3 +20,9 @@ void CopyPropagation::processSymbol(Symbol* sym) {
 //     printf("\n\n");
   }
 }
+
+
+void copyPropagation(void) {
+  Pass* pass = new CopyPropagation();
+  pass->run(Symboltable::getModules(pass->whichModules));
+}

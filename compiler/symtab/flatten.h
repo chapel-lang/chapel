@@ -8,4 +8,6 @@ class Flatten : public SymtabTraversal {
   void processSymbol(Symbol* sym);
 };
 
+void flatten(void);
+
 #endif

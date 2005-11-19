@@ -1,6 +1,5 @@
 PASSES_SRCS = \
         applyGettersSetters.cpp \
-	buildBinary.cpp \
         buildDefaultFunctions.cpp \
 	codegen.cpp \
 	createEntryPoint.cpp \
@@ -10,7 +9,6 @@ PASSES_SRCS = \
 	pass.cpp \
 	preAnalysisCleanup.cpp \
 	printProgram.cpp \
-	renameCSymbols.cpp \
 	runAnalysis.cpp \
         semanticChecks.cpp
 

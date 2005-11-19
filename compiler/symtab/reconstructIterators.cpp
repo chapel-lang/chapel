@@ -81,3 +81,9 @@ void ReconstructIterators::processSymbol(Symbol* sym) {
     tmp->replace(new DefExpr(fn, NULL, def->exprType->copy()));
   }
 }
+
+
+void reconstructIterators(void) {
+  Pass* pass = new ReconstructIterators();
+  pass->run(Symboltable::getModules(pass->whichModules));
+}

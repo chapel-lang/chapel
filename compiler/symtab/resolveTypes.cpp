@@ -3,6 +3,7 @@
 #include "analysis.h"
 #include "stmt.h"
 #include "expr.h"
+#include "symtab.h"
 
 
 ResolveTypes::ResolveTypes() {
@@ -97,4 +98,10 @@ void ResolveTypes::processSymbol(Symbol* sym) {
                 "(likely to be due to dead code not being eliminated)");
     }
   }
+}
+
+
+void resolveTypes(void) {
+  Pass* pass = new ResolveTypes();
+  pass->run(Symboltable::getModules(pass->whichModules));
 }

@@ -1,6 +1,7 @@
 #include "applyThisParameters.h"
 #include "expr.h"
 #include "symscope.h"
+#include "symtab.h"
 
 void ApplyThisParameters::postProcessExpr(Expr* expr) {
   SymExpr* symExpr = dynamic_cast<SymExpr*>(expr);
@@ -26,4 +27,9 @@ void ApplyThisParameters::postProcessExpr(Expr* expr) {
       return;
     }
   }
+}
+
+void applyThisParameters(void) {
+  Pass* pass = new ApplyThisParameters();
+  pass->run(Symboltable::getModules(pass->whichModules));
 }

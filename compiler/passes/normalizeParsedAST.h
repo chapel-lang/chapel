@@ -3,9 +3,6 @@
 
 #include "pass.h"
 
-class NormalizeParsedAST : public Pass {
-public:
-  virtual void run(Vec<ModuleSymbol*>* modules);
-};
+void normalizeParsedAST(void);
 
 #endif

@@ -254,3 +254,9 @@ void PreAnalysisHacks::postProcessType(Type* type) {
     }
   }
 }
+
+
+void preAnalysisHacks(void) {
+  Pass* pass = new PreAnalysisHacks();
+  pass->run(Symboltable::getModules(pass->whichModules));
+}

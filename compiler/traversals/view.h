@@ -28,4 +28,6 @@ extern void print_view_noline(BaseAST* ast);
 extern void nprint_view(BaseAST* ast);
 extern void mark_view(BaseAST* ast, long id);
 
+void view(void);
+
 #endif

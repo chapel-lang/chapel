@@ -15,85 +15,84 @@ PassInfo passlist[] = {
   FIRST,
 
   // passes to create the basic AST
-  RUN(FilesToAST, ""),
-  RUN(CreateEntryPoint, ""),
-  RUN(NormalizeParsedAST, ""), // handles complicated parsing transforms
-  RUN(SemanticCheckI, ""), // post parsing semantic checks
+  RUN(parse),
+  RUN(createEntryPoint),
+  RUN(normalizeParsedAST), // handles complicated parsing transforms
+  RUN(semanticCheckI), // post parsing semantic checks
 
   // passes to normalize the basic AST
-  RUN(ProcessImportExprs, ""),
-  RUN(Flatten, ""),
-  RUN(BuildClassHierarchy, ""),
+  RUN(processImportExprs),
+  RUN(flatten),
+  RUN(buildClassHierarchy),
 
-  RUN(BuildDefaultFunctions, ""),
+  RUN(buildDefaultFunctions),
 
-  RUN(InsertThisParameters, ""),
+  RUN(insertThisParameters),
 
   // SCOPE RESOLUTION
-  RUN(ScopeResolveSymbols, ""), // postScopeResolution = true
-  RUN(ScopeResolveGotos, ""),
-  RUN(ApplyThisParameters, ""),
+  RUN(scopeResolveSymbols),
+  RUN(scopeResolveGotos),
+  RUN(applyThisParameters),
 
-  RUN(SemanticCheckII, ""), // post scope resolution semantic checks
+  RUN(semanticCheckII), // post scope resolution semantic checks
 
-  RUN(BuildLValueFunctions, ""),
-  RUN(ReconstructIterators, ""),
+  RUN(buildLValueFunctions),
+  RUN(reconstructIterators),
 
-  RUN(InsertDefaultInitVariables, ""),
-  RUN(InsertOutParameterInitializations, ""),
-  RUN(EliminateReturns, ""),
-  RUN(NormalizeFunctions, ""),
+  RUN(insertDefaultInitVariables),
+  RUN(insertOutParameterInitializations),
+  RUN(eliminateReturns),
+  RUN(normalizeFunctions),
 
-  RUN(SpecializeCallExprs, ""),
-  RUN(PreAnalysisHacks, ""),
-  RUN(ApplyGettersSetters, ""),
+  RUN(specializeCallExprs),
+  RUN(preAnalysisHacks),
+  RUN(applyGettersSetters),
 
   // FunctionResolution instantiates types, resolves functions, and
   // computes a very basic form of type inference.  It is run with the
   // --no-infer or -b flag.  It replaces all the passes between its
   // two calls in this passlist.
-  RUN(FunctionResolution, ""),
+  RUN(functionResolution),
 
-  RUN(Instantiate, ""),
-  RUN(PreAnalysisCleanup, ""),
+  RUN(pre_instantiate),
+  RUN(preAnalysisCleanup),
 
   // ANALYSIS
-  RUN(RunAnalysis, ""), // postAnalysis = true
+  RUN(runAnalysis),
 
   // passes to capture analysis information in the AST
-  RUN(RemoveDeadSymbols, ""),
-  RUN(ResolveTypes, ""),
-  RUN(PostAnalysisCleanup, ""),
-  RUN(ResolveSymbols, ""),
+  RUN(removeDeadSymbols),
+  RUN(resolveTypes),
+  RUN(postAnalysisCleanup),
+  RUN(resolveSymbols),
 
-  RUN(FunctionResolution, ""),
+  RUN(functionResolution),
 
-  RUN(RemoveNamedParameters, ""),
-  RUN(RemoveTypeVariableActuals, ""),
-  RUN(RemoveTypeVariableFormals, ""),
+  RUN(removeNamedParameters),
+  RUN(removeTypeVariableActuals),
+  RUN(removeTypeVariableFormals),
 
 
-  RUN(SemanticCheckIII, ""), // post analysis semantic checks
+  RUN(semanticCheckIII), // post analysis semantic checks
 
-  RUN(CreateNestedFuncIterators, ""),
-  RUN(RemoveNestedFunctions, ""),
+  RUN(createNestedFuncIterators),
+  RUN(removeNestedFunctions),
 
   // eventually, optimizations will go here
 
   // passes to prepare for C code generation
-  RUN(InsertFunctionTemps, ""),
-  RUN(TransformLetExprs, ""),
-  RUN(EliminateReturns, ""),
-  RUN(ProcessParameters, ""),
-  RUN(InlineFunctions, ""),
-  RUN(InsertVariableInitializations, ""),
+  RUN(insertFunctionTemps),
+  RUN(transformLetExprs),
+  RUN(eliminateReturns),
+  RUN(processParameters),
+  RUN(inlineFunctions),
+  RUN(insertVariableInitializations),
 
-  RUN(CopyPropagation, ""),
+  RUN(copyPropagation),
 
   // passes to generate code and compile
-  RUN(CodegenOne, ""), // codegen types and function prototypes
-  RUN(Codegen, ""),
-  RUN(BuildBinary, ""),
+  RUN(codegenOne), // codegen types and function prototypes
+  RUN(codegen),
 
   LAST
 };

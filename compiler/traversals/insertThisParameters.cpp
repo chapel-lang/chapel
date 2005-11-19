@@ -71,3 +71,9 @@ void InsertThisParameters::preProcessExpr(Expr* expr) {
     }
   }
 }
+
+
+void insertThisParameters(void) {
+  Pass* pass = new InsertThisParameters();
+  pass->run(Symboltable::getModules(pass->whichModules));
+}

@@ -8,4 +8,6 @@ class RemoveDeadSymbols : public SymtabTraversal {
   void processSymbol(Symbol* sym);
 };
 
+void removeDeadSymbols(void);
+
 #endif

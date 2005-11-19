@@ -9,4 +9,6 @@ public:
   virtual void run(Vec<ModuleSymbol*>* modules);
 };
 
+void processImportExprs(void);
+
 #endif

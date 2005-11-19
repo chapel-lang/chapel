@@ -77,3 +77,9 @@ void InsertFunctionTemps::postProcessStmt(Stmt* stmt) {
     }
   }
 }
+
+
+void insertFunctionTemps(void) {
+  Pass* pass = new InsertFunctionTemps();
+  pass->run(Symboltable::getModules(pass->whichModules));
+}

@@ -4,13 +4,10 @@
 #include "pass.h"
 #include "alist.h"
 
-class Stmt;
+void runAnalysis(void);
 
-class RunAnalysis : public Pass {
- public:
-  static int isRunning;
-  static int runCount;
-  virtual void run(Vec<ModuleSymbol*>* modules);
-};
+extern bool preAnalysis;
+extern bool inAnalysis;
+extern bool postAnalysis;
 
 #endif

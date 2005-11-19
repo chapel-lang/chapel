@@ -3,22 +3,8 @@
 
 #include "pass.h"
 
-// After parsing
-class SemanticCheckI : public Pass {
-public:
-  virtual void run(Vec<ModuleSymbol*>* modules);
-};
-
-// After scope resolution
-class SemanticCheckII : public Pass {
-public:
-  virtual void run(Vec<ModuleSymbol*>* modules);
-};
-
-// After analysis
-class SemanticCheckIII : public Pass {
-public:
-  virtual void run(Vec<ModuleSymbol*>* modules);
-};
+void semanticCheckI(void); // after parsing
+void semanticCheckII(void); // after scope resolution
+void semanticCheckIII(void); // after function resolution
 
 #endif

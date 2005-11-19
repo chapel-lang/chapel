@@ -64,4 +64,7 @@ class GetTypes : public GetStuff {
 };
 
 
+void getStuff(void);
+
+
 #endif

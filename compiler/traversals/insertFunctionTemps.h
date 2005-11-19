@@ -8,4 +8,6 @@ class InsertFunctionTemps : public Traversal {
   void postProcessStmt(Stmt* stmt);
 };
 
+void insertFunctionTemps(void);
+
 #endif

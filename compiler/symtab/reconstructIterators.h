@@ -8,4 +8,6 @@ class ReconstructIterators : public SymtabTraversal {
   void processSymbol(Symbol* sym);
 };
 
+void reconstructIterators(void);
+
 #endif

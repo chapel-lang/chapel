@@ -17,4 +17,6 @@ public :
   DefExpr* copyFuncHelper(char* new_name, AList<DefExpr>* copy_formals, BlockStmt* copy_body, bool inheritIntents);
 };
 
+void createNestedFuncIterators(void);
+
 #endif

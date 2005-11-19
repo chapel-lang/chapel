@@ -173,3 +173,9 @@ static void verifyDefPoint(Symbol* sym) {
   }
   INT_FATAL(sym, "Incorrect defPoint for symbol '%s'", sym->name);
 }
+
+
+void verify(void) {
+  Pass* pass = new Verify();
+  pass->run(Symboltable::getModules(pass->whichModules));
+}

@@ -9,4 +9,6 @@ class InsertDefaultInitVariables : public SymtabTraversal {
   void processSymbol(Symbol* sym);
 };
 
+void insertDefaultInitVariables(void);
+
 #endif

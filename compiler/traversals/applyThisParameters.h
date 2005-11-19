@@ -18,4 +18,6 @@ class ApplyThisParameters : public Traversal {
   void postProcessExpr(Expr* expr);
 };
 
+void applyThisParameters(void);
+
 #endif

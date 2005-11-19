@@ -50,3 +50,9 @@ void ProcessImportExprs::run(Vec<ModuleSymbol*>* modules) {
   }
   Traversal::run(modules);
 }
+
+
+void processImportExprs(void) {
+  Pass* pass = new ProcessImportExprs();
+  pass->run(Symboltable::getModules(pass->whichModules));
+}

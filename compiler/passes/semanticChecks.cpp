@@ -32,7 +32,7 @@ check_redefinition(Symbol* sym) {
 }
 
 
-void SemanticCheckI::run(Vec<ModuleSymbol*>* modules) {
+void semanticCheckI(void) {
   Vec<Symbol*> syms;
   collect_symbols(&syms);
 
@@ -52,7 +52,7 @@ check_calls_ii(CallExpr* call) {
 }
 
 
-void SemanticCheckII::run(Vec<ModuleSymbol*>* modules) {
+void semanticCheckII(void) {
   Vec<BaseAST*> asts;
   collect_asts(&asts);
 
@@ -89,7 +89,7 @@ check_vars_iii(VarSymbol* var) {
 }
 
 
-void SemanticCheckIII::run(Vec<ModuleSymbol*>* modules) {
+void semanticCheckIII(void) {
   Vec<BaseAST*> asts;
   collect_asts(&asts);
 

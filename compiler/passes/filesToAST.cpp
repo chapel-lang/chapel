@@ -10,7 +10,7 @@
 #include "../traversals/fixup.h"
 #include "runtime.h"
 
-void FilesToAST::run(Vec<ModuleSymbol*>* modules) {
+void parse(void) {
   // parse prelude
   Symboltable::parsePrelude();
   char* chplroot = sysdirToChplRoot(system_dir);

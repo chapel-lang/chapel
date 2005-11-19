@@ -9,4 +9,6 @@ class ResolveSymbols : public Traversal {
   void postProcessExpr(Expr* expr);
 };
 
+void resolveSymbols(void);
+
 #endif

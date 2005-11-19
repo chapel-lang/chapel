@@ -278,3 +278,9 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
     }
   }
 }
+
+
+void resolveSymbols(void) {
+  Pass* pass = new ResolveSymbols();
+  pass->run(Symboltable::getModules(pass->whichModules));
+}

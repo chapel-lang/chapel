@@ -9,4 +9,6 @@ class PostAnalysisCleanup : public SymtabTraversal {
   void processSymbol(Symbol* sym);
 };
 
+void postAnalysisCleanup(void);
+
 #endif

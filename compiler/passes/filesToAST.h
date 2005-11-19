@@ -3,9 +3,6 @@
 
 #include "pass.h"
 
-class FilesToAST : public Pass {
-  virtual void run(Vec<ModuleSymbol*>* modules);
-};
+void parse(void);
 
 #endif
-

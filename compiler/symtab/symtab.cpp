@@ -28,9 +28,9 @@ static ModuleSymbol* currentModule = NULL;
 
 ModuleSymbol* commonModule = NULL;
 
-static Vec<ModuleSymbol*> allModules;     // Contains all modules
-static Vec<ModuleSymbol*> codegenModules; // Contains codegened modules
-static Vec<ModuleSymbol*> userModules;    // Contains user modules
+Vec<ModuleSymbol*> allModules;     // Contains all modules
+Vec<ModuleSymbol*> codegenModules; // Contains codegened modules
+Vec<ModuleSymbol*> userModules;    // Contains user modules
 
 static void registerModule(ModuleSymbol* mod) {
   switch (mod->modtype) {

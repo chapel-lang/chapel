@@ -8,4 +8,6 @@ class Instantiate : public Traversal {
   void postProcessExpr(Expr* expr);
 };
 
+void pre_instantiate(void);
+
 #endif

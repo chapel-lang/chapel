@@ -128,5 +128,7 @@ void EliminateReturns::createLabelWithRetAtFuncEnd(ReturnStmt* ret_stmt, FnSymbo
 }
 
 
-
-
+void eliminateReturns(void) {
+  Pass* pass = new EliminateReturns();
+  pass->run(Symboltable::getModules(pass->whichModules));
+}

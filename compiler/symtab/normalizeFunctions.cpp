@@ -53,3 +53,8 @@ void insert_formal_temps(FnSymbol* fn) {
   }
 }
 
+
+void normalizeFunctions(void) {
+  Pass* pass = new NormalizeFunctions();
+  pass->run(Symboltable::getModules(pass->whichModules));
+}

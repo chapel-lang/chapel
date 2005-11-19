@@ -10,4 +10,6 @@ class PrintAST : public Traversal {
   void preProcessStmt(Stmt* stmt);
 };
 
+void printAST(void);
+
 #endif

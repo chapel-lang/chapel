@@ -9,4 +9,6 @@ public:
   void processSymbol(Symbol* sym);
 };
 
+void copyPropagation(void);
+
 #endif

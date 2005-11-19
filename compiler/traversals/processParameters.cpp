@@ -59,3 +59,9 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
     }
   }
 }
+
+
+void processParameters(void) {
+  Pass* pass = new ProcessParameters();
+  pass->run(Symboltable::getModules(pass->whichModules));
+}

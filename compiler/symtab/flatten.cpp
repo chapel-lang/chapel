@@ -27,3 +27,9 @@ void Flatten::processSymbol(Symbol* sym) {
     }
   }
 }
+
+
+void flatten(void) {
+  Pass* pass = new Flatten();
+  pass->run(Symboltable::getModules(pass->whichModules));
+}

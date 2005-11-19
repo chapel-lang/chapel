@@ -42,10 +42,7 @@ void HtmlView::output() {
 void HtmlView::run(Vec<ModuleSymbol*>* modules) {
   static int uid = 1;
   char* filename;
-  if (!strncmp(args, "html ", 5)) {
-    html = stringcpy(args+5);
-
-  }
+  html = currentTraversal;
   forv_Vec(ModuleSymbol, mod, *modules) {
     filename = stringcat("pass", intstring(uid), "_module_", mod->name, ".html");
     fprintf(html_index_file, "&nbsp;&nbsp;<a href=\"%s\">%s</a>\n", filename, mod->name);
@@ -332,4 +329,10 @@ void HtmlView::html_print_fnsymbol(FnSymbol* fn) {
     html_print_symbol(fn->retType->symbol, false);
   }
   output();
+}
+
+
+void htmlView(void) {
+  Pass* pass = new HtmlView();
+  pass->run(Symboltable::getModules(pass->whichModules));
 }

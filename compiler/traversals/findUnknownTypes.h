@@ -17,5 +17,7 @@ class FindUnknownTypes : public Traversal {
   void preProcessSymbol(Symbol* sym);
 };
 
-#endif
+void removeTypeVariableActuals(void);
+void removeTypeVariableFormals(void);
 
+#endif

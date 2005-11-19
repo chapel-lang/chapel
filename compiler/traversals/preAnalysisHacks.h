@@ -12,4 +12,6 @@ public:
   void postProcessType(Type* type);
 };
 
+void preAnalysisHacks(void);
+
 #endif

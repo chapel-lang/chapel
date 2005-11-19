@@ -15,12 +15,10 @@ static bool skipFunctionResolution = false;
 
 struct PassInfo {
   char* name;
-  char* args;
 };
 
-
 #define START_PASSLIST_REGISTRATION \
-  static Pass* stringToPass(char* passname) {
+  static void (*stringToPass(char* passname))(void) {
 
 #define STOP_PASSLIST_REGISTRATION \
   INT_FATAL("Couldn't find a pass named %s", passname); \
@@ -29,35 +27,32 @@ struct PassInfo {
 
 #define REGISTER(pass) \
   if (strcmp(passname, #pass) == 0) { \
-    return new pass(); \
+    return &pass; \
   }
 
 #include "passlist.cpp"  
 
-
-#define FIRST {NULL, NULL}
-#define LAST {NULL, NULL}
-#define RUN(x, a) {#x, a}
+#define FIRST {NULL}
+#define LAST {NULL}
+#define RUN(x) {#x}
 #include "passlist.h"
 
 
-
-static void runPass(char* passName, Pass* pass, char* args) {
+static void runPass(char *passName, void (*pass)(void)) {
   struct timeval startTime;
   struct timeval stopTime;
   struct timezone timezone;
 
   if (no_infer) {
     if (skipFunctionResolution) {
-      if (!strcmp(passName, "FunctionResolution"))
+      if (!strcmp(passName, "functionResolution"))
         skipFunctionResolution = false;
       return;
     }
-  } else if (!strcmp(passName, "FunctionResolution"))
+  } else if (!strcmp(passName, "functionResolution"))
     return;
 
   currentTraversal = stringcpy(passName);
-  pass->setArgs(args);
   if (fdump_html) {
     gettimeofday(&startTime, &timezone);
   }
@@ -66,25 +61,21 @@ static void runPass(char* passName, Pass* pass, char* args) {
     fflush(stderr);
     gettimeofday(&startTime, &timezone);
   }
-  pass->run(Symboltable::getModules(pass->whichModules));
+  (*pass)();
   if (printPasses) {
     gettimeofday(&stopTime, &timezone);
     fprintf(stderr, "%8.3f seconds\n",  
             ((double)((stopTime.tv_sec*1e6+stopTime.tv_usec) - 
                       (startTime.tv_sec*1e6+startTime.tv_usec))) / 1e6);
   }
-  if (!strcmp(passName, "ScopeResolveSymbols")) {
-    postScopeResolution = true;
-  } else if (!strcmp(passName, "RunAnalysis")) {
-    postAnalysis = true;
-  } else if (!strcmp(passName, "FunctionResolution")) {
+  if (!strcmp(passName, "functionResolution")) {
     skipFunctionResolution = true;
   }
 
   if (fdump_html) {
     gettimeofday(&stopTime, &timezone);
     fprintf(html_index_file, "<TR><TD>", passName);
-    if (!strcmp(passName, "RunAnalysis")) {
+    if (!strcmp(passName, "runAnalysis")) {
       fprintf(html_index_file, "<A HREF=\"dump.html\">");
     }
     fprintf(html_index_file, "%s", passName);
@@ -94,7 +85,6 @@ static void runPass(char* passName, Pass* pass, char* args) {
     }
     fprintf(html_index_file, "</TD><TD>", passName);
     HtmlView* htmlview = new HtmlView(analysis_pass);
-    htmlview->setArgs(stringcat("html ", passName));
     htmlview->run(Symboltable::getModules(MODULES_CODEGEN));
     fprintf(html_index_file, "</TD></TR>", passName);
     fflush(html_index_file);
@@ -108,7 +98,6 @@ static void runPass(char* passName, Pass* pass, char* args) {
 static void parsePassFile(char* passfilename) {
   FILE* passfile = openInputFile(passfilename);
   char passname[80] = "";
-  char args[80] = "";
   int readPass;
   bool readLastPass;
   do {
@@ -128,29 +117,8 @@ static void parsePassFile(char* passfilename) {
       } else {
         char* passnameStart = passname + 4; // 4 == strlen("RUN(")
         int passnameLen = strlen(passnameStart);
-        passnameStart[passnameLen-1] = '\0'; // overwrite comma
-      
-        bool readChar;
-        char nextChar;
-        do {
-          readChar = fscanf(passfile, "%c", &nextChar);
-        } while (readChar == 1 && nextChar != '\"');
-        int argLength = 0;
-        do {
-          readChar = fscanf(passfile, "%c", &nextChar);
-          if (readChar) {
-            args[argLength++] = nextChar;
-          }
-        } while (readChar == 1 && nextChar != '\"');
-        args[--argLength] = '\0';
-        char extraStuff[80];
-        fscanf(passfile, "%s", extraStuff);
-        if (strcmp(extraStuff, "),") != 0) {
-          fail("pass name ended poorly: %s", extraStuff);
-        }
-
-        Pass* pass = stringToPass(passnameStart);
-        runPass(passnameStart, pass, args);
+        passnameStart[passnameLen-2] = '\0'; // overwrite ),
+        runPass(passnameStart, stringToPass(passnameStart));
       }
     }
   } while (readPass == 1 && !readLastPass);
@@ -188,7 +156,7 @@ void runPasses(char* passfilename) {
     PassInfo* pass = passlist+1;  // skip over FIRST
     
     while (pass->name != NULL) {
-      runPass(pass->name, stringToPass(pass->name), pass->args);
+      runPass(pass->name, stringToPass(pass->name));
       
       pass++;
     }
@@ -200,4 +168,8 @@ void runPasses(char* passfilename) {
     dump_index_footer(html_index_file);
     fclose(html_index_file);
   }
+}
+
+void passlistTest(void) {
+  printf("Passlist test successful\n");
 }

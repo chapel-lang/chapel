@@ -119,3 +119,9 @@ Instantiate::postProcessExpr(Expr* expr) {
     }
   }
 }
+
+
+void pre_instantiate(void) {
+  Pass* pass = new Instantiate();
+  pass->run(Symboltable::getModules(pass->whichModules));
+}

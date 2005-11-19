@@ -12,4 +12,6 @@ public :
   void run(Vec<ModuleSymbol*>* modules);
 };
 
+void removeNestedFunctions(void);
+
 #endif

@@ -70,3 +70,9 @@ void BuildClassHierarchy::postProcessExpr(Expr* expr) {
     addClassToHierarchy(classType, &alreadySeen);
   }
 }
+
+
+void buildClassHierarchy(void) {
+  Pass* pass = new BuildClassHierarchy();
+  pass->run(Symboltable::getModules(pass->whichModules));
+}

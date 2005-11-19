@@ -37,3 +37,8 @@ void InsertOutParameterInitializations::processSymbol(Symbol* sym) {
   Stmt* initStmt = new ExprStmt(assignExpr);
   body->insertAtHead(initStmt);
 }
+
+void insertOutParameterInitializations(void) {
+  Pass* pass = new InsertOutParameterInitializations();
+  pass->run(Symboltable::getModules(pass->whichModules));
+}

@@ -14,4 +14,6 @@ class CodegenOne : public SymtabTraversal {
   virtual void run(Vec<ModuleSymbol*>* modules = NULL);
 };
 
+void codegenOne(void);
+
 #endif

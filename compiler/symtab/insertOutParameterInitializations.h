@@ -9,4 +9,6 @@ class InsertOutParameterInitializations : public SymtabTraversal {
   void processSymbol(Symbol* sym);
 };
 
+void insertOutParameterInitializations(void);
+
 #endif

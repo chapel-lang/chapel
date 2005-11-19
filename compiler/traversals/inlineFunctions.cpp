@@ -93,3 +93,9 @@ void InlineFunctions::postProcessExpr(Expr* expr) {
 void InlineFunctions::run(Vec<ModuleSymbol*>* modules) {
   Traversal::run(modules);
 }
+
+
+void inlineFunctions(void) {
+  Pass* pass = new InlineFunctions();
+  pass->run(Symboltable::getModules(pass->whichModules));
+}

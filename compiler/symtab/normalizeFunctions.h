@@ -10,4 +10,6 @@ class NormalizeFunctions : public SymtabTraversal {
 
 void insert_formal_temps(FnSymbol* fn);
 
+void normalizeFunctions(void);
+
 #endif

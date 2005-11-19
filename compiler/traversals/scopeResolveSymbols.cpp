@@ -93,3 +93,9 @@ void ScopeResolveSymbols::postProcessExpr(Expr* expr) {
     }
   }
 }
+
+
+void scopeResolveSymbols(void) {
+  Pass* pass = new ScopeResolveSymbols();
+  pass->run(Symboltable::getModules(pass->whichModules));
+}

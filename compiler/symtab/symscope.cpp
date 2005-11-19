@@ -306,7 +306,7 @@ void SymScope::codegenFunctions(FILE* outfile) {
 
 
 void SymScope::addVisibleFunction(FnSymbol* fn) {
-  if (RunAnalysis::isRunning)
+  if (inAnalysis)
     return;
   int is_setter = (fn->name[0] == '=' && !OPERATOR_CHAR(fn->name[1]) &&
                    fn->name[1] != '\0');

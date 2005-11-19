@@ -1,6 +1,7 @@
 #include "removeNamedParameters.h"
 #include "expr.h"
 #include "stmt.h"
+#include "symtab.h"
 
 void RemoveNamedParameters::postProcessExpr(Expr* expr) {
   if (NamedExpr* named_expr = dynamic_cast<NamedExpr*>(expr)) {
@@ -45,4 +46,10 @@ void RemoveNamedParameters::postProcessExpr(Expr* expr) {
       }
     }
   }
+}
+
+
+void removeNamedParameters(void) {
+  Pass* pass = new RemoveNamedParameters();
+  pass->run(Symboltable::getModules(pass->whichModules));
 }

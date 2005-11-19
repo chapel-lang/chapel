@@ -3,6 +3,7 @@
 #include "stmt.h"
 #include "expr.h"
 #include "../traversals/resolveSymbols.h"
+#include "symtab.h"
 
 
 PostAnalysisCleanup::PostAnalysisCleanup() {
@@ -17,3 +18,7 @@ void PostAnalysisCleanup::processSymbol(Symbol* sym) {
 }
 
 
+void postAnalysisCleanup(void) {
+  Pass* pass = new PostAnalysisCleanup();
+  pass->run(Symboltable::getModules(pass->whichModules));
+}

@@ -6,13 +6,15 @@
 #include "symbol.h"
 #include "symtab.h"
 
-int RunAnalysis::runCount = 0;
-int RunAnalysis::isRunning = 0;
+bool preAnalysis = true;
+bool inAnalysis = false;
+bool postAnalysis = false;
 
-void RunAnalysis::run(Vec<ModuleSymbol*>* modules) {
-  RunAnalysis::isRunning = 1;
+void runAnalysis(void) {
+  preAnalysis = false;
+  inAnalysis = true;
   Vec<AList<Stmt> *> stmts;
-  forv_Vec(ModuleSymbol, mod, *modules) {
+  forv_Vec(ModuleSymbol, mod, allModules) {
     stmts.add(mod->stmts);
   }
   AST_to_IF1(stmts);
@@ -20,7 +22,7 @@ void RunAnalysis::run(Vec<ModuleSymbol*>* modules) {
   // I'm just passing in the first non-internal module's filename
   // JBP: that's fine, it is only used for debug, HTML and low level cg files
   char* firstUserModuleName = NULL;
-  forv_Vec(ModuleSymbol, mod, *modules) {
+  forv_Vec(ModuleSymbol, mod, allModules) {
     if (mod->modtype == MOD_USER) {
       firstUserModuleName = mod->filename;
     }
@@ -39,6 +41,6 @@ void RunAnalysis::run(Vec<ModuleSymbol*>* modules) {
     }
   }
 #endif
-  runCount++;
-  RunAnalysis::isRunning = 0;
+  inAnalysis = false;
+  postAnalysis = true;
 }

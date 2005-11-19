@@ -4,9 +4,6 @@
 #include "alist.h"
 #include "pass.h"
 
-class CreateEntryPoint : public Pass {
- public:
-  virtual void run(Vec<ModuleSymbol*>* modules);
-};
+void createEntryPoint(void);
 
 #endif

@@ -1,8 +1,6 @@
 TRAVERSALS_SRCS = \
 	applyThisParameters.cpp \
         buildClassHierarchy.cpp \
-	checkIDs.cpp \
-	checkTypeInfo.cpp \
         clearTypes.cpp \
 	collectASTS.cpp \
 	createConfigVarTable.cpp \
@@ -11,7 +9,6 @@ TRAVERSALS_SRCS = \
         eliminateReturns.cpp \
         findTypeVariables.cpp \
 	findUnknownTypes.cpp \
-	findUnresolvedSymbols.cpp \
 	fixup.cpp \
 	getstuff.cpp \
         htmlview.cpp \
@@ -30,7 +27,6 @@ TRAVERSALS_SRCS = \
         scopeResolveGotos.cpp \
 	scopeResolveSymbols.cpp \
 	specializeCallExprs.cpp \
-	testGetStuff.cpp \
 	transformLetExprs.cpp \
 	traversal.cpp \
 	updateSymbols.cpp \

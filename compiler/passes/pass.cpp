@@ -4,19 +4,5 @@
 
 
 Pass::Pass(void) :
-  args(""),
   whichModules(MODULES_ALL)
 {}
-
-
-void Pass::setArgs(char* init_args) {
-  args = stringcpy(init_args);
-}
-
-
-void DummyPass::run(Vec<ModuleSymbol*>* modules) {
-  fprintf(stdout, "Running dummy pass; args = %s\n", args);
-}
-
-
-

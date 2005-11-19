@@ -106,7 +106,7 @@ apply_getters_setters(BaseAST* ast) {
     apply_getters_setters(a);
 }
 
-void ApplyGettersSetters::run(Vec<ModuleSymbol*>* modules) {
+void applyGettersSetters(void) {
   Vec<FnSymbol*> fns;
   collect_functions(&fns);
   forv_Vec(FnSymbol, fn, fns) {
@@ -115,4 +115,3 @@ void ApplyGettersSetters::run(Vec<ModuleSymbol*>* modules) {
     }
   }
 }
-

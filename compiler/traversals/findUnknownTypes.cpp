@@ -77,3 +77,15 @@ void RemoveTypeVariableFormals::preProcessSymbol(Symbol* sym) {
     }
   }
 }
+
+
+void removeTypeVariableActuals(void) {
+  Pass* pass = new RemoveTypeVariableActuals();
+  pass->run(Symboltable::getModules(pass->whichModules));
+}
+
+
+void removeTypeVariableFormals(void) {
+  Pass* pass = new RemoveTypeVariableFormals();
+  pass->run(Symboltable::getModules(pass->whichModules));
+}

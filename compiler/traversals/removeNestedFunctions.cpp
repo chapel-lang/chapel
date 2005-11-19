@@ -131,3 +131,9 @@ void RemoveNestedFunctions::run(Vec<ModuleSymbol*>* modules) {
     addVarsToFormals(fn, uses);
   }
 }
+
+
+void removeNestedFunctions(void) {
+  Pass* pass = new RemoveNestedFunctions();
+  pass->run(Symboltable::getModules(pass->whichModules));
+}

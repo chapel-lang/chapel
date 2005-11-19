@@ -22,4 +22,6 @@ class CreateConfigVarTable : public SymtabTraversal {
   virtual void run(Vec<ModuleSymbol*>* modules = NULL);
 };
 
+void createConfigVarTable(void);
+
 #endif

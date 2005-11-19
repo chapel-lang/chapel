@@ -3,8 +3,6 @@
 
 #include "pass.h"
 
-class Codegen : public Pass {
-  virtual void run(Vec<ModuleSymbol*>* modules);
-};
+void codegen(void);
 
 #endif

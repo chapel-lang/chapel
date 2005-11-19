@@ -9,4 +9,6 @@ class BuildClassHierarchy : public Traversal {
   void postProcessExpr(Expr* expr);
 };
 
+void buildClassHierarchy(void);
+
 #endif

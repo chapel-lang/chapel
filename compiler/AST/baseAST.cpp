@@ -244,7 +244,7 @@ void BaseAST::postCopy(BaseAST* copy,
   copy->lineno = lineno;
   copy->filename = filename;
   copy->addPragmas(&pragmas);
-  if (!RunAnalysis::isRunning) {
+  if (!inAnalysis) {
     Expr* expr = dynamic_cast<Expr*>(this);
     Expr* exprCopy = dynamic_cast<Expr*>(copy);
     if (expr && exprCopy) {

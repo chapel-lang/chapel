@@ -59,3 +59,7 @@ void InsertDefaultInitVariables::processSymbol(Symbol* sym) {
   }
 }
 
+void insertDefaultInitVariables(void) {
+  Pass* pass = new InsertDefaultInitVariables();
+  pass->run(Symboltable::getModules(pass->whichModules));
+}

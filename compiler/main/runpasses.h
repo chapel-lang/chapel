@@ -5,4 +5,6 @@ extern bool printPasses;
 
 void runPasses(char* passfilename);
 
+void passlistTest(void);
+
 #endif

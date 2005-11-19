@@ -69,4 +69,7 @@ void BuildLValueFunctions::preProcessStmt(Stmt* stmt) {
 }
 
 
-
+void buildLValueFunctions(void) {
+  Pass* pass = new BuildLValueFunctions();
+  pass->run(Symboltable::getModules(pass->whichModules));
+}

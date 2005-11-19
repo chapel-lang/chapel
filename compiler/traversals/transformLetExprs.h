@@ -10,4 +10,6 @@ class TransformLetExprs : public Traversal {
   void postProcessExpr(Expr* expr);
 };
 
+void transformLetExprs(void);
+
 #endif

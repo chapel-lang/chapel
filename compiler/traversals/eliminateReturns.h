@@ -19,4 +19,6 @@ class EliminateReturns : public Traversal {
   void replaceRetWithGoto(ReturnStmt* ret_stmt, FnSymbol* fn_sym);
 };
 
+void eliminateReturns(void);
+
 #endif

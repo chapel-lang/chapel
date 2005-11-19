@@ -3,11 +3,7 @@
 
 #include "pass.h"
 
-class PreAnalysisCleanup : public Pass {
- public:
-  virtual void run(Vec<ModuleSymbol*>* modules);
-};
-
+void preAnalysisCleanup(void);
 void tagGenerics(Vec<BaseAST *> &asts);
 int tagGenerics(FnSymbol *f);
 int tagGenerics(Type *t);

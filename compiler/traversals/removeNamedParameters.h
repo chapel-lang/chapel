@@ -7,4 +7,6 @@ class RemoveNamedParameters : public Traversal {
   void postProcessExpr(Expr* expr);
 };
 
+void removeNamedParameters(void);
+
 #endif

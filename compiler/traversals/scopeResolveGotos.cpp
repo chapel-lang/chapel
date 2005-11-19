@@ -100,3 +100,9 @@ void ScopeResolveGotos::preProcessStmt(Stmt* stmt) {
     INT_FATAL(stmt, "Label already resolved in goto");
   }
 }
+
+
+void scopeResolveGotos(void) {
+  Pass* pass = new ScopeResolveGotos();
+  pass->run(Symboltable::getModules(pass->whichModules));
+}

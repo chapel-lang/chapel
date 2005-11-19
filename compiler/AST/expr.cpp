@@ -748,7 +748,7 @@ FnSymbol* CallExpr::findFnSymbol(void) {
 
 
 Type* CallExpr::typeInfo(void) {
-  if (!no_infer && !RunAnalysis::runCount) {
+  if (!no_infer && preAnalysis) {
     return dtUnknown;
   }
 
@@ -1134,7 +1134,7 @@ void LetExpr::traverseExpr(Traversal* traversal) {
 
 
 Type* LetExpr::typeInfo(void) {
-  if (!RunAnalysis::runCount) {
+  if (preAnalysis) {
     return dtUnknown;
   }
 
@@ -1196,7 +1196,7 @@ void CondExpr::traverseExpr(Traversal* traversal) {
 
 // not yet implemented right
 Type* CondExpr::typeInfo(void) {
-  if (!RunAnalysis::runCount) {
+  if (preAnalysis) {
     return dtUnknown;
   }
   return thenExpr->typeInfo();

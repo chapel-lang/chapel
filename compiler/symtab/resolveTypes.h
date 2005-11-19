@@ -9,4 +9,6 @@ class ResolveTypes : public SymtabTraversal {
   void processSymbol(Symbol* sym);
 };
 
+void resolveTypes(void);
+
 #endif

@@ -8,7 +8,7 @@
 #include "runtime.h"
 
 
-static void build_chpl_main(Vec<ModuleSymbol*>* modules);
+static void build_chpl_main(void);
 static void build_constructor(ClassType* ct);
 static void build_init(ClassType* ct);
 static void build_getter(ClassType* ct, Symbol *tmp);
@@ -76,8 +76,8 @@ static FnSymbol* function_exists(char* name,
 }
 
 
-void BuildDefaultFunctions::run(Vec<ModuleSymbol*>* modules) {
-  build_chpl_main(modules);
+void buildDefaultFunctions(void) {
+  build_chpl_main();
 
   Vec<BaseAST*> asts;
   collect_asts(&asts);
@@ -131,14 +131,14 @@ static ModuleSymbol* findUniqueUserModule(Vec<ModuleSymbol*>* modules) {
 }
 
 
-static void build_chpl_main(Vec<ModuleSymbol*>* modules) {
+static void build_chpl_main(void) {
   // find main function if it exists; create one if not
   chpl_main = function_exists("main", 0);
 
   BlockStmt* mainBody = 0;
   ModuleSymbol* mainModule = 0;
   if (!chpl_main) {
-    mainModule = findUniqueUserModule(modules);
+    mainModule = findUniqueUserModule(&allModules);
     if (mainModule) {
       mainBody = new BlockStmt();
       chpl_main = new FnSymbol("main", NULL, new AList<DefExpr>(), dtVoid, NULL, mainBody);

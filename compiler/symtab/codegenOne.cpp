@@ -120,3 +120,9 @@ void CodegenOne::run(Vec<ModuleSymbol*>* modules) {
   }
   closeCFile(outfile);
 }
+
+
+void codegenOne(void) {
+  Pass* pass = new CodegenOne();
+  pass->run(Symboltable::getModules(pass->whichModules));
+}

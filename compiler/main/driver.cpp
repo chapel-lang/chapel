@@ -23,9 +23,6 @@ static void handleLibPath(ArgumentState* arg_state, char* arg_unused);
 
 FILE* html_index_file = NULL;
 
-bool postScopeResolution = false;
-bool postAnalysis = false;
-
 int fdump_html = 0;
 static char passlist_filename[FILENAME_MAX] = "";
 static char libraryFilename[FILENAME_MAX] = "";

@@ -3,6 +3,7 @@
 #include "expr.h"
 #include "stmt.h"
 #include "symscope.h"
+#include "symtab.h"
 
 
 bool CreateConfigVarTable::running = false;
@@ -54,4 +55,10 @@ void CreateConfigVarTable::run(Vec<ModuleSymbol*>* modules) {
   CreateConfigVarTable::running = true;
   SymtabTraversal::run(modules);
   CreateConfigVarTable::running = false;
+}
+
+
+void createConfigVarTable(void) {
+  Pass* pass = new CreateConfigVarTable();
+  pass->run(Symboltable::getModules(pass->whichModules));
 }

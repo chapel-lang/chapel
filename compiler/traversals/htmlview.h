@@ -26,4 +26,6 @@ class HtmlView : public Traversal {
   HtmlView(int ashow_analysis_info = 0);
 };
 
+void htmlView(void);
+
 #endif

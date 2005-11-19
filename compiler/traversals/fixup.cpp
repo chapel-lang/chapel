@@ -307,6 +307,12 @@ void Fixup::run(Vec<ModuleSymbol*>* modules) {
 }
 
 
+void fixup(void) {
+  Pass* pass = new Fixup();
+  pass->run(Symboltable::getModules(pass->whichModules));
+}
+
+
 void fixup(BaseAST* ast) {
   fixup(ast, ast);
 }

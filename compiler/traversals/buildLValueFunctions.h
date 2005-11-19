@@ -10,4 +10,6 @@ class BuildLValueFunctions : public Traversal {
   void preProcessStmt(Stmt* stmt);
 };
 
+void buildLValueFunctions(void);
+
 #endif

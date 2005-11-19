@@ -3,6 +3,7 @@
 #include "stmt.h"
 #include "symbol.h"
 #include "type.h"
+#include "symtab.h"
 
 GetStuff::GetStuff(int flags) :
   Traversal(false, false),
@@ -73,3 +74,8 @@ GetTypes::GetTypes(void) :
   GetStuff(GET_TYPES)
 {}
 
+
+void getStuff(void) {
+  Pass* pass = new GetStuff();
+  pass->run(Symboltable::getModules(pass->whichModules));
+}
