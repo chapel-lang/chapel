@@ -50099,3 +50099,16 @@ Removed files:
 	                             findUnresolvedSymbols.h 
 	                             testGetStuff.cpp testGetStuff.h 
 
+---------------------------------------------------------------------------
+
+11/20/05 18:54:33 -- jplevyak
+
+Log message:
+	Fix valgrind runs?!?!
+	Tried to remove the "linux32" prefix for runs on 64 bit linux
+	as it isn't required any more, but I forgot to remove the
+	use the the variable.
+
+Modified files:
+	chapel/test/: sub_test 
+
