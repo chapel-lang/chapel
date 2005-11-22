@@ -50199,3 +50199,16 @@ Added files:
 	chapel/compiler/include/: passes.h 
 	chapel/compiler/passes/: scopeResolve.cpp 
 
+---------------------------------------------------------------------------
+
+11/22/05 11:02:35 -- bradc
+
+Log message:
+	It seems that when refactoring mail-related code in
+	the nightly regression tester, I broke the script's
+	ability to mail out an error report when the build
+	failed.  This should fix that bug.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
