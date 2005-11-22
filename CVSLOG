@@ -50112,3 +50112,67 @@ Log message:
 Modified files:
 	chapel/test/: sub_test 
 
+---------------------------------------------------------------------------
+
+11/21/05 17:16:32 -- deitz
+
+Log message:
+	Refactored scope resolution pass so that it resolves gotos (started)
+	and applies an implicit 'this' MemberAccess where necessary.  Note
+	that if a symbol is resolved, it will not get an implicit 'this'
+	MemberAccess anymore.  Thus I have changed the automatically generated
+	setters to have UnresolvedSymbols when they are generated.
+	
+	Made it easier to create MemberAccesses by overloading the constructor
+	as has been done for other Exprs.  You can now create a MemberAccess
+	with a Symbol baseExpr and the SymExpr is put around it.  You can
+	create the member symbol with a string and it is made into an
+	UnresolvedSymbol.  Updated code where I could make it simpler.
+	
+	Implementation question: Now that we use getters and setters, why do
+	we use the member_type and member_offset fields in the MemberAccess?
+	Why do we generate the getters and setters with casts rather than
+	simply accessess?  I gather this is a tradeoff optimizing less dynamic
+	dispatch on getters and setters at the expense of using static casts
+	in the generated code.  Is this so?
+	
+	Implemented collect_asts_postorder to be like collect_asts but to
+	return the Vec<BaseAST*> gotten with a postorder traversal of the AST.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp expr.cpp type.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: astutil.h baseAST.h expr.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: Makefile.share 
+	                         buildDefaultFunctions.cpp 
+	                         normalizeParsedAST.cpp 
+	chapel/compiler/symtab/: reconstructIterators.cpp 
+	chapel/compiler/traversals/: Makefile.share collectASTS.cpp 
+	                             collectASTS.h preAnalysisHacks.cpp 
+	chapel/test/classes/bradc/: weirdinit.good 
+	chapel/test/classes/deitz/: test_method_call2.good 
+	chapel/test/trivial/bradc/: defaultinit1a.good 
+	                            initvarsamename.good 
+	                            initvarsamename2.good vardecls.good 
+	                            vardecls1a.good 
+	chapel/test/trivial/deitz/: test_config_use_before_decl.good 
+	                            test_scope2.good 
+	                            test_use_before_def1.good 
+	                            test_use_before_def2.good 
+	                            test_use_before_def3.good 
+	                            test_var_decl_strange1.good 
+	                            test_var_decl_strange2.good 
+	                            test_var_decl_strange3.good 
+	                            test_var_decl_strange4.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+Removed files:
+	chapel/compiler/traversals/: applyThisParameters.cpp 
+	                             applyThisParameters.h 
+	                             scopeResolveGotos.cpp 
+	                             scopeResolveGotos.h 
+	                             scopeResolveSymbols.cpp 
+	                             scopeResolveSymbols.h 
+
