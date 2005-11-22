@@ -50176,3 +50176,15 @@ Removed files:
 	                             scopeResolveSymbols.cpp 
 	                             scopeResolveSymbols.h 
 
+---------------------------------------------------------------------------
+
+11/21/05 17:24:08 -- deitz
+
+Log message:
+	Added a future for a bug with label resolution code having to do with
+	nested loops and breaks or continues.  Fix coming soon.
+
+Added files:
+	chapel/test/trivial/deitz/: test_break1.chpl test_break1.future 
+	                            test_break1.good 
+
