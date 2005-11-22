@@ -50188,3 +50188,14 @@ Added files:
 	chapel/test/trivial/deitz/: test_break1.chpl test_break1.future 
 	                            test_break1.good 
 
+---------------------------------------------------------------------------
+
+11/22/05 09:50:35 -- deitz
+
+Log message:
+	Forgot to commit these new files yesterday.
+
+Added files:
+	chapel/compiler/include/: passes.h 
+	chapel/compiler/passes/: scopeResolve.cpp 
+
