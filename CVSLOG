@@ -50212,3 +50212,23 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+11/22/05 13:21:59 -- deitz
+
+Log message:
+	Fixed and unified goto resolution with scope resolution.
+	
+	This does not fix test/trivial/deitz/test_break1.chpl because the
+	break statements in nested loops interact poorly with the nested
+	function transformation.
+	
+	Added a few constructors for LabelStmt.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp 
+	chapel/compiler/include/: stmt.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: scopeResolve.cpp 
+	chapel/compiler/traversals/: eliminateReturns.cpp 
+
