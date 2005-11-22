@@ -169,6 +169,9 @@ class MemberAccess : public Expr {
   int member_offset;
 
   MemberAccess(Expr* init_base, Symbol* init_member);
+  MemberAccess(Symbol* init_base, Symbol* init_member);
+  MemberAccess(Expr* init_base, char* init_member);
+  MemberAccess(Symbol* init_base, char* init_member);
   virtual void verify(void); 
   COPY_DEF(MemberAccess);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);

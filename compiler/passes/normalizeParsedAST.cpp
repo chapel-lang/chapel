@@ -97,7 +97,7 @@ static void construct_tuple_type(int size) {
     }
 
     fn->retRef = true;
-    fn->body = new BlockStmt(new ReturnStmt(new SymExpr(fields.v[i-1])));
+    fn->body = new BlockStmt(new ReturnStmt(new SymExpr(fields.v[i-1]->name)));
     DefExpr* def = new DefExpr(fn);
     if (no_infer)
       def->exprType = new SymExpr(types.v[i-1]->symbol);
@@ -124,9 +124,8 @@ static void construct_tuple_type(int size) {
       actuals->insertAtTail(new_StringLiteral(stringcpy(", ")));
     actuals->insertAtTail(
       new MemberAccess(
-        new SymExpr(
-          new UnresolvedSymbol("val")),
-        new UnresolvedSymbol(stringcat("_f", intstring(i)))));
+          new UnresolvedSymbol("val"),
+          stringcat("_f", intstring(i))));
   }
   actuals->insertAtTail(new_StringLiteral(stringcpy(")")));
   Expr* fwriteCall = new CallExpr("fwrite", new SymExpr(fileArg), actuals);

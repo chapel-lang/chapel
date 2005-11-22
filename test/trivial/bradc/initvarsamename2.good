@@ -1,1 +1,1 @@
-Error: Variable 'x' used before it is defined (initvarsamename2.chpl:2)
+Error: Variable 'x' used before defined (initvarsamename2.chpl:2)

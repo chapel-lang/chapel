@@ -15,9 +15,7 @@ class ReconstructIteratorsHelper : public Traversal {
       returnStmt->insertBefore(
         new ExprStmt(
           new CallExpr(
-            new MemberAccess(
-              new SymExpr(seq),
-              new UnresolvedSymbol("_yield")),
+            new MemberAccess(seq, "_yield"),
             returnStmt->expr->copy())));
       if (returnStmt->yield) {
         returnStmt->remove();

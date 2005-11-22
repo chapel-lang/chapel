@@ -174,13 +174,6 @@ void collect_symbols(Vec<Symbol*>* syms, Type* type);
 //   FnSymbol* function = ...;
 //   collect_symbols(&all_syms, function);
 
-void collect_asts(Vec<BaseAST*>* asts);
-void collect_asts(Vec<BaseAST*>* asts, BaseAST* ast);
-// USAGE:
-//   Vec<BaseAST*> all_asts;
-//   FnSymbol* function = ...;
-//   collect_asts(&all_asts, function);
-
 int compar_baseast(const void *ai, const void *aj);
 // for use with qsort
 

@@ -1,6 +1,7 @@
 #include <typeinfo>
 #include "geysa.h"
 #include "analysis.h"
+#include "astutil.h"
 #include "chapel_ifa.h"
 #include "expr.h"
 #include "files.h"

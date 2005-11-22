@@ -9,7 +9,6 @@
 #include "type.h"
 #include "../traversals/fixup.h"
 #include "../traversals/updateSymbols.h"
-#include "../traversals/collectASTS.h"
 #include "../passes/filesToAST.h"
 
 
@@ -857,7 +856,7 @@ AList<Stmt>* ClassType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSym
     }
     addWriteStmt(body, fileArg, new_StringLiteral(tmp->name));
     addWriteStmt(body, fileArg, new_StringLiteral(" = "));
-    addWriteStmt(body, fileArg, new MemberAccess(new SymExpr(arg), tmp));
+    addWriteStmt(body, fileArg, new MemberAccess(arg, tmp));
     first = false;
   }
 

@@ -1,3 +1,5 @@
+#include "passes.h"
+
 #include "../passes/applyGettersSetters.h"
 #include "../passes/buildDefaultFunctions.h"
 #include "../passes/codegen.h"
@@ -22,7 +24,6 @@
 #include "../symtab/removeDeadSymbols.h"
 #include "../symtab/resolveTypes.h"
 
-#include "../traversals/applyThisParameters.h"
 #include "../traversals/buildClassHierarchy.h"
 #include "../traversals/createConfigVarTable.h"
 #include "../traversals/createNestedFuncIterators.h"
@@ -44,8 +45,6 @@
 #include "../traversals/removeNamedParameters.h"
 #include "../traversals/removeNestedFunctions.h"
 #include "../traversals/resolveSymbols.h"
-#include "../traversals/scopeResolveGotos.h"
-#include "../traversals/scopeResolveSymbols.h"
 #include "../traversals/specializeCallExprs.h"
 #include "../traversals/transformLetExprs.h"
 #include "../traversals/verify.h"
@@ -58,7 +57,6 @@
 
 START_PASSLIST_REGISTRATION
 REGISTER(applyGettersSetters);
-REGISTER(applyThisParameters);
 REGISTER(buildClassHierarchy);
 REGISTER(buildDefaultFunctions);
 REGISTER(buildLValueFunctions);
@@ -102,8 +100,7 @@ REGISTER(removeTypeVariableFormals);
 REGISTER(resolveSymbols);       // SJD: Resolve symbols after analysis
 REGISTER(resolveTypes);
 REGISTER(runAnalysis);
-REGISTER(scopeResolveGotos);
-REGISTER(scopeResolveSymbols);
+REGISTER(scopeResolve);
 REGISTER(semanticCheckI);
 REGISTER(semanticCheckII);
 REGISTER(semanticCheckIII);

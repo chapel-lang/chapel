@@ -1,1 +1,1 @@
-Error: Variable 'x' used before it is defined (vardecls.chpl:4)
+Error: Variable 'x' used before defined (vardecls.chpl:4)

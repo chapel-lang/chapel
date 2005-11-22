@@ -268,7 +268,7 @@ finishConstructor(FnSymbol* fn) {
     for_alist(DefExpr, formalDef, fn->formals) {
       if (ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym)) {
         if (!strcmp(formal->name, field->name)) {
-          Expr* lhs = new MemberAccess(new SymExpr(fn->_this), field);
+          Expr* lhs = new MemberAccess(fn->_this, field);
           Expr* assign_expr = new CallExpr(OP_GETSNORM, lhs, formal);
           Stmt* assign_stmt = new ExprStmt(assign_expr);
           stmts->insertAtTail(assign_stmt);
@@ -331,7 +331,7 @@ static void build_setter(ClassType* ct, Symbol* field) {
   if (no_infer && field->defPoint->exprType)
     argDef->exprType = field->defPoint->exprType->copy();
   fn->formals->insertAtTail(argDef);
-  fn->body->insertAtTail(new ExprStmt(new CallExpr(OP_GETSNORM, field, fieldArg)));
+  fn->body->insertAtTail(new ExprStmt(new CallExpr(OP_GETSNORM, new SymExpr(field->name), fieldArg)));
 
   ct->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(new DefExpr(fn)));
   reset_file_info(fn, field->lineno, field->filename);
@@ -365,8 +365,8 @@ static void build_record_equality_function(ClassType* ct) {
   Symboltable::continueFnDef(fn, args, dtBoolean);
   Expr* cond = NULL;
   forv_Vec(Symbol, tmp, ct->fields) {
-    Expr* left = new MemberAccess(new SymExpr(arg1), tmp);
-    Expr* right = new MemberAccess(new SymExpr(arg2), tmp);
+    Expr* left = new MemberAccess(arg1, tmp);
+    Expr* right = new MemberAccess(arg2, tmp);
     cond = (cond)
       ? new CallExpr(OP_LOGAND, cond, new CallExpr(OP_EQUAL, left, right))
       : new CallExpr(OP_EQUAL, left, right);
@@ -388,8 +388,8 @@ static void build_record_inequality_function(ClassType* ct) {
   Symboltable::continueFnDef(fn, args, dtBoolean);
   Expr* cond = NULL;
   forv_Vec(Symbol, tmp, ct->fields) {
-    Expr* left = new MemberAccess(new SymExpr(arg1), tmp);
-    Expr* right = new MemberAccess(new SymExpr(arg2), tmp);
+    Expr* left = new MemberAccess(arg1, tmp);
+    Expr* right = new MemberAccess(arg2, tmp);
     cond = (cond)
       ? new CallExpr(OP_LOGOR, cond, new CallExpr(OP_NEQUAL, left, right))
       : new CallExpr(OP_NEQUAL, left, right);
@@ -415,8 +415,8 @@ static void build_record_assignment_function(ClassType* ct) {
   Symboltable::continueFnDef(fn, args, dtUnknown);
   AList<Stmt>* body = new AList<Stmt>();
   forv_Vec(Symbol, tmp, ct->fields) {
-    Expr* left = new MemberAccess(new SymExpr(_arg1), tmp);
-    Expr* right = new MemberAccess(new SymExpr(arg2), tmp);
+    Expr* left = new MemberAccess(_arg1, tmp);
+    Expr* right = new MemberAccess(arg2, tmp);
     Expr* assign_expr = new CallExpr(OP_GETSNORM, left, right);
     body->insertAtTail(new ExprStmt(assign_expr));
   }

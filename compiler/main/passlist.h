@@ -30,9 +30,7 @@ PassInfo passlist[] = {
   RUN(insertThisParameters),
 
   // SCOPE RESOLUTION
-  RUN(scopeResolveSymbols),
-  RUN(scopeResolveGotos),
-  RUN(applyThisParameters),
+  RUN(scopeResolve),
 
   RUN(semanticCheckII), // post scope resolution semantic checks
 

@@ -23,12 +23,12 @@ void PreAnalysisHacks::postProcessStmt(Stmt* stmt) {
       new CallExpr(
         new MemberAccess(
           loop->iterators->only()->copy(),
-          new UnresolvedSymbol("_forall"))));
+          "_forall")));
     if (no_infer) {
       DefExpr* index = loop->indices->only();
       Expr* type = loop->iterators->only()->copy();
-      type = new CallExpr(new MemberAccess(type, new UnresolvedSymbol("_last")));
-      type = new CallExpr(new MemberAccess(type, new UnresolvedSymbol("_element")));
+      type = new CallExpr(new MemberAccess(type, "_last"));
+      type = new CallExpr(new MemberAccess(type, "_element"));
       if (!index->exprType)
         index->replace(new DefExpr(index->sym, NULL, type));
     }
@@ -53,13 +53,11 @@ void PreAnalysisHacks::postProcessExpr(Expr* expr) {
       // if only one is, change to append or prepend
       if (leftType != dtUnknown) {
         call->replace(new CallExpr(
-                        new MemberAccess(call->get(2)->copy(),
-                          new UnresolvedSymbol("_prepend")),
+                        new MemberAccess(call->get(2)->copy(), "_prepend"),
                         call->get(1)->copy()));
       } else if (rightType != dtUnknown) {
         call->replace(new CallExpr(
-                        new MemberAccess(call->get(1)->copy(),
-                          new UnresolvedSymbol("_append")),
+                        new MemberAccess(call->get(1)->copy(), "_append"),
                         call->get(2)->copy()));
       }
     }
@@ -144,10 +142,10 @@ void PreAnalysisHacks::postProcessExpr(Expr* expr) {
       if (!strcmp(base->var->name, "_construct__aarray")) {
         if (DefExpr* def = dynamic_cast<DefExpr*>(call->parentExpr)) {
           call->parentStmt->insertAfter(
-            new ExprStmt(new CallExpr(new MemberAccess(new SymExpr(def->sym), new UnresolvedSymbol("myinit")))));
+            new ExprStmt(new CallExpr(new MemberAccess(def->sym, "myinit"))));
           call->parentStmt->insertAfter(
             new ExprStmt(new CallExpr(OP_GETSNORM,
-                                      new MemberAccess(new SymExpr(def->sym), new UnresolvedSymbol("dom")),
+                                      new MemberAccess(def->sym, "dom"),
                                       call->argList->last()->copy())));
           call->argList->last()->replace(new_IntLiteral(2));
         }
@@ -171,9 +169,7 @@ void PreAnalysisHacks::postProcessExpr(Expr* expr) {
           stmt->insertBefore(
             new ExprStmt(
               new CallExpr(
-                new MemberAccess(
-                  new SymExpr(_adomain_tmp),
-                  new UnresolvedSymbol("_set")),
+                new MemberAccess(_adomain_tmp, "_set"),
                 new_IntLiteral(dim), arg->copy())));
           dim++;
         }

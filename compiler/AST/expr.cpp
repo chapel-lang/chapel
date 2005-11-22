@@ -512,6 +512,36 @@ MemberAccess::MemberAccess(Expr* init_base, Symbol* init_member) :
 }
 
 
+MemberAccess::MemberAccess(Symbol* init_base, Symbol* init_member) :
+  Expr(EXPR_MEMBERACCESS),
+  base(new SymExpr(init_base)),
+  member(init_member),
+  member_type(0),
+  member_offset(0)
+{ 
+}
+
+
+MemberAccess::MemberAccess(Expr* init_base, char* init_member) :
+  Expr(EXPR_MEMBERACCESS),
+  base(init_base),
+  member(new UnresolvedSymbol(init_member)),
+  member_type(0),
+  member_offset(0)
+{ 
+}
+
+
+MemberAccess::MemberAccess(Symbol* init_base, char* init_member) :
+  Expr(EXPR_MEMBERACCESS),
+  base(new SymExpr(init_base)),
+  member(new UnresolvedSymbol(init_member)),
+  member_type(0),
+  member_offset(0)
+{ 
+}
+
+
 void MemberAccess::verify() {
   if (astType != EXPR_MEMBERACCESS) {
     INT_FATAL(this, "Bad MemberAccess::astType");

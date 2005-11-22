@@ -10,9 +10,7 @@
 class CollectFunctions : public Traversal {
  public:
   Vec<FnSymbol*>* fns;
-
   CollectFunctions(Vec<FnSymbol*>* iFns) : fns(iFns) { }
-
   void postProcessExpr(Expr* expr) {
     if (DefExpr* def = dynamic_cast<DefExpr*>(expr))
       if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def->sym))
@@ -20,10 +18,66 @@ class CollectFunctions : public Traversal {
   }
 };
 
-
 void collect_functions(Vec<FnSymbol*>* fns) {
   CollectFunctions* traversal = new CollectFunctions(fns);
-  traversal->run(Symboltable::getModules(MODULES_ALL));
+  traversal->run(&allModules);
+}
+
+
+class PreCollectAST : public Traversal {
+ public:
+  Vec<BaseAST*>* asts;
+  PreCollectAST(Vec<BaseAST*>* iAsts) : asts(iAsts) { }
+  void preProcessStmt(Stmt* stmt) {
+    asts->add(stmt);
+  }
+  void preProcessExpr(Expr* expr) {
+    asts->add(expr);
+    if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
+      asts->add(def->sym);
+      if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(def->sym))
+        if (ts->definition)
+          asts->add(ts->definition);
+    }
+  }
+};
+
+class PostCollectAST : public Traversal {
+ public:
+  Vec<BaseAST*>* asts;
+  PostCollectAST(Vec<BaseAST*>* iAsts) : asts(iAsts) { }
+  void postProcessStmt(Stmt* stmt) {
+    asts->add(stmt);
+  }
+  void postProcessExpr(Expr* expr) {
+    asts->add(expr);
+    if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
+      asts->add(def->sym);
+      if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(def->sym))
+        if (ts->definition)
+          asts->add(ts->definition);
+    }
+  }
+};
+
+void collect_asts(Vec<BaseAST*>* asts, BaseAST* ast) {
+  TRAVERSE(ast, new PreCollectAST(asts), true);
+  asts->add(ast);
+}
+
+void collect_asts(Vec<BaseAST*>* asts) {
+  Traversal* traversal = new PreCollectAST(asts);
+  traversal->run(&allModules);
+}
+
+void collect_asts_postorder(Vec<BaseAST*>* asts, BaseAST* ast) {
+  TRAVERSE(ast, new PostCollectAST(asts), true);
+  asts->add(ast);
+}
+
+void collect_asts_postorder(Vec<BaseAST*>* asts) {
+  Traversal* traversal = new PostCollectAST(asts);
+  traversal->run(&allModules);
 }
 
 

@@ -5,12 +5,4 @@
 #include "traversal.h"
 #include "vec.h"
 
-class CollectASTs : public Traversal {
- public:
-  Vec<BaseAST*>* asts;
-  CollectASTs(Vec<BaseAST*>* init_asts);
-  void preProcessStmt(Stmt* stmt);
-  void preProcessExpr(Expr* expr);
-};
-
 #endif

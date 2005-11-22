@@ -1,5 +1,4 @@
 TRAVERSALS_SRCS = \
-	applyThisParameters.cpp \
         buildClassHierarchy.cpp \
         clearTypes.cpp \
 	collectASTS.cpp \
@@ -24,8 +23,6 @@ TRAVERSALS_SRCS = \
 	removeNamedParameters.cpp \
         removeNestedFunctions.cpp \
 	resolveSymbols.cpp \
-        scopeResolveGotos.cpp \
-	scopeResolveSymbols.cpp \
 	specializeCallExprs.cpp \
 	transformLetExprs.cpp \
 	traversal.cpp \
