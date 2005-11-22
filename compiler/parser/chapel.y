@@ -326,7 +326,7 @@ empty_stmt:
 label_stmt:
   TLABEL identifier stmt
     {
-      $3->insertAtHead(new LabelStmt(new DefExpr(new LabelSymbol($2))));
+      $3->insertAtHead(new LabelStmt($2));
       $$ = $3;
     }
 ;

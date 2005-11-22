@@ -199,7 +199,9 @@ class LabelStmt : public Stmt {
   DefExpr* defLabel;
   Stmt* stmt;
   
-  LabelStmt(DefExpr* initDefLabel);
+  LabelStmt(DefExpr* iDefLabel);
+  LabelStmt(Symbol* iDefLabel);
+  LabelStmt(char* iDefLabel);
   virtual void verify(void);
   COPY_DEF(LabelStmt);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -207,6 +209,7 @@ class LabelStmt : public Stmt {
 
   void print(FILE* outfile);
   void codegenStmt(FILE* outfile);
+  char* labelName(void);
 };
 
 

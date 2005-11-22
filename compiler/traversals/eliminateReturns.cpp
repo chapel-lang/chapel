@@ -123,7 +123,7 @@ void EliminateReturns::createLabelWithRetAtFuncEnd(ReturnStmt* ret_stmt, FnSymbo
   label_sym->cname = stringcat(label_sym->name, "_", intstring(uid++));
   label_ret_map->put(fn_sym, label_sym);
   
-  fn_sym->insertAtTail(new LabelStmt(new DefExpr(label_sym))); 
+  fn_sym->insertAtTail(new LabelStmt(label_sym)); 
   fn_sym->insertAtTail(ret_stmt->copy());
 }
 

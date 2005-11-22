@@ -808,9 +808,21 @@ void SelectStmt::codegenStmt(FILE* outfile) {
 }
 
 
-LabelStmt::LabelStmt(DefExpr* initDefLabel) :
+LabelStmt::LabelStmt(DefExpr* iDefLabel) :
   Stmt(STMT_LABEL),
-  defLabel(initDefLabel),
+  defLabel(iDefLabel),
+  stmt(new BlockStmt())
+{ }
+
+LabelStmt::LabelStmt(Symbol* iDefLabel) :
+  Stmt(STMT_LABEL),
+  defLabel(new DefExpr(iDefLabel)),
+  stmt(new BlockStmt())
+{ }
+
+LabelStmt::LabelStmt(char* iDefLabel) :
+  Stmt(STMT_LABEL),
+  defLabel(new DefExpr(new LabelSymbol(iDefLabel))),
   stmt(new BlockStmt())
 { }
 
@@ -863,6 +875,11 @@ void LabelStmt::codegenStmt(FILE* outfile) {
   defLabel->sym->codegen(outfile);
   fprintf(outfile, ":;\n");
   stmt->codegenStmt(outfile);
+}
+
+
+char* LabelStmt::labelName(void) {
+  return defLabel->sym->name;
 }
 
 

@@ -9,24 +9,6 @@
 #include "../traversals/traversal.h"
 
 
-/*** contains_unlabeled_break_or_continue
- ***   returns true iff goto is found without a label
- ***/
-static bool
-contains_unlabeled_break_or_continue(BaseAST* ast) {
-  Vec<BaseAST*> asts;
-  collect_asts(&asts, ast);
-  forv_Vec(BaseAST, ast, asts) {
-    if (GotoStmt* goto_stmt = dynamic_cast<GotoStmt*>(ast)) {
-      if (!goto_stmt->label) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-
 /*** function_matches_method
  ***   returns true iff function name matches a method name in class
  ***/
@@ -41,73 +23,28 @@ function_matches_method(FnSymbol* fn, ClassType* ct) {
 }
 
 
-class ScopeResolveGotos : public Traversal {
- public:
-  LabelStmt* preCurrentLoop;
-  LabelStmt* postCurrentLoop;
+/*** is_loop
+ ***   returns true iff ast is ForLoopStmt or WhileLoopStmt
+ ***/
+static bool
+is_loop(BaseAST* ast) {
+  return dynamic_cast<WhileLoopStmt*>(ast) || dynamic_cast<ForLoopStmt*>(ast);
+}
 
-  ScopeResolveGotos() : preCurrentLoop(NULL), postCurrentLoop(NULL) { }
-    
-  void preProcessStmt(Stmt* stmt) {
-    if (dynamic_cast<WhileLoopStmt*>(stmt) ||
-        dynamic_cast<ForLoopStmt*>(stmt)) { 
 
-      BlockStmt* loop_block = NULL;
-
-      if (WhileLoopStmt* loop = dynamic_cast<WhileLoopStmt*>(stmt)) {
-        loop_block = loop->block;
-      }
-      if (ForLoopStmt* loop = dynamic_cast<ForLoopStmt*>(stmt)) {
-        loop_block = loop->innerStmt;
-      }
-
-      if (!loop_block) {
-        INT_FATAL(stmt, "BlockStmt expected in ScopeResolveGotos");
-      }
-
-      if (LabelStmt* labelStmt = dynamic_cast<LabelStmt*>(loop_block->parentStmt->prev)) {
-        LabelSymbol* post_label_symbol = new LabelSymbol(stringcat("_post", labelStmt->defLabel->sym->name));
-        loop_block->parentStmt->insertAfter(new LabelStmt(new DefExpr(post_label_symbol)));
-      }
-
-      if (contains_unlabeled_break_or_continue(loop_block->body)) {
-        LabelSymbol* label_symbol = new LabelSymbol("_loop_label");
-        LabelStmt* label_stmt = new LabelStmt(new DefExpr(label_symbol));
-        stmt->insertBefore(label_stmt);
-        preCurrentLoop = label_stmt;
-        label_symbol = new LabelSymbol("_post_loop_label");
-        label_stmt = new LabelStmt(new DefExpr(label_symbol));
-        stmt->insertAfter(label_stmt);
-        postCurrentLoop = label_stmt;
-      }
-    } else if (GotoStmt* goto_stmt = dynamic_cast<GotoStmt*>(stmt)) {
-      if (!goto_stmt->label) {
-        if (!preCurrentLoop) {
-          USR_FATAL(stmt, "break or continue is not in a loop");
-        } else {
-          if (goto_stmt->goto_type == goto_break) {
-            goto_stmt->label = postCurrentLoop->defLabel->sym;
-          } else if (goto_stmt->goto_type == goto_continue) {
-            goto_stmt->label = preCurrentLoop->defLabel->sym;
-          } else {
-            INT_FATAL(stmt, "Unexpected goto type");
-          }
-        }
-      } else if (dynamic_cast<UnresolvedSymbol*>(goto_stmt->label)) {
-        char* label_name = goto_stmt->label->name;
-        if (goto_stmt->goto_type == goto_break) {
-          label_name = stringcat("_post", label_name);
-        }
-        Symbol* new_symbol = Symboltable::lookup(label_name);
-        if (dynamic_cast<LabelSymbol*>(new_symbol)) {
-          goto_stmt->label = new_symbol;
-        } else {
-          INT_FATAL(stmt, "Unable to resolve goto label");
-        }
-      }
-    }
-  }
-};
+/*** find_outer_loop
+ ***   returns WhileLoopStmt or ForLoopStmt if found via parentStmt
+ ***   links
+ ***/
+static Stmt*
+find_outer_loop(Stmt* stmt) {
+  if (is_loop(stmt->parentStmt))
+    return stmt->parentStmt;
+  else if (stmt->parentStmt)
+    return find_outer_loop(stmt->parentStmt);
+  else
+    return NULL;
+}
 
 
 class ExprTypeResolve : public Traversal {
@@ -164,6 +101,40 @@ addSymToDefList(DefExpr* def, Map<SymScope*,Vec<Symbol*>*>* defList) {
 }
 
 
+static void
+insertPostLoopLabelStmt(LabelStmt* ls) {
+  if (is_loop(ls->next))
+    ls->next->insertAfter(new LabelStmt(stringcat("_post", ls->labelName())));
+}
+
+
+static void
+resolveGotoLabel(GotoStmt* gotoStmt) {
+  if (!gotoStmt->label) {
+    Stmt* loop = find_outer_loop(gotoStmt);
+    if (!loop) {
+      USR_FATAL(gotoStmt, "break or continue is not in a loop");
+    } else if (gotoStmt->goto_type == goto_break) {
+      gotoStmt->label = new LabelSymbol("_post_loop_label");
+      loop->insertAfter(new LabelStmt(gotoStmt->label));
+    } else if (gotoStmt->goto_type == goto_continue) {
+      gotoStmt->label = new LabelSymbol("_loop_label");
+      loop->insertBefore(new LabelStmt(gotoStmt->label));
+    } else
+      INT_FATAL(gotoStmt, "Unexpected goto type");
+  } else if (dynamic_cast<UnresolvedSymbol*>(gotoStmt->label)) {
+    char* name = gotoStmt->label->name;
+    if (gotoStmt->goto_type == goto_break)
+      name = stringcat("_post", name);
+    Symbol* sym = Symboltable::lookupFromScope(name, gotoStmt->parentScope);
+    if (dynamic_cast<LabelSymbol*>(sym))
+      gotoStmt->label = sym;
+    else
+      INT_FATAL(gotoStmt, "Unable to resolve goto label");
+  }
+}
+
+
 void scopeResolve(void) {
   Map<SymScope*,Vec<Symbol*>*> defList;
   Vec<BaseAST*> asts;
@@ -213,9 +184,11 @@ void scopeResolve(void) {
     } else if (DefExpr* defExpr = dynamic_cast<DefExpr*>(ast)) {
       if (dynamic_cast<VarSymbol*>(defExpr->sym))
         addSymToDefList(defExpr, &defList);
+    } else if (LabelStmt* ls = dynamic_cast<LabelStmt*>(ast)) {
+      insertPostLoopLabelStmt(ls);
+    } else if (GotoStmt* gs = dynamic_cast<GotoStmt*>(ast)) {
+      resolveGotoLabel(gs);
     }
   }
-  Traversal* traversal = new ScopeResolveGotos();
-  traversal->run(&allModules);
   expr_type_resolve();
 }
