@@ -782,8 +782,11 @@ void ClassType::codegenDef(FILE* outfile) {
   symbol->codegen(outfile);
   fprintf(outfile, " {\n");
   bool printedSomething = false; // BLC: this is to avoid empty structs, illegal in C
-  for (Stmt* tmp = declarationList->first(); tmp; tmp = declarationList->next()) {
-    if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(tmp)) {
+  AList<Stmt>* stmtList = declarationList;
+  if (use_class_init)
+    stmtList = initFn->body->body;
+  for_alist(Stmt, stmt, stmtList) {
+    if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {
       if (DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr)) {
         if (VarSymbol* var = dynamic_cast<VarSymbol*>(defExpr->sym)) {
           var->codegenDef(outfile);
@@ -813,11 +816,6 @@ void ClassType::codegenPrototype(FILE* outfile) {
   fprintf(outfile, " ");
   codegenStructName(outfile);
   fprintf(outfile, ";\n");
-}
-
-
-void ClassType::codegenMemberAccessOp(FILE* outfile) {
-  fprintf(outfile, "->");
 }
 
 

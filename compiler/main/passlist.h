@@ -2,9 +2,7 @@
 #define _PASSLIST_H_
 
 /* This is the default list of passes that will be run by the
-   compiler.  The passes shown will be run in the order shown,
-   and their arguments will be set to the quoted string that
-   follows.
+   compiler.  The passes shown will be run in the order shown.
 
    This file may be saved and fed to the compiler using the
    --passlist argument to specify a different set of passes

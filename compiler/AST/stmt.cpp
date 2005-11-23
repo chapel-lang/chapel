@@ -173,7 +173,7 @@ void ExprStmt::print(FILE* outfile) {
 
 void ExprStmt::codegenStmt(FILE* outfile) {
   expr->codegen(outfile);
-  fprintf(outfile, ";");
+  fprintf(outfile, ";\n");
 }
 
 bool ExprStmt::noCodegen() {
@@ -224,7 +224,7 @@ void ReturnStmt::codegenStmt(FILE* outfile) {
     fprintf(outfile, " ");
     expr->codegen(outfile);
   }
-  fprintf(outfile, ";");
+  fprintf(outfile, ";\n");
 }
 
 
@@ -300,9 +300,8 @@ void BlockStmt::codegenStmt(FILE* outfile) {
   if (blkScope) {
     blkScope->codegen(outfile, "\n");
   }
-  if (body) body->codegen(outfile, "\n");
-  fprintf(outfile, "\n");
-  fprintf(outfile, "}");
+  if (body) body->codegen(outfile, "");
+  fprintf(outfile, "}\n");
 }
 
 
@@ -651,13 +650,11 @@ void CondStmt::print(FILE* outfile) {
 void CondStmt::codegenStmt(FILE* outfile) {
   fprintf(outfile, "if (");
   condExpr->codegen(outfile);
-  fprintf(outfile, ") {\n");
+  fprintf(outfile, ") ");
   thenStmt->codegenStmt(outfile);
-  fprintf(outfile, "\n}");
   if (elseStmt) {
-    fprintf(outfile, " else {\n");
+    fprintf(outfile, " else ");
     elseStmt->codegenStmt(outfile);
-    fprintf(outfile, "\n}");
   }
 }
 
@@ -840,15 +837,13 @@ void LabelStmt::verify() {
 
 LabelStmt*
 LabelStmt::copyInner(ASTMap* map) {
-  LabelStmt* ls = new LabelStmt(COPY_INT(defLabel));
-  ls->stmt = COPY_INT(stmt);
-  return ls;
+  return new LabelStmt(COPY_INT(defLabel));
 }
 
 
 void LabelStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == stmt) {
-    stmt = dynamic_cast<Stmt*>(new_ast);
+    INT_FATAL("LabelStmt::stmt should not be used");
   } else if (old_ast == defLabel) {
     defLabel = dynamic_cast<DefExpr*>(new_ast);
   } else {
@@ -874,7 +869,6 @@ void LabelStmt::print(FILE* outfile) {
 void LabelStmt::codegenStmt(FILE* outfile) {
   defLabel->sym->codegen(outfile);
   fprintf(outfile, ":;\n");
-  stmt->codegenStmt(outfile);
 }
 
 

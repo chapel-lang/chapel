@@ -1830,6 +1830,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       break;
     }
     case EXPR_DEF: break;
+      /*  SJD: Removed EXPR_INIT for new EXPR_DEF
     case EXPR_INIT: {
       InitExpr *s = dynamic_cast<InitExpr*>(ast);
       if (s->type) {
@@ -1839,6 +1840,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
         s->ainfo->rval = sym_nil;
       break;
     }
+      */
     case EXPR_MEMBERACCESS: {
       MemberAccess *s = dynamic_cast<MemberAccess*>(ast);
       s->ainfo->rval = new_sym();

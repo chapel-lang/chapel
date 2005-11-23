@@ -645,6 +645,7 @@ FnSymbol::FnSymbol(char* initName,
   noParens(initNoParens),
   retRef(initRetRef),
   argScope(NULL),
+  isInitFn(false),
   isSetter(false),
   isGeneric(false),
   _this(NULL),
@@ -1061,6 +1062,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
   currentFilename = filename;
   ASTMap map;
   if (fnClass == FN_CONSTRUCTOR) {
+    ClassType* oldClass = dynamic_cast<ClassType*>(retType);
     TypeSymbol* clone = retType->symbol->clone(&map);
     new_types->add(clone);
     instantiate_add_subs(&substitutions, &map);
@@ -1109,9 +1111,10 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
           fnClone->typeBinding = clone;
           fnClone->method_type = fn->method_type;
         }
-        if (retType->defaultConstructor == fn) {
+        if (oldClass->initFn == fn)
+          cloneType->initFn = fnClone;
+        if (retType->defaultConstructor == fn)
           cloneType->defaultConstructor = fnClone;
-        }
       }
     }
 

@@ -18,6 +18,7 @@ static void normalize_anonymous_record_or_forall_expression(DefExpr* def);
 static void destructure_indices(ForLoopStmt* stmt);
 static void destructure_tuple(CallExpr* call, Vec<BaseAST*>* asts);
 static void construct_tuple_type(int size);
+static void build_class_init_function(ClassType* ct);
 static void flatten_primary_methods(FnSymbol* fn);
 static void resolve_secondary_method_type(FnSymbol* fn);
 static void add_this_formal_to_method(FnSymbol* fn);
@@ -26,6 +27,7 @@ static void finish_constructor(FnSymbol* fn);
 
 void cleanup(void) {
   Vec<BaseAST*> asts;
+  Vec<Symbol*> syms;
   Vec<FnSymbol*> fns;
   collect_asts(&asts);
   forv_Vec(BaseAST, ast, asts) {
@@ -40,6 +42,17 @@ void cleanup(void) {
         construct_tuple_type(atoi(base->var->name+6));
         if (parent && OP_ISASSIGNOP(parent->opTag) && parent->get(1) == a)
           destructure_tuple(a, &asts);
+      }
+    }
+  }
+  asts.clear();
+  collect_asts_postorder(&asts);
+  forv_Vec(BaseAST, ast, asts) {
+    if (DefExpr* defExpr = dynamic_cast<DefExpr*>(ast)) {
+      if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(defExpr->sym)) {
+        if (ClassType* ct = dynamic_cast<ClassType*>(type->definition)) {
+          build_class_init_function(ct);
+        }
       }
     }
   }
@@ -237,6 +250,39 @@ static void construct_tuple_type(int rank) {
 }
 
 
+static bool stmt_defines_function(Stmt* stmt) {
+  if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt))
+    if (DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr))
+      if (dynamic_cast<FnSymbol*>(defExpr->sym))
+        return true;
+  return false;
+}
+
+
+static void build_class_init_function(ClassType* ct) {
+  if (ct->initFn)
+    INT_FATAL("ahhh");
+  ct->initFn = new FnSymbol(stringcat("_init_", ct->symbol->name));
+  ct->initFn->isInitFn = true;
+  ct->initFn->formals = new AList<DefExpr>();
+  ct->initFn->method_type = PRIMARY_METHOD;
+  ct->initFn->typeBinding = ct->symbol;
+  if (use_class_init) {
+    ct->initFn->body = new BlockStmt();
+    ct->initFn->body->blkScope = ct->structScope;
+    for_alist(Stmt, stmt, ct->declarationList) {
+      stmt->remove();
+      if (stmt_defines_function(stmt))
+        ct->symbol->defPoint->parentStmt->insertBefore(stmt);
+      else
+        ct->initFn->insertAtTail(stmt);
+    }
+  }
+  ct->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(new DefExpr(ct->initFn)));
+  ct->methods.add(ct->initFn);
+}
+
+
 static void flatten_primary_methods(FnSymbol* fn) {
   if (dynamic_cast<TypeSymbol*>(fn->defPoint->parentSymbol)) {
     Stmt* insertPoint = fn->typeBinding->defPoint->parentStmt;
@@ -318,7 +364,11 @@ finish_constructor(FnSymbol* fn) {
 
   stmts->insertAtTail(new ExprStmt(new DefExpr(fn->_this)));
   stmts->insertAtTail(alloc_stmt);
-  stmts->insertAtTail(new ExprStmt(new CallExpr(ct->initFn, Symboltable::lookupInternal("_methodToken"), fn->_this)));
+
+  if (use_class_init)
+    stmts->insertAtTail(new ExprStmt(new CallExpr(ct->initFn->name)));
+  else
+    stmts->insertAtTail(new ExprStmt(new CallExpr(ct->initFn, Symboltable::lookupInternal("_methodToken"), fn->_this)));
 
   // assign formals to fields by name
   forv_Vec(Symbol, field, ct->fields) {

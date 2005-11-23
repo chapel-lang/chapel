@@ -84,9 +84,6 @@ void createEntryPoint(void) {
   currentLineno = -1;
 
   forv_Vec(ModuleSymbol, mod, allModules) {
-    if (mod->modtype == MOD_INTERNAL || 
-        !ModuleDefContainsOnlyNestedModules(mod->stmts)) {
-      createInitFn(mod);
-    }
+    createInitFn(mod);
   }
 }

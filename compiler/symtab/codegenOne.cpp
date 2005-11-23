@@ -108,6 +108,7 @@ void CodegenOne::run(Vec<ModuleSymbol*>* modules) {
   }
   forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {
     if (!dynamic_cast<EnumType*>(typeSymbol->definition) &&
+        !dynamic_cast<VariableType*>(typeSymbol->definition) &&
         !dynamic_cast<UserType*>(typeSymbol->definition)) {
       typeSymbol->codegenDef(outfile);
     }

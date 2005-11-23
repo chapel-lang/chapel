@@ -10,7 +10,6 @@
 
 static void build_chpl_main(void);
 static void build_constructor(ClassType* ct);
-static void build_init(ClassType* ct);
 static void build_getter(ClassType* ct, Symbol *tmp);
 static void build_setters_and_getters(ClassType* ct);
 static void build_record_equality_function(ClassType* ct);
@@ -143,30 +142,6 @@ static void build_chpl_main(void) {
   mainBody->insertAtHead(buildCallExprStmt(mainModule->initFn));
   mainBody->insertAtHead(buildCallExprStmt(commonModule->initFn));
   mainBody->insertAtHead(buildCallExprStmt(prelude->initFn));
-}
-
-
-static void build_init(ClassType* ct) {
-  ct->initFn = new FnSymbol(stringcat("_init_", ct->symbol->name));
-  ct->initFn->formals = new AList<DefExpr>();
-
-//   if (use_init_expr) {
-//     forv_Vec(Symbol, field, ct->fields) {
-//       Expr* type = NULL;
-//       if (field->defPoint->exprType)
-//         type = field->defPoint->exprType->copy();
-//       else if (field->defPoint->init)
-//         type = new CallExpr("typeof", field->defPoint->init->copy());
-//       ct->initFn->insertAtTail(new ExprStmt(new InitExpr(field, type)));
-//     }
-//   }
-
-  reset_file_info(ct->initFn, ct->symbol->lineno, ct->symbol->filename);
-  ct->symbol->defPoint->parentStmt->insertBefore
-    (new ExprStmt(new DefExpr(ct->initFn)));
-  ct->methods.add(ct->initFn);
-  ct->initFn->method_type = PRIMARY_METHOD;
-  ct->initFn->typeBinding = ct->symbol;
 }
 
 
@@ -364,7 +339,6 @@ static void build_record_assignment_function(ClassType* ct) {
 
 void buildDefaultClassTypeMethods(ClassType* ct) {
   build_setters_and_getters(ct);
-  build_init(ct);
   build_constructor(ct);
   if (ct->classTag == CLASS_RECORD || ct->classTag == CLASS_VALUECLASS) {
     build_record_equality_function(ct);

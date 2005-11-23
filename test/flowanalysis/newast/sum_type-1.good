@@ -82,8 +82,8 @@ function _construct_cpoint sum_type-1.chpl:13
 function _construct_cpoint sum_type-1.chpl:13
 function _construct_point sum_type-1.chpl:13
 function _construct_point sum_type-1.chpl:13
-function _init_cpoint sum_type-1.chpl:9
-function _init_point sum_type-1.chpl:4
+function _init_cpoint sum_type-1.chpl:13
+function _init_point sum_type-1.chpl:13
 function color sum_type-1.chpl:9
 function color sum_type-1.chpl:9
 function length sum_type-1.chpl:11

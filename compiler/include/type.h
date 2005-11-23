@@ -198,7 +198,6 @@ class ClassType : public Type {
   virtual void codegenDef(FILE* outfile);
   virtual void codegenStructName(FILE* outfile);
   virtual void codegenPrototype(FILE* outfile);
-  virtual void codegenMemberAccessOp(FILE* outfile);
 
   virtual bool implementedUsingCVals(void);
 

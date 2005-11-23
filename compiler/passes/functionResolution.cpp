@@ -437,15 +437,18 @@ void functionResolution(void) {
   fns.set_add(chpl_main);
   TRAVERSE(chpl_main, new ResolveCalls(), true);
 
+  Vec<TypeSymbol*> dead_types;
   Vec<FnSymbol*> all_fns;
   collect_functions(&all_fns);
   forv_Vec(FnSymbol, fn, all_fns) {
     if (!fns.set_in(fn)) {
-      if (fn->retType->defaultConstructor == fn) {
-        fn->retType->symbol->defPoint->parentStmt->remove();
-      }
+      if (fn->isInitFn)
+        dead_types.add(fn->typeBinding);
       fn->defPoint->parentStmt->remove();
     }
+  }
+  forv_Vec(TypeSymbol, type, dead_types) {
+    type->defPoint->parentStmt->remove();
   }
 }
 

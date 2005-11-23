@@ -6,17 +6,6 @@
 #include "symtab.h"
 
 
-// static Expr *
-// init_expr(Type *t) {
-//   if (t->defaultValue)
-//     return new SymExpr(t->defaultValue);
-//   else if (t->defaultConstructor)
-//     return new CallExpr(t->defaultConstructor);
-//   else
-//     return new SymExpr(gNil);
-// }
-
-
 void PreAnalysisHacks::postProcessStmt(Stmt* stmt) {
   if (ForLoopStmt* loop = dynamic_cast<ForLoopStmt*>(stmt)) {
     loop->iterators->only()->replace(
@@ -184,45 +173,6 @@ void PreAnalysisHacks::postProcessExpr(Expr* expr) {
           def->exprType = def->init->copy();
           fixup(def->exprType, def->init);
         }
-      }
-    }
-  }
-
-  if (use_init_expr) {
-    if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
-      if (dynamic_cast<TypeSymbol*>(def->parentSymbol)) {
-        ClassType* ct = dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(def->parentSymbol)->definition);
-        Expr* type = NULL;
-        if (def->exprType)
-          type = def->exprType->copy();
-        else if (def->init)
-          type = def->init->copy(); // new CallExpr("typeof", def->init->copy());
-        ct->initFn->insertAtTail(new ExprStmt(new InitExpr(def->sym, type)));
-      } else if (dynamic_cast<ModuleSymbol*>(def->parentSymbol)) {
-        ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(def->parentSymbol);
-        Expr* type = NULL;
-        if (def->exprType)
-          type = def->exprType->copy();
-        else if (def->init)
-          type = def->init->copy(); // new CallExpr("typeof", def->init->copy());
-        mod->initFn->insertAtHead(new ExprStmt(new InitExpr(def->sym, type)));
-      } else if (dynamic_cast<ArgSymbol*>(def->sym)) {
-        Expr* type = NULL;
-        if (def->exprType)
-          type = def->exprType->copy();
-        else if (def->init)
-          type = def->init->copy(); // new CallExpr("typeof", def->init->copy());
-        def->parentFunction()->insertAtHead(new ExprStmt(new InitExpr(def->sym, type)));
-      } else {
-        if (def->init)
-          def->parentStmt->insertAfter(new ExprStmt(new CallExpr(OP_GETSNORM, def->sym, def->init->copy())));
-
-        Expr* type = NULL;
-        if (def->exprType)
-          type = def->exprType->copy();
-        else if (def->init)
-          type = def->init->copy(); // new CallExpr("typeof", def->init->copy());
-        def->parentStmt->insertAfter(new ExprStmt(new InitExpr(def->sym, type)));
       }
     }
   }

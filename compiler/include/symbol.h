@@ -174,6 +174,7 @@ class FnSymbol : public Symbol {
   bool retRef;
 
   SymScope* argScope;
+  bool isInitFn;
   bool isSetter;
   bool isGeneric;
   Symbol* _this;

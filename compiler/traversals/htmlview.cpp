@@ -177,9 +177,6 @@ void HtmlView::preProcessExpr(Expr* expr) {
       write("<B>def</B> ");
       html_print_symbol(e->sym, true);
     }
-  } else if (InitExpr* e = dynamic_cast<InitExpr*>(expr)) {
-    write("<B>init</B> ");
-    html_print_symbol(e->sym, true);
   } else if (VarSymbol* e = get_constant(expr)) {
     if (e->immediate->const_kind == IF1_CONST_KIND_STRING) {
       write("<FONT COLOR=\"lightblue\">'%s'</FONT>", e->immediate->v_string);
@@ -228,7 +225,6 @@ void HtmlView::postProcessExpr(Expr* expr) {
       }
       write("</UL>\n");
     }
-  } else if (dynamic_cast<InitExpr*>(expr)) {
   } else if (dynamic_cast<SymExpr*>(expr)) {
   } else {
     write(")");

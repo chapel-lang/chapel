@@ -71,7 +71,8 @@ void Fixup::preProcessStmt(Stmt* stmt) {
     if (!verifyParents) {
       if (insertHelper) {
         if (blockStmt->blkScope &&
-            blockStmt->blkScope->type > SCOPE_MODULE) {
+            blockStmt->blkScope->type > SCOPE_MODULE &&
+            blockStmt->blkScope->type != SCOPE_CLASS) {
           INT_FATAL(blockStmt, "Unexpected scope in BlockStmt");
         }
         if (!blockStmt->blkScope) {
@@ -105,8 +106,10 @@ void Fixup::postProcessStmt(Stmt* stmt) {
           blockStmt->blkScope->astParent = blockStmt;
         }
       } else {
-        Symboltable::removeScope(blockStmt->blkScope);
-        blockStmt->blkScope = NULL;
+        if (blockStmt->blkScope->type == SCOPE_LOCAL) {
+          Symboltable::removeScope(blockStmt->blkScope);
+          blockStmt->blkScope = NULL;
+        }
       }
     }
   }
