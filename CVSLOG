@@ -50232,3 +50232,42 @@ Modified files:
 	chapel/compiler/passes/: scopeResolve.cpp 
 	chapel/compiler/traversals/: eliminateReturns.cpp 
 
+---------------------------------------------------------------------------
+
+11/22/05 17:10:17 -- deitz
+
+Log message:
+	Added a new pass called cleanup that unifies a bunch of early passes
+	that basically fix up the parsed code.  Eventually there will be a
+	cleanup function that can be called on code that is built during
+	compilation.
+	
+	Cleaned up transform of methods to functions.  The method used to be
+	copied when it was moved outside of the class.  It is now simply
+	moved.
+	
+	Improved inheritance copy to just copy the fields of a class into a
+	class that inherits it.  This used to rely on pass ordering to just do
+	the fields.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/include/: passes.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/passes/: Makefile.share 
+	                         buildDefaultFunctions.cpp 
+	                         buildDefaultFunctions.h 
+	chapel/compiler/symtab/: Makefile.share 
+	chapel/compiler/traversals/: Makefile.share 
+	                             buildClassHierarchy.cpp 
+	chapel/test/flowanalysis/newast/: sum_type-1.good 
+	                                  sum_type-2.good 
+Added files:
+	chapel/compiler/passes/: cleanup.cpp 
+Removed files:
+	chapel/compiler/passes/: normalizeParsedAST.cpp 
+	                         normalizeParsedAST.h 
+	chapel/compiler/symtab/: flatten.cpp flatten.h 
+	chapel/compiler/traversals/: insertThisParameters.cpp 
+	                             insertThisParameters.h 
+
