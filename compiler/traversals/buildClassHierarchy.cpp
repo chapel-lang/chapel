@@ -35,7 +35,10 @@ static void addClassToHierarchy(ClassType* ct,
       addClassToHierarchy(pt, alreadySeen);
     }
     ct->dispatchParents.add(pt);
-    ct->addDeclarations(pt->declarationList->copy(), ct->declarationList->first());
+    Stmt* insertPoint = ct->declarationList->first();
+    forv_Vec(Symbol, field, pt->fields) {
+      ct->addDeclarations(new AList<Stmt>(field->defPoint->parentStmt->copy()), insertPoint);
+    }
     if (pt->classTag == CLASS_VALUECLASS) {
       ct->classTag = CLASS_VALUECLASS;
       ct->defaultValue = NULL;

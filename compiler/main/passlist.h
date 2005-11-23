@@ -16,20 +16,17 @@ PassInfo passlist[] = {
 
   // passes to create the basic AST
   RUN(parse),
-  RUN(createEntryPoint),
-  RUN(normalizeParsedAST), // handles complicated parsing transforms
   RUN(semanticCheckI), // post parsing semantic checks
+  RUN(createEntryPoint),
 
-  // passes to normalize the basic AST
   RUN(processImportExprs),
-  RUN(flatten),
+
   RUN(buildClassHierarchy),
 
   RUN(buildDefaultFunctions),
 
-  RUN(insertThisParameters),
+  RUN(cleanup), // post parsing normalization
 
-  // SCOPE RESOLUTION
   RUN(scopeResolve),
 
   RUN(semanticCheckII), // post scope resolution semantic checks

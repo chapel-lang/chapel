@@ -284,7 +284,10 @@ void Expr::codegenCastToString(FILE* outfile) {
 SymExpr::SymExpr(Symbol* init_var) :
   Expr(EXPR_SYM),
   var(init_var)
-{}
+{
+  if (!init_var)
+    INT_FATAL(this, "Bad call to SymExpr");
+}
 
 
 SymExpr::SymExpr(char* init_var) :

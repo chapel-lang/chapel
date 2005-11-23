@@ -6,7 +6,6 @@
 #include "../passes/createEntryPoint.h"
 #include "../passes/filesToAST.h"
 #include "../passes/functionResolution.h"
-#include "../passes/normalizeParsedAST.h"
 #include "../passes/preAnalysisCleanup.h"
 #include "../passes/printProgram.h"
 #include "../passes/runAnalysis.h"
@@ -14,7 +13,6 @@
 
 #include "../symtab/codegenOne.h"
 #include "../symtab/copyPropagation.h"
-#include "../symtab/flatten.h"
 #include "../symtab/insertDefaultInitVariables.h"
 #include "../symtab/insertOutParameterInitializations.h"
 #include "../symtab/normalizeFunctions.h"
@@ -35,7 +33,6 @@
 #include "../traversals/htmlview.h"
 #include "../traversals/inlineFunctions.h"
 #include "../traversals/insertFunctionTemps.h"
-#include "../traversals/insertThisParameters.h"
 #include "../traversals/insertVariableInitializations.h"
 #include "../traversals/instantiate.h"
 #include "../traversals/preAnalysisHacks.h"
@@ -60,6 +57,7 @@ REGISTER(applyGettersSetters);
 REGISTER(buildClassHierarchy);
 REGISTER(buildDefaultFunctions);
 REGISTER(buildLValueFunctions);
+REGISTER(cleanup);
 REGISTER(codegen);
 REGISTER(codegenOne);
 REGISTER(copyPropagation);
@@ -68,7 +66,6 @@ REGISTER(createEntryPoint);
 REGISTER(createNestedFuncIterators);
 REGISTER(eliminateReturns);
 REGISTER(fixup);
-REGISTER(flatten);
 REGISTER(functionResolution);
 REGISTER(getStuff);
 REGISTER(htmlView);
@@ -76,10 +73,8 @@ REGISTER(inlineFunctions);
 REGISTER(insertDefaultInitVariables);
 REGISTER(insertFunctionTemps);
 REGISTER(insertOutParameterInitializations);
-REGISTER(insertThisParameters);
 REGISTER(insertVariableInitializations);
 REGISTER(normalizeFunctions);
-REGISTER(normalizeParsedAST);
 REGISTER(parse);
 REGISTER(passlistTest);
 REGISTER(postAnalysisCleanup);

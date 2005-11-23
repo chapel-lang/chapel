@@ -1,11 +1,11 @@
 PASSES_SRCS = \
         applyGettersSetters.cpp \
         buildDefaultFunctions.cpp \
+        cleanup.cpp \
 	codegen.cpp \
 	createEntryPoint.cpp \
 	filesToAST.cpp \
         functionResolution.cpp \
-        normalizeParsedAST.cpp \
 	pass.cpp \
 	preAnalysisCleanup.cpp \
 	printProgram.cpp \

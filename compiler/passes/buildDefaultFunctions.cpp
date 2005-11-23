@@ -16,9 +16,6 @@ static void build_setters_and_getters(ClassType* ct);
 static void build_record_equality_function(ClassType* ct);
 static void build_record_inequality_function(ClassType* ct);
 static void build_record_assignment_function(ClassType* ct);
-static void buildDefaultClassTypeMethods(ClassType* ct);
-static void buildDefaultIOFunctions(Type* type);
-static void finishConstructor(FnSymbol* fn);
 
 
 // function_exists returns true iff
@@ -88,17 +85,6 @@ void buildDefaultFunctions(void) {
       if (ClassType* ct = dynamic_cast<ClassType*>(type->definition)) {
         buildDefaultClassTypeMethods(ct);
       }
-
-    }
-  }
-
-  asts.clear();
-  collect_asts(&asts);
-
-  forv_Vec(BaseAST, ast, asts) {
-    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
-      if (fn->fnClass == FN_CONSTRUCTOR)
-        finishConstructor(fn);
     }
   }
 }
@@ -239,67 +225,6 @@ static void build_constructor(ClassType* ct) {
 }
 
 
-static void
-finishConstructor(FnSymbol* fn) {
-  ClassType* ct = dynamic_cast<ClassType*>(fn->typeBinding->definition);
-
-  fn->_this = new VarSymbol("this", ct);
-  dynamic_cast<VarSymbol*>(fn->_this)->noDefaultInit = true;
-
-  char* description = stringcat("instance of class ", ct->symbol->name);
-  Expr* alloc_rhs = new CallExpr(Symboltable::lookupInternal("_chpl_alloc"),
-                                 ct->symbol,
-                                 new_StringLiteral(description));
-  CallExpr* alloc_expr = new CallExpr(OP_GETSNORM, fn->_this, alloc_rhs);
-  if (no_infer) {
-    alloc_expr->baseExpr = new SymExpr("_move");
-    alloc_expr->opTag = OP_NONE;
-  }
-  Stmt* alloc_stmt = new ExprStmt(alloc_expr);
-
-  AList<Stmt>* stmts = new AList<Stmt>();
-
-  stmts->insertAtTail(new ExprStmt(new DefExpr(fn->_this)));
-  stmts->insertAtTail(alloc_stmt);
-  stmts->insertAtTail(new ExprStmt(new CallExpr(ct->initFn, Symboltable::lookupInternal("_methodToken"), fn->_this)));
-
-  // assign formals to fields by name
-  forv_Vec(Symbol, field, ct->fields) {
-    for_alist(DefExpr, formalDef, fn->formals) {
-      if (ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym)) {
-        if (!strcmp(formal->name, field->name)) {
-          Expr* lhs = new MemberAccess(fn->_this, field);
-          Expr* assign_expr = new CallExpr(OP_GETSNORM, lhs, formal);
-          Stmt* assign_stmt = new ExprStmt(assign_expr);
-          stmts->insertAtTail(assign_stmt);
-        }
-      }
-    }
-  }
-
-  fn->insertAtHead(stmts);
-
-  // fix type variables, associate by name
-  for_alist(DefExpr, formalDef, fn->formals) {
-    ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
-    if (formal->intent == INTENT_TYPE) {
-      forv_Vec(TypeSymbol, type, ct->types) {
-        if (VariableType* variableType = dynamic_cast<VariableType*>(type->definition)) {
-          if (!strcmp(type->name, formal->name)) {
-            formal->type = variableType->type;
-            formal->isGeneric = true;
-            formal->genericSymbol = type;
-          }
-        }
-      }
-    }
-  }
-
-  fn->insertAtTail(new ReturnStmt(new SymExpr(fn->_this)));
-  fn->retType = ct;
-}
-
-
 static void build_getter(ClassType* ct, Symbol *field) {
   FnSymbol* fn = new FnSymbol(field->name);
   fn->addPragma("inline");
@@ -437,7 +362,7 @@ static void build_record_assignment_function(ClassType* ct) {
 }
 
 
-static void buildDefaultClassTypeMethods(ClassType* ct) {
+void buildDefaultClassTypeMethods(ClassType* ct) {
   build_setters_and_getters(ct);
   build_init(ct);
   build_constructor(ct);
@@ -449,7 +374,7 @@ static void buildDefaultClassTypeMethods(ClassType* ct) {
 }
 
 
-static void buildDefaultIOFunctions(Type* type) {
+void buildDefaultIOFunctions(Type* type) {
   if (type->hasDefaultWriteFunction()) {
     if (!function_exists("fwrite", 2, NULL, "file", type->symbol->name)) {
       FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("fwrite"));

@@ -13,7 +13,6 @@ TRAVERSALS_SRCS = \
         htmlview.cpp \
         inlineFunctions.cpp \
 	insertFunctionTemps.cpp \
-	insertThisParameters.cpp \
 	insertVariableInitializations.cpp \
         instantiate.cpp \
         preAnalysisHacks.cpp \
