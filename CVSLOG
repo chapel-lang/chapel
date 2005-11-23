@@ -50271,3 +50271,37 @@ Removed files:
 	chapel/compiler/traversals/: insertThisParameters.cpp 
 	                             insertThisParameters.h 
 
+---------------------------------------------------------------------------
+
+11/23/05 15:13:40 -- deitz
+
+Log message:
+	Added a new development flag --use-class-init which puts the DefExprs
+	of the fields of a class into the class's init function which is
+	called by the constructor.  Got this working to completion with the
+	--no-infer flag.  Open questions:
+	
+	1. What should getters and setters look like now?
+	2. What needs to be cleaned up to get this working better?
+	
+	Removed InitExpr and flag --use-init-expr.
+	
+	Made some superficial improvements to get rid of extra curly braces in
+	conditional statements, etc.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp stmt.cpp symbol.cpp 
+	                      type.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: baseAST.h driver.h expr.h symbol.h 
+	                          type.h 
+	chapel/compiler/main/: driver.cpp passlist.h 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         createEntryPoint.cpp 
+	                         functionResolution.cpp scopeResolve.cpp 
+	chapel/compiler/symtab/: codegenOne.cpp 
+	chapel/compiler/traversals/: fixup.cpp htmlview.cpp 
+	                             preAnalysisHacks.cpp 
+	chapel/test/flowanalysis/newast/: sum_type-1.good 
+	                                  sum_type-2.good 
+
