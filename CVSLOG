@@ -50346,3 +50346,13 @@ Modified files:
 	chapel/compiler/include/: stmt.h 
 	chapel/compiler/traversals/: processImportExprs.cpp 
 
+---------------------------------------------------------------------------
+
+11/28/05 14:24:35 -- deitz
+
+Log message:
+	Forgot to checkin normalize.cpp file with last checkin.
+
+Added files:
+	chapel/compiler/passes/: normalize.cpp 
+
