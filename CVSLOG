@@ -50305,3 +50305,32 @@ Modified files:
 	chapel/test/flowanalysis/newast/: sum_type-1.good 
 	                                  sum_type-2.good 
 
+---------------------------------------------------------------------------
+
+11/28/05 13:30:52 -- deitz
+
+Log message:
+	Started to work on cleaning up the series of passes after scope
+	resolution that put the AST into a normalized form.  Folded
+	ReconstructIterators pass into a new normalize pass.
+	
+	Added overloaded ReturnStmt constructors for convenience.  No
+	arguments now creates a return statement that returns nothing.  A
+	symbol or a string as the first argument returns that symbol or an
+	unresolved symbol with name equal to the string.  Cleaned up uses.
+	
+	Added "seq" class to runtime.h as TypeSymbol* chpl_seq.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: passes.h runtime.h stmt.h 
+	chapel/compiler/main/: passlist.cpp passlist.h runtime.cpp 
+	chapel/compiler/passes/: Makefile.share 
+	                         buildDefaultFunctions.cpp cleanup.cpp 
+	                         createEntryPoint.cpp filesToAST.cpp 
+	chapel/compiler/symtab/: Makefile.share 
+	chapel/compiler/traversals/: buildLValueFunctions.cpp 
+Removed files:
+	chapel/compiler/symtab/: reconstructIterators.cpp 
+	                         reconstructIterators.h 
+
