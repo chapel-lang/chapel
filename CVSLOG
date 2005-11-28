@@ -50334,3 +50334,15 @@ Removed files:
 	chapel/compiler/symtab/: reconstructIterators.cpp 
 	                         reconstructIterators.h 
 
+---------------------------------------------------------------------------
+
+11/28/05 13:37:12 -- deitz
+
+Log message:
+	Made some small improvements to code generation to tighten it up.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp symbol.cpp 
+	chapel/compiler/include/: stmt.h 
+	chapel/compiler/traversals/: processImportExprs.cpp 
+
