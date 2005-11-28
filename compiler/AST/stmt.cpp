@@ -11,9 +11,9 @@
 #include "../traversals/updateSymbols.h"
 #include "../passes/runAnalysis.h"
 
+static int inBlockStmt = 0;
 bool printCppLineno = false;
 bool printChplLineno = false;
-bool inFunction = false;
 bool inUserModule = false;
 bool justStartedGeneratingFunction = false;
 
@@ -54,7 +54,7 @@ void Stmt::codegen(FILE* outfile) {
       fprintf(outfile, "/* ZLINE: %d %s */\n", lineno, filename);
     } 
     
-    if (printChplLineno && inFunction && inUserModule) {
+    if (printChplLineno && inBlockStmt && inUserModule) {
       if (strcmp(filename, priorFilename) != 0 ||  
           justStartedGeneratingFunction) {
         fprintf(outfile, "_chpl_input_filename = \"%s\";\n", filename);
@@ -311,11 +311,13 @@ void BlockStmt::print(FILE* outfile) {
 
 void BlockStmt::codegenStmt(FILE* outfile) {
   fprintf(outfile, "{\n");
+  inBlockStmt++;
   if (blkScope) {
     blkScope->codegen(outfile, "\n");
   }
   if (body) body->codegen(outfile, "");
   fprintf(outfile, "}\n");
+  inBlockStmt--;
 }
 
 
@@ -430,13 +432,12 @@ void WhileLoopStmt::codegenStmt(FILE* outfile) {
   if (isWhileDo) {
     fprintf(outfile, "while (");
     condition->codegen(outfile);
-    fprintf(outfile, ") {\n");
+    fprintf(outfile, ") ");
     block->codegen(outfile);
-    fprintf(outfile, "\n}");
   } else { 
-    fprintf(outfile, "do {\n");
+    fprintf(outfile, "do ");
     block->codegen(outfile);
-    fprintf(outfile, "\n} while (");
+    fprintf(outfile, "while (");
     condition->codegen(outfile);
     fprintf(outfile, ");\n");
   }

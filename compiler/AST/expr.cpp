@@ -1311,7 +1311,9 @@ void ImportExpr::print(FILE* outfile) {
 }
 
 
-void ImportExpr::codegen(FILE* outfile) { }
+void ImportExpr::codegen(FILE* outfile) {
+  INT_FATAL(this, "Cannot codegen ImportExpr");
+}
 
 
 ModuleSymbol* ImportExpr::getImportedModule(void) {

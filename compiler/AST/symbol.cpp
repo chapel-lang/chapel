@@ -1204,6 +1204,7 @@ void FnSymbol::codegenDef(FILE* outfile) {
   }
 
   codegenHeader(outfile);
+  fprintf(outfile, " ");
 
   // while these braces seem like they should be extraneous since
   // all function bodies are BlockStmts, it turns out that they are
@@ -1211,13 +1212,10 @@ void FnSymbol::codegenDef(FILE* outfile) {
   // its local variable scope; so if we have a parameter and a local
   // variable of name x (as in trivial/bradc/vardecls1b.chpl), these
   // extra braces are required to make the generated code work out.
-  fprintf(outfile, " {\n");
-  inFunction = true;
+  // SJD: extra braces no longer necessary because of mangling
+  // SJD: Why should we not make the same scope restriction??
   justStartedGeneratingFunction = true;
   body->codegen(outfile);
-  inFunction = false;
-  fprintf(outfile, "\n");
-  fprintf(outfile, "}\n");
   fprintf(outfile, "\n\n");
 }
 

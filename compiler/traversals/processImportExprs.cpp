@@ -15,6 +15,7 @@ void ProcessImportExprs::postProcessExpr(Expr* expr) {
       if (ClassType* class_type = dynamic_cast<ClassType*>(symType->definition)) {
         AList<Stmt>* with_declarations = importExpr->getStruct()->declarationList->copy();
         class_type->addDeclarations(with_declarations, importExpr->parentStmt);
+        importExpr->parentStmt->remove();
         return;
       }
     }
@@ -29,6 +30,7 @@ void ProcessImportExprs::postProcessExpr(Expr* expr) {
     CallExpr* callInitFn = new CallExpr(module->initFn);
     importExpr->parentStmt->insertBefore(new ExprStmt(callInitFn));
     importExpr->parentScope->uses.add(module);
+    importExpr->parentStmt->remove();
   }
 }
 
