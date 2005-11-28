@@ -18,7 +18,6 @@
 #include "../symtab/normalizeFunctions.h"
 #include "../symtab/postAnalysisCleanup.h"
 #include "../symtab/printSymtab.h"
-#include "../symtab/reconstructIterators.h"
 #include "../symtab/removeDeadSymbols.h"
 #include "../symtab/resolveTypes.h"
 
@@ -75,6 +74,7 @@ REGISTER(insertFunctionTemps);
 REGISTER(insertOutParameterInitializations);
 REGISTER(insertVariableInitializations);
 REGISTER(normalizeFunctions);
+REGISTER(normalize);
 REGISTER(parse);
 REGISTER(passlistTest);
 REGISTER(postAnalysisCleanup);
@@ -86,7 +86,6 @@ REGISTER(printProgram);    // BLC: pretty-prints the whole program
 REGISTER(printSymtab);
 REGISTER(processImportExprs);
 REGISTER(processParameters); // BLC: handle parameter intents
-REGISTER(reconstructIterators);
 REGISTER(removeDeadSymbols);
 REGISTER(removeNamedParameters);
 REGISTER(removeNestedFunctions);

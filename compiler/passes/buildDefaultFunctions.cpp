@@ -206,7 +206,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
   fn->_getter = field;
   fn->retType = field->type;
   fn->formals = new AList<DefExpr>();
-  fn->body = new BlockStmt(new ReturnStmt(new SymExpr(field->name)));
+  fn->body = new BlockStmt(new ReturnStmt(field->name));
   DefExpr* def = new DefExpr(fn);
   if (no_infer && field->defPoint->exprType)
     def->exprType = field->defPoint->exprType->copy();
@@ -321,7 +321,7 @@ static void build_record_assignment_function(ClassType* ct) {
     body->insertAtTail(new ExprStmt(assign_expr));
   }
 
-  body->insertAtTail(new ReturnStmt(new SymExpr(_arg1)));
+  body->insertAtTail(new ReturnStmt(_arg1));
   BlockStmt* block_stmt = new BlockStmt(body);
   DefExpr* def = new DefExpr(Symboltable::finishFnDef(fn, block_stmt));
   ct->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def));

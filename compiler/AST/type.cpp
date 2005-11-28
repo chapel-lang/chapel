@@ -834,7 +834,7 @@ AList<Stmt>* ClassType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSym
   if (classTag == CLASS_CLASS) {
     AList<Stmt>* fwriteNil =
       new AList<Stmt>(genWriteStmt(fileArg, new_StringLiteral("nil")));
-    fwriteNil->insertAtTail(new ReturnStmt(NULL));
+    fwriteNil->insertAtTail(new ReturnStmt());
     BlockStmt* blockStmt = new BlockStmt(fwriteNil);
     Symbol* nil = Symboltable::lookupInternal("nil", SCOPE_INTRINSIC);
     Expr* argIsNil = new CallExpr(OP_EQUAL, arg, nil);

@@ -68,7 +68,7 @@ static void createInitFn(ModuleSymbol* mod) {
           OP_LOGNOT,
           new SymExpr(
             new UnresolvedSymbol(runOnce))), 
-        new ReturnStmt(NULL));
+        new ReturnStmt());
     initFunBody->insertAtHead(testRun);
   }
 

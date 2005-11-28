@@ -57,7 +57,9 @@ class ExprStmt : public Stmt {
 class ReturnStmt : public ExprStmt {
  public:
   bool yield;
-  ReturnStmt(Expr* initExpr, bool init_yield = false);
+  ReturnStmt(Expr* initExpr = NULL, bool init_yield = false);
+  ReturnStmt(Symbol* initExpr, bool init_yield = false);
+  ReturnStmt(char* initExpr, bool init_yield = false);
   virtual void verify(void);
   COPY_DEF(ReturnStmt);
   void print(FILE* outfile);

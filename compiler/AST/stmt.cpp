@@ -190,6 +190,20 @@ ReturnStmt::ReturnStmt(Expr* initExpr, bool init_yield) :
   astType = STMT_RETURN;
 }
 
+ReturnStmt::ReturnStmt(Symbol* initExpr, bool init_yield) :
+  ExprStmt(new SymExpr(initExpr)),
+  yield(init_yield)
+{
+  astType = STMT_RETURN;
+}
+
+ReturnStmt::ReturnStmt(char* initExpr, bool init_yield) :
+  ExprStmt(new SymExpr(new UnresolvedSymbol(initExpr))),
+  yield(init_yield)
+{
+  astType = STMT_RETURN;
+}
+
 
 void ReturnStmt::verify() {
   if (astType != STMT_RETURN) {

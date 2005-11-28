@@ -7,7 +7,6 @@ SYMTAB_SRCS = \
         normalizeFunctions.cpp \
         postAnalysisCleanup.cpp \
 	printSymtab.cpp \
-        reconstructIterators.cpp \
 	removeDeadSymbols.cpp \
         resolveTypes.cpp \
 	symscope.cpp \

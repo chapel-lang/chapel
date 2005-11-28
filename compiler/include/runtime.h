@@ -9,8 +9,10 @@
 extern ModuleSymbol* prelude;
 extern ModuleSymbol* fileModule;
 extern ModuleSymbol* tupleModule;
+extern ModuleSymbol* seqModule;
 
-extern TypeSymbol* htuple;
+extern TypeSymbol* chpl_htuple;
+extern TypeSymbol* chpl_seq;
 
 extern VarSymbol* chpl_true;
 extern VarSymbol* chpl_false;

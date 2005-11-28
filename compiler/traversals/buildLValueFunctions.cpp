@@ -26,7 +26,7 @@ static void
 replace_return(BaseAST *ast, Symbol *lvalue) {
   if (ReturnStmt *ret = dynamic_cast<ReturnStmt *>(ast)) {
     AList<Stmt> *body = handle_return_expr(ret->expr->copy(), lvalue);
-    body->insertAtTail(new ReturnStmt(NULL));
+    body->insertAtTail(new ReturnStmt());
     ast = new BlockStmt(body);
     ret->replace((Stmt*)ast);
     return;

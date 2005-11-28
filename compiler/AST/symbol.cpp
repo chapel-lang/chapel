@@ -951,7 +951,7 @@ buildMultidimensionalIterator(ClassType* type, int rank) {
 
   _forall->insertAtTail(loop);
 
-  _forall->insertAtTail(new ReturnStmt(new SymExpr(_seq_result)));
+  _forall->insertAtTail(new ReturnStmt(_seq_result));
 
   type->symbol->defPoint->parentStmt->insertBefore
     (new ExprStmt(new DefExpr(_forall))); //, NULL, _seq_result->defPoint->exprType->copy())));

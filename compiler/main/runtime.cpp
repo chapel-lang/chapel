@@ -3,8 +3,10 @@
 ModuleSymbol* prelude = NULL;
 ModuleSymbol* fileModule = NULL;
 ModuleSymbol* tupleModule = NULL;
+ModuleSymbol* seqModule = NULL;
 
-TypeSymbol* htuple = NULL;
+TypeSymbol* chpl_seq;
+TypeSymbol* chpl_htuple = NULL;
 
 VarSymbol* chpl_true = NULL;
 VarSymbol* chpl_false = NULL;

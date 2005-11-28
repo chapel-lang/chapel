@@ -9,6 +9,7 @@ PASSES_SRCS = \
 	pass.cpp \
 	preAnalysisCleanup.cpp \
 	printProgram.cpp \
+        normalize.cpp \
 	runAnalysis.cpp \
         scopeResolve.cpp \
         semanticChecks.cpp

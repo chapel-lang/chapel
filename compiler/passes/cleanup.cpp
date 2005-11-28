@@ -172,7 +172,7 @@ static void construct_tuple_type(int rank) {
     }
 
     fn->retRef = true;
-    fn->body = new BlockStmt(new ReturnStmt(new SymExpr(fields.v[i-1]->name)));
+    fn->body = new BlockStmt(new ReturnStmt(fields.v[i-1]->name));
     DefExpr* def = new DefExpr(fn);
     if (no_infer)
       def->exprType = new SymExpr(types.v[i-1]->symbol);
@@ -211,7 +211,7 @@ static void construct_tuple_type(int rank) {
   {
     FnSymbol* assignFn = new FnSymbol("=");
     ArgSymbol* htupleArg = 
-      new ArgSymbol(INTENT_BLANK, "_htuple", htuple->definition);
+      new ArgSymbol(INTENT_BLANK, "_htuple", chpl_htuple->definition);
     ArgSymbol* tupleArg = new ArgSymbol(INTENT_BLANK, "val", tupleType);
     assignFn->formals = new AList<DefExpr>(new DefExpr(htupleArg),
                                            new DefExpr(tupleArg));
@@ -223,7 +223,7 @@ static void construct_tuple_type(int rank) {
             new CallExpr(htupleArg, new_IntLiteral(i)),
             new CallExpr(tupleArg, new_IntLiteral(i)))));
     }
-    assignFn->insertAtTail(new ReturnStmt(new SymExpr(htupleArg)));
+    assignFn->insertAtTail(new ReturnStmt(htupleArg));
     commonModule->stmts->insertAtTail(new ExprStmt(new DefExpr(assignFn)));
   }
 
@@ -242,7 +242,7 @@ static void construct_tuple_type(int rank) {
 //             new CallExpr(tupleArg, new_IntLiteral(i)),
 //             new CallExpr(secondArg, new_IntLiteral(i)))));
 //     }
-//     assignFn->insertAtTail(new ReturnStmt(new SymExpr(tupleArg)));
+//     assignFn->insertAtTail(new ReturnStmt(tupleArg));
 //     commonModule->stmts->insertAtTail(new ExprStmt(new DefExpr(assignFn)));
 //   }
 
@@ -402,6 +402,6 @@ finish_constructor(FnSymbol* fn) {
     }
   }
 
-  fn->insertAtTail(new ReturnStmt(new SymExpr(fn->_this)));
+  fn->insertAtTail(new ReturnStmt(fn->_this));
   fn->retType = ct;
 }

@@ -34,8 +34,8 @@ void parse(void) {
             MOD_STANDARD);
   ParseFile(stringcat(chplroot, "/modules/standard/_chpl_data.chpl"),
             MOD_STANDARD);
-  ParseFile(stringcat(chplroot, "/modules/standard/_chpl_seq.chpl"),
-            MOD_STANDARD);
+  seqModule = ParseFile(stringcat(chplroot, "/modules/standard/_chpl_seq.chpl"),
+                        MOD_STANDARD);
   ParseFile(stringcat(chplroot, "/modules/standard/_chpl_standard.chpl"),
             MOD_STANDARD);
 
@@ -52,7 +52,8 @@ void parse(void) {
   Pass* fixup = new Fixup();
   fixup->run(Symboltable::getModules(MODULES_ALL));
 
-  htuple = dynamic_cast<TypeSymbol*>(Symboltable::lookupInScope("_htuple", tupleModule->modScope));
+  chpl_htuple = dynamic_cast<TypeSymbol*>(Symboltable::lookupInScope("_htuple", tupleModule->modScope));
+  chpl_seq = dynamic_cast<TypeSymbol*>(Symboltable::lookupInScope("seq", seqModule->modScope));
 
   chpl_true = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("true", prelude->modScope));
 

@@ -23,14 +23,15 @@ PassInfo passlist[] = {
 
   RUN(buildDefaultFunctions),
 
-  RUN(cleanup), // post parsing normalization
+  RUN(cleanup), // post parsing transformations
 
-  RUN(scopeResolve),
+  RUN(scopeResolve), // resolve symbols by scope
+
+  RUN(normalize), // normalization transformations
 
   RUN(semanticCheckII), // post scope resolution semantic checks
 
   RUN(buildLValueFunctions),
-  RUN(reconstructIterators),
 
   RUN(insertDefaultInitVariables),
   RUN(insertOutParameterInitializations),
