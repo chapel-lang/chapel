@@ -50382,3 +50382,21 @@ Removed files:
 	chapel/compiler/traversals/: buildLValueFunctions.cpp 
 	                             buildLValueFunctions.h 
 
+---------------------------------------------------------------------------
+
+11/28/05 16:45:13 -- jplevyak
+
+Log message:
+	Fix compilation warning (parens around assignment expression)
+	Fix error message capitalization.
+	Improve if1 codegen by removing unnecessary intermediates.
+	Add in code (#if'd out) to handle the old DefInit, but which
+	I want to use for the new DefExpr.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: if1.cpp 
+	chapel/compiler/passes/: filesToAST.cpp 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
