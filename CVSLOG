@@ -50517,3 +50517,16 @@ Log message:
 Modified files:
 	chapel/compiler/: Tasks 
 
+---------------------------------------------------------------------------
+
+11/29/05 13:33:00 -- bradc
+
+Log message:
+	After thrashing back and forth, I think I finally have the
+	regression script so that it will mail when failures occur
+	and also generate our normal subject line when things
+	succeed.  Sorry for blowing that away the past week or so...
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
