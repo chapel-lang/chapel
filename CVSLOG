@@ -50462,3 +50462,15 @@ Modified files:
 	                         fwriteIntUnopenedFile.good 
 	                         invalidMode.good openStdout.good 
 
+---------------------------------------------------------------------------
+
+11/28/05 21:02:01 -- jplevyak
+
+Log message:
+	Fix some compilation warnings for gcc 4.0.X
+
+Modified files:
+	chapel/compiler/ifa/: cg.cpp 
+	chapel/compiler/main/: runpasses.cpp 
+	chapel/compiler/traversals/: findUnknownTypes.cpp 
+
