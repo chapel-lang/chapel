@@ -16,6 +16,7 @@
 
 static void reconstruct_iterator(FnSymbol* fn);
 static void build_lvalue_function(FnSymbol* fn);
+static void normalize_returns(FnSymbol* fn);
 static void insert_type_default_temp(UserType* userType);
 static void init_out_argument_in_body(ArgSymbol* arg);
 
@@ -28,6 +29,7 @@ void normalize(void) {
       reconstruct_iterator(fn);
     if (fn->retRef)
       build_lvalue_function(fn);
+    normalize_returns(fn);
   }
 
   collect_asts(&asts);
@@ -135,6 +137,63 @@ static void build_lvalue_function(FnSymbol* fn) {
       returnStmt->expr->remove();
       returnStmt->insertBefore(handle_return_expr(expr, lvalue));
     }
+  }
+}
+
+
+static void normalize_returns(FnSymbol* fn) {
+  Vec<BaseAST*> asts;
+  Vec<ReturnStmt*> rets;
+  collect_asts(&asts, fn);
+  forv_Vec(BaseAST, ast, asts) {
+    if (ReturnStmt* returnStmt = dynamic_cast<ReturnStmt*>(ast)) {
+      if (returnStmt->parentSymbol == fn) // not in a nested function
+        rets.add(returnStmt);
+    }
+  }
+  if (rets.n == 0)
+    return;
+  if (rets.n == 1) {
+    ReturnStmt* ret = rets.v[0];
+    if (ret == fn->body->body->last() &&
+        (!ret->expr ||
+         dynamic_cast<SymExpr*>(ret->expr)))
+      return;
+  }
+  bool returns_void = rets.v[0]->expr == NULL;
+  forv_Vec(ReturnStmt, ret, rets) {
+    if ((ret->expr && returns_void) || (!ret->expr && !returns_void))
+      USR_FATAL(fn, "Not all function returns return a value");
+  }
+  LabelSymbol* label = new LabelSymbol(stringcat("_end_", fn->name));
+  fn->insertAtTail(new LabelStmt(label));
+  VarSymbol* retval = NULL;
+  if (returns_void) {
+    fn->insertAtTail(new ReturnStmt());
+  } else {
+    retval = new VarSymbol(stringcat("_ret_", fn->name), fn->retType);
+    retval->noDefaultInit = true;
+    Expr* type = NULL;
+    if (fn->defPoint->exprType)
+      type = fn->defPoint->exprType->copy();
+    fn->insertAtHead(new ExprStmt(new DefExpr(retval, NULL, type)));
+    fn->insertAtTail(new ReturnStmt(retval));
+  }
+  forv_Vec(ReturnStmt, ret, rets) {
+    if (retval) {
+      if (no_infer) {
+        Expr* ret_expr = ret->expr;
+        ret->expr->remove();
+        CallExpr* call = new CallExpr("_move", retval, ret_expr);
+        call->opTag = OP_GETSNORM;
+        ret->insertBefore(new ExprStmt(call));
+      } else {
+        Expr* ret_expr = ret->expr;
+        ret->expr->remove();
+        ret->insertBefore(new ExprStmt(new CallExpr(OP_GETSNORM, retval, ret_expr)));
+      }
+    }
+    ret->replace(new GotoStmt(goto_normal, label));
   }
 }
 

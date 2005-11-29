@@ -31,7 +31,6 @@ PassInfo passlist[] = {
 
   RUN(check_normalized), // checks semantics of normalized AST
 
-  RUN(eliminateReturns),
   RUN(normalizeFunctions),
 
   RUN(specializeCallExprs),
@@ -73,7 +72,6 @@ PassInfo passlist[] = {
   // passes to prepare for C code generation
   RUN(insertFunctionTemps),
   RUN(transformLetExprs),
-  RUN(eliminateReturns),
   RUN(processParameters),
   RUN(inlineFunctions),
   RUN(insertVariableInitializations),

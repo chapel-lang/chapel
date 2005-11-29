@@ -21,7 +21,6 @@
 #include "../traversals/buildClassHierarchy.h"
 #include "../traversals/createConfigVarTable.h"
 #include "../traversals/createNestedFuncIterators.h"
-#include "../traversals/eliminateReturns.h"
 #include "../traversals/findUnknownTypes.h"
 #include "../traversals/fixup.h"
 #include "../traversals/getstuff.h"
@@ -61,7 +60,6 @@ REGISTER(copyPropagation);
 REGISTER(createConfigVarTable);
 REGISTER(createEntryPoint);
 REGISTER(createNestedFuncIterators);
-REGISTER(eliminateReturns);
 REGISTER(fixup);
 REGISTER(functionResolution);
 REGISTER(getStuff);
