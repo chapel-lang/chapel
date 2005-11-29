@@ -50400,3 +50400,19 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+11/28/05 17:28:12 -- deitz
+
+Log message:
+	Reworked and greatly simplified the eliminateReturns traversal, and
+	then folded it into normalization.
+
+Modified files:
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/compiler/traversals/: Makefile.share 
+Removed files:
+	chapel/compiler/traversals/: eliminateReturns.cpp 
+	                             eliminateReturns.h 
+
