@@ -50497,3 +50497,13 @@ Modified files:
 	                                  sum_type-1.good 
 	                                  sum_type-2.good 
 
+---------------------------------------------------------------------------
+
+11/29/05 10:31:56 -- shannon
+
+Log message:
+	Update test output.
+
+Modified files:
+	chapel/test/types/file/: unableToOpenFile.good 
+
