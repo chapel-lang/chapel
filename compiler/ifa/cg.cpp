@@ -145,7 +145,7 @@ write_c_prim(FILE *fp, FA *fa, Fun *f, PNode *n) {
     default: return 0;
     case P_prim_tuple: {
       char *t = c_type(n->lvals.v[0]);
-      fprintf(fp, "%s = _CG_prim_tuple(%s);\n", n->lvals.v[0]->cg_string, t, t);
+      fprintf(fp, "%s = _CG_prim_tuple(%s);\n", n->lvals.v[0]->cg_string, t);
       for (int i = 1; i < n->rvals.n; i++)
         fprintf(fp, "%s->e%d = %s;\n", n->lvals.v[0]->cg_string, i-1, n->rvals.v[i]->cg_string);
       break;
@@ -455,9 +455,9 @@ write_arg_position(FILE *fp, MPosition *p) {
   for (int i = 0; i < p->pos.n; i++) {
     if (is_intPosition(p->pos.v[i])) {
       if (!i)
-        fprintf(fp, "a%d", Position2int(p->pos.v[i])-1);
+        fprintf(fp, "a%d", (int)Position2int(p->pos.v[i])-1);
       else
-        fprintf(fp, "->e%d", Position2int(p->pos.v[i])-1);
+        fprintf(fp, "->e%d", (int)Position2int(p->pos.v[i])-1);
     }
   }
 }

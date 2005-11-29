@@ -52,7 +52,7 @@ void RemoveTypeVariableActuals::postProcessExpr(Expr* expr) {
       if (dynamic_cast<TypeSymbol*>(def->parentSymbol)) {
         if (def->exprType) {
           if (def->sym->type == dtUnknown)
-            def->sym->type == def->exprType->typeInfo();
+            def->sym->type = def->exprType->typeInfo();
           def->exprType = NULL;
         }
       }

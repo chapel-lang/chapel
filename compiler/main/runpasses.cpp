@@ -74,7 +74,7 @@ static void runPass(char *passName, void (*pass)(void)) {
 
   if (fdump_html) {
     gettimeofday(&stopTime, &timezone);
-    fprintf(html_index_file, "<TR><TD>", passName);
+    fprintf(html_index_file, "<TR><TD>");
     if (!strcmp(passName, "runAnalysis")) {
       fprintf(html_index_file, "<A HREF=\"dump.html\">");
     }
@@ -83,10 +83,10 @@ static void runPass(char *passName, void (*pass)(void)) {
     if (analysis_pass) {
       fprintf(html_index_file, "</A>");
     }
-    fprintf(html_index_file, "</TD><TD>", passName);
+    fprintf(html_index_file, "</TD><TD>");
     HtmlView* htmlview = new HtmlView(analysis_pass);
     htmlview->run(Symboltable::getModules(MODULES_CODEGEN));
-    fprintf(html_index_file, "</TD></TR>", passName);
+    fprintf(html_index_file, "</TD></TR>");
     fflush(html_index_file);
   }
 
