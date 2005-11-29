@@ -4,20 +4,32 @@ TODOS:
 
 * Read about Scala
 
-* rewrite traverse() method to use get_ast_children -- keep public
-   interface/use of Traversal the same, but change mechanism to be
-   shared with get_ast_children
+* (Steve/John) move DefExprs out of ClassType and into something like
+   the init function
 
-* remove post-process symbol/type
+* (Steve) rewrite traverse() method to use get_ast_children -- keep
+   public interface/use of Traversal the same, but change mechanism to
+   be shared with get_ast_children
 
-* remove SymtabTraversal pass -- replace with function call that calls
-   collect symbols?
-   - maintain the ability to pretty-print Symboltable
+* (Steve) remove post-process symbol/type
+
+* (Steve) remove SymtabTraversal pass -- replace with function call
+   that calls collect symbols?  - maintain the ability to pretty-print
+   Symboltable
+
+* (Steve) put all traversal interfaces into traversal.h, all pass
+   interfaces into pass.h rather than having a header for each of
+   these things.
+
+* (Steve) normalization for all CallExprs by inserting temps;
+   unifying/regrouping initial passes; "verify canonical form" pass;
+   automatically have things that are inserted which are not in the
+   canonical form converted into the canonical form automagically.
+
+* (Steve) optag change in CallExprs -- only store OP_ field once we've
+   determined it's a built-in function
 
 * explore switching to Subversion
-
-* put all traversal interfaces into traversal.h, all pass interfaces
-   into pass.h rather than having a header for each of these things.
 
 * document what needs to be done when new classes added to AST, new
    fields added to AST classes
@@ -26,15 +38,7 @@ TODOS:
    pointers-to-structs (and flag/switch for switching back to current
    scheme)
 
-* temporary normalization for all CallExprs; unifying/regrouping
-   initial passes; "verify canonical form" pass; automatically have
-   things that are inserted which are not in the canonical form
-   converted into the canonical form automagically.
-
 * add support for interpreter
-
-* optag change in CallExprs -- only store OP_ field once we've
-   determined it's a built-in function
 
 * construct proposal for what we should support in where expressions
    to make our lives easier, leverage advantages of Scala
@@ -45,9 +49,6 @@ TODOS:
 * changes/canonicalizations to DefExpr
    - fix storage of initializer to support overloaded assignment
      by introducing temporaries
-
-* move DefExprs out of ClassType and into something like the init
-   function
 
 * make sure we have current understanding of nil implementation
    strategy implemented
