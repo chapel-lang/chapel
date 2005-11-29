@@ -50567,3 +50567,13 @@ Modified files:
 	                         createEntryPoint.cpp filesToAST.cpp 
 	chapel/compiler/traversals/: processImportExprs.cpp 
 
+---------------------------------------------------------------------------
+
+11/29/05 15:43:00 -- jplevyak
+
+Log message:
+	Permit arbitrary size string constants to be printed out.
+
+Modified files:
+	chapel/compiler/ifa/: sym.cpp 
+
