@@ -238,7 +238,7 @@ bool Type::hasDefaultReadFunction(void) {
 }
 
 
-AList<Stmt>* Type::buildDefaultReadFunctionBody(ArgSymbol* arg) {
+AList<Stmt>* Type::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
   return new AList<Stmt>();
 }
 
@@ -457,8 +457,29 @@ bool EnumType::hasDefaultReadFunction(void) {
 }
 
 
-AList<Stmt>* EnumType::buildDefaultReadFunctionBody(ArgSymbol* arg) {
-  return new AList<Stmt>(new ExprStmt(new CallExpr("_EnumReadStopgap", arg)));
+AList<Stmt>* EnumType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
+  AList<Stmt>* readBodyStmts = new AList<Stmt>();
+  Symbol* chplStdin = Symboltable::lookupInFileModuleScope("stdin");
+  Symbol* valString = new VarSymbol("valString", dtString, VAR_NORMAL);
+  ExprStmt* valStringDef = new ExprStmt(dynamic_cast<Expr*>(new DefExpr(valString)));
+  readBodyStmts->insertAtTail(valStringDef);
+  ExprStmt* freadCall = new ExprStmt(new CallExpr("fread", chplStdin, valString));
+  readBodyStmts->insertAtTail(freadCall);
+  Stmt* haltStmt = new ExprStmt(new CallExpr("halt", 
+                                  new_StringLiteral("***Error: Not of "), 
+                                  new_StringLiteral(arg->type->symbol->name), 
+                                  new_StringLiteral(" type***")));
+  Stmt* elseStmt = haltStmt;
+
+  for_alist_backward(DefExpr, constant, this->constants) {
+    Expr* symName = new_StringLiteral(constant->sym->name);
+    Expr* cond = new CallExpr(OP_EQUAL, valString, symName);
+    Stmt* thenStmt = new ExprStmt(new CallExpr(OP_GETSNORM, arg, constant->sym));
+    elseStmt = new CondStmt(cond, thenStmt, elseStmt);
+    
+  }
+  readBodyStmts->insertAtTail(elseStmt);
+  return readBodyStmts;
 }
 
 

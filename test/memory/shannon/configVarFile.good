@@ -8,4 +8,4 @@ c is initialized to 1.2+3.4i
 c at runtime is 9.9 + 99.9i
 s is initialized to Pope Benedict XVI
 s at runtime is He is widely respected for his uncompromising if ultraconservative principles and his ability to be critical.
-realloc called for 110 items of size 1 for string copy:  0xnnnnnnnn -> 0xnnnnnnnn
+malloc called for 110 items of size 1 for string copy:  0xnnnnnnnn

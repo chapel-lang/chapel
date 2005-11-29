@@ -366,12 +366,14 @@ void buildDefaultIOFunctions(Type* type) {
   }
 
   if (type->hasDefaultReadFunction()) {
-    if (!function_exists("read", 1, NULL, type->symbol->name)) {
-      FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("read"));
-      fn->cname = stringcat("_auto_", type->symbol->name, "_read");
+    if (!function_exists("fread", 2, NULL, "file", type->symbol->name)) {
+      FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("fread"));
+      fn->cname = stringcat("_auto_", type->symbol->name, "_fread");
+      TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(Symboltable::lookupInFileModuleScope("file"));
+      ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", fileType->definition);
       ArgSymbol* arg = new ArgSymbol(INTENT_INOUT, "val", type);
-      Symboltable::continueFnDef(fn, new AList<DefExpr>(new DefExpr(arg)), dtVoid);
-      AList<Stmt>* body = type->buildDefaultReadFunctionBody(arg);
+      Symboltable::continueFnDef(fn, new AList<DefExpr>(new DefExpr(fileArg), new DefExpr(arg)), dtVoid);
+      AList<Stmt>* body = type->buildDefaultReadFunctionBody(fileArg, arg);
       BlockStmt* block_stmt = new BlockStmt(body);
       DefExpr* def = new DefExpr(Symboltable::finishFnDef(fn, block_stmt));
       type->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def));

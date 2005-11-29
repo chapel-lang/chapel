@@ -822,23 +822,7 @@ void CallExpr::codegen(FILE* outfile) {
   ///
 
   if (SymExpr* variable = dynamic_cast<SymExpr*>(baseExpr)) {
-    if (!strcmp(variable->var->name, "_EnumReadStopgap")) {
-      EnumType* enumType = dynamic_cast<EnumType*>(argList->only()->typeInfo());
-      fprintf(outfile, "char* inputString = NULL;\n");
-      fprintf(outfile, "_chpl_read_string(&inputString);\n");
-      for_alist(DefExpr, constant, enumType->constants) {
-        fprintf(outfile, "if (strcmp(inputString, \"%s\") == 0) {\n", constant->sym->cname);
-        fprintf(outfile, "  *val = %s;\n", constant->sym->cname);
-        fprintf(outfile, "} else ");
-      }
-      fprintf(outfile, "{\n");
-      fprintf(outfile, "char* message = \"Not of ");
-      enumType->symbol->codegen(outfile);
-      fprintf(outfile, " type\";\n");
-      fprintf(outfile, "printError(message);\n");
-      fprintf(outfile, "}\n");
-      return;
-    } else if (!strcmp(variable->var->name, "_chpl_alloc")) {
+    if (!strcmp(variable->var->name, "_chpl_alloc")) {
       Type *t = variable->parentFunction()->retType;
       fprintf(outfile, "(%s)_chpl_malloc(1, sizeof(_", t->symbol->cname);
       t->codegen(outfile);
@@ -848,7 +832,7 @@ void CallExpr::codegen(FILE* outfile) {
       return;
     }
   }
-
+  
   ///
   /// END KLUDGE
   ///

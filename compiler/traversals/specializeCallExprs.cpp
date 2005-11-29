@@ -6,16 +6,6 @@
 #include "symtab.h"
 
 
-
-static void
-decomposeIOCall(CallExpr* call, char* newFunctionName) {
-  for_alist(Expr, arg, call->argList) {
-    call->parentStmt->insertBefore
-      (new ExprStmt(new CallExpr(newFunctionName, arg->copy())));
-  }
-}
-
-
 static void
 decomposeFileIOCall(CallExpr* call, char* newFunctionName, Expr* outfile) {
   for_alist(Expr, arg, call->argList) {
@@ -120,7 +110,9 @@ void SpecializeCallExprs::postProcessStmt(Stmt* stmt) {
           call->parentStmt->insertBefore(genExit(call->parentFunction()));
           call->parentStmt->remove();
         } else if (strcmp(baseVar->var->name, "read") == 0) {
-          decomposeIOCall(call, "read");
+          Symbol* chplStdin = Symboltable::lookupInFileModuleScope("stdin");
+          SymExpr* infile = new SymExpr(chplStdin);
+          decomposeFileIOCall(call, "fread", infile);
           call->parentStmt->remove();
         } else if (strcmp(baseVar->var->name, "write") == 0) {
           Symbol* chplStdout = Symboltable::lookupInFileModuleScope("stdout");

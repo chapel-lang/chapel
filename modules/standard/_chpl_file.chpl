@@ -7,7 +7,7 @@ class file {
   function open {
     if (fp == _STDINCFILEPTR or fp == _STDOUTCFILEPTR or  
         fp == _STDERRCFILEPTR) {
-      halt("It is not necessary to open \"", filename, "\".");
+      halt("***Error: It is not necessary to open \"", filename, "\"***");
     }
     if (fp != _NULLCFILEPTR) {
       this.close;
@@ -17,7 +17,8 @@ class file {
     fp = _fopen(fullFilename, mode);            
 
     if (fp == _NULLCFILEPTR) {
-      halt("Unable to open \"", fullFilename, "\": ", strerror(errno));
+      halt("***Error: Unable to open \"", fullFilename, "\": ", 
+           strerror(errno), "***");
     }
   }
 
@@ -32,16 +33,18 @@ class file {
   function close {
     if (fp == _STDINCFILEPTR or fp == _STDOUTCFILEPTR or  
         fp == _STDERRCFILEPTR) {
-      halt("You may not close \"", filename, "\".");
+      halt("***Error: You may not close \"", filename, "\"***");
     }
     if (fp == _NULLCFILEPTR) {
       var fullFilename = path + "/" + filename;
-      halt("Trying to close \"", fullFilename, "\" which isn't open.");
+      halt("***Error: Trying to close \"", fullFilename, 
+           "\" which isn't open***");
     }
     var returnVal: integer = _fclose(fp);
     if (returnVal < 0) {
       var fullFilename = path + "/" + filename;
-      halt("The close of \"", fullFilename, "\" failed: ", strerror(errno));
+      halt("***Error: The close of \"", fullFilename, "\" failed: ", 
+           strerror(errno), "***");
     }
     fp = _NULLCFILEPTR;
   }
@@ -55,20 +58,22 @@ const stderr : file = file("stderr", "w", "/dev", _STDERRCFILEPTR);
 function fopenError(f: file, isRead: boolean) {
   var fullFilename:string = f.path + "/" + f.filename;
   if (isRead) {
-    halt("You must open \"", fullFilename, "\" before trying to read from it.");
+    halt("***Error: You must open \"", fullFilename, 
+         "\" before trying to read from it***");
   } else {
-    halt("You must open \"", fullFilename, "\" before trying to write to it.");
+    halt("***Error: You must open \"", fullFilename, 
+         "\" before trying to write to it***");
   }
 }
 
 
 function fprintfError() {
-  halt("Write failed: ", strerror(errno));
+  halt("***Error: Write failed: ", strerror(errno), "***");
 }
 
 
 function fscanfError() {
-  halt("Read failed: ", strerror(errno));
+  halt("***Error: Read failed: ", strerror(errno), "***");
 }
 
 
@@ -92,7 +97,7 @@ function fread(f: file = stdin, inout val: integer) {
     if (returnVal < 0) {
       fscanfError();
     } else if (returnVal == 0) {
-      halt("No integer was read.");
+      halt("***Error: No integer was read***");
     }
   } else {
     fopenError(f, isRead = true);
@@ -107,7 +112,7 @@ function fwrite(f: file = stdout, val: integer) {
     if (returnVal < 0) {
       fprintfError();
     } else if (returnVal == 0) {
-      halt("No integer was written.");
+      halt("***Error: No integer was written***");
     }
   } else {
     fopenError(f, isRead = false);
@@ -122,7 +127,7 @@ function fread(f: file = stdin, inout val: float) {
     if (returnVal < 0) {
       fscanfError();
     } else if (returnVal == 0) {
-      halt("No float was read.");
+      halt("***Error: No float was read***");
     }
   } else {
     fopenError(f, isRead = true);
@@ -173,7 +178,7 @@ function fread(f: file = stdin, inout val: boolean) {
     } else if (valString == "false") {
       val = false;
     } else {
-      halt("Not of boolean type.");
+      halt("***Error: Not of boolean type***");
     }
   } else {
     fopenError(f, isRead = true);
@@ -213,5 +218,10 @@ function fwrite(f: file = stdout, x : _nilType) : void {
 
 
 function write() {
-  halt("This should never be called.  All write calls should be converted to fwrites.");
+  halt("***Error: This should never be called.  All write calls should be converted to fwrites***");
+}
+
+
+function read() {
+  halt("***Error: This should never be called.  All read calls should be converted to freads***");
 }

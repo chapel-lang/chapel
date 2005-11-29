@@ -78,7 +78,7 @@ class Type : public BaseAST {
   virtual bool hasDefaultWriteFunction(void);
   virtual AList<Stmt>* buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
   virtual bool hasDefaultReadFunction(void);
-  virtual AList<Stmt>* buildDefaultReadFunctionBody(ArgSymbol* arg);
+  virtual AList<Stmt>* buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
 };
 
 #define forv_Type(_p, _v) forv_Vec(Type, _p, _v)
@@ -114,7 +114,7 @@ class EnumType : public Type {
   virtual bool hasDefaultWriteFunction(void);
   virtual AList<Stmt>* buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
   virtual bool hasDefaultReadFunction(void);
-  virtual AList<Stmt>* buildDefaultReadFunctionBody(ArgSymbol* arg);
+  virtual AList<Stmt>* buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
 };
 
 
