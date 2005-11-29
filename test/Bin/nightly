@@ -137,13 +137,6 @@ if ($mailer eq "") {
     $mailer = "Mail";
 }
 
-if ($debug == 1) {
-    $mailcommand = "| $mailer -s \"$mailsubject \" $debugmail";
-} else {
-    $mailcommand = "| $mailer -s \"$mailsubject \" chapel_cronmail\@cray.com";
-}
-
-
 $somethingfailed = 0;
 
 #
@@ -322,6 +315,12 @@ if ($debug == 1) {
     $mailsubject = "Chapel: Nightly Results ($platform): $shortstatus";
 }
 
+if ($debug == 1) {
+    $mailcommand = "| $mailer -s \"$mailsubject \" $debugmail";
+} else {
+    $mailcommand = "| $mailer -s \"$mailsubject \" chapel_cronmail\@cray.com";
+}
+
 open(MAIL, $mailcommand);
 
 print MAIL "=== Summary ==========================================================\n";
@@ -467,6 +466,14 @@ sub mysystem {
 	print "Error $_[1]: $status\n";
 
 	if ($mailmsg != 0) {
+            if ($debug == 1) {
+                $mailsubject = "Chapel: Debug Results ($platform): Failure notice";
+                $mailcommand = "| $mailer -s \"$mailsubject \" $debugmail";
+            } else {
+                $mailsubject = "Chapel: Nightly Results ($platform): Failure notice";
+                $mailcommand = "| $mailer -s \"$mailsubject \" chapel_cronmail\@cray.com";
+            }
+
             print "Trying to mail message... using $mailcommand\n";
 	    open(MAIL, $mailcommand);
 	    print MAIL "=== Summary ===================================================\n";
