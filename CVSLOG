@@ -50356,3 +50356,29 @@ Log message:
 Added files:
 	chapel/compiler/passes/: normalize.cpp 
 
+---------------------------------------------------------------------------
+
+11/28/05 16:19:31 -- deitz
+
+Log message:
+	Folded a few more small normalizing passes into the new normalize pass.
+	
+	Renamed the semanticCheck passes to check_parsed, check_normalized,
+	and check_resolved to indicate that they are checking the AST for user
+	errors after parse, normalize, and analysis.
+
+Modified files:
+	chapel/compiler/include/: passes.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/passes/: normalize.cpp semanticChecks.cpp 
+	chapel/compiler/symtab/: Makefile.share 
+	chapel/compiler/traversals/: Makefile.share 
+Removed files:
+	chapel/compiler/passes/: semanticChecks.h 
+	chapel/compiler/symtab/: insertDefaultInitVariables.cpp 
+	                         insertDefaultInitVariables.h 
+	                         insertOutParameterInitializations.cpp 
+	                         insertOutParameterInitializations.h 
+	chapel/compiler/traversals/: buildLValueFunctions.cpp 
+	                             buildLValueFunctions.h 
+
