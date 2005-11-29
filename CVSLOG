@@ -50474,3 +50474,14 @@ Modified files:
 	chapel/compiler/main/: runpasses.cpp 
 	chapel/compiler/traversals/: findUnknownTypes.cpp 
 
+---------------------------------------------------------------------------
+
+11/29/05 09:34:32 -- jplevyak
+
+Log message:
+	Fix .good for recent changes (don't know which ones).
+
+Modified files:
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
