@@ -50416,3 +50416,19 @@ Removed files:
 	chapel/compiler/traversals/: eliminateReturns.cpp 
 	                             eliminateReturns.h 
 
+---------------------------------------------------------------------------
+
+11/28/05 17:35:07 -- deitz
+
+Log message:
+	Factored error checking of a function that sometimes returns values
+	and sometimes doesn't out of normalize_returns and into check_parsed.
+	
+	Added a test of this error.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp semanticChecks.cpp 
+Added files:
+	chapel/test/functions/deitz/: test_return2.chpl 
+	                              test_return2.good 
+
