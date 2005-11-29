@@ -50485,3 +50485,15 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+11/29/05 10:14:52 -- deitz
+
+Log message:
+	Forgot to checkin updates to these tests.
+
+Modified files:
+	chapel/test/flowanalysis/newast/: multiple_return.good 
+	                                  sum_type-1.good 
+	                                  sum_type-2.good 
+
