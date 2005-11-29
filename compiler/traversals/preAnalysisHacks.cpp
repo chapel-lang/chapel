@@ -6,24 +6,6 @@
 #include "symtab.h"
 
 
-void PreAnalysisHacks::postProcessStmt(Stmt* stmt) {
-  if (ForLoopStmt* loop = dynamic_cast<ForLoopStmt*>(stmt)) {
-    loop->iterators->only()->replace(
-      new CallExpr(
-        new MemberAccess(
-          loop->iterators->only()->copy(),
-          "_forall")));
-    if (no_infer) {
-      DefExpr* index = loop->indices->only();
-      Expr* type = loop->iterators->only()->copy();
-      type = new CallExpr(new MemberAccess(type, "_last"));
-      type = new CallExpr(new MemberAccess(type, "_element"));
-      if (!index->exprType)
-        index->replace(new DefExpr(index->sym, NULL, type));
-    }
-  }
-}
-
 static int
 check_type(Type *t) {
   return t && t != dtUnknown && t != dtNil;

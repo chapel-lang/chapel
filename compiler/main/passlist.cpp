@@ -12,7 +12,6 @@
 
 #include "../symtab/codegenOne.h"
 #include "../symtab/copyPropagation.h"
-#include "../symtab/normalizeFunctions.h"
 #include "../symtab/postAnalysisCleanup.h"
 #include "../symtab/printSymtab.h"
 #include "../symtab/removeDeadSymbols.h"
@@ -67,7 +66,6 @@ REGISTER(htmlView);
 REGISTER(inlineFunctions);
 REGISTER(insertFunctionTemps);
 REGISTER(insertVariableInitializations);
-REGISTER(normalizeFunctions);
 REGISTER(normalize);
 REGISTER(parse);
 REGISTER(passlistTest);

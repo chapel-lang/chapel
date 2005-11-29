@@ -12,16 +12,16 @@
 PassInfo passlist[] = {
   FIRST,
 
-  // passes to create the basic AST
   RUN(parse),
   RUN(check_parsed), // checks semantics of parsed AST
-  RUN(createEntryPoint),
 
-  RUN(processImportExprs),
+  RUN(createEntryPoint), // fold into cleanup -- builds init fn for modules
+  RUN(processImportExprs), // fold into cleanup -- expands with and use
+  RUN(buildClassHierarchy), // fold into cleanup -- handles inheritance
 
-  RUN(buildClassHierarchy),
-
-  RUN(buildDefaultFunctions),
+  RUN(buildDefaultFunctions), // move after normalize, the new
+                              // functions will then be cleaned up,
+                              // looked up, and normalized
 
   RUN(cleanup), // post parsing transformations
 
@@ -31,11 +31,9 @@ PassInfo passlist[] = {
 
   RUN(check_normalized), // checks semantics of normalized AST
 
-  RUN(normalizeFunctions),
-
-  RUN(specializeCallExprs),
-  RUN(preAnalysisHacks),
-  RUN(applyGettersSetters),
+  RUN(specializeCallExprs), // fold into normalize
+  RUN(preAnalysisHacks),    // fold into normalize
+  RUN(applyGettersSetters), // fold into normalize
 
   // FunctionResolution instantiates types, resolves functions, and
   // computes a very basic form of type inference.  It is run with the
@@ -43,24 +41,23 @@ PassInfo passlist[] = {
   // two calls in this passlist.
   RUN(functionResolution),
 
-  RUN(pre_instantiate),
+  RUN(pre_instantiate), // remove, analysis should instantiate
+
   RUN(preAnalysisCleanup),
 
   // ANALYSIS
   RUN(runAnalysis),
 
-  // passes to capture analysis information in the AST
-  RUN(removeDeadSymbols),
-  RUN(resolveTypes),
-  RUN(postAnalysisCleanup),
-  RUN(resolveSymbols),
+  RUN(removeDeadSymbols),   // fold into resolve analysis
+  RUN(resolveTypes),        // fold into resolve analysis
+  RUN(postAnalysisCleanup), // fold into resolve analysis
+  RUN(resolveSymbols),      // fold into resolve analysis
 
   RUN(functionResolution),
 
-  RUN(removeNamedParameters),
-  RUN(removeTypeVariableActuals),
-  RUN(removeTypeVariableFormals),
-
+  RUN(removeNamedParameters),     // fold into resolve analysis
+  RUN(removeTypeVariableActuals), // fold into resolve analysis
+  RUN(removeTypeVariableFormals), // fold into resolve analysis
 
   RUN(check_resolved), // checks semantics of resolved AST
 

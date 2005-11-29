@@ -132,22 +132,7 @@ void SpecializeCallExprs::postProcessStmt(Stmt* stmt) {
 }
 
 
-void SpecializeCallExprs::postProcessExpr(Expr* expr) {
-  if (CallExpr* paren = dynamic_cast<CallExpr*>(expr)) {
-    if (SymExpr* baseVar = dynamic_cast<SymExpr*>(paren->baseExpr)) {
-      if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(baseVar->var)) {
-        if (ClassType* ctype = dynamic_cast<ClassType*>(ts->definition)) {
-          if (ctype->defaultConstructor) {
-            expr->replace(
-              new CallExpr(ctype->defaultConstructor->name, paren->argList));
-          } else {
-            INT_FATAL(expr, "structural type has no default constructor");
-          }
-        }
-      }
-    }
-  }
-}
+void SpecializeCallExprs::postProcessExpr(Expr* expr) { }
 
 
 void specializeCallExprs(void) {

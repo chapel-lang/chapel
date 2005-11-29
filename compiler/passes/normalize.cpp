@@ -12,13 +12,17 @@
 #include "symbol.h"
 #include "symtab.h"
 #include "stringutil.h"
+#include "../traversals/updateSymbols.h"
 
 
 static void reconstruct_iterator(FnSymbol* fn);
 static void build_lvalue_function(FnSymbol* fn);
 static void normalize_returns(FnSymbol* fn);
 static void insert_type_default_temp(UserType* userType);
-static void init_out_argument_in_body(ArgSymbol* arg);
+static void initialize_out_formals(FnSymbol* fn);
+static void insert_formal_temps(FnSymbol* fn);
+static void call_constructor_for_class(CallExpr* call);
+static void normalize_for_loop(ForLoopStmt* stmt);
 
 void normalize(void) {
   Vec<FnSymbol*> fns;
@@ -30,6 +34,8 @@ void normalize(void) {
     if (fn->retRef)
       build_lvalue_function(fn);
     normalize_returns(fn);
+    initialize_out_formals(fn);
+    insert_formal_temps(fn);
   }
 
   collect_asts(&asts);
@@ -45,10 +51,15 @@ void normalize(void) {
         insert_type_default_temp(userType);
       }
     }
+  }
 
-    if (ArgSymbol* as = dynamic_cast<ArgSymbol*>(ast)) {
-      if (as->defPoint->init && as->intent == INTENT_OUT)
-        init_out_argument_in_body(as);
+  asts.clear();
+  collect_asts(&asts);
+  forv_Vec(BaseAST, ast, asts) {
+    if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
+      call_constructor_for_class(a);
+    } else if (ForLoopStmt* a = dynamic_cast<ForLoopStmt*>(ast)) {
+      normalize_for_loop(a);
     }
   }
 }
@@ -230,15 +241,81 @@ static void insert_type_default_temp(UserType* userType) {
 }
 
 
-static void init_out_argument_in_body(ArgSymbol* arg) {
-  FnSymbol* fn = dynamic_cast<FnSymbol*>(arg->defPoint->parentSymbol);
+static void initialize_out_formals(FnSymbol* fn) {
+  for_alist(DefExpr, argDef, fn->formals) {
+    ArgSymbol* arg = dynamic_cast<ArgSymbol*>(argDef->sym);
+    if (arg->defPoint->init && arg->intent == INTENT_OUT)
+      fn->body->insertAtHead(
+        new ExprStmt(
+          new CallExpr(OP_GETSNORM, arg, arg->defPoint->init->copy())));
+  }
+}
 
-  if (!fn)
-    INT_FATAL(arg, "Could not find function for ArgSymbol");
 
-  BlockStmt* body = fn->body;
+static void insert_formal_temps(FnSymbol* fn) {
+  if (!formalTemps)
+    return;
 
-  Expr* assignExpr = new CallExpr(OP_GETSNORM, arg, arg->defPoint->init->copy());
-  Stmt* initStmt = new ExprStmt(assignExpr);
-  body->insertAtHead(initStmt);
+  if (!strcmp("=", fn->name))
+    return;
+
+  Vec<DefExpr*> tempDefs;
+  ASTMap subs;
+
+  for_alist_backward(DefExpr, formalDef, fn->formals) {
+    ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
+    if (formal->intent == INTENT_REF)
+      continue;
+    Type *type = formal->type;
+    if (type == dtAny || type == dtNumeric)
+      type = dtUnknown;
+    if (formal->intent == INTENT_PARAM ||
+        formal->intent == INTENT_TYPE ||
+        formal->genericSymbol ||
+        type->isGeneric)
+      return;
+    VarSymbol* temp = new VarSymbol(stringcat("_", formal->name), formal->type);
+    DefExpr* tempDef = new DefExpr(temp, new SymExpr(formal));
+    if (formalDef->exprType)
+      tempDef->exprType = formalDef->exprType->copy();
+    tempDefs.add(tempDef);
+    subs.put(formal, temp);
+  }
+
+  TRAVERSE(fn->body, new UpdateSymbols(&subs), true);
+
+  forv_Vec(DefExpr, tempDef, tempDefs) {
+    fn->insertAtHead(new ExprStmt(tempDef));
+  }
+}
+
+
+static void call_constructor_for_class(CallExpr* call) {
+  if (SymExpr* baseVar = dynamic_cast<SymExpr*>(call->baseExpr)) {
+    if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(baseVar->var)) {
+      if (ClassType* ct = dynamic_cast<ClassType*>(ts->definition)) {
+        if (ct->defaultConstructor)
+          call->baseExpr->replace(new SymExpr(ct->defaultConstructor->name));
+        else
+          INT_FATAL(call, "class type has no default constructor");
+      }
+    }
+  }
+}
+
+
+static void normalize_for_loop(ForLoopStmt* stmt) {
+  stmt->iterators->only()->replace(
+    new CallExpr(
+      new MemberAccess(
+        stmt->iterators->only(),
+        "_forall")));
+  if (no_infer) {
+    DefExpr* index = stmt->indices->only();
+    Expr* type = stmt->iterators->only()->copy();
+    type = new CallExpr(new MemberAccess(type, "_last"));
+    type = new CallExpr(new MemberAccess(type, "_element"));
+    if (!index->exprType)
+      index->replace(new DefExpr(index->sym, NULL, type));
+  }
 }
