@@ -174,7 +174,7 @@ if1_conc(IF1 *p, Code **c, Code *cc) {
 Code *
 if1_move(IF1 *p, Code **c, Sym *a, Sym *b, IFAAST *ast) {
   Code *cc = new Code(Code_MOVE);
-  assert(a && b);
+  assert(a && b && a != b);
   cc->rvals.add(a);
   cc->lvals.add(b);
   cc->ast = ast;

@@ -1391,18 +1391,119 @@ gen_one_defexpr(VarSymbol *var, DefExpr *def) {
 
 static int
 gen_defexpr(DefExpr* defExpr) {
-  if (VarSymbol* var = dynamic_cast<VarSymbol*>(defExpr->sym))
+  if (VarSymbol *var = dynamic_cast<VarSymbol*>(defExpr->sym))
     if (gen_one_defexpr(var, defExpr))
       return -1;
   if1_gen(if1, &defExpr->parentStmt->ainfo->code, defExpr->ainfo->code);
   return 0;
 }
 
-static int gen_expr_stmt(BaseAST *a) {
+static int 
+gen_expr_stmt(BaseAST *a) {
   ExprStmt *expr = dynamic_cast<ExprStmt*>(a);
   expr->ainfo->code = expr->expr->ainfo->code;
   return 0;
 }
+
+#if 0
+static int
+gen_var_init_expr(VarSymbol *var, InitExpr *e) {
+  Type *type = var->type;
+#ifdef MAKE_USER_TYPE_BE_DEFINITION
+  while (type->astType == TYPE_USER)
+    type = ((UserType*)type)->underlyingType;
+#endif
+  Sym *s = var->asymbol->sym;
+  AAST *ast = e->ainfo;
+  ast->sym = s;
+  s->ast = ast;
+  s->is_var = 1;
+  switch (var->varClass) {
+    case VAR_NORMAL: break;
+    case VAR_REF: break;
+    case VAR_CONFIG: s->is_external = 1; break;
+    default: return show_error("unhandled variable class", ast);
+  }
+  switch (var->consClass) {
+    case VAR_CONST: s->is_read_only = 1; break;
+    case VAR_VAR: break;
+    case VAR_PARAM: break;
+    default: assert(!"unknown constant class");
+  }
+  if (type != dtUnknown) {
+    if (!is_reference_type(type))
+      s->type = unalias_type(type->asymbol->sym);
+    else
+      s->must_implement = unalias_type(type->asymbol->sym);
+  }
+  switch (type->astType) { 
+    case TYPE_VARIABLE:
+    case TYPE_META:
+      type = dtUnknown;  // as yet unknown
+      break;
+    default:
+      break;
+  }
+  int no_default_init = var->noDefaultInit ;
+  Sym *lhs = s;
+  if (!no_default_init) {
+    lhs = new_sym();
+    lhs->ast = ast;
+    if (e->type)
+      if1_gen(if1, &ast->code, e->type->ainfo->code);
+    Code *c = if1_send(if1, &ast->code, 3, 1, sym_primitive,
+                       chapel_defexpr_symbol, type->asymbol->sym, lhs);
+    c->ast = ast;
+    c->partial = Partial_NEVER;
+    if (e->type)
+      if1_add_send_arg(if1, c, e->type->ainfo->rval);
+    ast->rval = lhs;
+  } else
+    ast->rval = s;
+  return 0;
+}
+
+static int
+gen_arg_init_expr(ArgSymbol *arg, InitExpr *e) {
+  Type *type = arg->type;
+#ifdef MAKE_USER_TYPE_BE_DEFINITION
+  while (type->astType == TYPE_USER)
+    type = ((UserType*)type)->underlyingType;
+#endif
+  Sym *s = arg->asymbol->sym;
+  AAST *ast = e->ainfo;
+  ast->sym = s;
+  //s->ast = ast;
+  //s->is_var = 1;
+  Sym *lhs = s;
+  lhs = new_sym();
+  lhs->ast = ast;
+  if (e->type)
+    if1_gen(if1, &ast->code, e->type->ainfo->code);
+  Code *c = if1_send(if1, &ast->code, 3, 1, sym_primitive,
+                     chapel_defexpr_symbol, type->asymbol->sym, lhs);
+  c->ast = ast;
+  c->partial = Partial_NEVER;
+  if (e->type)
+    if1_add_send_arg(if1, c, e->type->ainfo->rval);
+  ast->rval = lhs;
+  return 0;
+}
+
+static int
+gen_init_expr(BaseAST *a) {
+  InitExpr *e = dynamic_cast<InitExpr*>(a);
+  if (!e)
+    return -1;
+  VarSymbol *var = dynamic_cast<VarSymbol*>(e->sym);
+  if (var)
+    return gen_var_init_expr(var, e);
+  ArgSymbol *arg = dynamic_cast<ArgSymbol*>(e->sym);
+  if (arg)
+    return gen_arg_init_expr(arg, e);
+  return 0;
+}
+#endif
 
 static int
 gen_while(BaseAST *a) {
@@ -1419,9 +1520,9 @@ gen_while(BaseAST *a) {
 static int
 gen_forall_internal(AAST *ainfo, Code *body, Vec<Symbol*> &indices, Vec<Expr*> &iterators) {
   if (indices.n != 1)
-    fail("Forall without single indice");
+    fail("forall without single indice");
   if (iterators.n != 1)
-    fail("Forall without single iterator");
+    fail("forall without single iterator");
 
   // setup code: evaluate iterators and get loop variable
   Code *setup_code = 0, *send;
@@ -1525,10 +1626,14 @@ gen_assign_rhs(CallExpr *s) {
   s->ainfo->rval = new_sym();
   s->ainfo->rval->ast = s->ainfo;
   s->ainfo->sym = s->get(1)->ainfo->sym;
-  if1_gen(if1, &s->ainfo->code, s->get(2)->ainfo->code);
-  Sym *rval = new_sym();
-  rval->ast = s->ainfo;
-  if1_move(if1, &s->ainfo->code, s->get(2)->ainfo->rval, rval, s->ainfo);
+  Expr *rhs = s->get(2);
+  if1_gen(if1, &s->ainfo->code, rhs->ainfo->code);
+  Sym *rval = rhs->ainfo->rval;
+  if (!rval->function_scope) {
+    rval = new_sym();
+    rval->ast = s->ainfo;
+    if1_move(if1, &s->ainfo->code, rhs->ainfo->rval, rval, s->ainfo);
+  }
   return rval;
 }
 
@@ -1547,16 +1652,6 @@ gen_set_member(MemberAccess *ma, CallExpr *base_ast) {
   c->ast = ast;
   c->partial = Partial_NEVER;
   return 0;
-}
-
-static Sym *
-make_temp(Sym *s, AAST *ast) {
-  if (1 || s->function_scope)
-    return s;
-  Sym *tmp = new_sym();
-  tmp->ast = ast;
-  if1_move(if1, &ast->code, s, tmp, ast);
-  return tmp;
 }
 
 static int
@@ -1597,12 +1692,11 @@ gen_paren_op(CallExpr *s) {
     base = dynamic_cast<FnSymbol*>(dynamic_cast<SymExpr*>(s->baseExpr)->var)->asymbol->sym;
   else
     base = s->baseExpr->ainfo->rval;
-  int need_temps = s->partialTag != PARTIAL_NEVER;
   Vec<Sym*> trvals;
   if (base)
-    trvals.add(need_temps ? make_temp(base, ast) : base);
+    trvals.add(base);
   forv_Sym(r, rvals)
-    trvals.add(need_temps ? make_temp(r, ast) : r);
+    trvals.add(r);
   Code *send = if1_send1(if1, &ast->code);
   send->ast = ast;
   forv_Sym(r, trvals)
@@ -1726,8 +1820,7 @@ gen_assignment(CallExpr *assign) {
     c->ast = assign->ainfo;
     c->partial = Partial_NEVER;
   } else {
-    if1_move(if1, &assign->ainfo->code, rval, assign->ainfo->rval, assign->ainfo);
-    if1_move(if1, &assign->ainfo->code, assign->ainfo->rval, assign->get(1)->ainfo->sym, assign->ainfo);
+    if1_move(if1, &assign->ainfo->code, rval, assign->get(1)->ainfo->sym, assign->ainfo);
   }
   return 0;
 }
@@ -1830,17 +1923,6 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       break;
     }
     case EXPR_DEF: break;
-      /*  SJD: Removed EXPR_INIT for new EXPR_DEF
-    case EXPR_INIT: {
-      InitExpr *s = dynamic_cast<InitExpr*>(ast);
-      if (s->type) {
-        if1_gen(if1, &s->ainfo->code, s->type->ainfo->code);
-        s->ainfo->rval = s->type->ainfo->rval;
-      } else
-        s->ainfo->rval = sym_nil;
-      break;
-    }
-      */
     case EXPR_MEMBERACCESS: {
       MemberAccess *s = dynamic_cast<MemberAccess*>(ast);
       s->ainfo->rval = new_sym();

@@ -42,7 +42,7 @@ void parse(void) {
   int filenum = 0;
   char* inputFilename = NULL;
 
-  while (inputFilename = nthFilename(filenum++)) {
+  while ((inputFilename = nthFilename(filenum++))) {
     ParseFile(inputFilename, MOD_USER);
   }
   finishCountingTokens();
