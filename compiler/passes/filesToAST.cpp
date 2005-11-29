@@ -21,23 +21,25 @@ void parse(void) {
   Symboltable::doneParsingPreludes();
 
   yydebug = debugParserLevel;
-
-  ParseFile(stringcat(chplroot, "/modules/standard/_chpl_complex.chpl"),
-            MOD_STANDARD);
-  fileModule = ParseFile(stringcat(chplroot, 
-                                   "/modules/standard/_chpl_file.chpl"),
-                         MOD_STANDARD);
-  tupleModule = ParseFile(stringcat(chplroot,
-                                    "/modules/standard/_chpl_htuple.chpl"),
+  
+  if (!fnostdincs) {
+    ParseFile(stringcat(chplroot, "/modules/standard/_chpl_complex.chpl"),
+              MOD_STANDARD);
+    fileModule = ParseFile(stringcat(chplroot, 
+                                     "/modules/standard/_chpl_file.chpl"),
+                           MOD_STANDARD);
+    tupleModule = ParseFile(stringcat(chplroot,
+                                      "/modules/standard/_chpl_htuple.chpl"),
+                            MOD_STANDARD);
+    ParseFile(stringcat(chplroot, "/modules/standard/_chpl_adomain.chpl"),
+              MOD_STANDARD);
+    ParseFile(stringcat(chplroot, "/modules/standard/_chpl_data.chpl"),
+              MOD_STANDARD);
+    seqModule = ParseFile(stringcat(chplroot, "/modules/standard/_chpl_seq.chpl"),
                           MOD_STANDARD);
-  ParseFile(stringcat(chplroot, "/modules/standard/_chpl_adomain.chpl"),
-            MOD_STANDARD);
-  ParseFile(stringcat(chplroot, "/modules/standard/_chpl_data.chpl"),
-            MOD_STANDARD);
-  seqModule = ParseFile(stringcat(chplroot, "/modules/standard/_chpl_seq.chpl"),
-                        MOD_STANDARD);
-  ParseFile(stringcat(chplroot, "/modules/standard/_chpl_standard.chpl"),
-            MOD_STANDARD);
+    ParseFile(stringcat(chplroot, "/modules/standard/_chpl_standard.chpl"),
+              MOD_STANDARD);
+  }
 
   int filenum = 0;
   char* inputFilename = NULL;
@@ -52,8 +54,10 @@ void parse(void) {
   Pass* fixup = new Fixup();
   fixup->run(Symboltable::getModules(MODULES_ALL));
 
-  chpl_htuple = dynamic_cast<TypeSymbol*>(Symboltable::lookupInScope("_htuple", tupleModule->modScope));
-  chpl_seq = dynamic_cast<TypeSymbol*>(Symboltable::lookupInScope("seq", seqModule->modScope));
+  if (!fnostdincs) {
+    chpl_htuple = dynamic_cast<TypeSymbol*>(Symboltable::lookupInScope("_htuple", tupleModule->modScope));
+    chpl_seq = dynamic_cast<TypeSymbol*>(Symboltable::lookupInScope("seq", seqModule->modScope));
+  }
 
   chpl_true = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("true", prelude->modScope));
 

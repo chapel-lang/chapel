@@ -33,7 +33,7 @@ static void createInitFn(ModuleSymbol* mod) {
 
   // BLC: code to run user modules once only
   char* runOnce = NULL;
-  if (mod->modtype == MOD_USER) {
+  if (mod->modtype == MOD_USER && !fnostdincs) {
     runOnce = stringcat("__run_", mod->name, "_firsttime");
     // create a boolean variable to guard module initialization
     DefExpr* varDefExpr = new DefExpr(new VarSymbol(runOnce, dtBoolean),

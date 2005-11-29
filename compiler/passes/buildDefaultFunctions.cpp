@@ -349,6 +349,8 @@ void buildDefaultClassTypeMethods(ClassType* ct) {
 
 
 void buildDefaultIOFunctions(Type* type) {
+  if (fnostdincs)
+    return;
   if (type->hasDefaultWriteFunction()) {
     if (!function_exists("fwrite", 2, NULL, "file", type->symbol->name)) {
       FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("fwrite"));

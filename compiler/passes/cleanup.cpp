@@ -208,7 +208,7 @@ static void construct_tuple_type(int rank) {
   commonModule->stmts->insertAtTail(new ExprStmt(new DefExpr(fwriteFn)));
 
   // Build htuple = tuple function
-  {
+  if (!fnostdincs) {
     FnSymbol* assignFn = new FnSymbol("=");
     ArgSymbol* htupleArg = 
       new ArgSymbol(INTENT_BLANK, "_htuple", chpl_htuple->definition);

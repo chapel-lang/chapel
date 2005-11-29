@@ -54,9 +54,11 @@ int print_call_depth = 2;
 int scoping_test = 0;
 int f_equal_method = 0;
 int fanalysis_errors = 0;
+int fnostdincs = 0;
 int num_constants_per_variable = 1;
 
 static ArgumentDescription arg_desc[] = {
+ {"nostdincs", ' ', "No Standard Includes", "T", &fnostdincs, "CHPL_NOSTDINCS", NULL},
  {"analysis-errors", ' ', "Pass Back Analysis Errors", "T", &fanalysis_errors, "CHPL_ANALYSIS_ERRORS", NULL},
  {"premalloc", 'm', "Pre-Malloc", "I", &pre_malloc, "CHPL_PRE_MALLOC", NULL},
  {"passlist", ' ', "Passlist Filename", "P", passlist_filename, "CHPL_PASSLIST", NULL},

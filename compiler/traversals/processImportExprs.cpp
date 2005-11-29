@@ -45,7 +45,7 @@ static ExprStmt* genModuleUse(char* moduleName) {
 void ProcessImportExprs::run(Vec<ModuleSymbol*>* modules) {
   forv_Vec(ModuleSymbol, mod, *modules) {
     ExprStmt* moduleUse;
-    if (mod->modtype == MOD_USER || (no_infer && mod->modtype == MOD_COMMON)) {
+    if ((mod->modtype == MOD_USER || (no_infer && mod->modtype == MOD_COMMON)) && !fnostdincs) {
       moduleUse = genModuleUse("_chpl_standard");
       mod->initFn->insertAtHead(moduleUse);
     }
