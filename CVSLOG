@@ -50432,3 +50432,33 @@ Added files:
 	chapel/test/functions/deitz/: test_return2.chpl 
 	                              test_return2.good 
 
+---------------------------------------------------------------------------
+
+11/28/05 18:49:09 -- shannon
+
+Log message:
+	Added the ability to read enums from a file, and removed
+	the kludge.  Unified the error messages produced in the
+	_chpl_file module and updated the affected test output.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	chapel/compiler/traversals/: specializeCallExprs.cpp 
+	chapel/modules/standard/: _chpl_file.chpl 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/memory/shannon/: configVarFile.good 
+	                             memstatPrint.good 
+	                             printFinalMemStat.good 
+	chapel/test/types/file/: closeStdin.good closedWithoutOpen.good 
+	                         freadIntFailed.good 
+	                         freadIntUnopenedFile.good 
+	                         freadNoFloat.good freadNoInt.good 
+	                         freadNotABoolean.good 
+	                         fwriteIntFailed.good 
+	                         fwriteIntUnopenedFile.good 
+	                         invalidMode.good openStdout.good 
+
