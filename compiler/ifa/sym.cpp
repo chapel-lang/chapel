@@ -205,8 +205,8 @@ unalias_type(Sym *s) {
   return s;
 }
 
-
-static int sprint_float_val(char* str, double val) {
+static int 
+sprint_float_val(char* str, double val) {
   int numchars = sprintf(str, "%g", val);
   if (strchr(str, '.') == NULL && strchr(str, 'e') == NULL) {
     strcat(str, ".0");
@@ -216,7 +216,8 @@ static int sprint_float_val(char* str, double val) {
   }
 }
 
-static int sprint_complex_val(char* str, double real, double imm) {
+static int 
+sprint_complex_val(char* str, double real, double imm) {
   int numchars = 0;
   numchars += sprintf(str+numchars, "(");
   numchars += sprint_float_val(str+numchars, real);
@@ -225,7 +226,6 @@ static int sprint_complex_val(char* str, double real, double imm) {
   numchars += sprintf(str+numchars, ")");
   return numchars;
 }
-
 
 int 
 sprint_imm(char *str, Immediate &imm) {
@@ -290,10 +290,78 @@ sprint_imm(char *str, Immediate &imm) {
 
 int 
 fprint_imm(FILE *fp, Immediate &imm) {
-  char str[80];
-  int res;
-  if ((res = sprint_imm(str, imm) >= 0))
-    fputs(str, fp);
+  int res = -1;
+  switch (imm.const_kind) {
+    case IF1_NUM_KIND_NONE:
+      break;
+    case IF1_NUM_KIND_UINT: {
+      switch (imm.num_index) {
+        case IF1_INT_TYPE_1: 
+          res = fprintf(fp, "%u", imm.v_bool); break;
+        case IF1_INT_TYPE_8: 
+          res = fprintf(fp, "%u", imm.v_uint8); break;
+        case IF1_INT_TYPE_16:
+          res = fprintf(fp, "%u", imm.v_uint16); break;
+        case IF1_INT_TYPE_32:
+          res = fprintf(fp, "%u", imm.v_uint32); break;
+        case IF1_INT_TYPE_64:
+          res = fprintf(fp, "%llu", imm.v_uint64); break;
+        default: assert(!"case");
+      }
+      break;
+    }
+    case IF1_NUM_KIND_INT: {
+      switch (imm.num_index) {
+        case IF1_INT_TYPE_8: 
+          res = fprintf(fp, "%d", imm.v_int8); break;
+        case IF1_INT_TYPE_16:
+          res = fprintf(fp, "%d", imm.v_int16); break;
+        case IF1_INT_TYPE_32:
+          res = fprintf(fp, "%d", imm.v_int32); break;
+        case IF1_INT_TYPE_64:
+          res = fprintf(fp, "%lld", imm.v_int64); break;
+        default: assert(!"case");
+      }
+      break;
+    }
+    case IF1_NUM_KIND_FLOAT:
+      switch (imm.num_index) {
+        case IF1_FLOAT_TYPE_32: {
+          char str[80];
+          res = sprint_float_val(str, imm.v_float32); 
+          fputs(str, fp);
+          break;
+        }
+        case IF1_FLOAT_TYPE_64: {
+          char str[80];
+          res = sprint_float_val(str, imm.v_float64); 
+          fputs(str, fp);
+          break;
+        }
+        default: assert(!"case");
+      }
+      break;
+    case IF1_NUM_KIND_COMPLEX:
+      switch (imm.num_index) {
+        case IF1_FLOAT_TYPE_32: {
+          char str[80];
+          res = sprint_complex_val(str, imm.v_complex32.r, imm.v_complex32.i); 
+          fputs(str, fp);
+          break;
+        }
+        case IF1_FLOAT_TYPE_64: {
+          char str[80];
+          res = sprint_complex_val(str, imm.v_complex64.r, imm.v_complex64.i); 
+          fputs(str, fp);
+          break;
+        }
+        default: assert(!"case");
+      }
+      break;
+    case IF1_CONST_KIND_STRING:
+      res = fprintf(fp, "%s", imm.v_string); break;
+      break;
+  }
   return res;
 }
 
