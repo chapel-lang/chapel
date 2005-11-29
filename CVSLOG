@@ -50551,3 +50551,19 @@ Removed files:
 	chapel/compiler/symtab/: normalizeFunctions.cpp 
 	                         normalizeFunctions.h 
 
+---------------------------------------------------------------------------
+
+11/29/05 15:09:50 -- jplevyak
+
+Log message:
+	Add an option --nostdincs which doesn't load the standard modules
+	so that small test cases can be run without loading in all the
+	module initialization code.
+
+Modified files:
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         createEntryPoint.cpp filesToAST.cpp 
+	chapel/compiler/traversals/: processImportExprs.cpp 
+
