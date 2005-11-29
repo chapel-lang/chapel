@@ -161,10 +161,6 @@ static void normalize_returns(FnSymbol* fn) {
       return;
   }
   bool returns_void = rets.v[0]->expr == NULL;
-  forv_Vec(ReturnStmt, ret, rets) {
-    if ((ret->expr && returns_void) || (!ret->expr && !returns_void))
-      USR_FATAL(fn, "Not all function returns return a value");
-  }
   LabelSymbol* label = new LabelSymbol(stringcat("_end_", fn->name));
   fn->insertAtTail(new LabelStmt(label));
   VarSymbol* retval = NULL;

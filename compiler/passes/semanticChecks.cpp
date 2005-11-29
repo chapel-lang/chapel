@@ -32,12 +32,35 @@ check_redefinition(Symbol* sym) {
 }
 
 
+static void
+check_returns(FnSymbol* fn) {
+  Vec<BaseAST*> asts;
+  Vec<ReturnStmt*> rets;
+  collect_asts(&asts, fn);
+  forv_Vec(BaseAST, ast, asts) {
+    if (ReturnStmt* ret = dynamic_cast<ReturnStmt*>(ast)) {
+      if (ret->parentSymbol == fn)
+        rets.add(ret);
+    }
+  }
+  if (rets.n == 0)
+    return;
+  bool returns_void = rets.v[0]->expr == NULL;
+  forv_Vec(ReturnStmt, ret, rets) {
+    if ((ret->expr && returns_void) || (!ret->expr && !returns_void))
+      USR_FATAL(fn, "Not all function returns return a value");
+  }
+}
+
+
 void
 check_parsed(void) {
   Vec<Symbol*> syms;
   collect_symbols(&syms);
   forv_Vec(Symbol, sym, syms) {
     check_redefinition(sym);
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym))
+      check_returns(fn);
   }
 }
 
