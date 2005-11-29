@@ -9,12 +9,9 @@
 #include "../passes/preAnalysisCleanup.h"
 #include "../passes/printProgram.h"
 #include "../passes/runAnalysis.h"
-#include "../passes/semanticChecks.h"
 
 #include "../symtab/codegenOne.h"
 #include "../symtab/copyPropagation.h"
-#include "../symtab/insertDefaultInitVariables.h"
-#include "../symtab/insertOutParameterInitializations.h"
 #include "../symtab/normalizeFunctions.h"
 #include "../symtab/postAnalysisCleanup.h"
 #include "../symtab/printSymtab.h"
@@ -24,7 +21,6 @@
 #include "../traversals/buildClassHierarchy.h"
 #include "../traversals/createConfigVarTable.h"
 #include "../traversals/createNestedFuncIterators.h"
-#include "../traversals/buildLValueFunctions.h"
 #include "../traversals/eliminateReturns.h"
 #include "../traversals/findUnknownTypes.h"
 #include "../traversals/fixup.h"
@@ -55,7 +51,9 @@ START_PASSLIST_REGISTRATION
 REGISTER(applyGettersSetters);
 REGISTER(buildClassHierarchy);
 REGISTER(buildDefaultFunctions);
-REGISTER(buildLValueFunctions);
+REGISTER(check_parsed);
+REGISTER(check_normalized);
+REGISTER(check_resolved);
 REGISTER(cleanup);
 REGISTER(codegen);
 REGISTER(codegenOne);
@@ -69,9 +67,7 @@ REGISTER(functionResolution);
 REGISTER(getStuff);
 REGISTER(htmlView);
 REGISTER(inlineFunctions);
-REGISTER(insertDefaultInitVariables);
 REGISTER(insertFunctionTemps);
-REGISTER(insertOutParameterInitializations);
 REGISTER(insertVariableInitializations);
 REGISTER(normalizeFunctions);
 REGISTER(normalize);
@@ -95,9 +91,6 @@ REGISTER(resolveSymbols);       // SJD: Resolve symbols after analysis
 REGISTER(resolveTypes);
 REGISTER(runAnalysis);
 REGISTER(scopeResolve);
-REGISTER(semanticCheckI);
-REGISTER(semanticCheckII);
-REGISTER(semanticCheckIII);
 REGISTER(specializeCallExprs);
 REGISTER(transformLetExprs);
 REGISTER(verify);

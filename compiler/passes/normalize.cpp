@@ -13,19 +13,44 @@
 #include "symtab.h"
 #include "stringutil.h"
 
+
 static void reconstruct_iterator(FnSymbol* fn);
 static void build_lvalue_function(FnSymbol* fn);
+static void insert_type_default_temp(UserType* userType);
+static void init_out_argument_in_body(ArgSymbol* arg);
 
 void normalize(void) {
   Vec<FnSymbol*> fns;
+  Vec<BaseAST*> asts;
   collect_functions(&fns);
   forv_Vec(FnSymbol, fn, fns) {
     if (fn->fnClass == FN_ITERATOR)
       reconstruct_iterator(fn);
-    if (0 && fn->retRef)
+    if (fn->retRef)
       build_lvalue_function(fn);
   }
+
+  collect_asts(&asts);
+  forv_Vec(BaseAST, ast, asts) {
+    if (VarSymbol* vs = dynamic_cast<VarSymbol*>(ast)) {
+      if (vs->type == dtUnknown && !vs->defPoint->exprType) {
+        vs->noDefaultInit = true;
+      }
+    }
+
+    if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(ast)) {
+      if (UserType* userType = dynamic_cast<UserType*>(ts->definition)) {
+        insert_type_default_temp(userType);
+      }
+    }
+
+    if (ArgSymbol* as = dynamic_cast<ArgSymbol*>(ast)) {
+      if (as->defPoint->init && as->intent == INTENT_OUT)
+        init_out_argument_in_body(as);
+    }
+  }
 }
+
 
 static void reconstruct_iterator(FnSymbol* fn) {
   Expr* seqType = NULL;
@@ -76,6 +101,7 @@ static void reconstruct_iterator(FnSymbol* fn) {
   }
 }
 
+
 static AList<Stmt>* handle_return_expr(Expr* e, Symbol* lvalue) {
   Stmt* newStmt = NULL;
   if (e)
@@ -110,4 +136,54 @@ static void build_lvalue_function(FnSymbol* fn) {
       returnStmt->insertBefore(handle_return_expr(expr, lvalue));
     }
   }
+}
+
+
+static void insert_type_default_temp(UserType* userType) {
+  TypeSymbol* sym = userType->symbol;
+  if (userType->underlyingType == dtUnknown &&
+      userType->typeExpr &&
+      userType->typeExpr->typeInfo() != dtUnknown) {
+    userType->underlyingType = userType->typeExpr->typeInfo();
+    userType->typeExpr = NULL;
+    if (userType->defaultExpr) {
+      char* temp_name = stringcat("_init_", sym->name);
+      Type* temp_type = userType;
+      Expr *temp_init = userType->defaultExpr->copy();
+      Symbol* parent_symbol = sym->defPoint->parentStmt->parentSymbol;
+      Symbol* outer_symbol = sym;
+      while (dynamic_cast<TypeSymbol*>(parent_symbol)) {
+        parent_symbol = parent_symbol->defPoint->parentStmt->parentSymbol;
+        outer_symbol = outer_symbol->defPoint->parentStmt->parentSymbol;
+      }
+      VarSymbol* temp = new VarSymbol(temp_name, temp_type);
+      DefExpr* def = new DefExpr(temp, temp_init);
+      if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(parent_symbol)) {
+        mod->initFn->insertAtHead(new ExprStmt(def));
+      } else {
+        Stmt* insert_point = outer_symbol->defPoint->parentStmt;
+        insert_point->insertBefore(new ExprStmt(def));
+      }
+      userType->defaultValue = temp;
+      userType->defaultExpr = NULL;
+      temp->noDefaultInit = true;
+    } else if (userType->underlyingType->defaultConstructor) 
+      userType->defaultConstructor = userType->underlyingType->defaultConstructor;
+    else if (userType->underlyingType->defaultValue)
+      userType->defaultValue = userType->underlyingType->defaultValue;
+  }
+}
+
+
+static void init_out_argument_in_body(ArgSymbol* arg) {
+  FnSymbol* fn = dynamic_cast<FnSymbol*>(arg->defPoint->parentSymbol);
+
+  if (!fn)
+    INT_FATAL(arg, "Could not find function for ArgSymbol");
+
+  BlockStmt* body = fn->body;
+
+  Expr* assignExpr = new CallExpr(OP_GETSNORM, arg, arg->defPoint->init->copy());
+  Stmt* initStmt = new ExprStmt(assignExpr);
+  body->insertAtHead(initStmt);
 }

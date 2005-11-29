@@ -1,6 +1,6 @@
-#include "semanticChecks.h"
 #include "astutil.h"
 #include "expr.h"
+#include "passes.h"
 #include "stmt.h"
 #include "symbol.h"
 #include "type.h"
@@ -32,10 +32,10 @@ check_redefinition(Symbol* sym) {
 }
 
 
-void semanticCheckI(void) {
+void
+check_parsed(void) {
   Vec<Symbol*> syms;
   collect_symbols(&syms);
-
   forv_Vec(Symbol, sym, syms) {
     check_redefinition(sym);
   }
@@ -43,7 +43,7 @@ void semanticCheckI(void) {
 
 
 static void
-check_calls_ii(CallExpr* call) {
+check_normalized_calls(CallExpr* call) {
   if (SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr)) {
     if (dynamic_cast<ModuleSymbol*>(base->var)) {
       USR_FATAL(call, "Illegal call of module %s", base->var->name);
@@ -52,20 +52,29 @@ check_calls_ii(CallExpr* call) {
 }
 
 
-void semanticCheckII(void) {
+static void
+check_normalized_functions(FnSymbol* fn) {
+  if (fn->noParens && !fn->typeBinding)
+    USR_FATAL(fn, "Non-member functions must have parenthesized argument lists");
+}
+
+
+void
+check_normalized(void) {
   Vec<BaseAST*> asts;
   collect_asts(&asts);
-
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
-      check_calls_ii(a);
+      check_normalized_calls(a);
+    } else if (FnSymbol* a = dynamic_cast<FnSymbol*>(ast)) {
+      check_normalized_functions(a);
     }
   }
 }
 
 
 static void
-check_calls_iii(CallExpr* call) {
+check_resolved_calls(CallExpr* call) {
   if (OP_ISASSIGNOP(call->opTag)) {
     if (call->get(1)->isConst() || call->get(1)->isParam()) {
       USR_FATAL(call, "Assigning to a constant expression");
@@ -75,7 +84,7 @@ check_calls_iii(CallExpr* call) {
 
 
 static void
-check_vars_iii(VarSymbol* var) {
+check_resolved_vars(VarSymbol* var) {
   if (var->isParam()) {
     if (var->defPoint->init && !get_constant(var->defPoint->init)) {
       USR_FATAL(var, "Initializing param to a variable expression.");
@@ -89,15 +98,15 @@ check_vars_iii(VarSymbol* var) {
 }
 
 
-void semanticCheckIII(void) {
+void
+check_resolved(void) {
   Vec<BaseAST*> asts;
   collect_asts(&asts);
-
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
-      check_calls_iii(a);
+      check_resolved_calls(a);
     } else if (VarSymbol* a = dynamic_cast<VarSymbol*>(ast)) {
-      check_vars_iii(a);
+      check_resolved_vars(a);
     }
   }
 }

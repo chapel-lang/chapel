@@ -4,7 +4,6 @@ TRAVERSALS_SRCS = \
 	collectASTS.cpp \
 	createConfigVarTable.cpp \
         createNestedFuncIterators.cpp \
-        buildLValueFunctions.cpp \
         eliminateReturns.cpp \
         findTypeVariables.cpp \
 	findUnknownTypes.cpp \

@@ -14,7 +14,7 @@ PassInfo passlist[] = {
 
   // passes to create the basic AST
   RUN(parse),
-  RUN(semanticCheckI), // post parsing semantic checks
+  RUN(check_parsed), // checks semantics of parsed AST
   RUN(createEntryPoint),
 
   RUN(processImportExprs),
@@ -29,12 +29,8 @@ PassInfo passlist[] = {
 
   RUN(normalize), // normalization transformations
 
-  RUN(semanticCheckII), // post scope resolution semantic checks
+  RUN(check_normalized), // checks semantics of normalized AST
 
-  RUN(buildLValueFunctions),
-
-  RUN(insertDefaultInitVariables),
-  RUN(insertOutParameterInitializations),
   RUN(eliminateReturns),
   RUN(normalizeFunctions),
 
@@ -67,7 +63,7 @@ PassInfo passlist[] = {
   RUN(removeTypeVariableFormals),
 
 
-  RUN(semanticCheckIII), // post analysis semantic checks
+  RUN(check_resolved), // checks semantics of resolved AST
 
   RUN(createNestedFuncIterators),
   RUN(removeNestedFunctions),

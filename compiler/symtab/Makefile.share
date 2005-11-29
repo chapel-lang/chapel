@@ -2,8 +2,6 @@ SYMTAB_SRCS = \
         codegenOne.cpp \
 	collectSymbols.cpp \
         copyPropagation.cpp \
-        insertDefaultInitVariables.cpp \
-        insertOutParameterInitializations.cpp \
         normalizeFunctions.cpp \
         postAnalysisCleanup.cpp \
 	printSymtab.cpp \
