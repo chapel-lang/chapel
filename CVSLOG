@@ -50507,3 +50507,13 @@ Log message:
 Modified files:
 	chapel/test/types/file/: unableToOpenFile.good 
 
+---------------------------------------------------------------------------
+
+11/29/05 11:38:26 -- deitz
+
+Log message:
+	Tagged a bunch of tasks I'm working on.
+
+Modified files:
+	chapel/compiler/: Tasks 
+
