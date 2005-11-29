@@ -50530,3 +50530,24 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+11/29/05 13:51:48 -- deitz
+
+Log message:
+	Moved insertion of formal temps (in normalizeFunctions), insertion of
+	constructors for types (in specializeCallExprs), and normalization of
+	for-loops (in preAnalysisHacks) to normalize.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/compiler/symtab/: Makefile.share 
+	chapel/compiler/traversals/: preAnalysisHacks.cpp 
+	                             preAnalysisHacks.h 
+	                             specializeCallExprs.cpp 
+Removed files:
+	chapel/compiler/symtab/: normalizeFunctions.cpp 
+	                         normalizeFunctions.h 
+
