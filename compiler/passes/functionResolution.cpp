@@ -178,8 +178,7 @@ void resolve_call(CallExpr* call) {
 
   SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr);
 
-  if (base && !strcmp(base->var->name, "_move")) {
-    call->opTag = OP_GETS;
+  if (call->opTag == OP_GETS) {
     if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->argList->get(1))) {
       if (symExpr->var->type == dtUnknown)
         symExpr->var->type = call->argList->get(2)->typeInfo();
@@ -196,8 +195,8 @@ void resolve_call(CallExpr* call) {
   if (base) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(base->var)) {
       resolve_function(fn);
-      if (call->opTag != OP_NONE && !fn->hasPragma("builtin"))
-        call->opTag = OP_NONE;
+      if (fn->hasPragma("builtin"))
+        call->makeOp();
       
       if (DefExpr* def = dynamic_cast<DefExpr*>(call->parentExpr)) {
         if (def->exprType == call) {

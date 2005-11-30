@@ -33,10 +33,10 @@ void RemoveTypeVariableActuals::postProcessExpr(Expr* expr) {
             arg->remove();
             continue;
           }
-        } else if (var_arg->var == Symboltable::lookupInternal("_methodToken")) {
+        } else if (var_arg->var == methodToken) {
           arg->remove();
           continue;
-        } else if (var_arg->var == Symboltable::lookupInternal("_setterToken")) {
+        } else if (var_arg->var == setterToken) {
           arg->remove();
           continue;
         }

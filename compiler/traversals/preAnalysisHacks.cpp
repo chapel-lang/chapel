@@ -13,7 +13,7 @@ check_type(Type *t) {
 
 void PreAnalysisHacks::postProcessExpr(Expr* expr) {
   if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
-    if (call->opTag == OP_SEQCAT) {
+    if (call->isOp(OP_SEQCAT)) {
       Type* leftType = call->get(1)->typeInfo();
       Type* rightType = call->get(2)->typeInfo();
 

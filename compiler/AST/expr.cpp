@@ -201,51 +201,6 @@ FnSymbol *Expr::parentFunction() {
 }
 
 
-typedef enum _EXPR_RW { expr_r, expr_w, expr_rw } EXPR_RW;
-
-static EXPR_RW expr_read_written(Expr* expr) {
-  if (expr->parentExpr) {
-    Expr* parent = expr->parentExpr;
-    if (dynamic_cast<MemberAccess*>(parent)) {
-      return expr_read_written(parent);
-    }
-    if (CallExpr* parenOpExpr = dynamic_cast<CallExpr*>(parent)) {
-      if (parenOpExpr->opTag == OP_GETS && parenOpExpr->get(1) == expr) {
-        return expr_w;
-      }
-    }
-    if (CallExpr* fn_call = dynamic_cast<CallExpr*>(parent)) {
-      if (fn_call->opTag == OP_NONE) {
-        FnSymbol* fn = fn_call->findFnSymbol();
-        DefExpr* formal = fn->formals->first();
-        for_alist(Expr, actual, fn_call->argList) {
-          if (actual == expr) {
-            if (ArgSymbol* formal_param = dynamic_cast<ArgSymbol*>(formal->sym)) {
-              if (formal_param->intent == INTENT_OUT) {
-                return expr_w;
-              }
-              else if (formal_param->intent == INTENT_INOUT) {
-                return expr_rw;
-              }
-            }
-          }
-          formal = fn->formals->next();
-        }
-      }
-    }
-  }
-  return expr_r;
-}
-
-bool Expr::isRead() {
-  return expr_read_written(this) != expr_w;
-}
-
-bool Expr::isWritten() {
-  return expr_read_written(this) != expr_r;
-}
-
-
 Stmt* Expr::getStmt() {
   return (parentStmt) ? parentStmt : parentSymbol->defPoint->getStmt();
 }
@@ -708,6 +663,46 @@ void CallExpr::print(FILE* outfile) {
 }
 
 
+void CallExpr::makeOp(void) {
+  SymExpr* base = dynamic_cast<SymExpr*>(baseExpr);
+  for (int tag = OP_NONE; tag <= OP_GETS; tag++) {
+    if (!strcmp(opChplString[tag], base->var->name)) {
+      opTag = (OpTag)tag;
+      if (opTag == OP_UNPLUS && argList->length() == 2)
+        opTag = OP_PLUS;
+      if (opTag == OP_UNMINUS && argList->length() == 2)
+        opTag = OP_MINUS;
+      return;
+    }
+  }
+  INT_FATAL(this, "Cannot change call to op");
+}
+
+
+bool CallExpr::isAssign(void) {
+  if (opTag == OP_GETS)
+    return true;
+  else if (opTag == OP_NONE) {
+    SymExpr* base = dynamic_cast<SymExpr*>(baseExpr);
+    if (base && !strcmp(base->var->name, "="))
+      return true;
+  }
+  return false;
+}
+
+
+bool CallExpr::isOp(OpTag op) {
+  if (opTag == op)
+    return true;
+  else if (opTag == OP_NONE) {
+    SymExpr* base = dynamic_cast<SymExpr*>(baseExpr);
+    if (base && !strcmp(base->var->name, opChplString[op]))
+      return true;
+  }
+  return false;
+}
+
+
 Expr* CallExpr::get(int index) {
   return argList->get(index);
 }
@@ -760,8 +755,7 @@ Type* CallExpr::typeInfo(void) {
 void CallExpr::codegen(FILE* outfile) {
 
   if (opTag != OP_NONE) {
-    if (OP_ISASSIGNOP(opTag)) {
-
+    if (opTag == OP_GETS) {
       bool string_init = false;
       Type* leftType = get(1)->typeInfo();
       Type* rightType = get(2)->typeInfo();

@@ -2,6 +2,7 @@
 #include "analysis.h"
 #include "files.h"
 #include "misc.h"
+#include "runtime.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -922,23 +923,18 @@ buildMultidimensionalIterator(ClassType* type, int rank) {
     _seq_result->defPoint->exprType = new CallExpr("_construct_seq", args);
 
   CallExpr* yield = new CallExpr(stringcat("_construct__tuple", intstring(rank)));
-  CallExpr* partial = new CallExpr("_yield", 
-                                   Symboltable::lookupInternal("_methodToken"),
-                                   _seq_result);
+  CallExpr* partial = new CallExpr("_yield", methodToken, _seq_result);
   partial->partialTag = PARTIAL_OK;
   Stmt* loop = new ExprStmt(new CallExpr(partial, yield));
   for (int i = 1; i <= rank; i++) {
     VarSymbol* index = new VarSymbol(stringcat("_i", intstring(i)), dtInteger);
-    CallExpr* partial = new CallExpr("_forall",
-                                     Symboltable::lookupInternal("_methodToken"),
-                                     _this);
+    CallExpr* partial = new CallExpr("_forall", methodToken, _this);
     partial->partialTag = PARTIAL_OK;
     loop = new ForLoopStmt(FORLOOPSTMT_FORALL,
              new AList<DefExpr>(new DefExpr(index)),
              new AList<Expr>(
-               new CallExpr("_forall",
-                            Symboltable::lookupInternal("_methodToken"),
-                            new CallExpr(partial, new_IntLiteral(i)))),
+               new CallExpr("_forall", methodToken,
+                 new CallExpr(partial, new_IntLiteral(i)))),
              loop);
     if (rank > 1) {
       yield->argList->insertAtHead(new SymExpr(dtInteger->symbol));

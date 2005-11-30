@@ -188,17 +188,9 @@ static void normalize_returns(FnSymbol* fn) {
   }
   forv_Vec(ReturnStmt, ret, rets) {
     if (retval) {
-      if (no_infer) {
-        Expr* ret_expr = ret->expr;
-        ret->expr->remove();
-        CallExpr* call = new CallExpr("_move", retval, ret_expr);
-        call->opTag = OP_GETS;
-        ret->insertBefore(new ExprStmt(call));
-      } else {
-        Expr* ret_expr = ret->expr;
-        ret->expr->remove();
-        ret->insertBefore(new ExprStmt(new CallExpr(OP_GETS, retval, ret_expr)));
-      }
+      Expr* ret_expr = ret->expr;
+      ret->expr->remove();
+      ret->insertBefore(new ExprStmt(new CallExpr(OP_GETS, retval, ret_expr)));
     }
     ret->replace(new GotoStmt(goto_normal, label));
   }

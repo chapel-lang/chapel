@@ -1960,7 +1960,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
     }
     case EXPR_CALL: {
       CallExpr* call = dynamic_cast<CallExpr*>(ast);
-      if (call->opTag == OP_GETS) {
+      if (call->isAssign()) {
         FnSymbol *f = call->parentFunction();
         int is_member = call->get(1)->astType == EXPR_MEMBERACCESS;
         if (f->fnClass == FN_CONSTRUCTOR && is_member) {
@@ -2055,10 +2055,15 @@ fun_where_clause(FnSymbol *f, Expr *w) {
   CallExpr *op = dynamic_cast<CallExpr*>(w);
   if (!op)
     return;
-  if (op->opTag == OP_LOGAND) {
+  SymExpr *base = dynamic_cast<SymExpr*>(op->baseExpr);
+  if (!base)
+    return;
+  if (!strcmp(base->var->name, "and")) {
+    op->opTag = OP_LOGAND;
     fun_where_clause(f, op->get(1));
     fun_where_clause(f, op->get(2));
-  } if (op->opTag == OP_EQUAL) {
+  } else if (!strcmp(base->var->name, "==")) {
+    op->opTag = OP_EQUAL;
     VarSymbol *c = 0;
     SymExpr* v = 0;
     if ((c = get_constant(op->get(1))) && (v = dynamic_cast<SymExpr*>(op->get(2)))) 

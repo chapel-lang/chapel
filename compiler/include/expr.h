@@ -47,7 +47,6 @@ enum OpTag {
   OP_GETS
 };
 
-#define OP_ISASSIGNOP(op) (op == OP_GETS)
 #define OP_ISBINARYOP(op) (op >= OP_PLUS && op <= OP_NOTSUBTYPE)
 #define OP_ISUNARYOP(op) (op >= OP_UNPLUS && op <= OP_BITNOT)
 
@@ -84,8 +83,6 @@ class Expr : public BaseAST {
 
   FnSymbol *parentFunction();
 
-  bool isRead(void);
-  bool isWritten(void);
   bool isRef(void);
   Stmt* Expr::getStmt();
 
@@ -179,6 +176,10 @@ class CallExpr : public Expr {
 
   virtual void print(FILE* outfile);
   virtual void codegen(FILE* outfile);
+
+  void makeOp(void);
+  bool isAssign(void);
+  bool isOp(OpTag);
 
   Expr* get(int index);
   FnSymbol* findFnSymbol(void);

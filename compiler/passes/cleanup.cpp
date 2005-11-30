@@ -37,10 +37,10 @@ void cleanup(void) {
       destructure_indices(a);
     } else if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
       SymExpr* base = dynamic_cast<SymExpr*>(a->baseExpr);
-      CallExpr* parent = dynamic_cast<CallExpr*>(a->parentExpr);
       if (base && !strncmp(base->var->name, "_tuple", 6)) {
         construct_tuple_type(atoi(base->var->name+6));
-        if (parent && OP_ISASSIGNOP(parent->opTag) && parent->get(1) == a)
+        CallExpr* parent = dynamic_cast<CallExpr*>(a->parentExpr);
+        if (parent && parent->isAssign() && parent->get(1) == a)
           destructure_tuple(a, &asts);
       }
     }
@@ -354,10 +354,6 @@ finish_constructor(FnSymbol* fn) {
                                  ct->symbol,
                                  new_StringLiteral(description));
   CallExpr* alloc_expr = new CallExpr(OP_GETS, fn->_this, alloc_rhs);
-  if (no_infer) {
-    alloc_expr->baseExpr = new SymExpr("_move");
-    alloc_expr->opTag = OP_NONE;
-  }
   Stmt* alloc_stmt = new ExprStmt(alloc_expr);
 
   AList<Stmt>* stmts = new AList<Stmt>();
@@ -368,7 +364,7 @@ finish_constructor(FnSymbol* fn) {
   if (use_class_init)
     stmts->insertAtTail(new ExprStmt(new CallExpr(ct->initFn->name)));
   else
-    stmts->insertAtTail(new ExprStmt(new CallExpr(ct->initFn, Symboltable::lookupInternal("_methodToken"), fn->_this)));
+    stmts->insertAtTail(new ExprStmt(new CallExpr(ct->initFn, methodToken, fn->_this)));
 
   // assign formals to fields by name
   forv_Vec(Symbol, field, ct->fields) {

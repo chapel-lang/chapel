@@ -317,7 +317,7 @@ static void build_record_assignment_function(ClassType* ct) {
   forv_Vec(Symbol, tmp, ct->fields) {
     Expr* left = new MemberAccess(_arg1, tmp);
     Expr* right = new MemberAccess(arg2, tmp);
-    Expr* assign_expr = new CallExpr(OP_GETS, left, right);
+    Expr* assign_expr = new CallExpr("=", left, right);
     body->insertAtTail(new ExprStmt(assign_expr));
   }
 

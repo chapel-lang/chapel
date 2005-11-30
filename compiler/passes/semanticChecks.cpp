@@ -98,7 +98,7 @@ check_normalized(void) {
 
 static void
 check_resolved_calls(CallExpr* call) {
-  if (OP_ISASSIGNOP(call->opTag)) {
+  if (call->opTag == OP_GETS) {
     if (call->get(1)->isConst() || call->get(1)->isParam()) {
       USR_FATAL(call, "Assigning to a constant expression");
     }

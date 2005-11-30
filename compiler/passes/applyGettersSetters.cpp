@@ -1,17 +1,19 @@
 #include "applyGettersSetters.h"
 #include "astutil.h"
 #include "expr.h"
+#include "runtime.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symtab.h"
 
 
-#define REPLACE(_x) do { \
-      BaseAST* replacement = _x; \
-      ast->replace(replacement); \
-      ast = replacement; \
-      goto Ldone; \
-} while (0)
+#define REPLACE(_x)              \
+  do {                           \
+    BaseAST* replacement = _x;   \
+    ast->replace(replacement);   \
+    ast = replacement;           \
+    goto Ldone;                  \
+  } while (0)
 
 void 
 apply_getters_setters(BaseAST* ast) {
@@ -24,12 +26,9 @@ apply_getters_setters(BaseAST* ast) {
   //         or a simple MemberAccess without CallExpr
   //         or a CallExpr without a MemberAccess
   CallExpr *call = dynamic_cast<CallExpr*>(ast), *assign = 0;
-  if (call && OP_ISASSIGNOP(call->opTag)) {
-    SymExpr* symExpr = dynamic_cast<SymExpr*>(call->baseExpr);
-    if (!symExpr || strcmp(symExpr->var->name, "_move")) {
-      assign = call;
-      call = dynamic_cast<CallExpr*>(assign->get(1));
-    }
+  if (call && call->isAssign()) {
+    assign = call;
+    call = dynamic_cast<CallExpr*>(assign->get(1));
   }
   BaseAST *base = call ? call->baseExpr : (assign ? assign->get(1) : ast);
   if (MemberAccess* memberAccess = dynamic_cast<MemberAccess*>(base)) {
@@ -37,12 +36,12 @@ apply_getters_setters(BaseAST* ast) {
     // build the main accessor/setter
     if ((call && !call->argList->isEmpty())) {
       CallExpr *lhs = new CallExpr(memberAccess->member->name, 
-                                   new SymExpr(Symboltable::lookupInternal("_methodToken")),
+                                   methodToken,
                                    memberAccess->base->copy());
       lhs->partialTag = PARTIAL_OK;
       AList<Expr>* arguments = call ? call->argList->copy() : new AList<Expr>;
       if (rhs) {
-        arguments->insertAtTail(new SymExpr(Symboltable::lookupInternal("_setterToken")));
+        arguments->insertAtTail(new SymExpr(setterToken));
         arguments->insertAtTail(rhs);
       }
       lhs = new CallExpr(lhs, arguments);
@@ -50,9 +49,9 @@ apply_getters_setters(BaseAST* ast) {
     } else {
       AList<Expr>* arguments = call ? call->argList->copy() : new AList<Expr>;
       arguments->insertAtHead(memberAccess->base->copy());
-      arguments->insertAtHead(new SymExpr(Symboltable::lookupInternal("_methodToken")));
+      arguments->insertAtHead(new SymExpr(methodToken));
       if (rhs) {
-        arguments->insertAtTail(new SymExpr(Symboltable::lookupInternal("_setterToken")));
+        arguments->insertAtTail(new SymExpr(setterToken));
         arguments->insertAtTail(rhs);
       }
       REPLACE(new CallExpr(memberAccess->member->name, arguments));
@@ -62,11 +61,11 @@ apply_getters_setters(BaseAST* ast) {
     Expr *rhs = assign->argList->get(2)->copy();
     if (call) {
       AList<Expr>* arguments = call->argList->copy();
-      arguments->insertAtTail(new SymExpr(Symboltable::lookupInternal("_setterToken")));
+      arguments->insertAtTail(new SymExpr(setterToken));
       arguments->insertAtTail(rhs);
       REPLACE(new CallExpr(call->baseExpr->copy(), arguments));
     } else
-      REPLACE(new CallExpr(OP_GETS, assign->argList->get(1)->copy(), rhs));
+      REPLACE(new CallExpr("=", assign->argList->get(1)->copy(), rhs));
   } 
  Ldone:
   // top down, on the modified AST

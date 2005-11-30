@@ -14,6 +14,9 @@ extern ModuleSymbol* seqModule;
 extern TypeSymbol* chpl_htuple;
 extern TypeSymbol* chpl_seq;
 
+extern VarSymbol* setterToken;
+extern VarSymbol* methodToken;
+
 extern VarSymbol* chpl_true;
 extern VarSymbol* chpl_false;
 

@@ -474,7 +474,7 @@ AList<Stmt>* EnumType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbo
   for_alist_backward(DefExpr, constant, this->constants) {
     Expr* symName = new_StringLiteral(constant->sym->name);
     Expr* cond = new CallExpr(OP_EQUAL, valString, symName);
-    Stmt* thenStmt = new ExprStmt(new CallExpr(OP_GETS, arg, constant->sym));
+    Stmt* thenStmt = new ExprStmt(new CallExpr("=", arg, constant->sym));
     elseStmt = new CondStmt(cond, thenStmt, elseStmt);
     
   }

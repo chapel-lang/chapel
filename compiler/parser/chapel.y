@@ -438,47 +438,47 @@ yield_stmt:
 assign_stmt:
   lvalue TASSIGN expr TSEMI
     {
-      $$ = new AList<Stmt>(new ExprStmt(new CallExpr(OP_GETS, $1, $3)));
+      $$ = new AList<Stmt>(new ExprStmt(new CallExpr("=", $1, $3)));
     }
 | lvalue TASSIGNPLUS expr TSEMI
     {
-      $$ = new AList<Stmt>(new ExprStmt(new CallExpr(OP_GETS, $1,
-             new CallExpr(OP_PLUS, $1->copy(), $3))));
+      $$ = new AList<Stmt>(new ExprStmt(new CallExpr("=", $1,
+             new CallExpr("+", $1->copy(), $3))));
     }
 | lvalue TASSIGNMINUS expr TSEMI
     {
-      $$ = new AList<Stmt>(new ExprStmt(new CallExpr(OP_GETS, $1,
-             new CallExpr(OP_MINUS, $1->copy(), $3))));
+      $$ = new AList<Stmt>(new ExprStmt(new CallExpr("=", $1,
+             new CallExpr("-", $1->copy(), $3))));
     }
 | lvalue TASSIGNMULTIPLY expr TSEMI
     {
-      $$ = new AList<Stmt>(new ExprStmt(new CallExpr(OP_GETS, $1,
-             new CallExpr(OP_MULT, $1->copy(), $3))));
+      $$ = new AList<Stmt>(new ExprStmt(new CallExpr("=", $1,
+             new CallExpr("*", $1->copy(), $3))));
     }
 | lvalue TASSIGNDIVIDE expr TSEMI
     {
-      $$ = new AList<Stmt>(new ExprStmt(new CallExpr(OP_GETS, $1,
-             new CallExpr(OP_DIV, $1->copy(), $3))));
+      $$ = new AList<Stmt>(new ExprStmt(new CallExpr("=", $1,
+             new CallExpr("/", $1->copy(), $3))));
     }
 | lvalue TASSIGNBAND expr TSEMI
     {
-      $$ = new AList<Stmt>(new ExprStmt(new CallExpr(OP_GETS, $1,
-             new CallExpr(OP_BITAND, $1->copy(), $3))));
+      $$ = new AList<Stmt>(new ExprStmt(new CallExpr("=", $1,
+             new CallExpr("&", $1->copy(), $3))));
     }
 | lvalue TASSIGNBOR expr TSEMI
     {
-      $$ = new AList<Stmt>(new ExprStmt(new CallExpr(OP_GETS, $1,
-             new CallExpr(OP_BITOR, $1->copy(), $3))));
+      $$ = new AList<Stmt>(new ExprStmt(new CallExpr("=", $1,
+             new CallExpr("|", $1->copy(), $3))));
     }
 | lvalue TASSIGNBXOR expr TSEMI
     {
-      $$ = new AList<Stmt>(new ExprStmt(new CallExpr(OP_GETS, $1,
-             new CallExpr(OP_BITXOR, $1->copy(), $3))));
+      $$ = new AList<Stmt>(new ExprStmt(new CallExpr("=", $1,
+             new CallExpr("^", $1->copy(), $3))));
     }
 | lvalue TASSIGNSEQCAT expr TSEMI
     {
-      $$ = new AList<Stmt>(new ExprStmt(new CallExpr(OP_GETS, $1,
-             new CallExpr(OP_SEQCAT, $1->copy(), $3))));
+      $$ = new AList<Stmt>(new ExprStmt(new CallExpr("=", $1,
+             new CallExpr("#", $1->copy(), $3))));
     }
 ;
 
@@ -691,47 +691,47 @@ whereexpr:
       $$ = new DefExpr(new_symbol, NULL, $3);
     }
 | TNOT whereexpr
-    { $$ = new CallExpr(OP_LOGNOT, $2); }
+    { $$ = new CallExpr("not", $2); }
 | TBNOT whereexpr
-    { $$ = new CallExpr(OP_BITNOT, $2); }
+    { $$ = new CallExpr("~", $2); }
 | whereexpr TPLUS whereexpr
-    { $$ = new CallExpr(OP_PLUS, $1, $3); }
+    { $$ = new CallExpr("+", $1, $3); }
 | whereexpr TMINUS whereexpr
-    { $$ = new CallExpr(OP_MINUS, $1, $3); }
+    { $$ = new CallExpr("-", $1, $3); }
 | whereexpr TSTAR whereexpr
-    { $$ = new CallExpr(OP_MULT, $1, $3); }
+    { $$ = new CallExpr("*", $1, $3); }
 | whereexpr TDIVIDE whereexpr
-    { $$ = new CallExpr(OP_DIV, $1, $3); }
+    { $$ = new CallExpr("/", $1, $3); }
 | whereexpr TMOD whereexpr
-    { $$ = new CallExpr(OP_MOD, $1, $3); }
+    { $$ = new CallExpr("mod", $1, $3); }
 | whereexpr TEQUAL whereexpr
-    { $$ = new CallExpr(OP_EQUAL, $1, $3); }
+    { $$ = new CallExpr("==", $1, $3); }
 | whereexpr TNOTEQUAL whereexpr
-    { $$ = new CallExpr(OP_NEQUAL, $1, $3); }
+    { $$ = new CallExpr("!=", $1, $3); }
 | whereexpr TLESSEQUAL whereexpr
-    { $$ = new CallExpr(OP_LEQUAL, $1, $3); }
+    { $$ = new CallExpr("<=", $1, $3); }
 | whereexpr TGREATEREQUAL whereexpr
-    { $$ = new CallExpr(OP_GEQUAL, $1, $3); }
+    { $$ = new CallExpr(">=", $1, $3); }
 | whereexpr TLESS whereexpr
-    { $$ = new CallExpr(OP_LTHAN, $1, $3); }
+    { $$ = new CallExpr("<", $1, $3); }
 | whereexpr TGREATER whereexpr
-    { $$ = new CallExpr(OP_GTHAN, $1, $3); }
+    { $$ = new CallExpr(">", $1, $3); }
 | whereexpr TBAND whereexpr
-    { $$ = new CallExpr(OP_BITAND, $1, $3); }
+    { $$ = new CallExpr("&", $1, $3); }
 | whereexpr TBOR whereexpr
-    { $$ = new CallExpr(OP_BITOR, $1, $3); }
+    { $$ = new CallExpr("|", $1, $3); }
 | whereexpr TBXOR whereexpr
-    { $$ = new CallExpr(OP_BITXOR, $1, $3); }
+    { $$ = new CallExpr("~", $1, $3); }
 | whereexpr TCOMMA whereexpr
-    { $$ = new CallExpr(OP_LOGAND, $1, $3); }
+    { $$ = new CallExpr("and", $1, $3); }
 | whereexpr TOR whereexpr
-    { $$ = new CallExpr(OP_LOGOR, $1, $3); }
+    { $$ = new CallExpr("or", $1, $3); }
 | whereexpr TEXP whereexpr
-    { $$ = new CallExpr(OP_EXP, $1, $3); }
+    { $$ = new CallExpr("**", $1, $3); }
 | whereexpr TSEQCAT whereexpr
-    { $$ = new CallExpr(OP_SEQCAT, $1, $3); }
+    { $$ = new CallExpr("#", $1, $3); }
 | whereexpr TBY whereexpr
-    { $$ = new CallExpr(OP_BY, $1, $3); }
+    { $$ = new CallExpr("by", $1, $3); }
 | whereexpr TCOLON whereexpr
     { $$ = new CallExpr(OP_SUBTYPE, $1, $3); }
 | whereexpr TNOTCOLON whereexpr
@@ -1172,51 +1172,51 @@ top_level_expr:
 | range %prec TDOTDOT
 | seq_expr
 | TPLUS expr %prec TUPLUS
-    { $$ = new CallExpr(OP_UNPLUS, $2); }
+    { $$ = new CallExpr("+", $2); }
 | TMINUS expr %prec TUMINUS
-    { $$ = new CallExpr(OP_UNMINUS, $2); }
+    { $$ = new CallExpr("-", $2); }
 | TNOT expr
-    { $$ = new CallExpr(OP_LOGNOT, $2); }
+    { $$ = new CallExpr("not", $2); }
 | TBNOT expr
-    { $$ = new CallExpr(OP_BITNOT, $2); }
+    { $$ = new CallExpr("~", $2); }
 | expr TPLUS expr
-    { $$ = new CallExpr(OP_PLUS, $1, $3); }
+    { $$ = new CallExpr("+", $1, $3); }
 | expr TMINUS expr
-    { $$ = new CallExpr(OP_MINUS, $1, $3); }
+    { $$ = new CallExpr("-", $1, $3); }
 | expr TSTAR expr
-    { $$ = new CallExpr(OP_MULT, $1, $3); }
+    { $$ = new CallExpr("*", $1, $3); }
 | expr TDIVIDE expr
-    { $$ = new CallExpr(OP_DIV, $1, $3); }
+    { $$ = new CallExpr("/", $1, $3); }
 | expr TMOD expr
-    { $$ = new CallExpr(OP_MOD, $1, $3); }
+    { $$ = new CallExpr("mod", $1, $3); }
 | expr TEQUAL expr
-    { $$ = new CallExpr(OP_EQUAL, $1, $3); }
+    { $$ = new CallExpr("==", $1, $3); }
 | expr TNOTEQUAL expr
-    { $$ = new CallExpr(OP_NEQUAL, $1, $3); }
+    { $$ = new CallExpr("!=", $1, $3); }
 | expr TLESSEQUAL expr
-    { $$ = new CallExpr(OP_LEQUAL, $1, $3); }
+    { $$ = new CallExpr("<=", $1, $3); }
 | expr TGREATEREQUAL expr
-    { $$ = new CallExpr(OP_GEQUAL, $1, $3); }
+    { $$ = new CallExpr(">=", $1, $3); }
 | expr TLESS expr
-    { $$ = new CallExpr(OP_LTHAN, $1, $3); }
+    { $$ = new CallExpr("<", $1, $3); }
 | expr TGREATER expr
-    { $$ = new CallExpr(OP_GTHAN, $1, $3); }
+    { $$ = new CallExpr(">", $1, $3); }
 | expr TBAND expr
-    { $$ = new CallExpr(OP_BITAND, $1, $3); }
+    { $$ = new CallExpr("&", $1, $3); }
 | expr TBOR expr
-    { $$ = new CallExpr(OP_BITOR, $1, $3); }
+    { $$ = new CallExpr("|", $1, $3); }
 | expr TBXOR expr
-    { $$ = new CallExpr(OP_BITXOR, $1, $3); }
+    { $$ = new CallExpr("^", $1, $3); }
 | expr TAND expr
-    { $$ = new CallExpr(OP_LOGAND, $1, $3); }
+    { $$ = new CallExpr("and", $1, $3); }
 | expr TOR expr
-    { $$ = new CallExpr(OP_LOGOR, $1, $3); }
+    { $$ = new CallExpr("or", $1, $3); }
 | expr TEXP expr
-    { $$ = new CallExpr(OP_EXP, $1, $3); }
+    { $$ = new CallExpr("**", $1, $3); }
 | expr TSEQCAT expr
-    { $$ = new CallExpr(OP_SEQCAT, $1, $3); }
+    { $$ = new CallExpr("#", $1, $3); }
 | expr TBY expr
-    { $$ = new CallExpr(OP_BY, $1, $3); }
+    { $$ = new CallExpr("by", $1, $3); }
 ;
 
 reduction:

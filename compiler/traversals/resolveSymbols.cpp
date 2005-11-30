@@ -32,21 +32,23 @@ is_builtin(FnSymbol *fn) {
 
 
 void ResolveSymbols::postProcessExpr(Expr* expr) {
+  CallExpr* call = dynamic_cast<CallExpr*>(expr);
+
+  if (call) {
+    SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr);
+    if (base && !strcmp(base->var->name, "__primitive"))
+      return;
+  }
 
   // Resolve CallExprs
-  if (CallExpr* paren = dynamic_cast<CallExpr*>(expr)) {
-    if (paren->opTag != OP_GETS) {
-      if (SymExpr* variable = dynamic_cast<SymExpr*>(paren->baseExpr)) {
-        if (!strcmp(variable->var->name, "__primitive")) {
-          return;
-        }
-      }
-      CallExpr *assign = dynamic_cast<CallExpr*>(paren->parentExpr);
-      if (!assign || assign->opTag != OP_GETS ||  assign->get(1) != expr) {
+  if (call) {
+    if (!call->isAssign()) {
+      CallExpr *assign = dynamic_cast<CallExpr*>(call->parentExpr);
+      if (!assign || !assign->isAssign() ||  assign->get(1) != expr) {
         Vec<FnSymbol*> fns;
-        call_info(paren, fns);
+        call_info(call, fns);
         if (fns.n == 0) { // for 0-ary (CallExpr(MemberAccess))
-          call_info(paren->baseExpr, fns);
+          call_info(call->baseExpr, fns);
         }
         if (fns.n != 1) {
           // HACK: Special case where write(:nilType) requires dynamic
@@ -61,30 +63,25 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
                      fns.v[0]->formals->get(2)->sym->type == dtNil) {
             fns.v[0] = fns.v[1];
           } else {
-            if (OP_ISUNARYOP(paren->opTag)) {
-              return;
-            }
-            if (OP_ISBINARYOP(paren->opTag)) {
-              return;
-            }
-            if (paren->partialTag != PARTIAL_NEVER)
+            if (call->partialTag != PARTIAL_NEVER)
               return;
             if (fns.n > 1)
               USR_WARNING(expr, "Dynamic dispatch not yet supported");
-            INT_FATAL(expr, "Unable to resolve function");
+            if (call->opTag == OP_NONE)
+              INT_FATAL(expr, "Unable to resolve function");
             return;
           }
         }
 
-        AList<Expr>* arguments = copy_argument_list(paren);
+        AList<Expr>* arguments = copy_argument_list(call);
         // HACK: to handle special case for a.x(1) translation
-        Expr *baseExpr = paren->baseExpr;
-        if (CallExpr* basecall = dynamic_cast<CallExpr*>(paren->baseExpr)) {
+        Expr *baseExpr = call->baseExpr;
+        if (CallExpr* basecall = dynamic_cast<CallExpr*>(call->baseExpr)) {
           if (basecall->partialTag != PARTIAL_NEVER) {
             Vec<FnSymbol*> fns;
             call_info(basecall, fns);
             if (fns.n == 0) { // for 0-ary (CallExpr(MemberAccess))
-              call_info(paren->baseExpr, fns);
+              call_info(call->baseExpr, fns);
             }
             if (fns.n == 0) {
               baseExpr = basecall->baseExpr;
@@ -96,9 +93,8 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
           arguments->insertAtHead(baseExpr->copy());
         }
         CallExpr *new_expr = new CallExpr(fns.v[0], arguments);
-        if (fns.v[0]->hasPragma("builtin")) {
-          new_expr->opTag = paren->opTag;
-        }
+        if (fns.v[0]->hasPragma("builtin"))
+          new_expr->makeOp();
         expr->replace(new_expr);
         expr = new_expr;
       }
@@ -107,7 +103,7 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
 
   // Resolve AssignOp to members or setter functions
   if (CallExpr* aop = dynamic_cast<CallExpr*>(expr)) {
-    if (aop->opTag == OP_GETS) {
+    if (aop->isAssign()) {
       if (SymExpr* var = dynamic_cast<SymExpr*>(aop->get(1))) {
         Vec<FnSymbol*> fns;
         call_info(aop, fns);
@@ -118,6 +114,7 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
           }
         }
         if (!notbuiltin) {
+          aop->makeOp();
           return;
         }
         if (fns.n == 1) {
@@ -187,7 +184,7 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
       }
     }
     if (CallExpr* aop = dynamic_cast<CallExpr*>(expr->parentExpr))
-      if (aop->opTag == OP_GETS && aop->get(1) == expr)
+      if (aop->isAssign() && aop->get(1) == expr)
         return;
 
     resolve_member_access(member_access, &member_access->member_offset,
