@@ -50656,3 +50656,38 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+11/30/05 14:46:44 -- deitz
+
+Log message:
+	NOTE TWO NEW REGRESSIONS:
+	  classes/deitz/test_class_construct1
+	  types/type_variables/deitz/test_instantiate_construct1
+	
+	This change makes OP_GETS mean assignment without overloading (MOVE).
+	Otherwise the unresolved symbol "=" means potentially overloaded.  Use
+	new CallExpr(OP_GETS, ...) or new CallExpr("=", ...).
+	
+	This change does the same thing with all operators.  So
+	CallExpr(OP_PLUS, ...) differs from CallExpr("+", ...).  All functions
+	are now parsed as CallExpr("+", ...) to allow for the potential of
+	overloaded operators.
+	
+	Note that currently setters and constructors are built with OP_GETS,
+	thus not allowing overloaded assignment.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: expr.h runtime.h 
+	chapel/compiler/main/: runtime.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: applyGettersSetters.cpp 
+	                         buildDefaultFunctions.cpp cleanup.cpp 
+	                         filesToAST.cpp functionResolution.cpp 
+	                         normalize.cpp semanticChecks.cpp 
+	chapel/compiler/traversals/: findUnknownTypes.cpp 
+	                             preAnalysisHacks.cpp 
+	                             resolveSymbols.cpp 
+
