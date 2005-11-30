@@ -2818,7 +2818,7 @@ split_entry_set(AVar *av, int fsetters, int fmark = 0) {
         stay_edges.add(ee);
   }
   Vec<AEdge *> tedges;
-  tedges.move(tedges);
+  tedges.move(do_edges);
   forv_AEdge(e, tedges) {
     int compat = 1;
     forv_AEdge(ee, stay_edges) {
