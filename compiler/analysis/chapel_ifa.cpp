@@ -1960,7 +1960,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
     }
     case EXPR_CALL: {
       CallExpr* call = dynamic_cast<CallExpr*>(ast);
-      if (call->opTag == OP_GETSNORM) {
+      if (call->opTag == OP_GETS) {
         FnSymbol *f = call->parentFunction();
         int is_member = call->get(1)->astType == EXPR_MEMBERACCESS;
         if (f->fnClass == FN_CONSTRUCTOR && is_member) {

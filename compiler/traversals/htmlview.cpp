@@ -143,9 +143,6 @@ void HtmlView::preProcessExpr(Expr* expr) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(e->sym)) {
       write("<UL CLASS =\"mktree\">\n<LI>");
       write("<CHPLTAG=\"FN%d\">\n", fn->id);
-      for (BaseAST* tmp = fn->copyFrom; tmp; tmp = tmp->copyFrom) {
-        write("<CHPLTAG=\"FN%d\">\n", tmp->id);
-      }
       write("<B>function ");
       html_print_fnsymbol(fn);
       write("</B><UL>\n");
@@ -218,9 +215,6 @@ void HtmlView::postProcessExpr(Expr* expr) {
          dynamic_cast<ClassType*>(e->sym->type))) {
       write("</UL>\n");
       if (FnSymbol* fn = dynamic_cast<FnSymbol*>(e->sym)) {
-        for (BaseAST* tmp = fn->copyFrom; tmp; tmp = tmp->copyFrom) {
-          write("<CHPLTAG=\"FN%d\">\n", tmp->id);
-        }
         write("<CHPLTAG=\"FN%d\">\n", fn->id);
       }
       write("</UL>\n");

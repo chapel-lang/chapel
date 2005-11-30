@@ -61,7 +61,6 @@ Is this "while x"(i); or "while x(i)";?
   char* pch;
   Vec<char*>* vpch;
 
-  OpTag ot;
   varType vt;
   consType ct;
   intentTag pt;
@@ -172,7 +171,6 @@ Is this "while x"(i); or "while x(i)";?
 %type <vt> var_state_tag
 %type <ct> var_const_tag
  
-%type <ot> assign_op_tag
 %type <pt> formal_tag
 %type <ft> fn_tag
 %type <blktype> atomic_cobegin
@@ -438,9 +436,49 @@ yield_stmt:
 
 
 assign_stmt:
-  lvalue assign_op_tag expr TSEMI
+  lvalue TASSIGN expr TSEMI
     {
-      $$ = new AList<Stmt>(new ExprStmt(new CallExpr($2, $1, $3)));
+      $$ = new AList<Stmt>(new ExprStmt(new CallExpr(OP_GETS, $1, $3)));
+    }
+| lvalue TASSIGNPLUS expr TSEMI
+    {
+      $$ = new AList<Stmt>(new ExprStmt(new CallExpr(OP_GETS, $1,
+             new CallExpr(OP_PLUS, $1->copy(), $3))));
+    }
+| lvalue TASSIGNMINUS expr TSEMI
+    {
+      $$ = new AList<Stmt>(new ExprStmt(new CallExpr(OP_GETS, $1,
+             new CallExpr(OP_MINUS, $1->copy(), $3))));
+    }
+| lvalue TASSIGNMULTIPLY expr TSEMI
+    {
+      $$ = new AList<Stmt>(new ExprStmt(new CallExpr(OP_GETS, $1,
+             new CallExpr(OP_MULT, $1->copy(), $3))));
+    }
+| lvalue TASSIGNDIVIDE expr TSEMI
+    {
+      $$ = new AList<Stmt>(new ExprStmt(new CallExpr(OP_GETS, $1,
+             new CallExpr(OP_DIV, $1->copy(), $3))));
+    }
+| lvalue TASSIGNBAND expr TSEMI
+    {
+      $$ = new AList<Stmt>(new ExprStmt(new CallExpr(OP_GETS, $1,
+             new CallExpr(OP_BITAND, $1->copy(), $3))));
+    }
+| lvalue TASSIGNBOR expr TSEMI
+    {
+      $$ = new AList<Stmt>(new ExprStmt(new CallExpr(OP_GETS, $1,
+             new CallExpr(OP_BITOR, $1->copy(), $3))));
+    }
+| lvalue TASSIGNBXOR expr TSEMI
+    {
+      $$ = new AList<Stmt>(new ExprStmt(new CallExpr(OP_GETS, $1,
+             new CallExpr(OP_BITXOR, $1->copy(), $3))));
+    }
+| lvalue TASSIGNSEQCAT expr TSEMI
+    {
+      $$ = new AList<Stmt>(new ExprStmt(new CallExpr(OP_GETS, $1,
+             new CallExpr(OP_SEQCAT, $1->copy(), $3))));
     }
 ;
 
@@ -593,22 +631,6 @@ fname:
   identifier
 | TASSIGN 
   { $$ = "="; } 
-| TASSIGNPLUS
-  { $$ = "+="; } 
-| TASSIGNMINUS
-  { $$ = "-="; } 
-| TASSIGNMULTIPLY
-  { $$ = "*="; } 
-| TASSIGNDIVIDE
-  { $$ = "/="; } 
-| TASSIGNBAND
-  { $$ = "&="; } 
-| TASSIGNBOR
-  { $$ = "|="; } 
-| TASSIGNBXOR
-  { $$ = "^="; } 
-| TASSIGNSEQCAT
-  { $$ = "#="; }
 | TBAND
   { $$ = "&"; } 
 | TBOR
@@ -1248,28 +1270,6 @@ atomic_cobegin:
     { $$ = BLOCK_ATOMIC; }
 | TCOBEGIN
     { $$ = BLOCK_COBEGIN; }
-;
-
-
-assign_op_tag:
-  TASSIGN
-    { $$ = OP_GETSNORM; }
-| TASSIGNPLUS
-    { $$ = OP_GETSPLUS; }
-| TASSIGNMINUS
-    { $$ = OP_GETSMINUS; }
-| TASSIGNMULTIPLY
-    { $$ = OP_GETSMULT; }
-| TASSIGNDIVIDE
-    { $$ = OP_GETSDIV; }
-| TASSIGNBAND
-    { $$ = OP_GETSBITAND; }
-| TASSIGNBOR
-    { $$ = OP_GETSBITOR; }
-| TASSIGNBXOR
-    { $$ = OP_GETSBITXOR; }
-| TASSIGNSEQCAT
-    { $$ = OP_GETSSEQCAT; }
 ;
 
 

@@ -484,7 +484,6 @@ AList<elemType>::copy(ASTMap* map,
     newList->insertAtTail(newnode);
   }
 
-  newList->copyFrom = this;
   newList->lineno = lineno;
   newList->filename = filename;
   newList->addPragmas(&pragmas);

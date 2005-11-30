@@ -119,7 +119,7 @@ static void destructure_tuple(CallExpr* call, Vec<BaseAST*>* asts) {
     if (++i <= start)
       continue;
     Stmt* stmt = new ExprStmt(
-                   new CallExpr(OP_GETSNORM, expr->copy(),
+                   new CallExpr(OP_GETS, expr->copy(),
                      new CallExpr(_tuple_destruct, new_IntLiteral(i-start))));
     collect_asts(asts, stmt);
     call->parentStmt->insertAfter(stmt);
@@ -219,7 +219,7 @@ static void construct_tuple_type(int rank) {
     for (int i = 1; i <= rank; i++) {
       assignFn->insertAtTail(
         new ExprStmt(
-          new CallExpr(OP_GETSNORM,
+          new CallExpr(OP_GETS,
             new CallExpr(htupleArg, new_IntLiteral(i)),
             new CallExpr(tupleArg, new_IntLiteral(i)))));
     }
@@ -238,7 +238,7 @@ static void construct_tuple_type(int rank) {
 //     for (int i = 1; i <= rank; i++) {
 //       assignFn->insertAtTail(
 //         new ExprStmt(
-//           new CallExpr(OP_GETSNORM,
+//           new CallExpr(OP_GETS,
 //             new CallExpr(tupleArg, new_IntLiteral(i)),
 //             new CallExpr(secondArg, new_IntLiteral(i)))));
 //     }
@@ -353,7 +353,7 @@ finish_constructor(FnSymbol* fn) {
   Expr* alloc_rhs = new CallExpr(Symboltable::lookupInternal("_chpl_alloc"),
                                  ct->symbol,
                                  new_StringLiteral(description));
-  CallExpr* alloc_expr = new CallExpr(OP_GETSNORM, fn->_this, alloc_rhs);
+  CallExpr* alloc_expr = new CallExpr(OP_GETS, fn->_this, alloc_rhs);
   if (no_infer) {
     alloc_expr->baseExpr = new SymExpr("_move");
     alloc_expr->opTag = OP_NONE;
@@ -376,7 +376,7 @@ finish_constructor(FnSymbol* fn) {
       if (ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym)) {
         if (!strcmp(formal->name, field->name)) {
           Expr* lhs = new MemberAccess(fn->_this, field);
-          Expr* assign_expr = new CallExpr(OP_GETSNORM, lhs, formal);
+          Expr* assign_expr = new CallExpr(OP_GETS, lhs, formal);
           Stmt* assign_stmt = new ExprStmt(assign_expr);
           stmts->insertAtTail(assign_stmt);
         }

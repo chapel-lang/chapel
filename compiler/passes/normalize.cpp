@@ -123,7 +123,7 @@ static AList<Stmt>* handle_return_expr(Expr* e, Symbol* lvalue) {
                              handle_return_expr(ce->thenExpr, lvalue),
                              handle_return_expr(ce->elseExpr, lvalue));
     else
-      newStmt = new ExprStmt(new CallExpr(OP_GETSNORM, e, lvalue));
+      newStmt = new ExprStmt(new CallExpr(OP_GETS, e, lvalue));
   return new AList<Stmt>(newStmt);
 }
 
@@ -192,12 +192,12 @@ static void normalize_returns(FnSymbol* fn) {
         Expr* ret_expr = ret->expr;
         ret->expr->remove();
         CallExpr* call = new CallExpr("_move", retval, ret_expr);
-        call->opTag = OP_GETSNORM;
+        call->opTag = OP_GETS;
         ret->insertBefore(new ExprStmt(call));
       } else {
         Expr* ret_expr = ret->expr;
         ret->expr->remove();
-        ret->insertBefore(new ExprStmt(new CallExpr(OP_GETSNORM, retval, ret_expr)));
+        ret->insertBefore(new ExprStmt(new CallExpr(OP_GETS, retval, ret_expr)));
       }
     }
     ret->replace(new GotoStmt(goto_normal, label));
@@ -247,7 +247,7 @@ static void initialize_out_formals(FnSymbol* fn) {
     if (arg->defPoint->init && arg->intent == INTENT_OUT)
       fn->body->insertAtHead(
         new ExprStmt(
-          new CallExpr(OP_GETSNORM, arg, arg->defPoint->init->copy())));
+          new CallExpr(OP_GETS, arg, arg->defPoint->init->copy())));
   }
 }
 

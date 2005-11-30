@@ -38,8 +38,7 @@ BaseAST::BaseAST(astType_t type) :
   filename(yyfilename), 
   lineno(yylineno),
   traversalInfo(NULL),
-  copyInfo(NULL),
-  copyFrom(NULL)
+  copyInfo(NULL)
 {
   checkid(id);
   if (lineno == -1) {
@@ -240,7 +239,6 @@ void BaseAST::postCopy(BaseAST* copy,
                        ASTMap* map,
                        Vec<BaseAST*>* update_list,
                        bool internal) {
-  copy->copyFrom = this;
   copy->lineno = lineno;
   copy->filename = filename;
   copy->addPragmas(&pragmas);

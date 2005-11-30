@@ -179,7 +179,7 @@ void resolve_call(CallExpr* call) {
   SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr);
 
   if (base && !strcmp(base->var->name, "_move")) {
-    call->opTag = OP_GETSNORM;
+    call->opTag = OP_GETS;
     if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->argList->get(1))) {
       if (symExpr->var->type == dtUnknown)
         symExpr->var->type = call->argList->get(2)->typeInfo();

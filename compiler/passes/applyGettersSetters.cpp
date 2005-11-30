@@ -13,23 +13,6 @@
       goto Ldone; \
 } while (0)
 
-static OpTag
-gets_to_non(OpTag t) {
-  switch (t) {
-    default: break;
-    case OP_GETSPLUS: return OP_PLUS;
-    case OP_GETSMINUS: return OP_MINUS;
-    case OP_GETSMULT: return OP_MULT;
-    case OP_GETSDIV: return OP_DIV;
-    case OP_GETSBITAND: return OP_BITAND;
-    case OP_GETSBITOR: return OP_BITOR;
-    case OP_GETSBITXOR: return OP_BITXOR;
-    case OP_GETSSEQCAT: return OP_SEQCAT;
-  }
-  assert(!"case");
-  return OP_NONE;
-}
-  
 void 
 apply_getters_setters(BaseAST* ast) {
   // Most generally:
@@ -51,17 +34,6 @@ apply_getters_setters(BaseAST* ast) {
   BaseAST *base = call ? call->baseExpr : (assign ? assign->get(1) : ast);
   if (MemberAccess* memberAccess = dynamic_cast<MemberAccess*>(base)) {
     Expr *rhs = assign ? assign->argList->get(2)->copy() : 0;
-    // build the RHS operator expression
-    if (rhs && assign->opTag != OP_GETSNORM) {
-      CallExpr *lhs = new CallExpr(memberAccess->member->name, 
-                                   new SymExpr(Symboltable::lookupInternal("_methodToken")),
-                                   memberAccess->base->copy());
-      if (call && !call->argList->isEmpty()) {
-        lhs->partialTag = PARTIAL_OK;
-        lhs = new CallExpr(lhs, call->argList->copy());
-      }
-      rhs = new CallExpr(gets_to_non(assign->opTag), lhs, rhs);
-    }
     // build the main accessor/setter
     if ((call && !call->argList->isEmpty())) {
       CallExpr *lhs = new CallExpr(memberAccess->member->name, 
@@ -88,15 +60,13 @@ apply_getters_setters(BaseAST* ast) {
   } 
   if (assign) {
     Expr *rhs = assign->argList->get(2)->copy();
-    if (assign->opTag != OP_GETSNORM)
-      rhs = new CallExpr(gets_to_non(assign->opTag), assign->argList->get(1)->copy(), rhs);
     if (call) {
       AList<Expr>* arguments = call->argList->copy();
       arguments->insertAtTail(new SymExpr(Symboltable::lookupInternal("_setterToken")));
       arguments->insertAtTail(rhs);
       REPLACE(new CallExpr(call->baseExpr->copy(), arguments));
     } else
-      REPLACE(new CallExpr(OP_GETSNORM, assign->argList->get(1)->copy(), rhs));
+      REPLACE(new CallExpr(OP_GETS, assign->argList->get(1)->copy(), rhs));
   } 
  Ldone:
   // top down, on the modified AST

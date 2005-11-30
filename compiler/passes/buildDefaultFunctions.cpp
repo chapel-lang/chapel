@@ -231,7 +231,7 @@ static void build_setter(ClassType* ct, Symbol* field) {
   if (no_infer && field->defPoint->exprType)
     argDef->exprType = field->defPoint->exprType->copy();
   fn->formals->insertAtTail(argDef);
-  fn->body->insertAtTail(new ExprStmt(new CallExpr(OP_GETSNORM, new SymExpr(field->name), fieldArg)));
+  fn->body->insertAtTail(new ExprStmt(new CallExpr(OP_GETS, new SymExpr(field->name), fieldArg)));
 
   ct->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(new DefExpr(fn)));
   reset_file_info(fn, field->lineno, field->filename);
@@ -317,7 +317,7 @@ static void build_record_assignment_function(ClassType* ct) {
   forv_Vec(Symbol, tmp, ct->fields) {
     Expr* left = new MemberAccess(_arg1, tmp);
     Expr* right = new MemberAccess(arg2, tmp);
-    Expr* assign_expr = new CallExpr(OP_GETSNORM, left, right);
+    Expr* assign_expr = new CallExpr(OP_GETS, left, right);
     body->insertAtTail(new ExprStmt(assign_expr));
   }
 

@@ -22,22 +22,6 @@ static AList<Expr>* copy_argument_list(CallExpr* expr) {
 }
 
 
-OpTag gets_to_op(OpTag i) {
-  switch (i) {
-    case OP_GETSPLUS: return OP_PLUS;
-    case OP_GETSMINUS: return OP_MINUS;
-    case OP_GETSMULT: return OP_MULT;
-    case OP_GETSDIV: return OP_DIV;
-    case OP_GETSBITAND: return OP_BITAND;
-    case OP_GETSBITOR: return OP_BITOR;
-    case OP_GETSBITXOR: return OP_BITXOR;
-    default: 
-      INT_FATAL("Unable to convert OpTag");
-  }
-  return OP_PLUS;
-}
-
-
 static int
 is_builtin(FnSymbol *fn) {
   if (fn->hasPragma("builtin")) {
@@ -47,43 +31,18 @@ is_builtin(FnSymbol *fn) {
 }
 
 
-static Expr *
-resolve_binary_operator(CallExpr *op, FnSymbol *resolved = 0) {
-  Expr *expr = op;
-  Vec<FnSymbol*> fns;
-  if (resolved)
-    fns.add(resolved);
-  else
-    call_info(expr, fns);
-  if (fns.n != 1) {
-    if (fns.n == 0) {
-      return expr;
-    } else {
-      INT_FATAL(expr, "Trouble resolving operator");
-    }
-  } else {
-    if (fns.v[0]->hasPragma("builtin")) {
-      return expr;
-    }
-    CallExpr *new_expr = new CallExpr(fns.v[0], op->copy());
-    expr->replace(new_expr);
-    expr = new_expr;
-  }
-  return expr;
-}
-
 void ResolveSymbols::postProcessExpr(Expr* expr) {
 
   // Resolve CallExprs
   if (CallExpr* paren = dynamic_cast<CallExpr*>(expr)) {
-    if (paren->opTag < OP_GETSNORM) {
+    if (paren->opTag != OP_GETS) {
       if (SymExpr* variable = dynamic_cast<SymExpr*>(paren->baseExpr)) {
         if (!strcmp(variable->var->name, "__primitive")) {
           return;
         }
       }
       CallExpr *assign = dynamic_cast<CallExpr*>(paren->parentExpr);
-      if (!assign || assign->opTag < OP_GETSNORM ||  assign->get(1) != expr) {
+      if (!assign || assign->opTag != OP_GETS ||  assign->get(1) != expr) {
         Vec<FnSymbol*> fns;
         call_info(paren, fns);
         if (fns.n == 0) { // for 0-ary (CallExpr(MemberAccess))
@@ -148,7 +107,7 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
 
   // Resolve AssignOp to members or setter functions
   if (CallExpr* aop = dynamic_cast<CallExpr*>(expr)) {
-    if (aop->opTag >= OP_GETSNORM) {
+    if (aop->opTag == OP_GETS) {
       if (SymExpr* var = dynamic_cast<SymExpr*>(aop->get(1))) {
         Vec<FnSymbol*> fns;
         call_info(aop, fns);
@@ -191,21 +150,12 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
         resolve_member_access(aop, &member_access->member_offset, 
                               &member_access->member_type);
         if (member_access->member_offset < 0) {
-          Vec<FnSymbol *> op_fns, assign_fns;
-          call_info(aop, op_fns, CALL_INFO_FIND_OPERATOR);
+          Vec<FnSymbol *> assign_fns;
           call_info(aop, assign_fns, CALL_INFO_FIND_FUNCTION);
-          if (op_fns.n > 1 || assign_fns.n != 1) 
+          if (assign_fns.n != 1) 
             INT_FATAL(expr, "Unable to resolve member access");
-          FnSymbol *f_op = op_fns.n ? op_fns.v[0] : 0;
           FnSymbol *f_assign = assign_fns.v[0];
           Expr *rhs = aop->get(2)->copy();
-          if (f_op) {
-            if (!is_builtin(f_op)) {
-              rhs = new CallExpr(f_op, member_access->copy(), rhs);
-            } else {
-              rhs = resolve_binary_operator(new CallExpr(gets_to_op(aop->opTag), aop->get(1)->copy(), aop->get(2)->copy()), f_op);
-            }
-          }
           AList<Expr>* assign_arguments = new AList<Expr>(member_access->base->copy());
           assign_arguments->insertAtTail(rhs);
           Expr* assign_function = new SymExpr(f_assign);
@@ -237,7 +187,7 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
       }
     }
     if (CallExpr* aop = dynamic_cast<CallExpr*>(expr->parentExpr))
-      if (aop->opTag >= OP_GETSNORM && aop->get(1) == expr)
+      if (aop->opTag == OP_GETS && aop->get(1) == expr)
         return;
 
     resolve_member_access(member_access, &member_access->member_offset,

@@ -210,7 +210,7 @@ static EXPR_RW expr_read_written(Expr* expr) {
       return expr_read_written(parent);
     }
     if (CallExpr* parenOpExpr = dynamic_cast<CallExpr*>(parent)) {
-      if (parenOpExpr->opTag >= OP_GETSNORM && parenOpExpr->get(1) == expr) {
+      if (parenOpExpr->opTag == OP_GETS && parenOpExpr->get(1) == expr) {
         return expr_w;
       }
     }

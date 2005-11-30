@@ -115,7 +115,7 @@ void PreAnalysisHacks::postProcessExpr(Expr* expr) {
           call->parentStmt->insertAfter(
             new ExprStmt(new CallExpr(new MemberAccess(def->sym, "myinit"))));
           call->parentStmt->insertAfter(
-            new ExprStmt(new CallExpr(OP_GETSNORM,
+            new ExprStmt(new CallExpr(OP_GETS,
                                       new MemberAccess(def->sym, "dom"),
                                       call->argList->last()->copy())));
           call->argList->last()->replace(new_IntLiteral(2));
