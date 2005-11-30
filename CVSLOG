@@ -50623,3 +50623,13 @@ Modified files:
 	chapel/test/npb/: mg.chpl 
 	chapel/test/npb/mg/: mg-annotated.chpl 
 
+---------------------------------------------------------------------------
+
+11/29/05 16:50:32 -- bradc
+
+Log message:
+	A small fix to the nightly token counting script.
+
+Modified files:
+	chapel/util/tokencount/: tokctnightly 
+
