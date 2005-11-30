@@ -1,5 +1,20 @@
--- This is a port of the NPB MG benchmark (version 3.0) ported to
--- Chapel by Brad Chamberlain.
+-- This is a port of the NPB MG benchmark (version 3.0) written in
+-- Chapel by Brad Chamberlain.  As with any port, a number of
+-- structural and stylistic choices were made; in some cases, the
+-- original identifiers were preserved, either for clarity, or because
+-- the author couldn't come up with better names for them.  In other
+-- cases, more verbose names were used in hopes of improving
+-- readability.
+
+-- In general, types are elided from declarations unless they are
+-- believed to be ambiguous when reading the source, or greatly
+-- improve the code's readability.  This is obviously a judgement
+-- call.
+
+-- It should be noted that as of this writing (Nov 2005), our
+-- prototype Chapel implementation is not yet far enough along to
+-- handle this code.  This therefore represents the target that we are
+-- striving for rather than something that works today.
 
 enum classVals {S, W, A, B, C, D, O};
 
@@ -64,18 +79,12 @@ function initializeMG(V, U, R) {
   writeln(" Iterations: ", numIters);
   writeln();
 
-  initArrays(V, U, R);
-
   if (warmup) {
-    warmupMG(V, U, R);
     initArrays(V, U, R);
+    runOneIteration(V, U, R);
   }
-}
 
-
-function warmupMG(V, U, R) {
-  mg3P(V, U, R);
-  resid(R(1), V, U(1));
+  initArrays(V, U, R);
 }
 
 
@@ -83,8 +92,7 @@ function computeMG(V, U, R) {
   resid(R(1), V, U(1));
   norm2u3(R(1));
   for it in (1..numIters) {
-    mg3P(V, U, R);
-    resid(R(1), V, U(1));
+    runOneIteration(V, U, R);
   }
   var (rnm2, _) = norm2u3(R(1));
 
@@ -124,6 +132,12 @@ function printResults(rnm2, inittime, runtime) {
     writeln(" UNSUCCESSFUL");
   }
   writeln(" Version = 3.0");
+}
+
+
+function runOneIteration(V, U, R) {
+  mg3P(V, U, R);
+  resid(R(1), V, U(1));
 }
 
 
@@ -197,7 +211,7 @@ function interp(R, S) {
 
   forall ioff in IDom {
     [ijk in SD] R(ijk + Rstr*ioff) 
-               += w(ioff) * sum reduce [off in IStn(ioff)] S(ijk + Sstr*off);
+                = w(ioff) * sum reduce [off in IStn(ioff)] S(ijk + Sstr*off);
   }
 }
 
