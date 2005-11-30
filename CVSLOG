@@ -50577,3 +50577,37 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: sym.cpp 
 
+---------------------------------------------------------------------------
+
+11/29/05 16:22:25 -- deitz
+
+Log message:
+	Eliminated +=, -=, etc., replacing it with ... = ... + ....  In
+	preparation for making a better distinction between ops and calls.
+	
+	Removed copyFrom pointer which maintained a chain of copy pointers to
+	ASTS as they were copied.
+	
+	Renamed OP_GETSNORM to OP_GETS because of the removal of all the other
+	OP_GETSOPS.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp type.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: alist.h baseAST.h expr.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: applyGettersSetters.cpp 
+	                         buildDefaultFunctions.cpp cleanup.cpp 
+	                         createEntryPoint.cpp 
+	                         functionResolution.cpp normalize.cpp 
+	chapel/compiler/traversals/: htmlview.cpp inlineFunctions.cpp 
+	                             insertFunctionTemps.cpp 
+	                             insertVariableInitializations.cpp 
+	                             preAnalysisHacks.cpp 
+	                             processParameters.cpp 
+	                             removeNamedParameters.cpp 
+	                             resolveSymbols.cpp 
+	chapel/modules/standard/: prelude.chpl 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
