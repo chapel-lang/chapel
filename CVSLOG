@@ -50633,3 +50633,16 @@ Log message:
 Modified files:
 	chapel/util/tokencount/: tokctnightly 
 
+---------------------------------------------------------------------------
+
+11/30/05 12:48:36 -- shannon
+
+Log message:
+	Added future test for failing string comparison due
+	to void return type.
+
+Added files:
+	chapel/test/types/string/shannon/: .cvsignore returnsVoid.chpl 
+	                                   returnsVoid.future 
+	                                   returnsVoid.good 
+
