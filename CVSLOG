@@ -50611,3 +50611,15 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+11/29/05 16:48:48 -- bradc
+
+Log message:
+	Checking in some changes to MG code that I made in
+	preparation for the LaR workshop.
+
+Modified files:
+	chapel/test/npb/: mg.chpl 
+	chapel/test/npb/mg/: mg-annotated.chpl 
+
