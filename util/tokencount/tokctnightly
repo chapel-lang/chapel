@@ -259,7 +259,7 @@ sub mysystem {
 	}
 
 	if ($fatal != 0) {
-	    `echo "$statdate\t1" >> $statfile`;
+	    `echo "$statdate\t-" >> $statfile`;
 	    if ($debug == 0) {
 		`ci -l -m"automated nightly checkin" $statfile`;
 	    }
