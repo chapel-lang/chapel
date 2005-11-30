@@ -50646,3 +50646,13 @@ Added files:
 	                                   returnsVoid.future 
 	                                   returnsVoid.good 
 
+---------------------------------------------------------------------------
+
+11/30/05 14:39:11 -- jplevyak
+
+Log message:
+	Optimize function contour sharing a bit.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
