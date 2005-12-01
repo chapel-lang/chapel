@@ -83,6 +83,7 @@ REGISTER(removeNamedParameters);
 REGISTER(removeNestedFunctions);
 REGISTER(removeTypeVariableActuals);
 REGISTER(removeTypeVariableFormals);
+REGISTER(resolve_analyzed);
 REGISTER(resolveSymbols);       // SJD: Resolve symbols after analysis
 REGISTER(resolveTypes);
 REGISTER(runAnalysis);

@@ -25,10 +25,50 @@ static void add_this_formal_to_method(FnSymbol* fn);
 static void finish_constructor(FnSymbol* fn);
 
 
+void cleanup(BaseAST* ast) {
+  Vec<BaseAST*> asts;
+  collect_asts(&asts, ast);
+  forv_Vec(BaseAST, ast, asts) {
+    if (DefExpr* a = dynamic_cast<DefExpr*>(ast)) {
+      normalize_anonymous_record_or_forall_expression(a);
+    } else if (ForLoopStmt* a = dynamic_cast<ForLoopStmt*>(ast)) {
+      destructure_indices(a);
+    } else if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
+      SymExpr* base = dynamic_cast<SymExpr*>(a->baseExpr);
+      if (base && !strncmp(base->var->name, "_tuple", 6)) {
+        construct_tuple_type(atoi(base->var->name+6));
+        CallExpr* parent = dynamic_cast<CallExpr*>(a->parentExpr);
+        if (parent && parent->isAssign() && parent->get(1) == a)
+          destructure_tuple(a, &asts);
+      }
+    }
+  }
+  asts.clear();
+  collect_asts_postorder(&asts, ast);
+  forv_Vec(BaseAST, ast, asts) {
+    if (DefExpr* defExpr = dynamic_cast<DefExpr*>(ast)) {
+      if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(defExpr->sym)) {
+        if (ClassType* ct = dynamic_cast<ClassType*>(type->definition)) {
+          build_class_init_function(ct);
+        }
+      }
+    }
+  }
+  asts.clear();
+  collect_asts(&asts, ast);
+  forv_Vec(BaseAST, ast, asts) {
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
+      flatten_primary_methods(fn);
+      resolve_secondary_method_type(fn);
+      add_this_formal_to_method(fn);
+      finish_constructor(fn);
+    }
+  }
+}
+
+
 void cleanup(void) {
   Vec<BaseAST*> asts;
-  Vec<Symbol*> syms;
-  Vec<FnSymbol*> fns;
   collect_asts(&asts);
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* a = dynamic_cast<DefExpr*>(ast)) {
@@ -56,12 +96,15 @@ void cleanup(void) {
       }
     }
   }
-  collect_functions(&fns);
-  forv_Vec(FnSymbol, fn, fns) {
-    flatten_primary_methods(fn);
-    resolve_secondary_method_type(fn);
-    add_this_formal_to_method(fn);
-    finish_constructor(fn);
+  asts.clear();
+  collect_asts(&asts);
+  forv_Vec(BaseAST, ast, asts) {
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
+      flatten_primary_methods(fn);
+      resolve_secondary_method_type(fn);
+      add_this_formal_to_method(fn);
+      finish_constructor(fn);
+    }
   }
 }
 
@@ -347,6 +390,20 @@ finish_constructor(FnSymbol* fn) {
   ClassType* ct = dynamic_cast<ClassType*>(fn->typeBinding->definition);
 
   fn->_this = new VarSymbol("this", ct);
+
+  if (fn->body->body->length() > 0) {
+    FnSymbol* user_fn = new FnSymbol(stringcat("_user_", fn->name));
+    user_fn->formals = new AList<DefExpr>();
+    user_fn->typeBinding = ct->symbol;
+    BlockStmt* user_body = fn->body;
+    fn->body->replace(new BlockStmt());
+    fn->insertAtHead(new ExprStmt(new DefExpr(user_fn)));
+    user_fn->body->replace(user_body);
+    fn->insertAtHead(new ExprStmt(new CallExpr(user_fn, methodToken, fn->_this)));
+    ct->methods.add(user_fn);
+    cleanup(user_fn);
+  }
+
   dynamic_cast<VarSymbol*>(fn->_this)->noDefaultInit = true;
 
   char* description = stringcat("instance of class ", ct->symbol->name);
@@ -361,10 +418,7 @@ finish_constructor(FnSymbol* fn) {
   stmts->insertAtTail(new ExprStmt(new DefExpr(fn->_this)));
   stmts->insertAtTail(alloc_stmt);
 
-  if (use_class_init)
-    stmts->insertAtTail(new ExprStmt(new CallExpr(ct->initFn->name)));
-  else
-    stmts->insertAtTail(new ExprStmt(new CallExpr(ct->initFn, methodToken, fn->_this)));
+  stmts->insertAtTail(new ExprStmt(new CallExpr(ct->initFn, methodToken, fn->_this)));
 
   // assign formals to fields by name
   forv_Vec(Symbol, field, ct->fields) {

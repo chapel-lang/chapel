@@ -5,7 +5,6 @@
 
 class ResolveTypes : public SymtabTraversal {
  public:
-  ResolveTypes::ResolveTypes();
   void processSymbol(Symbol* sym);
 };
 

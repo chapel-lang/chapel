@@ -6,11 +6,6 @@
 #include "symtab.h"
 
 
-ResolveTypes::ResolveTypes() {
-  //  whichModules = MODULES_CODEGEN;
-}
-
-
 static bool types_match(Type* super, Type* sub) {
   if (sub == super) {
     return true;
