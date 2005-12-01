@@ -50798,3 +50798,15 @@ Log message:
 Modified files:
 	chapel/compiler/util/: files.cpp misc.cpp 
 
+---------------------------------------------------------------------------
+
+12/01/05 12:46:14 -- jplevyak
+
+Log message:
+	Support for calling multiple clones of a single function at
+	call sites.  This is a prerequisite for support of dynamic dispatch.
+
+Modified files:
+	chapel/compiler/ifa/: clone.cpp fa.cpp fa.h 
+	chapel/compiler/include/: map.h 
+
