@@ -50706,3 +50706,14 @@ Modified files:
 	chapel/compiler/include/: symbol.h type.h 
 	chapel/compiler/passes/: normalize.cpp 
 
+---------------------------------------------------------------------------
+
+12/01/05 09:09:09 -- jplevyak
+
+Log message:
+	Add id's to AEdges and then sort them as part of contour
+	splitting to eliminate another potential source of non-determinism.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp fa.h 
+
