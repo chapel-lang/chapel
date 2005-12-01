@@ -31,9 +31,7 @@ class Match;
 class MPosition;
 class EntrySet;
 
-typedef MapElem<Fun *, AEdge *> FunAEdgeMapElem;
-typedef Map<Fun *, AEdge *> FunAEdgeMap;
-typedef Map<PNode *, FunAEdgeMap *> EdgeMap;
+typedef Map<PNode *, Vec<AEdge *> *> EdgeMap;
 typedef BlockHash<AEdge *, PointerHashFns> EdgeHash;
 typedef Vec<CreationSet *> VecCreationSet;
 typedef Vec<Vec<CreationSet *> *> CSSS;
@@ -55,26 +53,57 @@ class AType : public Vec<CreationSet *> {
 };
 #define forv_AType(_p, _v) forv_Vec(AType, _p, _v)
 
-typedef  MapElem<AEdge*, EntrySet*> MapElemAEdgeEntrySet;
+class AEdge : public gc {
+ public:
+  int                   id;
+  EntrySet              *from, *to;
+  PNode                 *pnode;
+  Map<MPosition*,AVar*> args;
+  Map<MPosition*,AVar*> filtered_args;
+  Vec<AVar *>           rets;
+  Fun                   *fun;
+  Match                 *match;
+  uint                  in_edge_worklist : 1;
+  uint                  es_backedge : 1;
+  uint                  es_cs_backedge : 1;
+  Link<AEdge>           edge_worklist_link;
+
+  AEdge();
+};
+#define forv_AEdge(_p, _v) forv_Vec(AEdge, _p, _v)
+
+class PendingMapHash {
+ public:
+  static uint hash(AEdge *e) { 
+    return (uint)((uintptr_t)e->fun + (13 * (uintptr_t)e->pnode) + (100003 * (uintptr_t)e->from));
+  }
+  static int equal(AEdge *a, AEdge *b) {
+    return (a->fun == b->fun) && (a->pnode == b->pnode) && (a->from == b->from);
+  }
+};
+
+typedef HashMap<AEdge *, PendingMapHash, Vec<EntrySet *> *> PendingAEdgeEntrySetsMap;
+typedef MapElem<AEdge *, Vec<EntrySet *> *> MapElemAEdgeEntrySets;
 
 class EntrySet : public gc {
  public:
-  Fun                           *fun;
-  int                           id;
-  uint                          dfs_color : 2;
-  Map<MPosition*,AVar*>         args;
-  Vec<AVar *>                   rets;
-  EdgeHash                      edges;
-  EdgeMap                       out_edge_map;
-  Vec<CreationSet *>            creates;
-  Vec<EntrySet *>               display;
-  Vec<AEdge *>                  out_edges;
-  Vec<AEdge *>                  backedges;
-  Vec<AEdge *>                  es_cs_backedges;
-  Vec<CreationSet *>            cs_backedges;
-  EntrySet                      *split;
-  Map<AEdge *, EntrySet *>      pending_es_backedge_map;
-  Vec<EntrySet *>               *equiv;         // clone.cpp
+  Fun                                   *fun;
+  int                                   id;
+  uint                                  dfs_color : 2;
+  Map<MPosition*,AVar*>                 args;
+  Vec<AVar *>                           rets;
+  Map<MPosition *, AType *>             filters;
+  EdgeHash                              edges;
+  EdgeMap                               out_edge_map;
+  Vec<CreationSet *>                    creates;
+  Vec<EntrySet *>                       display;
+  Vec<AEdge *>                          out_edges;
+  Vec<AEdge *>                          backedges;
+  Vec<AEdge *>                          es_cs_backedges;
+  Vec<CreationSet *>                    cs_backedges;
+  EntrySet                              *split;
+  PendingAEdgeEntrySetsMap              pending_es_backedge_map;
+  Vec<EntrySet *>                       *equiv;         // clone.cpp
 
   EntrySet(Fun *af);
 };
@@ -154,24 +183,6 @@ class AVar : public gc {
 };
 #define forv_AVar(_p, _v) forv_Vec(AVar, _p, _v)
 
-class AEdge : public gc {
- public:
-  int                   id;
-  EntrySet              *from, *to;
-  PNode                 *pnode;
-  Map<MPosition*,AVar*> args;
-  Map<MPosition*,AVar*> filtered_args;
-  Vec<AVar *>           rets;
-  Fun                   *fun;
-  Match                 *match;
-  uint                  in_edge_worklist : 1;
-  uint                  es_backedge : 1;
-  uint                  es_cs_backedge : 1;
-  Link<AEdge>           edge_worklist_link;
-
-  AEdge();
-};
-#define forv_AEdge(_p, _v) forv_Vec(AEdge, _p, _v)
 typedef MapElem<MPosition *, AVar *> MapMPositionAVar;
 #define form_MPositionAVar(_p, _v) form_Map(MapMPositionAVar, _p, _v)
 

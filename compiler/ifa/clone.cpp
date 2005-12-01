@@ -42,10 +42,10 @@ initialize() {
       es->out_edge_map.clear();
       forv_AEdge(e, es->out_edges) if (e) {
         // rebuild out_edge_map 
-        Map<Fun *, AEdge *> *f2e = es->out_edge_map.get(e->pnode);
-        if (!f2e)
-          es->out_edge_map.put(e->pnode, (f2e = new Map<Fun *, AEdge *>()));
-        f2e->put(e->match->fun, e);
+        Vec<AEdge *> *ees = es->out_edge_map.get(e->pnode);
+        if (!ees)
+          es->out_edge_map.put(e->pnode, (ees = new Vec<AEdge *>));
+        ees->set_add(e);
         // build called_css
         forv_MPosition(p, e->match->fun->positional_arg_positions) {
           AVar *av = e->args.get(p);
@@ -145,17 +145,15 @@ equivalent_es_vars(Var *v, EntrySet *a, EntrySet *b) {
 // clone for different sets of call targets
 static int
 equivalent_es_pnode(PNode *n, EntrySet *a, EntrySet *b) {
-  Map<Fun *, AEdge *> *va = a->out_edge_map.get(n);
-  Map<Fun *, AEdge *> *vb = b->out_edge_map.get(n);
+  Vec<AEdge *> *va = a->out_edge_map.get(n);
+  Vec<AEdge *> *vb = b->out_edge_map.get(n);
   if (!va || !vb)
     return 1;
   Vec<Vec<EntrySet *> *> ca, cb;
-  for(int i = 0; i < va->n; i++)
-    if (va->v[i].key)
-      ca.set_add(va->v[i].value->to->equiv);
-  for(int i = 0; i < vb->n; i++)
-    if (vb->v[i].key)
-      cb.set_add(vb->v[i].value->to->equiv);
+  forv_AEdge(ee, *va)
+    ca.set_add(ee->to->equiv);
+  forv_AEdge(ee, *vb)
+    cb.set_add(ee->to->equiv);
   if (ca.some_disjunction(cb))
     return 0;
   return 1;
@@ -875,13 +873,14 @@ clone_functions() {
         PNode *pnode = es->out_edge_map.v[i].key;
         if (f->nmap)
           pnode = f->nmap->get(pnode);
-        Map<Fun *, AEdge *> *m = es->out_edge_map.v[i].value;
+        Vec<AEdge *> *m = es->out_edge_map.v[i].value;
         Vec<Fun *> *vf = f->calls.get(pnode);
         if (!vf)
           f->calls.put(pnode, (vf = new Vec<Fun *>));
-        for (int j = 0; j < m->n; j++) 
-          if (m->v[j].key && used_edges.set_in(m->v[j].value))
-            vf->set_add(m->v[j].value->to->fun);
+        if (m)
+          forv_AEdge(ee, *m)
+            if (used_edges.set_in(ee))
+              vf->set_add(ee->to->fun);
       }
     }
   }

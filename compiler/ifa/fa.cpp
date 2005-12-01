@@ -13,16 +13,9 @@
 #include "clone.h"
 #include "graph.h"
 
-
 #define CACHE_CALLEES           1
 
-static int aedge_id = 1;
-static int avar_id = 1;
-static int creation_set_id = 1;
-static int entry_set_id = 1;
 int analysis_pass = 0;
-
-static FA *fa = 0;
 
 AType *bottom_type = 0;
 AType *void_type = 0;
@@ -40,13 +33,18 @@ AType *string_type = 0;
 AType *fun_symbol_type = 0;
 AType *anyclass_type = 0;
 
+static int avar_id = 1;
+static int aedge_id = 1;
+static int creation_set_id = 1;
+static int entry_set_id = 1;
+
+static FA *fa = 0;
+
 static ChainHash<AType *, ATypeChainHashFns> cannonical_atypes;
 static ChainHash<Setters *, SettersHashFns> cannonical_setters;
 static ChainHash<SettersClasses *, SettersClassesHashFns> cannonical_setters_classes;
 static ChainHash<ATypeFold *, ATypeFoldChainHashFns> type_fold_cache;
 static ChainHash<ATypeViolation *, ATypeViolationHashFuns> type_violation_hash;
-
-static Var *element_var = 0;
 
 static Que(AEdge, edge_worklist_link) edge_worklist;
 static Que(AVar, send_worklist_link) send_worklist;
@@ -908,26 +906,62 @@ find_best_entry_set(AEdge *e, EntrySet *split) {
   return es;
 }
 
+static AEdge *
+new_AEdge(Fun *f, PNode *p, EntrySet *from) {
+  AEdge *e = new AEdge;
+  e->pnode = p;
+  e->from = from;
+  e->fun = f;
+  return e;
+}
+
+static AEdge *
+new_AEdge(Match *m, PNode *p, EntrySet *from) {
+  AEdge *e = new AEdge;
+  e->pnode = p;
+  e->from = from;
+  e->fun = m->fun;
+  e->match = m;
+  return e;
+}
+
+static void
+set_or_copy_AEdge(AEdge *e, EntrySet *es, Vec<AEdge *> &ees)  {
+  if (!ees.n) {
+    set_entry_set(e, es);
+    ees.add(e);
+  } else {
+    AEdge *new_e = new_AEdge(e->match, e->pnode, e->from);
+    set_entry_set(new_e, es);
+    ees.add(new_e);
+  }
+}
+
 static int
-check_split(AEdge *e)  {
+check_split(AEdge *e, Vec<AEdge *> &ees)  {
   if (!e->from)
     return 0;
-  if (EntrySet *es = e->from->pending_es_backedge_map.get(e)) {
-    set_entry_set(e, es);
+  if (Vec<EntrySet *> *ess = e->from->pending_es_backedge_map.get(e)) {
+    forv_EntrySet(es, *ess)
+      set_or_copy_AEdge(e, es, ees);
     return 1;
   }
   if (e->from->split) {
-    Map<Fun *, AEdge *> *m = e->from->split->out_edge_map.get(e->pnode);
+    Vec<AEdge *> *m = e->from->split->out_edge_map.get(e->pnode);
     if (m) {
-      for (int i = 0; i < m->n; i++)
-        if (m->v[i].key == e->match->fun) {
+      forv_AEdge(ee, *m) {
+        if (ee->match->fun == e->match->fun) {
           if (e->match->fun->split_unique || e->match->fun->nested_in == e->from->fun) {
             set_entry_set(e);
-            e->to->split = m->v[i].value->to;
+            e->to->split = ee->to;
+            ees.add(e);
+            return 1;
           } else
-            set_entry_set(e, m->v[i].value->to);
-          return 1;
+            set_or_copy_AEdge(e, ee->to, ees);
         }
+      }
+      if (ees.n)
+        return 1;
     }
   }
   return 0;
@@ -935,15 +969,18 @@ check_split(AEdge *e)  {
 
 // check results of last session read from disk
 static int
-check_es_db(AEdge *e) {
+check_es_db(AEdge *e, Vec<AEdge *> &ees) {
   return 0;
 }
 
 static void 
-make_entry_set(AEdge *e, EntrySet *split = 0, EntrySet *preference = 0) {
-  if (e->to) return;
-  if (check_split(e)) return;
-  if (check_es_db(e)) return;
+make_entry_set(AEdge *e, Vec<AEdge *> &edges, EntrySet *split = 0, EntrySet *preference = 0) {
+  if (e->to) { 
+    edges.add(e);
+    return;
+  }
+  if (check_split(e, edges)) return;
+  if (check_es_db(e, edges)) return;
   EntrySet *es = 0;
   if (!split)
     es = find_best_entry_set(e, split);
@@ -952,6 +989,7 @@ make_entry_set(AEdge *e, EntrySet *split = 0, EntrySet *preference = 0) {
   set_entry_set(e, es);
   if (!es)
     e->to->split = split;
+  edges.add(e);
 }
 
 void
@@ -1254,42 +1292,44 @@ add_move_constraints(EntrySet *es) {
   }
 }
 
-static AEdge *
-get_AEdge(Fun *f, PNode *p, EntrySet *from) {
-  Map<Fun *, AEdge *> *f2e = from->out_edge_map.get(p);
-  if (!f2e)
-    from->out_edge_map.put(p, (f2e = new Map<Fun *, AEdge *>()));
-  AEdge *e = f2e->get(f);
-  if (!e) {
-    f2e->put(f, (e = new AEdge()));
-    e->pnode = p;
-    e->from = from;
-    e->fun = f;
+static void
+get_AEdges(Fun *f, PNode *p, EntrySet *from, Vec<AEdge *> &edges) {
+  Vec<AEdge *> *ve = from->out_edge_map.get(p);
+  if (!ve)
+    from->out_edge_map.put(p, (ve = new Vec<AEdge *>));
+  forv_AEdge(e, *ve) {
+    if (f == e->fun)
+      edges.add(e);
   }
-  return e;
+  if (!edges.n) {
+    AEdge *e = new_AEdge(f, p, from);
+    ve->set_add(e);
+    edges.add(e);
+  }
 }
 
-static AEdge *
-make_AEdge(Match *m, PNode *p, EntrySet *from) {
-  AEdge *e = get_AEdge(m->fun, p, from);
-  if (!e->match)
-    e->match = m;
-  else {
-    assert(e->match->fun == m->fun);
-    forv_MPosition(p, e->match->fun->positional_arg_positions) {
-      AType *t1 = e->match->formal_filters.get(p), *t2 = m->formal_filters.get(p);
-      if (t1 && t2)
-        e->match->formal_filters.put(p, type_union(t1, t2));
-      else if (!t1 && t2)
-        e->match->formal_filters.put(p, t2);
+static void
+make_AEdges(Match *m, PNode *p, EntrySet *from, Vec<AEdge *> &edges) {
+  get_AEdges(m->fun, p, from, edges);
+  forv_AEdge(e, edges) {
+    if (!e->match)
+      e->match = m;
+    else {
+      assert(e->match->fun == m->fun);
+      forv_MPosition(p, e->match->fun->positional_arg_positions) {
+        AType *t1 = e->match->formal_filters.get(p), *t2 = m->formal_filters.get(p);
+        if (t1 && t2)
+          e->match->formal_filters.put(p, type_union(t1, t2));
+        else if (!t1 && t2)
+          e->match->formal_filters.put(p, t2);
+      }
+    }
+    from->out_edges.set_add(e);
+    if (!e->in_edge_worklist) {
+      e->in_edge_worklist = 1;
+      edge_worklist.enqueue(e);
     }
   }
-  from->out_edges.set_add(e);
-  if (!e->in_edge_worklist) {
-    e->in_edge_worklist = 1;
-    edge_worklist.enqueue(e);
-  }
-  return e;
 }
 
 // returns 1 if any are partial, 0 if some matched and -1 if none matched
@@ -1354,18 +1394,21 @@ function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> 
   if (pattern_match(a, send, partial, &matches)) {
     forv_Match(m, matches) {
       if (!m->partial && partial != Partial_ALWAYS) {
-        AEdge *ee = make_AEdge(m, p, es);
-        if (!ee->args.n) {
-          MPosition p;
-          p.push(1);
-          for (int i = 0; i < m->fun->sym->has.n; i++) {
-            record_arg(0, a.v[i], m->fun->sym->has.v[i], ee, p);
-            p.inc();
+        Vec<AEdge *> edges;
+        make_AEdges(m, p, es, edges);
+        forv_AEdge(ee, edges) {
+          if (!ee->args.n) {
+            MPosition p;
+            p.push(1);
+            for (int i = 0; i < m->fun->sym->has.n; i++) {
+              record_arg(0, a.v[i], m->fun->sym->has.v[i], ee, p);
+              p.inc();
+            }
           }
-        }
-        if (!ee->rets.n) {
-          for (int i = 0; i < p->lvals.n; i++)
-            ee->rets.add(make_AVar(p->lvals.v[i], ee->from));
+          if (!ee->rets.n) {
+            for (int i = 0; i < p->lvals.n; i++)
+              ee->rets.add(make_AVar(p->lvals.v[i], ee->from));
+          }
         }
       } else 
         partial_result = 1;
@@ -1790,46 +1833,49 @@ get_filtered(AEdge *e, MPosition *p, AVar *av) {
 }
 
 static void
-analyze_edge(AEdge *e) {
-  make_entry_set(e);
-  form_MPositionAVar(x, e->args) {
-    if (!x->key->is_positional())
-      continue;
-    MPosition *p = x->key;
-    AVar *actual = x->value, *formal = make_AVar(e->to->fun->args.get(p), e->to),
-      *filtered = get_filtered(e, p, formal);
-    AType *filter = e->match->formal_filters.get(p);
-    if (!filter)
-      continue;
-    flow_var_type_permit(filtered, filter);
-    forv_CreationSet(cs, *filter) if (cs) 
-      cs->ess.set_add(e->to);
-    flow_vars(actual, filtered);
-    flow_vars(filtered, formal);
-    if (p->pos.n > 1)
-      set_container(filtered, get_filtered(e, p->up, e->to->args.get(p->up)));
-    else if (!actual->contour_is_entry_set && actual->contour != GLOBAL_CONTOUR) // closure
-      set_container(filtered, make_AVar(e->pnode->rvals.v[0], e->from));
-  }
-  creation_point(make_AVar(e->match->fun->sym->cont->var, e->to), sym_continuation);
-  for (int i = 0; i < e->pnode->lvals.n; i++)
-    flow_vars(e->to->rets.v[i], e->rets.v[i]);
-  int regular_rets = e->pnode->lvals.n;
-  fill_rets(e->to, regular_rets + e->match->fun->out_positions.n);
-  for (int o = 0; o < e->match->fun->out_positions.n; o++) {
-    MPosition *p = e->match->fun->out_positions.v[o];
-    p = p ? p : e->match->fun->out_positions.v[o];
-    AVar *actual = e->args.get(p);
-    flow_vars(e->to->rets.v[o + regular_rets], actual);
-  }
-  if (!entry_set_done.set_in(e->to)) {
-    entry_set_done.set_add(e->to);
-    if (!e->match->fun->fa_collected)
-      collect_Vars_PNodes(e->match->fun);
-    add_var_constraints(e->to);
-    add_move_constraints(e->to);
-    add_send_constraints(e->to);
-    add_send_edges(e);
+analyze_edge(AEdge *e_arg) {
+  Vec<AEdge *> edges;
+  make_entry_set(e_arg, edges);
+  forv_AEdge(ee, edges) {
+    form_MPositionAVar(x, ee->args) {
+      if (!x->key->is_positional())
+        continue;
+      MPosition *p = x->key;
+      AVar *actual = x->value, *formal = make_AVar(ee->to->fun->args.get(p), ee->to),
+        *filtered = get_filtered(ee, p, formal);
+      AType *filter = ee->match->formal_filters.get(p);
+      if (!filter)
+        continue;
+      flow_var_type_permit(filtered, filter);
+      forv_CreationSet(cs, *filter) if (cs) 
+        cs->ess.set_add(ee->to);
+      flow_vars(actual, filtered);
+      flow_vars(filtered, formal);
+      if (p->pos.n > 1)
+        set_container(filtered, get_filtered(ee, p->up, ee->to->args.get(p->up)));
+      else if (!actual->contour_is_entry_set && actual->contour != GLOBAL_CONTOUR) // closure
+        set_container(filtered, make_AVar(ee->pnode->rvals.v[0], ee->from));
+    }
+    creation_point(make_AVar(ee->match->fun->sym->cont->var, ee->to), sym_continuation);
+    for (int i = 0; i < ee->pnode->lvals.n; i++)
+      flow_vars(ee->to->rets.v[i], ee->rets.v[i]);
+    int regular_rets = ee->pnode->lvals.n;
+    fill_rets(ee->to, regular_rets + ee->match->fun->out_positions.n);
+    for (int o = 0; o < ee->match->fun->out_positions.n; o++) {
+      MPosition *p = ee->match->fun->out_positions.v[o];
+      p = p ? p : ee->match->fun->out_positions.v[o];
+      AVar *actual = ee->args.get(p);
+      flow_vars(ee->to->rets.v[o + regular_rets], actual);
+    }
+    if (!entry_set_done.set_in(ee->to)) {
+      entry_set_done.set_add(ee->to);
+      if (!ee->match->fun->fa_collected)
+        collect_Vars_PNodes(ee->match->fun);
+      add_var_constraints(ee->to);
+      add_move_constraints(ee->to);
+      add_send_constraints(ee->to);
+      add_send_edges(ee);
+    }
   }
 }
 
@@ -1850,7 +1896,9 @@ make_top_edge(Fun *top) {
   AEdge *e = new AEdge();
   e->match = new Match(top);
   e->pnode = new PNode();
-  make_entry_set(e);
+  Vec<AEdge *> edges;
+  make_entry_set(e, edges);
+  assert(edges.n == 1);
   sym_init->var = new Var(sym_init);
   refresh_top_edge(e);
   return e;
@@ -2414,7 +2462,7 @@ collect_argument_type_violations() {
       Vec<EntrySet *> ess;
       f->ess.set_intersection(fa->ess_set, ess);
       forv_EntrySet(from, ess) if (from) {
-        FunAEdgeMap *m = from->out_edge_map.get(p);
+        Vec<AEdge *> *m = from->out_edge_map.get(p);
         if (!m) {
           if (p->code->partial == Partial_NEVER) {
             forv_Var(v, p->rvals) {
@@ -2425,20 +2473,19 @@ collect_argument_type_violations() {
           }
         } else {
           Vec<AVar *> actuals;
-          form_Map(FunAEdgeMapElem, me, *m) {
-            if (!from->out_edges.set_in(me->value))
+          forv_AEdge(me, *m) {
+            if (!from->out_edges.set_in(me))
               continue;
-            form_MPositionAVar(x, me->value->args)
+            form_MPositionAVar(x, me->args)
               if (x->key->is_positional())
                 actuals.set_add(x->value);
           }
           forv_AVar(av, actuals) if (av) {
             AType *t = av->out;
-            form_Map(FunAEdgeMapElem, me, *m) {
-              AEdge *e = me->value;
+            forv_AEdge(e, *m) {
               if (!from->out_edges.set_in(e))
                 continue;
-              form_MPositionAVar(x, me->value->args) {
+              form_MPositionAVar(x, e->args) {
                 if (x->value != av)
                   continue;
                 if (!x->key->is_positional())
@@ -2550,7 +2597,6 @@ initialize_primitives() {
 static void
 initialize() {
   if1->callback->finalize_functions();
-  element_var = new Var(new_Sym("some element"));
   bottom_type = type_cannonicalize(new AType());
   bottom_type->type = bottom_type;
   void_type = make_abstract_type(sym_void);
@@ -2777,32 +2823,68 @@ collect_cs_type_confluences(Vec<AVar *> &confluences) {
 }
 
 static void
-record_backedges(AEdge *e, EntrySet *es, Map<AEdge *, EntrySet *> &up_map) {
-  form_Map(MapElemAEdgeEntrySet, m, up_map) {
+record_backedges(AEdge *e, EntrySet *es, PendingAEdgeEntrySetsMap &up_map) {
+  form_Map(MapElemAEdgeEntrySets, m, up_map) {
     if (m->key->from == es)
-      e->to->pending_es_backedge_map.put(get_AEdge(m->key->fun, m->key->pnode, e->to), m->value);
+      map_set_add(e->to->pending_es_backedge_map, 
+                  new_AEdge(m->key->fun, m->key->pnode, e->to), 
+                  m->value);
     else
-      e->to->pending_es_backedge_map.put(m->key, m->value);
+      map_set_add(e->to->pending_es_backedge_map, m->key, m->value);
   }
   Vec<AEdge *> *backedges = &es->backedges;
   if (es->split)
     backedges = &es->split->backedges;
-  forv_AEdge(ee, *backedges)
+  forv_AEdge(ee, *backedges) {
     if (ee->from == es)
-      e->to->pending_es_backedge_map.put(get_AEdge(ee->fun, ee->pnode, e->to), e->to);
+      map_set_add(e->to->pending_es_backedge_map, new_AEdge(ee->fun, ee->pnode, e->to), e->to);
     else
-      e->to->pending_es_backedge_map.put(ee, e->to);
+      map_set_add(e->to->pending_es_backedge_map, e, e->to);
+  }
 }
 
+
+#if 0
 static int
-split_entry_set(AVar *av, int fsetters, int fmark = 0) {
+split_entry_set_values(AVar *av, int fsetters, int fmark) {
+  assert(fsetters == 0);
   EntrySet *es = (EntrySet*)av->contour;
-  Vec<AEdge *> all_edges, do_edges, stay_edges;
+  Vec<AEdge *> do_edges;
+  AEdge **last = es->edges.last();
   Map<AEdge *, EntrySet *> pending_es_backedge_map;
-  int nedges = 0, non_rec_edges = 0;
+  for (AEdge **ee = es->edges.first(); ee < last; ee++) if (*ee) {
+    if (!(*ee)->args.n) 
+      continue;
+    do_edges.add(*ee);
+  }
+  MPosition *p = 0;
+  forv_MPosition(pp, es->fun->positional_arg_positions) {
+    if (es->args.get(pp) == av) {
+      p = pp;
+      break;
+    }
+  }
+  assert(p);
+  int split = 0;
+  if (av->out->type->n < 2) 
+    return 0;
+  forv_CreationSet(cs, *av->out->type) if (cs) {
+  }
+  return split;
+}
+#endif
+
+static int
+split_entry_set_edges(AVar *av, int fsetters, int fmark) {
+  EntrySet *es = (EntrySet*)av->contour;
+  if (es->split)
+    return 0;
+  Vec<AEdge *> all_edges, do_edges, stay_edges;
+  PendingAEdgeEntrySetsMap pending_es_backedge_map;
   forv_AEdge(ee, es->edges) if (ee)
     all_edges.add(ee);
   qsort_by_id(all_edges);
+  int nedges = 0, non_rec_edges = 0;
   forv_AEdge(ee, all_edges) if (ee) {
     if (!ee->args.n) 
       continue;
@@ -2864,7 +2946,8 @@ split_entry_set(AVar *av, int fsetters, int fmark = 0) {
       es->edges.del(x);
     }
     forv_AEdge(x, these_edges) {
-      make_entry_set(x, es, e->to);
+      Vec<AEdge *> new_edges;
+      make_entry_set(x, new_edges, es, e->to);
       if (x->to != es) {
         record_backedges(x, es, pending_es_backedge_map);
         split = 1;
@@ -2880,6 +2963,12 @@ split_entry_set(AVar *av, int fsetters, int fmark = 0) {
   }
   return split;
 }
+
+#define SPLIT_TYPE              0
+#define SPLIT_SETTER            1
+
+#define SPLIT_VALUE             0
+#define SPLIT_MARK              1
 
 static void
 build_type_mark(AVar *av, CreationSet *cs, int mark = 1) {
@@ -3022,7 +3111,6 @@ clear_cs(CreationSet *cs) {
 
 template <class F> void
 foreach_var() {
-  F::F(element_var);
   forv_Sym(s, fa->pdb->if1->allsyms)
     if (s->var)
       F::F(s->var);
@@ -3248,12 +3336,12 @@ split_with_setter_marks(AVar *av) {
       if (!av->is_lvalue) {
         AVar *aav = unique_AVar(av->var, av->contour);
         if (is_return_value(aav)) {
-          if (split_entry_set(aav, 0, 1))
+          if (split_entry_set_edges(aav, SPLIT_SETTER, SPLIT_MARK))
             analyze_again = 1;
         }
       } else {
         if (av->var->is_formal) {
-          if (split_entry_set(av, 0, 1))
+          if (split_entry_set_edges(av, SPLIT_SETTER, SPLIT_MARK))
             analyze_again = 1;
         }
       }
@@ -3270,7 +3358,7 @@ split_ess_setters(Vec<AVar *> &confluences) {
     if (av->contour_is_entry_set) {
       if (!av->is_lvalue) {
         if (is_return_value(av)) {
-          if (split_entry_set(av, 1))
+          if (split_entry_set_edges(av, SPLIT_SETTER, SPLIT_VALUE))
             analyze_again = 1;
         } else if (!analyze_again)
           if (split_with_setter_marks(av))
@@ -3278,7 +3366,7 @@ split_ess_setters(Vec<AVar *> &confluences) {
       } else {
         AVar *aav = unique_AVar(av->var, av->contour);
         if (aav->var->is_formal) {
-          if (split_entry_set(aav, 1))
+          if (split_entry_set_edges(aav, SPLIT_SETTER, SPLIT_VALUE))
             analyze_again = 1;
         } else if (!analyze_again)
           if (split_with_setter_marks(av))
@@ -3325,7 +3413,7 @@ split_css(Vec<AVar *> &astarters) {
         cs->defs.move(new_defs);
         CreationSet *new_cs = new CreationSet(cs);
         new_cs->defs.move(compatible_set);
-        forv_AVar(v, new_cs->defs)
+        forv_AVar(v, new_cs->defs) if (v)
           v->creation_set = new_cs;
         new_cs->split = cs;
         analyze_again = 1;
@@ -3360,13 +3448,13 @@ split_with_type_marks(AVar *av) {
     if (av->contour_is_entry_set) {
       if (!av->is_lvalue) {
         if (av->var->is_formal) {
-          if (split_entry_set(av, 0, 1))
+          if (split_entry_set_edges(av, SPLIT_TYPE, SPLIT_MARK))
             analyze_again = 1;
         }
       } else {
         AVar *aav = unique_AVar(av->var, av->contour);
         if (is_return_value(aav)) {
-          if (split_entry_set(aav, 0, 1))
+          if (split_entry_set_edges(aav, SPLIT_TYPE, SPLIT_MARK))
             analyze_again = 1;
         }
       }
@@ -3412,6 +3500,50 @@ collect_cs_setter_confluences(Vec<AVar *> &setters_confluences) {
   setters_confluences.set_to_vec();
 }
 
+#if 0
+static AVar*
+is_ivar_access_result(AVar *av) {
+  if (!av->contour_is_entry_set) return 0;
+  PNode *p = av->var->def;
+  if (!p) return 0;
+  if (!p->prim) return 0;
+  if (!p->prim->index == P_prim_period) return 0;
+  EntrySet *es = (EntrySet*)av->contour;
+  AVar *obj = make_AVar(p->rvals.v[1], es);
+  AVar *selector = make_AVar(p->rvals.v[3], es);
+  forv_CreationSet(sel, *selector->out) if (sel) {
+    char *symbol = sel->sym->name; assert(symbol);
+    forv_CreationSet(cs, *obj->out) if (cs) {
+      if (cs == null_type->v[0])
+        continue;
+      AVar *iv = cs->var_map.get(symbol);
+      if (iv)
+        return obj;
+    }
+  }
+  return 0;
+}
+
+static AVar*
+is_dispatch_result(AVar *av) {
+  if (!av->contour_is_entry_set) return 0;
+  PNode *p = av->var->def;
+  if (!p) return 0;
+  EntrySet *es = (EntrySet*)av->contour;
+  Map<Fun *, AEdge *> *m = es->out_edge_map.get(p);
+  if (!m) return 0;
+  Vec<AEdges *> edges;
+  for (int i = 0; i < m->n; i++)
+    if (m->v[i]->value && es->out_edges.get(m->v[i]->value))
+      edges.set_add(m->v[i]->value);
+  Vec<Fun *> found;
+  forv_AEdge(e, edges) if (e)
+    if (!found.set_add(e->fun))
+      return 1;
+  return 0;
+}
+#endif
+
 static int
 split_ess_type(Vec<AVar *> &confluences) {
   int analyze_again = 0;
@@ -3419,16 +3551,62 @@ split_ess_type(Vec<AVar *> &confluences) {
     if (av->contour_is_entry_set) {
       if (!av->is_lvalue) {
         if (av->var->is_formal)
-          analyze_again = split_entry_set(av, 0) || analyze_again; 
+          analyze_again = split_entry_set_edges(av, SPLIT_TYPE, SPLIT_VALUE) || analyze_again; 
       } else {
         AVar *aav = unique_AVar(av->var, av->contour);
         if (is_return_value(aav))
-          analyze_again = split_entry_set(aav, 0) || analyze_again; 
+          analyze_again = split_entry_set_edges(aav, SPLIT_TYPE, SPLIT_VALUE) || analyze_again; 
       }
     }
     if (!analyze_again)
       analyze_again = split_with_type_marks(av) || analyze_again;
   }
+  return analyze_again;
+}
+
+static void
+collect_es_type_imprecisions(Vec<AVar *> &imprecisions) {
+  imprecisions.clear();
+  forv_EntrySet(es, fa->ess) {
+    forv_Var(v, es->fun->fa_all_Vars) {
+      AVar *av = make_AVar(v, es);
+      if (av->var->is_formal && av->is_lvalue) {
+        if (av->contour_is_entry_set) {
+          if (av->out->type->n > 1)
+            imprecisions.set_add(av);
+        }
+      }
+    }
+  }
+}
+
+static int
+split_entry_set_imprecisions(AVar *av) {
+  EntrySet *es = (EntrySet*)av->contour;
+  PendingAEdgeEntrySetsMap pending_es_backedge_map;
+  //int first = 1;
+  forv_AEdge(ee, es->edges) if (ee)
+    pending_es_backedge_map.map_union(ee->from->pending_es_backedge_map);
+  AType *t = av->out->type;
+  int split = 0;
+  forv_CreationSet(cs, t->sorted) {
+  }
+  return split;
+}
+
+static int
+split_ess_imprecisions(Vec<AVar *> &imprecisions) {
+  int analyze_again = 0;
+  forv_AVar(av, imprecisions)
+    analyze_again = split_entry_set_imprecisions(av);
+#if 0
+        else if (fdd) {
+          if (AVar *dispatch = is_ivar_access_result(av))
+            analyze_again = introduce_dynamic_dispatch(av) || analyze_again; 
+          else if (AVar *dispatch = is_dispatch_result(av))
+            analyze_again = introduce_dynamic_dispatch(av) || analyze_again; 
+        }
+#endif
   return analyze_again;
 }
 
@@ -3450,6 +3628,7 @@ extend_analysis() {
   // 1) split EntrySet(s) based on type
   collect_es_type_confluences(confluences);
   analyze_again = split_ess_type(confluences);
+  // 2) split CreationSet(s) based on type
   if (!analyze_again) {
     collect_cs_type_confluences(confluences);
     forv_AVar(av, confluences)
@@ -3457,19 +3636,25 @@ extend_analysis() {
     if (split_for_setters())
       analyze_again = 1;
   }
+  // 3) split based on setters
   while (!analyze_again) {
-    // 2) compute setters for ivar imprecisions
+    // a) compute setters for ivar confluences
     collect_cs_setter_confluences(confluences);
     int progress = 0;
     forv_AVar(av, confluences)
       progress = analyze_confluence(av, AKIND_SETTER) || progress;
-    // 3) stop if no progress
+    // b) stop if no progress
     if (!progress) break;
-    // 4) split EntrySet(s) and CreationSet(s) for setter imprecisions
+    // c) split EntrySet(s) and CreationSet(s) for setter confluences
     if (split_for_setters()) {
       analyze_again = 1;
       break;
     }
+  }
+  if (!analyze_again) {
+    // 4) split EntrySet(s) based on type using dynamic dispatch
+    collect_es_type_imprecisions(confluences);
+    analyze_again = split_ess_imprecisions(confluences);
   }
   if (analyze_again) {
     ++analysis_pass;
