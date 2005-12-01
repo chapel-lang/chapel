@@ -872,22 +872,11 @@ void CallExpr::codegen(FILE* outfile) {
       }
 
       bool ampersand = dynamic_cast<ArgSymbol*>(formals->sym)->requiresCPtr();
-      bool star = false;
-      if (SymExpr* v = dynamic_cast<SymExpr*>(actuals))
-        if (VarSymbol *vs = dynamic_cast<VarSymbol*>(v->var))
-          if (vs->varClass == VAR_REF) {
-            if (ampersand)
-              ampersand = false;
-            else
-              star = true;
-          }
       if (ampersand) {
         fprintf(outfile, "&(");
-      } else if (star) {
-        fprintf(outfile, "*(");
       }
       actuals->codegen(outfile);
-      if (ampersand || star) {
+      if (ampersand) {
         fprintf(outfile, ")");
       }
       formals = fnSym->formals->next();

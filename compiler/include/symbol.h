@@ -24,7 +24,6 @@ enum fnType {
 
 enum varType {
   VAR_NORMAL,
-  VAR_REF,
   VAR_CONFIG,
   VAR_STATE
 };
@@ -103,7 +102,6 @@ class VarSymbol : public Symbol {
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void traverseDefSymbol(Traversal* traverse);
 
-  bool initializable(void);
   bool isConst(void);
   //Roxana
   bool isParam(void);

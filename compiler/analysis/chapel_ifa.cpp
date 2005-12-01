@@ -1318,7 +1318,6 @@ gen_one_defexpr(VarSymbol *var, DefExpr *def) {
   s->is_var = 1;
   switch (var->varClass) {
     case VAR_NORMAL: break;
-    case VAR_REF: break;
     case VAR_CONFIG: s->is_external = 1; break;
     default: return show_error("unhandled variable class", ast);
   }
@@ -1420,7 +1419,6 @@ gen_var_init_expr(VarSymbol *var, InitExpr *e) {
   s->is_var = 1;
   switch (var->varClass) {
     case VAR_NORMAL: break;
-    case VAR_REF: break;
     case VAR_CONFIG: s->is_external = 1; break;
     default: return show_error("unhandled variable class", ast);
   }

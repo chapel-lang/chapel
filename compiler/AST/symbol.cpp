@@ -336,25 +336,6 @@ void VarSymbol::traverseDefSymbol(Traversal* traversal) {
 }
 
 
-bool VarSymbol::initializable(void) {
-  switch (parentScope->type) {
-  case SCOPE_LOCAL:
-  case SCOPE_MODULE:
-    return true;
-  case SCOPE_INTRINSIC:
-  case SCOPE_PRELUDE:
-  case SCOPE_POSTPARSE:
-  case SCOPE_ARG:
-  case SCOPE_FORLOOP:
-  case SCOPE_CLASS:
-    return false;
-  default:
-    INT_FATAL(this, "unhandled case in needsTypeInitialization()");
-  }
-  return false;
-}
-
-
 bool VarSymbol::isConst(void) {
   return (consClass == VAR_CONST);
 }
@@ -417,13 +398,8 @@ void VarSymbol::codegenDef(FILE* outfile) {
     fprintf(outfile, "const ");
   }
   type->codegen(outfile);
-  if (varClass == VAR_REF)
-    fprintf(outfile, "*");
   fprintf(outfile, " ");
   this->codegen(outfile);
-  if (this->initializable() && varClass != VAR_REF) {
-    type->codegenSafeInit(outfile);
-  }
   fprintf(outfile, ";\n");
 }
 
@@ -495,8 +471,8 @@ void ArgSymbol::printDef(FILE* outfile) {
 
 
 bool ArgSymbol::requiresCPtr(void) {
-  return (intent == INTENT_OUT || intent == INTENT_INOUT || 
-          (intent == INTENT_REF && type->astType == TYPE_PRIMITIVE));
+  return intent == INTENT_OUT || intent == INTENT_INOUT ||
+    (intent == INTENT_REF && type->astType == TYPE_PRIMITIVE);
 }
 
 
@@ -1158,8 +1134,6 @@ void FnSymbol::codegenHeader(FILE* outfile) {
     INT_WARNING(this, "return type unknown, calling analysis late");
   }
   retType->codegen(outfile);
-//   if (is_Value_Type(retType) && _getter)
-//     fprintf(outfile, "*");
   fprintf(outfile, " ");
   this->codegen(outfile);
   fprintf(outfile, "(");

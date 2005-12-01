@@ -23,6 +23,7 @@ static void initialize_out_formals(FnSymbol* fn);
 static void insert_formal_temps(FnSymbol* fn);
 static void call_constructor_for_class(CallExpr* call);
 static void normalize_for_loop(ForLoopStmt* stmt);
+static void insert_call_temps(CallExpr* call);
 
 void normalize(void) {
   Vec<FnSymbol*> fns;
@@ -60,6 +61,14 @@ void normalize(void) {
       call_constructor_for_class(a);
     } else if (ForLoopStmt* a = dynamic_cast<ForLoopStmt*>(ast)) {
       normalize_for_loop(a);
+    }
+  }
+
+  asts.clear();
+  collect_asts_postorder(&asts);
+  forv_Vec(BaseAST, ast, asts) {
+    if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
+      insert_call_temps(a);
     }
   }
 }
@@ -310,4 +319,27 @@ static void normalize_for_loop(ForLoopStmt* stmt) {
     if (!index->exprType)
       index->replace(new DefExpr(index->sym, NULL, type));
   }
+}
+
+
+static void insert_call_temps(CallExpr* call) {
+  return;
+
+  static int uid = 1;
+
+  if (!call->parentExpr || !call->parentStmt)
+    return;
+  
+  if (dynamic_cast<DefExpr*>(call->parentExpr))
+    return;
+
+  if (SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr))
+    if (!strcmp("typeof", base->var->name))
+      return;
+
+  Stmt* stmt = call->parentStmt;
+  VarSymbol* tmp = new VarSymbol(stringcat("_tmp", intstring(uid++)));
+  tmp->noDefaultInit = true;
+  call->replace(new SymExpr(tmp));
+  stmt->insertBefore(new ExprStmt(new DefExpr(tmp, call)));
 }

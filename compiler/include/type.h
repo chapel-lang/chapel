@@ -67,7 +67,6 @@ class Type : public BaseAST {
   virtual void codegen(FILE* outfile);
   virtual void codegenDef(FILE* outfile);
   virtual void codegenPrototype(FILE* outfile);
-  virtual void codegenSafeInit(FILE* outfile);
   virtual void codegenStringToType(FILE* outfile);
   virtual void codegenConfigVarRoutines(FILE* outfile);
   virtual void codegenDefaultFormat(FILE* outfile, bool isRead);

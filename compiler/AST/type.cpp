@@ -150,12 +150,6 @@ void Type::codegenDef(FILE* outfile) {
 void Type::codegenPrototype(FILE* outfile) { }
 
 
-void Type::codegenSafeInit(FILE* outfile) {
-  // SJD: Is this ever going to be used?
-  // Used to be used to initialize strings to NULL
-}
-
-
 void Type::codegenStringToType(FILE* outfile) {
 }
 
