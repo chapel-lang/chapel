@@ -14,7 +14,7 @@
 int verbose_level = 0;
 int *assert_NULL_var = 0;
 
-static void cleanup(void) {
+void cleanup_for_exit(void) {
   deleteTmpDir();
   stopCatchingSignals();
 }
@@ -27,7 +27,7 @@ clean_exit(int status) {
   if (status != 0) {
     gdbShouldBreakHere();
   }
-  cleanup();
+  cleanup_for_exit();
   exit(status);
 }
 

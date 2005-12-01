@@ -378,13 +378,13 @@ char* createGDBFile(int argc, char* argv[]) {
   fprintf(gdbfile, "set $_exitcode = 's'\n");
   fprintf(gdbfile, "define hook-run\n");
   fprintf(gdbfile, "  if ($_exitcode == 'r')\n");
-  fprintf(gdbfile, "    call cleanup()\n");
+  fprintf(gdbfile, "    call cleanup_for_exit()\n");
   fprintf(gdbfile, "  end\n");
   fprintf(gdbfile, "  set $_exitcode = 'r'\n");
   fprintf(gdbfile, "end\n");
   fprintf(gdbfile, "define hook-quit\n");
   fprintf(gdbfile, "  if ($_exitcode == 'r')\n");
-  fprintf(gdbfile, "    call cleanup(0)\n");
+  fprintf(gdbfile, "    call cleanup_for_exit(0)\n");
   fprintf(gdbfile, "  end\n");
   fprintf(gdbfile, "end\n");
   fprintf(gdbfile, "define halt\n");
