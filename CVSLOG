@@ -50758,3 +50758,19 @@ Log message:
 Modified files:
 	chapel/modules/standard/: prelude.chpl 
 
+---------------------------------------------------------------------------
+
+12/01/05 10:18:37 -- shannon
+
+Log message:
+	Removed a future, and added another test for
+	string comparison.
+
+Modified files:
+	chapel/test/types/string/shannon/: returnsVoid.chpl 
+	                                   returnsVoid.good 
+Added files:
+	chapel/test/types/string/shannon/: stringEquals.chpl 
+Removed files:
+	chapel/test/types/string/shannon/: returnsVoid.future 
+
