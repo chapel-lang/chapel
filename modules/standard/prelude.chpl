@@ -322,10 +322,14 @@ function +(a : string, b : string) : string {
 }
 
 pragma "rename _chpl_string_equal"
-function ==(a : string, b : string) : boolean { }
+function ==(a : string, b : string) : boolean { 
+  return __primitive("pure_return", boolean);
+}
 
 pragma "rename _chpl_string_notequal"
-function !=(a : string, b : string) : boolean { }
+function !=(a : string, b : string) : boolean { 
+  return __primitive("pure_return", boolean);
+}
 
 pragma "rename _chpl_string_length"
 function length(a : string) : integer {
