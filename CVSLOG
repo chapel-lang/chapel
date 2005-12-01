@@ -50835,3 +50835,33 @@ Added files:
 	chapel/test/classes/deitz/: test_nested_method.chpl 
 	                            test_nested_method.good 
 
+---------------------------------------------------------------------------
+
+12/01/05 15:46:24 -- deitz
+
+Log message:
+	Folded specializeCallExprs into normalize and simplified.
+	
+	Removed AList::popHead() which is unnecessary and seldom used.  It
+	also failed to use fixup making it dangerous.
+	
+	Added "bool CallExpr::isNamed(char*)" to test the name of a call.
+	
+	Put chpl_stdin, chpl_stdout, and chpl_stderr in runtime.h so they can
+	be accessed without a lookup.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/include/: alist.h expr.h runtime.h 
+	chapel/compiler/main/: passlist.cpp passlist.h runtime.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: filesToAST.cpp normalize.cpp 
+	chapel/compiler/traversals/: Makefile.share 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/flowanalysis/newast/: enum.good 
+Removed files:
+	chapel/compiler/traversals/: specializeCallExprs.cpp 
+	                             specializeCallExprs.h 
+
