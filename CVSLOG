@@ -50717,3 +50717,13 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp fa.h 
 
+---------------------------------------------------------------------------
+
+12/01/05 09:10:10 -- jplevyak
+
+Log message:
+	Add function map_set_add().
+
+Modified files:
+	chapel/compiler/include/: map.h 
+
