@@ -495,6 +495,7 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
   case SYMBOL_VAR: 
     goto LSymbolCommon;
   case SYMBOL_ARG: 
+    AST_ADD_CHILD(ArgSymbol, defaultExpr);
     ADD_CHILD(ArgSymbol, genericSymbol);
     goto LSymbolCommon;
   case SYMBOL_TYPE: goto LSymbolCommon;

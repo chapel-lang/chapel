@@ -419,7 +419,7 @@ DefExpr* Symboltable::finishModuleDef(ModuleSymbol* mod, AList<Stmt>* def) {
 
 DefExpr*
 Symboltable::defineParam(intentTag tag, char* ident, Expr* type, Expr* init) {
-  ArgSymbol* argSymbol = new ArgSymbol(tag, ident, dtUnknown);
+  ArgSymbol* argSymbol = new ArgSymbol(tag, ident, dtUnknown, init);
   if (tag == INTENT_TYPE) {
     char *name = stringcat("__type_variable_", argSymbol->name);
     VariableType* new_type = new VariableType(getMetaType(NULL));
@@ -434,7 +434,7 @@ Symboltable::defineParam(intentTag tag, char* ident, Expr* type, Expr* init) {
     argSymbol->genericSymbol = varSymbol;
   }
 #endif
-  return new DefExpr(argSymbol, init, type);
+  return new DefExpr(argSymbol, NULL, type);
 }
 
 

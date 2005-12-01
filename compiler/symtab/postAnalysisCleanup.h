@@ -5,7 +5,6 @@
 
 class PostAnalysisCleanup : public SymtabTraversal {
  public:
-  PostAnalysisCleanup::PostAnalysisCleanup();
   void processSymbol(Symbol* sym);
 };
 

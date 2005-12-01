@@ -115,12 +115,13 @@ class VarSymbol : public Symbol {
 class ArgSymbol : public Symbol {
  public:
   intentTag intent;
+  Expr* defaultExpr;
   Symbol *genericSymbol;
   bool isGeneric;
   bool isExactMatch;
 
-  ArgSymbol(intentTag init_intent, char* init_name, 
-              Type* init_type = dtUnknown);
+  ArgSymbol(intentTag iIntent, char* iName, Type* iType,
+            Expr* iDefaultExpr = NULL);
   virtual void verify(void); 
   COPY_DEF(ArgSymbol);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);

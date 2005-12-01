@@ -161,7 +161,7 @@ add_candidate(Map<FnSymbol*,Vec<ArgSymbol*>*>* af_maps,
     j++;
     if (fa_map.v[j] && !actual_formal_match(fa_map.v[j], formal))
       return;
-    if (!fa_map.v[j] && !formalDef->init)
+    if (!fa_map.v[j] && !formal->defaultExpr)
       return;
   }
   af_maps->put(fn, af_map);

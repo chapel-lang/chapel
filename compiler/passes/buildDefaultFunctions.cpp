@@ -162,10 +162,10 @@ static void build_constructor(ClassType* ct) {
     if (VariableType *tv = dynamic_cast<VariableType*>(tmp->definition)) {
       char* name = tmp->name;
       Type* type = tv->type;
-      ArgSymbol* arg = new ArgSymbol(INTENT_TYPE, name, type);
+      ArgSymbol* arg = new ArgSymbol(INTENT_TYPE, name, type, new SymExpr(dtUnknown->symbol));
       arg->isGeneric = true;
       arg->genericSymbol = dynamic_cast<TypeSymbol*>(tv->symbol);
-      args->insertAtTail(new DefExpr(arg, new SymExpr(dtUnknown->symbol)));
+      args->insertAtTail(new DefExpr(arg));
     }
   }
 
@@ -182,8 +182,8 @@ static void build_constructor(ClassType* ct) {
       tmp->defPoint->init->remove();
     }
     VarSymbol *vtmp = dynamic_cast<VarSymbol*>(tmp);
-    ArgSymbol* arg = new ArgSymbol((vtmp && vtmp->consClass == VAR_PARAM) ? INTENT_PARAM : INTENT_BLANK, name, type);
-    DefExpr* defExpr = new DefExpr(arg, init, exprType);
+    ArgSymbol* arg = new ArgSymbol((vtmp && vtmp->consClass == VAR_PARAM) ? INTENT_PARAM : INTENT_BLANK, name, type, init);
+    DefExpr* defExpr = new DefExpr(arg, NULL, exprType);
     args->insertAtTail(defExpr);
   }
 

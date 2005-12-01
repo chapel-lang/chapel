@@ -2230,9 +2230,9 @@ handle_argument(Sym *s, char *name, Fun *fun, int added, MPosition &p) {
   // record default argument positions
   if (SYMBOL(s)) {
     ArgSymbol *symbol = dynamic_cast<ArgSymbol*>(SYMBOL(s));
-    if (symbol && symbol->defPoint->init) {
-      assert(symbol->defPoint->init->ainfo);
-      fun->default_args.put(cannonicalize_mposition(p), symbol->defPoint->init->ainfo);
+    if (symbol && symbol->defaultExpr) {
+      assert(symbol->defaultExpr->ainfo);
+      fun->default_args.put(cannonicalize_mposition(p), symbol->defaultExpr->ainfo);
     }
   }
   return added;

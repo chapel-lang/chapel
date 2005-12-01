@@ -6,14 +6,10 @@
 #include "symtab.h"
 
 
-PostAnalysisCleanup::PostAnalysisCleanup() {
-  //  whichModules = MODULES_CODEGEN;
-}
-
-
 void PostAnalysisCleanup::processSymbol(Symbol* sym) {
-  if (dynamic_cast<ArgSymbol*>(sym) && sym->defPoint->init) {
-    sym->defPoint->init->remove();
+  if (ArgSymbol* arg = dynamic_cast<ArgSymbol*>(sym)) {
+    if (arg->defaultExpr)
+      arg->defaultExpr->remove();
   }
 }
 

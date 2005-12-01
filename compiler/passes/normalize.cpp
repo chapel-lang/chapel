@@ -245,10 +245,9 @@ static void insert_type_default_temp(UserType* userType) {
 static void initialize_out_formals(FnSymbol* fn) {
   for_alist(DefExpr, argDef, fn->formals) {
     ArgSymbol* arg = dynamic_cast<ArgSymbol*>(argDef->sym);
-    if (arg->defPoint->init && arg->intent == INTENT_OUT)
+    if (arg->defaultExpr && arg->intent == INTENT_OUT)
       fn->body->insertAtHead(
-        new ExprStmt(
-          new CallExpr(OP_GETS, arg, arg->defPoint->init->copy())));
+        new ExprStmt(new CallExpr(OP_GETS, arg, arg->defaultExpr->copy())));
   }
 }
 

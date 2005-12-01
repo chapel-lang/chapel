@@ -416,10 +416,11 @@ static char* intentTagNames[NUM_INTENT_TYPES] = {
 };
 
 
-ArgSymbol::ArgSymbol(intentTag init_intent, char* init_name, 
-                         Type* init_type) :
-  Symbol(SYMBOL_ARG, init_name, init_type),
-  intent(init_intent),
+ArgSymbol::ArgSymbol(intentTag iIntent, char* iName, 
+                     Type* iType, Expr* iDefaultExpr) :
+  Symbol(SYMBOL_ARG, iName, iType),
+  intent(iIntent),
+  defaultExpr(iDefaultExpr),
   genericSymbol(NULL),
   isGeneric(false),
   isExactMatch(false)
@@ -441,7 +442,8 @@ void ArgSymbol::verify(void) {
 
 ArgSymbol*
 ArgSymbol::copyInner(ASTMap* map) {
-  ArgSymbol *ps = new ArgSymbol(intent, stringcpy(name), type);
+  ArgSymbol *ps = new ArgSymbol(intent, stringcpy(name),
+                                type, COPY_INT(defaultExpr));
   if (genericSymbol)
     ps->genericSymbol = genericSymbol;
   ps->isGeneric = isGeneric;
@@ -452,11 +454,15 @@ ArgSymbol::copyInner(ASTMap* map) {
 
 
 void ArgSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  type->replaceChild(old_ast, new_ast);
+  if (old_ast == defaultExpr)
+    defaultExpr = dynamic_cast<Expr*>(new_ast);
+  else
+    type->replaceChild(old_ast, new_ast);
 }
 
 
 void ArgSymbol::traverseDefSymbol(Traversal* traversal) {
+  TRAVERSE(defaultExpr, traversal, false);
   TRAVERSE(type, traversal, false);
   TRAVERSE(genericSymbol, traversal, false);
 }
@@ -792,29 +798,29 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
   AList<Expr>* wrapper_actuals = new AList<Expr>();
   BlockStmt* wrapper_body = new BlockStmt();
   ASTMap map;
-  for_alist(DefExpr, formal, formals) {
-    if (!defaults->set_in(formal->sym)) {
-      Symbol* newFormal = formal->sym->copy();
-      map.put(formal->sym, newFormal);
+  for_alist(DefExpr, formalDef, formals) {
+    ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
+    if (!defaults->set_in(formal)) {
+      Symbol* newFormal = formal->copy();
+      map.put(formal, newFormal);
       wrapper_formals->insertAtTail(new DefExpr(newFormal));
       wrapper_actuals->insertAtTail(new SymExpr(newFormal));
     } else {
-      intentTag formal_intent = dynamic_cast<ArgSymbol*>(formal->sym)->intent;
-      char* temp_name = stringcat("_default_temp_", formal->sym->name);
-      VarSymbol* temp = new VarSymbol(temp_name, formal->sym->type);
-      map.put(formal->sym, temp);
+      char* temp_name = stringcat("_default_temp_", formal->name);
+      VarSymbol* temp = new VarSymbol(temp_name, formal->type);
+      map.put(formal, temp);
       Expr* temp_init = NULL;
       Expr* temp_type = NULL;
-      if (formal_intent != INTENT_OUT)
-        temp_init = formal->sym->defPoint->init->copy();
-      if (no_infer && formal->sym->defPoint->exprType)
-        temp_type = formal->sym->defPoint->exprType->copy();
+      if (formal->intent != INTENT_OUT)
+        temp_init = formal->defaultExpr->copy();
+      if (no_infer && formalDef->exprType)
+        temp_type = formalDef->exprType->copy();
       wrapper_body->insertAtTail(new ExprStmt(new DefExpr(temp, temp_init, temp_type)));
 
-      if (formal->sym->type != dtUnknown &&
-          formal_intent != INTENT_OUT &&
-          formal_intent != INTENT_INOUT)
-        wrapper_actuals->insertAtTail(new CastExpr(new SymExpr(temp), NULL, formal->sym->type));
+      if (formal->type != dtUnknown &&
+          formal->intent != INTENT_OUT &&
+          formal->intent != INTENT_INOUT)
+        wrapper_actuals->insertAtTail(new CastExpr(new SymExpr(temp), NULL, formal->type));
       else
         wrapper_actuals->insertAtTail(new SymExpr(temp));
     }
