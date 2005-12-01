@@ -50727,3 +50727,22 @@ Log message:
 Modified files:
 	chapel/compiler/include/: map.h 
 
+---------------------------------------------------------------------------
+
+12/01/05 10:10:55 -- deitz
+
+Log message:
+	With this checkin, DefExpr::init is no longer used for the default
+	expression for ArgSymbols.  Instead ArgSymbol::defaultExpr is used.
+	This means that at this time, DefExpr::init is only used for
+	initializing VarSymbols.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp symbol.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	                         functionResolution.cpp normalize.cpp 
+	chapel/compiler/symtab/: postAnalysisCleanup.cpp 
+	                         postAnalysisCleanup.h symtab.cpp 
+
