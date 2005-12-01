@@ -50810,3 +50810,28 @@ Modified files:
 	chapel/compiler/ifa/: clone.cpp fa.cpp fa.h 
 	chapel/compiler/include/: map.h 
 
+---------------------------------------------------------------------------
+
+12/01/05 14:23:29 -- deitz
+
+Log message:
+	Turned functions nested in methods into nested methods.  Is this right?
+	
+	Added a new pass resolve_analyzed to unify all the little resolution
+	passes after analysis.  Put, but did not delete, RemoveDeadSymbols in
+	there.
+	
+	Created a separate function for user constructor code so that it is
+	not special-cased like the other code in the constructor.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: passes.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/passes/: Makefile.share cleanup.cpp 
+	chapel/compiler/symtab/: resolveTypes.cpp resolveTypes.h 
+Added files:
+	chapel/compiler/passes/: resolveAnalyzed.cpp 
+	chapel/test/classes/deitz/: test_nested_method.chpl 
+	                            test_nested_method.good 
+
