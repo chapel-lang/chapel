@@ -202,6 +202,14 @@ Map<K,C>::map_union(Map<K,C> &m) {
       put(m.v[i].key, m.v[i].value);
 }
 
+template <class K, class C> inline void
+map_set_add(Map<K, Vec<C> *> &m, K akey, C avalue) {
+  Vec<C> *v = m.get(akey);
+  if (!v)
+    m.put(akey, (v = new Vec<C>));
+  v->set_add(avalue);
+}
+
 template <class K, class AHashFns, class C> inline MapElem<K,C> * 
 HashMap<K,AHashFns,C>::get_internal(K akey) {
   if (!n)
