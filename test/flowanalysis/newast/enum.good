@@ -1,4 +1,4 @@
- called from 5 in __init_enum at enum.chpl:9
+ called from 228 in __init_enum at enum.chpl:9
 ::A(enum.chpl:1) ( classVals )
 ::B(enum.chpl:1) ( classVals )
 ::C(enum.chpl:1) ( classVals )

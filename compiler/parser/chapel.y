@@ -1051,7 +1051,8 @@ tuple_paren_expr:
   TLP nonempty_expr_ls TRP 
     { 
       if ($2->length() == 1) {
-        $$ = $2->popHead();
+        $$ = $2->get(1);
+        $$->remove();
       } else {
         AList<Expr>* types = new AList<Expr>();
         AList<Expr>* fields = new AList<Expr>();

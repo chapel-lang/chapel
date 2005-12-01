@@ -14,6 +14,10 @@ extern ModuleSymbol* seqModule;
 extern TypeSymbol* chpl_htuple;
 extern TypeSymbol* chpl_seq;
 
+extern VarSymbol* chpl_stdin;
+extern VarSymbol* chpl_stdout;
+extern VarSymbol* chpl_stderr;
+
 extern VarSymbol* setterToken;
 extern VarSymbol* methodToken;
 

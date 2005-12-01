@@ -68,9 +68,6 @@ class AList : public BaseAST {
   void insertBeforeListHelper(BaseAST* ast);
   void insertAfterListHelper(BaseAST* ast);
 
-  // pop front of list off and return it
-  elemType* popHead(void);
-
   // different ways to print/codegen lists
   void print(FILE* outfile, char* separator = ", ");
   void printDef(FILE* outfile, char* separator = ", ");
@@ -393,23 +390,6 @@ void AList<elemType>::insertAfterListHelper(BaseAST* ast) {
   for_alist_backward(elemType, elem, this) {
     elem->remove();
     ast->insertAfter(elem);
-  }
-}
-
-
-template <class elemType>
-elemType* AList<elemType>::popHead(void) {
-  elemType* pop = dynamic_cast<elemType*>(head->next);
-
-  if (isEmpty()) {
-    return NULL;
-  } else {
-    head->next = pop->next;
-    pop->next->prev = head;
-    pop->next = NULL;
-    pop->prev = NULL;
-
-    return pop;
   }
 }
 

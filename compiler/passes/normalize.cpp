@@ -24,6 +24,7 @@ static void insert_formal_temps(FnSymbol* fn);
 static void call_constructor_for_class(CallExpr* call);
 static void normalize_for_loop(ForLoopStmt* stmt);
 static void insert_call_temps(CallExpr* call);
+static void decompose_special_calls(CallExpr* call);
 
 void normalize(void) {
   Vec<FnSymbol*> fns;
@@ -61,6 +62,16 @@ void normalize(void) {
       call_constructor_for_class(a);
     } else if (ForLoopStmt* a = dynamic_cast<ForLoopStmt*>(ast)) {
       normalize_for_loop(a);
+    }
+  }
+
+  asts.clear();
+  collect_asts_postorder(&asts);
+  forv_Vec(BaseAST, ast, asts) {
+    currentLineno = ast->lineno;
+    currentFilename = ast->filename;
+    if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
+      decompose_special_calls(a);
     }
   }
 
@@ -341,4 +352,63 @@ static void insert_call_temps(CallExpr* call) {
   tmp->noDefaultInit = true;
   call->replace(new SymExpr(tmp));
   stmt->insertBefore(new ExprStmt(new DefExpr(tmp, call)));
+}
+
+
+static void
+decompose_multi_actuals(CallExpr* call, char* new_name, Expr* first_actual) {
+  for_alist(Expr, actual, call->argList) {
+    actual->remove();
+    call->parentStmt->insertBefore
+      (new ExprStmt(new CallExpr(new_name, first_actual->copy(), actual)));
+  }
+  call->parentStmt->remove();
+}
+
+
+static void decompose_special_calls(CallExpr* call) {
+  if (call->isNamed("assert")) {
+    if (call->argList->length() != 1) {
+      USR_FATAL(call->argList, "Assert takes exactly one "
+                "expression; you've given it %d.", call->argList->length());
+    }
+    CallExpr* halt_call = new CallExpr("halt", new_StringLiteral(stringcat
+      ("***Error:  Assertion at ",
+       call->filename,
+       ":",
+       intstring(call->lineno),
+       " failed***")));
+    Expr* arg = call->argList->get(1);
+    call->argList->get(1)->remove();
+    Expr* assert_cond = new CallExpr("not", arg);
+    BlockStmt* assert_body = new BlockStmt(new ExprStmt(halt_call));
+    call->parentStmt->insertBefore(new CondStmt(assert_cond, assert_body));
+    call->parentStmt->remove();
+    decompose_special_calls(halt_call);
+  } else if (call->isNamed("halt")) {
+    call->parentStmt->insertAfter(new ExprStmt(new CallExpr("exit", new_IntLiteral(0))));
+    call->parentStmt->insertAfter(new ExprStmt(new CallExpr("fwriteln", chpl_stdout)));
+    decompose_multi_actuals(call, "fwrite", new SymExpr(chpl_stdout));
+  } else if (call->isNamed("fread")) {
+    Expr* file = call->argList->get(1);
+    file->remove();
+    decompose_multi_actuals(call, "fread", file);
+    call->parentStmt->remove();
+  } else if (call->isNamed("fwrite")) {
+    Expr* file = call->argList->get(1);
+    file->remove();
+    decompose_multi_actuals(call, "fwrite", file);
+  } else if (call->isNamed("fwriteln")) {
+    Expr* file = call->argList->get(1);
+    file->remove();
+    call->parentStmt->insertAfter(new ExprStmt(new CallExpr("fwriteln", file)));
+    decompose_multi_actuals(call, "fwrite", file);
+  } else if (call->isNamed("read")) {
+    decompose_multi_actuals(call, "fread", new SymExpr(chpl_stdin));
+  } else if (call->isNamed("write")) {
+    decompose_multi_actuals(call, "fwrite", new SymExpr(chpl_stdout));
+  } else if (call->isNamed("writeln")) {
+    call->parentStmt->insertAfter(new ExprStmt(new CallExpr("fwriteln", chpl_stdout)));
+    decompose_multi_actuals(call, "fwrite", new SymExpr(chpl_stdout));
+  }
 }

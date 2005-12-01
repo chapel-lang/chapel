@@ -35,7 +35,6 @@
 #include "../traversals/removeNamedParameters.h"
 #include "../traversals/removeNestedFunctions.h"
 #include "../traversals/resolveSymbols.h"
-#include "../traversals/specializeCallExprs.h"
 #include "../traversals/transformLetExprs.h"
 #include "../traversals/verify.h"
 #include "../traversals/view.h"
@@ -88,7 +87,6 @@ REGISTER(resolveSymbols);       // SJD: Resolve symbols after analysis
 REGISTER(resolveTypes);
 REGISTER(runAnalysis);
 REGISTER(scopeResolve);
-REGISTER(specializeCallExprs);
 REGISTER(transformLetExprs);
 REGISTER(verify);
 REGISTER(view);

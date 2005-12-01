@@ -181,6 +181,8 @@ class CallExpr : public Expr {
   bool isAssign(void);
   bool isOp(OpTag);
 
+  bool isNamed(char*);
+
   Expr* get(int index);
   FnSymbol* findFnSymbol(void);
   Type* typeInfo(void);

@@ -20,7 +20,6 @@ TRAVERSALS_SRCS = \
 	removeNamedParameters.cpp \
         removeNestedFunctions.cpp \
 	resolveSymbols.cpp \
-	specializeCallExprs.cpp \
 	transformLetExprs.cpp \
 	traversal.cpp \
 	updateSymbols.cpp \

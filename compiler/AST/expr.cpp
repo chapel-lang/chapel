@@ -703,6 +703,14 @@ bool CallExpr::isOp(OpTag op) {
 }
 
 
+bool CallExpr::isNamed(char* name) {
+  SymExpr* base = dynamic_cast<SymExpr*>(baseExpr);
+  if (base && !strcmp(base->var->name, name))
+    return true;
+  return false;
+}
+
+
 Expr* CallExpr::get(int index) {
   return argList->get(index);
 }

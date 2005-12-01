@@ -31,7 +31,6 @@ PassInfo passlist[] = {
 
   RUN(check_normalized), // checks semantics of normalized AST
 
-  RUN(specializeCallExprs), // fold into normalize
   RUN(preAnalysisHacks),    // fold into normalize
   RUN(applyGettersSetters), // fold into normalize
 
