@@ -50784,3 +50784,17 @@ Log message:
 Added files:
 	chapel/test/types/string/shannon/: stringEquals.good 
 
+---------------------------------------------------------------------------
+
+12/01/05 11:32:16 -- jplevyak
+
+Log message:
+	Because of a conflict between the "cleanup()" used by
+	Brad for the GDB interface and the new "cleanup()" introduced
+	by Steve, the gdb interface was broken (at least on x86_64).
+	Renamed "cleanup()" in misc.cpp cleanup_for_exit() and made
+	it global so that the linker will catch any future conflicts.
+
+Modified files:
+	chapel/compiler/util/: files.cpp misc.cpp 
+
