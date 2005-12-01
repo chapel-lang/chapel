@@ -50774,3 +50774,13 @@ Added files:
 Removed files:
 	chapel/test/types/string/shannon/: returnsVoid.future 
 
+---------------------------------------------------------------------------
+
+12/01/05 10:26:27 -- shannon
+
+Log message:
+	Woops, forgot this on the last commit.
+
+Added files:
+	chapel/test/types/string/shannon/: stringEquals.good 
+
