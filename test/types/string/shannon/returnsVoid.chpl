@@ -4,5 +4,5 @@ var c: string = "c";
 var d: string = "d";
 
 if ((a != b) or (c != d)) {
-   writeln("Hey, this works now!");
+   writeln("Great, the string not-equal comparison is working now!");
 }
