@@ -156,6 +156,7 @@ class AVar : public gc {
 
 class AEdge : public gc {
  public:
+  int                   id;
   EntrySet              *from, *to;
   PNode                 *pnode;
   Map<MPosition*,AVar*> args;
@@ -168,7 +169,7 @@ class AEdge : public gc {
   uint                  es_cs_backedge : 1;
   Link<AEdge>           edge_worklist_link;
 
-  AEdge() : from(0), to(0), pnode(0), fun(0), match(0), in_edge_worklist(0) {}
+  AEdge();
 };
 #define forv_AEdge(_p, _v) forv_Vec(AEdge, _p, _v)
 typedef MapElem<MPosition *, AVar *> MapMPositionAVar;

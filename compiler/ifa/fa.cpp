@@ -16,6 +16,7 @@
 
 #define CACHE_CALLEES           1
 
+static int aedge_id = 1;
 static int avar_id = 1;
 static int creation_set_id = 1;
 static int entry_set_id = 1;
@@ -55,9 +56,10 @@ static Vec<ATypeViolation *> type_violations;
 static int application(PNode *p, EntrySet *es, AVar *fun, CreationSet *s, Vec<AVar *> &args, 
                        Partial_kind partial);
 
-static int 
-get_avar_id() {
-  return avar_id++;
+AEdge::AEdge() : 
+  from(0), to(0), pnode(0), fun(0), match(0), in_edge_worklist(0) 
+{
+  id = aedge_id++;
 }
 
 AVar::AVar(Var *v, void *acontour) : 
@@ -66,7 +68,7 @@ AVar::AVar(Var *v, void *acontour) :
   creation_set(0), type(0), ivar_offset(0), in_send_worklist(0), contour_is_entry_set(0), 
   is_lvalue(0), is_dead(0)
 {
-  id = get_avar_id();
+  id = avar_id++;
 }
 
 AType::AType(AType &a) {
@@ -2795,10 +2797,13 @@ record_backedges(AEdge *e, EntrySet *es, Map<AEdge *, EntrySet *> &up_map) {
 static int
 split_entry_set(AVar *av, int fsetters, int fmark = 0) {
   EntrySet *es = (EntrySet*)av->contour;
-  Vec<AEdge *> do_edges, stay_edges;
+  Vec<AEdge *> all_edges, do_edges, stay_edges;
   Map<AEdge *, EntrySet *> pending_es_backedge_map;
   int nedges = 0, non_rec_edges = 0;
-  forv_AEdge(ee, es->edges) if (ee) {
+  forv_AEdge(ee, es->edges) if (ee)
+    all_edges.add(ee);
+  qsort_by_id(all_edges);
+  forv_AEdge(ee, all_edges) if (ee) {
     if (!ee->args.n) 
       continue;
     nedges++;
@@ -2861,14 +2866,14 @@ split_entry_set(AVar *av, int fsetters, int fmark = 0) {
     forv_AEdge(x, these_edges) {
       make_entry_set(x, es, e->to);
       if (x->to != es) {
-        record_backedges(e, es, pending_es_backedge_map);
+        record_backedges(x, es, pending_es_backedge_map);
         split = 1;
         log(LOG_SPLITTING, "SPLIT ES %d %s%s%s %d from %d -> %d\n", 
             es->id,
             fsetters ? "setters " : "",
             fmark ? "marks " : "",
             es->fun->sym->name ? es->fun->sym->name : "", es->fun->sym->id,
-            e->pnode->lvals.v[0]->sym->id, e->to->id);
+            x->pnode->lvals.v[0]->sym->id, x->to->id);
       }
     }
     do_edges.move(next_edges);
