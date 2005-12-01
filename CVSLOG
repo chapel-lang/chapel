@@ -50746,3 +50746,15 @@ Modified files:
 	chapel/compiler/symtab/: postAnalysisCleanup.cpp 
 	                         postAnalysisCleanup.h symtab.cpp 
 
+---------------------------------------------------------------------------
+
+12/01/05 10:16:45 -- shannon
+
+Log message:
+	Added the "pure_return" for the boolean for the string
+	equals and not-equals comparisons in the prelude, per
+	John's suggestion.
+
+Modified files:
+	chapel/modules/standard/: prelude.chpl 
+
