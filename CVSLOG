@@ -50691,3 +50691,18 @@ Modified files:
 	                             preAnalysisHacks.cpp 
 	                             resolveSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+11/30/05 17:50:14 -- deitz
+
+Log message:
+	Initial coding for temporary insertion normalization, but it is disabled.
+	
+	Removed VAR_REF as it is no longer used.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: symbol.h type.h 
+	chapel/compiler/passes/: normalize.cpp 
+
