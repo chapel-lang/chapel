@@ -12,6 +12,7 @@ PASSES_SRCS = \
         normalize.cpp \
         resolveAnalyzed.cpp \
 	runAnalysis.cpp \
+	runInterpreter.cpp \
         scopeResolve.cpp \
         semanticChecks.cpp
 

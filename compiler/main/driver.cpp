@@ -40,6 +40,8 @@ bool developer = false;
 bool ignore_errors = false;
 bool _adhoc_to_uniform_mangling = false;
 int fnewvardef = 1;
+int run_interpreter = 0;
+int debug_level = 0;
 int fdce_if1 = 1;
 int fgraph = 0;
 int fgraph_constants = 0;
@@ -58,6 +60,8 @@ int fnostdincs = 0;
 int num_constants_per_variable = 1;
 
 static ArgumentDescription arg_desc[] = {
+ {"interpreter", 'i', "Run Interpreter (-ii for interactive)", "+", &run_interpreter, "CHPL_INTERPRETER", NULL},
+ {"debug", 'd', "Debug Level", "+", &debug_level, "CHPL_DEBUG", NULL},
  {"nostdincs", ' ', "No Standard Includes", "T", &fnostdincs, "CHPL_NOSTDINCS", NULL},
  {"analysis-errors", ' ', "Pass Back Analysis Errors", "T", &fanalysis_errors, "CHPL_ANALYSIS_ERRORS", NULL},
  {"premalloc", 'm', "Pre-Malloc", "I", &pre_malloc, "CHPL_PRE_MALLOC", NULL},

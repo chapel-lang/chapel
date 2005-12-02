@@ -28,6 +28,8 @@ extern int fgraph;
 extern int fgraph_constants;
 extern int fgraph_frequencies;
 extern int fgraph_pass_contours;
+extern int run_interpreter;
+extern int debug_level;
 extern bool no_inline;
 extern bool report_inlining;
 extern char system_dir[FILENAME_MAX];

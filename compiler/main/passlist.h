@@ -44,6 +44,10 @@ PassInfo passlist[] = {
 
   RUN(preAnalysisCleanup),
 
+  // INTERPRETER
+  //   Enabled by -i or --interpreter.  Terminates after running if enabled.
+  RUN(runInterpreter),
+
   // ANALYSIS
   RUN(runAnalysis),
 

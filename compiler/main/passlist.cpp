@@ -9,6 +9,7 @@
 #include "../passes/preAnalysisCleanup.h"
 #include "../passes/printProgram.h"
 #include "../passes/runAnalysis.h"
+#include "../passes/runInterpreter.h"
 
 #include "../symtab/codegenOne.h"
 #include "../symtab/copyPropagation.h"
@@ -82,6 +83,7 @@ REGISTER(resolve_analyzed);
 REGISTER(resolveSymbols);       // SJD: Resolve symbols after analysis
 REGISTER(resolveTypes);
 REGISTER(runAnalysis);
+REGISTER(runInterpreter);
 REGISTER(scopeResolve);
 REGISTER(transformLetExprs);
 REGISTER(verify);

@@ -141,11 +141,12 @@ template <class K, class C> class Env : public gc {
   inline C get(K akey);
   inline void push();
   inline void pop();
+  inline void clear() { store.clear(); scope.clear(); }
 
   inline Env() {}
  private:
   Map<K,List<C> *> store;
-  List<List<C> > scope;
+  List<List<K> > scope;
   inline List<C> *get_bucket(K akey);
 };
 
@@ -515,7 +516,7 @@ Env<K,C>::push() {
 
 template <class K, class C> inline void
 Env<K,C>::pop() {
-  forc_List(C, e, scope.first())
+  forc_List(K, e, scope.first())
     get_bucket(e->car)->pop();
 }
 
