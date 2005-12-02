@@ -50908,3 +50908,17 @@ Log message:
 Modified files:
 	chapel/test/flowanalysis/newast/: enum.good 
 
+---------------------------------------------------------------------------
+
+12/02/05 10:19:48 -- jplevyak
+
+Log message:
+	Little work on interpreter.
+	Fixed "do...while" loop IF1 translation (handle isWhileDo flag).
+	Removed stale prototype.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: sym.h 
+	chapel/compiler/passes/: runInterpreter.cpp 
+
