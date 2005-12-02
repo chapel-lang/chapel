@@ -50934,3 +50934,24 @@ Modified files:
 	chapel/compiler/main/: driver.cpp 
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+12/02/05 15:16:37 -- deitz
+
+Log message:
+	Folded preAnalysisHacks into the normalization pass, and simplified.
+	
+	Collapsed type resolution of exprType field into a single function in
+	the normalization pass.
+
+Modified files:
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/passes/: normalize.cpp scopeResolve.cpp 
+	chapel/compiler/traversals/: Makefile.share 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+Removed files:
+	chapel/compiler/traversals/: preAnalysisHacks.cpp 
+	                             preAnalysisHacks.h 
+
