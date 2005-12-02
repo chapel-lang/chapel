@@ -43,12 +43,12 @@ get_slot(Env<BaseAST *, ISlot *> &env, BaseAST *ast) {
   return NULL;
 }
 
+#define S(_t) _t *s = (_t *)ip; (void)s; if (trace_level > 0) printf( #_t " %p\n", s)
+
 static void
 check_type(ISlot &slot, Type *t) {
   return;
 }
-
-#define S(_t) _t *s = (_t *)ip; (void)s; if (debug_level > 0) printf( #_t " %p\n", s)
 
 static void
 interpreter(Expr *ip, ISlot *val = 0) {
@@ -66,7 +66,7 @@ interpreter(Expr *ip, ISlot *val = 0) {
       ISlot *slot = new ISlot;
       slot->kind = EMPTY_SLOT;
       env.put(s->sym, slot);
-      if (debug_level)
+      if (trace_level)
         printf("  '%s' %d\n", !s->sym->name ? "" : s->sym->name, (int)s->id);
       break;
     }
