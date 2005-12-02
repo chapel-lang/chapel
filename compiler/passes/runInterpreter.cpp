@@ -38,14 +38,14 @@ Env<BaseAST *, ISlot *> env;
 
 static void interpreter(AList<Stmt> *stmts, ISlot *);
 
-static void
-initialize() {
-  env.clear();
-}
-
 static ISlot *
 get_slot(Env<BaseAST *, ISlot *> &env, BaseAST *ast) {
   return NULL;
+}
+
+static void
+check_type(ISlot &slot, Type *t) {
+  return;
 }
 
 #define S(_t) _t *s = (_t *)ip; (void)s; if (debug_level > 0) printf( #_t " %p\n", s)
@@ -59,7 +59,7 @@ interpreter(Expr *ip, ISlot *val = 0) {
     case EXPR_SYM: {
       S(SymExpr);
       *val = *env.get(s->var);
-      return;
+      break;
     }
     case EXPR_DEF: {
       S(DefExpr);
@@ -76,9 +76,19 @@ interpreter(Expr *ip, ISlot *val = 0) {
       for_alist(DefExpr, e, s->symDefs)
         interpreter(e);
       interpreter(s->innerExpr, val);
-      return;
+      break;
     }
-    case EXPR_COND:
+    case EXPR_COND: {
+      S(CondExpr);
+      ISlot slot;
+      interpreter(s->condExpr, &slot);
+      check_type(slot, dtBoolean);
+      if (slot.imm->v_bool) 
+        interpreter(s->thenExpr, val);
+      else 
+        interpreter(s->elseExpr, val);
+      break;
+    }
     case EXPR_CALL:
     case EXPR_CAST:
     case EXPR_MEMBERACCESS:
@@ -87,11 +97,6 @@ interpreter(Expr *ip, ISlot *val = 0) {
     case EXPR_IMPORT:
       break;
   }
-}
-
-static void
-check_type(ISlot &slot, Type *t) {
-  return;
 }
 
 static void
@@ -123,6 +128,7 @@ interpreter(Stmt *ip, ISlot *val = 0) {
       }
       case STMT_WHILELOOP: {
         S(WhileLoopStmt);
+        /* if (s->isWhileDo); */
         (void)s;
         break;
       }
@@ -156,8 +162,7 @@ interpreter(Stmt *ip, ISlot *val = 0) {
       case STMT_LABEL: break;
       case STMT_GOTO: {
         S(GotoStmt);
-        (void)s;
-        //ip = s->target;
+        ip = s->label->defPoint->parentStmt;
         continue;
       }
     }
@@ -171,18 +176,21 @@ interpreter(Stmt *ip, ISlot *val = 0) {
 }
 
 static void
-interpreter(AList<Stmt> *stmts, ISlot *val) {
+interpreter(AList<Stmt> *stmts, ISlot *val = 0) {
   if (!stmts->head) return;
   interpreter((Stmt*)stmts->head->next, val);
+}
+
+static void
+initialize() {
+  env.clear();
 }
 
 void runInterpreter(void) {
   if (!run_interpreter)
     return;
   initialize();
-  forv_Vec(ModuleSymbol, mod, allModules) {
-    ISlot slot;
-    interpreter(mod->stmts, &slot);
-  }
+  forv_Vec(ModuleSymbol, mod, allModules)
+    interpreter(mod->stmts);
   exit(1);
 }

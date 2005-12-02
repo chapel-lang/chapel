@@ -169,6 +169,5 @@ Sym *meta_apply(Sym *fn, Sym *arg);
 
 void convert_constant_to_immediate(Sym *sym);
 int compar_syms(const void *ai, const void *aj);
-void coerce_numeric(Sym *s, Sym *t, Immediate *im);
 
 #endif

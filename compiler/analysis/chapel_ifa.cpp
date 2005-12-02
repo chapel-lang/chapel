@@ -462,12 +462,10 @@ BaseAST_to_Sym(BaseAST *b) {
 static Fun *
 install_new_asts(FnSymbol *f, Vec<FnSymbol *> &funs, Vec<TypeSymbol *> &types) {
   Vec<BaseAST *> syms;
-  forv_Vec(FnSymbol, f, funs) {
+  forv_Vec(FnSymbol, f, funs)
     collect_asts(&syms, f->defPoint->parentStmt);
-  }
-  forv_Vec(TypeSymbol, t, types) {
+  forv_Vec(TypeSymbol, t, types)
     collect_asts(&syms, t->defPoint->parentStmt);
-  }
   qsort(syms.v, syms.n, sizeof(syms.v[0]), compar_baseast);
   qsort(funs.v, funs.n, sizeof(funs.v[0]), compar_baseast);
   map_asts(syms);
@@ -1509,7 +1507,7 @@ gen_while(BaseAST *a) {
   Code *body_code = 0;
   if1_gen(if1, &body_code, s->block->ainfo->code);
   if1_loop(if1, &s->ainfo->code, s->ainfo->label[0], s->ainfo->label[1],
-           s->condition->ainfo->rval, 0, 
+           s->condition->ainfo->rval, !s->isWhileDo ? body_code : 0, 
            s->condition->ainfo->code, 0, 
            body_code, s->ainfo);
   return 0;
