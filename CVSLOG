@@ -50865,3 +50865,22 @@ Removed files:
 	chapel/compiler/traversals/: specializeCallExprs.cpp 
 	                             specializeCallExprs.h 
 
+---------------------------------------------------------------------------
+
+12/01/05 17:02:43 -- deitz
+
+Log message:
+	Removed unused pass removeDeadSymbols.
+	
+	Folded small pass postAnalysisCleanup into resolve_analyzed.
+
+Modified files:
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/passes/: resolveAnalyzed.cpp 
+	chapel/compiler/symtab/: Makefile.share 
+Removed files:
+	chapel/compiler/symtab/: postAnalysisCleanup.cpp 
+	                         postAnalysisCleanup.h 
+	                         removeDeadSymbols.cpp 
+	                         removeDeadSymbols.h 
+
