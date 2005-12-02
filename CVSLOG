@@ -50884,3 +50884,17 @@ Removed files:
 	                         removeDeadSymbols.cpp 
 	                         removeDeadSymbols.h 
 
+---------------------------------------------------------------------------
+
+12/01/05 17:37:15 -- jplevyak
+
+Log message:
+	Initial Interpreter Framework.
+
+Modified files:
+	chapel/compiler/include/: driver.h map.h 
+	chapel/compiler/main/: driver.cpp passlist.cpp passlist.h 
+	chapel/compiler/passes/: Makefile.share 
+Added files:
+	chapel/compiler/passes/: runInterpreter.cpp runInterpreter.h 
+
