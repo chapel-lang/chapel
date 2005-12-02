@@ -25,10 +25,16 @@ static void call_constructor_for_class(CallExpr* call);
 static void normalize_for_loop(ForLoopStmt* stmt);
 static void insert_call_temps(CallExpr* call);
 static void decompose_special_calls(CallExpr* call);
+static void hack_array_constructor_call(CallExpr* call);
+static void hack_domain_constructor_call(CallExpr* call);
+static void hack_seqcat_call(CallExpr* call);
+static void hack_typeof_call(CallExpr* call);
+static void hack_resolve_types(Expr* expr);
 
 void normalize(void) {
   Vec<FnSymbol*> fns;
   Vec<BaseAST*> asts;
+
   collect_functions(&fns);
   forv_Vec(FnSymbol, fn, fns) {
     if (fn->fnClass == FN_ITERATOR)
@@ -40,6 +46,7 @@ void normalize(void) {
     insert_formal_temps(fn);
   }
 
+  asts.clear();
   collect_asts(&asts);
   forv_Vec(BaseAST, ast, asts) {
     if (VarSymbol* vs = dynamic_cast<VarSymbol*>(ast)) {
@@ -79,6 +86,27 @@ void normalize(void) {
   collect_asts_postorder(&asts);
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
+      hack_array_constructor_call(a);
+      hack_domain_constructor_call(a);
+      hack_seqcat_call(a);
+      hack_typeof_call(a);
+    } else if (Expr* a = dynamic_cast<Expr*>(ast)) {
+      hack_resolve_types(a);
+    }
+  }
+
+  asts.clear();
+  collect_asts_postorder(&asts);
+  forv_Vec(BaseAST, ast, asts) {
+    if (Expr* a = dynamic_cast<Expr*>(ast)) {
+      hack_resolve_types(a);
+    }
+  }
+
+  asts.clear();
+  collect_asts_postorder(&asts);
+  forv_Vec(BaseAST, ast, asts) {
+    if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
       insert_call_temps(a);
     }
   }
@@ -90,21 +118,21 @@ static void reconstruct_iterator(FnSymbol* fn) {
   if (fn->retType != dtUnknown) {
     seqType = new SymExpr(fn->retType->symbol);
   } else if (fn->defPoint->exprType) {
-    seqType = fn->defPoint->exprType->copy();
+    seqType = fn->defPoint->exprType;
+    seqType->remove();
   } else {
     Vec<BaseAST*> asts;
     collect_asts(&asts, fn->body);
-    Type* type = dtUnknown;
     forv_Vec(BaseAST, ast, asts) {
       if (ReturnStmt* returnStmt = dynamic_cast<ReturnStmt*>(ast))
         if (returnStmt->expr)
-          type = returnStmt->expr->typeInfo();
+          if (!seqType)
+            seqType = new CallExpr("typeof", returnStmt->expr->copy());
+          else
+            USR_FATAL(fn, "Unable to infer type of iterator");
     }
-    if (type != dtUnknown) {
-      seqType = new SymExpr(type->symbol);
-    } else {
+    if (!seqType)
       USR_FATAL(fn, "Unable to infer type of iterator");
-    }
   }
 
   Symbol* seq = new VarSymbol("_seq_result");
@@ -200,9 +228,8 @@ static void normalize_returns(FnSymbol* fn) {
   } else {
     retval = new VarSymbol(stringcat("_ret_", fn->name), fn->retType);
     retval->noDefaultInit = true;
-    Expr* type = NULL;
-    if (fn->defPoint->exprType)
-      type = fn->defPoint->exprType->copy();
+    Expr* type = fn->defPoint->exprType;
+    type->remove();
     fn->insertAtHead(new ExprStmt(new DefExpr(retval, NULL, type)));
     fn->insertAtTail(new ReturnStmt(retval));
   }
@@ -410,5 +437,174 @@ static void decompose_special_calls(CallExpr* call) {
   } else if (call->isNamed("writeln")) {
     call->parentStmt->insertAfter(new ExprStmt(new CallExpr("fwriteln", chpl_stdout)));
     decompose_multi_actuals(call, "fwrite", new SymExpr(chpl_stdout));
+  }
+}
+
+
+static void hack_array_constructor_call(CallExpr* call) {
+  if (call->isNamed("_construct__aarray")) {
+    if (DefExpr* def = dynamic_cast<DefExpr*>(call->parentExpr)) {
+      call->parentStmt->insertAfter(
+        new ExprStmt(new CallExpr(new MemberAccess(def->sym, "myinit"))));
+      call->parentStmt->insertAfter(
+        new ExprStmt(new CallExpr(OP_GETS,
+          new MemberAccess(def->sym, "dom"),
+          call->argList->last()->copy())));
+      call->argList->last()->replace(new_IntLiteral(2)); // 2D arrays
+    }
+  }
+}
+
+
+static void hack_domain_constructor_call(CallExpr* call) {
+  if (call->isNamed("_construct__adomain_lit")) {
+    Stmt* stmt = call->parentStmt;
+    VarSymbol* _adomain_tmp = new VarSymbol("_adomain_tmp");
+    stmt->insertBefore(
+      new ExprStmt(
+        new DefExpr(_adomain_tmp, NULL,
+          new CallExpr("_construct__adomain_lit",
+            new_IntLiteral(call->argList->length())))));
+    call->replace(new SymExpr(_adomain_tmp));
+    int dim = 1;
+    for_alist(Expr, arg, call->argList) {
+      stmt->insertBefore(
+        new ExprStmt(
+          new CallExpr(
+            new MemberAccess(_adomain_tmp, "_set"),
+            new_IntLiteral(dim), arg->copy())));
+      dim++;
+    }
+  } else if (call->isNamed("domain")) {
+    if (call->argList->length() != 1)
+      USR_FATAL(call, "Domain type cannot yet be inferred");
+    if (call->argList->only()->typeInfo() != dtInteger)
+      USR_FATAL(call, "Non-arithmetic domains not yet supported");
+    call->baseExpr->replace(new SymExpr("_construct__adomain"));
+  }
+}
+
+
+static void hack_seqcat_call(CallExpr* call) {
+    if (call->isOp(OP_SEQCAT)) {
+      Type* leftType = call->get(1)->typeInfo();
+      Type* rightType = call->get(2)->typeInfo();
+
+      // assume dtUnknown may be sequence type, at least one should be
+      if (leftType != dtUnknown && rightType != dtUnknown)
+        INT_FATAL(call, "Bad # operation");
+
+      // if only one is, change to append or prepend
+      if (leftType != dtUnknown) {
+        call->replace(new CallExpr(
+                        new MemberAccess(call->get(2)->copy(), "_prepend"),
+                        call->get(1)->copy()));
+      } else if (rightType != dtUnknown) {
+        call->replace(new CallExpr(
+                        new MemberAccess(call->get(1)->copy(), "_append"),
+                        call->get(2)->copy()));
+      }
+    }
+}
+
+
+static void hack_typeof_call(CallExpr* call) {
+  if (call->isNamed("typeof")) {
+    Type* type = call->argList->only()->typeInfo();
+    if (type != dtUnknown) {
+      call->replace(new SymExpr(type->symbol));
+    } else if (SymExpr* base = dynamic_cast<SymExpr*>(call->argList->only())) {
+      if (base->var->defPoint->exprType) {
+        call->replace(base->var->defPoint->exprType->copy());
+      } else {
+        // NOTE we remove the typeof function even if we can't
+        // resolve the type before analysis
+        Expr* arg = call->argList->only();
+        arg->remove();
+        call->replace(arg);
+      }
+    } else {
+      // NOTE we remove the typeof function even if we can't
+      // resolve the type before analysis
+      Expr* arg = call->argList->only();
+      arg->remove();
+      call->replace(arg);
+    }
+  }
+}
+
+
+static bool can_resolve_type(Expr* type_expr) {
+  if (!type_expr)
+    return false;
+  Type* type = type_expr->typeInfo();
+  return type && type != dtUnknown; // && type != dtNil;
+}
+
+
+static void hack_resolve_types(Expr* expr) {
+  if (DefExpr* def_expr = dynamic_cast<DefExpr*>(expr)) {
+    if (ArgSymbol* arg = dynamic_cast<ArgSymbol*>(def_expr->sym)) {
+      if (arg->intent == INTENT_TYPE && can_resolve_type(def_expr->exprType)) {
+        arg->type = getMetaType(def_expr->exprType->typeInfo());
+      } else if (arg->type == dtUnknown &&
+                 can_resolve_type(def_expr->exprType)) {
+        arg->type = def_expr->exprType->typeInfo();
+        def_expr->exprType = NULL;
+      }
+    } else if (VarSymbol* var = dynamic_cast<VarSymbol*>(def_expr->sym)) {
+      if (var->type == dtUnknown && can_resolve_type(def_expr->exprType)) {
+        var->type = def_expr->exprType->typeInfo();
+        def_expr->exprType = NULL;
+      } else if (var->type == dtUnknown &&
+                 !def_expr->exprType &&
+                 can_resolve_type(def_expr->init)) {
+        var->type = def_expr->init->typeInfo();
+      }
+    }
+  }
+
+  if (CastExpr* castExpr = dynamic_cast<CastExpr*>(expr)) {
+    if (castExpr->type == dtUnknown && can_resolve_type(castExpr->newType)) {
+      castExpr->type = castExpr->newType->typeInfo();
+      castExpr->newType = NULL;
+    }
+  }
+
+  if (no_infer) {
+    if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
+      if (def->sym->type == dtUnknown) {
+        if (def->init && !def->exprType) {
+          def->exprType = def->init->copy();
+          fixup(def->exprType, def->init);
+        }
+      }
+    }
+  }
+
+  if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
+    if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(def->sym)) {
+      if (UserType* userType = dynamic_cast<UserType*>(ts->definition)) {
+        if (userType->underlyingType == dtUnknown && 
+            can_resolve_type(userType->typeExpr)) {
+          userType->underlyingType = userType->typeExpr->typeInfo();
+          userType->typeExpr = NULL;
+          if (!userType->defaultValue) {
+            if (userType->underlyingType->defaultValue) {
+              userType->defaultValue = userType->underlyingType->defaultValue;
+              ASTContext context;
+              context.parentScope = userType->symbol->defPoint->parentScope;
+              context.parentSymbol = userType->symbol;
+              context.parentStmt = NULL;
+              context.parentExpr = NULL;
+              insertHelper(userType->defaultValue, context);
+            } else {
+              userType->defaultConstructor =
+                userType->underlyingType->defaultConstructor;
+            }
+          }
+        }
+      }
+    }
   }
 }

@@ -27,7 +27,6 @@
 #include "../traversals/insertFunctionTemps.h"
 #include "../traversals/insertVariableInitializations.h"
 #include "../traversals/instantiate.h"
-#include "../traversals/preAnalysisHacks.h"
 #include "../traversals/printAST.h"
 #include "../traversals/processImportExprs.h"
 #include "../traversals/processParameters.h"
@@ -67,7 +66,6 @@ REGISTER(insertVariableInitializations);
 REGISTER(normalize);
 REGISTER(parse);
 REGISTER(passlistTest);
-REGISTER(preAnalysisHacks);
 REGISTER(preAnalysisCleanup);
 REGISTER(pre_instantiate);
 REGISTER(printAST);        // BLC: pretty-prints all or part of the AST

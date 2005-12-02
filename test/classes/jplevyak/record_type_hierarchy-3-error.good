@@ -16,10 +16,6 @@ _chpl_htuple.chpl:30: fwrite, f : file, val : _htuple
 _chpl_seq.chpl:170: fwrite, f : file, s : seq
 _chpl_seq.chpl:170: fwrite, f : file, s : seq
 _chpl_seq.chpl:170: fwrite, f : file, s : seq
-_chpl_seq.chpl:228: expression has no type
-_chpl_seq.chpl:228: illegal call argument type 'stdout' illegal: ( file ) 
-_chpl_seq.chpl:228: illegal call argument type expression illegal: ( ) 
-_chpl_seq.chpl:228: unresolved call 'fwrite'
 _chpl_seq.chpl:230: fwrite, f : file, s : _aseq
 _chpl_seq.chpl:8: fwrite, f : file, val : _seqNode
 _chpl_seq.chpl:8: fwrite, f : file, val : _seqNode
@@ -51,7 +47,11 @@ record_type_hierarchy-3-error.chpl:12: f, a : D
 record_type_hierarchy-3-error.chpl:12: fwrite, f : file, val : _tuple2
 record_type_hierarchy-3-error.chpl:12: fwrite, f : file, val : _tuple2
 record_type_hierarchy-3-error.chpl:16: expression has no type
+record_type_hierarchy-3-error.chpl:16: expression has no type
 record_type_hierarchy-3-error.chpl:16: illegal call argument type 'b' illegal: ( C ) 
+record_type_hierarchy-3-error.chpl:16: illegal call argument type 'stdout' illegal: ( file ) 
+record_type_hierarchy-3-error.chpl:16: illegal call argument type expression illegal: ( ) 
 record_type_hierarchy-3-error.chpl:16: unresolved call 'f'
+record_type_hierarchy-3-error.chpl:16: unresolved call 'fwrite'
 record_type_hierarchy-3-error.chpl:3: fwrite, f : file, val : C
 record_type_hierarchy-3-error.chpl:8: fwrite, f : file, val : D

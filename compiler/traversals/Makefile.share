@@ -13,7 +13,6 @@ TRAVERSALS_SRCS = \
 	insertFunctionTemps.cpp \
 	insertVariableInitializations.cpp \
         instantiate.cpp \
-        preAnalysisHacks.cpp \
 	printAST.cpp \
         processImportExprs.cpp \
 	processParameters.cpp \

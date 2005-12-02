@@ -47,40 +47,6 @@ find_outer_loop(Stmt* stmt) {
 }
 
 
-class ExprTypeResolve : public Traversal {
- public:
-  void postProcessExpr(Expr* expr) {
-    if (DefExpr* def_expr = dynamic_cast<DefExpr*>(expr)) {
-      if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def_expr->sym)) {
-        if (fn->retType == dtUnknown &&
-            def_expr->exprType &&
-            def_expr->exprType->typeInfo() != dtUnknown) {
-          fn->retType = def_expr->exprType->typeInfo();
-          def_expr->exprType = NULL;
-        }
-      } else if (def_expr->sym->type == dtUnknown &&
-                 def_expr->exprType &&
-                 def_expr->exprType->typeInfo() != dtUnknown) {
-        def_expr->sym->type = def_expr->exprType->typeInfo();
-        def_expr->exprType = NULL;
-      }
-    } else if (CastExpr* castExpr = dynamic_cast<CastExpr*>(expr)) {
-      if (castExpr->type == dtUnknown &&
-          castExpr->newType &&
-          castExpr->newType->typeInfo() != dtUnknown) {
-        castExpr->type = castExpr->newType->typeInfo();
-        castExpr->newType = NULL;
-      }
-    }
-  }
-};
-
-void expr_type_resolve(void) {
-  Traversal* traversal = new ExprTypeResolve();
-  traversal->run(&allModules);
-}
-
-
 static bool
 symInDefList(Symbol* sym, Map<SymScope*,Vec<Symbol*>*>* defList) {
   Vec<Symbol*>* sym_defs = defList->get(sym->parentScope);
@@ -203,5 +169,4 @@ void scopeResolve(void) {
       resolveGotoLabel(gs);
     }
   }
-  expr_type_resolve();
 }
