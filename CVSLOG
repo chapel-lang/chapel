@@ -50898,3 +50898,13 @@ Modified files:
 Added files:
 	chapel/compiler/passes/: runInterpreter.cpp runInterpreter.h 
 
+---------------------------------------------------------------------------
+
+12/02/05 08:44:29 -- jplevyak
+
+Log message:
+	Fix .good file (don't know why)
+
+Modified files:
+	chapel/test/flowanalysis/newast/: enum.good 
+
