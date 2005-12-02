@@ -50922,3 +50922,15 @@ Modified files:
 	chapel/compiler/ifa/: sym.h 
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+12/02/05 10:25:12 -- jplevyak
+
+Log message:
+	rename "debug_level" to "trace_level" to better match what it does
+
+Modified files:
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/passes/: runInterpreter.cpp 
+
