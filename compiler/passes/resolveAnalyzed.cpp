@@ -20,4 +20,13 @@ void resolve_analyzed(void) {
         fs->defPoint->parentStmt->remove();
     }
   }
+
+  asts.clear();
+  collect_asts(&asts);
+  forv_Vec(BaseAST, ast, asts) {
+    if (ArgSymbol* as = dynamic_cast<ArgSymbol*>(ast)) {
+      if (as->defaultExpr)
+        as->defaultExpr->remove();
+    }
+  }
 }

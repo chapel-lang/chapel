@@ -48,10 +48,7 @@ PassInfo passlist[] = {
   RUN(runAnalysis),
 
   RUN(resolve_analyzed),
-
-  //  RUN(removeDeadSymbols),   // fold into resolve analysis
   RUN(resolveTypes),        // fold into resolve analysis
-  RUN(postAnalysisCleanup), // fold into resolve analysis
   RUN(resolveSymbols),      // fold into resolve analysis
 
   RUN(functionResolution),

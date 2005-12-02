@@ -2,9 +2,7 @@ SYMTAB_SRCS = \
         codegenOne.cpp \
 	collectSymbols.cpp \
         copyPropagation.cpp \
-        postAnalysisCleanup.cpp \
 	printSymtab.cpp \
-	removeDeadSymbols.cpp \
         resolveTypes.cpp \
 	symscope.cpp \
         symtab.cpp \

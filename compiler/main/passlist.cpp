@@ -12,9 +12,7 @@
 
 #include "../symtab/codegenOne.h"
 #include "../symtab/copyPropagation.h"
-#include "../symtab/postAnalysisCleanup.h"
 #include "../symtab/printSymtab.h"
-#include "../symtab/removeDeadSymbols.h"
 #include "../symtab/resolveTypes.h"
 
 #include "../traversals/buildClassHierarchy.h"
@@ -68,7 +66,6 @@ REGISTER(insertVariableInitializations);
 REGISTER(normalize);
 REGISTER(parse);
 REGISTER(passlistTest);
-REGISTER(postAnalysisCleanup);
 REGISTER(preAnalysisHacks);
 REGISTER(preAnalysisCleanup);
 REGISTER(pre_instantiate);
@@ -77,7 +74,6 @@ REGISTER(printProgram);    // BLC: pretty-prints the whole program
 REGISTER(printSymtab);
 REGISTER(processImportExprs);
 REGISTER(processParameters); // BLC: handle parameter intents
-REGISTER(removeDeadSymbols);
 REGISTER(removeNamedParameters);
 REGISTER(removeNestedFunctions);
 REGISTER(removeTypeVariableActuals);
