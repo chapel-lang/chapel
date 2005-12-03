@@ -50955,3 +50955,13 @@ Removed files:
 	chapel/compiler/traversals/: preAnalysisHacks.cpp 
 	                             preAnalysisHacks.h 
 
+---------------------------------------------------------------------------
+
+12/02/05 16:03:53 -- jplevyak
+
+Log message:
+	improve debugging output of constants for -dF
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
