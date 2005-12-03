@@ -1919,7 +1919,11 @@ show_sym_name(Sym *s, FILE *fp) {
     fprintf(fp, "%s", s->name);
   else if (s->constant)
     fprintf(fp, "\"%s\"", s->constant);
-  else
+  else if (s->is_constant) {
+    fputs( "\"", fp);
+    fprint_imm(fp, s->imm);
+    fputs( "\"", fp);
+  } else
     fprintf(fp, "%d", s->id);
 }
 
