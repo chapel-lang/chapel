@@ -129,7 +129,7 @@ class ComputeCallSites : public Traversal {
                                               // longer in the tree,
                                               // e.g., _INIT_CONFIG
           call->findFnSymbol()->calledBy->add(call);
-          call->parentFunction()->calls->add(call);
+          call->getFunction()->calls->add(call);
         }
       }
     }

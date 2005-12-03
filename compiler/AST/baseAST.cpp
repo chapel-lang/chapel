@@ -316,7 +316,32 @@ void BaseAST::addPragmas(Vec<char*>* srcPragmas) {
 
 
 ModuleSymbol* BaseAST::getModule() {
-  return (parentScope) ? parentScope->getModule() : NULL;
+  if (!this || dynamic_cast<UnresolvedSymbol*>(this))
+    return NULL;
+  if (ModuleSymbol* x = dynamic_cast<ModuleSymbol*>(this))
+    return x;
+  else if (Type* x = dynamic_cast<Type*>(this))
+    return x->symbol->getModule();
+  else if (Symbol* x = dynamic_cast<Symbol*>(this))
+    return x->defPoint->getModule();
+  else
+    return parentSymbol->getModule();
+}
+
+
+FnSymbol* BaseAST::getFunction() {
+  if (!this || dynamic_cast<UnresolvedSymbol*>(this))
+    return NULL;
+  if (ModuleSymbol* x = dynamic_cast<ModuleSymbol*>(this))
+    return x->initFn;
+  else if (FnSymbol* x = dynamic_cast<FnSymbol*>(this))
+    return x;
+  else if (Type* x = dynamic_cast<Type*>(this))
+    return x->symbol->getFunction();
+  else if (Symbol* x = dynamic_cast<Symbol*>(this))
+    return x->defPoint->getFunction();
+  else
+    return parentSymbol->getFunction();
 }
 
 

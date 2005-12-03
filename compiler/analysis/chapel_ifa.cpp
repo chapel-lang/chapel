@@ -1635,7 +1635,7 @@ gen_assign_rhs(CallExpr *s) {
 
 static int
 gen_set_member(MemberAccess *ma, CallExpr *base_ast) {
-  FnSymbol *fn = ma->getStmt()->parentFunction();
+  FnSymbol *fn = ma->getFunction();
   AAST *ast = base_ast->ainfo;
   int equal = !fn || (!fn->_setter && (fn->fnClass != FN_CONSTRUCTOR || !is_this_member_access(ma)));
   assert(!equal);
@@ -1764,7 +1764,7 @@ gen_assignment(CallExpr *assign) {
   Sym *rval = gen_assign_rhs(assign);
   SymExpr* lhs_var = dynamic_cast<SymExpr*>(assign->get(1));
   Symbol *lhs_symbol = lhs_var ? dynamic_cast<Symbol *>(lhs_var->var) : 0;
-  FnSymbol *f = assign->parentFunction();
+  FnSymbol *f = assign->getFunction();
   int constructor_assignment = 0;
   if (f->fnClass == FN_CONSTRUCTOR) {
     if (MemberAccess *m = dynamic_cast<MemberAccess*>(assign->get(1))) {
@@ -1866,7 +1866,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       break;
     case STMT_RETURN: {
       ReturnStmt *s = dynamic_cast<ReturnStmt*>(ast);
-      Sym *fn = s->parentFunction()->asymbol->sym;
+      Sym *fn = s->getFunction()->asymbol->sym;
       if (s->expr) {
         fn->fun_returns_value = 1;
         if1_gen(if1, &s->ainfo->code, s->expr->ainfo->code);
@@ -1957,7 +1957,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
     case EXPR_CALL: {
       CallExpr* call = dynamic_cast<CallExpr*>(ast);
       if (call->isAssign()) {
-        FnSymbol *f = call->parentFunction();
+        FnSymbol *f = call->getFunction();
         int is_member = call->get(1)->astType == EXPR_MEMBERACCESS;
         if (f->fnClass == FN_CONSTRUCTOR && is_member) {
           if (gen_set_member(dynamic_cast<MemberAccess*>(call->get(1)), call) < 0) return -1;
@@ -2938,7 +2938,7 @@ is_assign(char *name) {
 
 int
 call_info(Expr* a, Vec<FnSymbol *> &fns, int find_type) {
-  FnSymbol* f = a->getStmt()->parentFunction();
+  FnSymbol* f = a->getFunction();
   fns.clear();
   if (!f) // this is not executable code
     return -1;

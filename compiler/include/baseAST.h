@@ -5,6 +5,7 @@
 
 class Symbol;
 class ModuleSymbol;
+class FnSymbol;
 class Type;
 class Stmt;
 class Expr;
@@ -154,6 +155,7 @@ class BaseAST : public gc {
   void addPragmas(Vec<char*>* srcPragmas);
 
   ModuleSymbol* getModule();
+  FnSymbol* getFunction();
 };
 
 typedef Map<BaseAST*,BaseAST*> ASTMap;

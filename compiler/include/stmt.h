@@ -32,7 +32,6 @@ class Stmt : public BaseAST {
   virtual void traverseDef(Traversal* traversal, bool atTop = true);
   virtual void traverseStmt(Traversal* traversal);
   virtual ASTContext getContext(void);
-  FnSymbol* parentFunction();
 };
 #define forv_Stmt(_p, _v) forv_Vec(Stmt, _p, _v)
 

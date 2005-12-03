@@ -146,19 +146,6 @@ void SymScope::undefine(Symbol* sym) {
 }
 
 
-ModuleSymbol* SymScope::getModule() {
-  if (type <= SCOPE_MODULE) {
-    return dynamic_cast<ModuleSymbol*>(astParent);
-  }
-
-  if (!parent) {
-    INT_FATAL("Scope not in module");
-  }
-
-  return parent->getModule();
-}
-
-
 int SymScope::parentLength(void) {
   if (!parent) {
     return 0;

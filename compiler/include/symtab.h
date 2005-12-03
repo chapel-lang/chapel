@@ -32,7 +32,6 @@ class Symboltable {
   static SymScope* popScope(void);
   static SymScope* getCurrentScope(void);
   static SymScope* setCurrentScope(SymScope* newScope);
-  static ModuleSymbol* getCurrentModule(void);
   static Vec<ModuleSymbol*>* getModules(moduleSet modules);
   static FnSymbol* getCurrentFn(void);
 
@@ -56,13 +55,6 @@ class Symboltable {
                                            Expr* type, Expr* init);
   static PrimitiveType* Symboltable::definePrimitiveType(char* name, char* cname, Symbol* initSymbol = NULL);
   static Type* Symboltable::defineBuiltinType(char* name, char* cname, Type* newType);
-  static FnSymbol* startFnDef(FnSymbol* fnsym);
-  static void continueFnDef(FnSymbol* fnsym, AList<DefExpr>* formals, 
-                            Type* retType, bool isRef = false, Expr *whereExp = NULL);
-  static FnSymbol* finishFnDef(FnSymbol* fnsym, BlockStmt* body);
-  static DefExpr* defineFunction(char* name, AList<DefExpr>* formals, 
-                                 Type* retType, BlockStmt* body);
-
   static DefExpr* defineStructType(char* name, Type* type, AList<Stmt>* def);
 
   static void print(FILE* outfile = stderr);

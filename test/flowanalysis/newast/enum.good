@@ -1,14 +1,14 @@
  called from 5 in __init_enum at enum.chpl:9
-::A(enum.chpl:1) ( classVals )
-::B(enum.chpl:1) ( classVals )
-::C(enum.chpl:1) ( classVals )
-::D(enum.chpl:1) ( classVals )
-::O(enum.chpl:1) ( classVals )
-::S(enum.chpl:1) ( classVals )
-::W(enum.chpl:1) ( classVals )
+::A(enum.chpl:1) ( classVals (enum.chpl:1) )
+::B(enum.chpl:1) ( classVals (enum.chpl:1) )
+::C(enum.chpl:1) ( classVals (enum.chpl:1) )
+::D(enum.chpl:1) ( classVals (enum.chpl:1) )
+::O(enum.chpl:1) ( classVals (enum.chpl:1) )
+::S(enum.chpl:1) ( classVals (enum.chpl:1) )
+::W(enum.chpl:1) ( classVals (enum.chpl:1) )
 ::f(enum.chpl:1) ( file )
-::val(enum.chpl:1) ( classVals )
-::x(enum.chpl:3) ( classVals )
+::val(enum.chpl:1) ( classVals (enum.chpl:1) )
+::x(enum.chpl:3) ( classVals (enum.chpl:1) )
 ::y(enum.chpl:7) ( int64 )
 function __init_enum enum.chpl:9
 function fwrite enum.chpl:1

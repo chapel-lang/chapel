@@ -29,15 +29,6 @@ void Stmt::verify(void) {
 }
 
 
-FnSymbol *Stmt::parentFunction() {
-  ModuleSymbol *mod = dynamic_cast<ModuleSymbol*>(parentSymbol);
-  if (mod)
-    return mod->initFn;
-  else
-    return dynamic_cast<FnSymbol*>(parentSymbol);
-}
-
-
 Stmt*
 Stmt::copyInner(ASTMap* map) {
   INT_FATAL(this, "Illegal call to Stmt::copy");

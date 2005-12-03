@@ -72,10 +72,10 @@ static void createInitFn(ModuleSymbol* mod) {
     initFunBody->insertAtHead(testRun);
   }
 
-  DefExpr* initFunDef = Symboltable::defineFunction(fnName, NULL, 
-                                                    dtVoid, initFunBody);
-  definition->insertAtHead(new ExprStmt(initFunDef));
-  mod->initFn = dynamic_cast<FnSymbol*>(initFunDef->sym);
+  mod->initFn = new FnSymbol(fnName);
+  mod->initFn->retType = dtVoid;
+  mod->initFn->body = initFunBody;
+  definition->insertAtHead(new ExprStmt(new DefExpr(mod->initFn)));
   mod->stmts->insertAtHead(definition);
 }
 

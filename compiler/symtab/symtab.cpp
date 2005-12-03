@@ -163,11 +163,6 @@ SymScope* Symboltable::setCurrentScope(SymScope* newScope) {
 }
 
 
-ModuleSymbol* Symboltable::getCurrentModule(void) {
-  return getCurrentScope()->getModule();
-}
-
-
 Vec<ModuleSymbol*>* Symboltable::getModules(moduleSet whichModules) {
   switch (whichModules) {
   case MODULES_ALL:
@@ -471,37 +466,6 @@ Type* Symboltable::defineBuiltinType(char* name, char* cname, Type *newType) {
   builtinTypes.add(newType);
 
   return newType;
-}
-
-
-FnSymbol* Symboltable::startFnDef(FnSymbol* fnsym) {
-  return fnsym;
-}
-
-
-void Symboltable::continueFnDef(FnSymbol* fnsym, AList<DefExpr>* formals, 
-                                Type* retType, bool isRef, Expr *whereExpr) {
-  fnsym->formals = formals;
-  fnsym->retType = retType;
-  fnsym->retRef = isRef;
-  fnsym->whereExpr = whereExpr;
-}
-
-
-FnSymbol* Symboltable::finishFnDef(FnSymbol* fnsym, BlockStmt* blockBody) {
-  fnsym->body = blockBody;
-  return fnsym;
-}
-
-
-DefExpr* Symboltable::defineFunction(char* name, AList<DefExpr>* formals, 
-                                     Type* retType, BlockStmt* body) {
-  if (formals == NULL) {
-    formals = new AList<DefExpr>();
-  }
-  FnSymbol* fnsym = startFnDef(new FnSymbol(name));
-  continueFnDef(fnsym, formals, retType);
-  return new DefExpr(finishFnDef(fnsym, body));
 }
 
 

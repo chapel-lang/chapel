@@ -192,15 +192,6 @@ int Expr::rank(void) {
 }
 
 
-FnSymbol *Expr::parentFunction() {
-  ModuleSymbol *mod = dynamic_cast<ModuleSymbol*>(parentSymbol);
-  if (mod)
-    return mod->initFn;
-  else
-    return dynamic_cast<FnSymbol*>(parentSymbol);
-}
-
-
 Stmt* Expr::getStmt() {
   return (parentStmt) ? parentStmt : parentSymbol->defPoint->getStmt();
 }
@@ -825,7 +816,7 @@ void CallExpr::codegen(FILE* outfile) {
 
   if (SymExpr* variable = dynamic_cast<SymExpr*>(baseExpr)) {
     if (!strcmp(variable->var->name, "_chpl_alloc")) {
-      Type *t = variable->parentFunction()->retType;
+      Type *t = variable->getFunction()->retType;
       fprintf(outfile, "(%s)_chpl_malloc(1, sizeof(_", t->symbol->cname);
       t->codegen(outfile);
       fprintf(outfile, "), ");

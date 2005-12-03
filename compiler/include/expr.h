@@ -81,8 +81,6 @@ class Expr : public BaseAST {
   virtual bool isConst(void);
   virtual int rank(void);
 
-  FnSymbol *parentFunction();
-
   bool isRef(void);
   Stmt* Expr::getStmt();
 

@@ -121,7 +121,7 @@ void scopeResolve(void) {
         // Check VarSymbols defined before used
         if (var &&
             sym->parentScope->type != SCOPE_CLASS &&
-            sym->getModule() == symExpr->parentScope->getModule() &&
+            sym->getModule() == symExpr->getModule() &&
             !symInDefList(sym, &defList))
           USR_FATAL(symExpr, "Variable '%s' used before defined", name);
 
@@ -135,7 +135,7 @@ void scopeResolve(void) {
           // Apply 'this' in methods where necessary
           if (!type) {
             ClassType* ct;
-            FnSymbol* method = symExpr->parentFunction();
+            FnSymbol* method = symExpr->getFunction();
             if (method && method->typeBinding) {
               ct = dynamic_cast<ClassType*>(method->typeBinding->definition);
               if ((var && var->parentScope->type == SCOPE_CLASS) ||

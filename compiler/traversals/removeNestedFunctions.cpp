@@ -120,9 +120,10 @@ void RemoveNestedFunctions::run(Vec<ModuleSymbol*>* modules) {
 
   // move nested functions to module level
   forv_Vec(FnSymbol, fn, all_nested_functions) {
+    ModuleSymbol* mod = fn->getModule();
     Stmt* stmt = fn->defPoint->parentStmt;
     stmt->remove();
-    fn->getModule()->stmts->insertAtTail(stmt);
+    mod->stmts->insertAtTail(stmt);
   }
 
   // add extra formals to nested functions

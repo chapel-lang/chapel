@@ -64,8 +64,6 @@ class SymScope : public gc {
   void codegen(FILE* outfile, char* separator);
   void codegenFunctions(FILE* outfile);
 
-  ModuleSymbol* SymScope::getModule();
-
   void addVisibleFunction(FnSymbol* fn);
   void removeVisibleFunction(FnSymbol* fn);
   void setVisibleFunctions(FnSymbol* fn);

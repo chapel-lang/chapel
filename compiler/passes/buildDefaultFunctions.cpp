@@ -2,6 +2,7 @@
 #include "astutil.h"
 #include "expr.h"
 #include "stmt.h"
+#include "symbol.h"
 #include "symtab.h"
 #include "stringutil.h"
 #include "filesToAST.h"
@@ -40,7 +41,6 @@ static FnSymbol* function_exists(char* name,
                                  char* formalTypeName2 = NULL) {
   Vec<FnSymbol*> fns;
   collect_functions(&fns);
-  FnSymbol* match = NULL;
   forv_Vec(FnSymbol, fn, fns) {
     if (strcmp(name, fn->name))
       continue;
@@ -61,14 +61,9 @@ static FnSymbol* function_exists(char* name,
       if (!type_name_match(formalTypeName2, fn->formals->get(2)->sym))
         continue;
 
-    if (!match) {
-      match = fn;
-    } else if (!strcmp("main", fn->name)) {
-      USR_FATAL(fn, "main multiply defined -- first occurrence at %s",
-                match->stringLoc());
-    }
+    return fn;
   }
-  return match;
+  return NULL;
 }
 
 
@@ -100,48 +95,37 @@ static ExprStmt* buildCallExprStmt(FnSymbol* fn) {
 }
 
 
-static ModuleSymbol* findUniqueUserModule(Vec<ModuleSymbol*>* modules) {
-  ModuleSymbol* userModule = NULL;
-
-  forv_Vec(ModuleSymbol, mod, *modules) {
-    if (mod->modtype == MOD_USER) {
-      if (userModule == NULL) {
-        userModule = mod;
+static FnSymbol* chpl_main_exists(void) {
+  Vec<FnSymbol*> fns;
+  collect_functions(&fns);
+  FnSymbol* match = NULL;
+  forv_Vec(FnSymbol, fn, fns) {
+    if (!strcmp("main", fn->name) && !fn->formals->length()) {
+      if (!match) {
+        match = fn;
       } else {
-        return NULL;  // two user modules defined
+        USR_FATAL(fn, "main multiply defined -- first occurrence at %s",
+                  match->stringLoc());
       }
     }
   }
-  return userModule;
+  return match;
 }
 
 
 static void build_chpl_main(void) {
-  // find main function if it exists; create one if not
-  chpl_main = function_exists("main", 0);
-
-  BlockStmt* mainBody = 0;
-  ModuleSymbol* mainModule = 0;
+  chpl_main = chpl_main_exists();
   if (!chpl_main) {
-    mainModule = findUniqueUserModule(&allModules);
-    if (mainModule) {
-      mainBody = new BlockStmt();
-      chpl_main = new FnSymbol("main", NULL, new AList<DefExpr>(), dtVoid, NULL, mainBody);
-      mainModule->stmts->insertAtTail(new ExprStmt(new DefExpr(chpl_main)));
-    } else {
+    if (userModules.n == 1) {
+      chpl_main = new FnSymbol("main", NULL, new AList<DefExpr>(), dtVoid);
+      userModules.v[0]->stmts->insertAtTail(new ExprStmt(new DefExpr(chpl_main)));
+    } else
       USR_FATAL("Code defines multiple modules but no main function.");
-    }
-  } else {
-    // tack call to main fn module's init call onto main fn's body
-    mainModule = dynamic_cast<ModuleSymbol*>(chpl_main->parentScope->astParent);
-    if (!mainModule) {
-      INT_FATAL(chpl_main, "main function's parent scope wasn't a module scope");
-    }
-    mainBody = chpl_main->body;
-  }
-  mainBody->insertAtHead(buildCallExprStmt(mainModule->initFn));
-  mainBody->insertAtHead(buildCallExprStmt(commonModule->initFn));
-  mainBody->insertAtHead(buildCallExprStmt(prelude->initFn));
+  } else if (chpl_main->getModule() != chpl_main->defPoint->parentSymbol)
+    USR_FATAL(chpl_main, "Main function must be defined at module scope");
+  chpl_main->insertAtHead(buildCallExprStmt(chpl_main->getModule()->initFn));
+  chpl_main->insertAtHead(buildCallExprStmt(commonModule->initFn));
+  chpl_main->insertAtHead(buildCallExprStmt(prelude->initFn));
 }
 
 
@@ -262,7 +246,8 @@ static void build_record_equality_function(ClassType* ct) {
   AList<DefExpr>* args = new AList<DefExpr>(new DefExpr(arg1));
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", ct);
   args->insertAtTail(new DefExpr(arg2));
-  Symboltable::continueFnDef(fn, args, dtBoolean);
+  fn->formals = args;
+  fn->retType = dtBoolean;
   Expr* cond = NULL;
   forv_Vec(Symbol, tmp, ct->fields) {
     Expr* left = new MemberAccess(arg1, tmp);
@@ -271,8 +256,8 @@ static void build_record_equality_function(ClassType* ct) {
       ? new CallExpr(OP_LOGAND, cond, new CallExpr(OP_EQUAL, left, right))
       : new CallExpr(OP_EQUAL, left, right);
   }
-  BlockStmt* retStmt = new BlockStmt(new ReturnStmt(cond));
-  DefExpr* def = new DefExpr(Symboltable::finishFnDef(fn, retStmt));
+  fn->body = new BlockStmt(new ReturnStmt(cond));
+  DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def));
   reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
 }
@@ -285,7 +270,8 @@ static void build_record_inequality_function(ClassType* ct) {
   AList<DefExpr>* args = new AList<DefExpr>(new DefExpr(arg1));
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", ct);
   args->insertAtTail(new DefExpr(arg2));
-  Symboltable::continueFnDef(fn, args, dtBoolean);
+  fn->formals = args;
+  fn->retType = dtBoolean;
   Expr* cond = NULL;
   forv_Vec(Symbol, tmp, ct->fields) {
     Expr* left = new MemberAccess(arg1, tmp);
@@ -295,7 +281,8 @@ static void build_record_inequality_function(ClassType* ct) {
       : new CallExpr(OP_NEQUAL, left, right);
   }
   BlockStmt* retStmt = new BlockStmt(new ReturnStmt(cond));
-  DefExpr* def = new DefExpr(Symboltable::finishFnDef(fn, retStmt));
+  fn->body = retStmt;
+  DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def));
   reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
 }
@@ -305,14 +292,15 @@ static void build_record_assignment_function(ClassType* ct) {
   if (function_exists("=", 2, NULL, ct->symbol->name))
     return;
 
-  FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("="));
+  FnSymbol* fn = new FnSymbol("=");
   ArgSymbol* _arg1 = 
     f_equal_method ? new ArgSymbol(INTENT_REF, "this", ct)
     : new ArgSymbol(INTENT_BLANK, "_arg1", ct);
   AList<DefExpr>* args = new AList<DefExpr>(new DefExpr(_arg1));
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtUnknown);
   args->insertAtTail(new DefExpr(arg2));
-  Symboltable::continueFnDef(fn, args, dtUnknown);
+  fn->formals = args;
+  fn->retType = dtUnknown;
   AList<Stmt>* body = new AList<Stmt>();
   forv_Vec(Symbol, tmp, ct->fields) {
     Expr* left = new MemberAccess(_arg1, tmp);
@@ -323,7 +311,8 @@ static void build_record_assignment_function(ClassType* ct) {
 
   body->insertAtTail(new ReturnStmt(_arg1));
   BlockStmt* block_stmt = new BlockStmt(body);
-  DefExpr* def = new DefExpr(Symboltable::finishFnDef(fn, block_stmt));
+  fn->body = block_stmt;
+  DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def));
   reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
   if (f_equal_method) {
@@ -353,15 +342,18 @@ void buildDefaultIOFunctions(Type* type) {
     return;
   if (type->hasDefaultWriteFunction()) {
     if (!function_exists("fwrite", 2, NULL, "file", type->symbol->name)) {
-      FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("fwrite"));
+      FnSymbol* fn = new FnSymbol("fwrite");
       fn->cname = stringcat("_auto_", type->symbol->name, "_fwrite");
       TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(Symboltable::lookupInFileModuleScope("file"));
       ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", fileType->definition);
       ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "val", type);
-      Symboltable::continueFnDef(fn, new AList<DefExpr>(new DefExpr(fileArg), new DefExpr(arg)), dtVoid);
+
+      fn->formals = new AList<DefExpr>(new DefExpr(fileArg), new DefExpr(arg));
+      fn->retType = dtVoid;
       AList<Stmt>* body = type->buildDefaultWriteFunctionBody(fileArg, arg);
       BlockStmt* block_stmt = new BlockStmt(body);
-      DefExpr* def = new DefExpr(Symboltable::finishFnDef(fn, block_stmt));
+      fn->body = block_stmt;
+      DefExpr* def = new DefExpr(fn);
       type->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def));
       reset_file_info(def, type->symbol->lineno, type->symbol->filename);
     }
@@ -369,15 +361,17 @@ void buildDefaultIOFunctions(Type* type) {
 
   if (type->hasDefaultReadFunction()) {
     if (!function_exists("fread", 2, NULL, "file", type->symbol->name)) {
-      FnSymbol* fn = Symboltable::startFnDef(new FnSymbol("fread"));
+      FnSymbol* fn = new FnSymbol("fread");
       fn->cname = stringcat("_auto_", type->symbol->name, "_fread");
       TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(Symboltable::lookupInFileModuleScope("file"));
       ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", fileType->definition);
       ArgSymbol* arg = new ArgSymbol(INTENT_INOUT, "val", type);
-      Symboltable::continueFnDef(fn, new AList<DefExpr>(new DefExpr(fileArg), new DefExpr(arg)), dtVoid);
+      fn->formals = new AList<DefExpr>(new DefExpr(fileArg), new DefExpr(arg));
+      fn->retType = dtVoid;
       AList<Stmt>* body = type->buildDefaultReadFunctionBody(fileArg, arg);
       BlockStmt* block_stmt = new BlockStmt(body);
-      DefExpr* def = new DefExpr(Symboltable::finishFnDef(fn, block_stmt));
+      fn->body = block_stmt;
+      DefExpr* def = new DefExpr(fn);
       type->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def));
       reset_file_info(def, type->symbol->lineno, type->symbol->filename);
     }
