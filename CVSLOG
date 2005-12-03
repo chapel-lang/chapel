@@ -50965,3 +50965,25 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+12/02/05 20:03:31 -- deitz
+
+Log message:
+	Cleaned code relating to getFunction() and getModule() which now work
+	on any BaseAST, independently of the Symboltable.
+	
+	Removed some unnecessary code from symtab.h, such as continueFnDef, etc.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp baseAST.cpp expr.cpp stmt.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: baseAST.h expr.h stmt.h symscope.h 
+	                          symtab.h 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	                         createEntryPoint.cpp scopeResolve.cpp 
+	chapel/compiler/symtab/: symscope.cpp symtab.cpp 
+	chapel/compiler/traversals/: removeNestedFunctions.cpp 
+	chapel/test/flowanalysis/newast/: enum.good sum_type-1.good 
+	                                  sum_type-2.good 
+
