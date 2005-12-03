@@ -1,8 +1,6 @@
 SYMTAB_SRCS = \
-        codegenOne.cpp \
 	collectSymbols.cpp \
         copyPropagation.cpp \
-	printSymtab.cpp \
         resolveTypes.cpp \
 	symscope.cpp \
         symtab.cpp \

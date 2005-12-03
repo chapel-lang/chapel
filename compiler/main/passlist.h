@@ -31,8 +31,6 @@ PassInfo passlist[] = {
 
   RUN(check_normalized), // checks semantics of normalized AST
 
-  RUN(applyGettersSetters), // fold into normalize
-
   // FunctionResolution instantiates types, resolves functions, and
   // computes a very basic form of type inference.  It is run with the
   // --no-infer or -b flag.  It replaces all the passes between its
@@ -76,8 +74,6 @@ PassInfo passlist[] = {
 
   RUN(copyPropagation),
 
-  // passes to generate code and compile
-  RUN(codegenOne), // codegen types and function prototypes
   RUN(codegen),
 
   LAST

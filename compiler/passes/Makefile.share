@@ -1,5 +1,4 @@
 PASSES_SRCS = \
-        applyGettersSetters.cpp \
         buildDefaultFunctions.cpp \
         cleanup.cpp \
 	codegen.cpp \

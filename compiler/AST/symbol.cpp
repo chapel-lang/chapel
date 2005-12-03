@@ -15,7 +15,6 @@
 #include "../traversals/instantiate.h"
 #include "../traversals/updateSymbols.h"
 #include "../passes/preAnalysisCleanup.h"
-#include "../passes/applyGettersSetters.h"
 
 FnSymbol* chpl_main = NULL;
 Symbol *gNil = 0;

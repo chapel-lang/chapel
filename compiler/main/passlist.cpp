@@ -1,6 +1,5 @@
 #include "passes.h"
 
-#include "../passes/applyGettersSetters.h"
 #include "../passes/buildDefaultFunctions.h"
 #include "../passes/codegen.h"
 #include "../passes/createEntryPoint.h"
@@ -11,9 +10,7 @@
 #include "../passes/runAnalysis.h"
 #include "../passes/runInterpreter.h"
 
-#include "../symtab/codegenOne.h"
 #include "../symtab/copyPropagation.h"
-#include "../symtab/printSymtab.h"
 #include "../symtab/resolveTypes.h"
 
 #include "../traversals/buildClassHierarchy.h"
@@ -43,7 +40,6 @@
    the pass above.  */
 
 START_PASSLIST_REGISTRATION
-REGISTER(applyGettersSetters);
 REGISTER(buildClassHierarchy);
 REGISTER(buildDefaultFunctions);
 REGISTER(check_parsed);
@@ -51,7 +47,6 @@ REGISTER(check_normalized);
 REGISTER(check_resolved);
 REGISTER(cleanup);
 REGISTER(codegen);
-REGISTER(codegenOne);
 REGISTER(copyPropagation);
 REGISTER(createConfigVarTable);
 REGISTER(createEntryPoint);
@@ -59,7 +54,6 @@ REGISTER(createNestedFuncIterators);
 REGISTER(fixup);
 REGISTER(functionResolution);
 REGISTER(getStuff);
-REGISTER(htmlView);
 REGISTER(inlineFunctions);
 REGISTER(insertFunctionTemps);
 REGISTER(insertVariableInitializations);
@@ -70,7 +64,6 @@ REGISTER(preAnalysisCleanup);
 REGISTER(pre_instantiate);
 REGISTER(printAST);        // BLC: pretty-prints all or part of the AST
 REGISTER(printProgram);    // BLC: pretty-prints the whole program
-REGISTER(printSymtab);
 REGISTER(processImportExprs);
 REGISTER(processParameters); // BLC: handle parameter intents
 REGISTER(removeNamedParameters);
@@ -85,5 +78,7 @@ REGISTER(runInterpreter);
 REGISTER(scopeResolve);
 REGISTER(transformLetExprs);
 REGISTER(verify);
-REGISTER(view);
+
+REGISTER(view);                       // debug passes
+REGISTER(htmlView);
 STOP_PASSLIST_REGISTRATION

@@ -36,7 +36,7 @@ extern char system_dir[FILENAME_MAX];
 extern int print_call_depth;
 
 extern int debugParserLevel;
-extern bool suppressCodegen;
+extern bool no_codegen;
 extern bool developer;
 extern int num_constants_per_variable;
 

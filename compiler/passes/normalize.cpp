@@ -30,6 +30,7 @@ static void hack_domain_constructor_call(CallExpr* call);
 static void hack_seqcat_call(CallExpr* call);
 static void hack_typeof_call(CallExpr* call);
 static void hack_resolve_types(Expr* expr);
+static void apply_getters_setters(BaseAST* ast);
 
 void normalize(void) {
   Vec<FnSymbol*> fns;
@@ -108,6 +109,17 @@ void normalize(void) {
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
       insert_call_temps(a);
+    }
+  }
+
+
+  asts.clear();
+  collect_asts_postorder(&asts);
+  forv_Vec(BaseAST, ast, asts) {
+    if (FnSymbol* a = dynamic_cast<FnSymbol*>(ast)) {
+      if (!(a->_setter || a->_getter ||
+            (!no_infer && a->fnClass == FN_CONSTRUCTOR)))
+        apply_getters_setters(a);
     }
   }
 }
@@ -607,4 +619,74 @@ static void hack_resolve_types(Expr* expr) {
       }
     }
   }
+}
+
+
+#define REPLACE(_x)              \
+  do {                           \
+    BaseAST* replacement = _x;   \
+    ast->replace(replacement);   \
+    ast = replacement;           \
+    goto Ldone;                  \
+  } while (0)
+
+
+static void apply_getters_setters(BaseAST* ast) {
+  // Most generally:
+  //   x.f(1) = y ---> f(_mt, x, 1, _st, y)
+  // or
+  //   CallExpr(=, CallExpr(MemberAccess(x, "f"), 1), y) --->
+  //     CallExpr("f", _mt, x, 1, _st, y)
+  // though, it could be just
+  //           a MemberAccess without a CallExpr
+  //           a CallExpr without a MemberAccess
+  // SJD: Commment needs to be updated with PARTIAL_OK
+  CallExpr *call = dynamic_cast<CallExpr*>(ast), *assign = 0;
+  if (call && call->isAssign()) {
+    assign = call;
+    call = dynamic_cast<CallExpr*>(assign->get(1));
+  }
+  BaseAST *base = call ? call->baseExpr : (assign ? assign->get(1) : ast);
+  if (MemberAccess* memberAccess = dynamic_cast<MemberAccess*>(base)) {
+    Expr *rhs = assign ? assign->argList->get(2)->copy() : 0;
+    // build the main accessor/setter
+    if ((call && !call->argList->isEmpty())) {
+      CallExpr *lhs = new CallExpr(memberAccess->member->name, 
+                                   methodToken,
+                                   memberAccess->base->copy());
+      lhs->partialTag = PARTIAL_OK;
+      AList<Expr>* arguments = call ? call->argList->copy() : new AList<Expr>;
+      if (rhs) {
+        arguments->insertAtTail(new SymExpr(setterToken));
+        arguments->insertAtTail(rhs);
+      }
+      lhs = new CallExpr(lhs, arguments);
+      REPLACE(lhs);
+    } else {
+      AList<Expr>* arguments = call ? call->argList->copy() : new AList<Expr>;
+      arguments->insertAtHead(memberAccess->base->copy());
+      arguments->insertAtHead(new SymExpr(methodToken));
+      if (rhs) {
+        arguments->insertAtTail(new SymExpr(setterToken));
+        arguments->insertAtTail(rhs);
+      }
+      REPLACE(new CallExpr(memberAccess->member->name, arguments));
+    }
+  } 
+  if (assign) {
+    Expr *rhs = assign->argList->get(2)->copy();
+    if (call) {
+      AList<Expr>* arguments = call->argList->copy();
+      arguments->insertAtTail(new SymExpr(setterToken));
+      arguments->insertAtTail(rhs);
+      REPLACE(new CallExpr(call->baseExpr->copy(), arguments));
+    } else
+      REPLACE(new CallExpr("=", assign->argList->get(1)->copy(), rhs));
+  } 
+ Ldone:
+  // top down, on the modified AST
+  Vec<BaseAST *> asts;
+  get_ast_children(ast, asts);
+  forv_BaseAST(a, asts)
+    apply_getters_setters(a);
 }

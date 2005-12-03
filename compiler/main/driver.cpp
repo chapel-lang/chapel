@@ -34,7 +34,7 @@ bool formalTemps = false;
 bool checkAnalysisTypeinfo = false;
 bool preinstantiate = true;
 bool no_infer = false;
-bool suppressCodegen = false;
+bool no_codegen = false;
 int debugParserLevel = 0;
 bool developer = false;
 bool ignore_errors = false;
@@ -101,7 +101,7 @@ static ArgumentDescription arg_desc[] = {
  {"check-typeinfo", ' ', "Check result of type_info and return_type_info", "F", &checkAnalysisTypeinfo, NULL, NULL},
  {"nopreinstantiate", ' ', "Do not instantiate before analysis", "f", &preinstantiate, NULL, NULL},
  {"tmpMangling", ' ', "Name mangling toggle", "F", &_adhoc_to_uniform_mangling, "CHPL_ADHOC_TO_UNIFORMA_MANGLING", NULL},
- {"no-codegen", ' ', "Suppress code generation", "F", &suppressCodegen, "CHPL_NO_CODEGEN", NULL},
+ {"no-codegen", ' ', "Suppress code generation", "F", &no_codegen, "CHPL_NO_CODEGEN", NULL},
  {"newvardef", ' ', "New Var Def code", "T", &fnewvardef, "CHPL_NEWVARDEF", NULL},
  {"equal-method", ' ', "= is a method", "T", &f_equal_method, "CHPL_EQUAL_METHOD", NULL},
  {"parser-debug", 'D', "Parser Debug Level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},

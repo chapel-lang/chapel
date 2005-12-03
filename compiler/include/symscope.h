@@ -51,15 +51,10 @@ class SymScope : public gc {
   void define(Symbol* sym);
   void undefine(Symbol* sym);
 
-  void print(FILE* outfile = stdout, bool tableOrder = false);
+  void dump_only();
+  void dump();
 
   int parentLength(void);
-
-  // these are "private"
-  char* indentStr(void);
-  void printHeader(FILE* outfile);
-  void printSymbols(FILE* outfile, bool tableOrder);
-  void printFooter(FILE* outfile);
 
   void codegen(FILE* outfile, char* separator);
   void codegenFunctions(FILE* outfile);

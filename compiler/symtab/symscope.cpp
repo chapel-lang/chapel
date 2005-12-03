@@ -155,110 +155,57 @@ int SymScope::parentLength(void) {
 }
 
 
-char* SymScope::indentStr(void) {
+static void print_indent(SymScope* scope) {
   static char* spaces = "                                                     "
                         "                                                     ";
-  int printLevel = parentLength();
-  int maxspaces = strlen(spaces);
-  int offset = maxspaces-(2*printLevel);
-  if (offset < 0) {
+  int offset = strlen(spaces) - 2*scope->parentLength();
+  if (offset < 0)
     offset = 0;
-  }
-
-  return spaces + offset;
+  printf("%s", spaces + offset);
 }
 
 
-static bool printEmpty = false;
+void SymScope::dump_only(void) {
+  if (isEmpty())
+    return;
 
-
-void SymScope::printHeader(FILE* outfile) {
-  char* indent = indentStr();
-  fprintf(outfile, "%s======================================================\n",
-          indent);
-  fprintf(outfile, "%sSCOPE: ", indent);
-  switch (type) {
-  case SCOPE_INTRINSIC:
-    fprintf(outfile, "intrinsic");
-    break;
-  case SCOPE_PRELUDE:
-    fprintf(outfile, "prelude");
-    break;
-  case SCOPE_MODULE:
-    fprintf(outfile, "module");
-    break;
-  case SCOPE_ARG:
-    fprintf(outfile, "formal arguments");
-    break;
-  case SCOPE_LOCAL:
-    fprintf(outfile, "local");
-    break;
-  case SCOPE_FORLOOP:
-    fprintf(outfile, "for loop");
-    break;
-  case SCOPE_LETEXPR:
-    fprintf(outfile, "let expression");
-    break;
-  case SCOPE_CLASS:
-    fprintf(outfile, "class");
-    break;
-  case SCOPE_POSTPARSE:
-    fprintf(outfile, "post parsing");
-    break;
-  }
-  if (Symbol* symParent = dynamic_cast<Symbol*>(astParent)) {
-    fprintf(outfile, " ");
-    symParent->print(outfile);
-  }
-  if (astParent) {
-    fprintf(outfile, " (%s)", astParent->stringLoc());
-  }
-  fprintf(outfile, "\n");
-
-  fprintf(outfile, "%s------------------------------------------------------\n",
-          indent);
-}
-
-
-void SymScope::printSymbols(FILE* outfile, bool tableOrder) {
-  char* indent = indentStr();
-  Vec<Symbol*> tableOrderSymbols;
-  Vec<Symbol*>* psymbols;
-  if (tableOrder) {
-    table.get_values(tableOrderSymbols);
-    psymbols = &tableOrderSymbols;
-  } else {
-    psymbols = &symbols;
-  }
-  forv_Vec(Symbol, sym, *psymbols) {
+  print_indent(this);
+  printf("=================================================================\n");
+  print_indent(this);
+  printf("SCOPE:");
+  if (astParent)
+    printf(" %s", astTypeName[astParent->astType]);
+  if (Symbol* sym = dynamic_cast<Symbol*>(astParent))
+    printf(" %s", sym->name);
+  if (astParent && astParent->lineno > 0)
+    printf(" (%s)", astParent->stringLoc());
+  printf("\n");
+  print_indent(this);
+  printf("-----------------------------------------------------------------\n");
+  forv_Vec(Symbol, sym, symbols) {
     if (sym) {
-      fprintf(outfile, "%s", indent);
-      sym->print(outfile);
-      fprintf(outfile, " (");
+      print_indent(this);
+      printf("%s (", sym->name);
       for (Symbol* tmp = sym; tmp; tmp = tmp->overload) {
-        fprintf(outfile, "%s", tmp->cname);
-        if (tmp->overload) fprintf(outfile, ", ");
+        printf("%s", tmp->cname);
+        if (tmp->overload)
+          printf(", ");
       }
-      fprintf(outfile, ")\n");
+      printf(")\n");
     }
   }
+  print_indent(this);
+  printf("=================================================================\n");
 }
 
 
-void SymScope::printFooter(FILE* outfile) {
-  char* indent = indentStr();
-  fprintf(outfile, "%s======================================================\n",
-          indent);
-}
-
-
-void SymScope::print(FILE* outfile, bool tableOrder) {
-  if (!isEmpty() && !printEmpty) {
-    printHeader(outfile);
-    printSymbols(outfile, tableOrder);
-    printFooter(outfile);
+void SymScope::dump(void) {
+  dump_only();
+  for(SymScope* tmp = child; tmp; tmp = tmp->sibling) {
+    tmp->dump();
   }
 }
+
 
 void SymScope::codegen(FILE* outfile, char* separator) {
   if (type > SCOPE_MODULE) { // Because initFn has modScope

@@ -2,7 +2,6 @@
 #include "driver.h"
 #include "expr.h"
 #include "misc.h"
-#include "printSymtab.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symtab.h"
@@ -482,27 +481,6 @@ DefExpr* Symboltable::defineStructType(char* name, // NULL = anonymous
   DefExpr* defExpr = new DefExpr(sym);
   structType->addDeclarations(def);
   return defExpr;
-}
-
-
-static void printHelp(FILE* outfile, SymScope* aScope) {
-  if (aScope == NULL) {
-    return;
-  } else {
-    printHelp(outfile, aScope->parent);
-    aScope->print(outfile);
-  }
-}
-
-
-void Symboltable::print(FILE* outfile) {
-  printHelp(outfile, currentScope);
-}
-
-
-void Symboltable::dump(FILE* outfile) {
-  PrintSymtab* printit = new PrintSymtab(outfile);
-  printit->run(NULL);
 }
 
 
