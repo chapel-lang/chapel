@@ -50987,3 +50987,36 @@ Modified files:
 	chapel/test/flowanalysis/newast/: enum.good sum_type-1.good 
 	                                  sum_type-2.good 
 
+---------------------------------------------------------------------------
+
+12/02/05 20:05:46 -- deitz
+
+Log message:
+	Replaced Symboltable::dump() etc. which used a SymtabTraversal.
+	SymScope::dump() prints out the contents of the scope and all nested
+	scopes.  SymScope::dump_only() prints out the contents of the scope
+	but not its nested scopes.  I also made some improvements to them
+	possible because of new AST features.
+	
+	Folded ApplyGettersSetters into normalization pass, completing the
+	normalization pass.  I have a little more cleanup to make it callable
+	on newly created AST.
+	
+	Folded CodegenOne pass, a pass that codegened the header, into
+	codegen, in a function called codegen_header.  This fixes the
+	--no-codegen flag which used to not suppress code generation of the
+	header.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: driver.h symscope.h symtab.h 
+	chapel/compiler/main/: driver.cpp passlist.cpp passlist.h 
+	chapel/compiler/passes/: Makefile.share codegen.cpp 
+	                         normalize.cpp 
+	chapel/compiler/symtab/: Makefile.share symscope.cpp symtab.cpp 
+Removed files:
+	chapel/compiler/passes/: applyGettersSetters.cpp 
+	                         applyGettersSetters.h 
+	chapel/compiler/symtab/: codegenOne.cpp codegenOne.h 
+	                         printSymtab.cpp printSymtab.h 
+
