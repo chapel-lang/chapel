@@ -51084,3 +51084,15 @@ Added files:
 	chapel/test/types/file/: freadComplex.chpl freadComplex.good 
 	                         freadComplex.txt 
 
+---------------------------------------------------------------------------
+
+12/05/05 14:49:22 -- shannon
+
+Log message:
+	Updated test output changed by last commit.
+
+Modified files:
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+
