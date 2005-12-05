@@ -16,7 +16,6 @@
 #include "../traversals/updateSymbols.h"
 
 class Traversal;
-class SymtabTraversal;
 
 template <class elemType>
 class AList : public BaseAST {
@@ -77,7 +76,6 @@ class AList : public BaseAST {
   // traversals
   void traverse(Traversal* traversal, bool atTop);
   void traverseDef(Traversal* traversal, bool atTop);
-  void traverse(SymtabTraversal* traversal);
 
   // convert list to vector
   void getElements(Vec<elemType*>& elements);
@@ -499,14 +497,6 @@ template <class elemType>
 void AList<elemType>::traverseDef(Traversal* traversal, bool atTop) {
   _for_all_elems(node) {
     node->traverseDef(traversal, false);
-  }
-}
-
-
-template <class elemType>
-void AList<elemType>::traverse(SymtabTraversal* traversal) {
-  _for_all_elems(node) {
-    node->traverse(traversal);
   }
 }
 

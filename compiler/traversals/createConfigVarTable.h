@@ -3,10 +3,8 @@
 
 #include "files.h"
 #include "traversal.h"
-#include "../symtab/symtabTraversal.h"
 
-
-class CreateConfigVarTable : public SymtabTraversal {
+class CreateConfigVarTable : public Traversal {
  public:
   static bool running;
   fileinfo outfileinfo;
@@ -15,7 +13,7 @@ class CreateConfigVarTable : public SymtabTraversal {
 
   CreateConfigVarTable(void);
 
-  void processSymbol(Symbol* sym);
+  void postProcessExpr(Expr* expr);
 
   void closeCFile(void);
 

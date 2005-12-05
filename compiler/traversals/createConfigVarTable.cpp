@@ -20,17 +20,19 @@ CreateConfigVarTable::CreateConfigVarTable(void) {
 }
 
 
-void CreateConfigVarTable::processSymbol(Symbol* symbol) {
-  codefile = outfileinfo.fptr;
+void CreateConfigVarTable::postProcessExpr(Expr* expr) {
+  if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
+    codefile = outfileinfo.fptr;
 
-  VarSymbol* var = dynamic_cast<VarSymbol*>(symbol);
+    VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym);
 
-  if (var && var->varClass == VAR_CONFIG) {
-    char* moduleName = dynamic_cast<Symbol*>(var->parentScope->astParent)->name;
-    fprintf(codefile, "installConfigVar(\"%s\", \"", var->name);
-    var->defPoint->init->print(codefile);
-    fprintf(codefile, "\", \"%s\");\n", moduleName);
-  }  
+    if (var && var->varClass == VAR_CONFIG) {
+      char* moduleName = dynamic_cast<Symbol*>(var->parentScope->astParent)->name;
+      fprintf(codefile, "installConfigVar(\"%s\", \"", var->name);
+      var->defPoint->init->print(codefile);
+      fprintf(codefile, "\", \"%s\");\n", moduleName);
+    }
+  }
 }
 
 
@@ -53,7 +55,7 @@ void CreateConfigVarTable::closeCFile() {
 
 void CreateConfigVarTable::run(Vec<ModuleSymbol*>* modules) {
   CreateConfigVarTable::running = true;
-  SymtabTraversal::run(modules);
+  Traversal::run(modules);
   CreateConfigVarTable::running = false;
 }
 

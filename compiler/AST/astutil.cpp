@@ -147,3 +147,21 @@ void compute_call_sites() {
   Pass* pass = new ComputeCallSites();
   pass->run(Symboltable::getModules(MODULES_ALL));
 }
+
+
+void clear_type_info(BaseAST* base) {
+  Vec<BaseAST*> asts;
+  collect_asts(&asts, base);
+  forv_Vec(BaseAST, ast, asts) {
+    if (DefExpr* defExpr = dynamic_cast<DefExpr*>(ast)) {
+      defExpr->sym->type = dtUnknown;
+
+      if (FnSymbol* fn = dynamic_cast<FnSymbol*>(defExpr->sym)) {
+        for_alist(DefExpr, tmp, fn->formals) {
+          tmp->sym->type = dtUnknown;
+        }
+        fn->retType = dtUnknown;
+      }
+    }
+  }
+}

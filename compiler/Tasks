@@ -13,10 +13,6 @@ TODOS:
 
 * (Steve) remove post-process symbol/type
 
-* (Steve) remove SymtabTraversal pass -- replace with function call
-   that calls collect symbols?  - maintain the ability to pretty-print
-   Symboltable
-
 * (Steve) put all traversal interfaces into traversal.h, all pass
    interfaces into pass.h rather than having a header for each of
    these things.
@@ -25,9 +21,6 @@ TODOS:
    unifying/regrouping initial passes; "verify canonical form" pass;
    automatically have things that are inserted which are not in the
    canonical form converted into the canonical form automagically.
-
-* (Steve) optag change in CallExprs -- only store OP_ field once we've
-   determined it's a built-in function
 
 * explore switching to Subversion
 
@@ -168,3 +161,10 @@ X (John) add means of iterating over ALists using an external cursor
 
 X (Steve) switch passlist to list of function pointers; wrap current
    Pass classes in functions
+
+X (Steve) remove SymtabTraversal pass -- replace with function call
+   that calls collect symbols?  - maintain the ability to pretty-print
+   Symboltable
+
+X (Steve) optag change in CallExprs -- only store OP_ field once we've
+   determined it's a built-in function

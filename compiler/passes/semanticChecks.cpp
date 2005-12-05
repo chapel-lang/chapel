@@ -55,11 +55,12 @@ check_returns(FnSymbol* fn) {
 
 void
 check_parsed(void) {
-  Vec<Symbol*> syms;
-  collect_symbols(&syms);
-  forv_Vec(Symbol, sym, syms) {
-    check_redefinition(sym);
-    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym))
+  Vec<BaseAST*> asts;
+  collect_asts(&asts);
+  forv_Vec(BaseAST, ast, asts) {
+    if (Symbol* sym = dynamic_cast<Symbol*>(ast))
+      check_redefinition(sym);
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast))
       check_returns(fn);
   }
 }

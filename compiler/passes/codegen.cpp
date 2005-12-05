@@ -60,9 +60,12 @@ static void codegen_header(void) {
       fn->defPoint->parentStmt->remove();
   }
 
-  Vec<Symbol*> syms;
-  collect_symbols(&syms);
-  forv_Vec(Symbol, sym, syms) {
+  Vec<BaseAST*> asts;
+  collect_asts(&asts);
+  forv_Vec(BaseAST, ast, asts) {
+    Symbol* sym = dynamic_cast<Symbol*>(ast);
+    if (!sym)
+      continue;
     if (sym->name == sym->cname)
       sym->cname = stringcpy(sym->name);
 

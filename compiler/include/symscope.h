@@ -18,7 +18,6 @@ enum scopeType {
   SCOPE_CLASS,
 };
 
-class SymtabTraversal;
 class ScopeLookupCache;
 
 class SymScope : public gc {
@@ -43,8 +42,6 @@ class SymScope : public gc {
 
   SymScope(scopeType init_type);
   void setASTParent(BaseAST* ast);
-
-  void traverse(SymtabTraversal* traversal);
 
   bool isEmpty(void);
 

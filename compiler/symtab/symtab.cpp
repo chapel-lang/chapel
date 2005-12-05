@@ -482,26 +482,3 @@ DefExpr* Symboltable::defineStructType(char* name, // NULL = anonymous
   structType->addDeclarations(def);
   return defExpr;
 }
-
-
-static void traverseSymtab(SymtabTraversal* traversal, SymScope* scope) {
-  if (scope != NULL) {
-    scope->traverse(traversal);
-    traverseSymtab(traversal, scope->child);
-    traverseSymtab(traversal, scope->sibling);
-  }
-}
-
-
-void Symboltable::traverse(SymtabTraversal* traversal) {
-  traverseSymtab(traversal, rootScope);
-}
-
-
-void Symboltable::traverseFromScope(SymtabTraversal* traversal,
-                                    SymScope* scope) {
-  if (scope != NULL) {
-    scope->traverse(traversal);
-    traverseSymtab(traversal, scope->child);
-  }
-}

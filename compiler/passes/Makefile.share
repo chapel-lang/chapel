@@ -2,6 +2,7 @@ PASSES_SRCS = \
         buildDefaultFunctions.cpp \
         cleanup.cpp \
 	codegen.cpp \
+        copy_propagation.cpp \
 	createEntryPoint.cpp \
 	filesToAST.cpp \
         functionResolution.cpp \

@@ -1,10 +1,6 @@
 SYMTAB_SRCS = \
-	collectSymbols.cpp \
-        copyPropagation.cpp \
-        resolveTypes.cpp \
 	symscope.cpp \
-        symtab.cpp \
-	symtabTraversal.cpp
+        symtab.cpp
 
 CVS_SRCS = $(SYMTAB_SRCS)
 SRCS = $(CVS_SRCS)

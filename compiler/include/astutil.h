@@ -16,3 +16,6 @@ void reset_file_info(BaseAST* baseAST, int lineno, char* filename);
 
 // compute call sites FnSymbol::calls
 void compute_call_sites();
+
+// clear type and retTypes
+void clear_type_info(BaseAST* baseAST);

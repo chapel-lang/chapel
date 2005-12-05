@@ -163,17 +163,6 @@ typedef MapElem<BaseAST*,BaseAST*> ASTMapElem;
 
 #define forv_BaseAST(_p, _v) forv_Vec(BaseAST, _p, _v)
 
-class FnSymbol;
-
-void collect_symbols(Vec<Symbol*>* syms);
-void collect_symbols(Vec<Symbol*>* syms, FnSymbol* function);
-void collect_symbols(Vec<Symbol*>* syms, Type* type);
-// USAGE:
-//   Vec<Symbol*> all_syms;
-//   collect_symbols(&all_syms);
-//   FnSymbol* function = ...;
-//   collect_symbols(&all_syms, function);
-
 int compar_baseast(const void *ai, const void *aj);
 // for use with qsort
 

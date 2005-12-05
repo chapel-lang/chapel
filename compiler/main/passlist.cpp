@@ -10,15 +10,11 @@
 #include "../passes/runAnalysis.h"
 #include "../passes/runInterpreter.h"
 
-#include "../symtab/copyPropagation.h"
-#include "../symtab/resolveTypes.h"
-
 #include "../traversals/buildClassHierarchy.h"
 #include "../traversals/createConfigVarTable.h"
 #include "../traversals/createNestedFuncIterators.h"
 #include "../traversals/findUnknownTypes.h"
 #include "../traversals/fixup.h"
-#include "../traversals/getstuff.h"
 #include "../traversals/htmlview.h"
 #include "../traversals/inlineFunctions.h"
 #include "../traversals/insertFunctionTemps.h"
@@ -47,13 +43,12 @@ REGISTER(check_normalized);
 REGISTER(check_resolved);
 REGISTER(cleanup);
 REGISTER(codegen);
-REGISTER(copyPropagation);
+REGISTER(copy_propagation);
 REGISTER(createConfigVarTable);
 REGISTER(createEntryPoint);
 REGISTER(createNestedFuncIterators);
 REGISTER(fixup);
 REGISTER(functionResolution);
-REGISTER(getStuff);
 REGISTER(inlineFunctions);
 REGISTER(insertFunctionTemps);
 REGISTER(insertVariableInitializations);
@@ -72,7 +67,6 @@ REGISTER(removeTypeVariableActuals);
 REGISTER(removeTypeVariableFormals);
 REGISTER(resolve_analyzed);
 REGISTER(resolveSymbols);       // SJD: Resolve symbols after analysis
-REGISTER(resolveTypes);
 REGISTER(runAnalysis);
 REGISTER(runInterpreter);
 REGISTER(scopeResolve);

@@ -14,7 +14,6 @@ PassInfo passlist[] = {
 
   RUN(parse),
   RUN(check_parsed), // checks semantics of parsed AST
-
   RUN(createEntryPoint), // fold into cleanup -- builds init fn for modules
   RUN(processImportExprs), // fold into cleanup -- expands with and use
   RUN(buildClassHierarchy), // fold into cleanup -- handles inheritance
@@ -49,7 +48,6 @@ PassInfo passlist[] = {
   RUN(runAnalysis),
 
   RUN(resolve_analyzed),
-  RUN(resolveTypes),        // fold into resolve analysis
   RUN(resolveSymbols),      // fold into resolve analysis
 
   RUN(functionResolution),
@@ -72,7 +70,7 @@ PassInfo passlist[] = {
   RUN(inlineFunctions),
   RUN(insertVariableInitializations),
 
-  RUN(copyPropagation),
+  RUN(copy_propagation),
 
   RUN(codegen),
 

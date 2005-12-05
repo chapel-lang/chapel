@@ -1,6 +1,7 @@
 #include "geysa.h"
 #include <string.h>
 #include <typeinfo>
+#include "astutil.h"
 #include "verify.h"
 #include "fixup.h"
 #include "expr.h"
@@ -10,14 +11,8 @@
 #include "symtab.h"
 
 
-static bool removeVerifySymbol(Vec<Symbol*>* syms, Symbol* sym);
 static void verifyDefPoint(Symbol* sym);
 static void verifyParentScope(Symbol* sym);
-
-
-Verify::Verify() :
-  syms(NULL)
-{ }
 
 
 void Verify::preProcessStmt(Stmt* stmt){
@@ -44,9 +39,6 @@ void Verify::preProcessExpr(Expr* expr){
         INT_FATAL(typeSym->definition, "Type has parentSymbol set");
       }
     }
-    if (!removeVerifySymbol(syms, defExpr->sym)) {
-      INT_FATAL(defExpr, "Symbol in DefExpr not in Symboltable");
-    }
   }
 }
 
@@ -55,21 +47,20 @@ void Verify::run(Vec<ModuleSymbol*>* modules) {
   Fixup* fixup = new Fixup(true);
   fixup->run(modules);
 
-  syms = new Vec<Symbol*>();
-  collect_symbols(syms);
-  forv_Vec(Symbol, sym, *syms) {
-    verifyParentScope(sym);
-    verifyDefPoint(sym);
-    if (!sym->isUnresolved) {
-      if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(sym)) {
-        if (ts->type->astType != TYPE_META) {
-          INT_FATAL(sym, "TypeSymbol::type is not a MetaType");
-        }
-        if (ts->definition->symbol != sym) {
-          INT_FATAL(sym, "TypeSymbol::definition->symbol is not TypeSymbol");
-        }
-        if (ts->definition->metaType != sym->type) {
-          INT_FATAL(sym, "TypeSymbol::definition->meta_type is not TypeSymbol::type");
+  Vec<BaseAST*> asts;
+  collect_asts(&asts);
+  forv_Vec(BaseAST, ast, asts) {
+    if (Symbol* sym = dynamic_cast<Symbol*>(ast)) {
+      if (!sym->isUnresolved) {
+        verifyParentScope(sym);
+        verifyDefPoint(sym);
+        if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(sym)) {
+          if (ts->type->astType != TYPE_META)
+            INT_FATAL(sym, "TypeSymbol::type is not a MetaType");
+          if (ts->definition->symbol != sym)
+            INT_FATAL(sym, "TypeSymbol::definition->symbol is not TypeSymbol");
+          if (ts->definition->metaType != sym->type)
+            INT_FATAL(sym, "TypeSymbol::definition->meta_type is not TypeSymbol::type");
         }
       }
     }
@@ -78,33 +69,6 @@ void Verify::run(Vec<ModuleSymbol*>* modules) {
   forv_Vec(ModuleSymbol, mod, *modules) {
     mod->startTraversal(this);
   }
-
-  forv_Vec(Symbol, sym, *syms) {
-    if (!sym ||
-        sym->parentScope->type == SCOPE_INTRINSIC ||
-        dynamic_cast<ModuleSymbol*>(sym)) {
-      continue;
-    }
-    TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(sym);
-    if (typeSym) {
-      if (dynamic_cast<VariableType*>(typeSym->definition) ||
-          dynamic_cast<SumType*>(typeSym->definition)) {
-        continue;
-      }
-    }
-    INT_FATAL(sym, "Symbol %s not in traversed DefExpr", sym->name);
-  }
-}
-
-
-static bool removeVerifySymbol(Vec<Symbol*>* syms, Symbol* sym) {
-  for (int i = 0; i < syms->n; i++) {
-    if (sym == syms->v[i]) {
-      syms->v[i] = NULL;
-      return true;
-    }
-  }
-  return false;
 }
 
 
@@ -112,16 +76,8 @@ static bool removeVerifySymbol(Vec<Symbol*>* syms, Symbol* sym) {
  **  Verify that Symbol::parentScope is correct
  **/
 static void verifyParentScope(Symbol* sym) {
-  /**
-   **  Unresolved symbols have no scope
-   **/
-  if (sym->isUnresolved) {
+  if (!sym->parentScope)
     return;
-  }
-
-  if (!sym->parentScope) {
-    return;
-  }
 
   /** 
    **  Symbol is a constant
@@ -157,21 +113,11 @@ static void verifyParentScope(Symbol* sym) {
  **  Verify that Symbol::defPoint is correct
  **/
 static void verifyDefPoint(Symbol* sym) {
-  if (sym->isUnresolved ||
-      dynamic_cast<TypeSymbol*>(sym) ||
-      dynamic_cast<SumType*>(sym->type)) {     // SJD: REMOVE
+  if (sym->parentScope && sym->parentScope->type == SCOPE_INTRINSIC)
     return;
-  }
 
-  if (sym->parentScope && sym->parentScope->type == SCOPE_INTRINSIC) {
-    return;
-  }
-
-  Symbol* tmp = sym->defPoint->sym;
-  if (tmp == sym) {
-    return;
-  }
-  INT_FATAL(sym, "Incorrect defPoint for symbol '%s'", sym->name);
+  if (sym != sym->defPoint->sym)
+    INT_FATAL(sym, "Incorrect defPoint for symbol '%s'", sym->name);
 }
 
 

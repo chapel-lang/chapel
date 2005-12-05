@@ -4,7 +4,6 @@
 #include "stringutil.h"
 #include "symscope.h"
 #include "symtab.h"
-#include "symtabTraversal.h"
 #include "../passes/filesToAST.h"
 #include "../passes/runAnalysis.h"
 #include "files.h"
@@ -58,26 +57,6 @@ SymScope::SymScope(scopeType init_type) :
 
 void SymScope::setASTParent(BaseAST* ast) {
   astParent = ast;
-}
-
-
-void SymScope::traverse(SymtabTraversal* traversal) {
-  SymScope* prevScope = Symboltable::setCurrentScope(this);
-
-  traversal->preProcessScope(this);
-
-  forv_Vec(Symbol, sym, symbols) {
-    Symbol* overload = sym;
-    while (overload) {
-      Symbol* next = overload->overload;
-      traversal->processSymbol(overload);
-      overload = next;
-    }
-  }
-
-  traversal->postProcessScope(this);
-
-  Symboltable::setCurrentScope(prevScope);
 }
 
 

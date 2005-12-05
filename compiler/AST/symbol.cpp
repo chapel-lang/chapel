@@ -1,4 +1,5 @@
 #include <typeinfo>
+#include "astutil.h"
 #include "analysis.h"
 #include "files.h"
 #include "misc.h"
@@ -9,7 +10,6 @@
 #include "symtab.h"
 #include "astutil.h"
 #include "../traversals/buildClassHierarchy.h"
-#include "../traversals/clearTypes.h"
 #include "../traversals/createConfigVarTable.h"
 #include "../traversals/findTypeVariables.h"
 #include "../traversals/instantiate.h"
@@ -742,8 +742,8 @@ FnSymbol* FnSymbol::clone(ASTMap* map) {
     defExpr->sym->cname = stringcat("_clone_", cname);
   }
   defPoint->parentStmt->insertAfter(copyStmt);
-  TRAVERSE(copyStmt, new ClearTypes(), true);
-  TRAVERSE(defPoint, new ClearTypes(), true);
+  clear_type_info(copyStmt);
+  clear_type_info(defPoint);
   defExpr->sym->addPragmas(&pragmas);
   return dynamic_cast<FnSymbol*>(defExpr->sym);
 }

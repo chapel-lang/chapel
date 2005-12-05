@@ -1,13 +1,10 @@
 TRAVERSALS_SRCS = \
         buildClassHierarchy.cpp \
-        clearTypes.cpp \
-	collectASTS.cpp \
 	createConfigVarTable.cpp \
         createNestedFuncIterators.cpp \
         findTypeVariables.cpp \
 	findUnknownTypes.cpp \
 	fixup.cpp \
-	getstuff.cpp \
         htmlview.cpp \
         inlineFunctions.cpp \
 	insertFunctionTemps.cpp \
