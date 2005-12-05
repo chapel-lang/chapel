@@ -51096,3 +51096,19 @@ Modified files:
 	                               record_type_hierarchy-3-error.good 
 	                               union_type_hierarchy-3-error.good 
 
+---------------------------------------------------------------------------
+
+12/05/05 15:07:52 -- jplevyak
+
+Log message:
+	Fix a bug in preAnalysisCleanup which could result in a endless loop.
+	Some work on the new nil semantics: removed old hack for uninitialized
+	  variables.
+	Futurized test of uninitialized variable and OUT parameter.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp pattern.cpp 
+	chapel/compiler/passes/: preAnalysisCleanup.cpp 
+Added files:
+	chapel/test/functions/jplevyak/: intent-9.future 
+
