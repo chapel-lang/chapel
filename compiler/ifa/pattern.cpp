@@ -250,40 +250,32 @@ Matcher::find_arg_matches(AVar *a, MPosition &ap, MPosition *acp, MPosition *acp
   a->arg_of_send.add(send);
   if (!all_positions || all_positions->set_in(acp)) {
     Vec<Fun *> funs;
-    if (!a->out->n) {
-      Vec<Fun *> new_funs;
-      Vec<Sym *> done;
-      pattern_match_sym(sym_unknown, acp, *local_matches, new_funs, out_of_position, done);
-      update_match_map(a, sym_unknown->abstract_type->v[0], acp, acpp, new_funs);
-      funs.set_union(new_funs);
-    } else {
-      forv_CreationSet(cs, *a->out) if (cs) {
-        Sym *sym = cs->sym;
-        if (a->var->sym->aspect) {
-          if (!a->var->sym->aspect->specializers.set_in(cs->sym) &&
-              (cs->sym != sym_null || !sym_object->specializers.set_in(a->var->sym->aspect)))
-            continue;
-          sym = a->var->sym->aspect;
-        }
-        Vec<Sym *> done;
-        Vec<Fun *> new_funs;
-        if (!pattern_match_sym(sym, acp, *local_matches, new_funs, out_of_position, done))
+    forv_CreationSet(cs, *a->out) if (cs) {
+      Sym *sym = cs->sym;
+      if (a->var->sym->aspect) {
+        if (!a->var->sym->aspect->specializers.set_in(cs->sym) &&
+            (cs->sym != sym_null || !sym_object->specializers.set_in(a->var->sym->aspect)))
           continue;
-        update_match_map(a, cs, acp, acpp, new_funs);
-        if (recurse && cs->vars.n) { // for recursive ap == app !! 
-          Vec<Fun *> rec_funs, tfuns, *rec_funs_p = &rec_funs;
-          tfuns.move(new_funs);
-          forv_Fun(f, tfuns) if (f) {
-            if (f->arg_syms.get(to_formal(acpp, match_map.get(f)))->is_pattern)
-              rec_funs.set_add(f);
-            else
-              new_funs.set_add(f);
-          }
-          find_all_matches(cs, cs->vars, &rec_funs_p, ap, out_of_position);
-          funs.set_union(rec_funs);
-        }
-        funs.set_union(new_funs);
+        sym = a->var->sym->aspect;
       }
+      Vec<Sym *> done;
+      Vec<Fun *> new_funs;
+      if (!pattern_match_sym(sym, acp, *local_matches, new_funs, out_of_position, done))
+        continue;
+      update_match_map(a, cs, acp, acpp, new_funs);
+      if (recurse && cs->vars.n) { // for recursive ap == app !! 
+        Vec<Fun *> rec_funs, tfuns, *rec_funs_p = &rec_funs;
+        tfuns.move(new_funs);
+        forv_Fun(f, tfuns) if (f) {
+          if (f->arg_syms.get(to_formal(acpp, match_map.get(f)))->is_pattern)
+            rec_funs.set_add(f);
+          else
+            new_funs.set_add(f);
+        }
+        find_all_matches(cs, cs->vars, &rec_funs_p, ap, out_of_position);
+        funs.set_union(rec_funs);
+      }
+      funs.set_union(new_funs);
     }
     if (!*local_matches) {
       *local_matches = new Vec<Fun *>(funs);

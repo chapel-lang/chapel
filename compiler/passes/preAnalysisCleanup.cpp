@@ -75,7 +75,7 @@ tagGenerics(FnSymbol *f) {
     f->genericSymbols.set_to_vec();
     qsort(f->genericSymbols.v, f->genericSymbols.n, sizeof(genericSymbols.v[0]), compar_baseast);
     if (int i = f->nestingDepth()) {
-      for (int j = 1; j <= i; i++) {
+      for (int j = 1; j <= i; j++) {
         FnSymbol *ff = f->nestingParent(i);
         changed = !ff->isGeneric || changed;
         genericSymbols.set_union(ff->genericSymbols);

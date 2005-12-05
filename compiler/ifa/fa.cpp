@@ -1837,6 +1837,14 @@ analyze_edge(AEdge *e_arg) {
   Vec<AEdge *> edges;
   make_entry_set(e_arg, edges);
   forv_AEdge(ee, edges) {
+    // verify that the filters are s
+    form_MPositionAVar(x, ee->args) {
+      if (!x->key->is_positional())
+        continue;
+      AType *filter = ee->match->formal_filters.get(x->key);
+      if (filter && type_intersection(x->value->out, filter) == bottom_type)
+        goto LnextEdge;
+    }
     form_MPositionAVar(x, ee->args) {
       if (!x->key->is_positional())
         continue;
@@ -1876,6 +1884,7 @@ analyze_edge(AEdge *e_arg) {
       add_send_constraints(ee->to);
       add_send_edges(ee);
     }
+  LnextEdge:;
   }
 }
 
