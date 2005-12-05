@@ -4,7 +4,7 @@ _chpl_adomain.chpl:50: fwrite, f : file, val : _adomain_lit
 _chpl_adomain.chpl:70: fwrite, f : file, x : _adomain
 _chpl_adomain.chpl:70: fwrite, f : file, x : _adomain
 _chpl_adomain.chpl:75: fwrite, f : file, val : _aarray_info
-_chpl_complex.chpl:11: fwrite, f : file, x : complex
+_chpl_complex.chpl:16: fwrite, f : file, x : complex
 _chpl_data.chpl:56: fwrite, f : file, val : _fdata
 _chpl_file.chpl:120: fwrite, f : file, val : int64
 _chpl_file.chpl:145: fwrite, f : file, val : float64

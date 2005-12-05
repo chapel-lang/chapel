@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -75,18 +76,27 @@ void _chpl_fread_string_help(FILE* fp, _string* val) {
 }
 
 
-void _chpl_read_complex(_complex128** val) {
-  char imaginaryI = 'i';
-  int numScans;
-  /* 
-     NOTE:  The imaginary "i" is stored and checked in the if statement below
-     to ensure that it has been entered directly after the second double of 
-     the complex number, with no intervening space.
-  */
-  numScans =
-    scanf("%lg  +  %lg%c", &((*val)->re), &((*val)->im), &imaginaryI);
-  if ((imaginaryI != 'i') || (numScans < 2)) {
-    char* message = "Incorrect format for complex numbers";
-    printError(message);
+int _readLitChar(FILE* fp, _string val, int ignoreWhiteSpace) {
+  int returnVal  = 0;
+  char inputVal  = ' ';
+  int charsMatch = 0;
+
+  if (ignoreWhiteSpace) {
+    while (isspace(inputVal)) {
+      returnVal = fscanf(fp, "%c", &inputVal);
+    }
+  } else {
+    returnVal = fscanf(fp, "%c", &inputVal);
   }
+
+  if (inputVal == *val) {
+    charsMatch = 1;
+  } else { 
+    returnVal = ungetc(inputVal, fp);
+    if (returnVal == EOF) {
+      char* message = _glom_strings(2, "ungetc in _readLitChar failed: ", strerror(errno));
+      printInternalError(message);
+    }
+  }
+  return charsMatch;
 }

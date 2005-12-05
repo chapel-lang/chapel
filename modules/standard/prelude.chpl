@@ -64,10 +64,6 @@ function _chpl_fread_string_help(f: CFILEPTR, inout val: string) : void {
          __primitive("read", val);
 }
 
-pragma "rename _chpl_read_complex" function read(inout x : complex) : void {
-         __primitive("read", x);
-}
-
 pragma "rename _chpl_tostring_boolean"
 function _tostring(x : boolean, format : string) : string {
          return __primitive("coerce", string, x);
@@ -86,6 +82,10 @@ function _tostring(x : float, format : string) : string {
 pragma "rename _chpl_tostring_complex"
 function _tostring(x : complex, format : string) : string {
          return __primitive("coerce", string, x);
+}
+
+function _readLitChar(f: CFILEPTR, val: string, ignoreWhiteSpace: integer) : void {
+         return __primitive("read", val);
 }
 
 -- intrinsic type values
