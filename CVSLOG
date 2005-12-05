@@ -51065,3 +51065,22 @@ Removed files:
 	                             collectASTS.cpp collectASTS.h 
 	                             getstuff.cpp getstuff.h 
 
+---------------------------------------------------------------------------
+
+12/05/05 13:41:51 -- shannon
+
+Log message:
+	Added the ability to read complex variables from a file.
+	Added a test and updated expected output for affected tests.
+
+Modified files:
+	chapel/modules/standard/: _chpl_complex.chpl prelude.chpl 
+	chapel/runtime/include/: chplio.h 
+	chapel/runtime/src/: chplio.c 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+Added files:
+	chapel/test/types/file/: freadComplex.chpl freadComplex.good 
+	                         freadComplex.txt 
+
