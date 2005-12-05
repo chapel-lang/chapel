@@ -51112,3 +51112,17 @@ Modified files:
 Added files:
 	chapel/test/functions/jplevyak/: intent-9.future 
 
+---------------------------------------------------------------------------
+
+12/05/05 15:13:02 -- shannon
+
+Log message:
+	Added a future test for passing a class data member
+	as an inout argument to a function.  The value set
+	in the function is not returned.
+
+Added files:
+	chapel/test/classes/shannon/: inoutClassDataMember.chpl 
+	                              inoutClassDataMember.future 
+	                              inoutClassDataMember.good 
+
