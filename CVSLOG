@@ -51020,3 +51020,48 @@ Removed files:
 	chapel/compiler/symtab/: codegenOne.cpp codegenOne.h 
 	                         printSymtab.cpp printSymtab.h 
 
+---------------------------------------------------------------------------
+
+12/05/05 10:20:40 -- deitz
+
+Log message:
+	Fixed insertion of SumTypes so that they have a DefExpr.
+	
+	Folded resolveTypes into resolveAnalyzed.
+	
+	Changed CreateConfigVarTable into a Traversal from a SymtabTraversal.
+	
+	Turned ClearTypes traversal into a simple function clear_type_info.
+	This is used on cloned functions.
+	
+	Removed verification code to make sure symboltable traversal traverses
+	same symbols as ast traversal.
+	
+	Removed symboltable traversal mechanism.
+	
+	Updated task list.
+
+Modified files:
+	chapel/compiler/: Tasks 
+	chapel/compiler/AST/: astutil.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: alist.h astutil.h baseAST.h passes.h 
+	                          symscope.h symtab.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/passes/: Makefile.share codegen.cpp 
+	                         resolveAnalyzed.cpp semanticChecks.cpp 
+	chapel/compiler/symtab/: Makefile.share symscope.cpp symtab.cpp 
+	chapel/compiler/traversals/: Makefile.share 
+	                             createConfigVarTable.cpp 
+	                             createConfigVarTable.h verify.cpp 
+	                             verify.h 
+Added files:
+	chapel/compiler/passes/: copy_propagation.cpp 
+Removed files:
+	chapel/compiler/symtab/: collectSymbols.cpp collectSymbols.h 
+	                         copyPropagation.cpp copyPropagation.h 
+	                         resolveTypes.cpp resolveTypes.h 
+	                         symtabTraversal.cpp symtabTraversal.h 
+	chapel/compiler/traversals/: clearTypes.cpp clearTypes.h 
+	                             collectASTS.cpp collectASTS.h 
+	                             getstuff.cpp getstuff.h 
+
