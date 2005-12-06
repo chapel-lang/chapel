@@ -51186,3 +51186,66 @@ Added files:
 	                                 zeroarity-bound-error-2.chpl 
 	                                 zeroarity-bound-error-2.good 
 
+---------------------------------------------------------------------------
+
+12/06/05 11:09:18 -- deitz
+
+Log message:
+	This checkin adds temporary insertion for all nested CallExprs.  It's
+	many temporaries.  Currently all the temps are named _tmp, but the
+	cname has a unique number to make it easier to debug.  I decided not
+	to number the names mainly to keep the test output for the
+	flowanalysis tests from changing all the time.  If this is a problem,
+	we can change it.  An alternative is to number the tmp with the line
+	number that is associated with the expression it is being inserted
+	for.
+	
+	This checkin also pushes the removal of LetExprs up into the
+	normalization phase by handling LetExprs as if they were nested
+	functions with no arguments and inlining them immediately.
+	
+	Improved return normalization to not insert a Label and a Goto if the
+	goto immediately precedes the label.
+	
+	Improved inlining by making it a function called inline_call and by
+	allowing it to be called before nested functions are removed.
+	
+	Made pre-instantiation work in the presence of temporary insertion.
+	
+	Fixed the prelude functions that define write and read to actually
+	return an integer.  The __primitive was not preceded by a return.
+	
+	Fixed a bug in the parsing of tuple types in which the inner types
+	were not types.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: cleanup.cpp normalize.cpp 
+	                         scopeResolve.cpp 
+	chapel/compiler/traversals/: inlineFunctions.cpp 
+	                             inlineFunctions.h instantiate.cpp 
+	                             removeNamedParameters.cpp 
+	chapel/modules/standard/: prelude.chpl 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	                               union_type_hierarchy-3-error.good 
+	chapel/test/flowanalysis/newast/: arithmetic_ops.good 
+	                                  assignment_expr.good 
+	                                  bitwise_assignment.good 
+	                                  bitwise_negation.good 
+	                                  bitwise_ops.good 
+	                                  compSampler.good 
+	                                  danglingelse.good 
+	                                  equality_ops.good 
+	                                  logical_and.good 
+	                                  logical_not.good mod.good 
+	                                  multiple_return.good 
+	                                  pareninit.good 
+	                                  relational_ops.good 
+	                                  sum_type-1.good 
+	                                  sum_type-2.good 
+	                                  unary_plusMinus.good var.good 
+	                                  var2.good whileLoop.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
