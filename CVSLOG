@@ -51281,3 +51281,27 @@ Removed files:
 	chapel/test/types/seq/deitz/: test_seq_record1.future 
 	chapel/test/types/tuple/jplevyak/: destruct-2.future 
 
+---------------------------------------------------------------------------
+
+12/06/05 13:41:49 -- deitz
+
+Log message:
+	Removed transformLetExprs pass as LetExprs are now handled earlier.
+	Removed LetExpr Expr as they are inlined early on in compilation.
+	
+	Removed insertFunctionTemps pass as this is no longer necessary now
+	that the AST has been normalized.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: baseAST.h expr.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/passes/: runInterpreter.cpp 
+	chapel/compiler/traversals/: Makefile.share fixup.cpp 
+Removed files:
+	chapel/compiler/traversals/: insertFunctionTemps.cpp 
+	                             insertFunctionTemps.h 
+	                             transformLetExprs.cpp 
+	                             transformLetExprs.h 
+
