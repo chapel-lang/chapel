@@ -51170,3 +51170,19 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+12/06/05 11:03:01 -- jplevyak
+
+Log message:
+	Tests for the correct zero arity behavior, including errors.
+
+Modified files:
+	chapel/test/functions/jplevyak/: zeroarity-bound-1.good 
+Added files:
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-1.chpl 
+	                                 zeroarity-bound-error-1.future 
+	                                 zeroarity-bound-error-1.good 
+	                                 zeroarity-bound-error-2.chpl 
+	                                 zeroarity-bound-error-2.good 
+
