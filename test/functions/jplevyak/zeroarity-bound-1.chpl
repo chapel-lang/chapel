@@ -9,6 +9,6 @@ var c = C();
 writeln(c.f);
 writeln(c.g());
 
-writeln(c.g);
-writeln(c.f());
+// error: writeln(c.g);
+// error: writeln(c.f());
 

@@ -1,9 +1,7 @@
 test_method_call2.chpl:10: illegal call argument type expression illegal: ( int64 ) 
   called from test_method_call2.chpl:18
-test_method_call2.chpl:10: illegal call argument type expression illegal: ( ) 
+test_method_call2.chpl:10: illegal call argument type expression illegal: ( function ) 
   called from test_method_call2.chpl:18
 test_method_call2.chpl:10: expression has no type
-  called from test_method_call2.chpl:18
-test_method_call2.chpl:12: expression has no type
   called from test_method_call2.chpl:18
 fail: program does not type

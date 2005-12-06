@@ -650,7 +650,7 @@ static void apply_getters_setters(BaseAST* ast) {
   if (MemberAccess* memberAccess = dynamic_cast<MemberAccess*>(base)) {
     Expr *rhs = assign ? assign->argList->get(2)->copy() : 0;
     // build the main accessor/setter
-    if ((call && !call->argList->isEmpty())) {
+    if (call) {
       CallExpr *lhs = new CallExpr(memberAccess->member->name, 
                                    methodToken,
                                    memberAccess->base->copy());

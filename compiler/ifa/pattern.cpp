@@ -740,10 +740,8 @@ Matcher::covers_formals(Fun *f, Vec<CreationSet *> &csargs, MPosition &p, int to
     }
   }
   // handle x.y(z) as ((#y, x), z) differently for paren vs. paren-less methods
-  if (top_level && partial == Partial_OK && result && !m->partial && !f->eager_evaluation) {
+  if (top_level && partial == Partial_OK && result && !m->partial && !f->eager_evaluation)
     m->partial = 1;
-    result = 0;
-  }
   return result;
 }
 

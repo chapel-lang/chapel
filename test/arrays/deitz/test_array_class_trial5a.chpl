@@ -37,10 +37,10 @@ class array2d {
   type t;
   var data : array1d(t) = array1d(t);
   function this(i : integer, j : integer) : t {
-    return data()((i - 1) * 2 + j);
+    return data((i - 1) * 2 + j);
   }
   function =this(i : integer, j : integer, val : t) : t {
-    data()((i - 1) * 2 + j) = val;
+    data((i - 1) * 2 + j) = val;
     return val;
   }
 }
