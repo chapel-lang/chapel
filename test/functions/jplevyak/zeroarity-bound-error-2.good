@@ -1,4 +1,5 @@
 zeroarity-bound-error-2.chpl:9: illegal call argument type 'stdout' illegal: ( file ) 
+zeroarity-bound-error-2.chpl:9: illegal call argument type '_tmp' illegal: ( ) 
 zeroarity-bound-error-2.chpl:9: unresolved call 'fwrite'
 note: candidates are:
 _chpl_complex.chpl:19: fwrite, f : file, x : complex
@@ -47,7 +48,7 @@ _chpl_seq.chpl:170: fwrite, f : file, s : seq
 _chpl_seq.chpl:8: fwrite, f : file, val : _seqNode
 prelude.chpl:24: fwrite, f : file, val : _ddata
 zeroarity-bound-error-2.chpl:9: illegal call argument type expression illegal: ( int64 ) 
-zeroarity-bound-error-2.chpl:9: illegal call argument type expression illegal: ( ) 
+zeroarity-bound-error-2.chpl:9: '_tmp' has no type
 zeroarity-bound-error-2.chpl:9: expression has no type
 zeroarity-bound-error-2.chpl:9: expression has no type
 fail: program does not type
