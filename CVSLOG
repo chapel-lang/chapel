@@ -51137,3 +51137,36 @@ Added files:
 	chapel/test/functions/deitz/nested/: test_nested7.chpl 
 	                                     test_nested7.good 
 
+---------------------------------------------------------------------------
+
+12/06/05 10:58:46 -- jplevyak
+
+Log message:
+	Fixed methods with no parens so that they can be called without parens.
+	
+	It is the case that c.f() where function C::f { ... }
+	is an error, but it is not yet the case that
+	c.g where function C::g() is an error.  This last case is a bit
+	tricky as there are a number of places in the compiler where
+	we are just calling methods (which are defined the normal way
+	-- with parens) using
+	
+	  new ExprStmt(new CallExpr(fnname, _mt, _this))
+	
+	instead of
+	
+	  new ExprStmt(new CallExpr(new CallExpr(fnname, _mt, _this)))
+	
+	So I can't throw the error yet.  Working on it.
+
+Modified files:
+	chapel/compiler/ifa/: pattern.cpp 
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/test/arrays/deitz/: test_array_class_trial5a.chpl 
+	                           test_array_class_trial5b.chpl 
+	chapel/test/classes/deitz/: test_method_call2.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-1.chpl 
+	chapel/test/trivial/preston/: curry.future 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
