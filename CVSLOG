@@ -51126,3 +51126,14 @@ Added files:
 	                              inoutClassDataMember.future 
 	                              inoutClassDataMember.good 
 
+---------------------------------------------------------------------------
+
+12/06/05 10:34:36 -- deitz
+
+Log message:
+	Added working nested function test.
+
+Added files:
+	chapel/test/functions/deitz/nested/: test_nested7.chpl 
+	                                     test_nested7.good 
+
