@@ -51270,3 +51270,14 @@ Log message:
 Modified files:
 	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
 
+---------------------------------------------------------------------------
+
+12/06/05 13:06:36 -- deitz
+
+Log message:
+	Defutured two working tests.
+
+Removed files:
+	chapel/test/types/seq/deitz/: test_seq_record1.future 
+	chapel/test/types/tuple/jplevyak/: destruct-2.future 
+
