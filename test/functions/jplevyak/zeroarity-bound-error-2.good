@@ -1,0 +1,53 @@
+zeroarity-bound-error-2.chpl:9: illegal call argument type 'stdout' illegal: ( file ) 
+zeroarity-bound-error-2.chpl:9: unresolved call 'fwrite'
+note: candidates are:
+_chpl_complex.chpl:19: fwrite, f : file, x : complex
+_chpl_file.chpl:120: fwrite, f : file, val : int64
+_chpl_file.chpl:145: fwrite, f : file, val : float64
+_chpl_file.chpl:168: fwrite, f : file, val : string
+_chpl_file.chpl:204: fwrite, f : file, val : bool
+_chpl_file.chpl:217: fwrite, f : file, x : null
+_chpl_htuple.chpl:30: fwrite, f : file, val : _htuple
+_chpl_adomain.chpl:70: fwrite, f : file, x : _adomain
+_chpl_adomain.chpl:119: fwrite, f : file, x : _aarray
+_chpl_data.chpl:56: fwrite, f : file, val : _fdata
+_chpl_seq.chpl:170: fwrite, f : file, s : seq
+_chpl_seq.chpl:230: fwrite, f : file, s : _aseq
+prelude.chpl:3: fwrite, f : file, val : object
+prelude.chpl:4: fwrite, f : file, val : value
+prelude.chpl:24: fwrite, f : file, val : _ddata
+prelude.chpl:29: fwrite, f : file, val : CFILEPTR
+prelude.chpl:127: fwrite, f : file, val : reduction
+prelude.chpl:130: fwrite, f : file, val : sum
+prelude.chpl:133: fwrite, f : file, val : max
+prelude.chpl:136: fwrite, f : file, val : min
+prelude.chpl:139: fwrite, f : file, val : maxloc
+prelude.chpl:142: fwrite, f : file, val : minloc
+prelude.chpl:151: fwrite, f : file, val : timer
+prelude.chpl:199: fwrite, f : file, val : _methodTokenType
+prelude.chpl:205: fwrite, f : file, val : _setterTokenType
+prelude.chpl:210: fwrite, f : file, val : _seq
+prelude.chpl:231: fwrite, f : file, val : Array
+prelude.chpl:234: fwrite, f : file, val : Domain
+prelude.chpl:244: fwrite, f : file, val : Tuple
+_chpl_file.chpl:51: fwrite, f : file, val : file
+_chpl_adomain.chpl:10: fwrite, f : file, val : _adomain_info
+_chpl_adomain.chpl:50: fwrite, f : file, val : _adomain_lit
+_chpl_adomain.chpl:75: fwrite, f : file, val : _aarray_info
+_chpl_seq.chpl:8: fwrite, f : file, val : _seqNode
+zeroarity-bound-error-2.chpl:5: fwrite, f : file, val : C
+zeroarity-bound-error-2.chpl:5: fwrite, f : file, val : _tuple2
+zeroarity-bound-error-2.chpl:5: fwrite, f : file, val : _tuple2
+prelude.chpl:24: fwrite, f : file, val : _ddata
+_chpl_seq.chpl:170: fwrite, f : file, s : seq
+_chpl_seq.chpl:8: fwrite, f : file, val : _seqNode
+prelude.chpl:24: fwrite, f : file, val : _ddata
+_chpl_adomain.chpl:70: fwrite, f : file, x : _adomain
+_chpl_seq.chpl:170: fwrite, f : file, s : seq
+_chpl_seq.chpl:8: fwrite, f : file, val : _seqNode
+prelude.chpl:24: fwrite, f : file, val : _ddata
+zeroarity-bound-error-2.chpl:9: illegal call argument type expression illegal: ( int64 ) 
+zeroarity-bound-error-2.chpl:9: illegal call argument type expression illegal: ( ) 
+zeroarity-bound-error-2.chpl:9: expression has no type
+zeroarity-bound-error-2.chpl:9: expression has no type
+fail: program does not type
