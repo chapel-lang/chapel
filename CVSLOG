@@ -51249,3 +51249,14 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+12/06/05 11:35:01 -- shannon
+
+Log message:
+	Woops, my last commit broke the Sun build.  This
+	should fix it.
+
+Modified files:
+	chapel/runtime/src/: chplio.c 
+
