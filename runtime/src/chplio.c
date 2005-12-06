@@ -1,4 +1,3 @@
-#include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -82,7 +81,8 @@ int _readLitChar(FILE* fp, _string val, int ignoreWhiteSpace) {
   int charsMatch = 0;
 
   if (ignoreWhiteSpace) {
-    while (isspace(inputVal)) {
+    while ((inputVal == ' ') || (inputVal == '\n') || (inputVal == '\r') || 
+           (inputVal == '\t')) {
       returnVal = fscanf(fp, "%c", &inputVal);
     }
   } else {
