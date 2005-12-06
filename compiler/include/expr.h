@@ -228,22 +228,6 @@ class ReduceExpr : public Expr {
 
 void initExpr(void);
 
-class LetExpr : public Expr {
- public:
-  AList<DefExpr>* symDefs;
-  Expr* innerExpr;
-  SymScope* letScope;
-
-  LetExpr(AList<DefExpr>* init_symDefs, Expr* init_innerExpr);
-  virtual void verify(void); 
-  COPY_DEF(LetExpr);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseExpr(Traversal* traversal);
-  Type* typeInfo(void);
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-};
-
 
 class CondExpr : public Expr {
  public:

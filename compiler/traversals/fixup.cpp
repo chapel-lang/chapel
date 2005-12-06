@@ -218,17 +218,6 @@ void Fixup::preProcessExpr(Expr* expr) {
     }
   }
 
-  if (LetExpr* letExpr = dynamic_cast<LetExpr*>(expr)) {
-    if (!verifyParents) {
-      if (insertHelper) {
-        if (letExpr->letScope) {
-          INT_FATAL(letExpr, "Unexpected scope in Let Expr");
-        }
-        Symboltable::pushScope(SCOPE_LETEXPR);
-      }
-    }
-  }
-
   parentExprs.add(expr);
 }
 
@@ -236,18 +225,6 @@ void Fixup::preProcessExpr(Expr* expr) {
 void Fixup::postProcessExpr(Expr* expr) {
   if (dynamic_cast<DefExpr*>(expr)) {
     defSymbols.pop();
-  }
-
-  if (LetExpr* letExpr = dynamic_cast<LetExpr*>(expr)) {
-    if (!verifyParents) {
-      if (insertHelper) {
-        letExpr->letScope = Symboltable::popScope();
-        letExpr->letScope->astParent = letExpr;
-      } else {
-        Symboltable::removeScope(letExpr->letScope);
-        letExpr->letScope = NULL;
-      }
-    }
   }
 
   if (DefExpr* defExpr = dynamic_cast<DefExpr*>(expr)) {

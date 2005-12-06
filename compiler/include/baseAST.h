@@ -31,7 +31,6 @@ enum astType_t {
   EXPR,
   EXPR_SYM,
   EXPR_DEF,
-  EXPR_LET,
   EXPR_COND,
   EXPR_CALL,
   EXPR_CAST,

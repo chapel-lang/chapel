@@ -70,14 +70,6 @@ interpreter(Expr *ip, ISlot *val = 0) {
         printf("  '%s' %d\n", !s->sym->name ? "" : s->sym->name, (int)s->id);
       break;
     }
-    case EXPR_LET: {
-      S(LetExpr);
-      env.push();
-      for_alist(DefExpr, e, s->symDefs)
-        interpreter(e);
-      interpreter(s->innerExpr, val);
-      break;
-    }
     case EXPR_COND: {
       S(CondExpr);
       ISlot slot;

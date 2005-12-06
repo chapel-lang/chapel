@@ -17,7 +17,6 @@
 #include "../traversals/fixup.h"
 #include "../traversals/htmlview.h"
 #include "../traversals/inlineFunctions.h"
-#include "../traversals/insertFunctionTemps.h"
 #include "../traversals/insertVariableInitializations.h"
 #include "../traversals/instantiate.h"
 #include "../traversals/printAST.h"
@@ -26,7 +25,6 @@
 #include "../traversals/removeNamedParameters.h"
 #include "../traversals/removeNestedFunctions.h"
 #include "../traversals/resolveSymbols.h"
-#include "../traversals/transformLetExprs.h"
 #include "../traversals/verify.h"
 #include "../traversals/view.h"
 
@@ -50,7 +48,6 @@ REGISTER(createNestedFuncIterators);
 REGISTER(fixup);
 REGISTER(functionResolution);
 REGISTER(inlineFunctions);
-REGISTER(insertFunctionTemps);
 REGISTER(insertVariableInitializations);
 REGISTER(normalize);
 REGISTER(parse);
@@ -70,7 +67,6 @@ REGISTER(resolveSymbols);       // SJD: Resolve symbols after analysis
 REGISTER(runAnalysis);
 REGISTER(runInterpreter);
 REGISTER(scopeResolve);
-REGISTER(transformLetExprs);
 REGISTER(verify);
 
 REGISTER(view);                       // debug passes

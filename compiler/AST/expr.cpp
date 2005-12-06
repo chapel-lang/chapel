@@ -1037,68 +1037,6 @@ void initExpr(void) {
 }
 
 
-LetExpr::LetExpr(AList<DefExpr>* init_symDefs, Expr* init_innerExpr) :
-  Expr(EXPR_LET),
-  symDefs(init_symDefs),
-  innerExpr(init_innerExpr),
-  letScope(NULL)
-{ }
-
-
-void LetExpr::verify() {
-  if (astType != EXPR_LET) {
-    INT_FATAL(this, "Bad LetExpr::astType");
-  }
-}
-
-
-LetExpr*
-LetExpr::copyInner(ASTMap* map) {
-  return new LetExpr(COPY_INT(symDefs), COPY_INT(innerExpr));
-}
-
-
-void LetExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == symDefs) {
-    symDefs = dynamic_cast<AList<DefExpr>*>(new_ast);
-  } else if (old_ast == innerExpr) {
-    innerExpr = dynamic_cast<Expr*>(new_ast);
-  } else {
-    INT_FATAL(this, "Unexpected case in LetExpr::replaceChild");
-  }
-}
-
-
-void LetExpr::traverseExpr(Traversal* traversal) {
-  SymScope* saveScope = NULL;
-  if (letScope)
-    saveScope = Symboltable::setCurrentScope(letScope);
-  TRAVERSE(symDefs, traversal, false);
-  TRAVERSE(innerExpr, traversal, false);
-  if (saveScope)
-    Symboltable::setCurrentScope(saveScope);
-}
-
-
-Type* LetExpr::typeInfo(void) {
-  if (preAnalysis) {
-    return dtUnknown;
-  }
-
-  return innerExpr->typeInfo();
-}
-
-
-void LetExpr::print(FILE* outfile) {
-  fprintf(outfile, "Let Expr");
-}
-
-
-void LetExpr::codegen(FILE* outfile) {
-  INT_FATAL(this, "LetExpr::codegen not implemented");
-}
-
-
 CondExpr::CondExpr(Expr* initCondExpr, Expr* initThenExpr, Expr* initElseExpr) :
   Expr(EXPR_COND),
   condExpr(initCondExpr),

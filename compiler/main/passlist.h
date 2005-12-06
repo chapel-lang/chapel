@@ -64,8 +64,6 @@ PassInfo passlist[] = {
   // eventually, optimizations will go here
 
   // passes to prepare for C code generation
-  RUN(insertFunctionTemps),
-  RUN(transformLetExprs),
   RUN(processParameters),
   RUN(inlineFunctions),
   RUN(insertVariableInitializations),

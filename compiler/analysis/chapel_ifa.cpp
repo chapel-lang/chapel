@@ -1934,19 +1934,6 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       c->partial = Partial_NEVER;
       break;
     }
-    case EXPR_LET: {
-      LetExpr *s = dynamic_cast<LetExpr *>(ast);
-      DefExpr* def_expr = s->symDefs->first();
-      while (def_expr) {
-        VarSymbol *vs = dynamic_cast<VarSymbol*>(def_expr->sym);
-        if1_gen(if1, &s->ainfo->code, def_expr->init->ainfo->code);
-        if1_move(if1, &s->ainfo->code, def_expr->init->ainfo->rval, vs->asymbol->sym, s->ainfo);
-        def_expr = s->symDefs->next();
-      }
-      if1_gen(if1, &s->ainfo->code, s->innerExpr->ainfo->code);
-      s->ainfo->rval = s->innerExpr->ainfo->rval;
-      break;
-    }
     case EXPR_COND: {
       CondExpr *s = dynamic_cast<CondExpr *>(ast);
       s->ainfo->rval = new_sym();
