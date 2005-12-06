@@ -122,6 +122,8 @@ void scopeResolve(void) {
         if (var &&
             sym->parentScope->type != SCOPE_CLASS &&
             sym->getModule() == symExpr->getModule() &&
+            (sym->parentScope->type != SCOPE_MODULE ||
+             symExpr->getFunction() == symExpr->getModule()->initFn) &&
             !symInDefList(sym, &defList))
           USR_FATAL(symExpr, "Variable '%s' used before defined", name);
 

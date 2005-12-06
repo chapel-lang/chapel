@@ -16,4 +16,6 @@ public:
 
 void inlineFunctions(void);
 
+Stmt* inline_call(CallExpr* call);
+
 #endif

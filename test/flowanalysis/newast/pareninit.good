@@ -1,3 +1,4 @@
+::_tmp(pareninit.chpl:2) ( int64 )
 ::x(pareninit.chpl:1) ( int64 )
 ::y(pareninit.chpl:2) ( int64 )
 function __init_pareninit pareninit.chpl:4

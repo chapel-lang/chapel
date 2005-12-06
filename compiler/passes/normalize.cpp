@@ -13,6 +13,7 @@
 #include "symtab.h"
 #include "stringutil.h"
 #include "../traversals/updateSymbols.h"
+#include "../traversals/inlineFunctions.h"
 
 
 static void reconstruct_iterator(FnSymbol* fn);
@@ -23,7 +24,6 @@ static void initialize_out_formals(FnSymbol* fn);
 static void insert_formal_temps(FnSymbol* fn);
 static void call_constructor_for_class(CallExpr* call);
 static void normalize_for_loop(ForLoopStmt* stmt);
-static void insert_call_temps(CallExpr* call);
 static void decompose_special_calls(CallExpr* call);
 static void hack_array_constructor_call(CallExpr* call);
 static void hack_domain_constructor_call(CallExpr* call);
@@ -31,6 +31,7 @@ static void hack_seqcat_call(CallExpr* call);
 static void hack_typeof_call(CallExpr* call);
 static void hack_resolve_types(Expr* expr);
 static void apply_getters_setters(BaseAST* ast);
+static void insert_call_temps(CallExpr* call);
 
 void normalize(void) {
   Vec<FnSymbol*> fns;
@@ -107,19 +108,20 @@ void normalize(void) {
   asts.clear();
   collect_asts_postorder(&asts);
   forv_Vec(BaseAST, ast, asts) {
-    if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
-      insert_call_temps(a);
-    }
-  }
-
-
-  asts.clear();
-  collect_asts_postorder(&asts);
-  forv_Vec(BaseAST, ast, asts) {
     if (FnSymbol* a = dynamic_cast<FnSymbol*>(ast)) {
       if (!(a->_setter || a->_getter ||
             (!no_infer && a->fnClass == FN_CONSTRUCTOR)))
         apply_getters_setters(a);
+    }
+  }
+
+  asts.clear();
+  collect_asts_postorder(&asts);
+  forv_Vec(BaseAST, ast, asts) {
+    currentLineno = ast->lineno;
+    currentFilename = ast->filename;
+    if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
+      insert_call_temps(a);
     }
   }
 }
@@ -245,14 +247,22 @@ static void normalize_returns(FnSymbol* fn) {
     fn->insertAtHead(new ExprStmt(new DefExpr(retval, NULL, type)));
     fn->insertAtTail(new ReturnStmt(retval));
   }
+  bool label_is_used = false;
   forv_Vec(ReturnStmt, ret, rets) {
     if (retval) {
       Expr* ret_expr = ret->expr;
       ret->expr->remove();
       ret->insertBefore(new ExprStmt(new CallExpr(OP_GETS, retval, ret_expr)));
     }
-    ret->replace(new GotoStmt(goto_normal, label));
+    if (ret->next != label->defPoint->parentStmt) {
+      ret->replace(new GotoStmt(goto_normal, label));
+      label_is_used = true;
+    } else {
+      ret->remove();
+    }
   }
+  if (!label_is_used)
+    label->defPoint->parentStmt->remove();
 }
 
 
@@ -368,29 +378,6 @@ static void normalize_for_loop(ForLoopStmt* stmt) {
     if (!index->exprType)
       index->replace(new DefExpr(index->sym, NULL, type));
   }
-}
-
-
-static void insert_call_temps(CallExpr* call) {
-  return;
-
-  static int uid = 1;
-
-  if (!call->parentExpr || !call->parentStmt)
-    return;
-  
-  if (dynamic_cast<DefExpr*>(call->parentExpr))
-    return;
-
-  if (SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr))
-    if (!strcmp("typeof", base->var->name))
-      return;
-
-  Stmt* stmt = call->parentStmt;
-  VarSymbol* tmp = new VarSymbol(stringcat("_tmp", intstring(uid++)));
-  tmp->noDefaultInit = true;
-  call->replace(new SymExpr(tmp));
-  stmt->insertBefore(new ExprStmt(new DefExpr(tmp, call)));
 }
 
 
@@ -689,4 +676,45 @@ static void apply_getters_setters(BaseAST* ast) {
   get_ast_children(ast, asts);
   forv_BaseAST(a, asts)
     apply_getters_setters(a);
+}
+
+
+static void insert_call_temps(CallExpr* call) {
+  static int uid = 1;
+
+  if (!call->parentExpr || !call->parentStmt)
+    return;
+  
+  if (dynamic_cast<DefExpr*>(call->parentExpr))
+    return;
+
+  if (call->partialTag != PARTIAL_NEVER)
+    return;
+
+  if (SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr))
+    if (!strcmp("typeof", base->var->name))
+      return;
+
+  Stmt* stmt = call->parentStmt;
+  VarSymbol* tmp = new VarSymbol(stringcat("_tmp"));
+  tmp->cname = stringcat(tmp->name, intstring(uid++));
+  tmp->noDefaultInit = true;
+  call->replace(new SymExpr(tmp));
+  stmt->insertBefore(new ExprStmt(new DefExpr(tmp, call)));
+
+  if (SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr)) {
+    if (!strncmp(base->var->name, "_let_fn", 7)) {
+      Stmt* stmt = inline_call(call);
+      Vec<BaseAST*> asts;
+      collect_asts_postorder(&asts, stmt);
+      forv_Vec(BaseAST, ast, asts) {
+        currentLineno = ast->lineno;
+        currentFilename = ast->filename;
+        if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
+          insert_call_temps(a);
+        }
+      }
+      base->var->defPoint->parentStmt->remove();
+    }
+  }
 }

@@ -1,3 +1,7 @@
+::_tmp(equality_ops.chpl:13) ( bool )
+::_tmp(equality_ops.chpl:19) ( bool )
+::_tmp(equality_ops.chpl:25) ( bool )
+::_tmp(equality_ops.chpl:31) ( bool )
 ::answer(equality_ops.chpl:4) ( int64 )
 ::m(equality_ops.chpl:1) ( int64 )
 ::n(equality_ops.chpl:2) ( int64 )

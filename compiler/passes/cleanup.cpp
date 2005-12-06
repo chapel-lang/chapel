@@ -115,10 +115,15 @@ void cleanup(void) {
  ***   NOTE: during parsing, these may be embedded in expressions
  ***/
 static void normalize_anonymous_record_or_forall_expression(DefExpr* def) {
+  Stmt* stmt = def->parentStmt;
+  if (stmt && stmt->getFunction() == stmt->getModule()->initFn)
+    stmt = dynamic_cast<Stmt*>(stmt->getFunction()->defPoint->parentStmt->next);
   if ((!strncmp("_anon_record", def->sym->name, 12)) ||
       (!strncmp("_forallexpr", def->sym->name, 11))) {
-    Stmt* stmt = def->parentStmt;
     def->replace(new SymExpr(def->sym));
+    stmt->insertBefore(new ExprStmt(def));
+  } else if (!strncmp("_let_fn", def->sym->name, 7)) {
+    def->replace(new CallExpr(def->sym));
     stmt->insertBefore(new ExprStmt(def));
   }
 }

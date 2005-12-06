@@ -44,34 +44,34 @@ function strerror(errno: integer) : string {
   return "";
 }
 
-pragma "rename _chpl_write_linefeed" function writeln() : void {
-         __primitive("writeln");
+pragma "rename _chpl_write_linefeed" function writeln() : integer {
+  return __primitive("writeln");
 }
 
 function fprintf(fp: CFILEPTR, fmt: string, val) : integer {
-         __primitive("write", val);
+  return __primitive("write", val);
 }
 
 function fscanf(fp: CFILEPTR, fmt: string, inout val) : integer {
-         __primitive("read", val);
+  return __primitive("read", val);
 }
 
-function _chpl_fwrite_float_help(f: CFILEPTR, val: float) : void {
-         __primitive("write", val);
+function _chpl_fwrite_float_help(f: CFILEPTR, val: float) : integer {
+  return __primitive("write", val);
 }
 
-function _chpl_fread_string_help(f: CFILEPTR, inout val: string) : void {
-         __primitive("read", val);
+function _chpl_fread_string_help(f: CFILEPTR, inout val: string) : integer {
+  return __primitive("read", val);
 }
 
 pragma "rename _chpl_tostring_boolean"
 function _tostring(x : boolean, format : string) : string {
-         return __primitive("coerce", string, x);
+  return __primitive("coerce", string, x);
 }
 
 pragma "rename _chpl_tostring_integer"
 function _tostring(x : integer, format : string) : string {
-         return __primitive("coerce", string, x);
+  return __primitive("coerce", string, x);
 }
 
 pragma "rename _chpl_tostring_float"
@@ -84,7 +84,7 @@ function _tostring(x : complex, format : string) : string {
          return __primitive("coerce", string, x);
 }
 
-function _readLitChar(f: CFILEPTR, val: string, ignoreWhiteSpace: integer) : void {
+function _readLitChar(f: CFILEPTR, val: string, ignoreWhiteSpace: integer) : integer {
          return __primitive("read", val);
 }
 
@@ -178,8 +178,8 @@ function _chpl_memtest_reallocOutOfMemory();
 
 function startTrackingMem();
 
-function _complex_read_hack(inout x) {
-  __primitive("read", x);
+function _complex_read_hack(inout x) : integer {
+  return __primitive("read", x);
 }
 
 function _complex_tostring_hack(x, format : string) : string {

@@ -1,3 +1,5 @@
+::_tmp(mod.chpl:14) ( int64 )
+::_tmp(mod.chpl:20) ( int64 )
 ::answer(mod.chpl:5) ( int64 )
 ::m(mod.chpl:2) ( int64 )
 ::n(mod.chpl:3) ( int64 )

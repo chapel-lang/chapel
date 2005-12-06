@@ -1,3 +1,7 @@
+::_tmp(arithmetic_ops.chpl:13) ( int64 )
+::_tmp(arithmetic_ops.chpl:19) ( int64 )
+::_tmp(arithmetic_ops.chpl:25) ( int64 )
+::_tmp(arithmetic_ops.chpl:31) ( int64 )
 ::answer(arithmetic_ops.chpl:4) ( int64 )
 ::m(arithmetic_ops.chpl:1) ( int64 )
 ::n(arithmetic_ops.chpl:2) ( int64 )

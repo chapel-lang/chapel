@@ -51,6 +51,7 @@ Is this "while x"(i); or "while x(i)";?
 
   static int anon_record_uid = 1;
   static int iterator_uid = 1;
+  static int let_uid = 1;
 
 %}
 
@@ -961,9 +962,9 @@ opt_init_expr:
 
 
 tuple_inner_type_ls:
-  lvalue
+  type
     { $$ = new AList<Expr>($1); }
-| tuple_inner_type_ls TCOMMA lvalue
+| tuple_inner_type_ls TCOMMA type
     { $1->insertAtTail($3); }
 ;
 
@@ -1154,12 +1155,12 @@ top_level_expr:
     { $$ = new SymExpr(gUnspecified); }
 | TLET var_decl_stmt_inner_ls TIN expr
     {
-      AList<DefExpr>* symDefs = new AList<DefExpr>();
-      for_alist(Stmt, stmt, $2) {
-        ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt);
-        symDefs->insertAtTail(dynamic_cast<DefExpr*>(exprStmt->expr));
-      }
-      $$ = new LetExpr(symDefs, $4);
+      FnSymbol* fn = new FnSymbol(stringcat("_let_fn", intstring(let_uid++)));
+      fn->formals = new AList<DefExpr>();
+      fn->addPragma("inline");
+      fn->body->insertAtTail($2);
+      fn->body->insertAtTail(new ReturnStmt($4));
+      $$ = new DefExpr(fn);
     }
 | reduction %prec TREDUCE
 | expr TCOLON type

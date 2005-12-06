@@ -1,3 +1,7 @@
+::_tmp(assignment_expr.chpl:11) ( int64 )
+::_tmp(assignment_expr.chpl:14) ( int64 )
+::_tmp(assignment_expr.chpl:5) ( int64 )
+::_tmp(assignment_expr.chpl:8) ( int64 )
 ::m(assignment_expr.chpl:1) ( int64 )
 ::n(assignment_expr.chpl:2) ( int64 )
 ::o(assignment_expr.chpl:3) ( int64 )

@@ -11,9 +11,7 @@ void RemoveNamedParameters::postProcessExpr(Expr* expr) {
   if (DefExpr* def = dynamic_cast<DefExpr*>(expr))
     if (def->init) {
       Type *type = def->sym->type;
-      if (type == dtVoid)
-        def->init->parentStmt->remove();
-      else if (SymExpr* var = dynamic_cast<SymExpr*>(def->init)) {
+      if (SymExpr* var = dynamic_cast<SymExpr*>(def->init)) {
         if (var->var == gNil) {
           if (type->defaultValue)
             def->init->replace(new SymExpr(type->defaultValue));

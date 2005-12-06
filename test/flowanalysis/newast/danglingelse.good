@@ -1,3 +1,5 @@
+::_tmp(danglingelse.chpl:24) ( int64 )
+::_tmp(danglingelse.chpl:27) ( int64 )
 ::a(danglingelse.chpl:2) ( int64 )
 ::b(danglingelse.chpl:4) ( int64 )
 function __init_danglingelse danglingelse.chpl:28

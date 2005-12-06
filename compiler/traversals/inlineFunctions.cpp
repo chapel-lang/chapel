@@ -7,16 +7,21 @@
 
 class ReplaceReturns : public Traversal {
  public:
+  FnSymbol* fn;
   Symbol* sym;
 
-  ReplaceReturns(Symbol* iSym = NULL) : sym(iSym) { }
+  ReplaceReturns(FnSymbol* iFn, Symbol* iSym = NULL) : fn(iFn), sym(iSym) { }
 
   void ReplaceReturns::postProcessStmt(Stmt* stmt) {
     if (ReturnStmt* s = dynamic_cast<ReturnStmt*>(stmt)) {
-      if (sym)
-        s->replace(new ExprStmt(new CallExpr(OP_GETS, sym, s->expr)));
-      else
-        s->remove();
+      if (s->getFunction() == fn) {
+        if (sym) {
+          Expr* ret = s->expr;
+          ret->remove();
+          s->replace(new ExprStmt(new CallExpr(OP_GETS, sym, ret)));
+        } else
+          s->remove();
+      }
     }
   }
 };
@@ -66,6 +71,17 @@ void InlineFunctions::postProcessExpr(Expr* expr) {
   if (!fn || !fn->hasPragma("inline") || fn->hasPragma("no codegen"))
     return;
 
+  Stmt* stmt = inline_call(call);
+  TRAVERSE(stmt, this, true);
+  if (report_inlining)
+    printf("chapel compiler: reporting inlining"
+           ", %s function was inlined\n", fn->cname);
+}
+
+
+Stmt* inline_call(CallExpr* call) {
+  FnSymbol* fn = call->findFnSymbol();
+
   ASTMap map;
   mapFormalsToActuals(call, &map);
 
@@ -74,19 +90,16 @@ void InlineFunctions::postProcessExpr(Expr* expr) {
     char* temp_name = stringcat("_inline_", fn->cname);
     VarSymbol* temp = new VarSymbol(temp_name, fn->retType);
     temp->noDefaultInit = true;
-    TRAVERSE(inlined_body, new ReplaceReturns(temp), true);
     call->parentStmt->insertBefore(new ExprStmt(new DefExpr(temp)));
     call->parentStmt->insertBefore(inlined_body);
+    TRAVERSE(inlined_body, new ReplaceReturns(call->getFunction(), temp), true);
     call->replace(new SymExpr(temp));
   } else {
-    TRAVERSE(inlined_body, new ReplaceReturns(), true);
     call->parentStmt->insertBefore(inlined_body);
+    TRAVERSE(inlined_body, new ReplaceReturns(call->getFunction()), true);
     call->parentStmt->remove();
   }
-  TRAVERSE(inlined_body, this, true);
-  if (report_inlining)
-    printf("chapel compiler: reporting inlining"
-           ", %s function was inlined\n", fn->cname);
+  return inlined_body;
 }
 
 

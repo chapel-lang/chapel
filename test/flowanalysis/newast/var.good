@@ -1,3 +1,4 @@
+::_tmp(var.chpl:2) ( float64 )
 ::x(var.chpl:1) ( int64 )
 function __init_var var.chpl:3
 function main var.chpl:3

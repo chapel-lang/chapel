@@ -1,3 +1,6 @@
+::_tmp(bitwise_assignment.chpl:10) ( int64 )
+::_tmp(bitwise_assignment.chpl:17) ( int64 )
+::_tmp(bitwise_assignment.chpl:24) ( int64 )
 ::m(bitwise_assignment.chpl:1) ( int64 )
 ::n(bitwise_assignment.chpl:2) ( int64 )
 function __init_bitwise_assignment bitwise_assignment.chpl:25
