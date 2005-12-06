@@ -51260,3 +51260,13 @@ Log message:
 Modified files:
 	chapel/runtime/src/: chplio.c 
 
+---------------------------------------------------------------------------
+
+12/06/05 12:43:05 -- deitz
+
+Log message:
+	Update test output with last change.
+
+Modified files:
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+
