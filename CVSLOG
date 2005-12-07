@@ -51428,3 +51428,19 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+12/07/05 13:43:42 -- shannon
+
+Log message:
+	Changed fclose() and strerror() in the prelude to use the pure_return
+	primitive.  Updated the output of affected tests.
+
+Modified files:
+	chapel/modules/standard/: prelude.chpl 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
