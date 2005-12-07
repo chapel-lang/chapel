@@ -51305,3 +51305,13 @@ Removed files:
 	                             transformLetExprs.cpp 
 	                             transformLetExprs.h 
 
+---------------------------------------------------------------------------
+
+12/06/05 16:48:50 -- jplevyak
+
+Log message:
+	Fix compilation issue with gcc 4.0
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
