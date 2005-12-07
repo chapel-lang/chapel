@@ -51403,3 +51403,28 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: normalize.cpp 
 
+---------------------------------------------------------------------------
+
+12/07/05 13:04:28 -- deitz
+
+Log message:
+	Removed class init function which we decided not to use.
+	
+	Robustified cleanup so that it can be called more than once and to
+	remove duplicate code.  Set it up to run twice whenever it is called
+	for testing.  This will allow me to speed it up easily later.
+	
+	Improved line number maintenance in cleanup and normalization.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/include/: astutil.h type.h 
+	chapel/compiler/passes/: cleanup.cpp normalize.cpp 
+	chapel/test/flowanalysis/newast/: sum_type-1.good 
+	                                  sum_type-2.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
