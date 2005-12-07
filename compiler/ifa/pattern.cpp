@@ -30,6 +30,7 @@ class Matcher {
   AVar *send;
   AVar *arg0;
   IFAAST *ast;
+  int is_closure;
   Partial_kind partial;
   Vec<Match *> *matches;
   MatchMap match_map;
@@ -55,7 +56,7 @@ class Matcher {
   void set_filters(Vec<CreationSet *> &, MPosition &, Vec<Fun *> &, int);
   void cannonicalize_matches(Vec<Fun *> &);
 
-  Matcher(AVar *send, AVar *arg0, Partial_kind partial, Vec<Match *> *matches);
+  Matcher(AVar *send, AVar *arg0, int is_closure, Partial_kind partial, Vec<Match *> *matches);
 };
 
 
@@ -178,9 +179,12 @@ Matcher::pattern_match_sym(Sym *type, MPosition *acp, Vec<Fun *> *local_matches,
   }
 }
 
-Matcher::Matcher(AVar *asend, AVar *aarg0, Partial_kind apartial, Vec<Match *> *amatches) {
+Matcher::Matcher(AVar *asend, AVar *aarg0, int ais_closure, Partial_kind apartial, 
+                 Vec<Match *> *amatches) 
+{
   send = asend;
   arg0 = aarg0;
+  is_closure = ais_closure;
   partial = apartial;
   matches = amatches;
   matches->clear();
@@ -742,6 +746,14 @@ Matcher::covers_formals(Fun *f, Vec<CreationSet *> &csargs, MPosition &p, int to
   // handle x.y(z) as ((#y, x), z) differently for paren vs. paren-less methods
   if (top_level && partial == Partial_OK && result && !m->partial && !f->eager_evaluation)
     m->partial = 1;
+  if (top_level && !f->eager_evaluation && !is_closure && result &&
+      csargs.n > 1 && pdb->fa->method_token && 
+      csargs.v[1]->sym == pdb->fa->method_token->out->v[0]->sym->type)
+    m->partial = 1;
+#if 0
+  if (top_level && f->eager_evaluation && is_closure)
+    result = 0;
+#endif
   return result;
 }
 
@@ -1106,8 +1118,9 @@ Matcher::cannonicalize_matches(Vec<Fun *> &partial_matches) {
 // main dispatch entry point - given a vector of arguments return a vector of matches
 //
 int
-pattern_match(Vec<AVar *> &args, AVar *send, Partial_kind partial, Vec<Match *> *matches) {
-  Matcher matcher(send, args.v[0], partial, matches);
+pattern_match(Vec<AVar *> &args, AVar *send, int is_closure, Partial_kind partial, 
+              Vec<Match *> *matches) {
+  Matcher matcher(send, args.v[0], is_closure, partial, matches);
   Vec<Fun *> *partial_matches = NULL;
   if (matcher.all_matches)
     partial_matches = new Vec<Fun *>(*matcher.all_matches);

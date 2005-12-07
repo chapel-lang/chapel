@@ -2673,7 +2673,7 @@ chapel_defexpr(PNode *pn, EntrySet *es) {
           CreationSet *cs = ctype->v[0];
           update_gen(cavar, ctype);
           Vec<AVar *> args;
-          function_dispatch(pn, es, cavar, cs, args, Partial_NEVER);
+          function_dispatch(pn, es, cavar, cs, args, 0, Partial_NEVER);
         } else
           update_gen(result, make_AType(tt));
       } else if (type == dtUnknown) {

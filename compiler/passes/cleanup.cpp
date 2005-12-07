@@ -391,6 +391,7 @@ static void
 finish_constructor(FnSymbol* fn) {
   if (fn->fnClass != FN_CONSTRUCTOR)
     return;
+  CallExpr *inner = 0;
 
   ClassType* ct = dynamic_cast<ClassType*>(fn->typeBinding->definition);
 
@@ -404,7 +405,8 @@ finish_constructor(FnSymbol* fn) {
     fn->body->replace(new BlockStmt());
     fn->insertAtHead(new ExprStmt(new DefExpr(user_fn)));
     user_fn->body->replace(user_body);
-    fn->insertAtHead(new ExprStmt(new CallExpr(user_fn, methodToken, fn->_this)));
+    fn->insertAtHead(new ExprStmt(new CallExpr((inner = new CallExpr(user_fn, methodToken, fn->_this)))));
+    inner->partialTag = PARTIAL_OK;
     ct->methods.add(user_fn);
     cleanup(user_fn);
   }
@@ -422,9 +424,8 @@ finish_constructor(FnSymbol* fn) {
 
   stmts->insertAtTail(new ExprStmt(new DefExpr(fn->_this)));
   stmts->insertAtTail(alloc_stmt);
-
-  stmts->insertAtTail(new ExprStmt(new CallExpr(ct->initFn, methodToken, fn->_this)));
-
+  stmts->insertAtTail(new ExprStmt(new CallExpr((inner = new CallExpr(ct->initFn, methodToken, fn->_this)))));
+  inner->partialTag = PARTIAL_OK;
   // assign formals to fields by name
   forv_Vec(Symbol, field, ct->fields) {
     for_alist(DefExpr, formalDef, fn->formals) {

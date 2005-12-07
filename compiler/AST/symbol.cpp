@@ -911,12 +911,15 @@ buildMultidimensionalIterator(ClassType* type, int rank) {
     VarSymbol* index = new VarSymbol(stringcat("_i", intstring(i)), dtInteger);
     CallExpr* partial = new CallExpr("_forall", methodToken, _this);
     partial->partialTag = PARTIAL_OK;
+    CallExpr *inner = 0;
     loop = new ForLoopStmt(FORLOOPSTMT_FORALL,
              new AList<DefExpr>(new DefExpr(index)),
              new AList<Expr>(
-               new CallExpr("_forall", methodToken,
-                 new CallExpr(partial, new_IntLiteral(i)))),
+               new CallExpr(
+               (inner = new CallExpr("_forall", methodToken,
+                 new CallExpr(partial, new_IntLiteral(i)))))),
              loop);
+    inner->partialTag = PARTIAL_OK;
     if (rank > 1) {
       yield->argList->insertAtHead(new SymExpr(dtInteger->symbol));
       yield->argList->insertAtTail(new NamedExpr(stringcat("_f", intstring(i)), new SymExpr(index)));

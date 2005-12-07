@@ -52,7 +52,7 @@ static Vec<EntrySet *> entry_set_done;
 static Vec<ATypeViolation *> type_violations;
 
 static int application(PNode *p, EntrySet *es, AVar *fun, CreationSet *s, Vec<AVar *> &args, 
-                       Partial_kind partial);
+                       int is_closure, Partial_kind partial);
 
 AEdge::AEdge() : 
   from(0), to(0), pnode(0), fun(0), match(0), in_edge_worklist(0) 
@@ -1334,11 +1334,13 @@ make_AEdges(Match *m, PNode *p, EntrySet *from, Vec<AEdge *> &edges) {
 
 // returns 1 if any are partial, 0 if some matched and -1 if none matched
 static int
-all_applications(PNode *p, EntrySet *es, AVar *a0, Vec<AVar *> &args, Partial_kind partial) {
+all_applications(PNode *p, EntrySet *es, AVar *a0, Vec<AVar *> &args, 
+                 int is_closure, Partial_kind partial) 
+{
   int incomplete = -2;
   a0->arg_of_send.add(make_AVar(p->lvals.v[0], es));
   forv_CreationSet(cs, *a0->out) if (cs)
-    switch (application(p, es, a0, cs, args, partial)) {
+    switch (application(p, es, a0, cs, args, is_closure, partial)) {
       case -1: if (incomplete < 0) incomplete = -1; break;
       case 0: if (incomplete < 0) incomplete = 0; break;
       case 1: incomplete = 1; break;
@@ -1355,7 +1357,7 @@ partial_application(PNode *p, EntrySet *es, CreationSet *cs, Vec<AVar *> args, P
     cs->vars.v[i]->arg_of_send.add(result);
     args.add(cs->vars.v[i]);
   }
-  return all_applications(p, es, fun, args, partial);
+  return all_applications(p, es, fun, args, 1, partial);
 }
 
 static void
@@ -1382,7 +1384,7 @@ record_arg(CreationSet *cs, AVar *a, Sym *s, AEdge *e, MPosition &p) {
 
 int
 function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> &args, 
-                  Partial_kind partial) 
+                  int is_closure, Partial_kind partial) 
 {
   Vec<AVar *> a;
   int partial_result = 0;
@@ -1391,7 +1393,7 @@ function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> 
     a.add(args.v[j]);
   Vec<Match *> matches;
   AVar *send = make_AVar(p->lvals.v[0], es);
-  if (pattern_match(a, send, partial, &matches)) {
+  if (pattern_match(a, send, is_closure, partial, &matches)) {
     forv_Match(m, matches) {
       if (!m->partial && partial != Partial_ALWAYS) {
         Vec<AEdge *> edges;
@@ -1425,11 +1427,11 @@ function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> 
 
 static int
 application(PNode *p, EntrySet *es, AVar *a0, CreationSet *cs, Vec<AVar *> &args, 
-            Partial_kind partial) 
+            int is_closure, Partial_kind partial) 
 {
   if (sym_function->implementors.set_in(cs->sym) && cs->defs.n)
     return partial_application(p, es, cs, args, partial);
-  return function_dispatch(p, es, a0, cs, args, partial);
+  return function_dispatch(p, es, a0, cs, args, is_closure, partial);
 }
 
 void
@@ -1516,7 +1518,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
       args.add(av);
     }
     AVar *a0 = make_AVar(p->rvals.v[0], es);
-    if (all_applications(p, es, a0, args, (Partial_kind)p->code->partial) > 0)
+    if (all_applications(p, es, a0, args, 0, (Partial_kind)p->code->partial) > 0)
       make_closure(result);
   } else {
     // argument and return constraints
@@ -1649,7 +1651,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
         AVar *fun = make_AVar(p->rvals.v[1], es);
         AVar *a1 = make_AVar(p->rvals.v[3], es);
         args.add(a1);
-        if (all_applications(p, es, fun, args, (Partial_kind)p->code->partial) > 0)
+        if (all_applications(p, es, fun, args, 0, (Partial_kind)p->code->partial) > 0)
           make_closure(result);
         break;
       }
@@ -1671,7 +1673,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
               args.add(obj);
               if (fa->method_token)
                 args.add(fa->method_token);
-              int res = application(p, es, selector, cs, args, (Partial_kind)p->code->partial);
+              int res = application(p, es, selector, cs, args, 0, (Partial_kind)p->code->partial);
               if (res > 0)
                 partial = 1;
               else if (res < 0)
@@ -1714,7 +1716,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
               if (fa->setter_token)
                 args.add(fa->setter_token);
               args.add(val);
-              int res = application(p, es, selector, cs, args, (Partial_kind)p->code->partial);
+              int res = application(p, es, selector, cs, args, 0, (Partial_kind)p->code->partial);
               if (res > 0)
                 partial = 1;
               else if (res < 0)

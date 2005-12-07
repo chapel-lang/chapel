@@ -11,6 +11,6 @@ function integer.fact() {
 }
 
 var j = 5;
-writeln(j.fact);
+writeln(j.fact());
 
 -- but writeln(5.fact) provokes a syntax error at the "."

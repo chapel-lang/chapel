@@ -345,7 +345,7 @@ AVar *unique_AVar(Var *v, EntrySet *es);
 void qsort_pointers(void **left, void **right);
 void initialize_Sym_for_fa(Sym *s);
 int function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> &args,
-                      Partial_kind partial);
+                      int is_closure, Partial_kind partial);
 void add_var_constraint(AVar *av);
 
 template<class C> void
