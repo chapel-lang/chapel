@@ -737,7 +737,10 @@ static void insert_call_temps(CallExpr* call) {
 
 static void fix_def_expr(DefExpr* def) {
   static int uid = 1;
-  if (def->sym->type != dtUnknown) {
+  if (dynamic_cast<VarSymbol*>(def->sym)->noDefaultInit) {
+    if (def->init)
+      def->parentStmt->insertAfter(new ExprStmt(new CallExpr(OP_GETS, def->sym, def->init->copy())));
+  } else if (def->sym->type != dtUnknown) {
     if (def->init)
       def->parentStmt->insertAfter(new ExprStmt(new CallExpr("=", def->sym, def->init->copy())));
     def->parentStmt->insertAfter(new ExprStmt(new CallExpr(OP_GETS, def->sym, new CallExpr("_alloc", def->sym->type->symbol))));
