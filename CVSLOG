@@ -51392,3 +51392,14 @@ Modified files:
 	chapel/compiler/passes/: cleanup.cpp normalize.cpp 
 	chapel/modules/standard/: prelude.chpl 
 
+---------------------------------------------------------------------------
+
+12/07/05 11:42:50 -- deitz
+
+Log message:
+	Fixed --use-alloc and fix_def_expr to handle variables that should not
+	be initialized, such as this in class constructors.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+
