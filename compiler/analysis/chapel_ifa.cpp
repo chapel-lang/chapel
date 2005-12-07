@@ -993,11 +993,8 @@ build_type(Type *t, bool make_default = true) {
       ClassType *tt = dynamic_cast<ClassType*>(t);
       t->asymbol->sym->type_kind = Type_RECORD;
       if (tt->classTag == CLASS_RECORD ||
-          tt->classTag == CLASS_UNION ||
           tt->classTag == CLASS_VALUECLASS)
         t->asymbol->sym->is_value_class = 1;
-      if (tt->classTag == CLASS_UNION)
-        t->asymbol->sym->is_union_class = 1;
       if (tt->dispatchParents.n > 0) {
         forv_Vec(Type, ttt, tt->dispatchParents)
           t->asymbol->sym->inherits_add(ttt->asymbol->sym);

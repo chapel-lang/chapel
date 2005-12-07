@@ -156,16 +156,7 @@ class UserType : public Type {
 enum ClassTag {
   CLASS_CLASS,
   CLASS_VALUECLASS,
-  CLASS_RECORD,
-  CLASS_UNION
-};
-
-enum unionCall {
-  UNION_SET = 0,
-  UNION_CHECK,
-  UNION_CHECK_QUIET,
-
-  NUM_UNION_CALLS
+  CLASS_RECORD
 };
 
 class ClassType : public Type {
@@ -266,6 +257,7 @@ TYPE_EXTERN Type* dtDomain;
 TYPE_EXTERN Type* dtArray;
 TYPE_EXTERN Type* dtMethodToken;
 TYPE_EXTERN Type* dtSetterToken;
+TYPE_EXTERN Type* dtFile;
 void findInternalTypes(void);
 
 // sum-ish types
