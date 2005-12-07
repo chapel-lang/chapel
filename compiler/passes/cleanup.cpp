@@ -16,61 +16,28 @@
 
 static void normalize_anonymous_record_or_forall_expression(DefExpr* def);
 static void destructure_indices(ForLoopStmt* stmt);
-static void destructure_tuple(CallExpr* call, Vec<BaseAST*>* asts);
+static void destructure_tuple(CallExpr* call);
 static void construct_tuple_type(int size);
-static void build_class_init_function(ClassType* ct);
 static void flatten_primary_methods(FnSymbol* fn);
 static void resolve_secondary_method_type(FnSymbol* fn);
 static void add_this_formal_to_method(FnSymbol* fn);
 static void finish_constructor(FnSymbol* fn);
 
 
-void cleanup(BaseAST* ast) {
-  Vec<BaseAST*> asts;
-  collect_asts(&asts, ast);
-  forv_Vec(BaseAST, ast, asts) {
-    if (DefExpr* a = dynamic_cast<DefExpr*>(ast)) {
-      normalize_anonymous_record_or_forall_expression(a);
-    } else if (ForLoopStmt* a = dynamic_cast<ForLoopStmt*>(ast)) {
-      destructure_indices(a);
-    } else if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
-      SymExpr* base = dynamic_cast<SymExpr*>(a->baseExpr);
-      if (base && !strncmp(base->var->name, "_tuple", 6)) {
-        construct_tuple_type(atoi(base->var->name+6));
-        CallExpr* parent = dynamic_cast<CallExpr*>(a->parentExpr);
-        if (parent && parent->isAssign() && parent->get(1) == a)
-          destructure_tuple(a, &asts);
-      }
-    }
-  }
-  asts.clear();
-  collect_asts_postorder(&asts, ast);
-  forv_Vec(BaseAST, ast, asts) {
-    if (DefExpr* defExpr = dynamic_cast<DefExpr*>(ast)) {
-      if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(defExpr->sym)) {
-        if (ClassType* ct = dynamic_cast<ClassType*>(type->definition)) {
-          build_class_init_function(ct);
-        }
-      }
-    }
-  }
-  asts.clear();
-  collect_asts(&asts, ast);
-  forv_Vec(BaseAST, ast, asts) {
-    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
-      flatten_primary_methods(fn);
-      resolve_secondary_method_type(fn);
-      add_this_formal_to_method(fn);
-      finish_constructor(fn);
-    }
-  }
+void cleanup(void) {
+  forv_Vec(ModuleSymbol, mod, allModules)
+    cleanup(mod);
+  cleanup(commonModule); // cleanup again because tuples are put here
 }
 
 
-void cleanup(void) {
+void cleanup(BaseAST* base) {
+  for (int i = 1; i <= 2; i++) {
   Vec<BaseAST*> asts;
-  collect_asts(&asts);
+  collect_asts(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
+    currentLineno = ast->lineno;
+    currentFilename = ast->filename;
     if (DefExpr* a = dynamic_cast<DefExpr*>(ast)) {
       normalize_anonymous_record_or_forall_expression(a);
     } else if (ForLoopStmt* a = dynamic_cast<ForLoopStmt*>(ast)) {
@@ -81,30 +48,23 @@ void cleanup(void) {
         construct_tuple_type(atoi(base->var->name+6));
         CallExpr* parent = dynamic_cast<CallExpr*>(a->parentExpr);
         if (parent && parent->isAssign() && parent->get(1) == a)
-          destructure_tuple(a, &asts);
+          destructure_tuple(a);
       }
     }
   }
+
   asts.clear();
-  collect_asts_postorder(&asts);
+  collect_asts(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
-    if (DefExpr* defExpr = dynamic_cast<DefExpr*>(ast)) {
-      if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(defExpr->sym)) {
-        if (ClassType* ct = dynamic_cast<ClassType*>(type->definition)) {
-          build_class_init_function(ct);
-        }
-      }
-    }
-  }
-  asts.clear();
-  collect_asts(&asts);
-  forv_Vec(BaseAST, ast, asts) {
+    currentLineno = ast->lineno;
+    currentFilename = ast->filename;
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
       flatten_primary_methods(fn);
       resolve_secondary_method_type(fn);
       add_this_formal_to_method(fn);
       finish_constructor(fn);
     }
+  }
   }
 }
 
@@ -115,8 +75,10 @@ void cleanup(void) {
  ***   NOTE: during parsing, these may be embedded in expressions
  ***/
 static void normalize_anonymous_record_or_forall_expression(DefExpr* def) {
+  if (!def->parentStmt || (!def->parentExpr && def->parentStmt->astType == STMT_EXPR))
+    return;
   Stmt* stmt = def->parentStmt;
-  if (stmt && stmt->getFunction() == stmt->getModule()->initFn)
+  if (stmt->getFunction() == stmt->getModule()->initFn)
     stmt = dynamic_cast<Stmt*>(stmt->getFunction()->defPoint->parentStmt->next);
   if ((!strncmp("_anon_record", def->sym->name, 12)) ||
       (!strncmp("_forallexpr", def->sym->name, 11))) {
@@ -157,22 +119,21 @@ static void destructure_indices(ForLoopStmt* stmt) {
  ***
  ***   NOTE: handles recursive tuple destructuring, (i,(j,k)) = ...
  ***/
-static void destructure_tuple(CallExpr* call, Vec<BaseAST*>* asts) {
-  VarSymbol* _tuple_destruct = new VarSymbol("_tuple_destruct");
-  DefExpr* def = new DefExpr(_tuple_destruct);
-  call->parentStmt->insertBefore(new ExprStmt(def));
-  int start = call->argList->length()/2;
-  int i = 0;
+static void destructure_tuple(CallExpr* call) {
+  Stmt* stmt = call->parentStmt;
+  VarSymbol* temp = new VarSymbol("_tuple_destruct");
+  stmt->insertBefore(new ExprStmt(new DefExpr(temp)));
+  call->replace(new SymExpr(temp));
+  int i = 1;
   for_alist(Expr, expr, call->argList) {
-    if (++i <= start)
-      continue;
-    Stmt* stmt = new ExprStmt(
-                   new CallExpr(OP_GETS, expr->copy(),
-                     new CallExpr(_tuple_destruct, new_IntLiteral(i-start))));
-    collect_asts(asts, stmt);
-    call->parentStmt->insertAfter(stmt);
+    if (CallExpr* callExpr = dynamic_cast<CallExpr*>(expr))
+      if (callExpr->isNamed("typeof"))
+        continue;
+    stmt->insertAfter(
+      new ExprStmt(
+        new CallExpr(OP_GETS, expr->remove(),
+          new CallExpr(temp, new_IntLiteral(i++)))));
   }
-  call->replace(new SymExpr(def->sym));
 }
 
 
@@ -180,6 +141,8 @@ static void destructure_tuple(CallExpr* call, Vec<BaseAST*>* asts) {
  ***   builds rank-dependent tuple type
  ***/
 static void construct_tuple_type(int rank) {
+  currentLineno = 0;
+
   char *name = stringcat("_tuple", intstring(rank));
 
   if (Symboltable::lookupInScope(name, commonModule->modScope))
@@ -233,6 +196,7 @@ static void construct_tuple_type(int rank) {
   tupleType->addSymbol(tupleSym);
   tupleType->addDeclarations(decls);
   commonModule->stmts->insertAtHead(new ExprStmt(new DefExpr(tupleSym)));
+  cleanup(tupleSym);
 
   // Build write function
   FnSymbol* fwriteFn = new FnSymbol("fwrite");
@@ -254,6 +218,7 @@ static void construct_tuple_type(int rank) {
   Expr* fwriteCall = new CallExpr("fwrite", new SymExpr(fileArg), actuals);
   fwriteFn->body = new BlockStmt(new ExprStmt(fwriteCall));
   commonModule->stmts->insertAtTail(new ExprStmt(new DefExpr(fwriteFn)));
+  cleanup(fwriteFn);
 
   // Build htuple = tuple function
   if (!fnostdincs) {
@@ -273,6 +238,7 @@ static void construct_tuple_type(int rank) {
     }
     assignFn->insertAtTail(new ReturnStmt(htupleArg));
     commonModule->stmts->insertAtTail(new ExprStmt(new DefExpr(assignFn)));
+    cleanup(assignFn);
   }
 
   // Build tuple = _ function
@@ -295,39 +261,6 @@ static void construct_tuple_type(int rank) {
 //   }
 
   buildDefaultClassTypeMethods(tupleType);
-}
-
-
-static bool stmt_defines_function(Stmt* stmt) {
-  if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt))
-    if (DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr))
-      if (dynamic_cast<FnSymbol*>(defExpr->sym))
-        return true;
-  return false;
-}
-
-
-static void build_class_init_function(ClassType* ct) {
-  if (ct->initFn)
-    INT_FATAL("ahhh");
-  ct->initFn = new FnSymbol(stringcat("_init_", ct->symbol->name));
-  ct->initFn->isInitFn = true;
-  ct->initFn->formals = new AList<DefExpr>();
-  ct->initFn->method_type = PRIMARY_METHOD;
-  ct->initFn->typeBinding = ct->symbol;
-  if (use_class_init) {
-    ct->initFn->body = new BlockStmt();
-    ct->initFn->body->blkScope = ct->structScope;
-    for_alist(Stmt, stmt, ct->declarationList) {
-      stmt->remove();
-      if (stmt_defines_function(stmt))
-        ct->symbol->defPoint->parentStmt->insertBefore(stmt);
-      else
-        ct->initFn->insertAtTail(stmt);
-    }
-  }
-  ct->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(new DefExpr(ct->initFn)));
-  ct->methods.add(ct->initFn);
 }
 
 
@@ -364,24 +297,22 @@ static void resolve_secondary_method_type(FnSymbol* fn) {
 
 
 static void add_this_formal_to_method(FnSymbol* fn) {
-  if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(fn->typeBinding)) {
-    fn->cname = stringcat("_", typeSym->cname, "_", fn->cname);
-    if (fn->fnClass != FN_CONSTRUCTOR) {
-      ArgSymbol* this_insert = new ArgSymbol(INTENT_REF, "this", typeSym->definition);
-      fn->formals->insertAtHead(new DefExpr(this_insert));
-      fn->_this = this_insert;
-      bool isThisMethod = !strcmp(fn->name, "this");
-      if (!isThisMethod) {
-        ArgSymbol* token_dummy = new ArgSymbol(INTENT_REF, "_methodTokenDummy",
-                                               dtMethodToken);
-        fn->formals->insertAtHead(new DefExpr(token_dummy));
-      }
-      if (fn->isSetter) {
-        ArgSymbol* setter_dummy = new ArgSymbol(INTENT_REF, "_setterTokenDummy", 
-                                                dtSetterToken);
-        int len = fn->formals->length();
-        fn->formals->get(len)->insertBefore(new DefExpr(setter_dummy));
-      }
+  if (fn->_this) // already added
+    return;
+  if (fn->typeBinding && fn->fnClass != FN_CONSTRUCTOR) {
+    fn->cname = stringcat("_", fn->typeBinding->cname, "_", fn->cname);
+    ArgSymbol* this_insert = new ArgSymbol(INTENT_REF, "this", fn->typeBinding->definition);
+    fn->formals->insertAtHead(new DefExpr(this_insert));
+    fn->_this = this_insert;
+    if (strcmp(fn->name, "this")) {
+      ArgSymbol* token_dummy = new ArgSymbol(INTENT_REF, "_methodTokenDummy",
+                                             dtMethodToken);
+      fn->formals->insertAtHead(new DefExpr(token_dummy));
+    }
+    if (fn->isSetter) {
+      ArgSymbol* setter_dummy = new ArgSymbol(INTENT_REF, "_setterTokenDummy", 
+                                              dtSetterToken);
+      fn->formals->last()->insertBefore(new DefExpr(setter_dummy));
     }
   }
 }
@@ -392,6 +323,11 @@ finish_constructor(FnSymbol* fn) {
   if (fn->fnClass != FN_CONSTRUCTOR)
     return;
   CallExpr *inner = 0;
+
+  if (ReturnStmt* stmt = dynamic_cast<ReturnStmt*>(fn->body->body->last())) {
+    if (stmt->expr)
+      return; // already finished
+  }
 
   ClassType* ct = dynamic_cast<ClassType*>(fn->typeBinding->definition);
 
@@ -424,8 +360,6 @@ finish_constructor(FnSymbol* fn) {
 
   stmts->insertAtTail(new ExprStmt(new DefExpr(fn->_this)));
   stmts->insertAtTail(alloc_stmt);
-  stmts->insertAtTail(new ExprStmt(new CallExpr((inner = new CallExpr(ct->initFn, methodToken, fn->_this)))));
-  inner->partialTag = PARTIAL_OK;
 
   // assign formals to fields by name
   forv_Vec(Symbol, field, ct->fields) {

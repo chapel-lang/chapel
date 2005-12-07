@@ -37,8 +37,8 @@ _chpl_adomain.chpl:50: fwrite, f : file, val : _adomain_lit
 _chpl_adomain.chpl:75: fwrite, f : file, val : _aarray_info
 _chpl_seq.chpl:8: fwrite, f : file, val : _seqNode
 zeroarity-bound-error-2.chpl:5: fwrite, f : file, val : C
-zeroarity-bound-error-2.chpl:5: fwrite, f : file, val : _tuple2
-zeroarity-bound-error-2.chpl:5: fwrite, f : file, val : _tuple2
+fwrite, f : file, val : _tuple2
+fwrite, f : file, val : _tuple2
 prelude.chpl:24: fwrite, f : file, val : _ddata
 _chpl_seq.chpl:170: fwrite, f : file, s : seq
 _chpl_seq.chpl:8: fwrite, f : file, val : _seqNode

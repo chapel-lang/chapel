@@ -40,6 +40,8 @@ void normalize(void) {
 
   collect_functions(&fns);
   forv_Vec(FnSymbol, fn, fns) {
+    currentLineno = fn->lineno;
+    currentFilename = fn->filename;
     if (fn->fnClass == FN_ITERATOR)
       reconstruct_iterator(fn);
     if (fn->retRef)
@@ -52,6 +54,8 @@ void normalize(void) {
   asts.clear();
   collect_asts(&asts);
   forv_Vec(BaseAST, ast, asts) {
+    currentLineno = ast->lineno;
+    currentFilename = ast->filename;
     if (VarSymbol* vs = dynamic_cast<VarSymbol*>(ast)) {
       if (vs->type == dtUnknown && !vs->defPoint->exprType) {
         vs->noDefaultInit = true;
@@ -68,6 +72,8 @@ void normalize(void) {
   asts.clear();
   collect_asts(&asts);
   forv_Vec(BaseAST, ast, asts) {
+    currentLineno = ast->lineno;
+    currentFilename = ast->filename;
     if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
       call_constructor_for_class(a);
     } else if (ForLoopStmt* a = dynamic_cast<ForLoopStmt*>(ast)) {
@@ -88,6 +94,8 @@ void normalize(void) {
   asts.clear();
   collect_asts_postorder(&asts);
   forv_Vec(BaseAST, ast, asts) {
+    currentLineno = ast->lineno;
+    currentFilename = ast->filename;
     if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
       hack_array_constructor_call(a);
       hack_domain_constructor_call(a);
@@ -101,6 +109,8 @@ void normalize(void) {
   asts.clear();
   collect_asts_postorder(&asts);
   forv_Vec(BaseAST, ast, asts) {
+    currentLineno = ast->lineno;
+    currentFilename = ast->filename;
     if (Expr* a = dynamic_cast<Expr*>(ast)) {
       hack_resolve_types(a);
     }
@@ -109,6 +119,8 @@ void normalize(void) {
   asts.clear();
   collect_asts_postorder(&asts);
   forv_Vec(BaseAST, ast, asts) {
+    currentLineno = ast->lineno;
+    currentFilename = ast->filename;
     if (FnSymbol* a = dynamic_cast<FnSymbol*>(ast)) {
       if (!(a->_setter || a->_getter ||
             (!no_infer && a->fnClass == FN_CONSTRUCTOR)))

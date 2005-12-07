@@ -646,7 +646,6 @@ ClassType::ClassType(ClassTag initClassTag) :
   types.clear();
   isPattern = false;
   fieldSelector = NULL;
-  initFn = NULL;
 }
 
 
@@ -795,10 +794,7 @@ void ClassType::codegenDef(FILE* outfile) {
   symbol->codegen(outfile);
   fprintf(outfile, " {\n");
   bool printedSomething = false; // BLC: this is to avoid empty structs, illegal in C
-  AList<Stmt>* stmtList = declarationList;
-  if (use_class_init)
-    stmtList = initFn->body->body;
-  for_alist(Stmt, stmt, stmtList) {
+  for_alist(Stmt, stmt, declarationList) {
     if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {
       if (DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr)) {
         if (VarSymbol* var = dynamic_cast<VarSymbol*>(defExpr->sym)) {
