@@ -51370,3 +51370,25 @@ Modified files:
 Added files:
 	chapel/test/trivial/preston/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+12/07/05 11:13:45 -- deitz
+
+Log message:
+	Added --use-alloc compiler option which breaks up the DefExpr of
+	VarSymbols into its constituent parts before analysis.  John, we
+	should go over this first pass as to what things should look like.
+	The code is in fix_def_expr in normalize.cpp.  I have left the init
+	and exprType fields on the DefExpr of a VarSymbol, but I assume these
+	can go away eventually.
+	
+	I'm not sure what to put for the _alloc function in the prelude, as
+	far as the primitive and pragmas.  Also, I have currently used nil for
+	variables that have no types and no inits.
+
+Modified files:
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/passes/: cleanup.cpp normalize.cpp 
+	chapel/modules/standard/: prelude.chpl 
+
