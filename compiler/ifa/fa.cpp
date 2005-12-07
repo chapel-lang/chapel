@@ -1837,6 +1837,7 @@ analyze_edge(AEdge *e_arg) {
   Vec<AEdge *> edges;
   make_entry_set(e_arg, edges);
   forv_AEdge(ee, edges) {
+    int regular_rets = ee->pnode->lvals.n;
     // verify that the filters are s
     form_MPositionAVar(x, ee->args) {
       if (!x->key->is_positional())
@@ -1867,7 +1868,6 @@ analyze_edge(AEdge *e_arg) {
     creation_point(make_AVar(ee->match->fun->sym->cont->var, ee->to), sym_continuation);
     for (int i = 0; i < ee->pnode->lvals.n; i++)
       flow_vars(ee->to->rets.v[i], ee->rets.v[i]);
-    int regular_rets = ee->pnode->lvals.n;
     fill_rets(ee->to, regular_rets + ee->match->fun->out_positions.n);
     for (int o = 0; o < ee->match->fun->out_positions.n; o++) {
       MPosition *p = ee->match->fun->out_positions.v[o];
