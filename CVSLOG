@@ -51444,3 +51444,14 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+12/07/05 15:56:13 -- deitz
+
+Log message:
+	More improvements to --use-alloc for noDefaultInit.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/modules/standard/: prelude.chpl 
+
