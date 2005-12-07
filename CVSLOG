@@ -51356,3 +51356,17 @@ Modified files:
 	chapel/compiler/passes/: cleanup.cpp 
 	chapel/test/trivial/preston/: boundfunction.chpl 
 
+---------------------------------------------------------------------------
+
+12/07/05 11:00:10 -- bradc
+
+Log message:
+	Converted chplio.c functions that return void and are
+	prototyped in prelude.chpl back to returning void in
+	the prelude rather than integer.
+
+Modified files:
+	chapel/modules/standard/: prelude.chpl 
+Added files:
+	chapel/test/trivial/preston/: .cvsignore 
+
