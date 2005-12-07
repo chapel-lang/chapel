@@ -340,6 +340,7 @@ function length(a : string) : integer {
   return __primitive("coerce", integer, a);
 }
 
+pragma "split unique"
 function _alloc(t) { return __primitive("chapel_defexpr", t); }
 
 pragma "split unique"

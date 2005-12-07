@@ -56,9 +56,11 @@ void normalize(void) {
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
-    if (VarSymbol* vs = dynamic_cast<VarSymbol*>(ast)) {
-      if (vs->type == dtUnknown && !vs->defPoint->exprType) {
-        vs->noDefaultInit = true;
+    if (!use_alloc) {
+      if (VarSymbol* vs = dynamic_cast<VarSymbol*>(ast)) {
+        if (vs->type == dtUnknown && !vs->defPoint->exprType) {
+          vs->noDefaultInit = true;
+        }
       }
     }
 
@@ -268,7 +270,8 @@ static void normalize_returns(FnSymbol* fn) {
     fn->insertAtTail(new ReturnStmt());
   } else {
     retval = new VarSymbol(stringcat("_ret_", fn->name), fn->retType);
-    retval->noDefaultInit = true;
+    if (!use_alloc)
+      retval->noDefaultInit = true;
     Expr* type = fn->defPoint->exprType;
     type->remove();
     fn->insertAtHead(new ExprStmt(new DefExpr(retval, NULL, type)));
