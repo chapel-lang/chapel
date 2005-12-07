@@ -51315,3 +51315,26 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+12/06/05 16:57:58 -- deitz
+
+Log message:
+	Made some major simplifications to resolveSymbols now that we
+	normalize the AST by inserting temporaries and applying the
+	getter/setter transform.
+	
+	Added an error for when the compiler encounters unions and futurized
+	three union tests that were sneaking by under a record implementation.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/traversals/: resolveSymbols.cpp 
+Added files:
+	chapel/test/classes/jplevyak/: union_type_hierarchy-1.future 
+	                               union_type_hierarchy-2.future 
+	                               union_type_hierarchy-3-error.future 
+
