@@ -21,21 +21,23 @@ _chpl_seq.chpl:8: fwrite, f : file, val : _seqNode
 _chpl_seq.chpl:8: fwrite, f : file, val : _seqNode
 _chpl_seq.chpl:8: fwrite, f : file, val : _seqNode
 fail: program does not type
+fwrite, f : file, val : _tuple2
+fwrite, f : file, val : _tuple2
 note: candidates are:
 note: candidates are:
-prelude.chpl:127: fwrite, f : file, val : reduction
-prelude.chpl:130: fwrite, f : file, val : sum
-prelude.chpl:133: fwrite, f : file, val : max
-prelude.chpl:136: fwrite, f : file, val : min
-prelude.chpl:139: fwrite, f : file, val : maxloc
-prelude.chpl:142: fwrite, f : file, val : minloc
-prelude.chpl:151: fwrite, f : file, val : timer
-prelude.chpl:199: fwrite, f : file, val : _methodTokenType
-prelude.chpl:205: fwrite, f : file, val : _setterTokenType
-prelude.chpl:210: fwrite, f : file, val : _seq
-prelude.chpl:231: fwrite, f : file, val : Array
-prelude.chpl:234: fwrite, f : file, val : Domain
-prelude.chpl:244: fwrite, f : file, val : Tuple
+prelude.chpl:131: fwrite, f : file, val : reduction
+prelude.chpl:134: fwrite, f : file, val : sum
+prelude.chpl:137: fwrite, f : file, val : max
+prelude.chpl:140: fwrite, f : file, val : min
+prelude.chpl:143: fwrite, f : file, val : maxloc
+prelude.chpl:146: fwrite, f : file, val : minloc
+prelude.chpl:155: fwrite, f : file, val : timer
+prelude.chpl:203: fwrite, f : file, val : _methodTokenType
+prelude.chpl:209: fwrite, f : file, val : _setterTokenType
+prelude.chpl:214: fwrite, f : file, val : _seq
+prelude.chpl:235: fwrite, f : file, val : Array
+prelude.chpl:238: fwrite, f : file, val : Domain
+prelude.chpl:248: fwrite, f : file, val : Tuple
 prelude.chpl:24: fwrite, f : file, val : _ddata
 prelude.chpl:24: fwrite, f : file, val : _ddata
 prelude.chpl:24: fwrite, f : file, val : _ddata
@@ -44,8 +46,6 @@ prelude.chpl:29: fwrite, f : file, val : CFILEPTR
 prelude.chpl:3: fwrite, f : file, val : object
 prelude.chpl:4: fwrite, f : file, val : value
 record_type_hierarchy-3-error.chpl:12: f, a : D
-record_type_hierarchy-3-error.chpl:12: fwrite, f : file, val : _tuple2
-record_type_hierarchy-3-error.chpl:12: fwrite, f : file, val : _tuple2
 record_type_hierarchy-3-error.chpl:16: '_tmp' has no type
 record_type_hierarchy-3-error.chpl:16: expression has no type
 record_type_hierarchy-3-error.chpl:16: expression has no type

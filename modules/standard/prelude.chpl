@@ -37,11 +37,13 @@ pragma "rename fopen" function _fopen(filename, mode : string) : CFILEPTR {
   return CFILEPTR();
 }
 
-pragma "rename fclose" function _fclose(fp : CFILEPTR) : integer;
+pragma "rename fclose" function _fclose(fp : CFILEPTR) : integer {
+  return __primitive("pure_return", integer);
+}
 
 const errno: integer;
 function strerror(errno: integer) : string {
-  return "";
+  return __primitive("pure_return", string);
 }
 
 pragma "rename _chpl_write_linefeed" function writeln() : void {
