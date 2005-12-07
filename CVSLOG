@@ -51338,3 +51338,21 @@ Added files:
 	                               union_type_hierarchy-2.future 
 	                               union_type_hierarchy-3-error.future 
 
+---------------------------------------------------------------------------
+
+12/06/05 17:54:46 -- jplevyak
+
+Log message:
+	Correctly report an error when a member function defined with parens
+	is called without parens.
+	This required fixing several codes which construct calls of the
+	  form c.x() as the inner CallExpr must now be PARTIAL_OK and
+	  be surrounded with an outer CallExpr().
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: fa.cpp fa.h pattern.cpp pattern.h 
+	chapel/compiler/passes/: cleanup.cpp 
+	chapel/test/trivial/preston/: boundfunction.chpl 
+
