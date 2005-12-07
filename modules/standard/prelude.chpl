@@ -44,8 +44,8 @@ function strerror(errno: integer) : string {
   return "";
 }
 
-pragma "rename _chpl_write_linefeed" function writeln() : integer {
-  return __primitive("writeln");
+pragma "rename _chpl_write_linefeed" function writeln() : void {
+         __primitive("writeln");
 }
 
 function fprintf(fp: CFILEPTR, fmt: string, val) : integer {
@@ -56,11 +56,16 @@ function fscanf(fp: CFILEPTR, fmt: string, inout val) : integer {
   return __primitive("read", val);
 }
 
-function _chpl_fwrite_float_help(f: CFILEPTR, val: float) : integer {
-  return __primitive("write", val);
+function _chpl_fwrite_float_help(f: CFILEPTR, val: float) : void {
+         __primitive("write", val);
 }
 
-function _chpl_fread_string_help(f: CFILEPTR, inout val: string) : integer {
+function _chpl_fread_string_help(f: CFILEPTR, inout val: string) : void {
+         __primitive("read", val);
+}
+
+function _readLitChar(f: CFILEPTR, val: string, 
+                      ignoreWhiteSpace: integer) : integer {
   return __primitive("read", val);
 }
 
@@ -84,9 +89,6 @@ function _tostring(x : complex, format : string) : string {
          return __primitive("coerce", string, x);
 }
 
-function _readLitChar(f: CFILEPTR, val: string, ignoreWhiteSpace: integer) : integer {
-         return __primitive("read", val);
-}
 
 -- intrinsic type values
 
