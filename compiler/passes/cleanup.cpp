@@ -426,6 +426,7 @@ finish_constructor(FnSymbol* fn) {
   stmts->insertAtTail(alloc_stmt);
   stmts->insertAtTail(new ExprStmt(new CallExpr((inner = new CallExpr(ct->initFn, methodToken, fn->_this)))));
   inner->partialTag = PARTIAL_OK;
+
   // assign formals to fields by name
   forv_Vec(Symbol, field, ct->fields) {
     for_alist(DefExpr, formalDef, fn->formals) {

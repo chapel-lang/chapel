@@ -32,6 +32,7 @@ static void hack_typeof_call(CallExpr* call);
 static void hack_resolve_types(Expr* expr);
 static void apply_getters_setters(BaseAST* ast);
 static void insert_call_temps(CallExpr* call);
+static void fix_def_expr(DefExpr* def);
 
 void normalize(void) {
   Vec<FnSymbol*> fns;
@@ -122,6 +123,20 @@ void normalize(void) {
     currentFilename = ast->filename;
     if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
       insert_call_temps(a);
+    }
+  }
+
+  if (use_alloc) {
+    asts.clear();
+    collect_asts_postorder(&asts);
+    forv_Vec(BaseAST, ast, asts) {
+      currentLineno = ast->lineno;
+      currentFilename = ast->filename;
+      if (DefExpr* a = dynamic_cast<DefExpr*>(ast)) {
+        if (dynamic_cast<VarSymbol*>(a->sym) &&
+            dynamic_cast<FnSymbol*>(a->parentSymbol))
+          fix_def_expr(a);
+      }
     }
   }
 }
@@ -716,5 +731,29 @@ static void insert_call_temps(CallExpr* call) {
       }
       base->var->defPoint->parentStmt->remove();
     }
+  }
+}
+
+
+static void fix_def_expr(DefExpr* def) {
+  static int uid = 1;
+  if (def->sym->type != dtUnknown) {
+    if (def->init)
+      def->parentStmt->insertAfter(new ExprStmt(new CallExpr("=", def->sym, def->init->copy())));
+    def->parentStmt->insertAfter(new ExprStmt(new CallExpr(OP_GETS, def->sym, new CallExpr("_alloc", def->sym->type->symbol))));
+  } else if (def->exprType) {
+    if (def->init)
+      def->parentStmt->insertAfter(new ExprStmt(new CallExpr("=", def->sym, def->init->copy())));
+    def->parentStmt->insertAfter(new ExprStmt(new CallExpr(OP_GETS, def->sym, new CallExpr("_alloc", def->exprType->copy()))));
+  } else if (def->init) {
+    VarSymbol* tmp = new VarSymbol("_deftmp");
+    tmp->cname = stringcat(tmp->name, intstring(uid++));
+    tmp->noDefaultInit = true;
+    def->parentStmt->insertBefore(new ExprStmt(new DefExpr(tmp)));
+    def->parentStmt->insertBefore(new ExprStmt(new CallExpr(OP_GETS, tmp, def->init->copy())));
+    def->parentStmt->insertAfter(new ExprStmt(new CallExpr("=", def->sym, tmp)));
+    def->parentStmt->insertAfter(new ExprStmt(new CallExpr(OP_GETS, def->sym, new CallExpr("_alloc", tmp))));
+  } else {
+    def->parentStmt->insertAfter(new ExprStmt(new CallExpr(OP_GETS, def->sym, new CallExpr("_alloc", gNil))));
   }
 }
