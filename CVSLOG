@@ -51597,3 +51597,24 @@ Modified files:
 Removed files:
 	chapel/test/arrays/deitz/: test_array_class_trial3.future 
 
+---------------------------------------------------------------------------
+
+12/08/05 15:29:04 -- deitz
+
+Log message:
+	Changed traversal UpdateSymbols into a function.  This, and
+	replaceChild, should be moved into baseAST.cpp along with
+	get_ast_children as they all potentially need to be updated when
+	fields etc. are added to BaseAST children classes.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp baseAST.cpp expr.cpp stmt.cpp 
+	                      symbol.cpp type.cpp 
+	chapel/compiler/include/: alist.h astutil.h 
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/compiler/traversals/: Makefile.share 
+	                             createNestedFuncIterators.cpp 
+	                             removeNestedFunctions.cpp 
+Removed files:
+	chapel/compiler/traversals/: updateSymbols.cpp updateSymbols.h 
+
