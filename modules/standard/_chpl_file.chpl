@@ -222,6 +222,12 @@ function write() {
 }
 
 
+function writeln() { 
+  halt("***Error: This should never be called.  All writeln calls should be converted to fwritelns***");
+}
+
 function read() {
   halt("***Error: This should never be called.  All read calls should be converted to freads***");
 }
+
+

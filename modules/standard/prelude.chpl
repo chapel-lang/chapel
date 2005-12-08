@@ -46,10 +46,6 @@ function strerror(errno: integer) : string {
   return __primitive("pure_return", string);
 }
 
-pragma "rename _chpl_write_linefeed" function writeln() : void {
-         __primitive("writeln");
-}
-
 function fprintf(fp: CFILEPTR, fmt: string, val) : integer {
   return __primitive("write", val);
 }
