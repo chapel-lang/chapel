@@ -1333,14 +1333,6 @@ gen_one_defexpr(VarSymbol *var, DefExpr *def) {
       s->must_implement = unalias_type(type->asymbol->sym);
   }
   Expr *init = def->init;
-  switch (type->astType) { 
-    case TYPE_VARIABLE:
-    case TYPE_META:
-      type = dtUnknown;  // as yet unknown
-      break;
-    default:
-      break;
-  }
   int no_default_init = var->noDefaultInit ;
  // optimizations || (init && (is_reference_type(type) || (is_scalar_type(type) && type == init->typeInfo())));
   Sym *lhs = s;
