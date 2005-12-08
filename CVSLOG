@@ -51508,3 +51508,30 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: chapel_ifa.cpp 
 
+---------------------------------------------------------------------------
+
+12/08/05 13:25:01 -- deitz
+
+Log message:
+	Simplified the test function for determining when a function should be
+	instantiated given that a class has been instantiated.
+	
+	Removed default value for type formals.  One problem we currently have
+	is that given:
+	
+	 class C { type t; }
+	 var c : C = C(t=integer);
+	
+	the exprType is SymExpr(C) rather than CallExpr(C) so this is still
+	allowed, but I'm going to look further into disallowing it even now.
+	
+	The #define REMOVE_TYPE_PARAM in instantiate.cpp says to remove the
+	type variables from the actuals and formals during pre-instantiation.
+	I haven't yet been able to remove this #define.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp normalize.cpp 
+	                         scopeResolve.cpp 
+	chapel/compiler/traversals/: instantiate.cpp 
+
