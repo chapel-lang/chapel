@@ -1029,6 +1029,19 @@ FnSymbol::clone_generic(ASTMap* formal_types) {
 }
 
 
+static bool
+function_requires_instantiation(FnSymbol* fn, Type* type) {
+  if (fn->retType == type)
+    return true;
+  for_alist(DefExpr, formalDef, fn->formals) {
+    ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
+    if (formal->type == type)
+      return true;
+  }
+  return false;
+}
+
+
 FnSymbol*
 FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
                               Vec<FnSymbol*>* new_functions,
@@ -1063,9 +1076,6 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
     cloneType->substitutions.copy(*generic_substitutions);
     tagGenerics(cloneType);
 
-    Vec<FnSymbol*> functions;
-    collect_functions(&functions);
-    
     Vec<BaseAST*> genericParameters;
     for (int i = 0; i < substitutions.n; i++)
       if (VariableType *t = dynamic_cast<VariableType*>(substitutions.v[i].key)) {
@@ -1077,8 +1087,10 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
     genericParameters.set_add(retType);
     genericParameters.set_add(retType->symbol);
 
-    forv_Vec(FnSymbol, fn, functions) {
-      if (functionContainsAnyAST(fn, &genericParameters)) {
+    Vec<FnSymbol*> fns;
+    collect_functions(&fns);
+    forv_Vec(FnSymbol, fn, fns) {
+      if (function_requires_instantiation(fn, retType)) {
         FnSymbol *fnClone = instantiate_function(fn, &substitutions, generic_substitutions, &map);
         new_functions->add(fnClone);
         if (fn == this) {

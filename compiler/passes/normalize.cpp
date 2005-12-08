@@ -579,12 +579,12 @@ static void hack_resolve_types(Expr* expr) {
       } else if (arg->type == dtUnknown &&
                  can_resolve_type(def_expr->exprType)) {
         arg->type = def_expr->exprType->typeInfo();
-        def_expr->exprType = NULL;
+        def_expr->exprType->remove();
       }
     } else if (VarSymbol* var = dynamic_cast<VarSymbol*>(def_expr->sym)) {
       if (var->type == dtUnknown && can_resolve_type(def_expr->exprType)) {
         var->type = def_expr->exprType->typeInfo();
-        def_expr->exprType = NULL;
+        def_expr->exprType->remove();
       } else if (var->type == dtUnknown &&
                  !def_expr->exprType &&
                  can_resolve_type(def_expr->init)) {

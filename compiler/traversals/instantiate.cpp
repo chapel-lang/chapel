@@ -7,11 +7,10 @@
 #include "stmt.h"
 #include "analysis.h"
 
+#define REMOVE_TYPE_PARAM
+
 void
 Instantiate::postProcessExpr(Expr* expr) {
-  if (!preinstantiate) {
-    return;
-  }
   if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
     if (SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr)) {
       Vec<FnSymbol*> functions;
@@ -113,12 +112,14 @@ Instantiate::postProcessExpr(Expr* expr) {
             TRAVERSE(function, new Instantiate(), true);
           }
 
+#ifdef REMOVE_TYPE_PARAM
           for_alist(DefExpr, formalDef, new_fn->formals) {
             ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
             if (formal->isGeneric || formal->genericSymbol) {
               formalDef->remove();
             }
           }
+#endif
           bool handled = false;
           if (DefExpr* parentDef = dynamic_cast<DefExpr*>(call->parentExpr)) {
             if (parentDef->exprType == call) {
@@ -127,8 +128,13 @@ Instantiate::postProcessExpr(Expr* expr) {
               handled = true;
             }
           }
+#ifdef REMOVE_TYPE_PARAM
           if (!handled)
             call->replace(new CallExpr(new_fn, newActuals));
+#else
+          if (!handled)
+            call->baseExpr->replace(new SymExpr(new_fn));
+#endif
         }
       }
     }
@@ -137,6 +143,8 @@ Instantiate::postProcessExpr(Expr* expr) {
 
 
 void pre_instantiate(void) {
+  if (!preinstantiate)
+    return;
   Pass* pass = new Instantiate();
   pass->run(Symboltable::getModules(pass->whichModules));
 }
