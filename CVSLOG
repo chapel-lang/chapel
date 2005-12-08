@@ -51482,3 +51482,18 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: sym.cpp 
 
+---------------------------------------------------------------------------
+
+12/08/05 09:02:44 -- deitz
+
+Log message:
+	Made --nostdincs still include _chpl_file.chpl.  Along with
+	prelude.chpl, this module is necessary for core features like
+	writeln(), so these modules are necessary for so many cases.  This
+	gets many of the class and type variable tests working with this flag.
+
+Modified files:
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	                         filesToAST.cpp 
+	chapel/compiler/traversals/: processImportExprs.cpp 
+
