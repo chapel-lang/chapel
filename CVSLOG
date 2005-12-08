@@ -51455,3 +51455,20 @@ Modified files:
 	chapel/compiler/passes/: normalize.cpp 
 	chapel/modules/standard/: prelude.chpl 
 
+---------------------------------------------------------------------------
+
+12/07/05 20:08:55 -- jplevyak
+
+Log message:
+	Compute alignments for all variables so that we can compute offsets
+	  of members.
+	Fix offset and alignment compuatations for setters.
+	Only use computed offsets for sum types, use C struct references
+	  otherwise.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: ast.cpp builtin_symbols.h clone.cpp 
+	                      if1.cpp if1.h sym.cpp sym.h 
+	chapel/compiler/traversals/: resolveSymbols.cpp 
+
