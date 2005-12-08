@@ -25,9 +25,11 @@ void parse(void) {
   if (!fnostdincs) {
     ParseFile(stringcat(chplroot, "/modules/standard/_chpl_complex.chpl"),
               MOD_STANDARD);
-    fileModule = ParseFile(stringcat(chplroot, 
-                                     "/modules/standard/_chpl_file.chpl"),
-                           MOD_STANDARD);
+  }
+  fileModule = ParseFile(stringcat(chplroot, 
+                                   "/modules/standard/_chpl_file.chpl"),
+                         MOD_STANDARD);
+  if (!fnostdincs) {
     tupleModule = ParseFile(stringcat(chplroot,
                                       "/modules/standard/_chpl_htuple.chpl"),
                             MOD_STANDARD);
