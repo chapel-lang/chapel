@@ -41,7 +41,7 @@ addVarToFormals(FnSymbol* fn, Symbol* sym) {
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, sym->name, sym->type);
   fn->formals->insertAtTail(new DefExpr(arg));
   update_map.put(sym, arg);
-  fn->body->traverse(new UpdateSymbols(&update_map));
+  update_symbols(fn->body, &update_map);
 }
 
 

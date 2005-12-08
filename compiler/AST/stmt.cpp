@@ -8,7 +8,6 @@
 #include "symscope.h"
 #include "symtab.h"
 #include "../traversals/fixup.h"
-#include "../traversals/updateSymbols.h"
 #include "../passes/runAnalysis.h"
 
 static int inBlockStmt = 0;

@@ -1,4 +1,5 @@
 #include "analysis.h"
+#include "astutil.h"
 #include "baseAST.h"
 #include "expr.h"
 #include "map.h"
@@ -9,7 +10,6 @@
 #include "type.h"
 #include "yy.h"
 #include "../passes/runAnalysis.h"
-#include "../traversals/updateSymbols.h"
 #include "../traversals/fixup.h"
 
 
@@ -265,7 +265,7 @@ void BaseAST::postCopy(BaseAST* copy,
         }
       }
     }
-    TRAVERSE(copy, new UpdateSymbols(map), true);
+    update_symbols(copy, map);
   }
 }
 

@@ -9,7 +9,6 @@
 #include "symtab.h"
 #include "type.h"
 #include "../traversals/fixup.h"
-#include "../traversals/updateSymbols.h"
 #include "../passes/filesToAST.h"
 
 

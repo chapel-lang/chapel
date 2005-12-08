@@ -13,7 +13,6 @@
 #include "../traversals/createConfigVarTable.h"
 #include "../traversals/findTypeVariables.h"
 #include "../traversals/instantiate.h"
-#include "../traversals/updateSymbols.h"
 #include "../passes/preAnalysisCleanup.h"
 
 FnSymbol* chpl_main = NULL;
@@ -824,7 +823,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
         wrapper_actuals->insertAtTail(new SymExpr(temp));
     }
   }
-  TRAVERSE(wrapper_body, new UpdateSymbols(&map), true);
+  update_symbols(wrapper_body, &map);
 
   wrapper_body->insertAtTail(
     function_returns_void(this)
@@ -947,7 +946,7 @@ instantiate_update_expr(ASTMap* substitutions, Expr* expr) {
     if (Type *t = dynamic_cast<Type*>(substitutions->v[i].key))
       if (Type *tt = dynamic_cast<Type*>(substitutions->v[i].value))
         map.put(t->symbol, tt->symbol);
-  TRAVERSE(expr, new UpdateSymbols(&map), true);
+  update_symbols(expr, &map);
 }
 
 

@@ -165,3 +165,55 @@ void clear_type_info(BaseAST* base) {
     }
   }
 }
+
+
+#define XSUB(_x, _t)                               \
+  if (_x) {                                        \
+    if (BaseAST *b = map->get(_x)) {               \
+      if (_t* _y = dynamic_cast<_t*>(b)) {         \
+        _x = _y;                                   \
+      } else {                                     \
+        INT_FATAL("Major error in update_symbols"); \
+      }                                            \
+    }                                              \
+  }
+
+void update_symbols(BaseAST* ast, ASTMap* map) {
+  Vec<BaseAST*> asts;
+  collect_asts(&asts, ast);
+  forv_Vec(BaseAST, ast, asts) {
+    if (SymExpr* sym_expr = dynamic_cast<SymExpr*>(ast)) {
+      XSUB(sym_expr->var, Symbol);
+    } else if (DefExpr* defExpr = dynamic_cast<DefExpr*>(ast)) {
+      XSUB(defExpr->sym->type, Type);
+    } else if (CastExpr* castExpr = dynamic_cast<CastExpr*>(ast)) {
+      XSUB(castExpr->type, Type);
+    } else if (MemberAccess* memberAccess = dynamic_cast<MemberAccess*>(ast)) {
+      XSUB(memberAccess->member, Symbol);
+    } else if (GotoStmt* goto_stmt = dynamic_cast<GotoStmt*>(ast)) {
+      XSUB(goto_stmt->label, LabelSymbol);
+    } else if (VarSymbol* ps = dynamic_cast<VarSymbol*>(ast)) {
+      XSUB(ps->type, Type);
+    } else if (FnSymbol* ps = dynamic_cast<FnSymbol*>(ast)) {
+      XSUB(ps->type, Type);
+      XSUB(ps->retType, Type);
+      XSUB(ps->_this, Symbol);
+      XSUB(ps->_setter, Symbol);
+      XSUB(ps->_getter, Symbol);
+    } else if (ArgSymbol* ps = dynamic_cast<ArgSymbol*>(ast)) {
+      XSUB(ps->type, Type);
+      if (ps->isGeneric && ps->genericSymbol) {
+        BaseAST *b = map->get(ps->genericSymbol);
+        if (b) {
+          if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(b)) {
+            if (ts->definition->astType != TYPE_VARIABLE)
+              ps->isGeneric = 0;
+            ps->genericSymbol = ts;
+          } else {
+            INT_FATAL("Major error in update_symbols");
+          }
+        }
+      }
+    }
+  }
+}

@@ -16,7 +16,6 @@ TRAVERSALS_SRCS = \
         removeNestedFunctions.cpp \
 	resolveSymbols.cpp \
 	traversal.cpp \
-	updateSymbols.cpp \
         verify.cpp \
         view.cpp
 

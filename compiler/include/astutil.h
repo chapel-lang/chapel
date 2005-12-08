@@ -1,5 +1,6 @@
 #include "baseAST.h"
-#include "symbol.h"
+
+class FnSymbol;
 
 void cleanup(BaseAST* ast);
 
@@ -21,3 +22,6 @@ void compute_call_sites();
 
 // clear type and retTypes
 void clear_type_info(BaseAST* baseAST);
+
+// update symbols in ast with map
+void update_symbols(BaseAST* ast, ASTMap* map);

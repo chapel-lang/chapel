@@ -55,7 +55,7 @@ addVarsToFormals(FnSymbol* fn, Vec<Symbol*>* vars) {
     }
   }
   if (update_map.n)
-    fn->body->traverse(new UpdateSymbols(&update_map));
+    update_symbols(fn->body, &update_map);
 }
 
 

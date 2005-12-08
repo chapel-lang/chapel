@@ -12,7 +12,6 @@
 #include "symbol.h"
 #include "symtab.h"
 #include "stringutil.h"
-#include "../traversals/updateSymbols.h"
 #include "../traversals/inlineFunctions.h"
 
 
@@ -372,7 +371,7 @@ static void insert_formal_temps(FnSymbol* fn) {
     subs.put(formal, temp);
   }
 
-  TRAVERSE(fn->body, new UpdateSymbols(&subs), true);
+  update_symbols(fn->body, &subs);
 
   forv_Vec(DefExpr, tempDef, tempDefs) {
     fn->insertAtHead(new ExprStmt(tempDef));

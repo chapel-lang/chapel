@@ -9,11 +9,11 @@
 #define WhenStmtList AList<WhenStmt>
 
 #include <stdio.h>
+#include "astutil.h"
 #include "baseAST.h"
 #include "chplalloc.h"
 #include "map.h"
 #include "../traversals/fixup.h"
-#include "../traversals/updateSymbols.h"
 
 class Traversal;
 
@@ -475,7 +475,7 @@ AList<elemType>::copy(ASTMap* map,
         }
       }
     }
-    TRAVERSE(newList, new UpdateSymbols(map), true);
+    update_symbols(newList, map);
   }
   return newList;
 }
