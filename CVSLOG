@@ -51497,3 +51497,14 @@ Modified files:
 	                         filesToAST.cpp 
 	chapel/compiler/traversals/: processImportExprs.cpp 
 
+---------------------------------------------------------------------------
+
+12/08/05 12:02:02 -- jplevyak
+
+Log message:
+	Remove special handling for type_variables in DefExpr which was
+	hiding another bug.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+
