@@ -51545,3 +51545,18 @@ Log message:
 Modified files:
 	chapel/modules/standard/: _chpl_file.chpl prelude.chpl 
 
+---------------------------------------------------------------------------
+
+12/08/05 14:52:34 -- shannon
+
+Log message:
+	Update test output affected by my earlier change
+	to the prelude.
+
+Modified files:
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
