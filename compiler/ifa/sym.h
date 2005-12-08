@@ -110,7 +110,8 @@ class Sym : public BasicSym {
   char                  *constant;              // string representing constant value
   Immediate             imm;                    // constant and folded constant immediate values
 
-  int                   size;                   // size as immediate (i.e. references == sizeof(void*))
+  unsigned int                   size;                   // size as immediate (i.e. references == sizeof(void*))
+  unsigned int                   alignment;             // alignment as immediate (i.e. references == __alignof__(void*))
 
   Scope                 *scope;                 // used in ast.cpp              *fun* *type* *module*
   LabelMap              *labelmap;              // used by ast.cpp              *fun*

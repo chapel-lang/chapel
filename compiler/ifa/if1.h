@@ -30,6 +30,7 @@ class IF1 : public gc {
   Primitives            *primitives;
   IFACallbacks           *callback;
   int                   pointer_size;           // defaults to sizeof(void *)
+  int                   pointer_alignment;      // defaults to __alignof__(void *)
   
   IF1();
 };
@@ -73,6 +74,7 @@ void    if1_set_int_type(IF1 *p, Sym *t, int signd, int size);
 void    if1_set_float_type(IF1 *p, Sym *t, int size);
 void    if1_set_complex_type(IF1 *p, Sym *t, int size);
 int     if1_numeric_size(IF1 *p, Sym *t);
+int     if1_numeric_alignment(IF1 *p, Sym *t);
 char    *if1_cannonicalize_string(IF1 *p, char *start, char *end = 0);
 void    if1_finalize(IF1 *p);
 void    if1_finalize_closure(IF1 *p, Sym *c);

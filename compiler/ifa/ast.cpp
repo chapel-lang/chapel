@@ -435,10 +435,14 @@ compute_type_size(Sym *s) {
     if (type->is_symbol || type->type_kind == Type_TAGGED) {
       type = unalias_type(sym_int);
       s->size = if1_numeric_size(if1, type);
-    } else if (type->num_kind)
+      s->alignment = if1_numeric_alignment(if1, type);
+    } else if (type->num_kind) {
       s->size = if1_numeric_size(if1, type);
-    else
+      s->alignment = if1_numeric_alignment(if1, type);
+    } else {
       s->size = if1->pointer_size;
+      s->alignment = if1->pointer_alignment;
+    }
   }
 }
 

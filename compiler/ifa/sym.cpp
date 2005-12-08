@@ -401,13 +401,69 @@ if1_numeric_size(IF1 *p, Sym *t) {
     case IF1_NUM_KIND_NONE: assert(!"bad case"); break;
     case IF1_NUM_KIND_INT:
     case IF1_NUM_KIND_UINT:
-      return 1 << (t->num_index ? t->num_index : 1) - 1; // bool takes 1 byte
+      if (!t->num_index) return sizeof(bool);
+      return 1 << (t->num_index ? t->num_index : 1) - 1;
     case IF1_NUM_KIND_FLOAT:
       return 2 + (2 * t->num_index);
     case IF1_NUM_KIND_COMPLEX:
       return 2 * (2 + (2 * t->num_index));
   }
   return 0;
+}
+
+#define MAKE_ALIGNOF(_t) \
+struct AlignOf##_t {      \
+  char a;                \
+  _t b;                  \
+}
+
+#define ALIGNOF(_t) ((int)&(((struct AlignOf##_t *)0)->b))
+
+MAKE_ALIGNOF(bool);
+MAKE_ALIGNOF(uint8);
+MAKE_ALIGNOF(uint16);
+MAKE_ALIGNOF(uint32);
+MAKE_ALIGNOF(uint64);
+MAKE_ALIGNOF(float32);
+MAKE_ALIGNOF(float64);
+MAKE_ALIGNOF(complex32);
+MAKE_ALIGNOF(complex64);
+typedef char *alignstring;
+MAKE_ALIGNOF(alignstring);
+
+int 
+if1_numeric_alignment(IF1 *p, Sym *t) {
+  int res = -1;
+  switch (t->num_kind) {
+    default: assert(!"case"); break;
+    case IF1_NUM_KIND_UINT:
+    case IF1_NUM_KIND_INT:
+      switch (t->num_index) {
+        case IF1_INT_TYPE_1: return ALIGNOF(bool); break;
+        case IF1_INT_TYPE_8: return ALIGNOF(uint8); break;
+        case IF1_INT_TYPE_16: return ALIGNOF(uint16); break;
+        case IF1_INT_TYPE_32: return ALIGNOF(uint32); break;
+        case IF1_INT_TYPE_64: return ALIGNOF(uint64); break;
+        default: assert(!"case");
+      }
+      break;
+    case IF1_NUM_KIND_FLOAT:
+      switch (t->num_index) {
+        case IF1_FLOAT_TYPE_32: return ALIGNOF(float32);
+        case IF1_FLOAT_TYPE_64: return ALIGNOF(float64);
+        default: assert(!"case");
+      }
+      break;
+    case IF1_NUM_KIND_COMPLEX:
+      switch (t->num_index) {
+        case IF1_FLOAT_TYPE_32: return ALIGNOF(complex32);
+        case IF1_FLOAT_TYPE_64: return ALIGNOF(complex64);
+        default: assert(!"case");
+      }
+      break;
+    case IF1_CONST_KIND_STRING: return ALIGNOF(alignstring);
+  }
+  return res;
 }
 
 void

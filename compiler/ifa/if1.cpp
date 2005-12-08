@@ -22,6 +22,7 @@ IF1::IF1() {
  memset(this, 0, sizeof *this); 
  primitives = new Primitives(this);
  pointer_size = sizeof(void *);
+ pointer_alignment = __alignof__(void *);
  if1 = this;
 }
 
@@ -962,13 +963,16 @@ static char *int_type_names[IF1_INT_TYPE_NUM][2] = {
   { "uint64",  "int64" }
 };
 static char *float_type_names[IF1_FLOAT_TYPE_NUM] = {
-  "float32",  "float64", "float128"
+  "float32",  "float64"
+// , "float128"
 };
 static char *complex_type_names[IF1_FLOAT_TYPE_NUM] = {
-  "complex32",  "complex64", "complex128"
+  "complex32",  "complex64"
+//, "complex128"
 };
 static int float_type_sizes[IF1_FLOAT_TYPE_NUM] = {
-  32, 64, 128
+  32, 64
+// , 128
 };
 
 void

@@ -1156,16 +1156,20 @@ build_builtin_symbols() {
   new_alias_type(sym_enum_element, "enum_element", sym_int64);
   new_primitive_type(sym_float32, "float32");
   new_primitive_type(sym_float64, "float64");
-  new_primitive_type(sym_float128, "float128");
+//  new_primitive_type(sym_float128, "float128");
   new_alias_type(sym_float, "float", sym_float64);
   new_lub_type(sym_anyfloat, "anyfloat", 
-               sym_float32, sym_float64, sym_float128, VARARG_END);
+               sym_float32, sym_float64, 
+//     sym_float128, 
+     VARARG_END);
   new_primitive_type(sym_complex32, "complex32");
   new_primitive_type(sym_complex64, "complex64");
-  new_primitive_type(sym_complex128, "complex128");
+//  new_primitive_type(sym_complex128, "complex128");
   new_primitive_type(sym_complex, "complex");
   new_lub_type(sym_anycomplex, "anycomplex", 
-               sym_complex32, sym_complex64, sym_complex128, VARARG_END);
+               sym_complex32, sym_complex64, 
+//      sym_complex128, 
+      VARARG_END);
   new_lub_type(sym_anynum, "anynum", sym_anyint, sym_anyfloat, sym_anycomplex, VARARG_END);
   new_primitive_type(sym_char, "char");
   new_primitive_type(sym_string, "string");
@@ -1199,10 +1203,10 @@ build_builtin_symbols() {
 
   sym_float32->specializes.add(sym_complex32);
   sym_float64->specializes.add(sym_complex64);
-  sym_float128->specializes.add(sym_complex128);
+//  sym_float128->specializes.add(sym_complex128);
 
   sym_complex32->specializes.add(sym_complex64);
-  sym_complex64->specializes.add(sym_complex128);
+//  sym_complex64->specializes.add(sym_complex128);
 
   sym_anynum->specializes.add(sym_string);
 
@@ -3042,7 +3046,7 @@ member_info(Sym *t, char *name, int *offset, Type **type) {
   }
   *offset = oresult;
   Sym *tmp = 0;
-  if (!iv_type.n)
+  if (!iv_type.n || types->n < 2)
     *type = NULL;
   else {
     if (iv_type.n == 1)

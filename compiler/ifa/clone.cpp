@@ -392,14 +392,19 @@ determine_basic_clones(Vec<Vec<CreationSet *> *> &css_sets_by_sym) {
 static void
 determine_layouts() {
   forv_CreationSet(cs, fa->css) {
-    int offset = 0;
+    unsigned int offset = 0;
     forv_AVar(iv, cs->vars) {
-      int size = 0;
+      unsigned int size = 0, alignment = 0;
       forv_CreationSet(x, *iv->out) if (x) {
         if (size && x->sym->size != size)
           fail("mismatched field sizes");
         size = x->sym->size;
+        if (alignment && x->sym->alignment != alignment)
+          fail("mismatched field alignments");
+        alignment = x->sym->alignment;
       }
+      if (alignment)
+        offset = (offset + alignment - 1) & ~(alignment - 1);
       iv->ivar_offset = offset;
       offset += size;
     }
