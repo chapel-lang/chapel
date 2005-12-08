@@ -51560,3 +51560,40 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+12/08/05 15:26:14 -- deitz
+
+Log message:
+	Added check to make sure that a class with a type variable is not
+	declared without setting that type variable.  That is, no more:
+	
+	  class C { type t; }
+	  var c : C = C(integer);
+	
+	Fixed numerous tests and removed one future.
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp normalize.cpp 
+	                         scopeResolve.cpp 
+	chapel/test/arrays/deitz/: test_array_class_trial1.chpl 
+	                           test_array_class_trial2.chpl 
+	                           test_array_class_trial3.chpl 
+	                           test_array_class_trial3.good 
+	                           test_array_class_trial4.chpl 
+	                           test_array_class_trial4a.chpl 
+	                           test_array_class_trial6.chpl 
+	chapel/test/types/type_variables/deitz/: test_datablock.chpl 
+	                                         test_datablock2.chpl 
+	                                         test_instantiate1.chpl 
+	                                         test_instantiate2.chpl 
+	                                         test_instantiate3.chpl 
+	                                         test_instantiate_construct1.chpl 
+	                                         test_typevar_class5.chpl 
+	                                         test_typevar_class6.chpl 
+	                                         test_typevar_class7.chpl 
+	chapel/test/types/type_variables/jplevyak/: 
+	                                            test_typevar_class1.chpl 
+Removed files:
+	chapel/test/arrays/deitz/: test_array_class_trial3.future 
+
