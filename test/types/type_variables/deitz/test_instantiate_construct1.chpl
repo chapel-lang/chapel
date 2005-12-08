@@ -9,6 +9,6 @@ class foo {
   }
 }
 
-var f : foo = foo(t=integer, x=3);
+var f : foo(t=integer) = foo(t=integer, x=3);
 
 f.print();

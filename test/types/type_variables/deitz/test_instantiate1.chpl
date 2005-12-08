@@ -11,7 +11,7 @@ class bar {
   var y : integer;
 }
 
-var f : foo = foo(t=bar);
+var f : foo(t=bar) = foo(t=bar);
 
 writeln(f);
 f.print();

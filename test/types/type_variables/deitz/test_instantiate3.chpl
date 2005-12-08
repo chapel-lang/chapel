@@ -11,7 +11,7 @@ class bar {
   var y : integer;
 }
 
-var f : foo = foo(t=bar);
+var f : foo(t=bar) = foo(t=bar);
 
 f.x = bar(x = 12, y = 13);
 

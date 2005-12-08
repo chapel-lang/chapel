@@ -26,7 +26,7 @@ class array1d {
   }
 }
 
-var a : array1d = array1d(integer);
+var a : array1d(integer) = array1d(integer);
 
 a.indexedby(1) = 3;
 a.indexedby(2) = 2;

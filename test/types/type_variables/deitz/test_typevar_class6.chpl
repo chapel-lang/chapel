@@ -8,9 +8,9 @@ class foo {
   }
 }
 
-var f : foo = foo(t1 = integer, t2 = string);
+var f : foo(t1=integer,t2=string) = foo(t1 = integer, t2 = string);
 
-var f2 : foo = foo(t1 = string, t2 = integer, x = "hello", y = 12);
+var f2 : foo(t1=string,t2=integer) = foo(t1 = string, t2 = integer, x = "hello", y = 12);
 
 f.x = 14;
 f.y = "world";

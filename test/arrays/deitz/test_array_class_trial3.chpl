@@ -26,7 +26,7 @@ class array1d {
   }
 }
 
-var a : array1d = array1d(integer);
+var a : array1d(integer) = array1d(integer);
 
 a(1) = 3;
 a(2) = 2;
@@ -35,7 +35,7 @@ writeln(a(1), a(2), a(3));
 
 class array2d {
   type t;
-  var data : array1d = array1d(t);
+  var data : array1d(t) = array1d(t);
   function this(i : integer, j : integer) : t {
     return data((i - 1) * 2 + j);
   }
@@ -45,7 +45,7 @@ class array2d {
   }
 }
 
-var a2 : array2d = array2d(integer);
+var a2 : array2d(integer) = array2d(integer);
 
 a2(1, 1) = 4;
 writeln(a2(1, 1));

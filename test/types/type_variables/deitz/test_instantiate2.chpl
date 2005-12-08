@@ -14,7 +14,7 @@ class bar {
 var b : bar = bar(x = 12, y = 13);
 writeln(b);
 
-var f : foo = foo(t=bar);
+var f : foo(t=bar) = foo(t=bar);
 
 writeln(f);
 f.print();

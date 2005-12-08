@@ -636,6 +636,18 @@ static void hack_resolve_types(Expr* expr) {
       }
     }
   }
+
+  if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
+    if (VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym)) {
+      if (ClassType* ct = dynamic_cast<ClassType*>(var->type)) {
+        forv_Vec(TypeSymbol, type, ct->types) {
+          if (dynamic_cast<VariableType*>(type->definition)) {
+            INT_FATAL(var, "Illegal declaration, type is generic");
+          }
+        }
+      }
+    }
+  }
 }
 
 

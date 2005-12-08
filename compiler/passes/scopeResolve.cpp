@@ -134,7 +134,7 @@ void scopeResolve(void) {
             else
               symExpr->var = sym;
 
-          // Make all class types, constructor calls
+          // Eventually want to make all class types, constructor calls
 //           if (type && dynamic_cast<ClassType*>(type->definition)) {
 //             if (symExpr->parentExpr && symExpr->parentStmt) {
 //               CallExpr* call = dynamic_cast<CallExpr*>(symExpr->parentExpr);

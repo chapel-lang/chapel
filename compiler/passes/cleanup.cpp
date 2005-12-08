@@ -331,7 +331,7 @@ finish_constructor(FnSymbol* fn) {
 
   ClassType* ct = dynamic_cast<ClassType*>(fn->typeBinding->definition);
 
-  fn->_this = new VarSymbol("this", ct);
+  fn->_this = new VarSymbol("this");
 
   if (fn->body->body->length() > 0) {
     FnSymbol* user_fn = new FnSymbol(stringcat("_user_", fn->name));

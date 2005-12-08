@@ -14,10 +14,10 @@ class foo {
   }
 }
 
-var f1 : foo = foo(t = integer);
-var b1 : bar = bar(t = integer);
-var f2 : foo = foo(t = string);
-var b2 : bar = bar(t = string);
+var f1 : foo(t=integer) = foo(t = integer);
+var b1 : bar(t=integer) = bar(t = integer);
+var f2 : foo(t=string) = foo(t = string);
+var b2 : bar(t=string) = bar(t = string);
 
 f1.x = 12;
 f2.x = "hello";
