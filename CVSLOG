@@ -51535,3 +51535,13 @@ Modified files:
 	                         scopeResolve.cpp 
 	chapel/compiler/traversals/: instantiate.cpp 
 
+---------------------------------------------------------------------------
+
+12/08/05 14:36:26 -- shannon
+
+Log message:
+	Remove _chpl_write_linefeed from the prelude.
+
+Modified files:
+	chapel/modules/standard/: _chpl_file.chpl prelude.chpl 
+
