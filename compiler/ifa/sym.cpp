@@ -417,7 +417,7 @@ struct AlignOf##_t {      \
   _t b;                  \
 }
 
-#define ALIGNOF(_t) ((int)&(((struct AlignOf##_t *)0)->b))
+#define ALIGNOF(_t) ((int)(intptr_t)&(((struct AlignOf##_t *)0)->b))
 
 MAKE_ALIGNOF(bool);
 MAKE_ALIGNOF(uint8);
