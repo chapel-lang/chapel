@@ -51472,3 +51472,13 @@ Modified files:
 	                      if1.cpp if1.h sym.cpp sym.h 
 	chapel/compiler/traversals/: resolveSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+12/08/05 08:49:32 -- jplevyak
+
+Log message:
+	Fix compilation problem on linux64 (needed intptr_t cast)
+
+Modified files:
+	chapel/compiler/ifa/: sym.cpp 
+
