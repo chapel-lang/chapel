@@ -708,8 +708,10 @@ print_syms(FILE *fp, Vec<Sym *> *syms, int start = 0) {
       fputs(" :GLOBAL true", fp);
     if (s->is_meta_type)
       fputs(" :META_TYPE true", fp);
-    if (s->is_value_class)
-      fputs(" :VALUE true", fp);
+    if (s->is_value_type)
+      fputs(" :VALUE_TYPE true", fp);
+    if (s->is_system_type)
+      fputs(" :SYSTEM_TYPE true", fp);
     if (s->code) {
       fputs(" :CODE\n", fp);
       print_code(fp, s->code, 1, 0);

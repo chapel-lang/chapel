@@ -286,6 +286,10 @@ extern HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
 extern StringChainHash uniqueStringHash;
 
 extern Symbol *gNil;
+extern Symbol *gUnknown;
 extern Symbol *gUnspecified;
+extern Symbol *gVoid;
+
+extern Vec<Symbol *> builtinSymbols;
 
 #endif

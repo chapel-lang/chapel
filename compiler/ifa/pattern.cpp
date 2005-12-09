@@ -71,7 +71,7 @@ static ChainHash<MPosition *, MPositionHashFuns> cannonical_mposition;
 static Sym *
 dispatch_type(Sym *a) {
   if (is_Sym_OUT(a)) 
-    return sym_unknown;
+    return sym_unknown_type;
   if (a->is_symbol)
     return a;
   if (a->type && a->type->is_symbol)
@@ -258,7 +258,7 @@ Matcher::find_arg_matches(AVar *a, MPosition &ap, MPosition *acp, MPosition *acp
       Sym *sym = cs->sym;
       if (a->var->sym->aspect) {
         if (!a->var->sym->aspect->specializers.set_in(cs->sym) &&
-            (cs->sym != sym_null || !sym_object->specializers.set_in(a->var->sym->aspect)))
+            (cs->sym != sym_nil_type || !sym_object->specializers.set_in(a->var->sym->aspect)))
           continue;
         sym = a->var->sym->aspect;
       }
@@ -477,7 +477,7 @@ Matcher::set_filters(Vec<CreationSet *> &csargs, MPosition &app, Vec<Fun *> &mat
           Sym *actual = m->actuals.get(to_actual(p, m))->var->sym;
           Vec<CreationSet *> newt;
           forv_CreationSet(cs, *t) if (cs) {
-            if (cs->sym == sym_null && actual->aspect &&
+            if (cs->sym == sym_nil_type && actual->aspect &&
                 sym_object->specializers.set_in(actual->aspect)) {
               if (m_type->specializers.set_in(actual->aspect))
                 newt.set_add(cs);
@@ -750,10 +750,6 @@ Matcher::covers_formals(Fun *f, Vec<CreationSet *> &csargs, MPosition &p, int to
       csargs.n > 1 && pdb->fa->method_token && 
       csargs.v[1]->sym == pdb->fa->method_token->out->v[0]->sym->type)
     m->partial = 1;
-#if 0
-  if (top_level && f->eager_evaluation && is_closure)
-    result = 0;
-#endif
   return result;
 }
 
@@ -786,7 +782,7 @@ unify_generic_type(Sym *formal, Sym *gtype, Sym *concrete_value, Map<Sym *, Sym 
                    IFAAST *ast) 
 {
   Sym *concrete_type = concrete_value->type;
-  if (concrete_type == sym_null)
+  if (concrete_type == sym_nil_type)
     return 0;
   if (formal->is_generic) {
     if (gtype == concrete_value)
@@ -830,7 +826,7 @@ unify_generic_type(Sym *formal, Sym *gtype, Sym *concrete_value, Map<Sym *, Sym 
   Sym *concrete_type = concrete_value->type;
   if (concrete_type->is_meta_type)
     concrete_type = concrete_type->meta_type;
-  if (concrete_type == sym_null)
+  if (concrete_type == sym_nil_type)
     return 0;
   if (formal->is_generic) {
     if (gtype->specializers.set_in(concrete_type->meta_type)) {
@@ -976,6 +972,12 @@ Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &app,
           goto LnextFun;
         }
       }
+      if (formal->is_this) {
+        if (csargs.v[i]->sym == sym_nil_type) {
+          app.pop();
+          goto LnextFun;
+        }
+      }
       m->formal_dispatch_types.put(fcpp, formal_type);
       app.inc();
     }
@@ -1079,13 +1081,8 @@ Matcher::find_best_matches(Vec<AVar *> &args, Vec<CreationSet *> &csargs,
     find_best_cs_match(csargs, app, matches, result, top_level);
   else {
     csargs.fill(iarg + 1);
-    if (args.v[iarg]->out->n) {
-      forv_CreationSet(cs, *args.v[iarg]->out) if (cs) {
-        csargs.v[iarg] = cs;
-        find_best_matches(args, csargs, matches, app, result, top_level, iarg + 1);
-      }
-    } else {
-      csargs.v[iarg] = make_abstract_type(sym_unknown)->v[0];
+    forv_CreationSet(cs, *args.v[iarg]->out) if (cs) {
+      csargs.v[iarg] = cs;
       find_best_matches(args, csargs, matches, app, result, top_level, iarg + 1);
     }
   }

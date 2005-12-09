@@ -10,8 +10,8 @@ function print(c : Cons) {
   }
 }
 
-var a = Cons(1, Cons(2));
-var b = Cons(1.0, Cons(2.0));
+var a = Cons(1, Cons(2, nil));
+var b = Cons(1.0, Cons(2.0, nil));
 
 print(a);
 print(b);

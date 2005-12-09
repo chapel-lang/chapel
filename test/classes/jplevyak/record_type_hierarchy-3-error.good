@@ -10,7 +10,7 @@ _chpl_file.chpl:120: fwrite, f : file, val : int64
 _chpl_file.chpl:145: fwrite, f : file, val : float64
 _chpl_file.chpl:168: fwrite, f : file, val : string
 _chpl_file.chpl:204: fwrite, f : file, val : bool
-_chpl_file.chpl:217: fwrite, f : file, x : null
+_chpl_file.chpl:217: fwrite, f : file, x : nil_type
 _chpl_file.chpl:51: fwrite, f : file, val : file
 _chpl_htuple.chpl:30: fwrite, f : file, val : _htuple
 _chpl_seq.chpl:170: fwrite, f : file, s : seq
@@ -25,19 +25,19 @@ fwrite, f : file, val : _tuple2
 fwrite, f : file, val : _tuple2
 note: candidates are:
 note: candidates are:
-prelude.chpl:127: fwrite, f : file, val : reduction
-prelude.chpl:130: fwrite, f : file, val : sum
-prelude.chpl:133: fwrite, f : file, val : max
-prelude.chpl:136: fwrite, f : file, val : min
-prelude.chpl:139: fwrite, f : file, val : maxloc
-prelude.chpl:142: fwrite, f : file, val : minloc
-prelude.chpl:151: fwrite, f : file, val : timer
-prelude.chpl:199: fwrite, f : file, val : _methodTokenType
-prelude.chpl:205: fwrite, f : file, val : _setterTokenType
-prelude.chpl:210: fwrite, f : file, val : _seq
-prelude.chpl:231: fwrite, f : file, val : Array
-prelude.chpl:234: fwrite, f : file, val : Domain
-prelude.chpl:244: fwrite, f : file, val : Tuple
+prelude.chpl:131: fwrite, f : file, val : reduction
+prelude.chpl:134: fwrite, f : file, val : sum
+prelude.chpl:137: fwrite, f : file, val : max
+prelude.chpl:140: fwrite, f : file, val : min
+prelude.chpl:143: fwrite, f : file, val : maxloc
+prelude.chpl:146: fwrite, f : file, val : minloc
+prelude.chpl:155: fwrite, f : file, val : timer
+prelude.chpl:203: fwrite, f : file, val : _methodTokenType
+prelude.chpl:209: fwrite, f : file, val : _setterTokenType
+prelude.chpl:214: fwrite, f : file, val : _seq
+prelude.chpl:236: fwrite, f : file, val : Array
+prelude.chpl:239: fwrite, f : file, val : Domain
+prelude.chpl:249: fwrite, f : file, val : Tuple
 prelude.chpl:24: fwrite, f : file, val : _ddata
 prelude.chpl:24: fwrite, f : file, val : _ddata
 prelude.chpl:24: fwrite, f : file, val : _ddata

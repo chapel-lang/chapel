@@ -48,6 +48,7 @@ class Fun : public gc {
   uint is_generic : 1;
   uint eager_evaluation : 1;
   uint is_external : 1;
+  uint is_member : 1;
 
   // cdb
   char *cdb_id;

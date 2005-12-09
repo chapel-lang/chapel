@@ -59,11 +59,11 @@ void parse(void) {
   if (!fnostdincs) {
     chpl_htuple = dynamic_cast<TypeSymbol*>(Symboltable::lookupInScope("_htuple", tupleModule->modScope));
     chpl_seq = dynamic_cast<TypeSymbol*>(Symboltable::lookupInScope("seq", seqModule->modScope));
-  }
 
-  chpl_stdin = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("stdin", fileModule->modScope));
-  chpl_stdout = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("stdout", fileModule->modScope));
-  chpl_stderr = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("stderr", fileModule->modScope));
+    chpl_stdin = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("stdin", fileModule->modScope));
+    chpl_stdout = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("stdout", fileModule->modScope));
+    chpl_stderr = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("stderr", fileModule->modScope));
+  }
 
   setterToken = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("_setterToken", prelude->modScope));
   methodToken = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("_methodToken", prelude->modScope));

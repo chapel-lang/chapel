@@ -209,7 +209,8 @@ var _setterToken : _setterTokenType;
 class _seq { -- this is no longer necessary
 }
 
-class Array {
+record Array {
+  var this_is_an_array : float;
   function this(i) {
     return __primitive("array_index", this, i);
   }

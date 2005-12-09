@@ -16,8 +16,13 @@
 #include "../passes/preAnalysisCleanup.h"
 
 FnSymbol* chpl_main = NULL;
+
 Symbol *gNil = 0;
+Symbol *gUnknown = 0;
 Symbol *gUnspecified = 0;
+Symbol *gVoid = 0;
+
+Vec<Symbol *> builtinSymbols;
 
 /*** Instantiation Cache vvv ***/
 class Inst : public gc {
@@ -752,8 +757,11 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
   AList<DefExpr>* wrapper_formals = new AList<DefExpr>();
   AList<Expr>* wrapper_actuals = new AList<Expr>();
   BlockStmt* wrapper_body = new BlockStmt();
+  Symbol *new_this = 0;
   for_alist(DefExpr, formal, formals) {
     Symbol* newFormal = formal->sym->copy();
+    if (_this == formal->sym)
+      new_this = newFormal;
     wrapper_formals->insertAtTail(new DefExpr(newFormal));
     Symbol* coercionSubstitution = coercion_substitutions->get(formal->sym);
     if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(coercionSubstitution)) {
@@ -781,6 +789,7 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
   wrapper_fn->method_type = method_type;
   wrapper_fn->cname = stringcat("_coerce_wrap_", cname);
   wrapper_fn->addPragma("inline");
+  wrapper_fn->_this = new_this;
   defPoint->parentStmt->insertAfter(new ExprStmt(new DefExpr(wrapper_fn)));
   wrapper_fn->addPragmas(&pragmas);
   reset_file_info(wrapper_fn->defPoint->parentStmt, lineno, filename);
@@ -1416,8 +1425,16 @@ void
 initSymbol() {
   gNil = new VarSymbol("nil", dtNil, VAR_NORMAL, VAR_CONST);
   rootScope->define(gNil); // SJD: Should intrinsics have DefExprs?
-  gUnspecified = new VarSymbol("_", dtUnknown, VAR_NORMAL, VAR_CONST);
+  builtinSymbols.add(gNil);
+  gUnknown = new VarSymbol("_unknown", dtUnknown, VAR_NORMAL, VAR_CONST);
+  rootScope->define(gUnknown); // SJD: Should intrinsics have DefExprs?
+  builtinSymbols.add(gUnknown);
+  gUnspecified = new VarSymbol("_", dtUnspecified, VAR_NORMAL, VAR_CONST);
   rootScope->define(gUnspecified); // SJD: Should intrinsics have DefExprs?
+  builtinSymbols.add(gUnspecified);
+  gVoid = new VarSymbol("_void", dtVoid, VAR_NORMAL, VAR_CONST);
+  rootScope->define(gVoid); // SJD: Should intrinsics have DefExprs?
+  builtinSymbols.add(gVoid);
 }
 
 static int literal_id = 1;

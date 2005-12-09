@@ -78,6 +78,7 @@ class BasicSym : public gc {
   unsigned int          is_rest:1;              // Sym is a rest (vararg) parameter
   unsigned int          is_generic:1;           // Sym is a generic parameter
   unsigned int          is_external:1;          // Sym is "external", so constraints are type
+  unsigned int          is_this:1;              // Sym is "this" (member function "target")
 
   unsigned int          intent:2;               // Sym is "in", "inout", or "out"
 
@@ -86,7 +87,8 @@ class BasicSym : public gc {
 
   unsigned int          is_structure:1;         // Sym is a structure (C compatibility)
   unsigned int          is_meta_type:1;         // Sym is class of class
-  unsigned int          is_value_class:1;       // Sym is a value class
+  unsigned int          is_value_type:1;        // Sym is a value type
+  unsigned int          is_system_type:1;       // Sym is a system type (don't add it to the hiearchy)
   unsigned int          is_union_class:1;       // Sym is a union
 
   unsigned int          fun_returns_value:1;    // used by analysis.cpp

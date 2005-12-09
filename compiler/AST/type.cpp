@@ -971,9 +971,10 @@ void VariableType::traverseDefType(Traversal* traversal) {
 
 
 void initType(void) {
-  dtUnknown = Symboltable::definePrimitiveType("???", "???");
-  dtVoid = Symboltable::definePrimitiveType("void", "void");
   dtNil = Symboltable::definePrimitiveType("_nilType", "_nilType");
+  dtUnknown = Symboltable::definePrimitiveType("_unknownType", "_unknownType");
+  dtUnspecified = Symboltable::definePrimitiveType("_unspecifiedType", "_unspecifiedType");
+  dtVoid = Symboltable::definePrimitiveType("void", "void");
 
   dtBoolean = Symboltable::definePrimitiveType("boolean", "_boolean", new_BoolSymbol(false));
   dtInteger = Symboltable::definePrimitiveType("integer", "_integer64", new_IntSymbol(0));
@@ -1044,17 +1045,20 @@ Type *getMetaType(Type *t) {
 void findInternalTypes(void) {
   dtMethodToken = Symboltable::lookupInternalType("_methodTokenType")->definition;
   dtSetterToken = Symboltable::lookupInternalType("_setterTokenType")->definition;
-  dtFile = dynamic_cast<TypeSymbol*>(Symboltable::lookupInFileModuleScope("file"))->definition;
+  if (!fnostdincs)
+    dtFile = dynamic_cast<TypeSymbol*>(Symboltable::lookupInFileModuleScope("file"))->definition;
 
   dtObject = dynamic_cast<ClassType*>(Symboltable::lookupInternalType("object")->definition);
   dtValue = dynamic_cast<ClassType*>(Symboltable::lookupInternalType("value")->definition);
 
   // These should all be eliminated.  Note they almost are since they
   // are MetaTypes, not the types in the prelude.
-  dtTuple = Symboltable::lookupInternalType("Tuple")->type;
-  dtDomain = Symboltable::lookupInternalType("Domain")->type;
-  dtArray = Symboltable::lookupInternalType("Array")->type;
-  dtSequence = Symboltable::lookupInternalType("_seq")->type;
+  if (!fnostdincs) {
+    dtTuple = Symboltable::lookupInternalType("Tuple")->type;
+    dtDomain = Symboltable::lookupInternalType("Domain")->type;
+    dtArray = Symboltable::lookupInternalType("Array")->type;
+    dtSequence = Symboltable::lookupInternalType("_seq")->type;
+  }
 
   // SJD: Can't do this when dtString is defined because
   // prelude hasn't been made yet.  Need to do it after.

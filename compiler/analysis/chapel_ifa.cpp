@@ -299,6 +299,10 @@ close_symbols(Vec<AList<Stmt> *> &stmts, Vec<BaseAST *> &syms) {
       if (set.set_add(t->symbol))
         syms.add(t->symbol);
   }
+  forv_Symbol(t, builtinSymbols) {
+    if (set.set_add(t))
+      syms.add(t);
+  }
 }
 
 static Sym *
@@ -994,7 +998,7 @@ build_type(Type *t, bool make_default = true) {
       t->asymbol->sym->type_kind = Type_RECORD;
       if (tt->classTag == CLASS_RECORD ||
           tt->classTag == CLASS_VALUECLASS)
-        t->asymbol->sym->is_value_class = 1;
+        t->asymbol->sym->is_value_type = 1;
       if (tt->dispatchParents.n > 0) {
         forv_Vec(Type, ttt, tt->dispatchParents)
           t->asymbol->sym->inherits_add(ttt->asymbol->sym);
@@ -1048,6 +1052,22 @@ new_primitive_type(Sym *&sym, char *name) {
 }
 
 static void
+new_global_variable(Sym *&sym, char *name) {
+  if (!sym)
+    sym = new_sym(name, 1);
+  sym->global_scope = 1;
+  if1_set_builtin(if1, sym, name);
+}
+
+static void
+new_primitive_object(Sym *&sym, Sym *sym_type, Symbol *symbol, char *name) {
+  sym = symbol->asymbol->sym;
+  new_global_variable(sym, name);
+  sym->type = sym_type;
+  sym->is_external = 1;
+}
+
+static void
 new_alias_type(Sym *&sym, char *name, Sym *alias) {
   if (!sym)
     sym = new_sym(name, 1);
@@ -1074,15 +1094,11 @@ new_lub_type(Sym *&sym, char *name, ...)  {
 }
 
 static void
-new_global_variable(Sym *&sym, char *name) {
-  if (!sym)
-    sym = new_sym(name, 1);
-  sym->global_scope = 1;
-  if1_set_builtin(if1, sym, name);
-}
-
-static void
 builtin_Symbol(Type *dt, Sym **sym, char *name) {
+  if (fnostdincs) {
+    *sym = new_sym(name);
+    return;
+  }
   if (!dt->asymbol)
     map_type(dt);
   *sym = dt->asymbol->sym;
@@ -1102,9 +1118,6 @@ build_builtin_symbols() {
     sym_system->init = new_sym("__init", 1);
   build_module(sym_system, sym_system->init);
 
-  sym_void = dtVoid->asymbol->sym;
-  sym_null = dtNil->asymbol->sym;
-  sym_unknown = dtUnknown->asymbol->sym;
   sym_bool = dtBoolean->asymbol->sym;
   sym_int64 = dtInteger->asymbol->sym;
   sym_float64 = dtFloat->asymbol->sym;
@@ -1113,19 +1126,26 @@ build_builtin_symbols() {
   sym_anynum = dtNumeric->asymbol->sym;
   sym_any = dtAny->asymbol->sym; 
   sym_object = dtObject->asymbol->sym; 
+  sym_nil_type = dtNil->asymbol->sym;
+  sym_unknown_type = dtUnknown->asymbol->sym;
+  sym_unspecified_type = dtUnspecified->asymbol->sym;
+  sym_value = dtValue->asymbol->sym;
+  sym_void_type = dtVoid->asymbol->sym;
 
   new_lub_type(sym_anyclass, "anyclass", VARARG_END);
   sym_anyclass->meta_type = sym_anyclass;
   new_lub_type(sym_any, "any", VARARG_END);
-  new_primitive_type(sym_null, "null");
+  new_primitive_type(sym_nil_type, "nil_type");
+  new_primitive_type(sym_unknown_type, "unknown_type");
+  new_primitive_type(sym_unspecified_type, "unspecified_type");
+  new_primitive_type(sym_void_type, "void_type");
   new_primitive_type(sym_module, "module");
   new_primitive_type(sym_symbol, "symbol");
   if1_set_symbols_type(if1);
   new_primitive_type(sym_function, "function");
   new_primitive_type(sym_continuation, "continuation");
   new_primitive_type(sym_vector, "vector");
-  new_primitive_type(sym_void, "void");
-  new_primitive_type(sym_unknown, "unknown");
+  new_primitive_type(sym_void_type, "void");
   if (!sym_object)
     sym_object = new_sym("object", 1);
   sym_object->type_kind = Type_RECORD;
@@ -1178,10 +1198,10 @@ build_builtin_symbols() {
     if1_set_builtin(if1, sym_new_object, "new_object");
   }
 
-  sym_nil = gNil->asymbol->sym;
-  new_global_variable(sym_nil, "nil");
-  sym_nil->type = sym_null;
-  sym_nil->is_external = 1;
+  new_primitive_object(sym_nil, sym_nil_type, gNil, "nil");
+  new_primitive_object(sym_unknown, sym_unknown_type, gUnknown, "_unknown");
+  new_primitive_object(sym_unspecified, sym_unspecified_type, gUnspecified, "_unspecified");
+  new_primitive_object(sym_void, sym_void_type, gVoid, "_void");
 
   sym_init = new_sym(); // placeholder
 
@@ -1209,6 +1229,28 @@ build_builtin_symbols() {
 //  sym_complex64->specializes.add(sym_complex128);
 
   sym_anynum->specializes.add(sym_string);
+
+  // defined type hierarchy
+  
+  sym_unspecified_type->implements.add(sym_any);
+  sym_any->implements.add(sym_unknown_type);
+  sym_object->implements.add(sym_any);
+  sym_nil_type->implements.add(sym_object);
+  sym_value->implements.add(sym_any);
+  sym_unspecified_type->specializes.add(sym_any);
+  sym_any->specializes.add(sym_unknown_type);
+  sym_object->specializes.add(sym_any);
+  sym_nil_type->specializes.add(sym_object);
+  sym_value->specializes.add(sym_any);
+
+  sym_any->is_system_type = 1;
+  sym_value->is_system_type = 1;
+  sym_object->is_system_type = 1;
+  sym_nil_type->is_system_type = 1;
+  sym_unknown_type->is_system_type = 1;
+  sym_unspecified_type->is_system_type = 1;
+  sym_void_type->is_system_type = 1;
+
 
 #define S(_n) assert(sym_##_n);
 #include "builtin_symbols.h"
@@ -2226,6 +2268,10 @@ finalize_function(Fun *fun) {
   FnSymbol *fs = dynamic_cast<FnSymbol*>(SYMBOL(fun->sym));
   if (fs->noParens)
     fun->eager_evaluation = 1;
+  if (fs->method_type != NON_METHOD) {
+    fun->is_member = 1;
+    fs->_this->asymbol->sym->is_this = 1;
+  }
   if (fs->typeBinding) {
     if (is_reference_type(SYMBOL(fs->typeBinding))) {
       if (fs->method_type != NON_METHOD) {
@@ -2650,6 +2696,10 @@ chapel_defexpr(PNode *pn, EntrySet *es) {
       else
         update_gen(result, make_AType(tt));
     } else {
+      if (type_sym == sym_unknown_type) {
+        type = dtUnspecified;
+        type_sym = sym_unspecified_type;
+      }
       if (type->defaultValue) {
         Sym *val = get_defaultVal(type);
         Var *v = val->var;
@@ -2672,8 +2722,10 @@ chapel_defexpr(PNode *pn, EntrySet *es) {
           function_dispatch(pn, es, cavar, cs, args, 0, Partial_NEVER);
         } else
           update_gen(result, make_AType(tt));
+#if 0
       } else if (type == dtUnknown) {
-        update_gen(result, make_abstract_type(sym_null));
+        update_gen(result, make_abstract_type(sym_unknown_type));
+#endif
       } else
         fail("Type without defaultValue or defaultConstructor");
     }

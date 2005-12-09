@@ -18,9 +18,10 @@
 int analysis_pass = 0;
 
 AType *bottom_type = 0;
-AType *void_type = 0;
-AType *null_type = 0;
+AType *nil_type = 0;
 AType *unknown_type = 0;
+AType *unspecified_type = 0;
+AType *void_type = 0;
 AType *top_type = 0;
 AType *any_type = 0;
 AType *bool_type = 0;
@@ -440,7 +441,7 @@ type_cannonicalize(AType *t) {
       consts++;
       nonconsts.set_add(base_cs);
     } else { 
-      if (cs->sym != sym_null)
+      if (cs->sym != sym_nil_type && cs->sym != sym_unspecified_type)
         nonconsts.set_add(cs);
       else
         nulls = 1;
@@ -949,7 +950,7 @@ check_split(AEdge *e, Vec<AEdge *> &ees)  {
   if (e->from->split) {
     Vec<AEdge *> *m = e->from->split->out_edge_map.get(e->pnode);
     if (m) {
-      forv_AEdge(ee, *m) {
+      forv_AEdge(ee, *m) if (ee) {
         if (ee->match->fun == e->match->fun) {
           if (e->match->fun->split_unique || e->match->fun->nested_in == e->from->fun) {
             set_entry_set(e);
@@ -1024,7 +1025,7 @@ add_var_constraint(AVar *av) {
   assert(s->type_kind != Type_VARIABLE);
   if (s->type && !s->is_pattern) {
     if (s->is_external && 
-        (s->type->num_kind || s->type == sym_string || s == sym_nil))
+        (s->type->num_kind || s->type == sym_string || s->type->is_system_type))
       update_gen(av, s->type->abstract_type);
     if (s->is_constant) // for constants, the abstract type is the concrete type
       update_gen(av, make_abstract_type(s));
@@ -1297,7 +1298,7 @@ get_AEdges(Fun *f, PNode *p, EntrySet *from, Vec<AEdge *> &edges) {
   Vec<AEdge *> *ve = from->out_edge_map.get(p);
   if (!ve)
     from->out_edge_map.put(p, (ve = new Vec<AEdge *>));
-  forv_AEdge(e, *ve) {
+  forv_AEdge(e, *ve) if (e) {
     if (f == e->fun)
       edges.add(e);
   }
@@ -1663,7 +1664,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
         forv_CreationSet(sel, *selector->out) if (sel) {
           char *symbol = sel->sym->name; assert(symbol);
           forv_CreationSet(cs, *obj->out) if (cs) {
-            if (cs == null_type->v[0])
+            if (cs == nil_type->v[0])
               continue;
             AVar *iv = cs->var_map.get(symbol);
             if (iv)
@@ -1705,7 +1706,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
         forv_CreationSet(sel, *selector->out) if (sel) {
           char *symbol = sel->sym->name; assert(symbol);
           forv_CreationSet(cs, *obj->out) if (cs) {
-            if (cs == null_type->v[0])
+            if (cs == nil_type->v[0])
               continue;
             AVar *iv = cs->var_map.get(symbol);
             if (iv)
@@ -2449,7 +2450,9 @@ empty_type_minus_partial_applications(AType *a) {
   forv_CreationSet(aa, *a) if (aa) {
     if (aa->sym == sym_function && aa->defs.n)
       continue;
-    if (aa == null_type->v[0])
+    if (aa == nil_type->v[0])
+      continue;
+    if (aa == unspecified_type->v[0])
       continue;
     return 0;
   }
@@ -2610,12 +2613,18 @@ initialize_primitives() {
 }
 
 static void
+initialize_global(Sym *s) {
+  if (!s->var)
+    s->var = new Var(s);
+  add_var_constraint(make_AVar(s->var, (EntrySet*)GLOBAL_CONTOUR));
+}
+
+static void
 initialize() {
   if1->callback->finalize_functions();
   bottom_type = type_cannonicalize(new AType());
   bottom_type->type = bottom_type;
-  void_type = make_abstract_type(sym_void);
-  unknown_type = make_abstract_type(sym_unknown);
+  void_type = make_abstract_type(sym_void_type);
   any_type = make_abstract_type(sym_any);
   top_type = type_union(any_type, void_type);
   bool_type = make_abstract_type(sym_bool);
@@ -2627,7 +2636,13 @@ initialize() {
   anyint_type = make_abstract_type(sym_anyint);
   anynum_kind = make_abstract_type(sym_anynum);
   anyclass_type = make_abstract_type(sym_anyclass);
-  null_type = make_abstract_type(sym_null);
+  nil_type = make_abstract_type(sym_nil_type);
+  unknown_type = make_abstract_type(sym_unknown_type);
+  unspecified_type = make_abstract_type(sym_unspecified_type);
+  initialize_global(sym_nil);
+  initialize_global(sym_unknown);
+  initialize_global(sym_unspecified);
+  initialize_global(sym_void);
   edge_worklist.clear();
   send_worklist.clear();
   initialize_symbols();
@@ -3020,7 +3035,7 @@ build_type_marks(AVar *av, Accum<AVar *> &acc) {
   // mark them
   forv_AVar(x, acc.asvec) {
     if (x->gen)
-      forv_CreationSet(s, *x->gen) if (s && s->sym != sym_null) {
+      forv_CreationSet(s, *x->gen) if (s && s->sym != sym_nil_type) {
         if (s->sym != s->sym->type)
           s = s->sym->type->abstract_type->v[0];
         build_type_mark(x, s);
@@ -3132,6 +3147,16 @@ foreach_var() {
   forv_Fun(f, fa->funs)
     forv_Var(v, f->fa_all_Vars)
       F::F(v);
+}
+
+template <class F> void
+foreach_var(AType *t) {
+  forv_Sym(s, fa->pdb->if1->allsyms)
+    if (s->var)
+      F::F(s->var, t);
+  forv_Fun(f, fa->funs)
+    forv_Var(v, f->fa_all_Vars)
+      F::F(v, t);
 }
 
 struct ClearVarFn { static void F(Var *v) { 
@@ -3529,7 +3554,7 @@ is_ivar_access_result(AVar *av) {
   forv_CreationSet(sel, *selector->out) if (sel) {
     char *symbol = sel->sym->name; assert(symbol);
     forv_CreationSet(cs, *obj->out) if (cs) {
-      if (cs == null_type->v[0])
+      if (cs == nil_type->v[0])
         continue;
       AVar *iv = cs->var_map.get(symbol);
       if (iv)
@@ -3695,18 +3720,25 @@ set_void_lub_types_to_void() {
   foreach_var<SetVoidFn>();
 }
 
-struct RemoveNullFn { static void F(Var *v) { 
-  CreationSet *s = null_type->v[0];
+struct RemoveTypeFn { static void F(Var *v, AType *t) { 
   for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].key) {
     AVar *av = v->avars.v[i].value;
-    if (av->out != s->sym->abstract_type && av->out->in(s))
-      av->out = type_diff(av->out, s->sym->abstract_type);
+    if (av->out != t && t->some_intersection(*av->out)) {
+      av->out = type_diff(av->out, t);
+      if (!av->out->n) {
+        if (!av->restrict)
+          av->out = av->in;
+        else
+          av->out = type_intersection(av->in, av->restrict);
+      }
+    }
   }
 } };
 
 static void
-remove_null_types() {
-  foreach_var<RemoveNullFn>();
+remove_types() {
+  AType *rmtype = type_union(nil_type, unspecified_type);
+  foreach_var<RemoveTypeFn>(rmtype);
 }
 
 static void
@@ -3737,7 +3769,7 @@ FA::analyze(Fun *top) {
     complete_pass();
   } while (extend_analysis());
   set_void_lub_types_to_void();
-  remove_null_types();
+  remove_types();
   if (fanalysis_errors)
     if1->callback->report_analysis_errors(type_violations);
   show_violations(fa, stderr);

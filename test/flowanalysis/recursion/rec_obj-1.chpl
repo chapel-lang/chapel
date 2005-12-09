@@ -12,12 +12,14 @@ function print(c : Cons) {
 
 var a = Cons();
 a.car = 1;
+a.cdr = nil;
 var aa = Cons();
 aa.car = 2;
 aa.cdr = a;
 
 var b = Cons();
 b.car = 1.0;
+b.cdr = nil;
 var bb = Cons();
 bb.car = 2.0;
 bb.cdr = b;

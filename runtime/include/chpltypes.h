@@ -3,6 +3,8 @@
 
 typedef void* _nilType;
 extern _nilType nil;
+typedef void* _unspecifiedType;
+extern _unspecifiedType _;
 
 typedef enum __boolean {
   false = 0,

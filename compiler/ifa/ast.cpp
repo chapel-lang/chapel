@@ -192,7 +192,7 @@ static void
 compute_structural_type_hierarchy(Vec<Sym *> types) {
   Vec<Sym *> record_types, union_types;
   forv_Sym(s, types) if (s) {
-    if (s->type_kind == Type_RECORD && s->is_value_class) {
+    if (s->type_kind == Type_RECORD && s->is_value_type) {
       if (!s->is_union_class)
         record_types.add(s);
       else
@@ -213,10 +213,6 @@ void check_unique(Vec<void *> &v) {
 void
 build_type_hierarchy() {
   Vec<Sym *> types, meta_types;
-  if (!type_hierarchy_built) {
-    implement_and_specialize(sym_unknown, sym_any, types);
-    implement_and_specialize(sym_object, sym_null, types);
-  }
   for (int x = type_hierarchy_built; x < if1->allsyms.n; x++) {
     Sym *s = if1->allsyms.v[x];
     // functions implement and specialize symbols (selectors) of the same name
@@ -250,10 +246,10 @@ build_type_hierarchy() {
       implement_and_specialize(s->instantiates, s, types);
   }
   forv_Sym(s, types) if (s) {
-    if (!s->dispatch_order.n && s != sym_any && s != sym_void && s != sym_unknown) {
+    if (!s->dispatch_order.n && !s->is_system_type) {
       if (s->is_meta_type && s != sym_anyclass)
         implement_and_specialize(sym_anyclass, s, types);
-      else if (s->is_value_class && s != sym_value)
+      else if (s->is_value_type && s != sym_value)
         implement_and_specialize(sym_value, s, types);
       else 
         implement_and_specialize(sym_any, s, types);
@@ -319,6 +315,12 @@ build_type_hierarchy() {
     changed.move(next_changed);
   }
 
+  // put nil at the bottom of the object hiearchy
+  forv_Sym(s, types) if (s) {
+    if (sym_object->specializers.set_in(s) && !s->is_value_type && s != sym_nil_type)
+      implement_and_specialize(s, sym_nil_type, types);
+  }
+
   type_hierarchy_built = if1->allsyms.n;
 }
 
@@ -365,8 +367,8 @@ include_instance_variables(IF1 *i) {
 
 static void
 set_value_for_value_classes(IF1 *i) {
-  sym_value->is_value_class = 1;
-  sym_anynum->is_value_class = 1;
+  sym_value->is_value_type = 1;
+  sym_anynum->is_value_type = 1;
   Vec<Sym *> implementers;
   for (int x = finalized_types; x < i->allsyms.n; x++) {
     Sym *s = i->allsyms.v[x];
@@ -379,9 +381,9 @@ set_value_for_value_classes(IF1 *i) {
     for (int x = finalized_types; x < i->allsyms.n; x++) {
       Sym *s = i->allsyms.v[x];
       forv_Sym(ss, s->implements)
-        if (ss->is_value_class && !s->is_value_class) { 
+        if (ss->is_value_type && !s->is_value_type) { 
           changed = 1;
-          s->is_value_class = 1;
+          s->is_value_type = 1;
         }
     }
   }
@@ -391,7 +393,7 @@ static void
 set_type_for_variables(IF1 *i) {
   for (int x = finalized_types; x < i->allsyms.n; x++) {
     Sym *s = i->allsyms.v[x];
-    if (s->is_var && s->must_implement && s->must_implement->is_value_class)
+    if (s->is_var && s->must_implement && s->must_implement->is_value_type)
       s->type = s->must_implement;
   }
 }

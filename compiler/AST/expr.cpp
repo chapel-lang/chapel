@@ -757,35 +757,37 @@ void CallExpr::codegen(FILE* outfile) {
       bool string_init = false;
       Type* leftType = get(1)->typeInfo();
       Type* rightType = get(2)->typeInfo();
-      if (leftType == dtString) {
-        if (CallExpr* fn_call = dynamic_cast<CallExpr*>(get(2))) {
-          if (SymExpr* fn_var = dynamic_cast<SymExpr*>(fn_call->baseExpr)) {
-            if (fn_var->var == dtString->defaultConstructor) {
-              string_init = true;
+      if (rightType != dtUnspecified) {
+        if (leftType == dtString) {
+          if (CallExpr* fn_call = dynamic_cast<CallExpr*>(get(2))) {
+            if (SymExpr* fn_var = dynamic_cast<SymExpr*>(fn_call->baseExpr)) {
+              if (fn_var->var == dtString->defaultConstructor) {
+                string_init = true;
+              }
             }
           }
-        }
-        if (string_init) {
+          if (string_init) {
+            get(1)->codegen(outfile);
+            fprintf(outfile, " %s ", opCString[opTag]);
+            get(2)->codegen(outfile);
+          } else {
+            fprintf(outfile, "_copy_string(&(");
+            get(1)->codegen(outfile);
+            fprintf(outfile, "), ");
+            get(2)->codegenCastToString(outfile);
+            fprintf(outfile, ")");
+          }
+        } else if ((leftType == dtInteger || leftType == dtFloat) && rightType == dtNil) {
+          get(1)->codegen(outfile);
+          fprintf(outfile, " %s (", opCString[opTag]);
+          leftType->codegen(outfile);
+          fprintf(outfile, ")(intptr_t)");
+          get(2)->codegen(outfile);
+        } else {
           get(1)->codegen(outfile);
           fprintf(outfile, " %s ", opCString[opTag]);
           get(2)->codegen(outfile);
-        } else {
-          fprintf(outfile, "_copy_string(&(");
-          get(1)->codegen(outfile);
-          fprintf(outfile, "), ");
-          get(2)->codegenCastToString(outfile);
-          fprintf(outfile, ")");
         }
-      } else if ((leftType == dtInteger || leftType == dtFloat) && rightType == dtNil) {
-        get(1)->codegen(outfile);
-        fprintf(outfile, " %s (", opCString[opTag]);
-        leftType->codegen(outfile);
-        fprintf(outfile, ")(intptr_t)");
-        get(2)->codegen(outfile);
-      } else {
-        get(1)->codegen(outfile);
-        fprintf(outfile, " %s ", opCString[opTag]);
-        get(2)->codegen(outfile);
       }
     } else if (OP_ISBINARYOP(opTag)) {
       if (opTag == OP_EXP) {
@@ -1033,6 +1035,9 @@ void ReduceExpr::codegen(FILE* outfile) {
 
 void initExpr(void) {
   dtNil->defaultValue = gNil;
+  dtUnknown->defaultValue = gUnknown;
+  dtUnspecified->defaultValue = gUnspecified;
+  dtVoid->defaultValue = gVoid;
 }
 
 
