@@ -51618,3 +51618,69 @@ Modified files:
 Removed files:
 	chapel/compiler/traversals/: updateSymbols.cpp updateSymbols.h 
 
+---------------------------------------------------------------------------
+
+12/09/05 08:27:50 -- jplevyak
+
+Log message:
+	New nil semantics.
+	
+	New type : _unspecifiedType along with new _ (unspecified value).
+	Uninitialized variables of unspecified type are initialized to this
+	value.  We should not permit comparison with it (i.e. at runtime it
+	should probably be truely uninitialized.  For testing we could set
+	it to random numbers.)
+	
+	New value gVoid.  Doesn't hurt to have it.  Can be returned
+	so that "ReturnStmt" and "ReturnStmt gVoid" are the same thing.
+	
+	The "this" argument of a member is not dispatached to by "nil".
+	
+	Fixed a bug whereby the _this variable was not getting correctly
+	updated by the building of the default wrapper.
+	
+	I am removing "unspecifiedType" as well as "nulltype" cloning
+	and before I hand back the results to the AST.  The rational
+	being that otherwise we will have lots of dynamic dispatches which
+	we don't want to take, and we would rather that the user manage
+	these explicitly.
+	
+	Assignments from "unspecifiedType" are surpressed at codegen.
+	This makes sense because the unspecified values correspond to
+	initializations which are not done.
+	
+	Array in the prelude is now a "record".  I also added a member variable:
+	 var this_is_an_array : float;
+	because otherwise the code which biulds the type hierarchy makes Array
+	the base of all records (since it has no overt fields).  This is really
+	lame.  What we want is a "value class" rather than a structurally typed
+	record.  We should probably add this to chapel.
+	
+	dtValue is now the automatic dispatch parent of "record"s.  It used
+	to be dtObject, but that doesn't make sense, and it was resulting in
+	"nil" being placed below all records as well in the type lattice.
+	
+	Updated some test cases.  Now variables of unspecified type are initialized
+	to gUnspecified (which is (void*)2 in the runtime) instead of nil ((void*)1).
+	This means that uninitialized variables are nolonger initialiazed to nil.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: ast.cpp builtin_symbols.h fa.cpp fun.h 
+	                      if1.cpp pattern.cpp sym.cpp sym.h 
+	chapel/compiler/include/: symbol.h type.h 
+	chapel/compiler/passes/: filesToAST.cpp 
+	chapel/compiler/traversals/: buildClassHierarchy.cpp 
+	chapel/modules/standard/: prelude.chpl 
+	chapel/runtime/include/: chpltypes.h 
+	chapel/runtime/src/: chpltypes.c 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/flowanalysis/recursion/: rec_obj-1.chpl 
+	                                     rec_obj-2.chpl 
+	                                     rec_obj-3.chpl 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
