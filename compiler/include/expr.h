@@ -44,6 +44,7 @@ enum OpTag {
   OP_BY,
   OP_SUBTYPE,
   OP_NOTSUBTYPE,
+  OP_INIT,
   OP_GETS
 };
 

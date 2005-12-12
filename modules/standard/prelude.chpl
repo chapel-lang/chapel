@@ -338,9 +338,6 @@ function length(a : string) : integer {
 }
 
 pragma "split unique"
-function _alloc(t) { return __primitive("chapel_defexpr", t); }
-
-pragma "split unique"
 pragma "keep types"
 pragma "rename _chpl_alloc"
 function _chpl_alloc(t, description:string) { return __primitive("chpl_alloc", t); }

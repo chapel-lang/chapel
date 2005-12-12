@@ -767,22 +767,39 @@ static void fix_def_expr(DefExpr* def) {
     if (def->init)
       def->parentStmt->insertAfter(new ExprStmt(new CallExpr(OP_GETS, def->sym, def->init->copy())));
   } else if (def->sym->type != dtUnknown) {
-    if (def->init)
-      def->parentStmt->insertAfter(new ExprStmt(new CallExpr("=", def->sym, def->init->copy())));
-    def->parentStmt->insertAfter(new ExprStmt(new CallExpr(OP_GETS, def->sym, new CallExpr("_alloc", def->sym->type->symbol))));
-  } else if (def->exprType) {
-    if (def->init)
-      def->parentStmt->insertAfter(new ExprStmt(new CallExpr("=", def->sym, def->init->copy())));
-    def->parentStmt->insertAfter(new ExprStmt(new CallExpr(OP_GETS, def->sym, new CallExpr("_alloc", def->exprType->copy()))));
-  } else if (def->init) {
-    VarSymbol* tmp = new VarSymbol("_deftmp");
+    AList<Stmt>* stmts = new AList<Stmt>();
+    VarSymbol* tmp = new VarSymbol("_defTmp");
     tmp->cname = stringcat(tmp->name, intstring(uid++));
     tmp->noDefaultInit = true;
-    def->parentStmt->insertBefore(new ExprStmt(new DefExpr(tmp)));
-    def->parentStmt->insertBefore(new ExprStmt(new CallExpr(OP_GETS, tmp, def->init->copy())));
-    def->parentStmt->insertAfter(new ExprStmt(new CallExpr("=", def->sym, tmp)));
-    def->parentStmt->insertAfter(new ExprStmt(new CallExpr(OP_GETS, def->sym, new CallExpr("_alloc", tmp))));
+    stmts->insertAtTail(new ExprStmt(new DefExpr(tmp)));
+    stmts->insertAtTail(new ExprStmt(new CallExpr(OP_GETS, tmp, new CallExpr(OP_INIT, def->sym->type->symbol))));
+    if (def->init)
+      stmts->insertAtTail(new ExprStmt(new CallExpr(OP_GETS, def->sym, new CallExpr("=", tmp, def->init->copy()))));
+    else
+      stmts->insertAtTail(new ExprStmt(new CallExpr(OP_GETS, def->sym, tmp)));
+    def->parentStmt->insertAfter(stmts);
+  } else if (def->exprType) {
+    AList<Stmt>* stmts = new AList<Stmt>();
+    VarSymbol* tmp = new VarSymbol("_defTmp");
+    tmp->cname = stringcat(tmp->name, intstring(uid++));
+    tmp->noDefaultInit = true;
+    stmts->insertAtTail(new ExprStmt(new DefExpr(tmp)));
+    stmts->insertAtTail(new ExprStmt(new CallExpr(OP_GETS, tmp, new CallExpr(OP_INIT, def->exprType->copy()))));
+    if (def->init)
+      stmts->insertAtTail(new ExprStmt(new CallExpr(OP_GETS, def->sym, new CallExpr("=", tmp, def->init->copy()))));
+    else
+      stmts->insertAtTail(new ExprStmt(new CallExpr(OP_GETS, def->sym, tmp)));
+    def->parentStmt->insertAfter(stmts);
+  } else if (def->init) {
+    AList<Stmt>* stmts = new AList<Stmt>();
+    VarSymbol* tmp = new VarSymbol("_defTmp");
+    tmp->cname = stringcat(tmp->name, intstring(uid++));
+    tmp->noDefaultInit = true;
+    stmts->insertAtTail(new ExprStmt(new DefExpr(tmp)));
+    stmts->insertAtTail(new ExprStmt(new CallExpr(OP_GETS, tmp, new CallExpr(OP_INIT, def->init->copy()))));
+    stmts->insertAtTail(new ExprStmt(new CallExpr(OP_GETS, def->sym, new CallExpr("=", tmp, def->init->copy()))));
+    def->parentStmt->insertAfter(stmts);
   } else {
-    def->parentStmt->insertAfter(new ExprStmt(new CallExpr(OP_GETS, def->sym, new CallExpr("_alloc", gNil))));
+    def->parentStmt->insertAfter(new ExprStmt(new CallExpr(OP_GETS, def->sym, new CallExpr(OP_INIT, gUnspecified))));
   }
 }
