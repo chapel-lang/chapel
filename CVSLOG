@@ -51698,3 +51698,18 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+12/12/05 10:50:01 -- deitz
+
+Log message:
+	Fixed fix_def_expr, used with --use-alloc flag.
+	
+	Made _alloc primitive an op called OP_INIT.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/modules/standard/: prelude.chpl 
+
