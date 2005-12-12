@@ -51713,3 +51713,32 @@ Modified files:
 	chapel/compiler/passes/: normalize.cpp 
 	chapel/modules/standard/: prelude.chpl 
 
+---------------------------------------------------------------------------
+
+12/12/05 14:27:37 -- deitz
+
+Log message:
+	Added ability to access primitive operators OP_GETS and OP_INIT from
+	within Chapel, for use in the prelude, by calling special functions
+	called _move(lhs, rhs) and _init(type).
+	
+	Renamed OP_GETS to OP_MOVE to make it easier to discuss the
+	distinction between OP_MOVE and "=" which is usually talked about as
+	"gets."
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         createEntryPoint.cpp 
+	                         functionResolution.cpp normalize.cpp 
+	                         semanticChecks.cpp 
+	chapel/compiler/traversals/: inlineFunctions.cpp 
+	                             insertVariableInitializations.cpp 
+	                             processParameters.cpp 
+	                             removeNamedParameters.cpp 
+	chapel/modules/standard/: prelude.chpl 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
