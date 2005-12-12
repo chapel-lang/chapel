@@ -108,12 +108,14 @@ Is this "while x"(i); or "while x(i)";?
 %token TIF
 %token TIN
 %token TINDEX
+%token TINIT
 %token TINOUT
 %token TITERATOR
 %token TLABEL
 %token TLET
 %token TLIKE
 %token TMODULE
+%token TMOVE
 %token TNIL
 %token TOF
 %token TORDERED
@@ -1071,6 +1073,10 @@ tuple_paren_expr:
 parenop_expr:
   non_tuple_lvalue TLP expr_ls TRP
     { $$ = new CallExpr($1, $3); }
+| TMOVE TLP expr_ls TRP
+    { $$ = new CallExpr(OP_MOVE, $3); }
+| TINIT TLP expr_ls TRP
+    { $$ = new CallExpr(OP_INIT, $3); }
 ;
 
 

@@ -45,7 +45,7 @@ enum OpTag {
   OP_SUBTYPE,
   OP_NOTSUBTYPE,
   OP_INIT,
-  OP_GETS
+  OP_MOVE
 };
 
 #define OP_ISBINARYOP(op) (op >= OP_PLUS && op <= OP_NOTSUBTYPE)

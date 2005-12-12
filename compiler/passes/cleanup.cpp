@@ -131,7 +131,7 @@ static void destructure_tuple(CallExpr* call) {
         continue;
     stmt->insertAfter(
       new ExprStmt(
-        new CallExpr(OP_GETS, expr->remove(),
+        new CallExpr(OP_MOVE, expr->remove(),
           new CallExpr(temp, new_IntLiteral(i++)))));
   }
 }
@@ -232,7 +232,7 @@ static void construct_tuple_type(int rank) {
     for (int i = 1; i <= rank; i++) {
       assignFn->insertAtTail(
         new ExprStmt(
-          new CallExpr(OP_GETS,
+          new CallExpr(OP_MOVE,
             new CallExpr(htupleArg, new_IntLiteral(i)),
             new CallExpr(tupleArg, new_IntLiteral(i)))));
     }
@@ -252,7 +252,7 @@ static void construct_tuple_type(int rank) {
 //     for (int i = 1; i <= rank; i++) {
 //       assignFn->insertAtTail(
 //         new ExprStmt(
-//           new CallExpr(OP_GETS,
+//           new CallExpr(OP_MOVE,
 //             new CallExpr(tupleArg, new_IntLiteral(i)),
 //             new CallExpr(secondArg, new_IntLiteral(i)))));
 //     }
@@ -353,7 +353,7 @@ finish_constructor(FnSymbol* fn) {
   Expr* alloc_rhs = new CallExpr(Symboltable::lookupInternal("_chpl_alloc"),
                                  ct->symbol,
                                  new_StringLiteral(description));
-  CallExpr* alloc_expr = new CallExpr(OP_GETS, fn->_this, alloc_rhs);
+  CallExpr* alloc_expr = new CallExpr(OP_MOVE, fn->_this, alloc_rhs);
   Stmt* alloc_stmt = new ExprStmt(alloc_expr);
 
   AList<Stmt>* stmts = new AList<Stmt>();
@@ -367,7 +367,7 @@ finish_constructor(FnSymbol* fn) {
       if (ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym)) {
         if (!strcmp(formal->name, field->name)) {
           Expr* lhs = new MemberAccess(fn->_this, field);
-          Expr* assign_expr = new CallExpr(OP_GETS, lhs, formal);
+          Expr* assign_expr = new CallExpr(OP_MOVE, lhs, formal);
           Stmt* assign_stmt = new ExprStmt(assign_expr);
           stmts->insertAtTail(assign_stmt);
         }

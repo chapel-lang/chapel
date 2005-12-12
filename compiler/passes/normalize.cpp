@@ -213,7 +213,7 @@ static AList<Stmt>* handle_return_expr(Expr* e, Symbol* lvalue) {
                              handle_return_expr(ce->thenExpr, lvalue),
                              handle_return_expr(ce->elseExpr, lvalue));
     else
-      newStmt = new ExprStmt(new CallExpr(OP_GETS, e, lvalue));
+      newStmt = new ExprStmt(new CallExpr(OP_MOVE, e, lvalue));
   return new AList<Stmt>(newStmt);
 }
 
@@ -281,7 +281,7 @@ static void normalize_returns(FnSymbol* fn) {
     if (retval) {
       Expr* ret_expr = ret->expr;
       ret->expr->remove();
-      ret->insertBefore(new ExprStmt(new CallExpr(OP_GETS, retval, ret_expr)));
+      ret->insertBefore(new ExprStmt(new CallExpr(OP_MOVE, retval, ret_expr)));
     }
     if (ret->next != label->defPoint->parentStmt) {
       ret->replace(new GotoStmt(goto_normal, label));
@@ -336,7 +336,7 @@ static void initialize_out_formals(FnSymbol* fn) {
     ArgSymbol* arg = dynamic_cast<ArgSymbol*>(argDef->sym);
     if (arg->defaultExpr && arg->intent == INTENT_OUT)
       fn->body->insertAtHead(
-        new ExprStmt(new CallExpr(OP_GETS, arg, arg->defaultExpr->copy())));
+        new ExprStmt(new CallExpr(OP_MOVE, arg, arg->defaultExpr->copy())));
   }
 }
 
@@ -475,7 +475,7 @@ static void hack_array_constructor_call(CallExpr* call) {
       call->parentStmt->insertAfter(
         new ExprStmt(new CallExpr(new MemberAccess(def->sym, "myinit"))));
       call->parentStmt->insertAfter(
-        new ExprStmt(new CallExpr(OP_GETS,
+        new ExprStmt(new CallExpr(OP_MOVE,
           new MemberAccess(def->sym, "dom"),
           call->argList->last()->copy())));
       call->argList->last()->replace(new_IntLiteral(2)); // 2D arrays
@@ -765,18 +765,18 @@ static void fix_def_expr(DefExpr* def) {
   static int uid = 1;
   if (dynamic_cast<VarSymbol*>(def->sym)->noDefaultInit) {
     if (def->init)
-      def->parentStmt->insertAfter(new ExprStmt(new CallExpr(OP_GETS, def->sym, def->init->copy())));
+      def->parentStmt->insertAfter(new ExprStmt(new CallExpr(OP_MOVE, def->sym, def->init->copy())));
   } else if (def->sym->type != dtUnknown) {
     AList<Stmt>* stmts = new AList<Stmt>();
     VarSymbol* tmp = new VarSymbol("_defTmp");
     tmp->cname = stringcat(tmp->name, intstring(uid++));
     tmp->noDefaultInit = true;
     stmts->insertAtTail(new ExprStmt(new DefExpr(tmp)));
-    stmts->insertAtTail(new ExprStmt(new CallExpr(OP_GETS, tmp, new CallExpr(OP_INIT, def->sym->type->symbol))));
+    stmts->insertAtTail(new ExprStmt(new CallExpr(OP_MOVE, tmp, new CallExpr(OP_INIT, def->sym->type->symbol))));
     if (def->init)
-      stmts->insertAtTail(new ExprStmt(new CallExpr(OP_GETS, def->sym, new CallExpr("=", tmp, def->init->copy()))));
+      stmts->insertAtTail(new ExprStmt(new CallExpr(OP_MOVE, def->sym, new CallExpr("=", tmp, def->init->copy()))));
     else
-      stmts->insertAtTail(new ExprStmt(new CallExpr(OP_GETS, def->sym, tmp)));
+      stmts->insertAtTail(new ExprStmt(new CallExpr(OP_MOVE, def->sym, tmp)));
     def->parentStmt->insertAfter(stmts);
   } else if (def->exprType) {
     AList<Stmt>* stmts = new AList<Stmt>();
@@ -784,11 +784,11 @@ static void fix_def_expr(DefExpr* def) {
     tmp->cname = stringcat(tmp->name, intstring(uid++));
     tmp->noDefaultInit = true;
     stmts->insertAtTail(new ExprStmt(new DefExpr(tmp)));
-    stmts->insertAtTail(new ExprStmt(new CallExpr(OP_GETS, tmp, new CallExpr(OP_INIT, def->exprType->copy()))));
+    stmts->insertAtTail(new ExprStmt(new CallExpr(OP_MOVE, tmp, new CallExpr(OP_INIT, def->exprType->copy()))));
     if (def->init)
-      stmts->insertAtTail(new ExprStmt(new CallExpr(OP_GETS, def->sym, new CallExpr("=", tmp, def->init->copy()))));
+      stmts->insertAtTail(new ExprStmt(new CallExpr(OP_MOVE, def->sym, new CallExpr("=", tmp, def->init->copy()))));
     else
-      stmts->insertAtTail(new ExprStmt(new CallExpr(OP_GETS, def->sym, tmp)));
+      stmts->insertAtTail(new ExprStmt(new CallExpr(OP_MOVE, def->sym, tmp)));
     def->parentStmt->insertAfter(stmts);
   } else if (def->init) {
     AList<Stmt>* stmts = new AList<Stmt>();
@@ -796,10 +796,10 @@ static void fix_def_expr(DefExpr* def) {
     tmp->cname = stringcat(tmp->name, intstring(uid++));
     tmp->noDefaultInit = true;
     stmts->insertAtTail(new ExprStmt(new DefExpr(tmp)));
-    stmts->insertAtTail(new ExprStmt(new CallExpr(OP_GETS, tmp, new CallExpr(OP_INIT, def->init->copy()))));
-    stmts->insertAtTail(new ExprStmt(new CallExpr(OP_GETS, def->sym, new CallExpr("=", tmp, def->init->copy()))));
+    stmts->insertAtTail(new ExprStmt(new CallExpr(OP_MOVE, tmp, new CallExpr(OP_INIT, def->init->copy()))));
+    stmts->insertAtTail(new ExprStmt(new CallExpr(OP_MOVE, def->sym, new CallExpr("=", tmp, def->init->copy()))));
     def->parentStmt->insertAfter(stmts);
   } else {
-    def->parentStmt->insertAfter(new ExprStmt(new CallExpr(OP_GETS, def->sym, new CallExpr(OP_INIT, gUnspecified))));
+    def->parentStmt->insertAfter(new ExprStmt(new CallExpr(OP_MOVE, def->sym, new CallExpr(OP_INIT, gUnspecified))));
   }
 }

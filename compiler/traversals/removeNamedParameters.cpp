@@ -25,7 +25,7 @@ void RemoveNamedParameters::postProcessExpr(Expr* expr) {
     }
 
   if (CallExpr* p = dynamic_cast<CallExpr*>(expr)) {
-    if (p->opTag == OP_GETS) {
+    if (p->opTag == OP_MOVE) {
       Expr *lhs = p->get(1);
       Expr *rhs = p->get(2);
       Type *type = lhs->typeInfo();

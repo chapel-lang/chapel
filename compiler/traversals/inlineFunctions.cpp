@@ -18,7 +18,7 @@ class ReplaceReturns : public Traversal {
         if (sym) {
           Expr* ret = s->expr;
           ret->remove();
-          s->replace(new ExprStmt(new CallExpr(OP_GETS, sym, ret)));
+          s->replace(new ExprStmt(new CallExpr(OP_MOVE, sym, ret)));
         } else
           s->remove();
       }
@@ -46,7 +46,7 @@ static void mapFormalsToActuals(CallExpr* call, ASTMap* map) {
         (new ExprStmt(new DefExpr(temp, actual->copy())));
       if (formal->isCopyOut())
         call->parentStmt->insertAfter
-          (new ExprStmt(new CallExpr(OP_GETS, actual->copy(), temp)));
+          (new ExprStmt(new CallExpr(OP_MOVE, actual->copy(), temp)));
       map->put(formal, temp);
     }
     actual = call->argList->next();

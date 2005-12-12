@@ -14,13 +14,13 @@ static Stmt* basic_default_init_stmt(Stmt* stmt, VarSymbol* var, Type* type) {
   } else if (type->defaultValue) {
     Expr* lhs = new SymExpr(var);
     Expr* rhs = new SymExpr(type->defaultValue);
-    Expr* init_expr = new CallExpr(OP_GETS, lhs, rhs);
+    Expr* init_expr = new CallExpr(OP_MOVE, lhs, rhs);
     return new ExprStmt(init_expr);
   } else if (type->defaultConstructor) {
     Expr* lhs = new SymExpr(var);
     Expr* constructor_variable = new SymExpr(type->defaultConstructor);
     Expr* rhs = new CallExpr(constructor_variable);
-    Expr* init_expr = new CallExpr(OP_GETS, lhs, rhs);
+    Expr* init_expr = new CallExpr(OP_MOVE, lhs, rhs);
     return new ExprStmt(init_expr);
   } else {
     INT_FATAL(var, "Failed to insert default initialization");
@@ -43,7 +43,7 @@ static void insert_config_init(Stmt* stmt, VarSymbol* var, Type* type) {
   args->insertAtTail(new_StringLiteral(stringcpy(var->name)));
   args->insertAtTail(new_StringLiteral(dynamic_cast<Symbol*>(var->parentScope->astParent)->name));
   CallExpr* call = new CallExpr(initConfigFn, args);
-  Expr* assign = new CallExpr(OP_GETS, var, init_expr->copy());
+  Expr* assign = new CallExpr(OP_MOVE, var, init_expr->copy());
   ExprStmt* assign_stmt = new ExprStmt(assign);
   CondStmt* cond_stmt = new CondStmt(call, assign_stmt);
   stmt->insertBefore(cond_stmt);
@@ -72,12 +72,12 @@ static void insert_basic_init(Stmt* stmt, VarSymbol* var, Type* type) {
     if (no_infer && type->defaultValue) {
       Expr* lhs = new SymExpr(var);
       Expr* rhs = new SymExpr(type->defaultValue);
-      Expr* init_expr = new CallExpr(OP_GETS, lhs, rhs);
+      Expr* init_expr = new CallExpr(OP_MOVE, lhs, rhs);
       stmt->insertBefore(new ExprStmt(init_expr));
     } else {
       Expr* lhs = new SymExpr(var);
       Expr* rhs = var->defPoint->exprType->copy();
-      Expr* init_expr = new CallExpr(OP_GETS, lhs, rhs);
+      Expr* init_expr = new CallExpr(OP_MOVE, lhs, rhs);
       stmt->insertBefore(new ExprStmt(init_expr));
     }
   }
@@ -94,11 +94,11 @@ static void insert_basic_init(Stmt* stmt, VarSymbol* var, Type* type) {
       if (!is_builtin(f)) {
         init_expr = new CallExpr(f, lhs, rhs);
       } else {
-        init_expr = new CallExpr(OP_GETS, lhs, rhs);
+        init_expr = new CallExpr(OP_MOVE, lhs, rhs);
       }
       stmt->insertBefore(new ExprStmt(init_expr));
     } else {
-      Expr* init_expr = new CallExpr(OP_GETS, lhs, rhs);
+      Expr* init_expr = new CallExpr(OP_MOVE, lhs, rhs);
       stmt->insertBefore(new ExprStmt(init_expr));
     }
   }

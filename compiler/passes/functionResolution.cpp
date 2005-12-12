@@ -178,7 +178,7 @@ void resolve_call(CallExpr* call) {
 
   SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr);
 
-  if (call->opTag == OP_GETS) {
+  if (call->opTag == OP_MOVE) {
     if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->argList->get(1))) {
       if (symExpr->var->type == dtUnknown)
         symExpr->var->type = call->argList->get(2)->typeInfo();

@@ -213,7 +213,7 @@ static void build_setter(ClassType* ct, Symbol* field) {
   if (no_infer && field->defPoint->exprType)
     argDef->exprType = field->defPoint->exprType->copy();
   fn->formals->insertAtTail(argDef);
-  fn->body->insertAtTail(new ExprStmt(new CallExpr(OP_GETS, new SymExpr(field->name), fieldArg)));
+  fn->body->insertAtTail(new ExprStmt(new CallExpr(OP_MOVE, new SymExpr(field->name), fieldArg)));
 
   ct->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(new DefExpr(fn)));
   reset_file_info(fn, field->lineno, field->filename);

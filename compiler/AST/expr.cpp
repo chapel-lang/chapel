@@ -641,7 +641,7 @@ void CallExpr::print(FILE* outfile) {
 
 void CallExpr::makeOp(void) {
   SymExpr* base = dynamic_cast<SymExpr*>(baseExpr);
-  for (int tag = OP_NONE; tag <= OP_GETS; tag++) {
+  for (int tag = OP_NONE; tag <= OP_MOVE; tag++) {
     if (!strcmp(opChplString[tag], base->var->name)) {
       opTag = (OpTag)tag;
       if (opTag == OP_UNPLUS && argList->length() == 2)
@@ -656,7 +656,7 @@ void CallExpr::makeOp(void) {
 
 
 bool CallExpr::isAssign(void) {
-  if (opTag == OP_GETS)
+  if (opTag == OP_MOVE)
     return true;
   else if (opTag == OP_NONE) {
     SymExpr* base = dynamic_cast<SymExpr*>(baseExpr);
@@ -739,7 +739,7 @@ Type* CallExpr::typeInfo(void) {
 void CallExpr::codegen(FILE* outfile) {
 
   if (opTag != OP_NONE) {
-    if (opTag == OP_GETS) {
+    if (opTag == OP_MOVE) {
       bool string_init = false;
       Type* leftType = get(1)->typeInfo();
       Type* rightType = get(2)->typeInfo();
