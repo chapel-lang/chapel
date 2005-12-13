@@ -51742,3 +51742,21 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+12/12/05 17:10:06 -- jplevyak
+
+Log message:
+	Handle OP_MOVE specially so that it is a simple move.
+	More work on the interpreter.
+	Fixed line numbers for error tests.
+	This causes a regression because of a bug with the way
+	  member setters are built.  They should use overloaded assignment.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: pattern.cpp 
+	chapel/compiler/passes/: runInterpreter.cpp 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
