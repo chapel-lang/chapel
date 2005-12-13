@@ -232,7 +232,7 @@ static void construct_tuple_type(int rank) {
     for (int i = 1; i <= rank; i++) {
       assignFn->insertAtTail(
         new ExprStmt(
-          new CallExpr(OP_MOVE,
+          new CallExpr("=",
             new CallExpr(htupleArg, new_IntLiteral(i)),
             new CallExpr(tupleArg, new_IntLiteral(i)))));
     }

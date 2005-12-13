@@ -52,6 +52,11 @@ void View::preProcessExpr(Expr* expr) {
   }
   printf("%s", astTypeName[expr->astType]);
 
+  if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
+    if (call->opTag != OP_NONE)
+      printf(" %s", opChplString[call->opTag]);
+  }
+
   if (NamedExpr* named = dynamic_cast<NamedExpr*>(expr)) {
     printf(" \"%s\"", named->name);
   }

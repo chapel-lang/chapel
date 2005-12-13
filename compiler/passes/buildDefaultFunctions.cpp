@@ -214,7 +214,6 @@ static void build_setter(ClassType* ct, Symbol* field) {
     argDef->exprType = field->defPoint->exprType->copy();
   fn->formals->insertAtTail(argDef);
   fn->body->insertAtTail(new ExprStmt(new CallExpr(OP_MOVE, new SymExpr(field->name), fieldArg)));
-
   ct->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(new DefExpr(fn)));
   reset_file_info(fn, field->lineno, field->filename);
 
@@ -251,8 +250,8 @@ static void build_record_equality_function(ClassType* ct) {
     Expr* left = new MemberAccess(arg1, tmp);
     Expr* right = new MemberAccess(arg2, tmp);
     cond = (cond)
-      ? new CallExpr(OP_LOGAND, cond, new CallExpr(OP_EQUAL, left, right))
-      : new CallExpr(OP_EQUAL, left, right);
+      ? new CallExpr("and", cond, new CallExpr("==", left, right))
+      : new CallExpr("==", left, right);
   }
   fn->body = new BlockStmt(new ReturnStmt(cond));
   DefExpr* def = new DefExpr(fn);
@@ -275,8 +274,8 @@ static void build_record_inequality_function(ClassType* ct) {
     Expr* left = new MemberAccess(arg1, tmp);
     Expr* right = new MemberAccess(arg2, tmp);
     cond = (cond)
-      ? new CallExpr(OP_LOGOR, cond, new CallExpr(OP_NEQUAL, left, right))
-      : new CallExpr(OP_NEQUAL, left, right);
+      ? new CallExpr("or", cond, new CallExpr("!=", left, right))
+      : new CallExpr("!=", left, right);
   }
   BlockStmt* retStmt = new BlockStmt(new ReturnStmt(cond));
   fn->body = retStmt;

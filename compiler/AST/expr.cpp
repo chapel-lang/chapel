@@ -75,9 +75,9 @@ char* opChplString[] = {
   ":",
   "!:",
 
-  "_init_",
+  "_init",
 
-  "="
+  "_move"
 };
 
 
@@ -571,7 +571,7 @@ CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
 
 CallExpr::CallExpr(OpTag initOpTag, BaseAST* arg1, BaseAST* arg2) :
   Expr(EXPR_CALL),
-  baseExpr(new SymExpr(new UnresolvedSymbol(opChplString[initOpTag]))),
+  baseExpr(NULL),
   argList(new AList<Expr>()),
   opTag(initOpTag),
   partialTag(PARTIAL_NEVER)
@@ -605,8 +605,9 @@ void CallExpr::verify() {
 
 CallExpr*
 CallExpr::copyInner(ASTMap* map) {
+  if (opTag != OP_NONE)
+    return new CallExpr(opTag, COPY_INT(argList));
   CallExpr* _this = new CallExpr(COPY_INT(baseExpr), COPY_INT(argList));
-  _this->opTag = opTag;
   _this->partialTag = partialTag;
   return _this;
 }
@@ -641,6 +642,10 @@ void CallExpr::print(FILE* outfile) {
 
 void CallExpr::makeOp(void) {
   SymExpr* base = dynamic_cast<SymExpr*>(baseExpr);
+  if (!strcmp(base->var->name, "=")) {
+    opTag = OP_MOVE;
+    return;
+  }
   for (int tag = OP_NONE; tag <= OP_MOVE; tag++) {
     if (!strcmp(opChplString[tag], base->var->name)) {
       opTag = (OpTag)tag;

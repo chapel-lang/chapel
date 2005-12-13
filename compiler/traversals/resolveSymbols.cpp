@@ -22,6 +22,8 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
   if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
     if (call->isNamed("__primitive"))
       return;
+    if (call->opTag != OP_NONE)
+      return;
     if (!call->isAssign()) {
       Vec<FnSymbol*> fns;
       call_info(call, fns);
@@ -40,8 +42,7 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
             return;
           if (fns.n > 1)
             USR_WARNING(expr, "Dynamic dispatch not yet supported");
-          if (call->opTag == OP_NONE)
-            INT_FATAL(expr, "Unable to resolve function");
+          INT_FATAL(expr, "Unable to resolve function");
           return;
         }
       }

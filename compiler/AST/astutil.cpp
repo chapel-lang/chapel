@@ -122,7 +122,7 @@ class ComputeCallSites : public Traversal {
  public:
   void preProcessExpr(Expr* expr) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
-      if (call->findFnSymbol()) {
+      if (call->opTag == OP_NONE && call->findFnSymbol()) {
         if (call->findFnSymbol()->calledBy) { // yuck, got some
                                               // functions being
                                               // called that are no

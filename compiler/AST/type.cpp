@@ -467,7 +467,7 @@ AList<Stmt>* EnumType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbo
 
   for_alist_backward(DefExpr, constant, this->constants) {
     Expr* symName = new_StringLiteral(constant->sym->name);
-    Expr* cond = new CallExpr(OP_EQUAL, valString, symName);
+    Expr* cond = new CallExpr("==", valString, symName);
     Stmt* thenStmt = new ExprStmt(new CallExpr("=", arg, constant->sym));
     elseStmt = new CondStmt(cond, thenStmt, elseStmt);
     
@@ -845,7 +845,7 @@ AList<Stmt>* ClassType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSym
     fwriteNil->insertAtTail(new ReturnStmt());
     BlockStmt* blockStmt = new BlockStmt(fwriteNil);
     Symbol* nil = Symboltable::lookupInternal("nil", SCOPE_INTRINSIC);
-    Expr* argIsNil = new CallExpr(OP_EQUAL, arg, nil);
+    Expr* argIsNil = new CallExpr("==", arg, nil);
     body->insertAtTail(new CondStmt(argIsNil, blockStmt));
   }
 

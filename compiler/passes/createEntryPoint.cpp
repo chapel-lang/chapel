@@ -65,7 +65,7 @@ static void createInitFn(ModuleSymbol* mod) {
     Stmt* testRun =
       new CondStmt(
         new CallExpr(
-          OP_LOGNOT,
+          "not",
           new SymExpr(
             new UnresolvedSymbol(runOnce))), 
         new ReturnStmt());

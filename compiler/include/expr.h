@@ -48,6 +48,8 @@ enum OpTag {
   OP_MOVE
 };
 
+extern char* opChplString[];
+
 #define OP_ISBINARYOP(op) (op >= OP_PLUS && op <= OP_NOTSUBTYPE)
 #define OP_ISUNARYOP(op) (op >= OP_UNPLUS && op <= OP_BITNOT)
 

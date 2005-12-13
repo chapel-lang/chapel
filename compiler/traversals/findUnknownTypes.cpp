@@ -8,6 +8,8 @@
 
 void RemoveTypeVariableActuals::postProcessExpr(Expr* expr) {
   if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
+    if (call->opTag != OP_NONE)
+      return;
     if (SymExpr* variable = dynamic_cast<SymExpr*>(call->baseExpr)) {
       if (variable->var->hasPragma("keep types")) {
         return;
