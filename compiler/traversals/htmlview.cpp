@@ -188,6 +188,8 @@ void HtmlView::preProcessExpr(Expr* expr) {
     write("(");
     if (e->opTag == OP_NONE) {
       write("<B>call</B> ");
+    } else {
+      write("%s ", opChplString[e->opTag]);
     }
     if (e->partialTag == PARTIAL_OK)
       write("(partial ok) ");

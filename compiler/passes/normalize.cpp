@@ -791,12 +791,17 @@ static void fix_def_expr(DefExpr* def) {
     def->parentStmt->insertAfter(stmts);
   } else if (def->init) {
     AList<Stmt>* stmts = new AList<Stmt>();
-    VarSymbol* tmp = new VarSymbol("_defTmp");
-    tmp->cname = stringcat(tmp->name, intstring(uid++));
-    tmp->noDefaultInit = true;
-    stmts->insertAtTail(new ExprStmt(new DefExpr(tmp)));
-    stmts->insertAtTail(new ExprStmt(new CallExpr(OP_MOVE, tmp, def->init->copy())));
-    stmts->insertAtTail(new ExprStmt(new CallExpr("=", def->sym, new CallExpr(OP_MOVE, def->sym, tmp))));
+    VarSymbol* tmp1 = new VarSymbol("_defTmp1");
+    tmp1->cname = stringcat(tmp1->name, intstring(uid++));
+    tmp1->noDefaultInit = true;
+    stmts->insertAtTail(new ExprStmt(new DefExpr(tmp1)));
+    VarSymbol* tmp2 = new VarSymbol("_defTmp2");
+    tmp2->cname = stringcat(tmp2->name, intstring(uid++));
+    tmp2->noDefaultInit = true;
+    stmts->insertAtTail(new ExprStmt(new DefExpr(tmp2)));
+    stmts->insertAtTail(new ExprStmt(new CallExpr(OP_MOVE, tmp1, def->init->copy())));
+    stmts->insertAtTail(new ExprStmt(new CallExpr(OP_MOVE, tmp2, new CallExpr(OP_INIT, tmp1))));
+    stmts->insertAtTail(new ExprStmt(new CallExpr(OP_MOVE, def->sym, new CallExpr("=", tmp2, tmp1))));
     def->parentStmt->insertAfter(stmts);
   } else {
     def->parentStmt->insertAfter(new ExprStmt(new CallExpr(OP_MOVE, def->sym, new CallExpr(OP_INIT, gUnspecified))));
