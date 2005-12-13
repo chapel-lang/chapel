@@ -51760,3 +51760,24 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+12/13/05 09:51:08 -- deitz
+
+Log message:
+	CallExprs that have an opTag no longer use the baseExpr field.
+	
+	Changed uses of OP_EQUAL, OP_LOGNOT, etc. to function forms in
+	building of default functions including I/O to allow for overloading.
+	
+	Fixed print_view to print operators specially, so OP_MOVE can now be
+	distinguished from overloaded assignment.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp expr.cpp type.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         createEntryPoint.cpp 
+	chapel/compiler/traversals/: findUnknownTypes.cpp 
+	                             resolveSymbols.cpp view.cpp 
+
