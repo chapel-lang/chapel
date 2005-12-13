@@ -51840,3 +51840,14 @@ Modified files:
 	chapel/compiler/passes/: filesToAST.cpp normalize.cpp 
 	chapel/compiler/traversals/: htmlview.cpp 
 
+---------------------------------------------------------------------------
+
+12/13/05 15:38:12 -- deitz
+
+Log message:
+	Added little test of initializing a variable with a function.  It works.
+
+Added files:
+	chapel/test/trivial/deitz/: test_var_decl_init5.chpl 
+	                            test_var_decl_init5.good 
+
