@@ -57,6 +57,14 @@ function =(x : _adomain, y : _adomain_lit) {
   return x;
 }
 
+function =(x : _adomain, y : _adomain) {
+  if x.rank != y.rank then
+    halt("Domain ranks do not match");
+  for dim in 1..x.rank do
+    x.info(dim-1) = y.info(dim-1);
+  return x;
+}
+
 function fwrite(f : file, x : _adomain) {
   fwrite(f, "[");
   for i in 0..x.rank-1 {
