@@ -51781,3 +51781,36 @@ Modified files:
 	chapel/compiler/traversals/: findUnknownTypes.cpp 
 	                             resolveSymbols.cpp view.cpp 
 
+---------------------------------------------------------------------------
+
+12/13/05 11:16:58 -- deitz
+
+Log message:
+	Made setter use overloaded assignment rather than OP_MOVE.
+	
+	Added = function for domain class.
+	
+	Fixed regression, but broke
+	
+	  types/seq/deitz/test_seq_record1
+	
+	because the record equality function is not visible where it is needed
+	by the sequence class.  The problem is that I instantiate the sequence
+	of record class in chpl_seq where the functions related to the record
+	cannot be seen.  Any ideas on how to deal with this issue?  We don't
+	want to make the record's functions visible everywhere and moving the
+	sequence of R class next to the record class will work in this case,
+	but is problematic in the more general case of tuples which may
+	contain two records in different places.  Instantiating where it is
+	created is not great either because we don't want to end up having to
+	instantiate multiple copies of the same thing.
+
+Modified files:
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
