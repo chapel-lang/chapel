@@ -732,9 +732,8 @@ static void insert_call_temps(CallExpr* call) {
   if (call->partialTag != PARTIAL_NEVER)
     return;
 
-  if (SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr))
-    if (!strcmp("typeof", base->var->name))
-      return;
+  if (call->isNamed("typeof") || call->isNamed("__primitive"))
+    return;
 
   Stmt* stmt = call->parentStmt;
   VarSymbol* tmp = new VarSymbol(stringcat("_tmp"));
@@ -796,8 +795,8 @@ static void fix_def_expr(DefExpr* def) {
     tmp->cname = stringcat(tmp->name, intstring(uid++));
     tmp->noDefaultInit = true;
     stmts->insertAtTail(new ExprStmt(new DefExpr(tmp)));
-    stmts->insertAtTail(new ExprStmt(new CallExpr(OP_MOVE, tmp, new CallExpr(OP_INIT, def->init->copy()))));
-    stmts->insertAtTail(new ExprStmt(new CallExpr(OP_MOVE, def->sym, new CallExpr("=", tmp, def->init->copy()))));
+    stmts->insertAtTail(new ExprStmt(new CallExpr(OP_MOVE, tmp, def->init->copy())));
+    stmts->insertAtTail(new ExprStmt(new CallExpr("=", def->sym, new CallExpr(OP_MOVE, def->sym, tmp))));
     def->parentStmt->insertAfter(stmts);
   } else {
     def->parentStmt->insertAfter(new ExprStmt(new CallExpr(OP_MOVE, def->sym, new CallExpr(OP_INIT, gUnspecified))));
