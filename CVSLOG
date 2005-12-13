@@ -51814,3 +51814,14 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+12/13/05 11:29:53 -- deitz
+
+Log message:
+	Fixed infinite recursion bug on = function by not inserting
+	temporaries for __primitive function results.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+
