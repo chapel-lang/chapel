@@ -743,13 +743,16 @@ Matcher::covers_formals(Fun *f, Vec<CreationSet *> &csargs, MPosition &p, int to
         result = 0;
     }
   }
-  // handle x.y(z) as ((#y, x), z) differently for paren vs. paren-less methods
-  if (top_level && partial == Partial_OK && result && !m->partial && !f->eager_evaluation)
-    m->partial = 1;
-  if (top_level && !f->eager_evaluation && !is_closure && result &&
-      csargs.n > 1 && pdb->fa->method_token && 
-      csargs.v[1]->sym == pdb->fa->method_token->out->v[0]->sym->type)
-    m->partial = 1;
+  if (top_level && result) {
+    // handle x.y(z) as ((#y, x), z) differently for paren vs. paren-less methods
+    if (partial == Partial_OK && !f->eager_evaluation)
+      m->partial = 1;
+    if (!f->eager_evaluation && !is_closure && csargs.n > 1 && pdb->fa->method_token && 
+        csargs.v[1]->sym == pdb->fa->method_token->out->v[0]->sym->type)
+      m->partial = 1;
+    if (f->eager_evaluation && is_closure)
+      result = 0;
+  }
   return result;
 }
 

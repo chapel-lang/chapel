@@ -1817,6 +1817,7 @@ gen_assignment(CallExpr *assign) {
   //  - symbol is "this"
   int operator_equal = 
     !(constructor_assignment || 
+      assign->opTag == OP_MOVE ||
       (lhs_var_symbol && lhs_var_symbol->noDefaultInit) ||
       (lhs_symbol && (lhs_symbol->type == dtUnknown && !lhs_symbol->defPoint->init)) ||
       (lhs_symbol && lhs_symbol->isThis()))
@@ -1978,7 +1979,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
     }
     case EXPR_CALL: {
       CallExpr* call = dynamic_cast<CallExpr*>(ast);
-      if (call->isAssign()) {
+      if (call->isAssign() || call->opTag == OP_MOVE) {
         FnSymbol *f = call->getFunction();
         int is_member = call->get(1)->astType == EXPR_MEMBERACCESS;
         if (f->fnClass == FN_CONSTRUCTOR && is_member) {
