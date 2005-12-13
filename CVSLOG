@@ -51825,3 +51825,18 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: normalize.cpp 
 
+---------------------------------------------------------------------------
+
+12/13/05 15:18:19 -- deitz
+
+Log message:
+	Fixed fix_def_expr's handling of cases like "var x = init_expr."
+	
+	Made lookup of chpl_stdin, etc. happen even with --nostdincs.
+	
+	Fixed html_view printing of CallExprs that are operators.
+
+Modified files:
+	chapel/compiler/passes/: filesToAST.cpp normalize.cpp 
+	chapel/compiler/traversals/: htmlview.cpp 
+
