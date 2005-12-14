@@ -213,7 +213,7 @@ static AList<Stmt>* handle_return_expr(Expr* e, Symbol* lvalue) {
                              handle_return_expr(ce->thenExpr, lvalue),
                              handle_return_expr(ce->elseExpr, lvalue));
     else
-      newStmt = new ExprStmt(new CallExpr(OP_MOVE, e, lvalue));
+      newStmt = new ExprStmt(new CallExpr("=", e, lvalue));
   return new AList<Stmt>(newStmt);
 }
 
@@ -273,6 +273,8 @@ static void normalize_returns(FnSymbol* fn) {
       retval->noDefaultInit = true;
     Expr* type = fn->defPoint->exprType;
     type->remove();
+    if (!type)
+      retval->noDefaultInit = true;
     fn->insertAtHead(new ExprStmt(new DefExpr(retval, NULL, type)));
     fn->insertAtTail(new ReturnStmt(retval));
   }
@@ -475,7 +477,7 @@ static void hack_array_constructor_call(CallExpr* call) {
       call->parentStmt->insertAfter(
         new ExprStmt(new CallExpr(new MemberAccess(def->sym, "myinit"))));
       call->parentStmt->insertAfter(
-        new ExprStmt(new CallExpr(OP_MOVE,
+        new ExprStmt(new CallExpr("=",
           new MemberAccess(def->sym, "dom"),
           call->argList->last()->copy())));
       call->argList->last()->replace(new_IntLiteral(2)); // 2D arrays
@@ -670,7 +672,7 @@ static void apply_getters_setters(BaseAST* ast) {
   //           a CallExpr without a MemberAccess
   // SJD: Commment needs to be updated with PARTIAL_OK
   CallExpr *call = dynamic_cast<CallExpr*>(ast), *assign = 0;
-  if (call && call->isAssign()) {
+  if (call && call->isNamed("=")) {
     assign = call;
     call = dynamic_cast<CallExpr*>(assign->get(1));
   }
