@@ -51851,3 +51851,14 @@ Added files:
 	chapel/test/trivial/deitz/: test_var_decl_init5.chpl 
 	                            test_var_decl_init5.good 
 
+---------------------------------------------------------------------------
+
+12/14/05 09:29:44 -- jplevyak
+
+Log message:
+	fix line numbers
+
+Modified files:
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
