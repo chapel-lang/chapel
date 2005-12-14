@@ -51916,3 +51916,16 @@ Modified files:
 	                         filesToAST.cpp 
 	chapel/compiler/traversals/: processImportExprs.cpp 
 
+---------------------------------------------------------------------------
+
+12/14/05 13:56:43 -- deitz
+
+Log message:
+	Fixed an assignment for the domain in the construction of arrays to
+	use '=' instead of _move.
+	
+	Made return temp for normalizing return statements use _move.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+
