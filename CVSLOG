@@ -51898,3 +51898,21 @@ Added files:
 	chapel/test/parsing/shannon/: .cvsignore invalidToken.chpl 
 	                              invalidToken.good 
 
+---------------------------------------------------------------------------
+
+12/14/05 12:08:02 -- jplevyak
+
+Log message:
+	Some work on the --use-alloc option.
+	Made a new option --nostdincs-but-file to complement --nostndincs which
+	  does not include anything (including file).
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         filesToAST.cpp 
+	chapel/compiler/traversals/: processImportExprs.cpp 
+
