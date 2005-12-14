@@ -22,14 +22,16 @@ void parse(void) {
 
   yydebug = debugParserLevel;
   
-  if (!fnostdincs) {
+  if (!fnostdincs && !fnostdincs_but_file) {
     ParseFile(stringcat(chplroot, "/modules/standard/_chpl_complex.chpl"),
               MOD_STANDARD);
   }
-  fileModule = ParseFile(stringcat(chplroot, 
-                                   "/modules/standard/_chpl_file.chpl"),
-                         MOD_STANDARD);
   if (!fnostdincs) {
+    fileModule = ParseFile(stringcat(chplroot, 
+                                     "/modules/standard/_chpl_file.chpl"),
+                           MOD_STANDARD);
+  }
+  if (!fnostdincs && !fnostdincs_but_file) {
     tupleModule = ParseFile(stringcat(chplroot,
                                       "/modules/standard/_chpl_htuple.chpl"),
                             MOD_STANDARD);
@@ -56,14 +58,16 @@ void parse(void) {
   Pass* fixup = new Fixup();
   fixup->run(Symboltable::getModules(MODULES_ALL));
 
-  if (!fnostdincs) {
+  if (!fnostdincs && !fnostdincs_but_file) {
     chpl_htuple = dynamic_cast<TypeSymbol*>(Symboltable::lookupInScope("_htuple", tupleModule->modScope));
     chpl_seq = dynamic_cast<TypeSymbol*>(Symboltable::lookupInScope("seq", seqModule->modScope));
   }
 
-  chpl_stdin = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("stdin", fileModule->modScope));
-  chpl_stdout = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("stdout", fileModule->modScope));
-  chpl_stderr = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("stderr", fileModule->modScope));
+  if (!fnostdincs) {
+    chpl_stdin = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("stdin", fileModule->modScope));
+    chpl_stdout = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("stdout", fileModule->modScope));
+    chpl_stderr = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("stderr", fileModule->modScope));
+  }
 
   setterToken = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("_setterToken", prelude->modScope));
   methodToken = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("_methodToken", prelude->modScope));

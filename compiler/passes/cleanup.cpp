@@ -198,30 +198,32 @@ static void construct_tuple_type(int rank) {
   commonModule->stmts->insertAtHead(new ExprStmt(new DefExpr(tupleSym)));
   cleanup(tupleSym);
 
-  // Build write function
-  FnSymbol* fwriteFn = new FnSymbol("fwrite");
-  TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(Symboltable::lookupInFileModuleScope("file"));
-  ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", fileType->definition);
-  ArgSymbol* fwriteArg = new ArgSymbol(INTENT_BLANK, "val", tupleType);
-  fwriteFn->formals = new AList<DefExpr>(new DefExpr(fileArg), new DefExpr(fwriteArg));
-  AList<Expr>* actuals = new AList<Expr>();
-  actuals->insertAtTail(new_StringLiteral(stringcpy("(")));
-  for (int i = 1; i <= rank; i++) {
-    if (i != 1)
-      actuals->insertAtTail(new_StringLiteral(stringcpy(", ")));
-    actuals->insertAtTail(
-      new MemberAccess(
+  if (!fnostdincs) {
+    // Build write function
+    FnSymbol* fwriteFn = new FnSymbol("fwrite");
+    TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(Symboltable::lookupInFileModuleScope("file"));
+    ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", fileType->definition);
+    ArgSymbol* fwriteArg = new ArgSymbol(INTENT_BLANK, "val", tupleType);
+    fwriteFn->formals = new AList<DefExpr>(new DefExpr(fileArg), new DefExpr(fwriteArg));
+    AList<Expr>* actuals = new AList<Expr>();
+    actuals->insertAtTail(new_StringLiteral(stringcpy("(")));
+    for (int i = 1; i <= rank; i++) {
+      if (i != 1)
+        actuals->insertAtTail(new_StringLiteral(stringcpy(", ")));
+      actuals->insertAtTail(
+        new MemberAccess(
           new UnresolvedSymbol("val"),
           stringcat("_f", intstring(i))));
+    }
+    actuals->insertAtTail(new_StringLiteral(stringcpy(")")));
+    Expr* fwriteCall = new CallExpr("fwrite", new SymExpr(fileArg), actuals);
+    fwriteFn->body = new BlockStmt(new ExprStmt(fwriteCall));
+    commonModule->stmts->insertAtTail(new ExprStmt(new DefExpr(fwriteFn)));
+    cleanup(fwriteFn);
   }
-  actuals->insertAtTail(new_StringLiteral(stringcpy(")")));
-  Expr* fwriteCall = new CallExpr("fwrite", new SymExpr(fileArg), actuals);
-  fwriteFn->body = new BlockStmt(new ExprStmt(fwriteCall));
-  commonModule->stmts->insertAtTail(new ExprStmt(new DefExpr(fwriteFn)));
-  cleanup(fwriteFn);
 
   // Build htuple = tuple function
-  if (!fnostdincs) {
+  if (!fnostdincs && !fnostdincs_but_file) {
     FnSymbol* assignFn = new FnSymbol("=");
     ArgSymbol* htupleArg = 
       new ArgSymbol(INTENT_BLANK, "_htuple", chpl_htuple->definition);

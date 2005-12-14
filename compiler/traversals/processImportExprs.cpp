@@ -46,10 +46,10 @@ void ProcessImportExprs::run(Vec<ModuleSymbol*>* modules) {
   forv_Vec(ModuleSymbol, mod, *modules) {
     ExprStmt* moduleUse;
     if ((mod->modtype == MOD_USER || (no_infer && mod->modtype == MOD_COMMON))) {
-      if (!fnostdincs) {
+      if (!fnostdincs && !fnostdincs_but_file) {
         moduleUse = genModuleUse("_chpl_standard");
         mod->initFn->insertAtHead(moduleUse);
-      } else {
+      } else if (!fnostdincs) {
         mod->initFn->insertAtHead(genModuleUse("_chpl_file"));
       }
     }

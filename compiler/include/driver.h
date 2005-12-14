@@ -24,6 +24,7 @@ extern int fdump_html;
 extern int f_equal_method;
 extern int fnewvardef;
 extern int fnostdincs;
+extern int fnostdincs_but_file;
 extern int fdce_if1;
 extern int fgraph;
 extern int fgraph_constants;

@@ -58,12 +58,14 @@ int scoping_test = 0;
 int f_equal_method = 0;
 int fanalysis_errors = 0;
 int fnostdincs = 0;
+int fnostdincs_but_file = 0;
 int num_constants_per_variable = 1;
 
 static ArgumentDescription arg_desc[] = {
  {"interpreter", 'i', "Run Interpreter (-ii for interactive)", "+", &run_interpreter, "CHPL_INTERPRETER", NULL},
  {"trace", 's', "Trace Level", "+", &trace_level, "CHPL_TRACE", NULL},
  {"nostdincs", ' ', "No Standard Includes", "T", &fnostdincs, "CHPL_NOSTDINCS", NULL},
+ {"nostdincs-but-file", ' ', "No Standard Includes But File", "T", &fnostdincs_but_file, "CHPL_NOSTDINCS_BUT_FILE", NULL},
  {"analysis-errors", ' ', "Pass Back Analysis Errors", "T", &fanalysis_errors, "CHPL_ANALYSIS_ERRORS", NULL},
  {"premalloc", 'm', "Pre-Malloc", "I", &pre_malloc, "CHPL_PRE_MALLOC", NULL},
  {"passlist", ' ', "Passlist Filename", "P", passlist_filename, "CHPL_PASSLIST", NULL},

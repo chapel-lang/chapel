@@ -1374,21 +1374,25 @@ gen_one_defexpr(VarSymbol *var, DefExpr *def) {
     else
       s->must_implement = unalias_type(type->asymbol->sym);
   }
-  Expr *init = def->init;
+  Expr *init = 0, *exprType = def->exprType;
+  if (!use_alloc) {
+    init = def->init;
+    exprType = def->exprType;
+  }
   int no_default_init = var->noDefaultInit ;
- // optimizations || (init && (is_reference_type(type) || (is_scalar_type(type) && type == init->typeInfo())));
+  // optimizations || (init && (is_reference_type(type) || (is_scalar_type(type) && type == init->typeInfo())));
   Sym *lhs = s;
   if (!no_default_init) {
     lhs = new_sym();
     lhs->ast = ast;
-    if (def->exprType)
-      if1_gen(if1, &ast->code, def->exprType->ainfo->code);
+    if (exprType)
+      if1_gen(if1, &ast->code, exprType->ainfo->code);
     Code *c = if1_send(if1, &ast->code, 3, 1, sym_primitive,
                        chapel_defexpr_symbol, type->asymbol->sym, lhs);
     c->ast = ast;
     c->partial = Partial_NEVER;
-    if (def->exprType)
-      if1_add_send_arg(if1, c, def->exprType->ainfo->rval);
+    if (exprType)
+      if1_add_send_arg(if1, c, exprType->ainfo->rval);
     if (SymExpr *e = dynamic_cast<SymExpr*>(init)) {
       if (e->var == gNil)
         init = NULL;
@@ -1632,7 +1636,7 @@ gen_cond(AAST *ast, AAST *xcond, AAST *xthen, AAST *xelse) {
 
 static astType_t
 undef_or_fn_expr(Expr *ast) {
-  if (ast->astType == EXPR_SYM) { 
+  if (ast && ast->astType == EXPR_SYM) { 
     SymExpr* v = dynamic_cast<SymExpr* >(ast);
     return v->var->astType;
   }
@@ -1690,7 +1694,8 @@ gen_paren_op(CallExpr *s) {
   AAST *ast = s->ainfo;
   ast->rval = new_sym();
   ast->rval->ast = ast;
-  if1_gen(if1, &ast->code, s->baseExpr->ainfo->code);
+  if (s->baseExpr)
+    if1_gen(if1, &ast->code, s->baseExpr->ainfo->code);
   Vec<Expr *> args;
   s->argList->getElements(args);
   if (args.n == 1 && !args.v[0])
@@ -1701,9 +1706,10 @@ gen_paren_op(CallExpr *s) {
     assert(a->ainfo->rval);
     rvals.add(a->ainfo->rval);
   }
+  Vec<Sym*> trvals;
   astType_t base_symbol = undef_or_fn_expr(s->baseExpr);
   Sym *base = NULL;
-  char *n = s->baseExpr->ainfo->rval->name, *str;
+  char *n = s->baseExpr ? s->baseExpr->ainfo->rval->name : 0, *str;
   if (n && !strcmp(n, "__primitive")) {
     if (args.n > 0 && get_string(args.v[0], &str) &&
         if1->primitives->prim_map[0][0].get(if1_cannonicalize_string(if1, str)))
@@ -1721,9 +1727,12 @@ gen_paren_op(CallExpr *s) {
     base = make_symbol(n);
   } else if (base_symbol == SYMBOL_FN)
     base = dynamic_cast<FnSymbol*>(dynamic_cast<SymExpr*>(s->baseExpr)->var)->asymbol->sym;
-  else
-    base = s->baseExpr->ainfo->rval;
-  Vec<Sym*> trvals;
+  else {
+    switch (s->opTag) {
+      case OP_INIT: trvals.add(sym_primitive); base = chapel_defexpr_symbol; break;
+      default: base = s->baseExpr ? s->baseExpr->ainfo->rval : 0; break;
+    }
+  }
   if (base)
     trvals.add(base);
   forv_Sym(r, rvals)
@@ -1979,7 +1988,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
     }
     case EXPR_CALL: {
       CallExpr* call = dynamic_cast<CallExpr*>(ast);
-      if (call->isAssign() || call->opTag == OP_MOVE) {
+      if (call->isAssign()) {
         FnSymbol *f = call->getFunction();
         int is_member = call->get(1)->astType == EXPR_MEMBERACCESS;
         if (f->fnClass == FN_CONSTRUCTOR && is_member) {
@@ -2690,6 +2699,8 @@ chapel_defexpr(PNode *pn, EntrySet *es) {
     tav = make_AVar(pn->rvals.v[3], es);
   forv_CreationSet(tt, tav->out->sorted) {
     Sym *type_sym = !type_expr ? tt->sym->meta_type : tt->sym;
+    if (type_sym->is_meta_type)
+      type_sym = type_sym->meta_type;
     Type *type = dynamic_cast<Type*>(type_sym->asymbol ? SYMBOL(type_sym) : 0);
     if (!type) {
       if (!type_expr)

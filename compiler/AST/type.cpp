@@ -1047,13 +1047,12 @@ void findInternalTypes(void) {
   dtSetterToken = Symboltable::lookupInternalType("_setterTokenType")->definition;
   if (!fnostdincs)
     dtFile = dynamic_cast<TypeSymbol*>(Symboltable::lookupInFileModuleScope("file"))->definition;
-
   dtObject = dynamic_cast<ClassType*>(Symboltable::lookupInternalType("object")->definition);
   dtValue = dynamic_cast<ClassType*>(Symboltable::lookupInternalType("value")->definition);
 
   // These should all be eliminated.  Note they almost are since they
   // are MetaTypes, not the types in the prelude.
-  if (!fnostdincs) {
+  if (!fnostdincs || !fnostdincs_but_file) {
     dtTuple = Symboltable::lookupInternalType("Tuple")->type;
     dtDomain = Symboltable::lookupInternalType("Domain")->type;
     dtArray = Symboltable::lookupInternalType("Array")->type;
