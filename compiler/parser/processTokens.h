@@ -9,6 +9,7 @@ char* eatStringLiteral(char* c);
 void processSingleLineComment(void);
 void processMultiLineComment(void);
 void processWhitespace(char* tabOrSpace);
+void processInvalidToken(void);
 
 #endif
 

@@ -1,4 +1,5 @@
+*.good
 *.tmp
 a.out
 output
-*.good
+log

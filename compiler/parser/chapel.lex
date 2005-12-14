@@ -163,6 +163,7 @@ yield           processToken(TYIELD);
 
 "/*"            processMultiLineComment();
 
+.               processInvalidToken();
 
 %%
 

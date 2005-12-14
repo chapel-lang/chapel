@@ -1,3 +1,4 @@
-output
 *.tmp
 a.out
+output
+log
