@@ -51872,3 +51872,29 @@ Log message:
 Removed files:
 	chapel/test/trivial/deitz/: test_break1.future 
 
+---------------------------------------------------------------------------
+
+12/14/05 10:43:50 -- shannon
+
+Log message:
+	Fixed an oversight in the parser where unrecognized
+	tokens were quietly printed to the screen:  now it
+	complains.  Added a test.  Also updated my .cvsignore
+	files.
+
+Modified files:
+	chapel/compiler/parser/: chapel.lex processTokens.cpp 
+	                         processTokens.h 
+	chapel/test/classes/shannon/: .cvsignore 
+	chapel/test/compflags/shannon/: .cvsignore 
+	chapel/test/compflags/shannon/cpplines/: .cvsignore 
+	chapel/test/execflags/shannon/: .cvsignore 
+	chapel/test/execflags/shannon/configs/: .cvsignore 
+	chapel/test/execflags/shannon/configs/help/: .cvsignore 
+	chapel/test/memory/shannon/: .cvsignore 
+	chapel/test/trivial/shannon/: .cvsignore 
+	chapel/test/types/string/shannon/: .cvsignore 
+Added files:
+	chapel/test/parsing/shannon/: .cvsignore invalidToken.chpl 
+	                              invalidToken.good 
+
