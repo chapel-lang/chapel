@@ -51929,3 +51929,16 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: normalize.cpp 
 
+---------------------------------------------------------------------------
+
+12/14/05 17:01:09 -- jplevyak
+
+Log message:
+	Add initial support for simulating multiple threads, for single stepping
+	and for interrupting the interpreter with control-c.  Added an
+	"interactive" mode to the interpreter.
+
+Modified files:
+	chapel/compiler/include/: vec.h 
+	chapel/compiler/passes/: runInterpreter.cpp 
+
