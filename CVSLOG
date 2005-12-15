@@ -51991,3 +51991,15 @@ Removed files:
 	chapel/test/memory/shannon/: jacobi.future printMemTable.future 
 	chapel/test/trivial/deitz/: test_scope1.future 
 
+---------------------------------------------------------------------------
+
+12/15/05 09:17:49 -- jplevyak
+
+Log message:
+	Improved the flexibility of analysis to handle the creation of
+	multiple types of objects at the same (virtually cloned)
+	program point.  Looks like the new DefExpr/init might require this.
+
+Modified files:
+	chapel/compiler/ifa/: clone.cpp fa.cpp fa.h pnode.h 
+
