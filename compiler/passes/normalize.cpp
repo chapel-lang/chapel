@@ -793,11 +793,11 @@ static void fix_def_expr(DefExpr* def) {
   if (dynamic_cast<VarSymbol*>(def->sym)->noDefaultInit) {
     if (def->init)
       def->parentStmt->insertAfter(new ExprStmt(new CallExpr(OP_MOVE, def->sym, def->init->copy())));
+    dynamic_cast<VarSymbol*>(def->sym)->noDefaultInit = false;
   } else if (def->sym->type != dtUnknown) {
     AList<Stmt>* stmts = new AList<Stmt>();
     VarSymbol* tmp = new VarSymbol("_defTmp");
     tmp->cname = stringcat(tmp->name, intstring(uid++));
-    tmp->noDefaultInit = true;
     stmts->insertAtTail(new ExprStmt(new DefExpr(tmp)));
     stmts->insertAtTail(new ExprStmt(new CallExpr(OP_MOVE, tmp, new CallExpr(OP_INIT, def->sym->type->symbol))));
     if (def->init)
@@ -809,7 +809,6 @@ static void fix_def_expr(DefExpr* def) {
     AList<Stmt>* stmts = new AList<Stmt>();
     VarSymbol* tmp = new VarSymbol("_defTmp");
     tmp->cname = stringcat(tmp->name, intstring(uid++));
-    tmp->noDefaultInit = true;
     stmts->insertAtTail(new ExprStmt(new DefExpr(tmp)));
     stmts->insertAtTail(new ExprStmt(new CallExpr(OP_MOVE, tmp, new CallExpr(OP_INIT, def->exprType->copy()))));
     if (def->init)
@@ -821,11 +820,9 @@ static void fix_def_expr(DefExpr* def) {
     AList<Stmt>* stmts = new AList<Stmt>();
     VarSymbol* tmp1 = new VarSymbol("_defTmp1");
     tmp1->cname = stringcat(tmp1->name, intstring(uid++));
-    tmp1->noDefaultInit = true;
     stmts->insertAtTail(new ExprStmt(new DefExpr(tmp1)));
     VarSymbol* tmp2 = new VarSymbol("_defTmp2");
     tmp2->cname = stringcat(tmp2->name, intstring(uid++));
-    tmp2->noDefaultInit = true;
     stmts->insertAtTail(new ExprStmt(new DefExpr(tmp2)));
     stmts->insertAtTail(new ExprStmt(new CallExpr(OP_MOVE, tmp1, def->init->copy())));
     stmts->insertAtTail(new ExprStmt(new CallExpr(OP_MOVE, tmp2, new CallExpr(OP_INIT, tmp1))));
