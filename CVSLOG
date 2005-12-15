@@ -52013,3 +52013,13 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+12/15/05 10:53:13 -- deitz
+
+Log message:
+	Removed setting of noDefaultInit when --use-alloc is used.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+
