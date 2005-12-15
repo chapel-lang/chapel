@@ -52003,3 +52003,13 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: clone.cpp fa.cpp fa.h pnode.h 
 
+---------------------------------------------------------------------------
+
+12/15/05 10:42:00 -- jplevyak
+
+Log message:
+	Fix compilation issue.
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+
