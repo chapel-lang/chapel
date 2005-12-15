@@ -201,13 +201,14 @@ IFrame::run(int timeslice) {
           case 0: 
             PUSH_EXPR(s->expr);
             break;
-          case 1:
+          case 1: {
             stage = 0;
             ISlot *slot = valStack.pop();
             thread->frame = parent;
             if (parent)
               parent->valStack.add(slot);
             return;
+          }
           default: INT_FATAL(ip, "interpreter: bad stage %d for astType: %d", stage, ip->astType); break;
         }
         break;
@@ -306,7 +307,7 @@ IFrame::run(int timeslice) {
           case 0:
             PUSH_EXPR(s->condExpr);
             break;
-          case 1:
+          case 1: {
             stage = 0;
             ISlot *cond = valStack.pop();
             check_type(ip, cond, dtBoolean);
@@ -315,6 +316,7 @@ IFrame::run(int timeslice) {
             else
               EVAL_STMT(s->elseStmt);
             break;
+          }
           default: INT_FATAL(ip, "interpreter: bad stage %d for astType: %d", stage, ip->astType); break;
         }
         break;
@@ -370,7 +372,7 @@ IFrame::run(int timeslice) {
           case 0:
             PUSH_EXPR(s->condExpr);
             break;
-          case 1:
+          case 1: {
             stage = 0;
             ISlot *cond = valStack.pop();
             check_type(ip, cond, dtBoolean);
@@ -382,6 +384,7 @@ IFrame::run(int timeslice) {
               env.put(expr, islot(s->thenExpr));
             }
             break;
+	  }
           default: INT_FATAL(ip, "interpreter: bad stage %d for astType: %d", stage, ip->astType); break;
         }
         break;
