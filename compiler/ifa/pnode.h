@@ -63,7 +63,7 @@ class PNode : public gc {
   Map<PNode *, int> cfg_pred_index;  // ssu.cpp, cg.cpp
 
   Dom *dom; // Dominators dom.cpp 
-  Sym *creates; // Cloning
+  Vec<Sym *> *creates; // Cloning
 
   float execution_frequency;
   float false_branch_frequency; // inline.cpp

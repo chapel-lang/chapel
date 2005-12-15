@@ -152,6 +152,8 @@ class Setters : public Vec<AVar *> {
 
 typedef MapElem<void *, int> MarkElem;
 typedef Map<void *, int> MarkMap;
+typedef Map<Sym *, CreationSet *> CSMap;
+typedef MapElem<Sym *, CreationSet *> CSMapElem;
 
 class AVar : public gc {
  public:
@@ -169,7 +171,7 @@ class AVar : public gc {
   Setters                       *setters;
   Setters                       *setter_class;
   MarkMap                       *mark_map;
-  CreationSet                   *creation_set;
+  CSMap                         *cs_map;
   Sym                           *type;
   int                           ivar_offset;
   uint                          in_send_worklist:1;

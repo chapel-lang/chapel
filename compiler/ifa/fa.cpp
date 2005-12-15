@@ -64,7 +64,7 @@ AEdge::AEdge() :
 AVar::AVar(Var *v, void *acontour) : 
   var(v), contour(acontour), lvalue(0), gen(0), in(bottom_type), out(bottom_type), 
   restrict(0), container(0), setters(0), setter_class(0), mark_map(0),
-  creation_set(0), type(0), ivar_offset(0), in_send_worklist(0), contour_is_entry_set(0), 
+  cs_map(0), type(0), ivar_offset(0), in_send_worklist(0), contour_is_entry_set(0), 
   is_lvalue(0), is_dead(0)
 {
   id = avar_id++;
@@ -285,7 +285,7 @@ flow_vars_assign(AVar *rhs, AVar *lhs) {
 // variable (location in program text).
 CreationSet *
 creation_point(AVar *v, Sym *s) {
-  CreationSet *cs = v->creation_set;
+  CreationSet *cs = v->cs_map ? v->cs_map->get(s) : 0;
   EntrySet *es = (EntrySet*)v->contour;
   if (cs) {
     assert(cs->sym == s);
@@ -297,7 +297,7 @@ creation_point(AVar *v, Sym *s) {
     es = 0;
   if (es && es->split) {
     AVar *oldv = make_AVar(v->var, es->split);
-    cs = oldv->creation_set;
+    cs = oldv->cs_map ? oldv->cs_map->get(s) : 0;
     if (cs) {
       assert(cs->sym == s);
       goto Lfound;
@@ -322,7 +322,9 @@ creation_point(AVar *v, Sym *s) {
       cs->var_map.put(h->name, iv);
   }
  Lfound:
-  v->creation_set = cs;
+  if (!v->cs_map)
+    v->cs_map = new CSMap;
+  v->cs_map->put(s, cs);
   cs->defs.set_add(v);
   if (v->contour_is_entry_set)
     ((EntrySet*)v->contour)->creates.set_add(cs);
@@ -3348,10 +3350,13 @@ collect_setter_confluences(Vec<AVar *> &setter_confluences, Vec<AVar *> &setter_
               break;
             }
           }
-          if (av->creation_set) {
+          if (av->cs_map) {
+            Vec<CreationSet *> css;
+            form_Map(CSMapElem, x, *av->cs_map)
+              css.set_add(x->value);
             forv_AVar(s, *av->setters) if (s) {
               assert(s->setter_class);
-              if (s->container->out->in(av->creation_set))
+              if (s->container->out->some_intersection(css))
                 setter_starters.set_add(av);
             }
           }
@@ -3420,23 +3425,19 @@ split_ess_setters(Vec<AVar *> &confluences) {
 }
 
 static int
-split_css(Vec<AVar *> &astarters) {
+split_css(Vec<AVar *> &starters) {
   int analyze_again = 0;
-  // build starter sets, groups of starters for the same CreationSet
-  Vec<AVar *> starters;
-  forv_AVar(av, astarters)
-    starters.add(av);
-  while (starters.n) {
-    CreationSet *cs = starters.v[0]->creation_set;
-    Vec<AVar *> save;
-    Vec<AVar *> starter_set;
-    forv_AVar(av, starters) {
-      if (av->creation_set == cs)
+  Vec<CreationSet *> css;
+  forv_AVar(av, starters)
+    form_Map(CSMapElem, x, *av->cs_map) 
+      css.set_add(x->value);
+  css.set_to_vec();
+  qsort_by_id(css);
+  forv_CreationSet(cs, css) {
+    Vec<AVar *> starter_set, save;
+    forv_AVar(av, starters)
+      if (av->cs_map->get(cs->sym))
         starter_set.add(av);    
-      else
-        save.add(av);
-    }
-    starters.move(save);
     while (starter_set.n > 1) {
       AVar *av = starter_set.v[0];
       Vec<AVar *> compatible_set;
@@ -3454,7 +3455,7 @@ split_css(Vec<AVar *> &astarters) {
         CreationSet *new_cs = new CreationSet(cs);
         new_cs->defs.move(compatible_set);
         forv_AVar(v, new_cs->defs) if (v)
-          v->creation_set = new_cs;
+          v->cs_map->put(cs->sym, new_cs);
         new_cs->split = cs;
         analyze_again = 1;
         log(LOG_SPLITTING, "SPLIT CS %d %s %d -> %d\n", cs->id,

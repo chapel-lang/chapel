@@ -210,10 +210,20 @@ ES_FN::equivalent(EntrySet *a, EntrySet *b) {
     if (n->lvals.n) {
       AVar *av = make_AVar(n->lvals.v[0], a);
       AVar *bv = make_AVar(n->lvals.v[0], b);
-      if ((av->creation_set || bv->creation_set))
-        if (!av->creation_set || !bv->creation_set ||
-            av->creation_set->equiv != bv->creation_set->equiv)
+      if ((av->cs_map || bv->cs_map)) {
+        if (!av->cs_map || !bv->cs_map)
+          return 0;
+        Vec<Sym *> cssyms;
+        form_Map(CSMapElem, x, *av->cs_map) cssyms.set_add(x->key);
+        form_Map(CSMapElem, x, *bv->cs_map) cssyms.set_add(x->key);
+        forv_Sym(s, cssyms) if (s) {
+          CreationSet *acs = av->cs_map->get(s), *bcs = bv->cs_map->get(s);
+          if (!acs || !bcs) return 0;
+          if (acs->equiv != bcs->equiv)
+            return 0;
+        }
         return 0;
+      }
     }
     if (n->prim) {
       switch (n->prim->index) {
@@ -741,9 +751,11 @@ concretize_var_type(Var *v) {
         }
       }
     }
-    if (v->avars.v[i].value->creation_set && v->def) {
-      assert(!v->def->creates || v->def->creates == v->avars.v[i].value->creation_set->type);
-      v->def->creates = v->avars.v[i].value->creation_set->type;
+    if (v->avars.v[i].value->cs_map && v->def) {
+      if (!v->def->creates)
+        v->def->creates = new Vec<Sym *>;
+      form_Map(CSMapElem, x, *v->avars.v[i].value->cs_map)
+        v->def->creates->set_add(x->value->type);
     }
   }
   if (!type)
