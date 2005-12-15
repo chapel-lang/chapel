@@ -1,3 +1,5 @@
+#include <signal.h>
+#include <ctype.h>
 #include "alist.h"
 #include "driver.h"
 #include "filesToAST.h"
@@ -6,7 +8,8 @@
 #include "symtab.h"
 #include "map.h"
 
-struct IObject;
+class IObject;
+class IThread;
 
 enum ISlotKind {
   EMPTY_SLOT,
@@ -36,25 +39,55 @@ class ISlot : public gc { public:
   ISlot() : kind(EMPTY_SLOT) {}
 };
 
-struct IObject {
+class IObject : public gc { public:
   Type  *type;
   int   nslots;
   ISlot slot[1];        // nslots for real length
 };
 
-struct IFrame {
+struct IFrame : public gc { public:
+  IThread *thread;
   IFrame *parent;
-  ISlot retval;         // value returned to here from last call
+
+  Map<BaseAST *, ISlot *> env;
+  Vec<Stmt *> stmtStack;
+  Vec<int> stmtStageStack;
+  Vec<Expr *> exprStack;
+  Vec<ISlot *> valStack;
+  Stmt *stmt;
+  int stage;
+  Expr *expr;
+  BaseAST *ip;
+
+  ISlot *islot(BaseAST *ast);
+  void icall(int nargs);
+  void run(int timeslice);
+  
+  IFrame(IThread *t, Stmt *s);
 };
 
-Env<BaseAST *, ISlot *> env;
+struct IThread : public gc { public:
+  IFrame *frame;
+  
+  void run();
+  IThread(Stmt *s);
+};
 
-static void interpreter(AList<Stmt> *stmts, ISlot *val = 0);
-static void interpreter(Stmt *ip, ISlot *val = 0);
-static void interpreter(Expr *ip, ISlot *val = 0);
+static int single_step = 0;
+volatile static int interrupted = 0;
 
-static ISlot *
-islot(BaseAST *ast) {
+static Vec<IThread *> threads;
+
+IFrame::IFrame(IThread *t, Stmt *s) : thread(t), parent(0), stmt(s), stage(0), expr(0), ip(s) {
+  assert(s && stmt && ip);
+}
+
+IThread::IThread(Stmt *s) : frame(0) {
+  frame = new IFrame(this, s);
+}
+
+ISlot *
+IFrame::islot(BaseAST *ast) {
   ISlot *s = env.get(ast);
   if (!s)
     env.put(ast, (s = new ISlot));
@@ -64,136 +97,150 @@ islot(BaseAST *ast) {
 #define S(_t) _t *s = (_t *)ip; (void)s; if (trace_level > 0) printf( #_t " %p\n", s)
 
 static void
-check_type(BaseAST *ast, ISlot &slot, Type *t) {
-  if (slot.kind == EMPTY_SLOT)
+check_type(BaseAST *ast, ISlot *slot, Type *t) {
+  if (slot->kind == EMPTY_SLOT)
     USR_FATAL(ast, "interpreter: accessed empty variable");
-  if (slot.kind == UNINITIALIZED_SLOT)
+  if (slot->kind == UNINITIALIZED_SLOT)
     USR_FATAL(ast, "interpreter: accessed uninitialized variable");
   return;
 }
 
-static void
-i_call(Expr *e, ISlot *args, int nargs, ISlot *val = 0) {
+void
+IFrame::icall(int nargs) {
+  if (valStack.n < nargs)
+    INT_FATAL(ip, "not enough arguments for call");
   char *name = 0;
+  ISlot **args = &valStack.v[valStack.n-(nargs + 1)];
   if (nargs < 1)
-    USR_FATAL(e, "call with no arguments");
+    USR_FATAL(ip, "call with no arguments");
   int done = 0;
   do {
-    if (args[0].kind == SELECTOR_SLOT) {
-      name = args[0].selector;
+    if (args[0]->kind == SELECTOR_SLOT) {
+      name = args[0]->selector;
       done = 1;
-    } else if (args[0].kind == CLOSURE_SLOT) {
+    } else if (args[0]->kind == CLOSURE_SLOT) {
+      USR_FATAL(ip, "closures not handled yet");
     } else
-      USR_FATAL(e, "call to something other than function name or closure");
+      USR_FATAL(ip, "call to something other than function name or closure");
   } while (!done);
   Vec<FnSymbol *> visible;
-  e->parentScope->getVisibleFunctions(&visible, cannonicalize_string(name));
+  ip->parentScope->getVisibleFunctions(&visible, cannonicalize_string(name));
   if (visible.n != 1)
-    USR_FATAL(e, "unable to resolve function to single function '%s'", name);
+    USR_FATAL(ip, "unable to resolve function to single function '%s'", name);
   return;
 }
 
 static void
-interpreter(Expr *ip, ISlot *val) {
-  ISlot slot;
-  if (!val) val = &slot;
-  switch (ip->astType) {
-    default: INT_FATAL(ip, "interpreter: bad astType: %d", ip->astType);
-    case EXPR_SYM: {
-      S(SymExpr);
-      *val = *env.get(s->var);
-      break;
-    }
-    case EXPR_DEF: {
-      S(DefExpr);
-      ISlot *slot = new ISlot;
-      slot->kind = EMPTY_SLOT;
-      env.put(s->sym, slot);
-      if (trace_level)
-        printf("  '%s' %d\n", !s->sym->name ? "" : s->sym->name, (int)s->id);
-      break;
-    }
-    case EXPR_COND: {
-      S(CondExpr);
-      ISlot slot;
-      interpreter(s->condExpr, &slot);
-      check_type(ip, slot, dtBoolean);
-      if (slot.imm->v_bool) 
-        interpreter(s->thenExpr, val);
-      else 
-        interpreter(s->elseExpr, val);
-      break;
-    }
-    case EXPR_CALL: {
-      S(CallExpr);
-      ISlot base_slot;
-      int n = s->argList->length() + 1;
-      ISlot arg_slot[n];
-      interpreter(s->baseExpr, &arg_slot[0]);
-      int a = 1;
-      for_alist(Expr, x, s->argList)
-        interpreter(x, &arg_slot[a++]);
-      i_call(ip, arg_slot, n, val);
-      break;
-    }
-    case EXPR_CAST:
-    case EXPR_MEMBERACCESS:
-    case EXPR_REDUCE:
-    case EXPR_NAMED:
-    case EXPR_IMPORT:
-      break;
-  }
+interactive_usage() {
+  fprintf(stdout, "chpl Interpreter Interactive Mode Commands:\n");
+  fprintf(stdout, 
+          "\tp - print\n"
+          "\tc - continue\n"
+          "\tq - quit\n"
+    );
 }
 
-static ISlot *
-eval(Expr *e) {
-  ISlot *s = islot(e);
-  interpreter(e, s);
-  return s;
-}
-
-static Symbol *
-new_temp(char *name = 0) {
-  return new UnresolvedSymbol(name ? name : (char*)"temp");
+static void 
+handle_interrupt(int sig) {
+  interrupted = 1;
 }
 
 static void
-interpreter(Stmt *ip, ISlot *val) {
-  ISlot slot;
-  if (!val) val = &slot;
-  Vec<Stmt *> stmtStack;
+interactive() {
   while (1) {
+    interrupted = 0;
+    fprintf(stdout, "\n> ");
+    char cmd_buffer[512], *c = cmd_buffer;
+    cmd_buffer[0] = 0;
+    fgets(cmd_buffer, 511, stdin);
+    while (*c && isspace(*c)) c++;
+    switch (tolower(*c)) {
+      default: interactive_usage(); break;
+      case 'q': exit(0); break;
+      case 'c': return;
+      case 'p': break;
+    }
+  }
+}
+
+
+#define PUSH_EXPR(_e) do { valStack.add(islot(_e)); exprStack.add(_e); } while (0)
+#define EVAL_EXPR(_e) do { exprStack.add(_e); } while (0)
+#define EVAL_STMT(_s) do { stmtStageStack.add(stage + 1); stmtStack.add(stmt); stmt = _s; } while (0)
+#define PUSH_SELECTOR(_s) do { ISlot *_slot = new ISlot; _slot->set_selector(_s); valStack.add(_slot); } while (0)
+#define PUSH_VAL(_s) valStack.add(islot(_s))
+#define POP_VAL(_s) *islot(_s) = *valStack.pop();
+#define CALL(_n) icall(_n)
+
+void
+IThread::run() {
+  while (frame)
+    frame->run(0);
+}
+
+void
+IFrame::run(int timeslice) {
+  assert(ip && stmt);
+  while (1) {
+  LgotoLabel:
+    if (timeslice && !--timeslice)
+      return;
+    if (interrupted || single_step)
+      interactive();
     switch (ip->astType) {
       default: INT_FATAL(ip, "interpreter: bad astType: %d", ip->astType);
       case STMT: break;
       case STMT_EXPR: {
         S(ExprStmt);
-        interpreter(s->expr);
+        EVAL_EXPR(s->expr);
         break;
       }
       case STMT_RETURN: {
         S(ReturnStmt);
-        interpreter(s->expr, val);
-        env.pop();
-        return;
+        switch (stage++) {
+          case 0: 
+            PUSH_EXPR(s->expr);
+            break;
+          case 1:
+            stage = 0;
+            ISlot *slot = valStack.pop();
+            thread->frame = parent;
+            if (parent)
+              parent->valStack.add(slot);
+            return;
+          default: INT_FATAL(ip, "interpreter: bad stage %d for astType: %d", stage, ip->astType); break;
+        }
+        break;
       }
       case STMT_BLOCK: {
         S(BlockStmt);
-        stmtStack.add((Stmt*)ip->next);
-        interpreter(s->body, val);
+        EVAL_STMT((Stmt*)s->body->head->next);
         break;
       }
       case STMT_WHILELOOP: {
         S(WhileLoopStmt);
-        if (!s->isWhileDo) 
-          interpreter(s->block);
-        while (1) {
-          ISlot slot;
-          interpreter(s->block);
-          interpreter(s->condition);
-          check_type(ip, slot, dtBoolean);
-          if (!slot.imm->v_bool)
+        switch (stage) {
+          case 0:
+            stage = 1;
+            if (!s->isWhileDo) 
+              EVAL_STMT(s->block);
             break;
+          case 1:
+            stage = 2;
+            EVAL_EXPR(s->condition);
+            break;
+          case 2: {
+            ISlot *cond = islot(s->condition);
+            check_type(ip, cond, dtBoolean);
+            if (!cond->imm->v_bool)
+              stage = 0;
+            else {
+              stage = 1;
+              EVAL_STMT(s->block);
+            }
+            break;
+          }
+          default: INT_FATAL(ip, "interpreter: bad stage %d for astType: %d", stage, ip->astType); break;
         }
         break;
       }
@@ -205,44 +252,71 @@ interpreter(Stmt *ip, ISlot *val) {
           INT_FATAL(ip, "interpreter: bad number of iterators");
         Expr *iter = s->iterators->only();
         Symbol *indice = s->indices->only()->sym;
-        Symbol *loop_var = new_temp("loop_var");
-        ISlot arg[5];
-        arg[0].set_selector("_forall_start");
-        arg[1] = *eval(iter);
-        i_call(iter, arg, 2, islot(loop_var));
-        while (1) {
-          ISlot valid;
-          arg[0].set_selector("_forall_valid");
-          arg[1] = *islot(iter);
-          arg[2] = *islot(loop_var);
-          i_call(iter, arg, 3, &valid);
-          check_type(ip, valid, dtBoolean);
-          if (!valid.imm->v_bool)
+        BaseAST *loop_var = s;
+        switch (stage++) {
+          case 0: 
+            EVAL_EXPR(iter); 
             break;
-
-          arg[0].set_selector("_forall_index");
-          arg[1] = *islot(iter);
-          arg[2] = *islot(loop_var);
-          i_call(iter, arg, 3, islot(indice));
-          
-          interpreter(s->innerStmt);
-
-          arg[0].set_selector("_forall_next");
-          arg[1] = *islot(iter);
-          arg[2] = *islot(loop_var);
-          i_call(iter, arg, 3, islot(loop_var));
+          case 1:
+            PUSH_SELECTOR("_forall_start");
+            PUSH_VAL(iter);
+            CALL(2);
+            break;
+          case 2:
+            POP_VAL(loop_var);
+            PUSH_SELECTOR("_forall_valid");
+            PUSH_VAL(iter);
+            PUSH_VAL(loop_var);
+            CALL(3);
+            break;
+          case 3: {
+            ISlot *valid = valStack.pop();
+            check_type(ip, valid, dtBoolean);
+            if (!valid->imm->v_bool) {
+              stage = 0;
+              break;
+            }
+            PUSH_SELECTOR("_forall_index");
+            PUSH_VAL(iter);
+            PUSH_VAL(loop_var);
+            CALL(3);
+            break;
+          }
+          case 4:
+            POP_VAL(indice);
+            EVAL_STMT(s->innerStmt);
+            break;
+          case 5:
+            PUSH_SELECTOR("_forall_next");
+            PUSH_VAL(iter);
+            PUSH_VAL(loop_var);
+            CALL(3);
+            break;
+          case 6:
+            stage = 2;
+            POP_VAL(loop_var);
+            break;
+          default: INT_FATAL(ip, "interpreter: bad stage %d for astType: %d", stage, ip->astType); break;
         }
         break;
       }
       case STMT_COND: {
         S(CondStmt);
-        ISlot slot;
-        interpreter(s->condExpr, &slot);
-        check_type(ip, slot, dtBoolean);
-        if (slot.imm->v_bool) 
-          ip = s->thenStmt;
-        else 
-          ip = s->elseStmt;
+        switch (stage++) {
+          case 0:
+            PUSH_EXPR(s->condExpr);
+            break;
+          case 1:
+            stage = 0;
+            ISlot *cond = valStack.pop();
+            check_type(ip, cond, dtBoolean);
+            if (cond->imm->v_bool)
+              EVAL_STMT(s->thenStmt);
+            else
+              EVAL_STMT(s->elseStmt);
+            break;
+          default: INT_FATAL(ip, "interpreter: bad stage %d for astType: %d", stage, ip->astType); break;
+        }
         break;
       }
       case STMT_WHEN: {
@@ -253,44 +327,128 @@ interpreter(Stmt *ip, ISlot *val) {
       }
       case STMT_SELECT: {
         S(SelectStmt);
-        interpreter(s->caseExpr, islot(s->caseExpr));
+        switch (stage++) {
+          case 0:
+            EVAL_EXPR(s->caseExpr);
+            break;
+          case 1:
+            stage = 0;
+            EVAL_STMT((Stmt*)s->whenStmts->head->next);
+            break;
+          default: INT_FATAL(ip, "interpreter: bad stage %d for astType: %d", stage, ip->astType); break;
+        }
         break;
       }
       case STMT_LABEL: break;
       case STMT_GOTO: {
         S(GotoStmt);
-        ip = s->label->defPoint->parentStmt;
-        continue;
+        stage = 0;
+        valStack.clear();
+        stmt = s->label->defPoint->parentStmt;
+        goto LgotoLabel;
       }
+      case EXPR_SYM: {
+        S(SymExpr);
+        ISlot *x = env.get(s->var);
+        if (!x)
+          USR_FATAL(ip, "unknown variable in SymExpr'%s'", s->var->name ? s->var->name : "");
+        env.put(s, x);
+        break;
+      }
+      case EXPR_DEF: {
+        S(DefExpr);
+        ISlot *slot = new ISlot;
+        slot->kind = EMPTY_SLOT;
+        env.put(s->sym, slot);
+        if (trace_level)
+          printf("  '%s' %d\n", !s->sym->name ? "" : s->sym->name, (int)s->id);
+        break;
+      }
+      case EXPR_COND: {
+        S(CondExpr);
+        switch (stage++) {
+          case 0:
+            PUSH_EXPR(s->condExpr);
+            break;
+          case 1:
+            stage = 0;
+            ISlot *cond = valStack.pop();
+            check_type(ip, cond, dtBoolean);
+            if (cond->imm->v_bool) {
+              EVAL_EXPR(s->thenExpr);
+              env.put(expr, islot(s->thenExpr));
+            } else {
+              EVAL_EXPR(s->elseExpr);
+              env.put(expr, islot(s->thenExpr));
+            }
+            break;
+          default: INT_FATAL(ip, "interpreter: bad stage %d for astType: %d", stage, ip->astType); break;
+        }
+        break;
+      }
+      case EXPR_CALL: {
+        S(CallExpr);
+        switch (stage++) {
+          case 0: {
+            switch (s->opTag) {
+              default: 
+                INT_FATAL("unhandled CallExpr::opTag: %d\n", s->opTag); 
+                break;
+              case OP_NONE:
+                PUSH_EXPR(s->baseExpr);
+                break;
+            }
+            break;
+          }
+          default:
+            if (stage <= s->argList->length()) {
+              PUSH_EXPR(s->argList->get(stage));
+            } else {
+              CALL(s->argList->length());
+            }
+            break;
+        }
+      }
+      case EXPR_CAST:
+      case EXPR_MEMBERACCESS:
+      case EXPR_REDUCE:
+      case EXPR_NAMED:
+      case EXPR_IMPORT:
+        break;
     }
-    ip = (Stmt*)ip->next;
-    while (!ip) {
-      if (!stmtStack.n)
-        return;
-      ip = stmtStack.pop();
+    ip = expr = exprStack.pop();
+    if (!expr) {
+      if (!stage) {
+        ip = stmt = (Stmt*)stmt->next;
+        valStack.clear();
+        while (!stmt) {
+          stmt = stmtStack.pop();
+          stage = stmtStageStack.pop() - 1;
+          if (!stmt) {
+            thread->frame = parent;
+            return;
+          }
+          assert(stage >= 0);
+          ip = stmt = (Stmt*)stmt->next;
+        }
+      }
     }
   }
 }
 
 static void
-interpreter(AList<Stmt> *stmts, ISlot *val) {
-  if (!stmts->head) return;
-  interpreter((Stmt*)stmts->head->next, val);
-}
-
-#define UNRESOLVED(_x) _x = new UnresolvedSymbol(#_x)
-
-static void
 initialize() {
-  env.clear();
-  env.push();
+  signal(SIGINT, handle_interrupt);
 }
 
-void runInterpreter(void) {
+void 
+runInterpreter(void) {
   if (!run_interpreter)
     return;
+  if (run_interpreter > 1)
+    interrupted = 1;
   initialize();
   forv_Vec(ModuleSymbol, mod, allModules)
-    interpreter(mod->stmts);
-  exit(1);
+    (new IThread((Stmt*)mod->stmts->head->next))->run();
+  exit(0);
 }

@@ -145,6 +145,8 @@ Vec<C>::add() {
 
 template <class C> inline C
 Vec<C>::pop() {
+  if (!n)
+    return 0;
   n--;
   C ret = v[n];
   if (!n)
