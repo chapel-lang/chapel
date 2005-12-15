@@ -51942,3 +51942,52 @@ Modified files:
 	chapel/compiler/include/: vec.h 
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+12/15/05 09:11:34 -- deitz
+
+Log message:
+	Added support for 1D arrays.  Improved support for 2D arrays.
+	
+	Defuturized 13 working array tests.  Added two array tests, one
+	working.
+
+Modified files:
+	chapel/compiler/passes/: buildDefaultFunctions.cpp normalize.cpp 
+	chapel/compiler/traversals/: instantiate.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	chapel/test/arrays/bradc/: domarr.chpl 
+	chapel/test/arrays/deitz/: jacobi2.chpl test_array_assign1.chpl 
+	                           test_array_integer_2d.chpl 
+	                           test_array_of_class1.chpl 
+	                           test_basic1d1.chpl test_basic1d2.chpl 
+	                           test_basic1d3.chpl test_basic1d4.chpl 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/flowanalysis/newast/: domarr.chpl domarr.good 
+	                                  protoast_test.chpl 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+	chapel/test/memory/shannon/: jacobi.chpl jacobi.good 
+	                             printMemTable.chpl 
+	                             printMemTable.good 
+	chapel/test/trivial/deitz/: test_scope1.chpl 
+Added files:
+	chapel/test/arrays/deitz/: test_array_basic1a.chpl 
+	                           test_array_basic1a.future 
+	                           test_array_basic1a.good 
+	                           test_array_basic2a.chpl 
+	                           test_array_basic2a.good 
+Removed files:
+	chapel/test/arrays/bradc/: domarr.future 
+	chapel/test/arrays/deitz/: jacobi2.future 
+	                           test_array_assign1.future 
+	                           test_array_integer_2d.future 
+	                           test_array_of_class1.future 
+	                           test_basic1d1.future 
+	                           test_basic1d2.future 
+	                           test_basic1d3.future 
+	                           test_basic1d4.future 
+	chapel/test/flowanalysis/newast/: domarr.future 
+	chapel/test/memory/shannon/: jacobi.future printMemTable.future 
+	chapel/test/trivial/deitz/: test_scope1.future 
+
