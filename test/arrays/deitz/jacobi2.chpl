@@ -2,15 +2,15 @@ config var n : integer = 5;
 config var epsilon : float = 0.00001;
 config var verbose : boolean = false;
 
-var R : domain(2) = (1..n, 1..n);
-var BigR : domain(2) = (0..n+1, 0..n+1);
+var R : domain(2) = [1..n, 1..n];
+var BigR : domain(2) = [0..n+1, 0..n+1];
 
 var A : [BigR] float;
 var Temp : [R] float;
 
 [i,j in BigR] A(i,j) = 0.0;
 
-[i,j in (n+1..n+1, 1..n)] A(i,j) = 1.0;
+[j in 1..n] A(n+1,j) = 1.0;
 
 if (verbose) {
   writeln("Initial configuration:");

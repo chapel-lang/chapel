@@ -2,7 +2,7 @@
 
 var n: integer = 999;  -- here is a one-line comment
 
-var D: domain(1) = 1..n;
+var D: domain(1) = [1..n];
 
 var A: [D] float;
 

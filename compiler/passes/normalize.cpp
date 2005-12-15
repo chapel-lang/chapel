@@ -152,6 +152,19 @@ void normalize(void) {
       }
     }
   }
+
+  asts.clear();
+  collect_asts_postorder(&asts);
+  forv_Vec(BaseAST, ast, asts) {
+    currentLineno = ast->lineno;
+    currentFilename = ast->filename;
+    if (DefExpr* a = dynamic_cast<DefExpr*>(ast)) {
+      if (dynamic_cast<VarSymbol*>(a->sym) &&
+          dynamic_cast<TypeSymbol*>(a->parentSymbol) &&
+          a->exprType)
+        a->exprType->remove();
+    }
+  }
 }
 
 
@@ -471,6 +484,19 @@ static void decompose_special_calls(CallExpr* call) {
 }
 
 
+static Expr* hack_rank(Expr* domain) {
+  if (SymExpr* symExpr = dynamic_cast<SymExpr*>(domain)) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(symExpr->var->defPoint->exprType)) {
+      if (call->isNamed("_construct__adomain")) {
+        return call->argList->first()->copy();
+      }
+    }
+  }
+  INT_FATAL("Could not determine rank of array");
+  return NULL;
+}
+
+
 static void hack_array_constructor_call(CallExpr* call) {
   if (call->isNamed("_construct__aarray")) {
     if (DefExpr* def = dynamic_cast<DefExpr*>(call->parentExpr)) {
@@ -480,7 +506,7 @@ static void hack_array_constructor_call(CallExpr* call) {
         new ExprStmt(new CallExpr("=",
           new MemberAccess(def->sym, "dom"),
           call->argList->last()->copy())));
-      call->argList->last()->replace(new_IntLiteral(2)); // 2D arrays
+      call->argList->last()->replace(hack_rank(call->argList->last()));
     }
   }
 }

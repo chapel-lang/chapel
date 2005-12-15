@@ -85,8 +85,12 @@ Instantiate::postProcessExpr(Expr* expr) {
                 }
               }
               if (SymExpr* symExpr = dynamic_cast<SymExpr*>(actualactual)) {
-                substitutions.put(formalArg, symExpr->var);
-                sub = true;
+                if (VarSymbol* var = dynamic_cast<VarSymbol*>(symExpr->var)) {
+                  if (var->immediate) {
+                    substitutions.put(formalArg, symExpr->var);
+                    sub = true;
+                  }
+                }
               }
             }
           }

@@ -8,7 +8,8 @@ function bar() {
   writeln(foo(3));
 
   {
-    var foo : [1..3] float;
+    var d : domain(1) = [1..3];
+    var foo : [d] float;
 
     foo(1) = 4.0;
     foo(2) = 2.0;

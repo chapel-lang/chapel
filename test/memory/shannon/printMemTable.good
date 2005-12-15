@@ -6,8 +6,20 @@
 Size:    Number:  Total:   Address:    Description:
 (bytes)           (bytes)  
 ================================================================================
-8        49       392      0xnnnnnnnn  array printMemTable_A
-8        49       392      0xnnnnnnnn  array printMemTable_Temp
+4        16       64       0xnnnnnnnn  _data
+4        16       64       0xnnnnnnnn  _data
+4        16       64       0xnnnnnnnn  _data
+4        16       64       0xnnnnnnnn  _data
+4        16       64       0xnnnnnnnn  _data
+4        16       64       0xnnnnnnnn  _data
+4        16       64       0xnnnnnnnn  _data
+4        16       64       0xnnnnnnnn  _data
+4        16       64       0xnnnnnnnn  _data
+8        128      1024     0xnnnnnnnn  _data
+4        16       64       0xnnnnnnnn  _data
+4        16       64       0xnnnnnnnn  _data
+4        16       64       0xnnnnnnnn  _data
+8        128      1024     0xnnnnnnnn  _data
 
 Jacobi computation complete.
 Delta is 9.68412e-06 (< epsilon = 1e-05)

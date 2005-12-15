@@ -10,7 +10,7 @@ _chpl_file.chpl:204: fwrite, f : file, val : bool
 _chpl_file.chpl:217: fwrite, f : file, x : nil_type
 _chpl_htuple.chpl:30: fwrite, f : file, val : _htuple
 _chpl_adomain.chpl:78: fwrite, f : file, x : _adomain
-_chpl_adomain.chpl:127: fwrite, f : file, x : _aarray
+_chpl_adomain.chpl:152: fwrite, f : file, x : _aarray
 _chpl_data.chpl:56: fwrite, f : file, val : _fdata
 _chpl_seq.chpl:170: fwrite, f : file, s : seq
 _chpl_seq.chpl:230: fwrite, f : file, s : _aseq
@@ -43,9 +43,6 @@ prelude.chpl:24: fwrite, f : file, val : _ddata
 _chpl_seq.chpl:170: fwrite, f : file, s : seq
 _chpl_seq.chpl:8: fwrite, f : file, val : _seqNode
 prelude.chpl:24: fwrite, f : file, val : _ddata
-_chpl_adomain.chpl:78: fwrite, f : file, x : _adomain
-_chpl_seq.chpl:170: fwrite, f : file, s : seq
-_chpl_seq.chpl:8: fwrite, f : file, val : _seqNode
 prelude.chpl:24: fwrite, f : file, val : _ddata
 zeroarity-bound-error-2.chpl:9: illegal call argument type expression illegal: ( int64 ) 
 zeroarity-bound-error-2.chpl:9: '_tmp' has no type

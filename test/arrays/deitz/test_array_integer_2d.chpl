@@ -1,6 +1,6 @@
 config var n : integer = 4;
 
-var D2 : domain(2) = (1..n, 1..n);
+var D2 : domain(2) = [1..n, 1..n];
 
 var A2 : [D2] integer;
 

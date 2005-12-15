@@ -86,32 +86,30 @@ class _aarray : value {
   type elt_type;
   param rank : integer;
 
-  var dom : _adomain(2);
+  var dom : _adomain(rank);
 
   var info : _ddata(_aarray_info) = _ddata(_aarray_info, 16);
   var size : integer;
   var data : _ddata(elt_type) = _ddata(elt_type, 128);
 
   function myinit() {
-    var dtmp : _adomain_info = dom.info(rank-1);
     var tmp : _aarray_info;
-    tmp._off = dtmp._low;
+    tmp._off = dom.info(rank-1)._low;
     tmp._blk = 1;
     info(rank-1) = tmp;
     var i : integer = rank-2;
     while i >= 0 {
-      var dtmp2 : _adomain_info = dom.info(i);
-      tmp._off = dtmp2._low;
-      var dtmp3 : _adomain_info = dom.info(i+1);
-      var tmp2 = info(i+1);
       var tmp4 : _aarray_info;
-      tmp4._blk = tmp2._blk * ((dtmp3._high - dtmp3._low + 1) / dtmp3._stride);
+      tmp4._off = dom.info(i)._low;
+      tmp4._blk = info(i+1)._blk *
+                    ((dom.info(i+1)._high - dom.info(i+1)._low + 1)
+                      / dom.info(i+1)._stride);
       info(i) = tmp4;
       i -= 1;
     }
-    var dtmp4 : _adomain_info = dom.info(1);
-    var tmp3 = info(0);
-    size = tmp3._blk * ((dtmp4._high - dtmp4._low + 1) / dtmp4._stride);
+    size = info(0)._blk *
+             ((dom.info(0)._high - dom.info(0)._low + 1)
+               / dom.info(0)._stride);
   }
 
   function this(i : integer, j : integer) var : elt_type {
@@ -120,10 +118,37 @@ class _aarray : value {
     return data(ind);
   }
 
+  function this(i : integer) var : elt_type {
+    var ind : integer = (i - info(0)._off) * info(0)._blk;
+    return data(ind);
+  }
+
 }
 
 function fwrite(f : file, x : _aarray) {
-  halt("Cannot write out arrays yet");
+  if x.rank == 1 {
+    var first : boolean = true;
+    for i in x.dom._for(1) {
+      if not first then
+        fwrite(f, " ");
+      else
+        first = false;
+      fwrite(f, x(i));
+    }
+  } else if x.rank == 2 {
+    for i in x.dom._for(1) {
+      var first : boolean = true;
+      for j in x.dom._for(2) {
+        if not first then
+          fwrite(f, " ");
+        else
+          first = false;
+        fwrite(f, x(i,j));
+      }
+      fwriteln(f);
+    }
+  } else
+    halt("Cannot write out arrays of more than two dimensions");
 }
 
 var _hack_x : (integer, integer) = (1, 2);

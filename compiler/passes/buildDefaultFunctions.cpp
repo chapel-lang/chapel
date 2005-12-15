@@ -154,15 +154,14 @@ static void build_constructor(ClassType* ct) {
   forv_Vec(Symbol, tmp, ct->fields) {
     char* name = tmp->name;
     Type* type = tmp->type;
-    Expr* init = (tmp->defPoint->init) 
-      ? tmp->defPoint->init->copy()
-      : new SymExpr(gNil);
-    Expr* exprType = (tmp->defPoint->exprType)
-      ? tmp->defPoint->exprType->copy()
-      : NULL;
-    if (tmp->defPoint->init) {
-      tmp->defPoint->init->remove();
-    }
+    Expr* exprType = tmp->defPoint->exprType;
+    if (exprType)
+      exprType = exprType->copy();
+    Expr* init = tmp->defPoint->init;
+    if (init)
+      init->remove();
+    else
+      init = new SymExpr(gNil);
     VarSymbol *vtmp = dynamic_cast<VarSymbol*>(tmp);
     ArgSymbol* arg = new ArgSymbol((vtmp && vtmp->consClass == VAR_PARAM) ? INTENT_PARAM : INTENT_BLANK, name, type, init);
     DefExpr* defExpr = new DefExpr(arg, NULL, exprType);
