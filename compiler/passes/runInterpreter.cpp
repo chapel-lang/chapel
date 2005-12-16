@@ -470,7 +470,7 @@ IFrame::run(int timeslice) {
               env.put(expr, islot(s->thenExpr));
             }
             break;
-	  }
+          }
           default: INT_FATAL(ip, "interpreter: bad stage %d for astType: %d", stage, ip->astType); break;
         }
         break;
