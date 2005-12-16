@@ -22,19 +22,19 @@ fwrite, f : file, val : _tuple2
 fwrite, f : file, val : _tuple2
 note: candidates are:
 note: candidates are:
-prelude.chpl:127: fwrite, f : file, val : reduction
-prelude.chpl:130: fwrite, f : file, val : sum
-prelude.chpl:133: fwrite, f : file, val : max
-prelude.chpl:136: fwrite, f : file, val : min
-prelude.chpl:139: fwrite, f : file, val : maxloc
-prelude.chpl:142: fwrite, f : file, val : minloc
-prelude.chpl:151: fwrite, f : file, val : timer
-prelude.chpl:199: fwrite, f : file, val : _methodTokenType
-prelude.chpl:205: fwrite, f : file, val : _setterTokenType
-prelude.chpl:210: fwrite, f : file, val : _seq
-prelude.chpl:232: fwrite, f : file, val : Array
-prelude.chpl:235: fwrite, f : file, val : Domain
-prelude.chpl:245: fwrite, f : file, val : Tuple
+prelude.chpl:129: fwrite, f : file, val : reduction
+prelude.chpl:132: fwrite, f : file, val : sum
+prelude.chpl:135: fwrite, f : file, val : max
+prelude.chpl:138: fwrite, f : file, val : min
+prelude.chpl:141: fwrite, f : file, val : maxloc
+prelude.chpl:144: fwrite, f : file, val : minloc
+prelude.chpl:153: fwrite, f : file, val : timer
+prelude.chpl:201: fwrite, f : file, val : _methodTokenType
+prelude.chpl:207: fwrite, f : file, val : _setterTokenType
+prelude.chpl:212: fwrite, f : file, val : _seq
+prelude.chpl:234: fwrite, f : file, val : Array
+prelude.chpl:237: fwrite, f : file, val : Domain
+prelude.chpl:247: fwrite, f : file, val : Tuple
 prelude.chpl:24: fwrite, f : file, val : _ddata
 prelude.chpl:24: fwrite, f : file, val : _ddata
 prelude.chpl:24: fwrite, f : file, val : _ddata

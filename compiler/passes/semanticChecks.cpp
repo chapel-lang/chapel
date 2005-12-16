@@ -73,6 +73,10 @@ check_normalized_calls(CallExpr* call) {
       USR_FATAL(call, "Illegal call of module %s", base->var->name);
     }
   }
+  if (call->isNamed("=") &&
+      (call->get(1)->isConst() || call->get(1)->isParam())) {
+    USR_FATAL(call, "Assigning to a constant expression");
+  }
 }
 
 
@@ -99,11 +103,6 @@ check_normalized(void) {
 
 static void
 check_resolved_calls(CallExpr* call) {
-  if (call->opTag == OP_MOVE) {
-    if (call->get(1)->isConst() || call->get(1)->isParam()) {
-      USR_FATAL(call, "Assigning to a constant expression");
-    }
-  }
 }
 
 

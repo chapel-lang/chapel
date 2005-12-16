@@ -34,24 +34,31 @@ static void insert_call_temps(CallExpr* call);
 static void fix_def_expr(DefExpr* def);
 
 void normalize(void) {
-  Vec<FnSymbol*> fns;
+  forv_Vec(ModuleSymbol, mod, allModules)
+    normalize(mod);
+}
+
+void normalize(BaseAST* base) {
   Vec<BaseAST*> asts;
 
-  collect_functions(&fns);
-  forv_Vec(FnSymbol, fn, fns) {
-    currentLineno = fn->lineno;
-    currentFilename = fn->filename;
-    if (fn->fnClass == FN_ITERATOR)
-      reconstruct_iterator(fn);
-    if (fn->retRef)
-      build_lvalue_function(fn);
-    normalize_returns(fn);
-    initialize_out_formals(fn);
-    insert_formal_temps(fn);
+  asts.clear();
+  collect_asts(&asts, base);
+  forv_Vec(BaseAST, ast, asts) {
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
+      currentLineno = fn->lineno;
+      currentFilename = fn->filename;
+      if (fn->fnClass == FN_ITERATOR)
+        reconstruct_iterator(fn);
+      if (fn->retRef)
+        build_lvalue_function(fn);
+      normalize_returns(fn);
+      initialize_out_formals(fn);
+      insert_formal_temps(fn);
+    }
   }
 
   asts.clear();
-  collect_asts(&asts);
+  collect_asts(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
@@ -71,7 +78,7 @@ void normalize(void) {
   }
 
   asts.clear();
-  collect_asts(&asts);
+  collect_asts(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
@@ -83,7 +90,7 @@ void normalize(void) {
   }
 
   asts.clear();
-  collect_asts_postorder(&asts);
+  collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
@@ -93,7 +100,7 @@ void normalize(void) {
   }
 
   asts.clear();
-  collect_asts_postorder(&asts);
+  collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
@@ -108,7 +115,7 @@ void normalize(void) {
   }
 
   asts.clear();
-  collect_asts_postorder(&asts);
+  collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
@@ -118,7 +125,7 @@ void normalize(void) {
   }
 
   asts.clear();
-  collect_asts_postorder(&asts);
+  collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
@@ -130,7 +137,7 @@ void normalize(void) {
   }
 
   asts.clear();
-  collect_asts_postorder(&asts);
+  collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
@@ -141,7 +148,7 @@ void normalize(void) {
 
   if (use_alloc) {
     asts.clear();
-    collect_asts_postorder(&asts);
+    collect_asts_postorder(&asts, base);
     forv_Vec(BaseAST, ast, asts) {
       currentLineno = ast->lineno;
       currentFilename = ast->filename;
@@ -154,7 +161,7 @@ void normalize(void) {
   }
 
   asts.clear();
-  collect_asts_postorder(&asts);
+  collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
@@ -831,4 +838,6 @@ static void fix_def_expr(DefExpr* def) {
   } else {
     def->parentStmt->insertAfter(new ExprStmt(new CallExpr(OP_MOVE, def->sym, new CallExpr(OP_INIT, gUnspecified))));
   }
+  def->exprType->remove();
+  def->init->remove();
 }

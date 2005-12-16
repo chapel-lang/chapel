@@ -504,6 +504,7 @@ static bool memberAccessConstHelper(Type* baseType, MemberAccess* expr) {
 
 
 bool MemberAccess::isConst(void) {
+  return false;
   Type* baseType = base->typeInfo();
   return memberAccessConstHelper(baseType, this);
 }
@@ -631,12 +632,20 @@ void CallExpr::traverseExpr(Traversal* traversal) {
 
 
 void CallExpr::print(FILE* outfile) {
-  baseExpr->print(outfile);
-  fprintf(outfile, "(");
-  if (argList) {
-    argList->print(outfile);
+  if (baseExpr) {
+    baseExpr->print(outfile);
+    fprintf(outfile, "(");
+    if (argList)
+      argList->print(outfile);
+    fprintf(outfile, ")");
+  } else if (OP_ISUNARYOP(opTag)) {
+    fprintf(outfile, opChplString[opTag]);
+    get(1)->print(outfile);
+  } else if (OP_ISBINARYOP(opTag)) {
+    get(1)->print(outfile);
+    fprintf(outfile, opChplString[opTag]);
+    get(2)->print(outfile);
   }
-  fprintf(outfile, ")");
 }
 
 
@@ -644,6 +653,7 @@ void CallExpr::makeOp(void) {
   SymExpr* base = dynamic_cast<SymExpr*>(baseExpr);
   if (!strcmp(base->var->name, "=")) {
     opTag = OP_MOVE;
+    base->remove();
     return;
   }
   for (int tag = OP_NONE; tag <= OP_MOVE; tag++) {
@@ -653,6 +663,7 @@ void CallExpr::makeOp(void) {
         opTag = OP_PLUS;
       if (opTag == OP_UNMINUS && argList->length() == 2)
         opTag = OP_MINUS;
+      base->remove();
       return;
     }
   }
@@ -727,6 +738,10 @@ Type* CallExpr::typeInfo(void) {
         return dtUnknown;
       }
       return get(1)->typeInfo();
+    } else if (opTag == OP_INIT) {
+      return argList->get(1)->typeInfo();
+    } else if (opTag == OP_MOVE) {
+      return argList->get(2)->typeInfo();
     } else {
       return dtVoid;
     }
@@ -734,6 +749,8 @@ Type* CallExpr::typeInfo(void) {
 
   if (SymExpr* symExpr = dynamic_cast<SymExpr*>(baseExpr)) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(symExpr->var)) {
+      if (!strcmp(fn->name, "_chpl_alloc"))
+        return argList->get(1)->typeInfo();
       return fn->retType;
     }
   }
@@ -745,10 +762,11 @@ void CallExpr::codegen(FILE* outfile) {
 
   if (opTag != OP_NONE) {
     if (opTag == OP_MOVE) {
-      bool string_init = false;
+      //      bool string_init = false;
       Type* leftType = get(1)->typeInfo();
       Type* rightType = get(2)->typeInfo();
       if (rightType != dtUnspecified) {
+        /*
         if (leftType == dtString) {
           if (CallExpr* fn_call = dynamic_cast<CallExpr*>(get(2))) {
             if (SymExpr* fn_var = dynamic_cast<SymExpr*>(fn_call->baseExpr)) {
@@ -768,15 +786,18 @@ void CallExpr::codegen(FILE* outfile) {
             get(2)->codegenCastToString(outfile);
             fprintf(outfile, ")");
           }
-        } else if ((leftType == dtInteger || leftType == dtFloat) && rightType == dtNil) {
+        } else
+        */
+        if ((leftType == dtInteger || leftType == dtFloat) &&
+            rightType == dtNil) {
           get(1)->codegen(outfile);
-          fprintf(outfile, " %s (", opCString[opTag]);
+          fprintf(outfile, " = (");
           leftType->codegen(outfile);
           fprintf(outfile, ")(intptr_t)");
           get(2)->codegen(outfile);
         } else {
           get(1)->codegen(outfile);
-          fprintf(outfile, " %s ", opCString[opTag]);
+          fprintf(outfile, " = ");
           get(2)->codegen(outfile);
         }
       }
@@ -834,11 +855,16 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, "*(_complex128*)");
     } else if (!strcmp(variable->var->cname, "_chpl_read_complex")) {
       fprintf(outfile, "(_complex128**)");
-    }
-    if (!strcmp(variable->var->cname, "_INIT_CONFIG")) {
+    } else if (!strcmp(variable->var->cname, "_INIT_CONFIG")) {
       if (!strcmp(argList->representative()->typeInfo()->symbol->cname, "_chpl_complex")) {
         fprintf(outfile, "(_complex128**)");
       }
+    } else if (!strcmp(variable->var->cname, "_copy_string")) {
+      get(1)->codegen(outfile);
+      fprintf(outfile, ", ");
+      get(2)->codegenCastToString(outfile);
+      fprintf(outfile, ")");
+      return;
     }
   }
 

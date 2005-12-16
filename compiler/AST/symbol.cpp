@@ -496,7 +496,7 @@ bool ArgSymbol::requiresCTmp(void) {
 
 
 bool ArgSymbol::isConst(void) {
-  return (intent == INTENT_CONST || intent == INTENT_BLANK); 
+  return intent == INTENT_BLANK || intent == INTENT_CONST;
 }
 
 
@@ -630,7 +630,6 @@ FnSymbol::FnSymbol(char* initName,
   noParens(initNoParens),
   retRef(initRetRef),
   argScope(NULL),
-  isInitFn(false),
   isSetter(false),
   isGeneric(false),
   _this(NULL),

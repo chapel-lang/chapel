@@ -46,10 +46,12 @@ function strerror(errno: integer) : string {
   return __primitive("pure_return", string);
 }
 
+pragma "rename fprintf"
 function fprintf(fp: CFILEPTR, fmt: string, val) : integer {
   return __primitive("write", val);
 }
 
+pragma "rename fscanf"
 function fscanf(fp: CFILEPTR, fmt: string, inout val) : integer {
   return __primitive("read", val);
 }
@@ -90,8 +92,8 @@ function _tostring(x : complex, format : string) : string {
 
 -- intrinsic type values
 
-const false: boolean = 0;
-const true: boolean = 1;
+const false: boolean = 0:boolean;
+const true: boolean = 1:boolean;
 
 
 -- math
@@ -291,7 +293,7 @@ pragma "builtin" function =(a : numeric, b : any) {
   return __primitive("cast", a, b);
 }
 
-pragma "builtin" function =(a : string, b : any) { 
+pragma "rename _copy_string" function =(a : string, b : any) : string { 
   return __primitive("pure_return", string);
 }
 

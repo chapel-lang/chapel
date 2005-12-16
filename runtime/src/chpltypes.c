@@ -53,14 +53,15 @@ char* _glom_strings(int numstrings, ...) {
 }
 
 
-void _copy_string(_string* lhs, _string rhs) {
-  /*** REALLOC vs MALLOC
-       We have memory leaks when dealing with strings.
-       *lhs = (char*)_chpl_realloc(*lhs, (strlen(rhs)+1), sizeof(char), "string copy"); */
-  *lhs = (char*)_chpl_malloc(strlen(rhs)+1, sizeof(char), "string copy");
+/* _string _copy_string(_string* lhs, _string rhs) { */
+/*   /\*** REALLOC vs MALLOC */
+/*        We have memory leaks when dealing with strings. */
+/*        *lhs = (char*)_chpl_realloc(*lhs, (strlen(rhs)+1), sizeof(char), "string copy"); *\/ */
+/*   *lhs = (char*)_chpl_malloc(strlen(rhs)+1, sizeof(char), "string copy"); */
 
-  strcpy(*lhs, rhs);
-}
+/*   strcpy(*lhs, rhs); */
+/*   return *lhs; */
+/* } */
 
 
 char* _chpl_tostring_boolean(_boolean x, char* format) {

@@ -41,8 +41,48 @@ void resolve_call(CallExpr* call);
 
 class ResolveCalls : public Traversal {
   void ResolveCalls::postProcessExpr(Expr* expr) {
-    if (CallExpr* call = dynamic_cast<CallExpr*>(expr))
-      resolve_call(call);
+    if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
+      if (call->opTag == OP_NONE) {
+        resolve_call(call);
+      } else if (call->opTag == OP_MOVE) {
+        if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->argList->get(1))) {
+          if (CallExpr* prim = dynamic_cast<CallExpr*>(call->argList->get(2)))
+            if (prim->isNamed("__primitive"))
+              return;
+          Type* type = call->argList->get(2)->typeInfo();
+          if (symExpr->var->type == dtUnknown)
+            symExpr->var->type = type;
+          else if (symExpr->var->type != type)
+            INT_FATAL("type mismatch in function resolution");
+        }
+      } else if (call->opTag == OP_INIT) {
+        AList<Expr>* args = call->argList->copy();
+        Expr* arg1 = args->get(1);
+        arg1->remove();
+        CallExpr* newcall = NULL;
+        if (SymExpr* symExpr = dynamic_cast<SymExpr*>(arg1)) {
+          if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(symExpr->var)) {
+            Type* type = ts->definition;
+            if (type->defaultValue) {
+              call->replace(new CastExpr(new SymExpr(type->defaultValue),
+                                         arg1, type));
+            } else if (type->defaultConstructor) {
+              newcall = new CallExpr(type->defaultConstructor->name, args);
+              call->replace(newcall);
+            } else {
+              INT_FATAL(call, "Type without defaultValue in function resolution");
+            }
+          } else {
+            INT_FATAL(call, "init not type");
+          }
+        } else if (CallExpr* ce = dynamic_cast<CallExpr*>(arg1)) {
+          newcall = ce;
+          call->replace(newcall);
+        }
+        if (newcall)
+          resolve_call(newcall);
+      }
+    }
   }
 };
 
@@ -178,31 +218,17 @@ void resolve_call(CallExpr* call) {
 
   SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr);
 
-  if (call->opTag == OP_MOVE) {
-    if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->argList->get(1))) {
-      if (symExpr->var->type == dtUnknown)
-        symExpr->var->type = call->argList->get(2)->typeInfo();
-    }
-    return;
-  }
-
   if (base && !strcmp(base->var->name, "__primitive")) // ignore __primitive
     return;
 
-  if (base && !strcmp(base->var->name, "_chpl_alloc")) // resolve alloc immediately
+  if (base && !strcmp(base->var->name, "_chpl_alloc")) { // resolve alloc immediately
     base->var = Symboltable::lookupInternal("_chpl_alloc");
+    return;
+  }
 
   if (base) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(base->var)) {
       resolve_function(fn);
-      if (fn->hasPragma("builtin"))
-        call->makeOp();
-      
-      if (DefExpr* def = dynamic_cast<DefExpr*>(call->parentExpr)) {
-        if (def->exprType == call) {
-          def->sym->type = fn->retType;
-        }
-      }
       return; // return if already resolved
     }
   }
@@ -366,8 +392,8 @@ void resolve_call(CallExpr* call) {
   // build coercion wrapper
   // NEED TO WRITE
 
-  // clone underspecified functions not in prelude
-  if (best->parentScope != prelude->modScope) {
+  // clone underspecified functions
+  {
     ASTMap formal_types;
     Expr* actual = call->argList->first();
     for_alist(DefExpr, formalDef, best->formals) {
@@ -392,14 +418,8 @@ void resolve_call(CallExpr* call) {
 
   base->var = best;
   resolve_function(best);
-  if (call->opTag != OP_NONE && !best->hasPragma("builtin"))
-    call->opTag = OP_NONE;
-
-  if (DefExpr* def = dynamic_cast<DefExpr*>(call->parentExpr)) {
-    if (def->exprType == call) {
-      def->sym->type = best->retType;
-    }
-  }
+  if (best->hasPragma("builtin"))
+    call->makeOp();
 }
 
 void resolve_function(FnSymbol* fn) {
@@ -407,9 +427,6 @@ void resolve_function(FnSymbol* fn) {
     return;
 
   fns.set_add(fn);
-
-  if (fn->parentScope == prelude->modScope)
-    return;
 
   TRAVERSE(fn->formals, new ResolveCalls(), true);
 
@@ -441,7 +458,7 @@ void functionResolution(void) {
   collect_functions(&all_fns);
   forv_Vec(FnSymbol, fn, all_fns) {
     if (!fns.set_in(fn)) {
-      if (fn->isInitFn)
+      if (fn->fnClass == FN_CONSTRUCTOR)
         dead_types.add(fn->typeBinding);
       fn->defPoint->parentStmt->remove();
     }

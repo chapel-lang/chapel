@@ -24,7 +24,9 @@ typedef char* _string;
 
 #define _init_string() _chpl_calloc(1, sizeof(char), "_init_string")
 
-void _copy_string(_string* lhs, _string rhs);
+#define _copy_string(lhs, rhs) (lhs = _glom_strings(1, rhs))
+
+//_string _copy_string(_string* lhs, _string rhs);
 char* _glom_strings(int numstrings, ...);
 
 char* _chpl_tostring_boolean(_boolean x, char* format);

@@ -64,9 +64,9 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
         arguments->insertAtHead(baseExpr->copy());
       }
       CallExpr *new_expr = new CallExpr(fns.v[0], arguments);
+      expr->replace(new_expr);
       if (fns.v[0]->hasPragma("builtin"))
         new_expr->makeOp();
-      expr->replace(new_expr);
     } else {
       // Resolve AssignOp to members or setter functions
       Vec<FnSymbol*> fns;

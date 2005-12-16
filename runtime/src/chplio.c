@@ -71,7 +71,7 @@ void _chpl_fread_string_help(FILE* fp, _string* val) {
     char* message = _glom_strings(2, "The maximum string length is ", dsl);
     printError(message);
   }
-  _copy_string(val, localVal);
+  _copy_string(*val, localVal);
 }
 
 

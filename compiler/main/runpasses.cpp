@@ -85,7 +85,7 @@ static void runPass(char *passName, void (*pass)(void)) {
     }
     fprintf(html_index_file, "</TD><TD>");
     HtmlView* htmlview = new HtmlView(analysis_pass);
-    htmlview->run(Symboltable::getModules(MODULES_CODEGEN));
+    htmlview->run(Symboltable::getModules(MODULES_ALL));
     fprintf(html_index_file, "</TD></TR>");
     fflush(html_index_file);
   }

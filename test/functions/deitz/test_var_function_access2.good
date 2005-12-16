@@ -1,4 +1,1 @@
-(a = 12)
-0
-12
-(a = 2)
+Error: Assigning to a constant expression (test_var_function_access2.chpl:6)
