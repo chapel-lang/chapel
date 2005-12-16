@@ -54,6 +54,7 @@ class IObject : public gc { public:
 struct IFrame : public gc { public:
   IThread *thread;
   IFrame *parent;
+  FnSymbol *function;
 
   Map<BaseAST *, ISlot *> env;
   Vec<Stmt *> stmtStack;
@@ -68,30 +69,44 @@ struct IFrame : public gc { public:
   ISlot *islot(BaseAST *ast);
   void icall(int nargs);
   void icall(FnSymbol *fn, int nargs);
-  void run(int timeslice);
+  void reset();
   void init(FnSymbol *fn);
+  void init(Stmt *s);
+  void init(AList<Stmt> *s);
+  void init(BaseAST *s);
+  int run(int timeslice = 0);
   
-  IFrame(IThread *t, Stmt *s = 0);
+  IFrame(IThread *t);
 };
 
+enum IThreadState { ITHREAD_RUNNING, ITHREAD_RUNNABLE, ITHREAD_STOPPED };
+
 struct IThread : public gc { public:
+  IThreadState state;
   IFrame *frame;
   
-  void run();
-  void run(FnSymbol *fn);
-  IThread(Stmt *s = 0);
+  Vec<BaseAST *> todo;
+
+  void add(BaseAST *s) { todo.add(s); }
+  void clear() { todo.clear(); }
+
+  int run(int timeslice = 0);
+  
+  IThread();
 };
 
 static int single_step = 0;
 volatile static int interrupted = 0;
 
 static Vec<IThread *> threads;
+static int cur_thread = -1;
+static Vec<char *> break_functions;
 
-IFrame::IFrame(IThread *t, Stmt *s) : thread(t), parent(0), stmt(s), stage(0), expr(0), ip(s) {
+IThread::IThread() : state(ITHREAD_STOPPED) {
+  threads.add(this);
 }
 
-IThread::IThread(Stmt *s) : frame(0) {
-  frame = new IFrame(this, s);
+IFrame::IFrame(IThread *t) : thread(t), parent(0), stmt(0), stage(0), expr(0), ip(0) {
 }
 
 ISlot *
@@ -102,7 +117,8 @@ IFrame::islot(BaseAST *ast) {
   return s;
 }
 
-#define S(_t) _t *s = (_t *)ip; (void)s; if (trace_level > 0) printf( #_t " %p\n", s)
+#define S(_t) _t *s = (_t *)ip; (void)s; if (trace_level > 0) \
+  printf( #_t " %p %s:%d\n", s, s->filename?s->filename:"<>", s->lineno )
 
 static void
 check_type(BaseAST *ast, ISlot *slot, Type *t) {
@@ -115,11 +131,22 @@ check_type(BaseAST *ast, ISlot *slot, Type *t) {
 
 void
 IFrame::icall(FnSymbol *fn, int nargs) {
+  if (trace_level) 
+    printf("  Calling '%s' %d\n", fn->name, (int)fn->id);
+  if (break_functions.n) {
+    forv_Vec(char *, x, break_functions) {
+      if (!strcmp(fn->name, x))
+        interrupted = 1;
+    }
+  }
   if (!ip) {
+    function = fn;
     ip = stmt = (Stmt*)fn->body->body->head->next;
   } else {
-    IFrame *f = new IFrame(thread, (Stmt*)fn->body->body->head->next);
+    IFrame *f = new IFrame(thread);
+    f->init((Stmt*)fn->body->body->head->next);
     f->parent = this;
+    f->function = fn;
   }
 }
 
@@ -158,6 +185,9 @@ interactive_usage() {
   fprintf(stdout, 
           "  step - single step\n"
           "  trace - trace program\n"
+          "  where - show stack\n"
+          "  bf - break at a function\n"
+          "  bi - break information\n"
           "  continue - continue execution\n"
           "  quit/exit - quit the interpreter\n"
           "  help - show commands (show this message)\n"
@@ -192,7 +222,22 @@ skip_arg(char *&c) {
 static char last_cmd_buffer[512] = "";
 
 static void
-interactive() {
+cmd_where(IFrame *frame) {
+  while (frame) {
+    BaseAST *ip = frame->ip;
+    if (ip)
+      printf(" %s %p in %s %s:%d\n", 
+             astTypeName[ip->astType], ip, 
+             frame->function ? frame->function->name : "<initialization>",
+             ip->filename?ip->filename:"<>", ip->lineno);
+    else
+      printf(" bad stack frame\n");
+    frame = frame->parent;
+  }
+}
+
+static void
+interactive(IFrame *frame) {
   while (1) {
     single_step = interrupted = 0;
     fprintf(stdout, "\n(chpl) ");
@@ -209,13 +254,26 @@ interactive() {
     if (0) {
     } else if (match_cmd(c, "help") || match_cmd(c, "?")) {
       interactive_usage();
-    } else if (match_cmd(c, "quit") || match_cmd(c, "exit")) {
+    } else if (match_cmd(c, "quit")) {
       exit(0);
     } else if (match_cmd(c, "continue")) {
       return;
     } else if (match_cmd(c, "step")) {
       single_step = 1;
       return;
+    } else if (match_cmd(c, "where")) {
+      cmd_where(frame);
+    } else if (match_cmd(c, "bf")) {
+      skip_arg(c);
+      char *e = c;
+      while (*e && !isspace(*e)) e++;
+      *e = 0;
+      break_functions.add(dupstr(c));
+      printf("    breaking at start of function '%s'\n", c);
+    } else if (match_cmd(c, "bi")) {
+      printf(" Break Functions: %d\n", break_functions.n);
+      forv_Vec(char *, x, break_functions)
+        printf("    bf '%s'\n", x);
     } else if (match_cmd(c, "trace")) {
       skip_arg(c);
       if (!*c)
@@ -229,6 +287,8 @@ interactive() {
           trace_level = atoi(c);
       }
       printf("tracing level set to %d\n", trace_level);
+    } else if (match_cmd(c, "exit")) {
+      exit(0);
     } else {
       if (*c)
         printf("unknown command\n");
@@ -245,34 +305,84 @@ interactive() {
 #define PUSH_VAL(_s) valStack.add(islot(_s))
 #define PUSH_FUN(_s)  do { ISlot *_slot = new ISlot; _slot->set_function(_s); valStack.add(_slot); } while (0)
 #define POP_VAL(_s) *islot(_s) = *valStack.pop();
-#define CALL(_n) do { icall(_n); return; } while (0)
+#define CALL(_n) do { icall(_n); return timeslice; } while (0)
 
-void
-IThread::run() {
-  while (frame)
-    frame->run(0);
+int
+IThread::run(int atimeslice) {
+  int timeslice = atimeslice;
+  while (frame || todo.n) {
+    if (!frame)
+      frame = new IFrame(this);
+    if (!frame->ip) {
+      if (todo.n) {
+        BaseAST *s = todo.v[0];
+        if (todo.n > 1)
+          memcpy(todo.v, &todo.v[1], (todo.n - 1) * sizeof(todo.v[0]));
+        todo.n--;
+        frame->init(s);
+      }
+    }
+    while (frame) {
+      timeslice = frame->run(timeslice);
+      if (atimeslice && !timeslice)
+        return timeslice;
+    }
+  }
+  return timeslice;  
 }
 
 void
-IThread::run(FnSymbol *fn) {
-  frame->init(fn);
-  run();
+IFrame::reset() {
+  function = 0;
+  env.clear();
+  stmtStack.clear();
+  stmtStageStack.clear();
+  exprStack.clear();
+  valStack.clear();
+  ip = stmt = 0;
+  expr = 0;
 }
 
 void
 IFrame::init(FnSymbol *fn) {
+  reset();
   PUSH_FUN(chpl_main);
-  CALL(1);
+  icall(1);
 }
 
 void
+IFrame::init(Stmt *s) {
+  reset();
+  ip = stmt = s;
+}
+
+void
+IFrame::init(AList<Stmt> *s) {
+  reset();
+  ip = stmt = (Stmt*)s->head->next;
+}
+
+void
+IFrame::init(BaseAST *s) {
+  if (FnSymbol *x = dynamic_cast<FnSymbol*>(s)) {
+    init(x);
+  } else if (Stmt *x = dynamic_cast<Stmt*>(s)) {
+    init(x);
+  } else if (AList<Stmt> *x = dynamic_cast<AList<Stmt>*>(s)) {
+    init(x);
+  } else {
+    INT_FATAL(ip, "interpreter: bad astType: %d", s->astType);
+  }
+}
+
+int
 IFrame::run(int timeslice) {
   while (1) {
   LgotoLabel:
     if (timeslice && !--timeslice)
-      return;
+      return timeslice;
     if (interrupted)
-      interactive();
+      interactive(this);
     switch (ip->astType) {
       default: INT_FATAL(ip, "interpreter: bad astType: %d", ip->astType);
       case STMT: break;
@@ -293,7 +403,7 @@ IFrame::run(int timeslice) {
             thread->frame = parent;
             if (parent)
               parent->valStack.add(slot);
-            return;
+            return timeslice;
           }
           default: INT_FATAL(ip, "interpreter: bad stage %d for astType: %d", stage, ip->astType); break;
         }
@@ -515,7 +625,7 @@ IFrame::run(int timeslice) {
           stage = stmtStageStack.pop() - 1;
           if (!stmt) {
             thread->frame = parent;
-            return;
+            return timeslice;
           }
           assert(stage >= 0);
           ip = stmt = (Stmt*)stmt->next;
@@ -532,6 +642,26 @@ initialize() {
   signal(SIGINT, handle_interrupt);
 }
 
+static void
+runProgram() {
+  threads.clear();
+  cur_thread = -1;
+  IThread *t = new IThread;
+  forv_Vec(ModuleSymbol, mod, allModules)
+    t->add((Stmt*)mod->stmts->head->next);
+  t->add(chpl_main);
+  t->run();
+}
+
+static void
+chpl_interpreter() {
+  while (threads.n) {
+    cur_thread = (cur_thread + 1) % threads.n;
+    IThread *t = threads.v[cur_thread];
+    t->run(0);
+  }
+}
+
 void 
 runInterpreter(void) {
   if (!run_interpreter)
@@ -539,9 +669,7 @@ runInterpreter(void) {
   if (run_interpreter > 1)
     interrupted = 1;
   initialize();
-  forv_Vec(ModuleSymbol, mod, allModules)
-    (new IThread((Stmt*)mod->stmts->head->next))->run();
-  IThread *t = new IThread;
-  t->run(chpl_main);
+  runProgram();
+  chpl_interpreter();
   exit(0);
 }
