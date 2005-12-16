@@ -52057,3 +52057,16 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+12/16/05 09:45:33 -- jplevyak
+
+Log message:
+	More work on interpreter.
+	Add support for thread states, "where", reporting of function names,
+	reporting of file names and line numbers, breaking on entering a
+	function by name.
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+
