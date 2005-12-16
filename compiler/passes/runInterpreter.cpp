@@ -15,6 +15,7 @@ enum ISlotKind {
   EMPTY_SLOT,
   UNINITIALIZED_SLOT,
   SELECTOR_SLOT,
+  FUNCTION_SLOT,
   CLOSURE_SLOT,
   OBJECT_SLOT,
   IMMEDIATE_SLOT
@@ -26,10 +27,15 @@ class ISlot : public gc { public:
     IObject *object;
     Immediate *imm;
     char *selector;
+    FnSymbol *function;
   };
   void set_selector(char *s) { 
     kind = SELECTOR_SLOT;
     selector = s;
+  }
+  void set_function(FnSymbol *s) { 
+    kind = FUNCTION_SLOT;
+    function = s;
   }
   ISlot &operator=(ISlot &s) {
     kind = s.kind;
@@ -61,16 +67,19 @@ struct IFrame : public gc { public:
 
   ISlot *islot(BaseAST *ast);
   void icall(int nargs);
+  void icall(FnSymbol *fn, int nargs);
   void run(int timeslice);
+  void init(FnSymbol *fn);
   
-  IFrame(IThread *t, Stmt *s);
+  IFrame(IThread *t, Stmt *s = 0);
 };
 
 struct IThread : public gc { public:
   IFrame *frame;
   
   void run();
-  IThread(Stmt *s);
+  void run(FnSymbol *fn);
+  IThread(Stmt *s = 0);
 };
 
 static int single_step = 0;
@@ -79,7 +88,6 @@ volatile static int interrupted = 0;
 static Vec<IThread *> threads;
 
 IFrame::IFrame(IThread *t, Stmt *s) : thread(t), parent(0), stmt(s), stage(0), expr(0), ip(s) {
-  assert(s && stmt && ip);
 }
 
 IThread::IThread(Stmt *s) : frame(0) {
@@ -106,16 +114,29 @@ check_type(BaseAST *ast, ISlot *slot, Type *t) {
 }
 
 void
+IFrame::icall(FnSymbol *fn, int nargs) {
+  if (!ip) {
+    ip = stmt = (Stmt*)fn->body->body->head->next;
+  } else {
+    IFrame *f = new IFrame(thread, (Stmt*)fn->body->body->head->next);
+    f->parent = this;
+  }
+}
+
+void
 IFrame::icall(int nargs) {
   if (valStack.n < nargs)
     INT_FATAL(ip, "not enough arguments for call");
   char *name = 0;
-  ISlot **args = &valStack.v[valStack.n-(nargs + 1)];
   if (nargs < 1)
     USR_FATAL(ip, "call with no arguments");
   int done = 0;
   do {
-    if (args[0]->kind == SELECTOR_SLOT) {
+    ISlot **args = &valStack.v[valStack.n-nargs];
+    if (args[0]->kind == FUNCTION_SLOT) {
+      icall(args[0]->function, nargs);
+      return;
+    } else if (args[0]->kind == SELECTOR_SLOT) {
       name = args[0]->selector;
       done = 1;
     } else if (args[0]->kind == CLOSURE_SLOT) {
@@ -127,16 +148,19 @@ IFrame::icall(int nargs) {
   ip->parentScope->getVisibleFunctions(&visible, cannonicalize_string(name));
   if (visible.n != 1)
     USR_FATAL(ip, "unable to resolve function to single function '%s'", name);
+  icall(visible.v[0], nargs);
   return;
 }
 
 static void
 interactive_usage() {
-  fprintf(stdout, "chpl interpreter interactive mode  commands:\n");
+  fprintf(stdout, "chpl interpreter interactive mode commands:\n");
   fprintf(stdout, 
-          "\tp - print\n"
-          "\tc - continue\n"
-          "\tq - quit\n"
+          "  step - single step\n"
+          "  trace - trace program\n"
+          "  continue - continue execution\n"
+          "  quit/exit - quit the interpreter\n"
+          "  help - show commands (show this message)\n"
     );
 }
 
@@ -145,20 +169,70 @@ handle_interrupt(int sig) {
   interrupted = 1;
 }
 
+#define STR_EQ(_c, _s) (!strncasecmp(_c, _s, sizeof(_s)-1))
+
+static int
+match_cmd(char *c, char *str) {
+  while (*c) {
+    if (!*str || isspace(*c))
+      return 1;
+    if (tolower(*c) != *str)
+      return 0;
+    c++; str++;
+  }
+  return 0;
+}
+
+static void
+skip_arg(char *&c) {
+  while (*c && !isspace(*c)) c++;
+  while (*c && isspace(*c)) c++;
+}
+
+static char last_cmd_buffer[512] = "";
+
 static void
 interactive() {
   while (1) {
-    interrupted = 0;
-    fprintf(stdout, "\n> ");
+    single_step = interrupted = 0;
+    fprintf(stdout, "\n(chpl) ");
     char cmd_buffer[512], *c = cmd_buffer;
     cmd_buffer[0] = 0;
     fgets(cmd_buffer, 511, stdin);
     while (*c && isspace(*c)) c++;
-    switch (tolower(*c)) {
-      default: interactive_usage(); break;
-      case 'q': exit(0); break;
-      case 'c': return;
-      case 'p': break;
+    if (!*c)
+      c = last_cmd_buffer;
+    else
+      strcpy(last_cmd_buffer, c);
+    // Insert commands in priority order.  First partial match
+    // will result in command execution. (e.g. q/qu/qui/quit are quit
+    if (0) {
+    } else if (match_cmd(c, "help") || match_cmd(c, "?")) {
+      interactive_usage();
+    } else if (match_cmd(c, "quit") || match_cmd(c, "exit")) {
+      exit(0);
+    } else if (match_cmd(c, "continue")) {
+      return;
+    } else if (match_cmd(c, "step")) {
+      single_step = 1;
+      return;
+    } else if (match_cmd(c, "trace")) {
+      skip_arg(c);
+      if (!*c)
+        trace_level = !trace_level;
+      else {
+        if (match_cmd(c, "true"))
+          trace_level = 1;
+        else if (match_cmd(c, "false"))
+          trace_level = 0;
+        else
+          trace_level = atoi(c);
+      }
+      printf("tracing level set to %d\n", trace_level);
+    } else {
+      if (*c)
+        printf("unknown command\n");
+      interactive_usage();
     }
   }
 }
@@ -169,8 +243,9 @@ interactive() {
 #define EVAL_STMT(_s) do { stmtStageStack.add(stage + 1); stmtStack.add(stmt); stmt = _s; } while (0)
 #define PUSH_SELECTOR(_s) do { ISlot *_slot = new ISlot; _slot->set_selector(_s); valStack.add(_slot); } while (0)
 #define PUSH_VAL(_s) valStack.add(islot(_s))
+#define PUSH_FUN(_s)  do { ISlot *_slot = new ISlot; _slot->set_function(_s); valStack.add(_slot); } while (0)
 #define POP_VAL(_s) *islot(_s) = *valStack.pop();
-#define CALL(_n) icall(_n)
+#define CALL(_n) do { icall(_n); return; } while (0)
 
 void
 IThread::run() {
@@ -179,13 +254,24 @@ IThread::run() {
 }
 
 void
+IThread::run(FnSymbol *fn) {
+  frame->init(fn);
+  run();
+}
+
+void
+IFrame::init(FnSymbol *fn) {
+  PUSH_FUN(chpl_main);
+  CALL(1);
+}
+
+void
 IFrame::run(int timeslice) {
-  assert(ip && stmt);
   while (1) {
   LgotoLabel:
     if (timeslice && !--timeslice)
       return;
-    if (interrupted || single_step)
+    if (interrupted)
       interactive();
     switch (ip->astType) {
       default: INT_FATAL(ip, "interpreter: bad astType: %d", ip->astType);
@@ -436,6 +522,8 @@ IFrame::run(int timeslice) {
         }
       }
     }
+    if (single_step)
+      interrupted = 1;
   }
 }
 
@@ -453,5 +541,7 @@ runInterpreter(void) {
   initialize();
   forv_Vec(ModuleSymbol, mod, allModules)
     (new IThread((Stmt*)mod->stmts->head->next))->run();
+  IThread *t = new IThread;
+  t->run(chpl_main);
   exit(0);
 }
