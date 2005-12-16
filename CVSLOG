@@ -52047,3 +52047,13 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+12/16/05 08:25:56 -- jplevyak
+
+Log message:
+	untabify
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+
