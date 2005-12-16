@@ -186,8 +186,9 @@ interactive_usage() {
           "  step - single step\n"
           "  trace - trace program\n"
           "  where - show stack\n"
-          "  bf - break at a function\n"
           "  bi - break information\n"
+          "  bf - break at a function\n"
+          "  bfrm - remove a break function by number\n"
           "  continue - continue execution\n"
           "  quit/exit - quit the interpreter\n"
           "  help - show commands (show this message)\n"
@@ -204,7 +205,7 @@ handle_interrupt(int sig) {
 static int
 match_cmd(char *c, char *str) {
   while (*c) {
-    if (!*str || isspace(*c))
+    if (!*c || isspace(*c))
       return 1;
     if (tolower(*c) != *str)
       return 0;
@@ -226,12 +227,12 @@ cmd_where(IFrame *frame) {
   while (frame) {
     BaseAST *ip = frame->ip;
     if (ip)
-      printf(" %s %p in %s %s:%d\n", 
+      printf("  %s %p in %s %s:%d\n", 
              astTypeName[ip->astType], ip, 
              frame->function ? frame->function->name : "<initialization>",
              ip->filename?ip->filename:"<>", ip->lineno);
     else
-      printf(" bad stack frame\n");
+      printf("  bad stack frame\n");
     frame = frame->parent;
   }
 }
@@ -269,11 +270,21 @@ interactive(IFrame *frame) {
       while (*e && !isspace(*e)) e++;
       *e = 0;
       break_functions.add(dupstr(c));
-      printf("    breaking at start of function '%s'\n", c);
+      printf("  breaking at start of function '%s'\n", c);
+    } else if (match_cmd(c, "bfrm")) {
+      skip_arg(c);
+      int i = atoi(c);
+      printf("  removing bf %d\n", i);
+      if (break_functions.n - 1 > i)
+        memcpy(&break_functions.v[i], &break_functions.v[i+1], 
+               break_functions.n - i - 1);
+      break_functions.n--;
     } else if (match_cmd(c, "bi")) {
-      printf(" Break Functions: %d\n", break_functions.n);
-      forv_Vec(char *, x, break_functions)
-        printf("    bf '%s'\n", x);
+      printf("  break functions: %d\n", break_functions.n);
+      for (int i = 0; i < break_functions.n; i++) {
+        char *x = break_functions.v[i];
+        printf("    bf %d '%s'\n", i, x);
+      }
     } else if (match_cmd(c, "trace")) {
       skip_arg(c);
       if (!*c)
@@ -286,12 +297,12 @@ interactive(IFrame *frame) {
         else
           trace_level = atoi(c);
       }
-      printf("tracing level set to %d\n", trace_level);
+      printf("  tracing level set to %d\n", trace_level);
     } else if (match_cmd(c, "exit")) {
       exit(0);
     } else {
       if (*c)
-        printf("unknown command\n");
+        printf("  unknown command\n");
       interactive_usage();
     }
   }
