@@ -52023,3 +52023,16 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: normalize.cpp 
 
+---------------------------------------------------------------------------
+
+12/15/05 18:07:32 -- jplevyak
+
+Log message:
+	More work on --use-alloc.
+	Current issue is the default function wrapper which doesn't seem
+	  have been transformed by "normalize".
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/passes/: runInterpreter.cpp 
+
