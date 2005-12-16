@@ -52080,3 +52080,15 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+12/16/05 12:08:00 -- deitz
+
+Log message:
+	Interesting var test case.  This looks like a problem to me.
+
+Added files:
+	chapel/test/functions/deitz/: test_var_function1.chpl 
+	                              test_var_function1.future 
+	                              test_var_function1.good 
+
