@@ -132,7 +132,7 @@ IFrame::icall(int nargs) {
 
 static void
 interactive_usage() {
-  fprintf(stdout, "chpl Interpreter Interactive Mode Commands:\n");
+  fprintf(stdout, "chpl interpreter interactive mode  commands:\n");
   fprintf(stdout, 
           "\tp - print\n"
           "\tc - continue\n"

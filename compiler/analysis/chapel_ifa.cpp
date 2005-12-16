@@ -1347,6 +1347,8 @@ constructor_name(Type *t) {
 
 static int
 gen_one_defexpr(VarSymbol *var, DefExpr *def) {
+  if (use_alloc)
+    return 0;
   Type *type = var->type;
 #ifdef MAKE_USER_TYPE_BE_DEFINITION
   while (type->astType == TYPE_USER)
@@ -1803,7 +1805,6 @@ gen_select(BaseAST *a) {
 
 static int
 gen_assignment(CallExpr *assign) {
-  // handle assignment
   if1_gen(if1, &assign->ainfo->code, assign->get(1)->ainfo->code);
   Sym *rval = gen_assign_rhs(assign);
   SymExpr* lhs_var = dynamic_cast<SymExpr*>(assign->get(1));
@@ -1826,13 +1827,16 @@ gen_assignment(CallExpr *assign) {
   //  - symbol is "this"
   int operator_equal = 
     !(constructor_assignment || 
-      assign->opTag == OP_MOVE ||
       (lhs_var_symbol && lhs_var_symbol->noDefaultInit) ||
       (lhs_symbol && (lhs_symbol->type == dtUnknown && !lhs_symbol->defPoint->init)) ||
       (lhs_symbol && lhs_symbol->isThis()))
     ;
   // always overload assignment if the variable was initalized
   operator_equal = operator_equal || (lhs_symbol && lhs_symbol->defPoint->init);
+  // but never if this is a move
+  operator_equal = operator_equal && assign->opTag != OP_MOVE;
+  if (use_alloc)
+    operator_equal = assign->opTag != OP_MOVE;
   if (operator_equal) {
     Sym *old_rval = rval;
     rval = new_sym();
@@ -1862,6 +1866,48 @@ gen_assignment(CallExpr *assign) {
     c->partial = Partial_NEVER;
   } else {
     if1_move(if1, &assign->ainfo->code, rval, assign->get(1)->ainfo->sym, assign->ainfo);
+  }
+  return 0;
+}
+
+static int
+gen_assignment_alloc(CallExpr *assign) {
+  Expr *lhs = assign->get(1), *rhs = assign->get(2);
+  if1_gen(if1, &assign->ainfo->code, lhs->ainfo->code);
+  if1_gen(if1, &assign->ainfo->code, rhs->ainfo->code);
+  Sym *rval = rhs->ainfo->rval;
+  if (!rval->function_scope) {
+    rval = new_sym();
+    rval->ast = assign->ainfo;
+    if1_move(if1, &assign->ainfo->code, rhs->ainfo->rval, rval, assign->ainfo);
+  }
+  if (assign->opTag != OP_MOVE) {
+    Sym *old_rval = rval;
+    rval = new_sym();
+    rval->ast = assign->ainfo;
+    if (f_equal_method) {
+      Code *c = if1_send(if1, &assign->ainfo->code, 4, 1, make_symbol("="), method_token,
+                         lhs->ainfo->rval, old_rval, rval);
+      c->ast = assign->ainfo;
+      c->partial = Partial_NEVER;
+    } else {
+      Code *c = if1_send(if1, &assign->ainfo->code, 3, 1, make_symbol("="), 
+                         lhs->ainfo->rval, old_rval, rval);
+      c->ast = assign->ainfo;
+      c->partial = Partial_NEVER;
+    }
+  }
+  if (!lhs->ainfo->sym)
+    show_error("assignment to non-lvalue", assign->ainfo);
+  assign->ainfo->rval = rval;
+  if (MemberAccess *ma = dynamic_cast<MemberAccess*>(assign->get(1))) {
+    Sym *selector = make_symbol(ma->member->asymbol->sym->name);
+    Code *c = if1_send(if1, &assign->ainfo->code, 5, 1, sym_operator, ma->base->ainfo->rval, 
+                       make_symbol(".="), selector, rval, assign->ainfo->rval);
+    c->ast = assign->ainfo;
+    c->partial = Partial_NEVER;
+  } else {
+    if1_move(if1, &assign->ainfo->code, rval, lhs->ainfo->sym, assign->ainfo);
   }
   return 0;
 }
@@ -1995,7 +2041,11 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
           if (gen_set_member(dynamic_cast<MemberAccess*>(call->get(1)), call) < 0) return -1;
           break;
         }
-        if (gen_assignment(call) < 0) return -1;
+        if (use_alloc) {
+          if (gen_assignment_alloc(call) < 0) return -1;
+        } else {
+          if (gen_assignment(call) < 0) return -1;
+        }
         break;
       }
       if (gen_paren_op(call) < 0) return -1;
@@ -2786,7 +2836,9 @@ ast_to_if1(Vec<AList<Stmt> *> &stmts) {
   build_types(syms, &types);
   build_symbols(syms);
   method_token = Symboltable::lookupInternal("_methodToken")->asymbol->sym;
+  method_token->type = Symboltable::lookupInternal("_methodTokenType")->asymbol->sym->meta_type;
   setter_token = Symboltable::lookupInternal("_setterToken")->asymbol->sym;
+  setter_token->type = Symboltable::lookupInternal("_setterTokenType")->asymbol->sym->meta_type;
   if1_set_primitive_types(if1);
   forv_Type(t, types)
     if (t->defaultValue)
