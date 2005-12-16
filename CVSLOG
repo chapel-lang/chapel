@@ -52036,3 +52036,14 @@ Modified files:
 	chapel/compiler/analysis/: chapel_ifa.cpp 
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+12/15/05 18:35:49 -- jplevyak
+
+Log message:
+	More work on the interpreter.  Added the beginnings of function calls.
+	Enhanced interactive mode, tracing, etc.
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+
