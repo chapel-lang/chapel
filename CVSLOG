@@ -52092,3 +52092,57 @@ Added files:
 	                              test_var_function1.future 
 	                              test_var_function1.good 
 
+---------------------------------------------------------------------------
+
+12/16/05 14:14:30 -- deitz
+
+Log message:
+	Regression: trivial/deitz/test_coerce_integer_to_string2
+	
+	Updated regressions file.
+	
+	Reworked the --no-infer option so that it works when used with the
+	--use-alloc option, at least on some simple test cases.
+	
+	Made it possible to call normalize on a piece of AST, but it can't yet
+	be called multiple times, and calling it on wrapper functions has led
+	to some difficulties that I'm still looking into.
+	
+	Moved constant assignment error detection before analysis.
+	
+	Made inlining of functions work with the --use-alloc flag and disabled
+	the late variable initialization insertion pass when --no-infer is
+	used.  This should probably also come out when --use-alloc is used.
+	
+	Fixed assignment of 0 to false and 1 to true in the prelude to use a
+	cast.
+	
+	Removed some special-cased string-handling code.
+	
+	Fixed CallExpr printing when the CallExpr is an infix operator.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp 
+	chapel/compiler/include/: astutil.h symbol.h 
+	chapel/compiler/main/: runpasses.cpp 
+	chapel/compiler/passes/: cleanup.cpp functionResolution.cpp 
+	                         normalize.cpp semanticChecks.cpp 
+	chapel/compiler/traversals/: inlineFunctions.cpp 
+	                             insertVariableInitializations.cpp 
+	                             resolveSymbols.cpp 
+	chapel/modules/standard/: prelude.chpl 
+	chapel/runtime/include/: chpltypes.h 
+	chapel/runtime/src/: chplio.c chpltypes.c config.c 
+	chapel/test/: REGRESSIONS 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/functions/deitz/: test_var_function_access.good 
+	                              test_var_function_access2.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+	chapel/test/memory/shannon/: configVarFile.good 
+	                             memstatPrint.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+Removed files:
+	chapel/test/functions/deitz/: test_var_function1.future 
+
