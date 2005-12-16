@@ -52070,3 +52070,13 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+12/16/05 09:55:23 -- jplevyak
+
+Log message:
+	Add ability to remove break on function
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+
