@@ -52225,3 +52225,23 @@ Modified files:
 	chapel/test/flowanalysis/newast/: sum_type-1.good 
 	                                  sum_type-2.good 
 
+---------------------------------------------------------------------------
+
+12/19/05 15:20:20 -- jplevyak
+
+Log message:
+	More work on the interpreter.
+	
+	The "run" command is now working.
+	The "next" command is now working.
+	Goto now checks to see that we are not jumping over variable declarations
+	  or down in the stack.
+	"locals" now prints out the values stored in the slots.
+	We now have a "program terminated" state which works correctly.
+	readline history is now working so that ^J (emacs previous command)
+	  works.
+	Printing of the expression stack is cleaner.
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+
