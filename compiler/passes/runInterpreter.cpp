@@ -64,6 +64,7 @@ struct IFrame : public gc { public:
   IThread *thread;
   IFrame *parent;
   FnSymbol *function;
+  int single_stepping;
 
   Map<BaseAST *, ISlot *> env;
   Vec<Stmt *> stmtStack;
@@ -78,6 +79,7 @@ struct IFrame : public gc { public:
   ISlot *islot(BaseAST *ast);
   void icall(int nargs);
   void icall(FnSymbol *fn, int nargs);
+  void igoto(Stmt *s);
   void reset();
   void init(FnSymbol *fn);
   void init(Stmt *s);
@@ -104,7 +106,8 @@ struct IThread : public gc { public:
   IThread();
 };
 
-static int single_step = 0;
+enum { NO_STEP = 0, SINGLE_STEP = 1, NEXT_STEP = 2 };
+static int single_step = NO_STEP;
 volatile static int interrupted = 0;
 
 static Vec<IThread *> threads;
@@ -112,11 +115,15 @@ static int cur_thread = -1;
 static Vec<char *> break_functions;
 static Map<int, BaseAST*> known_ids;
 
+static void runProgram();
+
 IThread::IThread() : state(ITHREAD_STOPPED) {
   threads.add(this);
 }
 
-IFrame::IFrame(IThread *t) : thread(t), parent(0), stmt(0), stage(0), expr(0), ip(0) {
+IFrame::IFrame(IThread *t) : thread(t), parent(0), function(0), single_stepping(NO_STEP), 
+                             stmt(0), stage(0), expr(0), ip(0) 
+{
 }
 
 ISlot *
@@ -162,6 +169,10 @@ IFrame::icall(FnSymbol *fn, int nargs) {
     f->init((Stmt*)fn->body->body->head->next);
     f->parent = this;
     f->function = fn;
+    if (single_step == NEXT_STEP) {
+      f->single_stepping = NEXT_STEP;
+      single_step = NO_STEP;
+    }
   }
   valStack.n -= nargs;
 }
@@ -209,6 +220,7 @@ interactive_usage() {
           "  bf - break at a function\n"
           "  bfrm - remove a break function by number\n"
           "  continue - continue execution\n"
+          "  run - restart execution\n"
           "  quit/exit - quit the interpreter\n"
           "  help - show commands (show this message)\n"
     );
@@ -246,38 +258,72 @@ skip_arg(char *&c) {
 static char last_cmd_buffer[512] = "";
 
 static void
+show(BaseAST *ip, int stage) {
+  printf("    %s(%d)", astTypeName[ip->astType], (int)ip->id); 
+  if (stage)
+    printf("/%d", stage);
+  printf(" %s:%d\n", 
+         ip->filename ? ip->filename:"<>", ip->lineno);
+  known_ids.put(ip->id, ip);
+}
+
+static void
+show(IFrame *frame, BaseAST *ip, int stage) {
+  printf("    %s(%d)", astTypeName[ip->astType], (int)ip->id);
+  if (stage)
+    printf("/%d", stage);
+  printf(" in %s %s:%d\n", 
+         frame->function ? frame->function->name : "<initialization>",
+         ip->filename?ip->filename:"<>", ip->lineno);
+  known_ids.put(ip->id, ip);
+}
+
+static int
+check_running(IFrame *frame) {
+  if (!frame) {
+    printf("    error: no running program\n");
+    return 0;
+  }
+  return 1;
+}
+
+static void
 cmd_where(IFrame *frame) {
+  if (!check_running(frame))
+    return;
   Expr *e = frame->expr;
+  int stage = frame->stage;
+  int istage = frame->stageStack.n;
   int iexpr = frame->exprStack.n;
   while (e) {
-    printf("    %s(%d) %s:%d\n", 
-           astTypeName[e->astType], (int)e->id, 
-           e->filename?e->filename:"<>", e->lineno);
-    known_ids.put(e->id, e);
+    show(e, stage);
+    istage--;
+    assert(istage >= 0); 
+    stage = frame->stageStack.v[istage];
     if (iexpr <= 0) break;
-    e = frame->exprStack.v[--iexpr];
+    iexpr--;
+    e = frame->exprStack.v[iexpr];
   }
   Stmt *s = frame->stmt;
   int istmt = frame->stmtStack.n;
   while (s) {
-    printf("    %s(%d) %s:%d\n", 
-           astTypeName[s->astType], (int)s->id, 
-           s->filename?s->filename:"<>", s->lineno);
-    known_ids.put(s->id, s);
+    if (!istage)
+      show(frame, s, stage);
+    else
+      show(s, stage);
     if (istmt <= 0) break;
-    s = frame->stmtStack.v[--istmt];
+    istmt--;
+    istage--;
+    assert(istage >= 0); 
+    stage = frame->stageStack.v[istage];
+    s = frame->stmtStack.v[istage];
   }
-  printf("\n");
+  frame = frame->parent;
   while (frame) {
-    BaseAST *ip = frame->ip;
-    if (ip) {
-      printf("    %s(%d) in %s %s:%d\n", 
-             astTypeName[ip->astType], (int)ip->id, 
-             frame->function ? frame->function->name : "<initialization>",
-             ip->filename?ip->filename:"<>", ip->lineno);
-      known_ids.put(ip->id, ip);
+    if (frame->ip) {
+      show(frame, frame->ip, frame->stage);
     } else
-      printf("    bad stack frame\n");
+      printf("    error: bad stack frame\n");
     frame = frame->parent;
   }
 }
@@ -290,7 +336,7 @@ print(ISlot *islot) {
     case UNINITIALIZED_ISLOT: printf("<uninitialized>"); break;
     case SELECTOR_ISLOT: printf("selector '%s'", islot->selector); break;
     case SYMBOL_ISLOT: 
-      printf("symbol: "); 
+      printf("symbol: %s ", astTypeName[islot->symbol->astType]);
       islot->symbol->print(stdout); 
       printf("(%d)", (int)islot->symbol->id); 
       known_ids.put(islot->symbol->id, islot->symbol);
@@ -306,6 +352,8 @@ print(ISlot *islot) {
 
 static void
 cmd_stack(IFrame *frame) {
+  if (!check_running(frame))
+    return;
   printf("  value stack:\n");
   for (int i = frame->valStack.n-1; i >= 0; i--) {
     printf("    ");
@@ -315,12 +363,16 @@ cmd_stack(IFrame *frame) {
 
 static void
 cmd_locals(IFrame *frame) {
+  if (!check_running(frame))
+    return;
   printf("  local symbols:\n");
   form_Map(MapElemBaseASTISlot, x, frame->env) {
     if (Symbol *s = dynamic_cast<Symbol*>(x->key)) {
       printf("    ");
       s->print(stdout);
-      printf("(%d)\n", (int)s->id);
+      printf("(%d) = ", (int)s->id);
+      print(x->value);
+      printf("\n");
       known_ids.put(s->id, s);
     }
   }
@@ -350,14 +402,18 @@ cmd_print(int i, int nprint = 0) {
   }
 }
 
-static void
+static int
 interactive(IFrame *frame) {
+  if (frame)
+    show(frame, frame->ip, frame->stage);
   while (1) {
     single_step = interrupted = 0;
 #ifdef USE_READLINE
     char *c = readline("(chpl) ");
     if (!c)
       exit(0);
+    else
+      add_history(c);
 #else
     fprintf(stdout, "(chpl) ");
     char cmd_buffer[512], *c = cmd_buffer;
@@ -377,10 +433,16 @@ interactive(IFrame *frame) {
     } else if (match_cmd(c, "quit")) {
       exit(0);
     } else if (match_cmd(c, "continue")) {
-      return;
+      check_running(frame);
+      return 0;
     } else if (match_cmd(c, "step")) {
-      single_step = 1;
-      return;
+      check_running(frame);
+      single_step = SINGLE_STEP;
+      return 0;
+    } else if (match_cmd(c, "next")) {
+      check_running(frame);
+      single_step = NEXT_STEP;
+      return 0;
     } else if (match_cmd(c, "print")) {
       skip_arg(c);
       cmd_print(atoi(c));
@@ -424,6 +486,13 @@ interactive(IFrame *frame) {
           trace_level = atoi(c);
       }
       printf("  tracing level set to %d\n", trace_level);
+    } else if (match_cmd(c, "run")) {
+      if (frame) {
+        frame->thread->todo.clear();
+        frame->thread->frame = 0;
+      }
+      runProgram();
+      return 1;
     } else if (match_cmd(c, "exit")) {
       exit(0);
     } else {
@@ -432,24 +501,8 @@ interactive(IFrame *frame) {
       interactive_usage();
     }
   }
+  return 0;
 }
-
-
-#define PUSH_EXPR(_e) do { \
-  if (expr && stage) { stageStack.add(stage + 1); exprStack.add(expr); }  \
-  valStack.add(islot(_e)); \
-  stageStack.add(1); exprStack.add(_e); stage = 0; expr = _e; \
-} while (0)
-#define EVAL_EXPR(_e) do { \
-  if (expr && stage) { stageStack.add(stage + 1); exprStack.add(expr); }  \
-  stageStack.add(1); exprStack.add(_e); stage = 0; expr = _e; \
-} while (0)
-#define EVAL_STMT(_s) do { stageStack.add(stage + 1); stmtStack.add(stmt); stmt = _s; } while (0)
-#define PUSH_SELECTOR(_s) do { ISlot *_slot = new ISlot; _slot->set_selector(_s); valStack.add(_slot); } while (0)
-#define PUSH_VAL(_s) valStack.add(islot(_s))
-#define PUSH_SYM(_s)  do { ISlot *_slot = new ISlot; _slot->set_symbol(_s); valStack.add(_slot); } while (0)
-#define POP_VAL(_s) *islot(_s) = *valStack.pop();
-#define CALL(_n) do { icall(_n); return timeslice; } while (0)
 
 int
 IThread::run(int atimeslice) {
@@ -485,6 +538,24 @@ IFrame::reset() {
   expr = 0;
 }
 
+#define PUSH_EXPR(_e) do { \
+  if (expr && stage) { exprStack.add(expr); } \
+  stageStack.add(stage + 1); \
+  valStack.add(islot(_e)); \
+  stageStack.add(1); exprStack.add(_e); stage = 0; expr = _e; \
+} while (0)
+#define EVAL_EXPR(_e) do { \
+  if (expr && stage) { exprStack.add(expr); }  \
+  stageStack.add(stage + 1); \
+  stageStack.add(1); exprStack.add(_e); stage = 0; expr = _e; \
+} while (0)
+#define EVAL_STMT(_s) do { stageStack.add(stage + 1); stmtStack.add(stmt); stmt = _s; } while (0)
+#define PUSH_SELECTOR(_s) do { ISlot *_slot = new ISlot; _slot->set_selector(_s); valStack.add(_slot); } while (0)
+#define PUSH_VAL(_s) valStack.add(islot(_s))
+#define PUSH_SYM(_s)  do { ISlot *_slot = new ISlot; _slot->set_symbol(_s); valStack.add(_slot); } while (0)
+#define POP_VAL(_s) *islot(_s) = *valStack.pop();
+#define CALL(_n) do { icall(_n); return timeslice; } while (0)
+
 void
 IFrame::init(FnSymbol *fn) {
   reset();
@@ -517,6 +588,40 @@ IFrame::init(BaseAST *s) {
   }
 }
 
+void
+IFrame::igoto(Stmt *s) {
+  Vec<Stmt *> parents;
+  Stmt *ss = s;
+  while (ss->parentStmt) {
+    parents.add(ss->parentStmt);
+    ss = ss->parentStmt;
+  }
+  parents.reverse();
+  if (parents.n > stmtStack.n)
+    USR_FATAL("interpreter: goto target nested below source");
+  for (int i = 0; i < parents.n; i++)
+    if (parents.v[i] != stmtStack.v[i])
+      USR_FATAL("interpreter: illegal goto target");
+  ss = stmt;
+  Expr *defexpr = 0;
+  while (ss) {
+    if (ss->astType == STMT_EXPR) {
+      if (ExprStmt *x = dynamic_cast<ExprStmt *>(ss))
+        if (x->expr->astType == EXPR_DEF)
+          defexpr = x->expr;
+    }
+    if (defexpr && ss == s)
+      USR_FATAL("interpreter: illegal goto over variable definition DefExpr(%d)", defexpr->id);
+    ss = (Stmt*)ss->next;
+  }
+  stage = 0;
+  stmt = s;
+  ip = expr = 0;
+  valStack.clear();
+  stageStack.n = parents.n;
+  stmtStack.n = parents.n;
+}
+
 int
 IFrame::run(int timeslice) {
   if (expr)
@@ -526,7 +631,8 @@ IFrame::run(int timeslice) {
     if (timeslice && !--timeslice)
       return timeslice;
     if (interrupted)
-      interactive(this);
+      if (interactive(this))
+        return 0;
     switch (ip->astType) {
       default: INT_FATAL(ip, "interpreter: bad astType: %d", ip->astType);
       case STMT: break;
@@ -545,6 +651,8 @@ IFrame::run(int timeslice) {
             stage = 0;
             ISlot *slot = valStack.pop();
             thread->frame = parent;
+            if (thread->frame->single_stepping == NEXT_STEP)
+              single_step = NEXT_STEP;
             if (parent)
               parent->valStack.add(slot);
             return timeslice;
@@ -684,9 +792,7 @@ IFrame::run(int timeslice) {
       case STMT_LABEL: break;
       case STMT_GOTO: {
         S(GotoStmt);
-        stage = 0;
-        valStack.clear();
-        stmt = s->label->defPoint->parentStmt;
+        igoto(s->label->defPoint->parentStmt);
         goto LgotoLabel;
       }
       case EXPR_SYM: {
@@ -722,6 +828,17 @@ IFrame::run(int timeslice) {
         ISlot *slot = new ISlot;
         slot->kind = EMPTY_ISLOT;
         env.put(s->sym, slot);
+        switch (s->sym->astType) {
+          default: break;
+          case SYMBOL_UNRESOLVED:
+          case SYMBOL_MODULE:
+          case SYMBOL_TYPE:
+          case SYMBOL_FN:
+          case SYMBOL_ENUM:
+          case SYMBOL_LABEL:
+            slot->set_symbol(s->sym);
+            break;
+        }
         if (trace_level) {
           printf("  %s(%d)\n", !s->sym->name ? "" : s->sym->name, (int)s->id);
           known_ids.put(s->id, s);
@@ -784,24 +901,26 @@ IFrame::run(int timeslice) {
     }
   LnextExpr:
     if (!stage) {
-      if (exprStack.n) {
-        ip = expr = exprStack.pop();
+      if (expr) {
         stage = stageStack.pop() - 1;
-      } else
-        ip = expr = 0;
-    }
-    if (!expr && !stage) {
-      ip = stmt = (Stmt*)stmt->next;
-      valStack.clear();
-      while (!stmt) {
-        stmt = stmtStack.pop();
-        stage = stageStack.pop() - 1;
-        if (!stmt) {
-          thread->frame = parent;
-          return timeslice;
-        }
-        assert(stage >= 0);
+        if (exprStack.n)
+          ip = expr = exprStack.pop();
+        else
+          ip = expr = 0;
+      }
+      if (!expr && !stage) {
         ip = stmt = (Stmt*)stmt->next;
+        valStack.clear();
+        while (!stmt) {
+          stmt = stmtStack.pop();
+          stage = stageStack.pop() - 1;
+          if (!stmt) {
+            thread->frame = parent;
+            return timeslice;
+          }
+          assert(stage >= 0);
+          ip = stmt = (Stmt*)stmt->next;
+        }
       }
     }
     if (single_step)
@@ -816,6 +935,8 @@ initialize() {
 
 static void
 runProgram() {
+  if (run_interpreter > 1)
+    interrupted = 1;
   threads.clear();
   cur_thread = -1;
   IThread *t = new IThread;
@@ -831,7 +952,7 @@ chpl_interpreter() {
     cur_thread = (cur_thread + 1) % threads.n;
     IThread *t = threads.v[cur_thread];
     t->run(0);
-    if (!t->frame)
+    if (!t->frame && cur_thread >= 0)
       threads.remove(cur_thread);
   }
 }
@@ -842,10 +963,11 @@ runInterpreter(void) {
     return;
   initialize();
   do {
-    if (run_interpreter > 1)
-      interrupted = 1;
     runProgram();
     chpl_interpreter();
+    printf("  program terminated\n");
+    while (!threads.n) 
+      interactive(0);
   } while (run_interpreter > 1);
   exit(0);
 }
