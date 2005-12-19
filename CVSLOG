@@ -52146,3 +52146,29 @@ Modified files:
 Removed files:
 	chapel/test/functions/deitz/: test_var_function1.future 
 
+---------------------------------------------------------------------------
+
+12/19/05 09:03:51 -- jplevyak
+
+Log message:
+	Added support for the "readline" library to the interpreter interactive mode.
+	  This is enabled on the linux/linux64 and cygwin platforms explicitly
+	  till such time as we are using "configure" or some other solution.
+	
+	Added nprint_view_noline and added support for printing arbitrary
+	  BaseASTs with either print_view_nooline or nprint_view_noline.
+	
+	Added "locals", "print" and "nprint" commands to the interpreter.
+	
+	Made the interpreter objects (IObject) a subclass of BaseAST to simplify
+	  mixing of IObject and other BaseAST pointers.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: baseAST.h vec.h 
+	chapel/compiler/passes/: runInterpreter.cpp 
+	chapel/compiler/traversals/: view.cpp view.h 
+	chapel/make/: Makefile.cygwin Makefile.freebsd Makefile.linux 
+	              Makefile.linux64 
+
