@@ -22,6 +22,25 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
   if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
     if (call->isNamed("__primitive"))
       return;
+    if (call->opTag == OP_INIT) {
+      Type* type = call->get(1)->typeInfo();
+      if (type->defaultValue) {
+        call->replace(new SymExpr(type->defaultValue));
+      } else if (type->defaultConstructor) {
+        FnSymbol* fn = type->defaultConstructor;
+        if (fn->formals->length() > 0) {
+          Vec<Symbol*> defaults;
+          for_alist(DefExpr, formalDef, fn->formals) {
+            defaults.add(formalDef->sym);
+          }
+          fn = fn->default_wrapper(&defaults);
+        }
+        call->replace(new CallExpr(fn));
+      } else {
+        INT_FATAL("type has no default value or default constructor");
+      }
+      return;
+    }
     if (call->opTag != OP_NONE)
       return;
     if (!call->isAssign()) {

@@ -695,6 +695,12 @@ bool CallExpr::isOp(OpTag op) {
 }
 
 
+bool CallExpr::isResolved(void) {
+  SymExpr* base = dynamic_cast<SymExpr*>(baseExpr);
+  return base && dynamic_cast<FnSymbol*>(base->var);
+}
+
+
 bool CallExpr::isNamed(char* name) {
   SymExpr* base = dynamic_cast<SymExpr*>(baseExpr);
   if (base && !strcmp(base->var->name, name))
@@ -741,7 +747,7 @@ Type* CallExpr::typeInfo(void) {
     } else if (opTag == OP_INIT) {
       return argList->get(1)->typeInfo();
     } else if (opTag == OP_MOVE) {
-      return argList->get(2)->typeInfo();
+      return argList->get(1)->typeInfo();
     } else {
       return dtVoid;
     }

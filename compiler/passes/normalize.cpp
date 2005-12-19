@@ -505,6 +505,8 @@ static Expr* hack_rank(Expr* domain) {
 
 
 static void hack_array_constructor_call(CallExpr* call) {
+  if (call->isResolved())
+    return;
   if (call->isNamed("_construct__aarray")) {
     if (DefExpr* def = dynamic_cast<DefExpr*>(call->parentExpr)) {
       call->parentStmt->insertAfter(
@@ -520,6 +522,8 @@ static void hack_array_constructor_call(CallExpr* call) {
 
 
 static void hack_domain_constructor_call(CallExpr* call) {
+  if (call->isResolved())
+    return;
   if (call->isNamed("_construct__adomain_lit")) {
     Stmt* stmt = call->parentStmt;
     VarSymbol* _adomain_tmp = new VarSymbol("_adomain_tmp");

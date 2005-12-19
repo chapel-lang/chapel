@@ -134,7 +134,7 @@ void InsertVariableInitializations::postProcessStmt(Stmt* stmt) {
 
 
 void insertVariableInitializations(void) {
-  if (no_infer)
+  if (no_infer || use_alloc)
     return;
   Pass* pass = new InsertVariableInitializations();
   pass->run(Symboltable::getModules(pass->whichModules));

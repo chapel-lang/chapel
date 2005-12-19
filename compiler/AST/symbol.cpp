@@ -767,8 +767,8 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
       newFormal->type = ts->definition;
       char* tempName = stringcat("_coercion_temp_", formal->sym->name);
       VarSymbol* temp = new VarSymbol(tempName, formal->sym->type);
-      DefExpr* tempDefExpr = new DefExpr(temp, new SymExpr(newFormal));
-      wrapper_body->insertAtTail(new ExprStmt(tempDefExpr));
+      wrapper_body->insertAtTail(new ExprStmt(new DefExpr(temp)));
+      wrapper_body->insertAtTail(new ExprStmt(new CallExpr(OP_MOVE, temp, new CastExpr(new SymExpr(newFormal), NULL, formal->sym->type))));
       wrapper_actuals->insertAtTail(new SymExpr(temp));
     } else {
       wrapper_actuals->insertAtTail(new SymExpr(newFormal));
@@ -792,6 +792,7 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
   defPoint->parentStmt->insertAfter(new ExprStmt(new DefExpr(wrapper_fn)));
   wrapper_fn->addPragmas(&pragmas);
   reset_file_info(wrapper_fn->defPoint->parentStmt, lineno, filename);
+  normalize(wrapper_fn);
   return wrapper_fn;
 }
 
@@ -814,6 +815,8 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
     } else {
       char* temp_name = stringcat("_default_temp_", formal->name);
       VarSymbol* temp = new VarSymbol(temp_name, formal->type);
+      if (no_infer || use_alloc)
+        temp->noDefaultInit = true;
       map.put(formal, temp);
       Expr* temp_init = NULL;
       Expr* temp_type = NULL;
@@ -848,6 +851,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
   wrapper_fn->addPragmas(&pragmas);
   reset_file_info(wrapper_fn->defPoint->parentStmt, lineno, filename);
   add_dwcache(wrapper_fn, this, defaults);
+  normalize(wrapper_fn);
   return wrapper_fn;
 }
 
@@ -888,7 +892,7 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_formals) {
 static FnSymbol*
 buildMultidimensionalIterator(ClassType* type, int rank) {
 
-  FnSymbol* _forall = new FnSymbol("_forall", type->symbol, NULL, dtUnknown);
+  FnSymbol* _forall = new FnSymbol("_forall", type->symbol);
   _forall->fnClass = FN_ITERATOR;
   ArgSymbol* _this = new ArgSymbol(INTENT_REF, "this", type);
   _forall->_this = _this;
