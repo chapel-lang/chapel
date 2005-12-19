@@ -52192,3 +52192,13 @@ Log message:
 Modified files:
 	chapel/compiler/include/: vec.h 
 
+---------------------------------------------------------------------------
+
+12/19/05 13:44:13 -- deitz
+
+Log message:
+	Fixed .good for test.
+
+Modified files:
+	chapel/test/functions/deitz/: test_var_function1.good 
+
