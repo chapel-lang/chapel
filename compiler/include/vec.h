@@ -76,7 +76,7 @@ class Vec : public gc {
 
 // c -- class, p -- pointer to elements of v, v -- vector
 #define forv_Vec(_c, _p, _v) if ((_v).n) for (_c *qq__##_p = (_c*)0, *_p = (_v).v[0]; \
-                    ((intptr_t)(qq__##_p) < (_v).n) && ((_p = (_v).v[(intptr_t)qq__##_p]) || 1); qq__##_p = (_c*)(((intptr_t)qq__##_p) + 1))
+                    ((intptr_t)(qq__##_p) < (_v).length()) && ((_p = (_v).v[(intptr_t)qq__##_p]) || 1); qq__##_p = (_c*)(((intptr_t)qq__##_p) + 1))
 
 template <class C> class Accum : public gc { public:
   Vec<C> asset;
