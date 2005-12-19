@@ -52202,3 +52202,26 @@ Log message:
 Modified files:
 	chapel/test/functions/deitz/: test_var_function1.good 
 
+---------------------------------------------------------------------------
+
+12/19/05 14:53:34 -- deitz
+
+Log message:
+	More work on --use-alloc which is now working on many tests.  I'm
+	looking into those that are not working.
+	
+	Normalize is now called on the wrappers.
+	
+	This checkin fixes:
+	  trivial/deitz/test_coerce_integer_to_string2
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/compiler/traversals/: insertVariableInitializations.cpp 
+	                             resolveSymbols.cpp 
+	chapel/make/: Makefile.linux 
+	chapel/test/flowanalysis/newast/: sum_type-1.good 
+	                                  sum_type-2.good 
+
