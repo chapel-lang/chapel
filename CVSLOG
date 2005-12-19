@@ -52245,3 +52245,13 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+12/19/05 15:30:08 -- deitz
+
+Log message:
+	Accidentally checked in disabled readline.
+
+Modified files:
+	chapel/make/: Makefile.linux 
+
