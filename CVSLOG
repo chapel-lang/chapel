@@ -52182,3 +52182,13 @@ Log message:
 Modified files:
 	chapel/make/: Makefile.cygwin Makefile.linux Makefile.linux64 
 
+---------------------------------------------------------------------------
+
+12/19/05 12:38:49 -- jplevyak
+
+Log message:
+	Fix problems with test_clone_classXX caused by a bug in the forv iterator.
+
+Modified files:
+	chapel/compiler/include/: vec.h 
+
