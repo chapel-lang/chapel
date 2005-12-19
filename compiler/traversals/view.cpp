@@ -130,6 +130,11 @@ void nprint_view(BaseAST* ast) {
   fflush(stdout);
 }
 
+void nprint_view_noline(BaseAST* ast) {
+  TRAVERSE(ast, new View(true), true);
+  fflush(stdout);
+}
+
 void mark_view(BaseAST* ast, long id) {
   TRAVERSE(ast, new View(false, id), true);
   printf("\n\n");

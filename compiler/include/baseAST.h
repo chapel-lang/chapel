@@ -61,6 +61,7 @@ enum astType_t {
   TYPE_VARIABLE,
 
   LIST,
+  OBJECT,
 
   AST_TYPE_END 
 };

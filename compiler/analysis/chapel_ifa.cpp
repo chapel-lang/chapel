@@ -2110,6 +2110,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
   case TYPE_VARIABLE:
   case AST_TYPE_END:
   case LIST:
+  case OBJECT:
     assert(!"case");
     break;
   }

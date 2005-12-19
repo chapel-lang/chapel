@@ -1,4 +1,4 @@
-# Makefile.cygwin: contains cygwin-specific variables
+# Makefile.freebsd: contains freebsd-specific variables
 #
 
 -include $(CHAPEL_ROOT)/make/Makefile.gnu

@@ -570,6 +570,9 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
   case LIST: 
     INT_FATAL(a, "Unexpected case in AST_GET_CHILDREN (LIST)");
     break;
+  case OBJECT: 
+    INT_FATAL(a, "Unexpected case in AST_GET_CHILDREN (OBJECT)");
+    break;
   }
 }
 #undef AST_ADD_CHILD

@@ -48,20 +48,21 @@ class Vec : public gc {
   void set_disjunction(Vec<C> &v, Vec<C> &result);
   void set_difference(Vec<C> &v, Vec<C> &result);
   int set_count();
-  inline int count();
-  inline C *in(C a);
-  inline C *set_in(C a);
-  inline C first();
+  int count();
+  C *in(C a);
+  C *set_in(C a);
+  C first();
   C *set_in_internal(C a);
   void set_expand();
-  inline int index(C a);
+  int index(C a);
   void set_to_vec();
   void vec_to_set();
-  inline void move(Vec<C> &v);
+  void move(Vec<C> &v);
   void copy_internal(const Vec<C> &v);
-  inline void copy(const Vec<C> &v);
-  inline void fill(int n);
-  inline void append(const Vec<C> &v);
+  void copy(const Vec<C> &v);
+  void fill(int n);
+  void append(const Vec<C> &v);
+  void remove(int index);
   void reverse();
   C* end() { return v + n; }
   Vec<C>& operator=(Vec<C> &v) { this->copy(v); return *this; }
@@ -75,7 +76,7 @@ class Vec : public gc {
 
 // c -- class, p -- pointer to elements of v, v -- vector
 #define forv_Vec(_c, _p, _v) if ((_v).n) for (_c *qq__##_p = (_c*)0, *_p = (_v).v[0]; \
-                    ((intptr_t)(qq__##_p) < (_v).length()) && ((_p = (_v).v[(intptr_t)qq__##_p]) || 1); qq__##_p = (_c*)(((intptr_t)qq__##_p) + 1))
+                    ((intptr_t)(qq__##_p) < (_v).n) && ((_p = (_v).v[(intptr_t)qq__##_p]) || 1); qq__##_p = (_c*)(((intptr_t)qq__##_p) + 1))
 
 template <class C> class Accum : public gc { public:
   Vec<C> asset;
@@ -275,6 +276,10 @@ Vec<C>::append(const Vec<C> &vv)  {
 
 template <class C> inline void 
 Vec<C>::addx() {
+  if (!n) {
+    v = e;
+    return;
+  }
   if (v == e) {
     v = (C*)MALLOC(VEC_INITIAL_SIZE * sizeof(C));
     memcpy(v, &e[0], n * sizeof(C));
@@ -468,6 +473,15 @@ Vec<C>::vec_to_set() {
   clear();
   for (C *c = vv.v; c < vv.v + vv.n; c++)
     set_add(*c);
+}
+
+template <class C>  void 
+Vec<C>::remove(int index) {
+  if (n > 1)
+    memcpy(&v[index], &v[index+1], (n - 1) * sizeof(v[0]));
+  n--;
+  if (n <= 0)
+    v = e;
 }
 
 template <class C>  void 
