@@ -2,7 +2,7 @@
 #
 
 CFLAGS += -DUSE_READLINE
-LDFLAGS += -lreadline
+LIBS += -lreadline
 
 EXE_SUFFIX=.exe
 PLATFORM_PREMAKE=rm -f $*/FILES

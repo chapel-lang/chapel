@@ -2,6 +2,6 @@
 #
 
 CFLAGS += -DUSE_READLINE
-LDFLAGS += -lreadline
+LIBS += -lreadline
 
 -include $(CHAPEL_ROOT)/make/Makefile.gnu
