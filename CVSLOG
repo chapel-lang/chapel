@@ -52172,3 +52172,13 @@ Modified files:
 	chapel/make/: Makefile.cygwin Makefile.freebsd Makefile.linux 
 	              Makefile.linux64 
 
+---------------------------------------------------------------------------
+
+12/19/05 09:19:37 -- jplevyak
+
+Log message:
+	Fix for cygwin compiler: use LIBS instead of LDFLAGS
+
+Modified files:
+	chapel/make/: Makefile.cygwin Makefile.linux Makefile.linux64 
+
