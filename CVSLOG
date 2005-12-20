@@ -52265,3 +52265,22 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+12/19/05 16:43:27 -- deitz
+
+Log message:
+	Rewrote the code to create the multidimensional iterator for domains
+	during instantiation so that it relies on cleanup, scopeResolve, and
+	normalize.
+	
+	Fixed a small bug in --no-infer function resolution.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: astutil.h 
+	chapel/compiler/passes/: functionResolution.cpp scopeResolve.cpp 
+	chapel/make/: Makefile.linux 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
