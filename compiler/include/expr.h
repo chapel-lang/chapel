@@ -6,6 +6,7 @@
 #include "analysis.h"
 #include "baseAST.h"
 #include "symbol.h"
+#include "primitive.h"
 
 class Stmt;
 class AAST;

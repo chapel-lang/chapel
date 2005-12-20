@@ -194,6 +194,7 @@ compile_all(void) {
   initType(); // BLC : clean these up
   initSymbol();
   initExpr();
+  initPrimitive();
   testInputFiles(arg_state.nfile_arguments, arg_state.file_argument);
   runPasses(passlist_filename);
 }
