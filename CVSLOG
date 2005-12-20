@@ -52255,3 +52255,13 @@ Log message:
 Modified files:
 	chapel/make/: Makefile.linux 
 
+---------------------------------------------------------------------------
+
+12/19/05 16:12:53 -- jplevyak
+
+Log message:
+	Fixed a bug in the handling of CallExpr in the interpeter.
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+
