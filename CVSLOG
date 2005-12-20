@@ -52284,3 +52284,20 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+12/20/05 07:21:33 -- jplevyak
+
+Log message:
+	Start of a new Primitives facility to be used by the AST,
+	the interpreter, and analysis to capture the semantics of the
+	AST after normalization.
+
+Modified files:
+	chapel/compiler/AST/: Makefile.share 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/main/: driver.cpp 
+Added files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/compiler/include/: primitive.h 
+
