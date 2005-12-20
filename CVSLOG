@@ -52301,3 +52301,16 @@ Added files:
 	chapel/compiler/AST/: primitive.cpp 
 	chapel/compiler/include/: primitive.h 
 
+---------------------------------------------------------------------------
+
+12/20/05 09:33:36 -- deitz
+
+Log message:
+	Rearrangement of --no-infer option to use a function instead of a
+	traversal class.  Added initial support for handling MemberAccesses.
+	Made it work on the normalized AST with less special-handling before
+	the pass.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+
