@@ -52314,3 +52314,29 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
 
+---------------------------------------------------------------------------
+
+12/20/05 11:42:55 -- deitz
+
+Log message:
+	Added the ability to insert Exprs into lists of Stmts using
+	insertAtTail, insertAtHead, insertBefore, insertAfter, and the
+	AList<Stmt> constructor without creating a new ExprStmt.  This is done
+	automatically.  Simplified much code accordingly, removing almost all
+	uses of the ExprStmt constructor.
+	
+	This should help to avoid some common mistakes and can be extended to
+	catch errors when they happen.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: alist.h stmt.h symbol.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         createEntryPoint.cpp normalize.cpp 
+	chapel/compiler/traversals/: createNestedFuncIterators.cpp 
+	                             inlineFunctions.cpp 
+	                             insertVariableInitializations.cpp 
+	                             processImportExprs.cpp 
+	                             processParameters.cpp 
+
