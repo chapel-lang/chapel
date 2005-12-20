@@ -130,8 +130,7 @@ void normalize(BaseAST* base) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
     if (FnSymbol* a = dynamic_cast<FnSymbol*>(ast)) {
-      if (!(a->_setter || a->_getter ||
-            (!no_infer && a->fnClass == FN_CONSTRUCTOR)))
+      if (!(a->_setter || a->_getter || a->fnClass == FN_CONSTRUCTOR))
         apply_getters_setters(a);
     }
   }

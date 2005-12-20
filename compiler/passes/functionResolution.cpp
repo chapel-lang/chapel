@@ -38,55 +38,8 @@ Vec<FnSymbol*> newFns; // new functions list;
 void resolve_return_type(FnSymbol* fn);
 void resolve_function(FnSymbol* fn);
 void resolve_call(CallExpr* call);
+void resolve_dot(MemberAccess* dot);
 
-class ResolveCalls : public Traversal {
-  void ResolveCalls::postProcessExpr(Expr* expr) {
-    if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
-      if (call->opTag == OP_NONE) {
-        resolve_call(call);
-      } else if (call->opTag == OP_MOVE) {
-        if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->argList->get(1))) {
-          if (CallExpr* prim = dynamic_cast<CallExpr*>(call->argList->get(2)))
-            if (prim->isNamed("__primitive"))
-              return;
-          Type* type = call->argList->get(2)->typeInfo();
-          if (type == dtNil)
-            return;
-          if (symExpr->var->type == dtUnknown)
-            symExpr->var->type = type;
-          else if (symExpr->var->type != type)
-            INT_FATAL("type mismatch in function resolution");
-        }
-      } else if (call->opTag == OP_INIT) {
-        AList<Expr>* args = call->argList->copy();
-        Expr* arg1 = args->get(1);
-        arg1->remove();
-        CallExpr* newcall = NULL;
-        if (SymExpr* symExpr = dynamic_cast<SymExpr*>(arg1)) {
-          if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(symExpr->var)) {
-            Type* type = ts->definition;
-            if (type->defaultValue) {
-              call->replace(new CastExpr(new SymExpr(type->defaultValue),
-                                         arg1, type));
-            } else if (type->defaultConstructor) {
-              newcall = new CallExpr(type->defaultConstructor->name, args);
-              call->replace(newcall);
-            } else {
-              INT_FATAL(call, "Type without defaultValue in function resolution");
-            }
-          } else {
-            INT_FATAL(call, "init not type");
-          }
-        } else if (CallExpr* ce = dynamic_cast<CallExpr*>(arg1)) {
-          newcall = ce;
-          call->replace(newcall);
-        }
-        if (newcall)
-          resolve_call(newcall);
-      }
-    }
-  }
-};
 
 bool actual_formal_match(Expr* actual, ArgSymbol* formal) {
   if (formal->intent == INTENT_TYPE ||
@@ -210,7 +163,70 @@ add_candidate(Map<FnSymbol*,Vec<ArgSymbol*>*>* af_maps,
 }
                           
 
+void resolve_dot(MemberAccess* dot) {
+  ClassType* ct = dynamic_cast<ClassType*>(dot->base->typeInfo());
+  if (!ct) {
+    INT_FATAL(dot, "Cannot resolve member access");
+    return;
+  }
+  dot->member = Symboltable::lookupInScope(dot->member->name, ct->structScope);
+  if (FnSymbol* fn = dynamic_cast<FnSymbol*>(dot->parentSymbol)) {
+    if (fn->fnClass = FN_CONSTRUCTOR) {
+      if (CallExpr* call = dynamic_cast<CallExpr*>(dot->parentExpr)) {
+        if (dot->member->type == dtUnknown) {
+          dot->member->type = call->get(2)->typeInfo();
+        }
+      }
+    }
+  }
+}
+
+
 void resolve_call(CallExpr* call) {
+  if (call->opTag == OP_MOVE) {
+    if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->argList->get(1))) {
+      if (CallExpr* prim = dynamic_cast<CallExpr*>(call->argList->get(2)))
+        if (prim->isNamed("__primitive"))
+          return;
+      Type* type = call->argList->get(2)->typeInfo();
+      if (type == dtNil)
+        return;
+      if (symExpr->var->type == dtUnknown)
+        symExpr->var->type = type;
+      else if (symExpr->var->type != type)
+        INT_FATAL("type mismatch in function resolution");
+    }
+  } else if (call->opTag == OP_INIT) {
+    AList<Expr>* args = call->argList->copy();
+    Expr* arg1 = args->get(1);
+    arg1->remove();
+    CallExpr* newcall = NULL;
+    if (SymExpr* symExpr = dynamic_cast<SymExpr*>(arg1)) {
+      if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(symExpr->var)) {
+        Type* type = ts->definition;
+        if (type->defaultValue) {
+          call->replace(new CastExpr(new SymExpr(type->defaultValue),
+                                     arg1, type));
+        } else if (type->defaultConstructor) {
+          newcall = new CallExpr(type->defaultConstructor->name, args);
+          call->replace(newcall);
+        } else {
+          INT_FATAL(call, "Type without defaultValue in function resolution");
+        }
+      } else {
+        INT_FATAL(call, "init not type");
+      }
+    } else if (CallExpr* ce = dynamic_cast<CallExpr*>(arg1)) {
+      newcall = ce;
+      call->replace(newcall);
+    }
+    if (newcall)
+      resolve_call(newcall);
+  }
+
+  if (call->opTag != OP_NONE)
+    return;
+
   if (CallExpr* partial = dynamic_cast<CallExpr*>(call->baseExpr)) {
     if (partial->typeInfo() == dtUnknown) {
       call->baseExpr->replace(partial->baseExpr->copy());
@@ -420,8 +436,27 @@ void resolve_call(CallExpr* call) {
 
   base->var = best;
   resolve_function(best);
+
+  if (DefExpr* def = dynamic_cast<DefExpr*>(call->parentExpr)) {
+    if (def->exprType == call) {
+      def->sym->type = best->retType;
+    }
+  }
+
   if (best->hasPragma("builtin"))
     call->makeOp();
+}
+
+void resolve_asts(BaseAST* base) {
+  Vec<BaseAST*> asts;
+  collect_asts_postorder(&asts, base);
+  forv_Vec(BaseAST, ast, asts) {
+    if (MemberAccess* dot = dynamic_cast<MemberAccess*>(ast)) {
+      resolve_dot(dot);
+    } else if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+      resolve_call(call);
+    }
+  }
 }
 
 void resolve_function(FnSymbol* fn) {
@@ -430,7 +465,7 @@ void resolve_function(FnSymbol* fn) {
 
   fns.set_add(fn);
 
-  TRAVERSE(fn->formals, new ResolveCalls(), true);
+  resolve_asts(fn->formals);
 
   for_alist(DefExpr, formalDef, fn->formals) {
     ArgSymbol* arg = dynamic_cast<ArgSymbol*>(formalDef->sym);
@@ -443,17 +478,17 @@ void resolve_function(FnSymbol* fn) {
     }
   }
 
-  TRAVERSE(fn->defPoint, new ResolveCalls(), true);
+  resolve_asts(fn->defPoint);
 
   if (fn->fnClass == FN_CONSTRUCTOR)
-    TRAVERSE(fn->typeBinding->defPoint, new ResolveCalls(), true);
+    resolve_asts(fn->typeBinding->defPoint);
 
   resolve_return_type(fn);
 }
 
 void functionResolution(void) {
   fns.set_add(chpl_main);
-  TRAVERSE(chpl_main, new ResolveCalls(), true);
+  resolve_asts(chpl_main);
 
   Vec<TypeSymbol*> dead_types;
   Vec<FnSymbol*> all_fns;
