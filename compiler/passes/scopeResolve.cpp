@@ -102,9 +102,15 @@ resolveGotoLabel(GotoStmt* gotoStmt) {
 
 
 void scopeResolve(void) {
+  forv_Vec(ModuleSymbol, mod, allModules)
+    scopeResolve(mod);
+}
+
+
+void scopeResolve(BaseAST* base) {
   Map<SymScope*,Vec<Symbol*>*> defList;
   Vec<BaseAST*> asts;
-  collect_asts_postorder(&asts);
+  collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     if (SymExpr* symExpr = dynamic_cast<SymExpr*>(ast)) {
       if (symExpr->var->isUnresolved) {

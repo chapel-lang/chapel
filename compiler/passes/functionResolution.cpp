@@ -50,6 +50,8 @@ class ResolveCalls : public Traversal {
             if (prim->isNamed("__primitive"))
               return;
           Type* type = call->argList->get(2)->typeInfo();
+          if (type == dtNil)
+            return;
           if (symExpr->var->type == dtUnknown)
             symExpr->var->type = type;
           else if (symExpr->var->type != type)

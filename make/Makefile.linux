@@ -1,7 +1,7 @@
 # Makefile.linux: contains linux-specific variables
 #
 
-CFLAGS += -DUSE_READLINE
-LIBS += -lreadline
+#CFLAGS += -DUSE_READLINE
+#LIBS += -lreadline
 
 -include $(CHAPEL_ROOT)/make/Makefile.gnu

@@ -894,57 +894,40 @@ buildMultidimensionalIterator(ClassType* type, int rank) {
 
   FnSymbol* _forall = new FnSymbol("_forall", type->symbol);
   _forall->fnClass = FN_ITERATOR;
-  ArgSymbol* _this = new ArgSymbol(INTENT_REF, "this", type);
-  _forall->_this = _this;
   _forall->method_type = PRIMARY_METHOD;
-  _forall->formals = new AList<DefExpr>(new DefExpr(_this));
+  _forall->formals = new AList<DefExpr>();
 
-  _forall->formals->insertAtHead(new DefExpr(new ArgSymbol(INTENT_REF, "_methodTokenDummy", dtMethodToken)));
-
-  _forall->body = new BlockStmt();
-
-  VarSymbol* _seq_result = new VarSymbol("_seq_result");
-  _forall->insertAtTail(new ExprStmt(new DefExpr(_seq_result)));
-  AList<Expr>* args = new AList<Expr>();
-  for (int i = 1; i <= rank; i++) {
-    args->insertAtTail(new SymExpr(dtInteger->symbol));
-  }
-  if (rank > 1)
-    _seq_result->defPoint->exprType = new CallExpr("_construct_seq", new CallExpr(stringcat("_construct__tuple", intstring(rank)), args));
-  else
-    _seq_result->defPoint->exprType = new CallExpr("_construct_seq", args);
-
-  CallExpr* yield = new CallExpr(stringcat("_construct__tuple", intstring(rank)));
-  CallExpr* partial = new CallExpr("_yield", methodToken, _seq_result);
-  partial->partialTag = PARTIAL_OK;
-  Stmt* loop = new ExprStmt(new CallExpr(partial, yield));
-  for (int i = 1; i <= rank; i++) {
-    VarSymbol* index = new VarSymbol(stringcat("_i", intstring(i)), dtInteger);
-    CallExpr* partial = new CallExpr("_forall", methodToken, _this);
-    partial->partialTag = PARTIAL_OK;
-    CallExpr *inner = 0;
-    loop = new ForLoopStmt(FORLOOPSTMT_FORALL,
-             new AList<DefExpr>(new DefExpr(index)),
-             new AList<Expr>(
-               new CallExpr(
-               (inner = new CallExpr("_forall", methodToken,
-                 new CallExpr(partial, new_IntLiteral(i)))))),
-             loop);
-    inner->partialTag = PARTIAL_OK;
-    if (rank > 1) {
-      yield->argList->insertAtHead(new SymExpr(dtInteger->symbol));
-      yield->argList->insertAtTail(new NamedExpr(stringcat("_f", intstring(i)), new SymExpr(index)));
-    } else {
-      yield->replace(new SymExpr(index));
+  Expr* ret_type = NULL;
+  if (rank == 1) {
+    ret_type = new SymExpr(dtInteger->symbol);
+    VarSymbol* index = new VarSymbol("_i", dtInteger);
+    _forall->insertAtTail
+      (new ForLoopStmt(FORLOOPSTMT_FORALL,
+         new AList<DefExpr>(new DefExpr(index)),
+         new AList<Expr>(new CallExpr("_forall", new_IntLiteral(1))),
+         new ReturnStmt(new SymExpr(index), true)));
+  } else {
+    ret_type = new CallExpr(stringcat("_tuple", intstring(rank)));
+    CallExpr* ret = new CallExpr(stringcat("_tuple", intstring(rank)));
+    Stmt* loop = new ReturnStmt(ret, true);
+    for (int i = 1; i <= rank; i++) {
+      VarSymbol* index = new VarSymbol(stringcat("_i", intstring(i)), dtInteger);
+      loop = new ForLoopStmt(FORLOOPSTMT_FORALL,
+               new AList<DefExpr>(new DefExpr(index)),
+               new AList<Expr>(new CallExpr("_forall", new_IntLiteral(i))),
+               loop);
+      ret->argList->insertAtHead(new SymExpr(dtInteger->symbol));
+      dynamic_cast<CallExpr*>(ret_type)->argList->insertAtHead(new SymExpr(dtInteger->symbol));
+      ret->argList->insertAtTail(new SymExpr(index));
     }
+    _forall->insertAtTail(loop);
   }
-
-  _forall->insertAtTail(loop);
-
-  _forall->insertAtTail(new ReturnStmt(_seq_result));
 
   type->symbol->defPoint->parentStmt->insertBefore
-    (new ExprStmt(new DefExpr(_forall))); //, NULL, _seq_result->defPoint->exprType->copy())));
+    (new ExprStmt(new DefExpr(_forall, NULL, ret_type)));
+  cleanup(_forall->defPoint);
+  scopeResolve(_forall->defPoint);
+  normalize(_forall->defPoint);
   return _forall;
 }
 

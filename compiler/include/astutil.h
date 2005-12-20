@@ -3,6 +3,7 @@
 class FnSymbol;
 
 void cleanup(BaseAST* ast);
+void scopeResolve(BaseAST* ast);
 void normalize(BaseAST* ast);
 
 // collect FnSymbols in the AST and return them in vectors
