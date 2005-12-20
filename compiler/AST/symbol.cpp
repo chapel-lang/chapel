@@ -579,7 +579,7 @@ TypeSymbol* TypeSymbol::clone(ASTMap* map) {
     INT_FATAL(this, "Class cloning went horribly wrong");
   }
   clone->cname = stringcat("_clone_", clone->cname);
-  defPoint->parentStmt->insertBefore(new ExprStmt(new DefExpr(clone)));
+  defPoint->parentStmt->insertBefore(new DefExpr(clone));
   clone->addPragmas(&pragmas);
   if (no_infer)
     newClass->dispatchParents.copy(originalClass->dispatchParents);
@@ -767,8 +767,8 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
       newFormal->type = ts->definition;
       char* tempName = stringcat("_coercion_temp_", formal->sym->name);
       VarSymbol* temp = new VarSymbol(tempName, formal->sym->type);
-      wrapper_body->insertAtTail(new ExprStmt(new DefExpr(temp)));
-      wrapper_body->insertAtTail(new ExprStmt(new CallExpr(OP_MOVE, temp, new CastExpr(new SymExpr(newFormal), NULL, formal->sym->type))));
+      wrapper_body->insertAtTail(new DefExpr(temp));
+      wrapper_body->insertAtTail(new CallExpr(OP_MOVE, temp, new CastExpr(new SymExpr(newFormal), NULL, formal->sym->type)));
       wrapper_actuals->insertAtTail(new SymExpr(temp));
     } else {
       wrapper_actuals->insertAtTail(new SymExpr(newFormal));
@@ -777,7 +777,7 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
 
   Expr* fn_call = new CallExpr(this, wrapper_actuals);
   if (function_returns_void(this)) {
-    wrapper_body->insertAtTail(new ExprStmt(fn_call));
+    wrapper_body->insertAtTail(fn_call);
   } else {
     wrapper_body->insertAtTail(new ReturnStmt(fn_call));
   }
@@ -789,7 +789,7 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
   wrapper_fn->cname = stringcat("_coerce_wrap_", cname);
   wrapper_fn->addPragma("inline");
   wrapper_fn->_this = new_this;
-  defPoint->parentStmt->insertAfter(new ExprStmt(new DefExpr(wrapper_fn)));
+  defPoint->parentStmt->insertAfter(new DefExpr(wrapper_fn));
   wrapper_fn->addPragmas(&pragmas);
   reset_file_info(wrapper_fn->defPoint->parentStmt, lineno, filename);
   normalize(wrapper_fn);
@@ -824,7 +824,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
         temp_init = formal->defaultExpr->copy();
       if (no_infer && formalDef->exprType)
         temp_type = formalDef->exprType->copy();
-      wrapper_body->insertAtTail(new ExprStmt(new DefExpr(temp, temp_init, temp_type)));
+      wrapper_body->insertAtTail(new DefExpr(temp, temp_init, temp_type));
 
       if (formal->type != dtUnknown &&
           formal->intent != INTENT_OUT &&
@@ -847,7 +847,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
   wrapper_fn->method_type = method_type;
   wrapper_fn->cname = stringcat("_default_wrap_", cname);
   wrapper_fn->addPragma("inline");
-  defPoint->parentStmt->insertAfter(new ExprStmt(new DefExpr(wrapper_fn)));
+  defPoint->parentStmt->insertAfter(new DefExpr(wrapper_fn));
   wrapper_fn->addPragmas(&pragmas);
   reset_file_info(wrapper_fn->defPoint->parentStmt, lineno, filename);
   add_dwcache(wrapper_fn, this, defaults);
@@ -879,7 +879,7 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_formals) {
   wrapper_fn->method_type = method_type;
   wrapper_fn->cname = stringcat("_order_wrap_", cname);
   wrapper_fn->addPragma("inline");
-  defPoint->parentStmt->insertBefore(new ExprStmt(new DefExpr(wrapper_fn)));
+  defPoint->parentStmt->insertBefore(new DefExpr(wrapper_fn));
   reset_file_info(wrapper_fn->defPoint->parentStmt, lineno, filename);
   return wrapper_fn;
 }
@@ -924,7 +924,7 @@ buildMultidimensionalIterator(ClassType* type, int rank) {
   }
 
   type->symbol->defPoint->parentStmt->insertBefore
-    (new ExprStmt(new DefExpr(_forall, NULL, ret_type)));
+    (new DefExpr(_forall, NULL, ret_type));
   cleanup(_forall->defPoint);
   scopeResolve(_forall->defPoint);
   normalize(_forall->defPoint);
@@ -1198,26 +1198,14 @@ void FnSymbol::codegenDef(FILE* outfile) {
 
 
 void
-FnSymbol::insertAtHead(Stmt* stmt) {
-  body->insertAtHead(stmt);
+FnSymbol::insertAtHead(BaseAST* ast) {
+  body->insertAtHead(ast);
 }
 
 
 void
-FnSymbol::insertAtTail(Stmt* stmt) {
-  body->insertAtTail(stmt);
-}
-
-
-void
-FnSymbol::insertAtHead(AList<Stmt>* stmt) {
-  body->insertAtHead(stmt);
-}
-
-
-void
-FnSymbol::insertAtTail(AList<Stmt>* stmt) {
-  body->insertAtTail(stmt);
+FnSymbol::insertAtTail(BaseAST* ast) {
+  body->insertAtTail(ast);
 }
 
 

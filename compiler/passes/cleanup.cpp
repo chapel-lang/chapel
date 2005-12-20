@@ -83,10 +83,10 @@ static void normalize_anonymous_record_or_forall_expression(DefExpr* def) {
   if ((!strncmp("_anon_record", def->sym->name, 12)) ||
       (!strncmp("_forallexpr", def->sym->name, 11))) {
     def->replace(new SymExpr(def->sym));
-    stmt->insertBefore(new ExprStmt(def));
+    stmt->insertBefore(def);
   } else if (!strncmp("_let_fn", def->sym->name, 7)) {
     def->replace(new CallExpr(def->sym));
-    stmt->insertBefore(new ExprStmt(def));
+    stmt->insertBefore(def);
   }
 }
 
@@ -105,7 +105,7 @@ static void destructure_indices(ForLoopStmt* stmt) {
     for_alist(DefExpr, indexDef, stmt->indices) {
       indexDef->remove();
       indexDef->init = new CallExpr(indextmp, new_IntLiteral(i++));
-      stmt->innerStmt->insertAtHead(new ExprStmt(indexDef));
+      stmt->innerStmt->insertAtHead(indexDef);
     }
     stmt->indices->insertAtTail(new DefExpr(indextmp));
   }
@@ -122,7 +122,7 @@ static void destructure_indices(ForLoopStmt* stmt) {
 static void destructure_tuple(CallExpr* call) {
   Stmt* stmt = call->parentStmt;
   VarSymbol* temp = new VarSymbol("_tuple_destruct");
-  stmt->insertBefore(new ExprStmt(new DefExpr(temp)));
+  stmt->insertBefore(new DefExpr(temp));
   call->replace(new SymExpr(temp));
   int i = 1;
   for_alist(Expr, expr, call->argList) {
@@ -130,9 +130,8 @@ static void destructure_tuple(CallExpr* call) {
       if (callExpr->isNamed("typeof"))
         continue;
     stmt->insertAfter(
-      new ExprStmt(
-        new CallExpr(OP_MOVE, expr->remove(),
-          new CallExpr(temp, new_IntLiteral(i++)))));
+      new CallExpr(OP_MOVE, expr->remove(),
+        new CallExpr(temp, new_IntLiteral(i++))));
   }
 }
 
@@ -157,7 +156,7 @@ static void construct_tuple_type(int rank) {
     VariableType* type = new VariableType(getMetaType(0));
     TypeSymbol* typeSymbol = new TypeSymbol(typeName, type);
     type->addSymbol(typeSymbol);
-    decls->insertAtTail(new ExprStmt(new DefExpr(typeSymbol)));
+    decls->insertAtTail(new DefExpr(typeSymbol));
     types.add(type);
   }
 
@@ -166,7 +165,7 @@ static void construct_tuple_type(int rank) {
   for (int i = 1; i <= rank; i++) {
     char* fieldName = stringcat("_f", intstring(i));
     VarSymbol* field = new VarSymbol(fieldName, types.v[i-1]);
-    decls->insertAtTail(new ExprStmt(new DefExpr(field)));
+    decls->insertAtTail(new DefExpr(field));
     fields.add(field);
   }
 
@@ -187,7 +186,7 @@ static void construct_tuple_type(int rank) {
     DefExpr* def = new DefExpr(fn);
     if (no_infer)
       def->exprType = new SymExpr(types.v[i-1]->symbol);
-    decls->insertAtTail(new ExprStmt(def));
+    decls->insertAtTail(def);
   }
 
   // Build tuple
@@ -195,7 +194,7 @@ static void construct_tuple_type(int rank) {
   TypeSymbol* tupleSym = new TypeSymbol(name, tupleType);
   tupleType->addSymbol(tupleSym);
   tupleType->addDeclarations(decls);
-  commonModule->stmts->insertAtHead(new ExprStmt(new DefExpr(tupleSym)));
+  commonModule->stmts->insertAtHead(new DefExpr(tupleSym));
   cleanup(tupleSym);
 
   if (!fnostdincs) {
@@ -218,7 +217,7 @@ static void construct_tuple_type(int rank) {
     actuals->insertAtTail(new_StringLiteral(stringcpy(")")));
     Expr* fwriteCall = new CallExpr("fwrite", new SymExpr(fileArg), actuals);
     fwriteFn->body = new BlockStmt(new ExprStmt(fwriteCall));
-    commonModule->stmts->insertAtTail(new ExprStmt(new DefExpr(fwriteFn)));
+    commonModule->stmts->insertAtTail(new DefExpr(fwriteFn));
     cleanup(fwriteFn);
   }
 
@@ -233,13 +232,12 @@ static void construct_tuple_type(int rank) {
     assignFn->body = new BlockStmt();
     for (int i = 1; i <= rank; i++) {
       assignFn->insertAtTail(
-        new ExprStmt(
-          new CallExpr("=",
-            new CallExpr(htupleArg, new_IntLiteral(i)),
-            new CallExpr(tupleArg, new_IntLiteral(i)))));
+        new CallExpr("=",
+          new CallExpr(htupleArg, new_IntLiteral(i)),
+          new CallExpr(tupleArg, new_IntLiteral(i))));
     }
     assignFn->insertAtTail(new ReturnStmt(htupleArg));
-    commonModule->stmts->insertAtTail(new ExprStmt(new DefExpr(assignFn)));
+    commonModule->stmts->insertAtTail(new DefExpr(assignFn));
     cleanup(assignFn);
   }
 
@@ -341,9 +339,9 @@ finish_constructor(FnSymbol* fn) {
     user_fn->typeBinding = ct->symbol;
     BlockStmt* user_body = fn->body;
     fn->body->replace(new BlockStmt());
-    fn->insertAtHead(new ExprStmt(new DefExpr(user_fn)));
+    fn->insertAtHead(new DefExpr(user_fn));
     user_fn->body->replace(user_body);
-    fn->insertAtHead(new ExprStmt(new CallExpr((inner = new CallExpr(user_fn, methodToken, fn->_this)))));
+    fn->insertAtHead(new CallExpr((inner = new CallExpr(user_fn, methodToken, fn->_this))));
     inner->partialTag = PARTIAL_OK;
     ct->methods.add(user_fn);
     cleanup(user_fn);
@@ -356,12 +354,11 @@ finish_constructor(FnSymbol* fn) {
                                  ct->symbol,
                                  new_StringLiteral(description));
   CallExpr* alloc_expr = new CallExpr(OP_MOVE, fn->_this, alloc_rhs);
-  Stmt* alloc_stmt = new ExprStmt(alloc_expr);
 
   AList<Stmt>* stmts = new AList<Stmt>();
 
-  stmts->insertAtTail(new ExprStmt(new DefExpr(fn->_this)));
-  stmts->insertAtTail(alloc_stmt);
+  stmts->insertAtTail(new DefExpr(fn->_this));
+  stmts->insertAtTail(alloc_expr);
 
   // assign formals to fields by name
   forv_Vec(Symbol, field, ct->fields) {
@@ -373,8 +370,7 @@ finish_constructor(FnSymbol* fn) {
             (no_infer)
             ? new CallExpr("=", lhs, formal)
             : new CallExpr(OP_MOVE, lhs, formal);
-          Stmt* assign_stmt = new ExprStmt(assign_expr);
-          stmts->insertAtTail(assign_stmt);
+          stmts->insertAtTail(assign_expr);
         }
       }
     }

@@ -199,7 +199,7 @@ static void reconstruct_iterator(FnSymbol* fn) {
   Symbol* seq = new VarSymbol("_seq_result");
   DefExpr* def = new DefExpr(seq, NULL, new CallExpr(chpl_seq, seqType));
 
-  fn->insertAtHead(new ExprStmt(def));
+  fn->insertAtHead(def);
 
   Vec<BaseAST*> asts;
   collect_asts_postorder(&asts, fn->body);
@@ -208,7 +208,7 @@ static void reconstruct_iterator(FnSymbol* fn) {
       Expr* expr = returnStmt->expr;
       returnStmt->expr->replace(new SymExpr(seq));
       returnStmt->insertBefore(
-        new ExprStmt(new CallExpr(new MemberAccess(seq, "_yield"), expr)));
+        new CallExpr(new MemberAccess(seq, "_yield"), expr));
       if (returnStmt->yield)
         returnStmt->remove();
     }
@@ -238,7 +238,7 @@ static AList<Stmt>* handle_return_expr(Expr* e, Symbol* lvalue) {
 
 static void build_lvalue_function(FnSymbol* fn) {
   FnSymbol* new_fn = fn->copy();
-  fn->defPoint->parentStmt->insertAfter(new ExprStmt(new DefExpr(new_fn)));
+  fn->defPoint->parentStmt->insertAfter(new DefExpr(new_fn));
   if (fn->typeBinding)
     fn->typeBinding->definition->methods.add(new_fn);
   new_fn->retRef = false;
@@ -294,7 +294,7 @@ static void normalize_returns(FnSymbol* fn) {
     type->remove();
     if (!type)
       retval->noDefaultInit = true;
-    fn->insertAtHead(new ExprStmt(new DefExpr(retval, NULL, type)));
+    fn->insertAtHead(new DefExpr(retval, NULL, type));
     fn->insertAtTail(new ReturnStmt(retval));
   }
   bool label_is_used = false;
@@ -302,7 +302,7 @@ static void normalize_returns(FnSymbol* fn) {
     if (retval) {
       Expr* ret_expr = ret->expr;
       ret->expr->remove();
-      ret->insertBefore(new ExprStmt(new CallExpr(OP_MOVE, retval, ret_expr)));
+      ret->insertBefore(new CallExpr(OP_MOVE, retval, ret_expr));
     }
     if (ret->next != label->defPoint->parentStmt) {
       ret->replace(new GotoStmt(goto_normal, label));
@@ -336,10 +336,10 @@ static void insert_type_default_temp(UserType* userType) {
       VarSymbol* temp = new VarSymbol(temp_name, temp_type);
       DefExpr* def = new DefExpr(temp, temp_init);
       if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(parent_symbol)) {
-        mod->initFn->insertAtHead(new ExprStmt(def));
+        mod->initFn->insertAtHead(def);
       } else {
         Stmt* insert_point = outer_symbol->defPoint->parentStmt;
-        insert_point->insertBefore(new ExprStmt(def));
+        insert_point->insertBefore(def);
       }
       userType->defaultValue = temp;
       userType->defaultExpr = NULL;
@@ -356,8 +356,7 @@ static void initialize_out_formals(FnSymbol* fn) {
   for_alist(DefExpr, argDef, fn->formals) {
     ArgSymbol* arg = dynamic_cast<ArgSymbol*>(argDef->sym);
     if (arg->defaultExpr && arg->intent == INTENT_OUT)
-      fn->body->insertAtHead(
-        new ExprStmt(new CallExpr(OP_MOVE, arg, arg->defaultExpr->copy())));
+      fn->insertAtHead(new CallExpr(OP_MOVE, arg, arg->defaultExpr->copy()));
   }
 }
 
@@ -395,7 +394,7 @@ static void insert_formal_temps(FnSymbol* fn) {
   update_symbols(fn->body, &subs);
 
   forv_Vec(DefExpr, tempDef, tempDefs) {
-    fn->insertAtHead(new ExprStmt(tempDef));
+    fn->insertAtHead(tempDef);
   }
 }
 
@@ -436,7 +435,7 @@ decompose_multi_actuals(CallExpr* call, char* new_name, Expr* first_actual) {
   for_alist(Expr, actual, call->argList) {
     actual->remove();
     call->parentStmt->insertBefore
-      (new ExprStmt(new CallExpr(new_name, first_actual->copy(), actual)));
+      (new CallExpr(new_name, first_actual->copy(), actual));
   }
   call->parentStmt->remove();
 }
@@ -462,8 +461,8 @@ static void decompose_special_calls(CallExpr* call) {
     call->parentStmt->remove();
     decompose_special_calls(halt_call);
   } else if (call->isNamed("halt")) {
-    call->parentStmt->insertAfter(new ExprStmt(new CallExpr("exit", new_IntLiteral(0))));
-    call->parentStmt->insertAfter(new ExprStmt(new CallExpr("fwriteln", chpl_stdout)));
+    call->parentStmt->insertAfter(new CallExpr("exit", new_IntLiteral(0)));
+    call->parentStmt->insertAfter(new CallExpr("fwriteln", chpl_stdout));
     decompose_multi_actuals(call, "fwrite", new SymExpr(chpl_stdout));
   } else if (call->isNamed("fread")) {
     Expr* file = call->argList->get(1);
@@ -477,14 +476,14 @@ static void decompose_special_calls(CallExpr* call) {
   } else if (call->isNamed("fwriteln")) {
     Expr* file = call->argList->get(1);
     file->remove();
-    call->parentStmt->insertAfter(new ExprStmt(new CallExpr("fwriteln", file)));
+    call->parentStmt->insertAfter(new CallExpr("fwriteln", file));
     decompose_multi_actuals(call, "fwrite", file);
   } else if (call->isNamed("read")) {
     decompose_multi_actuals(call, "fread", new SymExpr(chpl_stdin));
   } else if (call->isNamed("write")) {
     decompose_multi_actuals(call, "fwrite", new SymExpr(chpl_stdout));
   } else if (call->isNamed("writeln")) {
-    call->parentStmt->insertAfter(new ExprStmt(new CallExpr("fwriteln", chpl_stdout)));
+    call->parentStmt->insertAfter(new CallExpr("fwriteln", chpl_stdout));
     decompose_multi_actuals(call, "fwrite", new SymExpr(chpl_stdout));
   }
 }
@@ -509,11 +508,11 @@ static void hack_array_constructor_call(CallExpr* call) {
   if (call->isNamed("_construct__aarray")) {
     if (DefExpr* def = dynamic_cast<DefExpr*>(call->parentExpr)) {
       call->parentStmt->insertAfter(
-        new ExprStmt(new CallExpr(new MemberAccess(def->sym, "myinit"))));
+        new CallExpr(new MemberAccess(def->sym, "myinit")));
       call->parentStmt->insertAfter(
-        new ExprStmt(new CallExpr("=",
+        new CallExpr("=",
           new MemberAccess(def->sym, "dom"),
-          call->argList->last()->copy())));
+          call->argList->last()->copy()));
       call->argList->last()->replace(hack_rank(call->argList->last()));
     }
   }
@@ -527,18 +526,16 @@ static void hack_domain_constructor_call(CallExpr* call) {
     Stmt* stmt = call->parentStmt;
     VarSymbol* _adomain_tmp = new VarSymbol("_adomain_tmp");
     stmt->insertBefore(
-      new ExprStmt(
         new DefExpr(_adomain_tmp, NULL,
           new CallExpr("_construct__adomain_lit",
-            new_IntLiteral(call->argList->length())))));
+            new_IntLiteral(call->argList->length()))));
     call->replace(new SymExpr(_adomain_tmp));
     int dim = 1;
     for_alist(Expr, arg, call->argList) {
       stmt->insertBefore(
-        new ExprStmt(
           new CallExpr(
             new MemberAccess(_adomain_tmp, "_set"),
-            new_IntLiteral(dim), arg->copy())));
+            new_IntLiteral(dim), arg->copy()));
       dim++;
     }
   } else if (call->isNamed("domain")) {
@@ -778,7 +775,7 @@ static void insert_call_temps(CallExpr* call) {
   tmp->cname = stringcat(tmp->name, intstring(uid++));
   tmp->noDefaultInit = true;
   call->replace(new SymExpr(tmp));
-  stmt->insertBefore(new ExprStmt(new DefExpr(tmp, call)));
+  stmt->insertBefore(new DefExpr(tmp, call));
 
   if (SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr)) {
     if (!strncmp(base->var->name, "_let_fn", 7)) {
@@ -802,44 +799,44 @@ static void fix_def_expr(DefExpr* def) {
   static int uid = 1;
   if (dynamic_cast<VarSymbol*>(def->sym)->noDefaultInit) {
     if (def->init)
-      def->parentStmt->insertAfter(new ExprStmt(new CallExpr(OP_MOVE, def->sym, def->init->copy())));
+      def->parentStmt->insertAfter(new CallExpr(OP_MOVE, def->sym, def->init->copy()));
     dynamic_cast<VarSymbol*>(def->sym)->noDefaultInit = false;
   } else if (def->sym->type != dtUnknown) {
     AList<Stmt>* stmts = new AList<Stmt>();
     VarSymbol* tmp = new VarSymbol("_defTmp");
     tmp->cname = stringcat(tmp->name, intstring(uid++));
-    stmts->insertAtTail(new ExprStmt(new DefExpr(tmp)));
-    stmts->insertAtTail(new ExprStmt(new CallExpr(OP_MOVE, tmp, new CallExpr(OP_INIT, def->sym->type->symbol))));
+    stmts->insertAtTail(new DefExpr(tmp));
+    stmts->insertAtTail(new CallExpr(OP_MOVE, tmp, new CallExpr(OP_INIT, def->sym->type->symbol)));
     if (def->init)
-      stmts->insertAtTail(new ExprStmt(new CallExpr(OP_MOVE, def->sym, new CallExpr("=", tmp, def->init->copy()))));
+      stmts->insertAtTail(new CallExpr(OP_MOVE, def->sym, new CallExpr("=", tmp, def->init->copy())));
     else
-      stmts->insertAtTail(new ExprStmt(new CallExpr(OP_MOVE, def->sym, tmp)));
+      stmts->insertAtTail(new CallExpr(OP_MOVE, def->sym, tmp));
     def->parentStmt->insertAfter(stmts);
   } else if (def->exprType) {
     AList<Stmt>* stmts = new AList<Stmt>();
     VarSymbol* tmp = new VarSymbol("_defTmp");
     tmp->cname = stringcat(tmp->name, intstring(uid++));
-    stmts->insertAtTail(new ExprStmt(new DefExpr(tmp)));
-    stmts->insertAtTail(new ExprStmt(new CallExpr(OP_MOVE, tmp, new CallExpr(OP_INIT, def->exprType->copy()))));
+    stmts->insertAtTail(new DefExpr(tmp));
+    stmts->insertAtTail(new CallExpr(OP_MOVE, tmp, new CallExpr(OP_INIT, def->exprType->copy())));
     if (def->init)
-      stmts->insertAtTail(new ExprStmt(new CallExpr(OP_MOVE, def->sym, new CallExpr("=", tmp, def->init->copy()))));
+      stmts->insertAtTail(new CallExpr(OP_MOVE, def->sym, new CallExpr("=", tmp, def->init->copy())));
     else
-      stmts->insertAtTail(new ExprStmt(new CallExpr(OP_MOVE, def->sym, tmp)));
+      stmts->insertAtTail(new CallExpr(OP_MOVE, def->sym, tmp));
     def->parentStmt->insertAfter(stmts);
   } else if (def->init) {
     AList<Stmt>* stmts = new AList<Stmt>();
     VarSymbol* tmp1 = new VarSymbol("_defTmp1");
     tmp1->cname = stringcat(tmp1->name, intstring(uid++));
-    stmts->insertAtTail(new ExprStmt(new DefExpr(tmp1)));
+    stmts->insertAtTail(new DefExpr(tmp1));
     VarSymbol* tmp2 = new VarSymbol("_defTmp2");
     tmp2->cname = stringcat(tmp2->name, intstring(uid++));
-    stmts->insertAtTail(new ExprStmt(new DefExpr(tmp2)));
-    stmts->insertAtTail(new ExprStmt(new CallExpr(OP_MOVE, tmp1, def->init->copy())));
-    stmts->insertAtTail(new ExprStmt(new CallExpr(OP_MOVE, tmp2, new CallExpr(OP_INIT, tmp1))));
-    stmts->insertAtTail(new ExprStmt(new CallExpr(OP_MOVE, def->sym, new CallExpr("=", tmp2, tmp1))));
+    stmts->insertAtTail(new DefExpr(tmp2));
+    stmts->insertAtTail(new CallExpr(OP_MOVE, tmp1, def->init->copy()));
+    stmts->insertAtTail(new CallExpr(OP_MOVE, tmp2, new CallExpr(OP_INIT, tmp1)));
+    stmts->insertAtTail(new CallExpr(OP_MOVE, def->sym, new CallExpr("=", tmp2, tmp1)));
     def->parentStmt->insertAfter(stmts);
   } else {
-    def->parentStmt->insertAfter(new ExprStmt(new CallExpr(OP_MOVE, def->sym, new CallExpr(OP_INIT, gUnspecified))));
+    def->parentStmt->insertAfter(new CallExpr(OP_MOVE, def->sym, new CallExpr(OP_INIT, gUnspecified)));
   }
   def->exprType->remove();
   def->init->remove();

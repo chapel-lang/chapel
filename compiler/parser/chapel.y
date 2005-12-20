@@ -353,13 +353,13 @@ continue_stmt:
 
 call_stmt:
   TCALL lvalue TSEMI
-    { $$ = new AList<Stmt>(new ExprStmt($2)); }
+    { $$ = new AList<Stmt>($2); }
 ;
 
 
 expr_stmt:
   top_level_expr TSEMI
-    { $$ = new AList<Stmt>(new ExprStmt($1)); }
+    { $$ = new AList<Stmt>($1); }
 ;
 
 
@@ -441,47 +441,47 @@ yield_stmt:
 assign_stmt:
   lvalue TASSIGN expr TSEMI
     {
-      $$ = new AList<Stmt>(new ExprStmt(new CallExpr("=", $1, $3)));
+      $$ = new AList<Stmt>(new CallExpr("=", $1, $3));
     }
 | lvalue TASSIGNPLUS expr TSEMI
     {
-      $$ = new AList<Stmt>(new ExprStmt(new CallExpr("=", $1,
-             new CallExpr("+", $1->copy(), $3))));
+      $$ = new AList<Stmt>(new CallExpr("=", $1,
+             new CallExpr("+", $1->copy(), $3)));
     }
 | lvalue TASSIGNMINUS expr TSEMI
     {
-      $$ = new AList<Stmt>(new ExprStmt(new CallExpr("=", $1,
-             new CallExpr("-", $1->copy(), $3))));
+      $$ = new AList<Stmt>(new CallExpr("=", $1,
+             new CallExpr("-", $1->copy(), $3)));
     }
 | lvalue TASSIGNMULTIPLY expr TSEMI
     {
-      $$ = new AList<Stmt>(new ExprStmt(new CallExpr("=", $1,
-             new CallExpr("*", $1->copy(), $3))));
+      $$ = new AList<Stmt>(new CallExpr("=", $1,
+             new CallExpr("*", $1->copy(), $3)));
     }
 | lvalue TASSIGNDIVIDE expr TSEMI
     {
-      $$ = new AList<Stmt>(new ExprStmt(new CallExpr("=", $1,
-             new CallExpr("/", $1->copy(), $3))));
+      $$ = new AList<Stmt>(new CallExpr("=", $1,
+             new CallExpr("/", $1->copy(), $3)));
     }
 | lvalue TASSIGNBAND expr TSEMI
     {
-      $$ = new AList<Stmt>(new ExprStmt(new CallExpr("=", $1,
-             new CallExpr("&", $1->copy(), $3))));
+      $$ = new AList<Stmt>(new CallExpr("=", $1,
+             new CallExpr("&", $1->copy(), $3)));
     }
 | lvalue TASSIGNBOR expr TSEMI
     {
-      $$ = new AList<Stmt>(new ExprStmt(new CallExpr("=", $1,
-             new CallExpr("|", $1->copy(), $3))));
+      $$ = new AList<Stmt>(new CallExpr("=", $1,
+             new CallExpr("|", $1->copy(), $3)));
     }
 | lvalue TASSIGNBXOR expr TSEMI
     {
-      $$ = new AList<Stmt>(new ExprStmt(new CallExpr("=", $1,
-             new CallExpr("^", $1->copy(), $3))));
+      $$ = new AList<Stmt>(new CallExpr("=", $1,
+             new CallExpr("^", $1->copy(), $3)));
     }
 | lvalue TASSIGNSEQCAT expr TSEMI
     {
-      $$ = new AList<Stmt>(new ExprStmt(new CallExpr("=", $1,
-             new CallExpr("#", $1->copy(), $3))));
+      $$ = new AList<Stmt>(new CallExpr("=", $1,
+             new CallExpr("#", $1->copy(), $3)));
     }
 ;
 
@@ -524,19 +524,19 @@ decl_stmt:
 
 with_stmt:
   TWITH lvalue TSEMI
-    { $$ = new AList<Stmt>(new ExprStmt(new ImportExpr(IMPORT_WITH, $2))); }
+    { $$ = new AList<Stmt>(new ImportExpr(IMPORT_WITH, $2)); }
 ;
 
 
 use_stmt:
   TUSE lvalue TSEMI
-    { $$ = new AList<Stmt>(new ExprStmt(new ImportExpr(IMPORT_USE, $2))); }
+    { $$ = new AList<Stmt>(new ImportExpr(IMPORT_USE, $2)); }
 ;
 
 
 where_stmt:
   TWHERE whereexpr TSEMI
-    { $$ = new AList<Stmt>(new ExprStmt($2)); }
+    { $$ = new AList<Stmt>($2); }
 ;
 
 
@@ -547,7 +547,7 @@ mod_decl_stmt:
     }
                      TLCBR stmt_ls TRCBR
     {
-      $$ = new AList<Stmt>(new ExprStmt(Symboltable::finishModuleDef($<pmodsym>3, $5)));
+      $$ = new AList<Stmt>(Symboltable::finishModuleDef($<pmodsym>3, $5));
     }
 ;
 
@@ -564,7 +564,7 @@ fn_decl_stmt:
       $2->retRef = $4;
       $2->whereExpr = $6;
       $2->body = $7;
-      $$ = new AList<Stmt>(new ExprStmt(new DefExpr($2, NULL, $5)));
+      $$ = new AList<Stmt>(new DefExpr($2, NULL, $5));
     }
 ;
 
@@ -612,7 +612,7 @@ formal:
       //   this record has members which are ArgSymbols
       AList<Stmt> *stmts = new AList<Stmt>;
       for_alist(DefExpr, x, $2) {
-        stmts->insertAtTail(new ExprStmt(x));
+        stmts->insertAtTail(x);
       }
       Symboltable::defineStructType(NULL, t, stmts);
       $$ = Symboltable::defineParam(INTENT_IN, "<anonymous>", NULL, NULL);
@@ -768,7 +768,7 @@ class_decl_stmt:
       DefExpr* def = Symboltable::defineStructType($3, $1, $6);
       def->sym->addPragmas($2);
       dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(def->sym)->definition)->inherits = $4;
-      $$ = new AList<Stmt>(new ExprStmt(def));
+      $$ = new AList<Stmt>(def);
     }
 ;
 
@@ -798,7 +798,7 @@ enum_decl_stmt:
       TypeSymbol* pst = new TypeSymbol($3, pdt);
       pst->addPragmas($2);
       DefExpr* def_expr = new DefExpr(pst);
-      $$ = new AList<Stmt>(new ExprStmt(def_expr));
+      $$ = new AList<Stmt>(def_expr);
     }
 ;
 
@@ -826,7 +826,7 @@ typedef_decl_stmt:
       TypeSymbol* typeSym = new TypeSymbol($3, newtype);
       typeSym->addPragmas($2);
       DefExpr* def_expr = new DefExpr(typeSym);
-      $$ = new AList<Stmt>(new ExprStmt(def_expr));
+      $$ = new AList<Stmt>(def_expr);
     }
 ;
 
@@ -838,7 +838,7 @@ typevar_decl_stmt:
       TypeSymbol* new_symbol = new TypeSymbol($3, new_type);
       new_symbol->addPragmas($2);
       DefExpr* def_expr = new DefExpr(new_symbol, NULL, $4);
-      $$ = new AList<Stmt>(new ExprStmt(def_expr));
+      $$ = new AList<Stmt>(def_expr);
     }
 ;
 
@@ -884,7 +884,7 @@ var_decl_stmt_inner_ls:
 var_decl_stmt_inner:
   identifier opt_var_type opt_init_expr
     {
-      $$ = new AList<Stmt>(new ExprStmt(new DefExpr(new VarSymbol($1), $3, $2)));
+      $$ = new AList<Stmt>(new DefExpr(new VarSymbol($1), $3, $2));
     }
 ;
 
@@ -973,9 +973,9 @@ tuple_inner_type_ls:
 
 record_inner_type_ls:
   identifier var_type opt_init_expr
-    { $$ = new AList<Stmt>(new ExprStmt(new DefExpr(new VarSymbol($1), $3, $2))); }
+    { $$ = new AList<Stmt>(new DefExpr(new VarSymbol($1), $3, $2)); }
 | record_inner_type_ls TCOMMA identifier var_type
-    { $1->insertAtTail(new ExprStmt(new DefExpr(new VarSymbol($3), NULL, $4))); }
+    { $1->insertAtTail(new DefExpr(new VarSymbol($3), NULL, $4)); }
 ;
 
 

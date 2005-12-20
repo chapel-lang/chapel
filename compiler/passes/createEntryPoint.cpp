@@ -39,7 +39,7 @@ static void createInitFn(ModuleSymbol* mod) {
     DefExpr* varDefExpr = new DefExpr(new VarSymbol(runOnce, dtBoolean),
                                       new_BoolLiteral(true));
     // insert its definition in the common module's init function
-    commonModule->initFn->insertAtHead(new ExprStmt(varDefExpr));
+    commonModule->initFn->insertAtHead(varDefExpr);
  
     // insert a set to false at the beginning of the current module's
     // definition (we'll wrap it in a conditional just below, after
@@ -47,7 +47,7 @@ static void createInitFn(ModuleSymbol* mod) {
     Expr* assignVar = new CallExpr(OP_MOVE,
                                    new SymExpr(new UnresolvedSymbol(runOnce)),
                                    new_BoolLiteral(false));
-    definition->insertAtHead(new ExprStmt(assignVar));
+    definition->insertAtHead(assignVar);
   }
 
   definition->filter(stmtIsGlob, globstmts, initstmts);
@@ -75,7 +75,7 @@ static void createInitFn(ModuleSymbol* mod) {
   mod->initFn = new FnSymbol(fnName);
   mod->initFn->retType = dtVoid;
   mod->initFn->body = initFunBody;
-  definition->insertAtHead(new ExprStmt(new DefExpr(mod->initFn)));
+  definition->insertAtHead(new DefExpr(mod->initFn));
   mod->stmts->insertAtHead(definition);
 }
 

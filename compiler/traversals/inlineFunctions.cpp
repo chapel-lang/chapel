@@ -44,12 +44,12 @@ static void mapFormalsToActuals(CallExpr* call, ASTMap* map) {
       temp->noDefaultInit = true;
       if (no_infer || use_alloc)
         call->parentStmt->insertBefore
-          (new ExprStmt(new CallExpr(OP_MOVE, temp, actual->copy())));
+          (new CallExpr(OP_MOVE, temp, actual->copy()));
       call->parentStmt->insertBefore
-        (new ExprStmt(new DefExpr(temp, actual->copy())));
+        (new DefExpr(temp, actual->copy()));
       if (formal->isCopyOut())
         call->parentStmt->insertAfter
-          (new ExprStmt(new CallExpr(OP_MOVE, actual->copy(), temp)));
+          (new CallExpr(OP_MOVE, actual->copy(), temp));
       map->put(formal, temp);
     }
     actual = call->argList->next();
@@ -93,7 +93,7 @@ Stmt* inline_call(CallExpr* call) {
     char* temp_name = stringcat("_inline_", fn->cname);
     VarSymbol* temp = new VarSymbol(temp_name, fn->retType);
     temp->noDefaultInit = true;
-    call->parentStmt->insertBefore(new ExprStmt(new DefExpr(temp)));
+    call->parentStmt->insertBefore(new DefExpr(temp));
     call->parentStmt->insertBefore(inlined_body);
     TRAVERSE(inlined_body, new ReplaceReturns(call->getFunction(), temp), true);
     call->replace(new SymExpr(temp));

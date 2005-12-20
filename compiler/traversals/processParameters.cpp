@@ -49,10 +49,10 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
         VarSymbol* tmp = new VarSymbol(tmp_name, formal->type);
         tmp->noDefaultInit = true;
         DefExpr* tmp_def = new DefExpr(tmp, init);
-        stmt->insertBefore(new ExprStmt(tmp_def));
+        stmt->insertBefore(tmp_def);
         actual->replace(new SymExpr(tmp));
         if (formal->requiresCopyBack()) {
-          stmt->insertAfter(new ExprStmt(new CallExpr(OP_MOVE, actual, tmp)));
+          stmt->insertAfter(new CallExpr(OP_MOVE, actual, tmp));
         }
       }
       formal_def = fn->formals->next();

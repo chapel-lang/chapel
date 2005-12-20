@@ -312,26 +312,14 @@ void BlockStmt::codegenStmt(FILE* outfile) {
 
 
 void
-BlockStmt::insertAtHead(Stmt* stmt) {
-  body->insertAtHead(stmt);
+BlockStmt::insertAtHead(BaseAST* ast) {
+  body->insertAtHead(ast);
 }
 
 
 void
-BlockStmt::insertAtTail(Stmt* stmt) {
-  body->insertAtTail(stmt);
-}
-
-
-void
-BlockStmt::insertAtHead(AList<Stmt>* stmt) {
-  body->insertAtHead(stmt);
-}
-
-
-void
-BlockStmt::insertAtTail(AList<Stmt>* stmt) {
-  body->insertAtTail(stmt);
+BlockStmt::insertAtTail(BaseAST* ast) {
+  body->insertAtTail(ast);
 }
 
 

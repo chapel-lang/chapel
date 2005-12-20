@@ -28,7 +28,7 @@ void ProcessImportExprs::postProcessExpr(Expr* expr) {
       INT_FATAL(expr, "ImportExpr has no module");
     }
     CallExpr* callInitFn = new CallExpr(module->initFn);
-    importExpr->parentStmt->insertBefore(new ExprStmt(callInitFn));
+    importExpr->parentStmt->insertBefore(callInitFn);
     importExpr->parentScope->uses.add(module);
     importExpr->parentStmt->remove();
   }

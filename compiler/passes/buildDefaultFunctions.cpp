@@ -118,7 +118,7 @@ static void build_chpl_main(void) {
   if (!chpl_main) {
     if (userModules.n == 1) {
       chpl_main = new FnSymbol("main", NULL, new AList<DefExpr>(), dtVoid);
-      userModules.v[0]->stmts->insertAtTail(new ExprStmt(new DefExpr(chpl_main)));
+      userModules.v[0]->stmts->insertAtTail(new DefExpr(chpl_main));
     } else
       USR_FATAL("Code defines multiple modules but no main function.");
   } else if (chpl_main->getModule() != chpl_main->defPoint->parentSymbol)
@@ -171,7 +171,7 @@ static void build_constructor(ClassType* ct) {
   fn->formals = args;
 
   reset_file_info(fn, ct->symbol->lineno, ct->symbol->filename);
-  ct->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(new DefExpr(fn)));
+  ct->symbol->defPoint->parentStmt->insertBefore(new DefExpr(fn));
   ct->methods.add(fn);
   if (ct->symbol->hasPragma("data class")) {
     fn->addPragma("rename _data_construct");
@@ -191,7 +191,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
   DefExpr* def = new DefExpr(fn);
   if (no_infer && field->defPoint->exprType)
     def->exprType = field->defPoint->exprType->copy();
-  ct->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def));
+  ct->symbol->defPoint->parentStmt->insertBefore(def);
   reset_file_info(fn, field->lineno, field->filename);
   ct->methods.add(fn);
   fn->method_type = PRIMARY_METHOD;
@@ -212,8 +212,8 @@ static void build_setter(ClassType* ct, Symbol* field) {
   if (no_infer && field->defPoint->exprType)
     argDef->exprType = field->defPoint->exprType->copy();
   fn->formals->insertAtTail(argDef);
-  fn->body->insertAtTail(new ExprStmt(new CallExpr("=", new SymExpr(field->name), fieldArg)));
-  ct->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(new DefExpr(fn)));
+  fn->body->insertAtTail(new CallExpr("=", new SymExpr(field->name), fieldArg));
+  ct->symbol->defPoint->parentStmt->insertBefore(new DefExpr(fn));
   reset_file_info(fn, field->lineno, field->filename);
 
   ct->methods.add(fn);
@@ -254,7 +254,7 @@ static void build_record_equality_function(ClassType* ct) {
   }
   fn->body = new BlockStmt(new ReturnStmt(cond));
   DefExpr* def = new DefExpr(fn);
-  ct->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def));
+  ct->symbol->defPoint->parentStmt->insertBefore(def);
   reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
 }
 
@@ -279,7 +279,7 @@ static void build_record_inequality_function(ClassType* ct) {
   BlockStmt* retStmt = new BlockStmt(new ReturnStmt(cond));
   fn->body = retStmt;
   DefExpr* def = new DefExpr(fn);
-  ct->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def));
+  ct->symbol->defPoint->parentStmt->insertBefore(def);
   reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
 }
 
@@ -302,14 +302,14 @@ static void build_record_assignment_function(ClassType* ct) {
     Expr* left = new MemberAccess(_arg1, tmp);
     Expr* right = new MemberAccess(arg2, tmp);
     Expr* assign_expr = new CallExpr("=", left, right);
-    body->insertAtTail(new ExprStmt(assign_expr));
+    body->insertAtTail(assign_expr);
   }
 
   body->insertAtTail(new ReturnStmt(_arg1));
   BlockStmt* block_stmt = new BlockStmt(body);
   fn->body = block_stmt;
   DefExpr* def = new DefExpr(fn);
-  ct->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def));
+  ct->symbol->defPoint->parentStmt->insertBefore(def);
   reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
   if (f_equal_method) {
     ct->methods.add(fn);
@@ -350,7 +350,7 @@ void buildDefaultIOFunctions(Type* type) {
       BlockStmt* block_stmt = new BlockStmt(body);
       fn->body = block_stmt;
       DefExpr* def = new DefExpr(fn);
-      type->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def));
+      type->symbol->defPoint->parentStmt->insertBefore(def);
       reset_file_info(def, type->symbol->lineno, type->symbol->filename);
     }
   }
@@ -368,7 +368,7 @@ void buildDefaultIOFunctions(Type* type) {
       BlockStmt* block_stmt = new BlockStmt(body);
       fn->body = block_stmt;
       DefExpr* def = new DefExpr(fn);
-      type->symbol->defPoint->parentStmt->insertBefore(new ExprStmt(def));
+      type->symbol->defPoint->parentStmt->insertBefore(def);
       reset_file_info(def, type->symbol->lineno, type->symbol->filename);
     }
   }

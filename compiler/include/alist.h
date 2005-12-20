@@ -27,10 +27,10 @@ class AList : public BaseAST {
 
   // constructors
   AList();
-  AList(elemType*);
-  AList(elemType*, elemType*);
-  AList(elemType*, elemType*, elemType*);
-  AList(elemType*, elemType*, elemType*, elemType*);
+  AList(BaseAST*);
+  AList(BaseAST*, BaseAST*);
+  AList(BaseAST*, BaseAST*, BaseAST*);
+  AList(BaseAST*, BaseAST*, BaseAST*, BaseAST*);
   void clear(void);
 
   // copy routines
@@ -55,12 +55,10 @@ class AList : public BaseAST {
   elemType* get(int index); // get the index-th element in a list
 
   // add element(s) at beginning of list
-  void insertAtHead(elemType* newElem);
-  void insertAtHead(AList<elemType>* newList);
+  void insertAtHead(BaseAST* new_ast);
 
   // add element(s) at end of list
-  void insertAtTail(elemType* newElem);
-  void insertAtTail(AList<elemType>* newList);
+  void insertAtTail(BaseAST* new_ast);
 
   // helper routines for insertAfter/insertBefore
   bool isList(void);
@@ -138,7 +136,7 @@ AList<elemType>::AList() :
 
 
 template <class elemType>
-AList<elemType>::AList(elemType* elem1) :
+AList<elemType>::AList(BaseAST* elem1) :
   BaseAST(LIST),
   head(new elemType()),
   tail(new elemType()),
@@ -151,7 +149,7 @@ AList<elemType>::AList(elemType* elem1) :
 
 
 template <class elemType>
-AList<elemType>::AList(elemType* elem1, elemType* elem2) :
+AList<elemType>::AList(BaseAST* elem1, BaseAST* elem2) :
   BaseAST(LIST),
   head(new elemType()),
   tail(new elemType()),
@@ -165,7 +163,7 @@ AList<elemType>::AList(elemType* elem1, elemType* elem2) :
 
 
 template <class elemType>
-AList<elemType>::AList(elemType* elem1, elemType* elem2, elemType* elem3) :
+AList<elemType>::AList(BaseAST* elem1, BaseAST* elem2, BaseAST* elem3) :
   BaseAST(LIST),
   head(new elemType()),
   tail(new elemType()),
@@ -180,8 +178,8 @@ AList<elemType>::AList(elemType* elem1, elemType* elem2, elemType* elem3) :
 
 
 template <class elemType>
-AList<elemType>::AList(elemType* elem1, elemType* elem2,
-                       elemType* elem3, elemType* elem4) :
+AList<elemType>::AList(BaseAST* elem1, BaseAST* elem2,
+                       BaseAST* elem3, BaseAST* elem4) :
   BaseAST(LIST),
   head(new elemType()),
   tail(new elemType()),
@@ -333,38 +331,20 @@ elemType* AList<elemType>::get(int index) {
 
 
 template <class elemType>
-void AList<elemType>::insertAtHead(elemType* newElem) {
-  if (newElem->parentSymbol) {
-    INT_FATAL(newElem, "Argument is already in AST in AList::insertAtHead");
+void AList<elemType>::insertAtHead(BaseAST* new_ast) {
+  if (new_ast->parentSymbol) {
+    INT_FATAL(new_ast, "Argument is already in AST in AList::insertAtHead");
   }
-  head->next->insertBefore(newElem);
+  head->next->insertBefore(new_ast);
 }
 
 
 template <class elemType>
-void AList<elemType>::insertAtHead(AList<elemType>* newList) {
-  if (newList->parentSymbol) {
-    INT_FATAL(newList, "Argument is already in AST in AList::insertAtHead");
+void AList<elemType>::insertAtTail(BaseAST* new_ast) {
+  if (new_ast->parentSymbol) {
+    INT_FATAL(new_ast, "Argument is already in AST in AList::insertAtTail");
   }
-  head->next->insertBefore(newList);
-}
-
-
-template <class elemType>
-void AList<elemType>::insertAtTail(elemType* newElem) {
-  if (newElem->parentSymbol) {
-    INT_FATAL(newElem, "Argument is already in AST in AList::insertAtTail");
-  }
-  tail->prev->insertAfter(newElem);
-}
-
-
-template <class elemType>
-void AList<elemType>::insertAtTail(AList<elemType>* newList) {
-  if (newList->parentSymbol) {
-    INT_FATAL(newList, "Argument is already in AST in AList::insertAtTail");
-  }
-  tail->prev->insertAfter(newList);
+  tail->prev->insertAfter(new_ast);
 }
 
 

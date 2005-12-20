@@ -89,10 +89,8 @@ class BlockStmt : public Stmt {
   void print(FILE* outfile);
   void codegenStmt(FILE* outfile);
 
-  void insertAtHead(Stmt* stmt);
-  void insertAtTail(Stmt* stmt);
-  void insertAtHead(AList<Stmt>* stmt);
-  void insertAtTail(AList<Stmt>* stmt);
+  void insertAtHead(BaseAST* ast);
+  void insertAtTail(BaseAST* ast);
 };
 
 

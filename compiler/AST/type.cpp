@@ -12,16 +12,6 @@
 #include "../passes/filesToAST.h"
 
 
-// Utilities for building write functions
-static ExprStmt* genWriteStmt(ArgSymbol* fileArg, Expr* arg) {
-  return new ExprStmt(new CallExpr("fwrite", fileArg, arg));
-}
-
-static void addWriteStmt(AList<Stmt>* body, ArgSymbol* fileArg, Expr* arg) {
-  body->insertAtTail(genWriteStmt(fileArg, arg));
-}
-
-
 Type::Type(astType_t astType, Symbol* init_defaultVal) :
   BaseAST(astType),
   symbol(NULL),
@@ -437,9 +427,9 @@ AList<Stmt>* EnumType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymb
   AList<WhenStmt>* selectWhenStmts = new AList<WhenStmt>();
   for_alist(DefExpr, constant, this->constants) {
     Expr* constantName = new_StringLiteral(constant->sym->name);
-    ExprStmt* IOCall = genWriteStmt(fileArg, constantName);
     AList<Expr>* whenExpr = new AList<Expr>(new SymExpr(constant->sym));
-    WhenStmt* thisWhenStmt = new WhenStmt(whenExpr, IOCall);
+    WhenStmt* thisWhenStmt =
+      new WhenStmt(whenExpr, new ExprStmt(new CallExpr("fwrite", fileArg, constantName)));
     selectWhenStmts->insertAtTail(thisWhenStmt);
   }
   return new AList<Stmt>(new SelectStmt(new SymExpr(arg), selectWhenStmts));
@@ -455,10 +445,8 @@ AList<Stmt>* EnumType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbo
   AList<Stmt>* readBodyStmts = new AList<Stmt>();
   Symbol* chplStdin = Symboltable::lookupInFileModuleScope("stdin");
   Symbol* valString = new VarSymbol("valString", dtString, VAR_NORMAL);
-  ExprStmt* valStringDef = new ExprStmt(dynamic_cast<Expr*>(new DefExpr(valString)));
-  readBodyStmts->insertAtTail(valStringDef);
-  ExprStmt* freadCall = new ExprStmt(new CallExpr("fread", chplStdin, valString));
-  readBodyStmts->insertAtTail(freadCall);
+  readBodyStmts->insertAtTail(new DefExpr(valString));
+  readBodyStmts->insertAtTail(new CallExpr("fread", chplStdin, valString));
   Stmt* haltStmt = new ExprStmt(new CallExpr("halt", 
                                   new_StringLiteral("***Error: Not of "), 
                                   new_StringLiteral(arg->type->symbol->name), 
@@ -841,7 +829,7 @@ AList<Stmt>* ClassType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSym
   AList<Stmt>* body = new AList<Stmt>();
   if (classTag == CLASS_CLASS) {
     AList<Stmt>* fwriteNil =
-      new AList<Stmt>(genWriteStmt(fileArg, new_StringLiteral("nil")));
+      new AList<Stmt>(new CallExpr("fwrite", fileArg, new_StringLiteral("nil")));
     fwriteNil->insertAtTail(new ReturnStmt());
     BlockStmt* blockStmt = new BlockStmt(fwriteNil);
     Symbol* nil = Symboltable::lookupInternal("nil", SCOPE_INTRINSIC);
@@ -850,26 +838,26 @@ AList<Stmt>* ClassType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSym
   }
 
   if (classTag == CLASS_CLASS || classTag == CLASS_VALUECLASS) {
-    addWriteStmt(body, fileArg, new_StringLiteral("{"));
+    body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringLiteral("{")));
   } else {
-    addWriteStmt(body, fileArg, new_StringLiteral("("));
+    body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringLiteral("(")));
   }
 
   bool first = true;
   forv_Vec(Symbol, tmp, fields) {
     if (!first) {
-      addWriteStmt(body, fileArg, new_StringLiteral(", "));
+      body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringLiteral(", ")));
     }
-    addWriteStmt(body, fileArg, new_StringLiteral(tmp->name));
-    addWriteStmt(body, fileArg, new_StringLiteral(" = "));
-    addWriteStmt(body, fileArg, new MemberAccess(arg, tmp));
+    body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringLiteral(tmp->name)));
+    body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringLiteral(" = ")));
+    body->insertAtTail(new CallExpr("fwrite", fileArg, new MemberAccess(arg, tmp)));
     first = false;
   }
 
   if (classTag == CLASS_CLASS || classTag == CLASS_VALUECLASS) {
-    addWriteStmt(body, fileArg, new_StringLiteral("}"));
+    body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringLiteral("}")));
   } else {
-    addWriteStmt(body, fileArg, new_StringLiteral(")"));
+    body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringLiteral(")")));
   }
 
   return body;
@@ -1030,7 +1018,7 @@ Type *find_or_make_sum_type(Vec<Type *> *types) {
   lub_cache.put(new_sum_type);
   char* name = stringcat("_sum_type", intstring(uid++));
   TypeSymbol* sym = new TypeSymbol(name, new_sum_type);
-  commonModule->stmts->insertAtTail(new ExprStmt(new DefExpr(sym)));
+  commonModule->stmts->insertAtTail(new DefExpr(sym));
   return new_sum_type;
 }
 
@@ -1078,7 +1066,7 @@ new_LiteralType(VarSymbol *literal_var) {
   char* name = stringcat("_literal_type", intstring(uid++));
   TypeSymbol* sym = new TypeSymbol(name, literal_var->literalType);
   literal_var->literalType->addSymbol(sym);
-  commonModule->stmts->insertAtTail(new ExprStmt(new DefExpr(sym)));
+  commonModule->stmts->insertAtTail(new DefExpr(sym));
   literal_var->literalType->defaultValue = literal_var;
   return literal_var->literalType;
 }

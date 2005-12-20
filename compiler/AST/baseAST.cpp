@@ -189,6 +189,9 @@ void BaseAST::insertBefore(BaseAST* new_ast) {
   if (new_ast->prev || new_ast->next) {
     INT_FATAL(new_ast, "Argument is in a list in BaseAST::insertBefore");
   }
+  if (dynamic_cast<Stmt*>(this) && dynamic_cast<Expr*>(new_ast)) {
+    new_ast = new ExprStmt(dynamic_cast<Expr*>(new_ast));
+  }
   if (new_ast->isList()) {
     new_ast->insertBeforeListHelper(this);
   } else {
@@ -213,6 +216,9 @@ void BaseAST::insertAfter(BaseAST* new_ast) {
   }
   if (new_ast->prev || new_ast->next) {
     INT_FATAL(new_ast, "Argument is in a list in BaseAST::insertAfter");
+  }
+  if (dynamic_cast<Stmt*>(this) && dynamic_cast<Expr*>(new_ast)) {
+    new_ast = new ExprStmt(dynamic_cast<Expr*>(new_ast));
   }
   if (new_ast->isList()) {
     new_ast->insertAfterListHelper(this);

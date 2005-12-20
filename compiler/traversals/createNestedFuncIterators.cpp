@@ -63,8 +63,8 @@ void CreateNestedFuncIterators::postProcessStmt(Stmt* stmt) {
     body->formals = new AList<DefExpr>();
     body->body = fls->innerStmt->copy();
     body->retType = dtVoid;
-    fls->insertBefore(new ExprStmt(new DefExpr(body)));
-    fls->insertBefore(new ExprStmt(new DefExpr(iterator)));
+    fls->insertBefore(new DefExpr(body));
+    fls->insertBefore(new DefExpr(iterator));
     addVarToFormals(body, fls->indices->only()->sym);
     TRAVERSE(iterator, new UpdateIteratorYield(body), true);
     fls->replace(new ExprStmt(new CallExpr(iterator, iteratorCall->argList)));
