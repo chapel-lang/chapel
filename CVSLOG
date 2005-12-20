@@ -52340,3 +52340,23 @@ Modified files:
 	                             processImportExprs.cpp 
 	                             processParameters.cpp 
 
+---------------------------------------------------------------------------
+
+12/20/05 14:18:28 -- deitz
+
+Log message:
+	More work on --use-alloc which is now working on many tests.  I'm
+	looking into those that are not working.
+	
+	Normalize is now called on the wrappers.
+	
+	This checkin fixes:
+	  trivial/deitz/test_coerce_integer_to_string2
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/compiler/traversals/: inlineFunctions.cpp 
+	                             inlineFunctions.h 
+
