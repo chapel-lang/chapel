@@ -173,6 +173,7 @@ IFrame::icall(FnSymbol *fn, int nargs) {
       f->single_stepping = NEXT_STEP;
       single_step = NO_STEP;
     }
+    thread->frame = f;
   }
   valStack.n -= nargs;
 }
@@ -539,15 +540,17 @@ IFrame::reset() {
 }
 
 #define PUSH_EXPR(_e) do { \
+  Expr *__e = _e;  \
   if (expr && stage) { exprStack.add(expr); } \
   stageStack.add(stage + 1); \
-  valStack.add(islot(_e)); \
-  stageStack.add(1); exprStack.add(_e); stage = 0; expr = _e; \
+  valStack.add(islot(__e)); \
+  stageStack.add(1); exprStack.add(__e); stage = 0; expr = __e; \
 } while (0)
 #define EVAL_EXPR(_e) do { \
+  Expr *__e = _e;  \
   if (expr && stage) { exprStack.add(expr); }  \
   stageStack.add(stage + 1); \
-  stageStack.add(1); exprStack.add(_e); stage = 0; expr = _e; \
+  stageStack.add(1); exprStack.add(__e); stage = 0; expr = __e; \
 } while (0)
 #define EVAL_STMT(_s) do { stageStack.add(stage + 1); stmtStack.add(stmt); stmt = _s; } while (0)
 #define PUSH_SELECTOR(_s) do { ISlot *_slot = new ISlot; _slot->set_selector(_s); valStack.add(_slot); } while (0)
@@ -883,8 +886,8 @@ IFrame::run(int timeslice) {
             break;
           }
           default:
-            if (stage <= s->argList->length()) {
-              PUSH_EXPR(s->argList->get(stage));
+            if (stage - 1 <= s->argList->length()) {
+              PUSH_EXPR(s->argList->get(stage - 1));
             } else {
               stage = 0;
               CALL(s->argList->length() + 1);
