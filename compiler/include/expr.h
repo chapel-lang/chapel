@@ -183,7 +183,7 @@ class CallExpr : public Expr {
   bool isAssign(void);
   bool isOp(OpTag);
 
-  bool isResolved(void);
+  FnSymbol* isResolved(void);
   bool isNamed(char*);
 
   Expr* get(int index);

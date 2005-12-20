@@ -695,9 +695,9 @@ bool CallExpr::isOp(OpTag op) {
 }
 
 
-bool CallExpr::isResolved(void) {
+FnSymbol* CallExpr::isResolved(void) {
   SymExpr* base = dynamic_cast<SymExpr*>(baseExpr);
-  return base && dynamic_cast<FnSymbol*>(base->var);
+  return base ? dynamic_cast<FnSymbol*>(base->var) : NULL;
 }
 
 

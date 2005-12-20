@@ -57,31 +57,6 @@ static void mapFormalsToActuals(CallExpr* call, ASTMap* map) {
 }
 
 
-void InlineFunctions::postProcessExpr(Expr* expr) {
-  if (no_inline)
-    return;
-
-  CallExpr* call = dynamic_cast<CallExpr*>(expr);
-
-  if (!call || call->isPrimitive() || call->opTag != OP_NONE)
-    return;
-
-  if (no_infer && dynamic_cast<DefExpr*>(call->parentExpr))
-    return;
-
-  FnSymbol* fn = call->findFnSymbol();
-
-  if (!fn || !fn->hasPragma("inline") || fn->hasPragma("no codegen"))
-    return;
-
-  Stmt* stmt = inline_call(call);
-  TRAVERSE(stmt, this, true);
-  if (report_inlining)
-    printf("chapel compiler: reporting inlining"
-           ", %s function was inlined\n", fn->cname);
-}
-
-
 Stmt* inline_call(CallExpr* call) {
   FnSymbol* fn = call->findFnSymbol();
 
@@ -105,13 +80,34 @@ Stmt* inline_call(CallExpr* call) {
   return inlined_body;
 }
 
-
-void InlineFunctions::run(Vec<ModuleSymbol*>* modules) {
-  Traversal::run(modules);
+void inline_calls(BaseAST* base, Vec<FnSymbol*>* inline_stack = NULL) {
+  Vec<BaseAST*> asts;
+  collect_asts_postorder(&asts, base);
+  forv_Vec(BaseAST, ast, asts) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+      if (call->isPrimitive() || call->opTag != OP_NONE || !call->parentStmt)
+        continue;
+      FnSymbol* fn = call->findFnSymbol();
+      if (!fn || !fn->hasPragma("inline") || fn->hasPragma("no codegen"))
+        continue;
+      if (!inline_stack)
+        inline_stack = new Vec<FnSymbol*>();
+      if (inline_stack->in(fn))
+        INT_FATAL(fn, "Recursive inlining detected");
+      inline_stack->add(fn);
+      Stmt* stmt = inline_call(call);
+      inline_calls(stmt, inline_stack);
+      inline_stack->pop();
+      if (report_inlining)
+        printf("chapel compiler: reporting inlining"
+               ", %s function was inlined\n", fn->cname);
+    }
+  }
 }
 
-
 void inlineFunctions(void) {
-  Pass* pass = new InlineFunctions();
-  pass->run(Symboltable::getModules(pass->whichModules));
+  if (no_inline)
+    return;
+  forv_Vec(ModuleSymbol, mod, allModules)
+    inline_calls(mod);
 }

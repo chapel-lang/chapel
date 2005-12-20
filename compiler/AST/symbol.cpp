@@ -815,8 +815,6 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
     } else {
       char* temp_name = stringcat("_default_temp_", formal->name);
       VarSymbol* temp = new VarSymbol(temp_name, formal->type);
-      if (no_infer || use_alloc)
-        temp->noDefaultInit = true;
       map.put(formal, temp);
       Expr* temp_init = NULL;
       Expr* temp_type = NULL;
