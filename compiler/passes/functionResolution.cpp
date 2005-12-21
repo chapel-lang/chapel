@@ -432,6 +432,23 @@ void resolve_call(CallExpr* call) {
   base->var = best;
   resolve_function(best);
 
+  if (ForLoopStmt* loop = dynamic_cast<ForLoopStmt*>(call->parentStmt)) {
+    if (loop->iterators->only() == call) {
+      Symbol* index = loop->indices->only()->sym;
+      if (index->type == dtUnknown) {
+        Type* type = call->typeInfo();
+        if (ClassType* seq = dynamic_cast<ClassType*>(type)) {
+          if (ClassType* seqNode = dynamic_cast<ClassType*>(seq->fields.v[1]->type)) {
+            index->type = seqNode->fields.v[0]->type;
+          }
+        }
+      }
+      if (index->type == dtUnknown) {
+        INT_FATAL(index, "Could not determine type of index");
+      }
+    }
+  }
+
   if (best->hasPragma("builtin"))
     call->makeOp();
 }
@@ -503,11 +520,6 @@ void functionResolution(void) {
 void resolve_return_type(FnSymbol* fn) {
   if (fn->retType != dtUnknown)
     return;
-
-  if (fn->defPoint->exprType) {
-    fn->retType = fn->defPoint->exprType->typeInfo();
-    return;
-  }
 
   Type* return_type = dtVoid;
   Vec<BaseAST*> asts;

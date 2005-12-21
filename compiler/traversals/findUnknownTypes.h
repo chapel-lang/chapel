@@ -8,13 +8,7 @@ class RemoveTypeVariableActuals : public Traversal {
 };
 
 class RemoveTypeVariableFormals : public Traversal {
-  void preProcessSymbol(Symbol* sym);
-};
-
-class FindUnknownTypes : public Traversal {
- public:
-  FindUnknownTypes(void);
-  void preProcessSymbol(Symbol* sym);
+  void postProcessExpr(Expr* expr);
 };
 
 void removeTypeVariableActuals(void);

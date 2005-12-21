@@ -78,7 +78,7 @@ void normalize(BaseAST* base) {
   }
 
   asts.clear();
-  collect_asts(&asts, base);
+  collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
@@ -169,6 +169,9 @@ void normalize(BaseAST* base) {
           dynamic_cast<TypeSymbol*>(a->parentSymbol) &&
           a->exprType)
         a->exprType->remove();
+      if (dynamic_cast<FnSymbol*>(a->sym) &&
+          a->exprType)
+        a->exprType->remove();
     }
   }
 }
@@ -217,10 +220,6 @@ static void reconstruct_iterator(FnSymbol* fn) {
   fn->retType = dtUnknown;
   if (fn->defPoint->exprType)
     fn->defPoint->exprType->replace(def->exprType->copy());
-  else if (no_infer) {
-    DefExpr* tmp = fn->defPoint;
-    tmp->replace(new DefExpr(fn, NULL, def->exprType->copy()));
-  }
 }
 
 
@@ -422,8 +421,8 @@ static void normalize_for_loop(ForLoopStmt* stmt) {
   if (no_infer) {
     DefExpr* index = stmt->indices->only();
     Expr* type = stmt->iterators->only()->copy();
-    type = new CallExpr(new MemberAccess(type, "_last"));
-    type = new CallExpr(new MemberAccess(type, "_element"));
+    type = new MemberAccess(type, "_last");
+    type = new MemberAccess(type, "_element");
     if (!index->exprType)
       index->replace(new DefExpr(index->sym, NULL, type));
   }

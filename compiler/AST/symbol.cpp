@@ -820,6 +820,13 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
       Expr* temp_type = NULL;
       if (formal->intent != INTENT_OUT)
         temp_init = formal->defaultExpr->copy();
+      if (no_infer) {
+        if (SymExpr* symExpr = dynamic_cast<SymExpr*>(temp_init)) {
+          if (symExpr->var == gNil) {
+            temp_init = NULL;
+          }
+        }
+      }
       if (no_infer && formalDef->exprType)
         temp_type = formalDef->exprType->copy();
       wrapper_body->insertAtTail(new DefExpr(temp, temp_init, temp_type));
@@ -923,9 +930,9 @@ buildMultidimensionalIterator(ClassType* type, int rank) {
 
   type->symbol->defPoint->parentStmt->insertBefore
     (new DefExpr(_forall, NULL, ret_type));
-  cleanup(_forall->defPoint);
-  scopeResolve(_forall->defPoint);
-  normalize(_forall->defPoint);
+  cleanup(_forall->defPoint->parentStmt);
+  scopeResolve(_forall->defPoint->parentStmt);
+  normalize(_forall->defPoint->parentStmt);
   return _forall;
 }
 

@@ -42,11 +42,11 @@ static void mapFormalsToActuals(CallExpr* call, ASTMap* map) {
       char* temp_name =  stringcat("_inline_temp_", formal->cname);
       VarSymbol* temp = new VarSymbol(temp_name, actual->typeInfo());
       temp->noDefaultInit = true;
+      call->parentStmt->insertBefore
+        (new DefExpr(temp, actual->copy()));
       if (no_infer || use_alloc)
         call->parentStmt->insertBefore
           (new CallExpr(OP_MOVE, temp, actual->copy()));
-      call->parentStmt->insertBefore
-        (new DefExpr(temp, actual->copy()));
       if (formal->isCopyOut())
         call->parentStmt->insertAfter
           (new CallExpr(OP_MOVE, actual->copy(), temp));
