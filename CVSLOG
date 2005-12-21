@@ -52397,3 +52397,21 @@ Modified files:
 	                             findUnknownTypes.h 
 	                             inlineFunctions.cpp 
 
+---------------------------------------------------------------------------
+
+12/21/05 10:49:41 -- deitz
+
+Log message:
+	Added a test directory with a few tests of the --no-infer flag.  Made
+	it so that the --no-infer flag implies the --use-alloc flag.
+
+Modified files:
+	chapel/compiler/main/: runpasses.cpp 
+Added files:
+	chapel/test/no_infer/: .cvsignore COMPOPTS test_domains_2D.chpl 
+	                       test_domains_2D.future 
+	                       test_domains_2D.good test_seq1.chpl 
+	                       test_seq1.good test_tuple_simple4.chpl 
+	                       test_tuple_simple4.good 
+	                       test_var_decl4.chpl test_var_decl4.good 
+
