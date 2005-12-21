@@ -52360,3 +52360,40 @@ Modified files:
 	chapel/compiler/traversals/: inlineFunctions.cpp 
 	                             inlineFunctions.h 
 
+---------------------------------------------------------------------------
+
+12/21/05 09:48:09 -- deitz
+
+Log message:
+	More work on --no-infer function resolution.
+	
+	Fixed a bug in normalization of for loops in which a CallExpr was put
+	around a MemberAccess where it shouldn't have been.  This had the
+	result of calling a getter with parentheses.
+	
+	For an odd reason, the keep types macro is lost when --no-infer is not
+	used, but not lost when it is.  I'll look into it.  For now, I put a
+	if not no_infer around the hack in code generation of the data class
+	constructor.
+	
+	I made it so that if the default expression for an argument is nil, we
+	don't assign nil when --no-infer is used, instead assigning nothing
+	and using the default for the type.
+	
+	Added support for for loops to --no-infer function resolution.
+	
+	Removed printing of a config var initialization when the --help flag
+	is used temporarily since it will be a little more work to recover the
+	init expression.
+	
+	Simplified code for removing type variable actuals, formals, and the
+	method and setter tokens.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	chapel/compiler/traversals/: createConfigVarTable.cpp 
+	                             findUnknownTypes.cpp 
+	                             findUnknownTypes.h 
+	                             inlineFunctions.cpp 
+
