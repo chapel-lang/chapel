@@ -52415,3 +52415,44 @@ Added files:
 	                       test_tuple_simple4.good 
 	                       test_var_decl4.chpl test_var_decl4.good 
 
+---------------------------------------------------------------------------
+
+12/21/05 15:20:37 -- deitz
+
+Log message:
+	Replaced the special CommonModule which was nested above other modules
+	with a sibling module called _chpl_compiler.  Moved the tuple
+	definitions from the CommonModule into the tuple module _chpl_htuple.
+	Moved sum types and literal types from the CommonModule to
+	_chpl_compiler.  Move the init_runonce variables out of the
+	CommonModule and put them in _chpl_compiler.
+	
+	Stopped code generation of unused per-module header and internal
+	header files as they are not used.
+	
+	Made all standard modules use _chpl_standard (except _chpl_standard
+	and _chpl_compiler) and removed all the use statements that we have
+	put in these modules.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/include/: files.h runtime.h symbol.h symtab.h 
+	chapel/compiler/main/: runtime.cpp 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         createEntryPoint.cpp filesToAST.cpp 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: createConfigVarTable.cpp 
+	                             createConfigVarTable.h 
+	                             processImportExprs.cpp 
+	chapel/compiler/util/: files.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_complex.chpl 
+	                          _chpl_data.chpl _chpl_htuple.chpl 
+	                          _chpl_seq.chpl _chpl_standard.chpl 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+Added files:
+	chapel/modules/standard/: _chpl_compiler.chpl 
+
