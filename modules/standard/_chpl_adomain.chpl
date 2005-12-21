@@ -1,7 +1,3 @@
-use _chpl_seq;
-use _chpl_htuple;
-use _chpl_file;
-
 record _adomain_info {
   var _low : integer;
   var _high : integer;

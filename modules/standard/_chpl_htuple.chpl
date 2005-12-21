@@ -1,6 +1,3 @@
-use _chpl_seq;
-use _chpl_file;
-
 class _htuple : value {
   type elt_type;
   param size : integer;

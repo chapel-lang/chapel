@@ -7,8 +7,6 @@ extern char executableFilename[FILENAME_MAX];
 extern char saveCDir[FILENAME_MAX];
 
 extern FILE* codefile;
-extern FILE* intheadfile;
-extern FILE* extheadfile;
 
 struct fileinfo {
   FILE* fptr;
@@ -20,12 +18,9 @@ char* sysdirToChplRoot(char* systemDir);
 
 void deleteTmpDir(void);
 
-void genCFilenames(char* modulename, char** outfilename, 
-                   char** extheadfilename, char** intheadfilename);
-void openCFiles(char* modulename, fileinfo* outfile,
-                fileinfo* extheadfile, fileinfo* intheadfile);
-void closeCFiles(fileinfo* outfile, 
-                 fileinfo* extheadfile, fileinfo* intheadfile);
+void genCFilenames(char* modulename, char** outfilename);
+void openCFiles(char* modulename, fileinfo* outfile);
+void closeCFiles(fileinfo* outfile);
 
 FILE* openCFile(char* name);
 void closeCFile(FILE* f);

@@ -10,6 +10,8 @@ extern ModuleSymbol* prelude;
 extern ModuleSymbol* fileModule;
 extern ModuleSymbol* tupleModule;
 extern ModuleSymbol* seqModule;
+extern ModuleSymbol* standardModule;
+extern ModuleSymbol* compilerModule;
 
 extern TypeSymbol* chpl_htuple;
 extern TypeSymbol* chpl_seq;

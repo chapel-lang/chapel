@@ -1,8 +1,5 @@
 // Fake data, a stopgap measure to implementing domains and arrays
 
-use _chpl_seq;
-use _chpl_file;
-
 class _fdata : value {
   type elt_type;
 

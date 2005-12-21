@@ -124,8 +124,8 @@ static void build_chpl_main(void) {
   } else if (chpl_main->getModule() != chpl_main->defPoint->parentSymbol)
     USR_FATAL(chpl_main, "Main function must be defined at module scope");
   chpl_main->insertAtHead(buildCallExprStmt(chpl_main->getModule()->initFn));
-  chpl_main->insertAtHead(buildCallExprStmt(commonModule->initFn));
   chpl_main->insertAtHead(buildCallExprStmt(prelude->initFn));
+  chpl_main->insertAtHead(buildCallExprStmt(compilerModule->initFn));
 }
 
 

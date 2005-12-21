@@ -15,8 +15,6 @@ char executableFilename[FILENAME_MAX] = "a.out";
 char saveCDir[FILENAME_MAX] = "";
 
 FILE* codefile;
-FILE* extheadfile;
-FILE* intheadfile;
 
 static char* tmpdirname = NULL;
 static char* intDirName = NULL; // directory for intermediates; tmpdir or saveCDir
@@ -157,15 +155,9 @@ static char* stripdirectories(char* filename) {
 }
 
 
-void genCFilenames(char* modulename, char** outfilename, 
-                          char** extheadfilename, char** intheadfilename) {
+void genCFilenames(char* modulename, char** outfilename) {
   static char* outfilesuffix = ".c";
-  static char* extheadsuffix = ".h";
-  static char* intheadsuffix = "-internal.h";
-
   *outfilename = stringcat(modulename, outfilesuffix);
-  *extheadfilename = stringcat(modulename, extheadsuffix);
-  *intheadfilename = stringcat(modulename, intheadsuffix);
 }
 
 
@@ -205,30 +197,6 @@ void closefile(fileinfo* thefile) {
 }
 
 
-static void genIfndef(FILE* outfile, char* filename) {
-  char* macroname = stringcpy(filename);
-  char* dot;
-  do {
-    dot = strchr(macroname, '.');
-    if (dot == NULL) {
-      dot = strchr(macroname, '-');
-    }
-    if (dot != NULL) {
-      *dot = '_';
-    }
-  } while (dot != NULL);
-  fprintf(outfile, "#ifndef _%s_\n", macroname);
-  fprintf(outfile, "#define _%s_\n", macroname);
-  fprintf(outfile, "\n");
-}
-
-
-static void genEndif(FILE* outfile) {
-  fprintf(outfile, "\n");
-  fprintf(outfile, "#endif\n");
-}
-
-
 FILE* openCFile(char* name) {
   name = genIntFilename(name);
   return fopen(name, "w");
@@ -240,42 +208,21 @@ void closeCFile(FILE* f) {
 }
 
 
-void openCFiles(char* modulename, fileinfo* outfile,
-                fileinfo* extheader, fileinfo* intheader) {
-  genCFilenames(modulename, &(outfile->filename),
-                &(extheader->filename), &(intheader->filename));
-
+void openCFiles(char* modulename, fileinfo* outfile) {
+  genCFilenames(modulename, &(outfile->filename));
   outfile->pathname = genIntFilename(outfile->filename);
-  extheader->pathname = genIntFilename(extheader->filename);
-  intheader->pathname = genIntFilename(intheader->filename);
 
   fprintf(makefile, "\t%s \\\n", outfile->pathname);
   
   outfile->fptr = openfile(outfile->pathname);
-  extheader->fptr = openfile(extheader->pathname);
-  intheader->fptr = openfile(intheader->pathname);
 
   codefile = outfile->fptr;
-  extheadfile = extheader->fptr;
-  intheadfile = intheader->fptr;
-
-  genIfndef(extheader->fptr, extheader->filename);
-  genIfndef(intheader->fptr, intheader->filename);
 }
 
 
-void closeCFiles(fileinfo* outfile, 
-                 fileinfo* extheadfile, fileinfo* intheadfile) {
-  genEndif(extheadfile->fptr);
-  genEndif(intheadfile->fptr);
-
+void closeCFiles(fileinfo* outfile) {
   closefile(outfile->fptr);
-  closefile(extheadfile->fptr);
-  closefile(intheadfile->fptr);
-
   beautify(outfile);
-  beautify(extheadfile);
-  beautify(intheadfile);
 }
 
 

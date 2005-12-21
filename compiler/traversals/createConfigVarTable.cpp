@@ -10,9 +10,7 @@ bool CreateConfigVarTable::running = false;
 
 CreateConfigVarTable::CreateConfigVarTable(void) {
   char* rtconfigFile = "rtconfig";
-  openCFiles(rtconfigFile, &outfileinfo, &extheadfileinfo, &intheadfileinfo);
-  fprintf(codefile, "#include \"%s\"\n", extheadfileinfo.filename);
-  fprintf(codefile, "#include \"%s\"\n", intheadfileinfo.filename);
+  openCFiles(rtconfigFile, &outfileinfo);
   fprintf(codefile, "#include \"stdchpl.h\"\n");
   fprintf(codefile, "\n");
   fprintf(codefile, "void CreateConfigVarTable(void) {\n");
@@ -53,7 +51,7 @@ void CreateConfigVarTable::closeCFile() {
   fprintf(codefile, "}\n");
   
   fprintf(codefile, "}\n");
-  closeCFiles(&outfileinfo, &extheadfileinfo, &intheadfileinfo);
+  closeCFiles(&outfileinfo);
 }
 
 

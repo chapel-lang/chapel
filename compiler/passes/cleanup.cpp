@@ -27,7 +27,7 @@ static void finish_constructor(FnSymbol* fn);
 void cleanup(void) {
   forv_Vec(ModuleSymbol, mod, allModules)
     cleanup(mod);
-  cleanup(commonModule); // cleanup again because tuples are put here
+  cleanup(tupleModule); // cleanup again because tuples are put here
 }
 
 
@@ -144,7 +144,7 @@ static void construct_tuple_type(int rank) {
 
   char *name = stringcat("_tuple", intstring(rank));
 
-  if (Symboltable::lookupInScope(name, commonModule->modScope))
+  if (Symboltable::lookupInScope(name, tupleModule->modScope))
     return;
 
   AList<Stmt>* decls = new AList<Stmt>();
@@ -194,7 +194,7 @@ static void construct_tuple_type(int rank) {
   TypeSymbol* tupleSym = new TypeSymbol(name, tupleType);
   tupleType->addSymbol(tupleSym);
   tupleType->addDeclarations(decls);
-  commonModule->stmts->insertAtHead(new DefExpr(tupleSym));
+  tupleModule->stmts->insertAtHead(new DefExpr(tupleSym));
   cleanup(tupleSym);
 
   if (!fnostdincs) {
@@ -217,7 +217,7 @@ static void construct_tuple_type(int rank) {
     actuals->insertAtTail(new_StringLiteral(stringcpy(")")));
     Expr* fwriteCall = new CallExpr("fwrite", new SymExpr(fileArg), actuals);
     fwriteFn->body = new BlockStmt(new ExprStmt(fwriteCall));
-    commonModule->stmts->insertAtTail(new DefExpr(fwriteFn));
+    tupleModule->stmts->insertAtTail(new DefExpr(fwriteFn));
     cleanup(fwriteFn);
   }
 
@@ -237,7 +237,7 @@ static void construct_tuple_type(int rank) {
           new CallExpr(tupleArg, new_IntLiteral(i))));
     }
     assignFn->insertAtTail(new ReturnStmt(htupleArg));
-    commonModule->stmts->insertAtTail(new DefExpr(assignFn));
+    tupleModule->stmts->insertAtTail(new DefExpr(assignFn));
     cleanup(assignFn);
   }
 
@@ -257,7 +257,7 @@ static void construct_tuple_type(int rank) {
 //             new CallExpr(secondArg, new_IntLiteral(i)))));
 //     }
 //     assignFn->insertAtTail(new ReturnStmt(tupleArg));
-//     commonModule->stmts->insertAtTail(new ExprStmt(new DefExpr(assignFn)));
+//     tupleModule->stmts->insertAtTail(new ExprStmt(new DefExpr(assignFn)));
 //   }
 
   buildDefaultClassTypeMethods(tupleType);

@@ -4,6 +4,8 @@ ModuleSymbol* prelude = NULL;
 ModuleSymbol* fileModule = NULL;
 ModuleSymbol* tupleModule = NULL;
 ModuleSymbol* seqModule = NULL;
+ModuleSymbol* standardModule = NULL;
+ModuleSymbol* compilerModule = NULL;
 
 TypeSymbol* chpl_seq;
 TypeSymbol* chpl_htuple = NULL;

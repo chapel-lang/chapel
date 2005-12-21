@@ -21,6 +21,8 @@ void parse(void) {
   Symboltable::doneParsingPreludes();
 
   yydebug = debugParserLevel;
+  compilerModule = ParseFile(stringcat(chplroot, "/modules/standard/_chpl_compiler.chpl"),
+                             MOD_STANDARD);
   
   if (!fnostdincs && !fnostdincs_but_file) {
     ParseFile(stringcat(chplroot, "/modules/standard/_chpl_complex.chpl"),
@@ -41,8 +43,8 @@ void parse(void) {
               MOD_STANDARD);
     seqModule = ParseFile(stringcat(chplroot, "/modules/standard/_chpl_seq.chpl"),
                           MOD_STANDARD);
-    ParseFile(stringcat(chplroot, "/modules/standard/_chpl_standard.chpl"),
-              MOD_STANDARD);
+    standardModule = ParseFile(stringcat(chplroot, "/modules/standard/_chpl_standard.chpl"),
+                               MOD_STANDARD);
   }
 
   int filenum = 0;

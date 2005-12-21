@@ -3,6 +3,7 @@
 #include "expr.h"
 #include "filesToAST.h"
 #include "runAnalysis.h"
+#include "runtime.h"
 #include "stmt.h"
 #include "symtab.h"
 #include "stringutil.h"
@@ -33,13 +34,17 @@ static void createInitFn(ModuleSymbol* mod) {
 
   // BLC: code to run user modules once only
   char* runOnce = NULL;
-  if (mod->modtype == MOD_USER && !fnostdincs) {
+  if (mod->modtype != MOD_INTERNAL && mod != compilerModule && !fnostdincs) {
+    if (mod != standardModule) {
+      definition->insertAtHead(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol("_chpl_standard"))));
+    }
+
     runOnce = stringcat("__run_", mod->name, "_firsttime");
     // create a boolean variable to guard module initialization
     DefExpr* varDefExpr = new DefExpr(new VarSymbol(runOnce, dtBoolean),
                                       new_BoolLiteral(true));
-    // insert its definition in the common module's init function
-    commonModule->initFn->insertAtHead(varDefExpr);
+    // insert its definition in the _chpl_compiler module
+    compilerModule->initFn->insertAtHead(varDefExpr);
  
     // insert a set to false at the beginning of the current module's
     // definition (we'll wrap it in a conditional just below, after

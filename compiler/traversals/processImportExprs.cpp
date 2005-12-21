@@ -1,6 +1,7 @@
 #include "processImportExprs.h"
 #include "expr.h"
 #include "symtab.h"
+#include "runtime.h"
 
 
 void ProcessImportExprs::postProcessExpr(Expr* expr) {
@@ -27,33 +28,15 @@ void ProcessImportExprs::postProcessExpr(Expr* expr) {
     if (!module) {
       INT_FATAL(expr, "ImportExpr has no module");
     }
-    CallExpr* callInitFn = new CallExpr(module->initFn);
-    importExpr->parentStmt->insertBefore(callInitFn);
+    if (module != compilerModule)
+      importExpr->parentStmt->insertBefore(new CallExpr(module->initFn));
     importExpr->parentScope->uses.add(module);
     importExpr->parentStmt->remove();
   }
 }
 
 
-static ExprStmt* genModuleUse(char* moduleName) {
-  Expr* moduleUse = new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol(moduleName)));
-  return new ExprStmt(moduleUse);
-
-}
-
-
 void ProcessImportExprs::run(Vec<ModuleSymbol*>* modules) {
-  forv_Vec(ModuleSymbol, mod, *modules) {
-    ExprStmt* moduleUse;
-    if ((mod->modtype == MOD_USER || (no_infer && mod->modtype == MOD_COMMON))) {
-      if (!fnostdincs && !fnostdincs_but_file) {
-        moduleUse = genModuleUse("_chpl_standard");
-        mod->initFn->insertAtHead(moduleUse);
-      } else if (!fnostdincs) {
-        mod->initFn->insertAtHead(genModuleUse("_chpl_file"));
-      }
-    }
-  }
   Traversal::run(modules);
 }
 

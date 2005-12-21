@@ -1307,26 +1307,17 @@ void ModuleSymbol::setModScope(SymScope* init_modScope) {
 
 void ModuleSymbol::codegenDef(void) {
   fileinfo outfileinfo;
-  fileinfo extheadfileinfo;
-  fileinfo intheadfileinfo;
 
   inUserModule = (modtype == MOD_USER);
-  openCFiles(name, &outfileinfo, &extheadfileinfo, &intheadfileinfo);
+  openCFiles(name, &outfileinfo);
 
   fprintf(codefile, "#include \"stdchpl.h\"\n");
   fprintf(codefile, "#include \"_chpl_header.h\"\n");
-  fprintf(codefile, "#include \"_CommonModule.h\"\n");
-  fprintf(codefile, "#include \"_CommonModule-internal.h\"\n");
-
-  fprintf(codefile, "#include \"%s\"\n", extheadfileinfo.filename);
-  fprintf(codefile, "#include \"%s\"\n", intheadfileinfo.filename);
-
   fprintf(codefile, "\n");
 
   modScope->codegenFunctions(codefile);
-  //  stmts->codegen(codefile, "\n");
 
-  closeCFiles(&outfileinfo, &extheadfileinfo, &intheadfileinfo);
+  closeCFiles(&outfileinfo);
 }
 
 

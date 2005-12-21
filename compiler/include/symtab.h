@@ -9,7 +9,6 @@
 
 extern SymScope* rootScope;
 extern SymScope* preludeScope;
-extern ModuleSymbol* commonModule;
 
 extern Vec<ModuleSymbol*> allModules;     // Contains all modules
 extern Vec<ModuleSymbol*> codegenModules; // Contains codegened modules

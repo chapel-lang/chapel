@@ -4,6 +4,7 @@
 #include "expr.h"
 #include "files.h"
 #include "misc.h"
+#include "runtime.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "symtab.h"
@@ -1018,7 +1019,7 @@ Type *find_or_make_sum_type(Vec<Type *> *types) {
   lub_cache.put(new_sum_type);
   char* name = stringcat("_sum_type", intstring(uid++));
   TypeSymbol* sym = new TypeSymbol(name, new_sum_type);
-  commonModule->stmts->insertAtTail(new DefExpr(sym));
+  compilerModule->stmts->insertAtTail(new DefExpr(sym));
   return new_sum_type;
 }
 
@@ -1066,7 +1067,7 @@ new_LiteralType(VarSymbol *literal_var) {
   char* name = stringcat("_literal_type", intstring(uid++));
   TypeSymbol* sym = new TypeSymbol(name, literal_var->literalType);
   literal_var->literalType->addSymbol(sym);
-  commonModule->stmts->insertAtTail(new DefExpr(sym));
+  compilerModule->stmts->insertAtTail(new DefExpr(sym));
   literal_var->literalType->defaultValue = literal_var;
   return literal_var->literalType;
 }

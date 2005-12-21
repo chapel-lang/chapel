@@ -2,18 +2,18 @@ zeroarity-bound-error-2.chpl:9: illegal call argument type 'stdout' illegal: ( f
 zeroarity-bound-error-2.chpl:9: illegal call argument type '_tmp' illegal: ( ) 
 zeroarity-bound-error-2.chpl:9: unresolved call 'fwrite'
 note: candidates are:
-_chpl_complex.chpl:19: fwrite, f : file, x : complex
+_chpl_complex.chpl:17: fwrite, f : file, x : complex
 _chpl_file.chpl:120: fwrite, f : file, val : int64
 _chpl_file.chpl:145: fwrite, f : file, val : float64
 _chpl_file.chpl:168: fwrite, f : file, val : string
 _chpl_file.chpl:204: fwrite, f : file, val : bool
 _chpl_file.chpl:217: fwrite, f : file, x : nil_type
-_chpl_htuple.chpl:30: fwrite, f : file, val : _htuple
-_chpl_adomain.chpl:78: fwrite, f : file, x : _adomain
-_chpl_adomain.chpl:152: fwrite, f : file, x : _aarray
-_chpl_data.chpl:56: fwrite, f : file, val : _fdata
-_chpl_seq.chpl:170: fwrite, f : file, s : seq
-_chpl_seq.chpl:230: fwrite, f : file, s : _aseq
+_chpl_htuple.chpl:27: fwrite, f : file, val : _htuple
+_chpl_adomain.chpl:74: fwrite, f : file, x : _adomain
+_chpl_adomain.chpl:148: fwrite, f : file, x : _aarray
+_chpl_data.chpl:53: fwrite, f : file, val : _fdata
+_chpl_seq.chpl:168: fwrite, f : file, s : seq
+_chpl_seq.chpl:228: fwrite, f : file, s : _aseq
 prelude.chpl:3: fwrite, f : file, val : object
 prelude.chpl:4: fwrite, f : file, val : value
 prelude.chpl:24: fwrite, f : file, val : _ddata
@@ -32,16 +32,16 @@ prelude.chpl:234: fwrite, f : file, val : Array
 prelude.chpl:237: fwrite, f : file, val : Domain
 prelude.chpl:247: fwrite, f : file, val : Tuple
 _chpl_file.chpl:51: fwrite, f : file, val : file
-_chpl_adomain.chpl:10: fwrite, f : file, val : _adomain_info
-_chpl_adomain.chpl:50: fwrite, f : file, val : _adomain_lit
-_chpl_adomain.chpl:83: fwrite, f : file, val : _aarray_info
-_chpl_seq.chpl:8: fwrite, f : file, val : _seqNode
+_chpl_adomain.chpl:6: fwrite, f : file, val : _adomain_info
+_chpl_adomain.chpl:46: fwrite, f : file, val : _adomain_lit
+_chpl_adomain.chpl:79: fwrite, f : file, val : _aarray_info
+_chpl_seq.chpl:6: fwrite, f : file, val : _seqNode
 zeroarity-bound-error-2.chpl:5: fwrite, f : file, val : C
 fwrite, f : file, val : _tuple2
 fwrite, f : file, val : _tuple2
 prelude.chpl:24: fwrite, f : file, val : _ddata
-_chpl_seq.chpl:170: fwrite, f : file, s : seq
-_chpl_seq.chpl:8: fwrite, f : file, val : _seqNode
+_chpl_seq.chpl:168: fwrite, f : file, s : seq
+_chpl_seq.chpl:6: fwrite, f : file, val : _seqNode
 prelude.chpl:24: fwrite, f : file, val : _ddata
 prelude.chpl:24: fwrite, f : file, val : _ddata
 zeroarity-bound-error-2.chpl:9: illegal call argument type expression illegal: ( int64 ) 

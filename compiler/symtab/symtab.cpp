@@ -25,8 +25,6 @@ static SymScope* postludeScope = NULL;
 static SymScope* currentScope = NULL;
 static ModuleSymbol* currentModule = NULL;
 
-ModuleSymbol* commonModule = NULL;
-
 Vec<ModuleSymbol*> allModules;     // Contains all modules
 Vec<ModuleSymbol*> codegenModules; // Contains codegened modules
 Vec<ModuleSymbol*> userModules;    // Contains user modules
@@ -36,7 +34,6 @@ static void registerModule(ModuleSymbol* mod) {
   case MOD_USER:
     userModules.add(mod);
   case MOD_STANDARD:
-  case MOD_COMMON:
     codegenModules.add(mod);
   case MOD_INTERNAL:
     allModules.add(mod);
@@ -66,25 +63,12 @@ void Symboltable::parsePrelude(void) {
 void Symboltable::doneParsingPreludes(void) {
   parsePhase = PARSING_USERFILES;
 
-  // Setup common module and scope
-  // Hacked nested module, for declaring arrays-of-primitives types, e.g.
-  commonModule = new ModuleSymbol("_CommonModule", MOD_COMMON);
-  Symboltable::pushScope(SCOPE_MODULE);
-  commonModule->setModScope(currentScope);
-  commonModule->modScope->astParent = commonModule;
-
-  commonModule->stmts->insertAtTail(new BlockStmt());
-
-  registerModule(commonModule);
-
   prelude->modScope = preludeScope;          // SJD: Why here?
   preludeScope->astParent = prelude;
 }
 
 
 void Symboltable::doneParsingUserFiles(void) {
-  // pop common module scope
-  Symboltable::popScope();
   postludeScope = new SymScope(SCOPE_POSTPARSE);
   postludeScope->parent = rootScope;
   preludeScope->sibling = postludeScope;

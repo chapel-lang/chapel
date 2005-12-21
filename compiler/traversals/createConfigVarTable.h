@@ -8,8 +8,6 @@ class CreateConfigVarTable : public Traversal {
  public:
   static bool running;
   fileinfo outfileinfo;
-  fileinfo extheadfileinfo;
-  fileinfo intheadfileinfo;
 
   CreateConfigVarTable(void);
 

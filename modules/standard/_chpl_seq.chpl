@@ -1,5 +1,3 @@
-use _chpl_file;
-
 class _seqNode {
   type elt_type;
 

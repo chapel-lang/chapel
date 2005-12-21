@@ -1,5 +1,3 @@
-use _chpl_file;
-
 pragma "rename _chpl_complex" class complex : value {
   var real : float;
   var imag : float;
