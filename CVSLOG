@@ -52545,3 +52545,15 @@ Modified files:
 	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
 	                                         inlfunc2_report.good 
 
+---------------------------------------------------------------------------
+
+12/22/05 11:25:19 -- jplevyak
+
+Log message:
+	Switch to quadratic hashing for Vec used as as Set and Map.
+	This should decrease memory usage for large sets (which we are
+	using more lately).
+
+Modified files:
+	chapel/compiler/include/: map.h vec.h 
+
