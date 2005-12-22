@@ -52456,3 +52456,15 @@ Modified files:
 Added files:
 	chapel/modules/standard/: _chpl_compiler.chpl 
 
+---------------------------------------------------------------------------
+
+12/21/05 17:04:35 -- jplevyak
+
+Log message:
+	Fixed SEGV in global loop frequency estimation.
+	Added assert to detect irregularities in loop tree.
+	Fixed SEGV in recursion graph.
+
+Modified files:
+	chapel/compiler/ifa/: graph.cpp inline.cpp loop.cpp 
+
