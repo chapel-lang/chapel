@@ -45,6 +45,7 @@ local_frequency_estimation(Fun *f) {
 static void
 global_loop_frequency_estimation(LoopNode *l, float f) {
   forv_LoopNode(n, l->children) {
+    assert(n != l);
     if (n->node)
       ((Fun*)n->node)->execution_frequency = f;
     else

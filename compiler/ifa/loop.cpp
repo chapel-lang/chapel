@@ -44,10 +44,7 @@ LoopNode::dom_ancestor(LoopNode *x) {
 static void
 collapse(LoopGraph *g, Vec<LoopNode *> &body, LoopNode *header) {
   forv_LoopNode(z, body) if (z) {
-    if (z->parent)
-      header->children.add(z->parent);
     z->parent = header;
-    header->children.add(z);
     g->unify(z, header);
     if (header->pre_dfs < 0) {
       header->pre_dfs = z->pre_dfs;
@@ -154,6 +151,9 @@ find_loops(LoopGraph *g) {
     if (g->loops->node)
       g->loops = 0;
   }
+  forv_LoopNode(n, g->nodes)
+     if (n->parent)
+       n->parent->children.add(n);
 }
 
 void

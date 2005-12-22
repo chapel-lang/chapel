@@ -465,7 +465,7 @@ graph_contours(FA *fa, char *fn) {
       if (e && fa->ess_set.in(e->from) && fa->ess_set.in(e->to))
         graph_edge(fp, e->from, e->to, G_BLUE);
   forv_EntrySet(es, fa->ess)
-    forv_CreationSet(cs, es->creates)
+    forv_CreationSet(cs, es->creates) if (cs)
       if (css_set.in(NORM_CS(cs)))
         graph_edge(fp, es, NORM_CS(cs), G_PURPLE);
   forv_CreationSet(cs, css_set) if (cs)
