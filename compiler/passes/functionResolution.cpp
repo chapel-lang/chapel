@@ -37,6 +37,7 @@ Vec<FnSymbol*> newFns; // new functions list;
 
 void resolve_return_type(FnSymbol* fn);
 void resolve_function(FnSymbol* fn);
+void resolve_asts(BaseAST* base);
 void resolve_call(CallExpr* call);
 void resolve_op(CallExpr* call);
 void resolve_dot(MemberAccess* dot);
@@ -185,6 +186,41 @@ void resolve_dot(MemberAccess* dot) {
 }
 
 
+CallExpr* new_default_constructor_call(Type* type) {
+  if (!type->defaultConstructor)
+    INT_FATAL(type, "Cannot build default constructor for type");
+  CallExpr* call = new CallExpr(type->defaultConstructor->name);
+  if (type->substitutions.n > 0) {
+    Vec<BaseAST*> keys;
+    type->substitutions.get_keys(keys);
+    forv_Vec(BaseAST, key, keys) {
+      char* name = NULL;
+      if (Type* k = dynamic_cast<Type*>(key)) {
+        name = stringcpy(k->symbol->name);
+      } else if (Symbol* k = dynamic_cast<Symbol*>(key)) {
+        name = stringcpy(k->name);
+      } else {
+        INT_FATAL(type, "Unexpected case in new_default_constructor_call");
+      }
+      Expr* actual = NULL;
+      BaseAST* value = type->substitutions.get(key);
+      if (Type* v = dynamic_cast<Type*>(value)) {
+        if (v->defaultConstructor) {
+          actual = new_default_constructor_call(v);
+        } else {
+          actual = new SymExpr(v->symbol);
+        }
+      } else if (Symbol* v = dynamic_cast<Symbol*>(value)) {
+        actual = new SymExpr(v);
+      } else {
+        INT_FATAL(type, "Unexpected case in new_default_constructor_call");
+      }
+      call->argList->insertAtTail(new NamedExpr(name, actual));
+    }
+  }
+  return call;
+}
+
 void resolve_op(CallExpr* call) {
   if (call->opTag == OP_MOVE) {
     if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->argList->get(1))) {
@@ -206,14 +242,19 @@ void resolve_op(CallExpr* call) {
     if (type->defaultValue) {
       call->replace(new CastExpr(new SymExpr(type->defaultValue), NULL, type));
     } else if (type->defaultConstructor) {
+      CallExpr* c = new_default_constructor_call(type);
+      call->replace(c);
+      resolve_asts(c);
+/*
       if (CallExpr* icall = dynamic_cast<CallExpr*>(call->get(1))) {
         icall->remove();
         call->replace(icall);
       } else {
-        CallExpr* newcall = new CallExpr(type->defaultConstructor);
+        CallExpr* newcall = new CallExpr(type->defaultConstructor->name);
         call->replace(newcall);
         resolve_call(newcall);
       }
+*/
     } else {
       INT_FATAL(call, "Type without defaultValue in function resolution");
     }
@@ -478,7 +519,7 @@ void resolve_function(FnSymbol* fn) {
 
   for_alist(DefExpr, formalDef, fn->formals) {
     ArgSymbol* arg = dynamic_cast<ArgSymbol*>(formalDef->sym);
-    if (arg->type == dtUnknown) {
+    if (arg->type == dtUnknown && formalDef->exprType) {
       arg->type = formalDef->exprType->typeInfo();
     }
     if (arg->type == dtUnknown ||

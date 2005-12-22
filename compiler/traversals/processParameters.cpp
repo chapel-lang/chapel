@@ -50,6 +50,9 @@ void ProcessParameters::postProcessExpr(Expr* expr) {
         tmp->noDefaultInit = true;
         DefExpr* tmp_def = new DefExpr(tmp, init);
         stmt->insertBefore(tmp_def);
+        if (use_alloc) {
+          stmt->insertBefore(new CallExpr(OP_MOVE, tmp, init->copy()));
+        }
         actual->replace(new SymExpr(tmp));
         if (formal->requiresCopyBack()) {
           stmt->insertAfter(new CallExpr(OP_MOVE, actual, tmp));

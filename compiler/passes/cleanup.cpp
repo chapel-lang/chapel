@@ -366,10 +366,7 @@ finish_constructor(FnSymbol* fn) {
       if (ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym)) {
         if (!strcmp(formal->name, field->name)) {
           Expr* lhs = new MemberAccess(fn->_this, field);
-          Expr* assign_expr =
-            (no_infer)
-            ? new CallExpr("=", lhs, formal)
-            : new CallExpr(OP_MOVE, lhs, formal);
+          Expr* assign_expr = new CallExpr(OP_MOVE, lhs, formal);
           stmts->insertAtTail(assign_expr);
         }
       }

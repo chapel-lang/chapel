@@ -635,17 +635,6 @@ static void hack_resolve_types(Expr* expr) {
     }
   }
 
-  if (no_infer) {
-    if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
-      if (def->sym->type == dtUnknown) {
-        if (def->init && !def->exprType) {
-          def->exprType = def->init->copy();
-          fixup(def->exprType, def->init);
-        }
-      }
-    }
-  }
-
   if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
     if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(def->sym)) {
       if (UserType* userType = dynamic_cast<UserType*>(ts->definition)) {
@@ -797,6 +786,8 @@ static void insert_call_temps(CallExpr* call) {
 
 
 static void fix_def_expr(DefExpr* def) {
+  if (dynamic_cast<ForLoopStmt*>(def->parentStmt))
+    return;
   static int uid = 1;
   if (dynamic_cast<VarSymbol*>(def->sym)->noDefaultInit) {
     if (def->init)
