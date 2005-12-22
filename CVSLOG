@@ -52620,3 +52620,21 @@ Log message:
 Modified files:
 	chapel/test/functions/bradc/: arrayArg.chpl 
 
+---------------------------------------------------------------------------
+
+12/22/05 14:35:05 -- deitz
+
+Log message:
+	Cleaned up arithmetic domain module code slightly (replacing
+	hard-coded 16 dimension limit with the parameter rank).
+	
+	Fixed --no-infer function resolution so it works on array codes.
+	Added jacobi to --no-infer test directory.
+
+Modified files:
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	chapel/test/memory/shannon/: printMemTable.good 
+Added files:
+	chapel/test/no_infer/: jacobi.chpl jacobi.good 
+
