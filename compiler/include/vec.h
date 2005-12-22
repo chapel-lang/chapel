@@ -17,7 +17,7 @@
 #define VEC_INITIAL_SHIFT       3
 #define VEC_INITIAL_SIZE        (1 << VEC_INITIAL_SHIFT)
 
-#define SET_MAX_SEQUENTIAL      5
+#define SET_MAX_PROBE           5
 #define SET_INITIAL_INDEX       2
 
 template <class C> 
@@ -330,8 +330,8 @@ Vec<C>::set_add_internal(C c) {
     uint h = (uint)(uintptr_t)c;
     h = h % n;
     for (k = h, j = 0;
-         k < n && j < SET_MAX_SEQUENTIAL;
-         k = ((k + 1) % n), j++)
+         k < n && j < SET_MAX_PROBE;
+         k = ((k + ++j) % n))
     {
       if (!v[k]) {
         v[k] = c;
@@ -354,8 +354,8 @@ Vec<C>::set_in_internal(C c) {
     uint h = (uint)(uintptr_t)c;
     h = h % n;
     for (k = h, j = 0;
-         k < n && j < SET_MAX_SEQUENTIAL;
-         k = ((k + 1) % n), j++)
+         k < n && j < SET_MAX_PROBE;
+         k = ((k + ++j) % n))
     {
       if (!v[k])
         return 0;

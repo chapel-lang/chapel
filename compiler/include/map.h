@@ -233,8 +233,8 @@ HashMap<K,AHashFns,C>::get_internal(K akey) {
   unsigned int h = AHashFns::hash(akey);
   h = h % n;
   for (int k = h, j = 0;
-       k < n && j < SET_MAX_SEQUENTIAL;
-       k = ((k + 1) % n), j++)
+       k < n && j < SET_MAX_PROBE;
+       k = ((k + ++j) % n))
   {
     if (!v[k].key)
       return 0;
@@ -271,8 +271,8 @@ HashMap<K,AHashFns,C>::put(K akey, C avalue) {
       unsigned int h = AHashFns::hash(akey);
       h = h % n;
       for (int k = h, j = 0;
-           k < n && j < SET_MAX_SEQUENTIAL;
-           k = ((k + 1) % n), j++)
+           k < n && j < SET_MAX_PROBE;
+           k = ((k + ++j) % n))
       {
         if (!v[k].key) {
           v[k].key = akey;
