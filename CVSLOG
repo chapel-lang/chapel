@@ -52468,3 +52468,39 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: graph.cpp inline.cpp loop.cpp 
 
+---------------------------------------------------------------------------
+
+12/21/05 17:24:56 -- jplevyak
+
+Log message:
+	This is a relatively large change.
+	
+	Introduces CallExpr::primitive which is used instead of opTag
+	right after normalization and before resolveSymbols.  The idea
+	being to have a way of attaching semantic meaning to primitive
+	operations for the purposes of interpretation and analysis
+	(and possibly codegen).
+	
+	Primitives are registered in AST/primitive.cpp, and the operations
+	for the interpreter are defined in passes/interpreter_ops.h and
+	for analysis in analysis/analysis_ops.h.
+	
+	When adding new primitives, only the files primitives.cpp
+	runInterpreter.cpp and chapel_ifa.cpp need to be recompiled.
+	
+	This should make adding new primitives relatively easy, and
+	ensure that they are supported in the interpreter and in analysis.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp expr.cpp primitive.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp chapel_ifa.h 
+	chapel/compiler/ifa/: fa.cpp prim.cpp prim_data.dat 
+	chapel/compiler/include/: expr.h primitive.h 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	                         runInterpreter.cpp runInterpreter.h 
+	chapel/compiler/traversals/: resolveSymbols.cpp 
+	chapel/modules/standard/: prelude.chpl 
+Added files:
+	chapel/compiler/analysis/: analysis_ops.h 
+	chapel/compiler/passes/: interpreter_ops.h 
+
