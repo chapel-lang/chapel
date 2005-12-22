@@ -52557,3 +52557,17 @@ Log message:
 Modified files:
 	chapel/compiler/include/: map.h vec.h 
 
+---------------------------------------------------------------------------
+
+12/22/05 12:08:14 -- deitz
+
+Log message:
+	More work on --no-infer function resolution.  It now works on domain tests.
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp functionResolution.cpp 
+	                         normalize.cpp 
+	chapel/compiler/traversals/: processParameters.cpp 
+Removed files:
+	chapel/test/no_infer/: test_domains_2D.future 
+
