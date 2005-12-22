@@ -135,6 +135,7 @@ add_candidate(Map<FnSymbol*,Vec<ArgSymbol*>*>* af_maps,
       FnSymbol* inst_fn = fn->instantiate_generic(&subs, &inst_fns, &inst_ts);
       newFns.set_add(inst_fn);
       if (inst_fn->whereExpr) {
+        resolve_asts(inst_fn->whereExpr);
         param_compute(inst_fn->whereExpr);
         if (SymExpr* symExpr = dynamic_cast<SymExpr*>(inst_fn->whereExpr)) {
           VarSymbol* param = dynamic_cast<VarSymbol*>(symExpr->var);
@@ -237,7 +238,7 @@ void resolve_op(CallExpr* call) {
       if (symExpr->var->type == dtUnknown)
         INT_FATAL("Unable to resolve type");
     }
-  } else if (!strcmp(call->primitive->name, "init")) {
+  } else if (call->primitive && !strcmp(call->primitive->name, "init")) {
     Type* type = call->get(1)->typeInfo();
     if (type->defaultValue) {
       call->replace(new CastExpr(new SymExpr(type->defaultValue), NULL, type));

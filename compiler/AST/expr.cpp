@@ -1188,12 +1188,17 @@ void CondExpr::traverseExpr(Traversal* traversal) {
 }
 
 
-// not yet implemented right
 Type* CondExpr::typeInfo(void) {
-  if (preAnalysis) {
+  if (!no_infer && preAnalysis) {
     return dtUnknown;
   }
-  return thenExpr->typeInfo();
+  Type* then_type = thenExpr->typeInfo();
+  Type* else_type = elseExpr->typeInfo();
+
+  if (else_type != then_type)
+    INT_FATAL("CondExpr::typeInfo not fully implemented");
+
+  return then_type;
 }
 
 
