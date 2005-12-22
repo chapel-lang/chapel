@@ -222,7 +222,11 @@ user_error(IFrame *frame, char *fmt, ...) {
 
   printf("\n");
 
-  error_interactive(frame);
+  if (run_interpreter > 1)
+    error_interactive(frame);
+  else {
+    INT_FATAL("interpreter terminated");
+  }
 }
 
 void
@@ -263,6 +267,7 @@ interactive_usage() {
   fprintf(stdout, "chpl interpreter interactive mode commands:\n");
   fprintf(stdout, 
           "  step - single step\n"
+          "  next - single step skipping over function calls\n"
           "  trace - trace program\n"
           "  where - show stack\n"
           "  locals - show locals\n"
