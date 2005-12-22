@@ -52638,3 +52638,16 @@ Modified files:
 Added files:
 	chapel/test/no_infer/: jacobi.chpl jacobi.good 
 
+---------------------------------------------------------------------------
+
+12/22/05 14:58:05 -- deitz
+
+Log message:
+	Last improvements to --no-infer function resolution before the break.
+	
+	Improved CondExpr::typeInfo.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/passes/: functionResolution.cpp 
+
