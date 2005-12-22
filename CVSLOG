@@ -52608,3 +52608,15 @@ Modified files:
 	chapel/compiler/AST/: expr.cpp 
 	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
 
+---------------------------------------------------------------------------
+
+12/22/05 14:07:34 -- deitz
+
+Log message:
+	Fixed array test to use square brackets on domain.  This doesn't work
+	because of the line "A(i) = i" though it looks to me like a coercion
+	wrapper is built correctly.
+
+Modified files:
+	chapel/test/functions/bradc/: arrayArg.chpl 
+
