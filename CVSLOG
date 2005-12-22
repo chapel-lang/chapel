@@ -52596,3 +52596,15 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+12/22/05 13:28:11 -- deitz
+
+Log message:
+	Fixed --no-infer function resolution to work with the new init
+	primitive which replaced OP_INIT.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+
