@@ -52586,3 +52586,13 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: normalize.cpp runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+12/22/05 12:43:31 -- jplevyak
+
+Log message:
+	interpreter tweeks
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+
