@@ -110,7 +110,6 @@ void normalize(BaseAST* base) {
       hack_domain_constructor_call(a);
       hack_seqcat_call(a);
       hack_typeof_call(a);
-      convert_user_primitives(a);
     } else if (Expr* a = dynamic_cast<Expr*>(ast)) {
       hack_resolve_types(a);
     }
@@ -174,6 +173,16 @@ void normalize(BaseAST* base) {
       if (dynamic_cast<FnSymbol*>(a->sym) &&
           a->exprType)
         a->exprType->remove();
+    }
+  }
+
+  asts.clear();
+  collect_asts_postorder(&asts, base);
+  forv_Vec(BaseAST, ast, asts) {
+    currentLineno = ast->lineno;
+    currentFilename = ast->filename;
+    if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
+      convert_user_primitives(a);
     }
   }
 }

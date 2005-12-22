@@ -50,6 +50,7 @@ class ISlot : public gc { public:
     return *this;
   }
   ISlot(Symbol *s) : kind(SYMBOL_ISLOT) { symbol = s; }
+  ISlot(Immediate *i) : kind(IMMEDIATE_ISLOT) { imm = i; }
   ISlot() : kind(EMPTY_ISLOT) {}
 };
 
@@ -80,7 +81,7 @@ struct IFrame : public gc { public:
   ISlot *islot(BaseAST *ast);
   void icall(int nargs);
   void icall(FnSymbol *fn, int nargs);
-  void igoto(Stmt *s);
+  int igoto(Stmt *s);
   void reset();
   void init(FnSymbol *fn);
   void init(Stmt *s);
@@ -125,6 +126,7 @@ static Vec<char *> break_functions;
 static Map<int, BaseAST*> known_ids;
 
 static void runProgram();
+static void error_interactive(IFrame *frame);
 
 IThread::IThread() : state(ITHREAD_STOPPED) {
   threads.add(this);
@@ -187,13 +189,49 @@ IFrame::icall(FnSymbol *fn, int nargs) {
   valStack.n -= nargs;
 }
 
+static void
+user_error(IFrame *frame, char *fmt, ...) {
+  BaseAST *ip = frame->ip;
+  va_list args;
+  int lineno = 0;
+  char *filename = NULL;
+  if (ip) {
+    filename = ip->filename;
+    lineno = ip->lineno;
+  }
+  printf("error: ");
+
+  va_start(args, fmt);
+  vfprintf(stdout, fmt, args);
+  va_end(args);
+  
+  printf("\n");
+
+  if (filename || lineno) {
+    if (filename)
+      printf("at %s", filename);
+    if (lineno) {
+      if (filename)
+        printf(":");
+      else
+        printf("at line ");
+      printf("%d", lineno);
+    }
+    printf(" ");
+  }
+
+  printf("\n");
+
+  error_interactive(frame);
+}
+
 void
 IFrame::icall(int nargs) {
   if (valStack.n < nargs)
     INT_FATAL(ip, "not enough arguments for call");
   char *name = 0;
   if (nargs < 1)
-    USR_FATAL(ip, "call with no arguments");
+    INT_FATAL(ip, "call with no arguments");
   int done = 0;
   do {
     ISlot **args = &valStack.v[valStack.n-nargs];
@@ -204,14 +242,18 @@ IFrame::icall(int nargs) {
       name = args[0]->selector;
       done = 1;
     } else if (args[0]->kind == CLOSURE_ISLOT) {
-      USR_FATAL(ip, "closures not handled yet");
-    } else
-      USR_FATAL(ip, "call to something other than function name or closure");
+      INT_FATAL(ip, "closures not handled yet");
+    } else {
+      user_error(this, "call to something other than function name or closure");
+      return;
+    }
   } while (!done);
   Vec<FnSymbol *> visible;
   ip->parentScope->getVisibleFunctions(&visible, cannonicalize_string(name));
-  if (visible.n != 1)
-    USR_FATAL(ip, "unable to resolve function to single function '%s'", name);
+  if (visible.n != 1) {
+    user_error(this, "unable to resolve call '%s' to a single function", name);
+    return;
+  }
   icall(visible.v[0], nargs);
   return;
 }
@@ -514,6 +556,18 @@ interactive(IFrame *frame) {
   return 0;
 }
 
+static void
+error_interactive(IFrame *frame) {
+  BaseAST *ip = frame->ip;
+  while (1) {
+    interactive(frame);
+    if (frame->thread->frame && frame->ip == ip) 
+      printf("  unable to continue from error\n");
+    else
+      break;
+  }
+}
+
 int
 IThread::run(int atimeslice) {
   int timeslice = atimeslice;
@@ -565,7 +619,7 @@ IFrame::reset() {
 #define PUSH_SELECTOR(_s) do { ISlot *_slot = new ISlot; _slot->set_selector(_s); valStack.add(_slot); } while (0)
 #define PUSH_VAL(_s) valStack.add(islot(_s))
 #define PUSH_SYM(_s)  do { ISlot *_slot = new ISlot; _slot->set_symbol(_s); valStack.add(_slot); } while (0)
-#define POP_VAL(_s) *islot(_s) = *valStack.pop();
+#define POP_VAL(_s) do { *islot(_s) = *valStack.pop(); } while (0)
 #define CALL(_n) do { icall(_n); return timeslice; } while (0)
 
 void
@@ -600,7 +654,7 @@ IFrame::init(BaseAST *s) {
   }
 }
 
-void
+int
 IFrame::igoto(Stmt *s) {
   Vec<Stmt *> parents;
   Stmt *ss = s;
@@ -609,21 +663,27 @@ IFrame::igoto(Stmt *s) {
     ss = ss->parentStmt;
   }
   parents.reverse();
-  if (parents.n > stmtStack.n)
-    USR_FATAL("interpreter: goto target nested below source");
+  if (parents.n > stmtStack.n) {
+    user_error(this, "goto target nested below source");
+    return 1;
+  }
   for (int i = 0; i < parents.n; i++)
-    if (parents.v[i] != stmtStack.v[i])
-      USR_FATAL("interpreter: illegal goto target");
+    if (parents.v[i] != stmtStack.v[i]) {
+      user_error(this, "goto target crosses nesting levels");
+      return 1;
+    }
   ss = stmt;
   Expr *defexpr = 0;
   while (ss) {
     if (ss->astType == STMT_EXPR) {
-      if (ExprStmt *x = dynamic_cast<ExprStmt *>(ss))
+      if (ExprStmt *x = (ExprStmt *)(ss))
         if (x->expr->astType == EXPR_DEF)
           defexpr = x->expr;
     }
-    if (defexpr && ss == s)
-      USR_FATAL("interpreter: illegal goto over variable definition DefExpr(%d)", defexpr->id);
+    if (defexpr && ss == s) {
+      user_error(this, "goto over variable definition DefExpr(%d)", defexpr->id);
+      return 1;
+    }
     ss = (Stmt*)ss->next;
   }
   stage = 0;
@@ -632,6 +692,7 @@ IFrame::igoto(Stmt *s) {
   valStack.clear();
   stageStack.n = parents.n;
   stmtStack.n = parents.n;
+  return 0;
 }
 
 int
@@ -804,7 +865,8 @@ IFrame::run(int timeslice) {
       case STMT_LABEL: break;
       case STMT_GOTO: {
         S(GotoStmt);
-        igoto(s->label->defPoint->parentStmt);
+        if (igoto(s->label->defPoint->parentStmt))
+          return timeslice;
         goto LgotoLabel;
       }
       case EXPR_SYM: {
@@ -822,6 +884,14 @@ IFrame::run(int timeslice) {
             case SYMBOL_TYPE: 
               env.put(s->var, (x = new ISlot(s->var)));
               break;
+            case SYMBOL_VAR: {
+              VarSymbol *v = (VarSymbol*)s->var;
+              if (v->immediate) {
+                env.put(v, (x = new ISlot(v->immediate)));
+                break;
+              }
+            }
+              // fall through  
             default:
               USR_FATAL(ip, "unknown variable in SymExpr '%s'", s->var->name ? s->var->name : "");
               break;
@@ -891,6 +961,12 @@ IFrame::run(int timeslice) {
               case OP_NONE:
                 PUSH_EXPR(s->baseExpr);
                 break;
+              case OP_MOVE:
+                if (s->argList->length() != 2) {
+                  INT_FATAL("illegal number of arguments for MOVE %d\n", s->argList->length());
+                }
+                stage = 2;
+                break;
             }
             break;
           }
@@ -899,7 +975,15 @@ IFrame::run(int timeslice) {
               PUSH_EXPR(s->argList->get(stage - 1));
             } else {
               stage = 0;
-              CALL(s->argList->length() + 1);
+              if (s->opTag == OP_MOVE) {
+                Expr *a = s->argList->get(1);
+                if (a->astType == EXPR_SYM)
+                  POP_VAL(((SymExpr*)a)->var);
+                else {
+                  INT_FATAL("target of MOVE not an SymExpr, astType = %d\n", s->argList->get(1)->astType);
+                }
+              } else
+                CALL(s->argList->length() + 1);
             }
             break;
         }
