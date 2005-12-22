@@ -81,6 +81,42 @@ char* opChplString[] = {
 };
 
 
+char* opChplName[] = {
+  "",
+
+  "u+",
+  "u-",
+  "not",
+  "u~",
+
+  "+",
+  "-",
+  "*",
+  "/",
+  "mod",
+  "==",
+  "!=",
+  "<=",
+  ">=",
+  "<",
+  ">",
+  "&",
+  "|",
+  "^",
+  "and",
+  "or",
+  "**",
+  "#",
+  "by",
+  ":",
+  "!:",
+
+  "_init",
+
+  "_move"
+};
+
+
 Expr::Expr(astType_t astType) :
   BaseAST(astType),
   parentStmt(NULL),
@@ -554,6 +590,7 @@ CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
   baseExpr(NULL),
   argList(new AList<Expr>()),
   opTag(OP_NONE),
+  primitive(NULL),
   partialTag(PARTIAL_NEVER)
 {
   if (Symbol* b = dynamic_cast<Symbol*>(base)) {
@@ -575,6 +612,20 @@ CallExpr::CallExpr(OpTag initOpTag, BaseAST* arg1, BaseAST* arg2) :
   baseExpr(NULL),
   argList(new AList<Expr>()),
   opTag(initOpTag),
+  primitive(NULL),
+  partialTag(PARTIAL_NEVER)
+{
+  callExprHelper(this, arg1);
+  callExprHelper(this, arg2);
+}
+
+
+CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2) :
+  Expr(EXPR_CALL),
+  baseExpr(NULL),
+  argList(new AList<Expr>()),
+  opTag(OP_NONE),
+  primitive(prim),
   partialTag(PARTIAL_NEVER)
 {
   callExprHelper(this, arg1);
@@ -588,6 +639,7 @@ CallExpr::CallExpr(char* name, BaseAST* arg1, BaseAST* arg2,
   baseExpr(new SymExpr(new UnresolvedSymbol(name))),
   argList(new AList<Expr>()),
   opTag(OP_NONE),
+  primitive(NULL),
   partialTag(PARTIAL_NEVER)
 {
   callExprHelper(this, arg1);
@@ -606,9 +658,14 @@ void CallExpr::verify() {
 
 CallExpr*
 CallExpr::copyInner(ASTMap* map) {
+  CallExpr *_this = 0;
   if (opTag != OP_NONE)
-    return new CallExpr(opTag, COPY_INT(argList));
-  CallExpr* _this = new CallExpr(COPY_INT(baseExpr), COPY_INT(argList));
+    _this = new CallExpr(opTag, COPY_INT(argList));
+  else if (primitive)
+    _this = new CallExpr(primitive, COPY_INT(argList));
+  else
+    _this = new CallExpr(COPY_INT(baseExpr), COPY_INT(argList));
+  _this->primitive = primitive;;
   _this->partialTag = partialTag;
   return _this;
 }
@@ -638,6 +695,13 @@ void CallExpr::print(FILE* outfile) {
     if (argList)
       argList->print(outfile);
     fprintf(outfile, ")");
+  } else if (primitive) {
+    fprintf(outfile, "__primitive(\"%s\"", primitive->name);
+    if (argList) {
+      fprintf(outfile, ", ");
+      argList->print(outfile);
+    }
+    fprintf(outfile, ")");
   } else if (OP_ISUNARYOP(opTag)) {
     fprintf(outfile, opChplString[opTag]);
     get(1)->print(outfile);
@@ -651,23 +715,36 @@ void CallExpr::print(FILE* outfile) {
 
 void CallExpr::makeOp(void) {
   SymExpr* base = dynamic_cast<SymExpr*>(baseExpr);
-  if (!strcmp(base->var->name, "=")) {
+  if (base && !strcmp(base->var->name, "=")) {
     opTag = OP_MOVE;
     base->remove();
     return;
   }
-  for (int tag = OP_NONE; tag <= OP_MOVE; tag++) {
-    if (!strcmp(opChplString[tag], base->var->name)) {
-      opTag = (OpTag)tag;
-      if (opTag == OP_UNPLUS && argList->length() == 2)
-        opTag = OP_PLUS;
-      if (opTag == OP_UNMINUS && argList->length() == 2)
-        opTag = OP_MINUS;
-      base->remove();
-      return;
+  if (primitive) {
+    for (int tag = OP_NONE; tag <= OP_MOVE; tag++) {
+      if (!strcmp(opChplString[tag], primitive->name)) {
+        opTag = (OpTag)tag;
+        primitive = NULL;
+        return;
+      }
+    }
+  } else if (SymExpr *symExpr = dynamic_cast<SymExpr *>(base)) {
+    if (FnSymbol *fn = dynamic_cast<FnSymbol *>(symExpr->var)) {
+      if (fn->hasPragma("builtin")) {
+        for (int tag = OP_NONE; tag <= OP_MOVE; tag++) {
+          if (!strcmp(opChplString[tag], base->var->name)) {
+            opTag = (OpTag)tag;
+            if (opTag == OP_UNPLUS && argList->length() == 2)
+              opTag = OP_PLUS;
+            if (opTag == OP_UNMINUS && argList->length() == 2)
+              opTag = OP_MINUS;
+            primitive = NULL;
+            return;
+          }
+        }
+      }
     }
   }
-  INT_FATAL(this, "Cannot change call to op");
 }
 
 
@@ -916,6 +993,8 @@ void CallExpr::codegen(FILE* outfile) {
 
 
 bool CallExpr::isPrimitive(void) {
+  if (primitive)
+    return true;
   if (SymExpr* variable = dynamic_cast<SymExpr*>(baseExpr)) {
     if (!strcmp(variable->var->name, "__primitive")) {
       return true;

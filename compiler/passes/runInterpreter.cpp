@@ -5,6 +5,7 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #endif
+#include "pass.h"
 #include "alist.h"
 #include "driver.h"
 #include "filesToAST.h"
@@ -105,6 +106,14 @@ struct IThread : public gc { public:
   
   IThread();
 };
+
+class InterpreterOp : public gc { public:
+  char *name;
+};
+
+#define _EXTERN
+#define _INIT = NULL
+#include "interpreter_ops.h"
 
 enum { NO_STEP = 0, SINGLE_STEP = 1, NEXT_STEP = 2 };
 static int single_step = NO_STEP;

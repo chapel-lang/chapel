@@ -1254,10 +1254,10 @@ add_send_constraints(EntrySet *es) {
       switch (p->prim->index) {
         default: break;
         case P_prim_reply:
-          fill_rets(es, p->rvals.n - 2);
-          for (int i = 2; i < p->rvals.n; i++) {
+          fill_rets(es, p->rvals.n - 3);
+          for (int i = 3; i < p->rvals.n; i++) {
             AVar *r = make_AVar(p->rvals.v[i], es);
-            flow_vars(r, es->rets.v[i - 2]);
+            flow_vars(r, es->rets.v[i - 3]);
           }
           break;
         case P_prim_tuple: prim_make(p, es, sym_tuple); break;
@@ -1527,11 +1527,9 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
     // argument and return constraints
     int n = p->prim->nargs < 0 ? -p->prim->nargs : p->prim->nargs;
     AVar *a = 0, *b = 0;
-    int start = 0, iarg = 0;
-    if (p->rvals.v[0]->sym == sym_operator)
-      start = 1;
-    for (int i = start; i < p->rvals.n; i++) {
-      if (i - start == p->prim->pos) continue;
+    int iarg = 0;
+    for (int i = 1; i < p->rvals.n; i++) {
+      if (i - 1 == p->prim->pos) continue;
       AVar *arg = make_AVar(p->rvals.v[i], es);
       // record violations
       if (type_diff(arg->out, p->prim->args.v[iarg]) != bottom_type)
@@ -1545,7 +1543,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
         case PRIM_TYPE_ANY_INT_A: a = arg; break;
         case PRIM_TYPE_ANY_INT_B: b = arg; break;
       }
-      if (i - start < n - 1) iarg++;
+      if (i - 1 < n - 1) iarg++;
     }
     for (int i = 0; i < p->lvals.n; i++) {
       if (p->prim->ret_types[i] == PRIM_TYPE_ANY_NUM_AB) {
@@ -1578,8 +1576,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
           fail("bad primitive transfer function");
         RegisteredPrim *rp = fa->primitive_transfer_functions.get(name);
         if (!rp)
-          fail("undefined primitive transfer function '%s'", 
-               p->rvals.v[1]->sym->name);
+          fail("undefined primitive transfer function '%s'", name);
         rp->fn(p, es);
         break;
       }

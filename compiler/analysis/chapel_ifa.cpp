@@ -27,6 +27,7 @@
 #define MAKE_USER_TYPE_BE_DEFINITION            1
 //#define USE_SCOPE_LOOKUP_CACHE                  1
 //#define MINIMIZED_MEMORY 1  // minimize the memory used by Sym's... needs valgrind checking for safety
+//#define USE_FLOAT_128
 
 #define SYMBOL(_x) (((ASymbol*)(_x)->asymbol)->symbol)
 
@@ -36,6 +37,10 @@
    _c != '_'&& _c != '?' && _c != '$')                \
 
 Vec<AError *> analysis_errors;
+
+#define _EXTERN
+#define _INIT = NULL
+#include "analysis_ops.h"
 
 class LabelMap : public Map<char *, Stmt *> {};
 
@@ -51,20 +56,30 @@ class AnalysisCloneCallback : public CloneCallback {
   AnalysisCloneCallback() : context(0) {}
 };
 
-static Sym *expr_simple_seq_symbol = 0;
-static Sym *expr_domain_symbol = 0;
-static Sym *expr_create_domain_symbol = 0;
-static Sym *expr_reduce_symbol = 0;
+class AnalysisOp : public gc { public:
+  char *name;
+  char *internal_name;
+  PrimitiveTransferFunctionPtr ptfn;
+  Prim *prim;
+
+  AnalysisOp(char *aname, char *aninternal_name, PrimitiveTransferFunctionPtr pfn)
+    : name(aname), internal_name(aninternal_name), ptfn(pfn), prim(0)
+    {}
+  AnalysisOp(char *aname, char *aninternal_name, Prim *ap) 
+    : name(aname), internal_name(aninternal_name), ptfn(0), prim(ap)
+    {}
+};
+
+
 static Sym *write_symbol = 0;
-static Sym *writeln_symbol = 0;
 static Sym *read_symbol = 0;
 static Sym *array_index_symbol = 0;
 static Sym *array_set_symbol = 0;
 static Sym *cast_symbol = 0;
 static Sym *method_token = 0;
 static Sym *setter_token = 0;
-static Sym *make_seq_symbol = 0;
-static Sym *chapel_defexpr_symbol = 0;
+static Sym *chapel_init_symbol = 0;
+static Sym *unimplemented_symbol = 0;
 
 static Sym *sym_domain = 0;
 static Sym *sym_array = 0;
@@ -85,11 +100,6 @@ class ScopeLookupCache : public Map<char *, Vec<Fun *> *> {};
 static ScopeLookupCache universal_lookup_cache;
 static int finalized_symbols = 0;
 static Map<Sym *, SymExpr *> constant_cache;
-
-void
-init_chapel_ifa() {
-  ifa_init(new ACallbacks);
-}
 
 struct TraverseASTs {
   Vec<BaseAST *> asts;
@@ -813,7 +823,7 @@ map_baseast(BaseAST *s) {
           st->ainfo = new AAST;
           st->ainfo->xast = s;
         } else {
-          INT_FATAL(s, "Unexpected AST type in map_baseast: %s\n", astTypeName[s->astType]);
+          INT_FATAL(s, "unexpected AST type in map_baseast: %s\n", astTypeName[s->astType]);
         }
       }
     }
@@ -1021,9 +1031,6 @@ build_type(Type *t, bool make_default = true) {
       break;
     }
   }
-  // Note: Rewrite using new typeParents or dispatchParents vectors
-  //  if (t->parentType)
-  //    t->asymbol->sym->must_implement_and_specialize(t->parentType->asymbol->sym);
   return t->asymbol->sym;
 }
 
@@ -1176,19 +1183,27 @@ build_builtin_symbols() {
   new_alias_type(sym_enum_element, "enum_element", sym_int64);
   new_primitive_type(sym_float32, "float32");
   new_primitive_type(sym_float64, "float64");
-//  new_primitive_type(sym_float128, "float128");
+#ifdef USE_FLOAT_128
+  new_primitive_type(sym_float128, "float128");
+#endif
   new_alias_type(sym_float, "float", sym_float64);
   new_lub_type(sym_anyfloat, "anyfloat", 
                sym_float32, sym_float64, 
-//     sym_float128, 
+#ifdef USE_FLOAT_128
+               sym_float128, 
+#endif
      VARARG_END);
   new_primitive_type(sym_complex32, "complex32");
   new_primitive_type(sym_complex64, "complex64");
-//  new_primitive_type(sym_complex128, "complex128");
+#ifdef USE_FLOAT_128
+  new_primitive_type(sym_complex128, "complex128");
+#endif
   new_primitive_type(sym_complex, "complex");
   new_lub_type(sym_anycomplex, "anycomplex", 
                sym_complex32, sym_complex64, 
-//      sym_complex128, 
+#ifdef USE_FLOAT_128
+               sym_complex128, 
+#endif
       VARARG_END);
   new_lub_type(sym_anynum, "anynum", sym_anyint, sym_anyfloat, sym_anycomplex, VARARG_END);
   new_primitive_type(sym_char, "char");
@@ -1223,10 +1238,14 @@ build_builtin_symbols() {
 
   sym_float32->specializes.add(sym_complex32);
   sym_float64->specializes.add(sym_complex64);
-//  sym_float128->specializes.add(sym_complex128);
+#ifdef USE_FLOAT_128
+  sym_float128->specializes.add(sym_complex128);
+#endif
 
   sym_complex32->specializes.add(sym_complex64);
-//  sym_complex64->specializes.add(sym_complex128);
+#ifdef USE_FLOAT_128
+  sym_complex64->specializes.add(sym_complex128);
+#endif
 
   sym_anynum->specializes.add(sym_string);
 
@@ -1390,7 +1409,8 @@ gen_one_defexpr(VarSymbol *var, DefExpr *def) {
     if (exprType)
       if1_gen(if1, &ast->code, exprType->ainfo->code);
     Code *c = if1_send(if1, &ast->code, 3, 1, sym_primitive,
-                       chapel_defexpr_symbol, type->asymbol->sym, lhs);
+                       chapel_init_symbol,
+                       type->asymbol->sym, lhs);
     c->ast = ast;
     c->partial = Partial_NEVER;
     if (exprType)
@@ -1489,7 +1509,8 @@ gen_var_init_expr(VarSymbol *var, InitExpr *e) {
     if (e->type)
       if1_gen(if1, &ast->code, e->type->ainfo->code);
     Code *c = if1_send(if1, &ast->code, 3, 1, sym_primitive,
-                       chapel_defexpr_symbol, type->asymbol->sym, lhs);
+                       chapel_init_symbol,
+                       type->asymbol->sym, lhs);
     c->ast = ast;
     c->partial = Partial_NEVER;
     if (e->type)
@@ -1518,7 +1539,8 @@ gen_arg_init_expr(ArgSymbol *arg, InitExpr *e) {
   if (e->type)
     if1_gen(if1, &ast->code, e->type->ainfo->code);
   Code *c = if1_send(if1, &ast->code, 3, 1, sym_primitive,
-                     chapel_defexpr_symbol, type->asymbol->sym, lhs);
+                     chapel_init_symbol,
+                     type->asymbol->sym, lhs);
   c->ast = ast;
   c->partial = Partial_NEVER;
   if (e->type)
@@ -1691,8 +1713,30 @@ gen_set_member(MemberAccess *ma, CallExpr *base_ast) {
   return 0;
 }
 
+static Sym *
+gen_primitive(CallExpr *s, Vec<Expr *> &args, Vec<Sym *> &rvals) {
+  AnalysisOp *op = s->primitive->analysisOp;
+  if (!op)
+    INT_FATAL(s, "unknown primitive");
+  Prim *p = op->prim;
+  if (!p) {
+    rvals.v[0] = make_symbol(op->internal_name);
+    return sym_primitive;
+  }
+  else if (p->pos == 0) {
+    // unary or n-ary operation
+    rvals.v[0] = make_symbol(p->string);
+    return sym_primitive;
+  } else {
+    // binary operation requires the symbol in the center
+    rvals.v[0] = rvals.v[1];
+    rvals.v[1] = make_symbol(p->string);
+    return sym_operator;
+  }
+}
+
 static int
-gen_paren_op(CallExpr *s) {
+gen_call_expr(CallExpr *s) {
   AAST *ast = s->ainfo;
   ast->rval = new_sym();
   ast->rval->ast = ast;
@@ -1711,19 +1755,9 @@ gen_paren_op(CallExpr *s) {
   Vec<Sym*> trvals;
   astType_t base_symbol = undef_or_fn_expr(s->baseExpr);
   Sym *base = NULL;
-  char *n = s->baseExpr ? s->baseExpr->ainfo->rval->name : 0, *str;
-  if (n && !strcmp(n, "__primitive")) {
-    if (args.n > 0 && get_string(args.v[0], &str) &&
-        if1->primitives->prim_map[0][0].get(if1_cannonicalize_string(if1, str)))
-    {
-      rvals.v[0] = if1_get_builtin(if1, str);
-      base = 0;
-    } else if (args.n == 3 && get_string(args.v[1], &str) &&
-               if1->primitives->prim_map[1][1].get(if1_cannonicalize_string(if1, str))) {
-      rvals.v[1] = make_symbol(str);
-      base = sym_operator;
-    } else
-      base = sym_primitive;
+  char *n = s->baseExpr ? s->baseExpr->ainfo->rval->name : 0;
+  if (s->primitive) {
+    base = gen_primitive(s, args, rvals);
   } else if (base_symbol == SYMBOL_UNRESOLVED) {
     assert(n);
     base = make_symbol(n);
@@ -1731,7 +1765,7 @@ gen_paren_op(CallExpr *s) {
     base = dynamic_cast<FnSymbol*>(dynamic_cast<SymExpr*>(s->baseExpr)->var)->asymbol->sym;
   else {
     switch (s->opTag) {
-      case OP_INIT: trvals.add(sym_primitive); base = chapel_defexpr_symbol; break;
+      case OP_INIT: trvals.add(sym_primitive); base = chapel_init_symbol; break;
       default: base = s->baseExpr ? s->baseExpr->ainfo->rval : 0; break;
     }
   }
@@ -2048,7 +2082,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
         }
         break;
       }
-      if (gen_paren_op(call) < 0) return -1;
+      if (gen_call_expr(call) < 0) return -1;
       break;
     }
     case EXPR_CAST: {
@@ -2068,12 +2102,14 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       break;
     }
     case EXPR_REDUCE: {
+      assert(!"EXPR_REDUCE not implemented");
       ReduceExpr *s = dynamic_cast<ReduceExpr *>(ast);
       s->ainfo->rval = new_sym();
       s->ainfo->rval->ast = s->ainfo;
       if1_gen(if1, &s->ainfo->code, s->redDim->only()->ainfo->code);
       if1_gen(if1, &s->ainfo->code, s->argExpr->ainfo->code);
-      Code *send = if1_send(if1, &s->ainfo->code, 5, 1, sym_primitive, expr_reduce_symbol, 
+      Code *send = if1_send(if1, &s->ainfo->code, 5, 1, sym_primitive, 
+                            unimplemented_symbol,
                             s->reduceType->asymbol->sym, s->redDim->only()->ainfo->rval, 
                             s->argExpr->ainfo->rval, s->ainfo->rval);
       send->ast = s->ainfo;
@@ -2205,7 +2241,7 @@ gen_fun(FnSymbol *f) {
   if1_gen(if1, &body, f->body->ainfo->code);
   if1_move(if1, &body, sym_void, fn->ret, ast);
   if1_label(if1, &body, ast, ast->label[0]);
-  Code *c = if1_send(if1, &body, 3, 0, sym_reply, fn->cont, fn->ret);
+  Code *c = if1_send(if1, &body, 4, 0, sym_primitive, sym_reply, fn->cont, fn->ret);
   forv_Sym(r, out_args)
     if1_add_send_arg(if1, c, r);
   c->ast = ast;
@@ -2465,18 +2501,13 @@ ACallbacks::report_analysis_errors(Vec<ATypeViolation*> &type_violations) {
 
 static void
 init_symbols() {
-  expr_simple_seq_symbol = make_symbol("expr_simple_seq");
-  expr_domain_symbol = make_symbol("expr_domain");
-  expr_create_domain_symbol = make_symbol("expr_create_domain");
-  expr_reduce_symbol = make_symbol("expr_reduce");
-  cast_symbol = make_symbol("cast");
-  make_seq_symbol = make_symbol("make_seq");
-  chapel_defexpr_symbol = make_symbol("chapel_defexpr");
-  write_symbol = make_symbol("write");
-  writeln_symbol = make_symbol("writeln");
-  read_symbol = make_symbol("read");
-  array_index_symbol = make_symbol("array_index");
-  array_set_symbol = make_symbol("array_set");
+  cast_symbol = make_symbol("chapel_cast");
+  write_symbol = make_symbol("chapel_write");
+  read_symbol = make_symbol("chapel_read");
+  array_index_symbol = make_symbol("chapel_array_index");
+  array_set_symbol = make_symbol("chapel_array_set");
+  chapel_init_symbol = make_symbol("chapel_init");
+  unimplemented_symbol = make_symbol("chapel_unimplemented");
 }
 
 static void
@@ -2591,43 +2622,7 @@ cast_value(PNode *pn, EntrySet *es) {
 }
 
 static void
-expr_domain(PNode *pn, EntrySet *es) {
-  assert(0);
-}
-
-static void
-expr_reduce(PNode *pn, EntrySet *es) {
-  assert(0);
-}
-
-static void
-expr_simple_seq(PNode *pn, EntrySet *es) {
-  AVar *container = make_AVar(pn->lvals.v[0], es);
-  CreationSet *cs = creation_point(container, sym_sequence);
-  AVar *element = get_element_avar(cs);
-  update_gen(element,  make_abstract_type(sym_int));
-}
-
-static void
-expr_create_domain(PNode *pn, EntrySet *es) {
-  AVar *container = make_AVar(pn->lvals.v[0], es);
-  creation_point(container, sym_domain);
-}
-
-static void
-write_transfer_function(PNode *pn, EntrySet *es) {
-  AVar *result = make_AVar(pn->lvals.v[0], es);
-  update_gen(result, make_abstract_type(sym_int));
-}
-
-static void
-read_transfer_function(PNode *pn, EntrySet *es) {
-  AVar *result = make_AVar(pn->lvals.v[0], es);
-  update_gen(result, make_abstract_type(sym_int));
-}
-
-static void
-array_index(PNode *pn, EntrySet *es) {
+array_index_transfer_function(PNode *pn, EntrySet *es) {
   AVar *result = make_AVar(pn->lvals.v[0], es);
   AVar *array = make_AVar(pn->rvals.v[2], es);
   set_container(result, array);
@@ -2638,7 +2633,7 @@ array_index(PNode *pn, EntrySet *es) {
 }
 
 static void
-array_set(PNode *pn, EntrySet *es) {
+array_set_transfer_function(PNode *pn, EntrySet *es) {
   AVar *result = make_AVar(pn->lvals.v[0], es);
   AVar *array = make_AVar(pn->rvals.v[2], es);
   AVar *val = make_AVar(pn->rvals.v[pn->rvals.n-1], es);
@@ -2656,15 +2651,15 @@ array_set(PNode *pn, EntrySet *es) {
 }
 
 static void
-ptr_eq(PNode *pn, EntrySet *es) {
+return_int_transfer_function(PNode *pn, EntrySet *es) {
   AVar *result = make_AVar(pn->lvals.v[0], es);
   update_gen(result, make_abstract_type(sym_int));
 }
 
 static void
-ptr_neq(PNode *pn, EntrySet *es) {
+return_string_transfer_function(PNode *pn, EntrySet *es) {
   AVar *result = make_AVar(pn->lvals.v[0], es);
-  update_gen(result, make_abstract_type(sym_int));
+  update_gen(result, make_abstract_type(sym_string));
 }
 
 static void
@@ -2675,74 +2670,7 @@ array_pointwise_op(PNode *pn, EntrySet *es) {
 }
 
 static void
-string_op(PNode *pn, EntrySet *es) {
-  AVar* result = make_AVar(pn->lvals.v[0], es);
-  update_gen(result, make_abstract_type(sym_string));
-}
-
-static void
-make_seq(PNode *pn, EntrySet *es) {
-  AVar *result = make_AVar(pn->lvals.v[0], es);
-  CreationSet *cs = creation_point(result, sym_sequence);
-  AVar *element = get_element_avar(cs);
-  for (int i = 2; i < pn->rvals.n; i++) {
-    AVar *av = make_AVar(pn->rvals.v[i], es);
-    flow_vars(av, element);
-  }
-  update_gen(result, make_AType(cs));
-}
-
-static void
-seqcat_seq(PNode *pn, EntrySet *es) {
-  AVar *result = make_AVar(pn->lvals.v[0], es);
-  AVar *s1 = make_AVar(pn->rvals.v[2], es);
-  AVar *s2 = make_AVar(pn->rvals.v[2], es);
-  forv_CreationSet(a, s1->out->sorted) {
-    AVar *ea = get_element_avar(a);
-    forv_CreationSet(b, s2->out->sorted) {
-      AVar *eb = get_element_avar(b);
-      flow_vars(eb, ea);
-    }
-  }
-  flow_vars(s1, result);
-}
-
-static void
-seqcat_element(PNode *pn, EntrySet *es) {
-  AVar *result = make_AVar(pn->lvals.v[0], es);
-  AVar *s1 = make_AVar(pn->rvals.v[2], es);
-  AVar *s2 = make_AVar(pn->rvals.v[2], es);
-  forv_CreationSet(a, s1->out->sorted) {
-    AVar *ea = get_element_avar(a);
-    flow_vars(s2, ea);
-  }
-  flow_vars(s1, result);
-}
-
-static void
-indextype_get(PNode *pn, EntrySet *es) {
-  AVar *result = make_AVar(pn->lvals.v[0], es);
-  AVar *i = make_AVar(pn->rvals.v[2], es);
-  forv_CreationSet(a, i->out->sorted) {
-    AVar *ea = get_element_avar(a);
-    flow_vars(ea, result);
-  }
-}
-
-static void
-indextype_set(PNode *pn, EntrySet *es) {
-  AVar *result = make_AVar(pn->lvals.v[0], es);
-  AVar *i = make_AVar(pn->rvals.v[2], es);
-  AVar *x = make_AVar(pn->rvals.v[3], es);
-  forv_CreationSet(a, i->out->sorted) {
-    AVar *ea = get_element_avar(a);
-    flow_vars(x, ea);
-  }
-  flow_vars(x, result);
-}
-
-static void
-chapel_defexpr(PNode *pn, EntrySet *es) {
+init_transfer_function(PNode *pn, EntrySet *es) {
   AVar *tav = make_AVar(pn->rvals.v[2], es);
   AVar *result = make_AVar(pn->lvals.v[0], es);
   int type_expr = pn->rvals.n > 3;
@@ -2796,7 +2724,12 @@ chapel_defexpr(PNode *pn, EntrySet *es) {
 }
 
 static void
-chpl_alloc(PNode *pn, EntrySet *es) {
+unimplemented_transfer_function(PNode *pn, EntrySet *es) {
+  fail("unimplemented primitive");
+}
+
+static void
+alloc_transfer_function(PNode *pn, EntrySet *es) {
   AVar *tav = make_AVar(pn->rvals.v[2], es);
   AVar *result = make_AVar(pn->lvals.v[0], es);
   forv_CreationSet(cs, *tav->out) {
@@ -2806,21 +2739,6 @@ chpl_alloc(PNode *pn, EntrySet *es) {
       ; // update_gen(result, make_abstract_type(ts))  not permitted
     else
       creation_point(result, ts);
-  }
-}
-
-static void
-pure_return(PNode *pn, EntrySet *es) {
-  AVar *tav = make_AVar(pn->rvals.v[2], es);
-  AVar *result = make_AVar(pn->lvals.v[0], es);
-  forv_CreationSet(cs, *tav->out) {
-    Sym *ts = cs->sym;
-    if (ts->is_meta_type) ts = ts->meta_type;
-    if (ts->asymbol && is_scalar_type(SYMBOL(ts)))
-      update_gen(result, make_abstract_type(ts));
-    else
-      // creation_point(result, ts) not permitted
-      ;
   }
 }
 
@@ -2847,30 +2765,6 @@ ast_to_if1(Vec<AList<Stmt> *> &stmts) {
   build_classes(syms);
   finalize_types(if1, false);
   if (build_functions(syms) < 0) return -1;
-#define REG(_n, _f) pdb->fa->primitive_transfer_functions.put(_n, new RegisteredPrim(_f));
-#define SREG(_n, _f) pdb->fa->primitive_transfer_functions.put(if1_cannonicalize_string(if1,_n), new RegisteredPrim(_f));
-  REG(expr_simple_seq_symbol->name, expr_simple_seq);
-  REG(expr_domain_symbol->name, expr_domain);
-  REG(expr_create_domain_symbol->name, expr_create_domain);
-  REG(expr_reduce_symbol->name, expr_reduce);
-  REG(cast_symbol->name, cast_value);
-  REG(write_symbol->name, write_transfer_function);
-  REG(writeln_symbol->name, write_transfer_function);
-  REG(read_symbol->name, read_transfer_function);
-  REG(array_index_symbol->name, array_index);
-  REG(array_set_symbol->name, array_set);
-  REG(make_seq_symbol->name, make_seq);
-  REG(chapel_defexpr_symbol->name, chapel_defexpr);
-  SREG("ptr_eq", ptr_eq);
-  SREG("ptr_neq", ptr_neq);
-  SREG("array_pointwise_op", array_pointwise_op);
-  SREG("string_op", string_op);
-  SREG("seqcat_seq", seqcat_seq);
-  SREG("seqcat_element", seqcat_element);
-  SREG("indextype_get", indextype_get);
-  SREG("indextype_set", indextype_set);
-  SREG("chpl_alloc", chpl_alloc);
-  SREG("pure_return", pure_return);
   finalize_symbols(if1);
   build_type_hierarchy();
   finalize_types(if1, false);  // again to catch any new ones
@@ -3230,3 +3124,61 @@ float
 execution_frequence_info(FnSymbol *fn) {
   return fn->asymbol->sym->fun->execution_frequency;
 }
+
+static AnalysisOp *
+S(char *name, PrimitiveTransferFunctionPtr pfn) {
+  char internal_name[512];
+  strcpy(internal_name, "chapel_");
+  strcat(internal_name, name);
+  char *new_name = if1_cannonicalize_string(if1, internal_name);
+  pdb->fa->primitive_transfer_functions.put(new_name, new RegisteredPrim(pfn));
+  return new AnalysisOp(name, new_name, pfn);
+}
+
+static AnalysisOp *
+P(char *name, Prim *p) {
+  char internal_name[512];
+  strcpy(internal_name, "chapel_");
+  strcat(internal_name, name);
+  char *new_name = if1_cannonicalize_string(if1, internal_name);
+  return new AnalysisOp(name, new_name, p);
+}
+
+void
+init_chapel_ifa() {
+  ifa_init(new ACallbacks);
+  unimplemented_analysis_op = S("unimplemented", unimplemented_transfer_function);
+  init_analysis_op = S("init", init_transfer_function);
+  return_int_analysis_op = S("return_int", return_int_transfer_function); 
+  return_string_analysis_op = S("return_string", return_string_transfer_function); 
+  coerce_analysis_op = P("coerce", prim_coerce);
+  array_index_analysis_op = S("array_index", array_index_transfer_function);
+  array_set_analysis_op = S("array_set", array_set_transfer_function);
+  index_object_analysis_op = P("index_object", prim_index_object);
+  set_index_object_analysis_op = P("set_index_object", prim_set_index_object);
+  array_pointwise_op_analysis_op = S("array_pointwise_op", array_pointwise_op);
+  unary_minus_analysis_op = P("u-", prim_minus);
+  unary_plus_analysis_op = P("u+", prim_plus);
+  unary_bnot_analysis_op = P("u~", prim_bnot);
+  unary_not_analysis_op = P("not", prim_not);
+  add_analysis_op = P("+", prim_add);
+  subtract_analysis_op = P("-", prim_subtract);
+  mult_analysis_op = P("*", prim_mult);
+  div_analysis_op = P("/", prim_div);
+  mod_analysis_op = P("%", prim_mod);
+  equal_analysis_op = P("==", prim_equal);
+  notequal_analysis_op = P("!=", prim_notequal);
+  lessorequal_analysis_op = P("<=", prim_lessorequal);
+  greaterorequal_analysis_op = P(">=", prim_greaterorequal);
+  less_analysis_op = P("<", prim_less);
+  greater_analysis_op = P(">", prim_greater);
+  and_analysis_op = P("&", prim_and);
+  or_analysis_op = P("|", prim_or);
+  xor_analysis_op = P("^", prim_xor);
+  land_analysis_op = P("&&", prim_land);
+  lor_analysis_op = P("||", prim_lor);
+  exp_analysis_op = P("**", prim_exp);
+  cast_analysis_op = S("cast", cast_value);
+  alloc_analysis_op = S("alloc", alloc_transfer_function);
+}
+

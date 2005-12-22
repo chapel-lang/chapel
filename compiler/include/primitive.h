@@ -2,15 +2,22 @@
 #define _PRIMITIVE_H_
 
 #include "vec.h"
+#include "map.h"
+
+class InterpreterOp;
+class AnalysisOp;
 
 class PrimitiveOp : public gc { public:
-  int id;
+  int index;
   char *name;
-  
-  PrimitiveOp(char *aname);
+  InterpreterOp *interpreterOp;
+  AnalysisOp *analysisOp;
+
+  PrimitiveOp(char *aname, InterpreterOp *aiop, AnalysisOp *aaop);
 };
 
 extern Vec<PrimitiveOp *> primitives;
+extern HashMap<char *, StringHashFns, PrimitiveOp *> primitives_map;
 
 void initPrimitive();
 

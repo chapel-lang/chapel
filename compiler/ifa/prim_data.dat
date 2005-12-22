@@ -43,7 +43,6 @@ prim_bnot "~" 2 0 {PRIM_TYPE_ANY_INT_A} {PRIM_TYPE_A} ;
 prim_not "!" 2 0 {PRIM_TYPE_ANY_INT_A} {PRIM_TYPE_A} ;
 prim_deref "*" 2 0 {PRIM_TYPE_REF} {PRIM_TYPE_ANY} ;
 prim_ref "&" 2 0 {PRIM_TYPE_ANY} {PRIM_TYPE_ANY} ;
-prim_sizeof "sizeof" 2 0 {PRIM_TYPE_ANY} {PRIM_TYPE_SIZE} ;
 prim_cast "(" 3 0 {PRIM_TYPE_SYMBOL, PRIM_TYPE_ANY} {PRIM_TYPE_ANY} ;
 
 prim_reply  "reply" -3 0 {PRIM_TYPE_CONT, PRIM_TYPE_ALL} {PRIM_TYPE_ALL} nonfunctional;

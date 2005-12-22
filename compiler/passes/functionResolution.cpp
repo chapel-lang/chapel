@@ -172,7 +172,7 @@ void resolve_dot(MemberAccess* dot) {
   }
   dot->member = Symboltable::lookupInScope(dot->member->name, ct->structScope);
   if (FnSymbol* fn = dynamic_cast<FnSymbol*>(dot->parentSymbol)) {
-    if (fn->fnClass = FN_CONSTRUCTOR) {
+    if (fn->fnClass == FN_CONSTRUCTOR) {
       if (CallExpr* call = dynamic_cast<CallExpr*>(dot->parentExpr)) {
         if (dot->member->type == dtUnknown) {
           dot->member->type = call->get(2)->typeInfo();
@@ -189,7 +189,7 @@ void resolve_op(CallExpr* call) {
   if (call->opTag == OP_MOVE) {
     if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->argList->get(1))) {
       if (CallExpr* prim = dynamic_cast<CallExpr*>(call->argList->get(2)))
-        if (prim->isNamed("__primitive"))
+        if (prim->isNamed("__primitive") || prim->primitive)
           return;
       Type* type = call->argList->get(2)->typeInfo();
       if (type != dtNil) {
@@ -222,7 +222,7 @@ void resolve_op(CallExpr* call) {
 
 
 void resolve_call(CallExpr* call) {
-  if (call->isNamed("__primitive"))
+  if (call->isNamed("__primitive") || call->primitive)
     return;
 
   if (call->isNamed("_chpl_alloc")) {

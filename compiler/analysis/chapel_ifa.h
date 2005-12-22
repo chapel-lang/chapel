@@ -6,6 +6,7 @@
 #include "vec.h"
 #include "map.h"
 #include "../ifa/ifa.h"
+#include "../ifa/prim.h"
 
 class BaseIFAAST;
 class Label;

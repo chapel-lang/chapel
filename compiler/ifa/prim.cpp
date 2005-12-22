@@ -45,6 +45,13 @@ Primitives::find(Code *c) {
         prim = prim_map[nargs][1].get(n);
       }
       assert(prim);
+    } else if (prim == prim_primitive) {
+       char *name = c->rvals.v[1]->name;
+       if (!name) name = c->rvals.v[1]->constant;
+       if (!name) name = c->rvals.v[1]->imm.v_string;
+       Prim *pp = prim_map[0][0].get(name);
+       if (pp)
+         return pp;
     }
     return prim;
   }
@@ -68,6 +75,13 @@ Primitives::find(PNode *p) {
         prim = prim_map[nargs][1].get(p->rvals.v[2]->sym->name);
       }
       assert(prim);
+    } else if (prim == prim_primitive) {
+      char *name = p->rvals.v[1]->sym->name;
+      if (!name) name = p->rvals.v[1]->sym->constant;
+      if (!name) name = p->rvals.v[1]->sym->imm.v_string;
+      Prim *pp = prim_map[0][0].get(name);
+      if (pp)
+        return pp;
     }
     return prim;
   }

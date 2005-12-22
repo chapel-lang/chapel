@@ -28,6 +28,7 @@ static void hack_array_constructor_call(CallExpr* call);
 static void hack_domain_constructor_call(CallExpr* call);
 static void hack_seqcat_call(CallExpr* call);
 static void hack_typeof_call(CallExpr* call);
+static void convert_user_primitives(CallExpr* call);
 static void hack_resolve_types(Expr* expr);
 static void apply_getters_setters(BaseAST* ast);
 static void insert_call_temps(CallExpr* call);
@@ -109,6 +110,7 @@ void normalize(BaseAST* base) {
       hack_domain_constructor_call(a);
       hack_seqcat_call(a);
       hack_typeof_call(a);
+      convert_user_primitives(a);
     } else if (Expr* a = dynamic_cast<Expr*>(ast)) {
       hack_resolve_types(a);
     }
@@ -766,7 +768,7 @@ static void insert_call_temps(CallExpr* call) {
   if (call->partialTag != PARTIAL_NEVER)
     return;
 
-  if (call->isNamed("typeof") || call->isNamed("__primitive"))
+  if (call->isNamed("typeof") || call->primitive)
     return;
 
   Stmt* stmt = call->parentStmt;
@@ -840,3 +842,27 @@ static void fix_def_expr(DefExpr* def) {
   def->exprType->remove();
   def->init->remove();
 }
+
+
+static void convert_user_primitives(CallExpr* call) {
+  if (call->isNamed("__primitive")) {
+    if (!call->argList->length() > 0)
+      INT_FATAL(call, "primitive with no name");
+    SymExpr *s = dynamic_cast<SymExpr*>(call->argList->get(1));
+    if (!s)
+      INT_FATAL(call, "primitive with no name");
+    VarSymbol *str = dynamic_cast<VarSymbol*>(s->var);
+    if (!str || !str->immediate || str->immediate->const_kind != IF1_CONST_KIND_STRING)
+      INT_FATAL(call, "primitive with non-literal string name");
+    PrimitiveOp *prim = primitives_map.get(str->immediate->v_string);
+    if (!prim)
+      INT_FATAL(call, "primitive not found '%s'", str->immediate->v_string);
+    call->replace(new CallExpr(prim, call->argList));
+  } else if (call->opTag == OP_INIT) {
+    PrimitiveOp *prim = primitives_map.get("init");
+    if (!prim)
+      INT_FATAL(call, "primitive not found '%s'", "init");
+    call->replace(new CallExpr(prim, call->argList));
+  }
+}
+

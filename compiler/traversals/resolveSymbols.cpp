@@ -20,8 +20,10 @@ static AList<Expr>* copy_argument_list(CallExpr* expr) {
 
 void ResolveSymbols::postProcessExpr(Expr* expr) {
   if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
-    if (call->isNamed("__primitive"))
+    if (call->primitive) {
+      call->makeOp();
       return;
+    }
     if (call->opTag == OP_INIT) {
       Type* type = call->get(1)->typeInfo();
       if (type->defaultValue) {

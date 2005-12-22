@@ -163,11 +163,13 @@ class CallExpr : public Expr {
   Expr* baseExpr;
   AList<Expr>* argList;
   OpTag opTag;
+  PrimitiveOp *primitive;
   PartialTag partialTag;
 
   CallExpr(BaseAST* base, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
            BaseAST* arg3 = NULL, BaseAST* arg4 = NULL);
   CallExpr(OpTag initOpTag, BaseAST* arg1, BaseAST* arg2 = NULL);
+  CallExpr(PrimitiveOp *prim, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL);
   CallExpr(char* name, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
            BaseAST* arg3 = NULL, BaseAST* arg4 = NULL);
   virtual void verify(void); 
