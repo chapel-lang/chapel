@@ -52504,3 +52504,16 @@ Added files:
 	chapel/compiler/analysis/: analysis_ops.h 
 	chapel/compiler/passes/: interpreter_ops.h 
 
+---------------------------------------------------------------------------
+
+12/21/05 17:42:11 -- bradc
+
+Log message:
+	Putting emacs lisp files under CVS control to maintain
+	some sanity...  Still not ready for prime-time, but
+	getting closer.
+
+Added files:
+	chapel/etc/emacs/21.4/: cc-langs.el cc-menus.el cc-mode.el 
+	                        font-lock.el 
+
