@@ -766,7 +766,7 @@ static void insert_call_temps(CallExpr* call) {
   if (call->partialTag != PARTIAL_NEVER)
     return;
 
-  if (call->isNamed("typeof") || call->primitive)
+  if (call->isNamed("typeof") || call->primitive || call->isNamed("__primitive"))
     return;
 
   Stmt* stmt = call->parentStmt;

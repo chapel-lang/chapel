@@ -738,6 +738,7 @@ void CallExpr::makeOp(void) {
               opTag = OP_PLUS;
             if (opTag == OP_UNMINUS && argList->length() == 2)
               opTag = OP_MINUS;
+            base->remove();
             primitive = NULL;
             return;
           }
@@ -811,7 +812,7 @@ Type* CallExpr::typeInfo(void) {
     return dtUnknown;
   }
 
-  if (opTag != OP_NONE) {
+  if (!baseExpr) {
     if (OP_ISLOGICAL(opTag)) {
       return dtBoolean;
     } else if (OP_ISUNARYOP(opTag)) {
@@ -821,7 +822,7 @@ Type* CallExpr::typeInfo(void) {
         return dtUnknown;
       }
       return get(1)->typeInfo();
-    } else if (opTag == OP_INIT) {
+    } else if (primitive && !strcmp(primitive->name, "init")) {
       return argList->get(1)->typeInfo();
     } else if (opTag == OP_MOVE) {
       return argList->get(1)->typeInfo();

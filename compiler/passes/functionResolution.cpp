@@ -225,7 +225,7 @@ void resolve_op(CallExpr* call) {
   if (call->opTag == OP_MOVE) {
     if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->argList->get(1))) {
       if (CallExpr* prim = dynamic_cast<CallExpr*>(call->argList->get(2)))
-        if (prim->isNamed("__primitive") || prim->primitive)
+        if (prim->isNamed("__primitive") || (prim->primitive && strcmp(prim->primitive->name, "init")))
           return;
       Type* type = call->argList->get(2)->typeInfo();
       if (type != dtNil) {
@@ -237,7 +237,7 @@ void resolve_op(CallExpr* call) {
       if (symExpr->var->type == dtUnknown)
         INT_FATAL("Unable to resolve type");
     }
-  } else if (call->opTag == OP_INIT) {
+  } else if (!strcmp(call->primitive->name, "init")) {
     Type* type = call->get(1)->typeInfo();
     if (type->defaultValue) {
       call->replace(new CastExpr(new SymExpr(type->defaultValue), NULL, type));
@@ -263,7 +263,7 @@ void resolve_op(CallExpr* call) {
 
 
 void resolve_call(CallExpr* call) {
-  if (call->isNamed("__primitive") || call->primitive)
+  if (call->isNamed("__primitive"))
     return;
 
   if (call->isNamed("_chpl_alloc")) {
@@ -501,7 +501,7 @@ void resolve_asts(BaseAST* base) {
     if (MemberAccess* dot = dynamic_cast<MemberAccess*>(ast)) {
       resolve_dot(dot);
     } else if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
-      if (call->opTag != OP_NONE)
+      if (!call->baseExpr)
         resolve_op(call);
       else
         resolve_call(call);
