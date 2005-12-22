@@ -52517,3 +52517,31 @@ Added files:
 	chapel/etc/emacs/21.4/: cc-langs.el cc-menus.el cc-mode.el 
 	                        font-lock.el 
 
+---------------------------------------------------------------------------
+
+12/21/05 19:22:19 -- deitz
+
+Log message:
+	Instantiated classes are now put into their own modules which is used
+	at the point where the involved types are defined and uses the modules
+	in which the involved types are defined.  Eventually these modules
+	should use the scopes in which the involved types are defined rather
+	than the modules so as to deal better with nested types.
+	
+	The modules where the instantiated classes are put are named based on
+	the instantiation.  Thus if the user creates a 'seq of integer' the
+	module where this type is put is called _seq_of_integer.
+	
+	The code to create the modules is unwieldy in that I still define
+	module symbols explicitly.  I want to make this more orthogonal and
+	finish folding passes into cleanup to make this code cleaner.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h symtab.h 
+	chapel/compiler/passes/: codegen.cpp createEntryPoint.cpp 
+	                         createEntryPoint.h 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+
