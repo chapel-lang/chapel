@@ -52571,3 +52571,18 @@ Modified files:
 Removed files:
 	chapel/test/no_infer/: test_domains_2D.future 
 
+---------------------------------------------------------------------------
+
+12/22/05 12:12:28 -- jplevyak
+
+Log message:
+	Move normalization of primitives to the end of normalization to catch
+	any late OP_INITs.
+	Add a "user_error" mode which permits interpreter users to
+	  query the environment when a "user" error occurs.
+	Add support for OP_MOVE
+	Add support for loading of literals
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp runInterpreter.cpp 
+
