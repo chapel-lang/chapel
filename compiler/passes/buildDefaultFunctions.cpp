@@ -189,8 +189,6 @@ static void build_getter(ClassType* ct, Symbol *field) {
   fn->formals = new AList<DefExpr>();
   fn->body = new BlockStmt(new ReturnStmt(field->name));
   DefExpr* def = new DefExpr(fn);
-  if (no_infer && field->defPoint->exprType)
-    def->exprType = field->defPoint->exprType->copy();
   ct->symbol->defPoint->parentStmt->insertBefore(def);
   reset_file_info(fn, field->lineno, field->filename);
   ct->methods.add(fn);

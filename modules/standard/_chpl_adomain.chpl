@@ -9,7 +9,7 @@ pragma "instantiate multidimensional iterator"
 class _adomain : value {
   param rank : integer;
 
-  var info : _ddata(_adomain_info) = _ddata(_adomain_info, 16);
+  var info : _ddata(_adomain_info) = _ddata(_adomain_info, rank);
 
   function _set(dim : integer, x : _aseq) {
     var tmp : _adomain_info;
@@ -36,7 +36,7 @@ class _adomain : value {
 class _adomain_lit : value {
   param rank : integer;
 
-  var info : _ddata(_aseq) = _ddata(_aseq, 16);
+  var info : _ddata(_aseq) = _ddata(_aseq, rank);
 
   var dummy : integer;
 

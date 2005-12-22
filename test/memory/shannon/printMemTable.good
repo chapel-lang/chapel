@@ -7,17 +7,7 @@ Size:    Number:  Total:   Address:    Description:
 (bytes)           (bytes)  
 ================================================================================
 4        16       64       0xnnnnnnnn  _data
-4        16       64       0xnnnnnnnn  _data
-4        16       64       0xnnnnnnnn  _data
-4        16       64       0xnnnnnnnn  _data
-4        16       64       0xnnnnnnnn  _data
-4        16       64       0xnnnnnnnn  _data
-4        16       64       0xnnnnnnnn  _data
-4        16       64       0xnnnnnnnn  _data
-4        16       64       0xnnnnnnnn  _data
 8        128      1024     0xnnnnnnnn  _data
-4        16       64       0xnnnnnnnn  _data
-4        16       64       0xnnnnnnnn  _data
 4        16       64       0xnnnnnnnn  _data
 8        128      1024     0xnnnnnnnn  _data
 
