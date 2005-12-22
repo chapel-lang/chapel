@@ -75,6 +75,9 @@ static void codegen_header(void) {
     if (sym->parentScope->type < SCOPE_MODULE)
       continue;
 
+    if (sym->hasPragma("no codegen"))
+      continue;
+
     legalizeCName(sym);
 
     // mangle symbol that is neither field nor formal if the symbol's

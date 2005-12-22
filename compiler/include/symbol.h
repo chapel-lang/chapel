@@ -147,7 +147,7 @@ class TypeSymbol : public Symbol {
   TypeSymbol(char* init_name, Type* init_definition);
   virtual void verify(void); 
   COPY_DEF(TypeSymbol);
-  TypeSymbol* clone(ASTMap* map);
+  TypeSymbol* clone(ASTMap* map, Stmt* pointOfClone = NULL);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void traverseDefSymbol(Traversal* traverse);
   virtual void codegenDef(FILE* outfile);

@@ -29,7 +29,7 @@ Vec<ModuleSymbol*> allModules;     // Contains all modules
 Vec<ModuleSymbol*> codegenModules; // Contains codegened modules
 Vec<ModuleSymbol*> userModules;    // Contains user modules
 
-static void registerModule(ModuleSymbol* mod) {
+void registerModule(ModuleSymbol* mod) {
   switch (mod->modtype) {
   case MOD_USER:
     userModules.add(mod);

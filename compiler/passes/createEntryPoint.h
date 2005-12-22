@@ -4,6 +4,7 @@
 #include "alist.h"
 #include "pass.h"
 
+void createInitFn(ModuleSymbol*);
 void createEntryPoint(void);
 
 #endif

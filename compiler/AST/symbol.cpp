@@ -13,7 +13,9 @@
 #include "../traversals/createConfigVarTable.h"
 #include "../traversals/findTypeVariables.h"
 #include "../traversals/instantiate.h"
+#include "../traversals/processImportExprs.h"
 #include "../passes/preAnalysisCleanup.h"
+#include "../passes/createEntryPoint.h"
 
 FnSymbol* chpl_main = NULL;
 
@@ -568,7 +570,9 @@ TypeSymbol::copyInner(ASTMap* map) {
 }
 
 
-TypeSymbol* TypeSymbol::clone(ASTMap* map) {
+TypeSymbol* TypeSymbol::clone(ASTMap* map, Stmt* pointOfClone) {
+  if (!pointOfClone)
+    pointOfClone = defPoint->parentStmt;
   ClassType* originalClass = dynamic_cast<ClassType*>(definition);
   if (!originalClass) {
     INT_FATAL(this, "Attempt to clone non-class type");
@@ -579,7 +583,7 @@ TypeSymbol* TypeSymbol::clone(ASTMap* map) {
     INT_FATAL(this, "Class cloning went horribly wrong");
   }
   clone->cname = stringcat("_clone_", clone->cname);
-  defPoint->parentStmt->insertBefore(new DefExpr(clone));
+  pointOfClone->insertBefore(new DefExpr(clone));
   clone->addPragmas(&pragmas);
   if (no_infer)
     newClass->dispatchParents.copy(originalClass->dispatchParents);
@@ -964,12 +968,12 @@ instantiate_add_subs(ASTMap* substitutions, ASTMap* map) {
 
 
 static FnSymbol*
-instantiate_function(FnSymbol *fn, ASTMap *all_subs, ASTMap *generic_subs, ASTMap *map) {
+instantiate_function(Stmt* pointOfInstantiation, FnSymbol *fn, ASTMap *all_subs, ASTMap *generic_subs, ASTMap *map) {
   Stmt* fnStmt = fn->defPoint->parentStmt->copy(map);
   ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(fnStmt);
   DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr);
   defExpr->sym->cname = stringcat("_inst_", defExpr->sym->cname);
-  fn->defPoint->parentStmt->insertBefore(fnStmt);
+  pointOfInstantiation->insertBefore(fnStmt);
   instantiate_add_subs(all_subs, map);
   instantiate_update_expr(all_subs, defExpr);
   FnSymbol* fnClone = dynamic_cast<FnSymbol*>(defExpr->sym);
@@ -1053,7 +1057,55 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
   currentFilename = filename;
   ASTMap map;
   if (fnClass == FN_CONSTRUCTOR) {
-    TypeSymbol* clone = retType->symbol->clone(&map);
+    /*** gross code to insert a module because it is still old school */
+    Vec<BaseAST*> values;
+    generic_substitutions->get_values(values);
+    char* name = stringcat("_", retType->symbol->name, "_of");
+    forv_Vec(BaseAST, value, values) {
+      if (Type* type = dynamic_cast<Type*>(value)) {
+        name = stringcat(name, "_", type->symbol->name);
+      } else if (VarSymbol* var = dynamic_cast<VarSymbol*>(value)) {
+        name = stringcat(name, "_", var->cname);
+      } else {
+        INT_FATAL(this, "Unexpected generic substitution");
+      }
+    }
+
+    SymScope* saveScope = Symboltable::setCurrentScope(prelude->modScope);
+    ModuleSymbol* mod = new ModuleSymbol(name, MOD_STANDARD);
+    new DefExpr(mod);
+    preludeScope->define(mod);
+    Symboltable::pushScope(SCOPE_MODULE);
+    mod->setModScope(Symboltable::popScope());
+    mod->modScope->astParent = mod;
+    Symboltable::setCurrentScope(saveScope);
+    registerModule(mod);
+    Fixup* fixup = new Fixup();
+    fixup->parentSymbols.add(mod);
+    mod->startTraversal(fixup);
+    if (retType->symbol->defPoint->getModule() != prelude) {
+      mod->stmts->insertAtTail(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol(retType->symbol->defPoint->getModule()->name))));
+      retType->symbol->defPoint->parentScope->uses.add(mod);
+    }
+    forv_Vec(BaseAST, value, values) {
+      if (Type* type = dynamic_cast<Type*>(value)) {
+        if (type->symbol->defPoint) {
+          mod->stmts->insertAtTail(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol(type->symbol->defPoint->getModule()->name))));
+          type->symbol->defPoint->parentScope->uses.add(mod);
+        }
+      }
+    }
+    createInitFn(mod);
+    TRAVERSE(mod, new ProcessImportExprs(), true);
+    cleanup(mod);
+    scopeResolve(mod);
+    normalize(mod);
+    Stmt* pointOfInstantiation = mod->initFn->defPoint->parentStmt;
+
+    mod->addPragmas(&retType->symbol->defPoint->getModule()->pragmas);
+    /*** end gross code */
+
+    TypeSymbol* clone = retType->symbol->clone(&map, pointOfInstantiation);
     new_types->add(clone);
     instantiate_add_subs(&substitutions, &map);
 
@@ -1090,7 +1142,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
     collect_functions(&fns);
     forv_Vec(FnSymbol, fn, fns) {
       if (function_requires_instantiation(fn, retType)) {
-        FnSymbol *fnClone = instantiate_function(fn, &substitutions, generic_substitutions, &map);
+        FnSymbol *fnClone = instantiate_function(pointOfInstantiation, fn, &substitutions, generic_substitutions, &map);
         new_functions->add(fnClone);
         if (fn == this) {
           newfn = fnClone;
@@ -1113,7 +1165,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
     }
 
   } else {
-    newfn = instantiate_function(this, &substitutions, generic_substitutions, &map);
+    newfn = instantiate_function(defPoint->parentStmt, this, &substitutions, generic_substitutions, &map);
     new_functions->add(newfn);
   }
   if (!newfn) {

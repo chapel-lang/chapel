@@ -26,7 +26,7 @@ static bool stmtIsGlob(Stmt* stmt) {
 }
 
 
-static void createInitFn(ModuleSymbol* mod) {
+void createInitFn(ModuleSymbol* mod) {
   char* fnName = stringcat("__init_", mod->name);
   AList<Stmt>* globstmts = NULL;
   AList<Stmt>* initstmts = NULL;
