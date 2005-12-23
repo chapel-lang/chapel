@@ -52651,3 +52651,18 @@ Modified files:
 	chapel/compiler/AST/: expr.cpp 
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+12/22/05 16:44:58 -- jplevyak
+
+Log message:
+	Fix bug in handling of OP_INIT for --use-alloc.
+	Still have a problem where the new collect_asts doesn't
+	  collect Symbols (or Types most likely).
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: prim.cpp 
+	chapel/compiler/include/: vec.h 
+	chapel/compiler/passes/: normalize.cpp 
+
