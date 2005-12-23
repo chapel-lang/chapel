@@ -1720,16 +1720,15 @@ gen_primitive(CallExpr *s, Vec<Expr *> &args, Vec<Sym *> &rvals) {
     INT_FATAL(s, "unknown primitive");
   Prim *p = op->prim;
   if (!p) {
-    rvals.v[0] = make_symbol(op->internal_name);
+    rvals.insert(0, make_symbol(op->internal_name));
     return sym_primitive;
-  }
-  else if (p->pos == 0) {
+  } else if (p->pos == 0) {
     // unary or n-ary operation
-    rvals.v[0] = make_symbol(p->string);
+    rvals.insert(0, make_symbol(p->string));
     return sym_primitive;
   } else {
     // binary operation requires the symbol in the center
-    rvals.v[0] = rvals.v[1];
+    rvals.insert(0, rvals.v[1]);
     rvals.v[1] = make_symbol(p->string);
     return sym_operator;
   }

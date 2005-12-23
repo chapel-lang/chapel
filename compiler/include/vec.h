@@ -63,6 +63,7 @@ class Vec : public gc {
   void fill(int n);
   void append(const Vec<C> &v);
   void remove(int index);
+  void insert(int index, C a);
   void reverse();
   C* end() { return v + n; }
   Vec<C>& operator=(Vec<C> &v) { this->copy(v); return *this; }
@@ -478,10 +479,21 @@ Vec<C>::vec_to_set() {
 template <class C>  void 
 Vec<C>::remove(int index) {
   if (n > 1)
-    memcpy(&v[index], &v[index+1], (n - 1) * sizeof(v[0]));
+    memcpy(&v[index], &v[index+1], (n - 1 - index) * sizeof(v[0]));
   n--;
   if (n <= 0)
     v = e;
+}
+
+template <class C>  void 
+Vec<C>::insert( int index, C a) {
+  if (index >= n) {
+    add(a);
+    return;
+  }
+  add(a);
+  memcpy(&v[index+1], &v[index], (n - index) * sizeof(v[0]));
+  v[index] = a;
 }
 
 template <class C>  void 

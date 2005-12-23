@@ -857,6 +857,7 @@ static void convert_user_primitives(CallExpr* call) {
     PrimitiveOp *prim = primitives_map.get(str->immediate->v_string);
     if (!prim)
       INT_FATAL(call, "primitive not found '%s'", str->immediate->v_string);
+    s->remove();
     call->replace(new CallExpr(prim, call->argList));
   } else if (call->opTag == OP_INIT) {
     PrimitiveOp *prim = primitives_map.get("init");
