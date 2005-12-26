@@ -52666,3 +52666,13 @@ Modified files:
 	chapel/compiler/include/: vec.h 
 	chapel/compiler/passes/: normalize.cpp 
 
+---------------------------------------------------------------------------
+
+12/25/05 22:18:19 -- jplevyak
+
+Log message:
+	Sub in memmove for memcpy to fix valgrind issues.
+
+Modified files:
+	chapel/compiler/include/: vec.h 
+
