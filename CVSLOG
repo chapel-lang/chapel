@@ -52676,3 +52676,13 @@ Log message:
 Modified files:
 	chapel/compiler/include/: vec.h 
 
+---------------------------------------------------------------------------
+
+12/26/05 08:59:33 -- jplevyak
+
+Log message:
+	Fixed stupid bug in new Vec::insert() code.
+
+Modified files:
+	chapel/compiler/include/: vec.h 
+
