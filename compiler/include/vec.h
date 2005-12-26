@@ -486,14 +486,12 @@ Vec<C>::remove(int index) {
 }
 
 template <class C>  void 
-Vec<C>::insert( int index, C a) {
-  if (index >= n) {
-    add(a);
-    return;
-  }
-  add(a);
-  memmove(&v[index+1], &v[index], (n - index) * sizeof(v[0]));
+Vec<C>::insert(int index, C a) {
+  addx();
+  for (i = index; i < n; i++)
+    v[i+1] = v[i];
   v[index] = a;
+  n++;
 }
 
 template <class C>  void 
