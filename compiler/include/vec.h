@@ -492,7 +492,7 @@ Vec<C>::insert( int index, C a) {
     return;
   }
   add(a);
-  memcpy(&v[index+1], &v[index], (n - index) * sizeof(v[0]));
+  memmove(&v[index+1], &v[index], (n - index) * sizeof(v[0]));
   v[index] = a;
 }
 
