@@ -52686,3 +52686,13 @@ Log message:
 Modified files:
 	chapel/compiler/include/: vec.h 
 
+---------------------------------------------------------------------------
+
+01/02/06 13:02:37 -- jplevyak
+
+Log message:
+	Remove future for working test.
+
+Removed files:
+	chapel/test/classes/deitz/: test_this2.future 
+
