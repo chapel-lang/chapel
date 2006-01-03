@@ -167,6 +167,7 @@ int compar_baseast(const void *ai, const void *aj);
 // for use with qsort
 
 void get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all = 0);
+void collect_ast_children(BaseAST *a, Accum<BaseAST *> &asts, int all = 0);
 
 extern int currentLineno;
 extern char* currentFilename;

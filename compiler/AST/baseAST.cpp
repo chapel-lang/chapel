@@ -588,4 +588,14 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
 #undef ADD_LIST
 #undef ADD_VEC
 
+void
+collect_ast_children(BaseAST *a, Accum<BaseAST *> &acc, int all) {
+  acc.add(a);
+  forv_BaseAST(x, acc.asvec) {
+    Vec<BaseAST *> tmp;
+    get_ast_children(x, tmp, all);
+    acc.add(tmp);
+  }
+}
+
 

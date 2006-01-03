@@ -271,8 +271,8 @@ interactive_usage() {
           "  trace - trace program\n"
           "  where - show stack\n"
           "  locals - show locals\n"
-          "  print - print by id number\n"
-          "  nprint - print by id number showing ids\n"
+          "  print - print by id number or a local by name\n"
+          "  nprint - print showing ids\n"
           "  bi - break information\n"
           "  bf - break at a function\n"
           "  bfrm - remove a break function by number\n"
@@ -435,28 +435,74 @@ cmd_locals(IFrame *frame) {
   }
 }
 
-static void
-cmd_print(int i, int nprint = 0) {
-  static int last_print = 0;
-  if (!i)
-    i = last_print;
-  if (i <= 0) {
-    interactive_usage();
-    return;
-  }
+static BaseAST *
+get_known_id(int i) {
   BaseAST *p = known_ids.get(i);
-  if (!p) {
-    printf("  unknown id: %d\n", i);
+  if (p)
+    return p;
+  Accum<BaseAST*> asts;
+  forv_Vec(ModuleSymbol, mod, allModules)
+    collect_ast_children(mod, asts, 1);
+  forv_BaseAST(x, asts.asvec)
+    known_ids.put(x->id, x);
+  return known_ids.get(i);
+}
+
+static BaseAST *last_print = 0;
+
+static void
+cmd_print(IFrame *frame, char *c, int nprint = 0) {
+  skip_arg(c);
+  BaseAST *p = NULL;
+  if (!*c) {
+    if (last_print)
+      p = last_print;
+    else {
+      printf("  no previous print\n");
+      return;
+    }
+  } else if (isdigit(*c)) {
+    int i = atoi(c);
+    if (i <= 0) {
+      interactive_usage();
+      return;
+    }
+    p = get_known_id(i);
+    if (!p) {
+      printf("  unknown id: %d\n", i);
+      return;
+    }
+  } else {
+    char *e = c;
+    while (*e && !isspace(*e)) e++;
+    *e = 0;
+    form_Map(MapElemBaseASTISlot, x, frame->env) {
+      if (Symbol *s = dynamic_cast<Symbol*>(x->key)) {
+        if (s->name && !strcmp(s->name, c)) {
+          p = s;
+          goto Lfound;
+        }
+      }
+    }
+    printf("  unknown local: %s\n", c);
     return;
+  Lfound:;
   }
-  last_print = i;
-  if (BaseAST *b = dynamic_cast<BaseAST *>(p)) {
-    if (!nprint)
-      print_view_noline(b);
-    else
-      nprint_view_noline(b);
+  last_print = p;
+  if (!nprint)
+    print_view_noline(p);
+  else
+    nprint_view_noline(p);
+  printf("\n ");
+  p->print(stdout);
+  printf(" ");
+  ISlot *ss = frame->env.get(p);
+  if (ss) {
+    printf("= ");
+    print(ss);
     printf("\n");
-  }
+  } else
+    printf("\n");
 }
 
 static int
@@ -501,11 +547,9 @@ interactive(IFrame *frame) {
       single_step = NEXT_STEP;
       return 0;
     } else if (match_cmd(c, "print")) {
-      skip_arg(c);
-      cmd_print(atoi(c));
+      cmd_print(frame, c);
     } else if (match_cmd(c, "nprint")) {
-      skip_arg(c);
-      cmd_print(atoi(c), 1);
+      cmd_print(frame, c, 1);
     } else if (match_cmd(c, "where")) {
       cmd_where(frame);
     } else if (match_cmd(c, "stack")) {

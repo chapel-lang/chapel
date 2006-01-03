@@ -83,6 +83,7 @@ template <class C> class Accum : public gc { public:
   Vec<C> asset;
   Vec<C> asvec;
   void add(C c) { if (asset.set_add(c)) asvec.add(c); }
+  void add(Vec<C> v) { for (int i = 0; i < v.n; i++) if (v.v[i]) add(v.v[i]); }
   void clear() { asset.clear(); asvec.clear(); }
 };
 
