@@ -52737,3 +52737,20 @@ Modified files:
 	                             resolveSymbols.cpp 
 	chapel/modules/standard/: _chpl_htuple.chpl 
 
+---------------------------------------------------------------------------
+
+01/03/06 12:58:35 -- jplevyak
+
+Log message:
+	Fixed --nostdincs SEGV in cleanup, access to uninitialized tupleModle
+	Interpreter:
+	  - it is now possible to break on any id.
+	    for Expr and Stmt, this results in breaking on that stmt/expr
+	    for FnSymbol is results in breaking on entrance to that function
+	  - "stack" command now documented and terminated with a \n
+	  - added some more asserts regarding expression stack integrity
+	  - stub for primitives
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp runInterpreter.cpp 
+
