@@ -82,6 +82,7 @@ struct IFrame : public gc { public:
   void icall(int nargs);
   void icall(FnSymbol *fn, int nargs);
   int igoto(Stmt *s);
+  void iprimitive(CallExpr *s);
   void reset();
   void init(FnSymbol *fn);
   void init(Stmt *s);
@@ -122,7 +123,7 @@ volatile static int interrupted = 0;
 
 static Vec<IThread *> threads;
 static int cur_thread = -1;
-static Vec<char *> break_functions;
+static Vec<int> break_ids;
 static Map<int, BaseAST*> known_ids;
 
 static void runProgram();
@@ -166,12 +167,8 @@ IFrame::icall(FnSymbol *fn, int nargs) {
     printf("  Calling %s(%d)\n", fn->name, (int)fn->id);
     known_ids.put(fn->id, fn);
   }
-  if (break_functions.n) {
-    forv_Vec(char *, x, break_functions) {
-      if (!strcmp(fn->name, x))
-        interrupted = 1;
-    }
-  }
+  if (break_ids.in(fn->id))
+    interrupted = 1;
   if (!ip) {
     function = fn;
     ip = stmt = (Stmt*)fn->body->body->head->next;
@@ -269,13 +266,14 @@ interactive_usage() {
           "  step - single step\n"
           "  next - single step skipping over function calls\n"
           "  trace - trace program\n"
-          "  where - show stack\n"
+          "  where - show the expression/statement stack\n"
+          "  stack - show the value stack\n"
           "  locals - show locals\n"
           "  print - print by id number or a local by name\n"
           "  nprint - print showing ids\n"
-          "  bi - break information\n"
-          "  bf - break at a function\n"
-          "  bfrm - remove a break function by number\n"
+          "  info - information about breakpoints\n"
+          "  bi - break at an id\n"
+          "  birm - remove a break by id\n"
           "  continue - continue execution\n"
           "  run - restart execution\n"
           "  quit/exit - quit the interpreter\n"
@@ -415,6 +413,7 @@ cmd_stack(IFrame *frame) {
   for (int i = frame->valStack.n-1; i >= 0; i--) {
     printf("    ");
     print(frame->valStack.v[i]);
+    printf("\n");
   }
 }
 
@@ -505,6 +504,17 @@ cmd_print(IFrame *frame, char *c, int nprint = 0) {
     printf("\n");
 }
 
+static int 
+compar_int(const void *ai, const void *aj) {
+  int i = *(int*)ai;
+  int j = *(int*)aj;
+  if (i > j)
+    return 1;
+  else if (i < j)
+    return -1;
+  return 0;
+}
+
 static int
 interactive(IFrame *frame) {
   if (frame)
@@ -556,23 +566,44 @@ interactive(IFrame *frame) {
       cmd_stack(frame);
     } else if (match_cmd(c, "locals")) {
       cmd_locals(frame);
-    } else if (match_cmd(c, "bf")) {
-      skip_arg(c);
-      char *e = c;
-      while (*e && !isspace(*e)) e++;
-      *e = 0;
-      break_functions.add(dupstr(c));
-      printf("  breaking at start of function '%s'\n", c);
-    } else if (match_cmd(c, "bfrm")) {
+    } else if (match_cmd(c, "bi")) {
       skip_arg(c);
       int i = atoi(c);
-      printf("  removing bf %d\n", i);
-      break_functions.remove(i);
-    } else if (match_cmd(c, "bi")) {
-      printf("  break functions: %d\n", break_functions.n);
-      for (int i = 0; i < break_functions.n; i++) {
-        char *x = break_functions.v[i];
-        printf("    bf %d '%s'\n", i, x);
+      if (i) {
+        BaseAST *a = get_known_id(i);
+        if (a) {
+          break_ids.set_add(i);
+          printf("  breaking at ");
+          show(a, 0);
+        } else
+          printf("  unable to break at unknown id %d", i);
+      } else 
+        printf("  please provide a valid id\n");
+    } else if (match_cmd(c, "birm")) {
+      skip_arg(c);
+      int i = atoi(c);
+      Vec<int> ids;
+      ids.move(break_ids);
+      int found = 0;
+      for (int z = 0; z < ids.n; z++) {
+        if (ids.v[z]) {
+          if (i == ids.v[z]) {
+            printf("  removing bi %d\n", i);
+            found = 1;
+          } else
+            break_ids.set_add(i);
+        }
+      }
+      if (!found)
+        printf("  bi %d not found\n", i);
+    } else if (match_cmd(c, "info")) {
+      printf("  break ids:\n");
+      Vec<int> ids;
+      ids.copy(break_ids);
+      ids.set_to_vec();
+      qsort(ids.v, ids.n, sizeof(ids.v[0]), compar_int);
+      for (int i = 0; i < ids.n; i++) {
+        printf("    bi %d\n", ids.v[i]);
       }
     } else if (match_cmd(c, "trace")) {
       skip_arg(c);
@@ -653,6 +684,7 @@ IFrame::reset() {
 
 #define PUSH_EXPR(_e) do { \
   Expr *__e = _e;  \
+  assert(__e); \
   if (expr && stage) { exprStack.add(expr); } \
   stageStack.add(stage + 1); \
   valStack.add(islot(__e)); \
@@ -660,6 +692,7 @@ IFrame::reset() {
 } while (0)
 #define EVAL_EXPR(_e) do { \
   Expr *__e = _e;  \
+  assert(__e); \
   if (expr && stage) { exprStack.add(expr); }  \
   stageStack.add(stage + 1); \
   stageStack.add(1); exprStack.add(__e); stage = 0; expr = __e; \
@@ -744,6 +777,12 @@ IFrame::igoto(Stmt *s) {
   return 0;
 }
 
+void
+IFrame::iprimitive(CallExpr *s) {
+  int len = s->argList->length();
+  valStack.n -= len;
+}
+
 int
 IFrame::run(int timeslice) {
   if (expr)
@@ -752,6 +791,8 @@ IFrame::run(int timeslice) {
   LgotoLabel:
     if (timeslice && !--timeslice)
       return timeslice;
+    if (break_ids.in(ip->id))
+      interrupted = 1;
     if (interrupted)
       if (interactive(this))
         return 0;
@@ -1008,7 +1049,8 @@ IFrame::run(int timeslice) {
                 INT_FATAL("unhandled CallExpr::opTag: %d\n", s->opTag); 
                 break;
               case OP_NONE:
-                PUSH_EXPR(s->baseExpr);
+                if (!s->primitive)
+                  PUSH_EXPR(s->baseExpr);
                 break;
               case OP_MOVE:
                 if (s->argList->length() != 2) {
@@ -1024,7 +1066,9 @@ IFrame::run(int timeslice) {
               PUSH_EXPR(s->argList->get(stage - 1));
             } else {
               stage = 0;
-              if (s->opTag == OP_MOVE) {
+              if (s->primitive)
+                iprimitive(s);
+              else if (s->opTag == OP_MOVE) {
                 Expr *a = s->argList->get(1);
                 if (a->astType == EXPR_SYM)
                   POP_VAL(((SymExpr*)a)->var);
@@ -1066,7 +1110,12 @@ IFrame::run(int timeslice) {
           assert(stage >= 0);
           ip = stmt = (Stmt*)stmt->next;
         }
+      } else if (!ip) {
+        assert(!expr);
+        ip = stmt;
       }
+      assert((!expr || expr == ip) && (expr || ip == stmt));
+      assert(stageStack.n == exprStack.n + stmtStack.n + (expr ? 1 : 0));
     }
     if (single_step)
       interrupted = 1;

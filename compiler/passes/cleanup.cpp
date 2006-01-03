@@ -27,7 +27,8 @@ static void finish_constructor(FnSymbol* fn);
 void cleanup(void) {
   forv_Vec(ModuleSymbol, mod, allModules)
     cleanup(mod);
-  cleanup(tupleModule); // cleanup again because tuples are put here
+  if (tupleModule)
+    cleanup(tupleModule); // cleanup again because tuples are put here
 }
 
 
