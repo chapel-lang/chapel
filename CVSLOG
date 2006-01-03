@@ -52715,3 +52715,25 @@ Modified files:
 	chapel/compiler/include/: baseAST.h vec.h 
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+01/03/06 11:36:12 -- deitz
+
+Log message:
+	Fixed a few bugs related to the --use-alloc flag.  This checkin makes
+	a bunch of programs work with the --use-alloc flag.
+	
+	Made collect_asts add all UnresolvedSymbols encountered to the
+	resulting vector.  It does not in general add all symbols, only those
+	that are defined.
+	
+	Fixed handling of init primitive in resolveSymbols.
+	
+	Removed a stopgap from the tuple module (unrelated).
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp expr.cpp 
+	chapel/compiler/traversals/: processParameters.cpp 
+	                             resolveSymbols.cpp 
+	chapel/modules/standard/: _chpl_htuple.chpl 
+
