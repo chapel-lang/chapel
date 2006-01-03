@@ -52696,3 +52696,22 @@ Log message:
 Removed files:
 	chapel/test/classes/deitz/: test_this2.future 
 
+---------------------------------------------------------------------------
+
+01/03/06 08:45:10 -- jplevyak
+
+Log message:
+	Added Accum<C>::add(Vec<C> ) to permit accumulation of vectors of values.
+	Added collect_ast_children which uses get_ast_children to collect all
+	  the children reachable from a node.
+	Interpreter Added:
+	  - printing by name of local variables
+	  - printing by id of any reachable BastAST (by building an index over the entire program)
+	  - printing now does both print_view_noline() and x->print(stdout) since
+	    they give different information
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp 
+	chapel/compiler/include/: baseAST.h vec.h 
+	chapel/compiler/passes/: runInterpreter.cpp 
+
