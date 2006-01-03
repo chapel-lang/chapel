@@ -27,7 +27,7 @@ static bool tmpRequired(ArgSymbol* formal, Expr* actual) {
 void ProcessParameters::postProcessExpr(Expr* expr) {
   static int uid = 0;
   if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
-    if (call->opTag != OP_NONE) {
+    if (call->opTag != OP_NONE || call->primitive) {
       return;
     }
     Stmt* stmt = expr->getStmt();

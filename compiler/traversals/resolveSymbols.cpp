@@ -22,7 +22,6 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
   if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
     if (call->primitive) {
       call->makeOp();
-      return;
     }
     if (call->opTag == OP_INIT) {
       Type* type = call->get(1)->typeInfo();
@@ -43,7 +42,7 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
       }
       return;
     }
-    if (call->opTag != OP_NONE)
+    if (call->opTag != OP_NONE || call->primitive)
       return;
     if (!call->isAssign()) {
       Vec<FnSymbol*> fns;

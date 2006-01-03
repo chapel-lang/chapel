@@ -75,9 +75,9 @@ char* opChplString[] = {
   ":",
   "!:",
 
-  "_init",
+  "init",
 
-  "_move"
+  "move"
 };
 
 
