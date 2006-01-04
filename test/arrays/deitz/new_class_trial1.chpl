@@ -22,8 +22,8 @@ class adomain : value {
   }
 
   iterator _forall() : (integer, integer) {
-    for i:integer in _forall(0) {
-      for j:integer in _forall(1) {
+    forall i:integer in _forall(0) {
+      forall j:integer in _forall(1) {
         yield (i, j);
       }
     }

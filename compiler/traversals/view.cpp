@@ -29,6 +29,9 @@ void View::preProcessStmt(Stmt* stmt) {
     printf(" ");
   }
   printf("(");
+  if (numberSymbols) {
+    printf("%ld ", stmt->id);
+  }
   if (stmt->id == markAST) {
     printf("***");
   }
@@ -49,6 +52,9 @@ void View::preProcessExpr(Expr* expr) {
   printf("(");
   if (expr->id == markAST) {
     printf("***");
+  }
+  if (numberSymbols) {
+    printf("%ld ", expr->id);
   }
   printf("%s", astTypeName[expr->astType]);
 

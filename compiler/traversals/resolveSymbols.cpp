@@ -30,11 +30,20 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
       } else if (type->defaultConstructor) {
         FnSymbol* fn = type->defaultConstructor;
         if (fn->formals->length() > 0) {
+          /* alternative to use default_wrapper callback below */
+          Vec<FnSymbol*> fns;
+          call_info(call, fns);
+          if (fns.n == 1)
+            fn = fns.v[0];
+          else
+            INT_FATAL(call, "Cannot resolve init");
+          /* alternative to use default_wrapper callback
           Vec<Symbol*> defaults;
           for_alist(DefExpr, formalDef, fn->formals) {
             defaults.add(formalDef->sym);
           }
           fn = fn->default_wrapper(&defaults);
+          */
         }
         call->replace(new CallExpr(fn));
       } else {
