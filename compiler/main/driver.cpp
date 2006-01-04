@@ -13,6 +13,7 @@
 #include "stringutil.h"
 #include "symtab.h"
 #include "version.h"
+#include "../passes/runInterpreter.h"
 
 
 static void version(ArgumentState *arg_state, char *arg_unused);
@@ -253,6 +254,7 @@ main(int argc, char *argv[]) {
     init_logs();
   init_system();
   init_chapel_ifa();
+  init_interpreter();
   compile_all();
   free_args(&arg_state);
   clean_exit(0);

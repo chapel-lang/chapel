@@ -44,6 +44,10 @@ class ISlot : public gc { public:
     kind = SYMBOL_ISLOT;
     symbol = s;
   }
+  void set_immediate(Immediate *i) { 
+    kind = IMMEDIATE_ISLOT;
+    imm = i;
+  }
   ISlot &operator=(ISlot &s) {
     kind = s.kind;
     object = s.object; // representitive of the union
@@ -51,6 +55,7 @@ class ISlot : public gc { public:
   }
   ISlot(Symbol *s) : kind(SYMBOL_ISLOT) { symbol = s; }
   ISlot(Immediate *i) : kind(IMMEDIATE_ISLOT) { imm = i; }
+  ISlot(ISlot &s) { kind = s.kind; object = s.object; }
   ISlot() : kind(EMPTY_ISLOT) {}
 };
 
@@ -80,7 +85,7 @@ struct IFrame : public gc { public:
 
   ISlot *islot(BaseAST *ast);
   void icall(int nargs);
-  void icall(FnSymbol *fn, int nargs);
+  void icall(FnSymbol *fn, int nargs, int extra_args);
   int igoto(Stmt *s);
   void iprimitive(CallExpr *s);
   void reset();
@@ -111,6 +116,9 @@ struct IThread : public gc { public:
 
 class InterpreterOp : public gc { public:
   char *name;
+  int kind;
+  
+  InterpreterOp(char *n, int k) : name(n), kind(k) {}
 };
 
 #define _EXTERN
@@ -154,22 +162,50 @@ IFrame::islot(BaseAST *ast) {
 
 static void
 check_type(BaseAST *ast, ISlot *slot, Type *t) {
-  if (slot->kind == EMPTY_ISLOT)
+  if (slot->kind == EMPTY_ISLOT) {
     USR_FATAL(ast, "interpreter: accessed empty variable");
-  if (slot->kind == UNINITIALIZED_ISLOT)
+  }
+  if (slot->kind == UNINITIALIZED_ISLOT) {
     USR_FATAL(ast, "interpreter: accessed uninitialized variable");
+  }
+  if (slot->kind == IMMEDIATE_ISLOT) {
+    switch (slot->imm->const_kind) {
+      default: 
+    Lerror:
+        USR_FATAL(ast, "interpreter: bad immediate type");
+      case IF1_NUM_KIND_UINT:
+        if (t == dtBoolean && slot->imm->num_index == IF1_INT_TYPE_1) break;
+        goto Lerror;
+      case IF1_NUM_KIND_INT:
+        if (t == dtInteger && slot->imm->num_index == IF1_INT_TYPE_64) break;
+        goto Lerror;
+      case IF1_NUM_KIND_FLOAT:
+        if (t == dtFloat && slot->imm->num_index == IF1_FLOAT_TYPE_64) break;
+        goto Lerror;
+      case IF1_NUM_KIND_COMPLEX:
+        if (t == dtFloat && slot->imm->num_index == IF1_FLOAT_TYPE_64) break;
+        goto Lerror;
+      case IF1_CONST_KIND_STRING:
+        if (t == dtString) break;
+        goto Lerror;
+    }
+  }
   return;
 }
 
 void
-IFrame::icall(FnSymbol *fn, int nargs) {
+IFrame::icall(FnSymbol *fn, int nargs, int extra_args) {
   if (trace_level) {
     printf("  Calling %s(%d)\n", fn->name, (int)fn->id);
     known_ids.put(fn->id, fn);
   }
-  if (break_ids.in(fn->id))
+  if (break_ids.in(fn->id)) {
+    printf("  break at function id %d\n", (int)fn->id);
     interrupted = 1;
+  }
+  ISlot **args = &valStack.v[valStack.n-nargs];
   if (!ip) {
+    assert(!nargs);
     function = fn;
     ip = stmt = (Stmt*)fn->body->body->head->next;
   } else {
@@ -177,13 +213,19 @@ IFrame::icall(FnSymbol *fn, int nargs) {
     f->init((Stmt*)fn->body->body->head->next);
     f->parent = this;
     f->function = fn;
+    for (int i = 0; i < nargs; i++) {
+      DefExpr *def = fn->formals->get(i + 1); // FORTRAN-style
+      ISlot *slot = args[i], *arg_slot = new ISlot;
+      *arg_slot = *slot;
+      f->env.put(def->sym, arg_slot);
+    }
     if (single_step == NEXT_STEP) {
       f->single_stepping = NEXT_STEP;
       single_step = NO_STEP;
     }
     thread->frame = f;
   }
-  valStack.n -= nargs;
+  valStack.n -= (nargs + extra_args);
 }
 
 static void
@@ -233,15 +275,17 @@ IFrame::icall(int nargs) {
   char *name = 0;
   if (nargs < 1)
     INT_FATAL(ip, "call with no arguments");
-  int done = 0;
+  int done = 0, extra_args = 0;
   do {
     ISlot **args = &valStack.v[valStack.n-nargs];
     if (args[0]->kind == SYMBOL_ISLOT && args[0]->symbol->astType == SYMBOL_FN) {
-      icall((FnSymbol*)args[0]->symbol, nargs);
+      icall((FnSymbol*)args[0]->symbol, nargs - 1, 1);
       return;
     } else if (args[0]->kind == SELECTOR_ISLOT) {
       name = args[0]->selector;
       done = 1;
+      nargs--;
+      extra_args = 1;
     } else if (args[0]->kind == CLOSURE_ISLOT) {
       INT_FATAL(ip, "closures not handled yet");
     } else {
@@ -255,7 +299,7 @@ IFrame::icall(int nargs) {
     user_error(this, "unable to resolve call '%s' to a single function", name);
     return;
   }
-  icall(visible.v[0], nargs);
+  icall(visible.v[0], nargs, extra_args);
   return;
 }
 
@@ -313,8 +357,10 @@ skip_arg(char *&c) {
 static char last_cmd_buffer[512] = "";
 
 static void
-show(BaseAST *ip, int stage) {
-  printf("    %s(%d)", astTypeName[ip->astType], (int)ip->id); 
+show(BaseAST *ip, int stage, int nospaces = 0) {
+  if (!nospaces)
+    printf("    ");
+  printf("%s(%d)", astTypeName[ip->astType], (int)ip->id); 
   if (stage)
     printf("/%d", stage);
   printf(" %s:%d\n", 
@@ -327,8 +373,9 @@ show(IFrame *frame, BaseAST *ip, int stage) {
   printf("    %s(%d)", astTypeName[ip->astType], (int)ip->id);
   if (stage)
     printf("/%d", stage);
-  printf(" in %s %s:%d\n", 
+  printf(" in %s(%d) %s:%d\n", 
          frame->function ? frame->function->name : "<initialization>",
+         (int)(frame->function ? frame->function->id : 0),
          ip->filename?ip->filename:"<>", ip->lineno);
   known_ids.put(ip->id, ip);
 }
@@ -574,7 +621,7 @@ interactive(IFrame *frame) {
         if (a) {
           break_ids.set_add(i);
           printf("  breaking at ");
-          show(a, 0);
+          show(a, 0, 1);
         } else
           printf("  unable to break at unknown id %d", i);
       } else 
@@ -591,7 +638,7 @@ interactive(IFrame *frame) {
             printf("  removing bi %d\n", i);
             found = 1;
           } else
-            break_ids.set_add(i);
+            break_ids.set_add(ids.v[z]);
         }
       }
       if (!found)
@@ -777,10 +824,57 @@ IFrame::igoto(Stmt *s) {
   return 0;
 }
 
+static void
+check_prim_args(CallExpr *s, int nargs) {
+  int args = s->argList->length();
+  if (args != nargs) {
+    INT_FATAL(s, "interpreter: incorrect number of arguments (%d) to primitive '%s': expected %d", 
+              args, s->primitive->interpreterOp->name, nargs);
+  }
+}
+
+#define PRIM_INIT       1
+
 void
 IFrame::iprimitive(CallExpr *s) {
   int len = s->argList->length();
+  if (!s->primitive->interpreterOp) {
+    // INT_FATAL(ip, "interpreter: bad astType: %d", ip->astType);
+    valStack.n -= (len - 1);
+    valStack.add(new ISlot);
+    return;
+  }
+  ISlot **args = &valStack.v[valStack.n-len];
+  ISlot *result = new ISlot;
+  switch (s->primitive->interpreterOp->kind) {
+    default: INT_FATAL(ip, "interpreter: prim type: %d", s->primitive->interpreterOp->kind);
+    case PRIM_INIT: {
+      check_prim_args(s, 1);
+      if (args[0]->kind != SYMBOL_ISLOT) {
+        INT_FATAL(ip, "interpreter: non-symbol argument to INIT primitive: %d", args[0]->kind);
+      }
+      TypeSymbol *ts = dynamic_cast<TypeSymbol*>(args[0]->symbol);
+      if (!ts) {
+        INT_FATAL(ip, "interpreter: non-TypeSymbol argument to INIT primitive: %s", 
+                  astTypeName[args[0]->symbol->astType]);
+      }
+      Symbol *dv = ts->definition->defaultValue;
+      if (dv) {
+        if (VarSymbol *vs = dynamic_cast<VarSymbol*>(dv)) {
+          if (vs->immediate) {
+            result->set_immediate(vs->immediate);
+            goto Lok;
+          }
+        }
+        result->set_symbol(dv);
+      Lok:;
+      } else if (ts->definition->defaultConstructor) {
+      }
+      break;
+    }
+  }
   valStack.n -= len;
+  env.put(s, result);
 }
 
 int
@@ -791,8 +885,10 @@ IFrame::run(int timeslice) {
   LgotoLabel:
     if (timeslice && !--timeslice)
       return timeslice;
-    if (break_ids.in(ip->id))
+    if (break_ids.in(ip->id)) {
+      printf("  break at id %d\n", (int)ip->id);
       interrupted = 1;
+    }
     if (interrupted)
       if (interactive(this))
         return 0;
@@ -817,7 +913,7 @@ IFrame::run(int timeslice) {
             if (thread->frame->single_stepping == NEXT_STEP)
               single_step = NEXT_STEP;
             if (parent)
-              parent->valStack.add(slot);
+              parent->env.put(parent->ip, new ISlot(*slot));
             return timeslice;
           }
           default: INT_FATAL(ip, "interpreter: bad stage %d for astType: %d", stage, ip->astType); break;
@@ -998,7 +1094,6 @@ IFrame::run(int timeslice) {
       case EXPR_DEF: {
         S(DefExpr);
         ISlot *slot = new ISlot;
-        slot->kind = EMPTY_ISLOT;
         env.put(s->sym, slot);
         switch (s->sym->astType) {
           default: break;
@@ -1129,8 +1224,6 @@ initialize() {
 
 static void
 runProgram() {
-  if (run_interpreter > 1)
-    interrupted = 1;
   threads.clear();
   cur_thread = -1;
   IThread *t = new IThread;
@@ -1156,6 +1249,8 @@ runInterpreter(void) {
   if (!run_interpreter)
     return;
   initialize();
+  if (run_interpreter > 1)
+    interrupted = 1;
   do {
     runProgram();
     chpl_interpreter();
@@ -1164,4 +1259,9 @@ runInterpreter(void) {
       interactive(0);
   } while (run_interpreter > 1);
   exit(0);
+}
+
+void 
+init_interpreter() {
+  init_interpreter_op = new InterpreterOp("init", PRIM_INIT);
 }

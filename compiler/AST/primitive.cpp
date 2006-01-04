@@ -17,7 +17,7 @@ PrimitiveOp::PrimitiveOp(char *aname, InterpreterOp *aiop, AnalysisOp *aaop)
 
 void 
 initPrimitive() {
-  primitives.add(new PrimitiveOp("init", unimplemented_interpreter_op, init_analysis_op));
+  primitives.add(new PrimitiveOp("init", init_interpreter_op, init_analysis_op));
   primitives.add(new PrimitiveOp("sizeof", unimplemented_interpreter_op, unimplemented_analysis_op));
   primitives.add(new PrimitiveOp("fopen", unimplemented_interpreter_op, return_int_analysis_op));
   primitives.add(new PrimitiveOp("fclose", unimplemented_interpreter_op, return_int_analysis_op));
