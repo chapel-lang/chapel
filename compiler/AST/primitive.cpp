@@ -67,7 +67,7 @@ initPrimitive() {
   primitives.add(new PrimitiveOp("string_select", unimplemented_interpreter_op, return_string_analysis_op));
   primitives.add(new PrimitiveOp("string_strided_select", unimplemented_interpreter_op, return_string_analysis_op));
   primitives.add(new PrimitiveOp("string_length", unimplemented_interpreter_op, return_int_analysis_op));
-  primitives.add(new PrimitiveOp("chpl_alloc", unimplemented_interpreter_op, alloc_analysis_op));
+  primitives.add(new PrimitiveOp("chpl_alloc", alloc_interpreter_op, alloc_analysis_op));
   primitives.add(new PrimitiveOp("halt", unimplemented_interpreter_op, return_int_analysis_op));
   primitives.add(new PrimitiveOp("assert", unimplemented_interpreter_op, return_int_analysis_op));
 }

@@ -20,12 +20,20 @@ class IThread;
 
 enum ISlotKind {
   EMPTY_ISLOT,
-  UNINITIALIZED_ISLOT,
   SELECTOR_ISLOT,
   SYMBOL_ISLOT,
   CLOSURE_ISLOT,
   OBJECT_ISLOT,
   IMMEDIATE_ISLOT
+};
+
+char *slotKindName[] = {
+  "Empty",
+  "Selector",
+  "Symbol",
+  "Closure",
+  "Object",
+  "Immediate"
 };
 
 class ISlot : public gc { public:
@@ -55,14 +63,21 @@ class ISlot : public gc { public:
   }
   ISlot(Symbol *s) : kind(SYMBOL_ISLOT) { symbol = s; }
   ISlot(Immediate *i) : kind(IMMEDIATE_ISLOT) { imm = i; }
+  ISlot(char *sel) : kind(SELECTOR_ISLOT) { selector = sel; }
   ISlot(ISlot &s) { kind = s.kind; object = s.object; }
   ISlot() : kind(EMPTY_ISLOT) {}
 };
 
 class IObject : public BaseAST { public:
-  Type  *type;
-  int   nslots;
-  ISlot slot[1];        // nslots for real length
+  ClassType *type;
+  Vec<BaseAST *> alloc_context;
+  Map<BaseAST *, ISlot *> member;
+  Vec<ISlot *> array;
+  
+  void print(int fnprint = 0);
+  void nprint();
+
+  IObject() : BaseAST(OBJECT), type(0) {}
 };
 
 typedef MapElem<BaseAST *, ISlot*> MapElemBaseASTISlot;
@@ -82,10 +97,11 @@ struct IFrame : public gc { public:
   int stage;
   Expr *expr;
   BaseAST *ip;
+  ISlot *return_slot;
 
   ISlot *islot(BaseAST *ast);
-  void icall(int nargs);
-  void icall(FnSymbol *fn, int nargs, int extra_args);
+  void icall(int nargs, ISlot *ret_slot = 0);
+  void icall(FnSymbol *fn, int nargs = 0, int extra_args = 0);
   int igoto(Stmt *s);
   void iprimitive(CallExpr *s);
   void reset();
@@ -142,7 +158,7 @@ IThread::IThread() : state(ITHREAD_STOPPED) {
 }
 
 IFrame::IFrame(IThread *t) : thread(t), parent(0), function(0), single_stepping(NO_STEP), 
-                             stmt(0), stage(0), expr(0), ip(0) 
+                             stmt(0), stage(0), expr(0), ip(0), return_slot(0) 
 {
 }
 
@@ -161,12 +177,17 @@ IFrame::islot(BaseAST *ast) {
   }
 
 static void
+check_kind(BaseAST *ast, ISlot *slot, int kind) {
+  if (slot->kind != kind) {
+    USR_FATAL(ast, "interpreter: unexpected kind of slot %s: expected %s", 
+              slotKindName[slot->kind], slotKindName[kind]);
+  }
+}
+
+static void
 check_type(BaseAST *ast, ISlot *slot, Type *t) {
   if (slot->kind == EMPTY_ISLOT) {
     USR_FATAL(ast, "interpreter: accessed empty variable");
-  }
-  if (slot->kind == UNINITIALIZED_ISLOT) {
-    USR_FATAL(ast, "interpreter: accessed uninitialized variable");
   }
   if (slot->kind == IMMEDIATE_ISLOT) {
     switch (slot->imm->const_kind) {
@@ -269,7 +290,11 @@ user_error(IFrame *frame, char *fmt, ...) {
 }
 
 void
-IFrame::icall(int nargs) {
+IFrame::icall(int nargs, ISlot *ret_slot) {
+  if (!ret_slot)
+    return_slot = islot(ip);
+  else
+    return_slot = ret_slot;
   if (valStack.n < nargs)
     INT_FATAL(ip, "not enough arguments for call");
   char *name = 0;
@@ -431,11 +456,10 @@ cmd_where(IFrame *frame) {
 }
 
 static void
-print(ISlot *islot) {
+print(ISlot *islot, int fnprint = 0) {
   switch (islot->kind) {
     default: INT_FATAL("interpreter: bad slot type: %d", islot->kind); break;
     case EMPTY_ISLOT: printf("<empty>"); break;
-    case UNINITIALIZED_ISLOT: printf("<uninitialized>"); break;
     case SELECTOR_ISLOT: printf("selector '%s'", islot->selector); break;
     case SYMBOL_ISLOT: 
       printf("symbol: %s ", astTypeName[islot->symbol->astType]);
@@ -450,6 +474,49 @@ print(ISlot *islot) {
       break;
     case IMMEDIATE_ISLOT: printf("immediate: "); fprint_imm(stdout, *islot->imm); break;
   }
+}
+
+static void
+nprint(BaseAST *a) {
+  if (IObject *o = dynamic_cast<IObject*>(a)) {
+    o->print(1);
+  } else
+    nprint_view_noline(a);
+}
+
+static void
+print(BaseAST *a, int fnprint = 0) {
+  if (fnprint) {
+    nprint(a);
+    return;
+  }
+  if (IObject *o = dynamic_cast<IObject*>(a)) {
+    o->print(0);
+  } else
+    print_view_noline(a);
+}
+
+void
+IObject::print(int fnprint) {
+  printf("Object: %d\n", (int)id);
+  printf("  Type: "); 
+  ::print(type, fnprint); 
+  printf("\n");
+  printf("  Members:\n");
+  form_Map(MapElemBaseASTISlot, x, member) {
+    if (Symbol *s = dynamic_cast<Symbol*>(x->key)) {
+      printf("    ");
+      s->print(stdout);
+      printf("(%d) = ", (int)s->id);
+      ::print(x->value, fnprint);
+      printf("\n");
+      known_ids.put(s->id, s);
+    }
+  }
+  printf("  Array Elements: %d\n", array.n);
+  printf("  Allocation Context:\n");
+  forv_BaseAST(x, alloc_context)
+    show(x, 0);
 }
 
 static void
@@ -497,7 +564,7 @@ get_known_id(int i) {
 static BaseAST *last_print = 0;
 
 static void
-cmd_print(IFrame *frame, char *c, int nprint = 0) {
+cmd_print(IFrame *frame, char *c, int fnprint = 0) {
   skip_arg(c);
   BaseAST *p = NULL;
   if (!*c) {
@@ -535,10 +602,10 @@ cmd_print(IFrame *frame, char *c, int nprint = 0) {
   Lfound:;
   }
   last_print = p;
-  if (!nprint)
-    print_view_noline(p);
+  if (!fnprint)
+    print(p);
   else
-    nprint_view_noline(p);
+    nprint(p);
   printf("\n ");
   p->print(stdout);
   printf(" ");
@@ -750,6 +817,8 @@ IFrame::reset() {
 #define PUSH_SYM(_s)  do { ISlot *_slot = new ISlot; _slot->set_symbol(_s); valStack.add(_slot); } while (0)
 #define POP_VAL(_s) do { *islot(_s) = *valStack.pop(); } while (0)
 #define CALL(_n) do { icall(_n); return timeslice; } while (0)
+#define CALL_RET(_n, _s) do { icall(_n, _s); return timeslice; } while (0)
+#define CALL_PUSH(_n) do { ISlot *_slot = new ISlot; valStack.add(_slot); icall(_n, _slot); return timeslice; } while (0)
 
 void
 IFrame::init(FnSymbol *fn) {
@@ -833,48 +902,90 @@ check_prim_args(CallExpr *s, int nargs) {
   }
 }
 
+static void
+get_context(IFrame *frame, Vec<BaseAST *> &context) {
+  while (frame) {
+    if (frame->expr) context.add(frame->expr);
+    forv_Expr(e, frame->exprStack) context.add(frame->expr);
+    if (frame->stmt) context.add(frame->stmt);
+    forv_Stmt(e, frame->stmtStack) context.add(frame->stmt);
+    frame = frame->parent;
+  }
+}
+
 #define PRIM_INIT       1
+#define PRIM_ALLOC      2
 
 void
 IFrame::iprimitive(CallExpr *s) {
   int len = s->argList->length();
   if (!s->primitive->interpreterOp) {
     // INT_FATAL(ip, "interpreter: bad astType: %d", ip->astType);
-    valStack.n -= (len - 1);
-    valStack.add(new ISlot);
+    valStack.n -= len;
+    islot(s)->kind = EMPTY_ISLOT;
     return;
   }
-  ISlot **args = &valStack.v[valStack.n-len];
-  ISlot *result = new ISlot;
+  ISlot **arg = &valStack.v[valStack.n-len];
+  ISlot result;
   switch (s->primitive->interpreterOp->kind) {
-    default: INT_FATAL(ip, "interpreter: prim type: %d", s->primitive->interpreterOp->kind);
+
+    default: 
+      INT_FATAL(ip, "interpreter: prim type: %d", s->primitive->interpreterOp->kind);
+
     case PRIM_INIT: {
       check_prim_args(s, 1);
-      if (args[0]->kind != SYMBOL_ISLOT) {
-        INT_FATAL(ip, "interpreter: non-symbol argument to INIT primitive: %d", args[0]->kind);
+      if (arg[0]->kind != SYMBOL_ISLOT) {
+        INT_FATAL(ip, "interpreter: non-symbol argument to INIT primitive: %d", arg[0]->kind);
       }
-      TypeSymbol *ts = dynamic_cast<TypeSymbol*>(args[0]->symbol);
+      TypeSymbol *ts = dynamic_cast<TypeSymbol*>(arg[0]->symbol);
       if (!ts) {
         INT_FATAL(ip, "interpreter: non-TypeSymbol argument to INIT primitive: %s", 
-                  astTypeName[args[0]->symbol->astType]);
+                  astTypeName[arg[0]->symbol->astType]);
       }
       Symbol *dv = ts->definition->defaultValue;
       if (dv) {
         if (VarSymbol *vs = dynamic_cast<VarSymbol*>(dv)) {
           if (vs->immediate) {
-            result->set_immediate(vs->immediate);
+            result.set_immediate(vs->immediate);
             goto Lok;
           }
         }
-        result->set_symbol(dv);
+        result.set_symbol(dv);
       Lok:;
       } else if (ts->definition->defaultConstructor) {
+        return_slot = islot(s);
+        icall(ts->definition->defaultConstructor);
+        return;
       }
       break;
     }
+
+    case PRIM_ALLOC: {
+      check_prim_args(s, 1);
+      check_kind(s, arg[0], SYMBOL_ISLOT);
+      if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(arg[0]->symbol)) {
+        if (ClassType *ct = dynamic_cast<ClassType*>(ts->definition)) {
+          result.kind = OBJECT_ISLOT;
+          result.object = new IObject;
+          result.object->type = ct;
+          if (ct->isGeneric || ct->genericSymbols.n) {
+            USR_FATAL(s, "interpreter: attempted ALLOC of generic ClassType");
+          }
+          forv_Symbol(s, ct->fields)
+            result.object->member.put(s, new ISlot);
+          get_context(this, result.object->alloc_context);
+        } else {
+          USR_FATAL(s, "interpreter: non-ClassType definition of TypeSymbol argument to ALLOC primitive");
+        }
+      } else {
+        USR_FATAL(s, "interpreter: non-TypeSymbol argument to ALLOC primitive");
+      }
+      break;
+    }
+      
   }
   valStack.n -= len;
-  env.put(s, result);
+  *islot(s) = result;
 }
 
 int
@@ -904,16 +1015,15 @@ IFrame::run(int timeslice) {
         S(ReturnStmt);
         switch (stage++) {
           case 0: 
-            PUSH_EXPR(s->expr);
+            EVAL_EXPR(s->expr);
             break;
           case 1: {
             stage = 0;
-            ISlot *slot = valStack.pop();
             thread->frame = parent;
             if (thread->frame->single_stepping == NEXT_STEP)
               single_step = NEXT_STEP;
             if (parent)
-              parent->env.put(parent->ip, new ISlot(*slot));
+              *parent->return_slot = *islot(s->expr);
             return timeslice;
           }
           default: INT_FATAL(ip, "interpreter: bad stage %d for astType: %d", stage, ip->astType); break;
@@ -968,14 +1078,13 @@ IFrame::run(int timeslice) {
           case 1:
             PUSH_SELECTOR("_forall_start");
             PUSH_VAL(iter);
-            CALL(2);
+            CALL_RET(2, islot(loop_var));
             break;
           case 2:
-            POP_VAL(loop_var);
             PUSH_SELECTOR("_forall_valid");
             PUSH_VAL(iter);
             PUSH_VAL(loop_var);
-            CALL(3);
+            CALL_PUSH(3);
             break;
           case 3: {
             ISlot *valid = valStack.pop();
@@ -987,22 +1096,18 @@ IFrame::run(int timeslice) {
             PUSH_SELECTOR("_forall_index");
             PUSH_VAL(iter);
             PUSH_VAL(loop_var);
-            CALL(3);
+            CALL_RET(3, islot(indice));
             break;
           }
           case 4:
-            POP_VAL(indice);
             EVAL_STMT(s->innerStmt);
             break;
           case 5:
+            stage = 2;
             PUSH_SELECTOR("_forall_next");
             PUSH_VAL(iter);
             PUSH_VAL(loop_var);
-            CALL(3);
-            break;
-          case 6:
-            stage = 2;
-            POP_VAL(loop_var);
+            CALL_RET(3, islot(loop_var));
             break;
           default: INT_FATAL(ip, "interpreter: bad stage %d for astType: %d", stage, ip->astType); break;
         }
@@ -1060,20 +1165,17 @@ IFrame::run(int timeslice) {
         ISlot *x = env.get(s->var);
         if (!x) {
           switch (s->var->astType) {
-            case SYMBOL_UNRESOLVED: {
-              x = new ISlot();
-              x->set_selector(s->var->name);
-              env.put(s->var, x);
+            case SYMBOL_UNRESOLVED:
+              env.put(s->var, (x = new ISlot(s->var->name)));
               break;
-            }
             case SYMBOL_FN: 
-            case SYMBOL_TYPE: 
+            case SYMBOL_TYPE:
               env.put(s->var, (x = new ISlot(s->var)));
               break;
             case SYMBOL_VAR: {
               VarSymbol *v = (VarSymbol*)s->var;
               if (v->immediate) {
-                env.put(v, (x = new ISlot(v->immediate)));
+                env.put(s->var, (x = new ISlot(v->immediate)));
                 break;
               }
             }
@@ -1084,11 +1186,7 @@ IFrame::run(int timeslice) {
           }
         }
         assert(x);
-        ISlot *e = env.get(s);  
-        if (e)
-          *e = *x;
-        else
-          env.put(s, x);
+        *islot(s) = *x;
         break;
       }
       case EXPR_DEF: {
@@ -1127,7 +1225,7 @@ IFrame::run(int timeslice) {
               env.put(expr, islot(s->thenExpr));
             } else {
               EVAL_EXPR(s->elseExpr);
-              env.put(expr, islot(s->thenExpr));
+              env.put(expr, islot(s->elseExpr));
             }
             break;
           }
@@ -1264,4 +1362,5 @@ runInterpreter(void) {
 void 
 init_interpreter() {
   init_interpreter_op = new InterpreterOp("init", PRIM_INIT);
+  alloc_interpreter_op = new InterpreterOp("alloc", PRIM_ALLOC);
 }
