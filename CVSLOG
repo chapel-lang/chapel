@@ -52771,3 +52771,26 @@ Modified files:
 	chapel/compiler/passes/: interpreter_ops.h runInterpreter.cpp 
 	                         runInterpreter.h 
 
+---------------------------------------------------------------------------
+
+01/04/06 09:13:14 -- deitz
+
+Log message:
+	With this checkin, the --use-alloc flag is working on most tests with
+	a few exceptions including tests involving config vars.  Looking into
+	it.
+	
+	Fixed pre-instantiation to work better with --use-alloc.
+	
+	Fixed post-analysis resolveSymbols to use call_info to build default
+	wrappers for init, rather than building it itself.
+	
+	Improved nprint_view to print the IDs of statements and expressions as
+	well as symbols.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/traversals/: instantiate.cpp resolveSymbols.cpp 
+	                             view.cpp 
+	chapel/test/arrays/deitz/: new_class_trial1.chpl 
+
