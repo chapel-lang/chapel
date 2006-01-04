@@ -1,1 +1,2 @@
+Halt reached: invalidMode.chpl:4
 ***Error: Unable to open "./anyFile.txt": Invalid argument***

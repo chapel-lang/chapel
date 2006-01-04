@@ -4,4 +4,5 @@
 9.9 + 9.9i
 9.9 + 9.9i
 9.9 - 9.9i
+Halt reached: freadComplex.chpl:9
 ***Error: Incorrect format for complex numbers***

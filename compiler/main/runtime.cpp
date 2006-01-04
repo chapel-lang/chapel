@@ -14,6 +14,9 @@ VarSymbol* chpl_stdin = NULL;
 VarSymbol* chpl_stdout = NULL;
 VarSymbol* chpl_stderr = NULL;
 
+VarSymbol* chpl_input_filename;
+VarSymbol* chpl_input_lineno;
+
 VarSymbol* setterToken;
 VarSymbol* methodToken;
 

@@ -47,6 +47,9 @@ function strerror(errno: integer) : string {
   return __primitive("strerror", errno);
 }
 
+var chpl_input_filename: string;
+var chpl_input_lineno: integer;
+
 pragma "rename fprintf"
 function fprintf(fp: CFILEPTR, fmt: string, val) : integer {
   return __primitive("fprintf", fp.FILEptr, fmt, val);

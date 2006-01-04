@@ -3,4 +3,5 @@
 1.2 + 2.3i
 1.2 + 2.3i
 1.2 + 2.3i
-readWriteComplexLineno.chpl, line6:  ***Error: Incorrect format for complex numbers***
+Halt reached: readWriteComplexLineno.chpl:6
+***Error: Incorrect format for complex numbers***

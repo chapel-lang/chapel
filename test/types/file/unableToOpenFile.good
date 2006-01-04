@@ -1,3 +1,4 @@
 _test_cannotOpenMe.txt
 r
+Halt reached: unableToOpenFile.chpl:5
 ***Error: Unable to open "./_test_cannotOpenMe.txt": No such file or directory***

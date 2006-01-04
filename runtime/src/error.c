@@ -5,14 +5,14 @@
 #include "chplrt.h"
 
 
-char* _chpl_input_filename;
-int   _chpl_input_linenumber;
+char* chpl_input_filename = "";
+int   chpl_input_lineno = 0;
 
 void printError(char* message) {
   fflush(stdout);
-  if (_chpl_input_linenumber) {
-    fprintf(stderr, "%s, line%d:  ***Error: %s***\n", _chpl_input_filename, 
-            _chpl_input_linenumber, message);
+  if (chpl_input_lineno) {
+    fprintf(stderr, "%s, line%d:  ***Error: %s***\n", chpl_input_filename, 
+            chpl_input_lineno, message);
   } else {
     fprintf(stderr, "***Error: %s***\n", message);
   }
@@ -22,9 +22,9 @@ void printError(char* message) {
 
 void printWarning(char* message) {
   fflush(stdout);
-  if (_chpl_input_linenumber) {
-    fprintf(stderr, "%s, line%d:  ***Warning: %s***\n", _chpl_input_filename, 
-            _chpl_input_linenumber, message);
+  if (chpl_input_lineno) {
+    fprintf(stderr, "%s, line%d:  ***Warning: %s***\n", chpl_input_filename, 
+            chpl_input_lineno, message);
   } else {  
     fprintf(stderr, "***Warning: %s***\n", message);
   }

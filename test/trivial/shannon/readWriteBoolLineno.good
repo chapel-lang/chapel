@@ -3,4 +3,5 @@ false
 That's the wrong answer, try again.
 true
 Is Bush a liar? (true or false)
-readWriteBoolLineno.chpl, line13:  ***Error: Not of boolean type***
+Halt reached: readWriteBoolLineno.chpl:13
+***Error: Not of boolean type***

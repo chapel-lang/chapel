@@ -20,6 +20,9 @@ extern VarSymbol* chpl_stdin;
 extern VarSymbol* chpl_stdout;
 extern VarSymbol* chpl_stderr;
 
+extern VarSymbol* chpl_input_filename;
+extern VarSymbol* chpl_input_lineno;
+
 extern VarSymbol* setterToken;
 extern VarSymbol* methodToken;
 

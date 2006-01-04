@@ -71,6 +71,9 @@ void parse(void) {
     chpl_stderr = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("stderr", fileModule->modScope));
   }
 
+  chpl_input_filename = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("chpl_input_filename", prelude->modScope));
+  chpl_input_lineno = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("chpl_input_lineno", prelude->modScope));
+
   setterToken = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("_setterToken", prelude->modScope));
   methodToken = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("_methodToken", prelude->modScope));
 

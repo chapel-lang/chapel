@@ -1,1 +1,2 @@
+Halt reached: closeStdin.chpl:3
 ***Error: You may not close "stdin"***

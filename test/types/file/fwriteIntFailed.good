@@ -1,1 +1,2 @@
+Halt reached: fwriteIntFailed.chpl:5
 ***Error: Write failed: Bad file descriptor***

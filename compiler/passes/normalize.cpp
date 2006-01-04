@@ -451,29 +451,68 @@ decompose_multi_actuals(CallExpr* call, char* new_name, Expr* first_actual) {
 }
 
 
-static void decompose_special_calls(CallExpr* call) {
-  if (call->isNamed("assert")) {
+static CallExpr* lineno_info(CallExpr* call) {
+  CallExpr* errorInfo;
+  if (printChplLineno) {
+    errorInfo = new CallExpr("fwrite", 
+                             chpl_stdout, 
+                             chpl_input_filename, 
+                             new_StringLiteral(":"), 
+                             chpl_input_lineno);
+  } else {
+    errorInfo = new CallExpr("fwrite", 
+                   chpl_stdout,
+                   new_StringLiteral(stringcat(call->filename, 
+                                               ":", 
+                                               intstring(call->lineno))));
+  }
+  return errorInfo;
+}
+
+
+static void buildAssertStatement(CallExpr* call) {
     if (call->argList->length() != 1) {
       USR_FATAL(call->argList, "Assert takes exactly one "
                 "expression; you've given it %d.", call->argList->length());
     }
-    CallExpr* halt_call = new CallExpr("halt", new_StringLiteral(stringcat
-      ("***Error:  Assertion at ",
-       call->filename,
-       ":",
-       intstring(call->lineno),
-       " failed***")));
-    Expr* arg = call->argList->get(1);
-    call->argList->get(1)->remove();
-    Expr* assert_cond = new CallExpr("not", arg);
-    BlockStmt* assert_body = new BlockStmt(new ExprStmt(halt_call));
+    AList<Stmt>* blockStmt = new AList<Stmt>();
+    CallExpr* assertFailed = new CallExpr("fwrite", chpl_stdout, new_StringLiteral("Assertion failed: "));
+    blockStmt->insertAtTail(assertFailed);
+    CallExpr* printLineno = lineno_info(call);
+    blockStmt->insertAtTail(printLineno);
+    CallExpr* fwritelnCall = new CallExpr("fwriteln", chpl_stdout);
+    blockStmt->insertAtTail(fwritelnCall);
+    CallExpr* exitCall = new CallExpr("exit", new_IntLiteral(0));
+    blockStmt->insertAtTail(exitCall);
+    Expr* assertArg = call->argList->get(1);
+    Expr* assert_cond = new CallExpr("not", assertArg->copy());
+    BlockStmt* assert_body = new BlockStmt(blockStmt);
     call->parentStmt->insertBefore(new CondStmt(assert_cond, assert_body));
+    decompose_special_calls(printLineno);
     call->parentStmt->remove();
-    decompose_special_calls(halt_call);
-  } else if (call->isNamed("halt")) {
-    call->parentStmt->insertAfter(new CallExpr("exit", new_IntLiteral(0)));
-    call->parentStmt->insertAfter(new CallExpr("fwriteln", chpl_stdout));
+}
+
+
+static void buildHaltStatement(CallExpr* call) {
+    CallExpr* haltReached = new CallExpr("fwrite", chpl_stdout, new_StringLiteral("Halt reached: "));
+    call->parentStmt->insertBefore(haltReached);
+    CallExpr* printLineno = lineno_info(call);
+    call->parentStmt->insertBefore(printLineno);
+    decompose_special_calls(printLineno);
+    CallExpr* fwritelnCall = new CallExpr("fwriteln", chpl_stdout);
+    call->parentStmt->insertBefore(fwritelnCall->copy());
+    CallExpr* exitCall = new CallExpr("exit", new_IntLiteral(0));
+    call->parentStmt->insertAfter(exitCall);
+    call->parentStmt->insertAfter(fwritelnCall->copy());
     decompose_multi_actuals(call, "fwrite", new SymExpr(chpl_stdout));
+}
+
+
+static void decompose_special_calls(CallExpr* call) {
+  if (call->isNamed("assert")) {
+    buildAssertStatement(call);
+  } else if (call->isNamed("halt")) {
+    buildHaltStatement(call);
   } else if (call->isNamed("fread")) {
     Expr* file = call->argList->get(1);
     file->remove();

@@ -1,1 +1,2 @@
+Halt reached: freadIntFailed.chpl:5
 ***Error: Read failed: Bad file descriptor***

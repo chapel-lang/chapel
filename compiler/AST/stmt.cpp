@@ -47,12 +47,12 @@ void Stmt::codegen(FILE* outfile) {
     if (printChplLineno && inBlockStmt && inUserModule) {
       if (strcmp(filename, priorFilename) != 0 ||  
           justStartedGeneratingFunction) {
-        fprintf(outfile, "_chpl_input_filename = \"%s\";\n", filename);
+        fprintf(outfile, "chpl_input_filename = \"%s\";\n", filename);
         priorFilename = stringcpy(filename);
         justStartedGeneratingFunction = false;
       }
       if (lineno != priorLineno) {
-        fprintf(outfile, "_chpl_input_linenumber = %d;\n", lineno);
+        fprintf(outfile, "chpl_input_lineno = %d;\n", lineno);
         priorLineno = lineno;
       }
     }

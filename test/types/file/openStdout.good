@@ -1,1 +1,2 @@
+Halt reached: openStdout.chpl:3
 ***Error: It is not necessary to open "stdout"***

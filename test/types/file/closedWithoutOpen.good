@@ -1,1 +1,2 @@
+Halt reached: closedWithoutOpen.chpl:3
 ***Error: Trying to close "./closedWithoutOpen.txt" which isn't open***
