@@ -52794,3 +52794,19 @@ Modified files:
 	                             view.cpp 
 	chapel/test/arrays/deitz/: new_class_trial1.chpl 
 
+---------------------------------------------------------------------------
+
+01/04/06 09:18:04 -- jplevyak
+
+Log message:
+	Interpreter:
+	  Add support for allocation and printing of class instances (objects).
+	  Changed the way the value stack works so that intermediates are stored
+	    primarily in the environment.   This makes it possible to ask
+	    "what was the value produced by an expression last time it was evaluated "
+	    rather than having to try to match up results on the stack.
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/compiler/passes/: interpreter_ops.h runInterpreter.cpp 
+
