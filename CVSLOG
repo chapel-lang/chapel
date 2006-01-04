@@ -52754,3 +52754,20 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: cleanup.cpp runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+01/03/06 16:36:32 -- jplevyak
+
+Log message:
+	Interpreter:
+	 - begin work on the INIT primitive.
+	 - add better type checking.
+	 - print out function ids
+	 - fix bug with break ids
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/passes/: interpreter_ops.h runInterpreter.cpp 
+	                         runInterpreter.h 
+
