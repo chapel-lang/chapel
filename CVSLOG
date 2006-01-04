@@ -52865,3 +52865,68 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+01/04/06 15:08:07 -- shannon
+
+Log message:
+	Added the filename and linenumber to the output
+	of the assert and halt calls.  If the code is
+	compiled with the --cg-chpl-lineno flag, only user-code
+	information is printed, otherwise this information
+	could pertain to built-in modules.  Refactored assert
+	such that it no longer calls halt.
+	
+	Changed the output of a bunch of tests.  Also added the
+	--cg-chpl-lineno compopt to many tests so they wouldn't
+	print out user-specific paths to built-in modules.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp 
+	chapel/compiler/include/: runtime.h 
+	chapel/compiler/main/: runtime.cpp 
+	chapel/compiler/passes/: filesToAST.cpp normalize.cpp 
+	chapel/modules/standard/: prelude.chpl 
+	chapel/runtime/include/: error.h 
+	chapel/runtime/src/: error.c 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+	chapel/test/trivial/mjoyner/seq/: seq_index1.good 
+	chapel/test/trivial/shannon/: readWriteBool.good 
+	                              readWriteBoolLineno.good 
+	                              readWriteComplex.good 
+	                              readWriteComplexFail1.good 
+	                              readWriteComplexLineno.good 
+	                              readWriteEnum.good 
+	chapel/test/trivial/shannon/quit/: assert.good halt.good 
+	chapel/test/types/file/: closeStdin.good closedWithoutOpen.good 
+	                         freadComplex.good freadIntFailed.good 
+	                         freadIntUnopenedFile.good 
+	                         freadNoFloat.good freadNoInt.good 
+	                         freadNotABoolean.good 
+	                         fwriteIntFailed.good 
+	                         fwriteIntUnopenedFile.good 
+	                         invalidMode.good openStdout.good 
+	                         unableToOpenFile.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+Added files:
+	chapel/test/trivial/mjoyner/seq/: seq_index1.compopts 
+	chapel/test/trivial/shannon/: readWriteComplex.compopts 
+	                              readWriteComplexFail1.compopts 
+	chapel/test/trivial/shannon/quit/: .cvsignore 
+	chapel/test/types/file/: closeStdin.compopts 
+	                         closedWithoutOpen.compopts 
+	                         freadComplex.compopts 
+	                         freadIntFailed.compopts 
+	                         freadIntUnopenedFile.compopts 
+	                         freadNoFloat.compopts 
+	                         freadNoInt.compopts 
+	                         freadNotABoolean.compopts 
+	                         fwriteIntFailed.compopts 
+	                         fwriteIntUnopenedFile.compopts 
+	                         invalidMode.compopts 
+	                         openStdout.compopts 
+	                         unableToOpenFile.compopts 
+
