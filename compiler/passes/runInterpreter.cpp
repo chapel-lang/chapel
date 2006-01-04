@@ -44,18 +44,9 @@ class ISlot : public gc { public:
     char *selector;
     Symbol *symbol;
   };
-  void set_selector(char *s) { 
-    kind = SELECTOR_ISLOT;
-    selector = s;
-  }
-  void set_symbol(Symbol *s) { 
-    kind = SYMBOL_ISLOT;
-    symbol = s;
-  }
-  void set_immediate(Immediate *i) { 
-    kind = IMMEDIATE_ISLOT;
-    imm = i;
-  }
+  void set_selector(char *s) { kind = SELECTOR_ISLOT; selector = s; }
+  void set_symbol(Symbol *s) { kind = SYMBOL_ISLOT; symbol = s; }
+  void set_immediate(Immediate *i) { kind = IMMEDIATE_ISLOT; imm = i; }
   ISlot &operator=(ISlot &s) {
     kind = s.kind;
     object = s.object; // representitive of the union
@@ -72,10 +63,10 @@ class IObject : public BaseAST { public:
   ClassType *type;
   Vec<BaseAST *> alloc_context;
   Map<BaseAST *, ISlot *> member;
+  Vec<int> dim;
   Vec<ISlot *> array;
   
   void print(int fnprint = 0);
-  void nprint();
 
   IObject() : BaseAST(OBJECT), type(0) {}
 };
@@ -130,11 +121,15 @@ struct IThread : public gc { public:
   IThread();
 };
 
+enum PrimOps {PRIM_NONE, PRIM_INIT, PRIM_ALLOC, PRIM_FOPEN, PRIM_FCLOSE,
+              PRIM_STRERROR, PRIM_FPRINTF, PRIM_FSCANF, PRIM_ARRAY_INDEX,
+              PRIM_ARRAY_SET, PRIM_DONE };
+
 class InterpreterOp : public gc { public:
   char *name;
-  int kind;
+  PrimOps kind;
   
-  InterpreterOp(char *n, int k) : name(n), kind(k) {}
+  InterpreterOp(char *n, PrimOps k) : name(n), kind(k) {}
 };
 
 #define _EXTERN
@@ -142,9 +137,9 @@ class InterpreterOp : public gc { public:
 #include "interpreter_ops.h"
 
 enum { NO_STEP = 0, SINGLE_STEP = 1, NEXT_STEP = 2 };
-static int single_step = NO_STEP;
-volatile static int interrupted = 0;
 
+volatile static int interrupted = 0;
+static int single_step = NO_STEP;
 static Vec<IThread *> threads;
 static int cur_thread = -1;
 static Vec<int> break_ids;
@@ -513,7 +508,13 @@ IObject::print(int fnprint) {
       known_ids.put(s->id, s);
     }
   }
-  printf("  Array Elements: %d\n", array.n);
+  if (dim.n) {
+    printf("  Array Dimension(s): ");
+    for (int i = 0; i < dim.n; i++)
+      printf("%d ", dim.v[i]);
+    printf("\n");
+    printf("  Array Element(s): %d\n", array.n);
+  }
   printf("  Allocation Context:\n");
   forv_BaseAST(x, alloc_context)
     show(x, 0);
@@ -893,10 +894,17 @@ IFrame::igoto(Stmt *s) {
   return 0;
 }
 
+#define AT_LEAST -
 static void
 check_prim_args(CallExpr *s, int nargs) {
   int args = s->argList->length();
-  if (args != nargs) {
+  int bad = 0;
+  if (nargs < 0) {
+    if (AT_LEAST nargs > args)
+      bad = 1;
+  } else
+    bad = args != nargs;
+  if (bad) {
     INT_FATAL(s, "interpreter: incorrect number of arguments (%d) to primitive '%s': expected %d", 
               args, s->primitive->interpreterOp->name, nargs);
   }
@@ -913,9 +921,6 @@ get_context(IFrame *frame, Vec<BaseAST *> &context) {
   }
 }
 
-#define PRIM_INIT       1
-#define PRIM_ALLOC      2
-
 void
 IFrame::iprimitive(CallExpr *s) {
   int len = s->argList->length();
@@ -929,7 +934,7 @@ IFrame::iprimitive(CallExpr *s) {
   ISlot result;
   switch (s->primitive->interpreterOp->kind) {
 
-    default: 
+    case PRIM_NONE:
       INT_FATAL(ip, "interpreter: prim type: %d", s->primitive->interpreterOp->kind);
 
     case PRIM_INIT: {
@@ -981,6 +986,49 @@ IFrame::iprimitive(CallExpr *s) {
         USR_FATAL(s, "interpreter: non-TypeSymbol argument to ALLOC primitive");
       }
       break;
+    }
+      
+    case PRIM_FOPEN:
+    case PRIM_FCLOSE:
+    case PRIM_STRERROR:
+    case PRIM_FPRINTF:
+    case PRIM_FSCANF:
+      user_error(this, "unhandled primitive: %s", s->primitive->name);
+      return;
+    case PRIM_ARRAY_INDEX: {
+      check_prim_args(s, AT_LEAST 2);
+      check_kind(s, arg[0], OBJECT_ISLOT);
+      IObject *a = arg[0]->object;
+      check_prim_args(s, 1 + a->dim.n);
+      int mult = 1, index = 0;
+      for (int i = 0; i < a->dim.n; i++) {
+        check_type(s, arg[1 + i], dtInteger);
+        mult *= a->dim.v[i];
+        index = arg[1 + i]->imm->v_int64 + mult * index;
+      }
+      assert(index < a->array.n);
+      result = *a->array.v[index];
+      break;
+    }
+    case PRIM_ARRAY_SET: {
+      check_prim_args(s, AT_LEAST 3);
+      check_kind(s, arg[0], OBJECT_ISLOT);
+      IObject *a = arg[0]->object;
+      check_prim_args(s, 2 + a->dim.n);
+      int mult = 1, index = 0;
+      for (int i = 0; i < a->dim.n; i++) {
+        check_type(s, arg[1 + i], dtInteger);
+        mult *= a->dim.v[i];
+        index = arg[1 + i]->imm->v_int64 + mult * index;
+      }
+      assert(index < a->array.n);
+      *a->array.v[index] = *arg[a->dim.n + 1];
+      result = *arg[a->dim.n + 1];
+      break;
+    }
+    case PRIM_DONE: {
+      user_error(this, "interpreter terminated: %s", s->primitive->name);
+      return;
     }
       
   }
@@ -1363,4 +1411,13 @@ void
 init_interpreter() {
   init_interpreter_op = new InterpreterOp("init", PRIM_INIT);
   alloc_interpreter_op = new InterpreterOp("alloc", PRIM_ALLOC);
+  fopen_interpreter_op = new InterpreterOp("fopen", PRIM_FOPEN);
+  fclose_interpreter_op = new InterpreterOp("fclose", PRIM_FCLOSE);
+  strerror_interpreter_op = new InterpreterOp("strerror", PRIM_STRERROR);
+  fprintf_interpreter_op = new InterpreterOp("fprintf", PRIM_FPRINTF);
+  fscanf_interpreter_op = new InterpreterOp("fscanf", PRIM_FSCANF);
+  array_index_interpreter_op = new InterpreterOp("array_index", PRIM_ARRAY_INDEX);
+  array_set_interpreter_op = new InterpreterOp("array_set", PRIM_ARRAY_SET);
+  done_interpreter_op = new InterpreterOp("done", PRIM_DONE);
+//  x_interpreter_op = new InterpreterOp("x", PRIM_X);
 }

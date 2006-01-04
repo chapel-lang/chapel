@@ -26,47 +26,47 @@ class _ddata {
 -- I/O
 
 class CFILEPTR { 
+  var FILEptr : integer;
 }
 
-const _NULLCFILEPTR   : CFILEPTR = CFILEPTR();
-const _STDINCFILEPTR  : CFILEPTR = CFILEPTR();
-const _STDOUTCFILEPTR : CFILEPTR = CFILEPTR();
-const _STDERRCFILEPTR : CFILEPTR = CFILEPTR();
+const _NULLCFILEPTR   : CFILEPTR = CFILEPTR(-1);
+const _STDINCFILEPTR  : CFILEPTR = CFILEPTR(0);
+const _STDOUTCFILEPTR : CFILEPTR = CFILEPTR(1);
+const _STDERRCFILEPTR : CFILEPTR = CFILEPTR(2);
 
 pragma "rename fopen" function _fopen(filename, mode : string) : CFILEPTR {
-  return CFILEPTR();
+  return CFILEPTR(__primitive("fopen", filename, mode));
 }
 
 pragma "rename fclose" function _fclose(fp : CFILEPTR) : integer {
-  return __primitive("fclose", integer);
+  return __primitive("fclose", fp.FILEptr);
 }
 
 const errno: integer;
 function strerror(errno: integer) : string {
-  return __primitive("strerror", string);
+  return __primitive("strerror", errno);
 }
 
 pragma "rename fprintf"
 function fprintf(fp: CFILEPTR, fmt: string, val) : integer {
-  return __primitive("write", val);
+  return __primitive("fprintf", fp.FILEptr, fmt, val);
 }
 
 pragma "rename fscanf"
 function fscanf(fp: CFILEPTR, fmt: string, inout val) : integer {
-  return __primitive("read", val);
+  return __primitive("fscanf", fp.FILEptr, string, val);
 }
 
-function _chpl_fwrite_float_help(f: CFILEPTR, val: float) : void {
-         __primitive("write", val);
+function _chpl_fwrite_float_help(fp: CFILEPTR, val: float) : void {
+  __primitive("fprintf", fp.FILEptr, "%g", val);
 }
 
 function _chpl_fread_string_help(f: CFILEPTR, inout val: string) : void {
-         __primitive("read", val);
+  __primitive("fscanf", "%g", val);
 }
 
-function _readLitChar(f: CFILEPTR, val: string, 
-                      ignoreWhiteSpace: integer) : integer {
-  return __primitive("read", val);
+function _readLitChar(f: CFILEPTR, val: string, ignoreWhiteSpace: integer) : integer {
+  return __primitive("fscanf", "%s", val);
 }
 
 pragma "rename _chpl_tostring_boolean"
@@ -154,7 +154,9 @@ class timer {
 
 -- exits
 
-pragma "rename _chpl_exit" function exit(status : integer);
+pragma "rename _chpl_exit" function exit(status : integer) {
+  __primitive("exit");       
+}
 
 function halt() {
   __primitive("halt");
@@ -181,7 +183,7 @@ function _chpl_memtest_reallocOutOfMemory();
 function startTrackingMem();
 
 function _complex_read_hack(inout x) : integer {
-  return __primitive("read", x);
+  return __primitive("fscanf", "%g%g", x);
 }
 
 function _complex_tostring_hack(x, format : string) : string {
@@ -237,13 +239,6 @@ class Domain {
 }
 
 record Tuple {
-  var _tuple_dummy_field : integer;
-  function this(pragma "clone_for_constants" i) { 
-    return __primitive("index_object", this, i); 
-  }
-  function =this(pragma "clone_for_constants" i, x) {
-    return __primitive("set_index_object", this, i, x);
-  }
 }
 
 pragma "builtin" function +(a : Array, b : Array) { return __primitive("array_pointwise_op", a, b); }

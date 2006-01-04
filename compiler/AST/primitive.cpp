@@ -19,16 +19,13 @@ void
 initPrimitive() {
   primitives.add(new PrimitiveOp("init", init_interpreter_op, init_analysis_op));
   primitives.add(new PrimitiveOp("sizeof", unimplemented_interpreter_op, unimplemented_analysis_op));
-  primitives.add(new PrimitiveOp("fopen", unimplemented_interpreter_op, return_int_analysis_op));
-  primitives.add(new PrimitiveOp("fclose", unimplemented_interpreter_op, return_int_analysis_op));
-  primitives.add(new PrimitiveOp("strerror", unimplemented_interpreter_op, return_string_analysis_op));
-  primitives.add(new PrimitiveOp("write", unimplemented_interpreter_op, return_int_analysis_op));
-  primitives.add(new PrimitiveOp("read", unimplemented_interpreter_op, return_int_analysis_op));
-  primitives.add(new PrimitiveOp("coerce", unimplemented_interpreter_op, coerce_analysis_op));
-  primitives.add(new PrimitiveOp("array_index", unimplemented_interpreter_op, array_index_analysis_op));
-  primitives.add(new PrimitiveOp("array_set", unimplemented_interpreter_op, array_set_analysis_op));
-  primitives.add(new PrimitiveOp("index_object", unimplemented_interpreter_op, index_object_analysis_op));
-  primitives.add(new PrimitiveOp("set_index_object", unimplemented_interpreter_op, set_index_object_analysis_op));
+  primitives.add(new PrimitiveOp("fopen", fopen_interpreter_op, return_int_analysis_op));
+  primitives.add(new PrimitiveOp("fclose", fclose_interpreter_op, return_int_analysis_op));
+  primitives.add(new PrimitiveOp("strerror", strerror_interpreter_op, return_string_analysis_op));
+  primitives.add(new PrimitiveOp("fprintf", fprintf_interpreter_op, return_int_analysis_op));
+  primitives.add(new PrimitiveOp("fscanf", fscanf_interpreter_op, return_int_analysis_op));
+  primitives.add(new PrimitiveOp("array_index", array_index_interpreter_op, array_index_analysis_op));
+  primitives.add(new PrimitiveOp("array_set", array_set_interpreter_op, array_set_analysis_op));
   primitives.add(new PrimitiveOp("array_pointwise_op", unimplemented_interpreter_op, array_pointwise_op_analysis_op));
   primitives.add(new PrimitiveOp("u-", unimplemented_interpreter_op, unary_minus_analysis_op));
   primitives.add(new PrimitiveOp("u+", unimplemented_interpreter_op, unary_plus_analysis_op));
@@ -68,6 +65,7 @@ initPrimitive() {
   primitives.add(new PrimitiveOp("string_strided_select", unimplemented_interpreter_op, return_string_analysis_op));
   primitives.add(new PrimitiveOp("string_length", unimplemented_interpreter_op, return_int_analysis_op));
   primitives.add(new PrimitiveOp("chpl_alloc", alloc_interpreter_op, alloc_analysis_op));
-  primitives.add(new PrimitiveOp("halt", unimplemented_interpreter_op, return_int_analysis_op));
-  primitives.add(new PrimitiveOp("assert", unimplemented_interpreter_op, return_int_analysis_op));
+  primitives.add(new PrimitiveOp("exit", done_interpreter_op, return_int_analysis_op));
+  primitives.add(new PrimitiveOp("halt", done_interpreter_op, return_int_analysis_op));
+  primitives.add(new PrimitiveOp("assert", done_interpreter_op, return_int_analysis_op));
 }

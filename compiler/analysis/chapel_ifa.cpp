@@ -3150,11 +3150,8 @@ init_chapel_ifa() {
   init_analysis_op = S("init", init_transfer_function);
   return_int_analysis_op = S("return_int", return_int_transfer_function); 
   return_string_analysis_op = S("return_string", return_string_transfer_function); 
-  coerce_analysis_op = P("coerce", prim_coerce);
   array_index_analysis_op = S("array_index", array_index_transfer_function);
   array_set_analysis_op = S("array_set", array_set_transfer_function);
-  index_object_analysis_op = P("index_object", prim_index_object);
-  set_index_object_analysis_op = P("set_index_object", prim_set_index_object);
   array_pointwise_op_analysis_op = S("array_pointwise_op", array_pointwise_op);
   unary_minus_analysis_op = P("u-", prim_minus);
   unary_plus_analysis_op = P("u+", prim_plus);
