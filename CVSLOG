@@ -52837,3 +52837,31 @@ Modified files:
 	                                test_tuple_record_implementation8.chpl 
 	                                test_tuple_record_implementation9.chpl 
 
+---------------------------------------------------------------------------
+
+01/04/06 12:39:40 -- jplevyak
+
+Log message:
+	Changed primitives in the prelude so that they take the arguments
+	  required to do the operations instead of being stubs.
+	Updated test cases accordingly.
+	Added support for the array_index and array_set primitives into
+	  the interpreter.
+	Added support for halt, done, exit in the interpreter.
+	Added a primitive for "exit".
+	Removed support for the "coerce" "object_index" and "object_set_index"
+	  primitives which were nolonger used.
+	The "sizeof" primitive is marked as unsupported (do we still need this?)
+	IObjects now print out their array dimensionality.
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/passes/: interpreter_ops.h runInterpreter.cpp 
+	chapel/modules/standard/: prelude.chpl 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
