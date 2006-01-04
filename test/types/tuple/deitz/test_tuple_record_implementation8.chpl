@@ -11,7 +11,7 @@ function foo(param i : integer, t : mytuple) where i == 2 {
   return 2;
 }
 
-var t : mytuple(12, 13.4);
+var t : mytuple = mytuple(12, 13.4);
 writeln(t);
 
 writeln(foo(1, t));

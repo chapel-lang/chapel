@@ -9,7 +9,7 @@ record mytuple {
   }
 }
 
-var t : mytuple(12, 14.0);
+var t = mytuple(12, 14.0);
 
 writeln(t);
 
@@ -21,7 +21,7 @@ t(2) = 15.0;
 
 writeln(t);
 
-var t2 : mytuple(12.0, "hello world");
+var t2 = mytuple(12.0, "hello world");
 
 writeln(t2);
 

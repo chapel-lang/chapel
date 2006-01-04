@@ -9,7 +9,7 @@ record mytuple {
   }
 }
 
-var t : mytuple(12, 14.0);
+var t = mytuple(12, 14.0);
 
 writeln(t);
 
