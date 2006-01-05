@@ -52930,3 +52930,18 @@ Added files:
 	                         openStdout.compopts 
 	                         unableToOpenFile.compopts 
 
+---------------------------------------------------------------------------
+
+01/04/06 16:08:21 -- jplevyak
+
+Log message:
+	Add utility functions for casting and folding Immediate's.
+	These will be used to implement the builtin numeric functions
+	  in the interpreter.
+
+Modified files:
+	chapel/compiler/ifa/: Makefile.share num.h prim.h sym.cpp 
+	chapel/compiler/ifa/make_prims/: make_prims.cpp 
+Added files:
+	chapel/compiler/ifa/: cast_code.cpp make_cast_code.cpp num.cpp 
+
