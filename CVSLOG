@@ -53070,3 +53070,16 @@ Modified files:
 	chapel/runtime/include/: array.h 
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+01/05/06 15:05:13 -- deitz
+
+Log message:
+	Added .future files with previous checkin.
+
+Added files:
+	chapel/test/functions/bradc/: defaultParamInOut.future 
+	                              intents-classes3.future 
+	                              intents-classes4.future 
+	chapel/test/trivial/preston/: aliasing.future 
+
