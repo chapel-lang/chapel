@@ -392,7 +392,7 @@ fold_result(Immediate *im1, Immediate *im2, Immediate *imm) {
   return;
 }
 
-int
+void
 fold_constant(int op, Immediate *im1, Immediate *im2, Immediate *imm) {
   switch (op) {
     case P_prim_mult:

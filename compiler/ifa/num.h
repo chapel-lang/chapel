@@ -94,7 +94,7 @@ int fprint_imm(FILE *fp, Immediate &imm);
 int sprint_imm(char *s, Immediate &imm);
 void coerce_immediate(Immediate *from, Immediate *to);
 void fold_result(Immediate *imm1, Immediate *imm2, Immediate *imm);
-int fold_constant(int op, Immediate *im1, Immediate *im2, Immediate *imm);
+void fold_constant(int op, Immediate *im1, Immediate *im2, Immediate *imm);
 void convert_string_to_immediate(char *str, Immediate *imm);
 
 #endif

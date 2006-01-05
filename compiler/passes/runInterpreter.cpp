@@ -121,9 +121,19 @@ struct IThread : public gc { public:
   IThread();
 };
 
-enum PrimOps {PRIM_NONE, PRIM_INIT, PRIM_ALLOC, PRIM_FOPEN, PRIM_FCLOSE,
-              PRIM_STRERROR, PRIM_FPRINTF, PRIM_FSCANF, PRIM_ARRAY_INDEX,
-              PRIM_ARRAY_SET, PRIM_DONE };
+enum PrimOps {
+  PRIM_NONE, PRIM_INIT, PRIM_ALLOC, PRIM_FOPEN, PRIM_FCLOSE,
+  PRIM_STRERROR, PRIM_FPRINTF, PRIM_FSCANF, PRIM_ARRAY_INDEX,
+  PRIM_ARRAY_SET, PRIM_UNARY_MINUS, PRIM_UNARY_PLUS,
+  PRIM_UNARY_BNOT, PRIM_UNARY_NOT, PRIM_ADD,
+  PRIM_SUBTRACT, PRIM_MULT, PRIM_DIV, PRIM_MOD, PRIM_EQUAL,
+  PRIM_NOTEQUAL, PRIM_ELSSOREQUAL, PRIM_GREATEROREQUAL, PRIM_LESS,
+  PRIM_GREATER, PRIM_AND, PRIM_OR, PRIM_XOR, PRIM_LAND,
+  PRIM_LOR, PRIM_EXP, PRIM_PTR_EQ, PRIM_PTR_NEQ, PRIM_CAST,
+  PRIM_TO_STRING, PRIM_COPY_STRING, PRIM_STRING_INDEX, PRIM_STRING_CONCAT,
+  PRIM_STRING_EQUAL, PRIM_STRING_SELECT, PRIM_STRING_STRIDED_SELECT,
+  PRIM_STRING_LENGTH, PRIM_DONE 
+};
 
 class InterpreterOp : public gc { public:
   char *name;
@@ -921,6 +931,15 @@ get_context(IFrame *frame, Vec<BaseAST *> &context) {
   }
 }
 
+static TypeSymbol *
+check_TypeSymbol(BaseAST *s, ISlot *slot) { 
+  check_kind(s, slot, SYMBOL_ISLOT);
+  if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(slot->symbol))
+    return ts;
+  USR_FATAL(s, "interpreter: non-TypeSymbol argument to primitive");
+  return NULL;
+}
+
 void
 IFrame::iprimitive(CallExpr *s) {
   int len = s->argList->length();
@@ -967,23 +986,19 @@ IFrame::iprimitive(CallExpr *s) {
 
     case PRIM_ALLOC: {
       check_prim_args(s, 1);
-      check_kind(s, arg[0], SYMBOL_ISLOT);
-      if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(arg[0]->symbol)) {
-        if (ClassType *ct = dynamic_cast<ClassType*>(ts->definition)) {
-          result.kind = OBJECT_ISLOT;
-          result.object = new IObject;
-          result.object->type = ct;
-          if (ct->isGeneric || ct->genericSymbols.n) {
-            USR_FATAL(s, "interpreter: attempted ALLOC of generic ClassType");
-          }
-          forv_Symbol(s, ct->fields)
-            result.object->member.put(s, new ISlot);
-          get_context(this, result.object->alloc_context);
-        } else {
-          USR_FATAL(s, "interpreter: non-ClassType definition of TypeSymbol argument to ALLOC primitive");
+      TypeSymbol *ts = check_TypeSymbol(s, arg[0]);
+      if (ClassType *ct = dynamic_cast<ClassType*>(ts->definition)) {
+        result.kind = OBJECT_ISLOT;
+        result.object = new IObject;
+        result.object->type = ct;
+        if (ct->isGeneric || ct->genericSymbols.n) {
+          USR_FATAL(s, "interpreter: attempted ALLOC of generic ClassType");
         }
+        forv_Symbol(s, ct->fields)
+          result.object->member.put(s, new ISlot);
+        get_context(this, result.object->alloc_context);
       } else {
-        USR_FATAL(s, "interpreter: non-TypeSymbol argument to ALLOC primitive");
+        USR_FATAL(s, "interpreter: non-ClassType definition of TypeSymbol argument to ALLOC primitive");
       }
       break;
     }
@@ -1026,6 +1041,52 @@ IFrame::iprimitive(CallExpr *s) {
       result = *arg[a->dim.n + 1];
       break;
     }
+    case PRIM_CAST: {
+      check_prim_args(s, 2);
+      TypeSymbol *ts = check_TypeSymbol(s, arg[0]);
+      (void)ts;
+      switch (arg[1]->kind) {
+        default:
+          USR_FATAL(ip, "bad slot argument to CAST primitive: %s", 
+                    slotKindName[arg[1]->kind]);
+        case OBJECT_ISLOT:
+          break;
+        case IMMEDIATE_ISLOT:
+          break;
+      }
+      break;
+    }
+    case PRIM_UNARY_MINUS:
+    case PRIM_UNARY_PLUS:
+    case PRIM_UNARY_BNOT:
+    case PRIM_UNARY_NOT:
+    case PRIM_ADD:
+    case PRIM_SUBTRACT:
+    case PRIM_MULT:
+    case PRIM_DIV:
+    case PRIM_MOD:
+    case PRIM_EQUAL:
+    case PRIM_NOTEQUAL:
+    case PRIM_ELSSOREQUAL:
+    case PRIM_GREATEROREQUAL:
+    case PRIM_LESS:
+    case PRIM_GREATER:
+    case PRIM_AND:
+    case PRIM_OR:
+    case PRIM_XOR:
+    case PRIM_LAND:
+    case PRIM_LOR:
+    case PRIM_EXP:
+    case PRIM_PTR_EQ:
+    case PRIM_PTR_NEQ:
+    case PRIM_TO_STRING:
+    case PRIM_COPY_STRING:
+    case PRIM_STRING_INDEX:
+    case PRIM_STRING_CONCAT:
+    case PRIM_STRING_EQUAL:
+    case PRIM_STRING_SELECT:
+    case PRIM_STRING_STRIDED_SELECT:
+    case PRIM_STRING_LENGTH:
     case PRIM_DONE: {
       user_error(this, "interpreter terminated: %s", s->primitive->name);
       return;
@@ -1418,6 +1479,37 @@ init_interpreter() {
   fscanf_interpreter_op = new InterpreterOp("fscanf", PRIM_FSCANF);
   array_index_interpreter_op = new InterpreterOp("array_index", PRIM_ARRAY_INDEX);
   array_set_interpreter_op = new InterpreterOp("array_set", PRIM_ARRAY_SET);
+  unary_minus_interpreter_op = new InterpreterOp("unary_minus", PRIM_UNARY_MINUS);
+  unary_plus_interpreter_op = new InterpreterOp("unary_plus", PRIM_UNARY_PLUS);
+  unary_bnot_interpreter_op = new InterpreterOp("unary_bnot", PRIM_UNARY_BNOT);
+  unary_not_interpreter_op = new InterpreterOp("unary_not", PRIM_UNARY_NOT);
+  add_interpreter_op = new InterpreterOp("add", PRIM_ADD);
+  subtract_interpreter_op = new InterpreterOp("subtract", PRIM_SUBTRACT);
+  mult_interpreter_op = new InterpreterOp("mult", PRIM_MULT);
+  div_interpreter_op = new InterpreterOp("div", PRIM_DIV);
+  mod_interpreter_op = new InterpreterOp("mod", PRIM_MOD);
+  equal_interpreter_op = new InterpreterOp("equal", PRIM_EQUAL);
+  notequal_interpreter_op = new InterpreterOp("notequal", PRIM_NOTEQUAL);
+  elssorequal_interpreter_op = new InterpreterOp("elssorequal", PRIM_ELSSOREQUAL);
+  greaterorequal_interpreter_op = new InterpreterOp("greaterorequal", PRIM_GREATEROREQUAL);
+  less_interpreter_op = new InterpreterOp("less", PRIM_LESS);
+  greater_interpreter_op = new InterpreterOp("greater", PRIM_GREATER);
+  and_interpreter_op = new InterpreterOp("and", PRIM_AND);
+  or_interpreter_op = new InterpreterOp("or", PRIM_OR);
+  xor_interpreter_op = new InterpreterOp("xor", PRIM_XOR);
+  land_interpreter_op = new InterpreterOp("land", PRIM_LAND);
+  lor_interpreter_op = new InterpreterOp("lor", PRIM_LOR);
+  exp_interpreter_op = new InterpreterOp("exp", PRIM_EXP);
+  ptr_eq_interpreter_op = new InterpreterOp("ptr_eq", PRIM_PTR_EQ);
+  ptr_neq_interpreter_op = new InterpreterOp("ptr_neq", PRIM_PTR_NEQ);
+  cast_interpreter_op = new InterpreterOp("cast", PRIM_CAST);
+  to_string_interpreter_op = new InterpreterOp("to_string", PRIM_TO_STRING);
+  copy_string_interpreter_op = new InterpreterOp("copy_string", PRIM_COPY_STRING);
+  string_index_interpreter_op = new InterpreterOp("string_index", PRIM_STRING_INDEX);
+  string_concat_interpreter_op = new InterpreterOp("string_concat", PRIM_STRING_CONCAT);
+  string_equal_interpreter_op = new InterpreterOp("string_equal", PRIM_STRING_EQUAL);
+  string_select_interpreter_op = new InterpreterOp("string_select", PRIM_STRING_SELECT);
+  string_strided_select_interpreter_op = new InterpreterOp("string_strided_select", PRIM_STRING_STRIDED_SELECT);
+  string_length_interpreter_op = new InterpreterOp("string_length", PRIM_STRING_LENGTH);
   done_interpreter_op = new InterpreterOp("done", PRIM_DONE);
-//  x_interpreter_op = new InterpreterOp("x", PRIM_X);
 }
