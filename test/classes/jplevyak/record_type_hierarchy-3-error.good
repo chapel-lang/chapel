@@ -29,17 +29,17 @@ prelude.chpl:141: fwrite, f : file, val : min
 prelude.chpl:144: fwrite, f : file, val : maxloc
 prelude.chpl:147: fwrite, f : file, val : minloc
 prelude.chpl:156: fwrite, f : file, val : timer
-prelude.chpl:204: fwrite, f : file, val : _methodTokenType
-prelude.chpl:210: fwrite, f : file, val : _setterTokenType
-prelude.chpl:215: fwrite, f : file, val : _seq
-prelude.chpl:237: fwrite, f : file, val : Array
-prelude.chpl:240: fwrite, f : file, val : Domain
+prelude.chpl:206: fwrite, f : file, val : _methodTokenType
+prelude.chpl:212: fwrite, f : file, val : _setterTokenType
+prelude.chpl:217: fwrite, f : file, val : _seq
+prelude.chpl:239: fwrite, f : file, val : Array
+prelude.chpl:242: fwrite, f : file, val : Domain
+prelude.chpl:245: fwrite, f : file, val : Tuple
 prelude.chpl:24: fwrite, f : file, val : _ddata
 prelude.chpl:24: fwrite, f : file, val : _ddata
 prelude.chpl:24: fwrite, f : file, val : _ddata
 prelude.chpl:24: fwrite, f : file, val : _ddata
-prelude.chpl:250: fwrite, f : file, val : Tuple
-prelude.chpl:29: fwrite, f : file, val : CFILEPTR
+prelude.chpl:30: fwrite, f : file, val : CFILEPTR
 prelude.chpl:3: fwrite, f : file, val : object
 prelude.chpl:4: fwrite, f : file, val : value
 record_type_hierarchy-3-error.chpl:12: f, a : D
