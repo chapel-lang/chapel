@@ -52971,3 +52971,15 @@ Modified files:
 Added files:
 	chapel/compiler/ifa/: prim_data.cpp prim_data.h 
 
+---------------------------------------------------------------------------
+
+01/05/06 10:29:44 -- deitz
+
+Log message:
+	Updated goods based on line number changes in prelude.
+
+Modified files:
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+
