@@ -169,7 +169,7 @@ main(int argc, char *argv[]) {
   hfp = fopen("prim_data.h", "w");
   fprintf(hfp, "#ifndef _prim_data_H\n");
   fprintf(hfp, "#define _prim_data_H\n\n");
-  fprintf(hfp, "void prim_init(Primitives *p, IF1 *if1);\n\n");
+  fprintf(hfp, "class Prim;\n\n");
   declare_data(lines);
   fprintf(hfp, "#endif\n");
   fclose(hfp);

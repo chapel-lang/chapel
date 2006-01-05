@@ -63,6 +63,8 @@ class RegisteredPrim : public gc {
     : fn(afn), is_functional(is_func) {}
 };
 
+void prim_init(Primitives *p, IF1 *if1);
+
 #include "prim_data.h"
 
 #endif

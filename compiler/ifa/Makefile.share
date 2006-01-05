@@ -15,6 +15,7 @@ IFA_SRCS = \
 	if1.cpp \
 	inline.cpp \
 	loop.cpp \
+	num.cpp \
 	pattern.cpp \
 	pdb.cpp \
 	pnode.cpp \
