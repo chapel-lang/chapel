@@ -52945,3 +52945,15 @@ Modified files:
 Added files:
 	chapel/compiler/ifa/: cast_code.cpp make_cast_code.cpp num.cpp 
 
+---------------------------------------------------------------------------
+
+01/04/06 16:35:49 -- jplevyak
+
+Log message:
+	A bunch more work on primitives for the intepreter.
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/compiler/ifa/: num.cpp num.h 
+	chapel/compiler/passes/: interpreter_ops.h runInterpreter.cpp 
+
