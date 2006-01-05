@@ -53018,3 +53018,31 @@ Modified files:
 Added files:
 	chapel/test/trivial/shannon/: readWriteBool.compopts 
 
+---------------------------------------------------------------------------
+
+01/05/06 14:06:45 -- shannon
+
+Log message:
+	Updated the output of the config var tests
+	that changed per Steve's recent check in.
+	Added a future to remind myself that one day
+	we'd again like the ability to print the default
+	values.
+
+Modified files:
+	chapel/test/execflags/shannon/configs/help/: 
+	                                             configVar-Dash.cfghelp 
+	                                             configVarHelp.cfghelp 
+	                                             configVarModStrings1.cfghelp 
+	                                             configVarModStrings2.cfghelp 
+	                                             configVarSetOver.cfghelp 
+	                                             configVarSetTwoTypes.cfghelp 
+	                                             configVarTwoModules.cfghelp 
+	                                             varNameEnumQM.cfghelp 
+	                                             varNameQMark.cfghelp 
+Added files:
+	chapel/test/execflags/shannon/configs/help/: 
+	                                             configVarDefaultValue.cfghelp 
+	                                             configVarDefaultValue.chpl 
+	                                             configVarDefaultValue.future 
+
