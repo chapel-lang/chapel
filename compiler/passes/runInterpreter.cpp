@@ -38,25 +38,29 @@ char *slotKindName[] = {
 
 class ISlot : public gc { public:
   ISlotKind     kind;
+  char          *name;
+  Type          *aspect;
   union {
     IObject *object;
     Immediate *imm;
     char *selector;
     Symbol *symbol;
   };
-  void set_selector(char *s) { kind = SELECTOR_ISLOT; selector = s; }
-  void set_symbol(Symbol *s) { kind = SYMBOL_ISLOT; symbol = s; }
-  void set_immediate(Immediate *i) { kind = IMMEDIATE_ISLOT; imm = i; }
+  void x() { name = 0; aspect = 0; }
+  void set_selector(char *s) { kind = SELECTOR_ISLOT; x(); selector = s; }
+  void set_symbol(Symbol *s) { kind = SYMBOL_ISLOT; x(); symbol = s; }
+  void set_immediate(Immediate *i) { kind = IMMEDIATE_ISLOT; x(); imm = i; }
   ISlot &operator=(ISlot &s) {
     kind = s.kind;
+    x();
     object = s.object; // representitive of the union
     return *this;
   }
-  ISlot(Symbol *s) : kind(SYMBOL_ISLOT) { symbol = s; }
-  ISlot(Immediate *i) : kind(IMMEDIATE_ISLOT) { imm = i; }
-  ISlot(char *sel) : kind(SELECTOR_ISLOT) { selector = sel; }
-  ISlot(ISlot &s) { kind = s.kind; object = s.object; }
-  ISlot() : kind(EMPTY_ISLOT) {}
+  ISlot(Symbol *s) : kind(SYMBOL_ISLOT), name(0), aspect(0) { symbol = s; }
+  ISlot(Immediate *i) : kind(IMMEDIATE_ISLOT), name(0), aspect(0) { imm = i; }
+  ISlot(char *sel) : kind(SELECTOR_ISLOT), name(0), aspect(0) { selector = sel; }
+  ISlot(ISlot &s) { kind = s.kind; x(); object = s.object; }
+  ISlot() : kind(EMPTY_ISLOT), name(0), aspect(0) {}
 };
 
 class IObject : public BaseAST { public:
@@ -1043,14 +1047,11 @@ IFrame::iprimitive(CallExpr *s) {
     }
     case PRIM_CAST: {
       check_prim_args(s, 2);
-      TypeSymbol *ts = check_TypeSymbol(s, arg[0]);
-      (void)ts;
+      // cast arg[1] to the type of arg[0]
       switch (arg[1]->kind) {
         default:
           USR_FATAL(ip, "bad slot argument to CAST primitive: %s", 
                     slotKindName[arg[1]->kind]);
-        case OBJECT_ISLOT:
-          break;
         case IMMEDIATE_ISLOT:
           break;
       }
@@ -1226,11 +1227,11 @@ IFrame::run(int timeslice) {
         S(CondStmt);
         switch (stage++) {
           case 0:
-            PUSH_EXPR(s->condExpr);
+            EVAL_EXPR(s->condExpr);
             break;
           case 1: {
             stage = 0;
-            ISlot *cond = valStack.pop();
+            ISlot *cond = islot(s->condExpr);
             check_type(ip, cond, dtBoolean);
             if (cond->imm->v_bool)
               EVAL_STMT(s->thenStmt);
@@ -1323,18 +1324,18 @@ IFrame::run(int timeslice) {
         S(CondExpr);
         switch (stage++) {
           case 0:
-            PUSH_EXPR(s->condExpr);
+            EVAL_EXPR(s->condExpr);
             break;
           case 1: {
             stage = 0;
-            ISlot *cond = valStack.pop();
+            ISlot *cond = islot(s->condExpr);
             check_type(ip, cond, dtBoolean);
             if (cond->imm->v_bool) {
               EVAL_EXPR(s->thenExpr);
-              env.put(expr, islot(s->thenExpr));
+              env.put(s, islot(s->thenExpr));
             } else {
               EVAL_EXPR(s->elseExpr);
-              env.put(expr, islot(s->elseExpr));
+              env.put(s, islot(s->elseExpr));
             }
             break;
           }
@@ -1348,7 +1349,7 @@ IFrame::run(int timeslice) {
           case 0: {
             switch (s->opTag) {
               default: 
-                INT_FATAL("unhandled CallExpr::opTag: %d\n", s->opTag); 
+                INT_FATAL(ip, "unhandled CallExpr::opTag: %d\n", s->opTag); 
                 break;
               case OP_NONE:
                 if (!s->primitive)
@@ -1356,7 +1357,7 @@ IFrame::run(int timeslice) {
                 break;
               case OP_MOVE:
                 if (s->argList->length() != 2) {
-                  INT_FATAL("illegal number of arguments for MOVE %d\n", s->argList->length());
+                  INT_FATAL(ip, "illegal number of arguments for MOVE %d\n", s->argList->length());
                 }
                 stage = 2;
                 break;
@@ -1375,7 +1376,8 @@ IFrame::run(int timeslice) {
                 if (a->astType == EXPR_SYM)
                   POP_VAL(((SymExpr*)a)->var);
                 else {
-                  INT_FATAL("target of MOVE not an SymExpr, astType = %d\n", s->argList->get(1)->astType);
+                  INT_FATAL(ip, "target of MOVE not an SymExpr, astType = %d\n", 
+                            s->argList->get(1)->astType);
                 }
               } else
                 CALL(s->argList->length() + 1);
@@ -1383,10 +1385,64 @@ IFrame::run(int timeslice) {
             break;
         }
       }
-      case EXPR_CAST:
-      case EXPR_MEMBERACCESS:
-      case EXPR_REDUCE:
-      case EXPR_NAMED:
+      case EXPR_NAMED: {
+        S(NamedExpr);
+        switch (stage++) {
+          case 0:
+            EVAL_EXPR(s->actual);
+            break;
+          case 1: {
+            stage = 0;
+            ISlot *slot = islot(s->actual);
+            slot->name = s->name;
+            env.put(s, slot);
+            break;
+          }
+        }
+        break;
+      }
+      case EXPR_CAST: {
+        S(CastExpr);
+        switch (stage++) {
+          case 0:
+            EVAL_EXPR(s->expr);
+            break;
+          case 1: {
+            stage = 0;
+            ISlot *slot = islot(s->expr);
+            if (!s->type) {
+              INT_FATAL(ip, "CastExpr with NULL type");
+            }
+            slot->aspect = s->type;
+            env.put(s, slot);
+            break;
+          }
+        }
+        break;
+      }
+#if 0
+      case EXPR_MEMBERACCESS: {
+        S(MemberAccess);
+        switch (stage++) {
+          case 0:
+            EVAL_EXPR(s->expr);
+            break;
+          case 1: {
+            stage = 0;
+            ISlot *oslot = islot(s->expr);
+            check_kind(s, oslot, OBJECT_ISLOT);
+            IObject *a = oslot->object;
+            ISlot *mslot = a->member.get(s->member);
+            if (!mslot) {
+              user_error(this, "interpreter terminated: %s", s->primitive->name);
+              return;
+            }
+            env.put(s, new ISlot(*mslot));
+            break;
+          }
+        break;
+      }
+#endif
       case EXPR_IMPORT:
         break;
     }

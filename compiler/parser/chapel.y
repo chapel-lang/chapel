@@ -1229,9 +1229,9 @@ top_level_expr:
 
 reduction:
   identifier TREDUCE expr
-    { $$ = new ReduceExpr(new UnresolvedSymbol($1), $3, false); }
+    { $$ = new CallExpr(new UnresolvedSymbol("_reduce"), new UnresolvedSymbol($1), $3); }
 | identifier TSCAN expr
-    { $$ = new ReduceExpr(new UnresolvedSymbol($1), $3, true); }
+    { $$ = new CallExpr(new UnresolvedSymbol("_scan"), new UnresolvedSymbol($1), $3); }
 ;
 
 

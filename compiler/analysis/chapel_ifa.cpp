@@ -2100,21 +2100,6 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
       send->partial = Partial_NEVER;
       break;
     }
-    case EXPR_REDUCE: {
-      assert(!"EXPR_REDUCE not implemented");
-      ReduceExpr *s = dynamic_cast<ReduceExpr *>(ast);
-      s->ainfo->rval = new_sym();
-      s->ainfo->rval->ast = s->ainfo;
-      if1_gen(if1, &s->ainfo->code, s->redDim->only()->ainfo->code);
-      if1_gen(if1, &s->ainfo->code, s->argExpr->ainfo->code);
-      Code *send = if1_send(if1, &s->ainfo->code, 5, 1, sym_primitive, 
-                            unimplemented_symbol,
-                            s->reduceType->asymbol->sym, s->redDim->only()->ainfo->rval, 
-                            s->argExpr->ainfo->rval, s->ainfo->rval);
-      send->ast = s->ainfo;
-      send->partial = Partial_NEVER;
-      break;
-    }
     case EXPR_NAMED: {
       NamedExpr *s = dynamic_cast<NamedExpr *>(ast);
       s->ainfo->rval = new_sym();

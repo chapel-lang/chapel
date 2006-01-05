@@ -1091,75 +1091,6 @@ void CastExpr::codegen(FILE* outfile) {
 }
 
 
-ReduceExpr::ReduceExpr(Symbol* init_reduceType, Expr* init_argExpr, 
-                       bool init_isScan, AList<Expr>* init_redDim) :
-                       
-  Expr(EXPR_REDUCE),
-  reduceType(init_reduceType),
-  redDim(init_redDim),
-  argExpr(init_argExpr),
-  isScan(init_isScan)
-{ }
-
-
-void ReduceExpr::verify() {
-  if (astType != EXPR_REDUCE) {
-    INT_FATAL(this, "Bad ReduceExpr::astType");
-  }
-}
-
-
-ReduceExpr*
-ReduceExpr::copyInner(ASTMap* map) {
-  return new ReduceExpr(COPY_INT(reduceType), COPY_INT(argExpr),
-                        isScan, COPY_INT(redDim));
-}
-
-
-void ReduceExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == redDim) {
-    redDim = dynamic_cast<AList<Expr>*>(new_ast);
-  } else if (old_ast == argExpr) {
-    argExpr = dynamic_cast<Expr*>(new_ast);
-  } else {
-    INT_FATAL(this, "Unexpected case in ReduceExpr::replaceChild");
-  }
-}
-
-
-void ReduceExpr::traverseExpr(Traversal* traversal) {
-  TRAVERSE(reduceType, traversal, false);
-  redDim->traverse(traversal, false);
-  TRAVERSE(argExpr, traversal, false);
-}
-
-
-void ReduceExpr::print(FILE* outfile) {
-  fprintf(outfile, "reduce ");
-  if (!redDim->isEmpty()) {
-    fprintf(outfile, "(dim=");
-    redDim->print(outfile);
-    fprintf(outfile, ") ");
-  }
-  fprintf(outfile, "by ");
-  reduceType->print(outfile);
-  fprintf(outfile, " ");
-  argExpr->print(outfile);
-}
-
-void ReduceExpr::codegen(FILE* outfile) {
-  fprintf(outfile, "This is ReduceExpr's codegen method.\n");
-}
-
-
-void initExpr(void) {
-  dtNil->defaultValue = gNil;
-  dtUnknown->defaultValue = gUnknown;
-  dtUnspecified->defaultValue = gUnspecified;
-  dtVoid->defaultValue = gVoid;
-}
-
-
 CondExpr::CondExpr(Expr* initCondExpr, Expr* initThenExpr, Expr* initElseExpr) :
   Expr(EXPR_COND),
   condExpr(initCondExpr),
@@ -1477,4 +1408,11 @@ AList<DefExpr>* exprsToIndices(AList<Expr>* indices) {
     exprsToIndicesHelper(defs, index, dtUnknown);
   }
   return defs;
+}
+
+void initExpr(void) {
+  dtNil->defaultValue = gNil;
+  dtUnknown->defaultValue = gUnknown;
+  dtUnspecified->defaultValue = gUnspecified;
+  dtVoid->defaultValue = gVoid;
 }

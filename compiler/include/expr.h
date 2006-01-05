@@ -214,28 +214,6 @@ class CastExpr : public Expr {
 };
 
 
-class ReduceExpr : public Expr {
- public:
-  Symbol* reduceType;
-  AList<Expr>* redDim;
-  Expr* argExpr;
-  bool isScan;
-
-  ReduceExpr(Symbol* init_reduceType, Expr* init_argExpr, 
-             bool init_isScan, AList<Expr>* init_redDim = new AList<Expr>());
-  virtual void verify(void); 
-  COPY_DEF(ReduceExpr);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseExpr(Traversal* traversal);
-
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-};
-
-
-void initExpr(void);
-
-
 class CondExpr : public Expr {
  public:
   Expr* condExpr;
@@ -294,12 +272,13 @@ class ImportExpr : public Expr {
   ClassType* getStruct(void);
 };
 
+
+void initExpr(void);
 Expr *new_BoolLiteral(bool b);
 Expr *new_IntLiteral(char *);
 Expr *new_IntLiteral(int i);
 Expr *new_FloatLiteral(char *n, double d);
 Expr *new_StringLiteral(char *str);
-
 bool get_int(Expr *e, long *i); // false is failure
 bool get_string(Expr *e, char **s); // false is failure
 VarSymbol *get_constant(Expr *e);
