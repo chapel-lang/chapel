@@ -279,12 +279,11 @@ void printConfigVarTable(void) {
       moduleName = configVar->moduleName;
     }
     fprintf(stdout, "  %*s: ", longestName, configVar->varName);
+    fprintf(stdout, "%s", configVar->defaultValue);
     if (configVar->setValue) {
-      fprintf(stdout, "%s (default:  %s)\n", configVar->setValue, 
-               configVar->defaultValue);
-    } else {
-      fprintf(stdout, "%s\n", configVar->defaultValue);
+      fprintf(stdout, " (configured to %s)", configVar->setValue);
     }
+    fprintf(stdout, "\n");
   }
   exit(0);
 }

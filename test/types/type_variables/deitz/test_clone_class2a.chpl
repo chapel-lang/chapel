@@ -5,13 +5,13 @@ class foo {
   }
 }
 
-var f : foo = foo();
+var f = foo();
 
 f.x = "howdy";
 
 f.print();
 
-var f2 : foo = foo();
+var f2 = foo();
 
 f2.x = 3.2;
 

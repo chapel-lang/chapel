@@ -294,10 +294,12 @@ static void normalize_returns(FnSymbol* fn) {
   LabelSymbol* label = new LabelSymbol(stringcat("_end_", fn->name));
   fn->insertAtTail(new LabelStmt(label));
   VarSymbol* retval = NULL;
+  //Expr* rettype = NULL;
   if (returns_void) {
     fn->insertAtTail(new ReturnStmt());
   } else {
     retval = new VarSymbol(stringcat("_ret_", fn->name), fn->retType);
+
     if (!use_alloc)
       retval->noDefaultInit = true;
     Expr* type = fn->defPoint->exprType;
@@ -305,14 +307,39 @@ static void normalize_returns(FnSymbol* fn) {
     if (!type)
       retval->noDefaultInit = true;
     fn->insertAtHead(new DefExpr(retval, NULL, type));
+
+//     retval->noDefaultInit = true;
+//     rettype = fn->defPoint->exprType;
+//     rettype->remove();
+//     fn->insertAtHead(new DefExpr(retval));
+    
     fn->insertAtTail(new ReturnStmt(retval));
   }
   bool label_is_used = false;
   forv_Vec(ReturnStmt, ret, rets) {
     if (retval) {
+//       CallExpr* ret_call = dynamic_cast<CallExpr*>(ret->expr);
+//       if (ret_call && ret_call->isNamed("__primitive")) {
+//         ret_call->remove();
+//         ret->insertBefore(new CallExpr(OP_MOVE, retval, ret_call));
+//       } else {
+//         Expr* ret_expr = ret->expr;
+//         ret_expr->remove();
+//         VarSymbol* tmp1 = new VarSymbol("_retTmp1");
+//         if (rettype) {
+//           ret->insertBefore(new DefExpr(tmp1, ret_expr, rettype->copy()));
+//         } else {
+//           ret->insertBefore(new DefExpr(tmp1, ret_expr));
+//         }
+//         VarSymbol* tmp2 = new VarSymbol("_retTmp2");
+//         tmp2->noDefaultInit = true;
+//         ret->insertBefore(new DefExpr(tmp2));
+//         ret->insertBefore(new CallExpr(OP_MOVE, tmp2, new CallExpr(OP_INIT, tmp1)));
+//         ret->insertBefore(new CallExpr(OP_MOVE, retval, new CallExpr("=", tmp2, tmp1)));
       Expr* ret_expr = ret->expr;
-      ret->expr->remove();
+      ret_expr->remove();
       ret->insertBefore(new CallExpr(OP_MOVE, retval, ret_expr));
+      //      }
     }
     if (ret->next != label->defPoint->parentStmt) {
       ret->replace(new GotoStmt(goto_normal, label));
@@ -808,6 +835,10 @@ static void insert_call_temps(CallExpr* call) {
   if (call->isNamed("typeof") || call->primitive || call->isNamed("__primitive"))
     return;
 
+  if (CallExpr* parentCall = dynamic_cast<CallExpr*>(call->parentExpr))
+    if (parentCall->opTag == OP_MOVE)
+      return;
+
   Stmt* stmt = call->parentStmt;
   VarSymbol* tmp = new VarSymbol(stringcat("_tmp"));
   tmp->cname = stringcat(tmp->name, intstring(uid++));
@@ -837,7 +868,13 @@ static void fix_def_expr(DefExpr* def) {
   if (dynamic_cast<ForLoopStmt*>(def->parentStmt))
     return;
   static int uid = 1;
-  if (dynamic_cast<VarSymbol*>(def->sym)->noDefaultInit) {
+  SymExpr* initSymExpr = dynamic_cast<SymExpr*>(def->init);
+  bool no_init = initSymExpr && initSymExpr->var == gUnspecified;
+  if (no_init || dynamic_cast<VarSymbol*>(def->sym)->noDefaultInit) {
+    if (no_init)
+      def->init->remove();
+    if (def->sym->type == dtUnspecified)
+      def->sym->type = dtUnknown;
     if (def->init)
       def->parentStmt->insertAfter(new CallExpr(OP_MOVE, def->sym, def->init->copy()));
     dynamic_cast<VarSymbol*>(def->sym)->noDefaultInit = false;

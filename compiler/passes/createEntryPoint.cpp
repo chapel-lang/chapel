@@ -36,7 +36,11 @@ void createInitFn(ModuleSymbol* mod) {
   char* runOnce = NULL;
   if (mod->modtype != MOD_INTERNAL && mod != compilerModule && !fnostdincs) {
     if (mod != standardModule) {
-      definition->insertAtHead(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol("_chpl_standard"))));
+      if (fnostdincs_but_file) {
+        definition->insertAtHead(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol("_chpl_file"))));
+        definition->insertAtHead(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol("_chpl_compiler"))));
+      } else
+        definition->insertAtHead(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol("_chpl_standard"))));
     }
 
     runOnce = stringcat("__run_", mod->name, "_firsttime");

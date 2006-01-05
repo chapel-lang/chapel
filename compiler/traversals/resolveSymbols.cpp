@@ -105,7 +105,7 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
       } else if (fns.n > 1) {
         int notbuiltin = 0;
         forv_Vec(FnSymbol, f, fns) {
-          if (!fns.v[0]->hasPragma("builtin")) {
+          if (!f->hasPragma("builtin")) {
             notbuiltin = 1;
           }
         }

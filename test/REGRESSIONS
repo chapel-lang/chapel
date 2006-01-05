@@ -15,20 +15,18 @@ linux and general regressions
 =============================
 
 
-[Error matching compiler output for trivial/deitz/test_coerce_integer_to_string2]
+[Error matching compiler output for classes/deitz/test_mycomplex_record]
+[Error matching compiler output for types/type_variables/deitz/test_clone_class2a]
 
-Coercions to strings is hacky.
+??
 
-[Error matching program output for trivial/shannon/readWriteBoolLineno]
-[Error matching program output for trivial/shannon/readWriteComplexLineno]
+[Error matching program output for execflags/shannon/configs/help/*]
 
-Shannon is working to fix these line number problems.
+needs updating
 
-[Error matching compiler output for types/seq/deitz/test_seq_record1]
+[Error matching program output for trivial/shannon/readWriteBool]
 
-The problem has to do with where to instantiate the seq of R.  It
-can't happen near the seq class because then the functions on R are
-not visible.
+Shannon has this under control.
 
 
 ==========================

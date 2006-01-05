@@ -25,14 +25,9 @@ void CreateConfigVarTable::postProcessExpr(Expr* expr) {
     VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym);
 
     if (var && var->varClass == VAR_CONFIG) {
-      char* moduleName = dynamic_cast<Symbol*>(var->parentScope->astParent)->name;
       fprintf(codefile, "installConfigVar(\"%s\", \"", var->name);
-      if (use_alloc) {
-        fprintf(codefile, "__init__"); // should contain init
-      } else {
-        var->defPoint->init->print(codefile);
-      }
-      fprintf(codefile, "\", \"%s\");\n", moduleName);
+      fprintf(codefile, var->type->symbol->name);
+      fprintf(codefile, "\", \"%s\");\n", var->getModule()->name);
     }
   }
 }
