@@ -20,14 +20,6 @@ linux and general regressions
 
 ??
 
-[Error matching program output for execflags/shannon/configs/help/*]
-
-needs updating
-
-[Error matching program output for trivial/shannon/readWriteBool]
-
-Shannon has this under control.
-
 
 ==========================
 linux valgrind regressions

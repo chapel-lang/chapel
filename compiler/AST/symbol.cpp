@@ -482,8 +482,7 @@ void ArgSymbol::printDef(FILE* outfile) {
 
 
 bool ArgSymbol::requiresCPtr(void) {
-  return intent == INTENT_OUT || intent == INTENT_INOUT ||
-    (intent == INTENT_REF && type->astType == TYPE_PRIMITIVE);
+  return intent == INTENT_OUT || intent == INTENT_INOUT || intent == INTENT_REF;
 }
 
 
@@ -836,6 +835,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
       wrapper_body->insertAtTail(new DefExpr(temp, temp_init, temp_type));
 
       if (formal->type != dtUnknown &&
+          formal->intent != INTENT_REF &&
           formal->intent != INTENT_OUT &&
           formal->intent != INTENT_INOUT)
         wrapper_actuals->insertAtTail(new CastExpr(new SymExpr(temp), NULL, formal->type));

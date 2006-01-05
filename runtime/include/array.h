@@ -6,8 +6,8 @@
 #include "domain.h"
 
 #define _data_construct(t, size) _chpl_malloc(size, sizeof(t), "_data")
-#define _data_set(x, i, v) x[i] = v
-#define _data_get(x, i) (x[i])
+#define _data_set(x, i, v) (*x)[i] = v
+#define _data_get(x, i) ((*x)[i])
 
 typedef struct __arr_perdim {
   int off;

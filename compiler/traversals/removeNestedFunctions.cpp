@@ -49,7 +49,7 @@ addVarsToFormals(FnSymbol* fn, Vec<Symbol*>* vars) {
   ASTMap update_map;
   forv_Vec(Symbol, sym, *vars) {
     if (sym) {
-      ArgSymbol* arg = new ArgSymbol(INTENT_INOUT, sym->name, sym->type);
+      ArgSymbol* arg = new ArgSymbol(INTENT_REF, sym->name, sym->type);
       fn->formals->insertAtTail(new DefExpr(arg));
       update_map.put(sym, arg);
     }
