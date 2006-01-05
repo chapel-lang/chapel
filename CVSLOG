@@ -53046,3 +53046,27 @@ Added files:
 	                                             configVarDefaultValue.chpl 
 	                                             configVarDefaultValue.future 
 
+---------------------------------------------------------------------------
+
+01/05/06 15:04:39 -- deitz
+
+Log message:
+	Changed handling of inout and out intents to use ref intent.
+	Futurized four tests that aliased inout and out arguments.  During
+	normalization, I change the inout and out intents to be ref intent.
+	Out arguments are still initialized at the top of the call thereby
+	ignoring the value in the actual.
+	
+	Updated regressions file.
+	
+	Side effect: Due to proper handling of ref intent to implement inout
+	and out intents, the 'this' argument is now passed with an extra
+	pointer.  We should fix this, but for now it works.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/compiler/traversals/: removeNestedFunctions.cpp 
+	chapel/runtime/include/: array.h 
+	chapel/test/: REGRESSIONS 
+
