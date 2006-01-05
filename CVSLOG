@@ -52983,3 +52983,25 @@ Modified files:
 	                               record_type_hierarchy-3-error.good 
 	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
 
+---------------------------------------------------------------------------
+
+01/05/06 10:56:48 -- deitz
+
+Log message:
+	Updated REGRESSIONS file.  Caused two minor new ones.
+	
+	Fixed configs so that they work with --use-alloc via a stopgap.
+	
+	More general work on getting --use-alloc working.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/passes/: createEntryPoint.cpp normalize.cpp 
+	chapel/compiler/traversals/: createConfigVarTable.cpp 
+	                             htmlview.cpp resolveSymbols.cpp 
+	chapel/runtime/src/: config.c 
+	chapel/test/: REGRESSIONS 
+	chapel/test/flowanalysis/newast/: sum_type-1.good 
+	                                  sum_type-2.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class2a.chpl 
+
