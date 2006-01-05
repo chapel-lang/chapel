@@ -53083,3 +53083,17 @@ Added files:
 	                              intents-classes4.future 
 	chapel/test/trivial/preston/: aliasing.future 
 
+---------------------------------------------------------------------------
+
+01/05/06 15:16:35 -- jplevyak
+
+Log message:
+	Remove ReduceExpr
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: baseAST.h expr.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: runInterpreter.cpp 
+
