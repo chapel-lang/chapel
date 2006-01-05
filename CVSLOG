@@ -52957,3 +52957,17 @@ Modified files:
 	chapel/compiler/ifa/: num.cpp num.h 
 	chapel/compiler/passes/: interpreter_ops.h runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+01/05/06 08:56:13 -- jplevyak
+
+Log message:
+	Fix make problem by just putting prim_data.cpp and prim_data.h
+	under CVS.  They will now have to be rebuilt manually, but
+	since they rarely change that shouldn't be a problem.
+
+Modified files:
+	chapel/compiler/ifa/: Makefile 
+Added files:
+	chapel/compiler/ifa/: prim_data.cpp prim_data.h 
+
