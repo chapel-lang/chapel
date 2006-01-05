@@ -53005,3 +53005,16 @@ Modified files:
 	                                  sum_type-2.good 
 	chapel/test/types/type_variables/deitz/: test_clone_class2a.chpl 
 
+---------------------------------------------------------------------------
+
+01/05/06 11:04:13 -- shannon
+
+Log message:
+	Update the output of a test I missed on
+	yesterday's commit.
+
+Modified files:
+	chapel/test/trivial/shannon/: readWriteBool.good 
+Added files:
+	chapel/test/trivial/shannon/: readWriteBool.compopts 
+
