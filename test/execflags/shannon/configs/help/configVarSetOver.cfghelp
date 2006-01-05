@@ -1,8 +1,8 @@
 CONFIG VARS:
 ============
 module1's config vars:
-  x: 999 (default:  1)
+  x: integer (configured to 999)
 
 module2's config vars:
-  x: 2
-  z: 8888.88 (default:  2.2)
+  x: integer
+  z: float (configured to 8888.88)

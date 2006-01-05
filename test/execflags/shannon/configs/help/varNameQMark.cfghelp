@@ -1,5 +1,5 @@
 CONFIG VARS:
 ============
-     s?econd: 111 (default:  1)
-       last?: 222 (default:  2)
-  mu?ltip?le: 333 (default:  3)
+     s?econd: integer (configured to 111)
+       last?: integer (configured to 222)
+  mu?ltip?le: integer (configured to 333)

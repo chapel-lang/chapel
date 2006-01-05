@@ -1,8 +1,8 @@
 CONFIG VARS:
 ============
 module1's config vars:
-  x: this is a test (default:  "that seems to work")
+  x: string (configured to this is a test)
 
 module2's config vars:
-  x: 888 (default:  2)
-  z: no module name given (default:  "this one doesn't require it")
+  x: integer (configured to 888)
+  z: string (configured to no module name given)
