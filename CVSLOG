@@ -53252,3 +53252,13 @@ Removed files:
 	                             processParameters.cpp 
 	                             processParameters.h 
 
+---------------------------------------------------------------------------
+
+01/06/06 14:26:12 -- deitz
+
+Log message:
+	Removed future of test that has been working for a while for good reason.
+
+Removed files:
+	chapel/test/types/seq/deitz/: test_seq_htuple2.future 
+
