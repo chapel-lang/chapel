@@ -1,3 +1,4 @@
+::_defTmp(configVar.chpl:1) ( int64 )
 ::x(configVar.chpl:1) ( int64 )
 function __init_configVar configVar.chpl:3
 function main configVar.chpl:3

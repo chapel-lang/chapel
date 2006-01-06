@@ -1,3 +1,6 @@
+::_defTmp(pareninit.chpl:1) ( int64 )
+::_defTmp1(pareninit.chpl:2) ( int64 )
+::_defTmp2(pareninit.chpl:2) ( int64 )
 ::_tmp(pareninit.chpl:2) ( int64 )
 ::x(pareninit.chpl:1) ( int64 )
 ::y(pareninit.chpl:2) ( int64 )

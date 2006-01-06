@@ -1,4 +1,8 @@
  called from 20 in __init_globalref at globalref.chpl:26
+::_defTmp(globalref.chpl:1) ( int64 )
+::_defTmp(globalref.chpl:2) ( int64 )
+::_defTmp(globalref.chpl:3) ( int64 )
+::_defTmp(globalref.chpl:6) ( int64 )
 ::a(globalref.chpl:1) ( int64 )
 ::a(globalref.chpl:5) ( int64 )
 ::b(globalref.chpl:2) ( int64 )

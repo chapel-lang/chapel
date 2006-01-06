@@ -17,6 +17,7 @@ _chpl_seq.chpl:168: fwrite, f : file, s : seq
 _chpl_seq.chpl:228: fwrite, f : file, s : _aseq
 _chpl_seq.chpl:6: fwrite, f : file, val : _seqNode
 _chpl_seq.chpl:6: fwrite, f : file, val : _seqNode
+error: '_tmp' has no type
 fail: program does not type
 fwrite, f : file, val : _tuple2
 fwrite, f : file, val : _tuple2
@@ -43,7 +44,6 @@ prelude.chpl:30: fwrite, f : file, val : CFILEPTR
 prelude.chpl:3: fwrite, f : file, val : object
 prelude.chpl:4: fwrite, f : file, val : value
 record_type_hierarchy-3-error.chpl:12: f, a : D
-record_type_hierarchy-3-error.chpl:16: '_tmp' has no type
 record_type_hierarchy-3-error.chpl:16: expression has no type
 record_type_hierarchy-3-error.chpl:16: expression has no type
 record_type_hierarchy-3-error.chpl:16: illegal call argument type '_tmp' illegal: ( ) 

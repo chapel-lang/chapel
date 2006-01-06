@@ -1,3 +1,6 @@
+::_defTmp(logical_and.chpl:1) ( int64 )
+::_defTmp(logical_and.chpl:2) ( int64 )
+::_defTmp(logical_and.chpl:3) ( int64 )
 ::_tmp(logical_and.chpl:11) ( bool )
 ::_tmp(logical_and.chpl:5) ( bool )
 ::_tmp(logical_and.chpl:8) ( bool )

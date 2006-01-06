@@ -1,3 +1,6 @@
+::_defTmp(assignment_expr.chpl:1) ( int64 )
+::_defTmp(assignment_expr.chpl:2) ( int64 )
+::_defTmp(assignment_expr.chpl:3) ( int64 )
 ::_tmp(assignment_expr.chpl:11) ( int64 )
 ::_tmp(assignment_expr.chpl:14) ( int64 )
 ::_tmp(assignment_expr.chpl:5) ( int64 )

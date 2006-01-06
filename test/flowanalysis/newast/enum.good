@@ -6,6 +6,8 @@
 ::O(enum.chpl:1) ( classVals (enum.chpl:1) )
 ::S(enum.chpl:1) ( classVals (enum.chpl:1) )
 ::W(enum.chpl:1) ( classVals (enum.chpl:1) )
+::_defTmp(enum.chpl:3) ( classVals (enum.chpl:1) )
+::_defTmp(enum.chpl:7) ( int64 )
 ::f(enum.chpl:1) ( file )
 ::val(enum.chpl:1) ( classVals (enum.chpl:1) )
 ::x(enum.chpl:3) ( classVals (enum.chpl:1) )

@@ -1,3 +1,4 @@
+::_defTmp(whileLoop.chpl:1) ( int64 )
 ::_tmp(whileLoop.chpl:10) ( int64 )
 ::_tmp(whileLoop.chpl:16) ( int64 )
 ::_tmp(whileLoop.chpl:21) ( int64 )

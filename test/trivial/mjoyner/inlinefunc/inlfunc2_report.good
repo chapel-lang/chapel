@@ -4,6 +4,7 @@ chapel compiler: reporting inlining, _file_filename function was inlined
 chapel compiler: reporting inlining, _file_fp function was inlined
 chapel compiler: reporting inlining, _file_fp function was inlined
 chapel compiler: reporting inlining, _file_fp function was inlined
+chapel compiler: reporting inlining, _default_wrap__inst__construct__tuple2 function was inlined
 chapel compiler: reporting inlining, _default_wrap__construct_Foo function was inlined
 chapel compiler: reporting inlining, _Foo_y function was inlined
 chapel compiler: reporting inlining, leaf function was inlined

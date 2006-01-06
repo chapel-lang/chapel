@@ -1,3 +1,5 @@
+::_defTmp(bitwise_negation.chpl:1) ( int64 )
+::_defTmp(bitwise_negation.chpl:2) ( int64 )
 ::_tmp(bitwise_negation.chpl:15) ( int64 )
 ::_tmp(bitwise_negation.chpl:9) ( int64 )
 ::answer(bitwise_negation.chpl:2) ( int64 )
