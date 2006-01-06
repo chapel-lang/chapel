@@ -30,7 +30,6 @@ static char libraryFilename[FILENAME_MAX] = "";
 static char log_flags[512] = "";
 static bool rungdb = false;
 static int pre_malloc = 0;
-bool use_alloc = true;
 bool formalTemps = false;
 bool checkAnalysisTypeinfo = false;
 bool no_infer = false;
@@ -95,7 +94,6 @@ static ArgumentDescription arg_desc[] = {
  {"no-inline", ' ', "No inlining of functions" , "F", &no_inline, NULL, NULL},
  {"report-inlining", ' ', "Print inlined functions", "F", &report_inlining, NULL, NULL},
  {"formal-temps", ' ', "Insert temps for formals", "F", &formalTemps, "CHPL_FORMAL_TEMPS", NULL},
- {"use-alloc", ' ', "Use _alloc function for DefExpr", "F", &use_alloc, "USE_ALLOC", NULL},
  {"check-typeinfo", ' ', "Check result of type_info and return_type_info", "F", &checkAnalysisTypeinfo, NULL, NULL},
  {"no-codegen", ' ', "Suppress code generation", "F", &no_codegen, "CHPL_NO_CODEGEN", NULL},
  {"equal-method", ' ', "= is a method", "T", &f_equal_method, "CHPL_EQUAL_METHOD", NULL},

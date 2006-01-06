@@ -132,7 +132,6 @@ class ArgSymbol : public Symbol {
   bool requiresCTmp(void);
   bool isConst(void);
   bool isRef(void);
-  bool isCopyOut(void);
 
   void printDef(FILE* outfile);
   void codegen(FILE* outfile);

@@ -53,24 +53,10 @@ Instantiate::postProcessExpr(Expr* expr) {
                   }
                 } else if (dynamic_cast<VarSymbol*>(variable->var)) {
                   if (variable->var->defPoint) {
-                    if (use_alloc) {
-                      if (variable->var->type) {
-                        if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(formalArg->genericSymbol)) {
-                          substitutions.put(ts->definition, variable->var->type);
-                          sub = true;
-                        }
-                      }
-                    } else
-                    if (CallExpr* call = dynamic_cast<CallExpr*>(variable->var->defPoint->init)) {
-                      if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->baseExpr)) {
-                        if (FnSymbol* cfn = dynamic_cast<FnSymbol*>(symExpr->var)) {
-                          if (cfn->fnClass == FN_CONSTRUCTOR) {
-                            if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(formalArg->genericSymbol)) {
-                              substitutions.put(ts->definition, cfn->retType);
-                              sub = true;
-                            }
-                          }
-                        }
+                    if (variable->var->type) {
+                      if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(formalArg->genericSymbol)) {
+                        substitutions.put(ts->definition, variable->var->type);
+                        sub = true;
                       }
                     }
                   }
@@ -142,12 +128,10 @@ Instantiate::postProcessExpr(Expr* expr) {
               handled = true;
             }
           }
-          if (use_alloc) {
-            if (CallExpr* parentCall = dynamic_cast<CallExpr*>(call->parentExpr)) {
-              if (parentCall->opTag == OP_MOVE) {
-                if (SymExpr* sym = dynamic_cast<SymExpr*>(parentCall->get(1))) {
-                  sym->var->type = new_fn->retType;
-                }
+          if (CallExpr* parentCall = dynamic_cast<CallExpr*>(call->parentExpr)) {
+            if (parentCall->opTag == OP_MOVE) {
+              if (SymExpr* sym = dynamic_cast<SymExpr*>(parentCall->get(1))) {
+                sym->var->type = new_fn->retType;
               }
             }
           }

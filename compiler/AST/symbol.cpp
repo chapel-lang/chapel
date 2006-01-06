@@ -510,11 +510,6 @@ bool ArgSymbol::isRef(void) {
 }
 
 
-bool ArgSymbol::isCopyOut(void) {
-  return intent == INTENT_INOUT || intent == INTENT_OUT;
-}
-
-
 void ArgSymbol::codegen(FILE* outfile) {
   bool requiresDeref = requiresCPtr();
  
@@ -823,14 +818,12 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
       Expr* temp_type = NULL;
       if (formal->intent != INTENT_OUT)
         temp_init = formal->defaultExpr->copy();
-      if (no_infer || use_alloc) {
-        if (SymExpr* symExpr = dynamic_cast<SymExpr*>(temp_init)) {
-          if (symExpr->var == gNil) {
-            temp_init = NULL;
-          }
+      if (SymExpr* symExpr = dynamic_cast<SymExpr*>(temp_init)) {
+        if (symExpr->var == gNil) {
+          temp_init = NULL;
         }
       }
-      if ((no_infer || use_alloc) && formalDef->exprType)
+      if (formalDef->exprType)
         temp_type = formalDef->exprType->copy();
       wrapper_body->insertAtTail(new DefExpr(temp, temp_init, temp_type));
 

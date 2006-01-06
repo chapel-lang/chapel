@@ -843,7 +843,7 @@ Type* CallExpr::typeInfo(void) {
 
 
 void CallExpr::codegen(FILE* outfile) {
-  if (use_alloc && opTag == OP_MOVE) {
+  if (opTag == OP_MOVE) {
     if (SymExpr* sym = dynamic_cast<SymExpr*>(get(1))) {
       if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var)) {
         if (var->varClass == VAR_CONFIG) {

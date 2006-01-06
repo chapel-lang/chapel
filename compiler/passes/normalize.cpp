@@ -63,13 +63,6 @@ void normalize(BaseAST* base) {
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
-    if (!use_alloc) {
-      if (VarSymbol* vs = dynamic_cast<VarSymbol*>(ast)) {
-        if (vs->type == dtUnknown && !vs->defPoint->exprType) {
-          vs->noDefaultInit = true;
-        }
-      }
-    }
 
     if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(ast)) {
       if (UserType* userType = dynamic_cast<UserType*>(ts->definition)) {
@@ -146,17 +139,15 @@ void normalize(BaseAST* base) {
     }
   }
 
-  if (use_alloc) {
-    asts.clear();
-    collect_asts_postorder(&asts, base);
-    forv_Vec(BaseAST, ast, asts) {
-      currentLineno = ast->lineno;
-      currentFilename = ast->filename;
-      if (DefExpr* a = dynamic_cast<DefExpr*>(ast)) {
-        if (dynamic_cast<VarSymbol*>(a->sym) &&
-            dynamic_cast<FnSymbol*>(a->parentSymbol))
-          fix_def_expr(a);
-      }
+  asts.clear();
+  collect_asts_postorder(&asts, base);
+  forv_Vec(BaseAST, ast, asts) {
+    currentLineno = ast->lineno;
+    currentFilename = ast->filename;
+    if (DefExpr* a = dynamic_cast<DefExpr*>(ast)) {
+      if (dynamic_cast<VarSymbol*>(a->sym) &&
+          dynamic_cast<FnSymbol*>(a->parentSymbol))
+        fix_def_expr(a);
     }
   }
 
@@ -300,8 +291,6 @@ static void normalize_returns(FnSymbol* fn) {
   } else {
     retval = new VarSymbol(stringcat("_ret_", fn->name), fn->retType);
 
-    if (!use_alloc)
-      retval->noDefaultInit = true;
     Expr* type = fn->defPoint->exprType;
     type->remove();
     if (!type)

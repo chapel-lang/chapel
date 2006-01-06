@@ -133,8 +133,6 @@ void dump_index_footer(FILE* f) {
 
 
 void runPasses(char* passfilename) {
-  if (no_infer)
-    use_alloc = true;
   if (fdump_html) {
     html_index_file = fopen(stringcat(log_dir, "index.html"), "w");
     dump_index_header(html_index_file);
