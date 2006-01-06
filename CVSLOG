@@ -53235,3 +53235,20 @@ Modified files:
 	                         runInterpreter.cpp 
 	chapel/compiler/traversals/: instantiate.cpp resolveSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+01/06/06 13:59:19 -- deitz
+
+Log message:
+	Removed now unnecessary passes processParameters and
+	insertVariableInitializations.
+
+Modified files:
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/traversals/: Makefile.share 
+Removed files:
+	chapel/compiler/traversals/: insertVariableInitializations.cpp 
+	                             insertVariableInitializations.h 
+	                             processParameters.cpp 
+	                             processParameters.h 
+
