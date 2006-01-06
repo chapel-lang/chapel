@@ -53300,3 +53300,19 @@ Added files:
 	                              test_formal_copy1.future 
 	                              test_formal_copy1.good 
 
+---------------------------------------------------------------------------
+
+01/06/06 15:54:40 -- deitz
+
+Log message:
+	Removed --use-alloc flag and deleted some now dead code.  I commented
+	out the dead code in chapel_ifa.cpp.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: driver.h symbol.h 
+	chapel/compiler/main/: driver.cpp runpasses.cpp 
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/compiler/traversals/: inlineFunctions.cpp instantiate.cpp 
+
