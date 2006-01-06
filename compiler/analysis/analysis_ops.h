@@ -10,6 +10,7 @@ class AnalysisOp;
 
 _EXTERN AnalysisOp *unimplemented_analysis_op _INIT;
 _EXTERN AnalysisOp *init_analysis_op _INIT;
+_EXTERN AnalysisOp *return_bool_analysis_op _INIT;
 _EXTERN AnalysisOp *return_int_analysis_op _INIT;
 _EXTERN AnalysisOp *return_string_analysis_op _INIT;
 _EXTERN AnalysisOp *write_analysis_op _INIT;

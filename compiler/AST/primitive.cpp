@@ -53,14 +53,14 @@ initPrimitive() {
   // OP_BY by
   // OP_SUBTYPE :
   // OP_NOTSUBTYPE !:
-  primitives.add(new PrimitiveOp("ptr_eq", ptr_eq_interpreter_op, return_int_analysis_op));
-  primitives.add(new PrimitiveOp("ptr_neq", ptr_neq_interpreter_op, return_int_analysis_op));
+  primitives.add(new PrimitiveOp("ptr_eq", ptr_eq_interpreter_op, return_bool_analysis_op));
+  primitives.add(new PrimitiveOp("ptr_neq", ptr_neq_interpreter_op, return_bool_analysis_op));
   primitives.add(new PrimitiveOp("cast", cast_interpreter_op, cast_analysis_op));
   primitives.add(new PrimitiveOp("to_string", to_string_interpreter_op, return_string_analysis_op));
   primitives.add(new PrimitiveOp("copy_string", copy_string_interpreter_op, return_string_analysis_op));
   primitives.add(new PrimitiveOp("string_index", string_index_interpreter_op, return_string_analysis_op));
   primitives.add(new PrimitiveOp("string_concat", string_concat_interpreter_op, return_string_analysis_op));
-  primitives.add(new PrimitiveOp("string_equal", string_equal_interpreter_op, return_int_analysis_op));
+  primitives.add(new PrimitiveOp("string_equal", string_equal_interpreter_op, return_bool_analysis_op));
   primitives.add(new PrimitiveOp("string_select", string_select_interpreter_op, return_string_analysis_op));
   primitives.add(new PrimitiveOp("string_strided_select", string_strided_select_interpreter_op, return_string_analysis_op));
   primitives.add(new PrimitiveOp("string_length", string_length_interpreter_op, return_int_analysis_op));
