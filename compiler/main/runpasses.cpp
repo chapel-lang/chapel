@@ -11,8 +11,6 @@
 
 bool printPasses = false;
 
-static bool skipFunctionResolution = false;
-
 struct PassInfo {
   char* name;
 };
@@ -43,15 +41,6 @@ static void runPass(char *passName, void (*pass)(void)) {
   struct timeval stopTime;
   struct timezone timezone;
 
-  if (no_infer) {
-    if (skipFunctionResolution) {
-      if (!strcmp(passName, "functionResolution"))
-        skipFunctionResolution = false;
-      return;
-    }
-  } else if (!strcmp(passName, "functionResolution"))
-    return;
-
   currentTraversal = stringcpy(passName);
   if (fdump_html) {
     gettimeofday(&startTime, &timezone);
@@ -67,9 +56,6 @@ static void runPass(char *passName, void (*pass)(void)) {
     fprintf(stderr, "%8.3f seconds\n",  
             ((double)((stopTime.tv_sec*1e6+stopTime.tv_usec) - 
                       (startTime.tv_sec*1e6+startTime.tv_usec))) / 1e6);
-  }
-  if (!strcmp(passName, "functionResolution")) {
-    skipFunctionResolution = true;
   }
 
   if (fdump_html) {

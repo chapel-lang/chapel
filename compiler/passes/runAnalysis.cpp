@@ -11,6 +11,8 @@ bool inAnalysis = false;
 bool postAnalysis = false;
 
 void runAnalysis(void) {
+  if (no_infer)
+    return;
   preAnalysis = false;
   inAnalysis = true;
   Vec<AList<Stmt> *> stmts;

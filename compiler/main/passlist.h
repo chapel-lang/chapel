@@ -11,67 +11,46 @@
 
 PassInfo passlist[] = {
   FIRST,
-
   RUN(parse),
   RUN(check_parsed), // checks semantics of parsed AST
-  RUN(createEntryPoint), // fold into cleanup -- builds init fn for modules
-  RUN(processImportExprs), // fold into cleanup -- expands with and use
-  RUN(buildClassHierarchy), // fold into cleanup -- handles inheritance
 
-  RUN(buildDefaultFunctions), // move after normalize, the new
-                              // functions will then be cleaned up,
-                              // looked up, and normalized
+  RUN(createEntryPoint),    // move to cleanup -- builds init fn for modules
+  RUN(processImportExprs),  // move to cleanup -- expands with and use
+  RUN(buildClassHierarchy), // move to cleanup -- handles inheritance
 
-  RUN(cleanup), // post parsing transformations
+  RUN(buildDefaultFunctions), // move after normalize (maybe??)
 
-  RUN(scopeResolve), // resolve symbols by scope
-
-  RUN(normalize), // normalization transformations
-
-  RUN(check_normalized), // checks semantics of normalized AST
-
-  // FunctionResolution instantiates types, resolves functions, and
-  // computes a very basic form of type inference.  It is run with the
-  // --no-infer or -b flag.  It replaces all the passes between its
-  // two calls in this passlist.
-  RUN(functionResolution),
-
-  RUN(pre_instantiate), // remove, analysis should instantiate
-
+  RUN(cleanup),            // post parsing transformations
+  RUN(scopeResolve),       // resolve symbols by scope
+  RUN(normalize),          // normalization transformations
+  RUN(check_normalized),   // checks semantics of normalized AST
+  RUN(functionResolution), // --no-infer function resolution
+  RUN(pre_instantiate),    // pre-instantiation for analysis
   RUN(preAnalysisCleanup),
 
-  // INTERPRETER
-  //   Enabled by -i or --interpreter.  Terminates after running if enabled.
-  RUN(runInterpreter),
+  RUN(runInterpreter), // INTERPRETER
+                       //   Enabled by -i or --interpreter.
+                       //   Terminates after running if enabled.
 
-  // ANALYSIS
-  RUN(runAnalysis),
+  RUN(runAnalysis),      // analysis
+  RUN(resolve_analyzed), // resolve functions/types with analysis information
 
-  RUN(resolve_analyzed),
-  RUN(resolveSymbols),      // fold into resolve analysis
+  RUN(resolveSymbols), // move to resolve_analyzed
 
-  RUN(functionResolution),
-
-  RUN(removeNamedParameters),     // fold into resolve analysis
-  RUN(removeTypeVariableActuals), // fold into resolve analysis
-  RUN(removeTypeVariableFormals), // fold into resolve analysis
+  RUN(removeNamedParameters),     // move to resolve_analyzed/functionResolution
+  RUN(removeTypeVariableActuals), // move to resolve_analyzed/functionResolution
+  RUN(removeTypeVariableFormals), // move to resolve_analyzed/functionResolution
 
   RUN(check_resolved), // checks semantics of resolved AST
 
   RUN(createNestedFuncIterators),
   RUN(removeNestedFunctions),
 
-  // eventually, optimizations will go here
-
-  // passes to prepare for C code generation
-  RUN(processParameters),
-  RUN(inlineFunctions),
-  RUN(insertVariableInitializations),
-
-  RUN(copy_propagation),
-
+  RUN(processParameters), // remove (not used?)
+  RUN(inlineFunctions), // function inlining
+  RUN(insertVariableInitializations), // remove (not used?)
+  RUN(copy_propagation), // not implemented yet
   RUN(codegen),
-
   LAST
 };
 

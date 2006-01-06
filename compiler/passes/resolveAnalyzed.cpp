@@ -12,6 +12,8 @@ static void resolve_type(Symbol* sym);
 
 
 void resolve_analyzed(void) {
+  if (no_infer)
+    return;
   Vec<BaseAST*> asts;
   collect_asts(&asts);
   forv_Vec(BaseAST, ast, asts) {

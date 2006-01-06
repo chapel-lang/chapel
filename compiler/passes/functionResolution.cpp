@@ -541,6 +541,8 @@ void resolve_function(FnSymbol* fn) {
 }
 
 void functionResolution(void) {
+  if (!no_infer)
+    return;
   resolve_function(chpl_main);
 
   Vec<TypeSymbol*> dead_types;

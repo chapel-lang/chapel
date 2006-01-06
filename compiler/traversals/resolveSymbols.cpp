@@ -148,6 +148,8 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
 
 
 void resolveSymbols(void) {
+  if (no_infer)
+    return;
   Pass* pass = new ResolveSymbols();
   pass->run(Symboltable::getModules(pass->whichModules));
 }

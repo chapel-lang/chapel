@@ -139,6 +139,9 @@ tagGenerics(Vec<BaseAST *> &asts) {
 }
 
 void preAnalysisCleanup(void) {
+  if (no_infer)
+    return;
+
   Vec<Stmt *> stmts;
   Vec<Symbol *> symbols;
   Vec<BaseAST *> asts;
