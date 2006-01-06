@@ -53111,3 +53111,18 @@ Modified files:
 	chapel/compiler/AST/: primitive.cpp 
 	chapel/compiler/analysis/: analysis_ops.h chapel_ifa.cpp 
 
+---------------------------------------------------------------------------
+
+01/05/06 17:30:40 -- deitz
+
+Log message:
+	Fixed a bug that showed up in the handling of let expressions.
+	
+	Fixed regression test/classes/deitz/test_mycomplex_record.
+	
+	Updated regressions file.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/test/: REGRESSIONS 
+
