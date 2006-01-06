@@ -53262,3 +53262,14 @@ Log message:
 Removed files:
 	chapel/test/types/seq/deitz/: test_seq_htuple2.future 
 
+---------------------------------------------------------------------------
+
+01/06/06 14:34:48 -- deitz
+
+Log message:
+	Removed completely unused flags scoping_test and use_class_init.
+
+Modified files:
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+
