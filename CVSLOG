@@ -53288,3 +53288,15 @@ Modified files:
 	chapel/compiler/passes/: buildDefaultFunctions.cpp 
 	chapel/compiler/traversals/: instantiate.cpp 
 
+---------------------------------------------------------------------------
+
+01/06/06 15:25:04 -- deitz
+
+Log message:
+	Added test to show that formals are not yet copied.
+
+Added files:
+	chapel/test/functions/deitz/: test_formal_copy1.chpl 
+	                              test_formal_copy1.future 
+	                              test_formal_copy1.good 
+
