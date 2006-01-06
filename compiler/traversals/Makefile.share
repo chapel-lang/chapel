@@ -7,11 +7,9 @@ TRAVERSALS_SRCS = \
 	fixup.cpp \
         htmlview.cpp \
         inlineFunctions.cpp \
-	insertVariableInitializations.cpp \
         instantiate.cpp \
 	printAST.cpp \
         processImportExprs.cpp \
-	processParameters.cpp \
 	removeNamedParameters.cpp \
         removeNestedFunctions.cpp \
 	resolveSymbols.cpp \

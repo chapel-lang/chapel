@@ -46,9 +46,7 @@ PassInfo passlist[] = {
   RUN(createNestedFuncIterators),
   RUN(removeNestedFunctions),
 
-  RUN(processParameters), // remove (not used?)
   RUN(inlineFunctions), // function inlining
-  RUN(insertVariableInitializations), // remove (not used?)
   RUN(copy_propagation), // not implemented yet
   RUN(codegen),
   LAST
