@@ -166,7 +166,7 @@ Instantiate::postProcessExpr(Expr* expr) {
 
 
 void pre_instantiate(void) {
-  if (!preinstantiate || no_infer)
+  if (no_infer)
     return;
   Pass* pass = new Instantiate();
   pass->run(Symboltable::getModules(pass->whichModules));

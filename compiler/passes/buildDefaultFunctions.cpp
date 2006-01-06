@@ -227,8 +227,7 @@ static void build_setters_and_getters(ClassType* ct) {
     build_getter(ct, field);
   }
   forv_Vec(TypeSymbol, tmp, ct->types) {
-    if (tmp->type->astType == TYPE_USER || 
-        (fnewvardef && tmp->type->astType == TYPE_VARIABLE))
+    if (tmp->type->astType == TYPE_USER || tmp->type->astType == TYPE_VARIABLE)
       build_getter(ct, tmp);
   }
 }

@@ -14,13 +14,11 @@ extern bool use_alloc;
 extern bool no_infer;
 extern bool formalTemps;
 extern bool checkAnalysisTypeinfo;
-extern bool preinstantiate;
 extern int fanalysis_errors;
 // End temporary development flags
 
 extern int fdump_html;
 extern int f_equal_method;
-extern int fnewvardef;
 extern int fnostdincs;
 extern int fnostdincs_but_file;
 extern int fdce_if1;

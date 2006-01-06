@@ -2281,8 +2281,8 @@ build_classes(Vec<BaseAST *> &syms) {
     forv_Vec(Symbol, tmp, c->fields)
       csym->has.add(tmp->asymbol->sym);
     forv_Vec(TypeSymbol, tmp, c->types) if (tmp)
-      if (tmp->definition->astType == TYPE_USER || 
-          (fnewvardef && tmp->definition->astType == TYPE_VARIABLE))
+      if (tmp->definition->astType == TYPE_USER ||
+          tmp->definition->astType == TYPE_VARIABLE)
         csym->has.add(tmp->asymbol->sym);
   }
   build_patterns(syms);

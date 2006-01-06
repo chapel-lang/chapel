@@ -33,14 +33,11 @@ static int pre_malloc = 0;
 bool use_alloc = true;
 bool formalTemps = false;
 bool checkAnalysisTypeinfo = false;
-bool preinstantiate = true;
 bool no_infer = false;
 bool no_codegen = false;
 int debugParserLevel = 0;
 bool developer = false;
 bool ignore_errors = false;
-bool _adhoc_to_uniform_mangling = false;
-int fnewvardef = 1;
 int run_interpreter = 0;
 int trace_level = 0;
 int fdce_if1 = 1;
@@ -100,10 +97,7 @@ static ArgumentDescription arg_desc[] = {
  {"formal-temps", ' ', "Insert temps for formals", "F", &formalTemps, "CHPL_FORMAL_TEMPS", NULL},
  {"use-alloc", ' ', "Use _alloc function for DefExpr", "F", &use_alloc, "USE_ALLOC", NULL},
  {"check-typeinfo", ' ', "Check result of type_info and return_type_info", "F", &checkAnalysisTypeinfo, NULL, NULL},
- {"nopreinstantiate", ' ', "Do not instantiate before analysis", "f", &preinstantiate, NULL, NULL},
- {"tmpMangling", ' ', "Name mangling toggle", "F", &_adhoc_to_uniform_mangling, "CHPL_ADHOC_TO_UNIFORMA_MANGLING", NULL},
  {"no-codegen", ' ', "Suppress code generation", "F", &no_codegen, "CHPL_NO_CODEGEN", NULL},
- {"newvardef", ' ', "New Var Def code", "T", &fnewvardef, "CHPL_NEWVARDEF", NULL},
  {"equal-method", ' ', "= is a method", "T", &f_equal_method, "CHPL_EQUAL_METHOD", NULL},
  {"parser-debug", 'D', "Parser Debug Level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},
  {"count-tokens", ' ', "Count Tokens", "F", &countTokens, "CHPL_COUNT_TOKENS", NULL},
