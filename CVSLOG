@@ -53126,3 +53126,13 @@ Modified files:
 	chapel/compiler/passes/: normalize.cpp 
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+01/05/06 17:39:33 -- deitz
+
+Log message:
+	Updated test with values between : and = in declaration.
+
+Modified files:
+	chapel/test/types/type_variables/deitz/: test_tuplelike1.chpl 
+
