@@ -53146,3 +53146,76 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: semanticChecks.cpp 
 
+---------------------------------------------------------------------------
+
+01/06/06 11:01:20 -- deitz
+
+Log message:
+	Turned --use-alloc on by default.
+	
+	New regressions:
+	
+	  trivial/deitz/test_var_decl1
+	  trivial/preston/tuple
+	  types/tuple/deitz/test_destruct_nested
+	  types/tuple/deitz/test_htuple3
+	  types/tuple/deitz/test_tuple_of_tuples
+	  types/tuple/deitz/test_tuple_simple1
+	  types/tuple/deitz/test_tuple_simple1a
+	  types/tuple/deitz/test_tuple_simple2
+	  types/tuple/deitz/test_tuple_simple5
+	  types/tuple/deitz/test_tuple_simple7
+	  types/tuple/deitz/test_tuple_swap
+	  types/tuple/jplevyak/destruct-1
+	  types/tuple/jplevyak/destruct-2
+	  types/type_variables/deitz/test_clone_class2a
+	
+	    John expects a fix for these which fail because of analysis's
+	    handling of unspecified types.
+	
+	  functions/bradc/typefn2
+	  types/type_variables/deitz/test_instantiate_construct1
+	
+	    I'm looking at these two tests but expect the changes to be
+	    significant that I'd like to do it separately.
+	
+	Futurized complicated instantiation test:
+	  types/tuple/deitz/test_tuple_record_implementation15
+
+Modified files:
+	chapel/compiler/main/: driver.cpp 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/flowanalysis/jplevyak/config/: configVar.good 
+	chapel/test/flowanalysis/newast/: arithmetic_ops.good 
+	                                  assignment_expr.good 
+	                                  bitwise_assignment.good 
+	                                  bitwise_negation.good 
+	                                  bitwise_ops.good 
+	                                  codegen_test.good 
+	                                  compSampler.good 
+	                                  conditional.good 
+	                                  danglingelse.good deadvar.good 
+	                                  declprintdom.good 
+	                                  declprintint.good 
+	                                  declprintint2.good domarr.good 
+	                                  enum.good equality_ops.good 
+	                                  globalref.good 
+	                                  logical_and.good 
+	                                  logical_not.good mod.good 
+	                                  octalliteral.good 
+	                                  pareninit.good 
+	                                  relational_ops.good 
+	                                  sum_type-1.good 
+	                                  sum_type-2.good 
+	                                  unary_plusMinus.good var.good 
+	                                  var2.good whileLoop.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+Added files:
+	chapel/test/types/tuple/deitz/: 
+	                                test_tuple_record_implementation15.future 
+
