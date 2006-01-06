@@ -1,3 +1,0 @@
-deitz
-
-tuple added to sequence is added as a reference so that when the tuple changes, the sequence does too.  This is fixed with --formal-temps flag.
