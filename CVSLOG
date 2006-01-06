@@ -53219,3 +53219,19 @@ Added files:
 	chapel/test/types/tuple/deitz/: 
 	                                test_tuple_record_implementation15.future 
 
+---------------------------------------------------------------------------
+
+01/06/06 13:49:05 -- deitz
+
+Log message:
+	Removed special handling of functionResolution pass and documented
+	passlist file.
+
+Modified files:
+	chapel/compiler/main/: passlist.h runpasses.cpp 
+	chapel/compiler/passes/: functionResolution.cpp 
+	                         preAnalysisCleanup.cpp 
+	                         resolveAnalyzed.cpp runAnalysis.cpp 
+	                         runInterpreter.cpp 
+	chapel/compiler/traversals/: instantiate.cpp resolveSymbols.cpp 
+
