@@ -53273,3 +53273,18 @@ Modified files:
 	chapel/compiler/include/: driver.h 
 	chapel/compiler/main/: driver.cpp 
 
+---------------------------------------------------------------------------
+
+01/06/06 15:19:25 -- deitz
+
+Log message:
+	Removed unnecessary or unused flags --nopreinstantiate, --tmpMangling,
+	and --newvardef.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	chapel/compiler/traversals/: instantiate.cpp 
+
