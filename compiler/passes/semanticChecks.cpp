@@ -53,6 +53,22 @@ check_returns(FnSymbol* fn) {
 }
 
 
+static void
+check_parsed_vars(VarSymbol* var) {
+  if (var->isParam()) {
+    if (var->defPoint->init && !get_constant(var->defPoint->init)) {
+      USR_FATAL(var, "Initializing param to a variable expression.");
+    }
+    if (!var->defPoint->init &&
+        (dynamic_cast<FnSymbol*>(var->defPoint->parentSymbol) ||
+         dynamic_cast<ModuleSymbol*>(var->defPoint->parentSymbol)) &&
+        var->defPoint->parentScope->type != SCOPE_ARG) {
+      USR_FATAL(var, "Top-level params must be initialized.");
+    }
+  }
+}
+
+
 void
 check_parsed(void) {
   Vec<BaseAST*> asts;
@@ -60,6 +76,8 @@ check_parsed(void) {
   forv_Vec(BaseAST, ast, asts) {
     if (Symbol* sym = dynamic_cast<Symbol*>(ast))
       check_redefinition(sym);
+    if (VarSymbol* a = dynamic_cast<VarSymbol*>(ast))
+      check_parsed_vars(a);
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast))
       check_returns(fn);
   }
@@ -106,21 +124,6 @@ check_resolved_calls(CallExpr* call) {
 }
 
 
-static void
-check_resolved_vars(VarSymbol* var) {
-  if (var->isParam()) {
-    if (var->defPoint->init && !get_constant(var->defPoint->init)) {
-      USR_FATAL(var, "Initializing param to a variable expression.");
-    }
-    if (!var->defPoint->init &&
-        dynamic_cast<FnSymbol*>(var->defPoint->parentSymbol) &&
-        var->defPoint->parentScope->type != SCOPE_ARG) {
-      USR_FATAL(var, "Top-level params must be initialized.");
-    }
-  }
-}
-
-
 void
 check_resolved(void) {
   Vec<BaseAST*> asts;
@@ -128,8 +131,6 @@ check_resolved(void) {
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
       check_resolved_calls(a);
-    } else if (VarSymbol* a = dynamic_cast<VarSymbol*>(ast)) {
-      check_resolved_vars(a);
     }
   }
 }
