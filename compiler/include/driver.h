@@ -11,13 +11,11 @@ extern FILE* html_index_file;
 
 // Begin temporary development flags
 extern bool use_alloc;
-extern bool use_class_init;
 extern bool no_infer;
 extern bool formalTemps;
 extern bool checkAnalysisTypeinfo;
 extern bool preinstantiate;
 extern int fanalysis_errors;
-extern int scoping_test;
 // End temporary development flags
 
 extern int fdump_html;

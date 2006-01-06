@@ -31,7 +31,6 @@ static char log_flags[512] = "";
 static bool rungdb = false;
 static int pre_malloc = 0;
 bool use_alloc = true;
-bool use_class_init = false;
 bool formalTemps = false;
 bool checkAnalysisTypeinfo = false;
 bool preinstantiate = true;
@@ -55,7 +54,6 @@ bool no_inline = false;
 bool report_inlining = false;
 char system_dir[FILENAME_MAX] = DEFAULT_SYSTEM_DIR;
 int print_call_depth = 2;
-int scoping_test = 0;
 int f_equal_method = 0;
 int fanalysis_errors = 0;
 int fnostdincs = 0;
@@ -71,7 +69,6 @@ static ArgumentDescription arg_desc[] = {
  {"premalloc", 'm', "Pre-Malloc", "I", &pre_malloc, "CHPL_PRE_MALLOC", NULL},
  {"passlist", ' ', "Passlist Filename", "P", passlist_filename, "CHPL_PASSLIST", NULL},
  {"sysdir", 'S', "System Directory", "P", system_dir, "CHPL_SYSTEM_DIR", NULL},
- {"scoping", ' ', "Scoping Test", "T", &scoping_test, "CHPL_SCOPING_TEST", NULL},
  {"if1-dce", ' ', "Dead Code Elimination on IF1", "T", &fdce_if1, "CHPL_DCE_IF1", NULL},
  {"print-call-depth", 'C', "Print Calls to this Depth", "I", &print_call_depth, "CHPL_PRINT_CALL_DEPTH", NULL},
  {"constant-limit", ' ', "# of Constants Propagated", "I", &num_constants_per_variable, 
@@ -102,7 +99,6 @@ static ArgumentDescription arg_desc[] = {
  {"report-inlining", ' ', "Print inlined functions", "F", &report_inlining, NULL, NULL},
  {"formal-temps", ' ', "Insert temps for formals", "F", &formalTemps, "CHPL_FORMAL_TEMPS", NULL},
  {"use-alloc", ' ', "Use _alloc function for DefExpr", "F", &use_alloc, "USE_ALLOC", NULL},
- {"use-class-init", ' ', "Use class init for DefExprs", "F", &use_class_init, "USE_CLASS_INIT", NULL},
  {"check-typeinfo", ' ', "Check result of type_info and return_type_info", "F", &checkAnalysisTypeinfo, NULL, NULL},
  {"nopreinstantiate", ' ', "Do not instantiate before analysis", "f", &preinstantiate, NULL, NULL},
  {"tmpMangling", ' ', "Name mangling toggle", "F", &_adhoc_to_uniform_mangling, "CHPL_ADHOC_TO_UNIFORMA_MANGLING", NULL},
