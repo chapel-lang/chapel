@@ -53136,3 +53136,13 @@ Log message:
 Modified files:
 	chapel/test/types/type_variables/deitz/: test_tuplelike1.chpl 
 
+---------------------------------------------------------------------------
+
+01/06/06 10:21:16 -- deitz
+
+Log message:
+	Moved 'param' checks from just after analysis to just after parsing.
+
+Modified files:
+	chapel/compiler/passes/: semanticChecks.cpp 
+
