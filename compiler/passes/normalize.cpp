@@ -841,17 +841,6 @@ static void insert_call_temps(CallExpr* call) {
   if (call->isNamed("typeof") || call->primitive || call->isNamed("__primitive"))
     return;
 
-  if (CallExpr* parentCall = dynamic_cast<CallExpr*>(call->parentExpr))
-    if (parentCall->opTag == OP_MOVE)
-      return;
-
-  Stmt* stmt = call->parentStmt;
-  VarSymbol* tmp = new VarSymbol(stringcat("_tmp"));
-  tmp->cname = stringcat(tmp->name, intstring(uid++));
-  tmp->noDefaultInit = true;
-  call->replace(new SymExpr(tmp));
-  stmt->insertBefore(new DefExpr(tmp, call));
-
   if (SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr)) {
     if (!strncmp(base->var->name, "_let_fn", 7)) {
       Stmt* stmt = inline_call(call);
@@ -865,8 +854,20 @@ static void insert_call_temps(CallExpr* call) {
         }
       }
       base->var->defPoint->parentStmt->remove();
+      return;
     }
   }
+
+  if (CallExpr* parentCall = dynamic_cast<CallExpr*>(call->parentExpr))
+    if (parentCall->opTag == OP_MOVE)
+      return;
+
+  Stmt* stmt = call->parentStmt;
+  VarSymbol* tmp = new VarSymbol(stringcat("_tmp"));
+  tmp->cname = stringcat(tmp->name, intstring(uid++));
+  tmp->noDefaultInit = true;
+  call->replace(new SymExpr(tmp));
+  stmt->insertBefore(new DefExpr(tmp, call));
 }
 
 
