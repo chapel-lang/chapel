@@ -53097,3 +53097,17 @@ Modified files:
 	chapel/compiler/parser/: chapel.y 
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+01/05/06 17:15:13 -- deitz
+
+Log message:
+	Added return_bool_transfer_function so that things like == and !=
+	return a boolean value rather than an integer.  I was getting a mixed
+	primitives error with the --use-alloc flag otherwise because return
+	__primitive is handled specially to avoid imprecision.
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/compiler/analysis/: analysis_ops.h chapel_ifa.cpp 
+
