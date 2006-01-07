@@ -53316,3 +53316,13 @@ Modified files:
 	chapel/compiler/passes/: normalize.cpp 
 	chapel/compiler/traversals/: inlineFunctions.cpp instantiate.cpp 
 
+---------------------------------------------------------------------------
+
+01/06/06 16:32:26 -- deitz
+
+Log message:
+	Removed COMPOPTS to use flag I removed.  Tests still show the problem.
+
+Removed files:
+	chapel/test/functions/jplevyak/scoping/: COMPOPTS 
+
