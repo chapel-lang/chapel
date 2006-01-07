@@ -53326,3 +53326,20 @@ Log message:
 Removed files:
 	chapel/test/functions/jplevyak/scoping/: COMPOPTS 
 
+---------------------------------------------------------------------------
+
+01/06/06 17:14:34 -- deitz
+
+Log message:
+	Cleaned up two future tests and they now work.
+
+Modified files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_typevar_record5.chpl 
+	                                         test_typevar_record5.good 
+	                                         test_typevar_record6.chpl 
+Removed files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_typevar_record5.future 
+	                                         test_typevar_record6.future 
+
