@@ -53343,3 +53343,16 @@ Removed files:
 	                                         test_typevar_record5.future 
 	                                         test_typevar_record6.future 
 
+---------------------------------------------------------------------------
+
+01/06/06 17:23:11 -- deitz
+
+Log message:
+	Removed three .futures for tests which are now working due to
+	--use-alloc changes.
+
+Removed files:
+	chapel/test/arrays/deitz/: test_domain2D.future 
+	chapel/test/functions/jplevyak/: equal-8.future 
+	chapel/test/types/seq/bradc/: returnSeq2.future 
+
