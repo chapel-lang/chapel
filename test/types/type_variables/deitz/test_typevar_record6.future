@@ -1,4 +1,0 @@
-deitz
-
-this test is bogus, the "node" type is unqualified in "foo".
-when it is qualified it will be fixed by pre-instantiation
