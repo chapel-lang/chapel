@@ -158,7 +158,8 @@ void scopeResolve(BaseAST* base) {
               if ((var && var->parentScope->type == SCOPE_CLASS) ||
                   (fn && ct && function_matches_method(fn, ct)))
                 if (symExpr->var != method->_this) {
-                  Expr* dot = new MemberAccess(method->_this, name);
+                  Expr* dot = new CallExpr(OP_GET_MEMBER, method->_this, 
+                                           new_StringSymbol(name));
                   symExpr->replace(dot);
                   asts.add(dot);
                 }
@@ -167,14 +168,17 @@ void scopeResolve(BaseAST* base) {
         } else
           USR_FATAL(symExpr, "Symbol '%s' is not defined", name);
       }
-    } else if (MemberAccess* memberAccess = dynamic_cast<MemberAccess*>(ast)) {
-      if (FnSymbol* fn = dynamic_cast<FnSymbol*>(memberAccess->parentSymbol)) {
-        if (fn->_getter || fn->_setter) {
-          ClassType* ct = dynamic_cast<ClassType*>(fn->typeBinding->definition);
-          Symbol* sym = Symboltable::lookupFromScope(memberAccess->member->name,
-                                                     ct->structScope);
-          if (dynamic_cast<VarSymbol*>(sym))
-            memberAccess->member = sym;
+    } else if (CallExpr* callExpr = dynamic_cast<CallExpr*>(ast)) {
+      if (callExpr->opTag == OP_GET_MEMBER || callExpr->opTag == OP_SET_MEMBER) {
+        if (FnSymbol* fn = dynamic_cast<FnSymbol*>(callExpr->parentSymbol)) {
+          if (fn->_getter || fn->_setter) {
+            ClassType* ct = dynamic_cast<ClassType*>(fn->typeBinding->definition);
+            Symbol* sym = Symboltable::lookupFromScope(
+              dynamic_cast<VarSymbol*>(dynamic_cast<SymExpr*>(callExpr->get(2))->var)->immediate->v_string,
+              ct->structScope);
+            if (dynamic_cast<VarSymbol*>(sym))
+              callExpr->member = sym;
+          }
         }
       }
     } else if (DefExpr* defExpr = dynamic_cast<DefExpr*>(ast)) {

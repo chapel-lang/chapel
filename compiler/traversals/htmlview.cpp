@@ -135,9 +135,6 @@ structuralTypeSymbol(Symbol *s) {
 }
 
 void HtmlView::preProcessExpr(Expr* expr) {
-  if (dynamic_cast<MemberAccess*>(expr)) {
-    return;
-  }
   write("<DL>\n");
   if (DefExpr* e = dynamic_cast<DefExpr*>(expr)) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(e->sym)) {
@@ -209,11 +206,7 @@ void HtmlView::preProcessExpr(Expr* expr) {
 }
 
 void HtmlView::postProcessExpr(Expr* expr) {
-  if (MemberAccess* e = dynamic_cast<MemberAccess*>(expr)) {
-    write(".");
-    html_print_symbol(e->member, false);
-    return;
-  } else if (DefExpr* e = dynamic_cast<DefExpr*>(expr)) {
+  if (DefExpr* e = dynamic_cast<DefExpr*>(expr)) {
     if (dynamic_cast<FnSymbol*>(e->sym) || 
         (dynamic_cast<TypeSymbol*>(e->sym) &&
          dynamic_cast<ClassType*>(e->sym->type))) {

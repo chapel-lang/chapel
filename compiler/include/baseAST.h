@@ -34,7 +34,6 @@ enum astType_t {
   EXPR_COND,
   EXPR_CALL,
   EXPR_CAST,
-  EXPR_MEMBERACCESS,
   EXPR_NAMED,
   EXPR_IMPORT,
 

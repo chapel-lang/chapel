@@ -92,7 +92,7 @@ static void map_asts(Vec<BaseAST *> &syms);
 static void build_symbols(Vec<BaseAST *> &syms);
 static void build_types(Vec<BaseAST *> &syms, Vec<Type *> *types = NULL);
 static void build_classes(Vec<BaseAST *> &syms);
-static int gen_if1(BaseAST *ast, BaseAST *parent = 0);
+static int gen_if1(BaseAST *ast);
 static void finalize_function(Fun *fun);
 static Type * to_AST_type(Sym *type);
 
@@ -1667,52 +1667,6 @@ undef_or_fn_expr(Expr *ast) {
   return (astType_t)0;
 }
 
-static int
-is_this_member_access(BaseAST *a) {
-  MemberAccess *ma = dynamic_cast<MemberAccess*>(a);
-  if (!ma)
-    return 0;
-  SymExpr* v = dynamic_cast<SymExpr*>(ma->base);
-  if (!v)
-    return 0;
-  if (v->var->isThis())
-    return 1;
-  return 0;
-}
-
-static Sym *
-gen_assign_rhs(CallExpr *s) {
-  s->ainfo->rval = new_sym();
-  s->ainfo->rval->ast = s->ainfo;
-  s->ainfo->sym = s->get(1)->ainfo->sym;
-  Expr *rhs = s->get(2);
-  if1_gen(if1, &s->ainfo->code, rhs->ainfo->code);
-  Sym *rval = rhs->ainfo->rval;
-  if (!rval->function_scope) {
-    rval = new_sym();
-    rval->ast = s->ainfo;
-    if1_move(if1, &s->ainfo->code, rhs->ainfo->rval, rval, s->ainfo);
-  }
-  return rval;
-}
-
-static int
-gen_set_member(MemberAccess *ma, CallExpr *base_ast) {
-  FnSymbol *fn = ma->getFunction();
-  AAST *ast = base_ast->ainfo;
-  int equal = !fn || (!fn->_setter && (fn->fnClass != FN_CONSTRUCTOR || !is_this_member_access(ma)));
-  assert(!equal);
-  ast->rval = new_sym();
-  ast->rval->ast = base_ast->ainfo;
-  Sym *rhs = gen_assign_rhs(base_ast);
-  Sym *selector = make_symbol(ma->member->asymbol->sym->name);
-  Code *c = if1_send(if1, &ast->code, 5, 1, sym_operator, ma->base->ainfo->rval, 
-                     make_symbol(".="), selector, rhs, ast->rval);
-  c->ast = ast;
-  c->partial = Partial_NEVER;
-  return 0;
-}
-
 static Sym *
 gen_primitive(CallExpr *s, Vec<Expr *> &args, Vec<Sym *> &rvals) {
   AnalysisOp *op = s->primitive->analysisOp;
@@ -1728,7 +1682,7 @@ gen_primitive(CallExpr *s, Vec<Expr *> &args, Vec<Sym *> &rvals) {
     return sym_primitive;
   } else {
     // binary operation requires the symbol in the center
-    rvals.insert(0, rvals.v[1]);
+    rvals.insert(0, rvals.v[0]);
     rvals.v[1] = make_symbol(p->string);
     return sym_operator;
   }
@@ -1765,6 +1719,15 @@ gen_call_expr(CallExpr *s) {
   else {
     switch (s->opTag) {
       case OP_INIT: trvals.add(sym_primitive); base = chapel_init_symbol; break;
+      case OP_GET_MEMBER: 
+      case OP_SET_MEMBER: 
+        rvals.insert(1, make_symbol(s->opTag == OP_GET_MEMBER ? sym_period->name: sym_setter->name));
+        if (rvals.v[2]->imm.const_kind != IF1_CONST_KIND_STRING) {
+          INT_FATAL(s, "OP_XXX_MEMBER with non-string member name");
+        }
+        rvals.v[2] = make_symbol(rvals.v[2]->imm.v_string);
+        base = sym_operator;
+        break;
       default: base = s->baseExpr ? s->baseExpr->ainfo->rval : 0; break;
     }
   }
@@ -1789,7 +1752,7 @@ gen_when(WhenStmt *s, SelectStmt *ss, Label *l) {
   s->caseExprs->getElements(cases);
   Sym *cond = NULL;
   forv_Expr(x, cases) {
-    if (gen_if1(x, s) < 0) return -1;
+    if (gen_if1(x) < 0) return -1;
     if1_gen(if1, &s->ainfo->code, x->ainfo->code);
     Sym *tmp = new_sym();
     Code *c = if1_send(if1, &s->ainfo->code, 3, 1, make_symbol("=="),
@@ -1806,7 +1769,7 @@ gen_when(WhenStmt *s, SelectStmt *ss, Label *l) {
       cond = new_cond;
     }
   }
-  if (gen_if1(s->doStmt, s) < 0) return -1;
+  if (gen_if1(s->doStmt) < 0) return -1;
   if (cond) {
     Code *ifgoto = if1_if_goto(if1, &s->ainfo->code, cond, s->ainfo);
     if1_if_label_true(if1, ifgoto, if1_label(if1, &s->ainfo->code, s->ainfo));
@@ -1825,7 +1788,7 @@ gen_select(BaseAST *a) {
   SelectStmt *s = dynamic_cast<SelectStmt*>(a);
   Vec<WhenStmt*> whens;
   s->whenStmts->getElements(whens);
-  gen_if1(s->caseExpr, s);
+  gen_if1(s->caseExpr);
   if1_gen(if1, &s->ainfo->code, s->caseExpr->ainfo->code);
   Label *l = if1_alloc_label(if1);
   forv_Vec(WhenStmt, x, whens) {
@@ -1836,75 +1799,8 @@ gen_select(BaseAST *a) {
   return 0;
 }
 
-// static int
-// gen_assignment(CallExpr *assign) {
-//   if1_gen(if1, &assign->ainfo->code, assign->get(1)->ainfo->code);
-//   Sym *rval = gen_assign_rhs(assign);
-//   SymExpr* lhs_var = dynamic_cast<SymExpr*>(assign->get(1));
-//   Symbol *lhs_symbol = lhs_var ? dynamic_cast<Symbol *>(lhs_var->var) : 0;
-//   FnSymbol *f = assign->getFunction();
-//   int constructor_assignment = 0;
-//   if (f->fnClass == FN_CONSTRUCTOR) {
-//     if (MemberAccess *m = dynamic_cast<MemberAccess*>(assign->get(1))) {
-//       if (SymExpr* v = dynamic_cast<SymExpr*>(m->base)) {
-//         if (v->var->isThis())
-//           constructor_assignment = 1;
-//       }
-//     }
-//   }
-//   VarSymbol *lhs_var_symbol = lhs_var ? dynamic_cast<VarSymbol*>(lhs_var->var) : 0;
-//   // reasons to not overload an assignment
-//   //  - in constructor, setter or getter
-//   //  - symbol is noDefaultInit
-//   //  - symbol has no declared type and no initializer (i.e. var x; x = ....)
-//   //  - symbol is "this"
-//   int operator_equal = 
-//     !(constructor_assignment || 
-//       (lhs_var_symbol && lhs_var_symbol->noDefaultInit) ||
-//       (lhs_symbol && (lhs_symbol->type == dtUnknown && !lhs_symbol->defPoint->init)) ||
-//       (lhs_symbol && lhs_symbol->isThis()))
-//     ;
-//   // always overload assignment if the variable was initalized
-//   operator_equal = operator_equal || (lhs_symbol && lhs_symbol->defPoint->init);
-//   // but never if this is a move
-//   operator_equal = operator_equal && assign->opTag != OP_MOVE;
-// //   if (use_alloc)
-//   operator_equal = assign->opTag != OP_MOVE;
-//   if (operator_equal) {
-//     Sym *old_rval = rval;
-//     rval = new_sym();
-//     rval->ast = assign->ainfo;
-//     Sym *told_rval = new_sym();
-//     told_rval->ast = assign->ainfo;
-//     if1_move(if1, &assign->ainfo->code, old_rval, told_rval, assign->ainfo);
-//     if (f_equal_method) {
-//       Code *c = if1_send(if1, &assign->ainfo->code, 4, 1, make_symbol("="), method_token,
-//                          assign->get(1)->ainfo->rval, told_rval, rval);
-//       c->ast = assign->ainfo;
-//       c->partial = Partial_NEVER;
-//     } else {
-//       Code *c = if1_send(if1, &assign->ainfo->code, 3, 1, make_symbol("="), 
-//                          assign->get(1)->ainfo->rval, told_rval, rval);
-//       c->ast = assign->ainfo;
-//       c->partial = Partial_NEVER;
-//     }
-//   }
-//   if (!assign->get(1)->ainfo->sym)
-//     show_error("assignment to non-lvalue", assign->ainfo);
-//   if (MemberAccess *ma = dynamic_cast<MemberAccess*>(assign->get(1))) {
-//     Sym *selector = make_symbol(ma->member->asymbol->sym->name);
-//     Code *c = if1_send(if1, &assign->ainfo->code, 5, 1, sym_operator, ma->base->ainfo->rval, 
-//                        make_symbol(".="), selector, rval, assign->ainfo->rval);
-//     c->ast = assign->ainfo;
-//     c->partial = Partial_NEVER;
-//   } else {
-//     if1_move(if1, &assign->ainfo->code, rval, assign->get(1)->ainfo->sym, assign->ainfo);
-//   }
-//   return 0;
-// }
-
 static int
-gen_assignment_alloc(CallExpr *assign) {
+gen_assignment(CallExpr *assign) {
   Expr *lhs = assign->get(1), *rhs = assign->get(2);
   if1_gen(if1, &assign->ainfo->code, lhs->ainfo->code);
   if1_gen(if1, &assign->ainfo->code, rhs->ainfo->code);
@@ -1933,20 +1829,12 @@ gen_assignment_alloc(CallExpr *assign) {
   if (!lhs->ainfo->sym)
     show_error("assignment to non-lvalue", assign->ainfo);
   assign->ainfo->rval = rval;
-  if (MemberAccess *ma = dynamic_cast<MemberAccess*>(assign->get(1))) {
-    Sym *selector = make_symbol(ma->member->asymbol->sym->name);
-    Code *c = if1_send(if1, &assign->ainfo->code, 5, 1, sym_operator, ma->base->ainfo->rval, 
-                       make_symbol(".="), selector, rval, assign->ainfo->rval);
-    c->ast = assign->ainfo;
-    c->partial = Partial_NEVER;
-  } else {
-    if1_move(if1, &assign->ainfo->code, rval, lhs->ainfo->sym, assign->ainfo);
-  }
+  if1_move(if1, &assign->ainfo->code, rval, lhs->ainfo->sym, assign->ainfo);
   return 0;
 }
 
 static int
-gen_if1(BaseAST *ast, BaseAST *parent) {
+gen_if1(BaseAST *ast) {
   // special cases
   switch (ast->astType) {
     default: break;
@@ -1958,7 +1846,7 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
   DefExpr* def_expr = dynamic_cast<DefExpr*>(ast);
   if (!def_expr || !dynamic_cast<FnSymbol*>(def_expr->sym))
     forv_BaseAST(a, getStuff.asts)
-      if (gen_if1(a, ast) < 0)
+      if (gen_if1(a) < 0)
         return -1;
   // bottom's up
   switch (ast->astType) {
@@ -2029,35 +1917,13 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
     case EXPR_SYM: {
       SymExpr* s = dynamic_cast<SymExpr*>(ast);
       Sym *sym = s->var->asymbol->sym;
-      switch (SYMBOL(sym)->astType) {
-        default: break;
-        case SYMBOL_TYPE: 
-          if (parent && parent->astType == EXPR_MEMBERACCESS)
-            sym = ((TypeSymbol*)SYMBOL(sym))->definition->asymbol->sym->meta_type;
-          else
-            sym = ((TypeSymbol*)SYMBOL(sym))->definition->asymbol->sym;
-          break;
-      }
+      if (SYMBOL(sym)->astType == SYMBOL_TYPE)
+        sym = ((TypeSymbol*)SYMBOL(sym))->definition->asymbol->sym;
       s->ainfo->sym = sym;
       s->ainfo->rval = sym;
       break;
     }
     case EXPR_DEF: break;
-    case EXPR_MEMBERACCESS: {
-      MemberAccess *s = dynamic_cast<MemberAccess*>(ast);
-      s->ainfo->rval = new_sym();
-      s->ainfo->rval->ast = s->ainfo;
-      s->ainfo->sym = s->ainfo->rval;
-      if1_gen(if1, &s->ainfo->code, s->base->ainfo->code);
-      Sym *op = make_symbol(".");
-      Sym *selector = make_symbol(s->member->asymbol->sym->name);
-      Code *c = if1_send(if1, &s->ainfo->code, 4, 1, sym_operator,
-                         s->base->ainfo->rval, op, selector,
-                         s->ainfo->rval);
-      c->ast = s->ainfo;
-      c->partial = Partial_NEVER;
-      break;
-    }
     case EXPR_COND: {
       CondExpr *s = dynamic_cast<CondExpr *>(ast);
       s->ainfo->rval = new_sym();
@@ -2068,20 +1934,10 @@ gen_if1(BaseAST *ast, BaseAST *parent) {
     case EXPR_CALL: {
       CallExpr* call = dynamic_cast<CallExpr*>(ast);
       if (call->isAssign()) {
-        FnSymbol *f = call->getFunction();
-        int is_member = call->get(1)->astType == EXPR_MEMBERACCESS;
-        if (f->fnClass == FN_CONSTRUCTOR && is_member) {
-          if (gen_set_member(dynamic_cast<MemberAccess*>(call->get(1)), call) < 0) return -1;
-          break;
-        }
-//         if (use_alloc) {
-          if (gen_assignment_alloc(call) < 0) return -1;
-//         } else {
-//           if (gen_assignment(call) < 0) return -1;
-//         }
-        break;
+        if (gen_assignment(call) < 0) return -1;
+      } else {
+        if (gen_call_expr(call) < 0) return -1;
       }
-      if (gen_call_expr(call) < 0) return -1;
       break;
     }
     case EXPR_CAST: {
@@ -3166,6 +3022,8 @@ init_chapel_ifa() {
   land_analysis_op = P("&&", prim_land);
   lor_analysis_op = P("||", prim_lor);
   exp_analysis_op = P("**", prim_exp);
+  get_member_analysis_op = P(".", prim_period);
+  set_member_analysis_op = P(".=", prim_setter);
   cast_analysis_op = S("cast", cast_value);
   alloc_analysis_op = S("alloc", alloc_transfer_function);
 }

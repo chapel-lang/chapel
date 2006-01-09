@@ -39,6 +39,8 @@ _EXTERN InterpreterOp *xor_interpreter_op _INIT;
 _EXTERN InterpreterOp *land_interpreter_op _INIT;
 _EXTERN InterpreterOp *lor_interpreter_op _INIT;
 _EXTERN InterpreterOp *exp_interpreter_op _INIT;
+_EXTERN InterpreterOp *get_member_interpreter_op _INIT;
+_EXTERN InterpreterOp *set_member_interpreter_op _INIT;
 _EXTERN InterpreterOp *ptr_eq_interpreter_op _INIT;
 _EXTERN InterpreterOp *ptr_neq_interpreter_op _INIT;
 _EXTERN InterpreterOp *cast_interpreter_op _INIT;

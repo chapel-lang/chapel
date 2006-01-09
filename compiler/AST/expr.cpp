@@ -40,7 +40,12 @@ char* opCString[] = {
   " _by_ ",
   " _subtype_ ",
   " _notsubtype_ ",
+
+  " _get_member_ ",
+  " _set_member_ ",
+
   " _init_ ",
+
   "="
 };
 
@@ -74,6 +79,9 @@ char* opChplString[] = {
   "by",
   ":",
   "!:",
+
+  ".",
+  ".=",
 
   "init",
 
@@ -421,139 +429,9 @@ void DefExpr::print(FILE* outfile) {
 void DefExpr::codegen(FILE* outfile) { /** noop **/ }
 
 
-MemberAccess::MemberAccess(Expr* init_base, Symbol* init_member) :
-  Expr(EXPR_MEMBERACCESS),
-  base(init_base),
-  member(init_member),
-  member_type(0),
-  member_offset(0)
-{ 
-}
-
-
-MemberAccess::MemberAccess(Symbol* init_base, Symbol* init_member) :
-  Expr(EXPR_MEMBERACCESS),
-  base(new SymExpr(init_base)),
-  member(init_member),
-  member_type(0),
-  member_offset(0)
-{ 
-}
-
-
-MemberAccess::MemberAccess(Expr* init_base, char* init_member) :
-  Expr(EXPR_MEMBERACCESS),
-  base(init_base),
-  member(new UnresolvedSymbol(init_member)),
-  member_type(0),
-  member_offset(0)
-{ 
-}
-
-
-MemberAccess::MemberAccess(Symbol* init_base, char* init_member) :
-  Expr(EXPR_MEMBERACCESS),
-  base(new SymExpr(init_base)),
-  member(new UnresolvedSymbol(init_member)),
-  member_type(0),
-  member_offset(0)
-{ 
-}
-
-
-void MemberAccess::verify() {
-  if (astType != EXPR_MEMBERACCESS) {
-    INT_FATAL(this, "Bad MemberAccess::astType");
-  }
-}
-
-
-MemberAccess*
-MemberAccess::copyInner(ASTMap* map) {
-  MemberAccess* _this = new MemberAccess(COPY_INT(base), member);
-  _this->member_type = member_type;
-  _this->member_offset = member_offset;
-  return _this;
-}
-
-
-void MemberAccess::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == base) {
-    base = dynamic_cast<Expr*>(new_ast);
-  } else {
-    INT_FATAL(this, "Unexpected case in MemberAccess::replaceChild");
-  }
-}
-
-
-void MemberAccess::traverseExpr(Traversal* traversal) {
-  TRAVERSE(base, traversal, false);
-  TRAVERSE(member, traversal, false);
-}
-
-
-Type* MemberAccess::typeInfo(void) {
-  if (no_infer) {
-    return member->type;
-  }
-
-  if (member_type != NULL && member_type != dtUnknown) {
-    return member_type;
-  } else if (member->type != dtUnknown) {
-    return member->type;
-  } else if (ClassType* ctype =
-             dynamic_cast<ClassType*>(base->typeInfo())) {
-    Symbol* sym = Symboltable::lookupInScope(member->name, ctype->structScope);
-    if (sym) {
-      if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(sym))
-        return ts->definition;
-      else
-        return sym->type;
-    }
-  }
-  return dtUnknown;
-}
-
-
-static bool memberAccessConstHelper(Type* baseType, MemberAccess* expr) {
-  ClassType* classtype = dynamic_cast<ClassType*>(baseType);
-  
-  if (classtype) {
-    bool isTrueClass = (classtype->classTag == CLASS_CLASS);
-    if (isTrueClass) {
-      return expr->member->isConst();
-    } else {
-      return (expr->base->isConst() || expr->member->isConst());
-    }
-  } else if (SumType* sumtype = dynamic_cast<SumType*>(baseType)) {
-    forv_Vec(Type, type, sumtype->components) {
-      if (memberAccessConstHelper(type, expr)) {
-        return true;
-      }
-    }
-    return false;
-  } else {
-    INT_FATAL(expr, "Unexpected base expression type in MemberAccess");
-    return false;
-  }
-}
-
-
-bool MemberAccess::isConst(void) {
-  return false;
-  Type* baseType = base->typeInfo();
-  return memberAccessConstHelper(baseType, this);
-}
-
-
-void MemberAccess::print(FILE* outfile) {
-  base->print(outfile);
-  fprintf(outfile, ".");
-  member->print(outfile);
-}
-
-
-void MemberAccess::codegen(FILE* outfile) {
+static void codegen_member(FILE* outfile, BaseAST *base, BaseAST *member, Type *member_type, 
+                           int member_offset) 
+{
   if (member_type) {
     // (*((T*)(((char*)(p))+offset)))
     fprintf(outfile, "(*((");
@@ -563,8 +441,11 @@ void MemberAccess::codegen(FILE* outfile) {
     fprintf(outfile, "))+%d)))", member_offset);
   } else {
     base->codegen(outfile);
-    fprintf(outfile, "->");
-    member->codegen(outfile);
+    VarSymbol *vsmember = dynamic_cast<VarSymbol*>(dynamic_cast<SymExpr*>(member)->var);
+    if (!vsmember->immediate || vsmember->immediate->const_kind != IF1_CONST_KIND_STRING) {
+      INT_FATAL(member, "Member name is not a string");
+    }
+    fprintf(outfile, "->%s", vsmember->immediate->v_string);
   }
 }
 
@@ -591,7 +472,10 @@ CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
   argList(new AList<Expr>()),
   opTag(OP_NONE),
   primitive(NULL),
-  partialTag(PARTIAL_NEVER)
+  partialTag(PARTIAL_NEVER),
+  member(0),
+  member_type(0),
+  member_offset(-1)
 {
   if (Symbol* b = dynamic_cast<Symbol*>(base)) {
     baseExpr = new SymExpr(b);
@@ -607,16 +491,20 @@ CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
 }
 
 
-CallExpr::CallExpr(OpTag initOpTag, BaseAST* arg1, BaseAST* arg2) :
+CallExpr::CallExpr(OpTag initOpTag, BaseAST* arg1, BaseAST* arg2, BaseAST *arg3) :
   Expr(EXPR_CALL),
   baseExpr(NULL),
   argList(new AList<Expr>()),
   opTag(initOpTag),
   primitive(NULL),
-  partialTag(PARTIAL_NEVER)
+  partialTag(PARTIAL_NEVER),
+  member(0),
+  member_type(0),
+  member_offset(-1)
 {
   callExprHelper(this, arg1);
   callExprHelper(this, arg2);
+  callExprHelper(this, arg3);
 }
 
 
@@ -626,7 +514,10 @@ CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2) :
   argList(new AList<Expr>()),
   opTag(OP_NONE),
   primitive(prim),
-  partialTag(PARTIAL_NEVER)
+  partialTag(PARTIAL_NEVER),
+  member(0),
+  member_type(0),
+  member_offset(-1)
 {
   callExprHelper(this, arg1);
   callExprHelper(this, arg2);
@@ -640,7 +531,10 @@ CallExpr::CallExpr(char* name, BaseAST* arg1, BaseAST* arg2,
   argList(new AList<Expr>()),
   opTag(OP_NONE),
   primitive(NULL),
-  partialTag(PARTIAL_NEVER)
+  partialTag(PARTIAL_NEVER),
+  member(0),
+  member_type(0),
+  member_offset(-1)
 {
   callExprHelper(this, arg1);
   callExprHelper(this, arg2);
@@ -667,6 +561,9 @@ CallExpr::copyInner(ASTMap* map) {
     _this = new CallExpr(COPY_INT(baseExpr), COPY_INT(argList));
   _this->primitive = primitive;;
   _this->partialTag = partialTag;
+  _this->member = member;
+  _this->member_type = member_type;
+  _this->member_offset = member_offset;
   return _this;
 }
 
@@ -808,6 +705,30 @@ FnSymbol* CallExpr::findFnSymbol(void) {
 
 
 Type* CallExpr::typeInfo(void) {
+  if (opTag == OP_GET_MEMBER || opTag == OP_SET_MEMBER) {
+    if (no_infer) {
+      if (member)
+        return member->type;
+      else
+        return dtUnknown;
+    }
+    if (member_type != NULL && member_type != dtUnknown)
+      return member_type;
+    if (member && member->type != dtUnknown)
+      return member->type;
+    if (ClassType* ctype = dynamic_cast<ClassType*>(get(1)->typeInfo())) {
+      char *name = dynamic_cast<VarSymbol*>(dynamic_cast<SymExpr*>(get(2))->var)->immediate->v_string;
+      Symbol* sym = Symboltable::lookupInScope(name, ctype->structScope);
+      if (sym) {
+        if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(sym))
+          return ts->definition;
+        else
+          return sym->type;
+      }
+    }
+    return dtUnknown;
+  }
+
   if (!no_infer && preAnalysis) {
     return dtUnknown;
   }
@@ -859,7 +780,16 @@ void CallExpr::codegen(FILE* outfile) {
   }
 
   if (opTag != OP_NONE) {
-    if (opTag == OP_MOVE) {
+    if (opTag == OP_GET_MEMBER) {
+      codegen_member(outfile, get(1), get(2), member_type, member_offset);
+    } else if (opTag == OP_SET_MEMBER) {
+      Type* rightType = get(3)->typeInfo();
+      if (rightType != dtUnspecified) {
+        codegen_member(outfile, get(1), get(2), member_type, member_offset);
+        fprintf(outfile, " = ");
+        get(3)->codegen(outfile);
+      }
+    } else if (opTag == OP_MOVE) {
       //      bool string_init = false;
       Type* leftType = get(1)->typeInfo();
       Type* rightType = get(2)->typeInfo();

@@ -211,9 +211,9 @@ static void construct_tuple_type(int rank) {
       if (i != 1)
         actuals->insertAtTail(new_StringLiteral(stringcpy(", ")));
       actuals->insertAtTail(
-        new MemberAccess(
+        new CallExpr(OP_GET_MEMBER,
           new UnresolvedSymbol("val"),
-          stringcat("_f", intstring(i))));
+          new_StringSymbol(stringcat("_f", intstring(i)))));
     }
     actuals->insertAtTail(new_StringLiteral(stringcpy(")")));
     Expr* fwriteCall = new CallExpr("fwrite", new SymExpr(fileArg), actuals);
@@ -366,8 +366,8 @@ finish_constructor(FnSymbol* fn) {
     for_alist(DefExpr, formalDef, fn->formals) {
       if (ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym)) {
         if (!strcmp(formal->name, field->name)) {
-          Expr* lhs = new MemberAccess(fn->_this, field);
-          Expr* assign_expr = new CallExpr(OP_MOVE, lhs, formal);
+          Expr* assign_expr = new CallExpr(OP_SET_MEMBER, fn->_this, 
+                                           new_StringSymbol(field->name), formal);
           stmts->insertAtTail(assign_expr);
         }
       }

@@ -213,7 +213,7 @@ static void reconstruct_iterator(FnSymbol* fn) {
       Expr* expr = returnStmt->expr;
       returnStmt->expr->replace(new SymExpr(seq));
       returnStmt->insertBefore(
-        new CallExpr(new MemberAccess(seq, "_yield"), expr));
+        new CallExpr(new CallExpr(OP_GET_MEMBER, seq, new_StringSymbol("_yield")), expr));
       if (returnStmt->yield)
         returnStmt->remove();
     }
@@ -448,14 +448,14 @@ static void call_constructor_for_class(CallExpr* call) {
 static void normalize_for_loop(ForLoopStmt* stmt) {
   stmt->iterators->only()->replace(
     new CallExpr(
-      new MemberAccess(
-        stmt->iterators->only(),
-        "_forall")));
+      new CallExpr(OP_GET_MEMBER,
+                   stmt->iterators->only()->copy(),
+                   new_StringSymbol("_forall"))));
   if (no_infer) {
     DefExpr* index = stmt->indices->only();
     Expr* type = stmt->iterators->only()->copy();
-    type = new MemberAccess(type, "_last");
-    type = new MemberAccess(type, "_element");
+    type = new CallExpr(OP_GET_MEMBER, type, new_StringSymbol("_last"));
+    type = new CallExpr(OP_GET_MEMBER, type, new_StringSymbol("_element"));
     if (!index->exprType)
       index->replace(new DefExpr(index->sym, NULL, type));
   }
@@ -579,11 +579,10 @@ static void hack_array_constructor_call(CallExpr* call) {
   if (call->isNamed("_construct__aarray")) {
     if (DefExpr* def = dynamic_cast<DefExpr*>(call->parentExpr)) {
       call->parentStmt->insertAfter(
-        new CallExpr(new MemberAccess(def->sym, "myinit")));
+        new CallExpr(new CallExpr(OP_GET_MEMBER, def->sym, new_StringSymbol("myinit"))));
       call->parentStmt->insertAfter(
-        new CallExpr("=",
-          new MemberAccess(def->sym, "dom"),
-          call->argList->last()->copy()));
+        new CallExpr(OP_SET_MEMBER, def->sym, new_StringSymbol("dom"), 
+                     call->argList->last()->copy()));
       call->argList->last()->replace(hack_rank(call->argList->last()));
     }
   }
@@ -605,7 +604,7 @@ static void hack_domain_constructor_call(CallExpr* call) {
     for_alist(Expr, arg, call->argList) {
       stmt->insertBefore(
           new CallExpr(
-            new MemberAccess(_adomain_tmp, "_set"),
+            new CallExpr(OP_GET_MEMBER, _adomain_tmp, new_StringSymbol("_set")),
             new_IntLiteral(dim), arg->copy()));
       dim++;
     }
@@ -631,11 +630,13 @@ static void hack_seqcat_call(CallExpr* call) {
       // if only one is, change to append or prepend
       if (leftType != dtUnknown) {
         call->replace(new CallExpr(
-                        new MemberAccess(call->get(2)->copy(), "_prepend"),
+                        new CallExpr(OP_GET_MEMBER, call->get(2)->copy(), 
+                                     new_StringSymbol("_prepend")),
                         call->get(1)->copy()));
       } else if (rightType != dtUnknown) {
         call->replace(new CallExpr(
-                        new MemberAccess(call->get(1)->copy(), "_append"),
+                        new CallExpr(OP_GET_MEMBER, call->get(1)->copy(), 
+                                     new_StringSymbol("_append")),
                         call->get(2)->copy()));
       }
     }
@@ -758,27 +759,43 @@ static void apply_getters_setters(BaseAST* ast) {
   // Most generally:
   //   x.f(1) = y ---> f(_mt, x, 1, _st, y)
   // or
-  //   CallExpr(=, CallExpr(MemberAccess(x, "f"), 1), y) --->
+  //   CallExpr(=, CallExpr(CallExpr(OP_GET_MEMBER, x, "f"), 1), y) --->
   //     CallExpr("f", _mt, x, 1, _st, y)
   // though, it could be just
-  //           a MemberAccess without a CallExpr
-  //           a CallExpr without a MemberAccess
+  //           a CallExpr(OP_GET_MEMBER without a CallExpr
+  //           a CallExpr without a OP_GET_MEMBER
   // SJD: Commment needs to be updated with PARTIAL_OK
-  CallExpr *call = dynamic_cast<CallExpr*>(ast), *assign = 0;
-  if (call && call->isNamed("=")) {
+  CallExpr 
+    *call = dynamic_cast<CallExpr*>(ast),  // (eventually) non-assign, non-member call if any
+    *assign = 0,                           // assignment if any
+    *getter = 0;                           // getter if any
+  Expr *rhs = 0;                           // right hand side if any
+  if (!call)
+    goto Ldone;
+  if (call && call->isNamed("=")) {        // handle assignments
     assign = call;
+    rhs = assign->argList->get(2)->copy();
     call = dynamic_cast<CallExpr*>(assign->get(1));
   }
-  BaseAST *base = call ? call->baseExpr : (assign ? assign->get(1) : ast);
-  if (MemberAccess* memberAccess = dynamic_cast<MemberAccess*>(base)) {
-    Expr *rhs = assign ? assign->argList->get(2)->copy() : 0;
-    // build the main accessor/setter
+  if (!call)
+    goto Ldone;
+  if (call->opTag != OP_GET_MEMBER) {      // handle calls && getters
+    getter = dynamic_cast<CallExpr*>(call->baseExpr);
+    if (getter && getter->opTag != OP_GET_MEMBER)
+      getter = 0;
+  } else {
+    getter = call;
+    call = 0;
+  }
+  // at this point the comments above about the contents of the locals are valid
+  if (getter) {
+    VarSymbol *membername = dynamic_cast<VarSymbol*>(dynamic_cast<SymExpr*>(getter->get(2))->var);
+    assert(membername->immediate->const_kind == IF1_CONST_KIND_STRING);
     if (call) {
-      CallExpr *lhs = new CallExpr(memberAccess->member->name, 
-                                   methodToken,
-                                   memberAccess->base->copy());
+      CallExpr *lhs = new CallExpr(membername->immediate->v_string,
+                                   methodToken, getter->get(1)->copy());
       lhs->partialTag = PARTIAL_OK;
-      AList<Expr>* arguments = call ? call->argList->copy() : new AList<Expr>;
+      AList<Expr>* arguments = call->argList->copy();
       if (rhs) {
         arguments->insertAtTail(new SymExpr(setterToken));
         arguments->insertAtTail(rhs);
@@ -786,17 +803,17 @@ static void apply_getters_setters(BaseAST* ast) {
       lhs = new CallExpr(lhs, arguments);
       REPLACE(lhs);
     } else {
-      AList<Expr>* arguments = call ? call->argList->copy() : new AList<Expr>;
-      arguments->insertAtHead(memberAccess->base->copy());
+      AList<Expr>* arguments = new AList<Expr>;
+      arguments->insertAtHead(getter->get(1)->copy());
       arguments->insertAtHead(new SymExpr(methodToken));
       if (rhs) {
         arguments->insertAtTail(new SymExpr(setterToken));
         arguments->insertAtTail(rhs);
       }
-      REPLACE(new CallExpr(memberAccess->member->name, arguments));
+      REPLACE(new CallExpr(membername->immediate->v_string, arguments));
     }
-  } 
-  if (assign) {
+  }
+  if (assign && !getter) {
     Expr *rhs = assign->argList->get(2)->copy();
     if (call) {
       AList<Expr>* arguments = call->argList->copy();

@@ -186,15 +186,20 @@ static void build_getter(ClassType* ct, Symbol *field) {
   fn->addPragma("inline");
   fn->_getter = field;
   fn->retType = field->type;
-  fn->formals = new AList<DefExpr>();
-  fn->body = new BlockStmt(new ReturnStmt(field->name));
+  ArgSymbol* _this = new ArgSymbol(INTENT_REF, "this", ct);
+  fn->formals = new AList<DefExpr>(
+    new DefExpr(new ArgSymbol(INTENT_REF, "_methodTokenDummy", dtMethodToken)),
+    new DefExpr(_this));
+  fn->body = new BlockStmt(new ReturnStmt(new CallExpr(OP_GET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)))));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->parentStmt->insertBefore(def);
   reset_file_info(fn, field->lineno, field->filename);
   ct->methods.add(fn);
   fn->method_type = PRIMARY_METHOD;
   fn->typeBinding = ct->symbol;
+  fn->cname = stringcat("_", fn->typeBinding->cname, "_", fn->cname);
   fn->noParens = true;
+  fn->_this = _this;
 }
 
 
@@ -204,20 +209,29 @@ static void build_setter(ClassType* ct, Symbol* field) {
   fn->_setter = field;
   fn->retType = dtVoid;
 
-  fn->formals = new AList<DefExpr>(new DefExpr(new ArgSymbol(INTENT_REF, "_setterTokenDummy", dtSetterToken)));
+  ArgSymbol* _this = new ArgSymbol(INTENT_REF, "this", ct);
   ArgSymbol* fieldArg = new ArgSymbol(INTENT_BLANK, "_arg", (no_infer) ? field->type : dtUnknown);
   DefExpr* argDef = new DefExpr(fieldArg);
   if (no_infer && field->defPoint->exprType)
     argDef->exprType = field->defPoint->exprType->copy();
-  fn->formals->insertAtTail(argDef);
-  fn->body->insertAtTail(new CallExpr("=", new SymExpr(field->name), fieldArg));
+  fn->formals = new AList<DefExpr>(
+    new DefExpr(new ArgSymbol(INTENT_REF, "_methodTokenDummy", dtMethodToken)),
+    new DefExpr(_this), 
+    new DefExpr(new ArgSymbol(INTENT_REF, "_setterTokenDummy", dtSetterToken)),
+    argDef);
+  Expr *valExpr = new CallExpr(OP_GET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)));
+  Expr *assignExpr = new CallExpr("=", valExpr, fieldArg);
+  fn->body->insertAtTail(
+    new CallExpr(OP_SET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)), assignExpr));
   ct->symbol->defPoint->parentStmt->insertBefore(new DefExpr(fn));
   reset_file_info(fn, field->lineno, field->filename);
 
   ct->methods.add(fn);
   fn->method_type = PRIMARY_METHOD;
   fn->typeBinding = ct->symbol;
+  fn->cname = stringcat("_", fn->typeBinding->cname, "_", fn->cname);
   fn->noParens = true;
+  fn->_this = _this;
 }
 
 
@@ -232,7 +246,6 @@ static void build_setters_and_getters(ClassType* ct) {
   }
 }
 
-
 static void build_record_equality_function(ClassType* ct) {
   FnSymbol* fn = new FnSymbol("==");
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
@@ -243,8 +256,8 @@ static void build_record_equality_function(ClassType* ct) {
   fn->retType = dtBoolean;
   Expr* cond = NULL;
   forv_Vec(Symbol, tmp, ct->fields) {
-    Expr* left = new MemberAccess(arg1, tmp);
-    Expr* right = new MemberAccess(arg2, tmp);
+    Expr* left = new CallExpr(tmp->name, methodToken, arg1);
+    Expr* right = new CallExpr(tmp->name, methodToken, arg2);
     cond = (cond)
       ? new CallExpr("and", cond, new CallExpr("==", left, right))
       : new CallExpr("==", left, right);
@@ -267,8 +280,8 @@ static void build_record_inequality_function(ClassType* ct) {
   fn->retType = dtBoolean;
   Expr* cond = NULL;
   forv_Vec(Symbol, tmp, ct->fields) {
-    Expr* left = new MemberAccess(arg1, tmp);
-    Expr* right = new MemberAccess(arg2, tmp);
+    Expr* left = new CallExpr(tmp->name, methodToken, arg1);
+    Expr* right = new CallExpr(tmp->name, methodToken, arg2);
     cond = (cond)
       ? new CallExpr("or", cond, new CallExpr("!=", left, right))
       : new CallExpr("!=", left, right);
@@ -295,13 +308,9 @@ static void build_record_assignment_function(ClassType* ct) {
   fn->formals = args;
   fn->retType = dtUnknown;
   AList<Stmt>* body = new AList<Stmt>();
-  forv_Vec(Symbol, tmp, ct->fields) {
-    Expr* left = new MemberAccess(_arg1, tmp);
-    Expr* right = new MemberAccess(arg2, tmp);
-    Expr* assign_expr = new CallExpr("=", left, right);
-    body->insertAtTail(assign_expr);
-  }
-
+  forv_Vec(Symbol, tmp, ct->fields)
+    body->insertAtTail(new CallExpr(tmp->name, methodToken, _arg1, setterToken,
+                                    new CallExpr(tmp->name, methodToken, arg2)));
   body->insertAtTail(new ReturnStmt(_arg1));
   BlockStmt* block_stmt = new BlockStmt(body);
   fn->body = block_stmt;

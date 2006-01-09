@@ -489,10 +489,10 @@ Vec<C>::remove(int index) {
 template <class C>  void 
 Vec<C>::insert(int index, C a) {
   addx();
-  for (i = index; i < n; i++)
-    v[i+1] = v[i];
-  v[index] = a;
   n++;
+  for (int j = n-2; j >= index; j--)
+    v[j+1] = v[j];
+  v[index] = a;
 }
 
 template <class C>  void 

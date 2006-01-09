@@ -45,6 +45,8 @@ enum OpTag {
   OP_BY,
   OP_SUBTYPE,
   OP_NOTSUBTYPE,
+  OP_GET_MEMBER,
+  OP_SET_MEMBER,
   OP_INIT,
   OP_MOVE
 };
@@ -133,31 +135,6 @@ class SymExpr : public Expr {
 };
 
 
-class MemberAccess : public Expr {
- public:
-  Expr* base;
-  Symbol* member;
-  Type* member_type;
-  int member_offset;
-
-  MemberAccess(Expr* init_base, Symbol* init_member);
-  MemberAccess(Symbol* init_base, Symbol* init_member);
-  MemberAccess(Expr* init_base, char* init_member);
-  MemberAccess(Symbol* init_base, char* init_member);
-  virtual void verify(void); 
-  COPY_DEF(MemberAccess);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseExpr(Traversal* traversal);
-
-  Type* typeInfo(void);
-
-  bool isConst(void);
-
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-};
-
-
 class CallExpr : public Expr {
  public:
   Expr* baseExpr;
@@ -165,10 +142,13 @@ class CallExpr : public Expr {
   OpTag opTag;
   PrimitiveOp *primitive;
   PartialTag partialTag;
+  Symbol* member;
+  Type* member_type;
+  int member_offset;
 
   CallExpr(BaseAST* base, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
            BaseAST* arg3 = NULL, BaseAST* arg4 = NULL);
-  CallExpr(OpTag initOpTag, BaseAST* arg1, BaseAST* arg2 = NULL);
+  CallExpr(OpTag initOpTag, BaseAST* arg1, BaseAST* arg2 = NULL, BaseAST *arg3 = NULL);
   CallExpr(PrimitiveOp *prim, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL);
   CallExpr(char* name, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
            BaseAST* arg3 = NULL, BaseAST* arg4 = NULL);

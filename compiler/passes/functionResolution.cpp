@@ -40,8 +40,6 @@ void resolve_function(FnSymbol* fn);
 void resolve_asts(BaseAST* base);
 void resolve_call(CallExpr* call);
 void resolve_op(CallExpr* call);
-void resolve_dot(MemberAccess* dot);
-
 
 bool actual_formal_match(Expr* actual, ArgSymbol* formal) {
   if (formal->intent == INTENT_TYPE ||
@@ -164,27 +162,6 @@ add_candidate(Map<FnSymbol*,Vec<ArgSymbol*>*>* af_maps,
   }
   af_maps->put(fn, af_map);
 }
-                          
-
-void resolve_dot(MemberAccess* dot) {
-  ClassType* ct = dynamic_cast<ClassType*>(dot->base->typeInfo());
-  if (!ct) {
-    INT_FATAL(dot, "Cannot resolve member access");
-    return;
-  }
-  dot->member = Symboltable::lookupInScope(dot->member->name, ct->structScope);
-  if (FnSymbol* fn = dynamic_cast<FnSymbol*>(dot->parentSymbol)) {
-    if (fn->fnClass == FN_CONSTRUCTOR) {
-      if (CallExpr* call = dynamic_cast<CallExpr*>(dot->parentExpr)) {
-        if (dot->member->type == dtUnknown) {
-          dot->member->type = call->get(2)->typeInfo();
-        }
-      }
-    }
-  }
-  if (dot->member->type == dtUnknown)
-    INT_FATAL(dot, "Unable to resolve type of member access");
-}
 
 
 CallExpr* new_default_constructor_call(Type* type) {
@@ -238,6 +215,21 @@ void resolve_op(CallExpr* call) {
       if (symExpr->var->type == dtUnknown)
         INT_FATAL("Unable to resolve type");
     }
+  } else if (call->opTag == OP_SET_MEMBER || call->opTag == OP_GET_MEMBER) {
+    ClassType* ct = dynamic_cast<ClassType*>(call->get(1)->typeInfo());
+    if (!ct) {
+      INT_FATAL(call, "Cannot resolve member access");
+      return;
+    }
+    call->member = Symboltable::lookupInScope(
+      dynamic_cast<VarSymbol*>(dynamic_cast<SymExpr*>(call->get(2))->var)->immediate->v_string,
+      ct->structScope);
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(call->parentSymbol))
+      if (fn->fnClass == FN_CONSTRUCTOR && call->opTag == OP_SET_MEMBER && 
+          call->member->type == dtUnknown)
+        call->member->type = call->get(3)->typeInfo();
+    if (call->member->type == dtUnknown)
+      INT_FATAL(call, "Unable to resolve type of member access");
   } else if (call->primitive && !strcmp(call->primitive->name, "init")) {
     Type* type = call->get(1)->typeInfo();
     if (type->defaultValue) {
@@ -499,9 +491,7 @@ void resolve_asts(BaseAST* base) {
   Vec<BaseAST*> asts;
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
-    if (MemberAccess* dot = dynamic_cast<MemberAccess*>(ast)) {
-      resolve_dot(dot);
-    } else if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
       if (!call->baseExpr)
         resolve_op(call);
       else

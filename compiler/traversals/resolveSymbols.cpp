@@ -23,6 +23,8 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
     if (call->primitive) {
       call->makeOp();
     }
+    if (call->opTag == OP_GET_MEMBER || call->opTag == OP_SET_MEMBER)
+      resolve_member_access(call, &call->member_offset, &call->member_type);
     if (call->opTag == OP_INIT) {
       Type* type = call->get(1)->typeInfo();
       if (type->defaultValue) {
@@ -118,16 +120,6 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
         call->makeOp(); // assume op if can't resolve
       }
     }
-  } else if (MemberAccess* member_access = dynamic_cast<MemberAccess*>(expr)) {
-    // Resolve MemberAccesses
-    if (CallExpr* parent = dynamic_cast<CallExpr*>(expr->parentExpr))
-      if (parent->isAssign() && parent->get(1) == expr) {
-        resolve_member_access(expr->parentExpr, &member_access->member_offset,
-                              &member_access->member_type);
-        return;
-      }
-    resolve_member_access(member_access, &member_access->member_offset,
-                          &member_access->member_type);
   } else if (DefExpr* defExpr = dynamic_cast<DefExpr*>(expr)) {
     // Resolve default constructors
     Vec<FnSymbol*> fns;

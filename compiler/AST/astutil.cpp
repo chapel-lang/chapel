@@ -198,8 +198,6 @@ void update_symbols(BaseAST* ast, ASTMap* map) {
       XSUB(defExpr->sym->type, Type);
     } else if (CastExpr* castExpr = dynamic_cast<CastExpr*>(ast)) {
       XSUB(castExpr->type, Type);
-    } else if (MemberAccess* memberAccess = dynamic_cast<MemberAccess*>(ast)) {
-      XSUB(memberAccess->member, Symbol);
     } else if (GotoStmt* goto_stmt = dynamic_cast<GotoStmt*>(ast)) {
       XSUB(goto_stmt->label, LabelSymbol);
     } else if (VarSymbol* ps = dynamic_cast<VarSymbol*>(ast)) {

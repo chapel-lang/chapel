@@ -48,6 +48,8 @@ initPrimitive() {
   primitives.add(new PrimitiveOp("&&", land_interpreter_op, land_analysis_op));
   primitives.add(new PrimitiveOp("||", lor_interpreter_op, lor_analysis_op));
   primitives.add(new PrimitiveOp("**", exp_interpreter_op, exp_analysis_op));
+  primitives.add(new PrimitiveOp(".", get_member_interpreter_op, get_member_analysis_op));
+  primitives.add(new PrimitiveOp(".=", set_member_interpreter_op, set_member_analysis_op));
   // currently not implemented
   // OP_SEQCAT #
   // OP_BY by

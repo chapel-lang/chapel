@@ -851,7 +851,8 @@ AList<Stmt>* ClassType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSym
     }
     body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringLiteral(tmp->name)));
     body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringLiteral(" = ")));
-    body->insertAtTail(new CallExpr("fwrite", fileArg, new MemberAccess(arg, tmp)));
+    body->insertAtTail(new CallExpr("fwrite", fileArg, 
+                                    new CallExpr(OP_GET_MEMBER, arg, new_StringSymbol(tmp->name))));
     first = false;
   }
 
