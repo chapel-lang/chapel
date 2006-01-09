@@ -1565,29 +1565,6 @@ IFrame::run(int timeslice) {
         }
         break;
       }
-#if 0
-      case EXPR_MEMBERACCESS: {
-        S(MemberAccess);
-        switch (stage++) {
-          case 0:
-            EVAL_EXPR(s->expr);
-            break;
-          case 1: {
-            stage = 0;
-            ISlot *oslot = islot(s->expr);
-            check_kind(s, oslot, OBJECT_ISLOT);
-            IObject *a = oslot->object;
-            ISlot *mslot = a->member.get(s->member);
-            if (!mslot) {
-              user_error(this, "interpreter terminated: %s", s->primitive->name);
-              return;
-            }
-            env.put(s, new ISlot(*mslot));
-            break;
-          }
-        break;
-      }
-#endif
       case EXPR_IMPORT:
         break;
     }
