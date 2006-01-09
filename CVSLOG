@@ -53425,3 +53425,17 @@ Modified files:
 	chapel/compiler/include/: analysis.h expr.h 
 	chapel/compiler/traversals/: resolveSymbols.cpp 
 
+---------------------------------------------------------------------------
+
+01/09/06 15:09:25 -- shannon
+
+Log message:
+	Fixed a bug in my fread of enumerated types code.
+	Added a test.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+Added files:
+	chapel/test/types/file/: freadEnum.chpl freadEnum.good 
+	                         freadEnum.txt 
+
