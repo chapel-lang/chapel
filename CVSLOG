@@ -53403,3 +53403,13 @@ Modified files:
 	chapel/compiler/passes/: runInterpreter.cpp 
 	chapel/modules/standard/: prelude.chpl 
 
+---------------------------------------------------------------------------
+
+01/09/06 11:10:25 -- jplevyak
+
+Log message:
+	remove some dead code
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+
