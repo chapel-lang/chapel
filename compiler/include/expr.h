@@ -99,7 +99,6 @@ class DefExpr : public Expr {
   Symbol* sym;
   Expr* init;
   Expr* exprType;
-  Vec<FnSymbol *> initAssign;
 
   DefExpr(Symbol* initSym = NULL,
           Expr* initInit = NULL,

@@ -2759,20 +2759,6 @@ return_type_info(FnSymbol *fn) {
     return dtUnknown;  // analysis not run
 }
 
-static int
-is_operator_name(char *name) {
-  if (name[0] == '=' && !name[1])
-    return false;
-  if (OPERATOR_CHAR(name[0]) && (!name[1] || OPERATOR_CHAR(name[1])))
-    return true;
-  return false;
-}
-
-static int
-is_assign(char *name) {
-  return (name[0] == '=' && !name[1]);
-}
-
 int
 call_info(Expr* a, Vec<FnSymbol *> &fns, int find_type) {
   FnSymbol* f = a->getFunction();
@@ -2795,18 +2781,6 @@ call_info(Expr* a, Vec<FnSymbol *> &fns, int find_type) {
         switch (find_type) {
           case CALL_INFO_FIND_SINGLE: break;
           case CALL_INFO_FIND_ALL: break;
-          case CALL_INFO_FIND_OPERATOR: 
-            if (!is_operator_name(fs->name)) continue;
-            break;
-          case CALL_INFO_FIND_FUNCTION:
-            if (is_operator_name(fs->name)) continue;
-            break;
-          case CALL_INFO_FIND_ASSIGN:
-            if (!is_assign(fs->name)) continue;
-            break;
-          case CALL_INFO_FIND_NON_ASSIGN:
-           if (is_assign(fs->name)) continue;
-            break;
         }
         if (found_pn && found_pn != pn && find_type != CALL_INFO_FIND_ALL)
           fail("bad call to call_info");

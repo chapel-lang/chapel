@@ -76,11 +76,7 @@ int structural_subtypes(Type *t, Vec<Type *> subtypes); // -1 == error(s)
 int analysis_error(AError_kind akind, AVar *acall = NULL, AType *atype = NULL, AVar *avar = NULL);
 
 enum { CALL_INFO_FIND_SINGLE, 
-       CALL_INFO_FIND_ALL,       // for HTML output
-       CALL_INFO_FIND_OPERATOR,  //  >  these find disjoint sets
-       CALL_INFO_FIND_FUNCTION,  // / 
-       CALL_INFO_FIND_ASSIGN,    //  >  these find disjoint sets
-       CALL_INFO_FIND_NON_ASSIGN // /  
+       CALL_INFO_FIND_ALL       // for HTML output
 };
 int call_info(Expr *a, Vec<FnSymbol *> &fns, int find_type = CALL_INFO_FIND_SINGLE);
 

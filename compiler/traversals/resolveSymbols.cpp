@@ -11,13 +11,6 @@
 #include "stringutil.h"
 
 
-static AList<Expr>* copy_argument_list(CallExpr* expr) {
-  AList<Expr>* args = new AList<Expr>();
-  args->insertAtTail(expr->argList->copy());
-  return args;
-}
-
-
 void ResolveSymbols::postProcessExpr(Expr* expr) {
   if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
     if (call->primitive) {
@@ -30,26 +23,14 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
       if (type->defaultValue) {
         call->replace(new SymExpr(type->defaultValue));
       } else if (type->defaultConstructor) {
-        FnSymbol* fn = type->defaultConstructor;
-        if (fn->formals->length() > 0) {
-          /* alternative to use default_wrapper callback below */
-          Vec<FnSymbol*> fns;
-          call_info(call, fns);
-          if (fns.n == 1)
-            fn = fns.v[0];
-          else
-            INT_FATAL(call, "Cannot resolve init");
-          /* alternative to use default_wrapper callback
-          Vec<Symbol*> defaults;
-          for_alist(DefExpr, formalDef, fn->formals) {
-            defaults.add(formalDef->sym);
-          }
-          fn = fn->default_wrapper(&defaults);
-          */
-        }
-        call->replace(new CallExpr(fn));
+        Vec<FnSymbol*> fns;
+        call_info(call, fns);
+        if (fns.n == 1)
+          call->replace(new CallExpr(fns.v[0]));
+        else
+          INT_FATAL(call, "Cannot resolve default constructor");
       } else {
-        INT_FATAL("type has no default value or default constructor");
+        INT_FATAL("Type has neither default value nor default constructor");
       }
       return;
     }
@@ -78,7 +59,7 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
         }
       }
 
-      AList<Expr>* arguments = copy_argument_list(call);
+      AList<Expr>* arguments = call->argList->copy();
       // HACK: to handle special case for a.x(1) translation
       Expr *baseExpr = call->baseExpr;
       if (CallExpr* basecall = dynamic_cast<CallExpr*>(call->baseExpr)) {
@@ -119,21 +100,6 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
       } else {
         call->makeOp(); // assume op if can't resolve
       }
-    }
-  } else if (DefExpr* defExpr = dynamic_cast<DefExpr*>(expr)) {
-    // Resolve default constructors
-    Vec<FnSymbol*> fns;
-    call_info(defExpr, defExpr->initAssign, CALL_INFO_FIND_ASSIGN);
-    call_info(defExpr, fns, CALL_INFO_FIND_NON_ASSIGN);
-    if (fns.n == 1) {
-      defExpr->sym->type->defaultConstructor = fns.v[0];
-    } if (fns.n > 1) {
-      INT_FATAL(expr, "Unable to resolve default constructor");
-    } else if (defExpr->exprType) {
-      if (CallExpr *fc = dynamic_cast<CallExpr*>(defExpr->exprType))
-        if (SymExpr* v = dynamic_cast<SymExpr*>(fc->baseExpr))
-          if (FnSymbol *fn = dynamic_cast<FnSymbol*>(v->var))
-            defExpr->sym->type->defaultConstructor = fn;
     }
   }
 }
