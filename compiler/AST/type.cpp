@@ -444,10 +444,9 @@ bool EnumType::hasDefaultReadFunction(void) {
 
 AList<Stmt>* EnumType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
   AList<Stmt>* readBodyStmts = new AList<Stmt>();
-  Symbol* chplStdin = Symboltable::lookupInFileModuleScope("stdin");
   Symbol* valString = new VarSymbol("valString", dtString, VAR_NORMAL);
   readBodyStmts->insertAtTail(new DefExpr(valString));
-  readBodyStmts->insertAtTail(new CallExpr("fread", chplStdin, valString));
+  readBodyStmts->insertAtTail(new CallExpr("fread", fileArg, valString));
   Stmt* haltStmt = new ExprStmt(new CallExpr("halt", 
                                   new_StringLiteral("***Error: Not of "), 
                                   new_StringLiteral(arg->type->symbol->name), 
