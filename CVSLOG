@@ -53388,3 +53388,18 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+01/09/06 11:07:13 -- jplevyak
+
+Log message:
+	Interpreter:
+	   add support for all numeric primitives and string primitives.
+	Added some support constructors and overloaded assignments for
+	  Immediate (conversion of strings and bools).
+
+Modified files:
+	chapel/compiler/ifa/: num.h 
+	chapel/compiler/passes/: runInterpreter.cpp 
+	chapel/modules/standard/: prelude.chpl 
+
