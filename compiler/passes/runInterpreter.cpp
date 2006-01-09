@@ -14,6 +14,7 @@
 #include "symtab.h"
 #include "map.h"
 #include "../traversals/view.h"
+#include "stringutil.h"
 
 class IObject;
 class IThread;
@@ -49,7 +50,8 @@ class ISlot : public gc { public:
   void x() { name = 0; aspect = 0; }
   void set_selector(char *s) { kind = SELECTOR_ISLOT; x(); selector = s; }
   void set_symbol(Symbol *s) { kind = SYMBOL_ISLOT; x(); symbol = s; }
-  void set_immediate(Immediate *i) { kind = IMMEDIATE_ISLOT; x(); imm = i; }
+  void set_immediate(Immediate &i) { kind = IMMEDIATE_ISLOT; x(); imm = new Immediate; *imm = i; }
+  void set_immediate(Immediate *i) { kind = IMMEDIATE_ISLOT; x(); imm = new Immediate; *imm = *i; }
   ISlot &operator=(ISlot &s) {
     kind = s.kind;
     x();
@@ -131,7 +133,7 @@ enum PrimOps {
   PRIM_ARRAY_SET, PRIM_UNARY_MINUS, PRIM_UNARY_PLUS,
   PRIM_UNARY_BNOT, PRIM_UNARY_NOT, PRIM_ADD,
   PRIM_SUBTRACT, PRIM_MULT, PRIM_DIV, PRIM_MOD, PRIM_EQUAL,
-  PRIM_NOTEQUAL, PRIM_ELSSOREQUAL, PRIM_GREATEROREQUAL, PRIM_LESS,
+  PRIM_NOTEQUAL, PRIM_LESSOREQUAL, PRIM_GREATEROREQUAL, PRIM_LESS,
   PRIM_GREATER, PRIM_AND, PRIM_OR, PRIM_XOR, PRIM_LAND,
   PRIM_LOR, PRIM_EXP, PRIM_PTR_EQ, PRIM_PTR_NEQ, PRIM_CAST,
   PRIM_TO_STRING, PRIM_COPY_STRING, PRIM_STRING_INDEX, PRIM_STRING_CONCAT,
@@ -158,6 +160,7 @@ static Vec<IThread *> threads;
 static int cur_thread = -1;
 static Vec<int> break_ids;
 static Map<int, BaseAST*> known_ids;
+static Map<int, int> translate_prim;
 
 static void runProgram();
 static void error_interactive(IFrame *frame);
@@ -219,6 +222,43 @@ check_type(BaseAST *ast, ISlot *slot, Type *t) {
         if (t == dtString) break;
         goto Lerror;
     }
+  }
+  return;
+}
+
+static void
+check_string(BaseAST *ast, ISlot *slot) {
+  if (slot->kind != IMMEDIATE_ISLOT) {
+    USR_FATAL(ast, "interpreter: string expected: got %s slot", slotKindName[slot->kind]);
+  }
+  if (slot->imm->const_kind != IF1_CONST_KIND_STRING) {
+    char str[512];
+    sprint_imm(str, *slot->imm);
+    USR_FATAL(ast, "interpreter: bad immediate: %s", str);
+  }
+}
+
+static void
+check_numeric(BaseAST *ast, ISlot *slot) {
+  if (slot->kind == IMMEDIATE_ISLOT) {
+    switch (slot->imm->const_kind) {
+      default: {
+        char str[512], *s = str;
+        if (slot->imm->const_kind == IF1_CONST_KIND_STRING)
+          s = slot->imm->v_string;
+        else
+          sprint_imm(str, *slot->imm);
+        USR_FATAL(ast, "interpreter: bad immediate: %s", s);
+        break;
+      }
+      case IF1_NUM_KIND_UINT:
+      case IF1_NUM_KIND_INT:
+      case IF1_NUM_KIND_FLOAT:
+      case IF1_NUM_KIND_COMPLEX:
+        return;
+    }
+  } else {
+    USR_FATAL(ast, "interpreter: numeric expected: got %s slot", slotKindName[slot->kind]);
   }
   return;
 }
@@ -1061,6 +1101,13 @@ IFrame::iprimitive(CallExpr *s) {
     case PRIM_UNARY_PLUS:
     case PRIM_UNARY_BNOT:
     case PRIM_UNARY_NOT:
+      check_prim_args(s, 1);
+      check_numeric(s, arg[0]);
+      result.kind = IMMEDIATE_ISLOT;
+      result.imm = new Immediate;
+      fold_constant(translate_prim.get(s->primitive->interpreterOp->kind), 
+                    arg[0]->imm, NULL, result.imm);
+      break;
     case PRIM_ADD:
     case PRIM_SUBTRACT:
     case PRIM_MULT:
@@ -1068,7 +1115,7 @@ IFrame::iprimitive(CallExpr *s) {
     case PRIM_MOD:
     case PRIM_EQUAL:
     case PRIM_NOTEQUAL:
-    case PRIM_ELSSOREQUAL:
+    case PRIM_LESSOREQUAL:
     case PRIM_GREATEROREQUAL:
     case PRIM_LESS:
     case PRIM_GREATER:
@@ -1078,15 +1125,112 @@ IFrame::iprimitive(CallExpr *s) {
     case PRIM_LAND:
     case PRIM_LOR:
     case PRIM_EXP:
+      check_prim_args(s, 2);
+      check_numeric(s, arg[0]);
+      check_numeric(s, arg[1]);
+      result.kind = IMMEDIATE_ISLOT;
+      result.imm = new Immediate;
+      fold_constant(translate_prim.get(s->primitive->interpreterOp->kind), 
+                    arg[0]->imm, arg[1]->imm, result.imm);
+      break;
     case PRIM_PTR_EQ:
-    case PRIM_PTR_NEQ:
-    case PRIM_TO_STRING:
-    case PRIM_COPY_STRING:
-    case PRIM_STRING_INDEX:
-    case PRIM_STRING_CONCAT:
-    case PRIM_STRING_EQUAL:
-    case PRIM_STRING_SELECT:
-    case PRIM_STRING_STRIDED_SELECT:
+    case PRIM_PTR_NEQ: {
+      check_prim_args(s, 2);
+      check_kind(s, arg[0], OBJECT_ISLOT);
+      check_kind(s, arg[1], OBJECT_ISLOT);
+      Immediate imm;
+      if (s->primitive->interpreterOp->kind == PRIM_PTR_EQ)
+        imm = (bool)(arg[0]->object == arg[1]->object);
+      else
+        imm = (bool)(arg[0]->object != arg[1]->object);
+      result.set_immediate(imm);
+      break;
+    }
+    case PRIM_TO_STRING: {
+      check_prim_args(s, 1);
+      check_numeric(s, arg[0]);
+      char str[512];
+      sprint_imm(str, *arg[0]->imm);
+      Immediate imm(dupstr(str));
+      result.set_immediate(imm);
+      break;
+    }
+    case PRIM_COPY_STRING: {
+      check_prim_args(s, 2);
+      check_string(s, arg[0]);
+      check_string(s, arg[1]);
+      Immediate imm(dupstr(arg[1]->imm->v_string));
+      result.set_immediate(imm);
+      break;
+    }
+    case PRIM_STRING_INDEX: {
+      check_prim_args(s, 2);
+      check_string(s, arg[0]);
+      check_type(s, arg[1], dtInteger);
+      int i = arg[1]->imm->v_int64;
+      if ((int)strlen(arg[0]->imm->v_string) >= i) {
+        user_error(this, "interpreter: string_index out of range %d", i);
+        return;
+      }
+      Immediate imm(dupstr(arg[0]->imm->v_string + i, arg[0]->imm->v_string + i + 1));
+      result.set_immediate(imm);
+      break;
+    }
+    case PRIM_STRING_CONCAT: {
+      check_prim_args(s, 2);
+      check_string(s, arg[0]);
+      check_string(s, arg[1]);
+      Immediate imm(stringcat(arg[0]->imm->v_string, arg[1]->imm->v_string));
+      result.set_immediate(imm);
+      break;
+    }
+    case PRIM_STRING_EQUAL: {
+      check_prim_args(s, 2);
+      check_string(s, arg[0]);
+      check_string(s, arg[1]);
+      Immediate imm((bool)!strcmp(arg[0]->imm->v_string, arg[1]->imm->v_string));
+      result.set_immediate(imm);
+      break;
+    }
+    case PRIM_STRING_SELECT: {
+      check_prim_args(s, 3);
+      check_string(s, arg[0]);
+      check_type(s, arg[1], dtInteger);
+      check_type(s, arg[2], dtInteger);
+      int i = arg[1]->imm->v_int64;
+      int j = arg[2]->imm->v_int64;
+      int l = strlen(arg[0]->imm->v_string);
+      if (l >= i || l >= j || j < i) {
+        user_error(this, "interpreter: string_select out of range %d:%d", i, j);
+        return;
+      }
+      Immediate imm(dupstr(arg[0]->imm->v_string + i, arg[0]->imm->v_string + j + 1));
+      result.set_immediate(imm);
+      break;
+    }
+    case PRIM_STRING_STRIDED_SELECT: {
+      check_prim_args(s, 4);
+      check_string(s, arg[0]);
+      check_type(s, arg[1], dtInteger);
+      check_type(s, arg[2], dtInteger);
+      check_type(s, arg[3], dtInteger);
+      int i = arg[1]->imm->v_int64;
+      int j = arg[2]->imm->v_int64;
+      int stride = arg[3]->imm->v_int64;
+      int l = strlen(arg[0]->imm->v_string);
+      if (l >= i || l >= j || j < i) {
+        user_error(this, "interpreter: string_select out of range %d:%d", i, j);
+        return;
+      }
+      char str[((j - i)/stride) + 2];
+      int x = 0;
+      for (; x < ((j - i)/stride); x++)
+        str[x] = *(arg[0]->imm->v_string + i + j*stride);
+      str[x] = 0;
+      Immediate imm(dupstr(str));
+      result.set_immediate(imm);
+      break;
+    }
     case PRIM_STRING_LENGTH:
     case PRIM_DONE: {
       user_error(this, "interpreter terminated: %s", s->primitive->name);
@@ -1384,6 +1528,7 @@ IFrame::run(int timeslice) {
             }
             break;
         }
+        break;
       }
       case EXPR_NAMED: {
         S(NamedExpr);
@@ -1549,7 +1694,7 @@ init_interpreter() {
   mod_interpreter_op = new InterpreterOp("mod", PRIM_MOD);
   equal_interpreter_op = new InterpreterOp("equal", PRIM_EQUAL);
   notequal_interpreter_op = new InterpreterOp("notequal", PRIM_NOTEQUAL);
-  elssorequal_interpreter_op = new InterpreterOp("elssorequal", PRIM_ELSSOREQUAL);
+  elssorequal_interpreter_op = new InterpreterOp("elssorequal", PRIM_LESSOREQUAL);
   greaterorequal_interpreter_op = new InterpreterOp("greaterorequal", PRIM_GREATEROREQUAL);
   less_interpreter_op = new InterpreterOp("less", PRIM_LESS);
   greater_interpreter_op = new InterpreterOp("greater", PRIM_GREATER);
@@ -1571,4 +1716,25 @@ init_interpreter() {
   string_strided_select_interpreter_op = new InterpreterOp("string_strided_select", PRIM_STRING_STRIDED_SELECT);
   string_length_interpreter_op = new InterpreterOp("string_length", PRIM_STRING_LENGTH);
   done_interpreter_op = new InterpreterOp("done", PRIM_DONE);
+  translate_prim.put(PRIM_UNARY_MINUS, P_prim_minus);
+  translate_prim.put(PRIM_UNARY_PLUS, P_prim_plus);
+  translate_prim.put(PRIM_UNARY_BNOT, P_prim_bnot);
+  translate_prim.put(PRIM_UNARY_NOT, P_prim_not);
+  translate_prim.put(PRIM_ADD, P_prim_add);
+  translate_prim.put(PRIM_SUBTRACT, P_prim_subtract);
+  translate_prim.put(PRIM_MULT, P_prim_mult);
+  translate_prim.put(PRIM_DIV, P_prim_div);
+  translate_prim.put(PRIM_MOD, P_prim_mod);
+  translate_prim.put(PRIM_EQUAL, P_prim_equal);
+  translate_prim.put(PRIM_NOTEQUAL, P_prim_notequal);
+  translate_prim.put(PRIM_LESSOREQUAL, P_prim_lessorequal);
+  translate_prim.put(PRIM_GREATEROREQUAL, P_prim_greaterorequal);
+  translate_prim.put(PRIM_LESS, P_prim_less);
+  translate_prim.put(PRIM_GREATER, P_prim_greater);
+  translate_prim.put(PRIM_AND, P_prim_and);
+  translate_prim.put(PRIM_OR, P_prim_or);
+  translate_prim.put(PRIM_XOR, P_prim_xor);
+  translate_prim.put(PRIM_LAND, P_prim_land);
+  translate_prim.put(PRIM_LOR, P_prim_lor);
+  translate_prim.put(PRIM_EXP, P_prim_exp);
 }

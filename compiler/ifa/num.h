@@ -9,6 +9,25 @@
 #include "chpltypes.h"
 #include "prim_data.h"
 
+enum IF1_num_kind {
+  IF1_NUM_KIND_NONE, IF1_NUM_KIND_UINT, IF1_NUM_KIND_INT, IF1_NUM_KIND_FLOAT, IF1_NUM_KIND_COMPLEX
+};
+
+enum IF1_const_kind {
+  IF1_CONST_KIND_STRING = IF1_NUM_KIND_COMPLEX + 1, IF1_CONST_KIND_SYMBOL
+};
+
+enum IF1_int_type { 
+  IF1_INT_TYPE_1, IF1_INT_TYPE_8, IF1_INT_TYPE_16, IF1_INT_TYPE_32, IF1_INT_TYPE_64, 
+  IF1_INT_TYPE_NUM
+};
+
+enum IF1_float_type { 
+  IF1_FLOAT_TYPE_16, IF1_FLOAT_TYPE_32, IF1_FLOAT_TYPE_48, IF1_FLOAT_TYPE_64, 
+  IF1_FLOAT_TYPE_80, IF1_FLOAT_TYPE_96, IF1_FLOAT_TYPE_112, IF1_FLOAT_TYPE_128, 
+  IF1_FLOAT_TYPE_NUM
+};
+
 class Immediate : public gc { public:
   unsigned int const_kind : 4;
   unsigned int num_index : 3;
@@ -29,31 +48,32 @@ class Immediate : public gc { public:
     char *v_string;
   };
   Immediate& operator=(const Immediate&);
+  Immediate& operator=(bool b) {
+    const_kind = IF1_NUM_KIND_UINT;
+    num_index = IF1_INT_TYPE_1;
+    v_bool = b;
+    return *this;
+  }
+  Immediate& operator=(char *s) {
+    const_kind = IF1_CONST_KIND_STRING;
+    v_string = s;
+    return *this;
+  }
+  Immediate(bool b) {
+    const_kind = IF1_NUM_KIND_UINT;
+    num_index = IF1_INT_TYPE_1;
+    v_bool = b;
+  }
+  Immediate(char *s) {
+    const_kind = IF1_CONST_KIND_STRING;
+    v_string = s;
+  }
   Immediate();
 };
 
 class ImmHashFns { public:
   static unsigned int hash(Immediate *);
   static int equal(Immediate *, Immediate *);
-};
-
-enum IF1_num_kind {
-  IF1_NUM_KIND_NONE, IF1_NUM_KIND_UINT, IF1_NUM_KIND_INT, IF1_NUM_KIND_FLOAT, IF1_NUM_KIND_COMPLEX
-};
-
-enum IF1_const_kind {
-  IF1_CONST_KIND_STRING = IF1_NUM_KIND_COMPLEX + 1, IF1_CONST_KIND_SYMBOL
-};
-
-enum IF1_int_type { 
-  IF1_INT_TYPE_1, IF1_INT_TYPE_8, IF1_INT_TYPE_16, IF1_INT_TYPE_32, IF1_INT_TYPE_64, 
-  IF1_INT_TYPE_NUM
-};
-
-enum IF1_float_type { 
-  IF1_FLOAT_TYPE_16, IF1_FLOAT_TYPE_32, IF1_FLOAT_TYPE_48, IF1_FLOAT_TYPE_64, 
-  IF1_FLOAT_TYPE_80, IF1_FLOAT_TYPE_96, IF1_FLOAT_TYPE_112, IF1_FLOAT_TYPE_128, 
-  IF1_FLOAT_TYPE_NUM
 };
 
 #define CPP_IS_LAME {1,8,16,32,64}

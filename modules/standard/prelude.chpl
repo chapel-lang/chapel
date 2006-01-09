@@ -292,7 +292,7 @@ pragma "builtin" function =(a : numeric, b : any) {
 }
 
 pragma "rename _copy_string" function =(a : string, b : any) : string { 
-  return __primitive("copy_string", string);
+  return __primitive("copy_string", b);
 }
 
 pragma "split unique"
