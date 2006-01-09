@@ -53413,3 +53413,15 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+01/09/06 13:29:00 -- deitz
+
+Log message:
+	Some cleanup of post-analysis resolution in resolveSymbols.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: analysis.h expr.h 
+	chapel/compiler/traversals/: resolveSymbols.cpp 
+
