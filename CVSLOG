@@ -53356,3 +53356,35 @@ Removed files:
 	chapel/test/functions/jplevyak/: equal-8.future 
 	chapel/test/types/seq/bradc/: returnSeq2.future 
 
+---------------------------------------------------------------------------
+
+01/08/06 18:59:40 -- jplevyak
+
+Log message:
+	Removed MemberAccess and created two new primitives/OPs OP_GET_MEMBER
+	and OP_SET_MEMBER.  This took much longer than I would have imagined
+	because the AST currently spends most of it's time in uncannonicalized
+	form which means that many functions have subtle dependencies on the
+	state of various member variables and the structure of the AST, things
+	which need to be parents of this or that and constructs that only
+	appear in constructors or setters/getters.  Given all the work we
+	have done I found this discouraging since it means that the per-normalization
+	bits of the compiler are quite brittle and hard to change.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp baseAST.cpp expr.cpp 
+	                      primitive.cpp type.cpp 
+	chapel/compiler/analysis/: analysis_ops.h chapel_ifa.cpp 
+	chapel/compiler/ifa/: ast.cpp builtin_symbols.h 
+	chapel/compiler/include/: baseAST.h expr.h vec.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         functionResolution.cpp 
+	                         interpreter_ops.h normalize.cpp 
+	                         scopeResolve.cpp 
+	chapel/compiler/traversals/: htmlview.cpp resolveSymbols.cpp 
+	chapel/test/flowanalysis/newast/: sum_type-1.good 
+	                                  sum_type-2.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
