@@ -136,27 +136,6 @@ EntrySet::EntrySet(Fun *af) : fun(af), split(0), equiv(0) {
   id = entry_set_id++;
 }
 
-int
-compar_creation_sets(const void *ai, const void *aj) {
-  int i = (*(CreationSet**)ai)->id;
-  int j = (*(CreationSet**)aj)->id;
-  return (i > j) ? 1 : ((i < j) ? -1 : 0);
-}
-
-int 
-compar_avars(const void *ai, const void *aj) {
-  int i = (*(AVar**)ai)->id;
-  int j = (*(AVar**)aj)->id;
-  return (i > j) ? 1 : ((i < j) ? -1 : 0);
-}
-
-int 
-compar_entry_sets(const void *ai, const void *aj) {
-  int i = (*(EntrySet**)ai)->id;
-  int j = (*(EntrySet**)aj)->id;
-  return (i > j) ? 1 : ((i < j) ? -1 : 0);
-}
-
 AVar *
 make_AVar(Var *v, EntrySet *es) {
   if (v->sym->function_scope || v->is_internal) {

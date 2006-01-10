@@ -340,7 +340,6 @@ AType *type_diff(AType *, AType *);
 AType *type_intersection(AType *, AType *);
 AType *type_union(AType *a, AType *b);
 void log_var_types(Var *, Fun *);
-int compar_creation_sets(const void *, const void *);
 void set_container(AVar *av, AVar *container);
 AVar * unique_AVar(Var *v, void *contour);
 AVar *unique_AVar(Var *v, EntrySet *es);
