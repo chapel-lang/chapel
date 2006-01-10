@@ -3,9 +3,10 @@
 
 #include "baseAST.h"
 
-class FnSymbol;
-class CallExpr;
 class Type;
+class FnSymbol;
+class VarSymbol;
+class CallExpr;
 
 void cleanup(BaseAST* ast);
 void scopeResolve(BaseAST* ast);
@@ -25,8 +26,9 @@ enum resolve_call_error_type {
 extern resolve_call_error_type resolve_call_error;
 FnSymbol*
 resolve_call(CallExpr* call,
-             Vec<Type*>* types,
-             Vec<char*>* names);
+             Vec<Type*>* actual_types,
+             Vec<VarSymbol*>* actual_params,
+             Vec<char*>* actual_names);
 
 // collect FnSymbols in the AST and return them in vectors
 void collect_functions(Vec<FnSymbol*>* functions);
