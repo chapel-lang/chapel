@@ -53439,3 +53439,13 @@ Added files:
 	chapel/test/types/file/: freadEnum.chpl freadEnum.good 
 	                         freadEnum.txt 
 
+---------------------------------------------------------------------------
+
+01/09/06 16:16:12 -- jplevyak
+
+Log message:
+	Remove dead code
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+
