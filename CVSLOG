@@ -53463,3 +53463,14 @@ Modified files:
 	chapel/compiler/include/: astutil.h 
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+01/09/06 17:49:24 -- deitz
+
+Log message:
+	Finished first pass of modularization of --no-infer function resolution.
+
+Modified files:
+	chapel/compiler/include/: astutil.h 
+	chapel/compiler/passes/: functionResolution.cpp 
+
