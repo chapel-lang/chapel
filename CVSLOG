@@ -53474,3 +53474,13 @@ Modified files:
 	chapel/compiler/include/: astutil.h 
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+01/10/06 11:58:42 -- jplevyak
+
+Log message:
+	Remove some cruft
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp fa.h 
+
