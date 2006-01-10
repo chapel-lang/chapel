@@ -53449,3 +53449,17 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: chapel_ifa.cpp 
 
+---------------------------------------------------------------------------
+
+01/09/06 17:07:33 -- deitz
+
+Log message:
+	This is an intermediate checkin of --no-infer function resolution with
+	a new interface and a more modular implementation.  The interface is
+	not yet fully applied, i.e., the types and names vector is largely
+	ignored.
+
+Modified files:
+	chapel/compiler/include/: astutil.h 
+	chapel/compiler/passes/: functionResolution.cpp 
+
