@@ -6,6 +6,8 @@
 #include "stringutil.h"
 #include "runtime.h"
 
+resolve_call_error_type resolve_call_error;
+
 void param_compute(Expr* expr);
 
 bool can_dispatch(Type* actualType, Type* formalType);
@@ -38,7 +40,6 @@ Vec<FnSymbol*> newFns; // new functions list;
 void resolve_return_type(FnSymbol* fn);
 void resolve_function(FnSymbol* fn);
 void resolve_asts(BaseAST* base);
-void resolve_call(CallExpr* call);
 void resolve_op(CallExpr* call);
 
 bool actual_formal_match(Expr* actual, ArgSymbol* formal) {
@@ -56,7 +57,11 @@ bool actual_formal_match(Expr* actual, ArgSymbol* formal) {
 // Return actual-formal map if FnSymbol is viable candidate to call
 static void
 add_candidate(Map<FnSymbol*,Vec<ArgSymbol*>*>* af_maps,
-              CallExpr* call, FnSymbol* fn, bool inst = false) {
+              FnSymbol* fn,
+              CallExpr* call,
+              Vec<Type*>* actual_types,
+              Vec<char*>* actual_names,
+              bool inst = false) {
   Vec<ArgSymbol*>* af_map = new Vec<ArgSymbol*>();
   Vec<Expr*> fa_map;
   for_alist(DefExpr, formalDef, fn->formals)
@@ -146,7 +151,7 @@ add_candidate(Map<FnSymbol*,Vec<ArgSymbol*>*>* af_maps,
           return;
         }
       }
-      add_candidate(af_maps, call, inst_fn, true);
+      add_candidate(af_maps, inst_fn, call, actual_types, actual_names, true);
       return;
     }
   }
@@ -238,16 +243,6 @@ void resolve_op(CallExpr* call) {
       CallExpr* c = new_default_constructor_call(type);
       call->replace(c);
       resolve_asts(c);
-/*
-      if (CallExpr* icall = dynamic_cast<CallExpr*>(call->get(1))) {
-        icall->remove();
-        call->replace(icall);
-      } else {
-        CallExpr* newcall = new CallExpr(type->defaultConstructor->name);
-        call->replace(newcall);
-        resolve_call(newcall);
-      }
-*/
     } else {
       INT_FATAL(call, "Type without defaultValue in function resolution");
     }
@@ -255,217 +250,172 @@ void resolve_op(CallExpr* call) {
 }
 
 
-void resolve_call(CallExpr* call) {
-  if (call->isNamed("__primitive"))
-    return;
-
-  if (call->isNamed("_chpl_alloc")) {
-    call->baseExpr->replace(new SymExpr(Symboltable::lookupInternal("_chpl_alloc")));
-    return;
-  }
-
-  if (CallExpr* partial = dynamic_cast<CallExpr*>(call->baseExpr)) {
-    if (partial->typeInfo() == dtUnknown) {
-      call->baseExpr->replace(partial->baseExpr->copy());
-      call->argList->insertAtHead(partial->argList->copy());
-    }
-  }
-
-  SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr);
-
-  if (call->isResolved()) {
-    resolve_function(call->isResolved());
-    return;
-  }
-
-  if (!base ||
-      dynamic_cast<VarSymbol*>(base->var) ||
-      dynamic_cast<ArgSymbol*>(base->var)) {
-    CallExpr* newCall = new CallExpr("this", call->baseExpr->copy(),
-                                     call->argList->copy());
-    call->replace(newCall);
-    call = newCall;
-    base = dynamic_cast<SymExpr*>(call->baseExpr);
-  }
-
-  Vec<FnSymbol*> visibleFns; // visible function candidates
-  char* canon_name = cannonicalize_string(base->var->name);
-  call->parentScope->getVisibleFunctions(&visibleFns, canon_name);
-
-  for (int i = 0; i < visibleFns.n; i++)
-    if (newFns.set_in(visibleFns.v[i]))
-      visibleFns.v[i] = NULL;
-
-  Map<FnSymbol*,Vec<ArgSymbol*>*> af_maps; // viable function candidates
-                                           // and actual to formal mapping
-
-  forv_Vec(FnSymbol, visibleFn, visibleFns) {
-    if (!visibleFn)
-      continue;
-    add_candidate(&af_maps, call, visibleFn);
-  }
-
-  if (af_maps.n > 1) { // remove strictly worse matches
-    for (int i = 0; i < af_maps.n; i++) {
-      if (!af_maps.v[i].key)
-        continue;
-      for (int j = i + 1; j < af_maps.n; j++) {
-        if (!af_maps.v[j].key || !af_maps.v[i].key)
-          continue;
-        bool j_better = false;
-        bool j_worse = false;
-
-        // do the candidates have default values?
-        bool i_defaults = af_maps.v[i].key->formals->length() > call->argList->length();
-        bool j_defaults = af_maps.v[j].key->formals->length() > call->argList->length();
-        if (i_defaults && !j_defaults)
-          j_better = true;
-        if (!i_defaults && j_defaults)
-          j_worse = true;
-
-        // do actuals map better to one candidate?
-        int k = 0;
-        for_alist(Expr, actual, call->argList) {
-          ArgSymbol* i_formal = af_maps.v[i].value->v[k];
-          ArgSymbol* j_formal = af_maps.v[j].value->v[k];
-          if (i_formal->intent != INTENT_TYPE &&
-              j_formal->intent != INTENT_TYPE) {
-            if (can_dispatch_ne(j_formal->type, i_formal->type))
-              j_better = true;
-            if (can_dispatch_ne(i_formal->type, j_formal->type))
-              j_worse = true;
-          }
-          k++;
-        }
-
-        if (j_worse && !j_better)
-          af_maps.v[j].key = NULL;
-        if (j_better && !j_worse)
-          af_maps.v[i].key = NULL;
-      }
-    }
-  }
-
-  if (af_maps.n == 0) {
-    if (call->partialTag == PARTIAL_OK)
-      return;
-    else {
-      USR_FATAL(call, "Unresolved function call");
-      return;
-    }
-  }
-
-  bool ambiguous = false;
-  Vec<ArgSymbol*>* af_map = 0;
-  FnSymbol* best = NULL;
-
-  for (int i = 0; i < af_maps.n; i++) {
-    if (af_maps.v[i].key) {
-      if (!best) {
-        best = af_maps.v[i].key;
-        af_map = af_maps.v[i].value;
-      } else {
-        ambiguous = true;
-      }
-    }
-  }
-
-  if (ambiguous) {
-    USR_FATAL_CONT(call, "Ambiguous function call, candidates are:");
-    for (int i = 0; i < af_maps.n; i++)
-      USR_FATAL_CONT(af_maps.v[i].key, "%s", af_maps.v[i].key->name);
-    USR_FATAL(call, "Unable to resolve function call");
-  }
-
-  if (call->partialTag == PARTIAL_OK && !best->noParens)
-    return;
-
-  // build default_wrapper
-  if (best->formals->length() > call->argList->length()) {
+static FnSymbol*
+build_default_wrapper(FnSymbol* fn,
+                      int num_actuals,
+                      Vec<ArgSymbol*>* actual_formals) {
+  FnSymbol* wrapper = fn;
+  if (fn->formals->length() > num_actuals) {
     Vec<Symbol*> defaults;
-    for_alist(DefExpr, formalDef, best->formals) {
+    for_alist(DefExpr, formalDef, fn->formals) {
       ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
       bool used = false;
-      forv_Vec(ArgSymbol, arg, *af_map) {
+      forv_Vec(ArgSymbol, arg, *actual_formals) {
         if (arg == formal)
           used = true;
       }
       if (!used)
         defaults.add(formal);
     }
-    resolve_function(best);
-    FnSymbol* default_wrapper = best->default_wrapper(&defaults);
-    newFns.set_add(default_wrapper);
+    wrapper = fn->default_wrapper(&defaults);
+    newFns.set_add(wrapper);
 
-    // update af_map and best
-    DefExpr* newFormalDef = default_wrapper->formals->first();
-    for_alist(DefExpr, formalDef, best->formals) {
+    // update actual_formals for use in build_order_wrapper
+    DefExpr* newFormalDef = wrapper->formals->first();
+    for_alist(DefExpr, formalDef, fn->formals) {
       ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
-      for (int i = 0; i < af_map->n; i++) {
-        if (af_map->v[i] == formal) {
+      for (int i = 0; i < actual_formals->n; i++) {
+        if (actual_formals->v[i] == formal) {
           ArgSymbol* newFormal = dynamic_cast<ArgSymbol*>(newFormalDef->sym);
-          af_map->v[i] = newFormal;
-          newFormalDef = default_wrapper->formals->next();
+          actual_formals->v[i] = newFormal;
+          newFormalDef = wrapper->formals->next();
         }
       }
     }
-    best = default_wrapper;
   }
+  return wrapper;
+}
 
-  // build order wrapper
+
+static FnSymbol*
+build_order_wrapper(FnSymbol* fn,
+                    Vec<ArgSymbol*>* actual_formals) {
   bool order_wrapper_required = false;
   Map<Symbol*,Symbol*> formals_to_formals;
   int i = 0;
-  for_alist(DefExpr, formalDef, best->formals) {
+  for_alist(DefExpr, formalDef, fn->formals) {
     i++;
     ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
 
     int j = 0;
-    forv_Vec(ArgSymbol, af, *af_map) {
+    forv_Vec(ArgSymbol, af, *actual_formals) {
       j++;
       if (af == formal) {
         if (i != j)
           order_wrapper_required = true;
-        formals_to_formals.put(formal, af_map->v[i-1]);
+        formals_to_formals.put(formal, actual_formals->v[i-1]);
       }
     }
   }
   if (order_wrapper_required) {
-    resolve_function(best);
-    best = best->order_wrapper(&formals_to_formals);
-    newFns.set_add(best);
+    fn = fn->order_wrapper(&formals_to_formals);
+    newFns.set_add(fn);
+  }
+  return fn;
+}
+
+
+static FnSymbol*
+clone_underspecified_function(FnSymbol* fn,
+                              CallExpr* call) {
+  ASTMap formal_types;
+  Expr* actual = call->argList->first();
+  for_alist(DefExpr, formalDef, fn->formals) {
+    ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
+    if (formal->type == dtAny ||
+        formal->type == dtUnknown ||
+        formal->type == dtNumeric) {
+      if (actual->typeInfo() == dtUnknown)
+        INT_FATAL(actual, "Cannot determine type of actual");
+      formal_types.put(formal, actual->typeInfo());
+    }
+    actual = call->argList->next();
+  }
+  if (formal_types.n) {
+    fn = fn->clone_generic(&formal_types);
+    newFns.set_add(fn);
+  }
+  return fn;
+}
+
+
+FnSymbol*
+resolve_call(CallExpr* call,
+             Vec<Type*>* actual_types,
+             Vec<char*>* actual_names) {
+  resolve_call_error = CALL_NO_ERROR;
+
+  if (call->isNamed("_chpl_alloc"))
+    return dynamic_cast<FnSymbol*>(Symboltable::lookupInternal("_chpl_alloc"));
+
+  if (call->isResolved())
+    return call->isResolved();
+
+  Vec<FnSymbol*> visibleFns;                    // visible functions
+  SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr);
+  char* canon_name = cannonicalize_string(base->var->name);
+  call->parentScope->getVisibleFunctions(&visibleFns, canon_name);
+
+  Map<FnSymbol*,Vec<ArgSymbol*>*> candidateFns; // candidate functions
+
+  forv_Vec(FnSymbol, visibleFn, visibleFns) {
+    if (!newFns.set_in(visibleFn)) {
+      add_candidate(&candidateFns, visibleFn, call, actual_types, actual_names);
+    }
   }
 
-  // build coercion wrapper
-  // NEED TO WRITE
-
-  // clone underspecified functions
-  {
-    ASTMap formal_types;
-    Expr* actual = call->argList->first();
-    for_alist(DefExpr, formalDef, best->formals) {
-      ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
-      if (formal->type == dtAny ||
-          formal->type == dtUnknown ||
-          formal->type == dtNumeric) {
-        Expr* temp = actual;
-        if (NamedExpr* named = dynamic_cast<NamedExpr*>(temp))
-          temp = named->actual;
-        if (temp->typeInfo() == dtUnknown)
-          INT_FATAL(temp, "Cannot determine type of actual");
-        formal_types.put(formal, temp->typeInfo());
+  FnSymbol* best = NULL;
+  Vec<ArgSymbol*>* actual_formals = 0;
+  for (int i = 0; i < candidateFns.n; i++) {
+    if (candidateFns.v[i].key) {
+      best = candidateFns.v[i].key;
+      actual_formals = candidateFns.v[i].value;
+      for (int j = 0; j < candidateFns.n; j++) {
+        if (i != j && candidateFns.v[j].key) {
+          Vec<ArgSymbol*>* actual_formals2 = candidateFns.v[j].value;
+          for (int k = 0; k < actual_formals->n; k++) {
+            ArgSymbol* arg = actual_formals->v[k];
+            ArgSymbol* arg2 = actual_formals2->v[k];
+            if (arg->intent != INTENT_TYPE && arg2->intent != INTENT_TYPE) {
+              if (can_dispatch_ne(arg2->type, arg->type)) {
+                best = NULL;
+                break;
+              }
+            }
+          }
+          if (!best)
+            break;
+        }
       }
-      actual = call->argList->next();
-    }
-    if (formal_types.n) {
-      best = best->clone_generic(&formal_types);
-      newFns.set_add(best);
+      if (best)
+        break;
     }
   }
 
-  base->var = best;
-  resolve_function(best);
+  if (!best && candidateFns.n > 0) {
+    USR_WARNING(call, "Ambiguous function call");
+    resolve_call_error = CALL_AMBIGUOUS;
+    return NULL;
+  }
 
+  if (call->partialTag == PARTIAL_OK && (!best || !best->noParens)) {
+    resolve_call_error = CALL_PARTIAL;
+    return NULL;
+  }
+
+  if (!best) {
+    resolve_call_error = CALL_UNKNOWN;
+    USR_WARNING(call, "Unresolved function call");
+    return NULL;
+  }
+
+  best = build_default_wrapper(best, actual_types->n, actual_formals);
+  best = build_order_wrapper(best, actual_formals);
+  // need to implement build coercion wrapper
+  return best;
+}
+
+void resolve_for_loop(CallExpr* call) {
   if (ForLoopStmt* loop = dynamic_cast<ForLoopStmt*>(call->parentStmt)) {
     if (loop->iterators->only() == call) {
       Symbol* index = loop->indices->only()->sym;
@@ -482,9 +432,6 @@ void resolve_call(CallExpr* call) {
       }
     }
   }
-
-  if (best->hasPragma("builtin"))
-    call->makeOp();
 }
 
 void resolve_asts(BaseAST* base) {
@@ -494,8 +441,44 @@ void resolve_asts(BaseAST* base) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
       if (!call->baseExpr)
         resolve_op(call);
-      else
-        resolve_call(call);
+      else {
+        if (CallExpr* partial = dynamic_cast<CallExpr*>(call->baseExpr)) {
+          if (partial->typeInfo() == dtUnknown) {
+            call->baseExpr->replace(partial->baseExpr->copy());
+            call->argList->insertAtHead(partial->argList->copy());
+          }
+        }
+        SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr);
+        if (!base ||
+            dynamic_cast<VarSymbol*>(base->var) ||
+            dynamic_cast<ArgSymbol*>(base->var)) {
+          Expr* baseExpr = call->baseExpr;
+          call->baseExpr->replace(new SymExpr("this"));
+          call->argList->insertAtHead(baseExpr->copy());
+        }
+        Vec<Type*> actual_types;
+        Vec<char*> actual_names;
+        for_alist(Expr, actual, call->argList) {
+          actual_types.add(actual->typeInfo());
+          if (NamedExpr* named = dynamic_cast<NamedExpr*>(actual))
+            actual_names.add(named->name);
+          else
+            actual_names.add(NULL);
+        }
+        FnSymbol* fn = resolve_call(call, &actual_types, &actual_names);
+        if (fn) {
+          if (!call->isResolved())
+            fn = clone_underspecified_function(fn, call);
+          if (!call->isNamed("_chpl_alloc"))
+            resolve_function(fn);
+          call->baseExpr->replace(new SymExpr(fn));
+          resolve_for_loop(call);
+          if (fn->hasPragma("builtin"))
+            call->makeOp();
+        } else if (resolve_call_error != CALL_PARTIAL) {
+          INT_FATAL(call, "Doh!");
+        }
+      }
     }
   }
 }

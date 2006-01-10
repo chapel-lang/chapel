@@ -1,10 +1,32 @@
+#ifndef _ASTUTIL_H_
+#define _ASTUTIL_H_
+
 #include "baseAST.h"
 
 class FnSymbol;
+class CallExpr;
+class Type;
 
 void cleanup(BaseAST* ast);
 void scopeResolve(BaseAST* ast);
 void normalize(BaseAST* ast);
+
+// types contains the types of the actuals
+// names contains the name if it is a named argument, otherwise NULL
+// e.g.  foo(arg1=12, "hi");
+//  types = integer, string
+//  names = arg1, NULL
+enum resolve_call_error_type {
+  CALL_NO_ERROR,
+  CALL_PARTIAL,
+  CALL_AMBIGUOUS,
+  CALL_UNKNOWN
+};
+extern resolve_call_error_type resolve_call_error;
+FnSymbol*
+resolve_call(CallExpr* call,
+             Vec<Type*>* types,
+             Vec<char*>* names);
 
 // collect FnSymbols in the AST and return them in vectors
 void collect_functions(Vec<FnSymbol*>* functions);
@@ -27,3 +49,5 @@ void clear_type_info(BaseAST* baseAST);
 
 // update symbols in ast with map
 void update_symbols(BaseAST* ast, ASTMap* map);
+
+#endif
