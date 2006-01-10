@@ -1396,10 +1396,6 @@ gen_one_defexpr(VarSymbol *var, DefExpr *def) {
       s->must_implement = unalias_type(type->asymbol->sym);
   }
   Expr *init = 0, *exprType = def->exprType;
-//   if (!use_alloc) {
-//     init = def->init;
-//     exprType = def->exprType;
-//   }
   int no_default_init = var->noDefaultInit ;
   // optimizations || (init && (is_reference_type(type) || (is_scalar_type(type) && type == init->typeInfo())));
   Sym *lhs = s;
@@ -1462,107 +1458,6 @@ gen_expr_stmt(BaseAST *a) {
   expr->ainfo->code = expr->expr->ainfo->code;
   return 0;
 }
-
-#if 0
-static int
-gen_var_init_expr(VarSymbol *var, InitExpr *e) {
-  Type *type = var->type;
-#ifdef MAKE_USER_TYPE_BE_DEFINITION
-  while (type->astType == TYPE_USER)
-    type = ((UserType*)type)->underlyingType;
-#endif
-  Sym *s = var->asymbol->sym;
-  AAST *ast = e->ainfo;
-  ast->sym = s;
-  s->ast = ast;
-  s->is_var = 1;
-  switch (var->varClass) {
-    case VAR_NORMAL: break;
-    case VAR_CONFIG: s->is_external = 1; break;
-    default: return show_error("unhandled variable class", ast);
-  }
-  switch (var->consClass) {
-    case VAR_CONST: s->is_read_only = 1; break;
-    case VAR_VAR: break;
-    case VAR_PARAM: break;
-    default: assert(!"unknown constant class");
-  }
-  if (type != dtUnknown) {
-    if (!is_reference_type(type))
-      s->type = unalias_type(type->asymbol->sym);
-    else
-      s->must_implement = unalias_type(type->asymbol->sym);
-  }
-  switch (type->astType) { 
-    case TYPE_VARIABLE:
-    case TYPE_META:
-      type = dtUnknown;  // as yet unknown
-      break;
-    default:
-      break;
-  }
-  int no_default_init = var->noDefaultInit ;
-  Sym *lhs = s;
-  if (!no_default_init) {
-    lhs = new_sym();
-    lhs->ast = ast;
-    if (e->type)
-      if1_gen(if1, &ast->code, e->type->ainfo->code);
-    Code *c = if1_send(if1, &ast->code, 3, 1, sym_primitive,
-                       chapel_init_symbol,
-                       type->asymbol->sym, lhs);
-    c->ast = ast;
-    c->partial = Partial_NEVER;
-    if (e->type)
-      if1_add_send_arg(if1, c, e->type->ainfo->rval);
-    ast->rval = lhs;
-  } else
-    ast->rval = s;
-  return 0;
-}
-
-static int
-gen_arg_init_expr(ArgSymbol *arg, InitExpr *e) {
-  Type *type = arg->type;
-#ifdef MAKE_USER_TYPE_BE_DEFINITION
-  while (type->astType == TYPE_USER)
-    type = ((UserType*)type)->underlyingType;
-#endif
-  Sym *s = arg->asymbol->sym;
-  AAST *ast = e->ainfo;
-  ast->sym = s;
-  //s->ast = ast;
-  //s->is_var = 1;
-  Sym *lhs = s;
-  lhs = new_sym();
-  lhs->ast = ast;
-  if (e->type)
-    if1_gen(if1, &ast->code, e->type->ainfo->code);
-  Code *c = if1_send(if1, &ast->code, 3, 1, sym_primitive,
-                     chapel_init_symbol,
-                     type->asymbol->sym, lhs);
-  c->ast = ast;
-  c->partial = Partial_NEVER;
-  if (e->type)
-    if1_add_send_arg(if1, c, e->type->ainfo->rval);
-  ast->rval = lhs;
-  return 0;
-}
-
-static int
-gen_init_expr(BaseAST *a) {
-  InitExpr *e = dynamic_cast<InitExpr*>(a);
-  if (!e)
-    return -1;
-  VarSymbol *var = dynamic_cast<VarSymbol*>(e->sym);
-  if (var)
-    return gen_var_init_expr(var, e);
-  ArgSymbol *arg = dynamic_cast<ArgSymbol*>(e->sym);
-  if (arg)
-    return gen_arg_init_expr(arg, e);
-  return 0;
-}
-#endif
 
 static int
 gen_while(BaseAST *a) {
