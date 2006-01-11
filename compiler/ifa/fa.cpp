@@ -3118,16 +3118,6 @@ clear_cs(CreationSet *cs) {
 }
 
 static void
-foreach_var(void (*pfn)(Var*, AType *), AType *t) {
-  forv_Sym(s, fa->pdb->if1->allsyms)
-    if (s->var)
-      pfn(s->var, t);
-  forv_Fun(f, fa->funs)
-    forv_Var(v, f->fa_all_Vars)
-      pfn(v, t);
-}
-
-static void
 foreach_var(void (*pfn)(Var*)) {
   forv_Sym(s, fa->pdb->if1->allsyms)
     if (s->var)
@@ -3697,30 +3687,6 @@ static void
 set_void_lub_types_to_void() {
   foreach_var(set_void_lub_types_to_void);
 }
-
-#if 0
-static void 
-remove_var_types(Var *v, AType *t) { 
-  for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].key) {
-    AVar *av = v->avars.v[i].value;
-    if (av->out != t && t->some_intersection(*av->out)) {
-      av->out = type_diff(av->out, t);
-      if (!av->out->n) {
-        if (!av->restrict)
-          av->out = av->in;
-        else
-          av->out = type_intersection(av->in, av->restrict);
-      }
-    }
-  }
-}
-
-static void
-remove_types() {
-  AType *rmtype = type_union(nil_type, unspecified_type);
-  foreach_var(remove_var_types, rmtype);
-}
-#endif
 
 static void
 complete_pass() {
