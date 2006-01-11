@@ -53484,3 +53484,20 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp fa.h 
 
+---------------------------------------------------------------------------
+
+01/10/06 17:30:14 -- jplevyak
+
+Log message:
+	Cleanup dead code and remove unnecessary templates.
+	Move Chapel specific hacks (removing nil and unspecified types from
+	  the results of type_info()) into analysis/chapel_ifa.cpp
+	Add a new Chapel specific hack to remove functions which dispatch
+	  only on nil or unspecified types.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: clone.cpp fa.cpp var.cpp var.h 
+	chapel/test/flowanalysis/newast/: sum_type-1.good 
+	                                  sum_type-2.good 
+
