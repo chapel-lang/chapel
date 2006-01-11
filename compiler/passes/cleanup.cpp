@@ -49,7 +49,7 @@ void cleanup(BaseAST* base) {
         construct_tuple_type(atoi(base->var->name+6));
         CallExpr* parent = dynamic_cast<CallExpr*>(a->parentExpr);
         if (parent && parent->isAssign() && parent->get(1) == a)
-          destructure_tuple(a);
+          destructure_tuple(parent);
       }
     }
   }
@@ -124,14 +124,15 @@ static void destructure_tuple(CallExpr* call) {
   Stmt* stmt = call->parentStmt;
   VarSymbol* temp = new VarSymbol("_tuple_destruct");
   stmt->insertBefore(new DefExpr(temp));
-  call->replace(new SymExpr(temp));
+  CallExpr* tuple = dynamic_cast<CallExpr*>(call->get(1));
+  call->replace(new CallExpr(OP_MOVE, temp, call->get(2)->remove()));
   int i = 1;
-  for_alist(Expr, expr, call->argList) {
+  for_alist(Expr, expr, tuple->argList) {
     if (CallExpr* callExpr = dynamic_cast<CallExpr*>(expr))
       if (callExpr->isNamed("typeof"))
         continue;
     stmt->insertAfter(
-      new CallExpr(OP_MOVE, expr->remove(),
+      new CallExpr("=", expr->remove(),
         new CallExpr(temp, new_IntLiteral(i++))));
   }
 }
