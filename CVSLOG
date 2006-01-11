@@ -53511,3 +53511,19 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+01/11/06 11:27:45 -- deitz
+
+Log message:
+	Fixed a bug in tuple destructuring temp insertion.
+	
+	Updated REGRESSIONS file.
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp 
+	chapel/test/: REGRESSIONS 
+Removed files:
+	chapel/test/types/type_variables/jplevyak/: 
+	                                            test_typevar_class1.compopts 
+
