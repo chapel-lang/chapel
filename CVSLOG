@@ -53539,3 +53539,16 @@ Modified files:
 Removed files:
 	chapel/test/trivial/roxana/: test_dead_var_decl.future 
 
+---------------------------------------------------------------------------
+
+01/11/06 15:01:55 -- deitz
+
+Log message:
+	Functions that are not methods must have parenthesized argument lists.
+	Updated .good and removed .future.
+
+Modified files:
+	chapel/test/trivial/bradc/entrypoint/: main2.good 
+Removed files:
+	chapel/test/trivial/bradc/entrypoint/: main2.future 
+
