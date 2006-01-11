@@ -53527,3 +53527,15 @@ Removed files:
 	chapel/test/types/type_variables/jplevyak/: 
 	                                            test_typevar_class1.compopts 
 
+---------------------------------------------------------------------------
+
+01/11/06 14:58:51 -- deitz
+
+Log message:
+	Fixed test to match .good and removed .future.
+
+Modified files:
+	chapel/test/trivial/roxana/: test_dead_var_decl.chpl 
+Removed files:
+	chapel/test/trivial/roxana/: test_dead_var_decl.future 
+
