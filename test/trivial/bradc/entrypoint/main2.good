@@ -1,2 +1,1 @@
-x is: 32
-y is: 42
+Error: Non-member functions must have parenthesized argument lists (main2.chpl:4)
