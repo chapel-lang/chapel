@@ -385,6 +385,22 @@ ASymbol::copy() {
   return s;
 }
 
+static Sym *
+find_or_make_lub_type(Vec<Type *> *types, Sym *t) {
+  Type *tt = find_or_make_sum_type(types);
+  if (tt->asymbol)
+    return tt->asymbol->sym;
+  make_meta_type(t);
+  tt->symbol->asymbol = (ASymbol*)t->meta_type->asymbol;
+  tt->symbol->asymbol->sym = t->meta_type;
+  SYMBOL(tt->symbol) = tt->symbol;
+  tt->asymbol = (ASymbol*)t->asymbol;
+  tt->asymbol->sym = t;
+  SYMBOL(tt) = tt;
+  assert(tt->asymbol->sym->type_kind == Type_LUB);
+  return t;
+}
+
 Sym *
 ACallbacks::make_LUB_type(Sym *t) {
   Vec<Type *> types;
@@ -406,18 +422,7 @@ ACallbacks::make_LUB_type(Sym *t) {
     return sym_void;
   if (types.n == 1)
     return types.v[0]->asymbol->sym;
-  Type *tt = find_or_make_sum_type(&types);
-  if (tt->asymbol)
-    return tt->asymbol->sym;
-  make_meta_type(t);
-  tt->symbol->asymbol = (ASymbol*)t->meta_type->asymbol;
-  tt->symbol->asymbol->sym = t->meta_type;
-  SYMBOL(tt->symbol) = tt->symbol;
-  tt->asymbol = (ASymbol*)t->asymbol;
-  tt->asymbol->sym = t;
-  SYMBOL(tt) = tt;
-  assert(tt->asymbol->sym->type_kind == Type_LUB);
-  return t;
+  return find_or_make_lub_type(&types, t);
 }
 
 Sym *
@@ -2578,18 +2583,59 @@ ast_sym_info(BaseAST *a, Symbol *s, IFAAST **ast, Sym **sym) {
 
 static Type *
 to_AST_type(Sym *type) {
-  if (type == sym_void || type == sym_void->meta_type)
-    return dtVoid;
-#ifdef COMPLETE_TYPING
-  assert(type);
-#endif
   if (!type)
     return dtUnknown;
+  if (type == sym_void || type == sym_void->meta_type)
+    return dtVoid;
+  if (type->type_kind == Type_LUB) {
+    forv_Sym(s, type->has)
+      if (s == sym_void || s == sym_void->meta_type)
+        return dtVoid;
+  }
   if (type->is_meta_type) {
     if (type->meta_type->asymbol)
       return ((Type*)(SYMBOL(type->meta_type)))->metaType;
     else
       return dtUnknown;
+  }
+  if (type->type_kind == Type_LUB) {
+    int found_nil = 0, found_unspecified = 0;
+    Vec<Sym *> remains;
+    forv_Sym(s, type->has) {
+      if (s == sym_nil_type) {
+        found_nil = 1;
+        continue;
+      }
+      if (s == sym_unspecified_type) {
+        found_unspecified = 1;
+        continue;
+      }
+      remains.add(s);
+    }
+    if (found_nil || found_unspecified) {
+      if (remains.n) {
+        if (remains.n == 1)
+          return dynamic_cast<Type*>(SYMBOL(remains.v[0]));
+        else {
+          Vec<Type *> types;
+          type = new_sym();
+          type->type_kind = Type_LUB;
+          type->has.move(remains);
+          forv_Sym(s, type->has) {
+            if (Type *tt = dynamic_cast<Type*>(SYMBOL(s)))
+              types.add(tt);
+            else
+              INT_FATAL("non-Type member of Sum type");
+          }
+          type = find_or_make_lub_type(&types, type);
+        }
+      } else {
+        if (found_nil)
+          return dtNil;
+        else
+          return dtUnspecified;
+      }
+    }
   }
   ASymbol *asymbol = (ASymbol*)type->asymbol;
   BaseAST *atype = asymbol->symbol;
@@ -2601,9 +2647,6 @@ to_AST_type(Sym *type) {
     if (ts)
       btype = ts->definition;
   }
-#ifdef COMPLETE_TYPING
-  assert(btype);
-#endif
   if (!btype)
     return dtUnknown;
   return btype;
@@ -2621,9 +2664,6 @@ type_info(BaseAST *a, Symbol *s) {
     type = type_info(ast, sym);
     goto Ldone;
   }
-#ifdef COMPLETE_TYPING
-  assert(sym);
-#endif
   if (!sym)
     return dtUnknown;
   if (sym->type_kind && sym->type_kind != Type_VARIABLE) {
@@ -2655,7 +2695,7 @@ return_type_info(FnSymbol *fn) {
 }
 
 int
-call_info(Expr* a, Vec<FnSymbol *> &fns, int find_type) {
+call_info(Expr *a, Vec<FnSymbol *> &fns, int find_type) {
   FnSymbol* f = a->getFunction();
   fns.clear();
   if (!f) // this is not executable code
@@ -2666,22 +2706,45 @@ call_info(Expr* a, Vec<FnSymbol *> &fns, int find_type) {
     return -1; // this code is not known to analysis
   PNode *found_pn = NULL;
   forv_PNode(pn, ast->pnodes) {
+    Vec<Fun *> ff, allff;
     if (pn->code->kind != Code_SEND)
       continue;
-    Vec<Fun *> *ff = fun->calls.get(pn);
-    if (ff) {
-      forv_Fun(f, *ff) {
-        FnSymbol *fs = dynamic_cast<FnSymbol *>(SYMBOL(f->sym));
-        assert(fs);
-        switch (find_type) {
-          case CALL_INFO_FIND_SINGLE: break;
-          case CALL_INFO_FIND_ALL: break;
+    forv_EntrySet(es, fun->ess) {
+      Vec<AEdge *> *edges = es->out_edge_map.get(pn);
+      if (edges) {
+        forv_AEdge(e, *edges) {
+          allff.set_add(e->fun);
+          form_MPositionAVar(x, e->filtered_args) {
+            forv_CreationSet(cs, x->value->out->sorted) {
+              if (cs->sym != sym_nil_type && cs->sym != sym_unspecified_type)
+                goto Lok;
+            }
+            goto Lskip;
+          Lok:;
+          }
+          ff.set_add(e->fun);
+        Lskip:;
         }
-        if (found_pn && found_pn != pn && find_type != CALL_INFO_FIND_ALL)
-          fail("bad call to call_info");
-        found_pn = pn;
-        fns.add(fs);
       }
+    }
+    if (!ff.n)
+      ff.move(allff);
+    Vec<Fun *> *fff = fun->calls.get(pn);
+    if (fff)
+      assert(!ff.some_difference(*fff));
+    ff.set_to_vec();
+    qsort_by_id(ff);
+    forv_Fun(f, ff) {
+      FnSymbol *fs = dynamic_cast<FnSymbol *>(SYMBOL(f->sym));
+      assert(fs);
+      switch (find_type) {
+        case CALL_INFO_FIND_SINGLE: break;
+        case CALL_INFO_FIND_ALL: break;
+      }
+      if (found_pn && found_pn != pn && find_type != CALL_INFO_FIND_ALL)
+        fail("bad call to call_info");
+      found_pn = pn;
+      fns.add(fs);
     }
   }
   return 0;

@@ -13,9 +13,3 @@ Var::copy() {
   return v;
 }
 
-int
-compar_vars(const void *ai, const void *aj) {
-  int i = (*(Var**)ai)->id;
-  int j = (*(Var**)aj)->id;
-  return (i > j) ? 1 : ((i < j) ? -1 : 0);
-}

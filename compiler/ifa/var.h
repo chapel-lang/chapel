@@ -40,7 +40,4 @@ class Var : public gc {
 
 typedef Map<Var *, Var *> VarMap;
 
-int compar_vars(const void *ai, const void *aj);
-
-
 #endif

@@ -850,8 +850,11 @@ fixup_var(Var *v, Fun *f, Vec<EntrySet *> *ess) {
 void
 fixup_clone(Fun *f, Vec<EntrySet *> *ess) {
   f->ess.copy(*ess);
-  forv_EntrySet(es, f->ess) if (es)
+  forv_EntrySet(es, f->ess) if (es) {
+    forv_AEdge(ee, es->edges) if (ee)
+      ee->fun = f;
     es->fun = f;
+  }
   // fixup local variables
   forv_Var(v, f->fa_all_Vars)
     if (v->sym->function_scope)
@@ -884,10 +887,11 @@ clone_functions() {
   forv_EntrySet(es, fa->ess) {
     Fun *f = es->fun;
     Vec<AEdge *> used_edges;
+    EdgeMap new_out_edge_map;
     used_edges.set_union(es->out_edges); // build set
     for (int i = 0; i < es->out_edge_map.n; i++) {
       if (es->out_edge_map.v[i].key) {
-        PNode *pnode = es->out_edge_map.v[i].key;
+        PNode *old_pnode = es->out_edge_map.v[i].key, *pnode = old_pnode;
         if (f->nmap)
           pnode = f->nmap->get(pnode);
         Vec<AEdge *> *m = es->out_edge_map.v[i].value;
@@ -898,8 +902,12 @@ clone_functions() {
           forv_AEdge(ee, *m)
             if (used_edges.set_in(ee))
               vf->set_add(ee->to->fun);
+        // rebuild out_edge_map
+        if (m)
+          new_out_edge_map.put(pnode, m);
       }
     }
+    es->out_edge_map.move(new_out_edge_map);
   }
   // convert Fun::calls to vectors
   forv_Fun(f, fa->funs)
@@ -942,7 +950,7 @@ log_test_fa(FA *fa) {
     }
   }
   gvars.set_to_vec();
-  qsort(gvars.v, gvars.n, sizeof(gvars.v[0]), compar_vars);
+  qsort_by_id(gvars);
   log(LOG_TEST_FA, "globals\n");
   forv_Var(v, gvars)
     if ((!v->sym->is_constant || !v->sym->constant) && 

@@ -3117,24 +3117,24 @@ clear_cs(CreationSet *cs) {
     clear_avar(v);
 }
 
-template <class F> void
-foreach_var() {
+static void
+foreach_var(void (*pfn)(Var*, AType *), AType *t) {
   forv_Sym(s, fa->pdb->if1->allsyms)
     if (s->var)
-      F::F(s->var);
+      pfn(s->var, t);
   forv_Fun(f, fa->funs)
     forv_Var(v, f->fa_all_Vars)
-      F::F(v);
+      pfn(v, t);
 }
 
-template <class F> void
-foreach_var(AType *t) {
+static void
+foreach_var(void (*pfn)(Var*)) {
   forv_Sym(s, fa->pdb->if1->allsyms)
     if (s->var)
-      F::F(s->var, t);
+      pfn(s->var);
   forv_Fun(f, fa->funs)
     forv_Var(v, f->fa_all_Vars)
-      F::F(v, t);
+      pfn(v);
 }
 
 struct ClearVarFn { static void F(Var *v) { 
@@ -3143,7 +3143,7 @@ struct ClearVarFn { static void F(Var *v) {
 
 static void 
 clear_results() {
-  foreach_var<ClearVarFn>();
+  foreach_var(clear_var);
   forv_CreationSet(cs, fa->css)
     clear_cs(cs);
   forv_EntrySet(es, fa->ess)
@@ -3683,21 +3683,24 @@ extend_analysis() {
   return 0;
 }
 
-struct SetVoidFn { static void F(Var *v) { 
+static void 
+set_void_lub_types_to_void(Var *v) { 
   CreationSet *s = void_type->v[0];
   for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].key) {
     AVar *av = v->avars.v[i].value;
     if (av->out->in(s))
       av->out = void_type;
   }
-} };
+}
 
 static void
 set_void_lub_types_to_void() {
-  foreach_var<SetVoidFn>();
+  foreach_var(set_void_lub_types_to_void);
 }
 
-struct RemoveTypeFn { static void F(Var *v, AType *t) { 
+#if 0
+static void 
+remove_var_types(Var *v, AType *t) { 
   for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].key) {
     AVar *av = v->avars.v[i].value;
     if (av->out != t && t->some_intersection(*av->out)) {
@@ -3710,13 +3713,14 @@ struct RemoveTypeFn { static void F(Var *v, AType *t) {
       }
     }
   }
-} };
+}
 
 static void
 remove_types() {
   AType *rmtype = type_union(nil_type, unspecified_type);
-  foreach_var<RemoveTypeFn>(rmtype);
+  foreach_var(remove_var_types, rmtype);
 }
+#endif
 
 static void
 complete_pass() {
@@ -3746,7 +3750,7 @@ FA::analyze(Fun *top) {
     complete_pass();
   } while (extend_analysis());
   set_void_lub_types_to_void();
-  remove_types();
+//  remove_types();
   if (fanalysis_errors)
     if1->callback->report_analysis_errors(type_violations);
   show_violations(fa, stderr);
