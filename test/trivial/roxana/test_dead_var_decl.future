@@ -1,7 +1,0 @@
-deitz/bradc
-
-Need to handle code generation of dead variables more
-gracefully.
-
-I provided the function, if there is anyting more you
-want, tell me - john
