@@ -53501,3 +53501,13 @@ Modified files:
 	chapel/test/flowanalysis/newast/: sum_type-1.good 
 	                                  sum_type-2.good 
 
+---------------------------------------------------------------------------
+
+01/11/06 09:24:41 -- jplevyak
+
+Log message:
+	Fix compilation failure caused by warning promoted to error.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
