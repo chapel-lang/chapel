@@ -53614,3 +53614,13 @@ Removed files:
 	chapel/test/arrays/deitz/: test_array_basic1a.future 
 	chapel/test/arrays/jplevyak/: simple-1.future 
 
+---------------------------------------------------------------------------
+
+01/12/06 13:37:34 -- jplevyak
+
+Log message:
+	Fixup printing of objects in the interpreter.
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+
