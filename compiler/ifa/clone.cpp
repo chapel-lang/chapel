@@ -406,7 +406,7 @@ determine_layouts() {
     unsigned int offset = 0;
     forv_AVar(iv, cs->vars) {
       unsigned int size = 0, alignment = 0;
-      forv_CreationSet(x, *iv->out) if (x) {
+      forv_CreationSet(x, *iv->out->type) if (x) {
         if (size && x->sym->size != size)
           fail("mismatched field sizes");
         size = x->sym->size;
