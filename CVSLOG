@@ -53624,3 +53624,29 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+01/12/06 15:44:35 -- deitz
+
+Log message:
+	Fixed --no-infer to work when converting OP_GET_MEMBER and
+	OP_SET_MEMBER as primitives.  Enabled this conversion.
+	
+	CURRENT REGRESSIONS:
+	** classes/deitz/test_type_in_class3]
+	** classes/deitz/test_type_in_class4]
+	functions/bradc/typefn2]
+	trivial/preston/tuple]
+	** types/like/jplevyak/like-2]
+	types/type_variables/deitz/test_instantiate_construct1]
+	
+	The ** tests have to do with accessing types out of classes, as in
+	foo.t.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+
