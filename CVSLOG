@@ -53564,3 +53564,25 @@ Modified files:
 Removed files:
 	chapel/test/types/seq/bradc/: recordSeq.future 
 
+---------------------------------------------------------------------------
+
+01/12/06 09:03:17 -- jplevyak
+
+Log message:
+	Add support functions for Immediates: immediate_type(), new_ImmediateSymbol().
+	Analysis now permits member names to be either symbols or string constants.
+	resolve_call() now takes "name" and "partialTag" arguments.  A new wrapper
+	for resolve_call() handles the case of a simple CallExpr.
+	Fixed an issue with "Vec::remove": should use memmove for overlapping memcpy.
+	Removed unnecessary argument to add_candidate()
+	Added support for closures in the Interpreter.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/ifa/: clone.cpp fa.cpp prim_data.cpp 
+	                      prim_data.dat 
+	chapel/compiler/include/: astutil.h chplenum.h expr.h symbol.h 
+	                          vec.h 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	                         runInterpreter.cpp 
+
