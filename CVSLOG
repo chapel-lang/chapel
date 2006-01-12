@@ -53586,3 +53586,13 @@ Modified files:
 	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
 	                         runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+01/12/06 10:39:42 -- jplevyak
+
+Log message:
+	Fix bug in the way unspecified/nil were handled.
+
+Modified files:
+	chapel/compiler/ifa/: clone.cpp 
+
