@@ -53596,3 +53596,21 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: clone.cpp 
 
+---------------------------------------------------------------------------
+
+01/12/06 11:54:32 -- deitz
+
+Log message:
+	Added code to the array module so that array elements are initialized.
+	
+	Removed and fixed a few array tests.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	chapel/test/arrays/deitz/: test_array_of_array1.chpl 
+	                           test_domain1.chpl test_domain1.future 
+	chapel/test/arrays/jplevyak/: simple-1.chpl simple-1.good 
+Removed files:
+	chapel/test/arrays/deitz/: test_array_basic1a.future 
+	chapel/test/arrays/jplevyak/: simple-1.future 
+
