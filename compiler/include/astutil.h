@@ -2,6 +2,7 @@
 #define _ASTUTIL_H_
 
 #include "baseAST.h"
+#include "chplenum.h"
 
 class Type;
 class FnSymbol;
@@ -25,10 +26,12 @@ enum resolve_call_error_type {
 };
 extern resolve_call_error_type resolve_call_error;
 FnSymbol*
-resolve_call(CallExpr* call,
+resolve_call(BaseAST* ast,
+             char *name,
              Vec<Type*>* actual_types,
-             Vec<VarSymbol*>* actual_params,
-             Vec<char*>* actual_names);
+             Vec<Symbol*>* actual_params,
+             Vec<char*>* actual_names,
+             PartialTag partialTag);
 
 // collect FnSymbols in the AST and return them in vectors
 void collect_functions(Vec<FnSymbol*>* functions);

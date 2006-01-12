@@ -480,7 +480,7 @@ Vec<C>::vec_to_set() {
 template <class C>  void 
 Vec<C>::remove(int index) {
   if (n > 1)
-    memcpy(&v[index], &v[index+1], (n - 1 - index) * sizeof(v[0]));
+    memmove(&v[index], &v[index+1], (n - 1 - index) * sizeof(v[0]));
   n--;
   if (n <= 0)
     v = e;

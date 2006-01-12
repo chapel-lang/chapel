@@ -12,12 +12,6 @@ class Stmt;
 class AAST;
 class FnSymbol;
 
-enum PartialTag {
-  PARTIAL_OK,
-  PARTIAL_NEVER,
-  PARTIAL_ALWAYS
-};
-
 enum OpTag {
   OP_NONE,
   OP_UNPLUS,

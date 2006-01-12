@@ -42,10 +42,11 @@ class ISlot : public gc { public:
   char          *name;
   Type          *aspect;
   union {
-    IObject *object;
-    Immediate *imm;
     char *selector;
     Symbol *symbol;
+    Vec<ISlot *> *closure_args;
+    IObject *object;
+    Immediate *imm;
   };
   void x() { name = 0; aspect = 0; }
   void set_selector(char *s) { kind = SELECTOR_ISLOT; x(); selector = s; }
@@ -64,6 +65,7 @@ class ISlot : public gc { public:
   ISlot(ISlot &s) { kind = s.kind; x(); object = s.object; }
   ISlot() : kind(EMPTY_ISLOT), name(0), aspect(0) {}
 };
+#define forv_ISlot(_x, _v) forv_Vec(ISlot, _x, _v)
 
 class IObject : public BaseAST { public:
   ClassType *type;
@@ -97,6 +99,7 @@ struct IFrame : public gc { public:
   ISlot *return_slot;
 
   ISlot *islot(BaseAST *ast);
+  ISlot *make_closure(int nargs);
   void icall(int nargs, ISlot *ret_slot = 0);
   void icall(FnSymbol *fn, int nargs = 0, int extra_args = 0);
   int igoto(Stmt *s);
@@ -216,7 +219,7 @@ check_type(BaseAST *ast, ISlot *slot, Type *t) {
         if (t == dtFloat && slot->imm->num_index == IF1_FLOAT_TYPE_64) break;
         goto Lerror;
       case IF1_NUM_KIND_COMPLEX:
-        if (t == dtFloat && slot->imm->num_index == IF1_FLOAT_TYPE_64) break;
+        if (t == dtComplex && slot->imm->num_index == IF1_FLOAT_TYPE_64) break;
         goto Lerror;
       case IF1_CONST_KIND_STRING:
         if (t == dtString) break;
@@ -338,6 +341,17 @@ user_error(IFrame *frame, char *fmt, ...) {
   }
 }
 
+ISlot *
+IFrame::make_closure(int nargs) {
+  ISlot *slot = new ISlot;
+  slot->kind = CLOSURE_ISLOT;
+  slot->closure_args = new Vec<ISlot*>;
+  ISlot **args = &valStack.v[valStack.n-nargs];
+  for (int i = 0; i < nargs; i++)
+    slot->closure_args->add(args[i]);
+  return slot;
+}
+
 void
 IFrame::icall(int nargs, ISlot *ret_slot) {
   if (!ret_slot)
@@ -346,34 +360,98 @@ IFrame::icall(int nargs, ISlot *ret_slot) {
     return_slot = ret_slot;
   if (valStack.n < nargs)
     INT_FATAL(ip, "not enough arguments for call");
-  char *name = 0;
   if (nargs < 1)
     INT_FATAL(ip, "call with no arguments");
+  char *name = 0;
   int done = 0, extra_args = 0;
+  FnSymbol *fn = 0;
   do {
     ISlot **args = &valStack.v[valStack.n-nargs];
     if (args[0]->kind == SYMBOL_ISLOT && args[0]->symbol->astType == SYMBOL_FN) {
-      icall((FnSymbol*)args[0]->symbol, nargs - 1, 1);
-      return;
+      nargs--;
+      extra_args++;
+      fn = dynamic_cast<FnSymbol*>(args[0]->symbol);
+      done = 1;
     } else if (args[0]->kind == SELECTOR_ISLOT) {
       name = args[0]->selector;
-      done = 1;
       nargs--;
-      extra_args = 1;
+      extra_args++;
+      done = 1;
     } else if (args[0]->kind == CLOSURE_ISLOT) {
-      INT_FATAL(ip, "closures not handled yet");
+      Vec<ISlot *> &a = *args[0]->closure_args;
+      int istart = valStack.n - (nargs - 1);
+      valStack.fill(a.n-1);
+      memmove(&valStack.v[istart + 1], &valStack.v[istart + nargs], 
+              sizeof(valStack.v[0]) * (nargs - 1));
+      for (int i = 0; i < a.n; i++)
+        valStack.v[istart + i] = a.v[i];
+      nargs += args[0]->closure_args->n - 1;
     } else {
       user_error(this, "call to something other than function name or closure");
       return;
     }
   } while (!done);
-  Vec<FnSymbol *> visible;
-  ip->parentScope->getVisibleFunctions(&visible, cannonicalize_string(name));
-  if (visible.n != 1) {
-    user_error(this, "unable to resolve call '%s' to a single function", name);
-    return;
+  if (!fn) {
+#if 1
+    ISlot **args = &valStack.v[valStack.n-nargs];
+    Vec<Type *> actual_types;
+    Vec<Symbol *> actual_params;
+    Vec<char *> actual_names;
+    for (int i = 0; i < nargs; i++) {
+      actual_names.add(args[i]->name);
+      if (args[i]->aspect) {
+        actual_types.add(args[i]->aspect);
+        actual_params.add(NULL);
+      } else {
+        switch (args[i]->kind) {
+          default:
+          case EMPTY_ISLOT: 
+          case SELECTOR_ISLOT: 
+          case SYMBOL_ISLOT: 
+            actual_types.add(args[i]->symbol->type);
+            actual_params.add(args[i]->symbol);
+            break;
+          case OBJECT_ISLOT:
+            actual_types.add(args[i]->object->type);
+            actual_params.add(NULL);
+            break;
+          case IMMEDIATE_ISLOT:
+            actual_types.add(immediate_type(args[i]->imm));
+            actual_params.add(new_ImmediateSymbol(args[i]->imm));
+            break;
+        }
+      }
+    }
+    PartialTag partialTag = PARTIAL_NEVER;
+    if (CallExpr *call = dynamic_cast<CallExpr*>(ip)) 
+      partialTag = call->partialTag;
+    fn = resolve_call(ip, name, &actual_types, &actual_params, &actual_names, partialTag);
+    if (!fn) {
+      switch (resolve_call_error) {
+        default: INT_FATAL("interpreter: bad resolve_call_error: %d", (int)resolve_call_error); break;
+        case CALL_PARTIAL:
+          *return_slot = *make_closure(nargs + 1);
+          valStack.n -= (nargs + extra_args);
+          break;
+        case CALL_AMBIGUOUS:
+          user_error(this, "ambiguous call, unable to dispatch to a single function");
+          return;
+        case CALL_UNKNOWN:
+          user_error(this, "no function found, unable to dispatch function call");
+          return;
+      }
+    }
+#else
+    Vec<FnSymbol *> visible;
+    ip->parentScope->getVisibleFunctions(&visible, cannonicalize_string(name));
+    if (visible.n != 1) {
+      user_error(this, "unable to resolve call '%s' to a single function", name);
+      return;
+    }
+    fn = visible.v[0];
+#endif
   }
-  icall(visible.v[0], nargs, extra_args);
+  icall(fn, nargs, extra_args);
   return;
 }
 
@@ -1432,8 +1510,9 @@ IFrame::run(int timeslice) {
                 env.put(s->var, (x = new ISlot(v->immediate)));
                 break;
               }
+              env.put(s->var, (x = new ISlot(v)));
+              break;
             }
-              // fall through  
             default:
               USR_FATAL(ip, "unknown variable in SymExpr '%s'", s->var->name ? s->var->name : "");
               break;
@@ -1493,10 +1572,7 @@ IFrame::run(int timeslice) {
           case 0: {
             switch (s->opTag) {
               default: 
-                INT_FATAL(ip, "unhandled CallExpr::opTag: %d\n", s->opTag); 
-                break;
-              case OP_NONE:
-                if (!s->primitive)
+                if (s->baseExpr)
                   PUSH_EXPR(s->baseExpr);
                 break;
               case OP_MOVE:

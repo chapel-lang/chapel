@@ -55,13 +55,13 @@ void prim_init(Primitives *p, IF1 *if1) {
   n = if1->strings.put("operator");
   p->prims.add(prim_operator);
   p->prim_map[0][0].put(n, prim_operator);
-  static PrimType prim_period_arg_types[] = {PRIM_TYPE_ANY, PRIM_TYPE_SYMBOL};
+  static PrimType prim_period_arg_types[] = {PRIM_TYPE_ANY, PRIM_TYPE_ANY};
   static PrimType prim_period_ret_types[] = {PRIM_TYPE_ANY};
   prim_period = new Prim(1, ".", "prim_period", 3, 1, 1, prim_period_arg_types, prim_period_ret_types, PRIM_NON_FUNCTIONAL);
   n = if1->strings.put(".");
   p->prims.add(prim_period);
   p->prim_map[1][1].put(n, prim_period);
-  static PrimType prim_setter_arg_types[] = {PRIM_TYPE_ANY, PRIM_TYPE_SYMBOL, PRIM_TYPE_ANY};
+  static PrimType prim_setter_arg_types[] = {PRIM_TYPE_ANY, PRIM_TYPE_ANY, PRIM_TYPE_ANY};
   static PrimType prim_setter_ret_types[] = {PRIM_TYPE_ANY};
   prim_setter = new Prim(2, ".=", "prim_setter", 4, 1, 1, prim_setter_arg_types, prim_setter_ret_types, PRIM_NON_FUNCTIONAL);
   n = if1->strings.put(".=");

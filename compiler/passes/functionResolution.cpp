@@ -55,7 +55,6 @@ bool actual_formal_match(Type* actual_type, ArgSymbol* formal) {
 static void
 add_candidate(Map<FnSymbol*,Vec<ArgSymbol*>*>* candidateFns,
               FnSymbol* fn,
-              CallExpr* call,
               Vec<Type*>* actual_types,
               Vec<Symbol*>* actual_params,
               Vec<char*>* actual_names,
@@ -138,7 +137,7 @@ add_candidate(Map<FnSymbol*,Vec<ArgSymbol*>*>* candidateFns,
           return;
         }
       }
-      add_candidate(candidateFns, inst_fn, call, actual_types, actual_params, actual_names, true);
+      add_candidate(candidateFns, inst_fn, actual_types, actual_params, actual_names, true);
       return;
     }
   }
@@ -340,17 +339,30 @@ resolve_call(CallExpr* call,
   if (call->isResolved())
     return call->isResolved();
 
-  Vec<FnSymbol*> visibleFns;                    // visible functions
   SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr);
-  char* canon_name = cannonicalize_string(base->var->name);
-  call->parentScope->getVisibleFunctions(&visibleFns, canon_name);
+  char* name = base->var->name;
+
+  return resolve_call(call, name, actual_types, actual_params, actual_names, call->partialTag);
+}
+
+FnSymbol*
+resolve_call(BaseAST* ast,
+             char *name,
+             Vec<Type*>* actual_types,
+             Vec<Symbol*>* actual_params,
+             Vec<char*>* actual_names,
+             PartialTag partialTag)
+{
+  char* canon_name = cannonicalize_string(name);
+
+  Vec<FnSymbol*> visibleFns;                    // visible functions
+  ast->parentScope->getVisibleFunctions(&visibleFns, canon_name);
 
   Map<FnSymbol*,Vec<ArgSymbol*>*> candidateFns; // candidate functions
 
   forv_Vec(FnSymbol, visibleFn, visibleFns)
     if (!newFns.set_in(visibleFn))
-      add_candidate(&candidateFns, visibleFn, call,
-                    actual_types, actual_params, actual_names);
+      add_candidate(&candidateFns, visibleFn, actual_types, actual_params, actual_names);
 
   FnSymbol* best = NULL;
   Vec<ArgSymbol*>* actual_formals = 0;
@@ -381,19 +393,19 @@ resolve_call(CallExpr* call,
   }
 
   if (!best && candidateFns.n > 0) {
-    USR_WARNING(call, "Ambiguous function call");
+    USR_WARNING(ast, "Ambiguous function call");
     resolve_call_error = CALL_AMBIGUOUS;
     return NULL;
   }
 
-  if (call->partialTag == PARTIAL_OK && (!best || !best->noParens)) {
+  if (partialTag == PARTIAL_OK && (!best || !best->noParens)) {
     resolve_call_error = CALL_PARTIAL;
     return NULL;
   }
 
   if (!best) {
     resolve_call_error = CALL_UNKNOWN;
-    USR_WARNING(call, "Unresolved function call");
+    USR_WARNING(ast, "Unresolved function call");
     return NULL;
   }
 

@@ -952,7 +952,22 @@ static void convert_user_primitives(CallExpr* call) {
     PrimitiveOp *prim = primitives_map.get("init");
     if (!prim)
       INT_FATAL(call, "primitive not found '%s'", "init");
-    call->replace(new CallExpr(prim, call->argList));
+    call->opTag = OP_NONE;
+    call->primitive = prim;
+#if 0
+  } else if (call->opTag == OP_GET_MEMBER) {
+    PrimitiveOp *prim = primitives_map.get(".");
+    if (!prim)
+      INT_FATAL(call, "primitive not found '%s'", ".");
+    call->opTag = OP_NONE;
+    call->primitive = prim;
+  } else if (call->opTag == OP_SET_MEMBER) {
+    PrimitiveOp *prim = primitives_map.get(".=");
+    if (!prim)
+      INT_FATAL(call, "primitive not found '%s'", ".=");
+    call->opTag = OP_NONE;
+    call->primitive = prim;
+#endif
   }
 }
 

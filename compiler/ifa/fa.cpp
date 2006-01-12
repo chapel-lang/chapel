@@ -1640,7 +1640,10 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
         int partial = 0;
         set_container(result, obj);
         forv_CreationSet(sel, *selector->out) if (sel) {
-          char *symbol = sel->sym->name; assert(symbol);
+          char *symbol = sel->sym->name; 
+          if (!symbol) symbol = sel->sym->constant;
+          if (!symbol) symbol = sel->sym->imm.v_string;
+          assert(symbol);
           forv_CreationSet(cs, *obj->out) if (cs) {
             if (cs == nil_type->v[0])
               continue;
@@ -1682,7 +1685,10 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
         flow_vars(val, tval);
         set_container(tval, obj);
         forv_CreationSet(sel, *selector->out) if (sel) {
-          char *symbol = sel->sym->name; assert(symbol);
+          char *symbol = sel->sym->name; 
+          if (!symbol) symbol = sel->sym->constant;
+          if (!symbol) symbol = sel->sym->imm.v_string;
+          assert(symbol);
           forv_CreationSet(cs, *obj->out) if (cs) {
             if (cs == nil_type->v[0])
               continue;

@@ -165,7 +165,10 @@ prim_period_offset(PNode *p, EntrySet *es) {
   AVar *selector = make_AVar(p->rvals.v[3], es);
   int offset = -1;
   forv_CreationSet(sel, *selector->out) if (sel) {
-    char *symbol = sel->sym->name; assert(symbol);
+    char *symbol = sel->sym->name; 
+    if (!symbol) symbol = sel->sym->constant;
+    if (!symbol) symbol = sel->sym->imm.v_string;
+    assert(symbol);
     forv_CreationSet(cs, *obj->out) if (cs) {
       AVar *iv = cs->var_map.get(symbol);
       if (iv) {
@@ -229,7 +232,6 @@ ES_FN::equivalent(EntrySet *a, EntrySet *b) {
       switch (n->prim->index) {
         default: break;
         case P_prim_period: {
-          assert(n->prim->arg_types[1] == PRIM_TYPE_SYMBOL);
           AVar *av = make_AVar(n->rvals.v[3], a);
           AVar *bv = make_AVar(n->rvals.v[3], b);
           if (av->out != bv->out)
@@ -239,7 +241,6 @@ ES_FN::equivalent(EntrySet *a, EntrySet *b) {
           break;
         }
         case P_prim_cast: {
-          assert(n->prim->arg_types[0] == PRIM_TYPE_SYMBOL);
           AVar *av = make_AVar(n->rvals.v[2], a);
           AVar *bv = make_AVar(n->rvals.v[2], b);
           if (av->out != bv->out)

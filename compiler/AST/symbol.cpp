@@ -1547,3 +1547,46 @@ VarSymbol *new_ComplexSymbol(char *n, double r, double i) {
   uniqueConstantsHash.put(s->immediate, s);
   return s;
 }
+
+VarSymbol *new_ImmediateSymbol(Immediate *imm) {
+  VarSymbol *s = uniqueConstantsHash.get(imm);
+  if (s)
+    return s;
+  Type *t = immediate_type(imm);
+  s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), t);
+  s->immediate = new Immediate;
+  char str[512], *ss = str;
+  if (imm->const_kind == IF1_CONST_KIND_STRING)
+    ss = imm->v_string;
+  else
+    sprint_imm(str, *imm);
+  s->cname = dupstr(ss);
+  *s->immediate = imm;
+  uniqueConstantsHash.put(s->immediate, s);
+  return s;
+}
+
+Type *
+immediate_type(Immediate *imm) {
+  switch (imm->const_kind) {
+    default: 
+  Lerror:
+      USR_FATAL("bad immediate type");
+      break;
+    case IF1_CONST_KIND_STRING: return dtString;
+    case IF1_NUM_KIND_UINT:
+      if (imm->num_index == IF1_INT_TYPE_1) return dtBoolean;
+      goto Lerror;
+    case IF1_NUM_KIND_INT:
+      if (imm->num_index == IF1_INT_TYPE_64) return dtInteger;
+      goto Lerror;
+    case IF1_NUM_KIND_FLOAT:
+      if (imm->num_index == IF1_FLOAT_TYPE_64) return dtFloat;
+      goto Lerror;
+    case IF1_NUM_KIND_COMPLEX:
+      if (imm->num_index == IF1_FLOAT_TYPE_64) return dtComplex;
+      goto Lerror;
+  }
+  return NULL;
+}
+
