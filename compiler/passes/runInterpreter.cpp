@@ -75,6 +75,7 @@ class IObject : public BaseAST { public:
   Vec<ISlot *> array;
   
   void print(int fnprint = 0);
+  void print(FILE *fp);
 
   IObject() : BaseAST(OBJECT), type(0) {}
 };
@@ -625,10 +626,8 @@ print(BaseAST *a, int fnprint = 0) {
 
 void
 IObject::print(int fnprint) {
-  printf("Object: %d\n", (int)id);
-  printf("  Type: "); 
-  ::print(type, fnprint); 
-  printf("\n");
+  printf("Object(%d)", (int)id);
+  printf(" : %s(%d) {\n", type->symbol->name, (int)type->id); 
   printf("  Members:\n");
   form_Map(MapElemBaseASTISlot, x, member) {
     if (Symbol *s = dynamic_cast<Symbol*>(x->key)) {
@@ -650,6 +649,12 @@ IObject::print(int fnprint) {
   printf("  Allocation Context:\n");
   forv_BaseAST(x, alloc_context)
     show(x, 0);
+  printf("}");
+}
+
+void
+IObject::print(FILE *fp) {
+  fprintf(fp, "Object(%d)", (int)id);
 }
 
 static void
@@ -1046,9 +1051,9 @@ static void
 get_context(IFrame *frame, Vec<BaseAST *> &context) {
   while (frame) {
     if (frame->expr) context.add(frame->expr);
-    forv_Expr(e, frame->exprStack) context.add(frame->expr);
+    forv_Expr(e, frame->exprStack) context.add(e);
     if (frame->stmt) context.add(frame->stmt);
-    forv_Stmt(e, frame->stmtStack) context.add(frame->stmt);
+    forv_Stmt(s, frame->stmtStack) context.add(s);
     frame = frame->parent;
   }
 }
