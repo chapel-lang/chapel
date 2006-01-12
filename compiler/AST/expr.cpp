@@ -705,7 +705,9 @@ FnSymbol* CallExpr::findFnSymbol(void) {
 
 
 Type* CallExpr::typeInfo(void) {
-  if (opTag == OP_GET_MEMBER || opTag == OP_SET_MEMBER) {
+  if (primitive &&
+      ((!strcmp(primitive->name, ".")) ||
+       (!strcmp(primitive->name, ".=")))) {
     if (no_infer) {
       if (member)
         return member->type;
@@ -747,8 +749,6 @@ Type* CallExpr::typeInfo(void) {
       return argList->get(1)->typeInfo();
     } else if (opTag == OP_MOVE) {
       return argList->get(1)->typeInfo();
-    } else {
-      return dtVoid;
     }
   }
 
@@ -779,77 +779,55 @@ void CallExpr::codegen(FILE* outfile) {
     }
   }
 
-  if (opTag != OP_NONE) {
-    if (opTag == OP_GET_MEMBER) {
+  if (opTag == OP_GET_MEMBER ||
+      (primitive && !strcmp(primitive->name, "."))) {
+    codegen_member(outfile, get(1), get(2), member_type, member_offset);
+  } else if (opTag == OP_SET_MEMBER ||
+             (primitive && !strcmp(primitive->name, ".="))) {
+    Type* rightType = get(3)->typeInfo();
+    if (rightType != dtUnspecified) {
       codegen_member(outfile, get(1), get(2), member_type, member_offset);
-    } else if (opTag == OP_SET_MEMBER) {
-      Type* rightType = get(3)->typeInfo();
-      if (rightType != dtUnspecified) {
-        codegen_member(outfile, get(1), get(2), member_type, member_offset);
-        fprintf(outfile, " = ");
-        get(3)->codegen(outfile);
-      }
-    } else if (opTag == OP_MOVE) {
-      //      bool string_init = false;
-      Type* leftType = get(1)->typeInfo();
-      Type* rightType = get(2)->typeInfo();
-      if (rightType != dtUnspecified) {
-        /*
-        if (leftType == dtString) {
-          if (CallExpr* fn_call = dynamic_cast<CallExpr*>(get(2))) {
-            if (SymExpr* fn_var = dynamic_cast<SymExpr*>(fn_call->baseExpr)) {
-              if (fn_var->var == dtString->defaultConstructor) {
-                string_init = true;
-              }
-            }
-          }
-          if (string_init) {
-            get(1)->codegen(outfile);
-            fprintf(outfile, " %s ", opCString[opTag]);
-            get(2)->codegen(outfile);
-          } else {
-            fprintf(outfile, "_copy_string(&(");
-            get(1)->codegen(outfile);
-            fprintf(outfile, "), ");
-            get(2)->codegenCastToString(outfile);
-            fprintf(outfile, ")");
-          }
-        } else
-        */
-        if ((leftType == dtInteger || leftType == dtFloat) &&
-            rightType == dtNil) {
-          get(1)->codegen(outfile);
-          fprintf(outfile, " = (");
-          leftType->codegen(outfile);
-          fprintf(outfile, ")(intptr_t)");
-          get(2)->codegen(outfile);
-        } else {
-          get(1)->codegen(outfile);
-          fprintf(outfile, " = ");
-          get(2)->codegen(outfile);
-        }
-      }
-    } else if (OP_ISBINARYOP(opTag)) {
-      if (opTag == OP_EXP) {
-        fprintf(outfile, "pow");
-      }
-      fprintf(outfile, "(");
-      get(1)->codegen(outfile);
-      if (opTag == OP_EXP) {
-        fprintf(outfile, ", ");
-      } else {
-        fprintf(outfile, "%s", opCString[opTag]);
-      }
-      get(2)->codegen(outfile);
-      fprintf(outfile, ")");
-    } else if (OP_ISUNARYOP(opTag)) {
-      fprintf(outfile, "%s", opCString[opTag]);
-      get(1)->codegen(outfile);
-    } else {
-      INT_FATAL(this, "operator not handled in CallExpr::codegen");
+      fprintf(outfile, " = ");
+      get(3)->codegen(outfile);
     }
-    return;
+  } else if (opTag == OP_MOVE) {
+    Type* leftType = get(1)->typeInfo();
+    Type* rightType = get(2)->typeInfo();
+    if (rightType != dtUnspecified) {
+      if ((leftType == dtInteger || leftType == dtFloat) &&
+          rightType == dtNil) {
+        get(1)->codegen(outfile);
+        fprintf(outfile, " = (");
+        leftType->codegen(outfile);
+        fprintf(outfile, ")(intptr_t)");
+        get(2)->codegen(outfile);
+      } else {
+        get(1)->codegen(outfile);
+        fprintf(outfile, " = ");
+        get(2)->codegen(outfile);
+      }
+    }
+  } else if (OP_ISBINARYOP(opTag)) {
+    if (opTag == OP_EXP) {
+      fprintf(outfile, "pow");
+    }
+    fprintf(outfile, "(");
+    get(1)->codegen(outfile);
+    if (opTag == OP_EXP) {
+      fprintf(outfile, ", ");
+    } else {
+      fprintf(outfile, "%s", opCString[opTag]);
+    }
+    get(2)->codegen(outfile);
+    fprintf(outfile, ")");
+  } else if (OP_ISUNARYOP(opTag)) {
+    fprintf(outfile, "%s", opCString[opTag]);
+    get(1)->codegen(outfile);
+  } else if (opTag != OP_NONE) {
+    INT_FATAL(this, "operator not handled in CallExpr::codegen");
   }
+  if (!baseExpr)
+    return;
 
   ///
   /// BEGIN KLUDGE

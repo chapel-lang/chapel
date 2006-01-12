@@ -954,7 +954,6 @@ static void convert_user_primitives(CallExpr* call) {
       INT_FATAL(call, "primitive not found '%s'", "init");
     call->opTag = OP_NONE;
     call->primitive = prim;
-#if 0
   } else if (call->opTag == OP_GET_MEMBER) {
     PrimitiveOp *prim = primitives_map.get(".");
     if (!prim)
@@ -967,7 +966,6 @@ static void convert_user_primitives(CallExpr* call) {
       INT_FATAL(call, "primitive not found '%s'", ".=");
     call->opTag = OP_NONE;
     call->primitive = prim;
-#endif
   }
 }
 

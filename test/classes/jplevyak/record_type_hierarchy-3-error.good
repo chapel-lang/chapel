@@ -1,4 +1,4 @@
-_chpl_adomain.chpl:148: fwrite, f : file, x : _aarray
+_chpl_adomain.chpl:150: fwrite, f : file, x : _aarray
 _chpl_adomain.chpl:46: fwrite, f : file, val : _adomain_lit
 _chpl_adomain.chpl:6: fwrite, f : file, val : _adomain_info
 _chpl_adomain.chpl:74: fwrite, f : file, x : _adomain

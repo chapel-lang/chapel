@@ -194,9 +194,15 @@ CallExpr* new_default_constructor_call(Type* type) {
 void resolve_op(CallExpr* call) {
   if (call->opTag == OP_MOVE) {
     if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->argList->get(1))) {
-      if (CallExpr* prim = dynamic_cast<CallExpr*>(call->argList->get(2)))
-        if (prim->isNamed("__primitive") || (prim->primitive && strcmp(prim->primitive->name, "init")))
+      if (CallExpr* prim = dynamic_cast<CallExpr*>(call->argList->get(2))) {
+        if (prim->isNamed("__primitive"))
           return;
+        if (prim->primitive &&
+            strcmp(prim->primitive->name, "init") &&
+            strcmp(prim->primitive->name, ".") &&
+            strcmp(prim->primitive->name, ".="))
+          return;
+      }
       Type* type = call->argList->get(2)->typeInfo();
       if (type != dtNil) {
         if (symExpr->var->type == dtUnknown)
@@ -207,7 +213,9 @@ void resolve_op(CallExpr* call) {
       if (symExpr->var->type == dtUnknown)
         INT_FATAL("Unable to resolve type");
     }
-  } else if (call->opTag == OP_SET_MEMBER || call->opTag == OP_GET_MEMBER) {
+  } else if (call->primitive &&
+             ((!strcmp(call->primitive->name, ".")) ||
+              (!strcmp(call->primitive->name, ".=")))) {
     ClassType* ct = dynamic_cast<ClassType*>(call->get(1)->typeInfo());
     if (!ct) {
       INT_FATAL(call, "Cannot resolve member access");
@@ -217,7 +225,8 @@ void resolve_op(CallExpr* call) {
       dynamic_cast<VarSymbol*>(dynamic_cast<SymExpr*>(call->get(2))->var)->immediate->v_string,
       ct->structScope);
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(call->parentSymbol))
-      if (fn->fnClass == FN_CONSTRUCTOR && call->opTag == OP_SET_MEMBER && 
+      if (fn->fnClass == FN_CONSTRUCTOR &&
+          !strcmp(call->primitive->name, ".=") && 
           call->member->type == dtUnknown)
         call->member->type = call->get(3)->typeInfo();
     if (call->member->type == dtUnknown)
