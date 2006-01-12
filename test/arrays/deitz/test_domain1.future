@@ -1,3 +1,5 @@
 deitz
 
-please isolate the problem into a smaller test case
+The problem with this test is that we try to index into a tuple with a
+variable, not a parameter or literal.  This will be fixed when
+homogeneous and heterogeneous tuples are unified.

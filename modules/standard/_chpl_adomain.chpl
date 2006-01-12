@@ -106,6 +106,8 @@ class _aarray : value {
     size = info(0)._blk *
              ((dom.info(0)._high - dom.info(0)._low + 1)
                / dom.info(0)._stride);
+    for i in 1..size do
+      _move(data(i-1), _init(elt_type));
   }
 
   function this(i : integer, j : integer) var : elt_type {
