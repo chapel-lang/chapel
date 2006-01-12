@@ -53552,3 +53552,15 @@ Modified files:
 Removed files:
 	chapel/test/trivial/bradc/entrypoint/: main2.future 
 
+---------------------------------------------------------------------------
+
+01/11/06 17:00:13 -- deitz
+
+Log message:
+	Fixed .good and removed .future.
+
+Modified files:
+	chapel/test/types/seq/bradc/: recordSeq.good 
+Removed files:
+	chapel/test/types/seq/bradc/: recordSeq.future 
+
