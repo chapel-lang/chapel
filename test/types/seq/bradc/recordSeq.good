@@ -1,1 +1,2 @@
-(/(x = 1, y = 2.3)/)
+newrecord is: (x = 1, y = 2.3)
+myseq is: (/(x = 1, y = 2.3)/)
