@@ -53700,3 +53700,14 @@ Log message:
 Modified files:
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+01/13/06 10:11:54 -- deitz
+
+Log message:
+	Allow -i and -b to be used simultaneously.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	                         runInterpreter.cpp 
+
