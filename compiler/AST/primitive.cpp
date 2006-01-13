@@ -5,6 +5,8 @@
 Vec<PrimitiveOp *> primitives;
 HashMap<char *, StringHashFns, PrimitiveOp *> primitives_map;
 
+PrimitiveOp* prim_move;
+
 PrimitiveOp::PrimitiveOp(PrimitiveKind akind, char *aname, InterpreterOp *aiop, AnalysisOp *aaop)
   : kind(akind), name(aname), interpreterOp(aiop), analysisOp(aaop)
 {
@@ -14,6 +16,7 @@ PrimitiveOp::PrimitiveOp(PrimitiveKind akind, char *aname, InterpreterOp *aiop, 
 
 void 
 initPrimitive() {
+  primitives.add(prim_move = new PrimitiveOp(PRIMITIVE_UNKNOWN, "move", unimplemented_interpreter_op, unimplemented_analysis_op));
   primitives.add(new PrimitiveOp(PRIMITIVE_INIT, "init", init_interpreter_op, init_analysis_op));
   primitives.add(new PrimitiveOp(PRIMITIVE_SIZEOF, "sizeof", unimplemented_interpreter_op, unimplemented_analysis_op));
   primitives.add(new PrimitiveOp(PRIMITIVE_FOPEN, "fopen", fopen_interpreter_op, return_int_analysis_op));
@@ -46,11 +49,6 @@ initPrimitive() {
   primitives.add(new PrimitiveOp(PRIMITIVE_EXP, "**", exp_interpreter_op, exp_analysis_op));
   primitives.add(new PrimitiveOp(PRIMITIVE_GET_MEMBER, ".", get_member_interpreter_op, get_member_analysis_op));
   primitives.add(new PrimitiveOp(PRIMITIVE_SET_MEMBER, ".=", set_member_interpreter_op, set_member_analysis_op));
-  // currently not implemented
-  // OP_SEQCAT #
-  // OP_BY by
-  // OP_SUBTYPE :
-  // OP_NOTSUBTYPE !:
   primitives.add(new PrimitiveOp(PRIMITIVE_PTR_EQ, "ptr_eq", ptr_eq_interpreter_op, return_bool_analysis_op));
   primitives.add(new PrimitiveOp(PRIMITIVE_PTR_NEQ, "ptr_neq", ptr_neq_interpreter_op, return_bool_analysis_op));
   primitives.add(new PrimitiveOp(PRIMITIVE_CAST, "cast", cast_interpreter_op, cast_analysis_op));

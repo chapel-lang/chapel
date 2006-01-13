@@ -192,12 +192,13 @@ CallExpr* new_default_constructor_call(Type* type) {
 }
 
 void resolve_op(CallExpr* call) {
-  if (call->opTag == OP_MOVE) {
+  if (call->primitive == prim_move) {
     if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->argList->get(1))) {
       if (CallExpr* prim = dynamic_cast<CallExpr*>(call->argList->get(2))) {
         if (prim->isNamed("__primitive"))
           return;
         if (prim->primitive &&
+            strcmp(prim->primitive->name, "move") &&
             strcmp(prim->primitive->name, "init") &&
             strcmp(prim->primitive->name, ".") &&
             strcmp(prim->primitive->name, ".="))
@@ -248,10 +249,9 @@ void resolve_op(CallExpr* call) {
 
 static FnSymbol*
 build_default_wrapper(FnSymbol* fn,
-                      int num_actuals,
                       Vec<ArgSymbol*>* actual_formals) {
   FnSymbol* wrapper = fn;
-  if (fn->formals->length() > num_actuals) {
+  if (fn->formals->length() > actual_formals->n) {
     Vec<Symbol*> defaults;
     for_alist(DefExpr, formalDef, fn->formals) {
       ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
@@ -418,7 +418,7 @@ resolve_call(BaseAST* ast,
     return NULL;
   }
 
-  best = build_default_wrapper(best, actual_types->n, actual_formals);
+  best = build_default_wrapper(best, actual_formals);
   best = build_order_wrapper(best, actual_formals);
   // need to implement build coercion wrapper
   return best;

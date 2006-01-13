@@ -36,17 +36,11 @@ char* opCString[] = {
   "&&",
   "||",
   " _exponent_ ",
-  " _sequence_concat_ ",
-  " _by_ ",
-  " _subtype_ ",
-  " _notsubtype_ ",
 
   " _get_member_ ",
   " _set_member_ ",
 
-  " _init_ ",
-
-  "="
+  " _init_ "
 };
 
 
@@ -75,53 +69,11 @@ char* opChplString[] = {
   "and",
   "or",
   "**",
-  "#",
-  "by",
-  ":",
-  "!:",
 
   ".",
   ".=",
 
-  "init",
-
-  "move"
-};
-
-
-char* opChplName[] = {
-  "",
-
-  "u+",
-  "u-",
-  "not",
-  "u~",
-
-  "+",
-  "-",
-  "*",
-  "/",
-  "mod",
-  "==",
-  "!=",
-  "<=",
-  ">=",
-  "<",
-  ">",
-  "&",
-  "|",
-  "^",
-  "and",
-  "or",
-  "**",
-  "#",
-  "by",
-  ":",
-  "!:",
-
-  "_init",
-
-  "_move"
+  "init"
 };
 
 
@@ -611,34 +563,30 @@ void CallExpr::print(FILE* outfile) {
 
 
 void CallExpr::makeOp(void) {
-  SymExpr* base = dynamic_cast<SymExpr*>(baseExpr);
-  if (base && !strcmp(base->var->name, "=")) {
-    opTag = OP_MOVE;
-    base->remove();
+  if (isNamed("=")) {
+    primitive = prim_move;
+    baseExpr->remove();
     return;
   }
   if (primitive) {
-    for (int tag = OP_NONE; tag <= OP_MOVE; tag++) {
+    for (int tag = OP_NONE; tag <= OP_INIT; tag++) {
       if (!strcmp(opChplString[tag], primitive->name)) {
         opTag = (OpTag)tag;
         primitive = NULL;
         return;
       }
     }
-  } else if (SymExpr *symExpr = dynamic_cast<SymExpr *>(base)) {
-    if (FnSymbol *fn = dynamic_cast<FnSymbol *>(symExpr->var)) {
-      if (fn->hasPragma("builtin")) {
-        for (int tag = OP_NONE; tag <= OP_MOVE; tag++) {
-          if (!strcmp(opChplString[tag], base->var->name)) {
-            opTag = (OpTag)tag;
-            if (opTag == OP_UNPLUS && argList->length() == 2)
-              opTag = OP_PLUS;
-            if (opTag == OP_UNMINUS && argList->length() == 2)
-              opTag = OP_MINUS;
-            base->remove();
-            primitive = NULL;
-            return;
-          }
+  } else if (FnSymbol *fn = isResolved()) {
+    if (fn->hasPragma("builtin")) {
+      for (int tag = OP_NONE; tag <= OP_INIT; tag++) {
+        if (!strcmp(opChplString[tag], fn->name)) {
+          opTag = (OpTag)tag;
+          if (opTag == OP_UNPLUS && argList->length() == 2)
+            opTag = OP_PLUS;
+          if (opTag == OP_UNMINUS && argList->length() == 2)
+            opTag = OP_MINUS;
+          baseExpr->remove();
+          return;
         }
       }
     }
@@ -647,14 +595,7 @@ void CallExpr::makeOp(void) {
 
 
 bool CallExpr::isAssign(void) {
-  if (opTag == OP_MOVE)
-    return true;
-  else if (opTag == OP_NONE) {
-    SymExpr* base = dynamic_cast<SymExpr*>(baseExpr);
-    if (base && !strcmp(base->var->name, "="))
-      return true;
-  }
-  return false;
+  return primitive == prim_move || isNamed("=");
 }
 
 
@@ -741,13 +682,10 @@ Type* CallExpr::typeInfo(void) {
     } else if (OP_ISUNARYOP(opTag)) {
       return get(1)->typeInfo();
     } else if (OP_ISBINARYOP(opTag)) {
-      if (opTag == OP_BY) {
-        return dtUnknown;
-      }
       return get(1)->typeInfo();
     } else if (primitive && !strcmp(primitive->name, "init")) {
       return argList->get(1)->typeInfo();
-    } else if (opTag == OP_MOVE) {
+    } else if (primitive == prim_move) {
       return argList->get(1)->typeInfo();
     }
   }
@@ -764,7 +702,7 @@ Type* CallExpr::typeInfo(void) {
 
 
 void CallExpr::codegen(FILE* outfile) {
-  if (opTag == OP_MOVE) {
+  if (primitive == prim_move) {
     if (SymExpr* sym = dynamic_cast<SymExpr*>(get(1))) {
       if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var)) {
         if (var->varClass == VAR_CONFIG) {
@@ -790,7 +728,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, " = ");
       get(3)->codegen(outfile);
     }
-  } else if (opTag == OP_MOVE) {
+  } else if (primitive == prim_move) {
     Type* leftType = get(1)->typeInfo();
     Type* rightType = get(2)->typeInfo();
     if (rightType != dtUnspecified) {

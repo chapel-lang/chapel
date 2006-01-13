@@ -71,6 +71,8 @@ class PrimitiveOp : public gc { public:
 extern Vec<PrimitiveOp *> primitives;
 extern HashMap<char *, StringHashFns, PrimitiveOp *> primitives_map;
 
+extern PrimitiveOp* prim_move;
+
 void initPrimitive();
 
 #endif

@@ -766,7 +766,7 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
       char* tempName = stringcat("_coercion_temp_", formal->sym->name);
       VarSymbol* temp = new VarSymbol(tempName, formal->sym->type);
       wrapper_body->insertAtTail(new DefExpr(temp));
-      wrapper_body->insertAtTail(new CallExpr(OP_MOVE, temp, new CastExpr(new SymExpr(newFormal), NULL, formal->sym->type)));
+      wrapper_body->insertAtTail(new CallExpr(prim_move, temp, new CastExpr(new SymExpr(newFormal), NULL, formal->sym->type)));
       wrapper_actuals->insertAtTail(new SymExpr(temp));
     } else {
       wrapper_actuals->insertAtTail(new SymExpr(newFormal));

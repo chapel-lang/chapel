@@ -735,10 +735,6 @@ whereexpr:
     { $$ = new CallExpr("#", $1, $3); }
 | whereexpr TBY whereexpr
     { $$ = new CallExpr("by", $1, $3); }
-| whereexpr TCOLON whereexpr
-    { $$ = new CallExpr(OP_SUBTYPE, $1, $3); }
-| whereexpr TNOTCOLON whereexpr
-    { $$ = new CallExpr(OP_NOTSUBTYPE, $1, $3); }
 | class_tag pragma_ls opt_identifier TLCBR decl_stmt_ls TRCBR
     { $$ = NULL; }
 ;
@@ -1074,7 +1070,7 @@ parenop_expr:
   non_tuple_lvalue TLP expr_ls TRP
     { $$ = new CallExpr($1, $3); }
 | TMOVE TLP expr_ls TRP
-    { $$ = new CallExpr(OP_MOVE, $3); }
+    { $$ = new CallExpr(prim_move, $3); }
 | TINIT TLP expr_ls TRP
     { $$ = new CallExpr(OP_INIT, $3); }
 ;

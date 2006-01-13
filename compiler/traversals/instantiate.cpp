@@ -129,7 +129,7 @@ Instantiate::postProcessExpr(Expr* expr) {
             }
           }
           if (CallExpr* parentCall = dynamic_cast<CallExpr*>(call->parentExpr)) {
-            if (parentCall->opTag == OP_MOVE) {
+            if (parentCall->primitive == prim_move) {
               if (SymExpr* sym = dynamic_cast<SymExpr*>(parentCall->get(1))) {
                 sym->var->type = new_fn->retType;
               }

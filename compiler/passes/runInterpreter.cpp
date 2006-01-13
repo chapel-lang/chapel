@@ -1618,17 +1618,13 @@ IFrame::run(int timeslice) {
         S(CallExpr);
         switch (stage++) {
           case 0: {
-            switch (s->opTag) {
-              default: 
-                if (s->baseExpr)
-                  PUSH_EXPR(s->baseExpr);
-                break;
-              case OP_MOVE:
-                if (s->argList->length() != 2) {
-                  INT_FATAL(ip, "illegal number of arguments for MOVE %d\n", s->argList->length());
-                }
-                stage = 2;
-                break;
+            if (s->primitive == prim_move) {
+              if (s->argList->length() != 2) {
+                INT_FATAL(ip, "illegal number of arguments for MOVE %d\n", s->argList->length());
+              }
+              stage = 2;
+            } else if (s->baseExpr) {
+              PUSH_EXPR(s->baseExpr);
             }
             break;
           }
@@ -1637,9 +1633,7 @@ IFrame::run(int timeslice) {
               PUSH_EXPR(s->argList->get(stage - 1));
             } else {
               stage = 0;
-              if (s->primitive)
-                iprimitive(s);
-              else if (s->opTag == OP_MOVE) {
+              if (s->primitive == prim_move) {
                 Expr *a = s->argList->get(1);
                 if (a->astType == EXPR_SYM)
                   POP_VAL(((SymExpr*)a)->var);
@@ -1647,8 +1641,11 @@ IFrame::run(int timeslice) {
                   INT_FATAL(ip, "target of MOVE not an SymExpr, astType = %d\n", 
                             s->argList->get(1)->astType);
                 }
-              } else
+              } else if (s->primitive) {
+                iprimitive(s);
+              } else {
                 CALL(s->argList->length() + 1);
+              }
             }
             break;
         }

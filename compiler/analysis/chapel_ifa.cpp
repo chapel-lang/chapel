@@ -1710,7 +1710,7 @@ gen_assignment(CallExpr *assign) {
     rval->ast = assign->ainfo;
     if1_move(if1, &assign->ainfo->code, rhs->ainfo->rval, rval, assign->ainfo);
   }
-  if (assign->opTag != OP_MOVE) {
+  if (assign->primitive != prim_move) {
     Sym *old_rval = rval;
     rval = new_sym();
     rval->ast = assign->ainfo;

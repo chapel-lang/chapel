@@ -35,19 +35,14 @@ enum OpTag {
   OP_LOGAND,
   OP_LOGOR,
   OP_EXP,
-  OP_SEQCAT,
-  OP_BY,
-  OP_SUBTYPE,
-  OP_NOTSUBTYPE,
   OP_GET_MEMBER,
   OP_SET_MEMBER,
-  OP_INIT,
-  OP_MOVE
+  OP_INIT
 };
 
 extern char* opChplString[];
 
-#define OP_ISBINARYOP(op) (op >= OP_PLUS && op <= OP_NOTSUBTYPE)
+#define OP_ISBINARYOP(op) (op >= OP_PLUS && op <= OP_EXP)
 #define OP_ISUNARYOP(op) (op >= OP_UNPLUS && op <= OP_BITNOT)
 
 #define OP_ISLOGICAL(op) \
