@@ -53674,3 +53674,19 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: ast.cpp clone.cpp sym.cpp sym.h 
 
+---------------------------------------------------------------------------
+
+01/13/06 08:43:13 -- jplevyak
+
+Log message:
+	Primitives now have a enum PrimitiveKind for switch'ing on.
+	CallExpr has two new methods: bool isPrim() and PrimitiveKind primKind();
+	PrimitiveKind includes PRIMITIVE_NONE which is returned from
+	  primKind() if CallExpr::primitive is NULL, for easy switch'ing.
+	We should be able to remove opTag now and replace it completely with
+	  primitives.
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/compiler/include/: expr.h primitive.h 
+
