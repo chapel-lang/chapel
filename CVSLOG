@@ -53734,3 +53734,26 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+01/13/06 14:48:36 -- deitz
+
+Log message:
+	Removed OP_MOVE, replacing it with prim_move.
+	
+	Removed some unused OP_*.
+	
+	This is in preparation for replacing OP_* with PrimitiveOps.  Having
+	two mechanisms is becoming increasingly unwieldy.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp symbol.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: expr.h primitive.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: cleanup.cpp createEntryPoint.cpp 
+	                         functionResolution.cpp normalize.cpp 
+	                         runInterpreter.cpp 
+	chapel/compiler/traversals/: inlineFunctions.cpp instantiate.cpp 
+	                             removeNamedParameters.cpp 
+
