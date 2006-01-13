@@ -53650,3 +53650,17 @@ Modified files:
 	                               record_type_hierarchy-3-error.good 
 	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
 
+---------------------------------------------------------------------------
+
+01/12/06 17:30:34 -- jplevyak
+
+Log message:
+	Added support for showing source lines as part of single-stepping and
+	  general context in interactive mode.
+	Added "list", "up", "down" commands to the interpreter.
+
+Modified files:
+	chapel/compiler/include/: misc.h 
+	chapel/compiler/passes/: runInterpreter.cpp 
+	chapel/compiler/util/: misc.cpp 
+
