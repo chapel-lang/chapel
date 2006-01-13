@@ -1766,8 +1766,6 @@ void
 runInterpreter(void) {
   if (!run_interpreter)
     return;
-  if (no_infer)
-    INT_FATAL("Cannot run interpreter with --no-infer");
 
   initialize();
   if (run_interpreter > 1)

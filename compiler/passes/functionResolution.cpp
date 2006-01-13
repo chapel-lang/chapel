@@ -534,7 +534,7 @@ void resolve_function(FnSymbol* fn) {
 }
 
 void functionResolution(void) {
-  if (!no_infer)
+  if (!no_infer || run_interpreter)
     return;
   resolve_function(chpl_main);
 
