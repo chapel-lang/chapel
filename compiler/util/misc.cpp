@@ -85,6 +85,35 @@ buf_read(char *pathname, char **buf, int *len) {
   return *len;
 }
 
+char *
+get_file_line(char *filename, int lineno) {
+  static char *last_filename = 0;
+  static char *last_buf = 0;
+  static Vec<char *> last_lines;
+
+  if (!last_filename || strcmp(filename, last_filename)) {
+    int len = 0;
+    char *new_buf = 0;
+    if (buf_read(filename, &new_buf, &len) < 0)
+      return 0;
+    last_filename = filename;
+    last_buf = new_buf;
+    char *b = new_buf;
+    last_lines.add(b);
+    b = index(b, '\n');
+    while (b) {
+      *b = 0;
+      b++;
+      last_lines.add(b);
+      b = index(b, '\n');
+    }
+  }
+  lineno--; // 0 based
+  if (lineno < 0 || lineno > last_lines.n)
+    return NULL;
+  return last_lines.v[lineno];
+}
+
 void
 fail(char *str, ...) {
   char nstr[256];

@@ -84,7 +84,7 @@ typedef MapElem<BaseAST *, ISlot*> MapElemBaseASTISlot;
 
 struct IFrame : public gc { public:
   IThread *thread;
-  IFrame *parent;
+  IFrame *parent, *debug_child;
   FnSymbol *function;
   int single_stepping;
 
@@ -173,7 +173,7 @@ IThread::IThread() : state(ITHREAD_STOPPED) {
   threads.add(this);
 }
 
-IFrame::IFrame(IThread *t) : thread(t), parent(0), function(0), single_stepping(NO_STEP), 
+IFrame::IFrame(IThread *t) : thread(t), parent(0), debug_child(0), function(0), single_stepping(NO_STEP), 
                              stmt(0), stage(0), expr(0), ip(0), return_slot(0) 
 {
 }
@@ -464,6 +464,9 @@ interactive_usage() {
           "  next - single step skipping over function calls\n"
           "  trace - trace program\n"
           "  where - show the expression/statement stack\n"
+          "  up - move up the call stack\n"
+          "  down - move down the call stack\n"
+          "  list - show source lines\n"
           "  stack - show the value stack\n"
           "  locals - show locals\n"
           "  print - print by id number or a local by name\n"
@@ -523,6 +526,8 @@ show(BaseAST *ip, int stage, int nospaces = 0) {
 
 static void
 show(IFrame *frame, BaseAST *ip, int stage) {
+  if (ip->filename && ip->lineno > 0)
+    printf("%s\n", get_file_line(ip->filename, ip->lineno));
   printf("    %s(%d)", astTypeName[ip->astType], (int)ip->id);
   if (stage)
     printf("/%d", stage);
@@ -535,7 +540,7 @@ show(IFrame *frame, BaseAST *ip, int stage) {
 
 static int
 check_running(IFrame *frame) {
-  if (!frame) {
+  if (!frame || !frame->ip) {
     printf("    error: no running program\n");
     return 0;
   }
@@ -581,6 +586,47 @@ cmd_where(IFrame *frame) {
       printf("    error: bad stack frame\n");
     frame = frame->parent;
   }
+}
+
+static void
+cmd_list(IFrame *frame) {
+  if (!check_running(frame))
+    return;
+  int l = frame->ip->lineno;    
+  if (l <= 0 || !frame->ip->filename) {
+    printf("    error: no line information\n");
+    return;
+  }
+  for (int i = l - 5; i < l + 6; i++) {
+    char *line = get_file_line(frame->ip->filename, i); 
+    if (line)
+      printf("%s\n", line);
+  }
+}
+
+static IFrame *
+cmd_up(IFrame *frame) {
+  if (!check_running(frame))
+    return frame;
+  if (frame->parent) {
+    frame->parent->debug_child = frame;
+    frame = frame->parent;
+    show(frame, frame->ip, frame->stage);
+  } else
+    printf("    error: unable to move up\n");
+  return frame;
+}
+
+static IFrame *
+cmd_down(IFrame *frame) {
+  if (!check_running(frame))
+    return frame;
+  if (frame->debug_child) {
+    frame = frame->debug_child;
+    show(frame, frame->ip, frame->stage);
+  } else
+    printf("    error: unable to move down\n");
+  return frame;
 }
 
 static void
@@ -814,6 +860,12 @@ interactive(IFrame *frame) {
       cmd_print(frame, c, 1);
     } else if (match_cmd(c, "where")) {
       cmd_where(frame);
+    } else if (match_cmd(c, "list")) {
+      cmd_list(frame);
+    } else if (match_cmd(c, "up")) {
+      frame = cmd_up(frame);
+    } else if (match_cmd(c, "down")) {
+      frame = cmd_down(frame);
     } else if (match_cmd(c, "stack")) {
       cmd_stack(frame);
     } else if (match_cmd(c, "locals")) {
