@@ -53711,3 +53711,16 @@ Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 	                         runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+01/13/06 10:29:32 -- jplevyak
+
+Log message:
+	Fix compilation error on sunos: switch to POSIX functions: strchr vs index
+	Fix bug in get_file_line() (wasn't recognizing shift to new file)
+	Removed old code for fake dispatch in interpreter.
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+	chapel/compiler/util/: misc.cpp 
+
