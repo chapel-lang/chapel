@@ -96,11 +96,12 @@ get_file_line(char *filename, int lineno) {
     char *new_buf = 0;
     if (buf_read(filename, &new_buf, &len) < 0)
       return 0;
-    last_filename = filename;
+    last_filename = dupstr(filename);
     last_buf = new_buf;
     char *b = new_buf;
+    last_lines.clear();
     last_lines.add(b);
-    b = index(b, '\n');
+    b = strchr(b, '\n');
     while (b) {
       *b = 0;
       b++;

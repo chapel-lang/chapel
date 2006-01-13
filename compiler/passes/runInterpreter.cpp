@@ -393,7 +393,6 @@ IFrame::icall(int nargs, ISlot *ret_slot) {
     }
   } while (!done);
   if (!fn) {
-#if 1
     ISlot **args = &valStack.v[valStack.n-nargs];
     Vec<Type *> actual_types;
     Vec<Symbol *> actual_params;
@@ -407,6 +406,7 @@ IFrame::icall(int nargs, ISlot *ret_slot) {
         switch (args[i]->kind) {
           default:
           case EMPTY_ISLOT: 
+            INT_FATAL("interpreter: bad slot type: %d", args[i]->kind); break;
           case SELECTOR_ISLOT: 
           case SYMBOL_ISLOT: 
             actual_types.add(args[i]->symbol->type);
@@ -442,15 +442,6 @@ IFrame::icall(int nargs, ISlot *ret_slot) {
           return;
       }
     }
-#else
-    Vec<FnSymbol *> visible;
-    ip->parentScope->getVisibleFunctions(&visible, cannonicalize_string(name));
-    if (visible.n != 1) {
-      user_error(this, "unable to resolve call '%s' to a single function", name);
-      return;
-    }
-    fn = visible.v[0];
-#endif
   }
   icall(fn, nargs, extra_args);
   return;
