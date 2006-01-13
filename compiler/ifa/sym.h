@@ -89,7 +89,7 @@ class BasicSym : public gc {
   unsigned int          is_meta_type:1;         // Sym is class of class
   unsigned int          is_value_type:1;        // Sym is a value type
   unsigned int          is_system_type:1;       // Sym is a system type (don't add it to the hiearchy)
-  unsigned int          is_union_class:1;       // Sym is a union
+  unsigned int          is_union_type:1;        // Sym is a union
 
   unsigned int          fun_returns_value:1;    // used by analysis.cpp
   unsigned int          live:1;                 // used by if1.cpp

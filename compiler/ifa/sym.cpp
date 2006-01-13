@@ -42,7 +42,7 @@ BasicSym::BasicSym(void) :
   is_meta_type(0),
   is_value_type(0),
   is_system_type(0),
-  is_union_class(0),
+  is_union_type(0),
   fun_returns_value(0),
   live(0),
   incomplete(0),

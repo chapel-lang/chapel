@@ -373,7 +373,7 @@ determine_basic_clones(Vec<Vec<CreationSet *> *> &css_sets_by_sym) {
             av1 = cs1->vars.v[v]; 
             av2 = cs2->vars.v[v];
           }
-          if (MERGE_UNIONS && cs1->sym->is_union_class && av1->out->n == 0 || av2->out->n == 0)
+          if (MERGE_UNIONS && cs1->sym->is_union_type && av1->out->n == 0 || av2->out->n == 0)
             continue;
           // if the boxing or basic type is different
           if (basic_type(fa, av1->out, (Sym*)-1) != 

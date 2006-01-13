@@ -194,7 +194,7 @@ compute_structural_type_hierarchy(Vec<Sym *> types) {
   Vec<Sym *> record_types, union_types;
   forv_Sym(s, types) if (s) {
     if (s->type_kind == Type_RECORD && s->is_value_type) {
-      if (!s->is_union_class)
+      if (!s->is_union_type)
         record_types.add(s);
       else
         union_types.add(s);
