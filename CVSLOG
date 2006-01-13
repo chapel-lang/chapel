@@ -53664,3 +53664,13 @@ Modified files:
 	chapel/compiler/passes/: runInterpreter.cpp 
 	chapel/compiler/util/: misc.cpp 
 
+---------------------------------------------------------------------------
+
+01/13/06 08:04:55 -- jplevyak
+
+Log message:
+	Rename is_union_class -> is_union_type
+
+Modified files:
+	chapel/compiler/ifa/: ast.cpp clone.cpp sym.cpp sym.h 
+
