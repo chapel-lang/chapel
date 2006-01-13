@@ -53690,3 +53690,13 @@ Modified files:
 	chapel/compiler/AST/: primitive.cpp 
 	chapel/compiler/include/: expr.h primitive.h 
 
+---------------------------------------------------------------------------
+
+01/13/06 08:50:22 -- jplevyak
+
+Log message:
+	Update REGRESSIONS
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+
