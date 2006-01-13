@@ -53724,3 +53724,13 @@ Modified files:
 	chapel/compiler/passes/: runInterpreter.cpp 
 	chapel/compiler/util/: misc.cpp 
 
+---------------------------------------------------------------------------
+
+01/13/06 13:58:34 -- deitz
+
+Log message:
+	Fix to resolve_call of bad handling of nil dispatch.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+
