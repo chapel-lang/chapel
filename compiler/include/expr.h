@@ -154,6 +154,9 @@ class CallExpr : public Expr {
   virtual void print(FILE* outfile);
   virtual void codegen(FILE* outfile);
 
+  bool isPrim() { return !!primitive; }
+  PrimitiveKind primKind() { return primitive ? primitive->kind : PRIMITIVE_NONE; }
+
   void makeOp(void);
   bool isAssign(void);
   bool isOp(OpTag);
