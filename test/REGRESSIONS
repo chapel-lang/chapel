@@ -14,17 +14,12 @@
 linux and general regressions
 =============================
 
+[Error matching compiler output for classes/deitz/test_type_in_class3]
+[Error matching compiler output for classes/deitz/test_type_in_class4]
+[Error matching compiler output for types/like/jplevyak/like-2]
 
-[Error matching compiler output for arrays/deitz/test_domain2D]
-[Error matching compiler output for classes/jplevyak/sum_type-3]
-[Error matching compiler output for flowanalysis/recursion/rec_obj-1]
-[Error matching compiler output for trivial/jplevyak/pragma-6]
-[Error matching compiler output for types/type_variables/deitz/test_clone_class1]
-[Error matching compiler output for types/type_variables/deitz/test_clone_class2]
-[Error matching compiler output for types/type_variables/deitz/test_clone_class2a]
-[Error matching compiler output for types/type_variables/deitz/test_tuplelike1]
-
-Problem in analysis: "fail: mismatched field sizes"
+We need to handle PRIMITIVE_GET_MEMBER during pre-instantiation
+  for the case of foo.t  where t is a type variable in foo.
 
 [Error executing program trivial/preston/tuple]
 
