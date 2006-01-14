@@ -49,6 +49,7 @@ class ISlot : public gc { public:
     Immediate *imm;
   };
   void x() { name = 0; aspect = 0; }
+  void set_empty() { kind = EMPTY_ISLOT; x(); }
   void set_selector(char *s) { kind = SELECTOR_ISLOT; x(); selector = s; }
   void set_symbol(Symbol *s) { kind = SYMBOL_ISLOT; x(); symbol = s; }
   void set_immediate(Immediate &i) { kind = IMMEDIATE_ISLOT; x(); imm = new Immediate; *imm = i; }
@@ -1211,16 +1212,14 @@ IFrame::iprimitive(CallExpr *s) {
       result = *arg[a->dim.n + 1];
       break;
     }
-    case PRIM_CAST: {
+    case PRIM_CAST: { // cast arg[1] to the type of arg[0]
       check_prim_args(s, 2);
-      // cast arg[1] to the type of arg[0]
-      switch (arg[1]->kind) {
-        default:
-          USR_FATAL(ip, "bad slot argument to CAST primitive: %s", 
-                    slotKindName[arg[1]->kind]);
-        case IMMEDIATE_ISLOT:
-          break;
-      }
+      check_kind(s, arg[0], IMMEDIATE_ISLOT);
+      check_kind(s, arg[1], IMMEDIATE_ISLOT);
+      result.kind = IMMEDIATE_ISLOT;
+      result.imm = new Immediate;
+      *result.imm = *arg[0]->imm;
+      coerce_immediate(arg[1]->imm, result.imm);
       break;
     }
     case PRIM_UNARY_MINUS:
@@ -1572,10 +1571,11 @@ IFrame::run(int timeslice) {
       }
       case EXPR_DEF: {
         S(DefExpr);
-        ISlot *slot = new ISlot;
-        env.put(s->sym, slot);
+        ISlot *slot = islot(s->sym);
         switch (s->sym->astType) {
-          default: break;
+          default: 
+            slot->set_empty();
+            break;
           case SYMBOL_UNRESOLVED:
           case SYMBOL_MODULE:
           case SYMBOL_TYPE:
@@ -1598,16 +1598,22 @@ IFrame::run(int timeslice) {
             EVAL_EXPR(s->condExpr);
             break;
           case 1: {
+            ISlot *cond = islot(s->condExpr);
+            check_type(ip, cond, dtBoolean);
+            if (cond->imm->v_bool)
+              EVAL_EXPR(s->thenExpr);
+            else 
+              EVAL_EXPR(s->elseExpr);
+            break;
+          }
+          case 2: {
             stage = 0;
             ISlot *cond = islot(s->condExpr);
             check_type(ip, cond, dtBoolean);
-            if (cond->imm->v_bool) {
-              EVAL_EXPR(s->thenExpr);
-              env.put(s, islot(s->thenExpr));
-            } else {
-              EVAL_EXPR(s->elseExpr);
-              env.put(s, islot(s->elseExpr));
-            }
+            if (cond->imm->v_bool)
+              *islot(s) = *islot(s->thenExpr);
+            else
+              *islot(s) = *islot(s->elseExpr);
             break;
           }
           default: INT_FATAL(ip, "interpreter: bad stage %d for astType: %d", stage, ip->astType); break;
@@ -1636,7 +1642,7 @@ IFrame::run(int timeslice) {
               if (s->primitive == prim_move) {
                 Expr *a = s->argList->get(1);
                 if (a->astType == EXPR_SYM)
-                  POP_VAL(((SymExpr*)a)->var);
+                  POP_VAL((dynamic_cast<SymExpr*>(a))->var);
                 else {
                   INT_FATAL(ip, "target of MOVE not an SymExpr, astType = %d\n", 
                             s->argList->get(1)->astType);
@@ -1661,7 +1667,7 @@ IFrame::run(int timeslice) {
             stage = 0;
             ISlot *slot = islot(s->actual);
             slot->name = s->name;
-            env.put(s, slot);
+            *islot(s) = *slot;
             break;
           }
         }
@@ -1680,7 +1686,7 @@ IFrame::run(int timeslice) {
               INT_FATAL(ip, "CastExpr with NULL type");
             }
             slot->aspect = s->type;
-            env.put(s, slot);
+            *islot(s) = *slot;
             break;
           }
         }

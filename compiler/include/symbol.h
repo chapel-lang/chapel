@@ -277,6 +277,7 @@ VarSymbol *new_FloatSymbol(char *n, double b);
 VarSymbol *new_ComplexSymbol(char *n, double r, double i);
 VarSymbol *new_ImmediateSymbol(Immediate *imm);
 Type *immediate_type(Immediate *imm);
+int set_immediate_type(Immediate *imm, Type *); // -1 on failure
 
 extern HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
 extern StringChainHash uniqueStringHash;

@@ -1590,3 +1590,24 @@ immediate_type(Immediate *imm) {
   return NULL;
 }
 
+int
+set_immediate_type(Immediate *imm, Type *t) {
+  if (t == dtBoolean) {
+    imm->const_kind = IF1_NUM_KIND_UINT;
+    imm->num_index = IF1_INT_TYPE_1; 
+  } else if (t == dtInteger) {
+    imm->const_kind = IF1_NUM_KIND_INT;
+    imm->num_index = IF1_INT_TYPE_64; 
+  } else if (t == dtFloat) {
+    imm->const_kind = IF1_NUM_KIND_FLOAT;
+    imm->num_index = IF1_INT_TYPE_64;
+  } else if (t == dtComplex) {
+    imm->const_kind = IF1_NUM_KIND_COMPLEX;
+    imm->num_index = IF1_FLOAT_TYPE_64;
+  } else if (t == dtString) {
+    imm->const_kind = IF1_CONST_KIND_STRING;
+  } else
+    return -1;
+  return 0;
+}
+
