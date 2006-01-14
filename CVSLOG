@@ -53757,3 +53757,16 @@ Modified files:
 	chapel/compiler/traversals/: inlineFunctions.cpp instantiate.cpp 
 	                             removeNamedParameters.cpp 
 
+---------------------------------------------------------------------------
+
+01/13/06 16:06:58 -- jplevyak
+
+Log message:
+	Added new set_immediate_type() function.
+	fixed a bug with PRIM_CAST and another in EXPR_COND
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/passes/: runInterpreter.cpp 
+
