@@ -53770,3 +53770,29 @@ Modified files:
 	chapel/compiler/include/: symbol.h 
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+01/14/06 17:17:23 -- deitz
+
+Log message:
+	Removed OP_* to use more consistently PRIM_*.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp expr.cpp primitive.cpp 
+	                      symbol.cpp type.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: expr.h primitive.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         createEntryPoint.cpp 
+	                         functionResolution.cpp normalize.cpp 
+	                         runInterpreter.cpp scopeResolve.cpp 
+	chapel/compiler/traversals/: htmlview.cpp inlineFunctions.cpp 
+	                             instantiate.cpp 
+	                             removeNamedParameters.cpp 
+	                             resolveSymbols.cpp view.cpp 
+	chapel/test/flowanalysis/newast/: sum_type-1.good 
+	                                  sum_type-2.good 
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_paramvar_class1.chpl 
+
