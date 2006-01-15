@@ -1609,7 +1609,18 @@ gen_call_expr(CallExpr *s) {
   astType_t base_symbol = undef_or_fn_expr(s->baseExpr);
   Sym *base = NULL;
   char *n = s->baseExpr ? s->baseExpr->ainfo->rval->name : 0;
-  if (s->primitive) {
+  if (s->isPrimitive(PRIMITIVE_INIT)) {
+    trvals.add(sym_primitive);
+    base = chapel_init_symbol;
+  } else if (s->isPrimitive(PRIMITIVE_GET_MEMBER) ||
+             s->isPrimitive(PRIMITIVE_SET_MEMBER)) {
+    rvals.insert(1, make_symbol(s->isPrimitive(PRIMITIVE_GET_MEMBER) ? sym_period->name: sym_setter->name));
+    if (rvals.v[2]->imm.const_kind != IF1_CONST_KIND_STRING) {
+      INT_FATAL(s, "PRIMITIVE_XXX_MEMBER with non-string member name");
+    }
+    rvals.v[2] = make_symbol(rvals.v[2]->imm.v_string);
+    base = sym_operator;
+  } else if (s->isPrimitive()) {
     base = gen_primitive(s, args, rvals);
   } else if (base_symbol == SYMBOL_UNRESOLVED) {
     assert(n);
@@ -1617,19 +1628,7 @@ gen_call_expr(CallExpr *s) {
   } else if (base_symbol == SYMBOL_FN)
     base = dynamic_cast<FnSymbol*>(dynamic_cast<SymExpr*>(s->baseExpr)->var)->asymbol->sym;
   else {
-    switch (s->opTag) {
-      case OP_INIT: trvals.add(sym_primitive); base = chapel_init_symbol; break;
-      case OP_GET_MEMBER: 
-      case OP_SET_MEMBER: 
-        rvals.insert(1, make_symbol(s->opTag == OP_GET_MEMBER ? sym_period->name: sym_setter->name));
-        if (rvals.v[2]->imm.const_kind != IF1_CONST_KIND_STRING) {
-          INT_FATAL(s, "OP_XXX_MEMBER with non-string member name");
-        }
-        rvals.v[2] = make_symbol(rvals.v[2]->imm.v_string);
-        base = sym_operator;
-        break;
-      default: base = s->baseExpr ? s->baseExpr->ainfo->rval : 0; break;
-    }
+    base = s->baseExpr ? s->baseExpr->ainfo->rval : 0;
   }
   if (base)
     trvals.add(base);
@@ -1710,7 +1709,7 @@ gen_assignment(CallExpr *assign) {
     rval->ast = assign->ainfo;
     if1_move(if1, &assign->ainfo->code, rhs->ainfo->rval, rval, assign->ainfo);
   }
-  if (assign->primitive != prim_move) {
+  if (!assign->isPrimitive(PRIMITIVE_MOVE)) {
     Sym *old_rval = rval;
     rval = new_sym();
     rval->ast = assign->ainfo;
@@ -1914,11 +1913,13 @@ fun_where_clause(FnSymbol *f, Expr *w) {
   if (!base)
     return;
   if (!strcmp(base->var->name, "and")) {
-    op->opTag = OP_LOGAND;
+    op->primitive = primitives[PRIMITIVE_LAND];
+    op->baseExpr->remove();
     fun_where_clause(f, op->get(1));
     fun_where_clause(f, op->get(2));
   } else if (!strcmp(base->var->name, "==")) {
-    op->opTag = OP_EQUAL;
+    op->primitive = primitives[PRIMITIVE_EQUAL];
+    op->baseExpr->remove();
     VarSymbol *c = 0;
     SymExpr* v = 0;
     if ((c = get_constant(op->get(1))) && (v = dynamic_cast<SymExpr*>(op->get(2)))) 

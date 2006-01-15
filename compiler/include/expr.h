@@ -12,50 +12,6 @@ class Stmt;
 class AAST;
 class FnSymbol;
 
-enum OpTag {
-  OP_NONE,
-  OP_UNPLUS,
-  OP_UNMINUS,
-  OP_LOGNOT,
-  OP_BITNOT,
-  OP_PLUS,
-  OP_MINUS,
-  OP_MULT,
-  OP_DIV,
-  OP_MOD,
-  OP_EQUAL,
-  OP_NEQUAL,
-  OP_LEQUAL,
-  OP_GEQUAL,
-  OP_LTHAN,
-  OP_GTHAN,
-  OP_BITAND,
-  OP_BITOR,
-  OP_BITXOR,
-  OP_LOGAND,
-  OP_LOGOR,
-  OP_EXP,
-  OP_GET_MEMBER,
-  OP_SET_MEMBER,
-  OP_INIT
-};
-
-extern char* opChplString[];
-
-#define OP_ISBINARYOP(op) (op >= OP_PLUS && op <= OP_EXP)
-#define OP_ISUNARYOP(op) (op >= OP_UNPLUS && op <= OP_BITNOT)
-
-#define OP_ISLOGICAL(op) \
-  ((op == OP_LOGNOT) ||  \
-   (op == OP_EQUAL)  ||  \
-   (op == OP_NEQUAL) ||  \
-   (op == OP_LEQUAL) ||  \
-   (op == OP_GEQUAL) ||  \
-   (op == OP_LTHAN)  ||  \
-   (op == OP_GTHAN)  ||  \
-   (op == OP_LOGAND) ||  \
-   (op == OP_LOGOR))
-
 class Expr : public BaseAST {
  public:
   Stmt* parentStmt;
@@ -127,7 +83,6 @@ class CallExpr : public Expr {
  public:
   Expr* baseExpr;
   AList<Expr>* argList;
-  OpTag opTag;
   PrimitiveOp *primitive;
   PartialTag partialTag;
   Symbol* member;
@@ -136,8 +91,10 @@ class CallExpr : public Expr {
 
   CallExpr(BaseAST* base, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
            BaseAST* arg3 = NULL, BaseAST* arg4 = NULL);
-  CallExpr(OpTag initOpTag, BaseAST* arg1, BaseAST* arg2 = NULL, BaseAST *arg3 = NULL);
-  CallExpr(PrimitiveOp *prim, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL);
+  CallExpr(PrimitiveOp *prim, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
+           BaseAST* arg3 = NULL);
+  CallExpr(PrimitiveTag prim, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
+           BaseAST* arg3 = NULL);
   CallExpr(char* name, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
            BaseAST* arg3 = NULL, BaseAST* arg4 = NULL);
   virtual void verify(void); 
@@ -149,12 +106,8 @@ class CallExpr : public Expr {
   virtual void print(FILE* outfile);
   virtual void codegen(FILE* outfile);
 
-  bool isPrim() { return !!primitive; }
-  PrimitiveKind primKind() { return primitive ? primitive->kind : PRIMITIVE_NONE; }
-
   void makeOp(void);
   bool isAssign(void);
-  bool isOp(OpTag);
 
   FnSymbol* isResolved(void);
   bool isNamed(char*);
@@ -163,6 +116,11 @@ class CallExpr : public Expr {
   FnSymbol* findFnSymbol(void);
   Type* typeInfo(void);
   bool isPrimitive(void);
+  bool isPrimitive(PrimitiveTag primitiveTag);
+
+  bool isUnaryPrimitive(void);
+  bool isBinaryPrimitive(void);
+  bool isLogicalPrimitive(void);
 };
 
 

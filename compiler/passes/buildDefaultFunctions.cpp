@@ -190,7 +190,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
   fn->formals = new AList<DefExpr>(
     new DefExpr(new ArgSymbol(INTENT_REF, "_methodTokenDummy", dtMethodToken)),
     new DefExpr(_this));
-  fn->body = new BlockStmt(new ReturnStmt(new CallExpr(OP_GET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)))));
+  fn->body = new BlockStmt(new ReturnStmt(new CallExpr(PRIMITIVE_GET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)))));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->parentStmt->insertBefore(def);
   reset_file_info(fn, field->lineno, field->filename);
@@ -219,10 +219,10 @@ static void build_setter(ClassType* ct, Symbol* field) {
     new DefExpr(_this), 
     new DefExpr(new ArgSymbol(INTENT_REF, "_setterTokenDummy", dtSetterToken)),
     argDef);
-  Expr *valExpr = new CallExpr(OP_GET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)));
+  Expr *valExpr = new CallExpr(PRIMITIVE_GET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)));
   Expr *assignExpr = new CallExpr("=", valExpr, fieldArg);
   fn->body->insertAtTail(
-    new CallExpr(OP_SET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)), assignExpr));
+    new CallExpr(PRIMITIVE_SET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)), assignExpr));
   ct->symbol->defPoint->parentStmt->insertBefore(new DefExpr(fn));
   reset_file_info(fn, field->lineno, field->filename);
 

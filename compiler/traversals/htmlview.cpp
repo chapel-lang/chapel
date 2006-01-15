@@ -183,10 +183,8 @@ void HtmlView::preProcessExpr(Expr* expr) {
     write("(%s = ", e->name);
   } else if (CallExpr* e = dynamic_cast<CallExpr*>(expr)) {
     write("(");
-    if (e->opTag == OP_NONE && !e->primitive) {
+    if (!e->primitive) {
       write("<B>call</B> ");
-    } else if (e->opTag != OP_NONE) {
-      write("'%s' ", opChplString[e->opTag]);
     } else {
       write("'%s' ", e->primitive->name);
     }

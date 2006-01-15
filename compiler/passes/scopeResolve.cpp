@@ -158,7 +158,7 @@ void scopeResolve(BaseAST* base) {
               if ((var && var->parentScope->type == SCOPE_CLASS) ||
                   (fn && ct && function_matches_method(fn, ct)))
                 if (symExpr->var != method->_this) {
-                  Expr* dot = new CallExpr(OP_GET_MEMBER, method->_this, 
+                  Expr* dot = new CallExpr(PRIMITIVE_GET_MEMBER, method->_this, 
                                            new_StringSymbol(name));
                   symExpr->replace(dot);
                   asts.add(dot);
@@ -169,7 +169,7 @@ void scopeResolve(BaseAST* base) {
           USR_FATAL(symExpr, "Symbol '%s' is not defined", name);
       }
     } else if (CallExpr* callExpr = dynamic_cast<CallExpr*>(ast)) {
-      if (callExpr->opTag == OP_GET_MEMBER || callExpr->opTag == OP_SET_MEMBER) {
+      if (callExpr->isPrimitive(PRIMITIVE_GET_MEMBER) || callExpr->isPrimitive(PRIMITIVE_SET_MEMBER)) {
         if (FnSymbol* fn = dynamic_cast<FnSymbol*>(callExpr->parentSymbol)) {
           if (fn->_getter || fn->_setter) {
             ClassType* ct = dynamic_cast<ClassType*>(fn->typeBinding->definition);

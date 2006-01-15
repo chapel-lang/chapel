@@ -1624,7 +1624,7 @@ IFrame::run(int timeslice) {
         S(CallExpr);
         switch (stage++) {
           case 0: {
-            if (s->primitive == prim_move) {
+            if (s->isPrimitive(PRIMITIVE_MOVE)) {
               if (s->argList->length() != 2) {
                 INT_FATAL(ip, "illegal number of arguments for MOVE %d\n", s->argList->length());
               }
@@ -1639,7 +1639,7 @@ IFrame::run(int timeslice) {
               PUSH_EXPR(s->argList->get(stage - 1));
             } else {
               stage = 0;
-              if (s->primitive == prim_move) {
+              if (s->isPrimitive(PRIMITIVE_MOVE)) {
                 Expr *a = s->argList->get(1);
                 if (a->astType == EXPR_SYM)
                   POP_VAL((dynamic_cast<SymExpr*>(a))->var);

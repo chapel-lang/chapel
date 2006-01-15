@@ -192,16 +192,10 @@ CallExpr* new_default_constructor_call(Type* type) {
 }
 
 void resolve_op(CallExpr* call) {
-  if (call->primitive == prim_move) {
+  if (call->isPrimitive(PRIMITIVE_MOVE)) {
     if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->argList->get(1))) {
       if (CallExpr* prim = dynamic_cast<CallExpr*>(call->argList->get(2))) {
-        if (prim->isNamed("__primitive"))
-          return;
-        if (prim->primitive &&
-            strcmp(prim->primitive->name, "move") &&
-            strcmp(prim->primitive->name, "init") &&
-            strcmp(prim->primitive->name, ".") &&
-            strcmp(prim->primitive->name, ".="))
+        if (prim->typeInfo() == dtUnknown)
           return;
       }
       Type* type = call->argList->get(2)->typeInfo();
@@ -585,7 +579,7 @@ param_reduce(CallExpr* call) {
     return;
   if (!lsym->isParam() || !rsym->isParam())
     return;
-  if (call->opTag == OP_EQUAL) {
+  if (call->isPrimitive(PRIMITIVE_EQUAL)) {
     if (lsym->var == rsym->var)
       call->replace(new SymExpr(chpl_true));
     else

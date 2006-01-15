@@ -11,72 +11,6 @@
 #include "../passes/runAnalysis.h"
 
 
-char* opCString[] = {
-  "",
-
-  "+",
-  "-",
-  "!",
-  "~",
-
-  "+",
-  "-",
-  "*",
-  "/",
-  "%",
-  "==",
-  "!=",
-  "<=",
-  ">=",
-  "<",
-  ">",
-  "&",
-  "|",
-  "^",
-  "&&",
-  "||",
-  " _exponent_ ",
-
-  " _get_member_ ",
-  " _set_member_ ",
-
-  " _init_ "
-};
-
-
-char* opChplString[] = {
-  "",
-
-  "+",
-  "-",
-  "not",
-  "~",
-
-  "+",
-  "-",
-  "*",
-  "/",
-  "mod",
-  "==",
-  "!=",
-  "<=",
-  ">=",
-  "<",
-  ">",
-  "&",
-  "|",
-  "^",
-  "and",
-  "or",
-  "**",
-
-  ".",
-  ".=",
-
-  "init"
-};
-
-
 Expr::Expr(astType_t astType) :
   BaseAST(astType),
   parentStmt(NULL),
@@ -422,7 +356,6 @@ CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
   Expr(EXPR_CALL),
   baseExpr(NULL),
   argList(new AList<Expr>()),
-  opTag(OP_NONE),
   primitive(NULL),
   partialTag(PARTIAL_NEVER),
   member(0),
@@ -443,12 +376,11 @@ CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
 }
 
 
-CallExpr::CallExpr(OpTag initOpTag, BaseAST* arg1, BaseAST* arg2, BaseAST *arg3) :
+CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg3) :
   Expr(EXPR_CALL),
   baseExpr(NULL),
   argList(new AList<Expr>()),
-  opTag(initOpTag),
-  primitive(NULL),
+  primitive(prim),
   partialTag(PARTIAL_NEVER),
   member(0),
   member_type(0),
@@ -460,12 +392,11 @@ CallExpr::CallExpr(OpTag initOpTag, BaseAST* arg1, BaseAST* arg2, BaseAST *arg3)
 }
 
 
-CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2) :
+CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg3) :
   Expr(EXPR_CALL),
   baseExpr(NULL),
   argList(new AList<Expr>()),
-  opTag(OP_NONE),
-  primitive(prim),
+  primitive(primitives[prim]),
   partialTag(PARTIAL_NEVER),
   member(0),
   member_type(0),
@@ -473,6 +404,7 @@ CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2) :
 {
   callExprHelper(this, arg1);
   callExprHelper(this, arg2);
+  callExprHelper(this, arg3);
 }
 
 
@@ -481,7 +413,6 @@ CallExpr::CallExpr(char* name, BaseAST* arg1, BaseAST* arg2,
   Expr(EXPR_CALL),
   baseExpr(new SymExpr(new UnresolvedSymbol(name))),
   argList(new AList<Expr>()),
-  opTag(OP_NONE),
   primitive(NULL),
   partialTag(PARTIAL_NEVER),
   member(0),
@@ -505,9 +436,7 @@ void CallExpr::verify() {
 CallExpr*
 CallExpr::copyInner(ASTMap* map) {
   CallExpr *_this = 0;
-  if (opTag != OP_NONE)
-    _this = new CallExpr(opTag, COPY_INT(argList));
-  else if (primitive)
+  if (primitive)
     _this = new CallExpr(primitive, COPY_INT(argList));
   else
     _this = new CallExpr(COPY_INT(baseExpr), COPY_INT(argList));
@@ -551,63 +480,52 @@ void CallExpr::print(FILE* outfile) {
       argList->print(outfile);
     }
     fprintf(outfile, ")");
-  } else if (OP_ISUNARYOP(opTag)) {
-    fprintf(outfile, opChplString[opTag]);
-    get(1)->print(outfile);
-  } else if (OP_ISBINARYOP(opTag)) {
-    get(1)->print(outfile);
-    fprintf(outfile, opChplString[opTag]);
-    get(2)->print(outfile);
   }
 }
 
 
+#define make_op_help(tag, prim, args)                           \
+  if (!strcmp(fn->name, prim) && argList->length() == args) {   \
+    baseExpr->remove();                                         \
+    primitive = primitives[tag];                                \
+  }
+
 void CallExpr::makeOp(void) {
   if (isNamed("=")) {
-    primitive = prim_move;
+    primitive = primitives[PRIMITIVE_MOVE];
     baseExpr->remove();
     return;
   }
-  if (primitive) {
-    for (int tag = OP_NONE; tag <= OP_INIT; tag++) {
-      if (!strcmp(opChplString[tag], primitive->name)) {
-        opTag = (OpTag)tag;
-        primitive = NULL;
-        return;
-      }
-    }
-  } else if (FnSymbol *fn = isResolved()) {
+  if (FnSymbol *fn = isResolved()) {
     if (fn->hasPragma("builtin")) {
-      for (int tag = OP_NONE; tag <= OP_INIT; tag++) {
-        if (!strcmp(opChplString[tag], fn->name)) {
-          opTag = (OpTag)tag;
-          if (opTag == OP_UNPLUS && argList->length() == 2)
-            opTag = OP_PLUS;
-          if (opTag == OP_UNMINUS && argList->length() == 2)
-            opTag = OP_MINUS;
-          baseExpr->remove();
-          return;
-        }
-      }
+      make_op_help(PRIMITIVE_UNARY_MINUS, "-", 1);
+      make_op_help(PRIMITIVE_UNARY_PLUS, "+", 1);
+      make_op_help(PRIMITIVE_UNARY_BNOT, "~", 1);
+      make_op_help(PRIMITIVE_UNARY_NOT, "not", 1);
+      make_op_help(PRIMITIVE_ADD, "+", 2);
+      make_op_help(PRIMITIVE_SUBTRACT, "-", 2);
+      make_op_help(PRIMITIVE_MULT, "*", 2);
+      make_op_help(PRIMITIVE_DIV, "/", 2);
+      make_op_help(PRIMITIVE_MOD, "mod", 2);
+      make_op_help(PRIMITIVE_EQUAL, "==", 2);
+      make_op_help(PRIMITIVE_NOTEQUAL, "!=", 2);
+      make_op_help(PRIMITIVE_LESSOREQUAL, "<=", 2);
+      make_op_help(PRIMITIVE_GREATEROREQUAL, ">=", 2);
+      make_op_help(PRIMITIVE_LESS, "<", 2);
+      make_op_help(PRIMITIVE_GREATER, ">", 2);
+      make_op_help(PRIMITIVE_AND, "&", 2);
+      make_op_help(PRIMITIVE_OR, "|", 2);
+      make_op_help(PRIMITIVE_XOR, "^", 2);
+      make_op_help(PRIMITIVE_LAND, "and", 2);
+      make_op_help(PRIMITIVE_LOR, "or", 2);
+      make_op_help(PRIMITIVE_EXP, "**", 2);
     }
   }
 }
 
 
 bool CallExpr::isAssign(void) {
-  return primitive == prim_move || isNamed("=");
-}
-
-
-bool CallExpr::isOp(OpTag op) {
-  if (opTag == op)
-    return true;
-  else if (opTag == OP_NONE) {
-    SymExpr* base = dynamic_cast<SymExpr*>(baseExpr);
-    if (base && !strcmp(base->var->name, opChplString[op]))
-      return true;
-  }
-  return false;
+  return isPrimitive(PRIMITIVE_MOVE) || isNamed("=");
 }
 
 
@@ -677,15 +595,15 @@ Type* CallExpr::typeInfo(void) {
   }
 
   if (!baseExpr) {
-    if (OP_ISLOGICAL(opTag)) {
+    if (isLogicalPrimitive()) {
       return dtBoolean;
-    } else if (OP_ISUNARYOP(opTag)) {
+    } else if (isUnaryPrimitive()) {
       return get(1)->typeInfo();
-    } else if (OP_ISBINARYOP(opTag)) {
+    } else if (isBinaryPrimitive()) {
       return get(1)->typeInfo();
-    } else if (primitive && !strcmp(primitive->name, "init")) {
+    } else if (isPrimitive(PRIMITIVE_INIT)) {
       return argList->get(1)->typeInfo();
-    } else if (primitive == prim_move) {
+    } else if (isPrimitive(PRIMITIVE_MOVE)) {
       return argList->get(1)->typeInfo();
     }
   }
@@ -702,70 +620,201 @@ Type* CallExpr::typeInfo(void) {
 
 
 void CallExpr::codegen(FILE* outfile) {
-  if (primitive == prim_move) {
-    if (SymExpr* sym = dynamic_cast<SymExpr*>(get(1))) {
-      if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var)) {
-        if (var->varClass == VAR_CONFIG) {
-          fprintf(outfile, "if (_INIT_CONFIG(%s%s, %s, \"%s\", \"%s\"))\n",
-                  (!strcmp(var->type->symbol->cname, "_chpl_complex")) ? "(_complex128**)&" : "&",
-                  var->cname, 
-                  var->type->symbol->cname,
-                  var->name,
-                  var->defPoint->getModule()->name);
+  if (isPrimitive()) {
+    switch (primitive->tag) {
+    case PRIMITIVE_UNKNOWN:
+      break;
+    case PRIMITIVE_MOVE:
+      if (SymExpr* sym = dynamic_cast<SymExpr*>(get(1))) {
+        if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var)) {
+          if (var->varClass == VAR_CONFIG) {
+            fprintf(outfile, "if (_INIT_CONFIG(%s%s, %s, \"%s\", \"%s\"))\n",
+                    (!strcmp(var->type->symbol->cname, "_chpl_complex")) ? "(_complex128**)&" : "&",
+                    var->cname, 
+                    var->type->symbol->cname,
+                    var->name,
+                    var->defPoint->getModule()->name);
+          }
         }
       }
-    }
-  }
-
-  if (opTag == OP_GET_MEMBER ||
-      (primitive && !strcmp(primitive->name, "."))) {
-    codegen_member(outfile, get(1), get(2), member_type, member_offset);
-  } else if (opTag == OP_SET_MEMBER ||
-             (primitive && !strcmp(primitive->name, ".="))) {
-    Type* rightType = get(3)->typeInfo();
-    if (rightType != dtUnspecified) {
-      codegen_member(outfile, get(1), get(2), member_type, member_offset);
-      fprintf(outfile, " = ");
-      get(3)->codegen(outfile);
-    }
-  } else if (primitive == prim_move) {
-    Type* leftType = get(1)->typeInfo();
-    Type* rightType = get(2)->typeInfo();
-    if (rightType != dtUnspecified) {
-      if ((leftType == dtInteger || leftType == dtFloat) &&
-          rightType == dtNil) {
-        get(1)->codegen(outfile);
-        fprintf(outfile, " = (");
-        leftType->codegen(outfile);
-        fprintf(outfile, ")(intptr_t)");
-        get(2)->codegen(outfile);
-      } else {
-        get(1)->codegen(outfile);
-        fprintf(outfile, " = ");
-        get(2)->codegen(outfile);
+      Type* leftType = get(1)->typeInfo();
+      Type* rightType = get(2)->typeInfo();
+      if (rightType != dtUnspecified) {
+        if ((leftType == dtInteger || leftType == dtFloat) &&
+            rightType == dtNil) {
+          get(1)->codegen(outfile);
+          fprintf(outfile, " = (");
+          leftType->codegen(outfile);
+          fprintf(outfile, ")(intptr_t)");
+          get(2)->codegen(outfile);
+        } else {
+          get(1)->codegen(outfile);
+          fprintf(outfile, " = ");
+          get(2)->codegen(outfile);
+        }
       }
-    }
-  } else if (OP_ISBINARYOP(opTag)) {
-    if (opTag == OP_EXP) {
+      break;
+    case PRIMITIVE_INIT:
+      INT_FATAL(this, "Unexpected PRIMITIVE_INIT");
+      break;
+    case PRIMITIVE_UNARY_MINUS:
+      fprintf(outfile, "-");
+      get(1)->codegen(outfile);
+      break;
+    case PRIMITIVE_UNARY_PLUS:
+      fprintf(outfile, "+");
+      get(1)->codegen(outfile);
+      break;
+    case PRIMITIVE_UNARY_BNOT:
+      fprintf(outfile, "~");
+      get(1)->codegen(outfile);
+      break;
+    case PRIMITIVE_UNARY_NOT:
+      fprintf(outfile, "!");
+      get(1)->codegen(outfile);
+      break;
+    case PRIMITIVE_ADD:
+      fprintf(outfile, "(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, "+");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
+    case PRIMITIVE_SUBTRACT:
+      fprintf(outfile, "(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, "-");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
+    case PRIMITIVE_MULT:
+      fprintf(outfile, "(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, "*");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
+    case PRIMITIVE_DIV:
+      fprintf(outfile, "(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, "/");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
+    case PRIMITIVE_MOD:
+      fprintf(outfile, "(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, "%%");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
+    case PRIMITIVE_EQUAL:
+      fprintf(outfile, "(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, "==");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
+    case PRIMITIVE_NOTEQUAL:
+      fprintf(outfile, "(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, "!=");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
+    case PRIMITIVE_LESSOREQUAL:
+      fprintf(outfile, "(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, "<=");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
+    case PRIMITIVE_GREATEROREQUAL:
+      fprintf(outfile, "(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, ">=");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
+    case PRIMITIVE_LESS:
+      fprintf(outfile, "(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, "<");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
+    case PRIMITIVE_GREATER:
+      fprintf(outfile, "(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, ">");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
+    case PRIMITIVE_AND:
+      fprintf(outfile, "(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, "&");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
+    case PRIMITIVE_OR:
+      fprintf(outfile, "(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, "|");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
+    case PRIMITIVE_XOR:
+      fprintf(outfile, "(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, "^");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
+    case PRIMITIVE_LAND:
+      fprintf(outfile, "(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, "&&");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
+    case PRIMITIVE_LOR:
+      fprintf(outfile, "(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, "||");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
+    case PRIMITIVE_EXP:
       fprintf(outfile, "pow");
-    }
-    fprintf(outfile, "(");
-    get(1)->codegen(outfile);
-    if (opTag == OP_EXP) {
+      fprintf(outfile, "(");
+      get(1)->codegen(outfile);
       fprintf(outfile, ", ");
-    } else {
-      fprintf(outfile, "%s", opCString[opTag]);
+      get(2)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
+    case PRIMITIVE_GET_MEMBER:
+      codegen_member(outfile, get(1), get(2), member_type, member_offset);
+      break;
+    case PRIMITIVE_SET_MEMBER:
+      {
+        Type* rightType = get(3)->typeInfo();
+        if (rightType != dtUnspecified) {
+          codegen_member(outfile, get(1), get(2), member_type, member_offset);
+          fprintf(outfile, " = ");
+          get(3)->codegen(outfile);
+        }
+        break;
+      }
+    case PRIMITIVE_CHPL_ALLOC:
+      INT_FATAL(this, "Unexpected"); break;
+      break;
+    case NUM_KNOWN_PRIMS:
+      INT_FATAL(this, "Impossible"); break;
+      break;
     }
-    get(2)->codegen(outfile);
-    fprintf(outfile, ")");
-  } else if (OP_ISUNARYOP(opTag)) {
-    fprintf(outfile, "%s", opCString[opTag]);
-    get(1)->codegen(outfile);
-  } else if (opTag != OP_NONE) {
-    INT_FATAL(this, "operator not handled in CallExpr::codegen");
-  }
-  if (!baseExpr)
     return;
+  }
 
   ///
   /// BEGIN KLUDGE
@@ -862,6 +911,40 @@ bool CallExpr::isPrimitive(void) {
     }
   }
   return false;
+}
+
+
+bool CallExpr::isPrimitive(PrimitiveTag primitiveTag) {
+  return primitive && primitive->tag == primitiveTag;
+}
+
+
+bool CallExpr::isUnaryPrimitive(void) {
+  return
+    primitive &&
+    primitive->tag >= PRIMITIVE_UNARY_MINUS &&
+    primitive->tag <= PRIMITIVE_UNARY_NOT;
+}
+
+
+bool CallExpr::isBinaryPrimitive(void) {
+  return
+    primitive &&
+    primitive->tag >= PRIMITIVE_ADD &&
+    primitive->tag <= PRIMITIVE_EXP;
+}
+
+
+bool CallExpr::isLogicalPrimitive(void) {
+  return primitive &&
+    (primitive->tag == PRIMITIVE_EQUAL ||
+     primitive->tag == PRIMITIVE_NOTEQUAL ||
+     primitive->tag == PRIMITIVE_LESSOREQUAL ||
+     primitive->tag == PRIMITIVE_GREATEROREQUAL ||
+     primitive->tag == PRIMITIVE_LESS ||
+     primitive->tag == PRIMITIVE_GREATER ||
+     primitive->tag == PRIMITIVE_LAND ||
+     primitive->tag == PRIMITIVE_LOR);
 }
 
 

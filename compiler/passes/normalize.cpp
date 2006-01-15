@@ -213,7 +213,7 @@ static void reconstruct_iterator(FnSymbol* fn) {
       Expr* expr = returnStmt->expr;
       returnStmt->expr->replace(new SymExpr(seq));
       returnStmt->insertBefore(
-        new CallExpr(new CallExpr(OP_GET_MEMBER, seq, new_StringSymbol("_yield")), expr));
+        new CallExpr(new CallExpr(PRIMITIVE_GET_MEMBER, seq, new_StringSymbol("_yield")), expr));
       if (returnStmt->yield)
         returnStmt->remove();
     }
@@ -310,7 +310,7 @@ static void normalize_returns(FnSymbol* fn) {
 //       CallExpr* ret_call = dynamic_cast<CallExpr*>(ret->expr);
 //       if (ret_call && ret_call->isNamed("__primitive")) {
 //         ret_call->remove();
-//         ret->insertBefore(new CallExpr(prim_move, retval, ret_call));
+//         ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, ret_call));
 //       } else {
 //         Expr* ret_expr = ret->expr;
 //         ret_expr->remove();
@@ -323,11 +323,11 @@ static void normalize_returns(FnSymbol* fn) {
 //         VarSymbol* tmp2 = new VarSymbol("_retTmp2");
 //         tmp2->noDefaultInit = true;
 //         ret->insertBefore(new DefExpr(tmp2));
-//         ret->insertBefore(new CallExpr(prim_move, tmp2, new CallExpr(OP_INIT, tmp1)));
-//         ret->insertBefore(new CallExpr(prim_move, retval, new CallExpr("=", tmp2, tmp1)));
+//         ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp2, new CallExpr(PRIMITIVE_INIT, tmp1)));
+//         ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, new CallExpr("=", tmp2, tmp1)));
       Expr* ret_expr = ret->expr;
       ret_expr->remove();
-      ret->insertBefore(new CallExpr(prim_move, retval, ret_expr));
+      ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, ret_expr));
       //      }
     }
     if (ret->next != label->defPoint->parentStmt) {
@@ -383,9 +383,9 @@ static void initialize_out_formals(FnSymbol* fn) {
     ArgSymbol* arg = dynamic_cast<ArgSymbol*>(argDef->sym);
     if (arg->intent == INTENT_OUT) {
       if (arg->defaultExpr)
-        fn->insertAtHead(new CallExpr(prim_move, arg, arg->defaultExpr->copy()));
+        fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, arg, arg->defaultExpr->copy()));
       else
-        fn->insertAtHead(new CallExpr(prim_move, arg, new CallExpr(OP_INIT, arg)));
+        fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, arg, new CallExpr(PRIMITIVE_INIT, arg)));
     }
     if (arg->intent == INTENT_OUT || arg->intent == INTENT_INOUT)
       arg->intent = INTENT_REF;
@@ -448,14 +448,14 @@ static void call_constructor_for_class(CallExpr* call) {
 static void normalize_for_loop(ForLoopStmt* stmt) {
   stmt->iterators->only()->replace(
     new CallExpr(
-      new CallExpr(OP_GET_MEMBER,
+      new CallExpr(PRIMITIVE_GET_MEMBER,
                    stmt->iterators->only()->copy(),
                    new_StringSymbol("_forall"))));
   if (no_infer) {
     DefExpr* index = stmt->indices->only();
     Expr* type = stmt->iterators->only()->copy();
-    type = new CallExpr(OP_GET_MEMBER, type, new_StringSymbol("_last"));
-    type = new CallExpr(OP_GET_MEMBER, type, new_StringSymbol("_element"));
+    type = new CallExpr(PRIMITIVE_GET_MEMBER, type, new_StringSymbol("_last"));
+    type = new CallExpr(PRIMITIVE_GET_MEMBER, type, new_StringSymbol("_element"));
     if (!index->exprType)
       index->replace(new DefExpr(index->sym, NULL, type));
   }
@@ -579,9 +579,9 @@ static void hack_array_constructor_call(CallExpr* call) {
   if (call->isNamed("_construct__aarray")) {
     if (DefExpr* def = dynamic_cast<DefExpr*>(call->parentExpr)) {
       call->parentStmt->insertAfter(
-        new CallExpr(new CallExpr(OP_GET_MEMBER, def->sym, new_StringSymbol("myinit"))));
+        new CallExpr(new CallExpr(PRIMITIVE_GET_MEMBER, def->sym, new_StringSymbol("myinit"))));
       call->parentStmt->insertAfter(
-        new CallExpr(OP_SET_MEMBER, def->sym, new_StringSymbol("dom"), 
+        new CallExpr(PRIMITIVE_SET_MEMBER, def->sym, new_StringSymbol("dom"), 
                      call->argList->last()->copy()));
       call->argList->last()->replace(hack_rank(call->argList->last()));
     }
@@ -604,7 +604,7 @@ static void hack_domain_constructor_call(CallExpr* call) {
     for_alist(Expr, arg, call->argList) {
       stmt->insertBefore(
           new CallExpr(
-            new CallExpr(OP_GET_MEMBER, _adomain_tmp, new_StringSymbol("_set")),
+            new CallExpr(PRIMITIVE_GET_MEMBER, _adomain_tmp, new_StringSymbol("_set")),
             new_IntLiteral(dim), arg->copy()));
       dim++;
     }
@@ -630,12 +630,12 @@ static void hack_seqcat_call(CallExpr* call) {
     // if only one is, change to append or prepend
     if (leftType != dtUnknown) {
       call->replace(new CallExpr(
-                      new CallExpr(OP_GET_MEMBER, call->get(2)->copy(), 
+                      new CallExpr(PRIMITIVE_GET_MEMBER, call->get(2)->copy(), 
                                    new_StringSymbol("_prepend")),
                       call->get(1)->copy()));
     } else if (rightType != dtUnknown) {
       call->replace(new CallExpr(
-                      new CallExpr(OP_GET_MEMBER, call->get(1)->copy(), 
+                      new CallExpr(PRIMITIVE_GET_MEMBER, call->get(1)->copy(), 
                                    new_StringSymbol("_append")),
                       call->get(2)->copy()));
     }
@@ -759,11 +759,11 @@ static void apply_getters_setters(BaseAST* ast) {
   // Most generally:
   //   x.f(1) = y ---> f(_mt, x, 1, _st, y)
   // or
-  //   CallExpr(=, CallExpr(CallExpr(OP_GET_MEMBER, x, "f"), 1), y) --->
+  //   CallExpr(=, CallExpr(CallExpr(PRIMITIVE_GET_MEMBER, x, "f"), 1), y) --->
   //     CallExpr("f", _mt, x, 1, _st, y)
   // though, it could be just
-  //           a CallExpr(OP_GET_MEMBER without a CallExpr
-  //           a CallExpr without a OP_GET_MEMBER
+  //           a CallExpr(PRIMITIVE_GET_MEMBER without a CallExpr
+  //           a CallExpr without a PRIMITIVE_GET_MEMBER
   // SJD: Commment needs to be updated with PARTIAL_OK
   CallExpr 
     *call = dynamic_cast<CallExpr*>(ast),  // (eventually) non-assign, non-member call if any
@@ -779,9 +779,9 @@ static void apply_getters_setters(BaseAST* ast) {
   }
   if (!call)
     goto Ldone;
-  if (call->opTag != OP_GET_MEMBER) {      // handle calls && getters
+  if (!call->isPrimitive(PRIMITIVE_GET_MEMBER)) {      // handle calls && getters
     getter = dynamic_cast<CallExpr*>(call->baseExpr);
-    if (getter && getter->opTag != OP_GET_MEMBER)
+    if (getter && !getter->isPrimitive(PRIMITIVE_GET_MEMBER))
       getter = 0;
   } else {
     getter = call;
@@ -865,7 +865,7 @@ static void insert_call_temps(CallExpr* call) {
   }
 
   if (CallExpr* parentCall = dynamic_cast<CallExpr*>(call->parentExpr))
-    if (parentCall->primitive == prim_move)
+    if (parentCall->isPrimitive(PRIMITIVE_MOVE))
       return;
 
   Stmt* stmt = call->parentStmt;
@@ -889,29 +889,29 @@ static void fix_def_expr(DefExpr* def) {
     if (def->sym->type == dtUnspecified)
       def->sym->type = dtUnknown;
     if (def->init)
-      def->parentStmt->insertAfter(new CallExpr(prim_move, def->sym, def->init->copy()));
+      def->parentStmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, def->init->copy()));
     dynamic_cast<VarSymbol*>(def->sym)->noDefaultInit = false;
   } else if (def->sym->type != dtUnknown) {
     AList<Stmt>* stmts = new AList<Stmt>();
     VarSymbol* tmp = new VarSymbol("_defTmp");
     tmp->cname = stringcat(tmp->name, intstring(uid++));
     stmts->insertAtTail(new DefExpr(tmp));
-    stmts->insertAtTail(new CallExpr(prim_move, tmp, new CallExpr(OP_INIT, def->sym->type->symbol)));
+    stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_INIT, def->sym->type->symbol)));
     if (def->init)
-      stmts->insertAtTail(new CallExpr(prim_move, def->sym, new CallExpr("=", tmp, def->init->copy())));
+      stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, def->sym, new CallExpr("=", tmp, def->init->copy())));
     else
-      stmts->insertAtTail(new CallExpr(prim_move, def->sym, tmp));
+      stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, def->sym, tmp));
     def->parentStmt->insertAfter(stmts);
   } else if (def->exprType) {
     AList<Stmt>* stmts = new AList<Stmt>();
     VarSymbol* tmp = new VarSymbol("_defTmp");
     tmp->cname = stringcat(tmp->name, intstring(uid++));
     stmts->insertAtTail(new DefExpr(tmp));
-    stmts->insertAtTail(new CallExpr(prim_move, tmp, new CallExpr(OP_INIT, def->exprType->copy())));
+    stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_INIT, def->exprType->copy())));
     if (def->init)
-      stmts->insertAtTail(new CallExpr(prim_move, def->sym, new CallExpr("=", tmp, def->init->copy())));
+      stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, def->sym, new CallExpr("=", tmp, def->init->copy())));
     else
-      stmts->insertAtTail(new CallExpr(prim_move, def->sym, tmp));
+      stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, def->sym, tmp));
     def->parentStmt->insertAfter(stmts);
   } else if (def->init) {
     AList<Stmt>* stmts = new AList<Stmt>();
@@ -921,12 +921,12 @@ static void fix_def_expr(DefExpr* def) {
     VarSymbol* tmp2 = new VarSymbol("_defTmp2");
     tmp2->cname = stringcat(tmp2->name, intstring(uid++));
     stmts->insertAtTail(new DefExpr(tmp2));
-    stmts->insertAtTail(new CallExpr(prim_move, tmp1, def->init->copy()));
-    stmts->insertAtTail(new CallExpr(prim_move, tmp2, new CallExpr(OP_INIT, tmp1)));
-    stmts->insertAtTail(new CallExpr(prim_move, def->sym, new CallExpr("=", tmp2, tmp1)));
+    stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp1, def->init->copy()));
+    stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp2, new CallExpr(PRIMITIVE_INIT, tmp1)));
+    stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, def->sym, new CallExpr("=", tmp2, tmp1)));
     def->parentStmt->insertAfter(stmts);
   } else {
-    def->parentStmt->insertAfter(new CallExpr(prim_move, def->sym, new CallExpr(OP_INIT, gUnspecified)));
+    def->parentStmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, new CallExpr(PRIMITIVE_INIT, gUnspecified)));
   }
   def->exprType->remove();
   def->init->remove();
@@ -948,24 +948,6 @@ static void convert_user_primitives(CallExpr* call) {
       INT_FATAL(call, "primitive not found '%s'", str->immediate->v_string);
     s->remove();
     call->replace(new CallExpr(prim, call->argList));
-  } else if (call->opTag == OP_INIT) {
-    PrimitiveOp *prim = primitives_map.get("init");
-    if (!prim)
-      INT_FATAL(call, "primitive not found '%s'", "init");
-    call->opTag = OP_NONE;
-    call->primitive = prim;
-  } else if (call->opTag == OP_GET_MEMBER) {
-    PrimitiveOp *prim = primitives_map.get(".");
-    if (!prim)
-      INT_FATAL(call, "primitive not found '%s'", ".");
-    call->opTag = OP_NONE;
-    call->primitive = prim;
-  } else if (call->opTag == OP_SET_MEMBER) {
-    PrimitiveOp *prim = primitives_map.get(".=");
-    if (!prim)
-      INT_FATAL(call, "primitive not found '%s'", ".=");
-    call->opTag = OP_NONE;
-    call->primitive = prim;
   }
 }
 

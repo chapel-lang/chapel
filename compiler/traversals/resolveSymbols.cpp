@@ -13,12 +13,10 @@
 
 void ResolveSymbols::postProcessExpr(Expr* expr) {
   if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
-    if (call->primitive) {
-      call->makeOp();
-    }
-    if (call->opTag == OP_GET_MEMBER || call->opTag == OP_SET_MEMBER)
+    if (call->isPrimitive(PRIMITIVE_GET_MEMBER) ||
+        call->isPrimitive(PRIMITIVE_SET_MEMBER))
       resolve_member_access(call, &call->member_offset, &call->member_type);
-    if (call->opTag == OP_INIT) {
+    if (call->isPrimitive(PRIMITIVE_INIT)) {
       Type* type = call->get(1)->typeInfo();
       if (type->defaultValue) {
         call->replace(new SymExpr(type->defaultValue));
@@ -34,7 +32,7 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
       }
       return;
     }
-    if (call->opTag != OP_NONE || call->primitive)
+    if (call->primitive)
       return;
     if (!call->isAssign()) {
       Vec<FnSymbol*> fns;

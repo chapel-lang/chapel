@@ -1070,15 +1070,15 @@ parenop_expr:
   non_tuple_lvalue TLP expr_ls TRP
     { $$ = new CallExpr($1, $3); }
 | TMOVE TLP expr_ls TRP
-    { $$ = new CallExpr(prim_move, $3); }
+    { $$ = new CallExpr(PRIMITIVE_MOVE, $3); }
 | TINIT TLP expr_ls TRP
-    { $$ = new CallExpr(OP_INIT, $3); }
+    { $$ = new CallExpr(PRIMITIVE_INIT, $3); }
 ;
 
 
 memberaccess_expr:
   non_tuple_lvalue TDOT identifier
-    { $$ = new CallExpr(OP_GET_MEMBER, $1, new_StringSymbol($3)); }
+    { $$ = new CallExpr(PRIMITIVE_GET_MEMBER, $1, new_StringSymbol($3)); }
 ;
 
 
@@ -1110,7 +1110,7 @@ seq_expr:
         element->remove();
         seqLiteral =
           new CallExpr(
-            new CallExpr(OP_GET_MEMBER, seqLiteral, new_StringSymbol("_append_in_place")),
+            new CallExpr(PRIMITIVE_GET_MEMBER, seqLiteral, new_StringSymbol("_append_in_place")),
             element);
       }
       $$ = seqLiteral;

@@ -125,7 +125,7 @@ static void destructure_tuple(CallExpr* call) {
   VarSymbol* temp = new VarSymbol("_tuple_destruct");
   stmt->insertBefore(new DefExpr(temp));
   CallExpr* tuple = dynamic_cast<CallExpr*>(call->get(1));
-  call->replace(new CallExpr(prim_move, temp, call->get(2)->remove()));
+  call->replace(new CallExpr(PRIMITIVE_MOVE, temp, call->get(2)->remove()));
   int i = 1;
   for_alist(Expr, expr, tuple->argList) {
     if (CallExpr* callExpr = dynamic_cast<CallExpr*>(expr))
@@ -177,7 +177,7 @@ static void construct_tuple_type(int rank) {
     if (no_infer) {
       ArgSymbol* arg = new ArgSymbol(INTENT_PARAM, "index", dtInteger);
       fn->formals = new AList<DefExpr>(new DefExpr(arg));
-      fn->whereExpr = new CallExpr(OP_EQUAL, arg, new_IntLiteral(i));
+      fn->whereExpr = new CallExpr(PRIMITIVE_EQUAL, arg, new_IntLiteral(i));
     } else {
       ArgSymbol* arg = new ArgSymbol(INTENT_PARAM, "index", new_LiteralType(new_IntSymbol(i)));
       fn->formals = new AList<DefExpr>(new DefExpr(arg));
@@ -212,7 +212,7 @@ static void construct_tuple_type(int rank) {
       if (i != 1)
         actuals->insertAtTail(new_StringLiteral(stringcpy(", ")));
       actuals->insertAtTail(
-        new CallExpr(OP_GET_MEMBER,
+        new CallExpr(PRIMITIVE_GET_MEMBER,
           new UnresolvedSymbol("val"),
           new_StringSymbol(stringcat("_f", intstring(i)))));
     }
@@ -254,7 +254,7 @@ static void construct_tuple_type(int rank) {
 //     for (int i = 1; i <= rank; i++) {
 //       assignFn->insertAtTail(
 //         new ExprStmt(
-//           new CallExpr(prim_move,
+//           new CallExpr(PRIMITIVE_MOVE,
 //             new CallExpr(tupleArg, new_IntLiteral(i)),
 //             new CallExpr(secondArg, new_IntLiteral(i)))));
 //     }
@@ -355,7 +355,7 @@ finish_constructor(FnSymbol* fn) {
   Expr* alloc_rhs = new CallExpr(Symboltable::lookupInternal("_chpl_alloc"),
                                  ct->symbol,
                                  new_StringLiteral(description));
-  CallExpr* alloc_expr = new CallExpr(prim_move, fn->_this, alloc_rhs);
+  CallExpr* alloc_expr = new CallExpr(PRIMITIVE_MOVE, fn->_this, alloc_rhs);
 
   AList<Stmt>* stmts = new AList<Stmt>();
 
@@ -367,7 +367,7 @@ finish_constructor(FnSymbol* fn) {
     for_alist(DefExpr, formalDef, fn->formals) {
       if (ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym)) {
         if (!strcmp(formal->name, field->name)) {
-          Expr* assign_expr = new CallExpr(OP_SET_MEMBER, fn->_this, 
+          Expr* assign_expr = new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
                                            new_StringSymbol(field->name), formal);
           stmts->insertAtTail(assign_expr);
         }

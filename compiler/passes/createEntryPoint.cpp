@@ -53,7 +53,7 @@ void createInitFn(ModuleSymbol* mod) {
     // insert a set to false at the beginning of the current module's
     // definition (we'll wrap it in a conditional just below, after
     // filtering)
-    Expr* assignVar = new CallExpr(prim_move,
+    Expr* assignVar = new CallExpr(PRIMITIVE_MOVE,
                                    new SymExpr(new UnresolvedSymbol(runOnce)),
                                    new_BoolLiteral(false));
     definition->insertAtHead(assignVar);

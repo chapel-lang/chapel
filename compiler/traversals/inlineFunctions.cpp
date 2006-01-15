@@ -18,7 +18,7 @@ class ReplaceReturns : public Traversal {
         if (sym) {
           Expr* ret = s->expr;
           ret->remove();
-          s->replace(new ExprStmt(new CallExpr(prim_move, sym, ret)));
+          s->replace(new ExprStmt(new CallExpr(PRIMITIVE_MOVE, sym, ret)));
         } else
           s->remove();
       }
@@ -44,7 +44,7 @@ static void mapFormalsToActuals(CallExpr* call, ASTMap* map) {
       temp->noDefaultInit = true;
       call->parentStmt->insertBefore(new DefExpr(temp));
       call->parentStmt->insertBefore
-        (new CallExpr(prim_move, temp, actual->copy()));
+        (new CallExpr(PRIMITIVE_MOVE, temp, actual->copy()));
       map->put(formal, temp);
     }
     actual = call->argList->next();
@@ -80,7 +80,7 @@ void inline_calls(BaseAST* base, Vec<FnSymbol*>* inline_stack = NULL) {
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
-      if (call->isPrimitive() || call->opTag != OP_NONE || !call->parentStmt)
+      if (call->isPrimitive() || !call->parentStmt)
         continue;
       FnSymbol* fn = call->findFnSymbol();
       if (!fn || !fn->hasPragma("inline") || fn->hasPragma("no codegen"))
