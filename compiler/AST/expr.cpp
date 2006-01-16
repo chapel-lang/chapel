@@ -975,7 +975,7 @@ void CastExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   } else if (old_ast == newType) {
     newType = dynamic_cast<Expr*>(new_ast);
   } else {
-    INT_FATAL(this, "Unexpected case in CastExpr::replaceChild");
+
   }
 }
 
@@ -997,7 +997,10 @@ Type* CastExpr::typeInfo(void) {
 
 
 void CastExpr::print(FILE* outfile) {
-  newType->print(outfile);
+  if (type)
+    type->print(outfile);
+  else
+    newType->print(outfile);
   fprintf(outfile, "(");
   expr->print(outfile);
   fprintf(outfile, ")");
@@ -1144,7 +1147,9 @@ Type* NamedExpr::typeInfo(void) {
 
 
 void NamedExpr::print(FILE* outfile) {
-  INT_FATAL(this, "NamedExpr::print not implemented");
+  fprintf(outfile, "(\"%s\" = ", name);
+  actual->print(outfile);
+  fprintf(outfile, ")");
 }
 
 

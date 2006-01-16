@@ -60,7 +60,7 @@ add_candidate(Map<FnSymbol*,Vec<ArgSymbol*>*>* candidateFns,
               Vec<char*>* actual_names,
               bool inst = false) {
   int num_actuals = actual_types->n;
-  int num_formals = fn->formals->length();
+  int num_formals = fn->formals ? fn->formals->length() : 0;
 
   Vec<ArgSymbol*>* actual_formals = new Vec<ArgSymbol*>();
   Vec<Type*> formal_actuals;
@@ -245,7 +245,9 @@ static FnSymbol*
 build_default_wrapper(FnSymbol* fn,
                       Vec<ArgSymbol*>* actual_formals) {
   FnSymbol* wrapper = fn;
-  if (fn->formals->length() > actual_formals->n) {
+  int num_actuals = actual_formals->n;
+  int num_formals = fn->formals ? fn->formals->length() : 0;
+  if (num_formals > num_actuals) {
     Vec<Symbol*> defaults;
     for_alist(DefExpr, formalDef, fn->formals) {
       ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
@@ -354,18 +356,20 @@ resolve_call(BaseAST* ast,
              Vec<Type*>* actual_types,
              Vec<Symbol*>* actual_params,
              Vec<char*>* actual_names,
-             PartialTag partialTag)
+             PartialTag partialTag,
+             FnSymbol *fnSymbol)
 {
-  char* canon_name = cannonicalize_string(name);
-
-  Vec<FnSymbol*> visibleFns;                    // visible functions
-  ast->parentScope->getVisibleFunctions(&visibleFns, canon_name);
-
   Map<FnSymbol*,Vec<ArgSymbol*>*> candidateFns; // candidate functions
 
-  forv_Vec(FnSymbol, visibleFn, visibleFns)
-    if (!newFns.set_in(visibleFn))
-      add_candidate(&candidateFns, visibleFn, actual_types, actual_params, actual_names);
+  if (!fnSymbol) {
+    char* canon_name = cannonicalize_string(name);
+    Vec<FnSymbol*> visibleFns;                    // visible functions
+    ast->parentScope->getVisibleFunctions(&visibleFns, canon_name);
+    forv_Vec(FnSymbol, visibleFn, visibleFns)
+      if (!newFns.set_in(visibleFn))
+        add_candidate(&candidateFns, visibleFn, actual_types, actual_params, actual_names);
+  } else 
+    add_candidate(&candidateFns, fnSymbol, actual_types, actual_params, actual_names);
 
   FnSymbol* best = NULL;
   Vec<ArgSymbol*>* actual_formals = 0;

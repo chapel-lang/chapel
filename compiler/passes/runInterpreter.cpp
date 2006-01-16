@@ -71,7 +71,7 @@ class ISlot : public gc { public:
 class IObject : public BaseAST { public:
   ClassType *type;
   Vec<BaseAST *> alloc_context;
-  Map<BaseAST *, ISlot *> member;
+  HashMap<char *, StringHashFns, ISlot *> member;
   Vec<int> dim;
   Vec<ISlot *> array;
   
@@ -81,7 +81,8 @@ class IObject : public BaseAST { public:
   IObject() : BaseAST(OBJECT), type(0) {}
 };
 
-typedef MapElem<BaseAST *, ISlot*> MapElemBaseASTISlot;
+typedef MapElem<char *, ISlot*> MapElemStringISlot;
+typedef MapElem<BaseAST *, ISlot *> MapElemBaseASTISlot;
 
 struct IFrame : public gc { public:
   IThread *thread;
@@ -100,12 +101,14 @@ struct IFrame : public gc { public:
   BaseAST *ip;
   ISlot *return_slot;
 
+  ISlot *get(BaseAST *ast);
+  void put(BaseAST *ast, ISlot *s);
   ISlot *islot(BaseAST *ast);
   ISlot *make_closure(int nargs);
   void icall(int nargs, ISlot *ret_slot = 0);
   void icall(FnSymbol *fn, int nargs = 0, int extra_args = 0);
   int igoto(Stmt *s);
-  void iprimitive(CallExpr *s);
+  int iprimitive(CallExpr *s);
   void reset();
   void init(FnSymbol *fn);
   void init(Stmt *s);
@@ -140,8 +143,8 @@ enum PrimOps {
   PRIM_SUBTRACT, PRIM_MULT, PRIM_DIV, PRIM_MOD, PRIM_EQUAL,
   PRIM_NOTEQUAL, PRIM_LESSOREQUAL, PRIM_GREATEROREQUAL, PRIM_LESS,
   PRIM_GREATER, PRIM_AND, PRIM_OR, PRIM_XOR, PRIM_LAND,
-  PRIM_LOR, PRIM_EXP, PRIM_PTR_EQ, PRIM_PTR_NEQ, PRIM_CAST,
-  PRIM_TO_STRING, PRIM_COPY_STRING, PRIM_STRING_INDEX, PRIM_STRING_CONCAT,
+  PRIM_LOR, PRIM_EXP, PRIM_GET_MEMBER, PRIM_SET_MEMBER, PRIM_PTR_EQ, PRIM_PTR_NEQ, 
+  PRIM_CAST, PRIM_TO_STRING, PRIM_COPY_STRING, PRIM_STRING_INDEX, PRIM_STRING_CONCAT,
   PRIM_STRING_EQUAL, PRIM_STRING_SELECT, PRIM_STRING_STRIDED_SELECT,
   PRIM_STRING_LENGTH, PRIM_DONE 
 };
@@ -166,6 +169,7 @@ static int cur_thread = -1;
 static Vec<int> break_ids;
 static Map<int, BaseAST*> known_ids;
 static Map<int, int> translate_prim;
+Map<BaseAST *, ISlot *> global_env;
 
 static void runProgram();
 static void error_interactive(IFrame *frame);
@@ -180,10 +184,47 @@ IFrame::IFrame(IThread *t) : thread(t), parent(0), debug_child(0), function(0), 
 }
 
 ISlot *
-IFrame::islot(BaseAST *ast) {
+IFrame::get(BaseAST *ast) {
   ISlot *s = env.get(ast);
+  if (s)
+    return s;
+  if (!s) {
+    s = global_env.get(ast);
+    if (s)
+      return s;
+  }
+  return NULL;
+}
+
+void
+IFrame::put(BaseAST *ast, ISlot *s) {
+  if (Symbol *sym = dynamic_cast<Symbol *>(ast)) {
+    if (sym->parentScope) {
+      switch (sym->parentScope->type) {
+        default:
+          USR_FATAL(ast, "interpreter: bad symbol scope");
+        case SCOPE_INTRINSIC:
+        case SCOPE_PRELUDE:
+        case SCOPE_MODULE:
+        case SCOPE_POSTPARSE:
+          global_env.put(ast,s);
+          return;
+        case SCOPE_LETEXPR:
+        case SCOPE_ARG:
+        case SCOPE_LOCAL:
+        case SCOPE_FORLOOP:
+          break;
+      }
+    }
+  }
+  env.put(ast, s);
+}
+
+ISlot *
+IFrame::islot(BaseAST *ast) {
+  ISlot *s = get(ast);
   if (!s)
-    env.put(ast, (s = new ISlot));
+    put(ast, (s = new ISlot));
   return s;
 }
 
@@ -196,7 +237,7 @@ IFrame::islot(BaseAST *ast) {
 static void
 check_kind(BaseAST *ast, ISlot *slot, int kind) {
   if (slot->kind != kind) {
-    USR_FATAL(ast, "interpreter: unexpected kind of slot %s: expected %s", 
+    USR_FATAL(ast, "interpreter: unexpected kind of slot: %s, expected: %s", 
               slotKindName[slot->kind], slotKindName[kind]);
   }
 }
@@ -234,7 +275,7 @@ check_type(BaseAST *ast, ISlot *slot, Type *t) {
 static void
 check_string(BaseAST *ast, ISlot *slot) {
   if (slot->kind != IMMEDIATE_ISLOT) {
-    USR_FATAL(ast, "interpreter: string expected: got %s slot", slotKindName[slot->kind]);
+    USR_FATAL(ast, "interpreter: unexpected kind of slot: %s, expected: String", slotKindName[slot->kind]);
   }
   if (slot->imm->const_kind != IF1_CONST_KIND_STRING) {
     char str[512];
@@ -263,7 +304,8 @@ check_numeric(BaseAST *ast, ISlot *slot) {
         return;
     }
   } else {
-    USR_FATAL(ast, "interpreter: numeric expected: got %s slot", slotKindName[slot->kind]);
+    USR_FATAL(ast, "interpreter: unexpected kind of slot: %s, expected: Numeric", 
+              slotKindName[slot->kind]);
   }
   return;
 }
@@ -368,80 +410,78 @@ IFrame::icall(int nargs, ISlot *ret_slot) {
   int done = 0, extra_args = 0;
   FnSymbol *fn = 0;
   do {
-    ISlot **args = &valStack.v[valStack.n-nargs];
-    if (args[0]->kind == SYMBOL_ISLOT && args[0]->symbol->astType == SYMBOL_FN) {
+    ISlot **arg = &valStack.v[valStack.n-nargs];
+    if (arg[0]->kind == SYMBOL_ISLOT && arg[0]->symbol->astType == SYMBOL_FN) {
       nargs--;
       extra_args++;
-      fn = dynamic_cast<FnSymbol*>(args[0]->symbol);
+      fn = dynamic_cast<FnSymbol*>(arg[0]->symbol);
       done = 1;
-    } else if (args[0]->kind == SELECTOR_ISLOT) {
-      name = args[0]->selector;
+    } else if (arg[0]->kind == SELECTOR_ISLOT) {
+      name = arg[0]->selector;
       nargs--;
       extra_args++;
       done = 1;
-    } else if (args[0]->kind == CLOSURE_ISLOT) {
-      Vec<ISlot *> &a = *args[0]->closure_args;
+    } else if (arg[0]->kind == CLOSURE_ISLOT) {
+      Vec<ISlot *> &a = *arg[0]->closure_args;
       int istart = valStack.n - (nargs - 1);
       valStack.fill(a.n-1);
       memmove(&valStack.v[istart + 1], &valStack.v[istart + nargs], 
               sizeof(valStack.v[0]) * (nargs - 1));
       for (int i = 0; i < a.n; i++)
         valStack.v[istart + i] = a.v[i];
-      nargs += args[0]->closure_args->n - 1;
+      nargs += arg[0]->closure_args->n - 1;
     } else {
       user_error(this, "call to something other than function name or closure");
       return;
     }
   } while (!done);
-  if (!fn) {
-    ISlot **args = &valStack.v[valStack.n-nargs];
-    Vec<Type *> actual_types;
-    Vec<Symbol *> actual_params;
-    Vec<char *> actual_names;
-    for (int i = 0; i < nargs; i++) {
-      actual_names.add(args[i]->name);
-      if (args[i]->aspect) {
-        actual_types.add(args[i]->aspect);
-        actual_params.add(NULL);
-      } else {
-        switch (args[i]->kind) {
-          default:
-          case EMPTY_ISLOT: 
-            INT_FATAL("interpreter: bad slot type: %d", args[i]->kind); break;
-          case SELECTOR_ISLOT: 
-          case SYMBOL_ISLOT: 
-            actual_types.add(args[i]->symbol->type);
-            actual_params.add(args[i]->symbol);
-            break;
-          case OBJECT_ISLOT:
-            actual_types.add(args[i]->object->type);
-            actual_params.add(NULL);
-            break;
-          case IMMEDIATE_ISLOT:
-            actual_types.add(immediate_type(args[i]->imm));
-            actual_params.add(new_ImmediateSymbol(args[i]->imm));
-            break;
-        }
+  ISlot **arg = &valStack.v[valStack.n-nargs];
+  Vec<Type *> actual_types;
+  Vec<Symbol *> actual_params;
+  Vec<char *> actual_names;
+  for (int i = 0; i < nargs; i++) {
+    actual_names.add(arg[i]->name);
+    if (arg[i]->aspect) {
+      actual_types.add(arg[i]->aspect);
+      actual_params.add(NULL);
+    } else {
+      switch (arg[i]->kind) {
+        default:
+        case EMPTY_ISLOT: 
+          INT_FATAL("interpreter: bad slot type: %d", arg[i]->kind); break;
+        case SELECTOR_ISLOT: 
+        case SYMBOL_ISLOT: 
+          actual_types.add(arg[i]->symbol->type);
+          actual_params.add(arg[i]->symbol);
+          break;
+        case OBJECT_ISLOT:
+          actual_types.add(arg[i]->object->type);
+          actual_params.add(NULL);
+          break;
+        case IMMEDIATE_ISLOT:
+          actual_types.add(immediate_type(arg[i]->imm));
+          actual_params.add(new_ImmediateSymbol(arg[i]->imm));
+          break;
       }
     }
-    PartialTag partialTag = PARTIAL_NEVER;
-    if (CallExpr *call = dynamic_cast<CallExpr*>(ip)) 
-      partialTag = call->partialTag;
-    fn = resolve_call(ip, name, &actual_types, &actual_params, &actual_names, partialTag);
-    if (!fn) {
-      switch (resolve_call_error) {
-        default: INT_FATAL("interpreter: bad resolve_call_error: %d", (int)resolve_call_error); break;
-        case CALL_PARTIAL:
-          *return_slot = *make_closure(nargs + 1);
-          valStack.n -= (nargs + extra_args);
-          break;
-        case CALL_AMBIGUOUS:
-          user_error(this, "ambiguous call, unable to dispatch to a single function");
-          return;
-        case CALL_UNKNOWN:
-          user_error(this, "no function found, unable to dispatch function call");
-          return;
-      }
+  }
+  PartialTag partialTag = PARTIAL_NEVER;
+  if (CallExpr *call = dynamic_cast<CallExpr*>(ip)) 
+    partialTag = call->partialTag;
+  fn = resolve_call(ip, name, &actual_types, &actual_params, &actual_names, partialTag, fn);
+  if (!fn) {
+    switch (resolve_call_error) {
+      default: INT_FATAL("interpreter: bad resolve_call_error: %d", (int)resolve_call_error); break;
+      case CALL_PARTIAL:
+        *return_slot = *make_closure(nargs + 1);
+        valStack.n -= (nargs + extra_args);
+        break;
+      case CALL_AMBIGUOUS:
+        user_error(this, "ambiguous call, unable to dispatch to a single function");
+        return;
+      case CALL_UNKNOWN:
+        user_error(this, "no function found, unable to dispatch function call");
+        return;
     }
   }
   icall(fn, nargs, extra_args);
@@ -464,7 +504,7 @@ interactive_usage() {
           "  print - print by id number or a local by name\n"
           "  nprint - print showing ids\n"
           "  info - information about breakpoints\n"
-          "  bi - break at an id\n"
+          "  bi - break at an id (execute or set)\n"
           "  birm - remove a break by id\n"
           "  continue - continue execution\n"
           "  run - restart execution\n"
@@ -667,15 +707,11 @@ IObject::print(int fnprint) {
   printf("Object(%d)", (int)id);
   printf(" : %s(%d) {\n", type->symbol->name, (int)type->id); 
   printf("  Members:\n");
-  form_Map(MapElemBaseASTISlot, x, member) {
-    if (Symbol *s = dynamic_cast<Symbol*>(x->key)) {
-      printf("    ");
-      s->print(stdout);
-      printf("(%d) = ", (int)s->id);
-      ::print(x->value, fnprint);
-      printf("\n");
-      known_ids.put(s->id, s);
-    }
+  form_Map(MapElemStringISlot, x, member) {
+    char *s = x->key;
+    printf("    %s = ", s);
+    ::print(x->value, fnprint);
+    printf("\n");
   }
   if (dim.n) {
     printf("  Array Dimension(s): ");
@@ -768,12 +804,22 @@ cmd_print(IFrame *frame, char *c, int fnprint = 0) {
     form_Map(MapElemBaseASTISlot, x, frame->env) {
       if (Symbol *s = dynamic_cast<Symbol*>(x->key)) {
         if (s->name && !strcmp(s->name, c)) {
+          printf("local (%d) ", (int)s->id);
           p = s;
           goto Lfound;
         }
       }
     }
-    printf("  unknown local: %s\n", c);
+    form_Map(MapElemBaseASTISlot, x, global_env) {
+      if (Symbol *s = dynamic_cast<Symbol*>(x->key)) {
+        if (s->name && !strcmp(s->name, c)) {
+          printf("global (%d) ", (int)s->id);
+          p = s;
+          goto Lfound;
+        }
+      }
+    }
+    printf("  unknown: %s\n", c);
     return;
   Lfound:;
   }
@@ -784,8 +830,8 @@ cmd_print(IFrame *frame, char *c, int fnprint = 0) {
     nprint(p);
   printf("\n ");
   p->print(stdout);
-  printf(" ");
-  ISlot *ss = frame->env.get(p);
+  printf("  ");
+  ISlot *ss = frame->get(p);
   if (ss) {
     printf("= ");
     print(ss);
@@ -993,7 +1039,10 @@ IFrame::reset() {
   stageStack.add(stage + 1); \
   stageStack.add(1); exprStack.add(__e); stage = 0; expr = __e; \
 } while (0)
-#define EVAL_STMT(_s) do { stageStack.add(stage + 1); stmtStack.add(stmt); stmt = _s; } while (0)
+#define EVAL_STMT(_s) do { \
+  stageStack.add(stage + 1); stmtStack.add(stmt); \
+  stage = 0; ip = stmt = _s; goto LgotoLabel; \
+} while (0)
 #define PUSH_SELECTOR(_s) do { ISlot *_slot = new ISlot; _slot->set_selector(_s); valStack.add(_slot); } while (0)
 #define PUSH_VAL(_s) valStack.add(islot(_s))
 #define PUSH_SYM(_s)  do { ISlot *_slot = new ISlot; _slot->set_symbol(_s); valStack.add(_slot); } while (0)
@@ -1047,7 +1096,7 @@ IFrame::igoto(Stmt *s) {
     user_error(this, "goto target nested below source");
     return 1;
   }
-  for (int i = 0; i < parents.n; i++)
+  for (int i = 0; i < parents.n-1; i++)
     if (parents.v[i] != stmtStack.v[i]) {
       user_error(this, "goto target crosses nesting levels");
       return 1;
@@ -1066,9 +1115,10 @@ IFrame::igoto(Stmt *s) {
     }
     ss = (Stmt*)ss->next;
   }
+  assert(exprStack.n == 0);
+  assert(expr == 0);
   stage = 0;
-  stmt = s;
-  ip = expr = 0;
+  ip = stmt = s;
   valStack.clear();
   stageStack.n = parents.n;
   stmtStack.n = parents.n;
@@ -1111,28 +1161,41 @@ check_TypeSymbol(BaseAST *s, ISlot *slot) {
   return NULL;
 }
 
-void
+static FnSymbol *
+resolve_0arity_call(BaseAST *ip, FnSymbol *fn) {
+  Vec<Type *> actual_types;
+  Vec<Symbol *> actual_params;
+  Vec<char *> actual_names;
+  return resolve_call(ip, NULL, &actual_types, &actual_params, &actual_names, PARTIAL_NEVER, fn);
+}
+
+int
 IFrame::iprimitive(CallExpr *s) {
   int len = s->argList->length();
   if (!s->primitive->interpreterOp) {
-    // INT_FATAL(ip, "interpreter: bad astType: %d", ip->astType);
-    valStack.n -= len;
-    islot(s)->kind = EMPTY_ISLOT;
-    return;
+    INT_FATAL(ip, "interpreter: bad astType: %d", ip->astType);
+//    valStack.n -= len;
+//    islot(s)->kind = EMPTY_ISLOT;
+//    return 0;
   }
   ISlot **arg = &valStack.v[valStack.n-len];
   ISlot result;
-  switch (s->primitive->interpreterOp->kind) {
-
+  PrimOps kind = s->primitive->interpreterOp->kind;
+  switch (kind) {
     case PRIM_NONE:
       INT_FATAL(ip, "interpreter: prim type: %d", s->primitive->interpreterOp->kind);
-
     case PRIM_INIT: {
       check_prim_args(s, 1);
-      if (arg[0]->kind != SYMBOL_ISLOT) {
-        INT_FATAL(ip, "interpreter: non-symbol argument to INIT primitive: %d", arg[0]->kind);
+      TypeSymbol *ts = NULL;
+      if (arg[0]->kind == OBJECT_ISLOT)
+        ts = arg[0]->object->type->symbol;
+      else if (arg[0]->kind == SYMBOL_ISLOT)
+        ts = dynamic_cast<TypeSymbol*>(arg[0]->symbol);
+      else if (arg[0]->kind == IMMEDIATE_ISLOT)
+        ts = immediate_type(arg[0]->imm)->symbol;
+      else {
+        INT_FATAL(ip, "interpreter: bad argument to INIT primitive: %d", arg[0]->kind);
       }
-      TypeSymbol *ts = dynamic_cast<TypeSymbol*>(arg[0]->symbol);
       if (!ts) {
         INT_FATAL(ip, "interpreter: non-TypeSymbol argument to INIT primitive: %s", 
                   astTypeName[arg[0]->symbol->astType]);
@@ -1149,12 +1212,11 @@ IFrame::iprimitive(CallExpr *s) {
       Lok:;
       } else if (ts->definition->defaultConstructor) {
         return_slot = islot(s);
-        icall(ts->definition->defaultConstructor);
-        return;
+        icall(resolve_0arity_call(s, ts->definition->defaultConstructor), 0, 1);
+        return 1;
       }
       break;
     }
-
     case PRIM_ALLOC: {
       check_prim_args(s, 1);
       TypeSymbol *ts = check_TypeSymbol(s, arg[0]);
@@ -1166,21 +1228,20 @@ IFrame::iprimitive(CallExpr *s) {
           USR_FATAL(s, "interpreter: attempted ALLOC of generic ClassType");
         }
         forv_Symbol(s, ct->fields)
-          result.object->member.put(s, new ISlot);
+          result.object->member.put(s->name, new ISlot);
         get_context(this, result.object->alloc_context);
       } else {
         USR_FATAL(s, "interpreter: non-ClassType definition of TypeSymbol argument to ALLOC primitive");
       }
       break;
     }
-      
     case PRIM_FOPEN:
     case PRIM_FCLOSE:
     case PRIM_STRERROR:
     case PRIM_FPRINTF:
     case PRIM_FSCANF:
       user_error(this, "unhandled primitive: %s", s->primitive->name);
-      return;
+      return 1;
     case PRIM_ARRAY_INDEX: {
       check_prim_args(s, AT_LEAST 2);
       check_kind(s, arg[0], OBJECT_ISLOT);
@@ -1222,10 +1283,8 @@ IFrame::iprimitive(CallExpr *s) {
       coerce_immediate(arg[1]->imm, result.imm);
       break;
     }
-    case PRIM_UNARY_MINUS:
-    case PRIM_UNARY_PLUS:
-    case PRIM_UNARY_BNOT:
-    case PRIM_UNARY_NOT:
+    case PRIM_UNARY_MINUS: case PRIM_UNARY_PLUS:
+    case PRIM_UNARY_BNOT: case PRIM_UNARY_NOT:
       check_prim_args(s, 1);
       check_numeric(s, arg[0]);
       result.kind = IMMEDIATE_ISLOT;
@@ -1233,22 +1292,15 @@ IFrame::iprimitive(CallExpr *s) {
       fold_constant(translate_prim.get(s->primitive->interpreterOp->kind), 
                     arg[0]->imm, NULL, result.imm);
       break;
-    case PRIM_ADD:
-    case PRIM_SUBTRACT:
-    case PRIM_MULT:
-    case PRIM_DIV:
+    case PRIM_ADD: case PRIM_SUBTRACT:
+    case PRIM_MULT: case PRIM_DIV:
     case PRIM_MOD:
-    case PRIM_EQUAL:
-    case PRIM_NOTEQUAL:
-    case PRIM_LESSOREQUAL:
-    case PRIM_GREATEROREQUAL:
-    case PRIM_LESS:
-    case PRIM_GREATER:
-    case PRIM_AND:
-    case PRIM_OR:
+    case PRIM_EQUAL: case PRIM_NOTEQUAL:
+    case PRIM_LESSOREQUAL: case PRIM_GREATEROREQUAL:
+    case PRIM_LESS: case PRIM_GREATER:
+    case PRIM_AND: case PRIM_OR:
     case PRIM_XOR:
-    case PRIM_LAND:
-    case PRIM_LOR:
+    case PRIM_LAND: case PRIM_LOR:
     case PRIM_EXP:
       check_prim_args(s, 2);
       check_numeric(s, arg[0]);
@@ -1258,6 +1310,23 @@ IFrame::iprimitive(CallExpr *s) {
       fold_constant(translate_prim.get(s->primitive->interpreterOp->kind), 
                     arg[0]->imm, arg[1]->imm, result.imm);
       break;
+    case PRIM_GET_MEMBER: 
+    case PRIM_SET_MEMBER: {
+      check_prim_args(s, kind == PRIM_GET_MEMBER ? 2 : 3);
+      check_kind(s, arg[0], OBJECT_ISLOT);
+      check_string(s, arg[1]);
+      ISlot *m = arg[0]->object->member.get(arg[1]->imm->v_string);
+      if (!m) {
+        user_error(this, "member '%s' not found in object %d", arg[1]->imm->v_string, 
+                   (int)arg[0]->object->id);
+        return 1;
+      }
+      if (kind == PRIM_GET_MEMBER)
+        result = *m;
+      else
+        result = *m = *arg[2];
+      break;
+    }
     case PRIM_PTR_EQ:
     case PRIM_PTR_NEQ: {
       check_prim_args(s, 2);
@@ -1281,10 +1350,9 @@ IFrame::iprimitive(CallExpr *s) {
       break;
     }
     case PRIM_COPY_STRING: {
-      check_prim_args(s, 2);
+      check_prim_args(s, 1);
       check_string(s, arg[0]);
-      check_string(s, arg[1]);
-      Immediate imm(dupstr(arg[1]->imm->v_string));
+      Immediate imm(dupstr(arg[0]->imm->v_string));
       result.set_immediate(imm);
       break;
     }
@@ -1294,8 +1362,8 @@ IFrame::iprimitive(CallExpr *s) {
       check_type(s, arg[1], dtInteger);
       int i = arg[1]->imm->v_int64;
       if ((int)strlen(arg[0]->imm->v_string) >= i) {
-        user_error(this, "interpreter: string_index out of range %d", i);
-        return;
+        user_error(this, "string_index out of range %d", i);
+        return 1;
       }
       Immediate imm(dupstr(arg[0]->imm->v_string + i, arg[0]->imm->v_string + i + 1));
       result.set_immediate(imm);
@@ -1326,8 +1394,8 @@ IFrame::iprimitive(CallExpr *s) {
       int j = arg[2]->imm->v_int64;
       int l = strlen(arg[0]->imm->v_string);
       if (l >= i || l >= j || j < i) {
-        user_error(this, "interpreter: string_select out of range %d:%d", i, j);
-        return;
+        user_error(this, "string_select out of range %d:%d", i, j);
+        return 1;
       }
       Immediate imm(dupstr(arg[0]->imm->v_string + i, arg[0]->imm->v_string + j + 1));
       result.set_immediate(imm);
@@ -1344,8 +1412,8 @@ IFrame::iprimitive(CallExpr *s) {
       int stride = arg[3]->imm->v_int64;
       int l = strlen(arg[0]->imm->v_string);
       if (l >= i || l >= j || j < i) {
-        user_error(this, "interpreter: string_select out of range %d:%d", i, j);
-        return;
+        user_error(this, "string_select out of range %d:%d", i, j);
+        return 1;
       }
       char str[((j - i)/stride) + 2];
       int x = 0;
@@ -1356,15 +1424,22 @@ IFrame::iprimitive(CallExpr *s) {
       result.set_immediate(imm);
       break;
     }
-    case PRIM_STRING_LENGTH:
+    case PRIM_STRING_LENGTH: {
+      check_prim_args(s, 1);
+      check_string(s, arg[0]);
+      Immediate imm((int)strlen(arg[0]->imm->v_string));
+      result.set_immediate(imm);
+      break;
+    }
     case PRIM_DONE: {
       user_error(this, "interpreter terminated: %s", s->primitive->name);
-      return;
+      return 1;
     }
       
   }
   valStack.n -= len;
   *islot(s) = result;
+  return 0;
 }
 
 int
@@ -1394,8 +1469,11 @@ IFrame::run(int timeslice) {
         S(ReturnStmt);
         switch (stage++) {
           case 0: 
-            EVAL_EXPR(s->expr);
-            break;
+            if (s->expr) {
+              EVAL_EXPR(s->expr);
+              break;
+            }
+            // FALL THROUGH
           case 1: {
             stage = 0;
             thread->frame = parent;
@@ -1412,7 +1490,6 @@ IFrame::run(int timeslice) {
       case STMT_BLOCK: {
         S(BlockStmt);
         EVAL_STMT((Stmt*)s->body->head->next);
-        break;
       }
       case STMT_WHILELOOP: {
         S(WhileLoopStmt);
@@ -1480,7 +1557,6 @@ IFrame::run(int timeslice) {
           }
           case 4:
             EVAL_STMT(s->innerStmt);
-            break;
           case 5:
             stage = 2;
             PUSH_SELECTOR("_forall_next");
@@ -1504,8 +1580,10 @@ IFrame::run(int timeslice) {
             check_type(ip, cond, dtBoolean);
             if (cond->imm->v_bool)
               EVAL_STMT(s->thenStmt);
-            else
-              EVAL_STMT(s->elseStmt);
+            else {
+              if (s->elseStmt)
+                EVAL_STMT(s->elseStmt);
+            }
             break;
           }
           default: INT_FATAL(ip, "interpreter: bad stage %d for astType: %d", stage, ip->astType); break;
@@ -1527,7 +1605,6 @@ IFrame::run(int timeslice) {
           case 1:
             stage = 0;
             EVAL_STMT((Stmt*)s->whenStmts->head->next);
-            break;
           default: INT_FATAL(ip, "interpreter: bad stage %d for astType: %d", stage, ip->astType); break;
         }
         break;
@@ -1541,28 +1618,28 @@ IFrame::run(int timeslice) {
       }
       case EXPR_SYM: {
         S(SymExpr);
-        ISlot *x = env.get(s->var);
+        ISlot *x = get(s->var);
         if (!x) {
           switch (s->var->astType) {
             case SYMBOL_UNRESOLVED:
-              env.put(s->var, (x = new ISlot(s->var->name)));
+              put(s->var, (x = new ISlot(s->var->name)));
               break;
             case SYMBOL_FN: 
             case SYMBOL_TYPE:
-              env.put(s->var, (x = new ISlot(s->var)));
+              put(s->var, (x = new ISlot(s->var)));
               break;
             case SYMBOL_VAR: {
               VarSymbol *v = (VarSymbol*)s->var;
               if (v->immediate) {
-                env.put(s->var, (x = new ISlot(v->immediate)));
+                put(s->var, (x = new ISlot(v->immediate)));
                 break;
               }
-              env.put(s->var, (x = new ISlot(v)));
+              put(s->var, (x = new ISlot(v)));
               break;
             }
             default:
-              USR_FATAL(ip, "unknown variable in SymExpr '%s'", s->var->name ? s->var->name : "");
-              break;
+              user_error(this, "unknown variable in SymExpr '%s'", s->var->name ? s->var->name : "");
+              return timeslice;
           }
         }
         assert(x);
@@ -1628,6 +1705,12 @@ IFrame::run(int timeslice) {
               if (s->argList->length() != 2) {
                 INT_FATAL(ip, "illegal number of arguments for MOVE %d\n", s->argList->length());
               }
+              Expr *a = s->argList->get(1);
+              BaseAST *var = dynamic_cast<SymExpr*>(a)->var;
+              if (var && break_ids.in(var->id)) {
+                printf("  break at id %d\n", (int)var->id);
+                interrupted = 1;
+              }
               stage = 2;
             } else if (s->baseExpr) {
               PUSH_EXPR(s->baseExpr);
@@ -1641,14 +1724,15 @@ IFrame::run(int timeslice) {
               stage = 0;
               if (s->isPrimitive(PRIMITIVE_MOVE)) {
                 Expr *a = s->argList->get(1);
-                if (a->astType == EXPR_SYM)
-                  POP_VAL((dynamic_cast<SymExpr*>(a))->var);
-                else {
+                if (a->astType == EXPR_SYM) {
+                  POP_VAL(dynamic_cast<SymExpr*>(a)->var);
+                } else {
                   INT_FATAL(ip, "target of MOVE not an SymExpr, astType = %d\n", 
                             s->argList->get(1)->astType);
                 }
               } else if (s->primitive) {
-                iprimitive(s);
+                if (iprimitive(s))
+                  return timeslice;
               } else {
                 CALL(s->argList->length() + 1);
               }
@@ -1679,14 +1763,35 @@ IFrame::run(int timeslice) {
           case 0:
             EVAL_EXPR(s->expr);
             break;
-          case 1: {
+          case 1:
+            if (!s->type)
+              EVAL_EXPR(s->newType);
+            break;
+          case 2: {
             stage = 0;
-            ISlot *slot = islot(s->expr);
-            if (!s->type) {
+            ISlot *eslot = islot(s->expr);
+            Type *t = s->type;
+            if (!t) {
+              ISlot *tslot = islot(s->newType);
+              switch (tslot->kind) {
+                case OBJECT_ISLOT: t = tslot->object->type; break;
+                case IMMEDIATE_ISLOT: t = immediate_type(tslot->imm); break;
+                case SYMBOL_ISLOT: {
+                  if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(tslot->symbol)) {
+                    t = ts->definition;
+                    break;
+                  }
+                }
+                  // fall through
+                default:
+                  INT_FATAL(ip, "CastExpr with bad argument");
+              }
+            }
+            if (!t) {
               INT_FATAL(ip, "CastExpr with NULL type");
             }
-            slot->aspect = s->type;
-            *islot(s) = *slot;
+            eslot->aspect = t;
+            *islot(s) = *eslot;
             break;
           }
         }
@@ -1705,7 +1810,8 @@ IFrame::run(int timeslice) {
           ip = expr = 0;
       }
       if (!expr && !stage) {
-        ip = stmt = (Stmt*)stmt->next;
+        if (stmt)
+          ip = stmt = (Stmt*)stmt->next;
         valStack.clear();
         while (!stmt) {
           stmt = stmtStack.pop();
@@ -1806,6 +1912,8 @@ init_interpreter() {
   land_interpreter_op = new InterpreterOp("land", PRIM_LAND);
   lor_interpreter_op = new InterpreterOp("lor", PRIM_LOR);
   exp_interpreter_op = new InterpreterOp("exp", PRIM_EXP);
+  get_member_interpreter_op = new InterpreterOp("get_member", PRIM_GET_MEMBER);
+  set_member_interpreter_op = new InterpreterOp("set_member", PRIM_SET_MEMBER);
   ptr_eq_interpreter_op = new InterpreterOp("ptr_eq", PRIM_PTR_EQ);
   ptr_neq_interpreter_op = new InterpreterOp("ptr_neq", PRIM_PTR_NEQ);
   cast_interpreter_op = new InterpreterOp("cast", PRIM_CAST);
