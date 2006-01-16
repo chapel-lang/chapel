@@ -53807,3 +53807,32 @@ Log message:
 Modified files:
 	chapel/compiler/util/: misc.cpp 
 
+---------------------------------------------------------------------------
+
+01/16/06 11:27:03 -- jplevyak
+
+Log message:
+	  - added support for PRIM_GET_MEMBER/SET_MEMBER
+	  - fixed printing of primitives in view.cpp
+	  - fixed more cases for PRIM_ALLOC and PRIM_INIT:
+	      handle type symbols, immediates and objects as templates
+	  - fixed STRING_LENGTH: bad number of args
+	  - fixed lots of error messages to be more consistent
+	  - fix EVAL_STMT: was skipping subsequent statments in some case
+	  - now we resolve default wrappers, both for normal calls and
+	      constructors out of PRIM_INIT
+	  - added support for globals
+	  - "print" can now print globals
+	  - added some error checking to normalize
+	  - made call_resolve take an optional FnSymbol for
+	      cases where the call has been pre-resolved or
+	      for PRIM_INIT constructors
+	  - added support for NamedExpr::print
+	  - fixed CastExpr::print so that it can handle when newType is NULL
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/include/: astutil.h 
+	chapel/compiler/passes/: functionResolution.cpp 
+	                         runInterpreter.cpp 
+
