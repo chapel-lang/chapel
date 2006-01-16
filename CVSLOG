@@ -53867,3 +53867,19 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+01/16/06 15:18:19 -- bradc
+
+Log message:
+	Getting cygwin platform ready for demo at PDR.  Added .cvsignore
+	files for cygwin subdirectories and emacs support for version 21.3
+	(by copying 21.4 implementation).
+
+Modified files:
+	chapel/compiler/ifa/: .cvsignore 
+	chapel/compiler/ifa/make_prims/: .cvsignore 
+Added files:
+	chapel/etc/emacs/21.3/: cc-langs.el cc-menus.el cc-mode.el 
+	                        font-lock.el 
+
