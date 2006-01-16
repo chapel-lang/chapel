@@ -400,25 +400,20 @@ static void insert_formal_temps(FnSymbol* fn) {
   if (!strcmp("=", fn->name))
     return;
 
+  if (fn->getModule() == prelude)
+    return;
+
   Vec<DefExpr*> tempDefs;
   ASTMap subs;
 
   for_alist_backward(DefExpr, formalDef, fn->formals) {
     ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
-    if (formal->intent == INTENT_REF)
+    if (formal->intent == INTENT_REF ||
+        formal->intent == INTENT_PARAM ||
+        formal->intent == INTENT_TYPE)
       continue;
-    Type *type = formal->type;
-    if (type == dtAny || type == dtNumeric)
-      type = dtUnknown;
-    if (formal->intent == INTENT_PARAM ||
-        formal->intent == INTENT_TYPE ||
-        formal->genericSymbol ||
-        type->isGeneric)
-      return;
-    VarSymbol* temp = new VarSymbol(stringcat("_", formal->name), formal->type);
+    VarSymbol* temp = new VarSymbol(stringcat("_", formal->name));
     DefExpr* tempDef = new DefExpr(temp, new SymExpr(formal));
-    if (formalDef->exprType)
-      tempDef->exprType = formalDef->exprType->copy();
     tempDefs.add(tempDef);
     subs.put(formal, temp);
   }
@@ -726,18 +721,6 @@ static void hack_resolve_types(Expr* expr) {
               userType->defaultConstructor =
                 userType->underlyingType->defaultConstructor;
             }
-          }
-        }
-      }
-    }
-  }
-
-  if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
-    if (VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym)) {
-      if (ClassType* ct = dynamic_cast<ClassType*>(var->type)) {
-        forv_Vec(TypeSymbol, type, ct->types) {
-          if (dynamic_cast<VariableType*>(type->definition)) {
-            INT_FATAL(var, "Illegal declaration, type is generic");
           }
         }
       }
