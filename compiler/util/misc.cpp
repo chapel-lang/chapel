@@ -106,7 +106,7 @@ get_file_line(char *filename, int lineno) {
       *b = 0;
       b++;
       last_lines.add(b);
-      b = index(b, '\n');
+      b = strchr(b, '\n');
     }
   }
   lineno--; // 0 based
