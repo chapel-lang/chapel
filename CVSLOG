@@ -53856,3 +53856,14 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: normalize.cpp 
 
+---------------------------------------------------------------------------
+
+01/16/06 11:55:06 -- deitz
+
+Log message:
+	Updated test output.
+
+Modified files:
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
