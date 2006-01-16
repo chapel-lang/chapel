@@ -53796,3 +53796,14 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: 
 	                                         test_paramvar_class1.chpl 
 
+---------------------------------------------------------------------------
+
+01/16/06 11:18:58 -- jplevyak
+
+Log message:
+	Humm... seemed to have lost my change index() -> strchr().
+	Hope it will take this time and fix the sun build.
+
+Modified files:
+	chapel/compiler/util/: misc.cpp 
+
