@@ -53846,3 +53846,13 @@ Log message:
 Added files:
 	chapel/compiler/passes/: interpreter.todo 
 
+---------------------------------------------------------------------------
+
+01/16/06 11:54:14 -- deitz
+
+Log message:
+	Updated --formal-temps transform now that --use-alloc is default.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+
