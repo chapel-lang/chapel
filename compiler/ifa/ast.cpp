@@ -268,7 +268,7 @@ build_type_hierarchy() {
     s->specializers.set_add(s);
   }
   // compute structural type hierarchy
-  compute_structural_type_hierarchy(types);
+  if (0) compute_structural_type_hierarchy(types);
   // compute implementors closure
   Vec<Sym *> todo, changed, next_changed;
   types.set_union(meta_types);
