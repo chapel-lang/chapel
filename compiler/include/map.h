@@ -32,12 +32,12 @@ template <class K, class C> class Map : public Vec<MapElem<K,C> > {
   using Vec<MapElem<K, C> >::n;
   using Vec<MapElem<K, C> >::i;
   using Vec<MapElem<K, C> >::v;
-  inline MapElem<K,C> *put(K akey, C avalue);
-  inline C get(K akey);
-  inline void get_keys(Vec<K> &keys);
-  inline void get_keys_set(Vec<K> &keys);
-  inline void get_values(Vec<C> &values);
-  inline void map_union(Map<K,C> &m);
+  MapElem<K,C> *put(K akey, C avalue);
+  C get(K akey);
+  void get_keys(Vec<K> &keys);
+  void get_keys_set(Vec<K> &keys);
+  void get_values(Vec<C> &values);
+  void map_union(Map<K,C> &m);
 };
 
 template <class C> class HashFns {
@@ -52,11 +52,11 @@ template <class K, class AHashFns, class C> class HashMap : public Map<K,C> {
   using Map<K, C>::i;
   using Map<K, C>::v;
   using Map<K, C>::e;
-  inline MapElem<K,C> *get_internal(K akey);
-  inline C get(K akey);
-  inline MapElem<K,C> *put(K akey, C avalue);
-  inline void get_keys(Vec<K> &keys);
-  inline void get_values(Vec<C> &values);
+  MapElem<K,C> *get_internal(K akey);
+  C get(K akey);
+  MapElem<K,C> *put(K akey, C avalue);
+  void get_keys(Vec<K> &keys);
+  void get_values(Vec<C> &values);
 };
 
 #define form_Map(_c, _p, _v) if ((_v).n) for (_c *qq__##_p = (_c*)0, *_p = &(_v).v[0]; \
@@ -86,10 +86,10 @@ template <class C, class AHashFns> class ChainHash : public Map<unsigned int, Li
  public:
   using Map<unsigned int, List<C> >::n;
   using Map<unsigned int, List<C> >::v;
-  inline C put(C c);
-  inline C get(C c);
-  inline int del(C avalue);
-  inline void get_elements(Vec<C> &elements);
+  C put(C c);
+  C get(C c);
+  int del(C avalue);
+  void get_elements(Vec<C> &elements);
 };
 
 template <class K, class AHashFns, class C> class ChainHashMap : 
@@ -97,16 +97,16 @@ template <class K, class AHashFns, class C> class ChainHashMap :
  public:
   using Map<unsigned int, List<MapElem<K, C> > >::n;
   using Map<unsigned int, List<MapElem<K, C> > >::v;
-  inline MapElem<K,C> *put(K akey, C avalue);
-  inline C get(K akey);
-  inline int del(K akey);
-  inline void get_keys(Vec<K> &keys);
-  inline void get_values(Vec<C> &values);
+  MapElem<K,C> *put(K akey, C avalue);
+  C get(K akey);
+  int del(K akey);
+  void get_keys(Vec<K> &keys);
+  void get_values(Vec<C> &values);
 };
 
 class StringChainHash : public ChainHash<char *, StringHashFns> {
  public:
-  inline char *cannonicalize(char *s, char *e);
+  char *cannonicalize(char *s, char *e);
 };
 
 template <class C, class AHashFns, int N> class NBlockHash : public gc {
@@ -118,14 +118,17 @@ template <class C, class AHashFns, int N> class NBlockHash : public gc {
 
   C* end() { return last(); }
   int length() { return N * n; }
-  inline C *first();
-  inline C *last();
-  inline C put(C c);
-  inline C get(C c);
-  inline int del(C c);
-  inline void clear();
-  inline int count();
-  inline NBlockHash();
+  C *first();
+  C *last();
+  C put(C c);
+  C get(C c);
+  int del(C c);
+  void clear();
+  int count();
+  void copy(const NBlockHash<C,AHashFns,N> &hh);
+  void move(NBlockHash<C,AHashFns,N> &hh);
+  NBlockHash();
+  NBlockHash(NBlockHash<C,AHashFns,N> &hh) { copy(hh); }
 };
 
 /* use forv_Vec on BlockHashs */
@@ -137,17 +140,17 @@ typedef BlockHash<char *, StringHashFns> StringBlockHash;
 
 template <class K, class C> class Env : public gc {
  public:
-  inline void put(K akey, C avalue);
-  inline C get(K akey);
-  inline void push();
-  inline void pop();
-  inline void clear() { store.clear(); scope.clear(); }
+  void put(K akey, C avalue);
+  C get(K akey);
+  void push();
+  void pop();
+  void clear() { store.clear(); scope.clear(); }
 
-  inline Env() {}
+  Env() {}
  private:
   Map<K,List<C> *> store;
   List<List<K> > scope;
-  inline List<C> *get_bucket(K akey);
+  List<C> *get_bucket(K akey);
 };
 
 extern unsigned int open_hash_multipliers[256];
@@ -620,6 +623,34 @@ NBlockHash<C, AHashFns, N>::count() {
     if (*xx)
       nelements++;
   return nelements;
+}
+
+template <class C, class AHashFns, int N> inline void 
+NBlockHash<C, AHashFns, N>::copy(const NBlockHash<C, AHashFns, N> &hh)  {
+  n = hh.n;
+  i = hh.i;
+  if (hh.v == &hh.e[0]) { 
+    memcpy(e, &hh.e[0], sizeof(e));
+    v = e;
+  } else {
+    if (hh.v) {
+      v = (C*)MALLOC(n * sizeof(C) * N);
+      memcpy(v, hh.v, n * sizeof(C) * N);
+    } else
+      v = 0;
+  }
+}
+
+template <class C, class AHashFns, int N> inline void 
+NBlockHash<C, AHashFns, N>::move(NBlockHash<C, AHashFns, N> &hh)  {
+  n = hh.n;
+  i = hh.i;
+  v = hh.v;
+  if (hh.v == &hh.e[0]) { 
+    memcpy(e, &hh.e[0], sizeof(e));
+    v = e;
+  }
+  hh.clear();
 }
 
 void test_map();

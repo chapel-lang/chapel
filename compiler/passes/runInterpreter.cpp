@@ -167,6 +167,8 @@ static int single_step = NO_STEP;
 static Vec<IThread *> threads;
 static int cur_thread = -1;
 static Vec<int> break_ids;
+static Vec<int> watch_ids;
+static StringBlockHash break_functions;
 static Map<int, BaseAST*> known_ids;
 static Map<int, int> translate_prim;
 Map<BaseAST *, ISlot *> global_env;
@@ -318,6 +320,10 @@ IFrame::icall(FnSymbol *fn, int nargs, int extra_args) {
   }
   if (break_ids.in(fn->id)) {
     printf("  break at function id %d\n", (int)fn->id);
+    interrupted = 1;
+  }
+  if (break_functions.get(fn->name)) {
+    printf("  break at function %s\n", fn->name);
     interrupted = 1;
   }
   ISlot **args = &valStack.v[valStack.n-nargs];
@@ -504,8 +510,10 @@ interactive_usage() {
           "  print - print by id number or a local by name\n"
           "  nprint - print showing ids\n"
           "  info - information about breakpoints\n"
-          "  bi - break at an id (execute or set)\n"
-          "  birm - remove a break by id\n"
+          "  break - break at an id (execute or set)\n"
+          "  rmbreak - remove a break by id\n"
+          "  watch - break on read of an id\n"
+          "  rmwatch - remove a break on read of an id\n"
           "  continue - continue execution\n"
           "  run - restart execution\n"
           "  quit/exit - quit the interpreter\n"
@@ -851,6 +859,138 @@ compar_int(const void *ai, const void *aj) {
   return 0;
 }
 
+static void
+cmd_break(IFrame *frame, char *c) {
+  skip_arg(c);
+  if (isdigit(*c)) {
+    int i = atoi(c);
+    if (i) {
+      BaseAST *a = get_known_id(i);
+      if (a) {
+        break_ids.set_add(i);
+        printf("  breaking at ");
+        show(a, 0, 1);
+      } else
+        printf("  unable to break at unknown id %d\n", i);
+    } else 
+      printf("  please provide a valid id\n");
+  } else {
+    char *name = c;
+    while (*c && !isspace(*c)) c++;
+    name = dupstr(name, c);
+    break_functions.put(name);
+  }
+}
+
+static void
+cmd_delete(IFrame *frame, char *c) {
+  skip_arg(c);
+  if (isdigit(*c)) {
+    int i = atoi(c);
+    Vec<int> ids;
+    ids.move(break_ids);
+    int found = 0;
+    for (int z = 0; z < ids.n; z++) {
+      if (ids.v[z]) {
+        if (i == ids.v[z]) {
+          printf("  deleting break id %d\n", i);
+          found = 1;
+        } else
+          break_ids.set_add(ids.v[z]);
+      }
+    }
+    if (!found)
+      printf("  break id %d not found\n", i);
+  } else {
+    char *name = c;
+    while (*c && !isspace(*c)) c++;
+    name = dupstr(name, c);
+    StringBlockHash tmp;
+    tmp.move(break_functions);
+    int found = 0;
+    forv_Vec(char *, x, tmp) if (x) {
+      if (strcmp(x, name))
+        break_functions.put(x);
+      else {
+        printf("  deleting break function %s\n", x);
+        found = 1;
+      }
+    }
+    if (!found)
+      printf("  break function %s not found\n", name);
+  }
+}
+
+static void
+cmd_watch(IFrame *frame, char *c) {
+  skip_arg(c);
+  int i = atoi(c);
+  if (i) {
+    BaseAST *a = get_known_id(i);
+    if (a) {
+      if (dynamic_cast<Symbol*>(a)) {
+        watch_ids.set_add(i);
+        printf("  watching ");
+        show(a, 0, 1);
+      } else
+        printf("  unable to watch non-Symbol\n");
+    } else
+      printf("  unable to watch id %d\n", i);
+  } else 
+    printf("  please provide a valid id\n");
+}
+
+static void
+cmd_rmwatch(IFrame *frame, char *c) {
+  skip_arg(c);
+  int i = atoi(c);
+  Vec<int> ids;
+  ids.move(watch_ids);
+  int found = 0;
+  for (int z = 0; z < ids.n; z++) {
+    if (ids.v[z]) {
+      if (i == ids.v[z]) {
+        printf("  removing watch %d\n", i);
+        found = 1;
+      } else
+        watch_ids.set_add(ids.v[z]);
+    }
+  }
+  if (!found)
+    printf("  watch %d not found\n", i);
+}
+
+static void
+cmd_info(IFrame *frame) {
+  printf("  break ids:\n");
+  Vec<int> ids;
+  ids.copy(break_ids);
+  ids.set_to_vec();
+  qsort(ids.v, ids.n, sizeof(ids.v[0]), compar_int);
+  if (ids.n)
+    for (int i = 0; i < ids.n; i++)
+      printf("    break id %d\n", ids.v[i]);
+  else
+    printf("    none\n");
+
+  printf("  watch ids:\n");
+  ids.copy(watch_ids);
+  ids.set_to_vec();
+  qsort(ids.v, ids.n, sizeof(ids.v[0]), compar_int);
+  if (ids.n)
+    for (int i = 0; i < ids.n; i++)
+      printf("    watch %d\n", ids.v[i]);
+  else
+    printf("    none\n");
+
+  printf("  break functions named:\n");
+  if (break_functions.count()) {
+    forv_Vec(char *, x, break_functions) if (x)
+      printf("    break function named %s\n", x);
+  } else 
+    printf("    none\n");
+}
+
 static int
 interactive(IFrame *frame) {
   if (frame)
@@ -877,6 +1017,13 @@ interactive(IFrame *frame) {
     // Insert commands in priority order.  First partial match
     // will result in command execution. (e.g. q/qu/qui/quit are quit
     if (0) {
+    } else if (match_cmd(c, "run")) {
+      if (frame) {
+        frame->thread->todo.clear();
+        frame->thread->frame = 0;
+      }
+      runProgram();
+      return 1;
     } else if (match_cmd(c, "help") || match_cmd(c, "?")) {
       interactive_usage();
     } else if (match_cmd(c, "quit")) {
@@ -908,45 +1055,16 @@ interactive(IFrame *frame) {
       cmd_stack(frame);
     } else if (match_cmd(c, "locals")) {
       cmd_locals(frame);
-    } else if (match_cmd(c, "bi")) {
-      skip_arg(c);
-      int i = atoi(c);
-      if (i) {
-        BaseAST *a = get_known_id(i);
-        if (a) {
-          break_ids.set_add(i);
-          printf("  breaking at ");
-          show(a, 0, 1);
-        } else
-          printf("  unable to break at unknown id %d", i);
-      } else 
-        printf("  please provide a valid id\n");
-    } else if (match_cmd(c, "birm")) {
-      skip_arg(c);
-      int i = atoi(c);
-      Vec<int> ids;
-      ids.move(break_ids);
-      int found = 0;
-      for (int z = 0; z < ids.n; z++) {
-        if (ids.v[z]) {
-          if (i == ids.v[z]) {
-            printf("  removing bi %d\n", i);
-            found = 1;
-          } else
-            break_ids.set_add(ids.v[z]);
-        }
-      }
-      if (!found)
-        printf("  bi %d not found\n", i);
+    } else if (match_cmd(c, "break")) {
+      cmd_break(frame, c);
+    } else if (match_cmd(c, "delete")) {
+      cmd_delete(frame, c);
+    } else if (match_cmd(c, "watch")) {
+      cmd_watch(frame, c);
+    } else if (match_cmd(c, "rmwatch")) {
+      cmd_rmwatch(frame, c);
     } else if (match_cmd(c, "info")) {
-      printf("  break ids:\n");
-      Vec<int> ids;
-      ids.copy(break_ids);
-      ids.set_to_vec();
-      qsort(ids.v, ids.n, sizeof(ids.v[0]), compar_int);
-      for (int i = 0; i < ids.n; i++) {
-        printf("    bi %d\n", ids.v[i]);
-      }
+      cmd_info(frame);
     } else if (match_cmd(c, "trace")) {
       skip_arg(c);
       if (!*c)
@@ -960,13 +1078,6 @@ interactive(IFrame *frame) {
           trace_level = atoi(c);
       }
       printf("  tracing level set to %d\n", trace_level);
-    } else if (match_cmd(c, "run")) {
-      if (frame) {
-        frame->thread->todo.clear();
-        frame->thread->frame = 0;
-      }
-      runProgram();
-      return 1;
     } else if (match_cmd(c, "exit")) {
       exit(0);
     } else {
@@ -1690,6 +1801,10 @@ IFrame::run(int timeslice) {
       }
       case EXPR_SYM: {
         S(SymExpr);
+        if (s->var && watch_ids.in(s->var->id)) {
+          printf("  watch of id %d triggered, stopping\n", (int)s->var->id);
+          interrupted = 1;
+        }
         ISlot *x = get(s->var);
         if (!x) {
           switch (s->var->astType) {
