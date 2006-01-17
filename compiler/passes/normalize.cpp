@@ -218,7 +218,7 @@ static void reconstruct_iterator(FnSymbol* fn) {
       Expr* expr = returnStmt->expr;
       returnStmt->expr->replace(new SymExpr(seq));
       returnStmt->insertBefore(
-        new CallExpr(new CallExpr(PRIMITIVE_GET_MEMBER, seq, new_StringSymbol("_yield")), expr));
+        new CallExpr(new CallExpr(".", seq, new_StringSymbol("_yield")), expr));
       if (returnStmt->yield)
         returnStmt->remove();
     }
@@ -448,14 +448,14 @@ static void call_constructor_for_class(CallExpr* call) {
 static void normalize_for_loop(ForLoopStmt* stmt) {
   stmt->iterators->only()->replace(
     new CallExpr(
-      new CallExpr(PRIMITIVE_GET_MEMBER,
+      new CallExpr(".",
                    stmt->iterators->only()->copy(),
                    new_StringSymbol("_forall"))));
   if (no_infer) {
     DefExpr* index = stmt->indices->only();
     Expr* type = stmt->iterators->only()->copy();
-    type = new CallExpr(PRIMITIVE_GET_MEMBER, type, new_StringSymbol("_last"));
-    type = new CallExpr(PRIMITIVE_GET_MEMBER, type, new_StringSymbol("_element"));
+    type = new CallExpr(".", type, new_StringSymbol("_last"));
+    type = new CallExpr(".", type, new_StringSymbol("_element"));
     if (!index->exprType)
       index->replace(new DefExpr(index->sym, NULL, type));
   }
@@ -579,9 +579,9 @@ static void hack_array_constructor_call(CallExpr* call) {
   if (call->isNamed("_construct__aarray")) {
     if (DefExpr* def = dynamic_cast<DefExpr*>(call->parentExpr)) {
       call->parentStmt->insertAfter(
-        new CallExpr(new CallExpr(PRIMITIVE_GET_MEMBER, def->sym, new_StringSymbol("myinit"))));
+        new CallExpr(new CallExpr(".", def->sym, new_StringSymbol("myinit"))));
       call->parentStmt->insertAfter(
-        new CallExpr(PRIMITIVE_SET_MEMBER, def->sym, new_StringSymbol("dom"), 
+        new CallExpr("=", new CallExpr(".", def->sym, new_StringSymbol("dom")), 
                      call->argList->last()->copy()));
       call->argList->last()->replace(hack_rank(call->argList->last()));
     }
@@ -604,7 +604,7 @@ static void hack_domain_constructor_call(CallExpr* call) {
     for_alist(Expr, arg, call->argList) {
       stmt->insertBefore(
           new CallExpr(
-            new CallExpr(PRIMITIVE_GET_MEMBER, _adomain_tmp, new_StringSymbol("_set")),
+            new CallExpr(".", _adomain_tmp, new_StringSymbol("_set")),
             new_IntLiteral(dim), arg->copy()));
       dim++;
     }
@@ -630,12 +630,12 @@ static void hack_seqcat_call(CallExpr* call) {
     // if only one is, change to append or prepend
     if (leftType != dtUnknown) {
       call->replace(new CallExpr(
-                      new CallExpr(PRIMITIVE_GET_MEMBER, call->get(2)->copy(), 
+                      new CallExpr(".", call->get(2)->copy(), 
                                    new_StringSymbol("_prepend")),
                       call->get(1)->copy()));
     } else if (rightType != dtUnknown) {
       call->replace(new CallExpr(
-                      new CallExpr(PRIMITIVE_GET_MEMBER, call->get(1)->copy(), 
+                      new CallExpr(".", call->get(1)->copy(), 
                                    new_StringSymbol("_append")),
                       call->get(2)->copy()));
     }
@@ -747,11 +747,11 @@ static void apply_getters_setters(BaseAST* ast) {
   // Most generally:
   //   x.f(1) = y ---> f(_mt, x, 1, _st, y)
   // or
-  //   CallExpr(=, CallExpr(CallExpr(PRIMITIVE_GET_MEMBER, x, "f"), 1), y) --->
+  //   CallExpr(=, CallExpr(CallExpr(".", x, "f"), 1), y) --->
   //     CallExpr("f", _mt, x, 1, _st, y)
   // though, it could be just
-  //           a CallExpr(PRIMITIVE_GET_MEMBER without a CallExpr
-  //           a CallExpr without a PRIMITIVE_GET_MEMBER
+  //           a CallExpr("." without a CallExpr
+  //           a CallExpr without a "."
   // SJD: Commment needs to be updated with PARTIAL_OK
   CallExpr 
     *call = dynamic_cast<CallExpr*>(ast),  // (eventually) non-assign, non-member call if any
@@ -767,9 +767,9 @@ static void apply_getters_setters(BaseAST* ast) {
   }
   if (!call)
     goto Ldone;
-  if (!call->isPrimitive(PRIMITIVE_GET_MEMBER)) {      // handle calls && getters
+  if (!call->isNamed(".")) {      // handle calls && getters
     getter = dynamic_cast<CallExpr*>(call->baseExpr);
-    if (getter && !getter->isPrimitive(PRIMITIVE_GET_MEMBER))
+    if (getter && !getter->isNamed("."))
       getter = 0;
   } else {
     getter = call;

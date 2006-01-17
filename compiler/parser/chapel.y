@@ -1078,7 +1078,7 @@ parenop_expr:
 
 memberaccess_expr:
   non_tuple_lvalue TDOT identifier
-    { $$ = new CallExpr(PRIMITIVE_GET_MEMBER, $1, new_StringSymbol($3)); }
+    { $$ = new CallExpr(".", $1, new_StringSymbol($3)); }
 ;
 
 
@@ -1110,7 +1110,7 @@ seq_expr:
         element->remove();
         seqLiteral =
           new CallExpr(
-            new CallExpr(PRIMITIVE_GET_MEMBER, seqLiteral, new_StringSymbol("_append_in_place")),
+            new CallExpr(".", seqLiteral, new_StringSymbol("_append_in_place")),
             element);
       }
       $$ = seqLiteral;

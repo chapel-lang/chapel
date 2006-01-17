@@ -420,8 +420,7 @@ static void construct_tuple_type(int rank) {
       if (i != 1)
         actuals->insertAtTail(new_StringLiteral(stringcpy(", ")));
       actuals->insertAtTail(
-        new CallExpr(PRIMITIVE_GET_MEMBER,
-          new UnresolvedSymbol("val"),
+        new CallExpr(".", new SymExpr("val"),
           new_StringSymbol(stringcat("_f", intstring(i)))));
     }
     actuals->insertAtTail(new_StringLiteral(stringcpy(")")));

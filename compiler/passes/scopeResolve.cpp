@@ -115,7 +115,7 @@ void scopeResolve(BaseAST* base) {
     if (SymExpr* symExpr = dynamic_cast<SymExpr*>(ast)) {
       if (symExpr->var->isUnresolved) {
         char* name = symExpr->var->name;
-        if (!strcmp(name, "__primitive") || !strcmp(name, "domain"))
+        if (!strcmp(name, "__primitive") || !strcmp(name, "domain") || !strcmp(name, "."))
           continue;
 
         Symbol* sym = Symboltable::lookupFromScope(name, symExpr->parentScope);
@@ -158,7 +158,7 @@ void scopeResolve(BaseAST* base) {
               if ((var && var->parentScope->type == SCOPE_CLASS) ||
                   (fn && ct && function_matches_method(fn, ct)))
                 if (symExpr->var != method->_this) {
-                  Expr* dot = new CallExpr(PRIMITIVE_GET_MEMBER, method->_this, 
+                  Expr* dot = new CallExpr(".", method->_this, 
                                            new_StringSymbol(name));
                   symExpr->replace(dot);
                   asts.add(dot);
