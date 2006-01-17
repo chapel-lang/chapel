@@ -53912,3 +53912,13 @@ Modified files:
 	chapel/compiler/ifa/: num.h 
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+01/16/06 19:44:19 -- deitz
+
+Log message:
+	Transformed user-level assignments into a _move of an assignment.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+
