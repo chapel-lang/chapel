@@ -32,6 +32,7 @@ static void convert_user_primitives(CallExpr* call);
 static void hack_resolve_types(Expr* expr);
 static void apply_getters_setters(BaseAST* ast);
 static void insert_call_temps(CallExpr* call);
+static void fix_user_assign(CallExpr* call);
 static void fix_def_expr(DefExpr* def);
 
 void normalize(void) {
@@ -148,6 +149,10 @@ void normalize(BaseAST* base) {
       if (dynamic_cast<VarSymbol*>(a->sym) &&
           dynamic_cast<FnSymbol*>(a->parentSymbol))
         fix_def_expr(a);
+    }
+    if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
+      if (a->isNamed("="))
+        fix_user_assign(a);
     }
   }
 
@@ -857,6 +862,15 @@ static void insert_call_temps(CallExpr* call) {
   tmp->noDefaultInit = true;
   call->replace(new SymExpr(tmp));
   stmt->insertBefore(new DefExpr(tmp, call));
+}
+
+
+static void fix_user_assign(CallExpr* call) {
+  if (call->parentExpr)
+    return;
+  CallExpr* move = new CallExpr(PRIMITIVE_MOVE, call->get(1)->copy());
+  call->replace(move);
+  move->argList->insertAtTail(call);
 }
 
 
