@@ -53893,3 +53893,22 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: view.cpp 
 
+---------------------------------------------------------------------------
+
+01/16/06 17:51:17 -- jplevyak
+
+Log message:
+	 + added support for file operations in the interpreter
+	
+	SUCCESS: the interpreter now can handle simple programs:
+	
+	writeln(1 + 2);
+	
+	(of course it prints out "3\n")
+	
+	try it out!
+
+Modified files:
+	chapel/compiler/ifa/: num.h 
+	chapel/compiler/passes/: runInterpreter.cpp 
+
