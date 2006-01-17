@@ -318,7 +318,7 @@ IFrame::icall(FnSymbol *fn, int nargs, int extra_args) {
     printf("  Calling %s(%d)\n", fn->name, (int)fn->id);
     known_ids.put(fn->id, fn);
   }
-  if (break_ids.in(fn->id)) {
+  if (break_ids.set_in(fn->id)) {
     printf("  break at function id %d\n", (int)fn->id);
     interrupted = 1;
   }
@@ -1633,7 +1633,7 @@ IFrame::run(int timeslice) {
   LgotoLabel:
     if (timeslice && !--timeslice)
       return timeslice;
-    if (break_ids.in(ip->id)) {
+    if (break_ids.set_in(ip->id)) {
       printf("  break at id %d\n", (int)ip->id);
       interrupted = 1;
     }
@@ -1801,7 +1801,7 @@ IFrame::run(int timeslice) {
       }
       case EXPR_SYM: {
         S(SymExpr);
-        if (s->var && watch_ids.in(s->var->id)) {
+        if (s->var && watch_ids.set_in(s->var->id)) {
           printf("  watch of id %d triggered, stopping\n", (int)s->var->id);
           interrupted = 1;
         }
@@ -1894,7 +1894,7 @@ IFrame::run(int timeslice) {
               }
               Expr *a = s->argList->get(1);
               BaseAST *var = dynamic_cast<SymExpr*>(a)->var;
-              if (var && break_ids.in(var->id)) {
+              if (var && break_ids.set_in(var->id)) {
                 printf("  break at id %d\n", (int)var->id);
                 interrupted = 1;
               }
