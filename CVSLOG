@@ -53922,3 +53922,24 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: normalize.cpp 
 
+---------------------------------------------------------------------------
+
+01/16/06 19:45:29 -- deitz
+
+Log message:
+	Turned off structural typing of records.
+	
+	Added two flags
+	
+	  --no-pre-instantiate to turn off pre-instantiation.
+	
+	  --no-remove-on-pre-instantiate to turn off removal of generic
+	      formals/actuals when pre-instantiating a type or function.
+
+Modified files:
+	chapel/compiler/ifa/: ast.cpp 
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/traversals/: instantiate.cpp 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+
