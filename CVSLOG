@@ -54040,3 +54040,16 @@ Modified files:
 	chapel/compiler/passes/: cleanup.cpp normalize.cpp 
 	                         scopeResolve.cpp 
 
+---------------------------------------------------------------------------
+
+01/17/06 15:13:38 -- jplevyak
+
+Log message:
+	add watch points to the interpreter (break on read)
+	add break on function name to the interpreter
+	add NBlockHash::copy and NBlockHash::move
+
+Modified files:
+	chapel/compiler/include/: map.h 
+	chapel/compiler/passes/: runInterpreter.cpp 
+
