@@ -54053,3 +54053,13 @@ Modified files:
 	chapel/compiler/include/: map.h 
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+01/17/06 15:17:08 -- jplevyak
+
+Log message:
+	use Vec::set_in for testing breakpoints
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+
