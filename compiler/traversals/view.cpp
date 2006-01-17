@@ -60,7 +60,7 @@ void View::preProcessExpr(Expr* expr) {
 
   if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
     if (call->isPrimitive())
-      printf("%s", call->primitive->name);
+      printf(" %s", call->primitive->name);
   }
 
   if (NamedExpr* named = dynamic_cast<NamedExpr*>(expr)) {
