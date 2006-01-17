@@ -47,6 +47,11 @@ class Immediate : public gc { public:
     complex64 v_complex64;
     char *v_string;
   };
+  void set_int64(int64 l) {
+    const_kind = IF1_NUM_KIND_INT;
+    num_index = IF1_INT_TYPE_64;
+    v_int64 = l;
+  }
   Immediate& operator=(const Immediate&);
   Immediate& operator=(bool b) {
     const_kind = IF1_NUM_KIND_UINT;

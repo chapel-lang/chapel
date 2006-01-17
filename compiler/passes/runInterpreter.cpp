@@ -1235,10 +1235,82 @@ IFrame::iprimitive(CallExpr *s) {
       }
       break;
     }
-    case PRIM_FOPEN:
-    case PRIM_FCLOSE:
-    case PRIM_STRERROR:
-    case PRIM_FPRINTF:
+    case PRIM_FOPEN: {
+      check_prim_args(s, 2);
+      check_string(s, arg[0]);
+      check_string(s, arg[1]);
+      result.kind = IMMEDIATE_ISLOT;
+      result.imm = new Immediate;
+      result.imm->set_int64((intptr_t)fopen(arg[0]->imm->v_string, arg[1]->imm->v_string));
+      break;
+    }
+    case PRIM_FCLOSE: {
+      check_prim_args(s, 1);
+      check_type(s, arg[0], dtInteger);
+      result.kind = IMMEDIATE_ISLOT;
+      result.imm = new Immediate;
+      *result.imm = fclose((FILE*)(intptr_t)arg[0]->imm->v_int64);
+      break;
+    }
+    case PRIM_STRERROR: {
+      check_prim_args(s, 1);
+      check_type(s, arg[0], dtInteger);
+      result.kind = IMMEDIATE_ISLOT;
+      result.imm = new Immediate;
+      *result.imm = strerror((int)arg[0]->imm->v_int64);
+      break;
+    }
+    case PRIM_FPRINTF: {
+      check_prim_args(s, 3);
+      check_type(s, arg[0], dtInteger);
+      check_string(s, arg[1]);
+      check_kind(s, arg[2], IMMEDIATE_ISLOT);
+      result.kind = IMMEDIATE_ISLOT;
+      result.imm = new Immediate;
+      FILE *fp = (FILE*)(intptr_t)arg[0]->imm->v_int64;
+      if (fp == (FILE*)(intptr_t)-1) {
+        result.imm->set_int64(0);
+        break;
+      } else if (fp == (FILE*)(intptr_t)0) {
+        fp = stdin;
+      } else if (fp == (FILE*)(intptr_t)1) {
+        fp = stdout;
+      } else if (fp == (FILE*)(intptr_t)2) {
+        fp = stderr;
+      }
+      switch (arg[2]->imm->const_kind) {
+        default: 
+          user_error(this, "unhandled primitive: %s", s->primitive->name);
+          return 1;
+        case IF1_CONST_KIND_STRING:
+          result.imm->set_int64(fprintf(fp,
+                                        arg[1]->imm->v_string,
+                                        arg[2]->imm->v_string));
+          break;
+        case IF1_NUM_KIND_UINT:
+          result.imm->set_int64(fprintf(fp,
+                                        arg[1]->imm->v_string,
+                                        arg[2]->imm->v_bool));
+          break;
+        case IF1_NUM_KIND_INT:
+          result.imm->set_int64(fprintf(fp,
+                                        arg[1]->imm->v_string,
+                                        arg[2]->imm->v_int64));
+          break;
+        case IF1_NUM_KIND_FLOAT:
+          result.imm->set_int64(fprintf(fp,
+                                        arg[1]->imm->v_string,
+                                        arg[2]->imm->v_float64));
+          break;
+        case IF1_NUM_KIND_COMPLEX:
+          result.imm->set_int64(fprintf(fp,
+                                        arg[1]->imm->v_string,
+                                        arg[2]->imm->v_complex64.r,
+                                        arg[2]->imm->v_complex64.i));
+          break;
+      }
+      break;
+    }
     case PRIM_FSCANF:
       user_error(this, "unhandled primitive: %s", s->primitive->name);
       return 1;
@@ -1866,17 +1938,18 @@ void
 runInterpreter(void) {
   if (!run_interpreter)
     return;
-
   initialize();
   if (run_interpreter > 1)
     interrupted = 1;
   do {
     runProgram();
     chpl_interpreter();
+    if (run_interpreter <= 1) 
+      break;
     printf("  program terminated\n");
     while (!threads.n) 
       interactive(0);
-  } while (run_interpreter > 1);
+  } while (1);
   exit(0);
 }
 
