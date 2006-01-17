@@ -54014,3 +54014,29 @@ Added files:
 	                                   writeln-1.good writeln-2.chpl 
 	                                   writeln-2.good 
 
+---------------------------------------------------------------------------
+
+01/17/06 13:47:31 -- deitz
+
+Log message:
+	Changed early handling of member accesses so that to create a parsed
+	statement like "x.y = z" one simply has to write:
+	
+	  new CallExpr("=", new CallExpr(".", x, y), z)
+	
+	where x and z are symbols and y is a string literal.
+	
+	The primitives PRIMITVE_GET_MEMBER and PRIMITIVE_SET_MEMBER are only
+	introduced in setters, getters, and constructors, and specificially
+	the compiler generated codes.  User-defined constructors are specially
+	treated in a wrapped function, i.e., the user part is put in a
+	function of its own and called.  User-defined getters and setters
+	could eventually be handled the same way should we decide to support
+	them.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: cleanup.cpp normalize.cpp 
+	                         scopeResolve.cpp 
+
