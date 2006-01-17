@@ -53883,3 +53883,13 @@ Added files:
 	chapel/etc/emacs/21.3/: cc-langs.el cc-menus.el cc-mode.el 
 	                        font-lock.el 
 
+---------------------------------------------------------------------------
+
+01/16/06 16:42:43 -- jplevyak
+
+Log message:
+	Put a space between the AST type name and the primitive name.
+
+Modified files:
+	chapel/compiler/traversals/: view.cpp 
+
