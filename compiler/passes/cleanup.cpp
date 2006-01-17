@@ -531,9 +531,7 @@ static void build_constructor(ClassType* ct) {
 
 
 static void build_getter(ClassType* ct, Symbol *field) {
-  Vec<FnSymbol*> fns;
-  collect_functions(&fns);
-  forv_Vec(FnSymbol, fn, fns) {
+  forv_Vec(FnSymbol, fn, ct->methods) {
     if (fn->_getter == field)
       return;
   }
@@ -560,9 +558,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
 
 
 static void build_setter(ClassType* ct, Symbol* field) {
-  Vec<FnSymbol*> fns;
-  collect_functions(&fns);
-  forv_Vec(FnSymbol, fn, fns) {
+  forv_Vec(FnSymbol, fn, ct->methods) {
     if (fn->_setter == field)
       return;
   }
