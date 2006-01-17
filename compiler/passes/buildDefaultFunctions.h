@@ -4,8 +4,6 @@
 #include "pass.h"
 #include "type.h"
 
-void buildDefaultFunctions(void);
-void buildDefaultClassTypeMethods(ClassType* ct);
-void buildDefaultIOFunctions(Type* type);
+void build_default_functions(void);
 
 #endif

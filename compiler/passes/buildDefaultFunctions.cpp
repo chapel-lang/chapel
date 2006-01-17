@@ -10,13 +10,10 @@
 
 
 static void build_chpl_main(void);
-static void build_constructor(ClassType* ct);
-static void build_getter(ClassType* ct, Symbol *tmp);
-static void build_setters_and_getters(ClassType* ct);
 static void build_record_equality_function(ClassType* ct);
 static void build_record_inequality_function(ClassType* ct);
 static void build_record_assignment_function(ClassType* ct);
-
+static void buildDefaultIOFunctions(Type* type);
 
 // function_exists returns true iff
 //  function's name matches name
@@ -67,7 +64,7 @@ static FnSymbol* function_exists(char* name,
 }
 
 
-void buildDefaultFunctions(void) {
+void build_default_functions(void) {
   build_chpl_main();
 
   Vec<BaseAST*> asts;
@@ -77,21 +74,14 @@ void buildDefaultFunctions(void) {
     if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(ast)) {
       buildDefaultIOFunctions(type->definition);
       if (ClassType* ct = dynamic_cast<ClassType*>(type->definition)) {
-        buildDefaultClassTypeMethods(ct);
+        if (ct->classTag == CLASS_RECORD || ct->classTag == CLASS_VALUECLASS) {
+          build_record_equality_function(ct);
+          build_record_inequality_function(ct);
+          build_record_assignment_function(ct);
+        }
       }
     }
   }
-}
-
-
-static ExprStmt* buildCallExprStmt(FnSymbol* fn) {
-  SymExpr* variable = new SymExpr(fn);
-  variable->lineno = -1;
-  CallExpr* fnCall = new CallExpr(variable);
-  fnCall->lineno = -1;
-  ExprStmt* exprStmt = new ExprStmt(fnCall);
-  exprStmt->lineno = -1;
-  return exprStmt;
 }
 
 
@@ -119,132 +109,17 @@ static void build_chpl_main(void) {
     if (userModules.n == 1) {
       chpl_main = new FnSymbol("main", NULL, new AList<DefExpr>(), dtVoid);
       userModules.v[0]->stmts->insertAtTail(new DefExpr(chpl_main));
+      build(chpl_main);
     } else
       USR_FATAL("Code defines multiple modules but no main function.");
   } else if (chpl_main->getModule() != chpl_main->defPoint->parentSymbol)
     USR_FATAL(chpl_main, "Main function must be defined at module scope");
-  chpl_main->insertAtHead(buildCallExprStmt(chpl_main->getModule()->initFn));
-  chpl_main->insertAtHead(buildCallExprStmt(prelude->initFn));
-  chpl_main->insertAtHead(buildCallExprStmt(compilerModule->initFn));
+  currentLineno = -1;
+  chpl_main->insertAtHead(new CallExpr(chpl_main->getModule()->initFn));
+  chpl_main->insertAtHead(new CallExpr(prelude->initFn));
+  chpl_main->insertAtHead(new CallExpr(compilerModule->initFn));
 }
 
-
-static void build_constructor(ClassType* ct) {
-  ct->defaultConstructor = function_exists("initialize", -1, ct);
-  if (ct->defaultConstructor)
-    return;
-
-  char* name = stringcat("_construct_", ct->symbol->name);
-  FnSymbol* fn = new FnSymbol(name);
-  ct->defaultConstructor = fn;
-  fn->fnClass = FN_CONSTRUCTOR;
-  fn->cname = stringcat("_construct_", ct->symbol->cname);
-
-  AList<DefExpr>* args = new AList<DefExpr>();
-
-  forv_Vec(TypeSymbol, type, ct->types) {
-    if (VariableType *vt = dynamic_cast<VariableType*>(type->definition)) {
-      ArgSymbol* arg = new ArgSymbol(INTENT_TYPE, type->name, vt->type);
-      arg->isGeneric = true;
-      arg->genericSymbol = type;
-      args->insertAtTail(new DefExpr(arg));
-    }
-  }
-
-  forv_Vec(Symbol, tmp, ct->fields) {
-    char* name = tmp->name;
-    Type* type = tmp->type;
-    Expr* exprType = tmp->defPoint->exprType;
-    if (exprType)
-      exprType = exprType->copy();
-    Expr* init = tmp->defPoint->init;
-    if (init)
-      init->remove();
-    else
-      init = new SymExpr(gNil);
-    VarSymbol *vtmp = dynamic_cast<VarSymbol*>(tmp);
-    ArgSymbol* arg = new ArgSymbol((vtmp && vtmp->consClass == VAR_PARAM) ? INTENT_PARAM : INTENT_BLANK, name, type, init);
-    DefExpr* defExpr = new DefExpr(arg, NULL, exprType);
-    args->insertAtTail(defExpr);
-  }
-
-  fn->formals = args;
-
-  reset_file_info(fn, ct->symbol->lineno, ct->symbol->filename);
-  ct->symbol->defPoint->parentStmt->insertBefore(new DefExpr(fn));
-  ct->methods.add(fn);
-  if (ct->symbol->hasPragma("data class")) {
-    fn->addPragma("rename _data_construct");
-    fn->addPragma("keep types");
-  }
-  fn->typeBinding = ct->symbol;
-}
-
-
-static void build_getter(ClassType* ct, Symbol *field) {
-  FnSymbol* fn = new FnSymbol(field->name);
-  fn->addPragma("inline");
-  fn->_getter = field;
-  fn->retType = field->type;
-  ArgSymbol* _this = new ArgSymbol(INTENT_REF, "this", ct);
-  fn->formals = new AList<DefExpr>(
-    new DefExpr(new ArgSymbol(INTENT_REF, "_methodTokenDummy", dtMethodToken)),
-    new DefExpr(_this));
-  fn->body = new BlockStmt(new ReturnStmt(new CallExpr(PRIMITIVE_GET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)))));
-  DefExpr* def = new DefExpr(fn);
-  ct->symbol->defPoint->parentStmt->insertBefore(def);
-  reset_file_info(fn, field->lineno, field->filename);
-  ct->methods.add(fn);
-  fn->method_type = PRIMARY_METHOD;
-  fn->typeBinding = ct->symbol;
-  fn->cname = stringcat("_", fn->typeBinding->cname, "_", fn->cname);
-  fn->noParens = true;
-  fn->_this = _this;
-}
-
-
-static void build_setter(ClassType* ct, Symbol* field) {
-  FnSymbol* fn = new FnSymbol(field->name);
-  fn->addPragma("inline");
-  fn->_setter = field;
-  fn->retType = dtVoid;
-
-  ArgSymbol* _this = new ArgSymbol(INTENT_REF, "this", ct);
-  ArgSymbol* fieldArg = new ArgSymbol(INTENT_BLANK, "_arg", (no_infer) ? field->type : dtUnknown);
-  DefExpr* argDef = new DefExpr(fieldArg);
-  if (no_infer && field->defPoint->exprType)
-    argDef->exprType = field->defPoint->exprType->copy();
-  fn->formals = new AList<DefExpr>(
-    new DefExpr(new ArgSymbol(INTENT_REF, "_methodTokenDummy", dtMethodToken)),
-    new DefExpr(_this), 
-    new DefExpr(new ArgSymbol(INTENT_REF, "_setterTokenDummy", dtSetterToken)),
-    argDef);
-  Expr *valExpr = new CallExpr(PRIMITIVE_GET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)));
-  Expr *assignExpr = new CallExpr("=", valExpr, fieldArg);
-  fn->body->insertAtTail(
-    new CallExpr(PRIMITIVE_SET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)), assignExpr));
-  ct->symbol->defPoint->parentStmt->insertBefore(new DefExpr(fn));
-  reset_file_info(fn, field->lineno, field->filename);
-
-  ct->methods.add(fn);
-  fn->method_type = PRIMARY_METHOD;
-  fn->typeBinding = ct->symbol;
-  fn->cname = stringcat("_", fn->typeBinding->cname, "_", fn->cname);
-  fn->noParens = true;
-  fn->_this = _this;
-}
-
-
-static void build_setters_and_getters(ClassType* ct) {
-  forv_Vec(Symbol, field, ct->fields) {
-    build_setter(ct, field);
-    build_getter(ct, field);
-  }
-  forv_Vec(TypeSymbol, tmp, ct->types) {
-    if (tmp->type->astType == TYPE_USER || tmp->type->astType == TYPE_VARIABLE)
-      build_getter(ct, tmp);
-  }
-}
 
 static void build_record_equality_function(ClassType* ct) {
   FnSymbol* fn = new FnSymbol("==");
@@ -266,6 +141,7 @@ static void build_record_equality_function(ClassType* ct) {
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->parentStmt->insertBefore(def);
   reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
+  build(fn);
 }
 
 
@@ -291,6 +167,7 @@ static void build_record_inequality_function(ClassType* ct) {
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->parentStmt->insertBefore(def);
   reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
+  build(fn);
 }
 
 
@@ -325,17 +202,7 @@ static void build_record_assignment_function(ClassType* ct) {
   }
   if (no_infer)
     fn->retType = ct;
-}
-
-
-void buildDefaultClassTypeMethods(ClassType* ct) {
-  build_setters_and_getters(ct);
-  build_constructor(ct);
-  if (ct->classTag == CLASS_RECORD || ct->classTag == CLASS_VALUECLASS) {
-    build_record_equality_function(ct);
-    build_record_inequality_function(ct);
-    build_record_assignment_function(ct);
-  }
+  build(fn);
 }
 
 
@@ -358,6 +225,7 @@ void buildDefaultIOFunctions(Type* type) {
       DefExpr* def = new DefExpr(fn);
       type->symbol->defPoint->parentStmt->insertBefore(def);
       reset_file_info(def, type->symbol->lineno, type->symbol->filename);
+      build(fn);
     }
   }
 
@@ -376,6 +244,7 @@ void buildDefaultIOFunctions(Type* type) {
       DefExpr* def = new DefExpr(fn);
       type->symbol->defPoint->parentStmt->insertBefore(def);
       reset_file_info(def, type->symbol->lineno, type->symbol->filename);
+      build(fn);
     }
   }
 }

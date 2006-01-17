@@ -1217,7 +1217,7 @@ ModuleSymbol* ImportExpr::getImportedModule(void) {
   if (SymExpr* variable = dynamic_cast<SymExpr*>(expr)) {
     if (Symbol* symbol = variable->var) {
       if (ModuleSymbol* module =
-          dynamic_cast<ModuleSymbol*>(Symboltable::lookup(symbol->name))) {
+          dynamic_cast<ModuleSymbol*>(Symboltable::lookupFromScope(symbol->name, variable->parentScope))) {
         return module;
       }
     }
@@ -1241,7 +1241,7 @@ ImportExpr::getStruct(void) {
     if (ClassType *result = getClassType(var->var))
       return result;
     else if (UnresolvedSymbol* unresolved = dynamic_cast<UnresolvedSymbol*>(var->var)) {
-      if (ClassType *result =  getClassType(Symboltable::lookup(unresolved->name)))
+      if (ClassType *result =  getClassType(Symboltable::lookupFromScope(unresolved->name, var->parentScope)))
         return result;
     }
   }

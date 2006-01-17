@@ -11,20 +11,16 @@
 
 PassInfo passlist[] = {
   FIRST,
-  RUN(parse),
-  RUN(check_parsed), // checks semantics of parsed AST
+  RUN(parse),                   // parse files and create AST
+  RUN(check_parsed),            // checks semantics of parsed AST
+  RUN(cleanup),                 // post parsing transformations
+  RUN(scopeResolve),            // resolve symbols by scope
+  RUN(normalize),               // normalization transformations
+  RUN(check_normalized),        // check semantics of normalized AST
+  RUN(build_default_functions), // build default functions
 
-  RUN(createEntryPoint),    // move to cleanup -- builds init fn for modules
-  RUN(processImportExprs),  // move to cleanup -- expands with and use
-  RUN(buildClassHierarchy), // move to cleanup -- handles inheritance
-
-  RUN(buildDefaultFunctions), // move after normalize (maybe??)
-
-  RUN(cleanup),            // post parsing transformations
-  RUN(scopeResolve),       // resolve symbols by scope
-  RUN(normalize),          // normalization transformations
-  RUN(check_normalized),   // checks semantics of normalized AST
   RUN(functionResolution), // --no-infer function resolution
+
   RUN(pre_instantiate),    // pre-instantiation for analysis
   RUN(preAnalysisCleanup),
 

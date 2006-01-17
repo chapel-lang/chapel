@@ -9,13 +9,10 @@
 #include "symbol.h"
 #include "symtab.h"
 #include "astutil.h"
-#include "../traversals/buildClassHierarchy.h"
 #include "../traversals/createConfigVarTable.h"
 #include "../traversals/findTypeVariables.h"
 #include "../traversals/instantiate.h"
-#include "../traversals/processImportExprs.h"
 #include "../passes/preAnalysisCleanup.h"
-#include "../passes/createEntryPoint.h"
 
 FnSymbol* chpl_main = NULL;
 
@@ -1088,8 +1085,6 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
         }
       }
     }
-    createInitFn(mod);
-    TRAVERSE(mod, new ProcessImportExprs(), true);
     cleanup(mod);
     scopeResolve(mod);
     normalize(mod);

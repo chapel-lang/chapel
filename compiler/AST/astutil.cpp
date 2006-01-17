@@ -7,6 +7,13 @@
 #include "../traversals/traversal.h"
 
 
+void build(BaseAST* ast) {
+  cleanup(ast);
+  scopeResolve(ast);
+  normalize(ast);
+}
+
+
 class CollectFunctions : public Traversal {
  public:
   Vec<FnSymbol*>* fns;

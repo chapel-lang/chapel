@@ -12,6 +12,7 @@ class CallExpr;
 void cleanup(BaseAST* ast);
 void scopeResolve(BaseAST* ast);
 void normalize(BaseAST* ast);
+void build(BaseAST* ast);
 
 // types contains the types of the actuals
 // names contains the name if it is a named argument, otherwise NULL

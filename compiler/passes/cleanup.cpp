@@ -5,7 +5,6 @@
  ***/
 
 #include "astutil.h"
-#include "buildDefaultFunctions.h"
 #include "expr.h"
 #include "passes.h"
 #include "runtime.h"
@@ -18,13 +17,185 @@ static void normalize_anonymous_record_or_forall_expression(DefExpr* def);
 static void destructure_indices(ForLoopStmt* stmt);
 static void destructure_tuple(CallExpr* call);
 static void construct_tuple_type(int size);
+static void build_constructor(ClassType* ct);
+static void build_setters_and_getters(ClassType* ct);
 static void flatten_primary_methods(FnSymbol* fn);
 static void resolve_secondary_method_type(FnSymbol* fn);
 static void add_this_formal_to_method(FnSymbol* fn);
 static void finish_constructor(FnSymbol* fn);
 
 
+static bool stmtIsGlob(Stmt* stmt) {
+  if (!stmt)
+    INT_FATAL("Non-Stmt found in StmtIsGlob");
+  if (ExprStmt* expr_stmt = dynamic_cast<ExprStmt*>(stmt)) {
+    if (DefExpr* defExpr = dynamic_cast<DefExpr*>(expr_stmt->expr)) {
+      if (dynamic_cast<FnSymbol*>(defExpr->sym) ||
+          dynamic_cast<TypeSymbol*>(defExpr->sym)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+
+void createInitFn(ModuleSymbol* mod) {
+  if (mod->initFn)
+    return;
+
+  char* fnName = stringcat("__init_", mod->name);
+  AList<Stmt>* globstmts = NULL;
+  AList<Stmt>* initstmts = NULL;
+  AList<Stmt>* definition = mod->stmts;
+
+  // BLC: code to run user modules once only
+  char* runOnce = NULL;
+  if (mod->modtype != MOD_INTERNAL && mod != compilerModule && !fnostdincs) {
+    if (mod != standardModule) {
+      if (fnostdincs_but_file) {
+        definition->insertAtHead(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol("_chpl_file"))));
+        definition->insertAtHead(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol("_chpl_compiler"))));
+      } else
+        definition->insertAtHead(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol("_chpl_standard"))));
+    }
+
+    runOnce = stringcat("__run_", mod->name, "_firsttime");
+    // create a boolean variable to guard module initialization
+    DefExpr* varDefExpr = new DefExpr(new VarSymbol(runOnce, dtBoolean),
+                                      new_BoolLiteral(true));
+    // insert its definition in the _chpl_compiler module
+    compilerModule->initFn->insertAtHead(varDefExpr);
+ 
+    // insert a set to false at the beginning of the current module's
+    // definition (we'll wrap it in a conditional just below, after
+    // filtering)
+    Expr* assignVar = new CallExpr(PRIMITIVE_MOVE,
+                                   new SymExpr(new UnresolvedSymbol(runOnce)),
+                                   new_BoolLiteral(false));
+    definition->insertAtHead(assignVar);
+  }
+
+  definition->filter(stmtIsGlob, globstmts, initstmts);
+
+  definition = globstmts;
+  BlockStmt* initFunBody;
+  if (initstmts->isEmpty()) {
+    initFunBody = new BlockStmt();
+  } else {
+    initFunBody = new BlockStmt(initstmts);
+  }
+  initFunBody->blkScope = mod->modScope;
+  if (runOnce) {
+    // put conditional in front of body
+    Stmt* testRun =
+      new CondStmt(
+        new CallExpr(
+          "not",
+          new SymExpr(
+            new UnresolvedSymbol(runOnce))), 
+        new ReturnStmt());
+    initFunBody->insertAtHead(testRun);
+  }
+
+  mod->initFn = new FnSymbol(fnName);
+  mod->initFn->retType = dtVoid;
+  mod->initFn->body = initFunBody;
+  definition->insertAtHead(new DefExpr(mod->initFn));
+  mod->stmts->insertAtHead(definition);
+  clear_file_info(definition);
+}
+
+
+static void
+process_import_expr(ImportExpr* expr) {
+  if (expr->importTag == IMPORT_WITH) {
+    if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(expr->parentSymbol)) {
+      if (ClassType* ct = dynamic_cast<ClassType*>(ts->definition)) {
+        AList<Stmt>* with_decls = expr->getStruct()->declarationList->copy();
+        ct->addDeclarations(with_decls, expr->parentStmt);
+        expr->parentStmt->remove();
+        return;
+      }
+    }
+    USR_FATAL(expr, "Cannot find ClassType in ImportExpr");
+  }
+
+  if (expr->importTag == IMPORT_USE) {
+    ModuleSymbol* module = expr->getImportedModule();
+    if (!module)
+      INT_FATAL(expr, "ImportExpr has no module");
+    if (module != compilerModule)
+      expr->parentStmt->insertBefore(new CallExpr(module->initFn));
+    expr->parentScope->uses.add(module);
+    expr->parentStmt->remove();
+  }
+}
+
+
+static void
+add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* seen = NULL) {
+  if (seen == NULL) {
+    Vec<ClassType*> seen;
+    if (ct->inherits)
+      add_class_to_hierarchy(ct, &seen);
+    return;
+  }
+
+  forv_Vec(ClassType, at, *seen) {
+    if (at == ct) {
+      USR_FATAL(ct, "Cyclic class hierarchy detected");
+    }
+  }
+
+  for_alist(Expr, expr, ct->inherits) {
+    SymExpr* symExpr = dynamic_cast<SymExpr*>(expr);
+    if (!symExpr) {
+      USR_FATAL_CONT(symExpr, "Possible temporary restriction follows:");
+      USR_FATAL(symExpr, "Inheritance is only supported from simple classes");
+    }
+    Symbol* symbol = Symboltable::lookupFromScope(symExpr->var->name, symExpr->parentScope);
+    TypeSymbol* typeSymbol = dynamic_cast<TypeSymbol*>(symbol);
+    if (!typeSymbol)
+      USR_FATAL(expr, "Illegal to inherit from something other than a class");
+    ClassType* pt = dynamic_cast<ClassType*>(typeSymbol->definition);
+    if (!pt)
+      USR_FATAL(expr, "Illegal to inherit from something other than a class");
+    if (pt->classTag == CLASS_RECORD)
+      USR_FATAL(expr, "Illegal to inherit from record");
+    if (ct->classTag == CLASS_RECORD)
+      USR_FATAL(expr, "Illegal for record to inherit");
+    if (pt->inherits) {
+      seen->add(ct);
+      add_class_to_hierarchy(pt, seen);
+    }
+    ct->dispatchParents.add(pt);
+    Stmt* insertPoint = ct->declarationList->first();
+    forv_Vec(Symbol, field, pt->fields) {
+      ct->addDeclarations(new AList<Stmt>(field->defPoint->parentStmt->copy()), insertPoint);
+    }
+    if (pt->classTag == CLASS_VALUECLASS) {
+      ct->classTag = CLASS_VALUECLASS;
+      ct->defaultValue = NULL;
+    }
+  }
+  if (ct->dispatchParents.n == 0 && ct != dtObject && ct != dtValue) {
+    if (ct->classTag == CLASS_RECORD)
+      ct->dispatchParents.add(dtValue);
+    else
+      ct->dispatchParents.add(dtObject);
+  }
+  if (ct == dtValue) {
+    ct->classTag = CLASS_VALUECLASS;
+    ct->defaultValue = NULL;
+  }
+  ct->inherits = NULL;
+}
+
+
 void cleanup(void) {
+  forv_Vec(ModuleSymbol, mod, allModules)
+    createInitFn(mod);
   forv_Vec(ModuleSymbol, mod, allModules)
     cleanup(mod);
   if (tupleModule)
@@ -35,6 +206,33 @@ void cleanup(void) {
 void cleanup(BaseAST* base) {
   for (int i = 1; i <= 2; i++) {
   Vec<BaseAST*> asts;
+  collect_asts(&asts, base);
+  forv_Vec(BaseAST, ast, asts) {
+    if (ModuleSymbol* a = dynamic_cast<ModuleSymbol*>(ast))
+      createInitFn(a);
+  }
+
+  asts.clear();
+  collect_asts(&asts, base);
+  forv_Vec(BaseAST, ast, asts) {
+    if (ImportExpr* a = dynamic_cast<ImportExpr*>(ast)) {
+      process_import_expr(a);
+    }
+  }
+
+  asts.clear();
+  collect_asts(&asts, base);
+  forv_Vec(BaseAST, ast, asts) {
+    if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
+      if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(def->sym)) {
+        if (ClassType* ct = dynamic_cast<ClassType*>(ts->definition)) {
+          add_class_to_hierarchy(ct);
+        }
+      }
+    }
+  }
+
+  asts.clear();
   collect_asts(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
@@ -50,6 +248,17 @@ void cleanup(BaseAST* base) {
         CallExpr* parent = dynamic_cast<CallExpr*>(a->parentExpr);
         if (parent && parent->isAssign() && parent->get(1) == a)
           destructure_tuple(parent);
+      }
+    }
+  }
+
+  asts.clear();
+  collect_asts(&asts, base);
+  forv_Vec(BaseAST, ast, asts) {
+    if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(ast)) {
+      if (ClassType* ct = dynamic_cast<ClassType*>(type->definition)) {
+        build_constructor(ct);
+        build_setters_and_getters(ct);
       }
     }
   }
@@ -197,7 +406,6 @@ static void construct_tuple_type(int rank) {
   tupleType->addSymbol(tupleSym);
   tupleType->addDeclarations(decls);
   tupleModule->stmts->insertAtHead(new DefExpr(tupleSym));
-  cleanup(tupleSym);
 
   if (!fnostdincs) {
     // Build write function
@@ -220,7 +428,6 @@ static void construct_tuple_type(int rank) {
     Expr* fwriteCall = new CallExpr("fwrite", new SymExpr(fileArg), actuals);
     fwriteFn->body = new BlockStmt(new ExprStmt(fwriteCall));
     tupleModule->stmts->insertAtTail(new DefExpr(fwriteFn));
-    cleanup(fwriteFn);
   }
 
   // Build htuple = tuple function
@@ -240,7 +447,6 @@ static void construct_tuple_type(int rank) {
     }
     assignFn->insertAtTail(new ReturnStmt(htupleArg));
     tupleModule->stmts->insertAtTail(new DefExpr(assignFn));
-    cleanup(assignFn);
   }
 
   // Build tuple = _ function
@@ -261,8 +467,146 @@ static void construct_tuple_type(int rank) {
 //     assignFn->insertAtTail(new ReturnStmt(tupleArg));
 //     tupleModule->stmts->insertAtTail(new ExprStmt(new DefExpr(assignFn)));
 //   }
+}
 
-  buildDefaultClassTypeMethods(tupleType);
+
+static void build_constructor(ClassType* ct) {
+  if (ct->defaultConstructor)
+    return;
+
+  Vec<FnSymbol*> fns;
+  collect_functions(&fns);
+  forv_Vec(FnSymbol, fn, fns) {
+    if ((!strcmp("initialize", fn->name)) && fn->typeBinding->definition == ct) {
+      ct->defaultConstructor = fn;
+      return;
+    }
+  }
+
+  char* name = stringcat("_construct_", ct->symbol->name);
+  FnSymbol* fn = new FnSymbol(name);
+  ct->defaultConstructor = fn;
+  fn->fnClass = FN_CONSTRUCTOR;
+  fn->cname = stringcat("_construct_", ct->symbol->cname);
+
+  AList<DefExpr>* args = new AList<DefExpr>();
+
+  forv_Vec(TypeSymbol, type, ct->types) {
+    if (VariableType *vt = dynamic_cast<VariableType*>(type->definition)) {
+      ArgSymbol* arg = new ArgSymbol(INTENT_TYPE, type->name, vt->type);
+      arg->isGeneric = true;
+      arg->genericSymbol = type;
+      args->insertAtTail(new DefExpr(arg));
+    }
+  }
+
+  forv_Vec(Symbol, tmp, ct->fields) {
+    char* name = tmp->name;
+    Type* type = tmp->type;
+    Expr* exprType = tmp->defPoint->exprType;
+    if (exprType)
+      exprType = exprType->copy();
+    Expr* init = tmp->defPoint->init;
+    if (init)
+      init->remove();
+    else
+      init = new SymExpr(gNil);
+    VarSymbol *vtmp = dynamic_cast<VarSymbol*>(tmp);
+    ArgSymbol* arg = new ArgSymbol((vtmp && vtmp->consClass == VAR_PARAM) ? INTENT_PARAM : INTENT_BLANK, name, type, init);
+    DefExpr* defExpr = new DefExpr(arg, NULL, exprType);
+    args->insertAtTail(defExpr);
+  }
+
+  fn->formals = args;
+
+  reset_file_info(fn, ct->symbol->lineno, ct->symbol->filename);
+  ct->symbol->defPoint->parentStmt->insertBefore(new DefExpr(fn));
+  ct->methods.add(fn);
+  if (ct->symbol->hasPragma("data class")) {
+    fn->addPragma("rename _data_construct");
+    fn->addPragma("keep types");
+  }
+  fn->typeBinding = ct->symbol;
+}
+
+
+static void build_getter(ClassType* ct, Symbol *field) {
+  Vec<FnSymbol*> fns;
+  collect_functions(&fns);
+  forv_Vec(FnSymbol, fn, fns) {
+    if (fn->_getter == field)
+      return;
+  }
+
+  FnSymbol* fn = new FnSymbol(field->name);
+  fn->addPragma("inline");
+  fn->_getter = field;
+  fn->retType = field->type;
+  ArgSymbol* _this = new ArgSymbol(INTENT_REF, "this", ct);
+  fn->formals = new AList<DefExpr>(
+    new DefExpr(new ArgSymbol(INTENT_REF, "_methodTokenDummy", dtMethodToken)),
+    new DefExpr(_this));
+  fn->body = new BlockStmt(new ReturnStmt(new CallExpr(PRIMITIVE_GET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)))));
+  DefExpr* def = new DefExpr(fn);
+  ct->symbol->defPoint->parentStmt->insertBefore(def);
+  reset_file_info(fn, field->lineno, field->filename);
+  ct->methods.add(fn);
+  fn->method_type = PRIMARY_METHOD;
+  fn->typeBinding = ct->symbol;
+  fn->cname = stringcat("_", fn->typeBinding->cname, "_", fn->cname);
+  fn->noParens = true;
+  fn->_this = _this;
+}
+
+
+static void build_setter(ClassType* ct, Symbol* field) {
+  Vec<FnSymbol*> fns;
+  collect_functions(&fns);
+  forv_Vec(FnSymbol, fn, fns) {
+    if (fn->_setter == field)
+      return;
+  }
+
+  FnSymbol* fn = new FnSymbol(field->name);
+  fn->addPragma("inline");
+  fn->_setter = field;
+  fn->retType = dtVoid;
+
+  ArgSymbol* _this = new ArgSymbol(INTENT_REF, "this", ct);
+  ArgSymbol* fieldArg = new ArgSymbol(INTENT_BLANK, "_arg", (no_infer) ? field->type : dtUnknown);
+  DefExpr* argDef = new DefExpr(fieldArg);
+  if (no_infer && field->defPoint->exprType)
+    argDef->exprType = field->defPoint->exprType->copy();
+  fn->formals = new AList<DefExpr>(
+    new DefExpr(new ArgSymbol(INTENT_REF, "_methodTokenDummy", dtMethodToken)),
+    new DefExpr(_this), 
+    new DefExpr(new ArgSymbol(INTENT_REF, "_setterTokenDummy", dtSetterToken)),
+    argDef);
+  Expr *valExpr = new CallExpr(PRIMITIVE_GET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)));
+  Expr *assignExpr = new CallExpr("=", valExpr, fieldArg);
+  fn->body->insertAtTail(
+    new CallExpr(PRIMITIVE_SET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)), assignExpr));
+  ct->symbol->defPoint->parentStmt->insertBefore(new DefExpr(fn));
+  reset_file_info(fn, field->lineno, field->filename);
+
+  ct->methods.add(fn);
+  fn->method_type = PRIMARY_METHOD;
+  fn->typeBinding = ct->symbol;
+  fn->cname = stringcat("_", fn->typeBinding->cname, "_", fn->cname);
+  fn->noParens = true;
+  fn->_this = _this;
+}
+
+
+static void build_setters_and_getters(ClassType* ct) {
+  forv_Vec(Symbol, field, ct->fields) {
+    build_setter(ct, field);
+    build_getter(ct, field);
+  }
+  forv_Vec(TypeSymbol, tmp, ct->types) {
+    if (tmp->type->astType == TYPE_USER || tmp->type->astType == TYPE_VARIABLE)
+      build_getter(ct, tmp);
+  }
 }
 
 

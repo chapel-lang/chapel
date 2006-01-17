@@ -2,7 +2,6 @@
 
 #include "../passes/buildDefaultFunctions.h"
 #include "../passes/codegen.h"
-#include "../passes/createEntryPoint.h"
 #include "../passes/filesToAST.h"
 #include "../passes/functionResolution.h"
 #include "../passes/preAnalysisCleanup.h"
@@ -10,7 +9,6 @@
 #include "../passes/runAnalysis.h"
 #include "../passes/runInterpreter.h"
 
-#include "../traversals/buildClassHierarchy.h"
 #include "../traversals/createConfigVarTable.h"
 #include "../traversals/createNestedFuncIterators.h"
 #include "../traversals/findUnknownTypes.h"
@@ -19,7 +17,6 @@
 #include "../traversals/inlineFunctions.h"
 #include "../traversals/instantiate.h"
 #include "../traversals/printAST.h"
-#include "../traversals/processImportExprs.h"
 #include "../traversals/removeNamedParameters.h"
 #include "../traversals/removeNestedFunctions.h"
 #include "../traversals/resolveSymbols.h"
@@ -32,8 +29,7 @@
    the pass above.  */
 
 START_PASSLIST_REGISTRATION
-REGISTER(buildClassHierarchy);
-REGISTER(buildDefaultFunctions);
+REGISTER(build_default_functions);
 REGISTER(check_parsed);
 REGISTER(check_normalized);
 REGISTER(check_resolved);
@@ -41,7 +37,6 @@ REGISTER(cleanup);
 REGISTER(codegen);
 REGISTER(copy_propagation);
 REGISTER(createConfigVarTable);
-REGISTER(createEntryPoint);
 REGISTER(createNestedFuncIterators);
 REGISTER(fixup);
 REGISTER(functionResolution);
@@ -53,7 +48,6 @@ REGISTER(preAnalysisCleanup);
 REGISTER(pre_instantiate);
 REGISTER(printAST);        // BLC: pretty-prints all or part of the AST
 REGISTER(printProgram);    // BLC: pretty-prints the whole program
-REGISTER(processImportExprs);
 REGISTER(removeNamedParameters);
 REGISTER(removeNestedFunctions);
 REGISTER(removeTypeVariableActuals);

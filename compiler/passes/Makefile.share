@@ -3,7 +3,6 @@ PASSES_SRCS = \
         cleanup.cpp \
 	codegen.cpp \
         copy_propagation.cpp \
-	createEntryPoint.cpp \
 	filesToAST.cpp \
         functionResolution.cpp \
 	pass.cpp \
