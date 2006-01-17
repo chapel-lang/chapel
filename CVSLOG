@@ -53978,3 +53978,13 @@ Removed files:
 	                             processImportExprs.cpp 
 	                             processImportExprs.h 
 
+---------------------------------------------------------------------------
+
+01/16/06 20:45:40 -- deitz
+
+Log message:
+	Improved speed of cleanup due to a change in my last checkin.
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp 
+
