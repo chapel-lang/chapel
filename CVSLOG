@@ -53998,3 +53998,19 @@ Log message:
 Modified files:
 	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
 
+---------------------------------------------------------------------------
+
+01/17/06 13:42:18 -- jplevyak
+
+Log message:
+	Added some basic test of the interpreter.
+	These have the erroneous "1\n" output so they will have to be updated,
+	  but I wanted to get them in as is for now.
+
+Added files:
+	chapel/test/interpreter/jplevyak/: COMPOPTS NOEXEC call-1.chpl 
+	                                   call-1.good member-1.chpl 
+	                                   member-1.good writeln-1.chpl 
+	                                   writeln-1.good writeln-2.chpl 
+	                                   writeln-2.good 
+
