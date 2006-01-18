@@ -54195,3 +54195,13 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+01/18/06 10:21:27 -- jplevyak
+
+Log message:
+	Only intercept SIGINT if we are in interactive mode
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+
