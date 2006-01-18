@@ -1273,11 +1273,27 @@ check_TypeSymbol(BaseAST *s, ISlot *slot) {
 }
 
 static FnSymbol *
-resolve_0arity_call(BaseAST *ip, FnSymbol *fn) {
+resolve_0arity_call(IFrame *frame, BaseAST *ip, FnSymbol *fn) {
   Vec<Type *> actual_types;
   Vec<Symbol *> actual_params;
   Vec<char *> actual_names;
-  return resolve_call(ip, NULL, &actual_types, &actual_params, &actual_names, PARTIAL_NEVER, fn);
+  fn = resolve_call(ip, NULL, &actual_types, &actual_params, &actual_names, 
+                              PARTIAL_NEVER, fn);
+  if (!fn) {
+    switch (resolve_call_error) {
+      default: INT_FATAL("interpreter: bad resolve_call_error: %d", (int)resolve_call_error); break;
+      case CALL_PARTIAL:
+        user_error(frame, "partial call, unable to dispatch to a complete function");
+        break;
+      case CALL_AMBIGUOUS:
+        user_error(frame, "ambiguous call, unable to dispatch to a single function");
+        break;
+      case CALL_UNKNOWN:
+        user_error(frame, "no function found, unable to dispatch function call");
+        break;
+    }
+  }
+  return fn;
 }
 
 int
@@ -1285,9 +1301,6 @@ IFrame::iprimitive(CallExpr *s) {
   int len = s->argList->length();
   if (!s->primitive->interpreterOp) {
     INT_FATAL(ip, "interpreter: bad astType: %d", ip->astType);
-//    valStack.n -= len;
-//    islot(s)->kind = EMPTY_ISLOT;
-//    return 0;
   }
   ISlot **arg = &valStack.v[valStack.n-len];
   ISlot result;
@@ -1323,8 +1336,16 @@ IFrame::iprimitive(CallExpr *s) {
       Lok:;
       } else if (ts->definition->defaultConstructor) {
         return_slot = islot(s);
-        icall(resolve_0arity_call(s, ts->definition->defaultConstructor), 0, 1);
+        FnSymbol *fn = resolve_0arity_call(this, s, ts->definition->defaultConstructor);
+        if (fn)
+          icall(fn, 0, 1);
         return 1;
+      } else {
+        if (MetaType *mt = dynamic_cast<MetaType*>(ts->definition))
+          result.set_symbol(mt->base->symbol);
+        else {
+          USR_FATAL(s, "interpreter: attempted INIT of bad value");
+        }
       }
       break;
     }
