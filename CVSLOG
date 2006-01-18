@@ -54084,3 +54084,31 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+01/17/06 18:09:51 -- jplevyak
+
+Log message:
+	Fix a bug in constant folding.  Regularized primitive names
+	so that LNOT is logical not to match LAND as logical and.
+	Added more interpreter tests of basic arithmetic operations.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp 
+	chapel/compiler/analysis/: analysis_ops.h chapel_ifa.cpp 
+	chapel/compiler/ifa/: num.cpp prim_data.cpp prim_data.dat 
+	                      prim_data.h 
+	chapel/compiler/include/: primitive.h 
+	chapel/compiler/passes/: interpreter_ops.h runInterpreter.cpp 
+Added files:
+	chapel/test/interpreter/jplevyak/: arithmetic_ops-1.chpl 
+	                                   arithmetic_ops-1.good 
+	                                   assignment_expr-1.chpl 
+	                                   assignment_expr-1.good 
+	                                   bitwise_assignment-1.chpl 
+	                                   bitwise_assignment-1.good 
+	                                   bitwise_negation-1.chpl 
+	                                   bitwise_negation-1.good 
+	                                   bitwise_ops-1.chpl 
+	                                   bitwise_ops-1.good 
+
