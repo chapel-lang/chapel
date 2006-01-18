@@ -54185,3 +54185,13 @@ Added files:
 	chapel/test/interpreter/jplevyak/: compSampler-1.chpl 
 	                                   compSampler-1.good 
 
+---------------------------------------------------------------------------
+
+01/18/06 10:18:00 -- jplevyak
+
+Log message:
+	Fix bug in single stepping.
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+
