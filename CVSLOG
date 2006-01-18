@@ -54073,3 +54073,14 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: clone.cpp fa.cpp 
 
+---------------------------------------------------------------------------
+
+01/17/06 16:49:42 -- jplevyak
+
+Log message:
+	update the interpreter so that it gets the same error as
+	the compiler for Steve's generic record constuctor bug.
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+
