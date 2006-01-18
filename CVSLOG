@@ -54112,3 +54112,19 @@ Added files:
 	                                   bitwise_ops-1.chpl 
 	                                   bitwise_ops-1.good 
 
+---------------------------------------------------------------------------
+
+01/17/06 23:25:02 -- jplevyak
+
+Log message:
+	Constant folding now doesn't modify the incoming arguments
+	except the target (it used to coerce them).
+	Added Immediate(Immediate &).
+	Added new test case for equality ops.
+
+Modified files:
+	chapel/compiler/ifa/: num.cpp num.h 
+Added files:
+	chapel/test/interpreter/jplevyak/: equality_ops-1.chpl 
+	                                   equality_ops-1.good 
+
