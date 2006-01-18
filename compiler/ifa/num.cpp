@@ -211,6 +211,51 @@ coerce_immediate(Immediate *from, Immediate *to) {
           break; \
       }
 
+#define DO_FOLDB(_op) \
+      switch (im1.const_kind) { \
+        case IF1_NUM_KIND_NONE: \
+          break; \
+        case IF1_NUM_KIND_UINT: { \
+          switch (im1.num_index) { \
+            case IF1_INT_TYPE_1:  \
+              imm->v_bool = im1.v_bool _op im2.v_bool; break; \
+            case IF1_INT_TYPE_8:  \
+              imm->v_bool = im1.v_uint8 _op im2.v_uint8; break; \
+            case IF1_INT_TYPE_16: \
+              imm->v_bool = im1.v_uint16 _op im2.v_uint16; break; \
+            case IF1_INT_TYPE_32: \
+              imm->v_bool = im1.v_uint32 _op im2.v_uint32; break; \
+            case IF1_INT_TYPE_64: \
+              imm->v_bool = im1.v_uint64 _op im2.v_uint64; break; \
+            default: assert(!"case"); \
+          } \
+          break; \
+        } \
+        case IF1_NUM_KIND_INT: { \
+          switch (im1.num_index) { \
+            case IF1_INT_TYPE_8:  \
+              imm->v_bool = im1.v_int8 _op im2.v_int8; break; \
+            case IF1_INT_TYPE_16: \
+              imm->v_bool = im1.v_int16 _op im2.v_int16; break; \
+            case IF1_INT_TYPE_32: \
+              imm->v_bool = im1.v_int32 _op im2.v_int32; break; \
+            case IF1_INT_TYPE_64: \
+              imm->v_bool = im1.v_int64 _op im2.v_int64; break; \
+            default: assert(!"case"); \
+          } \
+          break; \
+        } \
+        case IF1_NUM_KIND_FLOAT: \
+          switch (im1.num_index) { \
+            case IF1_FLOAT_TYPE_32: \
+              imm->v_bool = im1.v_float32 _op im2.v_float32; break; \
+            case IF1_FLOAT_TYPE_64: \
+              imm->v_bool = im1.v_float64 _op im2.v_float64; break; \
+            default: assert(!"case"); \
+          } \
+          break; \
+      }
+
 #define DO_FOLDI(_op) \
       switch (imm->const_kind) { \
         case IF1_NUM_KIND_NONE: \
@@ -451,12 +496,12 @@ fold_constant(int op, Immediate *aim1, Immediate *aim2, Immediate *imm) {
     case P_prim_subtract: DO_FOLD(-); break;
     case P_prim_lsh: DO_FOLDI(<<); break;
     case P_prim_rsh: DO_FOLDI(>>); break;
-    case P_prim_less: DO_FOLD(<); break;
-    case P_prim_lessorequal: DO_FOLD(<=); break;
-    case P_prim_greater: DO_FOLD(>); break;
-    case P_prim_greaterorequal: DO_FOLD(>=); break;
-    case P_prim_equal: DO_FOLD(==); break;
-    case P_prim_notequal: DO_FOLD(!=); break;
+    case P_prim_less: DO_FOLDB(<); break;
+    case P_prim_lessorequal: DO_FOLDB(<=); break;
+    case P_prim_greater: DO_FOLDB(>); break;
+    case P_prim_greaterorequal: DO_FOLDB(>=); break;
+    case P_prim_equal: DO_FOLDB(==); break;
+    case P_prim_notequal: DO_FOLDB(!=); break;
     case P_prim_and: DO_FOLDI(&); break;
     case P_prim_xor: DO_FOLDI(^); break;
     case P_prim_or: DO_FOLDI(|); break;

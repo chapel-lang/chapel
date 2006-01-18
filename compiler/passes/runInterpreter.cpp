@@ -16,6 +16,8 @@
 #include "../traversals/view.h"
 #include "stringutil.h"
 
+#define HACK_NEWLINE_STRING 1
+
 class IObject;
 class IThread;
 
@@ -1272,6 +1274,33 @@ check_TypeSymbol(BaseAST *s, ISlot *slot) {
   return NULL;
 }
 
+char *
+unescape_string(char *s) {
+  char *x = (char*)MALLOC(strlen(s) * 2 + 1), c, *ret = x;
+  while ((c = *s++)) {
+    if (c == '\\') {
+      c = *s++;
+      if (!c) {
+        *x++ = c;
+        break;
+      }
+      switch (c) {
+        default: *x++ = c; break;
+        case 'b': *x++ = '\b'; break;
+        case 'f': *x++ = '\f'; break;
+        case 'n': *x++ = '\n'; break;
+        case 'r': *x++ = '\r'; break;
+        case 't': *x++ = '\t'; break;
+        case 'v': *x++ = '\v'; break;
+        case 'a': *x++ = '\a'; break;
+      }
+    } else
+      *x++ = c;
+  }
+  *x++ = 0;
+  return ret;
+}
+
 static FnSymbol *
 resolve_0arity_call(IFrame *frame, BaseAST *ip, FnSymbol *fn) {
   Vec<Type *> actual_types;
@@ -1414,11 +1443,19 @@ IFrame::iprimitive(CallExpr *s) {
         default: 
           user_error(this, "unhandled primitive: %s", s->primitive->name);
           return 1;
+#ifndef HACK_NEWLINE_STRING
         case IF1_CONST_KIND_STRING:
           result.imm->set_int64(fprintf(fp,
                                         arg[1]->imm->v_string,
                                         arg[2]->imm->v_string));
           break;
+#else
+        case IF1_CONST_KIND_STRING:
+          result.imm->set_int64(fprintf(fp,
+                                        arg[1]->imm->v_string,
+                                        unescape_string(arg[2]->imm->v_string)));
+          break;
+#endif
         case IF1_NUM_KIND_UINT:
           result.imm->set_int64(fprintf(fp,
                                         arg[1]->imm->v_string,

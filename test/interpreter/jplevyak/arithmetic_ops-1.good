@@ -1,1 +1,19 @@
-m = 5\nn = 2\no = 30\n\ntest: m * n\nexpected answer = 10\nactual answer = 10\n\ntest: o / m\nexpected answer = 6\nactual answer = 6\n\ntest: m + n\nexpected answer = 7\nactual answer = 7\n\ntest: m - n\nexpected answer = 3\nactual answer = 3\n
+m = 5
+n = 2
+o = 30
+
+test: m * n
+expected answer = 10
+actual answer = 10
+
+test: o / m
+expected answer = 6
+actual answer = 6
+
+test: m + n
+expected answer = 7
+actual answer = 7
+
+test: m - n
+expected answer = 3
+actual answer = 3

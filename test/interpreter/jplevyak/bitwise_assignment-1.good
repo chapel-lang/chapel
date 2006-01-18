@@ -1,1 +1,14 @@
-m = 10\nn = 12\n\ntest: m &= n\nexpected answer = 8\nactual answer = 8\n\ntest: m ^= n\nexpected answer = 6\nactual answer = 6\n\ntest: m |= n\nexpected answer = 14\nactual answer = 14\n
+m = 10
+n = 12
+
+test: m &= n
+expected answer = 8
+actual answer = 8
+
+test: m ^= n
+expected answer = 6
+actual answer = 6
+
+test: m |= n
+expected answer = 14
+actual answer = 14
