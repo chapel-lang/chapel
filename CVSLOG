@@ -54159,3 +54159,29 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: num.cpp 
 
+---------------------------------------------------------------------------
+
+01/18/06 09:57:01 -- jplevyak
+
+Log message:
+	Fix but in logical operators.
+	Added hack to unescape strings before printing them out.
+	updated test files to have real newlines
+	Added the compSampler! Working fine.
+
+Modified files:
+	chapel/compiler/ifa/: num.cpp 
+	chapel/compiler/passes/: runInterpreter.cpp 
+	chapel/test/interpreter/jplevyak/: arithmetic_ops-1.good 
+	                                   assignment_expr-1.good 
+	                                   bitwise_assignment-1.good 
+	                                   bitwise_negation-1.good 
+	                                   bitwise_ops-1.good 
+	                                   call-1.good 
+	                                   equality_ops-1.good 
+	                                   member-1.good writeln-1.good 
+	                                   writeln-2.good 
+Added files:
+	chapel/test/interpreter/jplevyak/: compSampler-1.chpl 
+	                                   compSampler-1.good 
+
