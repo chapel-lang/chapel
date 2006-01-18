@@ -2083,7 +2083,8 @@ IFrame::run(int timeslice) {
 
 static void
 initialize() {
-  signal(SIGINT, handle_interrupt);
+  if (run_interpreter > 1)
+    signal(SIGINT, handle_interrupt);
 }
 
 static void
