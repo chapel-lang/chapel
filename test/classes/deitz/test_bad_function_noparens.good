@@ -1,1 +1,2 @@
+Error: Symbol 'bar' is not defined (test_bad_function_noparens.chpl:5)
 Error: Non-member functions must have parenthesized argument lists (test_bad_function_noparens.chpl:1)

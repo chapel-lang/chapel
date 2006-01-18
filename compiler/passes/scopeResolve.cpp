@@ -140,15 +140,6 @@ void scopeResolve(BaseAST* base) {
             else
               symExpr->var = sym;
 
-          // Eventually want to make all class types, constructor calls
-//           if (type && dynamic_cast<ClassType*>(type->definition)) {
-//             if (symExpr->parentExpr && symExpr->parentStmt) {
-//               CallExpr* call = dynamic_cast<CallExpr*>(symExpr->parentExpr);
-//               if (!call || call->baseExpr != symExpr)
-//                 symExpr->replace(new CallExpr(type));
-//             }
-//           }
-
           // Apply 'this' in methods where necessary
           if (!type) {
             ClassType* ct;
@@ -165,8 +156,7 @@ void scopeResolve(BaseAST* base) {
                 }
             }
           }
-        } else
-          USR_FATAL(symExpr, "Symbol '%s' is not defined", name);
+        }
       }
     } else if (CallExpr* callExpr = dynamic_cast<CallExpr*>(ast)) {
       if (callExpr->isPrimitive(PRIMITIVE_GET_MEMBER) || callExpr->isPrimitive(PRIMITIVE_SET_MEMBER)) {

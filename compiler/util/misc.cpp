@@ -147,7 +147,8 @@ void myassert(char *file, int line, char *str) {
 
 // Support for internal errors, adopted from ZPL compiler
 
-static bool isFatal = true;
+static bool exit_immediately = true;
+static bool exit_eventually = false;
 
 
 static char* internalErrorCode(char* filename, int lineno) {
@@ -203,7 +204,9 @@ int setupDevelError(char *filename, int lineno, bool fatal, bool user, bool cont
     }
   }
 
-  isFatal = !cont;
+  if (fatal)
+    exit_eventually = true;
+  exit_immediately = !cont;
   return 1;
 }
 
@@ -237,7 +240,7 @@ void printProblem(char *fmt, ...) {
 
   printUsrLocation(NULL, 0);
 
-  if (isFatal && !ignore_errors) {
+  if (exit_immediately && !ignore_errors) {
     clean_exit(1);
   }
 }
@@ -259,7 +262,7 @@ void printProblem(IFAAST* ast, char *fmt, ...) {
 
   printUsrLocation(usrfilename, usrlineno);
 
-  if (isFatal && !ignore_errors) {
+  if (exit_immediately && !ignore_errors) {
     clean_exit(1);
   }
 }
@@ -292,7 +295,14 @@ void printProblem(BaseAST* ast, char *fmt, ...) {
     }
   }
 
-  if (isFatal && !ignore_errors) {
+  if (exit_immediately && !ignore_errors) {
+    clean_exit(1);
+  }
+}
+
+
+void check_fatal_errors_encountered() {
+  if (exit_eventually && !ignore_errors) {
     clean_exit(1);
   }
 }

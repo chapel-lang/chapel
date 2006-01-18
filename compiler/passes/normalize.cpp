@@ -35,7 +35,7 @@ static void apply_getters_setters(BaseAST* ast);
 static void insert_call_temps(CallExpr* call);
 static void fix_user_assign(CallExpr* call);
 static void fix_def_expr(DefExpr* def);
-static void fold_params(Vec<DefExpr*>* defs, Vec<CallExpr*>* calls);
+static void fold_params(Vec<DefExpr*>* defs, Vec<BaseAST*>* asts);
 
 void normalize(void) {
   forv_Vec(ModuleSymbol, mod, allModules)
@@ -186,17 +186,14 @@ void normalize(BaseAST* base) {
 
   compute_sym_uses(base);
   Vec<DefExpr*> defs;
-  Vec<CallExpr*> calls;
   asts.clear();
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
-    if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
-      calls.add(a);
-    } else if (DefExpr* a = dynamic_cast<DefExpr*>(ast)) {
+    if (DefExpr* a = dynamic_cast<DefExpr*>(ast)) {
       defs.add(a);
     }
   }
-  fold_params(&defs, &calls);
+  fold_params(&defs, &asts);
 }
 
 
@@ -995,11 +992,38 @@ static void fold_call_expr(CallExpr* call) {
           FOLD_CALL("-", P_prim_subtract);
           FOLD_CALL("*", P_prim_mult);
           FOLD_CALL("/", P_prim_div);
+          FOLD_CALL("&", P_prim_and);
+          FOLD_CALL("|", P_prim_or);
+          FOLD_CALL("^", P_prim_xor);
           FOLD_CALL("mod", P_prim_mod);
+          FOLD_CALL("<", P_prim_less);
+          FOLD_CALL("<=", P_prim_lessorequal);
+          FOLD_CALL(">", P_prim_greater);
+          FOLD_CALL(">=", P_prim_greaterorequal);
+          FOLD_CALL("==", P_prim_equal);
+          FOLD_CALL("!=", P_prim_notequal);
+          FOLD_CALL("and", P_prim_land);
+          FOLD_CALL("or", P_prim_lor);
           if (call->isNamed("=")) {
             call->replace(new SymExpr(v2));
             return;
           }
+        }
+      }
+    }
+  }
+  if (call->argList->length() == 1) {
+    SymExpr* a1 = dynamic_cast<SymExpr*>(call->get(1));
+    if (a1) {
+      VarSymbol* v1 = dynamic_cast<VarSymbol*>(a1->var);
+      if (v1) {
+        Immediate* i1 = v1->immediate;
+        Immediate* i2 = NULL;
+        if (i1) {
+          FOLD_CALL("+", P_prim_plus);
+          FOLD_CALL("-", P_prim_minus);
+          FOLD_CALL("~", P_prim_not);
+          FOLD_CALL("not", P_prim_lnot);
         }
       }
     }
@@ -1046,13 +1070,31 @@ static bool fold_def_expr(DefExpr* def) {
     return false;
 }
 
-static void fold_params(Vec<DefExpr*>* defs, Vec<CallExpr*>* calls) {
+static void fold_cond_stmt(CondStmt* if_stmt) {
+  if (SymExpr* cond = dynamic_cast<SymExpr*>(if_stmt->condExpr)) {
+    if (!strcmp(cond->var->cname, "true")) {
+      Stmt* then_stmt = if_stmt->thenStmt;
+      then_stmt->remove();
+      if_stmt->replace(then_stmt);
+    } else if (!strcmp(cond->var->cname, "false")) {
+      Stmt* else_stmt = if_stmt->elseStmt;
+      else_stmt->remove();
+      if_stmt->replace(else_stmt);
+    }
+  }
+}
+
+static void fold_params(Vec<DefExpr*>* defs, Vec<BaseAST*>* asts) {
   bool change;
   do {
     change = false;
-    forv_Vec(CallExpr*, call, *calls) {
-      if (call->parentSymbol) // in ast
-        fold_call_expr(call);
+    forv_Vec(BaseAST*, ast, *asts) {
+      if (CallExpr* a = dynamic_cast<CallExpr*>(ast))
+        if (a->parentSymbol) // in ast
+          fold_call_expr(a);
+      if (CondStmt* a = dynamic_cast<CondStmt*>(ast))
+        if (a->parentSymbol) // in ast
+          fold_cond_stmt(a);
     }
     forv_Vec(DefExpr*, def, *defs) {
       if (def->parentSymbol)

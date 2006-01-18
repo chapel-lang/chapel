@@ -143,7 +143,7 @@ void runPasses(char* passfilename) {
     
     while (pass->name != NULL) {
       runPass(pass->name, stringToPass(pass->name));
-      
+      check_fatal_errors_encountered();
       pass++;
     }
   } else {

@@ -48,6 +48,8 @@ int setupDevelError(char* filename, int lineno, bool fatal, bool user, bool cont
 void printProblem(char* fmt, ...);
 void printProblem(IFAAST* ast, char* fmt, ...);
 void printProblem(BaseAST* ast, char* fmt, ...);
+void check_fatal_errors_encountered(void);
+
 void myassert(char *file, int line, char *str);
 
 void startCatchingSignals(void);

@@ -86,7 +86,7 @@ static void
 check_normalized_calls(CallExpr* call) {
   if (SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr)) {
     if (dynamic_cast<ModuleSymbol*>(base->var)) {
-      USR_FATAL(call, "Illegal call of module %s", base->var->name);
+      USR_FATAL_CONT(call, "Illegal call of module %s", base->var->name);
     }
   }
 }
@@ -107,10 +107,10 @@ check_normalized_vars(Symbol* var) {
     }
   }
   if (num_moves >= 2) {
-    USR_FATAL(move, "Assigning to a constant expression");
+    USR_FATAL_CONT(move, "Assigning to a constant expression");
   }
   if (num_moves >= 1 && dynamic_cast<ArgSymbol*>(var)) {
-    USR_FATAL(move, "Assigning to a constant expression");
+    USR_FATAL_CONT(move, "Assigning to a constant expression");
   }
 }
 
@@ -118,7 +118,7 @@ check_normalized_vars(Symbol* var) {
 static void
 check_normalized_functions(FnSymbol* fn) {
   if (fn->noParens && !fn->typeBinding)
-    USR_FATAL(fn, "Non-member functions must have parenthesized argument lists");
+    USR_FATAL_CONT(fn, "Non-member functions must have parenthesized argument lists");
 }
 
 
@@ -136,6 +136,11 @@ check_normalized(void) {
       check_normalized_vars(a);
     } else if (FnSymbol* a = dynamic_cast<FnSymbol*>(ast)) {
       check_normalized_functions(a);
+    } else if (SymExpr* a = dynamic_cast<SymExpr*>(ast)) {
+      CallExpr* parent = dynamic_cast<CallExpr*>(a->parentExpr);
+      if (!(parent && parent->baseExpr == a))
+        if (dynamic_cast<UnresolvedSymbol*>(a->var))
+          USR_FATAL_CONT(a, "Symbol '%s' is not defined", a->var->name);
     }
   }
 }

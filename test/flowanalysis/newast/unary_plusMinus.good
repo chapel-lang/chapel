@@ -1,5 +1,3 @@
-::_defTmp1(unary_plusMinus.chpl:2) ( int64 )
-::_defTmp2(unary_plusMinus.chpl:2) ( int64 )
 ::_tmp(unary_plusMinus.chpl:11) ( int64 )
 ::_tmp(unary_plusMinus.chpl:17) ( int64 )
 ::_tmp(unary_plusMinus.chpl:22) ( int64 )
