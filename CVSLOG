@@ -54138,3 +54138,14 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: expr.cpp 
 
+---------------------------------------------------------------------------
+
+01/18/06 09:17:12 -- jplevyak
+
+Log message:
+	Fix conversion to bool, can't just cast, needed to add !!:
+	   x = (bool)!!y
+
+Modified files:
+	chapel/compiler/ifa/: cast_code.cpp make_cast_code.cpp 
+
