@@ -166,6 +166,29 @@ void compute_call_sites() {
 }
 
 
+void compute_sym_uses(BaseAST* base) {
+  Vec<DefExpr*> def_set;
+  Vec<BaseAST*> asts;
+  if (base == NULL)
+    collect_asts(&asts);
+  else
+    collect_asts(&asts, base);
+  forv_Vec(BaseAST, ast, asts) {
+    if (DefExpr* a = dynamic_cast<DefExpr*>(ast)) {
+      def_set.set_add(a);
+      a->sym->uses = new Vec<SymExpr*>();
+    }
+  }
+  forv_Vec(BaseAST, ast, asts) {
+    if (SymExpr* a = dynamic_cast<SymExpr*>(ast)) {
+      if (a->var->defPoint && def_set.set_in(a->var->defPoint)) {
+        a->var->uses->add(a);
+      }
+    }
+  }
+}
+
+
 void clear_type_info(BaseAST* base) {
   Vec<BaseAST*> asts;
   collect_asts(&asts, base);

@@ -42,7 +42,7 @@ pragma "rename fclose" function _fclose(fp : CFILEPTR) : integer {
   return __primitive("fclose", fp.FILEptr);
 }
 
-const errno: integer;
+var errno: integer;
 function strerror(errno: integer) : string {
   return __primitive("strerror", errno);
 }

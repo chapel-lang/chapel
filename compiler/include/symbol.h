@@ -40,6 +40,7 @@ class Symbol : public BaseAST {
   char* cname; // Name of symbol for generating C code
   Type* type;
   DefExpr* defPoint; // Point of definition
+  Vec<SymExpr*>* uses;
 
   ASymbol *asymbol;
   Symbol* overload;

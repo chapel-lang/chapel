@@ -56,9 +56,6 @@ check_returns(FnSymbol* fn) {
 static void
 check_parsed_vars(VarSymbol* var) {
   if (var->isParam()) {
-    if (var->defPoint->init && !get_constant(var->defPoint->init)) {
-      USR_FATAL(var, "Initializing param to a variable expression.");
-    }
     if (!var->defPoint->init &&
         (dynamic_cast<FnSymbol*>(var->defPoint->parentSymbol) ||
          dynamic_cast<ModuleSymbol*>(var->defPoint->parentSymbol)) &&
@@ -76,9 +73,10 @@ check_parsed(void) {
   forv_Vec(BaseAST, ast, asts) {
     if (Symbol* sym = dynamic_cast<Symbol*>(ast))
       check_redefinition(sym);
+
     if (VarSymbol* a = dynamic_cast<VarSymbol*>(ast))
       check_parsed_vars(a);
-    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast))
+    else if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast))
       check_returns(fn);
   }
 }
@@ -91,9 +89,28 @@ check_normalized_calls(CallExpr* call) {
       USR_FATAL(call, "Illegal call of module %s", base->var->name);
     }
   }
-  if (call->isNamed("=") &&
-      (call->get(1)->isConst() || call->get(1)->isParam())) {
-    USR_FATAL(call, "Assigning to a constant expression");
+}
+
+
+static void
+check_normalized_vars(Symbol* var) {
+  if (!var->isConst() && !var->isParam())
+    return;
+  int num_moves = 0;
+  CallExpr* move;
+  forv_Vec(SymExpr*, sym, *var->uses) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(sym->parentExpr)) {
+      if (call->isPrimitive(PRIMITIVE_MOVE) && call->get(1) == sym) {
+        num_moves++;
+        move = call;
+      }
+    }
+  }
+  if (num_moves >= 2) {
+    USR_FATAL(move, "Assigning to a constant expression");
+  }
+  if (num_moves >= 1 && dynamic_cast<ArgSymbol*>(var)) {
+    USR_FATAL(move, "Assigning to a constant expression");
   }
 }
 
@@ -107,11 +124,16 @@ check_normalized_functions(FnSymbol* fn) {
 
 void
 check_normalized(void) {
+  compute_sym_uses();
   Vec<BaseAST*> asts;
   collect_asts(&asts);
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
       check_normalized_calls(a);
+    } else if (VarSymbol* a = dynamic_cast<VarSymbol*>(ast)) {
+      check_normalized_vars(a);
+    } else if (ArgSymbol* a = dynamic_cast<ArgSymbol*>(ast)) {
+      check_normalized_vars(a);
     } else if (FnSymbol* a = dynamic_cast<FnSymbol*>(ast)) {
       check_normalized_functions(a);
     }
@@ -124,13 +146,24 @@ check_resolved_calls(CallExpr* call) {
 }
 
 
+static void
+check_resolved_vars(VarSymbol* var) {
+  if (!dynamic_cast<TypeSymbol*>(var->defPoint->parentSymbol))
+    if (var->isParam())
+      USR_FATAL(var,
+                "Initializing parameter '%s' to value not known at compile time",
+                var->name);
+}
+
+
 void
 check_resolved(void) {
   Vec<BaseAST*> asts;
   collect_asts(&asts);
   forv_Vec(BaseAST, ast, asts) {
-    if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
+    if (CallExpr* a = dynamic_cast<CallExpr*>(ast))
       check_resolved_calls(a);
-    }
+    else if (VarSymbol* a = dynamic_cast<VarSymbol*>(ast))
+      check_resolved_vars(a);
   }
 }

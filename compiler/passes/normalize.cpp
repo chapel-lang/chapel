@@ -13,6 +13,7 @@
 #include "symtab.h"
 #include "stringutil.h"
 #include "../traversals/inlineFunctions.h"
+#include "../traversals/view.h"
 
 
 static void reconstruct_iterator(FnSymbol* fn);
@@ -34,6 +35,7 @@ static void apply_getters_setters(BaseAST* ast);
 static void insert_call_temps(CallExpr* call);
 static void fix_user_assign(CallExpr* call);
 static void fix_def_expr(DefExpr* def);
+static void fold_params(Vec<DefExpr*>* defs, Vec<CallExpr*>* calls);
 
 void normalize(void) {
   forv_Vec(ModuleSymbol, mod, allModules)
@@ -181,6 +183,20 @@ void normalize(BaseAST* base) {
       convert_user_primitives(a);
     }
   }
+
+  compute_sym_uses(base);
+  Vec<DefExpr*> defs;
+  Vec<CallExpr*> calls;
+  asts.clear();
+  collect_asts_postorder(&asts, base);
+  forv_Vec(BaseAST, ast, asts) {
+    if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
+      calls.add(a);
+    } else if (DefExpr* a = dynamic_cast<DefExpr*>(ast)) {
+      defs.add(a);
+    }
+  }
+  fold_params(&defs, &calls);
 }
 
 
@@ -857,7 +873,7 @@ static void insert_call_temps(CallExpr* call) {
       return;
 
   Stmt* stmt = call->parentStmt;
-  VarSymbol* tmp = new VarSymbol(stringcat("_tmp"));
+  VarSymbol* tmp = new VarSymbol("_tmp", dtUnknown, VAR_NORMAL, VAR_CONST);
   tmp->cname = stringcat(tmp->name, intstring(uid++));
   tmp->noDefaultInit = true;
   call->replace(new SymExpr(tmp));
@@ -890,7 +906,7 @@ static void fix_def_expr(DefExpr* def) {
     dynamic_cast<VarSymbol*>(def->sym)->noDefaultInit = false;
   } else if (def->sym->type != dtUnknown) {
     AList<Stmt>* stmts = new AList<Stmt>();
-    VarSymbol* tmp = new VarSymbol("_defTmp");
+    VarSymbol* tmp = new VarSymbol("_defTmp", dtUnknown, VAR_NORMAL, VAR_CONST);
     tmp->cname = stringcat(tmp->name, intstring(uid++));
     stmts->insertAtTail(new DefExpr(tmp));
     stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_INIT, def->sym->type->symbol)));
@@ -901,7 +917,7 @@ static void fix_def_expr(DefExpr* def) {
     def->parentStmt->insertAfter(stmts);
   } else if (def->exprType) {
     AList<Stmt>* stmts = new AList<Stmt>();
-    VarSymbol* tmp = new VarSymbol("_defTmp");
+    VarSymbol* tmp = new VarSymbol("_defTmp", dtUnknown, VAR_NORMAL, VAR_CONST);
     tmp->cname = stringcat(tmp->name, intstring(uid++));
     stmts->insertAtTail(new DefExpr(tmp));
     stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_INIT, def->exprType->copy())));
@@ -912,10 +928,10 @@ static void fix_def_expr(DefExpr* def) {
     def->parentStmt->insertAfter(stmts);
   } else if (def->init) {
     AList<Stmt>* stmts = new AList<Stmt>();
-    VarSymbol* tmp1 = new VarSymbol("_defTmp1");
+    VarSymbol* tmp1 = new VarSymbol("_defTmp1", dtUnknown, VAR_NORMAL, VAR_CONST);
     tmp1->cname = stringcat(tmp1->name, intstring(uid++));
     stmts->insertAtTail(new DefExpr(tmp1));
-    VarSymbol* tmp2 = new VarSymbol("_defTmp2");
+    VarSymbol* tmp2 = new VarSymbol("_defTmp2", dtUnknown, VAR_NORMAL, VAR_CONST);
     tmp2->cname = stringcat(tmp2->name, intstring(uid++));
     stmts->insertAtTail(new DefExpr(tmp2));
     stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp1, def->init->copy()));
@@ -948,3 +964,99 @@ static void convert_user_primitives(CallExpr* call) {
   }
 }
 
+
+#define FOLD_CALL(name, prim)                             \
+  if (call->isNamed(name)) {                              \
+    Immediate i3;                                         \
+    fold_constant(prim, i1, i2, &i3);                     \
+    call->replace(new SymExpr(new_ImmediateSymbol(&i3))); \
+    return;                                               \
+  }
+
+static void fold_call_expr(CallExpr* call) {
+  if (call->isPrimitive(PRIMITIVE_INIT)) {
+    if (call->get(1)->typeInfo() == dtInteger)
+      call->replace(new SymExpr(dtInteger->defaultValue));
+    return;
+  }
+  if (call->argList->length() == 2) {
+    if (call->get(1)->typeInfo() == dtString) // folding not handling strings yet
+      return;
+    SymExpr* a1 = dynamic_cast<SymExpr*>(call->get(1));
+    SymExpr* a2 = dynamic_cast<SymExpr*>(call->get(2));
+    if (a1 && a2) {
+      VarSymbol* v1 = dynamic_cast<VarSymbol*>(a1->var);
+      VarSymbol* v2 = dynamic_cast<VarSymbol*>(a2->var);
+      if (v1 && v2) {
+        Immediate* i1 = v1->immediate;
+        Immediate* i2 = v2->immediate;
+        if (i1 && i2) {
+          FOLD_CALL("+", P_prim_add);
+          FOLD_CALL("-", P_prim_subtract);
+          FOLD_CALL("*", P_prim_mult);
+          FOLD_CALL("/", P_prim_div);
+          FOLD_CALL("mod", P_prim_mod);
+          if (call->isNamed("=")) {
+            call->replace(new SymExpr(v2));
+            return;
+          }
+        }
+      }
+    }
+  }
+}
+
+static bool fold_def_expr(DefExpr* def) {
+  VarSymbol* value = NULL;
+  CallExpr* move = NULL;
+  if (def->sym->isParam() || def->sym->isConst()) {
+    forv_Vec(SymExpr*, sym, *def->sym->uses) {
+      if (CallExpr* call = dynamic_cast<CallExpr*>(sym->parentExpr)) {
+        if (call->isPrimitive(PRIMITIVE_MOVE) && call->get(1) == sym) {
+          if (SymExpr* val = dynamic_cast<SymExpr*>(call->get(2))) {
+            if (VarSymbol* var = dynamic_cast<VarSymbol*>(val->var)) {
+              if (var->immediate) {
+                value = var;
+                move = call;
+              }
+            }
+          }
+        }
+        if (call->isNamed("=") && call->get(1) == sym) {
+          if (SymExpr* val = dynamic_cast<SymExpr*>(call->get(2))) {
+            if (VarSymbol* var = dynamic_cast<VarSymbol*>(val->var)) {
+              if (var->immediate) {
+                continue;
+              }
+            }
+          }
+          return false;
+        }
+      }
+    }
+  }
+  if (value) {
+    move->parentStmt->remove();
+    forv_Vec(SymExpr*, sym, *def->sym->uses) {
+      sym->var = value;
+    }
+    def->parentStmt->remove();
+    return true;
+  } else
+    return false;
+}
+
+static void fold_params(Vec<DefExpr*>* defs, Vec<CallExpr*>* calls) {
+  bool change;
+  do {
+    change = false;
+    forv_Vec(CallExpr*, call, *calls) {
+      if (call->parentSymbol) // in ast
+        fold_call_expr(call);
+    }
+    forv_Vec(DefExpr*, def, *defs) {
+      if (def->parentSymbol)
+        change |= fold_def_expr(def);
+    }
+  } while (change);
+}

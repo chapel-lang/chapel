@@ -51,6 +51,9 @@ void reset_file_info(BaseAST* baseAST, int lineno, char* filename);
 // compute call sites FnSymbol::calls
 void compute_call_sites();
 
+// compute all SymExprs for a Symbol and store in Symbol::uses
+void compute_sym_uses(BaseAST* ast = NULL);
+
 // clear type and retTypes
 void clear_type_info(BaseAST* baseAST);
 

@@ -103,6 +103,7 @@ Symbol::Symbol(astType_t astType, char* init_name, Type* init_type) :
   cname(name),
   type(init_type),
   defPoint(NULL),
+  uses(NULL),
   asymbol(0),
   overload(NULL),
   isUnresolved(false)
@@ -1556,7 +1557,7 @@ VarSymbol *new_ImmediateSymbol(Immediate *imm) {
   else
     sprint_imm(str, *imm);
   s->cname = dupstr(ss);
-  *s->immediate = imm;
+  *s->immediate = *imm;
   uniqueConstantsHash.put(s->immediate, s);
   return s;
 }
