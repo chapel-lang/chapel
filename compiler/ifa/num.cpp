@@ -418,12 +418,15 @@ fold_constant(int op, Immediate *aim1, Immediate *aim2, Immediate *imm) {
     case P_prim_greaterorequal:
     case P_prim_equal:
     case P_prim_notequal:
-    case P_prim_land:
-    case P_prim_lor:
-    case P_prim_lnot:
       fold_result(&im1, &im2, &coerce);
       imm->const_kind = IF1_NUM_KIND_UINT;
       imm->num_index = IF1_INT_TYPE_1;
+      break;
+    case P_prim_land:
+    case P_prim_lor:
+    case P_prim_lnot:
+      coerce.const_kind = imm->const_kind = IF1_NUM_KIND_UINT;
+      coerce.num_index = imm->num_index = IF1_INT_TYPE_1;
       break;
     case P_prim_plus:
     case P_prim_minus:
