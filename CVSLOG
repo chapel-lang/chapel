@@ -54149,3 +54149,13 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: cast_code.cpp make_cast_code.cpp 
 
+---------------------------------------------------------------------------
+
+01/18/06 09:23:19 -- jplevyak
+
+Log message:
+	Fix coercion of logical operators.
+
+Modified files:
+	chapel/compiler/ifa/: num.cpp 
+
