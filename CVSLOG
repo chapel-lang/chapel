@@ -54274,3 +54274,37 @@ Removed files:
 	chapel/test/trivial/roxana/: test_param_decl1.future 
 	                             test_param_init.future 
 
+---------------------------------------------------------------------------
+
+01/18/06 11:53:48 -- jplevyak
+
+Log message:
+	Fixed some issues with gotos.  Added a bunch of test case.
+	Added a .future for exit() which has some strange "module" issue.
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+Added files:
+	chapel/test/interpreter/jplevyak/: break-1.chpl break-1.good 
+	                                   break-2.chpl break-2.good 
+	                                   break-3.chpl break-3.good 
+	                                   break-4.chpl break-4.good 
+	                                   break-5.chpl break-5.good 
+	                                   continue-1.chpl 
+	                                   continue-1.good 
+	                                   continue-2.chpl 
+	                                   continue-2.good 
+	                                   continue-3.chpl 
+	                                   continue-3.good 
+	                                   continue-4.chpl 
+	                                   continue-4.good 
+	                                   continue-5.chpl 
+	                                   continue-5.good goto-1.chpl 
+	                                   goto-1.good goto-2.chpl 
+	                                   goto-2.good string-1.chpl 
+	                                   string-1.good 
+	                                   test_a_few_functions.good 
+	                                   test_cond_expr-1.chpl 
+	                                   test_cond_expr-1.good 
+	chapel/test/trivial/deitz/: exit.future 
+
