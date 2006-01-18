@@ -34,6 +34,7 @@ void initChplio(void);
 void _chpl_fwrite_float_help(FILE* fp, _float64 val);
 void _chpl_fread_string_help(FILE* fp, _string* val);
 int  _readLitChar(FILE* fp, _string val, int ignoreWhiteSpace);
+void _classReadError(void);
 
 #endif
 

@@ -191,6 +191,9 @@ class ClassType : public Type {
 
   virtual bool hasDefaultWriteFunction(void);
   virtual AList<Stmt>* buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
+  virtual bool hasDefaultReadFunction(void);
+  virtual AList<Stmt>* buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
+
 };
 
 

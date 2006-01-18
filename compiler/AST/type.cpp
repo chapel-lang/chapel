@@ -443,10 +443,10 @@ bool EnumType::hasDefaultReadFunction(void) {
 
 
 AList<Stmt>* EnumType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
-  AList<Stmt>* readBodyStmts = new AList<Stmt>();
+  AList<Stmt>* body = new AList<Stmt>();
   Symbol* valString = new VarSymbol("valString", dtString, VAR_NORMAL);
-  readBodyStmts->insertAtTail(new DefExpr(valString));
-  readBodyStmts->insertAtTail(new CallExpr("fread", fileArg, valString));
+  body->insertAtTail(new DefExpr(valString));
+  body->insertAtTail(new CallExpr("fread", fileArg, valString));
   Stmt* haltStmt = new ExprStmt(new CallExpr("halt", 
                                   new_StringLiteral("***Error: Not of "), 
                                   new_StringLiteral(arg->type->symbol->name), 
@@ -460,8 +460,8 @@ AList<Stmt>* EnumType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbo
     elseStmt = new CondStmt(cond, thenStmt, elseStmt);
     
   }
-  readBodyStmts->insertAtTail(elseStmt);
-  return readBodyStmts;
+  body->insertAtTail(elseStmt);
+  return body;
 }
 
 
@@ -863,6 +863,54 @@ AList<Stmt>* ClassType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSym
 
   return body;
  }
+
+
+bool ClassType::hasDefaultReadFunction(void) {
+  return true;
+}
+
+
+AList<Stmt>* ClassType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
+  AList<Stmt>* body = new AList<Stmt>();
+  Symbol* ignoreWhiteSpace = new VarSymbol("ignoreWhiteSpace", dtInteger, VAR_NORMAL);
+  body->insertAtTail(new DefExpr(ignoreWhiteSpace, new_IntLiteral(1)));
+  Symbol* matchingCharWasRead = new VarSymbol("matchingCharWasRead", dtInteger, VAR_NORMAL);
+  body->insertAtTail(new DefExpr(matchingCharWasRead, new_IntLiteral(0)));
+  CallExpr* fileArgFP = new CallExpr(PRIMITIVE_GET_MEMBER, fileArg, new_StringSymbol("fp"));
+  CallExpr* readOpenBrace = new CallExpr("_readLitChar", fileArgFP, new_StringLiteral("{"), ignoreWhiteSpace);
+  body->insertAtTail(new CallExpr("=", matchingCharWasRead, readOpenBrace));
+  CallExpr* notRead = new CallExpr("not", matchingCharWasRead);
+  Stmt* readError = new ExprStmt(new CallExpr("_classReadError"));
+  CondStmt* readErrorCond = new CondStmt(notRead, readError);
+  body->insertAtTail(readErrorCond);
+  bool first = true;
+  forv_Vec(Symbol, tmp, fields) {
+    if (!first) {
+      CallExpr* readComma = new CallExpr("_readLitChar", fileArgFP->copy(), new_StringLiteral(","), ignoreWhiteSpace);
+      body->insertAtTail(new CallExpr("=", matchingCharWasRead, readComma));
+      body->insertAtTail(readErrorCond->copy());
+    }  
+    Symbol* fieldName = new VarSymbol("fieldName", dtString, VAR_NORMAL);
+    body->insertAtTail(new DefExpr(fieldName, new_StringLiteral("")));
+    CallExpr* readFieldName = new CallExpr("fread", fileArg, fieldName);
+    body->insertAtTail(readFieldName);
+    Expr* name = new_StringLiteral(tmp->name);
+    Expr* confirmFieldName = new CallExpr("!=", fieldName, name);
+    CondStmt* fieldNameCond = new CondStmt(confirmFieldName, readError->copy());
+    body->insertAtTail(fieldNameCond);
+    CallExpr* readEqualSign = new CallExpr("_readLitChar", fileArgFP->copy(), new_StringLiteral("="), ignoreWhiteSpace);
+    body->insertAtTail(new CallExpr("=", matchingCharWasRead, readEqualSign));
+    body->insertAtTail(readErrorCond->copy());
+    CallExpr* argName = new CallExpr(PRIMITIVE_GET_MEMBER, arg, name->copy());
+    CallExpr* readValue = new CallExpr("fread", fileArg, argName);
+    body->insertAtTail(readValue);
+    first = false;
+  }
+  CallExpr* readCloseBrace = new CallExpr("_readLitChar", fileArgFP->copy(), new_StringLiteral("}"), ignoreWhiteSpace);
+  body->insertAtTail(new CallExpr("=", matchingCharWasRead, readCloseBrace));
+  body->insertAtTail(readErrorCond->copy());
+  return body;
+}
 
 
 MetaType::MetaType(Type* init_base) :

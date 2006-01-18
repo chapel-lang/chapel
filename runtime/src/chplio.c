@@ -75,6 +75,12 @@ void _chpl_fread_string_help(FILE* fp, _string* val) {
 }
 
 
+void _classReadError(void) {
+  char* message = _glom_strings(2, "Read of the class failed: ", strerror(errno));
+  printError(message);
+}
+
+                            
 int _readLitChar(FILE* fp, _string val, int ignoreWhiteSpace) {
   int returnVal  = 0;
   char inputVal  = ' ';

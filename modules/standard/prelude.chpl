@@ -64,13 +64,15 @@ function _chpl_fwrite_float_help(fp: CFILEPTR, val: float) : void {
   __primitive("fprintf", fp.FILEptr, "%g", val);
 }
 
-function _chpl_fread_string_help(f: CFILEPTR, inout val: string) : void {
+function _chpl_fread_string_help(fp: CFILEPTR, inout val: string) : void {
   __primitive("fscanf", "%g", val);
 }
 
-function _readLitChar(f: CFILEPTR, val: string, ignoreWhiteSpace: integer) : integer {
+function _readLitChar(fp: CFILEPTR, val: string, ignoreWhiteSpace: integer) : integer {
   return __primitive("fscanf", "%s", val);
 }
+
+function _classReadError() {}
 
 pragma "rename _chpl_tostring_boolean"
 function _tostring(x : boolean, format : string) : string {
