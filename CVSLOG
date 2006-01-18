@@ -54308,3 +54308,37 @@ Added files:
 	                                   test_cond_expr-1.good 
 	chapel/test/trivial/deitz/: exit.future 
 
+---------------------------------------------------------------------------
+
+01/18/06 13:45:15 -- deitz
+
+Log message:
+	Added support for all standard operators to normalization parameter
+	folding.  Added support for folding conditional statements and
+	enabling conditional compilation based on parameters.  See
+	
+	  test/trivial/deitz/test_param_fold5.chpl
+	
+	as an example of wrapping a conditional around the printing of a
+	variable that is never defined.
+	
+	Implemented USR_FATAL_CONT which generates a fatal user error message
+	but does not exit the compiler until the end of the pass or until a
+	fatal error is encountered.
+
+Modified files:
+	chapel/compiler/include/: misc.h 
+	chapel/compiler/main/: runpasses.cpp 
+	chapel/compiler/passes/: normalize.cpp scopeResolve.cpp 
+	                         semanticChecks.cpp 
+	chapel/compiler/util/: misc.cpp 
+	chapel/test/classes/deitz/: test_bad_function_noparens.good 
+	chapel/test/flowanalysis/newast/: unary_plusMinus.good 
+Added files:
+	chapel/test/trivial/deitz/: test_param_fold3.chpl 
+	                            test_param_fold3.good 
+	                            test_param_fold4.chpl 
+	                            test_param_fold4.good 
+	                            test_param_fold5.chpl 
+	                            test_param_fold5.good 
+
