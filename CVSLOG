@@ -54342,3 +54342,26 @@ Added files:
 	                            test_param_fold5.chpl 
 	                            test_param_fold5.good 
 
+---------------------------------------------------------------------------
+
+01/18/06 15:22:19 -- shannon
+
+Log message:
+	Added the fread function for classes, and a
+	test.  Updated the expected output for the
+	affected tests.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/modules/standard/: prelude.chpl 
+	chapel/runtime/include/: chplio.h 
+	chapel/runtime/src/: chplio.c 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+Added files:
+	chapel/test/types/file/: freadClass.chpl freadClass.good 
+
