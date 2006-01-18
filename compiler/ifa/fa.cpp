@@ -227,7 +227,7 @@ static void
 flow_var_to_var(AVar *a, AVar *b) {
   if (a == b)
     return;
-  if (a->forward.in(b))
+  if (a->forward.set_in(b))
     return;
   a->forward.set_add(b);
   b->backward.set_add(a);
@@ -1440,7 +1440,7 @@ destruct(AVar *ov, Var *p, EntrySet *es, AVar *result) {
   if (p->sym->has.n) {
     AVar *violation = 0;
     forv_CreationSet(cs, *ov->out) if (cs) {
-      if (p->sym->must_specialize->specializers.in(cs->sym)) {
+      if (p->sym->must_specialize->specializers.set_in(cs->sym)) {
         for (int i = 0; i < p->sym->has.n; i++) {
           AVar *av = NULL;
           int is_tuple = sym_tuple->specializers.set_in(cs->sym->type) != 0;
@@ -1724,7 +1724,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
             flow_vars(rhs, av);
             flow_vars(rhs, result);
           } else {
-            if (sym_anynum->specializers.in(cs->sym->type))
+            if (sym_anynum->specializers.set_in(cs->sym->type))
               update_in(result, cs->sym->type->abstract_type);
             else
               type_violation(ATypeViolation_MATCH, lhs, make_AType(cs), result);
@@ -2356,7 +2356,7 @@ log_var_types(Var *v, Fun *f) {
   Vec<CreationSet *> css;
   for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].key) {
     AVar *av = v->avars.v[i].value;
-    if (!f || f->ess.in(((EntrySet*)av->contour)))
+    if (!f || f->ess.set_in(((EntrySet*)av->contour)))
       css.set_union(*av->out);
   }
   assert(css.n);

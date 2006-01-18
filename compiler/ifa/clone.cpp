@@ -58,7 +58,7 @@ initialize() {
   Vec<Fun *> funs_set;
   funs_set.set_union(fa->funs);
   forv_Fun(f, pdb->funs) {
-    if (!funs_set.in(f))
+    if (!funs_set.set_in(f))
       f->ess.clear();
   }
   forv_Sym(s, fa->pdb->if1->allsyms) {
