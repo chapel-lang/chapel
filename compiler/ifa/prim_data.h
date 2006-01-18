@@ -59,10 +59,10 @@ extern Prim *prim_plus;
 #define P_prim_plus 26
 extern Prim *prim_minus;
 #define P_prim_minus 27
-extern Prim *prim_bnot;
-#define P_prim_bnot 28
 extern Prim *prim_not;
-#define P_prim_not 29
+#define P_prim_not 28
+extern Prim *prim_lnot;
+#define P_prim_lnot 29
 extern Prim *prim_deref;
 #define P_prim_deref 30
 extern Prim *prim_ref;

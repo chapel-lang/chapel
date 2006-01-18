@@ -402,6 +402,9 @@ fold_constant(int op, Immediate *im1, Immediate *im2, Immediate *imm) {
     case P_prim_subtract:
     case P_prim_lsh:
     case P_prim_rsh:
+    case P_prim_and:
+    case P_prim_or:
+    case P_prim_xor:
       fold_result(im1, im2, imm);
       break;
     case P_prim_less:
@@ -410,17 +413,14 @@ fold_constant(int op, Immediate *im1, Immediate *im2, Immediate *imm) {
     case P_prim_greaterorequal:
     case P_prim_equal:
     case P_prim_notequal:
-    case P_prim_and:
-    case P_prim_xor:
-    case P_prim_or:
     case P_prim_land:
     case P_prim_lor:
+    case P_prim_lnot:
       imm->const_kind = IF1_NUM_KIND_UINT;
       imm->num_index = IF1_INT_TYPE_1;
       break;
     case P_prim_plus:
     case P_prim_minus:
-    case P_prim_bnot:
     case P_prim_not:
       imm->const_kind = im1->const_kind;
       imm->num_index = im1->num_index;
@@ -446,15 +446,15 @@ fold_constant(int op, Immediate *im1, Immediate *im2, Immediate *imm) {
     case P_prim_greaterorequal: DO_FOLD(>=); break;
     case P_prim_equal: DO_FOLD(==); break;
     case P_prim_notequal: DO_FOLD(!=); break;
-    case P_prim_and: DO_FOLD(&&); break;
+    case P_prim_and: DO_FOLDI(&); break;
     case P_prim_xor: DO_FOLDI(^); break;
-    case P_prim_or: DO_FOLD(||); break;
-    case P_prim_land: DO_FOLDI(&); break;
-    case P_prim_lor: DO_FOLDI(|); break;
+    case P_prim_or: DO_FOLDI(|); break;
+    case P_prim_land: DO_FOLD(&&); break;
+    case P_prim_lor: DO_FOLD(||); break;
     case P_prim_plus: DO_FOLD1(+); break;
     case P_prim_minus: DO_FOLD1(-); break;
-    case P_prim_bnot: DO_FOLD1I(~); break;
-    case P_prim_not: DO_FOLD1(!); break;
+    case P_prim_not: DO_FOLD1I(~); break;
+    case P_prim_lnot: DO_FOLD1(!); break;
   }
 }
 

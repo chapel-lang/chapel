@@ -1,0 +1,1 @@
+m = 10\n\ntest: ~m\nexpected answer = -11\nactual answer = -11\n\ntest: ~answer\nexpected answer = 10\nactual answer = 10\n

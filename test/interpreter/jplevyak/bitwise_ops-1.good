@@ -1,0 +1,1 @@
+m = 10\nn = 12\no = 0\np = 1\n\ntest: m & n\nexpected answer = 8\nactual answer = 8\n\ntest: m ^ n\nexpected answer = 6\nactual answer = 6\n\ntest: m | n\nexpected answer = 14\nactual answer = 14\n\ntest: o or p\nexpected answer = 1\nactual answer = 1\n\ntest: o or o\nexpected answer = 0\nactual answer = 0\n\ntest: p or p\nexpected answer = 1\nactual answer = 1\n

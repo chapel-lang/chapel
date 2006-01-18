@@ -2936,8 +2936,8 @@ init_chapel_ifa() {
   array_pointwise_op_analysis_op = S("array_pointwise_op", array_pointwise_op);
   unary_minus_analysis_op = P("u-", prim_minus);
   unary_plus_analysis_op = P("u+", prim_plus);
-  unary_bnot_analysis_op = P("u~", prim_bnot);
-  unary_not_analysis_op = P("not", prim_not);
+  unary_not_analysis_op = P("u~", prim_not);
+  unary_lnot_analysis_op = P("not", prim_lnot);
   add_analysis_op = P("+", prim_add);
   subtract_analysis_op = P("-", prim_subtract);
   mult_analysis_op = P("*", prim_mult);

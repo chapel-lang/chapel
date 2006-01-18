@@ -30,8 +30,8 @@ initPrimitive() {
   prim_def(PRIMITIVE_INIT, "init", init_interpreter_op, init_analysis_op);
   prim_def(PRIMITIVE_UNARY_MINUS, "u-", unary_minus_interpreter_op, unary_minus_analysis_op);
   prim_def(PRIMITIVE_UNARY_PLUS, "u+", unary_plus_interpreter_op, unary_plus_analysis_op);
-  prim_def(PRIMITIVE_UNARY_BNOT, "u~", unary_bnot_interpreter_op, unary_bnot_analysis_op);
-  prim_def(PRIMITIVE_UNARY_NOT, "not", unary_not_interpreter_op, unary_not_analysis_op);
+  prim_def(PRIMITIVE_UNARY_NOT, "u~", unary_not_interpreter_op, unary_not_analysis_op);
+  prim_def(PRIMITIVE_UNARY_LNOT, "not", unary_lnot_interpreter_op, unary_lnot_analysis_op);
   prim_def(PRIMITIVE_ADD, "+", add_interpreter_op, add_analysis_op);
   prim_def(PRIMITIVE_SUBTRACT, "-", subtract_interpreter_op, subtract_analysis_op);
   prim_def(PRIMITIVE_MULT, "*", mult_interpreter_op, mult_analysis_op);

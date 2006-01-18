@@ -500,8 +500,8 @@ void CallExpr::makeOp(void) {
     if (fn->hasPragma("builtin")) {
       make_op_help(PRIMITIVE_UNARY_MINUS, "-", 1);
       make_op_help(PRIMITIVE_UNARY_PLUS, "+", 1);
-      make_op_help(PRIMITIVE_UNARY_BNOT, "~", 1);
-      make_op_help(PRIMITIVE_UNARY_NOT, "not", 1);
+      make_op_help(PRIMITIVE_UNARY_NOT, "~", 1);
+      make_op_help(PRIMITIVE_UNARY_LNOT, "not", 1);
       make_op_help(PRIMITIVE_ADD, "+", 2);
       make_op_help(PRIMITIVE_SUBTRACT, "-", 2);
       make_op_help(PRIMITIVE_MULT, "*", 2);
@@ -665,11 +665,11 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, "+");
       get(1)->codegen(outfile);
       break;
-    case PRIMITIVE_UNARY_BNOT:
+    case PRIMITIVE_UNARY_NOT:
       fprintf(outfile, "~");
       get(1)->codegen(outfile);
       break;
-    case PRIMITIVE_UNARY_NOT:
+    case PRIMITIVE_UNARY_LNOT:
       fprintf(outfile, "!");
       get(1)->codegen(outfile);
       break;

@@ -139,7 +139,7 @@ enum PrimOps {
   PRIM_NONE, PRIM_INIT, PRIM_ALLOC, PRIM_FOPEN, PRIM_FCLOSE,
   PRIM_STRERROR, PRIM_FPRINTF, PRIM_FSCANF, PRIM_ARRAY_INDEX,
   PRIM_ARRAY_SET, PRIM_UNARY_MINUS, PRIM_UNARY_PLUS,
-  PRIM_UNARY_BNOT, PRIM_UNARY_NOT, PRIM_ADD,
+  PRIM_UNARY_NOT, PRIM_UNARY_LNOT, PRIM_ADD,
   PRIM_SUBTRACT, PRIM_MULT, PRIM_DIV, PRIM_MOD, PRIM_EQUAL,
   PRIM_NOTEQUAL, PRIM_LESSOREQUAL, PRIM_GREATEROREQUAL, PRIM_LESS,
   PRIM_GREATER, PRIM_AND, PRIM_OR, PRIM_XOR, PRIM_LAND,
@@ -1488,7 +1488,7 @@ IFrame::iprimitive(CallExpr *s) {
       break;
     }
     case PRIM_UNARY_MINUS: case PRIM_UNARY_PLUS:
-    case PRIM_UNARY_BNOT: case PRIM_UNARY_NOT:
+    case PRIM_UNARY_NOT: case PRIM_UNARY_LNOT:
       check_prim_args(s, 1);
       check_numeric(s, arg[0]);
       result.kind = IMMEDIATE_ISLOT;
@@ -2102,8 +2102,8 @@ init_interpreter() {
   array_set_interpreter_op = new InterpreterOp("array_set", PRIM_ARRAY_SET);
   unary_minus_interpreter_op = new InterpreterOp("unary_minus", PRIM_UNARY_MINUS);
   unary_plus_interpreter_op = new InterpreterOp("unary_plus", PRIM_UNARY_PLUS);
-  unary_bnot_interpreter_op = new InterpreterOp("unary_bnot", PRIM_UNARY_BNOT);
   unary_not_interpreter_op = new InterpreterOp("unary_not", PRIM_UNARY_NOT);
+  unary_lnot_interpreter_op = new InterpreterOp("unary_lnot", PRIM_UNARY_LNOT);
   add_interpreter_op = new InterpreterOp("add", PRIM_ADD);
   subtract_interpreter_op = new InterpreterOp("subtract", PRIM_SUBTRACT);
   mult_interpreter_op = new InterpreterOp("mult", PRIM_MULT);
@@ -2137,8 +2137,8 @@ init_interpreter() {
   done_interpreter_op = new InterpreterOp("done", PRIM_DONE);
   translate_prim.put(PRIM_UNARY_MINUS, P_prim_minus);
   translate_prim.put(PRIM_UNARY_PLUS, P_prim_plus);
-  translate_prim.put(PRIM_UNARY_BNOT, P_prim_bnot);
   translate_prim.put(PRIM_UNARY_NOT, P_prim_not);
+  translate_prim.put(PRIM_UNARY_LNOT, P_prim_lnot);
   translate_prim.put(PRIM_ADD, P_prim_add);
   translate_prim.put(PRIM_SUBTRACT, P_prim_subtract);
   translate_prim.put(PRIM_MULT, P_prim_mult);
