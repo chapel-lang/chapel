@@ -54205,3 +54205,54 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+01/18/06 11:09:27 -- deitz
+
+Log message:
+	Implemented folding of parameters as a part of normalization.  Some
+	binary operators are now folded and some constants are now propagated.
+	A constant value is only propagated if it is a primitive literal and
+	it is stored in a variable that the user called a param or a const.
+	
+	Added a Vec<SymExpr*>* to the Symbol class which is filled in by the
+	utility routine compute_sym_uses(BaseAST* base) which determines all
+	of the uses (including defs) of a Symbol.  This is used to propagate
+	literals and to test constness.
+	
+	This constant folding uses the folding designed for the interpreter.
+	
+	Turned off folding of string concatentation of string literals which
+	is not yet handled.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp symbol.cpp 
+	chapel/compiler/include/: astutil.h symbol.h 
+	chapel/compiler/passes/: normalize.cpp semanticChecks.cpp 
+	chapel/modules/standard/: prelude.chpl 
+	chapel/test/flowanalysis/jplevyak/config/: configVar.good 
+	chapel/test/flowanalysis/newast/: arithmetic_ops.good 
+	                                  assignment_expr.good 
+	                                  bitwise_assignment.good 
+	                                  bitwise_negation.good 
+	                                  bitwise_ops.good 
+	                                  codegen_test.good 
+	                                  compSampler.good 
+	                                  conditional.good 
+	                                  danglingelse.good deadvar.good 
+	                                  declprintdom.good 
+	                                  declprintint.good 
+	                                  declprintint2.good domarr.good 
+	                                  equality_ops.good 
+	                                  globalref.good 
+	                                  logical_and.good 
+	                                  logical_not.good mod.good 
+	                                  octalliteral.good 
+	                                  pareninit.good 
+	                                  relational_ops.good 
+	                                  sum_type-1.good 
+	                                  sum_type-2.good 
+	                                  unary_plusMinus.good var.good 
+	                                  var2.good whileLoop.good 
+	chapel/test/trivial/roxana/: test_param_decl2.good 
+
