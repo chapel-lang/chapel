@@ -8,15 +8,15 @@ default: assert(!"case"); break;
 case 1:
 switch (from->num_index) {
 case 0:
-to->v_bool = (bool)from->v_bool; break;
+to->v_bool = (bool)!!from->v_bool; break;
 case 1:
-to->v_bool = (bool)from->v_uint8; break;
+to->v_bool = (bool)!!from->v_uint8; break;
 case 2:
-to->v_bool = (bool)from->v_uint16; break;
+to->v_bool = (bool)!!from->v_uint16; break;
 case 3:
-to->v_bool = (bool)from->v_uint32; break;
+to->v_bool = (bool)!!from->v_uint32; break;
 case 4:
-to->v_bool = (bool)from->v_uint64; break;
+to->v_bool = (bool)!!from->v_uint64; break;
 case 5:
 assert(!"case"); break;
 case 6:
@@ -29,13 +29,13 @@ switch (from->num_index) {
 case 0:
 assert(!"case"); break;
 case 1:
-to->v_bool = (bool)from->v_int8; break;
+to->v_bool = (bool)!!from->v_int8; break;
 case 2:
-to->v_bool = (bool)from->v_int16; break;
+to->v_bool = (bool)!!from->v_int16; break;
 case 3:
-to->v_bool = (bool)from->v_int32; break;
+to->v_bool = (bool)!!from->v_int32; break;
 case 4:
-to->v_bool = (bool)from->v_int64; break;
+to->v_bool = (bool)!!from->v_int64; break;
 case 5:
 assert(!"case"); break;
 case 6:
@@ -48,11 +48,11 @@ switch (from->num_index) {
 case 0:
 assert(!"case"); break;
 case 1:
-to->v_bool = (bool)from->v_float32; break;
+to->v_bool = (bool)!!from->v_float32; break;
 case 2:
 assert(!"case"); break;
 case 3:
-to->v_bool = (bool)from->v_float64; break;
+to->v_bool = (bool)!!from->v_float64; break;
 case 4:
 assert(!"case"); break;
 case 5:
