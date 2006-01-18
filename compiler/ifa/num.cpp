@@ -173,15 +173,15 @@ coerce_immediate(Immediate *from, Immediate *to) {
         case IF1_NUM_KIND_UINT: { \
           switch (imm->num_index) { \
             case IF1_INT_TYPE_1:  \
-              imm->v_bool = im1->v_bool _op im2->v_bool; break; \
+              imm->v_bool = im1.v_bool _op im2.v_bool; break; \
             case IF1_INT_TYPE_8:  \
-              imm->v_uint8 = im1->v_uint8 _op im2->v_uint8; break; \
+              imm->v_uint8 = im1.v_uint8 _op im2.v_uint8; break; \
             case IF1_INT_TYPE_16: \
-              imm->v_uint16 = im1->v_uint16 _op im2->v_uint16; break; \
+              imm->v_uint16 = im1.v_uint16 _op im2.v_uint16; break; \
             case IF1_INT_TYPE_32: \
-              imm->v_uint32 = im1->v_uint32 _op im2->v_uint32; break; \
+              imm->v_uint32 = im1.v_uint32 _op im2.v_uint32; break; \
             case IF1_INT_TYPE_64: \
-              imm->v_uint64 = im1->v_uint64 _op im2->v_uint64; break; \
+              imm->v_uint64 = im1.v_uint64 _op im2.v_uint64; break; \
             default: assert(!"case"); \
           } \
           break; \
@@ -189,13 +189,13 @@ coerce_immediate(Immediate *from, Immediate *to) {
         case IF1_NUM_KIND_INT: { \
           switch (imm->num_index) { \
             case IF1_INT_TYPE_8:  \
-              imm->v_int8 = im1->v_int8 _op im2->v_int8; break; \
+              imm->v_int8 = im1.v_int8 _op im2.v_int8; break; \
             case IF1_INT_TYPE_16: \
-              imm->v_int16 = im1->v_int16 _op im2->v_int16; break; \
+              imm->v_int16 = im1.v_int16 _op im2.v_int16; break; \
             case IF1_INT_TYPE_32: \
-              imm->v_int32 = im1->v_int32 _op im2->v_int32; break; \
+              imm->v_int32 = im1.v_int32 _op im2.v_int32; break; \
             case IF1_INT_TYPE_64: \
-              imm->v_int64 = im1->v_int64 _op im2->v_int64; break; \
+              imm->v_int64 = im1.v_int64 _op im2.v_int64; break; \
             default: assert(!"case"); \
           } \
           break; \
@@ -203,9 +203,9 @@ coerce_immediate(Immediate *from, Immediate *to) {
         case IF1_NUM_KIND_FLOAT: \
           switch (imm->num_index) { \
             case IF1_FLOAT_TYPE_32: \
-              imm->v_float32 = im1->v_float32 _op im2->v_float32; break; \
+              imm->v_float32 = im1.v_float32 _op im2.v_float32; break; \
             case IF1_FLOAT_TYPE_64: \
-              imm->v_float64 = im1->v_float64 _op im2->v_float64; break; \
+              imm->v_float64 = im1.v_float64 _op im2.v_float64; break; \
             default: assert(!"case"); \
           } \
           break; \
@@ -218,15 +218,15 @@ coerce_immediate(Immediate *from, Immediate *to) {
         case IF1_NUM_KIND_UINT: { \
           switch (imm->num_index) { \
             case IF1_INT_TYPE_1:  \
-              imm->v_bool = im1->v_bool _op im2->v_bool; break; \
+              imm->v_bool = im1.v_bool _op im2.v_bool; break; \
             case IF1_INT_TYPE_8:  \
-              imm->v_uint8 = im1->v_uint8 _op im2->v_uint8; break; \
+              imm->v_uint8 = im1.v_uint8 _op im2.v_uint8; break; \
             case IF1_INT_TYPE_16: \
-              imm->v_uint16 = im1->v_uint16 _op im2->v_uint16; break; \
+              imm->v_uint16 = im1.v_uint16 _op im2.v_uint16; break; \
             case IF1_INT_TYPE_32: \
-              imm->v_uint32 = im1->v_uint32 _op im2->v_uint32; break; \
+              imm->v_uint32 = im1.v_uint32 _op im2.v_uint32; break; \
             case IF1_INT_TYPE_64: \
-              imm->v_uint64 = im1->v_uint64 _op im2->v_uint64; break; \
+              imm->v_uint64 = im1.v_uint64 _op im2.v_uint64; break; \
             default: assert(!"case"); \
           } \
           break; \
@@ -234,13 +234,13 @@ coerce_immediate(Immediate *from, Immediate *to) {
         case IF1_NUM_KIND_INT: { \
           switch (imm->num_index) { \
             case IF1_INT_TYPE_8:  \
-              imm->v_int8 = im1->v_int8 _op im2->v_int8; break; \
+              imm->v_int8 = im1.v_int8 _op im2.v_int8; break; \
             case IF1_INT_TYPE_16: \
-              imm->v_int16 = im1->v_int16 _op im2->v_int16; break; \
+              imm->v_int16 = im1.v_int16 _op im2.v_int16; break; \
             case IF1_INT_TYPE_32: \
-              imm->v_int32 = im1->v_int32 _op im2->v_int32; break; \
+              imm->v_int32 = im1.v_int32 _op im2.v_int32; break; \
             case IF1_INT_TYPE_64: \
-              imm->v_int64 = im1->v_int64 _op im2->v_int64; break; \
+              imm->v_int64 = im1.v_int64 _op im2.v_int64; break; \
             default: assert(!"case"); \
           } \
           break; \
@@ -259,15 +259,15 @@ coerce_immediate(Immediate *from, Immediate *to) {
         case IF1_NUM_KIND_UINT: { \
           switch (imm->num_index) { \
             case IF1_INT_TYPE_1:  \
-              imm->v_bool = _op im1->v_bool; break; \
+              imm->v_bool = _op im1.v_bool; break; \
             case IF1_INT_TYPE_8:  \
-              imm->v_uint8 = _op im1->v_uint8; break; \
+              imm->v_uint8 = _op im1.v_uint8; break; \
             case IF1_INT_TYPE_16: \
-              imm->v_uint16 = _op im1->v_uint16; break; \
+              imm->v_uint16 = _op im1.v_uint16; break; \
             case IF1_INT_TYPE_32: \
-              imm->v_uint32 = _op im1->v_uint32; break; \
+              imm->v_uint32 = _op im1.v_uint32; break; \
             case IF1_INT_TYPE_64: \
-              imm->v_uint64 = _op im1->v_uint64; break; \
+              imm->v_uint64 = _op im1.v_uint64; break; \
             default: assert(!"case"); \
           } \
           break; \
@@ -275,13 +275,13 @@ coerce_immediate(Immediate *from, Immediate *to) {
         case IF1_NUM_KIND_INT: { \
           switch (imm->num_index) { \
             case IF1_INT_TYPE_8:  \
-              imm->v_int8 = _op im1->v_int8; break; \
+              imm->v_int8 = _op im1.v_int8; break; \
             case IF1_INT_TYPE_16: \
-              imm->v_int16 = _op im1->v_int16; break; \
+              imm->v_int16 = _op im1.v_int16; break; \
             case IF1_INT_TYPE_32: \
-              imm->v_int32 = _op im1->v_int32; break; \
+              imm->v_int32 = _op im1.v_int32; break; \
             case IF1_INT_TYPE_64: \
-              imm->v_int64 = _op im1->v_int64; break; \
+              imm->v_int64 = _op im1.v_int64; break; \
             default: assert(!"case"); \
           } \
           break; \
@@ -289,9 +289,9 @@ coerce_immediate(Immediate *from, Immediate *to) {
         case IF1_NUM_KIND_FLOAT: \
           switch (imm->num_index) { \
             case IF1_FLOAT_TYPE_32: \
-              imm->v_float32 = _op im1->v_float32; break; \
+              imm->v_float32 = _op im1.v_float32; break; \
             case IF1_FLOAT_TYPE_64: \
-              imm->v_float64 =  _op im1->v_float64; break; \
+              imm->v_float64 =  _op im1.v_float64; break; \
             default: assert(!"case"); \
           } \
           break; \
@@ -304,15 +304,15 @@ coerce_immediate(Immediate *from, Immediate *to) {
         case IF1_NUM_KIND_UINT: { \
           switch (imm->num_index) { \
             case IF1_INT_TYPE_1:  \
-              imm->v_bool = _op im1->v_bool; break; \
+              imm->v_bool = _op im1.v_bool; break; \
             case IF1_INT_TYPE_8:  \
-              imm->v_uint8 = _op im1->v_uint8; break; \
+              imm->v_uint8 = _op im1.v_uint8; break; \
             case IF1_INT_TYPE_16: \
-              imm->v_uint16 = _op im1->v_uint16; break; \
+              imm->v_uint16 = _op im1.v_uint16; break; \
             case IF1_INT_TYPE_32: \
-              imm->v_uint32 = _op im1->v_uint32; break; \
+              imm->v_uint32 = _op im1.v_uint32; break; \
             case IF1_INT_TYPE_64: \
-              imm->v_uint64 = _op im1->v_uint64; break; \
+              imm->v_uint64 = _op im1.v_uint64; break; \
             default: assert(!"case"); \
           } \
           break; \
@@ -320,13 +320,13 @@ coerce_immediate(Immediate *from, Immediate *to) {
         case IF1_NUM_KIND_INT: { \
           switch (imm->num_index) { \
             case IF1_INT_TYPE_8:  \
-              imm->v_int8 = _op im1->v_int8; break; \
+              imm->v_int8 = _op im1.v_int8; break; \
             case IF1_INT_TYPE_16: \
-              imm->v_int16 = _op im1->v_int16; break; \
+              imm->v_int16 = _op im1.v_int16; break; \
             case IF1_INT_TYPE_32: \
-              imm->v_int32 = _op im1->v_int32; break; \
+              imm->v_int32 = _op im1.v_int32; break; \
             case IF1_INT_TYPE_64: \
-              imm->v_int64 = _op im1->v_int64; break; \
+              imm->v_int64 = _op im1.v_int64; break; \
             default: assert(!"case"); \
           } \
           break; \
@@ -393,7 +393,10 @@ fold_result(Immediate *im1, Immediate *im2, Immediate *imm) {
 }
 
 void
-fold_constant(int op, Immediate *im1, Immediate *im2, Immediate *imm) {
+fold_constant(int op, Immediate *aim1, Immediate *aim2, Immediate *imm) {
+  Immediate im1(*aim1), im2, coerce;
+  if (aim2)
+    im2 = *aim2;
   switch (op) {
     case P_prim_mult:
     case P_prim_div:
@@ -405,7 +408,9 @@ fold_constant(int op, Immediate *im1, Immediate *im2, Immediate *imm) {
     case P_prim_and:
     case P_prim_or:
     case P_prim_xor:
-      fold_result(im1, im2, imm);
+      fold_result(&im1, &im2, &coerce);
+      imm->const_kind = coerce.const_kind;
+      imm->num_index = coerce.num_index;
       break;
     case P_prim_less:
     case P_prim_lessorequal:
@@ -416,21 +421,24 @@ fold_constant(int op, Immediate *im1, Immediate *im2, Immediate *imm) {
     case P_prim_land:
     case P_prim_lor:
     case P_prim_lnot:
+      fold_result(&im1, &im2, &coerce);
       imm->const_kind = IF1_NUM_KIND_UINT;
       imm->num_index = IF1_INT_TYPE_1;
       break;
     case P_prim_plus:
     case P_prim_minus:
     case P_prim_not:
-      imm->const_kind = im1->const_kind;
-      imm->num_index = im1->num_index;
+      imm->const_kind = im1.const_kind;
+      imm->num_index = im1.num_index;
       break;
   }
-  coerce_immediate(im1, imm);
-  *im1 = *imm;
-  if (im2) {
-    coerce_immediate(im2, imm);
-    *im2 = *imm;
+  if (coerce.const_kind) {
+    coerce_immediate(&im1, &coerce);
+    im1 = coerce;
+    if (aim2) {
+      coerce_immediate(&im2, &coerce);
+      im2 = coerce;
+    }
   }
   switch (op) {
     case P_prim_mult: DO_FOLD(*); break;

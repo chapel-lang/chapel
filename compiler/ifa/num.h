@@ -74,6 +74,7 @@ class Immediate : public gc { public:
     v_string = s;
   }
   Immediate();
+  Immediate(const Immediate &im);
 };
 
 class ImmHashFns { public:
@@ -96,6 +97,10 @@ EXTERN char *num_kind_string[4][8] EXTERN_INIT(CPP_IS_LAME);
 inline Immediate& Immediate::operator=(const Immediate& imm) {
   memcpy(this, &imm, sizeof(imm));
   return *this;
+}
+
+inline Immediate::Immediate(const Immediate& imm) {
+  memcpy(this, &imm, sizeof(imm));
 }
 
 inline Immediate::Immediate() {
