@@ -624,7 +624,7 @@ void CallExpr::codegen(FILE* outfile) {
     switch (primitive->tag) {
     case PRIMITIVE_UNKNOWN:
       break;
-    case PRIMITIVE_MOVE:
+    case PRIMITIVE_MOVE: {
       if (SymExpr* sym = dynamic_cast<SymExpr*>(get(1))) {
         if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var)) {
           if (var->varClass == VAR_CONFIG) {
@@ -654,6 +654,7 @@ void CallExpr::codegen(FILE* outfile) {
         }
       }
       break;
+    }
     case PRIMITIVE_INIT:
       INT_FATAL(this, "Unexpected PRIMITIVE_INIT");
       break;
