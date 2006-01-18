@@ -54256,3 +54256,21 @@ Modified files:
 	                                  var2.good whileLoop.good 
 	chapel/test/trivial/roxana/: test_param_decl2.good 
 
+---------------------------------------------------------------------------
+
+01/18/06 11:15:22 -- deitz
+
+Log message:
+	Added two param folding test cases.
+	
+	Removed two .futures for tests that were waiting for param folding.
+
+Added files:
+	chapel/test/trivial/deitz/: test_param_fold1.chpl 
+	                            test_param_fold1.good 
+	                            test_param_fold2.chpl 
+	                            test_param_fold2.good 
+Removed files:
+	chapel/test/trivial/roxana/: test_param_decl1.future 
+	                             test_param_init.future 
+
