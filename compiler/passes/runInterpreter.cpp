@@ -345,7 +345,7 @@ IFrame::icall(FnSymbol *fn, int nargs, int extra_args) {
       f->env.put(def->sym, arg_slot);
     }
     if (single_step == NEXT_STEP) {
-      f->single_stepping = NEXT_STEP;
+      single_stepping = NEXT_STEP;
       single_step = NO_STEP;
     }
     thread->frame = f;
@@ -881,6 +881,7 @@ cmd_break(IFrame *frame, char *c) {
     while (*c && !isspace(*c)) c++;
     name = dupstr(name, c);
     break_functions.put(name);
+    printf("  breaking at function %s\n", name);
   }
 }
 
@@ -1689,6 +1690,8 @@ IFrame::run(int timeslice) {
     goto LnextExpr;
   while (1) {
   LgotoLabel:
+    if (single_step)
+      interrupted = 1;
     if (timeslice && !--timeslice)
       return timeslice;
     if (break_ids.set_in(ip->id)) {
@@ -2075,8 +2078,6 @@ IFrame::run(int timeslice) {
       assert((!expr || expr == ip) && (expr || ip == stmt));
       assert(stageStack.n == exprStack.n + stmtStack.n + (expr ? 1 : 0));
     }
-    if (single_step)
-      interrupted = 1;
   }
 }
 
