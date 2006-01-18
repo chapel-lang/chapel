@@ -332,10 +332,10 @@ IFrame::icall(FnSymbol *fn, int nargs, int extra_args) {
   if (!ip) {
     assert(!nargs);
     function = fn;
-    ip = stmt = (Stmt*)fn->body->body->head->next;
+    ip = stmt = (Stmt*)fn->body;
   } else {
     IFrame *f = new IFrame(thread);
-    f->init((Stmt*)fn->body->body->head->next);
+    f->init((Stmt*)fn->body);
     f->parent = this;
     f->function = fn;
     for (int i = 0; i < nargs; i++) {
@@ -431,13 +431,13 @@ IFrame::icall(int nargs, ISlot *ret_slot) {
       done = 1;
     } else if (arg[0]->kind == CLOSURE_ISLOT) {
       Vec<ISlot *> &a = *arg[0]->closure_args;
-      int istart = valStack.n - (nargs - 1);
-      valStack.fill(a.n-1);
+      int istart = valStack.n - nargs;
+      valStack.fill(valStack.n + a.n - 1);
       memmove(&valStack.v[istart + 1], &valStack.v[istart + nargs], 
               sizeof(valStack.v[0]) * (nargs - 1));
       for (int i = 0; i < a.n; i++)
         valStack.v[istart + i] = a.v[i];
-      nargs += arg[0]->closure_args->n - 1;
+      nargs += a.n - 1;
     } else {
       user_error(this, "call to something other than function name or closure");
       return;
@@ -483,7 +483,7 @@ IFrame::icall(int nargs, ISlot *ret_slot) {
       case CALL_PARTIAL:
         *return_slot = *make_closure(nargs + 1);
         valStack.n -= (nargs + extra_args);
-        break;
+        return;
       case CALL_AMBIGUOUS:
         user_error(this, "ambiguous call, unable to dispatch to a single function");
         return;
@@ -1731,7 +1731,7 @@ IFrame::run(int timeslice) {
         }
         break;
       }
-      case STMT_BLOCK: {
+      case STMT_BLOCK: { assert(!stage);
         S(BlockStmt);
         EVAL_STMT((Stmt*)s->body->head->next);
       }
@@ -1740,7 +1740,7 @@ IFrame::run(int timeslice) {
         switch (stage) {
           case 0:
             stage = 1;
-            if (!s->isWhileDo) 
+            if (!s->isWhileDo)
               EVAL_STMT(s->block);
             break;
           case 1:
@@ -1834,7 +1834,7 @@ IFrame::run(int timeslice) {
         }
         break;
       }
-      case STMT_WHEN: {
+      case STMT_WHEN: { assert(!stage);
         S(WhenStmt);
         SelectStmt *select = (SelectStmt*)s->parentStmt;
         assert(select->astType == STMT_SELECT);
@@ -1853,14 +1853,14 @@ IFrame::run(int timeslice) {
         }
         break;
       }
-      case STMT_LABEL: break;
-      case STMT_GOTO: {
+      case STMT_LABEL: assert(!stage); break;
+      case STMT_GOTO: { assert(!stage);
         S(GotoStmt);
         if (igoto(s->label->defPoint->parentStmt))
           return timeslice;
         goto LgotoLabel;
       }
-      case EXPR_SYM: {
+      case EXPR_SYM: { assert(!stage);
         S(SymExpr);
         if (s->var && watch_ids.set_in(s->var->id)) {
           printf("  watch of id %d triggered, stopping\n", (int)s->var->id);
@@ -2069,7 +2069,10 @@ IFrame::run(int timeslice) {
             return timeslice;
           }
           assert(stage >= 0);
-          ip = stmt = (Stmt*)stmt->next;
+          if (!stage)
+            ip = stmt = (Stmt*)stmt->next;
+          else
+            ip = stmt;
         }
       } else if (!ip) {
         assert(!expr);
