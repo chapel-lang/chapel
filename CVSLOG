@@ -54063,3 +54063,13 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+01/17/06 16:08:51 -- jplevyak
+
+Log message:
+	Convert more Vec::in to Vec::set_in for efficiency.
+
+Modified files:
+	chapel/compiler/ifa/: clone.cpp fa.cpp 
+
