@@ -54128,3 +54128,13 @@ Added files:
 	chapel/test/interpreter/jplevyak/: equality_ops-1.chpl 
 	                                   equality_ops-1.good 
 
+---------------------------------------------------------------------------
+
+01/18/06 09:04:21 -- jplevyak
+
+Log message:
+	Fix compilation error on SUSE 9.3
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+
