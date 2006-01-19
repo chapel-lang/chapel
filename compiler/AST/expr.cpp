@@ -837,6 +837,17 @@ void CallExpr::codegen(FILE* outfile) {
   /// END KLUDGE
   ///
 
+  if (!no_infer) {
+    if (SymExpr* variable = dynamic_cast<SymExpr*>(baseExpr)) {
+      if (!strcmp(variable->var->cname, "_data_construct")) {
+        if (argList->length() == 0) {
+          fprintf(outfile, "0");
+          return;
+        }
+      }
+    }
+  }
+
   baseExpr->codegen(outfile);
   fprintf(outfile, "(");
 

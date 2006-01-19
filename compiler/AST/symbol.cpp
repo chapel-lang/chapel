@@ -633,6 +633,7 @@ FnSymbol::FnSymbol(char* initName,
   _getter(NULL),
   method_type(NON_METHOD),
   instantiatedFrom(NULL),
+  instantiatedTo(NULL),
   basicBlocks(NULL),
   calledBy(NULL),
   calls(NULL)
@@ -991,6 +992,7 @@ instantiate_function(Stmt* pointOfInstantiation, FnSymbol *fn, ASTMap *all_subs,
       }
     }
   }
+  normalize(fnClone);
   return fnClone;
 }
 
@@ -1047,6 +1049,24 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
   currentLineno = lineno;
   currentFilename = filename;
   ASTMap map;
+
+  if (instantiatedTo == NULL)
+    instantiatedTo = new Vec<FnSymbol*>();
+  
+  if (instantiatedTo->n >= instantiation_limit) {
+    if (fnClass == FN_CONSTRUCTOR) {
+      USR_FATAL_CONT(retType,
+                     "Type '%s' has been instantiated too many times",
+                     retType->symbol->name);
+    } else {
+      USR_FATAL_CONT(this,
+                     "Function '%s' has been instantiated too many times",
+                     name);
+    }
+    USR_PRINT("  If this is intentional, try increasing the instantiation limit from %d", instantiation_limit);
+    USR_STOP();
+  }
+
   if (fnClass == FN_CONSTRUCTOR) {
     /*** gross code to insert a module because it is still old school */
     Vec<BaseAST*> values;
@@ -1135,6 +1155,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
         new_functions->add(fnClone);
         if (fn == this) {
           newfn = fnClone;
+          instantiatedTo->add(fnClone);
         }
         if (fn->typeBinding == retType->symbol) {
           cloneType->methods.add(fnClone);
@@ -1155,6 +1176,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
 
   } else {
     newfn = instantiate_function(defPoint->parentStmt, this, &substitutions, generic_substitutions, &map);
+    instantiatedTo->add(newfn);
     new_functions->add(newfn);
   }
   if (!newfn) {

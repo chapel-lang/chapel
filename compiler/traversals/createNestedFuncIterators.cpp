@@ -51,9 +51,7 @@ void CreateNestedFuncIterators::postProcessStmt(Stmt* stmt) {
       return;
     CallExpr* iteratorCall = dynamic_cast<CallExpr*>(fls->iterators->only());
     if (CallExpr* t = dynamic_cast<CallExpr*>(iteratorCall->argList->only())) {
-      if (t->findFnSymbol()->fnClass == FN_ITERATOR) {
-        iteratorCall = t;
-      }
+      iteratorCall = t;
     }
     FnSymbol* iterator = iteratorCall->findFnSymbol()->copy();
     iterator->retType = dtVoid;

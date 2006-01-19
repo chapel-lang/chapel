@@ -182,6 +182,7 @@ class FnSymbol : public Symbol {
   Vec<Symbol *> genericSymbols;
   FnSymbol *instantiatedFrom;
   ASTMap substitutions;
+  Vec<FnSymbol *> *instantiatedTo;
   Vec<BasicBlock*>* basicBlocks;
   Vec<CallExpr*>* calledBy;
   Vec<CallExpr*>* calls;

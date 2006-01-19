@@ -58,6 +58,7 @@ int fanalysis_errors = 0;
 int fnostdincs = 0;
 int fnostdincs_but_file = 0;
 int num_constants_per_variable = 1;
+int instantiation_limit = 12;
 
 static ArgumentDescription arg_desc[] = {
  {"interpreter", 'i', "Run Interpreter (-ii for interactive)", "+", &run_interpreter, "CHPL_INTERPRETER", NULL},
@@ -74,6 +75,7 @@ static ArgumentDescription arg_desc[] = {
   "CHPL_CONSTANTS_PER_VARIABLE", NULL},
  {"devel", ' ', "Developer Compile", "F", &developer, "CHPL_DEVELOPER", NULL},
  {"ignore-errors", ' ', "Attempt to ignore errors", "F", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
+ {"instantiation-limit", ' ', "Limit to how many times to instantiate a single function or type", "I", &instantiation_limit, "CHPL_INSTANTIATION_LIMIT", NULL},
  {"html", 't', "Write Program in HTML", "T", &fdump_html, "CHPL_HTML", NULL},
  {"lowlevel-cg", 'g', "Low Level Code Generation", "T", &fcg, "CHPL_CG", NULL},
  {"graph", 'G', "Write Program Graphs", "T", &fgraph, "CHPL_GRAPH", NULL},

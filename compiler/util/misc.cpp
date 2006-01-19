@@ -211,6 +211,14 @@ int setupDevelError(char *filename, int lineno, bool fatal, bool user, bool cont
 }
 
 
+int setupDevelPrint(char *filename, int lineno) {
+  if (developer) {
+    fprintf(stderr, "[%s:%d] ", filename, lineno);
+  }
+  return 1;
+}
+
+
 static void printUsrLocation(char* filename, int lineno) {
   if (filename || lineno) {
     fprintf(stderr, " (");

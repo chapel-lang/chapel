@@ -41,10 +41,17 @@ char *get_file_line(char *filename, int lineno);
 #define USR_FATAL_CONT \
   if (setupDevelError(__FILE__, __LINE__, true , true , true )) printProblem
 
+#define USR_STOP \
+  check_fatal_errors_encountered
+
 #define USR_WARNING \
   if (setupDevelError(__FILE__, __LINE__, false, true , true )) printProblem
 
+#define USR_PRINT \
+  if (setupDevelPrint(__FILE__, __LINE__ )) printProblem
+
 int setupDevelError(char* filename, int lineno, bool fatal, bool user, bool cont);
+int setupDevelPrint(char* filename, int lineno);
 void printProblem(char* fmt, ...);
 void printProblem(IFAAST* ast, char* fmt, ...);
 void printProblem(BaseAST* ast, char* fmt, ...);

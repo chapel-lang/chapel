@@ -18,6 +18,8 @@ extern bool checkAnalysisTypeinfo;
 extern int fanalysis_errors;
 // End temporary development flags
 
+extern int instantiation_limit;
+
 extern int fdump_html;
 extern int f_equal_method;
 extern int fnostdincs;

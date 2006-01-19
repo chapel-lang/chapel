@@ -38,8 +38,10 @@ static void fix_def_expr(DefExpr* def);
 static void fold_params(Vec<DefExpr*>* defs, Vec<BaseAST*>* asts);
 
 void normalize(void) {
-  forv_Vec(ModuleSymbol, mod, allModules)
+  forv_Vec(ModuleSymbol, mod, allModules) {
     normalize(mod);
+    normalize(mod);
+  }
 }
 
 void normalize(BaseAST* base) {
@@ -240,6 +242,7 @@ static void reconstruct_iterator(FnSymbol* fn) {
   fn->retType = dtUnknown;
   if (fn->defPoint->exprType)
     fn->defPoint->exprType->replace(def->exprType->copy());
+  fn->fnClass = FN_FUNCTION;
 }
 
 
@@ -261,6 +264,7 @@ static void build_lvalue_function(FnSymbol* fn) {
   if (fn->typeBinding)
     fn->typeBinding->definition->methods.add(new_fn);
   new_fn->retRef = false;
+  fn->retRef = false;
   new_fn->retType = dtVoid;
   new_fn->cname = stringcat("_setter_", fn->cname);
   ArgSymbol* setterToken = new ArgSymbol(INTENT_REF, "_setterTokenDummy",
@@ -459,6 +463,13 @@ static void call_constructor_for_class(CallExpr* call) {
 
 
 static void normalize_for_loop(ForLoopStmt* stmt) {
+  if (CallExpr* call = dynamic_cast<CallExpr*>(stmt->iterators->only())) {
+    if (CallExpr* call2 = dynamic_cast<CallExpr*>(call->baseExpr)) {
+      if (call2->isNamed("_forall"))
+        return;
+    }
+  }
+
   stmt->iterators->only()->replace(
     new CallExpr(
       new CallExpr(".",
@@ -606,6 +617,8 @@ static void hack_domain_constructor_call(CallExpr* call) {
   if (call->isResolved())
     return;
   if (call->isNamed("_construct__adomain_lit")) {
+    if (!dynamic_cast<DefExpr*>(call->parentExpr))
+      return;
     Stmt* stmt = call->parentStmt;
     VarSymbol* _adomain_tmp = new VarSymbol("_adomain_tmp");
     stmt->insertBefore(
@@ -695,6 +708,7 @@ static void hack_resolve_types(Expr* expr) {
     if (ArgSymbol* arg = dynamic_cast<ArgSymbol*>(def_expr->sym)) {
       if (arg->intent == INTENT_TYPE && can_resolve_type(def_expr->exprType)) {
         arg->type = getMetaType(def_expr->exprType->typeInfo());
+        def_expr->exprType->remove();
       } else if (arg->type == dtUnknown &&
                  can_resolve_type(def_expr->exprType)) {
         arg->type = def_expr->exprType->typeInfo();
@@ -900,10 +914,10 @@ static void fix_def_expr(DefExpr* def) {
       def->sym->type = dtUnknown;
     if (def->init)
       def->parentStmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, def->init->copy()));
-    dynamic_cast<VarSymbol*>(def->sym)->noDefaultInit = false;
   } else if (def->sym->type != dtUnknown) {
     AList<Stmt>* stmts = new AList<Stmt>();
     VarSymbol* tmp = new VarSymbol("_defTmp", dtUnknown, VAR_NORMAL, VAR_CONST);
+    tmp->noDefaultInit = true;
     tmp->cname = stringcat(tmp->name, intstring(uid++));
     stmts->insertAtTail(new DefExpr(tmp));
     stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_INIT, def->sym->type->symbol)));
@@ -915,6 +929,7 @@ static void fix_def_expr(DefExpr* def) {
   } else if (def->exprType) {
     AList<Stmt>* stmts = new AList<Stmt>();
     VarSymbol* tmp = new VarSymbol("_defTmp", dtUnknown, VAR_NORMAL, VAR_CONST);
+    tmp->noDefaultInit = true;
     tmp->cname = stringcat(tmp->name, intstring(uid++));
     stmts->insertAtTail(new DefExpr(tmp));
     stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_INIT, def->exprType->copy())));
@@ -926,9 +941,11 @@ static void fix_def_expr(DefExpr* def) {
   } else if (def->init) {
     AList<Stmt>* stmts = new AList<Stmt>();
     VarSymbol* tmp1 = new VarSymbol("_defTmp1", dtUnknown, VAR_NORMAL, VAR_CONST);
+    tmp1->noDefaultInit = true;
     tmp1->cname = stringcat(tmp1->name, intstring(uid++));
     stmts->insertAtTail(new DefExpr(tmp1));
     VarSymbol* tmp2 = new VarSymbol("_defTmp2", dtUnknown, VAR_NORMAL, VAR_CONST);
+    tmp2->noDefaultInit = true;
     tmp2->cname = stringcat(tmp2->name, intstring(uid++));
     stmts->insertAtTail(new DefExpr(tmp2));
     stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp1, def->init->copy()));
@@ -940,6 +957,8 @@ static void fix_def_expr(DefExpr* def) {
   }
   def->exprType->remove();
   def->init->remove();
+  if (VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym))
+    var->noDefaultInit = true;
 }
 
 
@@ -1078,8 +1097,12 @@ static void fold_cond_stmt(CondStmt* if_stmt) {
       if_stmt->replace(then_stmt);
     } else if (!strcmp(cond->var->cname, "false")) {
       Stmt* else_stmt = if_stmt->elseStmt;
-      else_stmt->remove();
-      if_stmt->replace(else_stmt);
+      if (else_stmt) {
+        else_stmt->remove();
+        if_stmt->replace(else_stmt);
+      } else {
+        if_stmt->remove();
+      }
     }
   }
 }
