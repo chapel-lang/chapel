@@ -54561,3 +54561,18 @@ Added files:
 	                                         test_paramvar_record1.chpl 
 	                                         test_paramvar_record1.good 
 
+---------------------------------------------------------------------------
+
+01/19/06 15:41:46 -- jplevyak
+
+Log message:
+	Fixed bug with type checking of primitives.
+	Fixed bug in forall.
+	Forall now working!  Added test case for forall.
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+Added files:
+	chapel/test/interpreter/jplevyak/: test_forall.chpl 
+	                                   test_forall.good 
+
