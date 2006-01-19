@@ -810,29 +810,33 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
       wrapper_formals->insertAtTail(new DefExpr(newFormal));
       wrapper_actuals->insertAtTail(new SymExpr(newFormal));
     } else {
-      char* temp_name = stringcat("_default_temp_", formal->name);
-      VarSymbol* temp = new VarSymbol(temp_name, formal->type);
-      map.put(formal, temp);
-      Expr* temp_init = NULL;
-      Expr* temp_type = NULL;
-      if (formal->intent != INTENT_OUT)
-        temp_init = formal->defaultExpr->copy();
-      if (SymExpr* symExpr = dynamic_cast<SymExpr*>(temp_init)) {
-        if (symExpr->var == gNil) {
-          temp_init = NULL;
+      if (formal->intent == INTENT_TYPE) {
+        wrapper_actuals->insertAtTail(formal->defaultExpr->copy());
+      } else {
+        char* temp_name = stringcat("_default_temp_", formal->name);
+        VarSymbol* temp = new VarSymbol(temp_name, formal->type);
+        map.put(formal, temp);
+        Expr* temp_init = NULL;
+        Expr* temp_type = NULL;
+        if (formal->intent != INTENT_OUT)
+          temp_init = formal->defaultExpr->copy();
+        if (SymExpr* symExpr = dynamic_cast<SymExpr*>(temp_init)) {
+          if (symExpr->var == gNil) {
+            temp_init = NULL;
+          }
         }
+        if (formalDef->exprType)
+          temp_type = formalDef->exprType->copy();
+        wrapper_body->insertAtTail(new DefExpr(temp, temp_init, temp_type));
+        
+        if (formal->type != dtUnknown &&
+            formal->intent != INTENT_REF &&
+            formal->intent != INTENT_OUT &&
+            formal->intent != INTENT_INOUT)
+          wrapper_actuals->insertAtTail(new CastExpr(new SymExpr(temp), NULL, formal->type));
+        else
+          wrapper_actuals->insertAtTail(new SymExpr(temp));
       }
-      if (formalDef->exprType)
-        temp_type = formalDef->exprType->copy();
-      wrapper_body->insertAtTail(new DefExpr(temp, temp_init, temp_type));
-
-      if (formal->type != dtUnknown &&
-          formal->intent != INTENT_REF &&
-          formal->intent != INTENT_OUT &&
-          formal->intent != INTENT_INOUT)
-        wrapper_actuals->insertAtTail(new CastExpr(new SymExpr(temp), NULL, formal->type));
-      else
-        wrapper_actuals->insertAtTail(new SymExpr(temp));
     }
   }
   update_symbols(wrapper_body, &map);
@@ -1147,6 +1151,12 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
     genericParameters.set_add(retType);
     genericParameters.set_add(retType->symbol);
 
+    forv_Vec(Type*, parent, retType->typeParents)
+      cloneType->typeParents.add(parent);
+
+    forv_Vec(Type*, parent, retType->dispatchParents)
+      cloneType->dispatchParents.add(parent);
+
     Vec<FnSymbol*> fns;
     collect_functions(&fns);
     forv_Vec(FnSymbol, fn, fns) {
@@ -1183,6 +1193,19 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
     INT_FATAL(this, "Instantiation error");
   }
   add_icache(newfn);
+
+  for_alist(DefExpr, formal_def, newfn->formals) {
+    ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formal_def->sym);
+    if (formal->intent == INTENT_TYPE) {
+      if (!formal->defaultExpr) {
+        BaseAST* prev = formal_def->prev;
+        formal_def->remove();
+        formal->defaultExpr = new SymExpr(formal->genericSymbol);
+        prev->insertAfter(formal_def);
+      }
+    }
+  }
+
   return newfn;
 }
 
