@@ -54377,3 +54377,13 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+01/18/06 18:55:42 -- jplevyak
+
+Log message:
+	reorg for future work on watching of variables by name
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+
