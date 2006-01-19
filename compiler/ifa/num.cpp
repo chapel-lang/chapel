@@ -280,15 +280,15 @@ coerce_immediate(Immediate *from, Immediate *to) {
         case IF1_NUM_KIND_UINT: { \
           switch (imm->num_index) { \
             case IF1_INT_TYPE_1:  \
-              imm->v_bool = _op(im1.v_bool, im2.v_bool); break; \
+              imm->v_bool = (bool)_op(im1.v_bool, im2.v_bool); break; \
             case IF1_INT_TYPE_8:  \
-              imm->v_uint8 = _op(im1.v_uint8, im2.v_uint8); break; \
+              imm->v_uint8 = (uint8)_op(im1.v_uint8, im2.v_uint8); break; \
             case IF1_INT_TYPE_16: \
-              imm->v_uint16 = _op(im1.v_uint16, im2.v_uint16); break; \
+              imm->v_uint16 = (uint16)_op(im1.v_uint16, im2.v_uint16); break; \
             case IF1_INT_TYPE_32: \
-              imm->v_uint32 = _op(im1.v_uint32, im2.v_uint32); break; \
+              imm->v_uint32 = (uint32)_op(im1.v_uint32, im2.v_uint32); break; \
             case IF1_INT_TYPE_64: \
-              imm->v_uint64 = _op(im1.v_uint64, im2.v_uint64); break; \
+              imm->v_uint64 = (uint64)_op(im1.v_uint64, im2.v_uint64); break; \
             default: assert(!"case"); \
           } \
           break; \
@@ -296,13 +296,13 @@ coerce_immediate(Immediate *from, Immediate *to) {
         case IF1_NUM_KIND_INT: { \
           switch (imm->num_index) { \
             case IF1_INT_TYPE_8:  \
-              imm->v_int8 = _op(im1.v_int8, im2.v_int8); break; \
+              imm->v_int8 = (int8)_op(im1.v_int8, im2.v_int8); break; \
             case IF1_INT_TYPE_16: \
-              imm->v_int16 = _op(im1.v_int16, im2.v_int16); break; \
+              imm->v_int16 = (int16)_op(im1.v_int16, im2.v_int16); break; \
             case IF1_INT_TYPE_32: \
-              imm->v_int32 = _op(im1.v_int32, im2.v_int32); break; \
+              imm->v_int32 = (int32)_op(im1.v_int32, im2.v_int32); break; \
             case IF1_INT_TYPE_64: \
-              imm->v_int64 = _op(im1.v_int64, im2.v_int64); break; \
+              imm->v_int64 = (int64)_op(im1.v_int64, im2.v_int64); break; \
             default: assert(!"case"); \
           } \
           break; \
@@ -310,9 +310,9 @@ coerce_immediate(Immediate *from, Immediate *to) {
         case IF1_NUM_KIND_FLOAT: \
           switch (imm->num_index) { \
             case IF1_FLOAT_TYPE_32: \
-              imm->v_float32 = _op(im1.v_float32, im2.v_float32); break; \
+              imm->v_float32 = (float32)_op(im1.v_float32, im2.v_float32); break; \
             case IF1_FLOAT_TYPE_64: \
-              imm->v_float64 = _op(im1.v_float64, im2.v_float64); break; \
+              imm->v_float64 = (float64)_op(im1.v_float64, im2.v_float64); break; \
             default: assert(!"case"); \
           } \
           break; \

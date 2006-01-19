@@ -451,7 +451,7 @@ IFrame::icall(int nargs, ISlot *ret_slot) {
       Vec<ISlot *> &a = *arg[0]->closure_args;
       int istart = valStack.n - nargs;
       valStack.fill(valStack.n + a.n - 1);
-      memmove(&valStack.v[istart + 1], &valStack.v[istart + nargs], 
+      memmove(&valStack.v[istart + a.n], &valStack.v[istart + 1], 
               sizeof(valStack.v[0]) * (nargs - 1));
       for (int i = 0; i < a.n; i++)
         valStack.v[istart + i] = a.v[i];
@@ -1244,7 +1244,6 @@ IFrame::reset() {
 #define POP_VAL(_s) do { *islot(_s) = *valStack.pop(); } while (0)
 #define CALL(_n) do { icall(_n); return timeslice; } while (0)
 #define CALL_RET(_n, _s) do { icall(_n, _s); return timeslice; } while (0)
-#define CALL_PUSH(_n) do { ISlot *_slot = new ISlot; valStack.add(_slot); icall(_n, _slot); return timeslice; } while (0)
 
 void
 IFrame::init(FnSymbol *fn) {
@@ -1900,10 +1899,11 @@ IFrame::run(int timeslice) {
             PUSH_VAL(iter);
             CALL_RET(2, islot(loop_var));
           case 2:
+            PUSH_VAL(s);
             PUSH_SELECTOR("_forall_valid");
             PUSH_VAL(iter);
             PUSH_VAL(loop_var);
-            CALL_PUSH(3);
+            CALL_RET(3, islot(s));
           case 3: {
             ISlot *valid = valStack.pop();
             check_type(ip, valid, dtBoolean);
