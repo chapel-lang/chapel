@@ -54536,3 +54536,28 @@ Modified files:
 	chapel/compiler/ifa/: num.cpp 
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+01/19/06 15:06:20 -- deitz
+
+Log message:
+	Added a defaultExpr to the type formals in instantiated functions.
+	This gets the record test working without pre-instantiation.
+	
+	Added propagation of the dispatchParents and typeParents to
+	instantiated types.  Cleaned up default wrapper function to handle
+	type arguments with default values.
+	
+	Added a param variable record test.
+	
+	Fixed .good for test_overinstantiate1a.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_overinstantiate1a.good 
+Added files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_paramvar_record1.chpl 
+	                                         test_paramvar_record1.good 
+
