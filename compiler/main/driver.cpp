@@ -40,6 +40,7 @@ int debugParserLevel = 0;
 bool developer = false;
 bool ignore_errors = false;
 int run_interpreter = 0;
+int finterpreter_ast_mode = 0;
 int trace_level = 0;
 int fdce_if1 = 1;
 int fgraph = 0;
@@ -60,6 +61,7 @@ int num_constants_per_variable = 1;
 
 static ArgumentDescription arg_desc[] = {
  {"interpreter", 'i', "Run Interpreter (-ii for interactive)", "+", &run_interpreter, "CHPL_INTERPRETER", NULL},
+ {"ast_mode", 'a', "Set interpreter mode to AST", "T", &finterpreter_ast_mode, "CHPL_INTERPRETER_AST_MODE", NULL},
  {"trace", 's', "Trace Level", "+", &trace_level, "CHPL_TRACE", NULL},
  {"nostdincs", ' ', "No Standard Includes", "T", &fnostdincs, "CHPL_NOSTDINCS", NULL},
  {"nostdincs-but-file", ' ', "No Standard Includes But File", "T", &fnostdincs_but_file, "CHPL_NOSTDINCS_BUT_FILE", NULL},
@@ -67,7 +69,6 @@ static ArgumentDescription arg_desc[] = {
  {"premalloc", 'm', "Pre-Malloc", "I", &pre_malloc, "CHPL_PRE_MALLOC", NULL},
  {"passlist", ' ', "Passlist Filename", "P", passlist_filename, "CHPL_PASSLIST", NULL},
  {"sysdir", 'S', "System Directory", "P", system_dir, "CHPL_SYSTEM_DIR", NULL},
- {"if1-dce", ' ', "Dead Code Elimination on IF1", "T", &fdce_if1, "CHPL_DCE_IF1", NULL},
  {"print-call-depth", 'C', "Print Calls to this Depth", "I", &print_call_depth, "CHPL_PRINT_CALL_DEPTH", NULL},
  {"constant-limit", ' ', "# of Constants Propagated", "I", &num_constants_per_variable, 
   "CHPL_CONSTANTS_PER_VARIABLE", NULL},

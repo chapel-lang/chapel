@@ -28,6 +28,7 @@ extern int fgraph_constants;
 extern int fgraph_frequencies;
 extern int fgraph_pass_contours;
 extern int run_interpreter;
+extern int finterpreter_ast_mode;
 extern int trace_level;
 extern bool no_inline;
 extern bool report_inlining;

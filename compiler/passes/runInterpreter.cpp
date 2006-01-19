@@ -164,6 +164,7 @@ class InterpreterOp : public gc { public:
 
 enum { NO_STEP = 0, SINGLE_STEP = 1, NEXT_STEP = 2 };
 
+static int finterpreter_insert_mode = 0;
 volatile static int interrupted = 0;
 static int single_step = NO_STEP;
 static Vec<IThread *> threads;
@@ -232,11 +233,28 @@ IFrame::islot(BaseAST *ast) {
   return s;
 }
 
-#define S(_t) _t *s = (_t *)ip; (void)s; \
-  if (trace_level > 0) { \
-    printf( #_t "(%d) %s:%d\n", (int)s->id, s->filename?s->filename:"<>", s->lineno); \
-    known_ids.put(s->id, s); \
+static char *last_trace_filename = 0;
+static int last_trace_lineno = 0;
+
+static void 
+do_trace(IFrame *frame, BaseAST *s) {
+  if (finterpreter_ast_mode) {
+    if (frame->function && frame->function->name && s->filename && s->lineno > 0)
+      printf("%s(%d) %s:%d\n", astTypeName[s->astType], (int)s->id, s->filename, s->lineno);
+    else
+      printf("%s(%d)\n", astTypeName[s->astType], (int)s->id);
+  } else {
+    if (frame->function && frame->function->name && s->filename && s->lineno > 0) {
+      if (!last_trace_filename || (last_trace_filename != s->filename && 
+                                   last_trace_lineno != s->lineno)) {
+        last_trace_filename = s->filename;
+        last_trace_lineno = s->lineno;
+        printf("%s:%d\n", s->filename, s->lineno);
+      }
+    }
   }
+  known_ids.put(s->id, s);
+}
 
 static void
 check_kind(BaseAST *ast, ISlot *slot, int kind) {
@@ -317,7 +335,7 @@ check_numeric(BaseAST *ast, ISlot *slot) {
 void
 IFrame::icall(FnSymbol *fn, int nargs, int extra_args) {
   if (trace_level) {
-    printf("  Calling %s(%d)\n", fn->name, (int)fn->id);
+    printf("  calling %s(%d)\n", fn->name, (int)fn->id);
     known_ids.put(fn->id, fn);
   }
   if (break_ids.set_in(fn->id)) {
@@ -511,13 +529,15 @@ interactive_usage() {
           "  locals - show locals\n"
           "  print - print AST node or variable by id or name\n"
           "  nprint - print showing ids\n"
-          "  info - show information about breakpoints\n"
+          "  info - show information about breakpoints and modes\n"
           "  break - break at id or function name (execution or write of variable)\n"
           "  delete - delete a breakpoint by id or name\n"
           "  watch -  break on read of id\n"
           "  rmwatch - remove a watch on read of id\n"
           "  continue - continue execution\n"
           "  run - restart execution\n"
+          "  AST - toggle source/AST mode\n"
+          "  insert - toggle insert/debug mode\n"
           "  quit/exit - quit the interpreter\n"
           "  help - show commands (show this message)\n"
     );
@@ -536,7 +556,7 @@ match_cmd(char *ac, char *str) {
   while (*c) {
     if (isspace(*c))
       return 1;
-    if (tolower(*c) != *str)
+    if (tolower(*c) != tolower(*str))
       return 0;
     c++; str++;
   }
@@ -561,19 +581,22 @@ show(BaseAST *ip, int stage, int nospaces = 0) {
   printf("%s(%d)", astTypeName[ip->astType], (int)ip->id); 
   if (stage)
     printf("/%d", stage);
-  printf(" %s:%d\n", 
-         ip->filename ? ip->filename:"<>", ip->lineno);
+  printf(" at "); 
+  printf("%s:%d\n", ip->filename ? ip->filename:"<>", ip->lineno);
   known_ids.put(ip->id, ip);
 }
 
 static void
 show(IFrame *frame, BaseAST *ip, int stage) {
-  if (ip->filename && ip->lineno > 0)
-    printf("%s\n", get_file_line(ip->filename, ip->lineno));
-  printf("    %s(%d)", astTypeName[ip->astType], (int)ip->id);
-  if (stage)
-    printf("/%d", stage);
-  printf(" in %s(%d) %s:%d\n", 
+  if (frame->function && frame->function->name && ip->filename && ip->lineno > 0)
+    printf("> %s\n", get_file_line(ip->filename, ip->lineno));
+  if (finterpreter_ast_mode) {
+    printf("    %s(%d)", astTypeName[ip->astType], (int)ip->id);
+    if (stage)
+      printf("/%d", stage);
+  } else
+    printf(" ");
+  printf(" in %s(%d) at %s:%d\n", 
          frame->function ? frame->function->name : "<initialization>",
          (int)(frame->function ? frame->function->id : 0),
          ip->filename?ip->filename:"<>", ip->lineno);
@@ -631,18 +654,39 @@ cmd_where(IFrame *frame) {
 }
 
 static void
-cmd_list(IFrame *frame) {
+cmd_list(IFrame *frame, char *c) {
   if (!check_running(frame))
     return;
+  skip_arg(c);
   int l = frame->ip->lineno;    
-  if (l <= 0 || !frame->ip->filename) {
+  char *f = frame->ip->filename;
+  if (*c) {
+    if (isdigit(*c))
+      l = atoi(c);
+    else {
+      char *num = strchr(c, ':');
+      if (num) {
+        *num++ = 0;
+        l = atoi(num);
+        f = c;
+      } else {
+        printf("    error: no file:line information\n");
+        return;
+      }
+    }
+  }
+  if (l <= 0 || !f) {
     printf("    error: no line information\n");
     return;
   }
-  for (int i = l - 5; i < l + 6; i++) {
-    char *line = get_file_line(frame->ip->filename, i); 
-    if (line)
-      printf("%s\n", line);
+  for (int i = l - 7; i < l + 8; i++) {
+    char *line = get_file_line(f, i); 
+    if (line) {
+      if (i == l)
+        printf("> %s\n", line);
+      else
+        printf("  %s\n", line);
+    }
   }
 }
 
@@ -991,7 +1035,40 @@ cmd_info(IFrame *frame) {
       printf("    break function named %s\n", x);
   } else 
     printf("    none\n");
+  if (finterpreter_ast_mode) 
+    printf("  source/AST mode = AST\n");
+  else
+    printf("  source/AST mode = source\n");
+  if (finterpreter_insert_mode) 
+    printf("  insert/debug mode = insert\n");
+  else
+    printf("  insert/debug mode = debug\n");
 }
+
+static void
+cmd_toggle(IFrame *frame, char *c, int *flag) {
+  char *name = c;
+  while (*c && !isspace(*c)) c++;
+  if (*c) {
+    *c++ = 0;
+    while (*c && isspace(*c)) c++;
+  }
+  if (!*c)
+    *flag = !*flag;
+  else {
+    if (match_cmd(c, "true"))
+      *flag = 1;
+    else if (match_cmd(c, "false"))
+      *flag = 0;
+    else
+      *flag = atoi(c);
+  }
+  printf("  %s set to %d\n", name, *flag);
+} 
+
+
+static char *last_interactive_filename = 0;
+static int last_interactive_lineno = 0;
 
 static int
 interactive(IFrame *frame) {
@@ -999,6 +1076,15 @@ interactive(IFrame *frame) {
     show(frame, frame->ip, frame->stage);
   while (1) {
     single_step = interrupted = 0;
+    last_trace_filename = 0;
+    last_trace_lineno = 0;
+    if (frame) {
+      last_interactive_filename = frame->ip->filename;
+      last_interactive_lineno = frame->ip->lineno;
+    } else {
+      last_interactive_filename = 0;
+      last_interactive_lineno = 0;
+    }
 #ifdef USE_READLINE
     char *c = readline("(chpl) ");
     if (!c)
@@ -1016,6 +1102,14 @@ interactive(IFrame *frame) {
       c = last_cmd_buffer;
     else
       strcpy(last_cmd_buffer, c);
+    if (finterpreter_insert_mode) {
+      if (*c == ':')
+        c++;
+      else {
+        // add string c to program and execute
+        return 1;
+      }
+    }
     // Insert commands in priority order.  First partial match
     // will result in command execution. (e.g. q/qu/qui/quit are quit
     if (0) { } 
@@ -1043,7 +1137,7 @@ interactive(IFrame *frame) {
     else if (match_cmd(c, "print")) { cmd_print(frame, c); } 
     else if (match_cmd(c, "nprint")) { cmd_print(frame, c, 1); } 
     else if (match_cmd(c, "where")) { cmd_where(frame); } 
-    else if (match_cmd(c, "list")) { cmd_list(frame); } 
+    else if (match_cmd(c, "list")) { cmd_list(frame, c); } 
     else if (match_cmd(c, "up")) { frame = cmd_up(frame); } 
     else if (match_cmd(c, "down")) { frame = cmd_down(frame); } 
     else if (match_cmd(c, "stack")) { cmd_stack(frame); } 
@@ -1053,6 +1147,8 @@ interactive(IFrame *frame) {
     else if (match_cmd(c, "watch")) { cmd_watch(frame, c); } 
     else if (match_cmd(c, "rmwatch")) { cmd_rmwatch(frame, c); } 
     else if (match_cmd(c, "info")) { cmd_info(frame); } 
+    else if (match_cmd(c, "ast")) { cmd_toggle(frame, c, &finterpreter_ast_mode); } 
+    else if (match_cmd(c, "insert")) { cmd_toggle(frame, c, &finterpreter_insert_mode); } 
     else if (match_cmd(c, "trace")) {
       skip_arg(c);
       if (!*c)
@@ -1668,14 +1764,52 @@ IFrame::iprimitive(CallExpr *s) {
   return 0;
 }
 
+static int
+get_boolean(IFrame *frame, ISlot *slot, bool *c) {
+  switch (slot->kind) {
+    case OBJECT_ISLOT:
+      *c = true;
+      return 1;
+    case IMMEDIATE_ISLOT: {
+      Immediate imm;
+      imm.const_kind = IF1_NUM_KIND_UINT;
+      imm.num_index = IF1_INT_TYPE_1;
+      coerce_immediate(slot->imm, &imm);
+      *c = imm.v_bool;
+      return 1;
+    }
+    case SYMBOL_ISLOT: {
+      if (gNil == slot->symbol) {
+        *c = false;
+        return 1;
+      }
+      // fall through
+    }
+    default:
+      user_error(frame, "unable to coerce to boolean");
+      return 0;
+  }
+  return 0;
+}
+
+#define S(_t) _t *s = (_t *)ip; (void)s; if (trace_level) do_trace(this, s);
+
 int
 IFrame::run(int timeslice) {
   if (expr)
     goto LnextExpr;
   while (1) {
   LgotoLabel:
-    if (single_step)
-      interrupted = 1;
+    if (single_step) {
+      if (finterpreter_ast_mode)
+        interrupted = 1;
+      else {
+        if (ip->filename && ip->lineno > 0 &&
+            last_interactive_filename != ip->filename &&
+            last_interactive_lineno != ip->lineno) 
+        interrupted = 1;
+      }
+    }
     if (timeslice && !--timeslice)
       return timeslice;
     if (break_ids.set_in(ip->id)) {
@@ -1804,9 +1938,10 @@ IFrame::run(int timeslice) {
             break;
           case 1: {
             stage = 0;
-            ISlot *cond = islot(s->condExpr);
-            check_type(ip, cond, dtBoolean);
-            if (cond->imm->v_bool)
+            bool c;
+            if (!get_boolean(this, islot(s->condExpr), &c))
+              return timeslice;
+            if (c)
               EVAL_STMT(s->thenStmt);
             else {
               if (s->elseStmt)
@@ -1895,7 +2030,7 @@ IFrame::run(int timeslice) {
             break;
         }
         if (trace_level) {
-          printf("  %s(%d)\n", !s->sym->name ? "" : s->sym->name, (int)s->id);
+          printf("  defining %s(%d)\n", !s->sym->name ? "" : s->sym->name, (int)s->id);
           known_ids.put(s->id, s);
         }
         break;
@@ -2067,6 +2202,8 @@ IFrame::run(int timeslice) {
     }
   }
 }
+
+#undef S
 
 static void
 initialize() {
