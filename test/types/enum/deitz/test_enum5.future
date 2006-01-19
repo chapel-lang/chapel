@@ -1,3 +1,0 @@
-???
-
-This test initializes an enum with a computed value (-1).  We're not handling computed values yet.  How should we handle these in the presence of operator overloading.
