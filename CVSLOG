@@ -54476,3 +54476,13 @@ Added files:
 	                                         test_overinstantiate1a.future 
 	                                         test_overinstantiate1a.good 
 
+---------------------------------------------------------------------------
+
+01/19/06 12:55:55 -- deitz
+
+Log message:
+	Removed .future for working test.
+
+Removed files:
+	chapel/test/trivial/deitz/: exit.future 
+
