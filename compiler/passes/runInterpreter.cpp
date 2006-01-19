@@ -501,21 +501,21 @@ interactive_usage() {
   fprintf(stdout, "chpl interpreter interactive mode commands:\n");
   fprintf(stdout, 
           "  step - single step\n"
-          "  next - single step skipping over function calls\n"
+          "  next - single step, skipping over function calls\n"
           "  trace - trace program\n"
-          "  where - show the expression/statement stack\n"
+          "  where - show the expression/statement/call stack\n"
           "  up - move up the call stack\n"
           "  down - move down the call stack\n"
           "  list - show source lines\n"
           "  stack - show the value stack\n"
           "  locals - show locals\n"
-          "  print - print by id number or a local by name\n"
+          "  print - print AST node or variable by id or name\n"
           "  nprint - print showing ids\n"
-          "  info - information about breakpoints\n"
-          "  break - break at an id (execute or set)\n"
-          "  rmbreak - remove a break by id\n"
-          "  watch - break on read of an id\n"
-          "  rmwatch - remove a break on read of an id\n"
+          "  info - show information about breakpoints\n"
+          "  break - break at id or function name (execution or write of variable)\n"
+          "  delete - delete a breakpoint by id or name\n"
+          "  watch -  break on read of id\n"
+          "  rmwatch - remove a watch on read of id\n"
           "  continue - continue execution\n"
           "  run - restart execution\n"
           "  quit/exit - quit the interpreter\n"
@@ -783,6 +783,21 @@ get_known_id(int i) {
   return known_ids.get(i);
 }
 
+static BaseAST *
+find_by_name(IFrame *frame, char *name) {
+  form_Map(MapElemBaseASTISlot, x, frame->env) {
+    if (Symbol *s = dynamic_cast<Symbol*>(x->key))
+      if (s->name && !strcmp(s->name, name))
+        return s;
+  }
+  form_Map(MapElemBaseASTISlot, x, global_env) {
+    if (Symbol *s = dynamic_cast<Symbol*>(x->key))
+      if (s->name && !strcmp(s->name, name))
+        return s;
+  }
+  return NULL;
+}
+
 static BaseAST *last_print = 0;
 
 static void
@@ -811,27 +826,11 @@ cmd_print(IFrame *frame, char *c, int fnprint = 0) {
     char *e = c;
     while (*e && !isspace(*e)) e++;
     *e = 0;
-    form_Map(MapElemBaseASTISlot, x, frame->env) {
-      if (Symbol *s = dynamic_cast<Symbol*>(x->key)) {
-        if (s->name && !strcmp(s->name, c)) {
-          printf("local (%d) ", (int)s->id);
-          p = s;
-          goto Lfound;
-        }
-      }
+    p = find_by_name(frame, c);
+    if (!p) {
+      printf("  unknown: %s\n", c);
+      return;
     }
-    form_Map(MapElemBaseASTISlot, x, global_env) {
-      if (Symbol *s = dynamic_cast<Symbol*>(x->key)) {
-        if (s->name && !strcmp(s->name, c)) {
-          printf("global (%d) ", (int)s->id);
-          p = s;
-          goto Lfound;
-        }
-      }
-    }
-    printf("  unknown: %s\n", c);
-    return;
-  Lfound:;
   }
   last_print = p;
   if (!fnprint)
@@ -1019,56 +1018,42 @@ interactive(IFrame *frame) {
       strcpy(last_cmd_buffer, c);
     // Insert commands in priority order.  First partial match
     // will result in command execution. (e.g. q/qu/qui/quit are quit
-    if (0) {
-    } else if (match_cmd(c, "run")) {
+    if (0) { } 
+    else if (match_cmd(c, "run")) {
       if (frame) {
         frame->thread->todo.clear();
         frame->thread->frame = 0;
       }
       runProgram();
       return 1;
-    } else if (match_cmd(c, "help") || match_cmd(c, "?")) {
-      interactive_usage();
-    } else if (match_cmd(c, "quit")) {
-      exit(0);
-    } else if (match_cmd(c, "continue")) {
-      check_running(frame);
-      return 0;
-    } else if (match_cmd(c, "step")) {
+    } 
+    else if (match_cmd(c, "help") || match_cmd(c, "?")) { interactive_usage(); } 
+    else if (match_cmd(c, "quit")) { exit(0); } 
+    else if (match_cmd(c, "continue")) { check_running(frame); return 0; } 
+    else if (match_cmd(c, "step")) {
       check_running(frame);
       single_step = SINGLE_STEP;
       return 0;
-    } else if (match_cmd(c, "next")) {
+    } 
+    else if (match_cmd(c, "next")) {
       check_running(frame);
       single_step = NEXT_STEP;
       return 0;
-    } else if (match_cmd(c, "print")) {
-      cmd_print(frame, c);
-    } else if (match_cmd(c, "nprint")) {
-      cmd_print(frame, c, 1);
-    } else if (match_cmd(c, "where")) {
-      cmd_where(frame);
-    } else if (match_cmd(c, "list")) {
-      cmd_list(frame);
-    } else if (match_cmd(c, "up")) {
-      frame = cmd_up(frame);
-    } else if (match_cmd(c, "down")) {
-      frame = cmd_down(frame);
-    } else if (match_cmd(c, "stack")) {
-      cmd_stack(frame);
-    } else if (match_cmd(c, "locals")) {
-      cmd_locals(frame);
-    } else if (match_cmd(c, "break")) {
-      cmd_break(frame, c);
-    } else if (match_cmd(c, "delete")) {
-      cmd_delete(frame, c);
-    } else if (match_cmd(c, "watch")) {
-      cmd_watch(frame, c);
-    } else if (match_cmd(c, "rmwatch")) {
-      cmd_rmwatch(frame, c);
-    } else if (match_cmd(c, "info")) {
-      cmd_info(frame);
-    } else if (match_cmd(c, "trace")) {
+    } 
+    else if (match_cmd(c, "print")) { cmd_print(frame, c); } 
+    else if (match_cmd(c, "nprint")) { cmd_print(frame, c, 1); } 
+    else if (match_cmd(c, "where")) { cmd_where(frame); } 
+    else if (match_cmd(c, "list")) { cmd_list(frame); } 
+    else if (match_cmd(c, "up")) { frame = cmd_up(frame); } 
+    else if (match_cmd(c, "down")) { frame = cmd_down(frame); } 
+    else if (match_cmd(c, "stack")) { cmd_stack(frame); } 
+    else if (match_cmd(c, "locals")) { cmd_locals(frame); } 
+    else if (match_cmd(c, "break")) { cmd_break(frame, c); } 
+    else if (match_cmd(c, "delete")) { cmd_delete(frame, c); } 
+    else if (match_cmd(c, "watch")) { cmd_watch(frame, c); } 
+    else if (match_cmd(c, "rmwatch")) { cmd_rmwatch(frame, c); } 
+    else if (match_cmd(c, "info")) { cmd_info(frame); } 
+    else if (match_cmd(c, "trace")) {
       skip_arg(c);
       if (!*c)
         trace_level = !trace_level;
@@ -1081,9 +1066,8 @@ interactive(IFrame *frame) {
           trace_level = atoi(c);
       }
       printf("  tracing level set to %d\n", trace_level);
-    } else if (match_cmd(c, "exit")) {
-      exit(0);
-    } else {
+    } 
+    else if (match_cmd(c, "exit")) { exit(0); } else {
       if (*c)
         printf("  unknown command\n");
       interactive_usage();
