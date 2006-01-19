@@ -54461,3 +54461,18 @@ Added files:
 	                                         test_recursiveinstantiate1.chpl 
 	                                         test_recursiveinstantiate1.good 
 
+---------------------------------------------------------------------------
+
+01/19/06 12:54:47 -- deitz
+
+Log message:
+	Added a test to capture a bug in if1 translation that shows up only
+	when the instantiation limit for my overinstantiate test is increased.
+
+Added files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_overinstantiate1a.chpl 
+	                                         test_overinstantiate1a.compopts 
+	                                         test_overinstantiate1a.future 
+	                                         test_overinstantiate1a.good 
+
