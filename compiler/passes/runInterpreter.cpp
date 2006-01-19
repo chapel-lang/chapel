@@ -1237,6 +1237,7 @@ IFrame::reset() {
   stageStack.add(stage + 1); stmtStack.add(stmt); \
   stage = 0; ip = stmt = _s; goto LgotoLabel; \
 } while (0)
+#define POP_EVAL_STMT(_s) do { stage = 0; ip = stmt = _s; goto LgotoLabel; } while (0)
 #define PUSH_SELECTOR(_s) do { ISlot *_slot = new ISlot; _slot->set_selector(_s); valStack.add(_slot); } while (0)
 #define PUSH_VAL(_s) valStack.add(islot(_s))
 #define PUSH_SYM(_s)  do { ISlot *_slot = new ISlot; _slot->set_symbol(_s); valStack.add(_slot); } while (0)
@@ -1663,10 +1664,11 @@ IFrame::iprimitive(CallExpr *s) {
       break;
     }
     case PRIM_TO_STRING: {
-      check_prim_args(s, 1);
-      check_numeric(s, arg[0]);
+      check_prim_args(s, 2);
+      check_string(s, arg[0]);
+      check_numeric(s, arg[1]);
       char str[512];
-      sprint_imm(str, *arg[0]->imm);
+      sprint_imm(str, arg[0]->imm->v_string, *arg[1]->imm);
       Immediate imm(dupstr(str));
       result.set_immediate(imm);
       break;
@@ -1897,13 +1899,11 @@ IFrame::run(int timeslice) {
             PUSH_SELECTOR("_forall_start");
             PUSH_VAL(iter);
             CALL_RET(2, islot(loop_var));
-            break;
           case 2:
             PUSH_SELECTOR("_forall_valid");
             PUSH_VAL(iter);
             PUSH_VAL(loop_var);
             CALL_PUSH(3);
-            break;
           case 3: {
             ISlot *valid = valStack.pop();
             check_type(ip, valid, dtBoolean);
@@ -1915,7 +1915,6 @@ IFrame::run(int timeslice) {
             PUSH_VAL(iter);
             PUSH_VAL(loop_var);
             CALL_RET(3, islot(indice));
-            break;
           }
           case 4:
             EVAL_STMT(s->innerStmt);
@@ -1925,7 +1924,6 @@ IFrame::run(int timeslice) {
             PUSH_VAL(iter);
             PUSH_VAL(loop_var);
             CALL_RET(3, islot(loop_var));
-            break;
           default: INT_FATAL(ip, "interpreter: bad stage %d for astType: %d", stage, ip->astType); break;
         }
         break;
@@ -1953,10 +1951,36 @@ IFrame::run(int timeslice) {
         }
         break;
       }
-      case STMT_WHEN: { assert(!stage);
+      case STMT_WHEN: {
         S(WhenStmt);
         SelectStmt *select = (SelectStmt*)s->parentStmt;
         assert(select->astType == STMT_SELECT);
+        int phase = stage % 3;
+        int a = (stage / 3) + 1; // FORTRAN-like 1 based indexing!
+        stage++;
+        switch (phase) {
+          case 0: { 
+            if (!s->caseExprs || s->caseExprs->length() < a) {
+              stage = 0;
+              POP_EVAL_STMT(s->doStmt);
+            }
+            EVAL_EXPR(s->caseExprs->get(a));
+            break;
+          }
+          case 1: {
+            PUSH_SELECTOR("==");
+            PUSH_VAL(s->caseExprs->get(a));
+            PUSH_VAL(select->caseExpr);
+            CALL_RET(3, islot(s->caseExprs));
+          }
+          case 2: {
+            ISlot *cond = islot(s->caseExprs);
+            check_type(ip, cond, dtBoolean);
+            if (!cond->imm->v_bool)
+              stage = 0;
+            break;
+          }
+        }
         break;
       }
       case STMT_SELECT: {
