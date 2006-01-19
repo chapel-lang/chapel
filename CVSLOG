@@ -54387,3 +54387,13 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+01/19/06 10:23:46 -- deitz
+
+Log message:
+	Removed .future for test that now works because parameters are folded.
+
+Removed files:
+	chapel/test/types/enum/deitz/: test_enum5.future 
+
