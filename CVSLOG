@@ -54420,3 +54420,44 @@ Modified files:
 	chapel/compiler/main/: driver.cpp version_num.h 
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+01/19/06 12:51:18 -- deitz
+
+Log message:
+	Made normalize work when it is called more than once.  As of this
+	checkin, it is now called twice (like cleanup, for testing purposes).
+	Instantiated functions are now normalized.
+	
+	Added a check to make sure the same function or the same type is not
+	instantiated more than instantiation-limit number of times.  This
+	limit can be set at the command line.  The default is currently 12.
+	
+	Added a test of recursive instantiation on a function and a test of
+	infinite instantiation (that gives an error).
+	
+	Added USR_STOP macro which stops the compiler if any USR_FATAL_CONT
+	errors have been encountered.  Otherwise, the compiler stops at the
+	end of the current pass.
+	
+	Added USR_PRINT macro which is used to just print out a message to the
+	user.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp 
+	chapel/compiler/include/: driver.h misc.h symbol.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/compiler/traversals/: createNestedFuncIterators.cpp 
+	chapel/compiler/util/: misc.cpp 
+	chapel/test/flowanalysis/newast/: domarr.good sum_type-1.good 
+	                                  sum_type-2.good 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+Added files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_overinstantiate1.chpl 
+	                                         test_overinstantiate1.good 
+	                                         test_recursiveinstantiate1.chpl 
+	                                         test_recursiveinstantiate1.good 
+
