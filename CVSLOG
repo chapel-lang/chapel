@@ -54497,3 +54497,27 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+01/19/06 14:12:36 -- jplevyak
+
+Log message:
+	Added constant folding for primitive "exp" (pow).
+	Fixed bug in to_string primitive for custom print strings.
+	Fixed issues with "select... when..."
+	Added test cases for above.
+
+Modified files:
+	chapel/compiler/ifa/: num.cpp num.h 
+	chapel/compiler/passes/: runInterpreter.cpp 
+Added files:
+	chapel/test/interpreter/jplevyak/: conditional-1.chpl 
+	                                   conditional-1.good 
+	                                   op_associativity-1.chpl 
+	                                   op_associativity-1.good 
+	                                   select-1.chpl select-1.good 
+	                                   test_if_then_else.chpl 
+	                                   test_if_then_else.good 
+	                                   test_integer_method.chpl 
+	                                   test_integer_method.good 
+
