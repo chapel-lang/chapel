@@ -54397,3 +54397,26 @@ Log message:
 Removed files:
 	chapel/test/types/enum/deitz/: test_enum5.future 
 
+---------------------------------------------------------------------------
+
+01/19/06 10:55:24 -- jplevyak
+
+Log message:
+	Added new mode: interpreter ast vs. source mode.
+	  in AST mode, we print, next, where, ect. showing all AST nodes
+	  in source mode we generally show position and next/step via
+	    source lines, though we still show the expression stack via AST nodes.
+	Add new mode: insert vs. debug mode.
+	  in inset mode commands to the interpreter start with :, while
+	  other text is supposed to be new program code.
+	  currently insert mode is not implemented beyond parsing the :
+	Added list filename:lineno syntax and list lineno syntax.
+	Add new option to set "interpreter ast mode" from command line.
+	Bump compiler minor version number since it hasn't changed in a year
+	  and we are gearing up for the demo.
+
+Modified files:
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp version_num.h 
+	chapel/compiler/passes/: runInterpreter.cpp 
+
