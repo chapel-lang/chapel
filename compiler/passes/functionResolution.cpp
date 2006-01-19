@@ -14,8 +14,10 @@ bool can_dispatch(Type* actualType, Type* formalType);
 bool can_dispatch_ne(Type* actualType, Type* formalType) {
   if (actualType != dtAny && formalType == dtAny)
     return true;
-  if (actualType == dtNil && formalType == dtObject)
-    return true;
+  if (actualType == dtNil)
+    if (ClassType* ct = dynamic_cast<ClassType*>(formalType))
+      if (ct->classTag == CLASS_CLASS)
+        return true;
   if ((formalType == dtNumeric && actualType == dtBoolean) ||
       (formalType == dtNumeric && actualType == dtInteger) ||
       (formalType == dtNumeric && actualType == dtFloat))
