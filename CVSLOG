@@ -54521,3 +54521,18 @@ Added files:
 	                                   test_integer_method.chpl 
 	                                   test_integer_method.good 
 
+---------------------------------------------------------------------------
+
+01/19/06 14:38:05 -- jplevyak
+
+Log message:
+	Fixed compiler warning on conversion of float to integer during
+	folding.
+	Fixed bug with "forall" loops and another with closures.
+	current problem: can't dispatch:
+	  !=(nil, class instance)
+
+Modified files:
+	chapel/compiler/ifa/: num.cpp 
+	chapel/compiler/passes/: runInterpreter.cpp 
+
