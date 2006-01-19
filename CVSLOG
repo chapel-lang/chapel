@@ -54486,3 +54486,14 @@ Log message:
 Removed files:
 	chapel/test/trivial/deitz/: exit.future 
 
+---------------------------------------------------------------------------
+
+01/19/06 13:34:49 -- deitz
+
+Log message:
+	Fixup of nil handling in resolve_call.  More changes coming soon that
+	modify the dispatchParents.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+
