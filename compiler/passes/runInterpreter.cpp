@@ -265,6 +265,13 @@ check_kind(BaseAST *ast, ISlot *slot, int kind) {
 }
 
 static void
+check_object_or_nil(BaseAST *ast, ISlot *slot) {
+  if (slot->kind == SYMBOL_ISLOT && gNil == slot->symbol)
+    return;
+  check_kind(ast, slot, OBJECT_ISLOT);
+}
+
+static void
 check_type(BaseAST *ast, ISlot *slot, Type *t) {
   if (slot->kind == EMPTY_ISLOT) {
     USR_FATAL(ast, "interpreter: accessed empty variable");
@@ -1652,8 +1659,8 @@ IFrame::iprimitive(CallExpr *s) {
     case PRIM_PTR_EQ:
     case PRIM_PTR_NEQ: {
       check_prim_args(s, 2);
-      check_kind(s, arg[0], OBJECT_ISLOT);
-      check_kind(s, arg[1], OBJECT_ISLOT);
+      check_object_or_nil(s, arg[0]);
+      check_object_or_nil(s, arg[1]);
       Immediate imm;
       if (s->primitive->interpreterOp->kind == PRIM_PTR_EQ)
         imm = (bool)(arg[0]->object == arg[1]->object);
@@ -1890,6 +1897,7 @@ IFrame::run(int timeslice) {
         Expr *iter = s->iterators->only();
         Symbol *indice = s->indices->only()->sym;
         BaseAST *loop_var = s;
+        BaseAST *loop_valid = s->innerStmt;
         switch (stage++) {
           case 0: 
             EVAL_EXPR(iter); 
@@ -1899,13 +1907,12 @@ IFrame::run(int timeslice) {
             PUSH_VAL(iter);
             CALL_RET(2, islot(loop_var));
           case 2:
-            PUSH_VAL(s);
             PUSH_SELECTOR("_forall_valid");
             PUSH_VAL(iter);
             PUSH_VAL(loop_var);
-            CALL_RET(3, islot(s));
+            CALL_RET(3, islot(loop_valid));
           case 3: {
-            ISlot *valid = valStack.pop();
+            ISlot *valid = islot(loop_valid);
             check_type(ip, valid, dtBoolean);
             if (!valid->imm->v_bool) {
               stage = 0;
