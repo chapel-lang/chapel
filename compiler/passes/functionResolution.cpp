@@ -347,7 +347,20 @@ resolve_call(CallExpr* call,
   SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr);
   char* name = base->var->name;
 
-  return resolve_call(call, name, actual_types, actual_params, actual_names, call->partialTag);
+  FnSymbol *fn = 
+    resolve_call(call, name, actual_types, actual_params, actual_names, call->partialTag);
+  if (!fn) {
+    switch (resolve_call_error) {
+      default: break;
+      case CALL_AMBIGUOUS:
+        USR_WARNING(call, "Ambiguous function call");
+        break;
+      case CALL_UNKNOWN:
+        USR_WARNING(call, "Unresolved function call");
+        break;
+    }
+  }
+  return fn;
 }
 
 FnSymbol*
@@ -400,7 +413,6 @@ resolve_call(BaseAST* ast,
   }
 
   if (!best && candidateFns.n > 0) {
-    USR_WARNING(ast, "Ambiguous function call");
     resolve_call_error = CALL_AMBIGUOUS;
     return NULL;
   }
@@ -412,7 +424,6 @@ resolve_call(BaseAST* ast,
 
   if (!best) {
     resolve_call_error = CALL_UNKNOWN;
-    USR_WARNING(ast, "Unresolved function call");
     return NULL;
   }
 
