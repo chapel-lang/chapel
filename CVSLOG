@@ -54365,3 +54365,15 @@ Modified files:
 Added files:
 	chapel/test/types/file/: freadClass.chpl freadClass.good 
 
+---------------------------------------------------------------------------
+
+01/18/06 18:24:04 -- jplevyak
+
+Log message:
+	remove warning messages from low level resolve_call() and move up to
+	higher level resolve_call() so that the interpreter can issue consistent
+	error messages.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+
