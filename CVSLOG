@@ -54724,3 +54724,16 @@ Added files:
 	                         freadToClassDataMember.future 
 	                         freadToClassDataMember.good 
 
+---------------------------------------------------------------------------
+
+01/20/06 15:17:11 -- jplevyak
+
+Log message:
+	use _tostring to implement _chpl_fwrite_float_help with "" format.
+	make "" format mean the "Chapel default format" in the interpreter.
+	updated test case
+
+Modified files:
+	chapel/test/interpreter/jplevyak/: 
+	                                   variables_in_nested_function-1.good 
+
