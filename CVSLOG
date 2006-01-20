@@ -54737,3 +54737,18 @@ Modified files:
 	chapel/test/interpreter/jplevyak/: 
 	                                   variables_in_nested_function-1.good 
 
+---------------------------------------------------------------------------
+
+01/20/06 15:26:35 -- jplevyak
+
+Log message:
+	Add 3 tests for named parameters, 2 fail.
+
+Added files:
+	chapel/test/interpreter/jplevyak/: test_named_param1.chpl 
+	                                   test_named_param1.good 
+	                                   test_named_param2.chpl 
+	                                   test_named_param2.good 
+	                                   test_named_param3.chpl 
+	                                   test_named_param3.good 
+
