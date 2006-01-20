@@ -54644,3 +54644,20 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+01/20/06 10:48:51 -- deitz
+
+Log message:
+	Added two new debugging functions:
+	
+	void print_view_prototypes(BaseAST* base, char* only_named = NULL);
+	void print_view_functions(BaseAST* base, char* only_named = NULL);
+	
+	to print out all functions or function prototypes within an AST, for
+	example, a module that have the same name as the second argument.  Or
+	if the second argument is NULL, all the functions are printed out.
+
+Modified files:
+	chapel/compiler/traversals/: view.cpp view.h 
+
