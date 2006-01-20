@@ -54608,3 +54608,29 @@ Log message:
 Modified files:
 	chapel/test/compflags/bradc/noexec/: version.goodstart 
 
+---------------------------------------------------------------------------
+
+01/20/06 09:50:13 -- deitz
+
+Log message:
+	Added support for homogeneous tuples where the multiplier is a
+	parameter.  It must be an lvalue expression and the whole type must be
+	in parentheses due to parsing difficulties (at least for now).  For example:
+	
+	  param rank = 3;
+	  var x : (rank*integer);
+	
+	Added special support for folding parameters that are fields in
+	generic classes.
+	
+	Made some minor changes/extensions to the tuple and domain module.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_htuple.chpl 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+	chapel/test/memory/shannon/: jacobi.good printMemTable.good 
+
