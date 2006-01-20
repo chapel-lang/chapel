@@ -54661,3 +54661,14 @@ Log message:
 Modified files:
 	chapel/compiler/traversals/: view.cpp view.h 
 
+---------------------------------------------------------------------------
+
+01/20/06 13:44:05 -- shannon
+
+Log message:
+	Increased the virtual memory use limit to 128M
+	so the mallocOutOfMemory tests can compile.
+
+Modified files:
+	chapel/test/memory/shannon/outofmemory/: sub_test 
+
