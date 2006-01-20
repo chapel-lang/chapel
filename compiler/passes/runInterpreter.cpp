@@ -464,8 +464,8 @@ IFrame::icall(int nargs, ISlot *ret_slot) {
         valStack.v[istart + i] = a.v[i];
       nargs += a.n - 1;
     } else {
-      user_error(this, "call to something other than function name or closure");
-      return;
+      name = "this";
+      done = 1;
     }
   } while (!done);
   ISlot **arg = &valStack.v[valStack.n-nargs];
@@ -1430,9 +1430,13 @@ IFrame::iprimitive(CallExpr *s) {
       TypeSymbol *ts = NULL;
       if (arg[0]->kind == OBJECT_ISLOT)
         ts = arg[0]->object->type->symbol;
-      else if (arg[0]->kind == SYMBOL_ISLOT)
+      else if (arg[0]->kind == SYMBOL_ISLOT) {
+        if (arg[0]->symbol == gUnspecified) {
+          result = *arg[0];
+          break;
+        }
         ts = dynamic_cast<TypeSymbol*>(arg[0]->symbol);
-      else if (arg[0]->kind == IMMEDIATE_ISLOT)
+      } else if (arg[0]->kind == IMMEDIATE_ISLOT)
         ts = immediate_type(arg[0]->imm)->symbol;
       else {
         INT_FATAL(ip, "interpreter: bad argument to INIT primitive: %d", arg[0]->kind);
