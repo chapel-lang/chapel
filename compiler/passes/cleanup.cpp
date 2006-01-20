@@ -383,14 +383,8 @@ static void construct_tuple_type(int rank) {
   // Build this methods
   for (int i = 1; i <= rank; i++) {
     FnSymbol* fn = new FnSymbol("this");
-    if (no_infer) {
-      ArgSymbol* arg = new ArgSymbol(INTENT_PARAM, "index", dtInteger);
-      fn->formals = new AList<DefExpr>(new DefExpr(arg));
-      fn->whereExpr = new CallExpr(PRIMITIVE_EQUAL, arg, new_IntLiteral(i));
-    } else {
-      ArgSymbol* arg = new ArgSymbol(INTENT_PARAM, "index", new_LiteralType(new_IntSymbol(i)));
-      fn->formals = new AList<DefExpr>(new DefExpr(arg));
-    }
+    ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "index", new_LiteralType(new_IntSymbol(i)));
+    fn->formals = new AList<DefExpr>(new DefExpr(arg));
 
     fn->retRef = true;
     fn->body = new BlockStmt(new ReturnStmt(fields.v[i-1]->name));
