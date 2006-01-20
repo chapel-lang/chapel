@@ -54769,3 +54769,15 @@ Added files:
 	                                   label4.chpl label4.good 
 	                                   label5.chpl label5.good 
 
+---------------------------------------------------------------------------
+
+01/20/06 15:52:59 -- deitz
+
+Log message:
+	Fixed small problem with tuple this function which used parameter
+	intent argument of literal type.  This is unnecessary because the
+	literal type mechanism should replace the parameter intent mechanism.
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp 
+
