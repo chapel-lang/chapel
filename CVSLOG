@@ -54689,3 +54689,22 @@ Added files:
 	                                   variables_in_nested_function-2.chpl 
 	                                   variables_in_nested_function-2.good 
 
+---------------------------------------------------------------------------
+
+01/20/06 14:08:44 -- jplevyak
+
+Log message:
+	remove .future for file which is working
+	add new tests for default parameter handling in the interpreter.
+	  - one failure where an ambiguity should be recognized
+
+Added files:
+	chapel/test/interpreter/jplevyak/: test_default_param1.chpl 
+	                                   test_default_param1.good 
+	                                   test_default_param2.chpl 
+	                                   test_default_param2.good 
+	                                   test_default_param3.chpl 
+	                                   test_default_param3.good 
+Removed files:
+	chapel/test/functions/deitz/: test_default_param3.future 
+
