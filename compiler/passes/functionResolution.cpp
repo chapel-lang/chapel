@@ -10,8 +10,8 @@ resolve_call_error_type resolve_call_error;
 
 void param_compute(Expr* expr);
 
-bool can_dispatch(Type* actualType, Type* formalType);
-bool can_dispatch_ne(Type* actualType, Type* formalType) {
+bool can_dispatch(Symbol* actualParam, Type* actualType, Type* formalType);
+bool can_dispatch_ne(Symbol* actualParam, Type* actualType, Type* formalType) {
   if (actualType != dtAny && formalType == dtAny)
     return true;
   if (actualType == dtNil)
@@ -25,15 +25,19 @@ bool can_dispatch_ne(Type* actualType, Type* formalType) {
   if ((formalType == dtFloat && actualType == dtInteger) ||
       (formalType == dtInteger && actualType == dtBoolean))
     return true; // need coercion wrapper
+  if (LiteralType* lt = dynamic_cast<LiteralType*>(formalType))
+    if (lt->literal == actualParam)
+      return true;
   forv_Vec(Type, parent, actualType->dispatchParents) {
-    if (parent == formalType || can_dispatch(parent, formalType))
+    if (parent == formalType || can_dispatch(actualParam, parent, formalType))
       return true;
   }
   return false;
 }
 
-bool can_dispatch(Type* actualType, Type* formalType) {
-  return (actualType == formalType) || can_dispatch_ne(actualType, formalType);
+bool can_dispatch(Symbol* actualParam, Type* actualType, Type* formalType) {
+  return (actualType == formalType) ||
+    can_dispatch_ne(actualParam, actualType, formalType);
 }
 
 Vec<FnSymbol*> fns; // live functions list
@@ -44,10 +48,10 @@ void resolve_function(FnSymbol* fn);
 void resolve_asts(BaseAST* base);
 void resolve_op(CallExpr* call);
 
-bool actual_formal_match(Type* actual_type, ArgSymbol* formal) {
+bool actual_formal_match(Symbol* actual_param, Type* actual_type, ArgSymbol* formal) {
   if (formal->intent == INTENT_TYPE || formal->type == dtUnknown)
     return true;
-  if (can_dispatch(actual_type, formal->type))
+  if (can_dispatch(actual_param, actual_type, formal->type))
     return true;
   return false;
 }
@@ -66,8 +70,11 @@ add_candidate(Map<FnSymbol*,Vec<ArgSymbol*>*>* candidateFns,
 
   Vec<ArgSymbol*>* actual_formals = new Vec<ArgSymbol*>();
   Vec<Type*> formal_actuals;
-  for (int i = 0; i < num_formals; i++)
+  Vec<Symbol*> formal_params;
+  for (int i = 0; i < num_formals; i++) {
     formal_actuals.add(NULL);
+    formal_params.add(NULL);
+  }
   for (int i = 0; i < num_actuals; i++)
     actual_formals->add(NULL);
   for (int i = 0; i < actual_types->n; i++) {
@@ -81,6 +88,7 @@ add_candidate(Map<FnSymbol*,Vec<ArgSymbol*>*>* candidateFns,
           match = true;
           actual_formals->v[i] = formal;
           formal_actuals.v[j] = actual_types->v[i];
+          formal_params.v[j] = actual_params->v[i];
           break;
         }
       }
@@ -99,6 +107,7 @@ add_candidate(Map<FnSymbol*,Vec<ArgSymbol*>*>* candidateFns,
           match = true;
           actual_formals->v[i] = formal;
           formal_actuals.v[j] = actual_types->v[i];
+          formal_params.v[j] = actual_params->v[i];
           break;
         }
       }
@@ -149,7 +158,7 @@ add_candidate(Map<FnSymbol*,Vec<ArgSymbol*>*>* candidateFns,
     ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
     j++;
     if (formal_actuals.v[j] &&
-        !actual_formal_match(formal_actuals.v[j], formal))
+        !actual_formal_match(formal_params.v[j], formal_actuals.v[j], formal))
       return;
     if (!formal_actuals.v[j] && !formal->defaultExpr)
       return;
@@ -399,7 +408,7 @@ resolve_call(BaseAST* ast,
             ArgSymbol* arg = actual_formals->v[k];
             ArgSymbol* arg2 = actual_formals2->v[k];
             if (arg->intent != INTENT_TYPE && arg2->intent != INTENT_TYPE) {
-              if (can_dispatch_ne(arg2->type, arg->type)) {
+              if (can_dispatch_ne(NULL, arg2->type, arg->type)) {
                 best = NULL;
                 break;
               }
