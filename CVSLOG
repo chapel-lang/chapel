@@ -54634,3 +54634,13 @@ Modified files:
 	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
 	chapel/test/memory/shannon/: jacobi.good printMemTable.good 
 
+---------------------------------------------------------------------------
+
+01/20/06 10:16:57 -- deitz
+
+Log message:
+	Added support for literal types to resolve_call.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+
