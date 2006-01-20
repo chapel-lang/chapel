@@ -54598,3 +54598,13 @@ Added files:
 	                                   equal-8.chpl equal-8.good 
 	                                   equal-9.chpl equal-9.good 
 
+---------------------------------------------------------------------------
+
+01/20/06 08:19:34 -- jplevyak
+
+Log message:
+	Change version in test results
+
+Modified files:
+	chapel/test/compflags/bradc/noexec/: version.goodstart 
+
