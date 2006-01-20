@@ -978,7 +978,6 @@ record_inner_type_ls:
 tuple_multiplier:
   INTLITERAL
     { $$ = new_IntLiteral(yytext); }
-/* | non_tuple_lvalue */
 ;
 
 
@@ -989,14 +988,14 @@ variable_expr:
 
 
 type:
-  variable_expr
-| memberaccess_expr
-| parenop_expr
+  non_tuple_lvalue
 | record_tuple_type
 | non_tuple_lvalue TOF type
     { $$ = new CallExpr($1, new NamedExpr("elt_type", $3)); }
 | tuple_multiplier TSTAR variable_expr
     { $$ = new CallExpr("_htuple", $3, $1); }
+| TLP non_tuple_lvalue TSTAR variable_expr TRP
+    { $$ = new CallExpr("_htuple", $4, $2); }
 | TLSBR nonempty_expr_ls TRSBR type
     { $$ = new CallExpr("_aarray", $4, $2); }
 ;

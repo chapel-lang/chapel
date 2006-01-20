@@ -963,16 +963,48 @@ instantiate_add_subs(ASTMap* substitutions, ASTMap* map) {
 }
 
 
+static void
+fold_parameter_methods(FnSymbol* fn,
+                       ASTMap* generic_subs,
+                       Type* generic_type) {
+  Vec<BaseAST*> asts;
+  collect_asts(&asts, fn);
+  Vec<BaseAST*> keys;
+  generic_subs->get_keys(keys);
+  forv_Vec(BaseAST, key, keys) {
+    if (Symbol* var = dynamic_cast<Symbol*>(key)) {
+      forv_Vec(BaseAST, ast, asts) {
+        if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+          if (call->argList->length() == 2) {
+            if (call->isNamed(var->name)) {
+              if (call->get(1)->typeInfo() == dtMethodToken) {
+                if (call->get(2)->typeInfo() == generic_type) {
+                  if (Symbol* value = dynamic_cast<Symbol*>(generic_subs->get(key))) {
+                    call->replace(new SymExpr(value));
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
 static FnSymbol*
-instantiate_function(Stmt* pointOfInstantiation, FnSymbol *fn, ASTMap *all_subs, ASTMap *generic_subs, ASTMap *map) {
+instantiate_function(Stmt* pointOfInstantiation, FnSymbol *fn, ASTMap *all_subs, ASTMap *generic_subs, ASTMap *map, Type* generic_type = NULL) {
   Stmt* fnStmt = fn->defPoint->parentStmt->copy(map);
   ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(fnStmt);
   DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr);
-  defExpr->sym->cname = stringcat("_inst_", defExpr->sym->cname);
+  FnSymbol* fnClone = dynamic_cast<FnSymbol*>(defExpr->sym);
+  if (generic_type != NULL)
+    fold_parameter_methods(fnClone, generic_subs, generic_type);
+  fnClone->cname = stringcat("_inst_", defExpr->sym->cname);
   pointOfInstantiation->insertBefore(fnStmt);
   instantiate_add_subs(all_subs, map);
   instantiate_update_expr(all_subs, defExpr);
-  FnSymbol* fnClone = dynamic_cast<FnSymbol*>(defExpr->sym);
   fnClone->instantiatedFrom = fn;
   fnClone->substitutions.copy(*generic_subs);
   tagGenerics(fnClone);
@@ -1161,7 +1193,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
     collect_functions(&fns);
     forv_Vec(FnSymbol, fn, fns) {
       if (function_requires_instantiation(fn, retType)) {
-        FnSymbol *fnClone = instantiate_function(pointOfInstantiation, fn, &substitutions, generic_substitutions, &map);
+        FnSymbol *fnClone = instantiate_function(pointOfInstantiation, fn, &substitutions, generic_substitutions, &map, cloneType);
         new_functions->add(fnClone);
         if (fn == this) {
           newfn = fnClone;

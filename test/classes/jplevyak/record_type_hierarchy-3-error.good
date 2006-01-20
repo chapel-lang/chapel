@@ -1,8 +1,8 @@
-_chpl_adomain.chpl:150: fwrite, f : file, x : _aarray
-_chpl_adomain.chpl:46: fwrite, f : file, val : _adomain_lit
+_chpl_adomain.chpl:148: fwrite, f : file, x : _aarray
+_chpl_adomain.chpl:44: fwrite, f : file, val : _adomain_lit
 _chpl_adomain.chpl:6: fwrite, f : file, val : _adomain_info
-_chpl_adomain.chpl:74: fwrite, f : file, x : _adomain
-_chpl_adomain.chpl:79: fwrite, f : file, val : _aarray_info
+_chpl_adomain.chpl:72: fwrite, f : file, x : _adomain
+_chpl_adomain.chpl:77: fwrite, f : file, val : _aarray_info
 _chpl_complex.chpl:17: fwrite, f : file, x : complex
 _chpl_data.chpl:53: fwrite, f : file, val : _fdata
 _chpl_file.chpl:120: fwrite, f : file, val : int64
@@ -11,6 +11,7 @@ _chpl_file.chpl:168: fwrite, f : file, val : string
 _chpl_file.chpl:204: fwrite, f : file, val : bool
 _chpl_file.chpl:217: fwrite, f : file, x : nil_type
 _chpl_file.chpl:51: fwrite, f : file, val : file
+_chpl_htuple.chpl:27: fwrite, f : file, val : _htuple
 _chpl_htuple.chpl:27: fwrite, f : file, val : _htuple
 _chpl_seq.chpl:168: fwrite, f : file, s : seq
 _chpl_seq.chpl:168: fwrite, f : file, s : seq
@@ -36,6 +37,7 @@ prelude.chpl:219: fwrite, f : file, val : _seq
 prelude.chpl:241: fwrite, f : file, val : Array
 prelude.chpl:244: fwrite, f : file, val : Domain
 prelude.chpl:247: fwrite, f : file, val : Tuple
+prelude.chpl:24: fwrite, f : file, val : _ddata
 prelude.chpl:24: fwrite, f : file, val : _ddata
 prelude.chpl:24: fwrite, f : file, val : _ddata
 prelude.chpl:24: fwrite, f : file, val : _ddata

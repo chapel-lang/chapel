@@ -21,14 +21,12 @@ class _adomain : value {
   }
 
   iterator _forall(dim : integer) : integer {
-    var tmp : _adomain_info = info(dim-1);
-    forall i in tmp._low..tmp._high by tmp._stride do
+    forall i in info(dim-1)._low..info(dim-1)._high by info(dim-1)._stride do
       yield i;
   }
 
   iterator _for(dim : integer) : integer {
-    var tmp : _adomain_info = info(dim-1);
-    for i in tmp._low..tmp._high by tmp._stride do
+    for i in info(dim-1)._low..info(dim-1)._high by info(dim-1)._stride do
       yield i;
   }
 }

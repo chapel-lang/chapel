@@ -25,3 +25,11 @@ function fwrite(f : file, val : _htuple) {
   fwrite(f, val(val.size));
   fwrite(f, ")");
 }
+
+function _tuple_widen(x : _htuple, e) {
+  var y : _htuple(x.elt_type, x.size + 1);
+  for i in 1..x.size do
+    y(i) = x(i);
+  y(y.size) = e;
+  return y;
+}
