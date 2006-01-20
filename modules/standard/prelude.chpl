@@ -61,7 +61,7 @@ function fscanf(fp: CFILEPTR, fmt: string, inout val) : integer {
 }
 
 function _chpl_fwrite_float_help(fp: CFILEPTR, val: float) : void {
-  __primitive("fprintf", fp.FILEptr, "%g", val);
+  __primitive("fprintf", fp.FILEptr, "%s", _tostring(val, ""));
 }
 
 function _chpl_fread_string_help(fp: CFILEPTR, inout val: string) : void {

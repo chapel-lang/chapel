@@ -1695,7 +1695,10 @@ IFrame::iprimitive(CallExpr *s) {
       check_string(s, arg[0]);
       check_numeric(s, arg[1]);
       char str[512];
-      sprint_imm(str, arg[0]->imm->v_string, *arg[1]->imm);
+      if (*arg[0]->imm->v_string)
+        sprint_imm(str, arg[0]->imm->v_string, *arg[1]->imm);
+      else
+        sprint_imm(str, *arg[1]->imm);
       Immediate imm(dupstr(str));
       result.set_immediate(imm);
       break;
