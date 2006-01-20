@@ -54672,3 +54672,20 @@ Log message:
 Modified files:
 	chapel/test/memory/shannon/outofmemory/: sub_test 
 
+---------------------------------------------------------------------------
+
+01/20/06 13:56:28 -- jplevyak
+
+Log message:
+	Handle nested variables in the interpreter (implemented with displays).
+	Add test cases for nested variables.
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+Added files:
+	chapel/test/interpreter/jplevyak/: 
+	                                   variables_in_nested_function-1.chpl 
+	                                   variables_in_nested_function-1.good 
+	                                   variables_in_nested_function-2.chpl 
+	                                   variables_in_nested_function-2.good 
+
