@@ -28,6 +28,8 @@ extern void print_view_noline(BaseAST* ast);
 extern void nprint_view(BaseAST* ast);
 extern void nprint_view_noline(BaseAST* ast);
 extern void mark_view(BaseAST* ast, long id);
+extern void print_view_prototypes(BaseAST* base, char* only_named = NULL);
+extern void print_view_functions(BaseAST* base, char* only_named = NULL);
 
 void view(void);
 

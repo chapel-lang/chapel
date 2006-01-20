@@ -151,3 +151,28 @@ void view(void) {
   Pass* pass = new View();
   pass->run(Symboltable::getModules(pass->whichModules));
 }
+
+void print_view_prototypes(BaseAST* base, char* only_named) {
+  Vec<BaseAST*> asts;
+  collect_asts(&asts, base);
+  forv_Vec(BaseAST, ast, asts) {
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
+      if (only_named && !strcmp(only_named, fn->name)) {
+        printf("%s %ld:\n", fn->name, fn->id);
+        print_view(fn->formals);
+      }
+    }
+  }
+}
+
+void print_view_functions(BaseAST* base, char* only_named) {
+  Vec<BaseAST*> asts;
+  collect_asts(&asts, base);
+  forv_Vec(BaseAST, ast, asts) {
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
+      if (only_named && !strcmp(only_named, fn->name)) {
+        print_view(fn);
+      }
+    }
+  }
+}
