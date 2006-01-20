@@ -54708,3 +54708,19 @@ Added files:
 Removed files:
 	chapel/test/functions/deitz/: test_default_param3.future 
 
+---------------------------------------------------------------------------
+
+01/20/06 14:08:49 -- shannon
+
+Log message:
+	Added a future for reading into a class data
+	member.  It fails due to the insertion of
+	tmp variables in the generated C.  The value
+	is read into a tmp variable and never copied
+	back to the class data member.
+
+Added files:
+	chapel/test/types/file/: freadToClassDataMember.chpl 
+	                         freadToClassDataMember.future 
+	                         freadToClassDataMember.good 
+
