@@ -54752,3 +54752,20 @@ Added files:
 	                                   test_named_param3.chpl 
 	                                   test_named_param3.good 
 
+---------------------------------------------------------------------------
+
+01/20/06 15:37:26 -- jplevyak
+
+Log message:
+	Fix a bug in handling of return.
+	Add test cases for goto labels.
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+Added files:
+	chapel/test/interpreter/jplevyak/: label1.chpl label1.good 
+	                                   label2.chpl label2.good 
+	                                   label3.chpl label3.good 
+	                                   label4.chpl label4.good 
+	                                   label5.chpl label5.good 
+
