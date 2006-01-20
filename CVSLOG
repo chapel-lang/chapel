@@ -54576,3 +54576,25 @@ Added files:
 	chapel/test/interpreter/jplevyak/: test_forall.chpl 
 	                                   test_forall.good 
 
+---------------------------------------------------------------------------
+
+01/19/06 16:08:04 -- jplevyak
+
+Log message:
+	Fixed a bug with "var x;" declarations.
+	Added new tests.
+	A new regression equal-8.chpl because of problems resolving "this" functions.
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+Added files:
+	chapel/test/interpreter/jplevyak/: equal-1.chpl equal-1.good 
+	                                   equal-2.chpl equal-2.good 
+	                                   equal-3.chpl equal-3.good 
+	                                   equal-4.chpl equal-4.good 
+	                                   equal-5.chpl equal-5.good 
+	                                   equal-6.chpl equal-6.good 
+	                                   equal-7.chpl equal-7.good 
+	                                   equal-8.chpl equal-8.good 
+	                                   equal-9.chpl equal-9.good 
+
