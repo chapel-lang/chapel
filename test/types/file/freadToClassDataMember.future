@@ -1,0 +1,14 @@
+shannon
+
+Read into a data member of a class uses temporary variables and doesn't copy
+the value back to the data member.
+
+For example:
+------------ 
+  {
+    _integer64 _ret_x;
+    _ret_x = a->x;
+    _inline__myClass_x = _ret_x;
+  }
+  _tmp461 = _inline__myClass_x;
+  _chpl_fread_integer(myFile, &(_tmp461));
