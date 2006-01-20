@@ -1871,10 +1871,11 @@ IFrame::run(int timeslice) {
           case 1: {
             stage = 0;
             thread->frame = parent;
-            if (thread->frame->single_stepping == NEXT_STEP)
-              single_step = NEXT_STEP;
-            if (parent)
+            if (parent) {
+              if (parent->single_stepping == NEXT_STEP)
+                single_step = NEXT_STEP;
               *parent->return_slot = *islot(s->expr);
+            }
             return timeslice;
           }
           default: INT_FATAL(ip, "interpreter: bad stage %d for astType: %d", stage, ip->astType); break;
