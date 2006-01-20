@@ -89,6 +89,7 @@ typedef MapElem<BaseAST *, ISlot *> MapElemBaseASTISlot;
 struct IFrame : public gc { public:
   IThread *thread;
   IFrame *parent, *debug_child;
+  Vec<IFrame *> display;
   FnSymbol *function;
   int single_stepping;
 
@@ -112,6 +113,7 @@ struct IFrame : public gc { public:
   int igoto(Stmt *s);
   int iprimitive(CallExpr *s);
   void reset();
+  void update_display();
   void init(FnSymbol *fn);
   void init(Stmt *s);
   void init(AList<Stmt> *s);
@@ -193,11 +195,11 @@ IFrame::get(BaseAST *ast) {
   ISlot *s = env.get(ast);
   if (s)
     return s;
-  if (!s) {
-    s = global_env.get(ast);
-    if (s)
+  for (int i = display.n - 1; i >= 0; i--)
+    if ((s = display.v[i]->env.get(ast)))
       return s;
-  }
+  if ((s = global_env.get(ast)))
+    return s;
   return NULL;
 }
 
@@ -340,6 +342,20 @@ check_numeric(BaseAST *ast, ISlot *slot) {
 }
 
 void
+IFrame::update_display() {
+  if (!function->nestingDepth())
+    return;
+  if (function->nestingDepth() > parent->function->nestingDepth()) { // call down
+    display.copy(parent->display);
+    display.add(parent);
+  } else if (function->nestingDepth() == parent->function->nestingDepth()) // same level
+    display.copy(parent->display);
+  else // call up
+    for (int i = 0; i < function->nestingDepth(); i++)
+      display.add(parent->display.v[i]);
+}
+
+void
 IFrame::icall(FnSymbol *fn, int nargs, int extra_args) {
   if (trace_level) {
     printf("  calling %s(%d)\n", fn->name, (int)fn->id);
@@ -363,6 +379,7 @@ IFrame::icall(FnSymbol *fn, int nargs, int extra_args) {
     f->init((Stmt*)fn->body);
     f->parent = this;
     f->function = fn;
+    f->update_display();
     for (int i = 0; i < nargs; i++) {
       DefExpr *def = fn->formals->get(i + 1); // FORTRAN-style
       ISlot *slot = args[i], *arg_slot = new ISlot;
