@@ -181,7 +181,7 @@ Map<BaseAST *, ISlot *> global_env;
 static void runProgram();
 static void error_interactive(IFrame *frame);
 
-IThread::IThread() : state(ITHREAD_STOPPED) {
+IThread::IThread() : state(ITHREAD_STOPPED), frame(0) {
   threads.add(this);
 }
 

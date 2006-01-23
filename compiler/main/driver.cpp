@@ -234,6 +234,7 @@ void runCompilerInGDB(int argc, char* argv[]) {
 
 int
 main(int argc, char *argv[]) {
+  MEM_INIT();
   if (pre_malloc)
     (void)MALLOC(pre_malloc);
   compute_program_name_loc(argv[0], &(arg_state.program_name),

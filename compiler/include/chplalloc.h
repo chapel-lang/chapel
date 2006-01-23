@@ -9,6 +9,7 @@
 #define FREE(p) GC_FREE(p)
 #define REALLOC(p,n) GC_REALLOC((p),(n))
 #define CHECK_LEAKS() GC_gcollect()
+#define MEM_INIT() GC_INIT()
 #else
 #ifdef USE_GC
 #include "gc_cpp.h"
@@ -18,6 +19,7 @@
 #define malloc dont_use_malloc_use_MALLOC_instead
 #define relloc dont_use_realloc_use_REALLOC_instead
 #define free dont_use_free_use_FREE_instead
+#define MEM_INIT() GC_INIT()
 #else
 #include <stdlib.h>
 class gc {
@@ -27,6 +29,7 @@ class gc {
 #define MALLOC malloc
 #define REALLOC realloc
 #define FREE free
+#define MEM_INIT()
 #endif
 #endif
 
