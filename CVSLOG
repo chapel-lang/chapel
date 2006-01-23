@@ -54807,3 +54807,70 @@ Modified files:
 	chapel/compiler/main/: driver.cpp 
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+01/23/06 13:43:32 -- jplevyak
+
+Log message:
+	Fixed linenumbers so that each BaseAST which is created is given the
+	  linenumber of the first token of the production whose action it
+	  is created in.
+	 -- this require using yylloc and YYLOC_DEFAULT to update yystartlineno.
+	    but overall required changing very few lines of code.
+	
+	Fixed a bug in default_wrapper construction whereby Vec::set_in was
+	  being used on a non-set, changed to Vec::in which works on arrays.
+	
+	Patched around a problem with --gc-chpl-lineno
+	
+	  The problem is that it was putting
+	     chpl_input_lineno = ...
+	  assignments after each Stmt, but if that Stmt was a WhileStmt
+	   (or generally and stmt with embeddded Stmts like CondStmt, ForallStmt)
+	  then we would generate:
+	
+	  while (...)  chpl_input_lineno = ...;  {
+	    body;
+	  }
+	
+	  which doesn't work.  This patch only patches WhileStmt and
+	  does so by adding an extra set of { :
+	
+	  while (...)  { chpl_input_lineno = ...;  {
+	    body;
+	  } }
+	
+	  so I leave the final solution to the author of codegen or
+	  the --gc-chpl-lineno flag.
+	
+	Fixed a bug in "next" in the interpreter which would not
+	restart single stepping if the function didn't have
+	a ReturnStmt.  Turns out some functions don't (is this
+	intentional?).
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp stmt.cpp symbol.cpp 
+	chapel/compiler/include/: yy.h 
+	chapel/compiler/parser/: chapel.y parser.cpp processTokens.cpp 
+	chapel/compiler/passes/: cleanup.cpp runInterpreter.cpp 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/flowanalysis/newast/: chain.good codegen_test.good 
+	                                  compSampler.good 
+	                                  danglingelse.good domarr.good 
+	                                  globalref.good 
+	                                  multiple_return.good 
+	                                  mutrec.good noargs.good 
+	                                  onearg.good protoast_test.good 
+	                                  sum_type-1.good 
+	                                  sum_type-2.good 
+	                                  usebeforedef.good 
+	chapel/test/functions/deitz/: test_default_param3.good 
+	chapel/test/functions/deitz/named/: test_named3-error.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+	chapel/test/modules/bradc/: nestedmodule.good 
+	chapel/test/modules/bradc/manymodules/: manymodules.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+	chapel/test/types/type_variables/jplevyak/: where-2-error.good 
+
