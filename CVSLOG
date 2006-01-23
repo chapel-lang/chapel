@@ -54792,3 +54792,18 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+01/23/06 08:27:07 -- jplevyak
+
+Log message:
+	Some platforms (Solaris) can have problems if GC_INIT is not
+	called at the beginning of a program (which uses GC), so
+	I added the call (when GC is enabled).
+	Fixed a valgrind issue: uninitialized member variable.
+
+Modified files:
+	chapel/compiler/include/: chplalloc.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/passes/: runInterpreter.cpp 
+
