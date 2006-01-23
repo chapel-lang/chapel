@@ -2172,9 +2172,9 @@ IFrame::run(int timeslice) {
             break;
           case 1: {
             stage = 0;
-            ISlot *slot = islot(s->actual);
-            slot->name = s->name;
-            *islot(s) = *slot;
+            ISlot *result = islot(s);
+            *result = *islot(s->actual);
+            result->name = s->name;
             break;
           }
         }
