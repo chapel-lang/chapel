@@ -1,9 +1,9 @@
- called from 12 in length at sum_type-1.chpl:13
- called from 12 in length at sum_type-1.chpl:13
- called from 12 in length at sum_type-1.chpl:13
- called from 12 in length at sum_type-1.chpl:13
- called from 13 in _construct_cpoint at sum_type-1.chpl:13
- called from 13 in _construct_point at sum_type-1.chpl:13
+ called from 11 in _construct_cpoint at sum_type-1.chpl:11
+ called from 11 in _construct_point at sum_type-1.chpl:11
+ called from 12 in length at sum_type-1.chpl:11
+ called from 12 in length at sum_type-1.chpl:11
+ called from 12 in length at sum_type-1.chpl:11
+ called from 12 in length at sum_type-1.chpl:11
  called from 15 in __init_sum_type-1 at sum_type-1.chpl:31
  called from 17 in __init_sum_type-1 at sum_type-1.chpl:31
  called from 18 in __init_sum_type-1 at sum_type-1.chpl:31
@@ -23,17 +23,17 @@
 ::_arg(sum_type-1.chpl:3) ( float64 )
 ::_arg(sum_type-1.chpl:3) ( float64 )
 ::_arg(sum_type-1.chpl:8) ( int64 )
-::_defTmp(sum_type-1.chpl:13) ( float64 )
-::_defTmp(sum_type-1.chpl:13) ( float64 )
-::_defTmp(sum_type-1.chpl:13) ( float64 )
-::_defTmp(sum_type-1.chpl:13) ( float64 )
+::_defTmp(sum_type-1.chpl:11) ( float64 )
+::_defTmp(sum_type-1.chpl:11) ( float64 )
+::_defTmp(sum_type-1.chpl:11) ( float64 )
+::_defTmp(sum_type-1.chpl:11) ( float64 )
 ::_defTmp(sum_type-1.chpl:15) ( nil_type point (sum_type-1.chpl:1) )
 ::_defTmp(sum_type-1.chpl:22) ( nil_type cpoint (sum_type-1.chpl:6) )
-::_default_temp_color(sum_type-1.chpl:13) ( int64 )
-::_default_temp_x(sum_type-1.chpl:13) ( float64 )
-::_default_temp_x(sum_type-1.chpl:13) ( float64 )
-::_default_temp_y(sum_type-1.chpl:13) ( float64 )
-::_default_temp_y(sum_type-1.chpl:13) ( float64 )
+::_default_temp_color(sum_type-1.chpl:11) ( int64 )
+::_default_temp_x(sum_type-1.chpl:11) ( float64 )
+::_default_temp_x(sum_type-1.chpl:11) ( float64 )
+::_default_temp_y(sum_type-1.chpl:11) ( float64 )
+::_default_temp_y(sum_type-1.chpl:11) ( float64 )
 ::_methodTokenDummy(sum_type-1.chpl:2) ( _methodTokenType )
 ::_methodTokenDummy(sum_type-1.chpl:2) ( _methodTokenType )
 ::_methodTokenDummy(sum_type-1.chpl:2) ( _methodTokenType )
@@ -44,15 +44,15 @@
 ::_methodTokenDummy(sum_type-1.chpl:3) ( _methodTokenType )
 ::_methodTokenDummy(sum_type-1.chpl:8) ( _methodTokenType )
 ::_methodTokenDummy(sum_type-1.chpl:8) ( _methodTokenType )
-::_ret__construct_cpoint(sum_type-1.chpl:13) ( cpoint (sum_type-1.chpl:6) )
-::_ret__construct_point(sum_type-1.chpl:13) ( point (sum_type-1.chpl:1) )
-::_ret_color(sum_type-1.chpl:13) ( int64 )
+::_ret__construct_cpoint(sum_type-1.chpl:11) ( cpoint (sum_type-1.chpl:6) )
+::_ret__construct_point(sum_type-1.chpl:11) ( point (sum_type-1.chpl:1) )
+::_ret_color(sum_type-1.chpl:11) ( int64 )
 ::_ret_length(sum_type-1.chpl:11) ( float64 )
 ::_ret_length(sum_type-1.chpl:11) ( float64 )
-::_ret_x(sum_type-1.chpl:13) ( float64 )
-::_ret_x(sum_type-1.chpl:13) ( float64 )
-::_ret_y(sum_type-1.chpl:13) ( float64 )
-::_ret_y(sum_type-1.chpl:13) ( float64 )
+::_ret_x(sum_type-1.chpl:11) ( float64 )
+::_ret_x(sum_type-1.chpl:11) ( float64 )
+::_ret_y(sum_type-1.chpl:11) ( float64 )
+::_ret_y(sum_type-1.chpl:11) ( float64 )
 ::_setterTokenDummy(sum_type-1.chpl:2) ( _setterTokenType )
 ::_setterTokenDummy(sum_type-1.chpl:2) ( _setterTokenType )
 ::_setterTokenDummy(sum_type-1.chpl:3) ( _setterTokenType )
@@ -76,13 +76,13 @@
 ::_tmp(sum_type-1.chpl:30) ( float64 )
 ::_tmp(sum_type-1.chpl:31) ( float64 )
 ::_tmp(sum_type-1.chpl:8) ( int64 )
-::a(sum_type-1.chpl:11) ( cpoint (sum_type-1.chpl:6) )
-::a(sum_type-1.chpl:11) ( point (sum_type-1.chpl:1) )
-::color(sum_type-1.chpl:9) ( int64 )
+::a(sum_type-1.chpl:8) ( cpoint (sum_type-1.chpl:6) )
+::a(sum_type-1.chpl:8) ( point (sum_type-1.chpl:1) )
+::color(sum_type-1.chpl:6) ( int64 )
 ::cp(sum_type-1.chpl:22) ( cpoint (sum_type-1.chpl:6) )
 ::p(sum_type-1.chpl:15) ( point (sum_type-1.chpl:1) )
-::this(sum_type-1.chpl:13) ( cpoint (sum_type-1.chpl:6) )
-::this(sum_type-1.chpl:13) ( point (sum_type-1.chpl:1) )
+::this(sum_type-1.chpl:11) ( cpoint (sum_type-1.chpl:6) )
+::this(sum_type-1.chpl:11) ( point (sum_type-1.chpl:1) )
 ::this(sum_type-1.chpl:2) ( cpoint (sum_type-1.chpl:6) )
 ::this(sum_type-1.chpl:2) ( cpoint (sum_type-1.chpl:6) )
 ::this(sum_type-1.chpl:2) ( point (sum_type-1.chpl:1) )
@@ -93,26 +93,26 @@
 ::this(sum_type-1.chpl:3) ( point (sum_type-1.chpl:1) )
 ::this(sum_type-1.chpl:8) ( cpoint (sum_type-1.chpl:6) )
 ::this(sum_type-1.chpl:8) ( cpoint (sum_type-1.chpl:6) )
-::x(sum_type-1.chpl:4) ( float64 )
-::x(sum_type-1.chpl:9) ( float64 )
-::y(sum_type-1.chpl:4) ( float64 )
-::y(sum_type-1.chpl:9) ( float64 )
+::x(sum_type-1.chpl:1) ( float64 )
+::x(sum_type-1.chpl:6) ( float64 )
+::y(sum_type-1.chpl:1) ( float64 )
+::y(sum_type-1.chpl:6) ( float64 )
 function __init_sum_type-1 sum_type-1.chpl:31
-function _construct_cpoint sum_type-1.chpl:13
-function _construct_cpoint sum_type-1.chpl:13
-function _construct_point sum_type-1.chpl:13
-function _construct_point sum_type-1.chpl:13
-function color sum_type-1.chpl:13
-function color sum_type-1.chpl:13
+function _construct_cpoint sum_type-1.chpl:11
+function _construct_cpoint sum_type-1.chpl:11
+function _construct_point sum_type-1.chpl:11
+function _construct_point sum_type-1.chpl:11
+function color sum_type-1.chpl:11
+function color sum_type-1.chpl:11
 function length sum_type-1.chpl:11
 function length sum_type-1.chpl:11
-function main sum_type-1.chpl:13
-function x sum_type-1.chpl:13
-function x sum_type-1.chpl:13
-function x sum_type-1.chpl:13
-function x sum_type-1.chpl:13
-function y sum_type-1.chpl:13
-function y sum_type-1.chpl:13
-function y sum_type-1.chpl:13
-function y sum_type-1.chpl:13
+function main sum_type-1.chpl:11
+function x sum_type-1.chpl:11
+function x sum_type-1.chpl:11
+function x sum_type-1.chpl:11
+function x sum_type-1.chpl:11
+function y sum_type-1.chpl:11
+function y sum_type-1.chpl:11
+function y sum_type-1.chpl:11
+function y sum_type-1.chpl:11
 globals

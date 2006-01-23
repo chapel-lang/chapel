@@ -36,7 +36,7 @@ BaseAST::BaseAST(astType_t type) :
   parentScope(NULL),
   parentSymbol(NULL),
   filename(yyfilename), 
-  lineno(yylineno),
+  lineno(yystartlineno),
   traversalInfo(NULL),
   copyInfo(NULL)
 {

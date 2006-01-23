@@ -410,8 +410,9 @@ void WhileLoopStmt::codegenStmt(FILE* outfile) {
   if (isWhileDo) {
     fprintf(outfile, "while (");
     condition->codegen(outfile);
-    fprintf(outfile, ") ");
+    fprintf(outfile, ") { ");
     block->codegen(outfile);
+    fprintf(outfile, " } ");
   } else { 
     fprintf(outfile, "do ");
     block->codegen(outfile);

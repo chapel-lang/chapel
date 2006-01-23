@@ -8,6 +8,7 @@
 
 extern Symbol* yypst;
 extern AList<Stmt>* yystmtlist;
+extern int yystartlineno;
 
 extern "C" {
 #endif

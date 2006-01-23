@@ -3,6 +3,7 @@
 #include "misc.h"
 #include "processTokens.h"
 #include "yy.h"
+#include "chapel.tab.h"
 
 
 static int stringBuffLen = 0;
@@ -31,6 +32,7 @@ static void addChar(char c) {
 
 void processNewline(void) {
   yylineno++;
+  yylloc.first_line = yylloc.last_line = yylineno;
   countNewline();
 }
 

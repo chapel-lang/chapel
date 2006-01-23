@@ -53,6 +53,13 @@ Is this "while x"(i); or "while x(i)";?
   static int iterator_uid = 1;
   static int let_uid = 1;
 
+#define YYLLOC_DEFAULT(Current, Rhs, N)          \
+  Current.first_line   = Rhs[1].first_line;      \
+  if (Current.first_line) yystartlineno = Current.first_line; \
+  Current.first_column = Rhs[1].first_column;    \
+  Current.last_line    = Rhs[N].last_line;       \
+  Current.last_column  = Rhs[N].last_column;
+
 %}
 
 %start program
@@ -313,7 +320,7 @@ parsed_block_single_stmt:
 
 parsed_block_stmt:
   parsed_block_single_stmt
-    { $$ = new BlockStmt($1); }
+    { @1.first_line; $$ = new BlockStmt($1); }
 | block_stmt
 ;
 

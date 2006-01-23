@@ -534,6 +534,11 @@ IFrame::icall(int nargs, ISlot *ret_slot) {
         return;
     }
   }
+  int nformal_args = fn->formals ? fn->formals->length() : 0;
+  if (nformal_args != nargs) {
+    INT_FATAL("interpreter: resolve_call returned function of %d args instead of expected %d", 
+              nformal_args, nargs);
+  } 
   icall(fn, nargs, extra_args);
   return;
 }
@@ -2241,6 +2246,8 @@ IFrame::run(int timeslice) {
           stage = stageStack.pop() - 1;
           if (!stmt) {
             thread->frame = parent;
+            if (parent && parent->single_stepping == NEXT_STEP)
+              single_step = NEXT_STEP;
             return timeslice;
           }
           assert(stage >= 0);

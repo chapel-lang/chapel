@@ -2,8 +2,8 @@
 ::a(codegen_test.chpl:8) ( int64 )
 ::x(codegen_test.chpl:1) ( int64 )
 ::y(codegen_test.chpl:3) ( int64 )
-::z(codegen_test.chpl:7) ( int64 )
+::z(codegen_test.chpl:5) ( int64 )
 function __init_codegen_test codegen_test.chpl:16
 function foo codegen_test.chpl:7
-function main codegen_test.chpl:12
+function main codegen_test.chpl:7
 globals

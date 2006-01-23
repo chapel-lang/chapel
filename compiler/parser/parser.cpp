@@ -5,11 +5,13 @@
 #include "stringutil.h"
 #include "symtab.h"
 #include "symbol.h"
+#include "chapel.tab.h"
 #include "yy.h"
 
 AList<Stmt>* yystmtlist = NULL;
 char* yyfilename;
 int yylineno;
+int yystartlineno;
 
 
 static char* filenameToModulename(char* filename) {
@@ -29,13 +31,13 @@ static char* filenameToModulename(char* filename) {
 
 ModuleSymbol* ParseFile(char* filename, modType moduletype) {
   yyfilename = filename;
-  yylineno = 0;
+  yylloc.first_line = yylloc.last_line = yystartlineno = yylineno = 0;
 
   char* modulename = filenameToModulename(filename);
   ModuleSymbol* newModule = Symboltable::startModuleDef(modulename, 
                                                         moduletype);
 
-  yylineno = 1;
+  yylloc.first_line = yylloc.last_line = yystartlineno = yylineno = 1;
   yyin = openInputFile(filename);
   
   yystmtlist = NULL;
@@ -58,7 +60,7 @@ ModuleSymbol* ParseFile(char* filename, modType moduletype) {
   }
 
   yyfilename = "<internal>";
-  yylineno = -1;
+  yylloc.first_line = yylloc.last_line = yystartlineno = yylineno = -1;
 
   return newModule;
 }

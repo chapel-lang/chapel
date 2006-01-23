@@ -44,6 +44,9 @@ void createInitFn(ModuleSymbol* mod) {
   if (mod->initFn)
     return;
 
+  currentLineno = mod->lineno;
+  currentFilename = mod->filename;
+
   char* fnName = stringcat("__init_", mod->name);
   AList<Stmt>* globstmts = NULL;
   AList<Stmt>* initstmts = NULL;

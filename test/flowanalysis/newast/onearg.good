@@ -2,5 +2,5 @@
 ::a(onearg.chpl:1) ( int64 )
 function __init_onearg onearg.chpl:5
 function foo onearg.chpl:1
-function main onearg.chpl:3
+function main onearg.chpl:1
 globals

@@ -804,7 +804,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
   ASTMap map;
   for_alist(DefExpr, formalDef, formals) {
     ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
-    if (!defaults->set_in(formal)) {
+    if (!defaults->in(formal)) {
       Symbol* newFormal = formal->copy();
       map.put(formal, newFormal);
       wrapper_formals->insertAtTail(new DefExpr(newFormal));
