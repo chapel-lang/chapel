@@ -54781,3 +54781,14 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: cleanup.cpp 
 
+---------------------------------------------------------------------------
+
+01/22/06 20:36:28 -- jplevyak
+
+Log message:
+	Fix bug with NamedExpr which fixes the two named argument tests in the
+	interpreter.
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+
