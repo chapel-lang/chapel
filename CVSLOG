@@ -54874,3 +54874,14 @@ Modified files:
 	                                         test_clone_class1b.good 
 	chapel/test/types/type_variables/jplevyak/: where-2-error.good 
 
+---------------------------------------------------------------------------
+
+01/23/06 16:30:52 -- jplevyak
+
+Log message:
+	Fixup more line numbers based on the line number fix.
+
+Modified files:
+	chapel/test/flowanalysis/newast/: chain.good mutrec.good 
+	                                  onearg.good 
+
