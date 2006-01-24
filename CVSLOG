@@ -54885,3 +54885,14 @@ Modified files:
 	chapel/test/flowanalysis/newast/: chain.good mutrec.good 
 	                                  onearg.good 
 
+---------------------------------------------------------------------------
+
+01/24/06 11:52:05 -- jplevyak
+
+Log message:
+	Fixed compilation error from operator priority: add () around macro
+	arguments.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+
