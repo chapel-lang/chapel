@@ -54896,3 +54896,15 @@ Log message:
 Modified files:
 	chapel/compiler/parser/: chapel.y 
 
+---------------------------------------------------------------------------
+
+01/24/06 14:24:20 -- deitz
+
+Log message:
+	Reformatted.  Added warning notice, trademark page.
+
+Modified files:
+	braddoc/chapelCompArch/: .cvsignore chapelCompArch.tex 
+Added files:
+	braddoc/chapelCompArch/: tm.tex 
+
