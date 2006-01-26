@@ -55067,3 +55067,23 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/libifa/: Makefile 
 
+---------------------------------------------------------------------------
+
+01/26/06 15:50:54 -- deitz
+
+Log message:
+	During folding, added change of init primitive of a class constructor
+	to nil.
+	
+	Fixed instantiation during resolve_call to only fire on generic
+	parameters.  Once they are instantiated, they are no longer generic.
+	
+	Fixed instantiation to work when the generic types substitution was
+	for a meta type.
+	
+	Fixed a bug in naming the new module during instantiation.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+
