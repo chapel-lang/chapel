@@ -4,7 +4,7 @@
 #ifndef _clone_h_
 #define _clone_h_
 
-#include "geysa.h"
+#include "defs.h"
 
 class FA;
 class EntrySet;

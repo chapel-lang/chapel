@@ -4,7 +4,6 @@
 #include "traversal.h"
 #include "expr.h"
 #include "stmt.h"
-#include "vec.h"
 #include "symbol.h"
 #include "alist.h"
 

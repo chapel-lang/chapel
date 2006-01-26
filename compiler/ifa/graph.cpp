@@ -1,4 +1,4 @@
-#include "geysa.h"
+#include "defs.h"
 #include "fa.h"
 #include "builtin.h"
 #include "dom.h"
@@ -11,6 +11,7 @@
 #include "if1.h"
 #include "ast.h"
 #include "var.h"
+#include "log.h"
 
 #define G_BOX           (1<<0)
 #define G_ELLIPSE       (1<<1)
@@ -28,6 +29,8 @@
 char graph_fun[80];
 char graph_var[80];
 int graph_type = VCG;
+int fgraph_frequencies = 0;
+int fgraph_constants = 0;
 
 static FILE *
 graph_start(char *fn, char *tag, char *name) {

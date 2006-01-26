@@ -1,6 +1,5 @@
 UTIL_SRCS = \
 	files.cpp \
-	log.cpp \
 	misc.cpp \
 	mysystem.cpp \
 	stringutil.cpp \

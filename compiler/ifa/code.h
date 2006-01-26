@@ -3,7 +3,7 @@
 #ifndef _code_h_
 #define _code_h_
 
-#include "extern.h"
+#include "defs.h"
 
 class Label;
 class Prim;

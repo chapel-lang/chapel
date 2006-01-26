@@ -1,5 +1,4 @@
-#include "geysa.h"
-#include "driver.h"
+#include "defs.h"
 #include "pattern.h"
 #include "prim.h"
 #include "builtin.h"
@@ -8,19 +7,20 @@
 #include "fa.h"
 #include "ast.h"
 #include "var.h"
+#include "log.h"
 
 #define ANON "*anon*"
 
 static void
-dump_header(FILE *fp, char *fn) {
-  int relative = system_dir[0] != '/';
+dump_header(FILE *fp, char *fn, char *mktree_dir) {
+  int relative = mktree_dir[0] != '/';
   fprintf(fp, "<HTML>\n");
   fprintf(fp, "<HEAD>\n");
   fprintf(fp, "<TITLE> Program Dump for %s </TITLE>\n", fn);
-  fprintf(fp, "<SCRIPT SRC=\"%s%s/etc/www/mktree.js\" LANGUAGE=\"JavaScript\"></SCRIPT>", 
-          relative ? "../" : "", system_dir);
-  fprintf(fp, "<LINK REL=\"stylesheet\" HREF=\"%s%s/etc/www/mktree.css\">", 
-          relative ? "../" : "", system_dir);
+  fprintf(fp, "<SCRIPT SRC=\"%s%s/mktree.js\" LANGUAGE=\"JavaScript\"></SCRIPT>", 
+          relative ? "../" : "", mktree_dir);
+  fprintf(fp, "<LINK REL=\"stylesheet\" HREF=\"%s%s/mktree.css\">", 
+          relative ? "../" : "", mktree_dir);
   fprintf(fp, "</HEAD>\n");
   fprintf(fp, "<div style=\"text-align: center;\"><big><big><span style=\"font-weight: bold;\">");
   fprintf(fp, "Program Dump for %s <br></span></big></big>\n", fn);
@@ -377,12 +377,12 @@ dump_symbols(FILE *fp, FA *fa) {
 }
 
 void 
-dump_html(FA *fa, char *fn) {
+dump_html(FA *fa, char *fn, char *mktree_dir) {
   char hfn[512];
   strcpy(hfn, log_dir);
   strcat(hfn, "dump.html");
   FILE *fp = fopen(hfn, "w");
-  dump_header(fp, fn);
+  dump_header(fp, fn, mktree_dir);
   dump_symbols(fp, fa);
   dump_footer(fp);
   fclose(fp);

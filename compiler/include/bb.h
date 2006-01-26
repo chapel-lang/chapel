@@ -1,7 +1,7 @@
 #ifndef _BB_H_
 #define _BB_H_
 
-#include "vec.h"
+#include "chpl.h"
 
 class Expr;
 class Stmt;

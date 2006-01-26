@@ -1,4 +1,4 @@
-#include "geysa.h"
+#include "defs.h"
 #include "ifa.h"
 #include "pattern.h"
 #include "prim.h"
@@ -10,6 +10,7 @@
 #include "fa.h"
 #include "ast.h"
 #include "var.h"
+#include "log.h"
 
 #define MERGE_UNIONS  1  // merge unions which use different sets of elements
 

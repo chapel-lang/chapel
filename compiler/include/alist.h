@@ -9,10 +9,9 @@
 #define WhenStmtList AList<WhenStmt>
 
 #include <stdio.h>
+#include "chpl.h"
 #include "astutil.h"
 #include "baseAST.h"
-#include "chplalloc.h"
-#include "map.h"
 #include "../traversals/fixup.h"
 
 class Traversal;

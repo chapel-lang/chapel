@@ -3,7 +3,6 @@
 
 #include "traversal.h"
 #include "baseAST.h"
-#include "vec.h"
 
 class Fixup : public Traversal {
  public:

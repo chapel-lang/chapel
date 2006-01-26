@@ -3,7 +3,7 @@
 #include <sys/time.h>
 #include "files.h"
 #include "misc.h"
-#include "log.h"
+#include "chpl_log.h"
 #include "runpasses.h"
 #include "stringutil.h"
 #include "symtab.h"

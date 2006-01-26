@@ -1,4 +1,4 @@
-#include "geysa.h"
+#include "defs.h"
 #include "region.h"
 
 // unimplemented

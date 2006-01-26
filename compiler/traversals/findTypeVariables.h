@@ -2,7 +2,6 @@
 #define _FIND_TYPE_VARIABLE_H_
 
 #include "traversal.h"
-#include "vec.h"
 #include "type.h"
 
 class FindVariableType : public Traversal {

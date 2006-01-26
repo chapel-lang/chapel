@@ -1,7 +1,8 @@
 #define EXTERN
-#include "geysa.h"
+#include "chpl.h"
 #include "analysis.h"
-#include "arg.h"
+#include "../ifa/arg.h"
+#include "../ifa/graph.h"
 #include "countTokens.h"
 #include "driver.h"
 #include "files.h"
@@ -14,6 +15,7 @@
 #include "symtab.h"
 #include "version.h"
 #include "../passes/runInterpreter.h"
+#include "chpl_log.h"
 
 
 static void version(ArgumentState *arg_state, char *arg_unused);
@@ -42,19 +44,13 @@ bool ignore_errors = false;
 int run_interpreter = 0;
 int finterpreter_ast_mode = 0;
 int trace_level = 0;
-int fdce_if1 = 1;
 int fgraph = 0;
-int fgraph_constants = 0;
-int fgraph_frequencies = 0;
-int fgraph_pass_contours = 0;
 int fgraph_vcg = 0;
 int fcg = 0;
 bool no_inline = false;
 bool report_inlining = false;
 char system_dir[FILENAME_MAX] = DEFAULT_SYSTEM_DIR;
-int print_call_depth = 2;
 int f_equal_method = 0;
-int fanalysis_errors = 0;
 int fnostdincs = 0;
 int fnostdincs_but_file = 0;
 int num_constants_per_variable = 1;
@@ -175,8 +171,12 @@ do_analysis(char *fn) {
     fail("program does not type");
   if (fgraph)
     ifa_graph(fn);
-  if (fdump_html)
-    ifa_html(fn);
+  if (fdump_html) {
+    char mktree_dir[512];
+    strcpy(mktree_dir, system_dir);
+    strcat(mktree_dir, "/etc/www");
+    ifa_html(fn, mktree_dir);
+  }
   if (fcg) {
     ifa_cg(fn);
     ifa_compile(fn);

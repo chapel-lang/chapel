@@ -4,8 +4,7 @@
 #ifndef _ifa_H_
 #define _ifa_H_
 
-#include "vec.h"
-#include "map.h"
+#include "defs.h"
 
 class Sym;
 class Match;
@@ -72,8 +71,13 @@ int ifa_analyze(char *fn);
 enum GraphType { GraphViz, VCG };
 extern int graph_type;
 void ifa_graph(char *fn);
-void ifa_html(char *fn);
+void ifa_html(char *fn, char *mktree_dir);
 void ifa_cg(char *fn);
 void ifa_compile(char *fn);
+
+extern int print_call_depth;
+extern int fanalysis_errors;
+extern int fgraph_pass_contours;
+extern int fdce_if1;
 
 #endif

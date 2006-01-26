@@ -1,7 +1,7 @@
 #ifndef _BASEAST_H_
 #define _BASEAST_H_
 
-#include "map.h"
+#include "chpl.h"
 
 class Symbol;
 class ModuleSymbol;

@@ -2,9 +2,8 @@
 #define _fa_H_
 
 #include <sys/types.h>
-#include "map.h"
+#include "defs.h"
 #include "sym.h"
-#include "extern.h"
 #include "code.h"
 
 #define DEFAULT_NUM_CONSTANTS_PER_VARIABLE      1

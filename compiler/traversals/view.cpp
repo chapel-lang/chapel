@@ -6,7 +6,7 @@
 #include "type.h"
 #include "symtab.h"
 #include "stringutil.h"
-#include "log.h"
+#include "chpl_log.h"
 
 View::View(bool initNumberSymbols, int initMarkAST) {
   indent = 0;

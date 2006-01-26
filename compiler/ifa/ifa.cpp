@@ -1,3 +1,5 @@
+#define IFA_EXTERN
+#include "defs.h"
 #include "ifa.h"
 #include "ast.h"
 #include "if1.h"
@@ -11,6 +13,7 @@
 #include "pdb.h"
 #include "html.h"
 #include "graph.h"
+#include "log.h"
 
 void ifa_init(IFACallbacks *callbacks) {
   new IF1;
@@ -53,8 +56,8 @@ ifa_graph(char *fn) {
 }
 
 void 
-ifa_html(char *fn) {
-  dump_html(pdb->fa, fn);
+ifa_html(char *fn, char *mktree_dir) {
+  dump_html(pdb->fa, fn, mktree_dir);
 }
 
 void 

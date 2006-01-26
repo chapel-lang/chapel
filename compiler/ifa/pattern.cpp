@@ -1,4 +1,4 @@
-#include "geysa.h"
+#include "defs.h"
 #include "pattern.h"
 #include "pdb.h"
 #include "if1.h"
@@ -8,6 +8,7 @@
 #include "fa.h"
 #include "var.h"
 #include "ast.h"
+#include "log.h"
 
 //#define CHECK_INSTANTIATION     1
 //#define CHECK_CALLEE_CACHE      1

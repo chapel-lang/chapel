@@ -4,7 +4,7 @@
 #ifndef _log_H_
 #define _log_H_
 
-#include "extern.h"
+#include "defs.h"
 
 /*
   To add a new log type, add a new LOG_XXX with a unique letter:
@@ -42,8 +42,8 @@ class ArgumentState;
 #define LOG_DISPATCH    'd'
 #define LOG_SPLITTING   's'
 
-EXTERN char log_dir[FILENAME_MAX] EXTERN_INIT("./log");
-EXTERN char log_tag[256];
+IFA_EXTERN char log_dir[FILENAME_MAX] IFA_EXTERN_INIT("./log");
+IFA_EXTERN char log_tag[256];
 
 #define logging_level(_log, _level) (log_tag[(unsigned char)(_log)] >= _level)
 #define logging(_log) logging_level(_log, 1)

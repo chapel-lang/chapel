@@ -1,5 +1,4 @@
 MAIN_SRCS = \
-	arg.cpp \
 	driver.cpp \
 	runpasses.cpp \
         runtime.cpp \

@@ -5,6 +5,7 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #endif
+#include "chpl.h"
 #include "pass.h"
 #include "alist.h"
 #include "driver.h"
@@ -12,7 +13,6 @@
 #include "runInterpreter.h"
 #include "symbol.h"
 #include "symtab.h"
-#include "map.h"
 #include "../traversals/view.h"
 #include "stringutil.h"
 

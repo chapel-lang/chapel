@@ -1,4 +1,4 @@
-#include "geysa.h"
+#include "defs.h"
 #include "num.h"
 #include "math.h"
 
@@ -225,7 +225,7 @@ fprint_imm(FILE *fp, Immediate &imm) {
 
 void
 coerce_immediate(Immediate *from, Immediate *to) {
-#include "cast_code.cpp"
+#include "cast_code.cc"
 }
 
 #define DO_FOLD(_op) \

@@ -1,8 +1,6 @@
 #ifndef _SYMSCOPE_H_
 #define _SYMSCOPE_H_
 
-#include "chplalloc.h"
-#include "map.h"
 #include "symbol.h"
 
 enum scopeType {

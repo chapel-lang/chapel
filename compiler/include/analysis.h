@@ -1,10 +1,8 @@
 #ifndef _analysis_H_
 #define _analysis_H_
 
-#include "chplalloc.h"
+#include "chpl.h"
 #include "alist.h"
-#include "vec.h"
-#include "map.h"
 #include "../ifa/ifa.h"
 #include "../ifa/num.h"
 

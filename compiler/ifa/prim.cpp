@@ -1,4 +1,4 @@
-#include "geysa.h"
+#include "defs.h"
 #include "prim.h"
 #include "if1.h"
 #include "builtin.h"

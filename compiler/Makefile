@@ -12,7 +12,6 @@ COMPILER_SUBDIR = .
 #
 SUBDIRS = \
 	AST \
-	adt \
 	ifa \
 	analysis \
 	backend \
@@ -34,7 +33,6 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.head
 # include source subdirectories here
 #
 include AST/Makefile.include
-include adt/Makefile.include
 include ifa/Makefile.include
 include analysis/Makefile.include
 include backend/Makefile.include

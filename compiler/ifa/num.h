@@ -4,9 +4,7 @@
 #ifndef _num_h_
 #define _num_h_
 
-#include "geysa.h"
-#include "extern.h"
-#include "chpltypes.h"
+#include "defs.h"
 #include "prim_data.h"
 
 enum IF1_num_kind {
@@ -83,15 +81,15 @@ class ImmHashFns { public:
 };
 
 #define CPP_IS_LAME {1,8,16,32,64}
-EXTERN int int_type_precision[5] EXTERN_INIT(CPP_IS_LAME);
+IFA_EXTERN int int_type_precision[5] IFA_EXTERN_INIT(CPP_IS_LAME);
 #undef CPP_IS_LAME
 
 #define CPP_IS_LAME {16,32,48,64,80,96,112,128}
-EXTERN int float_type_precision[8] EXTERN_INIT(CPP_IS_LAME);
+IFA_EXTERN int float_type_precision[8] IFA_EXTERN_INIT(CPP_IS_LAME);
 #undef CPP_IS_LAME
 
 #define CPP_IS_LAME {{0,0,0,0,0,0,0,0}, {"bool", "uint8","uint16","uint32","uint64",0,0,0}, {0,"int8","int16","int32","int64",0,0,0}, {0,"float32",0,"float64",0,0,0,0}}
-EXTERN char *num_kind_string[4][8] EXTERN_INIT(CPP_IS_LAME);
+IFA_EXTERN char *num_kind_string[4][8] IFA_EXTERN_INIT(CPP_IS_LAME);
 #undef CPP_IS_LAME
 
 inline Immediate& Immediate::operator=(const Immediate& imm) {

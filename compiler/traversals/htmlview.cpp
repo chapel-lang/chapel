@@ -7,7 +7,7 @@
 #include "type.h"
 #include "symtab.h"
 #include "stringutil.h"
-#include "log.h"
+#include "chpl_log.h"
 
 HtmlView::HtmlView(int ashow_analysis_info) 
   : show_analysis_info(ashow_analysis_info)

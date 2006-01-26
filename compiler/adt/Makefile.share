@@ -1,7 +1,4 @@
 ADT_SRCS = \
-	list.cpp \
-	map.cpp \
-	vec.cpp \
 
 CVS_SRCS = $(ADT_SRCS)
 SRCS = $(CVS_SRCS)

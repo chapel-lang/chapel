@@ -1,4 +1,4 @@
-#include "geysa.h"
+#include "defs.h"
 #include "var.h"
 
 int var_id = 1;

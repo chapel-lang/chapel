@@ -1,8 +1,7 @@
 #ifndef _PRIMITIVE_H_
 #define _PRIMITIVE_H_
 
-#include "vec.h"
-#include "map.h"
+#include "chpl.h"
 
 class InterpreterOp;
 class AnalysisOp;

@@ -9,7 +9,7 @@
     PLDI'94 by Johnson, Pearson, Pingali
 */
 
-#include "geysa.h"
+#include "defs.h"
 #include "ssu.h"
 #include "region.h"
 #include "fun.h"

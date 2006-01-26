@@ -4,10 +4,8 @@
 #define _sym_h_
 
 #include <stdio.h>
-#include "extern.h"
+#include "defs.h"
 #include "num.h"
-#include "vec.h"
-#include "map.h"
 #include "ifa.h"
 
 class Var;

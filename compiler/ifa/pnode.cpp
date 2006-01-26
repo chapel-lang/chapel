@@ -1,4 +1,4 @@
-#include "geysa.h"
+#include "defs.h"
 #include "if1.h"
 #include "pnode.h"
 #include "var.h"

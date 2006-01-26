@@ -1,6 +1,8 @@
 COMPILER_ROOT = ..
 COMPILER_SUBDIR = ifa
 
+CFLAGS += -DIN_CHAPEL
+
 SUBDIRS = \
 #	make_prims \
 

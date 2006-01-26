@@ -1,7 +1,7 @@
 /* -*-Mode: c++;-*-
 */
-#ifndef _geysa_H_
-#define _geysa_H_
+#ifndef _chpl_H
+#define _chpl_H_
 
 #include <assert.h>
 #include <stdarg.h>
@@ -25,11 +25,10 @@
 extern int verbose_level;
 
 #include "extern.h"
-#include "list.h"
-#include "vec.h"
-#include "map.h"
+#include "../ifa/list.h"
+#include "../ifa/vec.h"
+#include "../ifa/map.h"
 #include "misc.h"
-#include "log.h"
 
 #if defined(__CYGWIN__) || 1
 #undef assert

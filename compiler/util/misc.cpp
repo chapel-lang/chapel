@@ -4,7 +4,7 @@
 #include "driver.h"
 #include "../main/version.h"
 #include "files.h"
-#include "geysa.h"
+#include "chpl.h"
 #include "ast.h"
 #include "if1.h"
 #include "var.h"

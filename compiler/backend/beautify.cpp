@@ -33,6 +33,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+#include "chpl.h"
 #include "chplalloc.h"
 #include "chpltypes.h"
 #include "beautify.h"
@@ -40,7 +41,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "misc.h"
 #include "stringutil.h"
 #include "mysystem.h"
-#include "vec.h"
 
 #define ZLINEFORMAT "#line %d \"%s\"\n"
 #define ZLINEINPUT "/* ZLINE: "

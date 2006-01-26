@@ -1,6 +1,5 @@
 #include "astutil.h"
 #include "expr.h"
-#include "map.h"
 #include "passes.h"
 #include "stringutil.h"
 #include "symbol.h"

@@ -16,7 +16,7 @@ g++ -I../include make_cast_code.cpp
 
 int
 main() {
-  FILE *fp = fopen("cast_code.cpp", "w");
+  FILE *fp = fopen("cast_code.cc", "w");
   fprintf(fp, "switch (to->const_kind) {\n");
   fprintf(fp, "default: assert(!\"case\"); break;\n");
   for (int tt = 1; tt < 4; tt++) {

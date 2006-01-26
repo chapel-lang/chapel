@@ -1,4 +1,4 @@
-#include "geysa.h"
+#include "defs.h"
 #include "ast.h"
 #include "sym.h"
 #include "builtin.h"

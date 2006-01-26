@@ -4,9 +4,7 @@
 #define _ast_H_
 
 #include <stdio.h>
-#include "chplalloc.h"
-#include "map.h"
-#include "vec.h"
+#include "defs.h"
 #include "ifa.h"
 
 class Fun;

@@ -1,4 +1,4 @@
-#include "geysa.h"
+#include "defs.h"
 #include "pattern.h"
 #include "fun.h"
 #include "pnode.h"

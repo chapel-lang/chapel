@@ -1,4 +1,4 @@
-#include "geysa.h"
+#include "defs.h"
 #include "ifa.h"
 #include "pattern.h"
 #include "prim.h"

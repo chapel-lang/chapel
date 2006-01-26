@@ -1,5 +1,5 @@
 #include <ctype.h>
-#include "geysa.h"
+#include "defs.h"
 #include "pattern.h"
 #include "cg.h"
 #include "prim.h"

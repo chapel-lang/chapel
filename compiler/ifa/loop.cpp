@@ -1,4 +1,4 @@
-#include "geysa.h"
+#include "defs.h"
 #include "loop.h"
 #include "dom.h"
 #include "if1.h"

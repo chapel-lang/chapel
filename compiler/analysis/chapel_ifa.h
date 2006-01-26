@@ -3,8 +3,7 @@
 
 #include "chplalloc.h"
 #include "alist.h"
-#include "vec.h"
-#include "map.h"
+#include "chpl.h"
 #include "../ifa/ifa.h"
 #include "../ifa/prim.h"
 

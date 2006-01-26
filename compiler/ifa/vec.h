@@ -8,8 +8,6 @@
 #include <string.h>
 #include <stdint.h>
 #include <sys/types.h>
-#include "chplalloc.h"
-#include "misc.h"
 
 // Simple Vector class, also supports open hashed sets
 

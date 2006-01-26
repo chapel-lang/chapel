@@ -28,12 +28,9 @@ TEST_CVS_SRCS = test_lib.cpp
 TEST_GEN_SRCS = \
 	beautify.test.cpp \
 	files.test.cpp \
-	list.test.cpp \
-	map.test.cpp \
 	misc.test.cpp \
 	mysystem.test.cpp \
-	stringutil.test.cpp \
-	vec.test.cpp
+	stringutil.test.cpp
 
 TEST_SRCS = \
 	$(TEST_CVS_SRCS) \
@@ -68,15 +65,6 @@ $(TEST_LIB): $(TEST_OBJS)
 #
 
 beautify.test.cpp: ../backend/beautify.cpp
-	cp $< $@
-
-list.test.cpp: ../adt/list.cpp
-	cp $< $@
-
-map.test.cpp: ../adt/map.cpp
-	cp $< $@
-
-vec.test.cpp: ../adt/vec.cpp
 	cp $< $@
 
 files.test.cpp: ../util/files.cpp

@@ -1,5 +1,6 @@
 #include <sys/stat.h>
-#include "geysa.h"
+#include "defs.h"
+#include "log.h"
 
 static char save_dir[FILENAME_MAX];
 static FILE *log_FILE[128];

@@ -15,7 +15,6 @@ extern bool no_remove_on_pre_instantiate;
 extern bool no_infer;
 extern bool formalTemps;
 extern bool checkAnalysisTypeinfo;
-extern int fanalysis_errors;
 // End temporary development flags
 
 extern int instantiation_limit;
@@ -24,18 +23,15 @@ extern int fdump_html;
 extern int f_equal_method;
 extern int fnostdincs;
 extern int fnostdincs_but_file;
-extern int fdce_if1;
+
 extern int fgraph;
-extern int fgraph_constants;
-extern int fgraph_frequencies;
-extern int fgraph_pass_contours;
+
 extern int run_interpreter;
 extern int finterpreter_ast_mode;
 extern int trace_level;
 extern bool no_inline;
 extern bool report_inlining;
 extern char system_dir[FILENAME_MAX];
-extern int print_call_depth;
 
 extern int debugParserLevel;
 extern bool no_codegen;

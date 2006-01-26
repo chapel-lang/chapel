@@ -1,5 +1,5 @@
 #include <typeinfo>
-#include "geysa.h"
+#include "chpl.h"
 #include "analysis.h"
 #include "astutil.h"
 #include "chapel_ifa.h"

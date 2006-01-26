@@ -1,6 +1,5 @@
-#include "geysa.h"
+#include "defs.h"
 #include "pattern.h"
-#include "driver.h"
 #include "prim.h"
 #include "if1.h"
 #include "builtin.h"
@@ -12,8 +11,17 @@
 #include "var.h"
 #include "clone.h"
 #include "graph.h"
+#include "log.h"
 
+/* compilation options 
+*/
 #define CACHE_CALLEES           1
+
+/* runtime options 
+*/
+int print_call_depth = 2;
+int fanalysis_errors = 0;
+int fgraph_pass_contours = 0;
 
 int analysis_pass = 0;
 
@@ -3724,7 +3732,6 @@ FA::analyze(Fun *top) {
     complete_pass();
   } while (extend_analysis());
   set_void_lub_types_to_void();
-//  remove_types();
   if (fanalysis_errors)
     if1->callback->report_analysis_errors(type_violations);
   show_violations(fa, stderr);

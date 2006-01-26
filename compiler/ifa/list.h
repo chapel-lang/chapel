@@ -20,7 +20,6 @@
 #else
 #include <stdint.h>
 #endif
-#include "chplalloc.h"
 
 template <class C> class SLink {
  public:

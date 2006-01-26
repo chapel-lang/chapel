@@ -8,7 +8,7 @@ class Sym;
 class Fun;
 class FA;
 
-void dump_html(FA *pdb, char *fn);
+void dump_html(FA *pdb, char *fn, char *mktree_dir);
 void dump_sym_name(FILE *fp, Sym *s);
 void dump_fun_list(FILE *fp, Vec<Fun *> &funs);
 
