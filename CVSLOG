@@ -55003,3 +55003,47 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+01/26/06 14:57:07 -- jplevyak
+
+Log message:
+	Reorg of various files to better modularize analysis and to remove
+	the "geysa.h" header which was leftover from old naming conventions.
+
+Modified files:
+	chapel/compiler/: Makefile 
+	chapel/compiler/AST/: baseAST.cpp bb.cpp 
+	chapel/compiler/adt/: Makefile.share 
+	chapel/compiler/analysis/: chapel_ifa.cpp chapel_ifa.h 
+	chapel/compiler/backend/: beautify.cpp 
+	chapel/compiler/ifa/: Makefile Makefile.share ast.cpp ast.h 
+	                      cdb.cpp cfg.cpp cg.cpp clone.cpp clone.h 
+	                      code.h dead.cpp dom.cpp fa.cpp fa.h 
+	                      fun.cpp graph.cpp graph.h html.cpp html.h 
+	                      if1.cpp ifa.cpp ifa.h inline.cpp loop.cpp 
+	                      make_cast_code.cpp num.cpp num.h 
+	                      pattern.cpp pdb.cpp pnode.cpp prim.cpp 
+	                      prim_data_incs.h region.cpp ssu.cpp 
+	                      sym.cpp sym.h var.cpp 
+	chapel/compiler/include/: alist.h analysis.h baseAST.h bb.h 
+	                          driver.h primitive.h symscope.h type.h 
+	chapel/compiler/main/: Makefile.share driver.cpp runpasses.cpp 
+	chapel/compiler/passes/: pass.h runInterpreter.cpp 
+	                         scopeResolve.cpp 
+	chapel/compiler/test/: Makefile test_lib.cpp 
+	chapel/compiler/traversals/: createNestedFuncIterators.h 
+	                             findTypeVariables.h fixup.h 
+	                             htmlview.cpp verify.cpp view.cpp 
+	chapel/compiler/util/: Makefile.share misc.cpp 
+Added files:
+	chapel/compiler/ifa/: arg.cpp arg.h cast_code.cc defs.h fail.cpp 
+	                      fail.h list.cpp list.h log.cpp log.h 
+	                      map.cpp map.h test_adt.cpp vec.cpp vec.h 
+	chapel/compiler/ifa/libifa/: Makefile ifa.1 ifa_defs.h main.cc 
+	chapel/compiler/include/: chpl.h chpl_log.h 
+Removed files:
+	chapel/compiler/ifa/: cast_code.cpp 
+	chapel/compiler/include/: geysa.h list.h log.h map.h vec.h 
+	chapel/compiler/util/: log.cpp 
+
