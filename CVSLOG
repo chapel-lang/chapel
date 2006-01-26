@@ -54908,3 +54908,24 @@ Modified files:
 Added files:
 	braddoc/chapelCompArch/: tm.tex 
 
+---------------------------------------------------------------------------
+
+01/25/06 16:25:06 -- deitz
+
+Log message:
+	Fixed scope resolution handling of labels so that the scope of a label
+	is the function.
+	
+	Fixed iteration over reversed arithmetic sequences so that
+	
+	  for i in 1..n by -1 do ...
+	
+	now goes from n downto 1.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp scopeResolve.cpp 
+	chapel/modules/standard/: _chpl_seq.chpl prelude.chpl 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+
