@@ -17,7 +17,7 @@ _chpl_seq.chpl:157: fwrite, f : file, s : seq
 _chpl_seq.chpl:157: fwrite, f : file, s : seq
 _chpl_seq.chpl:1: fwrite, f : file, val : _seqNode
 _chpl_seq.chpl:1: fwrite, f : file, val : _seqNode
-_chpl_seq.chpl:220: fwrite, f : file, s : _aseq
+_chpl_seq.chpl:236: fwrite, f : file, s : _aseq
 error: '_tmp' has no type
 fail: program does not type
 fwrite, f : file, val : _tuple2

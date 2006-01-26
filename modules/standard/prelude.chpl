@@ -16,10 +16,12 @@ class _ddata {
   pragma "rename _data_get"
   function this(i : integer) : elt_type {
     return _elt;
+//    return __primitive("array_index", this, i);
   }
   pragma "rename _data_set"
   function =this(i : integer, val : elt_type) {
     _elt = val;
+//    return __primitive("array_set", this, i, val);
   }
 }
 

@@ -176,18 +176,34 @@ record _aseq {
   var _stride : integer;
 
   iterator _for() : integer {
-    var i = _low;
-    while i <= _high {
-      yield i;
-      i = i + _stride;
+    if (_stride > 0) {
+      var i = _low;
+      while i <= _high {
+        yield i;
+        i = i + _stride;
+      }
+    } else {
+      var i = _high;
+      while i >= _low {
+        yield i;
+        i = i + _stride;
+      }
     }
   }
 
   iterator _forall() : integer {
-    var i = _low;
-    while i <= _high {
-      yield i;
-      i = i + _stride;
+    if (_stride > 0) {
+      var i = _low;
+      while i <= _high {
+        yield i;
+        i = i + _stride;
+      }
+    } else {
+      var i = _high;
+      while i >= _low {
+        yield i;
+        i = i + _stride;
+      }
     }
   }
 

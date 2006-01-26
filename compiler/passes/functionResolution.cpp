@@ -77,14 +77,14 @@ add_candidate(Map<FnSymbol*,Vec<ArgSymbol*>*>* candidateFns,
   }
   for (int i = 0; i < num_actuals; i++)
     actual_formals->add(NULL);
-  for (int i = 0; i < actual_types->n; i++) {
+  for (int i = 0; i < num_actuals; i++) {
     if (actual_names->v[i]) {
       bool match = false;
       int j = -1;
       for_alist(DefExpr, formalDef, fn->formals) {
         ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
         j++;
-        if (!strcmp(actual_names->v[i], formalDef->sym->name)) {
+        if (!strcmp(actual_names->v[i], formal->name)) {
           match = true;
           actual_formals->v[i] = formal;
           formal_actuals.v[j] = actual_types->v[i];
@@ -96,7 +96,7 @@ add_candidate(Map<FnSymbol*,Vec<ArgSymbol*>*>* candidateFns,
         return;
     }
   }
-  for (int i = 0; i < actual_types->n; i++) {
+  for (int i = 0; i < num_actuals; i++) {
     if (!actual_names->v[i]) {
       bool match = false;
       int j = -1;
@@ -117,7 +117,7 @@ add_candidate(Map<FnSymbol*,Vec<ArgSymbol*>*>* candidateFns,
   }
   if (!inst) {
     ASTMap subs;
-    for (int i = 0; i < actual_types->n; i++) {
+    for (int i = 0; i < num_actuals; i++) {
       if (actual_formals->v[i]->intent == INTENT_TYPE) {
         TypeSymbol* ts =
           dynamic_cast<TypeSymbol*>(actual_formals->v[i]->genericSymbol);

@@ -9,15 +9,14 @@
 #include "../traversals/traversal.h"
 
 
-/*** function_matches_method
+/*** function_name_matches_method_name
  ***   returns true iff function name matches a method name in class
  ***/
 static bool
-function_matches_method(FnSymbol* fn, ClassType* ct) {
+function_name_matches_method_name(FnSymbol* fn, ClassType* ct) {
   forv_Vec(FnSymbol, method, ct->methods) {
-    if (!strcmp(fn->name, method->name)) {
+    if (!strcmp(fn->name, method->name))
       return true;
-    }
   }
   return false;
 }
@@ -89,14 +88,18 @@ resolveGotoLabel(GotoStmt* gotoStmt) {
     } else
       INT_FATAL(gotoStmt, "Unexpected goto type");
   } else if (dynamic_cast<UnresolvedSymbol*>(gotoStmt->label)) {
+    FnSymbol* fn = gotoStmt->getFunction();
     char* name = gotoStmt->label->name;
     if (gotoStmt->goto_type == goto_break)
       name = stringcat("_post", name);
-    Symbol* sym = Symboltable::lookupFromScope(name, gotoStmt->parentScope);
-    if (dynamic_cast<LabelSymbol*>(sym))
-      gotoStmt->label = sym;
-    else
-      INT_FATAL(gotoStmt, "Unable to resolve goto label");
+    Vec<BaseAST*> asts;
+    collect_asts(&asts, fn);
+    forv_Vec(BaseAST, ast, asts) {
+      if (LabelSymbol* ls = dynamic_cast<LabelSymbol*>(ast)) {
+        if (!strcmp(ls->name, name))
+          gotoStmt->label = ls;
+      }
+    }
   }
 }
 
@@ -147,7 +150,7 @@ void scopeResolve(BaseAST* base) {
             if (method && method->typeBinding) {
               ct = dynamic_cast<ClassType*>(method->typeBinding->definition);
               if ((var && var->parentScope->type == SCOPE_CLASS) ||
-                  (fn && ct && function_matches_method(fn, ct)))
+                  (fn && ct && function_name_matches_method_name(fn, ct)))
                 if (symExpr->var != method->_this) {
                   Expr* dot = new CallExpr(".", method->_this, 
                                            new_StringSymbol(name));
