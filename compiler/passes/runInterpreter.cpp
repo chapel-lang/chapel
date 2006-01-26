@@ -1435,6 +1435,53 @@ resolve_0arity_call(IFrame *frame, BaseAST *ip, FnSymbol *fn) {
   return fn;
 }
 
+static EnumType *
+enumType(EnumSymbol *s) {
+  return dynamic_cast<EnumType*>(
+    dynamic_cast<TypeSymbol*>(s->defPoint->parentSymbol)->definition);
+}
+
+static int 
+get_enum_index(EnumSymbol *s) {
+  EnumType *tt = enumType(s);
+  Vec<DefExpr *> elements;
+  tt->constants->getElements(elements);
+  int i = 0;
+  forv_Vec(DefExpr, def, elements) {
+    if (def->sym == s)
+      return i;
+    i++;
+  }
+  USR_FATAL(s, "interpreter: bad enum (not found in type)");
+  return -1;
+}
+
+static EnumSymbol * 
+get_enum_from_index(EnumType *tt, int i) {
+  Vec<DefExpr *> elements;
+  tt->constants->getElements(elements);
+  int j = 0;
+  forv_Vec(DefExpr, def, elements) {
+    if (i == j)
+      return dynamic_cast<EnumSymbol*>(def->sym);
+    j++;
+  }
+  USR_FATAL(tt, "interpreter: bad enum (not found in type)");
+  return 0;
+}
+
+int
+convert_enum_to_integer(ISlot *slot) {
+  if (slot->kind == SYMBOL_ISLOT)
+    if (EnumSymbol *e = dynamic_cast<EnumSymbol*>(slot->symbol)) {
+      slot->kind = IMMEDIATE_ISLOT;
+      slot->imm = new Immediate;
+      slot->imm->set_int64(get_enum_index(e));
+      return 1;
+    }
+  return 0;
+}
+
 int
 IFrame::iprimitive(CallExpr *s) {
   int len = s->argList->length();
@@ -1539,7 +1586,6 @@ IFrame::iprimitive(CallExpr *s) {
       check_prim_args(s, 3);
       check_type(s, arg[0], dtInteger);
       check_string(s, arg[1]);
-      check_kind(s, arg[2], IMMEDIATE_ISLOT);
       result.kind = IMMEDIATE_ISLOT;
       result.imm = new Immediate;
       FILE *fp = (FILE*)(intptr_t)arg[0]->imm->v_int64;
@@ -1553,6 +1599,14 @@ IFrame::iprimitive(CallExpr *s) {
       } else if (fp == (FILE*)(intptr_t)2) {
         fp = stderr;
       }
+      if (arg[2]->kind == SYMBOL_ISLOT)
+        if (EnumSymbol *e = dynamic_cast<EnumSymbol*>(arg[2]->symbol)) {
+          result.imm->set_int64(fprintf(fp,
+                                        arg[1]->imm->v_string,
+                                        e->name));
+          break;
+        }
+      check_kind(s, arg[2], IMMEDIATE_ISLOT);
       switch (arg[2]->imm->const_kind) {
         default: 
           user_error(this, "unhandled primitive: %s", s->primitive->name);
@@ -1630,12 +1684,46 @@ IFrame::iprimitive(CallExpr *s) {
     }
     case PRIM_CAST: { // cast arg[1] to the type of arg[0]
       check_prim_args(s, 2);
+      Immediate imm0, imm1;
+      if (arg[0]->kind == arg[1]->kind) { // special case, same type
+        if ((arg[0]->kind == IMMEDIATE_ISLOT &&
+             arg[0]->imm->const_kind == arg[1]->imm->const_kind &&
+             arg[0]->imm->num_index == arg[1]->imm->num_index)
+            ||
+            (arg[0]->kind == SYMBOL_ISLOT &&
+             arg[0]->symbol->type == arg[1]->symbol->type)) 
+        {
+          result = *arg[1];
+          break;
+        }
+      }
+      if (arg[1]->kind == SYMBOL_ISLOT && arg[0]->kind == IMMEDIATE_ISLOT) { 
+        // special case, cast from enum
+        if (EnumSymbol *e = dynamic_cast<EnumSymbol*>(arg[1]->symbol)) {
+          imm1.set_int64(get_enum_index(e));
+          imm0 = *arg[0]->imm;
+          goto Lcast;
+        }
+      }
+      if (arg[0]->kind == SYMBOL_ISLOT && arg[1]->kind == IMMEDIATE_ISLOT) { 
+        // special case, cast to enum
+        if (EnumSymbol *e = dynamic_cast<EnumSymbol*>(arg[0]->symbol)) {
+          imm1.set_int64(0);
+          coerce_immediate(arg[1]->imm, &imm1);
+          result.kind = SYMBOL_ISLOT;
+          result.symbol = get_enum_from_index(enumType(e), (int)imm1.v_int64);
+          break;
+        }
+      }
       check_kind(s, arg[0], IMMEDIATE_ISLOT);
       check_kind(s, arg[1], IMMEDIATE_ISLOT);
+      imm0 = *arg[0]->imm;
+      imm1 = *arg[1]->imm;
+    Lcast:
       result.kind = IMMEDIATE_ISLOT;
       result.imm = new Immediate;
-      *result.imm = *arg[0]->imm;
-      coerce_immediate(arg[1]->imm, result.imm);
+      *result.imm = imm0;
+      coerce_immediate(&imm1, result.imm);
       break;
     }
     case PRIM_UNARY_MINUS: case PRIM_UNARY_PLUS:
@@ -1647,10 +1735,10 @@ IFrame::iprimitive(CallExpr *s) {
       fold_constant(translate_prim.get(s->primitive->interpreterOp->kind), 
                     arg[0]->imm, NULL, result.imm);
       break;
+    case PRIM_EQUAL: case PRIM_NOTEQUAL:
     case PRIM_ADD: case PRIM_SUBTRACT:
     case PRIM_MULT: case PRIM_DIV:
     case PRIM_MOD:
-    case PRIM_EQUAL: case PRIM_NOTEQUAL:
     case PRIM_LESSOREQUAL: case PRIM_GREATEROREQUAL:
     case PRIM_LESS: case PRIM_GREATER:
     case PRIM_AND: case PRIM_OR:
@@ -2052,6 +2140,7 @@ IFrame::run(int timeslice) {
             case SYMBOL_UNRESOLVED:
               put(s->var, (x = new ISlot(s->var->name)));
               break;
+            case SYMBOL_ENUM: 
             case SYMBOL_FN: 
             case SYMBOL_TYPE:
               put(s->var, (x = new ISlot(s->var)));

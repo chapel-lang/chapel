@@ -427,6 +427,7 @@ bool EnumType::hasDefaultWriteFunction(void) {
 AList<Stmt>* EnumType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
   AList<WhenStmt>* selectWhenStmts = new AList<WhenStmt>();
   for_alist(DefExpr, constant, this->constants) {
+    constant->sym->type = this;
     Expr* constantName = new_StringLiteral(constant->sym->name);
     AList<Expr>* whenExpr = new AList<Expr>(new SymExpr(constant->sym));
     WhenStmt* thisWhenStmt =
