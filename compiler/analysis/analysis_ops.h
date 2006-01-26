@@ -16,6 +16,7 @@ _EXTERN AnalysisOp *return_string_analysis_op _INIT;
 _EXTERN AnalysisOp *write_analysis_op _INIT;
 _EXTERN AnalysisOp *read_analysis_op _INIT;
 _EXTERN AnalysisOp *coerce_analysis_op _INIT;
+_EXTERN AnalysisOp *array_init_analysis_op _INIT;
 _EXTERN AnalysisOp *array_index_analysis_op _INIT;
 _EXTERN AnalysisOp *array_set_analysis_op _INIT;
 _EXTERN AnalysisOp *index_object_analysis_op _INIT;

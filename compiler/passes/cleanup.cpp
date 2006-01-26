@@ -22,7 +22,6 @@ static void build_setters_and_getters(ClassType* ct);
 static void flatten_primary_methods(FnSymbol* fn);
 static void resolve_secondary_method_type(FnSymbol* fn);
 static void add_this_formal_to_method(FnSymbol* fn);
-static void finish_constructor(FnSymbol* fn);
 
 
 static bool stmtIsGlob(Stmt* stmt) {
@@ -275,7 +274,6 @@ void cleanup(BaseAST* base) {
       flatten_primary_methods(fn);
       resolve_secondary_method_type(fn);
       add_this_formal_to_method(fn);
-      finish_constructor(fn);
     }
   }
   }
@@ -470,15 +468,6 @@ static void build_constructor(ClassType* ct) {
   if (ct->defaultConstructor)
     return;
 
-  Vec<FnSymbol*> fns;
-  collect_functions(&fns);
-  forv_Vec(FnSymbol, fn, fns) {
-    if ((!strcmp("initialize", fn->name)) && fn->typeBinding->definition == ct) {
-      ct->defaultConstructor = fn;
-      return;
-    }
-  }
-
   char* name = stringcat("_construct_", ct->symbol->name);
   FnSymbol* fn = new FnSymbol(name);
   ct->defaultConstructor = fn;
@@ -488,7 +477,7 @@ static void build_constructor(ClassType* ct) {
   AList<DefExpr>* args = new AList<DefExpr>();
 
   forv_Vec(TypeSymbol, type, ct->types) {
-    if (VariableType *vt = dynamic_cast<VariableType*>(type->definition)) {
+    if (VariableType* vt = dynamic_cast<VariableType*>(type->definition)) {
       ArgSymbol* arg = new ArgSymbol(INTENT_TYPE, type->name, vt->type);
       arg->isGeneric = true;
       arg->genericSymbol = type;
@@ -523,6 +512,43 @@ static void build_constructor(ClassType* ct) {
     fn->addPragma("keep types");
   }
   fn->typeBinding = ct->symbol;
+
+  fn->_this = new VarSymbol("this");
+  dynamic_cast<VarSymbol*>(fn->_this)->noDefaultInit = true;
+
+  char* description = stringcat("instance of class ", ct->symbol->name);
+  Expr* alloc_rhs = new CallExpr(Symboltable::lookupInternal("_chpl_alloc"),
+                                 ct->symbol,
+                                 new_StringLiteral(description));
+  CallExpr* alloc_expr = new CallExpr(PRIMITIVE_MOVE, fn->_this, alloc_rhs);
+
+  fn->insertAtTail(new DefExpr(fn->_this));
+  fn->insertAtTail(alloc_expr);
+
+  // assign formals to fields by name
+  forv_Vec(Symbol, field, ct->fields) {
+    for_alist(DefExpr, formalDef, fn->formals) {
+      if (ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym)) {
+        if (!strcmp(formal->name, field->name)) {
+          Expr* assign_expr = new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
+                                           new_StringSymbol(field->name), formal);
+          fn->insertAtTail(assign_expr);
+        }
+      }
+    }
+  }
+
+  forv_Vec(FnSymbol, method, ct->methods) {
+    if (!strcmp(method->name, "initialize")) {
+      if (method->formals->length() == 0) {
+        fn->insertAtTail(new CallExpr("initialize"));
+        break;
+      }
+    }
+  }
+
+  fn->insertAtTail(new ReturnStmt(fn->_this));
+  fn->retType = ct;
 }
 
 
@@ -653,82 +679,4 @@ static void add_this_formal_to_method(FnSymbol* fn) {
       fn->formals->last()->insertBefore(new DefExpr(setter_dummy));
     }
   }
-}
-
-
-static void
-finish_constructor(FnSymbol* fn) {
-  if (fn->fnClass != FN_CONSTRUCTOR)
-    return;
-  CallExpr *inner = 0;
-
-  if (ReturnStmt* stmt = dynamic_cast<ReturnStmt*>(fn->body->body->last())) {
-    if (stmt->expr)
-      return; // already finished
-  }
-
-  ClassType* ct = dynamic_cast<ClassType*>(fn->typeBinding->definition);
-
-  fn->_this = new VarSymbol("this");
-
-  if (fn->body->body->length() > 0) {
-    FnSymbol* user_fn = new FnSymbol(stringcat("_user_", fn->name));
-    user_fn->formals = new AList<DefExpr>();
-    user_fn->typeBinding = ct->symbol;
-    BlockStmt* user_body = fn->body;
-    fn->body->replace(new BlockStmt());
-    fn->insertAtHead(new DefExpr(user_fn));
-    user_fn->body->replace(user_body);
-    fn->insertAtHead(new CallExpr((inner = new CallExpr(user_fn, methodToken, fn->_this))));
-    inner->partialTag = PARTIAL_OK;
-    ct->methods.add(user_fn);
-    cleanup(user_fn);
-  }
-
-  dynamic_cast<VarSymbol*>(fn->_this)->noDefaultInit = true;
-
-  char* description = stringcat("instance of class ", ct->symbol->name);
-  Expr* alloc_rhs = new CallExpr(Symboltable::lookupInternal("_chpl_alloc"),
-                                 ct->symbol,
-                                 new_StringLiteral(description));
-  CallExpr* alloc_expr = new CallExpr(PRIMITIVE_MOVE, fn->_this, alloc_rhs);
-
-  AList<Stmt>* stmts = new AList<Stmt>();
-
-  stmts->insertAtTail(new DefExpr(fn->_this));
-  stmts->insertAtTail(alloc_expr);
-
-  // assign formals to fields by name
-  forv_Vec(Symbol, field, ct->fields) {
-    for_alist(DefExpr, formalDef, fn->formals) {
-      if (ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym)) {
-        if (!strcmp(formal->name, field->name)) {
-          Expr* assign_expr = new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
-                                           new_StringSymbol(field->name), formal);
-          stmts->insertAtTail(assign_expr);
-        }
-      }
-    }
-  }
-
-  fn->insertAtHead(stmts);
-
-  // fix type variables, associate by name
-  for_alist(DefExpr, formalDef, fn->formals) {
-    ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
-    if (formal->intent == INTENT_TYPE) {
-      forv_Vec(TypeSymbol, type, ct->types) {
-        if (VariableType* variableType = dynamic_cast<VariableType*>(type->definition)) {
-          if (!strcmp(type->name, formal->name)) {
-            formal->type = variableType->type;
-            formal->isGeneric = true;
-            formal->genericSymbol = type;
-          }
-        }
-      }
-    }
-  }
-
-  fn->insertAtTail(new ReturnStmt(fn->_this));
-  fn->retType = ct;
 }

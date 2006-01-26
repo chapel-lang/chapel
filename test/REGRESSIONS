@@ -26,9 +26,17 @@ We need to handle PRIMITIVE_GET_MEMBER during pre-instantiation
 We need to handle unspecified '_' OP_INIT better.
 
 [Error matching compiler output for functions/bradc/typefn2]
-[Error matching compiler output for types/type_variables/deitz/test_instantiate_construct1]
 
 ???
+
+[Error executing program arrays/deitz/test_array_basic1a]
+
+We need to initialize elements of an array.  I believe the current init primitive should not serve this purpose with the representative element as this will not result in calling the default constructor for each element in the array.
+
+[Error matching compiler output for classes/deitz/test_class_construct1]
+[Error matching compiler output for types/type_variables/deitz/test_instantiate_construct1]
+
+What are we going to do for class constructors?
 
 
 ==========================

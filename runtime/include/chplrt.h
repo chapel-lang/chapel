@@ -1,6 +1,7 @@
 #ifndef _chplrt_H_
 #define _chplrt_H_
 
+#define _noop(x)
 
 #define malloc  dont_use_malloc_use_chpl_malloc_instead
 #define calloc  dont_use_calloc_use_chpl_calloc_instead

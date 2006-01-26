@@ -3121,6 +3121,8 @@ clear_cs(CreationSet *cs) {
   cs->es_backedges.clear();
   forv_AVar(v, cs->vars)
     clear_avar(v);
+  if (cs->added_element_var)
+    clear_avar(get_element_avar(cs));
 }
 
 static void

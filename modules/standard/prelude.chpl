@@ -12,16 +12,18 @@ pragma "data class"
 class _ddata {
   type elt_type;
   var size : integer;
-  pragma "data block" var _elt : elt_type;
+  var _element : elt_type;
+  pragma "rename _noop"
+  function init() {
+    return __primitive("array_init", this, size, _element) ;
+  }
   pragma "rename _data_get"
   function this(i : integer) : elt_type {
-    return _elt;
-//    return __primitive("array_index", this, i);
+    return __primitive("array_index", this, i);
   }
   pragma "rename _data_set"
   function =this(i : integer, val : elt_type) {
-    _elt = val;
-//    return __primitive("array_set", this, i, val);
+    return __primitive("array_set", this, i, val);
   }
 }
 

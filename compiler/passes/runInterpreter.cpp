@@ -141,7 +141,7 @@ struct IThread : public gc { public:
 
 enum PrimOps {
   PRIM_NONE, PRIM_INIT, PRIM_ALLOC, PRIM_FOPEN, PRIM_FCLOSE,
-  PRIM_STRERROR, PRIM_FPRINTF, PRIM_FSCANF, PRIM_ARRAY_INDEX,
+  PRIM_STRERROR, PRIM_FPRINTF, PRIM_FSCANF, PRIM_ARRAY_INIT, PRIM_ARRAY_INDEX,
   PRIM_ARRAY_SET, PRIM_UNARY_MINUS, PRIM_UNARY_PLUS,
   PRIM_UNARY_NOT, PRIM_UNARY_LNOT, PRIM_ADD,
   PRIM_SUBTRACT, PRIM_MULT, PRIM_DIV, PRIM_MOD, PRIM_EQUAL,
@@ -1651,17 +1651,25 @@ IFrame::iprimitive(CallExpr *s) {
     case PRIM_FSCANF:
       user_error(this, "unhandled primitive: %s", s->primitive->name);
       return 1;
+    case PRIM_ARRAY_INIT: {
+      check_prim_args(s, 3);
+      check_kind(s, arg[0], OBJECT_ISLOT);
+      check_type(s, arg[1], dtInteger);
+      IObject *a = arg[0]->object;
+      int len = arg[1]->imm->v_int64;
+      a->array.fill(len);
+      for (int i = 0; i < len; i++) 
+        a->array.v[i] = new ISlot(*arg[2]);
+      result = *arg[0];
+      break;
+    }
     case PRIM_ARRAY_INDEX: {
       check_prim_args(s, AT_LEAST 2);
       check_kind(s, arg[0], OBJECT_ISLOT);
       IObject *a = arg[0]->object;
-      check_prim_args(s, 1 + a->dim.n);
-      int mult = 1, index = 0;
-      for (int i = 0; i < a->dim.n; i++) {
-        check_type(s, arg[1 + i], dtInteger);
-        mult *= a->dim.v[i];
-        index = arg[1 + i]->imm->v_int64 + mult * index;
-      }
+      check_prim_args(s, 2);
+      check_type(s, arg[1], dtInteger);
+      int index = arg[1]->imm->v_int64;
       assert(index < a->array.n);
       result = *a->array.v[index];
       break;
@@ -1670,18 +1678,45 @@ IFrame::iprimitive(CallExpr *s) {
       check_prim_args(s, AT_LEAST 3);
       check_kind(s, arg[0], OBJECT_ISLOT);
       IObject *a = arg[0]->object;
-      check_prim_args(s, 2 + a->dim.n);
-      int mult = 1, index = 0;
-      for (int i = 0; i < a->dim.n; i++) {
-        check_type(s, arg[1 + i], dtInteger);
-        mult *= a->dim.v[i];
-        index = arg[1 + i]->imm->v_int64 + mult * index;
-      }
+      check_prim_args(s, 3);
+      check_type(s, arg[1], dtInteger);
+      int index = arg[1]->imm->v_int64;
       assert(index < a->array.n);
-      *a->array.v[index] = *arg[a->dim.n + 1];
-      result = *arg[a->dim.n + 1];
+      *a->array.v[index] = *arg[2];
+      result = *arg[2];
       break;
     }
+//     case PRIM_ARRAY_INDEX: {
+//       check_prim_args(s, AT_LEAST 2);
+//       check_kind(s, arg[0], OBJECT_ISLOT);
+//       IObject *a = arg[0]->object;
+//       check_prim_args(s, 1 + a->dim.n);
+//       int mult = 1, index = 0;
+//       for (int i = 0; i < a->dim.n; i++) {
+//         check_type(s, arg[1 + i], dtInteger);
+//         mult *= a->dim.v[i];
+//         index = arg[1 + i]->imm->v_int64 + mult * index;
+//       }
+//       assert(index < a->array.n);
+//       result = *a->array.v[index];
+//       break;
+//     }
+//     case PRIM_ARRAY_SET: {
+//       check_prim_args(s, AT_LEAST 3);
+//       check_kind(s, arg[0], OBJECT_ISLOT);
+//       IObject *a = arg[0]->object;
+//       check_prim_args(s, 2 + a->dim.n);
+//       int mult = 1, index = 0;
+//       for (int i = 0; i < a->dim.n; i++) {
+//         check_type(s, arg[1 + i], dtInteger);
+//         mult *= a->dim.v[i];
+//         index = arg[1 + i]->imm->v_int64 + mult * index;
+//       }
+//       assert(index < a->array.n);
+//       *a->array.v[index] = *arg[a->dim.n + 1];
+//       result = *arg[a->dim.n + 1];
+//       break;
+//     }
     case PRIM_CAST: { // cast arg[1] to the type of arg[0]
       check_prim_args(s, 2);
       Immediate imm0, imm1;
@@ -2413,6 +2448,7 @@ init_interpreter() {
   strerror_interpreter_op = new InterpreterOp("strerror", PRIM_STRERROR);
   fprintf_interpreter_op = new InterpreterOp("fprintf", PRIM_FPRINTF);
   fscanf_interpreter_op = new InterpreterOp("fscanf", PRIM_FSCANF);
+  array_init_interpreter_op = new InterpreterOp("array_init", PRIM_ARRAY_INIT);
   array_index_interpreter_op = new InterpreterOp("array_index", PRIM_ARRAY_INDEX);
   array_set_interpreter_op = new InterpreterOp("array_set", PRIM_ARRAY_SET);
   unary_minus_interpreter_op = new InterpreterOp("unary_minus", PRIM_UNARY_MINUS);

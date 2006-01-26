@@ -59,6 +59,7 @@ initPrimitive() {
   prim_def("strerror", strerror_interpreter_op, return_string_analysis_op);
   prim_def("fprintf", fprintf_interpreter_op, return_int_analysis_op);
   prim_def("fscanf", fscanf_interpreter_op, return_int_analysis_op);
+  prim_def("array_init", array_init_interpreter_op, array_init_analysis_op);
   prim_def("array_index", array_index_interpreter_op, array_index_analysis_op);
   prim_def("array_set", array_set_interpreter_op, array_set_analysis_op);
   prim_def("ptr_eq", ptr_eq_interpreter_op, return_bool_analysis_op);

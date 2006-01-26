@@ -16,6 +16,7 @@ _EXTERN InterpreterOp *fclose_interpreter_op _INIT;
 _EXTERN InterpreterOp *strerror_interpreter_op _INIT;
 _EXTERN InterpreterOp *fprintf_interpreter_op _INIT;
 _EXTERN InterpreterOp *fscanf_interpreter_op _INIT;
+_EXTERN InterpreterOp *array_init_interpreter_op _INIT;
 _EXTERN InterpreterOp *array_index_interpreter_op _INIT;
 _EXTERN InterpreterOp *array_set_interpreter_op _INIT;
 _EXTERN InterpreterOp *unary_minus_interpreter_op _INIT;

@@ -11,6 +11,10 @@ class _adomain : value {
 
   var info : _ddata(_adomain_info) = _ddata(_adomain_info, rank);
 
+  function initialize() {
+    info.init();
+  }
+
   function _set(dim : integer, x : _aseq) {
     var tmp : _adomain_info;
     tmp._low = x._low;
@@ -37,6 +41,10 @@ class _adomain_lit : value {
   var info : _ddata(_aseq) = _ddata(_aseq, rank);
 
   var dummy : integer;
+
+  function initialize() {
+    info.init();
+  }
 
   function _set(dim : integer, x : _aseq) {
     info(dim-1) = x;
@@ -87,6 +95,8 @@ class _aarray : value {
   var data : _ddata(elt_type) = _ddata(elt_type, 128);
 
   function myinit() {
+    info.init();
+    data.init();
     var tmp : _aarray_info;
     tmp._off = dom.info(rank-1)._low;
     tmp._blk = 1;
@@ -104,8 +114,8 @@ class _aarray : value {
     size = info(0)._blk *
              ((dom.info(0)._high - dom.info(0)._low + 1)
                / dom.info(0)._stride);
-    for i in 1..size do
-      _move(data(i-1), _init(elt_type));
+//    for i in 1..size do
+//      _move(data(i-1), _init(elt_type));
   }
 
   function this(i : integer, j : integer) var : elt_type {

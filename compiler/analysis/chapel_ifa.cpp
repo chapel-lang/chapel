@@ -71,10 +71,6 @@ class AnalysisOp : public gc { public:
 };
 
 
-static Sym *write_symbol = 0;
-static Sym *read_symbol = 0;
-static Sym *array_index_symbol = 0;
-static Sym *array_set_symbol = 0;
 static Sym *cast_symbol = 0;
 static Sym *method_token = 0;
 static Sym *setter_token = 0;
@@ -1019,6 +1015,8 @@ build_type(Type *t, bool make_default = true) {
           t->asymbol->sym->inherits_add(ttt->asymbol->sym);
       }
       if (t->asymbol->sym == sym_sequence)
+        t->asymbol->sym->element = new_sym();
+      if (tt->symbol->hasPragma("data class"))
         t->asymbol->sym->element = new_sym();
       break;
     }
@@ -2243,10 +2241,6 @@ ACallbacks::report_analysis_errors(Vec<ATypeViolation*> &type_violations) {
 static void
 init_symbols() {
   cast_symbol = make_symbol("chapel_cast");
-  write_symbol = make_symbol("chapel_write");
-  read_symbol = make_symbol("chapel_read");
-  array_index_symbol = make_symbol("chapel_array_index");
-  array_set_symbol = make_symbol("chapel_array_set");
   chapel_init_symbol = make_symbol("chapel_init");
   unimplemented_symbol = make_symbol("chapel_unimplemented");
 }
@@ -2360,6 +2354,18 @@ cast_value(PNode *pn, EntrySet *es) {
   flow_var_type_permit(val_tmp, make_AType(val_css));
   flow_vars(val, val_tmp);
   flow_vars(val_tmp, result);
+}
+
+static void
+array_init_transfer_function(PNode *pn, EntrySet *es) {
+  AVar *result = make_AVar(pn->lvals.v[0], es);
+  AVar *array = make_AVar(pn->rvals.v[2], es);
+  AVar *val = make_AVar(pn->rvals.v[4], es);
+  forv_CreationSet(a, array->out->sorted) {
+    if (a->sym->element)
+      flow_vars(val, get_element_avar(a));
+  }
+  flow_vars(array, result);
 }
 
 static void
@@ -2931,6 +2937,7 @@ init_chapel_ifa() {
   return_bool_analysis_op = S("return_bool", return_bool_transfer_function);
   return_int_analysis_op = S("return_int", return_int_transfer_function); 
   return_string_analysis_op = S("return_string", return_string_transfer_function); 
+  array_init_analysis_op = S("array_init", array_init_transfer_function);
   array_index_analysis_op = S("array_index", array_index_transfer_function);
   array_set_analysis_op = S("array_set", array_set_transfer_function);
   array_pointwise_op_analysis_op = S("array_pointwise_op", array_pointwise_op);
