@@ -55057,3 +55057,13 @@ Log message:
 Added files:
 	chapel/compiler/ifa/libifa/: mkdep 
 
+---------------------------------------------------------------------------
+
+01/26/06 15:02:50 -- jplevyak
+
+Log message:
+	Fix issue with cast_code
+
+Modified files:
+	chapel/compiler/ifa/libifa/: Makefile 
+
