@@ -118,15 +118,17 @@ add_candidate(Map<FnSymbol*,Vec<ArgSymbol*>*>* candidateFns,
   if (!inst) {
     ASTMap subs;
     for (int i = 0; i < num_actuals; i++) {
-      if (actual_formals->v[i]->intent == INTENT_TYPE) {
-        TypeSymbol* ts =
-          dynamic_cast<TypeSymbol*>(actual_formals->v[i]->genericSymbol);
-        if (!ts)
-          INT_FATAL(actual_formals->v[i], "Unanticipated genericSymbol");
-        subs.put(ts->definition, actual_types->v[i]);
-      } else if (actual_formals->v[i]->intent == INTENT_PARAM) {
-        if (actual_params->v[i])
-          subs.put(actual_formals->v[i], actual_params->v[i]);
+      if (actual_formals->v[i]->isGeneric) {
+        if (actual_formals->v[i]->intent == INTENT_TYPE) {
+          TypeSymbol* ts =
+            dynamic_cast<TypeSymbol*>(actual_formals->v[i]->genericSymbol);
+          if (!ts)
+            INT_FATAL(actual_formals->v[i], "Unanticipated genericSymbol");
+          subs.put(ts->definition, actual_types->v[i]);
+        } else if (actual_formals->v[i]->intent == INTENT_PARAM) {
+          if (actual_params->v[i])
+            subs.put(actual_formals->v[i], actual_params->v[i]);
+        }
       }
     }
     if (subs.n) {

@@ -1078,6 +1078,14 @@ FnSymbol*
 FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
                               Vec<FnSymbol*>* new_functions,
                               Vec<TypeSymbol*>* new_types) {
+  for (int i = 0; i < generic_substitutions->n; i++) {
+    if (BaseAST* value = generic_substitutions->v[i].value) {
+      if (MetaType* metaType = dynamic_cast<MetaType*>(value)) {
+        generic_substitutions->v[i].value = metaType->base;
+      }
+    }
+  }
+
   if (FnSymbol* cached = check_icache(this, generic_substitutions))
     return cached;
   ASTMap substitutions(*generic_substitutions);
@@ -1108,13 +1116,15 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
     Vec<BaseAST*> values;
     generic_substitutions->get_values(values);
     char* name = stringcat("_", retType->symbol->name, "_of");
-    forv_Vec(BaseAST, value, values) {
-      if (Type* type = dynamic_cast<Type*>(value)) {
-        name = stringcat(name, "_", type->symbol->name);
-      } else if (VarSymbol* var = dynamic_cast<VarSymbol*>(value)) {
-        name = stringcat(name, "_", var->cname);
-      } else {
-        INT_FATAL(this, "Unexpected generic substitution");
+    for (int i = 0; i < generic_substitutions->n; i++) {
+      if (BaseAST* value = generic_substitutions->v[i].value) {
+        if (Type* type = dynamic_cast<Type*>(value)) {
+          name = stringcat(name, "_", type->symbol->name);
+        } else if (VarSymbol* var = dynamic_cast<VarSymbol*>(value)) {
+          name = stringcat(name, "_", var->cname);
+        } else {
+          INT_FATAL(this, "Unexpected generic substitution");
+        }
       }
     }
 
