@@ -55047,3 +55047,13 @@ Removed files:
 	chapel/compiler/include/: geysa.h list.h log.h map.h vec.h 
 	chapel/compiler/util/: log.cpp 
 
+---------------------------------------------------------------------------
+
+01/26/06 15:02:25 -- jplevyak
+
+Log message:
+	For computing library dependencies
+
+Added files:
+	chapel/compiler/ifa/libifa/: mkdep 
+
