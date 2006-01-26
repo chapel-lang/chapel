@@ -63,8 +63,7 @@ CFLAGS += -DLEAK_DETECT  ${GC_CFLAGS}
 LIBS += -lleak
 endif
 
-BUILD_VERSION = $(shell touch BUILD_VERSION;cat BUILD_VERSION)
-VERSIONCFLAGS += -DMAJOR_VERSION=$(MAJOR) -DMINOR_VERSION=$(MINOR) -DBUILD_VERSION=$(BUILD_VERSION)
+VERSIONCFLAGS += -DMAJOR_VERSION=$(MAJOR) -DMINOR_VERSION=$(MINOR)
 
 CFLAGS += -Wall -Wno-non-virtual-dtor
 # debug flags
@@ -86,7 +85,7 @@ LIBS += -lm
 DIR = ifa
 
 AUX_FILES = $(DIR)/Makefile $(DIR)/COPYRIGHT $(DIR)/README $(DIR)/index.html $(DIR)/manual.html $(DIR)/faq.html $(DIR)/ifa.1 $(DIR)/ifa.cat
-TAR_FILES = $(AUX_FILES) $(TEST_FILES) $(DIR)/BUILD_VERSION 
+TAR_FILES = $(AUX_FILES) $(TEST_FILES)
 
 LIB_SRCS = ast.cc builtin.cc cdb.cc cfg.cc cg.cc clone.cc \
 	dead.cc dom.cc fa.cc fail.cc fun.cc graph.cc html.cc if1.cc ifa.cc inline.cc \
@@ -118,7 +117,7 @@ SEPARATE_IFA_H_FILES = $(SEPARATE_IFA_H_FILES_1:../%.h=%.h)
 
 ALL_SRCS = $(IFA_SRCS) $(LIB_SRCS)
 
-all: $(EXECUTABLES) $(LIBRARIES) BUILD_VERSION ifa.cat
+all: $(EXECUTABLES) $(LIBRARIES) ifa.cat
 
 version:
 	echo $(OS_TYPE) $(OS_VERSION)
@@ -170,8 +169,9 @@ separate:
 	-for file in $(SEPARATE_IFA_H_FILES); do \
 	  ln -s -f ../$$file $$file; \
 	done
+	ln -s -f ../cast_code.cc cast_code.cc
 	rm defs.h
-	cp ifa_defs.h defs.h
+	ln -s -f ifa_defs.h defs.h
 
 version.o: Makefile
 
