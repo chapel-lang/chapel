@@ -54941,3 +54941,20 @@ Added files:
 	                                     fibonacci_squares.chpl 
 	                                     fibonacci_squares.good 
 
+---------------------------------------------------------------------------
+
+01/26/06 08:39:16 -- jplevyak
+
+Log message:
+	Change EnumSymbol::type to point to the corresponding EnumType.
+	Add support for casting of Enums to/from integers in the interpreter.
+	Add test for enums which fails because we don't yet build coercion
+	  wrappers in resolve_call()
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/passes/: runInterpreter.cpp 
+Added files:
+	chapel/test/interpreter/jplevyak/: test_enum1.chpl 
+	                                   test_enum1.good 
+
