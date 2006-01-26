@@ -54929,3 +54929,15 @@ Modified files:
 	                               record_type_hierarchy-3-error.good 
 	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
 
+---------------------------------------------------------------------------
+
+01/25/06 16:28:32 -- deitz
+
+Log message:
+	Add some example codes from Mack's HIPS paper to the test suite.
+
+Added files:
+	chapel/test/functions/deitz/hips06/: adiags.chpl adiags.good 
+	                                     fibonacci_squares.chpl 
+	                                     fibonacci_squares.good 
+
