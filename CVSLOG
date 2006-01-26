@@ -54958,3 +54958,48 @@ Added files:
 	chapel/test/interpreter/jplevyak/: test_enum1.chpl 
 	                                   test_enum1.good 
 
+---------------------------------------------------------------------------
+
+01/26/06 08:54:03 -- deitz
+
+Log message:
+	Fixed interpreter handling of array_set and array_index.  Added
+	support for new primitive array_init.  With John's patch.
+	
+	Removed bad support for ill-defined class constructors.  We need to
+	discuss this for the Chapel language.  I'll send out an email.
+	
+	Added support for an initialize method that is called by the default
+	constructor thus allowing user code to be inserted into the
+	constructor.
+	
+	Fixed the ddata class to use the array_set, array_index, and
+	array_init primitives.
+	
+	This checkin gets arrays and htuples through the interpreter.
+	arrays/deitz/jacobi.chpl takes a while but works.
+	
+	Changed domain implementation to use classes.
+	
+	New regressions discussed in REGRESSIONS file.  The constructor tests
+	should be removed or futurized.
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/compiler/analysis/: analysis_ops.h chapel_ifa.cpp 
+	chapel/compiler/ifa/: fa.cpp 
+	chapel/compiler/passes/: cleanup.cpp interpreter_ops.h 
+	                         normalize.cpp runInterpreter.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_htuple.chpl 
+	                          prelude.chpl 
+	chapel/runtime/include/: chplrt.h 
+	chapel/test/: REGRESSIONS 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/flowanalysis/newast/: chain.good mutrec.good 
+	                                  onearg.good sum_type-1.good 
+	                                  sum_type-2.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
