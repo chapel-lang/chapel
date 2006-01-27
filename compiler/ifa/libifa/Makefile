@@ -82,7 +82,7 @@ CPPFLAGS += $(CFLAGS)
 
 LIBS += -lm 
 
-DIR = ifa
+DIR = libifa
 
 AUX_FILES = $(DIR)/Makefile $(DIR)/COPYRIGHT $(DIR)/README $(DIR)/index.html $(DIR)/manual.html $(DIR)/faq.html $(DIR)/ifa.1 $(DIR)/ifa.cat
 TAR_FILES = $(AUX_FILES) $(TEST_FILES)
@@ -151,10 +151,7 @@ ifa.cat: ifa.1
 	nroff -man ifa.1 | sed -e 's/.//g' > ifa.cat
 
 tar:
-	(cd ..;tar czf ifa-$(RELEASE)-src.tar.gz ifa/*.cc ifa/*.h $(TAR_FILES)) 
-
-bintar:
-	(cd ..;tar czf ifa-$(RELEASE)-$(OS_TYPE)-bin.tar.gz $(AUX_FILES) $(LIBRARIES:%=ifa/%) $(INCLUDES:%=ifa/%) $(EXECUTABLES:%=ifa/%))
+	(cd ..;tar czf libifa-$(RELEASE)-src.tar.gz libifa/*.cc $(DIR)/*.h $(TAR_FILES)) 
 
 clean:
 	\rm -f *.o core *.core *.gmon *.a $(EXEC_FILES)
