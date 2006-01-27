@@ -151,7 +151,7 @@ ifa.cat: ifa.1
 	nroff -man ifa.1 | sed -e 's/.//g' > ifa.cat
 
 tar:
-	(cd ..;tar czf libifa-$(RELEASE)-src.tar.gz libifa/*.cc $(DIR)/*.h $(TAR_FILES)) 
+	(cd ..;tar czhf libifa-$(RELEASE)-src.tar.gz libifa/*.cc $(DIR)/*.h $(TAR_FILES)) 
 
 clean:
 	\rm -f *.o core *.core *.gmon *.a $(EXEC_FILES)
