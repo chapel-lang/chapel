@@ -1,0 +1,41 @@
+config var n : integer = 3;
+config var epsilon : float = 0.01;
+config var verbose : boolean = true;
+
+var R : domain(2) = [1..n, 1..n];
+var BigR : domain(2) = [0..n+1, 0..n+1];
+
+var A : [BigR] float;
+var Temp : [R] float;
+
+function main() {
+  [i,j in BigR]  A(i,j) = 0.0;
+  [j in 1..n] A(n+1,j) = 1.0;
+
+  if (verbose) {
+    writeln("Initial configuration:");
+    writeln(A);
+  }
+
+  var iteration = 0;
+  var delta = 1.0;
+
+  while (delta > epsilon) {
+    [i,j in R] Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;
+    delta = 0.0;
+    forall i,j in R {
+      delta += Temp(i,j)-A(i,j);
+    }
+    A = Temp;
+    iteration += 1;
+    if (verbose) {
+      write("Configuration after iteration: ", iteration);
+      writeln(" (delta = ", delta, ")");
+      writeln(A);
+    }
+  }
+
+  writeln("Jacobi computation complete.");
+  writeln("Delta is ", delta, " (< epsilon = ", epsilon, ")");
+  writeln("# of iterations: ", iteration);
+}
