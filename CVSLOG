@@ -55147,3 +55147,38 @@ Added files:
 	                                 history_accumulator2.chpl 
 	                                 jacobi.chpl 
 
+---------------------------------------------------------------------------
+
+01/27/06 14:16:47 -- deitz
+
+Log message:
+	Added parse_string functionality to parse a string of text inserted
+	during interactive interpreter run.  The interpreter parses this
+	string, inserts it into the AST at the end of _chpl_main, builds it
+	(cleanup,scopeResolve,normalize), and, for now, calls print_view on it
+	to spit out the code.  That's pretty useful alone.
+	
+	I think we want insert mode to run until it is at the end of the main
+	function (just before returning).  If necessary we can run it until it
+	reaches the last statement and put in a fake statement there.  Then
+	the user can insert new code at the end of main which will execute
+	completely, etc.
+	
+	Limitations.  The new code is currently stuck in a BlockStmt so it is
+	possible to declare the same variable multiple times, but impossible
+	to look at it.  I can fix this.  Errors encountered by the compiler
+	should be handled differently in this mode.  We should complain and
+	fall back to the interpreter, removing all newly inserted code.
+	
+	Also with this checkin, added ability to index 2D array with
+	(integer,integer).
+	
+	Small change to jacobi.chpl demo program.
+
+Modified files:
+	chapel/compiler/include/: parser.h 
+	chapel/compiler/parser/: chapel.lex 
+	chapel/compiler/passes/: runInterpreter.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	chapel/test/demo/review_060130/: jacobi.chpl 
+
