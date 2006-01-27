@@ -173,3 +173,10 @@ yield           processToken(TYIELD);
 int getNextYYChar() {
   return yyinput();
 }
+
+BlockStmt* parse_string(char* string) {
+  yystmtlist = NULL;
+  yy_scan_string(string);
+  yyparse();
+  return new BlockStmt(yystmtlist);
+}

@@ -118,6 +118,13 @@ class _aarray : value {
 //      _move(data(i-1), _init(elt_type));
   }
 
+
+  function this(ij : (integer, integer)) var : elt_type {
+    var ind : integer = (ij(1) - info(0)._off) * info(0)._blk +
+                        (ij(2) - info(1)._off) * info(1)._blk;
+    return data(ind);
+  }
+
   function this(i : integer, j : integer) var : elt_type {
     var ind : integer = (i - info(0)._off) * info(0)._blk +
                         (j - info(1)._off) * info(1)._blk;

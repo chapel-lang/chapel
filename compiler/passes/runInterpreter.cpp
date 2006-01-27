@@ -5,6 +5,7 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #endif
+#include "astutil.h"
 #include "chpl.h"
 #include "pass.h"
 #include "alist.h"
@@ -15,6 +16,7 @@
 #include "symtab.h"
 #include "../traversals/view.h"
 #include "stringutil.h"
+#include "parser.h"
 
 #define HACK_NEWLINE_STRING 1
 
@@ -1136,6 +1138,11 @@ interactive(IFrame *frame) {
         c++;
       else {
         // add string c to program and execute
+        char* line = strndup(c, strlen(c)-1);
+        BlockStmt* stmt = parse_string(line); 
+        chpl_main->insertAtTail(stmt);
+        build(stmt);
+        print_view(stmt);
         return 1;
       }
     }
