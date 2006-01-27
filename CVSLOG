@@ -55182,3 +55182,13 @@ Modified files:
 	chapel/modules/standard/: _chpl_adomain.chpl 
 	chapel/test/demo/review_060130/: jacobi.chpl 
 
+---------------------------------------------------------------------------
+
+01/27/06 15:30:40 -- jplevyak
+
+Log message:
+	Run code in insert mode in interpreter.
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+
