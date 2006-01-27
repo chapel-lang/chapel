@@ -55192,3 +55192,20 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+01/27/06 15:44:42 -- deitz
+
+Log message:
+	Made interpreter insert mode add list of statements to program, not
+	block statements, which would affect scoping.
+	
+	There is a problem in scope resolution error detection in falsely
+	believing that a variable is used before it is defined if you define
+	it, run it, and then use it.
+
+Modified files:
+	chapel/compiler/include/: parser.h 
+	chapel/compiler/parser/: chapel.lex 
+	chapel/compiler/passes/: runInterpreter.cpp 
+
