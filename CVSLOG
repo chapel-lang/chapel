@@ -55135,3 +55135,15 @@ Modified files:
 	chapel/test/flowanalysis/newast/: chain.good mutrec.good 
 	                                  onearg.good 
 
+---------------------------------------------------------------------------
+
+01/26/06 17:46:55 -- deitz
+
+Log message:
+	Checking in some code for use with the demo.
+
+Added files:
+	chapel/test/demo/review_060130/: history_accumulator.chpl 
+	                                 history_accumulator2.chpl 
+	                                 jacobi.chpl 
+
