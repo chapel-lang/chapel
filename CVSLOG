@@ -55110,3 +55110,13 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/libifa/: Makefile index.html 
 
+---------------------------------------------------------------------------
+
+01/26/06 16:18:22 -- jplevyak
+
+Log message:
+	little more cleanup
+
+Modified files:
+	chapel/compiler/ifa/libifa/: index.html 
+
