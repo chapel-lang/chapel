@@ -180,7 +180,8 @@ static Map<int, BaseAST*> known_ids;
 static Map<int, int> translate_prim;
 Map<BaseAST *, ISlot *> global_env;
 
-static void runProgram();
+static IThread *reset_program();
+static void run_program();
 static void error_interactive(IFrame *frame);
 
 IThread::IThread() : state(ITHREAD_STOPPED), frame(0) {
@@ -1142,7 +1143,12 @@ interactive(IFrame *frame) {
         BlockStmt* stmt = parse_string(line); 
         chpl_main->insertAtTail(stmt);
         build(stmt);
-        print_view(stmt);
+        if (frame) {
+          frame->thread->todo.clear();
+          frame->thread->frame = 0;
+        }
+        IThread *t = reset_program();
+        t->add(stmt);
         return 1;
       }
     }
@@ -1154,7 +1160,7 @@ interactive(IFrame *frame) {
         frame->thread->todo.clear();
         frame->thread->frame = 0;
       }
-      runProgram();
+      run_program();
       return 1;
     } 
     else if (match_cmd(c, "help") || match_cmd(c, "?")) { interactive_usage(); } 
@@ -2405,15 +2411,21 @@ initialize() {
     signal(SIGINT, handle_interrupt);
 }
 
-static void
-runProgram() {
+static IThread *
+reset_program() {
   threads.clear();
   cur_thread = -1;
   IThread *t = new IThread;
+  t->state = ITHREAD_RUNNABLE;
+  return t;
+}
+
+static void
+run_program() {
+  IThread *t = reset_program();
   forv_Vec(ModuleSymbol, mod, allModules)
     t->add((Stmt*)mod->stmts->head->next);
   t->add(chpl_main);
-  t->state = ITHREAD_RUNNABLE;
 }
 
 static void
@@ -2435,7 +2447,7 @@ runInterpreter(void) {
   if (run_interpreter > 1)
     interrupted = 1;
   do {
-    runProgram();
+    run_program();
     chpl_interpreter();
     if (run_interpreter <= 1) 
       break;
