@@ -55120,3 +55120,18 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/libifa/: index.html 
 
+---------------------------------------------------------------------------
+
+01/26/06 17:13:32 -- deitz
+
+Log message:
+	Improved error message for when compiler can't find module.
+	
+	Update a few .good files from my last checkin.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/passes/: cleanup.cpp 
+	chapel/test/flowanalysis/newast/: chain.good mutrec.good 
+	                                  onearg.good 
+
