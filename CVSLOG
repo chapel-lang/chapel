@@ -55087,3 +55087,16 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
 
+---------------------------------------------------------------------------
+
+01/26/06 16:04:28 -- jplevyak
+
+Log message:
+	Placeholders for the library
+
+Modified files:
+	chapel/compiler/ifa/libifa/: Makefile 
+Added files:
+	chapel/compiler/ifa/libifa/: COPYRIGHT README faq.html 
+	                             index.html manual.html 
+
