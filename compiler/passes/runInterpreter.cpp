@@ -1140,15 +1140,18 @@ interactive(IFrame *frame) {
       else {
         // add string c to program and execute
         char* line = strndup(c, strlen(c)-1);
-        BlockStmt* stmt = parse_string(line); 
-        chpl_main->insertAtTail(stmt);
-        build(stmt);
+        AList<Stmt>* stmts = parse_string(line); 
+        for_alist(Stmt, stmt, stmts) {
+          stmt->remove();
+          chpl_main->insertAtTail(stmt);
+          build(stmt);
+        }
         if (frame) {
           frame->thread->todo.clear();
           frame->thread->frame = 0;
         }
-        IThread *t = reset_program();
-        t->add(stmt);
+        reset_program();
+        //t->add(stmt);
         return 1;
       }
     }
