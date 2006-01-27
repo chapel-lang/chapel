@@ -1227,13 +1227,13 @@ void ImportExpr::codegen(FILE* outfile) {
 
 ModuleSymbol* ImportExpr::getImportedModule(void) {
   if (SymExpr* variable = dynamic_cast<SymExpr*>(expr)) {
-    if (Symbol* symbol = variable->var) {
-      if (ModuleSymbol* module =
-          dynamic_cast<ModuleSymbol*>(Symboltable::lookupFromScope(symbol->name, variable->parentScope))) {
-        return module;
-      }
+    if (ModuleSymbol* module =
+        dynamic_cast<ModuleSymbol*>(Symboltable::lookupFromScope(variable->var->name, parentScope))) {
+      return module;
     }
+    USR_FATAL(this, "Cannot find module '%s'", variable->var->name);
   }
+  INT_FATAL(this, "ImportExpr has no module");
   return NULL;
 }
 

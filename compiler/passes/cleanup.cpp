@@ -125,8 +125,6 @@ process_import_expr(ImportExpr* expr) {
 
   if (expr->importTag == IMPORT_USE) {
     ModuleSymbol* module = expr->getImportedModule();
-    if (!module)
-      INT_FATAL(expr, "ImportExpr has no module");
     if (module != compilerModule)
       expr->parentStmt->insertBefore(new CallExpr(module->initFn));
     expr->parentScope->uses.add(module);
