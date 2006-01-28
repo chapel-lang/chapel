@@ -33,6 +33,9 @@ class _adomain : value {
     for i in info(dim-1)._low..info(dim-1)._high by info(dim-1)._stride do
       yield i;
   }
+
+  function range(dim : integer)
+    return info(dim-1)._low..info(dim-1)._high by info(dim-1)._stride;
 }
 
 class _adomain_lit : value {
