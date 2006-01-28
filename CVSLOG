@@ -55244,3 +55244,18 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+01/27/06 17:10:53 -- jplevyak
+
+Log message:
+	Attempt to get -I working without specifying a file, but it segfaults
+	
+	chpl -I
+	
+	... something strange about the way modules are initialized.
+
+Modified files:
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+
