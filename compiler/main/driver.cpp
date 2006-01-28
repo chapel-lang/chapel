@@ -246,7 +246,7 @@ main(int argc, char *argv[]) {
                            &(arg_state.program_loc));
   process_args(&arg_state, argc, argv);
   startCatchingSignals();
-  if (arg_state.nfile_arguments < 1)
+  if (arg_state.nfile_arguments < 1 && !finterpreter_insert_mode)
     help(&arg_state, NULL);
   graph_type = !fgraph_vcg ? GraphViz : VCG;
   if (rungdb)
