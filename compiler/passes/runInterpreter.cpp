@@ -20,6 +20,9 @@
 
 #define HACK_NEWLINE_STRING 1
 
+int finterpreter_insert_mode = 0;
+int finterpreter_ast_mode = 0;
+
 class IObject;
 class IThread;
 
@@ -168,7 +171,6 @@ class InterpreterOp : public gc { public:
 
 enum { NO_STEP = 0, SINGLE_STEP = 1, NEXT_STEP = 2 };
 
-static int finterpreter_insert_mode = 0;
 volatile static int interrupted = 0;
 static int single_step = NO_STEP;
 static Vec<IThread *> threads;
@@ -2449,12 +2451,13 @@ runInterpreter(void) {
   initialize();
   if (run_interpreter > 1)
     interrupted = 1;
+  run_program();
   do {
-    run_program();
     chpl_interpreter();
     if (run_interpreter <= 1) 
       break;
-    printf("  program terminated\n");
+    if (!finterpreter_insert_mode)
+      printf("  program terminated\n");
     while (!threads.n) 
       interactive(0);
   } while (1);

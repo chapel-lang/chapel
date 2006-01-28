@@ -23,6 +23,7 @@ static void help(ArgumentState *arg_state, char *arg_unused);
 static void copyright(ArgumentState *arg_state, char *arg_unused);
 static void handleLibrary(ArgumentState* arg_state, char* arg_unused);
 static void handleLibPath(ArgumentState* arg_state, char* arg_unused);
+static void interpreter_insert_mode(ArgumentState* arg_state, char* arg_unused);
 
 FILE* html_index_file = NULL;
 
@@ -42,7 +43,6 @@ int debugParserLevel = 0;
 bool developer = false;
 bool ignore_errors = false;
 int run_interpreter = 0;
-int finterpreter_ast_mode = 0;
 int trace_level = 0;
 int fgraph = 0;
 int fgraph_vcg = 0;
@@ -57,8 +57,9 @@ int num_constants_per_variable = 1;
 int instantiation_limit = 12;
 
 static ArgumentDescription arg_desc[] = {
- {"interpreter", 'i', "Run Interpreter (-ii for interactive)", "+", &run_interpreter, "CHPL_INTERPRETER", NULL},
- {"ast_mode", 'a', "Set interpreter mode to AST", "T", &finterpreter_ast_mode, "CHPL_INTERPRETER_AST_MODE", NULL},
+ {"interpret", 'i', "Run in Interpreter (-ii interactive)", "+", &run_interpreter, "CHPL_INTERPRETER", NULL},
+ {"insert_mode", 'I', "Interpreter Insert Mode", "T", &finterpreter_insert_mode, "CHPL_INTERPRETER_INSERT_MODE", interpreter_insert_mode},
+ {"ast_mode", 'a', "Interpreter AST Mode", "T", &finterpreter_ast_mode, "CHPL_INTERPRETER_AST_MODE", NULL},
  {"trace", 's', "Trace Level", "+", &trace_level, "CHPL_TRACE", NULL},
  {"nostdincs", ' ', "No Standard Includes", "T", &fnostdincs, "CHPL_NOSTDINCS", NULL},
  {"nostdincs-but-file", ' ', "No Standard Includes But File", "T", &fnostdincs_but_file, "CHPL_NOSTDINCS_BUT_FILE", NULL},
@@ -106,8 +107,7 @@ static ArgumentDescription arg_desc[] = {
  {"verbose", 'v', "Verbose Level", "+", &verbose_level, "CHPL_VERBOSE", NULL},
  {"print-commands", ' ', "Print Subprocess Commands", "F", &printSystemCommands, 
   "CHPL_PRINT_COMMANDS", NULL},
- {"print-passes", ' ', "Print Passes", "F", &printPasses, "CHPL_PRINT_PASSES", 
-  NULL},
+ {"print-passes", ' ', "Print Passes", "F", &printPasses, "CHPL_PRINT_PASSES", NULL},
  {"version", ' ', "Show Version", NULL, NULL, NULL, version},
  {"copyright", ' ', "Show Copyright", NULL, NULL, NULL, copyright},
  {"help", 'h', "Help (show this list)", NULL, NULL, NULL, help},
@@ -130,13 +130,11 @@ copyright(ArgumentState *arg_state, char *arg_unused) {
   clean_exit(0);
 }
 
-
 static void printShortCopyright(void) {
   fprintf(stderr, "\n"
 #include "COPYRIGHT"
           );
 }
-
 
 static void printVersion(ArgumentState* arg_state) {
   char ver[30];
@@ -156,13 +154,20 @@ help(ArgumentState *arg_state, char *arg_unused) {
   usage(arg_state, arg_unused);
 }
 
-static void handleLibrary(ArgumentState* arg_state, char* arg_unused) {
+static void 
+handleLibrary(ArgumentState* arg_state, char* arg_unused) {
   addLibInfo(stringcat("-l", libraryFilename));
 }
 
-
-static void handleLibPath(ArgumentState* arg_state, char* arg_unused) {
+static void 
+handleLibPath(ArgumentState* arg_state, char* arg_unused) {
   addLibInfo(stringcat("-L", libraryFilename));
+}
+
+static void 
+interpreter_insert_mode(ArgumentState* arg_state, char* arg_unused) {
+  if (finterpreter_insert_mode)
+    run_interpreter = 2;
 }
 
 void

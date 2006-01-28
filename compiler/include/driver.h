@@ -26,9 +26,9 @@ extern int fnostdincs_but_file;
 
 extern int fgraph;
 
-extern int run_interpreter;
-extern int finterpreter_ast_mode;
 extern int trace_level;
+
+extern int run_interpreter;
 extern bool no_inline;
 extern bool report_inlining;
 extern char system_dir[FILENAME_MAX];
