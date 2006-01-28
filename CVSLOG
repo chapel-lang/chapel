@@ -55234,3 +55234,13 @@ Log message:
 Removed files:
 	chapel/compiler/main/: arg.cpp arg.h 
 
+---------------------------------------------------------------------------
+
+01/27/06 16:48:48 -- jplevyak
+
+Log message:
+	Start interpreter from new lines instead of top of program.
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+
