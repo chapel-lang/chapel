@@ -55314,3 +55314,15 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+01/28/06 12:12:30 -- jplevyak
+
+Log message:
+	Added Vec::set_remove()
+	Tweak up -I mode
+
+Modified files:
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/ifa/: vec.h 
+
