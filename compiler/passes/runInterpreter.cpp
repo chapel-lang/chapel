@@ -1134,7 +1134,8 @@ interactive(IFrame *frame) {
     fprintf(stdout, "(chpl) ");
     char cmd_buffer[512], *c = cmd_buffer;
     cmd_buffer[0] = 0;
-    fgets(cmd_buffer, 511, stdin);
+    if (!fgets(cmd_buffer, 511, stdin))
+      exit(0);
 #endif
     while (*c && isspace(*c)) c++;
     if (!*c)
