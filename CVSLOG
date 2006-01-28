@@ -55273,3 +55273,21 @@ Modified files:
 Added files:
 	chapel/modules/standard/: i.chpl 
 
+---------------------------------------------------------------------------
+
+01/27/06 17:33:31 -- deitz
+
+Log message:
+	Updated demo examples.
+	
+	Added range function to arithmetic domains so that range(dim) returns
+	an arithmetic sequence for that dimension.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+Added files:
+	chapel/test/demo/review_060130/: history_accumulator.good 
+	                                 iterators.chpl iterators.good 
+	                                 jacobi.good jacobi2.chpl 
+	                                 jacobi2.good 
+
