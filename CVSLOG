@@ -55224,3 +55224,13 @@ Modified files:
 	chapel/compiler/ifa/: arg.cpp 
 	chapel/compiler/main/: driver.cpp 
 
+---------------------------------------------------------------------------
+
+01/27/06 16:11:30 -- jplevyak
+
+Log message:
+	remove moved files.
+
+Removed files:
+	chapel/compiler/main/: arg.cpp arg.h 
+
