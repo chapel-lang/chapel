@@ -29,13 +29,14 @@ class Vec : public gc {
   Vec<C>();
   Vec<C>(const Vec<C> &vv);
 
-  inline void add(C a);  
-  inline int add_exclusive(C a);
-  inline C& add();
-  inline C pop();
-  inline void clear();
-  inline void set_clear();
-  inline C *set_add(C a);
+  void add(C a);  
+  int add_exclusive(C a);
+  C& add();
+  C pop();
+  void clear();
+  void set_clear();
+  C *set_add(C a);
+  void set_remove(C a); // expensive, use BlockHash for cheaper remove
   C *set_add_internal(C a);
   int set_union(Vec<C> &v);
   int set_intersection(Vec<C> &v);
@@ -183,6 +184,15 @@ Vec<C>::set_add(C a) {
       set_add_internal(*c);
   }
   return set_add_internal(a);
+}
+
+template <class C> void
+Vec<C>::set_remove(C a) {
+  Vec<C> tmp;
+  tmp.move(*this);
+  for (C *c = tmp.v; c < tmp.v + tmp.n; c++)
+    if (*c != a)
+      set_add(a);
 }
 
 template <class C> inline int

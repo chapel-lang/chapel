@@ -167,7 +167,7 @@ handleLibPath(ArgumentState* arg_state, char* arg_unused) {
 static void 
 interpreter_insert_mode(ArgumentState* arg_state, char* arg_unused) {
   if (finterpreter_insert_mode)
-    run_interpreter = 2;
+    run_interpreter++;
 }
 
 void
