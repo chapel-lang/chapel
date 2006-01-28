@@ -55209,3 +55209,18 @@ Modified files:
 	chapel/compiler/parser/: chapel.lex 
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+01/27/06 16:05:01 -- jplevyak
+
+Log message:
+	Add -I option to put us in interpreter insert mode.
+	Add space before type of option when the option os too long
+	  and extends beyond it's row.
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp runInterpreter.h 
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/ifa/: arg.cpp 
+	chapel/compiler/main/: driver.cpp 
+
