@@ -55259,3 +55259,17 @@ Modified files:
 	chapel/compiler/main/: driver.cpp 
 	chapel/compiler/passes/: buildDefaultFunctions.cpp 
 
+---------------------------------------------------------------------------
+
+01/27/06 17:32:29 -- deitz
+
+Log message:
+	Made chpl -I not require a filename.  If one is not provided, the
+	program modules/standard/i.chpl is loaded as the user program.
+
+Modified files:
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	                         filesToAST.cpp 
+Added files:
+	chapel/modules/standard/: i.chpl 
+
