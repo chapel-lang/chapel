@@ -55326,3 +55326,13 @@ Modified files:
 	chapel/compiler/main/: driver.cpp 
 	chapel/compiler/ifa/: vec.h 
 
+---------------------------------------------------------------------------
+
+01/28/06 12:44:53 -- jplevyak
+
+Log message:
+	Exit on EOF for non-readline version
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+
