@@ -55,6 +55,9 @@ void parse(void) {
   }
   finishCountingTokens();
 
+  if (userModules.n == 0)
+    ParseFile(stringcat(chplroot, "/modules/standard/i.chpl"), MOD_USER);
+
   Symboltable::doneParsingUserFiles();
 
   Pass* fixup = new Fixup();

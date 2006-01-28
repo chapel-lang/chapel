@@ -106,10 +106,9 @@ static FnSymbol* chpl_main_exists(void) {
 static void build_chpl_main(void) {
   chpl_main = chpl_main_exists();
   if (!chpl_main) {
-    if (userModules.n <= 1) {
-      ModuleSymbol *m = userModules.n ? userModules.v[0] : new ModuleSymbol("_empty", MOD_USER);
+    if (userModules.n == 1) {
       chpl_main = new FnSymbol("main", NULL, new AList<DefExpr>(), dtVoid);
-      m->stmts->insertAtTail(new DefExpr(chpl_main));
+      userModules.v[0]->stmts->insertAtTail(new DefExpr(chpl_main));
       build(chpl_main);
     } else
       USR_FATAL("Code defines multiple modules but no main function.");
