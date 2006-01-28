@@ -55291,3 +55291,26 @@ Added files:
 	                                 jacobi.good jacobi2.chpl 
 	                                 jacobi2.good 
 
+---------------------------------------------------------------------------
+
+01/28/06 12:11:39 -- jplevyak
+
+Log message:
+	-I interactive mode now working.
+	
+	(gdb) b:compiler [827] % chpl -I --gdb
+	Using host libthread_db library "/lib64/tls/libthread_db.so.1".
+	Breakpoint 1 at 0x51a3bc: file misc.cpp, line 23.
+	(gdb) r
+	(chpl) writeln(1);;
+	1
+	(chpl) writeln(1 + 2);;
+	3
+	(chpl) :exit
+	
+	Program exited normally.
+	(gdb)
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+
