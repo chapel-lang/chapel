@@ -172,6 +172,7 @@ class InterpreterOp : public gc { public:
 enum { NO_STEP = 0, SINGLE_STEP = 1, NEXT_STEP = 2 };
 
 volatile static int interrupted = 0;
+static int insert_mode_last_break_id = 0;
 static int single_step = NO_STEP;
 static Vec<IThread *> threads;
 static int cur_thread = -1;
@@ -433,7 +434,7 @@ user_error(IFrame *frame, char *fmt, ...) {
 
   printf("\n");
 
-  if (run_interpreter > 1)
+  if (run_interpreter > 1 || finterpreter_insert_mode)
     error_interactive(frame);
   else {
     INT_FATAL("interpreter terminated");
@@ -1106,7 +1107,7 @@ static int last_interactive_lineno = 0;
 
 static int
 interactive(IFrame *frame) {
-  if (frame)
+  if (frame && !(frame->ip && frame->ip->id == insert_mode_last_break_id))
     show(frame, frame->ip, frame->stage);
   while (1) {
     single_step = interrupted = 0;
@@ -1118,6 +1119,10 @@ interactive(IFrame *frame) {
     } else {
       last_interactive_filename = 0;
       last_interactive_lineno = 0;
+    }
+    if (insert_mode_last_break_id) {
+      break_ids.set_remove(insert_mode_last_break_id);
+      insert_mode_last_break_id = 0;
     }
 #ifdef USE_READLINE
     char *c = readline("(chpl) ");
@@ -1143,18 +1148,16 @@ interactive(IFrame *frame) {
         // add string c to program and execute
         char* line = strndup(c, strlen(c)-1);
         AList<Stmt>* stmts = parse_string(line); 
-        if (frame) {
-          frame->thread->todo.clear();
-          frame->thread->frame = 0;
-        }
-        IThread *t = reset_program();
+        BaseAST *last = chpl_main->body->body->last();
         for_alist(Stmt, stmt, stmts) {
           stmt->remove();
           chpl_main->insertAtTail(stmt);
           build(stmt);
-          t->add(stmt);
         }
-        return 1;
+        frame->init((Stmt*)last->next);
+        insert_mode_last_break_id = chpl_main->body->body->last()->next->id;
+        break_ids.set_add(insert_mode_last_break_id);
+        return 0;
       }
     }
     // Insert commands in priority order.  First partial match
@@ -1303,12 +1306,14 @@ void
 IFrame::init(Stmt *s) {
   reset();
   ip = stmt = s;
+  function = s->getFunction();
 }
 
 void
 IFrame::init(AList<Stmt> *s) {
   reset();
   ip = stmt = (Stmt*)s->head->next;
+  function = stmt->getFunction();
 }
 
 void
@@ -1682,10 +1687,9 @@ IFrame::iprimitive(CallExpr *s) {
       break;
     }
     case PRIM_ARRAY_INDEX: {
-      check_prim_args(s, AT_LEAST 2);
+      check_prim_args(s, 2);
       check_kind(s, arg[0], OBJECT_ISLOT);
       IObject *a = arg[0]->object;
-      check_prim_args(s, 2);
       check_type(s, arg[1], dtInteger);
       int index = arg[1]->imm->v_int64;
       assert(index < a->array.n);
@@ -1693,10 +1697,9 @@ IFrame::iprimitive(CallExpr *s) {
       break;
     }
     case PRIM_ARRAY_SET: {
-      check_prim_args(s, AT_LEAST 3);
+      check_prim_args(s, 3);
       check_kind(s, arg[0], OBJECT_ISLOT);
       IObject *a = arg[0]->object;
-      check_prim_args(s, 3);
       check_type(s, arg[1], dtInteger);
       int index = arg[1]->imm->v_int64;
       assert(index < a->array.n);
@@ -1704,37 +1707,6 @@ IFrame::iprimitive(CallExpr *s) {
       result = *arg[2];
       break;
     }
-//     case PRIM_ARRAY_INDEX: {
-//       check_prim_args(s, AT_LEAST 2);
-//       check_kind(s, arg[0], OBJECT_ISLOT);
-//       IObject *a = arg[0]->object;
-//       check_prim_args(s, 1 + a->dim.n);
-//       int mult = 1, index = 0;
-//       for (int i = 0; i < a->dim.n; i++) {
-//         check_type(s, arg[1 + i], dtInteger);
-//         mult *= a->dim.v[i];
-//         index = arg[1 + i]->imm->v_int64 + mult * index;
-//       }
-//       assert(index < a->array.n);
-//       result = *a->array.v[index];
-//       break;
-//     }
-//     case PRIM_ARRAY_SET: {
-//       check_prim_args(s, AT_LEAST 3);
-//       check_kind(s, arg[0], OBJECT_ISLOT);
-//       IObject *a = arg[0]->object;
-//       check_prim_args(s, 2 + a->dim.n);
-//       int mult = 1, index = 0;
-//       for (int i = 0; i < a->dim.n; i++) {
-//         check_type(s, arg[1 + i], dtInteger);
-//         mult *= a->dim.v[i];
-//         index = arg[1 + i]->imm->v_int64 + mult * index;
-//       }
-//       assert(index < a->array.n);
-//       *a->array.v[index] = *arg[a->dim.n + 1];
-//       result = *arg[a->dim.n + 1];
-//       break;
-//     }
     case PRIM_CAST: { // cast arg[1] to the type of arg[0]
       check_prim_args(s, 2);
       Immediate imm0, imm1;
@@ -1991,7 +1963,8 @@ IFrame::run(int timeslice) {
     if (timeslice && !--timeslice)
       return timeslice;
     if (break_ids.set_in(ip->id)) {
-      printf("  break at id %d\n", (int)ip->id);
+      if (!insert_mode_last_break_id)
+        printf("  break at id %d\n", (int)ip->id);
       interrupted = 1;
     }
     if (interrupted)
@@ -2451,13 +2424,18 @@ runInterpreter(void) {
   initialize();
   if (run_interpreter > 1)
     interrupted = 1;
+  if (finterpreter_insert_mode) {
+    insert_mode_last_break_id = chpl_main->body->body->last()->next->id;
+    break_ids.set_add(insert_mode_last_break_id);
+  }
   run_program();
   do {
     chpl_interpreter();
-    if (run_interpreter <= 1) 
-      break;
-    if (!finterpreter_insert_mode)
+    if (!finterpreter_insert_mode) {
+      if (run_interpreter <= 1)
+        break;
       printf("  program terminated\n");
+    }
     while (!threads.n) 
       interactive(0);
   } while (1);
