@@ -55336,3 +55336,17 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+01/28/06 23:05:23 -- deitz
+
+Log message:
+	Removed need for ';' in interactive interpreter.
+	
+	Removed def before use error checking.  This should be done in
+	check_normalized rather than during scope resolution.  Expect an error
+	test regression.
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp scopeResolve.cpp 
+
