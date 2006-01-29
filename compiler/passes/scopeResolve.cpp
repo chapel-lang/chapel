@@ -45,26 +45,6 @@ find_outer_loop(Stmt* stmt) {
 }
 
 
-static bool
-symInDefList(Symbol* sym, Map<SymScope*,Vec<Symbol*>*>* defList) {
-  Vec<Symbol*>* sym_defs = defList->get(sym->parentScope);
-  return sym_defs && sym_defs->set_in(sym);
-}
-
-
-static void
-addSymToDefList(DefExpr* def, Map<SymScope*,Vec<Symbol*>*>* defList) {
-  Vec<Symbol*>* syms = defList->get(def->parentScope);
-  if (syms) {
-    syms->set_add(def->sym);
-  } else {
-    syms = new Vec<Symbol*>();
-    syms->set_add(def->sym);
-    defList->put(def->parentScope, syms);
-  }
-}
-
-
 static void
 insertPostLoopLabelStmt(LabelStmt* ls) {
   if (is_loop(ls->next))
@@ -110,7 +90,6 @@ void scopeResolve(void) {
 
 
 void scopeResolve(BaseAST* base) {
-  Map<SymScope*,Vec<Symbol*>*> defList;
   Vec<BaseAST*> asts;
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
@@ -125,15 +104,6 @@ void scopeResolve(BaseAST* base) {
         FnSymbol* fn = dynamic_cast<FnSymbol*>(sym);
         TypeSymbol* type = dynamic_cast<TypeSymbol*>(sym);
         ArgSymbol* arg = dynamic_cast<ArgSymbol*>(sym);
-
-        // Check VarSymbols defined before used
-        if (var &&
-            sym->parentScope->type != SCOPE_CLASS &&
-            sym->getModule() == symExpr->getModule() &&
-            (sym->parentScope->type != SCOPE_MODULE ||
-             symExpr->getFunction() == symExpr->getModule()->initFn) &&
-            !symInDefList(sym, &defList))
-          USR_FATAL(symExpr, "Variable '%s' used before defined", name);
 
         if (sym) {
           if (!fn)
@@ -173,9 +143,6 @@ void scopeResolve(BaseAST* base) {
           }
         }
       }
-    } else if (DefExpr* defExpr = dynamic_cast<DefExpr*>(ast)) {
-      if (dynamic_cast<VarSymbol*>(defExpr->sym))
-        addSymToDefList(defExpr, &defList);
     } else if (LabelStmt* ls = dynamic_cast<LabelStmt*>(ast)) {
       insertPostLoopLabelStmt(ls);
     } else if (GotoStmt* gs = dynamic_cast<GotoStmt*>(ast)) {

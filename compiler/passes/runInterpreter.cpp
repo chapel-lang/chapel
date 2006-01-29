@@ -1147,7 +1147,8 @@ interactive(IFrame *frame) {
         c++;
       else {
         // add string c to program and execute
-        char* line = strndup(c, strlen(c)-1);
+        char* line = strdup(c);
+        line[strlen(line)-1] = ';';
         AList<Stmt>* stmts = parse_string(line); 
         BaseAST *last = chpl_main->body->body->last();
         for_alist(Stmt, stmt, stmts) {
