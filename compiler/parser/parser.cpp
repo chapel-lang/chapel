@@ -31,12 +31,13 @@ static char* filenameToModulename(char* filename) {
 
 ModuleSymbol* ParseFile(char* filename, modType moduletype) {
   yyfilename = filename;
-  yylloc.first_line = yylloc.last_line = yystartlineno = yylineno = 0;
+  yylloc.first_column = yylloc.last_column = yylloc.first_line = yylloc.last_line = yystartlineno = yylineno = 0;
 
   char* modulename = filenameToModulename(filename);
   ModuleSymbol* newModule = Symboltable::startModuleDef(modulename, 
                                                         moduletype);
 
+  yylloc.first_column = yylloc.last_column = 0;
   yylloc.first_line = yylloc.last_line = yystartlineno = yylineno = 1;
   yyin = openInputFile(filename);
   
@@ -60,6 +61,8 @@ ModuleSymbol* ParseFile(char* filename, modType moduletype) {
   }
 
   yyfilename = "<internal>";
+
+  yylloc.first_column = yylloc.last_column = 0;
   yylloc.first_line = yylloc.last_line = yystartlineno = yylineno = -1;
 
   return newModule;

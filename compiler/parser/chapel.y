@@ -54,12 +54,13 @@ Is this "while x"(i); or "while x(i)";?
   static int let_uid = 1;
 
 #define YYLLOC_DEFAULT(Current, Rhs, N)          \
-  (Current).first_line   = (Rhs)[1].first_line;      \
-  if ((Current).first_line) yystartlineno = (Current).first_line; \
-  (Current).first_column = (Rhs)[1].first_column;    \
-  (Current).last_line    = (Rhs)[N].last_line;       \
-  (Current).last_column  = (Rhs)[N].last_column;
-
+  if (N) { \
+    (Current).first_line   = (Rhs)[1].first_line;      \
+    if ((Current).first_line) yystartlineno = (Current).first_line; \
+    (Current).first_column = (Rhs)[1].first_column;    \
+    (Current).last_line    = (Rhs)[N].last_line;       \
+    (Current).last_column  = (Rhs)[N].last_column; \
+  } else (Current) = yylloc;
 %}
 
 %start program

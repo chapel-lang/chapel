@@ -32,6 +32,7 @@ static void addChar(char c) {
 
 void processNewline(void) {
   yylineno++;
+  yylloc.first_column = yylloc.last_column = 0;
   yylloc.first_line = yylloc.last_line = yylineno;
   countNewline();
 }
