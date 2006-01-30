@@ -55361,3 +55361,19 @@ Log message:
 Modified files:
 	chapel/compiler/parser/: chapel.y parser.cpp processTokens.cpp 
 
+---------------------------------------------------------------------------
+
+01/30/06 11:57:12 -- jplevyak
+
+Log message:
+	Fix line number for new YYLOC handling
+
+Modified files:
+	chapel/test/flowanalysis/newast/: chain.good codegen_test.good 
+	                                  globalref.good 
+	                                  multiple_return.good 
+	                                  mutrec.good onearg.good 
+	                                  sum_type-1.good 
+	                                  sum_type-2.good 
+	                                  usebeforedef.good 
+
