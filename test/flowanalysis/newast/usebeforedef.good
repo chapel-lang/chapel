@@ -1,5 +1,5 @@
  called from 1 in __init_usebeforedef at usebeforedef.chpl:3
-::a(usebeforedef.chpl:1) ( int64 )
+::a(usebeforedef.chpl:3) ( int64 )
 function __init_usebeforedef usebeforedef.chpl:3
 function foo usebeforedef.chpl:3
 function main usebeforedef.chpl:3

@@ -1,5 +1,5 @@
  called from 5 in __init_onearg at onearg.chpl:5
-::a(onearg.chpl:8) ( int64 )
+::a(onearg.chpl:1) ( int64 )
 function __init_onearg onearg.chpl:5
 function foo onearg.chpl:1
 function main onearg.chpl:1
