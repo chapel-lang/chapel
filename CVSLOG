@@ -55350,3 +55350,14 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: runInterpreter.cpp scopeResolve.cpp 
 
+---------------------------------------------------------------------------
+
+01/30/06 10:18:17 -- jplevyak
+
+Log message:
+	Handle the line number code for empty productions better.
+	Fix valgrind errors.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y parser.cpp processTokens.cpp 
+
