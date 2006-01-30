@@ -55377,3 +55377,13 @@ Modified files:
 	                                  sum_type-2.good 
 	                                  usebeforedef.good 
 
+---------------------------------------------------------------------------
+
+01/30/06 11:57:48 -- jplevyak
+
+Log message:
+	Fix line numbers
+
+Modified files:
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+
