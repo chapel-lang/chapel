@@ -55387,3 +55387,21 @@ Log message:
 Modified files:
 	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
 
+---------------------------------------------------------------------------
+
+01/30/06 13:55:59 -- jplevyak
+
+Log message:
+	Move tagging of generics into normalize()
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/passes/: Makefile.share normalize.cpp 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+Removed files:
+	chapel/compiler/passes/: preAnalysisCleanup.cpp 
+	                         preAnalysisCleanup.h 
+
