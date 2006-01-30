@@ -21,7 +21,6 @@
 #include "pattern.h"
 #include "clone.h"
 #include "ast.h"
-#include "../passes/preAnalysisCleanup.h"
 
 #define VARARG_END     0ll
 #define MAKE_USER_TYPE_BE_DEFINITION            1

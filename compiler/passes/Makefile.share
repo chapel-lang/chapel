@@ -6,7 +6,6 @@ PASSES_SRCS = \
 	filesToAST.cpp \
         functionResolution.cpp \
 	pass.cpp \
-	preAnalysisCleanup.cpp \
 	printProgram.cpp \
         normalize.cpp \
         resolveAnalyzed.cpp \

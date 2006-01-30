@@ -36,6 +36,8 @@ static void insert_call_temps(CallExpr* call);
 static void fix_user_assign(CallExpr* call);
 static void fix_def_expr(DefExpr* def);
 static void fold_params(Vec<DefExpr*>* defs, Vec<BaseAST*>* asts);
+static int tag_generic(FnSymbol* fn);
+static int tag_generic(Type* fn);
 
 void normalize(void) {
   forv_Vec(ModuleSymbol, mod, allModules) {
@@ -196,6 +198,21 @@ void normalize(BaseAST* base) {
     }
   }
   fold_params(&defs, &asts);
+
+  asts.clear();
+  collect_asts_postorder(&asts, base);
+  int changed = 1;
+  while (changed) {
+    changed = 0;
+    forv_Vec(BaseAST, ast, asts) {
+      if (DefExpr* a = dynamic_cast<DefExpr*>(ast)) {
+        if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(a->sym))
+          changed = tag_generic(ts->definition) || changed;
+        if (FnSymbol *fn = dynamic_cast<FnSymbol*>(a->sym)) 
+          changed = tag_generic(fn) || changed;
+      }
+    }
+  }
 }
 
 
@@ -1141,3 +1158,114 @@ static void fold_params(Vec<DefExpr*>* defs, Vec<BaseAST*>* asts) {
     }
   } while (change);
 }
+
+static int
+checkGeneric(BaseAST *ast, Vec<Symbol *> *genericSymbols = 0) {
+  int result = 0;
+  switch (ast->astType) {
+    case EXPR_SYM: {
+      SymExpr* v = dynamic_cast<SymExpr* >(ast);
+      if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(v->var))
+        if (ts->definition->isGeneric) {
+          if (!genericSymbols)
+            return 1;
+          else {
+            genericSymbols->set_add(ts);
+            result = 1;
+          }
+        }
+      break;
+    }
+    default: break;
+  }
+  DefExpr* def_expr = dynamic_cast<DefExpr*>(ast);
+  if (!def_expr || !dynamic_cast<FnSymbol*>(def_expr->sym)) {
+    Vec<BaseAST *> asts;
+    get_ast_children(ast, asts);
+    forv_BaseAST(a, asts)
+      if (checkGeneric(a, genericSymbols)) {
+        if (!genericSymbols)
+          return 1;
+        else
+          result = 1;
+      }
+  }
+  return result;
+}
+
+static int
+genericFunctionArg(FnSymbol *f, Vec<Symbol *> &genericSymbols) {
+  for (DefExpr* formal = f->formals->first(); formal; 
+       formal = f->formals->next()) {
+    if (ArgSymbol *ps = dynamic_cast<ArgSymbol *>(formal->sym)) {
+      if (TypeSymbol *ts = dynamic_cast<TypeSymbol *>(ps->genericSymbol)) {
+        if (ts->definition->isGeneric) {
+          assert(dynamic_cast<VariableType*>(ts->definition));
+          genericSymbols.set_add(ts);
+          return 1;
+        }
+      }
+      if (ps->type->isGeneric) {
+        genericSymbols.set_add(ps->type->symbol);
+        return 1;
+      }
+      if (ps->intent == INTENT_TYPE || ps->intent == INTENT_PARAM) {
+        genericSymbols.set_add(ps);
+        return 1;
+      }
+    }
+  }
+  return 0;
+}
+
+static int
+tag_generic(FnSymbol *f) {
+  int changed = 0;
+  Vec<Symbol *> genericSymbols;
+  if (genericFunctionArg(f, genericSymbols) || checkGeneric(f->body, &genericSymbols)) {
+    changed = !f->isGeneric || changed;
+    f->isGeneric = 1; 
+    f->genericSymbols.copy(genericSymbols);
+    f->genericSymbols.set_to_vec();
+    qsort(f->genericSymbols.v, f->genericSymbols.n, sizeof(genericSymbols.v[0]), compar_baseast);
+    if (int i = f->nestingDepth()) {
+      for (int j = 1; j <= i; j++) {
+        FnSymbol *ff = f->nestingParent(i);
+        changed = !ff->isGeneric || changed;
+        genericSymbols.set_union(ff->genericSymbols);
+        ff->genericSymbols.copy(genericSymbols);
+        ff->genericSymbols.set_to_vec();
+        qsort(ff->genericSymbols.v, ff->genericSymbols.n, sizeof(genericSymbols.v[0]), compar_baseast);
+        ff->isGeneric = 1;
+      }
+    }
+  }
+  return changed;
+}
+
+static int
+tag_generic(Type *t) {
+  Vec<Symbol *> genericSymbols;
+  forv_Vec(FnSymbol, fn, t->methods)
+    if (fn->isGeneric)
+      genericSymbols.set_union(fn->genericSymbols);
+  if (ClassType *st = dynamic_cast<ClassType *>(t)) {
+    forv_Vec(Symbol, s, st->fields)
+      assert(!dynamic_cast<TypeSymbol*>(s)); // play it safe
+    forv_Vec(TypeSymbol, s, st->types) {
+      if (s->definition->astType == TYPE_VARIABLE) 
+        genericSymbols.set_add(s->definition->symbol);
+      else
+        if (s->definition->isGeneric)
+          genericSymbols.set_union(s->definition->genericSymbols);
+    }    
+  }
+  if (genericSymbols.n) {
+    genericSymbols.set_to_vec();
+    qsort(genericSymbols.v, genericSymbols.n, sizeof(genericSymbols.v[0]), compar_baseast);
+    t->isGeneric = 1;
+    t->genericSymbols.move(genericSymbols);
+  }
+  return genericSymbols.n != 0;
+}
+

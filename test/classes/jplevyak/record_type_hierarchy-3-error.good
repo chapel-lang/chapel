@@ -1,8 +1,8 @@
-_chpl_adomain.chpl:134: fwrite, f : file, x : _aarray
+_chpl_adomain.chpl:144: fwrite, f : file, x : _aarray
 _chpl_adomain.chpl:1: fwrite, f : file, val : _adomain_info
-_chpl_adomain.chpl:38: fwrite, f : file, val : _adomain_lit
-_chpl_adomain.chpl:70: fwrite, f : file, x : _adomain
-_chpl_adomain.chpl:82: fwrite, f : file, val : _aarray_info
+_chpl_adomain.chpl:41: fwrite, f : file, val : _adomain_lit
+_chpl_adomain.chpl:73: fwrite, f : file, x : _adomain
+_chpl_adomain.chpl:85: fwrite, f : file, val : _aarray_info
 _chpl_complex.chpl:8: fwrite, f : file, x : complex
 _chpl_data.chpl:46: fwrite, f : file, val : _fdata
 _chpl_file.chpl:109: fwrite, f : file, val : int64

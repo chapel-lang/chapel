@@ -12,7 +12,6 @@
 #include "../traversals/createConfigVarTable.h"
 #include "../traversals/findTypeVariables.h"
 #include "../traversals/instantiate.h"
-#include "../passes/preAnalysisCleanup.h"
 
 FnSymbol* chpl_main = NULL;
 
@@ -1007,7 +1006,6 @@ instantiate_function(Stmt* pointOfInstantiation, FnSymbol *fn, ASTMap *all_subs,
   instantiate_update_expr(all_subs, defExpr);
   fnClone->instantiatedFrom = fn;
   fnClone->substitutions.copy(*generic_subs);
-  tagGenerics(fnClone);
   for_alist(DefExpr, formal, fnClone->formals) {
     if (ArgSymbol *ps = dynamic_cast<ArgSymbol *>(formal->sym)) {
       if (TypeSymbol *ts = dynamic_cast<TypeSymbol *>(ps->genericSymbol)) {
@@ -1180,7 +1178,6 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
     substitutions.put(retType, clone->definition);
 
     cloneType->substitutions.copy(*generic_substitutions);
-    tagGenerics(cloneType);
 
     Vec<BaseAST*> genericParameters;
     for (int i = 0; i < substitutions.n; i++)

@@ -4,7 +4,6 @@
 #include "../passes/codegen.h"
 #include "../passes/filesToAST.h"
 #include "../passes/functionResolution.h"
-#include "../passes/preAnalysisCleanup.h"
 #include "../passes/printProgram.h"
 #include "../passes/runAnalysis.h"
 #include "../passes/runInterpreter.h"
@@ -44,7 +43,6 @@ REGISTER(inlineFunctions);
 REGISTER(normalize);
 REGISTER(parse);
 REGISTER(passlistTest);
-REGISTER(preAnalysisCleanup);
 REGISTER(pre_instantiate);
 REGISTER(printAST);        // BLC: pretty-prints all or part of the AST
 REGISTER(printProgram);    // BLC: pretty-prints the whole program

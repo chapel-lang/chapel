@@ -22,7 +22,6 @@ PassInfo passlist[] = {
   RUN(functionResolution), // --no-infer function resolution
 
   RUN(pre_instantiate),    // pre-instantiation for analysis
-  RUN(preAnalysisCleanup),
 
   RUN(runInterpreter), // INTERPRETER
                        //   Enabled by -i or --interpreter.
