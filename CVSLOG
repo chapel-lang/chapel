@@ -55415,3 +55415,22 @@ Log message:
 Modified files:
 	chapel/test/modules/bradc/: nestedmodule.good 
 
+---------------------------------------------------------------------------
+
+01/31/06 12:32:32 -- jplevyak
+
+Log message:
+	More cleanup of libifa
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: Makefile.share arg.cpp arg.h cfg.cpp 
+	                      code.h dead.cpp fa.cpp fail.cpp fail.h 
+	                      fun.cpp if1.cpp ssu.cpp sym.cpp var.h 
+	chapel/compiler/ifa/libifa/: COPYRIGHT Makefile ifa_defs.h 
+	                             main.cc 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/util/: files.cpp misc.cpp mysystem.cpp 
+Added files:
+	chapel/compiler/ifa/libifa/: version.cc version.h 
+
