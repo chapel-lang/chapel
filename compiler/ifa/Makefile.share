@@ -9,6 +9,7 @@ IFA_SRCS = \
 	dead.cpp \
 	dom.cpp \
 	fa.cpp \
+	fail.cpp \
 	fun.cpp \
 	graph.cpp \
 	html.cpp \

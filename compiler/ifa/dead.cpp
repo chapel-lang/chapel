@@ -1,4 +1,5 @@
 #include "defs.h"
+#include "fail.h"
 #include "ifa.h"
 #include "pattern.h"
 #include "prim.h"
@@ -156,7 +157,7 @@ mark_dead_code(FA *fa, Fun *top) {
     mark_live_avars(fa);
     mark_live_pnodes(fa);
   } while (mark_live_avars_again);
-  if (verbose_level > 2)
+  if (ifa_verbose > 2)
     print_dead(fa);
   return 0;
 }

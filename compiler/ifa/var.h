@@ -10,7 +10,8 @@ class Sym;
 class PNode;
 class CreationSet;
 typedef MapElem<void *, AVar *> AVarMapElem;
-typedef Map<void *,AVar*> AVarMap;
+typedef Map<void *, AVar*> AVarMap;
+typedef Map<Var *, Var*> VarMap;
 
 extern int var_id;
 
@@ -35,9 +36,12 @@ class Var : public gc {
 #define forv_Var(_p, _v) forv_Vec(Var, _p, _v)
 #define forv_AVarMapElem(_p, _v) forv_Vec(AVarMapElem, _p, _v)
 
-#define Var_is_local(_v, _f) (!(_v)->sym->is_constant && (_v)->sym->in == (_f)->sym && \
-  !(_f)->init_function && !(_v)->sym->is_lvalue && !(_v)->sym->is_var)
-
-typedef Map<Var *, Var *> VarMap;
+#define Var_is_local(_v, _f)            \
+  (!(_v)->sym->is_constant &&           \
+   (_v)->sym->in == (_f)->sym &&       \
+   !(_v)->sym->nesting_depth &&         \
+   !(_f)->init_function &&              \
+   !(_v)->sym->is_lvalue &&             \
+   !(_v)->sym->is_var)
 
 #endif

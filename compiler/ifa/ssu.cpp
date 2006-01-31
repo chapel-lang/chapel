@@ -16,6 +16,7 @@
 #include "pnode.h"
 #include "var.h"
 #include "if1.h"
+#include "fail.h"
 
 static void
 print_classes_nodes(Vec<CQClass*> &cq_classes) {
@@ -87,7 +88,7 @@ print_renamed(Fun *f) {
 
 static void
 print_ssu(Fun *f, Vec<CQClass*> cq_classes, Region *region, Vec<PNode *> nodes) {
-  if (verbose_level > 2) {
+  if (ifa_verbose > 2) {
     printf("%d cq classes\n", cq_classes.n);
     int phi = 0, phy = 0;
     forv_PNode(n, nodes) {
@@ -97,7 +98,7 @@ print_ssu(Fun *f, Vec<CQClass*> cq_classes, Region *region, Vec<PNode *> nodes) 
     printf("%d phi nodes\n", phi);
     printf("%d phy nodes\n", phi);
   }
-  if (verbose_level > 3) {
+  if (ifa_verbose > 3) {
     print_classes_nodes(cq_classes);
     print_classes_edges(cq_classes);
     print_regions_nodes(region, 0);

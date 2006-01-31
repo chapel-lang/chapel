@@ -16,6 +16,7 @@
 #include "version.h"
 #include "../passes/runInterpreter.h"
 #include "chpl_log.h"
+#include "../ifa/fail.h"
 
 
 static void version(ArgumentState *arg_state, char *arg_unused);
@@ -57,9 +58,9 @@ int num_constants_per_variable = 1;
 int instantiation_limit = 12;
 
 static ArgumentDescription arg_desc[] = {
- {"interpret", 'i', "Run in Interpreter (-ii interactive)", "+", &run_interpreter, "CHPL_INTERPRETER", NULL},
- {"insert_mode", 'I', "Interpreter Insert Mode", "T", &finterpreter_insert_mode, "CHPL_INTERPRETER_INSERT_MODE", interpreter_insert_mode},
- {"ast_mode", 'a', "Interpreter AST Mode", "T", &finterpreter_ast_mode, "CHPL_INTERPRETER_AST_MODE", NULL},
+ {"interpreter", 'I', "Start Interpreter in Insert Mode", "T", &finterpreter_insert_mode, "CHPL_INTERPRETER_INSERT", interpreter_insert_mode},
+ {"interpret_program", 'i', "Run Program in Interpreter (-ii for prompt)", "+", &run_interpreter, "CHPL_INTERPRETER", NULL},
+ {"ast_mode", 'a', "Set Interpreter to AST Mode", "T", &finterpreter_ast_mode, "CHPL_INTERPRETER_AST_MODE", NULL},
  {"trace", 's', "Trace Level", "+", &trace_level, "CHPL_TRACE", NULL},
  {"nostdincs", ' ', "No Standard Includes", "T", &fnostdincs, "CHPL_NOSTDINCS", NULL},
  {"nostdincs-but-file", ' ', "No Standard Includes But File", "T", &fnostdincs_but_file, "CHPL_NOSTDINCS_BUT_FILE", NULL},
@@ -104,7 +105,7 @@ static ArgumentDescription arg_desc[] = {
  {"parser-debug", 'D', "Parser Debug Level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},
  {"count-tokens", ' ', "Count Tokens", "F", &countTokens, "CHPL_COUNT_TOKENS", NULL},
  {"print-tokens", ' ', "Print Tokens", "F", &printTokens, "CHPL_PRINT_TOKENS", NULL},
- {"verbose", 'v', "Verbose Level", "+", &verbose_level, "CHPL_VERBOSE", NULL},
+ {"verbose", 'v', "Level of Verbosity", "+", &ifa_verbose, "CHPL_VERBOSE", NULL},
  {"print-commands", ' ', "Print Subprocess Commands", "F", &printSystemCommands, 
   "CHPL_PRINT_COMMANDS", NULL},
  {"print-passes", ' ', "Print Passes", "F", &printPasses, "CHPL_PRINT_PASSES", NULL},

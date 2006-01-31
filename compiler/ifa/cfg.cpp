@@ -3,6 +3,7 @@
 #include "pdb.h"
 #include "fun.h"
 #include "pnode.h"
+#include "fail.h"
 
 typedef void code_fn_t(Code *);
 
@@ -13,7 +14,7 @@ static void build_pn_cfg(IF1 *if1, Code *code, Code *cont, Code *conc_cont);
 // build CFG
 void  
 Fun::build_cfg() {
-  if (verbose_level > 2)
+  if (ifa_verbose > 2)
     if1_dump(stdout, sym->code);
   if (!sym || !sym->code || (sym->code->is_group() && !sym->code->sub.n))
     return;
@@ -28,7 +29,7 @@ static void
 finalize_cfg(Fun *f) {
   Vec<PNode*> nodes;
   f->collect_PNodes(nodes);
-  if (verbose_level > 2)
+  if (ifa_verbose > 2)
     printf("%d cfg nodes\n", nodes.n);
   forv_PNode(p, nodes) {
     p->cfg_pred.set_to_vec();

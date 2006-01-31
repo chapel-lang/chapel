@@ -21,6 +21,7 @@
 #include "pattern.h"
 #include "clone.h"
 #include "ast.h"
+#include "fail.h"
 
 #define VARARG_END     0ll
 #define MAKE_USER_TYPE_BE_DEFINITION            1
@@ -800,7 +801,7 @@ map_baseast(BaseAST *s) {
         }
       }
     }
-    if (verbose_level > 2 && sym->name)
+    if (ifa_verbose > 2 && sym->name)
       printf("map_asts: found Symbol '%s'\n", sym->name);
   } else {
     Type *t = dynamic_cast<Type *>(s);
@@ -832,7 +833,7 @@ map_baseast(BaseAST *s) {
 
 static void
 map_asts(Vec<BaseAST *> &syms) {
-  if (verbose_level > 2)
+  if (ifa_verbose > 2)
     printf("map_asts: %d\n", syms.n);
   forv_BaseAST(s, syms)
     map_baseast(s);
@@ -1995,7 +1996,7 @@ gen_fun(FnSymbol *f) {
 static int
 init_function(FnSymbol *f) {
   Sym *s = f->asymbol->sym;
-  if (verbose_level > 2 && f->name)
+  if (ifa_verbose > 2 && f->name)
     printf("build_functions: %s\n", f->name);
   if (f == chpl_main) {
     if1_set_builtin(if1, s, "init");
@@ -2028,7 +2029,7 @@ build_classes(Vec<BaseAST *> &syms) {
   forv_BaseAST(s, syms)
     if (s->astType == TYPE_CLASS)
       classes.add(dynamic_cast<ClassType*>(s)); 
-  if (verbose_level > 2)
+  if (ifa_verbose > 2)
     printf("build_classes: %d classes\n", classes.n);
   forv_Vec(ClassType, c, classes) {
     Sym *csym = c->asymbol->sym;
@@ -2290,7 +2291,7 @@ print_one_baseast(BaseAST *a) {
 
 static void
 debug_new_ast(Vec<AList<Stmt> *> &stmts, Vec<BaseAST *> &syms) {
-  if (verbose_level > 2) {
+  if (ifa_verbose > 2) {
     forv_Vec(AList<Stmt>*, list, stmts) {
       Stmt* s = list->first();
       while (s) {

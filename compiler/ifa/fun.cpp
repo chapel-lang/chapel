@@ -6,6 +6,7 @@
 #include "ast.h"
 #include "var.h"
 #include "region.h"
+#include "fail.h"
 
 static int fun_id = 1;
 
@@ -37,7 +38,7 @@ Fun::Fun(Sym *asym, int aninit_function) {
   asym->fun = this;
   ast = sym->ast;
   init_fun();
-  if (verbose_level > 2)
+  if (ifa_verbose > 2)
     if (asym->name)
       printf("function %s\n", asym->name);
     else

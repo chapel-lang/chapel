@@ -1,6 +1,9 @@
 /* -*-Mode: c++;-*-
  Copyright 1994-2003 John Plevyak
 */
+#ifndef _arg_H
+#define _arg_H
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -36,3 +39,5 @@ typedef struct ArgumentState {
 void usage(ArgumentState *arg_state, char *arg_unused);
 void process_args(ArgumentState *arg_state, int argc, char **argv);
 void free_args(ArgumentState *arg_state);
+
+#endif

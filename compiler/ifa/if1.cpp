@@ -400,8 +400,7 @@ if1_dump_sym(FILE *fp, Sym *s) {
     fprintf(fp, "(const \"");
     fprint_imm(fp, s->imm);
     fprintf(fp, "\" %d)", s->id);
-  }
-  else
+  } else
     fprintf(fp, "(temp %d)", s->id);
 }
 
@@ -617,10 +616,8 @@ print_code(FILE *fp, Code *code, int indent, int lf) {
 
 void
 print_syms(FILE *fp, Vec<Sym *> *syms, int start = 0) {
-  Sym *s;
-
   for (int i = start; i < syms->n; i++) {
-    s = syms->v[i];
+    Sym *s = syms->v[i];
     if (!s->live)
       continue;
     fputs("(SYMBOL ", fp);

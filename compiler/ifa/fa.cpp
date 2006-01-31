@@ -12,6 +12,7 @@
 #include "clone.h"
 #include "graph.h"
 #include "log.h"
+#include "fail.h"
 
 /* compilation options 
 */
@@ -1936,7 +1937,7 @@ show_type(Vec<CreationSet *> &t, FILE *fp) {
   Vec<Sym *> type;
   forv_CreationSet(cs, t) if (cs) {
     Sym *s = cs->sym;
-    if (!verbose_level)
+    if (!ifa_verbose)
       s = s->type;
     type.set_add(s);
   }
@@ -1990,7 +1991,7 @@ show_fun(Fun *f, FILE *fp) {
     if (s != f->sym->has.v[f->sym->has.n-1])
       fprintf(fp, ", ");
   }
-  if (verbose_level)
+  if (ifa_verbose)
     fprintf(fp, " id:%d", f->sym->id);
 }
 
@@ -2033,7 +2034,7 @@ fa_print_backward(AVar *v, FILE *fp = 0) {
 }
 
 void
-fa_dump_var_types(AVar *av, FILE *fp, int verbose = verbose_level) {
+fa_dump_var_types(AVar *av, FILE *fp, int verbose = ifa_verbose) {
   Var *v = av->var;
   if (verbose < 2 && (!v->sym->name || v->sym->is_symbol))
     return;
@@ -2092,11 +2093,11 @@ show_illegal_type(FILE *fp, ATypeViolation *v) {
   AVar *av = v->av;
   if (av->var->sym->name)
     fprintf(fp, "'%s' ", av->var->sym->name);
-  else if (verbose_level)
+  else if (ifa_verbose)
     fprintf(fp, "expr:%d ", av->var->sym->id);
   else
     fprintf(fp, "expression ");
-  if (verbose_level) {
+  if (ifa_verbose) {
     fprintf(fp, "id:%d ", av->var->sym->id);
     if (av->out->n) {
       fprintf(fp, ": ");
@@ -2129,7 +2130,7 @@ show_call_tree(FILE *fp, PNode *p, EntrySet *es, int depth = 0) {
     for (int x = 0; x < depth; x++)
       fprintf(fp, " ");
     fprintf(fp, "called from %s:%d", p->code->filename(), p->code->line());
-    if (verbose_level && p->lvals.n)
+    if (ifa_verbose && p->lvals.n)
       fprintf(fp, " send:%d", p->lvals.v[0]->sym->id);
     fprintf(fp, "\n");
 
@@ -2259,7 +2260,7 @@ show_violations(FA *fa, FILE *fp) {
         if (v->av->var->sym->is_symbol &&
             v->send->var->def->rvals.v[0] == v->av->var) {
           fprintf(fp, "unresolved call '%s'", v->av->var->sym->name);
-          if (verbose_level)
+          if (ifa_verbose)
             fprintf(fp, " send:%d", v->send->var->sym->id);
           fprintf(fp, "\n");
           show_candidates(fp, v->send->var->def, v->av->var->sym);
@@ -2270,7 +2271,7 @@ show_violations(FA *fa, FILE *fp) {
         break;
       case ATypeViolation_DISPATCH_AMBIGUITY:
         fprintf(fp, "error: ambiguous call '%s'", v->av->var->sym->name);
-        if (verbose_level)
+        if (ifa_verbose)
           fprintf(fp, " send:%d", v->send->var->sym->id);
         fprintf(fp, "\n");
         fprintf(fp, "note: candidates are:\n");
@@ -2307,7 +2308,7 @@ show_violations(FA *fa, FILE *fp) {
       case ATypeViolation_NOTYPE:
         if (v->av->var->sym->name)
           fprintf(fp, "'%s' ", v->av->var->sym->name);
-        else if (verbose_level)
+        else if (ifa_verbose)
           fprintf(fp, "expr:%d ", v->av->var->sym->id);
         else
           fprintf(fp, "expression ");
@@ -2316,7 +2317,7 @@ show_violations(FA *fa, FILE *fp) {
       case ATypeViolation_BOXING:
         if (v->av->var->sym->name)
           fprintf(fp, "'%s' ", v->av->var->sym->name);
-        else if (verbose_level)
+        else if (ifa_verbose)
           fprintf(fp, "expr:%d ", v->av->var->sym->id);
         else
           fprintf(fp, "expression ");
@@ -2427,7 +2428,7 @@ collect_results() {
     }
   }
   // print results
-  if (verbose_level)
+  if (ifa_verbose)
     fa_dump_types(fa, stdout);
   if (fgraph_pass_contours) {
     char fn[2048];
@@ -3681,7 +3682,7 @@ extend_analysis() {
   }
   if (analyze_again) {
     ++analysis_pass;
-    if (verbose_level) printf("extending analysis %d\n", analysis_pass);
+    if (ifa_verbose) printf("extending analysis %d\n", analysis_pass);
     log(LOG_SPLITTING, "======== pass %d ========\n", analysis_pass);
     clear_results();
     return 1;

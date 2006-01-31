@@ -3,10 +3,7 @@
 */
 #include <stdio.h>
 #include "arg.h"
-#include "misc.h"
-#include "stringutil.h"
-#include "chpltypes.h"
-#include "chplalloc.h"
+#include "defs.h"
 
 static char *SPACES = "                                                                               ";
 static char *arg_types_keys = (char *)"IPSDfF+TL";
@@ -27,7 +24,7 @@ static char *arg_types_desc[] = {
 static void 
 bad_flag(char* flag) {
   fprintf(stderr, "Unrecognized flag: '%s' (use '-h' for help)\n", flag);
-  clean_exit(1);
+  exit(1);
 }
 
 
@@ -35,7 +32,7 @@ static void
 missing_arg(char* currentFlag) {
   fprintf(stderr, "Missing argument for flag: '%s' (use '-h' for help)\n", 
           currentFlag);
-  clean_exit(1);
+  exit(1);
 }
 
 
@@ -71,7 +68,7 @@ process_arg(ArgumentState *arg_state, int i, char ***argv, char* currentFlag) {
         default:
           fprintf(stderr, "%s:bad argument description\n", 
                  arg_state->program_name);
-          clean_exit(1);
+          exit(1);
           break;
       }
       **argv += strlen(**argv)-1;
@@ -83,13 +80,12 @@ process_arg(ArgumentState *arg_state, int i, char ***argv, char* currentFlag) {
 
 
 void
-process_args(ArgumentState *arg_state, int argc, char **orig_argv) {
+process_args(ArgumentState *arg_state, int argc, char **aargv) {
   int i, len;
-  char *end;
-  char** argv = (char**)MALLOC((argc+1)*sizeof(char*));
-  for (i=0; i<argc; i++) {
-    argv[i] = stringcpy(orig_argv[i]);
-  }
+  char *end = 0;
+  char **argv = (char**)MALLOC((argc+1)*sizeof(char*));
+  for (i = 0; i < argc; i++)
+    argv[i] = dupstr(aargv[i]);
   argv[i] = NULL;
   ArgumentDescription *desc = arg_state->desc;
   /* Grab Environment Variables */
@@ -120,8 +116,8 @@ process_args(ArgumentState *arg_state, int argc, char **orig_argv) {
   /*
     Grab Command Line Arguments
   */
-  while ( *++argv ) {
-    if ( **argv == '-' ) {
+  while (*++argv) {
+    if (**argv == '-') {
       if ((*argv)[1] == '-') {
         for (i = 0;; i++) {
           if (!desc[i].name)
@@ -133,7 +129,7 @@ process_args(ArgumentState *arg_state, int argc, char **orig_argv) {
           if (len == (int)strlen(desc[i].name) &&
               !strncmp(desc[i].name,(*argv)+2, len))
           {
-            char* currentFlag = stringcpy(*argv);
+            char* currentFlag = dupstr(*argv);
             if (!end)
               *argv += strlen(*argv) - 1;
             else
@@ -222,7 +218,7 @@ usage(ArgumentState *arg_state, char *arg_unused) {
     }
     fprintf(stderr," %s\n",desc[i].description);
   }
-  clean_exit(1);
+  exit(1);
 }
 
 void

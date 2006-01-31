@@ -25,9 +25,7 @@ void testme(Code *);
 class Code : public gc {
  public:
   Code_kind     kind;
-  //the variables this node reads
   Vec<Sym *>    rvals;
-  //the variables this node assigns
   Vec<Sym *>    lvals;
   Label         *label[2];
   Vec<Code *>   sub;
@@ -37,7 +35,7 @@ class Code : public gc {
   char          *pathname();
   char          *filename();
   int           line();
-  int           log_line(); // squelch line number in prelude (for testing)
+  int           log_line(); // prevent printing of headers by setting line number to 0
 
   unsigned int  partial:2;
   unsigned int  live:1;

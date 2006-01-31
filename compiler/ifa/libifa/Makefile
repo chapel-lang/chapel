@@ -87,10 +87,10 @@ DIR = libifa
 AUX_FILES = $(DIR)/Makefile $(DIR)/COPYRIGHT $(DIR)/README $(DIR)/index.html $(DIR)/manual.html $(DIR)/faq.html $(DIR)/ifa.1 $(DIR)/ifa.cat
 TAR_FILES = $(AUX_FILES) $(TEST_FILES)
 
-LIB_SRCS = ast.cc builtin.cc cdb.cc cfg.cc cg.cc clone.cc \
+LIB_SRCS = arg.cc ast.cc builtin.cc cdb.cc cfg.cc cg.cc clone.cc \
 	dead.cc dom.cc fa.cc fail.cc fun.cc graph.cc html.cc if1.cc ifa.cc inline.cc \
 	list.cc log.cc loop.cc map.cc num.cc pattern.cc pdb.cc pnode.cc prim.cc prim_data.cc \
-	region.cc ssu.cc sym.cc var.cc vec.cc
+	region.cc ssu.cc sym.cc var.cc vec.cc version.cc
 LIB_OBJS = $(LIB_SRCS:%.cc=%.o)
 
 IFA_SRCS = main.cc
