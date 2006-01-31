@@ -55405,3 +55405,13 @@ Removed files:
 	chapel/compiler/passes/: preAnalysisCleanup.cpp 
 	                         preAnalysisCleanup.h 
 
+---------------------------------------------------------------------------
+
+01/31/06 12:13:26 -- jplevyak
+
+Log message:
+	Fix line numbers
+
+Modified files:
+	chapel/test/modules/bradc/: nestedmodule.good 
+
