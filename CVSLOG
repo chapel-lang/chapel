@@ -55486,3 +55486,17 @@ Log message:
 Modified files:
 	chapel/compiler/util/: mysystem.cpp 
 
+---------------------------------------------------------------------------
+
+02/01/06 13:08:24 -- deitz
+
+Log message:
+	Fixup of demo folder to eliminate regressions of it.  Futurized
+	iterators test.
+
+Added files:
+	chapel/test/demo/review_060130/: iterators.future 
+	                                 jacobi2.compopts 
+Removed files:
+	chapel/test/demo/review_060130/: history_accumulator2.chpl 
+
