@@ -55476,3 +55476,13 @@ Modified files:
 	chapel/test/compflags/bradc/missinginfile/: test.good 
 	chapel/test/compflags/bradc/onebadfile/: badfile.good 
 
+---------------------------------------------------------------------------
+
+02/01/06 09:19:27 -- jplevyak
+
+Log message:
+	Regularize error messages
+
+Modified files:
+	chapel/compiler/util/: mysystem.cpp 
+
