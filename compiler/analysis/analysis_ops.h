@@ -46,6 +46,7 @@ _EXTERN AnalysisOp *exp_analysis_op _INIT;
 _EXTERN AnalysisOp *get_member_analysis_op _INIT;
 _EXTERN AnalysisOp *set_member_analysis_op _INIT;
 _EXTERN AnalysisOp *cast_analysis_op _INIT;
+_EXTERN AnalysisOp *type_equal_analysis_op _INIT;
 _EXTERN AnalysisOp *alloc_analysis_op _INIT;
 
 #endif

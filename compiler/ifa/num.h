@@ -50,6 +50,11 @@ class Immediate : public gc { public:
     num_index = IF1_INT_TYPE_64;
     v_int64 = l;
   }
+  void set_bool(bool b) {
+    const_kind = IF1_NUM_KIND_UINT;
+    num_index = IF1_INT_TYPE_1;
+    v_bool = b;
+  }
   Immediate& operator=(const Immediate&);
   Immediate& operator=(bool b) {
     const_kind = IF1_NUM_KIND_UINT;

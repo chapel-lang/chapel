@@ -2313,7 +2313,15 @@ debug_new_ast(Vec<AList<Stmt> *> &stmts, Vec<BaseAST *> &syms) {
 }
 
 static void
-cast_value(PNode *pn, EntrySet *es) {
+type_equal_transfer_function(PNode *pn, EntrySet *es) {
+  AVar *result = make_AVar(pn->lvals.v[0], es);
+  //AVar *type = make_AVar(pn->rvals.v[2], es);
+  //AVar *val = make_AVar(pn->rvals.v[3], es);
+  update_gen(result, make_abstract_type(sym_bool));
+}
+
+static void
+cast_value_transfer_function(PNode *pn, EntrySet *es) {
   assert(pn->rvals.n == 4);
   AVar *result = make_AVar(pn->lvals.v[0], es);
   AVar *type = make_AVar(pn->rvals.v[2], es);
@@ -2702,7 +2710,7 @@ return_type_info(FnSymbol *fn) {
 }
 
 int
-call_info(Expr *a, Vec<FnSymbol *> &fns, int find_type) {
+call_info(Expr *a, Vec<FnSymbol *> &fns, Vec<Vec<Vec<Type *> *> *> *dispatch) {
   FnSymbol* f = a->getFunction();
   fns.clear();
   if (!f) // this is not executable code
@@ -2711,10 +2719,9 @@ call_info(Expr *a, Vec<FnSymbol *> &fns, int find_type) {
   IFAAST *ast = a->ainfo;
   if (!ast)
     return -1; // this code is not known to analysis
-  PNode *found_pn = NULL;
+  Vec<Fun *> ff, allff;
   forv_PNode(pn, ast->pnodes) {
-    Vec<Fun *> ff, allff;
-    if (pn->code->kind != Code_SEND)
+    if (pn->code->kind != Code_SEND) 
       continue;
     forv_EntrySet(es, fun->ess) {
       Vec<AEdge *> *edges = es->out_edge_map.get(pn);
@@ -2734,24 +2741,43 @@ call_info(Expr *a, Vec<FnSymbol *> &fns, int find_type) {
         }
       }
     }
-    if (!ff.n)
-      ff.move(allff);
-    Vec<Fun *> *fff = fun->calls.get(pn);
-    if (fff)
-      assert(!ff.some_difference(*fff));
-    ff.set_to_vec();
-    qsort_by_id(ff);
-    forv_Fun(f, ff) {
-      FnSymbol *fs = dynamic_cast<FnSymbol *>(SYMBOL(f->sym));
-      assert(fs);
-      switch (find_type) {
-        case CALL_INFO_FIND_SINGLE: break;
-        case CALL_INFO_FIND_ALL: break;
+  }
+  if (!ff.n)
+    ff.move(allff);
+  ff.set_to_vec();
+  qsort_by_id(ff);
+  if (dispatch) {
+    dispatch->fill(ff.n);
+    for (int i = 0; i < ff.n; i++)
+      dispatch->v[i] = new Vec<Vec<Type *> *>;
+  }
+  for (int i = 0; i < ff.n; i++) {
+    Fun *f = ff.v[i];
+    FnSymbol *fs = dynamic_cast<FnSymbol *>(SYMBOL(f->sym));
+    fns.add(fs);
+    if (dispatch) {
+      forv_PNode(pn, ast->pnodes) {
+        if (pn->code->kind != Code_SEND) 
+          continue;
+        forv_EntrySet(es, fun->ess) {
+          Vec<AEdge *> *edges = es->out_edge_map.get(pn);
+          if (edges) {
+            forv_AEdge(e, *edges) {
+              if (e->fun == f) {
+                dispatch->v[i]->fill(f->positional_arg_positions.n);
+                for (int j = 0; j < f->positional_arg_positions.n; j++) {
+                  MPosition *x = f->positional_arg_positions.v[j];
+                  AType *filter = e->match->formal_filters.get(x);
+                  if (!dispatch->v[i]->v[j])
+                    dispatch->v[i]->v[j] = new Vec<Type *>;
+                  forv_CreationSet(cs, filter->sorted)
+                    dispatch->v[i]->v[j]->set_add(to_AST_type(cs->sym->type));
+                }
+              }
+            }
+          }
+        }
       }
-      if (found_pn && found_pn != pn && find_type != CALL_INFO_FIND_ALL)
-        fail("bad call to call_info");
-      found_pn = pn;
-      fns.add(fs);
     }
   }
   return 0;
@@ -2964,7 +2990,8 @@ init_chapel_ifa() {
   exp_analysis_op = P("**", prim_exp);
   get_member_analysis_op = P(".", prim_period);
   set_member_analysis_op = P(".=", prim_setter);
-  cast_analysis_op = S("cast", cast_value);
+  cast_analysis_op = S("cast", cast_value_transfer_function);
+  type_equal_analysis_op = S("type_equal", type_equal_transfer_function);
   alloc_analysis_op = S("alloc", alloc_transfer_function);
 }
 

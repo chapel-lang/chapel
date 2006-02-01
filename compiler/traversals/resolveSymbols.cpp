@@ -11,6 +11,64 @@
 #include "stringutil.h"
 
 
+static Expr *
+build_dispatch_tree(CallExpr *call, Vec<FnSymbol*> &fns, Vec<Vec<Vec<Type *> *> *> &dispatch, int a) {
+  if (a >= dispatch.v[0]->n) {
+    if (fns.set_count() != 1) {
+      USR_FATAL(call, "Unable to build table dispatch for ambiguous call");
+    }
+    return new CallExpr(fns.first(), call->argList->copy());
+  }
+  Vec<Type *> *t = 0;
+  for (int i = 0; i < fns.n; i++) {
+    if (fns.v[i]) {
+      if (!t) {
+        t = dispatch.v[i]->v[a];
+        continue;
+      }
+      Vec<Type *> diff;
+      t->set_disjunction(*dispatch.v[i]->v[a], diff);
+      if (diff.n) {
+        Type *type = diff.first();
+        Vec<FnSymbol *> true_fns, false_fns;
+        true_fns.fill(fns.n);
+        false_fns.fill(fns.n);
+        for (int i = 0; i < fns.n; i++) {
+          if (fns.v[i]) {
+            if (dispatch.v[i]->v[a]->set_in(type))
+              true_fns.v[i] = fns.v[i];
+            else
+              false_fns.v[i] = fns.v[i];
+          }
+        }
+        Expr *true_expr = 0, *false_expr = 0;
+        if (true_fns.set_count() == 1)
+          true_expr = new CallExpr(true_fns.first(), call->argList->copy());
+        else
+          true_expr = build_dispatch_tree(call, true_fns, dispatch, a + 1);
+        if (false_fns.set_count() == 1)
+          false_expr = new CallExpr(false_fns.first(), call->argList->copy());
+        else
+          false_expr = build_dispatch_tree(call, false_fns, dispatch, a);
+        return new CondExpr(new CallExpr(PRIMITIVE_TYPE_EQUAL, 
+                                         new SymExpr(type->symbol), 
+                                         call->argList->get(a)->copy()), 
+                            true_expr, false_expr);
+      }
+    }
+  }
+  return build_dispatch_tree(call, fns, dispatch, a+1);
+}
+
+static void
+dynamic_dispatch(CallExpr *call) {
+  Vec<Vec<Vec<Type *> *> *> dispatch;
+  Vec<FnSymbol*> fns;
+  call_info(call, fns, &dispatch);
+  Expr *new_expr = build_dispatch_tree(call, fns, dispatch, 1);  // FORTRAN NUMBERING
+  call->replace(new_expr);
+}
+
 void ResolveSymbols::postProcessExpr(Expr* expr) {
   if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
     if (call->isPrimitive(PRIMITIVE_GET_MEMBER) ||
@@ -50,8 +108,10 @@ void ResolveSymbols::postProcessExpr(Expr* expr) {
         } else {
           if (call->partialTag != PARTIAL_NEVER)
             return;
-          if (fns.n > 1)
-            USR_WARNING(expr, "Dynamic dispatch not yet supported");
+          if (fns.n > 1) {
+            dynamic_dispatch(call);
+            return;
+          }
           INT_FATAL(expr, "Unable to resolve function");
           return;
         }
@@ -109,3 +169,4 @@ void resolveSymbols(void) {
   Pass* pass = new ResolveSymbols();
   pass->run(Symboltable::getModules(pass->whichModules));
 }
+

@@ -810,6 +810,13 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_CHPL_ALLOC:
       INT_FATAL(this, "Unexpected"); break;
       break;
+    case PRIMITIVE_TYPE_EQUAL: {
+      int tid = (int)dynamic_cast<TypeSymbol*>(dynamic_cast<SymExpr*>(get(1))->var)->definition->id;
+      fprintf(outfile, "(_chpl_alloc_id(");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ") == %d)", tid);
+      break;
+    }
     case NUM_KNOWN_PRIMS:
       INT_FATAL(this, "Impossible"); break;
       break;
@@ -824,9 +831,9 @@ void CallExpr::codegen(FILE* outfile) {
   if (SymExpr* variable = dynamic_cast<SymExpr*>(baseExpr)) {
     if (!strcmp(variable->var->name, "_chpl_alloc")) {
       Type *t = variable->getFunction()->retType;
-      fprintf(outfile, "(%s)_chpl_malloc(1, sizeof(_", t->symbol->cname);
+      fprintf(outfile, "_chpl_alloc(sizeof(_");
       t->codegen(outfile);
-      fprintf(outfile, "), ");
+      fprintf(outfile, "), %d, ", (int)t->id);
       argList->get(2)->codegen(outfile);
       fprintf(outfile, ")");
       return;

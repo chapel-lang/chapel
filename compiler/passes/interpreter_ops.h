@@ -10,6 +10,7 @@ class InterpreterOp;
 
 _EXTERN InterpreterOp *unimplemented_interpreter_op _INIT;
 _EXTERN InterpreterOp *init_interpreter_op _INIT;
+_EXTERN InterpreterOp *type_equal_interpreter_op _INIT;
 _EXTERN InterpreterOp *alloc_interpreter_op _INIT;
 _EXTERN InterpreterOp *fopen_interpreter_op _INIT;
 _EXTERN InterpreterOp *fclose_interpreter_op _INIT;

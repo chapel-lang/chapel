@@ -383,6 +383,11 @@ static void printToMemLog(size_t number, size_t size, char* description,
   }
 }
 
+void* _chpl_alloc(size_t size, _integer64 id, char* description) {
+  _integer64 *ptr = (_integer64*)_chpl_malloc(1, size + sizeof(_integer64), description);
+  *ptr = id;
+  return (void*)(ptr + 1);
+}
 
 void* _chpl_malloc(size_t number, size_t size, char* description) {
   size_t chunk = number * size;

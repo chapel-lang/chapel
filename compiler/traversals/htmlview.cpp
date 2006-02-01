@@ -220,7 +220,7 @@ void HtmlView::postProcessExpr(Expr* expr) {
   }
   if (show_analysis_info && expr->parentSymbol) {
     Vec<FnSymbol *> fns;
-    call_info(expr, fns, CALL_INFO_FIND_ALL);
+    call_info(expr, fns);
     if (fns.n) {
       write(" calls: ");
       for (int i = 0; i < fns.n; i++) {

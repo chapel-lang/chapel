@@ -145,7 +145,7 @@ struct IThread : public gc { public:
 };
 
 enum PrimOps {
-  PRIM_NONE, PRIM_INIT, PRIM_ALLOC, PRIM_FOPEN, PRIM_FCLOSE,
+  PRIM_NONE, PRIM_INIT, PRIM_ALLOC, PRIM_TYPE_EQUAL, PRIM_FOPEN, PRIM_FCLOSE,
   PRIM_STRERROR, PRIM_FPRINTF, PRIM_FSCANF, PRIM_ARRAY_INIT, PRIM_ARRAY_INDEX,
   PRIM_ARRAY_SET, PRIM_UNARY_MINUS, PRIM_UNARY_PLUS,
   PRIM_UNARY_NOT, PRIM_UNARY_LNOT, PRIM_ADD,
@@ -450,6 +450,22 @@ IFrame::make_closure(int nargs) {
   for (int i = 0; i < nargs; i++)
     slot->closure_args->add(args[i]);
   return slot;
+}
+
+static Type *
+slot_type(ISlot *slot) {
+  switch (slot->kind) {
+  default:
+    break;
+  case SELECTOR_ISLOT: 
+  case SYMBOL_ISLOT: 
+    return slot->symbol->type;
+  case OBJECT_ISLOT:
+    return slot->object->type;
+  case IMMEDIATE_ISLOT:
+    return immediate_type(slot->imm);
+  }
+  return NULL;
 }
 
 void
@@ -1582,6 +1598,12 @@ IFrame::iprimitive(CallExpr *s) {
       }
       break;
     }
+    case PRIM_TYPE_EQUAL: {
+      check_prim_args(s, 2);
+      TypeSymbol *ts = check_TypeSymbol(s, arg[0]);
+      result.imm->set_bool(slot_type(arg[1]) == ts->definition);
+      break;
+    }
     case PRIM_FOPEN: {
       check_prim_args(s, 2);
       check_string(s, arg[0]);
@@ -2447,6 +2469,7 @@ runInterpreter(void) {
 void 
 init_interpreter() {
   init_interpreter_op = new InterpreterOp("init", PRIM_INIT);
+  type_equal_interpreter_op = new InterpreterOp("type_equal", PRIM_TYPE_EQUAL);
   alloc_interpreter_op = new InterpreterOp("alloc", PRIM_ALLOC);
   fopen_interpreter_op = new InterpreterOp("fopen", PRIM_FOPEN);
   fclose_interpreter_op = new InterpreterOp("fclose", PRIM_FCLOSE);

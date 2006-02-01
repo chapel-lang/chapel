@@ -51,6 +51,7 @@ initPrimitive() {
   prim_def(PRIMITIVE_EXP, "**", exp_interpreter_op, exp_analysis_op);
   prim_def(PRIMITIVE_GET_MEMBER, ".", get_member_interpreter_op, get_member_analysis_op);
   prim_def(PRIMITIVE_SET_MEMBER, ".=", set_member_interpreter_op, set_member_analysis_op);
+  prim_def(PRIMITIVE_TYPE_EQUAL, "type_equal", type_equal_interpreter_op, type_equal_analysis_op);
   prim_def(PRIMITIVE_CHPL_ALLOC, "chpl_alloc", alloc_interpreter_op, alloc_analysis_op);
 
   prim_def("sizeof", unimplemented_interpreter_op, unimplemented_analysis_op);

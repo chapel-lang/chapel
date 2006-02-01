@@ -1,10 +1,9 @@
 #include "defs.h"
-#include "arg.h"
 #include "version.h"
 #include "log.h"
 
-static  int fhtml = 0;
-static  int fgraph = 0;
+static int fhtml = 0;
+static int fgraph = 0;
 static int fgraph_vcg = 0;
 static char log_flags[512] = "";
 

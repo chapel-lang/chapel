@@ -86,8 +86,8 @@ typedef struct { float64 r; float64 i; } complex64;
 extern int ifa_verbose;
 extern int ifa_debug;
 
-#define dbg if (debug_level) printf
-#define DBG(_x) if (debug_level) { _x; }
+#define dbg if (ifa_debug) printf
+#define DBG(_x) do { if (ifa_debug) { _x; } } while (0);
 
 #include "list.h"
 #include "vec.h"
