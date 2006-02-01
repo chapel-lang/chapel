@@ -55500,3 +55500,18 @@ Added files:
 Removed files:
 	chapel/test/demo/review_060130/: history_accumulator2.chpl 
 
+---------------------------------------------------------------------------
+
+02/01/06 15:26:49 -- deitz
+
+Log message:
+	Reworked 'use before def' error detection fixing many, but not all, of
+	the bugs that crept in.  The rest of the fix coming soon.
+
+Modified files:
+	chapel/compiler/passes/: semanticChecks.cpp 
+	chapel/test/arrays/deitz/: test_domain2D.chpl 
+	chapel/test/functions/deitz/hips06/: fibonacci_squares.chpl 
+Added files:
+	chapel/test/arrays/deitz/: test_array_basic1a.future 
+
