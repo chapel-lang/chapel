@@ -122,6 +122,27 @@ check_normalized_functions(FnSymbol* fn) {
 }
 
 
+static void
+check_normalized_def_before_use(FnSymbol* fn) {
+  Vec<Symbol*> defined;
+  Vec<BaseAST*> asts;
+  collect_asts(&asts, fn);
+  forv_Vec(BaseAST, ast, asts) {
+    if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
+      defined.set_add(def->sym);
+    } else if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
+      if (!dynamic_cast<TypeSymbol*>(sym->var)) {
+        if (sym->var->defPoint && sym->var->defPoint->parentSymbol == fn) {
+          if (!defined.set_in(sym->var)) {
+            USR_FATAL(sym, "Variable '%s' used before defined", sym->var->name);
+          }
+        }
+      }
+    }
+  }
+}
+
+
 void
 check_normalized(void) {
   compute_sym_uses();
@@ -136,6 +157,7 @@ check_normalized(void) {
       check_normalized_vars(a);
     } else if (FnSymbol* a = dynamic_cast<FnSymbol*>(ast)) {
       check_normalized_functions(a);
+      check_normalized_def_before_use(a);
     } else if (SymExpr* a = dynamic_cast<SymExpr*>(ast)) {
       CallExpr* parent = dynamic_cast<CallExpr*>(a->parentExpr);
       if (!(parent && parent->baseExpr == a))

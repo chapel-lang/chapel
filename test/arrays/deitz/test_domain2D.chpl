@@ -35,7 +35,7 @@ class mydomain {
       }
     }
   }
-  iterator dforall(d : integer) {
+  iterator dforall(d : integer) : integer {
     var low : integer;
     select d {
       when 1 do low = info0.low;
@@ -52,7 +52,7 @@ class mydomain {
       yield i;
     }
   }
-  iterator dfor(d : integer) {
+  iterator dfor(d : integer) : integer {
     var low : integer;
     select d {
       when 1 do low = info0.low;

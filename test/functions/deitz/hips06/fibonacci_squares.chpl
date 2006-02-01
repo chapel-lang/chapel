@@ -1,4 +1,4 @@
-iterator fibonacci(n) {
+iterator fibonacci(n):integer {
   var i1 = 0, i2 = 1;
   var i = 0;
   while i <= n {
