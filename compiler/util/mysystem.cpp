@@ -17,9 +17,9 @@ int mysystem(const char* command, char* description, int ignorestatus) {
   }
 
   if (status == -1) {
-    INT_FATAL("system() fork failed");
+    USR_FATAL("system() fork failed");
   } else if (status != 0 && !ignorestatus) {
-    INT_FATAL(description);
+    USR_FATAL(description);
   }
 
   return status;

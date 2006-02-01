@@ -170,7 +170,7 @@ static FILE* openfile(char* outfilename, char* mode = "w") {
     char* errormsg = stringcat(errorstr, outfilename, ": ", 
                                  strerror(errno));
 
-    INT_FATAL(errormsg);
+    USR_FATAL(errormsg);
   }
 
   return outfile;
@@ -182,7 +182,7 @@ static void closefile(FILE* thefile) {
     char* errorstr = "closing file: ";
     char* errormsg = stringcat(errorstr, strerror(errno));
 
-    INT_FATAL(errormsg);
+    USR_FATAL(errormsg);
   }
 }
 
