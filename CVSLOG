@@ -55434,3 +55434,33 @@ Modified files:
 Added files:
 	chapel/compiler/ifa/libifa/: version.cc version.h 
 
+---------------------------------------------------------------------------
+
+01/31/06 19:05:55 -- jplevyak
+
+Log message:
+	Add new primitive PRIMITIVE_TYPE_EQUAL to test that a TypeSymbol
+	matches the runtime type of some Expr.
+	  This is supported in the interpreter, analysis, and in the runtime.
+	Added a new macro _chpl_alloc in the runtime to tag ClassType objects
+	  with their runtime type.  This is done by backing up the pointer
+	  sizeof(_integer64) and then assigning Type::id to this hidden
+	  location.
+	Added support for converting dynamic dispatch into tree of
+	  CondExpr.
+	    - this results in a compile-time error for test_inherit3.chpl
+	call_info() now optionally returns a Vec<Vec<Vec<Type *> *> *> *dispatch
+	  which contains for each function for each argument the set of
+	    Type's which dispatch to that function for that argument.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp 
+	chapel/compiler/analysis/: analysis_ops.h chapel_ifa.cpp 
+	chapel/compiler/ifa/: fa.cpp num.h 
+	chapel/compiler/ifa/libifa/: ifa_defs.h main.cc 
+	chapel/compiler/include/: analysis.h primitive.h 
+	chapel/compiler/passes/: interpreter_ops.h runInterpreter.cpp 
+	chapel/compiler/traversals/: htmlview.cpp resolveSymbols.cpp 
+	chapel/runtime/include/: chplmem.h 
+	chapel/runtime/src/: chplmem.c 
+
