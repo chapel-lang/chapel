@@ -55623,3 +55623,15 @@ Modified files:
 	chapel/compiler/ifa/libifa/: ast_to_if1.cc parse.cc prelude.v 
 	                             v.g 
 
+---------------------------------------------------------------------------
+
+02/02/06 14:58:31 -- deitz
+
+Log message:
+	Fixed the rest of the 'use before def' regressions.  These errors are
+	now once again detected.
+
+Modified files:
+	chapel/compiler/passes/: scopeResolve.cpp semanticChecks.cpp 
+	chapel/test/trivial/deitz/: test_scope2.chpl 
+
