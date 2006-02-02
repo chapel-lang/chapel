@@ -55515,3 +55515,19 @@ Modified files:
 Added files:
 	chapel/test/arrays/deitz/: test_array_basic1a.future 
 
+---------------------------------------------------------------------------
+
+02/01/06 16:32:00 -- jplevyak
+
+Log message:
+	Library test code.
+
+Modified files:
+	chapel/compiler/ifa/: ast.h fail.cpp 
+	chapel/compiler/ifa/libifa/: Makefile ifa_defs.h main.cc 
+Added files:
+	chapel/compiler/ifa/libifa/: ast_kinds.h ast_to_if1.cc 
+	                             ast_to_if1.h c.g parse.cc parse.h 
+	                             parse_structs.h prelude.v scope.cc 
+	                             scope.h v.g 
+
