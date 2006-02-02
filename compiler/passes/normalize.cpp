@@ -205,11 +205,11 @@ void normalize(BaseAST* base) {
   while (changed) {
     changed = 0;
     forv_Vec(BaseAST, ast, asts) {
+      if (FnSymbol *fn = dynamic_cast<FnSymbol*>(ast)) 
+        changed = tag_generic(fn) || changed;
       if (DefExpr* a = dynamic_cast<DefExpr*>(ast)) {
         if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(a->sym))
           changed = tag_generic(ts->definition) || changed;
-        if (FnSymbol *fn = dynamic_cast<FnSymbol*>(a->sym)) 
-          changed = tag_generic(fn) || changed;
       }
     }
   }
@@ -1209,7 +1209,7 @@ genericFunctionArg(FnSymbol *f, Vec<Symbol *> &genericSymbols) {
         genericSymbols.set_add(ps->type->symbol);
         return 1;
       }
-      if (ps->intent == INTENT_TYPE || ps->intent == INTENT_PARAM) {
+      if (ps->intent == INTENT_PARAM) {
         genericSymbols.set_add(ps);
         return 1;
       }
