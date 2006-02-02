@@ -55571,3 +55571,13 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: normalize.cpp 
 
+---------------------------------------------------------------------------
+
+02/01/06 16:49:12 -- jplevyak
+
+Log message:
+	Mirror isGeneric from the AST to IF1
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+
