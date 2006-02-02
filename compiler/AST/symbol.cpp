@@ -670,7 +670,7 @@ FnSymbol::copyInner(ASTMap* map) {
                                 retRef);
   copy->cname = cname;
   copy->isSetter = isSetter;
-  copy->isGeneric = isGeneric;
+  copy->isGeneric = false;  // set in normalize()
   copy->_this = _this;
   copy->_setter = _setter;
   copy->_getter = _getter; // If it is a cloned class we probably want
