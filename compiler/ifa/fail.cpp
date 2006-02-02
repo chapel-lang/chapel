@@ -120,7 +120,8 @@ dupstr(char *s, char *e) {
   return ss;
 }
 
-void myassert(char *file, int line, char *str) {
+void 
+myassert(char *file, int line, char *str) {
   printf("assert %s:%d: %s\n", file, line, str);
   *(int*)0 = 1;
 }

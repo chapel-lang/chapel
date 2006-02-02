@@ -11,8 +11,6 @@ class Fun;
 class PNode;
 class Sym;
 class IF1;
-class AST;
-class BaseAST;
 class Var;
 
 class ASTCopyContext : public gc {

@@ -85,6 +85,8 @@ typedef struct { float64 r; float64 i; } complex64;
 
 extern int ifa_verbose;
 extern int ifa_debug;
+extern char system_dir[512];
+extern int parser_verbose_non_prelude;
 
 #define dbg if (ifa_debug) printf
 #define DBG(_x) do { if (ifa_debug) { _x; } } while (0);
@@ -106,12 +108,5 @@ extern int ifa_debug;
 #include "pdb.h"
 #include "clone.h"
 #include "cg.h"
-
-#ifdef __CYGWIN__
-// cygwin assert busted 
-#undef assert
-void myassert();
-#define assert(_x) if (!(_x)) myassert()
-#endif
 
 #endif

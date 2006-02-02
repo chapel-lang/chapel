@@ -1,8 +1,8 @@
 # Makefile for IF1 library
 
-# ******************************
-# ***** User Level Options ***** 
-# ******************************
+# ************************
+# ***** User Options ***** 
+# ************************
 
 DEBUG=1
 #OPTIMIZE=1
@@ -14,9 +14,12 @@ ifndef PREFIX
 PREFIX=/usr/local
 endif
 
-# **********************************
-# ***** End User Level Options *****
-# **********************************
+MAKE_DPARSER = make_dparser
+LDFLAGS += -L/usr/local/lib 
+
+# ***************************
+# ***** Makefile Proper *****
+# ***************************
 
 MAJOR=0
 MINOR=1
@@ -80,7 +83,7 @@ endif
 
 CPPFLAGS += $(CFLAGS)
 
-LIBS += -lm 
+LIBS += -lm -ldparse_gc -lgc
 
 DIR = libifa
 
@@ -93,7 +96,7 @@ LIB_SRCS = arg.cc ast.cc builtin.cc cdb.cc cfg.cc cg.cc clone.cc \
 	region.cc ssu.cc sym.cc var.cc vec.cc version.cc
 LIB_OBJS = $(LIB_SRCS:%.cc=%.o)
 
-IFA_SRCS = main.cc
+IFA_SRCS = main.cc parse.cc scope.cc make_ast.cc ast_to_if1.cc v.g.d_parser.cc
 IFA_OBJS = $(IFA_SRCS:%.cc=%.o)
 
 EXECUTABLE_FILES = ifa
@@ -149,6 +152,9 @@ ifa.a:	$(LIB_OBJS)
 ifa.cat: ifa.1
 	rm -f ifa.cat
 	nroff -man ifa.1 | sed -e 's/.//g' > ifa.cat
+
+%.g.d_parser.cc: %.g
+	$(MAKE_DPARSER) -v -Xcc -I $<
 
 tar:
 	(cd ..;tar czhf libifa-$(RELEASE)-src.tar.gz libifa/*.cc $(DIR)/*.h $(TAR_FILES)) 
