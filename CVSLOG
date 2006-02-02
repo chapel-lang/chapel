@@ -55581,3 +55581,14 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: chapel_ifa.cpp 
 
+---------------------------------------------------------------------------
+
+02/01/06 16:49:45 -- jplevyak
+
+Log message:
+	isGeneric is computed in normalize, so it shouldn't be copied
+	when the FnSymbol is copied
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
