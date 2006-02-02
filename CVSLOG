@@ -55560,3 +55560,14 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+02/01/06 16:48:34 -- jplevyak
+
+Log message:
+	Just because something has a parameter of INTENT_TYPE it isn't
+	necessarily generic (it could have been instantiated).
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+
