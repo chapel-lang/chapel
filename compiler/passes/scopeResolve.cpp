@@ -130,19 +130,6 @@ void scopeResolve(BaseAST* base) {
           }
         }
       }
-    } else if (CallExpr* callExpr = dynamic_cast<CallExpr*>(ast)) {
-      if (callExpr->isPrimitive(PRIMITIVE_GET_MEMBER) || callExpr->isPrimitive(PRIMITIVE_SET_MEMBER)) {
-        if (FnSymbol* fn = dynamic_cast<FnSymbol*>(callExpr->parentSymbol)) {
-          if (fn->_getter || fn->_setter) {
-            ClassType* ct = dynamic_cast<ClassType*>(fn->typeBinding->definition);
-            Symbol* sym = Symboltable::lookupFromScope(
-              dynamic_cast<VarSymbol*>(dynamic_cast<SymExpr*>(callExpr->get(2))->var)->immediate->v_string,
-              ct->structScope);
-            if (dynamic_cast<VarSymbol*>(sym))
-              callExpr->member = sym;
-          }
-        }
-      }
     } else if (LabelStmt* ls = dynamic_cast<LabelStmt*>(ast)) {
       insertPostLoopLabelStmt(ls);
     } else if (GotoStmt* gs = dynamic_cast<GotoStmt*>(ast)) {

@@ -126,18 +126,21 @@ static void
 check_normalized_def_before_use(FnSymbol* fn) {
   Vec<Symbol*> defined;
   Vec<BaseAST*> asts;
-  collect_asts(&asts, fn);
+  collect_asts_postorder(&asts, fn);
   forv_Vec(BaseAST, ast, asts) {
-    if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
-      defined.set_add(def->sym);
+    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+      if (call->isPrimitive(PRIMITIVE_MOVE))
+        defined.set_add(dynamic_cast<SymExpr*>(call->get(1))->var);
     } else if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
-      if (!dynamic_cast<TypeSymbol*>(sym->var)) {
-        if (sym->var->defPoint && sym->var->defPoint->parentSymbol == fn) {
-          if (!defined.set_in(sym->var)) {
-            USR_FATAL(sym, "Variable '%s' used before defined", sym->var->name);
-          }
-        }
-      }
+      if (CallExpr* call = dynamic_cast<CallExpr*>(sym->parentExpr))
+        if (call->isPrimitive(PRIMITIVE_MOVE) && call->get(1) == sym)
+          continue;
+      if (dynamic_cast<VarSymbol*>(sym->var))
+        if (sym->var->defPoint && sym->var->defPoint->parentSymbol == fn)
+          if (!defined.set_in(sym->var))
+            // hack for for loop statements which are not very normal
+            if (!dynamic_cast<ForLoopStmt*>(sym->var->defPoint->parentStmt))
+              USR_FATAL(sym, "Variable '%s' used before defined", sym->var->name);
     }
   }
 }
