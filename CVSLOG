@@ -55531,3 +55531,22 @@ Added files:
 	                             parse_structs.h prelude.v scope.cc 
 	                             scope.h v.g 
 
+---------------------------------------------------------------------------
+
+02/01/06 16:47:09 -- jplevyak
+
+Log message:
+	Fix 2 cases where a non-fully qualified generic type was used:
+	  var d : mydomain = mydomain(rank = 2);
+	becomes
+	  var d : mydomain(rank=2) = mydomain(rank = 2);
+	added a test case to remind us to create a better error message for
+	this.
+
+Modified files:
+	chapel/test/arrays/deitz/: test_domain2.chpl test_domain2D.chpl 
+Added files:
+	chapel/test/arrays/jplevyak/: test_domain2-error.chpl 
+	                              test_domain2-error.future 
+	                              test_domain2-error.good 
+
