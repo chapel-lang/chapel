@@ -55550,3 +55550,13 @@ Added files:
 	                              test_domain2-error.future 
 	                              test_domain2-error.good 
 
+---------------------------------------------------------------------------
+
+02/01/06 16:47:45 -- jplevyak
+
+Log message:
+	Catch the case where the interpreter tries to execute generic code.
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+
