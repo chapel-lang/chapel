@@ -55612,3 +55612,14 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/libifa/: Makefile 
 
+---------------------------------------------------------------------------
+
+02/01/06 17:41:27 -- jplevyak
+
+Log message:
+	More work on tests.
+
+Modified files:
+	chapel/compiler/ifa/libifa/: ast_to_if1.cc parse.cc prelude.v 
+	                             v.g 
+
