@@ -555,6 +555,9 @@ IFrame::icall(int nargs, ISlot *ret_slot) {
         user_error(this, "no function found, unable to dispatch function call");
         return;
     }
+  } else if (fn->isGeneric) {
+    user_error(this, "call resolved to generic function");
+    return;
   }
   int nformal_args = fn->formals ? fn->formals->length() : 0;
   if (nformal_args != nargs) {
@@ -1464,14 +1467,17 @@ resolve_0arity_call(IFrame *frame, BaseAST *ip, FnSymbol *fn) {
       default: INT_FATAL("interpreter: bad resolve_call_error: %d", (int)resolve_call_error); break;
       case CALL_PARTIAL:
         user_error(frame, "partial call, unable to dispatch to a complete function");
-        break;
+        return 0;
       case CALL_AMBIGUOUS:
         user_error(frame, "ambiguous call, unable to dispatch to a single function");
-        break;
+        return 0;
       case CALL_UNKNOWN:
         user_error(frame, "no function found, unable to dispatch function call");
-        break;
+        return 0;
     }
+  } else if (fn->isGeneric) {
+    user_error(frame, "call resolved to generic function");
+    return 0;
   }
   return fn;
 }
