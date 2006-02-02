@@ -12,13 +12,17 @@ type function __name "function";
 type continuation __name "continuation";
 type vector __name "vector";
 type tuple __name "tuple";
-type void __name "void";
 type unknown __name "unknown";
 type object __name "object" = { };
 type list __name "list";
 type ref __name "ref";
 type value __name "value";
 type set __name "set";
+
+type null __name "nil_type";
+type unspecified_type __name "unspecified_type";
+type unknown_type __name "unknown_type";
+type void __name "void_type";
 
 type int8 __name "int8";
 type int16 __name "int16";
@@ -36,17 +40,19 @@ type anyint __name "anyint" =
 
 type float32 __name "float32";
 type float64 __name "float64";
-type float128 __name "float128";
+//type float128 __name "float128";
 type float __name "float" = float64;
 type anyfloat __name "anyfloat" = 
-  float32 | float64 | float128;
+  float32 | float64 // | float128
+;
 
 type complex32 __name "complex32";
 type complex64 __name "complex64";
-type complex128 __name "complex128";
+//type complex128 __name "complex128";
 type complex __name "complex" = complex64;
 type anycomplex __name "anycomplex" = 
-  complex32 | complex64 | complex128;
+  complex32 | complex64 // | complex128
+;
 
 type anynum __name "anynum" = anyint | anyfloat | anycomplex;
 type char __name "char" = uint8;
@@ -57,8 +63,9 @@ type enum_element __name "enum_element" = int;
 
 // builtin data
 
-type null __name "null";
 __nil__ __name "nil":0;
+__unspecifield__ __name "unspecified":0;
+__void__ __name "void":0;
 
 // global initialization
 

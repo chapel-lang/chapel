@@ -17,15 +17,11 @@ struct FrontEnd {
   D_WhiteSpaceFn whitespace;
 };
 
-#ifdef LANG_V
 extern D_ParserTables parser_tables_v;
 extern D_Symbol d_symbols_v[];
-#endif
 
 FrontEnd langs[] = {
-#ifdef LANG_V
   {"v", &parser_tables_v, no_preprocessor_whitespace},
-#endif
 };
 
 static char _wspace[256] = {
@@ -148,7 +144,7 @@ load_one(char *fn) {
   if (l >= (int)numberof(langs))
     fail("unknown extension '%s'", fn);
 
-  sprintf(tmpfn, "%s/etc/prelude", system_dir);
+  sprintf(tmpfn, "%s/prelude", system_dir);
   strcat(tmpfn, ".");
   strcat(tmpfn, langs[l].extension);
   if (!(a = load_file(tmpfn, &langs[l])))

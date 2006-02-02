@@ -1991,6 +1991,10 @@ fold_constant(IF1 *i, ParseAST *ast) {
     else
       a = ast->children.v[0]->sym;
   }
+  if (!a->is_constant || (b && !b->is_constant))
+    return;
+  assert(!ast->sym);
+  ast->sym = new_sym(i, ast->scope);
   fold_constant(ast->prim->index, &ast->sym->imm, &a->imm, b ? &b->imm : 0);
 }
 
@@ -2060,6 +2064,15 @@ ast_gen_if1(IF1 *i, Vec<ParseAST *> &av) {
   build_modules(i);
   build_init(i);
   finalize_symbols(i);
+
+  sym_any->is_system_type = 1;
+  sym_value->is_system_type = 1;
+  sym_object->is_system_type = 1;
+  sym_nil_type->is_system_type = 1;
+  sym_unknown_type->is_system_type = 1;
+  sym_unspecified_type->is_system_type = 1;
+  sym_void_type->is_system_type = 1;
+
   build_type_hierarchy();
   add_primitive_transfer_functions();
   return 0;
