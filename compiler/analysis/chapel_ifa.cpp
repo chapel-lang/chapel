@@ -1034,6 +1034,8 @@ build_type(Type *t, bool make_default = true) {
       break;
     }
   }
+  if (t->isGeneric)
+    t->asymbol->sym->is_generic = true;
   return t->asymbol->sym;
 }
 
