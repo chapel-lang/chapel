@@ -55602,3 +55602,13 @@ Log message:
 Added files:
 	chapel/compiler/ifa/libifa/: make_ast.cc make_ast.h 
 
+---------------------------------------------------------------------------
+
+02/01/06 17:00:07 -- jplevyak
+
+Log message:
+	Create install directories
+
+Modified files:
+	chapel/compiler/ifa/libifa/: Makefile 
+
