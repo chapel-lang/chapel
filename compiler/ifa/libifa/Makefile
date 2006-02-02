@@ -132,9 +132,13 @@ version.o: version.cc
 	$(CC) $(CFLAGS) $(VERSIONCFLAGS) -c version.cc
 
 install:
+	mkdir -p $(PREFIX)/bin
 	cp $(EXECUTABLES) $(PREFIX)/bin
+	mkdir -p $(PREFIX)/man/man1
 	cp $(MANPAGES) $(PREFIX)/man/man1
+	mkdir -p $(PREFIX)/include
 	cp $(INCLUDES) $(PREFIX)/include
+	mkdir -p $(PREFIX)/lib
 	cp $(INSTALL_LIBRARIES) $(PREFIX)/lib
 
 uninstall:
