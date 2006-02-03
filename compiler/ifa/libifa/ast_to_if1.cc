@@ -1257,7 +1257,7 @@ gen_fun(IF1 *i, ParseAST *ast) {
   else
     if1_move(i, &body, sym_nil_type, fn->ret, ast);
   if1_label(i, &body, ast, ast->label[0]);
-  c = if1_send(i, &body, 3, 0, sym_reply, fn->cont, fn->ret);
+  c = if1_send(i, &body, 4, 0, sym_primitive, sym_reply, fn->cont, fn->ret);
   c->ast = ast;
   int n = ast->children.n - 2;
   ParseAST **args = &ast->children.v[1];
@@ -1711,7 +1711,7 @@ gen_type(IF1 *i, ParseAST *ast) {
     }
     if1_gen(i, &body, rec->code);
     if1_label(i, &body, ast, ast->label[0]);
-    c = if1_send(i, &body, 3, 0, sym_reply, fn->cont, fn->ret);
+    c = if1_send(i, &body, 4, 0, sym_primitive, sym_reply, fn->cont, fn->ret);
     c->ast = ast;
     Sym *as[2];
     as[0] = new_sym(i, fn->scope);
@@ -1853,7 +1853,7 @@ build_modules(IF1 *i) {
       fn->cont->ast = s->ast;
       Code *body = NULL;
       if1_gen(i, &body, fn->code);
-      if1_send(i, &body, 3, 0, sym_reply, fn->cont, fn->ret);
+      if1_send(i, &body, 4, 0, sym_primitive, sym_reply, fn->cont, fn->ret);
       Sym *as = new_sym(i, fn->scope);
       as->must_implement_and_specialize(fn);
       as->ast = s->ast;
@@ -1917,7 +1917,7 @@ build_init(IF1 *i) {
     }
   fn->cont = new_sym(i, fn->scope);
   fn->ret = sym_nil_type;
-  if1_send(i, &body, 3, 0, sym_reply, fn->cont, fn->ret);
+  if1_send(i, &body, 4, 0, sym_primitive, sym_reply, fn->cont, fn->ret);
   Sym *as = if1_make_symbol(i, fn->name);
   if (!as->ast)
     as->ast = ast;
