@@ -55668,3 +55668,13 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+02/02/06 19:53:19 -- jplevyak
+
+Log message:
+	Use defPoint->parentSymbol to determine nesting level.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
