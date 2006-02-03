@@ -55756,3 +55756,26 @@ Modified files:
 	                             printFinalMemStat.good 
 	                             printMemTable2.good 
 
+---------------------------------------------------------------------------
+
+02/03/06 14:35:24 -- deitz
+
+Log message:
+	Changed constructor test cases to test new initialize function in
+	class until we decide how we want to handle constructors.
+	
+	Update regressions file.
+	
+	Added new simple future test of while loop that will continue to fail
+	until I normalize the while loop.
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+	chapel/test/classes/deitz/: test_class_construct1.chpl 
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_instantiate_construct1.chpl 
+	                                         test_instantiate_construct1.good 
+Added files:
+	chapel/test/trivial/deitz/: test_while1.chpl test_while1.future 
+	                            test_while1.good 
+
