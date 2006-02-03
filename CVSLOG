@@ -55645,3 +55645,16 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/libifa/: ast_to_if1.cc 
 
+---------------------------------------------------------------------------
+
+02/02/06 18:09:55 -- jplevyak
+
+Log message:
+	Only do lookings for nested variables which are so labeled, and only
+	  into the appropriate scope.
+	The existing nested function tests pass, but the new test
+	  fails because ArgSymbol's nesting depth is not determined.
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+
