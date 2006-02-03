@@ -55635,3 +55635,13 @@ Modified files:
 	chapel/compiler/passes/: scopeResolve.cpp semanticChecks.cpp 
 	chapel/test/trivial/deitz/: test_scope2.chpl 
 
+---------------------------------------------------------------------------
+
+02/02/06 17:33:45 -- jplevyak
+
+Log message:
+	reply is now a primitive
+
+Modified files:
+	chapel/compiler/ifa/libifa/: ast_to_if1.cc 
+
