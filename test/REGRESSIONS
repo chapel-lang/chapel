@@ -37,17 +37,6 @@ We need to handle unspecified '_' OP_INIT better.
 
 ?
 
-[Error matching program output for memory/shannon/memstatPrint]
-[Error matching program output for memory/shannon/printFinalMemStat]
-[Error matching program output for memory/shannon/printMemTable2]
-
-?
-
-[Error matching compiler output for classes/deitz/test_class_construct1]
-[Error matching compiler output for types/type_variables/deitz/test_instantiate_construct1]
-
-What are we going to do for class constructors?
-
 [Error matching compiler output for demo/review_060130/jacobi2]
 
 Failing because modules are sent to command line in wrong order.  Odd.

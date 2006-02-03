@@ -1,8 +1,8 @@
 class foo {
   type t;
   var x : t;
-  constructor initialize(type t, x : t) {
-    this.x = x;
+  function initialize() {
+    x += 10;
   }
   function print() {
     writeln(x);

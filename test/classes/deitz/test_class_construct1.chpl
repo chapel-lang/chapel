@@ -1,7 +1,7 @@
 class foo {
   var x : integer = 12;
-  constructor initialize(x : integer) {
-    this.x = x + 10;
+  function initialize() {
+    x += 10;
   }
 }
 
