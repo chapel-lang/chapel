@@ -201,9 +201,12 @@ IFrame::get(BaseAST *ast) {
   ISlot *s = env.get(ast);
   if (s)
     return s;
-  for (int i = display.n - 1; i >= 0; i--)
-    if ((s = display.v[i]->env.get(ast)))
-      return s;
+  if (Symbol *symbol = dynamic_cast<Symbol*>(ast)) {
+    int d = symbol->nestingDepth();
+    if (d && d <= display.n)
+      if ((s = display.v[d-1]->env.get(ast)))
+        return s;
+  }
   if ((s = global_env.get(ast)))
     return s;
   return NULL;
