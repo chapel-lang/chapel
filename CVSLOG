@@ -55743,3 +55743,16 @@ Modified files:
 Removed files:
 	chapel/compiler/traversals/: resolveSymbols.cpp resolveSymbols.h 
 
+---------------------------------------------------------------------------
+
+02/03/06 12:02:30 -- deitz
+
+Log message:
+	Updated expected output of these three tests.  We allocate an extra
+	word now for the type id for a class.
+
+Modified files:
+	chapel/test/memory/shannon/: memstatPrint.good 
+	                             printFinalMemStat.good 
+	                             printMemTable2.good 
+
