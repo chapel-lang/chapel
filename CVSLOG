@@ -55678,3 +55678,13 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+02/03/06 09:10:59 -- jplevyak
+
+Log message:
+	Kludge fix for SEGV for ArgSymbol with NULL parentSymbol.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
