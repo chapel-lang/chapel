@@ -18,7 +18,6 @@
 #include "../traversals/printAST.h"
 #include "../traversals/removeNamedParameters.h"
 #include "../traversals/removeNestedFunctions.h"
-#include "../traversals/resolveSymbols.h"
 #include "../traversals/verify.h"
 #include "../traversals/view.h"
 
@@ -51,7 +50,6 @@ REGISTER(removeNestedFunctions);
 REGISTER(removeTypeVariableActuals);
 REGISTER(removeTypeVariableFormals);
 REGISTER(resolve_analyzed);
-REGISTER(resolveSymbols);       // SJD: Resolve symbols after analysis
 REGISTER(runAnalysis);
 REGISTER(runInterpreter);
 REGISTER(scopeResolve);

@@ -559,7 +559,7 @@ void functionResolution(void) {
   if (!no_infer || run_interpreter)
     return;
   resolve_function(chpl_main);
-
+  fns.set_add(dynamic_cast<FnSymbol*>(Symboltable::lookupInternal("_chpl_alloc")));
   Vec<TypeSymbol*> dead_types;
   Vec<FnSymbol*> all_fns;
   collect_functions(&all_fns);

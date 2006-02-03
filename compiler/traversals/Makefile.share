@@ -10,7 +10,6 @@ TRAVERSALS_SRCS = \
 	printAST.cpp \
 	removeNamedParameters.cpp \
         removeNestedFunctions.cpp \
-	resolveSymbols.cpp \
 	traversal.cpp \
         verify.cpp \
         view.cpp

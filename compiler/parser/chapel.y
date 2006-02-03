@@ -51,7 +51,6 @@ Is this "while x"(i); or "while x(i)";?
 
   static int anon_record_uid = 1;
   static int iterator_uid = 1;
-  static int let_uid = 1;
 
 #define YYLLOC_DEFAULT(Current, Rhs, N)          \
   if (N) { \
@@ -1150,9 +1149,9 @@ expr:
 | TLSBR nonempty_expr_ls TRSBR
     { $$ = new CallExpr("_adomain_lit", $2); }
 | TIF expr TTHEN expr TELSE expr
-    { $$ = new CondExpr($2, $4, $6); }
+    { $$ = new DefExpr(build_if_expr($2, $4, $6)); }
 | TIF expr TTHEN expr %prec TNOELSE
-    { $$ = new CondExpr($2, $4); }
+    { $$ = new DefExpr(build_if_expr($2, $4)); }
 ;
 
 
@@ -1163,14 +1162,7 @@ top_level_expr:
 | TUNSPECIFIED
     { $$ = new SymExpr(gUnspecified); }
 | TLET var_decl_stmt_inner_ls TIN expr
-    {
-      FnSymbol* fn = new FnSymbol(stringcat("_let_fn", intstring(let_uid++)));
-      fn->formals = new AList<DefExpr>();
-      fn->addPragma("inline");
-      fn->body->insertAtTail($2);
-      fn->body->insertAtTail(new ReturnStmt($4));
-      $$ = new DefExpr(fn);
-    }
+    { $$ = new DefExpr(build_let_expr($2, $4)); }
 | reduction %prec TREDUCE
 | expr TCOLON type
     {

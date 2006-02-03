@@ -26,11 +26,11 @@ public:
     }
   }
 
-  // Changes returns to return nothing
+  // Changes returns to return void
   void postProcessStmt(Stmt* stmt) {
     if (ReturnStmt* ret = dynamic_cast<ReturnStmt*>(stmt))
       if (ret->expr)
-        ret->expr->remove();  
+        ret->expr->replace(new SymExpr(gVoid));
   }
 };
 
@@ -61,6 +61,7 @@ void CreateNestedFuncIterators::postProcessStmt(Stmt* stmt) {
     body->formals = new AList<DefExpr>();
     body->body = fls->innerStmt->copy();
     body->retType = dtVoid;
+    body->insertAtTail(new ReturnStmt(gVoid));
     fls->insertBefore(new DefExpr(body));
     fls->insertBefore(new DefExpr(iterator));
     addVarToFormals(body, fls->indices->only()->sym);

@@ -3,6 +3,7 @@
 #include "expr.h"
 #include "files.h"
 #include "misc.h"
+#include "passes.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symscope.h"
@@ -178,6 +179,8 @@ ReturnStmt::ReturnStmt(Expr* initExpr, bool init_yield) :
   yield(init_yield)
 {
   astType = STMT_RETURN;
+  if (initExpr == NULL)
+    expr = new SymExpr(gVoid);
 }
 
 ReturnStmt::ReturnStmt(Symbol* initExpr, bool init_yield) :
@@ -198,6 +201,18 @@ ReturnStmt::ReturnStmt(char* initExpr, bool init_yield) :
 void ReturnStmt::verify() {
   if (astType != STMT_RETURN) {
     INT_FATAL(this, "Bad ReturnStmt::astType");
+  }
+  if (!expr)
+    INT_FATAL(this, "Return statement has no return expression.");
+  if (normalized) {
+    FnSymbol* fn = dynamic_cast<FnSymbol*>(parentSymbol);
+    SymExpr* sym = dynamic_cast<SymExpr*>(expr);
+    if (!fn)
+      INT_FATAL(this, "Return statement is not in a function.");
+    if (fn->body->body->last() != this)
+      INT_FATAL(this, "Return statement is in middle of function.");
+    if (!sym)
+      INT_FATAL(this, "Return statement does not return a symbol.");
   }
 }
 
@@ -220,15 +235,20 @@ void ReturnStmt::print(FILE* outfile) {
 
 
 void ReturnStmt::codegenStmt(FILE* outfile) {
-  if (yield) {
+  if (yield)
     INT_FATAL(this, "Yield should be removed before codegen");
-  }
   fprintf(outfile, "return");
-  if (expr) {
+  if (!returnsVoid()) {
     fprintf(outfile, " ");
     expr->codegen(outfile);
   }
   fprintf(outfile, ";\n");
+}
+
+
+bool ReturnStmt::returnsVoid() {
+  SymExpr* sym = dynamic_cast<SymExpr*>(expr);
+  return sym && sym->var == gVoid;
 }
 
 

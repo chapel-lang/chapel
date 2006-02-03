@@ -674,14 +674,16 @@ ClassType::copyInner(ASTMap* map) {
 
 void ClassType::addDeclarations(AList<Stmt>* newDeclarations,
                                 Stmt* beforeStmt) {
-  Vec<BaseAST*> asts;
-  collect_asts(&asts, newDeclarations);
-  forv_Vec(BaseAST, ast, asts) {
-    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
-      methods.add(fn);
-      fn->typeBinding = this->symbol;
-      if (fn->fnClass != FN_CONSTRUCTOR)
-        fn->method_type = PRIMARY_METHOD;
+  for_alist(Stmt, stmt, newDeclarations) {
+    if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {
+      if (DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr)) {
+        if (FnSymbol* fn = dynamic_cast<FnSymbol*>(defExpr->sym)) {
+          methods.add(fn);
+          fn->typeBinding = this->symbol;
+          if (fn->fnClass != FN_CONSTRUCTOR)
+            fn->method_type = PRIMARY_METHOD;
+        }
+      }
     }
   }
   if (beforeStmt) {

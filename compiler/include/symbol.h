@@ -207,6 +207,7 @@ class FnSymbol : public Symbol {
   FnSymbol* order_wrapper(Map<Symbol*,Symbol*>* formals_to_formals);
   FnSymbol* coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitutions);
   FnSymbol* default_wrapper(Vec<Symbol*>* defaults);
+  bool isPartialInstantiation(ASTMap* generic_substitutions);
   FnSymbol* instantiate_generic(ASTMap* substitutions,
                                 Vec<FnSymbol*>* new_functions,
                                 Vec<TypeSymbol*>* new_types);

@@ -29,6 +29,8 @@ void Verify::preProcessStmt(Stmt* stmt){
 void Verify::preProcessExpr(Expr* expr){
   expr->verify();
 
+  if (!expr->parentSymbol)
+    INT_FATAL(expr, "Expr::parentSymbol is NULL");
   if (DefExpr* defExpr = dynamic_cast<DefExpr*>(expr)) {
     if (defExpr->sym->parentSymbol) {
       INT_FATAL(defExpr->sym, "Symbol has parentSymbol set");

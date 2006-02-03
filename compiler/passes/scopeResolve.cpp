@@ -114,18 +114,23 @@ void scopeResolve(BaseAST* base) {
 
           // Apply 'this' in methods where necessary
           if (!type) {
-            ClassType* ct;
-            FnSymbol* method = symExpr->getFunction();
-            if (method && method->typeBinding) {
-              ct = dynamic_cast<ClassType*>(method->typeBinding->definition);
-              if ((var && var->parentScope->type == SCOPE_CLASS) ||
-                  (fn && ct && function_name_matches_method_name(fn, ct)))
-                if (symExpr->var != method->_this) {
-                  Expr* dot = new CallExpr(".", method->_this, 
-                                           new_StringSymbol(name));
-                  symExpr->replace(dot);
-                  asts.add(dot);
+            Symbol* parent = symExpr->parentSymbol;
+            while (!dynamic_cast<ModuleSymbol*>(parent)) {
+              if (FnSymbol* method = dynamic_cast<FnSymbol*>(parent)) {
+                if (method->typeBinding) {
+                  ClassType* ct = dynamic_cast<ClassType*>(method->typeBinding->definition);
+                  if ((var && var->parentScope->type == SCOPE_CLASS) ||
+                      (fn && ct && function_name_matches_method_name(fn, ct)))
+                    if (symExpr->var != method->_this) {
+                      Expr* dot = new CallExpr(".", method->_this, 
+                                               new_StringSymbol(name));
+                      symExpr->replace(dot);
+                      asts.add(dot);
+                    }
+                  break;
                 }
+              }
+              parent = parent->defPoint->parentSymbol;
             }
           }
         }

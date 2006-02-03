@@ -62,6 +62,7 @@ class ReturnStmt : public ExprStmt {
   COPY_DEF(ReturnStmt);
   void print(FILE* outfile);
   void codegenStmt(FILE* outfile);
+  bool returnsVoid();
 };
 
 

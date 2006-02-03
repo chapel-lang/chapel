@@ -167,12 +167,13 @@ SymExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 void
 SymExpr::verify(void) {
-  if (astType != EXPR_SYM) {
+  if (astType != EXPR_SYM)
     INT_FATAL(this, "Bad SymExpr::astType");
-  }
-  if (!var) {
+  if (!var)
     INT_FATAL(this, "SymExpr::var is NULL");
-  }
+  if (var->defPoint && !var->defPoint->parentSymbol)
+    if (!dynamic_cast<ModuleSymbol*>(var))
+      INT_FATAL(this, "SymExpr::var::defPoint is not in AST");
 }
 
 
@@ -625,6 +626,10 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_UNKNOWN:
       break;
     case PRIMITIVE_MOVE: {
+      if (get(1)->typeInfo() == dtVoid) {
+        get(2)->codegen(outfile);
+        return;
+      }
       if (SymExpr* sym = dynamic_cast<SymExpr*>(get(1))) {
         if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var)) {
           if (var->varClass == VAR_CONFIG) {
@@ -1368,4 +1373,29 @@ void initExpr(void) {
   dtUnknown->defaultValue = gUnknown;
   dtUnspecified->defaultValue = gUnspecified;
   dtVoid->defaultValue = gVoid;
+}
+
+
+FnSymbol* build_if_expr(Expr* e, Expr* e1, Expr* e2) {
+  static int uid = 1;
+  FnSymbol* fn = new FnSymbol(stringcat("_if_fn", intstring(uid++)));
+  fn->retRef = true;
+  fn->formals = new AList<DefExpr>();
+  fn->addPragma("inline");
+  if (e2)
+    fn->insertAtTail(new CondStmt(e, new ReturnStmt(e1), new ReturnStmt(e2)));
+  else
+    USR_FATAL("if-then expressions currently require an else-clause");
+  return fn;
+}
+
+
+FnSymbol* build_let_expr(AList<Stmt>* decls, Expr* expr) {
+  static int uid = 1;
+  FnSymbol* fn = new FnSymbol(stringcat("_let_fn", intstring(uid++)));
+  fn->formals = new AList<DefExpr>();
+  fn->addPragma("inline");
+  fn->insertAtTail(decls);
+  fn->insertAtTail(new ReturnStmt(expr));
+  return fn;
 }

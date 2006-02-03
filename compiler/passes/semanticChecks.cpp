@@ -45,9 +45,13 @@ check_returns(FnSymbol* fn) {
   }
   if (rets.n == 0)
     return;
-  bool returns_void = rets.v[0]->expr == NULL;
+  bool returns_void = false;
   forv_Vec(ReturnStmt, ret, rets) {
-    if ((ret->expr && returns_void) || (!ret->expr && !returns_void))
+    if (ret->returnsVoid())
+      returns_void = true;
+  }
+  forv_Vec(ReturnStmt, ret, rets) {
+    if (returns_void && !ret->returnsVoid())
       USR_FATAL(fn, "Not all function returns return a value");
   }
 }

@@ -53,7 +53,7 @@ Instantiate::postProcessExpr(Expr* expr) {
                   }
                 } else if (dynamic_cast<VarSymbol*>(variable->var)) {
                   if (variable->var->defPoint) {
-                    if (variable->var->type) {
+                    if (variable->var->type && variable->var->type != dtUnknown) {
                       if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(formalArg->genericSymbol)) {
                         substitutions.put(ts->definition, variable->var->type);
                         sub = true;
@@ -94,7 +94,7 @@ Instantiate::postProcessExpr(Expr* expr) {
             newActuals->insertAtTail(actual->copy());
           formal = fn->formals->next();
         }
-        if (substitutions.n) {
+        if (substitutions.n && !fn->isPartialInstantiation(&substitutions)) {
 
           Vec<FnSymbol*> new_functions;
           Vec<TypeSymbol*> new_types;

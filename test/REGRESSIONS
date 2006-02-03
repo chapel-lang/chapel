@@ -25,19 +25,32 @@ We need to handle PRIMITIVE_GET_MEMBER during pre-instantiation
 
 We need to handle unspecified '_' OP_INIT better.
 
+[Error matching compiler output for arrays/deitz/test_domain2D]
 [Error matching compiler output for functions/bradc/typefn2]
+[Error matching compiler output for functions/deitz/test_typeconstraint1]
+[Error matching compiler output for interpreter/jplevyak/test_default_param3]
+[Error matching compiler output for interpreter/jplevyak/test_enum1]
+[Error matching compiler output for trivial/deitz/test_if_expr4]
+[Error matching compiler output for trivial/deitz/test_let7]
+[Error matching compiler output for types/type_variables/deitz/test_datablock]
+[Error matching compiler output for types/type_variables/jplevyak/where-3]
 
-???
+?
 
-[Error executing program arrays/deitz/test_array_basic1a]
+[Error matching program output for memory/shannon/memstatPrint]
+[Error matching program output for memory/shannon/printFinalMemStat]
+[Error matching program output for memory/shannon/printMemTable2]
 
-We need to initialize elements of an array.  I believe the current init primitive should not serve this purpose with the representative element as this will not result in calling the default constructor for each element in the array.
+?
 
 [Error matching compiler output for classes/deitz/test_class_construct1]
 [Error matching compiler output for types/type_variables/deitz/test_instantiate_construct1]
 
 What are we going to do for class constructors?
 
+[Error matching compiler output for demo/review_060130/jacobi2]
+
+Failing because modules are sent to command line in wrong order.  Odd.
 
 ==========================
 linux valgrind regressions

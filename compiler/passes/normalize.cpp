@@ -16,6 +16,8 @@
 #include "../traversals/view.h"
 
 
+bool normalized = false;
+
 static void reconstruct_iterator(FnSymbol* fn);
 static void build_lvalue_function(FnSymbol* fn);
 static void normalize_returns(FnSymbol* fn);
@@ -44,13 +46,14 @@ void normalize(void) {
     normalize(mod);
     normalize(mod);
   }
+  normalized = true;
 }
 
 void normalize(BaseAST* base) {
   Vec<BaseAST*> asts;
 
   asts.clear();
-  collect_asts(&asts, base);
+  collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
       currentLineno = fn->lineno;
@@ -59,6 +62,13 @@ void normalize(BaseAST* base) {
         reconstruct_iterator(fn);
       if (fn->retRef)
         build_lvalue_function(fn);
+    }
+  }
+
+  asts.clear();
+  collect_asts(&asts, base);
+  forv_Vec(BaseAST, ast, asts) {
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
       normalize_returns(fn);
       initialize_out_formals(fn);
       insert_formal_temps(fn);
@@ -293,9 +303,11 @@ static void build_lvalue_function(FnSymbol* fn) {
   collect_asts_postorder(&asts, new_fn->body);
   forv_Vec(BaseAST, ast, asts) {
     if (ReturnStmt* returnStmt = dynamic_cast<ReturnStmt*>(ast)) {
-      Expr* expr = returnStmt->expr;
-      returnStmt->expr->remove();
-      returnStmt->insertBefore(handle_return_expr(expr, lvalue));
+      if (returnStmt->parentSymbol == new_fn) {
+        Expr* expr = returnStmt->expr;
+        returnStmt->expr->replace(new SymExpr(gVoid));
+        returnStmt->insertBefore(handle_return_expr(expr, lvalue));
+      }
     }
   }
 }
@@ -311,63 +323,36 @@ static void normalize_returns(FnSymbol* fn) {
         rets.add(returnStmt);
     }
   }
-  if (rets.n == 0)
+  if (rets.n == 0) {
+    fn->insertAtTail(new ReturnStmt(gVoid));
     return;
+  }
   if (rets.n == 1) {
     ReturnStmt* ret = rets.v[0];
-    if (ret == fn->body->body->last() &&
-        (!ret->expr ||
-         dynamic_cast<SymExpr*>(ret->expr)))
+    if (ret == fn->body->body->last() && dynamic_cast<SymExpr*>(ret->expr))
       return;
   }
-  bool returns_void = rets.v[0]->expr == NULL;
+  bool returns_void = rets.v[0]->returnsVoid();
   LabelSymbol* label = new LabelSymbol(stringcat("_end_", fn->name));
   fn->insertAtTail(new LabelStmt(label));
   VarSymbol* retval = NULL;
-  //Expr* rettype = NULL;
   if (returns_void) {
     fn->insertAtTail(new ReturnStmt());
   } else {
     retval = new VarSymbol(stringcat("_ret_", fn->name), fn->retType);
-
     Expr* type = fn->defPoint->exprType;
     type->remove();
     if (!type)
       retval->noDefaultInit = true;
     fn->insertAtHead(new DefExpr(retval, NULL, type));
-
-//     retval->noDefaultInit = true;
-//     rettype = fn->defPoint->exprType;
-//     rettype->remove();
-//     fn->insertAtHead(new DefExpr(retval));
-    
     fn->insertAtTail(new ReturnStmt(retval));
   }
   bool label_is_used = false;
   forv_Vec(ReturnStmt, ret, rets) {
     if (retval) {
-//       CallExpr* ret_call = dynamic_cast<CallExpr*>(ret->expr);
-//       if (ret_call && ret_call->isNamed("__primitive")) {
-//         ret_call->remove();
-//         ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, ret_call));
-//       } else {
-//         Expr* ret_expr = ret->expr;
-//         ret_expr->remove();
-//         VarSymbol* tmp1 = new VarSymbol("_retTmp1");
-//         if (rettype) {
-//           ret->insertBefore(new DefExpr(tmp1, ret_expr, rettype->copy()));
-//         } else {
-//           ret->insertBefore(new DefExpr(tmp1, ret_expr));
-//         }
-//         VarSymbol* tmp2 = new VarSymbol("_retTmp2");
-//         tmp2->noDefaultInit = true;
-//         ret->insertBefore(new DefExpr(tmp2));
-//         ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp2, new CallExpr(PRIMITIVE_INIT, tmp1)));
-//         ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, new CallExpr("=", tmp2, tmp1)));
       Expr* ret_expr = ret->expr;
       ret_expr->remove();
       ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, ret_expr));
-      //      }
     }
     if (ret->next != label->defPoint->parentStmt) {
       ret->replace(new GotoStmt(goto_normal, label));
@@ -879,22 +864,22 @@ static void insert_call_temps(CallExpr* call) {
   if (call->isNamed("typeof") || call->primitive || call->isNamed("__primitive"))
     return;
 
-  if (SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr)) {
-    if (!strncmp(base->var->name, "_let_fn", 7)) {
-      Stmt* stmt = inline_call(call);
-      Vec<BaseAST*> asts;
-      collect_asts_postorder(&asts, stmt);
-      forv_Vec(BaseAST, ast, asts) {
-        currentLineno = ast->lineno;
-        currentFilename = ast->filename;
-        if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
-          insert_call_temps(a);
-        }
-      }
-      base->var->defPoint->parentStmt->remove();
-      return;
-    }
-  }
+//   if (SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr)) {
+//     if (!strncmp(base->var->name, "_let_fn", 7)) {
+//       Stmt* stmt = inline_call(call);
+//       Vec<BaseAST*> asts;
+//       collect_asts_postorder(&asts, stmt);
+//       forv_Vec(BaseAST, ast, asts) {
+//         currentLineno = ast->lineno;
+//         currentFilename = ast->filename;
+//         if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
+//           insert_call_temps(a);
+//         }
+//       }
+//       base->var->defPoint->parentStmt->remove();
+//       return;
+//     }
+//   }
 
   if (CallExpr* parentCall = dynamic_cast<CallExpr*>(call->parentExpr))
     if (parentCall->isPrimitive(PRIMITIVE_MOVE))
@@ -1268,4 +1253,3 @@ tag_generic(Type *t) {
   }
   return genericSymbols.n != 0;
 }
-

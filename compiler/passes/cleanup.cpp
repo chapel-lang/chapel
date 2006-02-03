@@ -293,8 +293,9 @@ static void normalize_anonymous_record_or_forall_expression(DefExpr* def) {
       (!strncmp("_forallexpr", def->sym->name, 11))) {
     def->replace(new SymExpr(def->sym));
     stmt->insertBefore(def);
-  } else if (!strncmp("_let_fn", def->sym->name, 7)) {
-    def->replace(new CallExpr(def->sym));
+  } else if ((!strncmp("_let_fn", def->sym->name, 7)) ||
+             (!strncmp("_if_fn", def->sym->name, 6))) {
+    def->replace(new CallExpr(def->sym->name));
     stmt->insertBefore(def);
   }
 }

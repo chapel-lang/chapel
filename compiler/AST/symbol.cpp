@@ -9,6 +9,7 @@
 #include "symbol.h"
 #include "symtab.h"
 #include "astutil.h"
+#include "passes.h"
 #include "../traversals/createConfigVarTable.h"
 #include "../traversals/findTypeVariables.h"
 #include "../traversals/instantiate.h"
@@ -110,7 +111,10 @@ Symbol::Symbol(astType_t astType, char* init_name, Type* init_type) :
 
 
 void Symbol::verify(void) {
-  INT_FATAL(this, "Symbol::verify() should never be called");
+  if (prev || next)
+    INT_FATAL(this, "Symbol is in AList");
+  if (defPoint && !defPoint->parentSymbol)
+    INT_FATAL(this, "Symbol::defPoint is not in AST");
 }
 
 
@@ -266,11 +270,9 @@ UnresolvedSymbol::UnresolvedSymbol(char* init_name, char* init_cname) :
 
 
 void UnresolvedSymbol::verify(void) {
+  Symbol::verify();
   if (astType != SYMBOL_UNRESOLVED) {
     INT_FATAL(this, "Bad UnresolvedSymbol::astType");
-  }
-  if (prev || next) {
-    INT_FATAL(this, "Symbol is in AList");
   }
 }
 
@@ -306,11 +308,9 @@ VarSymbol::VarSymbol(char* init_name,
 
 
 void VarSymbol::verify(void) {
+  Symbol::verify();
   if (astType != SYMBOL_VAR) {
     INT_FATAL(this, "Bad VarSymbol::astType");
-  }
-  if (prev || next) {
-    INT_FATAL(this, "Symbol is in AList");
   }
 }
 
@@ -394,6 +394,8 @@ void VarSymbol::printDef(FILE* outfile) {
 
 
 void VarSymbol::codegenDef(FILE* outfile) {
+  if (type == dtVoid)
+    return;
   // need to ensure that this can be realized in C as a const, and
   // move its initializer here if it can be
   if (0 && (consClass == VAR_CONST)) {
@@ -433,11 +435,9 @@ ArgSymbol::ArgSymbol(intentTag iIntent, char* iName,
 
 
 void ArgSymbol::verify(void) {
+  Symbol::verify();
   if (astType != SYMBOL_ARG) {
     INT_FATAL(this, "Bad ArgSymbol::astType");
-  }
-  if (prev || next) {
-    INT_FATAL(this, "Symbol is in AList");
   }
 }
 
@@ -541,11 +541,9 @@ TypeSymbol::TypeSymbol(char* init_name, Type* init_definition) :
 
 
 void TypeSymbol::verify(void) {
+  Symbol::verify();
   if (astType != SYMBOL_TYPE) {
     INT_FATAL(this, "Bad TypeSymbol::astType");
-  }
-  if (prev || next) {
-    INT_FATAL(this, "Symbol is in AList");
   }
   definition->verify();
 }
@@ -643,11 +641,13 @@ FnSymbol::FnSymbol(char* initName,
 
 
 void FnSymbol::verify(void) {
+  Symbol::verify();
   if (astType != SYMBOL_FN) {
     INT_FATAL(this, "Bad FnSymbol::astType");
   }
-  if (prev || next) {
-    INT_FATAL(this, "Symbol is in AList");
+  if (normalized) {
+    if (!dynamic_cast<ReturnStmt*>(body->body->last()))
+      INT_FATAL(this, "Last statement in normalized function is not a return");
   }
 }
 
@@ -885,6 +885,7 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_formals) {
   wrapper_fn->addPragma("inline");
   defPoint->parentStmt->insertBefore(new DefExpr(wrapper_fn));
   reset_file_info(wrapper_fn->defPoint->parentStmt, lineno, filename);
+  normalize(wrapper_fn);
   return wrapper_fn;
 }
 
@@ -1072,10 +1073,39 @@ function_requires_instantiation(FnSymbol* fn, Type* type) {
 }
 
 
+bool
+FnSymbol::isPartialInstantiation(ASTMap* generic_substitutions) {
+  for_alist(DefExpr, formalDef, this->formals) {
+    ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
+    if (formal->isGeneric) {
+      bool found = false;
+      for (int i = 0; i < generic_substitutions->n; i++) {
+        if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(formal->genericSymbol)) {
+          if (ts->definition == generic_substitutions->v[i].key) {
+            found = true;
+          }
+        } else {
+          if (formal == generic_substitutions->v[i].key) {
+            found = true;
+          }
+        }
+      }
+      if (!found) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+
 FnSymbol*
 FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
                               Vec<FnSymbol*>* new_functions,
                               Vec<TypeSymbol*>* new_types) {
+  // check to make sure this fully instantiates
+  if (isPartialInstantiation(generic_substitutions))
+    INT_FATAL(this, "partial instantiation detected");
   for (int i = 0; i < generic_substitutions->n; i++) {
     if (BaseAST* value = generic_substitutions->v[i].value) {
       if (MetaType* metaType = dynamic_cast<MetaType*>(value)) {
@@ -1344,9 +1374,9 @@ int Symbol::nestingDepth() {
     return 0;
   Symbol *s = defPoint->parentSymbol;
   int d = 0;
-  while (s && s->astType == SYMBOL_FN) {
+  while (s->astType == SYMBOL_FN) {
     d++;
-    s = s->defPoint->parentStmt->parentSymbol;
+    s = s->defPoint->parentSymbol;
   }
   return d;
 }
@@ -1356,11 +1386,11 @@ FnSymbol *Symbol::nestingParent(int i) {
   if (!defPoint) // labels
     return 0;
   Symbol *s = defPoint->parentSymbol;
-  while (s && s->astType == SYMBOL_FN) {
+  while (s->astType == SYMBOL_FN) {
     i--;
     if (i >= 0)
       return dynamic_cast<FnSymbol*>(s);
-    s = s->defPoint->parentStmt->parentSymbol;
+    s = s->defPoint->parentSymbol;
   }
   return 0;
 }
@@ -1374,11 +1404,9 @@ EnumSymbol::EnumSymbol(char* init_name) :
 
 
 void EnumSymbol::verify(void) {
+  Symbol::verify();
   if (astType != SYMBOL_ENUM) {
     INT_FATAL(this, "Bad EnumSymbol::astType");
-  }
-  if (prev || next) {
-    INT_FATAL(this, "Symbol is in AList");
   }
 }
 
@@ -1405,11 +1433,9 @@ ModuleSymbol::ModuleSymbol(char* init_name, modType init_modtype) :
 
 
 void ModuleSymbol::verify(void) {
+  Symbol::verify();
   if (astType != SYMBOL_MODULE) {
     INT_FATAL(this, "Bad ModuleSymbol::astType");
-  }
-  if (prev || next) {
-    INT_FATAL(this, "Symbol is in AList");
   }
 }
 
@@ -1495,11 +1521,9 @@ LabelSymbol::LabelSymbol(char* init_name) :
 
 
 void LabelSymbol::verify(void) {
+  Symbol::verify();
   if (astType != SYMBOL_LABEL) {
     INT_FATAL(this, "Bad LabelSymbol::astType");
-  }
-  if (prev || next) {
-    INT_FATAL(this, "Symbol is in AList");
   }
 }
 
