@@ -14,13 +14,6 @@
 linux and general regressions
 =============================
 
-[Error matching compiler output for classes/deitz/test_type_in_class3]
-[Error matching compiler output for classes/deitz/test_type_in_class4]
-[Error matching compiler output for types/like/jplevyak/like-2]
-
-We need to handle PRIMITIVE_GET_MEMBER during pre-instantiation
-  for the case of foo.t  where t is a type variable in foo.
-
 [Error executing program trivial/preston/tuple]
 
 We need to handle unspecified '_' OP_INIT better.
