@@ -55658,3 +55658,13 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+02/02/06 18:11:28 -- jplevyak
+
+Log message:
+	Don't check for nested lookups unless the current call frame is nested.
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+
