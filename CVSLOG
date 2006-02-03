@@ -55779,3 +55779,19 @@ Added files:
 	chapel/test/trivial/deitz/: test_while1.chpl test_while1.future 
 	                            test_while1.good 
 
+---------------------------------------------------------------------------
+
+02/03/06 14:51:01 -- deitz
+
+Log message:
+	Futurized three regressions doing something like class.t where t is a
+	user type inside a class.  I can get this working again, but doing it
+	right might take a little discussion.
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+Added files:
+	chapel/test/classes/deitz/: test_type_in_class3.future 
+	                            test_type_in_class4.future 
+	chapel/test/types/like/jplevyak/: like-2.future 
+
