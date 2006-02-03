@@ -55795,3 +55795,16 @@ Added files:
 	                            test_type_in_class4.future 
 	chapel/test/types/like/jplevyak/: like-2.future 
 
+---------------------------------------------------------------------------
+
+02/03/06 15:16:23 -- deitz
+
+Log message:
+	Removed CondExpr BaseAST and related dead code.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: baseAST.h expr.h 
+	chapel/compiler/passes/: normalize.cpp runInterpreter.cpp 
+
