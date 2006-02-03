@@ -1342,9 +1342,7 @@ FnSymbol::insertAtTail(BaseAST* ast) {
 int Symbol::nestingDepth() {
   if (!defPoint) // labels
     return 0;
-  if (!defPoint->parentStmt) // entry point
-    return 0;
-  Symbol *s = defPoint->parentStmt->parentSymbol;
+  Symbol *s = defPoint->parentSymbol;
   int d = 0;
   while (s->astType == SYMBOL_FN) {
     d++;
@@ -1357,9 +1355,7 @@ int Symbol::nestingDepth() {
 FnSymbol *Symbol::nestingParent(int i) {
   if (!defPoint) // labels
     return 0;
-  if (!defPoint->parentStmt) // entry point
-    return 0;
-  Symbol *s = defPoint->parentStmt->parentSymbol;
+  Symbol *s = defPoint->parentSymbol;
   while (s->astType == SYMBOL_FN) {
     i--;
     if (i >= 0)
