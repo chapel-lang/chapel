@@ -55688,3 +55688,58 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+02/03/06 11:54:53 -- deitz
+
+Log message:
+	Normalized functions so that the last statement is always a return
+	statement and it always returns a SymExpr of a symbol and so that
+	these are the only return statements.  This is verified.
+	
+	Removed uses of CondExpr, instead creating a function containing a
+	CondStmt and having an inline pragma.  Standardized this with the
+	function that is build with let expressions.  They used to be inlined
+	before analysis, but now they are inlined in the inlining pass.  This
+	allows these functions to be treated normally so that we can use an
+	if-expression in a return and turn it into a setter.
+	
+	Made codegen squelch printing of returns of voids from calls.
+	
+	Added a global "normalized" that is true after normalize has run,
+	allowing us to do more verification of normalized AST.
+	
+	Added verification that all symbols used via a SymExpr that have a
+	defPoint, have a defPoint that is in the AST (has a parentSymbol).
+	Fixed numerous bugs.
+	
+	Folded resolveSymbols into resolve_analyzed as planned.  I did this
+	now because otherwise the verification above would fail because the
+	INIT primitive would point to the wrong type, making the verification
+	above fail if that type was dead.
+	
+	Fixed pre-instantiation so that it only instantiates fully.  Added a
+	catch to instantiate_generic to make sure that a function is fully
+	instantiated only.
+	
+	Removed kludge fix to nesting_depth function for case where
+	ArgSymbol::defPoint::parentSymbol was NULL.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: expr.h passes.h stmt.h symbol.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: cleanup.cpp functionResolution.cpp 
+	                         normalize.cpp resolveAnalyzed.cpp 
+	                         scopeResolve.cpp semanticChecks.cpp 
+	chapel/compiler/traversals/: Makefile.share 
+	                             createNestedFuncIterators.cpp 
+	                             instantiate.cpp verify.cpp 
+	chapel/test/: REGRESSIONS 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+Removed files:
+	chapel/compiler/traversals/: resolveSymbols.cpp resolveSymbols.h 
+
