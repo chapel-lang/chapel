@@ -1344,7 +1344,7 @@ int Symbol::nestingDepth() {
     return 0;
   Symbol *s = defPoint->parentSymbol;
   int d = 0;
-  while (s->astType == SYMBOL_FN) {
+  while (s && s->astType == SYMBOL_FN) {
     d++;
     s = s->defPoint->parentStmt->parentSymbol;
   }
@@ -1356,7 +1356,7 @@ FnSymbol *Symbol::nestingParent(int i) {
   if (!defPoint) // labels
     return 0;
   Symbol *s = defPoint->parentSymbol;
-  while (s->astType == SYMBOL_FN) {
+  while (s && s->astType == SYMBOL_FN) {
     i--;
     if (i >= 0)
       return dynamic_cast<FnSymbol*>(s);
