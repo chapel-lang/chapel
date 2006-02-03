@@ -143,23 +143,6 @@ class CastExpr : public Expr {
 };
 
 
-class CondExpr : public Expr {
- public:
-  Expr* condExpr;
-  Expr* thenExpr;
-  Expr* elseExpr;
-
-  CondExpr(Expr* initCondExpr, Expr* initThenExpr, Expr* initElseExpr = NULL);
-  virtual void verify(void); 
-  COPY_DEF(CondExpr);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseExpr(Traversal* traversal);
-  Type* typeInfo(void);
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-};
-
-
 class NamedExpr : public Expr {
  public:
   char* name;

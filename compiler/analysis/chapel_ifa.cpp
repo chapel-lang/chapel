@@ -1823,13 +1823,6 @@ gen_if1(BaseAST *ast) {
       break;
     }
     case EXPR_DEF: break;
-    case EXPR_COND: {
-      CondExpr *s = dynamic_cast<CondExpr *>(ast);
-      s->ainfo->rval = new_sym();
-      s->ainfo->rval->ast = s->ainfo;
-      gen_cond(s->ainfo, s->condExpr->ainfo, s->thenExpr->ainfo, s->elseExpr->ainfo);
-      break;
-    }
     case EXPR_CALL: {
       CallExpr* call = dynamic_cast<CallExpr*>(ast);
       if (call->isAssign()) {

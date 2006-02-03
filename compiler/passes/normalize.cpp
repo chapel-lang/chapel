@@ -273,18 +273,6 @@ static void reconstruct_iterator(FnSymbol* fn) {
 }
 
 
-static AList<Stmt>* handle_return_expr(Expr* e, Symbol* lvalue) {
-  Stmt* newStmt = NULL;
-  if (e)
-    if (CondExpr *ce = dynamic_cast<CondExpr *>(e))
-      newStmt = new CondStmt(ce->condExpr, 
-                             handle_return_expr(ce->thenExpr, lvalue),
-                             handle_return_expr(ce->elseExpr, lvalue));
-    else
-      newStmt = new ExprStmt(new CallExpr("=", e, lvalue));
-  return new AList<Stmt>(newStmt);
-}
-
 static void build_lvalue_function(FnSymbol* fn) {
   FnSymbol* new_fn = fn->copy();
   fn->defPoint->parentStmt->insertAfter(new DefExpr(new_fn));
@@ -306,7 +294,7 @@ static void build_lvalue_function(FnSymbol* fn) {
       if (returnStmt->parentSymbol == new_fn) {
         Expr* expr = returnStmt->expr;
         returnStmt->expr->replace(new SymExpr(gVoid));
-        returnStmt->insertBefore(handle_return_expr(expr, lvalue));
+        returnStmt->insertBefore(new CallExpr("=", expr, lvalue));
       }
     }
   }

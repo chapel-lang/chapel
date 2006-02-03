@@ -2246,35 +2246,6 @@ IFrame::run(int timeslice) {
         }
         break;
       }
-      case EXPR_COND: {
-        S(CondExpr);
-        switch (stage++) {
-          case 0:
-            EVAL_EXPR(s->condExpr);
-            break;
-          case 1: {
-            ISlot *cond = islot(s->condExpr);
-            check_type(ip, cond, dtBoolean);
-            if (cond->imm->v_bool)
-              EVAL_EXPR(s->thenExpr);
-            else 
-              EVAL_EXPR(s->elseExpr);
-            break;
-          }
-          case 2: {
-            stage = 0;
-            ISlot *cond = islot(s->condExpr);
-            check_type(ip, cond, dtBoolean);
-            if (cond->imm->v_bool)
-              *islot(s) = *islot(s->thenExpr);
-            else
-              *islot(s) = *islot(s->elseExpr);
-            break;
-          }
-          default: INT_FATAL(ip, "interpreter: bad stage %d for astType: %d", stage, ip->astType); break;
-        }
-        break;
-      }
       case EXPR_CALL: {
         S(CallExpr);
         switch (stage++) {
