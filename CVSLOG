@@ -55808,3 +55808,23 @@ Modified files:
 	chapel/compiler/include/: baseAST.h expr.h 
 	chapel/compiler/passes/: normalize.cpp runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+02/06/06 10:16:24 -- deitz
+
+Log message:
+	Fixed a bug in interpreter/no-infer function resolution in detecting
+	ambiguous function calls.  Fixed regression
+	
+	  test/interpreter/jplevyak/test_default_param3
+	
+	The error message does not yet print out candidates but they are
+	captured in a vector.  We can figure this out when we discuss error
+	reporting.
+
+Modified files:
+	chapel/compiler/include/: astutil.h misc.h 
+	chapel/compiler/passes/: functionResolution.cpp 
+	                         runInterpreter.cpp 
+	chapel/test/interpreter/jplevyak/: test_default_param3.good 
+
