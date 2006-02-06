@@ -55904,3 +55904,23 @@ Modified files:
 	chapel/compiler/main/: driver.cpp 
 	chapel/compiler/passes/: resolveAnalyzed.cpp 
 
+---------------------------------------------------------------------------
+
+02/06/06 13:55:18 -- deitz
+
+Log message:
+	Folded removeNamedParameters into resolveAnalyzed.
+	
+	Removed some unnecessary kludge.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp 
+	chapel/compiler/include/: astutil.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/passes/: functionResolution.cpp 
+	                         resolveAnalyzed.cpp 
+	chapel/compiler/traversals/: Makefile.share 
+Removed files:
+	chapel/compiler/traversals/: removeNamedParameters.cpp 
+	                             removeNamedParameters.h 
+
