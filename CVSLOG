@@ -55828,3 +55828,19 @@ Modified files:
 	                         runInterpreter.cpp 
 	chapel/test/interpreter/jplevyak/: test_default_param3.good 
 
+---------------------------------------------------------------------------
+
+02/06/06 10:21:18 -- shannon
+
+Log message:
+	Changed the assert command to take multiple
+	arguments.  The first argument is the assert test;
+	the other arguments are converted to writes.
+	Added a test.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+Added files:
+	chapel/test/trivial/shannon/: multipleArgAssert.chpl 
+	                              multipleArgAssert.good 
+
