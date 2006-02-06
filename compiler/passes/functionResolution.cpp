@@ -7,6 +7,7 @@
 #include "runtime.h"
 
 resolve_call_error_type resolve_call_error;
+Vec<FnSymbol*> resolve_call_error_candidates;
 
 void param_compute(Expr* expr);
 
@@ -350,6 +351,7 @@ resolve_call(CallExpr* call,
              Vec<Symbol*>* actual_params,
              Vec<char*>* actual_names) {
   resolve_call_error = CALL_NO_ERROR;
+  resolve_call_error_candidates.clear();
 
   if (call->isNamed("_chpl_alloc"))
     return dynamic_cast<FnSymbol*>(Symboltable::lookupInternal("_chpl_alloc"));
@@ -366,10 +368,15 @@ resolve_call(CallExpr* call,
     switch (resolve_call_error) {
       default: break;
       case CALL_AMBIGUOUS:
-        USR_WARNING(call, "Ambiguous function call");
+        USR_FATAL_CONT(call, "Ambiguous call '%s'", name);
+        USR_PRINT(call, "  Candidates are:");
+        forv_Vec(FnSymbol, fn, resolve_call_error_candidates) {
+          USR_PRINT(fn, "    %s", fn->name);
+        }
+        USR_STOP();
         break;
       case CALL_UNKNOWN:
-        USR_WARNING(call, "Unresolved function call");
+        USR_FATAL(call, "Unresolved function call");
         break;
     }
   }
@@ -405,19 +412,25 @@ resolve_call(BaseAST* ast,
       actual_formals = candidateFns.v[i].value;
       for (int j = 0; j < candidateFns.n; j++) {
         if (i != j && candidateFns.v[j].key) {
+          bool better = false;
+          bool as_good = true;
           Vec<ArgSymbol*>* actual_formals2 = candidateFns.v[j].value;
           for (int k = 0; k < actual_formals->n; k++) {
             ArgSymbol* arg = actual_formals->v[k];
             ArgSymbol* arg2 = actual_formals2->v[k];
             if (arg->intent != INTENT_TYPE && arg2->intent != INTENT_TYPE) {
               if (can_dispatch_ne(NULL, arg2->type, arg->type)) {
-                best = NULL;
-                break;
+                better = true;
+              }
+              if (!can_dispatch(NULL, arg2->type, arg->type)) {
+                as_good = false;
               }
             }
           }
-          if (!best)
+          if (better || as_good) {
+            best = NULL;
             break;
+          }
         }
       }
       if (best)
@@ -426,6 +439,11 @@ resolve_call(BaseAST* ast,
   }
 
   if (!best && candidateFns.n > 0) {
+    for (int i = 0; i < candidateFns.n; i++) {
+      if (candidateFns.v[i].key) {
+        resolve_call_error_candidates.add(candidateFns.v[i].key);
+      }
+    }
     resolve_call_error = CALL_AMBIGUOUS;
     return NULL;
   }

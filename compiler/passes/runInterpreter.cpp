@@ -442,7 +442,7 @@ user_error(IFrame *frame, char *fmt, ...) {
   if (run_interpreter > 1 || finterpreter_insert_mode)
     error_interactive(frame);
   else {
-    INT_FATAL("interpreter terminated");
+    USR_FATAL("interpreter terminated");
   }
 }
 

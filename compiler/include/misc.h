@@ -50,6 +50,9 @@ char *get_file_line(char *filename, int lineno);
 #define USR_PRINT \
   if (setupDevelPrint(__FILE__, __LINE__ )) printProblem
 
+#define USR_PRINT_NOLINE \
+  if (setupDevelPrint(__FILE__, __LINE__ )) printProblemNoLine
+
 int setupDevelError(char* filename, int lineno, bool fatal, bool user, bool cont);
 int setupDevelPrint(char* filename, int lineno);
 void printProblem(char* fmt, ...);

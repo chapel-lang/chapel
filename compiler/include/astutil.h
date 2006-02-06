@@ -26,6 +26,7 @@ enum resolve_call_error_type {
   CALL_UNKNOWN
 };
 extern resolve_call_error_type resolve_call_error;
+extern Vec<FnSymbol*> resolve_call_error_candidates;
 FnSymbol*
 resolve_call(BaseAST* ast,
              char *name,
