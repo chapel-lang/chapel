@@ -55844,3 +55844,43 @@ Added files:
 	chapel/test/trivial/shannon/: multipleArgAssert.chpl 
 	                              multipleArgAssert.good 
 
+---------------------------------------------------------------------------
+
+02/06/06 11:07:27 -- deitz
+
+Log message:
+	Added a bunch of type variable in function tests.  4 futures, 2 that
+	work in the interpreter, but not in analysis.
+	
+	Added a nested function test that works.
+	
+	Added a few .cvsignore files.
+
+Added files:
+	chapel/test/demo/review_060130/: .cvsignore 
+	chapel/test/functions/deitz/: test_nested1.chpl 
+	                              test_nested1.good 
+	chapel/test/interpreter/jplevyak/: .cvsignore 
+	chapel/test/types/type_variables/deitz/functions/: .cvsignore 
+	                                                   test_foo1.chpl 
+	                                                   test_foo1.good 
+	                                                   test_foo2.chpl 
+	                                                   test_foo2.future 
+	                                                   test_foo2.good 
+	                                                   test_foo3.chpl 
+	                                                   test_foo3.good 
+	                                                   test_foo4.chpl 
+	                                                   test_foo4.good 
+	                                                   test_foo5-error.chpl 
+	                                                   test_foo5-error.future 
+	                                                   test_foo5-error.good 
+	                                                   test_foo5.chpl 
+	                                                   test_foo5.future 
+	                                                   test_foo5.good 
+	                                                   test_foo6.chpl 
+	                                                   test_foo6.future 
+	                                                   test_foo6.good 
+	                                                   test_foo7.chpl 
+	                                                   test_foo7.future 
+	                                                   test_foo7.good 
+
