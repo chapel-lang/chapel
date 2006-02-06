@@ -55884,3 +55884,23 @@ Added files:
 	                                                   test_foo7.future 
 	                                                   test_foo7.good 
 
+---------------------------------------------------------------------------
+
+02/06/06 12:55:19 -- deitz
+
+Log message:
+	Simplified resolve_type code in resolve_analyzed pass.  Added error
+	checking if analysis returns dtUnknown for a type.  This is now
+	catching the problem in trivial/deitz/test_let7.chpl, one of the
+	regressions, earlier.
+	
+	Added a small hack for the case where analysis says a symbol is an
+	integer, but it is really an enum.  We take the enum type if that is
+	what we used to have.  John, I can remove this hack if you want to
+	take a look.
+
+Modified files:
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/passes/: resolveAnalyzed.cpp 
+
