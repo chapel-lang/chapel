@@ -14,7 +14,6 @@ extern bool no_pre_instantiate;
 extern bool no_remove_on_pre_instantiate;
 extern bool no_infer;
 extern bool formalTemps;
-extern bool checkAnalysisTypeinfo;
 // End temporary development flags
 
 extern int instantiation_limit;

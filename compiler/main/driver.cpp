@@ -35,7 +35,6 @@ static char log_flags[512] = "";
 static bool rungdb = false;
 static int pre_malloc = 0;
 bool formalTemps = false;
-bool checkAnalysisTypeinfo = false;
 bool no_infer = false;
 bool no_pre_instantiate = false;
 bool no_remove_on_pre_instantiate = false;
@@ -99,7 +98,6 @@ static ArgumentDescription arg_desc[] = {
  {"no-remove-on-pre-instantiate", ' ', "No remove on pre-instantiation", "F", &no_remove_on_pre_instantiate, NULL, NULL},
  {"report-inlining", ' ', "Print inlined functions", "F", &report_inlining, NULL, NULL},
  {"formal-temps", ' ', "Insert temps for formals", "F", &formalTemps, "CHPL_FORMAL_TEMPS", NULL},
- {"check-typeinfo", ' ', "Check result of type_info and return_type_info", "F", &checkAnalysisTypeinfo, NULL, NULL},
  {"no-codegen", ' ', "Suppress code generation", "F", &no_codegen, "CHPL_NO_CODEGEN", NULL},
  {"equal-method", ' ', "= is a method", "T", &f_equal_method, "CHPL_EQUAL_METHOD", NULL},
  {"parser-debug", 'D', "Parser Debug Level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},
