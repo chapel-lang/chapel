@@ -16,7 +16,6 @@
 #include "../traversals/inlineFunctions.h"
 #include "../traversals/instantiate.h"
 #include "../traversals/printAST.h"
-#include "../traversals/removeNamedParameters.h"
 #include "../traversals/removeNestedFunctions.h"
 #include "../traversals/verify.h"
 #include "../traversals/view.h"
@@ -45,7 +44,6 @@ REGISTER(passlistTest);
 REGISTER(pre_instantiate);
 REGISTER(printAST);        // BLC: pretty-prints all or part of the AST
 REGISTER(printProgram);    // BLC: pretty-prints the whole program
-REGISTER(removeNamedParameters);
 REGISTER(removeNestedFunctions);
 REGISTER(removeTypeVariableActuals);
 REGISTER(removeTypeVariableFormals);

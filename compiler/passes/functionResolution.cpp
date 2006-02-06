@@ -591,6 +591,7 @@ void functionResolution(void) {
   forv_Vec(TypeSymbol, type, dead_types) {
     type->defPoint->parentStmt->remove();
   }
+  remove_named_exprs();
 }
 
 

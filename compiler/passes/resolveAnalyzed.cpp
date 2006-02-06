@@ -50,6 +50,8 @@ void resolve_analyzed(void) {
       resolve_symbol(a);
     }
   }
+
+  remove_named_exprs();
 }
 
 

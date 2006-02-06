@@ -8,7 +8,6 @@ TRAVERSALS_SRCS = \
         inlineFunctions.cpp \
         instantiate.cpp \
 	printAST.cpp \
-	removeNamedParameters.cpp \
         removeNestedFunctions.cpp \
 	traversal.cpp \
         verify.cpp \

@@ -30,7 +30,6 @@ PassInfo passlist[] = {
   RUN(runAnalysis),      // analysis
   RUN(resolve_analyzed), // resolve functions/types with analysis information
 
-  RUN(removeNamedParameters),     // move to resolve_analyzed/functionResolution
   RUN(removeTypeVariableActuals), // move to resolve_analyzed/functionResolution
   RUN(removeTypeVariableFormals), // move to resolve_analyzed/functionResolution
 

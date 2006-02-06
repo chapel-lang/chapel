@@ -255,3 +255,16 @@ void update_symbols(BaseAST* ast, ASTMap* map) {
     }
   }
 }
+
+
+void remove_named_exprs() {
+  Vec<BaseAST*> asts;
+  collect_asts_postorder(&asts);
+  forv_Vec(BaseAST, ast, asts) {
+    if (NamedExpr* named = dynamic_cast<NamedExpr*>(ast)) {
+      Expr* actual = named->actual;
+      actual->remove();
+      named->replace(actual);
+    }
+  }
+}

@@ -61,4 +61,7 @@ void clear_type_info(BaseAST* baseAST);
 // update symbols in ast with map
 void update_symbols(BaseAST* ast, ASTMap* map);
 
+// removes NamedExpr from AST
+void remove_named_exprs();
+
 #endif
