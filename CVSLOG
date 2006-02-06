@@ -55924,3 +55924,18 @@ Removed files:
 	chapel/compiler/traversals/: removeNamedParameters.cpp 
 	                             removeNamedParameters.h 
 
+---------------------------------------------------------------------------
+
+02/06/06 14:10:39 -- deitz
+
+Log message:
+	Minor fixes to dynamic dispatch code and addition of one working test.
+	I still need to insert cast or temp assignment code so that the types
+	workout in C.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp resolveAnalyzed.cpp 
+Added files:
+	chapel/test/classes/deitz/inherit/: test_inherit4.chpl 
+	                                    test_inherit4.good 
+
