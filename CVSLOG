@@ -55939,3 +55939,16 @@ Added files:
 	chapel/test/classes/deitz/inherit/: test_inherit4.chpl 
 	                                    test_inherit4.good 
 
+---------------------------------------------------------------------------
+
+02/06/06 14:12:18 -- deitz
+
+Log message:
+	Added a test that shows we are not even catching basic constant
+	assignment errors since lowering the AST.
+
+Added files:
+	chapel/test/trivial/deitz/: test_assign_const.chpl 
+	                            test_assign_const.future 
+	                            test_assign_const.good 
+
