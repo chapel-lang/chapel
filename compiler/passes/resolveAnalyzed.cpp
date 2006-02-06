@@ -114,6 +114,7 @@ build_dispatch_tree(CallExpr *call, Vec<FnSymbol*> &fns, Vec<Vec<Vec<Type *> *> 
                                          call->argList->get(a)->copy()), 
                                         true_expr, false_expr);
         if_fn->retType = true_expr->typeInfo();
+        if_fn->retRef = false;
         call->parentStmt->insertBefore(new DefExpr(if_fn));
         normalize(if_fn);
         return new CallExpr(if_fn);

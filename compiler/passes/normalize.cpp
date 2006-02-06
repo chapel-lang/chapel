@@ -549,6 +549,8 @@ static void buildHaltStatement(CallExpr* call) {
 
 
 static void decompose_special_calls(CallExpr* call) {
+  if (call->isResolved())
+    return;
   if (call->isNamed("assert")) {
     buildAssertStatement(call);
   } else if (call->isNamed("halt")) {
