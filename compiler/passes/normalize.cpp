@@ -507,20 +507,24 @@ static CallExpr* lineno_info(CallExpr* call) {
 
 
 static void buildAssertStatement(CallExpr* call) {
-    if (call->argList->length() != 1) {
-      USR_FATAL(call->argList, "Assert takes exactly one "
-                "expression; you've given it %d.", call->argList->length());
-    }
     AList<Stmt>* blockStmt = new AList<Stmt>();
     CallExpr* assertFailed = new CallExpr("fwrite", chpl_stdout, new_StringLiteral("Assertion failed: "));
     blockStmt->insertAtTail(assertFailed);
     CallExpr* printLineno = lineno_info(call);
     blockStmt->insertAtTail(printLineno);
+    Expr* assertArg = call->argList->get(1);
+    assertArg->remove();
     CallExpr* fwritelnCall = new CallExpr("fwriteln", chpl_stdout);
-    blockStmt->insertAtTail(fwritelnCall);
+    if (call->argList->length() > 1) {
+      blockStmt->insertAtTail(fwritelnCall->copy());
+    }
+    for_alist(Expr, actual, call->argList) {
+      actual->remove();
+      blockStmt->insertAtTail(new CallExpr("fwrite", chpl_stdout, actual));
+    }
+    blockStmt->insertAtTail(fwritelnCall->copy());
     CallExpr* exitCall = new CallExpr("exit", new_IntLiteral(0));
     blockStmt->insertAtTail(exitCall);
-    Expr* assertArg = call->argList->get(1);
     Expr* assert_cond = new CallExpr("not", assertArg->copy());
     BlockStmt* assert_body = new BlockStmt(blockStmt);
     call->parentStmt->insertBefore(new CondStmt(assert_cond, assert_body));
