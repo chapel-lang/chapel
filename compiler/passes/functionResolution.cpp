@@ -592,6 +592,8 @@ void functionResolution(void) {
     type->defPoint->parentStmt->remove();
   }
   remove_named_exprs();
+  remove_static_actuals();
+  remove_static_formals();
 }
 
 

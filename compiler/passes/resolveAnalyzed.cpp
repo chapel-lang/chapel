@@ -54,6 +54,8 @@ void resolve_analyzed(void) {
   }
 
   remove_named_exprs();
+  remove_static_actuals();
+  remove_static_formals();
 }
 
 

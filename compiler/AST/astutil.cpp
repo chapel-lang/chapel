@@ -268,3 +268,47 @@ void remove_named_exprs() {
     }
   }
 }
+
+
+void remove_static_actuals() {
+  Vec<BaseAST*> asts;
+  collect_asts_postorder(&asts);
+  forv_Vec(BaseAST, ast, asts) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+      if (FnSymbol* fn = call->isResolved()) {
+        if (!fn->hasPragma("keep types")) {
+          DefExpr* formalDef = fn->formals->first();
+          for_alist(Expr, actual, call->argList) {
+            ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
+            if (formal->intent == INTENT_TYPE ||
+                formal->type == dtMethodToken ||
+                formal->type == dtSetterToken) {
+              actual->remove();
+            }
+            formalDef = fn->formals->next();
+          }
+        }
+      }
+    }
+  }
+}
+
+
+void remove_static_formals() {
+  Vec<BaseAST*> asts;
+  collect_asts_postorder(&asts);
+  forv_Vec(BaseAST, ast, asts) {
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
+      if (!fn->hasPragma("keep types")) {
+        for_alist(DefExpr, formalDef, fn->formals) {
+          ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
+          if (formal->intent == INTENT_TYPE ||
+              formal->type == dtMethodToken ||
+              formal->type == dtSetterToken) {
+            formalDef->remove();
+          }
+        }
+      }
+    }
+  }
+}

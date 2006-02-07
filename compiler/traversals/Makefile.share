@@ -1,8 +1,6 @@
 TRAVERSALS_SRCS = \
 	createConfigVarTable.cpp \
         createNestedFuncIterators.cpp \
-        findTypeVariables.cpp \
-	findUnknownTypes.cpp \
 	fixup.cpp \
         htmlview.cpp \
         inlineFunctions.cpp \

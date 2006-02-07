@@ -64,4 +64,7 @@ void update_symbols(BaseAST* ast, ASTMap* map);
 // removes NamedExpr from AST
 void remove_named_exprs();
 
+void remove_static_actuals();
+void remove_static_formals();
+
 #endif

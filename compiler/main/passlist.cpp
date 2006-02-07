@@ -10,7 +10,6 @@
 
 #include "../traversals/createConfigVarTable.h"
 #include "../traversals/createNestedFuncIterators.h"
-#include "../traversals/findUnknownTypes.h"
 #include "../traversals/fixup.h"
 #include "../traversals/htmlview.h"
 #include "../traversals/inlineFunctions.h"
@@ -45,8 +44,6 @@ REGISTER(pre_instantiate);
 REGISTER(printAST);        // BLC: pretty-prints all or part of the AST
 REGISTER(printProgram);    // BLC: pretty-prints the whole program
 REGISTER(removeNestedFunctions);
-REGISTER(removeTypeVariableActuals);
-REGISTER(removeTypeVariableFormals);
 REGISTER(resolve_analyzed);
 REGISTER(runAnalysis);
 REGISTER(runInterpreter);

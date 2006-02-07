@@ -30,9 +30,6 @@ PassInfo passlist[] = {
   RUN(runAnalysis),      // analysis
   RUN(resolve_analyzed), // resolve functions/types with analysis information
 
-  RUN(removeTypeVariableActuals), // move to resolve_analyzed/functionResolution
-  RUN(removeTypeVariableFormals), // move to resolve_analyzed/functionResolution
-
   RUN(check_resolved), // checks semantics of resolved AST
 
   RUN(createNestedFuncIterators),
