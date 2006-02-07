@@ -56015,3 +56015,20 @@ Modified files:
 	chapel/compiler/main/: driver.cpp 
 	chapel/compiler/passes/: normalize.cpp 
 
+---------------------------------------------------------------------------
+
+02/07/06 10:08:04 -- deitz
+
+Log message:
+	Added support for tuples of size 1.  They are automatically converted
+	to the type.  So 1*integer is the same as integer.  Added a couple
+	homogeneous test cases.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+Added files:
+	chapel/test/types/tuple/deitz/: test_htuple6.chpl 
+	                                test_htuple6.good 
+	                                test_htuple7.chpl 
+	                                test_htuple7.good 
+
