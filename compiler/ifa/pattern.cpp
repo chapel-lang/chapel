@@ -10,7 +10,7 @@
 #include "ast.h"
 #include "log.h"
 
-//#define CHECK_INSTANTIATION     1
+#define CHECK_INSTANTIATION     1
 //#define CHECK_CALLEE_CACHE      1
 
 // Key to names of position variables
@@ -192,7 +192,7 @@ Matcher::Matcher(AVar *asend, AVar *aarg0, int ais_closure, Partial_kind apartia
   all_matches = 0;
   
   // use summary information from previous analysis iterations to restrict the search
-#ifndef CHECK_CALLEE_CACHE
+#ifdef CHECK_CALLEE_CACHE
   if (send->var->def->callees) {
     all_matches = new Vec<Fun *>(send->var->def->callees->funs);
     all_positions = &send->var->def->callees->arg_positions;
@@ -523,6 +523,7 @@ Matcher::build_Match(Fun *f, Match *m) {
   mm->default_args.copy(m->default_args);
   mm->generic_substitutions.copy(m->generic_substitutions);
   mm->coercion_substitutions.copy(m->coercion_substitutions);
+  mm->partial = m->partial;
   return mm;
 }
 
@@ -704,7 +705,7 @@ Matcher::instantiation_wrappers_and_partial_application(Vec<Fun *> &matches) {
     if (!m->partial)
       complete.set_add(f);
 #ifdef CHECK_INSTANTIATION
-    if (f->is_generic)
+    if (f->is_generic && !m->partial)
       fail("instantiation failure for function '%s'", f->sym->name ? f->sym->name : "<unknown>");
 #endif
     new_matches.set_add(f);
@@ -757,108 +758,87 @@ Matcher::covers_formals(Fun *f, Vec<CreationSet *> &csargs, MPosition &p, int to
   return result;
 }
 
-#if XX
-
 static int
-make_generic_substitution(IFAAST *ast, Sym *generic, Sym *sub, Map<Sym *, Sym *> &substitutions) {
-  assert(generic != sub);
-  assert(sub);
-  if (sub->instantiates == generic) {
-    for (int i = 0; i < sub->substitutions.n; i++)
-      if (!make_generic_substitution(ast, 
-                                     sub->substitutions.v[i].key, 
-                                     sub->substitutions.v[i].value, 
-                                     substitutions))
-        return 0;
-    return 1;
+unify_instantiated(Sym *generic_type, Sym *concrete_type, Map<Sym *, Sym *> &substitutions) {
+  Sym *sym = concrete_type;
+  while (sym != generic_type) {
+    substitutions.map_union(sym->substitutions);
+    sym = sym->instantiates;
+    if (!sym)
+      return 0;
   }
-  Sym *old = substitutions.get(generic);    
-  if (old && old != sub) {
-    show_error("conflicting generic variable substitutions", ast);
-    return 0;
-  }
-  substitutions.put(generic, sub);
   return 1;
 }
 
 static int
-unify_generic_type(Sym *formal, Sym *gtype, Sym *concrete_value, Map<Sym *, Sym *> &substitutions,
+make_generic_substitution(IFAAST *ast, Sym *generic_type, Sym *concrete_type, Map<Sym *, Sym *> &substitutions) {
+  Map<Sym *, Sym *> subs;
+  if (unify_instantiated(generic_type, concrete_type, subs)) {
+    for (int i = 0; i < subs.n; i++)
+      if (!make_generic_substitution(ast, subs.v[i].key, subs.v[i].value, substitutions))
+        return 0;
+  }
+  Sym *old = substitutions.get(generic_type);    
+  if (old && old != concrete_type) {
+    show_error("conflicting generic variable substitutions", ast);
+    return 0;
+  }
+  substitutions.put(generic_type, concrete_type);
+  return 1;
+}
+
+static int
+unify_generic_type(Sym *formal, Sym *generic_type, Sym *concrete_value, Map<Sym *, Sym *> &substitutions,
                    IFAAST *ast) 
 {
   Sym *concrete_type = concrete_value->type;
   if (concrete_type == sym_nil_type)
     return 0;
   if (formal->is_generic) {
-    if (gtype == concrete_value)
-      return 1;
+    if (generic_type == concrete_value)
+      return make_generic_substitution(ast, formal, concrete_value, substitutions);
     if (concrete_type->is_meta_type) {
-      if (!gtype->is_meta_type)
+      if (!generic_type->is_meta_type)
         return 0;
-      Sym *generic = if1->callback->formal_to_generic(formal);
-      if (!generic)
+      Sym *generic = 0;
+      int bind_to_value = 0;
+      if (!if1->callback->formal_to_generic(formal, &generic, &bind_to_value))
         return 1;
-     if (gtype->specializers.set_in(concrete_type))
+      if (generic_type->specializers.set_in(concrete_type))
         return make_generic_substitution(ast, generic, concrete_value->meta_type, 
                                          substitutions);
       return 0;
     }
-    if (gtype->specializers.set_in(concrete_type)) {
-      if (gtype->is_meta_type)
+    if (generic_type->specializers.set_in(concrete_type)) {
+      if (generic_type->is_meta_type)
         return 0;
-      Sym *generic = if1->callback->formal_to_generic(formal);
-      if (!generic)
+      Sym *generic = 0;
+      int bind_to_value = 0;
+      if (!if1->callback->formal_to_generic(formal, &generic, &bind_to_value))
         return 1;
-      return make_generic_substitution(ast, generic, concrete_type, substitutions);
+      return make_generic_substitution(ast, generic, bind_to_value ? concrete_value : concrete_type, 
+                                       substitutions);
     }
     return 0;
+  } else {
+    Sym *type = substitutions.get(generic_type);
+    if (!type) 
+      type = substitutions.get(generic_type->meta_type);
+    if (type == concrete_type)
+      return 1;
+    if (make_generic_substitution(ast, generic_type, concrete_type, substitutions))
+      return 1;
+    return 0;
   }
-  if (gtype == concrete_type)
+  if (generic_type == concrete_type)
     return 1;
 #if 0
   // treat type variables as ?t
-  if (gtype->type_kind == Type_VARIABLE)
-    return make_generic_substitution(ast, gtype, concrete_type, substitutions);
+  if (generic_type->type_kind == Type_VARIABLE)
+    return make_generic_substitution(ast, generic_type, concrete_type, substitutions);
 #endif
   return 0;
 }
-
-#else
-
-static int
-unify_generic_type(Sym *formal, Sym *gtype, Sym *concrete_value, Map<Sym *, Sym *> &substitutions,
-                   IFAAST *ast) {
-  Sym *concrete_type = concrete_value->type;
-  if (concrete_type->is_meta_type)
-    concrete_type = concrete_type->meta_type;
-  if (concrete_type == sym_nil_type)
-    return 0;
-  if (formal->is_generic) {
-    if (gtype->specializers.set_in(concrete_type->meta_type)) {
-      Sym *generic = if1->callback->formal_to_generic(formal);
-      if (!generic)
-        return 0;
-      substitutions.put(generic, concrete_type);
-      return 1;
-    }
-    if (gtype->specializers.set_in(concrete_type)) {
-      substitutions.put(formal, concrete_value);
-      return 1;
-    }
-    if (gtype == concrete_value) {
-      substitutions.put(formal, concrete_value);
-      return 1;
-    }
-    return 0;
-  }
-  if (gtype == concrete_type)
-    return 1;
-  if (gtype->type_kind == Type_VARIABLE) {
-    substitutions.put(gtype, concrete_type);
-    return 1;
-  }
-  return 0;
-}
-#endif
 
 static Sym *
 get_generic_type(Sym *formal) {
@@ -868,13 +848,12 @@ get_generic_type(Sym *formal) {
       return formal_type;
     return formal->type;
   }
-#if XX
-#else
   if (formal_type && formal_type->type_kind == Type_VARIABLE)
+    return formal_type;
+  if (formal_type && formal_type->is_generic)
     return formal_type;
   if (formal->type && formal->type->type_kind == Type_VARIABLE)
     return formal->type;
-#endif
   return 0;
 }
 
@@ -896,28 +875,26 @@ static int
 generic_substitutions(Match **am, MPosition &app, Vec<CreationSet*> &args, IFAAST *ast) {
   MPosition local_app(app);
   Match *m = *am;
-#if XX
   if (!m->fun->is_generic)
     return 1;
-#endif
   local_app.push(1);
   for (int i = 0; i < args.n; i++) {
     MPosition *acpp = cannonicalize_mposition(local_app);
     MPosition *fcpp = to_formal(acpp, m);
     AVar *a = m->actuals.get(acpp);
     CreationSet *cs = args.v[i];
-    Sym *concrete_type = a->var->sym->aspect ? a->var->sym->aspect : cs->sym;
+    Sym *concrete_value = a->var->sym->aspect ? a->var->sym->aspect : cs->sym;
     Sym *formal = m->fun->arg_syms.get(fcpp);
     Sym *generic_type = get_generic_type(formal);
     if (generic_type) {
-      if (!unify_generic_type(formal, generic_type, concrete_type, m->generic_substitutions, ast))
+      if (!unify_generic_type(formal, generic_type, concrete_value, m->generic_substitutions, ast))
         return 0;
       instantiate_formal_types(m);
     }
     local_app.inc();
   }
 #ifdef CHECK_INSTANTIATION
-  if (!m->generic_substitutions.n)
+  if (m->fun->is_generic && !m->generic_substitutions.n && !m->partial)
     fail("unification failure for generic function '%s'", 
          m->fun->sym->name ? m->fun->sym->name : "<unknown>");
 #endif

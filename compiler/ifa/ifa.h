@@ -57,7 +57,7 @@ public:
   virtual void finalize_functions() {}
   virtual Sym *make_LUB_type(Sym *s) { return s; }
   virtual Sym *instantiate(Sym *, Map<Sym *, Sym *> &substitutions) { return 0; }
-  virtual Sym *formal_to_generic(Sym *s) { return s; }
+  virtual int formal_to_generic(Sym *s, Sym **ret_generic, int *ret_bind_to_value) { return false; }
   virtual Sym *new_Sym(char *name) = 0;
   virtual Fun* order_wrapper(Fun *, Map<MPosition *, MPosition *> &substitutions) { return 0; }
   virtual Fun* coercion_wrapper(Fun *, Map<MPosition *, Sym *> &substitutions) { return 0; }

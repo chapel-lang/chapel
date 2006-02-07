@@ -574,20 +574,33 @@ ACallbacks::instantiate(Sym *s, Map<Sym *, Sym *> &substitutions) {
       } else
         subs.put(dynamic_cast<Type*>(SYMBOL(ss->key)), Sym_to_Type(ss->value));
     }
-    Type *new_type = type->instantiate_generic(subs);
+    Type *new_type = dynamic_cast<Type*>(subs.get(type));
+    if (!new_type)
+      new_type = type->instantiate_generic(subs);
     return new_type->asymbol->sym;
   }
   return 0;
 }
 
-Sym *
-ACallbacks::formal_to_generic(Sym *s) {
+int
+ACallbacks::formal_to_generic(Sym *s, Sym **ret_generic, int *ret_bind_to_value) {
   ArgSymbol *p = dynamic_cast<ArgSymbol*>(SYMBOL(s));
-  if (!p->isGeneric || !p->genericSymbol)
+  if (!p->isGeneric)
     return 0;
-  if ( p->genericSymbol->astType == SYMBOL_TYPE)
-    return dynamic_cast<TypeSymbol*>(p->genericSymbol)->definition->asymbol->sym;
-  return p->genericSymbol->asymbol->sym;
+  if (p->genericSymbol) {
+    if (p->genericSymbol->astType == SYMBOL_TYPE)
+      *ret_generic = dynamic_cast<TypeSymbol*>(p->genericSymbol)->definition->asymbol->sym;
+    *ret_generic = p->genericSymbol->asymbol->sym;
+    *ret_bind_to_value = 0;
+    return 1;
+  }
+  if (p->intent == INTENT_PARAM) {
+    *ret_generic = s;
+    *ret_bind_to_value = 1;
+    return 1;
+  }
+  assert(!"unrecognized generic");
+  return 0;
 }
 
 Fun *
@@ -666,12 +679,9 @@ ACallbacks::instantiate_generic(Fun *f, Map<Sym *, Sym *> &generic_substitutions
   ASTMap substitutions;
   form_SymSym(s, generic_substitutions) {
     Type *t = dynamic_cast<Type*>(SYMBOL(s->key));
-#if 0
-    // treat type variables as ?t
     if (!t)
       if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(SYMBOL(s->key)))
         t = ts->definition;
-#endif
     ArgSymbol *p = dynamic_cast<ArgSymbol*>(SYMBOL(s->key));
     if (!t)
       if (p && p->isGeneric && p->genericSymbol && p->genericSymbol->astType == SYMBOL_TYPE)

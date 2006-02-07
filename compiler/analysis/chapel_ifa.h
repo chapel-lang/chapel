@@ -18,7 +18,7 @@ public:
   void finalize_functions();
   Sym *make_LUB_type(Sym *);
   Sym *instantiate(Sym *, Map<Sym *, Sym *> &substitutions);
-  Sym *formal_to_generic(Sym*);
+  int formal_to_generic(Sym*, Sym **, int *);
   Sym *new_Sym(char *name = 0);
   Fun *order_wrapper(Fun *, Map<MPosition *, MPosition *> &substitutions);
   Fun *coercion_wrapper(Fun *, Map<MPosition *, Sym *> &substitutions);

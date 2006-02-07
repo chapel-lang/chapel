@@ -1225,9 +1225,6 @@ tag_generic(FnSymbol *f) {
 static int
 tag_generic(Type *t) {
   Vec<Symbol *> genericSymbols;
-  forv_Vec(FnSymbol, fn, t->methods)
-    if (fn->isGeneric)
-      genericSymbols.set_union(fn->genericSymbols);
   if (ClassType *st = dynamic_cast<ClassType *>(t)) {
     forv_Vec(Symbol, s, st->fields)
       assert(!dynamic_cast<TypeSymbol*>(s)); // play it safe
