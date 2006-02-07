@@ -207,18 +207,10 @@ function _complex_tostring_hack(x, format : string) : string {
 const numLocales: integer = 1;
 
 
--- FROM INTERNAL PRELUDE
-
-record _methodTokenType {
-  var _methodTokenTypeFieldDummy : integer;
-}
-
+record _methodTokenType { }
 var _methodToken : _methodTokenType;
 
-record _setterTokenType {
-  var _setterTokenTypeFieldDummy : integer;
-}
-
+record _setterTokenType { }
 var _setterToken : _setterTokenType;
 
 class _seq { -- this is no longer necessary
@@ -357,5 +349,3 @@ function _INIT_DOMAIN_DIM(dom, dim, lo, hi, str);
 function _ArrayWriteStopgap(x) { }
 function _EnumReadStopgap(x) { }
 function _DomainWriteStopgap(x) { }
-
--- END FROM INTERNAL PRELUDE

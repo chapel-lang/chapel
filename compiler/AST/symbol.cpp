@@ -796,17 +796,20 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
   if (FnSymbol* cached = check_dwcache(this, defaults))
     return cached;
 
-  AList<DefExpr>* wrapper_formals = new AList<DefExpr>();
+  FnSymbol* wrapper = new FnSymbol(name);
+  wrapper->formals = new AList<DefExpr>();
+
   AList<Expr>* wrapper_actuals = new AList<Expr>();
-  BlockStmt* wrapper_body = new BlockStmt();
   ASTMap map;
   for_alist(DefExpr, formalDef, formals) {
     ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
     if (!defaults->in(formal)) {
       Symbol* newFormal = formal->copy();
       map.put(formal, newFormal);
-      wrapper_formals->insertAtTail(new DefExpr(newFormal));
+      wrapper->formals->insertAtTail(new DefExpr(newFormal));
       wrapper_actuals->insertAtTail(new SymExpr(newFormal));
+      if (_this == formal)
+        wrapper->_this = newFormal;
     } else {
       if (formal->intent == INTENT_TYPE) {
         wrapper_actuals->insertAtTail(formal->defaultExpr->copy());
@@ -825,8 +828,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
         }
         if (formalDef->exprType)
           temp_type = formalDef->exprType->copy();
-        wrapper_body->insertAtTail(new DefExpr(temp, temp_init, temp_type));
-        
+        wrapper->insertAtTail(new DefExpr(temp, temp_init, temp_type));
         if (formal->type != dtUnknown &&
             formal->intent != INTENT_REF &&
             formal->intent != INTENT_OUT &&
@@ -837,25 +839,25 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
       }
     }
   }
-  update_symbols(wrapper_body, &map);
-
-  wrapper_body->insertAtTail(
+  update_symbols(wrapper->body, &map);
+  wrapper->insertAtTail(
     function_returns_void(this)
       ? new ExprStmt(new CallExpr(this, wrapper_actuals))
       : new ReturnStmt(new CallExpr(this, wrapper_actuals)));
-
-  FnSymbol* wrapper_fn = new FnSymbol(name, typeBinding, wrapper_formals,
-                                      retType, NULL, wrapper_body,
-                                      fnClass, noParens, retRef);
-  wrapper_fn->method_type = method_type;
-  wrapper_fn->cname = stringcat("_default_wrap_", cname);
-  wrapper_fn->addPragma("inline");
-  defPoint->parentStmt->insertAfter(new DefExpr(wrapper_fn));
-  wrapper_fn->addPragmas(&pragmas);
-  reset_file_info(wrapper_fn->defPoint->parentStmt, lineno, filename);
-  add_dwcache(wrapper_fn, this, defaults);
-  normalize(wrapper_fn);
-  return wrapper_fn;
+  wrapper->typeBinding = typeBinding;
+  wrapper->retType = retType;
+  wrapper->fnClass = fnClass;
+  wrapper->noParens = noParens;
+  wrapper->retRef = retRef;
+  wrapper->method_type = method_type;
+  wrapper->cname = stringcat("_default_wrap_", cname);
+  wrapper->addPragma("inline");
+  defPoint->parentStmt->insertAfter(new DefExpr(wrapper));
+  wrapper->addPragmas(&pragmas);
+  reset_file_info(wrapper->defPoint->parentStmt, lineno, filename);
+  add_dwcache(wrapper, this, defaults);
+  normalize(wrapper);
+  return wrapper;
 }
 
 
