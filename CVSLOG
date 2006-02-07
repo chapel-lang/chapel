@@ -55967,3 +55967,29 @@ Modified files:
 	chapel/compiler/passes/: cleanup.cpp resolveAnalyzed.cpp 
 	chapel/compiler/symtab/: symtab.cpp 
 
+---------------------------------------------------------------------------
+
+02/06/06 16:52:59 -- deitz
+
+Log message:
+	Folded removeTypeVariableActuals and removeTypeVariableFormals into
+	resolve_analyzed as functions called remove_static_actuals and
+	remove_static_formals to better describe what is being removed, the
+	static arguments to a function that do not need to be generated at
+	runtime.
+	
+	Removed unused traversal findTypeVariables.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp symbol.cpp 
+	chapel/compiler/include/: astutil.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/passes/: functionResolution.cpp 
+	                         resolveAnalyzed.cpp 
+	chapel/compiler/traversals/: Makefile.share 
+Removed files:
+	chapel/compiler/traversals/: findTypeVariables.cpp 
+	                             findTypeVariables.h 
+	                             findUnknownTypes.cpp 
+	                             findUnknownTypes.h 
+
