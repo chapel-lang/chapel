@@ -56032,3 +56032,13 @@ Added files:
 	                                test_htuple7.chpl 
 	                                test_htuple7.good 
 
+---------------------------------------------------------------------------
+
+02/07/06 10:12:27 -- deitz
+
+Log message:
+	Fixed codegen with --no-pre-instantiate for _data_construct macro.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+
