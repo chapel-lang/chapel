@@ -56057,3 +56057,17 @@ Added files:
 	                                        test_instantiate_iterator2.future 
 	                                        test_instantiate_iterator2.good 
 
+---------------------------------------------------------------------------
+
+02/07/06 12:26:59 -- shannon
+
+Log message:
+	Added the EOF variable to the prelude so I
+	could test for EOF on all reads.  Updated the
+	output of an affected test.
+
+Modified files:
+	chapel/modules/standard/: _chpl_file.chpl prelude.chpl 
+	chapel/runtime/src/: chplio.c 
+	chapel/test/types/file/: freadIntFailed.good 
+
