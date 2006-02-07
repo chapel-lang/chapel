@@ -55993,3 +55993,25 @@ Removed files:
 	                             findUnknownTypes.cpp 
 	                             findUnknownTypes.h 
 
+---------------------------------------------------------------------------
+
+02/06/06 21:18:20 -- jplevyak
+
+Log message:
+	Add environment variable: CHPL_NO_PRE_INSTANTIATION to ease testing.
+	The genericSymbols of a Type no longer include all the genericSymbols
+	  of all member functions (fix bug).
+	Enable CHECK_INSTANTIATION in pattern.cpp which checks that things
+	  are instantiated which should be.
+	Big changes to generic handling in pattern.cpp: fix unification
+	  of parameters, instantiated types with their generic versions
+	formal_to_generic now returns returns "bind to value" or "bind to type"
+	  for handling parameters in a uniform manner.
+	This checkin goes a long way toward --no-pre-instantiate
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp chapel_ifa.h 
+	chapel/compiler/ifa/: fa.cpp ifa.h pattern.cpp 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/passes/: normalize.cpp 
+
