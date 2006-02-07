@@ -56042,3 +56042,18 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: expr.cpp 
 
+---------------------------------------------------------------------------
+
+02/07/06 10:56:20 -- deitz
+
+Log message:
+	Added a few iterator test cases.
+
+Added files:
+	chapel/test/functions/deitz/iterators/: 
+	                                        test_instantiate_iterator1.chpl 
+	                                        test_instantiate_iterator1.good 
+	                                        test_instantiate_iterator2.chpl 
+	                                        test_instantiate_iterator2.future 
+	                                        test_instantiate_iterator2.good 
+
