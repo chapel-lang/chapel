@@ -55952,3 +55952,18 @@ Added files:
 	                            test_assign_const.future 
 	                            test_assign_const.good 
 
+---------------------------------------------------------------------------
+
+02/06/06 16:50:53 -- deitz
+
+Log message:
+	Patched up the init function of modules that are created as a result
+	of a type being instantiated.  These modules do not require a run-once
+	test and should be made lightweight.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/passes/: cleanup.cpp resolveAnalyzed.cpp 
+	chapel/compiler/symtab/: symtab.cpp 
+
