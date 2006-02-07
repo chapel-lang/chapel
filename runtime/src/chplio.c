@@ -63,6 +63,9 @@ void _chpl_fread_string_help(FILE* fp, _string* val) {
   char dsl[1024];
   int returnVal = 0;
   returnVal = fscanf(fp, "%255s", localVal);
+  if (returnVal == EOF) {
+    printError("Read failed: EOF");
+  }
   if (returnVal < 0) {
     scanfError();
   }

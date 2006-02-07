@@ -94,6 +94,9 @@ pragma "rename _chpl_fread_integer"
 function fread(f: file = stdin, inout val: integer) {
   if (f.isOpen) {
     var returnVal: integer = fscanf(f.fp, "%lld", val);
+    if (returnVal == EOF) {
+      halt("***Error: Read failed: EOF***");
+    }
     if (returnVal < 0) {
       fscanfError();
     } else if (returnVal == 0) {
@@ -124,6 +127,9 @@ pragma "rename _chpl_fread_float"
 function fread(f: file = stdin, inout val: float) {
   if (f.isOpen) {
     var returnVal: integer = fscanf(f.fp, "%lg", val);
+    if (returnVal == EOF) {
+      halt("***Error: Read failed: EOF***");
+    }
     if (returnVal < 0) {
       fscanfError();
     } else if (returnVal == 0) {
