@@ -1157,7 +1157,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
     }
 
     SymScope* saveScope = Symboltable::setCurrentScope(prelude->modScope);
-    ModuleSymbol* mod = new ModuleSymbol(name, MOD_STANDARD);
+    ModuleSymbol* mod = new ModuleSymbol(name, MOD_INSTANTIATED);
     new DefExpr(mod);
     preludeScope->define(mod);
     Symboltable::pushScope(SCOPE_MODULE);

@@ -33,6 +33,8 @@ void resolve_analyzed(void) {
     if (ArgSymbol* as = dynamic_cast<ArgSymbol*>(ast)) {
       if (as->defaultExpr)
         as->defaultExpr->remove();
+      if (as->defPoint->exprType)
+        as->defPoint->exprType->remove();
     }
   }
 

@@ -62,20 +62,16 @@ void createInitFn(ModuleSymbol* mod) {
         definition->insertAtHead(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol("_chpl_standard"))));
     }
 
-    runOnce = stringcat("__run_", mod->name, "_firsttime");
-    // create a boolean variable to guard module initialization
-    DefExpr* varDefExpr = new DefExpr(new VarSymbol(runOnce, dtBoolean),
-                                      new_BoolLiteral(true));
-    // insert its definition in the _chpl_compiler module
-    compilerModule->initFn->insertAtHead(varDefExpr);
- 
-    // insert a set to false at the beginning of the current module's
-    // definition (we'll wrap it in a conditional just below, after
-    // filtering)
-    Expr* assignVar = new CallExpr(PRIMITIVE_MOVE,
-                                   new SymExpr(new UnresolvedSymbol(runOnce)),
-                                   new_BoolLiteral(false));
-    definition->insertAtHead(assignVar);
+    if (mod->modtype != MOD_INSTANTIATED) {
+      runOnce = stringcat("__run_", mod->name, "_firsttime");
+      DefExpr* varDefExpr = new DefExpr(new VarSymbol(runOnce, dtBoolean),
+                                        new_BoolLiteral(true));
+      compilerModule->initFn->insertAtHead(varDefExpr);
+      Expr* assignVar = new CallExpr(PRIMITIVE_MOVE,
+                                     new SymExpr(new UnresolvedSymbol(runOnce)),
+                                     new_BoolLiteral(false));
+      definition->insertAtHead(assignVar);
+    }
   }
 
   definition->filter(stmtIsGlob, globstmts, initstmts);

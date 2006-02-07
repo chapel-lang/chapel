@@ -33,6 +33,7 @@ void registerModule(ModuleSymbol* mod) {
   switch (mod->modtype) {
   case MOD_USER:
     userModules.add(mod);
+  case MOD_INSTANTIATED:
   case MOD_STANDARD:
     codegenModules.add(mod);
   case MOD_INTERNAL:
