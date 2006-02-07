@@ -56092,3 +56092,15 @@ Added files:
 	                                      test_default_arg.future 
 	                                      test_default_arg.good 
 
+---------------------------------------------------------------------------
+
+02/07/06 14:46:40 -- deitz
+
+Log message:
+	Remove .future for test now working because of folding together of
+	resolve_analyzed work into one pass.
+
+Removed files:
+	chapel/test/types/type_variables/deitz/functions/: 
+	                                                   test_foo2.future 
+
