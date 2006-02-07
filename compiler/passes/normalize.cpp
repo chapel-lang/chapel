@@ -1007,6 +1007,15 @@ static void fold_call_expr(CallExpr* call) {
       call->replace(new SymExpr(dtInteger->defaultValue));
     return;
   }
+  if (call->isNamed("_construct__htuple")) {
+    if (SymExpr* rank = dynamic_cast<SymExpr*>(call->get(2))) {
+      if (!strcmp(rank->var->cname, "1")) {
+        Expr* type = call->get(1);
+        type->remove();
+        call->replace(type);
+      }
+    }
+  }
   if (call->argList->length() == 2) {
     if (call->get(1)->typeInfo() == dtString) // folding not handling strings yet
       return;
