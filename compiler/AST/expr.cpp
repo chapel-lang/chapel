@@ -849,7 +849,7 @@ void CallExpr::codegen(FILE* outfile) {
   /// END KLUDGE
   ///
 
-  if (!no_infer) {
+  if (!no_infer && !no_pre_instantiate) {
     if (SymExpr* variable = dynamic_cast<SymExpr*>(baseExpr)) {
       if (!strcmp(variable->var->cname, "_data_construct")) {
         if (argList->length() == 0) {
@@ -885,7 +885,7 @@ void CallExpr::codegen(FILE* outfile) {
     }
   }
 
-  if (!no_infer) {
+  if (!no_infer && !no_pre_instantiate) {
     if (SymExpr* variable = dynamic_cast<SymExpr*>(baseExpr)) {
       if (!strcmp(variable->var->cname, "_data_construct")) {
         ClassType* ct = dynamic_cast<ClassType*>(dynamic_cast<FnSymbol*>(variable->var)->retType);
