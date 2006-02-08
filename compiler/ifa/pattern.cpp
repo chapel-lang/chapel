@@ -153,9 +153,10 @@ Matcher::pattern_match_sym(Sym *type, MPosition *acp, Vec<Fun *> *local_matches,
           local_matches->set_intersection(*fs, ffs);
           fs = &ffs; 
         }
-        if (fs->n)
+        if (fs->n) {
           found = 1;
-        funs.set_union(*fs);
+          funs.set_union(*fs);
+        }
       }
     }
     forv_Sym(tt, type->dispatch_order)
@@ -633,7 +634,7 @@ fixup_maps_for_defaults(Match *m, Fun *oldf, Vec<MPosition *> &defaults) {
 }
 
 Fun *
-Matcher::build(Match *m, Vec<Fun *> &matches) {
+Matcher::build(Match *m, Vec<Fun *> &done_matches) {
   Fun *f = m->fun, *fnew;
   if (m->generic_substitutions.n) {
     GenericCache *c = f->generic_cache;
@@ -643,6 +644,9 @@ Matcher::build(Match *m, Vec<Fun *> &matches) {
       c->cache.put(new GenericMap(m->generic_substitutions), f);
     } else
       f = fnew;
+    if (done_matches.set_in(f))
+      return 0;
+    done_matches.set_add(f);
     m->generic_substitutions.clear();
     m = build_Match(f, m);
   }
@@ -656,6 +660,9 @@ Matcher::build(Match *m, Vec<Fun *> &matches) {
       c->cache.put(new Vec<MPosition*>(m->default_args), f);
     } else
       f = fnew;
+    if (done_matches.set_in(f))
+      return 0;
+    done_matches.set_add(f);
     Vec<MPosition *> defaults;
     defaults.move(m->default_args);
     m = build_Match(f, m);
@@ -669,6 +676,9 @@ Matcher::build(Match *m, Vec<Fun *> &matches) {
       c->cache.put(new CoercionMap(m->coercion_substitutions), f);
     } else
       f = fnew;
+    if (done_matches.set_in(f))
+      return 0;
+    done_matches.set_add(f);
     m->coercion_substitutions.clear();
     m = build_Match(f, m);
   }
@@ -687,6 +697,9 @@ Matcher::build(Match *m, Vec<Fun *> &matches) {
       c->cache.put(new OrderMap(m->order_substitutions), f);
     } else
       f = fnew;
+    if (done_matches.set_in(f))
+      return 0;
+    done_matches.set_add(f);
     Map<MPosition *, MPosition *> order_substitutions;
     order_substitutions.move(m->order_substitutions);
     m = build_Match(f, m);
@@ -698,10 +711,13 @@ Matcher::build(Match *m, Vec<Fun *> &matches) {
 
 void 
 Matcher::instantiation_wrappers_and_partial_application(Vec<Fun *> &matches) {
-  Vec<Fun *> new_matches, complete;
+  Vec<Fun *> new_matches, complete, done_matches;
+  done_matches.set_union(matches);
   forv_Fun(f, matches) {
     Match *m = match_map.get(f);
-    f = build(m, matches);
+    f = build(m, done_matches);
+    if (!f) 
+      continue;
     if (!m->partial)
       complete.set_add(f);
 #ifdef CHECK_INSTANTIATION
@@ -748,9 +764,6 @@ Matcher::covers_formals(Fun *f, Vec<CreationSet *> &csargs, MPosition &p, int to
   if (top_level && result) {
     // handle x.y(z) as ((#y, x), z) differently for paren vs. paren-less methods
     if (partial == Partial_OK && !f->eager_evaluation)
-      m->partial = 1;
-    if (!f->eager_evaluation && !is_closure && csargs.n > 1 && pdb->fa->method_token && 
-        csargs.v[1]->sym == pdb->fa->method_token->out->v[0]->sym->type)
       m->partial = 1;
     if (f->eager_evaluation && is_closure)
       result = 0;
