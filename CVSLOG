@@ -56184,3 +56184,14 @@ Modified files:
 Removed files:
 	chapel/test/arrays/bradc/: domarr1a.future 
 
+---------------------------------------------------------------------------
+
+02/08/06 09:43:27 -- deitz
+
+Log message:
+	Add .future for test_domains_5D which will now require more
+	rank-independent implementation techniques for domains.
+
+Added files:
+	chapel/test/arrays/deitz/: test_domains_5D.future 
+
