@@ -56118,3 +56118,56 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: pattern.cpp 
 
+---------------------------------------------------------------------------
+
+02/07/06 19:56:38 -- deitz
+
+Log message:
+	Reworked arrays and domains to use a _build_array and _build_domain
+	function.  Simplified the implementation removing some kruft.
+	
+	Removed 'keep types' pragma as it is no longer necessary for
+	_data_construct with the normalized AST.
+	
+	Fixed up many array tests to use brackets for domains.  With the
+	changes above, a few more array tests should now start working.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp expr.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: cleanup.cpp functionResolution.cpp 
+	                         normalize.cpp resolveAnalyzed.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl prelude.chpl 
+	chapel/test/arrays/deitz/: jacobi3.chpl test_anon_domain1.chpl 
+	                           test_anon_domain2.chpl 
+	                           test_array_assign2.chpl 
+	                           test_array_assign3.chpl 
+	                           test_array_integer_3d.chpl 
+	                           test_array_of_record1.chpl 
+	                           test_array_of_string2.chpl 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/distributions/bradc/foundations/: blockdist3.chpl 
+	chapel/test/domains/bradc/: paramRank.chpl 
+	chapel/test/flowanalysis/newast/: domarr.good 
+	chapel/test/functions/bradc/: intents-arrays2.chpl 
+	                              intents-arrays2a.chpl 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+	chapel/test/reductions/bradc/manual/: identisinferredvar.chpl 
+	                                      identisvar.chpl 
+	                                      inferstatetype.chpl 
+	                                      inferstatetype2.chpl 
+	                                      manual.chpl 
+	                                      threeuses-cast.chpl 
+	                                      threeuses.chpl 
+	                                      twouses.chpl usestate.chpl 
+	                                      usestate2.chpl 
+	chapel/test/trivial/bradc/: declprintdom2.chpl 
+	                            declprintdom2.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+Removed files:
+	chapel/test/arrays/deitz/: test_array_class2.chpl 
+	                           test_array_class2.future 
+	                           test_array_class2.good 
+
