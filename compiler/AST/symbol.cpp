@@ -1104,6 +1104,8 @@ FnSymbol*
 FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
                               Vec<FnSymbol*>* new_functions,
                               Vec<TypeSymbol*>* new_types) {
+  static int uid = 1;
+
   // check to make sure this fully instantiates
   if (isPartialInstantiation(generic_substitutions))
     INT_FATAL(this, "partial instantiation detected");
@@ -1144,7 +1146,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
     /*** gross code to insert a module because it is still old school */
     Vec<BaseAST*> values;
     generic_substitutions->get_values(values);
-    char* name = stringcat("_", retType->symbol->name, "_of");
+    char* name = stringcat("_", intstring(uid++), "_", retType->symbol->name, "_of");
     for (int i = 0; i < generic_substitutions->n; i++) {
       if (BaseAST* value = generic_substitutions->v[i].value) {
         if (Type* type = dynamic_cast<Type*>(value)) {
