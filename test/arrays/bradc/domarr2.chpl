@@ -1,7 +1,7 @@
 var m : integer = 4; 
 var n : integer = 8;
 
-var Mat : domain(2) = (1..m, 1..n);
+var Mat : domain(2) = [1..m, 1..n];
 
 var A : [Mat] float;
 
@@ -13,12 +13,6 @@ writeln("A is:\n", A);
 [i,j in Mat] A(i,j) = 1.0;
 
 writeln("A is:\n", A);
-
-/* This will only work if we have an elided indices concept
-[Mat] A = 1.5;
-
-writeln("A is:\n", A);
-*/
 
 A = [Mat] 2.0;
 
