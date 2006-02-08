@@ -56195,3 +56195,23 @@ Log message:
 Added files:
 	chapel/test/arrays/deitz/: test_domains_5D.future 
 
+---------------------------------------------------------------------------
+
+02/08/06 09:47:18 -- deitz
+
+Log message:
+	Removed .futures for now working tests.
+
+Removed files:
+	chapel/test/arrays/deitz/: test_anon_domain1.future 
+	                           test_anon_domain2.future 
+	chapel/test/functions/deitz/methods/: test_default_arg.future 
+	chapel/test/reductions/bradc/manual/: identisinferredvar.future 
+	                                      identisvar.future 
+	                                      inferstatetype.future 
+	                                      inferstatetype2.future 
+	                                      manual.future 
+	                                      usestate.future 
+	                                      usestate2.future 
+	chapel/test/trivial/bradc/: declprintdom2.future 
+
