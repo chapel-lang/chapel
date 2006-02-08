@@ -839,7 +839,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, "_chpl_alloc(sizeof(_");
       t->codegen(outfile);
       fprintf(outfile, "), %d, ", (int)t->id);
-      argList->get(2)->codegen(outfile);
+      argList->get(1)->codegen(outfile);
       fprintf(outfile, ")");
       return;
     }
@@ -849,13 +849,11 @@ void CallExpr::codegen(FILE* outfile) {
   /// END KLUDGE
   ///
 
-  if (!no_infer && !no_pre_instantiate) {
-    if (SymExpr* variable = dynamic_cast<SymExpr*>(baseExpr)) {
-      if (!strcmp(variable->var->cname, "_data_construct")) {
-        if (argList->length() == 0) {
-          fprintf(outfile, "0");
-          return;
-        }
+  if (SymExpr* variable = dynamic_cast<SymExpr*>(baseExpr)) {
+    if (!strcmp(variable->var->cname, "_data_construct")) {
+      if (argList->length() == 0) {
+        fprintf(outfile, "0");
+        return;
       }
     }
   }
@@ -885,13 +883,11 @@ void CallExpr::codegen(FILE* outfile) {
     }
   }
 
-  if (!no_infer && !no_pre_instantiate) {
-    if (SymExpr* variable = dynamic_cast<SymExpr*>(baseExpr)) {
-      if (!strcmp(variable->var->cname, "_data_construct")) {
-        ClassType* ct = dynamic_cast<ClassType*>(dynamic_cast<FnSymbol*>(variable->var)->retType);
-        ct->fields.v[1]->type->codegen(outfile);
-        fprintf(outfile, ", ");
-      }
+  if (SymExpr* variable = dynamic_cast<SymExpr*>(baseExpr)) {
+    if (!strcmp(variable->var->cname, "_data_construct")) {
+      ClassType* ct = dynamic_cast<ClassType*>(dynamic_cast<FnSymbol*>(variable->var)->retType);
+      ct->fields.v[1]->type->codegen(outfile);
+      fprintf(outfile, ", ");
     }
   }
 

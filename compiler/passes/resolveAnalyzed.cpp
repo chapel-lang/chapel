@@ -138,12 +138,6 @@ dynamic_dispatch(CallExpr *call) {
 }
 
 static void resolve_symbol(CallExpr* call) {
-    if (call->isNamed("_chpl_alloc")) {
-      CallExpr* parent = dynamic_cast<CallExpr*>(call->parentExpr);
-      if (!parent->isPrimitive(PRIMITIVE_MOVE))
-        INT_FATAL(call, "Bad _chpl_alloc encountered");
-      call->get(1)->replace(new SymExpr(parent->get(1)->typeInfo()->symbol));
-    }
     if (call->isPrimitive(PRIMITIVE_GET_MEMBER) ||
       call->isPrimitive(PRIMITIVE_SET_MEMBER))
     resolve_member_access(call, &call->member_offset, &call->member_type);

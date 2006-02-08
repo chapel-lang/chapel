@@ -578,18 +578,27 @@ void functionResolution(void) {
     return;
   resolve_function(chpl_main);
   fns.set_add(dynamic_cast<FnSymbol*>(Symboltable::lookupInternal("_chpl_alloc")));
-  Vec<TypeSymbol*> dead_types;
+
+  Vec<TypeSymbol*> live_types;
   Vec<FnSymbol*> all_fns;
   collect_functions(&all_fns);
   forv_Vec(FnSymbol, fn, all_fns) {
-    if (!fns.set_in(fn)) {
+    if (fns.set_in(fn)) {
       if (fn->fnClass == FN_CONSTRUCTOR)
-        dead_types.add(fn->typeBinding);
+        live_types.set_add(fn->typeBinding);
+    } else {
       fn->defPoint->parentStmt->remove();
     }
   }
-  forv_Vec(TypeSymbol, type, dead_types) {
-    type->defPoint->parentStmt->remove();
+  Vec<BaseAST*> asts;
+  collect_asts(&asts);
+  forv_Vec(BaseAST, ast, asts) {
+    if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(ast)) {
+      if (dynamic_cast<ClassType*>(ts->definition)) {
+        if (!live_types.set_in(ts))
+          ts->defPoint->parentStmt->remove();
+      }
+    }
   }
   remove_named_exprs();
   remove_static_actuals();

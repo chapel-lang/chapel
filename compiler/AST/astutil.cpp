@@ -276,18 +276,18 @@ void remove_static_actuals() {
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
       if (FnSymbol* fn = call->isResolved()) {
-        if (!fn->hasPragma("keep types")) {
-          DefExpr* formalDef = fn->formals->first();
-          for_alist(Expr, actual, call->argList) {
-            ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
-            if (formal->intent == INTENT_TYPE ||
-                formal->type == dtMethodToken ||
-                formal->type == dtSetterToken) {
-              actual->remove();
-            }
-            formalDef = fn->formals->next();
+        DefExpr* formalDef = fn->formals->first();
+        for_alist(Expr, actual, call->argList) {
+          ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
+          if (formal->intent == INTENT_TYPE ||
+              formal->type == dtMethodToken ||
+              formal->type == dtSetterToken) {
+            actual->remove();
           }
+          formalDef = fn->formals->next();
         }
+        if (!strcmp(fn->name, "_chpl_alloc"))
+          call->get(1)->remove();
       }
     }
   }
@@ -299,14 +299,12 @@ void remove_static_formals() {
   collect_asts_postorder(&asts);
   forv_Vec(BaseAST, ast, asts) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
-      if (!fn->hasPragma("keep types")) {
-        for_alist(DefExpr, formalDef, fn->formals) {
-          ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
-          if (formal->intent == INTENT_TYPE ||
-              formal->type == dtMethodToken ||
-              formal->type == dtSetterToken) {
-            formalDef->remove();
-          }
+      for_alist(DefExpr, formalDef, fn->formals) {
+        ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
+        if (formal->intent == INTENT_TYPE ||
+            formal->type == dtMethodToken ||
+            formal->type == dtSetterToken) {
+          formalDef->remove();
         }
       }
     }

@@ -597,13 +597,10 @@ static void hack_array_constructor_call(CallExpr* call) {
   if (call->isResolved())
     return;
   if (call->isNamed("_construct__aarray")) {
-    if (DefExpr* def = dynamic_cast<DefExpr*>(call->parentExpr)) {
-      call->parentStmt->insertAfter(
-        new CallExpr(new CallExpr(".", def->sym, new_StringSymbol("myinit"))));
-      call->parentStmt->insertAfter(
-        new CallExpr("=", new CallExpr(".", def->sym, new_StringSymbol("dom")), 
-                     call->argList->last()->copy()));
-      call->argList->last()->replace(hack_rank(call->argList->last()));
+    if (dynamic_cast<DefExpr*>(call->parentExpr)) {
+      Expr* dom = call->argList->last();
+      dom->insertBefore(hack_rank(call->argList->last()));
+      dom->replace(new NamedExpr("dom", dom));
     }
   }
 }

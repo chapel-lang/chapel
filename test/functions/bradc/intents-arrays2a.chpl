@@ -1,5 +1,5 @@
 config var n: integer = 6;
-var D: domain(1) = (1..n);
+var D: domain(1) = [1..n];
 var A: [D] float;
 
 function callin(in x) {

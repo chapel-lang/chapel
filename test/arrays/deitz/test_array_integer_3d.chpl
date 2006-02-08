@@ -1,8 +1,8 @@
 config var n : integer = 4;
 
-var D1 : domain(1) = (1..n);
-var D2 : domain(2) = (1..n, 1..n);
-var D3 : domain(3) = (1..n, 1..n, 1..n);
+var D1 : domain(1) = [1..n];
+var D2 : domain(2) = [1..n, 1..n];
+var D3 : domain(3) = [1..n, 1..n, 1..n];
 
 var A1 : [D1] integer;
 var A2 : [D2] integer;

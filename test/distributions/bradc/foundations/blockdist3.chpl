@@ -6,8 +6,8 @@ param rank: integer = 1;
 config const myNumLocales: integer = 4;
 config const n: integer = 10;
 
-var rankD: domain(1) = 1..rank;
-var localeD: domain(1) = 1..myNumLocales;
+var rankD: domain(1) = [1..rank];
+var localeD: domain(1) = [1..myNumLocales];
 
 --var locales: [i in localeD] locale = i;
 var locales: [localeD] locale;

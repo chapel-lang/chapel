@@ -1,27 +1,15 @@
-record _adomain_info {
-  var _low : integer;
-  var _high : integer;
-  var _stride : integer;
-  var _alignment : integer;
+function _array(dom, type elt_type) {
+  return dom._build_array(elt_type);
 }
 
 pragma "instantiate multidimensional iterator"
-class _adomain : value {
+class _adomain {
   param rank : integer;
 
-  var info : _ddata(_adomain_info) = _ddata(_adomain_info, rank);
+  var info : _ddata(_aseq) = _ddata(_aseq, rank);
 
   function initialize() {
     info.init();
-  }
-
-  function _set(dim : integer, x : _aseq) {
-    var tmp : _adomain_info;
-    tmp._low = x._low;
-    tmp._high = x._high;
-    tmp._stride = x._stride;
-    tmp._alignment = x._low;
-    info(dim-1) = tmp;
   }
 
   iterator _forall(dim : integer) : integer {
@@ -36,37 +24,25 @@ class _adomain : value {
 
   function range(dim : integer)
     return info(dim-1)._low..info(dim-1)._high by info(dim-1)._stride;
-}
 
-class _adomain_lit : value {
-  param rank : integer;
-
-  var info : _ddata(_aseq) = _ddata(_aseq, rank);
-
-  var dummy : integer;
-
-  function initialize() {
-    info.init();
-  }
-
-  function _set(dim : integer, x : _aseq) {
-    info(dim-1) = x;
+  function _build_array(type elt_type) {
+    return _aarray(elt_type, rank, dom=this);
   }
 }
 
-function =(x : _adomain, y : _adomain_lit) {
-  if x.rank != y.rank then
-    halt("Domain ranks do not match");
-  for dim in 1..x.rank do
-    x._set(dim, y.info(dim-1));
+function _build_domain(x : _adomain)
+  return x;
+
+function _build_domain(d1 : _aseq) {
+  var x = _adomain(1);
+  x.info(0) = d1;
   return x;
 }
 
-function =(x : _adomain, y : _adomain) {
-  if x.rank != y.rank then
-    halt("Domain ranks do not match");
-  for dim in 1..x.rank do
-    x.info(dim-1) = y.info(dim-1);
+function _build_domain(d1 : _aseq, d2 : _aseq) {
+  var x = _adomain(2);
+  x.info(0) = d1;
+  x.info(1) = d2;
   return x;
 }
 
@@ -97,9 +73,10 @@ class _aarray : value {
   var size : integer;
   var data : _ddata(elt_type) = _ddata(elt_type, 128);
 
-  function myinit() {
+  function initialize() {
     info.init();
     data.init();
+    if dom == nil then return;
     var tmp : _aarray_info;
     tmp._off = dom.info(rank-1)._low;
     tmp._blk = 1;

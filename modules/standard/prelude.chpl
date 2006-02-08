@@ -336,7 +336,6 @@ function length(a : string) : integer {
 }
 
 pragma "split unique"
-pragma "keep types"
 pragma "rename _chpl_alloc"
 function _chpl_alloc(t, description:string) { return __primitive("chpl_alloc", t); }
 

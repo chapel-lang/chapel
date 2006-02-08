@@ -22,6 +22,7 @@ static void build_setters_and_getters(ClassType* ct);
 static void flatten_primary_methods(FnSymbol* fn);
 static void resolve_secondary_method_type(FnSymbol* fn);
 static void add_this_formal_to_method(FnSymbol* fn);
+static void hack_array(DefExpr* def);
 
 
 static bool stmtIsGlob(Stmt* stmt) {
@@ -269,6 +270,9 @@ void cleanup(BaseAST* base) {
       resolve_secondary_method_type(fn);
       add_this_formal_to_method(fn);
     }
+    if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
+      hack_array(def);
+    }
   }
   }
 }
@@ -502,10 +506,8 @@ static void build_constructor(ClassType* ct) {
   reset_file_info(fn, ct->symbol->lineno, ct->symbol->filename);
   ct->symbol->defPoint->parentStmt->insertBefore(new DefExpr(fn));
   ct->methods.add(fn);
-  if (ct->symbol->hasPragma("data class")) {
+  if (ct->symbol->hasPragma("data class"))
     fn->addPragma("rename _data_construct");
-    fn->addPragma("keep types");
-  }
   fn->typeBinding = ct->symbol;
 
   fn->_this = new VarSymbol("this");
@@ -672,6 +674,21 @@ static void add_this_formal_to_method(FnSymbol* fn) {
       ArgSymbol* setter_dummy = new ArgSymbol(INTENT_REF, "_setterTokenDummy", 
                                               dtSetterToken);
       fn->formals->last()->insertBefore(new DefExpr(setter_dummy));
+    }
+  }
+}
+
+
+static void hack_array(DefExpr* def) {
+  if (CallExpr* type = dynamic_cast<CallExpr*>(def->exprType)) {
+    if (type->isNamed("_array")) {
+      if (def->init) {
+        Expr* init = def->init;
+        init->remove();
+        def->parentStmt->insertAfter(new CallExpr("=", def->sym, init));
+      }
+      def->init = def->exprType;
+      def->exprType = NULL;
     }
   }
 }

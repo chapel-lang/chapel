@@ -1004,7 +1004,7 @@ type:
 | TLP non_tuple_lvalue TSTAR variable_expr TRP
     { $$ = new CallExpr("_htuple", $4, $2); }
 | TLSBR nonempty_expr_ls TRSBR type
-    { $$ = new CallExpr("_aarray", $4, $2); }
+    { $$ = new CallExpr("_array", new CallExpr("_build_domain", $2), $4); }
 ;
 
 formal_type:
@@ -1147,7 +1147,7 @@ expr:
       $$ = new CallExpr(new DefExpr(forall_iterator));
     }
 | TLSBR nonempty_expr_ls TRSBR
-    { $$ = new CallExpr("_adomain_lit", $2); }
+    { $$ = new CallExpr("_build_domain", $2); }
 | TIF expr TTHEN expr TELSE expr
     { $$ = new DefExpr(build_if_expr($2, $4, $6)); }
 | TIF expr TTHEN expr %prec TNOELSE
