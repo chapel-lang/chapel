@@ -56234,3 +56234,15 @@ Modified files:
 	chapel/compiler/ifa/: ast.cpp pattern.cpp 
 	chapel/compiler/passes/: codegen.cpp 
 
+---------------------------------------------------------------------------
+
+02/08/06 14:49:40 -- deitz
+
+Log message:
+	Fixed a problem in naming new modules where they weren't unique.  They
+	now all are because I now put a number at the beginning of their
+	names.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
