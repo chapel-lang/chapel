@@ -56171,3 +56171,16 @@ Removed files:
 	                           test_array_class2.future 
 	                           test_array_class2.good 
 
+---------------------------------------------------------------------------
+
+02/07/06 19:58:35 -- deitz
+
+Log message:
+	Fixed up two more array tests, removing one .future.
+
+Modified files:
+	chapel/test/arrays/bradc/: domarr1a.chpl domarr1a.good 
+	                           domarr2.chpl 
+Removed files:
+	chapel/test/arrays/bradc/: domarr1a.future 
+
