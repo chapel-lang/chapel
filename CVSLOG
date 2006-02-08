@@ -56104,3 +56104,17 @@ Removed files:
 	chapel/test/types/type_variables/deitz/functions/: 
 	                                                   test_foo2.future 
 
+---------------------------------------------------------------------------
+
+02/07/06 19:22:29 -- jplevyak
+
+Log message:
+	Removed the restriction whereby methods needed to be invoked
+	  as (x.f)(1,2).
+	Now, they can be invoked as f(_methodToken, f, 1, 2) as well.  The
+	  (x.f)(1,2) way should still be used if there is a chance that f may
+	  be a no-parens (accessor) member function.
+
+Modified files:
+	chapel/compiler/ifa/: pattern.cpp 
+
