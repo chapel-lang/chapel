@@ -248,9 +248,9 @@ build_type_hierarchy() {
   }
   forv_Sym(s, types) if (s) {
     if (!s->dispatch_order.n && !s->is_system_type) {
-      if (s->is_meta_type && s != sym_anyclass)
+      if (s->is_meta_type)
         implement_and_specialize(sym_anyclass, s, types);
-      else if (s->is_value_type && s != sym_value)
+      else if (s->is_value_type)
         implement_and_specialize(sym_value, s, types);
       else 
         implement_and_specialize(sym_any, s, types);
@@ -262,6 +262,8 @@ build_type_hierarchy() {
       implement(s->meta_type, ss->meta_type, meta_types);
     forv_Sym(ss, s->specializers) if (ss && s->meta_type != ss->meta_type)
       specialize(s->meta_type, ss->meta_type, meta_types);
+    if (!s->is_system_type && !s->is_meta_type && s != s->meta_type)
+      implement_and_specialize(s->meta_type, s, types);
   }
   forv_Sym(s, types) if (s) {
     s->implementors.set_add(s);

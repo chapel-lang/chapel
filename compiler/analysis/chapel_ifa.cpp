@@ -1276,6 +1276,7 @@ build_builtin_symbols() {
   sym_object->specializes.add(sym_any);
   sym_nil_type->specializes.add(sym_object);
   sym_value->specializes.add(sym_any);
+  sym_anyclass->specializes.add(sym_any);
 
   sym_any->is_system_type = 1;
   sym_value->is_system_type = 1;
@@ -1284,7 +1285,7 @@ build_builtin_symbols() {
   sym_unknown_type->is_system_type = 1;
   sym_unspecified_type->is_system_type = 1;
   sym_void_type->is_system_type = 1;
-
+  sym_anyclass->is_system_type = 1;
 
 #define S(_n) assert(sym_##_n);
 #include "builtin_symbols.h"

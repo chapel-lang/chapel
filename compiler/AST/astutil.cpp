@@ -43,8 +43,11 @@ class PreCollectAST : public Traversal {
     if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
       asts->add(def->sym);
       if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(def->sym))
-        if (ts->definition)
+        if (ts->definition) {
           asts->add(ts->definition);
+          asts->add(ts->definition->metaType);
+          asts->add(ts->definition->metaType->symbol);
+        }
     }
     if (SymExpr* sym = dynamic_cast<SymExpr*>(expr)) {
       if (dynamic_cast<UnresolvedSymbol*>(sym->var)) {
@@ -66,8 +69,11 @@ class PostCollectAST : public Traversal {
     if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
       asts->add(def->sym);
       if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(def->sym))
-        if (ts->definition)
+        if (ts->definition) {
           asts->add(ts->definition);
+          asts->add(ts->definition->metaType);
+          asts->add(ts->definition->metaType->symbol);
+        }
     }
     if (SymExpr* sym = dynamic_cast<SymExpr*>(expr)) {
       if (dynamic_cast<UnresolvedSymbol*>(sym->var)) {

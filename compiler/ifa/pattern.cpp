@@ -823,8 +823,6 @@ unify_generic_type(Sym *formal, Sym *generic_type, Sym *concrete_value, Map<Sym 
       return 0;
     }
     if (generic_type->specializers.set_in(concrete_type)) {
-      if (generic_type->is_meta_type)
-        return 0;
       Sym *generic = 0;
       int bind_to_value = 0;
       if (!if1->callback->formal_to_generic(formal, &generic, &bind_to_value))
@@ -961,7 +959,10 @@ Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &app,
       Sym *formal_type = dispatch_type(formal);
       assert(formal_type);
       if (formal->is_exact_match) {
-        if (csargs.v[i]->sym != formal_type) {
+        if (csargs.v[i]->sym != formal_type 
+            && csargs.v[i]->sym->type != formal_type // HACK FOR pre-instantiation
+            && csargs.v[i]->sym->type->meta_type != formal_type // HACK FOR pre-instantiation
+          ) {
           app.pop();
           goto LnextFun;
         }
