@@ -56215,3 +56215,22 @@ Removed files:
 	                                      usestate2.future 
 	chapel/test/trivial/bradc/: declprintdom2.future 
 
+---------------------------------------------------------------------------
+
+02/08/06 14:45:41 -- jplevyak
+
+Log message:
+	Change collect_asts to collect the MetaType and corresponding TypeSymbol
+	  for each Type it collects.
+	Change type hierarchy such that all types specialize and implement their
+	  mata type so that values can be passed to type parameters.
+	Hack codegen to ignore syms without a parentScope (i.e. MetaType).
+	Hack pattern matching of exactMatch so that values can match Types
+	  (this will not be required after pre-instantiation has been removed).
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: ast.cpp pattern.cpp 
+	chapel/compiler/passes/: codegen.cpp 
+
