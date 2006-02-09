@@ -56406,3 +56406,20 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 	chapel/modules/standard/: _chpl_adomain.chpl 
 
+---------------------------------------------------------------------------
+
+02/09/06 14:43:23 -- deitz
+
+Log message:
+	Tests of inference of types of fields.  These tests also capture part
+	of an iterator implementation strategy.
+
+Added files:
+	chapel/test/classes/deitz/infer/: infer_field1.chpl 
+	                                  infer_field1.good 
+	                                  infer_field2.chpl 
+	                                  infer_field2.future 
+	                                  infer_field2.good 
+	                                  infer_field2a.chpl 
+	                                  infer_field2a.good 
+
