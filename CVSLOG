@@ -56423,3 +56423,19 @@ Added files:
 	                                  infer_field2a.chpl 
 	                                  infer_field2a.good 
 
+---------------------------------------------------------------------------
+
+02/09/06 14:44:57 -- deitz
+
+Log message:
+	Tests of when a tuple formal uses a previous formal for its rank.  The
+	error case does not produce an error in both interpreter and analysis
+	function resolution.
+
+Added files:
+	chapel/test/types/tuple/deitz/: test_param_tuple_arg1-error.chpl 
+	                                test_param_tuple_arg1-error.future 
+	                                test_param_tuple_arg1-error.good 
+	                                test_param_tuple_arg1.chpl 
+	                                test_param_tuple_arg1.good 
+
