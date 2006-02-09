@@ -2,7 +2,6 @@ function _array(dom, type elt_type) {
   return dom._build_array(elt_type);
 }
 
-//pragma "instantiate multidimensional iterator"
 class _adomain {
   param rank : integer;
 

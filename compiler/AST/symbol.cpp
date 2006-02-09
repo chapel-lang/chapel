@@ -890,53 +890,6 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_formals) {
 }
 
 
-//  iterator _forall() : (integer, integer)
-//    forall i in _forall(1)
-//      forall j in _forall(2)
-//        yield (i, j);
-static FnSymbol*
-buildMultidimensionalIterator(ClassType* type, int rank) {
-
-  FnSymbol* _forall = new FnSymbol("_forall", type->symbol);
-  _forall->fnClass = FN_ITERATOR;
-  _forall->method_type = PRIMARY_METHOD;
-  _forall->formals = new AList<DefExpr>();
-
-  Expr* ret_type = NULL;
-  if (rank == 1) {
-    ret_type = new SymExpr(dtInteger->symbol);
-    VarSymbol* index = new VarSymbol("_i", dtInteger);
-    _forall->insertAtTail
-      (new ForLoopStmt(FORLOOPSTMT_FORALL,
-         new AList<DefExpr>(new DefExpr(index)),
-         new AList<Expr>(new CallExpr("_forall", new_IntLiteral(1))),
-         new ReturnStmt(new SymExpr(index), true)));
-  } else {
-    ret_type = new CallExpr(stringcat("_tuple", intstring(rank)));
-    CallExpr* ret = new CallExpr(stringcat("_tuple", intstring(rank)));
-    Stmt* loop = new ReturnStmt(ret, true);
-    for (int i = 1; i <= rank; i++) {
-      VarSymbol* index = new VarSymbol(stringcat("_i", intstring(i)), dtInteger);
-      loop = new ForLoopStmt(FORLOOPSTMT_FORALL,
-               new AList<DefExpr>(new DefExpr(index)),
-               new AList<Expr>(new CallExpr("_forall", new_IntLiteral(i))),
-               loop);
-      ret->argList->insertAtHead(new SymExpr(dtInteger->symbol));
-      dynamic_cast<CallExpr*>(ret_type)->argList->insertAtHead(new SymExpr(dtInteger->symbol));
-      ret->argList->insertAtTail(new SymExpr(index));
-    }
-    _forall->insertAtTail(loop);
-  }
-
-  type->symbol->defPoint->parentStmt->insertBefore
-    (new DefExpr(_forall, NULL, ret_type));
-  cleanup(_forall->defPoint->parentStmt);
-  scopeResolve(_forall->defPoint->parentStmt);
-  normalize(_forall->defPoint->parentStmt);
-  return _forall;
-}
-
-
 static void
 instantiate_update_expr(ASTMap* substitutions, Expr* expr) {
   ASTMap map;
@@ -1247,14 +1200,6 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
           cloneType->defaultConstructor = fnClone;
       }
     }
-
-    if (clone->hasPragma("instantiate multidimensional iterator")) {
-      Symbol* rank_sym = Symboltable::lookupInScope("rank", argScope);
-      BaseAST* rank_ast = generic_substitutions->get(rank_sym);
-      int rank = (int)(dynamic_cast<VarSymbol*>(rank_ast)->immediate->v_int64);
-      new_functions->add(buildMultidimensionalIterator(cloneType, rank));
-    }
-
   } else {
     newfn = instantiate_function(defPoint->parentStmt, this, &substitutions, generic_substitutions, &map);
     instantiatedTo->add(newfn);
