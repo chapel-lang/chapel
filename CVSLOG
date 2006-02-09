@@ -56246,3 +56246,78 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+02/08/06 16:32:02 -- deitz
+
+Log message:
+	Lowered and removed WhileLoopStmt from the AST.  All high-level AST
+	information is retained in the BlockStmt.  Added new blockTypes
+	BLOCK_DO_WHILE and BLOCK_WHILE_DO to indicate that this BlockStmt is a
+	while loop.  This is used, for example, by scope resolution early on
+	to resolve break and continue statements without labels.  It also
+	retains some high-level information in the event that we want to test
+	ourselves in reconstructing it.
+	
+	The lowering transformation changes
+	
+	  while expr {
+	    stmts;
+	  }
+	
+	to
+	
+	  label _pre_loop;
+	  if expr {
+	    stmts;
+	    goto _pre_loop;
+	  }
+	  label _post_loop;
+	
+	and
+	
+	  do {
+	    stmts;
+	  } while expr;
+	
+	to
+	
+	  label _pre_loop;
+	  {
+	    stmts;
+	  }
+	  if expr goto _pre_loop;
+	  label _post_loop;
+	
+	The _post_loop labels are used for break statements.  They can also
+	serve as markers if necessary.
+	
+	Created new file, build.h and build.cpp, to contain code used by the
+	parser to construct Chapel things.  Moved build_if_expr and
+	build_let_expr into this file.  And added new build_while_do_block and
+	build_do_while_block.
+	
+	Added build_for_block to wrap a ForLoopStmt and provide labels for
+	breaks and continues within for loops.
+	
+	Removed .future for trivial/deitz/test_while1 which uses a slightly
+	more complicated conditional in the while loop and which used to be
+	handled incorrectly.
+
+Modified files:
+	chapel/compiler/AST/: Makefile.share baseAST.cpp bb.cpp expr.cpp 
+	                      stmt.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: baseAST.h expr.h stmt.h 
+	chapel/compiler/parser/: chapel.y lexyacc.h 
+	chapel/compiler/passes/: resolveAnalyzed.cpp runInterpreter.cpp 
+	                         scopeResolve.cpp 
+	chapel/compiler/traversals/: htmlview.cpp 
+Added files:
+	chapel/compiler/AST/: build.cpp 
+	chapel/compiler/include/: build.h 
+	chapel/test/trivial/deitz/: test_unused_label.chpl 
+	                            test_unused_label.good 
+Removed files:
+	chapel/test/trivial/deitz/: test_while1.future 
+
