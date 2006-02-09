@@ -56379,3 +56379,18 @@ Removed files:
 	chapel/test/functions/deitz/iterators/: 
 	                                        test_instantiate_iterator2.future 
 
+---------------------------------------------------------------------------
+
+02/09/06 11:04:57 -- deitz
+
+Log message:
+	Removed dead pre-instantiation code.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp passlist.cpp passlist.h 
+	chapel/compiler/traversals/: Makefile.share 
+Removed files:
+	chapel/compiler/traversals/: instantiate.cpp instantiate.h 
+
