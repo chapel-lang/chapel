@@ -151,8 +151,7 @@ Instantiate::postProcessExpr(Expr* expr) {
 
 
 void pre_instantiate(void) {
-  if (no_pre_instantiate)
-    return;
+  return;
   if (no_infer)
     return;
   Pass* pass = new Instantiate();

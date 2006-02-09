@@ -2,7 +2,7 @@ function _array(dom, type elt_type) {
   return dom._build_array(elt_type);
 }
 
-pragma "instantiate multidimensional iterator"
+//pragma "instantiate multidimensional iterator"
 class _adomain {
   param rank : integer;
 
@@ -20,6 +20,38 @@ class _adomain {
   iterator _for(dim : integer) : integer {
     for i in info(dim-1)._low..info(dim-1)._high by info(dim-1)._stride do
       yield i;
+  }
+
+  iterator _forall_help(param rank : integer) : (rank*integer) {
+    if rank > 2 {
+      for i in _forall(rank) do
+        for x in _forall_help(rank-1) {
+          var result : (rank*integer);
+          for j in 1..rank-1 do
+            result(j) = x(j);
+          result(rank) = i;
+          yield result;
+        }
+    } else if rank == 2 {
+      for i in _forall(rank) do
+        for x in _forall_help(1) {
+          var result : (rank*integer);
+          result(1) = x;
+          result(2) = i;
+          yield result;
+        }
+    } else if rank == 1 {
+      for i in _forall(1) do
+        yield i;
+    }
+  }
+
+  iterator _forall() {
+    var x : (rank*integer);
+    for i in _forall_help(rank) {
+      x = i;
+      yield x;
+    }
   }
 
   function range(dim : integer)
@@ -99,7 +131,7 @@ class _aarray : value {
   }
 
 
-  function this(ij : (integer, integer)) var : elt_type {
+  function this(ij : 2*integer) var : elt_type {
     var ind : integer = (ij(1) - info(0)._off) * info(0)._blk +
                         (ij(2) - info(1)._off) * info(1)._blk;
     return data(ind);

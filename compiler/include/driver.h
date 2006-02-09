@@ -10,7 +10,6 @@
 extern FILE* html_index_file;
 
 // Begin temporary development flags
-extern bool no_pre_instantiate;
 extern bool no_remove_on_pre_instantiate;
 extern bool no_infer;
 extern bool formalTemps;

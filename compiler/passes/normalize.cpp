@@ -1068,7 +1068,7 @@ static void fold_call_expr(CallExpr* call) {
 }
 
 static bool fold_def_expr(DefExpr* def) {
-  VarSymbol* value = NULL;
+  Symbol* value = NULL;
   CallExpr* move = NULL;
   if (def->sym->isParam() || def->sym->isConst()) {
     forv_Vec(SymExpr*, sym, *def->sym->uses) {
@@ -1080,6 +1080,9 @@ static bool fold_def_expr(DefExpr* def) {
                 value = var;
                 move = call;
               }
+            } else if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(val->var)) {
+              value = type;
+              move = call;
             }
           }
         }
