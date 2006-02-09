@@ -56394,3 +56394,15 @@ Modified files:
 Removed files:
 	chapel/compiler/traversals/: instantiate.cpp instantiate.h 
 
+---------------------------------------------------------------------------
+
+02/09/06 11:05:59 -- deitz
+
+Log message:
+	Removed dead code to instantiate multidimensional iterators for
+	arithmetic domains.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl 
+
