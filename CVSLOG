@@ -56367,3 +56367,15 @@ Added files:
 	                                        test_instantiate_iterator3a.chpl 
 	                                        test_instantiate_iterator3a.good 
 
+---------------------------------------------------------------------------
+
+02/09/06 09:03:46 -- deitz
+
+Log message:
+	Removed .futures for two new passing tests of iterators.
+
+Removed files:
+	chapel/test/demo/review_060130/: iterators.future 
+	chapel/test/functions/deitz/iterators/: 
+	                                        test_instantiate_iterator2.future 
+
