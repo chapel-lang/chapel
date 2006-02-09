@@ -2,6 +2,7 @@ pragma "no codegen";
 
 class object { }
 class value { }
+class closure : object { }
 
 function typeof(x) { }
 

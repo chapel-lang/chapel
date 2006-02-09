@@ -253,6 +253,7 @@ TYPE_EXTERN PrimitiveType* dtString;
 
 // internal types
 TYPE_EXTERN Type* dtTuple;
+TYPE_EXTERN Type* dtClosure;
 TYPE_EXTERN Type* dtIndex;
 TYPE_EXTERN Type* dtDomain;
 TYPE_EXTERN Type* dtArray;

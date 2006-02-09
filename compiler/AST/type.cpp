@@ -1089,6 +1089,7 @@ void findInternalTypes(void) {
     dtFile = dynamic_cast<TypeSymbol*>(Symboltable::lookupInFileModuleScope("file"))->definition;
   dtObject = dynamic_cast<ClassType*>(Symboltable::lookupInternalType("object")->definition);
   dtValue = dynamic_cast<ClassType*>(Symboltable::lookupInternalType("value")->definition);
+  dtClosure = dynamic_cast<ClassType*>(Symboltable::lookupInternalType("closure")->definition);
 
   // These should all be eliminated.  Note they almost are since they
   // are MetaTypes, not the types in the prelude.

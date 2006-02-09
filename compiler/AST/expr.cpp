@@ -1282,7 +1282,7 @@ AList<DefExpr>* exprsToIndices(AList<Expr>* indices) {
 
 void initExpr(void) {
   dtNil->defaultValue = gNil;
+  dtVoid->defaultValue = gVoid;
   dtUnknown->defaultValue = gUnknown;
   dtUnspecified->defaultValue = gUnspecified;
-  dtVoid->defaultValue = gVoid;
 }

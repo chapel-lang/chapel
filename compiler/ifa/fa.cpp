@@ -278,7 +278,7 @@ creation_point(AVar *v, Sym *s) {
     assert(cs->sym == s);
     goto Lfound;
   }
-  if (s == sym_function)
+  if (s == sym_closure)
     goto Lunique;
   if ((void*)es == GLOBAL_CONTOUR)
     es = 0;
@@ -1181,7 +1181,7 @@ static void
 make_closure(AVar *result) {
   assert(result->contour_is_entry_set);
   PNode *pn = result->var->def;
-  CreationSet *cs = creation_point(result, sym_function);
+  CreationSet *cs = creation_point(result, sym_closure);
   int add = !cs->vars.n;
   PNode *partial_application = result->var->def;
   EntrySet *es = (EntrySet*)result->contour;
@@ -1419,7 +1419,7 @@ static int
 application(PNode *p, EntrySet *es, AVar *a0, CreationSet *cs, Vec<AVar *> &args, 
             int is_closure, Partial_kind partial) 
 {
-  if (sym_function->implementors.set_in(cs->sym) && cs->defs.n)
+  if (sym_closure->implementors.set_in(cs->sym) && cs->defs.n)
     return partial_application(p, es, cs, args, partial);
   return function_dispatch(p, es, a0, cs, args, is_closure, partial);
 }
@@ -2440,7 +2440,7 @@ collect_results() {
 static int
 empty_type_minus_partial_applications(AType *a) {
   forv_CreationSet(aa, *a) if (aa) {
-    if (aa->sym == sym_function && aa->defs.n)
+    if (aa->sym == sym_closure && aa->defs.n)
       continue;
     if (aa == nil_type->v[0])
       continue;
@@ -2455,7 +2455,7 @@ static AType *
 type_minus_partial_applications(AType *a) {
   AType *r = new AType();
   forv_CreationSet(aa, *a) if (aa) {
-    if (aa->sym == sym_function && aa->defs.n)
+    if (aa->sym == sym_closure && aa->defs.n)
       continue;
     r->set_add(aa);
   }
@@ -2623,7 +2623,7 @@ initialize() {
   size_type = make_abstract_type(sym_size);
   symbol_type = make_abstract_type(sym_symbol);
   string_type = make_abstract_type(sym_string);
-  fun_type = make_abstract_type(sym_function);
+  fun_type = make_abstract_type(sym_closure);
   fun_symbol_type = type_union(symbol_type, fun_type);
   anyint_type = make_abstract_type(sym_anyint);
   anynum_kind = make_abstract_type(sym_anynum);

@@ -225,7 +225,7 @@ build_type_hierarchy() {
       implement_and_specialize(s->type, s, types);
     // functions implement and specialize of "function"
     if (s->is_fun)
-      implement_and_specialize(sym_function, s, types);
+      implement_and_specialize(sym_closure, s, types);
     if (s->type_kind) {
       forv_Sym(ss, s->implements)
         implement(ss, s, types);

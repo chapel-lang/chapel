@@ -1153,6 +1153,7 @@ build_builtin_symbols() {
   sym_unspecified_type = dtUnspecified->asymbol->sym;
   sym_value = dtValue->asymbol->sym;
   sym_void_type = dtVoid->asymbol->sym;
+  sym_closure = dtClosure->asymbol->sym;
 
   new_lub_type(sym_anyclass, "anyclass", VARARG_END);
   sym_anyclass->meta_type = sym_anyclass;
@@ -1164,7 +1165,7 @@ build_builtin_symbols() {
   new_primitive_type(sym_module, "module");
   new_primitive_type(sym_symbol, "symbol");
   if1_set_symbols_type(if1);
-  new_primitive_type(sym_function, "function");
+  new_primitive_type(sym_closure, "closure");
   new_primitive_type(sym_continuation, "continuation");
   new_primitive_type(sym_vector, "vector");
   new_primitive_type(sym_void_type, "void");

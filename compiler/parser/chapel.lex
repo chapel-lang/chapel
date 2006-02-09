@@ -145,6 +145,7 @@ yield           processToken(TYIELD);
 "}"             processToken(TRCBR);
 
 "?"             processToken(TQUESTION);
+"=>"            processToken(TPARTIAL);
 
 {ident}         processToken(TIDENT);
 {intLiteral}    processToken(INTLITERAL);

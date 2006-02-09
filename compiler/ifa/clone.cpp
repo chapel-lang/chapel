@@ -584,7 +584,7 @@ define_concrete_types(CSSS &css_sets) {
     }
     // same sym
     if (sym != (Sym*)-1) {
-      if (sym != sym_tuple && sym != sym_function) {
+      if (sym != sym_tuple && sym != sym_closure) {
         Vec<CreationSet *> creators;
         if (sym->abstract_type)
           eqcss->set_difference(*sym->abstract_type, creators);
@@ -623,7 +623,7 @@ define_concrete_types(CSSS &css_sets) {
             def = (AVar *)-1;
         }
       }
-      if (sym == sym_tuple || sym == sym_function) {
+      if (sym == sym_tuple || sym == sym_closure) {
         // tuples use record type
         char *name = 0;
         IFAAST *ast = 0;

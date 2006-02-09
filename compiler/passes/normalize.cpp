@@ -983,6 +983,8 @@ static void convert_user_primitives(CallExpr* call) {
   }
 
 static void fold_call_expr(CallExpr* call) {
+  if (call->partialTag == PARTIAL_ALWAYS)
+    return;
   if (call->isPrimitive(PRIMITIVE_INIT)) {
     if (!no_infer) {
       if (CallExpr* construct = dynamic_cast<CallExpr*>(call->get(1))) {
