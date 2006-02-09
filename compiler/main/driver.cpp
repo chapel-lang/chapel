@@ -36,7 +36,6 @@ static bool rungdb = false;
 static int pre_malloc = 0;
 bool formalTemps = false;
 bool no_infer = false;
-bool no_remove_on_pre_instantiate = false;
 bool no_codegen = false;
 int debugParserLevel = 0;
 bool developer = false;
@@ -93,7 +92,6 @@ static ArgumentDescription arg_desc[] = {
  {"gdb", ' ', "Run compiler in gdb", "F", &rungdb, NULL, NULL},
  {"no-infer", 'b', "Do not run analysis, inference", "F", &no_infer, NULL, NULL},
  {"no-inline", ' ', "No inlining of functions" , "F", &no_inline, NULL, NULL},
- {"no-remove-on-pre-instantiate", ' ', "No remove on pre-instantiation", "F", &no_remove_on_pre_instantiate, NULL, NULL},
  {"report-inlining", ' ', "Print inlined functions", "F", &report_inlining, NULL, NULL},
  {"formal-temps", ' ', "Insert temps for formals", "F", &formalTemps, "CHPL_FORMAL_TEMPS", NULL},
  {"no-codegen", ' ', "Suppress code generation", "F", &no_codegen, "CHPL_NO_CODEGEN", NULL},

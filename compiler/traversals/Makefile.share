@@ -4,7 +4,6 @@ TRAVERSALS_SRCS = \
 	fixup.cpp \
         htmlview.cpp \
         inlineFunctions.cpp \
-        instantiate.cpp \
 	printAST.cpp \
         removeNestedFunctions.cpp \
 	traversal.cpp \

@@ -11,7 +11,6 @@
 #include "astutil.h"
 #include "passes.h"
 #include "../traversals/createConfigVarTable.h"
-#include "../traversals/instantiate.h"
 
 FnSymbol* chpl_main = NULL;
 
