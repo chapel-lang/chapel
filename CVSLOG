@@ -56439,3 +56439,30 @@ Added files:
 	                                test_param_tuple_arg1.chpl 
 	                                test_param_tuple_arg1.good 
 
+---------------------------------------------------------------------------
+
+02/09/06 15:09:17 -- jplevyak
+
+Log message:
+	Partial evaluation/currying now works through analysis.
+	Fails in codegen.  Need to specialise the clone of the new dtClosure type
+	for each closure, and build the appropriate runtime support.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp type.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: ast.cpp builtin_symbols.h clone.cpp fa.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/modules/standard/: prelude.chpl 
+	chapel/test/classes/deitz/: test_method_call2.good 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+Added files:
+	chapel/test/functions/jplevyak/: partial-1.chpl partial-1.good 
+	                                 partial-2.chpl partial-2.good 
+
