@@ -21,49 +21,27 @@ function_name_matches_method_name(FnSymbol* fn, ClassType* ct) {
 }
 
 
-/*** is_loop
- ***   returns true iff ast is ForLoopStmt or WhileLoopStmt
- ***/
-static bool
-is_loop(BaseAST* ast) {
-  return dynamic_cast<WhileLoopStmt*>(ast) || dynamic_cast<ForLoopStmt*>(ast);
-}
-
-
-/*** find_outer_loop
- ***   returns WhileLoopStmt or ForLoopStmt if found via parentStmt
- ***   links
- ***/
-static Stmt*
+static BlockStmt*
 find_outer_loop(Stmt* stmt) {
-  if (is_loop(stmt->parentStmt))
-    return stmt->parentStmt;
-  else if (stmt->parentStmt)
-    return find_outer_loop(stmt->parentStmt);
-  else
+  if (!stmt)
     return NULL;
-}
-
-
-static void
-insertPostLoopLabelStmt(LabelStmt* ls) {
-  if (is_loop(ls->next))
-    ls->next->insertAfter(new LabelStmt(stringcat("_post", ls->labelName())));
+  if (BlockStmt* block = dynamic_cast<BlockStmt*>(stmt))
+    if (block->isLoop())
+      return block;
+  return find_outer_loop(stmt->parentStmt);
 }
 
 
 static void
 resolveGotoLabel(GotoStmt* gotoStmt) {
   if (!gotoStmt->label) {
-    Stmt* loop = find_outer_loop(gotoStmt);
+    BlockStmt* loop = find_outer_loop(gotoStmt);
     if (!loop) {
       USR_FATAL(gotoStmt, "break or continue is not in a loop");
     } else if (gotoStmt->goto_type == goto_break) {
-      gotoStmt->label = new LabelSymbol("_post_loop_label");
-      loop->insertAfter(new LabelStmt(gotoStmt->label));
+      gotoStmt->label = loop->post_loop;
     } else if (gotoStmt->goto_type == goto_continue) {
-      gotoStmt->label = new LabelSymbol("_loop_label");
-      loop->insertBefore(new LabelStmt(gotoStmt->label));
+      gotoStmt->label = loop->pre_loop;
     } else
       INT_FATAL(gotoStmt, "Unexpected goto type");
   } else if (dynamic_cast<UnresolvedSymbol*>(gotoStmt->label)) {
@@ -135,8 +113,6 @@ void scopeResolve(BaseAST* base) {
           }
         }
       }
-    } else if (LabelStmt* ls = dynamic_cast<LabelStmt*>(ast)) {
-      insertPostLoopLabelStmt(ls);
     } else if (GotoStmt* gs = dynamic_cast<GotoStmt*>(ast)) {
       resolveGotoLabel(gs);
     }

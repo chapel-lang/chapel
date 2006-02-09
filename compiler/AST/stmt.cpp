@@ -256,7 +256,9 @@ BlockStmt::BlockStmt(AList<Stmt>* init_body, blockStmtType init_blockType) :
   Stmt(STMT_BLOCK),
   blockType(init_blockType),
   body(init_body),
-  blkScope(NULL)
+  blkScope(NULL),
+  pre_loop(NULL),
+  post_loop(NULL)
 {}
 
 
@@ -264,7 +266,9 @@ BlockStmt::BlockStmt(Stmt* init_body, blockStmtType init_blockType) :
   Stmt(STMT_BLOCK),
   blockType(init_blockType),
   body(new AList<Stmt>(init_body)),
-  blkScope(NULL)
+  blkScope(NULL),
+  pre_loop(NULL),
+  post_loop(NULL)
 {}
 
 
@@ -302,13 +306,13 @@ void BlockStmt::traverseStmt(Traversal* traversal) {
 
 void BlockStmt::print(FILE* outfile) {
   switch (blockType) {
-  case BLOCK_NORMAL:
-    break;
   case BLOCK_ATOMIC:
     fprintf(outfile, "atomic ");
     break;
   case BLOCK_COBEGIN:
     fprintf(outfile, "cobegin ");
+  default:
+    break;
   }
   fprintf(outfile, "{\n");
   if (body) {
@@ -343,103 +347,14 @@ BlockStmt::insertAtTail(BaseAST* ast) {
 }
 
 
-WhileLoopStmt::WhileLoopStmt(bool init_whileDo,
-                             Expr* init_cond,
-                             BlockStmt* init_block) :
-  Stmt(STMT_WHILELOOP),
-  block(init_block),
-  isWhileDo(init_whileDo),
-  condition(init_cond)
-{ }
-
-
-WhileLoopStmt::WhileLoopStmt(bool init_whileDo,
-                             Expr* init_cond,
-                             Stmt* init_block) :
-  Stmt(STMT_WHILELOOP),
-  block(new BlockStmt(init_block)),
-  isWhileDo(init_whileDo),
-  condition(init_cond)
-{ }
-
-
-WhileLoopStmt::WhileLoopStmt(bool init_whileDo,
-                             Expr* init_cond,
-                             AList<Stmt>* init_block) :
-  Stmt(STMT_WHILELOOP),
-  block(new BlockStmt(init_block)),
-  isWhileDo(init_whileDo),
-  condition(init_cond)
-{ }
-
-
-void WhileLoopStmt::verify() {
-  if (astType != STMT_WHILELOOP) {
-    INT_FATAL(this, "Bad WhileLoopStmt::astType");
-  }
-}
-
-
-WhileLoopStmt* 
-WhileLoopStmt::copyInner(ASTMap* map) {
-  return new WhileLoopStmt(isWhileDo, COPY_INT(condition), COPY_INT(block));
-}
-
-
-void WhileLoopStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == condition) {
-    condition = dynamic_cast<Expr*>(new_ast);
-  } else if (old_ast == block) {
-    block = dynamic_cast<BlockStmt*>(new_ast);
-  } else {
-    INT_FATAL(this, "Unexpected case in WhileLoopStmt::replaceChild");
-  }
-}
-
-
-void WhileLoopStmt::traverseStmt(Traversal* traversal) {
-  if (isWhileDo) {
-    TRAVERSE(condition, traversal, false);
-    TRAVERSE(block, traversal, false);
-  } else {
-    TRAVERSE(block, traversal, false);
-    TRAVERSE(condition, traversal, false);
-  }
-}
-
-
-void WhileLoopStmt::print(FILE* outfile) {
-
-  if (isWhileDo) {
-    fprintf(outfile, "while (");
-    condition->print(outfile);
-    fprintf(outfile, ") ");
-    block->print(outfile);
-  } else {
-    fprintf(outfile, "do ");
-    block->print(outfile);
-    fprintf(outfile, "while (");
-    condition->print(outfile);
-    fprintf(outfile, ")");
-  }
-}
-
-
-void WhileLoopStmt::codegenStmt(FILE* outfile) {
-
-  if (isWhileDo) {
-    fprintf(outfile, "while (");
-    condition->codegen(outfile);
-    fprintf(outfile, ") { ");
-    block->codegen(outfile);
-    fprintf(outfile, " } ");
-  } else { 
-    fprintf(outfile, "do ");
-    block->codegen(outfile);
-    fprintf(outfile, "while (");
-    condition->codegen(outfile);
-    fprintf(outfile, ");\n");
-  }
+bool
+BlockStmt::isLoop(void) {
+  return
+    blockType == BLOCK_WHILE_DO ||
+    blockType == BLOCK_DO_WHILE ||
+    blockType == BLOCK_FOR ||
+    blockType == BLOCK_FORALL ||
+    blockType == BLOCK_ORDERED_FORALL;
 }
 
 

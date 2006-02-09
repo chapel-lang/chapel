@@ -1313,7 +1313,6 @@ define_labels(BaseAST *ast, LabelMap *labelmap) {
           target->ainfo->label[0] = if1_alloc_label(if1);
           target->ainfo->label[1] = target->ainfo->label[0];
           break;
-        case STMT_WHILELOOP:
         case STMT_FORLOOP:
           // handled below
           break;
@@ -1321,7 +1320,6 @@ define_labels(BaseAST *ast, LabelMap *labelmap) {
       labelmap->put(if1_cannonicalize_string(if1, dynamic_cast<LabelStmt*>(stmt)->defLabel->sym->name), target);
       break;
     }
-    case STMT_WHILELOOP:
     case STMT_FORLOOP:
       stmt->ainfo->label[0] = if1_alloc_label(if1);
       stmt->ainfo->label[1] = if1_alloc_label(if1);
@@ -1341,7 +1339,6 @@ resolve_labels(BaseAST *ast, LabelMap *labelmap,
 {
   Stmt *stmt = dynamic_cast<Stmt *>(ast);
   switch (stmt->astType) {
-    case STMT_WHILELOOP:
     case STMT_FORLOOP:
       continue_label = stmt->ainfo->label[0];
       break_label = stmt->ainfo->label[1];
@@ -1472,18 +1469,6 @@ static int
 gen_expr_stmt(BaseAST *a) {
   ExprStmt *expr = dynamic_cast<ExprStmt*>(a);
   expr->ainfo->code = expr->expr->ainfo->code;
-  return 0;
-}
-
-static int
-gen_while(BaseAST *a) {
-  WhileLoopStmt *s = dynamic_cast<WhileLoopStmt*>(a);
-  Code *body_code = 0;
-  if1_gen(if1, &body_code, s->block->ainfo->code);
-  if1_loop(if1, &s->ainfo->code, s->ainfo->label[0], s->ainfo->label[1],
-           s->condition->ainfo->rval, !s->isWhileDo ? body_code : 0, 
-           s->condition->ainfo->code, 0, 
-           body_code, s->ainfo);
   return 0;
 }
 
@@ -1808,7 +1793,6 @@ gen_if1(BaseAST *ast) {
         if1_gen(if1, &s->ainfo->code, ss->ainfo->code);
       break;
     }
-    case STMT_WHILELOOP: gen_while(ast); break;
     case STMT_FORLOOP: gen_for(ast); break;
     case STMT_COND: {
       CondStmt *s = dynamic_cast<CondStmt*>(ast);

@@ -2,6 +2,7 @@ AST_SRCS = \
         astutil.cpp \
 	baseAST.cpp \
         bb.cpp \
+        build.cpp \
 	expr.cpp \
 	primitive.cpp \
 	stmt.cpp \

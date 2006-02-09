@@ -1,4 +1,5 @@
 #include "astutil.h"
+#include "build.h"
 #include "expr.h"
 #include "passes.h"
 #include "runtime.h"

@@ -334,8 +334,9 @@ empty_stmt:
 label_stmt:
   TLABEL identifier stmt
     {
-      $3->insertAtHead(new LabelStmt($2));
       $$ = $3;
+      $$->insertAtTail(new LabelStmt(stringcat("_post", $2)));
+      $$->insertAtHead(new LabelStmt($2));
     }
 ;
 
@@ -384,12 +385,12 @@ if_stmt:
 
 for_stmt:
   for_stmt_tag nonempty_expr_ls TIN nonempty_expr_ls parsed_block_stmt
-    { $$ = new AList<Stmt>(new ForLoopStmt($1, exprsToIndices($2), $4, $5)); }
+    { $$ = build_for_block(new ForLoopStmt($1, exprsToIndices($2), $4, $5)); }
 | for_stmt_tag nonempty_expr_ls TIN nonempty_expr_ls TDO stmt
-    { $$ = new AList<Stmt>(new ForLoopStmt($1, exprsToIndices($2), $4, $6)); }
+    { $$ = build_for_block(new ForLoopStmt($1, exprsToIndices($2), $4, $6)); }
 | TLSBR nonempty_expr_ls TIN nonempty_expr_ls TRSBR stmt
     {
-      $$ = new AList<Stmt>(
+      $$ = build_for_block(
              new ForLoopStmt(FORLOOPSTMT_FORALL, exprsToIndices($2), $4, $6));
     }
 ;
@@ -397,15 +398,15 @@ for_stmt:
 
 while_do_stmt:
 TWHILE expr TDO stmt
-    { $$ = new AList<Stmt>(new WhileLoopStmt(true, $2, $4)); }
+    { $$ = build_while_do_block($2, new BlockStmt($4)); }
 | TWHILE expr parsed_block_stmt
-    { $$ = new AList<Stmt>(new WhileLoopStmt(true, $2, $3)); }
+    { $$ = build_while_do_block($2, $3); }
 ;
 
 
 do_while_stmt:
 TDO stmt TWHILE expr TSEMI
-    { $$ = new AList<Stmt>(new WhileLoopStmt(false, $4, $2)); }
+    { $$ = build_do_while_block($4, new BlockStmt($2)); }
 ;
 
 
@@ -1138,12 +1139,12 @@ expr:
       FnSymbol* forall_iterator =
         new FnSymbol(stringcat("_forallexpr", intstring(iterator_uid++)));
       forall_iterator->fnClass = FN_ITERATOR;
-      forall_iterator->body =
-        new BlockStmt(
+      forall_iterator->insertAtTail(
+        build_for_block(
           new ForLoopStmt(FORLOOPSTMT_FORALL,
                           exprsToIndices($2),
                           $4,
-                          new ReturnStmt($6, true)));
+                          new ReturnStmt($6, true))));
       $$ = new CallExpr(new DefExpr(forall_iterator));
     }
 | TLSBR nonempty_expr_ls TRSBR

@@ -1286,28 +1286,3 @@ void initExpr(void) {
   dtUnspecified->defaultValue = gUnspecified;
   dtVoid->defaultValue = gVoid;
 }
-
-
-FnSymbol* build_if_expr(Expr* e, Expr* e1, Expr* e2) {
-  static int uid = 1;
-  FnSymbol* fn = new FnSymbol(stringcat("_if_fn", intstring(uid++)));
-  fn->retRef = true;
-  fn->formals = new AList<DefExpr>();
-  fn->addPragma("inline");
-  if (e2)
-    fn->insertAtTail(new CondStmt(e, new ReturnStmt(e1), new ReturnStmt(e2)));
-  else
-    USR_FATAL("if-then expressions currently require an else-clause");
-  return fn;
-}
-
-
-FnSymbol* build_let_expr(AList<Stmt>* decls, Expr* expr) {
-  static int uid = 1;
-  FnSymbol* fn = new FnSymbol(stringcat("_let_fn", intstring(uid++)));
-  fn->formals = new AList<DefExpr>();
-  fn->addPragma("inline");
-  fn->insertAtTail(decls);
-  fn->insertAtTail(new ReturnStmt(expr));
-  return fn;
-}

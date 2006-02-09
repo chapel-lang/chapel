@@ -365,7 +365,6 @@ char* astTypeName[AST_TYPE_END+1] = {
   "ExprStmt",
   "ReturnStmt",
   "BlockStmt",
-  "WhileLoopStmt",
   "ForLoopStmt",
   "CondStmt",
   "WhenStmt",
@@ -435,10 +434,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     goto LExprStmtCommon;
   case STMT_BLOCK:
     AST_ADD_LIST(BlockStmt, body, Stmt);
-    goto LStmtCommon;
-  case STMT_WHILELOOP:
-    AST_ADD_CHILD(WhileLoopStmt, condition);
-    AST_ADD_CHILD(WhileLoopStmt, block);
     goto LStmtCommon;
   case STMT_FORLOOP:
     AST_ADD_LIST(ForLoopStmt, indices, DefExpr);

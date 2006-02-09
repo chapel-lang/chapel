@@ -2040,33 +2040,6 @@ IFrame::run(int timeslice) {
         S(BlockStmt);
         EVAL_STMT((Stmt*)s->body->head->next);
       }
-      case STMT_WHILELOOP: {
-        S(WhileLoopStmt);
-        switch (stage) {
-          case 0:
-            stage = 1;
-            if (!s->isWhileDo)
-              EVAL_STMT(s->block);
-            break;
-          case 1:
-            stage = 2;
-            EVAL_EXPR(s->condition);
-            break;
-          case 2: {
-            ISlot *cond = islot(s->condition);
-            check_type(ip, cond, dtBoolean);
-            if (!cond->imm->v_bool)
-              stage = 0;
-            else {
-              stage = 1;
-              EVAL_STMT(s->block);
-            }
-            break;
-          }
-          default: INT_FATAL(ip, "interpreter: bad stage %d for astType: %d", stage, ip->astType); break;
-        }
-        break;
-      }
       case STMT_FORLOOP: {
         S(ForLoopStmt);
         if (!s->indices || s->indices->length() != 1)

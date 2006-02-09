@@ -86,8 +86,6 @@ void HtmlView::preProcessStmt(Stmt* stmt) {
     }
     if (s->label)
       html_print_symbol(s->label, true);
-  } else if (dynamic_cast<WhileLoopStmt*>(stmt)) {
-    write("<B>while</B> ");
   } else if (dynamic_cast<CondStmt*>(stmt)) {
     write("<B>if</B> ");
   } else if (dynamic_cast<LabelStmt*>(stmt)) {

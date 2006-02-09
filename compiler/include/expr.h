@@ -196,7 +196,4 @@ bool get_string(Expr *e, char **s); // false is failure
 VarSymbol *get_constant(Expr *e);
 AList<DefExpr>* exprsToIndices(AList<Expr>* indices);
 
-FnSymbol* build_if_expr(Expr* eif, Expr* ethen, Expr* eelse = NULL);
-FnSymbol* build_let_expr(AList<Stmt>* decls, Expr* expr);
-
 #endif

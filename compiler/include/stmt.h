@@ -68,6 +68,11 @@ class ReturnStmt : public ExprStmt {
 
 enum blockStmtType {
   BLOCK_NORMAL = 0,
+  BLOCK_WHILE_DO,
+  BLOCK_DO_WHILE,
+  BLOCK_FOR,
+  BLOCK_FORALL,
+  BLOCK_ORDERED_FORALL,
   BLOCK_ATOMIC,
   BLOCK_COBEGIN
 };
@@ -78,6 +83,8 @@ class BlockStmt : public Stmt {
   blockStmtType blockType;
   AList<Stmt>* body;
   SymScope* blkScope;
+  LabelSymbol* pre_loop;
+  LabelSymbol* post_loop;
 
   BlockStmt::BlockStmt(AList<Stmt>* init_body = new AList<Stmt>(), 
                        blockStmtType init_blockType = BLOCK_NORMAL);
@@ -92,26 +99,8 @@ class BlockStmt : public Stmt {
 
   void insertAtHead(BaseAST* ast);
   void insertAtTail(BaseAST* ast);
-};
 
-
-class WhileLoopStmt : public Stmt {
- public:
-  BlockStmt* block;
-  bool isWhileDo;
-  Expr* condition;
-
-  WhileLoopStmt(bool init_whileDo, Expr* init_cond, BlockStmt* init_block);
-  WhileLoopStmt(bool init_whileDo, Expr* init_cond, Stmt* init_block);
-  WhileLoopStmt(bool init_whileDo, Expr* init_cond, AList<Stmt>* init_block);
-  virtual void verify(void);
-  COPY_DEF(WhileLoopStmt);
-
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseStmt(Traversal* traversal);
-
-  void print(FILE* outfile);
-  void codegenStmt(FILE* outfile);
+  bool isLoop(void);
 };
 
 
