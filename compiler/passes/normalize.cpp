@@ -33,7 +33,7 @@ static void hack_seqcat_call(CallExpr* call);
 static void hack_typeof_call(CallExpr* call);
 static void convert_user_primitives(CallExpr* call);
 static void hack_resolve_types(Expr* expr);
-static void apply_getters_setters(BaseAST* ast);
+static void apply_getters_setters(FnSymbol* fn);
 static void insert_call_temps(CallExpr* call);
 static void fix_user_assign(CallExpr* call);
 static void fix_def_expr(DefExpr* def);
@@ -763,89 +763,74 @@ static void hack_resolve_types(Expr* expr) {
 }
 
 
-#define REPLACE(_x)              \
-  do {                           \
-    BaseAST* replacement = _x;   \
-    ast->replace(replacement);   \
-    ast = replacement;           \
-    goto Ldone;                  \
-  } while (0)
-
-
-static void apply_getters_setters(BaseAST* ast) {
+static void apply_getters_setters(FnSymbol* fn) {
   // Most generally:
-  //   x.f(1) = y ---> f(_mt, x, 1, _st, y)
-  // or
-  //   CallExpr(=, CallExpr(CallExpr(".", x, "f"), 1), y) --->
-  //     CallExpr("f", _mt, x, 1, _st, y)
-  // though, it could be just
-  //           a CallExpr("." without a CallExpr
-  //           a CallExpr without a "."
-  // SJD: Commment needs to be updated with PARTIAL_OK
-  CallExpr 
-    *call = dynamic_cast<CallExpr*>(ast),  // (eventually) non-assign, non-member call if any
-    *assign = 0,                           // assignment if any
-    *getter = 0;                           // getter if any
-  Expr *rhs = 0;                           // right hand side if any
-  if (!call)
-    goto Ldone;
-  if (call && call->isNamed("=")) {        // handle assignments
-    assign = call;
-    rhs = assign->argList->get(2)->copy();
-    call = dynamic_cast<CallExpr*>(assign->get(1));
-  }
-  if (!call)
-    goto Ldone;
-  if (!call->isNamed(".")) {      // handle calls && getters
-    getter = dynamic_cast<CallExpr*>(call->baseExpr);
-    if (getter && !getter->isNamed("."))
-      getter = 0;
-  } else {
-    getter = call;
-    call = 0;
-  }
-  // at this point the comments above about the contents of the locals are valid
-  if (getter) {
-    VarSymbol *membername = dynamic_cast<VarSymbol*>(dynamic_cast<SymExpr*>(getter->get(2))->var);
-    assert(membername->immediate->const_kind == IF1_CONST_KIND_STRING);
-    if (call) {
-      CallExpr *lhs = new CallExpr(membername->immediate->v_string,
-                                   methodToken, getter->get(1)->copy());
-      lhs->partialTag = PARTIAL_OK;
-      AList<Expr>* arguments = call->argList->copy();
-      if (rhs) {
-        arguments->insertAtTail(new SymExpr(setterToken));
-        arguments->insertAtTail(rhs);
+  //   x.f(a) = y --> f(_mt, x)(a, _st, y)
+  // which is the same as
+  //   call(= call(call(. x "f") a) y) --> call(call(f _mt x) a _st y)
+  // Also:
+  //   x.f = y --> f(_mt, x, _st, y)
+  //   f(a) = y --> f(a, _st, y)
+  //   x.f --> f(_mt, x)
+  //   x.f(a) --> f(_mt, x)(a)
+  // Note:
+  //   call(call or )( indicates PARTIAL_OK
+  Vec<BaseAST*> asts;
+  collect_asts_postorder(&asts, fn);
+  forv_Vec(BaseAST, ast, asts) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+      if (call->getFunction() != fn) // in a nested function, handle
+                                     // later, because it may be a
+                                     // getter or a setter
+        continue;
+      if (call->isNamed(".")) { // handle getter
+        if (CallExpr* parent = dynamic_cast<CallExpr*>(call->parentExpr))
+          if (parent->isNamed("="))
+            if (parent->get(1) == call)
+              continue; // handle setter below
+        char* method = NULL;
+        if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->get(2)))
+          if (VarSymbol* var = dynamic_cast<VarSymbol*>(symExpr->var))
+            if (var->immediate->const_kind == IF1_CONST_KIND_STRING)
+              method = var->immediate->v_string;
+        if (!method)
+          INT_FATAL(call, "No method name for getter or setter");
+        Expr* _this = call->get(1);
+        _this->remove();
+        CallExpr* getter = new CallExpr(method, methodToken, _this);
+        call->replace(getter);
+        if (CallExpr* parent = dynamic_cast<CallExpr*>(getter->parentExpr))
+          if (parent->baseExpr == getter)
+            getter->partialTag = PARTIAL_OK;
+      } else if (call->isNamed("=")) {
+        if (CallExpr* lhs = dynamic_cast<CallExpr*>(call->get(1))) {
+          if (lhs->isNamed(".")) {
+            char* method = NULL;
+            if (SymExpr* symExpr = dynamic_cast<SymExpr*>(lhs->get(2)))
+              if (VarSymbol* var = dynamic_cast<VarSymbol*>(symExpr->var))
+                if (var->immediate->const_kind == IF1_CONST_KIND_STRING)
+                  method = var->immediate->v_string;
+            if (!method)
+              INT_FATAL(call, "No method name for getter or setter");
+            Expr* _this = lhs->get(1);
+            _this->remove();
+            Expr* rhs = call->get(2);
+            rhs->remove();
+            CallExpr* setter =
+              new CallExpr(method, methodToken, _this, setterToken, rhs);
+            call->replace(setter);
+          } else {
+            Expr* rhs = call->get(2);
+            rhs->remove();
+            lhs->remove();
+            call->replace(lhs);
+            lhs->argList->insertAtTail(new SymExpr(setterToken));
+            lhs->argList->insertAtTail(rhs);
+          }
+        }
       }
-      lhs = new CallExpr(lhs, arguments);
-      REPLACE(lhs);
-    } else {
-      AList<Expr>* arguments = new AList<Expr>;
-      arguments->insertAtHead(getter->get(1)->copy());
-      arguments->insertAtHead(new SymExpr(methodToken));
-      if (rhs) {
-        arguments->insertAtTail(new SymExpr(setterToken));
-        arguments->insertAtTail(rhs);
-      }
-      REPLACE(new CallExpr(membername->immediate->v_string, arguments));
     }
   }
-  if (assign && !getter) {
-    Expr *rhs = assign->argList->get(2)->copy();
-    if (call) {
-      AList<Expr>* arguments = call->argList->copy();
-      arguments->insertAtTail(new SymExpr(setterToken));
-      arguments->insertAtTail(rhs);
-      REPLACE(new CallExpr(call->baseExpr->copy(), arguments));
-    } else
-      REPLACE(new CallExpr("=", assign->argList->get(1)->copy(), rhs));
-  } 
- Ldone:
-  // top down, on the modified AST
-  Vec<BaseAST *> asts;
-  get_ast_children(ast, asts);
-  forv_BaseAST(a, asts)
-    apply_getters_setters(a);
 }
 
 
