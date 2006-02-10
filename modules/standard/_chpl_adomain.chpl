@@ -77,6 +77,14 @@ function _build_domain(d1 : _aseq, d2 : _aseq) {
   return x;
 }
 
+function _build_domain(d1 : _aseq, d2 : _aseq, d3 : _aseq) {
+  var x = _adomain(3);
+  x.info(0) = d1;
+  x.info(1) = d2;
+  x.info(2) = d3;
+  return x;
+}
+
 function fwrite(f : file, x : _adomain) {
   fwrite(f, "[");
   for i in 0..x.rank-1 {
