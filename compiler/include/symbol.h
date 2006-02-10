@@ -117,12 +117,13 @@ class ArgSymbol : public Symbol {
  public:
   intentTag intent;
   Expr* defaultExpr;
+  Expr* variableExpr;
   Symbol *genericSymbol;
   bool isGeneric;
   bool isExactMatch;
 
   ArgSymbol(intentTag iIntent, char* iName, Type* iType,
-            Expr* iDefaultExpr = NULL);
+            Expr* iDefaultExpr = NULL, Expr* iVariableExpr = NULL);
   virtual void verify(void); 
   COPY_DEF(ArgSymbol);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);

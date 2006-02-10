@@ -108,6 +108,7 @@ yield           processToken(TYIELD);
 "#="            processToken(TASSIGNSEQCAT);
 
 ".."            processToken(TDOTDOT);
+"..."           processToken(TDOTDOTDOT);
 
 "&"             processToken(TBAND);
 "|"             processToken(TBOR);

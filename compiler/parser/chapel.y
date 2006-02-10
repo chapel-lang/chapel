@@ -166,6 +166,7 @@ Is this "while x"(i); or "while x(i)";?
 %token TSEMI
 %token TCOMMA
 %token TDOT
+%token TDOTDOTDOT
 %token TCOLON
 %token TNOTCOLON
 %token TQUESTION
@@ -222,7 +223,7 @@ Is this "while x"(i); or "while x(i)";?
 %type <pexpr> tuple_paren_expr atom expr expr_list_item opt_expr
 %type <pexpr> literal range seq_expr where whereexpr
 %type <pexpr> tuple_multiplier variable_expr top_level_expr
-%type <pexpr> reduction opt_init_expr
+%type <pexpr> reduction opt_init_expr var_arg_expr
 %type <pexprls> expr_ls nonempty_expr_ls tuple_inner_type_ls opt_inherit_expr_ls
 %type <pdefexpr> formal enum_item
 %type <pdefexprls> formal_ls opt_formal_ls enum_ls
@@ -606,10 +607,21 @@ formal_ls:
 ;
 
 
+var_arg_expr:
+  TDOTDOTDOT expr
+    { $$ = $2; }
+;
+
+
 formal:
   formal_tag pragma_ls identifier opt_formal_var_type opt_init_expr
     {
       $$ = Symboltable::defineParam($1, $3, $4, $5);
+      $$->sym->addPragmas($2);
+    }
+| formal_tag pragma_ls identifier opt_formal_var_type var_arg_expr
+    {
+      $$ = Symboltable::defineParam($1, $3, $4, NULL, $5);
       $$->sym->addPragmas($2);
     }
 | TLP formal_ls TRP

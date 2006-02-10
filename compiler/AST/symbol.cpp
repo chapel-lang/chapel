@@ -419,10 +419,12 @@ static char* intentTagNames[NUM_INTENT_TYPES] = {
 
 
 ArgSymbol::ArgSymbol(intentTag iIntent, char* iName, 
-                     Type* iType, Expr* iDefaultExpr) :
+                     Type* iType, Expr* iDefaultExpr,
+                     Expr* iVariableExpr) :
   Symbol(SYMBOL_ARG, iName, iType),
   intent(iIntent),
   defaultExpr(iDefaultExpr),
+  variableExpr(iVariableExpr),
   genericSymbol(NULL),
   isGeneric(false),
   isExactMatch(false)
@@ -443,7 +445,8 @@ void ArgSymbol::verify(void) {
 ArgSymbol*
 ArgSymbol::copyInner(ASTMap* map) {
   ArgSymbol *ps = new ArgSymbol(intent, stringcpy(name),
-                                type, COPY_INT(defaultExpr));
+                                type, COPY_INT(defaultExpr),
+                                COPY_INT(variableExpr));
   if (genericSymbol)
     ps->genericSymbol = genericSymbol;
   ps->isGeneric = isGeneric;
@@ -456,6 +459,8 @@ ArgSymbol::copyInner(ASTMap* map) {
 void ArgSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == defaultExpr)
     defaultExpr = dynamic_cast<Expr*>(new_ast);
+  else if (old_ast == variableExpr)
+    variableExpr = dynamic_cast<Expr*>(new_ast);
   else
     type->replaceChild(old_ast, new_ast);
 }
@@ -463,6 +468,7 @@ void ArgSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 void ArgSymbol::traverseDefSymbol(Traversal* traversal) {
   TRAVERSE(defaultExpr, traversal, false);
+  TRAVERSE(variableExpr, traversal, false);
   TRAVERSE(type, traversal, false);
   TRAVERSE(genericSymbol, traversal, false);
 }
@@ -952,10 +958,10 @@ instantiate_function(Stmt* pointOfInstantiation, FnSymbol *fn, ASTMap *all_subs,
   ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(fnStmt);
   DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr);
   FnSymbol* fnClone = dynamic_cast<FnSymbol*>(defExpr->sym);
+  pointOfInstantiation->insertBefore(fnStmt);
   if (generic_type != NULL)
     fold_parameter_methods(fnClone, generic_subs, generic_type);
   fnClone->cname = stringcat("_inst_", defExpr->sym->cname);
-  pointOfInstantiation->insertBefore(fnStmt);
   instantiate_add_subs(all_subs, map);
   instantiate_update_expr(all_subs, defExpr);
   fnClone->instantiatedFrom = fn;

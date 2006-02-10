@@ -38,6 +38,7 @@ static void insert_call_temps(CallExpr* call);
 static void fix_user_assign(CallExpr* call);
 static void fix_def_expr(DefExpr* def);
 static void fold_params(Vec<DefExpr*>* defs, Vec<BaseAST*>* asts);
+static void expand_var_args(FnSymbol* fn);
 static int tag_generic(FnSymbol* fn);
 static int tag_generic(Type* fn);
 
@@ -208,6 +209,14 @@ void normalize(BaseAST* base) {
     }
   }
   fold_params(&defs, &asts);
+
+  asts.clear();
+  collect_asts(&asts, base);
+  forv_Vec(BaseAST, ast, asts) {
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
+      expand_var_args(fn);
+    }
+  }
 
   asts.clear();
   collect_asts_postorder(&asts, base);
@@ -1148,6 +1157,59 @@ static void fold_params(Vec<DefExpr*>* defs, Vec<BaseAST*>* asts) {
     }
   } while (change);
 }
+
+
+static void
+expand_var_args(FnSymbol* fn) {
+  for_alist(DefExpr, arg_def, fn->formals) {
+    ArgSymbol* arg = dynamic_cast<ArgSymbol*>(arg_def->sym);
+    if (SymExpr* sym = dynamic_cast<SymExpr*>(arg->variableExpr)) {
+      if (VarSymbol* n_var = dynamic_cast<VarSymbol*>(sym->var)) {
+        if (n_var->type == dtInteger && n_var->immediate) {
+          int n = n_var->immediate->v_int64;
+          AList<Expr>* actual_types = new AList<Expr>();
+          AList<Expr>* actuals = new AList<Expr>();
+          for (int i = 0; i < n; i++) {
+            DefExpr* new_arg_def = arg_def->copy();
+            ArgSymbol* new_arg = dynamic_cast<ArgSymbol*>(new_arg_def->sym);
+            new_arg->variableExpr = NULL;
+            actual_types->insertAtTail(new SymExpr(new_arg));
+            actuals->insertAtTail(new SymExpr(new_arg));
+            new_arg->name = stringcat("_e", intstring(i), "_", arg->name);
+            new_arg->cname = stringcat("_e", intstring(i), "_", arg->cname);
+            arg_def->insertBefore(new_arg_def);
+          }
+          VarSymbol* var = new VarSymbol(arg->name);
+          if (arg->type != dtUnknown) {
+            int i = n;
+            for_alist_backward(Expr, actual, actuals) {
+              actual->remove();
+              fn->insertAtHead(
+                new CallExpr("=",
+                  new CallExpr(var, new_IntLiteral(i)), actual));
+                i--;
+            }
+            fn->insertAtHead(
+              new DefExpr(var,
+                new CallExpr("_construct__htuple", arg->type->symbol, new_IntLiteral(n))));
+          } else {
+            fn->insertAtHead(
+              new DefExpr(var,
+                new CallExpr(stringcat("_construct__tuple", intstring(n)),
+                             actual_types, actuals)));
+          }
+          arg_def->remove();
+          ASTMap update;
+          update.put(arg, var);
+          update_symbols(fn, &update);
+          cleanup(fn);
+          normalize(fn);
+        }
+      }
+    }
+  }
+}
+
 
 static int
 checkGeneric(BaseAST *ast, Vec<Symbol *> *genericSymbols = 0) {
