@@ -628,7 +628,7 @@ define_concrete_types(CSSS &css_sets) {
         char *name = 0;
         IFAAST *ast = 0;
         int abstract = eqcss->n == 1 && eqcss->v[0]->defs.n == 0;
-        Sym *s = abstract ? sym->copy() : sym->clone();
+        Sym *s = abstract ? sym->copy() : sym->clone(eqcss->first()->vars.n);
         s->type_kind = sym == sym_tuple ? Type_RECORD : Type_FUN;
         s->incomplete = 1;
         forv_CreationSet(cs, *eqcss) if (cs) {
@@ -663,7 +663,7 @@ define_concrete_types(CSSS &css_sets) {
             cs->type = sym;
         } else {
           int abstract = eqcss->n == 1 && eqcss->v[0]->defs.n == 0;
-          Sym *s = abstract ? sym->copy() : sym->clone();
+          Sym *s = abstract ? sym->copy() : sym->clone(eqcss->first()->vars.n);
           char *name = 0;
           s->type_kind = sym->type_kind;
           s->incomplete = 1;

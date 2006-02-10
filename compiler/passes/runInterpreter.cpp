@@ -526,6 +526,10 @@ IFrame::icall(int nargs, ISlot *ret_slot) {
         default:
         case EMPTY_ISLOT: 
           INT_FATAL("interpreter: bad slot type: %d", arg[i]->kind); break;
+        case CLOSURE_ISLOT: 
+          actual_types.add(dtClosure);
+          actual_params.add(NULL);
+          break;
         case SELECTOR_ISLOT: 
         case SYMBOL_ISLOT: 
           actual_types.add(arg[i]->symbol->type);
@@ -545,6 +549,11 @@ IFrame::icall(int nargs, ISlot *ret_slot) {
   PartialTag partialTag = PARTIAL_NEVER;
   if (CallExpr *call = dynamic_cast<CallExpr*>(ip)) 
     partialTag = call->partialTag;
+  if (partialTag == PARTIAL_ALWAYS) {
+    *return_slot = *make_closure(nargs + 1);
+    valStack.n -= (nargs + extra_args);
+    return;
+  }
   fn = resolve_call(ip, name, &actual_types, &actual_params, &actual_names, partialTag, fn);
   if (!fn) {
     switch (resolve_call_error) {
@@ -1559,7 +1568,10 @@ IFrame::iprimitive(CallExpr *s) {
         ts = dynamic_cast<TypeSymbol*>(arg[0]->symbol);
       } else if (arg[0]->kind == IMMEDIATE_ISLOT)
         ts = immediate_type(arg[0]->imm)->symbol;
-      else {
+      else if (arg[0]->kind == CLOSURE_ISLOT) {
+        result.set_symbol(gUnspecified);
+        break;
+      } else {
         INT_FATAL(ip, "interpreter: bad argument to INIT primitive: %d", arg[0]->kind);
       }
       if (!ts) {

@@ -153,7 +153,7 @@ class Sym : public BasicSym {
   int                   log_line();             // squelch line numbers of prelude in log
   char                  *filename();
   int                   ast_id();
-  Sym *                 clone();
+  Sym *                 clone(int additional_members = 0);
 
   void                  copy_values(Sym *);
   void                  inherits_add(Sym *);

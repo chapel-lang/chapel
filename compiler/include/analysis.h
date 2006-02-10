@@ -70,6 +70,7 @@ float execution_frequency_info(Expr *);         // -1.0 == error(s)
 float execution_frequency_info(FnSymbol *);     // -1.0 == error(s)
 int resolve_member_access(Expr *e, int *offset, Type **type);  // -1 == error(s)
 int resolve_member(ClassType *t, VarSymbol *v, int *offset, Type **type);  // -1 == error(s)
+int resolve_member(ClassType *t, int index, int *offset, Type **type);  // -1 == error(s)
 int structural_subtypes(Type *t, Vec<Type *> subtypes); // -1 == error(s)
 int analysis_error(AError_kind akind, AVar *acall = NULL, AType *atype = NULL, AVar *avar = NULL);
 int call_info(Expr *a, Vec<FnSymbol *> &fns, Vec<Vec<Vec<Type *> *> *> *dispatch = 0);

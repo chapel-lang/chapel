@@ -474,8 +474,8 @@ BaseAST_to_Sym(BaseAST *b) {
   return 0;
 }
 
-static Fun *
-install_new_asts(FnSymbol *f, Vec<FnSymbol *> &funs, Vec<TypeSymbol *> &types) {
+static void
+install_new_asts(Vec<FnSymbol *> &funs, Vec<TypeSymbol *> &types) {
   Vec<BaseAST *> syms;
   forv_Vec(FnSymbol, f, funs)
     collect_asts(&syms, f->defPoint->parentStmt);
@@ -488,7 +488,8 @@ install_new_asts(FnSymbol *f, Vec<FnSymbol *> &funs, Vec<TypeSymbol *> &types) {
   build_symbols(syms);
   forv_Vec(TypeSymbol, new_ts, types) {
     Type* new_t = new_ts->definition;
-    new_t->asymbol->sym->instantiates = new_t->instantiatedFrom->asymbol->sym;
+    if (new_t->instantiatedFrom)
+      new_t->asymbol->sym->instantiates = new_t->instantiatedFrom->asymbol->sym;
     for (int i = 0; i < new_t->substitutions.n; i++) if (new_t->substitutions.v[i].key) {
       Sym *value = BaseAST_to_Sym(new_t->substitutions.v[i].value);
       // don't map yourself
@@ -523,7 +524,6 @@ install_new_asts(FnSymbol *f, Vec<FnSymbol *> &funs, Vec<TypeSymbol *> &types) {
     finalize_function(f->asymbol->sym->fun);
   }
   if1_write_log();
-  return f->asymbol->sym->fun;
 }
 
 static Fun *
@@ -531,7 +531,8 @@ install_new_asts(FnSymbol *f) {
   Vec<FnSymbol *> funs;
   funs.add(f);
   Vec<TypeSymbol *> types;
-  return install_new_asts(f, funs, types);
+  install_new_asts(funs, types);
+  return f->asymbol->sym->fun;
 }
 
 static Type *
@@ -696,16 +697,24 @@ ACallbacks::instantiate_generic(Fun *f, Map<Sym *, Sym *> &generic_substitutions
   Vec<FnSymbol*> new_functions;
   Vec<TypeSymbol*> new_types;
   FnSymbol *fsym = fndef->instantiate_generic(&substitutions, &new_functions, &new_types);
-  Fun *fun = install_new_asts(fsym, new_functions, new_types);
+  install_new_asts(new_functions, new_types);
+  Fun *fun = fsym->asymbol->sym->fun;
   fun->wraps = f;
   return fun;
 }
 
 Sym *
-ASymbol::clone() {
+ASymbol::clone(int members) {
   if (!symbol) { // internal to analysis
     Sym *s = copy()->sym;
     return s;
+  } else if (this->sym == sym_closure) {
+    Type *new_type = new_Closure(members);
+    Vec<FnSymbol *> funs;
+    Vec<TypeSymbol *> types;
+    types.add(new_type->symbol);
+    install_new_asts(funs, types);
+    return new_type->asymbol->sym;
   } else {
     AnalysisCloneCallback callback;
     ASTCopyContext context;
@@ -2828,7 +2837,7 @@ AST_is_used(BaseAST *a, Symbol *s) {
 }
 
 static int
-member_info(Sym *t, char *name, int *offset, Type **type) {
+member_info(Sym *t, char *name, int *offset, Type **type, int index = -1) {
   int oresult = -1;
   Vec<Sym *> iv_type;
   Vec<Sym *> ttypes, *types = 0;
@@ -2840,7 +2849,9 @@ member_info(Sym *t, char *name, int *offset, Type **type) {
   }
   forv_Sym(s, *types) {
     forv_CreationSet(cs, s->creators) {
-      AVar *iv = cs->var_map.get(name);
+      AVar *iv = name ? cs->var_map.get(name) : 0;
+      if (!iv && index >= 0 && index < cs->vars.n)
+        iv = cs->vars.v[index];
       if (iv) {
         if (oresult >= 0 && oresult != iv->ivar_offset)
           return analysis_error(AERROR_MISMATCH_OFFSETS);
@@ -2884,6 +2895,11 @@ resolve_member_access(Expr *e, int *offset, Type **type) {
 int
 resolve_member(ClassType *t, VarSymbol *v, int *offset, Type **type) {
   return member_info(t->asymbol->sym, v->name, offset, type);
+}
+
+int
+resolve_member(ClassType *t, int index, int *offset, Type **type) {
+  return member_info(t->asymbol->sym, NULL, offset, type, index);
 }
 
 int

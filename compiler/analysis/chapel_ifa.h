@@ -29,7 +29,7 @@ public:
 
 class ASymbol : public IFASymbol {
  public:
-  Sym *clone();
+  Sym *clone(int members);
   char *pathname();
   int line();
   int log_line();

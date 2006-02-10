@@ -289,5 +289,6 @@ int is_Reference_Type(Type *t);
 int is_Value_Type(Type *t);
 Type *getMetaType(Type *t);
 LiteralType *new_LiteralType(VarSymbol *literal_var);
+ClassType *new_Closure(int members);
 
 #endif
