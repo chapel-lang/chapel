@@ -56466,3 +56466,26 @@ Added files:
 	chapel/test/functions/jplevyak/: partial-1.chpl partial-1.good 
 	                                 partial-2.chpl partial-2.good 
 
+---------------------------------------------------------------------------
+
+02/10/06 06:59:40 -- jplevyak
+
+Log message:
+	partial-1.chpl and partial-2.chpl now work in the interpreter.
+	There is a new function new_Closure(int members) which creates a
+	  new subclass of dtClosure with the given number of members.
+	Cloning now uses new_Closure() to clone dtClosure.
+	There is a new version of resolve_member() which takes a
+	  member index instead of a VarSymbol (for use with things like
+	  Tuples and Closures where the member names are fake/arbitrary).
+	Reworked install_new_asts() to not require a FnSymbol (so that
+	  the result of new_Closure() can be integrated into the IF1
+	  representation of the program).
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp chapel_ifa.h 
+	chapel/compiler/ifa/: clone.cpp ifa.h sym.cpp sym.h 
+	chapel/compiler/include/: analysis.h type.h 
+	chapel/compiler/passes/: runInterpreter.cpp 
+
