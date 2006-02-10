@@ -56500,3 +56500,90 @@ Log message:
 Modified files:
 	chapel/modules/standard/: _chpl_adomain.chpl 
 
+---------------------------------------------------------------------------
+
+02/10/06 09:20:55 -- deitz
+
+Log message:
+	Added initial support for writing functions that take a variable
+	number of arguments.  A formal is replicated if it is followed by
+	"...n" where n is a param.  So to write a function that takes two
+	integers, we could write
+	
+	  function foo(is : integer ...2) {
+	    writeln(is(1), " and ", is(2));
+	  }
+	
+	The arguments are put in a tuple which can then be indexed into.  If
+	the type is specified, a homogeneous tuple is created.  Otherwise, a
+	standard tuple is created.  With tuple unification, a homogeneous
+	tuple will be created whenever all the types are the same.
+	
+	Though not yet implemented, a variable number of arguments can be
+	passed in using the syntax
+	
+	  function foo(is : integer ...?n) {
+	    for i in 1..n do
+	      writeln(is(i));
+	  }
+	
+	Here, n captures the number of integers that are passed in.
+	
+	Support for this is implemented in normalization.  So for the first
+	example, the function
+	
+	  function foo(_e0_is : integer, _e1_is : integer) {
+	    var is = (_e0_is, _e1_is);
+	    ...
+	  }
+	
+	is created during normalization.
+	
+	For supporting variable number of arguments, I plan on creating every
+	possible function during normalization.  I haven't thought about how
+	to determine the maximum number in the presence of currying.
+	
+	Added several test cases.  Two futures.  One problem is when the param
+	is an argument as in
+	
+	  function foo(param n : integer, is : integer ...n)
+	
+	In this case, the function needs to be instantiated even though the
+	number of actuals didn't match the number of formals.  This is
+	captured in
+	
+	  test/functions/deitz/varargs/test_varargs3.chpl
+	
+	The other problem is for a method in a class where the param comes
+	from the class.  The apply_getters_setters function is not applying to
+	formals because of a problem in the get_ast_children.  I'm looking
+	into this now.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp symbol.cpp 
+	chapel/compiler/include/: symbol.h symtab.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+Added files:
+	chapel/test/classes/deitz/: test_dot1.chpl test_dot1.good 
+	chapel/test/functions/deitz/varargs/: test_varargs1.chpl 
+	                                      test_varargs1.good 
+	                                      test_varargs2.chpl 
+	                                      test_varargs2.good 
+	                                      test_varargs3.chpl 
+	                                      test_varargs3.future 
+	                                      test_varargs3.good 
+	                                      test_varargs4.chpl 
+	                                      test_varargs4.good 
+	                                      test_varargs5.chpl 
+	                                      test_varargs5.good 
+	                                      test_varargs6.chpl 
+	                                      test_varargs6.good 
+	                                      test_varargs7.chpl 
+	                                      test_varargs7.future 
+	                                      test_varargs7.good 
+
