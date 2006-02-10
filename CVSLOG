@@ -56587,3 +56587,17 @@ Added files:
 	                                      test_varargs7.future 
 	                                      test_varargs7.good 
 
+---------------------------------------------------------------------------
+
+02/10/06 13:44:13 -- deitz
+
+Log message:
+	Reworked apply_getters_setters to use Vec of BaseAST via collect_asts.
+	This fixes a bug in which not all expressions were handled.  Removed
+	future for test/functions/deitz/varargs/test_varargs7.chpl.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+Removed files:
+	chapel/test/functions/deitz/varargs/: test_varargs7.future 
+
