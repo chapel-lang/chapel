@@ -56489,3 +56489,14 @@ Modified files:
 	chapel/compiler/include/: analysis.h type.h 
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+02/10/06 09:20:41 -- deitz
+
+Log message:
+	Added support for 3D arithmetic domains as a placeholder until the
+	variable arguments work is complete.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+
