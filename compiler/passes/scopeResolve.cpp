@@ -1,6 +1,7 @@
 #include "astutil.h"
 #include "expr.h"
 #include "passes.h"
+#include "runtime.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "symscope.h"
@@ -82,7 +83,6 @@ void scopeResolve(BaseAST* base) {
         FnSymbol* fn = dynamic_cast<FnSymbol*>(sym);
         TypeSymbol* type = dynamic_cast<TypeSymbol*>(sym);
         ArgSymbol* arg = dynamic_cast<ArgSymbol*>(sym);
-
         if (sym) {
           if (!fn)
             if (arg && arg->genericSymbol)
@@ -100,10 +100,18 @@ void scopeResolve(BaseAST* base) {
                   if ((var && var->parentScope->type == SCOPE_CLASS) ||
                       (fn && ct && function_name_matches_method_name(fn, ct)))
                     if (symExpr->var != method->_this) {
-                      Expr* dot = new CallExpr(".", method->_this, 
-                                               new_StringSymbol(name));
-                      symExpr->replace(dot);
-                      asts.add(dot);
+                      CallExpr* call = dynamic_cast<CallExpr*>(symExpr->parentExpr);
+                      if (call && call->baseExpr == symExpr &&
+                          call->argList->length() >= 2 &&
+                          dynamic_cast<SymExpr*>(call->get(1)) &&
+                          dynamic_cast<SymExpr*>(call->get(1))->var == methodToken) {
+                        symExpr->var = new UnresolvedSymbol(name);
+                      } else {
+                        Expr* dot = new CallExpr(".", method->_this, 
+                                                 new_StringSymbol(name));
+                        symExpr->replace(dot);
+                        asts.add(dot);
+                      }
                     }
                   break;
                 }

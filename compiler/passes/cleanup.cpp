@@ -16,7 +16,6 @@
 static void normalize_anonymous_record_or_forall_expression(DefExpr* def);
 static void destructure_indices(ForLoopStmt* stmt);
 static void destructure_tuple(CallExpr* call);
-static void construct_tuple_type(int size);
 static void build_constructor(ClassType* ct);
 static void build_setters_and_getters(ClassType* ct);
 static void flatten_primary_methods(FnSymbol* fn);
@@ -195,8 +194,6 @@ void cleanup(void) {
     createInitFn(mod);
   forv_Vec(ModuleSymbol, mod, allModules)
     cleanup(mod);
-  if (tupleModule)
-    cleanup(tupleModule); // cleanup again because tuples are put here
 }
 
 
@@ -240,8 +237,7 @@ void cleanup(BaseAST* base) {
       destructure_indices(a);
     } else if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
       SymExpr* base = dynamic_cast<SymExpr*>(a->baseExpr);
-      if (base && !strncmp(base->var->name, "_tuple", 6)) {
-        construct_tuple_type(atoi(base->var->name+6));
+      if (base && !strncmp(base->var->name, "_construct__tuple", 6)) {
         CallExpr* parent = dynamic_cast<CallExpr*>(a->parentExpr);
         if (parent && parent->isAssign() && parent->get(1) == a)
           destructure_tuple(parent);
@@ -344,122 +340,6 @@ static void destructure_tuple(CallExpr* call) {
       new CallExpr("=", expr->remove(),
         new CallExpr(temp, new_IntLiteral(i++))));
   }
-}
-
-
-/*** construct_tuple_type
- ***   builds rank-dependent tuple type
- ***/
-static void construct_tuple_type(int rank) {
-  currentLineno = 0;
-
-  char *name = stringcat("_tuple", intstring(rank));
-
-  if (Symboltable::lookupInScope(name, tupleModule->modScope))
-    return;
-
-  AList<Stmt>* decls = new AList<Stmt>();
-
-  // Build type declarations
-  Vec<Type*> types;
-  for (int i = 1; i <= rank; i++) {
-    char* typeName = stringcat("_t", intstring(i));
-    VariableType* type = new VariableType(getMetaType(0));
-    TypeSymbol* typeSymbol = new TypeSymbol(typeName, type);
-    type->addSymbol(typeSymbol);
-    decls->insertAtTail(new DefExpr(typeSymbol));
-    types.add(type);
-  }
-
-  // Build field declarations
-  Vec<VarSymbol*> fields;
-  for (int i = 1; i <= rank; i++) {
-    char* fieldName = stringcat("_f", intstring(i));
-    VarSymbol* field = new VarSymbol(fieldName, types.v[i-1]);
-    decls->insertAtTail(new DefExpr(field));
-    fields.add(field);
-  }
-
-  // Build this methods
-  for (int i = 1; i <= rank; i++) {
-    FnSymbol* fn = new FnSymbol("this");
-    ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "index", new_LiteralType(new_IntSymbol(i)));
-    fn->formals = new AList<DefExpr>(new DefExpr(arg));
-
-    fn->retRef = true;
-    fn->body = new BlockStmt(new ReturnStmt(fields.v[i-1]->name));
-    DefExpr* def = new DefExpr(fn);
-    if (no_infer)
-      def->exprType = new SymExpr(types.v[i-1]->symbol);
-    decls->insertAtTail(def);
-  }
-
-  // Build tuple
-  ClassType* tupleType = new ClassType(CLASS_RECORD);
-  TypeSymbol* tupleSym = new TypeSymbol(name, tupleType);
-  tupleType->addSymbol(tupleSym);
-  tupleType->addDeclarations(decls);
-  tupleModule->stmts->insertAtHead(new DefExpr(tupleSym));
-
-  if (!fnostdincs) {
-    // Build write function
-    FnSymbol* fwriteFn = new FnSymbol("fwrite");
-    TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(Symboltable::lookupInFileModuleScope("file"));
-    ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", fileType->definition);
-    ArgSymbol* fwriteArg = new ArgSymbol(INTENT_BLANK, "val", tupleType);
-    fwriteFn->formals = new AList<DefExpr>(new DefExpr(fileArg), new DefExpr(fwriteArg));
-    AList<Expr>* actuals = new AList<Expr>();
-    actuals->insertAtTail(new_StringLiteral(stringcpy("(")));
-    for (int i = 1; i <= rank; i++) {
-      if (i != 1)
-        actuals->insertAtTail(new_StringLiteral(stringcpy(", ")));
-      actuals->insertAtTail(
-        new CallExpr(".", new SymExpr("val"),
-          new_StringSymbol(stringcat("_f", intstring(i)))));
-    }
-    actuals->insertAtTail(new_StringLiteral(stringcpy(")")));
-    Expr* fwriteCall = new CallExpr("fwrite", new SymExpr(fileArg), actuals);
-    fwriteFn->body = new BlockStmt(new ExprStmt(fwriteCall));
-    tupleModule->stmts->insertAtTail(new DefExpr(fwriteFn));
-  }
-
-  // Build htuple = tuple function
-  if (!fnostdincs && !fnostdincs_but_file) {
-    FnSymbol* assignFn = new FnSymbol("=");
-    ArgSymbol* htupleArg = 
-      new ArgSymbol(INTENT_BLANK, "_htuple", chpl_htuple->definition);
-    ArgSymbol* tupleArg = new ArgSymbol(INTENT_BLANK, "val", tupleType);
-    assignFn->formals = new AList<DefExpr>(new DefExpr(htupleArg),
-                                           new DefExpr(tupleArg));
-    assignFn->body = new BlockStmt();
-    for (int i = 1; i <= rank; i++) {
-      assignFn->insertAtTail(
-        new CallExpr("=",
-          new CallExpr(htupleArg, new_IntLiteral(i)),
-          new CallExpr(tupleArg, new_IntLiteral(i))));
-    }
-    assignFn->insertAtTail(new ReturnStmt(htupleArg));
-    tupleModule->stmts->insertAtTail(new DefExpr(assignFn));
-  }
-
-  // Build tuple = _ function
-//   {
-//     FnSymbol* assignFn = new FnSymbol("=");
-//     ArgSymbol* tupleArg = new ArgSymbol(INTENT_BLANK, "tuple", tupleType);
-//     ArgSymbol* secondArg = new ArgSymbol(INTENT_BLANK, "val", dtUnknown);
-//     assignFn->formals = new AList<DefExpr>(new DefExpr(tupleArg),
-//                                            new DefExpr(secondArg));
-//     assignFn->body = new BlockStmt();
-//     for (int i = 1; i <= rank; i++) {
-//       assignFn->insertAtTail(
-//         new ExprStmt(
-//           new CallExpr(PRIMITIVE_MOVE,
-//             new CallExpr(tupleArg, new_IntLiteral(i)),
-//             new CallExpr(secondArg, new_IntLiteral(i)))));
-//     }
-//     assignFn->insertAtTail(new ReturnStmt(tupleArg));
-//     tupleModule->stmts->insertAtTail(new ExprStmt(new DefExpr(assignFn)));
-//   }
 }
 
 

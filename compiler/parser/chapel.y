@@ -610,6 +610,8 @@ formal_ls:
 var_arg_expr:
   TDOTDOTDOT expr
     { $$ = $2; }
+| TDOTDOTDOT TQUESTION identifier
+    { $$ = new DefExpr(new VarSymbol($3, dtInteger, VAR_NORMAL, VAR_PARAM)); }
 ;
 
 
@@ -917,7 +919,7 @@ record_tuple_inner_type:
     }
 | tuple_inner_type_ls TRP
     {
-      char *tupleName = stringcat("_tuple", intstring($1->length()));
+      char *tupleName = stringcat("_construct__tuple", intstring($1->length()));
       $$ = new CallExpr(tupleName, $1);
     }
 ;
@@ -1076,7 +1078,7 @@ tuple_paren_expr:
       } else {
         AList<Expr>* types = new AList<Expr>();
         AList<Expr>* fields = new AList<Expr>();
-        char* tuple_name = stringcat("_tuple", intstring($2->length()));
+        char* tuple_name = stringcat("_construct__tuple", intstring($2->length()));
         for_alist(Expr, expr, $2) {
           types->insertAtTail(new CallExpr("typeof", expr->copy()));
           fields->insertAtTail(expr->copy());

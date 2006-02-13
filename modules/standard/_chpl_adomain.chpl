@@ -11,15 +11,13 @@ class _adomain {
     info.init();
   }
 
-  iterator _forall(dim : integer) : integer {
-    forall i in info(dim-1)._low..info(dim-1)._high by info(dim-1)._stride do
+  iterator _forall(dim : integer) : integer
+    forall i in info(dim-1) do
       yield i;
-  }
 
-  iterator _for(dim : integer) : integer {
-    for i in info(dim-1)._low..info(dim-1)._high by info(dim-1)._stride do
+  iterator _for(dim : integer) : integer
+    for i in info(dim-1) do
       yield i;
-  }
 
   iterator _forall_help(param rank : integer) : (rank*integer) {
     if rank > 2 {
@@ -54,34 +52,22 @@ class _adomain {
   }
 
   function range(dim : integer)
-    return info(dim-1)._low..info(dim-1)._high by info(dim-1)._stride;
+    return info(dim-1);
 
-  function _build_array(type elt_type) {
+  function _build_array(type elt_type)
     return _aarray(elt_type, rank, dom=this);
-  }
 }
 
 function _build_domain(x : _adomain)
   return x;
 
-function _build_domain(d1 : _aseq) {
-  var x = _adomain(1);
-  x.info(0) = d1;
-  return x;
-}
-
-function _build_domain(d1 : _aseq, d2 : _aseq) {
-  var x = _adomain(2);
-  x.info(0) = d1;
-  x.info(1) = d2;
-  return x;
-}
-
-function _build_domain(d1 : _aseq, d2 : _aseq, d3 : _aseq) {
-  var x = _adomain(3);
-  x.info(0) = d1;
-  x.info(1) = d2;
-  x.info(2) = d3;
+function _build_domain(as : _aseq ...?rank) {
+  var x = _adomain(rank);
+  if rank == 1 then
+    x.info(0) = as;
+  else
+    for i in 1..rank do
+      x.info(i-1) = as(i);
   return x;
 }
 
@@ -133,10 +119,7 @@ class _aarray : value {
     size = info(0)._blk *
              ((dom.info(0)._high - dom.info(0)._low + 1)
                / dom.info(0)._stride);
-//    for i in 1..size do
-//      _move(data(i-1), _init(elt_type));
   }
-
 
   function this(ij : 2*integer) var : elt_type {
     var ind : integer = (ij(1) - info(0)._off) * info(0)._blk +

@@ -1000,6 +1000,7 @@ static void fold_call_expr(CallExpr* call) {
       call->replace(new SymExpr(dtInteger->defaultValue));
     return;
   }
+  // Should we treat 1*integer as integer or as a 1-tuple?
   if (call->isNamed("_construct__htuple")) {
     if (SymExpr* rank = dynamic_cast<SymExpr*>(call->get(2))) {
       if (!strcmp(rank->var->cname, "1")) {
@@ -1144,11 +1145,51 @@ static void fold_params(Vec<DefExpr*>* defs, Vec<BaseAST*>* asts) {
 }
 
 
+static int max_actuals = 0;
+
+static void
+compute_max_actuals() {
+  Vec<BaseAST*> asts;
+  collect_asts(&asts);
+  forv_Vec(BaseAST, ast, asts) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+      int num_actuals = call->argList->length();
+      if (call->partialTag == PARTIAL_OK) {
+        if (CallExpr* parent = dynamic_cast<CallExpr*>(call->parentExpr)) {
+          num_actuals += parent->argList->length();
+        }
+      }
+      if (num_actuals > max_actuals)
+        max_actuals = num_actuals;
+    }
+  }
+}
+
 static void
 expand_var_args(FnSymbol* fn) {
   for_alist(DefExpr, arg_def, fn->formals) {
     ArgSymbol* arg = dynamic_cast<ArgSymbol*>(arg_def->sym);
-    if (SymExpr* sym = dynamic_cast<SymExpr*>(arg->variableExpr)) {
+    if (DefExpr* def = dynamic_cast<DefExpr*>(arg->variableExpr)) {
+      // recursively handle variable argument list where number of
+      // variable arguments is one or more as in ...?k
+      if (max_actuals == 0)
+        compute_max_actuals();
+      for (int i = 1; i <= max_actuals; i++) {
+        arg->variableExpr->replace(new_IntLiteral(i));
+        FnSymbol* new_fn = fn->copy();
+        fn->defPoint->parentStmt->insertBefore(new DefExpr(new_fn));
+        DefExpr* new_def = def->copy();
+        new_def->init = new_IntLiteral(i);
+        new_fn->insertAtHead(new_def);
+        ASTMap update;
+        update.put(def->sym, new_def->sym);
+        update_symbols(new_fn, &update);
+        expand_var_args(new_fn);
+      }
+      fn->defPoint->parentStmt->remove();
+    } else if (SymExpr* sym = dynamic_cast<SymExpr*>(arg->variableExpr)) {
+      // handle expansion of variable argument list where number of
+      // variable arguments is a parameter
       if (VarSymbol* n_var = dynamic_cast<VarSymbol*>(sym->var)) {
         if (n_var->type == dtInteger && n_var->immediate) {
           int n = n_var->immediate->v_int64;
@@ -1165,18 +1206,22 @@ expand_var_args(FnSymbol* fn) {
             arg_def->insertBefore(new_arg_def);
           }
           VarSymbol* var = new VarSymbol(arg->name);
-          if (arg->type != dtUnknown) {
+          if (n == 1) {
+            Expr* actual = actuals->only();
+            actual->remove();
+            fn->insertAtHead(new DefExpr(var, actual));
+          } else if (arg->type != dtUnknown) {
             int i = n;
             for_alist_backward(Expr, actual, actuals) {
               actual->remove();
               fn->insertAtHead(
                 new CallExpr("=",
                   new CallExpr(var, new_IntLiteral(i)), actual));
-                i--;
+              i--;
             }
             fn->insertAtHead(
               new DefExpr(var,
-                new CallExpr("_construct__htuple", arg->type->symbol, new_IntLiteral(n))));
+                new CallExpr("_htuple", arg->type->symbol, new_IntLiteral(n))));
           } else {
             fn->insertAtHead(
               new DefExpr(var,
@@ -1187,8 +1232,7 @@ expand_var_args(FnSymbol* fn) {
           ASTMap update;
           update.put(arg, var);
           update_symbols(fn, &update);
-          cleanup(fn);
-          normalize(fn);
+          build(fn);
         }
       }
     }
