@@ -56648,3 +56648,18 @@ Added files:
 Removed files:
 	chapel/test/arrays/deitz/: test_domains_5D.future 
 
+---------------------------------------------------------------------------
+
+02/13/06 13:14:19 -- deitz
+
+Log message:
+	Added a couple test cases for sequence promotion of scalar functions.
+
+Added files:
+	chapel/test/arrays/deitz/: test_scalar_promote1.chpl 
+	                           test_scalar_promote1.future 
+	                           test_scalar_promote1.good 
+	                           test_scalar_promote2.chpl 
+	                           test_scalar_promote2.future 
+	                           test_scalar_promote2.good 
+
