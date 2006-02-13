@@ -56601,3 +56601,50 @@ Modified files:
 Removed files:
 	chapel/test/functions/deitz/varargs/: test_varargs7.future 
 
+---------------------------------------------------------------------------
+
+02/13/06 13:13:13 -- deitz
+
+Log message:
+	Added support for unknown number of variable arguments as in
+	
+	  function foo(i : integer ...?num) {
+	
+	where num is a param set to the number of i's that are passed in to
+	this routine.  It can be named anything.
+	
+	Moved creation of tuple types after normalization to
+	buildDefaultFunctions so that we can create all that we need at that
+	point.  We have a little difficulty creating new tuples because we put
+	them in the _chpl_htuple module and then need to renormalize that
+	module after building new ones.
+	
+	Used variable argument functions to implement domains in a completely
+	rank-independent way.  Domains of arbitrary rank are now supported.
+	Removed future for 5D domains.
+	
+	Our handling of tuples of size 1 as in 1*integer is a bit weird in
+	that we transform this into an integer.  I think we should leave it as
+	a 1-tuple and force it to be indexed, making the code more consistent
+	in the case where rank is 1, and the user wrote rank*integer.  In the
+	case of variable arguments, this would allow the user to always index
+	into the variable argument.
+	
+	Cleaned up domain code.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         normalize.cpp scopeResolve.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+Added files:
+	chapel/test/functions/deitz/varargs/: test_varargs8.chpl 
+	                                      test_varargs8.good 
+	                                      test_varargs9.chpl 
+	                                      test_varargs9.good 
+Removed files:
+	chapel/test/arrays/deitz/: test_domains_5D.future 
+
