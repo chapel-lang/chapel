@@ -56663,3 +56663,14 @@ Added files:
 	                           test_scalar_promote2.future 
 	                           test_scalar_promote2.good 
 
+---------------------------------------------------------------------------
+
+02/13/06 13:18:51 -- deitz
+
+Log message:
+	Added two more tests of state transform of iterators.
+
+Added files:
+	chapel/test/classes/deitz/infer/: infer_field2b.chpl 
+	                                  infer_field2b.good 
+
