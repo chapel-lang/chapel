@@ -561,7 +561,7 @@ static void add_this_formal_to_method(FnSymbol* fn) {
 
 static void hack_array(DefExpr* def) {
   if (CallExpr* type = dynamic_cast<CallExpr*>(def->exprType)) {
-    if (type->isNamed("_array")) {
+    if (type->isNamed("_build_array")) {
       if (def->init) {
         Expr* init = def->init;
         init->remove();

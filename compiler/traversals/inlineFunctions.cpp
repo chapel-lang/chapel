@@ -5,28 +5,6 @@
 #include "symtab.h"
 
 
-class ReplaceReturns : public Traversal {
- public:
-  FnSymbol* fn;
-  Symbol* sym;
-
-  ReplaceReturns(FnSymbol* iFn, Symbol* iSym = NULL) : fn(iFn), sym(iSym) { }
-
-  void ReplaceReturns::postProcessStmt(Stmt* stmt) {
-    if (ReturnStmt* s = dynamic_cast<ReturnStmt*>(stmt)) {
-      if (s->getFunction() == fn) {
-        if (sym) {
-          Expr* ret = s->expr;
-          ret->remove();
-          s->replace(new ExprStmt(new CallExpr(PRIMITIVE_MOVE, sym, ret)));
-        } else
-          s->remove();
-      }
-    }
-  }
-};
-
-
 static void mapFormalsToActuals(CallExpr* call, ASTMap* map) {
   FnSymbol* fn = call->findFnSymbol();
   Expr* actual = call->argList->first();
@@ -54,23 +32,25 @@ static void mapFormalsToActuals(CallExpr* call, ASTMap* map) {
 
 Stmt* inline_call(CallExpr* call) {
   FnSymbol* fn = call->findFnSymbol();
-
   ASTMap map;
   mapFormalsToActuals(call, &map);
-
-  Stmt* inlined_body = fn->body->copy(&map);
-  if (fn->retType != dtVoid) {
+  BlockStmt* inlined_body = fn->body->copy(&map);
+  if (fn->retType == dtVoid) {
+    call->parentStmt->insertBefore(inlined_body);
+    ReturnStmt* retStmt = dynamic_cast<ReturnStmt*>(inlined_body->body->last());
+    retStmt->remove();
+    call->parentStmt->remove();
+  } else {
     char* temp_name = stringcat("_inline_", fn->cname);
     VarSymbol* temp = new VarSymbol(temp_name, fn->retType);
     temp->noDefaultInit = true;
     call->parentStmt->insertBefore(new DefExpr(temp));
     call->parentStmt->insertBefore(inlined_body);
-    TRAVERSE(inlined_body, new ReplaceReturns(call->getFunction(), temp), true);
+    ReturnStmt* retStmt = dynamic_cast<ReturnStmt*>(inlined_body->body->last());
+    Expr* retVal = retStmt->expr;
+    retVal->remove();
+    retStmt->replace(new ExprStmt(new CallExpr(PRIMITIVE_MOVE, temp, retVal)));
     call->replace(new SymExpr(temp));
-  } else {
-    call->parentStmt->insertBefore(inlined_body);
-    TRAVERSE(inlined_body, new ReplaceReturns(call->getFunction()), true);
-    call->parentStmt->remove();
   }
   return inlined_body;
 }

@@ -1,10 +1,21 @@
-function _array(dom, type elt_type) {
+function _build_array(dom, type elt_type)
   return dom._build_array(elt_type);
+
+function _build_domain(x : _adomain)
+  return x;
+
+function _build_domain(as : _aseq ...?rank) {
+  var x = _adomain(rank);
+  if rank == 1 then
+    x.info(0) = as;
+  else
+    for i in 1..rank do
+      x.info(i-1) = as(i);
+  return x;
 }
 
 class _adomain {
   param rank : integer;
-
   var info : _ddata(_aseq) = _ddata(_aseq, rank);
 
   function initialize() {
@@ -56,19 +67,6 @@ class _adomain {
 
   function _build_array(type elt_type)
     return _aarray(elt_type, rank, dom=this);
-}
-
-function _build_domain(x : _adomain)
-  return x;
-
-function _build_domain(as : _aseq ...?rank) {
-  var x = _adomain(rank);
-  if rank == 1 then
-    x.info(0) = as;
-  else
-    for i in 1..rank do
-      x.info(i-1) = as(i);
-  return x;
 }
 
 function fwrite(f : file, x : _adomain) {
