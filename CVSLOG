@@ -56674,3 +56674,26 @@ Added files:
 	chapel/test/classes/deitz/infer/: infer_field2b.chpl 
 	                                  infer_field2b.good 
 
+---------------------------------------------------------------------------
+
+02/14/06 10:45:41 -- deitz
+
+Log message:
+	Small cleanup of lining code and domain module.
+	
+	Added a few goto tests that we may want to generate errors for.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: cleanup.cpp 
+	chapel/compiler/traversals/: inlineFunctions.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/flowanalysis/newast/: danglingelse.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+Added files:
+	chapel/test/trivial/deitz/: test_goto1.chpl test_goto1.future 
+	                            test_goto1.good test_goto2.chpl 
+	                            test_goto2.future test_goto2.good 
+
