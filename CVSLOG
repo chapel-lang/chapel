@@ -56763,3 +56763,26 @@ Modified files:
 Added files:
 	chapel/modules/standard/: _chpl_base.chpl 
 
+---------------------------------------------------------------------------
+
+02/15/06 14:14:00 -- deitz
+
+Log message:
+	Removed more code from the prelude, adding it to _chpl_base.  Removed
+	sizeof function prototype altogether along with associated primitive.
+	
+	Moved methodToken and setterToken into _chpl_base.  Removed related
+	from runtime.
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp type.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/passes/: filesToAST.cpp 
+	chapel/modules/standard/: _chpl_base.chpl prelude.chpl 
+	chapel/runtime/include/: chpltypes.h 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
