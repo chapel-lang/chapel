@@ -56697,3 +56697,22 @@ Added files:
 	                            test_goto1.good test_goto2.chpl 
 	                            test_goto2.future test_goto2.good 
 
+---------------------------------------------------------------------------
+
+02/15/06 10:11:40 -- jplevyak
+
+Log message:
+	Add _methodTokenType and _setterTokenType to chpltypes.h
+	(might be able to remove these when the prelude disappears).
+	Cloning now updates the set of creators for
+	  closures.
+	type_info now reports function names as dtString.
+	sum types are now put at the front of the compilerModule
+	  so they can be used by subsequent closure types.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: clone.cpp 
+	chapel/runtime/include/: chpltypes.h 
+
