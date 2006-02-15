@@ -1,0 +1,6 @@
+foo(integer) called
+  2
+foo(type t) called
+  0.0
+foo(type t) called
+  0
