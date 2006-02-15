@@ -56786,3 +56786,14 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+02/15/06 14:38:07 -- deitz
+
+Log message:
+	Working test of overloading a function with type intent vs. integer.
+
+Added files:
+	chapel/test/functions/deitz/: test_overload_type_intent.chpl 
+	                              test_overload_type_intent.good 
+
