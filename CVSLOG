@@ -56716,3 +56716,50 @@ Modified files:
 	chapel/compiler/ifa/: clone.cpp 
 	chapel/runtime/include/: chpltypes.h 
 
+---------------------------------------------------------------------------
+
+02/15/06 10:19:30 -- deitz
+
+Log message:
+	Added a new module _chpl_base to replace prelude and moved a bunch of
+	things there, including all numeric operators and string operators,
+	changing the builtin pragma to an inline pragma.  This inlines the
+	primitive rather than switching to it manually in the compiler.  Same
+	end result, cleaner implementation.
+	
+	Added ability to generate code for primitives that are not standard
+	(such as PRIMITIVE_NOTEQUAL).  The idea is to add "_chpl_" to the
+	front of the name of the primitive.  Then this function can be
+	implemented in the runtime.  Made ptr_eq and ptr_neq primitives
+	standard (so they have enum names PRIMITIVE_PTR_EQUAL and
+	PRIMITIVE_PTR_NOTEQUAL).
+	
+	Removed dtTuple, dtDomain, dtArray, dtSequence, and dtLocale plus
+	relevant code.  Left sym_tuple support in analysis, and added dtUnused
+	to interface with it.  Added a class _unused_class to _chpl_base.  It
+	should never be used.
+	
+	Removed unused items from the prelude, e.g., min function, min class,
+	reduction class, timer class, Array record, _seq class.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp type.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: primitive.h runtime.h type.h 
+	chapel/compiler/main/: runtime.cpp 
+	chapel/compiler/passes/: codegen.cpp filesToAST.cpp 
+	chapel/modules/standard/: _chpl_seq.chpl _chpl_standard.chpl 
+	                          prelude.chpl 
+	chapel/runtime/include/: chpltypes.h 
+	chapel/runtime/src/: chpltypes.c 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/flowanalysis/newast/: danglingelse.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+Added files:
+	chapel/modules/standard/: _chpl_base.chpl 
+
