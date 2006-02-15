@@ -7,6 +7,7 @@
 #include "type.h"
 
 extern ModuleSymbol* prelude;
+extern ModuleSymbol* baseModule;
 extern ModuleSymbol* fileModule;
 extern ModuleSymbol* tupleModule;
 extern ModuleSymbol* seqModule;

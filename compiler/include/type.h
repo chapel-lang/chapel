@@ -252,14 +252,12 @@ TYPE_EXTERN PrimitiveType* dtComplex;
 TYPE_EXTERN PrimitiveType* dtString;
 
 // internal types
-TYPE_EXTERN Type* dtTuple;
 TYPE_EXTERN Type* dtClosure;
 TYPE_EXTERN Type* dtIndex;
-TYPE_EXTERN Type* dtDomain;
-TYPE_EXTERN Type* dtArray;
 TYPE_EXTERN Type* dtMethodToken;
 TYPE_EXTERN Type* dtSetterToken;
 TYPE_EXTERN Type* dtFile;
+TYPE_EXTERN Type* dtUnused; // unused types for interfacing with ifa
 void findInternalTypes(void);
 
 // sum-ish types
@@ -267,12 +265,6 @@ TYPE_EXTERN Type* dtAny;
 TYPE_EXTERN Type* dtNumeric;
 TYPE_EXTERN ClassType* dtObject;
 TYPE_EXTERN ClassType* dtValue;
-
-// abstract base types
-TYPE_EXTERN Type* dtSequence;
-
-// other funny types
-TYPE_EXTERN Type* dtLocale;
 
 // vector of built-in types
 TYPE_EXTERN Vec<Type*> builtinTypes;

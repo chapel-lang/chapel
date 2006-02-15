@@ -1,66 +1,7 @@
-  called from _chpl_standard.chpl:5
-  called from _chpl_standard.chpl:5
-  called from _chpl_standard.chpl:5
-  called from _chpl_standard.chpl:5
-  called from _chpl_standard.chpl:5
-  called from _chpl_standard.chpl:5
-  called from _chpl_standard.chpl:5
-  called from _chpl_standard.chpl:5
-  called from _chpl_standard.chpl:5
-  called from _chpl_standard.chpl:5
-  called from _chpl_standard.chpl:5
-  called from _chpl_standard.chpl:5
-  called from _chpl_standard.chpl:5
-  called from _chpl_standard.chpl:5
-::a(conditional.chpl:2) ( int64 )
-::b(conditional.chpl:3) ( int64 )
-::c(conditional.chpl:4) ( int64 )
-::d(conditional.chpl:5) ( int64 )
-::e(conditional.chpl:6) ( int64 )
-::f(conditional.chpl:7) ( int64 )
-::g(conditional.chpl:8) ( int64 )
-::h(conditional.chpl:9) ( int64 )
-=, _arg1 : _tuple2, _arg2
-=, _htuple : _htuple, val : _tuple2
-_chpl_adomain.chpl:167: expression has no type
-_chpl_adomain.chpl:167: expression has no type
-_chpl_adomain.chpl:167: expression has no type
-_chpl_adomain.chpl:167: expression has no type
-_chpl_adomain.chpl:167: expression has no type
-_chpl_adomain.chpl:167: illegal call argument type '_defTmp' illegal: ( ) 
-_chpl_adomain.chpl:167: illegal call argument type 'int64' illegal: ( int64 ) 
-_chpl_adomain.chpl:167: illegal call argument type 'int64' illegal: ( int64 ) 
-_chpl_adomain.chpl:167: illegal call argument type expression illegal: ( ) 
-_chpl_adomain.chpl:167: illegal call argument type expression illegal: ( int64 ) 
-_chpl_adomain.chpl:167: illegal call argument type expression illegal: ( int64 ) 
-_chpl_adomain.chpl:167: unresolved call '='
-_chpl_adomain.chpl:167: unresolved call '_construct__tuple2'
-_chpl_adomain.chpl:167: unresolved call '_construct__tuple2'
-_chpl_adomain.chpl:84: =, _arg1 : _aarray_info, _arg2
-_chpl_adomain.chpl:89: =, _arg1 : _aarray, _arg2
-_chpl_complex.chpl:1: =, _arg1 : complex, _arg2
-_chpl_data.chpl:3: =, _arg1 : _fdata, _arg2
-_chpl_htuple.chpl:15: =, x : _htuple, y
-_chpl_seq.chpl:173: =, _arg1 : _aseq, _arg2
-_chpl_seq.chpl:8: =, _arg1 : seq, _arg2
-_construct__tuple2, _t1 @ any, _t2 @ any, _f1 : _t1, _f2 : _t2
-_construct__tuple2, _t1 @ any, _t2 @ any, _f1 : _t1, _f2 : _t2
-error: '_defTmp' has no type
-error: '_hack_x' has no type
-error: '_tmp' has no type
-error: '_tmp' has no type
-fail: program does not type
-function __init_conditional conditional.chpl:114
-function main conditional.chpl:114
+::_tmp(danglingelse.chpl:24) ( int64 )
+::_tmp(danglingelse.chpl:27) ( int64 )
+::a(danglingelse.chpl:2) ( int64 )
+::b(danglingelse.chpl:4) ( int64 )
+function __init_danglingelse danglingelse.chpl:3
+function main danglingelse.chpl:3
 globals
-note: candidates are:
-note: candidates are:
-note: candidates are:
-prelude.chpl:211: =, _arg1 : _methodTokenType, _arg2
-prelude.chpl:214: =, _arg1 : _setterTokenType, _arg2
-prelude.chpl:220: =, _arg1 : Array, _arg2
-prelude.chpl:245: =, _arg1 : Tuple, _arg2
-prelude.chpl:291: =, a : numeric, b : any
-prelude.chpl:295: =, a : string, b : any
-prelude.chpl:300: =, a : any, b : any
-prelude.chpl:4: =, _arg1 : value, _arg2

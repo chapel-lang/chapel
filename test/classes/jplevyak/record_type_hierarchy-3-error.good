@@ -1,6 +1,7 @@
 _chpl_adomain.chpl:141: fwrite, f : file, x : _aarray
 _chpl_adomain.chpl:72: fwrite, f : file, x : _adomain
 _chpl_adomain.chpl:84: fwrite, f : file, val : _aarray_info
+_chpl_base.chpl:3: fwrite, f : file, val : _unused_class
 _chpl_complex.chpl:8: fwrite, f : file, x : complex
 _chpl_data.chpl:46: fwrite, f : file, val : _fdata
 _chpl_file.chpl:112: fwrite, f : file, val : int64
@@ -20,19 +21,8 @@ fwrite, f : file, val : _tuple2
 note: candidates are:
 note: candidates are:
 prelude.chpl:13: fwrite, f : file, val : _ddata
-prelude.chpl:140: fwrite, f : file, val : reduction
-prelude.chpl:143: fwrite, f : file, val : sum
-prelude.chpl:146: fwrite, f : file, val : max
-prelude.chpl:149: fwrite, f : file, val : min
-prelude.chpl:152: fwrite, f : file, val : maxloc
-prelude.chpl:155: fwrite, f : file, val : minloc
-prelude.chpl:161: fwrite, f : file, val : timer
-prelude.chpl:211: fwrite, f : file, val : _methodTokenType
-prelude.chpl:214: fwrite, f : file, val : _setterTokenType
-prelude.chpl:217: fwrite, f : file, val : _seq
-prelude.chpl:220: fwrite, f : file, val : Array
-prelude.chpl:242: fwrite, f : file, val : Domain
-prelude.chpl:245: fwrite, f : file, val : Tuple
+prelude.chpl:149: fwrite, f : file, val : _methodTokenType
+prelude.chpl:152: fwrite, f : file, val : _setterTokenType
 prelude.chpl:33: fwrite, f : file, val : CFILEPTR
 prelude.chpl:3: fwrite, f : file, val : object
 prelude.chpl:4: fwrite, f : file, val : value

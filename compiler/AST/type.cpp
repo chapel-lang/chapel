@@ -1025,7 +1025,6 @@ void initType(void) {
 
   dtNumeric = Symboltable::definePrimitiveType("numeric", "_numeric");
   dtAny = Symboltable::definePrimitiveType("any", "_any");
-  dtLocale = Symboltable::definePrimitiveType("locale", "_locale", NULL);
 }
 
 // you can use something like the following cache to 
@@ -1094,10 +1093,7 @@ void findInternalTypes(void) {
   // These should all be eliminated.  Note they almost are since they
   // are MetaTypes, not the types in the prelude.
   if (!fnostdincs || !fnostdincs_but_file) {
-    dtTuple = Symboltable::lookupInternalType("Tuple")->type;
-    dtDomain = Symboltable::lookupInternalType("Domain")->type;
-    dtArray = Symboltable::lookupInternalType("Array")->type;
-    dtSequence = Symboltable::lookupInternalType("_seq")->type;
+    dtUnused = dynamic_cast<TypeSymbol*>(Symboltable::lookupInScope("_unused_class", baseModule->modScope))->definition;
   }
 
   // SJD: Can't do this when dtString is defined because

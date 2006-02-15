@@ -242,6 +242,3 @@ function fwrite(f : file, s : _aseq) {
     fwrite(f, s._stride);
   }
 }
-
-function string.this(s : _aseq) : string
-  return _chpl_string_strided_select(this, s._low, s._high, s._stride);

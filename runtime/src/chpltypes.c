@@ -119,9 +119,9 @@ _chpl_string_select(_string x, int low, int high) {
 }
 
 _string
-_chpl_string_index(_string* x, int i) {
+_chpl_string_index(_string x, int i) {
   char buffer[2];
-  sprintf(buffer, "%c", (*x)[i-1]);
+  sprintf(buffer, "%c", x[i-1]);
   return _glom_strings(1, buffer);
 }
 

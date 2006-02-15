@@ -77,11 +77,6 @@ static Sym *setter_token = 0;
 static Sym *chapel_init_symbol = 0;
 static Sym *unimplemented_symbol = 0;
 
-static Sym *sym_domain = 0;
-static Sym *sym_array = 0;
-static Sym *sym_sequence = 0;
-static Sym *sym_locale = 0;
-
 static int init_function(FnSymbol *f);
 static int build_function(FnSymbol *f);
 static void map_asts(Vec<BaseAST *> &syms);
@@ -1033,8 +1028,6 @@ build_type(Type *t, bool make_default = true) {
         forv_Vec(Type, ttt, tt->dispatchParents)
           t->asymbol->sym->inherits_add(ttt->asymbol->sym);
       }
-      if (t->asymbol->sym == sym_sequence)
-        t->asymbol->sym->element = new_sym();
       if (tt->symbol->hasPragma("data class"))
         t->asymbol->sym->element = new_sym();
       break;
@@ -1245,11 +1238,7 @@ build_builtin_symbols() {
 
   sym_init = new_sym(); // placeholder
 
-  builtin_Symbol(dtSequence, &sym_sequence, "sequence");
-  builtin_Symbol(dtTuple, &sym_tuple, "tuple");
-  builtin_Symbol(dtDomain, &sym_domain, "domain");
-  builtin_Symbol(dtArray, &sym_array, "array");
-  builtin_Symbol(dtLocale, &sym_locale, "locale");
+  builtin_Symbol(dtUnused, &sym_tuple, "tuple");
 
   // automatic promotions
 

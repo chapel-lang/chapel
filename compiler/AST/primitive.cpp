@@ -53,6 +53,8 @@ initPrimitive() {
   prim_def(PRIMITIVE_SET_MEMBER, ".=", set_member_interpreter_op, set_member_analysis_op);
   prim_def(PRIMITIVE_TYPE_EQUAL, "type_equal", type_equal_interpreter_op, type_equal_analysis_op);
   prim_def(PRIMITIVE_CHPL_ALLOC, "chpl_alloc", alloc_interpreter_op, alloc_analysis_op);
+  prim_def(PRIMITIVE_PTR_EQUAL, "ptr_eq", ptr_eq_interpreter_op, return_bool_analysis_op);
+  prim_def(PRIMITIVE_PTR_NOTEQUAL, "ptr_neq", ptr_neq_interpreter_op, return_bool_analysis_op);
 
   prim_def("sizeof", unimplemented_interpreter_op, unimplemented_analysis_op);
   prim_def("fopen", fopen_interpreter_op, return_int_analysis_op);
@@ -63,8 +65,6 @@ initPrimitive() {
   prim_def("array_init", array_init_interpreter_op, array_init_analysis_op);
   prim_def("array_index", array_index_interpreter_op, array_index_analysis_op);
   prim_def("array_set", array_set_interpreter_op, array_set_analysis_op);
-  prim_def("ptr_eq", ptr_eq_interpreter_op, return_bool_analysis_op);
-  prim_def("ptr_neq", ptr_neq_interpreter_op, return_bool_analysis_op);
   prim_def("cast", cast_interpreter_op, cast_analysis_op);
   prim_def("to_string", to_string_interpreter_op, return_string_analysis_op);
   prim_def("copy_string", copy_string_interpreter_op, return_string_analysis_op);

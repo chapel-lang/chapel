@@ -621,9 +621,19 @@ Type* CallExpr::typeInfo(void) {
 
 
 void CallExpr::codegen(FILE* outfile) {
+  bool first_actual = true;
   if (isPrimitive()) {
     switch (primitive->tag) {
     case PRIMITIVE_UNKNOWN:
+      fprintf(outfile, "_chpl_%s(", primitive->name);
+      for_alist(Expr, actual, argList) {
+        if (first_actual)
+          first_actual = false;
+        else
+          fprintf(outfile, ", ");
+        actual->codegen(outfile);
+      }
+      fprintf(outfile, ")");
       break;
     case PRIMITIVE_MOVE: {
       if (get(1)->typeInfo() == dtVoid) {
@@ -714,6 +724,7 @@ void CallExpr::codegen(FILE* outfile) {
       get(2)->codegen(outfile);
       fprintf(outfile, ")");
       break;
+    case PRIMITIVE_PTR_EQUAL:
     case PRIMITIVE_EQUAL:
       fprintf(outfile, "(");
       get(1)->codegen(outfile);
@@ -721,6 +732,7 @@ void CallExpr::codegen(FILE* outfile) {
       get(2)->codegen(outfile);
       fprintf(outfile, ")");
       break;
+    case PRIMITIVE_PTR_NOTEQUAL:
     case PRIMITIVE_NOTEQUAL:
       fprintf(outfile, "(");
       get(1)->codegen(outfile);
@@ -822,6 +834,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, ") == %d)", tid);
       break;
     }
+
     case NUM_KNOWN_PRIMS:
       INT_FATAL(this, "Impossible"); break;
       break;
@@ -893,15 +906,13 @@ void CallExpr::codegen(FILE* outfile) {
 
   Expr* actuals = argList->first();
   if (actuals) {
-    FnSymbol* fnSym = findFnSymbol();
-    DefExpr* formals = fnSym->formals->first();
-    bool firstArg = true;
+    FnSymbol* fn = findFnSymbol();
+    DefExpr* formals = fn->formals->first();
     while (actuals && formals) {
-      if (firstArg) {
-        firstArg = false;
-      } else {
+      if (first_actual)
+        first_actual = false;
+      else
         fprintf(outfile, ", ");
-      }
 
       bool ampersand = dynamic_cast<ArgSymbol*>(formals->sym)->requiresCPtr();
       if (ampersand) {
@@ -911,7 +922,7 @@ void CallExpr::codegen(FILE* outfile) {
       if (ampersand) {
         fprintf(outfile, ")");
       }
-      formals = fnSym->formals->next();
+      formals = fn->formals->next();
       actuals = argList->next();
     }
     if (formals || actuals) {
@@ -942,8 +953,9 @@ bool CallExpr::isPrimitive(PrimitiveTag primitiveTag) {
 bool CallExpr::isUnaryPrimitive(void) {
   return
     primitive &&
-    primitive->tag >= PRIMITIVE_UNARY_MINUS &&
-    primitive->tag <= PRIMITIVE_UNARY_NOT;
+    primitive->tag == PRIMITIVE_UNARY_MINUS &&
+    primitive->tag == PRIMITIVE_UNARY_PLUS &&
+    primitive->tag == PRIMITIVE_UNARY_NOT;
 }
 
 
@@ -963,6 +975,7 @@ bool CallExpr::isLogicalPrimitive(void) {
      primitive->tag == PRIMITIVE_GREATEROREQUAL ||
      primitive->tag == PRIMITIVE_LESS ||
      primitive->tag == PRIMITIVE_GREATER ||
+     primitive->tag == PRIMITIVE_UNARY_LNOT ||
      primitive->tag == PRIMITIVE_LAND ||
      primitive->tag == PRIMITIVE_LOR);
 }

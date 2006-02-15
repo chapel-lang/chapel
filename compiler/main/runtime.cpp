@@ -1,6 +1,7 @@
 #include "runtime.h"
 
 ModuleSymbol* prelude = NULL;
+ModuleSymbol* baseModule = NULL;
 ModuleSymbol* fileModule = NULL;
 ModuleSymbol* tupleModule = NULL;
 ModuleSymbol* seqModule = NULL;
