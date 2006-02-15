@@ -1070,7 +1070,7 @@ Type *find_or_make_sum_type(Vec<Type *> *types) {
   lub_cache.put(new_sum_type);
   char* name = stringcat("_sum_type", intstring(uid++));
   TypeSymbol* sym = new TypeSymbol(name, new_sum_type);
-  compilerModule->stmts->insertAtTail(new DefExpr(sym));
+  compilerModule->stmts->insertAtHead(new DefExpr(sym));
   return new_sum_type;
 }
 

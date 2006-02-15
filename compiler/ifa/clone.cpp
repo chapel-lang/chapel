@@ -631,6 +631,13 @@ define_concrete_types(CSSS &css_sets) {
         Sym *s = abstract ? sym->copy() : sym->clone(eqcss->first()->vars.n);
         s->type_kind = sym == sym_tuple ? Type_RECORD : Type_FUN;
         s->incomplete = 1;
+        s->creators.copy(*eqcss);
+        Vec<CreationSet *> old_creators;
+        old_creators.set_union(sym->creators);
+        sym->creators.clear();
+        old_creators.set_difference(s->creators, sym->creators);
+        s->creators.set_to_vec();
+        sym->creators.set_to_vec();
         forv_CreationSet(cs, *eqcss) if (cs) {
           Sym *ct = to_concrete_type(cs->sym);
           if (!name)

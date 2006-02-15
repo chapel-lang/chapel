@@ -22,6 +22,9 @@ typedef struct __complex128 {
 
 typedef char* _string;
 
+typedef int _methodTokenType;
+typedef int _setterTokenType;
+
 #define _init_string() _chpl_calloc(1, sizeof(char), "_init_string")
 
 #define _copy_string(lhs, rhs) (lhs = _glom_strings(1, rhs))

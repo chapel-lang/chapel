@@ -2602,6 +2602,8 @@ to_AST_type(Sym *type) {
     return dtUnknown;
   if (type == sym_void || type == sym_void->meta_type)
     return dtVoid;
+  if (type == sym_symbol)
+    return dtString;
   if (type->type_kind == Type_LUB) {
     forv_Sym(s, type->has)
       if (s == sym_void || s == sym_void->meta_type)
