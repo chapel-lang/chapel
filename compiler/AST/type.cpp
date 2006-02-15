@@ -1082,8 +1082,8 @@ Type *getMetaType(Type *t) {
 }
 
 void findInternalTypes(void) {
-  dtMethodToken = Symboltable::lookupInternalType("_methodTokenType")->definition;
-  dtSetterToken = Symboltable::lookupInternalType("_setterTokenType")->definition;
+  dtMethodToken = dynamic_cast<TypeSymbol*>(Symboltable::lookupInScope("_methodTokenType", baseModule->modScope))->definition;
+  dtSetterToken = dynamic_cast<TypeSymbol*>(Symboltable::lookupInScope("_setterTokenType", baseModule->modScope))->definition;
   if (!fnostdincs)
     dtFile = dynamic_cast<TypeSymbol*>(Symboltable::lookupInFileModuleScope("file"))->definition;
   dtObject = dynamic_cast<ClassType*>(Symboltable::lookupInternalType("object")->definition);

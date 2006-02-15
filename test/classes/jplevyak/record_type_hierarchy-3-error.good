@@ -1,7 +1,9 @@
 _chpl_adomain.chpl:141: fwrite, f : file, x : _aarray
 _chpl_adomain.chpl:72: fwrite, f : file, x : _adomain
 _chpl_adomain.chpl:84: fwrite, f : file, val : _aarray_info
+_chpl_base.chpl:11: fwrite, f : file, val : _setterTokenType
 _chpl_base.chpl:3: fwrite, f : file, val : _unused_class
+_chpl_base.chpl:9: fwrite, f : file, val : _methodTokenType
 _chpl_complex.chpl:8: fwrite, f : file, x : complex
 _chpl_data.chpl:46: fwrite, f : file, val : _fdata
 _chpl_file.chpl:112: fwrite, f : file, val : int64
@@ -20,10 +22,8 @@ fwrite, f : file, val : _tuple2
 fwrite, f : file, val : _tuple2
 note: candidates are:
 note: candidates are:
-prelude.chpl:13: fwrite, f : file, val : _ddata
-prelude.chpl:149: fwrite, f : file, val : _methodTokenType
-prelude.chpl:152: fwrite, f : file, val : _setterTokenType
-prelude.chpl:33: fwrite, f : file, val : CFILEPTR
+prelude.chpl:11: fwrite, f : file, val : _ddata
+prelude.chpl:31: fwrite, f : file, val : CFILEPTR
 prelude.chpl:3: fwrite, f : file, val : object
 prelude.chpl:4: fwrite, f : file, val : value
 prelude.chpl:5: fwrite, f : file, val : closure

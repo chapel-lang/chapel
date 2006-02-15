@@ -6,8 +6,6 @@ class closure : object { }
 
 function typeof(x) { }
 
-function sizeof(x) { return __primitive("sizeof", integer); }
-
 // dynamic data block class
 pragma "data class"
 class _ddata {
@@ -123,21 +121,6 @@ function assert() {
 }
 
 
--- memory tests (These tests will be moved to a module, once we have modules.)
-
-function _chpl_memtest_printMemTable();
-function _chpl_memtest_printMemStat();
-function _chpl_memtest_resetMemStat();
-function _chpl_memtest_allocAndFree();
-function _chpl_memtest_freedMalloc();
-function _chpl_memtest_freedWithoutMalloc();
-function _chpl_memtest_reallocWithoutMalloc();
-function _chpl_memtest_reallocZeroSize();
-function _chpl_memtest_mallocOutOfMemory();
-function _chpl_memtest_reallocOutOfMemory();
-
-function startTrackingMem();
-
 function _complex_read_hack(inout x) : integer {
   return __primitive("fscanf", "%g%g", x);
 }
@@ -145,12 +128,6 @@ function _complex_read_hack(inout x) : integer {
 function _complex_tostring_hack(x, format : string) : string {
   return __primitive("to_string", format, x);
 }
-
-record _methodTokenType { }
-var _methodToken : _methodTokenType;
-
-record _setterTokenType { }
-var _setterToken : _setterTokenType;
 
 pragma "rename _copy_string" function =(a : string, b : any) : string { 
   return __primitive("copy_string", b);

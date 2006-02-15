@@ -56,7 +56,6 @@ initPrimitive() {
   prim_def(PRIMITIVE_PTR_EQUAL, "ptr_eq", ptr_eq_interpreter_op, return_bool_analysis_op);
   prim_def(PRIMITIVE_PTR_NOTEQUAL, "ptr_neq", ptr_neq_interpreter_op, return_bool_analysis_op);
 
-  prim_def("sizeof", unimplemented_interpreter_op, unimplemented_analysis_op);
   prim_def("fopen", fopen_interpreter_op, return_int_analysis_op);
   prim_def("fclose", fclose_interpreter_op, return_int_analysis_op);
   prim_def("strerror", strerror_interpreter_op, return_string_analysis_op);

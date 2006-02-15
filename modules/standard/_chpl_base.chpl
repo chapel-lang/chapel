@@ -2,6 +2,16 @@
 
 class _unused_class { } // for interfacing with analysis (sym_tuple)
 
+
+//
+// Setter and method tokens
+//
+record _methodTokenType { }
+var _methodToken : _methodTokenType;
+record _setterTokenType { }
+var _setterToken : _setterTokenType;
+
+
 //
 // Primitive functions for numeric types
 //
@@ -52,3 +62,19 @@ pragma "inline" function string.this(s: _aseq)
     return __primitive("string_strided_select", this, s._low, s._high, s._stride);
   else
     return __primitive("string_select", this, s._low, s._high);
+
+//
+// MOVE THESE, maybe to a memory module?
+//
+pragma "no codegen" function _chpl_memtest_printMemTable();
+pragma "no codegen" function _chpl_memtest_printMemStat();
+pragma "no codegen" function _chpl_memtest_resetMemStat();
+pragma "no codegen" function _chpl_memtest_allocAndFree();
+pragma "no codegen" function _chpl_memtest_freedMalloc();
+pragma "no codegen" function _chpl_memtest_freedWithoutMalloc();
+pragma "no codegen" function _chpl_memtest_reallocWithoutMalloc();
+pragma "no codegen" function _chpl_memtest_reallocZeroSize();
+pragma "no codegen" function _chpl_memtest_mallocOutOfMemory();
+pragma "no codegen" function _chpl_memtest_reallocOutOfMemory();
+
+pragma "no codegen" function startTrackingMem();

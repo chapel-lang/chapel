@@ -22,6 +22,7 @@
 #include "clone.h"
 #include "ast.h"
 #include "fail.h"
+#include "runtime.h"
 
 #define VARARG_END     0ll
 #define MAKE_USER_TYPE_BE_DEFINITION            1
@@ -2504,10 +2505,10 @@ ast_to_if1(Vec<AList<Stmt> *> &stmts) {
   Vec<Type *> types;
   build_types(syms, &types);
   build_symbols(syms);
-  method_token = Symboltable::lookupInternal("_methodToken")->asymbol->sym;
-  method_token->type = Symboltable::lookupInternal("_methodTokenType")->asymbol->sym->meta_type;
-  setter_token = Symboltable::lookupInternal("_setterToken")->asymbol->sym;
-  setter_token->type = Symboltable::lookupInternal("_setterTokenType")->asymbol->sym->meta_type;
+  method_token = methodToken->asymbol->sym;
+  method_token->type = dtMethodToken->asymbol->sym->meta_type;
+  setter_token = setterToken->asymbol->sym;
+  setter_token->type = dtSetterToken->asymbol->sym->meta_type;
   if1_set_primitive_types(if1);
   forv_Type(t, types)
     if (t->defaultValue)
