@@ -78,7 +78,8 @@ void build_default_functions(void) {
       }
     }
   }
-  build(tupleModule);
+  if (!fnostdincs_but_file && !fnostdincs)
+    build(tupleModule);
 
   asts.clear();
   collect_asts(&asts);
@@ -305,7 +306,7 @@ static void construct_tuple_type(int rank) {
     fn->body = new BlockStmt(new ReturnStmt(fields.v[i-1]->name));
     DefExpr* def = new DefExpr(fn);
     if (no_infer)
-      def->exprType = new SymExpr(types.v[i-1]->symbol);
+      fn->retExpr = new SymExpr(types.v[i-1]->symbol);
     decls->insertAtTail(def);
   }
 

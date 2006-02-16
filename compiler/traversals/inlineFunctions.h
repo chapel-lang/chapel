@@ -6,6 +6,6 @@
 
 void inlineFunctions(void);
 
-Stmt* inline_call(CallExpr* call);
+void inline_call(CallExpr* call, Vec<Stmt*>* stmts);
 
 #endif

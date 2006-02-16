@@ -332,13 +332,13 @@ static void destructure_tuple(CallExpr* call) {
   CallExpr* tuple = dynamic_cast<CallExpr*>(call->get(1));
   call->replace(new CallExpr(PRIMITIVE_MOVE, temp, call->get(2)->remove()));
   int i = 1;
+  int length = tuple->argList->length();
   for_alist(Expr, expr, tuple->argList) {
-    if (CallExpr* callExpr = dynamic_cast<CallExpr*>(expr))
-      if (callExpr->isNamed("typeof"))
-        continue;
-    stmt->insertAfter(
-      new CallExpr("=", expr->remove(),
-        new CallExpr(temp, new_IntLiteral(i++))));
+    if (i - length/2 >= 1)
+      stmt->insertAfter(
+        new CallExpr("=", expr->remove(),
+          new CallExpr(temp, new_IntLiteral(i-length/2))));
+    i++;
   }
 }
 

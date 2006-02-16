@@ -12,7 +12,6 @@
 #include "symbol.h"
 #include "symtab.h"
 #include "stringutil.h"
-#include "../traversals/inlineFunctions.h"
 #include "../traversals/view.h"
 
 
@@ -30,7 +29,6 @@ static void decompose_special_calls(CallExpr* call);
 static void hack_array_constructor_call(CallExpr* call);
 static void hack_domain_constructor_call(CallExpr* call);
 static void hack_seqcat_call(CallExpr* call);
-static void hack_typeof_call(CallExpr* call);
 static void convert_user_primitives(CallExpr* call);
 static void hack_resolve_types(Expr* expr);
 static void apply_getters_setters(FnSymbol* fn);
@@ -120,7 +118,6 @@ void normalize(BaseAST* base) {
       hack_array_constructor_call(a);
       hack_domain_constructor_call(a);
       hack_seqcat_call(a);
-      hack_typeof_call(a);
     } else if (Expr* a = dynamic_cast<Expr*>(ast)) {
       hack_resolve_types(a);
     }
@@ -183,9 +180,6 @@ void normalize(BaseAST* base) {
           dynamic_cast<TypeSymbol*>(a->parentSymbol) &&
           a->exprType)
         a->exprType->remove();
-      if (dynamic_cast<FnSymbol*>(a->sym) &&
-          a->exprType)
-        a->exprType->remove();
     }
   }
 
@@ -236,26 +230,10 @@ void normalize(BaseAST* base) {
 
 
 static void reconstruct_iterator(FnSymbol* fn) {
-  Expr* seqType = NULL;
-  if (fn->retType != dtUnknown) {
-    seqType = new SymExpr(fn->retType->symbol);
-  } else if (fn->defPoint->exprType) {
-    seqType = fn->defPoint->exprType;
-    seqType->remove();
-  } else {
-    Vec<BaseAST*> asts;
-    collect_asts(&asts, fn->body);
-    forv_Vec(BaseAST, ast, asts) {
-      if (ReturnStmt* returnStmt = dynamic_cast<ReturnStmt*>(ast))
-        if (returnStmt->expr)
-          if (!seqType)
-            seqType = new CallExpr("typeof", returnStmt->expr->copy());
-          else
-            USR_FATAL(fn, "Unable to infer type of iterator");
-    }
-    if (!seqType)
-      USR_FATAL(fn, "Unable to infer type of iterator");
-  }
+  Expr* seqType = fn->retExpr;
+  if (!seqType)
+    USR_FATAL(fn, "Cannot infer iterator return type yet");
+  fn->retExpr->remove();
 
   Symbol* seq = new VarSymbol("_seq_result");
   DefExpr* def = new DefExpr(seq, NULL, new CallExpr(chpl_seq, seqType));
@@ -276,8 +254,6 @@ static void reconstruct_iterator(FnSymbol* fn) {
   }
   fn->insertAtTail(new ReturnStmt(seq));
   fn->retType = dtUnknown;
-  if (fn->defPoint->exprType)
-    fn->defPoint->exprType->replace(def->exprType->copy());
   fn->fnClass = FN_FUNCTION;
 }
 
@@ -337,7 +313,7 @@ static void normalize_returns(FnSymbol* fn) {
     fn->insertAtTail(new ReturnStmt());
   } else {
     retval = new VarSymbol(stringcat("_ret_", fn->name), fn->retType);
-    Expr* type = fn->defPoint->exprType;
+    Expr* type = fn->retExpr;
     type->remove();
     if (!type)
       retval->noDefaultInit = true;
@@ -671,32 +647,6 @@ static void hack_seqcat_call(CallExpr* call) {
 }
 
 
-static void hack_typeof_call(CallExpr* call) {
-  if (call->isNamed("typeof")) {
-    Type* type = call->argList->only()->typeInfo();
-    if (type != dtUnknown) {
-      call->replace(new SymExpr(type->symbol));
-    } else if (SymExpr* base = dynamic_cast<SymExpr*>(call->argList->only())) {
-      if (base->var->defPoint->exprType) {
-        call->replace(base->var->defPoint->exprType->copy());
-      } else {
-        // NOTE we remove the typeof function even if we can't
-        // resolve the type before analysis
-        Expr* arg = call->argList->only();
-        arg->remove();
-        call->replace(arg);
-      }
-    } else {
-      // NOTE we remove the typeof function even if we can't
-      // resolve the type before analysis
-      Expr* arg = call->argList->only();
-      arg->remove();
-      call->replace(arg);
-    }
-  }
-}
-
-
 static bool can_resolve_type(Expr* type_expr) {
   if (!type_expr)
     return false;
@@ -718,12 +668,17 @@ static void hack_resolve_types(Expr* expr) {
       }
     } else if (VarSymbol* var = dynamic_cast<VarSymbol*>(def_expr->sym)) {
       if (var->type == dtUnknown && can_resolve_type(def_expr->exprType)) {
-        var->type = def_expr->exprType->typeInfo();
-        def_expr->exprType->remove();
+        Type* type = def_expr->exprType->typeInfo();
+        if (type == dtString || dynamic_cast<EnumType*>(type)) {
+          var->type = type;
+          def_expr->exprType->remove();
+        }
       } else if (var->type == dtUnknown &&
                  !def_expr->exprType &&
                  can_resolve_type(def_expr->init)) {
-        var->type = def_expr->init->typeInfo();
+        Type* type = def_expr->init->typeInfo();
+        if (type == dtString || dynamic_cast<EnumType*>(type))
+          var->type = type;
       }
     }
   }
@@ -846,25 +801,8 @@ static void insert_call_temps(CallExpr* call) {
   if (call->partialTag != PARTIAL_NEVER)
     return;
 
-  if (call->isNamed("typeof") || call->primitive || call->isNamed("__primitive"))
+  if (call->primitive || call->isNamed("__primitive"))
     return;
-
-//   if (SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr)) {
-//     if (!strncmp(base->var->name, "_let_fn", 7)) {
-//       Stmt* stmt = inline_call(call);
-//       Vec<BaseAST*> asts;
-//       collect_asts_postorder(&asts, stmt);
-//       forv_Vec(BaseAST, ast, asts) {
-//         currentLineno = ast->lineno;
-//         currentFilename = ast->filename;
-//         if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
-//           insert_call_temps(a);
-//         }
-//       }
-//       base->var->defPoint->parentStmt->remove();
-//       return;
-//     }
-//   }
 
   if (CallExpr* parentCall = dynamic_cast<CallExpr*>(call->parentExpr))
     if (parentCall->isPrimitive(PRIMITIVE_MOVE))

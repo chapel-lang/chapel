@@ -30,29 +30,23 @@ static void mapFormalsToActuals(CallExpr* call, ASTMap* map) {
 }
 
 
-Stmt* inline_call(CallExpr* call) {
+void inline_call(CallExpr* call, Vec<Stmt*>* stmts) {
   FnSymbol* fn = call->findFnSymbol();
   ASTMap map;
   mapFormalsToActuals(call, &map);
-  BlockStmt* inlined_body = fn->body->copy(&map);
-  if (fn->retType == dtVoid) {
-    call->parentStmt->insertBefore(inlined_body);
-    ReturnStmt* retStmt = dynamic_cast<ReturnStmt*>(inlined_body->body->last());
-    retStmt->remove();
+  AList<Stmt>* fn_body = fn->body->body->copy(&map);
+  ReturnStmt* return_stmt = dynamic_cast<ReturnStmt*>(fn_body->last());
+  if (!return_stmt)
+    INT_FATAL(call, "Cannot inline function, function is not normalized");
+  Expr* return_value = return_stmt->expr;
+  return_stmt->remove();
+  for_alist(Stmt, stmt, fn_body)
+    stmts->add(stmt);
+  call->parentStmt->insertBefore(fn_body);
+  if (fn->retType == dtVoid)
     call->parentStmt->remove();
-  } else {
-    char* temp_name = stringcat("_inline_", fn->cname);
-    VarSymbol* temp = new VarSymbol(temp_name, fn->retType);
-    temp->noDefaultInit = true;
-    call->parentStmt->insertBefore(new DefExpr(temp));
-    call->parentStmt->insertBefore(inlined_body);
-    ReturnStmt* retStmt = dynamic_cast<ReturnStmt*>(inlined_body->body->last());
-    Expr* retVal = retStmt->expr;
-    retVal->remove();
-    retStmt->replace(new ExprStmt(new CallExpr(PRIMITIVE_MOVE, temp, retVal)));
-    call->replace(new SymExpr(temp));
-  }
-  return inlined_body;
+  else
+    call->replace(return_value);
 }
 
 void inline_calls(BaseAST* base, Vec<FnSymbol*>* inline_stack = NULL) {
@@ -70,8 +64,10 @@ void inline_calls(BaseAST* base, Vec<FnSymbol*>* inline_stack = NULL) {
       if (inline_stack->in(fn))
         INT_FATAL(fn, "Recursive inlining detected");
       inline_stack->add(fn);
-      Stmt* stmt = inline_call(call);
-      inline_calls(stmt, inline_stack);
+      Vec<Stmt*> stmts;
+      inline_call(call, &stmts);
+      forv_Vec(Stmt, stmt, stmts)
+        inline_calls(stmt, inline_stack);
       inline_stack->pop();
       if (report_inlining)
         printf("chapel compiler: reporting inlining"

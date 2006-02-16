@@ -622,6 +622,7 @@ FnSymbol::FnSymbol(char* initName,
   formals(initFormals),
   retType(initRetType),
   whereExpr(initWhereExpr),
+  retExpr(NULL),
   body(initBody),
   fnClass(initFnClass),
   noParens(initNoParens),
@@ -672,6 +673,7 @@ FnSymbol::copyInner(ASTMap* map) {
                                 fnClass,
                                 noParens,
                                 retRef);
+  copy->retExpr = COPY_INT(retExpr);
   copy->cname = cname;
   copy->isSetter = isSetter;
   copy->isGeneric = false;  // set in normalize()
@@ -692,6 +694,8 @@ void FnSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
     formals = dynamic_cast<AList<DefExpr>*>(new_ast);
   } else if (old_ast == whereExpr) {
     whereExpr = dynamic_cast<Expr*>(new_ast);
+  } else if (old_ast == retExpr) {
+    retExpr = dynamic_cast<Expr*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in FnSymbol::replaceChild");
   }
@@ -709,6 +713,7 @@ void FnSymbol::traverseDefSymbol(Traversal* traversal) {
   TRAVERSE(body, traversal, false);
   TRAVERSE(retType, traversal, false);
   TRAVERSE(whereExpr, traversal, false);
+  TRAVERSE(retExpr, traversal, false);
   if (argScope) {
     Symboltable::setCurrentScope(saveScope);
   }
@@ -936,10 +941,12 @@ fold_parameter_methods(FnSymbol* fn,
         if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
           if (call->argList->length() == 2) {
             if (call->isNamed(var->name)) {
-              if (call->get(1)->typeInfo() == dtMethodToken) {
-                if (call->get(2)->typeInfo() == generic_type) {
-                  if (Symbol* value = dynamic_cast<Symbol*>(generic_subs->get(key))) {
-                    call->replace(new SymExpr(value));
+              if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->get(1))) {
+                if (symExpr->var == methodToken) {
+                  if (call->get(2)->typeInfo() == generic_type) {
+                    if (Symbol* value = dynamic_cast<Symbol*>(generic_subs->get(key))) {
+                      call->replace(new SymExpr(value));
+                    }
                   }
                 }
               }

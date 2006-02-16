@@ -141,7 +141,6 @@ class CondStmt : public Stmt {
   CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt = NULL);
   virtual void verify(void);
   COPY_DEF(CondStmt);
-  void addElseStmt(BlockStmt* init_elseStmt);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseStmt(Traversal* traversal);
 

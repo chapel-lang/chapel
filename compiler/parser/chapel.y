@@ -573,9 +573,10 @@ fn_decl_stmt:
       }
       $2->formals = $3;
       $2->retRef = $4;
+      $2->retExpr = $5;
       $2->whereExpr = $6;
       $2->body = $7;
-      $$ = new AList<Stmt>(new DefExpr($2, NULL, $5));
+      $$ = new AList<Stmt>(new DefExpr($2));
     }
 ;
 
@@ -941,7 +942,7 @@ var_type:
   TCOLON type
     { $$ = $2; }
 | TLIKE expr
-    { $$ = new CallExpr("typeof", $2); }
+    { $$ = $2; }
 ;
 
 
@@ -1080,7 +1081,7 @@ tuple_paren_expr:
         AList<Expr>* fields = new AList<Expr>();
         char* tuple_name = stringcat("_construct__tuple", intstring($2->length()));
         for_alist(Expr, expr, $2) {
-          types->insertAtTail(new CallExpr("typeof", expr->copy()));
+          types->insertAtTail(expr->copy());
           fields->insertAtTail(expr->copy());
         }
         $$ = new CallExpr(tuple_name, types, fields);
@@ -1127,8 +1128,7 @@ atom:
 seq_expr:
   TSEQBEGIN expr_ls TSEQEND
     {
-      Expr* seqType = new CallExpr("typeof", $2->first()->copy());
-      Expr* seqLiteral = new CallExpr("seq", seqType);
+      Expr* seqLiteral = new CallExpr("seq", $2->first()->copy());
       for_alist(Expr, element, $2) {
         element->remove();
         seqLiteral =

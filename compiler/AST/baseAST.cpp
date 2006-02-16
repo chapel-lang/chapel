@@ -510,6 +510,7 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     ADD_CHILD(FnSymbol, _setter);
     ADD_CHILD(FnSymbol, _getter);
     AST_ADD_CHILD(FnSymbol, whereExpr);
+    AST_ADD_CHILD(FnSymbol, retExpr);
     goto LSymbolCommon;
   case SYMBOL_ENUM: case SYMBOL_LABEL:
     goto LSymbolCommon;

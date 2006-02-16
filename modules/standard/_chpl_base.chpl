@@ -53,7 +53,7 @@ pragma "inline" function !=(a: string, b: string) : boolean return not a == b;
 
 pragma "inline" function +(a: string, b: string) : string return __primitive("string_concat", a, b);
 
-pragma "rename inline" function length(a: string) return __primitive("string_length", a);
+pragma "inline" function length(a: string) return __primitive("string_length", a);
 
 pragma "inline" function string.this(i: integer) return __primitive("string_index", this, i);
 

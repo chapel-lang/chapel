@@ -168,6 +168,7 @@ class FnSymbol : public Symbol {
   AList<DefExpr>* formals;
   Type* retType;
   Expr *whereExpr;
+  Expr* retExpr;
   BlockStmt* body;
   fnType fnClass;
   bool noParens;

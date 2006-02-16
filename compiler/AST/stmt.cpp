@@ -248,7 +248,7 @@ void ReturnStmt::codegenStmt(FILE* outfile) {
 
 bool ReturnStmt::returnsVoid() {
   SymExpr* sym = dynamic_cast<SymExpr*>(expr);
-  return sym && sym->var == gVoid;
+  return sym && sym->var->type == dtVoid;
 }
 
 
@@ -477,12 +477,17 @@ CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
   thenStmt(NULL),
   elseStmt(NULL)
 {
+  BlockStmt* bs;
   if (BlockStmt* s = dynamic_cast<BlockStmt*>(iThenStmt)) {
     thenStmt = s;
   } else if (Stmt* s = dynamic_cast<Stmt*>(iThenStmt)) {
     thenStmt = new BlockStmt(s);
   } else if (AList<Stmt>* s = dynamic_cast<AList<Stmt>*>(iThenStmt)) {
-    thenStmt = new BlockStmt(s);
+    if (s->length() == 1 && (bs = dynamic_cast<BlockStmt*>(s->only()))) {
+      bs->remove();
+      thenStmt = bs;
+    } else
+      thenStmt = new BlockStmt(s);
   } else {
     INT_FATAL(iThenStmt, "Bad then-stmt passed to CondStmt constructor");
   }
@@ -493,7 +498,11 @@ CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
   } else if (Stmt* s = dynamic_cast<Stmt*>(iElseStmt)) {
     elseStmt = new BlockStmt(s);
   } else if (AList<Stmt>* s = dynamic_cast<AList<Stmt>*>(iElseStmt)) {
-    elseStmt = new BlockStmt(s);
+    if (s->length() == 1 && (bs = dynamic_cast<BlockStmt*>(s->only()))) {
+      bs->remove();
+      elseStmt = bs;
+    } else
+      elseStmt = new BlockStmt(s);
   } else {
     INT_FATAL(iElseStmt, "Bad else-stmt passed to CondStmt constructor");
   }
@@ -524,16 +533,6 @@ void CondStmt::verify() {
   if (elseStmt && (elseStmt->next || elseStmt->prev)) {
     INT_FATAL(this, "CondStmt::elseStmt is a list");
   }
-}
-
-
-//// DANGER //// See note below
-void CondStmt::addElseStmt(BlockStmt* init_elseStmt) {
-  if (elseStmt) {
-    INT_FATAL(this, "overwriting existing else Stmt");
-  }
-  elseStmt = init_elseStmt;
-  //SJD : this is not fixed up
 }
 
 

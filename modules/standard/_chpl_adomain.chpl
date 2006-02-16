@@ -54,12 +54,9 @@ class _adomain {
     }
   }
 
-  iterator _forall() {
-    var x : (rank*integer);
-    for i in _forall_help(rank) {
-      x = i;
-      yield x;
-    }
+  iterator _forall() : (rank*integer) {
+    for i in _forall_help(rank) do
+      yield i;
   }
 
   function range(dim : integer)
