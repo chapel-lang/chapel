@@ -1022,6 +1022,7 @@ void initType(void) {
   // This should point to the complex type defined in modules/standard/_chpl_complex.chpl
   dtComplex = Symboltable::definePrimitiveType("complex", "_complex128", new_ComplexSymbol("_MAKE_COMPLEX64(0.0,0.0)", 0.0, 0.0));
   dtString = Symboltable::definePrimitiveType("string", "_string");
+  dtSymbol = Symboltable::definePrimitiveType("symbol", "_symbol");
 
   dtNumeric = Symboltable::definePrimitiveType("numeric", "_numeric");
   dtAny = Symboltable::definePrimitiveType("any", "_any");
@@ -1118,32 +1119,5 @@ new_LiteralType(VarSymbol *literal_var) {
   compilerModule->stmts->insertAtTail(new DefExpr(sym));
   literal_var->literalType->defaultValue = literal_var;
   return literal_var->literalType;
-}
-
-static int closure_id = 0;
-
-ClassType *
-new_Closure(int members) {
-  currentLineno = 0;
-  char *name = stringcat("_closure_", intstring(members), "_", intstring(closure_id++));
-  AList<Stmt>* decls = new AList<Stmt>();
-
-  Vec<VarSymbol*> fields;
-  for (int i = 1; i <= members; i++) {
-    char* fieldName = stringcat("_f", intstring(i));
-    VarSymbol* field = new VarSymbol(fieldName);
-    decls->insertAtTail(new DefExpr(field));
-    fields.add(field);
-  }
-
-  ClassType* closureType = new ClassType(CLASS_CLASS);
-  TypeSymbol* closureSym = new TypeSymbol(name, closureType);
-  closureType->addSymbol(closureSym);
-  closureType->addDeclarations(decls);
-  compilerModule->stmts->insertAtHead(new DefExpr(closureSym));
-  closureType->typeParents.add(dtClosure);
-  closureType->dispatchParents.add(dtClosure);
-
-  return closureType;
 }
 

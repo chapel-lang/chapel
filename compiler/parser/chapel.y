@@ -1183,11 +1183,12 @@ top_level_expr:
 | reduction %prec TREDUCE
 | TPARTIAL expr
     {
-      $$ = $2;
-      if (CallExpr* call = dynamic_cast<CallExpr*>($$)) {
-        call->partialTag = PARTIAL_ALWAYS;
+      if (CallExpr* call = dynamic_cast<CallExpr*>($2)) {
+        char *closureName = stringcat("_construct__closure", intstring(call->argList->length() + 1));
+        char *fnname = dynamic_cast<SymExpr*>(call->baseExpr)->var->name;
+        $$ = new CallExpr(closureName, new_SymbolSymbol(fnname), call->argList->copy());
       } else {
-        USR_FATAL($$, "Unable to partially evaluate non-call");
+        USR_FATAL($2, "Unable to partially evaluate non-call");
       }
     }
 | expr TCOLON type

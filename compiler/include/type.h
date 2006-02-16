@@ -250,6 +250,7 @@ TYPE_EXTERN PrimitiveType* dtInteger;
 TYPE_EXTERN PrimitiveType* dtFloat;
 TYPE_EXTERN PrimitiveType* dtComplex;
 TYPE_EXTERN PrimitiveType* dtString;
+TYPE_EXTERN PrimitiveType* dtSymbol;
 
 // internal types
 TYPE_EXTERN Type* dtClosure;
@@ -281,6 +282,5 @@ int is_Reference_Type(Type *t);
 int is_Value_Type(Type *t);
 Type *getMetaType(Type *t);
 LiteralType *new_LiteralType(VarSymbol *literal_var);
-ClassType *new_Closure(int members);
 
 #endif

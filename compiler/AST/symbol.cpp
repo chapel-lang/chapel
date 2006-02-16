@@ -1514,6 +1514,7 @@ initSymbol() {
 
 static int literal_id = 1;
 HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
+HashMap<char *, StringHashFns, VarSymbol *> uniqueSymbolHash;
 
 VarSymbol *new_StringSymbol(char *str) {
   Immediate imm;
@@ -1623,6 +1624,17 @@ VarSymbol *new_ImmediateSymbol(Immediate *imm) {
   s->cname = dupstr(ss);
   *s->immediate = *imm;
   uniqueConstantsHash.put(s->immediate, s);
+  return s;
+}
+
+VarSymbol *new_SymbolSymbol(char *str) {
+  str = cannonicalize_string(str);
+  VarSymbol *s = uniqueSymbolHash.get(str);
+  if (s)
+    return s;
+  s = new VarSymbol(str, dtSymbol);
+  s->cname = intstring(s->id);
+  uniqueSymbolHash.put(str, s);
   return s;
 }
 

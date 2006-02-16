@@ -139,7 +139,7 @@ dynamic_dispatch(CallExpr *call) {
 }
 
 static void resolve_symbol(CallExpr* call) {
-    if (call->isPrimitive(PRIMITIVE_GET_MEMBER) ||
+  if (call->isPrimitive(PRIMITIVE_GET_MEMBER) ||
       call->isPrimitive(PRIMITIVE_SET_MEMBER))
     resolve_member_access(call, &call->member_offset, &call->member_type);
   if (call->isPrimitive(PRIMITIVE_INIT)) {
@@ -160,6 +160,21 @@ static void resolve_symbol(CallExpr* call) {
   }
   if (call->primitive)
     return;
+  if (call->baseExpr && call->baseExpr->typeInfo()->typeParents.in(dtClosure)) {
+    Vec<FnSymbol*> fns;
+    call_info(call, fns);
+    if (fns.n != 1) {
+      INT_FATAL("Dynamic dispatch for closures not yet supported");
+    }
+    AList<Expr>* arguments = call->argList->copy();
+    ClassType *ct = dynamic_cast<ClassType*>(call->baseExpr->typeInfo());
+    for (int i = 1; i < ct->fields.n; i++)
+      arguments->insertAtHead(new CallExpr(primitives[PRIMITIVE_GET_MEMBER], call->baseExpr->copy(),
+                                          new_StringSymbol(ct->fields.v[i]->name)));
+    CallExpr *new_expr = new CallExpr(fns.v[0], arguments);
+    call->replace(new_expr);
+    return;
+  }
   if (!call->isAssign()) {
     Vec<FnSymbol*> fns;
     call_info(call, fns);

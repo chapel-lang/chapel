@@ -1,1 +1,1 @@
-CFLAGS = -g -std=c99 -pedantic-errors
+CFLAGS = -g 

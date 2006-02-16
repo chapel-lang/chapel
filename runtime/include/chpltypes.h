@@ -21,6 +21,7 @@ typedef struct __complex128 {
 } _complex128;
 
 typedef char* _string;
+typedef _integer64 _symbol;
 
 #define _init_string() _chpl_calloc(1, sizeof(char), "_init_string")
 

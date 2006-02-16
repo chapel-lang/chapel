@@ -704,13 +704,6 @@ ASymbol::clone(int members) {
   if (!symbol) { // internal to analysis
     Sym *s = copy()->sym;
     return s;
-  } else if (this->sym == sym_closure) {
-    Type *new_type = new_Closure(members);
-    Vec<FnSymbol *> funs;
-    Vec<TypeSymbol *> types;
-    types.add(new_type->symbol);
-    install_new_asts(funs, types);
-    return new_type->asymbol->sym;
   } else {
     AnalysisCloneCallback callback;
     ASTCopyContext context;
@@ -767,6 +760,14 @@ is_literal(Symbol* sym) {
   return 0;
 }
 
+VarSymbol *
+is_symbol(Symbol* sym) {
+  if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym))
+    if (var->type == dtSymbol)
+      return var;
+  return 0;
+}
+
 Sym *
 map_const(IF1 *p, Immediate *imm) {
   Sym *sym = p->constants.get(imm);
@@ -779,13 +780,28 @@ map_const(IF1 *p, Immediate *imm) {
   return sym;
 }
 
+static Sym *
+make_symbol(char *name) {
+  Sym *s = if1_make_symbol(if1, name);
+  s->global_scope = 1;
+  return s;
+}
+
+static Sym *
+constructor_name(Type *t) {
+  return t->defaultConstructor->asymbol->sym;
+}
+
 static void
 map_baseast(BaseAST *s) {
   Symbol *sym = dynamic_cast<Symbol *>(s);
   if (sym) {
     if (sym->asymbol)
       return;
-    if (VarSymbol *var = is_literal(sym)) {
+    if (VarSymbol *var = is_symbol(sym)) {
+      Sym *s = make_symbol(var->name);
+      sym->asymbol = new_ASymbol(sym, s);
+    } else if (VarSymbol *var = is_literal(sym)) {
       Sym *s = map_const(if1, var->immediate);
       sym->asymbol = new_ASymbol(sym, s);
     } else {
@@ -1157,6 +1173,7 @@ build_builtin_symbols() {
   sym_value = dtValue->asymbol->sym;
   sym_void_type = dtVoid->asymbol->sym;
   sym_closure = dtClosure->asymbol->sym;
+  sym_symbol = dtSymbol->asymbol->sym;
 
   new_lub_type(sym_anyclass, "anyclass", VARARG_END);
   sym_anyclass->meta_type = sym_anyclass;
@@ -1363,18 +1380,6 @@ resolve_labels(BaseAST *ast, LabelMap *labelmap,
       if (resolve_labels(a, labelmap, return_label, break_label, continue_label) < 0)
         return -1;
   return 0;
-}
-
-static Sym *
-make_symbol(char *name) {
-  Sym *s = if1_make_symbol(if1, name);
-  s->global_scope = 1;
-  return s;
-}
-
-static Sym *
-constructor_name(Type *t) {
-  return t->defaultConstructor->asymbol->sym;
 }
 
 static int
@@ -2593,7 +2598,7 @@ to_AST_type(Sym *type) {
   if (type == sym_void || type == sym_void->meta_type)
     return dtVoid;
   if (type == sym_symbol)
-    return dtString;
+    return dtSymbol;
   if (type->type_kind == Type_LUB) {
     forv_Sym(s, type->has)
       if (s == sym_void || s == sym_void->meta_type)
