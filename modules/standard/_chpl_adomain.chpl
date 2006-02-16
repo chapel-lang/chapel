@@ -1,7 +1,7 @@
 function _build_array(dom, type elt_type)
   return dom._build_array(elt_type);
 
-function _build_domain(x : _adomain)
+function _build_domain(x : _domain)
   return x;
 
 function _build_domain(as : _aseq ...?rank) {
@@ -14,7 +14,9 @@ function _build_domain(as : _aseq ...?rank) {
   return x;
 }
 
-class _adomain {
+class _domain { }
+
+class _adomain : _domain {
   param rank : integer;
   var info : _ddata(_aseq) = _ddata(_aseq, rank);
 
@@ -67,14 +69,9 @@ class _adomain {
 }
 
 function fwrite(f : file, x : _adomain) {
-  fwrite(f, "[");
-  for i in 0..x.rank-1 {
-    if i > 0 then
-      fwrite(f, ", ");
-    fwrite(f, x.info(i)._low, "..", x.info(i)._high);
-    if x.info(i)._stride > 1 then
-      fwrite(f, " by ", x.info(i)._stride);
-  }
+  fwrite(f, "[", x.info(0));
+  for i in 1..x.rank-1 do
+    fwrite(f, ", ", x.info(i));
   fwrite(f, "]");
 }
 
@@ -116,23 +113,16 @@ class _aarray : value {
                / dom.info(0)._stride);
   }
 
-  function this(ij : 2*integer) var : elt_type {
-    var ind : integer = (ij(1) - info(0)._off) * info(0)._blk +
-                        (ij(2) - info(1)._off) * info(1)._blk;
-    return data(ind);
-  }
+  function this(ij : 2*integer) var : elt_type
+    return data((ij(1) - info(0)._off) * info(0)._blk +
+                (ij(2) - info(1)._off) * info(1)._blk);
 
-  function this(i : integer, j : integer) var : elt_type {
-    var ind : integer = (i - info(0)._off) * info(0)._blk +
-                        (j - info(1)._off) * info(1)._blk;
-    return data(ind);
-  }
+  function this(i : integer, j : integer) var : elt_type
+    return data((i - info(0)._off) * info(0)._blk +
+                (j - info(1)._off) * info(1)._blk);
 
-  function this(i : integer) var : elt_type {
-    var ind : integer = (i - info(0)._off) * info(0)._blk;
-    return data(ind);
-  }
-
+  function this(i : integer) var : elt_type
+    return data((i - info(0)._off) * info(0)._blk);
 }
 
 function fwrite(f : file, x : _aarray) {

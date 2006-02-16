@@ -1017,9 +1017,9 @@ type:
 | record_tuple_type
 | non_tuple_lvalue TOF type
     { $$ = new CallExpr($1, new NamedExpr("elt_type", $3)); }
-| tuple_multiplier TSTAR variable_expr
+| tuple_multiplier TSTAR type
     { $$ = new CallExpr("_htuple", $3, $1); }
-| TLP non_tuple_lvalue TSTAR variable_expr TRP
+| TLP non_tuple_lvalue TSTAR type TRP
     { $$ = new CallExpr("_htuple", $4, $2); }
 | TLSBR nonempty_expr_ls TRSBR type
     { $$ = new CallExpr("_build_array", new CallExpr("_build_domain", $2), $4); }

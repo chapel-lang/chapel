@@ -24,9 +24,8 @@ class seq : value {
       }
       return tmp._element;
     }
-    else 
+    else
       halt("error: sequence index out-of-bounds, index is ", i);
-
   }
 
   function length : integer
@@ -227,18 +226,11 @@ function _forall_valid(s : _aseq, e) {
   return e < s._high;
 }
 
-function by(s : _aseq, i : integer) : _aseq {
-  var tmp : _aseq = s;
-  tmp._stride = tmp._stride * i;
-  return tmp;
-}
+function by(s : _aseq, i : integer)
+  return _aseq(s._low, s._high, s._stride * i);
 
 function fwrite(f : file, s : _aseq) {
-  fwrite(f, s._low);
-  fwrite(f, "..");
-  fwrite(f, s._high);
-  if (s._stride > 1) {
-    fwrite(f, " by ");
-    fwrite(f, s._stride);
-  }
+  fwrite(f, s._low, "..", s._high);
+  if (s._stride > 1) then
+    fwrite(f, " by ", s._stride);
 }

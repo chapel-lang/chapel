@@ -26,7 +26,6 @@ static void insert_formal_temps(FnSymbol* fn);
 static void call_constructor_for_class(CallExpr* call);
 static void normalize_for_loop(ForLoopStmt* stmt);
 static void decompose_special_calls(CallExpr* call);
-static void hack_array_constructor_call(CallExpr* call);
 static void hack_domain_constructor_call(CallExpr* call);
 static void hack_seqcat_call(CallExpr* call);
 static void convert_user_primitives(CallExpr* call);
@@ -115,7 +114,6 @@ void normalize(BaseAST* base) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
     if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
-      hack_array_constructor_call(a);
       hack_domain_constructor_call(a);
       hack_seqcat_call(a);
     } else if (Expr* a = dynamic_cast<Expr*>(ast)) {
@@ -565,54 +563,10 @@ static void decompose_special_calls(CallExpr* call) {
 }
 
 
-static Expr* hack_rank(Expr* domain) {
-  if (SymExpr* symExpr = dynamic_cast<SymExpr*>(domain)) {
-    if (CallExpr* call = dynamic_cast<CallExpr*>(symExpr->var->defPoint->exprType)) {
-      if (call->isNamed("_construct__adomain")) {
-        return call->argList->first()->copy();
-      }
-    }
-  }
-  INT_FATAL("Could not determine rank of array");
-  return NULL;
-}
-
-
-static void hack_array_constructor_call(CallExpr* call) {
-  if (call->isResolved())
-    return;
-  if (call->isNamed("_construct__aarray")) {
-    if (dynamic_cast<DefExpr*>(call->parentExpr)) {
-      Expr* dom = call->argList->last();
-      dom->insertBefore(hack_rank(call->argList->last()));
-      dom->replace(new NamedExpr("dom", dom));
-    }
-  }
-}
-
-
 static void hack_domain_constructor_call(CallExpr* call) {
   if (call->isResolved())
     return;
-  if (call->isNamed("_construct__adomain_lit")) {
-    if (!dynamic_cast<DefExpr*>(call->parentExpr))
-      return;
-    Stmt* stmt = call->parentStmt;
-    VarSymbol* _adomain_tmp = new VarSymbol("_adomain_tmp");
-    stmt->insertBefore(
-        new DefExpr(_adomain_tmp, NULL,
-          new CallExpr("_construct__adomain_lit",
-            new_IntLiteral(call->argList->length()))));
-    call->replace(new SymExpr(_adomain_tmp));
-    int dim = 1;
-    for_alist(Expr, arg, call->argList) {
-      stmt->insertBefore(
-          new CallExpr(
-            new CallExpr(".", _adomain_tmp, new_StringSymbol("_set")),
-            new_IntLiteral(dim), arg->copy()));
-      dim++;
-    }
-  } else if (call->isNamed("domain")) {
+  if (call->isNamed("domain")) {
     if (call->argList->length() != 1)
       USR_FATAL(call, "Domain type cannot yet be inferred");
     if (call->argList->only()->typeInfo() != dtInteger)
