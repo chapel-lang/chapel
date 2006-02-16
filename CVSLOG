@@ -56836,3 +56836,22 @@ Modified files:
 Added files:
 	chapel/test/functions/deitz/: test_forallexpr1.future 
 
+---------------------------------------------------------------------------
+
+02/16/06 09:05:16 -- jplevyak
+
+Log message:
+	Implement closures (sans dynamic dispach and correct visibility)
+	Add the concept of a symbol to the runtime/IF which is unique
+	  and can be used to represent the set of functions with a particular name.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: symbol.h type.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	                         resolveAnalyzed.cpp 
+	chapel/runtime/etc/: Makefile.macros 
+	chapel/runtime/include/: chplmem.h chpltypes.h 
+
