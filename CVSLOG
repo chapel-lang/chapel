@@ -56855,3 +56855,34 @@ Modified files:
 	chapel/runtime/etc/: Makefile.macros 
 	chapel/runtime/include/: chplmem.h chpltypes.h 
 
+---------------------------------------------------------------------------
+
+02/16/06 09:07:12 -- deitz
+
+Log message:
+	Fixed a bug in parsing of homogeneous tuples in which a tuple of a
+	complex type could not be formed.  Now we allow things like
+	"3*(integer, integer)" though this will have trouble outside of the
+	interpreter because we don't initialize _ddata well.
+	
+	Removed unnecessary array/domain hacks from the compiler due to an
+	earlier simplification of the code.
+	
+	Added a _domain base class of _adomain.  Simplified some domain,
+	array, and sequence code.
+	
+	Added a homogeneous tuple of tuple test which fails for the above
+	mentioned trouble.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_seq.chpl 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+Added files:
+	chapel/test/types/tuple/deitz/: test_htuple_of_tuple.chpl 
+	                                test_htuple_of_tuple.future 
+	                                test_htuple_of_tuple.good 
+
