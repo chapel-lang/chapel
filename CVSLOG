@@ -56937,3 +56937,13 @@ Modified files:
 Added files:
 	chapel/modules/standard/: _chpl_closure.chpl 
 
+---------------------------------------------------------------------------
+
+02/16/06 18:41:01 -- jplevyak
+
+Log message:
+	Fix output
+
+Modified files:
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+
