@@ -18,12 +18,12 @@ _chpl_seq.chpl:232: fwrite, f : file, s : _aseq
 fwrite, f : file, val : _tuple2
 prelude.chpl:3: fwrite, f : file, val : object
 prelude.chpl:4: fwrite, f : file, val : value
-prelude.chpl:5: fwrite, f : file, val : closure
-prelude.chpl:11: fwrite, f : file, val : _ddata
-prelude.chpl:31: fwrite, f : file, val : CFILEPTR
+prelude.chpl:10: fwrite, f : file, val : _ddata
+prelude.chpl:30: fwrite, f : file, val : CFILEPTR
 _chpl_base.chpl:3: fwrite, f : file, val : _unused_class
 _chpl_base.chpl:9: fwrite, f : file, val : _methodTokenType
 _chpl_base.chpl:11: fwrite, f : file, val : _setterTokenType
+_chpl_closure.chpl:1: fwrite, f : file, val : closure
 _chpl_file.chpl:1: fwrite, f : file, val : file
 _chpl_adomain.chpl:17: fwrite, f : file, val : _domain
 _chpl_adomain.chpl:78: fwrite, f : file, val : _aarray_info
