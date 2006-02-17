@@ -897,15 +897,15 @@ static void fold_call_expr(CallExpr* call) {
     return;
   }
   // Should we treat 1*integer as integer or as a 1-tuple?
-  if (call->isNamed("_construct__htuple")) {
-    if (SymExpr* rank = dynamic_cast<SymExpr*>(call->get(2))) {
-      if (!strcmp(rank->var->cname, "1")) {
-        Expr* type = call->get(1);
-        type->remove();
-        call->replace(type);
-      }
-    }
-  }
+//   if (call->isNamed("_construct__htuple")) {
+//     if (SymExpr* rank = dynamic_cast<SymExpr*>(call->get(2))) {
+//       if (!strcmp(rank->var->cname, "1")) {
+//         Expr* type = call->get(1);
+//         type->remove();
+//         call->replace(type);
+//       }
+//     }
+//   }
   if (call->argList->length() == 2) {
     if (call->get(1)->typeInfo() == dtString) // folding not handling strings yet
       return;
@@ -1102,11 +1102,12 @@ expand_var_args(FnSymbol* fn) {
             arg_def->insertBefore(new_arg_def);
           }
           VarSymbol* var = new VarSymbol(arg->name);
-          if (n == 1) {
-            Expr* actual = actuals->only();
-            actual->remove();
-            fn->insertAtHead(new DefExpr(var, actual));
-          } else if (arg->type != dtUnknown) {
+//           if (n == 1) {
+//             Expr* actual = actuals->only();
+//             actual->remove();
+//             fn->insertAtHead(new DefExpr(var, actual));
+//           } else
+          if (arg->type != dtUnknown) {
             int i = n;
             for_alist_backward(Expr, actual, actuals) {
               actual->remove();

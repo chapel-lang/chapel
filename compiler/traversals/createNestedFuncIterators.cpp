@@ -54,6 +54,12 @@ void CreateNestedFuncIterators::postProcessStmt(Stmt* stmt) {
       iteratorCall = t;
     }
     FnSymbol* iterator = iteratorCall->findFnSymbol()->copy();
+    if (iterator->fnClass != FN_ITERATOR) // special case for domain
+                                          // _forall function because
+                                          // it is not an iterator.
+                                          // Change back after this is
+                                          // fixed.
+      return;
     iterator->retType = dtVoid;
     iterator->addPragma("inline");
     FnSymbol* body = new FnSymbol("loop_body");

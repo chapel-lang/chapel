@@ -6,11 +6,8 @@ function _build_domain(x : _domain)
 
 function _build_domain(as : _aseq ...?rank) {
   var x = _adomain(rank);
-  if rank == 1 then
-    x.info(0) = as;
-  else
-    for i in 1..rank do
-      x.info(i-1) = as(i);
+  for i in 1..rank do
+    x.info(i-1) = as(i);
   return x;
 }
 
@@ -33,7 +30,7 @@ class _adomain : _domain {
       yield i;
 
   iterator _forall_help(param rank : integer) : (rank*integer) {
-    if rank > 2 {
+    if rank > 1 {
       for i in _forall(rank) do
         for x in _forall_help(rank-1) {
           var result : (rank*integer);
@@ -42,23 +39,28 @@ class _adomain : _domain {
           result(rank) = i;
           yield result;
         }
-    } else if rank == 2 {
-      for i in _forall(rank) do
-        for x in _forall_help(1) {
-          var result : (rank*integer);
-          result(1) = x;
-          result(2) = i;
-          yield result;
-        }
     } else if rank == 1 {
-      for i in _forall(1) do
-        yield i;
+      var result : 1*integer;
+      for i in _forall(1) {
+        result(1) = i;
+        yield result;
+      }
     }
   }
 
-  iterator _forall() : (rank*integer) {
-    for i in _forall_help(rank) do
-      yield i;
+  // eventually this should be an iterator with inferred result
+  function _forall() {
+    if rank == 1 {
+      var s : seq of integer;
+      for i in _forall_help(rank) do
+        s._append_in_place(i(1));
+      return s;
+    } else {
+      var s : seq of (rank*integer);
+      for i in _forall_help(rank) do
+        s._append_in_place(i);
+      return s;
+    }
   }
 
   function range(dim : integer)
