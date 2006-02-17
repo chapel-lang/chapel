@@ -56947,3 +56947,16 @@ Log message:
 Modified files:
 	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
 
+---------------------------------------------------------------------------
+
+02/17/06 06:18:37 -- jplevyak
+
+Log message:
+	Make the disabling of method and setter tokens for constructors
+	  symetric.  Update one .good file.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.good 
+
