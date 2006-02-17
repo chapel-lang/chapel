@@ -56896,3 +56896,44 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp pattern.cpp 
 
+---------------------------------------------------------------------------
+
+02/16/06 18:21:18 -- jplevyak
+
+Log message:
+	Closures calling closures now works.
+	We now build the closure classes after analysis,
+	  this proved rather tricky:
+	    - needed to disable removing of static arguments
+	      for the closure constructor so we can include
+	      methodToken within a closure
+	Instantiated types now have a typeParent which is the original type.
+	There is a function "complete_closure" which uses the results
+	  of analysis to build the members for each closue
+	  we could use the same technique for tuples
+	Now use to_AST_type for member_info.
+	Closures are again tagged with PARTIAL_ALWAYS in chapel.y
+	The "this" variable in the constructor now has the type of the
+	  thing created.
+	There is a new module: _chpl_closure (like _chpl_tuple)
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: runtime.h type.h 
+	chapel/compiler/main/: runtime.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         filesToAST.cpp normalize.cpp 
+	                         resolveAnalyzed.cpp 
+	chapel/compiler/symtab/: symscope.cpp 
+	chapel/modules/standard/: _chpl_standard.chpl prelude.chpl 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+Added files:
+	chapel/modules/standard/: _chpl_closure.chpl 
+
