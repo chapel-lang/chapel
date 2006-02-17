@@ -56960,3 +56960,15 @@ Modified files:
 	chapel/test/classes/jplevyak/: 
 	                               record_type_hierarchy-3-error.good 
 
+---------------------------------------------------------------------------
+
+02/17/06 09:21:05 -- jplevyak
+
+Log message:
+	Make it possible to use partial application with members.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+Added files:
+	chapel/test/functions/jplevyak/: partial-4.chpl partial-4.good 
+
