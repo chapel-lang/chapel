@@ -56972,3 +56972,13 @@ Modified files:
 Added files:
 	chapel/test/functions/jplevyak/: partial-4.chpl partial-4.good 
 
+---------------------------------------------------------------------------
+
+02/17/06 10:02:45 -- deitz
+
+Log message:
+	Commented out unused prototype.
+
+Modified files:
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+
