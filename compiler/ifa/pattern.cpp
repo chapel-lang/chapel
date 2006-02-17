@@ -11,7 +11,7 @@
 #include "log.h"
 
 #define CHECK_INSTANTIATION     1
-//#define CHECK_CALLEE_CACHE      1
+#define CHECK_CALLEE_CACHE      1
 
 // Key to names of position variables
 //  ABCD 
