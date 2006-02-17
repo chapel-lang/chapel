@@ -709,8 +709,12 @@ static void apply_getters_setters(FnSymbol* fn) {
         CallExpr* getter = new CallExpr(method, methodToken, _this);
         call->replace(getter);
         if (CallExpr* parent = dynamic_cast<CallExpr*>(getter->parentExpr))
-          if (parent->baseExpr == getter)
-            getter->partialTag = PARTIAL_OK;
+          if (parent->baseExpr == getter) { 
+            if (parent->partialTag != PARTIAL_ALWAYS)
+              getter->partialTag = PARTIAL_OK;
+            else
+              getter->partialTag = PARTIAL_NEVER;
+          }
       } else if (call->isNamed("=")) {
         if (CallExpr* lhs = dynamic_cast<CallExpr*>(call->get(1))) {
           if (lhs->isNamed(".")) {
