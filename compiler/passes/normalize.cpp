@@ -1178,7 +1178,7 @@ genericFunctionArg(FnSymbol *f, Vec<Symbol *> &genericSymbols) {
           return 1;
         }
       }
-      if (ps->type->isGeneric) {
+      if (ps->type && ps->type->isGeneric) {
         genericSymbols.set_add(ps->type->symbol);
         return 1;
       }

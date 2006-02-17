@@ -1,11 +1,38 @@
+  called from _chpl_standard.chpl:7
+  called from _chpl_standard.chpl:7
+  called from _chpl_standard.chpl:7
+  called from _chpl_standard.chpl:7
+  called from _chpl_standard.chpl:7
+  called from _chpl_standard.chpl:7
+  called from _chpl_standard.chpl:7
+  called from _chpl_standard.chpl:7
+  called from _chpl_standard.chpl:7
+=, _arg1 : _tuple2, _arg2
+=, _htuple : _htuple, val : _tuple2
 _chpl_adomain.chpl:128: fwrite, f : file, x : _aarray
+_chpl_adomain.chpl:154: expression has no type
+_chpl_adomain.chpl:154: expression has no type
+_chpl_adomain.chpl:154: expression has no type
+_chpl_adomain.chpl:154: illegal call argument type '_defTmp' illegal: ( _tuple2 ) 
+_chpl_adomain.chpl:154: illegal call argument type expression illegal: ( ) 
+_chpl_adomain.chpl:154: illegal call argument type expression illegal: ( int64 ) 
+_chpl_adomain.chpl:154: illegal call argument type expression illegal: ( int64 ) 
+_chpl_adomain.chpl:154: unresolved call '='
+_chpl_adomain.chpl:154: unresolved call '_construct__tuple2'
 _chpl_adomain.chpl:17: fwrite, f : file, val : _domain
 _chpl_adomain.chpl:71: fwrite, f : file, x : _adomain
+_chpl_adomain.chpl:78: =, _arg1 : _aarray_info, _arg2
 _chpl_adomain.chpl:78: fwrite, f : file, val : _aarray_info
+_chpl_adomain.chpl:83: =, _arg1 : _aarray, _arg2
+_chpl_base.chpl:11: =, _arg1 : _setterTokenType, _arg2
 _chpl_base.chpl:11: fwrite, f : file, val : _setterTokenType
 _chpl_base.chpl:3: fwrite, f : file, val : _unused_class
+_chpl_base.chpl:9: =, _arg1 : _methodTokenType, _arg2
 _chpl_base.chpl:9: fwrite, f : file, val : _methodTokenType
+_chpl_closure.chpl:1: fwrite, f : file, val : closure
+_chpl_complex.chpl:1: =, _arg1 : complex, _arg2
 _chpl_complex.chpl:8: fwrite, f : file, x : complex
+_chpl_data.chpl:3: =, _arg1 : _fdata, _arg2
 _chpl_data.chpl:46: fwrite, f : file, val : _fdata
 _chpl_file.chpl:112: fwrite, f : file, val : int64
 _chpl_file.chpl:145: fwrite, f : file, val : float64
@@ -13,21 +40,32 @@ _chpl_file.chpl:165: fwrite, f : file, val : string
 _chpl_file.chpl:196: fwrite, f : file, val : bool
 _chpl_file.chpl:1: fwrite, f : file, val : file
 _chpl_file.chpl:214: fwrite, f : file, x : nil_type
+_chpl_htuple.chpl:15: =, x : _htuple, y
 _chpl_htuple.chpl:22: fwrite, f : file, val : _htuple
 _chpl_seq.chpl:156: fwrite, f : file, s : seq
+_chpl_seq.chpl:172: =, _arg1 : _aseq, _arg2
 _chpl_seq.chpl:1: fwrite, f : file, val : _seqNode
 _chpl_seq.chpl:232: fwrite, f : file, s : _aseq
+_chpl_seq.chpl:8: =, _arg1 : seq, _arg2
+_construct__tuple2, _t1 @ any, _t2 @ any, _f1 : _t1, _f2 : _t2
+error: '_hack_x' has no type
+error: '_tmp' has no type
 error: '_tmp' has no type
 fail: program does not type
 fwrite, f : file, val : _tuple2
 fwrite, f : file, val : _tuple2
 note: candidates are:
 note: candidates are:
-prelude.chpl:11: fwrite, f : file, val : _ddata
-prelude.chpl:31: fwrite, f : file, val : CFILEPTR
+note: candidates are:
+note: candidates are:
+prelude.chpl:10: fwrite, f : file, val : _ddata
+prelude.chpl:131: =, a : string, b : any
+prelude.chpl:136: =, a : numeric, b : any
+prelude.chpl:141: =, a : any, b : any
+prelude.chpl:30: fwrite, f : file, val : CFILEPTR
 prelude.chpl:3: fwrite, f : file, val : object
+prelude.chpl:4: =, _arg1 : value, _arg2
 prelude.chpl:4: fwrite, f : file, val : value
-prelude.chpl:5: fwrite, f : file, val : closure
 record_type_hierarchy-3-error.chpl:10: f, a : D
 record_type_hierarchy-3-error.chpl:16: expression has no type
 record_type_hierarchy-3-error.chpl:16: expression has no type

@@ -2835,6 +2835,7 @@ AST_is_used(BaseAST *a, Symbol *s) {
 
 static int
 member_info(Sym *t, char *name, int *offset, Type **type, int index = -1) {
+  int result = 0;
   int oresult = -1;
   Vec<Sym *> iv_type;
   Vec<Sym *> ttypes, *types = 0;
@@ -2847,7 +2848,9 @@ member_info(Sym *t, char *name, int *offset, Type **type, int index = -1) {
   forv_Sym(s, *types) {
     forv_CreationSet(cs, s->creators) {
       AVar *iv = name ? cs->var_map.get(name) : 0;
-      if (!iv && index >= 0 && index < cs->vars.n)
+      if (index >= cs->vars.n)
+        return -1;
+      if (!iv && index >= 0)
         iv = cs->vars.v[index];
       if (iv) {
         if (oresult >= 0 && oresult != iv->ivar_offset)
@@ -2859,16 +2862,18 @@ member_info(Sym *t, char *name, int *offset, Type **type, int index = -1) {
   }
   *offset = oresult;
   Sym *tmp = 0;
-  if (!iv_type.n || types->n < 2)
+  if (types->n < 2)
+    result = 0;
+  if (!iv_type.n)
     *type = NULL;
   else {
     if (iv_type.n == 1)
       tmp = iv_type.v[0];
     else 
       tmp = concrete_type_set_to_type(iv_type);
-    *type = dynamic_cast<Type *>(SYMBOL(tmp));
+    *type = to_AST_type(tmp);
   }
-  return 0;
+  return result;
 }
 
 int

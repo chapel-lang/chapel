@@ -8,6 +8,7 @@
 
 extern ModuleSymbol* prelude;
 extern ModuleSymbol* baseModule;
+extern ModuleSymbol* closureModule;
 extern ModuleSymbol* fileModule;
 extern ModuleSymbol* tupleModule;
 extern ModuleSymbol* seqModule;

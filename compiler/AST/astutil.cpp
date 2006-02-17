@@ -282,6 +282,10 @@ void remove_static_actuals() {
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
       if (FnSymbol* fn = call->isResolved()) {
+      int constructor = 0;
+      if (ClassType *ct = dynamic_cast<ClassType*>(fn->typeBinding))
+        if (ct->defaultConstructor == fn)
+          constructor = 1;
         DefExpr* formalDef = fn->formals->first();
         for_alist(Expr, actual, call->argList) {
           ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
@@ -305,13 +309,17 @@ void remove_static_formals() {
   collect_asts_postorder(&asts);
   forv_Vec(BaseAST, ast, asts) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
+      int constructor = 0;
+      if (fn->typeBinding)
+        if (ClassType *ct = dynamic_cast<ClassType*>(fn->typeBinding->definition))
+          if (ct->defaultConstructor == fn)
+            constructor = 1;
       for_alist(DefExpr, formalDef, fn->formals) {
         ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
         if (formal->intent == INTENT_TYPE ||
-            formal->type == dtMethodToken ||
-            formal->type == dtSetterToken) {
+            (!constructor && (formal->type == dtMethodToken ||
+                              formal->type == dtSetterToken)))
           formalDef->remove();
-        }
       }
     }
   }

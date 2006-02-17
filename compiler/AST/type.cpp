@@ -1089,7 +1089,9 @@ void findInternalTypes(void) {
     dtFile = dynamic_cast<TypeSymbol*>(Symboltable::lookupInFileModuleScope("file"))->definition;
   dtObject = dynamic_cast<ClassType*>(Symboltable::lookupInternalType("object")->definition);
   dtValue = dynamic_cast<ClassType*>(Symboltable::lookupInternalType("value")->definition);
-  dtClosure = dynamic_cast<ClassType*>(Symboltable::lookupInternalType("closure")->definition);
+
+  dtClosure = dynamic_cast<TypeSymbol*>(Symboltable::lookupInScope(
+                                         "closure", closureModule->modScope))->definition;
 
   // These should all be eliminated.  Note they almost are since they
   // are MetaTypes, not the types in the prelude.
@@ -1121,3 +1123,14 @@ new_LiteralType(VarSymbol *literal_var) {
   return literal_var->literalType;
 }
 
+void 
+complete_closure(ClassType *ct, Vec<Type *> types) {
+  currentLineno = 0;
+  AList<Stmt>* decls = new AList<Stmt>();
+  for (int i = 1; i <= types.n; i++) {
+    char* fieldName = stringcat("_f", intstring(i));
+    VarSymbol* field = new VarSymbol(fieldName, types.v[i-1]);
+    decls->insertAtTail(new DefExpr(field));
+  }
+  ct->addDeclarations(decls);
+}

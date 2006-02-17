@@ -77,8 +77,6 @@ void build_default_functions(void) {
       if (base) {
         if (!strncmp(base->var->name, "_construct__tuple", 17))
           construct_tuple_type(atoi(base->var->name+17));
-        if (!strncmp(base->var->name, "_construct__closure", 19))
-          construct_closure_type(atoi(base->var->name+19));
       }
     }
   }
@@ -380,34 +378,4 @@ static void construct_tuple_type(int rank) {
 //     assignFn->insertAtTail(new ReturnStmt(tupleArg));
 //     tupleModule->stmts->insertAtTail(new ExprStmt(new DefExpr(assignFn)));
 //   }
-}
-
-
-static void construct_closure_type(int members) {
-  currentLineno = 0;
-
-  char *name = stringcat("_closure", intstring(members));
-
-  if (Symboltable::lookupInScope(name, tupleModule->modScope))
-    return;
-
-  AList<Stmt>* decls = new AList<Stmt>();
-
-  // Build field declarations
-  Vec<VarSymbol*> fields;
-  for (int i = 1; i <= members; i++) {
-    char* fieldName = stringcat("_f", intstring(i));
-    VarSymbol* field = new VarSymbol(fieldName, dtUnknown);
-    decls->insertAtTail(new DefExpr(field));
-    fields.add(field);
-  }
-
-  // Build closure
-  ClassType* closureType = new ClassType(CLASS_CLASS);
-  TypeSymbol* closureSym = new TypeSymbol(name, closureType);
-  closureType->addSymbol(closureSym);
-  closureType->addDeclarations(decls);
-  closureType->typeParents.add(dtClosure);
-  closureType->dispatchParents.add(dtClosure);
-  tupleModule->stmts->insertAtHead(new DefExpr(closureSym));
 }

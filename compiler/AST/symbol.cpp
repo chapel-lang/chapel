@@ -578,6 +578,7 @@ TypeSymbol* TypeSymbol::clone(ASTMap* map, Stmt* pointOfClone) {
   clone->cname = stringcat("_clone_", clone->cname);
   pointOfClone->insertBefore(new DefExpr(clone));
   clone->addPragmas(&pragmas);
+  newClass->typeParents.add(originalClass);
   if (no_infer)
     newClass->dispatchParents.copy(originalClass->dispatchParents);
   return clone;

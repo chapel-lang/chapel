@@ -25,6 +25,7 @@ void parse(void) {
                              MOD_STANDARD);
 
   baseModule = ParseFile(stringcat(chplroot, "/modules/standard/_chpl_base.chpl"), MOD_STANDARD);
+  closureModule = ParseFile(stringcat(chplroot, "/modules/standard/_chpl_closure.chpl"), MOD_STANDARD);
 
   if (!fnostdincs && !fnostdincs_but_file) {
     ParseFile(stringcat(chplroot, "/modules/standard/_chpl_complex.chpl"),

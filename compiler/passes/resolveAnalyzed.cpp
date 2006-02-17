@@ -47,6 +47,27 @@ void resolve_analyzed(void) {
   }
 
   asts.clear();
+  collect_asts(&asts);
+  forv_Vec(BaseAST, ast, asts) {
+    if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(ast)) {
+      if (ClassType *ct = dynamic_cast<ClassType *>(ts->definition)) {
+        if (ct->typeParents.in(dtClosure)) {
+          Vec<Type *> types;
+          for (int i = 0;; i++) {
+            int offset;
+            Type *type = 0;
+            if (resolve_member(ct, i, &offset, &type) < 0)
+              break;
+            types.add(type);
+          }
+          complete_closure(ct, types);
+        }
+      }
+    }
+  }
+  build(closureModule);
+
+  asts.clear();
   collect_asts_postorder(&asts);
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
@@ -138,7 +159,24 @@ dynamic_dispatch(CallExpr *call) {
   call->replace(new_expr);
 }
 
+static void
+insert_closure_arg(AList<Expr>* arguments, Expr *baseExpr, Symbol *field = 0) {
+  Type *t = field ? field->typeInfo() : baseExpr->typeInfo();
+  if (t->typeParents.in(dtClosure)) {
+    ClassType *ct = dynamic_cast<ClassType*>(t);
+    insert_closure_arg(arguments, 
+                       new CallExpr(primitives[PRIMITIVE_GET_MEMBER], baseExpr->copy(),
+                                    new_StringSymbol(ct->fields.v[0]->name)),
+                       ct->fields.v[0]);
+    for (int i = 1; i < ct->fields.n; i++)
+      arguments->insertAtTail(new CallExpr(primitives[PRIMITIVE_GET_MEMBER], baseExpr->copy(),
+                                           new_StringSymbol(ct->fields.v[i]->name)));
+  } // else drop function symbol
+}
+
 static void resolve_symbol(CallExpr* call) {
+  if (!call->ainfo)
+    return;
   if (call->isPrimitive(PRIMITIVE_GET_MEMBER) ||
       call->isPrimitive(PRIMITIVE_SET_MEMBER))
     resolve_member_access(call, &call->member_offset, &call->member_type);
@@ -160,18 +198,28 @@ static void resolve_symbol(CallExpr* call) {
   }
   if (call->primitive)
     return;
+  if (call->partialTag == PARTIAL_ALWAYS) {
+    ClassType *closureType = dynamic_cast<ClassType*>(type_info(call));
+    AList<Expr>* arguments = call->argList->copy();
+    if (call->baseExpr->typeInfo()->typeParents.in(dtClosure)) {
+      arguments->insertAtHead(call->baseExpr->copy());
+    } else {
+      char *fnname = dynamic_cast<SymExpr*>(call->baseExpr)->var->name;
+      arguments->insertAtHead(new SymExpr(new_SymbolSymbol(fnname)));
+    }
+    CallExpr *new_expr = new CallExpr(closureType->defaultConstructor, arguments);
+    call->replace(new_expr);
+    return;
+  }
   if (call->baseExpr && call->baseExpr->typeInfo()->typeParents.in(dtClosure)) {
     Vec<FnSymbol*> fns;
     call_info(call, fns);
     if (fns.n != 1) {
       INT_FATAL("Dynamic dispatch for closures not yet supported");
     }
-    AList<Expr>* arguments = call->argList->copy();
-    ClassType *ct = dynamic_cast<ClassType*>(call->baseExpr->typeInfo());
-    for (int i = 1; i < ct->fields.n; i++)
-      arguments->insertAtHead(new CallExpr(primitives[PRIMITIVE_GET_MEMBER], call->baseExpr->copy(),
-                                          new_StringSymbol(ct->fields.v[i]->name)));
-    CallExpr *new_expr = new CallExpr(fns.v[0], arguments);
+    AList<Expr>* arguments = new AList<Expr>;
+    insert_closure_arg(arguments, call->baseExpr);
+    CallExpr *new_expr = new CallExpr(fns.v[0], arguments, call->argList->copy());
     call->replace(new_expr);
     return;
   }

@@ -283,4 +283,6 @@ int is_Value_Type(Type *t);
 Type *getMetaType(Type *t);
 LiteralType *new_LiteralType(VarSymbol *literal_var);
 
+void complete_closure(ClassType *closureType, Vec<Type *> member_types);
+
 #endif

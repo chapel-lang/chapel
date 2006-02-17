@@ -354,6 +354,7 @@ static void build_constructor(ClassType* ct) {
   fn->cname = stringcat("_construct_", ct->symbol->cname);
 
   AList<DefExpr>* args = new AList<DefExpr>();
+  args->head->parentSymbol = fn;
 
   forv_Vec(TypeSymbol, type, ct->types) {
     if (VariableType* vt = dynamic_cast<VariableType*>(type->definition)) {
@@ -390,7 +391,7 @@ static void build_constructor(ClassType* ct) {
     fn->addPragma("rename _data_construct");
   fn->typeBinding = ct->symbol;
 
-  fn->_this = new VarSymbol("this");
+  fn->_this = new VarSymbol("this", ct);
   dynamic_cast<VarSymbol*>(fn->_this)->noDefaultInit = true;
 
   char* description = stringcat("instance of class ", ct->symbol->name);
@@ -481,6 +482,7 @@ static void build_setter(ClassType* ct, Symbol* field) {
   Expr *assignExpr = new CallExpr("=", valExpr, fieldArg);
   fn->body->insertAtTail(
     new CallExpr(PRIMITIVE_SET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)), assignExpr));
+  fn->body->insertAtTail(new ReturnStmt(new SymExpr(_this)));
   ct->symbol->defPoint->parentStmt->insertBefore(new DefExpr(fn));
   reset_file_info(fn, field->lineno, field->filename);
 

@@ -69,7 +69,8 @@ void SymScope::define(Symbol* sym) {
   Symbol* tmp = table.get(sym->name);
   if (tmp) {
     if (tmp == sym) {
-      INT_FATAL(sym, "Attempt to define symbol %s twice", sym->name);
+      return;
+      //INT_FATAL(sym, "Attempt to define symbol %s twice", sym->name);
     }
     while (tmp->overload) {
       tmp = tmp->overload;
