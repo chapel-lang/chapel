@@ -15,7 +15,7 @@ static void build_record_inequality_function(ClassType* ct);
 static void build_record_assignment_function(ClassType* ct);
 static void buildDefaultIOFunctions(Type* type);
 static void construct_tuple_type(int size);
-static void construct_closure_type(int size);
+//static void construct_closure_type(int size);
 
 // function_exists returns true iff
 //  function's name matches name
