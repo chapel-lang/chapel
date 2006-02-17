@@ -290,10 +290,9 @@ void remove_static_actuals() {
         for_alist(Expr, actual, call->argList) {
           ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
           if (formal->intent == INTENT_TYPE ||
-              formal->type == dtMethodToken ||
-              formal->type == dtSetterToken) {
+              (!constructor && (formal->type == dtMethodToken ||
+                               formal->type == dtSetterToken)))
             actual->remove();
-          }
           formalDef = fn->formals->next();
         }
         if (!strcmp(fn->name, "_chpl_alloc"))
