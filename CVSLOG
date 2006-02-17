@@ -56982,3 +56982,33 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: buildDefaultFunctions.cpp 
 
+---------------------------------------------------------------------------
+
+02/17/06 10:07:27 -- deitz
+
+Log message:
+	Made 1*integer remain a tuple that should be indexed into.  Similarly,
+	(integer) is a tuple too.  There is no way to create a 1-tuple literal
+	though because (2) becomes 2 which is an integer.
+	
+	Question: Should we allow an element to be assigned to a 1-tuple
+	directly as in
+	
+	  var x : 1*integer = 2;
+	
+	This would currently result in an error.  The user would have to write
+	
+	  x(1) = 2;
+	
+	Changed domain _forall iterator into a function disabling the nested
+	function optimization for this case, but allowing the inferred type so
+	that it can return an integer for a 1D domain, but a 2-tuple for a 2D
+	domain.
+	
+	Removed unnecessary _tuple_widen function.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/compiler/traversals/: createNestedFuncIterators.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_htuple.chpl 
+
