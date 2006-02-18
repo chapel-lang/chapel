@@ -57012,3 +57012,16 @@ Modified files:
 	chapel/compiler/traversals/: createNestedFuncIterators.cpp 
 	chapel/modules/standard/: _chpl_adomain.chpl _chpl_htuple.chpl 
 
+---------------------------------------------------------------------------
+
+02/17/06 16:49:45 -- jplevyak
+
+Log message:
+	Add new partial evaluation tests.
+
+Added files:
+	chapel/test/functions/jplevyak/: partial-3.chpl partial-3.good 
+	                                 partial-5.chpl partial-5.good 
+	                                 partial-6.chpl partial-6.good 
+	                                 partial-7.chpl partial-7.good 
+
