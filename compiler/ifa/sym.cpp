@@ -10,6 +10,7 @@ char *type_kind_string[] = {
 
 BasicSym::BasicSym(void) :
   name(NULL),
+  in(NULL),
   type(NULL),
   aspect(NULL),
   must_specialize(NULL),
