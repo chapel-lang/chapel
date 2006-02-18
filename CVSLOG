@@ -57043,3 +57043,13 @@ Modified files:
 	chapel/compiler/ifa/: clone.cpp fa.cpp fa.h 
 	chapel/compiler/passes/: normalize.cpp resolveAnalyzed.cpp 
 
+---------------------------------------------------------------------------
+
+02/18/06 09:46:29 -- jplevyak
+
+Log message:
+	Fix valgrind problems.
+
+Modified files:
+	chapel/compiler/ifa/: sym.cpp 
+
