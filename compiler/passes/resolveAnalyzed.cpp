@@ -159,19 +159,50 @@ dynamic_dispatch(CallExpr *call) {
   call->replace(new_expr);
 }
 
-static void
-insert_closure_arg(AList<Expr>* arguments, Expr *baseExpr, Symbol *field = 0) {
-  Type *t = field ? field->typeInfo() : baseExpr->typeInfo();
+static int insert_closure_arg(AList<Expr>* arguments, Expr *baseExpr, Symbol *field, int nargs);
+
+static int
+insert_closure_type_arg(AList<Expr>* arguments, Expr *baseExpr, Type *t, int nargs) {
+  if (nargs < 0)
+    return 0;
+  AList<Expr> targuments;
   if (t->typeParents.in(dtClosure)) {
     ClassType *ct = dynamic_cast<ClassType*>(t);
-    insert_closure_arg(arguments, 
-                       new CallExpr(primitives[PRIMITIVE_GET_MEMBER], baseExpr->copy(),
-                                    new_StringSymbol(ct->fields.v[0]->name)),
-                       ct->fields.v[0]);
-    for (int i = 1; i < ct->fields.n; i++)
-      arguments->insertAtTail(new CallExpr(primitives[PRIMITIVE_GET_MEMBER], baseExpr->copy(),
-                                           new_StringSymbol(ct->fields.v[i]->name)));
-  } // else drop function symbol
+    CallExpr *ma = new CallExpr(primitives[PRIMITIVE_GET_MEMBER], baseExpr->copy(),
+                                new_StringSymbol(ct->fields.v[0]->name));
+    resolve_member(ct, 0, &ma->member_offset, &ma->member_type);
+    if (!insert_closure_arg(&targuments, ma, ct->fields.v[0], nargs - (ct->fields.n - 1)))
+      return 0;
+    arguments->insertAtHead(&targuments);
+    for (int i = 1; i < ct->fields.n; i++) {
+      CallExpr *ma = new CallExpr(primitives[PRIMITIVE_GET_MEMBER], baseExpr->copy(),
+                                  new_StringSymbol(ct->fields.v[i]->name));
+      resolve_member(ct, i, &ma->member_offset, &ma->member_type);
+      arguments->insertAtTail(ma);
+    }
+  } else if (t == dtSymbol)
+    return !nargs;
+  else {
+    arguments->insertAtTail(baseExpr->copy());
+    return nargs == 1;
+  }
+  return 1;
+}
+
+static int
+insert_closure_arg(AList<Expr>* arguments, Expr *baseExpr, Symbol *field, int nargs) {
+  Type *tt = field ? field->typeInfo() : baseExpr->typeInfo();
+  if (SumType *st = dynamic_cast<SumType*>(tt)) {
+    forv_Vec(Type*, x, st->components) {
+      if (x->typeParents.in(dtClosure)) {
+        ClassType *ct = dynamic_cast<ClassType*>(x);
+        if (insert_closure_type_arg(arguments, baseExpr, ct, nargs))
+          return 1;
+      }
+    }
+    return 0;
+  } else
+    return insert_closure_type_arg(arguments, baseExpr, tt, nargs);
 }
 
 static void resolve_symbol(CallExpr* call) {
@@ -204,8 +235,12 @@ static void resolve_symbol(CallExpr* call) {
     if (call->baseExpr->typeInfo()->typeParents.in(dtClosure)) {
       arguments->insertAtHead(call->baseExpr->copy());
     } else {
-      char *fnname = dynamic_cast<SymExpr*>(call->baseExpr)->var->name;
-      arguments->insertAtHead(new SymExpr(new_SymbolSymbol(fnname)));
+      if (SymExpr *symExpr = dynamic_cast<SymExpr*>(call->baseExpr)) {
+        char *fnname = symExpr->var->name;
+        arguments->insertAtHead(new SymExpr(new_SymbolSymbol(fnname)));
+      } else {
+        arguments->insertAtHead(call->baseExpr->copy());
+      }
     }
     CallExpr *new_expr = new CallExpr(closureType->defaultConstructor, arguments);
     call->replace(new_expr);
@@ -217,8 +252,11 @@ static void resolve_symbol(CallExpr* call) {
     if (fns.n != 1) {
       INT_FATAL("Dynamic dispatch for closures not yet supported");
     }
+    int nargs = fns.v[0]->formals->length() - call->argList->length();
     AList<Expr>* arguments = new AList<Expr>;
-    insert_closure_arg(arguments, call->baseExpr);
+    if (!insert_closure_arg(arguments, call->baseExpr, 0, nargs)) {
+      INT_FATAL("Unable to resolve closure");
+    }
     CallExpr *new_expr = new CallExpr(fns.v[0], arguments, call->argList->copy());
     call->replace(new_expr);
     return;

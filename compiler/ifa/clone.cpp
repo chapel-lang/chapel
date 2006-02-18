@@ -262,7 +262,9 @@ class AEDGE_FN {
 
 class CS_SYM_FN { 
  public: 
-  static int equivalent(CreationSet *a, CreationSet *b) { return a->sym == b->sym; }
+  static int equivalent(CreationSet *a, CreationSet *b) { 
+    return a->sym == b->sym;
+  }
 };
 
 class CS_EQ_FN { 

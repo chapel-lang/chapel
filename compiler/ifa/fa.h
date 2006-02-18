@@ -115,6 +115,7 @@ class CreationSet : public gc {
   uint                  clone_for_constants : 1;
   uint                  added_element_var : 1;
   uint                  dfs_color : 2;
+  uint                  closure_used : 1;
   Vec<AVar *>           defs;
   AType                 *atype;         // the type that this creation set belongs to
   Vec<AVar *>           vars;

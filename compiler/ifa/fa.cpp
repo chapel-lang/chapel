@@ -117,8 +117,8 @@ unique_AVar(Var *v, EntrySet *es) {
   return av;
 }
 
-CreationSet::CreationSet(Sym *s) : sym(s), clone_for_constants(0), added_element_var(0), 
-                                   atype(0), equiv(0), type(0)
+CreationSet::CreationSet(Sym *s) : sym(s), clone_for_constants(0), added_element_var(0),
+                                   closure_used(0), atype(0), equiv(0), type(0)
 {
   id = creation_set_id++;
 }
@@ -1347,7 +1347,10 @@ partial_application(PNode *p, EntrySet *es, CreationSet *cs, Vec<AVar *> args, P
     cs->vars.v[i]->arg_of_send.add(result);
     args.add(cs->vars.v[i]);
   }
-  return all_applications(p, es, fun, args, 1, partial);
+  int r = all_applications(p, es, fun, args, 1, partial);
+  if (!r)
+    cs->closure_used = 1;
+  return r;
 }
 
 static void
@@ -3131,6 +3134,7 @@ clear_cs(CreationSet *cs) {
     clear_avar(v);
   if (cs->added_element_var)
     clear_avar(get_element_avar(cs));
+  cs->closure_used = 0;
 }
 
 static void
@@ -3704,6 +3708,29 @@ set_void_lub_types_to_void() {
   foreach_var(set_void_lub_types_to_void);
 }
 
+static void 
+remove_unused_closures(Var *v) { 
+  for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].key) {
+    AVar *av = v->avars.v[i].value;
+    forv_CreationSet(cs, av->out->sorted)
+      if (cs->sym == sym_closure && !cs->closure_used) {
+        Vec<CreationSet *> css;
+        forv_CreationSet(cs, av->out->sorted) {
+          if (cs->sym == sym_closure && !cs->closure_used)
+            continue;
+          css.add(cs);
+        }
+        av->out = make_AType(css);
+        return;
+      }
+  }
+}
+
+static void
+remove_unused_closures() {
+  foreach_var(remove_unused_closures);
+}
+
 static void
 complete_pass() {
   collect_results();
@@ -3732,6 +3759,7 @@ FA::analyze(Fun *top) {
     complete_pass();
   } while (extend_analysis());
   set_void_lub_types_to_void();
+  remove_unused_closures();
   if (fanalysis_errors)
     if1->callback->report_analysis_errors(type_violations);
   show_violations(fa, stderr);
