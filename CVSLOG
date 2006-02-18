@@ -57053,3 +57053,17 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: sym.cpp 
 
+---------------------------------------------------------------------------
+
+02/18/06 13:59:32 -- jplevyak
+
+Log message:
+	Added some debugging print functions.
+	Updated test driver for libifa.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: fa.cpp fa.h pnode.cpp pnode.h sym.cpp 
+	                      sym.h var.cpp var.h 
+	chapel/compiler/ifa/libifa/: ast_to_if1.cc prelude.v 
+
