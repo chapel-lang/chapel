@@ -57025,3 +57025,21 @@ Added files:
 	                                 partial-6.chpl partial-6.good 
 	                                 partial-7.chpl partial-7.good 
 
+---------------------------------------------------------------------------
+
+02/17/06 16:54:51 -- jplevyak
+
+Log message:
+	In analysis: remove closures which are not used.  These are
+	  created because the ambiguities in Chapel as x.f(1,2) can
+	  either require a partial application or not, depending on
+	  whether f is a member whose value has a "this" fucntion" or not.
+	Add support for many levels of closures.
+	Add support for closures which handle both x.f(1,2) when
+	  f is a member variable whose value has a "this" function,
+	  and when f is a member function of 2 arguments.
+
+Modified files:
+	chapel/compiler/ifa/: clone.cpp fa.cpp fa.h 
+	chapel/compiler/passes/: normalize.cpp resolveAnalyzed.cpp 
+
