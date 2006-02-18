@@ -359,3 +359,9 @@ Sym::coerce_to(Sym *to) {
   return NULL;
 }
 
+void
+pp(Sym *s) {
+  printf("(SYM %d ", s->id);
+  if1_dump_sym(stdout, s);
+  printf(")");
+}

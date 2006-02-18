@@ -407,4 +407,8 @@ extern AType *anyclass_type;
 
 extern int analysis_pass;
 
+void pp(AVar *);
+void pp(AType *);
+void pp(CreationSet *);
+
 #endif

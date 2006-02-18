@@ -78,5 +78,7 @@ int compar_pnodes(const void *ai, const void *aj);
 typedef Vec<PNode *> VecPNode;
 typedef Map<PNode *, VecPNode> MapPNVecPN;
 
+void pp(PNode *);
+
 #endif
 

@@ -44,4 +44,6 @@ class Var : public gc {
    !(_v)->sym->is_lvalue &&             \
    !(_v)->sym->is_var)
 
+void pp(Var *);
+
 #endif

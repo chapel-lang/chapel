@@ -29,3 +29,35 @@ compar_pnodes(const void *ai, const void *aj) {
   return (i > j) ? 1 : ((i < j) ? -1 : 0);
 }
 
+void
+pp(PNode *p) {
+  printf("(PNode %d ", p->id);
+  printf("%s ", code_string[p->code->kind]);
+  if (p->lvals.n) {
+    printf("\n  (lvals %d ", p->lvals.n);
+    forv_Var(v, p->lvals) {
+      pp(v);
+      printf(" ");
+    }
+    printf(") ");
+  }
+  if (p->rvals.n) {
+    printf("\n  (rvals %d ", p->rvals.n);
+    forv_Var(v, p->rvals) {
+      pp(v);
+      printf(" ");
+    }
+    printf(") ");
+  }
+  if (p->tvals.n) {
+    printf("\n  (tvals %d ", p->tvals.n);
+    forv_Var(v, p->tvals) {
+      pp(v);
+      printf(" ");
+    }
+    printf(") ");
+  }
+  if (p->is_dead)
+    printf("DEAD ");
+  printf(")\n");
+}

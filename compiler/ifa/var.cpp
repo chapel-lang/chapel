@@ -1,5 +1,6 @@
 #include "defs.h"
 #include "var.h"
+#include "if1.h"
 
 int var_id = 1;
 
@@ -13,3 +14,15 @@ Var::copy() {
   return v;
 }
 
+void
+pp(Var *v) {
+  printf("(Var %d ", v->id);
+  if1_dump_sym(stdout, v->sym);
+  if (v->is_internal)
+    printf(" INTERNAL ");
+  if (v->is_filtered)
+    printf(" FILTERED ");
+  if (v->is_formal)
+    printf(" FORMAL ");
+  printf(")");
+}

@@ -3863,3 +3863,29 @@ symbol_info(Var *v, Vec<Sym *> &symbols) {
   symbols.set_to_vec();
   return symbols.n;
 }
+
+void
+pp(AVar *av) {
+  printf("(AVar %d ", av->id);
+  if1_dump_sym(stdout, av->var->sym);
+  printf(" OUT: ");
+  pp(av->out);
+  printf(")\n");
+}
+
+void
+pp(AType *t) {
+  printf("(AType %d ", t->n);
+  forv_CreationSet(cs, t->sorted)
+    pp(cs);
+  printf(")\n");
+}
+
+void
+pp(CreationSet *cs) {
+  printf("(CreationSet %d ", cs->id);
+  if1_dump_sym(stdout, cs->sym);
+  printf(" defs: %d ", cs->defs.n);
+  printf(" vars: %d ", cs->vars.n);
+  printf(")\n");
+}

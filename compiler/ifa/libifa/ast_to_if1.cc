@@ -540,7 +540,7 @@ set_builtin(IF1 *i, Sym *sym, char *start, char *end = 0) {
     case Builtin_complex128:
 #endif
     case Builtin_string:
-    case Builtin_function:
+    case Builtin_closure:
       sym->type_kind = Type_PRIMITIVE;
       break;
     case Builtin_any: sym->type_kind = Type_LUB; break;
@@ -2065,7 +2065,21 @@ ast_gen_if1(IF1 *i, Vec<ParseAST *> &av) {
   build_init(i);
   finalize_symbols(i);
 
+  sym_any->implements.add(sym_unknown_type);
+  sym_any->specializes.add(sym_unknown_type);
+  sym_unspecified_type->implements.add(sym_any);
+  sym_unspecified_type->specializes.add(sym_any);
+  sym_object->implements.add(sym_any);
+  sym_object->specializes.add(sym_any);
+  sym_nil_type->implements.add(sym_object);
+  sym_nil_type->specializes.add(sym_object);
+  sym_value->implements.add(sym_any);
+  sym_value->specializes.add(sym_any);
+  sym_anyclass->implements.add(sym_any);
+  sym_anyclass->specializes.add(sym_any);
+
   sym_any->is_system_type = 1;
+  sym_anyclass->is_system_type = 1;
   sym_value->is_system_type = 1;
   sym_object->is_system_type = 1;
   sym_nil_type->is_system_type = 1;
@@ -2080,4 +2094,6 @@ ast_gen_if1(IF1 *i, Vec<ParseAST *> &av) {
 
 void PCallbacks::finalize_functions() {
   sym_new_object->fun->split_unique = 1;
+  forv_Fun(fun, pdb->funs)
+    fun->eager_evaluation = 1;
 }

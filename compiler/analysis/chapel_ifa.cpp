@@ -1283,16 +1283,17 @@ build_builtin_symbols() {
 
   // defined type hierarchy
   
-  sym_unspecified_type->implements.add(sym_any);
   sym_any->implements.add(sym_unknown_type);
-  sym_object->implements.add(sym_any);
-  sym_nil_type->implements.add(sym_object);
-  sym_value->implements.add(sym_any);
-  sym_unspecified_type->specializes.add(sym_any);
   sym_any->specializes.add(sym_unknown_type);
+  sym_unspecified_type->implements.add(sym_any);
+  sym_unspecified_type->specializes.add(sym_any);
+  sym_object->implements.add(sym_any);
   sym_object->specializes.add(sym_any);
+  sym_nil_type->implements.add(sym_object);
   sym_nil_type->specializes.add(sym_object);
+  sym_value->implements.add(sym_any);
   sym_value->specializes.add(sym_any);
+  sym_anyclass->implements.add(sym_any);
   sym_anyclass->specializes.add(sym_any);
 
   sym_any->is_system_type = 1;

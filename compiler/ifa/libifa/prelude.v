@@ -8,7 +8,7 @@ type anyclass __name "anyclass";
 type any __name "any";
 type module __name "module";
 type symbol __name "symbol";
-type function __name "function";
+type closure __name "closure";
 type continuation __name "continuation";
 type vector __name "vector";
 type tuple __name "tuple";
