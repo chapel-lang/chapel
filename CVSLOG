@@ -57067,3 +57067,16 @@ Modified files:
 	                      sym.h var.cpp var.h 
 	chapel/compiler/ifa/libifa/: ast_to_if1.cc prelude.v 
 
+---------------------------------------------------------------------------
+
+02/18/06 17:10:05 -- jplevyak
+
+Log message:
+	fixup low level codegen
+
+Modified files:
+	chapel/compiler/ifa/: cg.cpp 
+	chapel/compiler/ifa/libifa/: Makefile parse.cc 
+Added files:
+	chapel/compiler/ifa/libifa/: Makefile.cg c_runtime.h 
+
