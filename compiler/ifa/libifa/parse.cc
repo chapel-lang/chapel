@@ -169,5 +169,7 @@ compile_one_file(char *fn) {
   if (load_one(fn) < 0)
     return -1;
   ifa_analyze(fn);
+  ifa_cg(fn);
+  ifa_compile(fn);
   return 0;
 }

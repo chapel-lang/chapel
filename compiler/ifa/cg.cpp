@@ -703,9 +703,13 @@ cg_print_c(FILE *fp, FA *fa, Fun *init) {
   if (globals.n)
     fputs("\n", fp);
   forv_Var(v, globals) {
-    if (v->sym->is_constant && v->sym->constant) {
+    if (v->sym->imm.const_kind != IF1_NUM_KIND_NONE) {
+      char s[100];
+      sprint_imm(s, v->sym->imm);
+      v->cg_string = dupstr(s);
+    } else if (v->sym->constant) {
       if (v->type == sym_string)
-        v->cg_string = quote_string(v->sym->constant);
+        v->cg_string = escape_string(v->sym->constant);
       else
         v->cg_string = v->sym->constant;
     } else if (v->sym->is_symbol) {
@@ -755,20 +759,6 @@ cg_compile(char *filename) {
   char target[512], s[1024];
   strcpy(target, filename);
   *strrchr(target, '.') = 0;
-  (void) target; // not used for testing
-#if 0
-  FILE *fp = fopen("Makefile.cg", "w");
-  fprintf(fp, 
-"COMPILER_ROOT=.\nCOMPILER_SUBDIR = \n"
-"include $(COMPILER_ROOT)/make/Makefile.compiler.head\n\n"
-"all: $(CG_FILES)\n"
-"\t$(CC) $(CFLAGS) $(LDFLAGS) -o $(CG_TARGET) $(CG_FILES) $(LIBS)\n"
-    );
-  fclose(fp);
-#endif
-  sprintf(s, "gmake -f Makefile.cg CG_TARGET=a.out CG_FILES=%s.c", filename);
-#if 0
-  unlink("Makefile.cg");
-#endif
+  sprintf(s, "gmake -f Makefile.cg CG_TARGET=%s CG_FILES=%s.c", target, filename);
   return system(s);
 }

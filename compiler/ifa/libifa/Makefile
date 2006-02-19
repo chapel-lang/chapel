@@ -87,7 +87,7 @@ LIBS += -lm -ldparse_gc -lgc
 
 DIR = libifa
 
-AUX_FILES = $(DIR)/Makefile $(DIR)/COPYRIGHT $(DIR)/README $(DIR)/index.html $(DIR)/manual.html $(DIR)/faq.html $(DIR)/ifa.1 $(DIR)/ifa.cat
+AUX_FILES = $(DIR)/Makefile $(DIR)/COPYRIGHT $(DIR)/README $(DIR)/index.html $(DIR)/manual.html $(DIR)/faq.html $(DIR)/ifa.1 $(DIR)/ifa.cat $(DIR)/Makefile.cg
 TAR_FILES = $(AUX_FILES) $(TEST_FILES)
 
 LIB_SRCS = arg.cc ast.cc builtin.cc cdb.cc cfg.cc cg.cc clone.cc \
