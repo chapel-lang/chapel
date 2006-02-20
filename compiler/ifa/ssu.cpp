@@ -331,10 +331,10 @@ approximate_liveness(Fun *f, Vec<PNode *> &nodes) {
     changed = 0;
     forv_PNode(n, nodes) {
       forv_PNode(p, n->cfg_succ)
-        changed = merge_live(n, p) || changed;
+        changed |= merge_live(n, p);
       forv_Var(v, n->rvals)
         if (Var_is_local(v, f))
-          changed = !n->live_vars->put(v) || changed;
+          changed |= !n->live_vars->put(v);
     }
   }
 }
@@ -356,7 +356,7 @@ static int
 place_one(Region *r, Var *v, int phy) {
   int placed = 0;
   forv_Region(rr, r->children) {
-    placed = place_one(rr, v, phy) || placed;
+    placed |= place_one(rr, v, phy);
     forv_PNode(n, rr->nodes) {
       if (!phy && n->lvals.in(v))
         placed = true;

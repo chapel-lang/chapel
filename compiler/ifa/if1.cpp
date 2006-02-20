@@ -475,7 +475,7 @@ mark_code_live(IF1 *p, Code *code, int &code_live) {
     case Code_SEND: break;
     default:
       for (int i = 0; i < code->sub.n; i++)
-        changed = mark_code_live(p, code->sub.v[i], code_live) || changed;
+        changed |= mark_code_live(p, code->sub.v[i], code_live);
       break;
   }
   return changed;
@@ -490,23 +490,23 @@ mark_live(IF1 *p, Code *code) {
       case Code_GOTO:
         break;
       case Code_IF:
-        changed = mark_sym_live(code->rvals.v[0]) || changed;
+        changed |= mark_sym_live(code->rvals.v[0]);
         break;
       case Code_MOVE:
         if (code->lvals.v[0]->live)
-          changed = mark_sym_live(code->rvals.v[0]) || changed;
+          changed |= mark_sym_live(code->rvals.v[0]);
         break;
       case Code_SEND:
         if (!code->lvals.n || code->lvals.v[0]->live || !is_functional(p, code)) {
           for (int i = 0; i < code->rvals.n; i++)
-            changed = mark_sym_live(code->rvals.v[i]) || changed;
+            changed |= mark_sym_live(code->rvals.v[i]);
           for (int i = 0; i < code->lvals.n; i++)
-            changed = mark_sym_live(code->lvals.v[i]) || changed;
+            changed |= mark_sym_live(code->lvals.v[i]);
         }
         break;
       default:
         for (int i = 0; i < code->sub.n; i++)
-          changed = mark_live(p, code->sub.v[i]) || changed;
+          changed |= mark_live(p, code->sub.v[i]);
         break;
     }
   }
@@ -742,7 +742,7 @@ if1_simple_dead_code_elimination(IF1 *p) {
     again = 0;
     for (int i = 0; i < p->allclosures.n; i++)
       if (p->allclosures.v[i]->code)
-        again = mark_live(p, p->allclosures.v[i]->code) || again;
+        again |= mark_live(p, p->allclosures.v[i]->code);
   }
   for (int i = 0; i < p->allclosures.n; i++) {
     if (p->allclosures.v[i]->code)
@@ -832,10 +832,7 @@ if1_finalize_closure(IF1 *p, Sym *c) {
     int code_live = 1;
     while (mark_code_live(p,c->code, code_live));
     int again = 1;
-    while (again) {
-      again = 0;
-      again = mark_live(p, c->code) || again;
-    }
+    while (mark_live(p, c->code)) ;
     mark_dead(p, c->code);
   }
   if1_flatten_code(c->code, Code_CONC, NULL);
