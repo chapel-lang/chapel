@@ -57080,3 +57080,17 @@ Modified files:
 Added files:
 	chapel/compiler/ifa/libifa/: Makefile.cg c_runtime.h 
 
+---------------------------------------------------------------------------
+
+02/20/06 11:14:53 -- jplevyak
+
+Log message:
+	Partial evaluations/closures now work with dynamic dispatch.
+	Add test case for same.
+
+Modified files:
+	chapel/compiler/passes/: resolveAnalyzed.cpp 
+Added files:
+	chapel/test/functions/jplevyak/: dynamic-partial-1.chpl 
+	                                 dynamic-partial-1.good 
+
