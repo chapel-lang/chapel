@@ -57094,3 +57094,13 @@ Added files:
 	chapel/test/functions/jplevyak/: dynamic-partial-1.chpl 
 	                                 dynamic-partial-1.good 
 
+---------------------------------------------------------------------------
+
+02/20/06 12:42:07 -- jplevyak
+
+Log message:
+	Code Cleanup.
+
+Modified files:
+	chapel/compiler/ifa/: ssu.cpp if1.cpp 
+
