@@ -97,12 +97,14 @@ static void resolve_type(Symbol* sym) {
 
 
 static Expr *
-build_dispatch_tree(CallExpr *call, Vec<FnSymbol*> &fns, Vec<Vec<Vec<Type *> *> *> &dispatch, int a) {
+build_dispatch_tree(CallExpr *call, AList<Expr> *arguments, 
+                    Vec<FnSymbol*> &fns, Vec<Vec<Vec<Type *> *> *> &dispatch, int a) 
+{
   if (a >= dispatch.v[0]->n) {
     if (fns.set_count() != 1) {
       USR_FATAL(call, "Unable to build table dispatch for ambiguous call");
     }
-    return new CallExpr(fns.first(), call->argList->copy());
+    return new CallExpr(fns.first(), arguments->copy());
   }
   Vec<Type *> *t = 0;
   for (int i = 0; i < fns.n; i++) {
@@ -128,16 +130,16 @@ build_dispatch_tree(CallExpr *call, Vec<FnSymbol*> &fns, Vec<Vec<Vec<Type *> *> 
         }
         Expr *true_expr = 0, *false_expr = 0;
         if (true_fns.set_count() == 1)
-          true_expr = new CallExpr(true_fns.first(), call->argList->copy());
+          true_expr = new CallExpr(true_fns.first(), arguments->copy());
         else
-          true_expr = build_dispatch_tree(call, true_fns, dispatch, a + 1);
+          true_expr = build_dispatch_tree(call, arguments, true_fns, dispatch, a + 1);
         if (false_fns.set_count() == 1)
-          false_expr = new CallExpr(false_fns.first(), call->argList->copy());
+          false_expr = new CallExpr(false_fns.first(), arguments->copy());
         else
-          false_expr = build_dispatch_tree(call, false_fns, dispatch, a);
+          false_expr = build_dispatch_tree(call, arguments, false_fns, dispatch, a);
         FnSymbol* if_fn = build_if_expr(new CallExpr(PRIMITIVE_TYPE_EQUAL, 
                                          new SymExpr(type->symbol), 
-                                         call->argList->get(a)->copy()), 
+                                                     arguments->get(a)->copy()), 
                                         true_expr, false_expr);
         if_fn->retType = true_expr->typeInfo();
         if_fn->retRef = false;
@@ -147,15 +149,15 @@ build_dispatch_tree(CallExpr *call, Vec<FnSymbol*> &fns, Vec<Vec<Vec<Type *> *> 
       }
     }
   }
-  return build_dispatch_tree(call, fns, dispatch, a+1);
+  return build_dispatch_tree(call, arguments, fns, dispatch, a+1);
 }
 
 static void
-dynamic_dispatch(CallExpr *call) {
+dynamic_dispatch(CallExpr *call, AList<Expr> *arguments) {
   Vec<Vec<Vec<Type *> *> *> dispatch;
   Vec<FnSymbol*> fns;
   call_info(call, fns, &dispatch);
-  Expr *new_expr = build_dispatch_tree(call, fns, dispatch, 1);  // FORTRAN NUMBERING
+  Expr *new_expr = build_dispatch_tree(call, arguments, fns, dispatch, 1);  // FORTRAN NUMBERING
   call->replace(new_expr);
 }
 
@@ -249,16 +251,23 @@ static void resolve_symbol(CallExpr* call) {
   if (call->baseExpr && call->baseExpr->typeInfo()->typeParents.in(dtClosure)) {
     Vec<FnSymbol*> fns;
     call_info(call, fns);
-    if (fns.n != 1) {
-      INT_FATAL("Dynamic dispatch for closures not yet supported");
+    if (fns.n <= 0) {
+      INT_FATAL("Unable to resolve function");
     }
     int nargs = fns.v[0]->formals->length() - call->argList->length();
     AList<Expr>* arguments = new AList<Expr>;
     if (!insert_closure_arg(arguments, call->baseExpr, 0, nargs)) {
       INT_FATAL("Unable to resolve closure");
     }
-    CallExpr *new_expr = new CallExpr(fns.v[0], arguments, call->argList->copy());
-    call->replace(new_expr);
+    arguments->insertAtTail(call->argList->copy());
+    if (fns.n == 1)
+      call->replace(new CallExpr(fns.v[0], arguments));
+    else {
+      if (call->partialTag != PARTIAL_NEVER)
+        return;
+      dynamic_dispatch(call, arguments);
+      return;
+    }
     return;
   }
   if (!call->isAssign()) {
@@ -278,7 +287,7 @@ static void resolve_symbol(CallExpr* call) {
         if (call->partialTag != PARTIAL_NEVER)
           return;
         if (fns.n > 1) {
-          dynamic_dispatch(call);
+          dynamic_dispatch(call, call->argList);
           return;
         }
         INT_FATAL(call, "Unable to resolve function");
