@@ -831,7 +831,6 @@ if1_finalize_closure(IF1 *p, Sym *c) {
   if (c->code) {
     int code_live = 1;
     while (mark_code_live(p,c->code, code_live));
-    int again = 1;
     while (mark_live(p, c->code)) ;
     mark_dead(p, c->code);
   }
