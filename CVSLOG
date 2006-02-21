@@ -57104,3 +57104,20 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: ssu.cpp if1.cpp 
 
+---------------------------------------------------------------------------
+
+02/21/06 07:18:22 -- jplevyak
+
+Log message:
+	Interm checkin for introduction of dynamic dispatch in the compiler.
+	  This checkin allows introduction to fix type violation based on
+	  accessing 2 versions of an instance variable with different primitive
+	  types from different clones of the same classs.
+	New Map::some_disjunction().
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp if1.cpp map.h 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+
