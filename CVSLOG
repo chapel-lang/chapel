@@ -57161,3 +57161,15 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+02/22/06 12:46:41 -- jplevyak
+
+Log message:
+	Fix bugs related to instnatiation of generics because of sym_anyclass
+	  (now sym_anytype).
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: ast.cpp builtin_symbols.h fa.cpp fa.h 
+
