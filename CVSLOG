@@ -57151,3 +57151,13 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: pattern.cpp 
 
+---------------------------------------------------------------------------
+
+02/22/06 11:26:43 -- jplevyak
+
+Log message:
+	Use sorted arrays instead of sets.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
