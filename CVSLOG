@@ -57173,3 +57173,19 @@ Modified files:
 	chapel/compiler/analysis/: chapel_ifa.cpp 
 	chapel/compiler/ifa/: ast.cpp builtin_symbols.h fa.cpp fa.h 
 
+---------------------------------------------------------------------------
+
+02/22/06 15:12:32 -- shannon
+
+Log message:
+	Added a future test for creating methods
+	of a class with variable arguments.  Currently
+	this fails to build with the complaint that
+	the program does not type.
+
+Added files:
+	chapel/test/functions/shannon/: .cvsignore 
+	                                methodWithVarargs.chpl 
+	                                methodWithVarargs.future 
+	                                methodWithVarargs.good 
+
