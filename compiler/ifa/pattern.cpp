@@ -793,7 +793,7 @@ make_generic_substitution(IFAAST *ast, Sym *generic_type, Sym *concrete_type, Ma
   }
   Sym *old = substitutions.get(generic_type);    
   if (old && old != concrete_type) {
-    show_error("conflicting generic variable substitutions", ast);
+    // conflicting generic variable substitutions
     return 0;
   }
   substitutions.put(generic_type, concrete_type);
