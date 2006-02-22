@@ -279,22 +279,14 @@ static void resolve_symbol(CallExpr* call) {
       if (fns.n == 2 && !strcmp(fns.v[1]->name, "fwrite") &&
           fns.v[1]->formals->first()->sym->type == dtFile && 
           fns.v[1]->formals->get(2)->sym->type == dtNil) {
+        fns.n = 1;
       } else if (fns.n == 2 && !strcmp(fns.v[0]->name, "fwrite") &&
                  fns.v[0]->formals->first()->sym->type == dtFile && 
                  fns.v[0]->formals->get(2)->sym->type == dtNil) {
         fns.v[0] = fns.v[1];
-      } else {
-        if (call->partialTag != PARTIAL_NEVER)
-          return;
-        if (fns.n > 1) {
-          dynamic_dispatch(call, call->argList);
-          return;
-        }
-        INT_FATAL(call, "Unable to resolve function");
-        return;
+        fns.n = 1;
       }
     }
-
     AList<Expr>* arguments = call->argList->copy();
     // HACK: to handle special case for a.x(1) translation
     Expr *baseExpr = call->baseExpr;
@@ -307,6 +299,16 @@ static void resolve_symbol(CallExpr* call) {
           arguments->insertAtHead(basecall->argList->copy());
         }
       }
+    }
+    if (fns.n != 1) {
+      if (call->partialTag != PARTIAL_NEVER)
+        return;
+      if (fns.n > 1) {
+        dynamic_dispatch(call, arguments);
+        return;
+      }
+      INT_FATAL(call, "Unable to resolve function");
+      return;
     }
     if (!strcmp("this", fns.v[0]->name)) {
       arguments->insertAtHead(baseExpr->copy());

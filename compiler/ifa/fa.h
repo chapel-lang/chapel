@@ -187,6 +187,8 @@ class AVar : public gc {
 
 typedef MapElem<MPosition *, AVar *> MapMPositionAVar;
 #define form_MPositionAVar(_p, _v) form_Map(MapMPositionAVar, _p, _v)
+typedef MapElem<MPosition *, AType *> MapElemMPositionAType;
+#define form_MPositionAType(_p, _v) form_Map(MapMPositionAType, _p, _v)
 
 class ATypeChainHashFns {
  public:

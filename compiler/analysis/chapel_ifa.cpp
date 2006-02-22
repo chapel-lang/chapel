@@ -2765,11 +2765,13 @@ call_info(Expr *a, Vec<FnSymbol *> &fns, Vec<Vec<Vec<Type *> *> *> *dispatch) {
                 dispatch->v[i]->fill(f->positional_arg_positions.n);
                 for (int j = 0; j < f->positional_arg_positions.n; j++) {
                   MPosition *x = f->positional_arg_positions.v[j];
-                  AType *filter = e->match->formal_filters.get(x);
+                  AType *edge_filter = e->match->formal_filters.get(x);
+                  AType *es_filter = e->to->filters.get(x);
+                  AType *filter = es_filter ? type_intersection(edge_filter, es_filter) : edge_filter;
                   if (!dispatch->v[i]->v[j])
                     dispatch->v[i]->v[j] = new Vec<Type *>;
                   forv_CreationSet(cs, filter->sorted)
-                    dispatch->v[i]->v[j]->set_add(to_AST_type(cs->sym->type));
+                    dispatch->v[i]->v[j]->set_add(to_AST_type(cs->type));
                 }
               }
             }
