@@ -481,11 +481,10 @@ type_union(AType *a, AType *b) {
     AType *ab = type_diff(a, b);
     AType *ba = type_diff(b, a);
     r = new AType(*ab);
-    forv_CreationSet(x, *ba)
-      if (x)
-        r->set_add(x);
-    forv_CreationSet(x, *a)
-      if (x && b->in(x))
+    forv_CreationSet(x, ba->sorted)
+      r->set_add(x);
+    forv_CreationSet(x, a->sorted)
+      if (b->in(x))
         r->set_add(x);
     r = type_cannonicalize(r);
   }
@@ -511,10 +510,10 @@ type_diff(AType *a, AType *b) {
     goto Ldone;
   }
   r = new AType();
-  forv_CreationSet(aa, *a) if (aa) {
+  forv_CreationSet(aa, a->sorted) {
     if (aa->defs.n && b->set_in(aa))
       continue;
-    forv_CreationSet(bb, *b) if (bb && !bb->defs.n) {
+    forv_CreationSet(bb, b->sorted) if (!bb->defs.n) {
       if (subsumed_by(aa->sym, bb->sym))
         goto Lnext;
     }
@@ -541,8 +540,8 @@ type_intersection(AType *a, AType *b) {
     goto Ldone;
   }
   r = new AType();
-  forv_CreationSet(aa, *a) if (aa) {
-    forv_CreationSet(bb, *b) if (bb) {
+  forv_CreationSet(aa, a->sorted) {
+    forv_CreationSet(bb, b->sorted) {
       if (aa->defs.n) {
         if (bb->defs.n) {
           if (aa == bb) {
