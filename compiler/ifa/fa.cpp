@@ -41,7 +41,7 @@ AType *fun_type = 0;
 AType *symbol_type = 0;
 AType *string_type = 0;
 AType *fun_symbol_type = 0;
-AType *anyclass_type = 0;
+AType *anytype_type = 0;
 
 static int avar_id = 1;
 static int aedge_id = 1;
@@ -2674,7 +2674,7 @@ initialize() {
   fun_symbol_type = type_union(symbol_type, fun_type);
   anyint_type = make_abstract_type(sym_anyint);
   anynum_kind = make_abstract_type(sym_anynum);
-  anyclass_type = make_abstract_type(sym_anyclass);
+  anytype_type = make_abstract_type(sym_anytype);
   nil_type = make_abstract_type(sym_nil_type);
   unknown_type = make_abstract_type(sym_unknown_type);
   unspecified_type = make_abstract_type(sym_unspecified_type);

@@ -405,7 +405,7 @@ extern AType *anynum_kind;
 extern AType *fun_type;
 extern AType *symbol_type;
 extern AType *fun_symbol_type;
-extern AType *anyclass_type;
+extern AType *anytype_type;
 
 extern int analysis_pass;
 

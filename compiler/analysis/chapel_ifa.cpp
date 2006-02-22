@@ -914,7 +914,7 @@ build_symbols(Vec<BaseAST *> &syms) {
         case SYMBOL_TYPE: {
           TypeSymbol *t = dynamic_cast<TypeSymbol*>(s);
           if (t->definition->astType == TYPE_VARIABLE)
-            t->asymbol->sym->must_specialize = sym_anyclass;
+            t->asymbol->sym->must_specialize = sym_anytype;
           break;
         }
         case SYMBOL_ARG: {
@@ -1175,8 +1175,6 @@ build_builtin_symbols() {
   sym_closure = dtClosure->asymbol->sym;
   sym_symbol = dtSymbol->asymbol->sym;
 
-  new_lub_type(sym_anyclass, "anyclass", VARARG_END);
-  sym_anyclass->meta_type = sym_anyclass;
   new_lub_type(sym_any, "any", VARARG_END);
   new_primitive_type(sym_nil_type, "nil_type");
   new_primitive_type(sym_unknown_type, "unknown_type");
@@ -1293,8 +1291,6 @@ build_builtin_symbols() {
   sym_nil_type->specializes.add(sym_object);
   sym_value->implements.add(sym_any);
   sym_value->specializes.add(sym_any);
-  sym_anyclass->implements.add(sym_any);
-  sym_anyclass->specializes.add(sym_any);
 
   sym_any->is_system_type = 1;
   sym_value->is_system_type = 1;
@@ -1303,7 +1299,12 @@ build_builtin_symbols() {
   sym_unknown_type->is_system_type = 1;
   sym_unspecified_type->is_system_type = 1;
   sym_void_type->is_system_type = 1;
-  sym_anyclass->is_system_type = 1;
+
+  make_meta_type(sym_any);
+  sym_anytype = sym_any->meta_type;
+  sym_anytype->implements.add(sym_any);
+  sym_anytype->specializes.add(sym_any);
+  sym_anytype->is_system_type = 1;
 
 #define S(_n) assert(sym_##_n);
 #include "builtin_symbols.h"

@@ -249,7 +249,7 @@ build_type_hierarchy() {
   forv_Sym(s, types) if (s) {
     if (!s->dispatch_order.n && !s->is_system_type) {
       if (s->is_meta_type)
-        implement_and_specialize(sym_anyclass, s, types);
+        implement_and_specialize(sym_anytype, s, types);
       else if (s->is_value_type)
         implement_and_specialize(sym_value, s, types);
       else 
@@ -420,15 +420,13 @@ make_meta_type(Sym *s) {
 
 static void
 make_meta_types(IF1 *i) {
-  sym_anyclass->meta_type = sym_anyclass;
-  sym_anyclass->is_meta_type = 1;
   for (int x = finalized_types; x < i->allsyms.n; x++) {
     Sym *s = i->allsyms.v[x];
     if (s->type_kind) {
       if (!s->meta_type)
         make_meta_type(s);
     }
- }
+  }
 }
 
 void

@@ -1,5 +1,5 @@
 S(system)
-S(anyclass)
+S(anytype)
 S(any)
 S(module)
 S(symbol)
