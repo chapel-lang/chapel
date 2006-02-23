@@ -57211,3 +57211,17 @@ Log message:
 Modified files:
 	./: COPYRIGHT LICENSE 
 
+---------------------------------------------------------------------------
+
+02/23/06 10:35:26 -- shannon
+
+Log message:
+	Updated the future test I committed yesterday to
+	accurately reflect the problem.  The test is
+	failing because a method of the class has a
+	variable of the same type of class that contains
+	the method.
+
+Modified files:
+	chapel/test/functions/shannon/: methodWithVarargs.chpl 
+
