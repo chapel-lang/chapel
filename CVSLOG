@@ -57225,3 +57225,13 @@ Log message:
 Modified files:
 	chapel/test/functions/shannon/: methodWithVarargs.chpl 
 
+---------------------------------------------------------------------------
+
+02/23/06 11:51:01 -- jplevyak
+
+Log message:
+	Add .future for regression
+
+Added files:
+	chapel/test/interpreter/jplevyak/: test_enum1.future 
+
