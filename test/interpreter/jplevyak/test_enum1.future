@@ -1,0 +1,4 @@
+deitz
+
+Need to dispatch ==(EnumType, EnumType) to something reasonable
+(probably build == for each enum type.
