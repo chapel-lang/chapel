@@ -57189,3 +57189,15 @@ Added files:
 	                                methodWithVarargs.future 
 	                                methodWithVarargs.good 
 
+---------------------------------------------------------------------------
+
+02/22/06 17:56:54 -- bradc
+
+Log message:
+	Hack to gc.h in order to re-enable compilation on the Suns.
+	Have sent a "help!" message to the BoehmGC team through John
+	to determine the approved way to get around this problem.
+
+Modified files:
+	chapel/third-party/boehmgc/gc6.5/include/: gc.h 
+
