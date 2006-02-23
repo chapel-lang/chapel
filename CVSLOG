@@ -57201,3 +57201,13 @@ Log message:
 Modified files:
 	chapel/third-party/boehmgc/gc6.5/include/: gc.h 
 
+---------------------------------------------------------------------------
+
+02/22/06 17:57:19 -- bradc
+
+Log message:
+	Updated dates in these files to mark the new year.
+
+Modified files:
+	./: COPYRIGHT LICENSE 
+
