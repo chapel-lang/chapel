@@ -1,9 +1,17 @@
 class myClass {
-  function myWrite(a: string ...?rank) {
-    for i in 1..rank do
-      write(a(i));
-  }
+  var x: integer;
+
 }
 
-var a: myClass;
-a.myWrite("This ", "should ", "print.");
+function myClass.setMember(a: integer ...?rank) {
+  var mc : myClass = myClass();
+  for i in 1..rank do
+    mc.x = a(i);
+
+  return mc;
+}
+
+var a: myClass = myClass();
+a.setMember(1, 2, 3, 4, 5);
+
+writeln(a);
