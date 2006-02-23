@@ -57235,3 +57235,13 @@ Log message:
 Added files:
 	chapel/test/interpreter/jplevyak/: test_enum1.future 
 
+---------------------------------------------------------------------------
+
+02/23/06 11:56:43 -- jplevyak
+
+Log message:
+	Remove future for working test.
+
+Removed files:
+	chapel/test/classes/deitz/infer/: infer_field2.future 
+
