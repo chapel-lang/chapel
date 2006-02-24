@@ -57245,3 +57245,15 @@ Log message:
 Removed files:
 	chapel/test/classes/deitz/infer/: infer_field2.future 
 
+---------------------------------------------------------------------------
+
+02/24/06 10:45:33 -- deitz
+
+Log message:
+	Disabled testing of "-b" flag as it fails to handle inheritance
+	correctly and this is starting to be used.  Moreover, this function
+	resolution mechanism is now tested by the interpreter tests.
+
+Added files:
+	chapel/test/no_infer/: NOTEST 
+
