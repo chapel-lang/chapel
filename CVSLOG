@@ -57317,3 +57317,20 @@ Modified files:
 	                                         test_clone_class1b.good 
 	chapel/test/types/type_variables/jplevyak/: where-2-error.good 
 
+---------------------------------------------------------------------------
+
+02/24/06 14:42:54 -- shannon
+
+Log message:
+	Added the translate function for _adomains.
+	This function takes a variable number of
+	integers corresponding to the dimension of
+	the domain, and returns a new domain with the
+	translated ranges.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_seq.chpl 
+Added files:
+	chapel/test/domains/shannon/: .cvsignore translate3D.chpl 
+	                              translate3D.good 
+
