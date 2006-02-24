@@ -57279,3 +57279,18 @@ Log message:
 Modified files:
 	chapel/test/types/tuple/deitz/: test_htuple7.good 
 
+---------------------------------------------------------------------------
+
+02/24/06 12:32:31 -- shannon
+
+Log message:
+	Fixed an error in that I hadn't captured
+	the returned variable.  Updated the .good,
+	and removed the future for this test.
+
+Modified files:
+	chapel/test/functions/shannon/: methodWithVarargs.chpl 
+	                                methodWithVarargs.good 
+Removed files:
+	chapel/test/functions/shannon/: methodWithVarargs.future 
+
