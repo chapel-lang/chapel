@@ -77,6 +77,23 @@ function _adomain.translate(dim : integer ...?rank) {
   return x;
 }
 
+function _adomain.interior(dim : integer ...?rank) {
+  var x = _adomain(rank);
+  for i in 1..rank do {
+    if (dim(i) < 0) {
+      x.info(i-1) = 
+        info(i-1)._low..info(i-1)._low-1-dim(i) by info(i-1)._stride;
+    } else if (dim(i) == 0) {
+      x.info(i-1) = 
+        info(i-1)._low..info(i-1)._high by info(i-1)._stride;
+    } else if (dim(i) > 0) {
+      x.info(i-1) = 
+        info(i-1)._high+1-dim(i)..info(i-1)._high by info(i-1)._stride;
+    }
+  }
+  return x;
+}
+
 function fwrite(f : file, x : _adomain) {
   fwrite(f, "[", x.info(0));
   for i in 1..x.rank-1 do
