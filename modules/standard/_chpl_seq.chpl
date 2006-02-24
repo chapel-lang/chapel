@@ -234,3 +234,9 @@ function fwrite(f : file, s : _aseq) {
   if (s._stride > 1) then
     fwrite(f, " by ", s._stride);
 }
+
+pragma "inline" function string.this(s: _aseq)
+  if s._stride != 1 then
+    return __primitive("string_strided_select", this, s._low, s._high, s._stride);
+  else
+    return __primitive("string_select", this, s._low, s._high);

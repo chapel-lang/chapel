@@ -268,6 +268,13 @@ AAST::copy_tree(ASTCopyContext* context) {
   return new_fn->defPoint->ainfo;
 }
 
+// Get all the BaseASTs in the Chapel Program.
+// This turns out the be extremely difficult thing to do
+// with the Chapel AST IF, and the code has been rewritten numerous times
+// to try to get it to work. There is something about the Chapel AST 
+// and traversal mechanmism which makes this unfathomably
+// complicated and brittle and which we haven't been able to fix.
+// ** CHANGE WITH CAUTION **
 static void
 close_symbols(Vec<AList<Stmt> *> &stmts, Vec<BaseAST *> &syms) {
   Vec<BaseAST *> set;
@@ -300,6 +307,9 @@ close_symbols(Vec<AList<Stmt> *> &stmts, Vec<BaseAST *> &syms) {
     if (t->symbol)
       if (set.set_add(t->symbol))
         syms.add(t->symbol);
+    if (t->metaType)
+      if (set.set_add(t->metaType))
+        syms.add(t->metaType);
   }
   forv_Symbol(t, builtinSymbols) {
     if (set.set_add(t))
@@ -377,19 +387,41 @@ ASymbol::copy() {
   return s;
 }
 
+static void
+map_type(Type *t) {
+  if (t->symbol) {
+    t->asymbol = new_ASymbol(t->symbol->name);
+    SYMBOL(t) = t;
+  } else {
+    t->asymbol = new_ASymbol("<anonymous>");
+    SYMBOL(t) = t;
+  }
+}
+
+static void
+make_chapel_meta_type(Type *tt) {
+  if (tt->astType == TYPE_META)
+    return;
+  Sym *t = tt->asymbol->sym;
+  if (!tt->metaType->asymbol)
+    map_type(tt->metaType);
+  t->meta_type = tt->metaType->asymbol->sym;
+  t->meta_type->meta_type = t;
+  t->meta_type->is_meta_type = 1;
+  t->meta_type->type = t->meta_type;
+  t->meta_type->type_kind = Type_PRIMITIVE;
+}
+
 static Sym *
 find_or_make_lub_type(Vec<Type *> *types, Sym *t) {
   Type *tt = find_or_make_sum_type(types);
   if (tt->asymbol)
     return tt->asymbol->sym;
-  make_meta_type(t);
-  tt->symbol->asymbol = (ASymbol*)t->meta_type->asymbol;
-  tt->symbol->asymbol->sym = t->meta_type;
-  SYMBOL(tt->symbol) = tt->symbol;
   tt->asymbol = (ASymbol*)t->asymbol;
   tt->asymbol->sym = t;
   SYMBOL(tt) = tt;
   assert(tt->asymbol->sym->type_kind == Type_LUB);
+  make_chapel_meta_type(tt);
   return t;
 }
 
@@ -438,8 +470,14 @@ finalize_symbols(IF1 *i) {
           s->instantiates = fn->instantiatedFrom->asymbol->sym;
       }
     }
-    if (s->is_constant)
-      make_meta_type(s);
+    if (s->is_constant) {
+      VarSymbol *vs = dynamic_cast<VarSymbol*>(SYMBOL(s));
+      if (vs && vs->literalType) {
+        s->meta_type = vs->literalType->metaType->asymbol->sym;
+        s->meta_type->meta_type = s;
+      } else
+        make_meta_type(s);
+    }
     if (s->is_constant || s->is_symbol)
       set_global_scope(s);
     else
@@ -510,10 +548,13 @@ install_new_asts(Vec<FnSymbol *> &funs, Vec<TypeSymbol *> &types) {
     pdb->add(fun);
   }
   forv_BaseAST(ast, syms) {
-    if (Symbol *s = dynamic_cast<Symbol *>(ast))
-      initialize_Sym_for_fa(s->asymbol->sym);
-    else if (Type *t = dynamic_cast<Type *>(ast))
-      initialize_Sym_for_fa(t->asymbol->sym);
+    if (Symbol *s = dynamic_cast<Symbol *>(ast)) {
+      if (s->asymbol)
+        initialize_Sym_for_fa(s->asymbol->sym);
+    } else if (Type *t = dynamic_cast<Type *>(ast)) {
+      if (t->asymbol)
+        initialize_Sym_for_fa(t->asymbol->sym);
+    }
   }
   forv_Vec(FnSymbol, f, funs) {
     build_patterns(pdb->fa, f->asymbol->sym->fun);
@@ -587,7 +628,8 @@ ACallbacks::formal_to_generic(Sym *s, Sym **ret_generic, int *ret_bind_to_value)
   if (p->genericSymbol) {
     if (p->genericSymbol->astType == SYMBOL_TYPE)
       *ret_generic = dynamic_cast<TypeSymbol*>(p->genericSymbol)->definition->asymbol->sym;
-    *ret_generic = p->genericSymbol->asymbol->sym;
+    else 
+      *ret_generic = p->genericSymbol->asymbol->sym;
     *ret_bind_to_value = 0;
     return 1;
   }
@@ -719,9 +761,12 @@ ASymbol::clone(int members) {
     Sym *new_type = callback.context->smap.get(old_type_symbol->definition->asymbol->sym);
     if (!new_type_symbol->asymbol) // SHOULD BE ASSERT
       callback.clone(old_type_symbol, new_type_symbol);
+    make_chapel_meta_type(dynamic_cast<Type*>(SYMBOL(new_type)));
+#if 0
     new_type->meta_type = new_type_symbol->asymbol->sym;
     new_type_symbol->asymbol->sym->meta_type = new_type;
     assert(new_type_symbol->asymbol->sym->is_meta_type);
+#endif
     for (int i = 0; i < new_type->has.n; i++) {
       Sym *s = callback.context->smap.get(new_type->has.v[i]);
       assert(s);
@@ -739,17 +784,6 @@ new_sym(char *name = 0, int global = 0) {
   else
     s->global_scope = 1;
   return s;
-}
-
-static void
-map_type(Type *t) {
-  if (t->symbol) {
-    t->asymbol = new_ASymbol(t->symbol->name);
-    SYMBOL(t) = t;
-  } else {
-    t->asymbol = new_ASymbol("<anonymous>");
-    SYMBOL(t) = t;
-  }
 }
 
 VarSymbol *
@@ -798,7 +832,9 @@ map_baseast(BaseAST *s) {
   if (sym) {
     if (sym->asymbol)
       return;
-    if (VarSymbol *var = is_symbol(sym)) {
+    if (sym->astType == SYMBOL_TYPE) {
+      return;
+    } else if (VarSymbol *var = is_symbol(sym)) {
       Sym *s = make_symbol(var->name);
       sym->asymbol = new_ASymbol(sym, s);
     } else if (VarSymbol *var = is_literal(sym)) {
@@ -808,7 +844,6 @@ map_baseast(BaseAST *s) {
       int basic = (s->astType != SYMBOL_FN) && (s->astType != SYMBOL_ENUM);
       sym->asymbol = new_ASymbol(sym, basic);
       SYMBOL(sym) = sym;
-    
       if (!sym->parentScope) {
         sym->asymbol->sym->global_scope = 1;
       } else {
@@ -911,12 +946,7 @@ build_symbols(Vec<BaseAST *> &syms) {
     Symbol *s = dynamic_cast<Symbol *>(ss);
     if (s) { 
       switch (s->astType) {
-        case SYMBOL_TYPE: {
-          TypeSymbol *t = dynamic_cast<TypeSymbol*>(s);
-          if (t->definition->astType == TYPE_VARIABLE)
-            t->asymbol->sym->must_specialize = sym_anytype;
-          break;
-        }
+        case SYMBOL_TYPE: break;
         case SYMBOL_ARG: {
           ArgSymbol *p = dynamic_cast<ArgSymbol*>(s);
           Sym *psym = s->asymbol->sym;
@@ -985,11 +1015,7 @@ get_defaultVal(Type *t) {
 
 static Sym *
 build_type(Type *t, bool make_default = true) {
-  if (t->symbol) {
-    t->asymbol->sym->meta_type = t->symbol->asymbol->sym;
-    t->symbol->asymbol->sym->meta_type = t->asymbol->sym;
-  }
-  make_meta_type(t->asymbol->sym);
+  make_chapel_meta_type(t);
   if (make_default && t->defaultValue)
     get_defaultVal(t);
   switch (t->astType) {
@@ -1049,17 +1075,17 @@ build_type(Type *t, bool make_default = true) {
         t->asymbol->sym->element = new_sym();
       break;
     }
-    case TYPE_META: {
-      MetaType *tt = dynamic_cast<MetaType*>(t);
-      if (tt->base->symbol)
-        tt->asymbol->sym = tt->base->symbol->asymbol->sym;
+    case TYPE_META: 
+      t->asymbol->sym->is_meta_type = 1;
+      t->asymbol->sym->type_kind = Type_PRIMITIVE;
+      t->asymbol->sym->type = t->asymbol->sym;
       break;
-    }
     case TYPE_VARIABLE: {
       VariableType *tt = dynamic_cast<VariableType*>(t);
       tt->asymbol->sym->type_kind = Type_VARIABLE;
       tt->asymbol->sym->meta_type->type_kind = Type_NONE;
       tt->asymbol->sym->meta_type->type = tt->asymbol->sym;
+      tt->asymbol->sym->must_specialize = sym_anytype;
       break;
     }
   }
@@ -1292,6 +1318,11 @@ build_builtin_symbols() {
   sym_value->implements.add(sym_any);
   sym_value->specializes.add(sym_any);
 
+  make_chapel_meta_type(dtAny);
+  sym_anytype = sym_any->meta_type;
+  sym_anytype->implements.add(sym_any);
+  sym_anytype->specializes.add(sym_any);
+
   sym_any->is_system_type = 1;
   sym_value->is_system_type = 1;
   sym_object->is_system_type = 1;
@@ -1299,12 +1330,8 @@ build_builtin_symbols() {
   sym_unknown_type->is_system_type = 1;
   sym_unspecified_type->is_system_type = 1;
   sym_void_type->is_system_type = 1;
-
-  make_meta_type(sym_any);
-  sym_anytype = sym_any->meta_type;
-  sym_anytype->implements.add(sym_any);
-  sym_anytype->specializes.add(sym_any);
   sym_anytype->is_system_type = 1;
+
 
 #define S(_n) assert(sym_##_n);
 #include "builtin_symbols.h"
@@ -1704,6 +1731,8 @@ gen_select(BaseAST *a) {
 static int
 gen_assignment(CallExpr *assign) {
   Expr *lhs = assign->get(1), *rhs = assign->get(2);
+  if (!lhs->ainfo->sym)
+    show_error("assignment to non-lvalue", assign->ainfo);
   if1_gen(if1, &assign->ainfo->code, lhs->ainfo->code);
   if1_gen(if1, &assign->ainfo->code, rhs->ainfo->code);
   Sym *rval = rhs->ainfo->rval;
@@ -1727,11 +1756,9 @@ gen_assignment(CallExpr *assign) {
       c->ast = assign->ainfo;
       c->partial = Partial_NEVER;
     }
-  }
-  if (!lhs->ainfo->sym)
-    show_error("assignment to non-lvalue", assign->ainfo);
+  } else
+    if1_move(if1, &assign->ainfo->code, rval, lhs->ainfo->sym, assign->ainfo);
   assign->ainfo->rval = rval;
-  if1_move(if1, &assign->ainfo->code, rval, lhs->ainfo->sym, assign->ainfo);
   return 0;
 }
 
@@ -1817,9 +1844,9 @@ gen_if1(BaseAST *ast) {
     }
     case EXPR_SYM: {
       SymExpr* s = dynamic_cast<SymExpr*>(ast);
-      Sym *sym = s->var->asymbol->sym;
-      if (SYMBOL(sym)->astType == SYMBOL_TYPE)
-        sym = ((TypeSymbol*)SYMBOL(sym))->definition->asymbol->sym;
+      Sym *sym = (s->var->astType == SYMBOL_TYPE) 
+        ? (((TypeSymbol*)s->var)->definition->asymbol->sym)
+        : s->var->asymbol->sym;
       s->ainfo->sym = sym;
       s->ainfo->rval = sym;
       break;
@@ -2035,7 +2062,7 @@ build_classes(Vec<BaseAST *> &syms) {
     forv_Vec(TypeSymbol, tmp, c->types) if (tmp)
       if (tmp->definition->astType == TYPE_USER ||
           tmp->definition->astType == TYPE_VARIABLE)
-        csym->has.add(tmp->asymbol->sym);
+        csym->has.add(tmp->definition->asymbol->sym);
   }
   build_patterns(syms);
 }
@@ -2106,7 +2133,7 @@ finalize_function(Fun *fun) {
     fs->_this->asymbol->sym->is_this = 1;
   }
   if (fs->typeBinding) {
-    if (is_reference_type(SYMBOL(fs->typeBinding))) {
+    if (is_reference_type(SYMBOL(fs->typeBinding->definition))) {
       if (fs->method_type != NON_METHOD) {
         add_to_universal_lookup_cache(name, fun);
         added = 1;
@@ -2815,10 +2842,8 @@ type_is_used(TypeSymbol *t) {
   if (if1->callback) {
     if (!dynamic_cast<ClassType*>(t->definition))
       return true;
-    if (t->asymbol)
-      return t->asymbol->sym->meta_type->creators.n != 0;
-    else
-      return false;
+    assert(!t->asymbol);
+    return t->definition->asymbol->sym->creators.n != 0;
   } else
     return true; // analysis not run   
 }

@@ -498,6 +498,7 @@ subsumed_by(Sym *a, Sym *b) {
   if (b->type_kind == Type_LUB || a->is_symbol)
     return b->specializers.set_in(a->type) != 0;
   else return a == b || a->type == b;
+  //return a == b || a->type == b || b->specializers.set_in(a->type) != 0;
 }
 
 AType *

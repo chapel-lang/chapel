@@ -57,11 +57,6 @@ pragma "inline" function length(a: string) return __primitive("string_length", a
 
 pragma "inline" function string.this(i: integer) return __primitive("string_index", this, i);
 
-pragma "inline" function string.this(s: _aseq)
-  if s._stride != 1 then
-    return __primitive("string_strided_select", this, s._low, s._high, s._stride);
-  else
-    return __primitive("string_select", this, s._low, s._high);
 
 //
 // MOVE THESE, maybe to a memory module?
