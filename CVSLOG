@@ -57257,3 +57257,14 @@ Log message:
 Added files:
 	chapel/test/no_infer/: NOTEST 
 
+---------------------------------------------------------------------------
+
+02/24/06 11:25:46 -- deitz
+
+Log message:
+	Fixed a bug in which the constructor was in the list of methods and
+	was thus transformed into this."constructor_call".
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp 
+
