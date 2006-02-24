@@ -1,5 +1,0 @@
-deitz/jplevyak
-
-This test fails when attempting to create a method of 
-a class with variable arguments.  It fails to build 
-complaining that the program does not type.

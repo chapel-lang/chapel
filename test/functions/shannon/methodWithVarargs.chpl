@@ -12,6 +12,6 @@ function myClass.setMember(a: integer ...?rank) {
 }
 
 var a: myClass = myClass();
-a.setMember(1, 2, 3, 4, 5);
+a = a.setMember(1, 2, 3, 4, 5);
 
 writeln(a);
