@@ -57268,3 +57268,14 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: cleanup.cpp 
 
+---------------------------------------------------------------------------
+
+02/24/06 11:26:37 -- deitz
+
+Log message:
+	Fixed output of 1-tuple test case.  It should now print out with
+	parentheses since it is a declared 1-tuple.
+
+Modified files:
+	chapel/test/types/tuple/deitz/: test_htuple7.good 
+
