@@ -57294,3 +57294,26 @@ Modified files:
 Removed files:
 	chapel/test/functions/shannon/: methodWithVarargs.future 
 
+---------------------------------------------------------------------------
+
+02/24/06 14:21:06 -- jplevyak
+
+Log message:
+	Changed the way TypeSymbols and MetaTypes are mapped from the AST to
+	IF1.  Before, when we didn't have MetaTypes yet, I was mapping the
+	TypeSymbol to the IF1 meta type.  Now, I am mapping the AST MetaType
+	to the IF1 metatype and not mapping TypeSymbols at all (since you can
+	get to the corresponding Type by looking at the TypeSymbol::definition).
+	Also moved a function which referenced aseq into the _chpl_seq module,
+	and fixed various test case outputs.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: fa.cpp 
+	chapel/modules/standard/: _chpl_base.chpl _chpl_seq.chpl 
+	chapel/test/flowanalysis/newast/: domarr.good sum_type-1.good 
+	                                  sum_type-2.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+	chapel/test/types/type_variables/jplevyak/: where-2-error.good 
+
