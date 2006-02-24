@@ -70,6 +70,13 @@ class _adomain : _domain {
     return _aarray(elt_type, rank, dom=this);
 }
 
+function _adomain.translate(dim : integer ...?rank) {
+  var x = _adomain(rank);
+  for i in 1..rank do
+    x.info(i-1) = range(i).translate(dim(i));
+  return x;
+}
+
 function fwrite(f : file, x : _adomain) {
   fwrite(f, "[", x.info(0));
   for i in 1..x.rank-1 do
