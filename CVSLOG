@@ -57396,3 +57396,13 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+02/25/06 09:50:53 -- jplevyak
+
+Log message:
+	update .good file
+
+Modified files:
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+
