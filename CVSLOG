@@ -57361,3 +57361,25 @@ Modified files:
 Added files:
 	chapel/test/domains/shannon/: interior3D.chpl interior3D.good 
 
+---------------------------------------------------------------------------
+
+02/24/06 16:31:42 -- deitz
+
+Log message:
+	Removed true and false from the prelude, putting builtin symbols into
+	the intrinsic scope.
+	
+	Improved arithmetic domain to use a tuple rather than the ddata class.
+	The tuple in turn is implemented via the ddata class.  Simplified code.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: expr.h runtime.h symbol.h 
+	chapel/compiler/main/: runtime.cpp 
+	chapel/compiler/passes/: cleanup.cpp filesToAST.cpp 
+	                         functionResolution.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl prelude.chpl 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
