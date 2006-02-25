@@ -11,11 +11,11 @@ _chpl_file.chpl:165: fwrite, f : file, val : string
 _chpl_file.chpl:196: fwrite, f : file, val : bool
 _chpl_file.chpl:214: fwrite, f : file, x : nil_type
 _chpl_htuple.chpl:22: fwrite, f : file, val : _htuple
-_chpl_adomain.chpl:73: fwrite, f : file, x : _adomain
-_chpl_adomain.chpl:130: fwrite, f : file, x : _aarray
+_chpl_adomain.chpl:86: fwrite, f : file, x : _adomain
+_chpl_adomain.chpl:143: fwrite, f : file, x : _aarray
 _chpl_data.chpl:46: fwrite, f : file, val : _fdata
 _chpl_seq.chpl:156: fwrite, f : file, s : seq
-_chpl_seq.chpl:232: fwrite, f : file, s : _aseq
+_chpl_seq.chpl:236: fwrite, f : file, s : _aseq
 fwrite, f : file, val : _tuple2
 prelude.chpl:3: fwrite, f : file, val : object
 prelude.chpl:4: fwrite, f : file, val : value
@@ -26,8 +26,8 @@ _chpl_base.chpl:9: fwrite, f : file, val : _methodTokenType
 _chpl_base.chpl:11: fwrite, f : file, val : _setterTokenType
 _chpl_closure.chpl:1: fwrite, f : file, val : closure
 _chpl_file.chpl:1: fwrite, f : file, val : file
-_chpl_adomain.chpl:14: fwrite, f : file, val : _domain
-_chpl_adomain.chpl:80: fwrite, f : file, val : _aarray_info
+_chpl_adomain.chpl:10: fwrite, f : file, val : _domain
+_chpl_adomain.chpl:93: fwrite, f : file, val : _aarray_info
 _chpl_seq.chpl:1: fwrite, f : file, val : _seqNode
 record_type_hierarchy-2.chpl:1: fwrite, f : file, val : C
 record_type_hierarchy-2.chpl:5: fwrite, f : file, val : D
