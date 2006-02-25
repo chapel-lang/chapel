@@ -28,7 +28,4 @@ extern VarSymbol* chpl_input_lineno;
 extern VarSymbol* setterToken;
 extern VarSymbol* methodToken;
 
-extern VarSymbol* chpl_true;
-extern VarSymbol* chpl_false;
-
 #endif

@@ -277,7 +277,6 @@ class LabelSymbol : public Symbol {
 void initSymbol();
 TypeSymbol *new_UnresolvedTypeSymbol(char *init_name);
 VarSymbol *new_StringSymbol(char *s);
-VarSymbol *new_BoolSymbol(bool b);
 VarSymbol *new_IntSymbol(long b);
 VarSymbol *new_FloatSymbol(char *n, double b);
 VarSymbol *new_ComplexSymbol(char *n, double r, double i);
@@ -293,6 +292,8 @@ extern Symbol *gNil;
 extern Symbol *gUnknown;
 extern Symbol *gUnspecified;
 extern Symbol *gVoid;
+extern VarSymbol *gTrue;
+extern VarSymbol *gFalse;
 
 extern Vec<Symbol *> builtinSymbols;
 

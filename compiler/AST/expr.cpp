@@ -1201,11 +1201,6 @@ ImportExpr::getStruct(void) {
 }
 
 Expr *
-new_BoolLiteral(bool b) {
-  return new SymExpr(new_BoolSymbol(b));
-}
-
-Expr *
 new_IntLiteral(char *l) {
   return new SymExpr(new_IntSymbol(atoi(l)));
 }

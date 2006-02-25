@@ -186,7 +186,6 @@ class ImportExpr : public Expr {
 
 
 void initExpr(void);
-Expr *new_BoolLiteral(bool b);
 Expr *new_IntLiteral(char *);
 Expr *new_IntLiteral(int i);
 Expr *new_FloatLiteral(char *n, double d);

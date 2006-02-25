@@ -18,6 +18,8 @@ Symbol *gNil = 0;
 Symbol *gUnknown = 0;
 Symbol *gUnspecified = 0;
 Symbol *gVoid = 0;
+VarSymbol *gTrue = 0;
+VarSymbol *gFalse = 0;
 
 Vec<Symbol *> builtinSymbols;
 
@@ -1497,6 +1499,10 @@ LabelSymbol::copyInner(ASTMap* map) {
 
 void LabelSymbol::codegenDef(FILE* outfile) { }
 
+static int literal_id = 1;
+HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
+HashMap<char *, StringHashFns, VarSymbol *> uniqueSymbolHash;
+
 void
 initSymbol() {
   gNil = new VarSymbol("nil", dtNil, VAR_NORMAL, VAR_CONST);
@@ -1511,11 +1517,24 @@ initSymbol() {
   gVoid = new VarSymbol("_void", dtVoid, VAR_NORMAL, VAR_CONST);
   rootScope->define(gVoid); // SJD: Should intrinsics have DefExprs?
   builtinSymbols.add(gVoid);
+  gTrue = new VarSymbol("true", dtBoolean, VAR_NORMAL, VAR_CONST);
+  rootScope->define(gTrue); // SJD: Should intrinsics have DefExprs?
+  builtinSymbols.add(gTrue);
+  gFalse = new VarSymbol("false", dtBoolean, VAR_NORMAL, VAR_CONST);
+  rootScope->define(gFalse); // SJD: Should intrinsics have DefExprs?
+  builtinSymbols.add(gFalse);
+  gTrue->immediate = new Immediate;
+  gTrue->immediate->v_bool = true;
+  gTrue->immediate->const_kind = IF1_NUM_KIND_UINT;
+  gTrue->immediate->num_index = IF1_INT_TYPE_1;
+  gFalse->immediate = new Immediate;
+  gFalse->immediate->v_bool = false;
+  gFalse->immediate->const_kind = IF1_NUM_KIND_UINT;
+  gFalse->immediate->num_index = IF1_INT_TYPE_1;
+  dtBoolean->defaultValue = gFalse;
+  uniqueConstantsHash.put(gTrue->immediate, gTrue);
+  uniqueConstantsHash.put(gFalse->immediate, gFalse);
 }
-
-static int literal_id = 1;
-HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
-HashMap<char *, StringHashFns, VarSymbol *> uniqueSymbolHash;
 
 VarSymbol *new_StringSymbol(char *str) {
   Immediate imm;
@@ -1532,25 +1551,6 @@ VarSymbol *new_StringSymbol(char *str) {
   n[l+1]='\"';
   n[l+2]=0;
   s->cname = n;
-  s->immediate = new Immediate;
-  *s->immediate = imm;
-  uniqueConstantsHash.put(s->immediate, s);
-  return s;
-}
-
-VarSymbol *new_BoolSymbol(bool b) {
-  Immediate imm;
-  imm.v_bool = b;
-  imm.const_kind = IF1_NUM_KIND_UINT;
-  imm.num_index = IF1_INT_TYPE_1;
-  VarSymbol *s = uniqueConstantsHash.get(&imm);
-  if (s)
-    return s;
-  s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), dtBoolean);
-  if (b)
-    s->cname = "true";
-  else
-    s->cname = "false";
   s->immediate = new Immediate;
   *s->immediate = imm;
   uniqueConstantsHash.put(s->immediate, s);

@@ -21,6 +21,3 @@ VarSymbol* chpl_input_lineno;
 
 VarSymbol* setterToken;
 VarSymbol* methodToken;
-
-VarSymbol* chpl_true = NULL;
-VarSymbol* chpl_false = NULL;

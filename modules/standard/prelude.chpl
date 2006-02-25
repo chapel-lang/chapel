@@ -99,12 +99,6 @@ function _tostring(x : complex, format : string) : string {
 }
 
 
--- intrinsic type values
-
-const false: boolean = 0:boolean;
-const true: boolean = 1:boolean;
-
-
 -- exits
 
 pragma "rename _chpl_exit" function exit(status : integer) {

@@ -4,29 +4,21 @@ function _build_array(dom, type elt_type)
 function _build_domain(x : _domain)
   return x;
 
-function _build_domain(as : _aseq ...?rank) {
-  var x = _adomain(rank);
-  for i in 1..rank do
-    x.info(i-1) = as(i);
-  return x;
-}
+function _build_domain(ranges : _aseq ...?rank)
+  return _adomain(rank, ranges);
 
 class _domain { }
 
 class _adomain : _domain {
   param rank : integer;
-  var info : _ddata(_aseq) = _ddata(_aseq, rank);
-
-  function initialize() {
-    info.init();
-  }
+  var ranges : (rank * _aseq);
 
   iterator _forall(dim : integer) : integer
-    forall i in info(dim-1) do
+    forall i in range(dim) do
       yield i;
 
   iterator _for(dim : integer) : integer
-    for i in info(dim-1) do
+    for i in range(dim) do
       yield i;
 
   iterator _forall_help(param rank : integer) : (rank*integer) {
@@ -64,7 +56,7 @@ class _adomain : _domain {
   }
 
   function range(dim : integer)
-    return info(dim-1);
+    return ranges(dim);
 
   function _build_array(type elt_type)
     return _aarray(elt_type, rank, dom=this);
@@ -73,7 +65,7 @@ class _adomain : _domain {
 function _adomain.translate(dim : integer ...?rank) {
   var x = _adomain(rank);
   for i in 1..rank do
-    x.info(i-1) = range(i).translate(dim(i));
+    x.ranges(i) = range(i).translate(dim(i));
   return x;
 }
 
@@ -81,23 +73,20 @@ function _adomain.interior(dim : integer ...?rank) {
   var x = _adomain(rank);
   for i in 1..rank do {
     if (dim(i) < 0) {
-      x.info(i-1) = 
-        info(i-1)._low..info(i-1)._low-1-dim(i) by info(i-1)._stride;
+      x.ranges(i) = range(i)._low..range(i)._low-1-dim(i) by range(i)._stride;
     } else if (dim(i) == 0) {
-      x.info(i-1) = 
-        info(i-1)._low..info(i-1)._high by info(i-1)._stride;
+      x.ranges(i) = range(i)._low..range(i)._high by range(i)._stride;
     } else if (dim(i) > 0) {
-      x.info(i-1) = 
-        info(i-1)._high+1-dim(i)..info(i-1)._high by info(i-1)._stride;
+      x.ranges(i) = range(i)._high+1-dim(i)..range(i)._high by range(i)._stride;
     }
   }
   return x;
 }
 
 function fwrite(f : file, x : _adomain) {
-  fwrite(f, "[", x.info(0));
-  for i in 1..x.rank-1 do
-    fwrite(f, ", ", x.info(i));
+  fwrite(f, "[", x.range(1));
+  for i in 2..x.rank do
+    fwrite(f, ", ", x.range(i));
   fwrite(f, "]");
 }
 
@@ -121,22 +110,22 @@ class _aarray : value {
     data.init();
     if dom == nil then return;
     var tmp : _aarray_info;
-    tmp._off = dom.info(rank-1)._low;
+    tmp._off = dom.range(rank)._low;
     tmp._blk = 1;
     info(rank-1) = tmp;
     var i : integer = rank-2;
     while i >= 0 {
       var tmp4 : _aarray_info;
-      tmp4._off = dom.info(i)._low;
+      tmp4._off = dom.range(i+1)._low;
       tmp4._blk = info(i+1)._blk *
-                    ((dom.info(i+1)._high - dom.info(i+1)._low + 1)
-                      / dom.info(i+1)._stride);
+                    ((dom.range(i+2)._high - dom.range(i+2)._low + 1)
+                      / dom.range(i+2)._stride);
       info(i) = tmp4;
       i -= 1;
     }
     size = info(0)._blk *
-             ((dom.info(0)._high - dom.info(0)._low + 1)
-               / dom.info(0)._stride);
+             ((dom.range(1)._high - dom.range(1)._low + 1)
+               / dom.range(1)._stride);
   }
 
   function this(ij : 2*integer) var : elt_type

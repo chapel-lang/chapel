@@ -83,8 +83,4 @@ void parse(void) {
   setterToken = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("_setterToken", baseModule->modScope));
   methodToken = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("_methodToken", baseModule->modScope));
 
-  chpl_true = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("true", prelude->modScope));
-
-  chpl_false = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("false", prelude->modScope));
-
 }

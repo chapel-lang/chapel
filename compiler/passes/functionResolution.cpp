@@ -142,9 +142,9 @@ add_candidate(Map<FnSymbol*,Vec<ArgSymbol*>*>* candidateFns,
         param_compute(inst_fn->whereExpr);
         if (SymExpr* symExpr = dynamic_cast<SymExpr*>(inst_fn->whereExpr)) {
           VarSymbol* param = dynamic_cast<VarSymbol*>(symExpr->var);
-          if (param != chpl_true && param != chpl_false)
+          if (param != gTrue && param != gFalse)
             INT_FATAL(fn, "Illegal where expression");
-          if (param == chpl_false)
+          if (param == gFalse)
             return;
         } else {
           INT_FATAL(fn, "Illegal where expression");
@@ -639,9 +639,9 @@ param_reduce(CallExpr* call) {
     return;
   if (call->isPrimitive(PRIMITIVE_EQUAL)) {
     if (lsym->var == rsym->var)
-      call->replace(new SymExpr(chpl_true));
+      call->replace(new SymExpr(gTrue));
     else
-      call->replace(new SymExpr(chpl_false));
+      call->replace(new SymExpr(gFalse));
   }
 }
 
