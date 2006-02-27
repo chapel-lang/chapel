@@ -38,7 +38,7 @@ class Var : public gc {
 
 #define Var_is_local(_v, _f)            \
   (!(_v)->sym->is_constant &&           \
-   (_v)->sym->in == (_f)->sym &&       \
+   (_v)->sym->in == (_f)->sym &&        \
    !(_v)->sym->nesting_depth &&         \
    !(_f)->init_function &&              \
    !(_v)->sym->is_lvalue &&             \
