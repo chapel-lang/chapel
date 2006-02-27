@@ -83,6 +83,20 @@ function _adomain.interior(dim : integer ...?rank) {
   return x;
 }
 
+function _adomain.exterior(dim : integer ...?rank) {
+  var x = _adomain(rank);
+  for i in 1..rank do {
+    if (dim(i) < 0) {
+      x.ranges(i) = ranges(i)._low+dim(i)..ranges(i)._low-1 by ranges(i)._stride;
+    } else if (dim(i) == 0) {
+      x.ranges(i) = ranges(i)._low..ranges(i)._high by ranges(i)._stride;
+    } else if (dim(i) > 0) {
+      x.ranges(i) = ranges(i)._high+1..ranges(i)._high+dim(i) by ranges(i)._stride;
+    }
+  }
+  return x;
+}
+
 function fwrite(f : file, x : _adomain) {
   fwrite(f, "[", x.range(1));
   for i in 2..x.rank do
