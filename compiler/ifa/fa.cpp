@@ -117,17 +117,18 @@ unique_AVar(Var *v, EntrySet *es) {
   return av;
 }
 
-CreationSet::CreationSet(Sym *s) : sym(s), clone_for_constants(0), added_element_var(0),
-                                   closure_used(0), atype(0), equiv(0), type(0)
+CreationSet::CreationSet(Sym *s) : sym(s), dfs_color(DFS_white), clone_for_constants(0), 
+                                   added_element_var(0), closure_used(0), 
+                                   atype(0), equiv(0), type(0)
 {
   id = creation_set_id++;
 }
 
-CreationSet::CreationSet(CreationSet *cs) : added_element_var(0) {
+CreationSet::CreationSet(CreationSet *cs) : dfs_color(DFS_white), added_element_var(0),
+                                            atype(0), equiv(0), type(0) {
   sym = cs->sym;
   id = creation_set_id++;
   clone_for_constants = cs->clone_for_constants;
-  atype = NULL;
   forv_AVar(v, cs->vars) {
     AVar *iv = unique_AVar(v->var, this);
     add_var_constraint(iv);
@@ -135,12 +136,10 @@ CreationSet::CreationSet(CreationSet *cs) : added_element_var(0) {
     if (iv->var->sym->name)
       var_map.put(iv->var->sym->name, iv);
   }
-  equiv = 0;
-  type = 0;
   sym->creators.add(this);
 }
 
-EntrySet::EntrySet(Fun *af) : fun(af), split(0), equiv(0) {
+EntrySet::EntrySet(Fun *af) : fun(af), dfs_color(DFS_white), split(0), equiv(0) {
   id = entry_set_id++;
 }
 
@@ -1871,6 +1870,7 @@ static void
 analyze_edge(AEdge *e_arg) {
   Vec<AEdge *> edges;
   make_entry_set(e_arg, edges);
+  qsort_by_id(edges);
   forv_AEdge(ee, edges) {
     if (!ee->args.n) ee->args.copy(e_arg->args);
     if (!ee->rets.n) ee->rets.copy(e_arg->rets);
@@ -2703,14 +2703,13 @@ initialize_pass() {
     fa->setter_token->out = make_abstract_type(fa->setter_token->var->sym);
 }
 
-enum { DFS_white = 0, DFS_grey, DFS_black };
-
 static void
-mark_es_backedges(EntrySet *es, Vec<EntrySet *> &nodes) {
+mark_es_backedges(EntrySet *es, Accum<EntrySet *> &ess) {
+  ess.add(es);
   es->dfs_color = DFS_grey;
   forv_AEdge(e, es->out_edges) if (e) {
     if (e->to->dfs_color == DFS_white)
-      mark_es_backedges(e->to, nodes);
+      mark_es_backedges(e->to, ess);
     else {
       if (e->to->dfs_color == DFS_grey) {
         e->es_backedge = 1;
@@ -2723,22 +2722,21 @@ mark_es_backedges(EntrySet *es, Vec<EntrySet *> &nodes) {
 
 static void
 compute_recursive_entry_sets() {
-  forv_EntrySet(es, fa->ess)
-    es->dfs_color = DFS_white;
-  Vec<EntrySet *> nodes;
-  nodes.set_add(fa->top_edge->to);
-  mark_es_backedges(fa->top_edge->to, nodes);
+  Accum<EntrySet *> ess;
+  mark_es_backedges(fa->top_edge->to, ess);
+  forv_EntrySet(es, ess.asvec) es->dfs_color = DFS_white;
 }
 
-static void mark_es_cs_backedges(CreationSet *cs);
-static void mark_es_cs_backedges(EntrySet *es);
+static void mark_es_cs_backedges(CreationSet *cs, Accum<EntrySet *> &ess, Accum<CreationSet *> &css);
+static void mark_es_cs_backedges(EntrySet *es, Accum<EntrySet *> &ess, Accum<CreationSet *> &css);
 
 static void
-mark_es_cs_backedges(CreationSet *cs) {
+mark_es_cs_backedges(CreationSet *cs, Accum<EntrySet *> &ess, Accum<CreationSet *> &css) {
+  css.add(cs);
   cs->dfs_color = DFS_grey;
   forv_EntrySet(es, cs->ess) if (es) {
     if (es->dfs_color == DFS_white)
-      mark_es_cs_backedges(es);
+      mark_es_cs_backedges(es, ess, css);
     else if (es->dfs_color == DFS_grey)
       es->cs_backedges.add(cs);
   }
@@ -2746,12 +2744,13 @@ mark_es_cs_backedges(CreationSet *cs) {
 }
 
 static void
-mark_es_cs_backedges(EntrySet *es) {
+mark_es_cs_backedges(EntrySet *es, Accum<EntrySet *> &ess, Accum<CreationSet *> &css) {
+  ess.add(es);
   es->dfs_color = DFS_grey;
   forv_AEdge(e, es->out_edges) if (e) {
     EntrySet *es_succ = e->to;
     if (es_succ->dfs_color == DFS_white)
-      mark_es_cs_backedges(es_succ);
+      mark_es_cs_backedges(es_succ, ess, css);
     else if (es_succ->dfs_color == DFS_grey) {
       e->es_cs_backedge = 1;
       es_succ->es_cs_backedges.add(e);
@@ -2759,7 +2758,7 @@ mark_es_cs_backedges(EntrySet *es) {
   }
   forv_CreationSet(cs, es->creates) if (cs) {
     if (cs->dfs_color == DFS_white)
-      mark_es_cs_backedges(cs);
+      mark_es_cs_backedges(cs, ess, css);
     else if (cs->dfs_color == DFS_grey)
       cs->es_backedges.add(es);
   }
@@ -2771,11 +2770,11 @@ mark_es_cs_backedges(EntrySet *es) {
 // (as in restricted) by those CreationSets
 static void
 compute_recursive_entry_creation_sets() {
-  forv_EntrySet(es, fa->ess)
-    es->dfs_color = DFS_white;
-  forv_CreationSet(cs, fa->css)
-    cs->dfs_color = DFS_white;
-  mark_es_cs_backedges(fa->top_edge->to);
+  Accum<EntrySet *> ess;
+  Accum<CreationSet *> css;
+  mark_es_cs_backedges(fa->top_edge->to, ess, css);
+  forv_EntrySet(es, ess.asvec) es->dfs_color = DFS_white;
+  forv_CreationSet(cs, css.asvec) cs->dfs_color = DFS_white;
 }
 
 int
