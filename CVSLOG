@@ -57476,3 +57476,14 @@ Modified files:
 	                               record_type_hierarchy-3-error.good 
 	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
 
+---------------------------------------------------------------------------
+
+02/27/06 11:57:03 -- shannon
+
+Log message:
+	Added a test for the domain exterior
+	function.
+
+Added files:
+	chapel/test/domains/shannon/: exterior3D.chpl exterior3D.good 
+
