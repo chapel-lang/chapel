@@ -57406,3 +57406,15 @@ Log message:
 Modified files:
 	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
 
+---------------------------------------------------------------------------
+
+02/27/06 09:59:55 -- jplevyak
+
+Log message:
+	Fix an uninitialized variable valgrind problem.
+	Reworked the DFS search for recursion to collect touched
+	  nodes for reinitialization.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp fa.h 
+
