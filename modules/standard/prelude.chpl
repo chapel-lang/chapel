@@ -99,29 +99,6 @@ function _tostring(x : complex, format : string) : string {
 }
 
 
--- exits
-
-pragma "rename _chpl_exit" function exit(status : integer) {
-  __primitive("exit");       
-}
-
-function halt() {
-  __primitive("halt");
-}
-
-function assert() {
-  __primitive("assert");
-}
-
-
-function _complex_read_hack(inout x) : integer {
-  return __primitive("fscanf", "%g%g", x);
-}
-
-function _complex_tostring_hack(x, format : string) : string {
-  return __primitive("to_string", format, x);
-}
-
 pragma "rename _copy_string" function =(a : string, b : any) : string { 
   return __primitive("copy_string", b);
 }
@@ -141,5 +118,3 @@ pragma "rename _chpl_alloc"
 function _chpl_alloc(t, description:string) { return __primitive("chpl_alloc", t); }
 
 function _init_string() { return ""; }
-
-function _INIT_CONFIG(inout v, v_type, chapel_name, module_name);

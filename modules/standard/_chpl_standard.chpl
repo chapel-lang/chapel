@@ -1,3 +1,4 @@
+use prelude;
 use _chpl_base;
 use _chpl_compiler;
 use _chpl_complex;

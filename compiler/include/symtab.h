@@ -8,7 +8,6 @@
 #include "symscope.h"
 
 extern SymScope* rootScope;
-extern SymScope* preludeScope;
 
 extern Vec<ModuleSymbol*> allModules;     // Contains all modules
 extern Vec<ModuleSymbol*> codegenModules; // Contains codegened modules
@@ -19,10 +18,6 @@ void registerModule(ModuleSymbol* mod);
 class Symboltable {
  public:
   static void init(void);
-  static void parsePrelude(void);
-  static void doneParsingPreludes(void);
-  static void doneParsingUserFiles(void);
-  static bool parsingUserCode(void);
 
   static void removeScope(SymScope* scope);
   static void pushScope(scopeType type);
@@ -41,10 +36,6 @@ class Symboltable {
   static Symbol* lookupFromScope(char* name, SymScope* scope);
   static Symbol* lookupInCurrentScope(char* name);
   static Symbol* lookup(char* name);
-
-  static Symbol* lookupInternal(char* name, 
-                                scopeType scope = SCOPE_PRELUDE);
-  static TypeSymbol* lookupInternalType(char* name);
 
   static ModuleSymbol* startModuleDef(char* name, modType modtype = MOD_USER);
   static DefExpr* finishModuleDef(ModuleSymbol* mod, AList<Stmt>* def);

@@ -59,6 +59,23 @@ pragma "inline" function string.this(i: integer) return __primitive("string_inde
 
 
 //
+// More primitive functions
+//
+pragma "no codegen" pragma "rename _chpl_exit" function exit(status : integer) {
+  __primitive("exit");       
+}
+
+pragma "no codegen" function halt() {
+  __primitive("halt");
+}
+
+pragma "no codegen" function assert() {
+  __primitive("assert");
+}
+
+
+
+//
 // MOVE THESE, maybe to a memory module?
 //
 pragma "no codegen" function _chpl_memtest_printMemTable();

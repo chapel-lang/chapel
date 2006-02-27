@@ -5,9 +5,7 @@
 
 enum scopeType {
   // builtins at the global level
-  SCOPE_INTRINSIC = -3,
-  SCOPE_PRELUDE = -2,
-  SCOPE_POSTPARSE = -1,
+  SCOPE_INTRINSIC = -1,
   SCOPE_MODULE = 0,           // less is all modules
   SCOPE_ARG,
   SCOPE_LOCAL,

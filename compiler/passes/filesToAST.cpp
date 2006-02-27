@@ -11,43 +11,25 @@
 #include "runtime.h"
 
 void parse(void) {
-  // parse prelude
-  Symboltable::parsePrelude();
-  char* chplroot = sysdirToChplRoot(system_dir);
-  prelude = ParseFile(stringcat(chplroot, "/modules/standard/prelude.chpl"),
-                      MOD_INTERNAL);
-
-  // parse user files
-  Symboltable::doneParsingPreludes();
-
   yydebug = debugParserLevel;
-  compilerModule = ParseFile(stringcat(chplroot, "/modules/standard/_chpl_compiler.chpl"),
-                             MOD_STANDARD);
 
-  baseModule = ParseFile(stringcat(chplroot, "/modules/standard/_chpl_base.chpl"), MOD_STANDARD);
-  closureModule = ParseFile(stringcat(chplroot, "/modules/standard/_chpl_closure.chpl"), MOD_STANDARD);
+  char* path = stringcat(sysdirToChplRoot(system_dir), "/modules/standard/");
 
-  if (!fnostdincs && !fnostdincs_but_file) {
-    ParseFile(stringcat(chplroot, "/modules/standard/_chpl_complex.chpl"),
-              MOD_STANDARD);
-  }
+  compilerModule = ParseFile(stringcat(path, "_chpl_compiler.chpl"), MOD_STANDARD);
+  prelude = ParseFile(stringcat(path, "prelude.chpl"), MOD_STANDARD);
+  baseModule = ParseFile(stringcat(path, "_chpl_base.chpl"), MOD_STANDARD);
+  closureModule = ParseFile(stringcat(path, "_chpl_closure.chpl"), MOD_STANDARD);
+
   if (!fnostdincs) {
-    fileModule = ParseFile(stringcat(chplroot, 
-                                     "/modules/standard/_chpl_file.chpl"),
-                           MOD_STANDARD);
+    fileModule = ParseFile(stringcat(path, "_chpl_file.chpl"), MOD_STANDARD);
   }
   if (!fnostdincs && !fnostdincs_but_file) {
-    tupleModule = ParseFile(stringcat(chplroot,
-                                      "/modules/standard/_chpl_htuple.chpl"),
-                            MOD_STANDARD);
-    ParseFile(stringcat(chplroot, "/modules/standard/_chpl_adomain.chpl"),
-              MOD_STANDARD);
-    ParseFile(stringcat(chplroot, "/modules/standard/_chpl_data.chpl"),
-              MOD_STANDARD);
-    seqModule = ParseFile(stringcat(chplroot, "/modules/standard/_chpl_seq.chpl"),
-                          MOD_STANDARD);
-    standardModule = ParseFile(stringcat(chplroot, "/modules/standard/_chpl_standard.chpl"),
-                               MOD_STANDARD);
+    ParseFile(stringcat(path, "_chpl_complex.chpl"), MOD_STANDARD);
+    tupleModule = ParseFile(stringcat(path, "_chpl_htuple.chpl"), MOD_STANDARD);
+    ParseFile(stringcat(path, "_chpl_adomain.chpl"), MOD_STANDARD);
+    ParseFile(stringcat(path, "_chpl_data.chpl"), MOD_STANDARD);
+    seqModule = ParseFile(stringcat(path, "_chpl_seq.chpl"), MOD_STANDARD);
+    standardModule = ParseFile(stringcat(path, "_chpl_standard.chpl"), MOD_STANDARD);
   }
 
   int filenum = 0;
@@ -59,9 +41,7 @@ void parse(void) {
   finishCountingTokens();
 
   if (userModules.n == 0)
-    ParseFile(stringcat(chplroot, "/modules/standard/i.chpl"), MOD_USER);
-
-  Symboltable::doneParsingUserFiles();
+    ParseFile(stringcat(path, "i.chpl"), MOD_USER);
 
   Pass* fixup = new Fixup();
   fixup->run(Symboltable::getModules(MODULES_ALL));

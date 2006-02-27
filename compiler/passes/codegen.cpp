@@ -145,7 +145,7 @@ void codegen(void) {
   createConfigVarTable->closeCFile();
 
   forv_Vec(ModuleSymbol, currentModule, allModules) {
-    if (currentModule->modtype != MOD_INTERNAL) {
+    if (!currentModule->hasPragma("no codegen")) {
       mysystem(stringcat("# codegen-ing module", currentModule->name),
                "generating comment for --print-commands option");
       currentModule->codegenDef();

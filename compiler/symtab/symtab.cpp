@@ -9,19 +9,7 @@
 #include "runtime.h"
 
 
-enum parsePhaseType {
-  PARSING_PRE,
-  PARSING_PRELUDE,
-  PARSING_USERFILES,
-  PARSING_POST
-};
-
-static parsePhaseType parsePhase = PARSING_PRE;
-
-
 SymScope* rootScope = NULL;
-SymScope* preludeScope = NULL;
-static SymScope* postludeScope = NULL;
 static SymScope* currentScope = NULL;
 static ModuleSymbol* currentModule = NULL;
 
@@ -47,41 +35,6 @@ void registerModule(ModuleSymbol* mod) {
 void Symboltable::init(void) {
   rootScope = new SymScope(SCOPE_INTRINSIC);
   currentScope = rootScope;
-}
-
-
-void Symboltable::parsePrelude(void) {
-  preludeScope = new SymScope(SCOPE_PRELUDE);
-  preludeScope->parent = rootScope;
-  rootScope->child = preludeScope;
-
-  currentScope = preludeScope;
-
-  parsePhase = PARSING_PRELUDE;
-}
-
-
-void Symboltable::doneParsingPreludes(void) {
-  parsePhase = PARSING_USERFILES;
-
-  prelude->modScope = preludeScope;          // SJD: Why here?
-  preludeScope->astParent = prelude;
-}
-
-
-void Symboltable::doneParsingUserFiles(void) {
-  postludeScope = new SymScope(SCOPE_POSTPARSE);
-  postludeScope->parent = rootScope;
-  preludeScope->sibling = postludeScope;
-
-  currentScope = postludeScope;
-
-  parsePhase = PARSING_POST;
-}
-
-
-bool Symboltable::parsingUserCode(void) {
-  return (parsePhase == PARSING_USERFILES);
 }
 
 
@@ -244,37 +197,6 @@ Symbol* Symboltable::lookupInCurrentScope(char* name) {
 }
 
 
-Symbol* Symboltable::lookupInternal(char* name, scopeType scope) {
-  Symbol* sym = NULL;
-
-  switch (scope) {
-  case SCOPE_INTRINSIC:
-    sym = lookupInScope(name, rootScope);
-    break;
-  case SCOPE_PRELUDE:
-    sym = lookupInScope(name, preludeScope);
-    break;
-  default:
-    INT_FATAL("lookupInternal called with bad scope type");
-  }
-  if (!sym) {
-    INT_FATAL("lookupInternal failed on %s", name);
-  }
-
-  return sym;
-}
-
-
-TypeSymbol* Symboltable::lookupInternalType(char* name) {
-  Symbol* sym = lookupInternal(name, SCOPE_PRELUDE);
-  TypeSymbol* retsym = dynamic_cast<TypeSymbol *>(sym);
-  if (retsym == NULL) {
-    INT_FATAL("lookupInternalType failed");
-  }
-  return retsym;
-}
-
-
 ModuleSymbol* Symboltable::startModuleDef(char* name, modType modtype) {
   ModuleSymbol* newModule = new ModuleSymbol(name, modtype);
 
@@ -361,7 +283,7 @@ DefExpr* Symboltable::finishModuleDef(ModuleSymbol* mod, AList<Stmt>* def) {
       } else {
         // for now, define all modules in the prelude scope, since
         // they can't be nested
-        preludeScope->define(mod);
+        rootScope->define(mod);
       }
     }
   }

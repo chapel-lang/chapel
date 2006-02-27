@@ -850,9 +850,7 @@ map_baseast(BaseAST *s) {
         switch (sym->parentScope->type) {
           default: assert(0);
           case SCOPE_INTRINSIC:
-          case SCOPE_PRELUDE:
           case SCOPE_MODULE:
-          case SCOPE_POSTPARSE:
             sym->asymbol->sym->global_scope = 1;
             break;
           case SCOPE_LETEXPR:

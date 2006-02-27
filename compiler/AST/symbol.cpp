@@ -749,7 +749,7 @@ FnSymbol* FnSymbol::clone(ASTMap* map) {
   // BLC: we don't want to rename any clones that we build in the
   // prelude, because they likely refer to external functions for
   // which clones will not be built
-  if (defPoint->parentScope->type != SCOPE_PRELUDE) {
+  if (defPoint->getModule() == prelude) {
     defExpr->sym->cname = stringcat("_clone_", cname);
   }
   defPoint->parentStmt->insertAfter(copyStmt);
@@ -1127,10 +1127,10 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
       }
     }
 
-    SymScope* saveScope = Symboltable::setCurrentScope(prelude->modScope);
+    SymScope* saveScope = Symboltable::setCurrentScope(rootScope);
     ModuleSymbol* mod = new ModuleSymbol(name, MOD_INSTANTIATED);
     new DefExpr(mod);
-    preludeScope->define(mod);
+    rootScope->define(mod);
     Symboltable::pushScope(SCOPE_MODULE);
     mod->setModScope(Symboltable::popScope());
     mod->modScope->astParent = mod;
@@ -1139,10 +1139,8 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
     Fixup* fixup = new Fixup();
     fixup->parentSymbols.add(mod);
     mod->startTraversal(fixup);
-    if (retType->symbol->defPoint->getModule() != prelude) {
-      mod->stmts->insertAtTail(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol(retType->symbol->defPoint->getModule()->name))));
-      retType->symbol->defPoint->parentScope->uses.add(mod);
-    }
+    mod->stmts->insertAtTail(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol(retType->symbol->defPoint->getModule()->name))));
+    retType->symbol->defPoint->parentScope->uses.add(mod);
     forv_Vec(BaseAST, value, values) {
       if (Type* type = dynamic_cast<Type*>(value)) {
         if (type->symbol->defPoint) {

@@ -3,12 +3,12 @@ zeroarity-bound-error-2.chpl:9: illegal call argument type 'stdout' illegal: ( f
 zeroarity-bound-error-2.chpl:9: illegal call argument type '_tmp' illegal: ( ) 
 zeroarity-bound-error-2.chpl:9: unresolved call 'fwrite'
 note: candidates are:
-_chpl_complex.chpl:8: fwrite, f : file, x : complex
 _chpl_file.chpl:112: fwrite, f : file, val : int64
 _chpl_file.chpl:145: fwrite, f : file, val : float64
 _chpl_file.chpl:165: fwrite, f : file, val : string
 _chpl_file.chpl:196: fwrite, f : file, val : bool
 _chpl_file.chpl:214: fwrite, f : file, x : nil_type
+_chpl_complex.chpl:8: fwrite, f : file, x : complex
 _chpl_htuple.chpl:22: fwrite, f : file, val : _htuple
 _chpl_adomain.chpl:100: fwrite, f : file, x : _adomain
 _chpl_adomain.chpl:157: fwrite, f : file, x : _aarray

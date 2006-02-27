@@ -835,8 +835,7 @@ AList<Stmt>* ClassType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSym
       new AList<Stmt>(new CallExpr("fwrite", fileArg, new_StringLiteral("nil")));
     fwriteNil->insertAtTail(new ReturnStmt());
     BlockStmt* blockStmt = new BlockStmt(fwriteNil);
-    Symbol* nil = Symboltable::lookupInternal("nil", SCOPE_INTRINSIC);
-    Expr* argIsNil = new CallExpr("==", arg, nil);
+    Expr* argIsNil = new CallExpr("==", arg, gNil);
     body->insertAtTail(new CondStmt(argIsNil, blockStmt));
   }
 
@@ -1087,8 +1086,8 @@ void findInternalTypes(void) {
   dtSetterToken = dynamic_cast<TypeSymbol*>(Symboltable::lookupInScope("_setterTokenType", baseModule->modScope))->definition;
   if (!fnostdincs)
     dtFile = dynamic_cast<TypeSymbol*>(Symboltable::lookupInFileModuleScope("file"))->definition;
-  dtObject = dynamic_cast<ClassType*>(Symboltable::lookupInternalType("object")->definition);
-  dtValue = dynamic_cast<ClassType*>(Symboltable::lookupInternalType("value")->definition);
+  dtObject = dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(Symboltable::lookupInScope("object", prelude->modScope))->definition);
+  dtValue = dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(Symboltable::lookupInScope("value", prelude->modScope))->definition);
 
   dtClosure = dynamic_cast<TypeSymbol*>(Symboltable::lookupInScope(
                                          "closure", closureModule->modScope))->definition;
@@ -1102,9 +1101,7 @@ void findInternalTypes(void) {
   // SJD: Can't do this when dtString is defined because
   // prelude hasn't been made yet.  Need to do it after.
   dtString->defaultConstructor =
-    dynamic_cast<FnSymbol*>(Symboltable::lookupInternal("_init_string"));
-  initConfigFn =
-    dynamic_cast<FnSymbol*>(Symboltable::lookupInternal("_INIT_CONFIG"));
+    dynamic_cast<FnSymbol*>(Symboltable::lookupInScope("_init_string", prelude->modScope));
 }
 
 

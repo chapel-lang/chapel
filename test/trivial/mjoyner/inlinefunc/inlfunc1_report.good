@@ -1,7 +1,6 @@
 chapel compiler: reporting inlining, not function was inlined
 chapel compiler: reporting inlining, not function was inlined
 chapel compiler: reporting inlining, not function was inlined
-chapel compiler: reporting inlining, not function was inlined
 chapel compiler: reporting inlining, _file_fp function was inlined
 chapel compiler: reporting inlining, != function was inlined
 chapel compiler: reporting inlining, _file_path function was inlined
@@ -15,6 +14,7 @@ chapel compiler: reporting inlining, < function was inlined
 chapel compiler: reporting inlining, == function was inlined
 chapel compiler: reporting inlining, _file_fp function was inlined
 chapel compiler: reporting inlining, < function was inlined
+chapel compiler: reporting inlining, not function was inlined
 chapel compiler: reporting inlining, _inst___tuple2__f1 function was inlined
 chapel compiler: reporting inlining, _inst___tuple2__f1 function was inlined
 chapel compiler: reporting inlining, _inst___tuple2__f2 function was inlined

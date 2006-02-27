@@ -53,11 +53,10 @@ function fread(f : file = stdin, x : complex) {
   }
 }
 
-
 pragma "no codegen"
 pragma "rename _chpl_tostring_complex"
 function _tostring(x : complex, format : string) : string {
-  return _complex_tostring_hack(x, format);
+  return __primitive("to_string", format, x);
 }
 
 

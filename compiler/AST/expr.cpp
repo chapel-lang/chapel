@@ -885,10 +885,6 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, "*(_complex128*)");
     } else if (!strcmp(variable->var->cname, "_chpl_read_complex")) {
       fprintf(outfile, "(_complex128**)");
-    } else if (!strcmp(variable->var->cname, "_INIT_CONFIG")) {
-      if (!strcmp(argList->representative()->typeInfo()->symbol->cname, "_chpl_complex")) {
-        fprintf(outfile, "(_complex128**)");
-      }
     } else if (!strcmp(variable->var->cname, "_copy_string")) {
       get(1)->codegen(outfile);
       fprintf(outfile, ", ");

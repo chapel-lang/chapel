@@ -354,7 +354,7 @@ resolve_call(CallExpr* call,
   resolve_call_error_candidates.clear();
 
   if (call->isNamed("_chpl_alloc"))
-    return dynamic_cast<FnSymbol*>(Symboltable::lookupInternal("_chpl_alloc"));
+    return dynamic_cast<FnSymbol*>(Symboltable::lookupInScope("_chpl_alloc", prelude->modScope));
 
   if (call->isResolved())
     return call->isResolved();
@@ -577,7 +577,7 @@ void functionResolution(void) {
   if (!no_infer || run_interpreter)
     return;
   resolve_function(chpl_main);
-  fns.set_add(dynamic_cast<FnSymbol*>(Symboltable::lookupInternal("_chpl_alloc")));
+  fns.set_add(dynamic_cast<FnSymbol*>(Symboltable::lookupInScope("_chpl_alloc", prelude->modScope)));
 
   Vec<TypeSymbol*> live_types;
   Vec<FnSymbol*> all_fns;

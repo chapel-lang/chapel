@@ -222,9 +222,7 @@ IFrame::put(BaseAST *ast, ISlot *s) {
         default:
           USR_FATAL(ast, "interpreter: bad symbol scope");
         case SCOPE_INTRINSIC:
-        case SCOPE_PRELUDE:
         case SCOPE_MODULE:
-        case SCOPE_POSTPARSE:
           global_env.put(ast,s);
           return;
         case SCOPE_LETEXPR:

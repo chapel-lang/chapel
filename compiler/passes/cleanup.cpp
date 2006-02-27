@@ -53,7 +53,7 @@ void createInitFn(ModuleSymbol* mod) {
 
   // BLC: code to run user modules once only
   char* runOnce = NULL;
-  if (mod->modtype != MOD_INTERNAL && mod != compilerModule && !fnostdincs) {
+  if (mod != prelude && mod != compilerModule && !fnostdincs) {
     if (mod != standardModule) {
       if (fnostdincs_but_file) {
         definition->insertAtHead(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol("_chpl_file"))));
@@ -192,6 +192,17 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* seen = NULL) {
 void cleanup(void) {
   forv_Vec(ModuleSymbol, mod, allModules)
     createInitFn(mod);
+
+  forv_Vec(ModuleSymbol, mod, allModules) {
+    Vec<BaseAST*> asts;
+    collect_asts(&asts, mod);
+    forv_Vec(BaseAST, ast, asts) {
+      if (ImportExpr* a = dynamic_cast<ImportExpr*>(ast)) {
+        process_import_expr(a);
+      }
+    }
+  }
+
   forv_Vec(ModuleSymbol, mod, allModules)
     cleanup(mod);
 }
@@ -395,7 +406,7 @@ static void build_constructor(ClassType* ct) {
   dynamic_cast<VarSymbol*>(fn->_this)->noDefaultInit = true;
 
   char* description = stringcat("instance of class ", ct->symbol->name);
-  Expr* alloc_rhs = new CallExpr(Symboltable::lookupInternal("_chpl_alloc"),
+  Expr* alloc_rhs = new CallExpr(Symboltable::lookupInScope("_chpl_alloc", prelude->modScope),
                                  ct->symbol,
                                  new_StringLiteral(description));
   CallExpr* alloc_expr = new CallExpr(PRIMITIVE_MOVE, fn->_this, alloc_rhs);
