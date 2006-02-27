@@ -57418,3 +57418,13 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp fa.h 
 
+---------------------------------------------------------------------------
+
+02/27/06 10:22:34 -- jplevyak
+
+Log message:
+	Fix another initialization valgrind issue.
+
+Modified files:
+	chapel/compiler/ifa/: num.h 
+
