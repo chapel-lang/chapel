@@ -57487,3 +57487,15 @@ Log message:
 Added files:
 	chapel/test/domains/shannon/: exterior3D.chpl exterior3D.good 
 
+---------------------------------------------------------------------------
+
+02/27/06 12:04:44 -- jplevyak
+
+Log message:
+	Remove old DefExpr handling code.
+	Fix bug with cloning of functions with nested variables.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: clone.cpp var.h 
+
