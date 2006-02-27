@@ -57438,3 +57438,13 @@ Log message:
 Added files:
 	chapel/test/trivial/preston/: tuple.future 
 
+---------------------------------------------------------------------------
+
+02/27/06 11:13:54 -- jplevyak
+
+Log message:
+	Add new .future
+
+Added files:
+	chapel/test/functions/bradc/: typefn2.future 
+
