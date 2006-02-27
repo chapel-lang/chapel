@@ -1,0 +1,9 @@
+deitz
+
+Problem with normalize_returns: should
+use "=" when the types don't match.  Tried
+trivial solution (change PRIMITIVE_MOVE to "=")
+but ended up with infinite recursion.  This
+is a semantics issue... maybe need new
+FnSymbol::fnClass ???
+
