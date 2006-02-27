@@ -57428,3 +57428,13 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: num.h 
 
+---------------------------------------------------------------------------
+
+02/27/06 10:54:39 -- jplevyak
+
+Log message:
+	new .future
+
+Added files:
+	chapel/test/trivial/preston/: tuple.future 
+
