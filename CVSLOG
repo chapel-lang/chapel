@@ -57499,3 +57499,37 @@ Modified files:
 	chapel/compiler/analysis/: chapel_ifa.cpp 
 	chapel/compiler/ifa/: clone.cpp var.h 
 
+---------------------------------------------------------------------------
+
+02/27/06 13:52:45 -- deitz
+
+Log message:
+	Moved a few more lines out of prelude into _chpl_base.
+	
+	Removed highly special treatment of prelude.  It is now parsed as all
+	other standard modules.  It is not code generated.
+	
+	Modified exit.chpl expected behavior.  Added a new test to make sure
+	we don't call a module.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: symscope.h symtab.h type.h 
+	chapel/compiler/passes/: cleanup.cpp codegen.cpp filesToAST.cpp 
+	                         functionResolution.cpp 
+	                         runInterpreter.cpp 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/modules/standard/: _chpl_base.chpl _chpl_compiler.chpl 
+	                          _chpl_complex.chpl _chpl_standard.chpl 
+	                          prelude.chpl 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+	chapel/test/trivial/deitz/: exit.good 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+Added files:
+	chapel/test/trivial/deitz/: foo.chpl foo.good 
+
