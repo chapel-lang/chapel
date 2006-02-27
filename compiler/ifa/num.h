@@ -68,11 +68,13 @@ class Immediate : public gc { public:
     return *this;
   }
   Immediate(bool b) {
+    memset(this, 0, sizeof(*this));
     const_kind = IF1_NUM_KIND_UINT;
     num_index = IF1_INT_TYPE_1;
     v_bool = b;
   }
   Immediate(char *s) {
+    memset(this, 0, sizeof(*this));
     const_kind = IF1_CONST_KIND_STRING;
     v_string = s;
   }
