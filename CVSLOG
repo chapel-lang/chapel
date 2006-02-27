@@ -57533,3 +57533,14 @@ Modified files:
 Added files:
 	chapel/test/trivial/deitz/: foo.chpl foo.good 
 
+---------------------------------------------------------------------------
+
+02/27/06 14:55:09 -- deitz
+
+Log message:
+	Updated future for test.  This is the strange test of initializing a
+	record of inferred type.
+
+Modified files:
+	chapel/test/trivial/preston/: tuple.future 
+
