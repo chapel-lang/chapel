@@ -57569,3 +57569,13 @@ Added files:
 	chapel/test/functions/jplevyak/: introduce-dispatch-1.future 
 	chapel/test/types/type_variables/jplevyak/: where-3.future 
 
+---------------------------------------------------------------------------
+
+02/28/06 09:05:50 -- jplevyak
+
+Log message:
+	Add new .future discussing what I think is the issue.
+
+Added files:
+	chapel/test/types/type_variables/deitz/: test_datablock.future 
+
