@@ -12,13 +12,16 @@ iterator foo(param rank : integer, n : integer) : (rank*integer) {
     for i in 0..n-1 do
       for x in foo(1, n) {
         var result : (rank*integer);
-        result(1) = x;
+        result(1) = x(1);
         result(2) = i;
         yield result;
       }
   } else if rank == 1 {
-    for i in 0..n-1 do
-      yield i;
+    for i in 0..n-1 {
+      var result : (rank*integer);
+      result(1) = i;
+      yield result;
+    }
   }
 }
 
