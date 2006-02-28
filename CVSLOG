@@ -57601,3 +57601,13 @@ Added files:
 	                              interiorError.compopts 
 	                              interiorError.good 
 
+---------------------------------------------------------------------------
+
+02/28/06 10:59:40 -- jplevyak
+
+Log message:
+	Fix cygwin compilation problem (lack of alloca support).
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+
