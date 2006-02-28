@@ -72,16 +72,20 @@ function _adomain.translate(dim : integer ...?rank) {
 function _adomain.interior(dim : integer ...?rank) {
   var x = _adomain(rank);
   for i in 1..rank do {
+    if ((-dim(i) > range(i)._high) or (dim(i) > range(i)._high)) {
+      halt("***Error: Degenerate dimension created in dimension ", i, "***");
+    } 
     if (dim(i) < 0) {
       x.ranges(i) = range(i)._low..range(i)._low-1-dim(i) by range(i)._stride;
     } else if (dim(i) == 0) {
-      x.ranges(i) = range(i)._low..range(i)._high by range(i)._stride;
+      x.ranges(i) = ranges(i)._low..ranges(i)._high by ranges(i)._stride;
     } else if (dim(i) > 0) {
       x.ranges(i) = range(i)._high+1-dim(i)..range(i)._high by range(i)._stride;
     }
   }
   return x;
 }
+
 
 function _adomain.exterior(dim : integer ...?rank) {
   var x = _adomain(rank);
@@ -92,6 +96,18 @@ function _adomain.exterior(dim : integer ...?rank) {
       x.ranges(i) = ranges(i)._low..ranges(i)._high by ranges(i)._stride;
     } else if (dim(i) > 0) {
       x.ranges(i) = ranges(i)._high+1..ranges(i)._high+dim(i) by ranges(i)._stride;
+    }
+  }
+  return x;
+}
+
+function _adomain.expand(dim : integer ...?rank) {
+  var x = _adomain(rank);
+  for i in 1..rank do {
+    if (dim(i) == 0) {
+      x.ranges(i) = ranges(i)._low..ranges(i)._high by ranges(i)._stride;
+    } else {
+      x.ranges(i) = ranges(i)._low-dim(i)..ranges(i)._high+dim(i) by ranges(i)._stride;
     }
   }
   return x;
