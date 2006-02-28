@@ -57579,3 +57579,25 @@ Log message:
 Added files:
 	chapel/test/types/type_variables/deitz/: test_datablock.future 
 
+---------------------------------------------------------------------------
+
+02/28/06 10:21:50 -- shannon
+
+Log message:
+	Added some error checking for the interior
+	function for _adomains to ensure that a
+	degenerate domain is not created.  Added
+	a test and updated the expected output of
+	some others.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/domains/shannon/: interior3D.chpl interior3D.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+Added files:
+	chapel/test/domains/shannon/: interiorError.chpl 
+	                              interiorError.compopts 
+	                              interiorError.good 
+
