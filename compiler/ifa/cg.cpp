@@ -507,7 +507,7 @@ write_c(FILE *fp, FA *fa, Fun *f, Vec<Var *> *globals = 0) {
     fputs("\n", fp);
   if (globals)
     forv_Var(v, *globals)
-      if (v->sym->fun && !v->sym->type_kind)
+      if (!v->sym->is_fun && v->sym->fun && !v->sym->type_kind)
         fprintf(fp, "%s = %s;\n", v->cg_string, v->sym->fun->cg_string);
   write_c_args(fp, f);
   // rebuild cfg_pred_index

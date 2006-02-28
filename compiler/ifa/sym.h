@@ -47,6 +47,8 @@ extern char *type_kind_string[];
 
 #define CLEAR_VARIABLE(_m) memset(&(_m),0,sizeof(_m))
 
+#define LOCALLY_NESTED -1
+
 class BasicSym : public gc {
  public:
   int                   id;                     // unique number
@@ -59,7 +61,7 @@ class BasicSym : public gc {
   IFAAST                *ast;                   // AST node which defined this symbol
   Var                   *var;                   // used by fa.cpp
   IFASymbol             *asymbol;               // front end interface object
-  int                   nesting_depth;          // nested function depth
+  int                   nesting_depth;          // nested function depth (or LOCALLY_NESTED)
   char                  *cg_string;             // used by cg.cpp
 
   unsigned int          is_builtin:1;           // Sym is builtin to the compiler
@@ -79,9 +81,6 @@ class BasicSym : public gc {
   unsigned int          is_this:1;              // Sym is "this" (member function "target")
 
   unsigned int          intent:2;               // Sym is "in", "inout", or "out"
-
-  unsigned int          global_scope:1;         // Sym is globally unique (file/module)
-  unsigned int          function_scope:1;       // Sym is function unique
 
   unsigned int          is_structure:1;         // Sym is a structure (C compatibility)
   unsigned int          is_meta_type:1;         // Sym is class of class

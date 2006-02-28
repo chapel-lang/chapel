@@ -36,8 +36,6 @@ BasicSym::BasicSym(void) :
   is_external(0),
   is_this(0),
   intent(0),
-  global_scope(0),
-  function_scope(0),
   is_structure(0),
   is_meta_type(0),
   is_value_type(0),

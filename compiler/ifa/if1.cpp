@@ -382,7 +382,6 @@ if1_closure(IF1 *p, Sym *f, Code *c, int nargs, Sym **args) {
     f->has.add(args[i]);
   f->code = c;
   f->is_fun = 1;
-  f->type_kind = Type_FUN;
   f->type = f;
   f->meta_type = f;
   p->allclosures.add(f);
@@ -622,6 +621,8 @@ print_syms(FILE *fp, Vec<Sym *> *syms, int start = 0) {
       continue;
     fputs("(SYMBOL ", fp);
     if1_dump_sym(fp, s);
+    if (s->nesting_depth)
+      fprintf(fp, " :NESTING_DEPTH %d", s->nesting_depth);
     if (s->type_kind)
       fprintf(fp, " :TYPE_KIND %s", type_kind_string[s->type_kind]);
     if (s->type) {
@@ -702,8 +703,6 @@ print_syms(FILE *fp, Vec<Sym *> *syms, int start = 0) {
       fputs(" :IS_CONSTANT true", fp);
     if (s->is_external)
       fputs(" :EXTERNAL true", fp);
-    if (s->global_scope)
-      fputs(" :GLOBAL true", fp);
     if (s->is_meta_type)
       fputs(" :META_TYPE true", fp);
     if (s->is_value_type)
@@ -722,7 +721,7 @@ static void
 if1_simple_dead_code_elimination(IF1 *p) {
   for (int i = 0; i < p->allsyms.n; i++) {
     Sym *s = p->allsyms.v[i];
-    if (s->global_scope || s->asymbol)
+    if (!s->nesting_depth || s->asymbol)
       mark_sym_live(s);
   }
   for (int i = 0; i < p->allclosures.n; i++) {
@@ -794,6 +793,34 @@ if1_flatten_code(Code *c, Code_kind k, Vec<Code *> *v) {
 }
 
 static void
+if1_fixup_nesting_internal(Code *code, Sym *f) {
+  switch (code->kind) {
+    case Code_IF: 
+    case Code_MOVE:
+    case Code_SEND:
+      for (int i = 0; i < code->lvals.n; i++)
+        if (code->lvals.v[i]->nesting_depth == LOCALLY_NESTED)
+          code->lvals.v[i]->nesting_depth = f->nesting_depth + 1;
+      for (int i = 0; i < code->rvals.n; i++)
+        if (code->rvals.v[i]->nesting_depth == LOCALLY_NESTED)
+          code->rvals.v[i]->nesting_depth = f->nesting_depth + 1;
+      break;
+    default:
+      for (int i = 0; i < code->sub.n; i++)
+        if1_fixup_nesting_internal(code->sub.v[i], f);
+      break;
+  }
+}
+
+static void
+if1_fixup_nesting(Code *code, Sym *f) {
+  for (int i = 0; i < f->has.n; i++)
+    if (f->has.v[i]->nesting_depth == LOCALLY_NESTED)
+      f->has.v[i]->nesting_depth = f->nesting_depth + 1;
+  if1_fixup_nesting_internal(code, f);
+}
+
+static void
 find_primitives(Primitives *prim, Code *c) {
   c->prim = prim->find(c);
   forv_Code(cc, c->sub)
@@ -816,8 +843,10 @@ if1_finalize(IF1 *p) {
     forv_Sym(s, p->allsyms) s->live = 1;
   for (int i = 0; i < p->allclosures.n; i++) {
     Sym *f = p->allclosures.v[i];
-    if (f->code)
+    if (f->code) {
       if1_flatten_code(f->code, Code_CONC, NULL);
+      if1_fixup_nesting(f->code, f);
+    }
   }
 }
 
@@ -835,6 +864,7 @@ if1_finalize_closure(IF1 *p, Sym *c) {
     mark_dead(p, c->code);
   }
   if1_flatten_code(c->code, Code_CONC, NULL);
+  if1_fixup_nesting(c->code, c);
 }
 
 void

@@ -120,19 +120,19 @@ Fun::collect_Vars(Vec<Var *> &avars, Vec<PNode *> *nodes) {
 }
 
 static void
-copy_var(Var **av, VarMap &vmap) {
+copy_var(Var **av, Fun *f) {
   Var *v = *av;
-  if (v->sym->function_scope) {
-    if (!(v = vmap.get(*av))) {
+  if (v->sym->nesting_depth == f->sym->nesting_depth + 1) {
+    if (!(v = f->vmap->get(*av))) {
       v = (*av)->copy();
-      vmap.put(*av, v);
+      f->vmap->put(*av, v);
     }
   }
   *av = v;
 }
 
 static PNode *
-copy_pnode(PNode *node, VarMap &vmap) {
+copy_pnode(PNode *node, Fun *f) {
   PNode *n = new PNode();
   n->code = node->code;
   n->rvals.copy(node->rvals);
@@ -144,11 +144,11 @@ copy_pnode(PNode *node, VarMap &vmap) {
   n->phy.copy(node->phy);
   n->prim = node->prim;
   for (int i = 0; i < n->rvals.n; i++)
-    copy_var(&n->rvals.v[i], vmap);
+    copy_var(&n->rvals.v[i], f);
   for (int i = 0; i < n->lvals.n; i++)
-    copy_var(&n->lvals.v[i], vmap);
+    copy_var(&n->lvals.v[i], f);
   for (int i = 0; i < n->tvals.n; i++)
-    copy_var(&n->tvals.v[i], vmap);
+    copy_var(&n->tvals.v[i], f);
   return n;
 }
 
@@ -164,19 +164,19 @@ Fun::copy() {
   Vec<PNode *> nodes;
 
   forv_PNode(n, fa_all_PNodes) {
-    PNode *p = copy_pnode(n, *f->vmap);
+    PNode *p = copy_pnode(n, f);
     nodes.add(p);
     f->nmap->put(n, p);
     for (int i = 0; i < n->phi.n; i++) {
       PNode *nn = n->phi.v[i];
-      PNode *pp = copy_pnode(nn, *f->vmap);
+      PNode *pp = copy_pnode(nn, f);
       nodes.add(pp);
       f->nmap->put(nn, pp);
       p->phi.v[i] = pp;
     }
     for (int i = 0; i < n->phy.n; i++) {
       PNode *nn = n->phy.v[i];
-      PNode *pp = copy_pnode(nn, *f->vmap);
+      PNode *pp = copy_pnode(nn, f);
       nodes.add(pp);
       f->nmap->put(nn, pp);
       p->phy.v[i] = pp;
@@ -193,12 +193,12 @@ Fun::copy() {
   f->positional_arg_positions.copy(positional_arg_positions);
   forv_MPosition(p, f->positional_arg_positions) {
     Var *v = args.get(p);
-    copy_var(&v, *f->vmap);
+    copy_var(&v, f);
     f->args.put(p, v);
   }
   f->rets.copy(rets);
   for (int i = 0; i < f->rets.n; i++)
-    copy_var(&f->rets.v[i], *f->vmap);
+    copy_var(&f->rets.v[i], f);
   for (int i = 0; i < f->vmap->n; i++)
     if (f->vmap->v[i].key)
       f->vmap->v[i].value->def = f->nmap->get(f->vmap->v[i].value->def);

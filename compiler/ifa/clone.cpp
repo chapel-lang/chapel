@@ -868,8 +868,7 @@ fixup_clone(Fun *f, Vec<EntrySet *> *ess) {
   }
   // fixup local variables
   forv_Var(v, f->fa_all_Vars)
-    if (v->sym->function_scope && (!v->sym->nesting_depth ||
-                                   v->sym->nesting_depth == f->sym->nesting_depth + 1))
+    if (v->sym->nesting_depth == f->sym->nesting_depth + 1)
       fixup_var(v, f, ess);
 }
 
@@ -953,7 +952,7 @@ log_test_fa(FA *fa) {
     }
     forv_Var(v, f->fa_all_Vars) {
       if (v->sym->log_line()) {
-        if (!v->sym->function_scope) {
+        if (!v->sym->nesting_depth) {
           gvars.set_add(v);
           continue;
         } else

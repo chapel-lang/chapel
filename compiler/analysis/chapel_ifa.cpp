@@ -324,12 +324,6 @@ base_type(Sym *s) {
   return unalias_type(s);
 }
 
-static void
-set_global_scope(Sym *s) {
-  s->function_scope = 0;
-  s->global_scope = 1;
-}
-
 static ASymbol *
 new_ASymbol(char *name) {
   ASymbol *s = new ASymbol;
@@ -479,10 +473,9 @@ finalize_symbols(IF1 *i) {
         make_meta_type(s);
     }
     if (s->is_constant || s->is_symbol)
-      set_global_scope(s);
-    else
-      if (s->type_kind)
-        set_global_scope(s);
+      s->nesting_depth = 0;
+    else if (s->type_kind)
+      s->nesting_depth = 0;
     if (s->asymbol && SYMBOL(s) && SYMBOL(s)->astType == SYMBOL_VAR) {
       VarSymbol *v = (VarSymbol*)SYMBOL(s);
       if (v->type && v->type != dtUnknown) {
@@ -780,9 +773,7 @@ static Sym *
 new_sym(char *name = 0, int global = 0) {
   Sym *s = new_ASymbol(name)->sym;
   if (!global)
-    s->function_scope = 1;
-  else
-    s->global_scope = 1;
+    s->nesting_depth = LOCALLY_NESTED;
   return s;
 }
 
@@ -817,7 +808,6 @@ map_const(IF1 *p, Immediate *imm) {
 static Sym *
 make_symbol(char *name) {
   Sym *s = if1_make_symbol(if1, name);
-  s->global_scope = 1;
   return s;
 }
 
@@ -845,19 +835,18 @@ map_baseast(BaseAST *s) {
       sym->asymbol = new_ASymbol(sym, basic);
       SYMBOL(sym) = sym;
       if (!sym->parentScope) {
-        sym->asymbol->sym->global_scope = 1;
+        sym->asymbol->sym->nesting_depth = 0;
       } else {
         switch (sym->parentScope->type) {
           default: assert(0);
           case SCOPE_INTRINSIC:
           case SCOPE_MODULE:
-            sym->asymbol->sym->global_scope = 1;
+            sym->asymbol->sym->nesting_depth = 0;
             break;
           case SCOPE_LETEXPR:
           case SCOPE_ARG:
           case SCOPE_LOCAL:
           case SCOPE_FORLOOP:
-            sym->asymbol->sym->function_scope = 1;
             sym->asymbol->sym->nesting_depth = sym->nestingDepth();
             break;
           case SCOPE_CLASS: // handled as the symbols appears in code
@@ -1120,7 +1109,7 @@ static void
 new_global_variable(Sym *&sym, char *name) {
   if (!sym)
     sym = new_sym(name, 1);
-  sym->global_scope = 1;
+  sym->nesting_depth = 0;
   if1_set_builtin(if1, sym, name);
 }
 
@@ -1646,7 +1635,7 @@ gen_assignment(CallExpr *assign) {
   if1_gen(if1, &assign->ainfo->code, lhs->ainfo->code);
   if1_gen(if1, &assign->ainfo->code, rhs->ainfo->code);
   Sym *rval = rhs->ainfo->rval;
-  if (!rval->function_scope) {
+  if (!rval->nesting_depth) {
     rval = new_sym();
     rval->ast = assign->ainfo;
     if1_move(if1, &assign->ainfo->code, rhs->ainfo->rval, rval, assign->ainfo);
@@ -1940,7 +1929,7 @@ init_function(FnSymbol *f) {
   s->ret = new_sym();
   s->ret->ast = ast;
   s->labelmap = new LabelMap;
-  set_global_scope(s);
+  s->nesting_depth = f->nestingDepth();
   return 0;
 }
 

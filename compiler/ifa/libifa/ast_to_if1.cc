@@ -1928,9 +1928,7 @@ build_init(IF1 *i) {
 static void
 finalize_sym(Sym *f, Sym *s) {
   if (s->in == f)
-    s->function_scope = 1;
-  else
-    assert(!s->function_scope);
+    s->nesting_depth = f->nesting_depth + 1;
   if (s->is_pattern)
     forv_Sym(ss, s->has)
       finalize_sym(f, ss);
@@ -1946,7 +1944,6 @@ finalize_fun_symbols(Sym *f, Code *code) {
     finalize_fun_symbols(f, c);
 }
 
-// Set Sym::function_scope and Sym::global_scope for flow analysis
 static void
 finalize_symbols(IF1 *i) {
   forv_Sym(f, i->allclosures) {
@@ -1960,10 +1957,10 @@ finalize_symbols(IF1 *i) {
   }
   forv_Sym(s, i->allsyms) {
     if (s->is_constant || s->is_symbol)
-      s->global_scope = 1;
+      s->nesting_depth = 0;
     else
       if (!s->in || s->in->is_module || s->type_kind)
-        s->global_scope = 1;
+        s->nesting_depth = 0;
   }
 }
 
@@ -2075,11 +2072,14 @@ ast_gen_if1(IF1 *i, Vec<ParseAST *> &av) {
   sym_nil_type->specializes.add(sym_object);
   sym_value->implements.add(sym_any);
   sym_value->specializes.add(sym_any);
-  sym_anyclass->implements.add(sym_any);
-  sym_anyclass->specializes.add(sym_any);
+
+  make_meta_type(sym_any);
+  sym_anytype = sym_any->meta_type;
+  sym_anytype->implements.add(sym_any);
+  sym_anytype->specializes.add(sym_any);
 
   sym_any->is_system_type = 1;
-  sym_anyclass->is_system_type = 1;
+  sym_anytype->is_system_type = 1;
   sym_value->is_system_type = 1;
   sym_object->is_system_type = 1;
   sym_nil_type->is_system_type = 1;

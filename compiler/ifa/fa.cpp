@@ -145,15 +145,15 @@ EntrySet::EntrySet(Fun *af) : fun(af), dfs_color(DFS_white), split(0), equiv(0) 
 
 AVar *
 make_AVar(Var *v, EntrySet *es) {
-  if (v->sym->function_scope || v->is_internal) {
-    if (es->fun && es->fun->sym->nesting_depth && v->sym->nesting_depth &&
+  assert(v->sym->nesting_depth >= 0);
+  if (v->sym->nesting_depth || v->is_internal) {
+    if (es->fun && es->fun->sym->nesting_depth && 
         v->sym->nesting_depth != es->fun->sym->nesting_depth + 1) {
       assert(es->fun->sym->nesting_depth >= v->sym->nesting_depth);
       return unique_AVar(v, es->display.v[v->sym->nesting_depth-1]);
     }
     return unique_AVar(v, es);
   }
-  assert(v->sym->global_scope);
   return unique_AVar(v, GLOBAL_CONTOUR);
 }
 
@@ -1078,7 +1078,7 @@ fill_tvals(Fun *fn, PNode *p, int n) {
   for (int i = 0; i < n; i++) {
     if (!p->tvals.v[i]) {
       Sym *s = new_Sym();
-      s->function_scope = 1;
+      s->nesting_depth = fn->sym->nesting_depth + 1;
       s->in = fn->sym;
       p->tvals.v[i] = new Var(s);
       p->tvals.v[i]->is_internal = 1;
@@ -1100,7 +1100,7 @@ prim_make(PNode *p, EntrySet *es, Sym *kind, int start, int ref) {
     AVar *av = make_AVar(v, es);
     if (!p->tvals.v[i]) {
       Sym *s = new_Sym();
-      s->function_scope = 1;
+      s->nesting_depth = es->fun->sym->nesting_depth + 1;
       s->is_lvalue = v->sym->is_lvalue;
       s->in = es->fun->sym;
       p->tvals.v[i] = new Var(s);
@@ -1150,7 +1150,7 @@ vector_elems(int rank, PNode *p, AVar *ae, AVar *elem, AVar *container, int n = 
       e = make_AVar(p->tvals.v[n-1], es);
     else {
       Sym *s = new_Sym();
-      s->function_scope = 1;
+      s->nesting_depth = es->fun->sym->nesting_depth + 1;
       assert(!e->var->sym->is_lvalue);
       s->in = es->fun->sym;
       Var *v = new Var(s);
@@ -1722,7 +1722,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
         p->tvals.fill(1);
         if (!p->tvals.v[0]) {
           Sym *s = new_Sym();
-          s->function_scope = 1;
+          s->nesting_depth = es->fun->sym->nesting_depth + 1;
           p->tvals.v[0] = new Var(s);
           s->var = p->tvals.v[0];
           p->tvals.v[0]->is_internal = 1;
@@ -2123,7 +2123,7 @@ fa_dump_types(FA *fa, FILE *fp) {
     Vec<Var *> vars;
     f->collect_Vars(vars);
     forv_Var(v, vars) {
-      if (v->sym->global_scope) {
+      if (!v->sym->nesting_depth) {
         gvars.set_add(v);
         continue;
       }

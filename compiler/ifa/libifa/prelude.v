@@ -4,7 +4,7 @@ in system __name "system";
 
 // simple builtin types
 
-type anyclass __name "anyclass";
+type anytype __name "anytype";
 type any __name "any";
 type module __name "module";
 type symbol __name "symbol";
@@ -80,7 +80,7 @@ reply: #reply __name "reply";
 // overloadable primitive operators
 
 __init(a:any)				   : a; 
-new(a:anyclass) __name "new_object"	   : { o: #__new a; o.__init; o };
+new(a:anytype) __name "new_object"	   : { o: #__new a; o.__init; o };
 operator(a:any, #".", b:symbol)		   : #__operator a #"." b;
 operator(a:any, #"*.", b:symbol)	   : #__operator a #"." b;
 operator(a:anynum, #"*", b:anynum)	   : #__operator a #"*" b;
