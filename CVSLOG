@@ -57611,3 +57611,43 @@ Log message:
 Modified files:
 	chapel/compiler/parser/: chapel.y 
 
+---------------------------------------------------------------------------
+
+02/28/06 13:13:59 -- shannon
+
+Log message:
+	Added the expand function for _adomains.
+	This function takes a variable number of
+	integers corresponding to the dimension of
+	the domain, and returns a new domain.
+	A negative argument to expand shrinks the
+	domain inward hereas a positive argument
+	expands it.
+	
+	For example, the following code:
+	
+	  d2 : domain(2) = [1..4, 1..4];
+	  writeln(d2.expand(-1, 3);
+	
+	will print:
+	
+	  [2..3, -2..7]
+	
+	Fixed the error message in the _adomains
+	interior function, and updated the
+	corresponding test output.  Added a couple
+	of tests for expand, and updated some
+	other tests.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/domains/shannon/: interiorError.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+Added files:
+	chapel/test/domains/shannon/: expand3D.chpl expand3D.good 
+	                              expandError.chpl 
+	                              expandError.compopts 
+	                              expandError.good 
+
