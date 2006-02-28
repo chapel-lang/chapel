@@ -57558,3 +57558,14 @@ Modified files:
 	                      sym.cpp sym.h 
 	chapel/compiler/ifa/libifa/: ast_to_if1.cc prelude.v 
 
+---------------------------------------------------------------------------
+
+02/28/06 08:54:57 -- jplevyak
+
+Log message:
+	Add 2 .futures with comments about what I think needs to be done.
+
+Added files:
+	chapel/test/functions/jplevyak/: introduce-dispatch-1.future 
+	chapel/test/types/type_variables/jplevyak/: where-3.future 
+
