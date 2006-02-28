@@ -57651,3 +57651,18 @@ Added files:
 	                              expandError.compopts 
 	                              expandError.good 
 
+---------------------------------------------------------------------------
+
+02/28/06 14:45:03 -- deitz
+
+Log message:
+	Fixed tests to take into account the new interpretation of 1-tuples.
+	This fixes these regressions.
+
+Modified files:
+	chapel/test/functions/deitz/iterators/: 
+	                                        test_instantiate_iterator3.chpl 
+	                                        test_instantiate_iterator3.good 
+	                                        test_instantiate_iterator3a.chpl 
+	                                        test_instantiate_iterator3a.good 
+
