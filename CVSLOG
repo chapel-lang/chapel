@@ -57544,3 +57544,17 @@ Log message:
 Modified files:
 	chapel/test/trivial/preston/: tuple.future 
 
+---------------------------------------------------------------------------
+
+02/27/06 17:52:46 -- jplevyak
+
+Log message:
+	Rework the way nested variables are handled.  Sym::nesting_depth is
+	now set for all Sym's, and subsumes Sym::global_scope and Sym::function_scope.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: cg.cpp clone.cpp fa.cpp fun.cpp if1.cpp 
+	                      sym.cpp sym.h 
+	chapel/compiler/ifa/libifa/: ast_to_if1.cc prelude.v 
+
