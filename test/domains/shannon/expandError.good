@@ -1,0 +1,3 @@
+domain(3): 		[1..4, 1..4, 1..4]
+expand(-1, -3, -5): 	Halt reached: expandError.chpl:5
+***Error: Degenerate dimension created in dimension 2***
