@@ -57744,3 +57744,14 @@ Removed files:
 	chapel/test/arrays/deitz/: new_class_trial1.chpl 
 	                           new_class_trial1.good 
 
+---------------------------------------------------------------------------
+
+03/01/06 09:10:13 -- jplevyak
+
+Log message:
+	new test case for copy of typesdef (fails).
+
+Added files:
+	chapel/test/types/typedefs/jplevyak/: copy_typedef-1.chpl 
+	                                      copy_typedef-1.good 
+
