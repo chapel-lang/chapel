@@ -78,6 +78,10 @@ static void codegen_header(void) {
     if (char* pragma = sym->hasPragma("rename"))
       sym->cname = stringcpy(pragma+7);
 
+    if (VarSymbol* vs = dynamic_cast<VarSymbol*>(ast))
+      if (vs->immediate)
+        continue;
+
     if (sym->parentScope->type < SCOPE_MODULE)
       continue;
 

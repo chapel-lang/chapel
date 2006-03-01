@@ -1564,12 +1564,16 @@ VarSymbol *new_IntSymbol(long b) {
   if (s)
     return s;
   s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), dtInteger);
+  rootScope->define(s);
   char n[80];
   sprintf(n, "%ld", b);
   s->cname = dupstr(n);
   s->immediate = new Immediate;
   *s->immediate = imm;
+  s->literalType = new_LiteralType(s);
   uniqueConstantsHash.put(s->immediate, s);
+  if (!dtInteger->defaultValue)
+    dtInteger->defaultValue = new_IntSymbol(0);
   return s;
 }
 

@@ -13,10 +13,8 @@ _chpl_complex.chpl:8: fwrite, f : file, x : complex
 _chpl_htuple.chpl:22: fwrite, f : file, val : _htuple
 _chpl_adomain.chpl:118: fwrite, f : file, x : _adomain
 _chpl_adomain.chpl:175: fwrite, f : file, x : _aarray
-_chpl_data.chpl:46: fwrite, f : file, val : _fdata
 _chpl_seq.chpl:156: fwrite, f : file, s : seq
 _chpl_seq.chpl:236: fwrite, f : file, s : _aseq
-fwrite, f : file, val : _tuple2
 prelude.chpl:3: fwrite, f : file, val : object
 prelude.chpl:4: fwrite, f : file, val : value
 prelude.chpl:10: fwrite, f : file, val : _ddata
@@ -31,7 +29,6 @@ _chpl_adomain.chpl:125: fwrite, f : file, val : _aarray_info
 _chpl_seq.chpl:1: fwrite, f : file, val : _seqNode
 record_type_hierarchy-2.chpl:1: fwrite, f : file, val : C
 record_type_hierarchy-2.chpl:5: fwrite, f : file, val : D
-fwrite, f : file, val : _tuple2
 record_type_hierarchy-2.chpl:16: unresolved call 'f'
 note: candidates are:
 record_type_hierarchy-2.chpl:10: f, a : C

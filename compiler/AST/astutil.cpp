@@ -50,9 +50,11 @@ class PreCollectAST : public Traversal {
         }
     }
     if (SymExpr* sym = dynamic_cast<SymExpr*>(expr)) {
-      if (dynamic_cast<UnresolvedSymbol*>(sym->var)) {
+      if (dynamic_cast<UnresolvedSymbol*>(sym->var))
         asts->add(sym->var);
-      }
+      if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var))
+        if (var->immediate)
+          asts->add(sym->var);
     }
   }
 };

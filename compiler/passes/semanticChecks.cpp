@@ -59,7 +59,7 @@ check_returns(FnSymbol* fn) {
 
 static void
 check_parsed_vars(VarSymbol* var) {
-  if (var->isParam()) {
+  if (var->isParam() && !var->immediate) {
     if (!var->defPoint->init &&
         (dynamic_cast<FnSymbol*>(var->defPoint->parentSymbol) ||
          dynamic_cast<ModuleSymbol*>(var->defPoint->parentSymbol)) &&
@@ -159,7 +159,8 @@ check_normalized(void) {
     if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
       check_normalized_calls(a);
     } else if (VarSymbol* a = dynamic_cast<VarSymbol*>(ast)) {
-      check_normalized_vars(a);
+      if (!a->immediate)
+        check_normalized_vars(a);
     } else if (ArgSymbol* a = dynamic_cast<ArgSymbol*>(ast)) {
       check_normalized_vars(a);
     } else if (FnSymbol* a = dynamic_cast<FnSymbol*>(ast)) {
@@ -182,6 +183,8 @@ check_resolved_calls(CallExpr* call) {
 
 static void
 check_resolved_vars(VarSymbol* var) {
+  if (var->immediate)
+    return;
   if (!dynamic_cast<TypeSymbol*>(var->defPoint->parentSymbol))
     if (var->isParam())
       USR_FATAL(var,

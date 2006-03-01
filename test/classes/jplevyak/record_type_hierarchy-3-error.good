@@ -7,7 +7,6 @@ _chpl_base.chpl:3: fwrite, f : file, val : _unused_class
 _chpl_base.chpl:9: fwrite, f : file, val : _methodTokenType
 _chpl_closure.chpl:1: fwrite, f : file, val : closure
 _chpl_complex.chpl:8: fwrite, f : file, x : complex
-_chpl_data.chpl:46: fwrite, f : file, val : _fdata
 _chpl_file.chpl:112: fwrite, f : file, val : int64
 _chpl_file.chpl:145: fwrite, f : file, val : float64
 _chpl_file.chpl:165: fwrite, f : file, val : string
@@ -20,8 +19,6 @@ _chpl_seq.chpl:1: fwrite, f : file, val : _seqNode
 _chpl_seq.chpl:236: fwrite, f : file, s : _aseq
 error: '_tmp' has no type
 fail: program does not type
-fwrite, f : file, val : _tuple2
-fwrite, f : file, val : _tuple2
 note: candidates are:
 note: candidates are:
 prelude.chpl:10: fwrite, f : file, val : _ddata

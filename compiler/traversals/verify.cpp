@@ -117,6 +117,10 @@ static void verifyDefPoint(Symbol* sym) {
   if (sym->parentScope && sym->parentScope->type == SCOPE_INTRINSIC)
     return;
 
+  if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym))
+    if (var->immediate)
+      return;
+
   if (sym != sym->defPoint->sym)
     INT_FATAL(sym, "Incorrect defPoint for symbol '%s'", sym->name);
 }

@@ -197,5 +197,3 @@ function fwrite(f : file, x : _aarray) {
   } else
     halt("Cannot write out arrays of more than two dimensions");
 }
-
-var _hack_x : (integer, integer) = (1, 2);
