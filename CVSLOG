@@ -57755,3 +57755,14 @@ Added files:
 	chapel/test/types/typedefs/jplevyak/: copy_typedef-1.chpl 
 	                                      copy_typedef-1.good 
 
+---------------------------------------------------------------------------
+
+03/01/06 10:29:14 -- deitz
+
+Log message:
+	Cleanup of arithmetic domain iterator function.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_seq.chpl 
+	chapel/test/arrays/deitz/: test_array_2Da.chpl 
+
