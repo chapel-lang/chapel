@@ -351,7 +351,7 @@ void qsort_pointers(void **left, void **right);
 void initialize_Sym_for_fa(Sym *s);
 int function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> &args,
                       int is_closure, Partial_kind partial);
-void add_var_constraint(AVar *av);
+void add_var_constraint(AVar *av, Sym *s = 0);
 
 template<class C> void
 qsort_by_id(C **left, C **right) {

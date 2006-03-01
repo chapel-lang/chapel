@@ -811,11 +811,6 @@ make_symbol(char *name) {
   return s;
 }
 
-static Sym *
-constructor_name(Type *t) {
-  return t->defaultConstructor->asymbol->sym;
-}
-
 static void
 map_baseast(BaseAST *s) {
   Symbol *sym = dynamic_cast<Symbol *>(s);
@@ -2355,19 +2350,13 @@ static void
 init_transfer_function(PNode *pn, EntrySet *es) {
   AVar *tav = make_AVar(pn->rvals.v[2], es);
   AVar *result = make_AVar(pn->lvals.v[0], es);
-  int type_expr = pn->rvals.n > 3;
-  if (type_expr)
-    tav = make_AVar(pn->rvals.v[3], es);
   forv_CreationSet(tt, tav->out->sorted) {
-    Sym *type_sym = !type_expr ? tt->sym->meta_type : tt->sym;
+    Sym *type_sym = tt->sym->meta_type;
     if (type_sym->is_meta_type)
       type_sym = type_sym->meta_type;
     Type *type = dynamic_cast<Type*>(type_sym->asymbol ? SYMBOL(type_sym) : 0);
     if (!type) {
-      if (!type_expr)
-        creation_point(result, type_sym);
-      else
-        update_gen(result, make_AType(tt));
+      creation_point(result, type_sym);
     } else {
       if (type_sym == sym_unknown_type) {
         type = dtUnspecified;
@@ -2375,30 +2364,19 @@ init_transfer_function(PNode *pn, EntrySet *es) {
       }
       if (type->defaultValue) {
         Sym *val = get_defaultVal(type);
-        Var *v = val->var;
-        if (!v)
-          v = val->var = new Var(val);
-        AVar *av = make_AVar(v, es);
-        add_var_constraint(av);
-        flow_vars(av, result);
+        if (!val->var) val->var = new Var(val);
+        AVar *vval = make_AVar(val->var, es);
+        add_var_constraint(vval);
+        flow_vars(vval, result);
       } else if (type->defaultConstructor) {
-        if (!type_expr) {
-          Sym *c = constructor_name(type);
-          Var *cvar = c->var;
-          if (!cvar)
-            cvar = c->var = new Var(c);
-          AVar *cavar = make_AVar(cvar, es);
-          AType *ctype = make_abstract_type(c);
-          CreationSet *cs = ctype->v[0];
-          update_gen(cavar, ctype);
-          Vec<AVar *> args;
-          function_dispatch(pn, es, cavar, cs, args, 0, Partial_NEVER);
-        } else
-          update_gen(result, make_AType(tt));
-#if 0
-      } else if (type == dtUnknown) {
-        update_gen(result, make_abstract_type(sym_unknown_type));
-#endif
+        fill_tvals(es->fun, pn, 1);
+        AVar *cval = make_AVar(pn->tvals.v[0], es);
+        Sym *c = type->defaultConstructor->asymbol->sym;
+        AType *ctype = make_abstract_type(c);
+        CreationSet *cs = ctype->v[0];
+        update_gen(cval, ctype);
+        Vec<AVar *> args;
+        function_dispatch(pn, es, cval, cs, args, 0, Partial_NEVER);
       } else
         fail("Type without defaultValue or defaultConstructor");
     }

@@ -1042,8 +1042,9 @@ flow_var_type_permit(AVar *v, Sym *s) {
 }
 
 void
-add_var_constraint(AVar *av) {
-  Sym *s = av->var->sym;
+add_var_constraint(AVar *av, Sym *s) {
+  if (!s)
+    s = av->var->sym;
   assert(s->type_kind != Type_VARIABLE);
   if (s->type && !s->is_pattern) {
     if (s->is_external && 

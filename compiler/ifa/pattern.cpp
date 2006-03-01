@@ -25,6 +25,7 @@
 //  ap - actual non-cannonical, positional or named position
 
 typedef Map<Fun *, Match *> MatchMap;
+typedef MapElem<Fun *, Match *> MatchElem;
 
 class Matcher {
  public:
@@ -193,26 +194,32 @@ Matcher::Matcher(AVar *asend, AVar *aarg0, int ais_closure, Partial_kind apartia
   all_matches = 0;
   
   // use summary information from previous analysis iterations to restrict the search
+  if (aarg0->out->n == 1 && aarg0->out->v[0]->sym->fun) {
+    all_matches = new Vec<Fun *>;
+    all_matches->set_add(aarg0->out->v[0]->sym->fun);
+    all_positions = 0;
+  } else {
 #ifdef CHECK_CALLEE_CACHE
-  if (send->var->def->callees) {
-    all_matches = new Vec<Fun *>(send->var->def->callees->funs);
-    all_positions = &send->var->def->callees->arg_positions;
-  } else 
+    if (send->var->def->callees) {
+      all_matches = new Vec<Fun *>(send->var->def->callees->funs);
+      all_positions = &send->var->def->callees->arg_positions;
+    } else 
 #endif
-  {
-    if (aarg0->out->n == 1)
-      all_matches = send->var->def->code->ast->visible_functions(aarg0->out->v[0]->sym);
-    else {
-      forv_CreationSet(cs, *aarg0->out) {
-        Vec<Fun *> *v = send->var->def->code->ast->visible_functions(cs->sym);
-        if (v) {
-          if (!all_matches)
-            all_matches = new Vec<Fun *>;
-          all_matches->set_union(*v);
+    {
+      if (aarg0->out->n == 1)
+        all_matches = send->var->def->code->ast->visible_functions(aarg0->out->v[0]->sym);
+      else {
+        forv_CreationSet(cs, *aarg0->out) {
+          Vec<Fun *> *v = send->var->def->code->ast->visible_functions(cs->sym);
+          if (v) {
+            if (!all_matches)
+              all_matches = new Vec<Fun *>;
+            all_matches->set_union(*v);
+          }
         }
       }
+      all_positions = 0;
     }
-    all_positions = 0;
   }
   ast = asend->var->def->code->ast;
 }
@@ -935,6 +942,17 @@ coercion_uses(Match **am, MPosition &app, Vec<CreationSet*> &args) {
   app.pop();
 }
 
+// clear out values needed only while considering a particular csargs
+static void
+clear_matches(MatchMap &match_map) {
+  form_Map(MatchElem, x, match_map) {
+    x->value->order_substitutions.clear();
+    x->value->default_args.clear();
+    x->value->generic_substitutions.clear();
+    x->value->coercion_substitutions.clear();
+  }
+}
+
 void
 Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &app, 
                             Vec<Fun *> &local_matches, 
@@ -1063,6 +1081,7 @@ Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &app,
   qsort_by_id(matches);
   log_dispatch_funs(*this, matches);
   result.set_union(matches);
+  clear_matches(match_map);
 }
 
 void
