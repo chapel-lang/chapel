@@ -57831,3 +57831,15 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+03/01/06 15:36:34 -- jplevyak
+
+Log message:
+	change ddata to always be accessed 0-based.
+	change array primitives to acacess ddata 0-based (init_elts)
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+	chapel/modules/standard/: _chpl_base.chpl 
+
