@@ -57766,3 +57766,17 @@ Modified files:
 	chapel/modules/standard/: _chpl_adomain.chpl _chpl_seq.chpl 
 	chapel/test/arrays/deitz/: test_array_2Da.chpl 
 
+---------------------------------------------------------------------------
+
+03/01/06 11:19:40 -- jplevyak
+
+Log message:
+	Fix for test_varargs5.chpl: clear temporaries in MatchMap.
+	Fixed and cleaned up handling of INIT primitive:
+	  - use constructor instead of constructor name from provided type
+	  - remove old cases from previous incarnations
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: fa.cpp fa.h pattern.cpp 
+
