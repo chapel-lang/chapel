@@ -57693,3 +57693,54 @@ Modified files:
 Removed files:
 	chapel/modules/standard/: _chpl_data.chpl 
 
+---------------------------------------------------------------------------
+
+03/01/06 09:03:48 -- deitz
+
+Log message:
+	Improved implementation of _ddata class, moving it out of the prelude
+	and putting it in _chpl_base.  Codegen is now making use of the same
+	primitives that analysis and the interpreter are using.  I had
+	difficulty with initializing _ddata of records because we can't just
+	make each vector element be the representative element.  The
+	interpreter must call the default constructor for records with no
+	arguments?  I added code to reassign a new record to each element in
+	the _chpl_base module.
+	
+	Fixed a bug in which a field with a complicated type resulted in an
+	odd normalized form.  Added a test case to capture this.
+	
+	Improved the arithmetic array implementation greatly, adding support
+	for arrays of arbitrary rank and not limiting their size to 128
+	elements.
+	
+	We need to consider how arrays should be written and how they should
+	be stored.  We currently store and traverse them column major, but we
+	print them row major.  In MatLab, a 1D array is printed as a column,
+	and in that case, column major makes more sense to me.  I have a small
+	preference to print a 1D array as a column.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/passes/: cleanup.cpp codegen.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_base.chpl 
+	                          prelude.chpl 
+	chapel/runtime/include/: array.h 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/domains/roxana/helper/: test_hash_table2.chpl 
+	                                    test_hash_table3.chpl 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+	chapel/test/memory/shannon/: jacobi.good printMemTable.chpl 
+	                             printMemTable.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+	                                         test_datablock3.chpl 
+Added files:
+	chapel/test/arrays/deitz/: test_array_3D.chpl test_array_3D.good 
+	chapel/test/classes/deitz/: test_class5.chpl test_class5.good 
+	chapel/test/demo/review_060130/: iterators.future 
+Removed files:
+	chapel/test/arrays/deitz/: new_class_trial1.chpl 
+	                           new_class_trial1.good 
+
