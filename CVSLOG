@@ -57805,3 +57805,18 @@ Modified files:
 	chapel/test/domains/roxana/helper/: test_hash_table1.chpl 
 	                                    test_hash_table1.future 
 
+---------------------------------------------------------------------------
+
+03/01/06 13:34:41 -- jplevyak
+
+Log message:
+	cleanup handling of the method_token and setter_token
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: fa.cpp fa.h 
+	chapel/compiler/ifa/libifa/: Makefile Makefile.cg 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+
