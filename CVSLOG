@@ -57666,3 +57666,30 @@ Modified files:
 	                                        test_instantiate_iterator3a.chpl 
 	                                        test_instantiate_iterator3a.good 
 
+---------------------------------------------------------------------------
+
+02/28/06 17:36:05 -- deitz
+
+Log message:
+	Made collect_asts return literals, VarSymbols with immediate set, such
+	as the VarSymbol 1 and 2.
+	
+	Set the literalType of literal symbols.
+	
+	Removed _chpl_data module which contained the fake data class.
+	Removed _hack_x tuple from _chpl_adomain.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp symbol.cpp type.cpp 
+	chapel/compiler/passes/: codegen.cpp filesToAST.cpp 
+	                         semanticChecks.cpp 
+	chapel/compiler/traversals/: verify.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+Removed files:
+	chapel/modules/standard/: _chpl_data.chpl 
+
