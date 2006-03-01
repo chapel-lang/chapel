@@ -1,0 +1,63 @@
+all
+
+What does this test mean?  Should this be legal?  Should there be an error?
+
+I guess my problem is that I don't really understand it.  
+I can see 2 meanings:  either the user has a generic and
+wants to use it for cloning when they don't specify the
+type variable binding (t defaults to dtAny), or they want
+to have instance variables bind the type variable in constructors
+automatically (a la a faked-up default/additional argument).
+
+construct_C(type t, var f : ?tt) where t == tt 
+
+and where the order doesn't matter, so that we can get
+f first, and that binds t...
+
+Given the ambiguity and the questionable utility, I say
+we drop this for now.   We have bigger fish to fry.
+
+john
+
+
+On Tue, Feb 28, 2006 at 09:06:04AM -0800, Steve Deitz wrote:
+> This test captured the idea in the spec that the type variables to a class
+> or record could be inferred.  I'm not crazy about doing this in the first 
+> place.  Maybe this should just be an error?  If the user wanted to infer 
+> the type, the type of f could be determined later by writing f.type.  Do 
+> you see any utility in this test or should we make it an error?
+> 
+> Steve
+> 
+> On Tue, 28 Feb 2006, John Plevyak wrote:
+> 
+> >
+> >
+> >Steve,
+> >
+> >I am trying to work through the regressions.
+> >
+> >Given this code:
+> >
+> >class C {
+> > type t;
+> > var f : t;
+> >}
+> >
+> >var c = C(f = 1);
+> >
+> >writeln(c);
+> >
+> >
+> >How do you envision that we handle this?
+> >
+> >We could make t default to dtAny, or we could make
+> >the constructor bind t when f is bound, and then
+> >somehow cause that to not require an actual argument
+> >to t (I can hack up a fake default argument and then
+> >use a modified defaults wrapper).
+> >
+> >Perhaps handle it in some other way?
+> >
+> >john
+
