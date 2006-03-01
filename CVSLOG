@@ -57793,3 +57793,15 @@ Added files:
 	chapel/test/types/type_variables/deitz/: 
 	                                         test_infer_class2.future 
 
+---------------------------------------------------------------------------
+
+03/01/06 13:07:19 -- jplevyak
+
+Log message:
+	update test case to use ddata.
+	now it fails at runtime.
+
+Modified files:
+	chapel/test/domains/roxana/helper/: test_hash_table1.chpl 
+	                                    test_hash_table1.future 
+
