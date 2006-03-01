@@ -21,35 +21,16 @@ class _adomain : _domain {
     for i in range(dim) do
       yield i;
 
-  iterator _forall_help(param rank : integer) : (rank*integer) {
-    if rank > 1 {
-      for i in _forall(rank) do
-        for x in _forall_help(rank-1) {
-          var result : (rank*integer);
-          for j in 1..rank-1 do
-            result(j) = x(j);
-          result(rank) = i;
-          yield result;
-        }
-    } else if rank == 1 {
-      var result : 1*integer;
-      for i in _forall(1) {
-        result(1) = i;
-        yield result;
-      }
-    }
-  }
-
   // eventually this should be an iterator with inferred result
   function _forall() {
     if rank == 1 {
       var s : seq of integer;
-      for i in _forall_help(rank) do
-        s._append_in_place(i(1));
+      for i in ranges(1) do
+        s._append_in_place(i);
       return s;
     } else {
       var s : seq of (rank*integer);
-      for i in _forall_help(rank) do
+      for i in _cross(rank, ranges) do
         s._append_in_place(i);
       return s;
     }

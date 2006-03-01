@@ -244,3 +244,28 @@ pragma "inline" function string.this(s: _aseq)
     return __primitive("string_strided_select", this, s._low, s._high, s._stride);
   else
     return __primitive("string_select", this, s._low, s._high);
+
+iterator _cross(param rank : integer, seqs) : (rank*integer) {
+  if rank < 2 {
+    halt("cross requires tuple of rank of 2 or greater");
+  } else if (rank == 2) {
+    var result : (rank*integer);
+    for i2 in seqs(2) {
+      for i1 in seqs(1) {
+        result(1) = i1;
+        result(2) = i2;
+        yield result;
+      }
+    }
+  } else {
+    var result : (rank*integer);
+    for i in seqs(rank) {
+      for is in _cross(rank-1, seqs) {
+        for j in 1..rank-1 do
+          result(j) = is(j);
+        result(rank) = i;
+        yield result;
+      }
+    }
+  }
+}
