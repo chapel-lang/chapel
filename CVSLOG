@@ -57820,3 +57820,14 @@ Modified files:
 	                               record_type_hierarchy-3-error.good 
 	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
 
+---------------------------------------------------------------------------
+
+03/01/06 13:37:29 -- jplevyak
+
+Log message:
+	Change array indexing primitives to work with FORTRAN numbering (from 1).
+	Change assert to a user_error (dumps to the interpreter prompt).
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+
