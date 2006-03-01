@@ -3,6 +3,8 @@ var s : integer = 10;
 --read(s);
 var table : _ddata(integer) = _ddata(integer, s);
 
+table.init();
+
 for i in 1..s {
   if (table(i-1) == 0) {
     table(i-1) = i;

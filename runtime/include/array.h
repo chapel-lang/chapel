@@ -5,9 +5,19 @@
 #include "chpltypes.h" /* only needed while _DECL_ARRAY is instantiated here */
 #include "domain.h"
 
-#define _data_construct(t, size) _chpl_malloc(size, sizeof(t), "_data")
-#define _data_set(x, i, v) (*x)[i] = v
-#define _data_get(x, i) ((*x)[i])
+#define _chpl_array_index(x, i) ((x)->_data[i])
+#define _chpl_array_set(x, i, v) ((x)->_data[i] = v)
+#define _chpl_array_init(type, x, size, v)                      \
+  {                                                             \
+    (x)->_data = _chpl_malloc(size, sizeof(type), "_data");     \
+    int _a_i;                                                   \
+    for (_a_i = 0; _a_i < size; _a_i++)                         \
+      (x)->_data[_a_i] = v;                                     \
+  }
+
+// #define _data_construct(t, size) _chpl_malloc(size, sizeof(t), "_data")
+// #define _data_set(x, i, v) (*x)[i] = v
+// #define _data_get(x, i) ((*x)[i])
 
 typedef struct __arr_perdim {
   int off;

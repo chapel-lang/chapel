@@ -1,9 +1,9 @@
 _chpl_adomain.chpl:10: fwrite, f : file, val : _domain
 _chpl_adomain.chpl:118: fwrite, f : file, x : _adomain
-_chpl_adomain.chpl:125: fwrite, f : file, val : _aarray_info
-_chpl_adomain.chpl:175: fwrite, f : file, x : _aarray
+_chpl_adomain.chpl:164: fwrite, f : file, x : _aarray
 _chpl_base.chpl:11: fwrite, f : file, val : _setterTokenType
 _chpl_base.chpl:3: fwrite, f : file, val : _unused_class
+_chpl_base.chpl:85: fwrite, f : file, val : _ddata
 _chpl_base.chpl:9: fwrite, f : file, val : _methodTokenType
 _chpl_closure.chpl:1: fwrite, f : file, val : closure
 _chpl_complex.chpl:8: fwrite, f : file, x : complex
@@ -21,8 +21,7 @@ error: '_tmp' has no type
 fail: program does not type
 note: candidates are:
 note: candidates are:
-prelude.chpl:10: fwrite, f : file, val : _ddata
-prelude.chpl:30: fwrite, f : file, val : CFILEPTR
+prelude.chpl:10: fwrite, f : file, val : CFILEPTR
 prelude.chpl:3: fwrite, f : file, val : object
 prelude.chpl:4: fwrite, f : file, val : value
 record_type_hierarchy-3-error.chpl:10: f, a : D

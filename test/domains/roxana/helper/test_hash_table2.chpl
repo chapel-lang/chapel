@@ -3,6 +3,9 @@ class HashTable {
   var table: _ddata(integer) = _ddata(integer, 20); -- limitation
     -- you currently cannot use 'size' here
     -- eventually you may be able to especially if size is a param
+  function initialize() {
+    table.init();
+  }
 }  
 
 var s1 : integer = 10;

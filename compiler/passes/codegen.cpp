@@ -100,6 +100,7 @@ static void codegen_header(void) {
     cnames.put(sym->cname, 1);
 
     if (TypeSymbol* typeSymbol = dynamic_cast<TypeSymbol*>(sym)) {
+      //      if (!typeSymbol->hasPragma("data class"))
       typeSymbols.add(typeSymbol);
     } else if (FnSymbol* fnSymbol = dynamic_cast<FnSymbol*>(sym)) {
       fnSymbols.add(fnSymbol);

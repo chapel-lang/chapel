@@ -1,4 +1,5 @@
 var d : _ddata(integer) = _ddata(integer, 3);
+d.init();
 
 d(0) = 1;
 d(1) = 2;

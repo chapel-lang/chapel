@@ -381,7 +381,7 @@ static void build_constructor(ClassType* ct) {
     Type* type = tmp->type;
     Expr* exprType = tmp->defPoint->exprType;
     if (exprType)
-      exprType = exprType->copy();
+      exprType->remove();
     Expr* init = tmp->defPoint->init;
     if (init)
       init->remove();
@@ -398,8 +398,10 @@ static void build_constructor(ClassType* ct) {
   reset_file_info(fn, ct->symbol->lineno, ct->symbol->filename);
   ct->symbol->defPoint->parentStmt->insertBefore(new DefExpr(fn));
   //  ct->methods.add(fn);
-  if (ct->symbol->hasPragma("data class"))
-    fn->addPragma("rename _data_construct");
+//   if (ct->symbol->hasPragma("data class")) {
+//     fn->addPragma("rename _data_construct");
+//     fn->addPragma("no codegen");
+//   }
   fn->typeBinding = ct->symbol;
 
   fn->_this = new VarSymbol("this", ct);

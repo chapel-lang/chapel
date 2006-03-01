@@ -794,6 +794,10 @@ void ClassType::codegenDef(FILE* outfile) {
       }
     }
   }
+  if (symbol->hasPragma("data class")) {
+    fields.v[1]->type->codegen(outfile);
+    fprintf(outfile, "* _data;\n");
+  }
   if (!printedSomething) {
     fprintf(outfile, "int _emptyStructPlaceholder;\n");
   }

@@ -122,54 +122,43 @@ function fwrite(f : file, x : _adomain) {
   fwrite(f, "]");
 }
 
-record _aarray_info {
-  var _off : integer;
-  var _blk : integer;
-}
-
 class _aarray : value {
   type elt_type;
   param rank : integer;
 
   var dom : _adomain(rank);
 
-  var info : _ddata(_aarray_info) = _ddata(_aarray_info, 16);
+  var info : (rank*2*integer);
   var size : integer;
-  var data : _ddata(elt_type) = _ddata(elt_type, 128);
+  var data : _ddata(elt_type);
+
+  function off(dim : integer) var
+    return info(dim)(1);
+
+  function blk(dim : integer) var
+    return info(dim)(2);
 
   function initialize() {
-    info.init();
-    data.init();
     if dom == nil then return;
-    var tmp : _aarray_info;
-    tmp._off = dom.range(rank)._low;
-    tmp._blk = 1;
-    info(rank-1) = tmp;
-    var i : integer = rank-2;
-    while i >= 0 {
-      var tmp4 : _aarray_info;
-      tmp4._off = dom.range(i+1)._low;
-      tmp4._blk = info(i+1)._blk *
-                    ((dom.range(i+2)._high - dom.range(i+2)._low + 1)
-                      / dom.range(i+2)._stride);
-      info(i) = tmp4;
-      i -= 1;
-    }
-    size = info(0)._blk *
-             ((dom.range(1)._high - dom.range(1)._low + 1)
-               / dom.range(1)._stride);
+    for dim in 1..rank do
+      off(dim) = dom.range(dim)._low;
+    blk(rank) = 1;
+    for dim in 1..rank-1 by -1 do
+      blk(dim) = blk(dim+1) * dom.range(dim+1).length;
+    size = blk(1) * dom.range(1).length;
+    data = _ddata(elt_type, size);
+    data.init();
   }
 
-  function this(ij : 2*integer) var : elt_type
-    return data((ij(1) - info(0)._off) * info(0)._blk +
-                (ij(2) - info(1)._off) * info(1)._blk);
+  function this(ind : (rank*integer)) var : elt_type {
+    var sum : integer;
+    for i in 1..rank do
+      sum += (ind(i) - off(i)) * blk(i);
+    return data(sum);
+  }
 
-  function this(i : integer, j : integer) var : elt_type
-    return data((i - info(0)._off) * info(0)._blk +
-                (j - info(1)._off) * info(1)._blk);
-
-  function this(i : integer) var : elt_type
-    return data((i - info(0)._off) * info(0)._blk);
+  function this(ind : integer ...?rank) var : elt_type
+    return this(ind);
 }
 
 function fwrite(f : file, x : _aarray) {
