@@ -302,8 +302,6 @@ class FA : public gc {
   Vec<AVar *> global_avars;
   ChainHashMap<char*, StringHashFns, RegisteredPrim*> primitive_transfer_functions;
 
-  AVar *method_token;
-  AVar *setter_token;
   bool permit_boxing;
   bool no_unused_instance_variables;
   int array_index_base;
@@ -311,8 +309,7 @@ class FA : public gc {
   int num_constants_per_variable;
 
   FA(PDB *apdb) : pdb(apdb), cdb(0), patterns(0), top_edge(0),
-    method_token(0), setter_token(0), permit_boxing(0),
-    no_unused_instance_variables(0),
+    permit_boxing(0), no_unused_instance_variables(0),
     array_index_base(0), tuple_index_base(0), num_constants_per_variable(1) {}
 
   int analyze(Fun *f);

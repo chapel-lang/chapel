@@ -1219,28 +1219,9 @@ make_closure(AVar *result) {
   int add = !cs->vars.n;
   PNode *partial_application = result->var->def;
   EntrySet *es = (EntrySet*)result->contour;
-  if (partial_application->prim) { // apply and period
-    if (pn->prim == prim_setter && fa->setter_token) {
-      pn->tvals.fill(4);
-      make_closure_var(partial_application->rvals.v[4], es, cs, result, add, 0);
-      make_closure_var(partial_application->rvals.v[3], es, cs, result, add, 1);
-      make_closure_var(fa->setter_token->var, es, cs, result, add, 2);
-      make_closure_var(partial_application->rvals.v[1], es, cs, result, add, 3);
-    } else if (pn->prim == prim_period && fa->method_token) {
-      pn->tvals.fill(3);
-      make_closure_var(partial_application->rvals.v[3], es, cs, result, add, 0);
-      make_closure_var(fa->method_token->var, es, cs, result, add, 1);
-      make_closure_var(partial_application->rvals.v[1], es, cs, result, add, 2);
-    } else {
-      pn->tvals.fill(2);
-      make_closure_var(partial_application->rvals.v[3], es, cs, result, add, 0);
-      make_closure_var(partial_application->rvals.v[1], es, cs, result, add, 1);
-    }
-  } else {
-    pn->tvals.fill(partial_application->rvals.n);
-    for (int i = 0; i < partial_application->rvals.n; i++)
-      make_closure_var(partial_application->rvals.v[i], es, cs, result, add, i);
-  }
+  pn->tvals.fill(partial_application->rvals.n);
+  for (int i = 0; i < partial_application->rvals.n; i++)
+    make_closure_var(partial_application->rvals.v[i], es, cs, result, add, i);
 }
 
 // for send nodes, add simple constraints which do not depend 
@@ -1698,17 +1679,6 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
             AVar *iv = cs->var_map.get(symbol);
             if (iv)
               flow_vars(iv, result);
-            else {
-              Vec<AVar *> args;
-              args.add(obj);
-              if (fa->method_token)
-                args.add(fa->method_token);
-              int res = application(p, es, selector, cs, args, 0, (Partial_kind)p->code->partial);
-              if (res > 0)
-                partial = 1;
-              else if (res < 0)
-                type_violation(ATypeViolation_MEMBER, selector, make_AType(cs), result);
-            }
           }
         }
         if (partial)
@@ -1743,18 +1713,6 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
             AVar *iv = cs->var_map.get(symbol);
             if (iv)
               flow_vars(tval, iv);
-            else {
-              Vec<AVar *> args;
-              args.add(obj);
-              if (fa->setter_token)
-                args.add(fa->setter_token);
-              args.add(val);
-              int res = application(p, es, selector, cs, args, 0, (Partial_kind)p->code->partial);
-              if (res > 0)
-                partial = 1;
-              else if (res < 0)
-                type_violation(ATypeViolation_MEMBER, selector, make_AType(cs), result);
-            }
           }
         }
         if (partial)
@@ -2698,10 +2656,6 @@ initialize_pass() {
   type_violation_hash.clear();
   entry_set_done.clear();
   refresh_top_edge(fa->top_edge);
-  if (fa->method_token)
-    fa->method_token->out = make_abstract_type(fa->method_token->var->sym);
-  if (fa->setter_token)
-    fa->setter_token->out = make_abstract_type(fa->setter_token->var->sym);
 }
 
 static void
@@ -3240,10 +3194,6 @@ clear_results() {
   for (int i = 0; i < cannonical_setters.n; i++)
     forc_List(Setters *, x, cannonical_setters.v[i].value)
       x->car->eq_classes = NULL;
-  if (fa->method_token)
-    clear_var(fa->method_token->var);
-  if (fa->setter_token)
-    clear_var(fa->setter_token->var);
 }
 
 static Setters *

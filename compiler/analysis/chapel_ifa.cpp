@@ -73,8 +73,6 @@ class AnalysisOp : public gc { public:
 
 
 static Sym *cast_symbol = 0;
-static Sym *method_token = 0;
-static Sym *setter_token = 0;
 static Sym *chapel_init_symbol = 0;
 static Sym *unimplemented_symbol = 0;
 
@@ -1640,10 +1638,13 @@ gen_assignment(CallExpr *assign) {
     rval = new_sym();
     rval->ast = assign->ainfo;
     if (f_equal_method) {
+      fail("not implemented");
+#if 0
       Code *c = if1_send(if1, &assign->ainfo->code, 4, 1, make_symbol("="), method_token,
                          lhs->ainfo->rval, old_rval, rval);
       c->ast = assign->ainfo;
       c->partial = Partial_NEVER;
+#endif
     } else {
       Code *c = if1_send(if1, &assign->ainfo->code, 3, 1, make_symbol("="), 
                          lhs->ainfo->rval, old_rval, rval);
@@ -2060,7 +2061,6 @@ finalize_function(Fun *fun) {
 
 void
 ACallbacks::finalize_functions() {
-  pdb->fa->method_token = unique_AVar(new Var(method_token), GLOBAL_CONTOUR);
   pdb->fa->array_index_base = 1;
   pdb->fa->tuple_index_base = 1;
   forv_Fun(fun, pdb->funs)
@@ -2414,10 +2414,6 @@ ast_to_if1(Vec<AList<Stmt> *> &stmts) {
   Vec<Type *> types;
   build_types(syms, &types);
   build_symbols(syms);
-  method_token = methodToken->asymbol->sym;
-  method_token->type = dtMethodToken->asymbol->sym->meta_type;
-  setter_token = setterToken->asymbol->sym;
-  setter_token->type = dtSetterToken->asymbol->sym->meta_type;
   if1_set_primitive_types(if1);
   forv_Type(t, types)
     if (t->defaultValue)

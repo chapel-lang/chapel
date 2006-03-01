@@ -1,6 +1,6 @@
 _chpl_adomain.chpl:10: fwrite, f : file, val : _domain
-_chpl_adomain.chpl:118: fwrite, f : file, x : _adomain
-_chpl_adomain.chpl:164: fwrite, f : file, x : _aarray
+_chpl_adomain.chpl:145: fwrite, f : file, x : _aarray
+_chpl_adomain.chpl:99: fwrite, f : file, x : _adomain
 _chpl_base.chpl:11: fwrite, f : file, val : _setterTokenType
 _chpl_base.chpl:3: fwrite, f : file, val : _unused_class
 _chpl_base.chpl:85: fwrite, f : file, val : _ddata

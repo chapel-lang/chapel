@@ -83,7 +83,7 @@ endif
 
 CPPFLAGS += $(CFLAGS)
 
-LIBS += -lm -ldparse_gc -lgc
+LIBS += -lm -ldparse_gc -lgc -ldl
 
 DIR = libifa
 
