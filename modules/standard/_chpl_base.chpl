@@ -76,7 +76,7 @@ pragma "no codegen" function assert() {
 function init_elts(x, s, e) {
   for i in 1..s {
     var y : e;
-    x(i) = y;
+    x(i-1) = y;
   }
 }
 

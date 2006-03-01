@@ -1737,11 +1737,11 @@ IFrame::iprimitive(CallExpr *s) {
       IObject *a = arg[0]->object;
       check_type(s, arg[1], dtInteger);
       int index = arg[1]->imm->v_int64;
-      if (index <= 0 || index > a->array.n) {
+      if (index < 0 || index >= a->array.n) {
         user_error(this, "array_index out of range (%d of %d)", index, a->array.n);
         return 1;
       }
-      result = *a->array.v[index-1];
+      result = *a->array.v[index];
       break;
     }
     case PRIM_ARRAY_SET: {
@@ -1750,11 +1750,11 @@ IFrame::iprimitive(CallExpr *s) {
       IObject *a = arg[0]->object;
       check_type(s, arg[1], dtInteger);
       int index = arg[1]->imm->v_int64;
-      if (index <= 0 || index > a->array.n) {
+      if (index < 0 || index >= a->array.n) {
         user_error(this, "array_set out of range (%d of %d)", index, a->array.n);
         return 1;
       }
-      *a->array.v[index-1] = *arg[2];
+      *a->array.v[index] = *arg[2];
       result = *arg[2];
       break;
     }
