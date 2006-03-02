@@ -57974,3 +57974,14 @@ Modified files:
 	                         freadNotABoolean.good 
 	                         fwritelnBooleanFile.chpl 
 
+---------------------------------------------------------------------------
+
+03/02/06 15:39:18 -- deitz
+
+Log message:
+	Add test of class with field that is a tuple.
+
+Added files:
+	chapel/test/types/tuple/deitz/: test_class_tuple1.chpl 
+	                                test_class_tuple1.good 
+
