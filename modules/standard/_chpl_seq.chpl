@@ -213,10 +213,6 @@ record _aseq {
         else (_low - _high + _stride) / _stride);
 }
 
-function _aseq.translate(i : integer) : _aseq {
-  return _low+i.._high+i by _stride;
-}
-
 function _forall_start(s : _aseq) {
   return s._low;
 }

@@ -1,0 +1,3 @@
+domain(1): 		[1..4]
+translate(1, 2): Halt reached: translateWrongNumDims.chpl:3
+***Error: Rank mismatch between domain and translate() arguments (1 != 2)***

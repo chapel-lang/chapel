@@ -43,55 +43,101 @@ class _adomain : _domain {
     return _aarray(elt_type, rank, dom=this);
 }
 
-function _adomain.translate(dim : integer ...?rank) {
+function _aseq._translate(i : integer) : _aseq {
+  return _low+i.._high+i by _stride;
+}
+
+function _adomain.translate(dim : integer ...?numDims) {
   var x = _adomain(rank);
+  if (numDims != rank) {
+    halt("***Error: Rank mismatch between domain and translate() arguments (", rank, " != ", numDims, ")***");
+  }
   for i in 1..rank do
-    x.ranges(i) = range(i).translate(dim(i));
+    x.ranges(i) = range(i)._translate(dim(i));
   return x;
 }
 
-function _adomain.interior(dim : integer ...?rank) {
+function _aseq._interior(i : integer) : _aseq {
+  var x : _aseq;
+  if (i < 0) {
+    x = _low.._low-1-i by _stride;
+  } else if (i > 0) {
+    x = _high+1-i.._high by _stride;
+  }
+  return x;
+}
+
+function _adomain.interior(dim : integer ...?numDims) {
   var x = _adomain(rank);
+  if (numDims != rank) {
+    halt("***Error: Rank mismatch between domain and interior() arguments (", rank, " != ", numDims, ")***");
+  }
   for i in 1..rank do {
-    if ((-dim(i) > range(i)._high) or (dim(i) > range(i)._high)) {
+    if ((dim(i) > 0) and (range(i)._high+1-dim(i) < range(i)._low) or
+        (dim(i) < 0) and (range(i)._low-1-dim(i) > range(i)._high)) {
       halt("***Error: Argument to 'interior' function out of range in dimension ", i, "***");
     } 
-    if (dim(i) < 0) {
-      x.ranges(i) = range(i)._low..range(i)._low-1-dim(i) by range(i)._stride;
-    } else if (dim(i) == 0) {
-      x.ranges(i) = ranges(i)._low..ranges(i)._high by ranges(i)._stride;
-    } else if (dim(i) > 0) {
-      x.ranges(i) = range(i)._high+1-dim(i)..range(i)._high by range(i)._stride;
+    if (dim(i) == 0) {
+      x.ranges(i) = range(i);
+    } else {
+      x.ranges(i) = range(i)._interior(dim(i));
     }
   }
   return x;
 }
 
-function _adomain.exterior(dim : integer ...?rank) {
-  var x = _adomain(rank);
-  for i in 1..rank do {
-    if (dim(i) < 0) {
-      x.ranges(i) = ranges(i)._low+dim(i)..ranges(i)._low-1 by ranges(i)._stride;
-    } else if (dim(i) == 0) {
-      x.ranges(i) = ranges(i)._low..ranges(i)._high by ranges(i)._stride;
-    } else if (dim(i) > 0) {
-      x.ranges(i) = ranges(i)._high+1..ranges(i)._high+dim(i) by ranges(i)._stride;
-    }
+function _aseq._exterior(i : integer) : _aseq {
+  var x : _aseq;
+  if (i < 0) {
+    x = _low+i.._low-1 by _stride;
+  } else if (i > 0) {
+    x = _high+1.._high+i by _stride;
   }
   return x;
 }
 
-function _adomain.expand(dim : integer ...?rank) {
+function _adomain.exterior(dim : integer ...?numDims) {
   var x = _adomain(rank);
+  if (numDims != rank) {
+    halt("***Error: Rank mismatch between domain and exterior() arguments (", rank, " != ", numDims, ")***");
+  }
   for i in 1..rank do {
     if (dim(i) == 0) {
-      x.ranges(i) = ranges(i)._low..ranges(i)._high by ranges(i)._stride;
+      x.ranges(i) = ranges(i);
     } else {
-      x.ranges(i) = ranges(i)._low-dim(i)..ranges(i)._high+dim(i) by ranges(i)._stride;
-      if (x.ranges(i)._low > x.ranges(i)._high) {
-        halt("***Error: Degenerate dimension created in dimension ", i, "***");
-      }
+      x.ranges(i) = ranges(i)._exterior(dim(i));
     }
+  }
+  return x;
+}
+
+function _aseq._expand(i : integer) : _aseq {
+  return _low-i.._high+i by _stride;
+}
+
+function _adomain.expand(dim : integer ...?numDims) {
+  var x = _adomain(rank);
+  for i in 1..numDims do {
+    if (numDims == rank) {
+      if (dim(i) == 0) {
+        x.ranges(i) = ranges(i);
+      } else {
+        x.ranges(i) = ranges(i)._expand(dim(i));
+        if (x.ranges(i)._low > x.ranges(i)._high) {
+          halt("***Error: Degenerate dimension created in dimension ", i, "***");
+        }
+      }
+    } else if (numDims == 1) {
+      for i in 1..rank do {
+        if (dim(1) == 0) {
+          x.ranges(i) = ranges(i);
+        } else {
+          x.ranges(i) = ranges(i)._low-dim(1)..ranges(i)._high+dim(1) by ranges(i)._stride;
+        }
+      }
+    } else {
+      halt("***Error: Rank mismatch between domain and expand() arguments (", rank, " != ", numDims, ")***");
+    } 
   }
   return x;
 }
