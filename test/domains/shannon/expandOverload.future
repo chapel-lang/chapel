@@ -1,0 +1,6 @@
+deitz/jplevyak
+
+Something fishy in analysis.  Here's the error:
+
+[resolveAnalyzed.cpp:94] Internal error: Analysis unable to determine type of symbol (/users/shannon/CHAPEL/current/chapel/modules/standard/_chpl_adomain.chpl:120)
+  Constructed in traversal runAnalysis
