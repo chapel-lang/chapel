@@ -57923,3 +57923,54 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: chapel_ifa.cpp 
 
+---------------------------------------------------------------------------
+
+03/02/06 15:33:04 -- deitz
+
+Log message:
+	Changed "boolean" to "bool" in the implementation.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         functionResolution.cpp 
+	                         runInterpreter.cpp 
+	chapel/etc/emacs/21.3/: cc-langs.el font-lock.el 
+	chapel/etc/emacs/21.4/: cc-langs.el font-lock.el 
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_base.chpl 
+	                          _chpl_complex.chpl _chpl_file.chpl 
+	                          prelude.chpl 
+	chapel/runtime/include/: chplio.h chpltypes.h config.h 
+	chapel/runtime/src/: chplmem_tests.c chpltypes.c config.c 
+	chapel/test/arrays/deitz/: jacobi.chpl jacobi2.chpl jacobi3.chpl 
+	chapel/test/demo/review_060130/: jacobi.chpl jacobi2.chpl 
+	chapel/test/execflags/shannon/configs/: configVarBoolean.chpl 
+	                                        configVarFile.chpl 
+	                                        configVarInvalidBoolean.chpl 
+	                                        configVarInvalidBoolean.good 
+	                                        configVarInvalidBooleanLineno.chpl 
+	                                        configVarInvalidBooleanLineno.good 
+	chapel/test/functions/deitz/: test_operator_overloading2.chpl 
+	chapel/test/memory/shannon/: allocAndFree.good 
+	                             configVarFile.chpl jacobi.chpl 
+	                             printFinalMemStat.chpl 
+	                             printMemTable.chpl 
+	chapel/test/no_infer/: jacobi.chpl 
+	chapel/test/npb/mg/: mg-annotated.chpl mg-compilable.chpl 
+	chapel/test/trivial/bradc/: defaultinit.chpl defaultinit1a.chpl 
+	                            defaultinit2.chpl 
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.chpl 
+	                                     mg-seq-concrete.good 
+	                                     mg-seq.chpl mg-seq.good 
+	chapel/test/trivial/shannon/: readWriteBool.chpl 
+	                              readWriteBool.good 
+	                              readWriteBoolLineno.chpl 
+	                              readWriteBoolLineno.good 
+	                              readWriteUserType.chpl 
+	                              readWriteUserType.good 
+	chapel/test/types/file/: freadBoolean.chpl freadNotABoolean.chpl 
+	                         freadNotABoolean.good 
+	                         fwritelnBooleanFile.chpl 
+
