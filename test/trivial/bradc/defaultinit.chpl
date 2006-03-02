@@ -1,4 +1,4 @@
-var a: boolean;
+var a: bool;
 var b: integer;
 var c: float;
 var d: complex;

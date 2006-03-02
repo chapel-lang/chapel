@@ -81,7 +81,7 @@ Otherwise, this variable is nil. I.e. this variable is non-nil for
   "char\\|double\\|float\\|int\\|long\\|short\\|signed\\|unsigned\\|void")
 (defconst c-C++-primitive-type-kwds c-C-primitive-type-kwds)
 (defconst c-Chpl-primitive-type-kwds
-  "boole\\|integer\\|float\\|string\\|domain")
+  "bool\\|integer\\|float\\|string\\|domain")
 (defconst c-ObjC-primitive-type-kwds c-C-primitive-type-kwds)
 (defconst c-Java-primitive-type-kwds
   "boolean\\|byte\\|char\\|double\\|float\\|int\\|long\\|short\\|void")

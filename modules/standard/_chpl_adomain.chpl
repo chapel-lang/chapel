@@ -190,7 +190,7 @@ class _aarray : value {
 
 function fwrite(f : file, x : _aarray) {
   if x.rank == 1 {
-    var first : boolean = true;
+    var first : bool = true;
     for i in x.dom._for(1) {
       if not first then
         fwrite(f, " ");
@@ -200,7 +200,7 @@ function fwrite(f : file, x : _aarray) {
     }
   } else if x.rank == 2 {
     for i in x.dom._for(1) {
-      var first : boolean = true;
+      var first : bool = true;
       for j in x.dom._for(2) {
         if not first then
           fwrite(f, " ");

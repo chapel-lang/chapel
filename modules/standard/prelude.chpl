@@ -58,8 +58,8 @@ function _readLitChar(fp: CFILEPTR, val: string, ignoreWhiteSpace: integer) : in
 
 function _classReadError() {}
 
-pragma "rename _chpl_tostring_boolean"
-function _tostring(x : boolean, format : string) : string {
+pragma "rename _chpl_tostring_bool"
+function _tostring(x : bool, format : string) : string {
   return __primitive("to_string", format, x);
 }
 

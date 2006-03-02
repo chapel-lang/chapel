@@ -5,8 +5,8 @@
 #include "chpltypes.h"
 #include "domain.h"
 
-#define _default_format_write_boolean     "%s"
-#define _default_format_read_boolean      "%s"
+#define _default_format_write_bool     "%s"
+#define _default_format_read_bool      "%s"
 
 #define _default_format_read_integer64    "%lld" /* long long int */
 #define _default_format_write_integer64   "%lld" /* long long int */

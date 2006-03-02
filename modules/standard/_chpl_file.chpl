@@ -22,8 +22,8 @@ class file {
     }
   }
 
-  function isOpen: boolean {
-    var openStatus: boolean = false;
+  function isOpen: bool {
+    var openStatus: bool = false;
     if (fp != _NULLCFILEPTR) {
       openStatus = true;
     }
@@ -55,7 +55,7 @@ const stdout : file = file("stdout", "w", "/dev", _STDOUTCFILEPTR);
 const stderr : file = file("stderr", "w", "/dev", _STDERRCFILEPTR);
 
 
-function fopenError(f: file, isRead: boolean) {
+function fopenError(f: file, isRead: bool) {
   var fullFilename:string = f.path + "/" + f.filename;
   if (isRead) {
     halt("***Error: You must open \"", fullFilename, 
@@ -174,8 +174,8 @@ function fwrite(f: file = stdout, val: string) {
 }
 
 
-pragma "rename _chpl_fread_boolean" 
-function fread(f: file = stdin, inout val: boolean) {
+pragma "rename _chpl_fread_bool" 
+function fread(f: file = stdin, inout val: bool) {
   if (f.isOpen) {
     var valString : string;
     _chpl_fread_string_help(f.fp, valString);
@@ -184,7 +184,7 @@ function fread(f: file = stdin, inout val: boolean) {
     } else if (valString == "false") {
       val = false;
     } else {
-      halt("***Error: Not of boolean type***");
+      halt("***Error: Not of bool type***");
     }
   } else {
     fopenError(f, isRead = true);
@@ -192,8 +192,8 @@ function fread(f: file = stdin, inout val: boolean) {
 }
 
 
-pragma "rename _chpl_fwrite_boolean"
-function fwrite(f: file = stdout, val: boolean) {
+pragma "rename _chpl_fwrite_bool"
+function fwrite(f: file = stdout, val: bool) {
   if (f.isOpen) {
     var returnVal: integer;
     if (val == true) {

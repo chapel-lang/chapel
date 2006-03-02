@@ -1,5 +1,5 @@
-var thisIsTrue: boolean = false;
-var thisIsFalse: boolean = true;
+var thisIsTrue: bool = false;
+var thisIsFalse: bool = true;
 
 var f: file = file(filename = "freadBoolean.txt", mode = "r");
 f.open;

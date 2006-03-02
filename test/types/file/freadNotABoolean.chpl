@@ -1,4 +1,4 @@
-var thisIsTrue: boolean = true;
+var thisIsTrue: bool = true;
 
 var f: file = file(filename = "freadNotABoolean.txt", mode = "r");
 f.open;

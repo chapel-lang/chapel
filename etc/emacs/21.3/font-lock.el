@@ -2739,7 +2739,7 @@ See also `chpl-font-lock-extra-types'.")
 	  (cons
 	   ,(eval-when-compile
 	      (regexp-opt
-	       '("boole" "complex" "domain" "float" "index" "integer" "string" 
+	       '("bool" "complex" "domain" "float" "index" "integer" "string" 
                  "void")))
 	   chpl-font-lock-extra-types)
 	  "\\|"))

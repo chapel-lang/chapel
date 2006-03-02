@@ -124,8 +124,8 @@ void Expr::codegenCastToString(FILE* outfile) {
     fprintf(outfile, "\"\"");
   } else {
     fprintf(outfile, "_chpl_tostring_");
-    if (exprType == dtBoolean) {
-      fprintf(outfile, "boolean");
+    if (exprType == dtBool) {
+      fprintf(outfile, "bool");
     } else if (exprType == dtInteger) {
       fprintf(outfile, "integer");
     } else if (exprType == dtFloat) {
@@ -599,7 +599,7 @@ Type* CallExpr::typeInfo(void) {
 
   if (!baseExpr) {
     if (isLogicalPrimitive()) {
-      return dtBoolean;
+      return dtBool;
     } else if (isUnaryPrimitive()) {
       return get(1)->typeInfo();
     } else if (isBinaryPrimitive()) {

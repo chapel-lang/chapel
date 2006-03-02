@@ -293,7 +293,7 @@ check_type(BaseAST *ast, ISlot *slot, Type *t) {
     Lerror:
         USR_FATAL(ast, "interpreter: bad immediate type");
       case IF1_NUM_KIND_UINT:
-        if (t == dtBoolean && slot->imm->num_index == IF1_INT_TYPE_1) break;
+        if (t == dtBool && slot->imm->num_index == IF1_INT_TYPE_1) break;
         goto Lerror;
       case IF1_NUM_KIND_INT:
         if (t == dtInteger && slot->imm->num_index == IF1_INT_TYPE_64) break;
@@ -1966,7 +1966,7 @@ IFrame::iprimitive(CallExpr *s) {
 }
 
 static int
-get_boolean(IFrame *frame, ISlot *slot, bool *c) {
+get_bool(IFrame *frame, ISlot *slot, bool *c) {
   switch (slot->kind) {
     case OBJECT_ISLOT:
       *c = true;
@@ -1987,7 +1987,7 @@ get_boolean(IFrame *frame, ISlot *slot, bool *c) {
       // fall through
     }
     default:
-      user_error(frame, "unable to coerce to boolean");
+      user_error(frame, "unable to coerce to bool");
       return 0;
   }
   return 0;
@@ -2081,7 +2081,7 @@ IFrame::run(int timeslice) {
             CALL_RET(3, islot(loop_valid));
           case 3: {
             ISlot *valid = islot(loop_valid);
-            check_type(ip, valid, dtBoolean);
+            check_type(ip, valid, dtBool);
             if (!valid->imm->v_bool) {
               stage = 0;
               break;
@@ -2112,7 +2112,7 @@ IFrame::run(int timeslice) {
           case 1: {
             stage = 0;
             bool c;
-            if (!get_boolean(this, islot(s->condExpr), &c))
+            if (!get_bool(this, islot(s->condExpr), &c))
               return timeslice;
             if (c)
               EVAL_STMT(s->thenStmt);
@@ -2150,7 +2150,7 @@ IFrame::run(int timeslice) {
           }
           case 2: {
             ISlot *cond = islot(s->caseExprs);
-            check_type(ip, cond, dtBoolean);
+            check_type(ip, cond, dtBool);
             if (!cond->imm->v_bool)
               stage = 0;
             break;

@@ -143,7 +143,7 @@ static void build_record_equality_function(ClassType* ct) {
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", ct);
   args->insertAtTail(new DefExpr(arg2));
   fn->formals = args;
-  fn->retType = dtBoolean;
+  fn->retType = dtBool;
   Expr* cond = NULL;
   forv_Vec(Symbol, tmp, ct->fields) {
     Expr* left = new CallExpr(tmp->name, methodToken, arg1);
@@ -168,7 +168,7 @@ static void build_record_inequality_function(ClassType* ct) {
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", ct);
   args->insertAtTail(new DefExpr(arg2));
   fn->formals = args;
-  fn->retType = dtBoolean;
+  fn->retType = dtBool;
   Expr* cond = NULL;
   forv_Vec(Symbol, tmp, ct->fields) {
     Expr* left = new CallExpr(tmp->name, methodToken, arg1);

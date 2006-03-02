@@ -199,7 +199,7 @@ bool Type::requiresCParamTmp(intentTag intent) {
 
 
 bool Type::implementedUsingCVals(void) {
-  if (this == dtBoolean ||
+  if (this == dtBool ||
       this == dtInteger ||
       this == dtFloat) {
     return true;
@@ -1019,7 +1019,7 @@ void initType(void) {
   dtUnspecified = Symboltable::definePrimitiveType("_unspecifiedType", "_unspecifiedType");
   dtVoid = Symboltable::definePrimitiveType("void", "void");
 
-  dtBoolean = Symboltable::definePrimitiveType("boolean", "_boolean");
+  dtBool = Symboltable::definePrimitiveType("bool", "_bool");
   dtInteger = Symboltable::definePrimitiveType("integer", "_integer64");
   dtFloat = Symboltable::definePrimitiveType("float", "_float64", new_FloatSymbol("0.0", 0.0));
   // This should point to the complex type defined in modules/standard/_chpl_complex.chpl

@@ -277,8 +277,8 @@ function resid(R, V, U) {
   -- stencil element should get the 0th coefficient value; those
   -- positions that are one coordinate off should get the 1st; two
   -- coordinates off should get the 2nd and so on.  I wrote this by
-  -- doing some boolean tests, and adding the results together,
-  -- relying on the implicit conversion of booleans to integers.  My
+  -- doing some bool tests, and adding the results together,
+  -- relying on the implicit conversion of bools to integers.  My
   -- hope is that by declaring these to be const, the compiler will do
   -- stencil optimizations on them as defined in Deitz's SC2001 paper.
 

@@ -25,8 +25,8 @@ void _chpl_memtest_allocAndFree(void) {
 
   _integer64* i = (_integer64*) _chpl_malloc(1, sizeof(_integer64), 
                                              "_integer64");
-  _boolean* b = (_boolean*) _chpl_malloc(1, sizeof(_boolean), "_boolean");
-  fprintf(stdout, "malloc'd an int and a boolean\n");
+  _bool* b = (_bool*) _chpl_malloc(1, sizeof(_bool), "_bool");
+  fprintf(stdout, "malloc'd an int and a bool\n");
   printMemStat();
 
   _float64* f = (_float64*) _chpl_calloc(1, sizeof(_float64), "_float64");
@@ -41,7 +41,7 @@ void _chpl_memtest_allocAndFree(void) {
   _chpl_free(i);
   _chpl_free(b);
   _chpl_free(c);
-  fprintf(stdout, "freed the int, the boolean, and the complex\n");
+  fprintf(stdout, "freed the int, the bool, and the complex\n");
   printMemStat();
 
   f = _chpl_realloc(f, 10, sizeof(_float64), "_float64");

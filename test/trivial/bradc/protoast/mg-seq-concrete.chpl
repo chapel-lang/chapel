@@ -34,9 +34,9 @@ config const verifyValue: float = checksum(Class);
 
 -- other control variables:
 
-config const warmup: boolean = true;
-config const verbose: boolean = false;
-config const debug: boolean = false;
+config const warmup: bool = true;
+config const verbose: bool = false;
+config const debug: bool = false;
 
 
 -- help for coefficient arrays:
@@ -113,7 +113,7 @@ function computeMG(in V: [Base] float,
 
 
 function printResults(const rnm2, inittime, runtime: float) {
-  var verified: boolean;
+  var verified: bool;
 
   if (verifyValue != 0.0) {
     const epsilon: float = 0.00000001;  -- BLC: 1.e-8;

@@ -1,5 +1,5 @@
-config var x: boolean = true;
-config var y: boolean = false;
+config var x: bool = true;
+config var y: bool = false;
 
 writeln("x is initialized at compile time to true");
 writeln("x at runtime is ", x);

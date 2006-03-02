@@ -1,4 +1,4 @@
-var myTrueBoolean: boolean = true;
+var myTrueBoolean: bool = true;
 var myFalseBoolean = false;
 var aSpace = " ";
 

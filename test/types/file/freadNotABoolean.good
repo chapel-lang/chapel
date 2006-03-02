@@ -1,2 +1,2 @@
 Halt reached: freadNotABoolean.chpl:6
-***Error: Not of boolean type***
+***Error: Not of bool type***

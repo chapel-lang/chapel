@@ -4,4 +4,4 @@ That's the wrong answer, try again.
 true
 Is Bush a liar? (true or false)
 Halt reached: readWriteBool.chpl:13
-***Error: Not of boolean type***
+***Error: Not of bool type***

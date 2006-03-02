@@ -64,7 +64,7 @@ void createInitFn(ModuleSymbol* mod) {
 
     if (mod->modtype != MOD_INSTANTIATED) {
       runOnce = stringcat("__run_", mod->name, "_firsttime");
-      DefExpr* varDefExpr = new DefExpr(new VarSymbol(runOnce, dtBoolean),
+      DefExpr* varDefExpr = new DefExpr(new VarSymbol(runOnce, dtBool),
                                         new SymExpr(gTrue));
       compilerModule->initFn->insertAtHead(varDefExpr);
       Expr* assignVar = new CallExpr(PRIMITIVE_MOVE,

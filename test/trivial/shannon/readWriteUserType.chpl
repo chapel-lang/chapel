@@ -4,7 +4,7 @@ var  myInteger:   newInteger;
 typedef newFloat:    float;
 var  myFloat:     newFloat;
 
-typedef newBoolean:  boolean;
+typedef newBoolean:  bool;
 var  myBoolean:   newBoolean;
 
 typedef newComplex:  complex;
@@ -18,7 +18,7 @@ write("Enter a float: ");
 read(myFloat);
 writeln("You entered ", myFloat);
 
-write("Enter a boolean: ");
+write("Enter a bool: ");
 read(myBoolean);
 writeln("You entered ", myBoolean);
 

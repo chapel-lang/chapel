@@ -245,7 +245,7 @@ TYPE_EXTERN PrimitiveType* dtUnspecified;
 TYPE_EXTERN PrimitiveType* dtVoid;
 
 // primitive types
-TYPE_EXTERN PrimitiveType* dtBoolean;
+TYPE_EXTERN PrimitiveType* dtBool;
 TYPE_EXTERN PrimitiveType* dtInteger;
 TYPE_EXTERN PrimitiveType* dtFloat;
 TYPE_EXTERN PrimitiveType* dtComplex;

@@ -2,7 +2,7 @@ use history_accumulator;
 
 config var n : integer = 3;
 config var epsilon : float = 0.01;
-config var verbose : boolean = true;
+config var verbose : bool = true;
 
 var R : domain(2) = [1..n, 1..n];
 var BigR : domain(2) = [0..n+1, 0..n+1];

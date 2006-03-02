@@ -1,6 +1,6 @@
 config var i: integer = 0;
 config var f: float = 1.2;
-config var b: boolean = true;
+config var b: bool = true;
 
 class C {
   var u: integer;

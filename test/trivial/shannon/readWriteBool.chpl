@@ -1,5 +1,5 @@
-var isBushAnIdiot: boolean;
-var isBushALiar:   boolean;
+var isBushAnIdiot: bool;
+var isBushALiar:   bool;
 
 writeln("Is Bush an idiot? (true or false)");
 read(isBushAnIdiot);

@@ -64,7 +64,7 @@ char* _glom_strings(int numstrings, ...) {
 /* } */
 
 
-char* _chpl_tostring_boolean(_boolean x, char* format) {
+char* _chpl_tostring_bool(_bool x, char* format) {
   if (x) {
     return _glom_strings(1, "true");
   } else {
@@ -126,7 +126,7 @@ _chpl_string_index(_string x, int i) {
 }
 
 
-_boolean _chpl_string_equal(_string x, _string y) {
+_bool _chpl_string_equal(_string x, _string y) {
   if (!strcmp(x, y)) {
     return true;
   } else {
@@ -135,7 +135,7 @@ _boolean _chpl_string_equal(_string x, _string y) {
 }
 
 
-_boolean _chpl_string_notequal(_string x, _string y) {
+_bool _chpl_string_notequal(_string x, _string y) {
   if (strcmp(x, y)) {
     return true;
   } else {

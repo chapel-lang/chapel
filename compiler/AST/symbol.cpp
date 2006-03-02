@@ -1515,10 +1515,10 @@ initSymbol() {
   gVoid = new VarSymbol("_void", dtVoid, VAR_NORMAL, VAR_CONST);
   rootScope->define(gVoid); // SJD: Should intrinsics have DefExprs?
   builtinSymbols.add(gVoid);
-  gTrue = new VarSymbol("true", dtBoolean, VAR_NORMAL, VAR_CONST);
+  gTrue = new VarSymbol("true", dtBool, VAR_NORMAL, VAR_CONST);
   rootScope->define(gTrue); // SJD: Should intrinsics have DefExprs?
   builtinSymbols.add(gTrue);
-  gFalse = new VarSymbol("false", dtBoolean, VAR_NORMAL, VAR_CONST);
+  gFalse = new VarSymbol("false", dtBool, VAR_NORMAL, VAR_CONST);
   rootScope->define(gFalse); // SJD: Should intrinsics have DefExprs?
   builtinSymbols.add(gFalse);
   gTrue->immediate = new Immediate;
@@ -1529,7 +1529,7 @@ initSymbol() {
   gFalse->immediate->v_bool = false;
   gFalse->immediate->const_kind = IF1_NUM_KIND_UINT;
   gFalse->immediate->num_index = IF1_INT_TYPE_1;
-  dtBoolean->defaultValue = gFalse;
+  dtBool->defaultValue = gFalse;
   uniqueConstantsHash.put(gTrue->immediate, gTrue);
   uniqueConstantsHash.put(gFalse->immediate, gFalse);
 }
@@ -1650,7 +1650,7 @@ immediate_type(Immediate *imm) {
       break;
     case IF1_CONST_KIND_STRING: return dtString;
     case IF1_NUM_KIND_UINT:
-      if (imm->num_index == IF1_INT_TYPE_1) return dtBoolean;
+      if (imm->num_index == IF1_INT_TYPE_1) return dtBool;
       goto Lerror;
     case IF1_NUM_KIND_INT:
       if (imm->num_index == IF1_INT_TYPE_64) return dtInteger;
@@ -1667,7 +1667,7 @@ immediate_type(Immediate *imm) {
 
 int
 set_immediate_type(Immediate *imm, Type *t) {
-  if (t == dtBoolean) {
+  if (t == dtBool) {
     imm->const_kind = IF1_NUM_KIND_UINT;
     imm->num_index = IF1_INT_TYPE_1; 
   } else if (t == dtInteger) {

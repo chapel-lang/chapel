@@ -434,29 +434,29 @@ int setInCommandLine_float64(char* varName, _float64* value,
 }
 
 
-int setInCommandLine_boolean(char* varName, _boolean* value, 
+int setInCommandLine_bool(char* varName, _bool* value, 
                              char* moduleName) {
   int varSet = 0;
   char* setValue = lookupSetValue(varName, moduleName);
 
   if (setValue) {
-    int validBoolean = 0;
+    int validBool = 0;
     if (setValue) {
       if (strcmp(setValue, "true") == 0) {
         *value = true;
-        validBoolean = 1;
+        validBool = 1;
       } else if (strcmp(setValue, "false") == 0) {
         *value = false;
-        validBoolean = 1;
+        validBool = 1;
       }
     }
 
-    if (validBoolean) {
+    if (validBool) {
       varSet = 1;
     } else {
       char* message = _glom_strings(5, "\"", setValue, "\" is not a valid "
                                     "value for config var \"", varName, 
-                                    "\" of type boolean");
+                                    "\" of type bool");
       printError(message);
     }
   }

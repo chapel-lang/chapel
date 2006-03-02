@@ -40,16 +40,16 @@ pragma "inline" function **(a: numeric, b: numeric) return __primitive("**", a, 
 //
 // Primitive functions for objects
 //
-pragma "inline" function ==(a: object, b: object) : boolean return __primitive("ptr_eq", a, b);
-pragma "inline" function !=(a: object, b: object) : boolean return __primitive("ptr_neq", a, b);
+pragma "inline" function ==(a: object, b: object) : bool return __primitive("ptr_eq", a, b);
+pragma "inline" function !=(a: object, b: object) : bool return __primitive("ptr_neq", a, b);
 
 
 //
 // Primitive functions for strings
 //
-pragma "inline" function ==(a: string, b: string) : boolean return __primitive("string_equal", a, b);
+pragma "inline" function ==(a: string, b: string) : bool return __primitive("string_equal", a, b);
 
-pragma "inline" function !=(a: string, b: string) : boolean return not a == b;
+pragma "inline" function !=(a: string, b: string) : bool return not a == b;
 
 pragma "inline" function +(a: string, b: string) : string return __primitive("string_concat", a, b);
 
