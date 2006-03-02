@@ -57893,3 +57893,23 @@ Removed files:
 	chapel/test/domains/shannon/: interiorError.chpl 
 	                              interiorError.compopts 
 
+---------------------------------------------------------------------------
+
+03/01/06 17:14:30 -- shannon
+
+Log message:
+	Woops, forgot to cvs add these guys.
+
+Added files:
+	chapel/test/domains/shannon/: expandOverload.future 
+	                              expandWrongNumDims.future 
+	                              interiorErrorNeg.compopts 
+	                              interiorErrorNeg.good 
+	                              interiorErrorPos.compopts 
+	                              interiorErrorPos.good 
+	                              interiorErrorPosLarge.chpl 
+	                              interiorErrorPosLarge.compopts 
+	                              interiorErrorPosLarge.good 
+	                              interiorRangeValues.chpl 
+	                              interiorRangeValues.good 
+
