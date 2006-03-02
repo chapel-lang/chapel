@@ -57913,3 +57913,13 @@ Added files:
 	                              interiorRangeValues.chpl 
 	                              interiorRangeValues.good 
 
+---------------------------------------------------------------------------
+
+03/01/06 22:34:51 -- jplevyak
+
+Log message:
+	remove unused variable.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+
