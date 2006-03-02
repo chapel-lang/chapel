@@ -74,7 +74,6 @@ class AnalysisOp : public gc { public:
 
 static Sym *cast_symbol = 0;
 static Sym *chapel_init_symbol = 0;
-static Sym *unimplemented_symbol = 0;
 
 static int init_function(FnSymbol *f);
 static int build_function(FnSymbol *f);
@@ -2158,7 +2157,6 @@ static void
 init_symbols() {
   cast_symbol = make_symbol("chapel_cast");
   chapel_init_symbol = make_symbol("chapel_init");
-  unimplemented_symbol = make_symbol("chapel_unimplemented");
 }
 
 static void
