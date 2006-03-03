@@ -930,36 +930,36 @@ instantiate_add_subs(ASTMap* substitutions, ASTMap* map) {
 }
 
 
-static void
-fold_parameter_methods(FnSymbol* fn,
-                       ASTMap* generic_subs,
-                       Type* generic_type) {
-  Vec<BaseAST*> asts;
-  collect_asts(&asts, fn);
-  Vec<BaseAST*> keys;
-  generic_subs->get_keys(keys);
-  forv_Vec(BaseAST, key, keys) {
-    if (Symbol* var = dynamic_cast<Symbol*>(key)) {
-      forv_Vec(BaseAST, ast, asts) {
-        if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
-          if (call->argList->length() == 2) {
-            if (call->isNamed(var->name)) {
-              if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->get(1))) {
-                if (symExpr->var == methodToken) {
-                  if (call->get(2)->typeInfo() == generic_type) {
-                    if (Symbol* value = dynamic_cast<Symbol*>(generic_subs->get(key))) {
-                      call->replace(new SymExpr(value));
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
+// static void
+// fold_parameter_methods(FnSymbol* fn,
+//                        ASTMap* generic_subs,
+//                        Type* generic_type) {
+//   Vec<BaseAST*> asts;
+//   collect_asts(&asts, fn);
+//   Vec<BaseAST*> keys;
+//   generic_subs->get_keys(keys);
+//   forv_Vec(BaseAST, key, keys) {
+//     if (Symbol* var = dynamic_cast<Symbol*>(key)) {
+//       forv_Vec(BaseAST, ast, asts) {
+//         if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+//           if (call->argList->length() == 2) {
+//             if (call->isNamed(var->name)) {
+//               if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->get(1))) {
+//                 if (symExpr->var == methodToken) {
+//                   if (call->get(2)->typeInfo() == generic_type) {
+//                     if (Symbol* value = dynamic_cast<Symbol*>(generic_subs->get(key))) {
+//                       call->replace(new SymExpr(value));
+//                     }
+//                   }
+//                 }
+//               }
+//             }
+//           }
+//         }
+//       }
+//     }
+//   }
+// }
 
 
 static FnSymbol*
@@ -969,8 +969,8 @@ instantiate_function(Stmt* pointOfInstantiation, FnSymbol *fn, ASTMap *all_subs,
   DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr);
   FnSymbol* fnClone = dynamic_cast<FnSymbol*>(defExpr->sym);
   pointOfInstantiation->insertBefore(fnStmt);
-  if (generic_type != NULL)
-    fold_parameter_methods(fnClone, generic_subs, generic_type);
+//   if (generic_type != NULL)
+//     fold_parameter_methods(fnClone, generic_subs, generic_type);
   fnClone->cname = stringcat("_inst_", defExpr->sym->cname);
   instantiate_add_subs(all_subs, map);
   instantiate_update_expr(all_subs, defExpr);

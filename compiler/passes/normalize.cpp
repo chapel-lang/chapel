@@ -891,16 +891,27 @@ static void fold_call_expr(CallExpr* call) {
       call->replace(new SymExpr(dtInteger->defaultValue));
     return;
   }
-  // Should we treat 1*integer as integer or as a 1-tuple?
-//   if (call->isNamed("_construct__htuple")) {
-//     if (SymExpr* rank = dynamic_cast<SymExpr*>(call->get(2))) {
-//       if (!strcmp(rank->var->cname, "1")) {
-//         Expr* type = call->get(1);
-//         type->remove();
-//         call->replace(type);
-//       }
-//     }
-//   }
+
+  // fold parameter methods
+  if (call->argList->length() == 2) {
+    if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->get(1))) {
+      if (symExpr->var == methodToken) {
+        Type* type = call->get(2)->typeInfo();
+        Vec<BaseAST*> keys;
+        type->substitutions.get_keys(keys);
+        forv_Vec(BaseAST, key, keys) {
+          if (Symbol* var = dynamic_cast<Symbol*>(key)) {
+            if (call->isNamed(var->name)) {
+              if (Symbol* value = dynamic_cast<Symbol*>(type->substitutions.get(key))) {
+                call->replace(new SymExpr(value));
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   if (call->argList->length() == 2) {
     if (call->get(1)->typeInfo() == dtString) // folding not handling strings yet
       return;
