@@ -2371,7 +2371,7 @@ log_var_types(Var *v, Fun *f) {
   Vec<CreationSet *> css;
   for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].key) {
     AVar *av = v->avars.v[i].value;
-    if (!f || f->ess.set_in(((EntrySet*)av->contour)))
+    if (!f || f->ess_set.set_in(((EntrySet*)av->contour)))
       css.set_union(*av->out);
   }
   assert(css.n);
