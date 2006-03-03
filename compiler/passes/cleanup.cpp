@@ -575,15 +575,28 @@ static void add_this_formal_to_method(FnSymbol* fn) {
 
 
 static void hack_array(DefExpr* def) {
-  if (CallExpr* type = dynamic_cast<CallExpr*>(def->exprType)) {
-    if (type->isNamed("_build_array")) {
-      if (def->init) {
-        Expr* init = def->init;
-        init->remove();
-        def->parentStmt->insertAfter(new CallExpr("=", def->sym, init));
+  if (ArgSymbol* arg = dynamic_cast<ArgSymbol*>(def->sym)) {
+    // handle arrays in constructors for arrays as fields
+    if (CallExpr* type = dynamic_cast<CallExpr*>(def->exprType)) {
+      if (type->isNamed("_build_array")) {
+        if (!arg->defaultExpr)
+          INT_FATAL(def, "Clean up arrays!!!");
+        Expr* expr = def->exprType;
+        expr->remove();
+        arg->defaultExpr->replace(expr);
       }
-      def->init = def->exprType;
-      def->exprType = NULL;
+    }
+  } else {
+    if (CallExpr* type = dynamic_cast<CallExpr*>(def->exprType)) {
+      if (type->isNamed("_build_array")) {
+        if (def->init) {
+          Expr* init = def->init;
+          init->remove();
+          def->parentStmt->insertAfter(new CallExpr("=", def->sym, init));
+        }
+        def->init = def->exprType;
+        def->exprType = NULL;
+      }
     }
   }
 }
