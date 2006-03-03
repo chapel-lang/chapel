@@ -57985,3 +57985,18 @@ Added files:
 	chapel/test/types/tuple/deitz/: test_class_tuple1.chpl 
 	                                test_class_tuple1.good 
 
+---------------------------------------------------------------------------
+
+03/02/06 16:08:23 -- deitz
+
+Log message:
+	Added support for arrays as fields in classes, and two tests.
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp 
+Added files:
+	chapel/test/arrays/deitz/: test_array_in_class.chpl 
+	                           test_array_in_class.good 
+	                           test_class_array1.chpl 
+	                           test_class_array1.good 
+
