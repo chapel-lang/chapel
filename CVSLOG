@@ -58077,3 +58077,13 @@ Modified files:
 	chapel/compiler/analysis/: chapel_ifa.cpp 
 	chapel/compiler/ifa/: ast.cpp ast.h pattern.cpp 
 
+---------------------------------------------------------------------------
+
+03/03/06 15:00:07 -- jplevyak
+
+Log message:
+	Fixed a bug in one of the analysis logs
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
