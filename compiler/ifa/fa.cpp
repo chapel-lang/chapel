@@ -3367,7 +3367,7 @@ collect_setter_confluences(Vec<AVar *> &setter_confluences, Vec<AVar *> &setter_
           }
           if (av->cs_map) {
             Vec<CreationSet *> css;
-            form_Map(CSMapElem, x, *av->cs_map)
+            form_Map(CSMapElem, x, *av->cs_map) if (fa->css_set.set_in(x->value))
               css.set_add(x->value);
             forv_AVar(s, *av->setters) if (s) {
               assert(s->setter_class);
@@ -3444,14 +3444,14 @@ split_css(Vec<AVar *> &starters) {
   int analyze_again = 0;
   Vec<CreationSet *> css;
   forv_AVar(av, starters)
-    form_Map(CSMapElem, x, *av->cs_map) 
+    form_Map(CSMapElem, x, *av->cs_map) if (fa->css_set.set_in(x->value))
       css.set_add(x->value);
   css.set_to_vec();
   qsort_by_id(css);
   forv_CreationSet(cs, css) {
     Vec<AVar *> starter_set, save;
     forv_AVar(av, starters)
-      if (av->cs_map->get(cs->sym))
+      if (av->cs_map->get(cs->sym) == cs)
         starter_set.add(av);    
     while (starter_set.n > 1) {
       AVar *av = starter_set.v[0];
@@ -3468,9 +3468,10 @@ split_css(Vec<AVar *> &starters) {
       if (new_defs.n) {
         cs->defs.move(new_defs);
         CreationSet *new_cs = new CreationSet(cs);
-        new_cs->defs.move(compatible_set);
-        forv_AVar(v, new_cs->defs) if (v)
+        forv_AVar(v, compatible_set) if (v) {
+          assert(cs == v->cs_map->get(cs->sym));
           v->cs_map->put(cs->sym, new_cs);
+        }
         new_cs->split = cs;
         analyze_again = 1;
         log(LOG_SPLITTING, "SPLIT CS %d %s %d -> %d\n", cs->id,
