@@ -14,7 +14,6 @@
 #include "stringutil.h"
 #include "../traversals/view.h"
 
-
 bool normalized = false;
 
 static void reconstruct_iterator(FnSymbol* fn);
@@ -1221,8 +1220,11 @@ static int
 tag_generic(Type *t) {
   Vec<Symbol *> genericSymbols;
   if (ClassType *st = dynamic_cast<ClassType *>(t)) {
-    forv_Vec(Symbol, s, st->fields)
-      assert(!dynamic_cast<TypeSymbol*>(s)); // play it safe
+    forv_Vec(Symbol, s, st->fields) {
+      VarSymbol *vs = dynamic_cast<VarSymbol *>(s);
+      if (vs && vs->consClass == VAR_PARAM)
+        genericSymbols.set_add(vs);
+    }
     forv_Vec(TypeSymbol, s, st->types) {
       if (s->definition->astType == TYPE_VARIABLE) 
         genericSymbols.set_add(s->definition->symbol);
