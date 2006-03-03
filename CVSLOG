@@ -58062,3 +58062,18 @@ Added files:
 	                            test_inherit_mod3.future 
 	                            test_inherit_mod3.good 
 
+---------------------------------------------------------------------------
+
+03/03/06 14:17:00 -- jplevyak
+
+Log message:
+	Fix 2 little bugs:
+	  SEGV from using a set as a vec.
+	  Changing set while iterating over it.
+	Change pattern matching to NOT attempt to generate
+	  wrappers or instantiate partial applications.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: ast.cpp ast.h pattern.cpp 
+
