@@ -2618,7 +2618,7 @@ call_info(Expr *a, Vec<FnSymbol *> &fns, Vec<Vec<Vec<Type *> *> *> *dispatch) {
   forv_PNode(pn, ast->pnodes) {
     if (pn->code->kind != Code_SEND) 
       continue;
-    forv_EntrySet(es, fun->ess) {
+    forv_EntrySet(es, fun->ess) if (es) {
       Vec<AEdge *> *edges = es->out_edge_map.get(pn);
       if (edges) {
         forv_AEdge(e, *edges) {
@@ -2654,7 +2654,7 @@ call_info(Expr *a, Vec<FnSymbol *> &fns, Vec<Vec<Vec<Type *> *> *> *dispatch) {
       forv_PNode(pn, ast->pnodes) {
         if (pn->code->kind != Code_SEND) 
           continue;
-        forv_EntrySet(es, fun->ess) {
+        forv_EntrySet(es, fun->ess) if (es) {
           Vec<AEdge *> *edges = es->out_edge_map.get(pn);
           if (edges) {
             forv_AEdge(e, *edges) {

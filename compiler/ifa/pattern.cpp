@@ -722,7 +722,8 @@ Matcher::instantiation_wrappers_and_partial_application(Vec<Fun *> &matches) {
   done_matches.set_union(matches);
   forv_Fun(f, matches) {
     Match *m = match_map.get(f);
-    f = build(m, done_matches);
+    if (!m->partial)
+      f = build(m, done_matches);
     if (!f) 
       continue;
     if (!m->partial)

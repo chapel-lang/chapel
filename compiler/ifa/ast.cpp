@@ -4,6 +4,7 @@
 #include "builtin.h"
 #include "if1.h"
 #include "pattern.h"
+#include "fa.h"
 
 static int type_hierarchy_built = 0;
 static int finalized_types = 0;
@@ -93,27 +94,27 @@ unalias_syms(IF1 *i) {
 }
 
 static void
-implement(Sym *s, Sym *ss, Vec<Sym *> &types) {
+implement(Sym *s, Sym *ss, Accum<Sym *> &types) {
   if (!ss->implements.in(s))
     ss->implements.add(s);
   s->implementors.set_add(ss);
-  types.set_add(s);
-  types.set_add(ss);
+  types.add(s);
+  types.add(ss);
 }
 
 static void
-specialize(Sym *s, Sym *ss, Vec<Sym *> &types) {
+specialize(Sym *s, Sym *ss, Accum<Sym *> &types) {
   assert(s != ss);
   if (!ss->specializes.in(s))
     ss->specializes.add(s);
   if (s->specializers.set_add(ss))
     ss->dispatch_order.add(s);
-  types.set_add(s);
-  types.set_add(ss);
+  types.add(s);
+  types.add(ss);
 }
 
 static void
-implement_and_specialize(Sym *s, Sym *ss, Vec<Sym *> &types) {
+implement_and_specialize(Sym *s, Sym *ss, Accum<Sym *> &types) {
   implement(s, ss, types);
   specialize(s, ss, types);
 }
@@ -190,9 +191,9 @@ compute_single_structural_type_hierarchy(Vec<Sym *> types, int is_union) {
 #undef E
 
 static void 
-compute_structural_type_hierarchy(Vec<Sym *> types) {
+compute_structural_type_hierarchy(Accum<Sym *> types) {
   Vec<Sym *> record_types, union_types;
-  forv_Sym(s, types) if (s) {
+  forv_Sym(s, types.asvec) if (s) {
     if (s->type_kind == Type_RECORD && s->is_value_type) {
       if (!s->is_union_type)
         record_types.add(s);
@@ -212,8 +213,8 @@ void check_unique(Vec<void *> &v) {
 }
 
 void
-build_type_hierarchy() {
-  Vec<Sym *> types, meta_types;
+build_type_hierarchy(int compute_structural_value_hierarchy) {
+  Accum<Sym *> types, meta_types;
   for (int x = type_hierarchy_built; x < if1->allsyms.n; x++) {
     Sym *s = if1->allsyms.v[x];
     // functions implement and specialize symbols (selectors) of the same name
@@ -242,11 +243,12 @@ build_type_hierarchy() {
         implement_and_specialize(a->must_specialize, s, types);
     }
     if (s->type_kind)
-      types.set_add(s);
+      types.add(s);
     if (s->instantiates) 
       implement_and_specialize(s->instantiates, s, types);
   }
-  forv_Sym(s, types) if (s) {
+  qsort_by_id(types.asvec);
+  forv_Sym(s, types.asvec) if (s) {
     if (!s->dispatch_order.n && !s->is_system_type) {
       if (s->is_meta_type)
         implement_and_specialize(sym_anytype, s, types);
@@ -257,7 +259,7 @@ build_type_hierarchy() {
     }
   }
   // map subtyping and subclassing to meta_types
-  forv_Sym(s, types) if (s && !s->is_meta_type) {
+  forv_Sym(s, types.asvec) if (s && !s->is_meta_type) {
     forv_Sym(ss, s->implementors) if (ss && s->meta_type != ss->meta_type)
       implement(s->meta_type, ss->meta_type, meta_types);
     forv_Sym(ss, s->specializers) if (ss && s->meta_type != ss->meta_type)
@@ -265,18 +267,21 @@ build_type_hierarchy() {
     if (!s->is_system_type && !s->is_meta_type && s != s->meta_type)
       implement_and_specialize(s->meta_type, s, types);
   }
-  forv_Sym(s, types) if (s) {
+  forv_Sym(s, types.asvec) if (s) {
     s->implementors.set_add(s);
     s->specializers.set_add(s);
   }
   // compute structural type hierarchy
-  if (0) compute_structural_type_hierarchy(types);
+  if (compute_structural_value_hierarchy) 
+    compute_structural_type_hierarchy(types);
   // compute implementors closure
   Vec<Sym *> todo, changed, next_changed;
-  types.set_union(meta_types);
-  forv_Sym(s, types) if (s)
+  types.asset.set_union(meta_types.asset);
+  types.asvec.clear();
+  types.asvec.append(types.asset);
+  forv_Sym(s, types.asvec) if (s)
     todo.set_union(s->implements); 
-  changed.copy(types);
+  changed.copy(types.asset);
   while (todo.n) {
     Vec<Sym *> now;
     now.move(todo);
@@ -296,9 +301,9 @@ build_type_hierarchy() {
     changed.move(next_changed);
   }
   // compute specializers closure
-  forv_Sym(s, types) if (s)
+  forv_Sym(s, types.asvec) if (s)
     todo.set_union(s->specializes); 
-  changed.copy(types);
+  changed.copy(types.asset);
   while (todo.n) {
     Vec<Sym *> now;
     now.move(todo);
@@ -319,7 +324,7 @@ build_type_hierarchy() {
   }
 
   // put nil at the bottom of the object hiearchy
-  forv_Sym(s, types) if (s) {
+  forv_Sym(s, types.asvec) if (s) {
     if (sym_object->specializers.set_in(s) && !s->is_value_type && s != sym_nil_type)
       implement_and_specialize(s, sym_nil_type, types);
   }
