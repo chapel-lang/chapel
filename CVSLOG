@@ -58000,3 +58000,16 @@ Added files:
 	                           test_class_array1.chpl 
 	                           test_class_array1.good 
 
+---------------------------------------------------------------------------
+
+03/02/06 19:36:47 -- jplevyak
+
+Log message:
+	fix bug: clear creation set definition points for newly cloned creation sets.
+	add an assert to check same.
+	This fixes the infinite loop when instantiation of all effected functions
+	  for a type is turned off.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
