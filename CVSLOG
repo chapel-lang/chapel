@@ -58013,3 +58013,14 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+03/03/06 08:50:48 -- jplevyak
+
+Log message:
+	Add paramters to Type::genericSymbols.  This was messing up
+	deferred instantiation.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+
