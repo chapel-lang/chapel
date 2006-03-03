@@ -58024,3 +58024,16 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: normalize.cpp 
 
+---------------------------------------------------------------------------
+
+03/03/06 12:02:19 -- deitz
+
+Log message:
+	Added two inheritance tests that work.
+
+Added files:
+	chapel/test/classes/deitz/: test_inherit_mod1.chpl 
+	                            test_inherit_mod1.good 
+	                            test_inherit_mod2.chpl 
+	                            test_inherit_mod2.good 
+
