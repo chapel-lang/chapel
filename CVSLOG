@@ -58050,3 +58050,15 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 	chapel/compiler/passes/: normalize.cpp 
 
+---------------------------------------------------------------------------
+
+03/03/06 13:54:08 -- deitz
+
+Log message:
+	Should this test be an error as reported?
+
+Added files:
+	chapel/test/classes/deitz/: test_inherit_mod3.chpl 
+	                            test_inherit_mod3.future 
+	                            test_inherit_mod3.good 
+
