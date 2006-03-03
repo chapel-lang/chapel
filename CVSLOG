@@ -58037,3 +58037,16 @@ Added files:
 	                            test_inherit_mod2.chpl 
 	                            test_inherit_mod2.good 
 
+---------------------------------------------------------------------------
+
+03/03/06 13:05:34 -- deitz
+
+Log message:
+	Fixed bug in folding of parameter methods.  But note this folding is
+	still shaky because it is difficult to determine that an access to a
+	field is a parameter.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/passes/: normalize.cpp 
+
