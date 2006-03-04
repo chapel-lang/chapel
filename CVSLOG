@@ -58097,3 +58097,16 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+03/04/06 10:39:40 -- jplevyak
+
+Log message:
+	Fix test case by remove unreachable edges and not cloning
+	for dispatch on nil.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+Removed files:
+	chapel/test/classes/deitz/: test_inherit_mod3.future 
+
