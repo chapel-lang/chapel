@@ -1369,7 +1369,6 @@ make_AEdges(Match *m, PNode *p, EntrySet *from, Vec<AVar *> &args) {
       }
     }
     record_args_rets(e, args);
-    from->out_edges.set_add(e);
     if (!e->in_edge_worklist) {
       e->in_edge_worklist = 1;
       edge_worklist.enqueue(e);
@@ -1845,10 +1844,11 @@ analyze_edge(AEdge *e_arg) {
           filter = type_intersection(filter, es_filter);
       } else 
         filter = es_filter;
-      if (filter && type_intersection(x->value->out, filter) == bottom_type) {
-        assert(!"bad filters");
-      }
+      if (filter && type_intersection(x->value->out, filter) == bottom_type)
+        goto LskipEdge;
     }
+    if (ee->from)
+      ee->from->out_edges.set_add(ee);
     form_MPositionAVar(x, ee->args) {
       if (!x->key->is_positional())
         continue;
@@ -1889,6 +1889,7 @@ analyze_edge(AEdge *e_arg) {
       add_send_constraints(ee->to);
       add_send_edges(ee);
     }
+  LskipEdge:;
   }
 }
 
@@ -2897,7 +2898,7 @@ split_edges(AVar *av, int fsetters, int fmark) {
   }
   assert(p);
   Map<CreationSet *, EntrySet *> cs_es_map;
-  forv_CreationSet(cs, av->out->sorted) {
+  forv_CreationSet(cs, av->out->type->sorted) {
     Map<MPosition *, AType *> filters;
     filters.copy(es->filters);
     filters.put(p, make_AType(cs));
@@ -2909,8 +2910,8 @@ split_edges(AVar *av, int fsetters, int fmark) {
     if (earg->out->n == 1)
       ee->to = cs_es_map.get(earg->out->v[0]);
     else {
-      for (int i = 0; i < earg->out->sorted.n; i++) {
-        CreationSet *cs = earg->out->sorted.v[i];
+      for (int i = 0; i < earg->out->type->sorted.n; i++) {
+        CreationSet *cs = earg->out->type->sorted.v[i];
         if (!i) {
           EntrySet *new_es = cs_es_map.get(cs);
           again |= new_es != ee->to; 
@@ -3610,6 +3611,15 @@ is_call_result(AVar *av) {
 }
 
 static int
+result_is_different(AVar *result, AEdge *e) {
+  for (int i = 0; i < e->pnode->lvals.n; i++)
+    if (result == e->rets.v[i])
+      return e->to->rets.v[i]->out->type != result->out->type;
+  assert(!"found");
+  return 0;
+}
+
+static int
 split_for_violations(Vec<ATypeViolation *> &violations) {
   Vec<AVar *> imprecisions;
   forv_ATypeViolation(v, violations) if (v) {
@@ -3621,10 +3631,16 @@ split_for_violations(Vec<ATypeViolation *> &violations) {
       EntrySet *es = (EntrySet*)v->av->contour;
       Vec<AEdge *> *ve = es->out_edge_map.get(p);
       if (ve) {
-        forv_AEdge(e, *ve)
-          if (e->to->filters.n)
-            form_MPositionAType(x, e->to->filters)
-              dispatched.set_add(e->args.get(x->key));
+        forv_AEdge(e, *ve) {
+          if (result_is_different(v->av, e)) {
+            form_MPositionAVar(x, e->args) {
+              if (e->to->filters.get(x->key))
+                dispatched.set_add(x->value);
+              if (e->match->formal_filters.get(x->key) != x->value->out)
+                dispatched.set_add(x->value);
+            }
+          }
+        }
       }
       Vec<AVar *> args;
       form_MPositionAVar(x, es->args)
