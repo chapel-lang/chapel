@@ -10,8 +10,7 @@
 #include "ast.h"
 #include "log.h"
 
-#define CHECK_INSTANTIATION     1
-#define CHECK_CALLEE_CACHE      1
+//#define CHECK_CALLEE_CACHE      1
 
 // Key to names of position variables
 //  ABCD 
@@ -728,10 +727,8 @@ Matcher::instantiation_wrappers_and_partial_application(Vec<Fun *> &matches) {
       continue;
     if (!m->partial)
       complete.set_add(f);
-#ifdef CHECK_INSTANTIATION
     if (f->is_generic && !m->partial)
       fail("instantiation failure for function '%s'", f->sym->name ? f->sym->name : "<unknown>");
-#endif
     new_matches.set_add(f);
   }
   complete.set_to_vec();
@@ -912,11 +909,9 @@ generic_substitutions(Match **am, MPosition &app, Vec<CreationSet*> &args, IFAAS
     }
     local_app.inc();
   }
-#ifdef CHECK_INSTANTIATION
   if (m->fun->is_generic && !m->generic_substitutions.n && !m->partial)
     fail("unification failure for generic function '%s'", 
          m->fun->sym->name ? m->fun->sym->name : "<unknown>");
-#endif
   return 1;
 }
 
