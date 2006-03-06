@@ -1198,7 +1198,9 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
     Vec<FnSymbol*> fns;
     collect_functions(&fns);
     forv_Vec(FnSymbol, fn, fns) {
-      if (function_requires_instantiation(fn, retType)) {
+      if (function_requires_instantiation(fn, retType)
+          && fn == this
+        ) {
         FnSymbol *fnClone = instantiate_function(pointOfInstantiation, fn, &substitutions, generic_substitutions, &map, cloneType);
         new_functions->add(fnClone);
         if (fn == this) {

@@ -1001,46 +1001,48 @@ Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &app,
       covered.set_add(m);
   LnextFun:;
   }
+  covered.set_to_vec();
   log(LOG_DISPATCH, "%d- cover_formals: %d\n", send->var->sym->id, covered.n);
   log_dispatch_matches(*this, covered);
   if (!covered.n)
     return;
 
+  Vec<Match *> applicable;
+  // record generic substitutions and point-wise applications
+  for (int i = 0; i < covered.n; i++) {
+    if (!generic_substitutions(&covered.v[i], app, csargs, ast))
+      continue;
+    coercion_uses(&covered.v[i], app, csargs);
+    applicable.add(covered.v[i]);
+  }
+
   Vec<Match *> unsubsumed, subsumed;
   // eliminate those which are subsumed by some other function
-  for (int i = 0; i < covered.n; i++) if (covered.v[i]) {
-    if (subsumed.set_in(covered.v[i]))
+  for (int i = 0; i < applicable.n; i++) if (applicable.v[i]) {
+    if (subsumed.set_in(applicable.v[i]))
       continue;
-    for (int j = i + 1; j < covered.n; j++) if (covered.v[j]) {
-      switch (subsumes(covered.v[i], covered.v[j], app, csargs.n)) {
-        case -1: subsumed.set_add(covered.v[j]); break;
+    for (int j = i + 1; j < applicable.n; j++) if (applicable.v[j]) {
+      switch (subsumes(applicable.v[i], applicable.v[j], app, csargs.n)) {
+        case -1: subsumed.set_add(applicable.v[j]); break;
         case 0: break;
-        case 1: goto LnextCovered;
+        case 1: goto LnextApplicable;
       }
     }
-    unsubsumed.add(covered.v[i]);
-  LnextCovered:;
+    unsubsumed.add(applicable.v[i]);
+  LnextApplicable:;
   }
   log(LOG_DISPATCH, "%d- unsubsumed: %d\n", send->var->sym->id, unsubsumed.n);
   log_dispatch_matches(*this, unsubsumed);
 
-  Vec<Match *> applicable;
-  // record generic substitutions and point-wise applications
-  for (int i = 0; i < unsubsumed.n; i++) {
-    if (!generic_substitutions(&unsubsumed.v[i], app, csargs, ast))
-      continue;
-    coercion_uses(&unsubsumed.v[i], app, csargs);
-    applicable.add(unsubsumed.v[i]);
-  }
   // for those remaining, check for ambiguities
   Vec<Fun *> matches, similar, done;
-  for (int i = 0; i < applicable.n; i++) {
-    Match *x = applicable.v[i];
+  for (int i = 0; i < unsubsumed.n; i++) {
+    Match *x = unsubsumed.v[i];
     if (done.set_in(x->fun))
       continue;
     similar.clear(); similar.add(x->fun);
-    for (int j = i + 1; j < applicable.n; j++) {
-      Match *y = applicable.v[j];
+    for (int j = i + 1; j < unsubsumed.n; j++) {
+      Match *y = unsubsumed.v[j];
       if (done.set_in(y->fun))
         continue;
       app.push(1);
@@ -1050,11 +1052,11 @@ Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &app,
         Sym *xtype = dispatch_type(xarg);
         Sym *ytype = dispatch_type(yarg);
         if (xtype != ytype || xarg->is_pattern != yarg->is_pattern)
-          goto LnextApplicable;
+          goto LnextUnsubsumed;
         app.inc();
       }
       similar.add(y->fun); done.set_add(y->fun);
-    LnextApplicable:;
+    LnextUnsubsumed:;
       app.pop();
     }
     log(LOG_DISPATCH, "%d- unambiguous: %d\n", send->var->sym->id, similar.n);
