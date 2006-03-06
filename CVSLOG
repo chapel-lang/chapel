@@ -58110,3 +58110,14 @@ Modified files:
 Removed files:
 	chapel/test/classes/deitz/: test_inherit_mod3.future 
 
+---------------------------------------------------------------------------
+
+03/06/06 06:46:48 -- jplevyak
+
+Log message:
+	Some minor cleanup (initialization of AEdge::rets, early completion of
+	incomplete dispatches).
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp pattern.cpp 
+
