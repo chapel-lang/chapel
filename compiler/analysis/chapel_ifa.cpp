@@ -82,7 +82,7 @@ static void build_symbols(Vec<BaseAST *> &syms);
 static void build_types(Vec<BaseAST *> &syms, Vec<Type *> *types = NULL);
 static void build_classes(Vec<BaseAST *> &syms);
 static int gen_if1(BaseAST *ast);
-static void finalize_function(Fun *fun);
+static void finalize_function(Fun *fun, int instantiation);
 static Type * to_AST_type(Sym *type);
 
 class ScopeLookupCache : public Map<char *, Vec<Fun *> *> {};
@@ -548,7 +548,7 @@ install_new_asts(Vec<FnSymbol *> &funs, Vec<TypeSymbol *> &types) {
   }
   forv_Vec(FnSymbol, f, funs) {
     build_patterns(pdb->fa, f->asymbol->sym->fun);
-    finalize_function(f->asymbol->sym->fun);
+    finalize_function(f->asymbol->sym->fun, 1);
   }
   if1_write_log();
 }
@@ -1982,22 +1982,24 @@ add_to_universal_lookup_cache(char *name, Fun *fun) {
 }
 
 static int
-handle_argument(Sym *s, char *name, Fun *fun, int added, MPosition &p) {
+handle_argument(Sym *s, char *name, Fun *fun, int added, MPosition &p, int instantiation) {
   if (s->is_pattern) {
     p.push(1);
     forv_Sym(ss, s->has) {
-      added = handle_argument(ss, name, fun, added, p);
+      added = handle_argument(ss, name, fun, added, p, instantiation);
       p.inc();
     }
     p.pop();
   }
-  // non-scoped lookup if any parameteter is specialized on a reference type
-  // (is dispatched)
-  if (!added && s->must_specialize && 
-      is_reference_type(SYMBOL(s->must_specialize)))
-  {
-    add_to_universal_lookup_cache(name, fun);
-    added = 1;
+  if (instantiation) { 
+    // non-scoped lookup if any parameteter is specialized on a reference type
+    // (is dispatched)
+    if (!added && s->must_specialize && 
+        is_reference_type(SYMBOL(s->must_specialize)))
+    {
+      add_to_universal_lookup_cache(name, fun);
+      added = 1;
+    }
   }
   // record default argument positions
   if (SYMBOL(s)) {
@@ -2011,7 +2013,7 @@ handle_argument(Sym *s, char *name, Fun *fun, int added, MPosition &p) {
 }
 
 static void 
-finalize_function(Fun *fun) {
+finalize_function(Fun *fun, int instantiation) {
   int added = 0;
   char *name = fun->sym->has.v[0]->name;
   assert(name);
@@ -2024,18 +2026,21 @@ finalize_function(Fun *fun) {
     fun->is_member = 1;
     fs->_this->asymbol->sym->is_this = 1;
   }
-  if (fs->typeBinding) {
-    if (is_reference_type(SYMBOL(fs->typeBinding->definition))) {
-      if (fs->method_type != NON_METHOD) {
-        add_to_universal_lookup_cache(name, fun);
-        added = 1;
+  // add to dispatch cache
+  if (!instantiation) {
+    if (fs->typeBinding) {
+      if (is_reference_type(SYMBOL(fs->typeBinding->definition))) {
+        if (fs->method_type != NON_METHOD) {
+          add_to_universal_lookup_cache(name, fun);
+          added = 1;
+        }
       }
     }
   }
   MPosition p;
   p.push(1);
   forv_Sym(s, fun->sym->has) {
-    added = handle_argument(s, name, fun, added, p);
+    added = handle_argument(s, name, fun, added, p, instantiation);
     p.inc();
   }
   // check nesting
@@ -2063,7 +2068,7 @@ ACallbacks::finalize_functions() {
   pdb->fa->array_index_base = 1;
   pdb->fa->tuple_index_base = 1;
   forv_Fun(fun, pdb->funs)
-    finalize_function(fun);
+    finalize_function(fun, 0);
 }
 
 // C++ boilerplate clutter
