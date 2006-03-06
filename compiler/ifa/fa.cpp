@@ -878,6 +878,8 @@ static AEdge *
 copy_AEdge(AEdge *ee, EntrySet *to) {
   AEdge *e = new_AEdge(ee->match, ee->pnode, ee->from);
   set_entry_set(e, to);
+  if (!e->args.n) e->args.copy(ee->args);
+  if (!e->rets.n) e->rets.copy(ee->rets);
   Vec<AEdge *> *ve = ee->from->out_edge_map.get(ee->pnode);
   if (!ve)
     ee->from->out_edge_map.put(ee->pnode, (ve = new Vec<AEdge *>));
@@ -1830,8 +1832,6 @@ analyze_edge(AEdge *e_arg) {
   make_entry_set(e_arg, edges);
   qsort_by_id(edges);
   forv_AEdge(ee, edges) {
-    if (!ee->args.n) ee->args.copy(e_arg->args);
-    if (!ee->rets.n) ee->rets.copy(e_arg->rets);
     int regular_rets = ee->pnode->lvals.n;
     // verify filters
     form_MPositionAVar(x, ee->args) {
