@@ -58145,3 +58145,13 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp pattern.cpp 
 
+---------------------------------------------------------------------------
+
+03/06/06 10:28:59 -- jplevyak
+
+Log message:
+	Use sorted vector instead of set for iteration.
+
+Modified files:
+	chapel/compiler/ifa/: pattern.cpp 
+
