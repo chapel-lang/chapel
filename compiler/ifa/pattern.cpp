@@ -1093,7 +1093,7 @@ Matcher::find_best_matches(Vec<AVar *> &args, Vec<CreationSet *> &csargs,
     find_best_cs_match(csargs, app, matches, result, top_level);
   else {
     csargs.fill(iarg + 1);
-    forv_CreationSet(cs, *args.v[iarg]->out) if (cs) {
+    forv_CreationSet(cs, args.v[iarg]->out->sorted) {
       csargs.v[iarg] = cs;
       find_best_matches(args, csargs, matches, app, result, top_level, iarg + 1);
     }
