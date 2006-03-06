@@ -58121,3 +58121,17 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp pattern.cpp 
 
+---------------------------------------------------------------------------
+
+03/06/06 08:49:44 -- jplevyak
+
+Log message:
+	Stop instantiating all related functions when we instantiate a type.
+	Move the subsumption checked below instantition during analysis
+	  resolution so that the instantiated types can be considered
+	  when deciding the "most specific" function.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/ifa/: pattern.cpp 
+
