@@ -58135,3 +58135,13 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 	chapel/compiler/ifa/: pattern.cpp 
 
+---------------------------------------------------------------------------
+
+03/06/06 10:20:41 -- jplevyak
+
+Log message:
+	Disable the callee cache as it causing a bug and I an rewriting it.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp pattern.cpp 
+
