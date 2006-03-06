@@ -58166,3 +58166,17 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: chapel_ifa.cpp 
 
+---------------------------------------------------------------------------
+
+03/06/06 13:21:35 -- deitz
+
+Log message:
+	Fixed .good and removed .future.
+
+Modified files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_overinstantiate1a.good 
+Removed files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_overinstantiate1a.future 
+
