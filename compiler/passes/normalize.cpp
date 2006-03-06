@@ -25,7 +25,6 @@ static void insert_formal_temps(FnSymbol* fn);
 static void call_constructor_for_class(CallExpr* call);
 static void normalize_for_loop(ForLoopStmt* stmt);
 static void decompose_special_calls(CallExpr* call);
-static void hack_domain_constructor_call(CallExpr* call);
 static void hack_seqcat_call(CallExpr* call);
 static void convert_user_primitives(CallExpr* call);
 static void hack_resolve_types(Expr* expr);
@@ -113,7 +112,6 @@ void normalize(BaseAST* base) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
     if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
-      hack_domain_constructor_call(a);
       hack_seqcat_call(a);
     } else if (Expr* a = dynamic_cast<Expr*>(ast)) {
       hack_resolve_types(a);
@@ -558,19 +556,6 @@ static void decompose_special_calls(CallExpr* call) {
   } else if (call->isNamed("writeln")) {
     call->parentStmt->insertAfter(new CallExpr("fwriteln", chpl_stdout));
     decompose_multi_actuals(call, "fwrite", new SymExpr(chpl_stdout));
-  }
-}
-
-
-static void hack_domain_constructor_call(CallExpr* call) {
-  if (call->isResolved())
-    return;
-  if (call->isNamed("domain")) {
-    if (call->argList->length() != 1)
-      USR_FATAL(call, "Domain type cannot yet be inferred");
-    if (call->argList->only()->typeInfo() != dtInteger)
-      USR_FATAL(call, "Non-arithmetic domains not yet supported");
-    call->baseExpr->replace(new SymExpr("_construct__adomain"));
   }
 }
 

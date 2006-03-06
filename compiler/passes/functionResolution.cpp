@@ -445,6 +445,10 @@ resolve_call(BaseAST* ast,
                 as_good = false;
               }
             }
+            if (arg->intent == INTENT_TYPE && arg2->intent != INTENT_TYPE)
+              better = true;
+            if (arg->intent != INTENT_TYPE && arg2->intent == INTENT_TYPE)
+              as_good = false;
           }
           if (better || as_good) {
             best = NULL;

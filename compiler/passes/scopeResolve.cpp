@@ -75,7 +75,7 @@ void scopeResolve(BaseAST* base) {
     if (SymExpr* symExpr = dynamic_cast<SymExpr*>(ast)) {
       if (symExpr->var->isUnresolved) {
         char* name = symExpr->var->name;
-        if (!strcmp(name, "__primitive") || !strcmp(name, "domain") || !strcmp(name, "."))
+        if (!strcmp(name, "__primitive") || !strcmp(name, "."))
           continue;
 
         Symbol* sym = Symboltable::lookupFromScope(name, symExpr->parentScope);

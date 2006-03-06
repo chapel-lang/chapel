@@ -1027,7 +1027,7 @@ type:
 | TLP non_tuple_lvalue TSTAR type TRP
     { $$ = new CallExpr("_htuple", $4, $2); }
 | TLSBR nonempty_expr_ls TRSBR type
-    { $$ = new CallExpr("_build_array", new CallExpr("_build_domain", $2), $4); }
+    { $$ = new CallExpr("_build_array_type", new CallExpr("_build_domain", $2), $4); }
 ;
 
 formal_type:

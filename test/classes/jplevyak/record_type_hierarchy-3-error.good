@@ -1,7 +1,8 @@
-_chpl_adomain.chpl:10: fwrite, f : file, val : _domain
-_chpl_adomain.chpl:145: fwrite, f : file, x : _adomain
-_chpl_adomain.chpl:191: fwrite, f : file, x : _aarray
+_chpl_adomain.chpl:173: fwrite, f : file, x : _adomain
+_chpl_adomain.chpl:180: fwrite, f : file, x : _aarray
+_chpl_base.chpl:106: fwrite, f : file, val : _domain
 _chpl_base.chpl:11: fwrite, f : file, val : _setterTokenType
+_chpl_base.chpl:120: fwrite, f : file, val : _array
 _chpl_base.chpl:3: fwrite, f : file, val : _unused_class
 _chpl_base.chpl:85: fwrite, f : file, val : _ddata
 _chpl_base.chpl:9: fwrite, f : file, val : _methodTokenType
@@ -14,6 +15,8 @@ _chpl_file.chpl:196: fwrite, f : file, val : bool
 _chpl_file.chpl:1: fwrite, f : file, val : file
 _chpl_file.chpl:214: fwrite, f : file, x : nil_type
 _chpl_htuple.chpl:22: fwrite, f : file, val : _htuple
+_chpl_indefinite.chpl:103: fwrite, f : file, x : _iarray
+_chpl_indefinite.chpl:32: fwrite, f : file, val : _idomain
 _chpl_seq.chpl:156: fwrite, f : file, s : seq
 _chpl_seq.chpl:1: fwrite, f : file, val : _seqNode
 _chpl_seq.chpl:232: fwrite, f : file, s : _aseq

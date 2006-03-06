@@ -14,25 +14,11 @@
 linux and general regressions
 =============================
 
-[Error executing program trivial/preston/tuple]
-
-We need to handle unspecified '_' OP_INIT better.
-
-[Error matching compiler output for arrays/deitz/test_domain2D]
-[Error matching compiler output for functions/bradc/typefn2]
-[Error matching compiler output for functions/deitz/test_typeconstraint1]
-[Error matching compiler output for interpreter/jplevyak/test_default_param3]
-[Error matching compiler output for interpreter/jplevyak/test_enum1]
-[Error matching compiler output for trivial/deitz/test_if_expr4]
-[Error matching compiler output for trivial/deitz/test_let7]
-[Error matching compiler output for types/type_variables/deitz/test_datablock]
-[Error matching compiler output for types/type_variables/jplevyak/where-3]
-
-?
-
+[Error matching compiler output for arrays/deitz/test_array_of_class1]
+[Error matching compiler output for arrays/deitz/test_indefinite2]
+[Error matching compiler output for classes/deitz/test_type_in_class2]
 [Error matching compiler output for demo/review_060130/jacobi2]
-
-Failing because modules are sent to command line in wrong order.  Odd.
+[Error matching compiler output for functions/deitz/varargs/test_varargs7]
 
 ==========================
 linux valgrind regressions
