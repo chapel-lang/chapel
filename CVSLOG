@@ -58180,3 +58180,21 @@ Removed files:
 	chapel/test/types/type_variables/deitz/: 
 	                                         test_overinstantiate1a.future 
 
+---------------------------------------------------------------------------
+
+03/06/06 13:24:30 -- deitz
+
+Log message:
+	Fixed interpreter function resolution to handle new instantiation
+	protocol in which only the constructor and type are copied when the
+	constructor is instantiated.  This means that the other methods and
+	functions on the generic type must be instantiated when they are
+	called.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	                         scopeResolve.cpp 
+Added files:
+	chapel/test/interpreter/deitz/: .cvsignore COMPOPTS NOEXEC 
+	                                domarr.chpl domarr.good 
+
