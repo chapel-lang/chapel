@@ -58254,3 +58254,15 @@ Added files:
 	                           test_indefinite3.chpl 
 	                           test_indefinite3.good 
 
+---------------------------------------------------------------------------
+
+03/06/06 15:32:31 -- deitz
+
+Log message:
+	Added two serial versions of NAS FT.  One of these I wrote a few
+	months ago.  The other I'm working on getting to run.
+
+Added files:
+	chapel/test/npb/ft/: NOTEST ft-serial-working1.chpl 
+	                     ft-serial.chpl 
+
