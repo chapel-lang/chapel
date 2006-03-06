@@ -79,7 +79,7 @@ void scopeResolve(BaseAST* base) {
           continue;
 
         Symbol* sym = Symboltable::lookupFromScope(name, symExpr->parentScope);
-        VarSymbol* var = dynamic_cast<VarSymbol*>(sym);
+        //VarSymbol* var = dynamic_cast<VarSymbol*>(sym);
         FnSymbol* fn = dynamic_cast<FnSymbol*>(sym);
         TypeSymbol* type = dynamic_cast<TypeSymbol*>(sym);
         ArgSymbol* arg = dynamic_cast<ArgSymbol*>(sym);
@@ -91,13 +91,13 @@ void scopeResolve(BaseAST* base) {
               symExpr->var = sym;
 
           // Apply 'this' in methods where necessary
-          if (!type) {
+          if (type || !type) {
             Symbol* parent = symExpr->parentSymbol;
             while (!dynamic_cast<ModuleSymbol*>(parent)) {
               if (FnSymbol* method = dynamic_cast<FnSymbol*>(parent)) {
                 if (method->typeBinding) {
                   ClassType* ct = dynamic_cast<ClassType*>(method->typeBinding->definition);
-                  if ((var && var->parentScope->type == SCOPE_CLASS) ||
+                  if ((sym && sym->parentScope->type == SCOPE_CLASS) ||
                       (fn && ct && function_name_matches_method_name(fn, ct)))
                     if (symExpr->var != method->_this) {
                       CallExpr* call = dynamic_cast<CallExpr*>(symExpr->parentExpr);

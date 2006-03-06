@@ -906,6 +906,12 @@ static void fold_call_expr(CallExpr* call) {
                 call->replace(new SymExpr(value));
               }
             }
+          } else if (Type* var = dynamic_cast<Type*>(key)) {
+            if (call->isNamed(var->symbol->name)) {
+              if (Type* value = dynamic_cast<Type*>(type->substitutions.get(key))) {
+                call->replace(new SymExpr(value->symbol));
+              }
+            }
           }
         }
       }

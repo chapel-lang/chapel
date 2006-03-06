@@ -11,6 +11,16 @@ Vec<FnSymbol*> resolve_call_error_candidates;
 
 void param_compute(Expr* expr);
 
+bool can_instantiate(Type* actualType, Type* formalType) {
+  if (actualType == formalType)
+    return true;
+  forv_Vec(Type, parent, actualType->typeParents) {
+    if (parent == formalType || can_instantiate(parent, formalType))
+      return true;
+  }
+  return false;
+}
+
 bool can_dispatch(Symbol* actualParam, Type* actualType, Type* formalType);
 bool can_dispatch_ne(Symbol* actualParam, Type* actualType, Type* formalType) {
   if (actualType != dtAny && formalType == dtAny)
@@ -130,11 +140,20 @@ add_candidate(Map<FnSymbol*,Vec<ArgSymbol*>*>* candidateFns,
           if (actual_params->v[i])
             subs.put(actual_formals->v[i], actual_params->v[i]);
         }
+      } else if (fn->isGeneric) {
+        TypeSymbol* formalType = actual_formals->v[i]->type->symbol;
+        if (fn->genericSymbols.set_in(formalType)) {
+          if (can_instantiate(actual_types->v[i], actual_formals->v[i]->type)) {
+            subs.put(actual_formals->v[i]->type, actual_types->v[i]);
+          }
+        }
       }
     }
     if (subs.n) {
       Vec<FnSymbol*> inst_fns;
       Vec<TypeSymbol*> inst_ts;
+      if (fn->isPartialInstantiation(&subs))
+        return;
       FnSymbol* inst_fn = fn->instantiate_generic(&subs, &inst_fns, &inst_ts);
       newFns.set_add(inst_fn);
       if (inst_fn->whereExpr) {
