@@ -58155,3 +58155,14 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: pattern.cpp 
 
+---------------------------------------------------------------------------
+
+03/06/06 12:09:07 -- jplevyak
+
+Log message:
+	Do not add instantiated functions to the dispatch tables.
+	(we always work from the generic version each time).
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+
