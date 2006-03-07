@@ -58325,3 +58325,16 @@ Added files:
 	                                      cobegin.simple1.good 
 	                                      cobegin.simple2.good 
 
+---------------------------------------------------------------------------
+
+03/06/06 17:14:42 -- waynew
+
+Log message:
+	Test saving intermediate C files to current directory.
+
+Added files:
+	chapel/test/compflags/waynew/: saveccurrdir.chpl 
+	                               saveccurrdir.compopts 
+	                               saveccurrdir.future 
+	                               saveccurrdir.good 
+
