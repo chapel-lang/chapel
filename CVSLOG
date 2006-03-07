@@ -58402,3 +58402,13 @@ Added files:
 	                              test_seq_arg.future 
 	                              test_seq_arg.good 
 
+---------------------------------------------------------------------------
+
+03/07/06 11:47:37 -- jplevyak
+
+Log message:
+	Disable the offsetof error message for gcc 4.0
+
+Modified files:
+	chapel/compiler/make/: Makefile.compiler.head 
+
