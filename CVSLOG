@@ -58350,3 +58350,14 @@ Removed files:
 	                                      cobegin.simple1.future 
 	                                      cobegin.simple2.future 
 
+---------------------------------------------------------------------------
+
+03/06/06 17:30:36 -- jplevyak
+
+Log message:
+	Add test case for nostdincs (currently broken)
+
+Added files:
+	chapel/test/modules/jplevyak/: COMPOPTS nostdincs.chpl 
+	                               nostdincs.good 
+
