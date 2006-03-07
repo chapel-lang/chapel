@@ -58486,3 +58486,27 @@ Added files:
 	chapel/test/arrays/deitz/: test_domain_dims.chpl 
 	                           test_domain_dims.good 
 
+---------------------------------------------------------------------------
+
+03/07/06 14:46:46 -- deitz
+
+Log message:
+	Added initial compiler support for sparse domains and arrays.  Added a
+	new module _chpl_sparse where the sparse domain implementation can go.
+	The module is basically empty.  Initial support only includes the
+	ability to declarse a sparse domain over an arithmetic domain, declare
+	a sparse array based on a sparse domain, and print out an error
+	message about writing sparse arrays.  See test_sparse1.chpl.
+	
+	Added domain and sparse to the lexer as keywords.
+
+Modified files:
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/passes/: cleanup.cpp filesToAST.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_base.chpl 
+	                          _chpl_standard.chpl 
+Added files:
+	chapel/modules/standard/: _chpl_sparse.chpl 
+	chapel/test/sparse/deitz/: .cvsignore test_sparse1.chpl 
+	                           test_sparse1.good 
+
