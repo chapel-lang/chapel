@@ -58288,3 +58288,13 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: pnode.h 
 
+---------------------------------------------------------------------------
+
+03/06/06 16:51:34 -- jplevyak
+
+Log message:
+	prevent SEGV
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
