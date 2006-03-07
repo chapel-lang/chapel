@@ -58313,3 +58313,15 @@ Added files:
 	                                      cobegin.simple2.chpl 
 	                                      cobegin.simple2.future 
 
+---------------------------------------------------------------------------
+
+03/06/06 17:09:01 -- waynew
+
+Log message:
+	Initial version of cobegin test output.
+
+Added files:
+	chapel/test/parallel/cobegin/waynew/: cobegin.simple0.good 
+	                                      cobegin.simple1.good 
+	                                      cobegin.simple2.good 
+
