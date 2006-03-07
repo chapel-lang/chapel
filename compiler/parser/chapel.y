@@ -112,6 +112,7 @@ Is this "while x"(i); or "while x(i)";?
 %token TPARAM
 %token TCONTINUE
 %token TDO
+%token TDOMAIN
 %token TENUM
 %token TFOR
 %token TFORALL
@@ -138,6 +139,7 @@ Is this "while x"(i); or "while x(i)";?
 %token TREF
 %token TRETURN
 %token TSELECT
+%token TSPARSE
 %token TSTATIC
 %token TTHEN
 %token TTYPE
@@ -1028,6 +1030,10 @@ type:
     { $$ = new CallExpr("_htuple", $4, $2); }
 | TLSBR nonempty_expr_ls TRSBR type
     { $$ = new CallExpr("_build_array_type", new CallExpr("_build_domain", $2), $4); }
+| TDOMAIN TLP expr_ls TRP
+    { $$ = new CallExpr("_build_domain_type", $3); }
+| TSPARSE TDOMAIN TLP expr_ls TRP
+    { $$ = new CallExpr("_build_sparse_domain_type", $4); }
 ;
 
 formal_type:

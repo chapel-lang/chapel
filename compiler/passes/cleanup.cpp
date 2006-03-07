@@ -578,24 +578,21 @@ static void hack_array(DefExpr* def) {
   if (ArgSymbol* arg = dynamic_cast<ArgSymbol*>(def->sym)) {
     // handle arrays in constructors for arrays as fields
     if (CallExpr* type = dynamic_cast<CallExpr*>(def->exprType)) {
-      if (type->isNamed("_build_array_type")) {
+      if (type->isNamed("_build_array_type") ||
+          type->isNamed("_build_sparse_domain_type") ||
+          type->isNamed("_build_domain_type")) {
         if (!arg->defaultExpr)
           INT_FATAL(def, "Clean up arrays!!!");
         Expr* expr = def->exprType;
         expr->remove();
         arg->defaultExpr->replace(expr);
-      } else if (type->isNamed("domain")) {
-        if (!arg->defaultExpr)
-          INT_FATAL(def, "Clean up arrays!!!");
-        Expr* expr = def->exprType;
-        expr->remove();
-        arg->defaultExpr->replace(expr);
-        type->baseExpr->replace(new SymExpr("_build_domain_type"));
       }
     }
   } else {
     if (CallExpr* type = dynamic_cast<CallExpr*>(def->exprType)) {
-      if (type->isNamed("_build_array_type")) {
+      if (type->isNamed("_build_array_type") ||
+          type->isNamed("_build_sparse_domain_type") ||
+          type->isNamed("_build_domain_type")) {
         if (def->init) {
           Expr* init = def->init;
           init->remove();
@@ -603,15 +600,6 @@ static void hack_array(DefExpr* def) {
         }
         def->init = def->exprType;
         def->exprType = NULL;
-      } else if (type->isNamed("domain")) {
-        if (def->init) {
-          Expr* init = def->init;
-          init->remove();
-          def->parentStmt->insertAfter(new CallExpr("=", def->sym, init));
-        }
-        def->init = def->exprType;
-        def->exprType = NULL;
-        type->baseExpr->replace(new SymExpr("_build_domain_type"));
       }
     }
   }

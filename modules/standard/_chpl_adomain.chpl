@@ -33,6 +33,9 @@ class _adomain : _domain {
 
   function _build_array(type elt_type)
     return _aarray(elt_type, rank, dom=this);
+
+  function _build_sparse_domain()
+    return _sdomain(rank, adomain=this);
 }
 
 class _aarray : value {

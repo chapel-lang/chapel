@@ -8,5 +8,6 @@ use _chpl_seq;
 use _chpl_htuple;
 use _chpl_adomain;
 use _chpl_indefinite;
+use _chpl_sparse;
 
 startTrackingMem();

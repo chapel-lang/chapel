@@ -1,0 +1,5 @@
+var d : domain(2) = [1..10, 1..10];
+var s : sparse domain(d);
+var a : [s] float;
+
+writeln(a);

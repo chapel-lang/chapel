@@ -117,6 +117,9 @@ function _build_domain_type(param rank : integer)
 function _build_domain_type(type ind_type)
   return _idomain(ind_type);
 
+function _build_sparse_domain_type(dom)
+  return dom._build_sparse_domain();
+
 class _array { }
 
 function _build_array_type(dom, type elt_type)
