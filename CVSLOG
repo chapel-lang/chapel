@@ -58361,3 +58361,29 @@ Added files:
 	chapel/test/modules/jplevyak/: COMPOPTS nostdincs.chpl 
 	                               nostdincs.good 
 
+---------------------------------------------------------------------------
+
+03/07/06 09:17:41 -- jplevyak
+
+Log message:
+	Finally really stop entering instantiated functions into the dispatch
+	tables so that we always rebuild functions from the generics.  This
+	required removing the code which enters things into the tables form
+	chapel_ifa, and fixing some issues with instantiation.
+	
+	Also, cache the "all_functions" part of dispatch which finds all the
+	functions which could be dispatched to given the sets of concrete
+	types at each argument at the call site.  This was currently taking
+	29% of the CPU time, hopefully this will bring it down to much less.
+	
+	Also, Match is now the public face of a match (dispatch result
+	which includes the sets of concrete types at each argument which
+	result in the particular function being selected) and PMatch is
+	the internal version which includes intermediate information
+	like default_args, formal->actual mappings, etc. which are not
+	needed once dispatch and wrapper creation is complete.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: fa.cpp pattern.cpp pattern.h 
+
