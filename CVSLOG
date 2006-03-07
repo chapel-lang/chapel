@@ -58475,3 +58475,14 @@ Modified files:
 	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
 	chapel/modules/standard/: _chpl_adomain.chpl 
 
+---------------------------------------------------------------------------
+
+03/07/06 13:53:28 -- deitz
+
+Log message:
+	Added domain indexing test.
+
+Added files:
+	chapel/test/arrays/deitz/: test_domain_dims.chpl 
+	                           test_domain_dims.good 
+
