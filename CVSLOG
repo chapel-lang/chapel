@@ -58278,3 +58278,13 @@ Modified files:
 	chapel/compiler/analysis/: chapel_ifa.cpp 
 	chapel/compiler/ifa/: pattern.cpp 
 
+---------------------------------------------------------------------------
+
+03/06/06 16:46:50 -- jplevyak
+
+Log message:
+	Add a comment
+
+Modified files:
+	chapel/compiler/ifa/: pnode.h 
+
