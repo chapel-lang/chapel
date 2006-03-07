@@ -30,7 +30,7 @@ class PNode : public gc {
   uint is_dead : 1;
   Vec<Var *> lvals; // variables this node assigns
   Vec<Var *> rvals; // variables this node reads
-  Vec<Var *> tvals;
+  Vec<Var *> tvals; // temporary variables used by this node
 
   // Control-Flow Graph (CFG): cfg.cpp, ssu.cpp 
   int mark; // ssu.c
