@@ -58338,3 +58338,15 @@ Added files:
 	                               saveccurrdir.future 
 	                               saveccurrdir.good 
 
+---------------------------------------------------------------------------
+
+03/06/06 17:20:06 -- waynew
+
+Log message:
+	.future not needed. Cobegin tests should work with sequential version also.
+
+Removed files:
+	chapel/test/parallel/cobegin/waynew/: cobegin.simple0.future 
+	                                      cobegin.simple1.future 
+	                                      cobegin.simple2.future 
+
