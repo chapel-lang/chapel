@@ -215,22 +215,24 @@ Matcher::pattern_match_sym(Sym *type, MPosition *acp, Vec<Fun *> *local_matches,
     if (vfn)
       goto Ldone;
   }
-  pattern_match_sym_internal(type, acp, new_funs, done);
-  //funs.set_union(new_funs);
-  pfm = sym_match_cache.get(type);
+  vfn = new Vec<Fun *>;
+  pattern_match_sym_internal(type, acp, *vfn, done);
   if (!pfm)
     sym_match_cache.put(type, (pfm = new Map<MPosition *, Vec<Fun *> *>));
-  vfn = new Vec<Fun *>;
-  vfn->move(new_funs);
-  //pfm->put(acp, vfn);
+  pfm->put(acp, vfn);
  Ldone:
   if (local_matches) {
-    forv_Fun(f, *vfn)
-      if (local_matches->set_in(f))
-        funs.set_add(f);
+    if (local_matches->n > vfn->n) {
+      forv_Fun(f, *vfn) if (f)
+        if (local_matches->set_in(f))
+          funs.set_add(f);
+    } else {
+      forv_Fun(f, *local_matches) if (f)
+        if (vfn->set_in(f))
+          funs.set_add(f);
+    }
   } else
-    forv_Fun(f, *vfn)
-      funs.set_add(f);
+    funs.set_union(*vfn);
   return funs.n;
 }
 
