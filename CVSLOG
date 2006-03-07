@@ -58412,3 +58412,17 @@ Log message:
 Modified files:
 	chapel/compiler/make/: Makefile.compiler.head 
 
+---------------------------------------------------------------------------
+
+03/07/06 12:41:11 -- waynew
+
+Log message:
+	.
+
+Modified files:
+	chapel/compiler/include/: driver.h passes.h 
+	chapel/compiler/main/: driver.cpp passlist.cpp passlist.h 
+	chapel/compiler/passes/: Makefile.share 
+Added files:
+	chapel/compiler/passes/: parallel.cpp 
+
