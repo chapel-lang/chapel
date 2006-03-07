@@ -58448,3 +58448,30 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: pattern.cpp 
 
+---------------------------------------------------------------------------
+
+03/07/06 13:52:20 -- deitz
+
+Log message:
+	Added bool FnSymbol::hasVarArgs which is true if any of the formal
+	arguments in the function are unexpanded variable arguments.
+	
+	Fixed the interpreter so that it may overinstantiate a generic
+	function that has variable arguments, thus fixing
+	
+	  test/functions/deitz/varargs/test_varargs7.chpl
+	
+	in the interpreter.
+	
+	Added ability to index into an arithmetic domain with a dimension
+	number to determine the extent of that dimension.  For example, to
+	iterate over the first dimension of domain D, write
+	
+	  forall i in D(1) ...
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl 
+
