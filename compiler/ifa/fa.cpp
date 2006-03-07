@@ -1420,7 +1420,7 @@ function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> 
     a.add(args.v[j]);
   Vec<Match *> matches;
   AVar *send = make_AVar(p->lvals.v[0], es);
-  if (pattern_match(a, send, is_closure, partial, &matches)) {
+  if (pattern_match(a, send, is_closure, partial, matches)) {
     forv_Match(m, matches) {
       if (!m->partial && partial != Partial_ALWAYS)
         make_AEdges(m, p, es, a);

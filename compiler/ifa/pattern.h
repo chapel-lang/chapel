@@ -95,23 +95,14 @@ class Patterns : public gc {
 class Match : public gc {
  public:
   Fun *fun;
-  Map<MPosition *, AType *> formal_filters; // formal -> type, positional-only and takes into account all arguments
-  Map<MPosition *, MPosition *> actual_to_formal_position;
-
-  Map<MPosition *, AVar *> actuals;
-  Map<MPosition *, Sym *> formal_dispatch_types;
-  Map<MPosition *, AType *> actual_filters; // actual -> type, point-wise and includes named arguments
-  Map<MPosition *, MPosition *> actual_named_to_positional;
-  Map<MPosition *, MPosition *> formal_to_actual_position;
-  Map<MPosition *, MPosition *> order_substitutions;  // formal position -> actual position
-  Vec<MPosition *> default_args; // formal positions
-  Map<Sym *, Sym *> generic_substitutions;
-  Map<MPosition *, Sym *> coercion_substitutions; // formal position -> coercion symbol
   int partial;
+  Map<MPosition *, AType *> formal_filters; // formal -> type, positional-only and takes into account all arguments
 
   Match(Fun *afun) : fun(afun), partial(0) { assert(afun); }
+  Match(Match &m) : fun(m.fun), partial(m.partial) { formal_filters.copy(m.formal_filters); }
 };
 #define forv_Match(_p, _v) forv_Vec(Match, _p, _v)
+
 typedef MapElem<MPosition *, AType *> MapMPositionAType;
 #define form_MPositionAType(_p, _v) form_Map(MapMPositionAType, _p, _v)
 typedef MapElem<MPosition *, MPosition *> MapMPositionMPosition;
@@ -127,7 +118,7 @@ void build_patterns(FA *fa, Fun *f);
 void build_arg_positions(FA *fa);
 int positional_to_named(CreationSet *cs, AVar *av, MPosition &p, MPosition *result_p);
 int pattern_match(Vec<AVar *> &args, AVar *send, int is_closure, Partial_kind partial, 
-                  Vec<Match *> *matches);
+                  Vec<Match *> &matches);
 MPosition *cannonicalize_mposition(MPosition &p);
 MPosition *build_arg_positions(Fun *f, MPosition *up = 0);
 

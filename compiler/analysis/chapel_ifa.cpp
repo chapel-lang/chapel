@@ -546,10 +546,8 @@ install_new_asts(Vec<FnSymbol *> &funs, Vec<TypeSymbol *> &types) {
         initialize_Sym_for_fa(t->asymbol->sym);
     }
   }
-  forv_Vec(FnSymbol, f, funs) {
-    build_patterns(pdb->fa, f->asymbol->sym->fun);
-    finalize_function(f->asymbol->sym->fun, 0);
-  }
+  forv_Vec(FnSymbol, f, funs)
+    finalize_function(f->asymbol->sym->fun, 1);
   if1_write_log();
 }
 
