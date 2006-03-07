@@ -58266,3 +58266,15 @@ Added files:
 	chapel/test/npb/ft/: NOTEST ft-serial-working1.chpl 
 	                     ft-serial.chpl 
 
+---------------------------------------------------------------------------
+
+03/06/06 16:18:29 -- jplevyak
+
+Log message:
+	Import some partial work from another directory regarding not
+	dispatching to generic functions.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: pattern.cpp 
+
