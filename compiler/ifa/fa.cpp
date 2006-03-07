@@ -3631,7 +3631,7 @@ split_for_violations(Vec<ATypeViolation *> &violations) {
       EntrySet *es = (EntrySet*)v->av->contour;
       Vec<AEdge *> *ve = es->out_edge_map.get(p);
       if (ve) {
-        forv_AEdge(e, *ve) {
+        forv_AEdge(e, *ve) if (e) {
           if (result_is_different(v->av, e)) {
             form_MPositionAVar(x, e->args) {
               if (e->to->filters.get(x->key))
