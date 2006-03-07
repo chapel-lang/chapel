@@ -58387,3 +58387,18 @@ Modified files:
 	chapel/compiler/analysis/: chapel_ifa.cpp 
 	chapel/compiler/ifa/: fa.cpp pattern.cpp pattern.h 
 
+---------------------------------------------------------------------------
+
+03/07/06 09:58:02 -- deitz
+
+Log message:
+	Two new futures pertaining to dispatch and instantiated types.
+
+Added files:
+	chapel/test/interpreter/deitz/: test_array1d.chpl 
+	                                test_array1d.future 
+	                                test_array1d.good 
+	chapel/test/types/seq/deitz/: test_seq_arg.chpl 
+	                              test_seq_arg.future 
+	                              test_seq_arg.good 
+
