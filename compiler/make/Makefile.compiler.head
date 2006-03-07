@@ -52,6 +52,11 @@ ifeq ($(GNU_GCC_MINOR_VERSION),4)
 ONLYCXXFLAGS += -Wno-invalid-offsetof
 endif
 endif
+ifeq ($(GNU_GCC_MAJOR_VERSION),4)
+ifeq ($(GNU_GCC_MINOR_VERSION),0)
+ONLYCXXFLAGS += -Wno-invalid-offsetof
+endif
+endif
 endif
 
 
