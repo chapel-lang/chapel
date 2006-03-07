@@ -1123,15 +1123,25 @@ Matcher::cannonicalize_matches(Vec<Fun *> &partial_matches) {
   }
 }
 
+static int
+incomplete_call(Vec<AVar *> &args, AVar *send) {
+  forv_AVar(av, args) {
+    if (!av->out->n) {
+      av->arg_of_send.add(send);
+      return 1;
+    }
+  }
+  return 0;
+}
+
 //
 // main dispatch entry point - given a vector of arguments return a vector of matches
 //
 int
 pattern_match(Vec<AVar *> &args, AVar *send, int is_closure, Partial_kind partial, 
               Vec<Match *> *matches) {
-  forv_AVar(av, args)
-    if (!av->out->n)
-      return 0;
+  if (incomplete_call(args, send))
+    return 0;
   Matcher matcher(send, args.v[0], is_closure, partial, matches);
   Vec<Fun *> *partial_matches = NULL;
   if (matcher.all_matches)

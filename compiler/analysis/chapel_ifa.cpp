@@ -548,7 +548,7 @@ install_new_asts(Vec<FnSymbol *> &funs, Vec<TypeSymbol *> &types) {
   }
   forv_Vec(FnSymbol, f, funs) {
     build_patterns(pdb->fa, f->asymbol->sym->fun);
-    finalize_function(f->asymbol->sym->fun, 1);
+    finalize_function(f->asymbol->sym->fun, 0);
   }
   if1_write_log();
 }
@@ -1991,7 +1991,7 @@ handle_argument(Sym *s, char *name, Fun *fun, int added, MPosition &p, int insta
     }
     p.pop();
   }
-  if (instantiation) { 
+  if (!instantiation) { 
     // non-scoped lookup if any parameteter is specialized on a reference type
     // (is dispatched)
     if (!added && s->must_specialize && 
