@@ -37,6 +37,7 @@ REGISTER(fixup);
 REGISTER(functionResolution);
 REGISTER(inlineFunctions);
 REGISTER(normalize);
+REGISTER(parallel);
 REGISTER(parse);
 REGISTER(passlistTest);
 REGISTER(printAST);        // BLC: pretty-prints all or part of the AST

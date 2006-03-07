@@ -53,6 +53,7 @@ int fnostdincs = 0;
 int fnostdincs_but_file = 0;
 int num_constants_per_variable = 1;
 int instantiation_limit = 12;
+bool parallelPass = false;
 
 static ArgumentDescription arg_desc[] = {
  {"interpreter", 'I', "Start Interpreter in Insert Mode", "T", &finterpreter_insert_mode, "CHPL_INTERPRETER_INSERT", interpreter_insert_mode},
@@ -102,6 +103,7 @@ static ArgumentDescription arg_desc[] = {
  {"verbose", 'v', "Level of Verbosity", "+", &ifa_verbose, "CHPL_VERBOSE", NULL},
  {"print-commands", ' ', "Print Subprocess Commands", "F", &printSystemCommands, 
   "CHPL_PRINT_COMMANDS", NULL},
+ {"parallel", 'p', "Parallelization Passes", "F", &parallelPass, "CHPL_PARALLELIZE", NULL},
  {"print-passes", ' ', "Print Passes", "F", &printPasses, "CHPL_PRINT_PASSES", NULL},
  {"version", ' ', "Show Version", NULL, NULL, NULL, version},
  {"copyright", ' ', "Show Copyright", NULL, NULL, NULL, copyright},

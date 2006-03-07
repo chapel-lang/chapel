@@ -37,6 +37,8 @@ extern int num_constants_per_variable;
 
 extern bool ignore_errors;
 
+extern bool parallelPass;
+
 void do_analysis(char *fn);
 
 #endif

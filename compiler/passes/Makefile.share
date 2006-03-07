@@ -1,6 +1,7 @@
 PASSES_SRCS = \
         buildDefaultFunctions.cpp \
         cleanup.cpp \
+        parallel.cpp \
 	codegen.cpp \
         copy_propagation.cpp \
 	filesToAST.cpp \
