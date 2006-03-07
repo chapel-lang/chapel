@@ -122,38 +122,38 @@ add_candidate(Map<FnSymbol*,Vec<ArgSymbol*>*>* candidateFns,
           break;
         }
       }
-      if (!match)
+      if (!match && !fn->isGeneric)
         return;
     }
   }
-  if (!inst) {
+  if (fn->isGeneric) {
     ASTMap subs;
     for (int i = 0; i < num_actuals; i++) {
-      if (actual_formals->v[i]->isGeneric) {
-        if (actual_formals->v[i]->intent == INTENT_TYPE) {
-          TypeSymbol* ts =
-            dynamic_cast<TypeSymbol*>(actual_formals->v[i]->genericSymbol);
-          if (!ts)
-            INT_FATAL(actual_formals->v[i], "Unanticipated genericSymbol");
-          subs.put(ts->definition, actual_types->v[i]);
-        } else if (actual_formals->v[i]->intent == INTENT_PARAM) {
-          if (actual_params->v[i])
-            subs.put(actual_formals->v[i], actual_params->v[i]);
-        }
-      } else if (fn->isGeneric) {
-        TypeSymbol* formalType = actual_formals->v[i]->type->symbol;
-        if (fn->genericSymbols.set_in(formalType)) {
-          if (can_instantiate(actual_types->v[i], actual_formals->v[i]->type)) {
-            subs.put(actual_formals->v[i]->type, actual_types->v[i]);
+      if (actual_formals->v[i]) {
+        if (actual_formals->v[i]->isGeneric) {
+          if (actual_formals->v[i]->intent == INTENT_TYPE) {
+            TypeSymbol* ts =
+              dynamic_cast<TypeSymbol*>(actual_formals->v[i]->genericSymbol);
+            if (!ts)
+              INT_FATAL(actual_formals->v[i], "Unanticipated genericSymbol");
+            subs.put(ts->definition, actual_types->v[i]);
+          } else if (actual_formals->v[i]->intent == INTENT_PARAM) {
+            if (actual_params->v[i])
+              subs.put(actual_formals->v[i], actual_params->v[i]);
+          }
+        } else if (fn->isGeneric) {
+          TypeSymbol* formalType = actual_formals->v[i]->type->symbol;
+          if (fn->genericSymbols.set_in(formalType)) {
+            if (can_instantiate(actual_types->v[i], actual_formals->v[i]->type)) {
+              subs.put(actual_formals->v[i]->type, actual_types->v[i]);
+            }
           }
         }
       }
     }
-    if (subs.n) {
+    if (subs.n && !fn->isPartialInstantiation(&subs)) {
       Vec<FnSymbol*> inst_fns;
       Vec<TypeSymbol*> inst_ts;
-      if (fn->isPartialInstantiation(&subs))
-        return;
       FnSymbol* inst_fn = fn->instantiate_generic(&subs, &inst_fns, &inst_ts);
       newFns.set_add(inst_fn);
       if (inst_fn->whereExpr) {
@@ -171,8 +171,8 @@ add_candidate(Map<FnSymbol*,Vec<ArgSymbol*>*>* candidateFns,
         }
       }
       add_candidate(candidateFns, inst_fn, actual_types, actual_params, actual_names, true);
-      return;
     }
+    return;
   }
 
   int j = -1;

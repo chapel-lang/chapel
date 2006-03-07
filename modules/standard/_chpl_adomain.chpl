@@ -25,6 +25,9 @@ class _adomain : _domain {
     }
   }
 
+  function this(dim : integer)
+    return ranges(dim);
+
   function range(dim : integer)
     return ranges(dim);
 

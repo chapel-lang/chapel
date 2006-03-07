@@ -36,6 +36,7 @@ static void fold_params(Vec<DefExpr*>* defs, Vec<BaseAST*>* asts);
 static void expand_var_args(FnSymbol* fn);
 static int tag_generic(FnSymbol* fn);
 static int tag_generic(Type* fn);
+static void tag_hasVarArgs(FnSymbol* fn);
 
 void normalize(void) {
   forv_Vec(ModuleSymbol, mod, allModules) {
@@ -220,6 +221,13 @@ void normalize(BaseAST* base) {
           changed = tag_generic(ts->definition) || changed;
       }
     }
+  }
+
+  asts.clear();
+  collect_asts_postorder(&asts, base);
+  forv_Vec(BaseAST, ast, asts) {
+    if (FnSymbol *fn = dynamic_cast<FnSymbol*>(ast))
+      tag_hasVarArgs(fn);
   }
 }
 
@@ -1242,4 +1250,14 @@ tag_generic(Type *t) {
     t->genericSymbols.move(genericSymbols);
   }
   return genericSymbols.n != 0;
+}
+
+static void
+tag_hasVarArgs(FnSymbol* fn) {
+  fn->hasVarArgs = false;
+  for_alist(DefExpr, formalDef, fn->formals) {
+    ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
+    if (formal->variableExpr)
+      fn->hasVarArgs = true;
+  }
 }

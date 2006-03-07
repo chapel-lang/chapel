@@ -177,6 +177,7 @@ class FnSymbol : public Symbol {
   SymScope* argScope;
   bool isSetter;
   bool isGeneric;
+  bool hasVarArgs;
   Symbol* _this;
   Symbol* _setter; // the variable this function sets if it is a setter
   Symbol* _getter; // the variable this function gets if it is a getter
