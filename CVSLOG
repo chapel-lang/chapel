@@ -58438,3 +58438,13 @@ Added files:
 	                                      cobegin.simple1.compopts 
 	                                      cobegin.simple2.compopts 
 
+---------------------------------------------------------------------------
+
+03/07/06 13:36:23 -- jplevyak
+
+Log message:
+	Enable caching of all applicable functions matching.
+
+Modified files:
+	chapel/compiler/ifa/: pattern.cpp 
+
