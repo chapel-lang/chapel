@@ -58426,3 +58426,15 @@ Modified files:
 Added files:
 	chapel/compiler/passes/: parallel.cpp 
 
+---------------------------------------------------------------------------
+
+03/07/06 12:42:48 -- waynew
+
+Log message:
+	Enable parallel pass.
+
+Added files:
+	chapel/test/parallel/cobegin/waynew/: cobegin.simple0.compopts 
+	                                      cobegin.simple1.compopts 
+	                                      cobegin.simple2.compopts 
+
