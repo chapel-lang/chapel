@@ -58640,3 +58640,15 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: sym.cpp 
 
+---------------------------------------------------------------------------
+
+03/08/06 07:45:50 -- deitz
+
+Log message:
+	Fixed .good files for regressions.
+
+Modified files:
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+
