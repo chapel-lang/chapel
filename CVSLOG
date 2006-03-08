@@ -58620,3 +58620,13 @@ Modified files:
 Added files:
 	chapel/test/arrays/deitz/: test_array_1D.chpl test_array_1D.good 
 
+---------------------------------------------------------------------------
+
+03/07/06 19:22:00 -- jplevyak
+
+Log message:
+	Fix another performance issue.  This one in build_type_hiearchy.
+
+Modified files:
+	chapel/compiler/ifa/: ast.cpp sym.h 
+
