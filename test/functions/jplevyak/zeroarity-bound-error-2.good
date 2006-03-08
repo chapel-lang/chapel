@@ -12,7 +12,8 @@ _chpl_complex.chpl:8: fwrite, f : file, x : complex
 _chpl_htuple.chpl:22: fwrite, f : file, val : _htuple
 _chpl_adomain.chpl:168: fwrite, f : file, x : _adomain
 _chpl_adomain.chpl:175: fwrite, f : file, x : _aarray
-_chpl_indefinite.chpl:103: fwrite, f : file, x : _iarray
+_chpl_indefinite.chpl:108: fwrite, f : file, x : _idomain
+_chpl_indefinite.chpl:115: fwrite, f : file, x : _iarray
 _chpl_sparse.chpl:16: fwrite, f : file, x : _sarray
 _chpl_seq.chpl:156: fwrite, f : file, s : seq
 _chpl_seq.chpl:232: fwrite, f : file, s : _aseq
@@ -27,7 +28,6 @@ _chpl_base.chpl:106: fwrite, f : file, val : _domain
 _chpl_base.chpl:123: fwrite, f : file, val : _array
 _chpl_closure.chpl:1: fwrite, f : file, val : closure
 _chpl_file.chpl:1: fwrite, f : file, val : file
-_chpl_indefinite.chpl:32: fwrite, f : file, val : _idomain
 _chpl_sparse.chpl:1: fwrite, f : file, val : _sdomain
 _chpl_seq.chpl:1: fwrite, f : file, val : _seqNode
 zeroarity-bound-error-2.chpl:1: fwrite, f : file, val : C
