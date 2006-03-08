@@ -58510,3 +58510,18 @@ Added files:
 	chapel/test/sparse/deitz/: .cvsignore test_sparse1.chpl 
 	                           test_sparse1.good 
 
+---------------------------------------------------------------------------
+
+03/07/06 16:03:47 -- deitz
+
+Log message:
+	Added support for writing and iterating over indefinite domains.
+
+Modified files:
+	chapel/modules/standard/: _chpl_indefinite.chpl 
+Added files:
+	chapel/test/arrays/deitz/: test_indefinite4.chpl 
+	                           test_indefinite4.good 
+	                           test_indefinite5.chpl 
+	                           test_indefinite5.good 
+
