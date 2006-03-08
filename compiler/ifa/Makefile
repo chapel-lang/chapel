@@ -25,7 +25,7 @@ include Makefile.share
 TARGETS = $(IFA_OBJS)
 
 OTHER_DEPEND_RULES = \
-	@$(MAKEDEPEND) -MT PRIM_DATA_INCLUDES $(CXXFLAGS) prim_data_incs.cpp | sed s/:\ prim_data_incs.cpp/\ =/ | grep -v \^\# >> $(CVS_DEPENDS) \
+	@$(MAKEDEPEND) -MT PRIM_DATA_INCLUDES $(CXXFLAGS) prim_data_incs.cpp | sed s/:\ prim_data_incs.cpp/\ =/ | grep -v \^\# >> $(CVS_DEPENDS).tmp \
 
 
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules

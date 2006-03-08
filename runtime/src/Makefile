@@ -43,11 +43,13 @@ clobber: clean
 
 depend: $(PLATFORM_DIR)
 	@echo Updating dependences...
-	@echo > $(CVS_DEPENDS)
+	@rm -f $(CVS_DEPENDS).tmp
+	@echo > $(CVS_DEPENDS).tmp
 	@for file in $(CVS_SRCS); do \
-	  $(ECHO) -n $(PLATFORM)/ >> $(CVS_DEPENDS); \
-	  $(CC) -MM -MG $(CFLAGS) $$file | grep -v \^\# >> $(CVS_DEPENDS); \
+	  $(ECHO) -n $(PLATFORM)/ >> $(CVS_DEPENDS).tmp; \
+	  $(CC) -MM -MG $(CFLAGS) $$file | grep -v \^\# >> $(CVS_DEPENDS).tmp; \
         done	
+	@mv -f $(CVS_DEPENDS).tmp $(CVS_DEPENDS)
 
 $(CHPL_RT_LIB): $(CHPL_RT_OBJS)
 	$(AR) -rc $@ $(CHPL_RT_OBJS)

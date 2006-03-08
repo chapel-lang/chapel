@@ -12,7 +12,7 @@ include Makefile.share
 TARGETS = $(PARSER_OBJS)
 
 OTHER_DEPEND_RULES = \
-	@$(MAKEDEPEND) -MT LEXYACC_INCLUDES $(CXXFLAGS) lexyacc.cpp | sed s/:\ lexyacc.cpp/\ =/ | grep -v \^\# >> $(CVS_DEPENDS)
+	@$(MAKEDEPEND) -MT LEXYACC_INCLUDES $(CXXFLAGS) lexyacc.cpp | sed s/:\ lexyacc.cpp/\ =/ | grep -v \^\# >> $(CVS_DEPENDS).tmp
 
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 

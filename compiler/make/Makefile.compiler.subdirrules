@@ -15,13 +15,15 @@ clobber: $(CLOBBERSUBDIRS) echocompilerdir
 
 depend: $(DEPENDSUBDIRS) $(PLATFORM_DIR) $(DEPEND_DEPS) echocompilerdir
 	@echo Updating dependences...
-	@echo > $(CVS_DEPENDS)
+	@rm -f $(CVS_DEPENDS).tmp
+	@echo > $(CVS_DEPENDS).tmp
 	-@for file in $(CVS_SRCS); do \
-	  $(ECHO) -n $(PLATFORM)/ >> $(CVS_DEPENDS); \
-	  $(MAKEDEPEND) $(CFLAGS) $$file | grep -v \^\# >> $(CVS_DEPENDS); \
+	  $(ECHO) -n $(PLATFORM)/ >> $(CVS_DEPENDS).tmp; \
+	  $(MAKEDEPEND) $(CFLAGS) $$file | grep -v \^\# >> $(CVS_DEPENDS).tmp; \
 	done
-	@echo Updating nogc dependences...
 	$(OTHER_DEPEND_RULES)
+	@mv -f $(CVS_DEPENDS).tmp $(CVS_DEPENDS)
+	@echo Updating nogc dependences...
 	@$(MAKE) USE_GC= nogcdepend
 
 CVS_NOGC_DEPS= $(CVS_SRCS:%.cpp=%.nogcdepend)
