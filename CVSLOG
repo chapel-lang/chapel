@@ -58673,3 +58673,21 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp sym.cpp sym.h 
 
+---------------------------------------------------------------------------
+
+03/08/06 14:26:40 -- jplevyak
+
+Log message:
+	I have been having problems with 'make depend' breaking my build
+	if I hit control-C.
+	
+	This change makes all the dependencies into a .tmp file then
+	atomically mv(s) it to the target file.
+
+Modified files:
+	chapel/compiler/ifa/: Makefile 
+	chapel/compiler/make/: Makefile.compiler.foot 
+	                       Makefile.compiler.subdirrules 
+	chapel/compiler/parser/: Makefile 
+	chapel/runtime/src/: Makefile 
+
