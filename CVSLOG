@@ -58691,3 +58691,13 @@ Modified files:
 	chapel/compiler/parser/: Makefile 
 	chapel/runtime/src/: Makefile 
 
+---------------------------------------------------------------------------
+
+03/08/06 14:27:42 -- jplevyak
+
+Log message:
+	Another optimization of the heavily used make_AVar routine
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
