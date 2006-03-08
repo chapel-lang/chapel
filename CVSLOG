@@ -58652,3 +58652,14 @@ Modified files:
 	                               record_type_hierarchy-3-error.good 
 	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
 
+---------------------------------------------------------------------------
+
+03/08/06 09:15:27 -- jplevyak
+
+Log message:
+	Clean up warning for possible (not really possible) use
+	  of uninitalized variable.
+
+Modified files:
+	chapel/compiler/passes/: semanticChecks.cpp 
+
