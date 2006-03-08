@@ -1,0 +1,6 @@
+???
+
+Even for a defined class with a defined read method, this error is
+thrown; probably all read() calls are getting re-written without
+checking that they are a top-level function.
+
