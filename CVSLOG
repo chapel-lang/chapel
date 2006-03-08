@@ -58701,3 +58701,14 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+03/08/06 14:28:26 -- waynew
+
+Log message:
+	Tweaked cobegin() to use for_alist instead of getElements to
+	traverse statements. Hopefully, replaced tabs with spaces.
+
+Modified files:
+	chapel/compiler/passes/: parallel.cpp 
+
