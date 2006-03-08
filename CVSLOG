@@ -58525,3 +58525,21 @@ Added files:
 	                           test_indefinite5.chpl 
 	                           test_indefinite5.good 
 
+---------------------------------------------------------------------------
+
+03/07/06 17:25:59 -- waynew
+
+Log message:
+	A Perl script that will call start_test on the directories in the
+	specified file. The default is to call start_test on the current
+	directory. It will produce a .log file that is a concatenation of
+	the start_test log files. At the end of the tests, the sum of
+	the counts is printed.
+	
+	This is meant for informal testing. It is not meant as a replacement
+	of start_test (i.e., the .log and .log.summary formats are not
+	as with start_test alone).
+
+Added files:
+	chapel/test/: testdirs.pl 
+
