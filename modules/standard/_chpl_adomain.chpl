@@ -2,14 +2,6 @@ class _adomain : _domain {
   param rank : integer;
   var ranges : (rank * _aseq);
 
-  iterator _forall(dim : integer) : integer
-    forall i in range(dim) do
-      yield i;
-
-  iterator _for(dim : integer) : integer
-    for i in range(dim) do
-      yield i;
-
   function _forall() {
     // eventually this should be an iterator with inferred result
     if rank == 1 {
@@ -26,9 +18,6 @@ class _adomain : _domain {
   }
 
   function this(dim : integer)
-    return ranges(dim);
-
-  function range(dim : integer)
     return ranges(dim);
 
   function _build_array(type elt_type)
@@ -57,11 +46,11 @@ class _aarray : value {
   function initialize() {
     if dom == nil then return;
     for dim in 1..rank do
-      off(dim) = dom.range(dim)._low;
+      off(dim) = dom(dim)._low;
     blk(rank) = 1;
     for dim in 1..rank-1 by -1 do
-      blk(dim) = blk(dim+1) * dom.range(dim+1).length;
-    size = blk(1) * dom.range(1).length;
+      blk(dim) = blk(dim+1) * dom(dim+1).length;
+    size = blk(1) * dom(1).length;
     data = _ddata(elt_type, size);
     data.init();
   }
@@ -87,7 +76,7 @@ function _adomain.translate(dim : integer ...?numDims) {
     halt("***Error: Rank mismatch between domain and translate() arguments (", rank, " != ", numDims, ")***");
   }
   for i in 1..rank do
-    x.ranges(i) = range(i)._translate(dim(i));
+    x.ranges(i) = ranges(i)._translate(dim(i));
   return x;
 }
 
@@ -107,14 +96,14 @@ function _adomain.interior(dim : integer ...?numDims) {
     halt("***Error: Rank mismatch between domain and interior() arguments (", rank, " != ", numDims, ")***");
   }
   for i in 1..rank do {
-    if ((dim(i) > 0) and (range(i)._high+1-dim(i) < range(i)._low) or
-        (dim(i) < 0) and (range(i)._low-1-dim(i) > range(i)._high)) {
+    if ((dim(i) > 0) and (ranges(i)._high+1-dim(i) < ranges(i)._low) or
+        (dim(i) < 0) and (ranges(i)._low-1-dim(i) > ranges(i)._high)) {
       halt("***Error: Argument to 'interior' function out of range in dimension ", i, "***");
     } 
     if (dim(i) == 0) {
-      x.ranges(i) = range(i);
+      x.ranges(i) = ranges(i);
     } else {
-      x.ranges(i) = range(i)._interior(dim(i));
+      x.ranges(i) = ranges(i)._interior(dim(i));
     }
   }
   return x;
@@ -177,16 +166,16 @@ function _adomain.expand(dim : integer ...?numDims) {
 }
 
 function fwrite(f : file, x : _adomain) {
-  fwrite(f, "[", x.range(1));
+  fwrite(f, "[", x(1));
   for i in 2..x.rank do
-    fwrite(f, ", ", x.range(i));
+    fwrite(f, ", ", x(i));
   fwrite(f, "]");
 }
 
 function fwrite(f : file, x : _aarray) {
   if x.rank == 1 {
     var first : bool = true;
-    for i in x.dom._for(1) {
+    for i in x.dom(1) {
       if not first then
         fwrite(f, " ");
       else
@@ -194,9 +183,9 @@ function fwrite(f : file, x : _aarray) {
       fwrite(f, x(i));
     }
   } else if x.rank == 2 {
-    for i in x.dom._for(1) {
+    for i in x.dom(1) {
       var first : bool = true;
-      for j in x.dom._for(2) {
+      for j in x.dom(2) {
         if not first then
           fwrite(f, " ");
         else

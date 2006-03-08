@@ -640,6 +640,7 @@ FnSymbol::FnSymbol(char* initName,
   method_type(NON_METHOD),
   instantiatedFrom(NULL),
   instantiatedTo(NULL),
+  visible(true),
   basicBlocks(NULL),
   calledBy(NULL),
   calls(NULL)
@@ -794,6 +795,7 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
   FnSymbol* wrapper_fn = new FnSymbol(name, typeBinding, wrapper_formals,
                                       retType, NULL, wrapper_body,
                                       fnClass, noParens, retRef);
+  wrapper_fn->visible = false;
   wrapper_fn->method_type = method_type;
   wrapper_fn->cname = stringcat("_coerce_wrap_", cname);
   wrapper_fn->addPragma("inline");
@@ -811,6 +813,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
     return cached;
 
   FnSymbol* wrapper = new FnSymbol(name);
+  wrapper->visible = false;
   wrapper->formals = new AList<DefExpr>();
 
   AList<Expr>* wrapper_actuals = new AList<Expr>();
@@ -895,6 +898,7 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_formals) {
   FnSymbol* wrapper_fn = new FnSymbol(name, typeBinding, wrapper_formals,
                                       retType, NULL, new BlockStmt(stmt),
                                       fnClass, noParens, retRef);
+  wrapper_fn->visible = false;
   wrapper_fn->method_type = method_type;
   wrapper_fn->cname = stringcat("_order_wrap_", cname);
   wrapper_fn->addPragma("inline");
@@ -969,6 +973,7 @@ instantiate_function(Stmt* pointOfInstantiation, FnSymbol *fn, ASTMap *all_subs,
   ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(fnStmt);
   DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr);
   FnSymbol* fnClone = dynamic_cast<FnSymbol*>(defExpr->sym);
+  fnClone->visible = false;
   pointOfInstantiation->insertBefore(fnStmt);
 //   if (generic_type != NULL)
 //     fold_parameter_methods(fnClone, generic_subs, generic_type);
@@ -1011,6 +1016,7 @@ FnSymbol::clone_generic(ASTMap* formal_types) {
   ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(fnStmt);
   DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr);
   FnSymbol* fnClone = dynamic_cast<FnSymbol*>(defExpr->sym);
+  fnClone->visible = false;
   fnClone->cname = stringcat("_clone_", fnClone->cname);
   defPoint->parentStmt->insertBefore(fnStmt);
   DefExpr* oldFormalDef = formals->first();

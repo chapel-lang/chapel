@@ -52,7 +52,6 @@ bool can_dispatch(Symbol* actualParam, Type* actualType, Type* formalType) {
 }
 
 Vec<FnSymbol*> fns; // live functions list
-Vec<FnSymbol*> newFns; // new functions list;
 
 void resolve_return_type(FnSymbol* fn);
 void resolve_function(FnSymbol* fn);
@@ -155,7 +154,6 @@ add_candidate(Map<FnSymbol*,Vec<ArgSymbol*>*>* candidateFns,
       Vec<FnSymbol*> inst_fns;
       Vec<TypeSymbol*> inst_ts;
       FnSymbol* inst_fn = fn->instantiate_generic(&subs, &inst_fns, &inst_ts);
-      newFns.set_add(inst_fn);
       if (inst_fn->whereExpr) {
         resolve_asts(inst_fn->whereExpr);
         param_compute(inst_fn->whereExpr);
@@ -293,7 +291,6 @@ build_default_wrapper(FnSymbol* fn,
         defaults.add(formal);
     }
     wrapper = fn->default_wrapper(&defaults);
-    newFns.set_add(wrapper);
 
     // update actual_formals for use in build_order_wrapper
     DefExpr* newFormalDef = wrapper->formals->first();
@@ -334,7 +331,6 @@ build_order_wrapper(FnSymbol* fn,
   }
   if (order_wrapper_required) {
     fn = fn->order_wrapper(&formals_to_formals);
-    newFns.set_add(fn);
   }
   return fn;
 }
@@ -358,7 +354,6 @@ clone_underspecified_function(FnSymbol* fn,
   }
   if (formal_types.n) {
     fn = fn->clone_generic(&formal_types);
-    newFns.set_add(fn);
   }
   return fn;
 }
@@ -418,8 +413,7 @@ resolve_call(BaseAST* ast,
     Vec<FnSymbol*> visibleFns;                    // visible functions
     ast->parentScope->getVisibleFunctions(&visibleFns, canon_name);
     forv_Vec(FnSymbol, visibleFn, visibleFns)
-      if (!newFns.set_in(visibleFn))
-        add_candidate(&candidateFns, visibleFn, actual_types, actual_params, actual_names);
+      add_candidate(&candidateFns, visibleFn, actual_types, actual_params, actual_names);
   } else 
     add_candidate(&candidateFns, fnSymbol, actual_types, actual_params, actual_names);
 

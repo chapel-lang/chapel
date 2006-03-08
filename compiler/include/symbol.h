@@ -186,6 +186,9 @@ class FnSymbol : public Symbol {
   FnSymbol *instantiatedFrom;
   ASTMap substitutions;
   Vec<FnSymbol *> *instantiatedTo;
+  bool visible; // included in visible function list for dispatch
+                // compiler generated functions are not visible, e.g.,
+                // instantiated functions, wrappers, cloned functions
   Vec<BasicBlock*>* basicBlocks;
   Vec<CallExpr*>* calledBy;
   Vec<CallExpr*>* calls;
