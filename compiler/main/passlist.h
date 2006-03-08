@@ -13,7 +13,7 @@ PassInfo passlist[] = {
   FIRST,
   RUN(parse),                   // parse files and create AST
   RUN(check_parsed),            // checks semantics of parsed AST
-  RUN(parallel),		// parallel passes
+  RUN(parallel),                // parallel passes
   RUN(cleanup),                 // post parsing transformations
   RUN(scopeResolve),            // resolve symbols by scope
   RUN(normalize),               // normalization transformations
