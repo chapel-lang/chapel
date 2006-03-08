@@ -205,20 +205,30 @@ compute_structural_type_hierarchy(Accum<Sym *> types) {
   compute_single_structural_type_hierarchy(union_types, 1);
 }
 
-void check_unique(Vec<void *> &v) {
-  Vec<void *> vv;
-  forv_Vec(void*, x, v) {
-    assert(vv.set_add(x));
-  }
+static void
+add_implementor(Sym *s, Sym *ss) {
+  if (ss->implementors.set_add(s))
+    forv_Sym(x, ss->implements)
+      add_implementor(s, x);
+}
+
+static void
+add_specializer(Sym *s, Sym *ss) {
+  if (ss->specializers.set_add(s))
+    forv_Sym(x, ss->specializes)
+      add_specializer(s, x);
 }
 
 void
 build_type_hierarchy(int compute_structural_value_hierarchy) {
   Accum<Sym *> types, meta_types;
+  Vec<Sym *> new_types;
   for (int x = type_hierarchy_built; x < if1->allsyms.n; x++) {
     Sym *s = if1->allsyms.v[x];
     // functions implement and specialize symbols (selectors) of the same name
     //   this permits overloading of selectors with multiple functions
+    if (s->is_symbol || s->is_constant || s->is_fun || s->type_kind)
+      new_types.add(s);
     if (s->is_symbol)
       implement_and_specialize(sym_symbol, s, types);
     // constants implement and specialize 'type'
@@ -274,61 +284,25 @@ build_type_hierarchy(int compute_structural_value_hierarchy) {
   // compute structural type hierarchy
   if (compute_structural_value_hierarchy) 
     compute_structural_type_hierarchy(types);
-  // compute implementors closure
+  // compute implementor/specializers closure
   Vec<Sym *> todo, changed, next_changed;
   types.asset.set_union(meta_types.asset);
   types.asvec.clear();
   types.asvec.append(types.asset);
-  forv_Sym(s, types.asvec) if (s)
-    todo.set_union(s->implements); 
-  changed.copy(types.asset);
-  while (todo.n) {
-    Vec<Sym *> now;
-    now.move(todo);
-    forv_Sym(s, now) if (s) {
-      int redo = 1;
-      while (redo) {
-        redo = 0;
-        forv_Sym(ss, s->implementors) if (ss && changed.set_in(ss)) {
-          if (s->implementors.set_union(ss->implementors)) {
-            todo.set_union(s->implements);
-            next_changed.set_add(s);
-            redo = 1;
-          }
-        }
-      }
-    }
-    changed.move(next_changed);
+  // build implementors/specializers
+  forv_Sym(s, new_types) {
+    forv_Sym(x, s->implements)
+      forv_Sym(y, x->implements)
+      add_implementor(s, y);
+    forv_Sym(x, s->specializes)
+      forv_Sym(y, x->specializes)
+      add_specializer(s, y);
   }
-  // compute specializers closure
-  forv_Sym(s, types.asvec) if (s)
-    todo.set_union(s->specializes); 
-  changed.copy(types.asset);
-  while (todo.n) {
-    Vec<Sym *> now;
-    now.move(todo);
-    forv_Sym(s, now) if (s) {
-      int redo = 1;
-      while (redo) {
-        redo = 0;
-        forv_Sym(ss, s->specializers) if (ss && changed.set_in(ss)) {
-          if (s->specializers.set_union(ss->specializers)) {
-            todo.set_union(s->specializes);
-            next_changed.set_add(s);
-            redo = 1;
-          }
-        }
-      }
-    }
-    changed.move(next_changed);
-  }
-
   // put nil at the bottom of the object hiearchy
-  forv_Sym(s, types.asvec) if (s) {
+  forv_Sym(s, new_types) {
     if (sym_object->specializers.set_in(s) && !s->is_value_type && s != sym_nil_type)
       implement_and_specialize(s, sym_nil_type, types);
   }
-
   type_hierarchy_built = if1->allsyms.n;
 }
 
