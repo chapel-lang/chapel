@@ -322,6 +322,10 @@ Sym::must_implement_and_specialize(Sym *s) {
 
 Sym *
 Sym::scalar_type() {
+  if (is_meta_type)
+    return 0;
+  if (this == sym_nil)
+    return type;
   if (type && type->num_kind)
     return type;
   forv_Sym(ss, dispatch_order)
