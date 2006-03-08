@@ -36,11 +36,11 @@ BasicSym::BasicSym(void) :
   is_external(0),
   is_this(0),
   intent(0),
-  is_structure(0),
   is_meta_type(0),
   is_value_type(0),
   is_system_type(0),
   is_union_type(0),
+  is_structure(0),
   fun_returns_value(0),
   live(0),
   incomplete(0),
@@ -322,15 +322,8 @@ Sym::must_implement_and_specialize(Sym *s) {
 
 Sym *
 Sym::scalar_type() {
-  if (is_meta_type)
-    return 0;
-  if (this == sym_nil)
-    return type;
   if (type && type->num_kind)
     return type;
-  forv_Sym(ss, dispatch_order)
-    if (ss->type && ss->type->num_kind)
-      return ss->type;
   return 0;
 }
 

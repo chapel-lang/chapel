@@ -145,13 +145,9 @@ EntrySet::EntrySet(Fun *af) : fun(af), dfs_color(DFS_white), split(0), equiv(0) 
 
 AVar *
 make_AVar(Var *v, EntrySet *es) {
-  assert(v->sym->nesting_depth >= 0);
   if (v->sym->nesting_depth || v->is_internal) {
-    if (es->fun && es->fun->sym->nesting_depth && 
-        v->sym->nesting_depth != es->fun->sym->nesting_depth + 1) {
-      assert(es->fun->sym->nesting_depth >= v->sym->nesting_depth);
+    if (es->fun && es->fun->sym->nesting_depth && v->sym->nesting_depth != es->fun->sym->nesting_depth + 1)
       return unique_AVar(v, es->display.v[v->sym->nesting_depth-1]);
-    }
     return unique_AVar(v, es);
   }
   return unique_AVar(v, GLOBAL_CONTOUR);
@@ -1691,15 +1687,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
         AVar *selector = make_AVar(p->rvals.v[3], es);
         AVar *val = make_AVar(p->rvals.v[4], es);
         int partial = 0;
-        p->tvals.fill(1);
-        if (!p->tvals.v[0]) {
-          Sym *s = new_Sym();
-          s->nesting_depth = es->fun->sym->nesting_depth + 1;
-          p->tvals.v[0] = new Var(s);
-          s->var = p->tvals.v[0];
-          p->tvals.v[0]->is_internal = 1;
-          es->fun->fa_all_Vars.add(p->tvals.v[0]);
-        }
+        fill_tvals(es->fun, p, 1);
         AVar *tval = make_AVar(p->tvals.v[0], es);
         flow_vars(val, tval);
         set_container(tval, obj);
