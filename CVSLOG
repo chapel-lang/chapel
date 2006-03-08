@@ -58722,3 +58722,14 @@ Log message:
 Modified files:
 	chapel/compiler/main/: passlist.h 
 
+---------------------------------------------------------------------------
+
+03/08/06 14:55:25 -- waynew
+
+Log message:
+	Ok, tabs were still there. Think they are gone now.
+
+Modified files:
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/passes/: parallel.cpp 
+
