@@ -145,11 +145,13 @@ EntrySet::EntrySet(Fun *af) : fun(af), dfs_color(DFS_white), split(0), equiv(0) 
 
 AVar *
 make_AVar(Var *v, EntrySet *es) {
-  if (v->sym->nesting_depth || v->is_internal) {
-    if (es->fun && es->fun->sym->nesting_depth && v->sym->nesting_depth != es->fun->sym->nesting_depth + 1)
+  if (v->sym->nesting_depth) {
+    if (v->sym->nesting_depth != es->fun->sym->nesting_depth + 1)
       return unique_AVar(v, es->display.v[v->sym->nesting_depth-1]);
     return unique_AVar(v, es);
   }
+  if (v->is_internal)
+    return unique_AVar(v, es);
   return unique_AVar(v, GLOBAL_CONTOUR);
 }
 
