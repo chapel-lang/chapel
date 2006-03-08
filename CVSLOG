@@ -58630,3 +58630,13 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: ast.cpp sym.h 
 
+---------------------------------------------------------------------------
+
+03/07/06 22:43:53 -- jplevyak
+
+Log message:
+	Patch another performance issue.  This time with the "nil" type.
+
+Modified files:
+	chapel/compiler/ifa/: sym.cpp 
+
