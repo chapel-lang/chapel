@@ -58543,3 +58543,54 @@ Log message:
 Added files:
 	chapel/test/: testdirs.pl 
 
+---------------------------------------------------------------------------
+
+03/07/06 17:49:00 -- bradc
+
+Log message:
+	Started working on a port of the 1D HPCC FFT
+	benchmark as requested by John Mellor-Crummey,
+	and am checking in what I've got as well as a
+	number of futures I ran into along the way,
+	more so I could keep track of the rewrites
+	that I made by hand than anything.
+	
+	bydomain -- "by" doesn't work on domains. Should it?
+	            Or should this be a domain method?
+	constdomain -- domains can't currently be "const"
+	subdomain -- subdomains don't work (not surprisingly)
+	readmethod/readmethod2 -- calling a method named "read"
+	                          yields surprising results,
+	                          probably because it is hoisted
+	                          out as though it was a top-level
+	                          read call?
+	shiftops -- shift operators don't work yet, not surprisingly
+	undefinedn/undefinedfn2 -- calling an undefined function
+	                           yields a lot of confusing error
+	                           messages.  This is a placeholder
+	                           in hopes of cleaning it up.
+	
+	Also removed a future that's now working: paramRank.
+
+Modified files:
+	chapel/test/domains/bradc/: paramRank.good 
+Added files:
+	chapel/test/domains/bradc/: bydomain.chpl bydomain.future 
+	                            bydomain.good constdomain.chpl 
+	                            constdomain.future constdomain.good 
+	                            subdomain.chpl subdomain.future 
+	                            subdomain.good 
+	chapel/test/hpcc/: fft.c fft.chpl 
+	chapel/test/trivial/bradc/: readmethod.chpl readmethod.future 
+	                            readmethod.good readmethod2.chpl 
+	                            readmethod2.future readmethod2.good 
+	                            readmethod2a.chpl readmethod2a.good 
+	                            shiftops.chpl shiftops.future 
+	                            shiftops.good undefinedfn.chpl 
+	                            undefinedfn.future undefinedfn.good 
+	                            undefinedfn2.chpl 
+	                            undefinedfn2.future 
+	                            undefinedfn2.good 
+Removed files:
+	chapel/test/domains/bradc/: paramRank.future 
+
