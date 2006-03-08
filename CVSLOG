@@ -58594,3 +58594,29 @@ Added files:
 Removed files:
 	chapel/test/domains/bradc/: paramRank.future 
 
+---------------------------------------------------------------------------
+
+03/07/06 19:01:24 -- deitz
+
+Log message:
+	Added FnSymbol::visible which is set to false for compiler generated
+	functions such as wrappers and instantiated functions.  These
+	functions are not in the visible functions lists.  Removed the list
+	that the interpreter used to keep track of these functions.
+	
+	Simplified the arithmetic domain implementation.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/compiler/symtab/: symscope.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+Added files:
+	chapel/test/arrays/deitz/: test_array_1D.chpl test_array_1D.good 
+
