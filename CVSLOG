@@ -58712,3 +58712,13 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: parallel.cpp 
 
+---------------------------------------------------------------------------
+
+03/08/06 14:31:56 -- waynew
+
+Log message:
+	Hopefully, replaced tabs with spaces.
+
+Modified files:
+	chapel/compiler/main/: passlist.h 
+
