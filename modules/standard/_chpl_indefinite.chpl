@@ -41,6 +41,11 @@ class _idomain : _domain {
     inds.init();
   }
 
+  iterator _forall() : ind_type {
+    forall i in 0..num_inds-1 do
+      yield inds(i);
+  }
+
   function _double() {
     size += 1;
     var inds_copy = _ddata(integer, _ps(size)/2);
@@ -98,6 +103,13 @@ class _iarray : value {
 
   function this(ind : ind_type) var : elt_type
     return data(dom._get_index(ind));
+}
+
+function fwrite(f : file, x : _idomain) {
+  fwrite(f, "[", x.inds(0));
+  for i in 1..x.num_inds-1 do
+    fwrite(f, ", ", x.inds(i));
+  fwrite(f, "]");
 }
 
 function fwrite(f : file, x : _iarray) {
