@@ -58663,3 +58663,13 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: semanticChecks.cpp 
 
+---------------------------------------------------------------------------
+
+03/08/06 11:12:02 -- jplevyak
+
+Log message:
+	More efficiency improvements
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp sym.cpp sym.h 
+
