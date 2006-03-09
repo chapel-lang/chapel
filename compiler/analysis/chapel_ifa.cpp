@@ -2024,12 +2024,12 @@ finalize_function(Fun *fun, int instantiation) {
   if (!strcmp("_chpl_alloc", name))
     fun->is_external = 1;
   FnSymbol *fs = dynamic_cast<FnSymbol*>(SYMBOL(fun->sym));
+  if (fs->hasVarArgs)
+    fun->is_varargs = 1;
   if (fs->noParens)
-    fun->eager_evaluation = 1;
-  if (fs->method_type != NON_METHOD) {
-    fun->is_member = 1;
+    fun->is_eager = 1;
+  if (fs->method_type != NON_METHOD)
     fs->_this->asymbol->sym->is_this = 1;
-  }
   // add to dispatch cache
   if (!instantiation) {
     if (fs->typeBinding) {

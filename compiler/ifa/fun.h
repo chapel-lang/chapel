@@ -44,12 +44,11 @@ class Fun : public gc {
   PNode *exit;
   Region *region;
 
-  uint init_function : 1; // everything is global
   uint is_generic : 1;
-  uint eager_evaluation : 1;
   uint is_external : 1;
-  uint is_member : 1;
-
+  uint is_varargs : 1;
+  uint is_eager : 1;
+  
   // cdb
   char *cdb_id;
   int prof_id;
@@ -127,7 +126,7 @@ class Fun : public gc {
   void setup_ast();
   void init_fun();
 
-  Fun(Sym *afn, int aninit_function = 0);
+  Fun(Sym *afn);
   Fun();
   Fun *copy();
 };

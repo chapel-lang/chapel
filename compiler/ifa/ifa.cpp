@@ -27,9 +27,8 @@ ifa_analyze(char *fn) {
   if1_write_log();
   if (!fdce_if1)
     fail("unable to translate dead code");
-  Sym *init = if1_get_builtin(if1, "init");
   for (int i = 0; i < if1->allclosures.n; i++) {
-    Fun *f = new Fun(if1->allclosures.v[i], if1->allclosures.v[i] == init);
+    Fun *f = new Fun(if1->allclosures.v[i]);
     if (!f)
       fail("IF1 invalid");
     pdb->add(f);

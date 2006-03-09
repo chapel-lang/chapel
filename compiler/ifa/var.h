@@ -40,7 +40,6 @@ class Var : public gc {
   (!(_v)->sym->is_constant &&           \
    (_v)->sym->in == (_f)->sym &&        \
    !(_v)->sym->nesting_depth &&         \
-   !(_f)->init_function &&              \
    !(_v)->sym->is_lvalue &&             \
    !(_v)->sym->is_var)
 

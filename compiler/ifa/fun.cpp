@@ -14,7 +14,8 @@ void Fun::init_fun() {
   id = fun_id++;
   is_external = 0;
   is_generic = 0;
-  eager_evaluation = 0;
+  is_varargs = 0;
+  is_eager = 0;
   nested_in = 0;
   clone_for_constants = 0;
   split_unique = 0;
@@ -32,8 +33,7 @@ void Fun::init_fun() {
   cg_string = 0;
 }
 
-Fun::Fun(Sym *asym, int aninit_function) {
-  init_function = aninit_function;
+Fun::Fun(Sym *asym) {
   sym = asym;
   asym->fun = this;
   ast = sym->ast;
@@ -156,7 +156,6 @@ Fun *
 Fun::copy() {
   Fun *f = new Fun();
   f->sym = sym;
-  f->init_function = init_function;
   f->nmap = new Map<PNode *, PNode*>;
   f->vmap = new VarMap;
   f->wraps = wraps;
