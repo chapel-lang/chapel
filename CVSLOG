@@ -58895,3 +58895,13 @@ Modified files:
 	chapel/compiler/analysis/: chapel_ifa.cpp 
 	chapel/compiler/ifa/: fun.cpp fun.h ifa.cpp pattern.cpp var.h 
 
+---------------------------------------------------------------------------
+
+03/09/06 07:12:05 -- jplevyak
+
+Log message:
+	Add -rt so that the clock_XXX function will be included (they are POSIX).
+
+Modified files:
+	chapel/make/: Makefile.base 
+
