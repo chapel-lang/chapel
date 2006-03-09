@@ -22,9 +22,9 @@ depend: $(DEPENDSUBDIRS) $(PLATFORM_DIR) $(DEPEND_DEPS) echocompilerdir
 	  $(MAKEDEPEND) $(CFLAGS) $$file | grep -v \^\# >> $(CVS_DEPENDS).tmp; \
 	done
 	$(OTHER_DEPEND_RULES)
-	@mv -f $(CVS_DEPENDS).tmp $(CVS_DEPENDS)
 	@echo Updating nogc dependences...
 	@$(MAKE) USE_GC= nogcdepend
+	@mv -f $(CVS_DEPENDS).tmp $(CVS_DEPENDS)
 
 CVS_NOGC_DEPS= $(CVS_SRCS:%.cpp=%.nogcdepend)
 
