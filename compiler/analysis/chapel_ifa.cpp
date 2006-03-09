@@ -1267,13 +1267,23 @@ build_builtin_symbols() {
 
   // automatic promotions
 
-  sym_bool->specializes.add(sym_int8);
+  sym_bool->specializes.add(sym_uint8);
+
+  sym_uint8->specializes.add(sym_uint16);
+  sym_uint16->specializes.add(sym_uint32);
+  sym_uint32->specializes.add(sym_uint64);
+
+  sym_uint32->specializes.add(sym_int32);
+  sym_uint64->specializes.add(sym_int64);
+
   sym_int8->specializes.add(sym_int16);
   sym_int16->specializes.add(sym_int32);
   sym_int32->specializes.add(sym_int64);
 
   sym_int32->specializes.add(sym_float32);
   sym_int64->specializes.add(sym_float64);
+
+  sym_float32->specializes.add(sym_float);
 
   sym_float32->specializes.add(sym_complex32);
   sym_float64->specializes.add(sym_complex64);

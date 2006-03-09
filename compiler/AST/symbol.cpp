@@ -1553,6 +1553,28 @@ VarSymbol *new_IntSymbol(long b) {
   return s;
 }
 
+VarSymbol *new_UIntSymbol(unsigned long b) {
+  Immediate imm;
+  imm.v_int64 = b;
+  imm.const_kind = IF1_NUM_KIND_UINT;
+  imm.num_index = IF1_INT_TYPE_64;
+  VarSymbol *s = uniqueConstantsHash.get(&imm);
+  if (s)
+    return s;
+  s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), dtUnsigned);
+  rootScope->define(s);
+  char n[80];
+  sprintf(n, "%lud", b);
+  s->cname = dupstr(n);
+  s->immediate = new Immediate;
+  *s->immediate = imm;
+  s->literalType = new_LiteralType(s);
+  uniqueConstantsHash.put(s->immediate, s);
+  if (!dtUnsigned->defaultValue)
+    dtUnsigned->defaultValue = new_UIntSymbol(0);
+  return s;
+}
+
 VarSymbol *new_FloatSymbol(char *n, double b) {
   (void)n;
   Immediate imm;

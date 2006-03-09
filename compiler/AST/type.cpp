@@ -1021,6 +1021,7 @@ void initType(void) {
 
   dtBool = Symboltable::definePrimitiveType("bool", "_bool");
   dtInteger = Symboltable::definePrimitiveType("integer", "_integer64");
+  dtUnsigned = Symboltable::definePrimitiveType("uinteger", "_uinteger64");
   dtFloat = Symboltable::definePrimitiveType("float", "_float64", new_FloatSymbol("0.0", 0.0));
   // This should point to the complex type defined in modules/standard/_chpl_complex.chpl
   dtComplex = Symboltable::definePrimitiveType("complex", "_complex128", new_ComplexSymbol("_MAKE_COMPLEX64(0.0,0.0)", 0.0, 0.0));
