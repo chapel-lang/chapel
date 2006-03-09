@@ -35,6 +35,7 @@ resolve_call(BaseAST* ast,
              Vec<char*>* actual_names,
              PartialTag partialTag,
              FnSymbol *fnSymbol = NULL);
+void resolve_type_expr(BaseAST* base);
 
 // collect FnSymbols in the AST and return them in vectors
 void collect_functions(Vec<FnSymbol*>* functions);

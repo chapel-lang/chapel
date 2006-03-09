@@ -649,6 +649,8 @@ ACallbacks::order_wrapper(Fun *f, Map<MPosition *, MPosition *> &substitutions) 
     }
   }
   FnSymbol *fsym = fndef->order_wrapper(&formals_to_formals);
+  if (fsym->asymbol)
+    return fsym->asymbol->sym->fun;
   Fun *fun = install_new_asts(fsym);
   fun->wraps = f;
   return fun;
@@ -676,6 +678,8 @@ ACallbacks::coercion_wrapper(Fun *f, Map<MPosition *, Sym *> &substitutions) {
   }
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(SYMBOL(f->sym));
   FnSymbol *fsym = fndef->coercion_wrapper(&coercions);
+  if (fsym->asymbol)
+    return fsym->asymbol->sym->fun;
   Fun *fun = install_new_asts(fsym);
   fun->wraps = f;
   return fun;
@@ -694,6 +698,8 @@ ACallbacks::default_wrapper(Fun *f, Vec<MPosition *> &default_args) {
   }
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(SYMBOL(f->sym));
   FnSymbol *fsym = fndef->default_wrapper(&defaults);
+  if (fsym->asymbol)
+    return fsym->asymbol->sym->fun;
   Fun *fun = install_new_asts(fsym);
   fun->wraps = f;
   return fun;
@@ -720,10 +726,10 @@ ACallbacks::instantiate_generic(Fun *f, Map<Sym *, Sym *> &generic_substitutions
   }
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(SYMBOL(f->sym));
   ASTMap map;
-  Vec<FnSymbol*> new_functions;
-  Vec<TypeSymbol*> new_types;
-  FnSymbol *fsym = fndef->instantiate_generic(&substitutions, &new_functions, &new_types);
-  install_new_asts(new_functions, new_types);
+  new_ast_functions.clear();
+  new_ast_types.clear();
+  FnSymbol *fsym = fndef->instantiate_generic(&substitutions);
+  install_new_asts(new_ast_functions, new_ast_types);
   Fun *fun = fsym->asymbol->sym->fun;
   fun->wraps = f;
   return fun;

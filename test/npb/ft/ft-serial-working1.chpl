@@ -98,10 +98,10 @@ function compute_initial_conditions(X1) {
 
 function compute_index_map(Twiddle) {
   const ap = -4.0 * alpha * pi * pi;
-  forall i,j,k in Twiddle.domain do
-    Twiddle(i,j,k) = exp((ap*(i+nx/2) mod nx - nx/2)**2 +
-                         (ap*(i+nx/2) mod nx - nx/2)**2 +
-                         (ap*(i+nx/2) mod nx - nx/2)**2);
+  forall i,j,k in DXYZ do
+    Twiddle(i,j,k) = exp(ap*(((i+nx/2) mod nx - nx/2)**2 +
+                             ((j+nx/2) mod nx - nx/2)**2 +
+                             ((j+nx/2) mod nx - nx/2)**2));
 }
 
 var fftblock : integer = 16, fftblockpad : integer = 18;
@@ -349,7 +349,7 @@ function checksum(i, X1) {
 -- Run problem once to ensure all data is touched
 --
 
-compute_indexmap(Twiddle);
+compute_index_map(Twiddle);
 compute_initial_conditions(U1);
 fft_init();
 fft(1, U1, U0);
@@ -358,7 +358,7 @@ fft(1, U1, U0);
 -- Restart benchmark
 --
 
-compute_indexmap(Twiddle);
+compute_index_map(Twiddle);
 compute_initial_conditions(U1);
 fft_init();
 fft(1, U1, U0);

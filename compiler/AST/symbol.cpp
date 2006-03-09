@@ -23,6 +23,9 @@ VarSymbol *gFalse = 0;
 
 Vec<Symbol *> builtinSymbols;
 
+Vec<FnSymbol*> new_ast_functions;
+Vec<TypeSymbol*> new_ast_types;
+
 /*** Instantiation Cache vvv ***/
 class Inst : public gc {
  public:
@@ -935,38 +938,6 @@ instantiate_add_subs(ASTMap* substitutions, ASTMap* map) {
 }
 
 
-// static void
-// fold_parameter_methods(FnSymbol* fn,
-//                        ASTMap* generic_subs,
-//                        Type* generic_type) {
-//   Vec<BaseAST*> asts;
-//   collect_asts(&asts, fn);
-//   Vec<BaseAST*> keys;
-//   generic_subs->get_keys(keys);
-//   forv_Vec(BaseAST, key, keys) {
-//     if (Symbol* var = dynamic_cast<Symbol*>(key)) {
-//       forv_Vec(BaseAST, ast, asts) {
-//         if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
-//           if (call->argList->length() == 2) {
-//             if (call->isNamed(var->name)) {
-//               if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->get(1))) {
-//                 if (symExpr->var == methodToken) {
-//                   if (call->get(2)->typeInfo() == generic_type) {
-//                     if (Symbol* value = dynamic_cast<Symbol*>(generic_subs->get(key))) {
-//                       call->replace(new SymExpr(value));
-//                     }
-//                   }
-//                 }
-//               }
-//             }
-//           }
-//         }
-//       }
-//     }
-//   }
-// }
-
-
 static FnSymbol*
 instantiate_function(Stmt* pointOfInstantiation, FnSymbol *fn, ASTMap *all_subs, ASTMap *generic_subs, ASTMap *map, Type* generic_type = NULL) {
   Stmt* fnStmt = fn->defPoint->parentStmt->copy(map);
@@ -975,13 +946,12 @@ instantiate_function(Stmt* pointOfInstantiation, FnSymbol *fn, ASTMap *all_subs,
   FnSymbol* fnClone = dynamic_cast<FnSymbol*>(defExpr->sym);
   fnClone->visible = false;
   pointOfInstantiation->insertBefore(fnStmt);
-//   if (generic_type != NULL)
-//     fold_parameter_methods(fnClone, generic_subs, generic_type);
   fnClone->cname = stringcat("_inst_", defExpr->sym->cname);
   instantiate_add_subs(all_subs, map);
   instantiate_update_expr(all_subs, defExpr);
   fnClone->instantiatedFrom = fn;
   fnClone->substitutions.copy(*generic_subs);
+  add_icache(fnClone);
   for_alist(DefExpr, formal, fnClone->formals) {
     if (ArgSymbol *ps = dynamic_cast<ArgSymbol *>(formal->sym)) {
       if (TypeSymbol *ts = dynamic_cast<TypeSymbol *>(ps->genericSymbol)) {
@@ -1076,9 +1046,7 @@ FnSymbol::isPartialInstantiation(ASTMap* generic_substitutions) {
 
 
 FnSymbol*
-FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
-                              Vec<FnSymbol*>* new_functions,
-                              Vec<TypeSymbol*>* new_types) {
+FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
   static int uid = 1;
 
   // check to make sure this fully instantiates
@@ -1165,7 +1133,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
     /*** end gross code */
 
     TypeSymbol* clone = retType->symbol->clone(&map, pointOfInstantiation);
-    new_types->add(clone);
+    new_ast_types.add(clone);
     instantiate_add_subs(&substitutions, &map);
 
     ClassType* cloneType = dynamic_cast<ClassType*>(clone->definition);
@@ -1209,7 +1177,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
           && fn == this
         ) {
         FnSymbol *fnClone = instantiate_function(pointOfInstantiation, fn, &substitutions, generic_substitutions, &map, cloneType);
-        new_functions->add(fnClone);
+        new_ast_functions.add(fnClone);
         if (fn == this) {
           newfn = fnClone;
           instantiatedTo->add(fnClone);
@@ -1226,12 +1194,11 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
   } else {
     newfn = instantiate_function(defPoint->parentStmt, this, &substitutions, generic_substitutions, &map);
     instantiatedTo->add(newfn);
-    new_functions->add(newfn);
+    new_ast_functions.add(newfn);
   }
   if (!newfn) {
     INT_FATAL(this, "Instantiation error");
   }
-  add_icache(newfn);
 
   for_alist(DefExpr, formal_def, newfn->formals) {
     ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formal_def->sym);

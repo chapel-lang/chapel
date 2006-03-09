@@ -37,6 +37,7 @@ static void expand_var_args(FnSymbol* fn);
 static int tag_generic(FnSymbol* fn);
 static int tag_generic(Type* fn);
 static void tag_hasVarArgs(FnSymbol* fn);
+static void resolve_formal_types(FnSymbol* fn);
 
 void normalize(void) {
   forv_Vec(ModuleSymbol, mod, allModules) {
@@ -226,8 +227,10 @@ void normalize(BaseAST* base) {
   asts.clear();
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
-    if (FnSymbol *fn = dynamic_cast<FnSymbol*>(ast))
+    if (FnSymbol *fn = dynamic_cast<FnSymbol*>(ast)) {
       tag_hasVarArgs(fn);
+      resolve_formal_types(fn);
+    }
   }
 }
 
@@ -1266,5 +1269,17 @@ tag_hasVarArgs(FnSymbol* fn) {
     ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
     if (formal->variableExpr)
       fn->hasVarArgs = true;
+  }
+}
+
+static void
+resolve_formal_types(FnSymbol* fn) {
+  if (!fn->isGeneric) {
+    for_alist(DefExpr, formalDef, fn->formals) {
+      if (dynamic_cast<CallExpr*>(formalDef->exprType)) {
+        resolve_type_expr(formalDef->exprType);
+        hack_resolve_types(formalDef);
+      }
+    }
   }
 }

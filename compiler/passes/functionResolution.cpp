@@ -55,8 +55,8 @@ Vec<FnSymbol*> fns; // live functions list
 
 void resolve_return_type(FnSymbol* fn);
 void resolve_function(FnSymbol* fn);
-void resolve_asts(BaseAST* base);
 void resolve_op(CallExpr* call);
+void resolve_asts(BaseAST* base);
 
 bool actual_formal_match(Symbol* actual_param, Type* actual_type, ArgSymbol* formal) {
   if (formal->intent == INTENT_TYPE || formal->type == dtUnknown)
@@ -151,9 +151,7 @@ add_candidate(Map<FnSymbol*,Vec<ArgSymbol*>*>* candidateFns,
       }
     }
     if (subs.n && !fn->isPartialInstantiation(&subs)) {
-      Vec<FnSymbol*> inst_fns;
-      Vec<TypeSymbol*> inst_ts;
-      FnSymbol* inst_fn = fn->instantiate_generic(&subs, &inst_fns, &inst_ts);
+      FnSymbol* inst_fn = fn->instantiate_generic(&subs);
       if (inst_fn->whereExpr) {
         resolve_asts(inst_fn->whereExpr);
         param_compute(inst_fn->whereExpr);
@@ -495,6 +493,44 @@ void resolve_for_loop(CallExpr* call) {
       }
       if (index->type == dtUnknown) {
         INT_FATAL(index, "Could not determine type of index");
+      }
+    }
+  }
+}
+
+void
+resolve_type_expr(BaseAST* base) {
+  Vec<BaseAST*> asts;
+  collect_asts_postorder(&asts, base);
+  forv_Vec(BaseAST, ast, asts) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+      if (!call->parentSymbol)
+        continue;
+      Vec<Type*> actual_types;
+      Vec<Symbol*> actual_params;
+      Vec<char*> actual_names;
+      for_alist(Expr, actual, call->argList) {
+        actual_types.add(actual->typeInfo());
+        SymExpr* symExpr;
+        if (NamedExpr* named = dynamic_cast<NamedExpr*>(actual)) {
+          actual_names.add(named->name);
+          symExpr = dynamic_cast<SymExpr*>(named->actual);
+        } else {
+          actual_names.add(NULL);
+          symExpr = dynamic_cast<SymExpr*>(actual);
+        }
+        if (symExpr && symExpr->var->isParam()) {
+          actual_params.add(symExpr->var);
+        } else {
+          actual_params.add(NULL);
+        }
+      }
+      FnSymbol* fn = resolve_call(call, &actual_types,
+                                  &actual_params, &actual_names);
+      if (fn) {
+        call->replace(new SymExpr(fn->retType->symbol));
+      } else {
+        INT_FATAL(call, "Error resolving formal argument type");
       }
     }
   }

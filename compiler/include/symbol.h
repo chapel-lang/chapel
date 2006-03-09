@@ -214,9 +214,7 @@ class FnSymbol : public Symbol {
   FnSymbol* coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitutions);
   FnSymbol* default_wrapper(Vec<Symbol*>* defaults);
   bool isPartialInstantiation(ASTMap* generic_substitutions);
-  FnSymbol* instantiate_generic(ASTMap* substitutions,
-                                Vec<FnSymbol*>* new_functions,
-                                Vec<TypeSymbol*>* new_types);
+  FnSymbol* instantiate_generic(ASTMap* substitutions);
   FnSymbol* clone_generic(ASTMap* formal_types);
   void codegenHeader(FILE* outfile);
   void codegenPrototype(FILE* outfile);
@@ -300,5 +298,7 @@ extern VarSymbol *gTrue;
 extern VarSymbol *gFalse;
 
 extern Vec<Symbol *> builtinSymbols;
+extern Vec<FnSymbol*> new_ast_functions;
+extern Vec<TypeSymbol*> new_ast_types;
 
 #endif

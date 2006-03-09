@@ -24,6 +24,16 @@ _chpl_sparse.chpl:16: fwrite, f : file, x : _sarray
 _chpl_sparse.chpl:1: fwrite, f : file, val : _sdomain
 error: '_tmp' has no type
 fail: program does not type
+fwrite, f : file, val : _tuple0
+fwrite, f : file, val : _tuple1
+fwrite, f : file, val : _tuple10
+fwrite, f : file, val : _tuple12
+fwrite, f : file, val : _tuple2
+fwrite, f : file, val : _tuple3
+fwrite, f : file, val : _tuple4
+fwrite, f : file, val : _tuple5
+fwrite, f : file, val : _tuple6
+fwrite, f : file, val : _tuple8
 note: candidates are:
 note: candidates are:
 prelude.chpl:10: fwrite, f : file, val : CFILEPTR
