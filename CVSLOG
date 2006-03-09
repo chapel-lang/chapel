@@ -58832,3 +58832,16 @@ Removed files:
 	chapel/test/interpreter/deitz/: test_array1d.future 
 	chapel/test/types/seq/deitz/: test_seq_arg.future 
 
+---------------------------------------------------------------------------
+
+03/08/06 19:33:25 -- jplevyak
+
+Log message:
+	Add Timer class for instrumentation.
+	Use timer class for per-pass instrumentation of interative flow analysis.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+Added files:
+	chapel/compiler/ifa/: timer.h 
+
