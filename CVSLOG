@@ -58745,3 +58745,13 @@ Modified files:
 	chapel/compiler/make/: Makefile.compiler.foot 
 	                       Makefile.compiler.subdirrules 
 
+---------------------------------------------------------------------------
+
+03/08/06 16:19:13 -- jplevyak
+
+Log message:
+	Fix possible bug and add comment to CACHE_CALLEES option.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp fa.h pattern.cpp 
+
