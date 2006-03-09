@@ -1,1 +1,1 @@
-Error: Symbol 'goo' is not defined (test/trivial/bradc/readmethod.chpl:2)
+Error: Symbol 'goo' is not defined (readmethod.chpl:2)
