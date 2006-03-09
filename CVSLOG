@@ -58755,3 +58755,21 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp fa.h pattern.cpp 
 
+---------------------------------------------------------------------------
+
+03/08/06 18:00:09 -- bradc
+
+Log message:
+	Implemented shift operators (<< and >>) and discussed at
+	last week's meeting, while procrastinating.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp 
+	chapel/compiler/analysis/: analysis_ops.h chapel_ifa.cpp 
+	chapel/compiler/include/: primitive.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/passes/: interpreter_ops.h runInterpreter.cpp 
+	chapel/modules/standard/: _chpl_base.chpl 
+Removed files:
+	chapel/test/trivial/bradc/: shiftops.future 
+
