@@ -58884,3 +58884,14 @@ Modified files:
 	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
 	                                         inlfunc2_report.good 
 
+---------------------------------------------------------------------------
+
+03/08/06 22:56:12 -- jplevyak
+
+Log message:
+	Cleanup flags in Fun - remove unused ones
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: fun.cpp fun.h ifa.cpp pattern.cpp var.h 
+
