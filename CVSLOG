@@ -58947,3 +58947,16 @@ Added files:
 	chapel/test/types/type_variables/deitz/: test_instantiate4.chpl 
 	                                         test_instantiate4.good 
 
+---------------------------------------------------------------------------
+
+03/09/06 14:07:11 -- jplevyak
+
+Log message:
+	Add some support for unsigned integers - more needs to be done.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: symbol.h type.h 
+	chapel/compiler/passes/: runInterpreter.cpp 
+
