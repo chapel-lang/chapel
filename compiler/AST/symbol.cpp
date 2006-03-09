@@ -1006,19 +1006,6 @@ FnSymbol::clone_generic(ASTMap* formal_types) {
 }
 
 
-static bool
-function_requires_instantiation(FnSymbol* fn, Type* type) {
-  if (fn->retType == type)
-    return true;
-  for_alist(DefExpr, formalDef, fn->formals) {
-    ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
-    if (formal->type == type)
-      return true;
-  }
-  return false;
-}
-
-
 bool
 FnSymbol::isPartialInstantiation(ASTMap* generic_substitutions) {
   for_alist(DefExpr, formalDef, this->formals) {
@@ -1047,41 +1034,41 @@ FnSymbol::isPartialInstantiation(ASTMap* generic_substitutions) {
 
 FnSymbol*
 FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
-  static int uid = 1;
-
   // check to make sure this fully instantiates
   if (isPartialInstantiation(generic_substitutions))
     INT_FATAL(this, "partial instantiation detected");
-  for (int i = 0; i < generic_substitutions->n; i++) {
-    if (BaseAST* value = generic_substitutions->v[i].value) {
-      if (MetaType* metaType = dynamic_cast<MetaType*>(value)) {
-        generic_substitutions->v[i].value = metaType->base;
-      }
-    }
-  }
 
+  // change meta types to types
+  for (int i = 0; i < generic_substitutions->n; i++)
+    if (BaseAST* value = generic_substitutions->v[i].value)
+      if (MetaType* metaType = dynamic_cast<MetaType*>(value))
+        generic_substitutions->v[i].value = metaType->base;
+
+  // return cached if we did this instantiation already
   if (FnSymbol* cached = check_icache(this, generic_substitutions))
     return cached;
+
+  static int uid = 1;
   ASTMap substitutions(*generic_substitutions);
   FnSymbol* newfn = NULL;
   currentLineno = lineno;
   currentFilename = filename;
   ASTMap map;
 
+  // check for infinite recursion by limiting the number of
+  // instantiations of a particular type or function
   if (instantiatedTo == NULL)
     instantiatedTo = new Vec<FnSymbol*>();
-  
   if (instantiatedTo->n >= instantiation_limit) {
     if (fnClass == FN_CONSTRUCTOR) {
-      USR_FATAL_CONT(retType,
-                     "Type '%s' has been instantiated too many times",
+      USR_FATAL_CONT(retType, "Type '%s' has been instantiated too many times",
                      retType->symbol->name);
     } else {
-      USR_FATAL_CONT(this,
-                     "Function '%s' has been instantiated too many times",
+      USR_FATAL_CONT(this, "Function '%s' has been instantiated too many times",
                      name);
     }
-    USR_PRINT("  If this is intentional, try increasing the instantiation limit from %d", instantiation_limit);
+    USR_PRINT("  If this is intentional, try increasing"
+              " the instantiation limit from %d", instantiation_limit);
     USR_STOP();
   }
 
@@ -1153,51 +1140,20 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
 
     cloneType->substitutions.copy(*generic_substitutions);
 
-    Vec<BaseAST*> genericParameters;
-    for (int i = 0; i < substitutions.n; i++)
-      if (VariableType *t = dynamic_cast<VariableType*>(substitutions.v[i].key)) {
-        genericParameters.set_add(t);
-        genericParameters.set_add(t->symbol);
-      } else if (ArgSymbol *s = dynamic_cast<ArgSymbol*>(substitutions.v[i].key))
-        if (s->isGeneric)
-          genericParameters.set_add(s);
-    genericParameters.set_add(retType);
-    genericParameters.set_add(retType->symbol);
-
     forv_Vec(Type*, parent, retType->typeParents)
       cloneType->typeParents.add(parent);
 
     forv_Vec(Type*, parent, retType->dispatchParents)
       cloneType->dispatchParents.add(parent);
 
-    Vec<FnSymbol*> fns;
-    collect_functions(&fns);
-    forv_Vec(FnSymbol, fn, fns) {
-      if (function_requires_instantiation(fn, retType)
-          && fn == this
-        ) {
-        FnSymbol *fnClone = instantiate_function(pointOfInstantiation, fn, &substitutions, generic_substitutions, &map, cloneType);
-        new_ast_functions.add(fnClone);
-        if (fn == this) {
-          newfn = fnClone;
-          instantiatedTo->add(fnClone);
-        }
-        if (fn->typeBinding == retType->symbol) {
-          cloneType->methods.add(fnClone);
-          fnClone->typeBinding = clone;
-          fnClone->method_type = fn->method_type;
-        }
-        if (retType->defaultConstructor == fn)
-          cloneType->defaultConstructor = fnClone;
-      }
-    }
+    newfn = instantiate_function(pointOfInstantiation, this, &substitutions, generic_substitutions, &map, cloneType);
+    new_ast_functions.add(newfn);
+    instantiatedTo->add(newfn);
+    cloneType->defaultConstructor = newfn;
   } else {
     newfn = instantiate_function(defPoint->parentStmt, this, &substitutions, generic_substitutions, &map);
-    instantiatedTo->add(newfn);
     new_ast_functions.add(newfn);
-  }
-  if (!newfn) {
-    INT_FATAL(this, "Instantiation error");
+    instantiatedTo->add(newfn);
   }
 
   for_alist(DefExpr, formal_def, newfn->formals) {
