@@ -58773,3 +58773,16 @@ Modified files:
 Removed files:
 	chapel/test/trivial/bradc/: shiftops.future 
 
+---------------------------------------------------------------------------
+
+03/08/06 18:03:54 -- bradc
+
+Log message:
+	Made rewrites of functions like assert(), read(), write(), etc. only
+	apply to functions, not to methods.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+Removed files:
+	chapel/test/trivial/bradc/: readmethod.future readmethod2.future 
+
