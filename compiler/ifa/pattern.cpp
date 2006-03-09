@@ -10,8 +10,6 @@
 #include "ast.h"
 #include "log.h"
 
-//#define CHECK_CALLEE_CACHE      1
-
 // Key to names of position variables
 //  ABCD 
 //   A = a | f, actual or formal (MANDITORY)
@@ -1164,7 +1162,7 @@ find_visible_functions(Vec<AVar *> &args, AVar *send, Vec<Fun *> **visible_funct
     function_values.set_add(aarg0->out->v[0]->sym->fun);
     visible = new Vec<Fun *>;
   } else {
-#ifdef CALLEE_CACHE
+#ifdef CACHE_CALLEES
     if (send->var->def->callees) {
       visible = new Vec<Fun *>(send->var->def->callees->funs);
       *all_positions = &send->var->def->callees->arg_positions;
