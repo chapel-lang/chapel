@@ -194,14 +194,18 @@ void cleanup(void) {
   forv_Vec(ModuleSymbol, mod, allModules)
     createInitFn(mod);
 
+  construct_tuple_type(1);
+  construct_tuple_type(2);
+  construct_tuple_type(3);
+  construct_tuple_type(4);
+  construct_tuple_type(5);
+
   forv_Vec(ModuleSymbol, mod, allModules) {
     Vec<BaseAST*> asts;
     collect_asts(&asts, mod);
     forv_Vec(BaseAST, ast, asts) {
       if (ImportExpr* a = dynamic_cast<ImportExpr*>(ast)) {
         process_import_expr(a);
-      } else if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
-        construct_tuple_type(a->argList->length());
       }
     }
   }
@@ -212,7 +216,6 @@ void cleanup(void) {
 
 
 void cleanup(BaseAST* base) {
-  for (int i = 1; i <= 2; i++) {
   Vec<BaseAST*> asts;
   collect_asts(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
@@ -283,7 +286,6 @@ void cleanup(BaseAST* base) {
     if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
       hack_array(def);
     }
-  }
   }
 }
 

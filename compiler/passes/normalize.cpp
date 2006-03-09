@@ -3,10 +3,10 @@
  *** This pass and function normalizes parsed and scope-resolved AST.
  ***/
 
+#include <sys/time.h>
 #include "astutil.h"
 #include "expr.h"
 #include "passes.h"
-#include "runtime.h"
 #include "runtime.h"
 #include "stmt.h"
 #include "symbol.h"
@@ -31,7 +31,7 @@ static void hack_resolve_types(Expr* expr);
 static void apply_getters_setters(FnSymbol* fn);
 static void insert_call_temps(CallExpr* call);
 static void fix_user_assign(CallExpr* call);
-static void fix_def_expr(DefExpr* def);
+static void fix_def_expr(DefExpr* def, VarSymbol* var);
 static void fold_params(Vec<DefExpr*>* defs, Vec<BaseAST*>* asts);
 static void expand_var_args(FnSymbol* fn);
 static int tag_generic(FnSymbol* fn);
@@ -41,7 +41,6 @@ static void resolve_formal_types(FnSymbol* fn);
 
 void normalize(void) {
   forv_Vec(ModuleSymbol, mod, allModules) {
-    normalize(mod);
     normalize(mod);
   }
   normalized = true;
@@ -157,9 +156,9 @@ void normalize(BaseAST* base) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
     if (DefExpr* a = dynamic_cast<DefExpr*>(ast)) {
-      if (dynamic_cast<VarSymbol*>(a->sym) &&
-          dynamic_cast<FnSymbol*>(a->parentSymbol))
-        fix_def_expr(a);
+      if (VarSymbol* var = dynamic_cast<VarSymbol*>(a->sym))
+        if (dynamic_cast<FnSymbol*>(a->parentSymbol))
+          fix_def_expr(a, var);
     }
     if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
       if (a->isNamed("="))
@@ -782,30 +781,30 @@ static void fix_user_assign(CallExpr* call) {
 }
 
 
-static void fix_def_expr(DefExpr* def) {
+static void fix_def_expr(DefExpr* def, VarSymbol* var) {
   if (dynamic_cast<ForLoopStmt*>(def->parentStmt))
     return;
   static int uid = 1;
   SymExpr* initSymExpr = dynamic_cast<SymExpr*>(def->init);
   bool no_init = initSymExpr && initSymExpr->var == gUnspecified;
-  if (no_init || dynamic_cast<VarSymbol*>(def->sym)->noDefaultInit) {
+  if (no_init || var->noDefaultInit) {
     if (no_init)
       def->init->remove();
-    if (def->sym->type == dtUnspecified)
-      def->sym->type = dtUnknown;
+    if (var->type == dtUnspecified)
+      var->type = dtUnknown;
     if (def->init)
-      def->parentStmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, def->init->copy()));
-  } else if (def->sym->type != dtUnknown) {
+      def->parentStmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, var, def->init->copy()));
+  } else if (var->type != dtUnknown) {
     AList<Stmt>* stmts = new AList<Stmt>();
     VarSymbol* tmp = new VarSymbol("_defTmp", dtUnknown, VAR_NORMAL, VAR_CONST);
     tmp->noDefaultInit = true;
     tmp->cname = stringcat(tmp->name, intstring(uid++));
     stmts->insertAtTail(new DefExpr(tmp));
-    stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_INIT, def->sym->type->symbol)));
+    stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_INIT, var->type->symbol)));
     if (def->init)
-      stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, def->sym, new CallExpr("=", tmp, def->init->copy())));
+      stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, var, new CallExpr("=", tmp, def->init->copy())));
     else
-      stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, def->sym, tmp));
+      stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, var, tmp));
     def->parentStmt->insertAfter(stmts);
   } else if (def->exprType) {
     AList<Stmt>* stmts = new AList<Stmt>();
@@ -815,9 +814,9 @@ static void fix_def_expr(DefExpr* def) {
     stmts->insertAtTail(new DefExpr(tmp));
     stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_INIT, def->exprType->copy())));
     if (def->init)
-      stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, def->sym, new CallExpr("=", tmp, def->init->copy())));
+      stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, var, new CallExpr("=", tmp, def->init->copy())));
     else
-      stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, def->sym, tmp));
+      stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, var, tmp));
     def->parentStmt->insertAfter(stmts);
   } else if (def->init) {
     AList<Stmt>* stmts = new AList<Stmt>();
@@ -831,15 +830,14 @@ static void fix_def_expr(DefExpr* def) {
     stmts->insertAtTail(new DefExpr(tmp2));
     stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp1, def->init->copy()));
     stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp2, new CallExpr(PRIMITIVE_INIT, tmp1)));
-    stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, def->sym, new CallExpr("=", tmp2, tmp1)));
+    stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, var, new CallExpr("=", tmp2, tmp1)));
     def->parentStmt->insertAfter(stmts);
   } else {
-    def->parentStmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, new CallExpr(PRIMITIVE_INIT, gUnspecified)));
+    def->parentStmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, var, new CallExpr(PRIMITIVE_INIT, gUnspecified)));
   }
   def->exprType->remove();
   def->init->remove();
-  if (VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym))
-    var->noDefaultInit = true;
+  var->noDefaultInit = true;
 }
 
 

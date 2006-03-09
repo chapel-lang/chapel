@@ -1,10 +1,10 @@
 _chpl_adomain.chpl:168: fwrite, f : file, x : _adomain
 _chpl_adomain.chpl:175: fwrite, f : file, x : _aarray
-_chpl_base.chpl:106: fwrite, f : file, val : _domain
+_chpl_base.chpl:108: fwrite, f : file, val : _domain
 _chpl_base.chpl:11: fwrite, f : file, val : _setterTokenType
-_chpl_base.chpl:123: fwrite, f : file, val : _array
+_chpl_base.chpl:125: fwrite, f : file, val : _array
 _chpl_base.chpl:3: fwrite, f : file, val : _unused_class
-_chpl_base.chpl:85: fwrite, f : file, val : _ddata
+_chpl_base.chpl:87: fwrite, f : file, val : _ddata
 _chpl_base.chpl:9: fwrite, f : file, val : _methodTokenType
 _chpl_closure.chpl:1: fwrite, f : file, val : closure
 _chpl_complex.chpl:8: fwrite, f : file, x : complex
@@ -24,16 +24,11 @@ _chpl_sparse.chpl:16: fwrite, f : file, x : _sarray
 _chpl_sparse.chpl:1: fwrite, f : file, val : _sdomain
 error: '_tmp' has no type
 fail: program does not type
-fwrite, f : file, val : _tuple0
 fwrite, f : file, val : _tuple1
-fwrite, f : file, val : _tuple10
-fwrite, f : file, val : _tuple12
 fwrite, f : file, val : _tuple2
 fwrite, f : file, val : _tuple3
 fwrite, f : file, val : _tuple4
 fwrite, f : file, val : _tuple5
-fwrite, f : file, val : _tuple6
-fwrite, f : file, val : _tuple8
 note: candidates are:
 note: candidates are:
 prelude.chpl:10: fwrite, f : file, val : CFILEPTR

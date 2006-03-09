@@ -9,12 +9,13 @@
 #include "runtime.h"
 
 
+static Vec<FnSymbol*> fns;
+
 static void build_chpl_main(void);
 static void build_record_equality_function(ClassType* ct);
 static void build_record_inequality_function(ClassType* ct);
 static void build_record_assignment_function(ClassType* ct);
 static void buildDefaultIOFunctions(Type* type);
-//static void construct_closure_type(int size);
 
 // function_exists returns true iff
 //  function's name matches name
@@ -37,8 +38,6 @@ static FnSymbol* function_exists(char* name,
                                  Type* typeBinding = NULL,
                                  char* formalTypeName1 = NULL,
                                  char* formalTypeName2 = NULL) {
-  Vec<FnSymbol*> fns;
-  collect_functions(&fns);
   forv_Vec(FnSymbol, fn, fns) {
     if (strcmp(name, fn->name))
       continue;
@@ -66,6 +65,7 @@ static FnSymbol* function_exists(char* name,
 
 
 void build_default_functions(void) {
+  collect_functions(&fns);
   build_chpl_main();
 
   Vec<BaseAST*> asts;
@@ -86,8 +86,6 @@ void build_default_functions(void) {
 
 
 static FnSymbol* chpl_main_exists(void) {
-  Vec<FnSymbol*> fns;
-  collect_functions(&fns);
   FnSymbol* match = NULL;
   forv_Vec(FnSymbol, fn, fns) {
     if (!strcmp("main", fn->name) && !fn->formals->length()) {
@@ -142,6 +140,7 @@ static void build_record_equality_function(ClassType* ct) {
   ct->symbol->defPoint->parentStmt->insertBefore(def);
   reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
   build(fn);
+  fns.add(fn);
 }
 
 
@@ -168,6 +167,7 @@ static void build_record_inequality_function(ClassType* ct) {
   ct->symbol->defPoint->parentStmt->insertBefore(def);
   reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
   build(fn);
+  fns.add(fn);
 }
 
 
@@ -203,6 +203,7 @@ static void build_record_assignment_function(ClassType* ct) {
   if (no_infer)
     fn->retType = ct;
   build(fn);
+  fns.add(fn);
 }
 
 
@@ -226,6 +227,7 @@ void buildDefaultIOFunctions(Type* type) {
       type->symbol->defPoint->parentStmt->insertBefore(def);
       reset_file_info(def, type->symbol->lineno, type->symbol->filename);
       build(fn);
+      fns.add(fn);
     }
   }
 
