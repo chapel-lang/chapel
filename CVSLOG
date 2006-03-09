@@ -58988,3 +58988,14 @@ Added files:
 	chapel/test/trivial/deitz/: test_for_param.chpl 
 	                            test_for_param.good 
 
+---------------------------------------------------------------------------
+
+03/09/06 15:35:06 -- deitz
+
+Log message:
+	Simplified instantiate_generic code given recent changes and
+	simplifications to instantiation.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
