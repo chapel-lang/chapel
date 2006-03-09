@@ -5,6 +5,8 @@
 
 MAKEFLAGS = --no-print-directory
 
+LIBS += -lrt
+
 
 #
 # determine what platform we're running on
