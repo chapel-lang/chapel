@@ -58798,3 +58798,37 @@ Added files:
 	chapel/test/functions/deitz/varargs/: .cvsignore 
 	chapel/test/types/typedefs/jplevyak/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+03/08/06 18:30:10 -- deitz
+
+Log message:
+	Added support for instantiating formal argument types during
+	normalization to allow for proper dispatch.  Removed future for
+	test/types/seq/deitz/test_seq_arg.chpl.  This change also gets 1D
+	arrays working through the interpreter.
+	
+	Moved construction of tuple types to the cleanup pass and made it so
+	that we now create lots of tuple types right up front.  This slows us
+	down, though I am optimizing some parts of the slowdown.  We should
+	discuss the tuple story at our next meeting.
+	
+	Futurized one test that used a field in a class that is an
+	instantiated type to deal with this later.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: astutil.h symbol.h 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         functionResolution.cpp normalize.cpp 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+	chapel/test/npb/ft/: ft-serial-working1.chpl 
+Added files:
+	chapel/test/types/tuple/deitz/: test_class_tuple1.future 
+Removed files:
+	chapel/test/interpreter/deitz/: test_array1d.future 
+	chapel/test/types/seq/deitz/: test_seq_arg.future 
+
