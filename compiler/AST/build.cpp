@@ -87,3 +87,18 @@ AList<Stmt>* build_for_block(ForLoopStmt* stmt) {
   stmts->insertAtTail(new LabelStmt(new DefExpr(body->post_loop)));
   return stmts;
 }
+
+
+AList<Stmt>* build_param_for(char* index, Expr* low, Expr* high, AList<Stmt>* stmts) {
+  static int uid = 1;
+  FnSymbol* fn = new FnSymbol(stringcat("_param_for_fn", intstring(uid++)));
+  fn->formals =
+    new AList<DefExpr>(new DefExpr(new ArgSymbol(INTENT_PARAM, index, dtInteger)));
+  fn->addPragma("inline");
+  stmts->insertAtTail(new CallExpr(fn->name, new CallExpr("+", new SymExpr(index), new_IntLiteral(1))));
+  fn->insertAtTail(
+    new CondStmt(new CallExpr("<=", new SymExpr(index), high), stmts));
+  Stmt* def_stmt = new ExprStmt(new DefExpr(fn));
+  Stmt* call_stmt = new ExprStmt(new CallExpr(fn->name, low));
+  return new AList<Stmt>(def_stmt, call_stmt);
+}

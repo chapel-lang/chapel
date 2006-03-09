@@ -395,7 +395,11 @@ if_stmt:
 
 
 for_stmt:
-  for_stmt_tag nonempty_expr_ls TIN nonempty_expr_ls parsed_block_stmt
+  TFOR TPARAM identifier TIN expr TDOTDOT expr TDO stmt
+    { $$ = build_param_for($3, $5, $7, $9); }
+| TFOR TPARAM identifier TIN expr TDOTDOT expr parsed_block_stmt
+    { $$ = build_param_for($3, $5, $7, new AList<Stmt>($8)); }
+| for_stmt_tag nonempty_expr_ls TIN nonempty_expr_ls parsed_block_stmt
     { $$ = build_for_block(new ForLoopStmt($1, exprsToIndices($2), $4, $5)); }
 | for_stmt_tag nonempty_expr_ls TIN nonempty_expr_ls TDO stmt
     { $$ = build_for_block(new ForLoopStmt($1, exprsToIndices($2), $4, $6)); }
