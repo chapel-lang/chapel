@@ -58921,3 +58921,15 @@ Removed files:
 	chapel/test/types/type_variables/deitz/functions/: 
 	                                                   test_foo5.future 
 
+---------------------------------------------------------------------------
+
+03/09/06 09:10:32 -- deitz
+
+Log message:
+	Fixed .good and removed .future.
+
+Modified files:
+	chapel/test/arrays/jplevyak/: simple-2.good 
+Removed files:
+	chapel/test/arrays/jplevyak/: simple-2.future 
+
