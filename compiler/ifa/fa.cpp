@@ -13,6 +13,7 @@
 #include "graph.h"
 #include "log.h"
 #include "fail.h"
+#include "timer.h"
 
 /* runtime options 
 */
@@ -45,6 +46,7 @@ static int creation_set_id = 1;
 static int entry_set_id = 1;
 
 static FA *fa = 0;
+static Timer pass_timer;
 
 static ChainHash<AType *, ATypeChainHashFns> cannonical_atypes;
 static ChainHash<Setters *, SettersHashFns> cannonical_setters;
@@ -2643,6 +2645,7 @@ initialize_pass() {
   type_violation_hash.clear();
   entry_set_done.clear();
   refresh_top_edge(fa->top_edge);
+  pass_timer.restart();
 }
 
 static void
@@ -3649,6 +3652,7 @@ clear_splits() {
 static int
 extend_analysis() {
   int analyze_again = 0;
+  Timer extend_timer;
   compute_recursive_entry_sets();
   compute_recursive_entry_creation_sets();
   clear_splits();
@@ -3682,15 +3686,10 @@ extend_analysis() {
   if (!analyze_again) {
     // 4) split AEdges(s) and EntrySet(s) for violations based on type using dynamic dispatch
     analyze_again = split_for_violations(type_violations);
-#if 0
-    if (!analyze_again) {
-      // 5) split AEdges(s) and EntrySet(s) for imprecision based on type using dynamic dispatch
-    }
-#endif
   }
   if (analyze_again) {
     ++analysis_pass;
-    if (ifa_verbose) printf("extending analysis %d\n", analysis_pass);
+    if (ifa_verbose) printf("PASS %d COMPLETE: %g second, extending: %g seconds\n", analysis_pass, pass_timer.time, extend_timer.snap());
     log(LOG_SPLITTING, "======== pass %d ========\n", analysis_pass);
     clear_results();
     return 1;
@@ -3741,6 +3740,7 @@ complete_pass() {
   collect_results();
   collect_argument_type_violations();
   collect_var_type_violations();
+  pass_timer.stop();
 }
 
 int
