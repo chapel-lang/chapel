@@ -58960,3 +58960,31 @@ Modified files:
 	chapel/compiler/include/: symbol.h type.h 
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+03/09/06 14:51:57 -- deitz
+
+Log message:
+	Added support for
+	
+	  FOR PARAM identifier IN expr..expr stmts
+	
+	which creates a loop that is unrolled.  It is currently implemented
+	via recursive instantiation, inlining, and nested functions.
+	
+	At some point, we need to decide what is valid for the param to be
+	used on.  It can currently only be used on an arithmetic sequence as
+	in
+	
+	  for param i in 1..4 do
+	
+	but perhaps can be generalized.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+	chapel/compiler/include/: build.h 
+	chapel/compiler/parser/: chapel.y 
+Added files:
+	chapel/test/trivial/deitz/: test_for_param.chpl 
+	                            test_for_param.good 
+
