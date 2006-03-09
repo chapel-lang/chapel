@@ -58873,3 +58873,14 @@ Log message:
 Modified files:
 	chapel/test/trivial/bradc/: readmethod.good 
 
+---------------------------------------------------------------------------
+
+03/08/06 21:38:31 -- deitz
+
+Log message:
+	Update two more .goods.
+
+Modified files:
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+
