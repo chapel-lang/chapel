@@ -539,6 +539,13 @@ static void buildHaltStatement(CallExpr* call) {
 static void decompose_special_calls(CallExpr* call) {
   if (call->isResolved())
     return;
+  if (!call->argList->isEmpty() > 0) {
+    Expr* firstArg = call->argList->get(1);
+    SymExpr* symArg = dynamic_cast<SymExpr*>(firstArg);
+    // don't decompose method calls
+    if (symArg && symArg->var == methodToken)
+      return;
+  }
   if (call->isNamed("assert")) {
     buildAssertStatement(call);
   } else if (call->isNamed("halt")) {

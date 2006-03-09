@@ -1,7 +1,0 @@
-???
-
-When using a .read() method on an undefined type, a non-helpful error
-message is created.  My guess would be that all read()s are being
-interpreted as the top-level read() function rather than checking to
-see if they are a method first.
-
