@@ -58786,3 +58786,15 @@ Modified files:
 Removed files:
 	chapel/test/trivial/bradc/: readmethod.future readmethod2.future 
 
+---------------------------------------------------------------------------
+
+03/08/06 18:06:08 -- bradc
+
+Log message:
+	Added some .cvsignore files to the test directory.
+
+Added files:
+	chapel/test/compflags/waynew/: .cvsignore 
+	chapel/test/functions/deitz/varargs/: .cvsignore 
+	chapel/test/types/typedefs/jplevyak/: .cvsignore 
+
