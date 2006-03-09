@@ -58733,3 +58733,15 @@ Modified files:
 	chapel/compiler/main/: passlist.h 
 	chapel/compiler/passes/: parallel.cpp 
 
+---------------------------------------------------------------------------
+
+03/08/06 16:01:47 -- jplevyak
+
+Log message:
+	Fixup dependencies.  Turns out nogcdepend uses a completely different
+	mechanism, which I didn't take into account.
+
+Modified files:
+	chapel/compiler/make/: Makefile.compiler.foot 
+	                       Makefile.compiler.subdirrules 
+
