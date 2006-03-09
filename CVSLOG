@@ -58933,3 +58933,17 @@ Modified files:
 Removed files:
 	chapel/test/arrays/jplevyak/: simple-2.future 
 
+---------------------------------------------------------------------------
+
+03/09/06 13:32:00 -- deitz
+
+Log message:
+	Add a test that works now, but shouldn't.  When the method bar is
+	instantiated it stays in module M1 and sees M2 only via the new
+	instantiated module.  It used to be instantiated in M2, but now that
+	it is not, we need to allow it to see M2, but not anything else in M1.
+
+Added files:
+	chapel/test/types/type_variables/deitz/: test_instantiate4.chpl 
+	                                         test_instantiate4.good 
+
