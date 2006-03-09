@@ -24,6 +24,8 @@ pragma "inline" function -(a: numeric, b: numeric) return __primitive("-", a, b)
 pragma "inline" function *(a: numeric, b: numeric) return __primitive("*", a, b);
 pragma "inline" function /(a: numeric, b: numeric) return __primitive("/", a, b);
 pragma "inline" function mod(a: numeric, b: numeric) return __primitive("%", a, b);
+pragma "inline" function <<(a: numeric, b: numeric) return __primitive("<<", a, b);
+pragma "inline" function >>(a: numeric, b: numeric) return __primitive(">>", a, b);
 pragma "inline" function ==(a: numeric, b: numeric) return __primitive("==", a, b); 
 pragma "inline" function !=(a: numeric, b: numeric) return __primitive("!=", a, b);
 pragma "inline" function <=(a: numeric, b: numeric) return __primitive("<=", a, b);

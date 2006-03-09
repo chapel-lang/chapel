@@ -2886,6 +2886,8 @@ init_chapel_ifa() {
   mult_analysis_op = P("*", prim_mult);
   div_analysis_op = P("/", prim_div);
   mod_analysis_op = P("%", prim_mod);
+  lsh_analysis_op = P("<<", prim_lsh);
+  rsh_analysis_op = P(">>", prim_rsh);
   equal_analysis_op = P("==", prim_equal);
   notequal_analysis_op = P("!=", prim_notequal);
   lessorequal_analysis_op = P("<=", prim_lessorequal);

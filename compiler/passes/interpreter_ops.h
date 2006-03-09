@@ -29,6 +29,8 @@ _EXTERN InterpreterOp *subtract_interpreter_op _INIT;
 _EXTERN InterpreterOp *mult_interpreter_op _INIT;
 _EXTERN InterpreterOp *div_interpreter_op _INIT;
 _EXTERN InterpreterOp *mod_interpreter_op _INIT;
+_EXTERN InterpreterOp *lsh_interpreter_op _INIT;
+_EXTERN InterpreterOp *rsh_interpreter_op _INIT;
 _EXTERN InterpreterOp *equal_interpreter_op _INIT;
 _EXTERN InterpreterOp *notequal_interpreter_op _INIT;
 _EXTERN InterpreterOp *elssorequal_interpreter_op _INIT;

@@ -731,6 +731,20 @@ void CallExpr::codegen(FILE* outfile) {
       get(2)->codegen(outfile);
       fprintf(outfile, ")");
       break;
+    case PRIMITIVE_LSH:
+      fprintf(outfile, "(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, "<<");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
+    case PRIMITIVE_RSH:
+      fprintf(outfile, "(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, ">>");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
     case PRIMITIVE_PTR_EQUAL:
     case PRIMITIVE_EQUAL:
       fprintf(outfile, "(");

@@ -31,6 +31,8 @@ _EXTERN AnalysisOp *subtract_analysis_op _INIT;
 _EXTERN AnalysisOp *mult_analysis_op _INIT;
 _EXTERN AnalysisOp *div_analysis_op _INIT;
 _EXTERN AnalysisOp *mod_analysis_op _INIT;
+_EXTERN AnalysisOp *lsh_analysis_op _INIT;
+_EXTERN AnalysisOp *rsh_analysis_op _INIT;
 _EXTERN AnalysisOp *equal_analysis_op _INIT;
 _EXTERN AnalysisOp *notequal_analysis_op _INIT;
 _EXTERN AnalysisOp *lessorequal_analysis_op _INIT;

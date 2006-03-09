@@ -117,6 +117,9 @@ yield           processToken(TYIELD);
 "^"             processToken(TBXOR);
 "~"             processToken(TBNOT);
 
+"<<"            processToken(TSHIFTLEFT);
+">>"            processToken(TSHIFTRIGHT);
+
 "=="            processToken(TEQUAL);
 "!="            processToken(TNOTEQUAL);
 "<="            processToken(TLESSEQUAL);

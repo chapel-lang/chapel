@@ -37,6 +37,8 @@ initPrimitive() {
   prim_def(PRIMITIVE_MULT, "*", mult_interpreter_op, mult_analysis_op);
   prim_def(PRIMITIVE_DIV, "/", div_interpreter_op, div_analysis_op);
   prim_def(PRIMITIVE_MOD, "%", mod_interpreter_op, mod_analysis_op);
+  prim_def(PRIMITIVE_LSH, "<<", lsh_interpreter_op, lsh_analysis_op);
+  prim_def(PRIMITIVE_RSH, ">>", rsh_interpreter_op, rsh_analysis_op);
   prim_def(PRIMITIVE_EQUAL, "==", equal_interpreter_op, equal_analysis_op);
   prim_def(PRIMITIVE_NOTEQUAL, "!=", notequal_interpreter_op, notequal_analysis_op);
   prim_def(PRIMITIVE_LESSOREQUAL, "<=", elssorequal_interpreter_op, lessorequal_analysis_op);

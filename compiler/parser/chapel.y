@@ -259,6 +259,7 @@ Is this "while x"(i); or "while x(i)";?
 %left TBOR
 %left TBXOR
 %left TBAND
+%left TSHIFTLEFT TSHIFTRIGHT
 %left TPLUS TMINUS
 %left TSTAR TDIVIDE TMOD
 %right TUPLUS TUMINUS TREDUCE TSCAN TBNOT
@@ -694,6 +695,10 @@ fname:
   { $$ = "*"; } 
 | TDIVIDE
   { $$ = "/"; } 
+| TSHIFTLEFT
+  { $$ = "<<"; }
+| TSHIFTRIGHT
+  { $$ = ">>"; }
 | TMOD
   { $$ = "mod"; } 
 | TEXP
@@ -737,6 +742,10 @@ whereexpr:
     { $$ = new CallExpr("*", $1, $3); }
 | whereexpr TDIVIDE whereexpr
     { $$ = new CallExpr("/", $1, $3); }
+| whereexpr TSHIFTLEFT whereexpr
+    { $$ = new CallExpr("<<", $1, $3); }
+| whereexpr TSHIFTRIGHT whereexpr
+    { $$ = new CallExpr(">>", $1, $3); }
 | whereexpr TMOD whereexpr
     { $$ = new CallExpr("mod", $1, $3); }
 | whereexpr TEQUAL whereexpr
@@ -1227,6 +1236,10 @@ top_level_expr:
     { $$ = new CallExpr("*", $1, $3); }
 | expr TDIVIDE expr
     { $$ = new CallExpr("/", $1, $3); }
+| expr TSHIFTLEFT expr
+    { $$ = new CallExpr("<<", $1, $3); }
+| expr TSHIFTRIGHT expr
+    { $$ = new CallExpr(">>", $1, $3); }
 | expr TMOD expr
     { $$ = new CallExpr("mod", $1, $3); }
 | expr TEQUAL expr

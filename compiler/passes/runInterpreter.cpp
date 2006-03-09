@@ -149,8 +149,8 @@ enum PrimOps {
   PRIM_STRERROR, PRIM_FPRINTF, PRIM_FSCANF, PRIM_ARRAY_INIT, PRIM_ARRAY_INDEX,
   PRIM_ARRAY_SET, PRIM_UNARY_MINUS, PRIM_UNARY_PLUS,
   PRIM_UNARY_NOT, PRIM_UNARY_LNOT, PRIM_ADD,
-  PRIM_SUBTRACT, PRIM_MULT, PRIM_DIV, PRIM_MOD, PRIM_EQUAL,
-  PRIM_NOTEQUAL, PRIM_LESSOREQUAL, PRIM_GREATEROREQUAL, PRIM_LESS,
+  PRIM_SUBTRACT, PRIM_MULT, PRIM_DIV, PRIM_MOD, PRIM_LSH, PRIM_RSH,
+  PRIM_EQUAL, PRIM_NOTEQUAL, PRIM_LESSOREQUAL, PRIM_GREATEROREQUAL, PRIM_LESS,
   PRIM_GREATER, PRIM_AND, PRIM_OR, PRIM_XOR, PRIM_LAND,
   PRIM_LOR, PRIM_EXP, PRIM_GET_MEMBER, PRIM_SET_MEMBER, PRIM_PTR_EQ, PRIM_PTR_NEQ, 
   PRIM_CAST, PRIM_TO_STRING, PRIM_COPY_STRING, PRIM_STRING_INDEX, PRIM_STRING_CONCAT,
@@ -1815,6 +1815,7 @@ IFrame::iprimitive(CallExpr *s) {
     case PRIM_ADD: case PRIM_SUBTRACT:
     case PRIM_MULT: case PRIM_DIV:
     case PRIM_MOD:
+    case PRIM_LSH: case PRIM_RSH:
     case PRIM_LESSOREQUAL: case PRIM_GREATEROREQUAL:
     case PRIM_LESS: case PRIM_GREATER:
     case PRIM_AND: case PRIM_OR:
@@ -2459,6 +2460,8 @@ init_interpreter() {
   mult_interpreter_op = new InterpreterOp("mult", PRIM_MULT);
   div_interpreter_op = new InterpreterOp("div", PRIM_DIV);
   mod_interpreter_op = new InterpreterOp("mod", PRIM_MOD);
+  lsh_interpreter_op = new InterpreterOp("<<", PRIM_LSH);
+  rsh_interpreter_op = new InterpreterOp(">>", PRIM_RSH);
   equal_interpreter_op = new InterpreterOp("equal", PRIM_EQUAL);
   notequal_interpreter_op = new InterpreterOp("notequal", PRIM_NOTEQUAL);
   elssorequal_interpreter_op = new InterpreterOp("elssorequal", PRIM_LESSOREQUAL);
@@ -2494,6 +2497,8 @@ init_interpreter() {
   translate_prim.put(PRIM_MULT, P_prim_mult);
   translate_prim.put(PRIM_DIV, P_prim_div);
   translate_prim.put(PRIM_MOD, P_prim_mod);
+  translate_prim.put(PRIM_LSH, P_prim_lsh);
+  translate_prim.put(PRIM_RSH, P_prim_rsh);
   translate_prim.put(PRIM_EQUAL, P_prim_equal);
   translate_prim.put(PRIM_NOTEQUAL, P_prim_notequal);
   translate_prim.put(PRIM_LESSOREQUAL, P_prim_lessorequal);
