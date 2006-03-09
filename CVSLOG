@@ -58905,3 +58905,19 @@ Log message:
 Modified files:
 	chapel/make/: Makefile.base 
 
+---------------------------------------------------------------------------
+
+03/09/06 08:55:04 -- deitz
+
+Log message:
+	Removed .futures of properly working tests.
+
+Removed files:
+	chapel/test/arrays/deitz/: test_array_2Da.future 
+	                           test_array_basic1.future 
+	                           test_array_basic1a.future 
+	                           test_array_of_record1.future 
+	chapel/test/types/seq/bradc/: emptySeq2.future 
+	chapel/test/types/type_variables/deitz/functions/: 
+	                                                   test_foo5.future 
+
