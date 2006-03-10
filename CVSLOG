@@ -59063,3 +59063,13 @@ Log message:
 Modified files:
 	chapel/test/: testdirs.pl 
 
+---------------------------------------------------------------------------
+
+03/10/06 12:41:46 -- jplevyak
+
+Log message:
+	Get running on cygwin
+
+Modified files:
+	chapel/compiler/ifa/libifa/: Makefile Makefile.cg ast_to_if1.cc 
+
