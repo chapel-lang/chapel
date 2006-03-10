@@ -51,7 +51,7 @@ class Matcher {
   int is_closure;
   Partial_kind partial;
   PMatchMap match_map;
-  Vec<Fun *> function_values; // functions passed in directly (not nec visible)
+  Vec<Fun *> function_values; // functions passed in directly and varargs functions
   Vec<MPosition *> *all_positions;
   Map<MPosition *, int> mapped_positions;
 
@@ -187,8 +187,11 @@ Matcher::pattern_match_arg(Sym *type, MPosition *cp, Vec<Fun *> &test, Vec<Fun *
       cp = facp ? to_formal(cp, m) : cp;
     }
     Sym *a = f->arg_syms.get(cp);
-    if (!a)
+    if (!a) {
+      if (f->is_varargs)
+        result.set_add(f);
       continue;
+    }
     Sym *m_type = dispatch_type(a);
     if (m_type->specializers.set_in(type))
       result.set_add(f);
@@ -298,7 +301,9 @@ Matcher::find_arg_matches(AVar *a, MPosition &ap, MPosition *acp, MPosition *acp
         Vec<Fun *> rec_funs, tfuns, *rec_funs_p = &rec_funs;
         tfuns.move(new_funs);
         forv_Fun(f, tfuns) if (f) {
-          if (f->arg_syms.get(to_formal(acpp, match_map.get(f)))->is_pattern)
+          Sym *a = f->arg_syms.get(to_formal(acpp, match_map.get(f)));
+          assert(a || f->is_varargs);
+          if (a && a->is_pattern)
             rec_funs.set_add(f);
           else
             new_funs.set_add(f);
@@ -760,6 +765,8 @@ Matcher::instantiation_wrappers_and_partial_application(Vec<Fun *> &matches) {
 
 int
 Matcher::covers_formals(Fun *f, Vec<CreationSet *> &csargs, MPosition &p, int top_level) {
+  if (f->is_varargs)
+    return 1;
   int result = 1;
   PMatch *m = match_map.get(f);
   Vec<MPosition *> formals;
@@ -920,12 +927,17 @@ generic_substitutions(PMatch **am, MPosition &app, Vec<CreationSet*> &args, IFAA
     CreationSet *cs = args.v[i];
     Sym *concrete_value = a->var->sym->aspect ? a->var->sym->aspect : cs->sym;
     Sym *formal = m->fun->arg_syms.get(fcpp);
-    Sym *generic_type = get_generic_type(formal);
-    if (generic_type) {
-      if (!unify_generic_type(formal, generic_type, concrete_value, m->generic_substitutions, ast))
-        return 0;
-      instantiate_formal_types(m);
+    if (!formal && m->fun->is_varargs)
+      goto Lnext; 
+    {
+      Sym *generic_type = get_generic_type(formal);
+      if (generic_type) {
+        if (!unify_generic_type(formal, generic_type, concrete_value, m->generic_substitutions, ast))
+          return 0;
+        instantiate_formal_types(m);
+      }
     }
+   Lnext:;
     local_app.inc();
   }
   if (m->fun->is_generic && !m->generic_substitutions.n && !m->partial)
@@ -946,12 +958,17 @@ coercion_uses(PMatch **am, MPosition &app, Vec<CreationSet*> &args) {
     Sym *concrete_type = a->var->sym->aspect ? a->var->sym->aspect : cs->sym;
     concrete_type = concrete_type->type;
     Sym *formal_type = m->formal_dispatch_types.get(fcpp);
-    Sym *coerced_type = concrete_type->coerce_to(formal_type) ;
-    if (coerced_type && concrete_type != coerced_type) {
-      m->coercion_substitutions.put(fcpp, concrete_type);
-      assert(coerced_type);
-      m->formal_dispatch_types.put(fcpp, coerced_type);
+    if (!formal_type && m->fun->is_varargs)
+      goto LnextArg;
+    {
+      Sym *coerced_type = concrete_type->coerce_to(formal_type) ;
+      if (coerced_type && concrete_type != coerced_type) {
+        m->coercion_substitutions.put(fcpp, concrete_type);
+        assert(coerced_type);
+        m->formal_dispatch_types.put(fcpp, coerced_type);
+      }
     }
+   LnextArg:;
     app.inc();
   }
   app.pop();
@@ -983,30 +1000,35 @@ Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &app,
       MPosition *acpp = cannonicalize_mposition(app);
       MPosition *fcpp = to_formal(acpp, m);
       AType *t = m->actual_filters.get(acpp);
+      Sym *formal = m->fun->arg_syms.get(fcpp);
+      if (!formal && f->is_varargs)
+        goto LnextCoverArg;
       // is each actual handled
       if (!t || !t->set_in(csargs.v[i])) {
         app.pop();
         goto LnextFun;
       }
-      Sym *formal = m->fun->arg_syms.get(fcpp);
-      Sym *formal_type = dispatch_type(formal);
-      assert(formal_type);
-      if (formal->is_exact_match) {
-        if (csargs.v[i]->sym != formal_type 
-            && csargs.v[i]->sym->type != formal_type // HACK FOR pre-instantiation
-            && csargs.v[i]->sym->type->meta_type != formal_type // HACK FOR pre-instantiation
-          ) {
-          app.pop();
-          goto LnextFun;
+      {
+        Sym *formal_type = dispatch_type(formal);
+        assert(formal_type);
+        if (formal->is_exact_match) {
+          if (csargs.v[i]->sym != formal_type 
+              && csargs.v[i]->sym->type != formal_type // HACK FOR pre-instantiation
+              && csargs.v[i]->sym->type->meta_type != formal_type // HACK FOR pre-instantiation
+            ) {
+            app.pop();
+            goto LnextFun;
+          }
         }
-      }
-      if (formal->is_this) {
-        if (csargs.v[i]->sym == sym_nil_type) {
-          app.pop();
-          goto LnextFun;
+        if (formal->is_this) {
+          if (csargs.v[i]->sym == sym_nil_type) {
+            app.pop();
+            goto LnextFun;
+          }
         }
+        m->formal_dispatch_types.put(fcpp, formal_type);
       }
-      m->formal_dispatch_types.put(fcpp, formal_type);
+     LnextCoverArg:;
       app.inc();
     }
     app.pop();
@@ -1079,12 +1101,15 @@ Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &app,
     app.push(1);
     for (int i = 0; i < csargs.n; i++) {
       Sym *arg = similar.v[0]->arg_syms.get(cannonicalize_to_formal(app, match_map.get(similar.v[0])));
+      if (!arg && similar.v[0]->is_varargs)
+        goto LnextSimilarArg; 
       if (arg->is_pattern) {
         Vec<CreationSet *> local_csargs;
         Vec<Fun *> local_result;
         find_best_matches(csargs.v[i]->vars, local_csargs, similar, app, local_result, 0);
         similar.copy(local_result);
       }
+     LnextSimilarArg:;
       app.inc();
     }
     app.pop();
@@ -1142,10 +1167,10 @@ Matcher::cannonicalize_matches(Vec<Fun *> &partial_matches, Vec<Match *> &matche
 }
 
 static void 
-log_dispatch_pattern_match(Vec<Fun *> *visible, Vec<Fun *> fnvalues, AVar *send) {
+log_dispatch_pattern_match(Vec<Fun *> *visible, Vec<Fun *> &fnvalues, AVar *send) {
   if (visible)
     log(LOG_DISPATCH, "%d- pass: %d visible: %d, fn values: %d\n", 
-        send->var->sym->id, analysis_pass, visible->count());
+        send->var->sym->id, analysis_pass, visible->count(), fnvalues.count());
   else
     log(LOG_DISPATCH, "%d- pass: %d visible: ALL\n", 
         send->var->sym->id, analysis_pass);
@@ -1156,15 +1181,17 @@ find_visible_functions(Vec<AVar *> &args, AVar *send, Vec<Fun *> **visible_funct
                        Vec<Fun *> &function_values, Vec<MPosition *> **all_positions) 
 {
   AVar *aarg0 = args.v[0];
-  Vec<Fun *> *visible = 0; 
+  *visible_functions = 0;
+  Vec<Fun *> *visible = 0;
   // use summary information from previous analysis iterations to restrict the search
   if (aarg0->out->n == 1 && aarg0->out->v[0]->sym->fun) {
     function_values.set_add(aarg0->out->v[0]->sym->fun);
-    visible = new Vec<Fun *>;
+    *visible_functions = new Vec<Fun *>;
+    return;
   } else {
 #ifdef CACHE_CALLEES
     if (send->var->def->callees) {
-      visible = new Vec<Fun *>(send->var->def->callees->funs);
+      *visible_functions = new Vec<Fun *>(send->var->def->callees->funs);
       *all_positions = &send->var->def->callees->arg_positions;
     } else 
 #endif
@@ -1178,16 +1205,28 @@ find_visible_functions(Vec<AVar *> &args, AVar *send, Vec<Fun *> **visible_funct
           else {
             Vec<Fun *> *v = send->var->def->code->ast->visible_functions(cs->sym);
             if (v) {
-              if (!visible)
-                visible = new Vec<Fun *>;
-              visible->set_union(*v);
+              if (!*visible_functions)
+                *visible_functions = new Vec<Fun *>;
+              (*visible_functions)->set_union(*v);
             }
           }
         }
       }
     }
+    Vec<Fun *> tmp;
+    if (visible) // needs to be copied
+      *visible_functions = new Vec<Fun *>;
+    else {
+      if (*visible_functions)
+        tmp.move(**visible_functions);
+      visible = &tmp;
+    }
+    forv_Fun(f, *visible) if (f)
+      if (f->is_varargs)
+        function_values.set_add(f);
+      else
+        (*visible_functions)->set_add(f);
   }
-  *visible_functions = visible;
 }
 
 static int
@@ -1209,11 +1248,9 @@ pattern_match(Vec<AVar *> &args, AVar *send, int is_closure, Partial_kind partia
   if (incomplete_call(args, send))
     return 0;
   Matcher matcher(send, args.v[0], is_closure, partial);
-  Vec<Fun *> *visible_functions = 0, *partial_matches = 0;
-  find_visible_functions(args, send, &visible_functions, matcher.function_values, &matcher.all_positions);
-  log_dispatch_pattern_match(visible_functions, matcher.function_values, send);
-  if (visible_functions)
-    partial_matches = new Vec<Fun *>(*visible_functions);
+  Vec<Fun *> *partial_matches = 0;
+  find_visible_functions(args, send, &partial_matches, matcher.function_values, &matcher.all_positions);
+  log_dispatch_pattern_match(partial_matches, matcher.function_values, send);
   MPosition app;
   matcher.find_all_matches(0, args, &partial_matches, app, 0);
   if (!partial_matches || !partial_matches->n)
