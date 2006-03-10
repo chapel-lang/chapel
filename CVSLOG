@@ -58999,3 +58999,21 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+03/09/06 16:52:02 -- deitz
+
+Log message:
+	Fixed a bug in which functions containing nested generic functions
+	were marked as generic.  I just commented out a chunk of code in
+	tagGenerics that was specifically designed to do this.  It seems a
+	bug to me and adversely impacts the new test
+	
+	  functions/deitz/varargs/test_varargs_write.chpl
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+Added files:
+	chapel/test/functions/deitz/varargs/: test_varargs_write.chpl 
+	                                      test_varargs_write.good 
+
