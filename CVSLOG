@@ -59096,3 +59096,45 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: pattern.cpp 
 
+---------------------------------------------------------------------------
+
+03/10/06 15:03:23 -- deitz
+
+Log message:
+	Implemented type select statements via overloaded nested functions.
+	Whether this is the way we want to go (I think so), it didn't take
+	long to get it working, and it is at least correct.  Since the nested
+	functions are inlined, it is equivalent in the end.
+	
+	There is an error in analysis's handling of nested functions.  The
+	interpreter passes the two futures checked in here.
+	
+	I implemented this construct as
+	
+	  type select ... {
+	    when ... do ...
+	    ...
+	
+	breaking typeselect into two words.  Note this is different from the
+	specification and should likely be changed to a single word.  However,
+	one nice thing about the two words is that we eliminate a keyword..
+	
+	The test
+	
+	  test/trivial/deitz/test_type_select1-handcode.chpl
+	
+	illustrates the nested function bug in analysis without using a type
+	select statement.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+	chapel/compiler/include/: build.h 
+	chapel/compiler/parser/: chapel.y 
+Added files:
+	chapel/test/trivial/deitz/: test_type_select1-handcode.chpl 
+	                            test_type_select1-handcode.future 
+	                            test_type_select1-handcode.good 
+	                            test_type_select1.chpl 
+	                            test_type_select1.future 
+	                            test_type_select1.good 
+
