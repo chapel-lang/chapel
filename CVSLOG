@@ -59138,3 +59138,13 @@ Added files:
 	                            test_type_select1.future 
 	                            test_type_select1.good 
 
+---------------------------------------------------------------------------
+
+03/10/06 15:56:37 -- deitz
+
+Log message:
+	Fixed oops.
+
+Modified files:
+	chapel/test/trivial/deitz/: test_type_select1-handcode.chpl 
+
