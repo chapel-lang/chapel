@@ -59053,3 +59053,13 @@ Log message:
 Modified files:
 	chapel/test/types/type_variables/jplevyak/: where-2-error.good 
 
+---------------------------------------------------------------------------
+
+03/10/06 11:39:36 -- waynew
+
+Log message:
+	Handles blanks lines in input file.
+
+Modified files:
+	chapel/test/: testdirs.pl 
+
