@@ -1,0 +1,4 @@
+mywrite integer for       12
+myrite float for          12.0
+mywrite integer for       true
+mywrite not supported for hello world

@@ -207,6 +207,7 @@ Is this "while x"(i); or "while x(i)";?
 %type <pstmtls> stmt empty_stmt label_stmt goto_stmt break_stmt continue_stmt
 %type <pstmtls> call_stmt expr_stmt if_stmt for_stmt while_do_stmt do_while_stmt
 %type <pstmtls> select_stmt return_stmt yield_stmt assign_stmt decl_stmt
+%type <pstmtls> type_select_stmt
 
 %type <pstmtls> typedef_decl_stmt fn_decl_stmt class_decl_stmt mod_decl_stmt
 %type <pstmtls> typevar_decl_stmt enum_decl_stmt with_stmt use_stmt where_stmt
@@ -302,6 +303,7 @@ stmt:
 | while_do_stmt
 | do_while_stmt
 | select_stmt
+| type_select_stmt
 | return_stmt
 | yield_stmt
 | assign_stmt
@@ -412,7 +414,7 @@ for_stmt:
 
 
 while_do_stmt:
-TWHILE expr TDO stmt
+  TWHILE expr TDO stmt
     { $$ = build_while_do_block($2, new BlockStmt($4)); }
 | TWHILE expr parsed_block_stmt
     { $$ = build_while_do_block($2, $3); }
@@ -422,6 +424,12 @@ TWHILE expr TDO stmt
 do_while_stmt:
 TDO stmt TWHILE expr TSEMI
     { $$ = build_do_while_block($4, new BlockStmt($2)); }
+;
+
+
+type_select_stmt:
+  TTYPE TSELECT nonempty_expr_ls TLCBR when_stmt_ls TRCBR
+    { $$ = new AList<Stmt>(build_type_select($3, $5)); }
 ;
 
 

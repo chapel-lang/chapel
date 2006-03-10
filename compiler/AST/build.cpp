@@ -102,3 +102,50 @@ AList<Stmt>* build_param_for(char* index, Expr* low, Expr* high, AList<Stmt>* st
   Stmt* call_stmt = new ExprStmt(new CallExpr(fn->name, low));
   return new AList<Stmt>(def_stmt, call_stmt);
 }
+
+
+AList<Stmt>* build_type_select(AList<Expr>* exprs, AList<WhenStmt>* whenstmts) {
+  static int uid = 1;
+  FnSymbol* fn;
+  AList<Stmt>* stmts = new AList<Stmt>();
+  bool has_otherwise = false;
+
+  for_alist(WhenStmt, whenstmt, whenstmts) {
+    if (whenstmt->caseExprs->length() == 0) {
+      if (has_otherwise)
+        USR_FATAL(exprs, "Type select statement has multiple otherwise clauses");
+      has_otherwise = true;
+      fn = new FnSymbol(stringcat("_typeselect", intstring(uid)));
+      fn->formals = new AList<DefExpr>();
+      int lid = 1;
+      for_alist(Expr, expr, exprs) {
+        fn->formals->insertAtTail(
+          new DefExpr(
+            new ArgSymbol(INTENT_BLANK,
+                          stringcat("_t", intstring(lid++)),
+                          dtAny)));
+      }
+      fn->addPragma("inline");
+      fn->insertAtTail(whenstmt->doStmt->body->copy());
+      stmts->insertAtTail(new DefExpr(fn));
+    } else {
+      if (whenstmt->caseExprs->length() != exprs->length())
+        USR_FATAL(whenstmt, "Type select statement requires number of selectors to be equal to number of when conditions");
+      fn = new FnSymbol(stringcat("_typeselect", intstring(uid)));
+      fn->formals = new AList<DefExpr>();
+      int lid = 1;
+      for_alist(Expr, expr, whenstmt->caseExprs) {
+        fn->formals->insertAtTail(
+          new DefExpr(
+            new ArgSymbol(INTENT_BLANK,
+                          stringcat("_t", intstring(lid++)),
+                          dtUnknown), NULL, expr->copy()));
+      }
+      fn->addPragma("inline");
+      fn->insertAtTail(whenstmt->doStmt->body->copy());
+      stmts->insertAtTail(new DefExpr(fn));
+    }
+  }
+  stmts->insertAtTail(new CallExpr(fn->name, exprs));
+  return stmts;
+}
