@@ -59073,3 +59073,16 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/libifa/: Makefile Makefile.cg ast_to_if1.cc 
 
+---------------------------------------------------------------------------
+
+03/10/06 13:54:28 -- deitz
+
+Log message:
+	Add test case of nested function in instantiated function where nested
+	functions are not visible.
+
+Added files:
+	chapel/test/types/type_variables/deitz/: test_nested1.chpl 
+	                                         test_nested1.future 
+	                                         test_nested1.good 
+
