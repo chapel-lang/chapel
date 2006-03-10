@@ -2095,5 +2095,5 @@ ast_gen_if1(IF1 *i, Vec<ParseAST *> &av) {
 void PCallbacks::finalize_functions() {
   sym_new_object->fun->split_unique = 1;
   forv_Fun(fun, pdb->funs)
-    fun->eager_evaluation = 1;
+    fun->is_eager = 1;
 }
