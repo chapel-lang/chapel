@@ -231,6 +231,16 @@ void normalize(BaseAST* base) {
       resolve_formal_types(fn);
     }
   }
+
+  asts.clear();
+  collect_asts_postorder(&asts, base);
+  forv_Vec(BaseAST, ast, asts) {
+    currentLineno = ast->lineno;
+    currentFilename = ast->filename;
+    if (Expr* a = dynamic_cast<Expr*>(ast)) {
+      hack_resolve_types(a);
+    }
+  }
 }
 
 
