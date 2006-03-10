@@ -59031,3 +59031,15 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: normalize.cpp 
 
+---------------------------------------------------------------------------
+
+03/10/06 07:40:40 -- jplevyak
+
+Log message:
+	-lrt is only for linux (not sunos or cygwin)
+
+Modified files:
+	chapel/compiler/make/: Makefile.compiler.head 
+	chapel/make/: Makefile.base Makefile.linux Makefile.linux64 
+	              Makefile.linux64_32 
+
