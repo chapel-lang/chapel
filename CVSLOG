@@ -59086,3 +59086,13 @@ Added files:
 	                                         test_nested1.future 
 	                                         test_nested1.good 
 
+---------------------------------------------------------------------------
+
+03/10/06 14:28:58 -- jplevyak
+
+Log message:
+	Add support for vararg functions, this fixes test_varargs7
+
+Modified files:
+	chapel/compiler/ifa/: pattern.cpp 
+
