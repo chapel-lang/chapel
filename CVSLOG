@@ -59043,3 +59043,13 @@ Modified files:
 	chapel/make/: Makefile.base Makefile.linux Makefile.linux64 
 	              Makefile.linux64_32 
 
+---------------------------------------------------------------------------
+
+03/10/06 08:44:34 -- deitz
+
+Log message:
+	Update .good.  String meta_type id number increased by one.
+
+Modified files:
+	chapel/test/types/type_variables/jplevyak/: where-2-error.good 
+
