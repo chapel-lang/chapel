@@ -5,10 +5,10 @@ function mywrite(x) {
   function bar(tmp:integer) {
     writeln("mywrite integer for       ", x);
   }
-  function bar(tmp:integer) {
+  function bar(tmp:float) {
     writeln("myrite float for          ", x);
   }
-  function bar(tmp:integer) {
+  function bar(tmp) {
     writeln("mywrite not supported for ", x);
   }
   bar(x);
