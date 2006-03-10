@@ -59017,3 +59017,17 @@ Added files:
 	chapel/test/functions/deitz/varargs/: test_varargs_write.chpl 
 	                                      test_varargs_write.good 
 
+---------------------------------------------------------------------------
+
+03/09/06 16:52:25 -- deitz
+
+Log message:
+	Fixed regression of
+	
+	  reductions/bradc/manual/inferstatetype2.chpl
+	
+	in which a cast was not updated in an instantiated function.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+
