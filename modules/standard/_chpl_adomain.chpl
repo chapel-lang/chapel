@@ -56,9 +56,14 @@ class _aarray : value {
   }
 
   function this(ind : (rank*integer)) var : elt_type {
+    for i in 1..rank do
+      if not _in(dom(i), ind(i)) {
+        writeln("out of bounds error ", ind);
+        exit(0);
+      }
     var sum : integer;
     for i in 1..rank do
-      sum += (ind(i) - off(i)) * blk(i);
+      sum = sum + (ind(i) - off(i)) * blk(i);
     return data(sum);
   }
 

@@ -229,6 +229,9 @@ function _forall_valid(s : _aseq, e) {
 function by(s : _aseq, i : integer)
   return _aseq(s._low, s._high, s._stride * i);
 
+function _in(s : _aseq, i : integer)
+  return i >= s._low and i <= s._high and (i - s._low) mod s._stride == 0;
+
 function fwrite(f : file, s : _aseq) {
   fwrite(f, s._low, "..", s._high);
   if (s._stride > 1) then
