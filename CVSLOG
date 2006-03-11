@@ -59148,3 +59148,23 @@ Log message:
 Modified files:
 	chapel/test/trivial/deitz/: test_type_select1-handcode.chpl 
 
+---------------------------------------------------------------------------
+
+03/10/06 16:03:56 -- deitz
+
+Log message:
+	Added bounds checking to arithmetic domains.
+	
+	The error message can be improved in the future.  I use exit because
+	halt prints out the full path of the file which doesn't work in the
+	test suite without special flags.  The error message prints out the
+	out-of-bounds index, but should print out the name of the array (needs
+	to be stored in the Array class or passed to the access function) and
+	the place in the file where this happens.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_seq.chpl 
+Added files:
+	chapel/test/arrays/deitz/: test_bounds1.chpl test_bounds1.good 
+	                           test_bounds2.chpl test_bounds2.good 
+
