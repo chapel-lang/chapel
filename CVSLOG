@@ -59168,3 +59168,13 @@ Added files:
 	chapel/test/arrays/deitz/: test_bounds1.chpl test_bounds1.good 
 	                           test_bounds2.chpl test_bounds2.good 
 
+---------------------------------------------------------------------------
+
+03/10/06 16:46:41 -- deitz
+
+Log message:
+	Removed future for test working for same reason as test_varargs7.
+
+Removed files:
+	chapel/test/functions/deitz/varargs/: test_varargs3.future 
+
