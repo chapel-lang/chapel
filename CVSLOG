@@ -59218,3 +59218,21 @@ Log message:
 Modified files:
 	chapel/modules/standard/: _chpl_indefinite.chpl 
 
+---------------------------------------------------------------------------
+
+03/13/06 11:13:21 -- deitz
+
+Log message:
+	Added nested function in class test that works.
+	
+	Added += test for indefinite domains which I can get to work once
+	  test/types/type_variables/deitz/test_nested1
+	works (as mentioned in the .future).
+
+Added files:
+	chapel/test/arrays/deitz/: test_indefinite6.chpl 
+	                           test_indefinite6.future 
+	                           test_indefinite6.good 
+	chapel/test/trivial/deitz/: test_plusassign.chpl 
+	                            test_plusassign.good 
+
