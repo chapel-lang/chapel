@@ -56,11 +56,12 @@ void createInitFn(ModuleSymbol* mod) {
   char* runOnce = NULL;
   if (mod != prelude && mod != compilerModule) {
     if (fnostdincs || mod != standardModule) {
-      if (fnostdincs) {
+      if (fnostdincs || fnostdincs_but_file) {
         definition->insertAtHead(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol("_chpl_compiler"))));
-      } else if (fnostdincs_but_file) {
-        definition->insertAtHead(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol("_chpl_file"))));
-        definition->insertAtHead(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol("_chpl_compiler"))));
+        definition->insertAtHead(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol("_chpl_base"))));
+        definition->insertAtHead(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol("_chpl_closure"))));
+        if (fnostdincs_but_file)
+          definition->insertAtHead(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol("_chpl_file"))));
       } else
         definition->insertAtHead(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol("_chpl_standard"))));
     }
