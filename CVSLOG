@@ -59204,3 +59204,17 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: cg.cpp 
 
+---------------------------------------------------------------------------
+
+03/13/06 11:13:09 -- jplevyak
+
+Log message:
+	Fix bug with indefinite domains:
+	
+	  the _idomain._double() function was making the "inds" member
+	  always a _ddata of integers, which resulted in mixed primitives type
+	  errors.
+
+Modified files:
+	chapel/modules/standard/: _chpl_indefinite.chpl 
+
