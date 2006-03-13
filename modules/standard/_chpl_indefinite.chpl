@@ -48,7 +48,7 @@ class _idomain : _domain {
 
   function _double() {
     size += 1;
-    var inds_copy = _ddata(integer, _ps(size)/2);
+    var inds_copy = _ddata(ind_type, _ps(size)/2);
     inds_copy.init();
     for i in 0.._ps(size-1)/2-1 do
       inds_copy(i) = inds(i);
