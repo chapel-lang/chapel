@@ -59247,3 +59247,15 @@ Added files:
 	chapel/test/arrays/deitz/: test_indefinite7.chpl 
 	                           test_indefinite7.good 
 
+---------------------------------------------------------------------------
+
+03/13/06 11:21:11 -- deitz
+
+Log message:
+	Added unborn code to transform an iterator into a next function, a
+	state type, and a wrapper function.  It is called with a false
+	conditional.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+
