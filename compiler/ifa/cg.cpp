@@ -759,6 +759,6 @@ cg_compile(char *filename) {
   char target[512], s[1024];
   strcpy(target, filename);
   *strrchr(target, '.') = 0;
-  sprintf(s, "gmake -f Makefile.cg CG_TARGET=%s CG_FILES=%s.c", target, filename);
+  sprintf(s, "make -f Makefile.cg CG_TARGET=%s CG_FILES=%s.c", target, filename);
   return system(s);
 }
