@@ -59236,3 +59236,14 @@ Added files:
 	chapel/test/trivial/deitz/: test_plusassign.chpl 
 	                            test_plusassign.good 
 
+---------------------------------------------------------------------------
+
+03/13/06 11:18:39 -- deitz
+
+Log message:
+	Added another working domain(string) indefinite domain/array test case.
+
+Added files:
+	chapel/test/arrays/deitz/: test_indefinite7.chpl 
+	                           test_indefinite7.good 
+
