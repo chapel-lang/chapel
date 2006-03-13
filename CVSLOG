@@ -59259,3 +59259,13 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: normalize.cpp 
 
+---------------------------------------------------------------------------
+
+03/13/06 12:08:19 -- jplevyak
+
+Log message:
+	Enable -lrt for high resolution timers.
+
+Modified files:
+	chapel/make/: Makefile.sunos 
+
