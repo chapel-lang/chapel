@@ -1,3 +1,31 @@
+//
+// Arrays and domains
+//
+
+class _domain { }
+
+function _build_domain(x : _domain)
+  return x;
+
+function _build_domain(ranges : _aseq ...?rank)
+  return _adomain(rank, ranges);
+
+function _build_domain_type(param rank : integer)
+  return _adomain(rank);
+
+function _build_domain_type(type ind_type)
+  return _idomain(ind_type);
+
+function _build_sparse_domain_type(dom)
+  return dom._build_sparse_domain();
+
+class _array { }
+
+function _build_array_type(dom, type elt_type)
+  return dom._build_array(elt_type);
+
+///////////////
+
 class _adomain : _domain {
   param rank : integer;
   var ranges : (rank * _aseq);

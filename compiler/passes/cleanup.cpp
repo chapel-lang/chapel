@@ -54,9 +54,11 @@ void createInitFn(ModuleSymbol* mod) {
 
   // BLC: code to run user modules once only
   char* runOnce = NULL;
-  if (mod != prelude && mod != compilerModule && !fnostdincs) {
-    if (mod != standardModule) {
-      if (fnostdincs_but_file) {
+  if (mod != prelude && mod != compilerModule) {
+    if (fnostdincs || mod != standardModule) {
+      if (fnostdincs) {
+        definition->insertAtHead(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol("_chpl_compiler"))));
+      } else if (fnostdincs_but_file) {
         definition->insertAtHead(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol("_chpl_file"))));
         definition->insertAtHead(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol("_chpl_compiler"))));
       } else
@@ -194,11 +196,13 @@ void cleanup(void) {
   forv_Vec(ModuleSymbol, mod, allModules)
     createInitFn(mod);
 
-  construct_tuple_type(1);
-  construct_tuple_type(2);
-  construct_tuple_type(3);
-  construct_tuple_type(4);
-  construct_tuple_type(5);
+  if (!fnostdincs && !fnostdincs_but_file) {
+    construct_tuple_type(1);
+    construct_tuple_type(2);
+    construct_tuple_type(3);
+    construct_tuple_type(4);
+    construct_tuple_type(5);
+  }
 
   forv_Vec(ModuleSymbol, mod, allModules) {
     Vec<BaseAST*> asts;
