@@ -59269,3 +59269,15 @@ Log message:
 Modified files:
 	chapel/make/: Makefile.sunos 
 
+---------------------------------------------------------------------------
+
+03/13/06 15:12:56 -- deitz
+
+Log message:
+	Work-around to reenable interpreter tests.
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp 
+	chapel/modules/standard/: _chpl_compiler.chpl 
+	                          _chpl_standard.chpl 
+
