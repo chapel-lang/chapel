@@ -2,6 +2,7 @@
 #
 
 ECHO = /usr/ucb/echo
+LIBS += -lrt
 
 -include $(CHAPEL_ROOT)/make/Makefile.gnu
 
