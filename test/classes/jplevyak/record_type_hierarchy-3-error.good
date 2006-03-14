@@ -1,5 +1,5 @@
-_chpl_adomain.chpl:198: fwrite, f : file, x : _adomain
-_chpl_adomain.chpl:205: fwrite, f : file, x : _aarray
+_chpl_adomain.chpl:200: fwrite, f : file, x : _adomain
+_chpl_adomain.chpl:207: fwrite, f : file, x : _aarray
 _chpl_adomain.chpl:22: fwrite, f : file, val : _array
 _chpl_adomain.chpl:5: fwrite, f : file, val : _domain
 _chpl_base.chpl:11: fwrite, f : file, val : _setterTokenType

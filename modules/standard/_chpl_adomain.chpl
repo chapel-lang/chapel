@@ -31,7 +31,7 @@ function _aseq._translate(i : integer) : _aseq {
 }
 
 function _aseq._interior(i : integer) : _aseq {
-  var x : _aseq;
+  var x : _aseq = _low.._high by _stride;
   if (i < 0) {
     x = _low.._low-1-i by _stride;
   } else if (i > 0) {
@@ -41,7 +41,7 @@ function _aseq._interior(i : integer) : _aseq {
 }
 
 function _aseq._exterior(i : integer) : _aseq {
-  var x : _aseq;
+  var x : _aseq = _low.._high by _stride;
   if (i < 0) {
     x = _low+i.._low-1 by _stride;
   } else if (i > 0) {
@@ -101,11 +101,7 @@ class _adomain : _domain {
           (dim(i) < 0) and (this(i)._low-1-dim(i) > this(i)._high)) {
         halt("***Error: Argument to 'interior' function out of range in dimension ", i, "***");
       } 
-      if (dim(i) == 0) {
-        x.ranges(i) = this(i);
-      } else {
-        x.ranges(i) = this(i)._interior(dim(i));
-      }
+      x.ranges(i) = this(i)._interior(dim(i));
     }
     return x;
   }
@@ -117,11 +113,7 @@ class _adomain : _domain {
   function exterior(dim : (rank*integer)) {
     var x = _adomain(rank);
     for i in 1..rank do {
-      if (dim(i) == 0) {
-        x.ranges(i) = this(i);
-      } else {
-        x.ranges(i) = this(i)._exterior(dim(i));
-      }
+      x.ranges(i) = this(i)._exterior(dim(i));
     }
     return x;
   }
@@ -133,20 +125,30 @@ class _adomain : _domain {
   function expand(dim : (rank*integer)) {
     var x = _adomain(rank);
     for i in 1..rank do {
-      if (dim(i) == 0) {
-        x.ranges(i) = ranges(i);
-      } else {
-        x.ranges(i) = ranges(i)._expand(dim(i));
-        if (x.ranges(i)._low > x.ranges(i)._high) {
-          halt("***Error: Degenerate dimension created in dimension ", i, "***");
-        }
+      x.ranges(i) = ranges(i)._expand(dim(i));
+      if (x.ranges(i)._low > x.ranges(i)._high) {
+        halt("***Error: Degenerate dimension created in dimension ", i, "***");
       }
     }
     return x;
   }  
- 
+  
   function expand(dim : integer ...?numDims) {
-    return expand(dim);
+    var x = _adomain(rank);
+    if (rank == numDims) {
+      -- NOTE: would probably like to get rid of this assignment
+      -- since domain assignment is/will eventually be nontrivial
+      -- in cost;  yet returning expand(dim) currently causes
+      -- problems as captured in trivial/shannon/condReturn3.chpl
+      x = expand(dim);
+    } else if (numDims == 1) {
+      for i in 1..rank do {
+        x.ranges(i) = ranges(i)._expand(dim(1));
+      }
+    } else {
+      halt("***Error: Rank mismatch between domain and expand() arguments (", rank, " != ", numDims, ")***");
+    }
+    return x;
   }
 }
 
