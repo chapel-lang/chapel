@@ -59391,3 +59391,17 @@ Removed files:
 	                              translateWrongNumDims.compopts 
 	                              translateWrongNumDims.good 
 
+---------------------------------------------------------------------------
+
+03/14/06 12:18:09 -- jplevyak
+
+Log message:
+	Fix bug with zeroarity functions whereby we were permitting members
+	declared with parens to be called without.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-1.good 
+Removed files:
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-1.future 
+
