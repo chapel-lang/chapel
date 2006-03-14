@@ -59463,3 +59463,18 @@ Modified files:
 	chapel/compiler/passes/: normalize.cpp 
 	chapel/modules/standard/: _chpl_adomain.chpl _chpl_seq.chpl 
 
+---------------------------------------------------------------------------
+
+03/14/06 14:51:23 -- bradc
+
+Log message:
+	Was trying a varargs unrolling function this afternoon
+	which works in the interpreter but fails in analysis
+	for some reason.  This test is very similar to
+	functions/deitz/varargs/test_varargs_write.chpl --
+	which works -- but mine fails for some reason.
+
+Added files:
+	chapel/test/trivial/bradc/: unroll.chpl unroll.future 
+	                            unroll.good 
+
