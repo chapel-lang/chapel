@@ -59346,3 +59346,48 @@ Modified files:
 	chapel/test/demo/review_060130/: jacobi.good 
 	chapel/test/interpreter/deitz/: domarr.good 
 
+---------------------------------------------------------------------------
+
+03/14/06 11:16:44 -- shannon
+
+Log message:
+	Refactored the _adomain methods I
+	added recently such that they now take
+	either a tuple or individual arguments.
+	
+	Removed tests that tested for an incorrect
+	number of arguments being passed to the
+	functions since they now fail in compilation.
+	
+	Added tests for tuple args and updated
+	some test output.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+Added files:
+	chapel/test/domains/shannon/: expand3Dtuple.chpl 
+	                              expand3Dtuple.good 
+	                              exterior3Dtuple.chpl 
+	                              exterior3Dtuple.good 
+	                              interior3Dtuple.chpl 
+	                              interior3Dtuple.good 
+	                              translate3Dtuple.chpl 
+	                              translate3Dtuple.good 
+Removed files:
+	chapel/test/domains/shannon/: expandWrongNumDims.chpl 
+	                              expandWrongNumDims.compopts 
+	                              expandWrongNumDims.future 
+	                              expandWrongNumDims.good 
+	                              exteriorWrongNumDims.chpl 
+	                              exteriorWrongNumDims.compopts 
+	                              exteriorWrongNumDims.good 
+	                              interiorWrongNumDims.chpl 
+	                              interiorWrongNumDims.compopts 
+	                              interiorWrongNumDims.good 
+	                              translateWrongNumDims.chpl 
+	                              translateWrongNumDims.compopts 
+	                              translateWrongNumDims.good 
+
