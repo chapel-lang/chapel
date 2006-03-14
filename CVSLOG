@@ -59443,3 +59443,23 @@ Modified files:
 Removed files:
 	chapel/test/domains/shannon/: expandOverload.future 
 
+---------------------------------------------------------------------------
+
+03/14/06 14:37:10 -- jplevyak
+
+Log message:
+	Add new option: --scalar-promotion.
+	Added "iterator this()" to seq and to _aarray.
+	Scalar promotion recognizes the cases where interator this()
+	returns a fixed type or a type variable defined in the surrounding class.
+	The "this" iterator is changed in chapel.y to '_promoter' to avoid
+	conflict with the "this" function.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_seq.chpl 
+
