@@ -1,0 +1,5 @@
+deitz/jplevyak
+
+This test fails compilation with the following error message:
+
+Error: Variable '_ret_foo' used before defined (condReturn.chpl:9)

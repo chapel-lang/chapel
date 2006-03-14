@@ -1,0 +1,7 @@
+deitz/jplevyak
+
+This test fails compilation with the following abridged error message:
+
+error: '_tmp' has no type
+error: '_ret_expand' has no type
+  called from condReturn3.chpl:37

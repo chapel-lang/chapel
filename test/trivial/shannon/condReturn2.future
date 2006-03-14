@@ -1,0 +1,6 @@
+deitz/jplevyak
+
+This test fails compilation with the following error message:
+
+[functionResolution.cpp:391] Error: Unresolved function call (<internal>:-1)
+  Constructed in traversal normalize
