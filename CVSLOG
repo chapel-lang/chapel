@@ -59334,3 +59334,15 @@ Log message:
 Added files:
 	chapel/test/arrays/deitz/: test_array_8d.chpl test_array_8d.good 
 
+---------------------------------------------------------------------------
+
+03/14/06 08:51:36 -- deitz
+
+Log message:
+	Fix output of 2 new regressions.  I forgot to update these array tests
+	with the change to how arrays print out.
+
+Modified files:
+	chapel/test/demo/review_060130/: jacobi.good 
+	chapel/test/interpreter/deitz/: domarr.good 
+
