@@ -59281,3 +59281,14 @@ Modified files:
 	chapel/modules/standard/: _chpl_compiler.chpl 
 	                          _chpl_standard.chpl 
 
+---------------------------------------------------------------------------
+
+03/13/06 16:09:41 -- deitz
+
+Log message:
+	Add test to illustrate potential iterator transform.
+
+Added files:
+	chapel/test/classes/deitz/infer/: infer_field2c.chpl 
+	                                  infer_field2c.good 
+
