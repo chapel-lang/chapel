@@ -1,4 +1,0 @@
-domain(3): 		[0..2, 1..4, 2..8]
-expand(2): 		[-2..4, -1..6, 0..10]
-expand(1, 2): Halt reached: expandWrongNumDims.chpl:4
-***Error: Rank mismatch between domain and expand() arguments (3 != 2)***

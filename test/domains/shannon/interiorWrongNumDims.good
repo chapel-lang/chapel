@@ -1,3 +1,0 @@
-domain(3): 		[1..4, 1..4, 1..4]
-interior(1, 2, 3, 4): Halt reached: interiorWrongNumDims.chpl:5
-***Error: Rank mismatch between domain and interior() arguments (3 != 4)***

@@ -11,8 +11,8 @@ _chpl_file.chpl:196: fwrite, f : file, val : bool
 _chpl_file.chpl:214: fwrite, f : file, x : nil_type
 _chpl_complex.chpl:8: fwrite, f : file, x : complex
 _chpl_htuple.chpl:22: fwrite, f : file, val : _htuple
-_chpl_adomain.chpl:201: fwrite, f : file, x : _adomain
-_chpl_adomain.chpl:208: fwrite, f : file, x : _aarray
+_chpl_adomain.chpl:198: fwrite, f : file, x : _adomain
+_chpl_adomain.chpl:205: fwrite, f : file, x : _aarray
 _chpl_indefinite.chpl:108: fwrite, f : file, x : _idomain
 _chpl_indefinite.chpl:115: fwrite, f : file, x : _iarray
 _chpl_sparse.chpl:16: fwrite, f : file, x : _sarray
