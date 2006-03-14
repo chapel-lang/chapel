@@ -59292,3 +59292,14 @@ Added files:
 	chapel/test/classes/deitz/infer/: infer_field2c.chpl 
 	                                  infer_field2c.good 
 
+---------------------------------------------------------------------------
+
+03/13/06 16:20:06 -- jplevyak
+
+Log message:
+	Add option for making zero arity non-no-paren members illegal.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: fun.cpp fun.h pattern.cpp 
+
