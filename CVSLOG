@@ -59405,3 +59405,20 @@ Modified files:
 Removed files:
 	chapel/test/functions/jplevyak/: zeroarity-bound-error-1.future 
 
+---------------------------------------------------------------------------
+
+03/14/06 13:41:07 -- shannon
+
+Log message:
+	Added some future tests that fail when
+	I (Brad) would have expected them to
+	compile.
+
+Added files:
+	chapel/test/trivial/shannon/: condReturn.chpl condReturn.future 
+	                              condReturn.good condReturn2.chpl 
+	                              condReturn2.future 
+	                              condReturn2.good condReturn3.chpl 
+	                              condReturn3.future 
+	                              condReturn3.good 
+
