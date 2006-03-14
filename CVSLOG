@@ -59422,3 +59422,24 @@ Added files:
 	                              condReturn3.future 
 	                              condReturn3.good 
 
+---------------------------------------------------------------------------
+
+03/14/06 14:29:47 -- shannon
+
+Log message:
+	Modified the newly-refactored expand method
+	such that if a single argument is given
+	it is expanded this amount in all dimensions.
+	Removed a future test since this code now works.
+	
+	Made some other simplifications in the code
+	for clarity, and updated some tests.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+Removed files:
+	chapel/test/domains/shannon/: expandOverload.future 
+
