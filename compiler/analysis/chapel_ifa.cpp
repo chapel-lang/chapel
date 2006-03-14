@@ -24,8 +24,6 @@
 #include "fail.h"
 #include "runtime.h"
 
-// #define ZERO_ARITY_NON_EAGER_ILLEGAL  1
-
 #define VARARG_END     0ll
 #define MAKE_USER_TYPE_BE_DEFINITION            1
 //#define USE_SCOPE_LOOKUP_CACHE                  1
@@ -2050,10 +2048,9 @@ finalize_function(Fun *fun, int instantiation) {
     fun->is_varargs = 1;
   if (fs->noParens)
     fun->is_eager = 1;
-#ifdef ZERO_ARITY_NON_EAGER_ILLEGAL
-  if (fs->method_type != NON_METHOD && !is_this_fun(fs) && !is_assign_this_fun(fs))
-    fun->is_lazy = 1;
-#endif
+  else
+    if (fs->method_type != NON_METHOD && !is_this_fun(fs) && !is_assign_this_fun(fs))
+      fun->is_lazy = 1;
   if (fs->method_type != NON_METHOD)
     fs->_this->asymbol->sym->is_this = 1;
   // add to dispatch cache

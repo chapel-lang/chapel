@@ -1,1 +1,46 @@
-some error
+error: '_tmp' has no type
+zeroarity-bound-error-1.chpl:9: illegal call argument type '_methodToken' illegal: ( _methodTokenType ) 
+zeroarity-bound-error-1.chpl:9: illegal call argument type 'stdout' illegal: ( file ) 
+zeroarity-bound-error-1.chpl:9: illegal call argument type 'c' illegal: ( C ) 
+zeroarity-bound-error-1.chpl:9: illegal call argument type '_tmp' illegal: ( ) 
+zeroarity-bound-error-1.chpl:9: unresolved call 'fwrite'
+note: candidates are:
+_chpl_file.chpl:112: fwrite, f : file, val : int64
+_chpl_file.chpl:145: fwrite, f : file, val : float64
+_chpl_file.chpl:165: fwrite, f : file, val : string
+_chpl_file.chpl:196: fwrite, f : file, val : bool
+_chpl_file.chpl:214: fwrite, f : file, x : nil_type
+_chpl_complex.chpl:8: fwrite, f : file, x : complex
+_chpl_htuple.chpl:22: fwrite, f : file, val : _htuple
+_chpl_adomain.chpl:201: fwrite, f : file, x : _adomain
+_chpl_adomain.chpl:208: fwrite, f : file, x : _aarray
+_chpl_indefinite.chpl:108: fwrite, f : file, x : _idomain
+_chpl_indefinite.chpl:115: fwrite, f : file, x : _iarray
+_chpl_sparse.chpl:16: fwrite, f : file, x : _sarray
+_chpl_seq.chpl:156: fwrite, f : file, s : seq
+_chpl_seq.chpl:235: fwrite, f : file, s : _aseq
+fwrite, f : file, val : _tuple1
+fwrite, f : file, val : _tuple2
+fwrite, f : file, val : _tuple3
+fwrite, f : file, val : _tuple4
+fwrite, f : file, val : _tuple5
+prelude.chpl:3: fwrite, f : file, val : object
+prelude.chpl:4: fwrite, f : file, val : value
+prelude.chpl:10: fwrite, f : file, val : CFILEPTR
+_chpl_base.chpl:3: fwrite, f : file, val : _unused_class
+_chpl_base.chpl:9: fwrite, f : file, val : _methodTokenType
+_chpl_base.chpl:11: fwrite, f : file, val : _setterTokenType
+_chpl_base.chpl:87: fwrite, f : file, val : _ddata
+_chpl_closure.chpl:1: fwrite, f : file, val : closure
+_chpl_file.chpl:1: fwrite, f : file, val : file
+_chpl_adomain.chpl:5: fwrite, f : file, val : _domain
+_chpl_adomain.chpl:22: fwrite, f : file, val : _array
+_chpl_sparse.chpl:1: fwrite, f : file, val : _sdomain
+_chpl_seq.chpl:1: fwrite, f : file, val : _seqNode
+zeroarity-bound-error-1.chpl:1: fwrite, f : file, val : C
+zeroarity-bound-error-1.chpl:9: unresolved call 'g'
+note: candidates are:
+zeroarity-bound-error-1.chpl:3: g, _methodTokenDummy : _methodTokenType, this : C
+zeroarity-bound-error-1.chpl:9: expression has no type
+zeroarity-bound-error-1.chpl:9: expression has no type
+fail: program does not type
