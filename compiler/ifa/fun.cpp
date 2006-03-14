@@ -16,6 +16,7 @@ void Fun::init_fun() {
   is_generic = 0;
   is_varargs = 0;
   is_eager = 0;
+  is_lazy = 0;
   nested_in = 0;
   clone_for_constants = 0;
   split_unique = 0;

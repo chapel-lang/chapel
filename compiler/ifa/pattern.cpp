@@ -796,6 +796,10 @@ Matcher::covers_formals(Fun *f, Vec<CreationSet *> &csargs, MPosition &p, int to
     // handle x.y(z) as ((#y, x), z) differently for paren vs. paren-less methods
     if (partial == Partial_OK && !f->is_eager)
       m->partial = 1;
+    // ensure that lazy Partial_OKs are returned as closures
+    if (partial == Partial_NEVER && f->is_lazy && !is_closure)
+      result = 0;
+    // ensure that eager functions are not called from a closure
     if (f->is_eager && is_closure)
       result = 0;
   }

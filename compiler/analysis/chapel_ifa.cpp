@@ -24,6 +24,8 @@
 #include "fail.h"
 #include "runtime.h"
 
+// #define ZERO_ARITY_NON_EAGER_ILLEGAL  1
+
 #define VARARG_END     0ll
 #define MAKE_USER_TYPE_BE_DEFINITION            1
 //#define USE_SCOPE_LOOKUP_CACHE                  1
@@ -1858,6 +1860,16 @@ fun_where_clause(FnSymbol *f, Expr *w) {
 }
 
 static int
+is_this_fun(FnSymbol *f) {
+  return !strcmp(f->asymbol->sym->name, "this");
+}
+
+static int
+is_assign_this_fun(FnSymbol *f) {
+  return !strcmp(f->asymbol->sym->name, "=this");
+}
+
+static int
 gen_fun(FnSymbol *f) {
   Sym *fn = f->asymbol->sym;
   AAST* ast = f->defPoint->ainfo;
@@ -1869,11 +1881,11 @@ gen_fun(FnSymbol *f) {
   Sym *as[args.n + 4];
   int iarg = 0;
   assert(f->asymbol->sym->name);
-  if (strcmp(f->asymbol->sym->name, "=this") == 0) {
+  if (is_this_fun(f)) {
     if (is_Sym_OUT(args.v[0]->asymbol->sym))
       out_args.add(args.v[0]->asymbol->sym);
     as[iarg++] = args.v[0]->asymbol->sym;
-  } else if (strcmp(f->asymbol->sym->name, "this") == 0) {
+  } else if (is_assign_this_fun(f)) {
     if (is_Sym_OUT(args.v[0]->asymbol->sym))
       out_args.add(args.v[0]->asymbol->sym);
     as[iarg++] = args.v[0]->asymbol->sym;
@@ -2038,6 +2050,10 @@ finalize_function(Fun *fun, int instantiation) {
     fun->is_varargs = 1;
   if (fs->noParens)
     fun->is_eager = 1;
+#ifdef ZERO_ARITY_NON_EAGER_ILLEGAL
+  if (fs->method_type != NON_METHOD && !is_this_fun(fs) && !is_assign_this_fun(fs))
+    fun->is_lazy = 1;
+#endif
   if (fs->method_type != NON_METHOD)
     fs->_this->asymbol->sym->is_this = 1;
   // add to dispatch cache

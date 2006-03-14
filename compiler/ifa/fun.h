@@ -47,7 +47,8 @@ class Fun : public gc {
   uint is_generic : 1;
   uint is_external : 1;
   uint is_varargs : 1;
-  uint is_eager : 1;
+  uint is_eager : 1;   // will evaulate for Partial_OK
+  uint is_lazy : 1;    // will not match Partial_NEVER
   
   // cdb
   char *cdb_id;
