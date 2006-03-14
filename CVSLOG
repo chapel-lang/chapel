@@ -59303,3 +59303,24 @@ Modified files:
 	chapel/compiler/analysis/: chapel_ifa.cpp 
 	chapel/compiler/ifa/: fun.cpp fun.h pattern.cpp 
 
+---------------------------------------------------------------------------
+
+03/13/06 16:55:58 -- deitz
+
+Log message:
+	Implemented arithmetic domain write function for arrays of arbitrary
+	rank using an "odometer"-style loop.
+	
+	Fixed a bug in arithmetic domain write in which extra line feeds were
+	applied at the end of the write for dimensions of rank 2 and greater.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	chapel/test/arrays/bradc/: domarr.good domarr1a.good 
+	chapel/test/arrays/deitz/: test_anon_domain2.good 
+	                           test_array_assign1.good 
+	                           test_array_integer_2d.good 
+	                           test_array_integer_3d.good 
+Removed files:
+	chapel/test/arrays/deitz/: test_array_integer_3d.future 
+
