@@ -12,6 +12,11 @@ class seq : value {
   var _first : _seqNode of elt_type;
   var _last : _seqNode of elt_type;
 
+  iterator this() : elt_type {
+    forall x in this
+      yield x; 
+  }
+
   function this(i : integer) var {
     var start_index : integer = 1;
     var end_index : integer = _length;

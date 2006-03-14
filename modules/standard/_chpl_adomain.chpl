@@ -163,6 +163,11 @@ class _aarray : value {
   var size : integer;
   var data : _ddata(elt_type);
 
+  iterator this() : elt_type {
+    forall x in dom
+      yield x; 
+  }
+
   function off(dim : integer) var
     return info(dim)(1);
 

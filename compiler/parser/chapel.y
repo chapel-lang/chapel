@@ -587,6 +587,8 @@ fn_decl_stmt:
   fn_tag function opt_formal_ls fnretref fnrettype where parsed_block_stmt
     {
       $2->fnClass = $1;
+      if ($1 == FN_ITERATOR && !strcmp($2->name, "this"))
+        $2->name = "_promoter";
       if (!$3) {
         $3 = new AList<DefExpr>();
         $2->noParens = true;

@@ -1031,6 +1031,18 @@ FnSymbol::isPartialInstantiation(ASTMap* generic_substitutions) {
   return false;
 }
 
+static void
+check_promoter(ClassType *at) {
+  if (!scalar_promotion)
+    return;
+  ClassType *t = dynamic_cast<ClassType*>(at->instantiatedFrom);
+  forv_Vec(TypeSymbol, tt, t->types) {
+    if (tt->hasPragma("promoter")) {
+      Type *seqElementType = dynamic_cast<Type*>(at->substitutions.get(tt->definition));
+      at->dispatchParents.add(seqElementType);
+    }
+  }
+}
 
 FnSymbol*
 FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
@@ -1150,6 +1162,9 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
     new_ast_functions.add(newfn);
     instantiatedTo->add(newfn);
     cloneType->defaultConstructor = newfn;
+
+    check_promoter(cloneType);
+
   } else {
     newfn = instantiate_function(defPoint->parentStmt, this, &substitutions, generic_substitutions, &map);
     new_ast_functions.add(newfn);

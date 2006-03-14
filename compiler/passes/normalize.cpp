@@ -297,6 +297,7 @@ static TypeSymbol* create_iterator_next_function(FnSymbol* fn) {
 static void reconstruct_iterator(FnSymbol* fn) {
   if (0) create_iterator_next_function(fn);
   Expr* seqType = fn->retExpr;
+  Type *seqElementType = seqType->typeInfo();
   if (!seqType)
     USR_FATAL(fn, "Cannot infer iterator return type yet");
   fn->retExpr->remove();
@@ -321,6 +322,36 @@ static void reconstruct_iterator(FnSymbol* fn) {
   fn->insertAtTail(new ReturnStmt(seq));
   fn->retType = dtUnknown;
   fn->fnClass = FN_FUNCTION;
+
+  if (scalar_promotion) {
+    if (!strcmp("_promoter", fn->name)) {
+      if (seqElementType != dtUnknown)
+        fn->typeBinding->definition->dispatchParents.add(seqElementType);
+      else {
+        if (CallExpr *c = dynamic_cast<CallExpr*>(seqType)) {
+          if (SymExpr *b = dynamic_cast<SymExpr*>(c->baseExpr)) {
+            if (!strcmp(".", b->var->name) && c->argList->length() == 2) {
+              if (SymExpr *a1 = dynamic_cast<SymExpr*>(c->argList->get(1))) {
+                if (a1->var == fn->_this) {
+                  if (SymExpr *a2 = dynamic_cast<SymExpr*>(c->argList->get(2))) {
+                    if (VarSymbol *vs = dynamic_cast<VarSymbol*>(a2->var)) {
+                      if (vs->immediate) {
+                        char *s = vs->immediate->v_string;
+                        ClassType *ct = dynamic_cast<ClassType*>(fn->typeBinding->definition);
+                        forv_Vec(TypeSymbol, ts, ct->types)
+                          if (!strcmp(ts->name, s))
+                            ts->addPragma("promoter");
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 
