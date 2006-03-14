@@ -206,27 +206,26 @@ function fwrite(f : file, x : _adomain) {
 }
 
 function fwrite(f : file, x : _aarray) {
-  if x.rank == 1 {
-    var first : bool = true;
-    for i in x.dom(1) {
-      if not first then
-        fwrite(f, " ");
-      else
-        first = false;
-      fwrite(f, x(i));
-    }
-  } else if x.rank == 2 {
-    for i in x.dom(1) {
-      var first : bool = true;
-      for j in x.dom(2) {
-        if not first then
-          fwrite(f, " ");
-        else
-          first = false;
-        fwrite(f, x(i,j));
+  var i : (x.rank*integer);
+  for dim in 1..x.rank do
+    i(dim) = x.dom(dim)._low;
+  label next while true {
+    fwrite(f, x(i));
+    if i(x.rank) < x.dom(x.rank)._high {
+      fwrite(f, " ");
+      i(x.rank) += x.dom(x.rank)._stride;
+    } else {
+      for dim in 1..x.rank-1 by -1 {
+        if i(dim) < x.dom(dim)._high {
+          i(dim) += x.dom(dim)._stride;
+          for dim2 in dim+1..x.rank {
+            fwrite(f, "\n");
+            i(dim2) = x.dom(dim2)._low;
+          }
+          continue next;
+        }
       }
-      fwriteln(f);
+      break;
     }
-  } else
-    halt("Cannot write out arrays of more than two dimensions");
+  }
 }
