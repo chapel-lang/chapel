@@ -59478,3 +59478,19 @@ Added files:
 	chapel/test/trivial/bradc/: unroll.chpl unroll.future 
 	                            unroll.good 
 
+---------------------------------------------------------------------------
+
+03/14/06 17:01:26 -- jplevyak
+
+Log message:
+	Steves patch for the defaults wrapper for member functions.
+	Patch for one of the closure variables which is holding a
+	function pointer and hence should have a function type, but
+	since that isn't implemented and since the closure isn't
+	actually used, I am transforming it into a SymbolType.
+	Howver, this fixes the test.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+
