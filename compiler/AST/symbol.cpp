@@ -819,15 +819,22 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
   wrapper->visible = false;
   wrapper->formals = new AList<DefExpr>();
 
+  AList<Expr>* method_actuals = new AList<Expr>();
   AList<Expr>* wrapper_actuals = new AList<Expr>();
   ASTMap map;
+  int formal_num = 0;
   for_alist(DefExpr, formalDef, formals) {
+    formal_num++;
     ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
     if (!defaults->in(formal)) {
       Symbol* newFormal = formal->copy();
       map.put(formal, newFormal);
       wrapper->formals->insertAtTail(new DefExpr(newFormal));
-      wrapper_actuals->insertAtTail(new SymExpr(newFormal));
+      if (formal_num <= 2 &&
+          (method_type == PRIMARY_METHOD || method_type == SECONDARY_METHOD))
+        method_actuals->insertAtTail(new SymExpr(newFormal));
+      else
+        wrapper_actuals->insertAtTail(new SymExpr(newFormal));
       if (_this == formal)
         wrapper->_this = newFormal;
     } else {
@@ -860,10 +867,15 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
     }
   }
   update_symbols(wrapper->body, &map);
+  CallExpr* call;
+  if (method_type == PRIMARY_METHOD || method_type == SECONDARY_METHOD) {
+    call = new CallExpr(this, method_actuals);
+    call->partialTag = PARTIAL_OK;
+    call = new CallExpr(call, wrapper_actuals);
+  } else
+    call = new CallExpr(this, wrapper_actuals);
   wrapper->insertAtTail(
-    function_returns_void(this)
-      ? new ExprStmt(new CallExpr(this, wrapper_actuals))
-      : new ReturnStmt(new CallExpr(this, wrapper_actuals)));
+    function_returns_void(this) ? new ExprStmt(call) : new ReturnStmt(call));
   wrapper->typeBinding = typeBinding;
   wrapper->retType = retType;
   wrapper->fnClass = fnClass;

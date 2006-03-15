@@ -2579,6 +2579,8 @@ to_AST_type(Sym *type) {
       }
     }
   }
+  if (type->is_fun) // HACK until the AST supports true function tyeps
+    return new_SymbolSymbol(type->name)->type;
   ASymbol *asymbol = (ASymbol*)type->asymbol;
   BaseAST *atype = asymbol->symbol;
   if (!atype)
