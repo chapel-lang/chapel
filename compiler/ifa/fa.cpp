@@ -955,6 +955,17 @@ check_edge(AEdge *e, EntrySet *es) {
 }
 
 static int
+display_compatible(EntrySet *a, EntrySet *b) {
+  int n = a->fun->sym->nesting_depth;
+  if (n > b->fun->sym->nesting_depth) // MIN
+    n = b->fun->sym->nesting_depth;
+  for (int i = 0; i < n; i++)
+    if (a->display.v[i] != b->display.v[i])
+      return 0;
+  return 1;
+}
+
+static int
 check_split(AEdge *e, Vec<AEdge *> &ees)  {
   if (!e->from)
     return 0;
@@ -970,7 +981,7 @@ check_split(AEdge *e, Vec<AEdge *> &ees)  {
         if (!check_edge(e, ee->to))
           continue;
         if (ee->match->fun == e->match->fun) {
-         if (e->match->fun->split_unique || e->match->fun->nested_in == e->from->fun) {
+         if (e->match->fun->split_unique || !display_compatible(e->from, ee->to)) {
             set_entry_set(e);
             e->to->split = ee->to;
             ees.add(e);
