@@ -59510,3 +59510,15 @@ Added files:
 	                               badfile2.chpl badfile2.good 
 	                               badfile3.chpl badfile3.good 
 
+---------------------------------------------------------------------------
+
+03/14/06 19:59:45 -- jplevyak
+
+Log message:
+	Patch for disambiguating nested functions.
+	There is still a potential issue with mutually recursive
+	  nested functions.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
