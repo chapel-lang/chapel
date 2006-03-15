@@ -59606,3 +59606,16 @@ Added files:
 	                                         test_nested2.future 
 	                                         test_nested2.good 
 
+---------------------------------------------------------------------------
+
+03/15/06 15:48:22 -- deitz
+
+Log message:
+	I think this is working (but wrong in the interpreter).  We should
+	write down our function resolution scheme and update it in the
+	specification.
+
+Added files:
+	chapel/test/functions/deitz/: test_clone_coerce.chpl 
+	                              test_clone_coerce.good 
+
