@@ -59570,3 +59570,15 @@ Added files:
 Removed files:
 	chapel/test/domains/bradc/: bydomain.future 
 
+---------------------------------------------------------------------------
+
+03/15/06 14:17:11 -- deitz
+
+Log message:
+	test to show ambiguity of globally visible nested function given our
+	current handling of nested functions.
+
+Added files:
+	chapel/test/functions/deitz/nested/: test_nested_global1.chpl 
+	                                     test_nested_global1.good 
+
