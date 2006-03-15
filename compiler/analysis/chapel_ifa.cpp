@@ -2732,7 +2732,7 @@ constant_info(BaseAST *a, Vec<SymExpr *> &constants, Symbol *s) {
 int
 function_is_used(FnSymbol *fn) {
   if (if1->callback) {
-    if (fn->asymbol)
+    if (fn->asymbol && fn->asymbol->sym->fun)
       return fn->asymbol->sym->fun->ess.n != 0;
     else
       return false;
