@@ -59494,3 +59494,19 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 	chapel/compiler/analysis/: chapel_ifa.cpp 
 
+---------------------------------------------------------------------------
+
+03/14/06 18:00:07 -- bradc
+
+Log message:
+	Added some tests that I stumbled across when trying
+	to figure out why Steve's test worked and mine didn't.
+	badfile.chpl is a future for Shannon which displays a
+	silent bug in the rewriting of fwriteln's.
+
+Added files:
+	chapel/test/types/file/bradc/: .cvsignore badfile.chpl 
+	                               badfile.future badfile.good 
+	                               badfile2.chpl badfile2.good 
+	                               badfile3.chpl badfile3.good 
+
