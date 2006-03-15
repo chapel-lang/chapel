@@ -59592,3 +59592,17 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: chapel_ifa.cpp 
 
+---------------------------------------------------------------------------
+
+03/15/06 15:44:42 -- deitz
+
+Log message:
+	Add a simpler test to show problem with nested functions inside
+	instantiated functions.  This gets rid of the class from test_nested1
+	and avoids the integer to string coercion.
+
+Added files:
+	chapel/test/types/type_variables/deitz/: test_nested2.chpl 
+	                                         test_nested2.future 
+	                                         test_nested2.good 
+
