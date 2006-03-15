@@ -1,0 +1,19 @@
+shannon
+
+It appears that when using fwrite(), the first symbol does not attempt
+to be resolved, presumably due to our rewrites in normalize.  This use
+of fwrite() is also bogus since it only has a file argument.  We
+should either:
+
+* rewrite it to be some sort of no-op (like:
+  "fwrite(thisVariableDoesntExist, "")") 
+  which should cause the symbol to be resolved;
+  
+* or translate it into a bogus call:
+  "fwrite(thisVariableDoesntExist)
+  which would cause a function dispatch problem
+
+* or generate a compile-time error message like:
+  "fwrite called with fewer than 2 arguments"
+
+Of the three approaches, I like the second one.

@@ -1,0 +1,1 @@
+Error: Symbol 'thisVariableDoesntExist' is not defined (badfile3.chpl:3)
