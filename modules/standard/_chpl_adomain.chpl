@@ -112,9 +112,8 @@ class _adomain : _domain {
 
   function exterior(dim : (rank*integer)) {
     var x = _adomain(rank);
-    for i in 1..rank do {
+    for i in 1..rank do
       x.ranges(i) = this(i)._exterior(dim(i));
-    }
     return x;
   }
   
@@ -142,14 +141,28 @@ class _adomain : _domain {
       -- problems as captured in trivial/shannon/condReturn3.chpl
       x = expand(dim);
     } else if (numDims == 1) {
-      for i in 1..rank do {
+      for i in 1..rank do
         x.ranges(i) = ranges(i)._expand(dim(1));
-      }
     } else {
       halt("***Error: Rank mismatch between domain and expand() arguments (", rank, " != ", numDims, ")***");
     }
     return x;
   }
+}
+
+
+function by(dom : _adomain, dim : (dom.rank*integer)) {
+  var x = _adomain(dom.rank);
+  for i in 1..dom.rank do
+    x.ranges(i) = dom.ranges(i) by dim(i);
+  return x;
+}
+
+function by(dom : _adomain, dim : integer) {
+  var x = _adomain(dom.rank);
+  for i in 1..dom.rank do
+    x.ranges(i) = dom.ranges(i) by dim;
+  return x;
 }
 
 
