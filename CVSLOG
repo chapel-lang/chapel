@@ -59546,3 +59546,27 @@ Added files:
 	chapel/test/functions/deitz/methods/: test_default_arg2.chpl 
 	                                      test_default_arg2.good 
 
+---------------------------------------------------------------------------
+
+03/15/06 13:39:00 -- shannon
+
+Log message:
+	Added the 'by' function for domains (which
+	implements the 'by' operator).  For a
+	multidimensional domain a single argument to
+	'by' modifies the strides in all dimensions.
+	
+	Removed a future for a now-working test and
+	added a test.  Updated some test output.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-1.good 
+	                                 zeroarity-bound-error-2.good 
+Added files:
+	chapel/test/domains/shannon/: by4Dtuple.chpl by4Dtuple.good 
+Removed files:
+	chapel/test/domains/bradc/: bydomain.future 
+
