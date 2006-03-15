@@ -59535,3 +59535,14 @@ Modified files:
 	chapel/test/functions/jplevyak/: zeroarity-bound-error-1.good 
 	                                 zeroarity-bound-error-2.good 
 
+---------------------------------------------------------------------------
+
+03/15/06 10:24:11 -- deitz
+
+Log message:
+	Add another working method with default argument test.
+
+Added files:
+	chapel/test/functions/deitz/methods/: test_default_arg2.chpl 
+	                                      test_default_arg2.good 
+
