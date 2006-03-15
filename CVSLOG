@@ -59582,3 +59582,13 @@ Added files:
 	chapel/test/functions/deitz/nested/: test_nested_global1.chpl 
 	                                     test_nested_global1.good 
 
+---------------------------------------------------------------------------
+
+03/15/06 15:30:41 -- jplevyak
+
+Log message:
+	Fix for SEGV for test_nested_global1.chpl
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+
