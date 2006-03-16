@@ -59746,3 +59746,14 @@ Modified files:
 	chapel/compiler/: Makefile 
 	chapel/make/: Makefile.base 
 
+---------------------------------------------------------------------------
+
+03/16/06 14:18:00 -- waynew
+
+Log message:
+	Fixed error in cleanup code to remove temporary files. The temporay
+	.synch directory should be correctly removed after testing now.
+
+Modified files:
+	chapel/test/: paratest.server.pl 
+
