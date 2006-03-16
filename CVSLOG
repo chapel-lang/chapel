@@ -59698,3 +59698,14 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: pattern.cpp 
 
+---------------------------------------------------------------------------
+
+03/16/06 10:50:36 -- deitz
+
+Log message:
+	Removed hack that kept functions from being added to the visible
+	function list during analysis.
+
+Modified files:
+	chapel/compiler/symtab/: symscope.cpp 
+
