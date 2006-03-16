@@ -23,7 +23,8 @@ bool can_instantiate(Type* actualType, Type* formalType) {
 
 bool can_dispatch(Symbol* actualParam, Type* actualType, Type* formalType);
 bool can_dispatch_ne(Symbol* actualParam, Type* actualType, Type* formalType) {
-  if (actualType != dtAny && formalType == dtAny)
+  if ((actualType != dtAny && actualType != dtUnknown) &&
+      (formalType == dtAny || formalType == dtUnknown))
     return true;
   if (actualType == dtNil)
     if (ClassType* ct = dynamic_cast<ClassType*>(formalType))
