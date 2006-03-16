@@ -78,7 +78,7 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 $(CHPL): $(PLATFORM)/$(CHPL)
 	cp -f $< $@
 
-$(PLATFORM)/$(CHPL): $(PLATFORM_DIR) $(CHPL_OBJS)
+$(PLATFORM)/$(CHPL): $(PLATFORM_DIR_DIR) $(CHPL_OBJS)
 	$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(LIBS)
 	@echo "Updating TAGS..."
 	@etags 	$(GC_SRC_DIR)/*.h $(GC_SRC_DIR)/*.c \
