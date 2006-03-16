@@ -59720,3 +59720,29 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+03/16/06 13:30:15 -- bradc
+
+Log message:
+	Small change to our build procedure, based on discussions
+	with Wayne about his parallel testing scripts this morning.
+	When built, the compiler is stored in compiler/ and
+	compiler/$(PLATFORM), where compiler/$(PLATFORM) was
+	implemented as a symbolic link to CHPLDEVTMP if that environment
+	variable was set.  CHPLDEVTMP is meant to be used for truly
+	temporary files like object files and Makefile dependences
+	and not for targets of the build process, so I switched this
+	to be a true subdirectory regardless of how CHPLDEVTMP is
+	set.  Object files and such are still stored in symbolic links
+	to CHPLDEVTMP if set, as always.
+	
+	Implementors who use CHPLDEVTMP may need to blow away their
+	compiler/$(PLATFORM) directory (where PLATFORM is linux for
+	most of us) in order to see this change and get a clean
+	build.
+
+Modified files:
+	chapel/compiler/: Makefile 
+	chapel/make/: Makefile.base 
+
