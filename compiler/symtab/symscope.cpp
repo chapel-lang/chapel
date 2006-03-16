@@ -222,8 +222,6 @@ void SymScope::codegenFunctions(FILE* outfile) {
 void SymScope::addVisibleFunction(FnSymbol* fn) {
   if (!fn->visible)
     return;
-  if (inAnalysis)
-    return;
   int is_setter = (fn->name[0] == '=' && !OPERATOR_CHAR(fn->name[1]) &&
                    fn->name[1] != '\0');
   char* n = cannonicalize_string(fn->name + (is_setter ? 1 : 0));
