@@ -188,6 +188,7 @@ sub nodes_free {
         unlink "$synchdir/$file";
     }
 
+    systemd ("rm -f $synchdir/*");
     # signal that all nodes are free
     for ($id=0; $id<=$#node_list; $id++) {
         $fname = "$node_list[$id].$id";
@@ -338,7 +339,7 @@ sub main {
 
     # cleanup - remove synch files and synch dir
     for ($id=0; $id<=$#node_list; $id++) {
-        $synchfile = "$node_list[$id].$id";
+        $synchfile = "$synchdir/$node_list[$id].$id";
         unlink $synchfile if (-e $synchfile);
     }
     rmdir $synchdir;
