@@ -59688,3 +59688,13 @@ Modified files:
 	chapel/compiler/ifa/: fa.cpp fa.h pattern.cpp pattern.h 
 	                      pnode.cpp pnode.h 
 
+---------------------------------------------------------------------------
+
+03/16/06 09:03:07 -- jplevyak
+
+Log message:
+	Copy the cached Match before returning it to prevent any sharing issues.
+
+Modified files:
+	chapel/compiler/ifa/: pattern.cpp 
+
