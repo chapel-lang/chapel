@@ -549,6 +549,17 @@ install_new_asts(Vec<FnSymbol *> &funs, Vec<TypeSymbol *> &types) {
   forv_Vec(FnSymbol, f, funs)
     finalize_function(f->asymbol->sym->fun, 1);
   if1_write_log();
+  // Enter new nested functions into the dispatch tables 
+  //   if their parent was instantiated
+  Vec<Fun *> funs_set;
+  forv_Vec(FnSymbol, fsym, funs)
+    funs_set.set_add(fsym->asymbol->sym->fun);
+  forv_Vec(FnSymbol, fsym, funs) {
+    Fun *f = fsym->asymbol->sym->fun;
+    if (f->nested_in && funs_set.set_in(f->nested_in))
+      build_patterns(pdb->fa, f);
+  }
+  if1_write_log();
 }
 
 static Fun *
