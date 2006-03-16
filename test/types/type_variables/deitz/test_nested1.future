@@ -1,3 +1,19 @@
-jplevyak
+jplevyak/deitz
+
+
+For this example, for "bar", getVisibleFunctions() called with "bar"
+from:
+
+(CallExpr
+  (SymExpr 'bar:_unknownType')
+  (SymExpr "hello world" '_literal_210:string'))
+
+is returning 0.   
+
+Even if that was not the case it would still fail since the new
+functions are not in the dispatch tables.
+
+
+HISTORY
 
 nested functions in instantiated function are not visible
