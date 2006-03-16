@@ -59675,3 +59675,16 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: chapel_ifa.cpp 
 
+---------------------------------------------------------------------------
+
+03/15/06 20:33:34 -- jplevyak
+
+Log message:
+	Remove CACHE_CALLEES which didn't work with wrappers and instantiation
+	and add a new caching mechanism which handles normal statically bound
+	functions directly from the set of abstract values at a call site.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp fa.h pattern.cpp pattern.h 
+	                      pnode.cpp pnode.h 
+
