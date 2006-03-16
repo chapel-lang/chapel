@@ -59629,3 +59629,16 @@ Log message:
 Modified files:
 	chapel/test/types/type_variables/deitz/: test_nested1.future 
 
+---------------------------------------------------------------------------
+
+03/15/06 17:42:06 -- waynew
+
+Log message:
+	Perl script to run tests in parallel. It invokes start_test on the
+	specified directories (current if none specified). If a list of
+	nodes is specified, it will run start_test in parallel on the nodes.
+	See the head of paratest.server.pl for the requirements.
+
+Added files:
+	chapel/test/: paratest.server.pl 
+
