@@ -1297,7 +1297,7 @@ match_cache_hit(Vec<AVar *> &args, AVar *send, int is_closure, Partial_kind part
   form_MPositionAType(x, m->formal_filters)
     if (get_type(args, x->key, send) != x->value)
       return 0;
-  matches.add(m);
+  matches.add(new Match(*m));
   log(LOG_DISPATCH, "%d- pass: %d hit %d\n", 
       send->var->sym->id, analysis_pass, m->fun->sym->id);
   return 1;
@@ -1312,7 +1312,6 @@ pattern_match(Vec<AVar *> &args, AVar *send, int is_closure, Partial_kind partia
     return 0;
   if (match_cache_hit(args, send, is_closure, partial, matches))
     return matches.n;
-  send->match_cache = 0;
   Matcher matcher(send, args.v[0], is_closure, partial);
   Vec<Fun *> *partial_matches = 0;
   find_visible_functions(args, send, &partial_matches, matcher.function_values, &matcher.all_positions);
