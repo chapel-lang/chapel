@@ -59642,3 +59642,15 @@ Log message:
 Added files:
 	chapel/test/: paratest.server.pl 
 
+---------------------------------------------------------------------------
+
+03/15/06 17:43:21 -- waynew
+
+Log message:
+	Companion script needed by paratest.server.pl to run tests in
+	parallel. See the head of paratest.server.pl for the requirements and
+	usage.
+
+Added files:
+	chapel/test/: paratest.client.pl 
+
