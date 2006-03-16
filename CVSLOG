@@ -59664,3 +59664,14 @@ Log message:
 Removed files:
 	chapel/test/: testdirs.pl 
 
+---------------------------------------------------------------------------
+
+03/15/06 18:54:49 -- jplevyak
+
+Log message:
+	Add instantiated nested functions (where the parent is being
+	instantiated) into the analysis dispatch tables.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+
