@@ -59709,3 +59709,14 @@ Log message:
 Modified files:
 	chapel/compiler/symtab/: symscope.cpp 
 
+---------------------------------------------------------------------------
+
+03/16/06 13:23:08 -- deitz
+
+Log message:
+	Fixed a bug in interpreter function resolution that gets my
+	instantiated nested function tests working.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+
