@@ -49,8 +49,10 @@ class PNode : public gc {
 
   Prim *prim; // Primitive
 
+#ifdef CALLEE_CACHE
   Callees *callees; // Callees
   Callees *next_callees;
+#endif
 
   // Temporary Space
   union {

@@ -71,7 +71,7 @@ AEdge::AEdge() :
 AVar::AVar(Var *v, void *acontour) : 
   var(v), contour(acontour), lvalue(0), gen(0), in(bottom_type), out(bottom_type), 
   restrict(0), container(0), setters(0), setter_class(0), mark_map(0),
-  cs_map(0), type(0), ivar_offset(0), in_send_worklist(0), contour_is_entry_set(0), 
+  cs_map(0), match_cache(0), type(0), ivar_offset(0), in_send_worklist(0), contour_is_entry_set(0), 
   is_lvalue(0), is_dead(0)
 {
   id = avar_id++;
@@ -1429,11 +1429,11 @@ function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> 
   AVar *send = make_AVar(p->lvals.v[0], es);
   if (pattern_match(a, send, is_closure, partial, matches)) {
     forv_Match(m, matches) {
-      if (!m->partial && partial != Partial_ALWAYS)
+      if (!m->is_partial && partial != Partial_ALWAYS)
         make_AEdges(m, p, es, a);
       else 
         partial_result = 1;
-#ifdef CACHE_CALLEES
+#ifdef CALLEE_CACHE
       if (!p->next_callees)
         p->next_callees = new Callees;
       Fun *f = m->fun;
@@ -2422,17 +2422,6 @@ collect_results() {
   forv_CreationSet(cs, fa->css_set) if (cs) 
     fa->css.add(cs);
   qsort_by_id(fa->css);
-  // collect callees
-  forv_Fun(f, fa->funs) {
-    forv_PNode(pnode, f->fa_send_PNodes) {
-      if (pnode->next_callees) {
-        pnode->callees = pnode->next_callees;
-        pnode->next_callees = 0;
-        forv_Fun(x, pnode->callees->funs) if (x)
-          pnode->callees->arg_positions.set_union(x->arg_positions);
-      }
-    }
-  }
   // print results
   if (ifa_verbose)
     fa_dump_types(fa, stdout);

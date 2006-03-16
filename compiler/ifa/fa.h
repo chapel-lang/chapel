@@ -6,8 +6,6 @@
 #include "sym.h"
 #include "code.h"
 
-// #define CACHE_CALLEE  1 // do not use if instantiation is possible
-
 #define DEFAULT_NUM_CONSTANTS_PER_VARIABLE      1
 
 #define GLOBAL_CONTOUR ((void*)1)
@@ -176,6 +174,7 @@ class AVar : public gc {
   Setters                       *setter_class;
   MarkMap                       *mark_map;
   CSMap                         *cs_map;
+  Match                         *match_cache;
   Sym                           *type;
   int                           ivar_offset;
   uint                          in_send_worklist:1;

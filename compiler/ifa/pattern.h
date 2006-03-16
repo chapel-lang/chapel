@@ -95,11 +95,18 @@ class Patterns : public gc {
 class Match : public gc {
  public:
   Fun *fun;
-  int partial;
   Map<MPosition *, AType *> formal_filters; // formal -> type, positional-only and takes into account all arguments
-
-  Match(Fun *afun) : fun(afun), partial(0) { assert(afun); }
-  Match(Match &m) : fun(m.fun), partial(m.partial) { formal_filters.copy(m.formal_filters); }
+  unsigned int is_partial : 1;
+  // used to verify the match cache
+  unsigned int call_is_closure : 1;
+  unsigned int call_partial : 3;
+  
+  Match(Fun *afun) : fun(afun), is_partial(0) { assert(afun); }
+  Match(Match &m) : fun(m.fun), is_partial(m.is_partial) { 
+    formal_filters.copy(m.formal_filters); 
+    call_is_closure = m.call_is_closure;
+    call_partial = m.call_partial;
+  }
 };
 #define forv_Match(_p, _v) forv_Vec(Match, _p, _v)
 
