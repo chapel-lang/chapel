@@ -1,5 +1,11 @@
-jplevyak/deitz
+deitz
 
+I think that this test is now working but the
+.good file is incorrect.   integers have a standard
+coercion into strings which supersedes the default.
+
+
+HISTORY
 
 For this example, for "bar", getVisibleFunctions() called with "bar"
 from:
