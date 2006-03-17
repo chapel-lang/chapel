@@ -59852,3 +59852,15 @@ Log message:
 Modified files:
 	chapel/test/types/type_variables/deitz/: test_nested1.future 
 
+---------------------------------------------------------------------------
+
+03/17/06 09:24:47 -- deitz
+
+Log message:
+	Removed .future and updated .good.
+
+Modified files:
+	chapel/test/types/type_variables/deitz/: test_nested1.good 
+Removed files:
+	chapel/test/types/type_variables/deitz/: test_nested1.future 
+
