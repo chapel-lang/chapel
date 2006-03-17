@@ -59793,3 +59793,20 @@ Added files:
 	chapel/test/types/type_variables/deitz/: test_stack.chpl 
 	                                         test_stack.good 
 
+---------------------------------------------------------------------------
+
+03/16/06 19:18:12 -- jplevyak
+
+Log message:
+	Steve's patch to get nested functions into the new function list.
+	My patches to put all the collected ASTs into a set to uniquify
+	  them and remove duplicates.
+	My patch to invalidate the sym_match_cache when adding new
+	  instantiated functions and/or wrappers.
+	This fixes test_nested2.chpl
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: pattern.cpp pattern.h 
+
