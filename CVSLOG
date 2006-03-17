@@ -59757,3 +59757,18 @@ Log message:
 Modified files:
 	chapel/test/: paratest.server.pl 
 
+---------------------------------------------------------------------------
+
+03/16/06 16:01:22 -- jplevyak
+
+Log message:
+	Add accumulators to the timers.
+	Add % of time used to the analysis pass timers and a summary
+	  for all of analysis.
+	Enhance the analysis pattern match cache to maintain multiple
+	  matches at each call site.  It now gets an 88% hit rate.
+	Add the pattern match cache hit rate to the verbose analysis output.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp fa.h pattern.cpp pattern.h timer.h 
+
