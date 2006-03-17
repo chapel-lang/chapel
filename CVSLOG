@@ -59831,3 +59831,13 @@ Log message:
 Added files:
 	chapel/test/types/typedefs/jplevyak/: copy_typedef-1.future 
 
+---------------------------------------------------------------------------
+
+03/17/06 07:12:04 -- jplevyak
+
+Log message:
+	remove working future
+
+Removed files:
+	chapel/test/types/type_variables/deitz/: test_nested2.future 
+
