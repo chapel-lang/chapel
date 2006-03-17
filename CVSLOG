@@ -59841,3 +59841,14 @@ Log message:
 Removed files:
 	chapel/test/types/type_variables/deitz/: test_nested2.future 
 
+---------------------------------------------------------------------------
+
+03/17/06 07:16:03 -- jplevyak
+
+Log message:
+	I think this test is now working... steve if you could take a look,
+	I put a note in the .future
+
+Modified files:
+	chapel/test/types/type_variables/deitz/: test_nested1.future 
+
