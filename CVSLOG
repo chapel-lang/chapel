@@ -59810,3 +59810,14 @@ Modified files:
 	chapel/compiler/analysis/: chapel_ifa.cpp 
 	chapel/compiler/ifa/: pattern.cpp pattern.h 
 
+---------------------------------------------------------------------------
+
+03/17/06 07:07:06 -- jplevyak
+
+Log message:
+	Fix bug whereby the new aggressive caching was causing errors not to
+	be reported by not caching results from matches which generate errors.
+
+Modified files:
+	chapel/compiler/ifa/: pattern.cpp 
+
