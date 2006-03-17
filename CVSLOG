@@ -59821,3 +59821,13 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: pattern.cpp 
 
+---------------------------------------------------------------------------
+
+03/17/06 07:08:29 -- jplevyak
+
+Log message:
+	Add note about what is wrong and make into a future
+
+Added files:
+	chapel/test/types/typedefs/jplevyak/: copy_typedef-1.future 
+
