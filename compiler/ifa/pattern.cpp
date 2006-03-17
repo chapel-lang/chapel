@@ -1400,20 +1400,27 @@ build_arg(FA *fa, Fun *f, Sym *a, MPosition &p) {
   p.inc();
 }
 
-void
-build_patterns(FA *fa, Fun *f) {
+static void
+build_patterns(FA *fa, Fun *f, int add) {
   MPosition p;
   p.push(1);
   insert_fun(fa, f, f->sym, f->sym, p);
   forv_Sym(a, f->sym->has)
     build_arg(fa, f, a, p);
+  if (add)
+    sym_match_cache.clear();
+}
+
+void
+add_patterns(FA *fa, Fun *f) {
+  build_patterns(fa, f, 1);
 }
 
 void
 build_patterns(FA *fa) {
   fa->patterns = new Patterns;
   forv_Fun(f, fa->pdb->funs) 
-    build_patterns(fa, f);
+    build_patterns(fa, f, 0);
 }
 
 //

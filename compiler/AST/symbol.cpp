@@ -1056,6 +1056,18 @@ check_promoter(ClassType *at) {
   }
 }
 
+static void
+add_new_ast_functions(FnSymbol* fn) {
+  new_ast_functions.add(fn);
+  Vec<BaseAST*> asts;
+  collect_asts(&asts, fn->body);
+  forv_Vec(BaseAST, ast, asts) {
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast))
+      new_ast_functions.add(fn);
+  }
+}
+
+
 FnSymbol*
 FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
   // check to make sure this fully instantiates
@@ -1171,7 +1183,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
       cloneType->dispatchParents.add(parent);
 
     newfn = instantiate_function(pointOfInstantiation, this, &substitutions, generic_substitutions, &map, cloneType);
-    new_ast_functions.add(newfn);
+    add_new_ast_functions(newfn);
     instantiatedTo->add(newfn);
     cloneType->defaultConstructor = newfn;
 
@@ -1179,7 +1191,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
 
   } else {
     newfn = instantiate_function(defPoint->parentStmt, this, &substitutions, generic_substitutions, &map);
-    new_ast_functions.add(newfn);
+    add_new_ast_functions(newfn);
     instantiatedTo->add(newfn);
   }
 

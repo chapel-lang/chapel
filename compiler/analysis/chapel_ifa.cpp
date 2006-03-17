@@ -500,11 +500,14 @@ BaseAST_to_Sym(BaseAST *b) {
 
 static void
 install_new_asts(Vec<FnSymbol *> &funs, Vec<TypeSymbol *> &types) {
-  Vec<BaseAST *> syms;
+  Vec<BaseAST *> syms, tsyms;
   forv_Vec(FnSymbol, f, funs)
     collect_asts(&syms, f->defPoint->parentStmt);
   forv_Vec(TypeSymbol, t, types)
     collect_asts(&syms, t->defPoint->parentStmt);
+  tsyms.move(syms);
+  syms.set_union(tsyms);
+  syms.set_to_vec();
   qsort(syms.v, syms.n, sizeof(syms.v[0]), compar_baseast);
   qsort(funs.v, funs.n, sizeof(funs.v[0]), compar_baseast);
   map_asts(syms);
@@ -557,7 +560,7 @@ install_new_asts(Vec<FnSymbol *> &funs, Vec<TypeSymbol *> &types) {
   forv_Vec(FnSymbol, fsym, funs) {
     Fun *f = fsym->asymbol->sym->fun;
     if (f->nested_in && funs_set.set_in(f->nested_in))
-      build_patterns(pdb->fa, f);
+      add_patterns(pdb->fa, f);
   }
   if1_write_log();
 }
