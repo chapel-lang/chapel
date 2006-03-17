@@ -26,7 +26,7 @@ class CreationSet;
 class ATypeViolation;
 class CDB;
 class Patterns;
-class Match;
+class MatchCache;
 class MPosition;
 class EntrySet;
 
@@ -174,7 +174,7 @@ class AVar : public gc {
   Setters                       *setter_class;
   MarkMap                       *mark_map;
   CSMap                         *cs_map;
-  Match                         *match_cache;
+  MatchCache                    *match_cache;
   Sym                           *type;
   int                           ivar_offset;
   uint                          in_send_worklist:1;
@@ -190,8 +190,6 @@ class AVar : public gc {
 
 typedef MapElem<MPosition *, AVar *> MapMPositionAVar;
 #define form_MPositionAVar(_p, _v) form_Map(MapMPositionAVar, _p, _v)
-typedef MapElem<MPosition *, AType *> MapElemMPositionAType;
-#define form_MPositionAType(_p, _v) form_Map(MapMPositionAType, _p, _v)
 
 class ATypeChainHashFns {
  public:

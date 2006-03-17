@@ -97,21 +97,17 @@ class Match : public gc {
   Fun *fun;
   Map<MPosition *, AType *> formal_filters; // formal -> type, positional-only and takes into account all arguments
   unsigned int is_partial : 1;
-  // used to verify the match cache
-  unsigned int call_is_closure : 1;
-  unsigned int call_partial : 3;
   
   Match(Fun *afun) : fun(afun), is_partial(0) { assert(afun); }
-  Match(Match &m) : fun(m.fun), is_partial(m.is_partial) { 
+  Match(Match &m) : fun(m.fun), is_partial(m.is_partial) {
     formal_filters.copy(m.formal_filters); 
-    call_is_closure = m.call_is_closure;
-    call_partial = m.call_partial;
   }
 };
 #define forv_Match(_p, _v) forv_Vec(Match, _p, _v)
 
-typedef MapElem<MPosition *, AType *> MapMPositionAType;
-#define form_MPositionAType(_p, _v) form_Map(MapMPositionAType, _p, _v)
+typedef Map<MPosition *, AType *> MapMPositionAType;
+typedef MapElem<MPosition *, AType *> MapMPositionATypeElem;
+#define form_MPositionAType(_p, _v) form_Map(MapMPositionATypeElem, _p, _v)
 typedef MapElem<MPosition *, MPosition *> MapMPositionMPosition;
 #define form_MPositionMPosition(_p, _v) form_Map(MapMPositionMPosition, _p, _v)
 typedef MapElem<Sym *, Sym *> MapSymSym;
@@ -128,5 +124,7 @@ int pattern_match(Vec<AVar *> &args, AVar *send, int is_closure, Partial_kind pa
                   Vec<Match *> &matches);
 MPosition *cannonicalize_mposition(MPosition &p);
 MPosition *build_arg_positions(Fun *f, MPosition *up = 0);
+
+extern int pattern_match_hits, pattern_match_complete, pattern_matches;
 
 #endif

@@ -46,7 +46,7 @@ static int creation_set_id = 1;
 static int entry_set_id = 1;
 
 static FA *fa = 0;
-static Timer pass_timer;
+static Timer pass_timer, match_timer, extend_timer;
 
 static ChainHash<AType *, ATypeChainHashFns> cannonical_atypes;
 static ChainHash<Setters *, SettersHashFns> cannonical_setters;
@@ -1427,6 +1427,7 @@ function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> 
     a.add(args.v[j]);
   Vec<Match *> matches;
   AVar *send = make_AVar(p->lvals.v[0], es);
+  match_timer.start();
   if (pattern_match(a, send, is_closure, partial, matches)) {
     forv_Match(m, matches) {
       if (!m->is_partial && partial != Partial_ALWAYS)
@@ -1441,6 +1442,7 @@ function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> 
 #endif
     }
   }
+  match_timer.stop();
   return matches.n ? partial_result : -1;
 }
 
@@ -2641,11 +2643,11 @@ initialize() {
 
 static void
 initialize_pass() {
+  pass_timer.restart();
   type_violations.clear();
   type_violation_hash.clear();
   entry_set_done.clear();
   refresh_top_edge(fa->top_edge);
-  pass_timer.restart();
 }
 
 static void
@@ -3652,7 +3654,7 @@ clear_splits() {
 static int
 extend_analysis() {
   int analyze_again = 0;
-  Timer extend_timer;
+  extend_timer.restart();
   compute_recursive_entry_sets();
   compute_recursive_entry_creation_sets();
   clear_splits();
@@ -3687,14 +3689,36 @@ extend_analysis() {
     // 4) split AEdges(s) and EntrySet(s) for violations based on type using dynamic dispatch
     analyze_again = split_for_violations(type_violations);
   }
+  extend_timer.stop();
+  int again = 0;
   if (analyze_again) {
-    ++analysis_pass;
-    if (ifa_verbose) printf("PASS %d COMPLETE: %g second, extending: %g seconds\n", analysis_pass, pass_timer.time, extend_timer.snap());
-    log(LOG_SPLITTING, "======== pass %d ========\n", analysis_pass);
     clear_results();
-    return 1;
+    again = 1;
   }
-  return 0;
+  pass_timer.stop();
+  ++analysis_pass;
+  if (ifa_verbose) {
+    double flow = pass_timer.time - extend_timer.time - match_timer.time;
+    printf("PASS %d COMPLETE: %f seconds, %f flow (%d%%), %f match (%d%%), %f extend (%d%%)\n", 
+           analysis_pass, pass_timer.time, 
+           flow, (int)(flow*100.0/pass_timer.time),
+           match_timer.time, (int)(match_timer.time*100.0/pass_timer.time),
+           extend_timer.time, (int)(extend_timer.time*100.0/pass_timer.time));
+  }
+  match_timer.accumulate();
+  extend_timer.accumulate();
+  pass_timer.accumulate();
+  log(LOG_SPLITTING, "======== pass %d ========\n", analysis_pass);
+  if (!again && ifa_verbose) {
+    double flow = pass_timer.accumulator[0] - extend_timer.accumulator[0] - match_timer.accumulator[0];
+    printf("COMPLETE: %f seconds, %f flow (%d%%), %f match (%d%%) cached (%d%%), %f extend (%d%%)\n", 
+           pass_timer.accumulator[0], 
+           flow, (int)(flow*100.0/pass_timer.accumulator[0]),
+           match_timer.accumulator[0], (int)(match_timer.accumulator[0]*100.0/pass_timer.accumulator[0]),
+           (int)(((double)pattern_match_hits / (double)pattern_match_complete) * 100.0),
+           extend_timer.accumulator[0], (int)(extend_timer.accumulator[0]*100.0/pass_timer.accumulator[0]));
+  }
+  return again;
 }
 
 static void 
