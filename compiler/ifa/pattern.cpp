@@ -64,6 +64,7 @@ class Matcher {
   AVar *arg0;
   IFAAST *ast;
   int is_closure;
+  int is_error;
   Partial_kind partial;
   PMatchMap match_map;
   Vec<Fun *> function_values; // functions passed in directly and varargs functions
@@ -255,6 +256,7 @@ Matcher::Matcher(AVar *asend, AVar *aarg0, int ais_closure, Partial_kind apartia
   send = asend;
   arg0 = aarg0;
   is_closure = ais_closure;
+  is_error = 0;
   partial = apartial;
   ast = asend->var->def->code->ast;
 }
@@ -782,9 +784,11 @@ Matcher::instantiation_wrappers_and_partial_application(Vec<Fun *> &matches) {
   }
   complete.set_to_vec();
   new_matches.set_to_vec();
-  if (complete.n > 1)
+  if (complete.n > 1) {
     type_violation(ATypeViolation_DISPATCH_AMBIGUITY, arg0, arg0->out, send, 
                    new Vec<Fun *>(complete));
+    is_error = 1;
+  }
   matches.move(new_matches);
 }
 
@@ -1186,14 +1190,16 @@ Matcher::cannonicalize_matches(Vec<Fun *> &partial_matches, int is_closure, Part
         m->formal_filters.v[i].value = make_AType(*m->formal_filters.v[i].value);
     matches.add(m);
   }
-  MatchCache *mc = send->match_cache;
-  if (!mc)
-    mc = send->match_cache = new MatchCache;
-  MatchCacheEntry *e = new MatchCacheEntry(is_closure, partial);
-  mc->add(e);
-  e->all_args.copy(all_args);
-  forv_Match(m, matches)
-    e->add(new Match(*m));
+  if (!is_error) {
+    MatchCache *mc = send->match_cache;
+    if (!mc)
+      mc = send->match_cache = new MatchCache;
+    MatchCacheEntry *e = new MatchCacheEntry(is_closure, partial);
+    mc->add(e);
+    e->all_args.copy(all_args);
+    forv_Match(m, matches)
+      e->add(new Match(*m));
+  }
 }
 
 static void 
