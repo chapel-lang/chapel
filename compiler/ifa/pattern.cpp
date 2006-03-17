@@ -291,6 +291,8 @@ positional_to_named(CreationSet *cs, AVar *av, MPosition &pp, MPosition *np) {
   return 0;
 }
 
+// This is an approximation.  It should really take into account
+// the specific CreationSet which contributed at each MPosition
 static void
 add_all_args(MapMPositionAType &m, MPosition *cp, AType *t) {
   AType *tt = m.get(cp);
