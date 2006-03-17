@@ -59772,3 +59772,13 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp fa.h pattern.cpp pattern.h timer.h 
 
+---------------------------------------------------------------------------
+
+03/16/06 16:02:11 -- jplevyak
+
+Log message:
+	Add a comment regarding a limitation of the cache.
+
+Modified files:
+	chapel/compiler/ifa/: pattern.cpp 
+
