@@ -59875,3 +59875,16 @@ Log message:
 Removed files:
 	chapel/test/types/type_variables/deitz/: test_datablock.future 
 
+---------------------------------------------------------------------------
+
+03/20/06 11:50:22 -- deitz
+
+Log message:
+	Remove .future and update .good of working test.  There is a
+	performance problem here, but we can deal with that later.
+
+Modified files:
+	chapel/test/classes/deitz/inherit/: test_inherit3.good 
+Removed files:
+	chapel/test/classes/deitz/inherit/: test_inherit3.future 
+
