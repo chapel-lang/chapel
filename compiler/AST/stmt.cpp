@@ -252,9 +252,9 @@ bool ReturnStmt::returnsVoid() {
 }
 
 
-BlockStmt::BlockStmt(AList<Stmt>* init_body, blockStmtType init_blockType) :
+BlockStmt::BlockStmt(AList<Stmt>* init_body, BlockTag init_blockTag) :
   Stmt(STMT_BLOCK),
-  blockType(init_blockType),
+  blockTag(init_blockTag),
   body(init_body),
   blkScope(NULL),
   pre_loop(NULL),
@@ -262,9 +262,9 @@ BlockStmt::BlockStmt(AList<Stmt>* init_body, blockStmtType init_blockType) :
 {}
 
 
-BlockStmt::BlockStmt(Stmt* init_body, blockStmtType init_blockType) :
+BlockStmt::BlockStmt(Stmt* init_body, BlockTag init_blockTag) :
   Stmt(STMT_BLOCK),
-  blockType(init_blockType),
+  blockTag(init_blockTag),
   body(new AList<Stmt>(init_body)),
   blkScope(NULL),
   pre_loop(NULL),
@@ -281,7 +281,7 @@ void BlockStmt::verify() {
 
 BlockStmt*
 BlockStmt::copyInner(ASTMap* map) {
-  return new BlockStmt(COPY_INT(body), blockType);
+  return new BlockStmt(COPY_INT(body), blockTag);
 }
 
 
@@ -305,7 +305,7 @@ void BlockStmt::traverseStmt(Traversal* traversal) {
 
 
 void BlockStmt::print(FILE* outfile) {
-  switch (blockType) {
+  switch (blockTag) {
   case BLOCK_ATOMIC:
     fprintf(outfile, "atomic ");
     break;
@@ -350,124 +350,11 @@ BlockStmt::insertAtTail(BaseAST* ast) {
 bool
 BlockStmt::isLoop(void) {
   return
-    blockType == BLOCK_WHILE_DO ||
-    blockType == BLOCK_DO_WHILE ||
-    blockType == BLOCK_FOR ||
-    blockType == BLOCK_FORALL ||
-    blockType == BLOCK_ORDERED_FORALL;
-}
-
-
-ForLoopStmt::ForLoopStmt(ForLoopStmtTag initForLoopStmtTag,
-                         AList<DefExpr>* initIndices,
-                         AList<Expr>* initIterators, 
-                         BaseAST* initInnerStmt) :
-  Stmt(STMT_FORLOOP),
-  forLoopStmtTag(initForLoopStmtTag),
-  indices(initIndices),
-  iterators(initIterators),
-  innerStmt(NULL),
-  indexScope(NULL)
-{
-  if (BlockStmt* s = dynamic_cast<BlockStmt*>(initInnerStmt)) {
-    innerStmt = s;
-  } else if (Stmt* s = dynamic_cast<Stmt*>(initInnerStmt)) {
-    innerStmt = new BlockStmt(s);
-  } else if (AList<Stmt>* s = dynamic_cast<AList<Stmt>*>(initInnerStmt)) {
-    innerStmt = new BlockStmt(s);
-  }
-}
-
-
-void ForLoopStmt::verify() {
-  if (astType != STMT_FORLOOP) {
-    INT_FATAL(this, "Bad ForLoopStmt::astType");
-  }
-}
-
-
-ForLoopStmt*
-ForLoopStmt::copyInner(ASTMap* map) {
-  return new ForLoopStmt(forLoopStmtTag,
-                         COPY_INT(indices),
-                         COPY_INT(iterators),
-                         COPY_INT(innerStmt));
-}
-
-
-void ForLoopStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == indices) {
-    indices = dynamic_cast<AList<DefExpr>*>(new_ast);
-  } else if (old_ast == iterators) {
-    iterators = dynamic_cast<AList<Expr>*>(new_ast);
-  } else if (old_ast == innerStmt) {
-    innerStmt = dynamic_cast<BlockStmt*>(new_ast);
-  } else {
-    INT_FATAL(this, "Unexpected case in ForLoopStmt::replaceChild");
-  }
-}
-
-
-void ForLoopStmt::traverseStmt(Traversal* traversal) {
-  SymScope* saveScope = NULL;
-  if (indexScope)
-    saveScope = Symboltable::setCurrentScope(indexScope);
-  TRAVERSE(indices, traversal, false);
-  TRAVERSE(iterators, traversal, false);
-  TRAVERSE(innerStmt, traversal, false);
-  if (saveScope)
-    Symboltable::setCurrentScope(saveScope);
-}
-
-
-void ForLoopStmt::print(FILE* outfile) {
-  switch (forLoopStmtTag) {
-  case FORLOOPSTMT_FOR:
-    fprintf(outfile, "for ");
-    break;
-  case FORLOOPSTMT_ORDEREDFORALL:
-    fprintf(outfile, "ordered forall ");
-    break;
-  case FORLOOPSTMT_FORALL:
-    fprintf(outfile, "forall ");
-    break;
-  }
-  indices->print(outfile);
-  fprintf(outfile, " in ");
-  iterators->print(outfile);
-  innerStmt->print(outfile);
-}
-
-
-void ForLoopStmt::codegenStmt(FILE* outfile) {
-  DefExpr* index = indices->first();
-
-  fprintf(outfile, "{\n");
-  index->sym->codegenDef(outfile);
-  switch (forLoopStmtTag) {
-  case FORLOOPSTMT_FOR:
-    fprintf(outfile, "_FOR_S(");
-    break;
-  case FORLOOPSTMT_ORDEREDFORALL:
-    fprintf(outfile, "_FORALL_S(");
-    break;
-  case FORLOOPSTMT_FORALL:
-    fprintf(outfile, "_FORALL_S(");
-    break;
-  }
-  index->sym->codegen(outfile);
-  fprintf(outfile, ", ");
-  iterators->only()->codegen(outfile);
-  fprintf(outfile, ", ");
-  ClassType* seqType = dynamic_cast<ClassType*>(iterators->only()->typeInfo());
-  fprintf(outfile, "%s", seqType->fields.v[1]->type->symbol->cname);
-  fprintf(outfile, ", ");
-  fprintf(outfile, "%ld", id);
-  fprintf(outfile, ") {\n");
-  innerStmt->codegen(outfile);
-  fprintf(outfile, "\n");
-  fprintf(outfile, "}\n");
-  fprintf(outfile, "}\n");
+    blockTag == BLOCK_WHILE_DO ||
+    blockTag == BLOCK_DO_WHILE ||
+    blockTag == BLOCK_FOR ||
+    blockTag == BLOCK_FORALL ||
+    blockTag == BLOCK_ORDERED_FORALL;
 }
 
 

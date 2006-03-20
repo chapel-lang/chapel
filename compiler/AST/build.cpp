@@ -40,9 +40,9 @@ static void build_loop_labels(BlockStmt* body) {
 
 
 AList<Stmt>* build_while_do_block(Expr* cond, BlockStmt* body) {
-  if (body->blockType != BLOCK_NORMAL)
+  if (body->blockTag != BLOCK_NORMAL)
     INT_FATAL(body, "Abnormal block passed to build_while_do_block");
-  body->blockType = BLOCK_WHILE_DO;
+  body->blockTag = BLOCK_WHILE_DO;
   build_loop_labels(body);
   AList<Stmt>* stmts = new AList<Stmt>();
   stmts->insertAtTail(new LabelStmt(new DefExpr(body->pre_loop)));
@@ -54,9 +54,9 @@ AList<Stmt>* build_while_do_block(Expr* cond, BlockStmt* body) {
 
 
 AList<Stmt>* build_do_while_block(Expr* cond, BlockStmt* body) {
-  if (body->blockType != BLOCK_NORMAL)
+  if (body->blockTag != BLOCK_NORMAL)
     INT_FATAL(body, "Abnormal block passed to build_do_while_block");
-  body->blockType = BLOCK_DO_WHILE;
+  body->blockTag = BLOCK_DO_WHILE;
   build_loop_labels(body);
   AList<Stmt>* stmts = new AList<Stmt>();
   stmts->insertAtTail(new LabelStmt(new DefExpr(body->pre_loop)));
@@ -67,24 +67,44 @@ AList<Stmt>* build_do_while_block(Expr* cond, BlockStmt* body) {
 }
 
 
-AList<Stmt>* build_for_block(ForLoopStmt* stmt) {
+AList<Stmt>* build_for_block(BlockTag tag,
+                             AList<DefExpr>* indices,
+                             AList<Expr>* iterators,
+                             BlockStmt* body) {
+  static int uid = 1;
+  if (body->blockTag != BLOCK_NORMAL)
+    INT_FATAL(body, "Abnormal block passed to build_for_block");
+  body->blockTag = tag;
   AList<Stmt>* stmts = new AList<Stmt>();
-  BlockStmt* body = new BlockStmt(stmt);
-  switch (stmt->forLoopStmtTag) {
-  case FORLOOPSTMT_FOR:
-    body->blockType = BLOCK_FOR;
-    break;
-  case FORLOOPSTMT_FORALL:
-    body->blockType = BLOCK_FORALL;
-    break;
-  case FORLOOPSTMT_ORDEREDFORALL:
-    body->blockType = BLOCK_ORDERED_FORALL;
-    break;
-  }
   build_loop_labels(body);
+  VarSymbol* index = new VarSymbol(stringcat("_index_", intstring(uid)));
+  if (indices->length() > 1) {
+    int i = 1;
+    for_alist(DefExpr, indexDef, indices) {
+      indexDef->remove();
+      indexDef->init = new CallExpr(index, new_IntLiteral(i++));
+      body->insertAtHead(indexDef);
+    }
+  } else {
+    DefExpr* indexDef = indices->only();
+    indexDef->remove();
+    indexDef->init = new SymExpr(index);
+    body->insertAtHead(indexDef);
+  }
+  VarSymbol* iterator = new VarSymbol(stringcat("_iterator_", intstring(uid)));
+  VarSymbol* cursor = new VarSymbol(stringcat("_cursor_", intstring(uid)));
+  stmts->insertAtTail(new DefExpr(iterator, iterators->only()->copy()));
+  stmts->insertAtTail(new DefExpr(cursor, new CallExpr(new CallExpr(".", iterator, new_StringLiteral("getHeadCursor")))));
   stmts->insertAtTail(new LabelStmt(new DefExpr(body->pre_loop)));
+
+  stmts->insertAtTail(new CondStmt(new CallExpr("not", new CallExpr(new CallExpr(".", iterator, new_StringLiteral("isValidCursor?")), cursor)), new GotoStmt(goto_normal, body->post_loop)));
+
+  stmts->insertAtTail(new DefExpr(index, new CallExpr(new CallExpr(".", iterator, new_StringLiteral("getValue")), cursor)));
   stmts->insertAtTail(body);
+  stmts->insertAtTail(new CallExpr("=", cursor, new CallExpr(new CallExpr(".", iterator, new_StringLiteral("getNextCursor")), cursor)));
+  stmts->insertAtTail(new GotoStmt(goto_normal, body->pre_loop));
   stmts->insertAtTail(new LabelStmt(new DefExpr(body->post_loop)));
+  uid++;
   return stmts;
 }
 

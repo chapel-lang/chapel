@@ -82,17 +82,6 @@ void Fixup::preProcessStmt(Stmt* stmt) {
     }
   }
 
-  if (ForLoopStmt* forStmt = dynamic_cast<ForLoopStmt*>(stmt)) {
-    if (!verifyParents) {
-      if (insertHelper) {
-        if (forStmt->indexScope) {
-          INT_FATAL(forStmt, "Unexpected scope in ForStmt");
-        }
-        Symboltable::pushScope(SCOPE_FORLOOP);
-      }
-    }
-  }
-
   parentStmts.add(stmt);
 }
 
@@ -110,18 +99,6 @@ void Fixup::postProcessStmt(Stmt* stmt) {
           Symboltable::removeScope(blockStmt->blkScope);
           blockStmt->blkScope = NULL;
         }
-      }
-    }
-  }
-
-  if (ForLoopStmt* forStmt = dynamic_cast<ForLoopStmt*>(stmt)) {
-    if (!verifyParents) {
-      if (insertHelper) {
-        forStmt->indexScope = Symboltable::popScope();
-        forStmt->indexScope->astParent = forStmt;
-      } else {
-        Symboltable::removeScope(forStmt->indexScope);
-        forStmt->indexScope = NULL;
       }
     }
   }

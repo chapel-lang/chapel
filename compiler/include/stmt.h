@@ -66,7 +66,7 @@ class ReturnStmt : public ExprStmt {
 };
 
 
-enum blockStmtType {
+enum BlockTag {
   BLOCK_NORMAL = 0,
   BLOCK_WHILE_DO,
   BLOCK_DO_WHILE,
@@ -80,16 +80,16 @@ enum blockStmtType {
 
 class BlockStmt : public Stmt {
  public:
-  blockStmtType blockType;
+  BlockTag blockTag;
   AList<Stmt>* body;
   SymScope* blkScope;
   LabelSymbol* pre_loop;
   LabelSymbol* post_loop;
 
   BlockStmt::BlockStmt(AList<Stmt>* init_body = new AList<Stmt>(), 
-                       blockStmtType init_blockType = BLOCK_NORMAL);
+                       BlockTag init_blockTag = BLOCK_NORMAL);
   BlockStmt::BlockStmt(Stmt* init_body,
-                       blockStmtType init_blockType = BLOCK_NORMAL);
+                       BlockTag init_blockTag = BLOCK_NORMAL);
   virtual void verify(void);
   COPY_DEF(BlockStmt);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -101,34 +101,6 @@ class BlockStmt : public Stmt {
   void insertAtTail(BaseAST* ast);
 
   bool isLoop(void);
-};
-
-
-enum ForLoopStmtTag {
-  FORLOOPSTMT_FOR,           // for ... do
-  FORLOOPSTMT_ORDEREDFORALL, // ordered forall ... do
-  FORLOOPSTMT_FORALL         // forall .. do
-};
-
-
-class ForLoopStmt : public Stmt {
- public:
-  ForLoopStmtTag forLoopStmtTag;
-  AList<DefExpr>* indices;
-  AList<Expr>* iterators;
-  BlockStmt* innerStmt;
-  SymScope* indexScope;
-
-  ForLoopStmt(ForLoopStmtTag initForLoopStmtTag,
-              AList<DefExpr>* initIndices,
-              AList<Expr>* initIterators,
-              BaseAST* initInnerStmt);
-  virtual void verify(void);
-  COPY_DEF(ForLoopStmt);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseStmt(Traversal* traversal);
-  void print(FILE* outfile);
-  void codegenStmt(FILE* outfile);
 };
 
 

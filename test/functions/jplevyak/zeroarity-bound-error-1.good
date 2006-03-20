@@ -12,13 +12,13 @@ _chpl_file.chpl:196: fwrite, f : file, val : bool
 _chpl_file.chpl:214: fwrite, f : file, x : nil_type
 _chpl_complex.chpl:8: fwrite, f : file, x : complex
 _chpl_htuple.chpl:22: fwrite, f : file, val : _htuple
-_chpl_adomain.chpl:218: fwrite, f : file, x : _adomain
-_chpl_adomain.chpl:225: fwrite, f : file, x : _aarray
-_chpl_indefinite.chpl:108: fwrite, f : file, x : _idomain
-_chpl_indefinite.chpl:115: fwrite, f : file, x : _iarray
+_chpl_adomain.chpl:248: fwrite, f : file, x : _adomain
+_chpl_adomain.chpl:255: fwrite, f : file, x : _aarray
+_chpl_indefinite.chpl:132: fwrite, f : file, x : _idomain
+_chpl_indefinite.chpl:139: fwrite, f : file, x : _iarray
 _chpl_sparse.chpl:16: fwrite, f : file, x : _sarray
-_chpl_seq.chpl:161: fwrite, f : file, s : seq
-_chpl_seq.chpl:240: fwrite, f : file, s : _aseq
+_chpl_seq.chpl:144: fwrite, f : file, s : seq
+_chpl_seq.chpl:193: fwrite, f : file, s : _aseq
 fwrite, f : file, val : _tuple1
 fwrite, f : file, val : _tuple2
 fwrite, f : file, val : _tuple3

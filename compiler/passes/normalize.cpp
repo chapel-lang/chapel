@@ -23,7 +23,6 @@ static void insert_type_default_temp(UserType* userType);
 static void initialize_out_formals(FnSymbol* fn);
 static void insert_formal_temps(FnSymbol* fn);
 static void call_constructor_for_class(CallExpr* call);
-static void normalize_for_loop(ForLoopStmt* stmt);
 static void decompose_special_calls(CallExpr* call);
 static void hack_seqcat_call(CallExpr* call);
 static void convert_user_primitives(CallExpr* call);
@@ -92,8 +91,6 @@ void normalize(BaseAST* base) {
     currentFilename = ast->filename;
     if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
       call_constructor_for_class(a);
-    } else if (ForLoopStmt* a = dynamic_cast<ForLoopStmt*>(ast)) {
-      normalize_for_loop(a);
     }
   }
 
@@ -534,30 +531,6 @@ static void call_constructor_for_class(CallExpr* call) {
 }
 
 
-static void normalize_for_loop(ForLoopStmt* stmt) {
-  if (CallExpr* call = dynamic_cast<CallExpr*>(stmt->iterators->only())) {
-    if (CallExpr* call2 = dynamic_cast<CallExpr*>(call->baseExpr)) {
-      if (call2->isNamed("_forall"))
-        return;
-    }
-  }
-
-  stmt->iterators->only()->replace(
-    new CallExpr(
-      new CallExpr(".",
-                   stmt->iterators->only()->copy(),
-                   new_StringSymbol("_forall"))));
-  if (no_infer) {
-    DefExpr* index = stmt->indices->only();
-    Expr* type = stmt->iterators->only()->copy();
-    type = new CallExpr(".", type, new_StringSymbol("_last"));
-    type = new CallExpr(".", type, new_StringSymbol("_element"));
-    if (!index->exprType)
-      index->replace(new DefExpr(index->sym, NULL, type));
-  }
-}
-
-
 static void
 decompose_multi_actuals(CallExpr* call, char* new_name, Expr* first_actual) {
   for_alist(Expr, actual, call->argList) {
@@ -874,8 +847,6 @@ static void fix_user_assign(CallExpr* call) {
 
 
 static void fix_def_expr(DefExpr* def, VarSymbol* var) {
-  if (dynamic_cast<ForLoopStmt*>(def->parentStmt))
-    return;
   static int uid = 1;
   SymExpr* initSymExpr = dynamic_cast<SymExpr*>(def->init);
   bool no_init = initSymExpr && initSymExpr->var == gUnspecified;

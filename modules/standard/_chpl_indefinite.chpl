@@ -46,6 +46,18 @@ class _idomain : _domain {
       yield inds(i);
   }
 
+  function getHeadCursor()
+    return 0;
+
+  function getNextCursor(c)
+    return c + 1;
+
+  function getValue(c)
+    return inds(c);
+
+  function isValidCursor?(c)
+    return c < num_inds;
+
   function _double() {
     size += 1;
     var inds_copy = _ddata(ind_type, _ps(size)/2);
@@ -103,6 +115,18 @@ class _iarray : value {
 
   function this(ind : ind_type) var : elt_type
     return data(dom._get_index(ind));
+
+  function getHeadCursor()
+    return 0;
+
+  function getNextCursor(c)
+    return c + 1;
+
+  function getValue(c)
+    return data(c);
+
+  function isValidCursor?(c)
+    return c < dom.num_inds;
 }
 
 function fwrite(f : file, x : _idomain) {

@@ -6,9 +6,9 @@
 Size:    Number:  Total:   Address:    Description:
 (bytes)           (bytes)  
 ================================================================================
-8        25       200      0x0805efc8  _data
-8        9        72       0x08064e70  _data
+8        25       200      0xnnnnnnnn  _data
+8        9        72       0xnnnnnnnn  _data
 
 Jacobi computation complete.
-Delta is 9.68412e-06 (< epsilon = 1e-05)
-# of iterations: 79
+Delta is 9.53674e-06 (< epsilon = 1e-05)
+# of iterations: 33

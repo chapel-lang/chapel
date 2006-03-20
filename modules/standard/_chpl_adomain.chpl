@@ -59,19 +59,37 @@ class _adomain : _domain {
   param rank : integer;
   var ranges : (rank * _aseq);
 
-  function _forall() {
-    // eventually this should be an iterator with inferred result
-    if rank == 1 {
-      var s : seq of integer;
-      for i in ranges(1) do
-        s._append_in_place(i);
-      return s;
-    } else {
-      var s : seq of (rank*integer);
-      for i in _cross(rank, ranges) do
-        s._append_in_place(i);
-      return s;
+  function getHeadCursor() {
+    var c : (rank*integer);
+    for i in 1..rank do
+      c(i) = ranges(i).getHeadCursor();
+    return c;
+  }
+
+  function getNextCursor(c) {
+    for i in 1..rank {
+      c(i) = ranges(i).getNextCursor(c(i));
+      if ranges(i).isValidCursor?(c(i)) then
+        return c;
+      else
+        c(i) = ranges(i).getHeadCursor();
     }
+    c(1) = ranges(1)._high+1;
+    return c;
+  }
+
+  function getValue(c) {
+    if rank == 1 then
+      return c(1);
+    else
+      return c;
+  }
+
+  function isValidCursor?(c) {
+    for i in 1..rank do
+      if c(i) < ranges(i)._low or c(i) > ranges(i)._high then
+        return false;
+    return true;
   }
 
   function this(dim : integer)
@@ -175,6 +193,18 @@ class _aarray : value {
   var info : (rank*2*integer);
   var size : integer;
   var data : _ddata(elt_type);
+
+  function getHeadCursor()
+    return 0;
+
+  function getNextCursor(c)
+    return c + 1;
+
+  function getValue(c)
+    return data(c);
+
+  function isValidCursor?(c)
+    return c < size;
 
   iterator this() : elt_type {
     forall x in dom

@@ -14,7 +14,6 @@
 #include "stringutil.h"
 
 static void normalize_anonymous_record_or_forall_expression(DefExpr* def);
-static void destructure_indices(ForLoopStmt* stmt);
 static void destructure_tuple(CallExpr* call);
 static void build_constructor(ClassType* ct);
 static void build_setters_and_getters(ClassType* ct);
@@ -255,8 +254,6 @@ void cleanup(BaseAST* base) {
     currentFilename = ast->filename;
     if (DefExpr* a = dynamic_cast<DefExpr*>(ast)) {
       normalize_anonymous_record_or_forall_expression(a);
-    } else if (ForLoopStmt* a = dynamic_cast<ForLoopStmt*>(ast)) {
-      destructure_indices(a);
     } else if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
       SymExpr* base = dynamic_cast<SymExpr*>(a->baseExpr);
       if (base && !strncmp(base->var->name, "_construct__tuple", 6)) {
@@ -314,27 +311,6 @@ static void normalize_anonymous_record_or_forall_expression(DefExpr* def) {
              (!strncmp("_if_fn", def->sym->name, 6))) {
     def->replace(new CallExpr(def->sym->name));
     stmt->insertBefore(def);
-  }
-}
-
-
-/*** destructure_indices
- ***
- ***   for i, j in D {    ==>    for _index_temp in D {
- ***                               i = _index_temp(1);
- ***                               j = _index_temp(2);
- ***
- ***/
-static void destructure_indices(ForLoopStmt* stmt) {
-  if (stmt->indices->length() > 1) {
-    VarSymbol* indextmp = new VarSymbol("_index_temp");
-    int i = 1;
-    for_alist(DefExpr, indexDef, stmt->indices) {
-      indexDef->remove();
-      indexDef->init = new CallExpr(indextmp, new_IntLiteral(i++));
-      stmt->innerStmt->insertAtHead(indexDef);
-    }
-    stmt->indices->insertAtTail(new DefExpr(indextmp));
   }
 }
 

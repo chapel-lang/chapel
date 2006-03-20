@@ -853,10 +853,8 @@ map_baseast(BaseAST *s) {
           case SCOPE_MODULE:
             sym->asymbol->sym->nesting_depth = 0;
             break;
-          case SCOPE_LETEXPR:
           case SCOPE_ARG:
           case SCOPE_LOCAL:
-          case SCOPE_FORLOOP:
             sym->asymbol->sym->nesting_depth = sym->nestingDepth();
             break;
           case SCOPE_CLASS: // handled as the symbols appears in code
@@ -1366,17 +1364,10 @@ define_labels(BaseAST *ast, LabelMap *labelmap) {
           target->ainfo->label[0] = if1_alloc_label(if1);
           target->ainfo->label[1] = target->ainfo->label[0];
           break;
-        case STMT_FORLOOP:
-          // handled below
-          break;
       }
       labelmap->put(if1_cannonicalize_string(if1, dynamic_cast<LabelStmt*>(stmt)->defLabel->sym->name), target);
       break;
     }
-    case STMT_FORLOOP:
-      stmt->ainfo->label[0] = if1_alloc_label(if1);
-      stmt->ainfo->label[1] = if1_alloc_label(if1);
-      break;
     default: break;
   }
   GET_AST_CHILDREN(ast, getStuff);
@@ -1392,10 +1383,6 @@ resolve_labels(BaseAST *ast, LabelMap *labelmap,
 {
   Stmt *stmt = dynamic_cast<Stmt *>(ast);
   switch (stmt->astType) {
-    case STMT_FORLOOP:
-      continue_label = stmt->ainfo->label[0];
-      break_label = stmt->ainfo->label[1];
-      break;
     case STMT_RETURN:
       stmt->ainfo->label[0] = return_label;
       break;
@@ -1423,80 +1410,6 @@ gen_expr_stmt(BaseAST *a) {
   ExprStmt *expr = dynamic_cast<ExprStmt*>(a);
   expr->ainfo->code = expr->expr->ainfo->code;
   return 0;
-}
-
-static int
-gen_forall_internal(AAST *ainfo, Code *body, Vec<Symbol*> &indices, Vec<Expr*> &iterators) {
-  if (indices.n != 1)
-    fail("forall without single indice");
-  if (iterators.n != 1)
-    fail("forall without single iterator");
-
-  // setup code: evaluate iterators and get loop variable
-  Code *setup_code = 0, *send;
-  Sym *indice = indices.v[0]->asymbol->sym;
-  if1_gen(if1, &setup_code, iterators.v[0]->ainfo->code);
-  Sym *iter = iterators.v[0]->ainfo->rval;
-  Sym *loop_var = new_sym();
-  loop_var->ast = ainfo;
-  Sym *ltmp = new_sym();
-  ltmp->ast = ainfo;
-  send = if1_send(if1, &setup_code, 2, 1, make_symbol("_forall_start"), 
-                  iter, ltmp);
-  send->ast = ainfo;
-  send->partial = Partial_NEVER;
-  if1_move(if1, &setup_code, ltmp, loop_var, ainfo);
-
-  // check for loop termination
-  Code *condition_code = 0;
-  Sym *condition_rval = new_sym();
-  send = if1_send(if1, &condition_code, 3, 1, make_symbol("_forall_valid"), 
-                  iter, loop_var, condition_rval);
-  send->ast = ainfo;
-  send->partial = Partial_NEVER;
-  // get index
-  Sym *itmp = new_sym();
-  itmp->ast = ainfo;
-  send = if1_send(if1, &condition_code, 3, 1, make_symbol("_forall_index"), 
-                  iter, loop_var, itmp);
-  send->ast = ainfo;
-  send->partial = Partial_NEVER;
-  if1_move(if1, &condition_code, itmp, indice, ainfo);
-
-  // next index code
-  Sym *ntmp = new_sym();
-  ntmp->ast = ainfo;
-  send = if1_send(if1, &body, 3, 1, make_symbol("_forall_next"), 
-                  iter, loop_var, ntmp);
-  send->ast = ainfo;
-  send->partial = Partial_NEVER;
-  if1_move(if1, &body, ntmp, loop_var, ainfo);
-
-  if (!ainfo->label[0])
-    ainfo->label[0] = if1_alloc_label(if1);
-  if (!ainfo->label[1])
-    ainfo->label[1] = if1_alloc_label(if1);
-  // build loop
-  if1_loop(if1, &ainfo->code, ainfo->label[0], ainfo->label[1],
-           condition_rval, setup_code, 
-           condition_code, 0, 
-           body, ainfo);
-  return 0;
-}
-
-static int
-gen_for(BaseAST *a) {
-  ForLoopStmt *s = dynamic_cast<ForLoopStmt*>(a);
-  Code *body = 0;
-  if1_gen(if1, &body, s->innerStmt->ainfo->code);
-  Vec<Symbol*> indices;
-  Vec<DefExpr*> indexDefs;
-  s->indices->getElements(indexDefs);
-  forv_Vec(DefExpr, indexDef, indexDefs)
-    indices.add(indexDef->sym);
-  Vec<Expr*> iterators;
-  iterators.add(s->iterators->only());
-  return gen_forall_internal(s->ainfo, body, indices, iterators);
 }
 
 static int
@@ -1747,7 +1660,6 @@ gen_if1(BaseAST *ast) {
         if1_gen(if1, &s->ainfo->code, ss->ainfo->code);
       break;
     }
-    case STMT_FORLOOP: gen_for(ast); break;
     case STMT_COND: {
       CondStmt *s = dynamic_cast<CondStmt*>(ast);
       gen_cond(s->ainfo, s->condExpr->ainfo, s->thenStmt->ainfo, 

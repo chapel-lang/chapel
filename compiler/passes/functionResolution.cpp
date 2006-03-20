@@ -480,25 +480,6 @@ resolve_call(BaseAST* ast,
   return best;
 }
 
-void resolve_for_loop(CallExpr* call) {
-  if (ForLoopStmt* loop = dynamic_cast<ForLoopStmt*>(call->parentStmt)) {
-    if (loop->iterators->only() == call) {
-      Symbol* index = loop->indices->only()->sym;
-      if (index->type == dtUnknown) {
-        Type* type = call->typeInfo();
-        if (ClassType* seq = dynamic_cast<ClassType*>(type)) {
-          if (ClassType* seqNode = dynamic_cast<ClassType*>(seq->fields.v[1]->type)) {
-            index->type = seqNode->fields.v[0]->type;
-          }
-        }
-      }
-      if (index->type == dtUnknown) {
-        INT_FATAL(index, "Could not determine type of index");
-      }
-    }
-  }
-}
-
 void
 resolve_type_expr(BaseAST* base) {
   Vec<BaseAST*> asts;
@@ -586,7 +567,6 @@ void resolve_asts(BaseAST* base) {
           if (!call->isNamed("_chpl_alloc"))
             resolve_function(fn);
           call->baseExpr->replace(new SymExpr(fn));
-          resolve_for_loop(call);
           if (fn->hasPragma("builtin"))
             call->makeOp();
         } else if (resolve_call_error != CALL_PARTIAL) {

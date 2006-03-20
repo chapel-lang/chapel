@@ -21,7 +21,7 @@ cobegin () {
     collect_asts(&asts, mod);
     forv_Vec (BaseAST, ast, asts) {
       if (BlockStmt *b=dynamic_cast<BlockStmt*>(ast)) {
-        if (BLOCK_COBEGIN == b->blockType) {
+        if (BLOCK_COBEGIN == b->blockTag) {
           for_alist (Stmt, stmt, b->body) {
             char *fname = stringcat ("_cobegin_stmt", intstring (ufid++));
             FnSymbol *fn = new FnSymbol (fname, NULL, new AList<DefExpr>(), dtVoid);

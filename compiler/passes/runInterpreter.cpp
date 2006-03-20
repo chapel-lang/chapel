@@ -225,10 +225,8 @@ IFrame::put(BaseAST *ast, ISlot *s) {
         case SCOPE_MODULE:
           global_env.put(ast,s);
           return;
-        case SCOPE_LETEXPR:
         case SCOPE_ARG:
         case SCOPE_LOCAL:
-        case SCOPE_FORLOOP:
           break;
       }
     }
@@ -2057,53 +2055,6 @@ IFrame::run(int timeslice) {
       case STMT_BLOCK: { assert(!stage);
         S(BlockStmt);
         EVAL_STMT((Stmt*)s->body->head->next);
-      }
-      case STMT_FORLOOP: {
-        S(ForLoopStmt);
-        if (!s->indices || s->indices->length() != 1)
-          INT_FATAL(ip, "interpreter: bad number of indices");
-        if (!s->iterators || s->iterators->length() != 1)
-          INT_FATAL(ip, "interpreter: bad number of iterators");
-        Expr *iter = s->iterators->only();
-        Symbol *indice = s->indices->only()->sym;
-        BaseAST *loop_var = s;
-        BaseAST *loop_valid = s->innerStmt;
-        switch (stage++) {
-          case 0: 
-            EVAL_EXPR(iter); 
-            break;
-          case 1:
-            PUSH_SELECTOR("_forall_start");
-            PUSH_VAL(iter);
-            CALL_RET(2, islot(loop_var));
-          case 2:
-            PUSH_SELECTOR("_forall_valid");
-            PUSH_VAL(iter);
-            PUSH_VAL(loop_var);
-            CALL_RET(3, islot(loop_valid));
-          case 3: {
-            ISlot *valid = islot(loop_valid);
-            check_type(ip, valid, dtBool);
-            if (!valid->imm->v_bool) {
-              stage = 0;
-              break;
-            }
-            PUSH_SELECTOR("_forall_index");
-            PUSH_VAL(iter);
-            PUSH_VAL(loop_var);
-            CALL_RET(3, islot(indice));
-          }
-          case 4:
-            EVAL_STMT(s->innerStmt);
-          case 5:
-            stage = 2;
-            PUSH_SELECTOR("_forall_next");
-            PUSH_VAL(iter);
-            PUSH_VAL(loop_var);
-            CALL_RET(3, islot(loop_var));
-          default: INT_FATAL(ip, "interpreter: bad stage %d for astType: %d", stage, ip->astType); break;
-        }
-        break;
       }
       case STMT_COND: {
         S(CondStmt);

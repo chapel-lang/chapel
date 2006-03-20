@@ -77,9 +77,8 @@ Is this "while x"(i); or "while x(i)";?
   varType vt;
   consType ct;
   intentTag pt;
-  blockStmtType blktype;
+  BlockTag btag;
   fnType ft;
-  ForLoopStmtTag flstag;
 
   Expr* pexpr;
   DefExpr* pdefexpr;
@@ -192,8 +191,8 @@ Is this "while x"(i); or "while x(i)";?
  
 %type <pt> formal_tag
 %type <ft> fn_tag
-%type <blktype> atomic_cobegin
-%type <flstag> for_stmt_tag
+%type <btag> atomic_cobegin
+%type <btag> for_tag
 
 %type <boolval> fnretref
 
@@ -401,15 +400,12 @@ for_stmt:
     { $$ = build_param_for($3, $5, $7, $9); }
 | TFOR TPARAM identifier TIN expr TDOTDOT expr parsed_block_stmt
     { $$ = build_param_for($3, $5, $7, new AList<Stmt>($8)); }
-| for_stmt_tag nonempty_expr_ls TIN nonempty_expr_ls parsed_block_stmt
-    { $$ = build_for_block(new ForLoopStmt($1, exprsToIndices($2), $4, $5)); }
-| for_stmt_tag nonempty_expr_ls TIN nonempty_expr_ls TDO stmt
-    { $$ = build_for_block(new ForLoopStmt($1, exprsToIndices($2), $4, $6)); }
+| for_tag nonempty_expr_ls TIN nonempty_expr_ls parsed_block_stmt
+    { $$ = build_for_block($1, exprsToIndices($2), $4, $5); }
+| for_tag nonempty_expr_ls TIN nonempty_expr_ls TDO stmt
+    { $$ = build_for_block($1, exprsToIndices($2), $4, new BlockStmt($6)); }
 | TLSBR nonempty_expr_ls TIN nonempty_expr_ls TRSBR stmt
-    {
-      $$ = build_for_block(
-             new ForLoopStmt(FORLOOPSTMT_FORALL, exprsToIndices($2), $4, $6));
-    }
+    { $$ = build_for_block(BLOCK_FORALL, exprsToIndices($2), $4, new BlockStmt($6)); }
 ;
 
 
@@ -1190,11 +1186,10 @@ expr:
         new FnSymbol(stringcat("_forallexpr", intstring(iterator_uid++)));
       forall_iterator->fnClass = FN_ITERATOR;
       forall_iterator->insertAtTail(
-        build_for_block(
-          new ForLoopStmt(FORLOOPSTMT_FORALL,
-                          exprsToIndices($2),
-                          $4,
-                          new ReturnStmt($6, true))));
+        build_for_block(BLOCK_FORALL,
+                        exprsToIndices($2),
+                        $4,
+                        new BlockStmt(new ReturnStmt($6, true))));
       $$ = new CallExpr(new DefExpr(forall_iterator));
     }
 | TLSBR nonempty_expr_ls TRSBR
@@ -1340,13 +1335,13 @@ atomic_cobegin:
 ;
 
 
-for_stmt_tag:
+for_tag:
   TFOR
-    { $$ = FORLOOPSTMT_FOR; }
-| TORDERED TFORALL
-    { $$ = FORLOOPSTMT_ORDEREDFORALL; }
+    { $$ = BLOCK_FOR; }
 | TFORALL
-    { $$ = FORLOOPSTMT_FORALL; }
+    { $$ = BLOCK_FORALL; }
+| TORDERED TFORALL
+    { $$ = BLOCK_ORDERED_FORALL; }
 ;
 
 

@@ -9,7 +9,6 @@
 #include "../passes/runInterpreter.h"
 
 #include "../traversals/createConfigVarTable.h"
-#include "../traversals/createNestedFuncIterators.h"
 #include "../traversals/fixup.h"
 #include "../traversals/htmlview.h"
 #include "../traversals/inlineFunctions.h"
@@ -32,7 +31,6 @@ REGISTER(cleanup);
 REGISTER(codegen);
 REGISTER(copy_propagation);
 REGISTER(createConfigVarTable);
-REGISTER(createNestedFuncIterators);
 REGISTER(fixup);
 REGISTER(functionResolution);
 REGISTER(inlineFunctions);

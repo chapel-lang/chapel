@@ -142,9 +142,7 @@ check_normalized_def_before_use(FnSymbol* fn) {
       if (dynamic_cast<VarSymbol*>(sym->var))
         if (sym->var->defPoint && sym->var->defPoint->parentSymbol == fn)
           if (!defined.set_in(sym->var))
-            // hack for for loop statements which are not very normal
-            if (!dynamic_cast<ForLoopStmt*>(sym->var->defPoint->parentStmt))
-              USR_FATAL(sym, "Variable '%s' used before defined", sym->var->name);
+            USR_FATAL(sym, "Variable '%s' used before defined", sym->var->name);
     }
   }
 }

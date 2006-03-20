@@ -6,4 +6,5 @@ var D : domain(2) = [1..n, 1..n];
 writeln(D);
 
 writeln("Iterating over D:");
-writeln(D._forall());
+for i in D do
+  writeln(i);

@@ -33,6 +33,18 @@ class seq : value {
       halt("error: sequence index out-of-bounds, index is ", i);
   }
 
+  function getHeadCursor()
+    return _first;
+
+  function getNextCursor(c)
+    return c._next;
+
+  function getValue(c)
+    return c._element;
+
+  function isValidCursor?(c)
+    return c != nil;
+
   function length : integer
     return _length;
 
@@ -109,22 +121,6 @@ class seq : value {
     }
     return new;     
   }
-
-  iterator _for() : elt_type {
-    var tmp = _first;
-    while tmp != nil {
-      yield tmp._element;
-      tmp = tmp._next;
-    }
-  }
-
-  iterator _forall() : elt_type {
-    var tmp = _first;
-    while tmp != nil {
-      yield tmp._element;
-      tmp = tmp._next;
-    }
-  }
 }
 
 //function =(s1: seq, s2) {
@@ -133,19 +129,6 @@ class seq : value {
 //
 //  return s1;
 //}
-
-function _forall_start(s : seq) {
-  return s._first;
-}
-function _forall_index(s : seq, e) {
-  return e._element;
-}
-function _forall_next(s : seq, e) {
-  return e._next;
-}
-function _forall_valid(s : seq, e) {
-  return e != nil;
-}
 
 function #(s1 : seq, s2 : seq) {
   return s1._concat(s2);
@@ -179,56 +162,26 @@ record _aseq {
   var _high : integer;
   var _stride : integer;
 
-  iterator _for() : integer {
-    if (_stride > 0) {
-      var i = _low;
-      while i <= _high {
-        yield i;
-        i = i + _stride;
-      }
-    } else {
-      var i = _high;
-      while i >= _low {
-        yield i;
-        i = i + _stride;
-      }
-    }
-  }
+  function getHeadCursor()
+    if _stride > 0 then
+      return _low;
+    else
+      return _high;
 
-  iterator _forall() : integer {
-    if (_stride > 0) {
-      var i = _low;
-      while i <= _high {
-        yield i;
-        i = i + _stride;
-      }
-    } else {
-      var i = _high;
-      while i >= _low {
-        yield i;
-        i = i + _stride;
-      }
-    }
-  }
+  function getNextCursor(c)
+    return c + _stride;
+
+  function getValue(c)
+    return c;
+
+  function isValidCursor?(c)
+    return _low <= c and c <= _high;
 
   function length : integer
     return
       (if _stride > 0
         then (_high - _low + _stride) / _stride
         else (_low - _high + _stride) / _stride);
-}
-
-function _forall_start(s : _aseq) {
-  return s._low;
-}
-function _forall_index(s : _aseq, e) {
-  return e;
-}
-function _forall_next(s : _aseq, e) {
-  return e + s._stride;
-}
-function _forall_valid(s : _aseq, e) {
-  return e < s._high;
 }
 
 function by(s : _aseq, i : integer)

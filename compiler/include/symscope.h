@@ -9,8 +9,6 @@ enum scopeType {
   SCOPE_MODULE = 0,           // less is all modules
   SCOPE_ARG,
   SCOPE_LOCAL,
-  SCOPE_FORLOOP,
-  SCOPE_LETEXPR,
   SCOPE_CLASS,
 };
 
