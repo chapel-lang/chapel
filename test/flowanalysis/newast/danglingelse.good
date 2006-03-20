@@ -1,7 +1,5 @@
-::_tmp(danglingelse.chpl:24) ( int64 )
-::_tmp(danglingelse.chpl:27) ( int64 )
-::a(danglingelse.chpl:2) ( int64 )
-::b(danglingelse.chpl:4) ( int64 )
-function __init_danglingelse danglingelse.chpl:3
-function main danglingelse.chpl:3
-globals
+ called from 24 in __init_danglingelse at danglingelse.chpl:3
+::b(danglingelse.chpl:4) 
+Internal error: MIS0214 chpl Version 0.3.2860
+assert fa.cpp:2379: css.n
+function _assignplus3 danglingelse.chpl:24

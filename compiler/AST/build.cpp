@@ -124,6 +124,36 @@ AList<Stmt>* build_param_for(char* index, Expr* low, Expr* high, AList<Stmt>* st
 }
 
 
+AList<Stmt>* build_assignplus(Expr* lhs, Expr* rhs) {
+  static int uid = 1;
+  FnSymbol* fn;
+  AList<Stmt>* stmts = new AList<Stmt>();
+
+  fn = new FnSymbol(stringcat("_assignplus", intstring(uid)));
+  fn->formals =
+    new AList<DefExpr>(
+      new DefExpr(
+        new ArgSymbol(INTENT_BLANK, "_lhs", dtAny)));
+  fn->addPragma("inline");
+  fn->insertAtTail(new CallExpr("=", lhs->copy(), new CallExpr("+", lhs->copy(), rhs->copy())));
+  stmts->insertAtTail(new DefExpr(fn));
+
+  fn = new FnSymbol(stringcat("_assignplus", intstring(uid)));
+  fn->formals =
+    new AList<DefExpr>(
+      new DefExpr(
+        new ArgSymbol(INTENT_BLANK, "_lhs", dtUnknown), NULL,
+          new SymExpr("_domain")));
+  fn->addPragma("inline");
+  fn->insertAtTail(new CallExpr(new CallExpr(".", lhs->copy(), new_StringLiteral("add")), rhs->copy()));
+  stmts->insertAtTail(new DefExpr(fn));
+
+  stmts->insertAtTail(new CallExpr(fn->name, lhs->copy()));
+  uid++;
+  return stmts;
+}
+
+
 AList<Stmt>* build_type_select(AList<Expr>* exprs, AList<WhenStmt>* whenstmts) {
   static int uid = 1;
   FnSymbol* fn;

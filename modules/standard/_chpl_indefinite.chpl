@@ -59,7 +59,7 @@ class _idomain : _domain {
     return c < num_inds;
 
   function _double() {
-    size += 1;
+    size = size + 1;
     var inds_copy = _ddata(ind_type, _ps(size)/2);
     inds_copy.init();
     for i in 0.._ps(size-1)/2-1 do
@@ -80,7 +80,7 @@ class _idomain : _domain {
         return i;
       if inds(table(i)-1) == ind then
         return i;
-      probe += 1;
+      probe = probe + 1;
     }
     return -1;
   }
@@ -90,7 +90,7 @@ class _idomain : _domain {
 
   function add(ind : ind_type) {
     if (table(_map(ind)) == 0) {
-      num_inds += 1;
+      num_inds = num_inds + 1;
       if num_inds == _ps(size)/2 then
         _double();
       table(_map(ind)) = num_inds;

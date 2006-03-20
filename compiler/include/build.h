@@ -15,6 +15,7 @@ AList<Stmt>* build_for_block(BlockTag tag,
                              AList<Expr>* iterators,
                              BlockStmt* body);
 AList<Stmt>* build_param_for(char* index, Expr* low, Expr* high, AList<Stmt>* stmts);
+AList<Stmt>* build_assignplus(Expr* lhs, Expr* rhs);
 AList<Stmt>* build_type_select(AList<Expr>* s, AList<WhenStmt>* whenstmts);
 
 #endif

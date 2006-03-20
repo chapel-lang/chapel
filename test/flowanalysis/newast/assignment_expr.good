@@ -1,3 +1,5 @@
+ called from 11 in __init_assignment_expr at assignment_expr.chpl:15
+::_lhs(assignment_expr.chpl:11) ( int64 )
 ::_tmp(assignment_expr.chpl:11) ( int64 )
 ::_tmp(assignment_expr.chpl:14) ( int64 )
 ::_tmp(assignment_expr.chpl:5) ( int64 )
@@ -6,5 +8,6 @@
 ::n(assignment_expr.chpl:2) ( int64 )
 ::o(assignment_expr.chpl:3) ( int64 )
 function __init_assignment_expr assignment_expr.chpl:15
-function main assignment_expr.chpl:15
+function _assignplus3 assignment_expr.chpl:11
+function main assignment_expr.chpl:11
 globals

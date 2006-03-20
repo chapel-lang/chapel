@@ -100,7 +100,6 @@ class _ddata {
   }
 }
 
-
 //
 // MOVE THESE, maybe to a memory module?
 //

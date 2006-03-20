@@ -472,8 +472,7 @@ assign_stmt:
     }
 | lvalue TASSIGNPLUS expr TSEMI
     {
-      $$ = new AList<Stmt>(new CallExpr("=", $1,
-             new CallExpr("+", $1->copy(), $3)));
+      $$ = build_assignplus($1, $3);
     }
 | lvalue TASSIGNMINUS expr TSEMI
     {
