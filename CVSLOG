@@ -59864,3 +59864,14 @@ Modified files:
 Removed files:
 	chapel/test/types/type_variables/deitz/: test_nested1.future 
 
+---------------------------------------------------------------------------
+
+03/20/06 08:49:50 -- deitz
+
+Log message:
+	Removed .future of now-working test.  It was failing because of the
+	visibility of a nested function in an instantiated function.
+
+Removed files:
+	chapel/test/types/type_variables/deitz/: test_datablock.future 
+
