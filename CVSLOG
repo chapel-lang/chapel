@@ -59976,3 +59976,13 @@ Modified files:
 	                                  danglingelse.good 
 	                                  whileLoop.good 
 
+---------------------------------------------------------------------------
+
+03/20/06 14:07:18 -- deitz
+
+Log message:
+	Removed .future for working indefinite domain with += test.
+
+Removed files:
+	chapel/test/arrays/deitz/: test_indefinite6.future 
+
