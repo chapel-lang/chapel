@@ -59888,3 +59888,71 @@ Modified files:
 Removed files:
 	chapel/test/classes/deitz/inherit/: test_inherit3.future 
 
+---------------------------------------------------------------------------
+
+03/20/06 13:36:23 -- deitz
+
+Log message:
+	Started transformation of how iterators are handled.  The basic idea
+	is that classes which can be iterated over, like sequences, domains,
+	and arrays, support functions that return the first element, return a
+	next element (based on a given element), and return true if there is
+	another element.  The ForLoopStmt is thus transformed into a loop that
+	calls these statements.
+	
+	This greatly improves the implementation of iterating over a domain as
+	we no longer create the sequence of indices.
+	
+	To handle iterators, which is not yet done as they currently just
+	return sequences which are iterated over, we will change the iterator
+	function into an iterator class that supports the iterator
+	functionality.
+	
+	Normalized ForLoopStmt to use above functions and removed it.
+	
+	Added support for iteration over arithmetic arrays.
+	
+	Removed bogus test test/arrays/deitz/test_array_class1.chpl.
+	
+	Added tests of iteration over 1D domains and iteration over arithmetic
+	arrays.
+	
+	Updated a few test outputs.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp bb.cpp build.cpp stmt.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: baseAST.h build.h stmt.h symscope.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: cleanup.cpp functionResolution.cpp 
+	                         normalize.cpp parallel.cpp 
+	                         runInterpreter.cpp semanticChecks.cpp 
+	chapel/compiler/traversals/: Makefile.share fixup.cpp 
+	                             htmlview.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	                          _chpl_indefinite.chpl _chpl_seq.chpl 
+	chapel/test/arrays/deitz/: test_domains_2D.chpl 
+	                           test_domains_2D.good 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/demo/review_060130/: jacobi2.good 
+	chapel/test/flowanalysis/newast/: domarr.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-1.good 
+	                                 zeroarity-bound-error-2.good 
+	chapel/test/memory/shannon/: printMemTable.good 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+Added files:
+	chapel/test/arrays/deitz/: test_array_traverse1.chpl 
+	                           test_array_traverse1.good 
+	                           test_domain_1D.chpl 
+	                           test_domain_1D.good 
+	chapel/test/types/seq/bradc/: emptySeq2.future 
+Removed files:
+	chapel/compiler/traversals/: createNestedFuncIterators.cpp 
+	                             createNestedFuncIterators.h 
+	chapel/test/arrays/deitz/: test_array_class1.chpl 
+	                           test_array_class1.future 
+	                           test_array_class1.good 
+
