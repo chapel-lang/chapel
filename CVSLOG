@@ -59956,3 +59956,23 @@ Removed files:
 	                           test_array_class1.future 
 	                           test_array_class1.good 
 
+---------------------------------------------------------------------------
+
+03/20/06 14:06:10 -- deitz
+
+Log message:
+	Implemented += on indefinite domains to be equivalent to the add
+	method so d += 2 is the same as d.add(2).
+	
+	This is done with a nested overloaded function similar to how type
+	select is implemented, and this could be implemented with type select.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+	chapel/compiler/include/: build.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/modules/standard/: _chpl_base.chpl _chpl_indefinite.chpl 
+	chapel/test/flowanalysis/newast/: assignment_expr.good 
+	                                  danglingelse.good 
+	                                  whileLoop.good 
+
