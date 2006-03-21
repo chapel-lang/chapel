@@ -60753,3 +60753,14 @@ Removed files:
 	                                             varNameEnumQM.cfghelp 
 	                                             varNameQMark.cfghelp 
 
+---------------------------------------------------------------------------
+
+03/21/06 09:13:55 -- jplevyak
+
+Log message:
+	Fix assert in danglingelse.chpl test.
+	Comment issue with nested functions.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
