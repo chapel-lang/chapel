@@ -892,7 +892,11 @@ entry_set_compatibility(AEdge *e, EntrySet *es) {
     return 0;
   switch (edge_type_compatible_with_entry_set(e, es)) {
     case 1: break;
-    case 0: val -= 4; break;
+    case 0: 
+      if (!analysis_pass && e->match->fun->split_eager)
+        return 0;
+      val -= 4; 
+      break;
     case -1: return 0;
   }
   if (!edge_sset_compatible_with_entry_set(e, es))

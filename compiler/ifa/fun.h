@@ -60,6 +60,7 @@ class Fun : public gc {
   uint fa_collected : 1;
   uint clone_for_constants : 1;
   uint split_unique : 1; // must be split uniquely for each caller
+  uint split_eager : 1; // split eagerly for different argument types
   Vec<EntrySet *> ess;
   Vec<Var *> fa_Vars;
   Vec<Var *> fa_all_Vars;

@@ -2014,6 +2014,8 @@ finalize_function(Fun *fun, int instantiation) {
   FnSymbol *f = dynamic_cast<FnSymbol*>(SYMBOL(fn));
   if (f->hasPragma("split unique"))
     fun->split_unique = 1;
+  if (f->hasPragma("split eager"))
+    fun->split_eager = 1;
 }
 
 void
@@ -2348,7 +2350,7 @@ static void
 alloc_transfer_function(PNode *pn, EntrySet *es) {
   AVar *tav = make_AVar(pn->rvals.v[2], es);
   AVar *result = make_AVar(pn->lvals.v[0], es);
-  forv_CreationSet(cs, *tav->out) {
+  forv_CreationSet(cs, tav->out->sorted) {
     Sym *ts = cs->sym;
     if (ts->is_meta_type) ts = ts->meta_type;
     if (ts->asymbol && is_scalar_type(SYMBOL(ts)))
