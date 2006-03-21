@@ -61313,3 +61313,22 @@ Modified files:
 	                                   localType2.chpl 
 	chapel/test/types/typedefs/jplevyak/: copy_typedef-1.chpl 
 
+---------------------------------------------------------------------------
+
+03/21/06 13:30:37 -- deitz
+
+Log message:
+	Implemented general serial reduction mechanism.
+	
+	Implemented standard reduction sum, but there must be a better way to
+	do this.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+	chapel/compiler/include/: build.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/modules/standard/: _chpl_seq.chpl 
+Added files:
+	chapel/test/types/seq/deitz/: test_reduce1.chpl 
+	                              test_reduce1.good 
+
