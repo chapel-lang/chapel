@@ -60764,3 +60764,15 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+03/21/06 11:02:58 -- jplevyak
+
+Log message:
+	Change "split unique" to "split eager" to reduce the number of analysis
+	  clones for common functions (like =).
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: fa.cpp fun.h 
+
