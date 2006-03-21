@@ -1,4 +1,4 @@
-function foo(x : integer = 4) {
+function foo(x : int = 4) {
   writeln("foo of ", x);
   bar(x);
   bar();

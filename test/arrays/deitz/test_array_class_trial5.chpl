@@ -3,7 +3,7 @@ class array1d {
   var x1 : t;
   var x2 : t;
   var x3 : t;
-  function indexedby(i : integer) : t {
+  function indexedby(i : int) : t {
     var result : t;
     select i {
       when 1 do result = x1;
@@ -14,7 +14,7 @@ class array1d {
     write("[Read on ", i, " returns ", result, "]");
     return result;
   }
-  function =indexedby(i : integer, val : t) : t {
+  function =indexedby(i : int, val : t) : t {
     select i {
       when 1 do x1 = val;
       when 2 do x2 = val;
@@ -26,7 +26,7 @@ class array1d {
   }
 }
 
-var a : array1d(integer) = array1d(integer);
+var a : array1d(int) = array1d(int);
 
 a.indexedby(1) = 3;
 a.indexedby(2) = 2;
@@ -36,16 +36,16 @@ writeln(a.indexedby(1), a.indexedby(2), a.indexedby(3));
 class array2d {
   type t;
   var data : array1d(t) = array1d(t);
-  function indexedby(i : integer, j : integer) : t {
+  function indexedby(i : int, j : int) : t {
     return data.indexedby((i - 1) * 2 + j);
   }
-  function =indexedby(i : integer, j : integer, val : t) : t {
+  function =indexedby(i : int, j : int, val : t) : t {
     data.indexedby((i - 1) * 2 + j) = val;
     return val;
   }
 }
 
-var a2 : array2d(integer) = array2d(integer);
+var a2 : array2d(int) = array2d(int);
 
 a2.indexedby(1, 1) = 4;
 writeln(a2.indexedby(1, 1));

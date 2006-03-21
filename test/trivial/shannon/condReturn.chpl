@@ -6,7 +6,7 @@ function buildC() {
   return C();
 }
 
-function foo(x: integer ...?numargs) {
+function foo(x: int ...?numargs) {
   writeln("In foo()");
   if (numargs > 1) {
     return buildC();

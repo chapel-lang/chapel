@@ -1,4 +1,4 @@
-function foo(x : integer = 2, y : integer = x * x) : integer {
+function foo(x : int = 2, y : int = x * x) : int {
   return x + y;
 }
 

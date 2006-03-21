@@ -10,7 +10,7 @@ function _build_domain(x : _domain)
 function _build_domain(ranges : _aseq ...?rank)
   return _adomain(rank, ranges);
 
-function _build_domain_type(param rank : integer)
+function _build_domain_type(param rank : int)
   return _adomain(rank);
 
 function _build_domain_type(type ind_type)
@@ -26,11 +26,11 @@ function _build_array_type(dom, type elt_type)
 
 ///////////////
 
-function _aseq._translate(i : integer) : _aseq {
+function _aseq._translate(i : int) : _aseq {
   return _low+i.._high+i by _stride;
 }
 
-function _aseq._interior(i : integer) : _aseq {
+function _aseq._interior(i : int) : _aseq {
   var x : _aseq = _low.._high by _stride;
   if (i < 0) {
     x = _low.._low-1-i by _stride;
@@ -40,7 +40,7 @@ function _aseq._interior(i : integer) : _aseq {
   return x;
 }
 
-function _aseq._exterior(i : integer) : _aseq {
+function _aseq._exterior(i : int) : _aseq {
   var x : _aseq = _low.._high by _stride;
   if (i < 0) {
     x = _low+i.._low-1 by _stride;
@@ -50,17 +50,17 @@ function _aseq._exterior(i : integer) : _aseq {
   return x;
 }
 
-function _aseq._expand(i : integer) : _aseq {
+function _aseq._expand(i : int) : _aseq {
   return _low-i.._high+i by _stride;
 }
 
 
 class _adomain : _domain {
-  param rank : integer;
+  param rank : int;
   var ranges : (rank * _aseq);
 
   function getHeadCursor() {
-    var c : (rank*integer);
+    var c : (rank*int);
     for i in 1..rank do
       c(i) = ranges(i).getHeadCursor();
     return c;
@@ -92,7 +92,7 @@ class _adomain : _domain {
     return true;
   }
 
-  function this(dim : integer)
+  function this(dim : int)
     return ranges(dim);
 
   function _build_array(type elt_type)
@@ -101,18 +101,18 @@ class _adomain : _domain {
   function _build_sparse_domain()
     return _sdomain(rank, adomain=this);
 
-  function translate(dim : (rank*integer)) {
+  function translate(dim : (rank*int)) {
     var x = _adomain(rank);
     for i in 1..rank do
       x.ranges(i) = this(i)._translate(dim(i));
     return x;
   }
 
-  function translate(dim : integer ...?numDims) {
+  function translate(dim : int ...?numDims) {
     return translate(dim);
   }
 
-  function interior(dim : (rank*integer)) {
+  function interior(dim : (rank*int)) {
     var x = _adomain(rank);
     for i in 1..rank do {
       if ((dim(i) > 0) and (this(i)._high+1-dim(i) < this(i)._low) or
@@ -124,22 +124,22 @@ class _adomain : _domain {
     return x;
   }
 
-  function interior(dim : integer ...?numDims) {
+  function interior(dim : int ...?numDims) {
     return interior(dim);
   }
 
-  function exterior(dim : (rank*integer)) {
+  function exterior(dim : (rank*int)) {
     var x = _adomain(rank);
     for i in 1..rank do
       x.ranges(i) = this(i)._exterior(dim(i));
     return x;
   }
   
-  function exterior(dim : integer ...?numDims) {
+  function exterior(dim : int ...?numDims) {
     return exterior(dim);
   }
 
-  function expand(dim : (rank*integer)) {
+  function expand(dim : (rank*int)) {
     var x = _adomain(rank);
     for i in 1..rank do {
       x.ranges(i) = ranges(i)._expand(dim(i));
@@ -150,7 +150,7 @@ class _adomain : _domain {
     return x;
   }  
   
-  function expand(dim : integer ...?numDims) {
+  function expand(dim : int ...?numDims) {
     var x = _adomain(rank);
     if (rank == numDims) {
       -- NOTE: would probably like to get rid of this assignment
@@ -169,14 +169,14 @@ class _adomain : _domain {
 }
 
 
-function by(dom : _adomain, dim : (dom.rank*integer)) {
+function by(dom : _adomain, dim : (dom.rank*int)) {
   var x = _adomain(dom.rank);
   for i in 1..dom.rank do
     x.ranges(i) = dom.ranges(i) by dim(i);
   return x;
 }
 
-function by(dom : _adomain, dim : integer) {
+function by(dom : _adomain, dim : int) {
   var x = _adomain(dom.rank);
   for i in 1..dom.rank do
     x.ranges(i) = dom.ranges(i) by dim;
@@ -186,12 +186,12 @@ function by(dom : _adomain, dim : integer) {
 
 class _aarray : value {
   type elt_type;
-  param rank : integer;
+  param rank : int;
 
   var dom : _adomain(rank);
 
-  var info : (rank*2*integer);
-  var size : integer;
+  var info : (rank*2*int);
+  var size : int;
   var data : _ddata(elt_type);
 
   function getHeadCursor()
@@ -211,10 +211,10 @@ class _aarray : value {
       yield x; 
   }
 
-  function off(dim : integer) var
+  function off(dim : int) var
     return info(dim)(1);
 
-  function blk(dim : integer) var
+  function blk(dim : int) var
     return info(dim)(2);
 
   function initialize() {
@@ -229,19 +229,19 @@ class _aarray : value {
     data.init();
   }
 
-  function this(ind : (rank*integer)) var : elt_type {
+  function this(ind : (rank*int)) var : elt_type {
     for i in 1..rank do
       if not _in(dom(i), ind(i)) {
         writeln("out of bounds error ", ind);
         exit(0);
       }
-    var sum : integer;
+    var sum : int;
     for i in 1..rank do
       sum = sum + (ind(i) - off(i)) * blk(i);
     return data(sum);
   }
 
-  function this(ind : integer ...?rank) var : elt_type
+  function this(ind : int ...?rank) var : elt_type
     return this(ind);
 }
 
@@ -253,7 +253,7 @@ function fwrite(f : file, x : _adomain) {
 }
 
 function fwrite(f : file, x : _aarray) {
-  var i : (x.rank*integer);
+  var i : (x.rank*int);
   for dim in 1..x.rank do
     i(dim) = x.dom(dim)._low;
   label next while true {

@@ -10,6 +10,6 @@ var f : foo of string;
 f.x = "hello world";
 writeln(f.x);
 
-var g : foo of integer;
+var g : foo of int;
 g.x = 2;
 writeln(g.x);

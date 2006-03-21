@@ -1,10 +1,10 @@
 class myclass {
-  var a: integer;
+  var a: int;
   var b: float;
 }
 
 record myrecord {
-  var a: seq(integer);
+  var a: seq(int);
 }
 
 function main() {

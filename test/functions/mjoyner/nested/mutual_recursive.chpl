@@ -1,7 +1,7 @@
 function bar() {
-  var x : integer = 12;
-  var y : integer = 15;
-  var z : integer = 18;
+  var x : int = 12;
+  var y : int = 15;
+  var z : int = 18;
   function foo() {
     writeln(x);
     if (x > 0) {

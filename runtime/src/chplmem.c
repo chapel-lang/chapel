@@ -53,8 +53,8 @@ static int memtrace = 0;
 static int memtraceSet = 0;
 static int memtrack = 0;
 static int memtrackSet = 0;
-static _integer64 memmaxValue = 0;
-static _integer64 memthresholdValue = 0;
+static _int64 memmaxValue = 0;
+static _int64 memthresholdValue = 0;
 static FILE* memlog = NULL;
 static size_t totalMem = 0;  /* total memory currently allocated */
 static size_t maxMem = 0;    /* maximum total memory during run  */
@@ -70,7 +70,7 @@ void initMemTable(void) {
 }
 
 
-void setMemmax(_integer64 value) {
+void setMemmax(_int64 value) {
   memmaxValue = value;
   setMemstat();
 }
@@ -87,7 +87,7 @@ void setMemtrack(void) {
 }
 
 
-void setMemthreshold(_integer64 value) {
+void setMemthreshold(_int64 value) {
   if (!memlog) {
     char* message = "--memthreshold useless when used without --memtrace";
     printError(message);
@@ -168,7 +168,7 @@ void printFinalMemStat(void) {
 }
 
 
-void printMemTable(_integer64 threshold) {
+void printMemTable(_int64 threshold) {
   if (!memtrack) {
     char* message = "The printMemTable function only works with the "
       "--memtrack flag";
@@ -383,8 +383,8 @@ static void printToMemLog(size_t number, size_t size, char* description,
   }
 }
 
-void* _chpl_alloc(size_t size, _integer64 id, char* description) {
-  _integer64 *ptr = (_integer64*)_chpl_malloc(1, size + sizeof(_integer64), description);
+void* _chpl_alloc(size_t size, _int64 id, char* description) {
+  _int64 *ptr = (_int64*)_chpl_malloc(1, size + sizeof(_int64), description);
   *ptr = id;
   return (void*)(ptr + 1);
 }

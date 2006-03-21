@@ -1,5 +1,5 @@
 record foo {
-  param x : integer;
+  param x : int;
   var str : string;
 }
 

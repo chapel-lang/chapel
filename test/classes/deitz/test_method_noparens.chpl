@@ -1,5 +1,5 @@
 class foo {
-  var a : integer;
+  var a : int;
   function bar {
     if a < 100
       then return true;

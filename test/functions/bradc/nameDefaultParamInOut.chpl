@@ -1,5 +1,5 @@
 
-function callinout2(inout x: integer = 100, inout y: integer = 200): integer {
+function callinout2(inout x: int = 100, inout y: int = 200): int {
   x += 1;
   y += 1;
   writeln("in callinout2, x is: ", x, ", y is: ", y);
@@ -8,9 +8,9 @@ function callinout2(inout x: integer = 100, inout y: integer = 200): integer {
 }
 
 function main() {
-  var a: integer = 10;
-  var b: integer = 30;
-  var r: integer;
+  var a: int = 10;
+  var b: int = 30;
+  var r: int;
 
   r = callinout2(x=a);
   writeln("at callsite, a is: ", a, ", b is: ", b, ", r is: ", r);

@@ -2,8 +2,8 @@
 
 module rand;
 
-var some_number : integer = 56;
-var some_other_number : integer = 57;
+var some_number : int = 56;
+var some_other_number : int = 57;
 
 
 module main;  -- what is the name of the module containing "main" ??

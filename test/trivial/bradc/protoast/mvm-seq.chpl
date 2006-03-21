@@ -4,8 +4,8 @@
 -- b) renamed reduce to sum
 -- c) changed whitespace
 
-var m : integer = 100; 
-var n : integer = 200;
+var m : int = 100; 
+var n : int = 200;
 
 var Mat : domain(2) = (1..m, 1..n);
 var Col : domain(2) = (1 /* * */, 1..n);  -- used to be flood

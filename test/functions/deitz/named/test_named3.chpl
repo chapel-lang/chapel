@@ -1,8 +1,8 @@
-function foo(i : integer, j : integer, k : integer) {
+function foo(i : int, j : int, k : int) {
   writeln("foo1 of ", i, ", ", j, ", ", k);
 }
 
-function foo(l : integer, m : integer, n : integer) {
+function foo(l : int, m : int, n : int) {
   writeln("foo2 of ", l, ", ", m, ", ", n);
 }
 

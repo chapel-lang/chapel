@@ -1,6 +1,6 @@
 
 pragma "inline" function foo() {
-  var i : integer = 0;
+  var i : int = 0;
   while(i < 10) {
     i = i + 1;
     writeln(i);

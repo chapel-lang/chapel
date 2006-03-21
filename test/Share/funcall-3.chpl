@@ -15,7 +15,7 @@ function binsearch(x : [?lo..?hi] , y]) {
 
 var d : domain(1);
 d = 1..5;
-var a[d] : integer;
+var a[d] : int;
 
 a[1] = 1;
 a[2] = 2;

@@ -1,4 +1,4 @@
-var one: integer = 1;
+var one: int = 1;
 
 if (!one) {
    writeln("This shouldn't have printed.");

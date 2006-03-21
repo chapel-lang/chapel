@@ -1,5 +1,5 @@
-function integer.print() {
-  writeln("integer.print = ", this);
+function int.print() {
+  writeln("int.print = ", this);
 }
 
 writeln(12);

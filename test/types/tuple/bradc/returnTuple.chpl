@@ -1,11 +1,11 @@
-function returntwo(): (integer, float) {
+function returntwo(): (int, float) {
   return (1, 2.3);
 }
 
-var x: integer;
+var x: int;
 var y: float;
 
-var t: (integer, float);
+var t: (int, float);
 
 t = returntwo();
 

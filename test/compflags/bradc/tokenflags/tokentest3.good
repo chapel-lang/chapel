@@ -1,6 +1,6 @@
 tokentest3.chpl
 =============================================================
-  7 |  var x : integer = 1 ;
+  7 |  var x : int = 1 ;
   5 |  writeln ( "test1" ) ;
   5 |  writeln ( 'test2' ) ;
   5 |  writeln ( '\"test3\"' ) ;

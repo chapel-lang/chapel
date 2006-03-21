@@ -2,12 +2,12 @@ function printout(s : string) {
   writeln("The string is '", s, "'");
 }
 
-function printout(i : integer) {
-  writeln("The integer is ", i);
+function printout(i : int) {
+  writeln("The int is ", i);
 }
 
 class foo {
-  var x : integer;
+  var x : int;
   function print() {
     printout(x);
   }

@@ -295,7 +295,7 @@ check_type(BaseAST *ast, ISlot *slot, Type *t) {
         if (t == dtUnsigned && slot->imm->num_index == IF1_INT_TYPE_64) break;
         goto Lerror;
       case IF1_NUM_KIND_INT:
-        if (t == dtInteger && slot->imm->num_index == IF1_INT_TYPE_64) break;
+        if (t == dtInt && slot->imm->num_index == IF1_INT_TYPE_64) break;
         goto Lerror;
       case IF1_NUM_KIND_FLOAT:
         if (t == dtFloat && slot->imm->num_index == IF1_FLOAT_TYPE_64) break;
@@ -1529,7 +1529,7 @@ get_enum_from_index(EnumType *tt, int i) {
 }
 
 int
-convert_enum_to_integer(ISlot *slot) {
+convert_enum_to_int(ISlot *slot) {
   if (slot->kind == SYMBOL_ISLOT)
     if (EnumSymbol *e = dynamic_cast<EnumSymbol*>(slot->symbol)) {
       slot->kind = IMMEDIATE_ISLOT;
@@ -1635,7 +1635,7 @@ IFrame::iprimitive(CallExpr *s) {
     }
     case PRIM_FCLOSE: {
       check_prim_args(s, 1);
-      check_type(s, arg[0], dtInteger);
+      check_type(s, arg[0], dtInt);
       result.kind = IMMEDIATE_ISLOT;
       result.imm = new Immediate;
       *result.imm = fclose((FILE*)(intptr_t)arg[0]->imm->v_int64);
@@ -1643,7 +1643,7 @@ IFrame::iprimitive(CallExpr *s) {
     }
     case PRIM_STRERROR: {
       check_prim_args(s, 1);
-      check_type(s, arg[0], dtInteger);
+      check_type(s, arg[0], dtInt);
       result.kind = IMMEDIATE_ISLOT;
       result.imm = new Immediate;
       *result.imm = strerror((int)arg[0]->imm->v_int64);
@@ -1651,7 +1651,7 @@ IFrame::iprimitive(CallExpr *s) {
     }
     case PRIM_FPRINTF: {
       check_prim_args(s, 3);
-      check_type(s, arg[0], dtInteger);
+      check_type(s, arg[0], dtInt);
       check_string(s, arg[1]);
       result.kind = IMMEDIATE_ISLOT;
       result.imm = new Immediate;
@@ -1721,7 +1721,7 @@ IFrame::iprimitive(CallExpr *s) {
     case PRIM_ARRAY_INIT: {
       check_prim_args(s, 3);
       check_kind(s, arg[0], OBJECT_ISLOT);
-      check_type(s, arg[1], dtInteger);
+      check_type(s, arg[1], dtInt);
       IObject *a = arg[0]->object;
       int len = arg[1]->imm->v_int64;
       a->array.fill(len);
@@ -1734,7 +1734,7 @@ IFrame::iprimitive(CallExpr *s) {
       check_prim_args(s, 2);
       check_kind(s, arg[0], OBJECT_ISLOT);
       IObject *a = arg[0]->object;
-      check_type(s, arg[1], dtInteger);
+      check_type(s, arg[1], dtInt);
       int index = arg[1]->imm->v_int64;
       if (index < 0 || index >= a->array.n) {
         user_error(this, "array_index out of range (%d of %d)", index, a->array.n);
@@ -1747,7 +1747,7 @@ IFrame::iprimitive(CallExpr *s) {
       check_prim_args(s, 3);
       check_kind(s, arg[0], OBJECT_ISLOT);
       IObject *a = arg[0]->object;
-      check_type(s, arg[1], dtInteger);
+      check_type(s, arg[1], dtInt);
       int index = arg[1]->imm->v_int64;
       if (index < 0 || index >= a->array.n) {
         user_error(this, "array_set out of range (%d of %d)", index, a->array.n);
@@ -1882,7 +1882,7 @@ IFrame::iprimitive(CallExpr *s) {
     case PRIM_STRING_INDEX: {
       check_prim_args(s, 2);
       check_string(s, arg[0]);
-      check_type(s, arg[1], dtInteger);
+      check_type(s, arg[1], dtInt);
       int i = arg[1]->imm->v_int64;
       if ((int)strlen(arg[0]->imm->v_string) >= i) {
         user_error(this, "string_index out of range %d", i);
@@ -1911,8 +1911,8 @@ IFrame::iprimitive(CallExpr *s) {
     case PRIM_STRING_SELECT: {
       check_prim_args(s, 3);
       check_string(s, arg[0]);
-      check_type(s, arg[1], dtInteger);
-      check_type(s, arg[2], dtInteger);
+      check_type(s, arg[1], dtInt);
+      check_type(s, arg[2], dtInt);
       int i = arg[1]->imm->v_int64;
       int j = arg[2]->imm->v_int64;
       int l = strlen(arg[0]->imm->v_string);
@@ -1927,9 +1927,9 @@ IFrame::iprimitive(CallExpr *s) {
     case PRIM_STRING_STRIDED_SELECT: {
       check_prim_args(s, 4);
       check_string(s, arg[0]);
-      check_type(s, arg[1], dtInteger);
-      check_type(s, arg[2], dtInteger);
-      check_type(s, arg[3], dtInteger);
+      check_type(s, arg[1], dtInt);
+      check_type(s, arg[2], dtInt);
+      check_type(s, arg[3], dtInt);
       int i = arg[1]->imm->v_int64;
       int j = arg[2]->imm->v_int64;
       int stride = arg[3]->imm->v_int64;

@@ -1,5 +1,5 @@
 writeln(x);
 
-config var x : integer = 12;
+config var x : int = 12;
 
 writeln(x);

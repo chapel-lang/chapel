@@ -1,7 +1,7 @@
 var complexNumber: complex = 1.2 + 3.4i;
 var f: file = file(filename = "freadComplex.txt", mode = "r");
-var i: integer = 0;
-var numTestCases: integer = 8;
+var i: int = 0;
+var numTestCases: int = 8;
 
 f.open;
 

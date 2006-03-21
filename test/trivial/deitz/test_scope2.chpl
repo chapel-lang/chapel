@@ -1,4 +1,4 @@
-function foo(i : integer) : float {
+function foo(i : int) : float {
   return i * 3.0;
 }
 

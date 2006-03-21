@@ -19,8 +19,8 @@
 enum classVals {S, W, A, B, C, D, O};
 
 
-const probSize: [S..O] integer = (/32, 64, 256, 256, 512, 1024, 256/);
-const iterations: [S..O] integer = (/4, 40, 4, 20, 20, 50, 4/);
+const probSize: [S..O] int = (/32, 64, 256, 256, 512, 1024, 256/);
+const iterations: [S..O] int = (/4, 40, 4, 20, 20, 50, 4/);
 const checksum: [S..O] float  = (/0.0000530770700573,
                                   0.00000000000000000250391406439,
                                   0.000002433365309,
@@ -311,17 +311,17 @@ function randlc(x, a) {
   var t1, t2, t3, t4, a1, a2, x1, x2, y: float;
 
   t1 = r23 * x;
-  a1 = t1:integer;
+  a1 = t1:int;
   a2 = a - t23 * a1;
 
   t1 = r23 * x;
-  x1 = t1:integer;
+  x1 = t1:int;
   x2 = x - t23 * x1;
   t1 = a1 * x2 + a2 * x1;
-  t2 = (r23 * t1):integer;
+  t2 = (r23 * t1):int;
   y = t1 - t23 * t2;
   t3 = t23 * y + a2 * x2;
-  t3 = (r46 * t3):integer;
+  t3 = (r46 * t3):int;
   x = t3 - t46 * t4;
 
   return r46 * x;

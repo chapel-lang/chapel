@@ -1,11 +1,11 @@
 /* testing the functionality of indexing into sequences */
 function main() {
-  var sequ1 : seq of integer = (/ 5 /); 
-  var sequ2 : seq of integer = (/ 4, 18 /);
-  var sequ4 : seq of integer =  (/ 1, 2, 3, 4, 5, 6, 7 /);
+  var sequ1 : seq of int = (/ 5 /); 
+  var sequ2 : seq of int = (/ 4, 18 /);
+  var sequ4 : seq of int =  (/ 1, 2, 3, 4, 5, 6, 7 /);
   
   /* 1 element sequences */ 
-  var index_int : integer = sequ1(1);
+  var index_int : int = sequ1(1);
   writeln("sequ1(1) is ", index_int);
   
   /* 2 element sequences */

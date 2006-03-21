@@ -1,5 +1,5 @@
 class foo {
-  var x : integer;
+  var x : int;
   function bar() {
     writeln("method bar ", x);
   }

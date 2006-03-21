@@ -1,6 +1,6 @@
-var x: integer = 2;
+var x: int = 2;
 
-function foo(x: integer) {
+function foo(x: int) {
   var x = 4;
   writeln("then x is: ", x);
 }

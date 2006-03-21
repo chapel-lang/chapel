@@ -1,5 +1,5 @@
-var d : domain(integer);
-var a : [d] integer;
+var d : domain(int);
+var a : [d] int;
 
 d.add(2);
 d.add(0);

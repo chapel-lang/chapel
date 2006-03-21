@@ -14,6 +14,6 @@ class C {
   }
 }
 
-var c = C(integer);
+var c = C(int);
 c.foo();
 writeln(c);

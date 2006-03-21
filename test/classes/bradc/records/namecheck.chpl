@@ -1,9 +1,9 @@
 class R {
-  var x: integer;
+  var x: int;
   var y: float;
 }
 
-var x: integer = 3;
+var x: int = 3;
 var y: float = 1.2;
 
 var r = R(x = x, y = y);

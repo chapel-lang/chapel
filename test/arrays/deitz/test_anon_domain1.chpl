@@ -1,6 +1,6 @@
-config var n : integer = 12;
+config var n : int = 12;
 
-var A : [1..n] integer;
+var A : [1..n] int;
 
 forall i in 1..n {
   A(i) = i;

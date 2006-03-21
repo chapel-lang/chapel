@@ -1,10 +1,10 @@
 class R {
-  var x: integer;
+  var x: int;
   var y: float;
 }
 
 function foo() {
-  var x: integer = 1;
+  var x: int = 1;
   var y: float = 2.3;
 
   var r = R(x = x, y = y);
@@ -14,7 +14,7 @@ function foo() {
 
 function bar() {
   var x: float = 4.5;
-  var y: integer = 6;
+  var y: int = 6;
 
   var r = R(x = y, y = x);
 

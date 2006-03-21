@@ -1,4 +1,4 @@
-foo(integer) called
+foo(int) called
   2
 foo(type t) called
   0.0

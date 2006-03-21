@@ -9,7 +9,7 @@ function main() {
   main(y);
 }
 
-function main(x: integer) {
+function main(x: int) {
   writeln("In main(x), x is: ", x);
 }
 

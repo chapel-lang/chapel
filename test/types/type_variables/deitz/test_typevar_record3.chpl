@@ -6,7 +6,7 @@ class node {
 
 record foo {
   type t;
-  var length : integer;
+  var length : int;
   var first : node(t);
   var last : node(t);
 
@@ -38,7 +38,7 @@ function fwrite(fp: file, f : foo) {
   fwrite(fp, "/)");
 }
 
-var f : foo(integer);
+var f : foo(int);
 
 f.append(1);
 f.append(2);

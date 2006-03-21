@@ -1,6 +1,6 @@
 -- let's look at conditional expressions versus if statements
 
-function zap(a: integer, b : integer) : integer {
+function zap(a: int, b : int) : int {
   if (if a == b then a < 10 else a >= 10) then return 1;
   else return 2;
 }

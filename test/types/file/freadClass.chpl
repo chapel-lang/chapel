@@ -1,5 +1,5 @@
 class myClass {
-  var x: integer;
+  var x: int;
   var y: float;
 }
 

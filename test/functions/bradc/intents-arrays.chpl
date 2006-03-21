@@ -1,4 +1,4 @@
-config var n: integer = 6;
+config var n: int = 6;
 var D: domain(1) = (1..n);
 
 function callin(in x) {

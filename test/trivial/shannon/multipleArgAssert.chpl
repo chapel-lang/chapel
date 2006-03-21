@@ -1,4 +1,4 @@
-var x : integer = 1;
+var x : int = 1;
 
 while (x) {
   assert(x != 10, "x = ", x);

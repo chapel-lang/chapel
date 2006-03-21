@@ -1,5 +1,5 @@
 class C {
-  var x : integer = 10;
+  var x : int = 10;
 }
 
 var c : C;

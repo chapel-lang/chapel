@@ -5,37 +5,37 @@ config const scale = 9;
 
 -- input values to describe the graph.  Override these on the
 -- executable's command-line using the -s flag
-config const totVertices: integer = 2**scale;
-config const maxCliqueSize : integer = 10;
+config const totVertices: int = 2**scale;
+config const maxCliqueSize : int = 10;
 config const probUnidirectional: float = 0.3;
-config const maxParallelEdges: integer = 3;
+config const maxParallelEdges: int = 3;
 config const probIntercliqueEdges: float = 0.6;
-config const percentIntegerWeights: float = 0.6;
-config const maxIntWeight: integer = 8**scale;
-config const maxStrLen: integer = ceil(scale/6.0);
+config const percentIntWeights: float = 0.6;
+config const maxIntWeight: int = 8**scale;
+config const maxStrLen: int = ceil(scale/6.0);
 
-config const cliqueGeneratorsPerLocale: integer = 1;
-config const numCliqueGenerators: integer = numLocales * cliqueGeneratorsPerLocale;
+config const cliqueGeneratorsPerLocale: int = 1;
+config const numCliqueGenerators: int = numLocales * cliqueGeneratorsPerLocale;
 
 
 union weightType {
-  var intWeight: integer;
+  var intWeight: int;
   var stringWeight: string;
 }
 
 record edgeTuple {
-  var start: integer;
-  var stop: integer;
+  var start: int;
+  var stop: int;
   var weight: weightType;
 }
 
 
-function randomInt(maxint: integer) {
+function randomInt(maxint: int) {
   halt("Need to implement randomInt()");
   return 0;
 }
 
-function randomString(strlen: integer) {
+function randomString(strlen: int) {
   halt("Need to implement randomString()");
   return "<empty>";
 }
@@ -48,10 +48,10 @@ function randomFloat(maxval: float = 1.0) {
 
 function generateDirectedEdges(start, stop) {
   var edges: seq(edgeTuple);
-  var numParallelEdges: integer = randomInt(maxParallelEdges);
+  var numParallelEdges: int = randomInt(maxParallelEdges);
   forall parEdge in 1..numParallelEdges { -- could drop "parEdge"
     var weight: weightType;
-    if (randomFloat() < percentIntegerWeights) {
+    if (randomFloat() < percentIntWeights) {
       weight.intWeight = randomInt(maxIntWeight);
     } else {
       weight.stringWeight = randomString(maxStrLen);
@@ -103,7 +103,7 @@ function generateEdgeList() {
 
   forall g in 1..numCliqueGenerators { -- could drop "g"
     while (numVerticesRemaining != totVertices) {
-      var cliqueSize: integer;
+      var cliqueSize: int;
       atomic {
         cliqueSize = min(randomInt(maxCliqueSize), numVerticesRemaining);
         numVerticesRemaining -= cliqueSize;
@@ -123,11 +123,11 @@ function kernel2(soughtString: string) {
 }
 
 
-function kernel3(subGraphEdgeLength: integer) {
+function kernel3(subGraphEdgeLength: int) {
 }
 
 
-function kernel4(maxClusterSize: integer, k4alpha) {
+function kernel4(maxClusterSize: int, k4alpha) {
 }
 
 
@@ -138,7 +138,7 @@ function writeConfigs() {
   writeln("probUnidirectional = ", probUnidirectional);
   writeln("maxParallelEdges = ", maxParallelEdges);
   writeln("probIntercliqueEdges = ", probIntercliqueEdges);
-  writeln("percentIntegerWeights = ", percentIntegerWeights);
+  writeln("percentIntWeights = ", percentIntWeights);
   writeln("maxIntWeight = ", maxIntWeight);
   writeln("maxStrLen = ", maxStrLen);
 }

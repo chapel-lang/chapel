@@ -3,5 +3,5 @@ function foo(type t) {
   writeln(x);
 }
 
-foo(integer);
+foo(int);
 foo(float);

@@ -1,9 +1,9 @@
 module red {
-  var x : integer = 8;
+  var x : int = 8;
 }
 
 module blue {
-  var y : integer = 4;
+  var y : int = 4;
 
   use red;
 

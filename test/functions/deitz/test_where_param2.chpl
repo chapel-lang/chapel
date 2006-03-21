@@ -1,4 +1,4 @@
-function foo(param i : integer) 
+function foo(param i : int) 
   where i == 1;
 {
 // this syntax is nolonger legal
@@ -6,7 +6,7 @@ function foo(param i : integer)
   writeln("Alpha");
 }
 
-function foo(param i : integer) 
+function foo(param i : int) 
   where i == 2;
 {
 // this syntax is nolonger legal

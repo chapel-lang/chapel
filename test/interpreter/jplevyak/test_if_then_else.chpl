@@ -1,5 +1,5 @@
-var a : integer = 1;
-var b : integer = 0;
+var a : int = 1;
+var b : int = 0;
 
 writeln("Start");
 if b then

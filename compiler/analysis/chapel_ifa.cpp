@@ -1181,7 +1181,7 @@ build_builtin_symbols() {
   build_module(sym_system, sym_system->init);
 
   sym_bool = dtBool->asymbol->sym;
-  sym_int64 = dtInteger->asymbol->sym;
+  sym_int64 = dtInt->asymbol->sym;
   sym_float64 = dtFloat->asymbol->sym;
   sym_complex64 = dtComplex->asymbol->sym;
   sym_string = dtString->asymbol->sym;

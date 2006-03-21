@@ -8,4 +8,4 @@ function foo(c : C(?u)) {
   writeln("foo of ", c, " with y = ", y);
 }
 
-foo(C(integer, 2));
+foo(C(int, 2));

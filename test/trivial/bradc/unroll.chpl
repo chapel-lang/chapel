@@ -1,6 +1,6 @@
 
-function foo(x: integer) {
-  writeln("Got an integer");
+function foo(x: int) {
+  writeln("Got an int");
 }
 
 function foo(x: float) {

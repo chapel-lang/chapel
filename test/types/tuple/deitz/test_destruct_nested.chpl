@@ -1,4 +1,4 @@
-var t : (integer, (integer, integer));
+var t : (int, (int, int));
 t(1) = 1;
 t(2)(1) = 2;
 t(2)(2) = 3;

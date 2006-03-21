@@ -1,13 +1,13 @@
 record mytuple {
-  var field1 : integer;
+  var field1 : int;
   var field2 : float;
 }
 
-function foo(param i : integer, t : mytuple) where i == 1 {
+function foo(param i : int, t : mytuple) where i == 1 {
   return t.field1;
 }
 
-function foo(param i : integer, t : mytuple) where i == 2 {
+function foo(param i : int, t : mytuple) where i == 2 {
   return t.field2;
 }
 

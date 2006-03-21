@@ -1,5 +1,5 @@
 class C {
-  var i : integer;
+  var i : int;
   function foo() var {
     return i;
   }

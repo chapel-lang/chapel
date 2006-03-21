@@ -1,6 +1,6 @@
-config var a: integer = 4;
-config var b: integer = 5;
-config var x: integer = a + b;
+config var a: int = 4;
+config var b: int = 5;
+config var x: int = a + b;
 
 writeln("a at compile time is 4");
 writeln("b at compile time is 5");

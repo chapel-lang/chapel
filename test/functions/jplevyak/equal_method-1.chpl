@@ -1,4 +1,4 @@
-record foo { var a : integer;  }
+record foo { var a : int;  }
 pragma "rename _foo_eq"
 function =(x : foo, b) {
   x.a = b.a + 10;

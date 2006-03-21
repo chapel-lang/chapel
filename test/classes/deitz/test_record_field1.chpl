@@ -1,12 +1,12 @@
 record R {
-  var x : integer;
+  var x : int;
 }
 
 var r : R;
 
 r.x = 2;
 
-var x : integer;
+var x : int;
 
 x = 3;
 

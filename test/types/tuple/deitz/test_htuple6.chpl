@@ -1,3 +1,3 @@
 param rank = 4;
-var x : (rank*integer);
+var x : (rank*int);
 writeln(x);

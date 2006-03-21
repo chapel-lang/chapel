@@ -5,7 +5,7 @@ class bar {
     return bar(t, y);
 }
 
-var b : bar(integer) = bar(integer, 4);
+var b : bar(int) = bar(int, 4);
 
 writeln(b);
 

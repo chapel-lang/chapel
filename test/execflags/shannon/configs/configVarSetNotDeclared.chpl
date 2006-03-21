@@ -1,4 +1,4 @@
-config var x: integer = 111;
+config var x: int = 111;
 config var y: float = 222.2;
 
 writeln("x is initialized to 111");

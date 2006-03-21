@@ -1,5 +1,5 @@
-iterator basic(inout z: integer) : integer {
-  var i : integer;
+iterator basic(inout z: int) : int {
+  var i : int;
   z += 1;
   while i < 10 {
     yield i * 4;
@@ -10,8 +10,8 @@ iterator basic(inout z: integer) : integer {
 
 
 function main() {
-var x : integer = 5;
-var a: integer = 9;
+var x : int = 5;
+var a: int = 9;
 writeln("initially, a is: ", a);
   for i in basic(a) {
     writeln(i+x);
@@ -20,7 +20,7 @@ writeln("initially, a is: ", a);
   writeln("after first iteration, a is: ", a);
 
   for j in basic(a) {
-     var y : integer = 4;
+     var y : int = 4;
      x = 3;
      writeln(j + y + x);
   }

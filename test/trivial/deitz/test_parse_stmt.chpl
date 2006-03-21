@@ -1,7 +1,7 @@
-var y : integer = 3;
+var y : int = 3;
 
 label l1
-var x : integer = 12;
+var x : int = 12;
 
 writeln(x, y);
 

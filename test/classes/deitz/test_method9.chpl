@@ -1,5 +1,5 @@
 class C {
-  var x : integer;
+  var x : int;
   function foo() {
     writeln("foo of ", x);
   }

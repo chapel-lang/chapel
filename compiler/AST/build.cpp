@@ -113,7 +113,7 @@ AList<Stmt>* build_param_for(char* index, Expr* low, Expr* high, AList<Stmt>* st
   static int uid = 1;
   FnSymbol* fn = new FnSymbol(stringcat("_param_for_fn", intstring(uid++)));
   fn->formals =
-    new AList<DefExpr>(new DefExpr(new ArgSymbol(INTENT_PARAM, index, dtInteger)));
+    new AList<DefExpr>(new DefExpr(new ArgSymbol(INTENT_PARAM, index, dtInt)));
   fn->addPragma("inline");
   stmts->insertAtTail(new CallExpr(fn->name, new CallExpr("+", new SymExpr(index), new_IntLiteral(1))));
   fn->insertAtTail(

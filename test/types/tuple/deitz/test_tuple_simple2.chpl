@@ -1,7 +1,7 @@
-var i : integer = 2;
-var j : integer = 3;
-var k : integer = 4;
-var l : integer = 5;
+var i : int = 2;
+var j : int = 3;
+var k : int = 4;
+var l : int = 5;
 
 writeln("i is ", i);
 writeln("j is ", j);

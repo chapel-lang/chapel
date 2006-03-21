@@ -17,7 +17,7 @@ void build(BaseAST* ast);
 // types contains the types of the actuals
 // names contains the name if it is a named argument, otherwise NULL
 // e.g.  foo(arg1=12, "hi");
-//  types = integer, string
+//  types = int, string
 //  names = arg1, NULL
 enum resolve_call_error_type {
   CALL_NO_ERROR,

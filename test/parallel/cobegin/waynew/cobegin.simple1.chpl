@@ -1,5 +1,5 @@
 
-var x : integer;
+var x : int;
 
 x = 92;
 cobegin {

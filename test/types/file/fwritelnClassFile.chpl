@@ -1,6 +1,6 @@
 class phone {
   var name: string;
-  var cell: integer;
+  var cell: int;
 }
 
 var myFile: file = file(filename = "_test_fwritelnClassFile.txt", mode = "w");

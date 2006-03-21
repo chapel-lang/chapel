@@ -1,4 +1,4 @@
-var x : 8*(string,integer);
+var x : 8*(string,int);
 
 x(1) = ("dog", 3);
 x(2) = ("cat", 3);

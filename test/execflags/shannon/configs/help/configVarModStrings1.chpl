@@ -7,7 +7,7 @@ module module1 {
 }
 
 module module2 {
-  config var x: integer = 2;
+  config var x: int = 2;
   config var z: string = "this one doesn't require it";
 }
 

@@ -1,5 +1,5 @@
 record myrecord {
-  var x: integer = 42;
+  var x: int = 42;
   var y: float = 4.2;
 }
 

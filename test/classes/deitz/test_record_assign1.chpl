@@ -1,5 +1,5 @@
 record A {
-  var i : integer = 1;
+  var i : int = 1;
   var f : float = 2.0;
   var s : string = "three";
 }

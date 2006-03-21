@@ -1,13 +1,13 @@
 
-type arr : [3] integer;
+type arr : [3] int;
 
 class C {
-  var a : integer;
+  var a : int;
 }
 class D {
-  var aa : integer;
-  function a(i : integer) { return aa; }
-  function =a(i : integer) { aa = i; }
+  var aa : int;
+  function a(i : int) { return aa; }
+  function =a(i : int) { aa = i; }
 }
 class E {
   var a : arr;

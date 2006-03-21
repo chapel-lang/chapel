@@ -13,7 +13,7 @@ function fwrite(f : file, t : trio) {
   fwrite(f, "(", t.x1, " & ", t.x2, " & ", t.x3, ")");
 }
 
-var t1 : trio(integer) = trio(integer, 1, 2, 3);
+var t1 : trio(int) = trio(int, 1, 2, 3);
 var t2 : trio(float) = trio(float, x1=1.0);
 
 writeln(t1);

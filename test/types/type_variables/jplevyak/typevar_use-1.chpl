@@ -1,10 +1,10 @@
 
 record R { 
   type t;
-  var x : integer;
+  var x : int;
 }
 
-var r = R(t = integer, x = 1);
+var r = R(t = int, x = 1);
 
 var n : r.t;
 

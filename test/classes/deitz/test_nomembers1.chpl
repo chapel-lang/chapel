@@ -1,5 +1,5 @@
 class addition {
-  function identity(x : integer) : integer {
+  function identity(x : int) : int {
     return x + 2;
   }
 }

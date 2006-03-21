@@ -1,7 +1,7 @@
-output integer 1
+output int 1
 output float 2.0
 output string three
 output float 2.0
 output string three
 output string four
-output integer 5
+output int 5

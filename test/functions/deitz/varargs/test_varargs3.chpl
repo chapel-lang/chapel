@@ -1,4 +1,4 @@
-function foo(param n : integer, ys : string ...n) {
+function foo(param n : int, ys : string ...n) {
   for i in 1..n do
     writeln(ys(i));
 }

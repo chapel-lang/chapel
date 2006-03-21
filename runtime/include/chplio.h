@@ -7,8 +7,8 @@
 #define _default_format_write_bool     "%s"
 #define _default_format_read_bool      "%s"
 
-#define _default_format_read_integer64    "%lld" /* long long int */
-#define _default_format_write_integer64   "%lld" /* long long int */
+#define _default_format_read_int64    "%lld" /* long long int */
+#define _default_format_write_int64   "%lld" /* long long int */
 
 #define _default_format_read_float64      "%lg"  /* double */
 #define _default_format_write_float64     "%lg"  /* double */

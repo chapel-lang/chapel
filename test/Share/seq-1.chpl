@@ -1,5 +1,5 @@
 
-var x : seq of integer;
+var x : seq of int;
 
 x = (/ 1, 2, 3, 4 /);
 

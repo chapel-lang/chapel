@@ -1,5 +1,5 @@
-var x : integer;
+var x : int;
 x = 1;
-function f() var : integer { return x; }
+function f() var : int { return x; }
 f() = 2;
 writeln(x);

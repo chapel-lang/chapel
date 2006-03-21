@@ -1,5 +1,5 @@
 var a: bool;
-var b: integer;
+var b: int;
 var c: float;
 var d: complex;
 var e: string;

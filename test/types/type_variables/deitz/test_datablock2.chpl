@@ -3,7 +3,7 @@ class DataBlock {
   var x1 : t;
   var x2 : t;
   var x3 : t;
-  function this(i : integer) : t {
+  function this(i : int) : t {
     if i == 1 then
       return x1;
     else if i == 2 then
@@ -11,7 +11,7 @@ class DataBlock {
     else
       return x3;
   }
-  function =this(i : integer, val : t) {
+  function =this(i : int, val : t) {
     if i == 1 then
       x1 = val;
     else if i == 2 then
@@ -21,7 +21,7 @@ class DataBlock {
   }
 }
 
-var x : DataBlock(integer) = DataBlock(integer);
+var x : DataBlock(int) = DataBlock(int);
 
 x(1) = 1;
 x(2) = 2;

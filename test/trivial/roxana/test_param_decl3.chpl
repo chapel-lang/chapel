@@ -1,1 +1,1 @@
-param x : integer;
+param x : int;

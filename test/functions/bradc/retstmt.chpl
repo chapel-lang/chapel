@@ -1,10 +1,10 @@
-function inc(x: integer): integer {
+function inc(x: int): int {
   return x + 1;
 }
 
 
 var a = 3;
-var b: integer;
+var b: int;
 
 b = inc(a);
 

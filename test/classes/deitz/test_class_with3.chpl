@@ -5,7 +5,7 @@ class point {
 
 class cpoint {
   with point;
-  var color : integer;
+  var color : int;
 }
 
 var p : point = point();

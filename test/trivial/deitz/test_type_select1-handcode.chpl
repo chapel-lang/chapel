@@ -2,8 +2,8 @@ var i = 12;
 var f = 12.0;
 
 function mywrite(x) {
-  function bar(tmp:integer) {
-    writeln("mywrite integer for       ", x);
+  function bar(tmp:int) {
+    writeln("mywrite int for       ", x);
   }
   function bar(tmp:float) {
     writeln("myrite float for          ", x);

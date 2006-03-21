@@ -1,8 +1,8 @@
-function foo(a:integer) {
+function foo(a:int) {
   writeln(a);
 }
 
 {
-  var a : integer = 12;
+  var a : int = 12;
   foo(a);
 }

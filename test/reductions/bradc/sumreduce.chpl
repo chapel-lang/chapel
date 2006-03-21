@@ -1,10 +1,10 @@
-config var n: integer = 10;
+config var n: int = 10;
 
 var D: domain(1) = 1..n;
 
-var A: [D] integer = 1;
+var A: [D] int = 1;
 
-var tot: integer;
+var tot: int;
 
 tot = sum reduce A;
 

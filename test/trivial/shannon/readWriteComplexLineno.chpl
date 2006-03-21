@@ -1,6 +1,6 @@
 var complexNumber: complex;
-var numTestCases: integer = 8;
-var i: integer = 0;
+var numTestCases: int = 8;
+var i: int = 0;
 
 while (i <= numTestCases) {
   read(complexNumber);	

@@ -1,13 +1,13 @@
 class HashTable { 
   type T;
-  var size: integer;
+  var size: int;
   var dummy : T;
   var table : _fdata(T) = _fdata(T, 20);
 }  
 
-var s : integer = 10;
+var s : int = 10;
   
-var ht : HashTable(T=integer) = HashTable(T=integer, size=s, dummy=0);
+var ht : HashTable(T=int) = HashTable(T=int, size=s, dummy=0);
 
 for i in 1..s do {
   ht.table(i-1) = i-1;

@@ -2,7 +2,7 @@
 -- to be working yet because of union prints; it's a reasonable test
 -- in itself, though
 union U {
-  var x: integer;
+  var x: int;
   var y: float;
 }
 

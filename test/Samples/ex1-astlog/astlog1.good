@@ -35,31 +35,31 @@ block
    qualified_ident
     ident catagory
  def_type builtin int8
-  ident integer8
+  ident int8
  def_type builtin int16
-  ident integer16
+  ident int16
  def_type builtin int32
-  ident integer32
+  ident int32
  def_type builtin int64
-  ident integer64
+  ident int64
  def_type builtin int
-  ident integer
+  ident int
   qualified_ident
-   ident integer64
+   ident int64
  def_type builtin uint8
-  ident uinteger8
+  ident uint8
  def_type builtin uint16
-  ident uinteger16
+  ident uint16
  def_type builtin uint32
-  ident uinteger32
+  ident uint32
  def_type builtin uint64
-  ident uinteger64
+  ident uint64
  def_type builtin uint
-  ident uinteger
+  ident uint
   qualified_ident
-   ident uinteger32
+   ident uint32
  def_type builtin anyint
-  ident anyinteger
+  ident anyint
   sum_type
    sum_type
     sum_type
@@ -68,21 +68,21 @@ block
        sum_type
         sum_type
          qualified_ident
-          ident integer8
+          ident int8
          qualified_ident
-          ident integer16
+          ident int16
         qualified_ident
-         ident integer32
+         ident int32
        qualified_ident
-        ident integer64
+        ident int64
       qualified_ident
-       ident uinteger8
+       ident uint8
      qualified_ident
-      ident uinteger16
+      ident uint16
     qualified_ident
-     ident uinteger32
+     ident uint32
    qualified_ident
-    ident uinteger64
+    ident uint64
  def_type builtin float32
   ident float32
  def_type builtin float64
@@ -112,29 +112,29 @@ block
   ident anynum
   sum_type
    qualified_ident
-    ident anyinteger
+    ident anyint
    qualified_ident
     ident anyfloat
  def_type builtin char
   ident char
   qualified_ident
-   ident uinteger8
+   ident uint8
  def_type builtin complex
   ident complex
  def_type builtin size
   ident size
   qualified_ident
-   ident uinteger
+   ident uint
  def_type builtin bool
   ident bool
   qualified_ident
-   ident integer
+   ident int
  def_type builtin string
   ident string
  def_type builtin enum_element
   ident enum_element
   qualified_ident
-   ident integer
+   ident int
  const 0
  def_ident
   ident null builtin null
@@ -382,14 +382,14 @@ block
     ident a
     constraint
      qualified_ident
-      ident integer
+      ident int
    arg
     const #"<<"
    arg
     ident b
     constraint
      qualified_ident
-      ident integer
+      ident int
   scope
    op
     op
@@ -411,14 +411,14 @@ block
     ident a
     constraint
      qualified_ident
-      ident integer
+      ident int
    arg
     const #">>"
    arg
     ident b
     constraint
      qualified_ident
-      ident integer
+      ident int
   scope
    op
     op
@@ -614,14 +614,14 @@ block
     ident a
     constraint
      qualified_ident
-      ident integer
+      ident int
    arg
     const #"&"
    arg
     ident b
     constraint
      qualified_ident
-      ident integer
+      ident int
   scope
    op
     op
@@ -643,14 +643,14 @@ block
     ident a
     constraint
      qualified_ident
-      ident integer
+      ident int
    arg
     const #"^"
    arg
     ident b
     constraint
      qualified_ident
-      ident integer
+      ident int
   scope
    op
     op
@@ -672,14 +672,14 @@ block
     ident a
     constraint
      qualified_ident
-      ident integer
+      ident int
    arg
     const #"|"
    arg
     ident b
     constraint
      qualified_ident
-      ident integer
+      ident int
   scope
    op
     op
@@ -955,7 +955,7 @@ block
     ident b
     constraint
      qualified_ident
-      ident integer
+      ident int
   scope
    op
     op
@@ -984,7 +984,7 @@ block
     ident b
     constraint
      qualified_ident
-      ident integer
+      ident int
   scope
    op
     op
@@ -1013,7 +1013,7 @@ block
     ident b
     constraint
      qualified_ident
-      ident integer
+      ident int
   scope
    op
     op
@@ -1042,7 +1042,7 @@ block
     ident b
     constraint
      qualified_ident
-      ident integer
+      ident int
   scope
    op
     op
@@ -1071,7 +1071,7 @@ block
     ident b
     constraint
      qualified_ident
-      ident integer
+      ident int
   scope
    op
     op
@@ -1525,7 +1525,7 @@ block
     ident width
     constraint
      qualified_ident
-      ident integer
+      ident int
  def_ident
   ident block2
   new
@@ -1565,7 +1565,7 @@ block
     ident rank
     constraint
      qualified_ident
-      ident integer
+      ident int
    def_ident
     ident index
     constraint

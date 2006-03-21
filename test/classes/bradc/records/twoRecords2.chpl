@@ -1,6 +1,6 @@
 record intcoord {
-  var x: integer;
-  var y: integer;
+  var x: int;
+  var y: int;
 }
 
 record floatcoord {

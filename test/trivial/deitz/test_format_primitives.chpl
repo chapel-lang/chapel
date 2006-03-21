@@ -1,4 +1,4 @@
-var i : integer = 3;
+var i : int = 3;
 
 writeln(i:"%lld");
 

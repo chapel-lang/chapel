@@ -1,5 +1,0 @@
-CONFIG VARS:
-============
-     s?econd: integer (configured to 111)
-       last?: integer (configured to 222)
-  mu?ltip?le: integer (configured to 333)

@@ -1,8 +1,8 @@
 /* testing getter and setter functions that will be inlined */
 class Foo {
-  var x : integer;
-  var y : integer;
-  var z : integer;
+  var x : int;
+  var y : int;
+  var z : int;
 }
 
 function main() {

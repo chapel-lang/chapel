@@ -1,8 +1,8 @@
-function integer.print() {
-  writeln("integer.print = ", this);
+function int.print() {
+  writeln("int.print = ", this);
 }
 
-var i : integer = 12;
+var i : int = 12;
 
 writeln(i);
 i.print();

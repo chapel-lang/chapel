@@ -3,8 +3,8 @@ function output(xs ...?n) {
     foutput(xs(i));
 }
 
-function foutput(x : integer) {
-  writeln("output integer ", x);
+function foutput(x : int) {
+  writeln("output int ", x);
 }
 
 function foutput(x : float) {

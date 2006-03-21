@@ -1,5 +1,5 @@
-var x : integer = y;
-var y : integer = x;
+var x : int = y;
+var y : int = x;
 
 writeln(x);
 writeln(y);

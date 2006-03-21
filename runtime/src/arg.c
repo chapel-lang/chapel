@@ -78,19 +78,19 @@ void printHelpTable(void) {
 }
 
 
-static _integer64 getIntArg(char* valueString, char* memFlag) {
+static _int64 getIntArg(char* valueString, char* memFlag) {
   char extraChars;
-  _integer64 value = 0;  /* initialization is silly hack for freebsd */
+  _int64 value = 0;  /* initialization is silly hack for freebsd */
 
   if (!valueString || strcmp(valueString, "") == 0) {
     char* message = _glom_strings(3, "The \"", memFlag, "\" flag is missing "
-                                  "its integer input");
+                                  "its int input");
     printError(message);
   }
-  int numScans = sscanf(valueString, _default_format_read_integer64"%c", 
+  int numScans = sscanf(valueString, _default_format_read_int64"%c", 
                         &value, &extraChars);
   if (numScans != 1) {
-    char* message = _glom_strings(2, valueString, " is not of integer type");
+    char* message = _glom_strings(2, valueString, " is not of int type");
     printError(message);
   }
   return value; 
@@ -126,7 +126,7 @@ static void parseMemFlag(char* memFlag) {
   } 
 
   if (strcmp(memFlag, "memmax") == 0) {
-    _integer64 value;
+    _int64 value;
     value = getIntArg(valueString, memFlag);
     setMemmax(value);
 
@@ -141,7 +141,7 @@ static void parseMemFlag(char* memFlag) {
   } else if ((strcmp(memFlag, "memthreshold") == 0) ||
              (strcmp(memFlag, "memthresshold") == 0) ||
              (strcmp(memFlag, "memthreshhold") == 0)) {
-    _integer64 value;
+    _int64 value;
     value = getIntArg(valueString, memFlag);
     setMemthreshold(value);
 

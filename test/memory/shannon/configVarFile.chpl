@@ -1,4 +1,4 @@
-config var i: integer = 0;
+config var i: int = 0;
 config var f: float = 1.2;
 config var b: bool = true;
 config var c: complex = 1.2+3.4i;

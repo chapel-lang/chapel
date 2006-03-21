@@ -1,5 +1,5 @@
-var m: integer = 2;
-var n: integer = 3;
+var m: int = 2;
+var n: int = 3;
 
 var o: float = 2.0;
 var p: float = 3.2;

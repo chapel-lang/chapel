@@ -1,7 +1,7 @@
 class C { }
 
 class D1 : C {
-  var x : integer;
+  var x : int;
 }
 
 class D2 : C {

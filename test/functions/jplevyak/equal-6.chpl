@@ -1,4 +1,4 @@
-record foo { var a : integer;  }
+record foo { var a : int;  }
 var x : foo = foo();
 var y : foo = foo();
 var z : foo = x;

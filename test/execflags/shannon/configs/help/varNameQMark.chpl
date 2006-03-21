@@ -1,6 +1,6 @@
-config var s?econd: integer = 1;
-config var last?: integer = 2;
-config var mu?ltip?le: integer = 3;
+config var s?econd: int = 1;
+config var last?: int = 2;
+config var mu?ltip?le: int = 3;
 
 writeln("s?econd = ", s?econd);
 writeln("last? = ", last?);

@@ -3,7 +3,7 @@ class array1d {
   var x1 : t;
   var x2 : t;
   var x3 : t;
-  function indexedby(i : integer) var : t {
+  function indexedby(i : int) var : t {
     write("[Access of ", i, "]");
     select i {
       when 1 do return x1;
@@ -15,7 +15,7 @@ class array1d {
   }
 }
 
-var a : array1d(integer) = array1d(integer);
+var a : array1d(int) = array1d(int);
 
 a.indexedby(1) = 3;
 a.indexedby(2) = 2;

@@ -7,6 +7,6 @@ var c = C(f = 1);
 
 writeln(c);
 
-var d : C(integer) = C(integer, 12);
+var d : C(int) = C(int, 12);
 
 writeln(d);

@@ -2,12 +2,12 @@
 -- shannon, finish futurizing this.  commit.
 
 class myClass {
-  var x: integer;
+  var x: int;
   var y: float;
 }
 
 var a: myClass = myClass(x = 1, y = 2.3);
-var myInt: integer = 9;
+var myInt: int = 9;
 var myFile: file = file(filename = "_test_freadToClassDataMember.txt", mode = "w");
 
 myFile.open;

@@ -1,7 +1,7 @@
 config var n = 12;
 
 var D4: domain(4) = [1..n, 1..n, 1..n, 1..n];
-var quad : 4*integer = (1, 2, 3, 4);
+var quad : 4*int = (1, 2, 3, 4);
 var D4byquad : domain(4) = D4 by quad;
 var D4by2 : domain(4) = D4 by 2;
 

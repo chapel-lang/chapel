@@ -1,16 +1,16 @@
 record mydomain_info {
-  var low : integer;
-  var high : integer;
-  var stride : integer;
-  var alignment : integer;
+  var low : int;
+  var high : int;
+  var stride : int;
+  var alignment : int;
 }
 
 class mydomain {
-  param rank : integer;
+  param rank : int;
   var info0 : mydomain_info;
   var info1 : mydomain_info;
   var info2 : mydomain_info;
-  function dimInit(d : integer, low, high, stride) {
+  function dimInit(d : int, low, high, stride) {
     select d {
       when 1 {
         info0.low = low;
@@ -35,14 +35,14 @@ class mydomain {
       }
     }
   }
-  iterator dforall(d : integer) : integer {
-    var low : integer;
+  iterator dforall(d : int) : int {
+    var low : int;
     select d {
       when 1 do low = info0.low;
       when 2 do low = info1.low;
       when 3 do low = info2.low;
     }
-    var high : integer;
+    var high : int;
     select d {
       when 1 do high = info0.high;
       when 2 do high = info1.high;
@@ -52,14 +52,14 @@ class mydomain {
       yield i;
     }
   }
-  iterator dfor(d : integer) : integer {
-    var low : integer;
+  iterator dfor(d : int) : int {
+    var low : int;
     select d {
       when 1 do low = info0.low;
       when 2 do low = info1.low;
       when 3 do low = info2.low;
     }
-    var high : integer;
+    var high : int;
     select d {
       when 1 do high = info0.high;
       when 2 do high = info1.high;
@@ -82,8 +82,8 @@ writeln(D.dforall(2));
 writeln(D.dfor(1));
 writeln(D.dfor(2));
 
-for i:integer in D.dfor(1) {
-  for j:integer in D.dfor(2) {
+for i:int in D.dfor(1) {
+  for j:int in D.dfor(2) {
     var t = (i,j);
     writeln(t);
   }

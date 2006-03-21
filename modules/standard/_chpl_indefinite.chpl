@@ -1,4 +1,4 @@
-var _ps : _ddata(integer) = _ddata(integer, 27);
+var _ps : _ddata(int) = _ddata(int, 27);
 _ps.init();
 
 _ps(0) = 23;
@@ -31,9 +31,9 @@ _ps(26) = 1610612741;
 
 class _idomain : _domain {
   type ind_type;
-  var num_inds : integer;
-  var size : integer = 0;
-  var table : _ddata(integer) = _ddata(integer, _ps(size));
+  var num_inds : int;
+  var size : int = 0;
+  var table : _ddata(int) = _ddata(int, _ps(size));
   var inds : _ddata(ind_type) = _ddata(ind_type, _ps(size)/2);
 
   function initialize() {
@@ -66,13 +66,13 @@ class _idomain : _domain {
       inds_copy(i) = inds(i);
     inds = inds_copy;
 
-    table = _ddata(integer, _ps(size));
+    table = _ddata(int, _ps(size));
     table.init();
     for i in 0.._ps(size-1)-1 do
       table(_map(inds(i))) = i+1;
   }
 
-  function _map(ind : ind_type) : integer {
+  function _map(ind : ind_type) : int {
     var probe = 0;
     while true {
       var i = (_indefinite_hash(ind) + probe**2) mod _ps(size);
@@ -142,7 +142,7 @@ function fwrite(f : file, x : _iarray) {
     fwrite(f, " ", x.data(i));
 }
 
-function _indefinite_hash(x : integer)
+function _indefinite_hash(x : int)
   return x;
 
 function _indefinite_hash(x : string)

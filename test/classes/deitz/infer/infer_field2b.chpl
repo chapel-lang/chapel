@@ -1,6 +1,6 @@
 // infer return type of iterator with state transform
 
-iterator bar() : integer {
+iterator bar() : int {
   var i = 1;
   while i < 5 {
     yield i;
@@ -9,9 +9,9 @@ iterator bar() : integer {
 }
 
 class C {
-  var jump : integer = 0;
-  var result : integer;
-  var i : integer;
+  var jump : int = 0;
+  var result : int;
+  var i : int;
 }
 
 function next_foo(c : C) : C {

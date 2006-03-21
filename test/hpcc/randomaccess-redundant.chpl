@@ -1,20 +1,20 @@
-config const n: integer = 8;
+config const n: int = 8;
 
 if (n < 1 || n > 64) {
   halt("n must be within [1,64]");
 }
 
-type int64: integer(64);
+type int64: int(64);
 
 forall l in Locales {
-  const tableSize: integer = 2**n;
+  const tableSize: int = 2**n;
   const TableInds: domain(1) = [1..tableSize];
   var T: [TableInds] int64 = 0;
 
-  const numUpdates: integer = 2**(n+2);
+  const numUpdates: int = 2**(n+2);
   const UpdateInds: domain(1) = [1..numUpdates];
 
-  const numLoBits: integer = 64-n;             -- e.g.,        10
+  const numLoBits: int = 64-n;             -- e.g.,        10
   const loBitMask: int64 = 2**numLowBits - 1;  -- e.g., 0x00003ff
   const hiBitMask: int64 = ~loBitMask;         -- e.g., 0xffffc00
 

@@ -4,11 +4,11 @@ function foo(type t) {
   writeln("  ", x);
 }
 
-function foo(x : integer) {
-  writeln("foo(integer) called");
+function foo(x : int) {
+  writeln("foo(int) called");
   writeln("  ", x);
 }
 
 foo(2);
 foo(3.0);
-foo(integer);
+foo(int);

@@ -1,4 +1,4 @@
-function foo(param i : integer) {
+function foo(param i : int) {
   writeln("in foo ", i);
   foo(i + 1);
 }

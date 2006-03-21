@@ -1,5 +1,5 @@
 class foo {
-  var x : integer = 12;
+  var x : int = 12;
   function initialize() {
     x += 10;
   }

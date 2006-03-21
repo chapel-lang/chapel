@@ -1,9 +1,9 @@
 record Numbers {
-  var totVertices : integer;
-  var maxParallelEdge :integer;
-  var numIntEdges : integer;
-  var numStrEdges : integer;
-  var maxIntWeight : integer;
+  var totVertices : int;
+  var maxParallelEdge :int;
+  var numIntEdges : int;
+  var numStrEdges : int;
+  var maxIntWeight : int;
 }
 
 var x : Numbers;

@@ -1,6 +1,6 @@
 record EndPoints {
-  var start : integer;
-  var end : integer;
+  var start : int;
+  var end : int;
 }
 
 constructor EndPoints(s, e) {

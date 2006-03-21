@@ -4,7 +4,7 @@ record foo {
 }
 
 record bar {
-  var be : foo(integer);
+  var be : foo(int);
 }
 
 var b : bar;

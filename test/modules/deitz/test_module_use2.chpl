@@ -1,13 +1,13 @@
 module red {
-  var x : integer = 8;
+  var x : int = 8;
 
-  function foo(i : integer) {
+  function foo(i : int) {
     writeln(i);
   }
 }
 
 module blue {
-  var y : integer = 4;
+  var y : int = 4;
 
   use red;
 

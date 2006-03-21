@@ -1,0 +1,26 @@
+
+FLAGS:
+======
+  -h, --help            -- print this message
+
+CONFIG VAR FLAGS:
+=================
+  -s<configVar>=<value> -- set the value of a config var
+  -f<filename>          -- read in a file of config var assignments
+
+MEMORY FLAGS:
+=============
+  --memmax=<n>          -- simulate 'n' bytes of memory available
+  --memstat             -- print memory statistics
+  --memtrack            -- track dynamic memory usage using a table
+  --memtrace=<filename> -- write memory trace to filename
+  --memthreshold=<n>    -- filter memtrace for sizes >= 'n' bytes
+
+CONFIG VARS:
+============
+module1's config vars:
+  x: int (configured to 9)
+
+module2's config vars:
+  x: float (configured to 8.888)
+  z: string (configured to string set without module name)

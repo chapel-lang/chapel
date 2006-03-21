@@ -33,7 +33,7 @@ function foo() {
 
 writeln(foo());
 
-iterator bar() : integer {
+iterator bar() : int {
   var i = 1;
   while i < 5 {
     yield i;

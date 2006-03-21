@@ -1,4 +1,4 @@
-function foo(i : integer = 1, j : float = 2.0, k : string = "three") {
+function foo(i : int = 1, j : float = 2.0, k : string = "three") {
   writeln("foo of ", i, ", ", j, ", ", k);
 }
 

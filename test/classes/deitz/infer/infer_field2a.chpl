@@ -1,7 +1,7 @@
 class C {
-  var jump : integer = 0;
-  var result : integer;
-  var i : integer;
+  var jump : int = 0;
+  var result : int;
+  var i : int;
 }
 
 function next_foo(c : C) : C {
@@ -23,7 +23,7 @@ label _1
 
 function foo() {
   var c = C();
-  var s : seq of integer;
+  var s : seq of int;
   c = next_foo(c);
   while c != nil {
     s._append_in_place(c.result);
@@ -34,7 +34,7 @@ function foo() {
 
 writeln(foo());
 
-iterator bar() : integer {
+iterator bar() : int {
   var i = 1;
   while i < 5 {
     yield i;

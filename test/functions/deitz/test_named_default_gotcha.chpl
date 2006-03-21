@@ -1,4 +1,4 @@
-function foo(x : integer = 1, y : integer = 2) {
+function foo(x : int = 1, y : int = 2) {
   writeln("x = ", x);
   writeln("y = ", y);
 }

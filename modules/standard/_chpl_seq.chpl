@@ -8,7 +8,7 @@ class _seqNode {
 class seq : value {
   type elt_type;
 
-  var _length : integer;
+  var _length : int;
   var _first : _seqNode of elt_type;
   var _last : _seqNode of elt_type;
 
@@ -17,11 +17,11 @@ class seq : value {
       yield x; 
   }
 
-  function this(i : integer) var {
-    var start_index : integer = 1;
-    var end_index : integer = _length;
+  function this(i : int) var {
+    var start_index : int = 1;
+    var end_index : int = _length;
     if (i >= start_index and i <= end_index) {
-      var cntr : integer = i - start_index;
+      var cntr : int = i - start_index;
       var tmp = _first;
       while(cntr != 0) {
         tmp = tmp._next;
@@ -45,7 +45,7 @@ class seq : value {
   function isValidCursor?(c)
     return c != nil;
 
-  function length : integer
+  function length : int
     return _length;
 
   function _append(e : elt_type)
@@ -134,7 +134,7 @@ function #(s1 : seq, s2 : seq) {
   return s1._concat(s2);
 }
 
-function reverse(s : seq, dim : integer = 1) {
+function reverse(s : seq, dim : int = 1) {
   if (dim != 1) {
     halt("reverse(:seq, dim=1) only implemented for dim 1");
   }
@@ -155,12 +155,12 @@ function fwrite(f : file, s : seq) {
 }
 
 -- Arithmetic sequence
--- Should this eventually be a subclass of seq(integer)?
+-- Should this eventually be a subclass of seq(int)?
 
 record _aseq {
-  var _low : integer;
-  var _high : integer;
-  var _stride : integer;
+  var _low : int;
+  var _high : int;
+  var _stride : int;
 
   function getHeadCursor()
     if _stride > 0 then
@@ -177,17 +177,17 @@ record _aseq {
   function isValidCursor?(c)
     return _low <= c and c <= _high;
 
-  function length : integer
+  function length : int
     return
       (if _stride > 0
         then (_high - _low + _stride) / _stride
         else (_low - _high + _stride) / _stride);
 }
 
-function by(s : _aseq, i : integer)
+function by(s : _aseq, i : int)
   return _aseq(s._low, s._high, s._stride * i);
 
-function _in(s : _aseq, i : integer)
+function _in(s : _aseq, i : int)
   return i >= s._low and i <= s._high and (i - s._low) mod s._stride == 0;
 
 function fwrite(f : file, s : _aseq) {
@@ -202,11 +202,11 @@ pragma "inline" function string.this(s: _aseq)
   else
     return __primitive("string_select", this, s._low, s._high);
 
-iterator _cross(param rank : integer, seqs) : (rank*integer) {
+iterator _cross(param rank : int, seqs) : (rank*int) {
   if rank < 2 {
     halt("cross requires tuple of rank of 2 or greater");
   } else if (rank == 2) {
-    var result : (rank*integer);
+    var result : (rank*int);
     for i2 in seqs(2) {
       for i1 in seqs(1) {
         result(1) = i1;
@@ -215,7 +215,7 @@ iterator _cross(param rank : integer, seqs) : (rank*integer) {
       }
     }
   } else {
-    var result : (rank*integer);
+    var result : (rank*int);
     for i in seqs(rank) {
       for is in _cross(rank-1, seqs) {
         for j in 1..rank-1 do

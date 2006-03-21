@@ -1,6 +1,6 @@
 class foo {
   var x;
-  var y : integer = 12;
+  var y : int = 12;
   function print() {
     writeln("x is ", x, " and y is ", y);
   }

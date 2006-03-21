@@ -10,18 +10,18 @@ class mysumreduce {
   }
 }
 
-config var n: integer = 10;
+config var n: int = 10;
 
 var D: domain(1) = [1..n];
 
-var A: [D] integer;
+var A: [D] int;
 
 forall i in D {
   A(i) = i;
 }
 
-var myreduce = mysumreduce(t = integer);
-var state: integer = myreduce.ident();
+var myreduce = mysumreduce(t = int);
+var state: int = myreduce.ident();
 for i in D {
   state = myreduce.combine(state, A(i));
 }

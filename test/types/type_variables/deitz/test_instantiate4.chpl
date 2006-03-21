@@ -11,7 +11,7 @@ module M2 {
   use M1;
 
   record R {
-    var x : integer = 3;
+    var x : int = 3;
   }
 
   function foo(r : R)

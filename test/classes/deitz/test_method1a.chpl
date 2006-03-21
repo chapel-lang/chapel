@@ -1,6 +1,6 @@
 class dog {
   var weight : float;
-  var paws : integer;
+  var paws : int;
   function grow() {
     writeln("woof");
   }

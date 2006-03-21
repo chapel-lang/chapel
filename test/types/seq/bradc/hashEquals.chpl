@@ -1,4 +1,4 @@
-var s: seq(integer) = (/ 1, 2, 3 /);
+var s: seq(int) = (/ 1, 2, 3 /);
 
 s #= (/ 4 /);
 

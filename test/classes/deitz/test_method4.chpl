@@ -1,9 +1,9 @@
 class foo {
-  var x : integer;
-  function setx(i : integer) {
+  var x : int;
+  function setx(i : int) {
     x = i;
   }
-  function getx() : integer {
+  function getx() : int {
     return x;
   }
 }

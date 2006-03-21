@@ -126,8 +126,8 @@ void Expr::codegenCastToString(FILE* outfile) {
     fprintf(outfile, "_chpl_tostring_");
     if (exprType == dtBool) {
       fprintf(outfile, "bool");
-    } else if (exprType == dtInteger) {
-      fprintf(outfile, "integer");
+    } else if (exprType == dtInt) {
+      fprintf(outfile, "int");
     } else if (exprType == dtFloat) {
       fprintf(outfile, "float");
     } else {
@@ -662,7 +662,7 @@ void CallExpr::codegen(FILE* outfile) {
       Type* leftType = get(1)->typeInfo();
       Type* rightType = get(2)->typeInfo();
       if (rightType != dtUnspecified) {
-        if ((leftType == dtInteger || leftType == dtFloat) &&
+        if ((leftType == dtInt || leftType == dtFloat) &&
             rightType == dtNil) {
           get(1)->codegen(outfile);
           fprintf(outfile, " = (");

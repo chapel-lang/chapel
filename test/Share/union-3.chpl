@@ -1,5 +1,5 @@
 union Weigth {
-  var i : integer;
+  var i : int;
   var s : string;
   function is_string? {
     typeselect(this) {
@@ -13,4 +13,4 @@ var x : Weight = 5:Weight.i;
 if (x.is_string?)
   writeln("string ", x.s);
 else
-  writeln("integer ", x.i);
+  writeln("int ", x.i);

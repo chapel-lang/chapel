@@ -1,4 +1,4 @@
-config var n: integer = 4;
+config var n: int = 4;
 
 var d1 : domain(1) = [1..n];
 writeln("domain(1): \t\t", d1);

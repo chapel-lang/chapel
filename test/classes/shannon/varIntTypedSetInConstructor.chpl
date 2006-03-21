@@ -1,8 +1,8 @@
 class setConst {
 
-  var thisShouldBeSix     : integer = 5;
-  var thisShouldBeEleven  : integer = 10;
-  var thisShouldBeSixteen : integer = 15;
+  var thisShouldBeSix     : int = 5;
+  var thisShouldBeEleven  : int = 10;
+  var thisShouldBeSixteen : int = 15;
 
 }
 

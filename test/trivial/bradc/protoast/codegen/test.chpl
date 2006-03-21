@@ -1,11 +1,11 @@
-var x: integer = 123;
+var x: int = 123;
 
-var y: integer;
+var y: int;
 
 y = 456;
 
-function foo(z: integer) {
-  var a: integer = 789;
+function foo(z: int) {
+  var a: int = 789;
 
   writeln("a is: ", a);
   writeln("z is: ", z);

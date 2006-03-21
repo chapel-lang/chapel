@@ -1,8 +1,8 @@
-config var n : integer = 4;
+config var n : int = 4;
 
 var d : domain(1) = [1..n];
 
-var a : [d] [d] integer;
+var a : [d] [d] int;
 
 forall i1 in d {
   forall i2 in d {

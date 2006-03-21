@@ -1,10 +1,10 @@
 union C {
-  var x : integer;
+  var x : int;
 }
 
 union D {
-  var x : integer;
-  var y : integer;
+  var x : int;
+  var y : int;
 }
 
 function f(a : D) {

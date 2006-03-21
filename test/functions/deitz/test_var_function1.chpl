@@ -1,5 +1,5 @@
 class foo {
-  var a : integer;
+  var a : int;
 }
 
 function bar(x : foo) var {

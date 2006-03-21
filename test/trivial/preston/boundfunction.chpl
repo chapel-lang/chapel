@@ -1,6 +1,6 @@
 -- playing with bound functions
 
-function integer.fact() {
+function int.fact() {
   var i = 1;
   var n = this;
   while n > 1 {

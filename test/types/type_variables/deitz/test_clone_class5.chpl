@@ -1,7 +1,7 @@
 class foo {
   var x;
   var y;
-  var z : integer = 12;
+  var z : int = 12;
   function print() {
     writeln("x is ", x, " and y is ", y, " and z is ", z);
   }

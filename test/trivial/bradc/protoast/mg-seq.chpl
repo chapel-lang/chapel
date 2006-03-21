@@ -2,8 +2,8 @@
 
 enum classVals {S, W, A, B, C, D, O};
 
-const probSize: [S..O] integer = (32, 64, 256, 256, 512, 1024, 256);
-const numIters: [S..O] integer = (4, 40, 4, 20, 20, 50, 4);
+const probSize: [S..O] int = (32, 64, 256, 256, 512, 1024, 256);
+const numIters: [S..O] int = (4, 40, 4, 20, 20, 50, 4);
 const checksum: [S..O] float  = (0.0000530770700573,
                                  0.00000000000000000250391406439,
                                  0.000002433365309,
@@ -17,14 +17,14 @@ config const Class: classVals = S;
 
 -- problem size parameters:
 
-config const n: integer = probSize(Class);
-config const nx: integer = n;
-config const ny: integer = n;
-config const nz: integer = n;
+config const n: int = probSize(Class);
+config const nx: int = n;
+config const ny: int = n;
+config const nz: int = n;
 
-config const numLevels: integer = lg2(n);
+config const numLevels: int = lg2(n);
 
-config const nit: integer = numIters(Class);
+config const nit: int = numIters(Class);
 
 
 -- checksum:
@@ -249,7 +249,7 @@ function initArrays(V, U, R) {
 
 
 function zran3(V) {
-  const ncharge: integer = 10;
+  const ncharge: int = 10;
   var POS: [1..ncharge] index(Base);
   var NEG: [1..ncharge] index(Base);
 
@@ -275,13 +275,13 @@ function longRandlc(n): float {
   static const s: float = 314159265.0;
   static const arand: float = 5.0**13;
 
-  var kk: integer = n;
+  var kk: int = n;
   var t1: float = s;
   var t2: float = arand;
   var t3: float;
 
   while (kk != 0) {
-    var ik: integer = kk / 2;
+    var ik: int = kk / 2;
     if (2*ij != kk) {
       t3 = randlc(t1, t2);
     }
@@ -304,17 +304,17 @@ function randlc(x, a): float {
   var t1, t2, t3, t4, a1, a2, x1, x2, y: float;
 
   t1 = r23 * x;
-  a1 = t1: integer;
+  a1 = t1: int;
   a2 = a - t23 * a1;
 
   t1 = r23 * x;
-  x1 = t1: integer;
+  x1 = t1: int;
   x2 = x - t23 * x1;
   t1 = a1 * x2 + a2 * x1;
-  t2 = (r23 * t1): integer;
+  t2 = (r23 * t1): int;
   y = t1 - t23 * t2;
   t3 = t23 * y + a2 * x2;
-  t3 = (r46 * t3) : integer;
+  t3 = (r46 * t3) : int;
   x = t3 - t46 * t4;
 
   return r46 * x;
@@ -335,8 +335,8 @@ function initCValues(Class): coeff {
 
 -- simple math helper function:
 
-function lg2(x): integer {
-  var lg: integer = -1;
+function lg2(x): int {
+  var lg: int = -1;
   while (x) {
     x *= 2;
     lg += 1;

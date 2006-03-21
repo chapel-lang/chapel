@@ -5,4 +5,4 @@ function foo(type t) {
     foo(float);
 }
 
-foo(integer);
+foo(int);

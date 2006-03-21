@@ -1,4 +1,4 @@
-function foo(x: integer) {
+function foo(x: int) {
   var x = x + 1;
 
   writeln("x is: ", x);

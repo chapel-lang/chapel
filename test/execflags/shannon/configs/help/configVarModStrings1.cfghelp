@@ -1,8 +1,0 @@
-CONFIG VARS:
-============
-module1's config vars:
-  x: string (configured to this is a test)
-
-module2's config vars:
-  x: integer (configured to 888)
-  z: string (configured to no module name given)

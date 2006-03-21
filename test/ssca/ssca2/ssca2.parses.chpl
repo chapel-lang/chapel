@@ -24,7 +24,7 @@ config var ENABLE_PLOT_K3    = false;
 config var ENABLE_PLOT_K3DB  = false;
 
 union Weight {
-  var i : integer;
+  var i : int;
   var s : string;
 /* TMP
 
@@ -43,31 +43,31 @@ union Weight {
 }
 
 record Numbers {
-  var totVertices : integer; 
-  var maxParallelEdge : integer;
-  var numIntEdges : integer; 
-  var numStrEdges : integer;
-  var maxIntWeight : integer;
+  var totVertices : int; 
+  var maxParallelEdge : int;
+  var numIntEdges : int; 
+  var numStrEdges : int;
+  var maxIntWeight : int;
 }
 
 record EndPoints { 
-  var start : integer;
-  var end : integer;
+  var start : int;
+  var end : int;
 }
 
 class Edges { 
   with Numbers;
   var Cliques : domain(1);
-  var cliqueSizes : [Cliques] integer; 
-  var VsInClique : [Cliques] (first:integer, last:integer);
-  var numEdgesPlaced  : integer;
+  var cliqueSizes : [Cliques] int; 
+  var VsInClique : [Cliques] (first:int, last:int);
+  var numEdgesPlaced  : int;
   var Edges : domain(1); -- 1..numEdgesPlaced
   var edges : [Edges] record { 
                         with EndPoints;
                         var weight :Weight;
                       };
-  var numEdgesPlacedInCliques : integer;
-  var numEdgesPlacedOutside   : integer;
+  var numEdgesPlacedInCliques : int;
+  var numEdgesPlacedOutside   : int;
 }
 
 class Graph {
@@ -75,7 +75,7 @@ class Graph {
   var VertexD  : domain(1);  -- 1..totVertices
   var ParEdgeD : domain(1) ; -- 1..maxParallelEdge
 
-  -- separate integer and string subgraps that
+  -- separate int and string subgraps that
   -- share the above two domains
 /* TMP
 
@@ -83,7 +83,7 @@ class Graph {
 -- this => is necessary at this point.
 -- BLC: I tend to agree
 
-  var intg = Subgraph(wtype=integer,
+  var intg = Subgraph(wtype=int,
                       VertexD=>VertexD,
                       ParEdgeD=>ParEdgeD);
   var strg = Subgraph(wtype=string,
@@ -148,9 +148,9 @@ function main() {
   config var MAX_CLIQUE_SIZE    =   10; 
   -- Max num of parallel edges allowed between two vertices. 
   config var MAX_PARAL_EDGES    =    8; 
-  -- Percentage of integer (vs. char string) edge weights.
+  -- Percentage of int (vs. char string) edge weights.
   config var PERC_INT_WEIGHTS   =  0.6; 
-  -- Max allowed integer value in any integer edge weight.
+  -- Max allowed int value in any int edge weight.
   config var MAX_INT_WEIGHT     =  255;
   -- Initial probability of a link between two cliques.
   config var PROB_INTERCL_EDGES =  0.5; 
@@ -304,7 +304,7 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
   -- fill matrix with random numbers
 /* TMP
 -- BLC: This doesn't work because of the inferred array element
---      type.  I believe that if specified, it should be integer 
+--      type.  I believe that if specified, it should be int 
 --      or index(VertexD)
 
   var cliqueAdjMatrix: [AdjDomain] = 
@@ -324,13 +324,13 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
 */
 /* TMP
 -- BLC: Another that fails due to the missing array element type.
---      In this case, I believe it should be integer
+--      In this case, I believe it should be int
 
   var edgeCounts: [(c,i) in edgeDomain] =  
         sum ([m in cliqueAdjMatrix(c)] m >=i);
 */
 /* TMP
--- BLC: And another.  I think this one should be integer, though
+-- BLC: And another.  I think this one should be int, though
 --      if we were to declare the 1..numEdgesPlacedInCliques
 --      domain below, we could use an index of that domain instead.
 
@@ -359,7 +359,7 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
   -- build a map from vertex number to the clique it is in
 /* TMP
 -- BLC: Another elided array element type. This one should be
---      index(Clique) or integer
+--      index(Clique) or int
 
   var toClique: [1..totalVertices];
 */
@@ -398,7 +398,7 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
 
 /* TMP
 -- BLC: Another array with its element type unspecified.  This one
---      should be integer, though if the 1..numPlacedOutside
+--      should be int, though if the 1..numPlacedOutside
 --      domain below was named, it could be an index of that domain.
 
   var offset: [bitsDomain] = sum scan (if bits then 1 else 0);
@@ -537,7 +537,7 @@ function sortWeights( G : Graph, soughtString : string ) {
 }
 
 
-function Graph.findSubGraphs(SUBGR_EDGE_LENGTH : integer,
+function Graph.findSubGraphs(SUBGR_EDGE_LENGTH : int,
                              startSetIntVPairs : seq of EndPoints,
                              startSetStrVPairs : seq of EndPoints) 
                             : seq of Graph {
@@ -602,7 +602,7 @@ function cutClusters(G, cutBoxSize, alpha) {
     use AdjMatrix only VertexD, AdjD;
 */
 /* TMP
--- BLC: another inferred element type; this one should be integer
+-- BLC: another inferred element type; this one should be int
     var adjCounts: [v in VertexD] = length(AdjD(v,*) # AdjD(*,v));
 */
 /* TMP
@@ -656,7 +656,7 @@ function cutClusters(G, cutBoxSize, alpha) {
           -- Pick the next vertex to be processed from among the adjacent 
           -- vertices, the one which minimizes the adjacency count.
 /* TMP
--- BLC: element type elided;  should be integers
+-- BLC: element type elided;  should be ints
           var count: [ setAdj ] ;
 */
           forall v in setAdj {
@@ -690,7 +690,7 @@ function cutClusters(G, cutBoxSize, alpha) {
 
   function remap(oldg, newg, vertexRemap) {
 /* TMP
--- BLC: element type missing; should be integer; could also be index(Vertex)
+-- BLC: element type missing; should be int; could also be index(Vertex)
     var map: [G.VertexD];
 */
 /* TMP

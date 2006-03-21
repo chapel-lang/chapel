@@ -1,4 +1,4 @@
-var x: integer = 1;
+var x: int = 1;
 writeln("test1");
 writeln('test2');
 writeln('"test3"');

@@ -1,5 +1,5 @@
 class foo {
-  param x : integer;
+  param x : int;
   var str : string;
 }
 

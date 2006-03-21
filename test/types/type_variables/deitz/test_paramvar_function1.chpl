@@ -1,4 +1,4 @@
-function instantiateme(param x : integer, y : string) {
+function instantiateme(param x : int, y : string) {
   writeln(y);
   writeln(x);
 }

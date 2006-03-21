@@ -4,6 +4,6 @@ var x: classVals = B;
 
 writeln("x is: ", x);
 
-var y: integer = x;
+var y: int = x;
 
 writeln("y is: ", y);

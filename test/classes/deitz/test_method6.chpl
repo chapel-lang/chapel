@@ -1,6 +1,6 @@
 class foo {
-  var x : integer;
-  function getx() : integer {
+  var x : int;
+  function getx() : int {
     return x;
   }
 }
@@ -8,4 +8,4 @@ class foo {
 var f : foo = foo();
 
 f.x = 3;
-writeln("the integer is ", f.getx());
+writeln("the int is ", f.getx());

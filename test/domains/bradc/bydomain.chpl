@@ -3,7 +3,7 @@ config var n = 8;
 var D: domain(1) = [1..n];
 var DOdd: domain(1) = D by 2;
 
-var A: [D] integer;
+var A: [D] int;
 
 for i in DOdd {
   A(i) = i;

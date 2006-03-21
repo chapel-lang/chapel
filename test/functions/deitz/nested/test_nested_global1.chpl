@@ -1,5 +1,5 @@
 class C {
-  var x : integer;
+  var x : int;
 }
 
 var c = C(x = 2);
@@ -12,6 +12,6 @@ function foo(type t) {
   writeln(x);
 }
 
-foo(integer);
+foo(int);
 foo(float);
 bar(c);

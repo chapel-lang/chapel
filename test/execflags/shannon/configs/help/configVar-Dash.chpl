@@ -1,4 +1,4 @@
-config var x: integer = 1;
+config var x: int = 1;
 config var y?: string = "why not?";
 config var z: float = 2.2;
 

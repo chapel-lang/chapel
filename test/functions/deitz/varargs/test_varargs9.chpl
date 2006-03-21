@@ -1,4 +1,4 @@
-function output_help(param i : integer, x) {
+function output_help(param i : int, x) {
   if i > 1 then
     output_help(i-1, x);
   output(x(i));
@@ -9,8 +9,8 @@ function output(x, xs ...?n) {
   output_help(n, xs);
 }
 
-function output(x : integer) {
-  writeln("output integer ", x);
+function output(x : int) {
+  writeln("output int ", x);
 }
 
 function output(x : float) {

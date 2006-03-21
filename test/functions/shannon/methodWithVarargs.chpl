@@ -1,9 +1,9 @@
 class myClass {
-  var x: integer;
+  var x: int;
 
 }
 
-function myClass.setMember(a: integer ...?rank) {
+function myClass.setMember(a: int ...?rank) {
   var mc : myClass = myClass();
   for i in 1..rank do
     mc.x = a(i);

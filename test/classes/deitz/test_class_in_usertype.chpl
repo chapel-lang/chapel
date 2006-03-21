@@ -1,5 +1,5 @@
 record foo {
-  var x : integer = 2;
+  var x : int = 2;
 }
 
 typedef myfoo : foo;

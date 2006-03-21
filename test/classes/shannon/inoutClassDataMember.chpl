@@ -1,8 +1,8 @@
 class volcano {
-  var alertLevel: integer;
+  var alertLevel: int;
 }
 
-function setVolcano(inout al: integer, inout name: string) {
+function setVolcano(inout al: int, inout name: string) {
   name = "Mount St. Helens";
   al = 2;
 }

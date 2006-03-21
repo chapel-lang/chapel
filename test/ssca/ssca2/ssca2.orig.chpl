@@ -15,7 +15,7 @@ module declareGlobals {
   config var ENABLE_PLOT_K3DB  = false;
 
   union Weight {
-    var i : integer;
+    var i : int;
     var s : string;
     function is_string {
       typeselect (this) {
@@ -26,31 +26,31 @@ module declareGlobals {
   }
 
   record Numbers {
-    var totVertices : integer; 
-    var maxParallelEdge : integer;
-    var numIntEdges : integer; 
-    var numStrEdges : integer;
-    var maxIntWeight : integer;
+    var totVertices : int; 
+    var maxParallelEdge : int;
+    var numIntEdges : int; 
+    var numStrEdges : int;
+    var maxIntWeight : int;
   }
 
   record EndPoints { 
-    var start : integer;
-    var end : integer;
+    var start : int;
+    var end : int;
   }
 
   class Edges { 
     with Numbers;
     var Cliques : domain(1);
-    var cliqueSizes : [Cliques] integer; 
-    var VsInClique : [Cliques] (first:integer, last:integer);
-    var numEdgesPlaced  : integer;
+    var cliqueSizes : [Cliques] int; 
+    var VsInClique : [Cliques] (first:int, last:int);
+    var numEdgesPlaced  : int;
     var Edges : domain(1); -- 1..numEdgesPlaced
     var edges : [Edges] record { 
                           with EndPoints;
                           var weight :Weight;
                         };
-    var numEdgesPlacedInCliques : integer;
-    var numEdgesPlacedOutside   : integer;
+    var numEdgesPlacedInCliques : int;
+    var numEdgesPlacedOutside   : int;
   }
 
   class Graph {
@@ -58,9 +58,9 @@ module declareGlobals {
     var VertexD  : domain(1);  -- 1..totVertices
     var ParEdgeD : domain(1) ; -- 1..maxParallelEdge
 
-    -- separate integer and string subgraps that
+    -- separate int and string subgraps that
     -- share the above two domains
-    var intg = Subgraph(wtype=integer,
+    var intg = Subgraph(wtype=int,
                         VertexD=>VertexD,
                         ParEdgeD=>ParEdgeD);
     var strg = Subgraph(wtype=string,
@@ -97,9 +97,9 @@ function main() {
   config var MAX_CLIQUE_SIZE    =   10; 
   -- Max num of parallel edges allowed between two vertices. 
   config var MAX_PARAL_EDGES    =    8; 
-  -- Percentage of integer (vs. char string) edge weights.
+  -- Percentage of int (vs. char string) edge weights.
   config var PERC_INT_WEIGHTS   =  0.6; 
-  -- Max allowed integer value in any integer edge weight.
+  -- Max allowed int value in any int edge weight.
   config var MAX_INT_WEIGHT     =  255;
   -- Initial probability of a link between two cliques.
   config var PROB_INTERCL_EDGES =  0.5; 
@@ -382,7 +382,7 @@ function sortWeights( G : Graph, soughtString : string ) {
 }
 
 
-function Graph.findSubGraphs(SUBGR_EDGE_LENGTH : integer,
+function Graph.findSubGraphs(SUBGR_EDGE_LENGTH : int,
                              startSetIntVPairs : seq of EndPoints,
                              startSetStrVPairs : seq of EndPoints) 
                             : seq of Graph {

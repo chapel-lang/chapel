@@ -1,9 +1,9 @@
 -- This is a test to make sure that local type default
 -- values are evaluated each time the type is encountered
 
-function foo(param defval: integer) {
-  typedef myfoointeger: integer = defval;
-  var x: myfoointeger;
+function foo(param defval: int) {
+  typedef myfooint: int = defval;
+  var x: myfooint;
   writeln("x is: ", x);
 }
 

@@ -1,8 +1,8 @@
-output integer 1
+output int 1
 output float 2.0
 output string three
 output bool true
 output bool true
-output integer 2
+output int 2
 output float 3.0
 output string four

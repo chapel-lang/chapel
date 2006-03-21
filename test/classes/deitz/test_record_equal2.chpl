@@ -1,5 +1,5 @@
 record A {
-  var i : integer;
+  var i : int;
 }
 
 var a1 : A = A();

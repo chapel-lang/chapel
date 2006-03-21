@@ -31,8 +31,8 @@ enum classVals {S, W, A, B, C, D, O};
 --   iterations: the number of iterations to run
 --   checksum: the expected result, if the default characteristics are used
 
-const probSize: [S..O] integer = (/32, 64, 256, 256, 512, 1024, 256/);
-const iterations: [S..O] integer = (/4, 40, 4, 20, 20, 50, 4/);
+const probSize: [S..O] int = (/32, 64, 256, 256, 512, 1024, 256/);
+const iterations: [S..O] int = (/4, 40, 4, 20, 20, 50, 4/);
 const checksum: [S..O] float  = (/0.0000530770700573,
                                   0.00000000000000000250391406439,
                                   0.000002433365309,
@@ -278,14 +278,14 @@ function resid(R, V, U) {
   -- positions that are one coordinate off should get the 1st; two
   -- coordinates off should get the 2nd and so on.  I wrote this by
   -- doing some bool tests, and adding the results together,
-  -- relying on the implicit conversion of bools to integers.  My
+  -- relying on the implicit conversion of bools to ints.  My
   -- hope is that by declaring these to be const, the compiler will do
   -- stencil optimizations on them as defined in Deitz's SC2001 paper.
 
   const a3d: [(i,j,k) in Stencil] float = a((i!=0) + (j!=0) + (k!=0));
 
   -- grab the U array's domain and stride information, for
-  -- convenience.  The stride is returned as a triple of integers
+  -- convenience.  The stride is returned as a triple of ints
 
   const UD = U.Domain,
         Ustr = U.stride;
@@ -516,17 +516,17 @@ function randlc(x, a) {
   var t1, t2, t3, t4, a1, a2, x1, x2, y: float;
 
   t1 = r23 * x;
-  a1 = t1:integer;
+  a1 = t1:int;
   a2 = a - t23 * a1;
 
   t1 = r23 * x;
-  x1 = t1:integer;
+  x1 = t1:int;
   x2 = x - t23 * x1;
   t1 = a1 * x2 + a2 * x1;
-  t2 = (r23 * t1):integer;
+  t2 = (r23 * t1):int;
   y = t1 - t23 * t2;
   t3 = t23 * y + a2 * x2;
-  t3 = (r46 * t3):integer;
+  t3 = (r46 * t3):int;
   x = t3 - t46 * t4;
 
   return r46 * x;

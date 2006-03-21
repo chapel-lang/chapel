@@ -57,13 +57,13 @@ pragma "inline" function +(a: string, b: string) : string return __primitive("st
 
 pragma "inline" function length(a: string) return __primitive("string_length", a);
 
-pragma "inline" function string.this(i: integer) return __primitive("string_index", this, i);
+pragma "inline" function string.this(i: int) return __primitive("string_index", this, i);
 
 
 //
 // More primitive functions
 //
-pragma "no codegen" pragma "rename _chpl_exit" function exit(status : integer) {
+pragma "no codegen" pragma "rename _chpl_exit" function exit(status : int) {
   __primitive("exit");       
 }
 
@@ -86,16 +86,16 @@ function init_elts(x, s, e) {
 pragma "data class"
 class _ddata {
   type elt_type;
-  var size : integer;
+  var size : int;
   var _element : elt_type;
   pragma "inline" function init() {
     __primitive("array_init", this, size, _element);
     init_elts(this, size, _element);
   }
-  pragma "inline" function this(i : integer) : elt_type {
+  pragma "inline" function this(i : int) : elt_type {
     return __primitive("array_index", this, i);
   }
-  pragma "inline" function =this(i : integer, val : elt_type) {
+  pragma "inline" function =this(i : int, val : elt_type) {
     __primitive("array_set", this, i, val);
   }
 }

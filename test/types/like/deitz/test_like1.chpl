@@ -1,4 +1,4 @@
-var ohmygod : integer = 12;
+var ohmygod : int = 12;
 
 writeln(ohmygod);
 

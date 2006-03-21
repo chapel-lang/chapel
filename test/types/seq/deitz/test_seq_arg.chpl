@@ -2,8 +2,8 @@ function foo(s : seq of string) {
   writeln("foo called on a sequence of strings: ", s);
 }
 
-function foo(s : seq of integer) {
-  writeln("foo called on a sequence of integers: ", s);
+function foo(s : seq of int) {
+  writeln("foo called on a sequence of ints: ", s);
 }
 
 foo((/"one", "two", "three"/));

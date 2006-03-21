@@ -1,6 +1,6 @@
 var a : record {
-          var x : integer;
-          var y : integer;
+          var x : int;
+          var y : int;
         };
 
 a.x = 12;

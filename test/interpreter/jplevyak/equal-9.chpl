@@ -1,4 +1,4 @@
-record foo { var a : integer;  }
+record foo { var a : int;  }
 function =(a : foo, b) {
   a.a = b.a + 10;
   return a;

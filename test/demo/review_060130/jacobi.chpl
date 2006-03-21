@@ -1,4 +1,4 @@
-config var n : integer = 3;
+config var n : int = 3;
 config var epsilon : float = 0.01;
 config var verbose : bool = true;
 

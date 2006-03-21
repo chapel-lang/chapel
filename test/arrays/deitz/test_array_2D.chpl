@@ -1,5 +1,5 @@
 var d : domain(2) = [1..3, 1..3];
-var a : [d] integer;
+var a : [d] int;
 
 a(1,1) = 1;
 a(1,2) = 2;

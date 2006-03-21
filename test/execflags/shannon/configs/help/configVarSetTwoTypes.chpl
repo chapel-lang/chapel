@@ -1,6 +1,6 @@
 module module1 {
   use module2;
-  config var x: integer = 1;
+  config var x: int = 1;
   function main() {
     writeln("x is: ", x);
   }

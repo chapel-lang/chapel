@@ -5,7 +5,7 @@ class C {
 }
 
 
-function f(x : ?t) where t.bar == integer {
+function f(x : ?t) where t.bar == int {
   writeln("x = ", x.x);
 }
 

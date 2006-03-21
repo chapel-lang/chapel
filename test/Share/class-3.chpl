@@ -1,15 +1,15 @@
 
 record EndPoints {
-  var start : integer;
-  var end : integer;
+  var start : int;
+  var end : int;
 }
 
 record Numbers {
-  var totVertices : integer;
-  var maxParallelEdge :integer;
-  var numIntEdges : integer;
-  var numStrEdges : integer;
-  var maxIntWeight : integer;
+  var totVertices : int;
+  var maxParallelEdge :int;
+  var numIntEdges : int;
+  var numStrEdges : int;
+  var maxIntWeight : int;
 }
 
 class Subgraph {
@@ -29,7 +29,7 @@ class Graph {
   with Numbers;
   var VertexD : domain(1);
   var ParEdgeD : domain(1);
-  var intg = Subgraph(wtype = integer, VertexD => VertexD, ParEdgeD => ParEdgeD);
+  var intg = Subgraph(wtype = int, VertexD => VertexD, ParEdgeD => ParEdgeD);
   var strg = Subgraph(wtype = string, VertexD => VertexD, ParEdgeD => ParEdgeD);
   function copy(s : Graph) {
     return Graph(VertexD = s.VertexD, ParEdgeD = s.ParEdgeD);

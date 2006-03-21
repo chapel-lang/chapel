@@ -1,7 +1,7 @@
 class C {
-  var x : integer = 2;
+  var x : int = 2;
   function foo() {
-    var y : integer = x;
+    var y : int = x;
     writeln(y);
     function bar() {
       writeln(x + y);

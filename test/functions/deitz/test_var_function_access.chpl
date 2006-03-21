@@ -1,5 +1,5 @@
 class foo {
-  var a : integer;
+  var a : int;
 }
 
 function bar(x : foo) var {
@@ -10,7 +10,7 @@ var f : foo = foo(a = 12);
 
 writeln(f);
 
-var i : integer;
+var i : int;
 
 writeln(i);
 

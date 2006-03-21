@@ -1,4 +1,4 @@
-var s: seq(integer);
+var s: seq(int);
 
 s = s # 1;
 

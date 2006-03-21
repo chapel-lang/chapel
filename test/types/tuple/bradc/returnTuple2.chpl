@@ -1,10 +1,10 @@
-type mytup: (integer, float);
+type mytup: (int, float);
 
 function returntwo(): mytup {
   return (1, 2.3);
 }
 
-var x: integer;
+var x: int;
 var y: float;
 
 var t: mytup;

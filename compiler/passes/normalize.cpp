@@ -951,8 +951,8 @@ static void fold_call_expr(CallExpr* call) {
         }
       }
     }
-    if (call->get(1)->typeInfo() == dtInteger)
-      call->replace(new SymExpr(dtInteger->defaultValue));
+    if (call->get(1)->typeInfo() == dtInt)
+      call->replace(new SymExpr(dtInt->defaultValue));
     return;
   }
 
@@ -1163,7 +1163,7 @@ expand_var_args(FnSymbol* fn) {
       // handle expansion of variable argument list where number of
       // variable arguments is a parameter
       if (VarSymbol* n_var = dynamic_cast<VarSymbol*>(sym->var)) {
-        if (n_var->type == dtInteger && n_var->immediate) {
+        if (n_var->type == dtInt && n_var->immediate) {
           int n = n_var->immediate->v_int64;
           AList<Expr>* actual_types = new AList<Expr>();
           AList<Expr>* actuals = new AList<Expr>();

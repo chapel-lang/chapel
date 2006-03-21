@@ -1,5 +1,5 @@
 module foo {
-  var x: integer;
+  var x: int;
   var y: string = "this is a test";
 
   function main() {

@@ -2,8 +2,8 @@
 
 enum classVals {S, W, A, B, C, D, O};
 
-const probSize: [S..O] integer = (32, 64, 256, 256, 512, 1024, 256);
-const numIters: [S..O] integer = (4, 40, 4, 20, 20, 50, 4);
+const probSize: [S..O] int = (32, 64, 256, 256, 512, 1024, 256);
+const numIters: [S..O] int = (4, 40, 4, 20, 20, 50, 4);
 const checksum: [S..O] float  = (0.0000530770700573,
                                  0.00000000000000000250391406439,
                                  0.000002433365309,
@@ -17,14 +17,14 @@ config const Class: classVals = S;
 
 -- problem size parameters:
 
-config const n: integer = probSize(Class);
-config const nx: integer = n;
-config const ny: integer = n;
-config const nz: integer = n;
+config const n: int = probSize(Class);
+config const nx: int = n;
+config const ny: int = n;
+config const nz: int = n;
 
-config const numLevels: integer = lg2(n);
+config const numLevels: int = lg2(n);
 
-config const nit: integer = numIters(Class);
+config const nit: int = numIters(Class);
 
 
 -- checksum:
@@ -184,7 +184,7 @@ function psinv(inout U: [?DUR] float,
   static const c: coeff = initCValues();
   static const c3d: [(i,j,k) in Stencil] float = c((i!=0) + (j!=0) + (k!=0));
 
-  const Rstr: [1..3] integer = DUR.stride;
+  const Rstr: [1..3] int = DUR.stride;
 
   U += [ijk in DUR] sum reduce [off in Stencil] (c3d * R(ijk + Rstr*off));
 }
@@ -195,7 +195,7 @@ function resid(out R: [?DUR] float,
   static const a: coeff = (-8.0/3.0, 0.0, 1.0/6.0, 1.0/12.0);
   static const a3d: [(i,j,k) in Stencil] float = a((i!=0) + (j!=0) + (k!=0));
 
-  const Ustr: [1..3] integer = DUR.stride;
+  const Ustr: [1..3] int = DUR.stride;
 
   R = V - [ijk in DUR] sum reduce [off in Stencil] (a3d * U(ijk + Ustr*off));
 }
@@ -206,7 +206,7 @@ function rprj3(out S: [] float,
   static const w: coeff = (0.5, 0.25, 0.125, 0.0625);
   static const w3d: [(i,j,k) in Stencil] float = w((i!=0) + (j!=0) + (k!=0));
 
-  const Rstr: [1..3] integer = R.stride;
+  const Rstr: [1..3] int = R.stride;
 
   S = [ijk in DR] sum reduce [off in Stencil] (w3d * R(ijk + Rstr*off));
 }
@@ -218,8 +218,8 @@ function interp(out R: [?DR] float,
   static const IStn: [(i,j,k) in IDom] domain(3) = (i..0, j..0, k..0);
   static const w: [ijk in IDom] float = 1.0 / IStn.size();
 
-  const Rstr: [1..3] integer = DR.stride;
-  const Sstr: [1..3] integer = DS.stride;
+  const Rstr: [1..3] int = DR.stride;
+  const Sstr: [1..3] int = DS.stride;
 
   forall ioff in IDom {
     [ijk in DS] R(ijk + Rstr*ioff) 
@@ -254,7 +254,7 @@ function initArrays(out V: [Base] float,
 
 
 function zran3(out V: [Base] float) {
-  const ncharge: integer = 10;
+  const ncharge: int = 10;
   var POS: [1..ncharge] index(Base);
   var NEG: [1..ncharge] index(Base);
 
@@ -276,17 +276,17 @@ function zran3(out V: [Base] float) {
 
 -- random number generators
 
-function longRandlc(const n: integer): float {
+function longRandlc(const n: int): float {
   static const s: float = 314159265.0;
   static const arand: float = 5.0**13;
 
-  var kk: integer = n;
+  var kk: int = n;
   var t1: float = s;
   var t2: float = arand;
   var t3: float;
 
   while (kk != 0) {
-    var ik: integer = kk / 2;
+    var ik: int = kk / 2;
     if (2*ik != kk) {
       t3 = randlc(t1, t2);
     }
@@ -310,17 +310,17 @@ function randlc(inout x: float,
   var t1, t2, t3, t4, a1, a2, x1, x2, y : float;
 
   t1 = r23 * x;
-  a1 = t1: integer;
+  a1 = t1: int;
   a2 = a - t23 * a1;
 
   t1 = r23 * x;
-  x1 = t1: integer;
+  x1 = t1: int;
   x2 = x - t23 * x1;
   t1 = a1 * x2 + a2 * x1;
-  t2 = (r23 * t1): integer;
+  t2 = (r23 * t1): int;
   y = t1 - t23 * t2;
   t3 = t23 * y + a2 * x2;
-  t3 = (r46 * t3): integer;
+  t3 = (r46 * t3): int;
   x = t3 - t46 * t4;
 
   return r46 * x;
@@ -341,8 +341,8 @@ function initCValues(const Class: classVals): coeff {
 
 -- simple math helper function:
 
-function lg2(const x: integer): integer {
-  var lg: integer = -1;
+function lg2(const x: int): int {
+  var lg: int = -1;
   while (x) {
     x *= 2;
     lg += 1;

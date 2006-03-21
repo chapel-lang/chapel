@@ -11,7 +11,7 @@ class A {
 
 class C {
   var a : A = A();
-  var bb : integer;
+  var bb : int;
   function f() {
     a(1) *= 2.0;
   }

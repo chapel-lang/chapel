@@ -1,5 +1,5 @@
 class C {
-  function this(ii : integer ...3) : integer {
+  function this(ii : int ...3) : int {
     for i in 1..3 do
       writeln(ii(i));
     return 4;

@@ -1,6 +1,6 @@
 record R {
-  var x : integer = 1;
-  var y : integer = 2;
+  var x : int = 1;
+  var y : int = 2;
 }
 
 var gr : R;

@@ -23,8 +23,8 @@ class Domain {
 }
 
 class ADomain : Domain {
-  parameter rank : integer;
-  var stride, alignment: integer;
+  parameter rank : int;
+  var stride, alignment: int;
   
   function set_range(r: seq(IndexType));
 }

@@ -1,5 +1,5 @@
 record foo {
-  var i : integer;
+  var i : int;
   var f : float;
 }
 

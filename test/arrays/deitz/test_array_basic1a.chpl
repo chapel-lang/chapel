@@ -1,8 +1,8 @@
-config var n : integer = 4;
+config var n : int = 4;
 
 record coord {
-  var x : integer;
-  var y : integer;
+  var x : int;
+  var y : int;
 }
 
 var d : domain(1) = [1..n];

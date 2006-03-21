@@ -1,4 +1,4 @@
-config var n : integer = 3;
+config var n : int = 3;
 config var epsilon : float = 0.00001;
 config var verbose : bool = false;
 
@@ -22,7 +22,7 @@ if (verbose) {
   writeln(A);
 }
 
-var iteration : integer = 0;
+var iteration : int = 0;
 var delta : float = 1.0;
 
 while (delta > epsilon) {

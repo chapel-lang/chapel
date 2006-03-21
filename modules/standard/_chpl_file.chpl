@@ -40,7 +40,7 @@ class file {
       halt("***Error: Trying to close \"", fullFilename, 
            "\" which isn't open***");
     }
-    var returnVal: integer = _fclose(fp);
+    var returnVal: int = _fclose(fp);
     if (returnVal < 0) {
       var fullFilename = path + "/" + filename;
       halt("***Error: The close of \"", fullFilename, "\" failed: ", 
@@ -80,7 +80,7 @@ function fscanfError() {
 pragma "rename _chpl_fwriteln"
 function fwriteln(f: file = stdout) {
   if (f.isOpen) {
-    var returnVal: integer = fprintf(f.fp, "%s", "\n");
+    var returnVal: int = fprintf(f.fp, "%s", "\n");
     if (returnVal < 0) {
       fprintfError();
     } 
@@ -90,17 +90,17 @@ function fwriteln(f: file = stdout) {
 }
 
 
-pragma "rename _chpl_fread_integer" 
-function fread(f: file = stdin, inout val: integer) {
+pragma "rename _chpl_fread_int" 
+function fread(f: file = stdin, inout val: int) {
   if (f.isOpen) {
-    var returnVal: integer = fscanf(f.fp, "%lld", val);
+    var returnVal: int = fscanf(f.fp, "%lld", val);
     if (returnVal == EOF) {
       halt("***Error: Read failed: EOF***");
     }
     if (returnVal < 0) {
       fscanfError();
     } else if (returnVal == 0) {
-      halt("***Error: No integer was read***");
+      halt("***Error: No int was read***");
     }
   } else {
     fopenError(f, isRead = true);
@@ -108,14 +108,14 @@ function fread(f: file = stdin, inout val: integer) {
 }
 
 
-pragma "rename _chpl_fwrite_integer"
-function fwrite(f: file = stdout, val: integer) {
+pragma "rename _chpl_fwrite_int"
+function fwrite(f: file = stdout, val: int) {
   if (f.isOpen) {
-    var returnVal: integer = fprintf(f.fp, "%lld", val);
+    var returnVal: int = fprintf(f.fp, "%lld", val);
     if (returnVal < 0) {
       fprintfError();
     } else if (returnVal == 0) {
-      halt("***Error: No integer was written***");
+      halt("***Error: No int was written***");
     }
   } else {
     fopenError(f, isRead = false);
@@ -126,7 +126,7 @@ function fwrite(f: file = stdout, val: integer) {
 pragma "rename _chpl_fread_float"
 function fread(f: file = stdin, inout val: float) {
   if (f.isOpen) {
-    var returnVal: integer = fscanf(f.fp, "%lg", val);
+    var returnVal: int = fscanf(f.fp, "%lg", val);
     if (returnVal == EOF) {
       halt("***Error: Read failed: EOF***");
     }
@@ -164,7 +164,7 @@ function fread(f: file = stdin, inout val: string) {
 pragma "rename _chpl_fwrite_string"
 function fwrite(f: file = stdout, val: string) {
   if (f.isOpen) {
-    var returnVal: integer = fprintf(f.fp, "%s", val);
+    var returnVal: int = fprintf(f.fp, "%s", val);
     if (returnVal < 0) {
       fprintfError();
     } 
@@ -195,7 +195,7 @@ function fread(f: file = stdin, inout val: bool) {
 pragma "rename _chpl_fwrite_bool"
 function fwrite(f: file = stdout, val: bool) {
   if (f.isOpen) {
-    var returnVal: integer;
+    var returnVal: int;
     if (val == true) {
       returnVal = fprintf(f.fp, "%s", "true");
     } else {
@@ -213,7 +213,7 @@ function fwrite(f: file = stdout, val: bool) {
 pragma "rename _chpl_fwrite_nil" 
 function fwrite(f: file = stdout, x : _nilType) : void {
   if (f.isOpen) {
-    var returnVal: integer = fprintf(f.fp, "%s", "nil");
+    var returnVal: int = fprintf(f.fp, "%s", "nil");
     if (returnVal < 0) {
       fprintfError();
     }

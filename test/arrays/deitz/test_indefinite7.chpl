@@ -1,5 +1,5 @@
 var d : domain(string);
-var a : [d] integer;
+var a : [d] int;
 
 d.add("two");
 d.add("zero");

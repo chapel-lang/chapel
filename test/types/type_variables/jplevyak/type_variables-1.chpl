@@ -4,7 +4,7 @@ function f(type t, x) {
   writeln(y);
 }
 
-var t = integer;
+var t = int;
 var tt = float;
 
 f(t, 1);

@@ -1,17 +1,17 @@
 record mydomain_info {
-  var low : integer;
-  var high : integer;
-  var stride : integer;
-  var alignment : integer;
+  var low : int;
+  var high : int;
+  var stride : int;
+  var alignment : int;
 }
 
 class mydomain {
-  param rank : integer;
+  param rank : int;
   var info0 : mydomain_info;
   var info1 : mydomain_info;
   var info2 : mydomain_info;
 --  var info : rank*mydomain_info;
-  function dimInit(d : integer, low, high, stride) {
+  function dimInit(d : int, low, high, stride) {
     select d {
       when 1 {
         info0.low = low;
@@ -40,7 +40,7 @@ class mydomain {
 --    info(d-1).stride = stride;
 --    info(d-1).alignment = stride;
   }
-  iterator dforall(d : integer) {
+  iterator dforall(d : int) {
     var low = (info0.low, info1.low, info2.low);
     var high = (info0.high, info1.high, info2.high);
     var alow = low(d);
@@ -49,7 +49,7 @@ class mydomain {
       yield i;
     }
   }
-  iterator dfor(d : integer) {
+  iterator dfor(d : int) {
     var low = (info0.low, info1.low, info2.low);
     var high = (info0.high, info1.high, info2.high);
     for i in low(d)..high(d) {

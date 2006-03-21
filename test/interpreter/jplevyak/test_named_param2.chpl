@@ -1,4 +1,4 @@
-function foo(i : integer, j : integer) {
+function foo(i : int, j : int) {
   writeln(i);
   writeln(j);
 }

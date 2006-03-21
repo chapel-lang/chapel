@@ -4,13 +4,13 @@ function foo(m : month) {
   writeln("It's a month");
 }
 
-function foo(i : integer) {
-  writeln("It's an integer");
+function foo(i : int) {
+  writeln("It's an int");
 }
 
 var m : month = jan;
-var i : integer = m;
+var i : int = m;
 
-writeln("The first month is ", m, " or, as an integer, ", i);
+writeln("The first month is ", m, " or, as an int, ", i);
 foo(m);
 foo(i);

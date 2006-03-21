@@ -1,9 +1,9 @@
 record mytuple {
-  var field1 : integer;
+  var field1 : int;
   var field2 : float;
 }
 
-function foo(param i : integer, t : mytuple) {
+function foo(param i : int, t : mytuple) {
   return 1;
 }
 

@@ -1,5 +1,5 @@
 class foo {
-  var i : integer = 17;
+  var i : int = 17;
   var f : float = 3.14;
 }
 

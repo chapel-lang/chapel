@@ -1,9 +1,9 @@
-var x : 2*integer;
+var x : 2*int;
 
 x = (12, 13);
 
-var i : integer;
-var j : integer;
+var i : int;
+var j : int;
 
 (i, j) = x;
 

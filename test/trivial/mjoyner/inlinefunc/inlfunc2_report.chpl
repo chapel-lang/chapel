@@ -4,7 +4,7 @@
  */
 
 class Foo {
-  var y : integer;
+  var y : int;
 }
 
 function main() {
@@ -17,10 +17,10 @@ function main() {
    */
   leaf(f);
 
-  var one: integer = 1;
-  var two: integer = 2;
-  var three: integer = 3;
-  var four : integer = 4;
+  var one: int = 1;
+  var two: int = 2;
+  var three: int = 3;
+  var four : int = 4;
   
   /* temporaries should be created for all four variables and 
    * there should be two copy back assignments created for variable 
@@ -37,7 +37,7 @@ pragma "inline" function leaf(x : Foo) : Foo {
   return x;
 }
 
-function bar(in a: integer, out b: integer, inout c : integer, const d : integer) {    
+function bar(in a: int, out b: int, inout c : int, const d : int) {    
   a = 11;
   b = 22;
   c = 33;

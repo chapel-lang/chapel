@@ -5,7 +5,7 @@ function foo(s) {
   return s;
 }
 
-var t: seq(integer) = (/ 1, 2, 3 /);
+var t: seq(int) = (/ 1, 2, 3 /);
 var a = foo(t);
 writeln("a is: ", a);
 t = t # 4;

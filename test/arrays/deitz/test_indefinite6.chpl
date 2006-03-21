@@ -1,5 +1,5 @@
-var d : domain(integer);
-var a : [d] integer;
+var d : domain(int);
+var a : [d] int;
 
 d += 2;
 d += 0;

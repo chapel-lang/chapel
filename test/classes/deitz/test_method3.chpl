@@ -1,9 +1,9 @@
 class foo {
-  var x : integer;
-  function setxlo(i : integer) {
+  var x : int;
+  function setxlo(i : int) {
     x = i-1;
   }
-  function setxhi(i : integer) {
+  function setxhi(i : int) {
     x = i+1;
   }
 }

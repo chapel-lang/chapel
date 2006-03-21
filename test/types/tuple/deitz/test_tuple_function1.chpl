@@ -1,11 +1,11 @@
-var a : (integer, integer) = (1, 2);
-var b : (integer, integer) = (3, 4);
-var c : (integer, integer);
+var a : (int, int) = (1, 2);
+var b : (int, int) = (3, 4);
+var c : (int, int);
 
 writeln(a, ", ", b, ", ", c);
 
-function foo(x : (integer, integer), y : (integer, integer)) {
-  var t : (integer, integer);
+function foo(x : (int, int), y : (int, int)) {
+  var t : (int, int);
   t(1) = x(1) + y(1);
   t(2) = x(2) + y(2);
   return t;

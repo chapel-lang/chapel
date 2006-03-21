@@ -1,5 +1,5 @@
 union Weigth {
-  var i : integer;
+  var i : int;
   var s : string;
 }
 

@@ -4,11 +4,11 @@ function foo(type t) {
 }
 
 class C {
-  var a : integer = 2;
+  var a : int = 2;
 }
 
 record R {
-  var b : integer = 2;
+  var b : int = 2;
 }
 
 foo(C);

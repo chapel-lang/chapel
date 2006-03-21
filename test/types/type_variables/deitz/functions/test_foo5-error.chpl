@@ -9,9 +9,9 @@ function foo(type t, x : t, y : float) {
   writeln("foo (2) of ", x, " and ", y);
 }
 
-foo(integer, 2, 4);
-foo(integer, 3, 3);
-foo(integer, 2, 4.0);
-foo(integer, 3, 3.0);
+foo(int, 2, 4);
+foo(int, 3, 3);
+foo(int, 2, 4.0);
+foo(int, 3, 3.0);
 foo(float, 2.0, 4.0);
 foo(float, 3.0, 3.0);

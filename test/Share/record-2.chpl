@@ -1,6 +1,6 @@
 record Base {
   var x : record {
-     var y : integer;
+     var y : int;
      var z : float;
   }
 }

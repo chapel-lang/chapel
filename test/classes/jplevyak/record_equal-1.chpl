@@ -1,8 +1,8 @@
 record A {
-  var i : integer;
+  var i : int;
 }
 record B {
-  var i : integer;
+  var i : int;
 }
 
 var a : A;

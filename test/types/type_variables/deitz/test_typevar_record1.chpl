@@ -6,7 +6,7 @@ record foo {
   }
 }
 
-var f : foo(t=integer);
+var f : foo(t=int);
 
 f.x = 2;
 

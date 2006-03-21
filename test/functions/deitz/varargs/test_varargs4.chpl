@@ -1,4 +1,4 @@
-param n : integer = 2;
+param n : int = 2;
 
 function foo(ys : string ...n) {
   for i in 1..n do

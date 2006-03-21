@@ -3,7 +3,7 @@ record array1d {
   var x1 : t;
   var x2 : t;
   var x3 : t;
-  function this(i : integer) : t {
+  function this(i : int) : t {
     var result : t;
     select i {
       when 1 do result = x1;
@@ -14,7 +14,7 @@ record array1d {
     write("[Read on ", i, " returns ", result, "]");
     return result;
   }
-  function =this(i : integer, val : t) : t {
+  function =this(i : int, val : t) : t {
     select i {
       when 1 do x1 = val;
       when 2 do x2 = val;
@@ -26,7 +26,7 @@ record array1d {
   }
 }
 
-var a : array1d(integer);
+var a : array1d(int);
 
 a(1) = 3;
 a(2) = 2;
@@ -36,16 +36,16 @@ writeln(a(1), a(2), a(3));
 record array2d {
   type t;
   var data : array1d(t);
-  function this(i : integer, j : integer) : t {
+  function this(i : int, j : int) : t {
     return data((i - 1) * 2 + j);
   }
-  function =this(i : integer, j : integer, val : t) : t {
+  function =this(i : int, j : int, val : t) : t {
     data((i - 1) * 2 + j) = val;
     return val;
   }
 }
 
-var a2 : array2d(integer);
+var a2 : array2d(int);
 
 a2(1, 1) = 4;
 writeln(a2(1, 1));

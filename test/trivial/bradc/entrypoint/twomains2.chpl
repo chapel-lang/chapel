@@ -1,7 +1,7 @@
 var x = 32;
 var y = -1;
 
-function main(x: integer) {
+function main(x: int) {
   writeln("In main(x), x is: ", x);
 }
 

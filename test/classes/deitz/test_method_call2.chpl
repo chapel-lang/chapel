@@ -1,4 +1,4 @@
-function foo(i : integer) {
+function foo(i : int) {
   writeln("function foo called with i = ", i);
 }
 

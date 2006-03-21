@@ -1,2 +1,2 @@
-var a : integer = 24;
-writeln(let x : integer = a*a in x*x);
+var a : int = 24;
+writeln(let x : int = a*a in x*x);

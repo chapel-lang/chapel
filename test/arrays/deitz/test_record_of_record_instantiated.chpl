@@ -8,10 +8,10 @@ record bar {
   var be : foo(t);
 }
 
-var f : foo(integer);
+var f : foo(int);
 f.fe = 12;
 writeln(f);
 
-var b : bar(integer);
+var b : bar(int);
 b.be.fe = 14;
 writeln(b);

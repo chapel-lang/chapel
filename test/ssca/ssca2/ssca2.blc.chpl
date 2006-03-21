@@ -5,17 +5,17 @@ config const scale = 9;
 
 -- input values to describe the graph.  Override these on the
 -- executable's command-line using the -s flag
-config const totVertices: integer = 2**scale;
-config const maxCliqueSize : integer = 10;
+config const totVertices: int = 2**scale;
+config const maxCliqueSize : int = 10;
 config const probUnidirectional: float = 0.3;
-config const maxParallelEdges: integer = 3;
+config const maxParallelEdges: int = 3;
 config const probIntercliqueEdges: float = 0.6;
-config const percentIntegerWeights: float = 0.6;
-config const maxIntWeight: integer = 8**scale;
-config const maxStrLen: integer = ceil(scale/6.0);
+config const percentIntWeights: float = 0.6;
+config const maxIntWeight: int = 8**scale;
+config const maxStrLen: int = ceil(scale/6.0);
 
-config const cliqueGeneratorsPerLocale: integer = 1;
-config const numCliqueGenerators: integer = numLocales * cliqueGeneratorsPerLocale;
+config const cliqueGeneratorsPerLocale: int = 1;
+config const numCliqueGenerators: int = numLocales * cliqueGeneratorsPerLocale;
 
 var Vertices: domain(1) = 1..totVertices;
 type vertex: index(Vertices);
@@ -28,14 +28,14 @@ var AdjSpace: domain(EdgeSpace) = EdgeSpace;
 var edge: index(Edges);
 
 record multiedge {
-  var intWeights: seq(integer);
+  var intWeights: seq(int);
   var strWeights: seq(string);
 };
 
 var Edges: [AdjSpace] multiedge;
 
 union weightType {
-  var intWeight: integer;
+  var intWeight: int;
   var stringWeight: string;
 }
 
@@ -61,14 +61,14 @@ function coinFlip(headsProb: float = 0.5) {
   return (randomFloat() < headsProb);
 }
 
--- return a random integer from 1 to maxval, inclusive
-function randomInt(maxint: integer) {
+-- return a random int from 1 to maxval, inclusive
+function randomInt(maxint: int) {
   halt("Need to implement randomInt()");
   return 0;
 }
 
 -- return a random string of length strlen
-function randomString(strlen: integer) {
+function randomString(strlen: int) {
   halt("Need to implement randomString()");
   return "<empty>";
 }
@@ -76,10 +76,10 @@ function randomString(strlen: integer) {
 
 function generateDirectedEdges(v1, v2) {
   var edges: seq(edgeTuple);
-  var numParallelEdges: integer = randomInt(maxParallelEdges);
+  var numParallelEdges: int = randomInt(maxParallelEdges);
   forall parEdge in 1..numParallelEdges { -- TODO: could drop "parEdge"
     var weight: weightType;
-    if (coinFlip(percentIntegerWeights)) {
+    if (coinFlip(percentIntWeights)) {
       weight.intWeight = randomInt(maxIntWeight);
     } else {
       weight.stringWeight = randomString(maxStrLen);
@@ -114,14 +114,14 @@ function generateEdges(v1, v2) {
 function generateEdgeList() {
   var edgeTuples: seq(edgeTuple);
   var numVerticesTaken = 0;
-  var clique: [Vertices] integer;
+  var clique: [Vertices] int;
   var numCliques = 0;
 
   forall g in 1..numCliqueGenerators { -- TODO: could drop "g"
     while (numVerticesTaken != totVertices) {
-      var cliqueSize: integer;
-      var vertexOffset: integer;
-      var myCliqueNum: integer;
+      var cliqueSize: int;
+      var vertexOffset: int;
+      var myCliqueNum: int;
       atomic {
         vertexOffset = numVerticesTaken;
         var numVerticesRemaining = totVertices - numVerticesTaken;
@@ -171,7 +171,7 @@ function kernel1(edgeTuples: seq(edgeTuple)) {
     var newEdge: edge = (t.source, t.sink);
     AdjSpace += newEdge;
     typeselect t.weight {
-      when i:integer do
+      when i:int do
         Edges(newEdge).intWeights #= i;
       when s:string do
         Edges(newEdge).strWeights #= s;
@@ -203,7 +203,7 @@ function kernel2(soughtString: string) {
 }
 
 
-function kernel3(startEdges, subGraphEdgeLength: integer) {
+function kernel3(startEdges, subGraphEdgeLength: int) {
   forall startEdge in startEdges {
     results #= findSubgraph(startEdge);
   }
@@ -242,7 +242,7 @@ function kernel3(startEdges, subGraphEdgeLength: integer) {
 }
 
 
-function kernel4(maxClusterSize: integer, k4alpha) {
+function kernel4(maxClusterSize: int, k4alpha) {
   halt("kernel4 not implemented yet");
 }
 
@@ -254,7 +254,7 @@ function writeConfigs() {
   writeln("probUnidirectional = ", probUnidirectional);
   writeln("maxParallelEdges = ", maxParallelEdges);
   writeln("probIntercliqueEdges = ", probIntercliqueEdges);
-  writeln("percentIntegerWeights = ", percentIntegerWeights);
+  writeln("percentIntWeights = ", percentIntWeights);
   writeln("maxIntWeight = ", maxIntWeight);
   writeln("maxStrLen = ", maxStrLen);
 }

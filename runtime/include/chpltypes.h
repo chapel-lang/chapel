@@ -11,7 +11,7 @@ typedef enum __bool {
   true = 1
 } _bool;
 
-typedef long long _integer64;
+typedef long long _int64;
 
 typedef double _float64;
 
@@ -21,7 +21,7 @@ typedef struct __complex128 {
 } _complex128;
 
 typedef char* _string;
-typedef _integer64 _symbol;
+typedef _int64 _symbol;
 
 #define _init_string() _chpl_calloc(1, sizeof(char), "_init_string")
 
@@ -31,7 +31,7 @@ typedef _integer64 _symbol;
 char* _glom_strings(int numstrings, ...);
 
 char* _chpl_tostring_bool(_bool x, char* format);
-char* _chpl_tostring_integer(_integer64 x, char* format);
+char* _chpl_tostring_int(_int64 x, char* format);
 char* _chpl_tostring_float(_float64 x, char* format);
 char* _chpl_tostring_complex(_complex128 x, char* format);
 
@@ -41,6 +41,6 @@ _string _chpl_string_select(_string x, int low, int high);
 _string _chpl_string_strided_select(_string x, int low, int high, int stride);
 _bool _chpl_string_equal(_string x, _string y);
 _bool _chpl_string_notequal(_string x, _string y);
-_integer64 _chpl_string_length(_string x);
+_int64 _chpl_string_length(_string x);
 
 #endif

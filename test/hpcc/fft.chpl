@@ -1,4 +1,4 @@
-config var logN: integer = 4;
+config var logN: int = 4;
 
 
 // PLACEHOLDER for external stuff

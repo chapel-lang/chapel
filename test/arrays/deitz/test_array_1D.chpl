@@ -1,7 +1,7 @@
-config var n : integer = 12;
+config var n : int = 12;
 
 var d : domain(1) = [1..n];
-var a : [d] integer;
+var a : [d] int;
 
 writeln(d);
 writeln(a);

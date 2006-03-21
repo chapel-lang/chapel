@@ -1,7 +1,7 @@
 var x = foo();
 var y = -1;
 
-function main(argc: integer, argv: [1..argc] string) {
+function main(argc: int, argv: [1..argc] string) {
   var y = 42;
 
   writeln("x is: ", x);

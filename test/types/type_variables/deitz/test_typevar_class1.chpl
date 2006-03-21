@@ -6,7 +6,7 @@ class foo {
   }
 }
 
-var f : foo(t=integer) = foo(t=integer);
+var f : foo(t=int) = foo(t=int);
 
 f.x = 2;
 

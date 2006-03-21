@@ -1,11 +1,11 @@
 typedef mybool: bool = true;
-typedef myinteger: integer = 1;
+typedef myint: int = 1;
 typedef myfloat: float = 2.3;
 typedef mycomplex: complex = 4.5 + 6.7i;
 typedef mystring: string = "empty";
 
 var a: mybool;
-var b: myinteger;
+var b: myint;
 var c: myfloat;
 var d: mycomplex;
 var e: mystring;

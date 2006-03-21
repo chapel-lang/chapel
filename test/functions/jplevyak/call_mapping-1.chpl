@@ -1,17 +1,17 @@
 class C {
-  var a : integer;
+  var a : int;
 }
 class D {
-  var aa : integer;
-  function a(i : integer) { return aa + i; }
-  function =a(i : integer, v : integer) { aa = i + v; }
+  var aa : int;
+  function a(i : int) { return aa + i; }
+  function =a(i : int, v : int) { aa = i + v; }
 }
 var d : domain(1) = 1..3;
 class E {
-  var a : [d] integer;
+  var a : [d] int;
 }
 
-var a : [d] integer;
+var a : [d] int;
 var x = 1;
 var z = 1;
 var y1 = C();

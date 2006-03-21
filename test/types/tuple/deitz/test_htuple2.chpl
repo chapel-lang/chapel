@@ -1,4 +1,4 @@
-var x : 2*integer;
+var x : 2*int;
 
 x = (12, 13);
 

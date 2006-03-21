@@ -1,6 +1,6 @@
-config var er: integer = 1;
-config var hz: integer = 2;
-config var ok: integer = 3;
+config var er: int = 1;
+config var hz: int = 2;
+config var ok: int = 3;
 
 writeln("*****************************************************");
 writeln("Given a hash table size of 101, these three variables");

@@ -14,8 +14,8 @@ class foo {
   }
 }
 
-var f1 : foo(t=integer) = foo(t = integer);
-var b1 : bar(t=integer) = bar(t = integer);
+var f1 : foo(t=int) = foo(t = int);
+var b1 : bar(t=int) = bar(t = int);
 var f2 : foo(t=string) = foo(t = string);
 var b2 : bar(t=string) = bar(t = string);
 

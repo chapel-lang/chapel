@@ -6,7 +6,7 @@ class foo {
   }
 }
 
-var f = foo(integer);
+var f = foo(int);
 
 var f2 = foo(string);
 

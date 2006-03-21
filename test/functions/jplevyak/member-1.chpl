@@ -1,5 +1,5 @@
 class foo {
-  var i : integer;
+  var i : int;
 /* function f() { return 10 + i; } */
 }
 

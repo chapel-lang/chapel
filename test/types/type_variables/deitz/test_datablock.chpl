@@ -3,12 +3,12 @@ class DataBlock {
   var x1 : t;
   var x2 : t;
   var x3 : t;
-  function this(i : integer) : t {
+  function this(i : int) : t {
     return (if i == 1 then x1 else (if i == 2 then x2 else x3));
   }
 }
 
-var x : DataBlock(integer) = DataBlock(integer);
+var x : DataBlock(int) = DataBlock(int);
 
 x.x1 = 1;
 x.x2 = 2;

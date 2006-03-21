@@ -1,7 +1,7 @@
-function foo(param rank : integer, x : (rank*integer)) {
+function foo(param rank : int, x : (rank*int)) {
   writeln(x);
 }
 
-var x : 2*integer;
+var x : 2*int;
 foo(2, x);
 foo(3, x);

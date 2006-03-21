@@ -1,4 +1,4 @@
-function filler(x : integer) {
+function filler(x : int) {
   writeln(x);
 }
 
@@ -6,7 +6,7 @@ function foo(x) {
   writeln(x);
 }
 
-var i : integer = 2;
+var i : int = 2;
 
 filler(i);
 

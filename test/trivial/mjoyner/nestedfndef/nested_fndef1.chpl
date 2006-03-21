@@ -2,7 +2,7 @@ function main() {
   nested();            
   
   function nested() {
-    var x : integer = 3;
+    var x : int = 3;
     writeln(x);
   } 
 }

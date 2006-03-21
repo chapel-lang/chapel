@@ -3,11 +3,11 @@ record bar {
   var x : t;
 }
 
-var b : bar(integer);
+var b : bar(int);
 
 writeln(b);
 
-function foo(b : bar(integer)) {
+function foo(b : bar(int)) {
   writeln(b);
 }
 

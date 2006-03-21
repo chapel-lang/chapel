@@ -1,5 +1,5 @@
 class G {
-  function readit(): integer {
+  function readit(): int {
     return 1;
   }
 }

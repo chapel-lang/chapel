@@ -1,7 +1,7 @@
 record foo {
-  var x : integer = 1;
-  var y : integer = 2;
-  var z : integer = 3;
+  var x : int = 1;
+  var y : int = 2;
+  var z : int = 3;
 }
 
 function fwrite(fp : file, f : foo) {

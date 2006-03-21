@@ -1,5 +1,5 @@
-var x : 2*integer;
-var y : (integer, integer);
+var x : 2*int;
+var y : (int, int);
 
 x = (1, 2);
 

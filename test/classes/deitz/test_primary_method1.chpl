@@ -1,5 +1,5 @@
 class foo {
-  var i : integer;
+  var i : int;
   function primary() {
     writeln("primary method call; i is ", i);
   }

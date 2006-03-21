@@ -1,10 +1,10 @@
-type locale: integer;
-type indexType: integer;
+type locale: int;
+type indexType: int;
 
-param rank: integer = 1;
+param rank: int = 1;
 
-config const numLocales: integer = 4;
-config const n: integer = 10;
+config const numLocales: int = 4;
+config const n: int = 10;
 
 var rankD: domain(1) = 1..rank;
 var localeD: domain(1) = 1..numLocales;
@@ -18,7 +18,7 @@ var mylo: [rankD] indexType;
 var myhi: [rankD] indexType;
 
 for loc in localeD {
-  var pos: [rankD] integer = loc;  -- only works for 1D
+  var pos: [rankD] int = loc;  -- only works for 1D
   for d in 1..rank {
     var firstLoc = 1;            -- localeD.lo(d)
     var numLocs = numLocales;       -- localeD.extent(d)

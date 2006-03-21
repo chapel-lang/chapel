@@ -1,4 +1,4 @@
-var t : (integer, string);
+var t : (int, string);
 
 t(1) = 12;
 t(2) = "hello world";

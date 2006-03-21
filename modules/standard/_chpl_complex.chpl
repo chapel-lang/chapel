@@ -22,7 +22,7 @@ function fread(f : file = stdin, x : complex) {
   var realPart: float;
   var imagPart: float;
   var imagI: string;
-  var matchingCharWasRead: integer;
+  var matchingCharWasRead: int;
   var isNeg: bool;
   var ignoreWhiteSpace = 1;
 

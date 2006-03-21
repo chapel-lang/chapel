@@ -1,10 +1,10 @@
 record C {
-  var x : integer;
+  var x : int;
 }
 
 record D {
-  var x : integer;
-  var y : integer;
+  var x : int;
+  var y : int;
 }
 
 function f(a : C) {

@@ -1,7 +1,7 @@
-config var n : integer = 4;
+config var n : int = 4;
 
 class foo {
-  var i : integer;
+  var i : int;
   var f : float;
 }
 

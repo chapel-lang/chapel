@@ -1,5 +1,5 @@
 class _sdomain : _domain {
-  param rank : integer;
+  param rank : int;
   var adomain : _adomain(rank);
 
   function _build_array(type elt_type)
@@ -8,7 +8,7 @@ class _sdomain : _domain {
 
 class _sarray : value {
   type elt_type;
-  param rank : integer;
+  param rank : int;
 
   var dom : _sdomain(rank);
 }

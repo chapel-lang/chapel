@@ -1,5 +1,5 @@
-pragma "inline" iterator basic() : integer {
-  var i : integer;
+pragma "inline" iterator basic() : int {
+  var i : int;
   while i < 10 {
     yield i * 4;
     i += 1;
@@ -9,13 +9,13 @@ pragma "inline" iterator basic() : integer {
 
 
 function main() {
-var x : integer = 5;
+var x : int = 5;
   for i in basic() {
     writeln(i+x);
   } 
 
   for j in basic() {
-     var y : integer = 4;
+     var y : int = 4;
      x = 3;
      writeln(j + y + x);
   }

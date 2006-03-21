@@ -2,6 +2,6 @@ function foo() {
   {
     writeln(x);
   }
-  var x : integer = 12;
+  var x : int = 12;
 }
 foo();

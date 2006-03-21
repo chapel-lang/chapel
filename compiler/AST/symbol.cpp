@@ -1331,7 +1331,7 @@ FnSymbol *Symbol::nestingParent(int i) {
 EnumSymbol::EnumSymbol(char* init_name) :
   Symbol(SYMBOL_ENUM, init_name)
 {
-  type = dtInteger;
+  type = dtInt;
 }
 
 
@@ -1534,7 +1534,7 @@ VarSymbol *new_IntSymbol(long b) {
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   if (s)
     return s;
-  s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), dtInteger);
+  s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), dtInt);
   rootScope->define(s);
   char n[80];
   sprintf(n, "%ld", b);
@@ -1543,8 +1543,8 @@ VarSymbol *new_IntSymbol(long b) {
   *s->immediate = imm;
   s->literalType = new_LiteralType(s);
   uniqueConstantsHash.put(s->immediate, s);
-  if (!dtInteger->defaultValue)
-    dtInteger->defaultValue = new_IntSymbol(0);
+  if (!dtInt->defaultValue)
+    dtInt->defaultValue = new_IntSymbol(0);
   return s;
 }
 
@@ -1646,7 +1646,7 @@ immediate_type(Immediate *imm) {
       if (imm->num_index == IF1_INT_TYPE_1) return dtBool;
       goto Lerror;
     case IF1_NUM_KIND_INT:
-      if (imm->num_index == IF1_INT_TYPE_64) return dtInteger;
+      if (imm->num_index == IF1_INT_TYPE_64) return dtInt;
       goto Lerror;
     case IF1_NUM_KIND_FLOAT:
       if (imm->num_index == IF1_FLOAT_TYPE_64) return dtFloat;
@@ -1663,7 +1663,7 @@ set_immediate_type(Immediate *imm, Type *t) {
   if (t == dtBool) {
     imm->const_kind = IF1_NUM_KIND_UINT;
     imm->num_index = IF1_INT_TYPE_1; 
-  } else if (t == dtInteger) {
+  } else if (t == dtInt) {
     imm->const_kind = IF1_NUM_KIND_INT;
     imm->num_index = IF1_INT_TYPE_64; 
   } else if (t == dtFloat) {

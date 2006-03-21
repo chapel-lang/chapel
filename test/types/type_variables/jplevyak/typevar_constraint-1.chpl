@@ -7,11 +7,11 @@ function foo(type t : C, c : t) {
 }
 
 class A { 
-  var x : integer;
+  var x : int;
 }
 
 class B : A { 
-  var y : integer;
+  var y : int;
 }
 
 class C { 

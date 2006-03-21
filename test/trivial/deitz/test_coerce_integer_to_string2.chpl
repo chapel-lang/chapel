@@ -4,6 +4,6 @@ function foo(s : string) {
 
 foo(12);
 
-var i : integer = 12;
+var i : int = 12;
 
 foo(i);

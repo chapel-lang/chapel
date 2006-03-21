@@ -1,21 +1,21 @@
 function foo1() {
-  var x : integer = 12;
+  var x : int = 12;
   writeln(x);
 }
 
-function foo2(i : integer) {
-  var x : integer = 13;
+function foo2(i : int) {
+  var x : int = 13;
   writeln(x, i);
 }
 
-function foo3(i : integer) {
+function foo3(i : int) {
   writeln(i);
 }
 
-function foo4(i : integer) {
-  var j : integer = 12;
+function foo4(i : int) {
+  var j : int = 12;
   {
-    var k : integer = 13;
+    var k : int = 13;
     writeln(i, j, k);
   }
 }

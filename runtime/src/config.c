@@ -390,21 +390,21 @@ void installConfigVar(char* varName, char* value, char* moduleName) {
 } 
 
 
-int setInCommandLine_integer64(char* varName, _integer64* value, 
+int setInCommandLine_int64(char* varName, _int64* value, 
                                char* moduleName) {
   int varSet = 0;
   char* setValue = lookupSetValue(varName, moduleName);
 
   if (setValue) {
     char extraChars;
-    int numScans = sscanf(setValue, _default_format_read_integer64"%c", 
+    int numScans = sscanf(setValue, _default_format_read_int64"%c", 
                       value, &extraChars);
     if (numScans == 1) {
       varSet = 1;
     } else {
       char* message = _glom_strings(5, "\"", setValue, "\" is not a valid "
                                     "value for config var \"", varName, 
-                                    "\" of type integer");
+                                    "\" of type int");
       printError(message);
     }
   }   

@@ -1,10 +1,10 @@
 class foo {
   class bar {
-    var x : integer;
-    var y : integer;
+    var x : int;
+    var y : int;
   }
   var b : bar = bar();
-  var z : integer;
+  var z : int;
 }
 
 var f : foo = foo();

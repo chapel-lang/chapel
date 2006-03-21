@@ -1,6 +1,6 @@
 class foo {
-  var x : integer = 12;
-  function bar(x : integer) {
+  var x : int = 12;
+  function bar(x : int) {
     writeln(x);
   }
 }

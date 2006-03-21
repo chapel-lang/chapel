@@ -1,7 +1,7 @@
-config var n : integer = 4;
+config var n : int = 4;
 
-var twice:  2*integer = (-1, 1);
-var thrice: 3*integer = (-1, 0, 1);
+var twice:  2*int = (-1, 1);
+var thrice: 3*int = (-1, 0, 1);
 
 var d2 : domain(2) = [1..n, 1..n];
 writeln("domain(2): \t\t\t", d2);

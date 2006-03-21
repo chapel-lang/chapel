@@ -1,16 +1,16 @@
 function main() {
 
   function nested() {
-     var w : integer = 3;
+     var w : int = 3;
      writeln(w);
      deeplyNested();
           
     function deeplyNested() {
-      var x : integer = 4;
+      var x : int = 4;
       writeln(x);
       
       function reallyDeeplyNested() {
-        var y : integer = 5;
+        var y : int = 5;
         writeln(y);
         superNested(); 
         

@@ -2,7 +2,7 @@ function min(type t): t {
   return -999:t;
 }
 
-var minint: integer = min(integer);
+var minint: int = min(int);
 var minfloat: float = min(float);
 
 writeln("minint is: ", minint);

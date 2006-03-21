@@ -1,5 +1,5 @@
 class foo {
-  var x : integer;
+  var x : int;
 }
 
 var a = foo();

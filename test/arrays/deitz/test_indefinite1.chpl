@@ -1,4 +1,4 @@
-var d : domain(integer);
+var d : domain(int);
 d.add(2);
 d.add(7);
 

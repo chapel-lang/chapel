@@ -3,7 +3,7 @@ class Subgraph {
   var x : wtype;
 }
 
-var x : Subgraph(wtype = integer) = Subgraph(wtype = integer);
+var x : Subgraph(wtype = int) = Subgraph(wtype = int);
 
 x.x = 1;
 

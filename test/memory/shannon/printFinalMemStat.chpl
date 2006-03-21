@@ -1,14 +1,14 @@
-config var i: integer = 0;
+config var i: int = 0;
 config var f: float = 1.2;
 config var b: bool = true;
 
 class C {
-  var u: integer;
-  var v: integer;
-  var w: integer;
-  var x: integer;
-  var y: integer;
-  var z: integer;
+  var u: int;
+  var v: int;
+  var w: int;
+  var x: int;
+  var y: int;
+  var z: int;
 }
 
 function foo() {

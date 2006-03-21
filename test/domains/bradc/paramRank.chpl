@@ -1,5 +1,5 @@
 param rank = 1;
-config var n: integer = 100;
+config var n: int = 100;
 
 var D: domain(rank) = [1..n];
 

@@ -1,8 +1,8 @@
 var i1 : index(2);
-var i : integer = 0;
-var j : integer = 0;
+var i : int = 0;
+var j : int = 0;
 
-var tuple : (integer, integer);
+var tuple : (int, int);
 
 i1 = (1,2);
 tuple = i1;

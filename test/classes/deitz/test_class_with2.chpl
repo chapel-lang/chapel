@@ -7,7 +7,7 @@ class point {
 }
 
 class cpoint {
-  var color : integer;
+  var color : int;
   with point;
 }
 

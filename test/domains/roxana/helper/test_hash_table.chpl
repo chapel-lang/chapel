@@ -3,13 +3,13 @@
 
 class HashTable {
   type T;  
-  var size : integer;
+  var size : int;
   var del : T;
   var null : T;
    
   var table: _fdata(T) = _fdata(T, 20);
     
-  function h1(k : integer) : integer {
+  function h1(k : int) : int {
     return k mod size;
   }
   
@@ -24,17 +24,17 @@ class HashTable {
     }
   }    
   
-  function h2(k : integer) : integer {
+  function h2(k : int) : int {
     return (1 + k mod (size - 1));
   }
   
-  function h(k : integer, i : integer) : integer {
+  function h(k : int, i : int) : int {
     return ((h1(k) + i*h2(k)) mod size);
   }
   
-  function Insert(k: integer, v : T) : integer {
-    var j : integer = -1;
-    var i : integer = 0;
+  function Insert(k: int, v : T) : int {
+    var j : int = -1;
+    var i : int = 0;
     while (i < size){
       j = h(k, i);
       if (table(j) == null or table(j) == del) {
@@ -47,8 +47,8 @@ class HashTable {
     return -1;
   }
   
-  function Remove(k : integer) : HashTable {
-    var j : integer = Search(k);
+  function Remove(k : int) : HashTable {
+    var j : int = Search(k);
     if (j == -1) {
       writeln("The key you want to delete is not in the table!");
       return this;
@@ -57,9 +57,9 @@ class HashTable {
     return this;
   }
   
-  function Search (k : integer) : integer {
-    var i : integer = 0;
-    var j : integer = -1;
+  function Search (k : int) : int {
+    var i : int = 0;
+    var j : int = -1;
     while ((i < size) and (table(j) != null)) {
       j = h(k, i);
       if (j == k){
@@ -72,27 +72,27 @@ class HashTable {
   }
 }
 
-  --var size : integer;
+  --var size : int;
   --writeln("Enter table size");
   --read(size);
   --writeln("Size is: ", size);
   
-  var s: integer = 10;
+  var s: int = 10;
   
-  var del : integer;
+  var del : int;
   writeln("Enter a <deleted key> value.");
   read(del);
   
-  var null : integer;
+  var null : int;
   writeln("Enter a <null key> value.");
   read(null);
   
-  var ht : HashTable(T=integer) = HashTable(T=integer, size=s, del=del, null=null);
+  var ht : HashTable(T=int) = HashTable(T=int, size=s, del=del, null=null);
   
   ht.Init();
   
-  var i : integer = 0;
-  var v : integer;
+  var i : int = 0;
+  var v : int;
   
   while(i < s) {
     writeln("Enter an element to insert");

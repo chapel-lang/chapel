@@ -1,7 +1,7 @@
-var s : integer = 10;
+var s : int = 10;
 --writeln("Enter table size");
 --read(s);
-var table : _ddata(integer) = _ddata(integer, s);
+var table : _ddata(int) = _ddata(int, s);
 
 table.init();
 

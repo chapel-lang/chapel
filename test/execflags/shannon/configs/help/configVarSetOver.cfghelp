@@ -1,8 +1,0 @@
-CONFIG VARS:
-============
-module1's config vars:
-  x: integer (configured to 999)
-
-module2's config vars:
-  x: integer
-  z: float (configured to 8888.88)

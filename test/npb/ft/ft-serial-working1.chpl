@@ -31,8 +31,8 @@ function nextrandlc(inout x : float, a : float) : float {
   return r46 * x;
 }
 
-function initrandlc(seed, a : float, in n : integer) : float {
-  var i : integer, t, g : float;
+function initrandlc(seed, a : float, in n : int) : float {
+  var i : int, t, g : float;
   var x : float = seed;
   t = a;
   while n != 0 do {
@@ -45,9 +45,9 @@ function initrandlc(seed, a : float, in n : integer) : float {
   return x;
 }
 
-var randlc_last_n : integer = -2,
+var randlc_last_n : int = -2,
     randlc_last_x : float;
-function randlc(n : integer) : float {
+function randlc(n : int) : float {
   if n != randlc_last_n + 1 then
     randlc_last_x = initrandlc(seed, arand, n);
   randlc_last_n = n;
@@ -104,7 +104,7 @@ function compute_index_map(Twiddle) {
                              ((j+nx/2) mod nx - nx/2)**2));
 }
 
-var fftblock : integer = 16, fftblockpad : integer = 18;
+var fftblock : int = 16, fftblockpad : int = 18;
 
 var u : [0..nz-1] complex;
 
@@ -124,7 +124,7 @@ function fft_init() {
   }
 }
 
-function fftz2(dir, l, m, n, ny, ny1 : integer,
+function fftz2(dir, l, m, n, ny, ny1 : int,
                u,
                x, y) {
   var lk = 2**(l-1), li = 2**(m-1), lj = 2*lk;
@@ -142,7 +142,7 @@ function fftz2(dir, l, m, n, ny, ny1 : integer,
   }
 }
 
-function cfftz(dir, m, n, ny, ny1 : integer,
+function cfftz(dir, m, n, ny, ny1 : int,
                x, y) {
   for l in 1..m by 2 {
     fftz2(dir, l, m, n, ny, ny1, u, x, y);
@@ -184,7 +184,7 @@ function cffts3(dir, n, X1, X2, ny, ny1, x, y) {
   }
 }
 
-function fft(dir : integer, X1, X2) {
+function fft(dir : int, X1, X2) {
   var x, y : [0..nz-1, 0..fftblockpad-1] complex;
   if dir == 1 {
     cffts3(dir, nz, X1, X1, fftblock, fftblockpad, x, y);

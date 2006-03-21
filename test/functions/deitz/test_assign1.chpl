@@ -1,9 +1,9 @@
 record C {
-  var i : integer = 2;
+  var i : int = 2;
 }
 
 record D {
-  var j : integer = 3;
+  var j : int = 3;
 }
 
 function =(d : D, c : C) {

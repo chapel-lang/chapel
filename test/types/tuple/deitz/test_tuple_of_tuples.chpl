@@ -1,4 +1,4 @@
-var t : (integer, (float, string));
+var t : (int, (float, string));
 
 t = (2, (3.14, "hello world"));
 

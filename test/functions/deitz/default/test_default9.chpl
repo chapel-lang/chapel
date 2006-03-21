@@ -1,9 +1,9 @@
 function bar() {
 
-  var x_default : integer = 2;
-  var y_default : integer = 4;
+  var x_default : int = 2;
+  var y_default : int = 4;
 
-  function foo(x : integer = x_default, y : integer = y_default) : integer return x + y;
+  function foo(x : int = x_default, y : int = y_default) : int return x + y;
 
   writeln(foo());
 }

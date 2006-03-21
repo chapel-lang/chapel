@@ -1,3 +1,3 @@
-var x : integer = 0;
+var x : int = 0;
 
 writeln(x);

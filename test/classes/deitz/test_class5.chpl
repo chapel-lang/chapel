@@ -3,7 +3,7 @@ record foo {
   var x : t;
 }
 
-var f : foo(foo(integer));
+var f : foo(foo(int));
 writeln(f);
 
 record bar {

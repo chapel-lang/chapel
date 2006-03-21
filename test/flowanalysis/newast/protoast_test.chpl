@@ -1,6 +1,6 @@
 /* a simple test */
 
-var n: integer = 999;  -- here is a one-line comment
+var n: int = 999;  -- here is a one-line comment
 
 var D: domain(1) = [1..n];
 

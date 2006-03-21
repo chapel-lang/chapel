@@ -73,7 +73,7 @@ char* _chpl_tostring_bool(_bool x, char* format) {
 }
 
 
-char* _chpl_tostring_integer(_integer64 x, char* format) {
+char* _chpl_tostring_int(_int64 x, char* format) {
   char buffer[256];
   sprintf(buffer, format, x);
   return _glom_strings(1, buffer);
@@ -144,6 +144,6 @@ _bool _chpl_string_notequal(_string x, _string y) {
 }
 
 
-_integer64 _chpl_string_length(_string x) {
+_int64 _chpl_string_length(_string x) {
   return strlen(x);
 }

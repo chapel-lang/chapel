@@ -1,4 +1,4 @@
-class A { var a : integer; }
+class A { var a : int; }
 class B { var b : float; }
 var a = A(1);
 var b = B(2.0);

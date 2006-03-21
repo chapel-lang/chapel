@@ -1,6 +1,6 @@
 class HashTable { 
-  var size : integer;
-  var table: _ddata(integer) = _ddata(integer, 20); -- limitation
+  var size : int;
+  var table: _ddata(int) = _ddata(int, 20); -- limitation
     -- you currently cannot use 'size' here
     -- eventually you may be able to especially if size is a param
   function initialize() {
@@ -8,7 +8,7 @@ class HashTable {
   }
 }  
 
-var s1 : integer = 10;
+var s1 : int = 10;
 
 var ht : HashTable = HashTable(s1);
 

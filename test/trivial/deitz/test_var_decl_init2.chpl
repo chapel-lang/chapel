@@ -1,7 +1,7 @@
-function foo(n : integer) : integer {
+function foo(n : int) : int {
   return n * 2;
 }
 
-var x : integer = foo(14);
+var x : int = foo(14);
 
 writeln(x);

@@ -1,5 +1,5 @@
 record C {
-  var c : integer;
+  var c : int;
 }
 
 record B {

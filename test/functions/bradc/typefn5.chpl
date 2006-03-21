@@ -4,6 +4,6 @@ function min(type t) {
   return x;
 }
 
-var minint: integer = min(integer);
+var minint: int = min(int);
 
 writeln("minint is: ", minint);

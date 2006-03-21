@@ -1,4 +1,4 @@
-function foo(inout a : integer) : integer {
+function foo(inout a : int) : int {
   a += 1;
   return a;
 }

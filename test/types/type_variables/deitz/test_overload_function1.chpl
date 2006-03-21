@@ -1,4 +1,4 @@
-function foo(x : integer) {
+function foo(x : int) {
   writeln(x);
 }
 
@@ -6,7 +6,7 @@ function foo(x : float) {
   writeln(x);
 }
 
-var i : integer = 2;
+var i : int = 2;
 
 foo(i);
 

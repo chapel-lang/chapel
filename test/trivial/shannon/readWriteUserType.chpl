@@ -1,5 +1,5 @@
-typedef newInteger:  integer;
-var  myInteger:   newInteger;
+typedef newInt:  int;
+var  myInt:   newInt;
 
 typedef newFloat:    float;
 var  myFloat:     newFloat;
@@ -10,9 +10,9 @@ var  myBoolean:   newBoolean;
 typedef newComplex:  complex;
 var  myComplex:   newComplex;
 
-write("Enter an integer: ");
-read(myInteger);
-writeln("You entered ", myInteger);
+write("Enter an int: ");
+read(myInt);
+writeln("You entered ", myInt);
 
 write("Enter a float: ");
 read(myFloat);

@@ -1,6 +1,6 @@
-var i : integer = 2;
-var j : integer = 3;
-var tuple : (integer, integer);
+var i : int = 2;
+var j : int = 3;
+var tuple : (int, int);
 
 tuple = (4, 5);
 

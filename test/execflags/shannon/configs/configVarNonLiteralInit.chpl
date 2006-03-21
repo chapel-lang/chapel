@@ -1,6 +1,6 @@
-var a: integer = 4;
-var b: integer = 5;
-config var x: integer = a + b;
+var a: int = 4;
+var b: int = 5;
+config var x: int = a + b;
 
 writeln("a: ", a);
 writeln("b: ", b);

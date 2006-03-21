@@ -200,7 +200,7 @@ bool Type::requiresCParamTmp(intentTag intent) {
 
 bool Type::implementedUsingCVals(void) {
   if (this == dtBool ||
-      this == dtInteger ||
+      this == dtInt ||
       this == dtFloat) {
     return true;
   } else {
@@ -878,9 +878,9 @@ bool ClassType::hasDefaultReadFunction(void) {
 
 AList<Stmt>* ClassType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
   AList<Stmt>* body = new AList<Stmt>();
-  Symbol* ignoreWhiteSpace = new VarSymbol("ignoreWhiteSpace", dtInteger, VAR_NORMAL);
+  Symbol* ignoreWhiteSpace = new VarSymbol("ignoreWhiteSpace", dtInt, VAR_NORMAL);
   body->insertAtTail(new DefExpr(ignoreWhiteSpace, new_IntLiteral(1)));
-  Symbol* matchingCharWasRead = new VarSymbol("matchingCharWasRead", dtInteger, VAR_NORMAL);
+  Symbol* matchingCharWasRead = new VarSymbol("matchingCharWasRead", dtInt, VAR_NORMAL);
   body->insertAtTail(new DefExpr(matchingCharWasRead, new_IntLiteral(0)));
   CallExpr* fileArgFP = new CallExpr(PRIMITIVE_GET_MEMBER, fileArg, new_StringSymbol("fp"));
   CallExpr* readOpenBrace = new CallExpr("_readLitChar", fileArgFP, new_StringLiteral("{"), ignoreWhiteSpace);
@@ -1020,8 +1020,8 @@ void initType(void) {
   dtVoid = Symboltable::definePrimitiveType("void", "void");
 
   dtBool = Symboltable::definePrimitiveType("bool", "_bool");
-  dtInteger = Symboltable::definePrimitiveType("integer", "_integer64");
-  dtUnsigned = Symboltable::definePrimitiveType("uinteger", "_uinteger64");
+  dtInt = Symboltable::definePrimitiveType("int", "_int64");
+  dtUnsigned = Symboltable::definePrimitiveType("uint", "_uint64");
   dtFloat = Symboltable::definePrimitiveType("float", "_float64", new_FloatSymbol("0.0", 0.0));
   // This should point to the complex type defined in modules/standard/_chpl_complex.chpl
   dtComplex = Symboltable::definePrimitiveType("complex", "_complex128", new_ComplexSymbol("_MAKE_COMPLEX64(0.0,0.0)", 0.0, 0.0));

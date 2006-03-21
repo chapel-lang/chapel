@@ -1,11 +1,11 @@
 class myclass {
-  var x: integer;
+  var x: int;
   var y: float;
 }
 
 class myotherclass {
   var x: float;
-  var y: integer;
+  var y: int;
 }
 
 function foo(a) {

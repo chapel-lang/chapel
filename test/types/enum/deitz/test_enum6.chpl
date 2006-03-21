@@ -1,4 +1,4 @@
-var j : integer = 2;
+var j : int = 2;
 
 while (j < 100) {
   j *= (j + 1);
@@ -7,19 +7,19 @@ while (j < 100) {
 enum ExprTypes { ADD, MUL, DIV, NEG=j };
 
 var E : ExprTypes = ADD;
-var i : integer;
+var i : int;
 
 i = E;
-writeln("The first type is ", E, " or, as an integer, ", i);
+writeln("The first type is ", E, " or, as an int, ", i);
 
 E = MUL;
 i = E;
-writeln("The second type is ", E, " or, as an integer, ", i);
+writeln("The second type is ", E, " or, as an int, ", i);
 
 E = DIV;
 i = E;
-writeln("The third type is ", E, " or, as an integer, ", i);
+writeln("The third type is ", E, " or, as an int, ", i);
 
 E = NEG;
 i = E;
-writeln("The fourth type is ", E, " or, as an integer, ", i);
+writeln("The fourth type is ", E, " or, as an int, ", i);

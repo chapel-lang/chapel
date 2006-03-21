@@ -1,6 +1,6 @@
 record point {
-  var x : integer;
-  var y : integer;
+  var x : int;
+  var y : int;
 }
 
 function +(p1 : point, p2 : point) : point {

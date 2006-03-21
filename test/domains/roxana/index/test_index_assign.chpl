@@ -1,4 +1,4 @@
-config var n : integer = 5;
+config var n : int = 5;
 
 var D2 : domain(2) = (1..n, 1..n);
 

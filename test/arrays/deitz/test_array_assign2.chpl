@@ -1,8 +1,8 @@
-config var n : integer = 8;
+config var n : int = 8;
 
 var D : domain(2) = [1..n, 1..n];
-var A : [D] integer;
-var B : [D] integer;
+var A : [D] int;
+var B : [D] int;
 
 [i,j in D] A(i,j) = (i - 1) * n + j;
 

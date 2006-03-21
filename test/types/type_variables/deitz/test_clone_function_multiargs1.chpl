@@ -3,7 +3,7 @@ function foo(x, y) {
   writeln(y);
 }
 
-var i : integer = 2;
+var i : int = 2;
 var s : string = "sugar";
 
 foo(i, i);

@@ -1,11 +1,11 @@
-var x: integer = 10;
+var x: int = 10;
 
 writeln("x is: ", x);
 writeln("x is: ", x:"%3lld");
 writeln("x is: ", x:"%.3lld");
 
 var D: domain(1) = 1..4;
-var A: [D] integer;
+var A: [D] int;
 
 forall i in D {
   A(i) = 3;

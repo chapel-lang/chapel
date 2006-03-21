@@ -1,11 +1,11 @@
 class _htuple : value {
   type elt_type;
-  param size : integer;
+  param size : int;
   var elements : _ddata(elt_type) = _ddata(elt_type, size);
   function initialize() {
     elements.init();
   }
-  function this(i : integer) var : elt_type {
+  function this(i : int) var : elt_type {
     if i < 1 or i > size then
       halt("tuple indexing out-of-bounds error");
     return elements(i-1);

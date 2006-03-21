@@ -1,1 +1,1 @@
-writeln([i:integer in 1..5] i);
+writeln([i:int in 1..5] i);

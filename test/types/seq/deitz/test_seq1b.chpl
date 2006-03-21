@@ -1,4 +1,4 @@
-var s : seq of integer;
+var s : seq of int;
 
 s = (/ 3, 1, 4, 1, 5, 9 /);
 

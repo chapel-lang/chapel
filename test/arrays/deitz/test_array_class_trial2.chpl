@@ -4,7 +4,7 @@ class array1d {
   var x2 : t;
   var x3 : t;
   var x4 : t;
-  function this(i : integer) : t {
+  function this(i : int) : t {
     var result : t;
     select i {
       when 1 do result = x1;
@@ -16,7 +16,7 @@ class array1d {
     writeln("Read on ", i, " returns ", result);
     return result;
   }
-  function =this(i : integer, val : t) : t {
+  function =this(i : int, val : t) : t {
     select i {
       when 1 do x1 = val;
       when 2 do x2 = val;
@@ -29,7 +29,7 @@ class array1d {
   }
 }
 
-var a : array1d(integer) = array1d(integer);
+var a : array1d(int) = array1d(int);
 
 a(1) = 4;
 a(2) = 3;

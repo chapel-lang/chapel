@@ -4,16 +4,16 @@
 -- declared (if, in fact, that is the language's
 -- intention.
 
-function readDefaultVal(): integer {
-  var defaultVal: integer;
+function readDefaultVal(): int {
+  var defaultVal: int;
   read(defaultVal);
   return defaultVal;
 }
 
 function foo() {
-  typedef myfoointeger: integer = readDefaultVal();
-  var x: myfoointeger;
-  var y: myfoointeger;
+  typedef myfooint: int = readDefaultVal();
+  var x: myfooint;
+  var y: myfooint;
   writeln("x is: ", x);
   writeln("y is: ", y);
 }
