@@ -59986,3 +59986,18 @@ Log message:
 Removed files:
 	chapel/test/arrays/deitz/: test_indefinite6.future 
 
+---------------------------------------------------------------------------
+
+03/20/06 16:41:53 -- deitz
+
+Log message:
+	Removed some dead runtime code.
+
+Modified files:
+	chapel/runtime/include/: chplio.h chplrt.h stdchpl.h 
+	chapel/runtime/src/: Makefile chplio.c 
+Removed files:
+	chapel/runtime/include/: array.h domain.h forall.h locales.h 
+	                         seq.h 
+	chapel/runtime/src/: array.c domain.c 
+
