@@ -2373,10 +2373,10 @@ log_var_types(Var *v, Fun *f) {
   Vec<CreationSet *> css;
   for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].key) {
     AVar *av = v->avars.v[i].value;
+    // this test doesn't take into account nested variables
     if (!f || f->ess.set_in(((EntrySet*)av->contour)))
       css.set_union(*av->out);
   }
-  assert(css.n);
   log(LOG_TEST_FA, "( ");
   Vec<Sym *> syms;
   forv_CreationSet(cs, css) if (cs)
