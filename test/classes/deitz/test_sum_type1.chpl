@@ -6,15 +6,15 @@ class D {
   var y : float = 2.0;
 }
 
-function foo(c : C) {
+fun foo(c : C) {
   writeln(c.x);
 }
 
-function foo(d : D) {
+fun foo(d : D) {
   writeln(d.y);
 }
 
-function bar(e) {
+fun bar(e) {
   foo(e);
 }
 

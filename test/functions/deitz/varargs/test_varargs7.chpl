@@ -1,6 +1,6 @@
 class C {
   param rank : int;
-  function this(ii : int ...rank) : int {
+  fun this(ii : int ...rank) : int {
     for i in 1..rank do
       writeln(ii(i));
     return 4;

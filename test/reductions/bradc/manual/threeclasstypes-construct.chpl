@@ -3,15 +3,15 @@ class mysumreduce {
   type statetype;
   type outtype;
   
-  function ident(): statetype {
+  fun ident(): statetype {
     return 0;
   }
 
-  function combine(x: statetype, y: intype): statetype {
+  fun combine(x: statetype, y: intype): statetype {
     return x + y;
   }
 
-  function result(x: statetype): outtype {
+  fun result(x: statetype): outtype {
     return x;
   }
 

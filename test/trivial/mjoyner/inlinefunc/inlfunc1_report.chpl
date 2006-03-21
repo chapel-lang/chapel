@@ -1,11 +1,11 @@
-/* testing getter and setter functions that will be inlined */
+/* testing getter and setter funs that will be inlined */
 class Foo {
   var x : int;
   var y : int;
   var z : int;
 }
 
-function main() {
+fun main() {
   var f : Foo = Foo();
   f.x = 1;
   f.y = 2;

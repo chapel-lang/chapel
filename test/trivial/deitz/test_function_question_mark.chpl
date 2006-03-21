@@ -1,4 +1,4 @@
-function whoami?() {
+fun whoami?() {
   writeln("i am me.");
 }
 

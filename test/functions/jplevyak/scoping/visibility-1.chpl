@@ -1,13 +1,13 @@
 
 record foo {
-  function f() { return 1; }
+  fun f() { return 1; }
 }
-function f(x : foo) { return 2; }
+fun f(x : foo) { return 2; }
 
 {
-  function f(x : foo) { return 3; }
+  fun f(x : foo) { return 3; }
   {
-    function f(x : foo) { return 4; }
+    fun f(x : foo) { return 4; }
   }
   var x = foo();
   writeln(x.f());

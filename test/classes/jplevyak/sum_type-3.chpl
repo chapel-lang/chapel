@@ -13,10 +13,10 @@ d.x = 2.0;
 c.y = 3.0;
 d.y = 3.0;
 
-function py(a) {
+fun py(a) {
   writeln(a.y);
 }
-function px(a) {
+fun px(a) {
   writeln(a.x);
 }
 px(c);

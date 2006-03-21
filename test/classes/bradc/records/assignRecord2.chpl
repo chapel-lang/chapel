@@ -7,7 +7,7 @@ record myrecord {
   var a: seq(int);
 }
 
-function main() {
+fun main() {
   var x: myrecord;
   var y: myrecord;
 

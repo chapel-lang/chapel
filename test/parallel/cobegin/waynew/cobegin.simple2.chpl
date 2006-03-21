@@ -1,5 +1,5 @@
 
-function test () {
+fun test () {
   var x : int;
 
   x = 92;

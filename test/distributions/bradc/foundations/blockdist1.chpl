@@ -55,11 +55,11 @@ for loc in localeD {
 }
 
 
-function min(type t): t {
+fun min(type t): t {
   return -999;
 }
 
 
-function max(type t): t {
+fun max(type t): t {
   return 999;
 }

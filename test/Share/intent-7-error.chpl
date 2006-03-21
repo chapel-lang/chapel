@@ -1,6 +1,6 @@
 
 
-function foo(inout x) {
+fun foo(inout x) {
   x = 7;
   return x;
 }

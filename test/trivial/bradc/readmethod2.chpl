@@ -1,10 +1,10 @@
 class G {
-  function read(): int {
+  fun read(): int {
     return 1;
   }
 }
 
-function main() {
+fun main() {
   var goo = G();
   var gooResult = goo.read();
   writeln("gooResult = ", gooResult);

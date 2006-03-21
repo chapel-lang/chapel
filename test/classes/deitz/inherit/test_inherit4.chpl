@@ -6,7 +6,7 @@ class D : C {
   var y : float = 2.0;
 }
 
-function foo(c : C) {
+fun foo(c : C) {
   writeln(c);
 }
 

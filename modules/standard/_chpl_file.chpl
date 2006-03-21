@@ -4,8 +4,8 @@ class file {
   var path : string = ".";
   var fp : CFILEPTR = _NULLCFILEPTR;
 
-  function open {
-    if (fp == _STDINCFILEPTR or fp == _STDOUTCFILEPTR or  
+  fun open {
+    if (fp == _STDINCFILEPTR || fp == _STDOUTCFILEPTR ||  
         fp == _STDERRCFILEPTR) {
       halt("***Error: It is not necessary to open \"", filename, "\"***");
     }
@@ -22,7 +22,7 @@ class file {
     }
   }
 
-  function isOpen: bool {
+  fun isOpen: bool {
     var openStatus: bool = false;
     if (fp != _NULLCFILEPTR) {
       openStatus = true;
@@ -30,8 +30,8 @@ class file {
     return openStatus;
   }
 
-  function close {
-    if (fp == _STDINCFILEPTR or fp == _STDOUTCFILEPTR or  
+  fun close {
+    if (fp == _STDINCFILEPTR || fp == _STDOUTCFILEPTR ||  
         fp == _STDERRCFILEPTR) {
       halt("***Error: You may not close \"", filename, "\"***");
     }
@@ -55,7 +55,7 @@ const stdout : file = file("stdout", "w", "/dev", _STDOUTCFILEPTR);
 const stderr : file = file("stderr", "w", "/dev", _STDERRCFILEPTR);
 
 
-function fopenError(f: file, isRead: bool) {
+fun fopenError(f: file, isRead: bool) {
   var fullFilename:string = f.path + "/" + f.filename;
   if (isRead) {
     halt("***Error: You must open \"", fullFilename, 
@@ -67,18 +67,18 @@ function fopenError(f: file, isRead: bool) {
 }
 
 
-function fprintfError() {
+fun fprintfError() {
   halt("***Error: Write failed: ", strerror(errno), "***");
 }
 
 
-function fscanfError() {
+fun fscanfError() {
   halt("***Error: Read failed: ", strerror(errno), "***");
 }
 
 
 pragma "rename _chpl_fwriteln"
-function fwriteln(f: file = stdout) {
+fun fwriteln(f: file = stdout) {
   if (f.isOpen) {
     var returnVal: int = fprintf(f.fp, "%s", "\n");
     if (returnVal < 0) {
@@ -91,7 +91,7 @@ function fwriteln(f: file = stdout) {
 
 
 pragma "rename _chpl_fread_int" 
-function fread(f: file = stdin, inout val: int) {
+fun fread(f: file = stdin, inout val: int) {
   if (f.isOpen) {
     var returnVal: int = fscanf(f.fp, "%lld", val);
     if (returnVal == EOF) {
@@ -109,7 +109,7 @@ function fread(f: file = stdin, inout val: int) {
 
 
 pragma "rename _chpl_fwrite_int"
-function fwrite(f: file = stdout, val: int) {
+fun fwrite(f: file = stdout, val: int) {
   if (f.isOpen) {
     var returnVal: int = fprintf(f.fp, "%lld", val);
     if (returnVal < 0) {
@@ -124,7 +124,7 @@ function fwrite(f: file = stdout, val: int) {
 
 
 pragma "rename _chpl_fread_float"
-function fread(f: file = stdin, inout val: float) {
+fun fread(f: file = stdin, inout val: float) {
   if (f.isOpen) {
     var returnVal: int = fscanf(f.fp, "%lg", val);
     if (returnVal == EOF) {
@@ -142,7 +142,7 @@ function fread(f: file = stdin, inout val: float) {
 
 
 pragma "rename _chpl_fwrite_float"
-function fwrite(f: file = stdout, val: float) {
+fun fwrite(f: file = stdout, val: float) {
   if (f.isOpen) {
      _chpl_fwrite_float_help(f.fp, val);
   } else {
@@ -152,7 +152,7 @@ function fwrite(f: file = stdout, val: float) {
 
 
 pragma "rename _chpl_fread_string"
-function fread(f: file = stdin, inout val: string) {
+fun fread(f: file = stdin, inout val: string) {
   if (f.isOpen) {
     _chpl_fread_string_help(f.fp, val);
   } else {
@@ -162,7 +162,7 @@ function fread(f: file = stdin, inout val: string) {
 
 
 pragma "rename _chpl_fwrite_string"
-function fwrite(f: file = stdout, val: string) {
+fun fwrite(f: file = stdout, val: string) {
   if (f.isOpen) {
     var returnVal: int = fprintf(f.fp, "%s", val);
     if (returnVal < 0) {
@@ -175,7 +175,7 @@ function fwrite(f: file = stdout, val: string) {
 
 
 pragma "rename _chpl_fread_bool" 
-function fread(f: file = stdin, inout val: bool) {
+fun fread(f: file = stdin, inout val: bool) {
   if (f.isOpen) {
     var valString : string;
     _chpl_fread_string_help(f.fp, valString);
@@ -193,7 +193,7 @@ function fread(f: file = stdin, inout val: bool) {
 
 
 pragma "rename _chpl_fwrite_bool"
-function fwrite(f: file = stdout, val: bool) {
+fun fwrite(f: file = stdout, val: bool) {
   if (f.isOpen) {
     var returnVal: int;
     if (val == true) {
@@ -211,7 +211,7 @@ function fwrite(f: file = stdout, val: bool) {
 
 
 pragma "rename _chpl_fwrite_nil" 
-function fwrite(f: file = stdout, x : _nilType) : void {
+fun fwrite(f: file = stdout, x : _nilType) : void {
   if (f.isOpen) {
     var returnVal: int = fprintf(f.fp, "%s", "nil");
     if (returnVal < 0) {
@@ -223,16 +223,16 @@ function fwrite(f: file = stdout, x : _nilType) : void {
 }
 
 
-function write() {
+fun write() {
   halt("***Error: This should never be called.  All write calls should be converted to fwrites***");
 }
 
 
-function writeln() { 
+fun writeln() { 
   halt("***Error: This should never be called.  All writeln calls should be converted to fwritelns***");
 }
 
-function read() {
+fun read() {
   halt("***Error: This should never be called.  All read calls should be converted to freads***");
 }
 

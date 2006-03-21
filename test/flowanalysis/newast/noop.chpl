@@ -1,7 +1,7 @@
 
 ;
 
-function foo() { }
+fun foo() { }
 
 var D : domain(1) = 1..3;
 

@@ -3,7 +3,7 @@ class array1d {
   var x1 : t;
   var x2 : t;
   var x3 : t;
-  function indexedby(i : int) var : t {
+  fun indexedby(i : int) var : t {
     write("[Access of ", i, "]");
     select i {
       when 1 do return x1;

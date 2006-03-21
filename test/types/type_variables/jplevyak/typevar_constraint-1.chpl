@@ -1,8 +1,8 @@
-function foo(type t : A, a : t) {
+fun foo(type t : A, a : t) {
   writeln("foo1 ", a.x);
 }
 
-function foo(type t : C, c : t) {
+fun foo(type t : C, c : t) {
   writeln("foo2 ", c.x);
 }
 

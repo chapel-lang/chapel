@@ -1,7 +1,7 @@
 var i = 0, j = 0, k = 0;
 
 label lab1 
-while (i <= 3 and k < 10) {
+while (i <= 3 && k < 10) {
   k += 1;
   j = 0;
   label lab2 

@@ -1,11 +1,11 @@
-function main() {         
+fun main() {         
   nested();
        
-  function nested() {
+  fun nested() {
     var x : int = 3;        
     writeln(x);          
     
-    function deeplyNested() {
+    fun deeplyNested() {
       var y : int = 4;
       writeln(y);
     }

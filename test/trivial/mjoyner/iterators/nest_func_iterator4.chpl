@@ -14,7 +14,7 @@ iterator simple() : int {
   }
 }
 
-function main() {
+fun main() {
 var x : int = 5;
   for i in basic() {
     for j in simple() {

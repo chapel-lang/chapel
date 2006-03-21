@@ -1,9 +1,9 @@
-function binsearch(x : [?lo..?hi] , y]) {
+fun binsearch(x : [?lo..?hi] , y]) {
          if(hi < lo ) return lo;
          if(x(hi) > y) return hi;
          if(y <= x(lo) return lo;
          while(lo+1 < hi) {
-              assert x(lo) < y and y <= x(hi) ;
+              assert x(lo) < y && y <= x(hi) ;
               var mid = (hi+lo)/2;
               if(x[mid] < y)
                 lo = mid;

@@ -3,7 +3,7 @@ class pair {
   var y: float;
 }
 
-function main() {
+fun main() {
   var a: pair;
   a = pair();
   a.x = 10;

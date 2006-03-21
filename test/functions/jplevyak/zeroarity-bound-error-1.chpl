@@ -1,6 +1,6 @@
 class C {
-  function f { return 1; }
-  function g() { return 2; }
+  fun f { return 1; }
+  fun g() { return 2; }
   
 }
 

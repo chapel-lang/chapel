@@ -38,7 +38,6 @@ floatLiteral    {digit}+"."{digit}+
 
 %%
 
-and             processToken(TAND);
 atomic          processToken(TATOMIC);
 break           processToken(TBREAK);
 by              processToken(TBY);
@@ -55,7 +54,7 @@ else            processToken(TELSE);
 enum            processToken(TENUM);
 for             processToken(TFOR);
 forall          processToken(TFORALL);
-function        processToken(TFUNCTION);
+fun             processToken(TFUN);
 goto            processToken(TGOTO);
 if              processToken(TIF);
 in              processToken(TIN);
@@ -66,13 +65,10 @@ iterator        processToken(TITERATOR);
 label           processToken(TLABEL);
 let             processToken(TLET);
 like            processToken(TLIKE);
-mod             processToken(TMOD);
 module          processToken(TMODULE);
 _move           processToken(TMOVE);
 nil             processToken(TNIL);
-not             processToken(TNOT);
 of              processToken(TOF);
-or              processToken(TOR);
 ordered         processToken(TORDERED);
 otherwise       processToken(TOTHERWISE);
 out             processToken(TOUT);
@@ -112,6 +108,10 @@ yield           processToken(TYIELD);
 ".."            processToken(TDOTDOT);
 "..."           processToken(TDOTDOTDOT);
 
+"&&"            processToken(TAND);
+"||"            processToken(TOR);
+"!"             processToken(TNOT);
+
 "&"             processToken(TBAND);
 "|"             processToken(TBOR);
 "^"             processToken(TBXOR);
@@ -131,6 +131,7 @@ yield           processToken(TYIELD);
 "-"             processToken(TMINUS);
 "*"             processToken(TSTAR);
 "/"             processToken(TDIVIDE);
+"%"             processToken(TMOD);
 
 "**"            processToken(TEXP);
 

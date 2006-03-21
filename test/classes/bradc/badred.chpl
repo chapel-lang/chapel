@@ -2,7 +2,7 @@ class bar {
   implements reduction;
 }
 
-function main() {
+fun main() {
   class reduction {
   } -- override built-in reduction class?
 

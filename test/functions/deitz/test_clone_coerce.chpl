@@ -1,8 +1,8 @@
-function foo(x : string) {
+fun foo(x : string) {
   writeln("string ", x);
 }
 
-function foo(x) {
+fun foo(x) {
   writeln("any ", x);
 }
 

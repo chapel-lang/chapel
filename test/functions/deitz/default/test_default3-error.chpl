@@ -1,8 +1,8 @@
-function foo(i : int = 1, j : float = 2.0, k : string = "three") {
+fun foo(i : int = 1, j : float = 2.0, k : string = "three") {
   writeln("foo of ", i, ", ", j, ", ", k);
 }
 
-function foo(i : float = 1.0, j : string = "two", k : int = 3) {
+fun foo(i : float = 1.0, j : string = "two", k : int = 3) {
   writeln("foo of ", i, ", ", j, ", ", k);
 }
 

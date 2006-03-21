@@ -1,4 +1,4 @@
-function foo(s) {
+fun foo(s) {
 
   writeln("s is: ", s);
 

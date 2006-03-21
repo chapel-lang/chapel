@@ -1,8 +1,8 @@
-function foo(x : float) {
+fun foo(x : float) {
   writeln("It's a float!");
 }
 
-function foo(x : complex) {
+fun foo(x : complex) {
   writeln("It's a complex!");
 }
 

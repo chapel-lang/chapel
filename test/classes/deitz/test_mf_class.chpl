@@ -1,11 +1,11 @@
 class foo {
   var x : int;
-  function bar() {
+  fun bar() {
     writeln("method bar ", x);
   }
 }
 
-function bar(f : foo) {
+fun bar(f : foo) {
   writeln("function bar ", f.x);
 }
 

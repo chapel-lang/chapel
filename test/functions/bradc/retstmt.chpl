@@ -1,4 +1,4 @@
-function inc(x: int): int {
+fun inc(x: int): int {
   return x + 1;
 }
 

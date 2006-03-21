@@ -5,11 +5,11 @@ class trio {
   var x2 : elt_type;
   var x3 : elt_type;
 
-  function sum()
+  fun sum()
     return x1 + x2 + x3;
 }
 
-function fwrite(f : file, t : trio) {
+fun fwrite(f : file, t : trio) {
   fwrite(f, "(", t.x1, " & ", t.x2, " & ", t.x3, ")");
 }
 

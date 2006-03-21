@@ -16,7 +16,7 @@ config var ENABLE_PLOT_K3DB  = false;
 union Weight {
   var i : int;
   var s : string;
-  function is_string {
+  fun is_string {
     typeselect (this) {
       when s     return true;
       otherwise  return false;
@@ -66,7 +66,7 @@ class Graph {
                       VertexD=>VertexD,
                       ParEdgeD=>ParEdgeD);
 
-  function copy(s : Graph) {
+  fun copy(s : Graph) {
     return Graph(VerteD  =s.VertexD,
                  ParEdgeD=s.ParEdgeD);
   }
@@ -85,11 +85,11 @@ class Subgraph {
     start = s;
     end   = e;
   }
-  function adjMatrix(i: index(AdjD)) { return weights(i).length; }
+  fun adjMatrix(i: index(AdjD)) { return weights(i).length; }
 }
 
 
-function main() {
+fun main() {
   -- Scalable Data Generator parameters.
   -- Total number of vertices in directed multigraph.
   config var TOT_VERTICES       =  2^8;
@@ -193,7 +193,7 @@ function main() {
 }
 
 
-function genScalData(totVertices, maxCliqueSize, maxParalEdges,
+fun genScalData(totVertices, maxCliqueSize, maxParalEdges,
                      percentIntWeights, 
                      maxIntWeightP, probInterclEdges) {
 
@@ -278,7 +278,7 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
                                reshape(random_numbers.generate(bitsDomain.extent),
                                        bitDomain)) {
     if (r <= probInterclEdges**d) {
-      var jx = (ix-1 + dir*2**d mod totVertices) + 1;
+      var jx = (ix-1 + dir*2**d % totVertices) + 1;
       bits(ix,d,dir) = toClique(ix) != toClique(jx);
     } else bits(ix,d,dir) = false;
   }
@@ -288,7 +288,7 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
   var interEdges: [1..numPlacedOutside] EndPoints;
   forall (ix, d, dir) in bitsDomain do
     if (bits(ix,d, dir)) {
-      var jx = (ix-1 + dir*2**d mod totVertices) + 1;
+      var jx = (ix-1 + dir*2**d % totVertices) + 1;
       interEdges(offset(ix,d,dir)) = (start=ix, end=jx);
     }
 
@@ -331,13 +331,13 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
 }
 
 
-function binsearch(x : [?lo..?hi] , y]) {
+fun binsearch(x : [?lo..?hi] , y]) {
   if (hi < lo  ) then return lo;
   if (x(hi) > y) then return hi;
   if (y <= x(lo)) then return lo;
 
   while (lo+1 < hi) {
-    assert(x(lo) < y and y <= x(hi));
+    assert(x(lo) < y && y <= x(hi));
 
     var mid = (hi+lo)/2;
     if (x(mid) < y) then
@@ -348,7 +348,7 @@ function binsearch(x : [?lo..?hi] , y]) {
   return hi;
 }
 
-function computeGraph(edges , totVertices, maxParalEdges, 
+fun computeGraph(edges , totVertices, maxParalEdges, 
                       maxIntWeight ) : Graph {
   var G = Graph();
   G:Numbers = edges;
@@ -357,7 +357,7 @@ function computeGraph(edges , totVertices, maxParalEdges,
 
   VertexD = 1..totVertices;
   ParEdgeD = 1..maxParalEdge;
-  intg.AdjD = [e in edges.edges] (if not e.weight.is_string?
+  intg.AdjD = [e in edges.edges] (if !e.weight.is_string?
                                   then (e.start, e.end));
   strg.AdjD = [e in edges.edges] (if e.weight.is_string?
                                   then (e.start, e.end));
@@ -371,9 +371,9 @@ function computeGraph(edges , totVertices, maxParalEdges,
 }
 
 
-function sortWeights( G : Graph, soughtString : string ) {
+fun sortWeights( G : Graph, soughtString : string ) {
 
-  function Subgraph.choose(value) {
+  fun Subgraph.choose(value) {
     return [e in AdjD] (if (weights(e) == value) then EndPoints(e));
   }
   use G only intg, strg;
@@ -382,12 +382,12 @@ function sortWeights( G : Graph, soughtString : string ) {
 }
 
 
-function Graph.findSubGraphs(SUBGR_EDGE_LENGTH : int,
+fun Graph.findSubGraphs(SUBGR_EDGE_LENGTH : int,
                              startSetIntVPairs : seq of EndPoints,
                              startSetStrVPairs : seq of EndPoints) 
                             : seq of Graph {
     
-  function Subgraph.expandSubGraphs(start, complete:subgraph) {
+  fun Subgraph.expandSubGraphs(start, complete:subgraph) {
     var frontier like AdjD = (start.start, start.end);
     AdjD = start;
     for k in 2..SUBGR_EDGE_LENGTH {
@@ -413,13 +413,13 @@ function Graph.findSubGraphs(SUBGR_EDGE_LENGTH : int,
   return subgraphs;
 }
 
-function cutClusters(G, cutBoxSize, alpha) {
+fun cutClusters(G, cutBoxSize, alpha) {
 
-  function cutClustersCommon( adjMatrix : Subgraph,
+  fun cutClustersCommon( adjMatrix : Subgraph,
                               cutBoxSize, alpha) {
     if cutBoxSize < 1
       then halt('cutBoxSize must be a least one.');
-    if alpha < 0 or alpha > 1
+    if alpha < 0 || alpha > 1
       then halt('alpha must be between 0 and 1 inclusive.');
     var startSearch = ceil(alpha * cutBoxSize); 
 
@@ -451,7 +451,7 @@ function cutClusters(G, cutBoxSize, alpha) {
 
           -- Evaluate this vertex as a cutting point.
           var cn = setAdj.extent;
-          if i >= startSearch and cnCut >= cn {
+          if i >= startSearch && cnCut >= cn {
             cnCut = cn;
             iCut = i;
             iAdj = setAdj;
@@ -488,7 +488,7 @@ function cutClusters(G, cutBoxSize, alpha) {
   var strVertexRemap = cutClustersCommon( G.strg, cutBoxSize, alpha );
   var cutG = Graph.copy(G);
 
-  function remap(oldg, newg, vertexRemap) {
+  fun remap(oldg, newg, vertexRemap) {
     var map: [G.VertexD];
     forall (new, old) in (1.., vertexRemap) do 
       map(old) = new;

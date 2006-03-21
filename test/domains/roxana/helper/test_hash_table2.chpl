@@ -3,7 +3,7 @@ class HashTable {
   var table: _ddata(int) = _ddata(int, 20); -- limitation
     -- you currently cannot use 'size' here
     -- eventually you may be able to especially if size is a param
-  function initialize() {
+  fun initialize() {
     table.init();
   }
 }  
@@ -17,8 +17,8 @@ for i in 1..s1 do {
 }
 
 -- writeln(ht); -- This needs to be changed, _data does not have a
-                -- write function so you can't use the builtin write
-                -- function for the class.
+                -- write fun so you can't use the builtin write
+                -- fun for the class.
 
 for i in 1..s1 do {
   writeln(ht.table(i-1));

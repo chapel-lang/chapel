@@ -14,7 +14,7 @@ var c2 : C = D2();
 writeln(c1);
 writeln(c2);
 
-function foo(c : C) {
+fun foo(c : C) {
   var y = c.x;
   writeln(y);
 }

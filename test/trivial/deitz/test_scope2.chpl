@@ -1,8 +1,8 @@
-function foo(i : int) : float {
+fun foo(i : int) : float {
   return i * 3.0;
 }
 
-function bar() {
+fun bar() {
   writeln(foo(1));
   writeln(foo(2));
   writeln(foo(3));

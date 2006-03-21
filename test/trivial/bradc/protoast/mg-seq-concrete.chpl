@@ -74,9 +74,9 @@ benchTimer.stop();
 printResults(rnm2, initTimer.read(), benchTimer.read());
 
 
--- Top-level functions:
+-- Top-level funs:
 
-function initializeMG(out V: [Base] float,
+fun initializeMG(out V: [Base] float,
                       out U, R: [lvl in Levels] [Hier(lvl)] float) {
   writeln(" NAS Parallel Benchmarks 2.4 (Chapel version) - MG Benchmark");
   writeln(" Size: ", nx, "x", ny, "x", nz);
@@ -87,7 +87,7 @@ function initializeMG(out V: [Base] float,
 }
 
 
-function warmupMG(inout V: [Base] float,
+fun warmupMG(inout V: [Base] float,
                   inout U, R: [lvl in Levels] [Hier(lvl)] float) {
   if (warmup) {
     mg3P(V, U, R);
@@ -98,7 +98,7 @@ function warmupMG(inout V: [Base] float,
 }
 
 
-function computeMG(in V: [Base] float,
+fun computeMG(in V: [Base] float,
                    inout U, R: [lvl in Levels] [Hier(lvl)] float): float {
   resid(R(1), V, U(1));
   norm2u3(R(1));
@@ -112,7 +112,7 @@ function computeMG(in V: [Base] float,
 }
 
 
-function printResults(const rnm2, inittime, runtime: float) {
+fun printResults(const rnm2, inittime, runtime: float) {
   var verified: bool;
 
   if (verifyValue != 0.0) {
@@ -151,7 +151,7 @@ function printResults(const rnm2, inittime, runtime: float) {
 
 -- Work for a single iteration:
 
-function mg3P(inout V: [Base] float,
+fun mg3P(inout V: [Base] float,
               inout U, R: [lvl in Levels] [Hier(lvl)] float) {
   -- project up the hierarchy
   for lvl in (2..numLevels) {
@@ -179,7 +179,7 @@ function mg3P(inout V: [Base] float,
 
 -- Here's the meat: the four stencil routines:
 
-function psinv(inout U: [?DUR] float,
+fun psinv(inout U: [?DUR] float,
                const R: [DUR] float) {
   static const c: coeff = initCValues();
   static const c3d: [(i,j,k) in Stencil] float = c((i!=0) + (j!=0) + (k!=0));
@@ -190,7 +190,7 @@ function psinv(inout U: [?DUR] float,
 }
 
 
-function resid(out R: [?DUR] float,
+fun resid(out R: [?DUR] float,
                const V, U: [DUR] float) {
   static const a: coeff = (-8.0/3.0, 0.0, 1.0/6.0, 1.0/12.0);
   static const a3d: [(i,j,k) in Stencil] float = a((i!=0) + (j!=0) + (k!=0));
@@ -201,7 +201,7 @@ function resid(out R: [?DUR] float,
 }
 
 
-function rprj3(out S: [] float,
+fun rprj3(out S: [] float,
                in R: [?DR] float) {
   static const w: coeff = (0.5, 0.25, 0.125, 0.0625);
   static const w3d: [(i,j,k) in Stencil] float = w((i!=0) + (j!=0) + (k!=0));
@@ -212,7 +212,7 @@ function rprj3(out S: [] float,
 }
 
 
-function interp(out R: [?DR] float,
+fun interp(out R: [?DR] float,
                 const S: [?DS] float) {
   static const IDom: domain(3) = (-1..0, -1..0, -1..0);
   static const IStn: [(i,j,k) in IDom] domain(3) = (i..0, j..0, k..0);
@@ -230,7 +230,7 @@ function interp(out R: [?DR] float,
 
 -- Calculates approximate norms:
 
-function norm2u3(const R: [] float): (float, float) {
+fun norm2u3(const R: [] float): (float, float) {
   const rnm2: float = sqrt((sum reduce R**2)/(nx*ny*nz));
   const rnmu: float = max reduce abs(R);
 
@@ -240,7 +240,7 @@ function norm2u3(const R: [] float): (float, float) {
 
 -- Setup stuff
 
-function initArrays(out V: [Base] float,
+fun initArrays(out V: [Base] float,
                     out U, R: [lvl in Levels] [Hier(lvl)] float) {
   -- conservatively, one might want to do "V=0.0; U=0.0; R=0.0; zran3(V);", 
   -- but the following is minimal:
@@ -253,7 +253,7 @@ function initArrays(out V: [Base] float,
 }
 
 
-function zran3(out V: [Base] float) {
+fun zran3(out V: [Base] float) {
   const ncharge: int = 10;
   var POS: [1..ncharge] index(Base);
   var NEG: [1..ncharge] index(Base);
@@ -276,7 +276,7 @@ function zran3(out V: [Base] float) {
 
 -- random number generators
 
-function longRandlc(const n: int): float {
+fun longRandlc(const n: int): float {
   static const s: float = 314159265.0;
   static const arand: float = 5.0**13;
 
@@ -300,7 +300,7 @@ function longRandlc(const n: int): float {
 }
 
 
-function randlc(inout x: float,
+fun randlc(inout x: float,
                 const a: float): float {
   static const r23: float = 0.5**23;
   static const t23: float = 2**23;
@@ -329,8 +329,8 @@ function randlc(inout x: float,
 
 -- help with coefficients
 
-function initCValues(const Class: classVals): coeff {
-  if (Class == A or Class == S or Class == W) {
+fun initCValues(const Class: classVals): coeff {
+  if (Class == A || Class == S || Class == W) {
     return (-3.0/8.0,  1.0/32.0, -1.0/64.0, 0.0);
   } else {
     return (-3.0/17.0, 1.0/33.0, -1.0/61.0, 0.0);
@@ -339,9 +339,9 @@ function initCValues(const Class: classVals): coeff {
 
 
 
--- simple math helper function:
+-- simple math helper fun:
 
-function lg2(const x: int): int {
+fun lg2(const x: int): int {
   var lg: int = -1;
   while (x) {
     x *= 2;

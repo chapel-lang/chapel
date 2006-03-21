@@ -2,6 +2,6 @@
 
 writeln("not here");
 
-function main {
+fun main {
   writeln("but here");
 }

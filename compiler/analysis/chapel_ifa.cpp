@@ -1766,7 +1766,7 @@ fun_where_clause(FnSymbol *f, Expr *w) {
   SymExpr *base = dynamic_cast<SymExpr*>(op->baseExpr);
   if (!base)
     return;
-  if (!strcmp(base->var->name, "and")) {
+  if (!strcmp(base->var->name, "&&")) {
     op->primitive = primitives[PRIMITIVE_LAND];
     op->baseExpr->remove();
     fun_where_clause(f, op->get(1));
@@ -2839,7 +2839,7 @@ init_chapel_ifa() {
   unary_minus_analysis_op = P("u-", prim_minus);
   unary_plus_analysis_op = P("u+", prim_plus);
   unary_not_analysis_op = P("u~", prim_not);
-  unary_lnot_analysis_op = P("not", prim_lnot);
+  unary_lnot_analysis_op = P("!", prim_lnot);
   add_analysis_op = P("+", prim_add);
   subtract_analysis_op = P("-", prim_subtract);
   mult_analysis_op = P("*", prim_mult);

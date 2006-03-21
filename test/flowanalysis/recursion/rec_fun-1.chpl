@@ -1,5 +1,5 @@
 
-function f(x) {
+fun f(x) {
  if (x > 9)
    return x;
   return f(x + 1);

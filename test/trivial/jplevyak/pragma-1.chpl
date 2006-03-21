@@ -1,2 +1,2 @@
-pragma "fast" function foo() { return 1; }
+pragma "fast" fun foo() { return 1; }
 writeln(foo());

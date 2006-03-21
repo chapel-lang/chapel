@@ -1,4 +1,4 @@
-function f(x, y, z) { writeln(x + y + z); return x + y + z; }
+fun f(x, y, z) { writeln(x + y + z); return x + y + z; }
 class C {
   var a;
 }

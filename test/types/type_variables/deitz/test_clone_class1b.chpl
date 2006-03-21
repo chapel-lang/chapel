@@ -1,6 +1,6 @@
 class foo {
   var x;
-  function print() {
+  fun print() {
     writeln(x);
   }
 }

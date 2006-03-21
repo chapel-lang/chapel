@@ -1,12 +1,12 @@
 
 
 module d2 {
-  function rund() {
+  fun rund() {
     writeln("in rund() from module d2");
   }
 }
 
 
-function rund() {
+fun rund() {
   writeln("in rund() from module d");
 }

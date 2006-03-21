@@ -17,10 +17,10 @@ class seq : value {
       yield x; 
   }
 
-  function this(i : int) var {
+  fun this(i : int) var {
     var start_index : int = 1;
     var end_index : int = _length;
-    if (i >= start_index and i <= end_index) {
+    if (i >= start_index && i <= end_index) {
       var cntr : int = i - start_index;
       var tmp = _first;
       while(cntr != 0) {
@@ -33,31 +33,31 @@ class seq : value {
       halt("error: sequence index out-of-bounds, index is ", i);
   }
 
-  function getHeadCursor()
+  fun getHeadCursor()
     return _first;
 
-  function getNextCursor(c)
+  fun getNextCursor(c)
     return c._next;
 
-  function getValue(c)
+  fun getValue(c)
     return c._element;
 
-  function isValidCursor?(c)
+  fun isValidCursor?(c)
     return c != nil;
 
-  function length : int
+  fun length : int
     return _length;
 
-  function _append(e : elt_type)
+  fun _append(e : elt_type)
     return this._copy()._append_in_place(e);
 
-  function _prepend(e : elt_type)
+  fun _prepend(e : elt_type)
     return this._copy()._prepend_in_place(e);
 
-  function _concat(s : seq)
+  fun _concat(s : seq)
     return this._copy()._concat_in_place(s);
 
-  function _append_in_place(e : elt_type) {
+  fun _append_in_place(e : elt_type) {
     var new = _seqNode(elt_type);
     new._element = e;
     if _length > 0 {
@@ -71,11 +71,11 @@ class seq : value {
     return this;
   }
 
-  function _yield(e: elt_type) {
+  fun _yield(e: elt_type) {
     this._append_in_place(e);
   } 
 
-  function _prepend_in_place(e : elt_type) {
+  fun _prepend_in_place(e : elt_type) {
     var new = _seqNode(elt_type);
     new._element = e;
     if _length > 0 {
@@ -89,7 +89,7 @@ class seq : value {
     return this;
   }
 
-  function _concat_in_place(s : seq) {
+  fun _concat_in_place(s : seq) {
     if _length > 0 {
       _last._next = s._first;
       _last = s._last;
@@ -102,7 +102,7 @@ class seq : value {
     return this;
   }
 
-  function _copy() {
+  fun _copy() {
     var new : seq of elt_type;
     var tmp = _first;
     while tmp != nil {
@@ -112,7 +112,7 @@ class seq : value {
     return new;
   }
 
-  function _reverse() {
+  fun _reverse() {
     var new : seq of elt_type;
     var tmp = _first;
     while (tmp != nil) {
@@ -123,25 +123,25 @@ class seq : value {
   }
 }
 
-//function =(s1: seq, s2) {
+//fun =(s1: seq, s2) {
 //  forall e in s2 do
 //    s1 = s1._append_in_place(e);
 //
 //  return s1;
 //}
 
-function #(s1 : seq, s2 : seq) {
+fun #(s1 : seq, s2 : seq) {
   return s1._concat(s2);
 }
 
-function reverse(s : seq, dim : int = 1) {
+fun reverse(s : seq, dim : int = 1) {
   if (dim != 1) {
     halt("reverse(:seq, dim=1) only implemented for dim 1");
   }
   return s._reverse();
 }
 
-function fwrite(f : file, s : seq) {
+fun fwrite(f : file, s : seq) {
   fwrite(f, "(/");
   var tmp = s._first;
   while tmp != nil {
@@ -162,41 +162,41 @@ record _aseq {
   var _high : int;
   var _stride : int;
 
-  function getHeadCursor()
+  fun getHeadCursor()
     if _stride > 0 then
       return _low;
     else
       return _high;
 
-  function getNextCursor(c)
+  fun getNextCursor(c)
     return c + _stride;
 
-  function getValue(c)
+  fun getValue(c)
     return c;
 
-  function isValidCursor?(c)
-    return _low <= c and c <= _high;
+  fun isValidCursor?(c)
+    return _low <= c && c <= _high;
 
-  function length : int
+  fun length : int
     return
       (if _stride > 0
         then (_high - _low + _stride) / _stride
         else (_low - _high + _stride) / _stride);
 }
 
-function by(s : _aseq, i : int)
+fun by(s : _aseq, i : int)
   return _aseq(s._low, s._high, s._stride * i);
 
-function _in(s : _aseq, i : int)
-  return i >= s._low and i <= s._high and (i - s._low) mod s._stride == 0;
+fun _in(s : _aseq, i : int)
+  return i >= s._low && i <= s._high && (i - s._low) % s._stride == 0;
 
-function fwrite(f : file, s : _aseq) {
+fun fwrite(f : file, s : _aseq) {
   fwrite(f, s._low, "..", s._high);
   if (s._stride > 1) then
     fwrite(f, " by ", s._stride);
 }
 
-pragma "inline" function string.this(s: _aseq)
+pragma "inline" fun string.this(s: _aseq)
   if s._stride != 1 then
     return __primitive("string_strided_select", this, s._low, s._high, s._stride);
   else

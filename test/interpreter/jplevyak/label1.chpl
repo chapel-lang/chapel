@@ -1,5 +1,5 @@
 
-pragma "inline" function foo() {
+pragma "inline" fun foo() {
   var i : int = 0;
   while(i < 10) {
     i = i + 1;
@@ -13,7 +13,7 @@ pragma "inline" function foo() {
   return;    
 }
 
-function main() {
+fun main() {
  foo();
  return;
 }

@@ -1,4 +1,4 @@
-function swap(inout x, inout y) {
+fun swap(inout x, inout y) {
   var tmp = x;
   x = y;
   y = tmp;

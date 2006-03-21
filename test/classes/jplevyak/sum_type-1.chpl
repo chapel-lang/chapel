@@ -8,7 +8,7 @@ class cpoint {
   var color : int;
 }
 
-function length(a) {
+fun length(a) {
   return a.x * a.y;
 }
 

@@ -2,7 +2,7 @@ record foo {
   var a : int;
 }
 
-function bar(x : foo) var {
+fun bar(x : foo) var {
   return x;
 }
 

@@ -3,7 +3,7 @@ class myClass {
 
 }
 
-function myClass.setMember(a: int ...?rank) {
+fun myClass.setMember(a: int ...?rank) {
   var mc : myClass = myClass();
   for i in 1..rank do
     mc.x = a(i);

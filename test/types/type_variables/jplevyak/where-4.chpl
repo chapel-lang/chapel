@@ -1,4 +1,4 @@
-function f(x : ?t) {
+fun f(x : ?t) {
   var y : t = x;
   writeln(y);
 }

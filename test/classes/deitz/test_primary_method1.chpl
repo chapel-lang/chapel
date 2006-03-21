@@ -1,9 +1,9 @@
 class foo {
   var i : int;
-  function primary() {
+  fun primary() {
     writeln("primary method call; i is ", i);
   }
-  function setx() {
+  fun setx() {
     i = 4;
   }
 }

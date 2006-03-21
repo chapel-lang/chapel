@@ -1,5 +1,5 @@
 
-function callin(in x: int = 100): int {
+fun callin(in x: int = 100): int {
   writeln("in callin, x is: ", x);
   x += 1;
   writeln("re-assigned to be: ", x);
@@ -7,7 +7,7 @@ function callin(in x: int = 100): int {
 }
 
 
-function callout(out x: int = 200): int {
+fun callout(out x: int = 200): int {
   writeln("in callout, x is: ", x);
   x += 1;
   writeln("re-assigned to be: ", x);
@@ -15,7 +15,7 @@ function callout(out x: int = 200): int {
 }
 
 
-function callinout(inout x: int = 300): int {
+fun callinout(inout x: int = 300): int {
   writeln("in callinout, x is: ", x);
   x += 1;
   writeln("re-assigned to be: ", x);
@@ -23,7 +23,7 @@ function callinout(inout x: int = 300): int {
 }
 
 
-function callblank(x: int = 400): int {
+fun callblank(x: int = 400): int {
   writeln("in callblank, x is: ", x);
   var y = x + 1;
   writeln("y assigned to be: ", y);
@@ -31,7 +31,7 @@ function callblank(x: int = 400): int {
 }
 
 
-function main() {
+fun main() {
   var a: int = 10;
   var b: int;
 

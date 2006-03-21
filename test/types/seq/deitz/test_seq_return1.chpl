@@ -1,4 +1,4 @@
-function f() {
+fun f() {
   var s : seq of int;
   var i : int;
   while i < 10 {

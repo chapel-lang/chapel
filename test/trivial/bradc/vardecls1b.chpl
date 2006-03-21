@@ -1,20 +1,20 @@
 var x: int = 2;
 
-function foo(x: int) {
+fun foo(x: int) {
   var x = 4;
   writeln("then x is: ", x);
 }
 
-function bar() {
+fun bar() {
   var x = 5;
   writeln("then x is: ", x);
 }
 
-function baz() {
+fun baz() {
   writeln("x in baz() is: ", x);
 }
 
-function main() {
+fun main() {
   foo(3);
   writeln();
   bar();

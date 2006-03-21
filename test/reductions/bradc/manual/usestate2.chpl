@@ -2,15 +2,15 @@ class mysumreduce {
   type t;
   var state: t;
   
-  function init() {
+  fun init() {
     state = 0;
   }
 
-  function combine(x: t) {
+  fun combine(x: t) {
     state += x;
   }
 
-  function finalize(): t {
+  fun finalize(): t {
     return state;
   }
 }

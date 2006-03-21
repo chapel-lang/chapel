@@ -1,6 +1,6 @@
 var one: int = 1;
 
-if (!one) {
+if (not one) {
    writeln("This shouldn't have printed.");
 }
 

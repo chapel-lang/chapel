@@ -1,4 +1,4 @@
-function foo(a) {
+fun foo(a) {
   writeln("in foo");
   if (a == 0) {
     bar(1);
@@ -7,7 +7,7 @@ function foo(a) {
   }
 }
 
-function bar(a) {
+fun bar(a) {
   writeln("in bar");
   if (a == 0) {
     foo(1);

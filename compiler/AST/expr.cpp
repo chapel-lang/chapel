@@ -504,12 +504,12 @@ void CallExpr::makeOp(void) {
       make_op_help(PRIMITIVE_UNARY_MINUS, "-", 1);
       make_op_help(PRIMITIVE_UNARY_PLUS, "+", 1);
       make_op_help(PRIMITIVE_UNARY_NOT, "~", 1);
-      make_op_help(PRIMITIVE_UNARY_LNOT, "not", 1);
+      make_op_help(PRIMITIVE_UNARY_LNOT, "!", 1);
       make_op_help(PRIMITIVE_ADD, "+", 2);
       make_op_help(PRIMITIVE_SUBTRACT, "-", 2);
       make_op_help(PRIMITIVE_MULT, "*", 2);
       make_op_help(PRIMITIVE_DIV, "/", 2);
-      make_op_help(PRIMITIVE_MOD, "mod", 2);
+      make_op_help(PRIMITIVE_MOD, "%", 2);
       make_op_help(PRIMITIVE_EQUAL, "==", 2);
       make_op_help(PRIMITIVE_NOTEQUAL, "!=", 2);
       make_op_help(PRIMITIVE_LESSOREQUAL, "<=", 2);
@@ -519,8 +519,8 @@ void CallExpr::makeOp(void) {
       make_op_help(PRIMITIVE_AND, "&", 2);
       make_op_help(PRIMITIVE_OR, "|", 2);
       make_op_help(PRIMITIVE_XOR, "^", 2);
-      make_op_help(PRIMITIVE_LAND, "and", 2);
-      make_op_help(PRIMITIVE_LOR, "or", 2);
+      make_op_help(PRIMITIVE_LAND, "&&", 2);
+      make_op_help(PRIMITIVE_LOR, "||", 2);
       make_op_help(PRIMITIVE_EXP, "**", 2);
     }
   }

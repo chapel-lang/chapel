@@ -1,8 +1,8 @@
-function baz() {
+fun baz() {
   var y = 2.0;
-  function foo() {
+  fun foo() {
    var x = 1;
-   function bar() {
+   fun bar() {
      x = x + 1;
      y = y + 1;
      writeln(x);

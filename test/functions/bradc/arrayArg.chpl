@@ -8,7 +8,7 @@ forall i in D {
   A(i) = i;
 }
 
-function foo(X) {
+fun foo(X) {
   writeln("X is: ", X);
 }
 

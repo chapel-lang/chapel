@@ -4,13 +4,13 @@
 -- declared (if, in fact, that is the language's
 -- intention.
 
-function readDefaultVal(): int {
+fun readDefaultVal(): int {
   var defaultVal: int;
   read(defaultVal);
   return defaultVal;
 }
 
-function foo() {
+fun foo() {
   typedef myfooint: int = readDefaultVal();
   var x: myfooint;
   var y: myfooint;
@@ -18,7 +18,7 @@ function foo() {
   writeln("y is: ", y);
 }
 
-function main() {
+fun main() {
   foo();
   foo();
 }

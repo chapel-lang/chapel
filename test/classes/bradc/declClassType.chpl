@@ -8,12 +8,12 @@ class D {
   var y = 20;
   var locc: C;
 
-  function doit {
+  fun doit {
     locc = globc;
   }
 }
 
-function main() {
+fun main() {
   var d: D = D();
   d.doit;
   writeln(d);

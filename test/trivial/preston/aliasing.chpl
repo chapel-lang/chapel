@@ -1,6 +1,6 @@
 -- what about aliasing of parameters?
 
-function zap(inout x : int, inout y : int) {
+fun zap(inout x : int, inout y : int) {
   writeln(x, ' ', y);
   x = 1;
   writeln(x, ' ', y);

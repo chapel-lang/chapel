@@ -1,11 +1,11 @@
-function foo(type t, x : t, y : t) {
+fun foo(type t, x : t, y : t) {
   if x == y then
     writeln("foo of ", x, " and itself");
   else
     writeln("foo of ", x, " and ", y);
 }
 
-function foo(type t, x : t, y : float) {
+fun foo(type t, x : t, y : float) {
   writeln("foo (2) of ", x, " and ", y);
 }
 

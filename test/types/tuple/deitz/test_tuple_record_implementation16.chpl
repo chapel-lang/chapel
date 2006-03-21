@@ -3,15 +3,15 @@ record mytuple {
   type t2;
   var f1 : t1;
   var f2 : t2;
-  function this(param i : int) var where i == 1 {
+  fun this(param i : int) var where i == 1 {
     return f1;
   }
-  function this(param i : int) var where i == 2 {
+  fun this(param i : int) var where i == 2 {
     return f2;
   }
 }
 
-function fwrite(f : file, val : mytuple) {
+fun fwrite(f : file, val : mytuple) {
   fwrite(f, "(", val.f1, ", ", val.f2, ")");
 }
 

@@ -1,14 +1,14 @@
 var i = 12;
 var f = 12.0;
 
-function mywrite(x) {
-  function bar(tmp:int) {
+fun mywrite(x) {
+  fun bar(tmp:int) {
     writeln("mywrite int for       ", x);
   }
-  function bar(tmp:float) {
+  fun bar(tmp:float) {
     writeln("myrite float for          ", x);
   }
-  function bar(tmp) {
+  fun bar(tmp) {
     writeln("mywrite not supported for ", x);
   }
   bar(x);

@@ -13,7 +13,7 @@ x.f = 2.2;
 
 writeln("x: (", x.f, ")");
 
-function set(out i : int, value : int) {
+fun set(out i : int, value : int) {
   i = value;
 }
 

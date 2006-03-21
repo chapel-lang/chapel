@@ -10,7 +10,7 @@ class mydomain {
   var info0 : mydomain_info;
   var info1 : mydomain_info;
   var info2 : mydomain_info;
-  function dimInit(d : int, low, high, stride) {
+  fun dimInit(d : int, low, high, stride) {
     select d {
       when 1 {
         info0.low = low;

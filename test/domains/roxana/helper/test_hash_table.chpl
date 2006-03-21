@@ -9,11 +9,11 @@ class HashTable {
    
   var table: _fdata(T) = _fdata(T, 20);
     
-  function h1(k : int) : int {
-    return k mod size;
+  fun h1(k : int) : int {
+    return k % size;
   }
   
-  function Init() {
+  fun Init() {
     if (null) {
       for i in 1..size do
         table(i-1) = null;
@@ -24,20 +24,20 @@ class HashTable {
     }
   }    
   
-  function h2(k : int) : int {
-    return (1 + k mod (size - 1));
+  fun h2(k : int) : int {
+    return (1 + k % (size - 1));
   }
   
-  function h(k : int, i : int) : int {
-    return ((h1(k) + i*h2(k)) mod size);
+  fun h(k : int, i : int) : int {
+    return ((h1(k) + i*h2(k)) % size);
   }
   
-  function Insert(k: int, v : T) : int {
+  fun Insert(k: int, v : T) : int {
     var j : int = -1;
     var i : int = 0;
     while (i < size){
       j = h(k, i);
-      if (table(j) == null or table(j) == del) {
+      if (table(j) == null || table(j) == del) {
         table(j) = v;
         return j;
       }
@@ -47,7 +47,7 @@ class HashTable {
     return -1;
   }
   
-  function Remove(k : int) : HashTable {
+  fun Remove(k : int) : HashTable {
     var j : int = Search(k);
     if (j == -1) {
       writeln("The key you want to delete is not in the table!");
@@ -57,10 +57,10 @@ class HashTable {
     return this;
   }
   
-  function Search (k : int) : int {
+  fun Search (k : int) : int {
     var i : int = 0;
     var j : int = -1;
-    while ((i < size) and (table(j) != null)) {
+    while ((i < size) && (table(j) != null)) {
       j = h(k, i);
       if (j == k){
         return j;

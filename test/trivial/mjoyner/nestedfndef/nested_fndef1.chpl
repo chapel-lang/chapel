@@ -1,7 +1,7 @@
-function main() {  
+fun main() {  
   nested();            
   
-  function nested() {
+  fun nested() {
     var x : int = 3;
     writeln(x);
   } 

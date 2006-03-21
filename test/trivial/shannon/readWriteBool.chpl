@@ -4,7 +4,7 @@ var isBushALiar:   bool;
 writeln("Is Bush an idiot? (true or false)");
 read(isBushAnIdiot);
 writeln(isBushAnIdiot);
-while (not isBushAnIdiot) {
+while (!isBushAnIdiot) {
   writeln("That's the wrong answer, try again.");
   read(isBushAnIdiot);
 }

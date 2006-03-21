@@ -1,4 +1,4 @@
-function foo(a:int) {
+fun foo(a:int) {
   writeln(a);
 }
 

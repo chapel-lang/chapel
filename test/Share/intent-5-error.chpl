@@ -1,6 +1,6 @@
 
 
-function foo(const x) {
+fun foo(const x) {
   x = 7;
   return x;
 }

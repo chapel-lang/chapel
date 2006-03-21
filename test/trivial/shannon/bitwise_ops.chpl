@@ -27,19 +27,19 @@ answer = m | n;
 writeln("actual answer = ", answer);
 writeln();
 
-writeln("test: o or p");
+writeln("test: o || p");
 writeln("expected answer = 1");
-answer = o or p;
+answer = o || p;
 writeln("actual answer = ", answer);
 writeln();
 
-writeln("test: o or o");
+writeln("test: o || o");
 writeln("expected answer = 0");
-answer = o or o;
+answer = o || o;
 writeln("actual answer = ", answer);
 writeln();
 
-writeln("test: p or p");
+writeln("test: p || p");
 writeln("expected answer = 1");
-answer = p or p;
+answer = p || p;
 writeln("actual answer = ", answer);

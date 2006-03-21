@@ -1,4 +1,4 @@
-function main() {
+fun main() {
   var x: float;
 
   x = foo();

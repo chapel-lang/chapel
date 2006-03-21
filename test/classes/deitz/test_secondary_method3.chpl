@@ -1,10 +1,10 @@
-function foo.secondary() {
+fun foo.secondary() {
   writeln("secondary method call");
 }
 
 class foo {
   var i : int;
-  function primary() {
+  fun primary() {
     writeln("primary method call");
   }
 }

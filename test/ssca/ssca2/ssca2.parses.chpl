@@ -33,7 +33,7 @@ union Weight {
 -- select during compilation.  We also need to implement the normal
 -- select statement.
 
-  function is_string {
+  fun is_string {
     typeselect (this) {
       when s     return true;
       otherwise  return false;
@@ -91,7 +91,7 @@ class Graph {
                       ParEdgeD=>ParEdgeD);
 */
 
-  function copy(s : Graph) {
+  fun copy(s : Graph) {
     return Graph(VerteD  =s.VertexD,
                  ParEdgeD=s.ParEdgeD);
   }
@@ -128,19 +128,19 @@ class Subgraph {
 /* TMP
 
 -- SJD: What's with the square brackets?
--- BLC: This was a concept which David had of a function that
+-- BLC: This was a concept which David had of a fun that
 --      had a domain;  I've never been sure of its purpose and
 --      believe that in any case for this benchmark it could be 
 --      written:
 -- 
---   function adjMatrix [i:AdjD] { return weights(i).length; }
+--   fun adjMatrix [i:AdjD] { return weights(i).length; }
 */
 
-  function adjMatrix(i: index(AdjD)) { return weights(i).length; }
+  fun adjMatrix(i: index(AdjD)) { return weights(i).length; }
 }
 
 
-function main() {
+fun main() {
   -- Scalable Data Generator parameters.
   -- Total number of vertices in directed multigraph.
   config var TOT_VERTICES       =  2^8;
@@ -248,7 +248,7 @@ function main() {
 }
 
 
-function genScalData(totVertices, maxCliqueSize, maxParalEdges,
+fun genScalData(totVertices, maxCliqueSize, maxParalEdges,
                      percentIntWeights, 
                      maxIntWeightP, probInterclEdges) {
 
@@ -305,7 +305,7 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
 /* TMP
 -- BLC: This doesn't work because of the inferred array element
 --      type.  I believe that if specified, it should be int 
---      or index(VertexD)
+--      || index(VertexD)
 
   var cliqueAdjMatrix: [AdjDomain] = 
     reshape(let n = AdjDomain.extent; 
@@ -359,7 +359,7 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
   -- build a map from vertex number to the clique it is in
 /* TMP
 -- BLC: Another elided array element type. This one should be
---      index(Clique) or int
+--      index(Clique) || int
 
   var toClique: [1..totalVertices];
 */
@@ -388,7 +388,7 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
                                        bitDomain)) {
 */
     if (r <= probInterclEdges**d) {
-      var jx = (ix-1 + dir*2**d mod totVertices) + 1;
+      var jx = (ix-1 + dir*2**d % totVertices) + 1;
       bits(ix,d,dir) = toClique(ix) != toClique(jx);
     } else bits(ix,d,dir) = false;
 /*
@@ -407,7 +407,7 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
   var interEdges: [1..numPlacedOutside] EndPoints;
   forall (ix, d, dir) in bitsDomain do
     if (bits(ix,d, dir)) {
-      var jx = (ix-1 + dir*2**d mod totVertices) + 1;
+      var jx = (ix-1 + dir*2**d % totVertices) + 1;
       interEdges(offset(ix,d,dir)) = (start=ix, end=jx);
     }
 
@@ -468,14 +468,14 @@ function genScalData(totVertices, maxCliqueSize, maxParalEdges,
 
 /* TMP
 -- BLC: This queried range throws the compiler off...
-function binsearch(x : [?lo..?hi] , y]) {
+fun binsearch(x : [?lo..?hi] , y]) {
 */
   if (hi < lo  ) then return lo;
   if (x(hi) > y) then return hi;
   if (y <= x(lo)) then return lo;
 
   while (lo+1 < hi) {
-    assert(x(lo) < y and y <= x(hi));
+    assert(x(lo) < y && y <= x(hi));
 
     var mid = (hi+lo)/2;
     if (x(mid) < y) then
@@ -488,7 +488,7 @@ function binsearch(x : [?lo..?hi] , y]) {
 }
 */
 
-function computeGraph(edges , totVertices, maxParalEdges, 
+fun computeGraph(edges , totVertices, maxParalEdges, 
                       maxIntWeight ) : Graph {
   var G = Graph();
 /* TMP
@@ -523,9 +523,9 @@ function computeGraph(edges , totVertices, maxParalEdges,
 }
 
 
-function sortWeights( G : Graph, soughtString : string ) {
+fun sortWeights( G : Graph, soughtString : string ) {
 
-  function Subgraph.choose(value) {
+  fun Subgraph.choose(value) {
     return [e in AdjD] (if (weights(e) == value) then EndPoints(e));
   }
 /* TMP
@@ -537,12 +537,12 @@ function sortWeights( G : Graph, soughtString : string ) {
 }
 
 
-function Graph.findSubGraphs(SUBGR_EDGE_LENGTH : int,
+fun Graph.findSubGraphs(SUBGR_EDGE_LENGTH : int,
                              startSetIntVPairs : seq of EndPoints,
                              startSetStrVPairs : seq of EndPoints) 
                             : seq of Graph {
     
-  function Subgraph.expandSubGraphs(start, complete:subgraph) {
+  fun Subgraph.expandSubGraphs(start, complete:subgraph) {
     var frontier like AdjD = (start.start, start.end);
     AdjD = start;
     for k in 2..SUBGR_EDGE_LENGTH {
@@ -555,7 +555,7 @@ function Graph.findSubGraphs(SUBGR_EDGE_LENGTH : int,
 
 /* TMP
 -- BLC: this is another array with inferred type.  This one should
---      either be Graph or SubGraph, I'm not sure which
+--      either be Graph || SubGraph, I'm not sure which
   var subgraphs: [1..(startSetIntVPairs.length+startSetStrVPairs.length)];
 */
   -- Loop over vertex pairs in the int starting set.
@@ -587,13 +587,13 @@ function Graph.findSubGraphs(SUBGR_EDGE_LENGTH : int,
   return subgraphs;
 }
 
-function cutClusters(G, cutBoxSize, alpha) {
+fun cutClusters(G, cutBoxSize, alpha) {
 
-  function cutClustersCommon( adjMatrix : Subgraph,
+  fun cutClustersCommon( adjMatrix : Subgraph,
                               cutBoxSize, alpha) {
     if cutBoxSize < 1
       then halt('cutBoxSize must be a least one.');
-    if alpha < 0 or alpha > 1
+    if alpha < 0 || alpha > 1
       then halt('alpha must be between 0 and 1 inclusive.');
     var startSearch = ceil(alpha * cutBoxSize); 
 
@@ -645,7 +645,7 @@ function cutClusters(G, cutBoxSize, alpha) {
 
           -- Evaluate this vertex as a cutting point.
           var cn = setAdj.extent;
-          if i >= startSearch and cnCut >= cn {
+          if i >= startSearch && cnCut >= cn {
             cnCut = cn;
             iCut = i;
             iAdj = setAdj;
@@ -688,7 +688,7 @@ function cutClusters(G, cutBoxSize, alpha) {
   var strVertexRemap = cutClustersCommon( G.strg, cutBoxSize, alpha );
   var cutG = Graph.copy(G);
 
-  function remap(oldg, newg, vertexRemap) {
+  fun remap(oldg, newg, vertexRemap) {
 /* TMP
 -- BLC: element type missing; should be int; could also be index(Vertex)
     var map: [G.VertexD];

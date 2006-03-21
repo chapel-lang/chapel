@@ -1,4 +1,4 @@
-function foo(s : string) {
+fun foo(s : string) {
   writeln(s);
 }
 

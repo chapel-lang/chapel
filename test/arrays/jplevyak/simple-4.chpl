@@ -6,8 +6,8 @@ class C {
 }
 class D {
   var aa : int;
-  function a(i : int) { return aa; }
-  function =a(i : int) { aa = i; }
+  fun a(i : int) { return aa; }
+  fun =a(i : int) { aa = i; }
 }
 class E {
   var a : arr;

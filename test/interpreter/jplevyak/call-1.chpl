@@ -1,4 +1,4 @@
-function foobar(x) {
+fun foobar(x) {
   return x;
 }
 

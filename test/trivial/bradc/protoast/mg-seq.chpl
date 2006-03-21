@@ -74,9 +74,9 @@ benchTimer.stop();
 printResults(rnm2, initTimer.read(), benchTimer.read());
 
 
--- Top-level functions:
+-- Top-level funs:
 
-function initializeMG(V, U, R) {
+fun initializeMG(V, U, R) {
   writeln(" NAS Parallel Benchmarks 2.4 (Chapel version) - MG Benchmark");
   writeln(" Size: ", nx, "x", ny, "x", nz);
   writeln(" Iterations: ", nit);
@@ -86,7 +86,7 @@ function initializeMG(V, U, R) {
 }
 
 
-function warmupMG(V, U, R) {
+fun warmupMG(V, U, R) {
   if (warmup) {
     mg3P(V, U, R);
     resid(R(1), V, U(1));
@@ -96,7 +96,7 @@ function warmupMG(V, U, R) {
 }
 
 
-function computeMG(V, U, R): float {
+fun computeMG(V, U, R): float {
   resid(R(1), V, U(1));
   norm2u3(R(1));
   for it in (1..nit) {
@@ -109,7 +109,7 @@ function computeMG(V, U, R): float {
 }
 
 
-function printResults(rnm2, inittime, runtime) {
+fun printResults(rnm2, inittime, runtime) {
   var verified: bool;
 
   if (verifyValue != 0.0) {
@@ -148,7 +148,7 @@ function printResults(rnm2, inittime, runtime) {
 
 -- Work for a single iteration:
 
-function mg3P(V, U, R) {
+fun mg3P(V, U, R) {
   -- project up the hierarchy
   for lvl in (2..numLevels) {
     rprj3(R(lvl), R(lvl-1));
@@ -175,7 +175,7 @@ function mg3P(V, U, R) {
 
 -- Here's the meat: the four stencil routines:
 
-function psinv(U, R) {
+fun psinv(U, R) {
   static const c: coeff = initCValues();
   static const c3d: [(i,j,k) in Stencil] float = c((i!=0) + (j!=0) + (k!=0));
 
@@ -186,7 +186,7 @@ function psinv(U, R) {
 }
 
 
-function resid(R, V, U) {
+fun resid(R, V, U) {
   static const a: coeff = (-8.0/3.0, 0.0, 1.0/6.0, 1.0/12.0);
   static const a3d: [(i,j,k) in Stencil] float = a((i!=0) + (j!=0) + (k!=0));
 
@@ -197,7 +197,7 @@ function resid(R, V, U) {
 }
 
 
-function rprj3(S, R) {
+fun rprj3(S, R) {
   static const w: coeff = (0.5, 0.25, 0.125, 0.0625);
   static const w3d: [(i,j,k) in Stencil] float = w((i!=0) + (j!=0) + (k!=0));
 
@@ -208,7 +208,7 @@ function rprj3(S, R) {
 }
 
 
-function interp(R, S) {
+fun interp(R, S) {
   static const IDom: domain(3) = (-1..0, -1..0, -1..0);
   static const IStn: [(i,j,k) in IDom] domain(3) = (i..0, j..0, k..0);
   static const w: [ijk in IDom] float = 1.0 / IStn.size();
@@ -226,7 +226,7 @@ function interp(R, S) {
 
 -- Calculates approximate norms:
 
-function norm2u3(R): (float, float) {
+fun norm2u3(R): (float, float) {
   const rnm2 = sqrt((sum reduce R**2)/(nx*ny*nz));
   const rnmu = max reduce abs(R);
 
@@ -236,7 +236,7 @@ function norm2u3(R): (float, float) {
 
 -- Setup stuff
 
-function initArrays(V, U, R) {
+fun initArrays(V, U, R) {
   -- conservatively, one might want to do "V=0.0; U=0.0; R=0.0; zran3(V);", 
   -- but the following is minimal:
   zran3(V);
@@ -248,7 +248,7 @@ function initArrays(V, U, R) {
 }
 
 
-function zran3(V) {
+fun zran3(V) {
   const ncharge: int = 10;
   var POS: [1..ncharge] index(Base);
   var NEG: [1..ncharge] index(Base);
@@ -271,7 +271,7 @@ function zran3(V) {
 
 -- random number generators
 
-function longRandlc(n): float {
+fun longRandlc(n): float {
   static const s: float = 314159265.0;
   static const arand: float = 5.0**13;
 
@@ -295,7 +295,7 @@ function longRandlc(n): float {
 }
 
 
-function randlc(x, a): float {
+fun randlc(x, a): float {
   static const r23: float = 0.5**23;
   static const t23: float = 2**23;
   static const r46: float = 0.5**46;
@@ -323,8 +323,8 @@ function randlc(x, a): float {
 
 -- help with coefficients
 
-function initCValues(Class): coeff {
-  if (Class == A or Class == S or Class == W) {
+fun initCValues(Class): coeff {
+  if (Class == A || Class == S || Class == W) {
     return (-3.0/8.0,  1.0/32.0, -1.0/64.0, 0.0);
   } else {
     return (-3.0/17.0, 1.0/33.0, -1.0/61.0, 0.0);
@@ -333,9 +333,9 @@ function initCValues(Class): coeff {
 
 
 
--- simple math helper function:
+-- simple math helper fun:
 
-function lg2(x): int {
+fun lg2(x): int {
   var lg: int = -1;
   while (x) {
     x *= 2;

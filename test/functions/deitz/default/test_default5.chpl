@@ -1,6 +1,6 @@
-function foo(x : int = 4) : float return x / 2.0;
+fun foo(x : int = 4) : float return x / 2.0;
 
-function foo(x : float) {
+fun foo(x : float) {
   writeln(x);
 }
 

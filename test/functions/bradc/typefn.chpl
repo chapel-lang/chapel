@@ -1,4 +1,4 @@
-function min(type t): t {
+fun min(type t): t {
   return -999:t;
 }
 

@@ -92,7 +92,7 @@ void createInitFn(ModuleSymbol* mod) {
     Stmt* testRun =
       new CondStmt(
         new CallExpr(
-          "not",
+          "!",
           new SymExpr(
             new UnresolvedSymbol(runOnce))), 
         new ReturnStmt());

@@ -115,7 +115,7 @@ Is this "while x"(i); or "while x(i)";?
 %token TENUM
 %token TFOR
 %token TFORALL
-%token TFUNCTION
+%token TFUN
 %token TGOTO
 %token TIF
 %token TIN
@@ -599,7 +599,7 @@ fn_decl_stmt:
 
 
 fn_tag:
-  TFUNCTION
+  TFUN
     { $$ = FN_FUNCTION; }
 | TCONSTRUCTOR
     { $$ = FN_CONSTRUCTOR; }
@@ -709,15 +709,15 @@ fname:
 | TSHIFTRIGHT
   { $$ = ">>"; }
 | TMOD
-  { $$ = "mod"; } 
+  { $$ = "%"; } 
 | TEXP
   { $$ = "**"; } 
 | TAND
-  { $$ = "and"; } 
+  { $$ = "&&"; } 
 | TNOT
-  { $$ = "not"; }
+  { $$ = "!"; }
 | TOR
-  { $$ = "or"; } 
+  { $$ = "||"; } 
 | TSEQCAT
   { $$ = "#"; } 
 | TBY
@@ -740,7 +740,7 @@ whereexpr:
       $$ = new DefExpr(new_symbol, NULL, $3);
     }
 | TNOT whereexpr
-    { $$ = new CallExpr("not", $2); }
+    { $$ = new CallExpr("!", $2); }
 | TBNOT whereexpr
     { $$ = new CallExpr("~", $2); }
 | whereexpr TPLUS whereexpr
@@ -756,7 +756,7 @@ whereexpr:
 | whereexpr TSHIFTRIGHT whereexpr
     { $$ = new CallExpr(">>", $1, $3); }
 | whereexpr TMOD whereexpr
-    { $$ = new CallExpr("mod", $1, $3); }
+    { $$ = new CallExpr("%", $1, $3); }
 | whereexpr TEQUAL whereexpr
     { $$ = new CallExpr("==", $1, $3); }
 | whereexpr TNOTEQUAL whereexpr
@@ -776,9 +776,9 @@ whereexpr:
 | whereexpr TBXOR whereexpr
     { $$ = new CallExpr("~", $1, $3); }
 | whereexpr TCOMMA whereexpr
-    { $$ = new CallExpr("and", $1, $3); }
+    { $$ = new CallExpr("&&", $1, $3); }
 | whereexpr TOR whereexpr
-    { $$ = new CallExpr("or", $1, $3); }
+    { $$ = new CallExpr("||", $1, $3); }
 | whereexpr TEXP whereexpr
     { $$ = new CallExpr("**", $1, $3); }
 | whereexpr TSEQCAT whereexpr
@@ -1233,7 +1233,7 @@ top_level_expr:
 | TMINUS expr %prec TUMINUS
     { $$ = new CallExpr("-", $2); }
 | TNOT expr
-    { $$ = new CallExpr("not", $2); }
+    { $$ = new CallExpr("!", $2); }
 | TBNOT expr
     { $$ = new CallExpr("~", $2); }
 | expr TPLUS expr
@@ -1249,7 +1249,7 @@ top_level_expr:
 | expr TSHIFTRIGHT expr
     { $$ = new CallExpr(">>", $1, $3); }
 | expr TMOD expr
-    { $$ = new CallExpr("mod", $1, $3); }
+    { $$ = new CallExpr("%", $1, $3); }
 | expr TEQUAL expr
     { $$ = new CallExpr("==", $1, $3); }
 | expr TNOTEQUAL expr
@@ -1269,9 +1269,9 @@ top_level_expr:
 | expr TBXOR expr
     { $$ = new CallExpr("^", $1, $3); }
 | expr TAND expr
-    { $$ = new CallExpr("and", $1, $3); }
+    { $$ = new CallExpr("&&", $1, $3); }
 | expr TOR expr
-    { $$ = new CallExpr("or", $1, $3); }
+    { $$ = new CallExpr("||", $1, $3); }
 | expr TEXP expr
     { $$ = new CallExpr("**", $1, $3); }
 | expr TSEQCAT expr

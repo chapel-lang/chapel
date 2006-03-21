@@ -1,9 +1,9 @@
-function foo(a) {
+fun foo(a) {
   writeln("in foo, a is ", a);
   bar(7);
 }
 
-function bar(a) {
+fun bar(a) {
   writeln("in bar, a is ", a);
 }
 

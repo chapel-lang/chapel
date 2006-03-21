@@ -1,7 +1,7 @@
 record point {
   var x : float;
   var y : float;
-  function setx(newx : float) {
+  fun setx(newx : float) {
     x = newx;
   }
 }

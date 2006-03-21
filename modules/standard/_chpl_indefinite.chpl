@@ -36,7 +36,7 @@ class _idomain : _domain {
   var table : _ddata(int) = _ddata(int, _ps(size));
   var inds : _ddata(ind_type) = _ddata(ind_type, _ps(size)/2);
 
-  function initialize() {
+  fun initialize() {
     table.init();
     inds.init();
   }
@@ -46,19 +46,19 @@ class _idomain : _domain {
       yield inds(i);
   }
 
-  function getHeadCursor()
+  fun getHeadCursor()
     return 0;
 
-  function getNextCursor(c)
+  fun getNextCursor(c)
     return c + 1;
 
-  function getValue(c)
+  fun getValue(c)
     return inds(c);
 
-  function isValidCursor?(c)
+  fun isValidCursor?(c)
     return c < num_inds;
 
-  function _double() {
+  fun _double() {
     size = size + 1;
     var inds_copy = _ddata(ind_type, _ps(size)/2);
     inds_copy.init();
@@ -72,10 +72,10 @@ class _idomain : _domain {
       table(_map(inds(i))) = i+1;
   }
 
-  function _map(ind : ind_type) : int {
+  fun _map(ind : ind_type) : int {
     var probe = 0;
     while true {
-      var i = (_indefinite_hash(ind) + probe**2) mod _ps(size);
+      var i = (_indefinite_hash(ind) + probe**2) % _ps(size);
       if table(i) == 0 then
         return i;
       if inds(table(i)-1) == ind then
@@ -85,10 +85,10 @@ class _idomain : _domain {
     return -1;
   }
 
-  function _get_index(ind : ind_type)
+  fun _get_index(ind : ind_type)
     return table(_map(ind)) - 1;
 
-  function add(ind : ind_type) {
+  fun add(ind : ind_type) {
     if (table(_map(ind)) == 0) {
       num_inds = num_inds + 1;
       if num_inds == _ps(size)/2 then
@@ -99,7 +99,7 @@ class _idomain : _domain {
     }
   }
 
-  function _build_array(type elt_type)
+  fun _build_array(type elt_type)
     return _iarray(elt_type, ind_type, dom=this);
 }
 
@@ -109,41 +109,41 @@ class _iarray : value {
   var dom : _idomain(ind_type);
   var data : _ddata(elt_type) = _ddata(elt_type, 128);
 
-  function initialize() {
+  fun initialize() {
     data.init();
   }
 
-  function this(ind : ind_type) var : elt_type
+  fun this(ind : ind_type) var : elt_type
     return data(dom._get_index(ind));
 
-  function getHeadCursor()
+  fun getHeadCursor()
     return 0;
 
-  function getNextCursor(c)
+  fun getNextCursor(c)
     return c + 1;
 
-  function getValue(c)
+  fun getValue(c)
     return data(c);
 
-  function isValidCursor?(c)
+  fun isValidCursor?(c)
     return c < dom.num_inds;
 }
 
-function fwrite(f : file, x : _idomain) {
+fun fwrite(f : file, x : _idomain) {
   fwrite(f, "[", x.inds(0));
   for i in 1..x.num_inds-1 do
     fwrite(f, ", ", x.inds(i));
   fwrite(f, "]");
 }
 
-function fwrite(f : file, x : _iarray) {
+fun fwrite(f : file, x : _iarray) {
   fwrite(f, x.data(0));
   for i in 1..x.dom.num_inds-1 do
     fwrite(f, " ", x.data(i));
 }
 
-function _indefinite_hash(x : int)
+fun _indefinite_hash(x : int)
   return x;
 
-function _indefinite_hash(x : string)
+fun _indefinite_hash(x : string)
   return 1;

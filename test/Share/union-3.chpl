@@ -1,7 +1,7 @@
 union Weigth {
   var i : int;
   var s : string;
-  function is_string? {
+  fun is_string? {
     typeselect(this) {
       when s return true;
       otherwise return false;

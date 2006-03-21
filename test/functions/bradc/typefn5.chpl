@@ -1,4 +1,4 @@
-function min(type t) {
+fun min(type t) {
   var x: t;
   x = -999;
   return x;

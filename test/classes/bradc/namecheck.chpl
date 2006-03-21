@@ -3,7 +3,7 @@ class R {
   var y: float;
 }
 
-function foo() {
+fun foo() {
   var x: int = 1;
   var y: float = 2.3;
 
@@ -12,7 +12,7 @@ function foo() {
   writeln("r is: ", r);
 }
 
-function bar() {
+fun bar() {
   var x: float = 4.5;
   var y: int = 6;
 
@@ -21,7 +21,7 @@ function bar() {
   writeln("r is: ", r);
 }
 
-function main() {
+fun main() {
   foo();
   bar();
 }

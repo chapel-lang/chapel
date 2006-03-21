@@ -1,6 +1,6 @@
 -- let's try some Curry
 
-function sum(a, b) {
+fun sum(a, b) {
   return a + b;
 }
 

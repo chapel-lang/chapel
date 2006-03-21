@@ -6,13 +6,13 @@ writeln("o = ", o);
 writeln("p = ", p);
 writeln();
 
-writeln("test: not o"); 
+writeln("test: !o"); 
 writeln("expected answer = 1");
-answer = not o;
+answer = !o;
 writeln("actual answer = ", answer);
 writeln();
 
-writeln("test: not p");
+writeln("test: !p");
 writeln("expected answer = 0");
-answer = not p;
+answer = !p;
 writeln("actual answer = ", answer);

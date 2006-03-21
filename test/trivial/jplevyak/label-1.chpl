@@ -1,5 +1,5 @@
 
-function foo() {
+fun foo() {
   label lab1 writeln(1);
 }
 foo();

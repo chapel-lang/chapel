@@ -1,4 +1,4 @@
-function foo(out x : int) {
+fun foo(out x : int) {
   writeln("expect 0, get ", x);
   x = 7;
   writeln("expect 7, get ", x);

@@ -1,6 +1,6 @@
 class foo {
   var x : int;
-  function getx() : int {
+  fun getx() : int {
     return x;
   }
 }

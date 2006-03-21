@@ -1,10 +1,10 @@
 class foo {
   type t;
   var x : t;
-  function initialize() {
+  fun initialize() {
     x += 10;
   }
-  function print() {
+  fun print() {
     writeln(x);
   }
 }

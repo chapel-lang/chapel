@@ -1,10 +1,10 @@
-function foo(i : int) {
+fun foo(i : int) {
   writeln("foo of ", i);
-  function bar(i : int) {
+  fun bar(i : int) {
     writeln("bar of ", i);
     car(i);
   }
-  function car(i : int) {
+  fun car(i : int) {
     writeln("car of ", i);
   }
   bar(i);

@@ -1,21 +1,21 @@
-function output(xs ...?n) {
+fun output(xs ...?n) {
   for param i in 1..n do
     foutput(xs(i));
 }
 
-function foutput(x : int) {
+fun foutput(x : int) {
   writeln("output int ", x);
 }
 
-function foutput(x : float) {
+fun foutput(x : float) {
   writeln("output float ", x);
 }
 
-function foutput(x : string) {
+fun foutput(x : string) {
   writeln("output string ", x);
 }
 
-function foutput(x : bool) {
+fun foutput(x : bool) {
   writeln("output bool ", x);
 }
 

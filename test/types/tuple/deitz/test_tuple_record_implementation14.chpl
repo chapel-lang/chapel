@@ -1,10 +1,10 @@
 record mytuple {
   var field1 : int;
   var field2 : float;
-  function this(param i : int) var where i == 1 {
+  fun this(param i : int) var where i == 1 {
     return field1;
   }
-  function this(param i : int) var where i == 2 {
+  fun this(param i : int) var where i == 2 {
     return field2;
   }
 }

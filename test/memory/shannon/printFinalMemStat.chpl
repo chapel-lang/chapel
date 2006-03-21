@@ -11,7 +11,7 @@ class C {
   var z: int;
 }
 
-function foo() {
+fun foo() {
   var s: string = "1234567890";
 
   s = "";

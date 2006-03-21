@@ -1,7 +1,7 @@
 module module1 {
   use module2;
   config var x: int = 1;
-  function main() {
+  fun main() {
     writeln("x is: ", x);
   }
 }

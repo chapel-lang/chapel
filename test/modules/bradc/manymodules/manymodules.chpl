@@ -10,6 +10,6 @@ use d;
 use e;
 use z;
 
-function main() {
+fun main() {
   writeln("x is: ", x);
 }

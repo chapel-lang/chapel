@@ -97,7 +97,7 @@ AList<Stmt>* build_for_block(BlockTag tag,
   stmts->insertAtTail(new DefExpr(cursor, new CallExpr(new CallExpr(".", iterator, new_StringLiteral("getHeadCursor")))));
   stmts->insertAtTail(new LabelStmt(new DefExpr(body->pre_loop)));
 
-  stmts->insertAtTail(new CondStmt(new CallExpr("not", new CallExpr(new CallExpr(".", iterator, new_StringLiteral("isValidCursor?")), cursor)), new GotoStmt(goto_normal, body->post_loop)));
+  stmts->insertAtTail(new CondStmt(new CallExpr("!", new CallExpr(new CallExpr(".", iterator, new_StringLiteral("isValidCursor?")), cursor)), new GotoStmt(goto_normal, body->post_loop)));
 
   stmts->insertAtTail(new DefExpr(index, new CallExpr(new CallExpr(".", iterator, new_StringLiteral("getValue")), cursor)));
   stmts->insertAtTail(body);

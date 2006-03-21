@@ -1,5 +1,5 @@
 
-function foo {
+fun foo {
   return (x = 1, y = 2);
 }
 

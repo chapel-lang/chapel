@@ -1,5 +1,5 @@
 
-function f(a : ?t) {
+fun f(a : ?t) {
   var y : t = a * 2;
   y = y + 3;
   writeln(y);

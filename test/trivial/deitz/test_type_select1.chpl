@@ -1,7 +1,7 @@
 var i = 12;
 var f = 12.0;
 
-function mywrite(x) {
+fun mywrite(x) {
   type select x {
     when int do writeln("mywrite int for       ", x);
     when float do   writeln("myrite float for          ", x);

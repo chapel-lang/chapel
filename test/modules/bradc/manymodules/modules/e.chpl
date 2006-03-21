@@ -1,20 +1,20 @@
 
 
-function runea() {
+fun runea() {
   writeln("in runea() from module e");
 }
 
 module e2 {
-  function runea() {
+  fun runea() {
     writeln("in runea() from module e2");
   }
 
-  function runeb() {
+  fun runeb() {
     writeln("in runeb() from module e2");
   }
 }
 
 
-function runeb() {
+fun runeb() {
   writeln("in runeb() from module e");
 }

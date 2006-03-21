@@ -1,12 +1,12 @@
 module a {
 
-  function runa() {
+  fun runa() {
     writeln("in runa() in module a");
   }
 
   module aSubB {
 
-    function runab() {
+    fun runab() {
       writeln("in runab() in module aSubB");
     }
 

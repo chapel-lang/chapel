@@ -1,13 +1,13 @@
-/* testing that functions specified with the pragma inline will be inlined
- * testing that functions passed actual ref arguments/formal parameters
- * testing that functions with intents to ensure copied backs happen for out/inout
+/* testing that funs specified with the pragma inline will be inlined
+ * testing that funs passed actual ref arguments/formal parameters
+ * testing that funs with intents to ensure copied backs happen for out/inout
  */
 
 class Foo {
   var y : int;
 }
 
-function main() {
+fun main() {
   var f : Foo = Foo();
   /* setter method will be created, temporary should not be created for f
    * since formal param this will be a ref */
@@ -33,11 +33,11 @@ function main() {
  
 }
 
-pragma "inline" function leaf(x : Foo) : Foo {
+pragma "inline" fun leaf(x : Foo) : Foo {
   return x;
 }
 
-function bar(in a: int, out b: int, inout c : int, const d : int) {    
+fun bar(in a: int, out b: int, inout c : int, const d : int) {    
   a = 11;
   b = 22;
   c = 33;

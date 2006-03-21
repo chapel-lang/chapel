@@ -1,5 +1,5 @@
 module b {
-  function runb() {
+  fun runb() {
     writeln("in runb() from module b");
   }
 }

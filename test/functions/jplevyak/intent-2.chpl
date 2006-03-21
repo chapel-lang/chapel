@@ -1,6 +1,6 @@
 
 
-function foo(in x) {
+fun foo(in x) {
   return x + x;
 }
 

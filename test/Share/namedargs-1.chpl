@@ -1,4 +1,4 @@
-function foo(x, y, z) {
+fun foo(x, y, z) {
   return (x - 1) * y + z;
 }
 

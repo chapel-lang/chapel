@@ -8,7 +8,7 @@ class cpoint {
   with point;
 }
 
-function length(a) {
+fun length(a) {
   return a.x * a.y;
 }
 

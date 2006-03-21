@@ -1,3 +1,3 @@
-function main() {
+fun main() {
   var gooResult = goo.read();
 }

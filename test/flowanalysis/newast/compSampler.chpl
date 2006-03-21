@@ -23,12 +23,12 @@ writeln(answer);
 if (answer != 5) then writeln("**ERROR** =>  m / n + o");
 
 answer = 0;
-answer = m + n mod o;
+answer = m + n % o;
 writeln(answer);
 if (answer != 5) then writeln("**ERROR** =>  m + n % o");
 
 answer = 0;
-answer = m mod n + o;
+answer = m % n + o;
 writeln(answer);
 if (answer != 7) then writeln("**ERROR** =>  m % n + o");
 

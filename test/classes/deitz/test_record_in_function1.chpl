@@ -1,4 +1,4 @@
-function foo() {
+fun foo() {
   record bar {
     var x : int = 2;
   }

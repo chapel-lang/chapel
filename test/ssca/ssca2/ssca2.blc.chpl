@@ -51,30 +51,30 @@ record edgeTuple {
 -- parallel will require some care
 
 -- return a random float in [0.0, 1.0)
-function randomFloat() {
+fun randomFloat() {
   halt("Need to implement randomFloat()");
   return 0.0;
 }
 
 -- flip a coin, returning heads (true) with probability headsProb
-function coinFlip(headsProb: float = 0.5) {
+fun coinFlip(headsProb: float = 0.5) {
   return (randomFloat() < headsProb);
 }
 
 -- return a random int from 1 to maxval, inclusive
-function randomInt(maxint: int) {
+fun randomInt(maxint: int) {
   halt("Need to implement randomInt()");
   return 0;
 }
 
 -- return a random string of length strlen
-function randomString(strlen: int) {
+fun randomString(strlen: int) {
   halt("Need to implement randomString()");
   return "<empty>";
 }
 
 
-function generateDirectedEdges(v1, v2) {
+fun generateDirectedEdges(v1, v2) {
   var edges: seq(edgeTuple);
   var numParallelEdges: int = randomInt(maxParallelEdges);
   forall parEdge in 1..numParallelEdges { -- TODO: could drop "parEdge"
@@ -90,7 +90,7 @@ function generateDirectedEdges(v1, v2) {
 }
 
 
-function generateEdges(v1, v2) {
+fun generateEdges(v1, v2) {
   var edges: seq(edgeTuple);
   var forward = true,   -- generate forward edges?
       backward = true;  -- generate backward edges?
@@ -111,7 +111,7 @@ function generateEdges(v1, v2) {
 }
 
 
-function generateEdgeList() {
+fun generateEdgeList() {
   var edgeTuples: seq(edgeTuple);
   var numVerticesTaken = 0;
   var clique: [Vertices] int;
@@ -148,9 +148,9 @@ function generateEdgeList() {
     var d = 2;
     var p = probIntercliqueEdges;
     while (d < totVertices/2) {
-      var v2: vertex = (v1+d) mod totVertices;
+      var v2: vertex = (v1+d) % totVertices;
       var r = randomFloat();
-      if (clique(v1) != clique(v2) and r <= p) {
+      if (clique(v1) != clique(v2) && r <= p) {
         edgeTuples #= generateEdges(v1, v2);
       }
 
@@ -166,7 +166,7 @@ function generateEdgeList() {
 }
 
 
-function kernel1(edgeTuples: seq(edgeTuple)) {
+fun kernel1(edgeTuples: seq(edgeTuple)) {
   forall t in edgeTuples {
     var newEdge: edge = (t.source, t.sink);
     AdjSpace += newEdge;
@@ -180,7 +180,7 @@ function kernel1(edgeTuples: seq(edgeTuple)) {
 }
 
 
-function kernel2(soughtString: string) {
+fun kernel2(soughtString: string) {
   var maxIntWeight = sum reduce Edges.intWeights;
   var maxEdges: sparse domain(EdgeSpace) = nil;
 
@@ -203,12 +203,12 @@ function kernel2(soughtString: string) {
 }
 
 
-function kernel3(startEdges, subGraphEdgeLength: int) {
+fun kernel3(startEdges, subGraphEdgeLength: int) {
   forall startEdge in startEdges {
     results #= findSubgraph(startEdge);
   }
 
-  function findSubgraph(startEdge) {
+  fun findSubgraph(startEdge) {
     var frontier: sparse domain(Vertices);
     frontier += sv1;
     frontier += sv2;
@@ -242,12 +242,12 @@ function kernel3(startEdges, subGraphEdgeLength: int) {
 }
 
 
-function kernel4(maxClusterSize: int, k4alpha) {
+fun kernel4(maxClusterSize: int, k4alpha) {
   halt("kernel4 not implemented yet");
 }
 
 
-function writeConfigs() {
+fun writeConfigs() {
   writeln("scale = ", scale);
   writeln("totVertices = ", totVertices);
   writeln("maxCliqueSize = ", maxCliqueSize);
@@ -259,7 +259,7 @@ function writeConfigs() {
   writeln("maxStrLen = ", maxStrLen);
 }
 
-function main() {
+fun main() {
   writeConfigs();
   generateEdgeList();
 }

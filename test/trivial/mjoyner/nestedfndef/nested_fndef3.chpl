@@ -1,20 +1,20 @@
-function main() {
+fun main() {
 
-  function nested() {
+  fun nested() {
      var w : int = 3;
      writeln(w);
      deeplyNested();
           
-    function deeplyNested() {
+    fun deeplyNested() {
       var x : int = 4;
       writeln(x);
       
-      function reallyDeeplyNested() {
+      fun reallyDeeplyNested() {
         var y : int = 5;
         writeln(y);
         superNested(); 
         
-        function superNested() {
+        fun superNested() {
           var z : float = 6.0;
           writeln(z);
         }

@@ -8,7 +8,7 @@ pragma "inline" iterator basic() : int {
 
 
 
-function main() {
+fun main() {
 var x : int = 5;
   for i in basic() {
     writeln(i+x);

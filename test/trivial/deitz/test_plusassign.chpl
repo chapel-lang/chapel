@@ -4,11 +4,11 @@ class D {
 
 class C : D {
   var x = 1;
-  function foo() {
-    function bar(_x) {
+  fun foo() {
+    fun bar(_x) {
       writeln("default bar");
     }
-    function bar(_x : D) {
+    fun bar(_x : D) {
       writeln("bar of D");
     }
     bar(x);

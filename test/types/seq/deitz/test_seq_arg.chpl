@@ -1,8 +1,8 @@
-function foo(s : seq of string) {
+fun foo(s : seq of string) {
   writeln("foo called on a sequence of strings: ", s);
 }
 
-function foo(s : seq of int) {
+fun foo(s : seq of int) {
   writeln("foo called on a sequence of ints: ", s);
 }
 

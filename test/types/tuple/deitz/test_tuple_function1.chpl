@@ -4,7 +4,7 @@ var c : (int, int);
 
 writeln(a, ", ", b, ", ", c);
 
-function foo(x : (int, int), y : (int, int)) {
+fun foo(x : (int, int), y : (int, int)) {
   var t : (int, int);
   t(1) = x(1) + y(1);
   t(2) = x(2) + y(2);

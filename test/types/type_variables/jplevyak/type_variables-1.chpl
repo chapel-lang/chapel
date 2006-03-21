@@ -1,5 +1,5 @@
 
-function f(type t, x) {
+fun f(type t, x) {
   var y : t = x;
   writeln(y);
 }

@@ -1,7 +1,7 @@
 class point {
   var x : float;
   var y : float;
-  function speak() {
+  fun speak() {
     writeln("Hello");
   }
 }

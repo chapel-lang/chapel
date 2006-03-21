@@ -13,7 +13,7 @@ const
   r46   = 0.5**46,
   t46   = 2.0**46;
 
-function nextrandlc(inout x : float, a : float) : float {
+fun nextrandlc(inout x : float, a : float) : float {
   // I want to say these are all floats
   var t1, t2, t3, t4, a1, a2, x1, x2, z : float;
   t1 = r23 * a;
@@ -31,7 +31,7 @@ function nextrandlc(inout x : float, a : float) : float {
   return r46 * x;
 }
 
-function initrandlc(seed, a : float, in n : int) : float {
+fun initrandlc(seed, a : float, in n : int) : float {
   var i : int, t, g : float;
   var x : float = seed;
   t = a;
@@ -47,7 +47,7 @@ function initrandlc(seed, a : float, in n : int) : float {
 
 var randlc_last_n : int = -2,
     randlc_last_x : float;
-function randlc(n : int) : float {
+fun randlc(n : int) : float {
   if n != randlc_last_n + 1 then
     randlc_last_x = initrandlc(seed, arand, n);
   randlc_last_n = n;
@@ -89,26 +89,26 @@ var
   U2 : [DXYZ] complex,
   Twiddle : [DXYZ] float;
 
-function compute_initial_conditions(X1) {
+fun compute_initial_conditions(X1) {
   forall i,j,k in DXYZ {
     X1(i,j,k).real = randlc(((i*ny+j)*nz+k)*2);
     X1(i,j,k).imag = randlc(((i*ny+j)*nz+k)*2+1);
   }
 }
 
-function compute_index_map(Twiddle) {
+fun compute_index_map(Twiddle) {
   const ap = -4.0 * alpha * pi * pi;
   forall i,j,k in DXYZ do
-    Twiddle(i,j,k) = exp(ap*(((i+nx/2) mod nx - nx/2)**2 +
-                             ((j+nx/2) mod nx - nx/2)**2 +
-                             ((j+nx/2) mod nx - nx/2)**2));
+    Twiddle(i,j,k) = exp(ap*(((i+nx/2) % nx - nx/2)**2 +
+                             ((j+nx/2) % nx - nx/2)**2 +
+                             ((j+nx/2) % nx - nx/2)**2));
 }
 
 var fftblock : int = 16, fftblockpad : int = 18;
 
 var u : [0..nz-1] complex;
 
-function fft_init() {
+fun fft_init() {
   var t, ti : float;
   var m = bpop(nz-1);
   var ku = 2;
@@ -124,7 +124,7 @@ function fft_init() {
   }
 }
 
-function fftz2(dir, l, m, n, ny, ny1 : int,
+fun fftz2(dir, l, m, n, ny, ny1 : int,
                u,
                x, y) {
   var lk = 2**(l-1), li = 2**(m-1), lj = 2*lk;
@@ -142,7 +142,7 @@ function fftz2(dir, l, m, n, ny, ny1 : int,
   }
 }
 
-function cfftz(dir, m, n, ny, ny1 : int,
+fun cfftz(dir, m, n, ny, ny1 : int,
                x, y) {
   for l in 1..m by 2 {
     fftz2(dir, l, m, n, ny, ny1, u, x, y);
@@ -154,7 +154,7 @@ function cfftz(dir, m, n, ny, ny1 : int,
   }
 }
 
-function cffts1(dir, n, X1, X2, ny, ny1, x, y) {
+fun cffts1(dir, n, X1, X2, ny, ny1, x, y) {
   for j in DXYZ(2) {
     for kk in DXYZ(3) by ny {
       [i1,_,i3 in [0..n-1,j..j,kk..kk+ny-1]] x(i1,i3-kk) = X1(i1,j,i3);
@@ -164,7 +164,7 @@ function cffts1(dir, n, X1, X2, ny, ny1, x, y) {
   }
 }
 
-function cffts2(dir, n, X1, X2, ny, ny1, x, y) {
+fun cffts2(dir, n, X1, X2, ny, ny1, x, y) {
   for i in DXYZ(1) {
     for kk in DXYZ(3) by ny {
       [_,i2,i3 in [i..i,0..n-1,kk..kk+ny-1]] x(i2,i3-kk) = X1(i,i2,i3);
@@ -174,7 +174,7 @@ function cffts2(dir, n, X1, X2, ny, ny1, x, y) {
   }
 }
 
-function cffts3(dir, n, X1, X2, ny, ny1, x, y) {
+fun cffts3(dir, n, X1, X2, ny, ny1, x, y) {
   for i in DXYZ(1) {
     for jj in DXYZ(2) by ny {
       [_,i2,i3 in [i..i,jj..jj+ny-1,0..n-1]] x(i3,i2-jj) = X1(i,i2,i3);
@@ -184,7 +184,7 @@ function cffts3(dir, n, X1, X2, ny, ny1, x, y) {
   }
 }
 
-function fft(dir : int, X1, X2) {
+fun fft(dir : int, X1, X2) {
   var x, y : [0..nz-1, 0..fftblockpad-1] complex;
   if dir == 1 {
     cffts3(dir, nz, X1, X1, fftblock, fftblockpad, x, y);
@@ -197,7 +197,7 @@ function fft(dir : int, X1, X2) {
   }
 }
 
-function evolve(X1, X2, Twiddle) {
+fun evolve(X1, X2, Twiddle) {
   forall ijk in DXYZ {
     X1(ijk) *= Twiddle(ijk);
     X2(ijk) = X1(ijk);
@@ -301,7 +301,7 @@ vdata_d(23) = 511.8776626738+511.9755100241i;
 vdata_d(24) = 511.8799262314+511.9776353561i;
 vdata_d(25) = 511.8822370068+511.9794338060i;
 
-function verify() {
+fun verify() {
   var rerr, ierr : float;
   for iter in 1..niter {
     select problem_class {
@@ -330,15 +330,15 @@ function verify() {
         ierr = (sums(iter).imag - vdata_d(iter).imag) / vdata_d(iter).imag;
       }
     }
-    if not (abs(rerr) <= epsilon and abs(ierr) <= epsilon) then
+    if !(abs(rerr) <= epsilon && abs(ierr) <= epsilon) then
       return false;
   }
   return true;
 }
 
-function checksum(i, X1) {
+fun checksum(i, X1) {
   var chk = 0;
-  [j in 1..1024] chk += X1((5*j) mod nx, (3*j) mod ny, j mod nz);
+  [j in 1..1024] chk += X1((5*j) % nx, (3*j) % ny, j % nz);
   chk /= nx * ny * nz;
   sums(i) = chk;
   if verbose then

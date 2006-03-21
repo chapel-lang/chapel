@@ -1,11 +1,11 @@
 
-function g(x) {
+fun g(x) {
  if (x > 19)
    return x;
   return g(x + 1);
 }
 
-function f(x) {
+fun f(x) {
  if (x > 9)
    return g(x);
   return f(x + 1);

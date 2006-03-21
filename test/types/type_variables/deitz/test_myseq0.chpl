@@ -10,14 +10,14 @@ class myseq {
   var first : myseq_node(elementType);
   var last : myseq_node(elementType);
 
-  function append(e : elementType) {
+  fun append(e : elementType) {
     first = myseq_node(elementType = elementType);
     first.element = e;
     last = first;
     length = 1;
   }
 
-  function print() {
+  fun print() {
     writeln("sequence contains ", first.element);
   }
 }

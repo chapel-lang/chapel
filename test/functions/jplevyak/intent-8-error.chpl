@@ -1,6 +1,6 @@
 
 
-function foo(out x) {
+fun foo(out x) {
   x = x * 2;
   return x;
 }

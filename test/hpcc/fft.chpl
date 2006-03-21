@@ -3,14 +3,14 @@ config var logN: int = 4;
 
 // PLACEHOLDER for external stuff
 class timer {
-  function start();
-  function stop();
-  function gettime() { return 1.0; }
+  fun start();
+  fun stop();
+  fun gettime() { return 1.0; }
 }
 // END PLACEHOLDER
 
 
-function main() {
+fun main() {
 // BLC: left-shift not supported (shiftops.chpl)
 //  const N = 1 << logN;
 // rewritten as exponentiation:
@@ -86,17 +86,17 @@ function main() {
   writeln("GFlops = ", gflop / time);
 }
 
-function bit_reverse(X) {
+fun bit_reverse(X) {
   return X;
 }
 
-function dfft(X, Y) {
+fun dfft(X, Y) {
 }
 
-function prand_array(X) {
+fun prand_array(X) {
 }
 
-function twiddles(X) {
+fun twiddles(X) {
 }
 
 

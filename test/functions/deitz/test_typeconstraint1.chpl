@@ -1,4 +1,4 @@
-function thesame(x : ?t, y : t) {
+fun thesame(x : ?t, y : t) {
   writeln(x, " and ", y);
 }
 

@@ -3,12 +3,12 @@ class C {
   var y;
 }
 
-function foo(c : C) {
+fun foo(c : C) {
   c.x = 2;
   c.y = 3;
 }
 
-function bar(c : C) {
+fun bar(c : C) {
   c.x = "hello";
   c.y = "world";
 }

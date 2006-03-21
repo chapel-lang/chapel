@@ -1,7 +1,7 @@
 var x = 32;
 var y = -1;
 
-function main() {
+fun main() {
   var y = 42;
 
   writeln("x is: ", x);
@@ -9,7 +9,7 @@ function main() {
   main(y);
 }
 
-function main(x: int) {
+fun main(x: int) {
   writeln("In main(x), x is: ", x);
 }
 

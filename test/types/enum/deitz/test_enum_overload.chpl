@@ -1,10 +1,10 @@
 enum month {jan, feb, mar, apr, may, jun, jul, aug, sep, oct, nov, dec};
 
-function foo(m : month) {
+fun foo(m : month) {
   writeln("It's a month");
 }
 
-function foo(i : int) {
+fun foo(i : int) {
   writeln("It's an int");
 }
 

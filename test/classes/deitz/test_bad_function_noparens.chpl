@@ -1,4 +1,4 @@
-function bar {
+fun bar {
   writeln("this is not allowed");
 }
 

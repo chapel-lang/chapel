@@ -4,33 +4,33 @@
 
 class _domain { }
 
-function _build_domain(x : _domain)
+fun _build_domain(x : _domain)
   return x;
 
-function _build_domain(ranges : _aseq ...?rank)
+fun _build_domain(ranges : _aseq ...?rank)
   return _adomain(rank, ranges);
 
-function _build_domain_type(param rank : int)
+fun _build_domain_type(param rank : int)
   return _adomain(rank);
 
-function _build_domain_type(type ind_type)
+fun _build_domain_type(type ind_type)
   return _idomain(ind_type);
 
-function _build_sparse_domain_type(dom)
+fun _build_sparse_domain_type(dom)
   return dom._build_sparse_domain();
 
 class _array { }
 
-function _build_array_type(dom, type elt_type)
+fun _build_array_type(dom, type elt_type)
   return dom._build_array(elt_type);
 
 ///////////////
 
-function _aseq._translate(i : int) : _aseq {
+fun _aseq._translate(i : int) : _aseq {
   return _low+i.._high+i by _stride;
 }
 
-function _aseq._interior(i : int) : _aseq {
+fun _aseq._interior(i : int) : _aseq {
   var x : _aseq = _low.._high by _stride;
   if (i < 0) {
     x = _low.._low-1-i by _stride;
@@ -40,7 +40,7 @@ function _aseq._interior(i : int) : _aseq {
   return x;
 }
 
-function _aseq._exterior(i : int) : _aseq {
+fun _aseq._exterior(i : int) : _aseq {
   var x : _aseq = _low.._high by _stride;
   if (i < 0) {
     x = _low+i.._low-1 by _stride;
@@ -50,7 +50,7 @@ function _aseq._exterior(i : int) : _aseq {
   return x;
 }
 
-function _aseq._expand(i : int) : _aseq {
+fun _aseq._expand(i : int) : _aseq {
   return _low-i.._high+i by _stride;
 }
 
@@ -59,14 +59,14 @@ class _adomain : _domain {
   param rank : int;
   var ranges : (rank * _aseq);
 
-  function getHeadCursor() {
+  fun getHeadCursor() {
     var c : (rank*int);
     for i in 1..rank do
       c(i) = ranges(i).getHeadCursor();
     return c;
   }
 
-  function getNextCursor(c) {
+  fun getNextCursor(c) {
     for i in 1..rank {
       c(i) = ranges(i).getNextCursor(c(i));
       if ranges(i).isValidCursor?(c(i)) then
@@ -78,45 +78,45 @@ class _adomain : _domain {
     return c;
   }
 
-  function getValue(c) {
+  fun getValue(c) {
     if rank == 1 then
       return c(1);
     else
       return c;
   }
 
-  function isValidCursor?(c) {
+  fun isValidCursor?(c) {
     for i in 1..rank do
-      if c(i) < ranges(i)._low or c(i) > ranges(i)._high then
+      if c(i) < ranges(i)._low || c(i) > ranges(i)._high then
         return false;
     return true;
   }
 
-  function this(dim : int)
+  fun this(dim : int)
     return ranges(dim);
 
-  function _build_array(type elt_type)
+  fun _build_array(type elt_type)
     return _aarray(elt_type, rank, dom=this);
 
-  function _build_sparse_domain()
+  fun _build_sparse_domain()
     return _sdomain(rank, adomain=this);
 
-  function translate(dim : (rank*int)) {
+  fun translate(dim : (rank*int)) {
     var x = _adomain(rank);
     for i in 1..rank do
       x.ranges(i) = this(i)._translate(dim(i));
     return x;
   }
 
-  function translate(dim : int ...?numDims) {
+  fun translate(dim : int ...?numDims) {
     return translate(dim);
   }
 
-  function interior(dim : (rank*int)) {
+  fun interior(dim : (rank*int)) {
     var x = _adomain(rank);
     for i in 1..rank do {
-      if ((dim(i) > 0) and (this(i)._high+1-dim(i) < this(i)._low) or
-          (dim(i) < 0) and (this(i)._low-1-dim(i) > this(i)._high)) {
+      if ((dim(i) > 0) && (this(i)._high+1-dim(i) < this(i)._low) ||
+          (dim(i) < 0) && (this(i)._low-1-dim(i) > this(i)._high)) {
         halt("***Error: Argument to 'interior' function out of range in dimension ", i, "***");
       } 
       x.ranges(i) = this(i)._interior(dim(i));
@@ -124,22 +124,22 @@ class _adomain : _domain {
     return x;
   }
 
-  function interior(dim : int ...?numDims) {
+  fun interior(dim : int ...?numDims) {
     return interior(dim);
   }
 
-  function exterior(dim : (rank*int)) {
+  fun exterior(dim : (rank*int)) {
     var x = _adomain(rank);
     for i in 1..rank do
       x.ranges(i) = this(i)._exterior(dim(i));
     return x;
   }
   
-  function exterior(dim : int ...?numDims) {
+  fun exterior(dim : int ...?numDims) {
     return exterior(dim);
   }
 
-  function expand(dim : (rank*int)) {
+  fun expand(dim : (rank*int)) {
     var x = _adomain(rank);
     for i in 1..rank do {
       x.ranges(i) = ranges(i)._expand(dim(i));
@@ -150,7 +150,7 @@ class _adomain : _domain {
     return x;
   }  
   
-  function expand(dim : int ...?numDims) {
+  fun expand(dim : int ...?numDims) {
     var x = _adomain(rank);
     if (rank == numDims) {
       -- NOTE: would probably like to get rid of this assignment
@@ -169,14 +169,14 @@ class _adomain : _domain {
 }
 
 
-function by(dom : _adomain, dim : (dom.rank*int)) {
+fun by(dom : _adomain, dim : (dom.rank*int)) {
   var x = _adomain(dom.rank);
   for i in 1..dom.rank do
     x.ranges(i) = dom.ranges(i) by dim(i);
   return x;
 }
 
-function by(dom : _adomain, dim : int) {
+fun by(dom : _adomain, dim : int) {
   var x = _adomain(dom.rank);
   for i in 1..dom.rank do
     x.ranges(i) = dom.ranges(i) by dim;
@@ -194,16 +194,16 @@ class _aarray : value {
   var size : int;
   var data : _ddata(elt_type);
 
-  function getHeadCursor()
+  fun getHeadCursor()
     return 0;
 
-  function getNextCursor(c)
+  fun getNextCursor(c)
     return c + 1;
 
-  function getValue(c)
+  fun getValue(c)
     return data(c);
 
-  function isValidCursor?(c)
+  fun isValidCursor?(c)
     return c < size;
 
   iterator this() : elt_type {
@@ -211,13 +211,13 @@ class _aarray : value {
       yield x; 
   }
 
-  function off(dim : int) var
+  fun off(dim : int) var
     return info(dim)(1);
 
-  function blk(dim : int) var
+  fun blk(dim : int) var
     return info(dim)(2);
 
-  function initialize() {
+  fun initialize() {
     if dom == nil then return;
     for dim in 1..rank do
       off(dim) = dom(dim)._low;
@@ -229,9 +229,9 @@ class _aarray : value {
     data.init();
   }
 
-  function this(ind : (rank*int)) var : elt_type {
+  fun this(ind : (rank*int)) var : elt_type {
     for i in 1..rank do
-      if not _in(dom(i), ind(i)) {
+      if ! _in(dom(i), ind(i)) {
         writeln("out of bounds error ", ind);
         exit(0);
       }
@@ -241,18 +241,18 @@ class _aarray : value {
     return data(sum);
   }
 
-  function this(ind : int ...?rank) var : elt_type
+  fun this(ind : int ...?rank) var : elt_type
     return this(ind);
 }
 
-function fwrite(f : file, x : _adomain) {
+fun fwrite(f : file, x : _adomain) {
   fwrite(f, "[", x(1));
   for i in 2..x.rank do
     fwrite(f, ", ", x(i));
   fwrite(f, "]");
 }
 
-function fwrite(f : file, x : _aarray) {
+fun fwrite(f : file, x : _aarray) {
   var i : (x.rank*int);
   for dim in 1..x.rank do
     i(dim) = x.dom(dim)._low;

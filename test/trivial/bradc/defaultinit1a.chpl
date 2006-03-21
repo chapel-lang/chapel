@@ -1,4 +1,4 @@
-function main() {
+fun main() {
 
 writeln("a is: ", a);
 writeln("b is: ", b);

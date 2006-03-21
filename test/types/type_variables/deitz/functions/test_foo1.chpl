@@ -1,4 +1,4 @@
-function foo(type t) {
+fun foo(type t) {
   var x : t;
   writeln(x);
 }

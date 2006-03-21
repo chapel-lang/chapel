@@ -8,11 +8,11 @@ writeln();
 
 writeln("test: not o"); 
 writeln("expected answer = 1");
-answer = not o;
+answer = !o;
 writeln("actual answer = ", answer);
 writeln();
 
 writeln("test: not p");
 writeln("expected answer = 0");
-answer = not p;
+answer = !p;
 writeln("actual answer = ", answer);

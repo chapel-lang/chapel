@@ -6,7 +6,7 @@ record D {
   var j : int = 3;
 }
 
-function =(d : D, c : C) {
+fun =(d : D, c : C) {
   d.j = c.i;
   return d;
 }

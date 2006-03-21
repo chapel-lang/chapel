@@ -1,4 +1,4 @@
-function foo(i : int) : int {
+fun foo(i : int) : int {
   return i + 2;
 }
 

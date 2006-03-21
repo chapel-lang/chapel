@@ -4,7 +4,7 @@ class pair {
   var b: float;
 }
 
-function callin(in x: pair) {
+fun callin(in x: pair) {
   writeln("in callin, x is: ", x.a, " ", x.b);
   x = pair();
   x.a = 11;
@@ -13,7 +13,7 @@ function callin(in x: pair) {
 }
 
 
-function callout(out x: pair) {
+fun callout(out x: pair) {
   writeln("in callout, x ought to be nil");
   x = pair();
   x.a = 12;
@@ -22,7 +22,7 @@ function callout(out x: pair) {
 }
 
 
-function callinout(inout x: pair) {
+fun callinout(inout x: pair) {
   writeln("in callinout, x is: ", x.a, " ", x.b);
   x = pair();
   x.a = 13;
@@ -31,7 +31,7 @@ function callinout(inout x: pair) {
 }
 
 
-function callblank(x: pair) {
+fun callblank(x: pair) {
   writeln("in callblank, x is: ", x.a, " ", x.b);
   x = pair();
   x.a = 14;
@@ -40,7 +40,7 @@ function callblank(x: pair) {
 }
 
 
-function main() {
+fun main() {
   var a: pair = pair();
 
   a.a = 10;

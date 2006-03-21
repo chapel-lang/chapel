@@ -5,7 +5,7 @@ pragma "rename _chpl_complex" class complex : value {
 
 
 pragma "rename _chpl_fwrite_complex"
-function fwrite(f : file = stdout, x : complex) {
+fun fwrite(f : file = stdout, x : complex) {
   fwrite(f, x.real);
   if (x.imag < 0) {
     fwrite(f, " - ");
@@ -18,7 +18,7 @@ function fwrite(f : file = stdout, x : complex) {
 
 
 pragma "rename _chpl_fread_complex"
-function fread(f : file = stdin, x : complex) {
+fun fread(f : file = stdin, x : complex) {
   var realPart: float;
   var imagPart: float;
   var imagI: string;
@@ -55,25 +55,25 @@ function fread(f : file = stdin, x : complex) {
 
 pragma "no codegen"
 pragma "rename _chpl_tostring_complex"
-function _tostring(x : complex, format : string) : string {
+fun _tostring(x : complex, format : string) : string {
   return __primitive("to_string", format, x);
 }
 
 
-function +(x : complex, y : complex)
+fun +(x : complex, y : complex)
   return complex(x.real + y.real, x.imag + y.imag);
 
-function +(x : float, y : complex)
+fun +(x : float, y : complex)
   return complex(x + y.real, y.imag);
 
-function -(x : complex, y : complex)
+fun -(x : complex, y : complex)
   return complex(x.real - y.real, x.imag - y.imag);
 
-function *(x : complex, y : complex)
+fun *(x : complex, y : complex)
   return complex(x.real*y.real - x.imag*y.imag,
                  x.imag*y.real + x.real*y.imag);
 
-function /(x : complex, y : complex)
+fun /(x : complex, y : complex)
   return let d = y.real*y.real + y.imag*y.imag in
     complex((x.real*y.real + x.imag*y.imag)/d,
             (x.imag*y.real - x.real*y.imag)/d);

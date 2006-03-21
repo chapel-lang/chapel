@@ -1,9 +1,9 @@
 class C {
   var x : int;
-  function foo() {
+  fun foo() {
     writeln("foo of ", x);
   }
-  function bar() {
+  fun bar() {
     writeln("bar of ", x);
     foo();
   }

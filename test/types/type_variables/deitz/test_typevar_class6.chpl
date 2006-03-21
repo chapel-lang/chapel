@@ -3,7 +3,7 @@ class foo {
   type t2;
   var x : t1;
   var y : t2;
-  function print() {
+  fun print() {
     writeln(x, " and ", y);
   }
 }

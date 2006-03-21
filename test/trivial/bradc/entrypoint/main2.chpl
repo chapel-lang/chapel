@@ -1,7 +1,7 @@
 var x = 32;
 var y = -1;
 
-function main {
+fun main {
   var y = 42;
 
   writeln("x is: ", x);

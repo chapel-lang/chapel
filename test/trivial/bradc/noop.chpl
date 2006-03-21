@@ -1,7 +1,7 @@
 
 ;
 
-function foo();
+fun foo();
 
 var D = 1..3;
 

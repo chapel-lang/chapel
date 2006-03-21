@@ -1,7 +1,7 @@
 record point {
   var x : float;
   var y : float;
-  function hello() {
+  fun hello() {
     writeln("Hi.  I'm a point.");
   }
 }

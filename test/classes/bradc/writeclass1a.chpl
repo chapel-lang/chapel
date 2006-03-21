@@ -3,7 +3,7 @@ class myclass {
   var y: float;
 }
 
-function fwrite(f:file, c:myclass) {
+fun fwrite(f:file, c:myclass) {
   fwrite(f, c.x, " ", c.y);
 }
 

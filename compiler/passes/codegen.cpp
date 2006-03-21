@@ -23,6 +23,7 @@ static void legalizeCName(Symbol* sym) {
     case '=': STRSUB("_EQUAL_"); break;
     case '*': STRSUB("_ASTERISK_"); break;
     case '/': STRSUB("_SLASH_"); break;
+    case '%': STRSUB("_PERCENT_"); break;
     case '+': STRSUB("_PLUS_"); break;
     case '-': STRSUB("_HYPHEN_"); break;
     case '^': STRSUB("_CARET_"); break;

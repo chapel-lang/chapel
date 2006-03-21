@@ -1,12 +1,12 @@
-function foo(s : string) {
+fun foo(s : string) {
   write("string ", s);
 }
 
-function foo(i : int) {
+fun foo(i : int) {
   write("int ", i);
 }
 
-function foo(ys ...2) {
+fun foo(ys ...2) {
   foo(ys(1));
   write(", ");
   foo(ys(2));

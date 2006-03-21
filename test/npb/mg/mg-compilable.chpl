@@ -35,9 +35,9 @@ const checksum: [S..O] float  = (/0.0000530770700573,
                                   0.000000570674826298,
                                   0.000000000158327506043,
                                   0.0/);
-implement these as functions for the time being: */
+implement these as funs for the time being: */
 
-function probSize(c: classVals) {
+fun probSize(c: classVals) {
   select (c) {
     when S do return 32;
     when W do return 64;
@@ -49,7 +49,7 @@ function probSize(c: classVals) {
   }
 }
 
-function iterations(c: classVals) {
+fun iterations(c: classVals) {
   select (c) {
     when S do return 4;
     when W do return 40;
@@ -61,7 +61,7 @@ function iterations(c: classVals) {
   }
 }
 
-function checksum(c: classVals) {
+fun checksum(c: classVals) {
   select (c) {
     when S do return 0.0000530770700573;
     when W do return 0.00000000000000000250391406439;
@@ -160,7 +160,7 @@ const Stencil: mydomain; -- HACK
 
 -- ENTRY POINT:
 
-function main() {
+fun main() {
   -- two timer variables that are used to time the initialization and
   -- the benchmark time, respectively
   var initTimer, benchTimer: timer;
@@ -196,7 +196,7 @@ function main() {
 
 -- initializeMG() gets things set up
 
-function initializeMG(V, U, R) {
+fun initializeMG(V, U, R) {
   -- print some standard heading information
   writeln(" NAS Parallel Benchmarks 3.0 (Chapel version) - MG Benchmark");
   writeln(" Size: ", nx, "x", ny, "x", nz);
@@ -217,7 +217,7 @@ function initializeMG(V, U, R) {
 
 -- warmupMG() runs a single iteration of the benchmark to warm stuff up
 
-function warmupMG(V, U, R) {
+fun warmupMG(V, U, R) {
   mg3P(V, U, R);
   resid(R(1), V, U(1));
 }
@@ -225,7 +225,7 @@ function warmupMG(V, U, R) {
 
 -- computeMG() runs the computation, returning the computed checksum
 
-function computeMG(V, U, R) {
+fun computeMG(V, U, R) {
   resid(R(1), V, U(1));
   norm2u3(R(1));
   for it in (1..numIters) {
@@ -244,7 +244,7 @@ function computeMG(V, U, R) {
 -- printResults() performs the checksum verification and prints out
 -- some general information about the run
 
-function printResults(rnm2, inittime, runtime) {
+fun printResults(rnm2, inittime, runtime) {
   var verified = false;
 
   if (verifyValue != 0.0) {
@@ -281,7 +281,7 @@ function printResults(rnm2, inittime, runtime) {
 
 -- mg3P() contains all the work needed to run a single multigrid cycle
 
-function mg3P(V, U, R) {
+fun mg3P(V, U, R) {
   -- project up the hierarchy
   for lvl in (2..numLevels) {
     rprj3(R(lvl), R(lvl-1));
@@ -318,7 +318,7 @@ function mg3P(V, U, R) {
 -- resid() applies a 27-point stencil to U, subtracts the result from
 -- V, and assigns to R.
 
-function resid(R, V, U) {
+fun resid(R, V, U) {
   -- these are the weight values for the stencil
   const a: coeff = (-8.0/3.0, 0.0, 1.0/6.0, 1.0/12.0);
 
@@ -366,7 +366,7 @@ function resid(R, V, U) {
 -- size for some reason (maybe there was a bug in the early version of
 -- the benchmark that has been preserved for backwards compatability?)
 
-function psinv(U, R) {
+fun psinv(U, R) {
   const c: coeff = initCValues();
 /* HACK: arrays don't parse yet
   const c3d: [(i,j,k) in Stencil] float = c((i!=0) + (j!=0) + (k!=0));
@@ -384,7 +384,7 @@ function psinv(U, R) {
 -- array, so the main loop iterates over the domain of S rather than
 -- R.
 
-function rprj3(S, R) {
+fun rprj3(S, R) {
   const w: coeff = (0.5, 0.25, 0.125, 0.0625);
 /* HACK: arrays don't parse yet
   const w3d: [(i,j,k) in Stencil] float = w((i!=0) + (j!=0) + (k!=0));
@@ -419,7 +419,7 @@ function rprj3(S, R) {
 -- the finer (R) array offsets in order to get the different
 -- topologies.
 
-function interp(R, S) {
+fun interp(R, S) {
 /* HACK: domains and arrays don't parse yet
   const IDom: domain(3) = [-1..0, -1..0, -1..0];
   const IStn: [(i,j,k) in IDom] domain(3) = [i..0, j..0, k..0];
@@ -445,7 +445,7 @@ function interp(R, S) {
 -- is used in this benchmark -- the other is dropped on the floor at
 -- the callsite).
 
-function norm2u3(R) {
+fun norm2u3(R) {
   const rnm2 = sqrt((sum reduce R**2)/(nx*ny*nz)),
         rnmu = max reduce abs(R);
 
@@ -455,8 +455,8 @@ function norm2u3(R) {
 
 -- initCValues() sets the c values for the psinv() stencil
 
-function initCValues(Class): coeff {
-  if (Class == A or Class == S or Class == W) {
+fun initCValues(Class): coeff {
+  if (Class == A || Class == S || Class == W) {
     return (/-3.0/8.0,  1.0/32.0, -1.0/64.0, 0.0/);
   } else {
     return (/-3.0/17.0, 1.0/33.0, -1.0/61.0, 0.0/);
@@ -469,7 +469,7 @@ function initCValues(Class): coeff {
 
 -- initArrays() initializes the arrays used in the computation.
 
-function initArrays(V, U, R) {
+fun initArrays(V, U, R) {
   -- conservatively, one might want to do "V=0.0; U=0.0; R=0.0; zran3(V);", 
   -- but the following is minimal:
   zran3(V);
@@ -477,9 +477,9 @@ function initArrays(V, U, R) {
 
   -- this is the most speculative part of this implementation; I've
   -- proposed support in Chapel for supporting boundary conditions by
-  -- associating functions with arrays that specify what should be
+  -- associating funs with arrays that specify what should be
   -- done when an array reference is out-of-bounds.  Some basic,
-  -- provided functions might be to declare an error, to return the
+  -- provided funs might be to declare an error, to return the
   -- zero for the array's element type, to wrap the reference around
   -- to the opposite side of the array, or to reflect the reference
   -- back into the array.  Because all of the 27-point stencils in
@@ -512,7 +512,7 @@ function initArrays(V, U, R) {
 -- version could be written on request -- if we did our job right,
 -- just the declaration of V would change)
 
-function zran3(V) {
+fun zran3(V) {
   const numCharges = 10;
 /* HACK: arrays don't parse yet
   var pos, neg: [1..numCharges] index(Base);
@@ -549,7 +549,7 @@ function zran3(V) {
 -- supplies in randdp.f; I don't claim to understand them in any
 -- depth.
 
-function longRandlc(n) {
+fun longRandlc(n) {
   const s = 314159265.0,
         arand = 5.0**13;
 
@@ -573,7 +573,7 @@ function longRandlc(n) {
 }
 
 
-function randlc(x, a) {
+fun randlc(x, a) {
   const r23 = 0.5**23,
         t23 = 2.0**23,
         r46 = 0.5**46,
@@ -599,10 +599,10 @@ function randlc(x, a) {
 }
 
 
--- simple math helper function; perhaps this will be part of the
+-- simple math helper fun; perhaps this will be part of the
 -- standard library, but it was easy enough to write
 
-function lg2(x) {
+fun lg2(x) {
   var lg = -1;
   while (x) {
     x *= 2;

@@ -1,8 +1,8 @@
-function foo(param i : int) where i == 1 {
+fun foo(param i : int) where i == 1 {
   writeln("Alpha");
 }
 
-function foo(param i : int) where i == 2 {
+fun foo(param i : int) where i == 2 {
   writeln("Beta");
 }
 

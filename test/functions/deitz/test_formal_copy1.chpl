@@ -5,7 +5,7 @@ record R {
 
 var gr : R;
 
-function foo(lr : R) {
+fun foo(lr : R) {
   lr.x = 100;
   writeln(lr);
   writeln(gr);

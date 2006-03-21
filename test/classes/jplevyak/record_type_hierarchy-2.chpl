@@ -7,7 +7,7 @@ record D {
   var y : int;
 }
 
-function f(a : C) {
+fun f(a : C) {
   return 1;
 }
 

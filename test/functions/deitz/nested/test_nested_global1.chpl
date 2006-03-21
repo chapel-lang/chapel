@@ -4,9 +4,9 @@ class C {
 
 var c = C(x = 2);
 
-function foo(type t) {
+fun foo(type t) {
   var x : t;
-  function bar(c : C) {
+  fun bar(c : C) {
     writeln(c);
   }
   writeln(x);

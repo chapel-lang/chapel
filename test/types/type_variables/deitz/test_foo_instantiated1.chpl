@@ -7,7 +7,7 @@ var b : bar(int);
 
 writeln(b);
 
-function foo(b : bar(int)) {
+fun foo(b : bar(int)) {
   writeln(b);
 }
 

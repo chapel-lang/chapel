@@ -1,4 +1,4 @@
-function f(a,b,c) {
+fun f(a,b,c) {
   if (a) then
     return b;
   else

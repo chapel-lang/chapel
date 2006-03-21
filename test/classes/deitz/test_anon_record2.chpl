@@ -1,7 +1,7 @@
 var a : record {
           var x : int;
           var y : int;
-          function print() {
+          fun print() {
             writeln(x, " and ", y);
           }
         };

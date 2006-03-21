@@ -1,31 +1,31 @@
 
-function callin(in x: int) {
+fun callin(in x: int) {
   writeln("in callin, x is: ", x);
   x += 1;
   writeln("re-assigned to be: ", x);
 }
 
 
-function callout(out x: int) {
+fun callout(out x: int) {
   writeln("in callout, x is: ", x);
   x += 1;
   writeln("re-assigned to be: ", x);
 }
 
 
-function callinout(inout x: int) {
+fun callinout(inout x: int) {
   writeln("in callinout, x is: ", x);
   x += 1;
   writeln("re-assigned to be: ", x);
 }
 
 
-function callblank(x: int) {
+fun callblank(x: int) {
   writeln("in callblank, x is: ", x);
 }
 
 
-function main() {
+fun main() {
   var a: int = 10;
 
   callin(a);

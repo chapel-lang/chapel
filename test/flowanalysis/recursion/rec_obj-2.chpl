@@ -3,7 +3,7 @@ class Cons {
   var cdr; 
 };
 
-function print(c : Cons) {
+fun print(c : Cons) {
   if (c != nil) {
      writeln(c.car);
      print(c.cdr);

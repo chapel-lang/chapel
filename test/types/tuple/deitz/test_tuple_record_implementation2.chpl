@@ -3,11 +3,11 @@ record mytuple {
   var field2 : float;
 }
 
-function foo(t : mytuple, param i : int) where i == 1 {
+fun foo(t : mytuple, param i : int) where i == 1 {
   return t.field1;
 }
 
-function foo(t : mytuple, param i : int) where i == 2 {
+fun foo(t : mytuple, param i : int) where i == 2 {
   return t.field2;
 }
 

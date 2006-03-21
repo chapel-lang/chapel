@@ -1,7 +1,7 @@
 module red {
   var x : int = 8;
 
-  function foo(i : int) {
+  fun foo(i : int) {
     writeln(i);
   }
 }
@@ -11,7 +11,7 @@ module blue {
 
   use red;
 
-  function main() {
+  fun main() {
     foo(y);
     foo(x);
     foo(16);

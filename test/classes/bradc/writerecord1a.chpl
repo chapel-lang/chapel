@@ -2,12 +2,12 @@ record myrecord {
   var x: int;
   var y: float;
 
-  function fwrite(): void { 
+  fun fwrite(): void { 
     fwrite(f, x, " ", y);
   }
 }
 
-function fwrite(f: file, a: myrecord) {
+fun fwrite(f: file, a: myrecord) {
   fwrite(f, a.x, " ", a.y);
 }
 

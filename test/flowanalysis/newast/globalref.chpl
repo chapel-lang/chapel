@@ -2,7 +2,7 @@ var a = 10;
 var b = 20;
 var c = 30;
 
-function foo(a) {
+fun foo(a) {
   var c = 3;
   writeln("In foo:");
   writeln("  a is ", a);

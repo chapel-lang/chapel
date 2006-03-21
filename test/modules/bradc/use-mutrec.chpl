@@ -1,7 +1,7 @@
 module mod1 {
   use mod2;
 
-  function foo() {
+  fun foo() {
     writeln("in mod1.foo()");
     baz();
   }
@@ -11,16 +11,16 @@ module mod1 {
 module mod2 {
   use mod1; 
 
-  function bar() {
+  fun bar() {
     writeln("in mod2.bar()");
     foo();
   }
 
-  function baz() {
+  fun baz() {
     writeln("in mod2.baz()");
   }
 
-  function main() {
+  fun main() {
     bar();
   }
 }

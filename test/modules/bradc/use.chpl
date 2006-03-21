@@ -1,5 +1,5 @@
 module mod1 {
-  function foo() {
+  fun foo() {
     writeln("in mod1.foo()");
   }
 }
@@ -8,12 +8,12 @@ module mod1 {
 module mod2 {
   use mod1; 
 
-  function bar() {
+  fun bar() {
     writeln("in mod2.bar()");
     foo();
   }
 
-  function main() {
+  fun main() {
     bar();
   }
 }

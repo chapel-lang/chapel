@@ -1,2 +1,2 @@
-invalidToken.chpl:3 ERROR: Invalid token
-yytext is: !
+invalidToken.chpl:3 ERROR: syntax error
+yytext is: one

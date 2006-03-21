@@ -1,5 +1,5 @@
 var x = 2;
 
-function main() {
+fun main() {
   writeln("x is: ", x);
 }

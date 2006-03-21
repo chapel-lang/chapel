@@ -4,7 +4,7 @@ class C {
   var i;
 }
 
-function next_foo(c : C) : C {
+fun next_foo(c : C) : C {
   if c.jump == 0 then
     goto _0;
   else if c.jump == 1 then
@@ -21,7 +21,7 @@ label _1
   return nil;
 }
 
-function foo() {
+fun foo() {
   var c = C();
   var s : seq of int;
   c = next_foo(c);

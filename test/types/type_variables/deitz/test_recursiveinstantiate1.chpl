@@ -1,4 +1,4 @@
-pragma "inline" function foo(param i : int) {
+pragma "inline" fun foo(param i : int) {
   writeln("in foo ", i);
   if i < 10 then
     foo(i + 1);

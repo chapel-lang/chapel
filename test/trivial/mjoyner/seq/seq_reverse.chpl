@@ -1,5 +1,5 @@
 /* test to show sequence reverse is working */
-function main() {
+fun main() {
   var seq1 : seq of int = (/ 5 /); 
   var sequ2 : seq of int = (/ 4, 18 /);
   var seq3 : seq of int =  (/ 1, 2, 3, 4, 5, 6, 7 /);  

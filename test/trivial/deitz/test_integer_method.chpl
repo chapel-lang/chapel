@@ -1,4 +1,4 @@
-function int.print() {
+fun int.print() {
   writeln("int.print = ", this);
 }
 

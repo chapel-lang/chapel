@@ -1,4 +1,4 @@
-function f((x, y), z) {
+fun f((x, y), z) {
   writeln(x);
   writeln(z);
   writeln(y);

@@ -1,19 +1,19 @@
-function returnInt() {
+fun returnInt() {
   return 2;
 }
 
 
-function returnFloat() {
+fun returnFloat() {
   return 2.3;
 }
 
 
-function returnString() {
+fun returnString() {
   return "hi there";
 }
 
 
-function main() {
+fun main() {
   writeln("returnInt() returns: ", returnInt());
   writeln("returnFloat() returns: ", returnFloat());
   writeln("returnString() returns: ", returnString());

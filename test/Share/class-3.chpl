@@ -22,7 +22,7 @@ class Subgraph {
     start = s;
     end = e;
   }
-  function adjMatrix [i:AdjD] { return weights(i).length; }
+  fun adjMatrix [i:AdjD] { return weights(i).length; }
 }
 
 class Graph {
@@ -31,7 +31,7 @@ class Graph {
   var ParEdgeD : domain(1);
   var intg = Subgraph(wtype = int, VertexD => VertexD, ParEdgeD => ParEdgeD);
   var strg = Subgraph(wtype = string, VertexD => VertexD, ParEdgeD => ParEdgeD);
-  function copy(s : Graph) {
+  fun copy(s : Graph) {
     return Graph(VertexD = s.VertexD, ParEdgeD = s.ParEdgeD);
   }
 }

@@ -4,7 +4,7 @@ class D {
 
 class C {
   var d : D = D();
-  function this() var : D
+  fun this() var : D
     return d;
 }
 

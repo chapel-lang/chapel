@@ -1,6 +1,6 @@
 class C {
   var x : int = 2;
-  function foo(y : int = 4) {
+  fun foo(y : int = 4) {
     writeln(y, " and ", x);
   }
 }

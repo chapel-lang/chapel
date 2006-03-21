@@ -1,6 +1,6 @@
 type mytup: (int, float);
 
-function returntwo(): mytup {
+fun returntwo(): mytup {
   return (1, 2.3);
 }
 

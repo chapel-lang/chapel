@@ -1,8 +1,8 @@
-function foo(i : int) {
+fun foo(i : int) {
   writeln(i);
 }
 
-function foo(i : int, s : string = "hello") {
+fun foo(i : int, s : string = "hello") {
   writeln(i);
   writeln(s);
 }

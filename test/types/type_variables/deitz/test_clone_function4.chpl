@@ -1,8 +1,8 @@
-function filler(x : int) {
+fun filler(x : int) {
   writeln(x);
 }
 
-function foo(x) {
+fun foo(x) {
   writeln(x);
 }
 

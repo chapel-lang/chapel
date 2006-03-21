@@ -1,4 +1,4 @@
-function returntwo(): (int, float) {
+fun returntwo(): (int, float) {
   return (1, 2.3);
 }
 

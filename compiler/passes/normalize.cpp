@@ -580,7 +580,7 @@ static void buildAssertStatement(CallExpr* call) {
     blockStmt->insertAtTail(fwritelnCall->copy());
     CallExpr* exitCall = new CallExpr("exit", new_IntLiteral(0));
     blockStmt->insertAtTail(exitCall);
-    Expr* assert_cond = new CallExpr("not", assertArg->copy());
+    Expr* assert_cond = new CallExpr("!", assertArg->copy());
     BlockStmt* assert_body = new BlockStmt(blockStmt);
     call->parentStmt->insertBefore(new CondStmt(assert_cond, assert_body));
     decompose_special_calls(printLineno);
@@ -1001,15 +1001,15 @@ static void fold_call_expr(CallExpr* call) {
           FOLD_CALL("&", P_prim_and);
           FOLD_CALL("|", P_prim_or);
           FOLD_CALL("^", P_prim_xor);
-          FOLD_CALL("mod", P_prim_mod);
+          FOLD_CALL("%", P_prim_mod);
           FOLD_CALL("<", P_prim_less);
           FOLD_CALL("<=", P_prim_lessorequal);
           FOLD_CALL(">", P_prim_greater);
           FOLD_CALL(">=", P_prim_greaterorequal);
           FOLD_CALL("==", P_prim_equal);
           FOLD_CALL("!=", P_prim_notequal);
-          FOLD_CALL("and", P_prim_land);
-          FOLD_CALL("or", P_prim_lor);
+          FOLD_CALL("&&", P_prim_land);
+          FOLD_CALL("||", P_prim_lor);
           if (call->isNamed("=")) {
             call->replace(new SymExpr(v2));
             return;
@@ -1029,7 +1029,7 @@ static void fold_call_expr(CallExpr* call) {
           FOLD_CALL("+", P_prim_plus);
           FOLD_CALL("-", P_prim_minus);
           FOLD_CALL("~", P_prim_not);
-          FOLD_CALL("not", P_prim_lnot);
+          FOLD_CALL("!", P_prim_lnot);
         }
       }
     }

@@ -1,5 +1,5 @@
-/* testing the functionality of indexing into multiple types of sequences */
-function main() {
+/* testing the funality of indexing into multiple types of sequences */
+fun main() {
   var sequ1 : seq of string = (/ "hard", "working" /); 
   var sequ2 : seq of int =  (/ 1, 2, 3, 4, 5, 6, 7 /);
   

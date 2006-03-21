@@ -7,7 +7,7 @@ record myrecord {
   var c: myclass;
 }
 
-function main() {
+fun main() {
   var x: myrecord;
   var y: myrecord;
 

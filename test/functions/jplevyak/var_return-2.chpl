@@ -1,7 +1,7 @@
 var x : int = 1;
 var y : int = 3;
 var z : int = 2;
-function f() var : int { 
+fun f() var : int { 
   return (if (x > y) then x else (if (y > z) then y else z));
 }
 f() = 7;

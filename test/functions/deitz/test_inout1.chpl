@@ -1,9 +1,9 @@
-function foo(inout t : int) {
+fun foo(inout t : int) {
   writeln(t);
   t += 1;
 }
 
-function bar(inout t : int) {
+fun bar(inout t : int) {
   foo(t);
   writeln(t);
   t += 1;

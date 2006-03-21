@@ -1,13 +1,13 @@
 class C {
   var rank: int = 2;
 
-  function foo(dim: (rank*int)) {
+  fun foo(dim: (rank*int)) {
     writeln("In other foo()");
     var x = C();
     return x;
   }
 
-  function foo(dim: int ...?numdims) {
+  fun foo(dim: int ...?numdims) {
     if (rank == numdims) {
       return foo(dim);
     } else {

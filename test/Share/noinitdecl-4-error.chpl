@@ -2,7 +2,7 @@
 
 config y = 1;
 
-function foo(a) {
+fun foo(a) {
   return a + a;
 }
 

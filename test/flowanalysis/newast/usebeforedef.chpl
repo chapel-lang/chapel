@@ -1,6 +1,6 @@
 foo(5);
 
-function foo(a) {
+fun foo(a) {
   writeln("a is ", a);
 }
 

@@ -7,7 +7,7 @@ module blue {
 
   use red;
 
-  function main() {
+  fun main() {
     writeln("y is ", y);
     writeln("x is ", x);
   }

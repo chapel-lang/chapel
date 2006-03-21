@@ -1,11 +1,11 @@
 class mysumreduce {
   type t;
   
-  function ident(): t {
+  fun ident(): t {
     return 0;
   }
 
-  function combine(x: t, y: t): t {
+  fun combine(x: t, y: t): t {
     return x + y;
   }
 }

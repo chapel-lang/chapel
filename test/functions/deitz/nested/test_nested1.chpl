@@ -1,5 +1,5 @@
-function foo(i : int) {
-  function bar(i : int) {
+fun foo(i : int) {
+  fun bar(i : int) {
     writeln(i);
   }
   bar(i);

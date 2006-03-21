@@ -1,4 +1,4 @@
-function foo(x : ?t) {
+fun foo(x : ?t) {
   var y : t;
   writeln("foo of ", x, " with y = ", y);
 }

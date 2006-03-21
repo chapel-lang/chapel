@@ -1,6 +1,6 @@
 class C {
   var i : int;
-  function foo() var {
+  fun foo() var {
     return i;
   }
 }

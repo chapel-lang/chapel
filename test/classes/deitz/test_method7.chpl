@@ -1,14 +1,14 @@
-function printout(s : string) {
+fun printout(s : string) {
   writeln("The string is '", s, "'");
 }
 
-function printout(i : int) {
+fun printout(i : int) {
   writeln("The int is ", i);
 }
 
 class foo {
   var x : int;
-  function print() {
+  fun print() {
     printout(x);
   }
 }

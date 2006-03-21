@@ -132,7 +132,7 @@ static void build_record_equality_function(ClassType* ct) {
     Expr* left = new CallExpr(tmp->name, methodToken, arg1);
     Expr* right = new CallExpr(tmp->name, methodToken, arg2);
     cond = (cond)
-      ? new CallExpr("and", cond, new CallExpr("==", left, right))
+      ? new CallExpr("&&", cond, new CallExpr("==", left, right))
       : new CallExpr("==", left, right);
   }
   fn->body = new BlockStmt(new ReturnStmt(cond));
@@ -158,7 +158,7 @@ static void build_record_inequality_function(ClassType* ct) {
     Expr* left = new CallExpr(tmp->name, methodToken, arg1);
     Expr* right = new CallExpr(tmp->name, methodToken, arg2);
     cond = (cond)
-      ? new CallExpr("or", cond, new CallExpr("!=", left, right))
+      ? new CallExpr("||", cond, new CallExpr("!=", left, right))
       : new CallExpr("!=", left, right);
   }
   BlockStmt* retStmt = new BlockStmt(new ReturnStmt(cond));

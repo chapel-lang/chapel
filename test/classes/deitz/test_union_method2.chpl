@@ -1,10 +1,10 @@
 union foo {
   var i : int;
   var f : float;
-  function hello() {
+  fun hello() {
     writeln("Hello");
   }
-  function printf() {
+  fun printf() {
     writeln("f value: ", f);
   }
 }

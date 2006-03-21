@@ -2,7 +2,7 @@ module M1 {
   class C {
     type t;
     var y : t;
-    function bar()
+    fun bar()
       return foo(y);
   }
 }
@@ -14,10 +14,10 @@ module M2 {
     var x : int = 3;
   }
 
-  function foo(r : R)
+  fun foo(r : R)
     return r.x * 2;
 
-  function main() {
+  fun main() {
     var c = C(R);
     writeln(c.bar());
   }

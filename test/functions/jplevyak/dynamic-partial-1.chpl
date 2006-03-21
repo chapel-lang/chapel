@@ -2,8 +2,8 @@ class A { var a : int; }
 class B { var b : float; }
 var a = A(1);
 var b = B(2.0);
-function f(x : A, y) { writeln(x.a + y); }
-function f(x : B, y) { writeln(x.b + y); }
+fun f(x : A, y) { writeln(x.a + y); }
+fun f(x : B, y) { writeln(x.b + y); }
 var c;
 c = => f(a);
 c(3);

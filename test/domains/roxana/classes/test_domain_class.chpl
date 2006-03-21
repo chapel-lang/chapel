@@ -10,13 +10,13 @@ class Domain {
   
   var first, last: IndexType;
   
-  function includes(other: Domain);
+  fun includes(other: Domain);
   
-  function index(i : IndexType): IndexType;
-  function range(): seq(IndexType);
+  fun index(i : IndexType): IndexType;
+  fun range(): seq(IndexType);
   
-  function allocate();
-  function reallocate();
+  fun allocate();
+  fun reallocate();
   
   iterator for(): IndexType;
   iterator forall(): IndexType;
@@ -26,21 +26,21 @@ class ADomain : Domain {
   parameter rank : int;
   var stride, alignment: int;
   
-  function set_range(r: seq(IndexType));
+  fun set_range(r: seq(IndexType));
 }
 
 class IDomain : Domain {
   var indices: Storage(IndexType);
   
-  function add(i: seq(IndexType));
-  function remove(i: seq(IndexType));
+  fun add(i: seq(IndexType));
+  fun remove(i: seq(IndexType));
   
-  function += (i: seq(IndexType));
-  function -= (i: seq(IndexType));
+  fun += (i: seq(IndexType));
+  fun -= (i: seq(IndexType));
   
-  function member?(i : seq(IndexType)): boole;
+  fun member?(i : seq(IndexType)): boole;
 }
 
 class ODomain : IDomain {
-  function new(): IndexType;
+  fun new(): IndexType;
 }
