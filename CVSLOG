@@ -60001,3 +60001,755 @@ Removed files:
 	                         seq.h 
 	chapel/runtime/src/: array.c domain.c 
 
+---------------------------------------------------------------------------
+
+03/20/06 19:37:17 -- deitz
+
+Log message:
+	Changed integer to int.
+	
+	Simplified test/execflags/shannon/configs/help/ directory.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: astutil.h type.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	                         resolveAnalyzed.cpp runInterpreter.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_base.chpl 
+	                          _chpl_complex.chpl _chpl_file.chpl 
+	                          _chpl_htuple.chpl 
+	                          _chpl_indefinite.chpl _chpl_seq.chpl 
+	                          _chpl_sparse.chpl prelude.chpl 
+	chapel/runtime/include/: chplio.h chplmem.h chpltypes.h config.h 
+	chapel/runtime/src/: arg.c chplmem.c chplmem_tests.c chpltypes.c 
+	                     config.c 
+	chapel/test/Samples/ex1-astlog/: astlog1.good 
+	chapel/test/Share/: ambiguousclass.chpl class-1.chpl 
+	                    class-2.chpl class-3.chpl constructor-1.chpl 
+	                    destruct-1.chpl domain-2-rangeerror.chpl 
+	                    domain-2.chpl domain-3.chpl domain-4.chpl 
+	                    domain-5.chpl domain-6.chpl domain-7.chpl 
+	                    funcall-3.chpl module-1.chpl 
+	                    module-2-error.chpl record-1.chpl 
+	                    record-2.chpl record-3.chpl scan-1.chpl 
+	                    seq-1.chpl seq-3.chpl typeselect-1.chpl 
+	                    typevar-1.chpl typevar-2.chpl union-1.chpl 
+	                    union-2.chpl union-3.chpl with-1.chpl 
+	                    with-2.chpl 
+	chapel/test/arrays/bradc/: domarr.chpl domarr1a.chpl 
+	                           domarr2.chpl enumarray.chpl 
+	                           noelemtype.chpl 
+	chapel/test/arrays/deitz/: jacobi.chpl jacobi2.chpl jacobi3.chpl 
+	                           test_anon_domain1.chpl 
+	                           test_anon_domain2.chpl 
+	                           test_array_1D.chpl test_array_2D.chpl 
+	                           test_array_2Da.chpl 
+	                           test_array_2Db.chpl 
+	                           test_array_2Dc.chpl 
+	                           test_array_3D.chpl test_array_8d.chpl 
+	                           test_array_assign1.chpl 
+	                           test_array_assign2.chpl 
+	                           test_array_assign3.chpl 
+	                           test_array_basic1.chpl 
+	                           test_array_basic1a.chpl 
+	                           test_array_class_trial1.chpl 
+	                           test_array_class_trial2.chpl 
+	                           test_array_class_trial3.chpl 
+	                           test_array_class_trial4.chpl 
+	                           test_array_class_trial4a.chpl 
+	                           test_array_class_trial5.chpl 
+	                           test_array_class_trial5a.chpl 
+	                           test_array_class_trial5b.chpl 
+	                           test_array_class_trial6.chpl 
+	                           test_array_in_class.chpl 
+	                           test_array_init1.chpl 
+	                           test_array_init2.chpl 
+	                           test_array_init3.chpl 
+	                           test_array_integer_2d.chpl 
+	                           test_array_integer_3d.chpl 
+	                           test_array_of_array1.chpl 
+	                           test_array_of_class1.chpl 
+	                           test_array_of_record1.chpl 
+	                           test_array_of_string1.chpl 
+	                           test_basic1d1.chpl test_basic1d2.chpl 
+	                           test_basic1d3.chpl test_basic1d4.chpl 
+	                           test_bounds1.chpl test_bounds2.chpl 
+	                           test_class_array1.chpl 
+	                           test_domain1.chpl test_domain2.chpl 
+	                           test_domain2D.chpl test_domain3.chpl 
+	                           test_domain_1D.chpl 
+	                           test_domains_1D.chpl 
+	                           test_domains_2D.chpl 
+	                           test_domains_2Da.chpl 
+	                           test_domains_2Db.chpl 
+	                           test_domains_5D.chpl 
+	                           test_indefinite1.chpl 
+	                           test_indefinite3.chpl 
+	                           test_indefinite4.chpl 
+	                           test_indefinite5.chpl 
+	                           test_indefinite6.chpl 
+	                           test_indefinite7.chpl 
+	                           test_record_of_record_instantiated.chpl 
+	                           test_record_of_record_instantiated2.chpl 
+	                           test_scalar_promote1.chpl 
+	                           test_scalar_promote2.chpl 
+	chapel/test/arrays/jplevyak/: simple-1.chpl simple-2.chpl 
+	                              simple-3.chpl simple-4.chpl 
+	                              test_domain2-error.chpl 
+	chapel/test/classes/bradc/: namecheck.chpl noinit.chpl 
+	                            noinit2.chpl trivialclass.chpl 
+	                            weirdinit.chpl writeclass.chpl 
+	                            writeclass1a.chpl writeclass2.chpl 
+	                            writeclass2a.chpl writeclass3.chpl 
+	                            writerecord.chpl writerecord1a.chpl 
+	                            writerecord2.chpl 
+	                            writeunion-workaround.chpl 
+	                            writeunion.chpl 
+	chapel/test/classes/bradc/records/: assignRecord.chpl 
+	                                    assignRecord2.chpl 
+	                                    assignRecord3.chpl 
+	                                    namecheck.chpl 
+	                                    twoRecords.chpl 
+	                                    twoRecords2.chpl 
+	chapel/test/classes/bradc/unions/: assign.chpl assign1a.chpl 
+	                                   stringunion.chpl 
+	                                   twounions.chpl 
+	                                   writeunion.chpl 
+	chapel/test/classes/deitz/: test_adotbdotc.chpl 
+	                            test_anon_record1.chpl 
+	                            test_anon_record2.chpl 
+	                            test_anon_record3.chpl 
+	                            test_badclass1.chpl test_class1.chpl 
+	                            test_class1a.chpl test_class2.chpl 
+	                            test_class3.chpl test_class4.chpl 
+	                            test_class5.chpl 
+	                            test_class_construct.chpl 
+	                            test_class_construct1.chpl 
+	                            test_class_in_usertype.chpl 
+	                            test_class_with1.chpl 
+	                            test_class_with2.chpl 
+	                            test_class_with3.chpl test_dot1.chpl 
+	                            test_inherit_mod1.chpl 
+	                            test_inherit_mod2.chpl 
+	                            test_inherit_mod3.chpl 
+	                            test_method1.chpl test_method1a.chpl 
+	                            test_method2.chpl test_method3.chpl 
+	                            test_method4.chpl test_method5.chpl 
+	                            test_method6.chpl test_method6.good 
+	                            test_method7.chpl test_method7.good 
+	                            test_method8.chpl test_method9.chpl 
+	                            test_method9a.chpl 
+	                            test_method_call2.chpl 
+	                            test_method_noparens.chpl 
+	                            test_mf_class.chpl 
+	                            test_mf_record.chpl 
+	                            test_nested_method.chpl 
+	                            test_nested_record1.chpl 
+	                            test_nested_record2.chpl 
+	                            test_nested_record_function.chpl 
+	                            test_nil1.chpl test_nil2.chpl 
+	                            test_nomembers1.chpl 
+	                            test_primary_method1.chpl 
+	                            test_record2.chpl test_record3.chpl 
+	                            test_record7.chpl test_record9.chpl 
+	                            test_record_assign1.chpl 
+	                            test_record_equal1.chpl 
+	                            test_record_equal2.chpl 
+	                            test_record_field1.chpl 
+	                            test_record_in_function1.chpl 
+	                            test_record_user_write.chpl 
+	                            test_record_with1.chpl 
+	                            test_secondary_method1.chpl 
+	                            test_secondary_method2.chpl 
+	                            test_secondary_method3.chpl 
+	                            test_string_field2.chpl 
+	                            test_sum_type1.chpl test_this1.chpl 
+	                            test_this2.chpl 
+	                            test_type_in_class1.chpl 
+	                            test_type_in_class2.chpl 
+	                            test_type_in_class3.chpl 
+	                            test_type_in_class4.chpl 
+	                            test_union1.chpl test_union2.chpl 
+	                            test_union3.chpl test_union4.chpl 
+	                            test_union_method1.chpl 
+	                            test_union_method2.chpl 
+	                            test_union_method3.chpl 
+	chapel/test/classes/deitz/infer/: infer_field2.chpl 
+	                                  infer_field2a.chpl 
+	                                  infer_field2b.chpl 
+	                                  infer_field2c.chpl 
+	chapel/test/classes/deitz/inherit/: test_inherit1.chpl 
+	                                    test_inherit2.chpl 
+	                                    test_inherit3.chpl 
+	                                    test_inherit4.chpl 
+	                                    test_inherit_error1.chpl 
+	                                    test_inherit_error2.chpl 
+	                                    test_inherit_error3.chpl 
+	                                    test_value1.chpl 
+	                                    test_value2.chpl 
+	chapel/test/classes/deitz/suite1/: test1.chpl test2.chpl 
+	                                   test3.chpl test4.chpl 
+	                                   test5.chpl 
+	chapel/test/classes/jplevyak/: record_equal-1.chpl 
+	                               record_equal-2.chpl 
+	                               record_type_hierarchy-1.chpl 
+	                               record_type_hierarchy-2.chpl 
+	                               record_type_hierarchy-3-error.chpl 
+	                               sum_type-1.chpl 
+	                               union_type_hierarchy-1.chpl 
+	                               union_type_hierarchy-2.chpl 
+	                               union_type_hierarchy-3-error.chpl 
+	chapel/test/classes/shannon/: inoutClassDataMember.chpl 
+	                              overloadedFunction.chpl 
+	                              overloadedFunction.good 
+	                              varIntTypedSetInConstructor.chpl 
+	chapel/test/compflags/bradc/passlist/: test.chpl 
+	chapel/test/compflags/bradc/tokenflags/: tokentest.chpl 
+	                                         tokentest2.chpl 
+	                                         tokentest3.chpl 
+	                                         tokentest3.good 
+	chapel/test/demo/review_060130/: history_accumulator.chpl 
+	                                 iterators.chpl jacobi.chpl 
+	                                 jacobi2.chpl 
+	chapel/test/distributions/bradc/foundations/: blockdist1.chpl 
+	                                              blockdist2.chpl 
+	                                              blockdist3.chpl 
+	chapel/test/domains/bradc/: bydomain.chpl constdomain.chpl 
+	                            domainindex.chpl paramRank.chpl 
+	                            subdomain.chpl 
+	chapel/test/domains/roxana/classes/: test_domain_class.chpl 
+	chapel/test/domains/roxana/helper/: test_hash_table.chpl 
+	                                    test_hash_table1.chpl 
+	                                    test_hash_table1a.chpl 
+	                                    test_hash_table2.chpl 
+	                                    test_hash_table3.chpl 
+	chapel/test/domains/roxana/index/: test_index_assign.chpl 
+	                                   test_index_expr.chpl 
+	                                   test_index_expr0.chpl 
+	                                   test_index_expr1.chpl 
+	                                   test_index_expr2.chpl 
+	chapel/test/domains/shannon/: by4Dtuple.chpl expand3D.chpl 
+	                              expand3Dtuple.chpl 
+	                              expandError.chpl 
+	                              expandOverload.chpl 
+	                              exterior3D.chpl 
+	                              exterior3Dtuple.chpl 
+	                              interior3D.chpl 
+	                              interior3Dtuple.chpl 
+	                              interiorErrorNeg.chpl 
+	                              interiorErrorPos.chpl 
+	                              interiorRangeValues.chpl 
+	                              translate3D.chpl 
+	                              translate3Dtuple.chpl 
+	chapel/test/execflags/shannon/: unexpectedFlag.chpl 
+	chapel/test/execflags/shannon/configs/: configVar.chpl 
+	                                        configVarDash.chpl 
+	                                        configVarDashS.chpl 
+	                                        configVarDashSVarEquals.chpl 
+	                                        configVarFile.chpl 
+	                                        configVarFloat.chpl 
+	                                        configVarHashCollision.chpl 
+	                                        configVarInvalidFloat.chpl 
+	                                        configVarInvalidFloatLineno.chpl 
+	                                        configVarInvalidInteger.chpl 
+	                                        configVarInvalidInteger.good 
+	                                        configVarInvalidIntegerLineno.chpl 
+	                                        configVarInvalidIntegerLineno.good 
+	                                        configVarInvalidName.chpl 
+	                                        configVarNonLiteralConfigs.chpl 
+	                                        configVarNonLiteralInit.chpl 
+	                                        configVarSetNotDeclared.chpl 
+	                                        configVarWithSpaces.chpl 
+	chapel/test/execflags/shannon/configs/help/: .cvsignore 
+	                                             configVar-Dash.chpl 
+	                                             configVarModStrings1.chpl 
+	                                             configVarSetTwoTypes.chpl 
+	                                             varNameQMark.chpl 
+	chapel/test/flowanalysis/jplevyak/config/: configVar.chpl 
+	chapel/test/flowanalysis/newast/: codegen_test.chpl domarr.chpl 
+	                                  enum.chpl enumarray.chpl 
+	                                  formatoutput.chpl 
+	                                  octalliteral.chpl 
+	                                  protoast_test.chpl 
+	                                  sum_type-1.chpl 
+	                                  sum_type-2.chpl var2.chpl 
+	chapel/test/functions/bradc/: arrayArg-explicit.chpl 
+	                              arrayArg.chpl defaultParam.chpl 
+	                              defaultParam2.chpl 
+	                              defaultParamInOut.chpl 
+	                              defaultParamWithReturn.chpl 
+	                              intents-arrays.chpl 
+	                              intents-arrays2.chpl 
+	                              intents-arrays2a.chpl 
+	                              intents-classes.chpl 
+	                              intents-classes2-error.chpl 
+	                              intents-classes2.chpl 
+	                              intents-classes3.chpl 
+	                              intents-classes4.chpl 
+	                              intents-error.chpl intents.chpl 
+	                              multipleParamsSameType.chpl 
+	                              nameDefaultParamInOut.chpl 
+	                              retstmt.chpl 
+	                              returnFnCallIntents.chpl 
+	                              typefn.chpl typefn2.chpl 
+	                              typefn3.chpl typefn4.chpl 
+	                              typefn4a.chpl typefn5.chpl 
+	chapel/test/functions/deitz/: test_assign1.chpl 
+	                              test_bad_function.chpl 
+	                              test_default_param1.chpl 
+	                              test_default_param2.chpl 
+	                              test_default_param3.chpl 
+	                              test_forallexpr1.chpl 
+	                              test_formal_copy1.chpl 
+	                              test_inout1.chpl 
+	                              test_iterator1.chpl 
+	                              test_iterator2.chpl 
+	                              test_named_default_gotcha.chpl 
+	                              test_named_param1.chpl 
+	                              test_named_param2.chpl 
+	                              test_named_param3.chpl 
+	                              test_operator_overloading1.chpl 
+	                              test_operator_overloading2.chpl 
+	                              test_out_parameter1.chpl 
+	                              test_overload_type_intent.chpl 
+	                              test_overload_type_intent.good 
+	                              test_return1.chpl 
+	                              test_return2.chpl 
+	                              test_var_function1.chpl 
+	                              test_var_function_access.chpl 
+	                              test_var_function_access2.chpl 
+	                              test_var_method.chpl 
+	                              test_where_param1.chpl 
+	                              test_where_param2.chpl 
+	                              test_where_param3.chpl 
+	chapel/test/functions/deitz/default/: test_default1.chpl 
+	                                      test_default2.chpl 
+	                                      test_default3-error.chpl 
+	                                      test_default3.chpl 
+	                                      test_default4-error.chpl 
+	                                      test_default4.chpl 
+	                                      test_default5.chpl 
+	                                      test_default6.chpl 
+	                                      test_default7.chpl 
+	                                      test_default7a.chpl 
+	                                      test_default7b.chpl 
+	                                      test_default7c.chpl 
+	                                      test_default7d.chpl 
+	                                      test_default8.chpl 
+	                                      test_default8a.chpl 
+	                                      test_default9.chpl 
+	chapel/test/functions/deitz/defaultnamed/: 
+	                                           test_defaultnamed1.chpl 
+	                                           test_defaultnamed2.chpl 
+	                                           test_defaultnamed3.chpl 
+	                                           test_defaultnamed4.chpl 
+	chapel/test/functions/deitz/hips06/: fibonacci_squares.chpl 
+	chapel/test/functions/deitz/iterators/: 
+	                                        test_instantiate_iterator1.chpl 
+	                                        test_instantiate_iterator2.chpl 
+	                                        test_instantiate_iterator2a.chpl 
+	                                        test_instantiate_iterator3.chpl 
+	                                        test_instantiate_iterator3a.chpl 
+	chapel/test/functions/deitz/methods/: test_default_arg.chpl 
+	                                      test_default_arg2.chpl 
+	chapel/test/functions/deitz/named/: test_named1.chpl 
+	                                    test_named2.chpl 
+	                                    test_named3-error.chpl 
+	                                    test_named3.chpl 
+	                                    test_named4.chpl 
+	                                    test_named5.chpl 
+	                                    test_named6-error.chpl 
+	chapel/test/functions/deitz/nested/: test_nested1.chpl 
+	                                     test_nested2.chpl 
+	                                     test_nested3.chpl 
+	                                     test_nested4.chpl 
+	                                     test_nested5.chpl 
+	                                     test_nested6.chpl 
+	                                     test_nested_global1.chpl 
+	chapel/test/functions/deitz/varargs/: test_varargs3.chpl 
+	                                      test_varargs4.chpl 
+	                                      test_varargs5.chpl 
+	                                      test_varargs5.good 
+	                                      test_varargs6.chpl 
+	                                      test_varargs7.chpl 
+	                                      test_varargs9.chpl 
+	                                      test_varargs9.good 
+	                                      test_varargs_write.chpl 
+	                                      test_varargs_write.good 
+	chapel/test/functions/jplevyak/: call_mapping-1.chpl 
+	                                 call_mapping-2.chpl 
+	                                 dynamic-partial-1.chpl 
+	                                 equal-4.chpl equal-5.chpl 
+	                                 equal-6.chpl equal-7.chpl 
+	                                 equal-9.chpl 
+	                                 equal_method-1.chpl 
+	                                 member-1.chpl member-2.chpl 
+	                                 type_var_fun-1.chpl 
+	                                 var_return-1.chpl 
+	                                 var_return-2.chpl 
+	chapel/test/functions/mjoyner/labelret/: label1.chpl label2.chpl 
+	                                         label3.chpl label4.chpl 
+	                                         label5.chpl 
+	chapel/test/functions/mjoyner/nested/: mutual_recursive.chpl 
+	chapel/test/functions/shannon/: methodWithVarargs.chpl 
+	chapel/test/hpcc/: fft.chpl randomaccess-distributed.chpl 
+	                   randomaccess-local.chpl 
+	                   randomaccess-redundant.chpl 
+	chapel/test/interpreter/deitz/: domarr.chpl test_array1d.chpl 
+	chapel/test/interpreter/jplevyak/: equal-4.chpl equal-5.chpl 
+	                                   equal-6.chpl equal-7.chpl 
+	                                   equal-9.chpl label1.chpl 
+	                                   label2.chpl label3.chpl 
+	                                   label4.chpl label5.chpl 
+	                                   member-1.chpl 
+	                                   op_associativity-1.chpl 
+	                                   select-1.chpl 
+	                                   test_cond_expr-1.chpl 
+	                                   test_default_param1.chpl 
+	                                   test_default_param2.chpl 
+	                                   test_default_param3.chpl 
+	                                   test_enum1.chpl 
+	                                   test_enum1.good 
+	                                   test_if_then_else.chpl 
+	                                   test_integer_method.chpl 
+	                                   test_integer_method.good 
+	                                   test_named_param1.chpl 
+	                                   test_named_param2.chpl 
+	                                   test_named_param3.chpl 
+	chapel/test/memory/shannon/: configVarFile.chpl freedMalloc.good 
+	                             jacobi.chpl memmaxBytes.good 
+	                             memmaxExceeds.chpl 
+	                             memmaxExceedsLineno.chpl 
+	                             memmaxInput.good memmaxIntOnly.good 
+	                             memstatPrint.chpl 
+	                             memtraceNoFilename.chpl 
+	                             printFinalMemStat.chpl 
+	                             printMemTable.chpl 
+	                             printMemTable2.chpl 
+	                             reallocWithoutMalloc.good 
+	                             reallocWithoutMallocLineno.good 
+	                             reallocZeroSize.good 
+	chapel/test/modules/bradc/: twomodulessamevar.chpl 
+	chapel/test/modules/deitz/: test_module_use1.chpl 
+	                            test_module_use2.chpl 
+	chapel/test/no_infer/: jacobi.chpl test_domains_2D.chpl 
+	                       test_seq1.chpl 
+	chapel/test/npb/: mg.chpl 
+	chapel/test/npb/ft/: ft-serial-working1.chpl ft-serial.chpl 
+	chapel/test/npb/mg/: mg-annotated.chpl mg-compilable.chpl 
+	chapel/test/parallel/cobegin/waynew/: cobegin.simple1.chpl 
+	                                      cobegin.simple2.chpl 
+	chapel/test/parsing/shannon/: invalidToken.chpl 
+	chapel/test/reductions/bradc/: sumreduce.chpl 
+	chapel/test/reductions/bradc/manual/: identisinferredvar.chpl 
+	                                      identisvar.chpl 
+	                                      inferstatetype.chpl 
+	                                      inferstatetype2.chpl 
+	                                      manual.chpl promote.chpl 
+	                                      threeclasstypes-construct.chpl 
+	                                      threeclasstypes-manual.chpl 
+	                                      threeclasstypes.chpl 
+	                                      threeuses-cast.chpl 
+	                                      threeuses.chpl 
+	                                      twouses.chpl usestate.chpl 
+	                                      usestate2.chpl 
+	                                      usetype.chpl usetype2.chpl 
+	chapel/test/ssca/ssca2/: ssca2.blc-hack.chpl ssca2.blc.chpl 
+	                         ssca2.blc.init.chpl ssca2.chpl 
+	                         ssca2.orig.chpl ssca2.origpar.chpl 
+	                         ssca2.parses.chpl 
+	                         ssca2.typedarrays.chpl 
+	chapel/test/trivial/bradc/: defaultinit.chpl defaultinit1a.chpl 
+	                            defaultinit2.chpl formatoutput.chpl 
+	                            initvarsamename.chpl 
+	                            initvarsamename2.chpl 
+	                            octalliteral.chpl 
+	                            opAssociativity.chpl 
+	                            readmethod2.chpl readmethod2a.chpl 
+	                            redefinevar.chpl testAllScopes.chpl 
+	                            testAllScopes2.chpl unroll.chpl 
+	                            unroll.good vardecls.chpl 
+	                            vardecls1a.chpl vardecls1b.chpl 
+	chapel/test/trivial/bradc/entrypoint/: twomains2.chpl 
+	                                       twomains2a.chpl 
+	                                       wrongmain.chpl 
+	                                       wrongmain2.chpl 
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.chpl 
+	                                     mg-seq-concrete.good 
+	                                     mg-seq.chpl mg-seq.good 
+	                                     mvm-seq.chpl mvm-seq.good 
+	                                     test.chpl test.good 
+	chapel/test/trivial/bradc/protoast/codegen/: enum.chpl test.chpl 
+	chapel/test/trivial/deitz/: foo.chpl test_a_few_functions.chpl 
+	                            test_block_call.chpl 
+	                            test_coerce_integer_to_string1.chpl 
+	                            test_coerce_integer_to_string1.good 
+	                            test_coerce_integer_to_string2.chpl 
+	                            test_cond_expr1.chpl 
+	                            test_config_use_before_decl.chpl 
+	                            test_for_param.chpl 
+	                            test_format_primitives.chpl 
+	                            test_goto1.chpl test_goto2.chpl 
+	                            test_if_expr.chpl test_if_expr2.chpl 
+	                            test_if_expr3.chpl 
+	                            test_if_then_else.chpl 
+	                            test_integer_method.chpl 
+	                            test_integer_method.good 
+	                            test_integer_method2.chpl 
+	                            test_integer_method2.good 
+	                            test_let5.chpl test_let6.chpl 
+	                            test_let8.chpl 
+	                            test_nested_function_call.chpl 
+	                            test_nested_function_call2.chpl 
+	                            test_parse_stmt.chpl 
+	                            test_scope1.chpl test_scope2.chpl 
+	                            test_scope3.chpl test_select1.chpl 
+	                            test_short_identifiers.chpl 
+	                            test_type_select1-handcode.chpl 
+	                            test_type_select1-handcode.good 
+	                            test_type_select1.chpl 
+	                            test_type_select1.good 
+	                            test_use_before_def1.chpl 
+	                            test_use_before_def2.chpl 
+	                            test_use_before_def3.chpl 
+	                            test_var_decl2.chpl 
+	                            test_var_decl3.chpl 
+	                            test_var_decl_init1.chpl 
+	                            test_var_decl_init2.chpl 
+	                            test_var_decl_init3.chpl 
+	                            test_var_decl_strange1.chpl 
+	                            test_write_return.chpl 
+	chapel/test/trivial/deitz/demo/: sample1.chpl sample1b.chpl 
+	                                 sample2.chpl 
+	chapel/test/trivial/jplevyak/: pragma-4.chpl pragma-5.chpl 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1.chpl 
+	                                         inlfunc1_report.chpl 
+	                                         inlfunc2.chpl 
+	                                         inlfunc2_report.chpl 
+	chapel/test/trivial/mjoyner/iterators/: nest_func_iterator1.chpl 
+	                                        nest_func_iterator2.chpl 
+	                                        nest_func_iterator2a.chpl 
+	                                        nest_func_iterator2b.chpl 
+	                                        nest_func_iterator3.chpl 
+	                                        nest_func_iterator4.chpl 
+	                                        nest_func_iterator5.chpl 
+	                                        nest_func_iterator6.chpl 
+	                                        nest_func_iterator7.chpl 
+	chapel/test/trivial/mjoyner/nestedfndef/: nested_fndef1.chpl 
+	                                          nested_fndef2.chpl 
+	                                          nested_fndef3.chpl 
+	                                          nested_fndef4.chpl 
+	                                          nested_fndef5.chpl 
+	chapel/test/trivial/mjoyner/seq/: seq_index1.chpl 
+	                                  seq_index2.chpl 
+	                                  seq_reverse.chpl 
+	chapel/test/trivial/preston/: aliasing.chpl boundfunction.chpl 
+	                              if.chpl 
+	chapel/test/trivial/roxana/: test_param_decl.chpl 
+	                             test_param_decl2.chpl 
+	                             test_param_decl3.chpl 
+	chapel/test/trivial/shannon/: condReturn.chpl condReturn2.chpl 
+	                              condReturn3.chpl exp.chpl 
+	                              multipleArgAssert.chpl 
+	                              readWriteComplex.chpl 
+	                              readWriteComplexLineno.chpl 
+	                              readWriteFloatInt.chpl 
+	                              readWriteUserType.chpl 
+	                              readWriteUserType.good 
+	chapel/test/trivial/shannon/quit/: assert.chpl exit.chpl 
+	                                   halt.chpl 
+	chapel/test/types/enum/deitz/: test_enum1.chpl test_enum1.good 
+	                               test_enum2.chpl test_enum2.good 
+	                               test_enum3.chpl test_enum3.good 
+	                               test_enum4.chpl test_enum4.good 
+	                               test_enum5.chpl test_enum5.good 
+	                               test_enum6.chpl test_enum6.good 
+	                               test_enum_overload.chpl 
+	                               test_enum_overload.good 
+	chapel/test/types/file/: freadClass.chpl freadComplex.chpl 
+	                         freadIntFloat.chpl freadNoInt.chpl 
+	                         freadNoInt.good 
+	                         freadToClassDataMember.chpl 
+	                         fwritelnClassFile.chpl invalidMode.chpl 
+	chapel/test/types/like/deitz/: test_like1.chpl 
+	chapel/test/types/seq/bradc/: emptySeq.chpl emptySeq2.chpl 
+	                              emptySeq2a.chpl emptySeq3.chpl 
+	                              hashEquals.chpl length.chpl 
+	                              length.modify.chpl recordSeq.chpl 
+	                              returnSeq.chpl returnSeq2.chpl 
+	chapel/test/types/seq/deitz/: test_seq1.chpl test_seq1a.chpl 
+	                              test_seq1b.chpl test_seq1c.chpl 
+	                              test_seq1d.chpl test_seq3.chpl 
+	                              test_seq4.chpl test_seq5.chpl 
+	                              test_seq6.chpl test_seq7.chpl 
+	                              test_seq8.chpl test_seq9.chpl 
+	                              test_seq_arg.chpl 
+	                              test_seq_arg.good 
+	                              test_seq_class1.chpl 
+	                              test_seq_class2.chpl 
+	                              test_seq_htuple1.chpl 
+	                              test_seq_htuple2.chpl 
+	                              test_seq_of_seq.chpl 
+	                              test_seq_of_seq2.chpl 
+	                              test_seq_record1.chpl 
+	                              test_seq_return1.chpl 
+	                              test_seq_reverse1.chpl 
+	                              test_seq_tuple.chpl 
+	                              test_seq_tuple3.chpl 
+	chapel/test/types/tuple/bradc/: returnTuple.chpl 
+	                                returnTuple2.chpl 
+	                                returnTuple3.chpl 
+	                                writeTuple.chpl 
+	chapel/test/types/tuple/deitz/: test_class_tuple1.chpl 
+	                                test_destruct.chpl 
+	                                test_destruct_nested.chpl 
+	                                test_htuple1.chpl 
+	                                test_htuple2.chpl 
+	                                test_htuple3.chpl 
+	                                test_htuple4.chpl 
+	                                test_htuple5.chpl 
+	                                test_htuple6.chpl 
+	                                test_htuple7.chpl 
+	                                test_htuple_of_tuple.chpl 
+	                                test_param_tuple_arg1-error.chpl 
+	                                test_param_tuple_arg1.chpl 
+	                                test_tuple_function1.chpl 
+	                                test_tuple_of_tuples.chpl 
+	                                test_tuple_record_implementation1.chpl 
+	                                test_tuple_record_implementation10.chpl 
+	                                test_tuple_record_implementation11.chpl 
+	                                test_tuple_record_implementation12.chpl 
+	                                test_tuple_record_implementation13.chpl 
+	                                test_tuple_record_implementation14.chpl 
+	                                test_tuple_record_implementation15.chpl 
+	                                test_tuple_record_implementation16.chpl 
+	                                test_tuple_record_implementation2.chpl 
+	                                test_tuple_record_implementation3.chpl 
+	                                test_tuple_record_implementation4.chpl 
+	                                test_tuple_record_implementation5.chpl 
+	                                test_tuple_record_implementation6.chpl 
+	                                test_tuple_record_implementation7.chpl 
+	                                test_tuple_record_implementation8.chpl 
+	                                test_tuple_record_implementation9.chpl 
+	                                test_tuple_simple1.chpl 
+	                                test_tuple_simple1a.chpl 
+	                                test_tuple_simple2.chpl 
+	                                test_tuple_simple5.chpl 
+	                                test_tuple_type1.chpl 
+	                                test_tuple_type2.chpl 
+	chapel/test/types/type_variables/deitz/: test_clone_class3.chpl 
+	                                         test_clone_class4.chpl 
+	                                         test_clone_class5.chpl 
+	                                         test_clone_function1.chpl 
+	                                         test_clone_function3.chpl 
+	                                         test_clone_function4.chpl 
+	                                         test_clone_function5.chpl 
+	                                         test_clone_function6.chpl 
+	                                         test_clone_function_multiargs1.chpl 
+	                                         test_coerce1.chpl 
+	                                         test_coerce1.good 
+	                                         test_datablock.chpl 
+	                                         test_datablock2.chpl 
+	                                         test_datablock3.chpl 
+	                                         test_foo_instantiated1.chpl 
+	                                         test_infer_class2.chpl 
+	                                         test_instantiate1.chpl 
+	                                         test_instantiate2.chpl 
+	                                         test_instantiate3.chpl 
+	                                         test_instantiate4.chpl 
+	                                         test_instantiate_construct1.chpl 
+	                                         test_myseq0.chpl 
+	                                         test_myseq1.chpl 
+	                                         test_myseq2.chpl 
+	                                         test_nested1.chpl 
+	                                         test_nested2.chpl 
+	                                         test_nested2.good 
+	                                         test_overinstantiate1.chpl 
+	                                         test_overinstantiate1a.chpl 
+	                                         test_overload_function1.chpl 
+	                                         test_overload_integerfloat1.chpl 
+	                                         test_overload_integerfloat1.good 
+	                                         test_overload_integerfloat2.chpl 
+	                                         test_overload_integerfloat2.good 
+	                                         test_overload_integerfloat3.chpl 
+	                                         test_overload_integerfloat3.good 
+	                                         test_overload_integerfloat4.chpl 
+	                                         test_overload_integerfloat4.good 
+	                                         test_paramvar_class1.chpl 
+	                                         test_paramvar_function1.chpl 
+	                                         test_paramvar_record1.chpl 
+	                                         test_recursiveinstantiate1.chpl 
+	                                         test_swap.chpl 
+	                                         test_tuplelike1.chpl 
+	                                         test_typevar_class1.chpl 
+	                                         test_typevar_class10.chpl 
+	                                         test_typevar_class2.chpl 
+	                                         test_typevar_class2a.chpl 
+	                                         test_typevar_class3.chpl 
+	                                         test_typevar_class4.chpl 
+	                                         test_typevar_class5.chpl 
+	                                         test_typevar_class6.chpl 
+	                                         test_typevar_class7.chpl 
+	                                         test_typevar_class8.chpl 
+	                                         test_typevar_class9.chpl 
+	                                         test_typevar_function1.chpl 
+	                                         test_typevar_function2.chpl 
+	                                         test_typevar_function3.chpl 
+	                                         test_typevar_function4.chpl 
+	                                         test_typevar_record1.chpl 
+	                                         test_typevar_record2.chpl 
+	                                         test_typevar_record3.chpl 
+	                                         test_typevar_record4.chpl 
+	                                         test_typevar_record5.chpl 
+	                                         test_typevar_record6.chpl 
+	chapel/test/types/type_variables/deitz/functions/: 
+	                                                   test_foo1.chpl 
+	                                                   test_foo2.chpl 
+	                                                   test_foo3.chpl 
+	                                                   test_foo4.chpl 
+	                                                   test_foo5-error.chpl 
+	                                                   test_foo5.chpl 
+	                                                   test_foo7.chpl 
+	chapel/test/types/type_variables/jplevyak/: 
+	                                            test_clone_class-1.chpl 
+	                                            test_coerce1.chpl 
+	                                            test_coerce1.good 
+	                                            test_coerce2.chpl 
+	                                            test_coerce2.good 
+	                                            test_typevar_class1.chpl 
+	                                            type_variables-1.chpl 
+	                                            typevar_constraint-1.chpl 
+	                                            typevar_use-1.chpl 
+	                                            where-1.chpl 
+	                                            where-2-error.chpl 
+	                                            where-2.chpl 
+	                                            where-3.chpl 
+	chapel/test/types/typedefs/bradc/: localType.chpl 
+	                                   localType2.chpl 
+	chapel/test/types/typedefs/jplevyak/: copy_typedef-1.chpl 
+Added files:
+	chapel/test/execflags/shannon/configs/help/: configVar-Dash.good 
+	                                             configVarDefaultValue.good 
+	                                             configVarHelp.good 
+	                                             configVarModStrings1.good 
+	                                             configVarModStrings2.good 
+	                                             configVarSetOver.good 
+	                                             configVarSetTwoTypes.good 
+	                                             configVarTwoModules.good 
+	                                             varNameEnumQM.good 
+	                                             varNameQMark.good 
+Removed files:
+	chapel/test/execflags/shannon/configs/help/: PREDIFF 
+	                                             configVar-Dash.cfghelp 
+	                                             configVarDefaultValue.cfghelp 
+	                                             configVarHelp.cfghelp 
+	                                             configVarModStrings1.cfghelp 
+	                                             configVarModStrings2.cfghelp 
+	                                             configVarSetOver.cfghelp 
+	                                             configVarSetTwoTypes.cfghelp 
+	                                             configVarTwoModules.cfghelp 
+	                                             varNameEnumQM.cfghelp 
+	                                             varNameQMark.cfghelp 
+
