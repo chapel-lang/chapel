@@ -226,3 +226,26 @@ iterator _cross(param rank : int, seqs) : (rank*int) {
     }
   }
 }
+
+class reduction { }
+
+fun _reduce(r : reduction, s) { // reduce sequence s by reduction r
+  for e in s do
+    r.accumulate(e);
+  return r.generate();  
+}
+
+class sum : reduction {
+  var value;
+  var first = false;
+  fun accumulate(x) {
+    if first then
+      value = value + x;
+    else {
+      first = true;
+      value = x;
+    }
+  }
+  fun generate()
+    return value;
+}
