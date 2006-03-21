@@ -3,7 +3,6 @@
 
 #include <stdio.h>
 #include "chpltypes.h"
-#include "domain.h"
 
 #define _default_format_write_bool     "%s"
 #define _default_format_read_bool      "%s"

@@ -4,7 +4,6 @@
 #include <string.h>
 #include "chplio.h"
 #include "chplrt.h"
-#include "domain.h"
 #include "error.h"
 
 

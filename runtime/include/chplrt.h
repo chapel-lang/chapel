@@ -1,6 +1,16 @@
 #ifndef _chplrt_H_
 #define _chplrt_H_
 
+#define _chpl_array_index(x, i) ((x)->_data[i])
+#define _chpl_array_set(x, i, v) ((x)->_data[i] = v)
+#define _chpl_array_init(type, x, size, v)                      \
+  {                                                             \
+    (x)->_data = _chpl_malloc(size, sizeof(type), "_data");     \
+    int _a_i;                                                   \
+    for (_a_i = 0; _a_i < size; _a_i++)                         \
+      (x)->_data[_a_i] = v;                                     \
+  }
+
 #define _noop(x)
 
 #define malloc  dont_use_malloc_use_chpl_malloc_instead

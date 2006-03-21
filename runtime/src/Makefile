@@ -10,13 +10,11 @@ CFLAGS += $(ONLYCFLAGS)
 
 CHPL_RT_SRCS = \
 	arg.c \
-	array.c \
 	chplio.c \
 	chplmem.c \
 	chplmem_tests.c \
 	chpltypes.c \
 	config.c \
-	domain.c \
 	error.c \
 	exit.c \
 
