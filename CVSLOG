@@ -61625,3 +61625,15 @@ Removed files:
 	                           test_array_init1.future 
 	                           test_array_of_string1.future 
 
+---------------------------------------------------------------------------
+
+03/22/06 15:58:19 -- waynew
+
+Log message:
+	Bug fix. Test-specific .prediff script argument to diff program
+	execution output against. Changed to pass execution log ($execlog)
+	instead of compilation log ($complog).
+
+Modified files:
+	chapel/test/: sub_test 
+
