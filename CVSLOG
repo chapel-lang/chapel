@@ -61477,3 +61477,14 @@ Removed files:
 	chapel/test/trivial/deitz/: test_type_select1-handcode.future 
 	                            test_type_select1.future 
 
+---------------------------------------------------------------------------
+
+03/22/06 10:59:42 -- jplevyak
+
+Log message:
+	Update .future and add note: this test doesn't work in the interpreter...
+
+Modified files:
+	chapel/test/functions/deitz/iterators/: 
+	                                        test_instantiate_iterator2a.future 
+
