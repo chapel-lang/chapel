@@ -215,6 +215,7 @@ foreach chplsrc ($testsrc)
 	endif
 
 	echo \[Executing diff $checkfile $complog\]
+        cat $complog
 	diff $diffargs $checkfile $complog
 	set difffailed = $status
         if ( $difffailed == 0 ) then
@@ -282,7 +283,7 @@ foreach chplsrc ($testsrc)
 	    endif
             if (-x ./$execfile.prediff) then
                 echo \[Executing $execfile.prediff\]
-                ./$execfile.prediff $execfile $complog $compiler
+                ./$execfile.prediff $execfile $execlog $compiler
             endif
 
 
