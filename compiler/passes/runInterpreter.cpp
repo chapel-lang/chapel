@@ -44,6 +44,8 @@ char *slotKindName[] = {
   "Immediate"
 };
 
+class ISlot;
+
 class ISlot : public gc { public:
   ISlotKind     kind;
   char          *name;
@@ -71,7 +73,7 @@ class ISlot : public gc { public:
   ISlot(Immediate *i) : kind(IMMEDIATE_ISLOT), name(0), aspect(0) { imm = i; }
   ISlot(char *sel) : kind(SELECTOR_ISLOT), name(0), aspect(0) { selector = sel; }
   ISlot(ISlot &s) { kind = s.kind; x(); object = s.object; }
-  ISlot() : kind(EMPTY_ISLOT), name(0), aspect(0) {}
+  ISlot() : kind(EMPTY_ISLOT), name(0), aspect(0) { }
 };
 #define forv_ISlot(_x, _v) forv_Vec(ISlot, _x, _v)
 
@@ -480,9 +482,18 @@ IFrame::icall(int nargs, ISlot *ret_slot) {
     INT_FATAL(ip, "not enough arguments for call");
   if (nargs < 1)
     INT_FATAL(ip, "call with no arguments");
+  PartialTag partialTag = PARTIAL_NEVER;
+  if (CallExpr *call = dynamic_cast<CallExpr*>(ip)) 
+    partialTag = call->partialTag;
+  if (partialTag == PARTIAL_ALWAYS) {
+    *return_slot = *make_closure(nargs);
+    valStack.n -= nargs;
+    return;
+  }
   char *name = 0;
   int done = 0, extra_args = 0;
   FnSymbol *fn = 0;
+  Vec<ISlot *> closures;
   do {
     ISlot **arg = &valStack.v[valStack.n-nargs];
     if (arg[0]->kind == SYMBOL_ISLOT && arg[0]->symbol->astType == SYMBOL_FN) {
@@ -496,6 +507,11 @@ IFrame::icall(int nargs, ISlot *ret_slot) {
       extra_args++;
       done = 1;
     } else if (arg[0]->kind == CLOSURE_ISLOT) {
+      if (closures.set_in(arg[0])) {
+        user_error(this, "recursive closure detected");
+        return;
+      }
+      closures.set_add(arg[0]);
       Vec<ISlot *> &a = *arg[0]->closure_args;
       int istart = valStack.n - nargs;
       valStack.fill(valStack.n + a.n - 1);
@@ -542,14 +558,6 @@ IFrame::icall(int nargs, ISlot *ret_slot) {
           break;
       }
     }
-  }
-  PartialTag partialTag = PARTIAL_NEVER;
-  if (CallExpr *call = dynamic_cast<CallExpr*>(ip)) 
-    partialTag = call->partialTag;
-  if (partialTag == PARTIAL_ALWAYS) {
-    *return_slot = *make_closure(nargs + 1);
-    valStack.n -= (nargs + extra_args);
-    return;
   }
   fn = resolve_call(ip, name, &actual_types, &actual_params, &actual_names, partialTag, fn);
   if (!fn) {
