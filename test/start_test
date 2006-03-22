@@ -43,6 +43,7 @@
 #   -startdir  <test subdir>          .
 #   -logfile   <log filename>         ./Logs/<username>.<platform>.log
 #   -valgrind
+#   -interpret
 #
 # These options can be used with a double-dash as well 
 # (e.g. --compopts).
@@ -77,6 +78,14 @@
 # executable should be run using valgrind in order to find errors.
 # The -valgrindexe option specifies that the generated executable
 # should be run using valgrind, but not the compiler.
+#
+# The -interpret option requests that the compiler be executed in
+# interpreter mode.  This will cause the test system to invoke the
+# compiler to interpret the program rather than compile and run it.
+# Future tests, those utilizing executable options (execopts), and
+# those that are not executed (noexec) tests are skipped when this
+# flag is invoked.  In addition, a directory can be requested to
+# be skipped by dropping a NOINTERP file into it.
 #
 # By default, setting up a subdirectory for testing simply consists
 # of creating the directory, putting Chapel (.chpl) source files
@@ -272,6 +281,7 @@ set startdir = "$testdir"
 set logfile = "$testdir/Logs/$user.$platform.log"
 set valgrind = 0
 set valgrindexe = 0
+set interpret = 0
 
 
 while ( $#argv > 0 )
@@ -316,6 +326,12 @@ while ( $#argv > 0 )
 		shift
 		set valgrind = 1
 		breaksw
+        case -i:
+        case --interpret:
+        case -interpret:
+                shift
+                set interpret = 1
+                breaksw
         case -valgrindexe:
         case --valgrindexe:
                 shift
@@ -333,6 +349,7 @@ while ( $#argv > 0 )
 		echo "          -logfile ./Logs/$user.$platform.log"
 		echo "          -valgrind"
                 echo "          -valgrindexe"
+                echo "          -interpret (or -i)"
 		echo "          -h, -help"
 		exit 0
 		breaksw
@@ -370,6 +387,15 @@ else
     if ($compiler == "") then
         set compiler = "../compiler/$platform/chpl"
     endif
+endif
+
+if ($interpret) then
+    echo \[interpreter: ON\]
+    set compopts = "-i $compopts"
+    setenv CHPL_TEST_INTERP on
+else
+    echo \[interpreter: OFF\]
+    setenv CHPL_TEST_INTERP off
 endif
 
 
@@ -459,7 +485,8 @@ foreach dir ($dirs)
 	endif
        	echo " " |& tee -a $logfile
 	set numtests = `(ls *.{chpl,v} |& grep -v "No match" | wc -l)`
-	if (! -e ./NOTEST && ($numtests != 0 || -x ./sub_test)) then
+	if (! -e ./NOTEST && ($numtests != 0 || -x ./sub_test) && \
+            (($CHPL_TEST_INTERP == "off") || (! -e ./NOINTERP && ! -e ./NOEXEC && ! -e ./EXECOPTS))) then
 		if (-x ./sub_test) then
 		    set sub_test = ./sub_test
 		else
