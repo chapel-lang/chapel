@@ -61346,3 +61346,13 @@ Log message:
 Added files:
 	chapel/compiler/: Features 
 
+---------------------------------------------------------------------------
+
+03/21/06 17:41:12 -- waynew
+
+Log message:
+	Fixes/mods to get working under SunOS. Tested with Linux and SunOS.
+
+Modified files:
+	chapel/test/: paratest.server.pl paratest.client.pl 
+
