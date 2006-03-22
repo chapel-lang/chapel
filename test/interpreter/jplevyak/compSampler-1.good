@@ -1438,97 +1438,97 @@
 1
 1
 
-|| and * permutations
+or and * permutations
 =========================
 1
 5
 1
 
-|| and / permutations
+or and / permutations
 =========================
 1
 0
 1
 
-|| and % permutations
+or and % permutations
 =========================
 1
 1
 1
 
-|| and + permutations
+or and + permutations
 =========================
 1
 6
 1
 
-|| and - permutations
+or and - permutations
 =========================
 1
 -4
 1
 
-|| and < permutations
+or and < permutations
 =========================
 1
 1
 1
 
-|| and <= permutations
+or and <= permutations
 =========================
 1
 1
 1
 
-|| and > permutations
-=========================
-1
-0
-1
-
-|| and >= permutations
+or and > permutations
 =========================
 1
 0
 1
 
-|| and == permutations
+or and >= permutations
 =========================
 1
 0
 1
 
-|| and != permutations
+or and == permutations
+=========================
+1
+0
+1
+
+or and != permutations
 =========================
 1
 1
 1
 
-|| and & permutations
+or and & permutations
 =========================
 1
 1
 1
 
-|| and ^ permutations
+or and ^ permutations
 =========================
 1
 4
 1
 
-|| and | permutations
+or and | permutations
 =========================
 1
 5
 1
 
-|| and && permutations
+or and && permutations
 =========================
 1
 1
 1
 
-|| and || permutations
+or and || permutations
 =========================
 1
 1

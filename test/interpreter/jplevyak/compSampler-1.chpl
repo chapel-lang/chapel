@@ -129,7 +129,7 @@ writeln(answer);
 answer = m * (n | o);
 writeln(answer, "\n");
 
-write("* and and permutations\n");
+write("* and && permutations\n");
 writeln("=========================");
 answer = m * n && o;
 writeln(answer);
@@ -285,7 +285,7 @@ writeln(answer);
 answer = m / (n | o);
 writeln(answer, "\n");
 
-write("/ and and permutations\n");
+write("/ and && permutations\n");
 writeln("=========================");
 answer = m / n && o;
 writeln(answer);
@@ -303,7 +303,7 @@ writeln(answer);
 answer = m / (n || o);
 writeln(answer, "\n");
 
-write("mod and * permutations\n");
+write("% and * permutations\n");
 writeln("=========================");
 answer = m % n * o;
 writeln(answer);
@@ -312,7 +312,7 @@ writeln(answer);
 answer = m % (n * o);
 writeln(answer, "\n");
 
-write("mod and / permutations\n");
+write("% and / permutations\n");
 writeln("=========================");
 answer = m % n / o;
 writeln(answer);
@@ -324,7 +324,7 @@ answer = m % (n / o);
 writeln(answer, "\n");
 n = 3;
 
-write("mod and % permutations\n");
+write("% and % permutations\n");
 writeln("=========================");
 answer = m % n % o;
 writeln(answer);
@@ -333,7 +333,7 @@ writeln(answer);
 answer = m % (n % o);
 writeln(answer, "\n");
 
-write("mod and + permutations\n");
+write("% and + permutations\n");
 writeln("=========================");
 answer = m % n + o;
 writeln(answer);
@@ -342,7 +342,7 @@ writeln(answer);
 answer = m % (n + o);
 writeln(answer, "\n");
 
-write("mod and - permutations\n");
+write("% and - permutations\n");
 writeln("=========================");
 answer = m % n - o;
 writeln(answer);
@@ -351,7 +351,7 @@ writeln(answer);
 answer = m % (n - o);
 writeln(answer, "\n");
 
-write("mod and < permutations\n");
+write("% and < permutations\n");
 writeln("=========================");
 answer = m % n < o;
 writeln(answer);
@@ -360,7 +360,7 @@ writeln(answer);
 answer = m % (n < o);
 writeln(answer, "\n");
 
-write("mod and <= permutations\n");
+write("% and <= permutations\n");
 writeln("=========================");
 answer = m % n <= o;
 writeln(answer);
@@ -369,7 +369,7 @@ writeln(answer);
 answer = m % (n <= o);
 writeln(answer, "\n");
 
-write("mod and > permutations\n");
+write("% and > permutations\n");
 writeln("=========================");
 answer = m % n > o;
 writeln(answer);
@@ -381,7 +381,7 @@ answer = m % (n > o);
 writeln(answer, "\n");
 n = 3;
 
-write("mod and >= permutations\n");
+write("% and >= permutations\n");
 writeln("=========================");
 answer = m % n >= o;
 writeln(answer);
@@ -393,7 +393,7 @@ answer = m % (n >= o);
 writeln(answer, "\n");
 n = 3;
 
-write("mod and == permutations\n");
+write("% and == permutations\n");
 writeln("=========================");
 answer = m % n == o;
 writeln(answer);
@@ -405,7 +405,7 @@ answer = m % (n == o);
 writeln(answer, "\n");
 n = 3;
 
-write("mod and != permutations\n");
+write("% and != permutations\n");
 writeln("=========================");
 answer = m % n != o;
 writeln(answer);
@@ -414,7 +414,7 @@ writeln(answer);
 answer = m % (n != o);
 writeln(answer, "\n");
 
-write("mod and & permutations\n");
+write("% and & permutations\n");
 writeln("=========================");
 answer = m % n & o;
 writeln(answer);
@@ -423,7 +423,7 @@ writeln(answer);
 answer = m % (n & o);
 writeln(answer, "\n");
 
-write("mod and ^ permutations\n");
+write("% and ^ permutations\n");
 writeln("=========================");
 answer = m % n ^ o;
 writeln(answer);
@@ -432,7 +432,7 @@ writeln(answer);
 answer = m % (n ^ o);
 writeln(answer, "\n");
 
-write("mod and | permutations\n");
+write("% and | permutations\n");
 writeln("=========================");
 answer = m % n | o;
 writeln(answer);
@@ -441,7 +441,7 @@ writeln(answer);
 answer = m % (n | o);
 writeln(answer, "\n");
 
-write("mod and and permutations\n");
+write("% and && permutations\n");
 writeln("=========================");
 answer = m % n && o;
 writeln(answer);
@@ -450,7 +450,7 @@ writeln(answer);
 answer = m % (n && o);
 writeln(answer, "\n");
 
-write("mod and || permutations\n");
+write("% and || permutations\n");
 writeln("=========================");
 answer = m % n || o;
 writeln(answer);
@@ -585,7 +585,7 @@ writeln(answer);
 answer = m + (n | o);
 writeln(answer, "\n");
 
-write("+ and and permutations\n");
+write("+ and && permutations\n");
 writeln("=========================");
 answer = m + n && o;
 writeln(answer);
@@ -729,9 +729,9 @@ writeln(answer);
 answer = m - (n | o);
 writeln(answer, "\n");
 
-write("- and and permutations\n");
+write("- and && permutations\n");
 writeln("=========================");
-answer = m - n and o;
+answer = m - n && o;
 writeln(answer);
 answer = (m - n) && o;
 writeln(answer);
@@ -873,7 +873,7 @@ writeln(answer);
 answer = m < (n | o);
 writeln(answer, "\n");
 
-write("< and and permutations\n");
+write("< and && permutations\n");
 writeln("=========================");
 answer = m < n && o;
 writeln(answer);
@@ -1017,7 +1017,7 @@ writeln(answer);
 answer = m <= (n | o);
 writeln(answer, "\n");
 
-write("<= and and permutations\n");
+write("<= and && permutations\n");
 writeln("=========================");
 answer = m <= n && o;
 writeln(answer);
@@ -1107,7 +1107,7 @@ writeln(answer);
 answer = m > (n > o);
 writeln(answer, "\n");
 
-write("> && >= permutations\n");
+write("> and >= permutations\n");
 writeln("=========================");
 answer = m > n >= o;
 writeln(answer);
@@ -1116,7 +1116,7 @@ writeln(answer);
 answer = m > (n >= o);
 writeln(answer, "\n");
 
-write("> && == permutations\n");
+write("> and == permutations\n");
 writeln("=========================");
 answer = m > n == o;
 writeln(answer);
@@ -1125,7 +1125,7 @@ writeln(answer);
 answer = m > (n == o);
 writeln(answer, "\n");
 
-write("> && != permutations\n");
+write("> and != permutations\n");
 writeln("=========================");
 answer = m > n != o;
 writeln(answer);
@@ -1134,7 +1134,7 @@ writeln(answer);
 answer = m > (n != o);
 writeln(answer, "\n");
 
-write("> && & permutations\n");
+write("> and & permutations\n");
 writeln("=========================");
 answer = m > n & o;
 writeln(answer);
@@ -1143,7 +1143,7 @@ writeln(answer);
 answer = m > (n & o);
 writeln(answer, "\n");
 
-write("> && ^ permutations\n");
+write("> and ^ permutations\n");
 writeln("=========================");
 answer = m > n ^ o;
 writeln(answer);
@@ -1152,7 +1152,7 @@ writeln(answer);
 answer = m > (n ^ o);
 writeln(answer, "\n");
 
-write("> && | permutations\n");
+write("> and | permutations\n");
 writeln("=========================");
 answer = m > n | o;
 writeln(answer);
@@ -1161,7 +1161,7 @@ writeln(answer);
 answer = m > (n | o);
 writeln(answer, "\n");
 
-write("> && and permutations\n");
+write("> and && permutations\n");
 writeln("=========================");
 answer = m > n && o;
 writeln(answer);
@@ -1170,7 +1170,7 @@ writeln(answer);
 answer = m > (n && o);
 writeln(answer, "\n");
 
-write("> && || permutations\n");
+write("> and || permutations\n");
 writeln("=========================");
 answer = m > n || o;
 writeln(answer);
@@ -1179,7 +1179,7 @@ writeln(answer);
 answer = m > (n || o);
 writeln(answer, "\n");
 
-write(">= && * permutations\n");
+write(">= and * permutations\n");
 writeln("=========================");
 answer = m >= n * o;
 writeln(answer);
@@ -1188,7 +1188,7 @@ writeln(answer);
 answer = m >= (n * o);
 writeln(answer, "\n");
 
-write(">= && / permutations\n");
+write(">= and / permutations\n");
 writeln("=========================");
 answer = m >= n / o;
 writeln(answer);
@@ -1197,7 +1197,7 @@ writeln(answer);
 answer = m >= (n / o);
 writeln(answer, "\n");
 
-write(">= && % permutations\n");
+write(">= and % permutations\n");
 writeln("=========================");
 answer = m >= n % o;
 writeln(answer);
@@ -1206,7 +1206,7 @@ writeln(answer);
 answer = m >= (n % o);
 writeln(answer, "\n");
 
-write(">= && + permutations\n");
+write(">= and + permutations\n");
 writeln("=========================");
 answer = m >= n + o;
 writeln(answer);
@@ -1215,7 +1215,7 @@ writeln(answer);
 answer = m >= (n + o);
 writeln(answer, "\n");
 
-write(">= && - permutations\n");
+write(">= and - permutations\n");
 writeln("=========================");
 answer = m >= n - o;
 writeln(answer);
@@ -1224,7 +1224,7 @@ writeln(answer);
 answer = m >= (n - o);
 writeln(answer, "\n");
 
-write(">= && < permutations\n");
+write(">= and < permutations\n");
 writeln("=========================");
 answer = m >= n < o;
 writeln(answer);
@@ -1233,7 +1233,7 @@ writeln(answer);
 answer = m >= (n < o);
 writeln(answer, "\n");
 
-write(">= && <= permutations\n");
+write(">= and <= permutations\n");
 writeln("=========================");
 answer = m >= n <= o;
 writeln(answer);
@@ -1242,7 +1242,7 @@ writeln(answer);
 answer = m >= (n <= o);
 writeln(answer, "\n");
 
-write(">= && > permutations\n");
+write(">= and > permutations\n");
 writeln("=========================");
 answer = m >= n > o;
 writeln(answer);
@@ -1251,7 +1251,7 @@ writeln(answer);
 answer = m >= (n > o);
 writeln(answer, "\n");
 
-write(">= && >= permutations\n");
+write(">= and >= permutations\n");
 writeln("=========================");
 answer = m >= n >= o;
 writeln(answer);
@@ -1260,7 +1260,7 @@ writeln(answer);
 answer = m >= (n >= o);
 writeln(answer, "\n");
 
-write(">= && == permutations\n");
+write(">= and == permutations\n");
 writeln("=========================");
 answer = m >= n == o;
 writeln(answer);
@@ -1269,7 +1269,7 @@ writeln(answer);
 answer = m >= (n == o);
 writeln(answer, "\n");
 
-write(">= && != permutations\n");
+write(">= and != permutations\n");
 writeln("=========================");
 answer = m >= n != o;
 writeln(answer);
@@ -1278,7 +1278,7 @@ writeln(answer);
 answer = m >= (n != o);
 writeln(answer, "\n");
 
-write(">= && & permutations\n");
+write(">= and & permutations\n");
 writeln("=========================");
 answer = m >= n & o;
 writeln(answer);
@@ -1287,7 +1287,7 @@ writeln(answer);
 answer = m >= (n & o);
 writeln(answer, "\n");
 
-write(">= && ^ permutations\n");
+write(">= and ^ permutations\n");
 writeln("=========================");
 answer = m >= n ^ o;
 writeln(answer);
@@ -1296,7 +1296,7 @@ writeln(answer);
 answer = m >= (n ^ o);
 writeln(answer, "\n");
 
-write(">= && | permutations\n");
+write(">= and | permutations\n");
 writeln("=========================");
 answer = m >= n | o;
 writeln(answer);
@@ -1305,7 +1305,7 @@ writeln(answer);
 answer = m >= (n | o);
 writeln(answer, "\n");
 
-write(">= && and permutations\n");
+write(">= and && permutations\n");
 writeln("=========================");
 answer = m >= n && o;
 writeln(answer);
@@ -1314,7 +1314,7 @@ writeln(answer);
 answer = m >= (n && o);
 writeln(answer, "\n");
 
-write(">= && || permutations\n");
+write(">= and || permutations\n");
 writeln("=========================");
 answer = m >= n || o;
 writeln(answer);
@@ -1323,7 +1323,7 @@ writeln(answer);
 answer = m >= (n || o);
 writeln(answer, "\n");
 
-write("== && * permutations\n");
+write("== and * permutations\n");
 writeln("=========================");
 answer = m == n * o;
 writeln(answer);
@@ -1332,7 +1332,7 @@ writeln(answer);
 answer = m == (n * o);
 writeln(answer, "\n");
 
-write("== && / permutations\n");
+write("== and / permutations\n");
 writeln("=========================");
 answer = m == n / o;
 writeln(answer);
@@ -1341,7 +1341,7 @@ writeln(answer);
 answer = m == (n / o);
 writeln(answer, "\n");
 
-write("== && % permutations\n");
+write("== and % permutations\n");
 writeln("=========================");
 answer = m == n % o;
 writeln(answer);
@@ -1350,7 +1350,7 @@ writeln(answer);
 answer = m == (n % o);
 writeln(answer, "\n");
 
-write("== && + permutations\n");
+write("== and + permutations\n");
 writeln("=========================");
 answer = m == n + o;
 writeln(answer);
@@ -1359,7 +1359,7 @@ writeln(answer);
 answer = m == (n + o);
 writeln(answer, "\n");
 
-write("== && - permutations\n");
+write("== and - permutations\n");
 writeln("=========================");
 answer = m == n - o;
 writeln(answer);
@@ -1368,7 +1368,7 @@ writeln(answer);
 answer = m == (n - o);
 writeln(answer, "\n");
 
-write("== && < permutations\n");
+write("== and < permutations\n");
 writeln("=========================");
 answer = m == n < o;
 writeln(answer);
@@ -1377,7 +1377,7 @@ writeln(answer);
 answer = m == (n < o);
 writeln(answer, "\n");
 
-write("== && <= permutations\n");
+write("== and <= permutations\n");
 writeln("=========================");
 answer = m == n <= o;
 writeln(answer);
@@ -1386,7 +1386,7 @@ writeln(answer);
 answer = m == (n <= o);
 writeln(answer, "\n");
 
-write("== && > permutations\n");
+write("== and > permutations\n");
 writeln("=========================");
 answer = m == n > o;
 writeln(answer);
@@ -1395,7 +1395,7 @@ writeln(answer);
 answer = m == (n > o);
 writeln(answer, "\n");
 
-write("== && >= permutations\n");
+write("== and >= permutations\n");
 writeln("=========================");
 answer = m == n >= o;
 writeln(answer);
@@ -1404,7 +1404,7 @@ writeln(answer);
 answer = m == (n >= o);
 writeln(answer, "\n");
 
-write("== && == permutations\n");
+write("== and == permutations\n");
 writeln("=========================");
 answer = m == n == o;
 writeln(answer);
@@ -1413,7 +1413,7 @@ writeln(answer);
 answer = m == (n == o);
 writeln(answer, "\n");
 
-write("== && != permutations\n");
+write("== and != permutations\n");
 writeln("=========================");
 answer = m == n != o;
 writeln(answer);
@@ -1422,7 +1422,7 @@ writeln(answer);
 answer = m == (n != o);
 writeln(answer, "\n");
 
-write("== && & permutations\n");
+write("== and & permutations\n");
 writeln("=========================");
 answer = m == n & o;
 writeln(answer);
@@ -1431,7 +1431,7 @@ writeln(answer);
 answer = m == (n & o);
 writeln(answer, "\n");
 
-write("== && ^ permutations\n");
+write("== and ^ permutations\n");
 writeln("=========================");
 answer = m == n ^ o;
 writeln(answer);
@@ -1440,7 +1440,7 @@ writeln(answer);
 answer = m == (n ^ o);
 writeln(answer, "\n");
 
-write("== && | permutations\n");
+write("== and | permutations\n");
 writeln("=========================");
 answer = m == n | o;
 writeln(answer);
@@ -1449,7 +1449,7 @@ writeln(answer);
 answer = m == (n | o);
 writeln(answer, "\n");
 
-write("== && and permutations\n");
+write("== and && permutations\n");
 writeln("=========================");
 answer = m == n && o;
 writeln(answer);
@@ -1458,7 +1458,7 @@ writeln(answer);
 answer = m == (n && o);
 writeln(answer, "\n");
 
-write("== && || permutations\n");
+write("== and || permutations\n");
 writeln("=========================");
 answer = m == n || o;
 writeln(answer);
@@ -1467,7 +1467,7 @@ writeln(answer);
 answer = m == (n || o);
 writeln(answer, "\n");
 
-write("!= && * permutations\n");
+write("!= and * permutations\n");
 writeln("=========================");
 answer = m != n * o;
 writeln(answer);
@@ -1476,7 +1476,7 @@ writeln(answer);
 answer = m != (n * o);
 writeln(answer, "\n");
 
-write("!= && / permutations\n");
+write("!= and / permutations\n");
 writeln("=========================");
 answer = m != n / o;
 writeln(answer);
@@ -1485,7 +1485,7 @@ writeln(answer);
 answer = m != (n / o);
 writeln(answer, "\n");
 
-write("!= && % permutations\n");
+write("!= and % permutations\n");
 writeln("=========================");
 answer = m != n % o;
 writeln(answer);
@@ -1494,7 +1494,7 @@ writeln(answer);
 answer = m != (n % o);
 writeln(answer, "\n");
 
-write("!= && + permutations\n");
+write("!= and + permutations\n");
 writeln("=========================");
 answer = m != n + o;
 writeln(answer);
@@ -1503,7 +1503,7 @@ writeln(answer);
 answer = m != (n + o);
 writeln(answer, "\n");
 
-write("!= && - permutations\n");
+write("!= and - permutations\n");
 writeln("=========================");
 answer = m != n - o;
 writeln(answer);
@@ -1512,7 +1512,7 @@ writeln(answer);
 answer = m != (n - o);
 writeln(answer, "\n");
 
-write("!= && < permutations\n");
+write("!= and < permutations\n");
 writeln("=========================");
 answer = m != n < o;
 writeln(answer);
@@ -1521,7 +1521,7 @@ writeln(answer);
 answer = m != (n < o);
 writeln(answer, "\n");
 
-write("!= && <= permutations\n");
+write("!= and <= permutations\n");
 writeln("=========================");
 answer = m != n <= o;
 writeln(answer);
@@ -1530,7 +1530,7 @@ writeln(answer);
 answer = m != (n <= o);
 writeln(answer, "\n");
 
-write("!= && > permutations\n");
+write("!= and > permutations\n");
 writeln("=========================");
 answer = m != n > o;
 writeln(answer);
@@ -1539,7 +1539,7 @@ writeln(answer);
 answer = m != (n > o);
 writeln(answer, "\n");
 
-write("!= && >= permutations\n");
+write("!= and >= permutations\n");
 writeln("=========================");
 answer = m != n >= o;
 writeln(answer);
@@ -1548,7 +1548,7 @@ writeln(answer);
 answer = m != (n >= o);
 writeln(answer, "\n");
 
-write("!= && == permutations\n");
+write("!= and == permutations\n");
 writeln("=========================");
 answer = m != n == o;
 writeln(answer);
@@ -1557,7 +1557,7 @@ writeln(answer);
 answer = m != (n == o);
 writeln(answer, "\n");
 
-write("!= && != permutations\n");
+write("!= and != permutations\n");
 writeln("=========================");
 answer = m != n != o;
 writeln(answer);
@@ -1566,7 +1566,7 @@ writeln(answer);
 answer = m != (n != o);
 writeln(answer, "\n");
 
-write("!= && & permutations\n");
+write("!= and & permutations\n");
 writeln("=========================");
 answer = m != n & o;
 writeln(answer);
@@ -1575,7 +1575,7 @@ writeln(answer);
 answer = m != (n & o);
 writeln(answer, "\n");
 
-write("!= && ^ permutations\n");
+write("!= and ^ permutations\n");
 writeln("=========================");
 answer = m != n ^ o;
 writeln(answer);
@@ -1584,7 +1584,7 @@ writeln(answer);
 answer = m != (n ^ o);
 writeln(answer, "\n");
 
-write("!= && | permutations\n");
+write("!= and | permutations\n");
 writeln("=========================");
 answer = m != n | o;
 writeln(answer);
@@ -1593,7 +1593,7 @@ writeln(answer);
 answer = m != (n | o);
 writeln(answer, "\n");
 
-write("!= && and permutations\n");
+write("!= and && permutations\n");
 writeln("=========================");
 answer = m != n && o;
 writeln(answer);
@@ -1602,7 +1602,7 @@ writeln(answer);
 answer = m != (n && o);
 writeln(answer, "\n");
 
-write("!= && || permutations\n");
+write("!= and || permutations\n");
 writeln("=========================");
 answer = m != n || o;
 writeln(answer);
@@ -1611,7 +1611,7 @@ writeln(answer);
 answer = m != (n || o);
 writeln(answer, "\n");
 
-write("& && * permutations\n");
+write("& and * permutations\n");
 writeln("=========================");
 answer = m & n * o;
 writeln(answer);
@@ -1620,7 +1620,7 @@ writeln(answer);
 answer = m & (n * o);
 writeln(answer, "\n");
 
-write("& && / permutations\n");
+write("& and / permutations\n");
 writeln("=========================");
 answer = m & n / o;
 writeln(answer);
@@ -1629,7 +1629,7 @@ writeln(answer);
 answer = m & (n / o);
 writeln(answer, "\n");
 
-write("& && % permutations\n");
+write("& and % permutations\n");
 writeln("=========================");
 answer = m & n % o;
 writeln(answer);
@@ -1638,7 +1638,7 @@ writeln(answer);
 answer = m & (n % o);
 writeln(answer, "\n");
 
-write("& && + permutations\n");
+write("& and + permutations\n");
 writeln("=========================");
 answer = m & n + o;
 writeln(answer);
@@ -1647,7 +1647,7 @@ writeln(answer);
 answer = m & (n + o);
 writeln(answer, "\n");
 
-write("& && - permutations\n");
+write("& and - permutations\n");
 writeln("=========================");
 answer = m & n - o;
 writeln(answer);
@@ -1656,7 +1656,7 @@ writeln(answer);
 answer = m & (n - o);
 writeln(answer, "\n");
 
-write("& && < permutations\n");
+write("& and < permutations\n");
 writeln("=========================");
 answer = m & n < o;
 writeln(answer);
@@ -1665,7 +1665,7 @@ writeln(answer);
 answer = m & (n < o);
 writeln(answer, "\n");
 
-write("& && <= permutations\n");
+write("& and <= permutations\n");
 writeln("=========================");
 answer = m & n <= o;
 writeln(answer);
@@ -1674,7 +1674,7 @@ writeln(answer);
 answer = m & (n <= o);
 writeln(answer, "\n");
 
-write("& && > permutations\n");
+write("& and > permutations\n");
 writeln("=========================");
 answer = m & n > o;
 writeln(answer);
@@ -1683,7 +1683,7 @@ writeln(answer);
 answer = m & (n > o);
 writeln(answer, "\n");
 
-write("& && >= permutations\n");
+write("& and >= permutations\n");
 writeln("=========================");
 answer = m & n >= o;
 writeln(answer);
@@ -1692,7 +1692,7 @@ writeln(answer);
 answer = m & (n >= o);
 writeln(answer, "\n");
 
-write("& && == permutations\n");
+write("& and == permutations\n");
 writeln("=========================");
 answer = m & n == o;
 writeln(answer);
@@ -1701,7 +1701,7 @@ writeln(answer);
 answer = m & (n == o);
 writeln(answer, "\n");
 
-write("& && != permutations\n");
+write("& and != permutations\n");
 writeln("=========================");
 answer = m & n != o;
 writeln(answer);
@@ -1710,7 +1710,7 @@ writeln(answer);
 answer = m & (n != o);
 writeln(answer, "\n");
 
-write("& && & permutations\n");
+write("& and & permutations\n");
 writeln("=========================");
 answer = m & n & o;
 writeln(answer);
@@ -1719,7 +1719,7 @@ writeln(answer);
 answer = m & (n & o);
 writeln(answer, "\n");
 
-write("& && ^ permutations\n");
+write("& and ^ permutations\n");
 writeln("=========================");
 answer = m & n ^ o;
 writeln(answer);
@@ -1728,7 +1728,7 @@ writeln(answer);
 answer = m & (n ^ o);
 writeln(answer, "\n");
 
-write("& && | permutations\n");
+write("& and | permutations\n");
 writeln("=========================");
 answer = m & n | o;
 writeln(answer);
@@ -1737,7 +1737,7 @@ writeln(answer);
 answer = m & (n | o);
 writeln(answer, "\n");
 
-write("& && and permutations\n");
+write("& and && permutations\n");
 writeln("=========================");
 answer = m & n && o;
 writeln(answer);
@@ -1746,7 +1746,7 @@ writeln(answer);
 answer = m & (n && o);
 writeln(answer, "\n");
 
-write("& && || permutations\n");
+write("& and || permutations\n");
 writeln("=========================");
 answer = m & n || o;
 writeln(answer);
@@ -1755,7 +1755,7 @@ writeln(answer);
 answer = m & (n || o);
 writeln(answer, "\n");
 
-write("^ && * permutations\n");
+write("^ and * permutations\n");
 writeln("=========================");
 answer = m ^ n * o;
 writeln(answer);
@@ -1764,7 +1764,7 @@ writeln(answer);
 answer = m ^ (n * o);
 writeln(answer, "\n");
 
-write("^ && / permutations\n");
+write("^ and / permutations\n");
 writeln("=========================");
 answer = m ^ n / o;
 writeln(answer);
@@ -1773,7 +1773,7 @@ writeln(answer);
 answer = m ^ (n / o);
 writeln(answer, "\n");
 
-write("^ && % permutations\n");
+write("^ and % permutations\n");
 writeln("=========================");
 answer = m ^ n % o;
 writeln(answer);
@@ -1782,7 +1782,7 @@ writeln(answer);
 answer = m ^ (n % o);
 writeln(answer, "\n");
 
-write("^ && + permutations\n");
+write("^ and + permutations\n");
 writeln("=========================");
 answer = m ^ n + o;
 writeln(answer);
@@ -1791,7 +1791,7 @@ writeln(answer);
 answer = m ^ (n + o);
 writeln(answer, "\n");
 
-write("^ && - permutations\n");
+write("^ and - permutations\n");
 writeln("=========================");
 answer = m ^ n - o;
 writeln(answer);
@@ -1800,7 +1800,7 @@ writeln(answer);
 answer = m ^ (n - o);
 writeln(answer, "\n");
 
-write("^ && < permutations\n");
+write("^ and < permutations\n");
 writeln("=========================");
 answer = m ^ n < o;
 writeln(answer);
@@ -1809,7 +1809,7 @@ writeln(answer);
 answer = m ^ (n < o);
 writeln(answer, "\n");
 
-write("^ && <= permutations\n");
+write("^ and <= permutations\n");
 writeln("=========================");
 answer = m ^ n <= o;
 writeln(answer);
@@ -1818,7 +1818,7 @@ writeln(answer);
 answer = m ^ (n <= o);
 writeln(answer, "\n");
 
-write("^ && > permutations\n");
+write("^ and > permutations\n");
 writeln("=========================");
 answer = m ^ n > o;
 writeln(answer);
@@ -1827,7 +1827,7 @@ writeln(answer);
 answer = m ^ (n > o);
 writeln(answer, "\n");
 
-write("^ && >= permutations\n");
+write("^ and >= permutations\n");
 writeln("=========================");
 answer = m ^ n >= o;
 writeln(answer);
@@ -1836,7 +1836,7 @@ writeln(answer);
 answer = m ^ (n >= o);
 writeln(answer, "\n");
 
-write("^ && == permutations\n");
+write("^ and == permutations\n");
 writeln("=========================");
 answer = m ^ n == o;
 writeln(answer);
@@ -1845,7 +1845,7 @@ writeln(answer);
 answer = m ^ (n == o);
 writeln(answer, "\n");
 
-write("^ && != permutations\n");
+write("^ and != permutations\n");
 writeln("=========================");
 answer = m ^ n != o;
 writeln(answer);
@@ -1854,7 +1854,7 @@ writeln(answer);
 answer = m ^ (n != o);
 writeln(answer, "\n");
 
-write("^ && & permutations\n");
+write("^ and & permutations\n");
 writeln("=========================");
 answer = m ^ n & o;
 writeln(answer);
@@ -1863,7 +1863,7 @@ writeln(answer);
 answer = m ^ (n & o);
 writeln(answer, "\n");
 
-write("^ && ^ permutations\n");
+write("^ and ^ permutations\n");
 writeln("=========================");
 answer = m ^ n ^ o;
 writeln(answer);
@@ -1872,7 +1872,7 @@ writeln(answer);
 answer = m ^ (n ^ o);
 writeln(answer, "\n");
 
-write("^ && | permutations\n");
+write("^ and | permutations\n");
 writeln("=========================");
 answer = m ^ n | o;
 writeln(answer);
@@ -1881,7 +1881,7 @@ writeln(answer);
 answer = m ^ (n | o);
 writeln(answer, "\n");
 
-write("^ && and permutations\n");
+write("^ and && permutations\n");
 writeln("=========================");
 answer = m ^ n && o;
 writeln(answer);
@@ -1890,7 +1890,7 @@ writeln(answer);
 answer = m ^ (n && o);
 writeln(answer, "\n");
 
-write("^ && || permutations\n");
+write("^ and || permutations\n");
 writeln("=========================");
 answer = m ^ n || o;
 writeln(answer);
@@ -1899,7 +1899,7 @@ writeln(answer);
 answer = m ^ (n || o);
 writeln(answer, "\n");
 
-write("| && * permutations\n");
+write("| and * permutations\n");
 writeln("=========================");
 answer = m | n * o;
 writeln(answer);
@@ -1908,7 +1908,7 @@ writeln(answer);
 answer = m | (n * o);
 writeln(answer, "\n");
 
-write("| && / permutations\n");
+write("| and / permutations\n");
 writeln("=========================");
 answer = m | n / o;
 writeln(answer);
@@ -1917,7 +1917,7 @@ writeln(answer);
 answer = m | (n / o);
 writeln(answer, "\n");
 
-write("| && % permutations\n");
+write("| and % permutations\n");
 writeln("=========================");
 answer = m | n % o;
 writeln(answer);
@@ -1926,7 +1926,7 @@ writeln(answer);
 answer = m | (n % o);
 writeln(answer, "\n");
 
-write("| && + permutations\n");
+write("| and + permutations\n");
 writeln("=========================");
 answer = m | n + o;
 writeln(answer);
@@ -1935,7 +1935,7 @@ writeln(answer);
 answer = m | (n + o);
 writeln(answer, "\n");
 
-write("| && - permutations\n");
+write("| and - permutations\n");
 writeln("=========================");
 answer = m | n - o;
 writeln(answer);
@@ -1944,7 +1944,7 @@ writeln(answer);
 answer = m | (n - o);
 writeln(answer, "\n");
 
-write("| && < permutations\n");
+write("| and < permutations\n");
 writeln("=========================");
 answer = m | n < o;
 writeln(answer);
@@ -1953,7 +1953,7 @@ writeln(answer);
 answer = m | (n < o);
 writeln(answer, "\n");
 
-write("| && <= permutations\n");
+write("| and <= permutations\n");
 writeln("=========================");
 answer = m | n <= o;
 writeln(answer);
@@ -1962,7 +1962,7 @@ writeln(answer);
 answer = m | (n <= o);
 writeln(answer, "\n");
 
-write("| && > permutations\n");
+write("| and > permutations\n");
 writeln("=========================");
 answer = m | n > o;
 writeln(answer);
@@ -1971,7 +1971,7 @@ writeln(answer);
 answer = m | (n > o);
 writeln(answer, "\n");
 
-write("| && >= permutations\n");
+write("| and >= permutations\n");
 writeln("=========================");
 answer = m | n >= o;
 writeln(answer);
@@ -1980,7 +1980,7 @@ writeln(answer);
 answer = m | (n >= o);
 writeln(answer, "\n");
 
-write("| && == permutations\n");
+write("| and == permutations\n");
 writeln("=========================");
 answer = m | n == o;
 writeln(answer);
@@ -1989,7 +1989,7 @@ writeln(answer);
 answer = m | (n == o);
 writeln(answer, "\n");
 
-write("| && != permutations\n");
+write("| and != permutations\n");
 writeln("=========================");
 answer = m | n != o;
 writeln(answer);
@@ -1998,7 +1998,7 @@ writeln(answer);
 answer = m | (n != o);
 writeln(answer, "\n");
 
-write("| && & permutations\n");
+write("| and & permutations\n");
 writeln("=========================");
 answer = m | n & o;
 writeln(answer);
@@ -2007,7 +2007,7 @@ writeln(answer);
 answer = m | (n & o);
 writeln(answer, "\n");
 
-write("| && ^ permutations\n");
+write("| and ^ permutations\n");
 writeln("=========================");
 answer = m | n ^ o;
 writeln(answer);
@@ -2016,7 +2016,7 @@ writeln(answer);
 answer = m | (n ^ o);
 writeln(answer, "\n");
 
-write("| && | permutations\n");
+write("| and | permutations\n");
 writeln("=========================");
 answer = m | n | o;
 writeln(answer);
@@ -2025,7 +2025,7 @@ writeln(answer);
 answer = m | (n | o);
 writeln(answer, "\n");
 
-write("| && and permutations\n");
+write("| and && permutations\n");
 writeln("=========================");
 answer = m | n && o;
 writeln(answer);
@@ -2034,7 +2034,7 @@ writeln(answer);
 answer = m | (n && o);
 writeln(answer, "\n");
 
-write("| && || permutations\n");
+write("| and || permutations\n");
 writeln("=========================");
 answer = m | n || o;
 writeln(answer);
@@ -2043,7 +2043,7 @@ writeln(answer);
 answer = m | (n || o);
 writeln(answer, "\n");
 
-write("and && * permutations\n");
+write("&& and * permutations\n");
 writeln("=========================");
 answer = m && n * o;
 writeln(answer);
@@ -2052,7 +2052,7 @@ writeln(answer);
 answer = m && (n * o);
 writeln(answer, "\n");
 
-write("and && / permutations\n");
+write("&& and / permutations\n");
 writeln("=========================");
 answer = m && n / o;
 writeln(answer);
@@ -2061,7 +2061,7 @@ writeln(answer);
 answer = m && (n / o);
 writeln(answer, "\n");
 
-write("and && % permutations\n");
+write("&& and % permutations\n");
 writeln("=========================");
 answer = m && n % o;
 writeln(answer);
@@ -2070,7 +2070,7 @@ writeln(answer);
 answer = m && (n % o);
 writeln(answer, "\n");
 
-write("and && + permutations\n");
+write("&& and + permutations\n");
 writeln("=========================");
 answer = m && n + o;
 writeln(answer);
@@ -2079,7 +2079,7 @@ writeln(answer);
 answer = m && (n + o);
 writeln(answer, "\n");
 
-write("and && - permutations\n");
+write("&& and - permutations\n");
 writeln("=========================");
 answer = m && n - o;
 writeln(answer);
@@ -2088,7 +2088,7 @@ writeln(answer);
 answer = m && (n - o);
 writeln(answer, "\n");
 
-write("and && < permutations\n");
+write("&& and < permutations\n");
 writeln("=========================");
 answer = m && n < o;
 writeln(answer);
@@ -2097,7 +2097,7 @@ writeln(answer);
 answer = m && (n < o);
 writeln(answer, "\n");
 
-write("and && <= permutations\n");
+write("&& and <= permutations\n");
 writeln("=========================");
 answer = m && n <= o;
 writeln(answer);
@@ -2106,7 +2106,7 @@ writeln(answer);
 answer = m && (n <= o);
 writeln(answer, "\n");
 
-write("and && > permutations\n");
+write("&& and > permutations\n");
 writeln("=========================");
 answer = m && n > o;
 writeln(answer);
@@ -2115,7 +2115,7 @@ writeln(answer);
 answer = m && (n > o);
 writeln(answer, "\n");
 
-write("and && >= permutations\n");
+write("&& and >= permutations\n");
 writeln("=========================");
 answer = m && n >= o;
 writeln(answer);
@@ -2124,7 +2124,7 @@ writeln(answer);
 answer = m && (n >= o);
 writeln(answer, "\n");
 
-write("and && == permutations\n");
+write("&& and == permutations\n");
 writeln("=========================");
 answer = m && n == o;
 writeln(answer);
@@ -2133,7 +2133,7 @@ writeln(answer);
 answer = m && (n == o);
 writeln(answer, "\n");
 
-write("and && != permutations\n");
+write("&& and != permutations\n");
 writeln("=========================");
 answer = m && n != o;
 writeln(answer);
@@ -2142,7 +2142,7 @@ writeln(answer);
 answer = m && (n != o);
 writeln(answer, "\n");
 
-write("and && & permutations\n");
+write("&& and & permutations\n");
 writeln("=========================");
 answer = m && n & o;
 writeln(answer);
@@ -2151,7 +2151,7 @@ writeln(answer);
 answer = m && (n & o);
 writeln(answer, "\n");
 
-write("and && ^ permutations\n");
+write("&& and ^ permutations\n");
 writeln("=========================");
 answer = m && n ^ o;
 writeln(answer);
@@ -2160,7 +2160,7 @@ writeln(answer);
 answer = m && (n ^ o);
 writeln(answer, "\n");
 
-write("and && | permutations\n");
+write("&& and | permutations\n");
 writeln("=========================");
 answer = m && n | o;
 writeln(answer);
@@ -2169,7 +2169,7 @@ writeln(answer);
 answer = m && (n | o);
 writeln(answer, "\n");
 
-write("and && and permutations\n");
+write("&& and && permutations\n");
 writeln("=========================");
 answer = m && n && o;
 writeln(answer);
@@ -2178,7 +2178,7 @@ writeln(answer);
 answer = m && (n && o);
 writeln(answer, "\n");
 
-write("and && || permutations\n");
+write("&& and || permutations\n");
 writeln("=========================");
 answer = m && n || o;
 writeln(answer);
@@ -2187,7 +2187,7 @@ writeln(answer);
 answer = m && (n || o);
 writeln(answer, "\n");
 
-write("or && * permutations\n");
+write("or and * permutations\n");
 writeln("=========================");
 answer = m || n * o;
 writeln(answer);
@@ -2196,7 +2196,7 @@ writeln(answer);
 answer = m || (n * o);
 writeln(answer, "\n");
 
-write("or && / permutations\n");
+write("or and / permutations\n");
 writeln("=========================");
 answer = m || n / o;
 writeln(answer);
@@ -2205,7 +2205,7 @@ writeln(answer);
 answer = m || (n / o);
 writeln(answer, "\n");
 
-write("or && % permutations\n");
+write("or and % permutations\n");
 writeln("=========================");
 answer = m || n % o;
 writeln(answer);
@@ -2214,7 +2214,7 @@ writeln(answer);
 answer = m || (n % o);
 writeln(answer, "\n");
 
-write("or && + permutations\n");
+write("or and + permutations\n");
 writeln("=========================");
 answer = m || n + o;
 writeln(answer);
@@ -2223,7 +2223,7 @@ writeln(answer);
 answer = m || (n + o);
 writeln(answer, "\n");
 
-write("or && - permutations\n");
+write("or and - permutations\n");
 writeln("=========================");
 answer = m || n - o;
 writeln(answer);
@@ -2232,7 +2232,7 @@ writeln(answer);
 answer = m || (n - o);
 writeln(answer, "\n");
 
-write("or && < permutations\n");
+write("or and < permutations\n");
 writeln("=========================");
 answer = m || n < o;
 writeln(answer);
@@ -2241,7 +2241,7 @@ writeln(answer);
 answer = m || (n < o);
 writeln(answer, "\n");
 
-write("or && <= permutations\n");
+write("or and <= permutations\n");
 writeln("=========================");
 answer = m || n <= o;
 writeln(answer);
@@ -2250,7 +2250,7 @@ writeln(answer);
 answer = m || (n <= o);
 writeln(answer, "\n");
 
-write("or && > permutations\n");
+write("or and > permutations\n");
 writeln("=========================");
 answer = m || n > o;
 writeln(answer);
@@ -2259,7 +2259,7 @@ writeln(answer);
 answer = m || (n > o);
 writeln(answer, "\n");
 
-write("or && >= permutations\n");
+write("or and >= permutations\n");
 writeln("=========================");
 answer = m || n >= o;
 writeln(answer);
@@ -2268,7 +2268,7 @@ writeln(answer);
 answer = m || (n >= o);
 writeln(answer, "\n");
 
-write("or && == permutations\n");
+write("or and == permutations\n");
 writeln("=========================");
 answer = m || n == o;
 writeln(answer);
@@ -2277,7 +2277,7 @@ writeln(answer);
 answer = m || (n == o);
 writeln(answer, "\n");
 
-write("or && != permutations\n");
+write("or and != permutations\n");
 writeln("=========================");
 answer = m || n != o;
 writeln(answer);
@@ -2286,7 +2286,7 @@ writeln(answer);
 answer = m || (n != o);
 writeln(answer, "\n");
 
-write("or && & permutations\n");
+write("or and & permutations\n");
 writeln("=========================");
 answer = m || n & o;
 writeln(answer);
@@ -2295,7 +2295,7 @@ writeln(answer);
 answer = m || (n & o);
 writeln(answer, "\n");
 
-write("or && ^ permutations\n");
+write("or and ^ permutations\n");
 writeln("=========================");
 answer = m || n ^ o;
 writeln(answer);
@@ -2304,7 +2304,7 @@ writeln(answer);
 answer = m || (n ^ o);
 writeln(answer, "\n");
 
-write("or && | permutations\n");
+write("or and | permutations\n");
 writeln("=========================");
 answer = m || n | o;
 writeln(answer);
@@ -2313,7 +2313,7 @@ writeln(answer);
 answer = m || (n | o);
 writeln(answer, "\n");
 
-write("or && and permutations\n");
+write("or and && permutations\n");
 writeln("=========================");
 answer = m || n && o;
 writeln(answer);
@@ -2322,7 +2322,7 @@ writeln(answer);
 answer = m || (n && o);
 writeln(answer, "\n");
 
-write("or && || permutations\n");
+write("or and || permutations\n");
 writeln("=========================");
 answer = m || n || o;
 writeln(answer);
@@ -2330,4 +2330,3 @@ answer = (m || n) || o;
 writeln(answer);
 answer = m || (n || o);
 writeln(answer, "\n");
-
