@@ -61422,3 +61422,17 @@ Modified files:
 	chapel/test/functions/jplevyak/: zeroarity-bound-error-1.good 
 	                                 zeroarity-bound-error-2.good 
 
+---------------------------------------------------------------------------
+
+03/22/06 10:25:34 -- jplevyak
+
+Log message:
+	update .good and remove .future
+
+Modified files:
+	chapel/test/types/type_variables/deitz/functions/: 
+	                                                   test_foo5-error.good 
+Removed files:
+	chapel/test/types/type_variables/deitz/functions/: 
+	                                                   test_foo5-error.future 
+
