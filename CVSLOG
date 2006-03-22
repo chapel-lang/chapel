@@ -61369,3 +61369,24 @@ Log message:
 Modified files:
 	chapel/compiler/util/: files.cpp 
 
+---------------------------------------------------------------------------
+
+03/21/06 22:24:24 -- jplevyak
+
+Log message:
+	Institute limit on the number of analysis passes (50) to
+	  catch loops a earlier.
+	Large scale change to cloning to handle nested functions.
+	  Nested functions are now handled in top down order.
+	  Clones are forced to obey nested.
+	  Fixup of type variables is deferred till the EntrySets are
+	    processed in nesting order.
+	This fixes trivial/bradc/unroll.chpl.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: ast.h clone.cpp clone.h fa.cpp fa.h 
+	                      fun.cpp fun.h var.cpp var.h 
+Removed files:
+	chapel/test/trivial/bradc/: unroll.future 
+
