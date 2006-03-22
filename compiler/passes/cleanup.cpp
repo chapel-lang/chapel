@@ -574,7 +574,7 @@ static void hack_array(DefExpr* def) {
         arg->defaultExpr->replace(expr);
       }
     }
-  } else {
+  } else if (VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym)) {
     if (CallExpr* type = dynamic_cast<CallExpr*>(def->exprType)) {
       if (type->isNamed("_build_array_type") ||
           type->isNamed("_build_sparse_domain_type") ||
@@ -586,6 +586,7 @@ static void hack_array(DefExpr* def) {
         }
         def->init = def->exprType;
         def->exprType = NULL;
+        var->noDefaultInit = true;
       }
     }
   }

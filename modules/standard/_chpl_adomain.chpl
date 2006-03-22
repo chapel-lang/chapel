@@ -245,6 +245,30 @@ class _aarray : value {
     return this(ind);
 }
 
+fun =(x : _aarray, y : _aarray) {
+  var j : int;
+  for e in y {
+    x.data(j) = e;
+    j = j + 1;
+  }
+  return x;
+}
+
+fun =(x : _aarray, y : seq) {
+  var j : int;
+  for e in y {
+    x.data(j) = e;
+    j = j + 1;
+  }
+  return x;
+}
+
+fun =(x : _aarray, y) {
+  for i in 0..x.size-1 do
+    x.data(i) = y;
+  return x;
+}
+
 fun fwrite(f : file, x : _adomain) {
   fwrite(f, "[", x(1));
   for i in 2..x.rank do
