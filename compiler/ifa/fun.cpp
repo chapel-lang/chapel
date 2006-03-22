@@ -128,6 +128,10 @@ copy_var(Var **av, Fun *f) {
       v = (*av)->copy();
       f->vmap->put(*av, v);
     }
+  } else if (v->sym->nesting_depth) {
+    Var *vv = f->vmap->get(*av);
+    if (vv)
+      v = vv;
   }
   *av = v;
 }
@@ -154,15 +158,17 @@ copy_pnode(PNode *node, Fun *f) {
 }
 
 Fun *
-Fun::copy() {
+Fun::copy(int copy_ast, VarMap *var_map) {
   Fun *f = new Fun();
   f->sym = sym;
+  f->fmap = new Map<Fun *, Fun*>;
   f->nmap = new Map<PNode *, PNode*>;
-  f->vmap = new VarMap;
+  f->vmap = var_map ? new VarMap(*var_map) : new VarMap();
   f->wraps = wraps;
 
   Vec<PNode *> nodes;
 
+  collect_Vars(fa_all_Vars, &fa_all_PNodes);
   forv_PNode(n, fa_all_PNodes) {
     PNode *p = copy_pnode(n, f);
     nodes.add(p);
@@ -218,11 +224,13 @@ Fun::copy() {
   ASTCopyContext context;
   context.nmap = f->nmap;
   context.vmap = f->vmap;
-  context.fmap.put(this, f);
-  f->ast = ast ? ast->copy_tree(&context) : 0;
-  Sym *new_sym = context.smap.get(f->sym);
+  context.fmap = f->fmap;
+  context.fmap->put(this, f);
+  f->ast = (ast && copy_ast)? ast->copy_tree(&context) : 0;
+  Sym *new_sym = context.smap.get(sym);
   if (new_sym)
     f->sym = new_sym;
+  if1_write_log();
   return f;
 }
 

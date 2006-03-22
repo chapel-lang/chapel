@@ -614,17 +614,14 @@ static int
 edge_nest_compatible_with_entry_set(AEdge *e, EntrySet *es) {
   if (!es->fun->sym->nesting_depth)
     return 1;
-  if (es->fun->sym->nesting_depth >= e->from->fun->sym->nesting_depth) { // call down or same
-    if (es->display.n) 
-      for (int i = 0; i < e->from->display.n; i++)
-        if (es->display.v[i] != e->from->display.v[i])
-          return 0;
-  } else { // call up
-    if (es->display.n)
-      for (int i = 0; i < es->fun->sym->nesting_depth; i++)
-        if (es->display.v[i] != e->from->display.v[i])
-          return 0;
-  }
+  int ef_nd = e->from->fun->sym->nesting_depth, es_nd = es->fun->sym->nesting_depth;
+  int n = ef_nd < es_nd ? ef_nd : es_nd; // MIN
+  for (int i = 0; i < n; i++)
+    if (e->from->display.v[i] != es->display.v[i])
+      return 0;
+  if (ef_nd < es_nd) // down call
+    if (es->display.v[es_nd - 1] != e->from)
+      return 0;
   return 1;
 }
 
@@ -809,27 +806,18 @@ edge_constant_compatible_with_entry_set(AEdge *e, EntrySet *es) {
 
 static void
 update_display(AEdge *e, EntrySet *es) {
-  if (es->fun->sym->nesting_depth > e->from->fun->sym->nesting_depth) { // call down
-    if (es->display.n == 0)
-      es->display.append(e->from->display);
+  // add any we need
+  for (int i = es->display.n; i < es->fun->sym->nesting_depth; i++)
+    if (i < e->from->display.n)
+      es->display.add(e->from->display.v[i]);
     else
-      for (int i = 0; i < e->from->display.n; i++)
-        assert(es->display.v[i] == e->from->display.v[i]);
-    es->display.add(e->from);
-  } else if (es->fun->sym->nesting_depth == e->from->fun->sym->nesting_depth) { // same level
-    if (es->display.n == 0)
-      es->display.append(e->from->display);
+      es->display.add(e->from);
+  // verify everything
+  for (int i = 0; i < es->fun->sym->nesting_depth; i++)
+    if (i < e->from->display.n)
+      assert(es->display.v[i] == e->from->display.v[i]);
     else
-      for (int i = 0; i < e->from->display.n; i++)
-        assert(es->display.v[i] == e->from->display.v[i]);
-  } else { // call up
-    if (es->display.n == 0)
-      for (int i = 0; i < es->fun->sym->nesting_depth; i++)
-        es->display.add(e->from->display.v[i]);
-    else
-      for (int i = 0; i < es->fun->sym->nesting_depth; i++)
-        assert(es->display.v[i] == e->from->display.v[i]);
-  }
+      assert(es->display.v[i] == e->from);
 }
 
 static void
@@ -959,17 +947,6 @@ check_edge(AEdge *e, EntrySet *es) {
 }
 
 static int
-display_compatible(EntrySet *a, EntrySet *b) {
-  int n = a->fun->sym->nesting_depth;
-  if (n > b->fun->sym->nesting_depth) // MIN
-    n = b->fun->sym->nesting_depth;
-  for (int i = 0; i < n; i++)
-    if (a->display.v[i] != b->display.v[i])
-      return 0;
-  return 1;
-}
-
-static int
 check_split(AEdge *e, Vec<AEdge *> &ees)  {
   if (!e->from)
     return 0;
@@ -985,7 +962,7 @@ check_split(AEdge *e, Vec<AEdge *> &ees)  {
         if (!check_edge(e, ee->to))
           continue;
         if (ee->match->fun == e->match->fun) {
-         if (e->match->fun->split_unique || !display_compatible(e->from, ee->to)) {
+         if (e->match->fun->split_unique || !edge_nest_compatible_with_entry_set(e, ee->to)) {
             set_entry_set(e);
             e->to->split = ee->to;
             ees.add(e);
@@ -3694,11 +3671,10 @@ extend_analysis() {
     analyze_again = split_for_violations(type_violations);
   }
   extend_timer.stop();
-  int again = 0;
-  if (analyze_again) {
+  if (analysis_pass > IFA_PASS_LIMIT)
+    analyze_again = 0;
+  if (analyze_again)
     clear_results();
-    again = 1;
-  }
   pass_timer.stop();
   ++analysis_pass;
   if (ifa_verbose) {
@@ -3713,7 +3689,7 @@ extend_analysis() {
   extend_timer.accumulate();
   pass_timer.accumulate();
   log(LOG_SPLITTING, "======== pass %d ========\n", analysis_pass);
-  if (!again && ifa_verbose) {
+  if (!analyze_again && ifa_verbose) {
     double flow = pass_timer.accumulator[0] - extend_timer.accumulator[0] - match_timer.accumulator[0];
     printf("COMPLETE: %f seconds, %f flow (%d%%), %f match (%d%%) cached (%d%%), %f extend (%d%%)\n", 
            pass_timer.accumulator[0], 
@@ -3722,7 +3698,7 @@ extend_analysis() {
            (int)(((double)pattern_match_hits / (double)pattern_match_complete) * 100.0),
            extend_timer.accumulator[0], (int)(extend_timer.accumulator[0]*100.0/pass_timer.accumulator[0]));
   }
-  return again;
+  return analyze_again;
 }
 
 static void 

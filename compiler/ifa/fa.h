@@ -7,6 +7,7 @@
 #include "code.h"
 
 #define DEFAULT_NUM_CONSTANTS_PER_VARIABLE      1
+#define IFA_PASS_LIMIT                          50
 
 #define GLOBAL_CONTOUR ((void*)1)
 

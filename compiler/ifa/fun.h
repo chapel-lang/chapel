@@ -88,10 +88,12 @@ class Fun : public gc {
   
   // clone
   Vec<EntrySet *> called_ess;
+  Vec<EntrySet *> called_by_ess;
   Vec<CreationSet *> called_css;
   Vec<Vec<EntrySet *> *> equiv_sets;
   Map<PNode *, PNode*> *nmap;
   Map<Var *, Var*> *vmap;
+  Map<Fun *, Fun*> *fmap;
 
   // clone typings and call graph
   Map<PNode *, Vec<Fun *> *> calls;
@@ -130,7 +132,7 @@ class Fun : public gc {
 
   Fun(Sym *afn);
   Fun();
-  Fun *copy();
+  Fun *copy(int copy_ast = 1, Map<Var *, Var *> *var_map = 0);
 };
 #define forv_Fun(_f, _v) forv_Vec(Fun, _f, _v)
 

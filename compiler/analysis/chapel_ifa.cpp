@@ -166,8 +166,11 @@ AAST::symbol() {
 IFAAST*
 AAST::copy_node(ASTCopyContext* context) {
   AAST *a = new AAST(*this);
-  for (int i = 0; i < a->pnodes.n; i++)
-    a->pnodes.v[i] = context->nmap->get(a->pnodes.v[i]);
+  for (int i = 0; i < a->pnodes.n; i++) {
+    PNode *pn = context->nmap->get(a->pnodes.v[i]);
+    assert(pn);
+    a->pnodes.v[i] = pn;
+  }
   return a;
 }
 
@@ -235,9 +238,11 @@ AnalysisCloneCallback::clone(BaseAST* old_ast, BaseAST* new_ast) {
           new_s->asymbol->sym->var = old_s->asymbol->sym->var;
       }
       if (old_s->asymbol->sym->fun) {
-        Fun *new_f = context->fmap.get(old_s->asymbol->sym->fun);
-        if (new_f)
+        Fun *new_f = context->fmap->get(old_s->asymbol->sym->fun);
+        if (new_f) {
           new_s->asymbol->sym->fun = new_f;
+          new_f->sym = new_s->asymbol->sym;
+        }
       }
     }
   } else if (isSomeType(new_ast->astType)) {
@@ -254,14 +259,31 @@ AnalysisCloneCallback::clone(BaseAST* old_ast, BaseAST* new_ast) {
 IFAAST *
 AAST::copy_tree(ASTCopyContext* context) {
   AnalysisCloneCallback callback;
-  callback.context = context;
+  callback.context = new ASTCopyContext();
+  callback.context->fmap = context->fmap;
+  callback.context->nmap = new Map<PNode *, PNode *>(*context->nmap);
+  callback.context->vmap = new Map<Var *, Var *>(*context->vmap);
   ASTMap clone_map;
   DefExpr* def_expr = dynamic_cast<DefExpr*>(xast);
   FnSymbol* orig_fn = dynamic_cast<FnSymbol*>(def_expr->sym);
   FnSymbol *new_fn = orig_fn->clone(&clone_map);
+  for (int i = 0; i < clone_map.n; i++) {
+    if (clone_map.v[i].key) {
+      // handle nested functions
+      if (FnSymbol *f = dynamic_cast<FnSymbol*>(clone_map.v[i].key)) {
+        if (f != orig_fn) {
+          Fun *new_f = f->asymbol->sym->fun->copy(0, callback.context->vmap);
+          callback.context->fmap->map_union(*new_f->fmap);
+          callback.context->nmap->map_union(*new_f->nmap);
+          callback.context->vmap->map_union(*new_f->vmap);
+        }
+      }
+    }
+  }
   for (int i = 0; i < clone_map.n; i++)
     if (clone_map.v[i].key)
       callback.clone(clone_map.v[i].key, clone_map.v[i].value);
+  context->smap.move(callback.context->smap);
   return new_fn->defPoint->ainfo;
 }
 
@@ -551,7 +573,6 @@ install_new_asts(Vec<FnSymbol *> &funs, Vec<TypeSymbol *> &types) {
   }
   forv_Vec(FnSymbol, f, funs)
     finalize_function(f->asymbol->sym->fun, 1);
-  if1_write_log();
   // Enter new nested functions into the dispatch tables 
   //   if their parent was instantiated
   Vec<Fun *> funs_set;

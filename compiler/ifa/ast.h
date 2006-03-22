@@ -15,11 +15,11 @@ class Var;
 
 class ASTCopyContext : public gc {
  public:
-  Map<Fun *, Fun *> fmap;
+  Map<Fun *, Fun *> *fmap;
   Map<PNode *, PNode *> *nmap;
   Map<Var *, Var *> *vmap;
   Map<Sym *, Sym *> smap;
-  ASTCopyContext() : nmap(0), vmap(0) {}
+  ASTCopyContext() : fmap(0), nmap(0), vmap(0) {}
 };
 
 void build_module(Sym *sym, Sym *init);

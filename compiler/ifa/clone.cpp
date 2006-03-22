@@ -34,8 +34,10 @@ initialize() {
   forv_Fun(f, fa->funs) {
     f->ess.set_intersection(fa->ess_set);  // restrict to used entry sets
     forv_EntrySet(es, f->ess) if (es) {
-      forv_AEdge(e, es->out_edges) if (e)
+      forv_AEdge(e, es->out_edges) if (e) {
         f->called_ess.set_add(e->to);
+        e->to->fun->called_by_ess.set_add(es);
+      }
       es->equiv = new Vec<EntrySet *>();
       es->equiv->add(es);
     }
@@ -71,6 +73,13 @@ initialize() {
           s->creators.add(cs);
     }
   }
+}
+
+int
+compar_fun_nesting(const void *ai, const void *aj) {
+  int i = (*(Fun**)ai)->sym->nesting_depth;
+  int j = (*(Fun**)aj)->sym->nesting_depth;
+  return (i > j) ? 1 : ((i < j) ? -1 : 0);
 }
 
 // object inlining placeholder
@@ -185,15 +194,29 @@ prim_period_offset(PNode *p, EntrySet *es) {
 class ES_FN { public: static int inline equivalent(EntrySet *a, EntrySet *b); };
 
 // The definition is:
-// 1) variables have the same boxing
-// 2) calls are to the same set of functions
-// 3) all objects are created equivalent CreationSets
-// 4) if constant cloning is used, all constants must be the same
-// 5) '.' and ')' (cast) primitives must have unique symbols
+// -- nested functions have same/compatible parents
+// -- if cloning for constants, arguments have same constants
+// -- variables have the same boxing
+// -- calls are to the same set of functions
+// -- all objects are created equivalent CreationSets
+// -- if constant cloning is used, all constants must be the same
+// -- '.' and ')' (cast) primitives must have unique symbols
 //    and the layouts of the '.' targets are compatible at the
 //    symbol (same offset)
 inline int
 ES_FN::equivalent(EntrySet *a, EntrySet *b) {
+  int nesting_depth = a->fun->sym->nesting_depth;
+  if (nesting_depth) {
+    Vec<void *> aparents, bparents;
+    forv_AEdge(ee, a->edges) if (ee)
+      if (a->display.v[nesting_depth - 1]->equiv)
+        aparents.add(a->display.v[nesting_depth - 1]->equiv);
+    forv_AEdge(ee, b->edges) if (ee)
+      if (b->display.v[nesting_depth - 1]->equiv)
+        bparents.add(b->display.v[nesting_depth - 1]->equiv);
+    if (aparents.some_disjunction(bparents))
+      return 0;
+  }
   if (a->fun->clone_for_constants) {
     forv_MPosition(p, a->fun->positional_arg_positions) {
       AVar *av = a->args.get(p);
@@ -449,6 +472,7 @@ determine_clones() {
       forv_Fun(f, fa->funs) {
         if (f->ess.some_intersection(last_changed_ess) ||
             f->called_ess.some_intersection(last_changed_ess) ||
+            f->called_by_ess.some_intersection(last_changed_ess) ||
             f->called_css.some_intersection(last_changed_css) ||
             f->ess.some_intersection(last_changed_css_ess) ||
             f->called_ess.some_intersection(last_changed_css_ess)) 
@@ -858,36 +882,99 @@ fixup_var(Var *v, Fun *f, Vec<EntrySet *> *ess) {
   v->avars.move(avs);
 }
 
-void
-fixup_clone(Fun *f, Vec<EntrySet *> *ess) {
+static void
+fixup_clone_vars(Fun *f, Vec<EntrySet *> *ess) {
+  forv_Var(v, f->fa_all_Vars)
+    if (v->sym->nesting_depth == f->sym->nesting_depth + 1)
+      fixup_var(v, f, ess);
+    else if (v->sym->nesting_depth) {
+      forv_EntrySet(es, f->ess) if (es)
+        for (int i = 0; i < v->avars.n; i++)
+          if (v->avars.v[i].key)
+            assert(es->display.v[v->sym->nesting_depth-1] == v->avars.v[i].key);
+    }
+}
+
+static void
+fixup_clone_ess(Fun *f, Vec<EntrySet *> *ess) {
   f->ess.copy(*ess);
   forv_EntrySet(es, f->ess) if (es) {
     forv_AEdge(ee, es->edges) if (ee)
       ee->fun = f;
     es->fun = f;
   }
-  // fixup local variables
-  forv_Var(v, f->fa_all_Vars)
-    if (v->sym->nesting_depth == f->sym->nesting_depth + 1)
-      fixup_var(v, f, ess);
+  f->equiv_sets.clear();
+  forv_EntrySet(es, f->ess) if (es)
+    f->equiv_sets.set_add(es->equiv);
+}
+
+static void
+fixup_clone(Fun *f, Vec<EntrySet *> *ess) {
+  fixup_clone_ess(f, ess);
+  fixup_clone_vars(f, ess);
+}
+
+void
+fixup_clone_tree(Fun *f, Vec<EntrySet *> *ess, Vec<Fun *> &fs) {
+  fixup_clone(f, ess);
+  fa->funs.add(f);
+  Vec<Fun *> nested_fns;
+  Vec<EntrySet *> ess_set;
+  ess_set.set_union(*ess);
+  for (int i = 0; i < f->fmap->n; i++) if (f->fmap->v[i].key) {
+    if (f->fmap->v[i].value != f)
+      nested_fns.add(f->fmap->v[i].key);
+  }
+  qsort(nested_fns.v, nested_fns.n, sizeof(nested_fns.v[0]), compar_fun_nesting);
+  forv_Fun(ff, nested_fns) {
+    Fun *new_ff = f->fmap->get(ff);
+    Vec<EntrySet *> old_ess, new_ess;
+    forv_EntrySet(es, ff->ess) if (es) {
+      if (ess_set.set_in(es->display.v[f->sym->nesting_depth]))
+        new_ess.set_add(es);
+      else
+        old_ess.set_add(es);
+    }
+    fixup_clone_ess(ff, &old_ess);
+    fixup_clone_ess(new_ff, &new_ess);
+    if (new_ess.n)
+      fa->funs.add(new_ff);
+    if (new_ess.n || old_ess.n) {
+      for (int i = 0; i < fs.n; i++) {
+        if (ff == fs.v[i]) {
+          if (!old_ess.n)
+            fs.v[i] = new_ff;
+          else {
+            fs.insert(i + 1, new_ff);
+          }
+          goto Lfound;
+        }
+      }
+      assert(!"found");
+    }
+  Lfound:;
+  }
 }
 
 static int
 clone_functions() {
   Vec<Fun *> fs;
   fs.copy(fa->funs);
+  qsort(fs.v, fs.n, sizeof(fs.v[0]), compar_fun_nesting);
   forv_Fun(f, fs) {
     if (f->equiv_sets.n == 1) {
       fixup_clone(f, f->equiv_sets.v[0]);
       if (concretize_types(f) < 0) return -1;
     } else {
-      for (int i = 0; i < f->equiv_sets.n; i++) {
-        Fun *ff = (i == f->equiv_sets.n - 1) ? f : f->copy();
-        fixup_clone(ff, f->equiv_sets.v[i]);
-        if (concretize_types(ff) < 0) return -1;
-        if (i != f->equiv_sets.n - 1) {
-          fa->pdb->add(ff);
-          fa->funs.add(ff);
+      Vec<Vec<EntrySet *> *> eqs(f->equiv_sets);
+      for (int i = 0; i < eqs.n; i++) {
+        if (i != eqs.n - 1) {
+          Fun *ff = f->copy();
+          fixup_clone_tree(ff, eqs.v[i], fs);
+          if (concretize_types(ff) < 0) return -1;
+        } else {
+          fixup_clone(f, eqs.v[i]);
+          if (concretize_types(f) < 0) return -1;
         }
       } 
     }

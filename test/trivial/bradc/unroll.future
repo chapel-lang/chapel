@@ -1,5 +1,0 @@
-jplevyak
-
-This test works in the interpreter, but causes an assertion failure in
-analysis for unknown reasons.  Strangely, this is very similar to
-functions/deitz/varargs/test_varargs_write.chpl which works.
