@@ -888,10 +888,11 @@ fixup_clone_vars(Fun *f, Vec<EntrySet *> *ess) {
     if (v->sym->nesting_depth == f->sym->nesting_depth + 1)
       fixup_var(v, f, ess);
     else if (v->sym->nesting_depth) {
-      forv_EntrySet(es, f->ess) if (es)
-        for (int i = 0; i < v->avars.n; i++)
-          if (v->avars.v[i].key)
-            assert(es->display.v[v->sym->nesting_depth-1] == v->avars.v[i].key);
+      if (!v->sym->is_fun) // these aren't fixed up... probably should be, but they are constants
+        forv_EntrySet(es, f->ess) if (es)
+          for (int i = 0; i < v->avars.n; i++)
+            if (v->avars.v[i].key)
+              assert(es->display.v[v->sym->nesting_depth-1] == v->avars.v[i].key);
     }
 }
 
