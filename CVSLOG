@@ -61356,3 +61356,16 @@ Log message:
 Modified files:
 	chapel/test/: paratest.server.pl paratest.client.pl 
 
+---------------------------------------------------------------------------
+
+03/21/06 17:44:45 -- waynew
+
+Log message:
+	Currently really have gmake Makefiles for generated C files. Should
+	explicitly call gmake. If we later intend to only require make to
+	run the Chapel compiler, we can change this back to make (and make
+	sure that make doesn't alias/link to gmake for testing purposes).
+
+Modified files:
+	chapel/compiler/util/: files.cpp 
+
