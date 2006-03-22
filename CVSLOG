@@ -61390,3 +61390,13 @@ Modified files:
 Removed files:
 	chapel/test/trivial/bradc/: unroll.future 
 
+---------------------------------------------------------------------------
+
+03/22/06 10:11:34 -- jplevyak
+
+Log message:
+	Fix .good
+
+Modified files:
+	chapel/test/flowanalysis/newast/: domarr.good 
+
