@@ -61531,3 +61531,17 @@ Added files:
 	chapel/test/memory/shannon/outofmemory/: .cvsignore 
 	chapel/test/types/string/deitz/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+03/22/06 11:07:13 -- bradc
+
+Log message:
+	Another session's work on HPCC FFT -- this isn't a particularly
+	clean snapshot, but I'm unlikely to get back to it in the next
+	few days, so wanted to capture where I was.  Realized after this
+	pass that I should be using complex types, which ought to simplify
+	a lot of the ridiculousness in the current code.
+
+Modified files:
+	chapel/test/hpcc/: fft.chpl 
+
