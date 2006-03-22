@@ -61411,3 +61411,14 @@ Modified files:
 	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
 	                               record_type_hierarchy-3-error.good 
 
+---------------------------------------------------------------------------
+
+03/22/06 10:13:38 -- jplevyak
+
+Log message:
+	more .good
+
+Modified files:
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-1.good 
+	                                 zeroarity-bound-error-2.good 
+
