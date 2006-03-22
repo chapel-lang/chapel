@@ -44,6 +44,8 @@ bool can_dispatch_ne(Symbol* actualParam, Type* actualType, Type* formalType) {
     if (parent == formalType || can_dispatch(actualParam, parent, formalType))
       return true;
   }
+  if (actualType->scalarPromotionType && can_dispatch(NULL, actualType->scalarPromotionType, formalType))
+    return true;
   return false;
 }
 
@@ -336,6 +338,30 @@ build_order_wrapper(FnSymbol* fn,
 
 
 static FnSymbol*
+build_promotion_wrapper(FnSymbol* fn,
+                        Vec<Type*>* actual_types) {
+  if (!strcmp(fn->name, "="))
+    return fn;
+  bool promotion_wrapper_required = false;
+  Map<Symbol*,Symbol*> promoted_subs;
+  int j = -1;
+  for_alist(DefExpr, formalDef, fn->formals) {
+    j++;
+    Type* actual_type = actual_types->v[j];
+    ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
+    if (actual_type->scalarPromotionType &&
+        can_dispatch(NULL, actual_type->scalarPromotionType, formal->type)) {
+      promotion_wrapper_required = true;
+      promoted_subs.put(formal, actual_type->symbol);
+    }
+  }
+  if (promotion_wrapper_required)
+    fn = fn->promotion_wrapper(&promoted_subs);
+  return fn;
+}
+
+
+static FnSymbol*
 clone_underspecified_function(FnSymbol* fn,
                               CallExpr* call) {
   ASTMap formal_types;
@@ -476,6 +502,7 @@ resolve_call(BaseAST* ast,
 
   best = build_default_wrapper(best, actual_formals);
   best = build_order_wrapper(best, actual_formals);
+  best = build_promotion_wrapper(best, actual_types);
   // need to implement build coercion wrapper
   return best;
 }

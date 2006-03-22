@@ -1,6 +1,7 @@
 #include <typeinfo>
 #include "astutil.h"
 #include "analysis.h"
+#include "build.h"
 #include "files.h"
 #include "misc.h"
 #include "runtime.h"
@@ -739,7 +740,7 @@ static bool function_returns_void(FnSymbol* fn) {
   collect_asts(&asts, fn);
   forv_Vec(BaseAST, ast, asts) {
     if (ReturnStmt* returnStmt = dynamic_cast<ReturnStmt*>(ast)) {
-      return !returnStmt->expr;
+      return returnStmt->expr->typeInfo() == dtVoid;
     }
   }
 
@@ -924,6 +925,57 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_formals) {
 }
 
 
+FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs) {
+  AList<DefExpr>* wrapper_formals = new AList<DefExpr>();
+  AList<DefExpr>* indices = new AList<DefExpr>();
+  AList<Expr>* iterators = new AList<Expr>();
+  AList<Expr>* wrapper_actuals = new AList<Expr>();
+  for_alist(DefExpr, formal, formals) {
+    if (Symbol* ts = promotion_subs->get(formal->sym)) {
+      Type* new_type = dynamic_cast<TypeSymbol*>(ts)->definition;
+      Symbol* new_formal = formal->sym->copy();
+      new_formal->type = new_type;
+      Symbol* new_index = new VarSymbol("_index", formal->sym->type);
+      wrapper_formals->insertAtTail(new DefExpr(new_formal));
+      iterators->insertAtTail(new SymExpr(new_formal));
+      indices->insertAtTail(new DefExpr(new_index));
+      wrapper_actuals->insertAtTail(new SymExpr(new_index));
+    } else {
+      Symbol* new_formal = formal->sym->copy();
+      wrapper_formals->insertAtTail(new DefExpr(new_formal));
+      wrapper_actuals->insertAtTail(new SymExpr(new_formal));
+    }
+  }
+  FnSymbol* wrapper;
+  BlockStmt* body;
+  if (function_returns_void(this)) {
+    body = new BlockStmt(build_for_block(BLOCK_FORALL,
+                                         indices,
+                                         iterators,
+                                         new BlockStmt(
+                                           new ExprStmt(
+                                             new CallExpr(this, wrapper_actuals)))));
+    wrapper = new FnSymbol(name, typeBinding, wrapper_formals, dtUnknown, NULL,
+                           body, FN_FUNCTION, false, false);
+  } else {
+    body = new BlockStmt(build_for_block(BLOCK_FORALL,
+                                         indices,
+                                         iterators,
+                                         new BlockStmt(
+                                           new ReturnStmt(
+                                             new CallExpr(this, wrapper_actuals), true))));
+    wrapper = new FnSymbol(name, typeBinding, wrapper_formals, dtUnknown, NULL,
+                           body, FN_ITERATOR, false, false);
+  }
+  wrapper->visible = false;
+  wrapper->method_type = method_type;
+  wrapper->cname = stringcat("_promotion_wrap_", cname);
+  defPoint->parentStmt->insertBefore(new DefExpr(wrapper));
+  reset_file_info(wrapper->defPoint->parentStmt, lineno, filename);
+  normalize(wrapper);
+  return wrapper;
+}
+
 static void
 instantiate_update_expr(ASTMap* substitutions, Expr* expr) {
   ASTMap map;
@@ -1051,7 +1103,9 @@ check_promoter(ClassType *at) {
   forv_Vec(TypeSymbol, tt, t->types) {
     if (tt->hasPragma("promoter")) {
       Type *seqElementType = dynamic_cast<Type*>(at->substitutions.get(tt->definition));
-      at->dispatchParents.add(seqElementType);
+      at->scalarPromotionType = seqElementType;
+      if (!run_interpreter)
+        at->dispatchParents.add(seqElementType);
     }
   }
 }

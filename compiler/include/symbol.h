@@ -210,6 +210,7 @@ class FnSymbol : public Symbol {
   virtual void traverseDefSymbol(Traversal* traverse);
 
   FnSymbol* clone(ASTMap* map);
+  FnSymbol* promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs);
   FnSymbol* order_wrapper(Map<Symbol*,Symbol*>* formals_to_formals);
   FnSymbol* coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitutions);
   FnSymbol* default_wrapper(Vec<Symbol*>* defaults);

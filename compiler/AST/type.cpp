@@ -15,6 +15,7 @@
 
 Type::Type(astType_t astType, Symbol* init_defaultVal) :
   BaseAST(astType),
+  scalarPromotionType(NULL),
   symbol(NULL),
   defaultValue(init_defaultVal),
   defaultConstructor(NULL),

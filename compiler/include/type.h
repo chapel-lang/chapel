@@ -35,6 +35,7 @@ class Type : public BaseAST {
  public:
   Vec<Type*> typeParents;     // type hierarchy
   Vec<Type*> dispatchParents; // dispatch hierarchy
+  Type* scalarPromotionType;
 
   TypeSymbol* symbol;
   Symbol* defaultValue;
