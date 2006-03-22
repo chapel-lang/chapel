@@ -61573,3 +61573,16 @@ Modified files:
 	                                         test_typevar_function3.chpl 
 	                                         test_typevar_function4.chpl 
 
+---------------------------------------------------------------------------
+
+03/22/06 15:18:34 -- jplevyak
+
+Log message:
+	Fix a bug in the interpreter which was causing a loop.
+	Added test case which detected it.
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+Added files:
+	chapel/test/interpreter/jplevyak/: partial-6.chpl partial-6.good 
+
