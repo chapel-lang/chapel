@@ -15,8 +15,8 @@ _chpl_adomain.chpl:255: fwrite, f : file, x : _aarray
 _chpl_indefinite.chpl:132: fwrite, f : file, x : _idomain
 _chpl_indefinite.chpl:139: fwrite, f : file, x : _iarray
 _chpl_sparse.chpl:16: fwrite, f : file, x : _sarray
-_chpl_seq.chpl:144: fwrite, f : file, s : seq
-_chpl_seq.chpl:193: fwrite, f : file, s : _aseq
+_chpl_seq.chpl:150: fwrite, f : file, s : seq
+_chpl_seq.chpl:199: fwrite, f : file, s : _aseq
 fwrite, f : file, val : _tuple1
 fwrite, f : file, val : _tuple2
 fwrite, f : file, val : _tuple3
@@ -35,8 +35,8 @@ _chpl_adomain.chpl:5: fwrite, f : file, val : _domain
 _chpl_adomain.chpl:22: fwrite, f : file, val : _array
 _chpl_sparse.chpl:1: fwrite, f : file, val : _sdomain
 _chpl_seq.chpl:1: fwrite, f : file, val : _seqNode
-_chpl_seq.chpl:230: fwrite, f : file, val : reduction
-_chpl_seq.chpl:238: fwrite, f : file, val : sum
+_chpl_seq.chpl:236: fwrite, f : file, val : reduction
+_chpl_seq.chpl:244: fwrite, f : file, val : sum
 zeroarity-bound-error-2.chpl:1: fwrite, f : file, val : C
 zeroarity-bound-error-2.chpl:9: illegal call argument type expression illegal: ( int64 ) 
 zeroarity-bound-error-2.chpl:9: expression has no type

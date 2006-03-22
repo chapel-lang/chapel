@@ -106,29 +106,35 @@ class seq : value {
     var new : seq of elt_type;
     var tmp = _first;
     while tmp != nil {
-      new = new._append_in_place(tmp._element);
+      new._append_in_place(tmp._element);
       tmp = tmp._next;
     }
     return new;
+  }
+
+  fun _delete() {
+    _first = nil;
+    _last = nil;
+    _length = 0;
   }
 
   fun _reverse() {
     var new : seq of elt_type;
     var tmp = _first;
     while (tmp != nil) {
-      new = new._prepend_in_place(tmp._element);
+      new._prepend_in_place(tmp._element);
       tmp  = tmp._next;    
     }
     return new;     
   }
 }
 
-//fun =(s1: seq, s2) {
-//  forall e in s2 do
-//    s1 = s1._append_in_place(e);
-//
-//  return s1;
-//}
+fun =(s1: seq, s2) {
+  s1._delete();
+  forall e in s2 do
+    s1._append_in_place(e);
+  return s1;
+}
 
 fun #(s1 : seq, s2 : seq) {
   return s1._concat(s2);

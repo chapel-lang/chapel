@@ -91,9 +91,14 @@ AList<Stmt>* build_for_block(BlockTag tag,
     indexDef->init = new SymExpr(index);
     body->insertAtHead(indexDef);
   }
-  VarSymbol* iterator = new VarSymbol(stringcat("_iterator_", intstring(uid)));
+  Symbol* iterator;
+  if (SymExpr* symExpr = dynamic_cast<SymExpr*>(iterators->only())) {
+    iterator = symExpr->var;
+  } else {
+    iterator = new VarSymbol(stringcat("_iterator_", intstring(uid)));
+    stmts->insertAtTail(new DefExpr(iterator, iterators->only()->copy()));
+  }
   VarSymbol* cursor = new VarSymbol(stringcat("_cursor_", intstring(uid)));
-  stmts->insertAtTail(new DefExpr(iterator, iterators->only()->copy()));
   stmts->insertAtTail(new DefExpr(cursor, new CallExpr(new CallExpr(".", iterator, new_StringLiteral("getHeadCursor")))));
   stmts->insertAtTail(new LabelStmt(new DefExpr(body->pre_loop)));
 
