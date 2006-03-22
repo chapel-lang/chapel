@@ -11,10 +11,7 @@ class timer {
 
 
 fun main() {
-// BLC: left-shift not supported (shiftops.chpl)
-//  const N = 1 << logN;
-// rewritten as exponentiation:
-  const N = 2 ** logN;
+  const N = 1 << logN;
   const N2 = 2 * N;
   const gflop = 5.0 * N * logN / 1000000000.0;
 
@@ -29,10 +26,9 @@ fun main() {
 //  const DOdd: subdomain(DN2) = DN2 by 2;
 // BLC: const domains not supported (constdomain.chpl)
 //  const DOdd: domain(1) = DN2 by 2;
-// BLC: by operator not supported (bydomain.chpl)
-//  var DOdd: domain(1) = DN2 by 2;
-  var DOdd: domain(1) = [1..N2 by 2];
-  var DNhalf: domain(1) = [1..N/2];
+  var DOdd: domain(1) = DN2 by 2;
+//  var DOdd: domain(1) = [1..N2 by 2];
+  var DNhalf: domain(1) = [0..N/2 - 1];
 
   var A: [DN2] float;
   var B: [DN2] float;
@@ -68,11 +64,9 @@ fun main() {
   fftTimer.stop();
   var time = fftTimer.gettime();
 
-/*
+// BLC: reductions not working yet...
   var maxerr = max reduce [i in DOdd] sqrt((B(i) - A(i))**2 +
                                            (B(i+1) - A(i+1))**2);
-*/
-  var maxerr = 42.1;
 
 
   maxerr = maxerr / logN / EPS;
@@ -86,17 +80,55 @@ fun main() {
   writeln("GFlops = ", gflop / time);
 }
 
-fun bit_reverse(X) {
-  return X;
+fun bit_reverse(W) {
+//  const WD = W.domain;
+  const n = WD.extent();
+//  const mask: uint = 0x0102040810204080;
+  const shift = (log(n) / log(2)): integer;
+
+  for i in 1..n {
+    const ndx = MTA_BIT_MAT_OR(mask, MTA_BIT_MAT_OR(i, mask));
+    ndx = MTA_ROTATE_LEFT(ndx, shift);
+    v(2*ndx) = w(2*i);
+    v(2*ndx + 1) = w(2*i + 1);
+  }
+
+  return V;
 }
 
-fun dfft(X, Y) {
+fun dfft(n, logn, a, w) {
+  cf1st(n, a, w);
+
+  var l = 8;
+  for i in 4..logn/2 by 2 {
+    l *= 4;
+    cftmd1(n, l, a, w);
+  }
+//  for i = 
 }
 
 fun prand_array(X) {
 }
 
-fun twiddles(X) {
+//fun twiddles(W: [?DW] float) {
+fun twiddles(W) {
+//  const DW = W.domain();
+  const n = DW.extent() / 2;
+  const delta = atan(1.0) / n;
+
+  W(0) = 1.0;
+  W(1) = 0.0;
+  W(n) = cos(delta * n);
+  W(n+1) = W(n);
+  for i in 2..n-1 by 2 {
+    const x = cos(delta * i);
+    const y = sin(delta * i);
+    W(i)           = x;
+    W(i+1)         = y;
+    W(2*n - i)     = y;
+    W(2*n - i + 1) = x;
+  }
+  writeln(W);
 }
 
 
