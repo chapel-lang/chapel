@@ -1,5 +1,5 @@
 fun foo(i : ?t) {
-  writeln("The fun foo has been called with actual value ", i);
+  writeln("The function foo has been called with actual value ", i);
 }
 
 var i : int = 2;
