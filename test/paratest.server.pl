@@ -10,7 +10,7 @@
 #
 # Requirements:
 #  - paratest.server.pl is run in $CHPLHOME/test.
-#  - Chapel compiler bin in $CHPLHOME/compiler/chpl.
+#  - Chapel compiler bin as $CHPLHOME/compiler/"platform"/chpl.
 #  - Scripts start_test and paratest.client.pl in the same directory
 #      as paratest.server.pl. It will create a temporary directory
 #      (.synch) to synchronize the distribution of work to the client
@@ -19,10 +19,10 @@
 #    - Chapel built without node-specific local temporary directories.
 #        Nodes must be able to execute start_test. For example, the
 #        start_test script may invoke the compiler as ../compiler/linux/chpl.
-#        If Chapel is built without CHPLDEVTMP defined to a remote accessible
-#        directory, the script may attempt to invoke chpl from a /ptmp
-#        directory. A good check is to run start_test with a different
-#        machine to see if it can run successfully.
+#        If Chapel is built with CHPLDEVTMP defined to a machine-specific local
+#        tmp directory (e.g., /ptmp), the script may not be able to execute
+#        chpl on a different machine. A good check is to run start_test with 
+#        a different machine to see if it can run successfully.
 #    - To run jobs remotely over a secured network without having to
 #      type a password each time, use ssh-agent and ssh-add. See
 #      http://upc.lbl.gov/docs/user/sshagent.html for a short tutorial.
@@ -35,20 +35,20 @@ $dirs_to_ignore = "CVS|Bin|Logs|Samples|Share|OUTPUT";
 
 $logdir = "Logs";
 $synchdir = "$logdir/.synch";
-$compiler = "../compiler/chpl";
+#$compiler = "../compiler/chpl";
 $cmd = "paratest.client.pl";
+#$rem_exe = "ssh -v";
 $rem_exe = "ssh";
 $pwd = `pwd`; chomp $pwd;
-$sleeptime = 1;
 $summary_len = 2;
-$sleep_time = 5;                                 # time between checks
+$sleep_time = 1;                                 # time between checks
 
 my (@testdir_list, @node_list, $starttime, $endtime);
 
 sub systemd {
     local ($cmd) = @_;
 
-    print "$cmd\n" if ($debug);
+    print "$cmd\n" if $debug;
     system ($cmd);
 }
 
@@ -57,23 +57,39 @@ sub systemd {
 sub collect_logs {
     local ($fin_log, @logs) = @_;
     local ($len, $successes, $failures, $futures);
-    local ($grep_summ);
+    local ($grep_summ, $head_opts);
+
+    if ($platform eq "linux") {
+        $head_opts = "-q";                     # quiet mode
+    }
 
     systemd ("echo \\[Parallel testing started at $starttime\\] > $fin_log");
     print "Collecting logs to $fin_log\n" if $verbose;
     foreach $log (@logs) {
         if (-e $log) {
             print "Merging $log\n" if $verbose;
-            $len = `wc -l $log`;
-            ($len, $junk) = split (/\s/, $len, 2);
-            $grep_out = `grep -n "^\\[Test Summary" $log`;
-            print "grep_out = $grep_out\n" if $debug;
-            if ($grep_out =~ /Summary/) {
-                ($len, $junk) = split (/:/, $grep_out, 2);
-                $len--;
+
+            # output of grep seem broken on sunos; hack one for now
+            # $len = `wc -l $log`;
+            # ($len, $junk) = split (/\s/, $len, 2);
+            #
+            # $grep_out = `grep -n "^\\[Test Summary" $log`;
+            # print "grep_out = $grep_out\n" if $debug;
+            # if ($grep_out =~ /Summary/) {
+            #    ($len, $junk) = split (/:/, $grep_out, 2);
+            #    $len--;
+            #}
+
+            open GLOG, $log or die "Cannot open log '$log'\n";
+            $len = 0;
+            while (<GLOG>) {
+                last if (/^\[Test Summary/);
+                $len++;
             }
+            close GLOG;
+
             print "\nlen = $len\n" if $debug;
-            systemd ("head -q -n $len $log >> $fin_log");
+            systemd ("head $head_opts -n $len $log >> $fin_log");
             unlink $log if (-e $log);
             unlink "$log.summary" if (-e "$log.summary");
         }
@@ -87,15 +103,18 @@ sub collect_logs {
     systemd ("echo \\[Parallel testing ended at $endtime\\] >> $fin_log");
     systemd ("echo \\[Test Summary - $date\\] >> $fin_log");
     $successes = `grep "^\\[Success matching" $fin_log | wc -l`;
-    ($successes, $junk) = split (/\s/, $successes, 2);
+    $successes =~ s/\s//g;
+    ($successes, $junk) = split (/\s+/, $successes, 2);
     $failures = `grep "^\\[Error" $fin_log | wc -l`;
-    ($failures, $junk) = split (/\s/, $failures, 2);
+    $failures =~ s/\s//g;
+    ($failures, $junk) = split (/\s+/, $failures, 2);
     $futures = `grep "^Future" $fin_log | wc -l`;
-    ($futures, $junk) = split (/\s/, $futures, 2);
+    $futures =~ s/\s//g;
+    ($futures, $junk) = split (/\s+/, $futures, 2);
     systemd ("echo \\[Summary: \\#Successes = $successes \\| \\#Failures = $failures \\| \\#Futures = $futures\\] >> $fin_log");
     systemd ("echo \\[END\\] >> $fin_log");
 
-    print "[Summary: #Successes = $successes | #Failures = $failures | #Futures = $futures]\n";
+    print "\n[Summary: #Successes = $successes | #Failures = $failures | #Futures = $futures]\n";
 
     # Generate summary file
     systemd ("echo \\[Test Summary - $date\\] > $fin_log.summary");
@@ -117,7 +136,8 @@ sub free_workers {
         ($node, $id) = split (/\./, $ready, 2);
         push @readyids, $id;
     }
-    
+
+    print ".";
     return @readyids;
 }
 
@@ -126,29 +146,42 @@ sub feed_nodes {
     local (@readyidv, $logfile, @logs, $testdir, $node);
     # local ($compiler) = `which chpl`;
     # chomp $compiler;
+    # local ($compiler) = "../compiler/$platform/chpl";
 
-    # @node_list = sort @node_list;
+    $| = 1;    # autoflush stdout
+
     @testdir_list = sort @testdir_list;
-    print "Worker nodes (@node_list)\n";
-    print "Test directories (@testdir_list)\n";
+    print $#node_list+1; print " worker(s) (@node_list)\n";
+    print $#testdir_list+1; print " test(s) (@testdir_list)\n";
 
     while ($#testdir_list >= 0) {         # while still have work to do
         @readyidv = free_workers ();      # get IDs of nodes that are ready
+
+        print "\n" if ($#readyidv >= 0);
         foreach $readyid (@readyidv) {    # for ready nodes
             next if ($#testdir_list < 0);
             $testdir = $testdir_list[0];
             $node = $node_list[$readyid]; # machine name to rem exec to
             $synchfile = "$synchdir/$node.$readyid";
-            unlink ($synchfile) if (-e $synchfile);
+
+            # remove synch file before forking work to worker
+            unless (-e $synchfile) {
+                printf ("Error: cannot remove synch file '$synchfile'\n");
+                exit (7);
+            }
+            unlink $synchfile;
+
             print "$node <- $testdir ($#testdir_list left)\n";
             # print ("$rem_exe $node $pwd/$cmd $readyid $pwd $testdir\n");
 
             # fork work
             unless ($pid = fork) {        # child
                 if ($verbose) {
-                    systemd ("$rem_exe $node $pwd/$cmd $readyid $pwd $testdir $compiler");
+                    # systemd ("$rem_exe $node $pwd/$cmd $readyid $pwd $testdir $compiler");
+                    systemd ("$rem_exe $node $pwd/$cmd $readyid $pwd $testdir");
                 } else {
-                    systemd ("$rem_exe $node $pwd/$cmd $readyid $pwd $testdir $compiler >& /dev/null");
+                    # systemd ("$rem_exe $node $pwd/$cmd $readyid $pwd $testdir $compiler >& /dev/null");
+                    systemd ("$rem_exe $node $pwd/$cmd $readyid $pwd $testdir > /dev/null 2>& 1");
                 }
                 exit (0);
             }
@@ -259,8 +292,8 @@ sub main {
     
     $user = `whoami`; chomp $user;
     $platform = `../util/platform`; chomp $platform;
-    $fin_logfile = "$logdir/$user.$platform.log";
-    # $fin_logfile = "$logdir/$user.$platform.log";    # final log file name
+    $fin_logfile = "$logdir/$user.$platform.log";      # final log file name
+    # $fin_logfile = "$logdir/$user.$platform.log";
     unlink $fin_logfile if (-e $fin_logfile);          # remove final log file
   
     $starttime = `date`; chomp $starttime;
@@ -307,7 +340,8 @@ sub main {
             chomp;
             push @node_list, $_;
         }
-    } else { # parallel test
+        # @node_list = sort @node_list;
+    } else { # else, just current node
         local ($node) = `uname -n`;
         ($node, $junk) = split (/\./, $node, 2);
         push @node_list, $node;
@@ -321,7 +355,7 @@ sub main {
             push @testdir_list, $_;
             # print "$_\n";
         }
-    } else {
+    } else { # else, current working dir
         @testdir_list = find_subdirs (".");
     }
 

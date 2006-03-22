@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# Usage: paratest.client.pl id chapeltestdir testdir compiler
+# Usage: paratest.client.pl id chapeltestdir testdir
 #  
 # Used remotely by paratest.server.pl to run start_test locally.
 #  id - used to create a file to synchronize with paratest.server.pl
@@ -24,21 +24,19 @@ sub systemd {
 
 sub main {
     my ($node) = `uname -n`;
-    my ($logfile, $synchfile);
+    my ($logfile, $synchfile, $workingdir, $testdir, $compiler, $platform);
 
     ($node, $junk) = split (/\./, $node, 2);
 
-    if ($#ARGV != 3) {
+    if ($#ARGV != 2) {
         print "@ARGV\n";
-        print "usage: multitest.client.pl id chapeltestdir testdir compiler\n";
+        print "usage: multitest.client.pl id chapeltestdir testdir\n";
         exit (3);
     }
 
     $id = $ARGV[0];
     $workingdir = $ARGV[1];
     $testdir = $ARGV[2];
-    $compiler = $ARGV[3];
-    print "$node $workingdir $testdir $compiler\n";
 
     $synchfile = "$synchdir/$node.$id";
 
@@ -48,10 +46,20 @@ sub main {
     }
     print "\n* $node up @ $workingdir *\n";
 
+    $platform = `../util/platform`; chomp $platform;
+    # $compiler = $ARGV[3];
+    $compiler = "../compiler/$platform/chpl";
+    unless (-e $compiler) {
+        print "Error: cannot find chpl as '$compiler'\n";
+        exit (2);
+    }
+
     unless (-e $synchdir and -d $synchdir) {
         print "Error: synch directory $synchdir does not exist\n";
         exit (2);
     }
+
+    print "$node $workingdir $testdir $compiler\n";
 
     $dirfname = $testdir;
     $dirfname =~ s/\//-/g;
