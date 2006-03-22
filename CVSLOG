@@ -61436,3 +61436,31 @@ Removed files:
 	chapel/test/types/type_variables/deitz/functions/: 
 	                                                   test_foo5-error.future 
 
+---------------------------------------------------------------------------
+
+03/22/06 10:33:23 -- deitz
+
+Log message:
+	Implemented initial functionality to build a scalar promotion wrapper
+	where necessary.  It is called only from in the context of the
+	interpreter at this time.
+	
+	It uses Type::scalarPromotionType which is set in arrays and sequences
+	and says that this type can promote.
+	
+	The wrapper is built in FnSymbol::promotion_wrapper and it takes a map
+	from formal ArgSymbols to TypeSymbols.
+	
+	I don't think we want to promote the = function to handle assignment
+	to sequences, arrays, etc., but I think there are other ways to handle
+	this too.
+	
+	This gets test/arrays/deitz/test_scalar_promote1.chpl and
+	test/arrays/deitz/test_scalar_promote2.chpl working correctly in the
+	interpreter using the --scalar-promotion and -i flags.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/include/: symbol.h type.h 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+
