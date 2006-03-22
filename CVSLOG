@@ -61400,3 +61400,14 @@ Log message:
 Modified files:
 	chapel/test/flowanalysis/newast/: domarr.good 
 
+---------------------------------------------------------------------------
+
+03/22/06 10:13:10 -- jplevyak
+
+Log message:
+	more .good files.
+
+Modified files:
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+
