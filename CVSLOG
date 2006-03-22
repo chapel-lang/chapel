@@ -61488,3 +61488,46 @@ Modified files:
 	chapel/test/functions/deitz/iterators/: 
 	                                        test_instantiate_iterator2a.future 
 
+---------------------------------------------------------------------------
+
+03/22/06 11:04:01 -- bradc
+
+Log message:
+	Added support to the testing system for running the entire
+	system in "interpreter" mode via the -interpret, --interpret,
+	or -i flags.  When run in this mode, tests that provide
+	execution-line options are skipped, as are tests that are
+	labeled as "noexec" and future tests.  In addition, a NOINTERP
+	file can be dropped into a directory to indicate that the
+	interpreter should not be tested there (this is currently
+	used in the interpreter/ test directory ironically, since
+	using the interpreter there results in -ii being invoked,
+	which tests the interactive interpreter capability).
+	
+	At this point, there are still ~110 tests that fail in the
+	interpreter, so I'm not going to set up our nightly regressions
+	to test the interpreter yet.  Once we whittle this number down
+	to something manageable, running this nightly will be useful
+	for keeping the interpreter solid.
+	
+	Primary causes for widespread failure currently are:
+	
+	- differing output for exit/halt/etc. (may be resolved once
+	  Shannon's reimplementation of them as varargs function is
+	  complete?)
+	- lack of fscanf capabilites in the interpreter
+	- poor support enum
+	- perhaps something related to argument intents?
+	
+	Otherwise, there are a variety of smaller issues that we
+	can work through over time.
+
+Modified files:
+	chapel/test/: start_test sub_test 
+Added files:
+	chapel/test/classes/deitz/infer/: .cvsignore 
+	chapel/test/interpreter/deitz/: NOINTERP 
+	chapel/test/interpreter/jplevyak/: NOINTERP 
+	chapel/test/memory/shannon/outofmemory/: .cvsignore 
+	chapel/test/types/string/deitz/: .cvsignore 
+
