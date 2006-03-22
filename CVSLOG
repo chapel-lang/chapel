@@ -61332,3 +61332,17 @@ Added files:
 	chapel/test/types/seq/deitz/: test_reduce1.chpl 
 	                              test_reduce1.good 
 
+---------------------------------------------------------------------------
+
+03/21/06 17:06:38 -- deitz
+
+Log message:
+	Added list of features I derived from a skim of the spec.  Implemented
+	features have an X in front of them, though we probably want to
+	reorganize this list to be divided into an unimplemented and an
+	implemented part, before someone goes through and adds a ton of
+	trivial implemented features.
+
+Added files:
+	chapel/compiler/: Features 
+
