@@ -37,6 +37,8 @@ _chpl_adomain.chpl:5: fwrite, f : file, val : _domain
 _chpl_adomain.chpl:22: fwrite, f : file, val : _array
 _chpl_sparse.chpl:1: fwrite, f : file, val : _sdomain
 _chpl_seq.chpl:1: fwrite, f : file, val : _seqNode
+_chpl_seq.chpl:230: fwrite, f : file, val : reduction
+_chpl_seq.chpl:238: fwrite, f : file, val : sum
 zeroarity-bound-error-1.chpl:1: fwrite, f : file, val : C
 zeroarity-bound-error-1.chpl:9: unresolved call 'g'
 note: candidates are:
