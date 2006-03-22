@@ -61464,3 +61464,16 @@ Modified files:
 	chapel/compiler/include/: symbol.h type.h 
 	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
 
+---------------------------------------------------------------------------
+
+03/22/06 10:57:04 -- jplevyak
+
+Log message:
+	Fix assert corner case and remove 2 .futures for type select
+
+Modified files:
+	chapel/compiler/ifa/: clone.cpp 
+Removed files:
+	chapel/test/trivial/deitz/: test_type_select1-handcode.future 
+	                            test_type_select1.future 
+
