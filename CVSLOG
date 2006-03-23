@@ -61688,3 +61688,50 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+03/23/06 15:15:37 -- bradc
+
+Log message:
+	Added a bunch of tests related to the dispatch thread
+	of the past 24 hours.
+	
+	dispatch.chpl is the original test I mailed about.  I
+	made it a future as a placeholder for generating a
+	better error message and/or adding support for a more
+	C++/Java-like interpretation as we discussed (possibly
+	via a compiler flag, possibly as a default to be overridden
+	via a compiler flag.
+	
+	dispatch-withnil is the suggestion John made of supplying
+	a nilType version of the function to resolve the ambiguity.
+	It works as he suggested.
+	
+	dispatch-nevernil is the version I asked about in the meeting
+	where the variable is constructed by default, avoiding the
+	chance that it will be assigned nil if the user doesn't do
+	so explicitly.  It works as John predicted.
+	
+	dispatch-nevernil2 are some variations where the member is
+	non-initialized by default but is initialized in the constructor.
+	Half of these work.  The other half seem to die due to problems
+	invoking a constructor as part of a named argument list.  I
+	think this is allowed in the language, so futurized them.
+
+Added files:
+	chapel/test/classes/bradc/: dispatch-nevernil.chpl 
+	                            dispatch-nevernil.good 
+	                            dispatch-nevernil2.chpl 
+	                            dispatch-nevernil2.good 
+	                            dispatch-nevernil2a.chpl 
+	                            dispatch-nevernil2a.future 
+	                            dispatch-nevernil2a.good 
+	                            dispatch-nevernil2b.chpl 
+	                            dispatch-nevernil2b.future 
+	                            dispatch-nevernil2b.good 
+	                            dispatch-nevernil2c.chpl 
+	                            dispatch-nevernil2c.good 
+	                            dispatch-withnil.chpl 
+	                            dispatch-withnil.good dispatch.chpl 
+	                            dispatch.future dispatch.good 
+
