@@ -61655,3 +61655,14 @@ Modified files:
 Added files:
 	chapel/test/parallel/cobegin/waynew/: cobegin.simple0.prediff 
 
+---------------------------------------------------------------------------
+
+03/22/06 16:47:07 -- deitz
+
+Log message:
+	Added another test of a record in a function.  It works!
+
+Added files:
+	chapel/test/classes/deitz/: test_record_in_function2.chpl 
+	                            test_record_in_function2.good 
+
