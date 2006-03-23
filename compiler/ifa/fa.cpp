@@ -3557,7 +3557,7 @@ back_reaching(AVar *av, Vec<AVar *> &reached) {
   Accum<AVar *> seen;
   seen.add(av);
   forv_AVar(x, seen.asvec)
-    forv_AVar(r, x->backward) {
+    forv_AVar(r, x->backward) if (r) {
       if (reached.set_in(r))
         return 1;
       seen.add(r);
