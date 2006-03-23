@@ -61666,3 +61666,15 @@ Added files:
 	chapel/test/classes/deitz/: test_record_in_function2.chpl 
 	                            test_record_in_function2.good 
 
+---------------------------------------------------------------------------
+
+03/22/06 16:49:36 -- deitz
+
+Log message:
+	Added yet another record in function test where the record has a
+	method that refers to a variable in the function.
+
+Added files:
+	chapel/test/classes/deitz/: test_record_in_function3.chpl 
+	                            test_record_in_function3.good 
+
