@@ -61678,3 +61678,13 @@ Added files:
 	chapel/test/classes/deitz/: test_record_in_function3.chpl 
 	                            test_record_in_function3.good 
 
+---------------------------------------------------------------------------
+
+03/22/06 17:13:40 -- jplevyak
+
+Log message:
+	Fix SEGV.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
