@@ -1,0 +1,10 @@
+???
+
+We determined that this test was appropriately ambiguous because
+myD.y is C|nilType and nilType is a subclass of C and D, so the
+call to foo() is ambiguous.  However, we also decided that it would
+be nice to have some mode -- perhaps the default -- in which this
+worked as a naive C++/Java programmer would expect.  So I'm filing
+this future to remember that we should work on this, and/or create
+an error message that is more tailored to this (somewhat confusing)
+case.
