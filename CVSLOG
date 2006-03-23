@@ -61637,3 +61637,21 @@ Log message:
 Modified files:
 	chapel/test/: sub_test 
 
+---------------------------------------------------------------------------
+
+03/22/06 16:06:17 -- waynew
+
+Log message:
+	Changed .chpl and .good, and added .prediff for tests to handle
+	nondeterministic output.
+
+Modified files:
+	chapel/test/parallel/cobegin/waynew/: cobegin.simple0.chpl 
+	                                      cobegin.simple0.good 
+	                                      cobegin.simple1.chpl 
+	                                      cobegin.simple1.good 
+	                                      cobegin.simple2.chpl 
+	                                      cobegin.simple2.good 
+Added files:
+	chapel/test/parallel/cobegin/waynew/: cobegin.simple0.prediff 
+
