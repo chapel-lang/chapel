@@ -7,5 +7,9 @@ cobegin {
   x = x + 67;
 }
 
-writeln (x);
+if (x==93 || x==159 || x==160) then {
+  writeln ("x is 93, 159, or 160");
+} else {
+  writeln (x);
+}
 

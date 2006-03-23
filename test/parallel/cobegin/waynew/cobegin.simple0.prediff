@@ -1,0 +1,5 @@
+#!/usr/bin/perl
+
+# args: test name, output to diff against, compiler
+$outfile = $ARGV[1];
+system ("sort $outfile");
