@@ -61896,3 +61896,14 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: primitive.cpp 
 
+---------------------------------------------------------------------------
+
+03/24/06 14:43:44 -- shannon
+
+Log message:
+	Some minor cleanup of my halt function.
+
+Modified files:
+	chapel/modules/standard/: _chpl_file.chpl 
+	chapel/test/trivial/shannon/quit/: haltNoArgs.good 
+
