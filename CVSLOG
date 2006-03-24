@@ -61804,3 +61804,25 @@ Added files:
 Removed files:
 	chapel/test/functions/jplevyak/scoping/: visibility-1.future 
 
+---------------------------------------------------------------------------
+
+03/24/06 07:00:51 -- jplevyak
+
+Log message:
+	Add a test for a nested function which subsumes a higher level
+	function.
+	
+	This test fails because we currently don't support declared subtyping
+	for records (at least with the familiar syntax).  I seem to remember that
+	we decided to get rid of structural subtyping for records and add
+	in declared subtyping, so I think this test should work.
+	Assigned to Steve on the language issue.  After that
+	we can talk about whether or no this subsumption nesting issue is
+	a visibility issue or a dispatch issue (we could handle it in either
+	place).
+
+Added files:
+	chapel/test/functions/jplevyak/scoping/: visibility-4.chpl 
+	                                         visibility-4.future 
+	                                         visibility-4.good 
+
