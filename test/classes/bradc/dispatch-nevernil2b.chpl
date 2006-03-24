@@ -17,7 +17,7 @@ fun foo(d: D) {
 fun main() {
   var myC = C(x=1);
   foo(myC);
-  var myD = D(c = C());
+  var myD = D(y = C());
   myD.y.x = 2;
   foo(myD);
 }
