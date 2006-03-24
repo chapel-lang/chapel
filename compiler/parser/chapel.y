@@ -242,10 +242,9 @@ Is this "while x"(i); or "while x(i)";?
 %left TNOELSE
 %left TELSE
 %left TCOMMA
+%left TREDUCE TSCAN
 %left TIF
 %left TBY
-%left TCOLON
-%left TNOTCOLON
 %left TRSBR
 %left TIN
 %left TDOTDOT
@@ -262,8 +261,9 @@ Is this "while x"(i); or "while x(i)";?
 %left TSHIFTLEFT TSHIFTRIGHT
 %left TPLUS TMINUS
 %left TSTAR TDIVIDE TMOD
-%right TUPLUS TUMINUS TREDUCE TSCAN TBNOT
+%right TUPLUS TUMINUS TBNOT
 %right TEXP
+%left TCOLON TNOTCOLON
 %left TLP
 %left TDOT
 
