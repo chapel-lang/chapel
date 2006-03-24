@@ -8,26 +8,38 @@ fun fflush(f: _nilType) {
   halt("***Error: called fflush on nil***");
 }
 
-pragma "rename _chpl_assert"
-fun assert(args ...?numArgs) {
-  fflush(stdout);
-  if (!args(1)) {
-    fwrite(stderr, "Assertion failed: ");
-    if (chpl_input_lineno) {
-      fwriteln(stderr, chpl_input_filename, ":", chpl_input_lineno);
-    } else {
-      if (numArgs == 1) {
-        fwriteln(stderr);
-      }
-    }
-    if (numArgs > 1) {
-      for param i in 2..numArgs {
-        fwrite(stderr, args(i));
-      }
+pragma "rename _chpl_assert_no_args"
+fun assert(test: bool) {
+  if (!test) {
+    _writeAssertFailed();
+    if (!chpl_input_lineno) {
       fwriteln(stderr);
     }
     exit(0);
   }
+}
+
+pragma "rename _chpl_assert"
+fun assert(test: bool, args ...?numArgs) {
+  if (!test) {
+    _writeAssertFailed();
+    if (!chpl_input_lineno) {
+      fwrite(stderr, ": ");
+    }
+    for param i in 1..numArgs {
+      fwrite(stderr, args(i));
+    }
+    fwriteln(stderr);
+    exit(0);
+  }
+}
+
+fun _writeAssertFailed() {
+  fflush(stdout);
+  fwrite(stderr, "Assertion failed");
+  if (chpl_input_lineno) {
+    fwriteln(stderr, ": ", chpl_input_filename, ":", chpl_input_lineno);
+  }     
 }
 
 pragma "rename _chpl_halt"
