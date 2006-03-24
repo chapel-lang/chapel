@@ -1,0 +1,6 @@
+deitz
+
+I believe we decided to go with declared subtyping of records.
+Also, I believe that the more general nested function should subsume.
+Whether this should be taken care of in visibility or in dispatch
+is another question.
