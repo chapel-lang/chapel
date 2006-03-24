@@ -5,7 +5,7 @@
 
 static int pnode_id = 1;
 
-PNode::PNode() : code(0), mark(0), region(0), prim(0), unode(NULL), creates(0),
+PNode::PNode() : code(0), mark(0), region(0), prim(0), unode(NULL), creates(0), call_context(0),
                  execution_frequency(0.0), false_branch_frequency(0.0) 
 {
   id = pnode_id++;

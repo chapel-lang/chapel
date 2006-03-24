@@ -148,6 +148,7 @@ copy_pnode(PNode *node, Fun *f) {
   n->phi.copy(node->phi);
   n->phy.copy(node->phy);
   n->prim = node->prim;
+  n->call_context = node->call_context;
   for (int i = 0; i < n->rvals.n; i++)
     copy_var(&n->rvals.v[i], f);
   for (int i = 0; i < n->lvals.n; i++)

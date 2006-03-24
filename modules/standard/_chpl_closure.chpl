@@ -1,1 +1,1 @@
-class closure : object {}
+class closure : object { }

@@ -135,9 +135,9 @@ Sym::copy_values(Sym *s) {
 }
 
 Sym *
-Sym::clone(int members) {
+Sym::clone() {
   if (asymbol)
-    return asymbol->clone(members);
+    return asymbol->clone();
   Sym *new_sym = copy();
   return new_sym;
 }

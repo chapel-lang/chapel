@@ -60,6 +60,7 @@ void resolve_analyzed(void) {
               break;
             types.add(type);
           }
+          types.add(dtInt); // context
           complete_closure(ct, types);
         }
       }
@@ -95,14 +96,70 @@ static void resolve_type(Symbol* sym) {
   }
 }
 
+static Expr *
+build_dispatch_tree(CallExpr *call, AList<Expr> *arguments, Expr *context, Vec<FnSymbol*> &fns, 
+                    Vec<Vec<Vec<Type *> *> *> &dispatch, Vec<Vec<int> *> &dispatch_context, int a);
 
 static Expr *
-build_dispatch_tree(CallExpr *call, AList<Expr> *arguments, 
-                    Vec<FnSymbol*> &fns, Vec<Vec<Vec<Type *> *> *> &dispatch, int a) 
+build_dispatch_tree_cond(CallExpr *call, AList<Expr> *arguments, Expr *context, 
+                         Expr *cond_expr, Vec<FnSymbol*> &true_fns, Vec<FnSymbol*> &false_fns, 
+                         Vec<Vec<Vec<Type *> *> *> &dispatch, Vec<Vec<int> *> &dispatch_context, int a) 
+{
+  Expr *true_expr = 0, *false_expr = 0;
+  if (true_fns.set_count() == 1)
+    true_expr = new CallExpr(true_fns.first(), arguments->copy());
+  else
+    true_expr = build_dispatch_tree(call, arguments, context, true_fns, dispatch, dispatch_context, a + 1);
+  if (false_fns.set_count() == 1)
+    false_expr = new CallExpr(false_fns.first(), arguments->copy());
+  else
+    false_expr = build_dispatch_tree(call, arguments, context, false_fns, dispatch, dispatch_context, a);
+  FnSymbol* if_fn = build_if_expr(cond_expr, true_expr, false_expr);
+  if_fn->retType = true_expr->typeInfo();
+  if_fn->retRef = false;
+  call->parentStmt->insertBefore(new DefExpr(if_fn));
+  normalize(if_fn);
+  return new CallExpr(if_fn);
+}
+
+static Expr *
+build_dispatch_tree(CallExpr *call, AList<Expr> *arguments, Expr *context, Vec<FnSymbol*> &fns, 
+                    Vec<Vec<Vec<Type *> *> *> &dispatch, Vec<Vec<int> *> &dispatch_context, int a) 
 {
   if (a >= dispatch.v[0]->n) {
-    if (fns.set_count() != 1) {
+    if (a >= dispatch.v[0]->n + 1) {
       USR_FATAL(call, "Unable to build table dispatch for ambiguous call");
+    }
+    if (fns.set_count() != 1) {
+      Vec<int> *c = 0;
+      for (int i = 0; i < fns.n; i++) {
+        if (fns.v[i]) {
+          if (!c) {
+            c = dispatch_context.v[i];
+            continue;
+          }
+          Vec<int> diff;
+          c->set_disjunction(*dispatch_context.v[i], diff);
+          if (diff.n) {
+            int cc = diff.first();
+            Vec<FnSymbol *> true_fns, false_fns;
+            true_fns.fill(fns.n);
+            false_fns.fill(fns.n);
+            for (int i = 0; i < fns.n; i++) {
+              if (fns.v[i]) {
+                if (dispatch_context.v[i]->set_in(cc))
+                  true_fns.v[i] = fns.v[i];
+                else
+                  false_fns.v[i] = fns.v[i];
+              }
+            }
+            return build_dispatch_tree_cond(
+              call, arguments, context,
+              new CallExpr(PRIMITIVE_EQUAL, context->copy(), new SymExpr(new_IntSymbol(cc))),
+              true_fns, false_fns, dispatch, dispatch_context, a);
+          }
+        }
+      }
     }
     return new CallExpr(fns.first(), arguments->copy());
   }
@@ -128,55 +185,46 @@ build_dispatch_tree(CallExpr *call, AList<Expr> *arguments,
               false_fns.v[i] = fns.v[i];
           }
         }
-        Expr *true_expr = 0, *false_expr = 0;
-        if (true_fns.set_count() == 1)
-          true_expr = new CallExpr(true_fns.first(), arguments->copy());
-        else
-          true_expr = build_dispatch_tree(call, arguments, true_fns, dispatch, a + 1);
-        if (false_fns.set_count() == 1)
-          false_expr = new CallExpr(false_fns.first(), arguments->copy());
-        else
-          false_expr = build_dispatch_tree(call, arguments, false_fns, dispatch, a);
-        FnSymbol* if_fn = build_if_expr(new CallExpr(PRIMITIVE_TYPE_EQUAL, 
-                                         new SymExpr(type->symbol), 
-                                                     arguments->get(a)->copy()), 
-                                        true_expr, false_expr);
-        if_fn->retType = true_expr->typeInfo();
-        if_fn->retRef = false;
-        call->parentStmt->insertBefore(new DefExpr(if_fn));
-        normalize(if_fn);
-        return new CallExpr(if_fn);
+        return build_dispatch_tree_cond(
+          call, arguments, context,
+          new CallExpr(PRIMITIVE_TYPE_EQUAL, new SymExpr(type->symbol), arguments->get(a)->copy()),
+          true_fns, false_fns, dispatch, dispatch_context, a);
       }
     }
   }
-  return build_dispatch_tree(call, arguments, fns, dispatch, a+1);
+  return build_dispatch_tree(call, arguments, context, fns, dispatch, dispatch_context, a+1);
 }
 
 static void
-dynamic_dispatch(CallExpr *call, AList<Expr> *arguments) {
+dynamic_dispatch(CallExpr *call, AList<Expr> *arguments, Expr *context = 0) {
   Vec<Vec<Vec<Type *> *> *> dispatch;
+  Vec<Vec<int> *> dispatch_context;
   Vec<FnSymbol*> fns;
-  call_info(call, fns, &dispatch);
-  Expr *new_expr = build_dispatch_tree(call, arguments, fns, dispatch, 1);  // FORTRAN NUMBERING
+  call_info(call, fns, &dispatch, &dispatch_context);
+  // NOTE: this call used FORTRAN NUMBERING to match the implementation of AList
+  Expr *new_expr = build_dispatch_tree(call, arguments, context, fns, dispatch, dispatch_context, 1);  
   call->replace(new_expr);
 }
 
-static int insert_closure_arg(AList<Expr>* arguments, Expr *baseExpr, Symbol *field, int nargs);
+static int insert_closure_arg(AList<Expr>* arguments, Expr *baseExpr, Symbol *field, int nargs, 
+                              Expr **context);
 
 static int
-insert_closure_type_arg(AList<Expr>* arguments, Expr *baseExpr, Type *t, int nargs) {
+insert_closure_type_arg(AList<Expr>* arguments, Expr *baseExpr, Type *t, int nargs, Expr **context) {
   if (nargs < 0)
     return 0;
   AList<Expr> targuments;
   if (t->typeParents.in(dtClosure)) {
     ClassType *ct = dynamic_cast<ClassType*>(t);
+    *context = new CallExpr(primitives[PRIMITIVE_GET_MEMBER], baseExpr->copy(),
+                            new_StringSymbol(ct->fields.v[ct->fields.n-1]->name));
     CallExpr *ma = new CallExpr(primitives[PRIMITIVE_GET_MEMBER], baseExpr->copy(),
                                 new_StringSymbol(ct->fields.v[0]->name));
     resolve_member(ct, 0, &ma->member_offset, &ma->member_type);
-    if (!insert_closure_arg(&targuments, ma, ct->fields.v[0], nargs - (ct->fields.n - 1)))
+    if (!insert_closure_arg(&targuments, ma, ct->fields.v[0], nargs - (ct->fields.n - 2), context))
       return 0;
     arguments->insertAtHead(&targuments);
-    for (int i = 1; i < ct->fields.n; i++) {
+    for (int i = 1; i < ct->fields.n - 1; i++) {
       CallExpr *ma = new CallExpr(primitives[PRIMITIVE_GET_MEMBER], baseExpr->copy(),
                                   new_StringSymbol(ct->fields.v[i]->name));
       resolve_member(ct, i, &ma->member_offset, &ma->member_type);
@@ -192,19 +240,19 @@ insert_closure_type_arg(AList<Expr>* arguments, Expr *baseExpr, Type *t, int nar
 }
 
 static int
-insert_closure_arg(AList<Expr>* arguments, Expr *baseExpr, Symbol *field, int nargs) {
+insert_closure_arg(AList<Expr>* arguments, Expr *baseExpr, Symbol *field, int nargs, Expr **context) {
   Type *tt = field ? field->typeInfo() : baseExpr->typeInfo();
   if (SumType *st = dynamic_cast<SumType*>(tt)) {
     forv_Vec(Type*, x, st->components) {
       if (x->typeParents.in(dtClosure)) {
         ClassType *ct = dynamic_cast<ClassType*>(x);
-        if (insert_closure_type_arg(arguments, baseExpr, ct, nargs))
+        if (insert_closure_type_arg(arguments, baseExpr, ct, nargs, context))
           return 1;
       }
     }
     return 0;
   } else
-    return insert_closure_type_arg(arguments, baseExpr, tt, nargs);
+    return insert_closure_type_arg(arguments, baseExpr, tt, nargs, context);
 }
 
 static void resolve_symbol(CallExpr* call) {
@@ -233,7 +281,7 @@ static void resolve_symbol(CallExpr* call) {
     return;
   if (call->partialTag == PARTIAL_ALWAYS) {
     ClassType *closureType = dynamic_cast<ClassType*>(type_info(call));
-    AList<Expr>* arguments = call->argList->copy();
+    AList<Expr>* arguments = call->argList->copy(); 
     if (call->baseExpr->typeInfo()->typeParents.in(dtClosure)) {
       arguments->insertAtHead(call->baseExpr->copy());
     } else {
@@ -244,6 +292,7 @@ static void resolve_symbol(CallExpr* call) {
         arguments->insertAtHead(call->baseExpr->copy());
       }
     }
+    arguments->insertAtTail(new SymExpr(new_IntSymbol(context_info(call))));
     CallExpr *new_expr = new CallExpr(closureType->defaultConstructor, arguments);
     call->replace(new_expr);
     return;
@@ -256,7 +305,8 @@ static void resolve_symbol(CallExpr* call) {
     }
     int nargs = fns.v[0]->formals->length() - call->argList->length();
     AList<Expr>* arguments = new AList<Expr>;
-    if (!insert_closure_arg(arguments, call->baseExpr, 0, nargs)) {
+    Expr *context = 0;
+    if (!insert_closure_arg(arguments, call->baseExpr, 0, nargs, &context)) {
       INT_FATAL("Unable to resolve closure");
     }
     arguments->insertAtTail(call->argList->copy());
@@ -265,7 +315,7 @@ static void resolve_symbol(CallExpr* call) {
     else {
       if (call->partialTag != PARTIAL_NEVER)
         return;
-      dynamic_dispatch(call, arguments);
+      dynamic_dispatch(call, arguments, context);
       return;
     }
     return;

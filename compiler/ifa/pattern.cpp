@@ -49,10 +49,11 @@ class MatchCacheEntry : public Vec<Match *> {
  public:
   int is_closure;
   Partial_kind partial;
+  PNode *visibility_point;
   MapMPositionAType all_args;
 
-  MatchCacheEntry(int ais_closure, Partial_kind apartial) : 
-    is_closure(ais_closure), partial(apartial) {}
+  MatchCacheEntry(int ais_closure, Partial_kind apartial, PNode *avp) : 
+    is_closure(ais_closure), partial(apartial), visibility_point(avp) {}
 };
 #define forv_MatchCacheEntry(_x, _v) forv_Vec(MatchCacheEntry, _x, _v)
 
@@ -89,7 +90,7 @@ class Matcher {
   Fun *build(PMatch *m, Vec<Fun *> &matches);
   void generic_arguments(Vec<CreationSet *> &, MPosition &, Vec<Fun *> &, int);
   void set_filters(Vec<CreationSet *> &, MPosition &, Vec<Fun *> &, int);
-  void cannonicalize_matches(Vec<Fun *> &, int, Partial_kind, Vec<Match *> &);
+  void cannonicalize_matches(Vec<Fun *> &, int, Partial_kind, Vec<Match *> &, PNode *);
 
   Matcher(AVar *send, AVar *arg0, int is_closure, Partial_kind partial);
 };
@@ -107,8 +108,23 @@ Match *
 PMatch::cache_copy() {
   Match *m = new Match(fun);
   m->formal_filters.copy(formal_filters);
+  m->visibility_points.copy(visibility_points);
   m->is_partial = is_partial;
   return m;
+}
+
+void
+Match::merge(Match *m) {
+  // Merge Matches
+  assert(fun == m->fun);
+  forv_MPosition(p, fun->positional_arg_positions) {
+    AType *t1 = formal_filters.get(p), *t2 = m->formal_filters.get(p);
+    if (t1 && t2)
+      formal_filters.put(p, type_union(t1, t2));
+    else if (!t1 && t2)
+      formal_filters.put(p, t2);
+  }
+  visibility_points.set_union(m->visibility_points);
 }
 
 static Sym *
@@ -467,7 +483,7 @@ Matcher::find_all_matches(CreationSet *cs, Vec<AVar *> &args, Vec<Fun *> **parti
 
 int
 subsumes(PMatch *x, PMatch *y, MPosition &app, int nargs) {
-  int result = 0;
+  int result = 0, identical = 1;
   app.push(1);
   for (int i = 0; i < nargs; i++) {
     MPosition *acpp = cannonicalize_mposition(app);
@@ -475,6 +491,7 @@ subsumes(PMatch *x, PMatch *y, MPosition &app, int nargs) {
     Sym *ytype = y->formal_dispatch_types.get(to_formal(acpp, y));
     if (xtype == ytype)
       goto Lnext;
+    identical = 0;
     if (xtype->specializers.set_in(ytype)) {
       if (ytype->specializers.set_in(xtype)) {
         result = 0;
@@ -500,6 +517,12 @@ subsumes(PMatch *x, PMatch *y, MPosition &app, int nargs) {
     }
   Lnext:
     app.inc();
+  }
+  if (identical && !result) {
+    if (x->fun->sym->nesting_depth > y->fun->sym->nesting_depth)
+      result = -1;
+    if (x->fun->sym->nesting_depth < y->fun->sym->nesting_depth)
+      result = 1;
   }
  Lreturn:
   app.pop();
@@ -1177,7 +1200,7 @@ Matcher::find_best_matches(Vec<AVar *> &args, Vec<CreationSet *> &csargs,
 
 void
 Matcher::cannonicalize_matches(Vec<Fun *> &partial_matches, int is_closure, Partial_kind partial, 
-                               Vec<Match *> &matches) 
+                               Vec<Match *> &matches, PNode *visibility_point) 
 {
   partial_matches.set_to_vec();
   qsort_by_id(partial_matches);
@@ -1188,13 +1211,14 @@ Matcher::cannonicalize_matches(Vec<Fun *> &partial_matches, int is_closure, Part
     for (int i = 0; i < m->formal_filters.n; i++)
       if (m->formal_filters.v[i].key)
         m->formal_filters.v[i].value = make_AType(*m->formal_filters.v[i].value);
+    m->visibility_points.set_add(visibility_point);
     matches.add(m);
   }
   if (!is_error) {
     MatchCache *mc = send->match_cache;
     if (!mc)
       mc = send->match_cache = new MatchCache;
-    MatchCacheEntry *e = new MatchCacheEntry(is_closure, partial);
+    MatchCacheEntry *e = new MatchCacheEntry(is_closure, partial, visibility_point);
     mc->add(e);
     e->all_args.copy(all_args);
     forv_Match(m, matches)
@@ -1213,7 +1237,7 @@ log_dispatch_pattern_match(Vec<Fun *> *visible, Vec<Fun *> &fnvalues, AVar *send
 }
 
 static void
-find_visible_functions(Vec<AVar *> &args, AVar *send, Vec<Fun *> **visible_functions, 
+find_visible_functions(Vec<AVar *> &args, PNode *visibility_point, Vec<Fun *> **visible_functions, 
                        Vec<Fun *> &function_values) 
 {
   AVar *aarg0 = args.v[0];
@@ -1226,13 +1250,13 @@ find_visible_functions(Vec<AVar *> &args, AVar *send, Vec<Fun *> **visible_funct
     return;
   } else {
     if (aarg0->out->n == 1) {
-      visible = send->var->def->code->ast->visible_functions(aarg0->out->v[0]->sym);
+      visible = visibility_point->code->ast->visible_functions(aarg0->out->v[0]->sym);
     } else {
       forv_CreationSet(cs, aarg0->out->sorted) {
         if (cs->sym->fun)
           function_values.set_add(cs->sym->fun);
         else {
-          Vec<Fun *> *v = send->var->def->code->ast->visible_functions(cs->sym);
+          Vec<Fun *> *v = visibility_point->code->ast->visible_functions(cs->sym);
           if (v) {
             if (!*visible_functions)
               *visible_functions = new Vec<Fun *>;
@@ -1294,7 +1318,8 @@ get_all_args(Vec<AVar *> &args, MapMPositionAType &all_args, Vec<MPosition *> &p
 }
 
 static int
-match_cache_hit(Vec<AVar *> &args, AVar *send, int is_closure, Partial_kind partial, Vec<Match *> &matches) {
+match_cache_hit(Vec<AVar *> &args, AVar *send, int is_closure, Partial_kind partial, 
+                PNode *visibility_point, Vec<Match *> &matches) {
   MatchCache *m = send->match_cache;
   if (!m) 
     return 0;
@@ -1303,6 +1328,8 @@ match_cache_hit(Vec<AVar *> &args, AVar *send, int is_closure, Partial_kind part
     if (e->is_closure != is_closure)
       continue;
     if (e->partial != partial)
+      continue;
+    if (e->visibility_point != visibility_point)
       continue;
     entries.add(e);
   }
@@ -1335,18 +1362,20 @@ match_cache_hit(Vec<AVar *> &args, AVar *send, int is_closure, Partial_kind part
 // main dispatch entry point - given a vector of arguments return a vector of matches
 //
 int
-pattern_match(Vec<AVar *> &args, AVar *send, int is_closure, Partial_kind partial, Vec<Match *> &matches) {
+pattern_match(Vec<AVar *> &args, AVar *send, int is_closure, Partial_kind partial, 
+              PNode *visibility_point, Vec<Match *> &matches)
+{
   pattern_matches++;
   if (incomplete_call(args, send))
     return 0;
   pattern_match_complete++;
-  if (match_cache_hit(args, send, is_closure, partial, matches)) {
+  if (match_cache_hit(args, send, is_closure, partial, visibility_point, matches)) {
     pattern_match_hits++;
     return matches.n;
   }
   Matcher matcher(send, args.v[0], is_closure, partial);
   Vec<Fun *> *partial_matches = 0;
-  find_visible_functions(args, send, &partial_matches, matcher.function_values);
+  find_visible_functions(args, visibility_point, &partial_matches, matcher.function_values);
   log_dispatch_pattern_match(partial_matches, matcher.function_values, send);
   MPosition app;
   matcher.find_all_matches(0, args, &partial_matches, app, 0);
@@ -1362,7 +1391,7 @@ pattern_match(Vec<AVar *> &args, AVar *send, int is_closure, Partial_kind partia
     if (!partial_matches->n)
       return 0;
   }
-  matcher.cannonicalize_matches(*partial_matches, is_closure, partial, matches);
+  matcher.cannonicalize_matches(*partial_matches, is_closure, partial, matches, visibility_point);
   return matches.n;
 }
 

@@ -46,6 +46,13 @@ char *slotKindName[] = {
 
 class ISlot;
 
+class IClosure : public gc { public:
+  Vec<ISlot *> args;
+  BaseAST *visibility_point;
+
+  IClosure(BaseAST *vp = 0) : visibility_point(vp) {}
+};
+
 class ISlot : public gc { public:
   ISlotKind     kind;
   char          *name;
@@ -53,7 +60,7 @@ class ISlot : public gc { public:
   union {
     char *selector;
     Symbol *symbol;
-    Vec<ISlot *> *closure_args;
+    IClosure *closure;
     IObject *object;
     Immediate *imm;
   };
@@ -449,10 +456,10 @@ ISlot *
 IFrame::make_closure(int nargs) {
   ISlot *slot = new ISlot;
   slot->kind = CLOSURE_ISLOT;
-  slot->closure_args = new Vec<ISlot*>;
+  slot->closure = new IClosure(ip);
   ISlot **args = &valStack.v[valStack.n-nargs];
   for (int i = 0; i < nargs; i++)
-    slot->closure_args->add(args[i]);
+    slot->closure->args.add(args[i]);
   return slot;
 }
 
@@ -494,6 +501,7 @@ IFrame::icall(int nargs, ISlot *ret_slot) {
   int done = 0, extra_args = 0;
   FnSymbol *fn = 0;
   Vec<ISlot *> closures;
+  BaseAST *visibility_point = ip;
   do {
     ISlot **arg = &valStack.v[valStack.n-nargs];
     if (arg[0]->kind == SYMBOL_ISLOT && arg[0]->symbol->astType == SYMBOL_FN) {
@@ -512,7 +520,8 @@ IFrame::icall(int nargs, ISlot *ret_slot) {
         return;
       }
       closures.set_add(arg[0]);
-      Vec<ISlot *> &a = *arg[0]->closure_args;
+      visibility_point = arg[0]->closure->visibility_point;
+      Vec<ISlot *> &a = arg[0]->closure->args;
       int istart = valStack.n - nargs;
       valStack.fill(valStack.n + a.n - 1);
       memmove(&valStack.v[istart + a.n], &valStack.v[istart + 1], 
@@ -559,7 +568,7 @@ IFrame::icall(int nargs, ISlot *ret_slot) {
       }
     }
   }
-  fn = resolve_call(ip, name, &actual_types, &actual_params, &actual_names, partialTag, fn);
+  fn = resolve_call(visibility_point, name, &actual_types, &actual_params, &actual_names, partialTag, fn);
   if (!fn) {
     switch (resolve_call_error) {
       default: INT_FATAL("interpreter: bad resolve_call_error: %d", (int)resolve_call_error); break;

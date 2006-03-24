@@ -96,11 +96,15 @@ class Match : public gc {
  public:
   Fun *fun;
   Map<MPosition *, AType *> formal_filters; // formal -> type, positional-only and takes into account all arguments
+  Vec<PNode *> visibility_points;
   unsigned int is_partial : 1;
+
+  void merge(Match *m); // merge in formal_filters and visibility_points
   
   Match(Fun *afun) : fun(afun), is_partial(0) { assert(afun); }
   Match(Match &m) : fun(m.fun), is_partial(m.is_partial) {
     formal_filters.copy(m.formal_filters); 
+    visibility_points.copy(m.visibility_points);
   }
 };
 #define forv_Match(_p, _v) forv_Vec(Match, _p, _v)
@@ -121,7 +125,7 @@ void add_patterns(FA *fa, Fun *f);
 void build_arg_positions(FA *fa);
 int positional_to_named(CreationSet *cs, AVar *av, MPosition &p, MPosition *result_p);
 int pattern_match(Vec<AVar *> &args, AVar *send, int is_closure, Partial_kind partial, 
-                  Vec<Match *> &matches);
+                  PNode *visibility_point, Vec<Match *> &matches);
 MPosition *cannonicalize_mposition(MPosition &p);
 MPosition *build_arg_positions(Fun *f, MPosition *up = 0);
 

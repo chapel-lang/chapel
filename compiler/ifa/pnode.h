@@ -47,7 +47,7 @@ class PNode : public gc {
   Vec<PNode *> phi; // MOVE nodes that logically follow this node
   Vec<PNode *> phy; // MOVE nodes that logically precede this node
 
-  Prim *prim; // Primitive
+  Prim *prim; // primitive
 
 #ifdef CALLEE_CACHE
   Callees *callees; // Callees
@@ -64,8 +64,9 @@ class PNode : public gc {
   Vec<Var *> lvals_set; // ssu.cpp
   Map<PNode *, int> cfg_pred_index;  // ssu.cpp, cg.cpp
 
-  Dom *dom; // Dominators dom.cpp 
-  Vec<Sym *> *creates; // Cloning
+  Dom *dom; // dominators dom.cpp 
+  Vec<Sym *> *creates; // cloning
+  int call_context;
 
   float execution_frequency;
   float false_branch_frequency; // inline.cpp

@@ -73,7 +73,9 @@ int resolve_member(ClassType *t, VarSymbol *v, int *offset, Type **type);  // -1
 int resolve_member(ClassType *t, int index, int *offset, Type **type);  // -1 == error(s)
 int structural_subtypes(Type *t, Vec<Type *> subtypes); // -1 == error(s)
 int analysis_error(AError_kind akind, AVar *acall = NULL, AType *atype = NULL, AVar *avar = NULL);
-int call_info(Expr *a, Vec<FnSymbol *> &fns, Vec<Vec<Vec<Type *> *> *> *dispatch = 0);
+int call_info(Expr *a, Vec<FnSymbol *> &fns, 
+              Vec<Vec<Vec<Type *> *> *> *dispatch = 0, Vec<Vec<int> *> *contexts = 0);
+int context_info(Expr *a); // calling context for dispatch on visibility
 
 // set by the above calls in case of errors
 // must be cleared by the caller after reporting the errors

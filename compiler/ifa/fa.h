@@ -304,12 +304,14 @@ class FA : public gc {
 
   bool permit_boxing;
   bool no_unused_instance_variables;
+  bool local_closure_visibility;
   int array_index_base;
   int tuple_index_base;
   int num_constants_per_variable;
 
   FA(PDB *apdb) : pdb(apdb), cdb(0), patterns(0), top_edge(0),
     permit_boxing(0), no_unused_instance_variables(0),
+    local_closure_visibility(0),
     array_index_base(0), tuple_index_base(0), num_constants_per_variable(1) {}
 
   int analyze(Fun *f);
@@ -347,7 +349,7 @@ AVar *unique_AVar(Var *v, EntrySet *es);
 void qsort_pointers(void **left, void **right);
 void initialize_Sym_for_fa(Sym *s);
 int function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> &args,
-                      int is_closure, Partial_kind partial);
+                      int is_closure, Partial_kind partial, PNode *visibility_point = 0);
 void add_var_constraint(AVar *av, Sym *s = 0);
 
 template<class C> void

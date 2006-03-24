@@ -19,7 +19,7 @@ class MPosition;
 */
 class IFASymbol : public gc {
  public:
-  virtual Sym *clone(int additional_members = 0) = 0;
+  virtual Sym *clone() = 0;
   virtual char *pathname() = 0;
   virtual int line() = 0;
   virtual int log_line() = 0;

@@ -771,7 +771,7 @@ ACallbacks::instantiate_generic(Fun *f, Map<Sym *, Sym *> &generic_substitutions
 }
 
 Sym *
-ASymbol::clone(int members) {
+ASymbol::clone() {
   if (!symbol) { // internal to analysis
     Sym *s = copy()->sym;
     return s;
@@ -2588,7 +2588,9 @@ return_type_info(FnSymbol *fn) {
 }
 
 int
-call_info(Expr *a, Vec<FnSymbol *> &fns, Vec<Vec<Vec<Type *> *> *> *dispatch) {
+call_info(Expr *a, Vec<FnSymbol *> &fns, 
+          Vec<Vec<Vec<Type *> *> *> *dispatch, Vec<Vec<int> *> *visibility_points)
+{
   FnSymbol* f = a->getFunction();
   fns.clear();
   if (!f) // this is not executable code
@@ -2629,6 +2631,11 @@ call_info(Expr *a, Vec<FnSymbol *> &fns, Vec<Vec<Vec<Type *> *> *> *dispatch) {
     for (int i = 0; i < ff.n; i++)
       dispatch->v[i] = new Vec<Vec<Type *> *>;
   }
+  if (visibility_points) {
+    visibility_points->fill(ff.n);
+    for (int i = 0; i < ff.n; i++)
+      visibility_points->v[i] = new Vec<int>;
+  }
   for (int i = 0; i < ff.n; i++) {
     Fun *f = ff.v[i];
     FnSymbol *fs = dynamic_cast<FnSymbol *>(SYMBOL(f->sym));
@@ -2653,6 +2660,8 @@ call_info(Expr *a, Vec<FnSymbol *> &fns, Vec<Vec<Vec<Type *> *> *> *dispatch) {
                   forv_CreationSet(cs, filter->sorted)
                     dispatch->v[i]->v[j]->set_add(to_AST_type(cs->type));
                 }
+                forv_PNode(p, e->match->visibility_points) if (p)    
+                  visibility_points->v[i]->set_add(p->call_context);
               }
             }
           }
@@ -2661,6 +2670,19 @@ call_info(Expr *a, Vec<FnSymbol *> &fns, Vec<Vec<Vec<Type *> *> *> *dispatch) {
     }
   }
   return 0;
+}
+
+int
+context_info(Expr *e) {
+  IFAAST *ast = e->ainfo;
+  if (!ast)
+    return -1; // this code is not known to analysis
+  forv_PNode(pn, ast->pnodes) {
+    if (pn->code->kind != Code_SEND) 
+      continue;
+    return pn->call_context;
+  }
+  return -1;
 }
 
 int 
