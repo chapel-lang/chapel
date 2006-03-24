@@ -61735,3 +61735,13 @@ Added files:
 	                            dispatch-withnil.good dispatch.chpl 
 	                            dispatch.future dispatch.good 
 
+---------------------------------------------------------------------------
+
+03/23/06 16:47:36 -- deitz
+
+Log message:
+	Fixed precedence of :, reduce, and scan.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+
