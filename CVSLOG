@@ -61745,3 +61745,19 @@ Log message:
 Modified files:
 	chapel/compiler/parser/: chapel.y 
 
+---------------------------------------------------------------------------
+
+03/23/06 17:26:08 -- bradc
+
+Log message:
+	Thanks to the Deitz compiler message interpreter system (tm),
+	removed my own thinkos that were causing these tests to fail.
+	How reassuring!
+
+Modified files:
+	chapel/test/classes/bradc/: dispatch-nevernil2a.chpl 
+	                            dispatch-nevernil2b.chpl 
+Removed files:
+	chapel/test/classes/bradc/: dispatch-nevernil2a.future 
+	                            dispatch-nevernil2b.future 
+
