@@ -61839,3 +61839,38 @@ Added files:
 	                                test_for_param_return.future 
 	                                test_for_param_return.good 
 
+---------------------------------------------------------------------------
+
+03/24/06 13:04:22 -- shannon
+
+Log message:
+	Moved the handling of variable args to write/fwrite from
+	normalize.cpp to a Chapel module.  Also moved the
+	halt and assert calls from normalize.cpp to a module.
+	Added the fflush call as a primitive to the compiler.
+	Added some tests and updated the output of some others.
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/compiler/passes/: interpreter_ops.h normalize.cpp 
+	                         runInterpreter.cpp 
+	chapel/modules/standard/: _chpl_base.chpl _chpl_file.chpl 
+	chapel/test/trivial/shannon/: readWriteBool.chpl 
+	                              readWriteBool.good 
+	                              readWriteBool.stdin 
+	                              readWriteBoolLineno.chpl 
+	                              readWriteBoolLineno.good 
+	                              readWriteBoolLineno.stdin 
+	chapel/test/types/file/: freadComplex.good freadComplex.txt 
+	                         fwritelnClassFile.chpl 
+	                         fwritelnClassFile.good 
+Added files:
+	chapel/test/trivial/shannon/: multipleArgAssert.compopts 
+	                              readWriteEnum.compopts 
+	chapel/test/trivial/shannon/quit/: assert.compopts halt.compopts 
+	                                   haltNoArgs.chpl 
+	                                   haltNoArgs.compopts 
+	                                   haltNoArgs.good 
+	                                   haltOneArg.chpl 
+	                                   haltOneArg.good 
+
