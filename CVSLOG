@@ -61885,3 +61885,14 @@ Log message:
 Modified files:
 	chapel/modules/standard/: _chpl_file.chpl 
 
+---------------------------------------------------------------------------
+
+03/24/06 14:32:21 -- shannon
+
+Log message:
+	Removed the primitive definition for halt and assert
+	now that they're handled in a Chapel module.
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+
