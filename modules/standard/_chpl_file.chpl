@@ -42,13 +42,21 @@ fun _writeAssertFailed() {
   }     
 }
 
+pragma "rename _chpl_halt_no_args"
+fun halt() {
+  _writeHaltReached();
+  if(!chpl_input_lineno) {
+    fwriteln(stderr);
+  }
+  exit(0);
+}
+
 pragma "rename _chpl_halt"
 fun halt(args ...?numArgs) {
-  fflush(stdout);
-  fwrite(stderr, "Halt reached: ");
-  if (chpl_input_lineno) {
-    fwriteln(stderr, chpl_input_filename, ":", chpl_input_lineno);
-  } 
+  _writeHaltReached();
+  if (!chpl_input_lineno) {
+    fwrite(stderr, ": ");
+  }
   for param i in 1..numArgs {
     fwrite(stderr, args(i));
   }
@@ -56,9 +64,12 @@ fun halt(args ...?numArgs) {
   exit(0);
 }
 
-pragma "rename _chpl_halt_no_args"
-fun halt() {
-  halt("");
+fun _writeHaltReached() {
+  fflush(stdout);
+  fwrite(stderr, "Halt reached");
+  if (chpl_input_lineno) {
+    fwriteln(stderr, ": ", chpl_input_filename, ":", chpl_input_lineno);
+  }
 }
 
 
