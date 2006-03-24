@@ -61826,3 +61826,16 @@ Added files:
 	                                         visibility-4.future 
 	                                         visibility-4.good 
 
+---------------------------------------------------------------------------
+
+03/24/06 08:37:44 -- deitz
+
+Log message:
+	Future that shows using return in param for loop does not work because
+	of nested function implementation of param for loops.  Plan to fix later.
+
+Added files:
+	chapel/test/types/tuple/deitz/: test_for_param_return.chpl 
+	                                test_for_param_return.future 
+	                                test_for_param_return.good 
+
