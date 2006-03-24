@@ -61874,3 +61874,14 @@ Added files:
 	                                   haltOneArg.chpl 
 	                                   haltOneArg.good 
 
+---------------------------------------------------------------------------
+
+03/24/06 14:24:15 -- shannon
+
+Log message:
+	Refactored assert such that its first argument
+	is now a bool, and did some other minor cleanup.
+
+Modified files:
+	chapel/modules/standard/: _chpl_file.chpl 
+
