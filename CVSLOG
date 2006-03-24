@@ -61761,3 +61761,46 @@ Removed files:
 	chapel/test/classes/bradc/: dispatch-nevernil2a.future 
 	                            dispatch-nevernil2b.future 
 
+---------------------------------------------------------------------------
+
+03/24/06 06:53:19 -- jplevyak
+
+Log message:
+	Function visibility for closures is now determined by the point where
+	the function name was captured.
+	- For the interpreter this means capturing the initial closure creation
+	   point.
+	- For compiled code
+	  - analysis now tracks the visibility point separately
+	  - visibility is a factor in dispatch, and caching of pattern match results
+	  - visibility is stored in the closure runtime object as a "call context id".
+	  - dynamic dispatch can dispatch on call context id.
+	- added new tests for visibility and for dynamic dispatch based on call context
+	    these work in both the interpreter and for compiled code
+	
+	Also, I fixed jplevyak/scoping/visibility-1.chpl which was testing
+	  shadowing of nested functions, however this only works for functions
+	  which are identical (as in this test).  The more complete test would
+	  include nested functions which cover the arguments of a function
+	  higher up.  I will add  test for that.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp chapel_ifa.h 
+	chapel/compiler/ifa/: clone.cpp fa.cpp fa.h fun.cpp ifa.h 
+	                      pattern.cpp pattern.h pnode.cpp pnode.h 
+	                      sym.cpp sym.h 
+	chapel/compiler/include/: analysis.h 
+	chapel/compiler/passes/: resolveAnalyzed.cpp runInterpreter.cpp 
+	chapel/modules/standard/: _chpl_closure.chpl 
+Added files:
+	chapel/test/functions/jplevyak/scoping/: visibility-2.chpl 
+	                                         visibility-2.good 
+	                                         visibility-3.chpl 
+	                                         visibility-3.good 
+	chapel/test/interpreter/jplevyak/: visibility-2.chpl 
+	                                   visibility-2.good 
+	                                   visibility-3.chpl 
+	                                   visibility-3.good 
+Removed files:
+	chapel/test/functions/jplevyak/scoping/: visibility-1.future 
+
