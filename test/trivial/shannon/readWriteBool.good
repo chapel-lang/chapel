@@ -1,7 +1,4 @@
-Is Bush an idiot? (true or false)
-false
-That's the wrong answer, try again.
 true
-Is Bush a liar? (true or false)
-Halt reached: readWriteBool.chpl:13
+false
+Halt reached: readWriteBool.chpl:9
 ***Error: Not of bool type***

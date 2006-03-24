@@ -6,5 +6,5 @@ class phone {
 var myFile: file = file(filename = "_test_fwritelnClassFile.txt", mode = "w");
 myFile.open;
 
-var smh: phone = phone(name = "shannon", cell = 2063833241);
+var smh: phone = phone(name = "shannon", cell = 2065551212);
 fwriteln(myFile, smh);
