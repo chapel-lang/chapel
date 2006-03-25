@@ -61930,3 +61930,15 @@ Removed files:
 	                                   haltOneArg.chpl 
 	                                   haltOneArg.good 
 
+---------------------------------------------------------------------------
+
+03/24/06 16:33:56 -- deitz
+
+Log message:
+	Fixed Preston's curry test to use "= =>" and removed .future.
+
+Modified files:
+	chapel/test/trivial/preston/: curry.chpl 
+Removed files:
+	chapel/test/trivial/preston/: curry.future 
+
