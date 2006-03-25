@@ -61942,3 +61942,24 @@ Modified files:
 Removed files:
 	chapel/test/trivial/preston/: curry.future 
 
+---------------------------------------------------------------------------
+
+03/24/06 16:35:04 -- deitz
+
+Log message:
+	A bit of work to try to unify the tuples into a new class that is
+	instantiated on its size and then cloned on the types of the
+	components.  I'm getting an error in analysis that I can't completely
+	narrow down.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: cleanup.cpp normalize.cpp 
+Added files:
+	chapel/test/types/tuple/deitz/: test_mytuple.chpl 
+	                                test_mytuple.future 
+	                                test_mytuple.good 
+
