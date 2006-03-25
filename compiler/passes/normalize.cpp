@@ -544,6 +544,67 @@ decompose_multi_actuals(CallExpr* call, char* new_name, Expr* first_actual) {
 }
 
 
+static CallExpr* lineno_info(CallExpr* call) {
+  CallExpr* errorInfo;
+  if (printChplLineno) {
+    errorInfo = new CallExpr("fwrite", 
+                             chpl_stdout, 
+                             chpl_input_filename, 
+                             new_StringLiteral(":"), 
+                             chpl_input_lineno);
+  } else {
+    errorInfo = new CallExpr("fwrite", 
+                   chpl_stdout,
+                   new_StringLiteral(stringcat(call->filename, 
+                                               ":", 
+                                               intstring(call->lineno))));
+  }
+  return errorInfo;
+}
+
+
+static void buildAssertStatement(CallExpr* call) {
+    AList<Stmt>* blockStmt = new AList<Stmt>();
+    CallExpr* assertFailed = new CallExpr("fwrite", chpl_stdout, new_StringLiteral("Assertion failed: "));
+    blockStmt->insertAtTail(assertFailed);
+    CallExpr* printLineno = lineno_info(call);
+    blockStmt->insertAtTail(printLineno);
+    Expr* assertArg = call->argList->get(1);
+    assertArg->remove();
+    CallExpr* fwritelnCall = new CallExpr("fwriteln", chpl_stdout);
+    if (call->argList->length() > 1) {
+      blockStmt->insertAtTail(fwritelnCall->copy());
+    }
+    for_alist(Expr, actual, call->argList) {
+      actual->remove();
+      blockStmt->insertAtTail(new CallExpr("fwrite", chpl_stdout, actual));
+    }
+    blockStmt->insertAtTail(fwritelnCall->copy());
+    CallExpr* exitCall = new CallExpr("exit", new_IntLiteral(0));
+    blockStmt->insertAtTail(exitCall);
+    Expr* assert_cond = new CallExpr("!", assertArg->copy());
+    BlockStmt* assert_body = new BlockStmt(blockStmt);
+    call->parentStmt->insertBefore(new CondStmt(assert_cond, assert_body));
+    decompose_special_calls(printLineno);
+    call->parentStmt->remove();
+}
+
+
+static void buildHaltStatement(CallExpr* call) {
+    CallExpr* haltReached = new CallExpr("fwrite", chpl_stdout, new_StringLiteral("Halt reached: "));
+    call->parentStmt->insertBefore(haltReached);
+    CallExpr* printLineno = lineno_info(call);
+    call->parentStmt->insertBefore(printLineno);
+    decompose_special_calls(printLineno);
+    CallExpr* fwritelnCall = new CallExpr("fwriteln", chpl_stdout);
+    call->parentStmt->insertBefore(fwritelnCall->copy());
+    CallExpr* exitCall = new CallExpr("exit", new_IntLiteral(0));
+    call->parentStmt->insertAfter(exitCall);
+    call->parentStmt->insertAfter(fwritelnCall->copy());
+    decompose_multi_actuals(call, "fwrite", new SymExpr(chpl_stdout));
+}
+
+
 static void decompose_special_calls(CallExpr* call) {
   if (call->isResolved())
     return;
@@ -554,13 +615,31 @@ static void decompose_special_calls(CallExpr* call) {
     if (symArg && symArg->var == methodToken)
       return;
   }
-  if (call->isNamed("fread")) {
+  if (call->isNamed("assert")) {
+    buildAssertStatement(call);
+  } else if (call->isNamed("halt")) {
+    buildHaltStatement(call);
+  } else if (call->isNamed("fread")) {
     Expr* file = call->argList->get(1);
     file->remove();
     decompose_multi_actuals(call, "fread", file);
     call->parentStmt->remove();
+  } else if (call->isNamed("fwrite")) {
+    Expr* file = call->argList->get(1);
+    file->remove();
+    decompose_multi_actuals(call, "fwrite", file);
+  } else if (call->isNamed("fwriteln")) {
+    Expr* file = call->argList->get(1);
+    file->remove();
+    call->parentStmt->insertAfter(new CallExpr("fwriteln", file));
+    decompose_multi_actuals(call, "fwrite", file);
   } else if (call->isNamed("read")) {
     decompose_multi_actuals(call, "fread", new SymExpr(chpl_stdin));
+  } else if (call->isNamed("write")) {
+    decompose_multi_actuals(call, "fwrite", new SymExpr(chpl_stdout));
+  } else if (call->isNamed("writeln")) {
+    call->parentStmt->insertAfter(new CallExpr("fwriteln", chpl_stdout));
+    decompose_multi_actuals(call, "fwrite", new SymExpr(chpl_stdout));
   }
 }
 

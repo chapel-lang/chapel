@@ -1,78 +1,3 @@
-pragma "rename _chpl_fflush"
-fun fflush(f: file) {
-  fflush(f.fp);
-}
-
-pragma "rename _chpl_fflush_nil"
-fun fflush(f: _nilType) {
-  halt("***Error: called fflush on nil***");
-}
-
-pragma "rename _chpl_assert_no_args"
-fun assert(test: bool) {
-  if (!test) {
-    _writeAssertFailed();
-    if (!chpl_input_lineno) {
-      fwriteln(stderr);
-    }
-    exit(0);
-  }
-}
-
-pragma "rename _chpl_assert"
-fun assert(test: bool, args ...?numArgs) {
-  if (!test) {
-    _writeAssertFailed();
-    if (!chpl_input_lineno) {
-      fwrite(stderr, ": ");
-    }
-    for param i in 1..numArgs {
-      fwrite(stderr, args(i));
-    }
-    fwriteln(stderr);
-    exit(0);
-  }
-}
-
-fun _writeAssertFailed() {
-  fflush(stdout);
-  fwrite(stderr, "Assertion failed");
-  if (chpl_input_lineno) {
-    fwriteln(stderr, ": ", chpl_input_filename, ":", chpl_input_lineno);
-  }     
-}
-
-pragma "rename _chpl_halt_no_args"
-fun halt() {
-  _writeHaltReached();
-  if(!chpl_input_lineno) {
-    fwriteln(stderr);
-  }
-  exit(0);
-}
-
-pragma "rename _chpl_halt"
-fun halt(args ...?numArgs) {
-  _writeHaltReached();
-  if (!chpl_input_lineno) {
-    fwrite(stderr, ": ");
-  }
-  for param i in 1..numArgs {
-    fwrite(stderr, args(i));
-  }
-  fwriteln(stderr);
-  exit(0);
-}
-
-fun _writeHaltReached() {
-  fflush(stdout);
-  fwrite(stderr, "Halt reached");
-  if (chpl_input_lineno) {
-    fwriteln(stderr, ": ", chpl_input_filename, ":", chpl_input_lineno);
-  }
-}
-
-
 class file {
   var filename : string = "";
   var mode : string = "r";
@@ -129,6 +54,7 @@ const stdin  : file = file("stdin", "r", "/dev", _STDINCFILEPTR);
 const stdout : file = file("stdout", "w", "/dev", _STDOUTCFILEPTR);
 const stderr : file = file("stderr", "w", "/dev", _STDERRCFILEPTR);
 
+
 fun fopenError(f: file, isRead: bool) {
   var fullFilename:string = f.path + "/" + f.filename;
   if (isRead) {
@@ -140,13 +66,29 @@ fun fopenError(f: file, isRead: bool) {
   }
 }
 
+
 fun fprintfError() {
   halt("***Error: Write failed: ", strerror(errno), "***");
 }
 
+
 fun fscanfError() {
   halt("***Error: Read failed: ", strerror(errno), "***");
 }
+
+
+pragma "rename _chpl_fwriteln"
+fun fwriteln(f: file = stdout) {
+  if (f.isOpen) {
+    var returnVal: int = fprintf(f.fp, "%s", "\n");
+    if (returnVal < 0) {
+      fprintfError();
+    } 
+  } else {
+    fopenError(f, isRead = false);
+  }
+}
+
 
 pragma "rename _chpl_fread_int" 
 fun fread(f: file = stdin, inout val: int) {
@@ -165,12 +107,6 @@ fun fread(f: file = stdin, inout val: int) {
   }
 }
 
-pragma "rename _chpl_fwrite"
-fun fwrite(f: file = stdout, args ...?numArgs) {
-  for param i in 1..numArgs {
-    fwrite(f, args(i));
-  }
-}
 
 pragma "rename _chpl_fwrite_int"
 fun fwrite(f: file = stdout, val: int) {
@@ -185,6 +121,7 @@ fun fwrite(f: file = stdout, val: int) {
     fopenError(f, isRead = false);
   }
 }
+
 
 pragma "rename _chpl_fread_float"
 fun fread(f: file = stdin, inout val: float) {
@@ -203,6 +140,7 @@ fun fread(f: file = stdin, inout val: float) {
   }
 }
 
+
 pragma "rename _chpl_fwrite_float"
 fun fwrite(f: file = stdout, val: float) {
   if (f.isOpen) {
@@ -212,6 +150,7 @@ fun fwrite(f: file = stdout, val: float) {
   }
 }
 
+
 pragma "rename _chpl_fread_string"
 fun fread(f: file = stdin, inout val: string) {
   if (f.isOpen) {
@@ -220,6 +159,7 @@ fun fread(f: file = stdin, inout val: string) {
     fopenError(f, isRead = true);
   }
 }
+
 
 pragma "rename _chpl_fwrite_string"
 fun fwrite(f: file = stdout, val: string) {
@@ -232,6 +172,7 @@ fun fwrite(f: file = stdout, val: string) {
     fopenError(f, isRead = false);
   }
 }
+
 
 pragma "rename _chpl_fread_bool" 
 fun fread(f: file = stdin, inout val: bool) {
@@ -250,6 +191,7 @@ fun fread(f: file = stdin, inout val: bool) {
   }
 }
 
+
 pragma "rename _chpl_fwrite_bool"
 fun fwrite(f: file = stdout, val: bool) {
   if (f.isOpen) {
@@ -267,18 +209,6 @@ fun fwrite(f: file = stdout, val: bool) {
   }
 }
 
-pragma "rename _chpl_fwriteln"
-fun fwriteln(f: file, args ...?numArgs) {
-  for param i in 1..numArgs {
-    fwrite(f, args(i));
-  }
-  fwriteln(f);
-}
-
-pragma "rename _chpl_fwriteln_no_args"
-fun fwriteln(f: file = stdout) {
-  fwrite(f, "\n");
-}
 
 pragma "rename _chpl_fwrite_nil" 
 fun fwrite(f: file = stdout, x : _nilType) : void {
@@ -292,26 +222,18 @@ fun fwrite(f: file = stdout, x : _nilType) : void {
   }
 }
 
-pragma "rename _chpl_write"
-fun write(args ...?numArgs) {
-  for param i in 1..numArgs {
-    fwrite(stdout, args(i));
-  }
+
+fun write() {
+  halt("***Error: This should never be called.  All write calls should be converted to fwrites***");
 }
 
-pragma "rename _chpl_writeln"
-fun writeln(args ...?numArgs) { 
-  for param i in 1..numArgs {
-    fwrite(stdout, args(i));
-  }
-  fwriteln(stdout);
-}
 
-pragma "rename _chpl_writeln_no_args"
-fun writeln() {
-  fwriteln(stdout);
+fun writeln() { 
+  halt("***Error: This should never be called.  All writeln calls should be converted to fwritelns***");
 }
 
 fun read() {
   halt("***Error: This should never be called.  All read calls should be converted to freads***");
 }
+
+
