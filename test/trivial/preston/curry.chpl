@@ -6,6 +6,6 @@ fun sum(a, b) {
 
 
 
-var succ => sum(1);
+var succ = => sum(1);
 
 writeln(succ(10));
