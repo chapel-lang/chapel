@@ -40,6 +40,7 @@ class Symbol : public BaseAST {
   char* cname; // Name of symbol for generating C code
   Type* type;
   DefExpr* defPoint; // Point of definition
+  Expr* variableExpr;
   Vec<SymExpr*>* uses;
 
   ASymbol *asymbol;
@@ -117,7 +118,6 @@ class ArgSymbol : public Symbol {
  public:
   intentTag intent;
   Expr* defaultExpr;
-  Expr* variableExpr;
   Symbol *genericSymbol;
   bool isGeneric;
   bool isExactMatch;

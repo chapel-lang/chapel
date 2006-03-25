@@ -930,7 +930,14 @@ var_decl_stmt_inner_ls:
 var_decl_stmt_inner:
   identifier opt_var_type opt_init_expr
     {
-      $$ = new AList<Stmt>(new DefExpr(new VarSymbol($1), $3, $2));
+      VarSymbol* var = new VarSymbol($1);
+      $$ = new AList<Stmt>(new DefExpr(var, $3, $2));
+    }
+| identifier opt_var_type var_arg_expr
+    {
+      VarSymbol* var = new VarSymbol($1);
+      $$ = new AList<Stmt>(new DefExpr(var, NULL, $2));
+      var->variableExpr = $3;
     }
 ;
 

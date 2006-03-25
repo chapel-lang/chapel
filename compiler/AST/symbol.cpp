@@ -107,6 +107,7 @@ Symbol::Symbol(astType_t astType, char* init_name, Type* init_type) :
   cname(name),
   type(init_type),
   defPoint(NULL),
+  variableExpr(NULL),
   uses(NULL),
   asymbol(0),
   overload(NULL),
@@ -323,6 +324,7 @@ VarSymbol*
 VarSymbol::copyInner(ASTMap* map) {
   VarSymbol* newVarSymbol = 
     new VarSymbol(stringcpy(name), type, varClass, consClass);
+  newVarSymbol->variableExpr = COPY_INT(variableExpr);
   newVarSymbol->cname = stringcpy(cname);
   assert(!newVarSymbol->immediate);
   assert(!newVarSymbol->literalType);
@@ -332,11 +334,15 @@ VarSymbol::copyInner(ASTMap* map) {
 
 
 void VarSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  type->replaceChild(old_ast, new_ast);
+  if (old_ast == variableExpr)
+    variableExpr = dynamic_cast<Expr*>(new_ast);
+  else
+    type->replaceChild(old_ast, new_ast);
 }
 
 
 void VarSymbol::traverseDefSymbol(Traversal* traversal) {
+  TRAVERSE(variableExpr, traversal, false);
   TRAVERSE(type, traversal, false);
   TRAVERSE(literalType, traversal, false);
 }
@@ -430,13 +436,13 @@ ArgSymbol::ArgSymbol(intentTag iIntent, char* iName,
   Symbol(SYMBOL_ARG, iName, iType),
   intent(iIntent),
   defaultExpr(iDefaultExpr),
-  variableExpr(iVariableExpr),
   genericSymbol(NULL),
   isGeneric(false),
   isExactMatch(false)
 {
   if (intent == INTENT_PARAM || intent == INTENT_TYPE)
     isGeneric = true;
+  variableExpr = iVariableExpr;
 }
 
 
@@ -451,8 +457,8 @@ void ArgSymbol::verify(void) {
 ArgSymbol*
 ArgSymbol::copyInner(ASTMap* map) {
   ArgSymbol *ps = new ArgSymbol(intent, stringcpy(name),
-                                type, COPY_INT(defaultExpr),
-                                COPY_INT(variableExpr));
+                                type, COPY_INT(defaultExpr));
+  ps->variableExpr = COPY_INT(variableExpr);
   if (genericSymbol)
     ps->genericSymbol = genericSymbol;
   ps->isGeneric = isGeneric;
@@ -1036,7 +1042,6 @@ instantiate_function(Stmt* pointOfInstantiation, FnSymbol *fn, ASTMap *all_subs,
       }
     }
   }
-  normalize(fnClone);
   return fnClone;
 }
 
@@ -1237,17 +1242,16 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
       cloneType->dispatchParents.add(parent);
 
     newfn = instantiate_function(pointOfInstantiation, this, &substitutions, generic_substitutions, &map, cloneType);
-    add_new_ast_functions(newfn);
-    instantiatedTo->add(newfn);
     cloneType->defaultConstructor = newfn;
-
+    newfn->typeBinding = clone;
     check_promoter(cloneType);
 
   } else {
     newfn = instantiate_function(defPoint->parentStmt, this, &substitutions, generic_substitutions, &map);
-    add_new_ast_functions(newfn);
-    instantiatedTo->add(newfn);
   }
+  normalize(newfn);
+  instantiatedTo->add(newfn);
+  add_new_ast_functions(newfn);
 
   for_alist(DefExpr, formal_def, newfn->formals) {
     ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formal_def->sym);

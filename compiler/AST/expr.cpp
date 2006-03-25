@@ -581,6 +581,8 @@ Type* CallExpr::typeInfo(void) {
     if (member && member->type != dtUnknown)
       return member->type;
     if (ClassType* ctype = dynamic_cast<ClassType*>(get(1)->typeInfo())) {
+      if (!dynamic_cast<VarSymbol*>(dynamic_cast<SymExpr*>(get(2))->var))
+        return dtUnknown;
       char *name = dynamic_cast<VarSymbol*>(dynamic_cast<SymExpr*>(get(2))->var)->immediate->v_string;
       Symbol* sym = Symboltable::lookupInScope(name, ctype->structScope);
       if (sym) {

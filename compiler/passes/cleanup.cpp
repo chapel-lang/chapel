@@ -269,8 +269,8 @@ void cleanup(BaseAST* base) {
   forv_Vec(BaseAST, ast, asts) {
     if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(ast)) {
       if (ClassType* ct = dynamic_cast<ClassType*>(type->definition)) {
-        build_constructor(ct);
         build_setters_and_getters(ct);
+        build_constructor(ct);
       }
     }
   }
@@ -373,8 +373,13 @@ static void build_constructor(ClassType* ct) {
       init->remove();
     else
       init = new SymExpr(gNil);
+    Expr* var_args = tmp->variableExpr;
+    if (var_args) {
+      var_args->remove();
+      init = NULL;
+    }
     VarSymbol *vtmp = dynamic_cast<VarSymbol*>(tmp);
-    ArgSymbol* arg = new ArgSymbol((vtmp && vtmp->consClass == VAR_PARAM) ? INTENT_PARAM : INTENT_BLANK, name, type, init);
+    ArgSymbol* arg = new ArgSymbol((vtmp && vtmp->consClass == VAR_PARAM) ? INTENT_PARAM : INTENT_BLANK, name, type, init, var_args);
     DefExpr* defExpr = new DefExpr(arg, NULL, exprType);
     args->insertAtTail(defExpr);
   }
@@ -406,7 +411,7 @@ static void build_constructor(ClassType* ct) {
   forv_Vec(Symbol, field, ct->fields) {
     for_alist(DefExpr, formalDef, fn->formals) {
       if (ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym)) {
-        if (!strcmp(formal->name, field->name)) {
+        if (!formal->variableExpr && !strcmp(formal->name, field->name)) {
           Expr* assign_expr = new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
                                            new_StringSymbol(field->name), formal);
           fn->insertAtTail(assign_expr);
@@ -443,7 +448,15 @@ static void build_getter(ClassType* ct, Symbol *field) {
   fn->formals = new AList<DefExpr>(
     new DefExpr(new ArgSymbol(INTENT_REF, "_methodTokenDummy", dtMethodToken)),
     new DefExpr(_this));
-  fn->body = new BlockStmt(new ReturnStmt(new CallExpr(PRIMITIVE_GET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)))));
+  if (field->variableExpr) {
+    ArgSymbol* index = new ArgSymbol(INTENT_PARAM, "_index", dtInt);
+    fn->formals->insertAtTail(new DefExpr(index));
+    SymExpr* symExpr = new SymExpr(index);
+    symExpr->addPragma("uniquify vararg");
+    fn->body = new BlockStmt(new ReturnStmt(new CallExpr(PRIMITIVE_GET_MEMBER, new SymExpr(_this), symExpr)));
+  } else {
+    fn->body = new BlockStmt(new ReturnStmt(new CallExpr(PRIMITIVE_GET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)))));
+  }
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->parentStmt->insertBefore(def);
   reset_file_info(fn, field->lineno, field->filename);
@@ -477,10 +490,30 @@ static void build_setter(ClassType* ct, Symbol* field) {
     new DefExpr(_this), 
     new DefExpr(new ArgSymbol(INTENT_REF, "_setterTokenDummy", dtSetterToken)),
     argDef);
-  Expr *valExpr = new CallExpr(PRIMITIVE_GET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)));
-  Expr *assignExpr = new CallExpr("=", valExpr, fieldArg);
-  fn->body->insertAtTail(
-    new CallExpr(PRIMITIVE_SET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)), assignExpr));
+
+  if (field->variableExpr) {
+    ArgSymbol* index = new ArgSymbol(INTENT_PARAM, "_index", dtInt);
+    _this->defPoint->insertAfter(new DefExpr(index));
+
+    SymExpr* symExpr = new SymExpr(index);
+    symExpr->addPragma("uniquify vararg");
+
+    Expr *valExpr = new CallExpr(PRIMITIVE_GET_MEMBER, new SymExpr(_this), symExpr);
+    Expr *assignExpr = new CallExpr("=", valExpr, fieldArg);
+
+    SymExpr* symExpr2 = new SymExpr(index);
+    symExpr2->addPragma("uniquify vararg");
+
+    fn->body->insertAtTail(
+      new CallExpr(PRIMITIVE_SET_MEMBER, new SymExpr(_this), symExpr2, assignExpr));
+
+
+  } else {
+    Expr *valExpr = new CallExpr(PRIMITIVE_GET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)));
+    Expr *assignExpr = new CallExpr("=", valExpr, fieldArg);
+    fn->body->insertAtTail(
+      new CallExpr(PRIMITIVE_SET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)), assignExpr));
+  }
   fn->body->insertAtTail(new ReturnStmt(new SymExpr(_this)));
   ct->symbol->defPoint->parentStmt->insertBefore(new DefExpr(fn));
   reset_file_info(fn, field->lineno, field->filename);

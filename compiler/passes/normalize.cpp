@@ -1104,6 +1104,15 @@ static void fold_params(Vec<DefExpr*>* defs, Vec<BaseAST*>* asts) {
   do {
     change = false;
     forv_Vec(BaseAST*, ast, *asts) {
+      if (SymExpr* a = dynamic_cast<SymExpr*>(ast))
+        if (a->parentSymbol)
+          if (a->hasPragma("uniquify vararg")) {
+            if (VarSymbol* var = dynamic_cast<VarSymbol*>(a->var)) {
+              if (var->immediate) {
+                a->replace(new_StringLiteral(stringcat("_e", var->cname, "_", a->parentSymbol->name)));
+              }
+            }
+          }
       if (CallExpr* a = dynamic_cast<CallExpr*>(ast))
         if (a->parentSymbol) // in ast
           fold_call_expr(a);
@@ -1140,7 +1149,45 @@ compute_max_actuals() {
 }
 
 static void
+expand_var_args_constructor(FnSymbol* fn) {
+  for_alist(DefExpr, arg_def, fn->formals) {
+    ArgSymbol* arg = dynamic_cast<ArgSymbol*>(arg_def->sym);
+    if (dynamic_cast<DefExpr*>(arg->variableExpr)) {
+      USR_FATAL(fn, "Number of variable fields must be a parameter");
+    } else if (SymExpr* sym = dynamic_cast<SymExpr*>(arg->variableExpr)) {
+      if (VarSymbol* n_var = dynamic_cast<VarSymbol*>(sym->var)) {
+        if (n_var->type == dtInt && n_var->immediate) {
+          int n = n_var->immediate->v_int64;
+          for (int i = 1; i <= n; i++) {
+            DefExpr* new_arg_def = arg_def->copy();
+            ArgSymbol* new_arg = dynamic_cast<ArgSymbol*>(new_arg_def->sym);
+            new_arg->variableExpr = NULL;
+            if (arg_def->exprType)
+              new_arg->defaultExpr = arg_def->exprType->copy();
+            else
+              new_arg->defaultExpr = new SymExpr(gNil);
+            new_arg->name = stringcat("_e", intstring(i), "_", arg->name);
+            new_arg->cname = stringcat("_e", intstring(i), "_", arg->cname);
+            arg_def->insertBefore(new_arg_def);
+            VarSymbol* var = new VarSymbol(new_arg->name);
+            AList<Stmt>* decl = new AList<Stmt>(new DefExpr(var));
+            dynamic_cast<ClassType*>(fn->typeBinding->definition)->addDeclarations(decl);
+            Stmt* last = fn->body->body->last();
+            last->insertBefore(new ExprStmt(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, new_StringSymbol(var->name), new_arg)));
+          }
+          arg_def->remove();
+          build(fn);
+        }
+      }
+    }
+  }
+}
+
+static void
 expand_var_args(FnSymbol* fn) {
+  if (fn->fnClass == FN_CONSTRUCTOR) {
+    expand_var_args_constructor(fn);
+  }
   for_alist(DefExpr, arg_def, fn->formals) {
     ArgSymbol* arg = dynamic_cast<ArgSymbol*>(arg_def->sym);
     if (DefExpr* def = dynamic_cast<DefExpr*>(arg->variableExpr)) {
@@ -1180,11 +1227,6 @@ expand_var_args(FnSymbol* fn) {
             arg_def->insertBefore(new_arg_def);
           }
           VarSymbol* var = new VarSymbol(arg->name);
-//           if (n == 1) {
-//             Expr* actual = actuals->only();
-//             actual->remove();
-//             fn->insertAtHead(new DefExpr(var, actual));
-//           } else
           if (arg->type != dtUnknown) {
             int i = n;
             for_alist_backward(Expr, actual, actuals) {

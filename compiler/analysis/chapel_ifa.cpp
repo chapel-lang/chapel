@@ -1499,9 +1499,9 @@ gen_call_expr(CallExpr *s) {
              s->isPrimitive(PRIMITIVE_SET_MEMBER)) {
     rvals.insert(1, make_symbol(s->isPrimitive(PRIMITIVE_GET_MEMBER) ? sym_period->name: sym_setter->name));
     if (rvals.v[2]->imm.const_kind != IF1_CONST_KIND_STRING) {
-      INT_FATAL(s, "PRIMITIVE_XXX_MEMBER with non-string member name");
-    }
-    rvals.v[2] = make_symbol(rvals.v[2]->imm.v_string);
+      rvals.v[2] = make_symbol("_invalid_member_access");
+    } else
+      rvals.v[2] = make_symbol(rvals.v[2]->imm.v_string);
     base = sym_operator;
   } else if (s->isPrimitive()) {
     base = gen_primitive(s, args, rvals);
