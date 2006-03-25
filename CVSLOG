@@ -61907,3 +61907,26 @@ Modified files:
 	chapel/modules/standard/: _chpl_file.chpl 
 	chapel/test/trivial/shannon/quit/: haltNoArgs.good 
 
+---------------------------------------------------------------------------
+
+03/24/06 16:24:43 -- shannon
+
+Log message:
+	Backing out the changes from today's earlier
+	disastrous commit.
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/compiler/passes/: interpreter_ops.h normalize.cpp 
+	                         runInterpreter.cpp 
+	chapel/modules/standard/: _chpl_base.chpl _chpl_file.chpl 
+Removed files:
+	chapel/test/trivial/shannon/: multipleArgAssert.compopts 
+	                              readWriteEnum.compopts 
+	chapel/test/trivial/shannon/quit/: assert.compopts halt.compopts 
+	                                   haltNoArgs.chpl 
+	                                   haltNoArgs.compopts 
+	                                   haltNoArgs.good 
+	                                   haltOneArg.chpl 
+	                                   haltOneArg.good 
+
