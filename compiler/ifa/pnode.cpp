@@ -13,7 +13,7 @@ PNode::PNode() : code(0), mark(0), region(0), prim(0), unode(NULL), creates(0), 
 
 PNode::PNode(Code *c) : 
   code(c), mark(0), region(0), prim(0), 
-  unode(0), creates(0),
+  unode(0), creates(0), call_context(0),
   execution_frequency(0.0), false_branch_frequency(0.0) 
 {
   forv_Sym(s, c->rvals)
