@@ -61973,3 +61973,28 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fun.cpp pnode.cpp 
 
+---------------------------------------------------------------------------
+
+03/27/06 10:24:42 -- deitz
+
+Log message:
+	Fixed bug in my tuple transitioning idea.  Added new test for
+	resolution of literal types.  Can
+	
+	  fun foo(param i : int)
+	
+	take priority over
+	
+	  fun foo(i : int)
+	
+	if the value passed is a parameter.
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp 
+	chapel/test/types/tuple/deitz/: test_mytuple.chpl 
+	                                test_mytuple.good 
+Added files:
+	chapel/test/functions/deitz/: test_lit_int1.chpl 
+	                              test_lit_int1.future 
+	                              test_lit_int1.good 
+
