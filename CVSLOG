@@ -61998,3 +61998,16 @@ Added files:
 	                              test_lit_int1.future 
 	                              test_lit_int1.good 
 
+---------------------------------------------------------------------------
+
+03/27/06 13:46:39 -- shannon
+
+Log message:
+	Test of nil inside a tuple.  It fails so .future.
+
+Added files:
+	chapel/test/types/tuple/shannon/: .cvsignore 
+	                                  test_nil_in_tuple.chpl 
+	                                  test_nil_in_tuple.future 
+	                                  test_nil_in_tuple.good 
+
