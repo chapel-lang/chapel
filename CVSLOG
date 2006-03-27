@@ -61963,3 +61963,13 @@ Added files:
 	                                test_mytuple.future 
 	                                test_mytuple.good 
 
+---------------------------------------------------------------------------
+
+03/26/06 17:52:29 -- jplevyak
+
+Log message:
+	Fix valgrind issues: uninitialized member variables.
+
+Modified files:
+	chapel/compiler/ifa/: fun.cpp pnode.cpp 
+
