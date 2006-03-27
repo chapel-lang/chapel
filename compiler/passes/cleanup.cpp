@@ -464,7 +464,8 @@ static void build_getter(ClassType* ct, Symbol *field) {
   fn->method_type = PRIMARY_METHOD;
   fn->typeBinding = ct->symbol;
   fn->cname = stringcat("_", fn->typeBinding->cname, "_", fn->cname);
-  fn->noParens = true;
+  if (!field->variableExpr)
+    fn->noParens = true;
   fn->_this = _this;
 }
 
@@ -522,7 +523,8 @@ static void build_setter(ClassType* ct, Symbol* field) {
   fn->method_type = PRIMARY_METHOD;
   fn->typeBinding = ct->symbol;
   fn->cname = stringcat("_", fn->typeBinding->cname, "_", fn->cname);
-  fn->noParens = true;
+  if (!field->variableExpr)
+    fn->noParens = true;
   fn->_this = _this;
 }
 

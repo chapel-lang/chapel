@@ -1,0 +1,5 @@
+jplevyak/deitz
+
+This fails in analysis and the interpreter.
+
+I don't think this should be ambiguous.  When the param foo is instantiated, the type becomes the literal type 1 which is more specific than the other foo which takes an int.

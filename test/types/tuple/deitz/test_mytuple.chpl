@@ -2,18 +2,12 @@ record mytuple {
   param rank : int;
   var component ...rank;
 
-  fun this(ind : int) {
-    var x;
-    for param i in 1..rank do
-      if i == ind then
-        x = component(i);
-    return x;
+  fun this(param i : int) var {
+    return component(i);
   }
 
-  fun =this(ind : int, x) {
-    for param i in 1..rank do
-      if i == ind then
-        component(i) = x;
+  fun this(i : int) var {
+    return component(i);
   }
 }
 
@@ -30,10 +24,10 @@ fun =(t : mytuple, x : mytuple) {
   return t;
 }
 
-var x = mytuple(1, "hello world");
+var x = mytuple(2, "hello world", 3.14);
 
-//writeln(x.component(1));
-/*
+writeln(x);
+
 x(1) = "good bye";
 
 writeln(x);
@@ -41,4 +35,3 @@ writeln(x);
 var y = mytuple(4, 5, 6, 7, 8);
 
 writeln(y);
-*/
