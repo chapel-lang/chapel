@@ -302,10 +302,18 @@ Matcher::update_match_map(AVar *a, CreationSet *cs, MPosition *acp, MPosition *a
 }
 
 int
-positional_to_named(CreationSet *cs, AVar *av, MPosition &pp, MPosition *np) {
-  if ((!cs || cs->sym == sym_tuple) && av->var->sym->arg_name) {
+positional_to_named(PNode *pn, CreationSet *cs, AVar *av, MPosition &pp, MPosition *np) {
+  if (!cs) {
+    assert(pp.pos.n == 1);
+    int i = Position2int(pp.pos.v[0]) - 1;
+    if (i < pn->names.n && pn->names.v[i]) {
+      np->copy(pp);
+      np->set_top(pn->names.v[i]);
+      return 1;
+    }
+  } else if (cs->sym == sym_tuple && av->var->sym->destruct_name) {
     np->copy(pp);
-    np->set_top(av->var->sym->arg_name);
+    np->set_top(av->var->sym->destruct_name);
     return 1;
   }
   return 0;
@@ -452,7 +460,7 @@ Matcher::find_all_matches(CreationSet *cs, Vec<AVar *> &args, Vec<Fun *> **parti
   app.push(1);
   forv_AVar(av, args) {
     MPosition anp;
-    if (positional_to_named(cs, av, app, &anp)) {
+    if (positional_to_named(send->var->def, cs, av, app, &anp)) {
       MPosition *acpp = cannonicalize_mposition(app);
       if (acpp) {
         MPosition *acnp = cannonicalize_mposition(anp);
@@ -890,8 +898,9 @@ make_generic_substitution(IFAAST *ast, Sym *generic_type, Sym *concrete_type, Ma
 }
 
 static int
-unify_generic_type(Sym *formal, Sym *generic_type, Sym *concrete_value, Map<Sym *, Sym *> &substitutions,
-                   IFAAST *ast) 
+unify_generic_type(Sym *formal, Sym *generic_type, 
+                   Sym *actual, Sym *concrete_value, 
+                   Map<Sym *, Sym *> &substitutions, IFAAST *ast) 
 {
   Sym *concrete_type = concrete_value->type;
 #ifndef INSTANTIATE_FOR_NIL
@@ -899,8 +908,8 @@ unify_generic_type(Sym *formal, Sym *generic_type, Sym *concrete_value, Map<Sym 
     return 0;
 #endif
   if (formal->is_generic) {
-    if (generic_type == concrete_value)
-      return make_generic_substitution(ast, formal, concrete_value, substitutions);
+    if (generic_type == actual)
+      return make_generic_substitution(ast, formal, actual, substitutions);
     if (concrete_type->is_meta_type) {
       if (!generic_type->is_meta_type)
         return 0;
@@ -921,6 +930,8 @@ unify_generic_type(Sym *formal, Sym *generic_type, Sym *concrete_value, Map<Sym 
       return make_generic_substitution(ast, generic, bind_to_value ? concrete_value : concrete_type, 
                                        substitutions);
     }
+    if (generic_type->specializers.set_in(actual))
+      return make_generic_substitution(ast, formal, actual, substitutions);
     return 0;
   } else {
     Sym *type = substitutions.get(generic_type);
@@ -983,16 +994,17 @@ generic_substitutions(PMatch **am, MPosition &app, Vec<CreationSet*> &args, IFAA
   for (int i = 0; i < args.n; i++) {
     MPosition *acpp = cannonicalize_mposition(local_app);
     MPosition *fcpp = to_formal(acpp, m);
-    AVar *a = m->actuals.get(acpp);
+    AVar *actual = m->actuals.get(acpp);
     CreationSet *cs = args.v[i];
-    Sym *concrete_value = a->var->sym->aspect ? a->var->sym->aspect : cs->sym;
+    Sym *concrete_value = actual->var->sym->aspect ? actual->var->sym->aspect : cs->sym;
     Sym *formal = m->fun->arg_syms.get(fcpp);
     if (!formal && m->fun->is_varargs)
       goto Lnext; 
     {
       Sym *generic_type = get_generic_type(formal);
       if (generic_type) {
-        if (!unify_generic_type(formal, generic_type, concrete_value, m->generic_substitutions, ast))
+        if (!unify_generic_type(formal, generic_type, actual->var->sym, 
+                                concrete_value, m->generic_substitutions, ast))
           return 0;
         instantiate_formal_types(m);
       }

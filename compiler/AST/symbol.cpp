@@ -1667,7 +1667,7 @@ VarSymbol *new_ImmediateSymbol(Immediate *imm) {
   VarSymbol *s = uniqueConstantsHash.get(imm);
   if (s)
     return s;
-  Type *t = immediate_type(imm);
+  PrimitiveType *t = immediate_type(imm);
   s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), t);
   s->immediate = new Immediate;
   char str[512], *ss = str;
@@ -1692,7 +1692,7 @@ VarSymbol *new_SymbolSymbol(char *str) {
   return s;
 }
 
-Type *
+PrimitiveType *
 immediate_type(Immediate *imm) {
   switch (imm->const_kind) {
     default: 

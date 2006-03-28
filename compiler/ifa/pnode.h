@@ -17,12 +17,6 @@ class Sym;
 
 // Program node
 
-class Callees : public gc {
- public:
-  Vec<Fun *> funs; 
-  Vec<MPosition *> arg_positions; 
-};
-
 class PNode : public gc {
  public:
   Code *code;
@@ -31,6 +25,7 @@ class PNode : public gc {
   Vec<Var *> lvals; // variables this node assigns
   Vec<Var *> rvals; // variables this node reads
   Vec<Var *> tvals; // temporary variables used by this node
+  Vec<char *> names;
 
   // Control-Flow Graph (CFG): cfg.cpp, ssu.cpp 
   int mark; // ssu.c
@@ -48,11 +43,6 @@ class PNode : public gc {
   Vec<PNode *> phy; // MOVE nodes that logically precede this node
 
   Prim *prim; // primitive
-
-#ifdef CALLEE_CACHE
-  Callees *callees; // Callees
-  Callees *next_callees;
-#endif
 
   // Temporary Space
   union {

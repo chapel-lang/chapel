@@ -27,6 +27,7 @@ class Code : public gc {
   Code_kind     kind;
   Vec<Sym *>    rvals;
   Vec<Sym *>    lvals;
+  Vec<char *>   names;
   Label         *label[2];
   Vec<Code *>   sub;
   IFAAST        *ast;

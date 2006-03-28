@@ -105,7 +105,6 @@ class BasicSym : public gc {
 class Sym : public BasicSym {
  public:
   char                  *destruct_name;         // name of related destructured element
-  char                  *arg_name;              // argument name
 
   char                  *constant;              // string representing constant value
   Immediate             imm;                    // constant and folded constant immediate values

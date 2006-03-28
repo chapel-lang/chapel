@@ -1307,9 +1307,9 @@ get_AEdges(Fun *f, PNode *p, EntrySet *from, Vec<AEdge *> &edges) {
 }
 
 static void
-record_arg(CreationSet *cs, AVar *a, Sym *s, AEdge *e, MPosition &p) {
+record_arg(PNode *pn, CreationSet *cs, AVar *a, Sym *s, AEdge *e, MPosition &p) {
   MPosition *cpnum = cannonicalize_mposition(p), *cpname = 0, cpname_p;
-  if (positional_to_named(cs, a, p, &cpname_p))
+  if (positional_to_named(pn, cs, a, p, &cpname_p))
     cpname = cannonicalize_mposition(cpname_p);
   for (MPosition *cp = cpnum; cp; cp = cpname, cpname = 0) { 
     e->args.put(cp, a);
@@ -1319,7 +1319,7 @@ record_arg(CreationSet *cs, AVar *a, Sym *s, AEdge *e, MPosition &p) {
         assert(s->has.n == cs->vars.n);
         p.push(1);
         for (int i = 0; i < s->has.n; i++) {
-          record_arg(cs, cs->vars.v[i], s->has.v[i], e, p);
+          record_arg(pn, cs, cs->vars.v[i], s->has.v[i], e, p);
           p.inc();
         }
         p.pop();
@@ -1334,7 +1334,7 @@ record_args_rets(AEdge *e, Vec<AVar *> &a) {
     MPosition p;
     p.push(1);
     for (int i = 0; i < e->fun->sym->has.n; i++) {
-      record_arg(0, a.v[i], e->fun->sym->has.v[i], e, p);
+      record_arg(e->pnode, 0, a.v[i], e->fun->sym->has.v[i], e, p);
       p.inc();
     }
   }
@@ -1415,12 +1415,6 @@ function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> 
         make_AEdges(m, p, es, a);
       else 
         partial_result = 1;
-#ifdef CALLEE_CACHE
-      if (!p->next_callees)
-        p->next_callees = new Callees;
-      Fun *f = m->fun;
-      p->next_callees->funs.set_add(f);
-#endif
     }
   }
   match_timer.stop();

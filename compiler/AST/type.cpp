@@ -230,7 +230,8 @@ AList<Stmt>* Type::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* a
 
 
 PrimitiveType::PrimitiveType(Symbol *init) :
-  Type(TYPE_PRIMITIVE, init)
+  Type(TYPE_PRIMITIVE, init),
+  literalType(0)
 {}
 
 
@@ -241,6 +242,11 @@ void PrimitiveType::verify(void) {
   if (prev || next) {
     INT_FATAL(this, "Type is in AList");
   }
+}
+
+
+void PrimitiveType::traverseDefType(Traversal* traversal) {
+  TRAVERSE(literalType, traversal, false);
 }
 
 
@@ -1021,13 +1027,29 @@ void initType(void) {
   dtVoid = Symboltable::definePrimitiveType("void", "void");
 
   dtBool = Symboltable::definePrimitiveType("bool", "_bool");
+  dtBool->literalType = Symboltable::definePrimitiveType("_boolLiteral", "_boolLiteral");
+  dtBool->literalType->dispatchParents.add(dtBool);
   dtInt = Symboltable::definePrimitiveType("int", "_int64");
+  dtInt->literalType = Symboltable::definePrimitiveType("_intLiteral", "_int64Literal");
+  dtInt->literalType->dispatchParents.add(dtInt);
   dtUnsigned = Symboltable::definePrimitiveType("uint", "_uint64");
-  dtFloat = Symboltable::definePrimitiveType("float", "_float64", new_FloatSymbol("0.0", 0.0));
+  dtUnsigned->literalType = Symboltable::definePrimitiveType("_uintLiteral", "_uint64Literal");
+  dtUnsigned->literalType->dispatchParents.add(dtUnsigned);
+  dtFloat = Symboltable::definePrimitiveType("float", "_float64");
+  dtFloat->literalType = Symboltable::definePrimitiveType("_floatLiteral", "_float64Literal");
+  dtFloat->defaultValue = new_FloatSymbol("0.0", 0.0);
+  dtFloat->literalType->dispatchParents.add(dtFloat);
   // This should point to the complex type defined in modules/standard/_chpl_complex.chpl
-  dtComplex = Symboltable::definePrimitiveType("complex", "_complex128", new_ComplexSymbol("_MAKE_COMPLEX64(0.0,0.0)", 0.0, 0.0));
+  dtComplex = Symboltable::definePrimitiveType("complex", "_complex128");
+  dtComplex->literalType = Symboltable::definePrimitiveType("_complexLiteral", "_complex128Literal");
+  dtComplex->defaultValue = new_ComplexSymbol("_MAKE_COMPLEX64(0.0,0.0)", 0.0, 0.0);
+  dtComplex->literalType->dispatchParents.add(dtComplex);
   dtString = Symboltable::definePrimitiveType("string", "_string");
+  dtString->literalType = Symboltable::definePrimitiveType("_stringLiteral", "_stringLiteral");
+  dtString->literalType->dispatchParents.add(dtString);
   dtSymbol = Symboltable::definePrimitiveType("symbol", "_symbol");
+  dtSymbol->literalType = Symboltable::definePrimitiveType("_symbolLiteral", "_symbolLiteral");
+  dtSymbol->literalType->dispatchParents.add(dtSymbol);
 
   dtNumeric = Symboltable::definePrimitiveType("numeric", "_numeric");
   dtAny = Symboltable::definePrimitiveType("any", "_any");
@@ -1123,6 +1145,7 @@ new_LiteralType(VarSymbol *literal_var) {
   literal_var->literalType->addSymbol(sym);
   compilerModule->stmts->insertAtTail(new DefExpr(sym));
   literal_var->literalType->defaultValue = literal_var;
+  literal_var->literalType->dispatchParents.add(literal_var->type);
   return literal_var->literalType;
 }
 

@@ -230,8 +230,11 @@ class VariableType : public Type {
 
 class PrimitiveType : public Type {
  public:
+  Type *literalType;
+
   PrimitiveType(Symbol *init_defaultVal = NULL);
   virtual void verify(void); 
+  void traverseDefType(Traversal* traversal);
 };
 
 

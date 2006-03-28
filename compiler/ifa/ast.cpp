@@ -231,13 +231,9 @@ build_type_hierarchy(int compute_structural_value_hierarchy) {
       new_types.add(s);
     if (s->is_symbol)
       implement_and_specialize(sym_symbol, s, types);
-    // constants implement and specialize 'type'
-    if (s->is_constant)
-      implement_and_specialize(s->type, s, types);
-    // functions implement and specialize of "function"
     if (s->is_fun)
       implement_and_specialize(sym_closure, s, types);
-    if (s->type_kind) {
+    if (s->type_kind || s->is_constant) {
       forv_Sym(ss, s->implements)
         implement(ss, s, types);
       forv_Sym(ss, s->specializes)

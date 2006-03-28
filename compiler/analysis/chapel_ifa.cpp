@@ -499,9 +499,7 @@ finalize_symbols(IF1 *i) {
       VarSymbol *v = (VarSymbol*)SYMBOL(s);
       if (v->type && v->type != dtUnknown) {
         Sym *t = v->type->asymbol->sym;
-        if (t->num_kind)
-          s->type = t;
-        if (s->is_constant)
+        if (t->num_kind || s->is_constant)
           s->type = t;
       }
     }
@@ -813,7 +811,7 @@ new_sym(char *name = 0, int global = 0) {
   return s;
 }
 
-VarSymbol *
+static VarSymbol *
 is_literal(Symbol* sym) {
   if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym))
     if (var->immediate)
@@ -821,7 +819,7 @@ is_literal(Symbol* sym) {
   return 0;
 }
 
-VarSymbol *
+static VarSymbol *
 is_symbol(Symbol* sym) {
   if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym))
     if (var->type == dtSymbol)
@@ -829,16 +827,20 @@ is_symbol(Symbol* sym) {
   return 0;
 }
 
-Sym *
-map_const(IF1 *p, Immediate *imm) {
-  Sym *sym = p->constants.get(imm);
+static void
+map_const(VarSymbol *var) {
+  Immediate *imm = var->immediate;
+  Sym *sym = if1->constants.get(imm);
   if (sym)
-    return sym;
+    return;
   sym = new_Sym();
   sym->is_constant = 1;
+  PrimitiveType *ptype = dynamic_cast<PrimitiveType*>(var->type);
+  sym->implements.add(ptype->literalType->asymbol->sym);
+  sym->specializes.add(ptype->literalType->asymbol->sym);
   sym->imm = *imm;
-  p->constants.put(&sym->imm, sym);
-  return sym;
+  if1->constants.put(&sym->imm, sym);
+  var->asymbol = new_ASymbol(var, sym);
 }
 
 static Sym *
@@ -859,8 +861,7 @@ map_baseast(BaseAST *s) {
       Sym *s = make_symbol(var->name);
       sym->asymbol = new_ASymbol(sym, s);
     } else if (VarSymbol *var = is_literal(sym)) {
-      Sym *s = map_const(if1, var->immediate);
-      sym->asymbol = new_ASymbol(sym, s);
+      map_const(var);
     } else {
       int basic = (s->astType != SYMBOL_FN) && (s->astType != SYMBOL_ENUM);
       sym->asymbol = new_ASymbol(sym, basic);
@@ -1034,15 +1035,23 @@ build_type(Type *t, bool make_default = true) {
   make_chapel_meta_type(t);
   if (make_default && t->defaultValue)
     get_defaultVal(t);
+  if (t->dispatchParents.n > 0) {
+    forv_Vec(Type, tt, t->dispatchParents)
+      t->asymbol->sym->inherits_add(tt->asymbol->sym);
+  }
   switch (t->astType) {
     default: assert(!"case");
     case TYPE:
       t->asymbol->sym->type_kind = Type_UNKNOWN;
       break;
-    case TYPE_PRIMITIVE:
+    case TYPE_PRIMITIVE: {
+      PrimitiveType *tt = dynamic_cast<PrimitiveType*>(t);
       if (t == dtUnknown)
         t->asymbol->sym->type_kind = Type_UNKNOWN;
+      if (tt->literalType)
+        tt->literalType->asymbol->sym->type_kind = Type_PRIMITIVE;
       break;
+    }
     case TYPE_FN:
       t->asymbol->sym->type_kind = Type_FUN;
       break;
@@ -1083,10 +1092,6 @@ build_type(Type *t, bool make_default = true) {
       if (tt->classTag == CLASS_RECORD ||
           tt->classTag == CLASS_VALUECLASS)
         t->asymbol->sym->is_value_type = 1;
-      if (tt->dispatchParents.n > 0) {
-        forv_Vec(Type, ttt, tt->dispatchParents)
-          t->asymbol->sym->inherits_add(ttt->asymbol->sym);
-      }
       if (tt->symbol->hasPragma("data class"))
         t->asymbol->sym->element = new_sym();
       break;
@@ -1486,10 +1491,18 @@ gen_call_expr(CallExpr *s) {
   if (args.n == 1 && !args.v[0])
     args.n--;
   Vec<Sym *> rvals;
-  forv_Vec(Expr, a, args) {
+  Vec<char *> arg_names;
+  int some_name = 0;
+  arg_names.fill(args.n);
+  for (int i = 0; i < args.n; i++) {
+    Expr *a = args.v[i];
     if1_gen(if1, &ast->code, a->ainfo->code);
     assert(a->ainfo->rval);
     rvals.add(a->ainfo->rval);
+    if (NamedExpr *n = dynamic_cast<NamedExpr*>(a)) {
+      arg_names.v[i] = if1_cannonicalize_string(if1, n->name);
+      some_name = 1;
+    }
   }
   Vec<Sym*> trvals;
   astType_t base_symbol = undef_or_fn_expr(s->baseExpr);
@@ -1497,10 +1510,12 @@ gen_call_expr(CallExpr *s) {
   char *n = s->baseExpr ? s->baseExpr->ainfo->rval->name : 0;
   if (s->isPrimitive(PRIMITIVE_INIT)) {
     trvals.add(sym_primitive);
+    arg_names.insert(0, NULL);
     base = chapel_init_symbol;
   } else if (s->isPrimitive(PRIMITIVE_GET_MEMBER) ||
              s->isPrimitive(PRIMITIVE_SET_MEMBER)) {
     rvals.insert(1, make_symbol(s->isPrimitive(PRIMITIVE_GET_MEMBER) ? sym_period->name: sym_setter->name));
+    assert(!some_name);
     if (rvals.v[2]->imm.const_kind != IF1_CONST_KIND_STRING) {
       rvals.v[2] = make_symbol("_invalid_member_access");
     } else
@@ -1516,11 +1531,15 @@ gen_call_expr(CallExpr *s) {
   else {
     base = s->baseExpr ? s->baseExpr->ainfo->rval : 0;
   }
-  if (base)
+  if (base) {
     trvals.add(base);
+    arg_names.insert(0, NULL);
+  }
   forv_Sym(r, rvals)
     trvals.add(r);
   Code *send = if1_send1(if1, &ast->code);
+  if (some_name)
+    send->names.move(arg_names);
   send->ast = ast;
   forv_Sym(r, trvals)
     if1_add_send_arg(if1, send, r);
@@ -1735,10 +1754,8 @@ gen_if1(BaseAST *ast) {
     }
     case EXPR_NAMED: {
       NamedExpr *s = dynamic_cast<NamedExpr *>(ast);
-      s->ainfo->rval = new_sym();
-      s->ainfo->rval->ast = s->ainfo;
-      if1_move(if1, &s->ainfo->code, s->actual->ainfo->rval, s->ainfo->rval, s->ainfo);
-      s->ainfo->rval->arg_name = if1_cannonicalize_string(if1, s->name);
+      if1_gen(if1, &s->ainfo->code, s->actual->ainfo->code);
+      s->ainfo->rval = s->actual->ainfo->rval;
       break;
     }
   case EXPR_IMPORT: break;

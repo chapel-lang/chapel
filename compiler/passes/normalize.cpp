@@ -683,10 +683,11 @@ static void hack_resolve_types(Expr* expr) {
       if (arg->intent == INTENT_TYPE && can_resolve_type(def_expr->exprType)) {
         arg->type = getMetaType(def_expr->exprType->typeInfo());
         def_expr->exprType->remove();
-      } else if (arg->type == dtUnknown &&
-                 can_resolve_type(def_expr->exprType)) {
+      } else if (arg->type == dtUnknown && can_resolve_type(def_expr->exprType)) {
         arg->type = def_expr->exprType->typeInfo();
         def_expr->exprType->remove();
+        if (arg->intent == INTENT_PARAM)
+          arg->type = dynamic_cast<PrimitiveType*>(arg->type)->literalType;
       }
     } else if (VarSymbol* var = dynamic_cast<VarSymbol*>(def_expr->sym)) {
       if (var->type == dtUnknown && can_resolve_type(def_expr->exprType)) {

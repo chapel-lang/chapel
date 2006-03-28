@@ -61,7 +61,6 @@ meta_apply(Sym *fn, Sym *arg) {
 
 Sym::Sym() :
   destruct_name(NULL),
-  arg_name(NULL),
   constant(NULL),
   size(0),
   scope(NULL),
