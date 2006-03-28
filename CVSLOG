@@ -62011,3 +62011,20 @@ Added files:
 	                                  test_nil_in_tuple.future 
 	                                  test_nil_in_tuple.good 
 
+---------------------------------------------------------------------------
+
+03/27/06 18:51:15 -- deitz
+
+Log message:
+	Major simplification to handling of for-param loops.  Unrolling is now
+	done during normalization and parameter folding rather than via nested
+	function resolution and inlining.  This fixes the future pertaining to
+	using a return statement inside a for-param loop.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp stmt.cpp 
+	chapel/compiler/include/: stmt.h 
+	chapel/compiler/passes/: normalize.cpp 
+Removed files:
+	chapel/test/types/tuple/deitz/: test_for_param_return.future 
+
