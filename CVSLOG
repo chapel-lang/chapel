@@ -62028,3 +62028,16 @@ Modified files:
 Removed files:
 	chapel/test/types/tuple/deitz/: test_for_param_return.future 
 
+---------------------------------------------------------------------------
+
+03/28/06 09:15:25 -- jplevyak
+
+Log message:
+	Add a compilation option INSTANTIATE_FOR_NIL at the head of pattern.cpp
+	  which enables instantiation of generics with nil (nil_type).
+	This currently causes a few regressions.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: pattern.cpp 
+
