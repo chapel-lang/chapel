@@ -1349,6 +1349,10 @@ build_builtin_symbols() {
   sym_anytype->implements.add(sym_any);
   sym_anytype->specializes.add(sym_any);
 
+  make_chapel_meta_type(dtNil);
+  sym_nil_type->implements.add(sym_nil_type->meta_type);
+  sym_nil_type->specializes.add(sym_nil_type->meta_type);
+
   sym_any->is_system_type = 1;
   sym_value->is_system_type = 1;
   sym_object->is_system_type = 1;
@@ -1357,7 +1361,6 @@ build_builtin_symbols() {
   sym_unspecified_type->is_system_type = 1;
   sym_void_type->is_system_type = 1;
   sym_anytype->is_system_type = 1;
-
 
 #define S(_n) assert(sym_##_n);
 #include "builtin_symbols.h"

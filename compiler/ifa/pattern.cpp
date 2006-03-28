@@ -10,6 +10,8 @@
 #include "ast.h"
 #include "log.h"
 
+//#define INSTANTIATE_FOR_NIL	1
+
 // Key to names of position variables
 //  ABCD 
 //   A = a | f, actual or formal (MANDITORY)
@@ -892,8 +894,10 @@ unify_generic_type(Sym *formal, Sym *generic_type, Sym *concrete_value, Map<Sym 
                    IFAAST *ast) 
 {
   Sym *concrete_type = concrete_value->type;
+#ifndef INSTANTIATE_FOR_NIL
   if (concrete_type == sym_nil_type)
     return 0;
+#endif
   if (formal->is_generic) {
     if (generic_type == concrete_value)
       return make_generic_substitution(ast, formal, concrete_value, substitutions);
