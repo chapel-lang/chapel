@@ -73,6 +73,7 @@ enum BlockTag {
   BLOCK_FOR,
   BLOCK_FORALL,
   BLOCK_ORDERED_FORALL,
+  BLOCK_PARAM_FOR,
   BLOCK_ATOMIC,
   BLOCK_COBEGIN
 };
@@ -85,6 +86,8 @@ class BlockStmt : public Stmt {
   SymScope* blkScope;
   LabelSymbol* pre_loop;
   LabelSymbol* post_loop;
+  Expr* param_factor; // for unrolling, number of times is a parameter
+  Expr* param_index; // for unrolling, index variable
 
   BlockStmt::BlockStmt(AList<Stmt>* init_body = new AList<Stmt>(), 
                        BlockTag init_blockTag = BLOCK_NORMAL);

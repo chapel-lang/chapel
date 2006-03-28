@@ -258,7 +258,9 @@ BlockStmt::BlockStmt(AList<Stmt>* init_body, BlockTag init_blockTag) :
   body(init_body),
   blkScope(NULL),
   pre_loop(NULL),
-  post_loop(NULL)
+  post_loop(NULL),
+  param_factor(NULL),
+  param_index(NULL)
 {}
 
 
@@ -268,7 +270,9 @@ BlockStmt::BlockStmt(Stmt* init_body, BlockTag init_blockTag) :
   body(new AList<Stmt>(init_body)),
   blkScope(NULL),
   pre_loop(NULL),
-  post_loop(NULL)
+  post_loop(NULL),
+  param_factor(NULL),
+  param_index(NULL)
 {}
 
 
@@ -281,13 +285,20 @@ void BlockStmt::verify() {
 
 BlockStmt*
 BlockStmt::copyInner(ASTMap* map) {
-  return new BlockStmt(COPY_INT(body), blockTag);
+  BlockStmt* _this = new BlockStmt(COPY_INT(body), blockTag);
+  _this->param_factor = COPY_INT(param_factor);
+  _this->param_index = COPY_INT(param_index);
+  return _this;
 }
 
 
 void BlockStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == body) {
     body = dynamic_cast<AList<Stmt>*>(new_ast);
+  } else if (old_ast == param_factor) {
+    param_factor = dynamic_cast<Expr*>(new_ast);
+  } else if (old_ast == param_index) {
+    param_index = dynamic_cast<Expr*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in BlockStmt::replaceChild");
   }
@@ -298,6 +309,8 @@ void BlockStmt::traverseStmt(Traversal* traversal) {
   SymScope* saveScope = NULL;
   if (blkScope)
     saveScope = Symboltable::setCurrentScope(blkScope);
+  TRAVERSE(param_factor, traversal, false);
+  TRAVERSE(param_index, traversal, false);
   TRAVERSE(body, traversal, false);
   if (saveScope)
     Symboltable::setCurrentScope(saveScope);
