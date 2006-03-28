@@ -62041,3 +62041,40 @@ Modified files:
 	chapel/compiler/analysis/: chapel_ifa.cpp 
 	chapel/compiler/ifa/: pattern.cpp 
 
+---------------------------------------------------------------------------
+
+03/28/06 10:55:11 -- jplevyak
+
+Log message:
+	Several changes:
+	
+	 1. changed the way instantiation of values (PARAM) work.  The values now
+	    have to be manifest at the call site.  We used to permit/use
+	    interprocedural reaching constants.
+	
+	 2. There is now a set of general literal types corresponding the the primitive
+	    types which are the supertypes of the specific literal types.  So
+	    there is a type for "1":int and a type of "_literalInt" and a type "int"
+	    and the hiarchy is built at the AST level using dispatchParents.  We
+	    should probably build the tables we want for everything at the AST level.
+	
+	 3. Changed the handling of NestedExpr at the low level so that it is
+	    a set of tags associated with the CallExpr.   This is something we
+	    should do at the AST level as well as Steve and I discussed before.
+	
+	- updated the tests which changed.  remoed the future for test_lit_int1.chpl
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: ast.cpp code.h fa.cpp pattern.cpp 
+	                      pattern.h pnode.cpp pnode.h sym.cpp sym.h 
+	chapel/compiler/include/: symbol.h type.h 
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/test/functions/deitz/named/: test_named3-error.good 
+	chapel/test/types/type_variables/deitz/functions/: 
+	                                                   test_foo5-error.good 
+	chapel/test/types/type_variables/jplevyak/: where-2-error.good 
+Removed files:
+	chapel/test/functions/deitz/: test_lit_int1.future 
+
