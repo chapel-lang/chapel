@@ -62078,3 +62078,14 @@ Modified files:
 Removed files:
 	chapel/test/functions/deitz/: test_lit_int1.future 
 
+---------------------------------------------------------------------------
+
+03/28/06 18:40:28 -- jplevyak
+
+Log message:
+	Nested tuple destructuring now follows the model of top level
+	argument names with the name stored in the surrounding PNode or Sym.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp pattern.cpp pattern.h sym.cpp sym.h 
+
