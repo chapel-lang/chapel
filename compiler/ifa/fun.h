@@ -71,7 +71,6 @@ class Fun : public gc {
   Vec<PNode *> fa_send_PNodes;
 
   // pattern
-  Vec<Fun *> *vec_of_one;
   Vec<MPosition *> arg_positions;
   Vec<MPosition *> positional_arg_positions;
   Map<MPosition *, MPosition *> named_to_positional;

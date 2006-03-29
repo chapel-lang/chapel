@@ -45,18 +45,6 @@ Vec<AError *> analysis_errors;
 
 class LabelMap : public Map<char *, Stmt *> {};
 
-class CloneCallback : public gc {
- public:
-  virtual void clone(BaseAST* old_ast, BaseAST* new_ast) = 0;
-};
-
-class AnalysisCloneCallback : public CloneCallback {
- public:
-  ASTCopyContext *context;
-  void clone(BaseAST* old_ast, BaseAST* new_ast);
-  AnalysisCloneCallback() : context(0) {}
-};
-
 class AnalysisOp : public gc { public:
   char *name;
   char *internal_name;
@@ -176,15 +164,13 @@ AAST::copy_node(ASTCopyContext* context) {
 
 Vec<Fun *> *
 AAST::visible_functions(Sym *arg0) {
+  Vec<Fun *> *v = 0;
   if (arg0->fun) {
     Fun *f = arg0->fun;
-    if (!arg0->fun->vec_of_one) {
-      arg0->fun->vec_of_one = new Vec<Fun *>;
-      arg0->fun->vec_of_one->add(f);
-    }
-    return arg0->fun->vec_of_one;
+    v = new Vec<Fun *>;
+    v->add(f);
+    return v;
   }
-  Vec<Fun *> *v = 0;
   char *name = 0;
   if (arg0->is_symbol)
     name = arg0->name;
@@ -213,7 +199,7 @@ AAST::visible_functions(Sym *arg0) {
 }
 
 void
-AnalysisCloneCallback::clone(BaseAST* old_ast, BaseAST* new_ast) {
+clone_baseast(BaseAST* old_ast, BaseAST* new_ast, ASTCopyContext *context) {
   if (isSomeStmt(new_ast->astType)) {
     Stmt *new_s = dynamic_cast<Stmt*>(new_ast), *old_s = dynamic_cast<Stmt*>(old_ast);
     if (old_s->ainfo) {
@@ -258,11 +244,10 @@ AnalysisCloneCallback::clone(BaseAST* old_ast, BaseAST* new_ast) {
 
 IFAAST *
 AAST::copy_tree(ASTCopyContext* context) {
-  AnalysisCloneCallback callback;
-  callback.context = new ASTCopyContext();
-  callback.context->fmap = context->fmap;
-  callback.context->nmap = new Map<PNode *, PNode *>(*context->nmap);
-  callback.context->vmap = new Map<Var *, Var *>(*context->vmap);
+  ASTCopyContext local_context;
+  local_context.fmap = context->fmap;
+  local_context.nmap = new Map<PNode *, PNode *>(*context->nmap);
+  local_context.vmap = new Map<Var *, Var *>(*context->vmap);
   ASTMap clone_map;
   DefExpr* def_expr = dynamic_cast<DefExpr*>(xast);
   FnSymbol* orig_fn = dynamic_cast<FnSymbol*>(def_expr->sym);
@@ -272,18 +257,18 @@ AAST::copy_tree(ASTCopyContext* context) {
       // handle nested functions
       if (FnSymbol *f = dynamic_cast<FnSymbol*>(clone_map.v[i].key)) {
         if (f != orig_fn) {
-          Fun *new_f = f->asymbol->sym->fun->copy(0, callback.context->vmap);
-          callback.context->fmap->map_union(*new_f->fmap);
-          callback.context->nmap->map_union(*new_f->nmap);
-          callback.context->vmap->map_union(*new_f->vmap);
+          Fun *new_f = f->asymbol->sym->fun->copy(0, local_context.vmap);
+          local_context.fmap->map_union(*new_f->fmap);
+          local_context.nmap->map_union(*new_f->nmap);
+          local_context.vmap->map_union(*new_f->vmap);
         }
       }
     }
   }
   for (int i = 0; i < clone_map.n; i++)
     if (clone_map.v[i].key)
-      callback.clone(clone_map.v[i].key, clone_map.v[i].value);
-  context->smap.move(callback.context->smap);
+      clone_baseast(clone_map.v[i].key, clone_map.v[i].value, &local_context);
+  context->smap.move(local_context.smap);
   return new_fn->defPoint->ainfo;
 }
 
@@ -774,9 +759,7 @@ ASymbol::clone() {
     Sym *s = copy()->sym;
     return s;
   } else {
-    AnalysisCloneCallback callback;
     ASTCopyContext context;
-    callback.context = &context;
     Type *type = dynamic_cast<Type*>(symbol);
     TypeSymbol *old_type_symbol = dynamic_cast<TypeSymbol*>(type->symbol);
     ASTMap clone_map;
@@ -784,18 +767,13 @@ ASymbol::clone() {
     assert(new_type_symbol);
     for (int i = 0; i < clone_map.n; i++)
       if (clone_map.v[i].key)
-        callback.clone(clone_map.v[i].key, clone_map.v[i].value);
-    Sym *new_type = callback.context->smap.get(old_type_symbol->definition->asymbol->sym);
+        clone_baseast(clone_map.v[i].key, clone_map.v[i].value, &context);
+    Sym *new_type = context.smap.get(old_type_symbol->definition->asymbol->sym);
     if (!new_type_symbol->asymbol) // SHOULD BE ASSERT
-      callback.clone(old_type_symbol, new_type_symbol);
+      clone_baseast(old_type_symbol, new_type_symbol, &context);
     make_chapel_meta_type(dynamic_cast<Type*>(SYMBOL(new_type)));
-#if 0
-    new_type->meta_type = new_type_symbol->asymbol->sym;
-    new_type_symbol->asymbol->sym->meta_type = new_type;
-    assert(new_type_symbol->asymbol->sym->is_meta_type);
-#endif
     for (int i = 0; i < new_type->has.n; i++) {
-      Sym *s = callback.context->smap.get(new_type->has.v[i]);
+      Sym *s = context.smap.get(new_type->has.v[i]);
       assert(s);
       new_type->has.v[i] = s;
     }
