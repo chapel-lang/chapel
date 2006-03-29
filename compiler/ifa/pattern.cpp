@@ -908,8 +908,12 @@ unify_generic_type(Sym *formal, Sym *generic_type,
 {
   Sym *concrete_type = concrete_value->type;
 #ifndef INSTANTIATE_FOR_NIL
-  if (concrete_type == sym_nil_type)
-    return 0;
+  if (concrete_type == sym_nil_type) { 
+    Sym *gtype = substitutions.get(generic_type);
+    if (!gtype) gtype = generic_type;
+    if (gtype != sym_nil_type && gtype != sym_any->meta_type)
+      return 0;
+  }
 #endif
   if (formal->is_generic) {
     if (generic_type == actual)
