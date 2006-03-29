@@ -123,7 +123,7 @@ typedef MapElem<MPosition *, Sym *> MapMPositionSym;
 void build_patterns(FA *fa);
 void add_patterns(FA *fa, Fun *f);
 void build_arg_positions(FA *fa);
-int positional_to_named(PNode *pn, CreationSet *cs, AVar *av, MPosition &p, MPosition *result_p);
+int positional_to_named(PNode *pn, CreationSet *cs, MPosition &p, MPosition *result_p);
 int pattern_match(Vec<AVar *> &args, AVar *send, int is_closure, Partial_kind partial, 
                   PNode *visibility_point, Vec<Match *> &matches);
 MPosition *cannonicalize_mposition(MPosition &p);

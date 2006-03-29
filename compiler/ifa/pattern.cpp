@@ -302,7 +302,7 @@ Matcher::update_match_map(AVar *a, CreationSet *cs, MPosition *acp, MPosition *a
 }
 
 int
-positional_to_named(PNode *pn, CreationSet *cs, AVar *av, MPosition &pp, MPosition *np) {
+positional_to_named(PNode *pn, CreationSet *cs, MPosition &pp, MPosition *np) {
   if (!cs) {
     assert(pp.pos.n == 1);
     int i = Position2int(pp.pos.v[0]) - 1;
@@ -311,9 +311,13 @@ positional_to_named(PNode *pn, CreationSet *cs, AVar *av, MPosition &pp, MPositi
       np->set_top(pn->names.v[i]);
       return 1;
     }
-  } else if (cs->sym == sym_tuple && av->var->sym->destruct_name) {
-    np->copy(pp);
-    np->set_top(av->var->sym->destruct_name);
+  } else if (cs->sym == sym_tuple) {
+    int i = Position2int(pp.last()) - 1;
+    char *n = cs->sym->has_name(i);
+    if (n) {
+      np->copy(pp);
+      np->set_top(n);
+    }
     return 1;
   }
   return 0;
@@ -460,7 +464,7 @@ Matcher::find_all_matches(CreationSet *cs, Vec<AVar *> &args, Vec<Fun *> **parti
   app.push(1);
   forv_AVar(av, args) {
     MPosition anp;
-    if (positional_to_named(send->var->def, cs, av, app, &anp)) {
+    if (positional_to_named(send->var->def, cs, app, &anp)) {
       MPosition *acpp = cannonicalize_mposition(app);
       if (acpp) {
         MPosition *acnp = cannonicalize_mposition(anp);

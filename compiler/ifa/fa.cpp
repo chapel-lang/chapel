@@ -1309,7 +1309,7 @@ get_AEdges(Fun *f, PNode *p, EntrySet *from, Vec<AEdge *> &edges) {
 static void
 record_arg(PNode *pn, CreationSet *cs, AVar *a, Sym *s, AEdge *e, MPosition &p) {
   MPosition *cpnum = cannonicalize_mposition(p), *cpname = 0, cpname_p;
-  if (positional_to_named(pn, cs, a, p, &cpname_p))
+  if (positional_to_named(pn, cs, p, &cpname_p))
     cpname = cannonicalize_mposition(cpname_p);
   for (MPosition *cp = cpnum; cp; cp = cpname, cpname = 0) { 
     e->args.put(cp, a);
@@ -1458,8 +1458,8 @@ destruct(AVar *ov, Var *p, EntrySet *es, AVar *result) {
         for (int i = 0; i < p->sym->has.n; i++) {
           AVar *av = NULL;
           int is_tuple = sym_tuple->specializers.set_in(cs->sym->type) != 0;
-          if (!is_tuple && p->sym->has.v[i]->destruct_name)
-            av = cs->var_map.get(p->sym->has.v[i]->destruct_name);
+          if (!is_tuple && p->sym->has_name(i))
+            av = cs->var_map.get(p->sym->has_name(i));
           else if (is_tuple && i < cs->vars.n)
             av = cs->vars.v[i];
           if (!av) {

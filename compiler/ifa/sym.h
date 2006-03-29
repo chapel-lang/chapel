@@ -104,8 +104,6 @@ class BasicSym : public gc {
 
 class Sym : public BasicSym {
  public:
-  char                  *destruct_name;         // name of related destructured element
-
   char                  *constant;              // string representing constant value
   Immediate             imm;                    // constant and folded constant immediate values
 
@@ -123,9 +121,6 @@ class Sym : public BasicSym {
 
   Sym                   *instantiates;          
   Map<Sym *, Sym *>     substitutions;
-  Vec<Sym *>            implementors;           // used by fa.cpp, implementors *type*
-  Vec<Sym *>            specializers;           // used by fa.cpp, specializers *type*
-  Vec<Sym *>            dispatch_order;         // used by fa.cpp, pattern.cpp  *type*
 
   MType                 *match_type;            // used by pattern.cpp          *type*
   AType                 *abstract_type;         // used by fa.cpp               *type*
@@ -134,13 +129,16 @@ class Sym : public BasicSym {
   Vec<Sym *>            specializes;            // declared superclasses        *type*
   Vec<Sym *>            includes;               // included code                *type*
   Vec<Sym *>            implements;             // declared supertypes          *type*
-  Vec<Sym *>            has;                    // sub variables/members (currently fun args) *fun* *type*
-  Vec<Sym *>            arg;                    // arg variables (currently just meta type args) *type*
+  Vec<Sym *>            has;                    // sub variables/members/fun args *fun* *type*
+  Vec<char *>           has_names;              // optional names of has fields *tuples*
   Sym                   *alias;                 // alias of type                *type*
   Sym                   *init;                  // for modules & classes (default init function) *type*
   Sym                   *meta_type;             // meta type and inverse ptr    *type*
   Sym                   *element;               // element type for aggregates  *type*
-  Sym                   *domain;                // domain type for  aggregates  *type
+
+  Vec<Sym *>            implementors;           // used by fa.cpp, implementors *type*
+  Vec<Sym *>            specializers;           // used by fa.cpp, specializers *type*
+  Vec<Sym *>            dispatch_order;         // used by fa.cpp, pattern.cpp  *type*
 
   void                  *temp;                  // algorithmic temp             *type*
 
@@ -153,6 +151,7 @@ class Sym : public BasicSym {
   char                  *filename();
   int                   ast_id();
   Sym *                 clone();
+  char                  *has_name(int i);
 
   void                  copy_values(Sym *);
   void                  inherits_add(Sym *);

@@ -60,7 +60,6 @@ meta_apply(Sym *fn, Sym *arg) {
 }
 
 Sym::Sym() :
-  destruct_name(NULL),
   constant(NULL),
   size(0),
   scope(NULL),
@@ -77,7 +76,6 @@ Sym::Sym() :
   init(NULL),
   meta_type(NULL),
   element(NULL),
-  domain(NULL),
   temp(NULL)
 {}
 
@@ -91,6 +89,13 @@ Sym::pathname() {
   if (p)
     return p;
   return "<unknown>";
+}
+
+char *
+Sym::has_name(int i) {
+  if (i < has_names.n)
+    return has_names.v[i];
+  return 0;
 }
 
 char *
