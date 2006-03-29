@@ -62150,3 +62150,18 @@ Modified files:
 	chapel/compiler/include/: symscope.h 
 	chapel/compiler/symtab/: symscope.cpp 
 
+---------------------------------------------------------------------------
+
+03/29/06 14:19:18 -- jplevyak
+
+Log message:
+	Kludge/patch for test_nil_in_tuple which is now allowed to dispatch
+	  to things of nil_type (e.g. generic tuples) and dtAny.
+	I am not sure that this is a good idea, but it fixes the test
+	  and it doesn't break any other.
+
+Modified files:
+	chapel/compiler/ifa/: pattern.cpp 
+Removed files:
+	chapel/test/types/tuple/shannon/: test_nil_in_tuple.future 
+
