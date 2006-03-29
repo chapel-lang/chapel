@@ -12,13 +12,9 @@ enum scopeType {
   SCOPE_CLASS,
 };
 
-class ScopeLookupCache;
-
 class SymScope : public gc {
  public:
   scopeType type;
-
-  ScopeLookupCache *lookupCache;
 
   BaseAST* astParent; // back pointer to AST
 

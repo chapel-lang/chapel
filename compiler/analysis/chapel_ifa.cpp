@@ -25,8 +25,6 @@
 #include "runtime.h"
 
 #define VARARG_END     0ll
-#define MAKE_USER_TYPE_BE_DEFINITION            1
-//#define USE_SCOPE_LOOKUP_CACHE                  1
 //#define MINIMIZED_MEMORY 1  // minimize the memory used by Sym's... needs valgrind checking for safety
 //#define USE_FLOAT_128
 
@@ -177,11 +175,6 @@ AAST::visible_functions(Sym *arg0) {
   else
     name = if1_cannonicalize_string(if1, "this");
   SymScope* scope = this->xast->parentScope;
-#ifdef USE_SCOPE_LOOKUP_CACHE
-  ScopeLookupCache *sym_cache = 0;
-  if (sym_cache && (v = sym_cache->get(name))) 
-    return v;
-#endif
   Vec<FnSymbol *> fss;
   scope->getVisibleFunctions(&fss, name);
   v = new Vec<Fun *>;
@@ -190,11 +183,6 @@ AAST::visible_functions(Sym *arg0) {
   Vec<Fun *> *universal = universal_lookup_cache.get(name);
   if (universal)
     v->set_union(*universal);
-#ifdef USE_SCOPE_LOOKUP_CACHE
-  if (!sym_cache)
-    sym_cache = scope->lookupCache = new ScopeLookupCache;
-  sym_cache->put(name, v);
-#endif
   return v;
 }
 
@@ -2141,73 +2129,6 @@ init_symbols() {
 }
 
 static void
-print_ast(BaseAST *a, Vec<BaseAST *> &asts) {
-  if (!asts.set_add(a)) {
-    printf("(%d *)", (int)a->astType);
-    return;
-  }
-  printf("(%d", (int)a->astType);
-  GET_AST_CHILDREN(a, getStuff);
-  if (getStuff.asts.n)
-    printf(" ");
-  forv_BaseAST(b, getStuff.asts)
-    print_ast(b, asts);
-  printf(")");
-}
-
-static void
-print_ast(BaseAST *a) {
-  Vec<BaseAST *> asts;
-  print_ast(a, asts);
-  printf("\n");
-}
-
-static void
-print_baseast(BaseAST *a, Vec<BaseAST *> &asts) {
-  if (!asts.set_add(a)) {
-    printf("(%s *)", astTypeName[a->astType]);
-    return;
-  }
-  printf("(%s", astTypeName[a->astType]);
-  GET_AST_CHILDREN(a, getStuff);
-  if (getStuff.asts.n)
-    printf(" ");
-  forv_BaseAST(b, getStuff.asts)
-    print_ast(b, asts);
-  printf(")");
-}
-
-static void
-print_one_baseast(BaseAST *a) {
-  Vec<BaseAST *> asts;
-  print_baseast(a, asts);
-  printf("\n");
-}
-
-static void
-debug_new_ast(Vec<AList<Stmt> *> &stmts, Vec<BaseAST *> &syms) {
-  if (ifa_verbose > 2) {
-    forv_Vec(AList<Stmt>*, list, stmts) {
-      Stmt* s = list->first();
-      while (s) {
-        print_one_baseast(s);
-        s = list->next();
-      }
-    }
-    forv_BaseAST(s, syms) {
-      DefExpr* def_expr = dynamic_cast<DefExpr*>(s);
-      if (def_expr && dynamic_cast<FnSymbol*>(def_expr->sym)) {
-        print_ast(dynamic_cast<FnSymbol*>(def_expr->sym)->body);
-      } else {
-        Type *t = dynamic_cast<Type*>(s); 
-        if (t && t->symbol)
-          printf("Type: %s cname %s\n", t->symbol->name, t->symbol->cname); 
-      }
-    }
-  }
-}
-
-static void
 type_equal_transfer_function(PNode *pn, EntrySet *es) {
   AVar *result = make_AVar(pn->lvals.v[0], es);
   //AVar *type = make_AVar(pn->rvals.v[2], es);
@@ -2387,7 +2308,6 @@ ast_to_if1(Vec<AList<Stmt> *> &stmts) {
   close_symbols(stmts, syms);
   qsort(syms.v, syms.n, sizeof(syms.v[0]), compar_baseast);
   init_symbols();
-  debug_new_ast(stmts, syms);
   map_asts(syms);
   build_builtin_symbols();
   Vec<Type *> types;
@@ -2411,35 +2331,6 @@ AST_to_IF1(Vec<AList<Stmt> *> &stmts) {
   if (ast_to_if1(stmts) < 0)
     fail("unable to analyze AST");
   return 0;
-}
-
-void 
-print_AST_Expr_types(BaseAST *ast) {
-  GET_AST_CHILDREN(ast, getStuff);
-  forv_BaseAST(a, getStuff.asts)
-    print_AST_Expr_types(a);
-  Expr *x = dynamic_cast<Expr*>(ast);
-  if (x) {
-    if (x->ainfo->rval && x->ainfo->rval->var) {
-      printf("%s %d %s %d\n", x->ainfo->rval->name ? x->ainfo->rval->name : "", 
-                           x->ainfo->rval->id, 
-                           x->ainfo->rval->var->type->name ?  x->ainfo->rval->var->type->name : "", 
-                           x->ainfo->rval->var->type->id);
-      printf("%X\n", (int)(intptr_t)type_info(x->ainfo));
-    }
-    Type *t = type_info(ast);
-    assert(t);
-  }
-}
-
-void 
-print_AST_types() {
-  forv_Fun(f, pdb->fa->funs) {
-    AAST *a = dynamic_cast<AAST *>(f->ast);
-    DefExpr* defExpr = dynamic_cast<DefExpr*>(a->xast);
-    FnSymbol* fn = dynamic_cast<FnSymbol*>(defExpr->sym);
-    print_AST_Expr_types(fn->body);
-  }
 }
 
 static void

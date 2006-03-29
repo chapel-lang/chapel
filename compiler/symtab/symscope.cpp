@@ -43,7 +43,6 @@ isGloballyVisible(FnSymbol* fn) {
 
 SymScope::SymScope(scopeType init_type) :
   type(init_type),
-  lookupCache(NULL),
   astParent(NULL),
   parent(NULL),
   child(NULL),
