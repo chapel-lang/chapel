@@ -62138,3 +62138,15 @@ Modified files:
 	chapel/compiler/analysis/: chapel_ifa.cpp 
 	chapel/compiler/ifa/: fun.cpp fun.h 
 
+---------------------------------------------------------------------------
+
+03/29/06 14:16:09 -- jplevyak
+
+Log message:
+	Remove some more unused cruft.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: symscope.h 
+	chapel/compiler/symtab/: symscope.cpp 
+
