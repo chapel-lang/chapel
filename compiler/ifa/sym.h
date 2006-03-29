@@ -113,6 +113,11 @@ class Sym : public BasicSym {
   Scope                 *scope;                 // used in ast.cpp              *fun* *type* *module*
   LabelMap              *labelmap;              // used by ast.cpp              *fun*
 
+  Vec<Sym *>            generic_args;
+
+  Vec<Sym *>            has;                    // sub variables/members/fun args *fun* *type*
+  Vec<char *>           has_names;              // optional names of has fields *tuples*
+
   Fun                   *fun;                   // used by fa.cpp               *fun*
   Code                  *code;                  // for functions, Code          *fun*
   Sym                   *self;                  // self variable for the function *fun*
@@ -129,11 +134,11 @@ class Sym : public BasicSym {
   Vec<Sym *>            specializes;            // declared superclasses        *type*
   Vec<Sym *>            includes;               // included code                *type*
   Vec<Sym *>            implements;             // declared supertypes          *type*
-  Vec<Sym *>            has;                    // sub variables/members/fun args *fun* *type*
-  Vec<char *>           has_names;              // optional names of has fields *tuples*
+
   Sym                   *alias;                 // alias of type                *type*
   Sym                   *init;                  // for modules & classes (default init function) *type*
   Sym                   *meta_type;             // meta type and inverse ptr    *type*
+  Sym                   *constant_type;         // corresponding type for constants *type*
   Sym                   *element;               // element type for aggregates  *type*
 
   Vec<Sym *>            implementors;           // used by fa.cpp, implementors *type*

@@ -1048,8 +1048,10 @@ build_type(Type *t, bool make_default = true) {
       PrimitiveType *tt = dynamic_cast<PrimitiveType*>(t);
       if (t == dtUnknown)
         t->asymbol->sym->type_kind = Type_UNKNOWN;
-      if (tt->literalType)
+      if (tt->literalType) {
+        tt->asymbol->sym->constant_type = tt->literalType->asymbol->sym;
         tt->literalType->asymbol->sym->type_kind = Type_PRIMITIVE;
+      }
       break;
     }
     case TYPE_FN:

@@ -278,9 +278,13 @@ if1_send1(IF1 *p, Code **c) {
   return send;
 }
 
-void if1_add_send_arg(IF1 *p, Code *c, Sym *a) { 
+void if1_add_send_arg(IF1 *p, Code *c, Sym *a, char *name) { 
   assert(a);
   c->rvals.add(a); 
+  if (name) {
+    c->names.fill(c->rvals.n);
+    c->names.v[c->rvals.n-1] = name;
+  }
 }
 
 void if1_add_send_result(IF1 *p, Code *c, Sym *r) { 

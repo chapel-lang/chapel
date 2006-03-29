@@ -479,7 +479,13 @@ new_constant(IF1 *i, char *string, char *constant_type) {
   imm.const_kind = type->num_kind;
   imm.num_index = type->num_index;
   convert_string_to_immediate(str, &imm);
-  return if1_const(i, type, str, &imm);
+  Sym *sym = if1_const(i, type, str, &imm);
+  if (!sym->implements.n) {
+    assert(type->constant_type);
+    sym->implements.add(type->constant_type);
+    sym->specializes.add(type->constant_type);
+  }
+  return sym;
 }
 
 Sym *
@@ -539,7 +545,16 @@ set_builtin(IF1 *i, Sym *sym, char *start, char *end = 0) {
 #ifdef USE_FLOAT_128
     case Builtin_complex128:
 #endif
-    case Builtin_string:
+    case Builtin_string: 
+    {
+      sym->type_kind = Type_PRIMITIVE;
+      char n[512];
+      strcpy(n, "constant ");
+      strcat(n, sym->name);
+      sym->constant_type = new_Sym(dupstr(n));
+      sym->constant_type->type_kind = Type_PRIMITIVE;
+      break;
+    }
     case Builtin_closure:
       sym->type_kind = Type_PRIMITIVE;
       break;
@@ -901,7 +916,7 @@ scope_constraints(ParseAST *ast, Sym *sym) {
       assert(!sym->must_implement);
       sym->must_implement = a->sym;
     } else if (a->kind == AST_def_type_param) {
-      sym->arg.add(a->sym);
+      sym->generic_args.add(a->sym);
       if (ifa_verbose > 2)
         printf("%s has param %s\n", sym->name, a->sym->name);
     }
@@ -977,8 +992,6 @@ scope_idpattern(IF1 *i, ParseAST *ast, Scope *scope) {
         sym->type_kind = Type_NONE;
         ast->sym = sym;
       }
-      if (ast->destruct_name)
-        ast->sym->destruct_name = ast->destruct_name;
       break;
     }
     case AST_pattern: {
@@ -1005,6 +1018,7 @@ scope_idpattern(IF1 *i, ParseAST *ast, Scope *scope) {
             return -1;
           assert(a->sym);
           ast->sym->has.add(a->sym);
+          ast->sym->has_names.add(a->destruct_name);
         }
       }
       break;
@@ -1297,13 +1311,15 @@ get_tuple_args(IF1 *i, Code **c, ParseAST *ast, Vec<Sym *> &args) {
 }
 
 static int
-get_apply_args(IF1 *i, Code **c, ParseAST *ast, Vec<Sym *> &args) {
+get_apply_args(IF1 *i, Code **c, ParseAST *ast, Vec<Sym *> &args, Vec<char *> &arg_names) {
   if (ast->is_application) {
-    int r = get_apply_args(i, c, ast->children.v[0], args);
+    int r = get_apply_args(i, c, ast->children.v[0], args, arg_names);
     args.add(ast->children.v[2]->rval);
+    arg_names.add(ast->children.v[2]->arg_name);
     return 1 + r;
   }
   args.add(ast->rval);
+  arg_names.add(ast->arg_name);
   return 1;
 }
 
@@ -1364,13 +1380,16 @@ gen_apply_op(IF1 *i, ParseAST *ast, ParseAST *a0, ParseAST *a1) {
   if (ast->in_apply)
     return;
   Vec<Sym *> args;
-  get_apply_args(i, c, a0, args);
-  if (a1)
+  Vec<char *> arg_names;
+  get_apply_args(i, c, a0, args, arg_names);
+  if (a1) {
     args.add(a1->rval);
+    arg_names.add(a1->arg_name);
+  }
   Code *send = if1_send1(i, c);
   send->ast = ast;
-  forv_Sym(a, args)
-    if1_add_send_arg(i, send, a);
+  for (int x = 0; x < args.n; x++)
+    if1_add_send_arg(i, send, args.v[x], arg_names.v[x]);
   if1_add_send_result(i, send, res);
   res->is_lvalue = 1;
 }
@@ -1798,20 +1817,6 @@ gen_if1(IF1 *i, ParseAST *ast) {
   return 0;
 }
 
-static int
-post_gen_top_down(IF1 *i, ParseAST *ast) {
-  if (ast->arg_name) {
-    if (ast->rval)
-      ast->rval->arg_name = ast->arg_name;
-    if (ast->sym)
-      ast->sym->arg_name = ast->arg_name;
-  }
-  forv_ParseAST(a, ast->children)
-    if (post_gen_top_down(i, a) < 0)
-      return -1;
-  return 0;
-}
-
 static Sym *
 collect_module_init(IF1 *i, ParseAST *ast, Sym *mod) {
   forv_ParseAST(a, ast->children) 
@@ -1838,7 +1843,6 @@ build_functions(IF1 *i, ParseAST *ast, Sym *mod) {
   if (pre_gen_top_down(i, ast, 0, 0) < 0) return -1;
   if (pre_gen_bottom_up(ast) < 0) return -1;
   if (gen_if1(i, ast) < 0) return -1;
-  if (post_gen_top_down(i, ast)) return -1;
   collect_module_init(i, ast, mod->init);
   return 0;
 }
@@ -2077,6 +2081,10 @@ ast_gen_if1(IF1 *i, Vec<ParseAST *> &av) {
   sym_anytype = sym_any->meta_type;
   sym_anytype->implements.add(sym_any);
   sym_anytype->specializes.add(sym_any);
+
+  make_meta_type(sym_nil_type);
+  sym_nil_type->implements.add(sym_nil_type->meta_type);
+  sym_nil_type->specializes.add(sym_nil_type->meta_type);
 
   sym_any->is_system_type = 1;
   sym_anytype->is_system_type = 1;

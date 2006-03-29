@@ -85,7 +85,7 @@ CPPFLAGS += $(CFLAGS)
 
 LIBS += -lm -ldparse_gc -lgc
 
-ifeq ($OS_TYPE),Linux)
+ifeq ($(OS_TYPE),Linux)
   LIBS += -ldl -lrt
 endif
 
@@ -100,7 +100,8 @@ LIB_SRCS = arg.cc ast.cc builtin.cc cdb.cc cfg.cc cg.cc clone.cc \
 	region.cc ssu.cc sym.cc var.cc vec.cc version.cc
 LIB_OBJS = $(LIB_SRCS:%.cc=%.o)
 
-IFA_SRCS = main.cc parse.cc scope.cc make_ast.cc ast_to_if1.cc v.g.d_parser.cc
+IFA_DEPEND_SRCS = main.cc parse.cc scope.cc make_ast.cc ast_to_if1.cc
+IFA_SRCS = $(IFA_DEPEND_SRCS) v.g.d_parser.cc
 IFA_OBJS = $(IFA_SRCS:%.cc=%.o)
 
 EXECUTABLE_FILES = ifa
@@ -122,12 +123,12 @@ SEPARATE_IFA_CPP_FILES = $(SEPARATE_IFA_CPP_FILES_1:../%.cpp=%.cpp)
 SEPARATE_IFA_H_FILES_1 = $(shell ls ../*.h)
 SEPARATE_IFA_H_FILES = $(SEPARATE_IFA_H_FILES_1:../%.h=%.h)
 
-ALL_SRCS = $(IFA_SRCS) $(LIB_SRCS)
+DEPEND_SRCS = $(IFA_DEPEND_SRCS) $(LIB_SRCS)
 
 all: $(EXECUTABLES) $(LIBRARIES) ifa.cat
 
 version:
-	echo $(OS_TYPE) $(OS_VERSION)
+	@echo $(RELEASE) $(OS_TYPE) $(OS_VERSION)
 
 test:
 	(MAKE=$(MAKE) ./ifa_tests)
@@ -171,7 +172,7 @@ clean:
 	\rm -f *.o core *.core *.gmon *.a $(EXEC_FILES)
 
 depend:
-	mkdep $(CFLAGS) $(ALL_SRCS)
+	mkdep $(CFLAGS) $(DEPEND_SRCS)
 
 separate:
 	-for file in $(SEPARATE_IFA_CPP_FILES); do \

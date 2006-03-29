@@ -53,7 +53,7 @@ Label   *if1_label(IF1 *p, Code **code, IFAAST *ast = 0, Label *l = 0);
 Sym     *if1_operator(IF1 *p, Code **t, Sym *a1, Sym *a2, Sym *a3); 
 Code    *if1_send(IF1 *p, Code **c, int args, int results, ...);
 Code    *if1_send1(IF1 *p, Code **c);
-void    if1_add_send_arg(IF1 *p, Code *c, Sym *a);
+void    if1_add_send_arg(IF1 *p, Code *c, Sym *a, char *name = 0);
 void    if1_add_send_result(IF1 *p, Code *c, Sym *r);
 Code    *if1_if_goto(IF1 *p, Code **t, Sym *ifcond, IFAAST *ast = 0);
 void    if1_set_goto(IF1 *p, Code *go, Label *label);

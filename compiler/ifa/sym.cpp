@@ -75,6 +75,7 @@ Sym::Sym() :
   alias(NULL),
   init(NULL),
   meta_type(NULL),
+  constant_type(NULL),
   element(NULL),
   temp(NULL)
 {}
