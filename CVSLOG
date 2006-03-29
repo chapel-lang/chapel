@@ -62165,3 +62165,19 @@ Modified files:
 Removed files:
 	chapel/test/types/tuple/shannon/: test_nil_in_tuple.future 
 
+---------------------------------------------------------------------------
+
+03/29/06 14:42:45 -- bradc
+
+Log message:
+	Checking in a future that I ran into, in which assigning
+	integer values to elements of an array of floats causes
+	compilation failures (in the write function for the array,
+	strangely...).  Also checking in a coercion test for scalars
+	that works as a sanity check.
+
+Added files:
+	chapel/test/trivial/bradc/: coerce.chpl coerce.future 
+	                            coerce.good coerce2.chpl 
+	                            coerce2.good 
+
