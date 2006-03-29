@@ -62127,3 +62127,14 @@ Modified files:
 	chapel/compiler/ifa/libifa/: ast_to_if1.cc 
 	chapel/compiler/include/: analysis.h 
 
+---------------------------------------------------------------------------
+
+03/29/06 11:41:29 -- jplevyak
+
+Log message:
+	Cleanup old callback interfaces which were not being used.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: fun.cpp fun.h 
+
