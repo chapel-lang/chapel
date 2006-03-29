@@ -62099,3 +62099,16 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: pattern.cpp 
 
+---------------------------------------------------------------------------
+
+03/29/06 08:34:32 -- jplevyak
+
+Log message:
+	Store the literal type in the Sym for the base type.
+	Fixed LIBS and 'make depend' for libifa.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: if1.cpp if1.h sym.cpp sym.h 
+	chapel/compiler/ifa/libifa/: Makefile ast_to_if1.cc 
+
