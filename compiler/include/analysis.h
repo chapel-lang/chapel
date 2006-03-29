@@ -10,23 +10,16 @@ class Symbol;
 class BaseAST;
 class Expr;
 class SymExpr;
-class Label;
-class Code;
 class Type;
 class BaseAST;
 class FnSymbol;
 class Stmt;
-class ASTCopyContext;
 class Sym;
 class TypeSymbol;
 class ClassType;
 class VarSymbol;
 class AVar;
 class AType;
-
-class ASymbol;
-class AAST;
-class ACallbacks;
 
 enum AError_kind {
   AERROR_CALL_ARGUMENT,         // all types of a call argument not handled

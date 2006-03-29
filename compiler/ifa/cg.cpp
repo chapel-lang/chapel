@@ -488,10 +488,10 @@ write_c(FILE *fp, FA *fa, Fun *f, Vec<Var *> *globals = 0) {
   Vec<Var *> vars, defs;
   f->collect_Vars(vars);
   forv_Var(v, vars)
-    if (Var_is_local(v->sym->var, f))
+    if (v->sym->is_local)
       v->cg_string = v->sym->var->cg_string = NULL;
   forv_Var(v, vars) if (!v->is_internal) {
-    if (Var_is_local(v->sym->var, f)) {
+    if (v->sym->is_local) {
       if (v->sym->var->cg_string) {
         v->cg_string = v->sym->var->cg_string;
       } else {
@@ -548,7 +548,7 @@ build_type_strings(FILE *fp, FA *fa, Vec<Var *> &globals) {
     Vec<Var *> vars;
     f->collect_Vars(vars);
     forv_Var(v, vars) {
-      if (!Var_is_local(v, f))
+      if (!v->sym->is_local)
         globals.set_add(v);
       allsyms.set_add(v->type);
     }

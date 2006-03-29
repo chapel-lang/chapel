@@ -847,8 +847,8 @@ scope_pattern(IF1 *i, ParseAST *ast, Scope *scope) {
       }
       if (init)
         ast->sym->is_default_arg = 1;
-      if (var)
-        ast->sym->is_var = 1;
+      if (!var)
+        ast->sym->is_local = 1;
       break;
     }
     default: break;
@@ -1409,7 +1409,7 @@ gen_op(IF1 *i, ParseAST *ast) {
     gen_comma_op(i, ast, a0, a1);
   else if (ast->is_application) 
     gen_apply_op(i, ast, a0, a1);
-  else if (ast->is_simple_assign && !a0->rval->is_var) {
+  else if (ast->is_simple_assign && a0->rval->is_local) {
     if (a0->rval->is_read_only)
       show_error("assignment to read-only symbol", ast);
     if1_move(i, c, a1->rval, a0->rval, ast);
@@ -1693,8 +1693,8 @@ gen_def_ident(IF1 *i, ParseAST *ast) {
     ast->rval = ast->sym;
   if (must_implement)
     ast->sym->must_implement = must_implement->sym;
-  if (var)
-    ast->sym->is_var = 1;
+  if (!var)
+    ast->sym->is_local = 1;
   if (ast->sym != sym_init) { // don't init the initial function
     // declared to be a value type
     if (must_implement && must_implement->sym->is_value_type) 

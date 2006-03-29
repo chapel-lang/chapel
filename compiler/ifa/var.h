@@ -35,13 +35,6 @@ class Var : public gc {
 #define forv_Var(_p, _v) forv_Vec(Var, _p, _v)
 #define forv_AVarMapElem(_p, _v) forv_Vec(AVarMapElem, _p, _v)
 
-#define Var_is_local(_v, _f)            \
-  (!(_v)->sym->is_constant &&           \
-   (_v)->sym->in == (_f)->sym &&        \
-   !(_v)->sym->nesting_depth &&         \
-   !(_v)->sym->is_lvalue &&             \
-   !(_v)->sym->is_var)
-
 void pp(Var *);
 
 #endif

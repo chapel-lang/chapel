@@ -324,7 +324,7 @@ approximate_liveness(Fun *f, Vec<PNode *> &nodes) {
   forv_PNode(n, nodes) {
     n->live_vars = new BlockHash<Var *, PointerHashFns>;
     forv_Var(v, n->lvals)
-      if (Var_is_local(v, f))
+      if (v->sym->is_local)
         n->lvals_set.set_add(v);
   }
   while (changed) {
@@ -333,7 +333,7 @@ approximate_liveness(Fun *f, Vec<PNode *> &nodes) {
       forv_PNode(p, n->cfg_succ)
         changed |= merge_live(n, p);
       forv_Var(v, n->rvals)
-        if (Var_is_local(v, f))
+        if (v->sym->is_local)
           changed |= !n->live_vars->put(v);
     }
   }
@@ -385,7 +385,7 @@ place_phi_phy(Fun *f) {
   f->collect_PNodes(nodes);
   approximate_liveness(f, nodes);
   forv_Var(v, vars) {
-    if (Var_is_local(v, f)) {
+    if (v->sym->is_local) {
       place_one(f->region, v, 0);
       place_one(f->region, v, 1);
     }
@@ -399,7 +399,7 @@ typedef Vec<PNode **> EdgeSet;
 
 static inline Var *
 new_Var(Var *v, VarEnv &e, Fun *f) {
-  if (!Var_is_local(v, f))
+  if (!v->sym->is_local)
     return v;
   Var *vv = new Var(v->sym);
   e.put(v, vv);
@@ -408,7 +408,7 @@ new_Var(Var *v, VarEnv &e, Fun *f) {
 
 static inline Var *
 get_Var(Var *v, VarEnv &env, Fun *f) {
-  if (!Var_is_local(v, f))
+  if (!v->sym->is_local)
     return v;
   Var *vv = env.get(v);
   if (vv)

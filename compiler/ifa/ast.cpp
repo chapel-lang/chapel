@@ -367,15 +367,6 @@ set_value_for_value_classes(IF1 *i) {
   }
 }
 
-static void
-set_type_for_variables(IF1 *i) {
-  for (int x = finalized_types; x < i->allsyms.n; x++) {
-    Sym *s = i->allsyms.v[x];
-    if (s->is_var && s->must_implement && s->must_implement->is_value_type)
-      s->type = s->must_implement;
-  }
-}
-
 void
 make_meta_type(Sym *s) {
   if (!s->meta_type)
@@ -439,7 +430,6 @@ finalize_types(IF1 *i, int import_included_ivars) {
 #include "builtin_symbols.h"
 #undef S
   set_value_for_value_classes(i);
-  set_type_for_variables(i);
   make_meta_types(i);
   compute_type_sizes(i);
   finalized_types = i->allsyms.n;

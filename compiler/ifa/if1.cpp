@@ -701,8 +701,8 @@ print_syms(FILE *fp, Vec<Sym *> *syms, int start = 0) {
       fputs(" :CONT ", fp);
       if1_dump_sym(fp, s->cont);
     }
-    if (s->is_var)
-      fputs(" :VAR true", fp);
+    if (s->is_local)
+      fputs(" :LOCAL true", fp);
     if (s->is_constant)
       fputs(" :IS_CONSTANT true", fp);
     if (s->is_external)

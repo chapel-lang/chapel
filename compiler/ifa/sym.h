@@ -68,7 +68,7 @@ class BasicSym : public gc {
   unsigned int          is_read_only:1;         // Sym is read only
   unsigned int          is_constant:1;          // Sym is a constant
   unsigned int          is_lvalue:1;            // Sym is an lvalue
-  unsigned int          is_var:1;               // Sym is a variable (as opposed to let bound)
+  unsigned int          is_local:1;             // Sym is local (can be converted into SSU)
   unsigned int          is_default_arg:1;       // Sym is a default argument
   unsigned int          is_exact_match:1;       // must_specialize/implement is must_BE_EXACT
   unsigned int          is_module:1;            // Sym is a module
