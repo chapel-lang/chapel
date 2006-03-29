@@ -10,7 +10,7 @@
 #include "ast.h"
 #include "log.h"
 
-//#define INSTANTIATE_FOR_NIL	1
+//#define INSTANTIATE_FOR_NIL           1
 
 // Key to names of position variables
 //  ABCD 
