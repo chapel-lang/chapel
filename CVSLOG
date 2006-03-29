@@ -62112,3 +62112,18 @@ Modified files:
 	chapel/compiler/ifa/: if1.cpp if1.h sym.cpp sym.h 
 	chapel/compiler/ifa/libifa/: Makefile ast_to_if1.cc 
 
+---------------------------------------------------------------------------
+
+03/29/06 10:18:00 -- jplevyak
+
+Log message:
+	Changed is_var to is_local with the reverse meaning.
+	Removed the macro Var_is_local using is_local instead.
+	Cleaned up some unnecessary "class XXX" declarations
+
+Modified files:
+	chapel/compiler/ifa/: ast.cpp cg.cpp if1.cpp ssu.cpp sym.cpp 
+	                      sym.h var.h 
+	chapel/compiler/ifa/libifa/: ast_to_if1.cc 
+	chapel/compiler/include/: analysis.h 
+
