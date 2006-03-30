@@ -62230,3 +62230,13 @@ Log message:
 Modified files:
 	chapel/test/hpcc/: fft.chpl 
 
+---------------------------------------------------------------------------
+
+03/29/06 18:15:45 -- jplevyak
+
+Log message:
+	Remove redundant "names" vector from PNode struct.
+
+Modified files:
+	chapel/compiler/ifa/: pattern.cpp pnode.cpp pnode.h 
+
