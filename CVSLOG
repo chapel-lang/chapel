@@ -62200,3 +62200,21 @@ Added files:
 Removed files:
 	chapel/test/reductions/bradc/: sumreduce.future 
 
+---------------------------------------------------------------------------
+
+03/29/06 17:13:12 -- bradc
+
+Log message:
+	More tests related to features I was trying out for FFT --
+	this time whole array assignment.  Naked whole array
+	assignment seems to work, negating the array for the
+	assignment doesn't.  This may be related to the same
+	root cause as the previous future I checked in, or it
+	may be a feature we just don't have implemented yet.
+
+Added files:
+	chapel/test/arrays/bradc/: arrayassign.chpl arrayassign.good 
+	                           arrayassign1a.chpl 
+	                           arrayassign1a.future 
+	                           arrayassign1a.good 
+
