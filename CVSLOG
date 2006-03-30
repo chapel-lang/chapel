@@ -62181,3 +62181,22 @@ Added files:
 	                            coerce.good coerce2.chpl 
 	                            coerce2.good 
 
+---------------------------------------------------------------------------
+
+03/29/06 16:10:49 -- bradc
+
+Log message:
+	Unfuturized a reduction test that Steve's recent reduction
+	work fixed (but was failing for an unrelated reason), added
+	a max reduction using the similar needs-more-work strategy
+	and added a couple of new reduction tests.
+
+Modified files:
+	chapel/modules/standard/: _chpl_seq.chpl 
+	chapel/test/reductions/bradc/: sumreduce.chpl sumreduce.good 
+Added files:
+	chapel/test/reductions/bradc/: maxreduce.chpl maxreduce.good 
+	                               sumreduce2.chpl sumreduce2.good 
+Removed files:
+	chapel/test/reductions/bradc/: sumreduce.future 
+
