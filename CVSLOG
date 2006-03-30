@@ -62218,3 +62218,15 @@ Added files:
 	                           arrayassign1a.future 
 	                           arrayassign1a.good 
 
+---------------------------------------------------------------------------
+
+03/29/06 17:22:07 -- bradc
+
+Log message:
+	A bit more work on the FFT code.  Converted things from floats
+	to complexes which cleaned some of the top-level code up nicely.
+	Still have lots of meat to flesh out, though (no pun intended).
+
+Modified files:
+	chapel/test/hpcc/: fft.chpl 
+
