@@ -67,12 +67,12 @@ pragma "no codegen" pragma "rename _chpl_exit" fun exit(status : int) {
   __primitive("exit");       
 }
 
-pragma "no codegen" fun halt() {
-  __primitive("halt");
+pragma "no codegen" pragma "rename fflush" fun fflush(fp: CFILEPTR) : int {
+  return __primitive("fflush", fp.FILEptr);
 }
 
-pragma "no codegen" fun assert() {
-  __primitive("assert");
+pragma "no codegen" fun halt() {
+  __primitive("halt");
 }
 
 fun init_elts(x, s, e) {

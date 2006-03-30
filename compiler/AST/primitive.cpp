@@ -63,6 +63,7 @@ initPrimitive() {
   prim_def("strerror", strerror_interpreter_op, return_string_analysis_op);
   prim_def("fprintf", fprintf_interpreter_op, return_int_analysis_op);
   prim_def("fscanf", fscanf_interpreter_op, return_int_analysis_op);
+  prim_def("fflush", fflush_interpreter_op, return_int_analysis_op);
   prim_def("array_init", array_init_interpreter_op, array_init_analysis_op);
   prim_def("array_index", array_index_interpreter_op, array_index_analysis_op);
   prim_def("array_set", array_set_interpreter_op, array_set_analysis_op);
@@ -77,7 +78,6 @@ initPrimitive() {
   prim_def("string_length", string_length_interpreter_op, return_int_analysis_op);
   prim_def("exit", done_interpreter_op, return_int_analysis_op);
   prim_def("halt", done_interpreter_op, return_int_analysis_op);
-  prim_def("assert", done_interpreter_op, return_int_analysis_op);
 
   // TEMPORARY
   prim_def("array_pointwise_op", unimplemented_interpreter_op, array_pointwise_op_analysis_op);

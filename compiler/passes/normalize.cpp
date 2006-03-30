@@ -563,33 +563,6 @@ static CallExpr* lineno_info(CallExpr* call) {
 }
 
 
-static void buildAssertStatement(CallExpr* call) {
-    AList<Stmt>* blockStmt = new AList<Stmt>();
-    CallExpr* assertFailed = new CallExpr("fwrite", chpl_stdout, new_StringLiteral("Assertion failed: "));
-    blockStmt->insertAtTail(assertFailed);
-    CallExpr* printLineno = lineno_info(call);
-    blockStmt->insertAtTail(printLineno);
-    Expr* assertArg = call->argList->get(1);
-    assertArg->remove();
-    CallExpr* fwritelnCall = new CallExpr("fwriteln", chpl_stdout);
-    if (call->argList->length() > 1) {
-      blockStmt->insertAtTail(fwritelnCall->copy());
-    }
-    for_alist(Expr, actual, call->argList) {
-      actual->remove();
-      blockStmt->insertAtTail(new CallExpr("fwrite", chpl_stdout, actual));
-    }
-    blockStmt->insertAtTail(fwritelnCall->copy());
-    CallExpr* exitCall = new CallExpr("exit", new_IntLiteral(0));
-    blockStmt->insertAtTail(exitCall);
-    Expr* assert_cond = new CallExpr("!", assertArg->copy());
-    BlockStmt* assert_body = new BlockStmt(blockStmt);
-    call->parentStmt->insertBefore(new CondStmt(assert_cond, assert_body));
-    decompose_special_calls(printLineno);
-    call->parentStmt->remove();
-}
-
-
 static void buildHaltStatement(CallExpr* call) {
     CallExpr* haltReached = new CallExpr("fwrite", chpl_stdout, new_StringLiteral("Halt reached: "));
     call->parentStmt->insertBefore(haltReached);
@@ -615,9 +588,7 @@ static void decompose_special_calls(CallExpr* call) {
     if (symArg && symArg->var == methodToken)
       return;
   }
-  if (call->isNamed("assert")) {
-    buildAssertStatement(call);
-  } else if (call->isNamed("halt")) {
+  if (call->isNamed("halt")) {
     buildHaltStatement(call);
   } else if (call->isNamed("fread")) {
     Expr* file = call->argList->get(1);

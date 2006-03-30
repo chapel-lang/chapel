@@ -155,8 +155,8 @@ struct IThread : public gc { public:
 
 enum PrimOps {
   PRIM_NONE, PRIM_INIT, PRIM_ALLOC, PRIM_TYPE_EQUAL, PRIM_FOPEN, PRIM_FCLOSE,
-  PRIM_STRERROR, PRIM_FPRINTF, PRIM_FSCANF, PRIM_ARRAY_INIT, PRIM_ARRAY_INDEX,
-  PRIM_ARRAY_SET, PRIM_UNARY_MINUS, PRIM_UNARY_PLUS,
+  PRIM_STRERROR, PRIM_FPRINTF, PRIM_FSCANF, PRIM_FFLUSH, PRIM_ARRAY_INIT, 
+  PRIM_ARRAY_INDEX, PRIM_ARRAY_SET, PRIM_UNARY_MINUS, PRIM_UNARY_PLUS,
   PRIM_UNARY_NOT, PRIM_UNARY_LNOT, PRIM_ADD,
   PRIM_SUBTRACT, PRIM_MULT, PRIM_DIV, PRIM_MOD, PRIM_LSH, PRIM_RSH,
   PRIM_EQUAL, PRIM_NOTEQUAL, PRIM_LESSOREQUAL, PRIM_GREATEROREQUAL, PRIM_LESS,
@@ -1735,6 +1735,11 @@ IFrame::iprimitive(CallExpr *s) {
     case PRIM_FSCANF:
       user_error(this, "unhandled primitive: %s", s->primitive->name);
       return 1;
+
+    case PRIM_FFLUSH:
+      user_error(this, "unhandled primitive: %s", s->primitive->name);
+      return 1;
+
     case PRIM_ARRAY_INIT: {
       check_prim_args(s, 3);
       check_kind(s, arg[0], OBJECT_ISLOT);
@@ -2417,6 +2422,7 @@ init_interpreter() {
   strerror_interpreter_op = new InterpreterOp("strerror", PRIM_STRERROR);
   fprintf_interpreter_op = new InterpreterOp("fprintf", PRIM_FPRINTF);
   fscanf_interpreter_op = new InterpreterOp("fscanf", PRIM_FSCANF);
+  fflush_interpreter_op = new InterpreterOp("fflush", PRIM_FFLUSH);
   array_init_interpreter_op = new InterpreterOp("array_init", PRIM_ARRAY_INIT);
   array_index_interpreter_op = new InterpreterOp("array_index", PRIM_ARRAY_INDEX);
   array_set_interpreter_op = new InterpreterOp("array_set", PRIM_ARRAY_SET);

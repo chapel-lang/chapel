@@ -1,3 +1,48 @@
+pragma "rename _chpl_fflush"
+fun fflush(f: file) {
+  fflush(f.fp);
+}
+
+pragma "rename _chpl_fflush_nil"
+fun fflush(f: _nilType) {
+  halt("***Error: called fflush on nil***");
+}
+
+pragma "rename _chpl_assert_no_args"
+fun assert(test: bool) {
+  if (!test) {
+    _writeAssertFailed();
+    if (!chpl_input_lineno) {
+      fwriteln(stderr);
+    }
+    exit(0);
+  }
+}
+
+pragma "rename _chpl_assert"
+fun assert(test: bool, args ...?numArgs) {
+  if (!test) {
+    _writeAssertFailed();
+    if (!chpl_input_lineno) {
+      fwrite(stderr, ": ");
+    }
+    for param i in 1..numArgs {
+      fwrite(stderr, args(i));
+    }
+    fwriteln(stderr);
+    exit(0);
+  }
+}
+
+fun _writeAssertFailed() {
+  fflush(stdout);
+  fwrite(stderr, "Assertion failed");
+  if (chpl_input_lineno) {
+    fwriteln(stderr, ": ", chpl_input_filename, ":", chpl_input_lineno);
+  }     
+}
+
+
 class file {
   var filename : string = "";
   var mode : string = "r";
