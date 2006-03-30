@@ -22,6 +22,7 @@ _chpl_seq.chpl:199: fwrite, f : file, s : _aseq
 _chpl_seq.chpl:1: fwrite, f : file, val : _seqNode
 _chpl_seq.chpl:236: fwrite, f : file, val : reduction
 _chpl_seq.chpl:244: fwrite, f : file, val : sum
+_chpl_seq.chpl:259: fwrite, f : file, val : max
 _chpl_sparse.chpl:16: fwrite, f : file, x : _sarray
 _chpl_sparse.chpl:1: fwrite, f : file, val : _sdomain
 error: '_tmp' has no type

@@ -37,6 +37,7 @@ _chpl_sparse.chpl:1: fwrite, f : file, val : _sdomain
 _chpl_seq.chpl:1: fwrite, f : file, val : _seqNode
 _chpl_seq.chpl:236: fwrite, f : file, val : reduction
 _chpl_seq.chpl:244: fwrite, f : file, val : sum
+_chpl_seq.chpl:259: fwrite, f : file, val : max
 zeroarity-bound-error-2.chpl:1: fwrite, f : file, val : C
 zeroarity-bound-error-2.chpl:9: illegal call argument type expression illegal: ( int64 ) 
 zeroarity-bound-error-2.chpl:9: expression has no type
