@@ -12,48 +12,36 @@ class timer {
 
 fun main() {
   const N = 1 << logN;
-  const N2 = 2 * N;
   const gflop = 5.0 * N * logN / 1000000000.0;
 
   const EPS = 2.0 ** -51.0;
   const THRESHOLD = 16.0;
 
 // BLC: const domains not supported (constdomain.chpl)
-//  const DN2: domain(1) = [1..N2];
+//  const D: domain(1) = [1..N];
 // rewritten as var:
-  var DN2: domain(1) = [1..N2];
-// BLC: subdomains not supported (subdomain.chpl)
-//  const DOdd: subdomain(DN2) = DN2 by 2;
-// BLC: const domains not supported (constdomain.chpl)
-//  const DOdd: domain(1) = DN2 by 2;
-  var DOdd: domain(1) = DN2 by 2;
-//  var DOdd: domain(1) = [1..N2 by 2];
-  var DNhalf: domain(1) = [0..N/2 - 1];
+  var D: domain(1) = [1..N];
+  var DW: domain(1) = [1..N/4];
 
-  var A: [DN2] float;
-  var B: [DN2] float;
-  var W: [DNhalf] float;
+  var A: [D] complex;
+  var B: [D] complex;
+  var W: [DW] complex;
 
   prand_array(A);
 
-  B = A;  // save A for verification step
+  B = A;                   // save A for verification step
 
   twiddles(W);
   W = bit_reverse(W);
 
-  forall i in DOdd do
-    A(i) = -A(i);
+  A.im = -A.im;            // conjugate data
 
   A = bit_reverse(A);
 
-  forall i in DOdd do
-
   dfft(A, W);
 
-  forall i in DOdd {
-    A(i) = A(i) / N;
-    A(i+1) = -A(i+1) / N;
-  }
+  A.re =  A.re / N;        // conjugate and scale data
+  A.im = -A.im / N;
 
   var fftTimer = timer();
   fftTimer.start();
@@ -64,10 +52,7 @@ fun main() {
   fftTimer.stop();
   var time = fftTimer.gettime();
 
-// BLC: reductions not working yet...
-  var maxerr = max reduce [i in DOdd] sqrt((B(i) - A(i))**2 +
-                                           (B(i+1) - A(i+1))**2);
-
+  var maxerr = max reduce sqrt((B.re - A.re)**2 + (B.im - A.im)**2);
 
   maxerr = maxerr / logN / EPS;
 
@@ -81,6 +66,8 @@ fun main() {
 }
 
 fun bit_reverse(W) {
+  return W;
+/*
 //  const WD = W.domain;
   const n = WD.extent();
 //  const mask: uint = 0x0102040810204080;
@@ -94,9 +81,11 @@ fun bit_reverse(W) {
   }
 
   return V;
+*/
 }
 
 fun dfft(n, logn, a, w) {
+/*
   cf1st(n, a, w);
 
   var l = 8;
@@ -105,6 +94,7 @@ fun dfft(n, logn, a, w) {
     cftmd1(n, l, a, w);
   }
 //  for i = 
+*/
 }
 
 fun prand_array(X) {
@@ -112,6 +102,7 @@ fun prand_array(X) {
 
 //fun twiddles(W: [?DW] float) {
 fun twiddles(W) {
+/*
 //  const DW = W.domain();
   const n = DW.extent() / 2;
   const delta = atan(1.0) / n;
@@ -129,6 +120,7 @@ fun twiddles(W) {
     W(2*n - i + 1) = x;
   }
   writeln(W);
+*/
 }
 
 
