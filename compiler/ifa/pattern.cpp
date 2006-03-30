@@ -306,9 +306,9 @@ positional_to_named(PNode *pn, CreationSet *cs, MPosition &pp, MPosition *np) {
   if (!cs) {
     assert(pp.pos.n == 1);
     int i = Position2int(pp.pos.v[0]) - 1;
-    if (i < pn->names.n && pn->names.v[i]) {
+    if (i < pn->code->names.n && pn->code->names.v[i]) {
       np->copy(pp);
-      np->set_top(pn->names.v[i]);
+      np->set_top(pn->code->names.v[i]);
       return 1;
     }
   } else if (cs->sym == sym_tuple) {

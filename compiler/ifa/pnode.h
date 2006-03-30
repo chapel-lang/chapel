@@ -25,7 +25,6 @@ class PNode : public gc {
   Vec<Var *> lvals; // variables this node assigns
   Vec<Var *> rvals; // variables this node reads
   Vec<Var *> tvals; // temporary variables used by this node
-  Vec<char *> names;
 
   // Control-Flow Graph (CFG): cfg.cpp, ssu.cpp 
   int mark; // ssu.c

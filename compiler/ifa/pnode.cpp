@@ -21,7 +21,6 @@ PNode::PNode(Code *c) :
   forv_Sym(s, c->lvals)
     lvals.add(s->var ? s->var : (s->var = new Var(s)));
   id = pnode_id++;
-  names.copy(c->names);
 }
 
 int
