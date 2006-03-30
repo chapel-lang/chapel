@@ -255,3 +255,21 @@ class sum : reduction {
   fun generate()
     return value;
 }
+
+class max : reduction {
+  var value;
+  var first = true;
+  fun accumulate(x) {
+    if first {
+      first = false;
+      value = x;
+    } else {
+      if (x > value) {
+        value = x;
+      }
+    }
+  }
+  fun generate() {
+    return value;
+  }
+}
