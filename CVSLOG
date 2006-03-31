@@ -62296,3 +62296,14 @@ Modified files:
 	chapel/compiler/util/: files.cpp 
 	chapel/runtime/etc/: Makefile.include 
 
+---------------------------------------------------------------------------
+
+03/31/06 07:40:38 -- deitz
+
+Log message:
+	Check in simpler case where coercion wrapper fails.
+
+Added files:
+	chapel/test/trivial/deitz/: coerce2.chpl coerce2.future 
+	                            coerce2.good 
+
