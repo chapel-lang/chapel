@@ -516,13 +516,18 @@ Vec<C>::reverse() {
 
 template <class C> void 
 Vec<C>::copy_internal(const Vec<C> &vv) {
-  int l = n, nl = (1 + VEC_INITIAL_SHIFT);
-  l = l >> VEC_INITIAL_SHIFT;
-  while (l) { l = l >> 1; nl++; }
-  nl = 1 << nl;
-  v = (C*)MALLOC(nl * sizeof(C));
-  memcpy(v, vv.v, n * sizeof(C));
-  memset(v + n, 0, (nl - n) * sizeof(C)); 
+  if (i) {
+    v = (C*)MALLOC(n * sizeof(C));
+    memcpy(v, vv.v, n * sizeof(C));
+  } else {
+    int l = vv.n, nl = (1 + VEC_INITIAL_SHIFT);
+    l = l >> VEC_INITIAL_SHIFT;
+    while (l) { l = l >> 1; nl++; }
+    nl = 1 << nl;
+    v = (C*)MALLOC(nl * sizeof(C));
+    memcpy(v, vv.v, n * sizeof(C));
+    memset(v + n, 0, (nl - n) * sizeof(C)); 
+  }
 }
 
 void test_vec();
