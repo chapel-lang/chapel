@@ -1,3 +1,0 @@
-jplevyak
-
-this should work, right? initialization sets type and allows inference.  it fails like infer_field4.
