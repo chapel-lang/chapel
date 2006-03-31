@@ -62474,3 +62474,15 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: resolveAnalyzed.cpp 
 
+---------------------------------------------------------------------------
+
+03/31/06 14:37:43 -- jplevyak
+
+Log message:
+	Remove fixed .futures
+
+Removed files:
+	chapel/test/classes/deitz/infer/: infer_field4.future 
+	                                  infer_field5.future 
+	                                  infer_field7.future 
+
