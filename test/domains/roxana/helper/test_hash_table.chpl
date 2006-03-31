@@ -7,7 +7,7 @@ class HashTable {
   var del : T;
   var null : T;
    
-  var table: _fdata(T) = _fdata(T, 20);
+  var table: _ddata(T) = _ddata(T, 20);
     
   fun h1(k : int) : int {
     return k % size;

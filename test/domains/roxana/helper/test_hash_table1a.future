@@ -1,3 +1,10 @@
-??
+deitz/jplevyak
+
+I changed fdata -> ddata, and analysis now works, 
+but for some reason that ddata array doesn't 
+seem to be getting initialized.
+
+HISTORY
+
 test_hash_table1a.chpl:21: expression has mixed basic types:( bool int64 ) 
 fail: program does not type

@@ -1,4 +1,9 @@
-??
+deitz/jplevyak
+
+changed _fdata -> _ddata, analysis works, same problem as test_hash_table1a.
+
+
+HISTORY
 
 test_hash_table.chpl:52: illegal call argument type expression illegal: ( int64 ) 
   called from test_hash_table.chpl:115

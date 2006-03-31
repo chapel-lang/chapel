@@ -1,2 +1,13 @@
-*** THIS SHOULD GENERATE AN ERROR MESSAGE DUE TO CALLING A METHOD ***
-*** ON A CLASS ***
+callMethodOnClass.chpl:25: illegal call argument type '_methodToken' illegal: ( _methodTokenType ) 
+callMethodOnClass.chpl:25: illegal call argument type 'D' illegal: ( _meta_type319 ) 
+callMethodOnClass.chpl:25: unresolved call 'start'
+note: candidates are:
+callMethodOnClass.chpl:14: start, _methodTokenDummy : _methodTokenType, this : D
+callMethodOnClass.chpl:25: expression has no type
+callMethodOnClass.chpl:26: illegal call argument type '_methodToken' illegal: ( _methodTokenType ) 
+callMethodOnClass.chpl:26: illegal call argument type 'D' illegal: ( _meta_type319 ) 
+callMethodOnClass.chpl:26: unresolved call 'testit'
+note: candidates are:
+callMethodOnClass.chpl:18: testit, _methodTokenDummy : _methodTokenType, this : D
+callMethodOnClass.chpl:26: expression has no type
+fail: program does not type

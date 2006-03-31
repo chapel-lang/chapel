@@ -1,4 +1,9 @@
-???
+deitz
+
+As a first step, this is dependent on getting unions working,
+and all of those tests are currently assigned to deitz.
+
+HISTORY
 
 String fields of unions are tricky because in general we can't assume
 that there will be a legal string pointer there.  It seems that any
