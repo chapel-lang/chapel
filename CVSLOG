@@ -62360,3 +62360,27 @@ Log message:
 Modified files:
 	chapel/compiler/util/: files.cpp 
 
+---------------------------------------------------------------------------
+
+03/31/06 12:55:17 -- jplevyak
+
+Log message:
+	Updated a bunch of .future with some additional information after
+	 looking into them.
+	callmethodOnClass is working now, so removed that .future
+	Changed _fdata -> _ddata.
+
+Modified files:
+	chapel/test/arrays/bradc/: domarr2.future 
+	chapel/test/classes/bradc/: callMethodOnClass.good 
+	                            dispatch.future 
+	chapel/test/classes/bradc/unions/: stringunion.future 
+	                                   writeunion.future 
+	chapel/test/domains/bradc/: constdomain.future subdomain.future 
+	chapel/test/domains/roxana/helper/: test_hash_table.chpl 
+	                                    test_hash_table.future 
+	                                    test_hash_table1a.chpl 
+	                                    test_hash_table1a.future 
+Removed files:
+	chapel/test/classes/bradc/: callMethodOnClass.future 
+
