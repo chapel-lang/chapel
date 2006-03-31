@@ -62278,3 +62278,21 @@ Added files:
 	chapel/test/trivial/shannon/: multipleArgAssert.compopts 
 	chapel/test/trivial/shannon/quit/: assert.compopts 
 
+---------------------------------------------------------------------------
+
+03/30/06 17:05:00 -- waynew
+
+Log message:
+	Wanted to allow regular make to build Chapel-generated code.
+	 - Gen code's Makefile no longer includes compiler build Makefile(s). Those
+	   still require GNU make.
+	 - Removed unused macros and removed GNU make features in Makefiles included
+	   in the generated code.
+	 - Changed gen code build command string from "gmake" to "make".
+	Should still work if "make" is GNU make.
+
+Modified files:
+	chapel/make/: Makefile Makefile.platform 
+	chapel/compiler/util/: files.cpp 
+	chapel/runtime/etc/: Makefile.include 
+
