@@ -62336,3 +62336,27 @@ Added files:
 	                                   haltOneArg.chpl 
 	                                   haltOneArg.good 
 
+---------------------------------------------------------------------------
+
+03/31/06 11:46:30 -- bradc
+
+Log message:
+	Fixed problem with using "quit" within gdb spawned by
+	--gdb not working as reported a week or so ago.  Turns
+	out one of our calls to cleanup_for_exit() was passing
+	in "0" even though it's a void function.  Looks like this
+	has been in there forever, and either got caught by newer
+	versions of gdb, or when cleanup_for_exit() became
+	non-static.  In either case, it was a bug, now fixed, so
+	--gdb should work as expected on linux.
+	
+	On cygwin, --gdb isn't currently working for me due to
+	the fact that cygwin's gdb doesn't seem to be searching
+	the user's path to find the program being debugged as
+	it ought to.  For now I'm going to consider this a bug
+	rather than trying to hack anything up to work around it.
+	Debugging on linux is more fun anyway.
+
+Modified files:
+	chapel/compiler/util/: files.cpp 
+
