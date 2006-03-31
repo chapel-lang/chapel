@@ -62463,3 +62463,14 @@ Added files:
 	                         freadString.ifuture 
 	chapel/test/types/seq/bradc/: emptySeq2a.ifuture 
 
+---------------------------------------------------------------------------
+
+03/31/06 14:35:31 -- jplevyak
+
+Log message:
+	Fix the infer_field tests, by using the function resolved by analysis
+	  if there is no Type::defaultValue.
+
+Modified files:
+	chapel/compiler/passes/: resolveAnalyzed.cpp 
+
