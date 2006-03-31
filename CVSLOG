@@ -62307,3 +62307,32 @@ Added files:
 	chapel/test/trivial/deitz/: coerce2.chpl coerce2.future 
 	                            coerce2.good 
 
+---------------------------------------------------------------------------
+
+03/31/06 09:44:18 -- shannon
+
+Log message:
+	Moved the handling of variable args to halt() from
+	normalize.cpp to a Chapel module.  This is code that had
+	been committed once before as part of a larger commit that
+	caused a bunch of test failures and was backed out.
+	
+	Updated some test output and added some tests.
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/modules/standard/: _chpl_base.chpl _chpl_file.chpl 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-1.good 
+	                                 zeroarity-bound-error-2.good 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+Added files:
+	chapel/test/trivial/shannon/quit/: haltNoArgs.chpl 
+	                                   haltNoArgs.compopts 
+	                                   haltNoArgs.good 
+	                                   haltOneArg.chpl 
+	                                   haltOneArg.good 
+
