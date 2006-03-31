@@ -62384,3 +62384,26 @@ Modified files:
 Removed files:
 	chapel/test/classes/bradc/: callMethodOnClass.future 
 
+---------------------------------------------------------------------------
+
+03/31/06 13:10:05 -- deitz
+
+Log message:
+	Trying to recreate an error, I ended up creating some other .futures
+	with classes where fields have no type.
+	
+	What's the expected behavior here (on test 7)?
+
+Added files:
+	chapel/test/classes/deitz/infer/: infer_field4.chpl 
+	                                  infer_field4.future 
+	                                  infer_field4.good 
+	                                  infer_field5.chpl 
+	                                  infer_field5.future 
+	                                  infer_field5.good 
+	                                  infer_field6.chpl 
+	                                  infer_field6.good 
+	                                  infer_field7.chpl 
+	                                  infer_field7.future 
+	                                  infer_field7.good 
+
