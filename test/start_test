@@ -114,6 +114,12 @@
 # Subsequent lines can contain notes and will be ignored by the
 # testing system.
 #
+# As mentioned above, running the test system in interpreter mode
+# does not attempt to execute tests with .future files.  The
+# interpreter mode of the testing system has a parallel mechanism
+# for creating future tests using a .ifuture file (the "i"
+# stands for interpreter)
+#
 # If the test-writer wants to redirect standard input from a file,
 # they may do so by supplying a .stdin file with the same base
 # name as the test itself (e.g., if mytest.stdin exists, it will
