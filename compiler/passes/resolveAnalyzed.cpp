@@ -265,15 +265,13 @@ static void resolve_symbol(CallExpr* call) {
     Type* type = call->get(1)->typeInfo();
     if (type->defaultValue) {
       call->replace(new SymExpr(type->defaultValue));
-    } else if (type->defaultConstructor) {
+    } else {
       Vec<FnSymbol*> fns;
       call_info(call, fns);
       if (fns.n == 1)
         call->replace(new CallExpr(fns.v[0]));
       else
         INT_FATAL(call, "Cannot resolve default constructor");
-    } else {
-      INT_FATAL("Type has neither default value nor default constructor");
     }
     return;
   }
