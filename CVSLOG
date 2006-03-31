@@ -62486,3 +62486,13 @@ Removed files:
 	                                  infer_field5.future 
 	                                  infer_field7.future 
 
+---------------------------------------------------------------------------
+
+03/31/06 15:59:53 -- jplevyak
+
+Log message:
+	Fix an inefficiency in Vec::copy_internal().
+
+Modified files:
+	chapel/compiler/ifa/: vec.h 
+
