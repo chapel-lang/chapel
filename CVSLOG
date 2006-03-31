@@ -62407,3 +62407,59 @@ Added files:
 	                                  infer_field7.future 
 	                                  infer_field7.good 
 
+---------------------------------------------------------------------------
+
+03/31/06 13:27:47 -- bradc
+
+Log message:
+	As discussed at yesterday's meeting added a .future capability
+	for the testing system in interpreted mode using files with the
+	extension .ifuture.  Thus, if a test has a .ifuture file, it
+	will be handled as usual in the testing system under a normal
+	run, but handled as a future test when running the testing
+	system in interpreter mode (using -i or --interpret).
+	
+	Recall that normal .future tests are currently skipped over when
+	running the testing system in interpreter mode in order to save
+	time (under the assumption that if it's not working in normal
+	mode, it's less likely to work in interpreter mode).
+	
+	Added .ifuture files for the two largest classes of interpreter
+	failures: terminating the program early (via halt, assert, or
+	exit) and using fscanf.  Both of these should be cleared up as
+	Shannon finishes her varargs versions of these functions.
+
+Modified files:
+	chapel/test/: start_test sub_test 
+Added files:
+	chapel/test/domains/shannon/: expandError.ifuture 
+	                              interiorErrorNeg.ifuture 
+	                              interiorErrorPos.ifuture 
+	                              interiorErrorPosLarge.ifuture 
+	chapel/test/trivial/deitz/: exit.ifuture 
+	chapel/test/trivial/mjoyner/seq/: seq_index1.ifuture 
+	chapel/test/trivial/shannon/: multipleArgAssert.ifuture 
+	                              readStringOverflow.ifuture 
+	                              readStringOverflowLineno.ifuture 
+	                              readWriteBool.ifuture 
+	                              readWriteBoolLineno.ifuture 
+	                              readWriteComplex.ifuture 
+	                              readWriteComplexFail1.ifuture 
+	                              readWriteComplexLineno.ifuture 
+	                              readWriteEnum.ifuture 
+	                              readWriteString.ifuture 
+	                              readWriteUserType.ifuture 
+	chapel/test/trivial/shannon/quit/: assert.ifuture exit.ifuture 
+	                                   halt.ifuture 
+	chapel/test/types/file/: closeStdin.ifuture 
+	                         closedWithoutOpen.ifuture 
+	                         freadBoolean.ifuture freadClass.ifuture 
+	                         freadComplex.ifuture freadEnum.ifuture 
+	                         freadIntFailed.ifuture 
+	                         freadIntFloat.ifuture 
+	                         freadIntUnopenedFile.ifuture 
+	                         freadNoFloat.ifuture freadNoInt.ifuture 
+	                         freadNotABoolean.ifuture 
+	                         freadString.ifuture 
+	chapel/test/types/seq/bradc/: emptySeq2a.ifuture 
+
