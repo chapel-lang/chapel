@@ -71,10 +71,6 @@ pragma "no codegen" pragma "rename fflush" fun fflush(fp: CFILEPTR) : int {
   return __primitive("fflush", fp.FILEptr);
 }
 
-pragma "no codegen" fun halt() {
-  __primitive("halt");
-}
-
 fun init_elts(x, s, e) {
   for i in 1..s {
     var y : e;

@@ -42,6 +42,36 @@ fun _writeAssertFailed() {
   }     
 }
 
+pragma "rename _chpl_halt_no_args"
+fun halt() {
+  _writeHaltReached();
+  if(!chpl_input_lineno) {
+    fwriteln(stderr);
+  }
+  exit(0);
+}
+
+pragma "rename _chpl_halt"
+fun halt(args ...?numArgs) {
+  _writeHaltReached();
+  if (!chpl_input_lineno) {
+    fwrite(stderr, ": ");
+  }
+  for param i in 1..numArgs {
+    fwrite(stderr, args(i));
+  }
+  fwriteln(stderr);
+  exit(0);
+}
+
+fun _writeHaltReached() {
+  fflush(stdout);
+  fwrite(stderr, "Halt reached");
+  if (chpl_input_lineno) {
+    fwriteln(stderr, ": ", chpl_input_filename, ":", chpl_input_lineno);
+  }
+}
+
 
 class file {
   var filename : string = "";

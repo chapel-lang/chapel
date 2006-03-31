@@ -544,40 +544,6 @@ decompose_multi_actuals(CallExpr* call, char* new_name, Expr* first_actual) {
 }
 
 
-static CallExpr* lineno_info(CallExpr* call) {
-  CallExpr* errorInfo;
-  if (printChplLineno) {
-    errorInfo = new CallExpr("fwrite", 
-                             chpl_stdout, 
-                             chpl_input_filename, 
-                             new_StringLiteral(":"), 
-                             chpl_input_lineno);
-  } else {
-    errorInfo = new CallExpr("fwrite", 
-                   chpl_stdout,
-                   new_StringLiteral(stringcat(call->filename, 
-                                               ":", 
-                                               intstring(call->lineno))));
-  }
-  return errorInfo;
-}
-
-
-static void buildHaltStatement(CallExpr* call) {
-    CallExpr* haltReached = new CallExpr("fwrite", chpl_stdout, new_StringLiteral("Halt reached: "));
-    call->parentStmt->insertBefore(haltReached);
-    CallExpr* printLineno = lineno_info(call);
-    call->parentStmt->insertBefore(printLineno);
-    decompose_special_calls(printLineno);
-    CallExpr* fwritelnCall = new CallExpr("fwriteln", chpl_stdout);
-    call->parentStmt->insertBefore(fwritelnCall->copy());
-    CallExpr* exitCall = new CallExpr("exit", new_IntLiteral(0));
-    call->parentStmt->insertAfter(exitCall);
-    call->parentStmt->insertAfter(fwritelnCall->copy());
-    decompose_multi_actuals(call, "fwrite", new SymExpr(chpl_stdout));
-}
-
-
 static void decompose_special_calls(CallExpr* call) {
   if (call->isResolved())
     return;
@@ -588,9 +554,7 @@ static void decompose_special_calls(CallExpr* call) {
     if (symArg && symArg->var == methodToken)
       return;
   }
-  if (call->isNamed("halt")) {
-    buildHaltStatement(call);
-  } else if (call->isNamed("fread")) {
+  if (call->isNamed("fread")) {
     Expr* file = call->argList->get(1);
     file->remove();
     decompose_multi_actuals(call, "fread", file);
