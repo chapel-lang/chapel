@@ -1,22 +1,6 @@
 #
-# OS/ARCH/PLATFORM stuff
+# PLATFORM stuff
 #
-OS_TYPE = $(shell uname -s | awk '{ split($$1,a,"_"); printf("%s", a[1]);  }')
-
-ARCH = $(shell uname -m)
-ifeq ($(ARCH),i386)
-	ARCH = x86
-endif
-ifeq ($(ARCH),i486)
-	ARCH = x86
-endif
-ifeq ($(ARCH),i586)
-	ARCH = x86
-endif
-ifeq ($(ARCH),i686)
-	ARCH = x86
-endif
-
 #
 # PLATFORM is simply the one-word description we'll use for all
 # platforms that we run on.

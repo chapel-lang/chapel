@@ -351,9 +351,9 @@ char* createGDBFile(int argc, char* argv[]) {
 
 
 void makeBinary(void) {
-  const char* gmakeflags = printSystemCommands ? "-f " : "-s -f ";
-  char* command = stringcat("gmake ", gmakeflags, intDirName, 
-                              "/Makefile");
+  const char* makeflags = printSystemCommands ? "-f " : "-s -f ";
+  char* command = stringcat("make ", makeflags, intDirName, 
+                            "/Makefile");
   mysystem(command, "compiling generated source");
 }
 
