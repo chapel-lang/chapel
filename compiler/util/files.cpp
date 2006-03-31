@@ -331,7 +331,7 @@ char* createGDBFile(int argc, char* argv[]) {
   fprintf(gdbfile, "end\n");
   fprintf(gdbfile, "define hook-quit\n");
   fprintf(gdbfile, "  if ($_exitcode == 'r')\n");
-  fprintf(gdbfile, "    call cleanup_for_exit(0)\n");
+  fprintf(gdbfile, "    call cleanup_for_exit()\n");
   fprintf(gdbfile, "  end\n");
   fprintf(gdbfile, "end\n");
   fprintf(gdbfile, "define halt\n");
