@@ -62496,3 +62496,15 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: vec.h 
 
+---------------------------------------------------------------------------
+
+03/31/06 16:09:20 -- jplevyak
+
+Log message:
+	Update test "type" -> "typedef".
+	Also update .future with more questions.
+
+Modified files:
+	chapel/test/types/tuple/bradc/: returnTuple2.chpl 
+	                                returnTuple2.future 
+
