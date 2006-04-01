@@ -1,4 +1,9 @@
-???
+deitz/jplevyak
+
+UserType's don't seem to have a defaultValue or a defaultConstructor.
+It isn't clear to me (jplevyak) where this should be handled.
+
+HISTORY
 
 fails in analysis apparently due to a defaultVal
 or defaultConstructor

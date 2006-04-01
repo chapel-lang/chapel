@@ -1,4 +1,4 @@
-type mytup: (int, float);
+typedef mytup: (int, float);
 
 fun returntwo(): mytup {
   return (1, 2.3);
