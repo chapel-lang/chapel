@@ -62508,3 +62508,14 @@ Modified files:
 	chapel/test/types/tuple/bradc/: returnTuple2.chpl 
 	                                returnTuple2.future 
 
+---------------------------------------------------------------------------
+
+03/31/06 16:48:40 -- bradc
+
+Log message:
+	This file was not meant to be checked in.  It was just a test
+	to see that the .ifuture mechanism was working properly.
+
+Removed files:
+	chapel/test/types/seq/bradc/: emptySeq2a.ifuture 
+
