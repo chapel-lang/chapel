@@ -1,4 +1,9 @@
-???
+deitz
+
+As a first cut this probably requires a bit of high
+level array work.
+
+HISTORY
 
 Whole-array assignment doesn't seem to work when
 applying operators like unary negative.  This may

@@ -1,4 +1,9 @@
-???
+deitz
+
+This now has the "Clean up arrays!!!" internal error.
+
+
+HISTORY
 
 seg fault in analysis due to inclusion of explicit
 array type in formal parameter list; could be that
