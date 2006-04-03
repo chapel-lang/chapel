@@ -62,6 +62,7 @@ meta_apply(Sym *fn, Sym *arg) {
 Sym::Sym() :
   constant(NULL),
   size(0),
+  alignment(0),
   scope(NULL),
   labelmap(NULL),
   fun(NULL),
