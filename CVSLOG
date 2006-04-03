@@ -62519,3 +62519,13 @@ Log message:
 Removed files:
 	chapel/test/types/seq/bradc/: emptySeq2a.ifuture 
 
+---------------------------------------------------------------------------
+
+04/03/06 10:53:41 -- jplevyak
+
+Log message:
+	Fix uninitialized variable which was causing a couple valgrind issues.
+
+Modified files:
+	chapel/compiler/ifa/: sym.cpp 
+
