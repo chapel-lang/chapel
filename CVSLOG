@@ -62529,3 +62529,16 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: sym.cpp 
 
+---------------------------------------------------------------------------
+
+04/03/06 12:17:35 -- jplevyak
+
+Log message:
+	update a couple of the ?? .futures
+
+Modified files:
+	chapel/test/arrays/bradc/: arrayassign1a.future 
+	chapel/test/functions/bradc/: arrayArg-explicit.future 
+	chapel/test/functions/jplevyak/: intent-8-error.future 
+	chapel/test/reductions/bradc/manual/: promote.future 
+
