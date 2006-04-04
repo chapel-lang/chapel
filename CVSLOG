@@ -62553,3 +62553,15 @@ Modified files:
 	chapel/compiler/analysis/: chapel_ifa.cpp chapel_ifa.h 
 	chapel/compiler/ifa/: ifa.h pattern.cpp 
 
+---------------------------------------------------------------------------
+
+04/04/06 10:25:41 -- shannon
+
+Log message:
+	Add compilation options for a couple of tests
+	that were failing due to the lack of them.
+
+Added files:
+	chapel/test/trivial/shannon/: readWriteEnum.compopts 
+	chapel/test/trivial/shannon/quit/: halt.compopts 
+
