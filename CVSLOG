@@ -62587,3 +62587,19 @@ Log message:
 Modified files:
 	chapel/test/: sub_test 
 
+---------------------------------------------------------------------------
+
+04/04/06 13:19:05 -- bradc
+
+Log message:
+	Rewrote the timedexec script based on some stuff I read
+	about Perl's alarm and exec features today, to make it
+	slightly more controlled and hopefully tighter than it
+	had been before.  This change shouldn't affect a user's
+	view of the testing system at all, only how it works.
+	Let me know if you find otherwise.
+
+Modified files:
+	chapel/test/: sub_test 
+	chapel/test/Bin/: timedexec 
+
