@@ -62615,3 +62615,32 @@ Modified files:
 	chapel/test/parallel/cobegin/waynew/: cobegin.simple0.chpl 
 	                                      cobegin.simple0.prediff 
 
+---------------------------------------------------------------------------
+
+04/04/06 16:36:36 -- waynew
+
+Log message:
+	3 changes
+	 - Implemented cobegin code generation to use pthreads. This could be made
+	   more modular in the future. Side note, current while blocks within a
+	   cobegin block is current broken. Current workaround is to make a
+	   call to the function containing the while loop.
+	 - Added a couple cobegin test. One requires parallel execution. Otherwise,
+	   it hangs.
+	 - Changed dtUnsigned->dtUInt. On the path to enabling uint type.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/passes/: parallel.cpp runInterpreter.cpp 
+	chapel/compiler/util/: files.cpp 
+	chapel/runtime/src/: Makefile 
+Added files:
+	chapel/test/parallel/cobegin/waynew/: depend.chpl 
+	                                      depend.compopts 
+	                                      depend.good writeln.chpl 
+	                                      writeln.compopts 
+	                                      writeln.good 
+	                                      writeln.prediff 
+
