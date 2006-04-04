@@ -8,11 +8,17 @@
 
 $| = 1;					# will flush buffers after write
 
-$SIG{'ALRM'} = 'doalarm';
-sub doalarm { exit(10); }
-
-alarm @ARGV[0];
-
-exec @ARGV[1..$#ARGV];			# don't call shell, will do fork
-
-exit($?);
+eval {
+    local $SIG{ALRM} = sub { die "alarm\n" };
+    alarm @ARGV[0];
+    system @ARGV[1..$#ARGV];
+    $mystatus = $?;
+    alarm 0;
+};
+die if $@ && $@ ne "alarm\n";
+if ($@) {
+    print "timedexec Alarm Clock\n";
+    exit(222);
+} else {
+    exit($mystatus);
+}

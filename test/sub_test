@@ -197,7 +197,7 @@ foreach chplsrc ($testsrc)
     set compstatus = $status
     if ( $compstatus != 0 || $executebin == "no") then
 	# Compile unsuccessful
-        if ( $compstatus == 142) then
+        if ( $compstatus == 222) then
             echo "$futuretest""[Error: Timed out compilation for $localdir/$execfile]"
             continue
         endif
@@ -273,7 +273,7 @@ foreach chplsrc ($testsrc)
 
 	    if ( $execstatus != 0 ) then
 		cat $execlog
-                if ( $execstatus == 142) then
+                if ( $execstatus == 222) then
                     echo "$futuretest""[Error: Timed out executing program $localdir/$execfile]"
                 else
                     echo "$futuretest""[Error executing program $localdir/$execfile]"
