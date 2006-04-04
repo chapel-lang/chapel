@@ -62565,3 +62565,25 @@ Added files:
 	chapel/test/trivial/shannon/: readWriteEnum.compopts 
 	chapel/test/trivial/shannon/quit/: halt.compopts 
 
+---------------------------------------------------------------------------
+
+04/04/06 12:31:15 -- bradc
+
+Log message:
+	Changed sub_test's handling of timeouts to make the error
+	message indicate that a timeout occurred.  Thus, compilations
+	that take too long will result in:
+	
+	     [Error: Timed out compilation for ... ]
+	
+	and executions that take too long will result in:
+	
+	    [Error: Timed out executing program ... ]
+	
+	Timeouts are still set at 5 minutes by default and may be
+	overridden using mechanisms described in the start_test
+	comments.
+
+Modified files:
+	chapel/test/: sub_test 
+
