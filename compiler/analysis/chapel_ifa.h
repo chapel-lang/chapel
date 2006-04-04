@@ -16,11 +16,12 @@ class Sym;
 class ACallbacks : public IFACallbacks {
 public:
   void finalize_functions();
-  Sym *make_LUB_type(Sym *);
-  Sym *instantiate(Sym *, Map<Sym *, Sym *> &substitutions);
-  int formal_to_generic(Sym*, Sym **, int *);
   Sym *new_Sym(char *name = 0);
+  Sym *make_LUB_type(Sym *);
+  int formal_to_generic(Sym*, Sym **, int *);
+  Sym *instantiate(Sym *, Map<Sym *, Sym *> &substitutions);
   Fun *order_wrapper(Fun *, Map<MPosition *, MPosition *> &substitutions);
+  Sym *coerce(Sym *actual, Sym *formal);
   Fun *coercion_wrapper(Fun *, Map<MPosition *, Sym *> &substitutions);
   Fun *default_wrapper(Fun *, Vec<MPosition *> &defaults);
   Fun *instantiate_generic(Fun *, Map<Sym *, Sym *> &substitutions);

@@ -1038,13 +1038,12 @@ coercion_uses(PMatch **am, MPosition &app, Vec<CreationSet*> &args) {
     Sym *concrete_type = a->var->sym->aspect ? a->var->sym->aspect : cs->sym;
     concrete_type = concrete_type->type;
     Sym *formal_type = m->formal_dispatch_types.get(fcpp);
-    if (!formal_type && m->fun->is_varargs)
+    if (formal_type == concrete_type || (!formal_type && m->fun->is_varargs))
       goto LnextArg;
     {
-      Sym *coerced_type = concrete_type->coerce_to(formal_type) ;
+      Sym *coerced_type = if1->callback->coerce(concrete_type, formal_type);
       if (coerced_type && concrete_type != coerced_type) {
         m->coercion_substitutions.put(fcpp, concrete_type);
-        assert(coerced_type);
         m->formal_dispatch_types.put(fcpp, coerced_type);
       }
     }

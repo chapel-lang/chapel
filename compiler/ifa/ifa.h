@@ -55,11 +55,12 @@ class IFAAST : public gc {
 class IFACallbacks : public gc {
 public:
   virtual void finalize_functions() {}
-  virtual Sym *make_LUB_type(Sym *s) { return s; }
-  virtual Sym *instantiate(Sym *, Map<Sym *, Sym *> &substitutions) { return 0; }
-  virtual int formal_to_generic(Sym *s, Sym **ret_generic, int *ret_bind_to_value) { return false; }
   virtual Sym *new_Sym(char *name) = 0;
+  virtual Sym *make_LUB_type(Sym *s) { return s; }
+  virtual int formal_to_generic(Sym *s, Sym **ret_generic, int *ret_bind_to_value) { return false; }
+  virtual Sym *instantiate(Sym *, Map<Sym *, Sym *> &substitutions) { return 0; }
   virtual Fun* order_wrapper(Fun *, Map<MPosition *, MPosition *> &substitutions) { return 0; }
+  virtual Sym *coerce(Sym *actual, Sym *formal) { return NULL; }
   virtual Fun* coercion_wrapper(Fun *, Map<MPosition *, Sym *> &substitutions) { return 0; }
   virtual Fun* default_wrapper(Fun *, Vec<MPosition *> &defaults) { return 0; }
   virtual Fun* instantiate_generic(Fun *, Map<Sym *, Sym*> &substitutions) { return 0; }

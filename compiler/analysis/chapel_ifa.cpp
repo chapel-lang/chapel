@@ -662,6 +662,25 @@ ACallbacks::order_wrapper(Fun *f, Map<MPosition *, MPosition *> &substitutions) 
   return fun;
 }
 
+Sym *
+ACallbacks::coerce(Sym *actual, Sym *formal) {
+  Sym *a = actual->scalar_type(), *f = formal->scalar_type();
+  if (a && f) {
+    Sym *res = coerce_num(a, f);
+    if (res == f)
+      return f;
+    return NULL;
+  }
+  if (a && formal == sym_string)
+    return sym_string;
+  Type *t = dynamic_cast<Type *>(SYMBOL(actual));
+  if (t) {
+    if (t->scalarPromotionType)
+      return t->scalarPromotionType->asymbol->sym;
+  }
+  return NULL;
+}
+
 Fun *
 ACallbacks::coercion_wrapper(Fun *f, Map<MPosition *, Sym *> &substitutions) {
   if (!f->ast) 
