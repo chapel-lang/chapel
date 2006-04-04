@@ -1450,6 +1450,10 @@ void ModuleSymbol::codegenDef(void) {
 
   fprintf(codefile, "#include \"stdchpl.h\"\n");
   fprintf(codefile, "#include \"_chpl_header.h\"\n");
+  if (parallelPass) {
+    // WAW: Should be done in codegen, but cannot add include's after codegen.
+    fprintf (codefile, "#include \"chplthreads.h\"\n");
+  }
   fprintf(codefile, "\n");
 
   modScope->codegenFunctions(codefile);
@@ -1608,13 +1612,13 @@ VarSymbol *new_IntSymbol(long b) {
 
 VarSymbol *new_UIntSymbol(unsigned long b) {
   Immediate imm;
-  imm.v_int64 = b;
+  imm.v_uint64 = b;
   imm.const_kind = IF1_NUM_KIND_UINT;
   imm.num_index = IF1_INT_TYPE_64;
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   if (s)
     return s;
-  s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), dtUnsigned);
+  s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), dtUInt);
   rootScope->define(s);
   char n[80];
   sprintf(n, "%lud", b);
@@ -1623,8 +1627,8 @@ VarSymbol *new_UIntSymbol(unsigned long b) {
   *s->immediate = imm;
   s->literalType = new_LiteralType(s);
   uniqueConstantsHash.put(s->immediate, s);
-  if (!dtUnsigned->defaultValue)
-    dtUnsigned->defaultValue = new_UIntSymbol(0);
+  if (!dtUInt->defaultValue)
+    dtUInt->defaultValue = new_UIntSymbol(0);
   return s;
 }
 

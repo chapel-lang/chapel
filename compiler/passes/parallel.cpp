@@ -1,6 +1,5 @@
-/*
- * This pass moves cobegin statements into nested functions.
- */
+// This pass performs some transformations to enable parallel code
+// generation.
 
 #include "astutil.h"
 #include "expr.h"
@@ -11,10 +10,12 @@
 #include "stringutil.h"
 #include "driver.h"
 
-
-void 
+// This pass moves cobegin statements into nested functions. Currently,
+// each statement is moved to within it's own function and the
+// appropriate function def and call expressions are added. 
+void
 cobegin () {
-  static int ufid = 1;
+  int  ufid = 1;
 
   forv_Vec (ModuleSymbol, mod, allModules) {
     Vec<BaseAST*> asts;
@@ -22,14 +23,22 @@ cobegin () {
     forv_Vec (BaseAST, ast, asts) {
       if (BlockStmt *b=dynamic_cast<BlockStmt*>(ast)) {
         if (BLOCK_COBEGIN == b->blockTag) {
+          // replace with a new cobegin block
+          BlockStmt *newb = new BlockStmt();
+          newb->blockTag = BLOCK_COBEGIN;
           for_alist (Stmt, stmt, b->body) {
             char *fname = stringcat ("_cobegin_stmt", intstring (ufid++));
             FnSymbol *fn = new FnSymbol (fname, NULL, new AList<DefExpr>(), dtVoid);
-            stmt->insertBefore (new CallExpr (fname)); // in block add call to fn
             stmt->remove ();
             fn->insertAtTail (stmt);            // move stmt to new function
-            b->insertBefore (new DefExpr (fn)); // add def to before cobegin blk
+            newb->body->insertAtHead (new DefExpr (fn));
+            newb->body->insertAtTail (new CallExpr (fname));
+            // stmt->insertBefore (new CallExpr (fname)); // in blk add fn call
+            // b->insertBefore (new DefExpr (fn)); // add def to before cobegin blk
           }
+          b->insertBefore (newb);
+          b->remove ();
+          delete b;
         }
       }
     }
@@ -40,7 +49,7 @@ cobegin () {
 void
 parallel (void) {
   if (parallelPass) {
-    cobegin ();     // move cobegin stmts to within a function
+    cobegin ();      // move cobegin stmts to within a function
   }
 }
 

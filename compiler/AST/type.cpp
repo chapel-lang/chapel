@@ -1029,16 +1029,20 @@ void initType(void) {
   dtBool = Symboltable::definePrimitiveType("bool", "_bool");
   dtBool->literalType = Symboltable::definePrimitiveType("_boolLiteral", "_boolLiteral");
   dtBool->literalType->dispatchParents.add(dtBool);
+
   dtInt = Symboltable::definePrimitiveType("int", "_int64");
   dtInt->literalType = Symboltable::definePrimitiveType("_intLiteral", "_int64Literal");
   dtInt->literalType->dispatchParents.add(dtInt);
-  dtUnsigned = Symboltable::definePrimitiveType("uint", "_uint64");
-  dtUnsigned->literalType = Symboltable::definePrimitiveType("_uintLiteral", "_uint64Literal");
-  dtUnsigned->literalType->dispatchParents.add(dtUnsigned);
+
+  dtUInt = Symboltable::definePrimitiveType("uint", "_uint64");
+  dtUInt->literalType = Symboltable::definePrimitiveType("_uintLiteral", "_uint64Literal");
+  dtUInt->literalType->dispatchParents.add(dtUInt);
+
   dtFloat = Symboltable::definePrimitiveType("float", "_float64");
   dtFloat->literalType = Symboltable::definePrimitiveType("_floatLiteral", "_float64Literal");
   dtFloat->defaultValue = new_FloatSymbol("0.0", 0.0);
   dtFloat->literalType->dispatchParents.add(dtFloat);
+
   // This should point to the complex type defined in modules/standard/_chpl_complex.chpl
   dtComplex = Symboltable::definePrimitiveType("complex", "_complex128");
   dtComplex->literalType = Symboltable::definePrimitiveType("_complexLiteral", "_complex128Literal");

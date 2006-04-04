@@ -255,13 +255,18 @@ static void genMakefileHeader(char* srcfilename, char* systemDir) {
   fprintf(makefile, "BINNAME = %s\n", executableFilename);
   fprintf(makefile, "TMPBINNAME = %s\n", intExeFilename);
   fprintf(makefile, "CHAPEL_ROOT = %s\n", sysdirToChplRoot(systemDir));
-  fprintf(makefile, "LIBS =");
+  fprintf(makefile, "CHPLSRC = \\\n");
+}
+
+
+static void
+genMakefileLibs () {
+  fprintf(makefile, "\nLIBS =");
   int i;
   for (i=0; i<numLibFlags; i++) {
     fprintf(makefile, " %s", libFlag[i]);
   }
   fprintf(makefile, "\n");
-  fprintf(makefile, "CHPLSRC = \\\n");
 }
 
 
@@ -272,7 +277,8 @@ void openMakefile(char* srcfilename, char* systemDir) {
 }
 
 
-void closeMakefile(void) {
+void closeMakefile() {
+  genMakefileLibs();
   fprintf(makefile, "\n");
   fprintf(makefile, "include $(CHAPEL_ROOT)/runtime/etc/Makefile.include\n");
 

@@ -128,6 +128,8 @@ void Expr::codegenCastToString(FILE* outfile) {
       fprintf(outfile, "bool");
     } else if (exprType == dtInt) {
       fprintf(outfile, "int");
+    } else if (exprType == dtUInt) {
+      fprintf(outfile, "uint");
     } else if (exprType == dtFloat) {
       fprintf(outfile, "float");
     } else {

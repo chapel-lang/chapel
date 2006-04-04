@@ -301,7 +301,7 @@ check_type(BaseAST *ast, ISlot *slot, Type *t) {
         USR_FATAL(ast, "interpreter: bad immediate type");
       case IF1_NUM_KIND_UINT:
         if (t == dtBool && slot->imm->num_index == IF1_INT_TYPE_1) break;
-        if (t == dtUnsigned && slot->imm->num_index == IF1_INT_TYPE_64) break;
+        if (t == dtUInt && slot->imm->num_index == IF1_INT_TYPE_64) break;
         goto Lerror;
       case IF1_NUM_KIND_INT:
         if (t == dtInt && slot->imm->num_index == IF1_INT_TYPE_64) break;
