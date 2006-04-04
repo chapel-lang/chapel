@@ -62542,3 +62542,14 @@ Modified files:
 	chapel/test/functions/jplevyak/: intent-8-error.future 
 	chapel/test/reductions/bradc/manual/: promote.future 
 
+---------------------------------------------------------------------------
+
+04/03/06 19:35:47 -- jplevyak
+
+Log message:
+	Added a new callback to handle detction of scalar promotion coercions.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp chapel_ifa.h 
+	chapel/compiler/ifa/: ifa.h pattern.cpp 
+
