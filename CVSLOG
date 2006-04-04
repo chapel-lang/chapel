@@ -62603,3 +62603,15 @@ Modified files:
 	chapel/test/: sub_test 
 	chapel/test/Bin/: timedexec 
 
+---------------------------------------------------------------------------
+
+04/04/06 13:57:37 -- waynew
+
+Log message:
+	Extended "sleep" for thread to test nondeterminism. Changed sorting in
+	.prediff... was not currently working.
+
+Modified files:
+	chapel/test/parallel/cobegin/waynew/: cobegin.simple0.chpl 
+	                                      cobegin.simple0.prediff 
+
