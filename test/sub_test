@@ -194,9 +194,13 @@ foreach chplsrc ($testsrc)
     echo \[Executing: \"$valgrndcomp$compiler $compopts $chplsrc $lastcompopts \< $compstdin\"\]
     $timedexec $timeout "$valgrndcomp$compiler $compopts $chplsrc $lastcompopts" < "$compstdin" >& $complog
 	
-
-    if ( $status != 0 || $executebin == "no") then
+    set compstatus = $status
+    if ( $compstatus != 0 || $executebin == "no") then
 	# Compile unsuccessful
+        if ( $compstatus == 142) then
+            echo "$futuretest""[Error: Timed out compilation for $localdir/$execfile]"
+            continue
+        endif
 	# Compare compiler output with expected program output
 	if ( "$catfiles" != "") then
 	    echo \[Concatenating extra files: $catfiles\]
@@ -265,10 +269,16 @@ foreach chplsrc ($testsrc)
 	    # compiler (in case warning were output
 	    # by compiler)
 	    $timedexec $timeout "$valgrndbin./$binfile $execopts" < $redirectin >>& $execlog
+            set execstatus = $status
 
-	    if ( $status != 0 ) then
+	    if ( $execstatus != 0 ) then
 		cat $execlog
-		echo "$futuretest""[Error executing program $localdir/$execfile]"
+                if ( $execstatus == 142) then
+                    echo "$futuretest""[Error: Timed out executing program $localdir/$execfile]"
+                else
+                    echo "$futuretest""[Error executing program $localdir/$execfile]"
+                endif
+
 		rm -f $binfile
 		continue
 	    else
