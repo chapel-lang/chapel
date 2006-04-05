@@ -319,7 +319,7 @@ foreach chplsrc ($testsrc)
 		continue
 	    endif
 	else
-	    echo \[Error could not locate executable $localdir/$execfile\]
+	    echo "$futuretest""[Error could not locate executable $binfile for $localdir/$execfile]"
 	endif
     endif
 end
