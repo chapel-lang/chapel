@@ -575,9 +575,7 @@ TypeSymbol::copyInner(ASTMap* map) {
 }
 
 
-TypeSymbol* TypeSymbol::clone(ASTMap* map, Stmt* pointOfClone) {
-  if (!pointOfClone)
-    pointOfClone = defPoint->parentStmt;
+TypeSymbol* TypeSymbol::clone(ASTMap* map) {
   ClassType* originalClass = dynamic_cast<ClassType*>(definition);
   if (!originalClass) {
     INT_FATAL(this, "Attempt to clone non-class type");
@@ -588,7 +586,7 @@ TypeSymbol* TypeSymbol::clone(ASTMap* map, Stmt* pointOfClone) {
     INT_FATAL(this, "Class cloning went horribly wrong");
   }
   clone->cname = stringcat("_clone_", clone->cname);
-  pointOfClone->insertBefore(new DefExpr(clone));
+  defPoint->parentStmt->insertBefore(new DefExpr(clone));
   clone->addPragmas(&pragmas);
   newClass->typeParents.add(originalClass);
   if (no_infer)
@@ -1009,13 +1007,13 @@ instantiate_add_subs(ASTMap* substitutions, ASTMap* map) {
 
 
 static FnSymbol*
-instantiate_function(Stmt* pointOfInstantiation, FnSymbol *fn, ASTMap *all_subs, ASTMap *generic_subs, ASTMap *map, Type* generic_type = NULL) {
+instantiate_function(FnSymbol *fn, ASTMap *all_subs, ASTMap *generic_subs, ASTMap *map) {
   Stmt* fnStmt = fn->defPoint->parentStmt->copy(map);
   ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(fnStmt);
   DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr);
   FnSymbol* fnClone = dynamic_cast<FnSymbol*>(defExpr->sym);
   fnClone->visible = false;
-  pointOfInstantiation->insertBefore(fnStmt);
+  fn->defPoint->parentStmt->insertBefore(fnStmt);
   fnClone->cname = stringcat("_inst_", defExpr->sym->cname);
   instantiate_add_subs(all_subs, map);
   instantiate_update_expr(all_subs, defExpr);
@@ -1145,7 +1143,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
   if (FnSymbol* cached = check_icache(this, generic_substitutions))
     return cached;
 
-  static int uid = 1;
+  //  static int uid = 1;
   ASTMap substitutions(*generic_substitutions);
   FnSymbol* newfn = NULL;
   currentLineno = lineno;
@@ -1170,53 +1168,19 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
   }
 
   if (fnClass == FN_CONSTRUCTOR) {
-    /*** gross code to insert a module because it is still old school */
+
+    //
+    // Make what is visible at types to instantiate visible at
+    // instantiated type
+    //
     Vec<BaseAST*> values;
     generic_substitutions->get_values(values);
-    char* name = stringcat("_", intstring(uid++), "_", retType->symbol->name, "_of");
-    for (int i = 0; i < generic_substitutions->n; i++) {
-      if (BaseAST* value = generic_substitutions->v[i].value) {
-        if (Type* type = dynamic_cast<Type*>(value)) {
-          name = stringcat(name, "_", type->symbol->name);
-        } else if (VarSymbol* var = dynamic_cast<VarSymbol*>(value)) {
-          name = stringcat(name, "_", var->cname);
-        } else {
-          INT_FATAL(this, "Unexpected generic substitution");
-        }
-      }
-    }
+    forv_Vec(BaseAST, value, values)
+      if (Type* type = dynamic_cast<Type*>(value))
+        if (type->symbol->defPoint)
+          defPoint->parentScope->uses.add(type->symbol->defPoint->getModule());
 
-    SymScope* saveScope = Symboltable::setCurrentScope(rootScope);
-    ModuleSymbol* mod = new ModuleSymbol(name, MOD_INSTANTIATED);
-    new DefExpr(mod);
-    rootScope->define(mod);
-    Symboltable::pushScope(SCOPE_MODULE);
-    mod->setModScope(Symboltable::popScope());
-    mod->modScope->astParent = mod;
-    Symboltable::setCurrentScope(saveScope);
-    registerModule(mod);
-    Fixup* fixup = new Fixup();
-    fixup->parentSymbols.add(mod);
-    mod->startTraversal(fixup);
-    mod->stmts->insertAtTail(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol(retType->symbol->defPoint->getModule()->name))));
-    retType->symbol->defPoint->parentScope->uses.add(mod);
-    forv_Vec(BaseAST, value, values) {
-      if (Type* type = dynamic_cast<Type*>(value)) {
-        if (type->symbol->defPoint) {
-          mod->stmts->insertAtTail(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol(type->symbol->defPoint->getModule()->name))));
-          type->symbol->defPoint->parentScope->uses.add(mod);
-        }
-      }
-    }
-    cleanup(mod);
-    scopeResolve(mod);
-    normalize(mod);
-    Stmt* pointOfInstantiation = mod->initFn->defPoint->parentStmt;
-
-    mod->addPragmas(&retType->symbol->defPoint->getModule()->pragmas);
-    /*** end gross code */
-
-    TypeSymbol* clone = retType->symbol->clone(&map, pointOfInstantiation);
+    TypeSymbol* clone = retType->symbol->clone(&map);
     new_ast_types.add(clone);
     instantiate_add_subs(&substitutions, &map);
 
@@ -1243,18 +1207,21 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
     forv_Vec(Type*, parent, retType->dispatchParents)
       cloneType->dispatchParents.add(parent);
 
-    newfn = instantiate_function(pointOfInstantiation, this, &substitutions, generic_substitutions, &map, cloneType);
+    newfn = instantiate_function(this, &substitutions, generic_substitutions, &map);
     cloneType->defaultConstructor = newfn;
     newfn->typeBinding = clone;
     check_promoter(cloneType);
 
   } else {
-    newfn = instantiate_function(defPoint->parentStmt, this, &substitutions, generic_substitutions, &map);
+    newfn = instantiate_function(this, &substitutions, generic_substitutions, &map);
   }
   normalize(newfn);
   instantiatedTo->add(newfn);
   add_new_ast_functions(newfn);
 
+  //
+  // set default expression for type intent arguments
+  //
   for_alist(DefExpr, formal_def, newfn->formals) {
     ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formal_def->sym);
     if (formal->intent == INTENT_TYPE) {

@@ -72,6 +72,8 @@ void build_default_functions(void) {
   collect_asts(&asts);
   forv_Vec(BaseAST, ast, asts) {
     if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(ast)) {
+      if (type->definition->instantiatedFrom)
+        continue;
       buildDefaultIOFunctions(type->definition);
       if (ClassType* ct = dynamic_cast<ClassType*>(type->definition)) {
         if (ct->classTag == CLASS_RECORD || ct->classTag == CLASS_VALUECLASS) {
