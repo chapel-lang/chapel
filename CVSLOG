@@ -62663,3 +62663,15 @@ Modified files:
 	chapel/test/: sub_test 
 	chapel/test/Bin/: timedexec 
 
+---------------------------------------------------------------------------
+
+04/04/06 17:17:35 -- waynew
+
+Log message:
+	Runtime header and source needed to implementing calls to the
+	thread library.
+
+Added files:
+	chapel/runtime/include/: chplthreads.h 
+	chapel/runtime/src/: chplthreads.c 
+
