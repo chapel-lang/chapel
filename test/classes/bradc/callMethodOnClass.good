@@ -1,11 +1,11 @@
 callMethodOnClass.chpl:25: illegal call argument type '_methodToken' illegal: ( _methodTokenType ) 
-callMethodOnClass.chpl:25: illegal call argument type 'D' illegal: ( _meta_type319 ) 
+callMethodOnClass.chpl:25: illegal call argument type 'D' illegal: ( _meta_type330 ) 
 callMethodOnClass.chpl:25: unresolved call 'start'
 note: candidates are:
 callMethodOnClass.chpl:14: start, _methodTokenDummy : _methodTokenType, this : D
 callMethodOnClass.chpl:25: expression has no type
 callMethodOnClass.chpl:26: illegal call argument type '_methodToken' illegal: ( _methodTokenType ) 
-callMethodOnClass.chpl:26: illegal call argument type 'D' illegal: ( _meta_type319 ) 
+callMethodOnClass.chpl:26: illegal call argument type 'D' illegal: ( _meta_type330 ) 
 callMethodOnClass.chpl:26: unresolved call 'testit'
 note: candidates are:
 callMethodOnClass.chpl:18: testit, _methodTokenDummy : _methodTokenType, this : D
