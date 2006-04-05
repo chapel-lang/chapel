@@ -62733,3 +62733,13 @@ Modified files:
 	chapel/compiler/include/: symbol.h 
 	chapel/compiler/passes/: buildDefaultFunctions.cpp normalize.cpp 
 
+---------------------------------------------------------------------------
+
+04/05/06 15:36:09 -- deitz
+
+Log message:
+	Remove working .future.
+
+Removed files:
+	chapel/test/types/tuple/deitz/: test_mytuple.future 
+
