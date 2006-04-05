@@ -62754,3 +62754,19 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: ast.cpp 
 
+---------------------------------------------------------------------------
+
+04/05/06 16:44:05 -- deitz
+
+Log message:
+	Added three working tests.  No bugs here.
+
+Added files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_instantiate_clone1.chpl 
+	                                         test_instantiate_clone1.good 
+	                                         test_instantiate_clone2.chpl 
+	                                         test_instantiate_clone2.good 
+	                                         test_instantiate_clone3.chpl 
+	                                         test_instantiate_clone3.good 
+
