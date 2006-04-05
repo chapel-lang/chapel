@@ -37,6 +37,7 @@ class PMatch : public Match {
   Vec<MPosition *> default_args; // formal positions
   Map<Sym *, Sym *> generic_substitutions;
   Map<MPosition *, Sym *> coercion_substitutions; // formal position -> coercion symbol
+  Map<MPosition *, Sym *> promotion_substitutions; // formal position -> coercion symbol
 
   Match *cache_copy();
 
@@ -618,6 +619,7 @@ Matcher::build_PMatch(Fun *f, PMatch *m) {
   mm->default_args.copy(m->default_args);
   mm->generic_substitutions.copy(m->generic_substitutions);
   mm->coercion_substitutions.copy(m->coercion_substitutions);
+  mm->promotion_substitutions.copy(m->promotion_substitutions);
   mm->is_partial = m->is_partial;
   return mm;
 }
@@ -644,10 +646,12 @@ class MapCacheHashFns : public gc {
   }
 };
 typedef Map<MPosition *, Sym*> CoercionMap;
+typedef CoercionMap PromotionMap;
 typedef Map<Sym *, Sym*> GenericMap;
 typedef Map<MPosition *, MPosition*> OrderMap;
 class CoercionCache : public gc { 
  public: HashMap<CoercionMap *, MapCacheHashFns<CoercionMap *>, Fun *> cache; };
+class PromotionCache : public CoercionCache {};
 class GenericCache : public gc { 
  public: HashMap<GenericMap *, MapCacheHashFns<GenericMap *>, Fun *> cache; };
 class OrderCache : public gc { 
@@ -774,6 +778,20 @@ Matcher::build(PMatch *m, Vec<Fun *> &done_matches) {
       return 0;
     done_matches.set_add(f);
     m->coercion_substitutions.clear();
+    m = build_PMatch(f, m);
+  }
+  if (m->promotion_substitutions.n) {
+    PromotionCache *c = f->promotion_cache;
+    if (!c) c = f->promotion_cache = new PromotionCache;
+    if (!(fnew = c->cache.get(&m->promotion_substitutions))) {
+      f = if1->callback->promotion_wrapper(f, m->promotion_substitutions);
+      c->cache.put(new PromotionMap(m->promotion_substitutions), f);
+    } else
+      f = fnew;
+    if (done_matches.set_in(f))
+      return 0;
+    done_matches.set_add(f);
+    m->promotion_substitutions.clear();
     m = build_PMatch(f, m);
   }
   int order_change = 0;
@@ -1053,6 +1071,33 @@ coercion_uses(PMatch **am, MPosition &app, Vec<CreationSet*> &args) {
   app.pop();
 }
 
+static void
+promotion_uses(PMatch **am, MPosition &app, Vec<CreationSet*> &args) {
+  PMatch *m = *am;
+  app.push(1);
+  for (int i = 0; i < args.n; i++) {
+    MPosition *acpp = cannonicalize_mposition(app);
+    MPosition *fcpp = to_formal(acpp, m);
+    AVar *a = m->actuals.get(acpp);
+    CreationSet *cs = args.v[i];
+    Sym *concrete_type = a->var->sym->aspect ? a->var->sym->aspect : cs->sym;
+    concrete_type = concrete_type->type;
+    Sym *formal_type = m->formal_dispatch_types.get(fcpp);
+    if (formal_type == concrete_type || (!formal_type && m->fun->is_varargs))
+      goto LnextArg;
+    {
+      Sym *promoted_type = if1->callback->promote(concrete_type, formal_type);
+      if (promoted_type && concrete_type != promoted_type) {
+        m->promotion_substitutions.put(fcpp, concrete_type);
+        m->formal_dispatch_types.put(fcpp, promoted_type);
+      }
+    }
+   LnextArg:;
+    app.inc();
+  }
+  app.pop();
+}
+
 // clear out values needed only while considering a particular csargs
 static void
 clear_matches(PMatchMap &match_map) {
@@ -1061,6 +1106,7 @@ clear_matches(PMatchMap &match_map) {
     x->value->default_args.clear();
     x->value->generic_substitutions.clear();
     x->value->coercion_substitutions.clear();
+    x->value->promotion_substitutions.clear();
   }
 }
 
@@ -1128,6 +1174,7 @@ Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &app,
     if (!generic_substitutions(&covered.v[i], app, csargs, ast))
       continue;
     coercion_uses(&covered.v[i], app, csargs);
+    promotion_uses(&covered.v[i], app, csargs);
     applicable.add(covered.v[i]);
   }
 

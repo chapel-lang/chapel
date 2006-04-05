@@ -17,6 +17,7 @@ class PNode;
 class CreationSet;
 class Match;
 class CoercionCache;
+class PromotionCache;
 class GenericCache;
 class OrderCache;
 class DefaultCache;
@@ -80,6 +81,7 @@ class Fun : public gc {
   Vec<MPosition *> out_positions;
   Map<MPosition *, IFAAST *> default_args;
   Vec<MPosition *> generic_args;
+  PromotionCache *promotion_cache;
   CoercionCache *coercion_cache;
   GenericCache *generic_cache;
   OrderCache *order_cache;

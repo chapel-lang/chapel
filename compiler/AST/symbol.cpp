@@ -1108,9 +1108,11 @@ check_promoter(ClassType *at) {
   forv_Vec(TypeSymbol, tt, t->types) {
     if (tt->hasPragma("promoter")) {
       Type *seqElementType = dynamic_cast<Type*>(at->substitutions.get(tt->definition));
-      at->scalarPromotionType = seqElementType;
-      if (!run_interpreter)
-        at->dispatchParents.add(seqElementType);
+      if (dynamic_cast<PrimitiveType*>(seqElementType)) {
+        at->scalarPromotionType = seqElementType;
+        if (!run_interpreter)
+          at->dispatchParents.add(seqElementType);
+      }
     }
   }
 }

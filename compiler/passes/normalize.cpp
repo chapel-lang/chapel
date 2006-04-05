@@ -323,9 +323,11 @@ static void reconstruct_iterator(FnSymbol* fn) {
   if (scalar_promotion) {
     if (!strcmp("_promoter", fn->name)) {
       if (seqElementType != dtUnknown) {
-        fn->typeBinding->definition->scalarPromotionType = seqElementType;
-        if (!run_interpreter)
-          fn->typeBinding->definition->dispatchParents.add(seqElementType);
+        if (dynamic_cast<PrimitiveType*>(seqElementType)) {
+          fn->typeBinding->definition->scalarPromotionType = seqElementType;
+          if (!run_interpreter)
+            fn->typeBinding->definition->dispatchParents.add(seqElementType);
+        }
       } else {
         if (CallExpr *c = dynamic_cast<CallExpr*>(seqType)) {
           if (SymExpr *b = dynamic_cast<SymExpr*>(c->baseExpr)) {

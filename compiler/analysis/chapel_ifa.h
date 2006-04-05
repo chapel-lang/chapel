@@ -23,6 +23,8 @@ public:
   Fun *order_wrapper(Fun *, Map<MPosition *, MPosition *> &substitutions);
   Sym *coerce(Sym *actual, Sym *formal);
   Fun *coercion_wrapper(Fun *, Map<MPosition *, Sym *> &substitutions);
+  Sym *promote(Sym *actual, Sym *formal);
+  Fun *promotion_wrapper(Fun *, Map<MPosition *, Sym *> &substitutions);
   Fun *default_wrapper(Fun *, Vec<MPosition *> &defaults);
   Fun *instantiate_generic(Fun *, Map<Sym *, Sym *> &substitutions);
   void report_analysis_errors(Vec<ATypeViolation*> &type_violations);

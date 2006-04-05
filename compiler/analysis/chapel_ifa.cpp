@@ -57,6 +57,7 @@ class AnalysisOp : public gc { public:
     {}
 };
 
+static Sym *sym_anyscalar = 0;
 
 static Sym *cast_symbol = 0;
 static Sym *chapel_init_symbol = 0;
@@ -673,19 +674,28 @@ ACallbacks::coerce(Sym *actual, Sym *formal) {
   }
   if (a && formal == sym_string)
     return sym_string;
+  return NULL;
+}
+
+Sym *
+ACallbacks::promote(Sym *actual, Sym *formal) {
   Type *t = dynamic_cast<Type *>(SYMBOL(actual));
-  if (t) {
-    if (t->scalarPromotionType)
-      return t->scalarPromotionType->asymbol->sym;
+  if (t && t->scalarPromotionType) {
+    Sym * a = t->scalarPromotionType->asymbol->sym->scalar_type(),
+      *f = formal->scalar_type();
+    if (a && f) {
+      Sym *res = coerce_num(a, f);
+      if (res == f)
+        return f;
+    }
+    if (a && formal == sym_string)
+      return sym_string;
   }
   return NULL;
 }
 
-Fun *
-ACallbacks::coercion_wrapper(Fun *f, Map<MPosition *, Sym *> &substitutions) {
-  if (!f->ast) 
-    return NULL;
-  Map<Symbol *, Symbol *> coercions;
+static void
+convert_substitutions(Fun *f, Map<MPosition *, Sym *> &substitutions, Map<Symbol *, Symbol *> &subs) {
   forv_MPosition(p, f->positional_arg_positions) {
     Sym *sym = f->arg_syms.get(p);
     Symbol *symbol = sym->asymbol ? dynamic_cast<Symbol*>(SYMBOL(sym)) : 0;
@@ -696,13 +706,36 @@ ACallbacks::coercion_wrapper(Fun *f, Map<MPosition *, Sym *> &substitutions) {
         Sym *a = f->arg_syms.get(p);
         if (a->asymbol && SYMBOL(a)) {
           Symbol *aa = dynamic_cast<Symbol*>(SYMBOL(a));
-          coercions.put(aa, type->symbol);
+          subs.put(aa, type->symbol);
         }
       }
     }
   }
+}
+
+Fun *
+ACallbacks::coercion_wrapper(Fun *f, Map<MPosition *, Sym *> &substitutions) {
+  if (!f->ast) 
+    return NULL;
+  Map<Symbol *, Symbol *> coercions;
+  convert_substitutions(f, substitutions, coercions);
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(SYMBOL(f->sym));
   FnSymbol *fsym = fndef->coercion_wrapper(&coercions);
+  if (fsym->asymbol)
+    return fsym->asymbol->sym->fun;
+  Fun *fun = install_new_asts(fsym);
+  fun->wraps = f;
+  return fun;
+}
+
+Fun *
+ACallbacks::promotion_wrapper(Fun *f, Map<MPosition *, Sym *> &substitutions) {
+  if (!f->ast) 
+    return NULL;
+  Map<Symbol *, Symbol *> promotions;
+  convert_substitutions(f, substitutions, promotions);
+  FnSymbol *fndef = dynamic_cast<FnSymbol *>(SYMBOL(f->sym));
+  FnSymbol *fsym = fndef->promotion_wrapper(&promotions);
   if (fsym->asymbol)
     return fsym->asymbol->sym->fun;
   Fun *fun = install_new_asts(fsym);
@@ -1200,6 +1233,7 @@ build_builtin_symbols() {
   sym_complex64 = dtComplex->asymbol->sym;
   sym_string = dtString->asymbol->sym;
   sym_anynum = dtNumeric->asymbol->sym;
+  sym_anyscalar = dtScalar->asymbol->sym;
   sym_any = dtAny->asymbol->sym; 
   sym_object = dtObject->asymbol->sym; 
   sym_nil_type = dtNil->asymbol->sym;
@@ -1275,6 +1309,7 @@ build_builtin_symbols() {
 #endif
       VARARG_END);
   new_lub_type(sym_anynum, "anynum", sym_anyint, sym_anyfloat, sym_anycomplex, VARARG_END);
+  new_lub_type(sym_anyscalar, "anyscalar", sym_anynum, sym_string, VARARG_END);
   new_primitive_type(sym_char, "char");
   new_primitive_type(sym_string, "string");
   if (!sym_new_object) {

@@ -54,7 +54,7 @@ int fnostdincs_but_file = 0;
 int num_constants_per_variable = 1;
 int instantiation_limit = 12;
 bool parallelPass = false;
-int scalar_promotion = 0;
+int scalar_promotion = 1;
 
 static ArgumentDescription arg_desc[] = {
  {"interpreter", 'I', "Start Interpreter in Insert Mode", "T", &finterpreter_insert_mode, "CHPL_INTERPRETER_INSERT", interpreter_insert_mode},
@@ -95,7 +95,7 @@ static ArgumentDescription arg_desc[] = {
  {"no-infer", 'b', "Do not Run Analysis, Inference", "F", &no_infer, NULL, NULL},
  {"no-inline", ' ', "Do Not Inline Functions" , "F", &no_inline, NULL, NULL},
  {"report-inlining", ' ', "Print Inlined Functions", "F", &report_inlining, NULL, NULL},
- {"scalar-promotion", ' ', "Enable Scalar Promotion", "F", &scalar_promotion, "CHPL_SCALAR_PROMOTION", NULL},
+ {"scalar-promotion", ' ', "Enable Scalar Promotion", "T", &scalar_promotion, "CHPL_SCALAR_PROMOTION", NULL},
  {"formal-temps", ' ', "Insert Temps for Formals", "F", &formalTemps, "CHPL_FORMAL_TEMPS", NULL},
  {"no-codegen", ' ', "Suppress Code Generation", "F", &no_codegen, "CHPL_NO_CODEGEN", NULL},
  {"equal-method", ' ', "Make = a method", "T", &f_equal_method, "CHPL_EQUAL_METHOD", NULL},

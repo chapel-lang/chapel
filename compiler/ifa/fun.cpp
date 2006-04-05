@@ -23,6 +23,7 @@ void Fun::init_fun() {
   split_eager = 0;
   execution_frequency = 0.0;
   fa_collected = 0;
+  promotion_cache = 0;
   coercion_cache = 0;
   generic_cache = 0;
   order_cache = 0;

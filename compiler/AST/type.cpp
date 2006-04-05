@@ -1056,6 +1056,7 @@ void initType(void) {
   dtSymbol->literalType->dispatchParents.add(dtSymbol);
 
   dtNumeric = Symboltable::definePrimitiveType("numeric", "_numeric");
+  dtScalar = Symboltable::definePrimitiveType("scalar", "_scalar");
   dtAny = Symboltable::definePrimitiveType("any", "_any");
 }
 

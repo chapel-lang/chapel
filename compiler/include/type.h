@@ -268,6 +268,7 @@ void findInternalTypes(void);
 
 // sum-ish types
 TYPE_EXTERN Type* dtAny;
+TYPE_EXTERN Type* dtScalar;
 TYPE_EXTERN Type* dtNumeric;
 TYPE_EXTERN ClassType* dtObject;
 TYPE_EXTERN ClassType* dtValue;
