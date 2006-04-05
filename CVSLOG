@@ -62702,3 +62702,15 @@ Removed files:
 	chapel/test/arrays/deitz/: test_scalar_promote1.future 
 	                           test_scalar_promote2.future 
 
+---------------------------------------------------------------------------
+
+04/05/06 10:02:13 -- deitz
+
+Log message:
+	Fixed .good for test.  Is the metatype number going to keep changing?
+	Maybe it should have a different name.  Instead of _meta_type120 it
+	could be _meta_type_int or something.
+
+Modified files:
+	chapel/test/classes/bradc/: callMethodOnClass.good 
+
