@@ -62644,3 +62644,22 @@ Added files:
 	                                      writeln.good 
 	                                      writeln.prediff 
 
+---------------------------------------------------------------------------
+
+04/04/06 17:11:38 -- bradc
+
+Log message:
+	Fixed a few problems in the testing system caused/revealed by
+	my earlier checkins:
+	
+	1) added future test prefix to "unable to find executable" case
+	   and improved wording to make it more accurate.
+	
+	2) fixed my naive handling of exit codes from system() calls
+	   in perl to more accurately propagate return codes and
+	   core dumps.
+
+Modified files:
+	chapel/test/: sub_test 
+	chapel/test/Bin/: timedexec 
+
