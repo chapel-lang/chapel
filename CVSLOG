@@ -62743,3 +62743,14 @@ Log message:
 Removed files:
 	chapel/test/types/tuple/deitz/: test_mytuple.future 
 
+---------------------------------------------------------------------------
+
+04/05/06 16:35:52 -- jplevyak
+
+Log message:
+	Permit the dispatch order to be updated independently of
+	  specializes and implements.
+
+Modified files:
+	chapel/compiler/ifa/: ast.cpp 
+
