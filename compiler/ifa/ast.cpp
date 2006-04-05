@@ -255,7 +255,7 @@ build_type_hierarchy(int compute_structural_value_hierarchy) {
   }
   qsort_by_id(types.asvec);
   forv_Sym(s, types.asvec) if (s) {
-    if (!s->dispatch_order.n && !s->is_system_type) {
+    if (!s->is_system_type) {
       if (s->is_meta_type)
         implement_and_specialize(sym_anytype, s, types);
       else if (s->is_value_type)
