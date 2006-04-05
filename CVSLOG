@@ -62714,3 +62714,22 @@ Log message:
 Modified files:
 	chapel/test/classes/bradc/: callMethodOnClass.good 
 
+---------------------------------------------------------------------------
+
+04/05/06 15:00:22 -- deitz
+
+Log message:
+	Simplified instantiation some by removing the module (which is not
+	necessary now that we instantiate methods as called) and removing the
+	checkGeneric which was incorrectly tagging functions as generic based
+	on their body.  They are generic based only on their formals.  It is
+	illegal to declare a variable to be a generic type, only a formal.
+	
+	Fixed a bug in which default functions were created for instantiated
+	types that are instantiated during normalization.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp normalize.cpp 
+
