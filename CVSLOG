@@ -62675,3 +62675,30 @@ Added files:
 	chapel/runtime/include/: chplthreads.h 
 	chapel/runtime/src/: chplthreads.c 
 
+---------------------------------------------------------------------------
+
+04/04/06 20:12:35 -- jplevyak
+
+Log message:
+	calar promotion tests test_scalar_promote{1,2}.chpl are now
+	  working.
+	--scalar-promotion now on by default, the option is now a toggle
+	add dtScalar (currently unused)
+	scalar promotion is only active for scalars (or more specifically,
+	  things which are PrimitiveType) (is that OK?)
+	Added calls to promotion_wrapper and a PromotionCache to
+	  mirror coercion_wrapper calls and cache.
+	Added a callback "promote" to trigger creation of the promotion
+	  wrapper.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp chapel_ifa.h 
+	chapel/compiler/ifa/: fun.cpp fun.h ifa.h pattern.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/passes/: normalize.cpp 
+Removed files:
+	chapel/test/arrays/deitz/: test_scalar_promote1.future 
+	                           test_scalar_promote2.future 
+
