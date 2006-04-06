@@ -62847,3 +62847,14 @@ Added files:
 	chapel/test/classes/deitz/infer/: infer_field3.chpl 
 	                                  infer_field3.good 
 
+---------------------------------------------------------------------------
+
+04/06/06 13:55:43 -- jplevyak
+
+Log message:
+	Fix compilation problems on older versions of gcc which don't
+	like jumping over variable definitions.
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+
