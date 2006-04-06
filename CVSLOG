@@ -62770,3 +62770,28 @@ Added files:
 	                                         test_instantiate_clone3.chpl 
 	                                         test_instantiate_clone3.good 
 
+---------------------------------------------------------------------------
+
+04/05/06 21:01:56 -- shannon
+
+Log message:
+	Changed all the exit()s to clean_exit()s.
+	Implemented fflush in the interpreter so
+	that assert() and halt() now work properly in
+	the interpreter.  Added linenumber and
+	filename information to the interpreted
+	asserts and halts.
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+Removed files:
+	chapel/test/domains/shannon/: expandError.ifuture 
+	                              interiorErrorNeg.ifuture 
+	                              interiorErrorPos.ifuture 
+	                              interiorErrorPosLarge.ifuture 
+	chapel/test/trivial/deitz/: exit.ifuture 
+	chapel/test/trivial/mjoyner/seq/: seq_index1.ifuture 
+	chapel/test/trivial/shannon/: multipleArgAssert.ifuture 
+	chapel/test/trivial/shannon/quit/: assert.ifuture exit.ifuture 
+	                                   halt.ifuture 
+
