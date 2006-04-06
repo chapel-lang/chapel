@@ -1885,7 +1885,7 @@ gen_fun(FnSymbol *f) {
     s->ast = ast;
     s->must_specialize = make_symbol(s->name);
     as[iarg++] = s;
-    if (f->method_type != NON_METHOD) {
+    if (f->isMethod) {
       // this
       if (args.n) {
         if (is_Sym_OUT(args.v[0]->asymbol->sym))
@@ -1893,7 +1893,7 @@ gen_fun(FnSymbol *f) {
         as[iarg++] = args.v[0]->asymbol->sym;
       }
     }
-    if (f->method_type == NON_METHOD) {
+    if (!f->isMethod) {
       if (args.n) {
         if (is_Sym_OUT(args.v[0]->asymbol->sym))
           out_args.add(args.v[0]->asymbol->sym);
@@ -2039,15 +2039,15 @@ finalize_function(Fun *fun, int instantiation) {
   if (fs->noParens)
     fun->is_eager = 1;
   else
-    if (fs->method_type != NON_METHOD && !is_this_fun(fs) && !is_assign_this_fun(fs))
+    if (fs->isMethod && !is_this_fun(fs) && !is_assign_this_fun(fs))
       fun->is_lazy = 1;
-  if (fs->method_type != NON_METHOD)
+  if (fs->isMethod)
     fs->_this->asymbol->sym->is_this = 1;
   // add to dispatch cache
   if (!instantiation) {
     if (fs->typeBinding) {
       if (is_reference_type(SYMBOL(fs->typeBinding->definition))) {
-        if (fs->method_type != NON_METHOD) {
+        if (fs->isMethod) {
           add_to_universal_lookup_cache(name, fun);
           added = 1;
         }

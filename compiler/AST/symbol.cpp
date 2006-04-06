@@ -645,7 +645,7 @@ FnSymbol::FnSymbol(char* initName,
   _this(NULL),
   _setter(NULL),
   _getter(NULL),
-  method_type(NON_METHOD),
+  isMethod(false),
   instantiatedFrom(NULL),
   instantiatedTo(NULL),
   visible(true),
@@ -695,7 +695,7 @@ FnSymbol::copyInner(ASTMap* map) {
   copy->_getter = _getter; // If it is a cloned class we probably want
                            // this to point to the new member, but how
                            // do we do that
-  copy->method_type = method_type;
+  copy->isMethod = isMethod;
   return copy;
 }
 
@@ -786,7 +786,7 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
       char* tempName = stringcat("_coercion_temp_", formal->sym->name);
       VarSymbol* temp = new VarSymbol(tempName, formal->sym->type);
       wrapper_body->insertAtTail(new DefExpr(temp));
-      wrapper_body->insertAtTail(new CallExpr(PRIMITIVE_MOVE, temp, new CastExpr(new SymExpr(newFormal), NULL, formal->sym->type)));
+      wrapper_body->insertAtTail(new CallExpr("=", temp, new CastExpr(new SymExpr(newFormal), NULL, formal->sym->type)));
       wrapper_actuals->insertAtTail(new SymExpr(temp));
     } else {
       wrapper_actuals->insertAtTail(new SymExpr(newFormal));
@@ -804,7 +804,7 @@ FnSymbol* FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitution
                                       retType, NULL, wrapper_body,
                                       fnClass, noParens, retRef);
   wrapper_fn->visible = false;
-  wrapper_fn->method_type = method_type;
+  wrapper_fn->isMethod = isMethod;
   wrapper_fn->cname = stringcat("_coerce_wrap_", cname);
   wrapper_fn->addPragma("inline");
   wrapper_fn->_this = new_this;
@@ -835,8 +835,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
       Symbol* newFormal = formal->copy();
       map.put(formal, newFormal);
       wrapper->formals->insertAtTail(new DefExpr(newFormal));
-      if (formal_num <= 2 &&
-          (method_type == PRIMARY_METHOD || method_type == SECONDARY_METHOD))
+      if (formal_num <= 2 && isMethod)
         method_actuals->insertAtTail(new SymExpr(newFormal));
       else
         wrapper_actuals->insertAtTail(new SymExpr(newFormal));
@@ -873,7 +872,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
   }
   update_symbols(wrapper->body, &map);
   CallExpr* call;
-  if (method_type == PRIMARY_METHOD || method_type == SECONDARY_METHOD) {
+  if (isMethod) {
     call = new CallExpr(this, method_actuals);
     call->partialTag = PARTIAL_OK;
     call = new CallExpr(call, wrapper_actuals);
@@ -886,7 +885,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
   wrapper->fnClass = fnClass;
   wrapper->noParens = noParens;
   wrapper->retRef = retRef;
-  wrapper->method_type = method_type;
+  wrapper->isMethod = isMethod;
   wrapper->cname = stringcat("_default_wrap_", cname);
   wrapper->addPragma("inline");
   defPoint->parentStmt->insertAfter(new DefExpr(wrapper));
@@ -895,6 +894,22 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
   add_dwcache(wrapper, this, defaults);
   normalize(wrapper);
   return wrapper;
+}
+
+
+static CallExpr*
+fix_method_wrapper_call(FnSymbol* fn, CallExpr* call) {
+  if (fn->isMethod) {
+    call->partialTag = PARTIAL_OK;
+    CallExpr* outer = new CallExpr(call);
+    while (call->argList->length() > 2) {
+      Expr* arg = call->get(3);
+      arg->remove();
+      outer->argList->insertAtTail(arg);
+    }
+    return outer;
+  }
+  return call;
 }
 
 
@@ -911,15 +926,17 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* formals_to_formals) {
     wrapper_actuals->insertAtTail(new SymExpr(old_to_new.get(formal->sym)));
   }
 
+  CallExpr* call = new CallExpr(this, wrapper_actuals);
+  call = fix_method_wrapper_call(this, call);
   Stmt* stmt = (function_returns_void(this))
-    ? new ExprStmt(new CallExpr(this, wrapper_actuals))
-    : new ReturnStmt(new CallExpr(this, wrapper_actuals));
+    ? new ExprStmt(call)
+    : new ReturnStmt(call);
 
   FnSymbol* wrapper_fn = new FnSymbol(name, typeBinding, wrapper_formals,
                                       retType, NULL, new BlockStmt(stmt),
                                       fnClass, noParens, retRef);
   wrapper_fn->visible = false;
-  wrapper_fn->method_type = method_type;
+  wrapper_fn->isMethod = isMethod;
   wrapper_fn->cname = stringcat("_order_wrap_", cname);
   wrapper_fn->addPragma("inline");
   defPoint->parentStmt->insertBefore(new DefExpr(wrapper_fn));
@@ -972,7 +989,7 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs) {
                            body, FN_ITERATOR, false, false);
   }
   wrapper->visible = false;
-  wrapper->method_type = method_type;
+  wrapper->isMethod = isMethod;
   wrapper->cname = stringcat("_promotion_wrap_", cname);
   defPoint->parentStmt->insertBefore(new DefExpr(wrapper));
   reset_file_info(wrapper->defPoint->parentStmt, lineno, filename);

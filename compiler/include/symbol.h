@@ -156,12 +156,6 @@ class TypeSymbol : public Symbol {
 };
 
 
-typedef enum __method_type {
-  NON_METHOD,
-  PRIMARY_METHOD,
-  SECONDARY_METHOD
-} _method_type;
-
 class FnSymbol : public Symbol {
  public:
   TypeSymbol* typeBinding;
@@ -181,7 +175,7 @@ class FnSymbol : public Symbol {
   Symbol* _this;
   Symbol* _setter; // the variable this function sets if it is a setter
   Symbol* _getter; // the variable this function gets if it is a getter
-  _method_type method_type;
+  bool isMethod;
   Vec<Symbol *> genericSymbols;
   FnSymbol *instantiatedFrom;
   ASTMap substitutions;

@@ -688,7 +688,7 @@ void ClassType::addDeclarations(AList<Stmt>* newDeclarations,
           methods.add(fn);
           fn->typeBinding = this->symbol;
           if (fn->fnClass != FN_CONSTRUCTOR)
-            fn->method_type = PRIMARY_METHOD;
+            fn->isMethod = true;
         }
       }
     }

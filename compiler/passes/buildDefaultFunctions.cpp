@@ -198,7 +198,7 @@ static void build_record_assignment_function(ClassType* ct) {
   reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
   if (f_equal_method) {
     ct->methods.add(fn);
-    fn->method_type = PRIMARY_METHOD;
+    fn->isMethod = true;
     fn->typeBinding = ct->symbol;
     fn->_this = _arg1;
   }

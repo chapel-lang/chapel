@@ -461,7 +461,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
   ct->symbol->defPoint->parentStmt->insertBefore(def);
   reset_file_info(fn, field->lineno, field->filename);
   ct->methods.add(fn);
-  fn->method_type = PRIMARY_METHOD;
+  fn->isMethod = true;
   fn->typeBinding = ct->symbol;
   fn->cname = stringcat("_", fn->typeBinding->cname, "_", fn->cname);
   if (!field->variableExpr)
@@ -520,7 +520,7 @@ static void build_setter(ClassType* ct, Symbol* field) {
   reset_file_info(fn, field->lineno, field->filename);
 
   ct->methods.add(fn);
-  fn->method_type = PRIMARY_METHOD;
+  fn->isMethod = true;
   fn->typeBinding = ct->symbol;
   fn->cname = stringcat("_", fn->typeBinding->cname, "_", fn->cname);
   if (!field->variableExpr)
@@ -563,7 +563,7 @@ static void resolve_secondary_method_type(FnSymbol* fn) {
       Type* typeBinding = ts->definition;
       fn->typeBinding = ts;
       if (fn->fnClass != FN_CONSTRUCTOR) {
-        fn->method_type = SECONDARY_METHOD;
+        fn->isMethod = true;
       }
       typeBinding->methods.add(fn);
     } else {
