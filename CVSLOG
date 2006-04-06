@@ -62795,3 +62795,17 @@ Removed files:
 	chapel/test/trivial/shannon/quit/: assert.ifuture exit.ifuture 
 	                                   halt.ifuture 
 
+---------------------------------------------------------------------------
+
+04/06/06 06:10:12 -- bradc
+
+Log message:
+	Another fix/improvement to timedexec.  My previous changes left
+	timed out processes running on the system, eventually bogging
+	it down once there were enough going (sorry Shannon!).  This new
+	check makes sure to kill any timed out children rather than
+	orphaning them.
+
+Modified files:
+	chapel/test/Bin/: timedexec 
+
