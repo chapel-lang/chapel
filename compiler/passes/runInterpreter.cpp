@@ -1737,7 +1737,7 @@ IFrame::iprimitive(CallExpr *s) {
       user_error(this, "unhandled primitive: %s", s->primitive->name);
       return 1;
 
-    case PRIM_FFLUSH:
+    case PRIM_FFLUSH: {
       check_prim_args(s, 1);
       check_type(s, arg[0], dtInt);
       result.kind = IMMEDIATE_ISLOT;
@@ -1755,6 +1755,7 @@ IFrame::iprimitive(CallExpr *s) {
       }
       *result.imm = fflush(fp);
       break;
+    }
 
     case PRIM_ARRAY_INIT: {
       check_prim_args(s, 3);
@@ -2034,9 +2035,6 @@ get_bool(IFrame *frame, ISlot *slot, bool *c) {
 
 int
 IFrame::run(int timeslice) {
-  if (expr)
-    goto LnextExpr;
-
   ISlot* filename_slot = new ISlot;
   filename_slot->kind = IMMEDIATE_ISLOT;
   filename_slot->imm = new Immediate("");
@@ -2045,7 +2043,11 @@ IFrame::run(int timeslice) {
   lineno_slot->kind = IMMEDIATE_ISLOT;
   lineno_slot->imm = new Immediate;
 
+  if (expr)
+    goto LnextExpr;
+
   while (1) {
+
   LgotoLabel:
     if (single_step) {
       if (finterpreter_ast_mode)
