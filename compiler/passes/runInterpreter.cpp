@@ -17,6 +17,7 @@
 #include "../traversals/view.h"
 #include "stringutil.h"
 #include "parser.h"
+#include "runtime.h"
 
 #define HACK_NEWLINE_STRING 1
 
@@ -1174,7 +1175,7 @@ interactive(IFrame *frame) {
 #ifdef USE_READLINE
     char *c = readline("(chpl) ");
     if (!c)
-      exit(0);
+      clean_exit(0);
     else
       add_history(c);
 #else
@@ -1182,7 +1183,7 @@ interactive(IFrame *frame) {
     char cmd_buffer[512], *c = cmd_buffer;
     cmd_buffer[0] = 0;
     if (!fgets(cmd_buffer, 511, stdin))
-      exit(0);
+      clean_exit(0);
 #endif
     while (*c && isspace(*c)) c++;
     if (!*c)
@@ -1221,7 +1222,7 @@ interactive(IFrame *frame) {
       return 1;
     } 
     else if (match_cmd(c, "help") || match_cmd(c, "?")) { interactive_usage(); } 
-    else if (match_cmd(c, "quit")) { exit(0); } 
+    else if (match_cmd(c, "quit")) { clean_exit(0); } 
     else if (match_cmd(c, "continue")) { check_running(frame); return 0; } 
     else if (match_cmd(c, "step")) {
       check_running(frame);
@@ -1262,7 +1263,7 @@ interactive(IFrame *frame) {
       }
       printf("  tracing level set to %d\n", trace_level);
     } 
-    else if (match_cmd(c, "exit")) { exit(0); } else {
+    else if (match_cmd(c, "exit")) { clean_exit(0); } else {
       if (*c)
         printf("  unknown command\n");
       interactive_usage();
@@ -1737,8 +1738,23 @@ IFrame::iprimitive(CallExpr *s) {
       return 1;
 
     case PRIM_FFLUSH:
-      user_error(this, "unhandled primitive: %s", s->primitive->name);
-      return 1;
+      check_prim_args(s, 1);
+      check_type(s, arg[0], dtInt);
+      result.kind = IMMEDIATE_ISLOT;
+      result.imm = new Immediate;
+      FILE *fp = (FILE*)(intptr_t)arg[0]->imm->v_int64;
+      if (fp == (FILE*)(intptr_t)-1) {
+        result.imm->set_int64(0);
+        break;
+      } else if (fp == (FILE*)(intptr_t)0) {
+        fp = stdin;
+      } else if (fp == (FILE*)(intptr_t)1) {
+        fp = stdout;
+      } else if (fp == (FILE*)(intptr_t)2) {
+        fp = stderr;
+      }
+      *result.imm = fflush(fp);
+      break;
 
     case PRIM_ARRAY_INIT: {
       check_prim_args(s, 3);
@@ -1977,8 +1993,7 @@ IFrame::iprimitive(CallExpr *s) {
       break;
     }
     case PRIM_DONE: {
-      user_error(this, "interpreter terminated: %s", s->primitive->name);
-      return 1;
+      clean_exit(0);
     }
       
   }
@@ -2021,6 +2036,15 @@ int
 IFrame::run(int timeslice) {
   if (expr)
     goto LnextExpr;
+
+  ISlot* filename_slot = new ISlot;
+  filename_slot->kind = IMMEDIATE_ISLOT;
+  filename_slot->imm = new Immediate("");
+
+  ISlot* lineno_slot = new ISlot;
+  lineno_slot->kind = IMMEDIATE_ISLOT;
+  lineno_slot->imm = new Immediate;
+
   while (1) {
   LgotoLabel:
     if (single_step) {
@@ -2043,6 +2067,19 @@ IFrame::run(int timeslice) {
     if (interrupted)
       if (interactive(this))
         return 0;
+
+    if (dynamic_cast<Stmt*>(ip) != NULL) {
+      if (printChplLineno) {
+        ModuleSymbol* modsym = ip->getModule();
+        if (modsym->modtype == MOD_USER) {
+          *filename_slot->imm = ip->filename;
+          lineno_slot->imm->set_int64(ip->lineno);
+          *islot(chpl_input_filename) = *filename_slot;
+          *islot(chpl_input_lineno) = *lineno_slot;
+        }
+      }
+    }
+    
     switch (ip->astType) {
       default: INT_FATAL(ip, "interpreter: bad astType: %d", ip->astType);
       case STMT: break;
@@ -2409,7 +2446,7 @@ runInterpreter(void) {
     while (!threads.n) 
       interactive(0);
   } while (1);
-  exit(0);
+  clean_exit(0);
 }
 
 void 
