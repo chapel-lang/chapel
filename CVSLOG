@@ -62809,3 +62809,29 @@ Log message:
 Modified files:
 	chapel/test/Bin/: timedexec 
 
+---------------------------------------------------------------------------
+
+04/06/06 08:34:40 -- deitz
+
+Log message:
+	Removed distinction of secondary and primary methods from the compiler
+	since there is no longer a distinction in the language and this
+	distinction could only lead to bugs.
+	
+	Fixed the order wrapper on methods but the order wrapper is not called
+	from analysis.  John, can you take a look at this.  It should now work
+	when it is called.  Added two futures to show the problem.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+Added files:
+	chapel/test/classes/deitz/: test_name_method.chpl 
+	                            test_name_method.future 
+	                            test_name_method.good 
+	                            test_name_method2.chpl 
+	                            test_name_method2.future 
+	                            test_name_method2.good 
+
