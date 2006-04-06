@@ -62835,3 +62835,15 @@ Added files:
 	                            test_name_method2.future 
 	                            test_name_method2.good 
 
+---------------------------------------------------------------------------
+
+04/06/06 10:57:32 -- deitz
+
+Log message:
+	Why does this test work and not result in a mixed primitive error
+	given the tuple test that failed?
+
+Added files:
+	chapel/test/classes/deitz/infer/: infer_field3.chpl 
+	                                  infer_field3.good 
+
