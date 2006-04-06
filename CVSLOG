@@ -62858,3 +62858,14 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+04/06/06 16:09:01 -- bradc
+
+Log message:
+	Removing an extraneous debugging line that crept into
+	the sub_test script.
+
+Modified files:
+	chapel/test/: sub_test 
+
