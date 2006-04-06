@@ -222,7 +222,6 @@ foreach chplsrc ($testsrc)
 	endif
 
 	echo \[Executing diff $checkfile $complog\]
-        cat $complog
 	diff $diffargs $checkfile $complog
 	set difffailed = $status
         if ( $difffailed == 0 ) then
