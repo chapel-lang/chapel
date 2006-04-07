@@ -1,3 +1,4 @@
 #!/bin/tcsh
 source ~/.chapelcshrc-cron
 $CHPLHOME/test/Bin/nightly -cron
+$CHPLHOME/test/Bin/nightly -cron -valgrind
