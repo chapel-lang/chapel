@@ -1,5 +1,0 @@
- called from 19 in __init_noop at _chpl_seq.chpl:-1
-::D(noop.chpl:6) ( _domain_1d )
-::i(noop.chpl:8) ( int64 )
-function foo noop.chpl:4
-globals

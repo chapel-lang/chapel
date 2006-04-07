@@ -1,6 +1,0 @@
-var n: int = 999;;
-var D: domain(???) = [1..n];;
-var A: [D] float;;
-forall var i: int; in D {
-A(i) = i;
-}
