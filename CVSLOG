@@ -63127,3 +63127,29 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+04/07/06 14:31:09 -- bradc
+
+Log message:
+	Updated these scripts that wrap the nightly script
+	to reflect the new flags supported by the nightly
+	script.  nightly.cron now calls nightly first in
+	standard mode, then in valgrind mode.
+	nightly.novgr.cron only calls it in standard mode.
+	
+	I should have mentioned in the previous check-in that
+	the nightly script used to automatically do a normal
+	run when it did a valgrind run.  Now the two are
+	completely decoupled, so you will only get a normal
+	or valgrind run for each execution of the nightly
+	script.
+	
+	The last check-in also changed the subject line for
+	nightly testing to include a bit more summary
+	information.  Further improvements could probably
+	be made.
+
+Modified files:
+	chapel/test/Bin/: nightly.cron nightly.novgr.cron 
+
