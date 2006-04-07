@@ -1,27 +1,26 @@
 #!/usr/bin/perl
 
 $valgrind = 0;
+$interpret = 0;
+$printusage = 1;
+$debug = 1;
 
-$printusage = 0;
-if (@ARGV) {
-    $debugflag = shift @ARGV;
-    if ($debugflag eq "-debug") {
+while (@ARGV) {
+    $flag = shift @ARGV;
+    if ($flag eq "-debug") {
 	$debug = 1;
-	$valgrind = 0;
-    } elsif ($debugflag eq "-cron") {
+        $printusage = 0;
+    } elsif ($flag eq "-cron") {
 	$debug = 0;
+        $printusage = 0;
+    } elsif ($flag eq "-valgrind") {
 	$valgrind = 1;
-    } elsif ($debugflag eq "-cronnovgr") {
-	$debug = 0;
-	$valgrind = 0;
-    } elsif ($debugflag eq "-debugvgr") {
-	$debug = 1;
-	$valgrind = 1;
+    } elsif ($flag eq "-interpret") {
+        $interpret = 1;
     } else {
-	$printusage = 1;
+        $printusage = 1;
+        last;
     }
-} else {
-    $printusage = 1;
 }
 
 $statdate = `date +%D`; chomp($statdate);
@@ -31,11 +30,11 @@ if (@ARGV) {
 }
 
 if ($printusage == 1) {
-    print "nightly [-debug|-debugvgr|-cron|-cronnovgr] {date}\n";
-    print "\t-debug     : check out sources and run standard only\n";
-    print "\t-debugvgr  : check out sources and run standard, valgrind\n";
+    print "nightly [-debug|-cron] {[-valgrind|-interpret]}\n";
+    print "\t-debug     : check out sources and run for individual user (default)\n";
     print "\t-cron      : use for nightly cron runs only\n";
-    print "\t-cronnovgr : use for nightly cron runs on platforms without valgrind\n";
+    print "\t-valgrind  : run tests in valgrind mode\n";
+    print "\t-interpret : run tests in interpreted mode\n";
     exit 1;
 }
 
@@ -102,32 +101,41 @@ if ($debug == 1) {
 }
 
 
+if ($valgrind == 1) {
+    if ($interpret == 1) {
+        $threechars = "vgi";
+        $morechars = "intrp+vgrnd";
+    } else {
+        $threechars = "vgr";
+        $morechars = "valgrind";
+    }
+} elsif ($interpret == 1) {
+    $threechars = "int";
+    $morechars = "interpret";
+} else {
+    $threechars = "std";
+    $morechars = "standard";
+}
+
+
 #
 # test log filenames
 #
 if ($debug == 1) {
-  $rawstdlog = "$logdir/debug-$platform-std.log";
-  $rawvgrlog = "$logdir/debug-$platform-vgr.log";
+  $rawlog = "$logdir/debug-$platform-$threechars.log";
 } else {
-  $rawstdlog = "$logdir/day$today-$platform-std.log";
-  $rawvgrlog = "$logdir/day$today-$platform-vgr.log";
+  $rawlog = "$logdir/day$today-$platform-$threechars.log";
 }
-$rawstdsummary = "$rawstdlog.summary";
-$rawvgrsummary = "$rawvgrlog.summary";
+$rawsummary = "$rawlog.summary";
+$sortedsummary = "$rawlog.sorted";
+$prevsummary = "$cronlogdir/last-$platform-$threechars.log.sorted";
 
-$sortedstdsummary = "$rawstdlog.sorted";
-$sortedvgrsummary = "$rawvgrlog.sorted";
-
-$prevstdsummary = "$cronlogdir/last-$platform-std.log.sorted";
-$prevvgrsummary = "$cronlogdir/last-$platform-vgr.log.sorted";
 
 #
 # make "prev" logs if they don't already exist
 #
-ensureSummaryExists($prevstdsummary);
-if ($valgrind == 1) {
-    ensureSummaryExists($prevvgrsummary);
-}
+ensureSummaryExists($prevsummary);
+
 
 #
 # set mail options
@@ -194,6 +202,7 @@ if ($platform eq "cygwin") {
 #
 # build stuff
 #
+
 mysystem("cd $chapeldir && $make third-party", "making third-party", 1, 1);
 mysystem("cd $chapeldir && $make compiler", "making chapel compiler", 1, 1);
 mysystem("cd $chapeldir && $make runtime", "making chapel runtime", 1, 1);
@@ -206,81 +215,52 @@ if ($valgrind == 1) {
 # run tests
 #
 #`rm -f $rawstdlog $rawvgrlog $rawstdsummary $rawvgrsummary`;
-$stdstatus = mysystem("cd $testdir && ./start_test -logfile $rawstdlog", "running standard tests", 0, 0);
-if ($valgrind == 1) {
-  $vgrstatus = mysystem("cd $testdir && ./start_test -valgrind -logfile $rawvgrlog", "running valgrind tests", 0, 0);
-} else {
-    $vgrstatus = 1;
+
+$testflags = "-logfile $rawlog";
+if ($interpret == 1) {
+    $testflags = "$testflags -interpret";
 }
+if ($valgrind == 1) {
+    $testflags = "$testflags -valgrind";
+}
+
+$status = mysystem("cd $testdir && ./start_test $testflags", "running standard tests", 0, 0);
+
 
 
 #
 # sort output
 #
 
+if ($status == 0) {
+    `cat $rawsummary | grep -v "^.END" | grep -v "^.Test Summary" | sort > $sortedsummary`;
 
-if ($stdstatus == 0) {
-    `cat $rawstdsummary | grep -v "^.END" | grep -v "^.Test Summary" | sort > $sortedstdsummary`;
+    $oldsummary = `grep Summary: $prevsummary`; chomp($oldsummary);
+    $cursummary = `grep Summary: $sortedsummary`; chomp($cursummary);
 
-    $oldstdsummary = `grep Summary: $prevstdsummary`; chomp($oldstdsummary);
-    $newstdsummary = `grep Summary: $sortedstdsummary`; chomp($newstdsummary);
+    $oldsucc = &numsuccesses($oldsummary);
+    $oldfail = &numfailures($oldsummary);
+    $oldfut  = &numfutures($oldsummary);
 
-    $oldstdsucc = &numsuccesses($oldstdsummary);
-    $oldstdfail = &numfailures($oldstdsummary);
-    $oldstdfut  = &numfutures($oldstdsummary);
+    $cursucc = &numsuccesses($cursummary);
+    $curfail = &numfailures($cursummary);
+    $curfut  = &numfutures($cursummary);
 
-    $newstdsucc = &numsuccesses($newstdsummary);
-    $newstdfail = &numfailures($newstdsummary);
-    $newstdfut  = &numfutures($newstdsummary);
+    $delsucc = &delta($oldsucc, $cursucc);
+    $delfail = &delta($oldfail, $curfail);
+    $delfut  = &delta($oldfut, $curfut);
 
-    $delstdsucc = &delta($oldstdsucc, $newstdsucc);
-    $delstdfail = &delta($oldstdfail, $newstdfail);
-    $delstdfut  = &delta($oldstdfut, $newstdfut);
-
-    $stdsummary = "standard run: $newstdsucc Successes ($delstdsucc), $newstdfail Failures ($delstdfail)";
+    $summary = "$morechars run: $cursucc Successes ($delsucc), $curfail Failures ($delfail)";
 } else {
-    $stdsummary = "standard run: failed";
-}
-
-if ($vgrstatus == 0) {
-    `cat $rawvgrsummary | grep -v "^.END" | grep -v "^.Test Summary" | sort > $sortedvgrsummary`;
-    
-    $oldvgrsummary = `grep Summary: $prevvgrsummary`; chomp($oldvgrsummary);
-    $newvgrsummary = `grep Summary: $sortedvgrsummary`; chomp($newvgrsummary);
-
-    $oldvgrsucc = &numsuccesses($oldvgrsummary);
-    $oldvgrfail = &numfailures($oldvgrsummary);
-    $oldvgrfut  = &numfutures($oldvgrsummary);
-
-    $newvgrsucc = &numsuccesses($newvgrsummary);
-    $newvgrfail = &numfailures($newvgrsummary);
-    $newvgrfut  = &numfutures($newvgrsummary);
-
-    $delvgrsucc = &delta($oldvgrsucc, $newvgrsucc);
-    $delvgrfail = &delta($oldvgrfail, $newvgrfail);
-    $delvgrfut  = &delta($oldvgrfut, $newvgrfut);
-
-    $vgrsummary = "valgrind run: $newvgrsucc Successes ($delvgrsucc), $newvgrfail Failures ($delvgrfail)";
-
-} else {
-    if ($valgrind == 1) {
-	$vgrsummary = "valgrind run: failed";
-    } else {
-	$vgrsummary = "valgrind not run";
-    }
+    $summary = "$morechars run: failed";
 }
 
 $knownumtests = 1;
-if ($stdstatus == 0) {
-    $oldnumtests = $oldstdsucc + $oldstdfail;
-    $newnumtests = $newstdsucc + $newstdfail;
-    $deltests = &delta($oldnumtests, $newnumtests);
-    $numtestssummary = "$newnumtests Tests ($deltests), $newstdfut Futures ($delstdfut)";
-} elsif ($vgrstatus == 0) {
-    $oldnumtests = $oldvgrsucc + $oldvgrfail;
-    $newnumtests = $newvgrsucc + $newvgrfail;
-    $deltests = &delta($oldnumtests, $newnumtests);
-    $numtestssummary = "$newnumtests Tests ($deltests), $newvgrfut Futures ($delvgrfut)";
+if ($status == 0) {
+    $oldnumtests = $oldsucc + $oldfail;
+    $curnumtests = $cursucc + $curfail;
+    $deltests = &delta($oldnumtests, $curnumtests);
+    $numtestssummary = "$curnumtests Tests ($deltests), $curfut Futures ($delfut)";
 } else {
     $numtestssummary = "unknown number of Tests";
     $knownumtests = 0;
@@ -295,24 +275,17 @@ if ($stdstatus == 0) {
 $futuremarker = "^Future";
 
 $newfailures = "???";
-$newvgrfailures = "???";
-if ($stdstatus == 0) {
-    $newfailures = `comm -13 $prevstdsummary $sortedstdsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | wc -l`; chomp($newfailures);
+if ($status == 0) {
+    $newfailures = `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | wc -l`; chomp($newfailures);
     $newfailures += 0;
-}
-if ($vgrstatus == 0) {
-    $newvgrfailures = `comm -13 $prevvgrsummary $sortedvgrsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | wc -l`; chomp($newvgrfailures);
-    $newvgrfailures += 0;
-    $shortstatus = "$newfailures/$newvgrfailures new failures";
-} elsif ($stdstatus == 0) {
-    $shortstatus = "$newfailures new failures";
+    $shortstatus = "$newfailures new failures ($curfail/$curfut total failures/futures)";
 } else {
     $shortstatus = "build/test failed";
 }
 if ($debug == 1) {
-    $mailsubject = "Chapel: Debug Results ($platform): $shortstatus";
+    $mailsubject = "Chapel Debug ($platform): $shortstatus";
 } else {
-    $mailsubject = "Chapel: Nightly Results ($platform): $shortstatus";
+    $mailsubject = "Chapel Nightly ($platform): $shortstatus";
 }
 
 if ($debug == 1) {
@@ -325,80 +298,43 @@ open(MAIL, $mailcommand);
 
 print MAIL "=== Summary ==========================================================\n";
 print MAIL "$numtestssummary\n";
-print MAIL "$stdsummary\n";
-print MAIL "$vgrsummary\n";
+print MAIL "$summary\n";
 print MAIL "======================================================================\n";
 print MAIL "\n";
 
-if ($stdstatus == 0) {
-    print MAIL "--- New Errors (standard) --------------------------------------------\n";
-    print MAIL `comm -13 $prevstdsummary $sortedstdsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
+if ($status == 0) {
+    print MAIL "--- New Errors ($morechars) -----------------------------------------\n";
+    print MAIL `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
     print MAIL "\n";
 }
 
-if ($vgrstatus == 0) {
-    print MAIL "--- New Errors (valgrind) --------------------------------------------\n";
-    print MAIL `comm -13 $prevvgrsummary $sortedvgrsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
+if ($status == 0) {
+    print MAIL "--- Resolved Errors ($morechars) ------------------------------------\n";
+    print MAIL `comm -23 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
     print MAIL "\n";
 }
 
-if ($stdstatus == 0) {
-    print MAIL "--- Resolved Errors (standard) ---------------------------------------\n";
-    print MAIL `comm -23 $prevstdsummary $sortedstdsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
+if ($status == 0) {
+    print MAIL "--- Unresolved Errors ($morechars) ----------------------------------\n";
+    print MAIL `comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
     print MAIL "\n";
 }
 
-if ($vgrstatus == 0) {
-    print MAIL "--- Resolved Errors (valgrind) ---------------------------------------\n";
-    print MAIL `comm -23 $prevvgrsummary $sortedvgrsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
-    print MAIL "\n";
-}
-
-if ($stdstatus == 0) {
-    print MAIL "--- Unresolved Errors (standard) -------------------------------------\n";
-    print MAIL `comm -12 $prevstdsummary $sortedstdsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
-    print MAIL "\n";
-}
-
-if ($vgrstatus == 0) {
-    print MAIL "--- Unresolved Errors (valgrind) -------------------------------------\n";
-    print MAIL `comm -12 $prevvgrsummary $sortedvgrsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
-    print MAIL "\n";
-}
-
-if ($stdstatus == 0) {
-    print MAIL "--- Passing Future tests (standard) ----------------------------------\n";
-    print MAIL `grep "$futuremarker" $sortedstdsummary | grep "Success"`;
+if ($status == 0) {
+    print MAIL "--- Passing Future tests ($morechars) -------------------------------\n";
+    print MAIL `grep "$futuremarker" $sortedsummary | grep "Success"`;
     print MAIL "\n";    
 }
 
-if ($vgrstatus == 0) {
-    print MAIL "--- Passing Future tests (valgrind) ----------------------------------\n";
-    print MAIL `grep "$futuremarker" $sortedvgrsummary | grep "Success"`;
+if ($status == 0) {
+    print MAIL "--- New Failing Future tests ($morechars) ---------------------------\n";
+    print MAIL `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "Error"`;
     print MAIL "\n";    
 }
 
-if ($stdstatus == 0) {
-    print MAIL "--- New Failing Future tests (standard) ----------------------------------\n";
-    print MAIL `comm -13 $prevstdsummary $sortedstdsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "Error"`;
-    print MAIL "\n";    
-}
-
-if ($vgrstatus == 0) {
-    print MAIL "--- New Failing Future tests (valgrind) ----------------------------------\n";
-    print MAIL `comm -13 $prevvgrsummary $sortedvgrsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "Error"`;
-    print MAIL "\n";    
-}
-
-if ($stdstatus == 0) {
-    print MAIL "--- Unresolved Future tests (standard) ----------------------------------\n";
-    print MAIL `comm -12 $prevstdsummary $sortedstdsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "Error"`;
-    print MAIL "\n";    
-}
-
-if ($vgrstatus == 0) {
-    print MAIL "--- Unresolved Future tests (valgrind) ----------------------------------\n";
-    print MAIL `comm -12 $prevvgrsummary $sortedvgrsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "Error"`;
+if ($status == 0) {
+    print MAIL "--- Unresolved Future tests ($morechars) ----------------------------\n";
+    print MAIL `comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "Error"`;
     print MAIL "\n";    
 }
 
@@ -409,11 +345,8 @@ close(MAIL);
 # tuck this run's output away for comparison tomorrow
 #
 if ($debug == 0) {
-    if ($stdstatus == 0) {
-	`cp $sortedstdsummary $prevstdsummary`;
-    }
-    if ($vgrstatus == 0) {
-	`cp $sortedvgrsummary $prevvgrsummary`;
+    if ($status == 0) {
+	`cp $sortedsummary $prevsummary`;
     }
 }
 
@@ -426,17 +359,14 @@ if ($knownumtests == 1) {
 } else {
     $testcol = "-";
 }
-if ($stdstatus == 0) {
-    $stdcol = "$newstdsucc";
-} else {
-    $stdcol = "-";
-}
-if ($vgrstatus == 0) {
-    $vgrcol = "$newvgrsucc";
-} else {
+if ($valgrind == 0) {
+    $col = "$newsucc";
     $vgrcol = "-";
+} else {
+    $col = "-";
+    $vgrcol = "$newsucc";
 }
-`echo "$statdate\t-\t$testcol\t$stdcol\t$vgrcol" >> $statfile`;
+`echo "$statdate\t-\t$testcol\t$col\t$vgrcol" >> $statfile`;
 commitstats();
 
 #
