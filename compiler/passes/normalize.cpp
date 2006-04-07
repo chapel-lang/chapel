@@ -474,8 +474,7 @@ static void insert_type_default_temp(UserType* userType) {
 
 
 static void initialize_out_formals(FnSymbol* fn) {
-  for_alist(DefExpr, argDef, fn->formals) {
-    ArgSymbol* arg = dynamic_cast<ArgSymbol*>(argDef->sym);
+  for_formals(arg, fn->formals) {
     if (arg->intent == INTENT_OUT) {
       if (arg->defaultExpr)
         fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, arg, arg->defaultExpr->copy()));
@@ -1292,11 +1291,9 @@ tag_generic(Type *t) {
 static void
 tag_hasVarArgs(FnSymbol* fn) {
   fn->hasVarArgs = false;
-  for_alist(DefExpr, formalDef, fn->formals) {
-    ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
+  for_formals(formal, fn->formals)
     if (formal->variableExpr)
       fn->hasVarArgs = true;
-  }
 }
 
 static void

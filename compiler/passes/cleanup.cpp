@@ -409,13 +409,11 @@ static void build_constructor(ClassType* ct) {
 
   // assign formals to fields by name
   forv_Vec(Symbol, field, ct->fields) {
-    for_alist(DefExpr, formalDef, fn->formals) {
-      if (ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym)) {
-        if (!formal->variableExpr && !strcmp(formal->name, field->name)) {
-          Expr* assign_expr = new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
-                                           new_StringSymbol(field->name), formal);
-          fn->insertAtTail(assign_expr);
-        }
+    for_formals(formal, fn->formals) {
+      if (!formal->variableExpr && !strcmp(formal->name, field->name)) {
+        Expr* assign_expr = new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
+                                         new_StringSymbol(field->name), formal);
+        fn->insertAtTail(assign_expr);
       }
     }
   }
