@@ -63034,3 +63034,96 @@ Modified files:
 	                         normalize.cpp 
 	chapel/compiler/traversals/: removeNestedFunctions.cpp 
 
+---------------------------------------------------------------------------
+
+04/07/06 14:24:01 -- bradc
+
+Log message:
+	Changes to the nightly script that is used to run regressions
+	in order to support nightly intepreter regression tests and
+	to clean things up slightly.  I've done some testing, but this
+	may cause some growing pains in the next few days, so please
+	bear with the testing system...
+	
+	The nightly script now requires one of two flags:
+	    -debug | -cron
+	
+	-cron is meant to be used only when running nightly cron jobs
+	      that will result in mail to be sent out to the whole
+	      team;
+	
+	-debug is for use by an individual user to run the complete
+	       testing suite using a clean checkout of the source
+	       tree, build from scratch, etc.  It can be a nice way
+	       of testing the current project version of the source
+	       tree, and/or for testing changes after checking them
+	       in (for those of us who don't work in /tmp by default,
+	       it can also result in faster testing due to its use of
+	       the local file system).
+	
+	There are then two optional flags:
+	      <nothing> | -valgrind | -interpret
+	
+	<nothing> (a lack of optional flags) causes the testing
+	          system to be run in its standard way
+	
+	-valgrind causes a valgrind version of the testing system to
+	          be run
+	
+	-interpret causes the testing suite to be run in interpreted
+	           mode
+	
+	theoretically, -valgrind and -interpret ought to be usable
+	               together, but this hasn't been tested.
+	
+	Thus, a nightly regression is likely to be run by a cron job
+	as one of:
+	        nightly -cron
+	        nightly -cron -valgrind
+	        nightly -cron -interpret
+	
+	Users may do their own testing via:
+	
+	      nightly -debug
+	      nightly -debug -valgrind
+	      nightly -debug -interpret
+	
+	The nightly script has a few environment variables that are
+	required or optional, as follows:
+	
+	required:
+	
+	CHPL_NIGHTLY_LOGDIR : a directory where logs should be stored; on Cray
+	                    systems, this is /data/sea/cascade/chapel/Nightly
+	                    for the nightly runs
+	
+	CHPL_NIGHTLY_CRON_LOGDIR : the directory where cron job logs should be
+	                         stored, for purposes of comparison.  On Cray
+	                         systems, this is
+	                         /data/sea/cascade/chapel/Nightly
+	
+	CHPL_NIGHTLY_STATDIR : a directory where statistics should be stored;
+	                     on Cray systems, this is
+	                     /data/sea/cascade/chapel/Nightly/Stats
+	                     for the nightly runs
+	
+	optional:
+	
+	CHPL_UW_CVS_USERNAME : your username under the UW CVS system; defaults
+	                     to your username on the machine in question
+	
+	CHPL_NIGHTLY_DEBUG_EMAIL : the address which -debug output should be
+	                         sent to; defaults to [your username on the
+	                         machine in question]@cray.com
+	
+	CHPL_NIGHTLY_TMPDIR : tmp directory in which to run the tests;
+	                    defaults to $TMPDIR if set, /tmp otherwise
+	
+	CHPL_NIGHTLY_MAKE : make command to use; defaults to $MAKE if set,
+	                  "make" otherwise
+	
+	CHPL_MAILER : command to use for sending mail; defaults to "Mail"
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
