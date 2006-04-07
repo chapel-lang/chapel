@@ -62869,3 +62869,30 @@ Log message:
 Modified files:
 	chapel/test/: sub_test 
 
+---------------------------------------------------------------------------
+
+04/06/06 17:02:04 -- deitz
+
+Log message:
+	Fixed coercion wrapper to deal with methods and removed future for
+	test/trivial/deitz/coercion2.future.
+	
+	Cleaned coercion wrapper and order wrapper code big time.
+	
+	Fixed regression functions/bradc/defaultParamWithReturn as an
+	unexpected but welcome side effect to this cleanup.
+	
+	Added a stylized for-loop
+	
+	  for_formals(ArgSymbol* formal, AList<DefExpr>* formals) {
+	
+	for iterating over formal arguments in a function.  Come to think of
+	it, I will change formals to a FnSymbol.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: alist.h 
+	chapel/compiler/passes/: cleanup.cpp normalize.cpp 
+Removed files:
+	chapel/test/trivial/deitz/: coerce2.future 
+
