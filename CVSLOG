@@ -62960,3 +62960,32 @@ Removed files:
 	                                     test.chpl test.future 
 	                                     test.good 
 
+---------------------------------------------------------------------------
+
+04/07/06 10:57:06 -- deitz
+
+Log message:
+	Update a couple future files with new info.
+	
+	Added two working tests.  One is a version of jacobi that uses the
+	domain functions expand and interior.
+	
+	Added three future tests I've been sitting on.  Two show the need for
+	tuple unification.  One shows zipper iteration.
+
+Modified files:
+	chapel/test/arrays/bradc/: domarr2.future noelemtype.future 
+Added files:
+	chapel/test/arrays/deitz/: jacobi4.chpl jacobi4.good 
+	chapel/test/classes/deitz/: test_record_infer.chpl 
+	                            test_record_infer.good 
+	chapel/test/types/seq/deitz/: test_zipper1.chpl 
+	                              test_zipper1.future 
+	                              test_zipper1.good 
+	chapel/test/types/tuple/deitz/: test_htuple8.chpl 
+	                                test_htuple8.future 
+	                                test_htuple8.good 
+	                                test_htuple9.chpl 
+	                                test_htuple9.future 
+	                                test_htuple9.good 
+
