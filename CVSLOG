@@ -62929,3 +62929,34 @@ Log message:
 Removed files:
 	chapel/test/types/tuple/deitz/: test_class_tuple1.future 
 
+---------------------------------------------------------------------------
+
+04/07/06 09:15:25 -- deitz
+
+Log message:
+	Removed three future flowanalysis tests and four future protoast
+	tests.  We discussed removing all protoast and flowanalysis tests.
+	
+	Fixed test_array_init3 and remove future.
+
+Modified files:
+	chapel/test/arrays/deitz/: test_array_init3.chpl 
+	                           test_array_init3.good 
+Removed files:
+	chapel/test/arrays/deitz/: test_array_init3.future 
+	chapel/test/flowanalysis/newast/: declprintdom2.chpl 
+	                                  declprintdom2.future 
+	                                  declprintdom2.good noop.chpl 
+	                                  noop.future noop.good 
+	                                  protoast_test.chpl 
+	                                  protoast_test.future 
+	                                  protoast_test.good 
+	chapel/test/trivial/bradc/protoast/: mg-seq-concrete.chpl 
+	                                     mg-seq-concrete.future 
+	                                     mg-seq-concrete.good 
+	                                     mg-seq.chpl mg-seq.future 
+	                                     mg-seq.good mvm-seq.chpl 
+	                                     mvm-seq.future mvm-seq.good 
+	                                     test.chpl test.future 
+	                                     test.good 
+
