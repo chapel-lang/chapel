@@ -62989,3 +62989,18 @@ Added files:
 	                                test_htuple9.future 
 	                                test_htuple9.good 
 
+---------------------------------------------------------------------------
+
+04/07/06 11:09:30 -- deitz
+
+Log message:
+	Add stand-alone future for infer complication case that I think we
+	were seeing in the tuple.  With this test, I'm going to go ahead and
+	try to get the tuples to work without this so that I can unify them as
+	that is becoming a bottleneck.
+
+Added files:
+	chapel/test/classes/deitz/: infer_complication.chpl 
+	                            infer_complication.future 
+	                            infer_complication.good 
+
