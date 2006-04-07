@@ -63153,3 +63153,26 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly.cron nightly.novgr.cron 
 
+---------------------------------------------------------------------------
+
+04/07/06 15:41:46 -- deitz
+
+Log message:
+	Four tests showing inheritance and instantiation, two futures.  One
+	seems to have a problem with dispatching to a function that takes its
+	generic parent argument.  The other is a problem with copying the
+	types to the child class.
+
+Added files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         inherit_instantiate.chpl 
+	                                         inherit_instantiate.good 
+	                                         inherit_instantiate2.chpl 
+	                                         inherit_instantiate2.future 
+	                                         inherit_instantiate2.good 
+	                                         inherit_instantiate3.chpl 
+	                                         inherit_instantiate3.good 
+	                                         inherit_instantiate4.chpl 
+	                                         inherit_instantiate4.future 
+	                                         inherit_instantiate4.good 
+
