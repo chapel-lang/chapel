@@ -106,6 +106,9 @@ class CallExpr : public Expr {
   virtual void print(FILE* outfile);
   virtual void codegen(FILE* outfile);
 
+  void insertAtHead(BaseAST* ast);
+  void insertAtTail(BaseAST* ast);
+
   void makeOp(void);
   bool isAssign(void);
 
@@ -127,10 +130,11 @@ class CallExpr : public Expr {
 class CastExpr : public Expr {
  public:
   Expr* expr;
-  Expr* newType;
   Type* type;
+  Expr* newType;
 
-  CastExpr(Expr* initExpr, Expr* initNewType, Type* initType = dtUnknown);
+  CastExpr(Expr* initExpr, Type* initType, Expr* initNewType = NULL);
+  CastExpr(Symbol* initExpr, Type* initType, Expr* initNewType = NULL);
   virtual void verify(void); 
   COPY_DEF(CastExpr);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);

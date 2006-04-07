@@ -471,7 +471,7 @@ static void insert_type_default_temp(UserType* userType) {
 
 
 static void initialize_out_formals(FnSymbol* fn) {
-  for_formals(arg, fn->formals) {
+  for_formals(arg, fn) {
     if (arg->intent == INTENT_OUT) {
       if (arg->defaultExpr)
         fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, arg, arg->defaultExpr->copy()));
@@ -735,8 +735,8 @@ static void apply_getters_setters(FnSymbol* fn) {
             rhs->remove();
             lhs->remove();
             call->replace(lhs);
-            lhs->argList->insertAtTail(new SymExpr(setterToken));
-            lhs->argList->insertAtTail(rhs);
+            lhs->insertAtTail(setterToken);
+            lhs->insertAtTail(rhs);
           }
         }
       }
@@ -778,7 +778,7 @@ static void fix_user_assign(CallExpr* call) {
     return;
   CallExpr* move = new CallExpr(PRIMITIVE_MOVE, call->get(1)->copy());
   call->replace(move);
-  move->argList->insertAtTail(call);
+  move->insertAtTail(call);
 }
 
 
@@ -1288,7 +1288,7 @@ tag_generic(Type *t) {
 static void
 tag_hasVarArgs(FnSymbol* fn) {
   fn->hasVarArgs = false;
-  for_formals(formal, fn->formals)
+  for_formals(formal, fn)
     if (formal->variableExpr)
       fn->hasVarArgs = true;
 }

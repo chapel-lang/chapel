@@ -341,18 +341,15 @@ static void codegen_member(FILE* outfile, BaseAST *base, BaseAST *member, Type *
 }
 
 
-static void callExprHelper(CallExpr* callExpr, BaseAST* arg) {
+static void callExprHelper(CallExpr* call, BaseAST* arg) {
   if (!arg)
     return;
-  if (Symbol* a = dynamic_cast<Symbol*>(arg)) {
-    callExpr->argList->insertAtTail(new SymExpr(a));
-  } else if (Expr* a = dynamic_cast<Expr*>(arg)) {
-    callExpr->argList->insertAtTail(a);
-  } else if (AList<Expr>* a = dynamic_cast<AList<Expr>*>(arg)) {
-    callExpr->argList->insertAtTail(a);
-  } else {
-    INT_FATAL(callExpr, "Bad argList in CallExpr constructor");
-  }
+  if (dynamic_cast<Symbol*>(arg) ||
+      dynamic_cast<Expr*>(arg) ||
+      dynamic_cast<AList<Expr>*>(arg))
+    call->insertAtTail(arg);
+  else
+    INT_FATAL(call, "Bad argList in CallExpr constructor");
 }
 
 
@@ -486,6 +483,18 @@ void CallExpr::print(FILE* outfile) {
     }
     fprintf(outfile, ")");
   }
+}
+
+
+void
+CallExpr::insertAtHead(BaseAST* ast) {
+  argList->insertAtHead(ast);
+}
+
+
+void
+CallExpr::insertAtTail(BaseAST* ast) {
+  argList->insertAtTail(ast);
 }
 
 
@@ -1002,11 +1011,19 @@ bool CallExpr::isLogicalPrimitive(void) {
 }
 
 
-CastExpr::CastExpr(Expr* initExpr, Expr* initNewType, Type* initType) :
+CastExpr::CastExpr(Expr* initExpr, Type* initType, Expr* initNewType) :
   Expr(EXPR_CAST),
   expr(initExpr),
-  newType(initNewType),
-  type(initType)
+  type(initType),
+  newType(initNewType)
+{ }
+
+
+CastExpr::CastExpr(Symbol* initExpr, Type* initType, Expr* initNewType) :
+  Expr(EXPR_CAST),
+  expr(new SymExpr(initExpr)),
+  type(initType),
+  newType(initNewType)
 { }
 
 
@@ -1019,7 +1036,7 @@ void CastExpr::verify() {
 
 CastExpr*
 CastExpr::copyInner(ASTMap* map) {
-  return new CastExpr(COPY_INT(expr), COPY_INT(newType), type);
+  return new CastExpr(COPY_INT(expr), type, COPY_INT(newType));
 }
 
 

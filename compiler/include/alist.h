@@ -91,8 +91,8 @@ class AList : public BaseAST {
        node = _alist_next,                                                                      \
          _alist_next = (node) ? dynamic_cast<elemtype*>((node)->next) : NULL)
 
-#define for_formals(formal, formals)                                    \
-  for (ArgSymbol *formal = (formals) ? ((formals)->head ? dynamic_cast<ArgSymbol*>(dynamic_cast<DefExpr*>((formals)->head->next)->sym) : NULL) : NULL, \
+#define for_formals(formal, fn)                                         \
+  for (ArgSymbol *formal = ((fn)->formals) ? (((fn)->formals)->head ? dynamic_cast<ArgSymbol*>(dynamic_cast<DefExpr*>(((fn)->formals)->head->next)->sym) : NULL) : NULL, \
          *_alist_next = (formal) ? dynamic_cast<ArgSymbol*>(dynamic_cast<DefExpr*>((formal)->defPoint->next)->sym) : NULL; \
        (formal);                                                        \
        formal = _alist_next,                                            \

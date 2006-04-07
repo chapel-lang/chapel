@@ -217,7 +217,7 @@ CallExpr* new_default_constructor_call(Type* type) {
       } else {
         INT_FATAL(type, "Unexpected case in new_default_constructor_call");
       }
-      call->argList->insertAtTail(new NamedExpr(name, actual));
+      call->insertAtTail(new NamedExpr(name, actual));
     }
   }
   return call;
@@ -261,7 +261,7 @@ void resolve_op(CallExpr* call) {
   } else if (call->primitive && !strcmp(call->primitive->name, "init")) {
     Type* type = call->get(1)->typeInfo();
     if (type->defaultValue) {
-      call->replace(new CastExpr(new SymExpr(type->defaultValue), NULL, type));
+      call->replace(new CastExpr(type->defaultValue, type));
     } else if (type->defaultConstructor) {
       CallExpr* c = new_default_constructor_call(type);
       call->replace(c);
@@ -556,7 +556,7 @@ void resolve_asts(BaseAST* base) {
         if (CallExpr* partial = dynamic_cast<CallExpr*>(call->baseExpr)) {
           if (partial->typeInfo() == dtUnknown) {
             call->baseExpr->replace(partial->baseExpr->copy());
-            call->argList->insertAtHead(partial->argList->copy());
+            call->insertAtHead(partial->argList->copy());
           }
         }
         SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr);
@@ -565,7 +565,7 @@ void resolve_asts(BaseAST* base) {
             dynamic_cast<ArgSymbol*>(base->var)) {
           Expr* baseExpr = call->baseExpr;
           call->baseExpr->replace(new SymExpr("this"));
-          call->argList->insertAtHead(baseExpr->copy());
+          call->insertAtHead(baseExpr->copy());
         }
         Vec<Type*> actual_types;
         Vec<Symbol*> actual_params;

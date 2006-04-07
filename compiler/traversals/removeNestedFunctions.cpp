@@ -62,8 +62,8 @@ addVarsToFormals(FnSymbol* fn, Vec<Symbol*>* vars) {
 static void
 addVarsToActuals(CallExpr* call, Vec<Symbol*>* vars) {
   forv_Vec(Symbol, sym, *vars) {
-    if (sym) 
-      call->argList->insertAtTail(new SymExpr(sym));
+    if (sym)
+      call->insertAtTail(sym);
   }
 }
 

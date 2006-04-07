@@ -749,7 +749,7 @@ make_method_call_partial(CallExpr* call) {
   while (call->argList->length() > 2) {
     Expr* arg = call->get(3);
     arg->remove();
-    outer->argList->insertAtTail(arg);
+    outer->insertAtTail(arg);
   }
   return outer;
 }
@@ -795,22 +795,16 @@ FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_map) {
   FnSymbol* wrapper = build_empty_wrapper(this);
   wrapper->cname = stringcat("_coerce_wrap_", cname);
   CallExpr* call = new CallExpr(this);
-  for_formals(formal, formals) {
+  for_formals(formal, this) {
     Symbol* wrapper_formal = formal->copy();
     if (_this == formal)
       wrapper->_this = wrapper_formal;
-    wrapper->formals->insertAtTail(new DefExpr(wrapper_formal));
+    wrapper->formals->insertAtTail(wrapper_formal);
     if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(coercion_map->get(formal))) {
       wrapper_formal->type = ts->definition;
-      char* temp_name = stringcat("_coercion_temp_", formal->name);
-      VarSymbol* temp = new VarSymbol(temp_name, formal->type);
-      wrapper->insertAtTail(new DefExpr(temp));
-      wrapper->insertAtTail(
-        new CallExpr("=", temp,
-          new CastExpr(new SymExpr(wrapper_formal), NULL, formal->type)));
-      call->argList->insertAtTail(new SymExpr(temp));
+      call->insertAtTail(new CastExpr(wrapper_formal, formal->type));
     } else {
-      call->argList->insertAtTail(new SymExpr(wrapper_formal));
+      call->insertAtTail(wrapper_formal);
     }
   }
   if (isMethod)
@@ -829,67 +823,51 @@ FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_map) {
 FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
   if (FnSymbol* cached = check_dwcache(this, defaults))
     return cached;
-
-  FnSymbol* wrapper = new FnSymbol(name);
-  wrapper->visible = false;
-  wrapper->formals = new AList<DefExpr>();
-
-  AList<Expr>* wrapper_actuals = new AList<Expr>();
-  ASTMap map;
-  for_alist(DefExpr, formalDef, formals) {
-    ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
+  FnSymbol* wrapper = build_empty_wrapper(this);
+  wrapper->cname = stringcat("_default_wrap_", cname);
+  CallExpr* call = new CallExpr(this);
+  ASTMap copy_map;
+  for_formals(formal, this) {
     if (!defaults->in(formal)) {
-      Symbol* newFormal = formal->copy();
-      map.put(formal, newFormal);
-      wrapper->formals->insertAtTail(new DefExpr(newFormal));
-      wrapper_actuals->insertAtTail(new SymExpr(newFormal));
+      Symbol* wrapper_formal = formal->copy();
       if (_this == formal)
-        wrapper->_this = newFormal;
+        wrapper->_this = wrapper_formal;
+      copy_map.put(formal, wrapper_formal);
+      wrapper->formals->insertAtTail(wrapper_formal);
+      call->insertAtTail(wrapper_formal);
     } else {
       if (formal->intent == INTENT_TYPE) {
-        wrapper_actuals->insertAtTail(formal->defaultExpr->copy());
+        call->insertAtTail(formal->defaultExpr->copy());
       } else {
         char* temp_name = stringcat("_default_temp_", formal->name);
         VarSymbol* temp = new VarSymbol(temp_name, formal->type);
-        map.put(formal, temp);
+        copy_map.put(formal, temp);
         Expr* temp_init = NULL;
         Expr* temp_type = NULL;
         if (formal->intent != INTENT_OUT)
           temp_init = formal->defaultExpr->copy();
-        if (SymExpr* symExpr = dynamic_cast<SymExpr*>(temp_init)) {
-          if (symExpr->var == gNil) {
+        if (SymExpr* symExpr = dynamic_cast<SymExpr*>(temp_init))
+          if (symExpr->var == gNil)
             temp_init = NULL;
-          }
-        }
-        if (formalDef->exprType)
-          temp_type = formalDef->exprType->copy();
+        if (formal->defPoint->exprType)
+          temp_type = formal->defPoint->exprType->copy();
         wrapper->insertAtTail(new DefExpr(temp, temp_init, temp_type));
         if (formal->type != dtUnknown &&
             formal->intent != INTENT_REF &&
             formal->intent != INTENT_OUT &&
             formal->intent != INTENT_INOUT)
-          wrapper_actuals->insertAtTail(new CastExpr(new SymExpr(temp), NULL, formal->type));
+          call->insertAtTail(new CastExpr(temp, formal->type));
         else
-          wrapper_actuals->insertAtTail(new SymExpr(temp));
+          call->insertAtTail(temp);
       }
     }
   }
-  update_symbols(wrapper->body, &map);
-  CallExpr* call = new CallExpr(this, wrapper_actuals);
+  update_symbols(wrapper->body, &copy_map);
   if (isMethod)
     call = make_method_call_partial(call);
   wrapper->insertAtTail(
     returns_void(this) ? new ExprStmt(call) : new ReturnStmt(call));
-  wrapper->typeBinding = typeBinding;
-  wrapper->retType = retType;
-  wrapper->fnClass = fnClass;
-  wrapper->noParens = noParens;
-  wrapper->retRef = retRef;
-  wrapper->isMethod = isMethod;
-  wrapper->cname = stringcat("_default_wrap_", cname);
-  wrapper->addPragma("inline");
   defPoint->parentStmt->insertAfter(new DefExpr(wrapper));
-  wrapper->addPragmas(&pragmas);
   reset_file_info(wrapper->defPoint->parentStmt, lineno, filename);
   add_dwcache(wrapper, this, defaults);
   normalize(wrapper);
@@ -901,13 +879,16 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* order_map) {
   FnSymbol* wrapper = build_empty_wrapper(this);
   wrapper->cname = stringcat("_order_wrap_", cname);
   CallExpr* call = new CallExpr(this);
-  Map<Symbol*,Symbol*> copy_map;
-  for_formals(formal, formals) {
-    copy_map.put(formal, formal->copy());
+  ASTMap copy_map;
+  for_formals(formal, this) {
+    Symbol* wrapper_formal = formal->copy();
+    if (_this == formal)
+      wrapper->_this = wrapper_formal;
+    copy_map.put(formal, wrapper_formal);
   }
-  for_formals(formal, formals) {
-    wrapper->formals->insertAtTail(new DefExpr(copy_map.get(order_map->get(formal))));
-    call->argList->insertAtTail(new SymExpr(copy_map.get(formal)));
+  for_formals(formal, this) {
+    wrapper->formals->insertAtTail(copy_map.get(order_map->get(formal)));
+    call->insertAtTail(copy_map.get(formal));
   }
   if (isMethod)
     call = make_method_call_partial(call);
