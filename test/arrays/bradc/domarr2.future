@@ -1,3 +1,11 @@
+bradc
+
+I think the line
+
+A = [Mat] 2.0;
+
+is illegal.  If this is a for expression then it needs to be something like [i in Mat] but in this case, it is odd because the expression 2.0 does not contain i.  Leaving it to you to update.  -SJD
+
 deitz
 
 the current error is a parsing proble
