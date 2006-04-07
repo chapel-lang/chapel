@@ -678,18 +678,17 @@ ACallbacks::coerce(Sym *actual, Sym *formal) {
 }
 
 Sym *
-ACallbacks::promote(Sym *actual, Sym *formal) {
+ACallbacks::promote(Fun *f, Sym *formal, Sym *formal_type, Sym *actual) {
+  if (!strcmp(f->sym->name, "=") || formal_type->is_meta_type || formal_type->is_system_type)
+    return NULL;
+  FnSymbol *fn = dynamic_cast<FnSymbol *>(SYMBOL(f->sym));
+  if (fn->isMethod && SYMBOL(formal) == fn->_this)
+    return NULL;
   Type *t = dynamic_cast<Type *>(SYMBOL(actual));
   if (t && t->scalarPromotionType) {
-    Sym * a = t->scalarPromotionType->asymbol->sym->scalar_type(),
-      *f = formal->scalar_type();
-    if (a && f) {
-      Sym *res = coerce_num(a, f);
-      if (res == f)
-        return f;
-    }
-    if (a && formal == sym_string)
-      return sym_string;
+    Sym *tt = t->scalarPromotionType->asymbol->sym;
+    if (formal_type->specializers.in(tt))
+      return formal_type;
   }
   return NULL;
 }
@@ -721,6 +720,8 @@ ACallbacks::coercion_wrapper(Fun *f, Map<MPosition *, Sym *> &substitutions) {
   convert_substitutions(f, substitutions, coercions);
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(SYMBOL(f->sym));
   FnSymbol *fsym = fndef->coercion_wrapper(&coercions);
+  if (!fsym)
+    return NULL;
   if (fsym->asymbol)
     return fsym->asymbol->sym->fun;
   Fun *fun = install_new_asts(fsym);
@@ -736,6 +737,8 @@ ACallbacks::promotion_wrapper(Fun *f, Map<MPosition *, Sym *> &substitutions) {
   convert_substitutions(f, substitutions, promotions);
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(SYMBOL(f->sym));
   FnSymbol *fsym = fndef->promotion_wrapper(&promotions);
+  if (!fsym)
+    return NULL;
   if (fsym->asymbol)
     return fsym->asymbol->sym->fun;
   Fun *fun = install_new_asts(fsym);
@@ -756,6 +759,8 @@ ACallbacks::default_wrapper(Fun *f, Vec<MPosition *> &default_args) {
   }
   FnSymbol *fndef = dynamic_cast<FnSymbol *>(SYMBOL(f->sym));
   FnSymbol *fsym = fndef->default_wrapper(&defaults);
+  if (!fsym)
+    return NULL;
   if (fsym->asymbol)
     return fsym->asymbol->sym->fun;
   Fun *fun = install_new_asts(fsym);
@@ -1057,6 +1062,8 @@ build_type(Type *t, bool make_default = true) {
     forv_Vec(Type, tt, t->dispatchParents)
       t->asymbol->sym->inherits_add(tt->asymbol->sym);
   }
+  if (t->scalarPromotionType)
+    t->asymbol->sym->dispatch_types.add(t->scalarPromotionType->asymbol->sym);
   switch (t->astType) {
     default: assert(!"case");
     case TYPE:

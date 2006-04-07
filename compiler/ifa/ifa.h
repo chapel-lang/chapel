@@ -60,7 +60,7 @@ public:
   virtual int formal_to_generic(Sym *s, Sym **ret_generic, int *ret_bind_to_value) { return false; }
   virtual Sym *instantiate(Sym *, Map<Sym *, Sym *> &substitutions) { return 0; }
   virtual Fun* order_wrapper(Fun *, Map<MPosition *, MPosition *> &substitutions) { return 0; }
-  virtual Sym *promote(Sym *actual, Sym *formal) { return NULL; }
+  virtual Sym *promote(Fun *, Sym *, Sym *, Sym *) { return NULL; }
   virtual Fun* promotion_wrapper(Fun *, Map<MPosition *, Sym *> &substitutions) { return 0; }
   virtual Sym *coerce(Sym *actual, Sym *formal) { return NULL; }
   virtual Fun* coercion_wrapper(Fun *, Map<MPosition *, Sym *> &substitutions) { return 0; }

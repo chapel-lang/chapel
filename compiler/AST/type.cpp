@@ -767,9 +767,11 @@ int
 is_Value_Type(Type *t) {
   if (UserType *ut = dynamic_cast<UserType*>(t))
     return is_Value_Type(ut->underlyingType);
+  PrimitiveType *pt = dynamic_cast<PrimitiveType*>(t);
+  if (pt)
+    return true;
   ClassType* ct = dynamic_cast<ClassType*>(t);
-  return ct && (ct->classTag == CLASS_RECORD
-                || ct->classTag == CLASS_VALUECLASS);
+  return ct && (ct->classTag == CLASS_RECORD || ct->classTag == CLASS_VALUECLASS);
 }
 
 

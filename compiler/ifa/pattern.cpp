@@ -10,8 +10,6 @@
 #include "ast.h"
 #include "log.h"
 
-//#define INSTANTIATE_FOR_NIL           1
-
 // Key to names of position variables
 //  ABCD 
 //   A = a | f, actual or formal (MANDITORY)
@@ -92,7 +90,8 @@ class Matcher {
   void instantiation_wrappers_and_partial_application(Vec<Fun *> &);
   Fun *build(PMatch *m, Vec<Fun *> &matches);
   void generic_arguments(Vec<CreationSet *> &, MPosition &, Vec<Fun *> &, int);
-  void set_filters(Vec<CreationSet *> &, MPosition &, Vec<Fun *> &, int);
+  void set_filters(Vec<CreationSet *> &, MPosition &, Vec<Fun *> &);
+  void reverify_filters(Vec<Fun *> &);
   void cannonicalize_matches(Vec<Fun *> &, int, Partial_kind, Vec<Match *> &, PNode *);
 
   Matcher(AVar *send, AVar *arg0, int is_closure, Partial_kind partial);
@@ -206,7 +205,7 @@ Matcher::pattern_match_sym_internal(Sym *type, MPosition *fcp, Vec<Fun *> &funs,
     if (fs)
       funs.set_union(*fs);
   }
-  forv_Sym(tt, type->dispatch_order)
+  forv_Sym(tt, type->dispatch_types)
     if (done.set_add(tt))
       pattern_match_sym_internal(tt, fcp, funs, done);
 }
@@ -539,18 +538,20 @@ subsumes(PMatch *x, PMatch *y, MPosition &app, int nargs) {
     if (x->fun->sym->nesting_depth < y->fun->sym->nesting_depth)
       result = 1;
   }
+  if (!result) {
+    if (!x->promotion_substitutions.n && y->promotion_substitutions.n)
+      result = -1;
+    if (x->promotion_substitutions.n && !y->promotion_substitutions.n)
+      result = 1;
+  }
  Lreturn:
   app.pop();
   return result;
 }
 
 void
-Matcher::set_filters(Vec<CreationSet *> &csargs, MPosition &app, Vec<Fun *> &matches, 
-                     int top_level) 
-{
-  Vec<Fun *> mm;
-  mm.move(matches);
-  forv_Fun(f, mm) {
+Matcher::set_filters(Vec<CreationSet *> &csargs, MPosition &app, Vec<Fun *> &matches) {
+  forv_Fun(f, matches) {
     PMatch *m = match_map.get(f);
     app.push(1);
     for (int i = 0; i < csargs.n; i++) {
@@ -564,33 +565,6 @@ Matcher::set_filters(Vec<CreationSet *> &csargs, MPosition &app, Vec<Fun *> &mat
       app.inc();
     }
     app.pop();
-    if (top_level) {
-      // re-verify filters after instantiation
-      int ok = 1;
-      forv_MPosition(p, f->positional_arg_positions) {
-        AType *t = m->formal_filters.get(p);
-        if (t) {
-          Sym *m_type = dispatch_type(m->fun->arg_syms.get(p));
-          Sym *actual = m->actuals.get(to_actual(p, m))->var->sym;
-          Vec<CreationSet *> newt;
-          forv_CreationSet(cs, *t) if (cs) {
-            if (cs->sym == sym_nil_type && actual->aspect &&
-                sym_object->specializers.set_in(actual->aspect)) {
-              if (m_type->specializers.set_in(actual->aspect))
-                newt.set_add(cs);
-            } else 
-              if (m_type == cs->sym || m_type->specializers.set_in(cs->sym->type))
-                newt.set_add(cs);
-          }
-          if (!newt.n)
-            ok = 0;
-          t->move(newt);
-        }
-      }
-      if (ok)
-        matches.add(f);
-    } else
-      matches.add(f);
   }
 }
 
@@ -925,14 +899,14 @@ unify_generic_type(Sym *formal, Sym *generic_type,
                    Map<Sym *, Sym *> &substitutions, IFAAST *ast) 
 {
   Sym *concrete_type = concrete_value->type;
-#ifndef INSTANTIATE_FOR_NIL
+  if (concrete_type == sym_unspecified_type)
+    return 0;
   if (concrete_type == sym_nil_type) { 
     Sym *gtype = substitutions.get(generic_type);
     if (!gtype) gtype = generic_type;
     if (gtype != sym_nil_type && gtype != sym_any->meta_type)
       return 0;
   }
-#endif
   if (formal->is_generic) {
     if (generic_type == actual)
       return make_generic_substitution(ast, formal, actual, substitutions);
@@ -965,17 +939,13 @@ unify_generic_type(Sym *formal, Sym *generic_type,
       type = substitutions.get(generic_type->meta_type);
     if (type == concrete_type)
       return 1;
-    if (make_generic_substitution(ast, generic_type, concrete_type, substitutions))
-      return 1;
+    if (concrete_type->instantiates == generic_type)
+      if (make_generic_substitution(ast, generic_type, concrete_type, substitutions))
+        return 1;
     return 0;
   }
   if (generic_type == concrete_type)
     return 1;
-#if 0
-  // treat type variables as ?t
-  if (generic_type->type_kind == Type_VARIABLE)
-    return make_generic_substitution(ast, generic_type, concrete_type, substitutions);
-#endif
   return 0;
 }
 
@@ -1071,7 +1041,19 @@ coercion_uses(PMatch **am, MPosition &app, Vec<CreationSet*> &args) {
   app.pop();
 }
 
-static void
+static int
+verify_arg(Sym *actual, CreationSet *cs, Sym *formal_type) { 
+  if (cs->sym == sym_nil_type && actual->aspect &&
+      sym_object->specializers.set_in(actual->aspect)) {
+    if (!formal_type->specializers.set_in(actual->aspect))
+      return 0;
+  } else
+    if (formal_type != cs->sym && !formal_type->specializers.set_in(cs->sym))
+      return 0;
+  return 1;
+}
+
+static int
 promotion_uses(PMatch **am, MPosition &app, Vec<CreationSet*> &args) {
   PMatch *m = *am;
   app.push(1);
@@ -1086,16 +1068,24 @@ promotion_uses(PMatch **am, MPosition &app, Vec<CreationSet*> &args) {
     if (formal_type == concrete_type || (!formal_type && m->fun->is_varargs))
       goto LnextArg;
     {
-      Sym *promoted_type = if1->callback->promote(concrete_type, formal_type);
-      if (promoted_type && concrete_type != promoted_type) {
-        m->promotion_substitutions.put(fcpp, concrete_type);
-        m->formal_dispatch_types.put(fcpp, promoted_type);
-      }
+      Sym *formal = m->fun->arg_syms.get(fcpp);
+      Sym *promoted_type = if1->callback->promote(m->fun, formal, formal_type, concrete_type);
+      if (promoted_type) {
+        if (concrete_type != promoted_type) {
+          m->promotion_substitutions.put(fcpp, promoted_type);
+          m->formal_dispatch_types.put(fcpp, promoted_type);
+        }
+      } else
+        if (!verify_arg(a->var->sym, cs, formal_type)) {
+          app.pop();
+          return 0;
+        }
     }
    LnextArg:;
     app.inc();
   }
   app.pop();
+  return 1;
 }
 
 // clear out values needed only while considering a particular csargs
@@ -1107,6 +1097,44 @@ clear_matches(PMatchMap &match_map) {
     x->value->generic_substitutions.clear();
     x->value->coercion_substitutions.clear();
     x->value->promotion_substitutions.clear();
+  }
+}
+
+void 
+Matcher::reverify_filters(Vec<Fun *> &matches) {
+  Vec<Fun *> mm;
+  mm.move(matches);
+  forv_Fun(f, mm) {
+    PMatch *m = match_map.get(f);
+    int ok = 1;
+    forv_MPosition(p, f->positional_arg_positions) {
+      AType *t = m->formal_filters.get(p);
+      if (t) {
+        Sym *m_type = dispatch_type(m->fun->arg_syms.get(p));
+        Sym *actual = m->actuals.get(to_actual(p, m))->var->sym;
+        Vec<CreationSet *> newt;
+        forv_CreationSet(cs, *t) if (cs) {
+          if (cs->sym == sym_nil_type && actual->aspect &&
+              sym_object->specializers.set_in(actual->aspect)) {
+            if (m_type->specializers.set_in(actual->aspect))
+              newt.set_add(cs);
+          } else {
+            if (m_type == cs->sym || m_type->specializers.set_in(cs->sym->type))
+              newt.set_add(cs);
+            else
+              // promotions can add to the dispatch table but do not specialize
+              forv_Sym(s, m_type->dispatch_types)
+                if (s->specializers.set_in(cs->sym->type))
+                  newt.set_add(cs);
+          }
+        }
+        if (!newt.n)
+          ok = 0;
+        t->move(newt);
+      }
+    }
+    if (ok)
+      matches.add(f);
   }
 }
 
@@ -1173,8 +1201,9 @@ Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &app,
   for (int i = 0; i < covered.n; i++) {
     if (!generic_substitutions(&covered.v[i], app, csargs, ast))
       continue;
+    if (!promotion_uses(&covered.v[i], app, csargs))
+      continue;
     coercion_uses(&covered.v[i], app, csargs);
-    promotion_uses(&covered.v[i], app, csargs);
     applicable.add(covered.v[i]);
   }
 
@@ -1243,7 +1272,9 @@ Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &app,
   }
   if (top_level)
     instantiation_wrappers_and_partial_application(matches);
-  set_filters(csargs, app, matches, top_level);
+  set_filters(csargs, app, matches);
+  if (top_level)
+    reverify_filters(matches);
   log(LOG_DISPATCH, "%d- destructure_level: %d matches: %d\n", send->var->sym->id, 
       app.pos.n, matches.n);
   qsort_by_id(matches);

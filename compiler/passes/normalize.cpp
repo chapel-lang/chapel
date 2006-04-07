@@ -294,9 +294,9 @@ static TypeSymbol* create_iterator_next_function(FnSymbol* fn) {
 static void reconstruct_iterator(FnSymbol* fn) {
   if (0) create_iterator_next_function(fn);
   Expr* seqType = fn->retExpr;
-  Type *seqElementType = seqType->typeInfo();
   if (!seqType)
     USR_FATAL(fn, "Cannot infer iterator return type yet");
+  Type *seqElementType = seqType->typeInfo();
   fn->retExpr->remove();
 
   Symbol* seq = new VarSymbol("_seq_result");
@@ -323,11 +323,8 @@ static void reconstruct_iterator(FnSymbol* fn) {
   if (scalar_promotion) {
     if (!strcmp("_promoter", fn->name)) {
       if (seqElementType != dtUnknown) {
-        if (dynamic_cast<PrimitiveType*>(seqElementType)) {
+        if (is_Value_Type(seqElementType))
           fn->typeBinding->definition->scalarPromotionType = seqElementType;
-          if (!run_interpreter)
-            fn->typeBinding->definition->dispatchParents.add(seqElementType);
-        }
       } else {
         if (CallExpr *c = dynamic_cast<CallExpr*>(seqType)) {
           if (SymExpr *b = dynamic_cast<SymExpr*>(c->baseExpr)) {

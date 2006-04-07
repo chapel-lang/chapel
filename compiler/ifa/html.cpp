@@ -275,7 +275,7 @@ dump_symbols(FILE *fp, FA *fa) {
         again = syms.set_add(s->must_specialize) || again;
       if (s->must_implement)
         again = syms.set_add(s->must_implement) || again;
-      forv_Sym(ss, s->dispatch_order) if (ss)
+      forv_Sym(ss, s->dispatch_types) if (ss)
         again = syms.set_add(ss) || again;
       forv_Sym(ss, s->has) if (ss)
         again = syms.set_add(ss) || again;

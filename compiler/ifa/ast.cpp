@@ -108,7 +108,7 @@ specialize(Sym *s, Sym *ss, Accum<Sym *> &types) {
   if (!ss->specializes.in(s))
     ss->specializes.add(s);
   if (s->specializers.set_add(ss))
-    ss->dispatch_order.add(s);
+    ss->dispatch_types.add(s);
   types.add(s);
   types.add(ss);
 }
@@ -161,10 +161,10 @@ compute_single_structural_type_hierarchy(Vec<Sym *> types, int is_union) {
                       goto Lskip;
                 if (!is_union) {
                   if (s->specializers.set_add(ss))
-                    ss->dispatch_order.add(s);
+                    ss->dispatch_types.add(s);
                 } else {
                   if (ss->specializers.set_add(s))
-                    s->dispatch_order.add(ss);
+                    s->dispatch_types.add(ss);
                 }
               Lskip:;
               }
@@ -180,7 +180,7 @@ compute_single_structural_type_hierarchy(Vec<Sym *> types, int is_union) {
       forv_Sym(ss, types) {
         if (!related(s, ss))
           if (s->specializers.set_add(ss))
-            ss->dispatch_order.add(s);
+            ss->dispatch_types.add(s);
       }
     }
   }

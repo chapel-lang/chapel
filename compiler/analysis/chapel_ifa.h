@@ -19,15 +19,15 @@ public:
   Sym *new_Sym(char *name = 0);
   Sym *make_LUB_type(Sym *);
   int formal_to_generic(Sym*, Sym **, int *);
-  Sym *instantiate(Sym *, Map<Sym *, Sym *> &substitutions);
-  Fun *order_wrapper(Fun *, Map<MPosition *, MPosition *> &substitutions);
-  Sym *coerce(Sym *actual, Sym *formal);
+  Sym *instantiate(Sym *, Map<Sym *, Sym *> &);
+  Fun *order_wrapper(Fun *, Map<MPosition *, MPosition *> &);
+  Sym *coerce(Sym *, Sym *);
   Fun *coercion_wrapper(Fun *, Map<MPosition *, Sym *> &substitutions);
-  Sym *promote(Sym *actual, Sym *formal);
-  Fun *promotion_wrapper(Fun *, Map<MPosition *, Sym *> &substitutions);
-  Fun *default_wrapper(Fun *, Vec<MPosition *> &defaults);
-  Fun *instantiate_generic(Fun *, Map<Sym *, Sym *> &substitutions);
-  void report_analysis_errors(Vec<ATypeViolation*> &type_violations);
+  Sym *promote(Fun *,Sym *, Sym *, Sym *);
+  Fun *promotion_wrapper(Fun *, Map<MPosition *, Sym *> &);
+  Fun *default_wrapper(Fun *, Vec<MPosition *> &);
+  Fun *instantiate_generic(Fun *, Map<Sym *, Sym *> &);
+  void report_analysis_errors(Vec<ATypeViolation*> &);
 };
 
 class ASymbol : public IFASymbol {
