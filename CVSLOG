@@ -63004,3 +63004,33 @@ Added files:
 	                            infer_complication.future 
 	                            infer_complication.good 
 
+---------------------------------------------------------------------------
+
+04/07/06 13:59:10 -- deitz
+
+Log message:
+	Cleaned default wrapper code and a little more cleaning of coercion
+	and order wrapper code, plus some fixes.
+	
+	In continuing the work of making AST insertion easier, I extended
+	insertAtTail and insertAtHead to work directly on CallExprs (similarly
+	to the extension to BlockStmts and FnSymbols).  Also I extended the
+	convenience of automatically putting "new ExprStmt" around expressions
+	that are inserted into Stmt lists to put "new DefExpr" around symbols
+	that are put into DefExpr lists and "new SymExpr" around symbols that
+	are put into Expr lists other than DefExpr lists.  Changed how the
+	CastExpr constructor works to make it simplify the common case.  Made
+	some simplifications throughout the code as a result.
+	
+	Made for_formals work on FnSymbols directly as in
+	
+	  for_formals(formal, fn) { ... }
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp symbol.cpp 
+	chapel/compiler/include/: alist.h expr.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: cleanup.cpp functionResolution.cpp 
+	                         normalize.cpp 
+	chapel/compiler/traversals/: removeNestedFunctions.cpp 
+
