@@ -62919,3 +62919,13 @@ Modified files:
 	chapel/compiler/ifa/: ast.cpp html.cpp ifa.h pattern.cpp sym.h 
 	chapel/compiler/passes/: normalize.cpp 
 
+---------------------------------------------------------------------------
+
+04/07/06 09:03:21 -- deitz
+
+Log message:
+	Remove future for working test.
+
+Removed files:
+	chapel/test/types/tuple/deitz/: test_class_tuple1.future 
+
