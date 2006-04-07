@@ -62896,3 +62896,26 @@ Modified files:
 Removed files:
 	chapel/test/trivial/deitz/: coerce2.future 
 
+---------------------------------------------------------------------------
+
+04/06/06 23:06:13 -- jplevyak
+
+Log message:
+	Major changes to scalar promotion.
+	 - no longer add the seqElementType to the dispatchParents
+	 - is_Value_Type now includes primitive types (e.g. int) as well
+	   as records and value classes
+	 - the "promote" callback how blocks overloaded =, scalar promotion
+	   of the "this" argument for methods, and generic functions.
+	 - introduce handling for wrapper/instantiation "failures"
+	   when the wrapper builder returns NULL.
+	 - reorgnanized the way wrappers are built
+	 - this causes/exposes a regresssion, but adds
+	     scalar promotion of tuples and other non-primitive value types.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp chapel_ifa.h 
+	chapel/compiler/ifa/: ast.cpp html.cpp ifa.h pattern.cpp sym.h 
+	chapel/compiler/passes/: normalize.cpp 
+
