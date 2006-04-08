@@ -63176,3 +63176,18 @@ Added files:
 	                                         inherit_instantiate4.future 
 	                                         inherit_instantiate4.good 
 
+---------------------------------------------------------------------------
+
+04/08/06 14:25:53 -- jplevyak
+
+Log message:
+	There was a bug with clearing of the Setter information between
+	  analyzing a single member variables confluences and the next.
+	Took a heavy handed approach to fix it, will deal with any
+	  performance consequences if they come up.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+Removed files:
+	chapel/test/classes/deitz/: infer_complication.future 
+
