@@ -3158,9 +3158,7 @@ clear_results() {
     clear_cs(cs);
   forv_EntrySet(es, fa->ess)
     clear_es(es);
-  for (int i = 0; i < cannonical_setters.n; i++)
-    forc_List(Setters *, x, cannonical_setters.v[i].value)
-      x->car->eq_classes = NULL;
+  cannonical_setters.clear();
 }
 
 static Setters *
@@ -3295,6 +3293,7 @@ analyze_confluence(AVar *av, int akind = AKIND_TYPE) {
     assert(x->contour_is_entry_set);
     if (akind == AKIND_TYPE && !x->out->type->n) continue;
     if (akind == AKIND_MARK && !x->mark_map) continue;
+#if 0
     for (int i = 0; i < ss.n; i++) {
       forv_AVar(a, *ss.v[i]) if (a) {
         if ((akind == AKIND_TYPE && 
@@ -3307,6 +3306,7 @@ analyze_confluence(AVar *av, int akind = AKIND_TYPE) {
         }
       }
     }
+#endif
     ss.add(new Setters);
     ss.v[ss.n - 1]->set_add(x);
   Ldone:;
