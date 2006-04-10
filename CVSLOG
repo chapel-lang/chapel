@@ -63201,3 +63201,16 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+04/10/06 16:58:10 -- deitz
+
+Log message:
+	New where test that will work soon, once instantiation evaluates where
+	clauses and returns NULL if it evaluated to false.
+
+Added files:
+	chapel/test/functions/deitz/: test_where_param4.chpl 
+	                              test_where_param4.future 
+	                              test_where_param4.good 
+
