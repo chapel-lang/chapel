@@ -63191,3 +63191,13 @@ Modified files:
 Removed files:
 	chapel/test/classes/deitz/: infer_complication.future 
 
+---------------------------------------------------------------------------
+
+04/10/06 09:15:05 -- deitz
+
+Log message:
+	Comment out unused Ldone label.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
