@@ -3309,7 +3309,7 @@ analyze_confluence(AVar *av, int akind = AKIND_TYPE) {
 #endif
     ss.add(new Setters);
     ss.v[ss.n - 1]->set_add(x);
-  Ldone:;
+    //  Ldone:;
   }
   for (int i = 0; i < ss.n; i++)
     ss.v[i] = setters_cannonicalize(ss.v[i]);
