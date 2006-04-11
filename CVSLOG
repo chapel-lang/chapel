@@ -63260,3 +63260,14 @@ Log message:
 Modified files:
 	chapel/test/: paratest.server.pl 
 
+---------------------------------------------------------------------------
+
+04/11/06 14:40:52 -- deitz
+
+Log message:
+	Added test case of more complicated where clause on parameter value.
+
+Added files:
+	chapel/test/functions/deitz/: test_where_param5.chpl 
+	                              test_where_param5.good 
+
