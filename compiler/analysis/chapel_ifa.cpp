@@ -610,7 +610,8 @@ ACallbacks::instantiate(Sym *s, Map<Sym *, Sym *> &substitutions) {
     Type *new_type = dynamic_cast<Type*>(subs.get(type));
     if (!new_type)
       new_type = type->instantiate_generic(subs);
-    return new_type->asymbol->sym;
+    if (new_type)
+      return new_type->asymbol->sym;
   }
   return 0;
 }

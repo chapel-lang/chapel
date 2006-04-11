@@ -713,10 +713,11 @@ Matcher::build(PMatch *m, Vec<Fun *> &done_matches) {
     if (!c) c = f->generic_cache = new GenericCache;
     if (!(fnew = c->cache.get(&m->generic_substitutions))) {
       f = if1->callback->instantiate_generic(f, m->generic_substitutions);
-      c->cache.put(new GenericMap(m->generic_substitutions), f);
+      if (f)
+        c->cache.put(new GenericMap(m->generic_substitutions), f);
     } else
       f = fnew;
-    if (done_matches.set_in(f))
+    if (!f || done_matches.set_in(f))
       return 0;
     done_matches.set_add(f);
     m->generic_substitutions.clear();
@@ -729,10 +730,11 @@ Matcher::build(PMatch *m, Vec<Fun *> &done_matches) {
     if (!c) c = f->default_cache = new DefaultCache;
     if (!(fnew = c->cache.get(&m->default_args))) {
       f = if1->callback->default_wrapper(f, m->default_args);
-      c->cache.put(new Vec<MPosition*>(m->default_args), f);
+      if (f)
+       c->cache.put(new Vec<MPosition*>(m->default_args), f);
     } else
       f = fnew;
-    if (done_matches.set_in(f))
+    if (!f || done_matches.set_in(f))
       return 0;
     done_matches.set_add(f);
     Vec<MPosition *> defaults;
@@ -745,10 +747,11 @@ Matcher::build(PMatch *m, Vec<Fun *> &done_matches) {
     if (!c) c = f->coercion_cache = new CoercionCache;
     if (!(fnew = c->cache.get(&m->coercion_substitutions))) {
       f = if1->callback->coercion_wrapper(f, m->coercion_substitutions);
-      c->cache.put(new CoercionMap(m->coercion_substitutions), f);
+      if (f)
+        c->cache.put(new CoercionMap(m->coercion_substitutions), f);
     } else
       f = fnew;
-    if (done_matches.set_in(f))
+    if (!f || done_matches.set_in(f))
       return 0;
     done_matches.set_add(f);
     m->coercion_substitutions.clear();
@@ -759,10 +762,11 @@ Matcher::build(PMatch *m, Vec<Fun *> &done_matches) {
     if (!c) c = f->promotion_cache = new PromotionCache;
     if (!(fnew = c->cache.get(&m->promotion_substitutions))) {
       f = if1->callback->promotion_wrapper(f, m->promotion_substitutions);
-      c->cache.put(new PromotionMap(m->promotion_substitutions), f);
+      if (f)
+        c->cache.put(new PromotionMap(m->promotion_substitutions), f);
     } else
       f = fnew;
-    if (done_matches.set_in(f))
+    if (!f || done_matches.set_in(f))
       return 0;
     done_matches.set_add(f);
     m->promotion_substitutions.clear();
@@ -780,10 +784,11 @@ Matcher::build(PMatch *m, Vec<Fun *> &done_matches) {
     if (!c) c = f->order_cache = new OrderCache;
     if (!(fnew = c->cache.get(&m->order_substitutions))) {
       f = if1->callback->order_wrapper(f, m->order_substitutions);
-      c->cache.put(new OrderMap(m->order_substitutions), f);
+      if (f)
+        c->cache.put(new OrderMap(m->order_substitutions), f);
     } else
       f = fnew;
-    if (done_matches.set_in(f))
+    if (!f || done_matches.set_in(f))
       return 0;
     done_matches.set_add(f);
     Map<MPosition *, MPosition *> order_substitutions;
