@@ -63214,3 +63214,14 @@ Added files:
 	                              test_where_param4.future 
 	                              test_where_param4.good 
 
+---------------------------------------------------------------------------
+
+04/10/06 17:05:24 -- jplevyak
+
+Log message:
+	Handle nil returned from instantiation wrapper.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: pattern.cpp 
+
