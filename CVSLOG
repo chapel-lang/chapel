@@ -63225,3 +63225,28 @@ Modified files:
 	chapel/compiler/analysis/: chapel_ifa.cpp 
 	chapel/compiler/ifa/: pattern.cpp 
 
+---------------------------------------------------------------------------
+
+04/10/06 19:16:45 -- deitz
+
+Log message:
+	Moved handling of where clause into instantiation.  Made where
+	expression into a where block statement to allow normalization to do
+	the parameter folding.  Previously there was a separate version of
+	parameter folding using by the interpreter function resolution and
+	where clauses were hacked in chapel_ifa to handle == and && only when
+	not in the interpreter.
+	
+	Simplified the FnSymbol constructor to just take two arguments, which
+	is all that were passed in most cases.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp symbol.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	                         functionResolution.cpp parallel.cpp 
+Removed files:
+	chapel/test/functions/deitz/: test_where_param4.future 
+
