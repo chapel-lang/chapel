@@ -41,7 +41,7 @@ $cmd = "paratest.client.pl";
 $rem_exe = "ssh";
 $pwd = `pwd`; chomp $pwd;
 $summary_len = 2;
-$sleep_time = 1;                                 # time between checks
+$sleep_time = 5;                                 # time (sec) between checks
 
 my (@testdir_list, @node_list, $starttime, $endtime);
 
