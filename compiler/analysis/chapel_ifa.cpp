@@ -793,6 +793,9 @@ ACallbacks::instantiate_generic(Fun *f, Map<Sym *, Sym *> &generic_substitutions
   new_ast_functions.clear();
   new_ast_types.clear();
   FnSymbol *fsym = fndef->instantiate_generic(&substitutions);
+  // SJD: If the where clause evaluates to false, fsym is NULL.
+  if (!fsym)
+    return NULL;
   install_new_asts(new_ast_functions, new_ast_types);
   Fun *fun = fsym->asymbol->sym->fun;
   fun->wraps = f;
@@ -1818,42 +1821,42 @@ gen_if1(BaseAST *ast) {
   return 0;
 }
 
-static void
-fun_where_equal_constant(FnSymbol *f, SymExpr* v, VarSymbol *c) {
-  if (ArgSymbol *s = dynamic_cast<ArgSymbol*>(v->var)) {
-    if (!s->isGeneric) {
-      show_error("where constraint on non-generic %s", f->body->ainfo, s->name);
-      return;
-    }
-    s->asymbol->sym->must_implement = c->asymbol->sym;
-    s->asymbol->sym->must_specialize =  c->asymbol->sym;
-  }
-}
+// static void
+// fun_where_equal_constant(FnSymbol *f, SymExpr* v, VarSymbol *c) {
+//   if (ArgSymbol *s = dynamic_cast<ArgSymbol*>(v->var)) {
+//     if (!s->isGeneric) {
+//       show_error("where constraint on non-generic %s", f->body->ainfo, s->name);
+//       return;
+//     }
+//     s->asymbol->sym->must_implement = c->asymbol->sym;
+//     s->asymbol->sym->must_specialize =  c->asymbol->sym;
+//   }
+// }
 
-static void
-fun_where_clause(FnSymbol *f, Expr *w) {
-  CallExpr *op = dynamic_cast<CallExpr*>(w);
-  if (!op)
-    return;
-  SymExpr *base = dynamic_cast<SymExpr*>(op->baseExpr);
-  if (!base)
-    return;
-  if (!strcmp(base->var->name, "&&")) {
-    op->primitive = primitives[PRIMITIVE_LAND];
-    op->baseExpr->remove();
-    fun_where_clause(f, op->get(1));
-    fun_where_clause(f, op->get(2));
-  } else if (!strcmp(base->var->name, "==")) {
-    op->primitive = primitives[PRIMITIVE_EQUAL];
-    op->baseExpr->remove();
-    VarSymbol *c = 0;
-    SymExpr* v = 0;
-    if ((c = get_constant(op->get(1))) && (v = dynamic_cast<SymExpr*>(op->get(2)))) 
-      fun_where_equal_constant(f, v, c);
-    else if ((c = get_constant(op->get(2))) && (v = dynamic_cast<SymExpr*>(op->get(1)))) 
-      fun_where_equal_constant(f, v, c);
-  }
-}
+// static void
+// fun_where_clause(FnSymbol *f, Expr *w) {
+//   CallExpr *op = dynamic_cast<CallExpr*>(w);
+//   if (!op)
+//     return;
+//   SymExpr *base = dynamic_cast<SymExpr*>(op->baseExpr);
+//   if (!base)
+//     return;
+//   if (!strcmp(base->var->name, "&&")) {
+//     op->primitive = primitives[PRIMITIVE_LAND];
+//     op->baseExpr->remove();
+//     fun_where_clause(f, op->get(1));
+//     fun_where_clause(f, op->get(2));
+//   } else if (!strcmp(base->var->name, "==")) {
+//     op->primitive = primitives[PRIMITIVE_EQUAL];
+//     op->baseExpr->remove();
+//     VarSymbol *c = 0;
+//     SymExpr* v = 0;
+//     if ((c = get_constant(op->get(1))) && (v = dynamic_cast<SymExpr*>(op->get(2)))) 
+//       fun_where_equal_constant(f, v, c);
+//     else if ((c = get_constant(op->get(2))) && (v = dynamic_cast<SymExpr*>(op->get(1)))) 
+//       fun_where_equal_constant(f, v, c);
+//   }
+// }
 
 static int
 is_this_fun(FnSymbol *f) {
@@ -1927,7 +1930,7 @@ gen_fun(FnSymbol *f) {
   fn->ast = ast;
   if (f->_this && f->fnClass != FN_CONSTRUCTOR)
     fn->self = f->_this->asymbol->sym;
-  fun_where_clause(f, f->whereExpr);
+  //  fun_where_clause(f, f->whereExpr);
   return 0;
 }
 

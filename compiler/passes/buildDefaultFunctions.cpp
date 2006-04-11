@@ -107,7 +107,9 @@ static void build_chpl_main(void) {
   chpl_main = chpl_main_exists();
   if (!chpl_main) {
     if (userModules.n == 1) {
-      chpl_main = new FnSymbol("main", NULL, new AList<DefExpr>(), dtVoid);
+      chpl_main = new FnSymbol("main", NULL);
+      chpl_main->formals = new AList<DefExpr>();
+      chpl_main->retType = dtVoid;
       userModules.v[0]->stmts->insertAtTail(new DefExpr(chpl_main));
       build(chpl_main);
     } else

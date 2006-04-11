@@ -591,7 +591,8 @@ fn_decl_stmt:
       $2->formals = $3;
       $2->retRef = $4;
       $2->retExpr = $5;
-      $2->whereExpr = $6;
+      if ($6)
+        $2->where = new BlockStmt(new ExprStmt($6));
       $2->body = $7;
       $$ = new AList<Stmt>(new DefExpr($2));
     }

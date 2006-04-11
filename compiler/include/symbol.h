@@ -161,7 +161,7 @@ class FnSymbol : public Symbol {
   TypeSymbol* typeBinding;
   AList<DefExpr>* formals;
   Type* retType;
-  Expr *whereExpr;
+  BlockStmt* where;
   Expr* retExpr;
   BlockStmt* body;
   fnType fnClass;
@@ -187,15 +187,7 @@ class FnSymbol : public Symbol {
   Vec<CallExpr*>* calledBy;
   Vec<CallExpr*>* calls;
 
-  FnSymbol(char* initName,
-           TypeSymbol* initTypeBinding = NULL,
-           AList<DefExpr>* initFormals = NULL,
-           Type* initRetType = dtUnknown,
-           Expr* initWhereExpr = NULL,
-           BlockStmt* initBody = NULL,
-           fnType initFnClass = FN_FUNCTION,
-           bool initNoParens = false,
-           bool initRetRef = false);
+  FnSymbol(char* initName, TypeSymbol* initTypeBinding = NULL);
            
   virtual void verify(void); 
   COPY_DEF(FnSymbol);

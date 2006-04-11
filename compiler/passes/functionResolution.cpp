@@ -155,21 +155,22 @@ add_candidate(Map<FnSymbol*,Vec<ArgSymbol*>*>* candidateFns,
     }
     if (subs.n && !fn->isPartialInstantiation(&subs)) {
       FnSymbol* inst_fn = fn->instantiate_generic(&subs);
-      if (inst_fn->whereExpr) {
-        resolve_asts(inst_fn->whereExpr);
-        param_compute(inst_fn->whereExpr);
-        if (SymExpr* symExpr = dynamic_cast<SymExpr*>(inst_fn->whereExpr)) {
-          VarSymbol* param = dynamic_cast<VarSymbol*>(symExpr->var);
-          if (param != gTrue && param != gFalse)
-            INT_FATAL(fn, "Illegal where expression");
-          if (param == gFalse)
-            return;
-        } else {
-          INT_FATAL(fn, "Illegal where expression");
-          return;
-        }
-      }
-      add_candidate(candidateFns, inst_fn, actual_types, actual_params, actual_names, true);
+//       if (inst_fn->whereExpr) {
+//         resolve_asts(inst_fn->whereExpr);
+//         param_compute(inst_fn->whereExpr);
+//         if (SymExpr* symExpr = dynamic_cast<SymExpr*>(inst_fn->whereExpr)) {
+//           VarSymbol* param = dynamic_cast<VarSymbol*>(symExpr->var);
+//           if (param != gTrue && param != gFalse)
+//             INT_FATAL(fn, "Illegal where expression");
+//           if (param == gFalse)
+//             return;
+//         } else {
+//           INT_FATAL(fn, "Illegal where expression");
+//           return;
+//         }
+//       }
+      if (inst_fn)
+        add_candidate(candidateFns, inst_fn, actual_types, actual_params, actual_names, true);
     }
     return;
   }

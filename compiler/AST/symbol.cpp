@@ -619,25 +619,17 @@ void TypeSymbol::codegenDef(FILE* outfile) {
 }
 
 
-FnSymbol::FnSymbol(char* initName,
-                   TypeSymbol* initTypeBinding,
-                   AList<DefExpr>* initFormals,
-                   Type* initRetType,
-                   Expr* initWhereExpr,
-                   BlockStmt* initBody,
-                   fnType initFnClass,
-                   bool initNoParens,
-                   bool initRetRef) :
+FnSymbol::FnSymbol(char* initName, TypeSymbol* initTypeBinding) :
   Symbol(SYMBOL_FN, initName, new FnType()),
   typeBinding(initTypeBinding),
-  formals(initFormals),
-  retType(initRetType),
-  whereExpr(initWhereExpr),
+  formals(NULL),
+  retType(dtUnknown),
+  where(NULL),
   retExpr(NULL),
-  body(initBody),
-  fnClass(initFnClass),
-  noParens(initNoParens),
-  retRef(initRetRef),
+  body(new BlockStmt()),
+  fnClass(FN_FUNCTION),
+  noParens(false),
+  retRef(false),
   argScope(NULL),
   isSetter(false),
   isGeneric(false),
@@ -652,10 +644,7 @@ FnSymbol::FnSymbol(char* initName,
   basicBlocks(NULL),
   calledBy(NULL),
   calls(NULL)
-{
-  if (!body)
-    body = new BlockStmt();
-}
+{ }
 
 
 void FnSymbol::verify(void) {
@@ -677,15 +666,14 @@ FnSymbol* FnSymbol::getFnSymbol(void) {
 
 FnSymbol*
 FnSymbol::copyInner(ASTMap* map) {
-  FnSymbol* copy = new FnSymbol(name,
-                                typeBinding,
-                                COPY_INT(formals),
-                                retType,
-                                COPY_INT(whereExpr),
-                                COPY_INT(body),
-                                fnClass,
-                                noParens,
-                                retRef);
+  FnSymbol* copy = new FnSymbol(name, typeBinding);
+  copy->formals = COPY_INT(formals);
+  copy->retType = retType;
+  copy->where = COPY_INT(where);
+  copy->body = COPY_INT(body);
+  copy->fnClass = fnClass;
+  copy->noParens = noParens;
+  copy->retRef = retRef;
   copy->retExpr = COPY_INT(retExpr);
   copy->cname = cname;
   copy->isSetter = isSetter;
@@ -705,8 +693,8 @@ void FnSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
     body = dynamic_cast<BlockStmt*>(new_ast);
   } else if (old_ast == formals) {
     formals = dynamic_cast<AList<DefExpr>*>(new_ast);
-  } else if (old_ast == whereExpr) {
-    whereExpr = dynamic_cast<Expr*>(new_ast);
+  } else if (old_ast == where) {
+    where = dynamic_cast<BlockStmt*>(new_ast);
   } else if (old_ast == retExpr) {
     retExpr = dynamic_cast<Expr*>(new_ast);
   } else {
@@ -725,7 +713,7 @@ void FnSymbol::traverseDefSymbol(Traversal* traversal) {
   TRAVERSE(type, traversal, false);
   TRAVERSE(body, traversal, false);
   TRAVERSE(retType, traversal, false);
-  TRAVERSE(whereExpr, traversal, false);
+  TRAVERSE(where, traversal, false);
   TRAVERSE(retExpr, traversal, false);
   if (argScope) {
     Symboltable::setCurrentScope(saveScope);
@@ -904,7 +892,8 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* order_map) {
 
 
 FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs) {
-  AList<DefExpr>* wrapper_formals = new AList<DefExpr>();
+  FnSymbol* wrapper = build_empty_wrapper(this);
+  wrapper->cname = stringcat("_promotion_wrap_", cname);
   AList<DefExpr>* indices = new AList<DefExpr>();
   AList<Expr>* iterators = new AList<Expr>();
   AList<Expr>* wrapper_actuals = new AList<Expr>();
@@ -914,40 +903,32 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs) {
       Symbol* new_formal = formal->sym->copy();
       new_formal->type = new_type;
       Symbol* new_index = new VarSymbol("_index", formal->sym->type);
-      wrapper_formals->insertAtTail(new DefExpr(new_formal));
+      wrapper->formals->insertAtTail(new DefExpr(new_formal));
       iterators->insertAtTail(new SymExpr(new_formal));
       indices->insertAtTail(new DefExpr(new_index));
       wrapper_actuals->insertAtTail(new SymExpr(new_index));
     } else {
       Symbol* new_formal = formal->sym->copy();
-      wrapper_formals->insertAtTail(new DefExpr(new_formal));
+      wrapper->formals->insertAtTail(new DefExpr(new_formal));
       wrapper_actuals->insertAtTail(new SymExpr(new_formal));
     }
   }
-  FnSymbol* wrapper;
-  BlockStmt* body;
   if (returns_void(this)) {
-    body = new BlockStmt(build_for_block(BLOCK_FORALL,
+    wrapper->insertAtTail(new BlockStmt(build_for_block(BLOCK_FORALL,
                                          indices,
                                          iterators,
                                          new BlockStmt(
                                            new ExprStmt(
-                                             new CallExpr(this, wrapper_actuals)))));
-    wrapper = new FnSymbol(name, typeBinding, wrapper_formals, dtUnknown, NULL,
-                           body, FN_FUNCTION, false, false);
+                                             new CallExpr(this, wrapper_actuals))))));
   } else {
-    body = new BlockStmt(build_for_block(BLOCK_FORALL,
+    wrapper->insertAtTail(new BlockStmt(build_for_block(BLOCK_FORALL,
                                          indices,
                                          iterators,
                                          new BlockStmt(
                                            new ReturnStmt(
-                                             new CallExpr(this, wrapper_actuals), true))));
-    wrapper = new FnSymbol(name, typeBinding, wrapper_formals, dtUnknown, NULL,
-                           body, FN_ITERATOR, false, false);
+                                             new CallExpr(this, wrapper_actuals), true)))));
+    wrapper->fnClass = FN_ITERATOR;
   }
-  wrapper->visible = false;
-  wrapper->isMethod = isMethod;
-  wrapper->cname = stringcat("_promotion_wrap_", cname);
   defPoint->parentStmt->insertBefore(new DefExpr(wrapper));
   reset_file_info(wrapper->defPoint->parentStmt, lineno, filename);
   normalize(wrapper);
@@ -1203,6 +1184,19 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
         prev->insertAfter(formal_def);
       }
     }
+  }
+
+  if (newfn->where) {
+    ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(newfn->where->body->last());
+    if (!exprStmt)
+      INT_FATAL(where, "Bad where");
+    SymExpr* symExpr = dynamic_cast<SymExpr*>(exprStmt->expr);
+    if (!symExpr)
+      USR_FATAL(where, "Illegal where clause");
+    if (!strcmp(symExpr->var->name, "false"))
+      return NULL;
+    if (strcmp(symExpr->var->name, "true"))
+      USR_FATAL(where, "Illegal where clause");
   }
 
   return newfn;
