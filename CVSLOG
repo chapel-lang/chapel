@@ -63250,3 +63250,13 @@ Modified files:
 Removed files:
 	chapel/test/functions/deitz/: test_where_param4.future 
 
+---------------------------------------------------------------------------
+
+04/11/06 09:57:54 -- waynew
+
+Log message:
+	Reduce the polling rate of the server.
+
+Modified files:
+	chapel/test/: paratest.server.pl 
+
