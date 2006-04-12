@@ -31,7 +31,7 @@
 $debug = 0;
 $verbose = 0;
 
-$dirs_to_ignore = "CVS|Bin|Logs|Samples|Share|OUTPUT";
+$dirs_to_ignore = "CVS|Bin|Logs|Samples|Share|OUTPUT|RCS";
 
 $logdir = "Logs";
 $synchdir = "$logdir/.synch";
@@ -102,13 +102,13 @@ sub collect_logs {
     systemd ("echo \\[Parallel testing started at $starttime\\] >> $fin_log");
     systemd ("echo \\[Parallel testing ended at $endtime\\] >> $fin_log");
     systemd ("echo \\[Test Summary - $date\\] >> $fin_log");
-    $successes = `grep "^\\[Success matching" $fin_log | wc -l`;
+    $successes = `grep -a "^\\[Success matching" $fin_log | wc -l`;
     $successes =~ s/\s//g;
     ($successes, $junk) = split (/\s+/, $successes, 2);
-    $failures = `grep "^\\[Error" $fin_log | wc -l`;
+    $failures = `grep -a "^\\[Error" $fin_log | wc -l`;
     $failures =~ s/\s//g;
     ($failures, $junk) = split (/\s+/, $failures, 2);
-    $futures = `grep "^Future" $fin_log | wc -l`;
+    $futures = `grep -a "^Future" $fin_log | wc -l`;
     $futures =~ s/\s//g;
     ($futures, $junk) = split (/\s+/, $futures, 2);
     systemd ("echo \\[Summary: \\#Successes = $successes \\| \\#Failures = $failures \\| \\#Futures = $futures\\] >> $fin_log");
@@ -356,7 +356,7 @@ sub main {
             # print "$_\n";
         }
     } else { # else, current working dir
-        @testdir_list = find_subdirs (".");
+        @testdir_list = find_subdirs (".", 0);
     }
 
 
