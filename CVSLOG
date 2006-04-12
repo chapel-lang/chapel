@@ -63271,3 +63271,13 @@ Added files:
 	chapel/test/functions/deitz/: test_where_param5.chpl 
 	                              test_where_param5.good 
 
+---------------------------------------------------------------------------
+
+04/11/06 17:06:25 -- waynew
+
+Log message:
+	Couple bug fixes.
+
+Modified files:
+	chapel/test/: paratest.server.pl 
+
