@@ -63299,3 +63299,13 @@ Modified files:
 Removed files:
 	chapel/modules/standard/: _chpl_compiler.chpl 
 
+---------------------------------------------------------------------------
+
+04/11/06 17:19:53 -- waynew
+
+Log message:
+	Forgot to remove a couple commented deleted lines.
+
+Modified files:
+	chapel/compiler/passes/: filesToAST.cpp 
+
