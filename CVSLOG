@@ -63281,3 +63281,21 @@ Log message:
 Modified files:
 	chapel/test/: paratest.server.pl 
 
+---------------------------------------------------------------------------
+
+04/11/06 17:16:44 -- waynew
+
+Log message:
+	Intermediate checkin to save progress.  Removed the empty Chapel module
+	file _chpl_compiler.chpl file. compilerModule is now created in code
+	and not parsed by ParseFile in filesToAST.cpp.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp type.cpp 
+	chapel/compiler/include/: symscope.h symtab.h type.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/passes/: filesToAST.cpp 
+	chapel/compiler/symtab/: symscope.cpp 
+Removed files:
+	chapel/modules/standard/: _chpl_compiler.chpl 
+
