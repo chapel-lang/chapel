@@ -1022,7 +1022,17 @@ void VariableType::traverseDefType(Traversal* traversal) {
 }
 
 
-void initType(void) {
+
+void initTypesAndSymbols(void) {
+  // Create initial compiler module and its scope
+  compilerModule = new ModuleSymbol("_chpl_compiler", MOD_STANDARD) ;
+  rootScope->define(compilerModule);
+  registerModule(compilerModule);
+  compilerModule->modScope = new SymScope(SCOPE_MODULE);
+  compilerModule->modScope->astParent = compilerModule;
+  rootScope->insertChildScope(compilerModule->modScope);
+  compilerModule->stmts->insertAtTail(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol("prelude"))));
+
   dtNil = Symboltable::definePrimitiveType("_nilType", "_nilType");
   dtUnknown = Symboltable::definePrimitiveType("_unknownType", "_unknownType");
   dtUnspecified = Symboltable::definePrimitiveType("_unspecifiedType", "_unspecifiedType");
@@ -1050,9 +1060,11 @@ void initType(void) {
   dtComplex->literalType = Symboltable::definePrimitiveType("_complexLiteral", "_complex128Literal");
   dtComplex->defaultValue = new_ComplexSymbol("_MAKE_COMPLEX64(0.0,0.0)", 0.0, 0.0);
   dtComplex->literalType->dispatchParents.add(dtComplex);
+
   dtString = Symboltable::definePrimitiveType("string", "_string");
   dtString->literalType = Symboltable::definePrimitiveType("_stringLiteral", "_stringLiteral");
   dtString->literalType->dispatchParents.add(dtString);
+
   dtSymbol = Symboltable::definePrimitiveType("symbol", "_symbol");
   dtSymbol->literalType = Symboltable::definePrimitiveType("_symbolLiteral", "_symbolLiteral");
   dtSymbol->literalType->dispatchParents.add(dtSymbol);

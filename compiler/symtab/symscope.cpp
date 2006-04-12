@@ -59,6 +59,24 @@ void SymScope::setASTParent(BaseAST* ast) {
 }
 
 
+// Inserts an already-allocated scope.
+void SymScope::insertChildScope(SymScope *aScope) {
+  if (aScope != NULL) {
+    if (child == NULL) {
+      child = aScope;
+    } else {
+      while (child->sibling != NULL) {
+        child = child->sibling;
+      }
+      child->sibling = aScope;
+    }
+    aScope->parent = this;
+  } else {
+    INT_FATAL("ERROR: trying to insert NULL as a scope");
+  }
+}
+
+
 bool SymScope::isEmpty(void) {
   return symbols.n == 0;
 }

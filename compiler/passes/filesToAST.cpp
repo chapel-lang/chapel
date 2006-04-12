@@ -15,8 +15,9 @@ void parse(void) {
 
   char* path = stringcat(sysdirToChplRoot(system_dir), "/modules/standard/");
 
-  compilerModule = ParseFile(stringcat(path, "_chpl_compiler.chpl"), MOD_STANDARD);
+  // compilerModule = ParseFile(stringcat(path, "_chpl_compiler.chpl"), MOD_STANDARD);
   prelude = ParseFile(stringcat(path, "prelude.chpl"), MOD_STANDARD);
+  // compilerModule->modScope->uses.add (prelude);   // now can add prelude module
   baseModule = ParseFile(stringcat(path, "_chpl_base.chpl"), MOD_STANDARD);
   closureModule = ParseFile(stringcat(path, "_chpl_closure.chpl"), MOD_STANDARD);
 

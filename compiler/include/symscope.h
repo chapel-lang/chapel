@@ -32,7 +32,8 @@ class SymScope : public gc {
 
   SymScope(scopeType init_type);
   void setASTParent(BaseAST* ast);
-
+  
+  void insertChildScope(SymScope *aScope);
   bool isEmpty(void);
 
   void define(Symbol* sym);

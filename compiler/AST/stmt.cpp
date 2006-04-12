@@ -345,76 +345,72 @@ void BlockStmt::codegenStmt(FILE* outfile) {
     blkScope->codegen(outfile, "\n");
   }
   if (body) {
-    if (BLOCK_COBEGIN == blockTag) {
-      if (parallelPass) {
-        if (!need_threadlib) {
-          addLibInfo ("-lpthread");
-          need_threadlib = true;
-        }
-        int stmt_cnt;
-        int num_stmts = body->length();
-        // For now, assume all statements will be forked.
-
-        // gen code for the function pointer array
-        fprintf (outfile, "_chpl_threadfp_t fpv[%d] = {\n", num_stmts);
-        stmt_cnt = 0;
-        for_alist (Stmt, stmt, body) {
-          if (ExprStmt *estmt=dynamic_cast<ExprStmt*>(stmt)) {
-            if (CallExpr *cexpr=dynamic_cast<CallExpr*>(estmt->expr)) {
-              if (SymExpr *sexpr=dynamic_cast<SymExpr*>(cexpr->baseExpr)) {
-                fprintf (outfile, "(_chpl_threadfp_t)%s", sexpr->var->cname);
-              } else {
-                INT_FATAL(stmt, "cobegin codegen - call expr not a SymExpr");
-              } 
-            } else {
-              INT_FATAL(stmt, "cobegin codegen - statement not a CallExpr");
-            }
-          } else {
-            INT_FATAL(stmt, "cobegin codegen - statement not an ExprStmt");
-          }
-          stmt_cnt++;
-          if (stmt_cnt < num_stmts) {
-            fprintf (outfile, ",\n");
-          }
-        }
-        fprintf (outfile, "};\n");
-
-        // ok, walk through again and gen code for the argument array
-        fprintf (outfile, "_chpl_threadarg_t av[%d] = {\n", num_stmts);
-        stmt_cnt = 0;
-        for_alist (Stmt, stmt, body) {
-          if (ExprStmt *estmt=dynamic_cast<ExprStmt*>(stmt)) {
-            if (CallExpr *cexpr=dynamic_cast<CallExpr*>(estmt->expr)) {
-              Expr *actuals = cexpr->argList->first();
-              // for now generate exactly one argument per function
-              fprintf (outfile, "(_chpl_threadarg_t)");
-              if (actuals) {
-                FnSymbol *fnsym = cexpr->findFnSymbol();
-                DefExpr  *formals = fnsym->formals->first();
-                if (dynamic_cast<ArgSymbol*>(formals->sym)->requiresCPtr()) {
-                  fprintf (outfile, "&");
-                }
-                fprintf (outfile, "(");
-                actuals->codegen (outfile);
-                fprintf (outfile, ")");
-              } else {
-                fprintf (outfile, "NULL");
-              }
-            } 
-          }
-          stmt_cnt++;
-          if (stmt_cnt < num_stmts) {
-            fprintf (outfile, ",\n");
-          }
-        }
-        fprintf (outfile, "};\n");
-
-        fprintf (outfile, "_chpl_cobegin_wkspace_t wksp[%d];\n", num_stmts);
-        fprintf (outfile, "_chpl_cobegin (%d, %s, %s, %s);\n",
-                 num_stmts, "fpv", "av", "wksp");
-      } else {
-        body->codegen(outfile, "");
+    if ((BLOCK_COBEGIN == blockTag) && (parallelPass)) {
+      if (!need_threadlib) {
+        addLibInfo ("-lpthread");
+        need_threadlib = true;
       }
+      int stmt_cnt;
+      int num_stmts = body->length();
+      // For now, assume all statements will be forked.
+
+      // gen code for the function pointer array
+      fprintf (outfile, "_chpl_threadfp_t fpv[%d] = {\n", num_stmts);
+      stmt_cnt = 0;
+      for_alist (Stmt, stmt, body) {
+        if (ExprStmt *estmt=dynamic_cast<ExprStmt*>(stmt)) {
+          if (CallExpr *cexpr=dynamic_cast<CallExpr*>(estmt->expr)) {
+            if (SymExpr *sexpr=dynamic_cast<SymExpr*>(cexpr->baseExpr)) {
+              fprintf (outfile, "(_chpl_threadfp_t)%s", sexpr->var->cname);
+            } else {
+              INT_FATAL(stmt, "cobegin codegen - call expr not a SymExpr");
+            } 
+          } else {
+            INT_FATAL(stmt, "cobegin codegen - statement not a CallExpr");
+          }
+        } else {
+          INT_FATAL(stmt, "cobegin codegen - statement not an ExprStmt");
+        }
+        stmt_cnt++;
+        if (stmt_cnt < num_stmts) {
+          fprintf (outfile, ",\n");
+        }
+      }
+      fprintf (outfile, "};\n");
+      
+      // ok, walk through again and gen code for the argument array
+      fprintf (outfile, "_chpl_threadarg_t av[%d] = {\n", num_stmts);
+      stmt_cnt = 0;
+      for_alist (Stmt, stmt, body) {
+        if (ExprStmt *estmt=dynamic_cast<ExprStmt*>(stmt)) {
+          if (CallExpr *cexpr=dynamic_cast<CallExpr*>(estmt->expr)) {
+            Expr *actuals = cexpr->argList->first();
+            // for now generate exactly one argument per function
+            fprintf (outfile, "(_chpl_threadarg_t)");
+            if (actuals) {
+              FnSymbol *fnsym = cexpr->findFnSymbol();
+              DefExpr  *formals = fnsym->formals->first();
+              if (dynamic_cast<ArgSymbol*>(formals->sym)->requiresCPtr()) {
+                fprintf (outfile, "&");
+              }
+              fprintf (outfile, "(");
+              actuals->codegen (outfile);
+              fprintf (outfile, ")");
+            } else {
+              fprintf (outfile, "NULL");
+            }
+          } 
+        }
+        stmt_cnt++;
+        if (stmt_cnt < num_stmts) {
+          fprintf (outfile, ",\n");
+        }
+      }
+      fprintf (outfile, "};\n");
+      
+      fprintf (outfile, "_chpl_cobegin_wkspace_t wksp[%d];\n", num_stmts);
+      fprintf (outfile, "_chpl_cobegin (%d, %s, %s, %s);\n",
+               num_stmts, "fpv", "av", "wksp");
 
     } else {  // else, serial code gen
       body->codegen(outfile, "");

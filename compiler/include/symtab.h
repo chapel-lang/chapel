@@ -17,10 +17,10 @@ void registerModule(ModuleSymbol* mod);
 
 class Symboltable {
  public:
-  static void init(void);
+  static void      init(void);
 
-  static void removeScope(SymScope* scope);
-  static void pushScope(scopeType type);
+  static void      removeScope(SymScope* scope);
+  static void      pushScope(scopeType type);
   static SymScope* popScope(void);
   static SymScope* getCurrentScope(void);
   static SymScope* setCurrentScope(SymScope* newScope);

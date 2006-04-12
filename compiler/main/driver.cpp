@@ -191,7 +191,8 @@ do_analysis(char *fn) {
 static void
 compile_all(void) {
   Symboltable::init();
-  initType(); // BLC : clean these up
+  initTypesAndSymbols();
+  // initType();
   initSymbol();
   initExpr();
   initPrimitive();
