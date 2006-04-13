@@ -63309,3 +63309,13 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: filesToAST.cpp 
 
+---------------------------------------------------------------------------
+
+04/13/06 16:35:44 -- waynew
+
+Log message:
+	Removed a race condition that can cause deadlock.
+
+Modified files:
+	chapel/test/parallel/cobegin/waynew/: depend.chpl 
+
