@@ -962,20 +962,18 @@ instantiate_add_subs(ASTMap* substitutions, ASTMap* map) {
 
 
 static FnSymbol*
-instantiate_function(FnSymbol *fn, ASTMap *all_subs, ASTMap *generic_subs, ASTMap *map) {
-  Stmt* fnStmt = fn->defPoint->parentStmt->copy(map);
-  ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(fnStmt);
-  DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr);
-  FnSymbol* fnClone = dynamic_cast<FnSymbol*>(defExpr->sym);
-  fnClone->visible = false;
-  fn->defPoint->parentStmt->insertBefore(fnStmt);
-  fnClone->cname = stringcat("_inst_", defExpr->sym->cname);
-  instantiate_add_subs(all_subs, map);
-  instantiate_update_expr(all_subs, defExpr);
-  fnClone->instantiatedFrom = fn;
-  fnClone->substitutions.copy(*generic_subs);
-  add_icache(fnClone);
-  for_alist(DefExpr, formal, fnClone->formals) {
+instantiate_function(FnSymbol *fn, ASTMap *all_subs, ASTMap *generic_subs) {
+  ASTMap map;
+  FnSymbol* clone = fn->copy(&map);
+  clone->cname = stringcat("_inst_", clone->cname);
+  clone->visible = false;
+  clone->instantiatedFrom = fn;
+  clone->substitutions.copy(*generic_subs);
+  add_icache(clone);
+  fn->defPoint->parentStmt->insertBefore(new DefExpr(clone));
+  instantiate_add_subs(all_subs, &map);
+  instantiate_update_expr(all_subs, clone->defPoint);
+  for_alist(DefExpr, formal, clone->formals) {
     if (ArgSymbol *ps = dynamic_cast<ArgSymbol *>(formal->sym)) {
       if (TypeSymbol *ts = dynamic_cast<TypeSymbol *>(ps->genericSymbol)) {
         if (ts->definition->astType != TYPE_VARIABLE) {
@@ -995,7 +993,7 @@ instantiate_function(FnSymbol *fn, ASTMap *all_subs, ASTMap *generic_subs, ASTMa
       }
     }
   }
-  return fnClone;
+  return clone;
 }
 
 
@@ -1159,13 +1157,13 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
     forv_Vec(Type*, parent, retType->dispatchParents)
       cloneType->dispatchParents.add(parent);
 
-    newfn = instantiate_function(this, &substitutions, generic_substitutions, &map);
+    newfn = instantiate_function(this, &substitutions, generic_substitutions);
     cloneType->defaultConstructor = newfn;
     newfn->typeBinding = clone;
     check_promoter(cloneType);
 
   } else {
-    newfn = instantiate_function(this, &substitutions, generic_substitutions, &map);
+    newfn = instantiate_function(this, &substitutions, generic_substitutions);
   }
   normalize(newfn);
   instantiatedTo->add(newfn);
