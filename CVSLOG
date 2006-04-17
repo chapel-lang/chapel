@@ -63329,3 +63329,13 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+04/17/06 13:44:33 -- waynew
+
+Log message:
+	Fixed .summary log file to match that of start_test.
+
+Modified files:
+	chapel/test/: paratest.server.pl 
+
