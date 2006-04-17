@@ -1,3 +1,27 @@
+record _tuple {
+  param size : int;
+  var component ...size;
+
+  fun this(param i : int) var
+    return component(i);
+
+  fun this(i : int) var
+    return component(i);
+}
+
+fun =(x : _tuple, y) {
+  for param i in 1..x.size do
+    x(i) = y(i);
+  return x;
+}
+
+fun fwrite(f : file, x : _tuple) {
+  fwrite(f, "(", x(1));
+  for param i in 2..x.size do
+    fwrite(f, ", ", x(i));
+  fwrite(f, ")");
+}
+
 class _htuple : value {
   type elt_type;
   param size : int;
@@ -13,18 +37,14 @@ class _htuple : value {
 }
 
 fun =(x : _htuple, y) {
-  for i in 1..x.size {
+  for param i in 1..x.size do
     x(i) = y(i);
-  }
   return x;
 }
 
-fun fwrite(f : file, val : _htuple) {
-  fwrite(f, "(");
-  for i in 1..val.size-1 {
-    fwrite(f, val(i));
-    fwrite(f, ", ");
-  }
-  fwrite(f, val(val.size));
+fun fwrite(f : file, x : _htuple) {
+  fwrite(f, "(", x(1));
+  for param i in 2..x.size do
+    fwrite(f, ", ", x(i));
   fwrite(f, ")");
 }

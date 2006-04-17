@@ -52,7 +52,7 @@ int f_equal_method = 0;
 int fnostdincs = 0;
 int fnostdincs_but_file = 0;
 int num_constants_per_variable = 1;
-int instantiation_limit = 12;
+int instantiation_limit = 256;
 bool parallelPass = false;
 int scalar_promotion = 1;
 

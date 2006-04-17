@@ -953,8 +953,11 @@ record_tuple_inner_type:
     }
 | tuple_inner_type_ls TRP
     {
-      char *tupleName = stringcat("_construct__tuple", intstring($1->length()));
-      $$ = new CallExpr(tupleName, $1);
+      CallExpr* call = new CallExpr("_tuple", new_IntLiteral($1->length()));
+      for_alist(Expr, expr, $1) {
+        call->argList->insertAtTail(new CallExpr(PRIMITIVE_INIT, expr->remove()));
+      }
+      $$ = call;
     }
 ;
 
@@ -1114,14 +1117,7 @@ tuple_paren_expr:
         $$ = $2->get(1);
         $$->remove();
       } else {
-        AList<Expr>* types = new AList<Expr>();
-        AList<Expr>* fields = new AList<Expr>();
-        char* tuple_name = stringcat("_construct__tuple", intstring($2->length()));
-        for_alist(Expr, expr, $2) {
-          types->insertAtTail(expr->copy());
-          fields->insertAtTail(expr->copy());
-        }
-        $$ = new CallExpr(tuple_name, types, fields);
+        $$ = new CallExpr("_tuple", new_IntLiteral($2->length()), $2);
       }
     }
 ;

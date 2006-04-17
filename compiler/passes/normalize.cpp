@@ -760,9 +760,12 @@ static void insert_call_temps(CallExpr* call) {
   if (call->primitive || call->isNamed("__primitive"))
     return;
 
-  if (CallExpr* parentCall = dynamic_cast<CallExpr*>(call->parentExpr))
+  if (CallExpr* parentCall = dynamic_cast<CallExpr*>(call->parentExpr)) {
     if (parentCall->isPrimitive(PRIMITIVE_MOVE))
       return;
+    if (parentCall->isPrimitive(PRIMITIVE_INIT))
+      call = parentCall;
+  }
 
   Stmt* stmt = call->parentStmt;
   VarSymbol* tmp = new VarSymbol("_tmp", dtUnknown, VAR_NORMAL, VAR_CONST);
@@ -1044,6 +1047,10 @@ static void fold_param_for(BlockStmt* block) {
           block->param_index->remove();
           block->blockTag = BLOCK_NORMAL;
           Symbol* index = dynamic_cast<SymExpr*>(index_expr)->var;
+          if (n < 1) {
+            block->remove();
+            return;
+          }
           for (int i = n-1; i >= 1; i--) {
             VarSymbol* new_index = new VarSymbol(index->name);
             new_index->consClass = VAR_PARAM;
@@ -1203,10 +1210,7 @@ expand_var_args(FnSymbol* fn) {
               new DefExpr(var,
                 new CallExpr("_htuple", arg->type->symbol, new_IntLiteral(n))));
           } else {
-            fn->insertAtHead(
-              new DefExpr(var,
-                new CallExpr(stringcat("_construct__tuple", intstring(n)),
-                             actual_types, actuals)));
+            fn->insertAtHead(new DefExpr(var, new CallExpr("_tuple", new_IntLiteral(n), actuals)));
           }
           arg_def->remove();
           ASTMap update;
