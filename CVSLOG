@@ -63351,3 +63351,62 @@ Added files:
 	chapel/test/parallel/cobegin/waynew/: while.chpl while.compopts 
 	                                      while.future while.good 
 
+---------------------------------------------------------------------------
+
+04/17/06 13:49:19 -- deitz
+
+Log message:
+	Note: two new regressions
+	
+	[Error matching compiler output for types/tuple/deitz/test_destruct_nested]
+	[Error executing program types/tuple/deitz/test_tuple_of_tuples]
+	
+	Unified all heterogeneous tuples into a new tuple class that is
+	instantiated by size and uses a variable number of fields (will be
+	changed to a pragma rather than a feature of the language).  This is
+	step one in the unification of tuples work and is a major step
+	forward.  As a benefit, tuples are no longer restricted to size five
+	or less and much code that was specially built in the compiler is no
+	longer built.
+	
+	Increased default instantiation-limit from 12 to 256 though I'm unsure
+	what a good default should be.  I think this is too high.
+	
+	Simplified tuple build code in the parser as a result.
+	
+	Fixed a bug in param for loops in the case where the loop should not
+	be executed as in 'for param i in 1..0 do' and added a test case.
+	
+	Cleaned up temp insertion for INIT primitive in normalization.
+	
+	Added generic _tuple record instantiated based on size of tuple to
+	replace the tuple records that were built by the compiler, i.e.,
+	_tuple1, _tuple2, ...
+	
+	Added write and = function on _tuple and removed compiler-generated
+	ones.
+	
+	Regressions deal with tuple of tuple types not being handled
+	correctly.  The errors seem to relate to our handling of complex type
+	definitions and I will work on creating a stand-alone test and/or
+	fixing the problem.
+
+Modified files:
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: cleanup.cpp normalize.cpp 
+	chapel/modules/standard/: _chpl_htuple.chpl 
+	chapel/test/classes/bradc/: callMethodOnClass.good 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/flowanalysis/newast/: domarr.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-1.good 
+	                                 zeroarity-bound-error-2.good 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_overinstantiate1.good 
+Added files:
+	chapel/test/trivial/deitz/: test_for_param2.chpl 
+	                            test_for_param2.good 
+
