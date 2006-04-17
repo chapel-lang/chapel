@@ -118,6 +118,8 @@ sub collect_logs {
 
     # Generate summary file
     systemd ("echo \\[Test Summary - $date\\] > $fin_log.summary");
+    systemd ("grep '^\\[Error' $fin_log >> $fin_log.summary");
+    systemd ("grep '^Future' $fin_log >> $fin_log.summary");
     systemd ("echo \\[Summary: \\#Successes = $successes \\| \\#Failures = $failures \\| \\#Futures = $futures\\] >> $fin_log.summary");
     systemd ("echo \\[END\\] >> $fin_log.summary");
 }
