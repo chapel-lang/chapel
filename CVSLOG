@@ -63339,3 +63339,15 @@ Log message:
 Modified files:
 	chapel/test/: paratest.server.pl 
 
+---------------------------------------------------------------------------
+
+04/17/06 13:46:08 -- waynew
+
+Log message:
+	Simple test of parallel code generation of while statements within
+	a cobegin statement.
+
+Added files:
+	chapel/test/parallel/cobegin/waynew/: while.chpl while.compopts 
+	                                      while.future while.good 
+
