@@ -1,0 +1,7 @@
+deitz
+
+The initial parallel/cobegin pass puts cobegin statements into
+their own nested function. This currently breaks with while
+blocks because the while is expanded into a multi-statment
+loop beforehand. One solution is to put this multi-statement
+transformation into a block before the parallel pass.
