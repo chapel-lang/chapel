@@ -63319,3 +63319,13 @@ Log message:
 Modified files:
 	chapel/test/parallel/cobegin/waynew/: depend.chpl 
 
+---------------------------------------------------------------------------
+
+04/17/06 09:43:46 -- deitz
+
+Log message:
+	Minor simplifications to instantiation callback.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
