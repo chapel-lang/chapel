@@ -209,7 +209,7 @@ Is this "while x"(i); or "while x(i)";?
 %type <pstmtls> type_select_stmt
 
 %type <pstmtls> typedef_decl_stmt fn_decl_stmt class_decl_stmt mod_decl_stmt
-%type <pstmtls> typevar_decl_stmt enum_decl_stmt with_stmt use_stmt where_stmt
+%type <pstmtls> typevar_decl_stmt enum_decl_stmt with_stmt use_stmt
 
 %type <pstmtls> var_decl_stmt var_decl_stmt_inner var_decl_stmt_inner_ls
 
@@ -228,7 +228,7 @@ Is this "while x"(i); or "while x(i)";?
 
 %type <pexpr> parenop_expr memberaccess_expr non_tuple_lvalue lvalue
 %type <pexpr> tuple_paren_expr atom expr expr_list_item opt_expr
-%type <pexpr> literal range seq_expr where whereexpr
+%type <pexpr> literal range seq_expr where
 %type <pexpr> tuple_multiplier variable_expr top_level_expr
 %type <pexpr> reduction opt_init_expr var_arg_expr
 %type <pexprls> expr_ls nonempty_expr_ls tuple_inner_type_ls opt_inherit_expr_ls
@@ -537,7 +537,6 @@ decl_stmt_ls:
 decl_stmt:
   with_stmt
 | use_stmt
-| where_stmt
 | mod_decl_stmt
 | fn_decl_stmt
 | class_decl_stmt
@@ -557,12 +556,6 @@ with_stmt:
 use_stmt:
   TUSE lvalue TSEMI
     { $$ = new AList<Stmt>(new ImportExpr(IMPORT_USE, $2)); }
-;
-
-
-where_stmt:
-  TWHERE whereexpr TSEMI
-    { $$ = new AList<Stmt>($2); }
 ;
 
 
@@ -728,68 +721,9 @@ fname:
 where:
   /* empty */
     { $$ = NULL; }
-| TWHERE whereexpr
+| TWHERE expr
     { $$ = $2; }
 ;
-
-whereexpr: 
-  atom
-| TTYPE identifier opt_var_type TCOMMA whereexpr
-    { 
-      VariableType* new_type = new VariableType(getMetaType(0));
-      TypeSymbol* new_symbol = new TypeSymbol($2, new_type);
-      $$ = new DefExpr(new_symbol, NULL, $3);
-    }
-| TNOT whereexpr
-    { $$ = new CallExpr("!", $2); }
-| TBNOT whereexpr
-    { $$ = new CallExpr("~", $2); }
-| whereexpr TPLUS whereexpr
-    { $$ = new CallExpr("+", $1, $3); }
-| whereexpr TMINUS whereexpr
-    { $$ = new CallExpr("-", $1, $3); }
-| whereexpr TSTAR whereexpr
-    { $$ = new CallExpr("*", $1, $3); }
-| whereexpr TDIVIDE whereexpr
-    { $$ = new CallExpr("/", $1, $3); }
-| whereexpr TSHIFTLEFT whereexpr
-    { $$ = new CallExpr("<<", $1, $3); }
-| whereexpr TSHIFTRIGHT whereexpr
-    { $$ = new CallExpr(">>", $1, $3); }
-| whereexpr TMOD whereexpr
-    { $$ = new CallExpr("%", $1, $3); }
-| whereexpr TEQUAL whereexpr
-    { $$ = new CallExpr("==", $1, $3); }
-| whereexpr TNOTEQUAL whereexpr
-    { $$ = new CallExpr("!=", $1, $3); }
-| whereexpr TLESSEQUAL whereexpr
-    { $$ = new CallExpr("<=", $1, $3); }
-| whereexpr TGREATEREQUAL whereexpr
-    { $$ = new CallExpr(">=", $1, $3); }
-| whereexpr TLESS whereexpr
-    { $$ = new CallExpr("<", $1, $3); }
-| whereexpr TGREATER whereexpr
-    { $$ = new CallExpr(">", $1, $3); }
-| whereexpr TBAND whereexpr
-    { $$ = new CallExpr("&", $1, $3); }
-| whereexpr TBOR whereexpr
-    { $$ = new CallExpr("|", $1, $3); }
-| whereexpr TBXOR whereexpr
-    { $$ = new CallExpr("~", $1, $3); }
-| whereexpr TCOMMA whereexpr
-    { $$ = new CallExpr("&&", $1, $3); }
-| whereexpr TOR whereexpr
-    { $$ = new CallExpr("||", $1, $3); }
-| whereexpr TEXP whereexpr
-    { $$ = new CallExpr("**", $1, $3); }
-| whereexpr TSEQCAT whereexpr
-    { $$ = new CallExpr("#", $1, $3); }
-| whereexpr TBY whereexpr
-    { $$ = new CallExpr("by", $1, $3); }
-| class_tag pragma_ls opt_identifier TLCBR decl_stmt_ls TRCBR
-    { $$ = NULL; }
-;
-
 
 function:
   fname

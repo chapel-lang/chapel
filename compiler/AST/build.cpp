@@ -124,17 +124,6 @@ AList<Stmt>* build_param_for(char* index, Expr* low, Expr* high, AList<Stmt>* st
   BlockStmt* outer = new BlockStmt(block);
   block->insertBefore(new DefExpr(index_var, low->copy()));
   return new AList<Stmt>(outer);
-//   static int uid = 1;
-//   FnSymbol* fn = new FnSymbol(stringcat("_param_for_fn", intstring(uid++)));
-//   fn->formals =
-//     new AList<DefExpr>(new DefExpr(new ArgSymbol(INTENT_PARAM, index, dtInt)));
-//   fn->addPragma("inline");
-//   stmts->insertAtTail(new CallExpr(fn->name, new CallExpr("+", new SymExpr(index), new_IntLiteral(1))));
-//   fn->insertAtTail(
-//     new CondStmt(new CallExpr("<=", new SymExpr(index), high), stmts));
-//   Stmt* def_stmt = new ExprStmt(new DefExpr(fn));
-//   Stmt* call_stmt = new ExprStmt(new CallExpr(fn->name, low));
-//   return new AList<Stmt>(def_stmt, call_stmt);
 }
 
 
