@@ -63428,3 +63428,35 @@ Added files:
 	chapel/test/types/tuple/deitz/: test_tuple_forall.chpl 
 	                                test_tuple_forall.good 
 
+---------------------------------------------------------------------------
+
+04/18/06 16:58:47 -- deitz
+
+Log message:
+	Removed distinction between VALUECLASS and RECORD in the compiler as
+	now that records are no longer structurally typed, there is no
+	distinction.  Basically
+	
+	  class R : value { ...
+	
+	is identical to
+	
+	  record R { ...
+	
+	Enabled nominal subtyping on records and updated .future for
+	test/functions/jplevyak/scoping/visibility-4.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	chapel/test/classes/deitz/inherit/: test_inherit_error3.good 
+	                                    test_value1.good 
+	                                    test_value2.good 
+	chapel/test/functions/jplevyak/scoping/: visibility-4.chpl 
+	                                         visibility-4.future 
+Added files:
+	chapel/test/classes/deitz/: test_record_inherit1.chpl 
+	                            test_record_inherit1.good 
+
