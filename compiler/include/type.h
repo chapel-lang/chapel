@@ -155,7 +155,6 @@ class UserType : public Type {
 
 enum ClassTag {
   CLASS_CLASS,
-  CLASS_VALUECLASS,
   CLASS_RECORD
 };
 

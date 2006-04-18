@@ -1,3 +1,11 @@
+jplevyak/deitz
+
+I fixed the below problem.  It is now a visibility issue but what
+should happen, and the .good has two writelns, but the program only
+has one.
+
+------HISTORY----------
+
 deitz
 
 I believe we decided to go with declared subtyping of records.

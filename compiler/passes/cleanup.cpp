@@ -160,10 +160,6 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* seen = NULL) {
     ClassType* pt = dynamic_cast<ClassType*>(typeSymbol->definition);
     if (!pt)
       USR_FATAL(expr, "Illegal to inherit from something other than a class");
-    if (pt->classTag == CLASS_RECORD)
-      USR_FATAL(expr, "Illegal to inherit from record");
-    if (ct->classTag == CLASS_RECORD)
-      USR_FATAL(expr, "Illegal for record to inherit");
     if (pt->inherits) {
       seen->add(ct);
       add_class_to_hierarchy(pt, seen);
@@ -173,8 +169,8 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* seen = NULL) {
     forv_Vec(Symbol, field, pt->fields) {
       ct->addDeclarations(new AList<Stmt>(field->defPoint->parentStmt->copy()), insertPoint);
     }
-    if (pt->classTag == CLASS_VALUECLASS) {
-      ct->classTag = CLASS_VALUECLASS;
+    if (pt->classTag == CLASS_RECORD) {
+      ct->classTag = CLASS_RECORD;
       ct->defaultValue = NULL;
     }
   }
@@ -185,7 +181,7 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* seen = NULL) {
       ct->dispatchParents.add(dtObject);
   }
   if (ct == dtValue) {
-    ct->classTag = CLASS_VALUECLASS;
+    ct->classTag = CLASS_RECORD;
     ct->defaultValue = NULL;
   }
   ct->inherits = NULL;

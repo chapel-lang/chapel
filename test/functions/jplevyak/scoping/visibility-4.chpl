@@ -1,8 +1,8 @@
 record bar {
-  var x : integer;
+  var x : int;
 }
 record foo : bar {
-  var y : integer;
+  var y : int;
 }
 fun f(x : foo) { return 2; }
 

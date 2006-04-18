@@ -1120,8 +1120,7 @@ build_type(Type *t, bool make_default = true) {
     case TYPE_CLASS: {
       ClassType *tt = dynamic_cast<ClassType*>(t);
       t->asymbol->sym->type_kind = Type_RECORD;
-      if (tt->classTag == CLASS_RECORD ||
-          tt->classTag == CLASS_VALUECLASS)
+      if (tt->classTag == CLASS_RECORD)
         t->asymbol->sym->is_value_type = 1;
       if (tt->symbol->hasPragma("data class"))
         t->asymbol->sym->element = new_sym();

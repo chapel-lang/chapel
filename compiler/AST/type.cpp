@@ -744,7 +744,7 @@ void ClassType::traverseDefType(Traversal* traversal) {
 
 bool
 ClassType::isNominalType() {
-  return classTag == CLASS_CLASS || classTag == CLASS_VALUECLASS;
+  return classTag == CLASS_CLASS;
 }
 
 
@@ -771,7 +771,7 @@ is_Value_Type(Type *t) {
   if (pt)
     return true;
   ClassType* ct = dynamic_cast<ClassType*>(t);
-  return ct && (ct->classTag == CLASS_RECORD || ct->classTag == CLASS_VALUECLASS);
+  return ct && ct->classTag == CLASS_RECORD;
 }
 
 
@@ -852,7 +852,7 @@ AList<Stmt>* ClassType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSym
     body->insertAtTail(new CondStmt(argIsNil, blockStmt));
   }
 
-  if (classTag == CLASS_CLASS || classTag == CLASS_VALUECLASS) {
+  if (classTag == CLASS_CLASS) {
     body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringLiteral("{")));
   } else {
     body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringLiteral("(")));
@@ -870,7 +870,7 @@ AList<Stmt>* ClassType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSym
     first = false;
   }
 
-  if (classTag == CLASS_CLASS || classTag == CLASS_VALUECLASS) {
+  if (classTag == CLASS_CLASS) {
     body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringLiteral("}")));
   } else {
     body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringLiteral(")")));

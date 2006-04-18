@@ -76,7 +76,7 @@ void build_default_functions(void) {
         continue;
       buildDefaultIOFunctions(type->definition);
       if (ClassType* ct = dynamic_cast<ClassType*>(type->definition)) {
-        if (ct->classTag == CLASS_RECORD || ct->classTag == CLASS_VALUECLASS) {
+        if (ct->classTag == CLASS_RECORD) {
           build_record_equality_function(ct);
           build_record_inequality_function(ct);
           build_record_assignment_function(ct);
