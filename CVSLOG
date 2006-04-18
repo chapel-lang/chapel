@@ -63460,3 +63460,15 @@ Added files:
 	chapel/test/classes/deitz/: test_record_inherit1.chpl 
 	                            test_record_inherit1.good 
 
+---------------------------------------------------------------------------
+
+04/18/06 16:59:04 -- deitz
+
+Log message:
+	Removed special parsing of where expressions, now parsed as any other
+	expression in preparation for more changes to the parser.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+	chapel/compiler/parser/: chapel.y 
+
