@@ -63410,3 +63410,21 @@ Added files:
 	chapel/test/trivial/deitz/: test_for_param2.chpl 
 	                            test_for_param2.good 
 
+---------------------------------------------------------------------------
+
+04/18/06 10:27:10 -- deitz
+
+Log message:
+	Checking in tests from workspace.  Two futures.  Three working.
+
+Added files:
+	chapel/test/arrays/deitz/: array_forall_expr.chpl 
+	                           array_forall_expr.future 
+	                           array_forall_expr.good 
+	chapel/test/trivial/deitz/: coerce.chpl coerce.good 
+	                            test_function1.chpl 
+	                            test_function1.good test_infer1.chpl 
+	                            test_infer1.future test_infer1.good 
+	chapel/test/types/tuple/deitz/: test_tuple_forall.chpl 
+	                                test_tuple_forall.good 
+
