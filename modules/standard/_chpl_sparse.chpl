@@ -6,7 +6,7 @@ class _sdomain : _domain {
     return _sarray(elt_type, rank, dom=this);
 }
 
-class _sarray : value {
+record _sarray {
   type elt_type;
   param rank : int;
 

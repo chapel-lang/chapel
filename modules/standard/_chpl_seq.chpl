@@ -5,7 +5,7 @@ class _seqNode {
   var _next : _seqNode(elt_type);
 }
 
-class seq : value {
+record seq {
   type elt_type;
 
   var _length : int;

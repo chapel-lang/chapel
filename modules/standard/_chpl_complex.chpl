@@ -1,4 +1,4 @@
-pragma "rename _chpl_complex" class complex : value {
+pragma "rename _chpl_complex" record complex {
   var real : float;
   var imag : float;
 }

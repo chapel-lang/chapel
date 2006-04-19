@@ -103,7 +103,7 @@ class _idomain : _domain {
     return _iarray(elt_type, ind_type, dom=this);
 }
 
-class _iarray : value {
+record _iarray {
   type elt_type;
   type ind_type;
   var dom : _idomain(ind_type);

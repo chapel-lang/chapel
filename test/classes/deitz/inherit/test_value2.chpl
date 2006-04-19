@@ -1,9 +1,9 @@
-class C : value {
+record C {
   var x : int = 1;
   var y : float = 2.0;
 }
 
-class D : C {
+record D : C {
   var z : string = "three";
 }
 

@@ -6,6 +6,8 @@
 class Symbol;
 class ModuleSymbol;
 class FnSymbol;
+class TypeSymbol;
+class VarSymbol;
 class Type;
 class Stmt;
 class Expr;
@@ -151,6 +153,13 @@ class BaseAST : public gc {
 
   ModuleSymbol* getModule();
   FnSymbol* getFunction();
+
+  Symbol* lookup(char*);
+  Symbol* lookup(BaseAST*);
+  TypeSymbol* lookupType(char*);
+  TypeSymbol* lookupType(BaseAST*);
+  VarSymbol* lookupVar(char*);
+  VarSymbol* lookupVar(BaseAST*);
 };
 
 typedef Map<BaseAST*,BaseAST*> ASTMap;

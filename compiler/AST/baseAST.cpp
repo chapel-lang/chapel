@@ -6,6 +6,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "symscope.h"
+#include "symtab.h"
 #include "type.h"
 #include "yy.h"
 #include "../passes/runAnalysis.h"
@@ -355,6 +356,35 @@ FnSymbol* BaseAST::getFunction() {
     return parentSymbol->getFunction();
 }
 
+
+Symbol* BaseAST::lookup(char* name) {
+  if (ModuleSymbol* a = dynamic_cast<ModuleSymbol*>(this))
+    return Symboltable::lookupFromScope(name, a->modScope);
+  return Symboltable::lookupFromScope(name, parentScope);
+}
+
+Symbol* BaseAST::lookup(BaseAST* ast) {
+  if (SymExpr* a = dynamic_cast<SymExpr*>(ast))
+    return lookup(a->var->name);
+  INT_FATAL(ast, "Bad call to lookup");
+  return NULL;
+}
+
+TypeSymbol* BaseAST::lookupType(char* name) {
+  return dynamic_cast<TypeSymbol*>(lookup(name));
+}
+
+TypeSymbol* BaseAST::lookupType(BaseAST* ast) {
+  return dynamic_cast<TypeSymbol*>(lookup(ast));
+}
+
+VarSymbol* BaseAST::lookupVar(char* name) {
+  return dynamic_cast<VarSymbol*>(lookup(name));
+}
+
+VarSymbol* BaseAST::lookupVar(BaseAST* ast) {
+  return dynamic_cast<VarSymbol*>(lookup(ast));
+}
 
 int compar_baseast(const void *ai, const void *aj) {
   BaseAST *i = *(BaseAST**)ai;

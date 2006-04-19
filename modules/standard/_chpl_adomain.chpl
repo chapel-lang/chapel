@@ -184,7 +184,7 @@ fun by(dom : _adomain, dim : int) {
 }
 
 
-class _aarray : value {
+record _aarray {
   type elt_type;
   param rank : int;
 

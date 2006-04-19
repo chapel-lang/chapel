@@ -1,7 +1,7 @@
 pragma "no codegen";
 
 class object { }
-class value { }
+record value { }
 
 fun typeof(x) { }
 

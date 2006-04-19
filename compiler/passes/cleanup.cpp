@@ -134,32 +134,37 @@ process_import_expr(ImportExpr* expr) {
 
 static void
 add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* seen = NULL) {
+  if (!ct->inherits)
+    return;
+
   if (seen == NULL) {
     Vec<ClassType*> seen;
-    if (ct->inherits)
-      add_class_to_hierarchy(ct, &seen);
+    add_class_to_hierarchy(ct, &seen);
     return;
   }
 
-  forv_Vec(ClassType, at, *seen) {
-    if (at == ct) {
-      USR_FATAL(ct, "Cyclic class hierarchy detected");
-    }
-  }
+  forv_Vec(ClassType, at, *seen)
+    if (at == ct)
+      USR_FATAL(ct, "Class hierarchy is cyclic");
+
+  // make root records inherit from value
+  // make root classes inherit from object
+  if (ct->inherits->length() == 0 && ct != dtValue && ct != dtObject)
+    ct->dispatchParents.add(ct->classTag == CLASS_RECORD ? dtValue : dtObject);
 
   for_alist(Expr, expr, ct->inherits) {
-    SymExpr* symExpr = dynamic_cast<SymExpr*>(expr);
-    if (!symExpr) {
-      USR_FATAL_CONT(symExpr, "Possible temporary restriction follows:");
-      USR_FATAL(symExpr, "Inheritance is only supported from simple classes");
-    }
-    Symbol* symbol = Symboltable::lookupFromScope(symExpr->var->name, symExpr->parentScope);
-    TypeSymbol* typeSymbol = dynamic_cast<TypeSymbol*>(symbol);
-    if (!typeSymbol)
-      USR_FATAL(expr, "Illegal to inherit from something other than a class");
-    ClassType* pt = dynamic_cast<ClassType*>(typeSymbol->definition);
+    TypeSymbol* ts = dynamic_cast<TypeSymbol*>(expr->lookup(expr));
+    if (!ts)
+      USR_FATAL(expr, "Illegal super class");
+    ClassType* pt = dynamic_cast<ClassType*>(ts->definition);
     if (!pt)
-      USR_FATAL(expr, "Illegal to inherit from something other than a class");
+      USR_FATAL(expr, "Illegal super class %s", ts->name);
+    if (ct->classTag == CLASS_RECORD && pt->classTag == CLASS_CLASS)
+      USR_FATAL(expr, "Record %s inherits from class %s",
+                ct->symbol->name, pt->symbol->name);
+    if (ct->classTag == CLASS_CLASS && pt->classTag == CLASS_RECORD)
+      USR_FATAL(expr, "Class %s inherits from record %s",
+                ct->symbol->name, pt->symbol->name);
     if (pt->inherits) {
       seen->add(ct);
       add_class_to_hierarchy(pt, seen);
@@ -169,21 +174,8 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* seen = NULL) {
     forv_Vec(Symbol, field, pt->fields) {
       ct->addDeclarations(new AList<Stmt>(field->defPoint->parentStmt->copy()), insertPoint);
     }
-    if (pt->classTag == CLASS_RECORD) {
-      ct->classTag = CLASS_RECORD;
-      ct->defaultValue = NULL;
-    }
   }
-  if (ct->dispatchParents.n == 0 && ct != dtObject && ct != dtValue) {
-    if (ct->classTag == CLASS_RECORD)
-      ct->dispatchParents.add(dtValue);
-    else
-      ct->dispatchParents.add(dtObject);
-  }
-  if (ct == dtValue) {
-    ct->classTag = CLASS_RECORD;
-    ct->defaultValue = NULL;
-  }
+
   ct->inherits = NULL;
 }
 

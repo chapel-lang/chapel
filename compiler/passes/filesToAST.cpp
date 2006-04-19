@@ -47,20 +47,16 @@ void parse(void) {
   fixup->run(Symboltable::getModules(MODULES_ALL));
 
   if (!fnostdincs && !fnostdincs_but_file) {
-    chpl_htuple = dynamic_cast<TypeSymbol*>(Symboltable::lookupInScope("_htuple", tupleModule->modScope));
-    chpl_seq = dynamic_cast<TypeSymbol*>(Symboltable::lookupInScope("seq", seqModule->modScope));
+    chpl_htuple = tupleModule->lookupType("_htuple");
+    chpl_seq = seqModule->lookupType("seq");
   }
-
   if (!fnostdincs) {
-    chpl_stdin = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("stdin", fileModule->modScope));
-    chpl_stdout = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("stdout", fileModule->modScope));
-    chpl_stderr = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("stderr", fileModule->modScope));
+    chpl_stdin = fileModule->lookupVar("stdin");
+    chpl_stdout = fileModule->lookupVar("stdout");
+    chpl_stderr = fileModule->lookupVar("stderr");
   }
-
-  chpl_input_filename = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("chpl_input_filename", prelude->modScope));
-  chpl_input_lineno = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("chpl_input_lineno", prelude->modScope));
-
-  setterToken = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("_setterToken", baseModule->modScope));
-  methodToken = dynamic_cast<VarSymbol*>(Symboltable::lookupInScope("_methodToken", baseModule->modScope));
-
+  chpl_input_filename = prelude->lookupVar("chpl_input_filename");
+  chpl_input_lineno = prelude->lookupVar("chpl_input_lineno");
+  setterToken = baseModule->lookupVar("_setterToken");
+  methodToken = baseModule->lookupVar("_methodToken");
 }

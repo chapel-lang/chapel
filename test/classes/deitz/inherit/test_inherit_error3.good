@@ -1,1 +1,1 @@
-(y = 1, x = 1)
+Error: Class C inherits from record D (test_inherit_error3.chpl:1)

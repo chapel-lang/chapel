@@ -78,7 +78,7 @@ void scopeResolve(BaseAST* base) {
         if (!strcmp(name, "__primitive") || !strcmp(name, "."))
           continue;
 
-        Symbol* sym = Symboltable::lookupFromScope(name, symExpr->parentScope);
+        Symbol* sym = symExpr->lookup(name);
         //VarSymbol* var = dynamic_cast<VarSymbol*>(sym);
         FnSymbol* fn = dynamic_cast<FnSymbol*>(sym);
         TypeSymbol* type = dynamic_cast<TypeSymbol*>(sym);

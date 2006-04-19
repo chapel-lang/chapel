@@ -22,7 +22,7 @@ fun fwrite(f : file, x : _tuple) {
   fwrite(f, ")");
 }
 
-class _htuple : value {
+record _htuple {
   type elt_type;
   param size : int;
   var elements : _ddata(elt_type) = _ddata(elt_type, size);
