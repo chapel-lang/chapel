@@ -63472,3 +63472,14 @@ Modified files:
 	chapel/compiler/AST/: build.cpp 
 	chapel/compiler/parser/: chapel.y 
 
+---------------------------------------------------------------------------
+
+04/19/06 11:30:41 -- deitz
+
+Log message:
+	Test case for declaring classes and records.
+
+Added files:
+	chapel/test/classes/deitz/: test_var_decl1.good 
+	                            test_var_decl1.chpl 
+
