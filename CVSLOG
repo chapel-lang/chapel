@@ -63483,3 +63483,38 @@ Added files:
 	chapel/test/classes/deitz/: test_var_decl1.good 
 	                            test_var_decl1.chpl 
 
+---------------------------------------------------------------------------
+
+04/19/06 15:22:32 -- deitz
+
+Log message:
+	Cleaned up class hierarchy computation.  In particular, resolved
+	differences between record r and class r : value.  Class r : value is
+	now illegal and should be written record r since value is a record.  I
+	made it illegal for records to inherit from classes and vice versa but
+	if this does make sense or is necessary, it can easily be enabled.
+	
+	Superficial cleanup to lookup routine which can now be used as
+	
+	  BaseAST->lookup(char*)
+	  BaseAST->lookup(BaseAST);
+	
+	which looks up in this's parentScope (if module, modScope), the char*
+	name argument or the BaseAST->var->name argument assuming the BaseAST
+	argument is a SymExpr (error otherwise).
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp 
+	chapel/compiler/include/: baseAST.h 
+	chapel/compiler/passes/: cleanup.cpp filesToAST.cpp 
+	                         normalize.cpp scopeResolve.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_complex.chpl 
+	                          _chpl_htuple.chpl 
+	                          _chpl_indefinite.chpl _chpl_seq.chpl 
+	                          _chpl_sparse.chpl prelude.chpl 
+	chapel/test/classes/deitz/inherit/: test_inherit_error1.good 
+	                                    test_inherit_error2.good 
+	                                    test_inherit_error3.good 
+	                                    test_value1.chpl 
+	                                    test_value2.chpl 
+
