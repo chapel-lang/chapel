@@ -63518,3 +63518,17 @@ Modified files:
 	                                    test_value1.chpl 
 	                                    test_value2.chpl 
 
+---------------------------------------------------------------------------
+
+04/19/06 16:42:24 -- waynew
+
+Log message:
+	Combined initType, initSymbol, and initExpr into initPrimitiveTypes.
+	Should just be code relocation.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/include/: symtab.h type.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/symtab/: symtab.cpp 
+
