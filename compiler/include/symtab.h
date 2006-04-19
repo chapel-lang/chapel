@@ -44,6 +44,11 @@ class Symboltable {
   static PrimitiveType* Symboltable::definePrimitiveType(char* name, char* cname, Symbol* initSymbol = NULL);
   static Type* Symboltable::defineBuiltinType(char* name, char* cname, Type* newType);
   static DefExpr* defineStructType(char* name, Type* type, AList<Stmt>* def);
+
+  static PrimitiveType* createPrimitiveType (char      *name,
+                                             char      *cname,
+                                             char      *ltype_name = NULL,
+                                             char      *ltype_cname = NULL);
 };
 
 bool ModuleDefContainsOnlyNestedModules(AList<Stmt>* def);

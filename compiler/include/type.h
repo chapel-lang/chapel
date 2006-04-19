@@ -275,8 +275,7 @@ TYPE_EXTERN ClassType* dtValue;
 // vector of built-in types
 TYPE_EXTERN Vec<Type*> builtinTypes;
 
-// void initType(void);
-void initTypesAndSymbols(void);
+void initPrimitiveTypes(void);
 Type *find_or_make_sum_type(Vec<Type *> *types);
 int is_Scalar_Type(Type *t);
 int is_Reference_Type(Type *t);

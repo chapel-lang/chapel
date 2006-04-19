@@ -1022,8 +1022,14 @@ void VariableType::traverseDefType(Traversal* traversal) {
 }
 
 
+#define CREATE_DEFAULT_SYMBOL(primType, gSym, name)                     \
+  gSym = new VarSymbol (name, primType, VAR_NORMAL, VAR_CONST);         \
+  rootScope->define (gSym);                                             \
+  builtinSymbols.add (gSym);                                            \
+  primType->defaultValue = gSym
+  
 
-void initTypesAndSymbols(void) {
+void initPrimitiveTypes(void) {
   // Create initial compiler module and its scope
   compilerModule = new ModuleSymbol("_chpl_compiler", MOD_STANDARD) ;
   rootScope->define(compilerModule);
@@ -1033,45 +1039,64 @@ void initTypesAndSymbols(void) {
   rootScope->insertChildScope(compilerModule->modScope);
   compilerModule->stmts->insertAtTail(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol("prelude"))));
 
-  dtNil = Symboltable::definePrimitiveType("_nilType", "_nilType");
-  dtUnknown = Symboltable::definePrimitiveType("_unknownType", "_unknownType");
-  dtUnspecified = Symboltable::definePrimitiveType("_unspecifiedType", "_unspecifiedType");
-  dtVoid = Symboltable::definePrimitiveType("void", "void");
+  dtNil = Symboltable::createPrimitiveType ("_nilType", "_nilType");
+  CREATE_DEFAULT_SYMBOL (dtNil, gNil, "nil");
+  
+  dtUnknown = Symboltable::createPrimitiveType ("_unknownType", "_unknownType");
+  CREATE_DEFAULT_SYMBOL (dtUnknown, gUnknown, "_unknown");
 
-  dtBool = Symboltable::definePrimitiveType("bool", "_bool");
-  dtBool->literalType = Symboltable::definePrimitiveType("_boolLiteral", "_boolLiteral");
-  dtBool->literalType->dispatchParents.add(dtBool);
+  dtUnspecified = Symboltable::createPrimitiveType ("_unspecifiedType", "_unspecifiedType");
+  CREATE_DEFAULT_SYMBOL (dtUnspecified, gUnspecified, "_");
 
-  dtInt = Symboltable::definePrimitiveType("int", "_int64");
-  dtInt->literalType = Symboltable::definePrimitiveType("_intLiteral", "_int64Literal");
-  dtInt->literalType->dispatchParents.add(dtInt);
+  dtVoid = Symboltable::createPrimitiveType ("void", "void");
+  CREATE_DEFAULT_SYMBOL (dtVoid, gVoid, "_void");
 
-  dtUInt = Symboltable::definePrimitiveType("uint", "_uint64");
-  dtUInt->literalType = Symboltable::definePrimitiveType("_uintLiteral", "_uint64Literal");
-  dtUInt->literalType->dispatchParents.add(dtUInt);
+  dtBool = Symboltable::createPrimitiveType ("bool", "_bool",
+                                             "_boolLiteral", "_boolLiteral");
+  CREATE_DEFAULT_SYMBOL (dtBool, gFalse, "false");
+  gFalse->immediate = new Immediate;
+  gFalse->immediate->v_bool = false;
+  gFalse->immediate->const_kind = IF1_NUM_KIND_UINT;
+  gFalse->immediate->num_index = IF1_INT_TYPE_1;
+  uniqueConstantsHash.put(gFalse->immediate, gFalse);
+  dtBool->defaultValue = gFalse;
 
-  dtFloat = Symboltable::definePrimitiveType("float", "_float64");
-  dtFloat->literalType = Symboltable::definePrimitiveType("_floatLiteral", "_float64Literal");
+  gTrue = new VarSymbol("true", dtBool, VAR_NORMAL, VAR_CONST);
+  rootScope->define(gTrue); // SJD: Should intrinsics have DefExprs?
+  builtinSymbols.add(gTrue);
+  gTrue->immediate = new Immediate;
+  gTrue->immediate->v_bool = true;
+  gTrue->immediate->const_kind = IF1_NUM_KIND_UINT;
+  gTrue->immediate->num_index = IF1_INT_TYPE_1;
+  uniqueConstantsHash.put(gTrue->immediate, gTrue);
+
+
+  dtInt = Symboltable::createPrimitiveType ("int", "_int64",
+                                            "_intLiteral", "_int64Literal");
+  dtInt->defaultValue = new_IntSymbol(0);
+
+  dtUInt = Symboltable::createPrimitiveType ("uint", "_uint64",
+                                             "_uintLiteral", "_uint64Literal");
+  // dtUInt->defaultValue = new_UIntSymbol(0);
+
+  dtFloat = Symboltable::createPrimitiveType ("float", "_float64",
+                                              "_floatLiteral", "_float64Literal");
   dtFloat->defaultValue = new_FloatSymbol("0.0", 0.0);
-  dtFloat->literalType->dispatchParents.add(dtFloat);
 
   // This should point to the complex type defined in modules/standard/_chpl_complex.chpl
-  dtComplex = Symboltable::definePrimitiveType("complex", "_complex128");
-  dtComplex->literalType = Symboltable::definePrimitiveType("_complexLiteral", "_complex128Literal");
+  dtComplex = Symboltable::createPrimitiveType ("complex", "_complex128",
+                                                "_complexLiteral", "_complex128Literal");
   dtComplex->defaultValue = new_ComplexSymbol("_MAKE_COMPLEX64(0.0,0.0)", 0.0, 0.0);
-  dtComplex->literalType->dispatchParents.add(dtComplex);
 
-  dtString = Symboltable::definePrimitiveType("string", "_string");
-  dtString->literalType = Symboltable::definePrimitiveType("_stringLiteral", "_stringLiteral");
-  dtString->literalType->dispatchParents.add(dtString);
+  dtString = Symboltable::createPrimitiveType ("string", "_string",
+                                               "_stringLiteral", "_stringLiteral");
 
-  dtSymbol = Symboltable::definePrimitiveType("symbol", "_symbol");
-  dtSymbol->literalType = Symboltable::definePrimitiveType("_symbolLiteral", "_symbolLiteral");
-  dtSymbol->literalType->dispatchParents.add(dtSymbol);
+  dtSymbol = Symboltable::createPrimitiveType ("symbol", "_symbol",
+                                               "_symbolLiteral", "_symbolLiteral");
 
-  dtNumeric = Symboltable::definePrimitiveType("numeric", "_numeric");
-  dtScalar = Symboltable::definePrimitiveType("scalar", "_scalar");
-  dtAny = Symboltable::definePrimitiveType("any", "_any");
+  dtNumeric = Symboltable::createPrimitiveType ("numeric", "_numeric");
+  dtScalar = Symboltable::createPrimitiveType ("scalar", "_scalar");
+  dtAny = Symboltable::createPrimitiveType ("any", "_any");
 }
 
 // you can use something like the following cache to 

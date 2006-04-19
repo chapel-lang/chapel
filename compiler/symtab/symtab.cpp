@@ -389,3 +389,19 @@ DefExpr* Symboltable::defineStructType(char* name, // NULL = anonymous
   structType->addDeclarations(def);
   return defExpr;
 }
+
+
+PrimitiveType* 
+Symboltable::createPrimitiveType (char      *name,
+                                  char      *cname,
+                                  char      *ltype_name,
+                                  char      *ltype_cname) {
+  PrimitiveType *newtype = Symboltable::definePrimitiveType (name, cname);
+  if (ltype_name) {
+    newtype->literalType = Symboltable::definePrimitiveType (ltype_name,
+                                                             ltype_cname);
+    newtype->literalType->dispatchParents.add (newtype);
+  }
+
+  return newtype;
+}

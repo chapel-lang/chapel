@@ -191,10 +191,7 @@ do_analysis(char *fn) {
 static void
 compile_all(void) {
   Symboltable::init();
-  initTypesAndSymbols();
-  // initType();
-  initSymbol();
-  initExpr();
+  initPrimitiveTypes();
   initPrimitive();
   testInputFiles(arg_state.nfile_arguments, arg_state.file_argument);
   runPasses(passlist_filename);
