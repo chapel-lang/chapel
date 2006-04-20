@@ -63578,3 +63578,28 @@ Modified files:
 	                                                   test_foo5-error.good 
 	chapel/test/types/type_variables/jplevyak/: where-2-error.good 
 
+---------------------------------------------------------------------------
+
+04/20/06 16:12:25 -- deitz
+
+Log message:
+	Rearranged inlineFunctions and removeNestedFunctions (now
+	flattenFunctions) to be function-based passes rather than traversal
+	class-based passes and moved them into the passes directory.  This
+	falls under the previous Task list's removed old traversal mechanism
+	task.
+
+Modified files:
+	chapel/compiler/include/: passes.h 
+	chapel/compiler/main/: passlist.cpp passlist.h 
+	chapel/compiler/passes/: Makefile.share 
+	chapel/compiler/traversals/: Makefile.share 
+Added files:
+	chapel/compiler/passes/: flattenFunctions.cpp 
+	                         inlineFunctions.cpp 
+Removed files:
+	chapel/compiler/traversals/: inlineFunctions.cpp 
+	                             inlineFunctions.h 
+	                             removeNestedFunctions.cpp 
+	                             removeNestedFunctions.h 
+
