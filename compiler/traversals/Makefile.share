@@ -2,9 +2,7 @@ TRAVERSALS_SRCS = \
 	createConfigVarTable.cpp \
 	fixup.cpp \
         htmlview.cpp \
-        inlineFunctions.cpp \
 	printAST.cpp \
-        removeNestedFunctions.cpp \
 	traversal.cpp \
         verify.cpp \
         view.cpp

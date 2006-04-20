@@ -11,9 +11,7 @@
 #include "../traversals/createConfigVarTable.h"
 #include "../traversals/fixup.h"
 #include "../traversals/htmlview.h"
-#include "../traversals/inlineFunctions.h"
 #include "../traversals/printAST.h"
-#include "../traversals/removeNestedFunctions.h"
 #include "../traversals/verify.h"
 #include "../traversals/view.h"
 
@@ -32,6 +30,7 @@ REGISTER(codegen);
 REGISTER(copy_propagation);
 REGISTER(createConfigVarTable);
 REGISTER(fixup);
+REGISTER(flattenFunctions);
 REGISTER(functionResolution);
 REGISTER(inlineFunctions);
 REGISTER(normalize);
@@ -40,7 +39,6 @@ REGISTER(parse);
 REGISTER(passlistTest);
 REGISTER(printAST);        // BLC: pretty-prints all or part of the AST
 REGISTER(printProgram);    // BLC: pretty-prints the whole program
-REGISTER(removeNestedFunctions);
 REGISTER(resolve_analyzed);
 REGISTER(runAnalysis);
 REGISTER(runInterpreter);

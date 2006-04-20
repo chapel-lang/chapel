@@ -12,5 +12,7 @@ void copy_propagation(void);
 void normalize(void);
 void resolve_analyzed(void);
 void scopeResolve(void);
+void inlineFunctions(void);
+void flattenFunctions(void);
 
 #endif

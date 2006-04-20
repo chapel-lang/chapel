@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <typeinfo>
-#include "inlineFunctions.h"
+#include "passes.h"
 #include "stringutil.h"
 #include "symtab.h"
 
@@ -30,7 +30,7 @@ static void mapFormalsToActuals(CallExpr* call, ASTMap* map) {
 }
 
 
-void inline_call(CallExpr* call, Vec<Stmt*>* stmts) {
+static void inline_call(CallExpr* call, Vec<Stmt*>* stmts) {
   FnSymbol* fn = call->findFnSymbol();
   ASTMap map;
   mapFormalsToActuals(call, &map);
@@ -49,7 +49,7 @@ void inline_call(CallExpr* call, Vec<Stmt*>* stmts) {
     call->replace(return_value);
 }
 
-void inline_calls(BaseAST* base, Vec<FnSymbol*>* inline_stack = NULL) {
+static void inline_calls(BaseAST* base, Vec<FnSymbol*>* inline_stack = NULL) {
   Vec<BaseAST*> asts;
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {

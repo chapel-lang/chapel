@@ -1,4 +1,4 @@
-#include "removeNestedFunctions.h"
+#include "passes.h"
 #include "symscope.h"
 #include "symtab.h"
 #include "astutil.h"
@@ -25,23 +25,19 @@ isOuterVar(Symbol* sym, FnSymbol* fn, SymScope* scope = NULL) {
 //
 // finds outer vars directly used in a function
 //
-class FindOuterVars : public Traversal {
-public:
-  FnSymbol* fn;
-  Vec<Symbol*>* uses;
-
-  FindOuterVars(FnSymbol* iFn, Vec<Symbol*>* iUses)
-    : fn(iFn), uses(iUses) { }
-
-  void preProcessExpr(Expr* expr) {
-    if (SymExpr* symExpr = dynamic_cast<SymExpr*>(expr)) {
+static void
+findOuterVars(FnSymbol* fn, Vec<Symbol*>* uses) {
+  Vec<BaseAST*> asts;
+  collect_asts(&asts, fn);
+  forv_Vec(BaseAST, ast, asts) {
+    if (SymExpr* symExpr = dynamic_cast<SymExpr*>(ast)) {
       Symbol* sym = symExpr->var;
       if (dynamic_cast<VarSymbol*>(sym) || dynamic_cast<ArgSymbol*>(sym))
         if (isOuterVar(sym, fn))
           uses->add_exclusive(sym);
     }
   }
-};
+}
 
 
 static void
@@ -68,7 +64,7 @@ addVarsToActuals(CallExpr* call, Vec<Symbol*>* vars) {
 }
 
 
-void RemoveNestedFunctions::run(Vec<ModuleSymbol*>* modules) {
+void flattenFunctions(void) {
   compute_call_sites();
 
   Vec<FnSymbol*> all_functions;
@@ -80,7 +76,7 @@ void RemoveNestedFunctions::run(Vec<ModuleSymbol*>* modules) {
     if (dynamic_cast<FnSymbol*>(fn->defPoint->parentSymbol)) {
       all_nested_functions.add_exclusive(fn);
       Vec<Symbol*>* uses = new Vec<Symbol*>();
-      TRAVERSE(fn, new FindOuterVars(fn, uses), true);
+      findOuterVars(fn, uses);
       args_map.put(fn, uses);
     }
   }
@@ -133,8 +129,3 @@ void RemoveNestedFunctions::run(Vec<ModuleSymbol*>* modules) {
   }
 }
 
-
-void removeNestedFunctions(void) {
-  Pass* pass = new RemoveNestedFunctions();
-  pass->run(Symboltable::getModules(pass->whichModules));
-}

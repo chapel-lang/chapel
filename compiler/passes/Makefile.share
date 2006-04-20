@@ -5,7 +5,9 @@ PASSES_SRCS = \
 	codegen.cpp \
         copy_propagation.cpp \
 	filesToAST.cpp \
+        flattenFunctions.cpp \
         functionResolution.cpp \
+        inlineFunctions.cpp \
 	pass.cpp \
 	printProgram.cpp \
         normalize.cpp \

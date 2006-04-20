@@ -31,7 +31,7 @@ PassInfo passlist[] = {
 
   RUN(check_resolved), // checks semantics of resolved AST
 
-  RUN(removeNestedFunctions),
+  RUN(flattenFunctions),
 
   RUN(inlineFunctions), // function inlining
   RUN(copy_propagation), // not implemented yet
