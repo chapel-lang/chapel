@@ -63603,3 +63603,14 @@ Removed files:
 	                             removeNestedFunctions.cpp 
 	                             removeNestedFunctions.h 
 
+---------------------------------------------------------------------------
+
+04/20/06 16:17:02 -- waynew
+
+Log message:
+	Simple tests of converting int->uint and uint->int.
+
+Added files:
+	chapel/test/trivial/waynew/: int2uint.chpl int2uint.good 
+	                             uint2int.chpl uint2int.good 
+
