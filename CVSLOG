@@ -63614,3 +63614,15 @@ Added files:
 	chapel/test/trivial/waynew/: int2uint.chpl int2uint.good 
 	                             uint2int.chpl uint2int.good 
 
+---------------------------------------------------------------------------
+
+04/20/06 16:25:19 -- jplevyak
+
+Log message:
+	Improve the efficiency of expanding sets.
+	Add a splitting log message when splitting by
+	  adding dynamic dispatch.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp vec.h 
+
