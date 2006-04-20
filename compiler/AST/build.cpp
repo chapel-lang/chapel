@@ -117,12 +117,12 @@ AList<Stmt>* build_for_block(BlockTag tag,
 AList<Stmt>* build_param_for(char* index, Expr* low, Expr* high, AList<Stmt>* stmts) {
   BlockStmt* block = new BlockStmt(stmts);
   block->blockTag = BLOCK_PARAM_FOR;
-  block->param_factor = new CallExpr("+", new CallExpr("-", high->copy(), low->copy()), new_IntLiteral(1));
-  VarSymbol* index_var = new VarSymbol(index);
-  index_var->consClass = VAR_PARAM;
+  block->param_low = low;
+  block->param_high = high;
+  VarSymbol* index_var = new VarSymbol(index, dtInt);
   block->param_index = new SymExpr(index_var);
   BlockStmt* outer = new BlockStmt(block);
-  block->insertBefore(new DefExpr(index_var, low->copy()));
+  block->insertBefore(new DefExpr(index_var, new_IntLiteral(0)));
   return new AList<Stmt>(outer);
 }
 

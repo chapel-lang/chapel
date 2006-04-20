@@ -86,7 +86,8 @@ class BlockStmt : public Stmt {
   SymScope* blkScope;
   LabelSymbol* pre_loop;
   LabelSymbol* post_loop;
-  Expr* param_factor; // for unrolling, number of times is a parameter
+  Expr* param_low; // for unrolling, low bound
+  Expr* param_high; // for unrolling, high bound
   Expr* param_index; // for unrolling, index variable
 
   BlockStmt::BlockStmt(AList<Stmt>* init_body = new AList<Stmt>(), 

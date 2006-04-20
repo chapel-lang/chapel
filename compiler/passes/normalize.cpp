@@ -1037,29 +1037,32 @@ static void fold_cond_stmt(CondStmt* if_stmt) {
 }
 
 static void fold_param_for(BlockStmt* block) {
-  if (block->param_factor) {
-    if (SymExpr* val = dynamic_cast<SymExpr*>(block->param_factor)) {
-      if (VarSymbol* var = dynamic_cast<VarSymbol*>(val->var)) {
-        if (var->immediate) {
-          int n = var->immediate->v_int64;
-          Expr* index_expr = block->param_index;
-          block->param_factor->remove();
-          block->param_index->remove();
-          block->blockTag = BLOCK_NORMAL;
-          Symbol* index = dynamic_cast<SymExpr*>(index_expr)->var;
-          if (n < 1) {
-            block->remove();
-            return;
+  if (block->param_low || block->param_high) {
+    if (SymExpr* lse = dynamic_cast<SymExpr*>(block->param_low)) {
+      if (SymExpr* hse = dynamic_cast<SymExpr*>(block->param_high)) {
+        if (VarSymbol* lvar = dynamic_cast<VarSymbol*>(lse->var)) {
+          if (VarSymbol* hvar = dynamic_cast<VarSymbol*>(hse->var)) {
+            if (lvar->immediate && hvar->immediate) {
+              int low = lvar->immediate->v_int64;
+              int high = hvar->immediate->v_int64;
+              block->param_low->remove();
+              block->param_high->remove();
+              Expr* index_expr = block->param_index;
+              block->param_index->remove();
+              block->blockTag = BLOCK_NORMAL;
+              Symbol* index = dynamic_cast<SymExpr*>(index_expr)->var;
+              for (int i = low; i <= high; i++) {
+                VarSymbol* new_index = new VarSymbol(index->name);
+                new_index->consClass = VAR_PARAM;
+                block->insertBefore(new DefExpr(new_index, new_IntLiteral(i)));
+                ASTMap map;
+                map.put(index, new_index);
+                block->insertBefore(block->copy(&map));
+              }
+              normalize(block->parentSymbol);
+              block->remove();
+            }
           }
-          for (int i = n-1; i >= 1; i--) {
-            VarSymbol* new_index = new VarSymbol(index->name);
-            new_index->consClass = VAR_PARAM;
-            ASTMap map;
-            map.put(index, new_index);
-            block->insertAfter(block->copy(&map));
-            block->insertAfter(new DefExpr(new_index, new CallExpr("+", index, new_IntLiteral(i))));
-          }
-          normalize(block->parentSymbol);
         }
       }
     }

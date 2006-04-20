@@ -259,7 +259,8 @@ BlockStmt::BlockStmt(AList<Stmt>* init_body, BlockTag init_blockTag) :
   blkScope(NULL),
   pre_loop(NULL),
   post_loop(NULL),
-  param_factor(NULL),
+  param_low(NULL),
+  param_high(NULL),
   param_index(NULL)
 {}
 
@@ -271,7 +272,8 @@ BlockStmt::BlockStmt(Stmt* init_body, BlockTag init_blockTag) :
   blkScope(NULL),
   pre_loop(NULL),
   post_loop(NULL),
-  param_factor(NULL),
+  param_low(NULL),
+  param_high(NULL),
   param_index(NULL)
 {}
 
@@ -286,7 +288,8 @@ void BlockStmt::verify() {
 BlockStmt*
 BlockStmt::copyInner(ASTMap* map) {
   BlockStmt* _this = new BlockStmt(COPY_INT(body), blockTag);
-  _this->param_factor = COPY_INT(param_factor);
+  _this->param_low = COPY_INT(param_low);
+  _this->param_high = COPY_INT(param_high);
   _this->param_index = COPY_INT(param_index);
   return _this;
 }
@@ -295,8 +298,10 @@ BlockStmt::copyInner(ASTMap* map) {
 void BlockStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == body) {
     body = dynamic_cast<AList<Stmt>*>(new_ast);
-  } else if (old_ast == param_factor) {
-    param_factor = dynamic_cast<Expr*>(new_ast);
+  } else if (old_ast == param_low) {
+    param_low = dynamic_cast<Expr*>(new_ast);
+  } else if (old_ast == param_high) {
+    param_high = dynamic_cast<Expr*>(new_ast);
   } else if (old_ast == param_index) {
     param_index = dynamic_cast<Expr*>(new_ast);
   } else {
@@ -309,7 +314,8 @@ void BlockStmt::traverseStmt(Traversal* traversal) {
   SymScope* saveScope = NULL;
   if (blkScope)
     saveScope = Symboltable::setCurrentScope(blkScope);
-  TRAVERSE(param_factor, traversal, false);
+  TRAVERSE(param_low, traversal, false);
+  TRAVERSE(param_high, traversal, false);
   TRAVERSE(param_index, traversal, false);
   TRAVERSE(body, traversal, false);
   if (saveScope)
