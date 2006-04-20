@@ -63532,3 +63532,14 @@ Modified files:
 	chapel/compiler/main/: driver.cpp 
 	chapel/compiler/symtab/: symtab.cpp 
 
+---------------------------------------------------------------------------
+
+04/19/06 17:26:07 -- waynew
+
+Log message:
+	Oops.  Should actually delete functions no longer used.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp 
+	chapel/compiler/include/: expr.h symbol.h 
+
