@@ -63543,3 +63543,15 @@ Modified files:
 	chapel/compiler/AST/: expr.cpp symbol.cpp 
 	chapel/compiler/include/: expr.h symbol.h 
 
+---------------------------------------------------------------------------
+
+04/19/06 17:30:08 -- deitz
+
+Log message:
+	Cleaned up parameter for loops due to bug I ran into with other changes.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp stmt.cpp 
+	chapel/compiler/include/: stmt.h 
+	chapel/compiler/passes/: normalize.cpp 
+
