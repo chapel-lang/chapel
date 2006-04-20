@@ -63555,3 +63555,14 @@ Modified files:
 	chapel/compiler/include/: stmt.h 
 	chapel/compiler/passes/: normalize.cpp 
 
+---------------------------------------------------------------------------
+
+04/20/06 08:38:15 -- bradc
+
+Log message:
+	Fixed subject line that was never updated for the error
+	case in the nightly TAB check.
+
+Modified files:
+	chapel/util/: lookForTabs.cron 
+
