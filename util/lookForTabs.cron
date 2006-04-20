@@ -3,7 +3,7 @@
 $pid = getpgrp();
 $user = `whoami`;
 chomp($user);
-$mailcommand = "| Mail -s \"Chapel: Debug Results\" $user\@cray.com";
+$mailcommand = "| Mail -s \"Chapel: Nightly TAB check\" $user\@cray.com";
 $tmpdir = "/tmp/chapel-tabsearch.$user.$pid.deleteme";
 $chpldir = "$tmpdir/chapel";
 
