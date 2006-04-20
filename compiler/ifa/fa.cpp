@@ -2873,20 +2873,24 @@ split_edges(AVar *av, int fsetters, int fmark) {
   }
   forv_AEdge(ee, all_edges) if (ee) {
     AVar *earg = es->args.get(p);
+    EntrySet *old = ee->to;
     if (earg->out->n == 1)
       ee->to = cs_es_map.get(earg->out->v[0]);
     else {
       for (int i = 0; i < earg->out->type->sorted.n; i++) {
         CreationSet *cs = earg->out->type->sorted.v[i];
-        if (!i) {
-          EntrySet *new_es = cs_es_map.get(cs);
-          again |= new_es != ee->to; 
-          set_entry_set(ee, new_es);
-        } else {
-          copy_AEdge(ee, cs_es_map.get(cs));
-          again = 1;
-        }
+        if (!i)
+          set_entry_set(ee, cs_es_map.get(cs));
+        else
+          ee = copy_AEdge(ee, cs_es_map.get(cs));
       }
+    }
+    if (ee->to != old) {
+      again = 1;
+      log(LOG_SPLITTING, "DISPATCH ES %d:%d, %s %d -> %d\n", 
+          ee->from->id, ee->pnode->lvals.v[0]->sym->id, 
+          es->fun->sym->name ? es->fun->sym->name : "", es->fun->sym->id,
+          old->id, ee->to->id);
     }
   }
   return again;

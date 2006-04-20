@@ -56,6 +56,7 @@ class Vec : public gc {
   int index(C a);
   void set_to_vec();
   void vec_to_set();
+  void move_internal(Vec<C> &v);
   void move(Vec<C> &v);
   void copy_internal(const Vec<C> &v);
   void copy(const Vec<C> &v);
@@ -245,7 +246,7 @@ Vec<C>::index(C a) {
 }
 
 template <class C> inline void 
-Vec<C>::move(Vec<C> &vv)  {
+Vec<C>::move_internal(Vec<C> &vv)  {
   n = vv.n;
   i = vv.i;
   v = vv.v;
@@ -253,6 +254,11 @@ Vec<C>::move(Vec<C> &vv)  {
     memcpy(e, &vv.e[0], sizeof(e));
     v = e;
   }
+}
+
+template <class C> inline void 
+Vec<C>::move(Vec<C> &vv)  {
+  move_internal(vv);
   vv.clear();
 }
 
@@ -350,7 +356,8 @@ Vec<C>::set_add_internal(C c) {
         return 0;
     }
   }
-  Vec<C> vv(*this);
+  Vec<C> vv;
+  vv.move_internal(*this);
   set_expand();
   if (vv.v)
     set_union(vv);
@@ -516,18 +523,13 @@ Vec<C>::reverse() {
 
 template <class C> void 
 Vec<C>::copy_internal(const Vec<C> &vv) {
-  if (i) {
-    v = (C*)MALLOC(n * sizeof(C));
-    memcpy(v, vv.v, n * sizeof(C));
-  } else {
-    int l = vv.n, nl = (1 + VEC_INITIAL_SHIFT);
-    l = l >> VEC_INITIAL_SHIFT;
-    while (l) { l = l >> 1; nl++; }
-    nl = 1 << nl;
-    v = (C*)MALLOC(nl * sizeof(C));
-    memcpy(v, vv.v, n * sizeof(C));
-    memset(v + n, 0, (nl - n) * sizeof(C)); 
-  }
+  int l = n, nl = (1 + VEC_INITIAL_SHIFT);
+  l = l >> VEC_INITIAL_SHIFT;
+  while (l) { l = l >> 1; nl++; }
+  nl = 1 << nl;
+  v = (C*)MALLOC(nl * sizeof(C));
+  memcpy(v, vv.v, n * sizeof(C));
+  memset(v + n, 0, (nl - n) * sizeof(C)); 
 }
 
 void test_vec();
