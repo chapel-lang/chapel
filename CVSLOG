@@ -63566,3 +63566,15 @@ Log message:
 Modified files:
 	chapel/util/: lookForTabs.cron 
 
+---------------------------------------------------------------------------
+
+04/20/06 08:43:06 -- deitz
+
+Log message:
+	Update .goods due to change in metatype numbering.
+
+Modified files:
+	chapel/test/types/type_variables/deitz/functions/: 
+	                                                   test_foo5-error.good 
+	chapel/test/types/type_variables/jplevyak/: where-2-error.good 
+
