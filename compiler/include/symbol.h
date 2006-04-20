@@ -263,7 +263,7 @@ class LabelSymbol : public Symbol {
   virtual void codegenDef(FILE* outfile);
 };
 
-void initSymbol();
+
 TypeSymbol *new_UnresolvedTypeSymbol(char *init_name);
 VarSymbol *new_StringSymbol(char *s);
 VarSymbol *new_IntSymbol(long b);

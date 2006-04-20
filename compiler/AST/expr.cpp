@@ -1326,9 +1326,3 @@ AList<DefExpr>* exprsToIndices(AList<Expr>* indices) {
   return defs;
 }
 
-void initExpr(void) {
-  dtNil->defaultValue = gNil;
-  dtVoid->defaultValue = gVoid;
-  dtUnknown->defaultValue = gUnknown;
-  dtUnspecified->defaultValue = gUnspecified;
-}

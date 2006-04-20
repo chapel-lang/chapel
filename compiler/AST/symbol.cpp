@@ -1466,55 +1466,6 @@ static int literal_id = 1;
 HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
 HashMap<char *, StringHashFns, VarSymbol *> uniqueSymbolHash;
 
-void
-initSymbol() {
-  /*
-  gNil = new VarSymbol("nil", dtNil, VAR_NORMAL, VAR_CONST);
-  rootScope->define(gNil); // SJD: Should intrinsics have DefExprs?
-  builtinSymbols.add(gNil);
-  */
-
-  /*
-  gUnknown = new VarSymbol("_unknown", dtUnknown, VAR_NORMAL, VAR_CONST);
-  rootScope->define(gUnknown); // SJD: Should intrinsics have DefExprs?
-  builtinSymbols.add(gUnknown);
-  */
-
-  /*
-  gUnspecified = new VarSymbol("_", dtUnspecified, VAR_NORMAL, VAR_CONST);
-  rootScope->define(gUnspecified); // SJD: Should intrinsics have DefExprs?
-  builtinSymbols.add(gUnspecified);
-  */
-
-  /*
-  gVoid = new VarSymbol("_void", dtVoid, VAR_NORMAL, VAR_CONST);
-  rootScope->define(gVoid); // SJD: Should intrinsics have DefExprs?
-  builtinSymbols.add(gVoid);
-  */
-
-  /*
-  gTrue = new VarSymbol("true", dtBool, VAR_NORMAL, VAR_CONST);
-  rootScope->define(gTrue); // SJD: Should intrinsics have DefExprs?
-  builtinSymbols.add(gTrue);
-  gTrue->immediate = new Immediate;
-  gTrue->immediate->v_bool = true;
-  gTrue->immediate->const_kind = IF1_NUM_KIND_UINT;
-  gTrue->immediate->num_index = IF1_INT_TYPE_1;
-  uniqueConstantsHash.put(gTrue->immediate, gTrue);
-
-  gFalse = new VarSymbol("false", dtBool, VAR_NORMAL, VAR_CONST);
-  rootScope->define(gFalse); // SJD: Should intrinsics have DefExprs?
-  builtinSymbols.add(gFalse);
-  gFalse->immediate = new Immediate;
-  gFalse->immediate->v_bool = false;
-  gFalse->immediate->const_kind = IF1_NUM_KIND_UINT;
-  gFalse->immediate->num_index = IF1_INT_TYPE_1;
-
-  dtBool->defaultValue = gFalse;
-  uniqueConstantsHash.put(gFalse->immediate, gFalse);
-  */
-}
-
 
 VarSymbol *new_StringSymbol(char *str) {
   Immediate imm;
