@@ -1519,7 +1519,7 @@ VarSymbol *new_UIntSymbol(unsigned long long b) {
   s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), dtUInt);
   rootScope->define(s);
   char n[80];
-  sprintf(n, "%llu", b);
+  sprintf(n, "%lluull", b);
   s->cname = dupstr(n);
   s->immediate = new Immediate;
   *s->immediate = imm;
