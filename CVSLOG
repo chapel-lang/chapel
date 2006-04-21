@@ -63650,3 +63650,25 @@ Modified files:
 	chapel/compiler/include/: expr.h symbol.h 
 	chapel/compiler/parser/: chapel.lex chapel.y 
 
+---------------------------------------------------------------------------
+
+04/21/06 10:43:30 -- deitz
+
+Log message:
+	Added new function BaseAST::hasPragmaPrefix to test to see if a BaseAST has a prefix in a pragma.  Changed hasPragma to test for an identical match, not a prefix match.  hasPragmaPrefix is now used for the rename pragma.
+	
+	Updated outputs for regressions.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp 
+	chapel/compiler/include/: baseAST.h 
+	chapel/compiler/passes/: codegen.cpp 
+	chapel/test/classes/bradc/: callMethodOnClass.good 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-1.good 
+	                                 zeroarity-bound-error-2.good 
+	chapel/test/types/type_variables/deitz/functions/: 
+	                                                   test_foo5-error.good 
+	chapel/test/types/type_variables/jplevyak/: where-2-error.good 
+
