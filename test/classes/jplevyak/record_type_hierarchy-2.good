@@ -5,10 +5,11 @@ record_type_hierarchy-2.chpl:16: illegal call argument type '_tmp' illegal: ( )
 record_type_hierarchy-2.chpl:16: unresolved call 'fwrite'
 note: candidates are:
 _chpl_file.chpl:187: fwrite, f : file, val : int64
-_chpl_file.chpl:220: fwrite, f : file, val : float64
-_chpl_file.chpl:240: fwrite, f : file, val : string
-_chpl_file.chpl:271: fwrite, f : file, val : bool
-_chpl_file.chpl:289: fwrite, f : file, x : nil_type
+_chpl_file.chpl:220: fwrite, f : file, val : uint64
+_chpl_file.chpl:253: fwrite, f : file, val : float64
+_chpl_file.chpl:273: fwrite, f : file, val : string
+_chpl_file.chpl:304: fwrite, f : file, val : bool
+_chpl_file.chpl:322: fwrite, f : file, x : nil_type
 _chpl_complex.chpl:8: fwrite, f : file, x : complex
 _chpl_htuple.chpl:18: fwrite, f : file, x : _tuple
 _chpl_htuple.chpl:45: fwrite, f : file, x : _htuple

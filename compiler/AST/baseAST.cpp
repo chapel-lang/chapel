@@ -298,11 +298,22 @@ void BaseAST::printLoc(FILE* outfile) {
 
 char* BaseAST::hasPragma(char* str) {
   forv_Vec(char, pragma, pragmas) {
-    if (!strncmp(pragma, str, strlen(str)))
+    if (!strcmp(pragma, str))
       return pragma;
   }
   if (!dynamic_cast<ModuleSymbol*>(this) && getModule())
     return getModule()->hasPragma(str);
+  return NULL;
+}
+
+
+char* BaseAST::hasPragmaPrefix(char* str) {
+  forv_Vec(char, pragma, pragmas) {
+    if (!strncmp(pragma, str, strlen(str)))
+      return pragma;
+  }
+  if (!dynamic_cast<ModuleSymbol*>(this) && getModule())
+    return getModule()->hasPragmaPrefix(str);
   return NULL;
 }
 

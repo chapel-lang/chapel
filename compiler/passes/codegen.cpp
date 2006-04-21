@@ -76,7 +76,7 @@ static void codegen_header(void) {
     if (sym->name == sym->cname)
       sym->cname = stringcpy(sym->name);
 
-    if (char* pragma = sym->hasPragma("rename"))
+    if (char* pragma = sym->hasPragmaPrefix("rename"))
       sym->cname = stringcpy(pragma+7);
 
     if (VarSymbol* vs = dynamic_cast<VarSymbol*>(ast))

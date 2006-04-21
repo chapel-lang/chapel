@@ -148,6 +148,7 @@ class BaseAST : public gc {
   void printLoc(FILE* outfile);
 
   char* hasPragma(char* str);
+  char* hasPragmaPrefix(char* str);
   void addPragma(char* str);
   void addPragmas(Vec<char*>* srcPragmas);
 
