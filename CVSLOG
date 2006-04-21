@@ -63672,3 +63672,14 @@ Modified files:
 	                                                   test_foo5-error.good 
 	chapel/test/types/type_variables/jplevyak/: where-2-error.good 
 
+---------------------------------------------------------------------------
+
+04/21/06 14:51:04 -- waynew
+
+Log message:
+	Unsigned integers now have a "ull" suffix.  This is to remove some
+	warnings during C compilation of Chapel-generated files.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
