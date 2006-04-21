@@ -63636,3 +63636,17 @@ Log message:
 Added files:
 	chapel/test/trivial/waynew/: uintliteral.chpl uintliteral.good 
 
+---------------------------------------------------------------------------
+
+04/20/06 17:46:03 -- waynew
+
+Log message:
+	Enabled unsigned int types and literals.
+
+Modified files:
+	chapel/modules/standard/: _chpl_file.chpl 
+	chapel/runtime/include/: chpltypes.h 
+	chapel/compiler/AST/: expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: expr.h symbol.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+
