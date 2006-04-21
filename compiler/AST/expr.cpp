@@ -1247,6 +1247,18 @@ new_IntLiteral(int i) {
 }
 
 Expr *
+new_UIntLiteral(char *ui_str) {
+  // WAW: what about base 8 or 2?
+  return new SymExpr(new_UIntSymbol(strtoull(ui_str, NULL, 0)));
+}
+
+Expr *
+new_UIntLiteral(unsigned long u) {
+  // WAW: what about base 8 or 2?
+  return new SymExpr(new_UIntSymbol(u));
+}
+
+Expr *
 new_FloatLiteral(char *n, double d) {
   return new SymExpr(new_FloatSymbol(n, d));
 }

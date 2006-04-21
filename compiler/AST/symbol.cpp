@@ -1505,15 +1505,10 @@ VarSymbol *new_IntSymbol(long b) {
   *s->immediate = imm;
   s->literalType = new_LiteralType(s);
   uniqueConstantsHash.put(s->immediate, s);
-  /*
-  if (!dtInt->defaultValue) {
-    dtInt->defaultValue = new_IntSymbol(0);
-  }
-  */
   return s;
 }
 
-VarSymbol *new_UIntSymbol(unsigned long b) {
+VarSymbol *new_UIntSymbol(unsigned long long b) {
   Immediate imm;
   imm.v_uint64 = b;
   imm.const_kind = IF1_NUM_KIND_UINT;
@@ -1524,16 +1519,12 @@ VarSymbol *new_UIntSymbol(unsigned long b) {
   s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), dtUInt);
   rootScope->define(s);
   char n[80];
-  sprintf(n, "%lud", b);
+  sprintf(n, "%llu", b);
   s->cname = dupstr(n);
   s->immediate = new Immediate;
   *s->immediate = imm;
   s->literalType = new_LiteralType(s);
   uniqueConstantsHash.put(s->immediate, s);
-  /*
-  if (!dtUInt->defaultValue)
-    dtUInt->defaultValue = new_UIntSymbol(0);
-  */
   return s;
 }
 

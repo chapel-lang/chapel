@@ -156,7 +156,7 @@ Is this "while x"(i); or "while x(i)";?
 %token TUNSPECIFIED
 
 %token TIDENT
-%token INTLITERAL FLOATLITERAL IMAGLITERAL
+%token INTLITERAL FLOATLITERAL IMAGLITERAL UINTLITERAL
 %token <pch> STRINGLITERAL
 
 %token TASSIGN
@@ -1235,6 +1235,8 @@ range:
 literal:
   INTLITERAL
     { $$ = new_IntLiteral(yytext); }
+| UINTLITERAL
+    { $$ = new_UIntLiteral(yytext); }
 | FLOATLITERAL
     { $$ = new_FloatLiteral(yytext, atof(yytext)); }
 | IMAGLITERAL

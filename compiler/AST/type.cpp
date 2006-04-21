@@ -1077,7 +1077,7 @@ void initPrimitiveTypes(void) {
 
   dtUInt = Symboltable::createPrimitiveType ("uint", "_uint64",
                                              "_uintLiteral", "_uint64Literal");
-  // dtUInt->defaultValue = new_UIntSymbol(0);
+  dtUInt->defaultValue = new_UIntSymbol(0);
 
   dtFloat = Symboltable::createPrimitiveType ("float", "_float64",
                                               "_floatLiteral", "_float64Literal");

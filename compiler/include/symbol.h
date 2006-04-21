@@ -267,7 +267,7 @@ class LabelSymbol : public Symbol {
 TypeSymbol *new_UnresolvedTypeSymbol(char *init_name);
 VarSymbol *new_StringSymbol(char *s);
 VarSymbol *new_IntSymbol(long b);
-VarSymbol *new_UIntSymbol(unsigned long b);
+VarSymbol *new_UIntSymbol(unsigned long long b);
 VarSymbol *new_FloatSymbol(char *n, double b);
 VarSymbol *new_ComplexSymbol(char *n, double r, double i);
 VarSymbol *new_ImmediateSymbol(Immediate *imm);

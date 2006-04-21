@@ -198,6 +198,39 @@ fun fwrite(f: file = stdout, val: int) {
 }
 
 
+pragma "rename _chpl_fread_uint" 
+fun fread(f: file = stdin, inout val: uint) {
+  if (f.isOpen) {
+    var returnVal: int = fscanf(f.fp, "%llu", val);
+    if (returnVal == EOF) {
+      halt("***Error: Read failed: EOF***");
+    }
+    if (returnVal < 0) {
+      fscanfError();
+    } else if (returnVal == 0) {
+      halt("***Error: No int was read***");
+    }
+  } else {
+    fopenError(f, isRead = true);
+  }
+}
+
+
+pragma "rename _chpl_fwrite_uint"
+fun fwrite(f: file = stdout, val: uint) {
+  if (f.isOpen) {
+    var returnVal: int = fprintf(f.fp, "%llu", val);
+    if (returnVal < 0) {
+      fprintfError();
+    } else if (returnVal == 0) {
+      halt("***Error: No int was written***");
+    }
+  } else {
+    fopenError(f, isRead = false);
+  }
+}
+
+
 pragma "rename _chpl_fread_float"
 fun fread(f: file = stdin, inout val: float) {
   if (f.isOpen) {

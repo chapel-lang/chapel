@@ -191,6 +191,8 @@ class ImportExpr : public Expr {
 
 Expr *new_IntLiteral(char *);
 Expr *new_IntLiteral(int i);
+Expr *new_UIntLiteral(char *ui_str);
+Expr *new_UIntLiteral(unsigned long u);
 Expr *new_FloatLiteral(char *n, double d);
 Expr *new_StringLiteral(char *str);
 bool get_int(Expr *e, long *i); // false is failure

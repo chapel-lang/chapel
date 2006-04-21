@@ -12,7 +12,7 @@ typedef enum __bool {
 } _bool;
 
 typedef long long _int64;
-
+typedef unsigned long long _uint64;
 typedef double _float64;
 
 typedef struct __complex128 {
