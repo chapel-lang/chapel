@@ -63626,3 +63626,13 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp vec.h 
 
+---------------------------------------------------------------------------
+
+04/20/06 17:07:22 -- waynew
+
+Log message:
+	Test unsigned int literal.
+
+Added files:
+	chapel/test/trivial/waynew/: uintliteral.chpl uintliteral.good 
+
