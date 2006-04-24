@@ -6,7 +6,8 @@ _chpl_cobegin (int                      nthreads,
                _chpl_threadfp_t        *fp, 
                _chpl_threadarg_t       *a, 
                _chpl_cobegin_wkspace_t *twrk) {
-  int t, retv, fn_retv;
+  int   t, retv;
+  void *fn_retv;                         // drop?
   retv = 0;
 
   // fork pthreads
