@@ -63683,3 +63683,13 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+04/24/06 16:52:35 -- waynew
+
+Log message:
+	Fixed an error. Forgot to account for possible 64-bit addr/pointer systems.
+
+Modified files:
+	chapel/runtime/src/: chplthreads.c 
+
