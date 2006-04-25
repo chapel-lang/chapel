@@ -63693,3 +63693,15 @@ Log message:
 Modified files:
 	chapel/runtime/src/: chplthreads.c 
 
+---------------------------------------------------------------------------
+
+04/25/06 14:00:04 -- shannon
+
+Log message:
+	Added future test for a tuple containing sequences.
+
+Added files:
+	chapel/test/types/tuple/shannon/: sequenceInTuple.chpl 
+	                                  sequenceInTuple.future 
+	                                  sequenceInTuple.good 
+
