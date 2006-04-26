@@ -50,7 +50,7 @@ copyright(ArgumentState *arg_state, char *arg_unused) {
 
 static void
 short_copyright() {
-  fprintf(stderr, "Copyright (c) 1992-2006 John Plevyak, 2003-2006 Cray Inc.\n");  
+  fprintf(stderr, "Copyright (c) 1992-2006 John Plevyak, Copyright (c) 2003-2006 Cray Inc.\n");  
 }
 
 static void

@@ -187,4 +187,6 @@ separate:
 
 version.o: Makefile
 
+main.o: COPYRIGHT
+
 -include .depend
