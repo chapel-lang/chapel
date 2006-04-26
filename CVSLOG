@@ -63705,3 +63705,13 @@ Added files:
 	                                  sequenceInTuple.future 
 	                                  sequenceInTuple.good 
 
+---------------------------------------------------------------------------
+
+04/26/06 15:57:45 -- jplevyak
+
+Log message:
+	Make the COPYRIGHT for libifa the MIT License.
+
+Modified files:
+	chapel/compiler/ifa/libifa/: COPYRIGHT Makefile README main.cc 
+
