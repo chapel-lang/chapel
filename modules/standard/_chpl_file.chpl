@@ -343,5 +343,3 @@ fun writeln() {
 fun read() {
   halt("***Error: This should never be called.  All read calls should be converted to freads***");
 }
-
-

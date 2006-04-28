@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <signal.h>
 #include <ctype.h>
+#include <math.h>
 #ifdef USE_READLINE
 #include <readline/readline.h>
 #include <readline/history.h>
@@ -158,14 +159,13 @@ enum PrimOps {
   PRIM_NONE, PRIM_INIT, PRIM_ALLOC, PRIM_TYPE_EQUAL, PRIM_FOPEN, PRIM_FCLOSE,
   PRIM_STRERROR, PRIM_FPRINTF, PRIM_FSCANF, PRIM_FFLUSH, PRIM_ARRAY_INIT, 
   PRIM_ARRAY_INDEX, PRIM_ARRAY_SET, PRIM_UNARY_MINUS, PRIM_UNARY_PLUS,
-  PRIM_UNARY_NOT, PRIM_UNARY_LNOT, PRIM_ADD,
-  PRIM_SUBTRACT, PRIM_MULT, PRIM_DIV, PRIM_MOD, PRIM_LSH, PRIM_RSH,
-  PRIM_EQUAL, PRIM_NOTEQUAL, PRIM_LESSOREQUAL, PRIM_GREATEROREQUAL, PRIM_LESS,
-  PRIM_GREATER, PRIM_AND, PRIM_OR, PRIM_XOR, PRIM_LAND,
-  PRIM_LOR, PRIM_EXP, PRIM_GET_MEMBER, PRIM_SET_MEMBER, PRIM_PTR_EQ, PRIM_PTR_NEQ, 
-  PRIM_CAST, PRIM_TO_STRING, PRIM_COPY_STRING, PRIM_STRING_INDEX, PRIM_STRING_CONCAT,
-  PRIM_STRING_EQUAL, PRIM_STRING_SELECT, PRIM_STRING_STRIDED_SELECT,
-  PRIM_STRING_LENGTH, PRIM_DONE 
+  PRIM_UNARY_NOT, PRIM_UNARY_LNOT, PRIM_ADD, PRIM_SUBTRACT, PRIM_MULT, 
+  PRIM_DIV, PRIM_MOD, PRIM_LSH, PRIM_RSH, PRIM_EQUAL, PRIM_NOTEQUAL,  
+  PRIM_LESSOREQUAL, PRIM_GREATEROREQUAL, PRIM_LESS, PRIM_GREATER, PRIM_AND, 
+  PRIM_OR, PRIM_XOR, PRIM_LAND, PRIM_LOR, PRIM_EXP, PRIM_SIN, PRIM_GET_MEMBER, 
+  PRIM_SET_MEMBER, PRIM_PTR_EQ, PRIM_PTR_NEQ, PRIM_CAST, PRIM_TO_STRING, 
+  PRIM_COPY_STRING, PRIM_STRING_INDEX, PRIM_STRING_CONCAT, PRIM_STRING_EQUAL, 
+  PRIM_STRING_SELECT, PRIM_STRING_STRIDED_SELECT, PRIM_STRING_LENGTH, PRIM_DONE 
 };
 
 class InterpreterOp : public gc { public:
@@ -1868,6 +1868,13 @@ IFrame::iprimitive(CallExpr *s) {
       fold_constant(translate_prim.get(s->primitive->interpreterOp->kind), 
                     arg[0]->imm, arg[1]->imm, result.imm);
       break;
+    case PRIM_SIN:
+      check_prim_args(s, 1);
+      check_type(s, arg[0], dtFloat);
+      result.kind = IMMEDIATE_ISLOT;
+      result.imm = new Immediate;
+      result.imm->set_float64(sin(arg[0]->imm->v_float64));
+      break;
     case PRIM_GET_MEMBER: 
     case PRIM_SET_MEMBER: {
       check_prim_args(s, kind == PRIM_GET_MEMBER ? 2 : 3);
@@ -2488,6 +2495,7 @@ init_interpreter() {
   land_interpreter_op = new InterpreterOp("land", PRIM_LAND);
   lor_interpreter_op = new InterpreterOp("lor", PRIM_LOR);
   exp_interpreter_op = new InterpreterOp("exp", PRIM_EXP);
+  sin_interpreter_op = new InterpreterOp("sin", PRIM_SIN);
   get_member_interpreter_op = new InterpreterOp("get_member", PRIM_GET_MEMBER);
   set_member_interpreter_op = new InterpreterOp("set_member", PRIM_SET_MEMBER);
   ptr_eq_interpreter_op = new InterpreterOp("ptr_eq", PRIM_PTR_EQ);

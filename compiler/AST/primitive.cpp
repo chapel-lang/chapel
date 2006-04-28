@@ -51,13 +51,13 @@ initPrimitive() {
   prim_def(PRIMITIVE_LAND, "&&", land_interpreter_op, land_analysis_op);
   prim_def(PRIMITIVE_LOR, "||", lor_interpreter_op, lor_analysis_op);
   prim_def(PRIMITIVE_EXP, "**", exp_interpreter_op, exp_analysis_op);
+  prim_def("sin", sin_interpreter_op, return_float_analysis_op);
   prim_def(PRIMITIVE_GET_MEMBER, ".", get_member_interpreter_op, get_member_analysis_op);
   prim_def(PRIMITIVE_SET_MEMBER, ".=", set_member_interpreter_op, set_member_analysis_op);
   prim_def(PRIMITIVE_TYPE_EQUAL, "type_equal", type_equal_interpreter_op, type_equal_analysis_op);
   prim_def(PRIMITIVE_CHPL_ALLOC, "chpl_alloc", alloc_interpreter_op, alloc_analysis_op);
   prim_def(PRIMITIVE_PTR_EQUAL, "ptr_eq", ptr_eq_interpreter_op, return_bool_analysis_op);
   prim_def(PRIMITIVE_PTR_NOTEQUAL, "ptr_neq", ptr_neq_interpreter_op, return_bool_analysis_op);
-
   prim_def("fopen", fopen_interpreter_op, return_int_analysis_op);
   prim_def("fclose", fclose_interpreter_op, return_int_analysis_op);
   prim_def("strerror", strerror_interpreter_op, return_string_analysis_op);

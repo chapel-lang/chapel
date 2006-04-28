@@ -2299,6 +2299,12 @@ return_int_transfer_function(PNode *pn, EntrySet *es) {
 }
 
 static void
+return_float_transfer_function(PNode *pn, EntrySet *es) {
+  AVar *result = make_AVar(pn->lvals.v[0], es);
+  update_gen(result, make_abstract_type(sym_float));
+}
+
+static void
 return_string_transfer_function(PNode *pn, EntrySet *es) {
   AVar *result = make_AVar(pn->lvals.v[0], es);
   update_gen(result, make_abstract_type(sym_string));
@@ -2830,6 +2836,7 @@ init_chapel_ifa() {
   init_analysis_op = S("init", init_transfer_function);
   return_bool_analysis_op = S("return_bool", return_bool_transfer_function);
   return_int_analysis_op = S("return_int", return_int_transfer_function); 
+  return_float_analysis_op = S("return_float", return_float_transfer_function);
   return_string_analysis_op = S("return_string", return_string_transfer_function); 
   array_init_analysis_op = S("array_init", array_init_transfer_function);
   array_index_analysis_op = S("array_index", array_index_transfer_function);

@@ -50,6 +50,11 @@ class Immediate : public gc { public:
     num_index = IF1_INT_TYPE_64;
     v_int64 = l;
   }
+  void set_float64(float64 f) {
+    const_kind = IF1_NUM_KIND_FLOAT;
+    num_index = IF1_FLOAT_TYPE_64;
+    v_float64 = f;
+  }
   void set_bool(bool b) {
     const_kind = IF1_NUM_KIND_UINT;
     num_index = IF1_INT_TYPE_1;
