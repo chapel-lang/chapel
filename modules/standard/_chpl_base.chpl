@@ -121,3 +121,32 @@ pragma "no codegen" fun _chpl_memtest_mallocOutOfMemory();
 pragma "no codegen" fun _chpl_memtest_reallocOutOfMemory();
 
 pragma "no codegen" fun startTrackingMem();
+
+
+//
+// bit manipulation functions
+//
+// note we need an init function so u1, u3, and u7 can be computed
+// once and not every time bpop is called
+//
+fun bpop(i : int) {
+  var u1 = 0u, u3 = 0u, u7 = 0u, tmp = 0u;
+
+  u1 = 1;
+  do {
+    tmp = u1;
+    u1 = 1 + (u1 << 3);
+  } while u1 != tmp;
+  u3 = 3;
+  do {
+    tmp = u3;
+    u3 = 3 + (u3 << 3);
+  } while u3 != tmp;
+  u7 = 7;
+  do {
+    tmp = u7;
+    u7 = 7 + (u7 << 9);
+  } while u7 != tmp;
+  tmp = i - ((i >> 1) & u3) - ((i >> 2) & u1);
+  return (((tmp + (tmp >> 3)) & u7) + ((tmp >> 6) & u7)) % 511;
+}

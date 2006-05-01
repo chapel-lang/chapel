@@ -77,3 +77,6 @@ fun /(x : complex, y : complex)
   return let d = y.real*y.real + y.imag*y.imag in
     complex((x.real*y.real + x.imag*y.imag)/d,
             (x.imag*y.real - x.real*y.imag)/d);
+
+fun conjg(x : complex)
+  return complex(x.real, -x.imag);
