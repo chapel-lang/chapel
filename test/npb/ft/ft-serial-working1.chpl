@@ -13,7 +13,7 @@ const
   r46   = 0.5**46,
   t46   = 2.0**46;
 
-fun nextrandlc(x : float, a : float) : float {
+fun nextrandlc(x : float, a : float) {
   var t1 = r23 * a;
   var a1 = floor(t1);
   var a2 = a - t23 * a1;
@@ -56,25 +56,23 @@ fun randlc(n : int) : float {
 
 enum classes {S = 1, W, A, B, C, D};
 
-const class_defaults =
-  (('S',   64,   64,   64,  6),
-   ('W',   32,  128,  128,  6),
-   ('A',  128,  256,  512,  6),
-   ('B',  256,  256,  512, 20),
-   ('C',  512,  512,  512, 20),
-   ('D', 1024, 1024, 2048, 25));
+/*
+var class_defaults : [S..D] (string, int, int, int, int) =
+  (/ ('S',   64,   64,   64,  6),
+     ('W',   32,  128,  128,  6),
+     ('A',  128,  256,  512,  6),
+     ('B',  256,  256,  512, 20),
+     ('C',  512,  512,  512, 20),
+     ('D', 1024, 1024, 2048, 25) /);
+*/
 
 config const problem_class = 1;
 
-var
-  char = class_defaults(problem_class)(1),
-  nx = class_defaults(problem_class)(2),
-  ny = class_defaults(problem_class)(3),
-  nz = class_defaults(problem_class)(4),
-  niter = class_defaults(problem_class)(5);
-
-
---const (char, nx, ny, nz, niter) = class_defaults(problem_class);
+config var
+  nx : int = 64,
+  ny : int = 64,
+  nz : int = 64,
+  niter : int = 6;
 
 const
   alpha = 0.000001,
@@ -196,7 +194,7 @@ fun fft(dir : int, X1, X2) {
 
 fun evolve(X1, X2, Twiddle) {
   forall ijk in DXYZ {
-    X1(ijk) *= Twiddle(ijk);
+    X1(ijk) *= (Twiddle(ijk) + 0i);
     X2(ijk) = X1(ijk);
   }
 }
@@ -327,16 +325,16 @@ fun verify() {
         ierr = (sums(iter).imag - vdata_d(iter).imag) / vdata_d(iter).imag;
       }
     }
-    if !(abs(rerr) <= epsilon && abs(ierr) <= epsilon) then
+    if !(fabs(rerr) <= epsilon && fabs(ierr) <= epsilon) then
       return false;
   }
   return true;
 }
 
 fun checksum(i, X1) {
-  var chk = 0.0;
+  var chk : complex;
   [j in 1..1024] chk += X1((5*j) % nx, (3*j) % ny, j % nz);
-  chk /= nx * ny * nz;
+  chk = chk / ((nx * ny * nz) + 0i);
   sums(i) = chk;
   if verbose then
     writeln("T = ", i, "    Checksum = ", sums(i).real, " ", sums(i).imag);
