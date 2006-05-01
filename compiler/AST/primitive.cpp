@@ -54,6 +54,7 @@ initPrimitive() {
   prim_def("acos", acos_interpreter_op, return_float_analysis_op);  
   prim_def("ceil", ceil_interpreter_op, return_float_analysis_op);  
   prim_def("cos", cos_interpreter_op, return_float_analysis_op);
+  prim_def("eexp", eexp_interpreter_op, return_float_analysis_op);
   prim_def("fabs", fabs_interpreter_op, return_float_analysis_op);
   prim_def("floor", floor_interpreter_op, return_float_analysis_op);
   prim_def("sin", sin_interpreter_op, return_float_analysis_op);

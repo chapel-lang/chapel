@@ -47,6 +47,7 @@ _EXTERN InterpreterOp *exp_interpreter_op _INIT;
 _EXTERN InterpreterOp *acos_interpreter_op _INIT;
 _EXTERN InterpreterOp *ceil_interpreter_op _INIT;
 _EXTERN InterpreterOp *cos_interpreter_op _INIT;
+_EXTERN InterpreterOp *eexp_interpreter_op _INIT;
 _EXTERN InterpreterOp *fabs_interpreter_op _INIT;
 _EXTERN InterpreterOp *floor_interpreter_op _INIT;
 _EXTERN InterpreterOp *sin_interpreter_op _INIT;

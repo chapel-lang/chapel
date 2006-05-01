@@ -15,7 +15,9 @@ pragma "no codegen" pragma "rename cos" fun cos(x : float) : float {
   return __primitive("cos", x);
 }
 
-
+pragma "no codegen" pragma "rename exp" fun exp(x: float) : float {
+  return __primitive("eexp", x);
+}
 
 pragma "no codegen" pragma "rename fabs" fun fabs(x : float) : float {
   return __primitive("fabs", x);

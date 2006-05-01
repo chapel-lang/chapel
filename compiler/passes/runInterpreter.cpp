@@ -163,11 +163,11 @@ enum PrimOps {
   PRIM_DIV, PRIM_MOD, PRIM_LSH, PRIM_RSH, PRIM_EQUAL, PRIM_NOTEQUAL,  
   PRIM_LESSOREQUAL, PRIM_GREATEROREQUAL, PRIM_LESS, PRIM_GREATER, PRIM_AND, 
   PRIM_OR, PRIM_XOR, PRIM_LAND, PRIM_LOR, PRIM_EXP, PRIM_ACOS, PRIM_CEIL, 
-  PRIM_COS, 
-  PRIM_FABS, PRIM_FLOOR, PRIM_SIN, PRIM_TAN, PRIM_GET_MEMBER, 
-  PRIM_SET_MEMBER, PRIM_PTR_EQ, PRIM_PTR_NEQ, PRIM_CAST, PRIM_TO_STRING, 
-  PRIM_COPY_STRING, PRIM_STRING_INDEX, PRIM_STRING_CONCAT, PRIM_STRING_EQUAL, 
-  PRIM_STRING_SELECT, PRIM_STRING_STRIDED_SELECT, PRIM_STRING_LENGTH, PRIM_DONE 
+  PRIM_COS, PRIM_EEXP, PRIM_FABS, PRIM_FLOOR, PRIM_SIN, PRIM_TAN, 
+  PRIM_GET_MEMBER, PRIM_SET_MEMBER, PRIM_PTR_EQ, PRIM_PTR_NEQ, PRIM_CAST, 
+  PRIM_TO_STRING, PRIM_COPY_STRING, PRIM_STRING_INDEX, PRIM_STRING_CONCAT, 
+  PRIM_STRING_EQUAL, PRIM_STRING_SELECT, PRIM_STRING_STRIDED_SELECT, 
+  PRIM_STRING_LENGTH, PRIM_DONE 
 };
 
 class InterpreterOp : public gc { public:
@@ -1891,6 +1891,13 @@ IFrame::iprimitive(CallExpr *s) {
       result.imm = new Immediate;
       result.imm->set_float64(cos(arg[0]->imm->v_float64));
       break;
+    case PRIM_EEXP:
+      check_prim_args(s, 1);
+      check_type(s, arg[0], dtFloat);
+      result.kind = IMMEDIATE_ISLOT;
+      result.imm = new Immediate;
+      result.imm->set_float64(exp(arg[0]->imm->v_float64));
+      break;
     case PRIM_FABS:
       check_prim_args(s, 1);
       check_type(s, arg[0], dtFloat);
@@ -2542,6 +2549,7 @@ init_interpreter() {
   acos_interpreter_op = new InterpreterOp("acos", PRIM_ACOS);
   ceil_interpreter_op = new InterpreterOp("ceil", PRIM_CEIL);
   cos_interpreter_op = new InterpreterOp("cos", PRIM_COS);
+  eexp_interpreter_op = new InterpreterOp("eexp", PRIM_EEXP);
   fabs_interpreter_op = new InterpreterOp("fabs", PRIM_FABS);
   floor_interpreter_op = new InterpreterOp("floor", PRIM_FLOOR);
   sin_interpreter_op = new InterpreterOp("sin", PRIM_SIN);
