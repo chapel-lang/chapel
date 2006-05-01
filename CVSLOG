@@ -63826,3 +63826,22 @@ Added files:
 	                                    sinh.chpl sinh.good 
 	                                    tanh.chpl tanh.good 
 
+---------------------------------------------------------------------------
+
+05/01/06 14:14:59 -- deitz
+
+Log message:
+	Reworked bpop so as not to use uint (though it may now fail for
+	numbers that use all the leftmost bit).
+	
+	Added a working 3D array of floats test.
+	
+	Fixed a version of NAS FT though it is not yet working.
+
+Modified files:
+	chapel/modules/standard/: _chpl_base.chpl 
+	chapel/test/npb/ft/: ft-serial-working1.chpl 
+Added files:
+	chapel/test/arrays/deitz/: test_array_3D_float.chpl 
+	                           test_array_3D_float.good 
+
