@@ -63845,3 +63845,14 @@ Added files:
 	chapel/test/arrays/deitz/: test_array_3D_float.chpl 
 	                           test_array_3D_float.good 
 
+---------------------------------------------------------------------------
+
+05/01/06 15:29:01 -- deitz
+
+Log message:
+	Potentially almost working version of NAS FT but over allocation of
+	tuple indexes makes it impossible to run.
+
+Modified files:
+	chapel/test/npb/ft/: ft-serial-working1.chpl 
+
