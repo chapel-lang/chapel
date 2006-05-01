@@ -63735,3 +63735,16 @@ Added files:
 	chapel/test/modules/standard/math/: .cvsignore sin_pi.chpl 
 	                                    sin_pi.good 
 
+---------------------------------------------------------------------------
+
+05/01/06 09:57:29 -- deitz
+
+Log message:
+	Added standard functions bpop and conjg, implemented in Chapel.  Added
+	a test of bpop.
+
+Modified files:
+	chapel/modules/standard/: _chpl_base.chpl _chpl_complex.chpl 
+Added files:
+	chapel/test/trivial/deitz/: test_bpop.chpl test_bpop.good 
+
