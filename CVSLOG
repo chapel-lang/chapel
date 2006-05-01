@@ -63776,3 +63776,18 @@ Added files:
 Removed files:
 	chapel/test/modules/standard/math/: sin_pi.chpl sin_pi.good 
 
+---------------------------------------------------------------------------
+
+05/01/06 10:34:27 -- shannon
+
+Log message:
+	Added the exp(x) math function and a test.
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/compiler/passes/: interpreter_ops.h runInterpreter.cpp 
+	chapel/modules/standard/: _chpl_math.chpl 
+	chapel/test/modules/standard/math/: cos.chpl 
+Added files:
+	chapel/test/modules/standard/math/: exp.chpl exp.good 
+
