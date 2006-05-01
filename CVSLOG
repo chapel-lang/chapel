@@ -63791,3 +63791,38 @@ Modified files:
 Added files:
 	chapel/test/modules/standard/math/: exp.chpl exp.good 
 
+---------------------------------------------------------------------------
+
+05/01/06 13:48:50 -- shannon
+
+Log message:
+	Added some hyperbolic and inverse trig functions: acosh(x),
+	asin(x), asinh(x), atan(x), atanh(x), cosh(x), sinh(x)
+	and tanh(x).
+	
+	Did some minor refactoring and added some more tests.
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/compiler/passes/: interpreter_ops.h runInterpreter.cpp 
+	chapel/modules/standard/: _chpl_math.chpl 
+Added files:
+	chapel/test/modules/standard/math/: acosh.chpl acosh.good 
+	                                    acosh_out_of_range.chpl 
+	                                    acosh_out_of_range.good 
+	                                    asin.chpl asin.good 
+	                                    asin_out_of_range.chpl 
+	                                    asin_out_of_range.good 
+	                                    asinh.chpl asinh.good 
+	                                    atan.chpl atan.good 
+	                                    atanh.chpl atanh.good 
+	                                    atanh_asymptote.chpl 
+	                                    atanh_asymptote.good 
+	                                    atanh_out_of_range.chpl 
+	                                    atanh_out_of_range.good 
+	                                    cosh.chpl cosh.good 
+	                                    cosh_asymptote.chpl 
+	                                    cosh_asymptote.good 
+	                                    sinh.chpl sinh.good 
+	                                    tanh.chpl tanh.good 
+
