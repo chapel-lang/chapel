@@ -28,6 +28,7 @@ void parse(void) {
     ParseFile(stringcat(path, "_chpl_adomain.chpl"), MOD_STANDARD);
     ParseFile(stringcat(path, "_chpl_indefinite.chpl"), MOD_STANDARD);
     ParseFile(stringcat(path, "_chpl_sparse.chpl"), MOD_STANDARD);
+    ParseFile(stringcat(path, "_chpl_math.chpl"), MOD_STANDARD);
     seqModule = ParseFile(stringcat(path, "_chpl_seq.chpl"), MOD_STANDARD);
     standardModule = ParseFile(stringcat(path, "_chpl_standard.chpl"), MOD_STANDARD);
   }

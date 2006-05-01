@@ -1,0 +1,4 @@
+a = -2.0
+acos(a) = nan.0
+b = 2.0
+acos(b) = nan.0

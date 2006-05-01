@@ -1,0 +1,19 @@
+var a: float = -29.39;
+var b: float = -31.87;
+var c: float = 0;
+var d: float = 0.1111;
+var e: float = 1.1111;
+var f: float = 99.99;
+
+writeln("a = ", a);
+writeln("ceil(a) = ", ceil(a));
+writeln("b = ", b);
+writeln("ceil(b) = ", ceil(b));
+writeln("c = ", c);
+writeln("ceil(c) = ", ceil(c));
+writeln("d = ", d);
+writeln("ceil(d) = ", ceil(d));
+writeln("e = ", e);
+writeln("ceil(e) = ", ceil(e));
+writeln("f = ", f);
+writeln("ceil(f) = ", ceil(f));

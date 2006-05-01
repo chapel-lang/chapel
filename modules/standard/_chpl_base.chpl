@@ -41,15 +41,6 @@ pragma "inline" fun **(a: numeric, b: numeric) return __primitive("**", a, b);
 
 
 //
-// Primitive math funs
-//
-
-pragma "no codegen" pragma "rename sin" fun sin(x: float) : float {
-  return __primitive("sin", x);
-}
-
-
-//
 // Primitive funs for objects
 //
 pragma "inline" fun ==(a: object, b: object) : bool return __primitive("ptr_eq", a, b);

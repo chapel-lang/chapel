@@ -1,0 +1,19 @@
+var a: float = -29.39;
+var b: float = -31.87;
+var c: float = 0;
+var d: float = 0.1111;
+var e: float = 1.1111;
+var f: float = 99.99;
+
+writeln("a = ", a);
+writeln("floor(a) = ", floor(a));
+writeln("b = ", b);
+writeln("floor(b) = ", floor(b));
+writeln("c = ", c);
+writeln("floor(c) = ", floor(c));
+writeln("d = ", d);
+writeln("floor(d) = ", floor(d));
+writeln("e = ", e);
+writeln("floor(e) = ", floor(e));
+writeln("f = ", f);
+writeln("floor(f) = ", floor(f));
