@@ -162,12 +162,13 @@ enum PrimOps {
   PRIM_UNARY_NOT, PRIM_UNARY_LNOT, PRIM_ADD, PRIM_SUBTRACT, PRIM_MULT, 
   PRIM_DIV, PRIM_MOD, PRIM_LSH, PRIM_RSH, PRIM_EQUAL, PRIM_NOTEQUAL,  
   PRIM_LESSOREQUAL, PRIM_GREATEROREQUAL, PRIM_LESS, PRIM_GREATER, PRIM_AND, 
-  PRIM_OR, PRIM_XOR, PRIM_LAND, PRIM_LOR, PRIM_EXP, PRIM_ACOS, PRIM_CEIL, 
-  PRIM_COS, PRIM_EEXP, PRIM_FABS, PRIM_FLOOR, PRIM_SIN, PRIM_TAN, 
-  PRIM_GET_MEMBER, PRIM_SET_MEMBER, PRIM_PTR_EQ, PRIM_PTR_NEQ, PRIM_CAST, 
-  PRIM_TO_STRING, PRIM_COPY_STRING, PRIM_STRING_INDEX, PRIM_STRING_CONCAT, 
-  PRIM_STRING_EQUAL, PRIM_STRING_SELECT, PRIM_STRING_STRIDED_SELECT, 
-  PRIM_STRING_LENGTH, PRIM_DONE 
+  PRIM_OR, PRIM_XOR, PRIM_LAND, PRIM_LOR, PRIM_EXP, PRIM_ACOS, PRIM_ACOSH, 
+  PRIM_ASIN, PRIM_ASINH, PRIM_ATAN, PRIM_ATANH, PRIM_CEIL, PRIM_COS, 
+  PRIM_COSH, PRIM_EEXP, PRIM_FABS, PRIM_FLOOR, PRIM_SIN, PRIM_SINH, 
+  PRIM_TAN, PRIM_TANH, PRIM_GET_MEMBER, PRIM_SET_MEMBER, PRIM_PTR_EQ, 
+  PRIM_PTR_NEQ, PRIM_CAST, PRIM_TO_STRING, PRIM_COPY_STRING, 
+  PRIM_STRING_INDEX, PRIM_STRING_CONCAT, PRIM_STRING_EQUAL, 
+  PRIM_STRING_SELECT, PRIM_STRING_STRIDED_SELECT, PRIM_STRING_LENGTH, PRIM_DONE 
 };
 
 class InterpreterOp : public gc { public:
@@ -1560,6 +1561,15 @@ convert_enum_to_int(ISlot *slot) {
   return 0;
 }
 
+void
+check_args_and_setup_result(CallExpr *s, ISlot** arg, ISlot result) {
+  check_prim_args(s, 1);
+  check_type(s, arg[0], dtFloat);
+  result.kind = IMMEDIATE_ISLOT;
+  result.imm = new Immediate;
+}
+
+
 int
 IFrame::iprimitive(CallExpr *s) {
   int len = s->argList->length();
@@ -1871,60 +1881,68 @@ IFrame::iprimitive(CallExpr *s) {
                     arg[0]->imm, arg[1]->imm, result.imm);
       break;
     case PRIM_ACOS:
-      check_prim_args(s, 1);
-      check_type(s, arg[0], dtFloat);
-      result.kind = IMMEDIATE_ISLOT;
-      result.imm = new Immediate;
+      check_args_and_setup_result(s, arg, result);
       result.imm->set_float64(acos(arg[0]->imm->v_float64));
       break;
+    case PRIM_ACOSH:
+      check_args_and_setup_result(s, arg, result);
+      result.imm->set_float64(acosh(arg[0]->imm->v_float64));
+      break;
+    case PRIM_ASIN:
+      check_args_and_setup_result(s, arg, result);
+      result.imm->set_float64(asin(arg[0]->imm->v_float64));
+      break;
+    case PRIM_ASINH:
+      check_args_and_setup_result(s, arg, result);
+      result.imm->set_float64(asinh(arg[0]->imm->v_float64));
+      break;
+    case PRIM_ATAN:
+      check_args_and_setup_result(s, arg, result);
+      result.imm->set_float64(atan(arg[0]->imm->v_float64));
+      break;
+    case PRIM_ATANH:
+      check_args_and_setup_result(s, arg, result);
+      result.imm->set_float64(atanh(arg[0]->imm->v_float64));
+      break;
     case PRIM_CEIL:
-      check_prim_args(s, 1);
-      check_type(s, arg[0], dtFloat);
-      result.kind = IMMEDIATE_ISLOT;
-      result.imm = new Immediate;
+      check_args_and_setup_result(s, arg, result);
       result.imm->set_float64(ceil(arg[0]->imm->v_float64));
       break;
     case PRIM_COS:
-      check_prim_args(s, 1);
-      check_type(s, arg[0], dtFloat);
-      result.kind = IMMEDIATE_ISLOT;
-      result.imm = new Immediate;
+      check_args_and_setup_result(s, arg, result);
       result.imm->set_float64(cos(arg[0]->imm->v_float64));
       break;
+    case PRIM_COSH:
+      check_args_and_setup_result(s, arg, result);
+      result.imm->set_float64(cosh(arg[0]->imm->v_float64));
+      break;
     case PRIM_EEXP:
-      check_prim_args(s, 1);
-      check_type(s, arg[0], dtFloat);
-      result.kind = IMMEDIATE_ISLOT;
-      result.imm = new Immediate;
+      check_args_and_setup_result(s, arg, result);
       result.imm->set_float64(exp(arg[0]->imm->v_float64));
       break;
     case PRIM_FABS:
-      check_prim_args(s, 1);
-      check_type(s, arg[0], dtFloat);
-      result.kind = IMMEDIATE_ISLOT;
-      result.imm = new Immediate;
+      check_args_and_setup_result(s, arg, result);
       result.imm->set_float64(fabs(arg[0]->imm->v_float64));
       break;
     case PRIM_FLOOR:
-      check_prim_args(s, 1);
-      check_type(s, arg[0], dtFloat);
-      result.kind = IMMEDIATE_ISLOT;
-      result.imm = new Immediate;
+      check_args_and_setup_result(s, arg, result);
       result.imm->set_float64(floor(arg[0]->imm->v_float64));
       break;
     case PRIM_SIN:
-      check_prim_args(s, 1);
-      check_type(s, arg[0], dtFloat);
-      result.kind = IMMEDIATE_ISLOT;
-      result.imm = new Immediate;
+      check_args_and_setup_result(s, arg, result);
       result.imm->set_float64(sin(arg[0]->imm->v_float64));
       break;
+    case PRIM_SINH:
+      check_args_and_setup_result(s, arg, result);
+      result.imm->set_float64(sinh(arg[0]->imm->v_float64));
+      break;
     case PRIM_TAN:
-      check_prim_args(s, 1);
-      check_type(s, arg[0], dtFloat);
-      result.kind = IMMEDIATE_ISLOT;
-      result.imm = new Immediate;
+      check_args_and_setup_result(s, arg, result);
       result.imm->set_float64(tan(arg[0]->imm->v_float64));
+      break;
+    case PRIM_TANH:
+      check_args_and_setup_result(s, arg, result);
+      result.imm->set_float64(tanh(arg[0]->imm->v_float64));
       break;
     case PRIM_GET_MEMBER: 
     case PRIM_SET_MEMBER: {
@@ -2547,13 +2565,21 @@ init_interpreter() {
   lor_interpreter_op = new InterpreterOp("lor", PRIM_LOR);
   exp_interpreter_op = new InterpreterOp("exp", PRIM_EXP);
   acos_interpreter_op = new InterpreterOp("acos", PRIM_ACOS);
+  acosh_interpreter_op = new InterpreterOp("acosh", PRIM_ACOSH);
+  asin_interpreter_op = new InterpreterOp("asin", PRIM_ASIN);
+  asinh_interpreter_op = new InterpreterOp("asinh", PRIM_ASINH);
+  atan_interpreter_op = new InterpreterOp("atan", PRIM_ATAN);
+  atanh_interpreter_op = new InterpreterOp("atanh", PRIM_ATANH);
   ceil_interpreter_op = new InterpreterOp("ceil", PRIM_CEIL);
   cos_interpreter_op = new InterpreterOp("cos", PRIM_COS);
+  cosh_interpreter_op = new InterpreterOp("cosh", PRIM_COSH);
   eexp_interpreter_op = new InterpreterOp("eexp", PRIM_EEXP);
   fabs_interpreter_op = new InterpreterOp("fabs", PRIM_FABS);
   floor_interpreter_op = new InterpreterOp("floor", PRIM_FLOOR);
   sin_interpreter_op = new InterpreterOp("sin", PRIM_SIN);
+  sinh_interpreter_op = new InterpreterOp("sinh", PRIM_SINH);
   tan_interpreter_op = new InterpreterOp("tan", PRIM_TAN);
+  tanh_interpreter_op = new InterpreterOp("tanh", PRIM_TANH);
   get_member_interpreter_op = new InterpreterOp("get_member", PRIM_GET_MEMBER);
   set_member_interpreter_op = new InterpreterOp("set_member", PRIM_SET_MEMBER);
   ptr_eq_interpreter_op = new InterpreterOp("ptr_eq", PRIM_PTR_EQ);
