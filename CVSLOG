@@ -63748,3 +63748,31 @@ Modified files:
 Added files:
 	chapel/test/trivial/deitz/: test_bpop.chpl test_bpop.good 
 
+---------------------------------------------------------------------------
+
+05/01/06 10:09:41 -- shannon
+
+Log message:
+	Added the acos(x), ceil(x), cos(x), fabs(x), floor(x),
+	and tan(x) math routines.
+	
+	Added a bunch of tests.
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/compiler/passes/: filesToAST.cpp interpreter_ops.h 
+	                         runInterpreter.cpp 
+	chapel/modules/standard/: _chpl_base.chpl _chpl_standard.chpl 
+Added files:
+	chapel/modules/standard/: _chpl_math.chpl 
+	chapel/test/modules/standard/math/: acos.chpl acos.good 
+	                                    acos_out_of_range.chpl 
+	                                    acos_out_of_range.good 
+	                                    ceil.chpl ceil.good cos.chpl 
+	                                    cos.good fabs.chpl fabs.good 
+	                                    floor.chpl floor.good 
+	                                    sin.chpl sin.good tan.chpl 
+	                                    tan.good 
+Removed files:
+	chapel/test/modules/standard/math/: sin_pi.chpl sin_pi.good 
+
