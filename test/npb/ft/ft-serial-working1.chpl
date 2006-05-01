@@ -1,7 +1,7 @@
 // NAS FT - Ported to Chapel from ZPL
 
 config const
-  verbose         = false,
+  verbose         = true,
   timers_enabled  = false,
   timers_disabled = false;
 
@@ -13,22 +13,20 @@ const
   r46   = 0.5**46,
   t46   = 2.0**46;
 
-fun nextrandlc(inout x : float, a : float) : float {
-  // I want to say these are all floats
-  var t1, t2, t3, t4, a1, a2, x1, x2, z : float;
-  t1 = r23 * a;
-  a1 = floor(t1);
-  a2 = a - t23 * a1;
+fun nextrandlc(x : float, a : float) : float {
+  var t1 = r23 * a;
+  var a1 = floor(t1);
+  var a2 = a - t23 * a1;
   t1 = r23 * x;
-  x1 = floor(t1);
-  x2 = x - t23 * x1;
+  var x1 = floor(t1);
+  var x2 = x - t23 * x1;
   t1 = a1 * x2 + a2 * x1;
-  t2 = floor(r23 * t1);
-  z  = t1 - t23 * t2;
-  t3 = t23 * z + a2 * x2;
-  t4 = floor(r46 * t3);
-  x  = t3 - t46 * t4;
-  return r46 * x;
+  var t2 = floor(r23 * t1);
+  var z  = t1 - t23 * t2;
+  var t3 = t23 * z + a2 * x2;
+  var t4 = floor(r46 * t3);
+  var x3 = t3 - t46 * t4;
+  return (x3, r46 * x3);
 }
 
 fun initrandlc(seed, a : float, in n : int) : float {
@@ -38,8 +36,8 @@ fun initrandlc(seed, a : float, in n : int) : float {
   while n != 0 do {
     i = n / 2;
     if 2 * i != n then
-      g = nextrandlc(x, t);
-    g = nextrandlc(t, t);
+      (x, g) = nextrandlc(x, t);
+    (t, g) = nextrandlc(t, t);
     n = i;
   }
   return x;
@@ -48,17 +46,18 @@ fun initrandlc(seed, a : float, in n : int) : float {
 var randlc_last_n : int = -2,
     randlc_last_x : float;
 fun randlc(n : int) : float {
+  var result : float;
   if n != randlc_last_n + 1 then
     randlc_last_x = initrandlc(seed, arand, n);
   randlc_last_n = n;
-  return nextrandlc(randlc_last_x, arand);
+  (randlc_last_x, result) = nextrandlc(randlc_last_x, arand);
+  return result;
 }
 
-enum classes {T = 1, S, W, A, B, C, D};
+enum classes {S = 1, W, A, B, C, D};
 
 const class_defaults =
-  (('T',    4,    4,    4,  3),
-   ('S',   64,   64,   64,  6),
+  (('S',   64,   64,   64,  6),
    ('W',   32,  128,  128,  6),
    ('A',  128,  256,  512,  6),
    ('B',  256,  256,  512, 20),
@@ -83,7 +82,7 @@ const
   epsilon = 0.000000000001;
 
 var
-  DXYZ : domain(2) = [0..nx-1, 0..ny-1, 0..nz-1],
+  DXYZ : domain(3) = [0..nx-1, 0..ny-1, 0..nz-1],
   U0 : [DXYZ] complex,
   U1 : [DXYZ] complex,
   U2 : [DXYZ] complex,
@@ -100,8 +99,8 @@ fun compute_index_map(Twiddle) {
   const ap = -4.0 * alpha * pi * pi;
   forall i,j,k in DXYZ do
     Twiddle(i,j,k) = exp(ap*(((i+nx/2) % nx - nx/2)**2 +
-                             ((j+nx/2) % nx - nx/2)**2 +
-                             ((j+nx/2) % nx - nx/2)**2));
+                             ((j+ny/2) % ny - ny/2)**2 +
+                             ((k+nz/2) % nz - nz/2)**2));
 }
 
 var fftblock : int = 16, fftblockpad : int = 18;
@@ -109,11 +108,11 @@ var fftblock : int = 16, fftblockpad : int = 18;
 var u : [0..nz-1] complex;
 
 fun fft_init() {
-  var t, ti : float;
+  var t : float, ti : float;
   var m = bpop(nz-1);
   var ku = 2;
   var ln = 1;
-  u(0) = m;
+  u(0) = m+0i;
   for j in 1..m {
     for i in 0..ln-1 {
       u(i+ku-1).real = cos(i*pi/ln);
@@ -124,9 +123,7 @@ fun fft_init() {
   }
 }
 
-fun fftz2(dir, l, m, n, ny, ny1 : int,
-               u,
-               x, y) {
+fun fftz2(dir, l, m, n, ny, ny1 : int, u, x, y) {
   var lk = 2**(l-1), li = 2**(m-1), lj = 2*lk;
   for i in 0..li-1 {
     var i11 = i * lk, i12 = i11 + n/2, i21 = i * lj, i22 = i21 + lk;
@@ -142,8 +139,7 @@ fun fftz2(dir, l, m, n, ny, ny1 : int,
   }
 }
 
-fun cfftz(dir, m, n, ny, ny1 : int,
-               x, y) {
+fun cfftz(dir, m, n, ny, ny1 : int, x, y) {
   for l in 1..m by 2 {
     fftz2(dir, l, m, n, ny, ny1, u, x, y);
     if l != m then
@@ -185,7 +181,8 @@ fun cffts3(dir, n, X1, X2, ny, ny1, x, y) {
 }
 
 fun fft(dir : int, X1, X2) {
-  var x, y : [0..nz-1, 0..fftblockpad-1] complex;
+  var x : [0..nz-1, 0..fftblockpad-1] complex;
+  var y : [0..nz-1, 0..fftblockpad-1] complex;
   if dir == 1 {
     cffts3(dir, nz, X1, X1, fftblock, fftblockpad, x, y);
     cffts2(dir, ny, X1, X1, fftblock, fftblockpad, x, y);
@@ -302,7 +299,7 @@ vdata_d(24) = 511.8799262314+511.9776353561i;
 vdata_d(25) = 511.8822370068+511.9794338060i;
 
 fun verify() {
-  var rerr, ierr : float;
+  var rerr : float, ierr : float;
   for iter in 1..niter {
     select problem_class {
       when S {
@@ -337,7 +334,7 @@ fun verify() {
 }
 
 fun checksum(i, X1) {
-  var chk = 0;
+  var chk = 0.0;
   [j in 1..1024] chk += X1((5*j) % nx, (3*j) % ny, j % nz);
   chk /= nx * ny * nz;
   sums(i) = chk;

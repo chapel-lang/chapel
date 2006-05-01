@@ -121,7 +121,7 @@ pragma "no codegen" fun startTrackingMem();
 // once and not every time bpop is called
 //
 fun bpop(i : int) {
-  var u1 = 0u, u3 = 0u, u7 = 0u, tmp = 0u;
+  var u1 = 0, u3 = 0, u7 = 0, tmp = 0;
 
   u1 = 1;
   do {
