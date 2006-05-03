@@ -63933,3 +63933,14 @@ Modified files:
 	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
 	                                         inlfunc2_report.good 
 
+---------------------------------------------------------------------------
+
+05/03/06 16:25:46 -- deitz
+
+Log message:
+	Removed two unused functions.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+
