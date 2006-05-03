@@ -63915,3 +63915,21 @@ Removed files:
 	                                    asin_out_of_range.chpl 
 	                                    asin_out_of_range.good 
 
+---------------------------------------------------------------------------
+
+05/03/06 14:18:44 -- jplevyak
+
+Log message:
+	Fixed 2 .good files.
+	Some modifications to permit an option to not print line
+	  numbers for builtin modules (to avoid having to update the
+	  .good files all the time) (incomplete)
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp chapel_ifa.h 
+	chapel/compiler/ifa/: clone.cpp code.h fa.cpp fun.cpp fun.h 
+	                      if1.cpp ifa.h sym.cpp sym.h 
+	chapel/compiler/ifa/libifa/: ast_to_if1.cc ast_to_if1.h 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+
