@@ -56,6 +56,7 @@ initPrimitive() {
   prim_def("asin", asin_interpreter_op, return_float_analysis_op);
   prim_def("asinh", asinh_interpreter_op, return_float_analysis_op);
   prim_def("atan", atan_interpreter_op, return_float_analysis_op);
+  prim_def("atan2", atan2_interpreter_op, return_float_analysis_op);  
   prim_def("atanh", atanh_interpreter_op, return_float_analysis_op);
   prim_def("ceil", ceil_interpreter_op, return_float_analysis_op);
   prim_def("cos", cos_interpreter_op, return_float_analysis_op);

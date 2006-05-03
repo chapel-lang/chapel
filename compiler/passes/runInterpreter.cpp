@@ -156,13 +156,16 @@ struct IThread : public gc { public:
 };
 
 /**
- **  Note:  Update the PrimOps and the f64_fns_f64 array together always.
+ **  Note:  Update the f64_fns_f64 array and its corresponding PrimOps 
+ **  together always.
  **/ 
 
 enum PrimOps {
   PRIM_ACOS, PRIM_ACOSH, PRIM_ASIN, PRIM_ASINH, PRIM_ATAN, PRIM_ATANH, 
   PRIM_CEIL, PRIM_COS, PRIM_COSH, PRIM_EEXP, PRIM_FABS, PRIM_FLOOR, PRIM_SIN, 
   PRIM_SINH, PRIM_TAN, PRIM_TANH,
+
+  PRIM_ATAN2,
 
   PRIM_NONE, PRIM_INIT, PRIM_ALLOC, PRIM_TYPE_EQUAL, PRIM_FOPEN, PRIM_FCLOSE,
   PRIM_STRERROR, PRIM_FPRINTF, PRIM_FSCANF, PRIM_FFLUSH, PRIM_ARRAY_INIT, 
@@ -1916,6 +1919,15 @@ IFrame::iprimitive(CallExpr *s) {
       execute_f64_fn_f64(s, arg, result, 
                          f64_fns_f64[kind - ARG_F64_RETURN_F64_START]);
       break;
+      // shannon takes two doubles, returns double
+    case PRIM_ATAN2:
+      check_prim_args(s, 2);
+      check_type(s, arg[0], dtFloat);
+      check_type(s, arg[1], dtFloat);
+      result.kind = IMMEDIATE_ISLOT;
+      result.imm = new Immediate;
+      result.imm->set_float64(atan2(arg[0]->imm->v_float64, arg[1]->imm->v_float64));
+      break;
     case PRIM_GET_MEMBER: 
     case PRIM_SET_MEMBER: {
       check_prim_args(s, kind == PRIM_GET_MEMBER ? 2 : 3);
@@ -2541,6 +2553,7 @@ init_interpreter() {
   asin_interpreter_op = new InterpreterOp("asin", PRIM_ASIN);
   asinh_interpreter_op = new InterpreterOp("asinh", PRIM_ASINH);
   atan_interpreter_op = new InterpreterOp("atan", PRIM_ATAN);
+  atan2_interpreter_op = new InterpreterOp("atan2", PRIM_ATAN2);
   atanh_interpreter_op = new InterpreterOp("atanh", PRIM_ATANH);
   ceil_interpreter_op = new InterpreterOp("ceil", PRIM_CEIL);
   cos_interpreter_op = new InterpreterOp("cos", PRIM_COS);

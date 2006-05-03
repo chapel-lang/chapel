@@ -49,6 +49,7 @@ _EXTERN InterpreterOp *acosh_interpreter_op _INIT;
 _EXTERN InterpreterOp *asin_interpreter_op _INIT;
 _EXTERN InterpreterOp *asinh_interpreter_op _INIT;
 _EXTERN InterpreterOp *atan_interpreter_op _INIT;
+_EXTERN InterpreterOp *atan2_interpreter_op _INIT;
 _EXTERN InterpreterOp *atanh_interpreter_op _INIT;
 _EXTERN InterpreterOp *ceil_interpreter_op _INIT;
 _EXTERN InterpreterOp *cos_interpreter_op _INIT;

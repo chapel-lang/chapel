@@ -23,11 +23,9 @@ pragma "no codegen" pragma "rename atan" fun atan(x : float) : float {
   return __primitive("atan", x);
 }
 
-/*
-pragma "no codegen" pragma "rename atan2" fun atan2(x : float) : float {
+pragma "no codegen" pragma "rename atan2" fun atan2(y : float, x : float) : float {
   return __primitive("atan2", x);
 }
-*/
 
 pragma "no codegen" pragma "rename atanh" fun atanh(x : float) : float {
   return __primitive("atanh", x);
