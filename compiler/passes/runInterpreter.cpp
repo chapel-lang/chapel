@@ -155,21 +155,37 @@ struct IThread : public gc { public:
   IThread();
 };
 
+/**
+ **  Note:  Update the PrimOps and the f64_fns_f64 array together always.
+ **/ 
+
 enum PrimOps {
+  PRIM_ACOS, PRIM_ACOSH, PRIM_ASIN, PRIM_ASINH, PRIM_ATAN, PRIM_ATANH, 
+  PRIM_CEIL, PRIM_COS, PRIM_COSH, PRIM_EEXP, PRIM_FABS, PRIM_FLOOR, PRIM_SIN, 
+  PRIM_SINH, PRIM_TAN, PRIM_TANH,
+
   PRIM_NONE, PRIM_INIT, PRIM_ALLOC, PRIM_TYPE_EQUAL, PRIM_FOPEN, PRIM_FCLOSE,
   PRIM_STRERROR, PRIM_FPRINTF, PRIM_FSCANF, PRIM_FFLUSH, PRIM_ARRAY_INIT, 
   PRIM_ARRAY_INDEX, PRIM_ARRAY_SET, PRIM_UNARY_MINUS, PRIM_UNARY_PLUS,
   PRIM_UNARY_NOT, PRIM_UNARY_LNOT, PRIM_ADD, PRIM_SUBTRACT, PRIM_MULT, 
   PRIM_DIV, PRIM_MOD, PRIM_LSH, PRIM_RSH, PRIM_EQUAL, PRIM_NOTEQUAL,  
   PRIM_LESSOREQUAL, PRIM_GREATEROREQUAL, PRIM_LESS, PRIM_GREATER, PRIM_AND, 
-  PRIM_OR, PRIM_XOR, PRIM_LAND, PRIM_LOR, PRIM_EXP, PRIM_ACOS, PRIM_ACOSH, 
-  PRIM_ASIN, PRIM_ASINH, PRIM_ATAN, PRIM_ATANH, PRIM_CEIL, PRIM_COS, 
-  PRIM_COSH, PRIM_EEXP, PRIM_FABS, PRIM_FLOOR, PRIM_SIN, PRIM_SINH, 
-  PRIM_TAN, PRIM_TANH, PRIM_GET_MEMBER, PRIM_SET_MEMBER, PRIM_PTR_EQ, 
-  PRIM_PTR_NEQ, PRIM_CAST, PRIM_TO_STRING, PRIM_COPY_STRING, 
-  PRIM_STRING_INDEX, PRIM_STRING_CONCAT, PRIM_STRING_EQUAL, 
+  PRIM_OR, PRIM_XOR, PRIM_LAND, PRIM_LOR, PRIM_EXP, PRIM_GET_MEMBER, 
+  PRIM_SET_MEMBER, PRIM_PTR_EQ, PRIM_PTR_NEQ, PRIM_CAST, PRIM_TO_STRING, 
+  PRIM_COPY_STRING, PRIM_STRING_INDEX, PRIM_STRING_CONCAT, PRIM_STRING_EQUAL, 
   PRIM_STRING_SELECT, PRIM_STRING_STRIDED_SELECT, PRIM_STRING_LENGTH, PRIM_DONE 
 };
+
+
+typedef double (*f64_fn_f64) (double);
+const int ARG_F64_RETURN_F64_START = PRIM_ACOS;
+const int ARG_F64_RETURN_F64_STOP  = PRIM_TANH + 1;
+
+f64_fn_f64 f64_fns_f64[ARG_F64_RETURN_F64_STOP] = {
+  acos, acosh, asin, asinh, atan, atanh, ceil, cos, cosh, exp, fabs, floor, 
+  sin, sinh, tan, tanh
+};
+
 
 class InterpreterOp : public gc { public:
   char *name;
@@ -1561,14 +1577,15 @@ convert_enum_to_int(ISlot *slot) {
   return 0;
 }
 
-void
-check_args_and_setup_result(CallExpr *s, ISlot** arg, ISlot result) {
+void 
+execute_f64_fn_f64(CallExpr* s, ISlot** arg, ISlot result, 
+                      double (*f64_fn_f64)(double)) {
   check_prim_args(s, 1);
   check_type(s, arg[0], dtFloat);
   result.kind = IMMEDIATE_ISLOT;
   result.imm = new Immediate;
+  result.imm->set_float64(f64_fn_f64(arg[0]->imm->v_float64));
 }
-
 
 int
 IFrame::iprimitive(CallExpr *s) {
@@ -1881,68 +1898,23 @@ IFrame::iprimitive(CallExpr *s) {
                     arg[0]->imm, arg[1]->imm, result.imm);
       break;
     case PRIM_ACOS:
-      check_args_and_setup_result(s, arg, result);
-      result.imm->set_float64(acos(arg[0]->imm->v_float64));
-      break;
     case PRIM_ACOSH:
-      check_args_and_setup_result(s, arg, result);
-      result.imm->set_float64(acosh(arg[0]->imm->v_float64));
-      break;
     case PRIM_ASIN:
-      check_args_and_setup_result(s, arg, result);
-      result.imm->set_float64(asin(arg[0]->imm->v_float64));
-      break;
     case PRIM_ASINH:
-      check_args_and_setup_result(s, arg, result);
-      result.imm->set_float64(asinh(arg[0]->imm->v_float64));
-      break;
     case PRIM_ATAN:
-      check_args_and_setup_result(s, arg, result);
-      result.imm->set_float64(atan(arg[0]->imm->v_float64));
-      break;
     case PRIM_ATANH:
-      check_args_and_setup_result(s, arg, result);
-      result.imm->set_float64(atanh(arg[0]->imm->v_float64));
-      break;
     case PRIM_CEIL:
-      check_args_and_setup_result(s, arg, result);
-      result.imm->set_float64(ceil(arg[0]->imm->v_float64));
-      break;
     case PRIM_COS:
-      check_args_and_setup_result(s, arg, result);
-      result.imm->set_float64(cos(arg[0]->imm->v_float64));
-      break;
     case PRIM_COSH:
-      check_args_and_setup_result(s, arg, result);
-      result.imm->set_float64(cosh(arg[0]->imm->v_float64));
-      break;
     case PRIM_EEXP:
-      check_args_and_setup_result(s, arg, result);
-      result.imm->set_float64(exp(arg[0]->imm->v_float64));
-      break;
     case PRIM_FABS:
-      check_args_and_setup_result(s, arg, result);
-      result.imm->set_float64(fabs(arg[0]->imm->v_float64));
-      break;
     case PRIM_FLOOR:
-      check_args_and_setup_result(s, arg, result);
-      result.imm->set_float64(floor(arg[0]->imm->v_float64));
-      break;
     case PRIM_SIN:
-      check_args_and_setup_result(s, arg, result);
-      result.imm->set_float64(sin(arg[0]->imm->v_float64));
-      break;
     case PRIM_SINH:
-      check_args_and_setup_result(s, arg, result);
-      result.imm->set_float64(sinh(arg[0]->imm->v_float64));
-      break;
     case PRIM_TAN:
-      check_args_and_setup_result(s, arg, result);
-      result.imm->set_float64(tan(arg[0]->imm->v_float64));
-      break;
     case PRIM_TANH:
-      check_args_and_setup_result(s, arg, result);
-      result.imm->set_float64(tanh(arg[0]->imm->v_float64));
+      execute_f64_fn_f64(s, arg, result, 
+                         f64_fns_f64[kind - ARG_F64_RETURN_F64_START]);
       break;
     case PRIM_GET_MEMBER: 
     case PRIM_SET_MEMBER: {
