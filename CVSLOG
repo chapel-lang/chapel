@@ -63893,3 +63893,25 @@ Modified files:
 	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
 	                               record_type_hierarchy-3-error.good 
 
+---------------------------------------------------------------------------
+
+05/03/06 12:32:16 -- shannon
+
+Log message:
+	Added the atan2() math routine and a test.
+	
+	Removed a couple of tests that were failing on the Sun
+	due to different output representations of NaN.
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/compiler/passes/: interpreter_ops.h runInterpreter.cpp 
+	chapel/modules/standard/: _chpl_math.chpl 
+Added files:
+	chapel/test/modules/standard/math/: atan2.chpl atan2.good 
+Removed files:
+	chapel/test/modules/standard/math/: acos_out_of_range.chpl 
+	                                    acos_out_of_range.good 
+	                                    asin_out_of_range.chpl 
+	                                    asin_out_of_range.good 
+
