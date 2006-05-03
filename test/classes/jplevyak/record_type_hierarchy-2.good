@@ -26,7 +26,7 @@ prelude.chpl:10: fwrite, f : file, val : CFILEPTR
 _chpl_base.chpl:3: fwrite, f : file, val : _unused_class
 _chpl_base.chpl:9: fwrite, f : file, val : _methodTokenType
 _chpl_base.chpl:11: fwrite, f : file, val : _setterTokenType
-_chpl_base.chpl:83: fwrite, f : file, val : _ddata
+_chpl_base.chpl:84: fwrite, f : file, val : _ddata
 _chpl_closure.chpl:1: fwrite, f : file, val : closure
 _chpl_file.chpl:76: fwrite, f : file, val : file
 _chpl_adomain.chpl:5: fwrite, f : file, val : _domain
