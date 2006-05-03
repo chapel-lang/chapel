@@ -63856,3 +63856,14 @@ Log message:
 Modified files:
 	chapel/test/npb/ft/: ft-serial-working1.chpl 
 
+---------------------------------------------------------------------------
+
+05/03/06 07:48:42 -- jplevyak
+
+Log message:
+	Fix up some unnecessary failures
+
+Modified files:
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-1.good 
+	                                 zeroarity-bound-error-2.good 
+
