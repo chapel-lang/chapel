@@ -63882,3 +63882,14 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+05/03/06 10:09:57 -- jplevyak
+
+Log message:
+	Tweak 2 more .good files
+
+Modified files:
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+
