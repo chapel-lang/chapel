@@ -35,7 +35,7 @@ class ASymbol : public IFASymbol {
   Sym *clone();
   char *pathname();
   int line();
-  int log_line();
+  int source_line();
   int ast_id();
   ASymbol *copy();
 
@@ -47,6 +47,7 @@ class ASymbol : public IFASymbol {
 class AAST : public IFAAST {
  public:
   char *pathname();
+  int source_line();
   int line();
   Sym *symbol();  
   IFAAST *copy_tree(ASTCopyContext* context);

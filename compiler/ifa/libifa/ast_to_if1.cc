@@ -239,6 +239,13 @@ ParseAST::line() {
   return _line;
 }
 
+int
+ParseAST::source_line() {
+  if (strstr(filename(), "prelude"))
+    return 0;
+  return line();
+}
+
 ParseAST *
 new_AST(AST_kind k, D_ParseNode *pn) {
   return new ParseAST(k, pn);

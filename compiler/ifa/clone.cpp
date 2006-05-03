@@ -1026,20 +1026,20 @@ void
 log_test_fa(FA *fa) {
   Vec<Var *> gvars;
   forv_Fun(f, fa->funs) {
-    if (f->sym->log_line() > 0) {
+    if (f->sym->source_line() > 0) {
       log(LOG_TEST_FA, "function %s %s:%d\n", f->sym->name ? f->sym->name : "<anonymous>",
-          f->sym->filename(), f->sym->log_line());
+          f->sym->filename(), f->sym->source_line());
       forv_CallPoint(cp, f->called) {
         Fun *ff = cp->fun;
-        if (cp->pnode->code->line() > 0 && ff->log_line() > 0)
+        if (cp->pnode->code->line() > 0 && ff->source_line() > 0)
           log(LOG_TEST_FA, " called from %d in %s at %s:%d\n", 
-              cp->pnode->code->log_line(),
+              cp->pnode->code->source_line(),
               ff->sym->name ? ff->sym->name : "<anonymous>",
-              ff->filename(), ff->log_line());
+              ff->filename(), ff->source_line());
       }
     }
     forv_Var(v, f->fa_all_Vars) {
-      if (v->sym->log_line()) {
+      if (v->sym->source_line()) {
         if (!v->sym->nesting_depth) {
           gvars.set_add(v);
           continue;

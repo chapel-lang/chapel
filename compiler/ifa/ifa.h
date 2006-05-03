@@ -22,7 +22,7 @@ class IFASymbol : public gc {
   virtual Sym *clone() = 0;
   virtual char *pathname() = 0;
   virtual int line() = 0;
-  virtual int log_line() = 0;
+  virtual int source_line() = 0;
   virtual int ast_id() = 0;
   virtual IFASymbol *copy() = 0;
 
@@ -40,6 +40,7 @@ class IFAAST : public gc {
 
   virtual char *pathname() = 0;
   virtual int line() = 0;
+  virtual int source_line() = 0;
   virtual Sym *symbol() = 0;
   virtual Vec<Fun *> *visible_functions(Sym *arg0) { return NULL; }
   virtual IFAAST *copy_tree(ASTCopyContext* context) = 0;

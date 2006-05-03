@@ -152,7 +152,7 @@ class Sym : public BasicSym {
   Sym *                 coerce_to(Sym *);
   char                  *pathname();
   int                   line();
-  int                   log_line();             // squelch line numbers of prelude in log
+  int                   source_line();          // squelch line numbers builtins
   char                  *filename();
   int                   ast_id();
   Sym *                 clone();

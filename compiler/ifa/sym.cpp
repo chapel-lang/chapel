@@ -118,19 +118,20 @@ Sym::line() {
 }
 
 int
+Sym::source_line() {
+  int l = 0;
+  if (asymbol)
+    return asymbol->source_line();
+  if (!l && ast)
+    l = ast->source_line();
+  return l;
+}
+
+int
 Sym::ast_id() {
   if (asymbol)
     return asymbol->ast_id();
   return id;
-}
-
-int
-Sym::log_line() {
-  if (asymbol)
-    return asymbol->log_line();
-  if (strstr(filename(), "prelude"))
-    return 0;
-  return line();
 }
 
 void

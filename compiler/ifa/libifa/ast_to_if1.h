@@ -89,6 +89,7 @@ class ParseAST : public IFAAST {
 
   char *pathname();
   int line();
+  int source_line();
   void propagate(Vec<PNode *> *nodes);
   void dump(FILE *fp, Fun *f);
   void graph(FILE *fp);

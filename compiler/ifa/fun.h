@@ -121,7 +121,7 @@ class Fun : public gc {
   char *pathname();
   char *filename();
   int line();
-  int log_line();
+  int source_line();
   
   void collect_PNodes(Vec<PNode *> &v);
   void collect_Vars(Vec<Var *> &v, Vec<PNode *> *vv = 0);

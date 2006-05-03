@@ -979,10 +979,10 @@ Code::line() {
 }
 
 int
-Code::log_line() {
-  if (strstr(filename(), "prelude"))
-    return 0;
-  return line();
+Code::source_line() {
+  if (ast)
+    return ast->source_line();
+  return 0;
 }
 
 static char *int_type_names[IF1_INT_TYPE_NUM][2] = {

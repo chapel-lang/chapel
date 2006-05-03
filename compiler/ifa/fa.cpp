@@ -2340,11 +2340,11 @@ log_var_types(Var *v, Fun *f) {
     log(LOG_TEST_FA, "%d::", v->sym->in->id);
   if (v->sym->name) {
     if (v->sym->line() > 0)
-      log(LOG_TEST_FA, "%s(%s:%d) ", v->sym->name, fn(v->sym->filename()), v->sym->log_line());
+      log(LOG_TEST_FA, "%s(%s:%d) ", v->sym->name, fn(v->sym->filename()), v->sym->source_line());
     else
       log(LOG_TEST_FA, "%s ", v->sym->name);
   } else
-    log(LOG_TEST_FA, "(%s:%d) ", fn(v->sym->filename()), v->sym->log_line());
+    log(LOG_TEST_FA, "(%s:%d) ", fn(v->sym->filename()), v->sym->source_line());
   Vec<CreationSet *> css;
   for (int i = 0; i < v->avars.n; i++) if (v->avars.v[i].key) {
     AVar *av = v->avars.v[i].value;
@@ -2368,8 +2368,8 @@ log_var_types(Var *v, Fun *f) {
       sprint_imm(c, s->imm);
       log(LOG_TEST_FA, "\"%s\" ", c);
     }
-    if (s->log_line())
-      log(LOG_TEST_FA, "(%s:%d) ", fn(s->filename()), s->log_line());
+    if (s->source_line())
+      log(LOG_TEST_FA, "(%s:%d) ", fn(s->filename()), s->source_line());
   }
   log(LOG_TEST_FA, ")\n");
 }

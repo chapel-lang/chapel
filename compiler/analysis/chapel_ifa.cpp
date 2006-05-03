@@ -113,7 +113,7 @@ ASymbol::line() {
 }
 
 int 
-ASymbol::log_line() {
+ASymbol::source_line() {
   if (symbol) {
     ModuleSymbol *m = symbol->getModule();
     if (m && m->modtype == MOD_USER)
@@ -143,6 +143,15 @@ int
 AAST::line() {
   return xast->lineno;
 }
+
+int
+AAST::source_line() {
+  ModuleSymbol *m = xast->getModule();
+  if (m && m->modtype == MOD_USER)
+    return line();
+  return 0;
+}
+
 
 Sym *
 AAST::symbol() {

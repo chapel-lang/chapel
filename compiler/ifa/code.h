@@ -36,7 +36,7 @@ class Code : public gc {
   char          *pathname();
   char          *filename();
   int           line();
-  int           log_line(); // prevent printing of headers by setting line number to 0
+  int           source_line(); // prevent printing of headers by setting line number to 0
 
   unsigned int  partial:2;
   unsigned int  live:1;

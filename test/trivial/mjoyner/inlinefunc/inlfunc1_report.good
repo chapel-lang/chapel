@@ -70,6 +70,7 @@ chapel compiler: reporting inlining, _inst___ddata_this function was inlined
 chapel compiler: reporting inlining, _inst___ddata_this function was inlined
 chapel compiler: reporting inlining, ! function was inlined
 chapel compiler: reporting inlining, ! function was inlined
+chapel compiler: reporting inlining, ! function was inlined
 chapel compiler: reporting inlining, __aseq__stride function was inlined
 chapel compiler: reporting inlining, > function was inlined
 chapel compiler: reporting inlining, __aseq__low function was inlined
