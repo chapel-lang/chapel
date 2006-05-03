@@ -63867,3 +63867,18 @@ Modified files:
 	chapel/test/functions/jplevyak/: zeroarity-bound-error-1.good 
 	                                 zeroarity-bound-error-2.good 
 
+---------------------------------------------------------------------------
+
+05/03/06 09:12:21 -- shannon
+
+Log message:
+	Refactored the handling of the math routines I've added
+	so far.  Added a function that contained the body of the
+	case statement which was identical for this group of
+	functions that take a double arg and return a double.
+	Added an array of function pointers which are indexed
+	with the corresponding PrimOp.
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+
