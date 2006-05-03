@@ -499,16 +499,6 @@ bool ArgSymbol::requiresCPtr(void) {
 }
 
 
-bool ArgSymbol::requiresCopyBack(void) {
-  return intent == INTENT_OUT || intent == INTENT_INOUT;
-}
-
-
-bool ArgSymbol::requiresCTmp(void) {
-  return type->requiresCParamTmp(intent);
-}
-
-
 bool ArgSymbol::isConst(void) {
   return intent == INTENT_BLANK || intent == INTENT_CONST;
 }

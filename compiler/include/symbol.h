@@ -130,8 +130,6 @@ class ArgSymbol : public Symbol {
   virtual void traverseDefSymbol(Traversal* traverse);
 
   bool requiresCPtr(void);
-  bool requiresCopyBack(void);
-  bool requiresCTmp(void);
   bool isConst(void);
   bool isRef(void);
 
