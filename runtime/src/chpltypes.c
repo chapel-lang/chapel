@@ -94,13 +94,14 @@ char* _chpl_tostring_complex(_complex128 x, char* format) {
 }
 
 
-_string _chpl_string_concat(_string x, _string y) {
+_string
+string_concat(_string x, _string y) {
   return _glom_strings(2, x, y);
 }
 
 
 _string
-_chpl_string_strided_select(_string x, int low, int high, int stride) {
+string_strided_select(_string x, int low, int high, int stride) {
   _string result =
     _chpl_malloc((high - low + 2), sizeof(char), "_chpl_string_strided_select temp");
   _string src = x + low - 1;
@@ -114,19 +115,20 @@ _chpl_string_strided_select(_string x, int low, int high, int stride) {
 }
 
 _string
-_chpl_string_select(_string x, int low, int high) {
-  return _chpl_string_strided_select(x, low, high, 1);
+string_select(_string x, int low, int high) {
+  return string_strided_select(x, low, high, 1);
 }
 
 _string
-_chpl_string_index(_string x, int i) {
+string_index(_string x, int i) {
   char buffer[2];
   sprintf(buffer, "%c", x[i-1]);
   return _glom_strings(1, buffer);
 }
 
 
-_bool _chpl_string_equal(_string x, _string y) {
+_bool
+string_equal(_string x, _string y) {
   if (!strcmp(x, y)) {
     return true;
   } else {
@@ -135,15 +137,7 @@ _bool _chpl_string_equal(_string x, _string y) {
 }
 
 
-_bool _chpl_string_notequal(_string x, _string y) {
-  if (strcmp(x, y)) {
-    return true;
-  } else {
-    return false;
-  }
-}
-
-
-_int64 _chpl_string_length(_string x) {
+_int64
+string_length(_string x) {
   return strlen(x);
 }

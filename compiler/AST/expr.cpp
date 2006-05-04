@@ -640,7 +640,7 @@ void CallExpr::codegen(FILE* outfile) {
   if (isPrimitive()) {
     switch (primitive->tag) {
     case PRIMITIVE_UNKNOWN:
-      fprintf(outfile, "_chpl_%s(", primitive->name);
+      fprintf(outfile, "%s(", primitive->name);
       if (!strcmp(primitive->name, "array_init")) {
         Type* elt_type = argList->last()->typeInfo();
         elt_type->symbol->codegen(outfile);

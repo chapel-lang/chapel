@@ -1,9 +1,9 @@
 #ifndef _chplrt_H_
 #define _chplrt_H_
 
-#define _chpl_array_index(x, i) ((x)->_data[i])
-#define _chpl_array_set(x, i, v) ((x)->_data[i] = v)
-#define _chpl_array_init(type, x, size, v)                      \
+#define array_index(x, i) ((x)->_data[i])
+#define array_set(x, i, v) ((x)->_data[i] = v)
+#define array_init(type, x, size, v)                            \
   {                                                             \
     (x)->_data = _chpl_malloc(size, sizeof(type), "_data");     \
     int _a_i;                                                   \

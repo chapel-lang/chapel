@@ -35,12 +35,11 @@ char* _chpl_tostring_int(_int64 x, char* format);
 char* _chpl_tostring_float(_float64 x, char* format);
 char* _chpl_tostring_complex(_complex128 x, char* format);
 
-_string _chpl_string_concat(_string x, _string y);
-_string _chpl_string_index(_string x, int i);
-_string _chpl_string_select(_string x, int low, int high);
-_string _chpl_string_strided_select(_string x, int low, int high, int stride);
-_bool _chpl_string_equal(_string x, _string y);
-_bool _chpl_string_notequal(_string x, _string y);
-_int64 _chpl_string_length(_string x);
+_string string_concat(_string x, _string y);
+_string string_index(_string x, int i);
+_string string_select(_string x, int low, int high);
+_string string_strided_select(_string x, int low, int high, int stride);
+_bool string_equal(_string x, _string y);
+_int64 string_length(_string x);
 
 #endif
