@@ -9,7 +9,8 @@
 #include "symtab.h"
 #include "../passes/pass.h"
 #include "../traversals/htmlview.h"
-#include "../traversals/verify.h"
+
+void verify();
 
 bool printPasses = false;
 
@@ -64,8 +65,7 @@ static void runPass(char *passName, void (*pass)(void)) {
     fflush(html_index_file);
   }
 
-  Verify* verify = new Verify();
-  verify->run(Symboltable::getModules(MODULES_ALL));
+  verify();
 }
 
 

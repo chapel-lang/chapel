@@ -48,7 +48,7 @@ class Symbol : public BaseAST {
   bool isUnresolved;
 
   Symbol(astType_t astType, char* init_name, Type* init_type = dtUnknown);
-  virtual void verify(void); 
+  virtual void verify(); 
   void setParentScope(SymScope* init_parentScope);
   COPY_DEF(Symbol);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -78,7 +78,7 @@ class Symbol : public BaseAST {
 class UnresolvedSymbol : public Symbol {
  public:
   UnresolvedSymbol(char* init_name, char* init_cname = NULL);
-  virtual void verify(void); 
+  virtual void verify(); 
   COPY_DEF(UnresolvedSymbol);
 
   virtual void traverseDefSymbol(Traversal* traverse);
@@ -99,7 +99,7 @@ class VarSymbol : public Symbol {
   VarSymbol(char* init_name, Type* init_type = dtUnknown,
             varType init_varClass = VAR_NORMAL, 
             consType init_consClass = VAR_VAR);
-  virtual void verify(void); 
+  virtual void verify(); 
   COPY_DEF(VarSymbol);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void traverseDefSymbol(Traversal* traverse);
@@ -124,7 +124,7 @@ class ArgSymbol : public Symbol {
 
   ArgSymbol(intentTag iIntent, char* iName, Type* iType,
             Expr* iDefaultExpr = NULL, Expr* iVariableExpr = NULL);
-  virtual void verify(void); 
+  virtual void verify(); 
   COPY_DEF(ArgSymbol);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void traverseDefSymbol(Traversal* traverse);
@@ -144,7 +144,7 @@ class TypeSymbol : public Symbol {
   Type *definition;
 
   TypeSymbol(char* init_name, Type* init_definition);
-  virtual void verify(void); 
+  virtual void verify(); 
   COPY_DEF(TypeSymbol);
   TypeSymbol* clone(ASTMap* map);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -187,7 +187,7 @@ class FnSymbol : public Symbol {
 
   FnSymbol(char* initName, TypeSymbol* initTypeBinding = NULL);
            
-  virtual void verify(void); 
+  virtual void verify(); 
   COPY_DEF(FnSymbol);
   virtual FnSymbol* getFnSymbol(void);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -215,7 +215,7 @@ class FnSymbol : public Symbol {
 class EnumSymbol : public Symbol {
  public:
   EnumSymbol(char* init_name);
-  virtual void verify(void); 
+  virtual void verify(); 
   COPY_DEF(EnumSymbol);
   virtual void traverseDefSymbol(Traversal* traverse);
   void codegenDef(FILE* outfile);
@@ -239,7 +239,7 @@ class ModuleSymbol : public Symbol {
   SymScope* modScope;
 
   ModuleSymbol(char* init_name, modType init_modtype);
-  virtual void verify(void); 
+  virtual void verify(); 
   COPY_DEF(ModuleSymbol);
   void setModScope(SymScope* init_modScope);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -256,7 +256,7 @@ class ModuleSymbol : public Symbol {
 class LabelSymbol : public Symbol {
  public:
   LabelSymbol(char* init_name);
-  virtual void verify(void); 
+  virtual void verify(); 
   COPY_DEF(LabelSymbol);
   virtual void codegenDef(FILE* outfile);
 };

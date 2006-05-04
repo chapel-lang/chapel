@@ -31,8 +31,10 @@ Type::Type(astType_t astType, Symbol* init_defaultVal) :
 }
 
 
-void Type::verify(void) {
-  INT_FATAL(this, "Type::verify() should never be called");
+void Type::verify() {
+  BaseAST::verify();
+  if (parentSymbol)
+    INT_FATAL(this, "Type has parentSymbol set");
 }
 
 
@@ -235,7 +237,8 @@ PrimitiveType::PrimitiveType(Symbol *init) :
 {}
 
 
-void PrimitiveType::verify(void) {
+void PrimitiveType::verify() {
+  Type::verify();
   if (astType != TYPE_PRIMITIVE) {
     INT_FATAL(this, "Bad PrimitiveType::astType");
   }
@@ -255,7 +258,8 @@ FnType::FnType(void) :
 {}
 
 
-void FnType::verify(void) {
+void FnType::verify() {
+  Type::verify();
   if (astType != TYPE_FN) {
     INT_FATAL(this, "Bad FnType::astType");
   }
@@ -281,7 +285,8 @@ EnumType::EnumType(AList<DefExpr>* init_constants) :
 { }
 
 
-void EnumType::verify(void) {
+void EnumType::verify() {
+  Type::verify();
   if (astType != TYPE_ENUM) {
     INT_FATAL(this, "Bad EnumType::astType");
   }
@@ -479,7 +484,8 @@ LiteralType::LiteralType(VarSymbol* init_literal) :
 { }
 
 
-void LiteralType::verify(void) {
+void LiteralType::verify() {
+  Type::verify();
   if (astType != TYPE_LITERAL) {
     INT_FATAL(this, "Bad LiteralType::astType");
   }
@@ -560,7 +566,8 @@ UserType::UserType(Expr* init_typeExpr, Type* init_underlyingType, Expr* init_de
 {}
 
 
-void UserType::verify(void) {
+void UserType::verify() {
+  Type::verify();
   if (astType != TYPE_USER) {
     INT_FATAL(this, "Bad UserType::astType");
   }
@@ -644,7 +651,8 @@ ClassType::ClassType(ClassTag initClassTag) :
 }
 
 
-void ClassType::verify(void) {
+void ClassType::verify() {
+  Type::verify();
   if (astType != TYPE_CLASS) {
     INT_FATAL(this, "Bad ClassType::astType");
   }
@@ -941,7 +949,8 @@ MetaType::MetaType(Type* init_base) :
 }
 
 
-void MetaType::verify(void) {
+void MetaType::verify() {
+  Type::verify();
   if (astType != TYPE_META) {
     INT_FATAL(this, "Bad MetaType::astType");
   }
@@ -960,7 +969,8 @@ SumType::SumType() :
 {
 }
 
-void SumType::verify(void) {
+void SumType::verify() {
+  Type::verify();
   if (astType != TYPE_SUM) {
     INT_FATAL(this, "Bad SumType::astType");
   }
@@ -992,7 +1002,8 @@ VariableType::VariableType(Type *init_type) :
 }
 
 
-void VariableType::verify(void) {
+void VariableType::verify() {
+  Type::verify();
   if (astType != TYPE_VARIABLE) {
     INT_FATAL(this, "Bad VariableType::astType");
   }

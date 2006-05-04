@@ -49,7 +49,7 @@ class Type : public BaseAST {
   ASTMap substitutions;
 
   Type(astType_t astType, Symbol* init_defaultVal);
-  virtual void verify(void); 
+  virtual void verify(); 
   COPY_DEF(Type);
   void addSymbol(TypeSymbol* newSymbol);
   Type *instantiate_generic(ASTMap &substitutions);
@@ -86,7 +86,7 @@ class Type : public BaseAST {
 class FnType : public Type {
  public:
   FnType(void);
-  virtual void verify(void); 
+  virtual void verify(); 
   virtual void codegen(FILE* outfile);
   virtual void codegenDef(FILE* outfile);
 };
@@ -97,7 +97,7 @@ class EnumType : public Type {
   AList<DefExpr>* constants; // EnumSymbols
 
   EnumType(AList<DefExpr>* init_constants);
-  virtual void verify(void); 
+  virtual void verify(); 
   COPY_DEF(EnumType);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
@@ -122,7 +122,7 @@ class LiteralType : public Type {
   VarSymbol *literal;
   
   LiteralType(VarSymbol *init_literal);
-  virtual void verify(void);
+  virtual void verify();
   COPY_DEF(LiteralType);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseDefType(Traversal* traversal);
@@ -142,7 +142,7 @@ class UserType : public Type {
   UserType(Type* init_underlyingType, Expr* init_defaultExpr = NULL);
   UserType(Expr* init_typeExpr, Expr* init_defaultExpr = NULL);
   UserType(Expr* init_typeExpr, Type* init_underlyingType, Expr* init_defaultExpr = NULL);
-  virtual void verify(void); 
+  virtual void verify(); 
   COPY_DEF(UserType);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseDefType(Traversal* traversal);
@@ -172,7 +172,7 @@ class ClassType : public Type {
   Vec<TypeSymbol*> types;
 
   ClassType(ClassTag initClassTag);
-  virtual void verify(void); 
+  virtual void verify(); 
   COPY_DEF(ClassType);
   void addDeclarations(AList<Stmt>* newDeclarations,
                        Stmt* afterStmt = NULL);
@@ -202,7 +202,7 @@ class MetaType : public Type {
 
   void traverseDefType(Traversal* traversal);
   MetaType(Type* init_base);
-  virtual void verify(void); 
+  virtual void verify(); 
 };
 
 class SumType : public Type {
@@ -210,7 +210,7 @@ class SumType : public Type {
   Vec<Type*> components;
 
   SumType();
-  virtual void verify(void); 
+  virtual void verify(); 
   void addType(Type* additionalType);
   virtual void codegenStructName(FILE* outfile);
   void codegenDef(FILE* outfile);
@@ -221,7 +221,7 @@ class VariableType : public Type {
   Type* type;
 
   VariableType(Type *init_type = NULL);
-  virtual void verify(void); 
+  virtual void verify(); 
   COPY_DEF(VariableType);
   void traverseDefType(Traversal* traversal);
   void codegen(FILE* outfile);
@@ -232,7 +232,7 @@ class PrimitiveType : public Type {
   Type *literalType;
 
   PrimitiveType(Symbol *init_defaultVal = NULL);
-  virtual void verify(void); 
+  virtual void verify(); 
   void traverseDefType(Traversal* traversal);
 };
 

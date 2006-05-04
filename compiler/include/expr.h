@@ -21,7 +21,7 @@ class Expr : public BaseAST {
   Expr(astType_t astType = EXPR);
   COPY_DEF(Expr);
   virtual void callReplaceChild(BaseAST* new_ast);
-  virtual void verify(void); 
+  virtual void verify(); 
   virtual void traverse(Traversal* traversal, bool atTop = true);
   virtual void traverseDef(Traversal* traversal, bool atTop = true);
   virtual void traverseExpr(Traversal* traversal);
@@ -48,7 +48,7 @@ class DefExpr : public Expr {
   DefExpr(Symbol* initSym = NULL,
           Expr* initInit = NULL,
           Expr* initExprType = NULL);
-  virtual void verify(void); 
+  virtual void verify(); 
   COPY_DEF(DefExpr);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
@@ -68,7 +68,7 @@ class SymExpr : public Expr {
   SymExpr(char* init_var);
   COPY_DEF(SymExpr);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  virtual void verify(void); 
+  virtual void verify(); 
   void traverseExpr(Traversal* traversal);
 
   Type* typeInfo(void);
@@ -97,7 +97,7 @@ class CallExpr : public Expr {
            BaseAST* arg3 = NULL);
   CallExpr(char* name, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
            BaseAST* arg3 = NULL, BaseAST* arg4 = NULL);
-  virtual void verify(void); 
+  virtual void verify(); 
   COPY_DEF(CallExpr);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -135,7 +135,7 @@ class CastExpr : public Expr {
 
   CastExpr(Expr* initExpr, Type* initType, Expr* initNewType = NULL);
   CastExpr(Symbol* initExpr, Type* initType, Expr* initNewType = NULL);
-  virtual void verify(void); 
+  virtual void verify(); 
   COPY_DEF(CastExpr);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
@@ -152,7 +152,7 @@ class NamedExpr : public Expr {
   char* name;
   Expr* actual;
   NamedExpr(char* init_name, Expr* init_actual);
-  virtual void verify(void); 
+  virtual void verify(); 
   COPY_DEF(NamedExpr);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);
@@ -177,7 +177,7 @@ class ImportExpr : public Expr {
   Map<char*,char*>* renameList; // only clause
   Vec<char*>* exceptList;       // except clause
   ImportExpr(ImportTag initImportTag, Expr* initExpr);
-  virtual void verify(void); 
+  virtual void verify(); 
   COPY_DEF(ImportExpr);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void traverseExpr(Traversal* traversal);

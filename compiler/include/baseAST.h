@@ -117,6 +117,8 @@ class BaseAST : public gc {
   virtual void traverse(Traversal* traversal, bool atTop = true);
   virtual void traverseDef(Traversal* traversal, bool atTop = true);
 
+  virtual void verify(); 
+
   virtual void print(FILE* outfile);
   virtual void printDef(FILE* outfile);
   void println(FILE* outfile);

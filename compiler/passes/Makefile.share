@@ -15,7 +15,8 @@ PASSES_SRCS = \
 	runAnalysis.cpp \
 	runInterpreter.cpp \
         scopeResolve.cpp \
-        semanticChecks.cpp
+        semanticChecks.cpp \
+        verify.cpp
 
 CVS_SRCS = $(PASSES_SRCS)
 SRCS = $(CVS_SRCS)

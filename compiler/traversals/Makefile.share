@@ -4,7 +4,6 @@ TRAVERSALS_SRCS = \
         htmlview.cpp \
 	printAST.cpp \
 	traversal.cpp \
-        verify.cpp \
         view.cpp
 
 CVS_SRCS = $(TRAVERSALS_SRCS)

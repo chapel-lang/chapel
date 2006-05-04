@@ -24,8 +24,14 @@ Stmt::Stmt(astType_t astType) :
 {}
 
 
-void Stmt::verify(void) {
-  INT_FATAL(this, "Stmt::verify() should never be called");
+void Stmt::verify() {
+  BaseAST::verify();
+  if (!prev || !next) {
+    if (!dynamic_cast<BlockStmt*>(this) &&
+        !dynamic_cast<LabelStmt*>(parentStmt)) {
+      INT_FATAL(this, "Statement is not in a list");
+    }
+  }
 }
 
 
@@ -130,6 +136,7 @@ ExprStmt::ExprStmt(Expr* initExpr) :
 
 
 void ExprStmt::verify() {
+  Stmt::verify();
   if (astType != STMT_EXPR) {
     INT_FATAL(this, "Bad ExprStmt::astType");
   }
@@ -199,6 +206,7 @@ ReturnStmt::ReturnStmt(char* initExpr, bool init_yield) :
 
 
 void ReturnStmt::verify() {
+  Stmt::verify();
   if (astType != STMT_RETURN) {
     INT_FATAL(this, "Bad ReturnStmt::astType");
   }
@@ -279,6 +287,7 @@ BlockStmt::BlockStmt(Stmt* init_body, BlockTag init_blockTag) :
 
 
 void BlockStmt::verify() {
+  Stmt::verify();
   if (astType != STMT_BLOCK) {
     INT_FATAL(this, "Bad BlockStmt::astType");
   }
@@ -489,6 +498,7 @@ CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
 
 
 void CondStmt::verify() {
+  Stmt::verify();
   if (astType != STMT_COND) {
     INT_FATAL(this, "Bad CondStmt::astType");
   }
@@ -588,6 +598,7 @@ WhenStmt::WhenStmt(AList<Expr>* init_caseExprs, AList<Stmt>* init_doStmt) :
 
 
 void WhenStmt::verify() {
+  Stmt::verify();
   if (astType != STMT_WHEN) {
     INT_FATAL(this, "Bad WhenStmt::astType");
   }
@@ -638,6 +649,7 @@ SelectStmt::SelectStmt(Expr* init_caseExpr, AList<WhenStmt>* init_whenStmts) :
 
 
 void SelectStmt::verify() {
+  Stmt::verify();
   if (astType != STMT_SELECT) {
     INT_FATAL(this, "Bad SelectStmt::astType");
   }
@@ -732,6 +744,7 @@ LabelStmt::LabelStmt(char* iDefLabel) :
 
 
 void LabelStmt::verify() {
+  Stmt::verify();
   if (astType != STMT_LABEL) {
     INT_FATAL(this, "Bad LabelStmt::astType");
   }
@@ -809,6 +822,7 @@ GotoStmt::GotoStmt(gotoType init_goto_type, Symbol* init_label) :
 
 
 void GotoStmt::verify() {
+  Stmt::verify();
   if (astType != STMT_GOTO) {
     INT_FATAL(this, "Bad GotoStmt::astType");
   }

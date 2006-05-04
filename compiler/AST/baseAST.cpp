@@ -70,6 +70,11 @@ void BaseAST::traverseDef(Traversal* traversal, bool atTop) {
 }
 
 
+void BaseAST::verify() {
+
+}
+
+
 void BaseAST::print(FILE* outfile) {
   if (!this) {
     INT_FATAL("Calling print() on a Null AST");

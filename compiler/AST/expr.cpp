@@ -26,8 +26,10 @@ Expr::copyInner(ASTMap* map) {
 }
 
 
-void Expr::verify(void) {
-  INT_FATAL(this, "Expr::verify() should never be called");
+void Expr::verify() {
+  BaseAST::verify();
+  if (!parentSymbol)
+    INT_FATAL(this, "Expr::parentSymbol is NULL");
 }
 
 
@@ -168,7 +170,8 @@ SymExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 void
-SymExpr::verify(void) {
+SymExpr::verify() {
+  Expr::verify();
   if (astType != EXPR_SYM)
     INT_FATAL(this, "Bad SymExpr::astType");
   if (!var)
@@ -241,7 +244,8 @@ DefExpr::DefExpr(Symbol* initSym, Expr* initInit, Expr* initExprType) :
 }
 
 
-void DefExpr::verify(void) {
+void DefExpr::verify() {
+  Expr::verify();
   if (astType != EXPR_DEF) {
     INT_FATAL(this, "Bad DefExpr::astType");
   }
@@ -429,6 +433,7 @@ CallExpr::CallExpr(char* name, BaseAST* arg1, BaseAST* arg2,
 
 
 void CallExpr::verify() {
+  Expr::verify();
   if (astType != EXPR_CALL) {
     INT_FATAL(this, "Bad CallExpr::astType");
   }
@@ -1028,6 +1033,7 @@ CastExpr::CastExpr(Symbol* initExpr, Type* initType, Expr* initNewType) :
 
 
 void CastExpr::verify() {
+  Expr::verify();
   if (astType != EXPR_CAST) {
     INT_FATAL(this, "Bad CastExpr::astType");
   }
@@ -1102,6 +1108,7 @@ NamedExpr::NamedExpr(char* init_name, Expr* init_actual) :
 
 
 void NamedExpr::verify() {
+  Expr::verify();
   if (astType != EXPR_NAMED) {
     INT_FATAL(this, "Bad NamedExpr::astType");
   }
@@ -1158,6 +1165,7 @@ ImportExpr::ImportExpr(ImportTag initImportTag, Expr* initExpr) :
 
 
 void ImportExpr::verify() {
+  Expr::verify();
   if (astType != EXPR_IMPORT) {
     INT_FATAL(this, "Bad ImportExpr::astType");
   }

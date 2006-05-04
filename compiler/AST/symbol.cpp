@@ -115,11 +115,25 @@ Symbol::Symbol(astType_t astType, char* init_name, Type* init_type) :
 {}
 
 
-void Symbol::verify(void) {
+void Symbol::verify() {
+  BaseAST::verify();
+  if (parentSymbol)
+    INT_FATAL(this, "Symbol has parentSymbol set");
   if (prev || next)
     INT_FATAL(this, "Symbol is in AList");
   if (defPoint && !defPoint->parentSymbol)
     INT_FATAL(this, "Symbol::defPoint is not in AST");
+  if (defPoint && this != defPoint->sym)
+    INT_FATAL(this, "Symbol::defPoint != Sym::defPoint->sym");
+  if (parentScope && strcmp(name, "")) {
+    bool found = false;
+    Symbol* match = Symboltable::lookupInScope(name, parentScope);
+    for (Symbol* tmp = match; tmp; tmp = tmp->overload)
+      if (this == tmp)
+        found = true;
+    if (!found)
+      INT_FATAL(this, "Incorrect Symbol::parentScope for '%s'", name);
+  }
 }
 
 
@@ -274,7 +288,7 @@ UnresolvedSymbol::UnresolvedSymbol(char* init_name, char* init_cname) :
 }
 
 
-void UnresolvedSymbol::verify(void) {
+void UnresolvedSymbol::verify() {
   Symbol::verify();
   if (astType != SYMBOL_UNRESOLVED) {
     INT_FATAL(this, "Bad UnresolvedSymbol::astType");
@@ -312,7 +326,7 @@ VarSymbol::VarSymbol(char* init_name,
 { }
 
 
-void VarSymbol::verify(void) {
+void VarSymbol::verify() {
   Symbol::verify();
   if (astType != SYMBOL_VAR) {
     INT_FATAL(this, "Bad VarSymbol::astType");
@@ -446,7 +460,7 @@ ArgSymbol::ArgSymbol(intentTag iIntent, char* iName,
 }
 
 
-void ArgSymbol::verify(void) {
+void ArgSymbol::verify() {
   Symbol::verify();
   if (astType != SYMBOL_ARG) {
     INT_FATAL(this, "Bad ArgSymbol::astType");
@@ -546,11 +560,17 @@ TypeSymbol::TypeSymbol(char* init_name, Type* init_definition) :
 }
 
 
-void TypeSymbol::verify(void) {
+void TypeSymbol::verify() {
   Symbol::verify();
   if (astType != SYMBOL_TYPE) {
     INT_FATAL(this, "Bad TypeSymbol::astType");
   }
+  if (type->astType != TYPE_META)
+    INT_FATAL(this, "TypeSymbol::type is not a MetaType");
+  if (definition->symbol != this)
+    INT_FATAL(this, "TypeSymbol::definition->symbol != TypeSymbol");
+  if (definition->metaType != type)
+    INT_FATAL(this, "TypeSymbol::definition->meta_type != TypeSymbol::type");
   definition->verify();
 }
 
@@ -637,7 +657,7 @@ FnSymbol::FnSymbol(char* initName, TypeSymbol* initTypeBinding) :
 { }
 
 
-void FnSymbol::verify(void) {
+void FnSymbol::verify() {
   Symbol::verify();
   if (astType != SYMBOL_FN) {
     INT_FATAL(this, "Bad FnSymbol::astType");
@@ -1315,7 +1335,7 @@ EnumSymbol::EnumSymbol(char* init_name) :
 }
 
 
-void EnumSymbol::verify(void) {
+void EnumSymbol::verify() {
   Symbol::verify();
   if (astType != SYMBOL_ENUM) {
     INT_FATAL(this, "Bad EnumSymbol::astType");
@@ -1344,7 +1364,7 @@ ModuleSymbol::ModuleSymbol(char* init_name, modType init_modtype) :
 { }
 
 
-void ModuleSymbol::verify(void) {
+void ModuleSymbol::verify() {
   Symbol::verify();
   if (astType != SYMBOL_MODULE) {
     INT_FATAL(this, "Bad ModuleSymbol::astType");
@@ -1436,7 +1456,7 @@ LabelSymbol::LabelSymbol(char* init_name) :
 }
 
 
-void LabelSymbol::verify(void) {
+void LabelSymbol::verify() {
   Symbol::verify();
   if (astType != SYMBOL_LABEL) {
     INT_FATAL(this, "Bad LabelSymbol::astType");
