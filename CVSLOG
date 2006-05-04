@@ -63944,3 +63944,27 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 	chapel/compiler/include/: symbol.h 
 
+---------------------------------------------------------------------------
+
+05/04/06 09:07:29 -- deitz
+
+Log message:
+	Removed secondary passlist execution mechanism, associated --passlist
+	compiler option, and related passlist parsing code.  Added a function
+	pointer to the PassInfo struct.  It is no longer necessary to register
+	a pass in passlist.cpp.  Removed passlist.cpp.  To add a pass to the
+	compiler simply add the function call to the passlist.  It is probably
+	also necessary to prototype the function in passlist.h which is done
+	for all the passes that are currently there.
+	
+	Removed regressing passlist test.
+
+Modified files:
+	chapel/compiler/main/: driver.cpp passlist.h runpasses.cpp 
+	                       runpasses.h 
+Removed files:
+	chapel/compiler/main/: passlist.cpp 
+	chapel/test/compflags/bradc/passlist/: COMPOPTS NOEXEC 
+	                                       passlist.h test.chpl 
+	                                       test.good 
+
