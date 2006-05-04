@@ -63968,3 +63968,21 @@ Removed files:
 	                                       passlist.h test.chpl 
 	                                       test.good 
 
+---------------------------------------------------------------------------
+
+05/04/06 14:13:56 -- deitz
+
+Log message:
+	Switched all but atan2 and exp math functions to use the inline pragma
+	rather than the no codegen and rename pragmas.
+	
+	Made code generation of "unknown" primitives (primitives not
+	special-cased by the compiler) generate simply the name of the
+	primitive rather than prepending _chpl_ to it.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/modules/standard/: _chpl_math.chpl 
+	chapel/runtime/include/: chplrt.h chpltypes.h 
+	chapel/runtime/src/: chpltypes.c 
+
