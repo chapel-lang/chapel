@@ -63986,3 +63986,25 @@ Modified files:
 	chapel/runtime/include/: chplrt.h chpltypes.h 
 	chapel/runtime/src/: chpltypes.c 
 
+---------------------------------------------------------------------------
+
+05/04/06 16:37:08 -- deitz
+
+Log message:
+	Refactored verify() so that it is no longer a traversal, but now a
+	function.  All the code that does the verification is now in the
+	verify methods of BaseAST things.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp stmt.cpp symbol.cpp 
+	                      type.cpp 
+	chapel/compiler/include/: baseAST.h expr.h stmt.h symbol.h 
+	                          type.h 
+	chapel/compiler/main/: runpasses.cpp 
+	chapel/compiler/passes/: Makefile.share 
+	chapel/compiler/traversals/: Makefile.share 
+Added files:
+	chapel/compiler/passes/: verify.cpp 
+Removed files:
+	chapel/compiler/traversals/: verify.cpp verify.h 
+
