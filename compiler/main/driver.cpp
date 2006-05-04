@@ -29,7 +29,6 @@ static void interpreter_insert_mode(ArgumentState* arg_state, char* arg_unused);
 FILE* html_index_file = NULL;
 
 int fdump_html = 0;
-static char passlist_filename[FILENAME_MAX] = "";
 static char libraryFilename[FILENAME_MAX] = "";
 static char log_flags[512] = "";
 static bool rungdb = false;
@@ -65,7 +64,6 @@ static ArgumentDescription arg_desc[] = {
  {"nostdincs-but-file", ' ', "No Standard Includes but File", "T", &fnostdincs_but_file, "CHPL_NOSTDINCS_BUT_FILE", NULL},
  {"analysis-errors", ' ', "Pass Back Analysis Errors", "T", &fanalysis_errors, "CHPL_ANALYSIS_ERRORS", NULL},
  {"premalloc", 'm', "Pre-Malloc", "I", &pre_malloc, "CHPL_PRE_MALLOC", NULL},
- {"passlist", ' ', "Passlist Filename", "P", passlist_filename, "CHPL_PASSLIST", NULL},
  {"sysdir", 'S', "System Directory", "P", system_dir, "CHPL_SYSTEM_DIR", NULL},
  {"print-call-depth", 'C', "Print Calls to this Depth", "I", &print_call_depth, "CHPL_PRINT_CALL_DEPTH", NULL},
  {"constant-limit", ' ', "# of Constants Propagated", "I", &num_constants_per_variable, 
@@ -194,7 +192,7 @@ compile_all(void) {
   initPrimitiveTypes();
   initPrimitive();
   testInputFiles(arg_state.nfile_arguments, arg_state.file_argument);
-  runPasses(passlist_filename);
+  runPasses();
 }
 
 static void

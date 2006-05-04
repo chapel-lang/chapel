@@ -8,31 +8,19 @@
 #include "stringutil.h"
 #include "symtab.h"
 #include "../passes/pass.h"
+#include "../traversals/htmlview.h"
+#include "../traversals/verify.h"
 
 bool printPasses = false;
 
 struct PassInfo {
-  char* name;
+  void (*fn)(void);
+  char *name;
 };
 
-#define START_PASSLIST_REGISTRATION \
-  static void (*stringToPass(char* passname))(void) {
-
-#define STOP_PASSLIST_REGISTRATION \
-  INT_FATAL("Couldn't find a pass named %s", passname); \
-  return NULL; \
-}
-
-#define REGISTER(pass) \
-  if (strcmp(passname, #pass) == 0) { \
-    return &pass; \
-  }
-
-#include "passlist.cpp"  
-
-#define FIRST {NULL}
-#define LAST {NULL}
-#define RUN(x) {#x}
+#define FIRST {NULL, NULL}
+#define LAST {NULL, NULL}
+#define RUN(x) {x, #x}
 #include "passlist.h"
 
 
@@ -81,37 +69,6 @@ static void runPass(char *passName, void (*pass)(void)) {
 }
 
 
-static void parsePassFile(char* passfilename) {
-  FILE* passfile = openInputFile(passfilename);
-  char passname[80] = "";
-  int readPass;
-  bool readLastPass;
-  do {
-    readPass = fscanf(passfile, "%s", passname);
-  } while (readPass == 1 && strcmp(passname, "FIRST,") != 0);
-  do {
-    readPass = fscanf(passfile, "%s", passname);
-    readLastPass = strcmp(passname, "LAST") == 0;
-    if (!readLastPass) {
-      if (strncmp(passname, "//", 2) == 0) {
-        char nextChar;
-        do {
-          fscanf(passfile, "%c", &nextChar);
-        } while (nextChar != '\n');
-      } else if (strncmp(passname, "RUN(", 4) != 0) {
-        fail("ill-formed passname: %s", passname);
-      } else {
-        char* passnameStart = passname + 4; // 4 == strlen("RUN(")
-        int passnameLen = strlen(passnameStart);
-        passnameStart[passnameLen-2] = '\0'; // overwrite ),
-        runPass(passnameStart, stringToPass(passnameStart));
-      }
-    }
-  } while (readPass == 1 && !readLastPass);
-  closeInputFile(passfile);
-}
-
-
 void dump_index_header(FILE* f) {
   fprintf(f, "<HTML>\n");
   fprintf(f, "<HEAD>\n");
@@ -132,30 +89,21 @@ void dump_index_footer(FILE* f) {
 }
 
 
-void runPasses(char* passfilename) {
+void runPasses(void) {
   if (fdump_html) {
     html_index_file = fopen(stringcat(log_dir, "index.html"), "w");
     dump_index_header(html_index_file);
     fprintf(html_index_file, "<TABLE CELLPADDING=\"0\" CELLSPACING=\"0\">");
   }
-  if (strcmp(passfilename, "") == 0) {
-    PassInfo* pass = passlist+1;  // skip over FIRST
-    
-    while (pass->name != NULL) {
-      runPass(pass->name, stringToPass(pass->name));
-      check_fatal_errors_encountered();
-      pass++;
-    }
-  } else {
-    parsePassFile(passfilename);
+  PassInfo* pass = passlist+1;  // skip over FIRST
+  while (pass->name != NULL) {
+    runPass(pass->name, pass->fn);
+    check_fatal_errors_encountered();
+    pass++;
   }
   if (fdump_html) {
     fprintf(html_index_file, "</TABLE>");
     dump_index_footer(html_index_file);
     fclose(html_index_file);
   }
-}
-
-void passlistTest(void) {
-  printf("Passlist test successful\n");
 }

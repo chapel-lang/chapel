@@ -1,13 +1,23 @@
 #ifndef _PASSLIST_H_
 #define _PASSLIST_H_
 
-/* This is the default list of passes that will be run by the
-   compiler.  The passes shown will be run in the order shown.
-
-   This file may be saved and fed to the compiler using the
-   --passlist argument to specify a different set of passes
-   dynamically.
-*/
+void parse();
+void check_parsed();
+void parallel();
+void cleanup();
+void scopeResolve();
+void normalize();
+void check_normalized();
+void build_default_functions();
+void functionResolution();
+void runInterpreter();
+void runAnalysis();
+void resolve_analyzed();
+void check_resolved();
+void flattenFunctions();
+void inlineFunctions();
+void copy_propagation();
+void codegen();
 
 PassInfo passlist[] = {
   FIRST,
