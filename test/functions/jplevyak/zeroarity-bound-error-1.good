@@ -1,4 +1,3 @@
-error: '_tmp' has no type
 zeroarity-bound-error-1.chpl:9: illegal call argument type '_methodToken' illegal: ( _methodTokenType ) 
 zeroarity-bound-error-1.chpl:9: illegal call argument type 'stdout' illegal: ( file ) 
 zeroarity-bound-error-1.chpl:9: illegal call argument type 'c' illegal: ( C ) 
@@ -41,6 +40,7 @@ zeroarity-bound-error-1.chpl:1: fwrite, f : file, val : C
 zeroarity-bound-error-1.chpl:9: unresolved call 'g'
 note: candidates are:
 zeroarity-bound-error-1.chpl:3: g, _methodTokenDummy : _methodTokenType, this : C
+zeroarity-bound-error-1.chpl:9: '_tmp' has no type
 zeroarity-bound-error-1.chpl:9: expression has no type
 zeroarity-bound-error-1.chpl:9: expression has no type
 fail: program does not type

@@ -1,5 +1,8 @@
  called from 24 in __init_danglingelse at danglingelse.chpl:3
  called from 27 in __init_danglingelse at danglingelse.chpl:3
+::__init_danglingelse(danglingelse.chpl:3) ( __init_danglingelse (danglingelse.chpl:3) )
+::_assignplus3(danglingelse.chpl:24) ( _assignplus3 )
+::_assignplus4(danglingelse.chpl:27) ( _assignplus4 )
 ::_lhs(danglingelse.chpl:24) ( int64 )
 ::_lhs(danglingelse.chpl:27) ( int64 )
 ::_tmp(danglingelse.chpl:24) ( int64 )
@@ -7,6 +10,7 @@
 ::a(danglingelse.chpl:2) ( int64 )
 ::b(danglingelse.chpl:4) ( )
 ::b(danglingelse.chpl:4) ( int64 )
+::main(danglingelse.chpl:3) ( main (danglingelse.chpl:3) )
 function __init_danglingelse danglingelse.chpl:3
 function _assignplus3 danglingelse.chpl:24
 function _assignplus4 danglingelse.chpl:27

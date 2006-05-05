@@ -2,6 +2,11 @@
  called from 16 in __init_whileLoop at whileLoop.chpl:23
  called from 21 in __init_whileLoop at whileLoop.chpl:23
  called from 5 in __init_whileLoop at whileLoop.chpl:23
+::__init_whileLoop(whileLoop.chpl:23) ( __init_whileLoop (whileLoop.chpl:23) )
+::_assignplus3(whileLoop.chpl:5) ( _assignplus3 )
+::_assignplus4(whileLoop.chpl:10) ( _assignplus4 )
+::_assignplus5(whileLoop.chpl:16) ( _assignplus5 )
+::_assignplus6(whileLoop.chpl:21) ( _assignplus6 )
 ::_lhs(whileLoop.chpl:10) ( int64 )
 ::_lhs(whileLoop.chpl:16) ( int64 )
 ::_lhs(whileLoop.chpl:21) ( int64 )
@@ -11,6 +16,7 @@
 ::_tmp(whileLoop.chpl:21) ( int64 )
 ::_tmp(whileLoop.chpl:5) ( int64 )
 ::i(whileLoop.chpl:1) ( int64 )
+::main(whileLoop.chpl:23) ( main (whileLoop.chpl:23) )
 function __init_whileLoop whileLoop.chpl:23
 function _assignplus3 whileLoop.chpl:5
 function _assignplus4 whileLoop.chpl:10

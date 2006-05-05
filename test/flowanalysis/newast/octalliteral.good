@@ -1,3 +1,5 @@
+::__init_octalliteral(octalliteral.chpl:3) ( __init_octalliteral (octalliteral.chpl:3) )
+::main(octalliteral.chpl:3) ( main (octalliteral.chpl:3) )
 ::x(octalliteral.chpl:1) ( int64 )
 function __init_octalliteral octalliteral.chpl:3
 function main octalliteral.chpl:3

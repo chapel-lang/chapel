@@ -1,6 +1,8 @@
+::__init_pareninit(pareninit.chpl:4) ( __init_pareninit (pareninit.chpl:4) )
 ::_defTmp1(pareninit.chpl:2) ( int64 )
 ::_defTmp2(pareninit.chpl:2) ( int64 )
 ::_tmp(pareninit.chpl:2) ( int64 )
+::main(pareninit.chpl:4) ( main (pareninit.chpl:4) )
 ::x(pareninit.chpl:1) ( int64 )
 ::y(pareninit.chpl:2) ( int64 )
 function __init_pareninit pareninit.chpl:4

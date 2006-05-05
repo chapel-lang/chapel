@@ -36,6 +36,7 @@ extern bool developer;
 extern int num_constants_per_variable;
 
 extern bool ignore_errors;
+extern int squelch_header_errors;
 
 extern bool parallelPass;
 extern int scalar_promotion;

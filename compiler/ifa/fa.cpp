@@ -2231,16 +2231,16 @@ show_violations(FA *fa, FILE *fp) {
     vv.add(v);
   qsort(vv.v, vv.n, sizeof(vv.v[0]), compar_tv);
   forv_ATypeViolation(v, vv) if (v) {
-    if (v->send && v->send->var->def->code->line() > 0)
+    if (v->send && v->send->var->def->code->source_line() > 0)
       fprintf(fp, "%s:%d: ", v->send->var->def->code->filename(), 
-              v->send->var->def->code->line());
-    else if (v->av->var->sym->ast && v->av->var->sym->line() > 0)
+              v->send->var->def->code->source_line());
+    else if (v->av->var->sym->ast && v->av->var->sym->source_line() > 0)
       fprintf(fp, "%s:%d: ", v->av->var->sym->filename(), 
-              v->av->var->sym->line());
+              v->av->var->sym->source_line());
     else if (!v->av->contour_is_entry_set && v->av->contour != GLOBAL_CONTOUR) {
       CreationSet *cs = (CreationSet*)v->av->contour;
       fprintf(fp, "%s:%d: class %s:: ", 
-              cs->sym->filename(), cs->sym->line(), cs->sym->name);     
+              cs->sym->filename(), cs->sym->source_line(), cs->sym->name);     
     } else
       fprintf(fp, "error: ");
     switch (v->kind) {

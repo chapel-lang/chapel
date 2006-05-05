@@ -1,3 +1,5 @@
+::__init_deadvar(deadvar.chpl:4) ( __init_deadvar (deadvar.chpl:4) )
+::main(deadvar.chpl:4) ( main (deadvar.chpl:4) )
 ::x(deadvar.chpl:1) ( int64 )
 ::y(deadvar.chpl:2) ( int64 )
 function __init_deadvar deadvar.chpl:4

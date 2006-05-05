@@ -1,6 +1,7 @@
 ::D1(declprintdom.chpl:5) ( _aseq )
 ::D2(declprintdom.chpl:6) ( _aseq )
 ::D3(declprintdom.chpl:7) ( _aseq )
+::__init_declprintdom(declprintdom.chpl:11) ( __init_declprintdom (declprintdom.chpl:11) )
 ::_defTmp1(declprintdom.chpl:5) ( _aseq )
 ::_defTmp1(declprintdom.chpl:6) ( _aseq )
 ::_defTmp1(declprintdom.chpl:7) ( _aseq )
@@ -10,6 +11,7 @@
 ::m1(declprintdom.chpl:1) ( int64 )
 ::m2(declprintdom.chpl:2) ( int64 )
 ::m3(declprintdom.chpl:3) ( int64 )
+::main(declprintdom.chpl:11) ( main (declprintdom.chpl:11) )
 function __init_declprintdom declprintdom.chpl:11
 function main declprintdom.chpl:11
 globals

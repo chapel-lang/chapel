@@ -116,7 +116,7 @@ int
 ASymbol::source_line() {
   if (symbol) {
     ModuleSymbol *m = symbol->getModule();
-    if (m && m->modtype == MOD_USER)
+    if (!squelch_header_errors || (m && m->modtype == MOD_USER))
       return symbol->lineno;
   }
   return 0;
@@ -147,7 +147,7 @@ AAST::line() {
 int
 AAST::source_line() {
   ModuleSymbol *m = xast->getModule();
-  if (m && m->modtype == MOD_USER)
+  if (!squelch_header_errors || (m && m->modtype == MOD_USER))
     return line();
   return 0;
 }
@@ -1768,7 +1768,12 @@ gen_if1(BaseAST *ast) {
       s->ainfo->rval = sym;
       break;
     }
-    case EXPR_DEF: break;
+    case EXPR_DEF: {
+      DefExpr* s = dynamic_cast<DefExpr*>(ast);
+      if (s->sym->asymbol && !s->sym->asymbol->sym->ast)
+        s->sym->asymbol->sym->ast = s->ainfo;
+      break;
+    }
     case EXPR_CALL: {
       CallExpr* call = dynamic_cast<CallExpr*>(ast);
       if (call->isAssign()) {

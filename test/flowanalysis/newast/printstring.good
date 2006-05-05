@@ -1,3 +1,5 @@
+::__init_printstring(printstring.chpl:1) ( __init_printstring (printstring.chpl:1) )
+::main(printstring.chpl:1) ( main (printstring.chpl:1) )
 function __init_printstring printstring.chpl:1
 function main printstring.chpl:1
 globals

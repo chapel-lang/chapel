@@ -54,6 +54,7 @@ int num_constants_per_variable = 1;
 int instantiation_limit = 256;
 bool parallelPass = false;
 int scalar_promotion = 1;
+int squelch_header_errors = 0;
 
 static ArgumentDescription arg_desc[] = {
  {"interpreter", 'I', "Start Interpreter in Insert Mode", "T", &finterpreter_insert_mode, "CHPL_INTERPRETER_INSERT", interpreter_insert_mode},
@@ -105,6 +106,7 @@ static ArgumentDescription arg_desc[] = {
   "CHPL_PRINT_COMMANDS", NULL},
  {"parallel", 'p', "Parallelization Passes", "F", &parallelPass, "CHPL_PARALLELIZE", NULL},
  {"print-passes", ' ', "Print Passes", "F", &printPasses, "CHPL_PRINT_PASSES", NULL},
+ {"no-header-errors", ' ', "Squelch Header Errors", "T", &squelch_header_errors, "CHPL_SQUELCH_HEADER_ERRORS", NULL},
  {"version", ' ', "Show Version", NULL, NULL, NULL, version},
  {"copyright", ' ', "Show Copyright", NULL, NULL, NULL, copyright},
  {"help", 'h', "Help (show this list)", NULL, NULL, NULL, help},

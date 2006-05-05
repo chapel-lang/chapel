@@ -121,7 +121,7 @@ int
 Sym::source_line() {
   int l = 0;
   if (asymbol)
-    return asymbol->source_line();
+    l = asymbol->source_line();
   if (!l && ast)
     l = ast->source_line();
   return l;

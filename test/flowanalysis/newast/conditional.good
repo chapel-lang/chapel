@@ -1,3 +1,4 @@
+::__init_conditional(conditional.chpl:114) ( __init_conditional (conditional.chpl:114) )
 ::a(conditional.chpl:2) ( int64 )
 ::b(conditional.chpl:3) ( int64 )
 ::c(conditional.chpl:4) ( int64 )
@@ -6,6 +7,7 @@
 ::f(conditional.chpl:7) ( int64 )
 ::g(conditional.chpl:8) ( int64 )
 ::h(conditional.chpl:9) ( int64 )
+::main(conditional.chpl:114) ( main (conditional.chpl:114) )
 function __init_conditional conditional.chpl:114
 function main conditional.chpl:114
 globals

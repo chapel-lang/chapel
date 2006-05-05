@@ -1,4 +1,7 @@
  called from 5 in __init_noargs at noargs.chpl:5
+::__init_noargs(noargs.chpl:5) ( __init_noargs (noargs.chpl:5) )
+::foo(noargs.chpl:1) ( foo )
+::main(noargs.chpl:1) ( main (noargs.chpl:1) )
 function __init_noargs noargs.chpl:5
 function foo noargs.chpl:1
 function main noargs.chpl:1

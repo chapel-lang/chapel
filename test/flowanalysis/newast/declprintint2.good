@@ -1,3 +1,5 @@
+::__init_declprintint2(declprintint2.chpl:3) ( __init_declprintint2 (declprintint2.chpl:3) )
+::main(declprintint2.chpl:3) ( main (declprintint2.chpl:3) )
 ::myvariable(declprintint2.chpl:1) ( int64 )
 function __init_declprintint2 declprintint2.chpl:3
 function main declprintint2.chpl:3

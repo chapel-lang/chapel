@@ -27,7 +27,6 @@ _chpl_seq.chpl:244: fwrite, f : file, val : sum
 _chpl_seq.chpl:259: fwrite, f : file, val : max
 _chpl_sparse.chpl:16: fwrite, f : file, x : _sarray
 _chpl_sparse.chpl:1: fwrite, f : file, val : _sdomain
-error: '_tmp' has no type
 fail: program does not type
 note: candidates are:
 note: candidates are:
@@ -35,6 +34,7 @@ prelude.chpl:10: fwrite, f : file, val : CFILEPTR
 prelude.chpl:3: fwrite, f : file, val : object
 prelude.chpl:4: fwrite, f : file, val : value
 record_type_hierarchy-3-error.chpl:10: f, a : D
+record_type_hierarchy-3-error.chpl:16: '_tmp' has no type
 record_type_hierarchy-3-error.chpl:16: expression has no type
 record_type_hierarchy-3-error.chpl:16: expression has no type
 record_type_hierarchy-3-error.chpl:16: illegal call argument type '_tmp' illegal: ( ) 

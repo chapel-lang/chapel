@@ -1,8 +1,12 @@
  called from 10 in __init_chain at chain.chpl:11
  called from 11 in __init_chain at chain.chpl:11
  called from 3 in foo at chain.chpl:1
+::__init_chain(chain.chpl:11) ( __init_chain (chain.chpl:11) )
 ::a(chain.chpl:1) ( int64 )
 ::a(chain.chpl:6) ( int64 )
+::bar(chain.chpl:6) ( bar )
+::foo(chain.chpl:1) ( foo )
+::main(chain.chpl:6) ( main (chain.chpl:6) )
 function __init_chain chain.chpl:11
 function bar chain.chpl:6
 function foo chain.chpl:1

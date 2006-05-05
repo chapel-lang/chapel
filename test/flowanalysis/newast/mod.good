@@ -1,7 +1,9 @@
+::__init_test_mod(mod.chpl:21) ( __init_test_mod (mod.chpl:21) )
 ::_tmp(mod.chpl:14) ( int64 )
 ::_tmp(mod.chpl:20) ( int64 )
 ::answer(mod.chpl:5) ( int64 )
 ::m(mod.chpl:2) ( int64 )
+::main(mod.chpl:21) ( main (mod.chpl:21) )
 ::n(mod.chpl:3) ( int64 )
 ::o(mod.chpl:4) ( int64 )
 function __init_test_mod mod.chpl:21
