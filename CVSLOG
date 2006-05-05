@@ -64008,3 +64008,13 @@ Added files:
 Removed files:
 	chapel/compiler/traversals/: verify.cpp verify.h 
 
+---------------------------------------------------------------------------
+
+05/05/06 07:40:37 -- jplevyak
+
+Log message:
+	Do not test this directory (redundant)
+
+Added files:
+	chapel/test/flowanalysis/jplevyak/config/: NOTEST 
+
