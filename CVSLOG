@@ -64074,3 +64074,18 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+05/05/06 15:57:26 -- deitz
+
+Log message:
+	Flattened ReturnStmt so that all statements are subclasses of Stmt
+	similar to the 3-deep hierarchy for everything else.  It now goes
+	BaseAST--Stmt/Expr/Symbol/Type--all other subclasses.  This is work I
+	was doing earlier to eliminate the old traversal use.  Nothing was
+	gained with this extra level of hierarchy in this case only.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp stmt.cpp symbol.cpp 
+	chapel/compiler/include/: stmt.h 
+
