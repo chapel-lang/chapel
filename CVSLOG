@@ -64018,3 +64018,59 @@ Log message:
 Added files:
 	chapel/test/flowanalysis/jplevyak/config/: NOTEST 
 
+---------------------------------------------------------------------------
+
+05/05/06 07:43:40 -- jplevyak
+
+Log message:
+	add new option: --no-header-errors which squelches the
+	line numbers from header errors.  This can be used with
+	tests which fail to prevent frequent regressions.
+	
+	it isn't used for those tests in this checkin (I wanted
+	to make sure that the results were the same without it).
+	
+	However, next time (I/anyone) sees any of those files regresses,
+	(I/they) can just add --no-header-errors to the COMPOPTS file before
+	building the new .good for checkin.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: fa.cpp sym.cpp 
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/flowanalysis/newast/: COMPOPTS arithmetic_ops.good 
+	                                  assignment_expr.good 
+	                                  bitwise_assignment.good 
+	                                  bitwise_negation.good 
+	                                  bitwise_ops.good chain.good 
+	                                  codegen_test.good 
+	                                  compSampler.good 
+	                                  conditional.good 
+	                                  danglingelse.good deadvar.good 
+	                                  declprintdom.good 
+	                                  declprintint.good 
+	                                  declprintint2.good domarr.good 
+	                                  enum.good equality_ops.good 
+	                                  globalref.good 
+	                                  logical_and.good 
+	                                  logical_not.good mod.good 
+	                                  multiple_return.good 
+	                                  mutrec.good noargs.good 
+	                                  octalliteral.good onearg.good 
+	                                  pareninit.good printempty.good 
+	                                  printstring.good 
+	                                  relational_ops.good 
+	                                  sum_type-1.good 
+	                                  sum_type-2.good 
+	                                  unary_plusMinus.good 
+	                                  usebeforedef.good var.good 
+	                                  var2.good whileLoop.good 
+	                                  writen.good writetwo.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-1.good 
+	                                 zeroarity-bound-error-2.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
