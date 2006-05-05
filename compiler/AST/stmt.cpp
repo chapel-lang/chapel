@@ -182,27 +182,27 @@ bool ExprStmt::noCodegen() {
 }
 
 ReturnStmt::ReturnStmt(Expr* initExpr, bool init_yield) :
-  ExprStmt(initExpr),
+  Stmt(STMT_RETURN),
+  expr(initExpr),
   yield(init_yield)
 {
-  astType = STMT_RETURN;
   if (initExpr == NULL)
     expr = new SymExpr(gVoid);
+  if (expr && expr->parentSymbol)
+    INT_FATAL(this, "ReturnStmt initialized with expr already in tree");
 }
 
 ReturnStmt::ReturnStmt(Symbol* initExpr, bool init_yield) :
-  ExprStmt(new SymExpr(initExpr)),
+  Stmt(STMT_RETURN),
+  expr(new SymExpr(initExpr)),
   yield(init_yield)
-{
-  astType = STMT_RETURN;
-}
+{ }
 
 ReturnStmt::ReturnStmt(char* initExpr, bool init_yield) :
-  ExprStmt(new SymExpr(new UnresolvedSymbol(initExpr))),
+  Stmt(STMT_RETURN),
+  expr(new SymExpr(new UnresolvedSymbol(initExpr))),
   yield(init_yield)
-{
-  astType = STMT_RETURN;
-}
+{ }
 
 
 void ReturnStmt::verify() {
@@ -228,6 +228,20 @@ void ReturnStmt::verify() {
 ReturnStmt*
 ReturnStmt::copyInner(ASTMap* map) {
   return new ReturnStmt(COPY_INT(expr), yield);
+}
+
+
+void ReturnStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  if (old_ast == expr) {
+    expr = dynamic_cast<Expr*>(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in ReturnStmt::replaceChild");
+  }
+}
+
+
+void ReturnStmt::traverseStmt(Traversal* traversal) {
+  TRAVERSE(expr, traversal, false);
 }
 
 

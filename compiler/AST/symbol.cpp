@@ -863,8 +863,10 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
   update_symbols(wrapper->body, &copy_map);
   if (isMethod)
     call = make_method_call_partial(call);
-  wrapper->insertAtTail(
-    returns_void(this) ? new ExprStmt(call) : new ReturnStmt(call));
+  if (returns_void(this))
+    wrapper->insertAtTail(call);
+  else
+    wrapper->insertAtTail(new ReturnStmt(call));
   defPoint->parentStmt->insertAfter(new DefExpr(wrapper));
   reset_file_info(wrapper->defPoint->parentStmt, lineno, filename);
   add_dwcache(wrapper, this, defaults);

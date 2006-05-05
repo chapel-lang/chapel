@@ -52,14 +52,17 @@ class ExprStmt : public Stmt {
 };
 
 
-class ReturnStmt : public ExprStmt {
+class ReturnStmt : public Stmt {
  public:
+  Expr* expr;
   bool yield;
   ReturnStmt(Expr* initExpr = NULL, bool init_yield = false);
   ReturnStmt(Symbol* initExpr, bool init_yield = false);
   ReturnStmt(char* initExpr, bool init_yield = false);
   virtual void verify();
   COPY_DEF(ReturnStmt);
+  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  void traverseStmt(Traversal* traversal);
   void print(FILE* outfile);
   void codegenStmt(FILE* outfile);
   bool returnsVoid();

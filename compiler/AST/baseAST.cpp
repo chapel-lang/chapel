@@ -478,11 +478,11 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
   LStmtCommon:
     break;
   case STMT_EXPR:
-  LExprStmtCommon:
     AST_ADD_CHILD(ExprStmt, expr);
     goto LStmtCommon;
   case STMT_RETURN:
-    goto LExprStmtCommon;
+    AST_ADD_CHILD(ReturnStmt, expr);
+    goto LStmtCommon;
   case STMT_BLOCK:
     AST_ADD_LIST(BlockStmt, body, Stmt);
     goto LStmtCommon;
