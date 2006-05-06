@@ -64089,3 +64089,15 @@ Modified files:
 	chapel/compiler/AST/: baseAST.cpp stmt.cpp symbol.cpp 
 	chapel/compiler/include/: stmt.h 
 
+---------------------------------------------------------------------------
+
+05/06/06 06:27:50 -- shannon
+
+Log message:
+	Fixed an embarassing bug.  The math functions now work
+	again in the interpreter.  Removed a comment that
+	shouldn't have been committed.
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+
