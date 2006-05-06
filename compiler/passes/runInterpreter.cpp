@@ -1581,13 +1581,13 @@ convert_enum_to_int(ISlot *slot) {
 }
 
 void 
-execute_f64_fn_f64(CallExpr* s, ISlot** arg, ISlot result, 
+execute_f64_fn_f64(CallExpr* s, ISlot** arg, ISlot* result, 
                       double (*f64_fn_f64)(double)) {
   check_prim_args(s, 1);
   check_type(s, arg[0], dtFloat);
-  result.kind = IMMEDIATE_ISLOT;
-  result.imm = new Immediate;
-  result.imm->set_float64(f64_fn_f64(arg[0]->imm->v_float64));
+  result->kind = IMMEDIATE_ISLOT;
+  result->imm = new Immediate;
+  result->imm->set_float64(f64_fn_f64(arg[0]->imm->v_float64));
 }
 
 int
@@ -1916,10 +1916,9 @@ IFrame::iprimitive(CallExpr *s) {
     case PRIM_SINH:
     case PRIM_TAN:
     case PRIM_TANH:
-      execute_f64_fn_f64(s, arg, result, 
+      execute_f64_fn_f64(s, arg, &result, 
                          f64_fns_f64[kind - ARG_F64_RETURN_F64_START]);
       break;
-      // shannon takes two doubles, returns double
     case PRIM_ATAN2:
       check_prim_args(s, 2);
       check_type(s, arg[0], dtFloat);
