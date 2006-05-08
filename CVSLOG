@@ -64141,3 +64141,19 @@ Modified files:
 	chapel/compiler/symtab/: symtab.cpp 
 	chapel/compiler/traversals/: view.cpp 
 
+---------------------------------------------------------------------------
+
+05/08/06 13:22:05 -- deitz
+
+Log message:
+	Reworked CreateConfigVarTable as a short function called during code
+	generation.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/passes/: codegen.cpp 
+	chapel/compiler/traversals/: Makefile.share 
+Removed files:
+	chapel/compiler/traversals/: createConfigVarTable.cpp 
+	                             createConfigVarTable.h 
+
