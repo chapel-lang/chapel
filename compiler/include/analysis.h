@@ -51,7 +51,7 @@ class AError : public gc { public:
 
 void init_chapel_ifa();
 char *cannonicalize_string(char *);
-int AST_to_IF1(Vec<AList<Stmt> *> &stmts);      // -1 == error(s)
+int AST_to_IF1(Vec<BaseAST*>& syms);      // -1 == error(s)
 Type *type_info(BaseAST *a, Symbol *s = 0);     // NULL == error(s)
 Type *return_type_info(FnSymbol *fn);           // NULL == error(s)
 Type *element_type_info(TypeSymbol *t);         // NULL == error(s)

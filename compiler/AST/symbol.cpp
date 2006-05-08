@@ -22,8 +22,6 @@ Symbol *gVoid = 0;
 VarSymbol *gTrue = 0;
 VarSymbol *gFalse = 0;
 
-Vec<Symbol *> builtinSymbols;
-
 Vec<FnSymbol*> new_ast_functions;
 Vec<TypeSymbol*> new_ast_types;
 
@@ -121,7 +119,7 @@ void Symbol::verify() {
     INT_FATAL(this, "Symbol has parentSymbol set");
   if (prev || next)
     INT_FATAL(this, "Symbol is in AList");
-  if (defPoint && !defPoint->parentSymbol)
+  if (defPoint && !defPoint->parentSymbol && !dynamic_cast<ModuleSymbol*>(this))
     INT_FATAL(this, "Symbol::defPoint is not in AST");
   if (defPoint && this != defPoint->sym)
     INT_FATAL(this, "Symbol::defPoint != Sym::defPoint->sym");

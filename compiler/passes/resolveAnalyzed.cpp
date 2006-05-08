@@ -87,7 +87,8 @@ static void resolve_type(Symbol* sym) {
     fn->retType = return_type_info(fn);
     if (fn->retType == dtUnknown)
       INT_FATAL(fn, "Analysis unable to determine return type of function");
-  } else if (!dynamic_cast<UnresolvedSymbol*>(sym)) {
+  } else if (!dynamic_cast<UnresolvedSymbol*>(sym) &&
+             !dynamic_cast<ModuleSymbol*>(sym)) {
     Type* analysis_type = type_info(sym);
     if (!(dynamic_cast<EnumType*>(sym->type) && analysis_type == dtInt))
       sym->type = analysis_type;

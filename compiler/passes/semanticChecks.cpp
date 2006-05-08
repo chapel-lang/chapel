@@ -102,7 +102,7 @@ check_normalized_vars(Symbol* var) {
     return;
   int num_moves = 0;
   CallExpr* move = 0;
-  forv_Vec(SymExpr*, sym, *var->uses) {
+  if (var->uses) forv_Vec(SymExpr*, sym, *var->uses) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(sym->parentExpr)) {
       if (call->isPrimitive(PRIMITIVE_MOVE) && call->get(1) == sym) {
         num_moves++;

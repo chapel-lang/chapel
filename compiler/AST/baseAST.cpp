@@ -485,6 +485,9 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     goto LStmtCommon;
   case STMT_BLOCK:
     AST_ADD_LIST(BlockStmt, body, Stmt);
+    AST_ADD_CHILD(BlockStmt, param_low);
+    AST_ADD_CHILD(BlockStmt, param_high);
+    AST_ADD_CHILD(BlockStmt, param_index);
     goto LStmtCommon;
   case STMT_COND:
     AST_ADD_CHILD(CondStmt, condExpr);
@@ -532,7 +535,8 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
   case EXPR_NAMED:
     AST_ADD_CHILD(NamedExpr, actual);
     goto LExprCommon;
-  case SYMBOL: case SYMBOL_UNRESOLVED: 
+  case SYMBOL:
+  case SYMBOL_UNRESOLVED:
   LSymbolCommon:
     ADD_CHILD(Symbol, type);
     break;
@@ -540,16 +544,17 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     ADD_LIST(ModuleSymbol, stmts, Stmt);
     ADD_CHILD(ModuleSymbol, initFn);
     goto LSymbolCommon;
-  case SYMBOL_VAR: 
+  case SYMBOL_VAR:
     goto LSymbolCommon;
-  case SYMBOL_ARG: 
+  case SYMBOL_ARG:
     AST_ADD_CHILD(ArgSymbol, defaultExpr);
     AST_ADD_CHILD(ArgSymbol, variableExpr);
     ADD_CHILD(ArgSymbol, genericSymbol);
     goto LSymbolCommon;
-  case SYMBOL_TYPE: goto LSymbolCommon;
+  case SYMBOL_TYPE:
+    goto LSymbolCommon;
   case SYMBOL_FN:
-    ADD_LIST(FnSymbol, formals, DefExpr);
+    AST_ADD_LIST(FnSymbol, formals, DefExpr);
     AST_ADD_CHILD(FnSymbol, body);
     ADD_CHILD(FnSymbol, retType);
     ADD_CHILD(FnSymbol, _this);
@@ -558,7 +563,8 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     AST_ADD_CHILD(FnSymbol, where);
     AST_ADD_CHILD(FnSymbol, retExpr);
     goto LSymbolCommon;
-  case SYMBOL_ENUM: case SYMBOL_LABEL:
+  case SYMBOL_ENUM:
+  case SYMBOL_LABEL:
     goto LSymbolCommon;
   case TYPE:
   LTypeCommon:
@@ -596,11 +602,12 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
   case TYPE_VARIABLE:
     ADD_CHILD(VariableType, type);
     goto LTypeCommon;
-  case AST_TYPE_END: break;
-  case LIST: 
+  case AST_TYPE_END:
+    break;
+  case LIST:
     INT_FATAL(a, "Unexpected case in AST_GET_CHILDREN (LIST)");
     break;
-  case OBJECT: 
+  case OBJECT:
     INT_FATAL(a, "Unexpected case in AST_GET_CHILDREN (OBJECT)");
     break;
   }

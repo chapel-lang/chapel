@@ -272,9 +272,6 @@ TYPE_EXTERN Type* dtNumeric;
 TYPE_EXTERN ClassType* dtObject;
 TYPE_EXTERN ClassType* dtValue;
 
-// vector of built-in types
-TYPE_EXTERN Vec<Type*> builtinTypes;
-
 void initPrimitiveTypes(void);
 Type *find_or_make_sum_type(Vec<Type *> *types);
 int is_Scalar_Type(Type *t);

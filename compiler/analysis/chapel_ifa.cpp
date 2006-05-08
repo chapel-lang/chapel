@@ -270,55 +270,6 @@ AAST::copy_tree(ASTCopyContext* context) {
   return new_fn->defPoint->ainfo;
 }
 
-// Get all the BaseASTs in the Chapel Program.
-// This turns out the be extremely difficult thing to do
-// with the Chapel AST IF, and the code has been rewritten numerous times
-// to try to get it to work. There is something about the Chapel AST 
-// and traversal mechanmism which makes this unfathomably
-// complicated and brittle and which we haven't been able to fix.
-// ** CHANGE WITH CAUTION **
-static void
-close_symbols(Vec<AList<Stmt> *> &stmts, Vec<BaseAST *> &syms) {
-  Vec<BaseAST *> set;
-  forv_Vec(AList<Stmt>*, a, stmts) {
-    Stmt* stmt = a->first();
-    while (stmt) {
-      set.set_add(stmt);
-      syms.add(stmt);
-      stmt = a->next();
-    }
-  }
-  forv_BaseAST(s, syms) {
-    GET_ALL_CHILDREN(s, getStuff);
-    forv_BaseAST(ss, getStuff.asts) {
-      assert(ss);
-      if (set.set_add(ss))
-        syms.add(ss);
-    }
-    if (s->astType == SYMBOL_FN) {
-      Vec<BaseAST*> asts;
-      collect_asts(&asts, dynamic_cast<FnSymbol*>(s));
-      forv_BaseAST(x, asts)
-        if (set.set_add(x))
-          syms.add(x);
-    }
-  }
-  forv_Type(t, builtinTypes) {
-    if (set.set_add(t))
-      syms.add(t);
-    if (t->symbol)
-      if (set.set_add(t->symbol))
-        syms.add(t->symbol);
-    if (t->metaType)
-      if (set.set_add(t->metaType))
-        syms.add(t->metaType);
-  }
-  forv_Symbol(t, builtinSymbols) {
-    if (set.set_add(t))
-      syms.add(t);
-  }
-}
-
 static Sym *
 base_type(Sym *s) {
   if (UserType *t = dynamic_cast<UserType*>(SYMBOL(s)))
@@ -2388,9 +2339,7 @@ alloc_transfer_function(PNode *pn, EntrySet *es) {
 }
 
 int 
-ast_to_if1(Vec<AList<Stmt> *> &stmts) {
-  Vec<BaseAST *> syms;
-  close_symbols(stmts, syms);
+ast_to_if1(Vec<BaseAST*>& syms) {
   qsort(syms.v, syms.n, sizeof(syms.v[0]), compar_baseast);
   init_symbols();
   map_asts(syms);
@@ -2412,8 +2361,8 @@ ast_to_if1(Vec<AList<Stmt> *> &stmts) {
 }
 
 int
-AST_to_IF1(Vec<AList<Stmt> *> &stmts) {
-  if (ast_to_if1(stmts) < 0)
+AST_to_IF1(Vec<BaseAST*>& syms) {
+  if (ast_to_if1(syms) < 0)
     fail("unable to analyze AST");
   return 0;
 }

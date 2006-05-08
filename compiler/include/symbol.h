@@ -283,7 +283,6 @@ extern Symbol *gVoid;
 extern VarSymbol *gTrue;
 extern VarSymbol *gFalse;
 
-extern Vec<Symbol *> builtinSymbols;
 extern Vec<FnSymbol*> new_ast_functions;
 extern Vec<TypeSymbol*> new_ast_types;
 

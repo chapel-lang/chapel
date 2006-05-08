@@ -125,6 +125,84 @@ void print_view(BaseAST* ast) {
   fflush(stdout);
 }
 
+void view_ast(BaseAST* ast, int indent = 0) {
+  if (Expr* expr = dynamic_cast<Expr*>(ast)) {
+    printf("\n");
+    for (int i = 0; i < indent; i++)
+      printf(" ");
+    printf("(%s", astTypeName[expr->astType]);
+
+    if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
+      if (call->isPrimitive())
+        printf(" %s", call->primitive->name);
+    }
+
+    if (NamedExpr* named = dynamic_cast<NamedExpr*>(expr)) {
+      printf(" \"%s\"", named->name);
+    }
+
+    long i;
+    char *str;
+    if (get_int(expr, &i)) {
+      printf(" %ld", i);
+    } else if (get_string(expr, &str)) {
+      printf(" \"%s\"", str);
+    }
+
+    if (SymExpr* sym = dynamic_cast<SymExpr*>(expr)) {
+      printf(" '");
+      if (dynamic_cast<FnSymbol*>(sym->var)) {
+        printf("fn ");
+      } else if (dynamic_cast<ArgSymbol*>(sym->var)) {
+        printf("arg ");
+      } else if (dynamic_cast<TypeSymbol*>(sym->var)) {
+        printf("type ");
+      }
+      printf("%s", sym->var->name);
+      if (sym->var->type && sym->var->type->symbol)
+        printf(":%s", sym->var->type->symbol->name);
+      printf("'");
+    }
+  }
+
+  if (Stmt* stmt = dynamic_cast<Stmt*>(ast)) {
+    printf("\n");
+    for (int i = 0; i < indent; i++)
+      printf(" ");
+    printf("(%s", astTypeName[stmt->astType]);
+  }
+
+  if (Symbol* sym = dynamic_cast<Symbol*>(ast)) {
+    printf("'");
+    if (dynamic_cast<FnSymbol*>(sym)) {
+      printf("fn ");
+    } else if (dynamic_cast<ArgSymbol*>(sym)) {
+      printf("arg ");
+    } else if (dynamic_cast<TypeSymbol*>(sym)) {
+      printf("type ");
+    }
+    printf("%s", sym->name);
+    if (sym->type && sym->type->symbol)
+      printf(":%s", sym->type->symbol->name);
+    printf("'");
+  }
+
+  Vec<BaseAST*> asts;
+  get_ast_children(ast, asts);
+  forv_Vec(BaseAST, ast, asts)
+    view_ast(ast, indent + 2);
+
+  if (dynamic_cast<Expr*>(ast) || dynamic_cast<Stmt*>(ast)) {
+    printf(")");
+  }
+}
+
+void print_view2(BaseAST* ast) {
+  view_ast(ast);
+  printf("\n\n");
+  fflush(stdout);
+}
+
 void print_view_noline(BaseAST* ast) {
   TRAVERSE(ast, new View(), true);
   fflush(stdout);

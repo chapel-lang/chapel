@@ -15,11 +15,10 @@ void runAnalysis(void) {
     return;
   preAnalysis = false;
   inAnalysis = true;
-  Vec<AList<Stmt> *> stmts;
-  forv_Vec(ModuleSymbol, mod, allModules) {
-    stmts.add(mod->stmts);
-  }
-  AST_to_IF1(stmts);
+  Accum<BaseAST*> asts;
+  forv_Vec(BaseAST, ast, rootScope->symbols)
+    collect_ast_children(ast, asts, 1);
+  AST_to_IF1(asts.asvec);
   // BLC: John, what filename should be passed in for multiple modules?
   // I'm just passing in the first non-internal module's filename
   // JBP: that's fine, it is only used for debug, HTML and low level cg files

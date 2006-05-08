@@ -78,9 +78,11 @@ class PostCollectAST : public Traversal {
         }
     }
     if (SymExpr* sym = dynamic_cast<SymExpr*>(expr)) {
-      if (dynamic_cast<UnresolvedSymbol*>(sym->var)) {
+      if (dynamic_cast<UnresolvedSymbol*>(sym->var))
         asts->add(sym->var);
-      }
+      if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var))
+        if (var->immediate)
+          asts->add(sym->var);
     }
   }
 };
@@ -91,8 +93,8 @@ void collect_asts(Vec<BaseAST*>* asts, BaseAST* ast) {
 }
 
 void collect_asts(Vec<BaseAST*>* asts) {
-  Traversal* traversal = new PreCollectAST(asts);
-  traversal->run(&allModules);
+  forv_Vec(ModuleSymbol, mod, allModules)
+    collect_asts(asts, mod);
 }
 
 void collect_asts_postorder(Vec<BaseAST*>* asts, BaseAST* ast) {
@@ -101,8 +103,8 @@ void collect_asts_postorder(Vec<BaseAST*>* asts, BaseAST* ast) {
 }
 
 void collect_asts_postorder(Vec<BaseAST*>* asts) {
-  Traversal* traversal = new PostCollectAST(asts);
-  traversal->run(&allModules);
+  forv_Vec(ModuleSymbol, mod, allModules)
+    collect_asts_postorder(asts, mod);
 }
 
 

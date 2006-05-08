@@ -1036,7 +1036,6 @@ void VariableType::traverseDefType(Traversal* traversal) {
 #define CREATE_DEFAULT_SYMBOL(primType, gSym, name)                     \
   gSym = new VarSymbol (name, primType, VAR_NORMAL, VAR_CONST);         \
   rootScope->define (gSym);                                             \
-  builtinSymbols.add (gSym);                                            \
   primType->defaultValue = gSym
   
 
@@ -1074,7 +1073,6 @@ void initPrimitiveTypes(void) {
 
   gTrue = new VarSymbol("true", dtBool, VAR_NORMAL, VAR_CONST);
   rootScope->define(gTrue); // SJD: Should intrinsics have DefExprs?
-  builtinSymbols.add(gTrue);
   gTrue->immediate = new Immediate;
   gTrue->immediate->v_bool = true;
   gTrue->immediate->const_kind = IF1_NUM_KIND_UINT;

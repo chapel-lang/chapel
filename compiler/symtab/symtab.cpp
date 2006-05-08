@@ -368,9 +368,6 @@ Type* Symboltable::defineBuiltinType(char* name, char* cname, Type *newType) {
   TypeSymbol* sym = new TypeSymbol(name, newType);
   rootScope->define(sym);
   sym->cname = stringcpy(cname);
-
-  builtinTypes.add(newType);
-
   return newType;
 }
 
