@@ -6,6 +6,7 @@
 #include "if1.h"
 #include "var.h"
 #include "pnode.h"
+#include "fail.h"
 
 int ifa_verbose = 0;
 int ifa_debug = 0;
@@ -77,7 +78,7 @@ get_file_line(char *filename, int lineno) {
     char *new_buf = 0;
     if (buf_read(filename, &new_buf, &len) < 0)
       return 0;
-    last_filename = dupstr(filename);
+    last_filename = _dupstr(filename);
     last_buf = new_buf;
     char *b = new_buf;
     last_lines.clear();
@@ -109,15 +110,6 @@ fail(char *str, ...) {
   vfprintf(stderr, nstr, ap);
   va_end(ap);
   exit(1);
-}
-
-char *
-dupstr(char *s, char *e) {
-  int l = e ? e-s : strlen(s);
-  char *ss = (char*)MALLOC(l+1);
-  memcpy(ss, s, l);
-  ss[l] = 0;
-  return ss;
 }
 
 void 

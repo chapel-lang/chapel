@@ -99,7 +99,7 @@ load_file(char *fn, FrontEnd *fe) {
   char *buf = NULL;
 
   D_Parser *p = new_D_Parser(fe->compilation_tables, sizeof(D_ParseNode_User));
-  p->loc.pathname = dupstr(fn);
+  p->loc.pathname = _dupstr(fn);
   p->loc.line = 1;
   p->loc.col = p->loc.previous_col = 0;
   p->save_parse_tree = 1;

@@ -19,8 +19,8 @@ int buf_read(char *pathname, char **buf, int *len);
 void fail(char *str, ...);
 char *loc_string(d_loc_t &l);
 char *get_file_line(char *filename, int lineno);
-
-// char *dupstr(char *s, char *e = 0); in map.h because of template's in header hell
+char *get_file_line(char *filename, int lineno);
+char *dupstr(char *s, char *e = 0);
 
 
 // INT_FATAL(ast, format, ...)

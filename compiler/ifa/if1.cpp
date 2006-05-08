@@ -5,6 +5,7 @@
 #include "ast.h"
 #include "sym.h"
 #include "log.h"
+#include "fail.h"
 
 char *builtin_strings[] = {
 #define S(_x) #_x,
@@ -70,7 +71,7 @@ if1_const(IF1 *p, Sym *type, char *constant, Immediate *imm) {
 Sym *
 if1_make_symbol(IF1 *p, char *name, char *end) {
   if (end)
-    name = dupstr(name, end);
+    name = _dupstr(name, end);
   name = if1_cannonicalize_string(p, name);
   Sym *s = p->symbols.get(name);
   if (s)
@@ -95,7 +96,7 @@ if1_set_symbols_type(IF1 *p) {
 void
 if1_set_builtin(IF1 *p, Sym *s, char *name, char *end) {
   if (end)
-    name = dupstr(name, end);
+    name = _dupstr(name, end);
   name = if1_cannonicalize_string(p, name);
   Sym *ss = p->builtins.get(name);
   if (ss == s)
@@ -110,7 +111,7 @@ if1_set_builtin(IF1 *p, Sym *s, char *name, char *end) {
 Sym *
 if1_get_builtin(IF1 *p, char *name, char *end) {
   if (end)
-    name = dupstr(name, end);
+    name = _dupstr(name, end);
   name = if1_cannonicalize_string(p, name);
   return p->builtins.get(name);
 }

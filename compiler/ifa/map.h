@@ -1,4 +1,5 @@
 /* -*-Mode: c++;-*-
+  Copyright 2003-2006 John Plevyak.
 */
 
 #ifndef _map_H_
@@ -7,8 +8,17 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include "vec.h"
+#include "list.h"
 
-char *dupstr(char *s, char *e = 0); // from misc.h
+static inline char *
+_dupstr(char *s, char *e = 0) {
+  int l = e ? e-s : strlen(s);
+  char *ss = (char*)MALLOC(l+1);
+  memcpy(ss, s, l);
+  ss[l] = 0;
+  return ss;
+}
 
 // Simple direct mapped Map (pointer hash table) and Environment
 
@@ -38,7 +48,7 @@ template <class K, class C> class Map : public Vec<MapElem<K,C> > {
   int some_disjunction(Map<K,C> &m);
 };
 
-template <class C> class HashFns {
+template <class C> class HashFns : public gc {
  public:
   static unsigned int hash(C a);
   static int equal(C a, C b);
@@ -136,7 +146,7 @@ template <class C, class ABlockHashFns> class BlockHash :
   public NBlockHash<C, ABlockHashFns, DEFAULT_BLOCK_HASH_SIZE> {};
 typedef BlockHash<char *, StringHashFns> StringBlockHash;
 
-template <class K, class C> class Env : public gc {
+template <class K, class C> class Env {
  public:
   void put(K akey, C avalue);
   C get(K akey);
@@ -489,7 +499,7 @@ StringChainHash::cannonicalize(char *s, char *e) {
       }
     }
   }
-  s = dupstr(s, e);
+  s = _dupstr(s, e);
   char *ss = put(s);
   if (ss)
     return ss;
@@ -564,6 +574,7 @@ NBlockHash<C, AHashFns, N>::put(C c) {
     return (C)0;
   }
   C *vv = first(), *ve = last();
+  C *old_v = v;
   i = i + 1;
   n = prime2[i];
   v = (C*)MALLOC(n * sizeof(C) * N);
@@ -571,6 +582,8 @@ NBlockHash<C, AHashFns, N>::put(C c) {
   for (;vv < ve; vv++)
     if (*vv)
       put(*vv);
+  if (old_v != &e[0])
+    FREE(old_v);
   return put(c);
 }
 
@@ -635,7 +648,8 @@ NBlockHash<C, AHashFns, N>::count() {
 }
 
 template <class C, class AHashFns, int N> inline void 
-NBlockHash<C, AHashFns, N>::copy(const NBlockHash<C, AHashFns, N> &hh)  {
+NBlockHash<C, AHashFns, N>::copy(const NBlockHash<C, AHashFns, N> &hh) {
+  clear();
   n = hh.n;
   i = hh.i;
   if (hh.v == &hh.e[0]) { 
@@ -651,7 +665,7 @@ NBlockHash<C, AHashFns, N>::copy(const NBlockHash<C, AHashFns, N> &hh)  {
 }
 
 template <class C, class AHashFns, int N> inline void 
-NBlockHash<C, AHashFns, N>::move(NBlockHash<C, AHashFns, N> &hh)  {
+NBlockHash<C, AHashFns, N>::move(NBlockHash<C, AHashFns, N> &hh) {
   n = hh.n;
   i = hh.i;
   v = hh.v;

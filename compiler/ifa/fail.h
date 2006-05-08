@@ -15,6 +15,5 @@ int buf_read(char *pathname, char **buf, int *len);
 void fail(char *str, ...);
 char *get_file_line(char *filename, int lineno);
 void myassert(char *file, int line, char *str);
-// char *dupstr(char *s, char *e = 0); in map.h because of template's in header hell
 
 #endif

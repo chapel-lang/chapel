@@ -19,6 +19,15 @@ void cleanup_for_exit(void) {
 static void gdbShouldBreakHere() {
 }
 
+char *
+dupstr(char *s, char *e) {
+  int l = e ? e-s : strlen(s);
+  char *ss = (char*)MALLOC(l+1);
+  memcpy(ss, s, l);
+  ss[l] = 0;
+  return ss;
+}
+
 void
 clean_exit(int status) {
   if (status != 0) {

@@ -241,7 +241,10 @@ ParseAST::line() {
 
 int
 ParseAST::source_line() {
-  if (strstr(filename(), "prelude"))
+  char *p = pathname();
+  char *filename = strrchr(p, '/');
+  if (!filename) filename = p;
+  if (strstr(filename, "prelude"))
     return 0;
   return line();
 }
@@ -474,7 +477,7 @@ new_constant(IF1 *i, char *string, char *constant_type) {
       s++;
     return if1_make_symbol(i, s, e);
   }
-  char *str = dupstr(s, e);
+  char *str = _dupstr(s, e);
   Sym *type = if1_get_builtin(i, constant_type);
   if (type == sym_int) type = sym_int32;
   if (type == sym_uint) type = sym_uint32;
@@ -524,7 +527,7 @@ set_builtin(IF1 *i, Sym *sym, char *start, char *end = 0) {
     if ((int)strlen(builtin_strings[x]) == (int)(end-start) && 
         !strncmp(builtin_strings[x], start, end-start))
       goto Lfound;
-  fail("builtin not found '%s'", dupstr(start, end));
+  fail("builtin not found '%s'", _dupstr(start, end));
  Lfound:
   switch (x) {
 #define S(_n) case Builtin_##_n: sym_##_n = sym; break;
@@ -558,7 +561,7 @@ set_builtin(IF1 *i, Sym *sym, char *start, char *end = 0) {
       char n[512];
       strcpy(n, "constant ");
       strcat(n, sym->name);
-      sym->constant_type = new_Sym(dupstr(n));
+      sym->constant_type = new_Sym(_dupstr(n));
       sym->constant_type->type_kind = Type_PRIMITIVE;
       break;
     }

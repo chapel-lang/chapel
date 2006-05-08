@@ -1,5 +1,5 @@
 /* -*-Mode: c++;-*-
-  Copyright 2003 John Plevyak
+  Copyright 2003-2006 John Plevyak.
 */
 
 #ifndef _vec_H_
@@ -7,6 +7,7 @@
 
 #include <string.h>
 #include <stdint.h>
+#include "stdlib.h"
 #include <sys/types.h>
 
 // Simple Vector class, also supports open hashed sets
@@ -15,19 +16,21 @@
 #define VEC_INITIAL_SHIFT       3
 #define VEC_INITIAL_SIZE        (1 << VEC_INITIAL_SHIFT)
 
+#define SET_LINEAR_SIZE         4               /* must be <= than VEC_INTEGRAL_SIZE */
 #define SET_MAX_PROBE           5
 #define SET_INITIAL_INDEX       2
 
-template <class C> 
+template <class C, int S = VEC_INTEGRAL_SIZE>  // S must be a power of 2
 class Vec : public gc {
  public:
   int           n;
   int           i;      // size index for sets
   C             *v;
-  C             e[VEC_INTEGRAL_SIZE];
+  C             e[S];
   
-  Vec<C>();
-  Vec<C>(const Vec<C> &vv);
+  Vec<C,S>();
+  Vec<C,S>(const Vec<C,S> &vv);
+  ~Vec() { if (v && v != e) FREE(v); }
 
   void add(C a);  
   int add_exclusive(C a);
@@ -38,14 +41,14 @@ class Vec : public gc {
   C *set_add(C a);
   void set_remove(C a); // expensive, use BlockHash for cheaper remove
   C *set_add_internal(C a);
-  int set_union(Vec<C> &v);
-  int set_intersection(Vec<C> &v);
-  int some_intersection(Vec<C> &v);
-  int some_disjunction(Vec<C> &v);
-  int some_difference(Vec<C> &v);
-  void set_intersection(Vec<C> &v, Vec<C> &result);
-  void set_disjunction(Vec<C> &v, Vec<C> &result);
-  void set_difference(Vec<C> &v, Vec<C> &result);
+  int set_union(Vec<C,S> &v);
+  int set_intersection(Vec<C,S> &v);
+  int some_intersection(Vec<C,S> &v);
+  int some_disjunction(Vec<C,S> &v);
+  int some_difference(Vec<C,S> &v);
+  void set_intersection(Vec<C,S> &v, Vec<C,S> &result);
+  void set_disjunction(Vec<C,S> &v, Vec<C,S> &result);
+  void set_difference(Vec<C,S> &v, Vec<C,S> &result);
   int set_count();
   int count();
   C *in(C a);
@@ -56,20 +59,20 @@ class Vec : public gc {
   int index(C a);
   void set_to_vec();
   void vec_to_set();
-  void move_internal(Vec<C> &v);
-  void move(Vec<C> &v);
-  void copy_internal(const Vec<C> &v);
-  void copy(const Vec<C> &v);
+  void move(Vec<C,S> &v);
+  void copy(const Vec<C,S> &v);
   void fill(int n);
-  void append(const Vec<C> &v);
+  void append(const Vec<C,S> &v);
   void remove(int index);
   void insert(int index, C a);
   void reverse();
   C* end() { return v + n; }
-  Vec<C>& operator=(Vec<C> &v) { this->copy(v); return *this; }
+  Vec<C,S>& operator=(Vec<C,S> &v) { this->copy(v); return *this; }
   int length () { return n; }
   
  private:
+  void move_internal(Vec<C,S> &v);
+  void copy_internal(const Vec<C,S> &v);
   void add_internal(C a);
   C& add_internal();
   void addx();
@@ -79,11 +82,11 @@ class Vec : public gc {
 #define forv_Vec(_c, _p, _v) if ((_v).n) for (_c *qq__##_p = (_c*)0, *_p = (_v).v[0]; \
                     ((intptr_t)(qq__##_p) < (_v).length()) && ((_p = (_v).v[(intptr_t)qq__##_p]) || 1); qq__##_p = (_c*)(((intptr_t)qq__##_p) + 1))
 
-template <class C> class Accum : public gc { public:
-  Vec<C> asset;
-  Vec<C> asvec;
+template <class C, int S = VEC_INTEGRAL_SIZE> class Accum { public:
+  Vec<C,S> asset;
+  Vec<C,S> asvec;
   void add(C c) { if (asset.set_add(c)) asvec.add(c); }
-  void add(Vec<C> v) { for (int i = 0; i < v.n; i++) if (v.v[i]) add(v.v[i]); }
+  void add(Vec<C,S> v) { for (int i = 0; i < v.n; i++) if (v.v[i]) add(v.v[i]); }
   void clear() { asset.clear(); asvec.clear(); }
 };
 
@@ -115,18 +118,18 @@ extern unsigned int prime2[];
 
 /* IMPLEMENTATION */
 
-template <class C> inline
-Vec<C>::Vec() : n(0), i(0), v(0) {
+template <class C, int S> inline
+Vec<C,S>::Vec() : n(0), i(0), v(0) {
 }
 
-template <class C> inline
-Vec<C>::Vec(const Vec<C> &vv) {
+template <class C, int S> inline
+Vec<C,S>::Vec(const Vec<C,S> &vv) {
   copy(vv);
 }
 
-template <class C> inline void 
-Vec<C>::add(C a) {
-  if (n & (VEC_INTEGRAL_SIZE-1))
+template <class C, int S> inline void 
+Vec<C,S>::add(C a) {
+  if (n & (S-1))
     v[n++] = a;
   else if (!v)
     (v = e)[n++] = a;
@@ -134,10 +137,10 @@ Vec<C>::add(C a) {
     add_internal(a);
 }
 
-template <class C> inline C&
-Vec<C>::add() {
+template <class C, int S> inline C&
+Vec<C,S>::add() {
   C *ret;
-  if (n & (VEC_INTEGRAL_SIZE-1))
+  if (n & (S-1))
     ret = &v[n++];
   else if (!v)
     ret = &(v = e)[n++];
@@ -146,8 +149,8 @@ Vec<C>::add() {
   return *ret;
 }
 
-template <class C> inline C
-Vec<C>::pop() {
+template <class C, int S> inline C
+Vec<C,S>::pop() {
   if (!n)
     return 0;
   n--;
@@ -157,29 +160,30 @@ Vec<C>::pop() {
   return ret;
 }
 
-template <class C> inline void
-Vec<C>::clear() {
+template <class C, int S> inline void
+Vec<C,S>::clear() {
+  if (v && v != e) FREE(v);
   v = NULL;
   n = 0;
   i = 0;
 }
 
-template <class C> inline void
-Vec<C>::set_clear() {
+template <class C, int S> inline void
+Vec<C,S>::set_clear() {
   memset(v, 0, n * sizeof(C));
 }
 
-template <class C> inline C *
-Vec<C>::set_add(C a) {
-  if (n < VEC_INTEGRAL_SIZE) {
+template <class C, int S> inline C *
+Vec<C,S>::set_add(C a) {
+  if (n < SET_LINEAR_SIZE) {
     for (C *c = v; c < v + n; c++)
       if (*c == a)
         return 0;
     add(a);
     return &v[n-1];
   }
-  if (n == VEC_INTEGRAL_SIZE) {
-    Vec<C> vv(*this);
+  if (n == SET_LINEAR_SIZE) {
+    Vec<C,S> vv(*this);
     clear();
     for (C *c = vv.v; c < vv.v + vv.n; c++)
       set_add_internal(*c);
@@ -187,17 +191,17 @@ Vec<C>::set_add(C a) {
   return set_add_internal(a);
 }
 
-template <class C> void
-Vec<C>::set_remove(C a) {
-  Vec<C> tmp;
+template <class C, int S> void
+Vec<C,S>::set_remove(C a) {
+  Vec<C,S> tmp;
   tmp.move(*this);
   for (C *c = tmp.v; c < tmp.v + tmp.n; c++)
     if (*c != a)
       set_add(a);
 }
 
-template <class C> inline int
-Vec<C>::count() {
+template <class C, int S> inline int
+Vec<C,S>::count() {
   int x = 0;
   for (C *c = v; c < v + n; c++)
     if (*c)
@@ -205,16 +209,16 @@ Vec<C>::count() {
   return x;
 }
 
-template <class C> inline C*
-Vec<C>::in(C a) {
+template <class C, int S> inline C*
+Vec<C,S>::in(C a) {
   for (C *c = v; c < v + n; c++)
     if (*c == a)
       return c;
   return NULL;
 }
 
-template <class C> inline int
-Vec<C>::add_exclusive(C a) {
+template <class C, int S> inline int
+Vec<C,S>::add_exclusive(C a) {
   if (!in(a)) {
     add(a);
     return 1;
@@ -222,48 +226,49 @@ Vec<C>::add_exclusive(C a) {
     return 0;
 }
 
-template <class C> inline C *
-Vec<C>::set_in(C a) {
-  if (n <= VEC_INTEGRAL_SIZE)
+template <class C, int S> inline C *
+Vec<C,S>::set_in(C a) {
+  if (n <= SET_LINEAR_SIZE)
     return in(a);
   return set_in_internal(a);
 }
 
-template <class C> inline C
-Vec<C>::first() {
+template <class C, int S> inline C
+Vec<C,S>::first() {
   for (C *c = v; c < v + n; c++)
     if (*c)
       return *c;
   return 0;
 }
 
-template <class C> inline int
-Vec<C>::index(C a) {
+template <class C, int S> inline int
+Vec<C,S>::index(C a) {
   for (C *c = v; c < v + n; c++)
     if (*c == a)
       return c - v;
   return -1;
 }
 
-template <class C> inline void 
-Vec<C>::move_internal(Vec<C> &vv)  {
+template <class C, int S> inline void 
+Vec<C,S>::move_internal(Vec<C,S> &vv)  {
   n = vv.n;
   i = vv.i;
   v = vv.v;
   if (vv.v == &vv.e[0]) { 
     memcpy(e, &vv.e[0], sizeof(e));
     v = e;
-  }
+  } else
+    vv.v = 0;
 }
 
-template <class C> inline void 
-Vec<C>::move(Vec<C> &vv)  {
+template <class C, int S> inline void 
+Vec<C,S>::move(Vec<C,S> &vv)  {
   move_internal(vv);
   vv.clear();
 }
 
-template <class C> inline void 
-Vec<C>::copy(const Vec<C> &vv)  {
+template <class C, int S> inline void 
+Vec<C,S>::copy(const Vec<C,S> &vv)  {
   n = vv.n;
   i = vv.i;
   if (vv.v == &vv.e[0]) { 
@@ -277,21 +282,21 @@ Vec<C>::copy(const Vec<C> &vv)  {
   }
 }
 
-template <class C> inline void 
-Vec<C>::fill(int nn)  {
+template <class C, int S> inline void 
+Vec<C,S>::fill(int nn)  {
   for (int i = n; i < nn; i++)
     add() = 0;
 }
 
-template <class C> inline void
-Vec<C>::append(const Vec<C> &vv)  {
+template <class C, int S> inline void
+Vec<C,S>::append(const Vec<C,S> &vv)  {
   for (C *c = vv.v; c < vv.v + vv.n; c++)
     if (*c)
       add(*c);
 }
 
-template <class C> inline void 
-Vec<C>::addx() {
+template <class C, int S> inline void 
+Vec<C,S>::addx() {
   if (!n) {
     v = e;
     return;
@@ -311,25 +316,26 @@ Vec<C>::addx() {
         v = (C*)MALLOC(nl * sizeof(C));
         memcpy(v, vv, n * sizeof(C));
         memset(&v[n], 0, (nl - n) * sizeof(C));
+        FREE(vv);
       }
     }
   }
 }
 
-template <class C> void 
-Vec<C>::add_internal(C a) {
+template <class C, int S> void 
+Vec<C,S>::add_internal(C a) {
   addx();
   v[n++] = a;
 }
 
-template <class C> C&
-Vec<C>::add_internal() {
+template <class C, int S> C&
+Vec<C,S>::add_internal() {
   addx();
   return v[n++];
 }
 
-template <class C> void
-Vec<C>::set_expand() {
+template <class C, int S> void
+Vec<C,S>::set_expand() {
   if (!n)
     i = SET_INITIAL_INDEX;
   else
@@ -339,8 +345,8 @@ Vec<C>::set_expand() {
   memset(v, 0, n * sizeof(C));
 }
 
-template <class C> C *
-Vec<C>::set_add_internal(C c) {
+template <class C, int S> C *
+Vec<C,S>::set_add_internal(C c) {
   int j, k;
   if (n) {
     uint h = (uint)(uintptr_t)c;
@@ -356,7 +362,7 @@ Vec<C>::set_add_internal(C c) {
         return 0;
     }
   }
-  Vec<C> vv;
+  Vec<C,S> vv;
   vv.move_internal(*this);
   set_expand();
   if (vv.v)
@@ -364,8 +370,8 @@ Vec<C>::set_add_internal(C c) {
   return set_add(c);
 }
 
-template <class C> C *
-Vec<C>::set_in_internal(C c) {
+template <class C, int S> C *
+Vec<C,S>::set_in_internal(C c) {
   int j, k;
   if (n) {
     uint h = (uint)(uintptr_t)c;
@@ -383,8 +389,8 @@ Vec<C>::set_in_internal(C c) {
   return 0;
 }
 
-template <class C> int
-Vec<C>::set_union(Vec<C> &vv) {
+template <class C, int S> int
+Vec<C,S>::set_union(Vec<C,S> &vv) {
   int changed = 0;
   for (int i = 0; i < vv.n; i++)
     if (vv.v[i])
@@ -392,9 +398,9 @@ Vec<C>::set_union(Vec<C> &vv) {
   return changed;
 } 
 
-template <class C> int
-Vec<C>::set_intersection(Vec<C> &vv) {
-  Vec<C> tv;
+template <class C, int S> int
+Vec<C,S>::set_intersection(Vec<C,S> &vv) {
+  Vec<C,S> tv;
   tv.move(*this);
   int changed = 0;
   for (int i = 0; i < tv.n; i++)
@@ -407,8 +413,8 @@ Vec<C>::set_intersection(Vec<C> &vv) {
   return changed;
 } 
 
-template <class C> int
-Vec<C>::some_intersection(Vec<C> &vv) {
+template <class C, int S> int
+Vec<C,S>::some_intersection(Vec<C,S> &vv) {
   for (int i = 0; i < n; i++)
     if (v[i])
       if (vv.set_in(v[i]))
@@ -416,8 +422,8 @@ Vec<C>::some_intersection(Vec<C> &vv) {
   return 0;
 } 
 
-template <class C> int
-Vec<C>::some_disjunction(Vec<C> &vv) {
+template <class C, int S> int
+Vec<C,S>::some_disjunction(Vec<C,S> &vv) {
   for (int i = 0; i < n; i++)
     if (v[i])
       if (!vv.set_in(v[i]))
@@ -429,16 +435,16 @@ Vec<C>::some_disjunction(Vec<C> &vv) {
   return 0;
 } 
 
-template <class C> void
-Vec<C>::set_intersection(Vec<C> &vv, Vec<C> &result) {
+template <class C, int S> void
+Vec<C,S>::set_intersection(Vec<C,S> &vv, Vec<C,S> &result) {
   for (int i = 0; i < n; i++)
     if (v[i])
       if (vv.set_in(v[i]))
         result.set_add(v[i]);
 } 
 
-template <class C> void
-Vec<C>::set_disjunction(Vec<C> &vv, Vec<C> &result) {
+template <class C, int S> void
+Vec<C,S>::set_disjunction(Vec<C,S> &vv, Vec<C,S> &result) {
   for (int i = 0; i < n; i++)
     if (v[i])
       if (!vv.set_in(v[i]))
@@ -449,16 +455,16 @@ Vec<C>::set_disjunction(Vec<C> &vv, Vec<C> &result) {
         result.set_add(vv.v[i]);
 } 
 
-template <class C> void
-Vec<C>::set_difference(Vec<C> &vv, Vec<C> &result) {
+template <class C, int S> void
+Vec<C,S>::set_difference(Vec<C,S> &vv, Vec<C,S> &result) {
   for (int i = 0; i < n; i++)
     if (v[i])
       if (!vv.set_in(v[i]))
         result.set_add(v[i]);
 } 
 
-template <class C> int
-Vec<C>::some_difference(Vec<C> &vv) {
+template <class C, int S> int
+Vec<C,S>::some_difference(Vec<C,S> &vv) {
   for (int i = 0; i < n; i++)
     if (v[i])
       if (!vv.set_in(v[i]))
@@ -466,8 +472,8 @@ Vec<C>::some_difference(Vec<C> &vv) {
   return 0;
 } 
 
-template <class C> int
-Vec<C>::set_count() {
+template <class C, int S> int
+Vec<C,S>::set_count() {
   int x = 0;
   for (int i = 0; i < n; i++)
     if (v[i])
@@ -475,25 +481,25 @@ Vec<C>::set_count() {
   return x;
 } 
 
-template <class C> void
-Vec<C>::set_to_vec() {
-  Vec<C> vv(*this);
+template <class C, int S> void
+Vec<C,S>::set_to_vec() {
+  Vec<C,S> vv(*this);
   clear();
   for (C *c = vv.v; c < vv.v + vv.n; c++)
     if (*c)
       add(*c);
 }
 
-template <class C> void
-Vec<C>::vec_to_set() {
-  Vec<C> vv(*this);
+template <class C, int S> void
+Vec<C,S>::vec_to_set() {
+  Vec<C,S> vv(*this);
   clear();
   for (C *c = vv.v; c < vv.v + vv.n; c++)
     set_add(*c);
 }
 
-template <class C>  void 
-Vec<C>::remove(int index) {
+template <class C, int S>  void 
+Vec<C,S>::remove(int index) {
   if (n > 1)
     memmove(&v[index], &v[index+1], (n - 1 - index) * sizeof(v[0]));
   n--;
@@ -501,8 +507,8 @@ Vec<C>::remove(int index) {
     v = e;
 }
 
-template <class C>  void 
-Vec<C>::insert(int index, C a) {
+template <class C, int S>  void 
+Vec<C,S>::insert(int index, C a) {
   addx();
   n++;
   for (int j = n-2; j >= index; j--)
@@ -510,8 +516,8 @@ Vec<C>::insert(int index, C a) {
   v[index] = a;
 }
 
-template <class C>  void 
-Vec<C>::reverse() {
+template <class C, int S>  void 
+Vec<C,S>::reverse() {
   for (int i = 0; i < n/2; i++) {
     C *s = &v[i], *e = &v[n - 1 - i];
     C t;
@@ -521,8 +527,8 @@ Vec<C>::reverse() {
   }
 }
 
-template <class C> void 
-Vec<C>::copy_internal(const Vec<C> &vv) {
+template <class C, int S> void
+Vec<C,S>::copy_internal(const Vec<C,S> &vv) {
   int l = n, nl = (1 + VEC_INITIAL_SHIFT);
   l = l >> VEC_INITIAL_SHIFT;
   while (l) { l = l >> 1; nl++; }

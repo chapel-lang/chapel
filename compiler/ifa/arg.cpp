@@ -85,7 +85,7 @@ process_args(ArgumentState *arg_state, int argc, char **aargv) {
   char *end = 0;
   char **argv = (char**)MALLOC((argc+1)*sizeof(char*));
   for (i = 0; i < argc; i++)
-    argv[i] = dupstr(aargv[i]);
+    argv[i] = _dupstr(aargv[i]);
   argv[i] = NULL;
   ArgumentDescription *desc = arg_state->desc;
   /* Grab Environment Variables */
@@ -129,7 +129,7 @@ process_args(ArgumentState *arg_state, int argc, char **aargv) {
           if (len == (int)strlen(desc[i].name) &&
               !strncmp(desc[i].name,(*argv)+2, len))
           {
-            char* currentFlag = dupstr(*argv);
+            char* currentFlag = _dupstr(*argv);
             if (!end)
               *argv += strlen(*argv) - 1;
             else

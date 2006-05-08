@@ -59,7 +59,9 @@ endif
 
 ifdef USE_GC
 CFLAGS += -DUSE_GC ${GC_CFLAGS}
-LIBS += -lgc
+LIBS += -lgc -ldparse_gc
+else
+LIBS += -ldparse
 endif
 ifdef LEAK_DETECT
 CFLAGS += -DLEAK_DETECT  ${GC_CFLAGS}
@@ -83,7 +85,7 @@ endif
 
 CPPFLAGS += $(CFLAGS)
 
-LIBS += -lm -ldparse_gc -lgc
+LIBS += -lm -ldparse_gc
 
 ifeq ($(OS_TYPE),Linux)
   LIBS += -ldl -lrt

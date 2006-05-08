@@ -10,6 +10,7 @@
 #include "pnode.h"
 #include "fa.h"
 #include "var.h"
+#include "fail.h"
 
 static inline char *
 c_type(Var *v) {
@@ -497,7 +498,7 @@ write_c(FILE *fp, FA *fa, Fun *f, Vec<Var *> *globals = 0) {
       } else {
         char s[100];
         sprintf(s, "t%d", index++);
-        v->cg_string = dupstr(s);
+        v->cg_string = _dupstr(s);
         write_c_type(fp, v);
         fprintf(fp, " %s; (void)%s;\n", v->cg_string, v->cg_string);
       }
@@ -536,9 +537,9 @@ build_type_strings(FILE *fp, FA *fa, Vec<Var *> &globals) {
       sprintf(s, "_CG_f_%d_%d/*%s*/", f->sym->id, f_index, f->sym->name);
     else
       sprintf(s, "_CG_f_%d_%d", f->sym->id, f_index);
-    f->cg_string = dupstr(s);
+    f->cg_string = _dupstr(s);
     sprintf(s, "_CG_pf%d", f_index);
-    f->cg_structural_string = dupstr(s);
+    f->cg_structural_string = _dupstr(s);
     f->sym->cg_string = f->cg_structural_string;
     f_index++;
   }
@@ -579,7 +580,7 @@ build_type_strings(FILE *fp, FA *fa, Vec<Var *> &globals) {
       } else {
         switch (s->type_kind) {
           default: 
-            s->cg_string = dupstr("_CG_any");
+            s->cg_string = _dupstr("_CG_any");
             break;
           case Type_FUN:
             if (s->fun) break;
@@ -590,7 +591,7 @@ build_type_strings(FILE *fp, FA *fa, Vec<Var *> &globals) {
               fprintf(fp, "struct _CG_s%d;\n", s->id);
               fprintf(fp, "typedef struct _CG_s%d *_CG_ps%d;\n", s->id, s->id);
               sprintf(ss, "_CG_ps%d", s->id);
-              s->cg_string = dupstr(ss);
+              s->cg_string = _dupstr(ss);
             } else
               s->cg_string = "_CG_void";
             break;
@@ -706,7 +707,7 @@ cg_print_c(FILE *fp, FA *fa, Fun *init) {
     if (v->sym->imm.const_kind != IF1_NUM_KIND_NONE) {
       char s[100];
       sprint_imm(s, v->sym->imm);
-      v->cg_string = dupstr(s);
+      v->cg_string = _dupstr(s);
     } else if (v->sym->constant) {
       if (v->type == sym_string)
         v->cg_string = escape_string(v->sym->constant);
@@ -715,7 +716,7 @@ cg_print_c(FILE *fp, FA *fa, Fun *init) {
     } else if (v->sym->is_symbol) {
       char s[100];
       sprintf(s, "_CG_Symbol(%d, \"%s\")", v->sym->id, v->sym->name);
-      v->cg_string = dupstr(s);
+      v->cg_string = _dupstr(s);
     } else if (v->sym->is_fun) {
       v->cg_string = v->sym->fun->cg_string;
     } else if (!v->sym->type_kind) {
@@ -724,14 +725,14 @@ cg_print_c(FILE *fp, FA *fa, Fun *init) {
         sprintf(s, "/* %s %d */ g%d", v->sym->name, v->sym->id, index++);
       else
         sprintf(s, "/* %d */ g%d", v->sym->id, index++);
-      v->cg_string = dupstr(s);
+      v->cg_string = _dupstr(s);
       write_c_type(fp, v);
       fputs(" ", fp);
       fputs(v->cg_string, fp);
       fputs(";\n", fp);
     } else {
       index++;
-      v->cg_string = dupstr(v->sym->name);
+      v->cg_string = _dupstr(v->sym->name);
     }
   }
   forv_Fun(f, fa->funs) if (f != init && !f->is_external)
