@@ -9,8 +9,6 @@
 resolve_call_error_type resolve_call_error;
 Vec<FnSymbol*> resolve_call_error_candidates;
 
-void param_compute(Expr* expr);
-
 bool can_instantiate(Type* actualType, Type* formalType) {
   if (actualType == formalType)
     return true;
@@ -155,20 +153,6 @@ add_candidate(Map<FnSymbol*,Vec<ArgSymbol*>*>* candidateFns,
     }
     if (subs.n && !fn->isPartialInstantiation(&subs)) {
       FnSymbol* inst_fn = fn->instantiate_generic(&subs);
-//       if (inst_fn->whereExpr) {
-//         resolve_asts(inst_fn->whereExpr);
-//         param_compute(inst_fn->whereExpr);
-//         if (SymExpr* symExpr = dynamic_cast<SymExpr*>(inst_fn->whereExpr)) {
-//           VarSymbol* param = dynamic_cast<VarSymbol*>(symExpr->var);
-//           if (param != gTrue && param != gFalse)
-//             INT_FATAL(fn, "Illegal where expression");
-//           if (param == gFalse)
-//             return;
-//         } else {
-//           INT_FATAL(fn, "Illegal where expression");
-//           return;
-//         }
-//       }
       if (inst_fn)
         add_candidate(candidateFns, inst_fn, actual_types, actual_params, actual_names, true);
     }
@@ -687,34 +671,4 @@ void resolve_return_type(FnSymbol* fn) {
     }
   }
   fn->retType = return_type;
-}
-
-static void
-param_reduce(CallExpr* call) {
-  if (call->argList->length() != 2)
-    return;
-  SymExpr* lsym = dynamic_cast<SymExpr*>(call->argList->get(1));
-  SymExpr* rsym = dynamic_cast<SymExpr*>(call->argList->get(2));
-  if (!lsym || !rsym)
-    return;
-  if (!lsym->isParam() || !rsym->isParam())
-    return;
-  if (call->isPrimitive(PRIMITIVE_EQUAL)) {
-    if (lsym->var == rsym->var)
-      call->replace(new SymExpr(gTrue));
-    else
-      call->replace(new SymExpr(gFalse));
-  }
-}
-
-class ParamCompute : public Traversal {
-  void ParamCompute::postProcessExpr(Expr* expr) {
-    if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
-      param_reduce(call);
-    }
-  }
-};
-
-void param_compute(Expr* expr) {
-  TRAVERSE(expr, new ParamCompute(), false);
 }
