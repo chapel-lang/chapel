@@ -7,7 +7,6 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "symtab.h"
-#include "../traversals/createConfigVarTable.h"
 
 
 #define STRSUB(x)                               \
@@ -138,6 +137,44 @@ static void codegen_header(void) {
 }
 
 
+static void
+codegen_config() {
+  fileinfo outfileinfo;
+  char* rtconfigFile = "rtconfig";
+  openCFiles(rtconfigFile, &outfileinfo);
+  fprintf(codefile, "#include \"stdchpl.h\"\n\n");
+  fprintf(codefile, "void CreateConfigVarTable(void) {\n");
+  fprintf(codefile, "initConfigVarTable();\n");
+
+  Vec<BaseAST*> asts;
+  collect_asts_postorder(&asts);
+  forv_Vec(BaseAST, ast, asts) {
+    if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
+      codefile = outfileinfo.fptr;
+      VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym);
+      if (var && var->varClass == VAR_CONFIG) {
+        fprintf(codefile, "installConfigVar(\"%s\", \"", var->name);
+        fprintf(codefile, var->type->symbol->name);
+        fprintf(codefile, "\", \"%s\");\n", var->getModule()->name);
+      }
+    }
+  }
+
+  codefile = outfileinfo.fptr;
+  fprintf(codefile, "if (askedToParseArgs()) {\n");
+  fprintf(codefile, "  parseConfigArgs();\n");
+  fprintf(codefile, "}\n");
+
+  fprintf(codefile, "if (askedToPrintHelpMessage()) {\n");
+  fprintf(codefile, "  printHelpTable();\n");
+  fprintf(codefile, "  printConfigVarTable();\n");
+  fprintf(codefile, "}\n");
+  
+  fprintf(codefile, "}\n");
+  closeCFiles(&outfileinfo);
+}
+
+
 void codegen(void) {
   if (no_codegen)
     return;
@@ -146,9 +183,7 @@ void codegen(void) {
 
   openMakefile(allModules.v[0]->filename, system_dir);
 
-  CreateConfigVarTable* createConfigVarTable = new CreateConfigVarTable();
-  createConfigVarTable->run(&allModules);
-  createConfigVarTable->closeCFile();
+  codegen_config();
 
   forv_Vec(ModuleSymbol, currentModule, allModules) {
     if (!currentModule->hasPragma("no codegen")) {

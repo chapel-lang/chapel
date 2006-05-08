@@ -1,5 +1,4 @@
 TRAVERSALS_SRCS = \
-	createConfigVarTable.cpp \
 	fixup.cpp \
         htmlview.cpp \
 	printAST.cpp \

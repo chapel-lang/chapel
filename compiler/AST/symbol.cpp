@@ -11,7 +11,6 @@
 #include "symtab.h"
 #include "astutil.h"
 #include "passes.h"
-#include "../traversals/createConfigVarTable.h"
 
 FnSymbol* chpl_main = NULL;
 
@@ -374,19 +373,11 @@ void VarSymbol::print(FILE* outfile) {
   if (immediate) {
     bool isString = (immediate->const_kind == IF1_CONST_KIND_STRING);
     if (isString) {
-      if (CreateConfigVarTable::running) {
-        fprintf(outfile, "\\\"");
-      } else {
-        fprintf(outfile, "\"");
-      }
+      fprintf(outfile, "\"");
     }
     fprint_imm(outfile, *immediate);
     if (isString) {
-      if (CreateConfigVarTable::running) {
-        fprintf(outfile, "\\\"");
-      } else {
-        fprintf(outfile, "\"");
-      }
+      fprintf(outfile, "\"");
     }
   } else
     Symbol::print(outfile);
