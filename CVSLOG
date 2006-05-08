@@ -64157,3 +64157,20 @@ Removed files:
 	chapel/compiler/traversals/: createConfigVarTable.cpp 
 	                             createConfigVarTable.h 
 
+---------------------------------------------------------------------------
+
+05/08/06 14:00:10 -- jplevyak
+
+Log message:
+	Fix some bugs with non-GC vec.h map.h uses.
+	Fixup dupstr so that the prototype is declared in the right place.
+	Fix ParseAST::filename() missing issue.
+	Add the capability increasing the integral elements of a Vec.
+
+Modified files:
+	chapel/compiler/ifa/: arg.cpp cg.cpp fail.cpp fail.h if1.cpp 
+	                      map.h vec.h 
+	chapel/compiler/ifa/libifa/: Makefile ast_to_if1.cc parse.cc 
+	chapel/compiler/include/: misc.h 
+	chapel/compiler/util/: misc.cpp 
+
