@@ -64101,3 +64101,43 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+05/08/06 13:21:15 -- deitz
+
+Log message:
+	This checkin is part of the effort to remove the old traversal
+	mechanism.
+	
+	Fixed a bug in which the postorder version of collect_asts did not
+	collect immediate symbols.
+	
+	Fixed the new traversal mechanism to traverse some new fields of
+	BlockStmt.  These are removed prior to analysis, so this had no
+	visible effect.
+	
+	Removed complex close_symbols routine in chapel_ifa, replacing it with
+	the collect_all_children routine used by the interpreter.  This
+	catches a few extra symbols too, ones that are intrinsic but not used
+	by a program.  This may help Wayne's current work on adding widths to
+	the primitive types.  My effort is to clean up the differences between
+	the old traversal and the new traversal.
+	
+	Removed builtinSymbols and builtinTypes vectors.  These were used
+	inconsistently.
+	
+	Started work on a new implementation of print_view, called view_ast
+	(will be renamed when done), that uses the new traversal.  The only
+	remaining old traversals are Fixup and one to deal with configuration
+	variables.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp baseAST.cpp symbol.cpp 
+	                      type.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: analysis.h symbol.h type.h 
+	chapel/compiler/passes/: resolveAnalyzed.cpp runAnalysis.cpp 
+	                         semanticChecks.cpp 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: view.cpp 
+
