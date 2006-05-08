@@ -64174,3 +64174,14 @@ Modified files:
 	chapel/compiler/include/: misc.h 
 	chapel/compiler/util/: misc.cpp 
 
+---------------------------------------------------------------------------
+
+05/08/06 16:56:57 -- deitz
+
+Log message:
+	Removed unused ParamCompute traversal, code I wrote a long time ago to
+	support the -b flag, but that hasn't been used for a long time.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+
