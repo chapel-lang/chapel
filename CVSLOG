@@ -64291,3 +64291,25 @@ Modified files:
 Removed files:
 	chapel/compiler/traversals/: printAST.cpp printAST.h 
 
+---------------------------------------------------------------------------
+
+05/09/06 12:55:57 -- deitz
+
+Log message:
+	Rewrote the html view traversal (-t output pass) to use the new
+	traversal mechanism.  Removed HtmlView class.
+	
+	This new rewrite incorporates a change I had planned to do since
+	normalization to keep an expression on a single line.  The resulting
+	output is now tighter.
+	
+	The only Traversal class remaining is Fixup.
+
+Modified files:
+	chapel/compiler/AST/: view.cpp 
+	chapel/compiler/include/: view.h 
+	chapel/compiler/main/: runpasses.cpp 
+	chapel/compiler/traversals/: Makefile.share 
+Removed files:
+	chapel/compiler/traversals/: htmlview.cpp htmlview.h 
+
