@@ -64226,3 +64226,22 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+05/09/06 10:03:39 -- deitz
+
+Log message:
+	Removed unnecessary header files, an artifact of the Pass class.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp codegen.cpp 
+	                         filesToAST.cpp functionResolution.cpp 
+	                         printProgram.cpp runAnalysis.cpp 
+	                         runInterpreter.cpp 
+	chapel/compiler/symtab/: symscope.cpp 
+Removed files:
+	chapel/compiler/passes/: buildDefaultFunctions.h codegen.h 
+	                         filesToAST.h functionResolution.h 
+	                         printProgram.h 
+
