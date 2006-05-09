@@ -64185,3 +64185,44 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+05/09/06 09:51:14 -- deitz
+
+Log message:
+	This checkin is part of the effort to remove the old traversal
+	mechanism.
+	
+	Rewrote the functions collect_asts and collect_asts_postorder to use
+	the new traversal mechanism function get_ast_children removing the old
+	traversal classes PreCollectAST and PostCollectAST.
+	
+	Reworked the collect_functions function and removed the traversal
+	class CollectFunctions.
+	
+	Updated the implementation of get_ast_children to more faithfully do
+	what the old traversal class mechanism did when the "all" argument is
+	false.  The all argument is currently used for the traversals that get
+	everything to analysis and the interpreter.  Eventually I would like
+	to see this "all" argument used only for verification that the
+	traversal reaches all nodes.
+	
+	Guarded the traversal in gen_if1 to only call get_ast_children when
+	generating a statement or an expression, a necessary change to make
+	get_ast_children work like the old traversal worked.  That is,
+	DefExpr::sym is a child a of DefExpr.
+	
+	Note an odd line number change in var function error tests.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp baseAST.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: alist.h 
+	chapel/test/flowanalysis/newast/: sum_type-1.good 
+	                                  sum_type-2.good 
+	chapel/test/functions/deitz/: test_var_function1.good 
+	                              test_var_function_access.good 
+	                              test_var_function_access2.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
+	                                         test_clone_class1b.good 
+
