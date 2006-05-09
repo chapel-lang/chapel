@@ -8,7 +8,7 @@
 #include "stringutil.h"
 #include "chpl_log.h"
 
-void
+static void
 view_ast(BaseAST* ast, bool number = false, long mark = -1, int indent = 0) {
   if (Expr* expr = dynamic_cast<Expr*>(ast)) {
     printf("\n");
@@ -133,4 +133,253 @@ void mark_view(BaseAST* ast, long id) {
   view_ast(ast, false, id);
   printf("\n\n");
   fflush(stdout);
+}
+
+static ClassType *
+structuralTypeSymbol(Symbol *s) {
+  if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(s))
+    if (ClassType *st = dynamic_cast<ClassType*>(ts->definition))
+      return st;
+  return NULL;
+}
+
+static void
+html_print_symbol(FILE* html_file, Symbol* sym, bool def, bool show_analysis_info) {
+  if (!sym->isUnresolved) {
+    if (def)
+      fprintf(html_file, "<A NAME=\"SYM%d\">", sym->id);
+    else
+      fprintf(html_file, "<A HREF=\"#SYM%d\">", sym->id);
+  }
+  if (dynamic_cast<FnSymbol*>(sym)) {
+    fprintf(html_file, "<FONT COLOR=\"blue\">");
+  } else if (dynamic_cast<TypeSymbol*>(sym)) {
+    fprintf(html_file, "<FONT COLOR=\"green\">");
+  } else {
+    fprintf(html_file, "<FONT COLOR=\"red\">");
+  }
+  fprintf(html_file, "%s", sym->name);
+  fprintf(html_file, "</FONT>");
+  if (!sym->isUnresolved) {
+    fprintf(html_file, "<FONT COLOR=\"grey\">[%ld]</FONT>", sym->id);
+  }
+  fprintf(html_file, "</A>");
+  if (def &&
+      !dynamic_cast<TypeSymbol*>(sym) &&
+      sym->type &&
+      sym->type->symbol &&
+      sym->type != dtUnknown) {
+    fprintf(html_file, ":");
+    html_print_symbol(html_file, sym->type->symbol, false, show_analysis_info);
+  }
+  if (show_analysis_info) {
+    Vec<SymExpr *> constants;
+    constant_info(sym, constants);
+    if (constants.n) {
+      if (constants.n > 1)
+        fprintf(html_file, " constants: { ");
+      else
+        fprintf(html_file, " constant: ");
+      for (int i = 0; i < constants.n; i++) {
+        if (i > 0) fprintf(html_file, ", ");
+        char *s;
+        if (get_string(constants.v[i], &s))
+          fprintf(html_file, "<FONT COLOR=\"lightblue\">'%s'</FONT>", s);
+        else if (SymExpr* v = dynamic_cast<SymExpr* >(constants.v[i]))          
+          html_print_symbol(html_file, v->var, false, show_analysis_info);
+        else 
+          INT_FATAL("bad constant");
+      }
+      if (constants.n > 1)
+        fprintf(html_file, " }");
+    }
+  }
+}
+
+static void
+html_print_fnsymbol(FILE* html_file, FnSymbol* fn, bool show_analysis_info) {
+  if (fn->typeBinding) {
+    html_print_symbol(html_file, fn->typeBinding, false, show_analysis_info);
+    fprintf(html_file, " . ");
+  }
+  html_print_symbol(html_file, fn, true, show_analysis_info);
+  fprintf(html_file, " ( ");
+  bool first = true;
+  for_alist(DefExpr, arg, fn->formals) {
+    if (!first) {
+      fprintf(html_file, " , ");
+    } else {
+      first = false;
+    }
+    html_print_symbol(html_file, arg->sym, true, show_analysis_info);
+  }
+  fprintf(html_file, " ) ");
+  if (fn->retType->symbol) {
+    fprintf(html_file, " : ");
+    html_print_symbol(html_file, fn->retType->symbol, false, show_analysis_info);
+  }
+}
+
+static void
+html_view_ast(FILE* html_file, BaseAST* ast, bool show_analysis_info) {
+  if (Stmt* stmt = dynamic_cast<Stmt*>(ast)) {
+    fprintf(html_file, "<DL>\n");
+    if (dynamic_cast<BlockStmt*>(stmt)) {
+      fprintf(html_file, "{");
+    } else if (GotoStmt* s = dynamic_cast<GotoStmt*>(stmt)) {
+      switch (s->goto_type) {
+      case goto_normal: fprintf(html_file, "<B>goto</B> "); break;
+      case goto_break: fprintf(html_file, "<B>break</B> "); break;
+      case goto_continue: fprintf(html_file, "<B>continue</B> "); break;
+      }
+      if (s->label)
+        html_print_symbol(html_file, s->label, true, show_analysis_info);
+    } else if (dynamic_cast<CondStmt*>(stmt)) {
+      fprintf(html_file, "<B>if</B> ");
+    } else if (dynamic_cast<LabelStmt*>(stmt)) {
+      fprintf(html_file, "<B>label</B> ");
+    } else if (ReturnStmt* s = dynamic_cast<ReturnStmt*>(stmt)) {
+      if (s->yield)
+        fprintf(html_file, "<B>yield</B> ");
+      else
+        fprintf(html_file, "<B>return</B> ");
+    } else if (!dynamic_cast<ExprStmt*>(ast)) {
+      fprintf(html_file, "%s", astTypeName[stmt->astType]);
+    }
+  }
+
+  if (Expr* expr = dynamic_cast<Expr*>(ast)) {
+    fprintf(html_file, " ");
+    if (DefExpr* e = dynamic_cast<DefExpr*>(expr)) {
+      if (FnSymbol* fn = dynamic_cast<FnSymbol*>(e->sym)) {
+        fprintf(html_file, "<UL CLASS =\"mktree\">\n<LI>");
+        fprintf(html_file, "<CHPLTAG=\"FN%d\">\n", fn->id);
+        fprintf(html_file, "<B>function ");
+        html_print_fnsymbol(html_file, fn, show_analysis_info);
+        fprintf(html_file, "</B><UL>\n");
+      } else if (structuralTypeSymbol(e->sym)) {
+        fprintf(html_file, "<UL CLASS =\"mktree\">\n");
+        fprintf(html_file, "<LI><B>type ");
+        html_print_symbol(html_file, e->sym, true, show_analysis_info);
+        fprintf(html_file, "</B><UL>\n");
+      } else if (dynamic_cast<TypeSymbol*>(e->sym)) {
+        fprintf(html_file, "<B>type</B> ");
+        html_print_symbol(html_file, e->sym, true, show_analysis_info);
+      } else if (dynamic_cast<VarSymbol*>(e->sym)) {
+        fprintf(html_file, "<B>var</B> ");
+        html_print_symbol(html_file, e->sym, true, show_analysis_info);
+      } else if (ArgSymbol* s = dynamic_cast<ArgSymbol*>(e->sym)) {
+        switch (s->intent) {
+          case INTENT_IN: fprintf(html_file, "<B>in</B> "); break;
+          case INTENT_INOUT: fprintf(html_file, "<B>inout</B> "); break;
+          case INTENT_OUT: fprintf(html_file, "<B>out</B> "); break;
+          case INTENT_CONST: fprintf(html_file, "<B>const</B> "); break;
+          case INTENT_REF: fprintf(html_file, "<B>ref</B> "); break;
+          case INTENT_PARAM: fprintf(html_file, "<B>param</B> "); break;
+          case INTENT_TYPE: fprintf(html_file, "<B>type</B> "); break;
+          default: break;
+        }
+        fprintf(html_file, "<B>arg</B> ");
+        html_print_symbol(html_file, e->sym, true, show_analysis_info);
+      } else {
+        fprintf(html_file, "<B>def</B> ");
+        html_print_symbol(html_file, e->sym, true, show_analysis_info);
+      }
+    } else if (VarSymbol* e = get_constant(expr)) {
+      if (e->immediate->const_kind == IF1_CONST_KIND_STRING) {
+        fprintf(html_file, "<FONT COLOR=\"lightblue\">'%s'</FONT>", e->immediate->v_string);
+      } else {
+        fprintf(html_file, "<FONT COLOR=\"lightblue\">%s</FONT>", e->cname);
+      }
+    } else if (SymExpr* e = dynamic_cast<SymExpr*>(expr)) {
+      html_print_symbol(html_file, e->var, false, show_analysis_info);
+    } else if (NamedExpr* e = dynamic_cast<NamedExpr*>(expr)) {
+      fprintf(html_file, "(%s = ", e->name);
+    } else if (CallExpr* e = dynamic_cast<CallExpr*>(expr)) {
+      fprintf(html_file, "(");
+      if (!e->primitive) {
+        fprintf(html_file, "<B>call</B> ");
+      } else {
+        fprintf(html_file, "'%s' ", e->primitive->name);
+      }
+      if (e->partialTag == PARTIAL_OK)
+        fprintf(html_file, "(partial ok) ");
+      if (e->partialTag == PARTIAL_ALWAYS)
+        fprintf(html_file, "(partial always) ");
+    } else if (ImportExpr* e = dynamic_cast<ImportExpr*>(expr)) {
+      if (e->importTag == IMPORT_WITH) {
+        fprintf(html_file, "<B>with</B>");
+      } else {
+        fprintf(html_file, "<B>use</B>");
+      }
+    } else {
+      fprintf(html_file, "(%s", astTypeName[expr->astType]);
+    }
+  }
+
+  Vec<BaseAST*> asts;
+  get_ast_children(ast, asts);
+  forv_Vec(BaseAST, ast, asts)
+    html_view_ast(html_file, ast, show_analysis_info);
+
+  if (Stmt* stmt = dynamic_cast<Stmt*>(ast)) {
+    if (dynamic_cast<BlockStmt*>(stmt))
+      fprintf(html_file, "}");
+    fprintf(html_file, "</DL>\n");
+  }
+
+  if (Expr* expr = dynamic_cast<Expr*>(ast)) {
+    if (DefExpr* e = dynamic_cast<DefExpr*>(expr)) {
+      if (dynamic_cast<FnSymbol*>(e->sym) || 
+          (dynamic_cast<TypeSymbol*>(e->sym) &&
+           dynamic_cast<ClassType*>(e->sym->type))) {
+        fprintf(html_file, "</UL>\n");
+        if (FnSymbol* fn = dynamic_cast<FnSymbol*>(e->sym)) {
+          fprintf(html_file, "<CHPLTAG=\"FN%d\">\n", fn->id);
+        }
+        fprintf(html_file, "</UL>\n");
+      }
+    } else if (dynamic_cast<SymExpr*>(expr)) {
+    } else {
+      fprintf(html_file, ")");
+    }
+    if (show_analysis_info && expr->parentSymbol) {
+      Vec<FnSymbol *> fns;
+      call_info(expr, fns);
+      if (fns.n) {
+        fprintf(html_file, " calls: ");
+        for (int i = 0; i < fns.n; i++) {
+          if (i > 0) fprintf(html_file, " ");
+          html_print_symbol(html_file, fns.v[i], false, show_analysis_info);
+        }
+      }
+    }
+  }
+}
+
+void html_view(int show_analysis_info) {
+  static int uid = 1;
+  FILE* html_file;
+  char* filename;
+  forv_Vec(ModuleSymbol, mod, allModules) {
+    filename = stringcat("pass", intstring(uid), "_module_", mod->name, ".html");
+    fprintf(html_index_file, "&nbsp;&nbsp;<a href=\"%s\">%s</a>\n", filename, mod->name);
+    html_file = fopen(stringcat(log_dir, filename), "w");
+    fprintf(html_file, "<CHPLTAG=\"%s\">\n", currentTraversal);
+    fprintf(html_file, "<HTML>\n");
+    fprintf(html_file, "<HEAD>\n");
+    fprintf(html_file, "<TITLE> AST for Module %s after Pass %s </TITLE>\n", mod->name, currentTraversal);
+    fprintf(html_file, "<SCRIPT SRC=\"%s/etc/www/mktree.js\" LANGUAGE=\"JavaScript\"></SCRIPT>", system_dir);
+    fprintf(html_file, "<LINK REL=\"stylesheet\" HREF=\"%s/etc/www/mktree.css\">", system_dir);
+    fprintf(html_file, "</HEAD>\n");
+    fprintf(html_file, "<div style=\"text-align: center;\"><big><big><span style=\"font-weight: bold;\">");
+    fprintf(html_file, "AST for Module %s after Pass %s <br><br></span></big></big>\n", mod->name, currentTraversal);
+    fprintf(html_file, "<div style=\"text-align: left;\">\n\n");
+    fprintf(html_file, "<B>module %s</B>\n", mod->name);
+    for_alist(Stmt, stmt, mod->stmts)
+      html_view_ast(html_file, stmt, show_analysis_info);
+    fprintf(html_file, "</HTML>\n");
+    fclose(html_file);
+  }
+  uid++;
 }

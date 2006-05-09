@@ -1,6 +1,5 @@
 TRAVERSALS_SRCS = \
 	fixup.cpp \
-        htmlview.cpp \
 	traversal.cpp
 
 CVS_SRCS = $(TRAVERSALS_SRCS)
