@@ -64272,3 +64272,22 @@ Added files:
 	chapel/compiler/AST/: view.cpp 
 	chapel/compiler/include/: view.h 
 
+---------------------------------------------------------------------------
+
+05/09/06 11:53:23 -- deitz
+
+Log message:
+	Reworked clear_file_info, reset_file_info, and compute_call_sites to
+	use new traversal mechanism.
+	
+	Removed PrintAST traversal, already implemented in PrintProgram pass.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp 
+	chapel/compiler/passes/: cleanup.cpp 
+	chapel/compiler/traversals/: Makefile.share 
+	chapel/test/flowanalysis/newast/: sum_type-1.good 
+	                                  sum_type-2.good 
+Removed files:
+	chapel/compiler/traversals/: printAST.cpp printAST.h 
+
