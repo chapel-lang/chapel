@@ -64245,3 +64245,19 @@ Removed files:
 	                         filesToAST.h functionResolution.h 
 	                         printProgram.h 
 
+---------------------------------------------------------------------------
+
+05/09/06 11:47:25 -- deitz
+
+Log message:
+	Reworked print_view suite of functions now in include/view.h and
+	AST/view.cpp to use the new traversal mechanism.  Removed View
+	traversal.
+
+Modified files:
+	chapel/compiler/AST/: Makefile.share bb.cpp 
+	chapel/compiler/passes/: normalize.cpp runInterpreter.cpp 
+	chapel/compiler/traversals/: Makefile.share 
+Removed files:
+	chapel/compiler/traversals/: view.cpp view.h 
+
