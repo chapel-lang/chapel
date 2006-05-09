@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include "astutil.h"
-#include "codegen.h"
 #include "driver.h"
 #include "files.h"
 #include "mysystem.h"

@@ -1,7 +1,6 @@
 #include "alist.h"
 #include "analysis.h"
 #include "driver.h"
-#include "filesToAST.h"
 #include "runAnalysis.h"
 #include "symbol.h"
 #include "symtab.h"

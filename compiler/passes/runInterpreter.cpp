@@ -11,7 +11,6 @@
 #include "pass.h"
 #include "alist.h"
 #include "driver.h"
-#include "filesToAST.h"
 #include "runInterpreter.h"
 #include "symbol.h"
 #include "symtab.h"

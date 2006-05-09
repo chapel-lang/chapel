@@ -10,7 +10,6 @@
 #include "symtab.h"
 #include "type.h"
 #include "../traversals/fixup.h"
-#include "../passes/filesToAST.h"
 
 
 Type::Type(astType_t astType, Symbol* init_defaultVal) :

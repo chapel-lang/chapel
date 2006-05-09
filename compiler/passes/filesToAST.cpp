@@ -1,6 +1,5 @@
 #include "driver.h"
 #include "files.h"
-#include "filesToAST.h"
 #include "parser.h"
 #include "stringutil.h"
 #include "symbol.h"
