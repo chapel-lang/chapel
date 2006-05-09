@@ -12,7 +12,7 @@
 #include "symbol.h"
 #include "symtab.h"
 #include "stringutil.h"
-#include "../traversals/view.h"
+#include "view.h"
 
 bool normalized = false;
 

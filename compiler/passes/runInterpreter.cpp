@@ -14,7 +14,7 @@
 #include "runInterpreter.h"
 #include "symbol.h"
 #include "symtab.h"
-#include "../traversals/view.h"
+#include "view.h"
 #include "stringutil.h"
 #include "parser.h"
 #include "runtime.h"

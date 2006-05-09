@@ -1,7 +1,7 @@
 #include "bb.h"
 #include "expr.h"
 #include "stmt.h"
-#include "../traversals/view.h"
+#include "view.h"
 
 BasicBlock::BasicBlock(int init_id) : id(init_id) {}
 

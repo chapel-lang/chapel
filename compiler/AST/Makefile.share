@@ -8,6 +8,7 @@ AST_SRCS = \
 	stmt.cpp \
 	symbol.cpp \
 	type.cpp \
+        view.cpp
 
 CVS_SRCS = $(AST_SRCS)
 SRCS = $(CVS_SRCS)
