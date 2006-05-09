@@ -81,9 +81,6 @@ struct TraverseASTs {
   Vec<BaseAST *> asts;
 };
 
-#define GET_ALL_CHILDREN(_s, _x) \
-  TraverseASTs _x;\
-  get_ast_children(_s, _x.asts, 1);
 #define GET_AST_CHILDREN(_s, _x) \
   TraverseASTs _x;\
   get_ast_children(_s, _x.asts);
@@ -1642,12 +1639,14 @@ gen_if1(BaseAST *ast) {
     case STMT_SELECT: gen_select(ast); return 0;
   }
   // recurse
-  GET_AST_CHILDREN(ast, getStuff);
-  DefExpr* def_expr = dynamic_cast<DefExpr*>(ast);
-  if (!def_expr || !dynamic_cast<FnSymbol*>(def_expr->sym))
-    forv_BaseAST(a, getStuff.asts)
-      if (gen_if1(a) < 0)
-        return -1;
+  if (dynamic_cast<Expr*>(ast) || dynamic_cast<Stmt*>(ast)) {
+    GET_AST_CHILDREN(ast, getStuff);
+    DefExpr* def_expr = dynamic_cast<DefExpr*>(ast);
+    if (!def_expr || !dynamic_cast<FnSymbol*>(def_expr->sym))
+      forv_BaseAST(a, getStuff.asts)
+        if (gen_if1(a) < 0)
+          return -1;
+  }
   // bottom's up
   switch (ast->astType) {
     case STMT: assert(!ast); break;
@@ -1779,7 +1778,6 @@ gen_if1(BaseAST *ast) {
   case AST_TYPE_END:
   case LIST:
   case OBJECT:
-    assert(!"case");
     break;
   }
   return 0;

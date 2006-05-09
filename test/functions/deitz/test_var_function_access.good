@@ -1,1 +1,1 @@
-Error: Assigning to a constant expression (test_var_function_access.chpl:6)
+Error: Assigning to a constant expression (test_var_function_access.chpl:5)

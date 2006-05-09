@@ -484,10 +484,10 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     AST_ADD_CHILD(ReturnStmt, expr);
     goto LStmtCommon;
   case STMT_BLOCK:
-    AST_ADD_LIST(BlockStmt, body, Stmt);
     AST_ADD_CHILD(BlockStmt, param_low);
     AST_ADD_CHILD(BlockStmt, param_high);
     AST_ADD_CHILD(BlockStmt, param_index);
+    AST_ADD_LIST(BlockStmt, body, Stmt);
     goto LStmtCommon;
   case STMT_COND:
     AST_ADD_CHILD(CondStmt, condExpr);
@@ -516,12 +516,12 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     ADD_CHILD(SymExpr, var);
     goto LExprCommon;
   case EXPR_IMPORT:
-    ADD_CHILD(ImportExpr, expr);
+    AST_ADD_CHILD(ImportExpr, expr);
     goto LExprCommon;
   case EXPR_DEF:
-    ADD_CHILD(DefExpr, sym);
     AST_ADD_CHILD(DefExpr, init);
     AST_ADD_CHILD(DefExpr, exprType);
+    AST_ADD_CHILD(DefExpr, sym);
     goto LExprCommon;
   case EXPR_CALL:
     AST_ADD_CHILD(CallExpr, baseExpr);
@@ -541,10 +541,11 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     ADD_CHILD(Symbol, type);
     break;
   case SYMBOL_MODULE:
-    ADD_LIST(ModuleSymbol, stmts, Stmt);
+    AST_ADD_LIST(ModuleSymbol, stmts, Stmt);
     ADD_CHILD(ModuleSymbol, initFn);
     goto LSymbolCommon;
   case SYMBOL_VAR:
+    AST_ADD_CHILD(VarSymbol, variableExpr);
     goto LSymbolCommon;
   case SYMBOL_ARG:
     AST_ADD_CHILD(ArgSymbol, defaultExpr);
@@ -552,6 +553,7 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     ADD_CHILD(ArgSymbol, genericSymbol);
     goto LSymbolCommon;
   case SYMBOL_TYPE:
+    AST_ADD_CHILD(TypeSymbol, definition);
     goto LSymbolCommon;
   case SYMBOL_FN:
     AST_ADD_LIST(FnSymbol, formals, DefExpr);
@@ -577,10 +579,10 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
   case TYPE_FN:
     goto LTypeCommon;
   case TYPE_ENUM:
-    ADD_LIST(EnumType, constants, DefExpr);
+    AST_ADD_LIST(EnumType, constants, DefExpr);
     goto LTypeCommon;
   case TYPE_LITERAL:
-    AST_ADD_CHILD(LiteralType, literal);
+    ADD_CHILD(LiteralType, literal);
     goto LTypeCommon;
   case TYPE_USER:
     AST_ADD_CHILD(UserType, typeExpr);
@@ -588,7 +590,8 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
     ADD_CHILD(UserType, underlyingType);
     goto LTypeCommon;
   case TYPE_CLASS:
-    ADD_LIST(ClassType, declarationList, Stmt);
+    AST_ADD_LIST(ClassType, declarationList, Stmt);
+    AST_ADD_LIST(ClassType, inherits, Expr);
     ADD_VEC(ClassType, fields, Symbol);
     ADD_VEC(ClassType, types, TypeSymbol);
     ADD_CHILD(ClassType, fieldSelector);

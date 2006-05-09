@@ -13,83 +13,32 @@ void build(BaseAST* ast) {
   normalize(ast);
 }
 
-
-class CollectFunctions : public Traversal {
- public:
-  Vec<FnSymbol*>* fns;
-  CollectFunctions(Vec<FnSymbol*>* iFns) : fns(iFns) { }
-  void postProcessExpr(Expr* expr) {
-    if (DefExpr* def = dynamic_cast<DefExpr*>(expr))
-      if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def->sym))
-        fns->add(fn);
-  }
-};
-
 void collect_functions(Vec<FnSymbol*>* fns) {
-  CollectFunctions* traversal = new CollectFunctions(fns);
-  traversal->run(&allModules);
+  Vec<BaseAST*> asts;
+  collect_asts(&asts);
+  forv_Vec(BaseAST, ast, asts)
+    if (FnSymbol* a = dynamic_cast<FnSymbol*>(ast))
+      fns->add(a);
 }
 
-
-class PreCollectAST : public Traversal {
- public:
-  Vec<BaseAST*>* asts;
-  PreCollectAST(Vec<BaseAST*>* iAsts) : asts(iAsts) { }
-  void preProcessStmt(Stmt* stmt) {
-    asts->add(stmt);
-  }
-  void preProcessExpr(Expr* expr) {
-    asts->add(expr);
-    if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
-      asts->add(def->sym);
-      if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(def->sym))
-        if (ts->definition) {
-          asts->add(ts->definition);
-          asts->add(ts->definition->metaType);
-          asts->add(ts->definition->metaType->symbol);
-        }
-    }
-    if (SymExpr* sym = dynamic_cast<SymExpr*>(expr)) {
-      if (dynamic_cast<UnresolvedSymbol*>(sym->var))
-        asts->add(sym->var);
-      if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var))
-        if (var->immediate)
-          asts->add(sym->var);
-    }
-  }
-};
-
-class PostCollectAST : public Traversal {
- public:
-  Vec<BaseAST*>* asts;
-  PostCollectAST(Vec<BaseAST*>* iAsts) : asts(iAsts) { }
-  void postProcessStmt(Stmt* stmt) {
-    asts->add(stmt);
-  }
-  void postProcessExpr(Expr* expr) {
-    asts->add(expr);
-    if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
-      asts->add(def->sym);
-      if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(def->sym))
-        if (ts->definition) {
-          asts->add(ts->definition);
-          asts->add(ts->definition->metaType);
-          asts->add(ts->definition->metaType->symbol);
-        }
-    }
-    if (SymExpr* sym = dynamic_cast<SymExpr*>(expr)) {
-      if (dynamic_cast<UnresolvedSymbol*>(sym->var))
-        asts->add(sym->var);
-      if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var))
-        if (var->immediate)
-          asts->add(sym->var);
-    }
-  }
-};
-
 void collect_asts(Vec<BaseAST*>* asts, BaseAST* ast) {
-  TRAVERSE(ast, new PreCollectAST(asts), true);
   asts->add(ast);
+  if (Type* type = dynamic_cast<Type*>(ast)) {
+    asts->add(type->metaType);
+    asts->add(type->metaType->symbol);
+  }
+  if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
+    if (dynamic_cast<UnresolvedSymbol*>(sym->var))
+      asts->add(sym->var);
+    if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var))
+      if (var->immediate)
+        asts->add(sym->var);
+  }
+  Vec<BaseAST*> next_asts;
+  get_ast_children(ast, next_asts);
+  forv_Vec(BaseAST, next_ast, next_asts) {
+    collect_asts(asts, next_ast);
+  }
 }
 
 void collect_asts(Vec<BaseAST*>* asts) {
@@ -98,8 +47,23 @@ void collect_asts(Vec<BaseAST*>* asts) {
 }
 
 void collect_asts_postorder(Vec<BaseAST*>* asts, BaseAST* ast) {
-  TRAVERSE(ast, new PostCollectAST(asts), true);
+  Vec<BaseAST*> next_asts;
+  get_ast_children(ast, next_asts);
+  forv_Vec(BaseAST, next_ast, next_asts) {
+    collect_asts_postorder(asts, next_ast);
+  }
   asts->add(ast);
+  if (Type* type = dynamic_cast<Type*>(ast)) {
+    asts->add(type->metaType);
+    asts->add(type->metaType->symbol);
+  }
+  if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
+    if (dynamic_cast<UnresolvedSymbol*>(sym->var))
+      asts->add(sym->var);
+    if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var))
+      if (var->immediate)
+        asts->add(sym->var);
+  }
 }
 
 void collect_asts_postorder(Vec<BaseAST*>* asts) {

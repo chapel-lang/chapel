@@ -461,7 +461,8 @@ AList<elemType>::copy(ASTMap* map,
         }
       }
     }
-    update_symbols(newList, map);
+    for_alist(elemType, node, newList)
+      update_symbols(node, map);
   }
   return newList;
 }
