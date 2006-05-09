@@ -104,7 +104,8 @@ void createInitFn(ModuleSymbol* mod) {
   mod->initFn->body = initFunBody;
   definition->insertAtHead(new DefExpr(mod->initFn));
   mod->stmts->insertAtHead(definition);
-  clear_file_info(definition);
+  for_alist(Stmt, stmt, definition)
+    clear_file_info(stmt);
 }
 
 
