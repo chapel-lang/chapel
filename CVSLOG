@@ -64261,3 +64261,14 @@ Modified files:
 Removed files:
 	chapel/compiler/traversals/: view.cpp view.h 
 
+---------------------------------------------------------------------------
+
+05/09/06 11:49:38 -- deitz
+
+Log message:
+	New files with last checkin.
+
+Added files:
+	chapel/compiler/AST/: view.cpp 
+	chapel/compiler/include/: view.h 
+
