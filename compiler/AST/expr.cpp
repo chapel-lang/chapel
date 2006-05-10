@@ -537,7 +537,7 @@ void CallExpr::makeOp(void) {
       make_op_help(PRIMITIVE_XOR, "^", 2);
       make_op_help(PRIMITIVE_LAND, "&&", 2);
       make_op_help(PRIMITIVE_LOR, "||", 2);
-      make_op_help(PRIMITIVE_EXP, "**", 2);
+      make_op_help(PRIMITIVE_POW, "**", 2);
     }
   }
 }
@@ -842,7 +842,7 @@ void CallExpr::codegen(FILE* outfile) {
       get(2)->codegen(outfile);
       fprintf(outfile, ")");
       break;
-    case PRIMITIVE_EXP:
+    case PRIMITIVE_POW:
       fprintf(outfile, "pow");
       fprintf(outfile, "(");
       get(1)->codegen(outfile);
@@ -998,7 +998,7 @@ bool CallExpr::isBinaryPrimitive(void) {
   return
     primitive &&
     primitive->tag >= PRIMITIVE_ADD &&
-    primitive->tag <= PRIMITIVE_EXP;
+    primitive->tag <= PRIMITIVE_POW;
 }
 
 

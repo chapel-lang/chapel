@@ -45,7 +45,7 @@ _EXTERN AnalysisOp *or_analysis_op _INIT;
 _EXTERN AnalysisOp *xor_analysis_op _INIT;
 _EXTERN AnalysisOp *land_analysis_op _INIT;
 _EXTERN AnalysisOp *lor_analysis_op _INIT;
-_EXTERN AnalysisOp *exp_analysis_op _INIT;
+_EXTERN AnalysisOp *pow_analysis_op _INIT;
 _EXTERN AnalysisOp *get_member_analysis_op _INIT;
 _EXTERN AnalysisOp *set_member_analysis_op _INIT;
 _EXTERN AnalysisOp *cast_analysis_op _INIT;

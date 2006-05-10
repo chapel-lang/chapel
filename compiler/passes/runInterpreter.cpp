@@ -161,7 +161,7 @@ struct IThread : public gc { public:
 
 enum PrimOps {
   PRIM_ACOS, PRIM_ACOSH, PRIM_ASIN, PRIM_ASINH, PRIM_ATAN, PRIM_ATANH, 
-  PRIM_CBRT, PRIM_CEIL, PRIM_COS, PRIM_COSH, PRIM_EEXP, PRIM_ERF, PRIM_ERFC,  
+  PRIM_CBRT, PRIM_CEIL, PRIM_COS, PRIM_COSH, PRIM_ERF, PRIM_ERFC, PRIM_EXP,  
   PRIM_EXP2, PRIM_EXPM1, PRIM_FABS, PRIM_FLOOR, PRIM_LGAMMA, PRIM_LOG, 
   PRIM_LOG2, PRIM_LOG10, PRIM_LOG1P, PRIM_LOGB, PRIM_NEARBYINT, PRIM_RINT, 
   PRIM_ROUND, PRIM_SIN, PRIM_SINH, PRIM_SQRT, PRIM_TAN, PRIM_TANH, 
@@ -175,7 +175,7 @@ enum PrimOps {
   PRIM_UNARY_NOT, PRIM_UNARY_LNOT, PRIM_ADD, PRIM_SUBTRACT, PRIM_MULT, 
   PRIM_DIV, PRIM_MOD, PRIM_LSH, PRIM_RSH, PRIM_EQUAL, PRIM_NOTEQUAL,  
   PRIM_LESSOREQUAL, PRIM_GREATEROREQUAL, PRIM_LESS, PRIM_GREATER, PRIM_AND, 
-  PRIM_OR, PRIM_XOR, PRIM_LAND, PRIM_LOR, PRIM_EXP, PRIM_GET_MEMBER, 
+  PRIM_OR, PRIM_XOR, PRIM_LAND, PRIM_LOR, PRIM_POW, PRIM_GET_MEMBER, 
   PRIM_SET_MEMBER, PRIM_PTR_EQ, PRIM_PTR_NEQ, PRIM_CAST, PRIM_TO_STRING, 
   PRIM_COPY_STRING, PRIM_STRING_INDEX, PRIM_STRING_CONCAT, PRIM_STRING_EQUAL, 
   PRIM_STRING_SELECT, PRIM_STRING_STRIDED_SELECT, PRIM_STRING_LENGTH, PRIM_DONE 
@@ -187,7 +187,7 @@ const int ARG_F64_RETURN_F64_START = PRIM_ACOS;
 const int ARG_F64_RETURN_F64_STOP  = PRIM_TRUNC + 1;
 
 f64_fn_f64 f64_fns_f64[ARG_F64_RETURN_F64_STOP] = {
-  acos, acosh, asin, asinh, atan, atanh, cbrt, ceil, cos, cosh, exp, erf, erfc,
+  acos, acosh, asin, asinh, atan, atanh, cbrt, ceil, cos, cosh, erf, erfc, exp,
   exp2, expm1, fabs, floor, lgamma, log, log2, log10, log1p, logb, nearbyint,
   rint, round, sin, sinh, sqrt, tan, tanh, tgamma, trunc
 };
@@ -1894,7 +1894,7 @@ IFrame::iprimitive(CallExpr *s) {
     case PRIM_AND: case PRIM_OR:
     case PRIM_XOR:
     case PRIM_LAND: case PRIM_LOR:
-    case PRIM_EXP:
+    case PRIM_POW:
       check_prim_args(s, 2);
       check_numeric(s, arg[0]);
       check_numeric(s, arg[1]);
@@ -1905,8 +1905,8 @@ IFrame::iprimitive(CallExpr *s) {
       break;
     case PRIM_ACOS: case PRIM_ACOSH: case PRIM_ASIN: case PRIM_ASINH: 
     case PRIM_ATAN: case PRIM_ATANH: case PRIM_CBRT: case PRIM_CEIL:
-    case PRIM_COS: case PRIM_COSH: case PRIM_EEXP: case PRIM_ERF: 
-    case PRIM_ERFC: case PRIM_EXP2: case PRIM_EXPM1: case PRIM_FABS:
+    case PRIM_COS: case PRIM_COSH: case PRIM_ERF: case PRIM_ERFC: 
+    case PRIM_EXP: case PRIM_EXP2: case PRIM_EXPM1: case PRIM_FABS:
     case PRIM_FLOOR: case PRIM_LGAMMA: case PRIM_LOG: case PRIM_LOG2:
     case PRIM_LOG10: case PRIM_LOG1P: case PRIM_LOGB: case PRIM_NEARBYINT:
     case PRIM_RINT: case PRIM_ROUND: case PRIM_SIN: case PRIM_SINH:
@@ -2542,7 +2542,7 @@ init_interpreter() {
   xor_interpreter_op = new InterpreterOp("xor", PRIM_XOR);
   land_interpreter_op = new InterpreterOp("land", PRIM_LAND);
   lor_interpreter_op = new InterpreterOp("lor", PRIM_LOR);
-  exp_interpreter_op = new InterpreterOp("exp", PRIM_EXP);
+  pow_interpreter_op = new InterpreterOp("pow", PRIM_POW);
 
   acos_interpreter_op = new InterpreterOp("acos", PRIM_ACOS);
   acosh_interpreter_op = new InterpreterOp("acosh", PRIM_ACOSH);
@@ -2555,9 +2555,9 @@ init_interpreter() {
   ceil_interpreter_op = new InterpreterOp("ceil", PRIM_CEIL);
   cos_interpreter_op = new InterpreterOp("cos", PRIM_COS);
   cosh_interpreter_op = new InterpreterOp("cosh", PRIM_COSH);
-  eexp_interpreter_op = new InterpreterOp("eexp", PRIM_EEXP);
   erf_interpreter_op = new InterpreterOp("erf", PRIM_ERF);
   erfc_interpreter_op = new InterpreterOp("erfc", PRIM_ERFC);
+  exp_interpreter_op = new InterpreterOp("exp", PRIM_EXP);
   exp2_interpreter_op = new InterpreterOp("exp2", PRIM_EXP2);
   expm1_interpreter_op = new InterpreterOp("expm1", PRIM_EXPM1);
   fabs_interpreter_op = new InterpreterOp("fabs", PRIM_FABS);
@@ -2615,5 +2615,5 @@ init_interpreter() {
   translate_prim.put(PRIM_XOR, P_prim_xor);
   translate_prim.put(PRIM_LAND, P_prim_land);
   translate_prim.put(PRIM_LOR, P_prim_lor);
-  translate_prim.put(PRIM_EXP, P_prim_exp);
+  translate_prim.put(PRIM_POW, P_prim_pow);
 }

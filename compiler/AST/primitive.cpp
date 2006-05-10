@@ -50,7 +50,7 @@ initPrimitive() {
   prim_def(PRIMITIVE_XOR, "^", xor_interpreter_op, xor_analysis_op);
   prim_def(PRIMITIVE_LAND, "&&", land_interpreter_op, land_analysis_op);
   prim_def(PRIMITIVE_LOR, "||", lor_interpreter_op, lor_analysis_op);
-  prim_def(PRIMITIVE_EXP, "**", exp_interpreter_op, exp_analysis_op);
+  prim_def(PRIMITIVE_POW, "**", pow_interpreter_op, pow_analysis_op);
   prim_def("acos", acos_interpreter_op, return_float_analysis_op);
   prim_def("acosh", acosh_interpreter_op, return_float_analysis_op);
   prim_def("asin", asin_interpreter_op, return_float_analysis_op);
@@ -62,7 +62,7 @@ initPrimitive() {
   prim_def("ceil", ceil_interpreter_op, return_float_analysis_op);
   prim_def("cos", cos_interpreter_op, return_float_analysis_op);
   prim_def("cosh", cosh_interpreter_op, return_float_analysis_op);
-  prim_def("eexp", eexp_interpreter_op, return_float_analysis_op);
+  prim_def("exp", exp_interpreter_op, return_float_analysis_op);
   prim_def("erf", erf_interpreter_op, return_float_analysis_op);
   prim_def("erfc", erfc_interpreter_op, return_float_analysis_op);
   prim_def("exp2", exp2_interpreter_op, return_float_analysis_op);

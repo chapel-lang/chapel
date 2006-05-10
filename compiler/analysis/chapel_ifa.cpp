@@ -2825,7 +2825,7 @@ init_chapel_ifa() {
   xor_analysis_op = P("^", prim_xor);
   land_analysis_op = P("&&", prim_land);
   lor_analysis_op = P("||", prim_lor);
-  exp_analysis_op = P("**", prim_exp);
+  pow_analysis_op = P("**", prim_pow);
   get_member_analysis_op = P(".", prim_period);
   set_member_analysis_op = P(".=", prim_setter);
   cast_analysis_op = S("cast", cast_value_transfer_function);

@@ -9,8 +9,8 @@ extern Prim *prim_period;
 #define P_prim_period 1
 extern Prim *prim_setter;
 #define P_prim_setter 2
-extern Prim *prim_exp;
-#define P_prim_exp 3
+extern Prim *prim_pow;
+#define P_prim_pow 3
 extern Prim *prim_mult;
 #define P_prim_mult 4
 extern Prim *prim_div;

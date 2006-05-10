@@ -14,6 +14,7 @@ pragma "inline" fun cos(x : float) return __primitive("cos", x);
 pragma "inline" fun cosh(x : float) return __primitive("cosh", x);
 pragma "inline" fun erf(x : float) return __primitive("erf", x);
 pragma "inline" fun erfc(x : float) return __primitive("erfc", x);
+pragma "inline" fun exp(x : float) return __primitive("exp", x);
 pragma "inline" fun exp2(x : float) return __primitive("exp2", x);
 pragma "inline" fun expm1(x : float) return __primitive("expm1", x);
 pragma "inline" fun fabs(x : float) return __primitive("fabs", x);
@@ -40,4 +41,8 @@ pragma "inline" fun trunc(x : float) return __primitive("trunc", x);
 // Need to update these to use inline pragma
 
 pragma "no codegen" pragma "rename atan2" fun atan2(y : float, x : float) return __primitive("atan2", x);
-pragma "no codegen" pragma "rename exp" fun exp(x: float) return __primitive("eexp", x);
+
+
+/*
+pragma "no codegen" pragma "rename exp" fun exp(x: float) return __primitive("exp", x);
+*/

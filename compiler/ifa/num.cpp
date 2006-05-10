@@ -561,7 +561,7 @@ fold_constant(int op, Immediate *aim1, Immediate *aim2, Immediate *imm) {
     case P_prim_and:
     case P_prim_or:
     case P_prim_xor:
-    case P_prim_exp:
+    case P_prim_pow:
       fold_result(&im1, &im2, &coerce);
       imm->const_kind = coerce.const_kind;
       imm->num_index = coerce.num_index;
@@ -621,7 +621,7 @@ fold_constant(int op, Immediate *aim1, Immediate *aim2, Immediate *imm) {
     case P_prim_minus: DO_FOLD1(-); break;
     case P_prim_not: DO_FOLD1I(~); break;
     case P_prim_lnot: DO_FOLD1(!); break;
-    case P_prim_exp: DO_FOLDF(pow); break;
+    case P_prim_pow: DO_FOLDF(pow); break;
   }
 }
 

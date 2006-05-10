@@ -3,7 +3,7 @@
 Prim *prim_operator = 0;
 Prim *prim_period = 0;
 Prim *prim_setter = 0;
-Prim *prim_exp = 0;
+Prim *prim_pow = 0;
 Prim *prim_mult = 0;
 Prim *prim_div = 0;
 Prim *prim_mod = 0;
@@ -67,12 +67,12 @@ void prim_init(Primitives *p, IF1 *if1) {
   n = if1->strings.put(".=");
   p->prims.add(prim_setter);
   p->prim_map[2][1].put(n, prim_setter);
-  static PrimType prim_exp_arg_types[] = {PRIM_TYPE_ANY_NUM_A, PRIM_TYPE_ANY_NUM_B};
-  static PrimType prim_exp_ret_types[] = {PRIM_TYPE_ANY_NUM_AB};
-  prim_exp = new Prim(3, "**", "prim_exp", 3, 1, 1, prim_exp_arg_types, prim_exp_ret_types, 0);
+  static PrimType prim_pow_arg_types[] = {PRIM_TYPE_ANY_NUM_A, PRIM_TYPE_ANY_NUM_B};
+  static PrimType prim_pow_ret_types[] = {PRIM_TYPE_ANY_NUM_AB};
+  prim_pow = new Prim(3, "**", "prim_pow", 3, 1, 1, prim_pow_arg_types, prim_pow_ret_types, 0);
   n = if1->strings.put("**");
-  p->prims.add(prim_exp);
-  p->prim_map[1][1].put(n, prim_exp);
+  p->prims.add(prim_pow);
+  p->prim_map[1][1].put(n, prim_pow);
   static PrimType prim_mult_arg_types[] = {PRIM_TYPE_ANY_NUM_A, PRIM_TYPE_ANY_NUM_B};
   static PrimType prim_mult_ret_types[] = {PRIM_TYPE_ANY_NUM_AB};
   prim_mult = new Prim(4, "*", "prim_mult", 3, 1, 1, prim_mult_arg_types, prim_mult_ret_types, 0);
