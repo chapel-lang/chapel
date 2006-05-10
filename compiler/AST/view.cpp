@@ -147,9 +147,9 @@ static void
 html_print_symbol(FILE* html_file, Symbol* sym, bool def, bool show_analysis_info) {
   if (!sym->isUnresolved) {
     if (def)
-      fprintf(html_file, "<A NAME=\"SYM%d\">", sym->id);
+      fprintf(html_file, "<A NAME=\"SYM%ld\">", sym->id);
     else
-      fprintf(html_file, "<A HREF=\"#SYM%d\">", sym->id);
+      fprintf(html_file, "<A HREF=\"#SYM%ld\">", sym->id);
   }
   if (dynamic_cast<FnSymbol*>(sym)) {
     fprintf(html_file, "<FONT COLOR=\"blue\">");
@@ -253,7 +253,7 @@ html_view_ast(FILE* html_file, BaseAST* ast, bool show_analysis_info) {
     if (DefExpr* e = dynamic_cast<DefExpr*>(expr)) {
       if (FnSymbol* fn = dynamic_cast<FnSymbol*>(e->sym)) {
         fprintf(html_file, "<UL CLASS =\"mktree\">\n<LI>");
-        fprintf(html_file, "<CHPLTAG=\"FN%d\">\n", fn->id);
+        fprintf(html_file, "<CHPLTAG=\"FN%ld\">\n", fn->id);
         fprintf(html_file, "<B>function ");
         html_print_fnsymbol(html_file, fn, show_analysis_info);
         fprintf(html_file, "</B><UL>\n");
@@ -335,7 +335,7 @@ html_view_ast(FILE* html_file, BaseAST* ast, bool show_analysis_info) {
            dynamic_cast<ClassType*>(e->sym->type))) {
         fprintf(html_file, "</UL>\n");
         if (FnSymbol* fn = dynamic_cast<FnSymbol*>(e->sym)) {
-          fprintf(html_file, "<CHPLTAG=\"FN%d\">\n", fn->id);
+          fprintf(html_file, "<CHPLTAG=\"FN%ld\">\n", fn->id);
         }
         fprintf(html_file, "</UL>\n");
       }
