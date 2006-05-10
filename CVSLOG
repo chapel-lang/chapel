@@ -64355,3 +64355,19 @@ Added files:
 	                                    tgamma.good trunc.chpl 
 	                                    trunc.good 
 
+---------------------------------------------------------------------------
+
+05/10/06 10:51:22 -- shannon
+
+Log message:
+	Some minor refactoring:  changed the 'exp' primitive to
+	'pow' and 'eexp' to 'exp'.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp 
+	chapel/compiler/analysis/: analysis_ops.h chapel_ifa.cpp 
+	chapel/compiler/ifa/: num.cpp prim_data.cpp prim_data.h 
+	chapel/compiler/include/: primitive.h 
+	chapel/compiler/passes/: interpreter_ops.h runInterpreter.cpp 
+	chapel/modules/standard/: _chpl_math.chpl 
+
