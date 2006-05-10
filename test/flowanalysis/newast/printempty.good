@@ -1,5 +1,3 @@
-::__init_printempty(printempty.chpl:3) ( __init_printempty (printempty.chpl:3) )
-::main(printempty.chpl:3) ( main (printempty.chpl:3) )
-function __init_printempty printempty.chpl:3
-function main printempty.chpl:3
+::__init_printempty ( __init_printempty (<internal>:-1) )
+::main ( main (<internal>:-1) )
 globals

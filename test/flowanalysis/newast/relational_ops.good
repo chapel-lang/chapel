@@ -1,4 +1,4 @@
-::__init_relational_ops(relational_ops.chpl:58) ( __init_relational_ops (relational_ops.chpl:58) )
+::__init_relational_ops ( __init_relational_ops (<internal>:-1) )
 ::_tmp(relational_ops.chpl:15) ( bool )
 ::_tmp(relational_ops.chpl:21) ( bool )
 ::_tmp(relational_ops.chpl:27) ( bool )
@@ -9,10 +9,8 @@
 ::_tmp(relational_ops.chpl:57) ( bool )
 ::answer(relational_ops.chpl:5) ( int64 )
 ::m(relational_ops.chpl:1) ( int64 )
-::main(relational_ops.chpl:58) ( main (relational_ops.chpl:58) )
+::main ( main (<internal>:-1) )
 ::n(relational_ops.chpl:2) ( int64 )
 ::o(relational_ops.chpl:3) ( int64 )
 ::p(relational_ops.chpl:4) ( int64 )
-function __init_relational_ops relational_ops.chpl:58
-function main relational_ops.chpl:58
 globals

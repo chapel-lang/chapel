@@ -1,6 +1,4 @@
-::__init_declprintint(declprintint.chpl:3) ( __init_declprintint (declprintint.chpl:3) )
-::main(declprintint.chpl:3) ( main (declprintint.chpl:3) )
+::__init_declprintint ( __init_declprintint (<internal>:-1) )
+::main ( main (<internal>:-1) )
 ::myvariable(declprintint.chpl:1) ( int64 )
-function __init_declprintint declprintint.chpl:3
-function main declprintint.chpl:3
 globals

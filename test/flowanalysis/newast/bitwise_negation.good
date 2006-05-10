@@ -1,9 +1,7 @@
-::__init_bitwise_negation(bitwise_negation.chpl:16) ( __init_bitwise_negation (bitwise_negation.chpl:16) )
+::__init_bitwise_negation ( __init_bitwise_negation (<internal>:-1) )
 ::_tmp(bitwise_negation.chpl:15) ( int64 )
 ::_tmp(bitwise_negation.chpl:9) ( int64 )
 ::answer(bitwise_negation.chpl:2) ( int64 )
 ::m(bitwise_negation.chpl:1) ( int64 )
-::main(bitwise_negation.chpl:16) ( main (bitwise_negation.chpl:16) )
-function __init_bitwise_negation bitwise_negation.chpl:16
-function main bitwise_negation.chpl:16
+::main ( main (<internal>:-1) )
 globals

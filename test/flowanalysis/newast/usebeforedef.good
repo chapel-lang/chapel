@@ -1,9 +1,7 @@
- called from 1 in __init_usebeforedef at usebeforedef.chpl:3
-::__init_usebeforedef(usebeforedef.chpl:3) ( __init_usebeforedef (usebeforedef.chpl:3) )
+::__init_usebeforedef ( __init_usebeforedef (<internal>:-1) )
 ::a(usebeforedef.chpl:3) ( int64 )
 ::foo(usebeforedef.chpl:3) ( foo )
 ::main(usebeforedef.chpl:3) ( main (usebeforedef.chpl:3) )
-function __init_usebeforedef usebeforedef.chpl:3
 function foo usebeforedef.chpl:3
 function main usebeforedef.chpl:3
 globals

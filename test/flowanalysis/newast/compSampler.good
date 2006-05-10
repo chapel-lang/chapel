@@ -1,4 +1,4 @@
-::__init_compSampler(compSampler.chpl:33) ( __init_compSampler (compSampler.chpl:33) )
+::__init_compSampler ( __init_compSampler (<internal>:-1) )
 ::_tmp(compSampler.chpl:11) ( int64 )
 ::_tmp(compSampler.chpl:11) ( int64 )
 ::_tmp(compSampler.chpl:16) ( int64 )
@@ -13,9 +13,7 @@
 ::_tmp(compSampler.chpl:6) ( int64 )
 ::answer(compSampler.chpl:4) ( int64 )
 ::m(compSampler.chpl:1) ( int64 )
-::main(compSampler.chpl:33) ( main (compSampler.chpl:33) )
+::main ( main (<internal>:-1) )
 ::n(compSampler.chpl:2) ( int64 )
 ::o(compSampler.chpl:3) ( int64 )
-function __init_compSampler compSampler.chpl:33
-function main compSampler.chpl:33
 globals

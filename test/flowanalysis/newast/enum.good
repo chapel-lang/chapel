@@ -1,4 +1,3 @@
- called from 5 in __init_enum at enum.chpl:9
 ::A(enum.chpl:1) ( classVals (enum.chpl:1) )
 ::B(enum.chpl:1) ( classVals (enum.chpl:1) )
 ::C(enum.chpl:1) ( classVals (enum.chpl:1) )
@@ -6,7 +5,7 @@
 ::O(enum.chpl:1) ( classVals (enum.chpl:1) )
 ::S(enum.chpl:1) ( classVals (enum.chpl:1) )
 ::W(enum.chpl:1) ( classVals (enum.chpl:1) )
-::__init_enum(enum.chpl:9) ( __init_enum (enum.chpl:9) )
+::__init_enum ( __init_enum (<internal>:-1) )
 ::_defTmp(enum.chpl:3) ( classVals (enum.chpl:1) )
 ::_defTmp(enum.chpl:7) ( int64 )
 ::f(enum.chpl:1) ( file )
@@ -15,7 +14,6 @@
 ::val(enum.chpl:1) ( classVals (enum.chpl:1) )
 ::x(enum.chpl:3) ( classVals (enum.chpl:1) )
 ::y(enum.chpl:7) ( int64 )
-function __init_enum enum.chpl:9
 function fwrite enum.chpl:1
 function main enum.chpl:1
 globals

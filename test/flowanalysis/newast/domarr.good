@@ -1,6 +1,6 @@
 ::A(domarr.chpl:6) ( _aarray )
 ::Mat(domarr.chpl:4) ( _adomain )
-::__init_domarr(domarr.chpl:11) ( __init_domarr (domarr.chpl:11) )
+::__init_domarr ( __init_domarr (<internal>:-1) )
 ::_cursor_37(domarr.chpl:8) ( _htuple )
 ::_defTmp1(domarr.chpl:8) ( _htuple )
 ::_defTmp1(domarr.chpl:8) ( _htuple )
@@ -20,8 +20,6 @@
 ::i(domarr.chpl:8) ( int64 )
 ::j(domarr.chpl:8) ( int64 )
 ::m(domarr.chpl:1) ( int64 )
-::main(domarr.chpl:11) ( main (domarr.chpl:11) )
+::main ( main (<internal>:-1) )
 ::n(domarr.chpl:2) ( int64 )
-function __init_domarr domarr.chpl:11
-function main domarr.chpl:11
 globals

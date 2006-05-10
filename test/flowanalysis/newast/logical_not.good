@@ -1,10 +1,8 @@
-::__init_logical_not(logical_not.chpl:18) ( __init_logical_not (logical_not.chpl:18) )
+::__init_logical_not ( __init_logical_not (<internal>:-1) )
 ::_tmp(logical_not.chpl:11) ( int64 )
 ::_tmp(logical_not.chpl:17) ( int64 )
 ::answer(logical_not.chpl:3) ( int64 )
-::main(logical_not.chpl:18) ( main (logical_not.chpl:18) )
+::main ( main (<internal>:-1) )
 ::o(logical_not.chpl:1) ( int64 )
 ::p(logical_not.chpl:2) ( int64 )
-function __init_logical_not logical_not.chpl:18
-function main logical_not.chpl:18
 globals

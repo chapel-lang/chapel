@@ -1,4 +1,4 @@
-::__init_bitwise_ops(bitwise_ops.chpl:45) ( __init_bitwise_ops (bitwise_ops.chpl:45) )
+::__init_bitwise_ops ( __init_bitwise_ops (<internal>:-1) )
 ::_tmp(bitwise_ops.chpl:14) ( int64 )
 ::_tmp(bitwise_ops.chpl:20) ( int64 )
 ::_tmp(bitwise_ops.chpl:26) ( int64 )
@@ -7,10 +7,8 @@
 ::_tmp(bitwise_ops.chpl:44) ( bool )
 ::answer(bitwise_ops.chpl:5) ( int64 )
 ::m(bitwise_ops.chpl:1) ( int64 )
-::main(bitwise_ops.chpl:45) ( main (bitwise_ops.chpl:45) )
+::main ( main (<internal>:-1) )
 ::n(bitwise_ops.chpl:2) ( int64 )
 ::o(bitwise_ops.chpl:3) ( int64 )
 ::p(bitwise_ops.chpl:4) ( int64 )
-function __init_bitwise_ops bitwise_ops.chpl:45
-function main bitwise_ops.chpl:45
 globals

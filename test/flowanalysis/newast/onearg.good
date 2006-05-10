@@ -1,9 +1,7 @@
- called from 5 in __init_onearg at onearg.chpl:5
-::__init_onearg(onearg.chpl:5) ( __init_onearg (onearg.chpl:5) )
+::__init_onearg ( __init_onearg (<internal>:-1) )
 ::a(onearg.chpl:1) ( int64 )
 ::foo(onearg.chpl:1) ( foo )
 ::main(onearg.chpl:1) ( main (onearg.chpl:1) )
-function __init_onearg onearg.chpl:5
 function foo onearg.chpl:1
 function main onearg.chpl:1
 globals
