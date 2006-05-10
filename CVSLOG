@@ -64313,3 +64313,13 @@ Modified files:
 Removed files:
 	chapel/compiler/traversals/: htmlview.cpp htmlview.h 
 
+---------------------------------------------------------------------------
+
+05/09/06 19:01:44 -- deitz
+
+Log message:
+	Changed %d to %ld to print BaseAST::id in html view code.
+
+Modified files:
+	chapel/compiler/AST/: view.cpp 
+
