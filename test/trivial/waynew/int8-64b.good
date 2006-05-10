@@ -1,0 +1,4 @@
+int(8) can hold -128
+int(16) can hold -32768
+int(32) can hold -2147483648
+int(64) can hold -9223372036854775808
