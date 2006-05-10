@@ -64538,3 +64538,17 @@ Modified files:
 	                         runAnalysis.cpp runInterpreter.cpp 
 	chapel/runtime/include/: chpltypes.h 
 
+---------------------------------------------------------------------------
+
+05/10/06 16:46:06 -- waynew
+
+Log message:
+	Test cases for testing primitive type sizes.
+
+Added files:
+	chapel/test/trivial/waynew/: float32-64.chpl float32-64.good 
+	                             int8-64.chpl int8-64.good 
+	                             int8-64b.chpl int8-64b.good 
+	                             int8b.chpl int8b.good uint8-64.chpl 
+	                             uint8-64.good 
+
