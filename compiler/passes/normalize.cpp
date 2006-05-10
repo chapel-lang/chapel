@@ -656,12 +656,7 @@ static void hack_resolve_types(Expr* expr) {
           if (!userType->defaultValue) {
             if (userType->underlyingType->defaultValue) {
               userType->defaultValue = userType->underlyingType->defaultValue;
-              ASTContext context;
-              context.parentScope = userType->symbol->defPoint->parentScope;
-              context.parentSymbol = userType->symbol;
-              context.parentStmt = NULL;
-              context.parentExpr = NULL;
-              insertHelper(userType->defaultValue, context);
+              insert_help(userType->defaultValue, NULL, NULL, userType->symbol, userType->symbol->defPoint->parentScope);
             } else {
               userType->defaultConstructor =
                 userType->underlyingType->defaultConstructor;

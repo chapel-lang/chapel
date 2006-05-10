@@ -135,7 +135,7 @@ BaseAST* BaseAST::remove(void) {
   } else {
     callReplaceChild(NULL);
   }
-  removeHelper(this);
+  remove_help(this);
   return this;
 }
 
@@ -161,8 +161,9 @@ void BaseAST::replace(BaseAST* new_ast) {
     callReplaceChild(new_ast);
   }
   ASTContext context = getContext();
-  removeHelper(this);
-  insertHelper(new_ast, context);
+  remove_help(this);
+  insert_help(new_ast, context.parentExpr, context.parentStmt,
+              context.parentSymbol, context.parentScope);
 }
 
 
@@ -207,7 +208,10 @@ void BaseAST::insertBefore(BaseAST* new_ast) {
     new_ast->next = this;
     prev->next = new_ast;
     prev = new_ast;
-    insertHelper(new_ast, getContext());
+    ASTContext context = getContext();
+    if (context.parentSymbol)
+      insert_help(new_ast, context.parentExpr, context.parentStmt,
+                  context.parentSymbol, context.parentScope);
   }
 }
 
@@ -237,8 +241,11 @@ void BaseAST::insertAfter(BaseAST* new_ast) {
     new_ast->prev = this;
     new_ast->next = next;
     next->prev = new_ast;
-    next = new_ast;
-    insertHelper(new_ast, getContext());
+    next = new_ast; 
+    ASTContext context = getContext();
+    if (context.parentSymbol)
+      insert_help(new_ast, context.parentExpr, context.parentStmt,
+                  context.parentSymbol, context.parentScope);
   }
 }
 
@@ -461,18 +468,25 @@ char* currentFilename = NULL;
 char* currentTraversal = NULL;
 
 #define AST_ADD_CHILD(_t, _m) if (((_t*)a)->_m) asts.add(((_t*)a)->_m)
-#define AST_ADD_LIST(_t, _m, _mt) \
-  for (_mt* tmp = ((_t*)a)->_m->first(); tmp; tmp = ((_t*)a)->_m->next()) \
-      asts.add(tmp)
+#define AST_ADD_LIST(_t, _m, _mt)                                       \
+  if (((_t*)a)->_m) { \
+    for (_mt* tmp = ((_t*)a)->_m->first(); tmp; tmp = ((_t*)a)->_m->next()) \
+      asts.add(tmp);                                                      \
+    if (sentinels) {                                                      \
+      asts.add(((_t*)a)->_m->head);                                       \
+      asts.add(((_t*)a)->_m->tail);                                       \
+    } \
+  }
+
 #define AST_ADD_VEC(_t, _m, _mt) \
-    forv_Vec(_mt, c, ((_t*)a)->_m) asts.add(c)
+  forv_Vec(_mt, c, ((_t*)a)->_m) asts.add(c)
 
 #define ADD_CHILD(_t, _m) if (all) AST_ADD_CHILD(_t, _m)
 #define ADD_LIST(_t, _m, _mt) if (all) AST_ADD_LIST(_t, _m, _mt)
 #define ADD_VEC(_t, _m, _mt) if (all) AST_ADD_VEC(_t, _m, _mt)
 
 void
-get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all) {
+get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all, int sentinels) {
   switch (a->astType) {
   case STMT:
   LStmtCommon:

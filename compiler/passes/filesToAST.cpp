@@ -43,8 +43,10 @@ void parse(void) {
   if (userModules.n == 0)
     ParseFile(stringcat(path, "i.chpl"), MOD_USER);
 
-  Pass* fixup = new Fixup();
-  fixup->run(Symboltable::getModules(MODULES_ALL));
+  forv_Vec(ModuleSymbol, mod, allModules)
+    insert_help(mod, NULL, NULL, mod, mod->modScope);
+
+  findInternalTypes();
 
   if (!fnostdincs && !fnostdincs_but_file) {
     chpl_htuple = tupleModule->lookupType("_htuple");

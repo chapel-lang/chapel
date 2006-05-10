@@ -276,17 +276,8 @@ void DefExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 void DefExpr::traverseExpr(Traversal* traversal) {
-  SymScope* saveScope = NULL;
   TRAVERSE(init, traversal, false);
-  if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
-    if (fn->argScope) {
-      saveScope = Symboltable::setCurrentScope(fn->argScope);
-    }
-  }
   TRAVERSE(exprType, traversal, false);
-  if (saveScope) {
-    Symboltable::setCurrentScope(saveScope);
-  }
   TRAVERSE_DEF(sym, traversal, false);
 }
 

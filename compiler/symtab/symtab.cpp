@@ -54,21 +54,24 @@ void Symboltable::removeScope(SymScope* scope) {
 }
 
 
-void Symboltable::pushScope(scopeType type) {
+SymScope* Symboltable::pushScope(scopeType type, SymScope* parent) {
+  if (!parent)
+    parent = currentScope;
   SymScope* newScope = new SymScope(type);
-  SymScope* child = currentScope->child;
+  SymScope* child = parent->child;
 
   if (child == NULL) {
-    currentScope->child = newScope;
+    parent->child = newScope;
   } else {
     while (child->sibling != NULL) {
       child = child->sibling;
     }
     child->sibling = newScope;
   }
-  newScope->parent = currentScope;
+  newScope->parent = parent;
 
   currentScope = newScope;
+  return newScope;
 }
 
 

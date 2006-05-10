@@ -20,7 +20,7 @@ class Symboltable {
   static void      init(void);
 
   static void      removeScope(SymScope* scope);
-  static void      pushScope(scopeType type);
+  static SymScope* pushScope(scopeType type, SymScope* parent = NULL);
   static SymScope* popScope(void);
   static SymScope* getCurrentScope(void);
   static SymScope* setCurrentScope(SymScope* newScope);

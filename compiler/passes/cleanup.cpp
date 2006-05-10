@@ -100,12 +100,11 @@ void createInitFn(ModuleSymbol* mod) {
   }
 
   mod->initFn = new FnSymbol(fnName);
+  mod->initFn->formals = new AList<DefExpr>();
   mod->initFn->retType = dtVoid;
   mod->initFn->body = initFunBody;
   definition->insertAtHead(new DefExpr(mod->initFn));
   mod->stmts->insertAtHead(definition);
-  for_alist(Stmt, stmt, definition)
-    clear_file_info(stmt);
 }
 
 
@@ -332,7 +331,6 @@ static void build_constructor(ClassType* ct) {
   fn->cname = stringcat("_construct_", ct->symbol->cname);
 
   AList<DefExpr>* args = new AList<DefExpr>();
-  args->head->parentSymbol = fn;
 
   forv_Vec(TypeSymbol, type, ct->types) {
     if (VariableType* vt = dynamic_cast<VariableType*>(type->definition)) {
