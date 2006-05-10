@@ -64485,3 +64485,26 @@ Removed files:
 	                                    tgamma.good trunc.chpl 
 	                                    trunc.good 
 
+---------------------------------------------------------------------------
+
+05/10/06 15:05:17 -- deitz
+
+Log message:
+	Removed the old traversal mechanism including Pass and Traversal.
+	Stopped compilation of the traversals directory.
+
+Modified files:
+	chapel/compiler/: Makefile 
+	chapel/compiler/AST/: astutil.cpp baseAST.cpp expr.cpp stmt.cpp 
+	                      symbol.cpp type.cpp 
+	chapel/compiler/include/: alist.h baseAST.h expr.h stmt.h 
+	                          symbol.h type.h 
+	chapel/compiler/main/: runpasses.cpp 
+	chapel/compiler/passes/: Makefile.share runAnalysis.h 
+	                         runInterpreter.cpp scopeResolve.cpp 
+Removed files:
+	chapel/compiler/passes/: pass.cpp pass.h 
+	chapel/compiler/traversals/: Makefile Makefile.include 
+	                             Makefile.share traversal.cpp 
+	                             traversal.h 
+
