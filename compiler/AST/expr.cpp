@@ -32,39 +32,6 @@ void Expr::verify() {
 }
 
 
-void Expr::traverse(Traversal* traversal, bool atTop) {
-  SymScope* saveScope = NULL;
-  if (atTop) {
-    saveScope = Symboltable::setCurrentScope(parentScope);
-  }
-  if (traversal->processTop || !atTop) {
-    currentLineno = lineno;
-    currentFilename = filename;
-    traversal->preProcessExpr(this);
-  }
-  if (atTop || traversal->exploreChildExprs) {
-    traverseExpr(traversal);
-  }
-  if (traversal->processTop || !atTop) {
-    currentLineno = lineno;
-    currentFilename = filename;
-    traversal->postProcessExpr(this);
-  }
-  if (atTop) {
-    Symboltable::setCurrentScope(saveScope);
-  }
-}
-
-
-void Expr::traverseDef(Traversal* traversal, bool atTop) {
-  INT_FATAL(this, "Attempt to traverse the definition of an expression");
-}
-
-
-void Expr::traverseExpr(Traversal* traversal) {
-}
-
-
 ASTContext Expr::getContext(void) {
   ASTContext context;
   context.parentScope = parentScope;
@@ -187,11 +154,6 @@ SymExpr::copyInner(ASTMap* map) {
 }
 
 
-void SymExpr::traverseExpr(Traversal* traversal) {
-  TRAVERSE(var, traversal, false);
-}
-
-
 Type* SymExpr::typeInfo(void) {
   if (ArgSymbol* argSymbol = dynamic_cast<ArgSymbol*>(var)) {
     if (argSymbol->intent == INTENT_TYPE) {
@@ -271,13 +233,6 @@ void DefExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   } else {
     INT_FATAL(this, "Unexpected case in DefExpr::replaceChild");
   }
-}
-
-
-void DefExpr::traverseExpr(Traversal* traversal) {
-  TRAVERSE(init, traversal, false);
-  TRAVERSE(exprType, traversal, false);
-  TRAVERSE_DEF(sym, traversal, false);
 }
 
 
@@ -454,12 +409,6 @@ void CallExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   } else {
     INT_FATAL(this, "Unexpected case in CallExpr::replaceChild");
   }
-}
-
-
-void CallExpr::traverseExpr(Traversal* traversal) {
-  TRAVERSE(baseExpr, traversal, false);
-  argList->traverse(traversal, false);
 }
 
 
@@ -1047,13 +996,6 @@ void CastExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 }
 
 
-void CastExpr::traverseExpr(Traversal* traversal) {
-  TRAVERSE(expr, traversal, false);
-  TRAVERSE(newType, traversal, false);
-  TRAVERSE(type, traversal, false);
-}
-
-
 Type* CastExpr::typeInfo(void) {
   if (type) {
     return type;
@@ -1120,11 +1062,6 @@ void NamedExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 }
 
 
-void NamedExpr::traverseExpr(Traversal* traversal) {
-  TRAVERSE(actual, traversal, false);
-}
-
-
 Type* NamedExpr::typeInfo(void) {
   return actual->typeInfo();
 }
@@ -1174,11 +1111,6 @@ void ImportExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   } else {
     INT_FATAL(this, "Unexpected case in ImportExpr::replaceChild");
   }
-}
-
-
-void ImportExpr::traverseExpr(Traversal* traversal) {
-  TRAVERSE(expr, traversal, false);
 }
 
 

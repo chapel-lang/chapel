@@ -8,7 +8,6 @@ PASSES_SRCS = \
         flattenFunctions.cpp \
         functionResolution.cpp \
         inlineFunctions.cpp \
-	pass.cpp \
 	printProgram.cpp \
         normalize.cpp \
         resolveAnalyzed.cpp \

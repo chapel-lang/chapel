@@ -72,39 +72,6 @@ void Stmt::codegenStmt(FILE* outfile) {
 }
 
 
-void Stmt::traverse(Traversal* traversal, bool atTop) {
-  SymScope* saveScope = NULL;
-  if (atTop) {
-    saveScope = Symboltable::setCurrentScope(parentScope);
-  }
-  if (traversal->processTop || !atTop) {
-    currentLineno = lineno;
-    currentFilename = filename;
-    traversal->preProcessStmt(this);
-  }
-  if (atTop || traversal->exploreChildStmts) {
-    traverseStmt(traversal);
-  }
-  if (traversal->processTop || !atTop) {
-    currentLineno = lineno;
-    currentFilename = filename;
-    traversal->postProcessStmt(this);
-  }
-  if (atTop) {
-    Symboltable::setCurrentScope(saveScope);
-  }
-}
-
-
-void Stmt::traverseDef(Traversal* traversal, bool atTop) {
-  INT_FATAL(this, "Attempt to traverse the definition of a statement");
-}
-
-
-void Stmt::traverseStmt(Traversal* traversal) {
-}
-
-
 ASTContext Stmt::getContext(void) {
   ASTContext context;
   context.parentScope = parentScope;
@@ -154,11 +121,6 @@ void ExprStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   } else {
     INT_FATAL(this, "Unexpected case in ExprStmt::replaceChild");
   }
-}
-
-
-void ExprStmt::traverseStmt(Traversal* traversal) {
-  TRAVERSE(expr, traversal, false);
 }
 
 
@@ -236,11 +198,6 @@ void ReturnStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   } else {
     INT_FATAL(this, "Unexpected case in ReturnStmt::replaceChild");
   }
-}
-
-
-void ReturnStmt::traverseStmt(Traversal* traversal) {
-  TRAVERSE(expr, traversal, false);
 }
 
 
@@ -329,19 +286,6 @@ void BlockStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   } else {
     INT_FATAL(this, "Unexpected case in BlockStmt::replaceChild");
   }
-}
-
-
-void BlockStmt::traverseStmt(Traversal* traversal) {
-  SymScope* saveScope = NULL;
-  if (blkScope)
-    saveScope = Symboltable::setCurrentScope(blkScope);
-  TRAVERSE(param_low, traversal, false);
-  TRAVERSE(param_high, traversal, false);
-  TRAVERSE(param_index, traversal, false);
-  TRAVERSE(body, traversal, false);
-  if (saveScope)
-    Symboltable::setCurrentScope(saveScope);
 }
 
 
@@ -559,13 +503,6 @@ void CondStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 }
 
 
-void CondStmt::traverseStmt(Traversal* traversal) {
-  TRAVERSE(condExpr, traversal, false);
-  TRAVERSE(thenStmt, traversal, false);
-  TRAVERSE(elseStmt, traversal, false);
-}
-
-
 void CondStmt::print(FILE* outfile) {
   fprintf(outfile, "if (");
   condExpr->print(outfile);
@@ -635,12 +572,6 @@ void WhenStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 }
 
 
-void WhenStmt::traverseStmt(Traversal* traversal) {
-  TRAVERSE(caseExprs, traversal, false);
-  TRAVERSE(doStmt, traversal, false);
-}
-
-
 void WhenStmt::print(FILE* outfile) {
   fprintf(outfile, "when ");
   caseExprs->print(outfile);
@@ -683,12 +614,6 @@ void SelectStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   } else {
     INT_FATAL(this, "Unexpected case in SelectStmt::replaceChild");
   }
-}
-
-
-void SelectStmt::traverseStmt(Traversal* traversal) {
-  TRAVERSE(caseExpr, traversal, false);
-  whenStmts->traverse(traversal, false);
 }
 
 
@@ -785,12 +710,6 @@ void LabelStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 }
 
 
-void LabelStmt::traverseStmt(Traversal* traversal) {
-  TRAVERSE(defLabel, traversal, false);
-  TRAVERSE(stmt, traversal, false);
-}
-
-
 void LabelStmt::print(FILE* outfile) {
   fprintf(outfile, "label ");
   defLabel->print(outfile);
@@ -845,11 +764,6 @@ void GotoStmt::verify() {
 GotoStmt*
 GotoStmt::copyInner(ASTMap* map) {
   return new GotoStmt(goto_type, label);
-}
-
-
-void GotoStmt::traverseStmt(Traversal* traversal) {
-  TRAVERSE(label, traversal, false);
 }
 
 

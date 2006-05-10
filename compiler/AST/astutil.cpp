@@ -4,7 +4,6 @@
 #include "symbol.h"
 #include "type.h"
 #include "symtab.h"
-#include "../traversals/traversal.h"
 
 
 void build(BaseAST* ast) {

@@ -8,7 +8,6 @@
 #endif
 #include "astutil.h"
 #include "chpl.h"
-#include "pass.h"
 #include "alist.h"
 #include "driver.h"
 #include "runInterpreter.h"

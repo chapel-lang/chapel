@@ -151,66 +151,6 @@ void Symbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 }
 
 
-void Symbol::traverse(Traversal* traversal, bool atTop) {
-  SymScope* saveScope = NULL;
-  if (atTop) {
-    saveScope = Symboltable::setCurrentScope(parentScope);
-  }
-  if (traversal->processTop || !atTop) {
-    currentLineno = lineno;
-    currentFilename = filename;
-    traversal->preProcessSymbol(this);
-  }
-  if (atTop || traversal->exploreChildSymbols) {
-    if (atTop) {
-      traverseDefSymbol(traversal);
-    }
-    else {
-      traverseSymbol(traversal);
-    }
-  }
-  if (traversal->processTop || !atTop) {
-    currentLineno = lineno;
-    currentFilename = filename;
-    traversal->postProcessSymbol(this);
-  }
-  if (atTop) {
-    Symboltable::setCurrentScope(saveScope);
-  }
-}
-
-
-void Symbol::traverseDef(Traversal* traversal, bool atTop) {
-  SymScope* saveScope = NULL;
-  if (atTop) {
-    saveScope = Symboltable::setCurrentScope(parentScope);
-  }
-  if (traversal->processTop || !atTop) {
-    currentLineno = lineno;
-    currentFilename = filename;
-    traversal->preProcessSymbol(this);
-  }
-  traverseDefSymbol(traversal);
-  if (traversal->processTop || !atTop) {
-    currentLineno = lineno;
-    currentFilename = filename;
-    traversal->postProcessSymbol(this);
-  }
-  if (atTop) {
-    Symboltable::setCurrentScope(saveScope);
-  }
-}
-
-
-void Symbol::traverseSymbol(Traversal* traversal) {
-  
-}
-
-
-void Symbol::traverseDefSymbol(Traversal* traversal) {
-}
-
-
 bool Symbol::isConst(void) {
   return false;
 }
@@ -305,11 +245,6 @@ UnresolvedSymbol::copyInner(ASTMap* map) {
 }
 
 
-void UnresolvedSymbol::traverseDefSymbol(Traversal* traversal) {
-  TRAVERSE(this, traversal, false);
-}
-
-
 VarSymbol::VarSymbol(char* init_name,
                      Type* init_type,
                      varType init_varClass, 
@@ -349,13 +284,6 @@ void VarSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
     variableExpr = dynamic_cast<Expr*>(new_ast);
   else
     type->replaceChild(old_ast, new_ast);
-}
-
-
-void VarSymbol::traverseDefSymbol(Traversal* traversal) {
-  TRAVERSE(variableExpr, traversal, false);
-  TRAVERSE(type, traversal, false);
-  TRAVERSE(literalType, traversal, false);
 }
 
 
@@ -481,14 +409,6 @@ void ArgSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 }
 
 
-void ArgSymbol::traverseDefSymbol(Traversal* traversal) {
-  TRAVERSE(defaultExpr, traversal, false);
-  TRAVERSE(variableExpr, traversal, false);
-  TRAVERSE(type, traversal, false);
-  TRAVERSE(genericSymbol, traversal, false);
-}
-
-
 void ArgSymbol::printDef(FILE* outfile) {
   fprintf(outfile, "%s ", intentTagNames[intent]);
   Symbol::print(outfile);
@@ -602,12 +522,6 @@ void TypeSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 }
 
 
-void TypeSymbol::traverseDefSymbol(Traversal* traversal) {
-  TRAVERSE(type, traversal, false);
-  TRAVERSE_DEF(definition, traversal, false);
-}
-
-
 void TypeSymbol::codegenPrototype(FILE* outfile) {
   definition->codegenPrototype(outfile);
 }
@@ -698,24 +612,6 @@ void FnSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
     retExpr = dynamic_cast<Expr*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in FnSymbol::replaceChild");
-  }
-}
-
-
-void FnSymbol::traverseDefSymbol(Traversal* traversal) {
-  SymScope* saveScope = NULL;
-
-  if (argScope) {
-    saveScope = Symboltable::setCurrentScope(argScope);
-  }
-  TRAVERSE(formals, traversal, false);
-  TRAVERSE(type, traversal, false);
-  TRAVERSE(body, traversal, false);
-  TRAVERSE(retType, traversal, false);
-  TRAVERSE(where, traversal, false);
-  TRAVERSE(retExpr, traversal, false);
-  if (argScope) {
-    Symboltable::setCurrentScope(saveScope);
   }
 }
 
@@ -1340,9 +1236,6 @@ EnumSymbol::copyInner(ASTMap* map) {
 }
 
 
-void EnumSymbol::traverseDefSymbol(Traversal* traversal) { }
-
-
 void EnumSymbol::codegenDef(FILE* outfile) { }
 
 
@@ -1395,31 +1288,12 @@ void ModuleSymbol::codegenDef(void) {
 }
 
 
-void ModuleSymbol::startTraversal(Traversal* traversal) {
-  SymScope* prevScope = NULL;
-
-  if (modScope) {
-    prevScope = Symboltable::setCurrentScope(modScope);
-  }
-  stmts->traverse(traversal, false);
-  if (modScope) {
-    Symboltable::setCurrentScope(prevScope);
-  }
-}
-
-
 void ModuleSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == stmts) {
     stmts = dynamic_cast<AList<Stmt>*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in ModuleSymbol::replaceChild");
   }
-}
-
-
-/** SJD: Makes sense for this to take place of above startTraversal **/
-void ModuleSymbol::traverseDefSymbol(Traversal* traversal) {
-  startTraversal(traversal);
 }
 
 

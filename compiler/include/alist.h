@@ -12,9 +12,6 @@
 #include "chpl.h"
 #include "astutil.h"
 #include "baseAST.h"
-#include "../traversals/traversal.h"
-
-class Traversal;
 
 template <class elemType>
 class AList : public BaseAST {
@@ -69,10 +66,6 @@ class AList : public BaseAST {
   void printDef(FILE* outfile, char* separator = ", ");
   void codegen(FILE* outfile, char* separator = ", ");
   void codegenDef(FILE* outfile, char* separator = ", ");
-
-  // traversals
-  void traverse(Traversal* traversal, bool atTop);
-  void traverseDef(Traversal* traversal, bool atTop);
 
   // convert list to vector
   void getElements(Vec<elemType*>& elements);
@@ -465,22 +458,6 @@ AList<elemType>::copy(ASTMap* map,
       update_symbols(node, map);
   }
   return newList;
-}
-
-
-template <class elemType>
-void AList<elemType>::traverse(Traversal* traversal, bool atTop) {
-  _for_all_elems(node) {
-    node->traverse(traversal, false);
-  }
-}
-
-
-template <class elemType>
-void AList<elemType>::traverseDef(Traversal* traversal, bool atTop) {
-  _for_all_elems(node) {
-    node->traverseDef(traversal, false);
-  }
 }
 
 

@@ -66,53 +66,6 @@ void Type::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 }
 
 
-void Type::traverse(Traversal* traversal, bool atTop) {
-  if (traversal->processTop || !atTop) {
-    currentLineno = lineno;
-    currentFilename = filename;
-    traversal->preProcessType(this);
-  }
-  if (atTop || traversal->exploreChildTypes) {
-    if (atTop || symbol == NULL) {
-      traverseDefType(traversal);
-    }
-    else {
-      traverseType(traversal);
-    }
-  }
-  if (traversal->processTop || !atTop) {
-    currentLineno = lineno;
-    currentFilename = filename;
-    traversal->postProcessType(this);
-  }
-}
-
-
-void Type::traverseDef(Traversal* traversal, bool atTop) {
-  if (traversal->processTop || !atTop) {
-    currentLineno = lineno;
-    currentFilename = filename;
-    traversal->preProcessType(this);
-  }
-  TRAVERSE(symbol, traversal, false);
-  traverseDefType(traversal);
-  if (traversal->processTop || !atTop) {
-    currentLineno = lineno;
-    currentFilename = filename;
-    traversal->postProcessType(this);
-  }
-}
-
-
-void Type::traverseType(Traversal* traversal) {
-}
-
-
-void Type::traverseDefType(Traversal* traversal) {
-  TRAVERSE(defaultValue, traversal, false);
-}
-
-
 int Type::rank(void) {
   return 0;
 }
@@ -246,11 +199,6 @@ void PrimitiveType::verify() {
 }
 
 
-void PrimitiveType::traverseDefType(Traversal* traversal) {
-  TRAVERSE(literalType, traversal, false);
-}
-
-
 FnType::FnType(void) :
   Type(TYPE_FN, NULL)
 {}
@@ -314,12 +262,6 @@ void EnumType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   } else {
     INT_FATAL(this, "Unexpected case in Type::replaceChild");
   }
-}
-
-
-void EnumType::traverseDefType(Traversal* traversal) {
-  TRAVERSE(constants, traversal, false);
-  TRAVERSE(defaultValue, traversal, false);
 }
 
 
@@ -514,11 +456,6 @@ void LiteralType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 }
 
 
-void LiteralType::traverseDefType(Traversal* traversal) {
-  TRAVERSE(literal, traversal, false);
-}
-
-
 void LiteralType::printDef(FILE* outfile) {
   fprintf(outfile, "type ");
   symbol->print(outfile);
@@ -597,14 +534,6 @@ void UserType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   } else {
     INT_FATAL(this, "Unexpected case in Type::replaceChild");
   }
-}
-
-
-void UserType::traverseDefType(Traversal* traversal) {
-  TRAVERSE(typeExpr, traversal, false);
-  TRAVERSE(underlyingType, traversal, false);
-  TRAVERSE(defaultExpr, traversal, false);
-  TRAVERSE(defaultValue, traversal, false);
 }
 
 
@@ -730,20 +659,6 @@ void ClassType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
     inherits = dynamic_cast<AList<Expr>*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in Type::replaceChild");
-  }
-}
-
-
-void ClassType::traverseDefType(Traversal* traversal) {
-  SymScope* prevScope = NULL;
-  if (structScope) {
-    prevScope = Symboltable::setCurrentScope(structScope);
-  }
-  TRAVERSE(inherits, traversal, false);
-  TRAVERSE(declarationList, traversal, false);
-  TRAVERSE(defaultValue, traversal, false);
-  if (structScope) {
-    Symboltable::setCurrentScope(prevScope);
   }
 }
 
@@ -958,10 +873,6 @@ void MetaType::verify() {
 }
 
 
-void MetaType::traverseDefType(Traversal* traversal) {
-  TRAVERSE(base, traversal, false);
-}
-
 SumType::SumType() :
   Type(TYPE_SUM, gNil)
 {
@@ -1024,10 +935,6 @@ VariableType::copyInner(ASTMap* map) {
 
 void VariableType::codegen(FILE* outfile) {
   INT_FATAL(this, "Unanticipated call to VariableType::codegen");
-}
-
-void VariableType::traverseDefType(Traversal* traversal) {
-  TRAVERSE(type, traversal, false);
 }
 
 

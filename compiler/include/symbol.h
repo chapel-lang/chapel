@@ -52,10 +52,6 @@ class Symbol : public BaseAST {
   void setParentScope(SymScope* init_parentScope);
   COPY_DEF(Symbol);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  virtual void traverse(Traversal* traversal, bool atTop = true);
-  virtual void traverseDef(Traversal* traversal, bool atTop = true);
-  virtual void traverseSymbol(Traversal* traverse);
-  virtual void traverseDefSymbol(Traversal* traverse);
 
   virtual bool isConst(void);
   virtual bool isParam(void);
@@ -80,9 +76,6 @@ class UnresolvedSymbol : public Symbol {
   UnresolvedSymbol(char* init_name, char* init_cname = NULL);
   virtual void verify(); 
   COPY_DEF(UnresolvedSymbol);
-
-  virtual void traverseDefSymbol(Traversal* traverse);
-
   void codegen(FILE* outfile);
 };
 
@@ -102,7 +95,6 @@ class VarSymbol : public Symbol {
   virtual void verify(); 
   COPY_DEF(VarSymbol);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  virtual void traverseDefSymbol(Traversal* traverse);
 
   bool isConst(void);
   //Roxana
@@ -127,7 +119,6 @@ class ArgSymbol : public Symbol {
   virtual void verify(); 
   COPY_DEF(ArgSymbol);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  virtual void traverseDefSymbol(Traversal* traverse);
 
   bool requiresCPtr(void);
   bool isConst(void);
@@ -148,7 +139,6 @@ class TypeSymbol : public Symbol {
   COPY_DEF(TypeSymbol);
   TypeSymbol* clone(ASTMap* map);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  virtual void traverseDefSymbol(Traversal* traverse);
   virtual void codegenDef(FILE* outfile);
   virtual void codegenPrototype(FILE* outfile);
 };
@@ -191,7 +181,6 @@ class FnSymbol : public Symbol {
   COPY_DEF(FnSymbol);
   virtual FnSymbol* getFnSymbol(void);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  virtual void traverseDefSymbol(Traversal* traverse);
 
   FnSymbol* clone(ASTMap* map);
   FnSymbol* promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs);
@@ -217,7 +206,6 @@ class EnumSymbol : public Symbol {
   EnumSymbol(char* init_name);
   virtual void verify(); 
   COPY_DEF(EnumSymbol);
-  virtual void traverseDefSymbol(Traversal* traverse);
   void codegenDef(FILE* outfile);
 };
 
@@ -243,8 +231,6 @@ class ModuleSymbol : public Symbol {
   COPY_DEF(ModuleSymbol);
   void setModScope(SymScope* init_modScope);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  virtual void traverseDefSymbol(Traversal* traverse);
-  void startTraversal(Traversal* traversal);
 
   void codegenDef(void);
   bool isFileModule(void);

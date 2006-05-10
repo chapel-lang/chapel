@@ -7,7 +7,6 @@
 #include "runpasses.h"
 #include "stringutil.h"
 #include "symtab.h"
-#include "../passes/pass.h"
 #include "view.h"
 
 void verify();

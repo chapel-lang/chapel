@@ -21,10 +21,7 @@ class Expr : public BaseAST {
   Expr(astType_t astType = EXPR);
   COPY_DEF(Expr);
   virtual void callReplaceChild(BaseAST* new_ast);
-  virtual void verify(); 
-  virtual void traverse(Traversal* traversal, bool atTop = true);
-  virtual void traverseDef(Traversal* traversal, bool atTop = true);
-  virtual void traverseExpr(Traversal* traversal);
+  virtual void verify();
   virtual ASTContext getContext(void);
   virtual Type* typeInfo(void);
 
@@ -51,7 +48,6 @@ class DefExpr : public Expr {
   virtual void verify(); 
   COPY_DEF(DefExpr);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseExpr(Traversal* traversal);
 
   Type* typeInfo(void);
 
@@ -69,7 +65,6 @@ class SymExpr : public Expr {
   COPY_DEF(SymExpr);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void verify(); 
-  void traverseExpr(Traversal* traversal);
 
   Type* typeInfo(void);
   virtual bool isConst(void);
@@ -101,7 +96,6 @@ class CallExpr : public Expr {
   COPY_DEF(CallExpr);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseExpr(Traversal* traversal);
 
   virtual void print(FILE* outfile);
   virtual void codegen(FILE* outfile);
@@ -138,7 +132,6 @@ class CastExpr : public Expr {
   virtual void verify(); 
   COPY_DEF(CastExpr);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseExpr(Traversal* traversal);
 
   Type* typeInfo(void);
 
@@ -155,7 +148,6 @@ class NamedExpr : public Expr {
   virtual void verify(); 
   COPY_DEF(NamedExpr);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseExpr(Traversal* traversal);
   Type* typeInfo(void);
   void print(FILE* outfile);
   void codegen(FILE* outfile);
@@ -180,7 +172,6 @@ class ImportExpr : public Expr {
   virtual void verify(); 
   COPY_DEF(ImportExpr);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseExpr(Traversal* traversal);
   Type* typeInfo(void);
   void print(FILE* outfile);
   void codegen(FILE* outfile);

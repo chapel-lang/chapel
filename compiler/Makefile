@@ -20,7 +20,6 @@ SUBDIRS = \
 	passes \
 	symtab \
 	test \
-	traversals \
 	util \
 
 #
@@ -40,7 +39,6 @@ include main/Makefile.include
 include parser/Makefile.include
 include passes/Makefile.include
 include symtab/Makefile.include
-include traversals/Makefile.include
 include util/Makefile.include
 
 CVS_SRCS = 
@@ -56,7 +54,6 @@ CHPL_OBJS = \
 	$(PARSER_OBJS) \
 	$(PASSES_OBJS) \
 	$(SYMTAB_OBJS) \
-	$(TRAVERSALS_OBJS) \
 	$(UTIL_OBJS) \
 
 EXECS = $(CHPL)

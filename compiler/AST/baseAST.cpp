@@ -59,16 +59,6 @@ BaseAST::copyInner(ASTMap* map) {
 }
 
 
-void BaseAST::traverse(Traversal* traversal, bool atTop) {
-  INT_FATAL(this, "Cannot traverse BaseAST");
-}
-
-
-void BaseAST::traverseDef(Traversal* traversal, bool atTop) {
-  INT_FATAL(this, "Cannot traverse definitions of BaseAST");
-}
-
-
 void BaseAST::verify() {
 
 }

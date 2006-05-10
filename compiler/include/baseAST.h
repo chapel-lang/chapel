@@ -11,7 +11,6 @@ class VarSymbol;
 class Type;
 class Stmt;
 class Expr;
-class Traversal;
 class SymScope;
 
 /**
@@ -114,8 +113,6 @@ class BaseAST : public gc {
   BaseAST(void);
   BaseAST(astType_t type);
   COPY_DEF(BaseAST);
-  virtual void traverse(Traversal* traversal, bool atTop = true);
-  virtual void traverseDef(Traversal* traversal, bool atTop = true);
 
   virtual void verify(); 
 

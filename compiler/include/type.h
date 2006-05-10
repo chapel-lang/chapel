@@ -55,10 +55,6 @@ class Type : public BaseAST {
   Type *instantiate_generic(ASTMap &substitutions);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  virtual void traverse(Traversal* traversal, bool atTop = true);
-  virtual void traverseDef(Traversal* traversal, bool atTop = true);
-  virtual void traverseType(Traversal* traversal);
-  virtual void traverseDefType(Traversal* traversal);
 
   virtual int rank(void);
 
@@ -101,8 +97,6 @@ class EnumType : public Type {
   COPY_DEF(EnumType);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
-  void traverseDefType(Traversal* traversal);
-
   void printDef(FILE* outfile);
   void codegenDef(FILE* outfile);
   void codegenStringToType(FILE* outfile);
@@ -125,7 +119,6 @@ class LiteralType : public Type {
   virtual void verify();
   COPY_DEF(LiteralType);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseDefType(Traversal* traversal);
 
   void printDef(FILE* outfile);
   void codegenDef(FILE* outfile);
@@ -145,7 +138,6 @@ class UserType : public Type {
   virtual void verify(); 
   COPY_DEF(UserType);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseDefType(Traversal* traversal);
 
   void printDef(FILE* outfile);
   void codegenDef(FILE* outfile);
@@ -178,7 +170,6 @@ class ClassType : public Type {
                        Stmt* afterStmt = NULL);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseDefType(Traversal* traversal);
 
   bool isNominalType();
 
@@ -200,7 +191,6 @@ class MetaType : public Type {
  public:
   Type* base;
 
-  void traverseDefType(Traversal* traversal);
   MetaType(Type* init_base);
   virtual void verify(); 
 };
@@ -223,7 +213,6 @@ class VariableType : public Type {
   VariableType(Type *init_type = NULL);
   virtual void verify(); 
   COPY_DEF(VariableType);
-  void traverseDefType(Traversal* traversal);
   void codegen(FILE* outfile);
 };
 
@@ -233,7 +222,6 @@ class PrimitiveType : public Type {
 
   PrimitiveType(Symbol *init_defaultVal = NULL);
   virtual void verify(); 
-  void traverseDefType(Traversal* traversal);
 };
 
 

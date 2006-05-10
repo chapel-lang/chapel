@@ -6,7 +6,6 @@
 #include "symbol.h"
 #include "symscope.h"
 #include "symtab.h"
-#include "../traversals/traversal.h"
 
 
 /*** function_name_matches_method_name

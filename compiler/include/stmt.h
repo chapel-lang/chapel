@@ -28,9 +28,6 @@ class Stmt : public BaseAST {
   void codegen(FILE* outfile);
   virtual void codegenStmt(FILE* outfile);
   virtual void callReplaceChild(BaseAST* new_ast);
-  virtual void traverse(Traversal* traversal, bool atTop = true);
-  virtual void traverseDef(Traversal* traversal, bool atTop = true);
-  virtual void traverseStmt(Traversal* traversal);
   virtual ASTContext getContext(void);
 };
 #define forv_Stmt(_p, _v) forv_Vec(Stmt, _p, _v)
@@ -44,7 +41,6 @@ class ExprStmt : public Stmt {
   virtual void verify();
   COPY_DEF(ExprStmt);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseStmt(Traversal* traversal);
 
   virtual void print(FILE* outfile);
   virtual bool noCodegen();
@@ -62,7 +58,6 @@ class ReturnStmt : public Stmt {
   virtual void verify();
   COPY_DEF(ReturnStmt);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseStmt(Traversal* traversal);
   void print(FILE* outfile);
   void codegenStmt(FILE* outfile);
   bool returnsVoid();
@@ -100,7 +95,6 @@ class BlockStmt : public Stmt {
   virtual void verify();
   COPY_DEF(BlockStmt);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseStmt(Traversal* traversal);
   void print(FILE* outfile);
   void codegenStmt(FILE* outfile);
 
@@ -121,7 +115,6 @@ class CondStmt : public Stmt {
   virtual void verify();
   COPY_DEF(CondStmt);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseStmt(Traversal* traversal);
 
   void print(FILE* outfile);
   void codegenStmt(FILE* outfile);
@@ -139,7 +132,6 @@ class WhenStmt : public Stmt {
   virtual void verify();
   COPY_DEF(WhenStmt);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseStmt(Traversal* traversal);
   void print(FILE* outfile);
   void codegenStmt(FILE* outfile);
 };
@@ -154,7 +146,6 @@ class SelectStmt : public Stmt {
   virtual void verify();
   COPY_DEF(SelectStmt);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseStmt(Traversal* traversal);
   void print(FILE* outfile);
   void codegenStmt(FILE* outfile);
 };
@@ -171,8 +162,6 @@ class LabelStmt : public Stmt {
   virtual void verify();
   COPY_DEF(LabelStmt);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void traverseStmt(Traversal* traversal);
-
   void print(FILE* outfile);
   void codegenStmt(FILE* outfile);
   char* labelName(void);
@@ -196,7 +185,6 @@ class GotoStmt : public Stmt {
   GotoStmt(gotoType init_goto_type, Symbol* init_label);
   virtual void verify();
   COPY_DEF(GotoStmt);
-  void traverseStmt(Traversal* traversal);
   void print(FILE* outfile);
   void codegenStmt(FILE* outfile);
 };
