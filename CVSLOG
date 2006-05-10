@@ -64433,3 +64433,29 @@ Modified files:
 	chapel/test/types/type_variables/deitz/: test_clone_class1a.good 
 	                                         test_clone_class1b.good 
 
+---------------------------------------------------------------------------
+
+05/10/06 13:16:36 -- deitz
+
+Log message:
+	Moved insert_help and remove_help to astutil.cpp.  Removed Fixup
+	verify, putting the code into a new function call verify_parents.  The
+	old traversal mechanism is no longer used.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp baseAST.cpp expr.cpp stmt.cpp 
+	                      type.cpp 
+	chapel/compiler/include/: alist.h astutil.h 
+	chapel/compiler/passes/: filesToAST.cpp verify.cpp 
+	chapel/compiler/traversals/: Makefile.share 
+	chapel/test/flowanalysis/newast/: assignment_expr.good 
+	                                  chain.good codegen_test.good 
+	                                  enum.good globalref.good 
+	                                  multiple_return.good 
+	                                  mutrec.good noargs.good 
+	                                  onearg.good sum_type-1.good 
+	                                  sum_type-2.good 
+	                                  usebeforedef.good 
+Removed files:
+	chapel/compiler/traversals/: fixup.cpp fixup.h 
+
