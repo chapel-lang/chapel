@@ -837,9 +837,9 @@ static void
 map_baseast(BaseAST *s) {
   Symbol *sym = dynamic_cast<Symbol *>(s);
   if (sym) {
-    if (sym->asymbol)
+    if (sym->asymbol) {
       return;
-    if (sym->astType == SYMBOL_TYPE) {
+    } else if (sym->astType == SYMBOL_TYPE) {
       return;
     } else if (VarSymbol *var = is_symbol(sym)) {
       Sym *s = make_symbol(var->name);
@@ -1194,9 +1194,21 @@ build_builtin_symbols() {
   build_module(sym_system, sym_system->init);
 
   sym_bool = dtBool->asymbol->sym;
-  sym_int64 = dtInt->asymbol->sym;
-  sym_uint64 = dtUInt->asymbol->sym;
-  sym_float64 = dtFloat->asymbol->sym;
+
+  sym_int8  = dtInt[IF1_INT_TYPE_8]->asymbol->sym;
+  sym_int16 = dtInt[IF1_INT_TYPE_16]->asymbol->sym;
+  sym_int32 = dtInt[IF1_INT_TYPE_32]->asymbol->sym;
+  sym_int64 = dtInt[IF1_INT_TYPE_64]->asymbol->sym;
+
+  sym_uint8  = dtUInt[IF1_INT_TYPE_8]->asymbol->sym;
+  sym_uint16 = dtUInt[IF1_INT_TYPE_16]->asymbol->sym;
+  sym_uint32 = dtUInt[IF1_INT_TYPE_32]->asymbol->sym;
+  sym_uint64 = dtUInt[IF1_INT_TYPE_64]->asymbol->sym;
+
+  sym_float32  = dtFloat[IF1_FLOAT_TYPE_32]->asymbol->sym;
+  sym_float64  = dtFloat[IF1_FLOAT_TYPE_64]->asymbol->sym;
+  sym_float128 = dtFloat[IF1_FLOAT_TYPE_128]->asymbol->sym;
+
   sym_complex64 = dtComplex->asymbol->sym;
   sym_string = dtString->asymbol->sym;
   sym_anynum = dtNumeric->asymbol->sym;
@@ -1231,38 +1243,41 @@ build_builtin_symbols() {
   new_primitive_type(sym_ref, "ref");
   new_primitive_type(sym_value, "value");
   new_primitive_type(sym_set, "set");
-  new_primitive_type(sym_int8, "int8");
-  new_primitive_type(sym_int16, "int16");
-  new_primitive_type(sym_int32, "int32");
-  new_primitive_type(sym_int64, "int64");
+
+  new_primitive_type(sym_int8,   "int8");
+  new_primitive_type(sym_int16,  "int16");
+  new_primitive_type(sym_int32,  "int32");
+  new_primitive_type(sym_int64,  "int64");
+  // new_primitive_type(sym_int128, "int128");
+
   new_alias_type(sym_int, "int", sym_int64);
   new_primitive_type(sym_true, "true");
   new_primitive_type(sym_false, "false");
   new_primitive_type(sym_bool, "bool");
   sym_true->inherits_add(sym_bool);
   sym_false->inherits_add(sym_bool);
+
   new_primitive_type(sym_uint8, "uint8");
   new_primitive_type(sym_uint16, "uint16");
   new_primitive_type(sym_uint32, "uint32");
   new_primitive_type(sym_uint64, "uint64");
   new_alias_type(sym_uint, "uint", sym_uint64);
+
   new_lub_type(sym_anyint, "anyint", 
-               sym_int8, sym_int16, sym_int32, sym_int64, sym_bool,
-               sym_uint8, sym_uint16, sym_uint32, sym_uint64, VARARG_END);
+               sym_int8, sym_int16, sym_int32, sym_int64,
+               sym_bool,
+               sym_uint8, sym_uint16, sym_uint32, sym_uint64, 
+               VARARG_END);
+
   new_alias_type(sym_size, "size", sym_int64);
   new_alias_type(sym_enum_element, "enum_element", sym_int64);
   new_primitive_type(sym_float32, "float32");
   new_primitive_type(sym_float64, "float64");
-#ifdef USE_FLOAT_128
   new_primitive_type(sym_float128, "float128");
-#endif
   new_alias_type(sym_float, "float", sym_float64);
   new_lub_type(sym_anyfloat, "anyfloat", 
-               sym_float32, sym_float64, 
-#ifdef USE_FLOAT_128
-               sym_float128, 
-#endif
-     VARARG_END);
+               sym_float32, sym_float64, sym_float128, 
+               VARARG_END);
   new_primitive_type(sym_complex32, "complex32");
   new_primitive_type(sym_complex64, "complex64");
 #ifdef USE_FLOAT_128
@@ -1311,7 +1326,8 @@ build_builtin_symbols() {
   sym_int32->specializes.add(sym_float32);
   sym_int64->specializes.add(sym_float64);
 
-  sym_float32->specializes.add(sym_float);
+  sym_float32->specializes.add(sym_float64);
+  sym_float64->specializes.add(sym_float128);
 
   sym_float32->specializes.add(sym_complex32);
   sym_float64->specializes.add(sym_complex64);

@@ -77,12 +77,12 @@ static int
 cg_writeln(FILE *fp, Vec<Var *> vars, int ln) {
   fprintf(fp, "0; /* write/writeln */\n");
   for (int i = 2; i < vars.n; i++) {
-    if (vars.v[i]->type == sym_bool ||
-        vars.v[i]->type == sym_int8 ||
+    if (vars.v[i]->type == sym_int8 ||
         vars.v[i]->type == sym_int16 ||
         vars.v[i]->type == sym_int32)
       fprintf(fp, "printf(\"%%d\", %s);\n", vars.v[i]->cg_string);
-    else if (vars.v[i]->type == sym_uint8 ||
+    else if (vars.v[i]->type == sym_bool ||
+             vars.v[i]->type == sym_uint8 ||
              vars.v[i]->type == sym_uint16 ||
              vars.v[i]->type == sym_uint32)
       fprintf(fp, "printf(\"%%u\", %s);\n", vars.v[i]->cg_string);
@@ -91,9 +91,8 @@ cg_writeln(FILE *fp, Vec<Var *> vars, int ln) {
     else if (vars.v[i]->type == sym_uint64)
       fprintf(fp, "printf(\"%%llu\", %s);\n", vars.v[i]->cg_string);
     else if (vars.v[i]->type == sym_float32 ||
-             vars.v[i]->type == sym_float64)
-      fprintf(fp, "printf(\"%%g\", %s);\n", vars.v[i]->cg_string);
-    else if (vars.v[i]->type == sym_float64)
+             vars.v[i]->type == sym_float64 ||
+             vars.v[i]->type == sym_float128)
       fprintf(fp, "printf(\"%%g\", %s);\n", vars.v[i]->cg_string);
     else if (vars.v[i]->type == sym_string)
       fprintf(fp, "printf(\"%%s\", %s);\n", vars.v[i]->cg_string);
@@ -130,8 +129,9 @@ num_string(Sym *s) {
       break;
     case IF1_NUM_KIND_FLOAT:
       switch (s->num_index) {
-        case IF1_FLOAT_TYPE_32: return "_CG_float32";
-        case IF1_FLOAT_TYPE_64: return "_CG_float64";
+        case IF1_FLOAT_TYPE_32:  return "_CG_float32";
+        case IF1_FLOAT_TYPE_64:  return "_CG_float64";
+        case IF1_FLOAT_TYPE_128: return "_CG_float128";
         default: assert(!"case");
           break;
       }

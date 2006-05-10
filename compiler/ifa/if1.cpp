@@ -987,23 +987,21 @@ Code::source_line() {
 }
 
 static char *int_type_names[IF1_INT_TYPE_NUM][2] = {
-  { "bool",   0 },
+  { "bool",    "bool" },
   { "uint8",   "int8" },
   { "uint16",  "int16" },
   { "uint32",  "int32" },
   { "uint64",  "int64" }
 };
 static char *float_type_names[IF1_FLOAT_TYPE_NUM] = {
-  "float32",  "float64"
-// , "float128"
+  NULL, "float32", NULL, "float64",  NULL, NULL, NULL, "float128" 
 };
 static char *complex_type_names[IF1_FLOAT_TYPE_NUM] = {
-  "complex32",  "complex64"
-//, "complex128"
+  NULL, "complex32", NULL, "complex64", NULL, NULL, NULL, 
+  // "complex128"
 };
 static int float_type_sizes[IF1_FLOAT_TYPE_NUM] = {
-  32, 64
-// , 128
+  16, 32, 48, 64, 80, 96, 112, 128
 };
 
 void

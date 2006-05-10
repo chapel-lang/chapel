@@ -28,11 +28,12 @@ bool can_dispatch_ne(Symbol* actualParam, Type* actualType, Type* formalType) {
       if (ct->classTag == CLASS_CLASS)
         return true;
   if ((formalType == dtNumeric && actualType == dtBool) ||
-      (formalType == dtNumeric && actualType == dtInt) ||
-      (formalType == dtNumeric && actualType == dtFloat))
+      (formalType == dtNumeric && actualType == dtInt[IF1_INT_TYPE_64]) ||
+      (formalType == dtNumeric && actualType == dtFloat[IF1_FLOAT_TYPE_64]))
     return true;
-  if ((formalType == dtFloat && actualType == dtInt) ||
-      (formalType == dtInt && actualType == dtBool))
+  if ((formalType == dtFloat[IF1_FLOAT_TYPE_64] && 
+       actualType == dtInt[IF1_INT_TYPE_64]) ||
+      (formalType == dtInt[IF1_INT_TYPE_64] && actualType == dtBool))
     return true; // need coercion wrapper
   if (LiteralType* lt = dynamic_cast<LiteralType*>(formalType))
     if (lt->literal == actualParam)

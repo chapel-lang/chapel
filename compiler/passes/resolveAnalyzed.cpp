@@ -60,7 +60,7 @@ void resolve_analyzed(void) {
               break;
             types.add(type);
           }
-          types.add(dtInt); // context
+          types.add(dtInt[IF1_INT_TYPE_64]); // context
           complete_closure(ct, types);
         }
       }
@@ -90,7 +90,7 @@ static void resolve_type(Symbol* sym) {
   } else if (!dynamic_cast<UnresolvedSymbol*>(sym) &&
              !dynamic_cast<ModuleSymbol*>(sym)) {
     Type* analysis_type = type_info(sym);
-    if (!(dynamic_cast<EnumType*>(sym->type) && analysis_type == dtInt))
+    if (!(dynamic_cast<EnumType*>(sym->type) && analysis_type == dtInt[IF1_INT_TYPE_64]))
       sym->type = analysis_type;
     if (sym->type == dtUnknown)
       INT_FATAL(sym, "Analysis unable to determine type of symbol");

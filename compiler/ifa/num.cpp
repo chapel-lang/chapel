@@ -48,6 +48,8 @@ sprint_imm(char *str, char *control_string, Immediate &imm) {
     }
     case IF1_NUM_KIND_INT: {
       switch (imm.num_index) {
+        case IF1_INT_TYPE_1: 
+          res = sprintf(str, control_string, imm.v_bool); break;
         case IF1_INT_TYPE_8: 
           res = sprintf(str, control_string, imm.v_int8); break;
         case IF1_INT_TYPE_16:
@@ -66,6 +68,8 @@ sprint_imm(char *str, char *control_string, Immediate &imm) {
           res = sprintf(str, control_string, imm.v_float32); break;
         case IF1_FLOAT_TYPE_64:
           res = sprintf(str, control_string, imm.v_float64); break;
+        case IF1_FLOAT_TYPE_128:
+          res = sprintf(str, control_string, imm.v_float128); break;
         default: assert(!"case");
       }
       break;
@@ -109,6 +113,8 @@ sprint_imm(char *str, Immediate &imm) {
     }
     case IF1_NUM_KIND_INT: {
       switch (imm.num_index) {
+        case IF1_INT_TYPE_1: 
+          res = sprintf(str, "%d", imm.v_bool); break;
         case IF1_INT_TYPE_8: 
           res = sprintf(str, "%d", imm.v_int8); break;
         case IF1_INT_TYPE_16:
@@ -127,6 +133,8 @@ sprint_imm(char *str, Immediate &imm) {
           res = sprint_float_val(str, imm.v_float32); break;
         case IF1_FLOAT_TYPE_64:
           res = sprint_float_val(str, imm.v_float64); break;
+        case IF1_FLOAT_TYPE_128:
+          res = sprint_float_val(str, imm.v_float128); break;
         default: assert(!"case");
       }
       break;
@@ -170,6 +178,8 @@ fprint_imm(FILE *fp, Immediate &imm) {
     }
     case IF1_NUM_KIND_INT: {
       switch (imm.num_index) {
+        case IF1_INT_TYPE_1: 
+          res = fprintf(fp, "%d", imm.v_bool); break;
         case IF1_INT_TYPE_8: 
           res = fprintf(fp, "%d", imm.v_int8); break;
         case IF1_INT_TYPE_16:
@@ -183,21 +193,22 @@ fprint_imm(FILE *fp, Immediate &imm) {
       break;
     }
     case IF1_NUM_KIND_FLOAT:
+      char str[80];
       switch (imm.num_index) {
-        case IF1_FLOAT_TYPE_32: {
-          char str[80];
+        case IF1_FLOAT_TYPE_32:  
           res = sprint_float_val(str, imm.v_float32); 
-          fputs(str, fp);
+          break;
+        case IF1_FLOAT_TYPE_64: {
+          res = sprint_float_val(str, imm.v_float64); 
           break;
         }
-        case IF1_FLOAT_TYPE_64: {
-          char str[80];
-          res = sprint_float_val(str, imm.v_float64); 
-          fputs(str, fp);
+        case IF1_FLOAT_TYPE_128: {
+          res = sprint_float_val(str, imm.v_float128); 
           break;
         }
         default: assert(!"case");
       }
+      fputs(str, fp);
       break;
     case IF1_NUM_KIND_COMPLEX:
       switch (imm.num_index) {
@@ -250,6 +261,8 @@ coerce_immediate(Immediate *from, Immediate *to) {
         } \
         case IF1_NUM_KIND_INT: { \
           switch (imm->num_index) { \
+            case IF1_INT_TYPE_1:  \
+              imm->v_bool = im1.v_bool _op im2.v_bool; break; \
             case IF1_INT_TYPE_8:  \
               imm->v_int8 = im1.v_int8 _op im2.v_int8; break; \
             case IF1_INT_TYPE_16: \
@@ -268,6 +281,8 @@ coerce_immediate(Immediate *from, Immediate *to) {
               imm->v_float32 = im1.v_float32 _op im2.v_float32; break; \
             case IF1_FLOAT_TYPE_64: \
               imm->v_float64 = im1.v_float64 _op im2.v_float64; break; \
+            case IF1_FLOAT_TYPE_128: \
+              imm->v_float128 = im1.v_float128 _op im2.v_float128; break; \
             default: assert(!"case"); \
           } \
           break; \
@@ -295,6 +310,8 @@ coerce_immediate(Immediate *from, Immediate *to) {
         } \
         case IF1_NUM_KIND_INT: { \
           switch (imm->num_index) { \
+            case IF1_INT_TYPE_1:  \
+              imm->v_bool = (bool)_op(im1.v_bool, im2.v_bool); break; \
             case IF1_INT_TYPE_8:  \
               imm->v_int8 = (int8)_op(im1.v_int8, im2.v_int8); break; \
             case IF1_INT_TYPE_16: \
@@ -313,6 +330,8 @@ coerce_immediate(Immediate *from, Immediate *to) {
               imm->v_float32 = (float32)_op(im1.v_float32, im2.v_float32); break; \
             case IF1_FLOAT_TYPE_64: \
               imm->v_float64 = (float64)_op(im1.v_float64, im2.v_float64); break; \
+            case IF1_FLOAT_TYPE_128: \
+              imm->v_float128 = (float128)_op(im1.v_float128, im2.v_float128); break; \
             default: assert(!"case"); \
           } \
           break; \
@@ -340,6 +359,8 @@ coerce_immediate(Immediate *from, Immediate *to) {
         } \
         case IF1_NUM_KIND_INT: { \
           switch (im1.num_index) { \
+            case IF1_INT_TYPE_1:  \
+              imm->v_bool = im1.v_bool _op im2.v_bool; break; \
             case IF1_INT_TYPE_8:  \
               imm->v_bool = im1.v_int8 _op im2.v_int8; break; \
             case IF1_INT_TYPE_16: \
@@ -358,6 +379,8 @@ coerce_immediate(Immediate *from, Immediate *to) {
               imm->v_bool = im1.v_float32 _op im2.v_float32; break; \
             case IF1_FLOAT_TYPE_64: \
               imm->v_bool = im1.v_float64 _op im2.v_float64; break; \
+            case IF1_FLOAT_TYPE_128: \
+              imm->v_bool = im1.v_float128 _op im2.v_float128; break; \
             default: assert(!"case"); \
           } \
           break; \
@@ -385,6 +408,8 @@ coerce_immediate(Immediate *from, Immediate *to) {
         } \
         case IF1_NUM_KIND_INT: { \
           switch (imm->num_index) { \
+            case IF1_INT_TYPE_1:  \
+              imm->v_bool = im1.v_bool _op im2.v_bool; break; \
             case IF1_INT_TYPE_8:  \
               imm->v_int8 = im1.v_int8 _op im2.v_int8; break; \
             case IF1_INT_TYPE_16: \
@@ -426,6 +451,8 @@ coerce_immediate(Immediate *from, Immediate *to) {
         } \
         case IF1_NUM_KIND_INT: { \
           switch (imm->num_index) { \
+            case IF1_INT_TYPE_1:  \
+              imm->v_bool = _op im1.v_bool; break; \
             case IF1_INT_TYPE_8:  \
               imm->v_int8 = _op im1.v_int8; break; \
             case IF1_INT_TYPE_16: \
@@ -444,6 +471,8 @@ coerce_immediate(Immediate *from, Immediate *to) {
               imm->v_float32 = _op im1.v_float32; break; \
             case IF1_FLOAT_TYPE_64: \
               imm->v_float64 =  _op im1.v_float64; break; \
+            case IF1_FLOAT_TYPE_128: \
+              imm->v_float128 =  _op im1.v_float128; break; \
             default: assert(!"case"); \
           } \
           break; \
@@ -471,6 +500,8 @@ coerce_immediate(Immediate *from, Immediate *to) {
         } \
         case IF1_NUM_KIND_INT: { \
           switch (imm->num_index) { \
+            case IF1_INT_TYPE_1:  \
+              imm->v_bool = _op im1.v_bool; break; \
             case IF1_INT_TYPE_8:  \
               imm->v_int8 = _op im1.v_int8; break; \
             case IF1_INT_TYPE_16: \
@@ -634,7 +665,7 @@ convert_string_to_immediate(char *str, Immediate *imm) {
       switch (imm->num_index) {
         case IF1_INT_TYPE_8: 
           if (str[0] != '\'')
-            imm->v_uint8 = strtoul(str, 0, 0);
+            imm->v_uint8 = strtoul(str, 0, 10);
           else {
             if (str[1] != '\\')
               imm->v_uint8 = str[1];
@@ -643,11 +674,11 @@ convert_string_to_immediate(char *str, Immediate *imm) {
           }
           break;
         case IF1_INT_TYPE_16:
-          imm->v_uint16 = strtoul(str, 0, 0); break;
+          imm->v_uint16 = strtoul(str, 0, 10); break;
         case IF1_INT_TYPE_32:
-          imm->v_uint32 = strtoul(str, 0, 0); break;
+          imm->v_uint32 = strtoul(str, 0, 10); break;
         case IF1_INT_TYPE_64:
-          imm->v_uint64 = strtoull(str, 0, 0); break;
+          imm->v_uint64 = strtoull(str, 0, 10); break;
         default: assert(!"case");
       }
       break;
@@ -656,7 +687,7 @@ convert_string_to_immediate(char *str, Immediate *imm) {
       switch (imm->num_index) {
         case IF1_INT_TYPE_8: 
           if (str[0] != '\'')
-            imm->v_int8 = strtoul(str, 0, 0);
+            imm->v_int8 = strtoul(str, 0, 10);
           else {
             if (str[1] != '\\')
               imm->v_int8 = str[1];
@@ -665,11 +696,11 @@ convert_string_to_immediate(char *str, Immediate *imm) {
           }
           break;
         case IF1_INT_TYPE_16:
-          imm->v_int16 = strtol(str, 0, 0); break;
+          imm->v_int16 = strtol(str, 0, 10); break;
         case IF1_INT_TYPE_32:
-          imm->v_int32 = strtol(str, 0, 0); break;
+          imm->v_int32 = strtol(str, 0, 10); break;
         case IF1_INT_TYPE_64:
-          imm->v_int64 = strtoll(str, 0, 0); break;
+          imm->v_int64 = strtoll(str, 0, 10); break;
         default: assert(!"case");
       }
       break;
@@ -677,9 +708,11 @@ convert_string_to_immediate(char *str, Immediate *imm) {
     case IF1_NUM_KIND_FLOAT:
       switch (imm->num_index) {
         case IF1_FLOAT_TYPE_32:
-          imm->v_float32 = strtod(str, 0); break;
+          imm->v_float32 = strtof(str, 0); break;
         case IF1_FLOAT_TYPE_64:
           imm->v_float64 = strtod(str, 0); break;
+        case IF1_FLOAT_TYPE_128:
+          imm->v_float128 = strtold(str, 0); break;
         default: assert(!"case");
       }
       break;

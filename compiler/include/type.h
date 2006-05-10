@@ -6,6 +6,7 @@
 #include "baseAST.h"
 #include "analysis.h"
 #include "chplenum.h"
+#include "../ifa/num.h"			// hmmm... duplicate or include?
 
 /*
   Things which must be changed if instance variablers are added
@@ -237,9 +238,9 @@ TYPE_EXTERN PrimitiveType* dtVoid;
 
 // primitive types
 TYPE_EXTERN PrimitiveType* dtBool;
-TYPE_EXTERN PrimitiveType* dtInt;
-TYPE_EXTERN PrimitiveType* dtUInt;
-TYPE_EXTERN PrimitiveType* dtFloat;
+TYPE_EXTERN PrimitiveType* dtInt[IF1_INT_TYPE_NUM];
+TYPE_EXTERN PrimitiveType* dtUInt[IF1_INT_TYPE_NUM];
+TYPE_EXTERN PrimitiveType* dtFloat[IF1_FLOAT_TYPE_NUM];
 TYPE_EXTERN PrimitiveType* dtComplex;
 TYPE_EXTERN PrimitiveType* dtString;
 TYPE_EXTERN PrimitiveType* dtSymbol;

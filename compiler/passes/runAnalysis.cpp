@@ -9,6 +9,7 @@ bool preAnalysis = true;
 bool inAnalysis = false;
 bool postAnalysis = false;
 
+
 void runAnalysis(void) {
   if (no_infer)
     return;

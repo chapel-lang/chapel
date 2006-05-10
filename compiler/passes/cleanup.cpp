@@ -426,7 +426,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
     new DefExpr(new ArgSymbol(INTENT_REF, "_methodTokenDummy", dtMethodToken)),
     new DefExpr(_this));
   if (field->variableExpr) {
-    ArgSymbol* index = new ArgSymbol(INTENT_PARAM, "_index", dtInt);
+    ArgSymbol* index = new ArgSymbol(INTENT_PARAM, "_index", dtInt[IF1_INT_TYPE_64]);
     fn->formals->insertAtTail(new DefExpr(index));
     SymExpr* symExpr = new SymExpr(index);
     symExpr->addPragma("uniquify vararg");
@@ -470,7 +470,7 @@ static void build_setter(ClassType* ct, Symbol* field) {
     argDef);
 
   if (field->variableExpr) {
-    ArgSymbol* index = new ArgSymbol(INTENT_PARAM, "_index", dtInt);
+    ArgSymbol* index = new ArgSymbol(INTENT_PARAM, "_index", dtInt[IF1_INT_TYPE_64]);
     _this->defPoint->insertAfter(new DefExpr(index));
 
     SymExpr* symExpr = new SymExpr(index);

@@ -324,14 +324,34 @@ check_type(BaseAST *ast, ISlot *slot, Type *t) {
     Lerror:
         USR_FATAL(ast, "interpreter: bad immediate type");
       case IF1_NUM_KIND_UINT:
-        if (t == dtBool && slot->imm->num_index == IF1_INT_TYPE_1) break;
-        if (t == dtUInt && slot->imm->num_index == IF1_INT_TYPE_64) break;
+        if (t == dtBool && 
+            slot->imm->num_index == IF1_INT_TYPE_1) break;
+        if (t == dtUInt[IF1_INT_TYPE_8] && 
+            slot->imm->num_index == IF1_INT_TYPE_8) break;
+        if (t == dtUInt[IF1_INT_TYPE_16] && 
+            slot->imm->num_index == IF1_INT_TYPE_16) break;
+        if (t == dtUInt[IF1_INT_TYPE_32] && 
+            slot->imm->num_index == IF1_INT_TYPE_32) break;
+        if (t == dtUInt[IF1_INT_TYPE_64] && 
+            slot->imm->num_index == IF1_INT_TYPE_64) break;
         goto Lerror;
       case IF1_NUM_KIND_INT:
-        if (t == dtInt && slot->imm->num_index == IF1_INT_TYPE_64) break;
+        if (t == dtInt[IF1_INT_TYPE_8] && 
+            slot->imm->num_index == IF1_INT_TYPE_8) break;
+        if (t == dtInt[IF1_INT_TYPE_16] && 
+            slot->imm->num_index == IF1_INT_TYPE_16) break;
+        if (t == dtInt[IF1_INT_TYPE_32] && 
+            slot->imm->num_index == IF1_INT_TYPE_32) break;
+        if (t == dtInt[IF1_INT_TYPE_64] && 
+            slot->imm->num_index == IF1_INT_TYPE_64) break;
         goto Lerror;
       case IF1_NUM_KIND_FLOAT:
-        if (t == dtFloat && slot->imm->num_index == IF1_FLOAT_TYPE_64) break;
+        if (t == dtFloat[IF1_FLOAT_TYPE_32] && 
+            slot->imm->num_index == IF1_FLOAT_TYPE_32) break;
+        if (t == dtFloat[IF1_FLOAT_TYPE_64] && 
+            slot->imm->num_index == IF1_FLOAT_TYPE_64) break;
+        if (t == dtFloat[IF1_FLOAT_TYPE_128] && 
+            slot->imm->num_index == IF1_FLOAT_TYPE_128) break;
         goto Lerror;
       case IF1_NUM_KIND_COMPLEX:
         if (t == dtComplex && slot->imm->num_index == IF1_FLOAT_TYPE_64) break;
@@ -1575,7 +1595,7 @@ convert_enum_to_int(ISlot *slot) {
     if (EnumSymbol *e = dynamic_cast<EnumSymbol*>(slot->symbol)) {
       slot->kind = IMMEDIATE_ISLOT;
       slot->imm = new Immediate;
-      slot->imm->set_int64(get_enum_index(e));
+      slot->imm->set_int(get_enum_index(e));
       return 1;
     }
   return 0;
@@ -1585,10 +1605,10 @@ void
 execute_f64_fn_f64(CallExpr* s, ISlot** arg, ISlot* result, 
                       double (*f64_fn_f64)(double)) {
   check_prim_args(s, 1);
-  check_type(s, arg[0], dtFloat);
+  check_type(s, arg[0], dtFloat[IF1_FLOAT_TYPE_64]);
   result->kind = IMMEDIATE_ISLOT;
   result->imm = new Immediate;
-  result->imm->set_float64(f64_fn_f64(arg[0]->imm->v_float64));
+  result->imm->set_float(f64_fn_f64(arg[0]->imm->v_float64));
 }
 
 int
@@ -1681,12 +1701,12 @@ IFrame::iprimitive(CallExpr *s) {
       check_string(s, arg[1]);
       result.kind = IMMEDIATE_ISLOT;
       result.imm = new Immediate;
-      result.imm->set_int64((intptr_t)fopen(arg[0]->imm->v_string, arg[1]->imm->v_string));
+      result.imm->set_int((intptr_t)fopen(arg[0]->imm->v_string, arg[1]->imm->v_string));
       break;
     }
     case PRIM_FCLOSE: {
       check_prim_args(s, 1);
-      check_type(s, arg[0], dtInt);
+      check_type(s, arg[0], dtInt[IF1_INT_TYPE_64]);
       result.kind = IMMEDIATE_ISLOT;
       result.imm = new Immediate;
       *result.imm = fclose((FILE*)(intptr_t)arg[0]->imm->v_int64);
@@ -1694,7 +1714,7 @@ IFrame::iprimitive(CallExpr *s) {
     }
     case PRIM_STRERROR: {
       check_prim_args(s, 1);
-      check_type(s, arg[0], dtInt);
+      check_type(s, arg[0], dtInt[IF1_INT_TYPE_64]);
       result.kind = IMMEDIATE_ISLOT;
       result.imm = new Immediate;
       *result.imm = strerror((int)arg[0]->imm->v_int64);
@@ -1702,13 +1722,13 @@ IFrame::iprimitive(CallExpr *s) {
     }
     case PRIM_FPRINTF: {
       check_prim_args(s, 3);
-      check_type(s, arg[0], dtInt);
+      check_type(s, arg[0], dtInt[IF1_INT_TYPE_64]);
       check_string(s, arg[1]);
       result.kind = IMMEDIATE_ISLOT;
       result.imm = new Immediate;
       FILE *fp = (FILE*)(intptr_t)arg[0]->imm->v_int64;
       if (fp == (FILE*)(intptr_t)-1) {
-        result.imm->set_int64(0);
+        result.imm->set_int(0);
         break;
       } else if (fp == (FILE*)(intptr_t)0) {
         fp = stdin;
@@ -1719,9 +1739,9 @@ IFrame::iprimitive(CallExpr *s) {
       }
       if (arg[2]->kind == SYMBOL_ISLOT)
         if (EnumSymbol *e = dynamic_cast<EnumSymbol*>(arg[2]->symbol)) {
-          result.imm->set_int64(fprintf(fp,
-                                        arg[1]->imm->v_string,
-                                        e->name));
+          result.imm->set_int(fprintf(fp,
+                                      arg[1]->imm->v_string,
+                                      e->name));
           break;
         }
       check_kind(s, arg[2], IMMEDIATE_ISLOT);
@@ -1731,37 +1751,37 @@ IFrame::iprimitive(CallExpr *s) {
           return 1;
 #ifndef HACK_NEWLINE_STRING
         case IF1_CONST_KIND_STRING:
-          result.imm->set_int64(fprintf(fp,
-                                        arg[1]->imm->v_string,
-                                        arg[2]->imm->v_string));
+          result.imm->set_int(fprintf(fp,
+                                      arg[1]->imm->v_string,
+                                      arg[2]->imm->v_string));
           break;
 #else
         case IF1_CONST_KIND_STRING:
-          result.imm->set_int64(fprintf(fp,
-                                        arg[1]->imm->v_string,
-                                        unescape_string(arg[2]->imm->v_string)));
+          result.imm->set_int(fprintf(fp,
+                                      arg[1]->imm->v_string,
+                                      unescape_string(arg[2]->imm->v_string)));
           break;
 #endif
         case IF1_NUM_KIND_UINT:
-          result.imm->set_int64(fprintf(fp,
-                                        arg[1]->imm->v_string,
-                                        arg[2]->imm->v_bool));
+          result.imm->set_uint(fprintf(fp,
+                                      arg[1]->imm->v_string,
+                                      arg[2]->imm->v_bool));
           break;
         case IF1_NUM_KIND_INT:
-          result.imm->set_int64(fprintf(fp,
-                                        arg[1]->imm->v_string,
-                                        arg[2]->imm->v_int64));
+          result.imm->set_int(fprintf(fp,
+                                      arg[1]->imm->v_string,
+                                      arg[2]->imm->v_int64));
           break;
         case IF1_NUM_KIND_FLOAT:
-          result.imm->set_int64(fprintf(fp,
-                                        arg[1]->imm->v_string,
-                                        arg[2]->imm->v_float64));
+          result.imm->set_int(fprintf(fp,
+                                      arg[1]->imm->v_string,
+                                      arg[2]->imm->v_float64));
           break;
         case IF1_NUM_KIND_COMPLEX:
-          result.imm->set_int64(fprintf(fp,
-                                        arg[1]->imm->v_string,
-                                        arg[2]->imm->v_complex64.r,
-                                        arg[2]->imm->v_complex64.i));
+          result.imm->set_int(fprintf(fp,
+                                      arg[1]->imm->v_string,
+                                      arg[2]->imm->v_complex64.r,
+                                      arg[2]->imm->v_complex64.i));
           break;
       }
       break;
@@ -1772,12 +1792,12 @@ IFrame::iprimitive(CallExpr *s) {
 
     case PRIM_FFLUSH: {
       check_prim_args(s, 1);
-      check_type(s, arg[0], dtInt);
+      check_type(s, arg[0], dtInt[IF1_INT_TYPE_64]);
       result.kind = IMMEDIATE_ISLOT;
       result.imm = new Immediate;
       FILE *fp = (FILE*)(intptr_t)arg[0]->imm->v_int64;
       if (fp == (FILE*)(intptr_t)-1) {
-        result.imm->set_int64(0);
+        result.imm->set_int(0);
         break;
       } else if (fp == (FILE*)(intptr_t)0) {
         fp = stdin;
@@ -1793,7 +1813,7 @@ IFrame::iprimitive(CallExpr *s) {
     case PRIM_ARRAY_INIT: {
       check_prim_args(s, 3);
       check_kind(s, arg[0], OBJECT_ISLOT);
-      check_type(s, arg[1], dtInt);
+      check_type(s, arg[1], dtInt[IF1_INT_TYPE_64]);
       IObject *a = arg[0]->object;
       int len = arg[1]->imm->v_int64;
       a->array.fill(len);
@@ -1806,7 +1826,7 @@ IFrame::iprimitive(CallExpr *s) {
       check_prim_args(s, 2);
       check_kind(s, arg[0], OBJECT_ISLOT);
       IObject *a = arg[0]->object;
-      check_type(s, arg[1], dtInt);
+      check_type(s, arg[1], dtInt[IF1_INT_TYPE_64]);
       int index = arg[1]->imm->v_int64;
       if (index < 0 || index >= a->array.n) {
         user_error(this, "array_index out of range (%d of %d)", index, a->array.n);
@@ -1819,7 +1839,7 @@ IFrame::iprimitive(CallExpr *s) {
       check_prim_args(s, 3);
       check_kind(s, arg[0], OBJECT_ISLOT);
       IObject *a = arg[0]->object;
-      check_type(s, arg[1], dtInt);
+      check_type(s, arg[1], dtInt[IF1_INT_TYPE_64]);
       int index = arg[1]->imm->v_int64;
       if (index < 0 || index >= a->array.n) {
         user_error(this, "array_set out of range (%d of %d)", index, a->array.n);
@@ -1847,7 +1867,7 @@ IFrame::iprimitive(CallExpr *s) {
       if (arg[1]->kind == SYMBOL_ISLOT && arg[0]->kind == IMMEDIATE_ISLOT) { 
         // special case, cast from enum
         if (EnumSymbol *e = dynamic_cast<EnumSymbol*>(arg[1]->symbol)) {
-          imm1.set_int64(get_enum_index(e));
+          imm1.set_int(get_enum_index(e));
           imm0 = *arg[0]->imm;
           goto Lcast;
         }
@@ -1855,7 +1875,7 @@ IFrame::iprimitive(CallExpr *s) {
       if (arg[0]->kind == SYMBOL_ISLOT && arg[1]->kind == IMMEDIATE_ISLOT) { 
         // special case, cast to enum
         if (EnumSymbol *e = dynamic_cast<EnumSymbol*>(arg[0]->symbol)) {
-          imm1.set_int64(0);
+          imm1.set_int(0);
           coerce_immediate(arg[1]->imm, &imm1);
           result.kind = SYMBOL_ISLOT;
           result.symbol = get_enum_from_index(enumType(e), (int)imm1.v_int64);
@@ -1913,11 +1933,11 @@ IFrame::iprimitive(CallExpr *s) {
       break;
     case PRIM_ATAN2:
       check_prim_args(s, 2);
-      check_type(s, arg[0], dtFloat);
-      check_type(s, arg[1], dtFloat);
+      check_type(s, arg[0], dtFloat[IF1_FLOAT_TYPE_64]);
+      check_type(s, arg[1], dtFloat[IF1_FLOAT_TYPE_64]);
       result.kind = IMMEDIATE_ISLOT;
       result.imm = new Immediate;
-      result.imm->set_float64(atan2(arg[0]->imm->v_float64, arg[1]->imm->v_float64));
+      result.imm->set_float(atan2(arg[0]->imm->v_float64, arg[1]->imm->v_float64));
       break;
     case PRIM_GET_MEMBER: 
     case PRIM_SET_MEMBER: {
@@ -1972,7 +1992,7 @@ IFrame::iprimitive(CallExpr *s) {
     case PRIM_STRING_INDEX: {
       check_prim_args(s, 2);
       check_string(s, arg[0]);
-      check_type(s, arg[1], dtInt);
+      check_type(s, arg[1], dtInt[IF1_INT_TYPE_64]);
       int i = arg[1]->imm->v_int64;
       if ((int)strlen(arg[0]->imm->v_string) >= i) {
         user_error(this, "string_index out of range %d", i);
@@ -2001,8 +2021,8 @@ IFrame::iprimitive(CallExpr *s) {
     case PRIM_STRING_SELECT: {
       check_prim_args(s, 3);
       check_string(s, arg[0]);
-      check_type(s, arg[1], dtInt);
-      check_type(s, arg[2], dtInt);
+      check_type(s, arg[1], dtInt[IF1_INT_TYPE_64]);
+      check_type(s, arg[2], dtInt[IF1_INT_TYPE_64]);
       int i = arg[1]->imm->v_int64;
       int j = arg[2]->imm->v_int64;
       int l = strlen(arg[0]->imm->v_string);
@@ -2017,9 +2037,9 @@ IFrame::iprimitive(CallExpr *s) {
     case PRIM_STRING_STRIDED_SELECT: {
       check_prim_args(s, 4);
       check_string(s, arg[0]);
-      check_type(s, arg[1], dtInt);
-      check_type(s, arg[2], dtInt);
-      check_type(s, arg[3], dtInt);
+      check_type(s, arg[1], dtInt[IF1_INT_TYPE_64]);
+      check_type(s, arg[2], dtInt[IF1_INT_TYPE_64]);
+      check_type(s, arg[3], dtInt[IF1_INT_TYPE_64]);
       int i = arg[1]->imm->v_int64;
       int j = arg[2]->imm->v_int64;
       int stride = arg[3]->imm->v_int64;
@@ -2126,7 +2146,7 @@ IFrame::run(int timeslice) {
         ModuleSymbol* modsym = ip->getModule();
         if (modsym->modtype == MOD_USER) {
           *filename_slot->imm = ip->filename;
-          lineno_slot->imm->set_int64(ip->lineno);
+          lineno_slot->imm->set_int(ip->lineno);
           *islot(chpl_input_filename) = *filename_slot;
           *islot(chpl_input_lineno) = *lineno_slot;
         }

@@ -170,7 +170,7 @@ Sym::imm_int(int *result) {
     default: return -1;
     case IF1_NUM_KIND_UINT: {
       switch (type->num_index) {
-        case IF1_INT_TYPE_8: i = imm.v_uint8; break;
+        case IF1_INT_TYPE_8:  i = imm.v_uint8; break;
         case IF1_INT_TYPE_16: i = imm.v_uint16; break;
         case IF1_INT_TYPE_32: i = imm.v_uint32; break;
         case IF1_INT_TYPE_64: i = imm.v_uint64; break;
@@ -180,7 +180,7 @@ Sym::imm_int(int *result) {
     }
     case IF1_NUM_KIND_INT: {
       switch (type->num_index) {
-        case IF1_INT_TYPE_8: i = imm.v_int8; break;
+        case IF1_INT_TYPE_8:  i = imm.v_int8; break;
         case IF1_INT_TYPE_16: i = imm.v_int16; break;
         case IF1_INT_TYPE_32: i = imm.v_int32; break;
         case IF1_INT_TYPE_64: i = imm.v_int64; break;
@@ -273,6 +273,7 @@ MAKE_ALIGNOF(uint32);
 MAKE_ALIGNOF(uint64);
 MAKE_ALIGNOF(float32);
 MAKE_ALIGNOF(float64);
+MAKE_ALIGNOF(float128);
 MAKE_ALIGNOF(complex32);
 MAKE_ALIGNOF(complex64);
 typedef char *alignstring;
@@ -296,8 +297,9 @@ if1_numeric_alignment(IF1 *p, Sym *t) {
       break;
     case IF1_NUM_KIND_FLOAT:
       switch (t->num_index) {
-        case IF1_FLOAT_TYPE_32: return ALIGNOF(float32);
-        case IF1_FLOAT_TYPE_64: return ALIGNOF(float64);
+        case IF1_FLOAT_TYPE_32:  return ALIGNOF(float32);
+        case IF1_FLOAT_TYPE_64:  return ALIGNOF(float64);
+        case IF1_FLOAT_TYPE_128: return ALIGNOF(float128);
         default: assert(!"case");
       }
       break;

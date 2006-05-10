@@ -623,7 +623,7 @@ var_arg_expr:
   TDOTDOTDOT expr
     { $$ = $2; }
 | TDOTDOTDOT TQUESTION identifier
-    { $$ = new DefExpr(new VarSymbol($3, dtInt, VAR_NORMAL, VAR_PARAM)); }
+    { $$ = new DefExpr(new VarSymbol($3, dtInt[IF1_INT_TYPE_64], VAR_NORMAL, VAR_PARAM)); }
 ;
 
 

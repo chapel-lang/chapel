@@ -94,12 +94,34 @@ void Expr::codegenCastToString(FILE* outfile) {
     fprintf(outfile, "_chpl_tostring_");
     if (exprType == dtBool) {
       fprintf(outfile, "bool");
-    } else if (exprType == dtInt) {
+
+    } else if (exprType == dtInt[IF1_INT_TYPE_8]) {
+      fprintf(outfile, "int8");
+    } else if (exprType == dtInt[IF1_INT_TYPE_16]) {
+      fprintf(outfile, "int16");
+    } else if (exprType == dtInt[IF1_INT_TYPE_32]) {
+      fprintf(outfile, "int32");
+    } else if (exprType == dtInt[IF1_INT_TYPE_64]) {
       fprintf(outfile, "int");
-    } else if (exprType == dtUInt) {
+
+    } else if (exprType == dtUInt[IF1_INT_TYPE_1]) {
+      fprintf(outfile, "bool");
+    } else if (exprType == dtUInt[IF1_INT_TYPE_8]) {
+      fprintf(outfile, "uint8");
+    } else if (exprType == dtUInt[IF1_INT_TYPE_16]) {
+      fprintf(outfile, "uint16");
+    } else if (exprType == dtUInt[IF1_INT_TYPE_32]) {
+      fprintf(outfile, "uint32");
+    } else if (exprType == dtUInt[IF1_INT_TYPE_64]) {
       fprintf(outfile, "uint");
-    } else if (exprType == dtFloat) {
-      fprintf(outfile, "float");
+
+    } else if (exprType == dtFloat[IF1_FLOAT_TYPE_32]) {
+      fprintf(outfile, "float32");
+    } else if (exprType == dtFloat[IF1_FLOAT_TYPE_64]) {
+      fprintf(outfile, "float64");
+    } else if (exprType == dtFloat[IF1_FLOAT_TYPE_128]) {
+      fprintf(outfile, "float128");
+
     } else {
       INT_FATAL(this, "Unexpected type case in codegenCastToString");
     }
@@ -619,7 +641,8 @@ void CallExpr::codegen(FILE* outfile) {
       Type* leftType = get(1)->typeInfo();
       Type* rightType = get(2)->typeInfo();
       if (rightType != dtUnspecified) {
-        if ((leftType == dtInt || leftType == dtFloat) &&
+        if ((leftType == dtInt[IF1_INT_TYPE_64] || 
+             leftType == dtFloat[IF1_FLOAT_TYPE_64]) &&
             rightType == dtNil) {
           get(1)->codegen(outfile);
           fprintf(outfile, " = (");
@@ -629,7 +652,34 @@ void CallExpr::codegen(FILE* outfile) {
         } else {
           get(1)->codegen(outfile);
           fprintf(outfile, " = ");
-          get(2)->codegen(outfile);
+
+          // WAW: YAH (yet another hack). Insert C cast to remove warnings 
+          // during comilation of Chapel generated code. Only cast for 
+          // numerics? widths less than default 64-bit Chapel size?  128-bit 
+          // types and constants?
+          if ((leftType != rightType) &&
+              (((leftType == dtInt[IF1_INT_TYPE_8])  ||
+                (leftType == dtInt[IF1_INT_TYPE_16]) ||
+                (leftType == dtInt[IF1_INT_TYPE_32]) ||
+                (leftType == dtUInt[IF1_INT_TYPE_1])  ||
+                (leftType == dtUInt[IF1_INT_TYPE_8])  ||
+                (leftType == dtUInt[IF1_INT_TYPE_16]) ||
+                (leftType == dtUInt[IF1_INT_TYPE_32])))) {
+            fprintf( outfile, " (");
+            leftType->symbol->codegen( outfile);
+            fprintf( outfile, ") ");
+          }
+
+          // WAW: YAH.  C enum types are int.  For
+          // int/uint(1), we only want 1-bit.  See writeln for failure case.
+          if (rightType == dtInt[IF1_INT_TYPE_1] ||
+              rightType == dtUInt[IF1_INT_TYPE_1]) {
+            fprintf( outfile, " (");
+            get(2)->codegen(outfile);
+            fprintf( outfile, "& 0x1) ");
+          } else {
+            get(2)->codegen(outfile);
+          }
         }
       }
       break;
@@ -1168,28 +1218,28 @@ ImportExpr::getStruct(void) {
 
 Expr *
 new_IntLiteral(char *l) {
-  return new SymExpr(new_IntSymbol(atoi(l)));
+  return new SymExpr(new_IntSymbol(strtoll(l, NULL, 10)));
 }
 
 Expr *
-new_IntLiteral(int i) {
+new_IntLiteral(long long int i) {
   return new SymExpr(new_IntSymbol(i));
 }
 
 Expr *
 new_UIntLiteral(char *ui_str) {
   // WAW: what about base 8 or 2?
-  return new SymExpr(new_UIntSymbol(strtoull(ui_str, NULL, 0)));
+  return new SymExpr(new_UIntSymbol(strtoull(ui_str, NULL, 10)));
 }
 
 Expr *
-new_UIntLiteral(unsigned long u) {
+new_UIntLiteral(unsigned long long u) {
   // WAW: what about base 8 or 2?
   return new SymExpr(new_UIntSymbol(u));
 }
 
 Expr *
-new_FloatLiteral(char *n, double d) {
+new_FloatLiteral(char *n, long double d) {
   return new SymExpr(new_FloatSymbol(n, d));
 }
 

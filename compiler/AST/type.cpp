@@ -154,8 +154,18 @@ bool Type::requiresCParamTmp(intentTag intent) {
 
 bool Type::implementedUsingCVals(void) {
   if (this == dtBool ||
-      this == dtInt ||
-      this == dtFloat) {
+      this == dtInt[IF1_INT_TYPE_8]  ||
+      this == dtInt[IF1_INT_TYPE_16] ||
+      this == dtInt[IF1_INT_TYPE_32] ||
+      this == dtInt[IF1_INT_TYPE_64] ||
+      this == dtUInt[IF1_INT_TYPE_1]  ||
+      this == dtUInt[IF1_INT_TYPE_8]  ||
+      this == dtUInt[IF1_INT_TYPE_16] ||
+      this == dtUInt[IF1_INT_TYPE_32] ||
+      this == dtUInt[IF1_INT_TYPE_64] ||
+      this == dtFloat[IF1_FLOAT_TYPE_32] ||
+      this == dtFloat[IF1_FLOAT_TYPE_64] ||
+      this == dtFloat[IF1_FLOAT_TYPE_128]) {
     return true;
   } else {
     return false;
@@ -808,10 +818,10 @@ bool ClassType::hasDefaultReadFunction(void) {
 
 AList<Stmt>* ClassType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
   AList<Stmt>* body = new AList<Stmt>();
-  Symbol* ignoreWhiteSpace = new VarSymbol("ignoreWhiteSpace", dtInt, VAR_NORMAL);
+  Symbol* ignoreWhiteSpace = new VarSymbol("ignoreWhiteSpace", dtInt[IF1_INT_TYPE_64], VAR_NORMAL);
   body->insertAtTail(new DefExpr(ignoreWhiteSpace, new_IntLiteral(1)));
-  Symbol* matchingCharWasRead = new VarSymbol("matchingCharWasRead", dtInt, VAR_NORMAL);
-  body->insertAtTail(new DefExpr(matchingCharWasRead, new_IntLiteral(0)));
+  Symbol* matchingCharWasRead = new VarSymbol("matchingCharWasRead", dtInt[IF1_INT_TYPE_64], VAR_NORMAL);
+  body->insertAtTail(new DefExpr(matchingCharWasRead, new_IntLiteral((int64)0)));
   CallExpr* fileArgFP = new CallExpr(PRIMITIVE_GET_MEMBER, fileArg, new_StringSymbol("fp"));
   CallExpr* readOpenBrace = new CallExpr("_readLitChar", fileArgFP, new_StringLiteral("{"), ignoreWhiteSpace);
   body->insertAtTail(new CallExpr("=", matchingCharWasRead, readOpenBrace));
@@ -938,12 +948,36 @@ void VariableType::codegen(FILE* outfile) {
 }
 
 
+// Create new primitive type for integers. Specify name for now. Though it will 
+// probably be something like int1, int8, etc. in the end. In that case
+// we can just specify the width.
+#define INIT_PRIMITIVE_INT( name, width)                                   \
+  dtInt[IF1_INT_TYPE_ ## width] = Symboltable::createPrimitiveType (name,  \
+                                  "_int" #width, "_intLiteral" #width,     \
+                                  "_int" #width "Literal");                \
+  dtInt[IF1_INT_TYPE_ ## width]->defaultValue = new_IntSymbol( 0,          \
+                                                IF1_INT_TYPE_ ## width)
+
+#define INIT_PRIMITIVE_UINT( name, width)                                  \
+  dtUInt[IF1_INT_TYPE_ ## width] = Symboltable::createPrimitiveType (name, \
+                                   "_uint" #width, "_uintLiteral" #width,  \
+                                   "_uint" #width "Literal");              \
+  dtUInt[IF1_INT_TYPE_ ## width]->defaultValue = new_UIntSymbol( 0,        \
+                                                 IF1_INT_TYPE_ ## width)
+
+#define INIT_PRIMITIVE_FLOAT( name, width)                                    \
+  dtFloat[IF1_FLOAT_TYPE_ ## width] = Symboltable::createPrimitiveType (name, \
+                                   "_float" #width, "_floatLiteral" #width,   \
+                                   "_float" #width "Literal");                \
+  dtFloat[IF1_FLOAT_TYPE_ ## width]->defaultValue = new_FloatSymbol( "0.0", 0.0, IF1_FLOAT_TYPE_ ## width)
+  
+
 #define CREATE_DEFAULT_SYMBOL(primType, gSym, name)                     \
   gSym = new VarSymbol (name, primType, VAR_NORMAL, VAR_CONST);         \
   rootScope->define (gSym);                                             \
   primType->defaultValue = gSym
-  
 
+  
 void initPrimitiveTypes(void) {
   // Create initial compiler module and its scope
   compilerModule = new ModuleSymbol("_chpl_compiler", MOD_STANDARD) ;
@@ -984,18 +1018,20 @@ void initPrimitiveTypes(void) {
   gTrue->immediate->num_index = IF1_INT_TYPE_1;
   uniqueConstantsHash.put(gTrue->immediate, gTrue);
 
+  // WAW: could have a loop, but the following unrolling is more explicit.
+  INIT_PRIMITIVE_INT( "int", 64);
+  INIT_PRIMITIVE_INT( "_int8", 8);
+  INIT_PRIMITIVE_INT( "_int16", 16);
+  INIT_PRIMITIVE_INT( "_int32", 32);
 
-  dtInt = Symboltable::createPrimitiveType ("int", "_int64",
-                                            "_intLiteral", "_int64Literal");
-  dtInt->defaultValue = new_IntSymbol(0);
+  INIT_PRIMITIVE_UINT( "uint", 64);
+  INIT_PRIMITIVE_UINT( "_uint8", 8);
+  INIT_PRIMITIVE_UINT( "_uint16", 16);
+  INIT_PRIMITIVE_UINT( "_uint32", 32);
 
-  dtUInt = Symboltable::createPrimitiveType ("uint", "_uint64",
-                                             "_uintLiteral", "_uint64Literal");
-  dtUInt->defaultValue = new_UIntSymbol(0);
-
-  dtFloat = Symboltable::createPrimitiveType ("float", "_float64",
-                                              "_floatLiteral", "_float64Literal");
-  dtFloat->defaultValue = new_FloatSymbol("0.0", 0.0);
+  INIT_PRIMITIVE_FLOAT( "float", 64);
+  INIT_PRIMITIVE_FLOAT( "_float32", 32);
+  INIT_PRIMITIVE_FLOAT( "_float128", 128);
 
   // This should point to the complex type defined in modules/standard/_chpl_complex.chpl
   dtComplex = Symboltable::createPrimitiveType ("complex", "_complex128",

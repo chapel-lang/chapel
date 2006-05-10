@@ -6,14 +6,32 @@ extern _nilType nil;
 typedef void* _unspecifiedType;
 extern _unspecifiedType _;
 
+/* macros for specifying the correct C constant type */
+#define _CHPL_CCONST_INT8( i)   (i)
+#define _CHPL_CCONST_INT16( i)  (i)
+#define _CHPL_CCONST_INT32( i)  (i ## L)
+#define _CHPL_CCONST_INT64( i)  (i ## LL)
+#define _CHPL_CCONST_UINT8( i)  (i ## U)
+#define _CHPL_CCONST_UINT16( i) (i ## U)
+#define _CHPL_CCONST_UINT32( i) (i ## UL)
+#define _CHPL_CCONST_UINT64( i) (i ## ULL)
+
 typedef enum __bool {
   false = 0,
   true = 1
 } _bool;
 
-typedef long long _int64;
+typedef char               _int8;
+typedef short int          _int16;
+typedef long int           _int32;
+typedef long long int      _int64;
+typedef unsigned char      _uint8;
+typedef unsigned short int _uint16;
+typedef unsigned long int  _uint32;
 typedef unsigned long long _uint64;
-typedef double _float64;
+typedef float              _float32;
+typedef double             _float64;
+typedef long double        _float128;
 
 typedef struct __complex128 {
   _float64 re;
