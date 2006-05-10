@@ -4,8 +4,7 @@
 ::a(chain.chpl:6) ( int64 )
 ::bar(chain.chpl:6) ( bar )
 ::foo(chain.chpl:1) ( foo )
-::main(chain.chpl:6) ( main (chain.chpl:6) )
+::main ( main (<internal>:-1) )
 function bar chain.chpl:6
 function foo chain.chpl:1
-function main chain.chpl:6
 globals

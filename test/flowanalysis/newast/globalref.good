@@ -5,7 +5,6 @@
 ::c(globalref.chpl:3) ( int64 )
 ::c(globalref.chpl:6) ( int64 )
 ::foo(globalref.chpl:5) ( foo )
-::main(globalref.chpl:5) ( main (globalref.chpl:5) )
+::main ( main (<internal>:-1) )
 function foo globalref.chpl:5
-function main globalref.chpl:5
 globals

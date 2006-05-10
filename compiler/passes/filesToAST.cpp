@@ -6,7 +6,6 @@
 #include "symtab.h"
 #include "countTokens.h"
 #include "yy.h"
-#include "../traversals/fixup.h"
 #include "runtime.h"
 
 void parse(void) {

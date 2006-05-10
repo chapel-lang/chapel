@@ -10,10 +10,9 @@
 ::_defTmp(enum.chpl:7) ( int64 )
 ::f(enum.chpl:1) ( file )
 ::fwrite(enum.chpl:1) ( fwrite )
-::main(enum.chpl:1) ( main (enum.chpl:1) )
+::main ( main (<internal>:-1) )
 ::val(enum.chpl:1) ( classVals (enum.chpl:1) )
 ::x(enum.chpl:3) ( classVals (enum.chpl:1) )
 ::y(enum.chpl:7) ( int64 )
 function fwrite enum.chpl:1
-function main enum.chpl:1
 globals

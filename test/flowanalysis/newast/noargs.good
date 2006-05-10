@@ -1,6 +1,5 @@
 ::__init_noargs ( __init_noargs (<internal>:-1) )
 ::foo(noargs.chpl:1) ( foo )
-::main(noargs.chpl:1) ( main (noargs.chpl:1) )
+::main ( main (<internal>:-1) )
 function foo noargs.chpl:1
-function main noargs.chpl:1
 globals

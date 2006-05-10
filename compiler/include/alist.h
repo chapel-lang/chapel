@@ -12,7 +12,7 @@
 #include "chpl.h"
 #include "astutil.h"
 #include "baseAST.h"
-#include "../traversals/fixup.h"
+#include "../traversals/traversal.h"
 
 class Traversal;
 
@@ -470,10 +470,6 @@ AList<elemType>::copy(ASTMap* map,
 
 template <class elemType>
 void AList<elemType>::traverse(Traversal* traversal, bool atTop) {
-  if (dynamic_cast<Fixup*>(traversal)) {
-    head->traverse(traversal, false);
-    tail->traverse(traversal, false);
-  }
   _for_all_elems(node) {
     node->traverse(traversal, false);
   }

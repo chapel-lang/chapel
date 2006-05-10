@@ -1,5 +1,4 @@
 TRAVERSALS_SRCS = \
-	fixup.cpp \
 	traversal.cpp
 
 CVS_SRCS = $(TRAVERSALS_SRCS)

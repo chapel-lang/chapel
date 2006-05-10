@@ -1,7 +1,6 @@
 ::__init_usebeforedef ( __init_usebeforedef (<internal>:-1) )
 ::a(usebeforedef.chpl:3) ( int64 )
 ::foo(usebeforedef.chpl:3) ( foo )
-::main(usebeforedef.chpl:3) ( main (usebeforedef.chpl:3) )
+::main ( main (<internal>:-1) )
 function foo usebeforedef.chpl:3
-function main usebeforedef.chpl:3
 globals

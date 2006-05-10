@@ -68,4 +68,12 @@ void remove_named_exprs();
 void remove_static_actuals();
 void remove_static_formals();
 
+// replaces Fixup
+void remove_help(BaseAST* ast);
+void insert_help(BaseAST* ast,
+                 Expr* parentExpr,
+                 Stmt* parentStmt,
+                 Symbol* parentSymbol,
+                 SymScope* parentScope);
+
 #endif

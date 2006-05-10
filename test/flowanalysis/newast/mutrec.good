@@ -5,8 +5,7 @@
 ::a(mutrec.chpl:10) ( int64 )
 ::bar(mutrec.chpl:10) ( bar )
 ::foo(mutrec.chpl:1) ( foo )
-::main(mutrec.chpl:10) ( main (mutrec.chpl:10) )
+::main ( main (<internal>:-1) )
 function bar mutrec.chpl:10
 function foo mutrec.chpl:1
-function main mutrec.chpl:10
 globals

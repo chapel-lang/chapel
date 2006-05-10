@@ -5,7 +5,6 @@
 ::b(multiple_return.chpl:1) ( int64 )
 ::c(multiple_return.chpl:1) ( int64 )
 ::f(multiple_return.chpl:1) ( f )
-::main(multiple_return.chpl:1) ( main (multiple_return.chpl:1) )
+::main ( main (<internal>:-1) )
 function f multiple_return.chpl:1
-function main multiple_return.chpl:1
 globals

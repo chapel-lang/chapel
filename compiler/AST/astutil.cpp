@@ -264,3 +264,123 @@ void remove_static_formals() {
     }
   }
 }
+
+
+void insert_help(BaseAST* ast,
+                 Expr* parentExpr,
+                 Stmt* parentStmt,
+                 Symbol* parentSymbol,
+                 SymScope* parentScope) {
+  if (Symbol* sym = dynamic_cast<Symbol*>(ast)) {
+    parentSymbol = sym;
+    parentExpr = NULL;
+    parentStmt = NULL;
+  }
+
+  if (Stmt* stmt = dynamic_cast<Stmt*>(ast)) {
+    stmt->parentScope = parentScope;
+    stmt->parentSymbol = parentSymbol;
+    stmt->parentStmt = parentStmt;
+
+    if (BlockStmt* blockStmt = dynamic_cast<BlockStmt*>(stmt)) {
+      if (blockStmt->blkScope &&
+          blockStmt->blkScope->type > SCOPE_MODULE &&
+          blockStmt->blkScope->type != SCOPE_CLASS) {
+        INT_FATAL(blockStmt, "Unexpected scope in BlockStmt");
+      }
+      if (!blockStmt->blkScope) {
+        blockStmt->blkScope = Symboltable::pushScope(SCOPE_LOCAL, parentScope);
+        blockStmt->blkScope->astParent = blockStmt;
+      }
+      parentScope = blockStmt->blkScope;
+    }
+    parentStmt = stmt;
+  }
+
+  if (Expr* expr = dynamic_cast<Expr*>(ast)) {
+    expr->parentScope = parentScope;
+    expr->parentSymbol = parentSymbol;
+    expr->parentStmt = parentStmt;
+    expr->parentExpr = parentExpr;
+
+    if (DefExpr* def_expr = dynamic_cast<DefExpr*>(expr)) {
+      if (!dynamic_cast<ModuleSymbol*>(def_expr->sym)) {
+        if (def_expr->sym && !def_expr->sym->isUnresolved) {
+          def_expr->parentScope->define(def_expr->sym);
+        }
+      }
+      if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def_expr->sym)) {
+        if (fn->argScope) {
+          INT_FATAL(fn, "Unexpected scope in FnSymbol");
+        }
+        fn->argScope = Symboltable::pushScope(SCOPE_ARG, parentScope);
+        fn->argScope->astParent = fn;
+        parentScope = fn->argScope;
+      }
+      if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(def_expr->sym)) {
+        if (ClassType* type = dynamic_cast<ClassType*>(typeSym->definition)) {
+          if (type->structScope) {
+            INT_FATAL(typeSym, "Unexpected scope in FnSymbol");
+          }
+          type->structScope = Symboltable::pushScope(SCOPE_CLASS, parentScope);
+          type->structScope->astParent = typeSym;
+          parentScope = type->structScope;
+        }
+      }
+    }
+    parentExpr = expr;
+  }
+
+  Vec<BaseAST*> asts;
+  get_ast_children(ast, asts, 0, 1);
+  forv_Vec(BaseAST, ast, asts)
+    insert_help(ast, parentExpr, parentStmt, parentSymbol, parentScope);
+}
+
+
+void remove_help(BaseAST* ast) {
+  if (Stmt* stmt = dynamic_cast<Stmt*>(ast)) {
+    stmt->parentScope = NULL;
+    stmt->parentSymbol = NULL;
+    stmt->parentStmt = NULL;
+  }
+  if (Expr* expr = dynamic_cast<Expr*>(ast)) {
+    expr->parentScope = NULL;
+    expr->parentSymbol = NULL;
+    expr->parentStmt = NULL;
+    expr->parentExpr = NULL;
+  }
+  if (DefExpr* defExpr = dynamic_cast<DefExpr*>(ast)) {
+    if (!dynamic_cast<ModuleSymbol*>(defExpr->sym)) {
+      if (defExpr->sym->parentScope)
+        defExpr->sym->parentScope->undefine(defExpr->sym);
+      defExpr->sym->parentScope = NULL;
+    }
+  }
+
+  Vec<BaseAST*> asts;
+  get_ast_children(ast, asts);
+  forv_Vec(BaseAST, ast, asts)
+    remove_help(ast);
+
+  if (BlockStmt* block = dynamic_cast<BlockStmt*>(ast)) {
+    if (block->blkScope && block->blkScope->type == SCOPE_LOCAL) {
+      Symboltable::removeScope(block->blkScope);
+      block->blkScope = NULL;
+    }
+  }
+  if (DefExpr* defExpr = dynamic_cast<DefExpr*>(ast)) {
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(defExpr->sym)) {
+      if (fn->argScope)
+        Symboltable::removeScope(fn->argScope);
+      fn->argScope = NULL;
+    }
+    if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(defExpr->sym)) {
+      if (ClassType* type = dynamic_cast<ClassType*>(typeSym->definition)) {
+        if (type->structScope)
+          Symboltable::removeScope(type->structScope);
+        type->structScope = NULL;
+      }
+    }
+  }
+}

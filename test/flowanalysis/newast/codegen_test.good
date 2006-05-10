@@ -1,10 +1,9 @@
 ::__init_codegen_test ( __init_codegen_test (<internal>:-1) )
 ::a(codegen_test.chpl:8) ( int64 )
 ::foo(codegen_test.chpl:7) ( foo )
-::main(codegen_test.chpl:7) ( main (codegen_test.chpl:7) )
+::main ( main (<internal>:-1) )
 ::x(codegen_test.chpl:1) ( int64 )
 ::y(codegen_test.chpl:3) ( int64 )
 ::z(codegen_test.chpl:7) ( int64 )
 function foo codegen_test.chpl:7
-function main codegen_test.chpl:7
 globals

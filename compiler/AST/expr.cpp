@@ -7,7 +7,6 @@
 #include "stringutil.h"
 #include "symscope.h"
 #include "symtab.h"
-#include "../traversals/fixup.h"
 #include "../passes/runAnalysis.h"
 
 

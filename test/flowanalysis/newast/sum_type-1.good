@@ -73,7 +73,7 @@
 ::cp(sum_type-1.chpl:22) ( cpoint (sum_type-1.chpl:6) )
 ::length(sum_type-1.chpl:11) ( length )
 ::length(sum_type-1.chpl:11) ( length )
-::main(sum_type-1.chpl:11) ( main (sum_type-1.chpl:11) )
+::main ( main (<internal>:-1) )
 ::p(sum_type-1.chpl:15) ( point (sum_type-1.chpl:1) )
 ::this(sum_type-1.chpl:12) ( cpoint (sum_type-1.chpl:6) )
 ::this(sum_type-1.chpl:12) ( point (sum_type-1.chpl:1) )
@@ -107,7 +107,6 @@ function color sum_type-1.chpl:8
 function color sum_type-1.chpl:8
 function length sum_type-1.chpl:11
 function length sum_type-1.chpl:11
-function main sum_type-1.chpl:11
 function x sum_type-1.chpl:2
 function x sum_type-1.chpl:2
 function x sum_type-1.chpl:2

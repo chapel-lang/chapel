@@ -9,7 +9,6 @@
 #include "symbol.h"
 #include "symtab.h"
 #include "type.h"
-#include "../traversals/fixup.h"
 
 
 Type::Type(astType_t astType, Symbol* init_defaultVal) :

@@ -10,7 +10,6 @@
 #include "type.h"
 #include "yy.h"
 #include "../passes/runAnalysis.h"
-#include "../traversals/fixup.h"
 
 
 static long uid = 1;
