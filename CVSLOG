@@ -64459,3 +64459,29 @@ Modified files:
 Removed files:
 	chapel/compiler/traversals/: fixup.cpp fixup.h 
 
+---------------------------------------------------------------------------
+
+05/10/06 13:38:44 -- shannon
+
+Log message:
+	Pulled out some of the recently-added math primitives
+	because they aren't declared in Sun's math.h:
+	
+	exp2(), log2(), nearbyint(), round(), tgamma(), and
+	trunc().
+	
+	Removed the corresponding tests.
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/compiler/passes/: interpreter_ops.h runInterpreter.cpp 
+	chapel/modules/standard/: _chpl_math.chpl 
+Removed files:
+	chapel/test/modules/standard/math/: exp2.chpl exp2.good 
+	                                    log2.chpl log2.good 
+	                                    nearbyint.chpl 
+	                                    nearbyint.good round.chpl 
+	                                    round.good tgamma.chpl 
+	                                    tgamma.good trunc.chpl 
+	                                    trunc.good 
+
