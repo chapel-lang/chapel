@@ -64371,3 +64371,25 @@ Modified files:
 	chapel/compiler/passes/: interpreter_ops.h runInterpreter.cpp 
 	chapel/modules/standard/: _chpl_math.chpl 
 
+---------------------------------------------------------------------------
+
+05/10/06 11:03:17 -- deitz
+
+Log message:
+	Decomposed the Fixup traversal into two new functions using the new
+	traversal mechanism to deal with inserting AST into and removing AST
+	from the Tree.  The Fixup traversal is now only used for verification
+	purposes, to be changed over separately.
+	
+	Added the ability to traverse over the sentinels (head and tail) of a
+	list during the get_ast_children traversal, used when traversing over
+	the AST for inserting it into the tree.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp 
+	chapel/compiler/include/: baseAST.h symtab.h 
+	chapel/compiler/passes/: cleanup.cpp filesToAST.cpp 
+	                         normalize.cpp 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/compiler/traversals/: fixup.cpp fixup.h 
+
