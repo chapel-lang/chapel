@@ -64323,3 +64323,35 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: view.cpp 
 
+---------------------------------------------------------------------------
+
+05/10/06 09:18:57 -- shannon
+
+Log message:
+	Added some more math functions:  exp2(), expm1(), log(),
+	log10(), log1p(), log2(), logb(), cbrt(), sqrt(), erf(),
+	erfc(), lgamma(), tgamma(), nearbyint(), rint(), round(),
+	and trun(), and a bunch of tests.
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/compiler/passes/: interpreter_ops.h runInterpreter.cpp 
+	chapel/modules/standard/: _chpl_math.chpl 
+Added files:
+	chapel/test/modules/standard/math/: cbrt.chpl cbrt.good erf.chpl 
+	                                    erf.good erfc.chpl erfc.good 
+	                                    exp2.chpl exp2.good 
+	                                    expm1.chpl expm1.good 
+	                                    lgamma.chpl lgamma.good 
+	                                    log.chpl log.good log10.chpl 
+	                                    log10.good log1p.chpl 
+	                                    log1p.good log2.chpl 
+	                                    log2.good logb.chpl 
+	                                    logb.good nearbyint.chpl 
+	                                    nearbyint.good rint.chpl 
+	                                    rint.good round.chpl 
+	                                    round.good sqrt.chpl 
+	                                    sqrt.good tgamma.chpl 
+	                                    tgamma.good trunc.chpl 
+	                                    trunc.good 
+
