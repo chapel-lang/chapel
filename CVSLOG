@@ -64508,3 +64508,33 @@ Removed files:
 	                             Makefile.share traversal.cpp 
 	                             traversal.h 
 
+---------------------------------------------------------------------------
+
+05/10/06 16:41:37 -- waynew
+
+Log message:
+	Enabled/added support for different primitive type sizes for int,
+	uint, and float.
+	 - Changed primitive types into an array of primitive types, indexed by
+	   size enumeration type.
+	 - Folded call expression of type(size) into a sym expr of the appropriate
+	   primitive type.
+	 - Chapel-generated C constants are now wrapped with a macro that will
+	   add the appropriate C-style size suffix to the int/uint constant.
+	
+	Still missing sizes for int(128), uint(128), and complex types.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/etc/: c_runtime.h 
+	chapel/compiler/ifa/: builtin_symbols.h cg.cpp if1.cpp num.cpp 
+	                      num.h sym.cpp 
+	chapel/compiler/include/: chpltypes.h expr.h passes.h symbol.h 
+	                          type.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: cleanup.cpp functionResolution.cpp 
+	                         normalize.cpp resolveAnalyzed.cpp 
+	                         runAnalysis.cpp runInterpreter.cpp 
+	chapel/runtime/include/: chpltypes.h 
+
