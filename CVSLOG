@@ -64583,3 +64583,13 @@ Added files:
 	                                test_tuples4.chpl 
 	                                test_tuples4.good 
 
+---------------------------------------------------------------------------
+
+05/11/06 10:00:02 -- waynew
+
+Log message:
+	Removed a TAB.
+
+Modified files:
+	chapel/compiler/include/: type.h 
+
