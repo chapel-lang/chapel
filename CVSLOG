@@ -64566,3 +64566,20 @@ Modified files:
 	                                                   test_foo5-error.good 
 	chapel/test/types/type_variables/jplevyak/: where-2-error.good 
 
+---------------------------------------------------------------------------
+
+05/11/06 09:25:44 -- deitz
+
+Log message:
+	Added a few tuple tests.
+
+Added files:
+	chapel/test/types/tuple/deitz/: test_tuples1.chpl 
+	                                test_tuples1.good 
+	                                test_tuples2.chpl 
+	                                test_tuples2.good 
+	                                test_tuples3.chpl 
+	                                test_tuples3.good 
+	                                test_tuples4.chpl 
+	                                test_tuples4.good 
+
