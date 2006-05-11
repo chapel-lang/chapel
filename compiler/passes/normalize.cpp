@@ -364,7 +364,7 @@ static void build_lvalue_function(FnSymbol* fn) {
   fn->retRef = false;
   new_fn->retType = dtVoid;
   new_fn->cname = stringcat("_setter_", fn->cname);
-  ArgSymbol* setterToken = new ArgSymbol(INTENT_REF, "_setterTokenDummy",
+  ArgSymbol* setterToken = new ArgSymbol(INTENT_BLANK, "_setterTokenDummy",
                                          dtSetterToken);
   ArgSymbol* lvalue = new ArgSymbol(INTENT_BLANK, "_lvalue", fn->retType);
   new_fn->formals->insertAtTail(new DefExpr(setterToken));

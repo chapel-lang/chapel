@@ -421,9 +421,9 @@ static void build_getter(ClassType* ct, Symbol *field) {
   fn->addPragma("inline");
   fn->_getter = field;
   fn->retType = field->type;
-  ArgSymbol* _this = new ArgSymbol(INTENT_REF, "this", ct);
+  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
   fn->formals = new AList<DefExpr>(
-    new DefExpr(new ArgSymbol(INTENT_REF, "_methodTokenDummy", dtMethodToken)),
+    new DefExpr(new ArgSymbol(INTENT_BLANK, "_methodTokenDummy", dtMethodToken)),
     new DefExpr(_this));
   if (field->variableExpr) {
     ArgSymbol* index = new ArgSymbol(INTENT_PARAM, "_index", dtInt[IF1_INT_TYPE_64]);
@@ -458,15 +458,15 @@ static void build_setter(ClassType* ct, Symbol* field) {
   fn->_setter = field;
   fn->retType = dtVoid;
 
-  ArgSymbol* _this = new ArgSymbol(INTENT_REF, "this", ct);
+  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
   ArgSymbol* fieldArg = new ArgSymbol(INTENT_BLANK, "_arg", (no_infer) ? field->type : dtUnknown);
   DefExpr* argDef = new DefExpr(fieldArg);
   if (no_infer && field->defPoint->exprType)
     argDef->exprType = field->defPoint->exprType->copy();
   fn->formals = new AList<DefExpr>(
-    new DefExpr(new ArgSymbol(INTENT_REF, "_methodTokenDummy", dtMethodToken)),
+    new DefExpr(new ArgSymbol(INTENT_BLANK, "_methodTokenDummy", dtMethodToken)),
     new DefExpr(_this), 
-    new DefExpr(new ArgSymbol(INTENT_REF, "_setterTokenDummy", dtSetterToken)),
+    new DefExpr(new ArgSymbol(INTENT_BLANK, "_setterTokenDummy", dtSetterToken)),
     argDef);
 
   if (field->variableExpr) {
@@ -555,16 +555,16 @@ static void add_this_formal_to_method(FnSymbol* fn) {
     return;
   if (fn->typeBinding && fn->fnClass != FN_CONSTRUCTOR) {
     fn->cname = stringcat("_", fn->typeBinding->cname, "_", fn->cname);
-    ArgSymbol* this_insert = new ArgSymbol(INTENT_REF, "this", fn->typeBinding->definition);
+    ArgSymbol* this_insert = new ArgSymbol(INTENT_BLANK, "this", fn->typeBinding->definition);
     fn->formals->insertAtHead(new DefExpr(this_insert));
     fn->_this = this_insert;
     if (strcmp(fn->name, "this")) {
-      ArgSymbol* token_dummy = new ArgSymbol(INTENT_REF, "_methodTokenDummy",
+      ArgSymbol* token_dummy = new ArgSymbol(INTENT_BLANK, "_methodTokenDummy",
                                              dtMethodToken);
       fn->formals->insertAtHead(new DefExpr(token_dummy));
     }
     if (fn->isSetter) {
-      ArgSymbol* setter_dummy = new ArgSymbol(INTENT_REF, "_setterTokenDummy", 
+      ArgSymbol* setter_dummy = new ArgSymbol(INTENT_BLANK, "_setterTokenDummy", 
                                               dtSetterToken);
       fn->formals->last()->insertBefore(new DefExpr(setter_dummy));
     }

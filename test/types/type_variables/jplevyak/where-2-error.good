@@ -1,7 +1,7 @@
 fail: program does not type
 note: candidates are:
-where-2-error.chpl:1: f, t @ _meta_type21, y
+where-2-error.chpl:1: f, t @ _meta_type43, y
 where-2-error.chpl:7: expression has no type
-where-2-error.chpl:7: illegal call argument type 'string' illegal: ( _meta_type17 ) 
+where-2-error.chpl:7: illegal call argument type 'string' illegal: ( _meta_type39 ) 
 where-2-error.chpl:7: illegal call argument type expression illegal: ( int64 ) 
 where-2-error.chpl:7: unresolved call 'f'
