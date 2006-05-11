@@ -6,7 +6,7 @@
 #include "baseAST.h"
 #include "analysis.h"
 #include "chplenum.h"
-#include "../ifa/num.h"			// hmmm... duplicate or include?
+#include "../ifa/num.h"
 
 /*
   Things which must be changed if instance variablers are added
