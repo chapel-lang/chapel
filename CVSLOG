@@ -64552,3 +64552,17 @@ Added files:
 	                             int8b.chpl int8b.good uint8-64.chpl 
 	                             uint8-64.good 
 
+---------------------------------------------------------------------------
+
+05/10/06 21:56:07 -- deitz
+
+Log message:
+	Stopped passing "this" by reference.  Since records and classes are
+	always passed via a pointer, this is no longer necessary.
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp normalize.cpp 
+	chapel/test/types/type_variables/deitz/functions/: 
+	                                                   test_foo5-error.good 
+	chapel/test/types/type_variables/jplevyak/: where-2-error.good 
+
