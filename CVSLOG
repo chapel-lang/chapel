@@ -64697,3 +64697,14 @@ Modified files:
 	                         functionResolution.cpp normalize.cpp 
 	                         resolveAnalyzed.cpp runAnalysis.cpp 
 
+---------------------------------------------------------------------------
+
+05/12/06 16:52:07 -- waynew
+
+Log message:
+	No strtof() or strtold() under our SunOS installation.  Reverted back
+	to atof().
+
+Modified files:
+	chapel/compiler/ifa/: num.cpp 
+
