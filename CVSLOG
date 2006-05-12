@@ -64681,3 +64681,19 @@ Log message:
 Added files:
 	chapel/test/flowanalysis/newast/: NOTEST 
 
+---------------------------------------------------------------------------
+
+05/12/06 15:01:07 -- deitz
+
+Log message:
+	Removed "-b" flag and some associated code.  This hasn't been working
+	for a long time and is misleading.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp 
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp passlist.h 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         functionResolution.cpp normalize.cpp 
+	                         resolveAnalyzed.cpp runAnalysis.cpp 
+
