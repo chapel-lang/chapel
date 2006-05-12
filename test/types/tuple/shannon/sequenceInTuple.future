@@ -1,4 +1,0 @@
-steve, jplevyak
-
-This code compiles but seg faults on execution, 
-on creation of the tuple.

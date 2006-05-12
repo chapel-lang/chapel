@@ -1,8 +1,0 @@
-deitz
-
-failing in check_normalized
-
-HISTORY
-
-It seems that constant domains don't work for some reason.
-Switching this domain from const to var does make it work.
