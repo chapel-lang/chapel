@@ -708,11 +708,11 @@ convert_string_to_immediate(char *str, Immediate *imm) {
     case IF1_NUM_KIND_FLOAT:
       switch (imm->num_index) {
         case IF1_FLOAT_TYPE_32:
-          imm->v_float32 = strtof(str, 0); break;
+          imm->v_float32 = atof( str); break;
         case IF1_FLOAT_TYPE_64:
-          imm->v_float64 = strtod(str, 0); break;
+          imm->v_float64 = atof( str); break;
         case IF1_FLOAT_TYPE_128:
-          imm->v_float128 = strtold(str, 0); break;
+          imm->v_float128 = atof( str); break;
         default: assert(!"case");
       }
       break;
