@@ -64651,3 +64651,23 @@ Removed files:
 	chapel/test/types/tuple/deitz/: test_mytuple.chpl 
 	                                test_mytuple.good 
 
+---------------------------------------------------------------------------
+
+05/12/06 14:22:09 -- deitz
+
+Log message:
+	Removing .futures for working tests.  Some of these now work because
+	of the last checkin, some have been working for a while.
+
+Removed files:
+	chapel/test/arrays/deitz/: test_array_2Db.future 
+	                           test_class_array1.future 
+	                           test_domains_2Db.future 
+	chapel/test/arrays/jplevyak/: simple-2.future 
+	chapel/test/domains/bradc/: constdomain.future 
+	chapel/test/functions/jplevyak/: introduce-dispatch-1.future 
+	chapel/test/types/tuple/deitz/: test_htuple4.future 
+	                                test_htuple8.future 
+	                                test_tuple_record_implementation15.future 
+	chapel/test/types/tuple/shannon/: sequenceInTuple.future 
+
