@@ -64671,3 +64671,13 @@ Removed files:
 	                                test_tuple_record_implementation15.future 
 	chapel/test/types/tuple/shannon/: sequenceInTuple.future 
 
+---------------------------------------------------------------------------
+
+05/12/06 14:50:37 -- deitz
+
+Log message:
+	Disabled newast tests.
+
+Added files:
+	chapel/test/flowanalysis/newast/: NOTEST 
+
