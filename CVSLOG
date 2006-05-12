@@ -64593,3 +64593,61 @@ Log message:
 Modified files:
 	chapel/compiler/include/: type.h 
 
+---------------------------------------------------------------------------
+
+05/12/06 13:53:48 -- deitz
+
+Log message:
+	Note: new regressions:
+	
+	  [Error matching compiler output for types/tuple/bradc/writeTuple]
+	  [Error matching compiler output for types/tuple/deitz/test_tuples4]
+	
+	Added support for a _copy function so that variable declarations with
+	only initialization clauses are now translated as
+	
+	  var x = y;   ==>   var x; x = _copy(y);
+	
+	The _copy function is specialized for records.  Default copy
+	constructors for other types are in _chpl_base.chpl
+	
+	Removed mechanism for a variable number of fields in a record.  The
+	implementation of tuples is now based on pragmas that effect during
+	instantiation.
+	
+	Fixed a bug in instantiation regarding the caching of instantiated
+	functions.  The problem was that we would cache functions after they
+	were instantiated even if the where clause evaluated to false and
+	would therefore invalidate the instantiated function.  Then a second
+	attempt to instantiate the same function in the same way would simply
+	grab the cached copy.  The fix: added a mechanism to remove the cached
+	copy if the instantiated function is invalidated.  Note that it was
+	not possible to insert into the cache later (after where clause
+	evaluation) due to the problem of running into an infinite loop if the
+	body of the instantiated function during normalization wished to
+	instantiate the same function in the same way.  The cache catches this
+	and simply returns the same function.
+	
+	Moved Symbol::variableExpr to ArgSymbol::variableExpr since it now
+	only applies to ArgSymbols.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         normalize.cpp semanticChecks.cpp 
+	chapel/modules/standard/: _chpl_base.chpl _chpl_htuple.chpl 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/flowanalysis/newast/: declprintdom.good domarr.good 
+	                                  pareninit.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-1.good 
+	                                 zeroarity-bound-error-2.good 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+Removed files:
+	chapel/test/types/tuple/deitz/: test_mytuple.chpl 
+	                                test_mytuple.good 
+
