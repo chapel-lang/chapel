@@ -811,7 +811,11 @@ static void fix_def_expr(DefExpr* def, VarSymbol* var) {
     tmp->noDefaultInit = true;
     tmp->cname = stringcat(tmp->name, intstring(uid++));
     stmts->insertAtTail(new DefExpr(tmp));
-    stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_INIT, def->exprType->copy())));
+    CallExpr* call = dynamic_cast<CallExpr*>(def->exprType);
+    if (call && call->isNamed("_construct__tuple"))
+      stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, def->exprType->copy()));
+    else
+      stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_INIT, def->exprType->copy())));
     if (def->init)
       stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, var, new CallExpr("=", tmp, def->init->copy())));
     else
@@ -819,17 +823,12 @@ static void fix_def_expr(DefExpr* def, VarSymbol* var) {
     def->parentStmt->insertAfter(stmts);
   } else if (def->init) {
     AList<Stmt>* stmts = new AList<Stmt>();
-    VarSymbol* tmp1 = new VarSymbol("_defTmp1", dtUnknown, VAR_NORMAL, VAR_CONST);
-    tmp1->noDefaultInit = true;
-    tmp1->cname = stringcat(tmp1->name, intstring(uid++));
-    stmts->insertAtTail(new DefExpr(tmp1));
-    VarSymbol* tmp2 = new VarSymbol("_defTmp2", dtUnknown, VAR_NORMAL, VAR_CONST);
-    tmp2->noDefaultInit = true;
-    tmp2->cname = stringcat(tmp2->name, intstring(uid++));
-    stmts->insertAtTail(new DefExpr(tmp2));
-    stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp1, def->init->copy()));
-    stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp2, new CallExpr(PRIMITIVE_INIT, tmp1)));
-    stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, var, new CallExpr("=", tmp2, tmp1)));
+    VarSymbol* tmp = new VarSymbol("_defTmp", dtUnknown, VAR_NORMAL, VAR_CONST);
+    tmp->noDefaultInit = true;
+    tmp->cname = stringcat(tmp->name, intstring(uid++));
+    stmts->insertAtTail(new DefExpr(tmp));
+    stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, def->init->copy()));
+    stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, var, new CallExpr("_copy", tmp)));
     def->parentStmt->insertAfter(stmts);
   } else {
     def->parentStmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, var, new CallExpr(PRIMITIVE_INIT, gUnspecified)));
@@ -901,7 +900,17 @@ static void fold_call_expr(CallExpr* call) {
       call->replace(new SymExpr(dtInt[IF1_INT_TYPE_64]->defaultValue));
     return;
   }
-
+  if (call->isNamed("_copy")) {
+    if (call->argList->length() == 1) {
+      if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->get(1))) {
+        if (VarSymbol* var = dynamic_cast<VarSymbol*>(symExpr->var)) {
+          if (var->immediate) {
+            call->replace(new SymExpr(var));
+          }
+        }
+      }
+    }
+  }
   // fold parameter methods
   if (call->argList->length() == 2) {
     if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->get(1))) {
@@ -1150,15 +1159,6 @@ static void fold_params(Vec<DefExpr*>* defs, Vec<BaseAST*>* asts) {
   do {
     change = false;
     forv_Vec(BaseAST*, ast, *asts) {
-      if (SymExpr* a = dynamic_cast<SymExpr*>(ast))
-        if (a->parentSymbol)
-          if (a->hasPragma("uniquify vararg")) {
-            if (VarSymbol* var = dynamic_cast<VarSymbol*>(a->var)) {
-              if (var->immediate) {
-                a->replace(new_StringLiteral(stringcat("_e", var->cname, "_", a->parentSymbol->name)));
-              }
-            }
-          }
       if (CallExpr* a = dynamic_cast<CallExpr*>(ast))
         if (a->parentSymbol) // in ast
           fold_call_expr(a);
@@ -1198,45 +1198,7 @@ compute_max_actuals() {
 }
 
 static void
-expand_var_args_constructor(FnSymbol* fn) {
-  for_alist(DefExpr, arg_def, fn->formals) {
-    ArgSymbol* arg = dynamic_cast<ArgSymbol*>(arg_def->sym);
-    if (dynamic_cast<DefExpr*>(arg->variableExpr)) {
-      USR_FATAL(fn, "Number of variable fields must be a parameter");
-    } else if (SymExpr* sym = dynamic_cast<SymExpr*>(arg->variableExpr)) {
-      if (VarSymbol* n_var = dynamic_cast<VarSymbol*>(sym->var)) {
-        if (n_var->type == dtInt[IF1_INT_TYPE_64] && n_var->immediate) {
-          int n = n_var->immediate->v_int64;
-          for (int i = 1; i <= n; i++) {
-            DefExpr* new_arg_def = arg_def->copy();
-            ArgSymbol* new_arg = dynamic_cast<ArgSymbol*>(new_arg_def->sym);
-            new_arg->variableExpr = NULL;
-            if (arg_def->exprType)
-              new_arg->defaultExpr = arg_def->exprType->copy();
-            else
-              new_arg->defaultExpr = new SymExpr(gNil);
-            new_arg->name = stringcat("_e", intstring(i), "_", arg->name);
-            new_arg->cname = stringcat("_e", intstring(i), "_", arg->cname);
-            arg_def->insertBefore(new_arg_def);
-            VarSymbol* var = new VarSymbol(new_arg->name);
-            AList<Stmt>* decl = new AList<Stmt>(new DefExpr(var));
-            dynamic_cast<ClassType*>(fn->typeBinding->definition)->addDeclarations(decl);
-            Stmt* last = fn->body->body->last();
-            last->insertBefore(new ExprStmt(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, new_StringSymbol(var->name), new_arg)));
-          }
-          arg_def->remove();
-          build(fn);
-        }
-      }
-    }
-  }
-}
-
-static void
 expand_var_args(FnSymbol* fn) {
-  if (fn->fnClass == FN_CONSTRUCTOR) {
-    expand_var_args_constructor(fn);
-  }
   for_alist(DefExpr, arg_def, fn->formals) {
     ArgSymbol* arg = dynamic_cast<ArgSymbol*>(arg_def->sym);
     if (DefExpr* def = dynamic_cast<DefExpr*>(arg->variableExpr)) {
@@ -1305,6 +1267,7 @@ expand_var_args(FnSymbol* fn) {
 
 static int
 genericFunctionArg(FnSymbol *f, Vec<Symbol *> &genericSymbols) {
+  int result = 0;
   for (DefExpr* formal = f->formals->first(); formal; 
        formal = f->formals->next()) {
     if (ArgSymbol *ps = dynamic_cast<ArgSymbol *>(formal->sym)) {
@@ -1312,20 +1275,23 @@ genericFunctionArg(FnSymbol *f, Vec<Symbol *> &genericSymbols) {
         if (ts->definition->isGeneric) {
           assert(dynamic_cast<VariableType*>(ts->definition));
           genericSymbols.set_add(ts);
-          return 1;
+          result = 1;
+          continue;
         }
       }
       if (ps->type && ps->type->isGeneric) {
         genericSymbols.set_add(ps->type->symbol);
-        return 1;
+        result = 1;
+        continue;
       }
       if (ps->intent == INTENT_PARAM) {
         genericSymbols.set_add(ps);
-        return 1;
+        result = 1;
+        continue;
       }
     }
   }
-  return 0;
+  return result;
 }
 
 static int
@@ -1371,6 +1337,9 @@ tag_generic(Type *t) {
 static void
 tag_hasVarArgs(FnSymbol* fn) {
   fn->hasVarArgs = false;
+  if (fn->hasPragma("tuple"))
+    if (fn->genericSymbols.n) // not if instantiated
+      fn->hasVarArgs = true;
   for_formals(formal, fn)
     if (formal->variableExpr)
       fn->hasVarArgs = true;

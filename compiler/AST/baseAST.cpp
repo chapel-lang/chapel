@@ -548,7 +548,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all, int sentinels) {
     ADD_CHILD(ModuleSymbol, initFn);
     goto LSymbolCommon;
   case SYMBOL_VAR:
-    AST_ADD_CHILD(VarSymbol, variableExpr);
     goto LSymbolCommon;
   case SYMBOL_ARG:
     AST_ADD_CHILD(ArgSymbol, defaultExpr);

@@ -55,6 +55,13 @@ check_icache(FnSymbol* fn, ASTMap* substitutions) {
 }
 
 static void
+remove_icache(FnSymbol* fn, ASTMap* substitutions) {
+  forv_Vec(Inst, inst, icache)
+    if (inst->oldFn == fn && subs_match(substitutions, inst->subs))
+      inst->newFn = NULL;
+}
+
+static void
 add_icache(FnSymbol* newFn) {
   icache.add(new Inst(newFn->instantiatedFrom, newFn, &newFn->substitutions));
 }
@@ -104,7 +111,6 @@ Symbol::Symbol(astType_t astType, char* init_name, Type* init_type) :
   cname(name),
   type(init_type),
   defPoint(NULL),
-  variableExpr(NULL),
   uses(NULL),
   asymbol(0),
   overload(NULL),
@@ -313,7 +319,6 @@ VarSymbol*
 VarSymbol::copyInner(ASTMap* map) {
   VarSymbol* newVarSymbol = 
     new VarSymbol(stringcpy(name), type, varClass, consClass);
-  newVarSymbol->variableExpr = COPY_INT(variableExpr);
   newVarSymbol->cname = stringcpy(cname);
   assert(!newVarSymbol->immediate);
   assert(!newVarSymbol->literalType);
@@ -323,10 +328,7 @@ VarSymbol::copyInner(ASTMap* map) {
 
 
 void VarSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == variableExpr)
-    variableExpr = dynamic_cast<Expr*>(new_ast);
-  else
-    type->replaceChild(old_ast, new_ast);
+  type->replaceChild(old_ast, new_ast);
 }
 
 
@@ -410,13 +412,13 @@ ArgSymbol::ArgSymbol(intentTag iIntent, char* iName,
   Symbol(SYMBOL_ARG, iName, iType),
   intent(iIntent),
   defaultExpr(iDefaultExpr),
+  variableExpr(iVariableExpr),
   genericSymbol(NULL),
   isGeneric(false),
   isExactMatch(false)
 {
   if (intent == INTENT_PARAM || intent == INTENT_TYPE)
     isGeneric = true;
-  variableExpr = iVariableExpr;
 }
 
 
@@ -431,8 +433,7 @@ void ArgSymbol::verify() {
 ArgSymbol*
 ArgSymbol::copyInner(ASTMap* map) {
   ArgSymbol *ps = new ArgSymbol(intent, stringcpy(name),
-                                type, COPY_INT(defaultExpr));
-  ps->variableExpr = COPY_INT(variableExpr);
+                                type, COPY_INT(defaultExpr), COPY_INT(variableExpr));
   if (genericSymbol)
     ps->genericSymbol = genericSymbol;
   ps->isGeneric = isGeneric;
@@ -909,6 +910,12 @@ instantiate_function(FnSymbol *fn, ASTMap *all_subs, ASTMap *generic_subs) {
   clone->visible = false;
   clone->instantiatedFrom = fn;
   clone->substitutions.copy(*generic_subs);
+  // patch up the typeBinding
+  if (clone->typeBinding) {
+    Type *tt = dynamic_cast<Type*>(clone->substitutions.get(clone->typeBinding->definition));
+    if (tt)
+      clone->typeBinding = tt->symbol;
+  }
   add_icache(clone);
   fn->defPoint->parentStmt->insertBefore(new DefExpr(clone));
   instantiate_add_subs(all_subs, &map);
@@ -1017,6 +1024,54 @@ add_new_ast_functions(FnSymbol* fn) {
 }
 
 
+static void
+instantiate_tuple(FnSymbol* fn) {
+  ClassType* tuple = dynamic_cast<ClassType*>(fn->typeBinding->definition);
+  int size = dynamic_cast<VarSymbol*>(tuple->substitutions.v[0].value)->immediate->v_int64;
+  Stmt* last = fn->body->body->last();
+  for (int i = 1; i <= size; i++) {
+    char* name = stringcat("x", intstring(i));
+    ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, name, dtUnknown, new SymExpr(gNil));
+    fn->formals->insertAtTail(arg);
+    last->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this,
+                                    new_StringLiteral(name), arg));
+    VarSymbol* field = new VarSymbol(name);
+    tuple->addDeclarations(new AList<Stmt>(new ExprStmt(new DefExpr(field))));
+  }
+}
+
+FnSymbol*
+instantiate_tuple_get(FnSymbol* fn) {
+  int index = dynamic_cast<VarSymbol*>(fn->substitutions.get(fn->instantiatedFrom->formals->get(2)->sym))->immediate->v_int64;
+  char* name = stringcat("x", intstring(index));
+  fn->body->replace(new BlockStmt(new ReturnStmt(new CallExpr(PRIMITIVE_GET_MEMBER, fn->_this, new_StringLiteral(name)))));
+  return fn;
+}
+
+FnSymbol*
+instantiate_tuple_set(FnSymbol* fn) {
+  int index = dynamic_cast<VarSymbol*>(fn->substitutions.get(fn->instantiatedFrom->formals->get(2)->sym))->immediate->v_int64;
+  char* name = stringcat("x", intstring(index));
+  VarSymbol* tmp = new VarSymbol("_tmp");
+  fn->insertAtHead(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, new_StringLiteral(name), new CallExpr("=", tmp, fn->formals->last()->sym)));
+  fn->insertAtHead(new DefExpr(tmp, new CallExpr(PRIMITIVE_GET_MEMBER, fn->_this, new_StringLiteral(name))));
+  return fn;
+}
+
+FnSymbol*
+instantiate_tuple_copy(FnSymbol* fn) {
+  ArgSymbol* arg = dynamic_cast<ArgSymbol*>(fn->formals->only()->sym);
+  ClassType* ct = dynamic_cast<ClassType*>(arg->type);
+  CallExpr* call = new CallExpr(ct->defaultConstructor->name);
+  call->insertAtTail(new CallExpr(".", arg, new_StringLiteral("size")));
+  for (int i = 1; i < ct->fields.n; i++)
+    call->insertAtTail(new CallExpr(arg, new_IntLiteral(i)));
+  fn->body->replace(new BlockStmt(new ReturnStmt(call)));
+  fn->addPragma("split eager");
+  return fn;
+}
+
+
 FnSymbol*
 FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
   // check to make sure this fully instantiates
@@ -1101,9 +1156,26 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
     cloneType->defaultConstructor = newfn;
     newfn->typeBinding = clone;
     check_promoter(cloneType);
+    if (hasPragma("tuple"))
+      instantiate_tuple(newfn);
 
   } else {
     newfn = instantiate_function(this, &substitutions, generic_substitutions);
+
+    if (hasPragma("tuple set"))
+      newfn = instantiate_tuple_set(newfn);
+
+    if (hasPragma("tuple get"))
+      newfn = instantiate_tuple_get(newfn);
+
+    if (hasPragma("tuple copy"))
+      newfn = instantiate_tuple_copy(newfn);
+
+    if (!newfn) {
+      remove_icache(this, generic_substitutions);
+      return NULL;
+    }
+
   }
   normalize(newfn);
   instantiatedTo->add(newfn);
@@ -1131,8 +1203,10 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
     SymExpr* symExpr = dynamic_cast<SymExpr*>(exprStmt->expr);
     if (!symExpr)
       USR_FATAL(where, "Illegal where clause");
-    if (!strcmp(symExpr->var->name, "false"))
+    if (!strcmp(symExpr->var->name, "false")) {
+      remove_icache(this, generic_substitutions);
       return NULL;
+    }
     if (strcmp(symExpr->var->name, "true"))
       USR_FATAL(where, "Illegal where clause");
   }

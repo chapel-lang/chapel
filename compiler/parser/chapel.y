@@ -868,12 +868,6 @@ var_decl_stmt_inner:
       VarSymbol* var = new VarSymbol($1);
       $$ = new AList<Stmt>(new DefExpr(var, $3, $2));
     }
-| identifier opt_var_type var_arg_expr
-    {
-      VarSymbol* var = new VarSymbol($1);
-      $$ = new AList<Stmt>(new DefExpr(var, NULL, $2));
-      var->variableExpr = $3;
-    }
 ;
 
 

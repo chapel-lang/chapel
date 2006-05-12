@@ -1,12 +1,10 @@
-record _tuple {
+pragma "tuple" record _tuple {
   param size : int;
-  var component ...size;
 
-  fun this(param i : int) var
-    return component(i);
+  pragma "tuple get" fun this(param i : int)
+    return 0;
 
-  fun this(i : int) var
-    return component(i);
+  pragma "tuple set" fun =this(param i : int, y);
 }
 
 fun =(x : _tuple, y) {
@@ -34,6 +32,12 @@ record _htuple {
       halt("tuple indexing out-of-bounds error");
     return elements(i-1);
   }
+}
+
+fun _copy(x : _htuple) {
+  var y : x;
+  y = x;
+  return y;
 }
 
 fun =(x : _htuple, y) {

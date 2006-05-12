@@ -13,6 +13,7 @@ static void build_chpl_main(void);
 static void build_record_equality_function(ClassType* ct);
 static void build_record_inequality_function(ClassType* ct);
 static void build_record_assignment_function(ClassType* ct);
+static void build_record_copy_function(ClassType* ct);
 static void buildDefaultIOFunctions(Type* type);
 
 // function_exists returns true iff
@@ -78,6 +79,7 @@ void build_default_functions(void) {
           build_record_equality_function(ct);
           build_record_inequality_function(ct);
           build_record_assignment_function(ct);
+          build_record_copy_function(ct);
         }
       }
     }
@@ -206,6 +208,29 @@ static void build_record_assignment_function(ClassType* ct) {
     fn->retType = ct;
   build(fn);
   fns.add(fn);
+}
+
+
+static void build_record_copy_function(ClassType* ct) {
+  if (function_exists("_copy", 1, NULL, ct->symbol->name))
+    return;
+
+  FnSymbol* fn = new FnSymbol("_copy");
+  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
+  fn->formals = new AList<DefExpr>(new DefExpr(arg));
+  CallExpr* call = new CallExpr(ct->defaultConstructor->name);
+  forv_Vec(Symbol, tmp, ct->types)
+    call->insertAtTail(new CallExpr(".", arg, new_StringLiteral(tmp->name)));
+  forv_Vec(Symbol, tmp, ct->fields)
+    call->insertAtTail(new CallExpr(".", arg, new_StringLiteral(tmp->name)));
+  fn->insertAtTail(new ReturnStmt(call));
+  DefExpr* def = new DefExpr(fn);
+  ct->symbol->defPoint->parentStmt->insertBefore(def);
+  reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
+  build(fn);
+  fns.add(fn);
+  if (ct->symbol->hasPragma("tuple"))
+    fn->addPragma("tuple copy");
 }
 
 

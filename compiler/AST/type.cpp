@@ -596,6 +596,8 @@ void ClassType::verify() {
   if (prev || next) {
     INT_FATAL(this, "Type is in AList");
   }
+  if (classTag != CLASS_CLASS && classTag != CLASS_RECORD)
+    INT_FATAL(this, "Bad ClassType::classTag");
 }
 
 

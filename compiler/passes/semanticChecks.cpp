@@ -110,7 +110,7 @@ check_normalized_vars(Symbol* var) {
       }
     }
   }
-  if (num_moves >= 2) {
+  if (num_moves >= 3) {
     USR_FATAL_CONT(move, "Assigning to a constant expression");
   }
   if (num_moves >= 1 && dynamic_cast<ArgSymbol*>(var)) {
