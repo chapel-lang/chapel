@@ -552,8 +552,6 @@ TypeSymbol* TypeSymbol::clone(ASTMap* map) {
   defPoint->parentStmt->insertBefore(new DefExpr(clone));
   clone->addPragmas(&pragmas);
   newClass->typeParents.add(originalClass);
-  if (no_infer)
-    newClass->dispatchParents.copy(originalClass->dispatchParents);
   return clone;
 }
 
@@ -931,11 +929,9 @@ instantiate_function(FnSymbol *fn, ASTMap *all_subs, ASTMap *generic_subs) {
       if (all_subs->get(ps) && ps->intent == INTENT_PARAM) {
         ps->intent = INTENT_BLANK;
         ps->isGeneric = false;
-        if (!no_infer) {
-          if (VarSymbol *vs = dynamic_cast<VarSymbol*>(all_subs->get(ps))) {
-            if (vs->literalType)
-              ps->type = vs->literalType;
-          }
+        if (VarSymbol *vs = dynamic_cast<VarSymbol*>(all_subs->get(ps))) {
+          if (vs->literalType)
+            ps->type = vs->literalType;
         }
       }
     }

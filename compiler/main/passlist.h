@@ -9,7 +9,6 @@ void scopeResolve();
 void normalize();
 void check_normalized();
 void build_default_functions();
-void functionResolution();
 void runInterpreter();
 void runAnalysis();
 void resolve_analyzed();
@@ -29,8 +28,6 @@ PassInfo passlist[] = {
   RUN(normalize),               // normalization transformations
   RUN(check_normalized),        // check semantics of normalized AST
   RUN(build_default_functions), // build default functions
-
-  RUN(functionResolution), // --no-infer function resolution
 
   RUN(runInterpreter), // INTERPRETER
                        //   Enabled by -i or --interpreter.

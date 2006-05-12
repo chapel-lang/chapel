@@ -14,8 +14,6 @@ static void resolve_symbol(CallExpr* call);
 
 
 void resolve_analyzed(void) {
-  if (no_infer)
-    return;
   Vec<BaseAST*> asts;
   collect_asts(&asts);
   forv_Vec(BaseAST, ast, asts) {

@@ -880,16 +880,14 @@ static void fold_call_expr(CallExpr* call) {
   if (call->partialTag == PARTIAL_ALWAYS)
     return;
   if (call->isPrimitive(PRIMITIVE_INIT)) {
-    if (!no_infer) {
-      if (CallExpr* construct = dynamic_cast<CallExpr*>(call->get(1))) {
-        if (SymExpr* base = dynamic_cast<SymExpr*>(construct->baseExpr)) {
-          Symbol* sym = call->lookup(base);
-          if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
-            if (fn->fnClass == FN_CONSTRUCTOR) {
-              if (ClassType* ct = dynamic_cast<ClassType*>(fn->retType)) {
-                if (ct->classTag == CLASS_CLASS) {
-                  call->replace(new SymExpr(gNil));
-                }
+    if (CallExpr* construct = dynamic_cast<CallExpr*>(call->get(1))) {
+      if (SymExpr* base = dynamic_cast<SymExpr*>(construct->baseExpr)) {
+        Symbol* sym = call->lookup(base);
+        if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
+          if (fn->fnClass == FN_CONSTRUCTOR) {
+            if (ClassType* ct = dynamic_cast<ClassType*>(fn->retType)) {
+              if (ct->classTag == CLASS_CLASS) {
+                call->replace(new SymExpr(gNil));
               }
             }
           }

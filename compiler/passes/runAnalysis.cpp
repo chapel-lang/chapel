@@ -11,8 +11,6 @@ bool postAnalysis = false;
 
 
 void runAnalysis(void) {
-  if (no_infer)
-    return;
   preAnalysis = false;
   inAnalysis = true;
   Accum<BaseAST*> asts;

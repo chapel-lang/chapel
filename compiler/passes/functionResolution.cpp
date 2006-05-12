@@ -54,11 +54,6 @@ bool can_dispatch(Symbol* actualParam, Type* actualType, Type* formalType) {
 
 Vec<FnSymbol*> fns; // live functions list
 
-void resolve_return_type(FnSymbol* fn);
-void resolve_function(FnSymbol* fn);
-void resolve_op(CallExpr* call);
-void resolve_asts(BaseAST* base);
-
 bool actual_formal_match(Symbol* actual_param, Type* actual_type, ArgSymbol* formal) {
   if (formal->intent == INTENT_TYPE || formal->type == dtUnknown)
     return true;
@@ -208,56 +203,6 @@ CallExpr* new_default_constructor_call(Type* type) {
   return call;
 }
 
-void resolve_op(CallExpr* call) {
-  if (call->isPrimitive(PRIMITIVE_MOVE)) {
-    if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->argList->get(1))) {
-      if (CallExpr* prim = dynamic_cast<CallExpr*>(call->argList->get(2))) {
-        if (prim->typeInfo() == dtUnknown)
-          return;
-      }
-      Type* type = call->argList->get(2)->typeInfo();
-      if (type != dtNil) {
-        if (symExpr->var->type == dtUnknown)
-          symExpr->var->type = type;
-        else if (symExpr->var->type != type)
-          INT_FATAL("type mismatch in function resolution");
-      }
-      if (symExpr->var->type == dtUnknown)
-        INT_FATAL("Unable to resolve type");
-    }
-  } else if (call->primitive &&
-             ((!strcmp(call->primitive->name, ".")) ||
-              (!strcmp(call->primitive->name, ".=")))) {
-    ClassType* ct = dynamic_cast<ClassType*>(call->get(1)->typeInfo());
-    if (!ct) {
-      INT_FATAL(call, "Cannot resolve member access");
-      return;
-    }
-    call->member = Symboltable::lookupInScope(
-      dynamic_cast<VarSymbol*>(dynamic_cast<SymExpr*>(call->get(2))->var)->immediate->v_string,
-      ct->structScope);
-    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(call->parentSymbol))
-      if (fn->fnClass == FN_CONSTRUCTOR &&
-          !strcmp(call->primitive->name, ".=") && 
-          call->member->type == dtUnknown)
-        call->member->type = call->get(3)->typeInfo();
-    if (call->member->type == dtUnknown)
-      INT_FATAL(call, "Unable to resolve type of member access");
-  } else if (call->primitive && !strcmp(call->primitive->name, "init")) {
-    Type* type = call->get(1)->typeInfo();
-    if (type->defaultValue) {
-      call->replace(new CastExpr(type->defaultValue, type));
-    } else if (type->defaultConstructor) {
-      CallExpr* c = new_default_constructor_call(type);
-      call->replace(c);
-      resolve_asts(c);
-    } else {
-      INT_FATAL(call, "Type without defaultValue in function resolution");
-    }
-  }
-}
-
-
 static FnSymbol*
 build_default_wrapper(FnSymbol* fn,
                       Vec<ArgSymbol*>* actual_formals) {
@@ -342,29 +287,6 @@ build_promotion_wrapper(FnSymbol* fn,
   }
   if (promotion_wrapper_required)
     fn = fn->promotion_wrapper(&promoted_subs);
-  return fn;
-}
-
-
-static FnSymbol*
-clone_underspecified_function(FnSymbol* fn,
-                              CallExpr* call) {
-  ASTMap formal_types;
-  Expr* actual = call->argList->first();
-  for_alist(DefExpr, formalDef, fn->formals) {
-    ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
-    if (formal->type == dtAny ||
-        formal->type == dtUnknown ||
-        formal->type == dtNumeric) {
-      if (actual->typeInfo() == dtUnknown)
-        INT_FATAL(actual, "Cannot determine type of actual");
-      formal_types.put(formal, actual->typeInfo());
-    }
-    actual = call->argList->next();
-  }
-  if (formal_types.n) {
-    fn = fn->clone_generic(&formal_types);
-  }
   return fn;
 }
 
@@ -528,147 +450,4 @@ resolve_type_expr(BaseAST* base) {
       }
     }
   }
-}
-
-void resolve_asts(BaseAST* base) {
-  Vec<BaseAST*> asts;
-  collect_asts_postorder(&asts, base);
-  forv_Vec(BaseAST, ast, asts) {
-    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
-      if (!call->baseExpr)
-        resolve_op(call);
-      else {
-        if (CallExpr* partial = dynamic_cast<CallExpr*>(call->baseExpr)) {
-          if (partial->typeInfo() == dtUnknown) {
-            call->baseExpr->replace(partial->baseExpr->copy());
-            call->insertAtHead(partial->argList->copy());
-          }
-        }
-        SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr);
-        if (!base ||
-            dynamic_cast<VarSymbol*>(base->var) ||
-            dynamic_cast<ArgSymbol*>(base->var)) {
-          Expr* baseExpr = call->baseExpr;
-          call->baseExpr->replace(new SymExpr("this"));
-          call->insertAtHead(baseExpr->copy());
-        }
-        Vec<Type*> actual_types;
-        Vec<Symbol*> actual_params;
-        Vec<char*> actual_names;
-        for_alist(Expr, actual, call->argList) {
-          actual_types.add(actual->typeInfo());
-          SymExpr* symExpr;
-          if (NamedExpr* named = dynamic_cast<NamedExpr*>(actual)) {
-            actual_names.add(named->name);
-            symExpr = dynamic_cast<SymExpr*>(named->actual);
-          } else {
-            actual_names.add(NULL);
-            symExpr = dynamic_cast<SymExpr*>(actual);
-          }
-          if (symExpr && symExpr->var->isParam()) {
-            actual_params.add(symExpr->var);
-          } else {
-            actual_params.add(NULL);
-          }
-        }
-        FnSymbol* fn = resolve_call(call, &actual_types,
-                                    &actual_params, &actual_names);
-        if (fn) {
-          if (!call->isResolved())
-            fn = clone_underspecified_function(fn, call);
-          if (!call->isNamed("_chpl_alloc"))
-            resolve_function(fn);
-          call->baseExpr->replace(new SymExpr(fn));
-          if (fn->hasPragma("builtin"))
-            call->makeOp();
-        } else if (resolve_call_error != CALL_PARTIAL) {
-          INT_FATAL(call, "Doh!");
-        }
-      }
-    }
-  }
-}
-
-void resolve_function(FnSymbol* fn) {
-  if (fns.set_in(fn))
-    return;
-
-  fns.set_add(fn);
-
-  resolve_asts(fn->formals);
-
-  for_alist(DefExpr, formalDef, fn->formals) {
-    ArgSymbol* arg = dynamic_cast<ArgSymbol*>(formalDef->sym);
-    if (arg->type == dtUnknown && formalDef->exprType) {
-      arg->type = formalDef->exprType->typeInfo();
-    }
-    if (arg->type == dtUnknown ||
-        arg->type == dtAny ||
-        arg->type == dtNumeric ||
-        arg->isGeneric) {
-      INT_FATAL(fn, "Generic function should have been cloned");
-      return;
-    }
-  }
-
-  resolve_asts(fn->body);
-
-  if (fn->fnClass == FN_CONSTRUCTOR)
-    resolve_asts(fn->typeBinding->defPoint);
-
-  resolve_return_type(fn);
-}
-
-void functionResolution(void) {
-  if (!no_infer || run_interpreter)
-    return;
-  resolve_function(chpl_main);
-  fns.set_add(dynamic_cast<FnSymbol*>(Symboltable::lookupInScope("_chpl_alloc", prelude->modScope)));
-
-  Vec<TypeSymbol*> live_types;
-  Vec<FnSymbol*> all_fns;
-  collect_functions(&all_fns);
-  forv_Vec(FnSymbol, fn, all_fns) {
-    if (fns.set_in(fn)) {
-      if (fn->fnClass == FN_CONSTRUCTOR)
-        live_types.set_add(fn->typeBinding);
-    } else {
-      fn->defPoint->parentStmt->remove();
-    }
-  }
-  Vec<BaseAST*> asts;
-  collect_asts(&asts);
-  forv_Vec(BaseAST, ast, asts) {
-    if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(ast)) {
-      if (dynamic_cast<ClassType*>(ts->definition)) {
-        if (!live_types.set_in(ts))
-          ts->defPoint->parentStmt->remove();
-      }
-    }
-  }
-  remove_named_exprs();
-  remove_static_actuals();
-  remove_static_formals();
-}
-
-
-void resolve_return_type(FnSymbol* fn) {
-  if (fn->retType != dtUnknown)
-    return;
-
-  Type* return_type = dtVoid;
-  Vec<BaseAST*> asts;
-  collect_asts(&asts, fn);
-  forv_Vec(BaseAST, ast, asts) {
-    if (ReturnStmt* returnStmt = dynamic_cast<ReturnStmt*>(ast)) {
-      if (returnStmt->expr) {
-        if (return_type == dtVoid) {
-          return_type = returnStmt->expr->typeInfo();
-        } else if (return_type != returnStmt->expr->typeInfo()) {
-          USR_FATAL(fn, "Unable to resolve return type of function");
-        }
-      }
-    }
-  }
-  fn->retType = return_type;
 }

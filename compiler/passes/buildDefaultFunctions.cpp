@@ -204,8 +204,6 @@ static void build_record_assignment_function(ClassType* ct) {
     fn->typeBinding = ct->symbol;
     fn->_this = _arg1;
   }
-  if (no_infer)
-    fn->retType = ct;
   build(fn);
   fns.add(fn);
 }

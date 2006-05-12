@@ -547,12 +547,6 @@ Type* CallExpr::typeInfo(void) {
   if (primitive &&
       ((!strcmp(primitive->name, ".")) ||
        (!strcmp(primitive->name, ".=")))) {
-    if (no_infer) {
-      if (member)
-        return member->type;
-      else
-        return dtUnknown;
-    }
     if (member_type != NULL && member_type != dtUnknown)
       return member_type;
     if (member && member->type != dtUnknown)
@@ -572,7 +566,7 @@ Type* CallExpr::typeInfo(void) {
     return dtUnknown;
   }
 
-  if (!no_infer && preAnalysis) {
+  if (preAnalysis) {
     return dtUnknown;
   }
 

@@ -448,10 +448,8 @@ static void build_setter(ClassType* ct, Symbol* field) {
   fn->retType = dtVoid;
 
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
-  ArgSymbol* fieldArg = new ArgSymbol(INTENT_BLANK, "_arg", (no_infer) ? field->type : dtUnknown);
+  ArgSymbol* fieldArg = new ArgSymbol(INTENT_BLANK, "_arg", dtUnknown);
   DefExpr* argDef = new DefExpr(fieldArg);
-  if (no_infer && field->defPoint->exprType)
-    argDef->exprType = field->defPoint->exprType->copy();
   fn->formals = new AList<DefExpr>(
     new DefExpr(new ArgSymbol(INTENT_BLANK, "_methodTokenDummy", dtMethodToken)),
     new DefExpr(_this), 
