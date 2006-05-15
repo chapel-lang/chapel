@@ -10,6 +10,10 @@ module a {
       writeln("in runab() in module aSubB");
     }
 
+    fun main() {
+      runa();
+      runab();
+    }  
   }
-
 }
+

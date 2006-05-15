@@ -8,8 +8,15 @@ use b;
 use c;
 use d;
 use e;
-use z;
+use f;
 
 fun main() {
   writeln("x is: ", x);
+  runa();
+  runb();
+  runc();
+  rund();
+  runea();
+  runeb();
+  runf();
 }

@@ -1,1 +1,2 @@
-Error: Code defines multiple modules but no main function.
+in runa() in module a
+in runab() in module aSubB
