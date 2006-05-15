@@ -23,11 +23,11 @@ typedef enum __bool {
 
 typedef char               _int8;
 typedef short int          _int16;
-typedef long int           _int32;
+typedef int                _int32;
 typedef long long int      _int64;
 typedef unsigned char      _uint8;
 typedef unsigned short int _uint16;
-typedef unsigned long int  _uint32;
+typedef unsigned int       _uint32;
 typedef unsigned long long _uint64;
 typedef float              _float32;
 typedef double             _float64;
