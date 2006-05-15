@@ -1,5 +1,5 @@
 fun f() { return 4; }
-var a;
+var a = => f();
 writeln(a());
 
 fun g() { 
