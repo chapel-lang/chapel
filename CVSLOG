@@ -64829,3 +64829,16 @@ Added files:
 	chapel/test/modules/deitz/: test_module_use3.chpl 
 	                            test_module_use3.good 
 
+---------------------------------------------------------------------------
+
+05/15/06 15:31:38 -- bradc
+
+Log message:
+	Updated some of my modules tests as a result of Steve's
+	last checkin.
+
+Modified files:
+	chapel/test/modules/bradc/: nestedmodule.chpl nestedmodule.good 
+	chapel/test/modules/bradc/manymodules/: manymodules.chpl 
+	                                        manymodules.good 
+
