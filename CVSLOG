@@ -64787,3 +64787,45 @@ Added files:
 	chapel/test/arrays/deitz/: test_array_init_seq.chpl 
 	                           test_array_init_seq.good 
 
+---------------------------------------------------------------------------
+
+05/15/06 15:01:40 -- deitz
+
+Log message:
+	Major simplification to creation of modules including removal of
+	startModuleDef and finishModuleDef.
+	
+	Insertion of nested modules into the AST now fully supports nested
+	modules.  All modules are top-level and nested modules use their outer
+	module.  This assumes that modules are nested only in other modules,
+	not functions or types.  This is guarded by a user error.
+	
+	ModuleSymbol constructor now registers the module, puts it in the root
+	scope, sets up its scope, etc.  Result: It is easy to create a new
+	module.
+	
+	Removed currentScope and currentModule global variables, no longer
+	used.  Also removed popScope, getCurrentScope, and setCurrentScope,
+	also no longer used.
+	
+	A module is not created for a file that contains only module
+	definitions.  This is checked for in ParseFile.
+	
+	Added test of nested module.
+	
+	Note module names like Mod1.Mod2 are not yet supported.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: symbol.h symtab.h 
+	chapel/compiler/parser/: chapel.y parser.cpp 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-1.good 
+	chapel/test/modules/bradc/: nestedmodule.good 
+	chapel/test/modules/bradc/manymodules/: manymodules.good 
+Added files:
+	chapel/test/functions/jplevyak/: 
+	                                 zeroarity-bound-error-1.compopts 
+	chapel/test/modules/deitz/: test_module_use3.chpl 
+	                            test_module_use3.good 
+
