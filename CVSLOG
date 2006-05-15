@@ -64762,3 +64762,15 @@ Log message:
 Modified files:
 	chapel/test/interpreter/jplevyak/: visibility-3.chpl 
 
+---------------------------------------------------------------------------
+
+05/15/06 14:33:12 -- waynew
+
+Log message:
+	"long int" under AMD/linux64 is 8 bytes. It seems to be 4 bytes under
+	Pentium4/linux and SunOS.  Changed "long int" to "int" for our 32-bit
+	integers.
+
+Modified files:
+	chapel/runtime/include/: chpltypes.h 
+
