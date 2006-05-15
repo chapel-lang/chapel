@@ -64708,3 +64708,30 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: num.cpp 
 
+---------------------------------------------------------------------------
+
+05/15/06 11:38:41 -- deitz
+
+Log message:
+	Added error checking to make sure that a variable is declared with a
+	type or is initialized.  Updated tests that violated this rule.
+
+Modified files:
+	chapel/compiler/passes/: semanticChecks.cpp 
+	chapel/test/functions/deitz/: test_nested1.chpl 
+	chapel/test/functions/jplevyak/: dynamic-partial-1.chpl 
+	                                 equal-3.chpl equal-5.chpl 
+	                                 introduce-dispatch-1.chpl 
+	chapel/test/functions/jplevyak/scoping/: visibility-3.chpl 
+	                                         visibility-3.good 
+	chapel/test/interpreter/jplevyak/: equal-3.chpl equal-5.chpl 
+	                                   visibility-3.chpl 
+	                                   visibility-3.good 
+	chapel/test/trivial/deitz/: test_var_decl1.chpl 
+	                            test_var_decl2.chpl 
+	                            test_var_decl3.chpl 
+	chapel/test/types/tuple/deitz/: test_tuple_simple7.chpl 
+	chapel/test/types/tuple/jplevyak/: destruct-1.chpl 
+	                                   destruct-2.chpl 
+	chapel/test/types/type_variables/jplevyak/: test_coerce2.chpl 
+
