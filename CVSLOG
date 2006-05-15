@@ -64735,3 +64735,20 @@ Modified files:
 	                                   destruct-2.chpl 
 	chapel/test/types/type_variables/jplevyak/: test_coerce2.chpl 
 
+---------------------------------------------------------------------------
+
+05/15/06 11:48:43 -- shannon
+
+Log message:
+	Pulled out another recently-added math primitive,
+	logb(), because it broke the cygwin build.  Removed
+	the corresponding test.
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/compiler/passes/: interpreter_ops.h runInterpreter.cpp 
+	chapel/modules/standard/: _chpl_math.chpl 
+	chapel/test/: .cvsignore 
+Removed files:
+	chapel/test/modules/standard/math/: logb.chpl logb.good 
+
