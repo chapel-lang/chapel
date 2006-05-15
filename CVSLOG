@@ -64752,3 +64752,13 @@ Modified files:
 Removed files:
 	chapel/test/modules/standard/math/: logb.chpl logb.good 
 
+---------------------------------------------------------------------------
+
+05/15/06 14:17:13 -- deitz
+
+Log message:
+	Small fix of oversight in my update of this duplicated test.
+
+Modified files:
+	chapel/test/interpreter/jplevyak/: visibility-3.chpl 
+
