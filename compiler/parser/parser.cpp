@@ -28,14 +28,23 @@ static char* filenameToModulename(char* filename) {
   return modulename;
 }
 
+bool containsOnlyModules(AList<Stmt>* stmts) {
+  for_alist(Stmt, stmt, stmts) {
+    bool isModuleDef = false;
+    if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt))
+      if (DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr))
+        if (dynamic_cast<ModuleSymbol*>(defExpr->sym))
+          isModuleDef = true;
+    if (!isModuleDef)
+      return false;
+  }
+  return true;
+}
 
 ModuleSymbol* ParseFile(char* filename, modType moduletype) {
+  ModuleSymbol* newModule = NULL;
   yyfilename = filename;
   yylloc.first_column = yylloc.last_column = yylloc.first_line = yylloc.last_line = yystartlineno = yylineno = 0;
-
-  char* modulename = filenameToModulename(filename);
-  ModuleSymbol* newModule = Symboltable::startModuleDef(modulename, 
-                                                        moduletype);
 
   yylloc.first_column = yylloc.last_column = 0;
   yylloc.first_line = yylloc.last_line = yystartlineno = yylineno = 1;
@@ -52,12 +61,14 @@ ModuleSymbol* ParseFile(char* filename, modType moduletype) {
 
   closeInputFile(yyin);
 
-  Symboltable::finishModuleDef(newModule, yystmtlist);
+  if (!containsOnlyModules(yystmtlist)) {
+    char* modulename = filenameToModulename(filename);
+    newModule = new ModuleSymbol(modulename, moduletype, yystmtlist);
 
-  if (BlockStmt* first = dynamic_cast<BlockStmt*>(newModule->stmts->first())) {
-    if (first->body->isEmpty()) {
-      newModule->addPragmas(&first->pragmas);
-    }
+    // for file modules to use a first pragma statement for module-level pragmas
+    if (BlockStmt* first = dynamic_cast<BlockStmt*>(newModule->stmts->first()))
+      if (first->body->isEmpty())
+        newModule->addPragmas(&first->pragmas);
   }
 
   yyfilename = "<internal>";

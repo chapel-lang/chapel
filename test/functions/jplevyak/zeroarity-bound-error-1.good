@@ -1,10 +1,10 @@
-_chpl_base.chpl:10: illegal call argument type '_methodToken' illegal: ( _methodTokenType ) 
-zeroarity-bound-error-1.chpl:7: illegal call argument type 'c' illegal: ( C ) 
-error: unresolved call 'g'
+zeroarity-bound-error-1.chpl:1: illegal call argument type '_methodToken' illegal: ( _methodTokenType ) 
+zeroarity-bound-error-1.chpl:1: illegal call argument type 'c' illegal: ( C ) 
+zeroarity-bound-error-1.chpl:1: unresolved call 'g'
 note: candidates are:
 zeroarity-bound-error-1.chpl:3: g, _methodTokenDummy : _methodTokenType, this : C
-error: '_tmp' has no type
-error: expression has no type
+zeroarity-bound-error-1.chpl:1: '_tmp' has no type
+zeroarity-bound-error-1.chpl:1: expression has no type
 zeroarity-bound-error-1.chpl:9: illegal call argument type 'stdout' illegal: ( file ) 
 zeroarity-bound-error-1.chpl:9: illegal call argument type '_tmp' illegal: ( ) 
 zeroarity-bound-error-1.chpl:9: unresolved call 'fwrite'

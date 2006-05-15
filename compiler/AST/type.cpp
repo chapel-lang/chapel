@@ -982,12 +982,7 @@ void VariableType::codegen(FILE* outfile) {
   
 void initPrimitiveTypes(void) {
   // Create initial compiler module and its scope
-  compilerModule = new ModuleSymbol("_chpl_compiler", MOD_STANDARD) ;
-  rootScope->define(compilerModule);
-  registerModule(compilerModule);
-  compilerModule->modScope = new SymScope(SCOPE_MODULE);
-  compilerModule->modScope->astParent = compilerModule;
-  rootScope->insertChildScope(compilerModule->modScope);
+  compilerModule = new ModuleSymbol("_chpl_compiler", MOD_STANDARD, new AList<Stmt>());
   compilerModule->stmts->insertAtTail(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol("prelude"))));
 
   dtNil = Symboltable::createPrimitiveType ("_nilType", "_nilType");

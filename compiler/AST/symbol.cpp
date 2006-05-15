@@ -1352,13 +1352,21 @@ EnumSymbol::copyInner(ASTMap* map) {
 void EnumSymbol::codegenDef(FILE* outfile) { }
 
 
-ModuleSymbol::ModuleSymbol(char* init_name, modType init_modtype) :
+ModuleSymbol::ModuleSymbol(char* init_name,
+                           modType init_modtype,
+                           AList<Stmt>* init_stmts) :
   Symbol(SYMBOL_MODULE, init_name),
   modtype(init_modtype),
-  stmts(new AList<Stmt>),
+  stmts(init_stmts),
   initFn(NULL),
-  modScope(NULL)
-{ }
+  modScope(new SymScope(SCOPE_MODULE))
+{
+  rootScope->define(this);
+  registerModule(this);
+  modScope->astParent = this;
+  rootScope->insertChildScope(modScope);
+
+}
 
 
 void ModuleSymbol::verify() {

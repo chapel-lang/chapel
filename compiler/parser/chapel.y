@@ -560,13 +560,9 @@ use_stmt:
 
 
 mod_decl_stmt:
-  TMODULE identifier
+  TMODULE identifier TLCBR stmt_ls TRCBR
     {
-      $<pmodsym>$ = Symboltable::startModuleDef($2);
-    }
-                     TLCBR stmt_ls TRCBR
-    {
-      $$ = new AList<Stmt>(Symboltable::finishModuleDef($<pmodsym>3, $5));
+      $$ = new AList<Stmt>(new ExprStmt(new DefExpr(new ModuleSymbol($2, MOD_USER, $4))));
     }
 ;
 

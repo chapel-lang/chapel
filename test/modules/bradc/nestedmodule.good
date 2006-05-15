@@ -1,1 +1,1 @@
-Error: Can't handle nested modules yet (nestedmodule.chpl:7)
+Error: Code defines multiple modules but no main function.

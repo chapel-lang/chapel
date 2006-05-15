@@ -303,7 +303,14 @@ void insert_help(BaseAST* ast,
     expr->parentExpr = parentExpr;
 
     if (DefExpr* def_expr = dynamic_cast<DefExpr*>(expr)) {
-      if (!dynamic_cast<ModuleSymbol*>(def_expr->sym)) {
+      if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(def_expr->sym)) {
+        ModuleSymbol* outer = dynamic_cast<ModuleSymbol*>(def_expr->parentSymbol);
+        parentStmt->remove();
+        if (!outer)
+          USR_FATAL(mod, "Nested module is not defined at module level");
+        mod->stmts->insertAtHead(new ImportExpr(IMPORT_USE, new SymExpr(outer->name)));
+        parentScope = mod->modScope;
+      } else {
         if (def_expr->sym && !def_expr->sym->isUnresolved) {
           def_expr->parentScope->define(def_expr->sym);
         }

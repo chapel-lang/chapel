@@ -10,8 +10,6 @@
 
 
 SymScope* rootScope = NULL;
-static SymScope* currentScope = NULL;
-static ModuleSymbol* currentModule = NULL;
 
 Vec<ModuleSymbol*> allModules;     // Contains all modules
 Vec<ModuleSymbol*> codegenModules; // Contains codegened modules
@@ -34,7 +32,6 @@ void registerModule(ModuleSymbol* mod) {
 
 void Symboltable::init(void) {
   rootScope = new SymScope(SCOPE_INTRINSIC);
-  currentScope = rootScope;
 }
 
 
@@ -56,7 +53,7 @@ void Symboltable::removeScope(SymScope* scope) {
 
 SymScope* Symboltable::pushScope(scopeType type, SymScope* parent) {
   if (!parent)
-    parent = currentScope;
+    parent = rootScope;
   SymScope* newScope = new SymScope(type);
   SymScope* child = parent->child;
 
@@ -70,51 +67,7 @@ SymScope* Symboltable::pushScope(scopeType type, SymScope* parent) {
   }
   newScope->parent = parent;
 
-  currentScope = newScope;
   return newScope;
-}
-
-
-SymScope* Symboltable::popScope(void) {
-  SymScope* topScope = currentScope;
-  SymScope* prevScope = currentScope->parent;
-
-  if (prevScope == NULL) {
-    INT_FATAL("ERROR: popping too many scopes");
-  } else {
-    currentScope = prevScope;
-  }
-
-  return topScope;
-}
-
-
-SymScope* Symboltable::getCurrentScope(void) {
-  return currentScope;
-}
-
-
-SymScope* Symboltable::setCurrentScope(SymScope* newScope) {
-  SymScope* oldScope = currentScope;
-
-  currentScope = newScope;
-
-  return oldScope;
-}
-
-
-Vec<ModuleSymbol*>* Symboltable::getModules(moduleSet whichModules) {
-  switch (whichModules) {
-  case MODULES_ALL:
-    return &allModules;
-  case MODULES_CODEGEN:
-    return &codegenModules;
-  case MODULES_USER:
-    return &userModules;
-  default:
-    INT_FATAL("Unexpected case in getModules: %d\n", whichModules);
-    return NULL;
-  }
 }
 
 
@@ -187,137 +140,6 @@ Symbol* Symboltable::lookupFromScope(char* name, SymScope* scope) {
     scope = scope->parent;
   }
   return NULL;
-}
-
-
-Symbol* Symboltable::lookup(char* name) {
-  return lookupFromScope(name, currentScope);
-}
-
-
-Symbol* Symboltable::lookupInCurrentScope(char* name) {
-  return lookupInScope(name, currentScope);
-}
-
-
-ModuleSymbol* Symboltable::startModuleDef(char* name, modType modtype) {
-  ModuleSymbol* newModule = new ModuleSymbol(name, modtype);
-
-  // if this is a software rather than a file module and there
-  // is a current module that is also a software module, then
-  // this is a nested module, which we can't handle
-  if (!newModule->isFileModule() && currentModule && 
-      !currentModule->isFileModule()) {
-    USR_FATAL(newModule, "Can't handle nested modules yet");
-  } else {
-    if (modtype != MOD_INTERNAL) {
-      // Typically all modules would push scopes;  however, if this
-      // is a software module within a file module, and the file
-      // module's scope is empty, we can re-use it for simplicity
-      // This will have to change once we support nested modules
-      // to work with the case where the file is empty up to the
-      // first software module, but then contains other file module
-      // code after the first software module.
-      if (newModule->isFileModule()) {
-        Symboltable::pushScope(SCOPE_MODULE);
-      } else {
-        if (!currentScope->isEmpty()) {
-          USR_FATAL(newModule, "Can't handle nested modules yet");
-        }
-      }
-    }
-  }
-
-  currentModule = newModule;
-
-  return newModule;
-}
-
-bool ModuleDefContainsOnlyNestedModules(AList<Stmt>* def) {
-  for_alist(Stmt, stmt, def) {
-    if (ExprStmt* expr_stmt = dynamic_cast<ExprStmt*>(stmt)) {
-      if (DefExpr* defExpr = dynamic_cast<DefExpr*>(expr_stmt->expr)) {
-        if (!dynamic_cast<ModuleSymbol*>(defExpr->sym)) {
-          return false;
-        }
-      } else {
-        return false;
-      }
-    } else {
-      return false;
-    }
-  }
-  return true;
-}
-
-
-static Stmt* ModuleDefContainsNestedModules(AList<Stmt>* def) {
-  for_alist(Stmt, stmt, def) {
-    if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {
-      if (DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr)) {
-        if (dynamic_cast<ModuleSymbol*>(defExpr->sym)) {
-          def->reset();
-          return stmt;
-        }
-      }
-    }
-  }
-  return NULL;
-}
-
-
-DefExpr* Symboltable::finishModuleDef(ModuleSymbol* mod, AList<Stmt>* def) {
-  bool empty = false;
-  if (mod->modtype != MOD_INTERNAL) {
-    if (ModuleDefContainsOnlyNestedModules(def)) {
-      // This is the case for a file module that contains a number
-      // of software modules and nothing else.  Such modules should
-      // essentially be dropped on the floor, as the file only
-      // served as a container, not as a module
-      empty = true;
-    } else {
-      Stmt* moduleDef = ModuleDefContainsNestedModules(def);
-      // if the definition contains anything other than module
-      // definitions, then this is the case of a file that contains
-      // a software module and some other stuff, which is a nested
-      // module, and we can't handle that case yet
-      if (moduleDef) {
-        USR_FATAL(moduleDef, "Can't handle nested modules yet");
-      } else {
-        // for now, define all modules in the prelude scope, since
-        // they can't be nested
-        rootScope->define(mod);
-      }
-    }
-  }
-
-  DefExpr* defExpr = new DefExpr(mod);
-
-  if (!empty) {
-    registerModule(mod);
-    mod->stmts->insertAtTail(def);
-
-    // pop the module's scope
-    if (mod->modtype != MOD_INTERNAL) {
-      SymScope* modScope = Symboltable::popScope();
-      modScope->astParent = mod;
-      mod->setModScope(modScope);
-    }
-
-    // if this was a software scope within a file scope, we borrowed
-    // its (empty) scope in startModuleDef.  Give it a new scope to
-    // work with here.
-    if (mod->modtype != MOD_INTERNAL) {
-      if (!mod->isFileModule()) {
-        Symboltable::pushScope(SCOPE_MODULE);
-      }
-    }
-  }
-
-  // HACK: should actually look at parent module in general case
-  currentModule = NULL;
-
-  return defExpr;
 }
 
 

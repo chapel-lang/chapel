@@ -21,10 +21,6 @@ class Symboltable {
 
   static void      removeScope(SymScope* scope);
   static SymScope* pushScope(scopeType type, SymScope* parent = NULL);
-  static SymScope* popScope(void);
-  static SymScope* getCurrentScope(void);
-  static SymScope* setCurrentScope(SymScope* newScope);
-  static Vec<ModuleSymbol*>* getModules(moduleSet modules);
   static FnSymbol* getCurrentFn(void);
 
   /** SJD: These are the lookup's to use--
@@ -34,11 +30,7 @@ class Symboltable {
   static Symbol* lookupInScope(char* name, SymScope* scope, Vec<SymScope*>* scopesAlreadyVisited = NULL);
   static Symbol* lookupInFileModuleScope(char* name);
   static Symbol* lookupFromScope(char* name, SymScope* scope);
-  static Symbol* lookupInCurrentScope(char* name);
-  static Symbol* lookup(char* name);
 
-  static ModuleSymbol* startModuleDef(char* name, modType modtype = MOD_USER);
-  static DefExpr* finishModuleDef(ModuleSymbol* mod, AList<Stmt>* def);
   static DefExpr* Symboltable::defineParam(intentTag tag, char* ident,
                                            Expr* type, Expr* init, Expr* variable = NULL);
   static PrimitiveType* Symboltable::definePrimitiveType(char* name, char* cname, Symbol* initSymbol = NULL);
@@ -50,8 +42,6 @@ class Symboltable {
                                              char      *ltype_name = NULL,
                                              char      *ltype_cname = NULL);
 };
-
-bool ModuleDefContainsOnlyNestedModules(AList<Stmt>* def);
 
 void setVarSymbolAttributes(AList<Stmt>* stmts,
                             varType vartag,
