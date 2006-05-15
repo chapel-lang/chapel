@@ -1,4 +1,3 @@
 class foo { var a : int;  }
-var x;
-x = foo();
+var x = foo();
 writeln(x);

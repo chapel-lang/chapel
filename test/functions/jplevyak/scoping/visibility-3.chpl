@@ -1,4 +1,6 @@
-var a;
+fun f() { return 4; }
+var a = => f();
+writeln(a());
 
 fun g() { 
   fun f() { return 1; }

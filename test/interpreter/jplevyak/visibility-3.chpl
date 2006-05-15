@@ -1,4 +1,6 @@
+fun f() { return 4; }
 var a;
+writeln(a());
 
 fun g() { 
   fun f() { return 1; }

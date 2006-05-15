@@ -1,4 +1,4 @@
-var x, y, z : float;
+var x : float, y : float, z : float;
 
 x = 2.3;
 y = 3.4;
@@ -8,7 +8,7 @@ writeln(x);
 writeln(y);
 writeln(z);
 
-var a, b : float;
+var a : string, b : float;
 
 a = "sugar";
 b = 2.3;

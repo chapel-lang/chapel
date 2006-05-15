@@ -1,4 +1,4 @@
-var a, b : int;
+var a : int, b : int;
 
 a = 2;
 b = 3;

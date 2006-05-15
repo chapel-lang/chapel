@@ -1,3 +1,2 @@
-var x;
-x = 2;
+var x = 2;
 writeln(x);
