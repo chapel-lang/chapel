@@ -64774,3 +64774,16 @@ Log message:
 Modified files:
 	chapel/runtime/include/: chpltypes.h 
 
+---------------------------------------------------------------------------
+
+05/15/06 14:38:04 -- deitz
+
+Log message:
+	Added working test of initializing constant array with a sequence.
+	Note at this time that this works only for 1D arrays and the constness
+	of arrays is not enforced.
+
+Added files:
+	chapel/test/arrays/deitz/: test_array_init_seq.chpl 
+	                           test_array_init_seq.good 
+
