@@ -22,7 +22,6 @@ pragma "inline" fun lgamma(x : float) return __primitive("lgamma", x);
 pragma "inline" fun log(x : float) return __primitive("log", x);
 pragma "inline" fun log10(x : float) return __primitive("log10", x);
 pragma "inline" fun log1p(x : float) return __primitive("log1p", x);
-pragma "inline" fun logb(x : float) return __primitive("logb", x);
 pragma "inline" fun rint(x: float) return __primitive("rint", x);
 pragma "inline" fun sin(x: float) return __primitive("sin", x);
 pragma "inline" fun sinh(x : float) return __primitive("sinh", x);

@@ -162,8 +162,7 @@ enum PrimOps {
   PRIM_ACOS, PRIM_ACOSH, PRIM_ASIN, PRIM_ASINH, PRIM_ATAN, PRIM_ATANH, 
   PRIM_CBRT, PRIM_CEIL, PRIM_COS, PRIM_COSH, PRIM_ERF, PRIM_ERFC, PRIM_EXP, 
   PRIM_EXPM1, PRIM_FABS, PRIM_FLOOR, PRIM_LGAMMA, PRIM_LOG, PRIM_LOG10, 
-  PRIM_LOG1P, PRIM_LOGB, PRIM_RINT, PRIM_SIN, PRIM_SINH, PRIM_SQRT, PRIM_TAN, 
-  PRIM_TANH,
+  PRIM_LOG1P, PRIM_RINT, PRIM_SIN, PRIM_SINH, PRIM_SQRT, PRIM_TAN, PRIM_TANH,
 
   PRIM_ATAN2,
 
@@ -186,8 +185,8 @@ const int ARG_F64_RETURN_F64_STOP  = PRIM_TANH + 1;
 
 f64_fn_f64 f64_fns_f64[ARG_F64_RETURN_F64_STOP] = {
   acos, acosh, asin, asinh, atan, atanh, cbrt, ceil, cos, cosh, erf, erfc, 
-  exp, expm1, fabs, floor, lgamma, log, log10, log1p, logb, rint, sin, sinh, 
-  sqrt, tan, tanh
+  exp, expm1, fabs, floor, lgamma, log, log10, log1p, rint, sin, sinh, sqrt, 
+  tan, tanh
 };
 
 
@@ -1926,8 +1925,8 @@ IFrame::iprimitive(CallExpr *s) {
     case PRIM_COS: case PRIM_COSH: case PRIM_ERF: case PRIM_ERFC: 
     case PRIM_EXP:  case PRIM_EXPM1: case PRIM_FABS: case PRIM_FLOOR: 
     case PRIM_LGAMMA: case PRIM_LOG: case PRIM_LOG10: case PRIM_LOG1P: 
-    case PRIM_LOGB: case PRIM_RINT:  case PRIM_SIN: case PRIM_SINH:
-    case PRIM_SQRT: case PRIM_TAN: case PRIM_TANH: 
+    case PRIM_RINT:  case PRIM_SIN: case PRIM_SINH: case PRIM_SQRT: 
+    case PRIM_TAN: case PRIM_TANH: 
       execute_f64_fn_f64(s, arg, &result, 
                          f64_fns_f64[kind - ARG_F64_RETURN_F64_START]);
       break;
@@ -2581,7 +2580,6 @@ init_interpreter() {
   log_interpreter_op = new InterpreterOp("log", PRIM_LOG);
   log10_interpreter_op = new InterpreterOp("log10", PRIM_LOG10);
   log1p_interpreter_op = new InterpreterOp("log1p", PRIM_LOG1P);
-  logb_interpreter_op = new InterpreterOp("logb", PRIM_LOGB);
   rint_interpreter_op = new InterpreterOp("rint", PRIM_RINT);
   sin_interpreter_op = new InterpreterOp("sin", PRIM_SIN);
   sinh_interpreter_op = new InterpreterOp("sinh", PRIM_SINH);

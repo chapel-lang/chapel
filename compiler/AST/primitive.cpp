@@ -72,7 +72,6 @@ initPrimitive() {
   prim_def("log", log_interpreter_op, return_float_analysis_op);
   prim_def("log10", log10_interpreter_op, return_float_analysis_op);
   prim_def("log1p", log1p_interpreter_op, return_float_analysis_op);
-  prim_def("logb", logb_interpreter_op, return_float_analysis_op);
   prim_def("rint", rint_interpreter_op, return_float_analysis_op);
   prim_def("sin", sin_interpreter_op, return_float_analysis_op);
   prim_def("sinh", sinh_interpreter_op, return_float_analysis_op);

@@ -65,7 +65,6 @@ _EXTERN InterpreterOp *lgamma_interpreter_op _INIT;
 _EXTERN InterpreterOp *log_interpreter_op _INIT;
 _EXTERN InterpreterOp *log10_interpreter_op _INIT;
 _EXTERN InterpreterOp *log1p_interpreter_op _INIT;
-_EXTERN InterpreterOp *logb_interpreter_op _INIT;
 _EXTERN InterpreterOp *rint_interpreter_op _INIT;
 _EXTERN InterpreterOp *sin_interpreter_op _INIT;
 _EXTERN InterpreterOp *sinh_interpreter_op _INIT;
