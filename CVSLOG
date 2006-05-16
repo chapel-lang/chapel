@@ -65032,3 +65032,15 @@ Added files:
 	                                  infer_field10.future 
 	                                  infer_field10.good 
 
+---------------------------------------------------------------------------
+
+05/16/06 15:09:06 -- jplevyak
+
+Log message:
+	use FnSymbol::visible flag to determine whether or not to insert
+	something into the dispatch tables.   This doesn't seem necessary
+	now, but is available for the future.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+
