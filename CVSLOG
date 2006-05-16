@@ -64969,3 +64969,19 @@ Removed files:
 	                                         test_clone_class1a.prediff 
 	                                         test_clone_class1b.prediff 
 
+---------------------------------------------------------------------------
+
+05/16/06 10:42:16 -- jplevyak
+
+Log message:
+	Studies directory structure and my tests.
+
+Added files:
+	chapel/test/studies/jacobi/jplevyak/: NOTEST 
+	                                      jacobi-jp-broken-1.chpl 
+	                                      jacobi-jp-broken-2.chpl 
+	                                      jacobi-jp-notes.chpl 
+	                                      jacobi-jp-working.chpl 
+	                                      jacobi-jp1.chpl 
+	                                      jacobi-jp2.chpl 
+
