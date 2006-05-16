@@ -65044,3 +65044,17 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: chapel_ifa.cpp 
 
+---------------------------------------------------------------------------
+
+05/16/06 15:43:12 -- jplevyak
+
+Log message:
+	Remove unspecified type from analysis.
+	Fixup compilation of libifa.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: builtin_symbols.h fa.cpp num.h pattern.cpp 
+	                      sym.cpp sym.h 
+	chapel/compiler/ifa/libifa/: ast_to_if1.cc ifa_defs.h 
+
