@@ -65020,3 +65020,15 @@ Modified files:
 	                         semanticChecks.cpp 
 	chapel/compiler/symtab/: symscope.cpp 
 
+---------------------------------------------------------------------------
+
+05/16/06 13:01:18 -- deitz
+
+Log message:
+	Future represents issue with unification of htuple/tuple work.
+
+Added files:
+	chapel/test/classes/deitz/infer/: infer_field10.chpl 
+	                                  infer_field10.future 
+	                                  infer_field10.good 
+
