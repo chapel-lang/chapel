@@ -555,7 +555,7 @@ Type* CallExpr::typeInfo(void) {
       if (!dynamic_cast<VarSymbol*>(dynamic_cast<SymExpr*>(get(2))->var))
         return dtUnknown;
       char *name = dynamic_cast<VarSymbol*>(dynamic_cast<SymExpr*>(get(2))->var)->immediate->v_string;
-      Symbol* sym = Symboltable::lookupInScope(name, ctype->structScope);
+      Symbol* sym = ctype->structScope->lookupLocal(name);
       if (sym) {
         if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(sym))
           return ts->definition;
@@ -1175,12 +1175,11 @@ void ImportExpr::codegen(FILE* outfile) {
 
 
 ModuleSymbol* ImportExpr::getImportedModule(void) {
-  if (SymExpr* variable = dynamic_cast<SymExpr*>(expr)) {
-    if (ModuleSymbol* module =
-        dynamic_cast<ModuleSymbol*>(Symboltable::lookupFromScope(variable->var->name, parentScope))) {
-      return module;
-    }
-    USR_FATAL(this, "Cannot find module '%s'", variable->var->name);
+  if (SymExpr* sym = dynamic_cast<SymExpr*>(expr)) {
+    ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(lookup(sym->var->name));
+    if (mod)
+      return mod;
+    USR_FATAL(this, "Cannot find module '%s'", sym->var->name);
   }
   INT_FATAL(this, "ImportExpr has no module");
   return NULL;
@@ -1198,11 +1197,11 @@ getClassType(Symbol *s) {
 
 ClassType* 
 ImportExpr::getStruct(void) {
-  if (SymExpr* var = dynamic_cast<SymExpr*>(expr)) {
-    if (ClassType *result = getClassType(var->var))
+  if (SymExpr* sym = dynamic_cast<SymExpr*>(expr)) {
+    if (ClassType *result = getClassType(sym->var))
       return result;
-    else if (UnresolvedSymbol* unresolved = dynamic_cast<UnresolvedSymbol*>(var->var)) {
-      if (ClassType *result =  getClassType(Symboltable::lookupFromScope(unresolved->name, var->parentScope)))
+    else if (sym->var->isUnresolved) {
+      if (ClassType *result = getClassType(lookup(sym->var->name)))
         return result;
     }
   }

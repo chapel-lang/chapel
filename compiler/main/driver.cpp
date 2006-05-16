@@ -188,7 +188,6 @@ do_analysis(char *fn) {
 
 static void
 compile_all(void) {
-  Symboltable::init();
   initPrimitiveTypes();
   initPrimitive();
   testInputFiles(arg_state.nfile_arguments, arg_state.file_argument);

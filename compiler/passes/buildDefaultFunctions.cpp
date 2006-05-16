@@ -239,7 +239,7 @@ void buildDefaultIOFunctions(Type* type) {
     if (!function_exists("fwrite", 2, NULL, "file", type->symbol->name)) {
       FnSymbol* fn = new FnSymbol("fwrite");
       fn->cname = stringcat("_auto_", type->symbol->name, "_fwrite");
-      TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(Symboltable::lookupInFileModuleScope("file"));
+      TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(fileModule->lookup("file"));
       ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", fileType->definition);
       ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "val", type);
 
@@ -260,7 +260,7 @@ void buildDefaultIOFunctions(Type* type) {
     if (!function_exists("fread", 2, NULL, "file", type->symbol->name)) {
       FnSymbol* fn = new FnSymbol("fread");
       fn->cname = stringcat("_auto_", type->symbol->name, "_fread");
-      TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(Symboltable::lookupInFileModuleScope("file"));
+      TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(fileModule->lookup("file"));
       ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", fileType->definition);
       ArgSymbol* arg = new ArgSymbol(INTENT_INOUT, "val", type);
       fn->formals = new AList<DefExpr>(new DefExpr(fileArg), new DefExpr(arg));

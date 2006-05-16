@@ -371,8 +371,8 @@ FnSymbol* BaseAST::getFunction() {
 
 Symbol* BaseAST::lookup(char* name) {
   if (ModuleSymbol* a = dynamic_cast<ModuleSymbol*>(this))
-    return Symboltable::lookupFromScope(name, a->modScope);
-  return Symboltable::lookupFromScope(name, parentScope);
+    return a->modScope->lookup(name);
+  return parentScope->lookup(name);
 }
 
 Symbol* BaseAST::lookup(BaseAST* ast) {

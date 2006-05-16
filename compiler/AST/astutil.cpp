@@ -288,7 +288,7 @@ void insert_help(BaseAST* ast,
         INT_FATAL(blockStmt, "Unexpected scope in BlockStmt");
       }
       if (!blockStmt->blkScope) {
-        blockStmt->blkScope = Symboltable::pushScope(SCOPE_LOCAL, parentScope);
+        blockStmt->blkScope = new SymScope(SCOPE_LOCAL, blockStmt, parentScope);
         blockStmt->blkScope->astParent = blockStmt;
       }
       parentScope = blockStmt->blkScope;
@@ -319,7 +319,7 @@ void insert_help(BaseAST* ast,
         if (fn->argScope) {
           INT_FATAL(fn, "Unexpected scope in FnSymbol");
         }
-        fn->argScope = Symboltable::pushScope(SCOPE_ARG, parentScope);
+        fn->argScope = new SymScope(SCOPE_ARG, fn, parentScope);
         fn->argScope->astParent = fn;
         parentScope = fn->argScope;
       }
@@ -328,8 +328,7 @@ void insert_help(BaseAST* ast,
           if (type->structScope) {
             INT_FATAL(typeSym, "Unexpected scope in FnSymbol");
           }
-          type->structScope = Symboltable::pushScope(SCOPE_CLASS, parentScope);
-          type->structScope->astParent = typeSym;
+          type->structScope = new SymScope(SCOPE_CLASS, typeSym, parentScope);
           parentScope = type->structScope;
         }
       }
@@ -371,20 +370,20 @@ void remove_help(BaseAST* ast) {
 
   if (BlockStmt* block = dynamic_cast<BlockStmt*>(ast)) {
     if (block->blkScope && block->blkScope->type == SCOPE_LOCAL) {
-      Symboltable::removeScope(block->blkScope);
+      block->blkScope->remove();
       block->blkScope = NULL;
     }
   }
   if (DefExpr* defExpr = dynamic_cast<DefExpr*>(ast)) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(defExpr->sym)) {
       if (fn->argScope)
-        Symboltable::removeScope(fn->argScope);
+        fn->argScope->remove();
       fn->argScope = NULL;
     }
     if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(defExpr->sym)) {
       if (ClassType* type = dynamic_cast<ClassType*>(typeSym->definition)) {
         if (type->structScope)
-          Symboltable::removeScope(type->structScope);
+          type->structScope->remove();
         type->structScope = NULL;
       }
     }

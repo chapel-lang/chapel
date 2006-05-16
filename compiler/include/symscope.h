@@ -30,14 +30,17 @@ class SymScope : public gc {
 
   ChainHashMap<char*, StringHashFns, Symbol*> table;
 
-  SymScope(scopeType init_type);
-  void setASTParent(BaseAST* ast);
+  SymScope(scopeType itype, BaseAST* iastParent, SymScope* iparent);
   
   void insertChildScope(SymScope *aScope);
   bool isEmpty(void);
+  void remove();
 
   void define(Symbol* sym);
   void undefine(Symbol* sym);
+
+  Symbol* lookupLocal(char* name, Vec<SymScope*>* alreadyVisited = NULL);
+  Symbol* lookup(char* name);
 
   void dump_only();
   void dump();
@@ -49,11 +52,9 @@ class SymScope : public gc {
 
   void addVisibleFunction(FnSymbol* fn);
   void removeVisibleFunction(FnSymbol* fn);
-  void setVisibleFunctions(FnSymbol* fn);
-  void printVisibleFunctions();
-
   void getVisibleFunctions(Vec<FnSymbol*>* allVisibleFunctions, char* name,
                            bool recursed = false);
+  void printVisibleFunctions();
 }; 
 
 void getSymbols(SymScope *scope, Vec<Symbol *> &symbols);

@@ -981,6 +981,7 @@ void VariableType::codegen(FILE* outfile) {
 
   
 void initPrimitiveTypes(void) {
+  rootScope = new SymScope(SCOPE_INTRINSIC, NULL, NULL);
   // Create initial compiler module and its scope
   compilerModule = new ModuleSymbol("_chpl_compiler", MOD_STANDARD, new AList<Stmt>());
   compilerModule->stmts->insertAtTail(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol("prelude"))));
@@ -1101,26 +1102,25 @@ Type *getMetaType(Type *t) {
 }
 
 void findInternalTypes(void) {
-  dtMethodToken = dynamic_cast<TypeSymbol*>(Symboltable::lookupInScope("_methodTokenType", baseModule->modScope))->definition;
-  dtSetterToken = dynamic_cast<TypeSymbol*>(Symboltable::lookupInScope("_setterTokenType", baseModule->modScope))->definition;
+  dtMethodToken = dynamic_cast<TypeSymbol*>(baseModule->lookup("_methodTokenType"))->definition;
+  dtSetterToken = dynamic_cast<TypeSymbol*>(baseModule->lookup("_setterTokenType"))->definition;
   if (!fnostdincs)
-    dtFile = dynamic_cast<TypeSymbol*>(Symboltable::lookupInFileModuleScope("file"))->definition;
-  dtObject = dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(Symboltable::lookupInScope("object", prelude->modScope))->definition);
-  dtValue = dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(Symboltable::lookupInScope("value", prelude->modScope))->definition);
+    dtFile = dynamic_cast<TypeSymbol*>(fileModule->lookup("file"))->definition;
+  dtObject = dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(prelude->lookup("object"))->definition);
+  dtValue = dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(prelude->lookup("value"))->definition);
 
-  dtClosure = dynamic_cast<TypeSymbol*>(Symboltable::lookupInScope(
-                                         "closure", closureModule->modScope))->definition;
+  dtClosure = dynamic_cast<TypeSymbol*>(closureModule->lookup("closure"))->definition;
 
   // These should all be eliminated.  Note they almost are since they
   // are MetaTypes, not the types in the prelude.
   if (!fnostdincs || !fnostdincs_but_file) {
-    dtUnused = dynamic_cast<TypeSymbol*>(Symboltable::lookupInScope("_unused_class", baseModule->modScope))->definition;
+    dtUnused = dynamic_cast<TypeSymbol*>(baseModule->lookup("_unused_class"))->definition;
   }
 
   // SJD: Can't do this when dtString is defined because
   // prelude hasn't been made yet.  Need to do it after.
   dtString->defaultConstructor =
-    dynamic_cast<FnSymbol*>(Symboltable::lookupInScope("_init_string", prelude->modScope));
+    dynamic_cast<FnSymbol*>(prelude->lookup("_init_string"));
 }
 
 

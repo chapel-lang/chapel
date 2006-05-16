@@ -40,44 +40,49 @@ isGloballyVisible(FnSymbol* fn) {
 }
 
 
-SymScope::SymScope(scopeType init_type) :
-  type(init_type),
-  astParent(NULL),
-  parent(NULL),
+SymScope::SymScope(scopeType itype, BaseAST* iastParent, SymScope* iparent) :
+  type(itype),
+  astParent(iastParent),
+  parent(iparent),
   child(NULL),
   sibling(NULL)
 {
   symbols.clear();
   uses.clear();
   visibleFunctions.clear();
-}
-
-
-void SymScope::setASTParent(BaseAST* ast) {
-  astParent = ast;
-}
-
-
-// Inserts an already-allocated scope.
-void SymScope::insertChildScope(SymScope *aScope) {
-  if (aScope != NULL) {
+  if (parent) {
+    SymScope* child = parent->child;
     if (child == NULL) {
-      child = aScope;
+      parent->child = this;
     } else {
       while (child->sibling != NULL) {
         child = child->sibling;
       }
-      child->sibling = aScope;
+      child->sibling = this;
     }
-    aScope->parent = this;
-  } else {
-    INT_FATAL("ERROR: trying to insert NULL as a scope");
   }
 }
 
 
 bool SymScope::isEmpty(void) {
   return symbols.n == 0;
+}
+
+
+void
+SymScope::remove() {
+  if (parent->child == this) {
+    parent->child = sibling;
+    return;
+  } else {
+    for (SymScope* tmp = parent->child; tmp; tmp = tmp->sibling) {
+      if (tmp->sibling == this) {
+        tmp->sibling = sibling;
+        return;
+      }
+    }
+  }
+  INT_FATAL(astParent, "Unable to remove SymScope");
 }
 
 
@@ -139,6 +144,57 @@ void SymScope::undefine(Symbol* sym) {
     }
   }
   INT_FATAL(sym, "Symbol not found in scope from which deleted");
+}
+
+
+Symbol*
+SymScope::lookupLocal(char* name, Vec<SymScope*>* alreadyVisited) {
+  Symbol* sym;
+
+  if (!alreadyVisited) {
+    Vec<SymScope*> scopes;
+    return lookupLocal(name, &scopes);
+  }
+
+  if (alreadyVisited->set_in(this))
+    return NULL;
+
+  alreadyVisited->set_add(this);
+
+  sym = table.get(name);
+  if (sym)
+    return sym;
+
+  forv_Vec(ModuleSymbol, module, uses) {
+    sym = module->modScope->lookupLocal(name, alreadyVisited);
+    if (sym)
+      return sym;
+  }
+
+  return NULL;
+}
+
+
+Symbol*
+SymScope::lookup(char* name) {
+  Symbol* sym = lookupLocal(name);
+  if (sym)
+    return sym;
+
+  if (FnSymbol* fn = dynamic_cast<FnSymbol*>(astParent)) {
+    if (fn->typeBinding) {
+      ClassType* ct = dynamic_cast<ClassType*>(fn->typeBinding->definition);
+      if (ct) {
+        Symbol* sym = ct->structScope->lookupLocal(name);
+        if (sym)
+          return sym;
+      }
+    }
+  }
+  if (parent)
+    return parent->lookup(name);
+  else
+    return NULL;
 }
 
 

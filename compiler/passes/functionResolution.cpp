@@ -300,7 +300,7 @@ resolve_call(CallExpr* call,
   resolve_call_error_candidates.clear();
 
   if (call->isNamed("_chpl_alloc"))
-    return dynamic_cast<FnSymbol*>(Symboltable::lookupInScope("_chpl_alloc", prelude->modScope));
+    return dynamic_cast<FnSymbol*>(prelude->lookup("_chpl_alloc"));
 
   if (call->isResolved())
     return call->isResolved();

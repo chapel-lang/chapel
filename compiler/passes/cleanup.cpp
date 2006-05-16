@@ -376,7 +376,7 @@ static void build_constructor(ClassType* ct) {
   dynamic_cast<VarSymbol*>(fn->_this)->noDefaultInit = true;
 
   char* description = stringcat("instance of class ", ct->symbol->name);
-  Expr* alloc_rhs = new CallExpr(Symboltable::lookupInScope("_chpl_alloc", prelude->modScope),
+  Expr* alloc_rhs = new CallExpr(prelude->lookup("_chpl_alloc"),
                                  ct->symbol,
                                  new_StringLiteral(description));
   CallExpr* alloc_expr = new CallExpr(PRIMITIVE_MOVE, fn->_this, alloc_rhs);
@@ -501,7 +501,7 @@ static void flatten_primary_methods(FnSymbol* fn) {
 
 static void resolve_secondary_method_type(FnSymbol* fn) {
   if (fn->typeBinding && fn->typeBinding->isUnresolved) {
-    Symbol* typeBindingSymbol = Symboltable::lookupFromScope(fn->typeBinding->name, fn->parentScope);
+    Symbol* typeBindingSymbol = fn->parentScope->lookup(fn->typeBinding->name);
     assert(!typeBindingSymbol->isUnresolved);
     if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(typeBindingSymbol)) {
       Type* typeBinding = ts->definition;

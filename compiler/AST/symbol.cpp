@@ -130,7 +130,7 @@ void Symbol::verify() {
     INT_FATAL(this, "Symbol::defPoint != Sym::defPoint->sym");
   if (parentScope && strcmp(name, "")) {
     bool found = false;
-    Symbol* match = Symboltable::lookupInScope(name, parentScope);
+    Symbol* match = parentScope->lookupLocal(name);
     for (Symbol* tmp = match; tmp; tmp = tmp->overload)
       if (this == tmp)
         found = true;
@@ -1359,13 +1359,11 @@ ModuleSymbol::ModuleSymbol(char* init_name,
   modtype(init_modtype),
   stmts(init_stmts),
   initFn(NULL),
-  modScope(new SymScope(SCOPE_MODULE))
+  modScope(new SymScope(SCOPE_MODULE, this, rootScope))
 {
   rootScope->define(this);
   registerModule(this);
   modScope->astParent = this;
-  rootScope->insertChildScope(modScope);
-
 }
 
 
