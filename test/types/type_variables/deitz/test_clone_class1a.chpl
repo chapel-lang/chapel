@@ -5,9 +5,7 @@ class foo {
   }
 }
 
-var f : foo = foo();
-
-f.x = 3.2;
+var f : foo = foo(3.2);
 
 f.print();
 

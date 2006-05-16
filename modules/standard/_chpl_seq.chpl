@@ -58,8 +58,8 @@ record seq {
     return this._copy()._concat_in_place(s);
 
   fun _append_in_place(e : elt_type) {
-    var new = _seqNode(elt_type);
-    new._element = e;
+    var tmp = e;
+    var new = _seqNode(elt_type, tmp);
     if _length > 0 {
       _last._next = new;
       _last = new;
@@ -76,8 +76,8 @@ record seq {
   } 
 
   fun _prepend_in_place(e : elt_type) {
-    var new = _seqNode(elt_type);
-    new._element = e;
+    var tmp = e;
+    var new = _seqNode(elt_type, tmp);
     if _length > 0 {
       new._next = _first;
       _first = new;
@@ -242,7 +242,8 @@ fun _reduce(r : reduction, s) { // reduce sequence s by reduction r
 }
 
 class sum : reduction {
-  var value;
+  type elt_type;
+  var value : elt_type;
   var first = false;
   fun accumulate(x) {
     if first then
@@ -257,7 +258,8 @@ class sum : reduction {
 }
 
 class max : reduction {
-  var value;
+  type elt_type;
+  var value : elt_type;
   var first = true;
   fun accumulate(x) {
     if first {

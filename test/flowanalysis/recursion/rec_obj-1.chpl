@@ -10,19 +10,11 @@ fun print(c : Cons) {
   }
 }
 
-var a = Cons();
-a.car = 1;
-a.cdr = nil;
-var aa = Cons();
-aa.car = 2;
-aa.cdr = a;
+var a = Cons(1, nil);
+var aa = Cons(2, a);
 
-var b = Cons();
-b.car = 1.0;
-b.cdr = nil;
-var bb = Cons();
-bb.car = 2.0;
-bb.cdr = b;
+var b = Cons(1.0, nil);
+var bb = Cons(2.0, b);
 
 
 print(aa);

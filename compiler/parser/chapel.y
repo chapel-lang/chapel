@@ -153,8 +153,6 @@ Is this "while x"(i); or "while x(i)";?
 %token TWITH
 %token TYIELD
 
-%token TUNSPECIFIED
-
 %token TIDENT
 %token INTLITERAL FLOATLITERAL IMAGLITERAL UINTLITERAL
 %token <pch> STRINGLITERAL
@@ -1132,8 +1130,6 @@ top_level_expr:
   atom
 | TNIL
     { $$ = new SymExpr(gNil); }
-| TUNSPECIFIED
-    { $$ = new SymExpr(gUnspecified); }
 | TLET var_decl_stmt_inner_ls TIN expr
     { $$ = new DefExpr(build_let_expr($2, $4)); }
 | reduction %prec TREDUCE

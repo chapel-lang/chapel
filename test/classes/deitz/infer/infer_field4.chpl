@@ -2,9 +2,7 @@ record R {
   var f;
 }
 
-var r : R;
-
-r.f = 12;
+var r = R(12);
 
 writeln(r);
 

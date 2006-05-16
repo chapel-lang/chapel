@@ -13,7 +13,7 @@ fun bar(c : C) {
   c.y = "world";
 }
 
-var c = C(), d = C();
+var c = C(0, 0), d = C("", "");
 foo(c);
 bar(d);
 writeln(c);

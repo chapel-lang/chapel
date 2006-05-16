@@ -10,7 +10,7 @@ for i in D {
 
 // writeln("A is: ", A);
 
-var maxA = max reduce A;
+var maxA = max(float) reduce A;
 
 writeln("maxA is: ", maxA);
 

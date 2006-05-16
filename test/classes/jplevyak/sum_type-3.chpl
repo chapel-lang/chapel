@@ -5,13 +5,8 @@ class C {
   var y;
 }
 
-var c = C();
-var d = C();
-
-c.x = 1;
-d.x = 2.0;
-c.y = 3.0;
-d.y = 3.0;
+var c = C(1, 3.0);
+var d = C(2.0, 3.0);
 
 fun py(a) {
   writeln(a.y);

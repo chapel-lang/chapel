@@ -205,8 +205,5 @@ AList<Stmt>* build_type_select(AList<Expr>* exprs, AList<WhenStmt>* whenstmts) {
 
 
 Expr* build_reduce_expr(Expr* red, Expr *seq) {
-  if (!dynamic_cast<CallExpr*>(red))
-    return new CallExpr("_reduce", new CallExpr(red), seq);
-  else
-    return new CallExpr("_reduce", red, seq);
+  return new CallExpr("_reduce", red, seq);
 }

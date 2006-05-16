@@ -93,8 +93,6 @@ while           processToken(TWHILE);
 with            processToken(TWITH);
 yield           processToken(TYIELD);
 
-"_"             processToken(TUNSPECIFIED);
-
 "="             processToken(TASSIGN);
 "+="            processToken(TASSIGNPLUS);
 "-="            processToken(TASSIGNMINUS);

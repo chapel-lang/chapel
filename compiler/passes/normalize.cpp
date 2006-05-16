@@ -784,13 +784,7 @@ static void fix_user_assign(CallExpr* call) {
 
 static void fix_def_expr(DefExpr* def, VarSymbol* var) {
   static int uid = 1;
-  SymExpr* initSymExpr = dynamic_cast<SymExpr*>(def->init);
-  bool no_init = initSymExpr && initSymExpr->var == gUnspecified;
-  if (no_init || var->noDefaultInit) {
-    if (no_init)
-      def->init->remove();
-    if (var->type == dtUnspecified)
-      var->type = dtUnknown;
+  if (var->noDefaultInit) {
     if (def->init)
       def->parentStmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, var, def->init->copy()));
   } else if (var->type != dtUnknown) {
@@ -831,7 +825,7 @@ static void fix_def_expr(DefExpr* def, VarSymbol* var) {
     stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, var, new CallExpr("_copy", tmp)));
     def->parentStmt->insertAfter(stmts);
   } else {
-    def->parentStmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, var, new CallExpr(PRIMITIVE_INIT, gUnspecified)));
+    INT_FATAL(def, "DefExpr has neither init nor type");
   }
   def->exprType->remove();
   def->init->remove();

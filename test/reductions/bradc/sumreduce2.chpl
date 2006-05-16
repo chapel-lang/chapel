@@ -6,6 +6,6 @@ var A: [D] float = 1.0;
 
 var tot: float;
 
-tot = sum reduce A;
+tot = sum(float) reduce A;
 
 writeln("result is: ", tot);

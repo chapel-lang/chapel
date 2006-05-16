@@ -1,7 +1,7 @@
 class C {
   var jump : int = 0;
-  var result;
-  var i;
+  var result : int;
+  var i : int;
 }
 
 fun next_foo(c : C) : C {

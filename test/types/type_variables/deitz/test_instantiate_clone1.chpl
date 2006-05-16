@@ -4,9 +4,7 @@ class C {
   var y;
 }
 
-var c = C(int);
-
-c.y = 12.0;
+var c = C(int, y=12.0);
 
 writeln(c);
 
