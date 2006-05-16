@@ -64995,3 +64995,28 @@ Log message:
 Added files:
 	chapel/test/studies/jacobi/deitz/: NOTEST jacobi.chpl 
 
+---------------------------------------------------------------------------
+
+05/16/06 12:10:27 -- deitz
+
+Log message:
+	Added new debug facilities print_symtab(BaseAST*) and
+	nprint_symtab(BaseAST*) to print out the Symboltable entries using the
+	new traversal mechanism.  This replaces SymScope::dump().  A specific
+	scope can still be printed using, e.g., rootScope->print().
+	
+	Simplified SymScope, removing child and sibling pointers as well as
+	the scopeType field.  Traversing the SymScope, only done for debug
+	purposes, now uses the unified traversal mechanism.
+	
+	Removed dead code.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp symbol.cpp type.cpp view.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: symscope.h view.h 
+	chapel/compiler/passes/: codegen.cpp flattenFunctions.cpp 
+	                         runInterpreter.cpp scopeResolve.cpp 
+	                         semanticChecks.cpp 
+	chapel/compiler/symtab/: symscope.cpp 
+
