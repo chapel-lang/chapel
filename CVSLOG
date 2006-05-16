@@ -64842,3 +64842,16 @@ Modified files:
 	chapel/test/modules/bradc/manymodules/: manymodules.chpl 
 	                                        manymodules.good 
 
+---------------------------------------------------------------------------
+
+05/15/06 17:03:43 -- deitz
+
+Log message:
+	Fixed problem of shadowing functions that I introduced with my fix to
+	these two tests.  This shadowing issue is tested elsewhere so I
+	removed the issue by renaming a function.
+
+Modified files:
+	chapel/test/functions/jplevyak/scoping/: visibility-3.chpl 
+	chapel/test/interpreter/jplevyak/: visibility-3.chpl 
+
