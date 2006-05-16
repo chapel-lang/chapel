@@ -2078,8 +2078,6 @@ ast_gen_if1(IF1 *i, Vec<ParseAST *> &av) {
 
   sym_any->implements.add(sym_unknown_type);
   sym_any->specializes.add(sym_unknown_type);
-  sym_unspecified_type->implements.add(sym_any);
-  sym_unspecified_type->specializes.add(sym_any);
   sym_object->implements.add(sym_any);
   sym_object->specializes.add(sym_any);
   sym_nil_type->implements.add(sym_object);
@@ -2102,7 +2100,6 @@ ast_gen_if1(IF1 *i, Vec<ParseAST *> &av) {
   sym_object->is_system_type = 1;
   sym_nil_type->is_system_type = 1;
   sym_unknown_type->is_system_type = 1;
-  sym_unspecified_type->is_system_type = 1;
   sym_void_type->is_system_type = 1;
 
   build_type_hierarchy();

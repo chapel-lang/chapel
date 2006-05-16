@@ -78,8 +78,10 @@ typedef unsigned short uint16;
 /* typedef uint32 uint; * already part of most systems */
 typedef float float32;
 typedef double float64;
+typedef long double float128;
 typedef struct { float32 r; float32 i; } complex32;
 typedef struct { float64 r; float64 i; } complex64;
+typedef struct { float128 r; float128 i; } complex128;
 
 #define NUM_ELEMENTS(_x) (sizeof(_x)/sizeof((_x)[0]))
 

@@ -904,8 +904,6 @@ unify_generic_type(Sym *formal, Sym *generic_type,
                    Map<Sym *, Sym *> &substitutions, IFAAST *ast) 
 {
   Sym *concrete_type = concrete_value->type;
-  if (concrete_type == sym_unspecified_type)
-    return 0;
   if (concrete_type == sym_nil_type) { 
     Sym *gtype = substitutions.get(generic_type);
     if (!gtype) gtype = generic_type;

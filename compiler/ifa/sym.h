@@ -83,6 +83,7 @@ class BasicSym : public gc {
   unsigned int          intent:2;               // Sym is "in", "inout", or "out"
 
   unsigned int          is_meta_type:1;         // Sym is class of class
+  unsigned int          is_unique_type:1;       // Sym is a type with a unique (single) member (nil)
   unsigned int          is_value_type:1;        // Sym is a value type
   unsigned int          is_system_type:1;       // Sym is a system type (don't add it to the hiearchy)
   unsigned int          is_union_type:1;        // Sym is a union

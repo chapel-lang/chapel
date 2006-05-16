@@ -61,7 +61,7 @@ class Immediate : public gc { public:
     case IF1_INT_TYPE_32: v_int32 = l; break;
     case IF1_INT_TYPE_64: v_int64 = l; break;
     default:
-      INT_FATAL("unsupported int IF1_int_type %d", int_type);
+      assert(!"unsupported int IF1_int_type");
     }
   }
 
@@ -74,7 +74,7 @@ class Immediate : public gc { public:
     case IF1_INT_TYPE_32: v_uint32 = ul; break;
     case IF1_INT_TYPE_64: v_uint64 = ul; break;
     default:
-      INT_FATAL("unsupported uint IF1_int_type %d", uint_type);
+      assert(!"unsupported uint IF1_int_type");
     }
   }
 
@@ -86,7 +86,7 @@ class Immediate : public gc { public:
     case IF1_FLOAT_TYPE_64:  v_float64 = f;  break;
     case IF1_FLOAT_TYPE_128: v_float128 = f; break;
     default:
-      INT_FATAL("unsupported float IF1_float_type %d", fp_type);
+      assert(!"unsupported float IF1_float_type");
     }
   }
 
@@ -132,7 +132,7 @@ Immediate::int_value( void) {
   case IF1_INT_TYPE_32: val = v_int32; break;
   case IF1_INT_TYPE_64: val = v_int64; break;
   default:
-    INT_FATAL( "unknown int size %d", num_index);
+    assert(!"unknown int size");
   }
   return val;
 }
@@ -148,7 +148,7 @@ Immediate::uint_value( void) {
   case IF1_INT_TYPE_32: val = v_uint32; break;
   case IF1_INT_TYPE_64: val = v_uint64; break;
   default:
-    INT_FATAL( "unknown uint size %d", num_index);
+    assert(!"unknown uint size");
   }
   return val;
 }

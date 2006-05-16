@@ -37,6 +37,7 @@ BasicSym::BasicSym(void) :
   is_this(0),
   intent(0),
   is_meta_type(0),
+  is_unique_type(0),
   is_value_type(0),
   is_system_type(0),
   is_union_type(0),

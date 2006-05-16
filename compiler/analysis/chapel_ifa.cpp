@@ -1128,10 +1128,12 @@ new_global_variable(Sym *&sym, char *name) {
 
 static void
 new_primitive_object(Sym *&sym, Sym *sym_type, Symbol *symbol, char *name) {
-  sym = symbol->asymbol->sym;
+  if (symbol)
+    sym = symbol->asymbol->sym;
   new_global_variable(sym, name);
   sym->type = sym_type;
   sym->is_external = 1;
+  sym_type->is_unique_type = 1;
 }
 
 static void
@@ -1209,7 +1211,6 @@ build_builtin_symbols() {
   sym_object = dtObject->asymbol->sym; 
   sym_nil_type = dtNil->asymbol->sym;
   sym_unknown_type = dtUnknown->asymbol->sym;
-  sym_unspecified_type = dtUnspecified->asymbol->sym;
   sym_value = dtValue->asymbol->sym;
   sym_void_type = dtVoid->asymbol->sym;
   sym_closure = dtClosure->asymbol->sym;
@@ -1218,7 +1219,6 @@ build_builtin_symbols() {
   new_lub_type(sym_any, "any", VARARG_END);
   new_primitive_type(sym_nil_type, "nil_type");
   new_primitive_type(sym_unknown_type, "unknown_type");
-  new_primitive_type(sym_unspecified_type, "unspecified_type");
   new_primitive_type(sym_void_type, "void_type");
   new_primitive_type(sym_module, "module");
   new_primitive_type(sym_symbol, "symbol");
@@ -1293,7 +1293,6 @@ build_builtin_symbols() {
 
   new_primitive_object(sym_nil, sym_nil_type, gNil, "nil");
   new_primitive_object(sym_unknown, sym_unknown_type, gUnknown, "_unknown");
-  new_primitive_object(sym_unspecified, sym_unspecified_type, gUnspecified, "_unspecified");
   new_primitive_object(sym_void, sym_void_type, gVoid, "_void");
 
   sym_init = new_sym(); // placeholder
@@ -1338,8 +1337,6 @@ build_builtin_symbols() {
   
   sym_any->implements.add(sym_unknown_type);
   sym_any->specializes.add(sym_unknown_type);
-  sym_unspecified_type->implements.add(sym_any);
-  sym_unspecified_type->specializes.add(sym_any);
   sym_object->implements.add(sym_any);
   sym_object->specializes.add(sym_any);
   sym_nil_type->implements.add(sym_object);
@@ -1361,7 +1358,6 @@ build_builtin_symbols() {
   sym_object->is_system_type = 1;
   sym_nil_type->is_system_type = 1;
   sym_unknown_type->is_system_type = 1;
-  sym_unspecified_type->is_system_type = 1;
   sym_void_type->is_system_type = 1;
   sym_anytype->is_system_type = 1;
 
@@ -2300,10 +2296,6 @@ init_transfer_function(PNode *pn, EntrySet *es) {
     if (!type) {
       creation_point(result, type_sym);
     } else {
-      if (type_sym == sym_unknown_type) {
-        type = dtUnspecified;
-        type_sym = sym_unspecified_type;
-      }
       if (type->defaultValue) {
         Sym *val = get_defaultVal(type);
         if (!val->var) val->var = new Var(val);
@@ -2421,20 +2413,16 @@ to_AST_type(Sym *type) {
       return dtUnknown;
   }
   if (type->type_kind == Type_LUB) {
-    int found_nil = 0, found_unspecified = 0;
+    int found_nil = 0;
     Vec<Sym *> remains;
     forv_Sym(s, type->has) {
       if (s == sym_nil_type) {
         found_nil = 1;
         continue;
       }
-      if (s == sym_unspecified_type) {
-        found_unspecified = 1;
-        continue;
-      }
       remains.add(s);
     }
-    if (found_nil || found_unspecified) {
+    if (found_nil) {
       if (remains.n) {
         if (remains.n == 1)
           return dynamic_cast<Type*>(SYMBOL(remains.v[0]));
@@ -2451,12 +2439,8 @@ to_AST_type(Sym *type) {
           }
           type = find_or_make_lub_type(&types, type);
         }
-      } else {
-        if (found_nil)
-          return dtNil;
-        else
-          return dtUnspecified;
-      }
+      } else
+        return dtNil;
     }
   }
   if (type->is_fun) // HACK until the AST supports true function tyeps
@@ -2541,7 +2525,7 @@ call_info(Expr *a, Vec<FnSymbol *> &fns,
           allff.set_add(e->fun);
           form_MPositionAVar(x, e->filtered_args) {
             forv_CreationSet(cs, x->value->out->sorted) {
-              if (cs->sym != sym_nil_type && cs->sym != sym_unspecified_type)
+              if (cs->sym != sym_nil_type)
                 goto Lok;
             }
             goto Lskip;

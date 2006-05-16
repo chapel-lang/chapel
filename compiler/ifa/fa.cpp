@@ -26,7 +26,6 @@ int analysis_pass = 0;
 AType *bottom_type = 0;
 AType *nil_type = 0;
 AType *unknown_type = 0;
-AType *unspecified_type = 0;
 AType *void_type = 0;
 AType *top_type = 0;
 AType *any_type = 0;
@@ -426,7 +425,7 @@ type_cannonicalize(AType *t) {
       consts++;
       nonconsts.set_add(base_cs);
     } else { 
-      if (cs->sym != sym_nil_type && cs->sym != sym_unspecified_type)
+      if (!cs->sym->is_unique_type)
         nonconsts.set_add(cs);
       else
         nulls = 1;
@@ -1659,8 +1658,6 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
           if (!symbol) symbol = sel->sym->imm.v_string;
           assert(symbol);
           forv_CreationSet(cs, *obj->out) if (cs) {
-            if (cs == nil_type->v[0])
-              continue;
             AVar *iv = cs->var_map.get(symbol);
             if (iv)
               flow_vars(iv, result);
@@ -1685,8 +1682,6 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
           if (!symbol) symbol = sel->sym->imm.v_string;
           assert(symbol);
           forv_CreationSet(cs, *obj->out) if (cs) {
-            if (cs == nil_type->v[0])
-              continue;
             AVar *iv = cs->var_map.get(symbol);
             if (iv)
               flow_vars(tval, iv);
@@ -2415,9 +2410,7 @@ empty_type_minus_partial_applications(AType *a) {
   forv_CreationSet(aa, *a) if (aa) {
     if (aa->sym == sym_closure && aa->defs.n)
       continue;
-    if (aa == nil_type->v[0])
-      continue;
-    if (aa == unspecified_type->v[0])
+    if (aa->sym->is_unique_type)
       continue;
     return 0;
   }
@@ -2603,10 +2596,8 @@ initialize() {
   anytype_type = make_abstract_type(sym_anytype);
   nil_type = make_abstract_type(sym_nil_type);
   unknown_type = make_abstract_type(sym_unknown_type);
-  unspecified_type = make_abstract_type(sym_unspecified_type);
   initialize_global(sym_nil);
   initialize_global(sym_unknown);
-  initialize_global(sym_unspecified);
   initialize_global(sym_void);
   edge_worklist.clear();
   send_worklist.clear();
