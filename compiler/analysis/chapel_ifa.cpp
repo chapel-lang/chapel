@@ -509,7 +509,7 @@ install_new_asts(Vec<FnSymbol *> &funs, Vec<TypeSymbol *> &types) {
     funs_set.set_add(fsym->asymbol->sym->fun);
   forv_Vec(FnSymbol, fsym, funs) {
     Fun *f = fsym->asymbol->sym->fun;
-    if (f->nested_in && funs_set.set_in(f->nested_in))
+    if ((f->nested_in && funs_set.set_in(f->nested_in)) || fsym->visible)
       add_patterns(pdb->fa, f);
   }
   if1_write_log();
