@@ -64985,3 +64985,13 @@ Added files:
 	                                      jacobi-jp1.chpl 
 	                                      jacobi-jp2.chpl 
 
+---------------------------------------------------------------------------
+
+05/16/06 12:07:06 -- deitz
+
+Log message:
+	Added my NOTEST jacobi to studies directory.
+
+Added files:
+	chapel/test/studies/jacobi/deitz/: NOTEST jacobi.chpl 
+
