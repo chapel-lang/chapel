@@ -96,7 +96,7 @@ void scopeResolve(BaseAST* base) {
               if (FnSymbol* method = dynamic_cast<FnSymbol*>(parent)) {
                 if (method->typeBinding) {
                   ClassType* ct = dynamic_cast<ClassType*>(method->typeBinding->definition);
-                  if ((sym && sym->parentScope->type == SCOPE_CLASS) ||
+                  if ((sym && dynamic_cast<ClassType*>(sym->parentScope->astParent)) ||
                       (fn && ct && function_name_matches_method_name(fn, ct)))
                     if (symExpr->var != method->_this) {
                       CallExpr* call = dynamic_cast<CallExpr*>(symExpr->parentExpr);

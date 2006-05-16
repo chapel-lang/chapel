@@ -981,7 +981,7 @@ void VariableType::codegen(FILE* outfile) {
 
   
 void initPrimitiveTypes(void) {
-  rootScope = new SymScope(SCOPE_INTRINSIC, NULL, NULL);
+  rootScope = new SymScope(NULL, NULL);
   // Create initial compiler module and its scope
   compilerModule = new ModuleSymbol("_chpl_compiler", MOD_STANDARD, new AList<Stmt>());
   compilerModule->stmts->insertAtTail(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol("prelude"))));

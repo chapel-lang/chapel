@@ -852,20 +852,12 @@ map_baseast(BaseAST *s) {
       SYMBOL(sym) = sym;
       if (!sym->parentScope) {
         sym->asymbol->sym->nesting_depth = 0;
-      } else {
-        switch (sym->parentScope->type) {
-          default: assert(0);
-          case SCOPE_INTRINSIC:
-          case SCOPE_MODULE:
-            sym->asymbol->sym->nesting_depth = 0;
-            break;
-          case SCOPE_ARG:
-          case SCOPE_LOCAL:
+      } else if (sym->parentScope == rootScope ||
+                 dynamic_cast<ModuleSymbol*>(sym->parentScope->astParent)) {
+        sym->asymbol->sym->nesting_depth = 0;
+      } else if (dynamic_cast<FnSymbol*>(sym->parentScope->astParent) ||
+                 dynamic_cast<BlockStmt*>(sym->parentScope->astParent)) {
             sym->asymbol->sym->nesting_depth = sym->nestingDepth();
-            break;
-          case SCOPE_CLASS: // handled as the symbols appears in code
-            break;
-        }
       }
     }
     if (ifa_verbose > 2 && sym->name)

@@ -59,14 +59,12 @@ check_returns(FnSymbol* fn) {
 
 static void
 check_parsed_vars(VarSymbol* var) {
-  if (var->isParam() && !var->immediate) {
+  if (var->isParam() && !var->immediate)
     if (!var->defPoint->init &&
         (dynamic_cast<FnSymbol*>(var->defPoint->parentSymbol) ||
          dynamic_cast<ModuleSymbol*>(var->defPoint->parentSymbol)) &&
-        var->defPoint->parentScope->type != SCOPE_ARG) {
+        !dynamic_cast<FnSymbol*>(var->defPoint->parentScope->astParent))
       USR_FATAL(var, "Top-level params must be initialized.");
-    }
-  }
 }
 
 

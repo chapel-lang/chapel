@@ -81,7 +81,7 @@ static void codegen_header(void) {
       if (vs->immediate)
         continue;
 
-    if (sym->parentScope->type < SCOPE_MODULE)
+    if (sym->parentScope == rootScope)
       continue;
 
     if (sym->hasPragma("no codegen"))
@@ -92,7 +92,7 @@ static void codegen_header(void) {
     // mangle symbol that is neither field nor formal if the symbol's
     // name has already been encountered
     if (!dynamic_cast<ArgSymbol*>(sym) &&
-        sym->parentScope->type != SCOPE_CLASS &&
+        !dynamic_cast<ClassType*>(sym->parentScope->astParent) &&
         cnames.get(sym->cname))
       sym->cname = stringcat("_", intstring(sym->id), "_", sym->cname);
 
@@ -104,7 +104,7 @@ static void codegen_header(void) {
     } else if (FnSymbol* fnSymbol = dynamic_cast<FnSymbol*>(sym)) {
       fnSymbols.add(fnSymbol);
     } else if (VarSymbol* varSymbol = dynamic_cast<VarSymbol*>(sym)) {
-      if (varSymbol->parentScope->type == SCOPE_MODULE)
+      if (dynamic_cast<ModuleSymbol*>(varSymbol->parentScope->astParent))
         varSymbols.add(varSymbol);
     }
   }

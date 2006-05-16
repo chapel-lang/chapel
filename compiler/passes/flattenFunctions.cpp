@@ -13,7 +13,7 @@ static bool
 isOuterVar(Symbol* sym, FnSymbol* fn, SymScope* scope = NULL) {
   if (!scope)
     scope = fn->parentScope;
-  if (scope->type == SCOPE_MODULE)
+  if (scope->astParent && dynamic_cast<ModuleSymbol*>(scope->astParent))
     return false;
   else if (sym->parentScope == scope)
     return true;

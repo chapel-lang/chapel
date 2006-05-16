@@ -283,12 +283,10 @@ void insert_help(BaseAST* ast,
 
     if (BlockStmt* blockStmt = dynamic_cast<BlockStmt*>(stmt)) {
       if (blockStmt->blkScope &&
-          blockStmt->blkScope->type > SCOPE_MODULE &&
-          blockStmt->blkScope->type != SCOPE_CLASS) {
+          blockStmt->blkScope->astParent == blockStmt)
         INT_FATAL(blockStmt, "Unexpected scope in BlockStmt");
-      }
       if (!blockStmt->blkScope) {
-        blockStmt->blkScope = new SymScope(SCOPE_LOCAL, blockStmt, parentScope);
+        blockStmt->blkScope = new SymScope(blockStmt, parentScope);
         blockStmt->blkScope->astParent = blockStmt;
       }
       parentScope = blockStmt->blkScope;
@@ -316,19 +314,17 @@ void insert_help(BaseAST* ast,
         }
       }
       if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def_expr->sym)) {
-        if (fn->argScope) {
+        if (fn->argScope)
           INT_FATAL(fn, "Unexpected scope in FnSymbol");
-        }
-        fn->argScope = new SymScope(SCOPE_ARG, fn, parentScope);
+        fn->argScope = new SymScope(fn, parentScope);
         fn->argScope->astParent = fn;
         parentScope = fn->argScope;
       }
       if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(def_expr->sym)) {
         if (ClassType* type = dynamic_cast<ClassType*>(typeSym->definition)) {
-          if (type->structScope) {
+          if (type->structScope)
             INT_FATAL(typeSym, "Unexpected scope in FnSymbol");
-          }
-          type->structScope = new SymScope(SCOPE_CLASS, typeSym, parentScope);
+          type->structScope = new SymScope(type, parentScope);
           parentScope = type->structScope;
         }
       }
@@ -369,21 +365,15 @@ void remove_help(BaseAST* ast) {
     remove_help(ast);
 
   if (BlockStmt* block = dynamic_cast<BlockStmt*>(ast)) {
-    if (block->blkScope && block->blkScope->type == SCOPE_LOCAL) {
-      block->blkScope->remove();
+    if (block->blkScope && block->blkScope->astParent == block)
       block->blkScope = NULL;
-    }
   }
   if (DefExpr* defExpr = dynamic_cast<DefExpr*>(ast)) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(defExpr->sym)) {
-      if (fn->argScope)
-        fn->argScope->remove();
       fn->argScope = NULL;
     }
     if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(defExpr->sym)) {
       if (ClassType* type = dynamic_cast<ClassType*>(typeSym->definition)) {
-        if (type->structScope)
-          type->structScope->remove();
         type->structScope = NULL;
       }
     }

@@ -107,6 +107,27 @@ view_ast(BaseAST* ast, bool number = false, long mark = -1, int indent = 0) {
   }
 }
 
+static void view_symtab(BaseAST* ast, bool number = false, int indent = 0) {
+  SymScope* scope = NULL;
+  if (BlockStmt* a = dynamic_cast<BlockStmt*>(ast))
+    scope = a->blkScope;
+  else if (ModuleSymbol* a = dynamic_cast<ModuleSymbol*>(ast))
+    scope = a->modScope;
+  else if (FnSymbol* a = dynamic_cast<FnSymbol*>(ast))
+    scope = a->argScope;
+  else if (TypeSymbol* a = dynamic_cast<TypeSymbol*>(ast))
+    if (ClassType* ct = dynamic_cast<ClassType*>(a->definition))
+      scope = ct->structScope;
+
+  if (scope)
+    scope->print(number, indent);
+
+  Vec<BaseAST*> asts;
+  get_ast_children(ast, asts);
+  forv_Vec(BaseAST, ast, asts)
+    view_symtab(ast, number, indent + 2);
+}
+
 void print_view(BaseAST* ast) {
   view_ast(ast);
   printf("\n\n");
@@ -126,6 +147,17 @@ void nprint_view(BaseAST* ast) {
 
 void nprint_view_noline(BaseAST* ast) {
   view_ast(ast, true);
+  fflush(stdout);
+}
+
+
+void print_symtab(BaseAST* ast) {
+  view_symtab(ast);
+  fflush(stdout);
+}
+
+void nprint_symtab(BaseAST* ast) {
+  view_symtab(ast, true);
   fflush(stdout);
 }
 

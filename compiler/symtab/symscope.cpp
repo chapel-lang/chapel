@@ -40,50 +40,10 @@ isGloballyVisible(FnSymbol* fn) {
 }
 
 
-SymScope::SymScope(scopeType itype, BaseAST* iastParent, SymScope* iparent) :
-  type(itype),
+SymScope::SymScope(BaseAST* iastParent, SymScope* iparent) :
   astParent(iastParent),
-  parent(iparent),
-  child(NULL),
-  sibling(NULL)
-{
-  symbols.clear();
-  uses.clear();
-  visibleFunctions.clear();
-  if (parent) {
-    SymScope* child = parent->child;
-    if (child == NULL) {
-      parent->child = this;
-    } else {
-      while (child->sibling != NULL) {
-        child = child->sibling;
-      }
-      child->sibling = this;
-    }
-  }
-}
-
-
-bool SymScope::isEmpty(void) {
-  return symbols.n == 0;
-}
-
-
-void
-SymScope::remove() {
-  if (parent->child == this) {
-    parent->child = sibling;
-    return;
-  } else {
-    for (SymScope* tmp = parent->child; tmp; tmp = tmp->sibling) {
-      if (tmp->sibling == this) {
-        tmp->sibling = sibling;
-        return;
-      }
-    }
-  }
-  INT_FATAL(astParent, "Unable to remove SymScope");
-}
+  parent(iparent)
+{ }
 
 
 void SymScope::define(Symbol* sym) {
@@ -198,76 +158,58 @@ SymScope::lookup(char* name) {
 }
 
 
-int SymScope::parentLength(void) {
-  if (!parent) {
-    return 0;
-  } else {
-    return parent->parentLength() + 1;
-  }
+void SymScope::print() {
+  print(false, 0);
 }
 
 
-static void print_indent(SymScope* scope) {
-  static char* spaces = "                                                     "
-                        "                                                     ";
-  int offset = strlen(spaces) - 2*scope->parentLength();
-  if (offset < 0)
-    offset = 0;
-  printf("%s", spaces + offset);
-}
-
-
-void SymScope::dump_only(void) {
-  if (isEmpty())
+void SymScope::print(bool number, int indent) {
+  if (!symbols.n)
     return;
-
-  print_indent(this);
+  for (int i = 0; i < indent; i++)
+    printf(" ");
   printf("=================================================================\n");
-  print_indent(this);
-  printf("SCOPE:");
-  if (astParent)
+  for (int i = 0; i < indent; i++)
+    printf(" ");
+  if (astParent) {
+    if (number)
+      printf("%ld", astParent->id);
     printf(" %s", astTypeName[astParent->astType]);
+  }
   if (Symbol* sym = dynamic_cast<Symbol*>(astParent))
     printf(" %s", sym->name);
-  if (astParent && astParent->lineno > 0)
-    printf(" (%s)", astParent->stringLoc());
   printf("\n");
-  print_indent(this);
+  for (int i = 0; i < indent; i++)
+    printf(" ");
   printf("-----------------------------------------------------------------\n");
   forv_Vec(Symbol, sym, symbols) {
     if (sym) {
-      print_indent(this);
+      for (int i = 0; i < indent; i++)
+        printf(" ");
       printf("%s (", sym->name);
       for (Symbol* tmp = sym; tmp; tmp = tmp->overload) {
         printf("%s", tmp->cname);
+        if (number)
+          printf("[%ld]", tmp->id);
         if (tmp->overload)
           printf(", ");
       }
       printf(")\n");
     }
   }
-  print_indent(this);
+  for (int i = 0; i < indent; i++)
+    printf(" ");
   printf("=================================================================\n");
 }
 
 
-void SymScope::dump(void) {
-  dump_only();
-  for(SymScope* tmp = child; tmp; tmp = tmp->sibling) {
-    tmp->dump();
-  }
-}
-
-
 void SymScope::codegen(FILE* outfile, char* separator) {
-  if (type > SCOPE_MODULE) { // Because initFn has modScope
-    forv_Vec(Symbol, sym, symbols) {
-      for (Symbol* tmp = sym; tmp; tmp = tmp->overload) {
-        if (!dynamic_cast<TypeSymbol*>(tmp)) {
-          tmp->codegenDef(outfile);
-        }
-      }
-    }
+  if (dynamic_cast<ModuleSymbol*>(astParent)) // because initFn has modScope
+    return;
+  forv_Vec(Symbol, sym, symbols) {
+    for (Symbol* tmp = sym; tmp; tmp = tmp->overload)
+      if (!dynamic_cast<TypeSymbol*>(tmp))
+        tmp->codegenDef(outfile);
   }
 }
 
@@ -355,15 +297,4 @@ void SymScope::printVisibleFunctions() {
       }
     }
   }
-}
-
-
-void
-getSymbols(SymScope *scope, Vec<Symbol *> &symbols) {
-  if (!scope) return;
-  forv_Symbol(sym, scope->symbols)
-    for (Symbol *s = sym; s; s = s->overload)
-      symbols.set_add(s);
-  getSymbols(scope->child, symbols);
-  getSymbols(scope->sibling, symbols);
 }

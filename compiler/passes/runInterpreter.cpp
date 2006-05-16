@@ -249,19 +249,10 @@ IFrame::get(BaseAST *ast) {
 void
 IFrame::put(BaseAST *ast, ISlot *s) {
   if (Symbol *sym = dynamic_cast<Symbol *>(ast)) {
-    if (sym->parentScope) {
-      switch (sym->parentScope->type) {
-        default:
-          USR_FATAL(ast, "interpreter: bad symbol scope");
-        case SCOPE_INTRINSIC:
-        case SCOPE_MODULE:
-          global_env.put(ast,s);
-          return;
-        case SCOPE_ARG:
-        case SCOPE_LOCAL:
-          break;
-      }
-    }
+    if (sym->parentScope &&
+        (sym->parentScope == rootScope ||
+         dynamic_cast<ModuleSymbol*>(sym->parentScope->astParent)))
+      global_env.put(ast, s);
   }
   env.put(ast, s);
 }

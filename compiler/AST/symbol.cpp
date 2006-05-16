@@ -1359,7 +1359,7 @@ ModuleSymbol::ModuleSymbol(char* init_name,
   modtype(init_modtype),
   stmts(init_stmts),
   initFn(NULL),
-  modScope(new SymScope(SCOPE_MODULE, this, rootScope))
+  modScope(new SymScope(this, rootScope))
 {
   rootScope->define(this);
   registerModule(this);
