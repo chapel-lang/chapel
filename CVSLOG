@@ -64878,3 +64878,94 @@ Modified files:
 	                         functionResolution.cpp 
 	chapel/compiler/symtab/: symscope.cpp symtab.cpp 
 
+---------------------------------------------------------------------------
+
+05/15/06 21:53:17 -- deitz
+
+Log message:
+	Removed "_" unspecified.  Removed support for definition of variables
+	that have no type or initialization expression.  The variable
+	gUnspecified and type dtUnspecified should no longer appear in an AST.
+	They can be removed when this is removed from analysis.
+	
+	Fixed many tests that did not initialize a field in a class or record
+	in the constructor call of that class or record if the field had no
+	type or initialization expression.  Fixed the tests that did something
+	like
+	
+	  class C {
+	    var x;
+	  }
+	
+	  var c = C();
+	  c.x = 2;
+	
+	by changing them to
+	
+	  class C {
+	    var x;
+	  }
+	  var c = C(2);
+	
+	The error message the user gets for this issue is vague and should be
+	updated.  It is a high-level error message.
+	
+	Changed reductions to currently require an elt_type so to reduce an
+	array of integers, one must write
+	
+	  max(int) reduce A
+	
+	We can certainly get around this by passing the first element in the
+	sequence to the reduction class, but that won't work for an empty
+	sequence.
+	
+	Cleaned up sequence append and prepend code to initialize the field.
+	This failed when the field was a tuple because the default constructor
+	was called and the fields have no type or initialization.  I think
+	this is an interesting issue for tuples.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/modules/standard/: _chpl_seq.chpl 
+	chapel/test/classes/deitz/infer/: infer_field1.chpl 
+	                                  infer_field2.chpl 
+	                                  infer_field2c.chpl 
+	                                  infer_field4.chpl 
+	                                  infer_field5.chpl 
+	                                  infer_field6.chpl 
+	                                  infer_field7.chpl 
+	                                  infer_field7.good 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	                               sum_type-3.chpl 
+	chapel/test/flowanalysis/recursion/: rec_obj-1.chpl 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-1.good 
+	                                 zeroarity-bound-error-2.good 
+	chapel/test/reductions/bradc/: maxreduce.chpl sumreduce.chpl 
+	                               sumreduce2.chpl 
+	chapel/test/trivial/jplevyak/: pragma-6.chpl 
+	chapel/test/types/seq/deitz/: test_reduce1.chpl 
+	chapel/test/types/type_variables/deitz/: test_clone_class1.chpl 
+	                                         test_clone_class1a.chpl 
+	                                         test_clone_class1a.good 
+	                                         test_clone_class1b.chpl 
+	                                         test_clone_class1b.good 
+	                                         test_clone_class2.chpl 
+	                                         test_clone_class2a.chpl 
+	                                         test_instantiate_clone1.chpl 
+	                                         test_tuplelike1.chpl 
+Added files:
+	chapel/test/classes/deitz/infer/: infer_field8.chpl 
+	                                  infer_field8.good 
+	                                  infer_field9.chpl 
+	                                  infer_field9.good 
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_clone_class1b.future 
+Removed files:
+	chapel/test/arrays/deitz/: test_domain2D.chpl test_domain2D.good 
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_clone_class1a.prediff 
+	                                         test_clone_class1b.prediff 
+
