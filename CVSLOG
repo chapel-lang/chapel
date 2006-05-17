@@ -65170,3 +65170,19 @@ Added files:
 	                              test_visible2.chpl 
 	                              test_visible2.good 
 
+---------------------------------------------------------------------------
+
+05/17/06 16:32:06 -- deitz
+
+Log message:
+	Simplified DefExpr transform in preparation for removing INIT
+	primitive.  Removed duplicate cases and greatly simplified code.
+	
+	Removed VarSymbol::noDefaultInit.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/passes/: cleanup.cpp inlineFunctions.cpp 
+	                         normalize.cpp 
+
