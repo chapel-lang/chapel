@@ -1889,11 +1889,34 @@ make_top_edge(Fun *top) {
   return e;
 }
 
-static inline int
+static int 
+equiv_avar(AVar *a, AVar *b) {
+  if (a->contour != b->contour)
+    return 0;
+  Accum<AVar *> acc;
+  acc.add(a);
+  forv_AVar(x, acc.asvec) {
+    forv_AVar(y, x->backward) {
+      if (y == b)
+        return 1;
+      if (y->contour == a->contour) 
+        acc.add(y);
+    }
+    forv_AVar(y, x->forward) {
+      if (y == b)
+        return 1;
+      if (y->contour == a->contour) 
+        acc.add(y);
+    }
+  }
+  return 0;
+}
+
+static int
 is_return_value(AVar *av) {
   EntrySet *es = (EntrySet*)av->contour;
   forv_AVar(v, es->rets)
-    if (v == av)
+    if (v == av || equiv_avar(v, av))
       return 1;
   return 0;
 }
@@ -2802,6 +2825,9 @@ collect_cs_type_confluences(Vec<AVar *> &confluences) {
   }
   confluences.set_to_vec();
   qsort_by_id(confluences);
+  forv_AVar(x, confluences)
+    log(LOG_SPLITTING, "cs type confluences %s %d\n", 
+        x->var->sym->name ? x->var->sym->name : "", x->var->sym->id);
 }
 
 static void
