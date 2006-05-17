@@ -409,8 +409,8 @@ bool EnumType::hasDefaultReadFunction(void) {
 
 AList<Stmt>* EnumType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
   AList<Stmt>* body = new AList<Stmt>();
-  Symbol* valString = new VarSymbol("valString", dtString, VAR_NORMAL);
-  body->insertAtTail(new DefExpr(valString));
+  Symbol* valString = new VarSymbol("valString");
+  body->insertAtTail(new DefExpr(valString, new_StringLiteral("")));
   body->insertAtTail(new CallExpr("fread", fileArg, valString));
   Stmt* haltStmt = new ExprStmt(new CallExpr("halt", 
                                   new_StringLiteral("***Error: Not of "), 
@@ -822,9 +822,9 @@ bool ClassType::hasDefaultReadFunction(void) {
 
 AList<Stmt>* ClassType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
   AList<Stmt>* body = new AList<Stmt>();
-  Symbol* ignoreWhiteSpace = new VarSymbol("ignoreWhiteSpace", dtInt[IF1_INT_TYPE_64], VAR_NORMAL);
+  Symbol* ignoreWhiteSpace = new VarSymbol("ignoreWhiteSpace");
   body->insertAtTail(new DefExpr(ignoreWhiteSpace, new_IntLiteral(1)));
-  Symbol* matchingCharWasRead = new VarSymbol("matchingCharWasRead", dtInt[IF1_INT_TYPE_64], VAR_NORMAL);
+  Symbol* matchingCharWasRead = new VarSymbol("matchingCharWasRead");
   body->insertAtTail(new DefExpr(matchingCharWasRead, new_IntLiteral((int64)0)));
   CallExpr* fileArgFP = new CallExpr(PRIMITIVE_GET_MEMBER, fileArg, new_StringSymbol("fp"));
   CallExpr* readOpenBrace = new CallExpr("_readLitChar", fileArgFP, new_StringLiteral("{"), ignoreWhiteSpace);
@@ -840,7 +840,7 @@ AList<Stmt>* ClassType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymb
       body->insertAtTail(new CallExpr("=", matchingCharWasRead, readComma));
       body->insertAtTail(readErrorCond->copy());
     }  
-    Symbol* fieldName = new VarSymbol("fieldName", dtString, VAR_NORMAL);
+    Symbol* fieldName = new VarSymbol("fieldName");
     body->insertAtTail(new DefExpr(fieldName, new_StringLiteral("")));
     CallExpr* readFieldName = new CallExpr("fread", fileArg, fieldName);
     body->insertAtTail(readFieldName);

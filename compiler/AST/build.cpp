@@ -119,10 +119,11 @@ AList<Stmt>* build_param_for(char* index, Expr* low, Expr* high, AList<Stmt>* st
   block->blockTag = BLOCK_PARAM_FOR;
   block->param_low = low;
   block->param_high = high;
-  VarSymbol* index_var = new VarSymbol(index, dtInt[IF1_INT_TYPE_64]);
+  VarSymbol* index_var = new VarSymbol(index);
   block->param_index = new SymExpr(index_var);
   BlockStmt* outer = new BlockStmt(block);
   block->insertBefore(new DefExpr(index_var, new_IntLiteral((int64)0)));
+  block->insertBefore(new CallExpr("=", index_var, index_var)); // because otherwise it is dead leading to an analysis problem
   return new AList<Stmt>(outer);
 }
 

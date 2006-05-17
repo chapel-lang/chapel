@@ -120,14 +120,12 @@ Is this "while x"(i); or "while x(i)";?
 %token TIF
 %token TIN
 %token TINDEX
-%token TINIT
 %token TINOUT
 %token TITERATOR
 %token TLABEL
 %token TLET
 %token TLIKE
 %token TMODULE
-%token TMOVE
 %token TNIL
 %token TOF
 %token TORDERED
@@ -617,7 +615,7 @@ var_arg_expr:
   TDOTDOTDOT expr
     { $$ = $2; }
 | TDOTDOTDOT TQUESTION identifier
-    { $$ = new DefExpr(new VarSymbol($3, dtInt[IF1_INT_TYPE_64], VAR_NORMAL, VAR_PARAM)); }
+    { $$ = new DefExpr(new VarSymbol($3, dtUnknown, VAR_NORMAL, VAR_PARAM)); }
 ;
 
 
@@ -1048,10 +1046,6 @@ tuple_paren_expr:
 parenop_expr:
   non_tuple_lvalue TLP expr_ls TRP
     { $$ = new CallExpr($1, $3); }
-| TMOVE TLP expr_ls TRP
-    { $$ = new CallExpr(PRIMITIVE_MOVE, $3); }
-| TINIT TLP expr_ls TRP
-    { $$ = new CallExpr(PRIMITIVE_INIT, $3); }
 ;
 
 

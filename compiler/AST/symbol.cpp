@@ -765,7 +765,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
         call->insertAtTail(formal->defaultExpr->copy());
       } else {
         char* temp_name = stringcat("_default_temp_", formal->name);
-        VarSymbol* temp = new VarSymbol(temp_name, formal->type);
+        VarSymbol* temp = new VarSymbol(temp_name);
         copy_map.put(formal, temp);
         Expr* temp_init = NULL;
         Expr* temp_type = NULL;
@@ -776,6 +776,8 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
             temp_init = NULL;
         if (formal->defPoint->exprType)
           temp_type = formal->defPoint->exprType->copy();
+        if (!temp_type && !temp_init)
+          temp_type = new SymExpr(formal->type->symbol);
         wrapper->insertAtTail(new DefExpr(temp, temp_init, temp_type));
         if (formal->type != dtUnknown &&
             formal->intent != INTENT_REF &&
@@ -841,7 +843,7 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs) {
       Type* new_type = dynamic_cast<TypeSymbol*>(ts)->definition;
       Symbol* new_formal = formal->sym->copy();
       new_formal->type = new_type;
-      Symbol* new_index = new VarSymbol("_index", formal->sym->type);
+      Symbol* new_index = new VarSymbol("_index");
       wrapper->formals->insertAtTail(new DefExpr(new_formal));
       iterators->insertAtTail(new SymExpr(new_formal));
       indices->insertAtTail(new DefExpr(new_index));
