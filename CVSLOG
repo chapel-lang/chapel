@@ -65155,3 +65155,18 @@ Modified files:
 	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
 	                                         inlfunc2_report.good 
 
+---------------------------------------------------------------------------
+
+05/17/06 14:15:03 -- deitz
+
+Log message:
+	Added two visible function tests.  One future for me because we remove
+	a live function that is nested in a dead function.
+
+Added files:
+	chapel/test/functions/deitz/: test_visible1.chpl 
+	                              test_visible1.future 
+	                              test_visible1.good 
+	                              test_visible2.chpl 
+	                              test_visible2.good 
+
