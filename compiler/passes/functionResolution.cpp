@@ -18,6 +18,8 @@ bool can_instantiate(Type* actualType, Type* formalType) {
   return false;
 }
 
+bool require_scalar_promotion = false;
+
 bool can_dispatch(Symbol* actualParam, Type* actualType, Type* formalType);
 bool can_dispatch_ne(Symbol* actualParam, Type* actualType, Type* formalType) {
   if ((actualType != dtAny && actualType != dtUnknown) &&
@@ -42,8 +44,10 @@ bool can_dispatch_ne(Symbol* actualParam, Type* actualType, Type* formalType) {
     if (parent == formalType || can_dispatch(actualParam, parent, formalType))
       return true;
   }
-  if (actualType->scalarPromotionType && can_dispatch(NULL, actualType->scalarPromotionType, formalType))
+  if (actualType->scalarPromotionType && can_dispatch(NULL, actualType->scalarPromotionType, formalType)) {
+    require_scalar_promotion = true;
     return true;
+  }
   return false;
 }
 
@@ -279,10 +283,12 @@ build_promotion_wrapper(FnSymbol* fn,
     j++;
     Type* actual_type = actual_types->v[j];
     ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
-    if (actual_type->scalarPromotionType &&
-        can_dispatch(NULL, actual_type->scalarPromotionType, formal->type)) {
-      promotion_wrapper_required = true;
-      promoted_subs.put(formal, actual_type->symbol);
+    require_scalar_promotion = false;
+    if (can_dispatch(NULL, actual_type, formal->type)) {
+      if (require_scalar_promotion) {
+        promotion_wrapper_required = true;
+        promoted_subs.put(formal, actual_type->symbol);
+      }
     }
   }
   if (promotion_wrapper_required)

@@ -559,22 +559,8 @@ static void decompose_special_calls(CallExpr* call) {
     file->remove();
     decompose_multi_actuals(call, "fread", file);
     call->parentStmt->remove();
-  } else if (call->isNamed("fwrite")) {
-    Expr* file = call->argList->get(1);
-    file->remove();
-    decompose_multi_actuals(call, "fwrite", file);
-  } else if (call->isNamed("fwriteln")) {
-    Expr* file = call->argList->get(1);
-    file->remove();
-    call->parentStmt->insertAfter(new CallExpr("fwriteln", file));
-    decompose_multi_actuals(call, "fwrite", file);
   } else if (call->isNamed("read")) {
     decompose_multi_actuals(call, "fread", new SymExpr(chpl_stdin));
-  } else if (call->isNamed("write")) {
-    decompose_multi_actuals(call, "fwrite", new SymExpr(chpl_stdout));
-  } else if (call->isNamed("writeln")) {
-    call->parentStmt->insertAfter(new CallExpr("fwriteln", chpl_stdout));
-    decompose_multi_actuals(call, "fwrite", new SymExpr(chpl_stdout));
   }
 }
 

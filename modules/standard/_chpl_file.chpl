@@ -152,15 +152,10 @@ fun fscanfError() {
 }
 
 
-pragma "rename _chpl_fwriteln"
-fun fwriteln(f: file = stdout) {
-  if (f.isOpen) {
-    var returnVal: int = fprintf(f.fp, "%s", "\n");
-    if (returnVal < 0) {
-      fprintfError();
-    } 
-  } else {
-    fopenError(f, isRead = false);
+pragma "rename _chpl_fwrite"
+fun fwrite(f: file = stdout, args ...?numArgs) {
+  for param i in 1..numArgs {
+    fwrite(f, args(i));
   }
 }
 
@@ -318,6 +313,21 @@ fun fwrite(f: file = stdout, val: bool) {
 }
 
 
+pragma "rename _chpl_fwriteln"
+fun fwriteln(f: file, args ...?numArgs) {
+  for param i in 1..numArgs {
+    fwrite(f, args(i));
+  }
+  fwriteln(f);
+}
+
+
+pragma "rename _chpl_fwriteln_no_args"
+fun fwriteln(f: file = stdout) {
+  fwrite(f, "\n");
+}
+
+
 pragma "rename _chpl_fwrite_nil" 
 fun fwrite(f: file = stdout, x : _nilType) : void {
   if (f.isOpen) {
@@ -331,14 +341,28 @@ fun fwrite(f: file = stdout, x : _nilType) : void {
 }
 
 
-fun write() {
-  halt("***Error: This should never be called.  All write calls should be converted to fwrites***");
+pragma "rename _chpl_write"
+fun write(args ...?numArgs) {
+  for param i in 1..numArgs {
+    fwrite(stdout, args(i));
+  }
 }
 
 
-fun writeln() { 
-  halt("***Error: This should never be called.  All writeln calls should be converted to fwritelns***");
+pragma "rename _chpl_writeln"
+fun writeln(args ...?numArgs) { 
+  for param i in 1..numArgs {
+    fwrite(stdout, args(i));
+  }
+  fwriteln(stdout);
 }
+
+
+pragma "rename _chpl_writeln_no_args"
+fun writeln() {
+  fwriteln(stdout);
+}
+
 
 fun read() {
   halt("***Error: This should never be called.  All read calls should be converted to freads***");
