@@ -306,7 +306,6 @@ static void destructure_tuple(CallExpr* call) {
   Stmt* stmt = call->parentStmt;
   VarSymbol* temp = new VarSymbol("_tuple_destruct");
   stmt->insertBefore(new DefExpr(temp));
-  temp->noDefaultInit = true;
   CallExpr* tuple = dynamic_cast<CallExpr*>(call->get(1));
   call->replace(new CallExpr(PRIMITIVE_MOVE, temp, call->get(2)->remove()));
   int i = 1;
@@ -373,7 +372,6 @@ static void build_constructor(ClassType* ct) {
   fn->typeBinding = ct->symbol;
 
   fn->_this = new VarSymbol("this", ct);
-  dynamic_cast<VarSymbol*>(fn->_this)->noDefaultInit = true;
 
   char* description = stringcat("instance of class ", ct->symbol->name);
   Expr* alloc_rhs = new CallExpr(prelude->lookup("_chpl_alloc"),
@@ -558,14 +556,12 @@ static void hack_array(DefExpr* def) {
       if (type->isNamed("_build_array_type") ||
           type->isNamed("_build_sparse_domain_type") ||
           type->isNamed("_build_domain_type")) {
-        if (def->init) {
-          Expr* init = def->init;
+        if (Expr* init = def->init) {
           init->remove();
           def->parentStmt->insertAfter(new CallExpr("=", def->sym, init));
         }
-        def->init = def->exprType;
-        def->exprType = NULL;
-        var->noDefaultInit = true;
+        type->remove();
+        def->parentStmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, var, type));
       }
     }
   }

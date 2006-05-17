@@ -143,6 +143,18 @@ void normalize(BaseAST* base) {
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
+    if (DefExpr* a = dynamic_cast<DefExpr*>(ast)) {
+      if (VarSymbol* var = dynamic_cast<VarSymbol*>(a->sym))
+        if (dynamic_cast<FnSymbol*>(a->parentSymbol))
+          fix_def_expr(a, var);
+    }
+  }
+
+  asts.clear();
+  collect_asts_postorder(&asts, base);
+  forv_Vec(BaseAST, ast, asts) {
+    currentLineno = ast->lineno;
+    currentFilename = ast->filename;
     if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
       insert_call_temps(a);
     }
@@ -153,11 +165,6 @@ void normalize(BaseAST* base) {
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
-    if (DefExpr* a = dynamic_cast<DefExpr*>(ast)) {
-      if (VarSymbol* var = dynamic_cast<VarSymbol*>(a->sym))
-        if (dynamic_cast<FnSymbol*>(a->parentSymbol))
-          fix_def_expr(a, var);
-    }
     if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
       if (a->isNamed("="))
         fix_user_assign(a);
@@ -412,8 +419,6 @@ static void normalize_returns(FnSymbol* fn) {
     retval = new VarSymbol(stringcat("_ret_", fn->name), fn->retType);
     Expr* type = fn->retExpr;
     type->remove();
-    if (!type)
-      retval->noDefaultInit = true;
     fn->insertAtHead(new DefExpr(retval, NULL, type));
     fn->insertAtTail(new ReturnStmt(retval));
   }
@@ -454,16 +459,16 @@ static void insert_type_default_temp(UserType* userType) {
         outer_symbol = outer_symbol->defPoint->parentStmt->parentSymbol;
       }
       VarSymbol* temp = new VarSymbol(temp_name, temp_type);
-      DefExpr* def = new DefExpr(temp, temp_init);
+      DefExpr* def = new DefExpr(temp);
       if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(parent_symbol)) {
         mod->initFn->insertAtHead(def);
       } else {
         Stmt* insert_point = outer_symbol->defPoint->parentStmt;
         insert_point->insertBefore(def);
       }
+      def->parentStmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, temp, temp_init));
       userType->defaultValue = temp;
       userType->defaultExpr = NULL;
-      temp->noDefaultInit = true;
     } else if (userType->underlyingType->defaultConstructor) 
       userType->defaultConstructor = userType->underlyingType->defaultConstructor;
     else if (userType->underlyingType->defaultValue)
@@ -611,6 +616,7 @@ static void hack_resolve_types(Expr* expr) {
           arg->type = dynamic_cast<PrimitiveType*>(arg->type)->literalType;
       }
     } else if (VarSymbol* var = dynamic_cast<VarSymbol*>(def_expr->sym)) {
+      // only until analysis's type_info resolves enums correctly
       if (SymExpr* symExpr = dynamic_cast<SymExpr*>(def_expr->exprType))
         if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(symExpr->var))
           if (dynamic_cast<EnumType*>(ts->definition))
@@ -728,7 +734,7 @@ static void insert_call_temps(CallExpr* call) {
   if (dynamic_cast<DefExpr*>(call->parentExpr))
     return;
 
-  if (call->partialTag != PARTIAL_NEVER)
+  if (call->partialTag == PARTIAL_OK)
     return;
 
   if (call->primitive || call->isNamed("__primitive"))
@@ -744,9 +750,9 @@ static void insert_call_temps(CallExpr* call) {
   Stmt* stmt = call->parentStmt;
   VarSymbol* tmp = new VarSymbol("_tmp", dtUnknown, VAR_NORMAL, VAR_CONST);
   tmp->cname = stringcat(tmp->name, intstring(uid++));
-  tmp->noDefaultInit = true;
   call->replace(new SymExpr(tmp));
-  stmt->insertBefore(new DefExpr(tmp, call));
+  stmt->insertBefore(new DefExpr(tmp));
+  stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, call));
 }
 
 
@@ -761,32 +767,9 @@ static void fix_user_assign(CallExpr* call) {
 
 static void fix_def_expr(DefExpr* def, VarSymbol* var) {
   static int uid = 1;
-  if (var->noDefaultInit) {
-    if (def->init)
-      def->parentStmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, var, def->init->copy()));
-  } else if (var->type != dtUnknown) {
-    if (!dynamic_cast<EnumType*>(var->type))
-      INT_FATAL(def, "Uh oh... a type");
+  if (def->exprType) {
     AList<Stmt>* stmts = new AList<Stmt>();
     VarSymbol* tmp = new VarSymbol("_defTmp", dtUnknown, VAR_NORMAL, VAR_CONST);
-    tmp->noDefaultInit = true;
-    tmp->cname = stringcat(tmp->name, intstring(uid++));
-    stmts->insertAtTail(new DefExpr(tmp));
-    if (var->type->defaultValue)
-      stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, var->type->defaultValue));
-    else if (var->type->defaultConstructor)
-      stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(var->type->defaultConstructor)));
-    else
-      INT_FATAL(var->type, "Type has neither defaultValue nor defaultConstructor");
-    if (def->init)
-      stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, var, new CallExpr("=", tmp, def->init->copy())));
-    else
-      stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, var, tmp));
-    def->parentStmt->insertAfter(stmts);
-  } else if (def->exprType) {
-    AList<Stmt>* stmts = new AList<Stmt>();
-    VarSymbol* tmp = new VarSymbol("_defTmp", dtUnknown, VAR_NORMAL, VAR_CONST);
-    tmp->noDefaultInit = true;
     tmp->cname = stringcat(tmp->name, intstring(uid++));
     stmts->insertAtTail(new DefExpr(tmp));
     CallExpr* call = dynamic_cast<CallExpr*>(def->exprType);
@@ -800,20 +783,10 @@ static void fix_def_expr(DefExpr* def, VarSymbol* var) {
       stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, var, tmp));
     def->parentStmt->insertAfter(stmts);
   } else if (def->init) {
-    AList<Stmt>* stmts = new AList<Stmt>();
-    VarSymbol* tmp = new VarSymbol("_defTmp", dtUnknown, VAR_NORMAL, VAR_CONST);
-    tmp->noDefaultInit = true;
-    tmp->cname = stringcat(tmp->name, intstring(uid++));
-    stmts->insertAtTail(new DefExpr(tmp));
-    stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, def->init->copy()));
-    stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, var, new CallExpr("_copy", tmp)));
-    def->parentStmt->insertAfter(stmts);
-  } else {
-    INT_FATAL(def, "DefExpr has neither init nor type");
+    def->parentStmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, var, new CallExpr("_copy", def->init->remove())));
   }
   def->exprType->remove();
   def->init->remove();
-  var->noDefaultInit = true;
 }
 
 

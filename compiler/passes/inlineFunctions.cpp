@@ -19,7 +19,6 @@ static void mapFormalsToActuals(CallExpr* call, ASTMap* map) {
     } else {
       char* temp_name =  stringcat("_inline_temp_", formal->cname);
       VarSymbol* temp = new VarSymbol(temp_name, actual->typeInfo());
-      temp->noDefaultInit = true;
       call->parentStmt->insertBefore(new DefExpr(temp));
       call->parentStmt->insertBefore
         (new CallExpr(PRIMITIVE_MOVE, temp, actual->copy()));

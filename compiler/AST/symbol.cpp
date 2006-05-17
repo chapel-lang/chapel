@@ -302,8 +302,7 @@ VarSymbol::VarSymbol(char* init_name,
   varClass(init_varClass),
   consClass(init_consClass),
   immediate(NULL),
-  literalType(NULL),
-  noDefaultInit(false)
+  literalType(NULL)
 { }
 
 
@@ -322,7 +321,6 @@ VarSymbol::copyInner(ASTMap* map) {
   newVarSymbol->cname = stringcpy(cname);
   assert(!newVarSymbol->immediate);
   assert(!newVarSymbol->literalType);
-  newVarSymbol->noDefaultInit = noDefaultInit;
   return newVarSymbol;
 }
 
