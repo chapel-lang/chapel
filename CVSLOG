@@ -65091,3 +65091,13 @@ Modified files:
 	chapel/compiler/parser/: chapel.lex chapel.y 
 	chapel/compiler/passes/: cleanup.cpp normalize.cpp 
 
+---------------------------------------------------------------------------
+
+05/17/06 09:09:00 -- jplevyak
+
+Log message:
+	Fix issue with not detecting equivalent return variables (copies).
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
