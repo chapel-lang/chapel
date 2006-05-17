@@ -65186,3 +65186,15 @@ Modified files:
 	chapel/compiler/passes/: cleanup.cpp inlineFunctions.cpp 
 	                         normalize.cpp 
 
+---------------------------------------------------------------------------
+
+05/17/06 16:40:13 -- deitz
+
+Log message:
+	Added two tests for using but not declaring int(32) and enumerated
+	types.
+
+Added files:
+	chapel/test/trivial/deitz/: test_int32.chpl test_int32.good 
+	chapel/test/types/enum/deitz/: test_enum1b.chpl test_enum1b.good 
+
