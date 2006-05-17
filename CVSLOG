@@ -65072,3 +65072,22 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp type.cpp 
 
+---------------------------------------------------------------------------
+
+05/17/06 09:04:41 -- deitz
+
+Log message:
+	In preparation for simplifying the INIT primitive, removed, almost,
+	one special case of the DefExpr transform in normalization handling
+	the definition of a VarSymbol with a specified VarSymbol::type (not
+	dtUnknown).  Removed all setting of VarSymbol::type before the DefExpr
+	transform except for EnumTypes.
+	
+	Removed special syntax for accessing the INIT and MOVE primitives from
+	the Chapel level.  It is unused and unnecessary.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp symbol.cpp type.cpp 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/passes/: cleanup.cpp normalize.cpp 
+
