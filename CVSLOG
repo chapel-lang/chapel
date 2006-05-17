@@ -65116,3 +65116,42 @@ Added files:
 	                            test_method_call_noparens2.chpl 
 	                            test_method_call_noparens2.good 
 
+---------------------------------------------------------------------------
+
+05/17/06 11:38:38 -- shannon
+
+Log message:
+	Moved the handling of variable args to write and fwrite
+	from normalize.cpp to a Chapel module.  This code was
+	committed once before but caused many test failures.
+	All but one of these have been resolved.  For now,
+	test_foo2.chpl is going to regress.
+	
+	This commit also includes a patch of Steve's to better
+	handle scalar promotion in function resolution.
+	
+	Updated the output of tests that were affected by
+	this change.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	chapel/modules/standard/: _chpl_file.chpl 
+	chapel/test/arrays/deitz/: test_array_class_trial3.good 
+	                           test_array_class_trial4.good 
+	                           test_array_class_trial4a.good 
+	                           test_array_class_trial5.good 
+	                           test_array_class_trial5a.good 
+	                           test_array_class_trial5b.good 
+	                           test_array_class_trial6.good 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/domains/shannon/: expandError.good 
+	                              interiorErrorNeg.good 
+	                              interiorErrorPos.good 
+	                              interiorErrorPosLarge.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-1.good 
+	                                 zeroarity-bound-error-2.good 
+	chapel/test/memory/shannon/: printFinalMemStat.good 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+
