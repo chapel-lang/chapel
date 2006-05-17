@@ -1330,9 +1330,7 @@ FnSymbol *Symbol::nestingParent(int i) {
 
 EnumSymbol::EnumSymbol(char* init_name) :
   Symbol(SYMBOL_ENUM, init_name)
-{
-  type = dtInt[IF1_INT_TYPE_64];
-}
+{ }
 
 
 void EnumSymbol::verify() {
