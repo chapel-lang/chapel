@@ -65101,3 +65101,18 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+05/17/06 11:31:36 -- deitz
+
+Log message:
+	Added two tests that look at methods without parentheses.  I was
+	convinced I'd find a scope resolution bug with these tests, but they
+	work.
+
+Added files:
+	chapel/test/classes/deitz/: test_method_call_noparens.chpl 
+	                            test_method_call_noparens.good 
+	                            test_method_call_noparens2.chpl 
+	                            test_method_call_noparens2.good 
+
