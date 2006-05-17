@@ -65058,3 +65058,17 @@ Modified files:
 	                      sym.cpp sym.h 
 	chapel/compiler/ifa/libifa/: ast_to_if1.cc ifa_defs.h 
 
+---------------------------------------------------------------------------
+
+05/16/06 19:11:06 -- deitz
+
+Log message:
+	Fixed type of EnumSymbols earlier.  They used to be set when the
+	default write function was created for an enumerated type.  They are
+	now set when the enumerated type is created.  Prior they were set to
+	integer and then changed to the correct type.  Now they are just set
+	as the correct type.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+
