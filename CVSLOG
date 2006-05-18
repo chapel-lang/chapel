@@ -65243,3 +65243,23 @@ Added files:
 	chapel/test/trivial/deitz/: test_integer_method3.chpl 
 	                            test_integer_method3.good 
 
+---------------------------------------------------------------------------
+
+05/17/06 19:33:27 -- deitz
+
+Log message:
+	Simplified primitive mechanism in the front end so that if a CallExpr
+	is a primitive, CallExpr::primitive is set.  This involved simply
+	setting it when the CallExpr is built during parsing.  Removed extra
+	checks to see if a CallExpr is a primitive because the name of the
+	function is __primitive.  The transformation to set
+	CallExpr::primitive used to be done during normalization.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp expr.cpp view.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: build.h expr.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/passes/: inlineFunctions.cpp normalize.cpp 
+	                         scopeResolve.cpp 
+
