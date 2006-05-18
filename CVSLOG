@@ -65263,3 +65263,15 @@ Modified files:
 	chapel/compiler/passes/: inlineFunctions.cpp normalize.cpp 
 	                         scopeResolve.cpp 
 
+---------------------------------------------------------------------------
+
+05/18/06 13:44:02 -- jplevyak
+
+Log message:
+	Fix for writeTuple.chpl.
+	Fixed issue with circular data flow passing through member variables
+	 for example the members of a tuple assigned with operator=.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
