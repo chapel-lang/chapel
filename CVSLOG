@@ -65208,3 +65208,38 @@ Log message:
 Added files:
 	chapel/test/studies/jacobi/waynew/: NOTEST example1.chpl 
 
+---------------------------------------------------------------------------
+
+05/17/06 19:31:19 -- deitz
+
+Log message:
+	Removed usage of FnSymbol::typeBinding from many places in the
+	compiler most often by replacing typeBinding->definition with
+	_this->type, but occasionally simplifying.  This is in preparation for
+	supporting bound functions on type expressions.
+	
+	Added support for bound functions on types that cannot be specified
+	with a single identifier, e.g., int(32), but are type expressions.
+	For the time being, for parsing purposes, the type is required to be
+	in parentheses as in
+	
+	  fun (int(32)).print() { ...
+	
+	This work furthers Wayne's work on making the complex type a primitive
+	type and supporting bit widths on types.  It is also part of my effort
+	to simplify the normalization/cleanup/scope resolution code.
+	
+	Fixed FnSymbol constructor to allocate the formals alist.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp build.cpp symbol.cpp view.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         normalize.cpp parallel.cpp 
+	                         scopeResolve.cpp semanticChecks.cpp 
+	chapel/compiler/symtab/: symscope.cpp 
+Added files:
+	chapel/test/trivial/deitz/: test_integer_method3.chpl 
+	                            test_integer_method3.good 
+
