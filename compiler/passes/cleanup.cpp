@@ -100,7 +100,6 @@ void createInitFn(ModuleSymbol* mod) {
   }
 
   mod->initFn = new FnSymbol(fnName);
-  mod->initFn->formals = new AList<DefExpr>();
   mod->initFn->retType = dtVoid;
   mod->initFn->body = initFunBody;
   definition->insertAtHead(new DefExpr(mod->initFn));
@@ -364,11 +363,7 @@ static void build_constructor(ClassType* ct) {
 
   reset_file_info(fn, ct->symbol->lineno, ct->symbol->filename);
   ct->symbol->defPoint->parentStmt->insertBefore(new DefExpr(fn));
-  //  ct->methods.add(fn);
-//   if (ct->symbol->hasPragma("data class")) {
-//     fn->addPragma("rename _data_construct");
-//     fn->addPragma("no codegen");
-//   }
+
   fn->typeBinding = ct->symbol;
 
   fn->_this = new VarSymbol("this", ct);
@@ -418,9 +413,8 @@ static void build_getter(ClassType* ct, Symbol *field) {
   fn->_getter = field;
   fn->retType = field->type;
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
-  fn->formals = new AList<DefExpr>(
-    new DefExpr(new ArgSymbol(INTENT_BLANK, "_methodTokenDummy", dtMethodToken)),
-    new DefExpr(_this));
+  fn->formals->insertAtTail(new ArgSymbol(INTENT_BLANK, "_methodTokenDummy", dtMethodToken));
+  fn->formals->insertAtTail(_this);
   fn->body = new BlockStmt(new ReturnStmt(new CallExpr(PRIMITIVE_GET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)))));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->parentStmt->insertBefore(def);
@@ -447,13 +441,10 @@ static void build_setter(ClassType* ct, Symbol* field) {
 
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
   ArgSymbol* fieldArg = new ArgSymbol(INTENT_BLANK, "_arg", dtUnknown);
-  DefExpr* argDef = new DefExpr(fieldArg);
-  fn->formals = new AList<DefExpr>(
-    new DefExpr(new ArgSymbol(INTENT_BLANK, "_methodTokenDummy", dtMethodToken)),
-    new DefExpr(_this), 
-    new DefExpr(new ArgSymbol(INTENT_BLANK, "_setterTokenDummy", dtSetterToken)),
-    argDef);
-
+  fn->formals->insertAtTail(new ArgSymbol(INTENT_BLANK, "_methodTokenDummy", dtMethodToken));
+  fn->formals->insertAtTail(_this);
+  fn->formals->insertAtTail(new ArgSymbol(INTENT_BLANK, "_setterTokenDummy", dtSetterToken));
+  fn->formals->insertAtTail(fieldArg);
   Expr *valExpr = new CallExpr(PRIMITIVE_GET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)));
   Expr *assignExpr = new CallExpr("=", valExpr, fieldArg);
   fn->body->insertAtTail(

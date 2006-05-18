@@ -569,11 +569,10 @@ fn_decl_stmt:
       $2->fnClass = $1;
       if ($1 == FN_ITERATOR && !strcmp($2->name, "this"))
         $2->name = "_promoter";
-      if (!$3) {
-        $3 = new AList<DefExpr>();
+      if (!$3)
         $2->noParens = true;
-      }
-      $2->formals = $3;
+      else
+        $2->formals->insertAtTail($3);
       $2->retRef = $4;
       $2->retExpr = $5;
       if ($6)
@@ -731,6 +730,23 @@ function:
     {
       $$ = new FnSymbol($4, new TypeSymbol($1, NULL));
       $$->isSetter = true;
+    }
+| TLP non_tuple_lvalue TRP TDOT identifier
+    {
+      $$ = new FnSymbol($5);
+      $$->_this = new ArgSymbol(INTENT_BLANK, "this", dtUnknown);
+      $$->formals->insertAtHead(new DefExpr($$->_this, NULL, $2));
+      $$->formals->insertAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_methodTokenDummy",
+                                                          dtUnknown), NULL, new SymExpr("_methodTokenType")));
+    }
+| TLP non_tuple_lvalue TRP TDOT TASSIGN identifier
+    {
+      $$ = new FnSymbol($6);
+      $$->_this = new ArgSymbol(INTENT_BLANK, "this", dtUnknown);
+      $$->formals->insertAtHead(new DefExpr($$->_this, NULL, $2));
+      $$->formals->insertAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_methodTokenDummy",
+                                                          dtUnknown), NULL, new SymExpr("_methodTokenType")));
+      $$->formals->last()->insertBefore(new DefExpr(new ArgSymbol(INTENT_BLANK, "_setterTokenDummy", dtUnknown), NULL, new SymExpr("_setterTokenType")));
     }
 ;
 

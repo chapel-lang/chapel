@@ -230,8 +230,8 @@ html_print_symbol(FILE* html_file, Symbol* sym, bool def, bool show_analysis_inf
 
 static void
 html_print_fnsymbol(FILE* html_file, FnSymbol* fn, bool show_analysis_info) {
-  if (fn->typeBinding) {
-    html_print_symbol(html_file, fn->typeBinding, false, show_analysis_info);
+  if (fn->_this) {
+    html_print_symbol(html_file, fn->_this->type->symbol, false, show_analysis_info);
     fprintf(html_file, " . ");
   }
   html_print_symbol(html_file, fn, true, show_analysis_info);

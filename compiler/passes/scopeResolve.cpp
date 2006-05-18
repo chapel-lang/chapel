@@ -94,8 +94,8 @@ void scopeResolve(BaseAST* base) {
             Symbol* parent = symExpr->parentSymbol;
             while (!dynamic_cast<ModuleSymbol*>(parent)) {
               if (FnSymbol* method = dynamic_cast<FnSymbol*>(parent)) {
-                if (method->typeBinding) {
-                  ClassType* ct = dynamic_cast<ClassType*>(method->typeBinding->definition);
+                if (method->_this) {
+                  ClassType* ct = dynamic_cast<ClassType*>(method->_this->type);
                   if ((sym && dynamic_cast<ClassType*>(sym->parentScope->astParent)) ||
                       (fn && ct && function_name_matches_method_name(fn, ct)))
                     if (symExpr->var != method->_this) {

@@ -250,58 +250,7 @@ void normalize(BaseAST* base) {
 }
 
 
-static TypeSymbol* create_iterator_next_function(FnSymbol* fn) {
-  static int uid = 1;
-
-  ClassType* ct = new ClassType(CLASS_CLASS);
-  TypeSymbol* ts =
-    new TypeSymbol(stringcat("_iterator_state", intstring(uid++)), ct);
-  AList<Stmt>* decl_stmts = new AList<Stmt>();
-  FnSymbol* next = fn->copy();
-  next->name = stringcat("_next_", fn->name);
-  next->cname = stringcat("_next_", fn->cname);
-  ArgSymbol* state = new ArgSymbol(INTENT_BLANK, "_state", ct);
-  next->formals->insertAtHead(new DefExpr(state));
-  fn->defPoint->parentStmt->insertBefore(new DefExpr(next));
-  // find local variable declarations
-  Map<Symbol*,Symbol*> localsToFields;
-  Vec<BaseAST*> asts;
-  collect_asts(&asts, next);
-  int field_uid = 1;
-  forv_Vec(BaseAST, ast, asts) {
-    if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
-      if (dynamic_cast<VarSymbol*>(def->sym)) {
-        DefExpr* fieldDef = def->copy();
-        fieldDef->sym->name =
-          stringcat("_state", intstring(field_uid++), "_", fieldDef->sym->name);
-        decl_stmts->insertAtTail(fieldDef);
-        localsToFields.put(def->sym, fieldDef->sym);
-        def->parentStmt->remove();
-      }
-    }
-  }
-  asts.clear();
-  collect_asts(&asts, next);
-  forv_Vec(BaseAST, ast, asts) {
-    if (SymExpr* symExpr = dynamic_cast<SymExpr*>(ast)) {
-      if (dynamic_cast<VarSymbol*>(symExpr->var)) {
-        if (Symbol* field = localsToFields.get(symExpr->var)) {
-          symExpr->replace(
-            new CallExpr(".", state, new_StringSymbol(field->name)));
-        }
-      }
-    }
-  }
-  ct->addDeclarations(decl_stmts);
-  fn->defPoint->parentStmt->insertBefore(new DefExpr(ts));
-  cleanup(ts->defPoint->parentStmt);
-  cleanup(next->defPoint->parentStmt);
-  return ts;
-}
-
-
 static void reconstruct_iterator(FnSymbol* fn) {
-  if (0) create_iterator_next_function(fn);
   Expr* seqType = fn->retExpr;
   if (!seqType)
     USR_FATAL(fn, "Cannot infer iterator return type yet");
@@ -333,7 +282,7 @@ static void reconstruct_iterator(FnSymbol* fn) {
     if (!strcmp("_promoter", fn->name)) {
       if (seqElementType != dtUnknown) {
         if (is_Value_Type(seqElementType))
-          fn->typeBinding->definition->scalarPromotionType = seqElementType;
+          fn->_this->type->scalarPromotionType = seqElementType;
       } else {
         if (CallExpr *c = dynamic_cast<CallExpr*>(seqType)) {
           if (SymExpr *b = dynamic_cast<SymExpr*>(c->baseExpr)) {
@@ -344,7 +293,7 @@ static void reconstruct_iterator(FnSymbol* fn) {
                     if (VarSymbol *vs = dynamic_cast<VarSymbol*>(a2->var)) {
                       if (vs->immediate) {
                         char *s = vs->immediate->v_string;
-                        ClassType *ct = dynamic_cast<ClassType*>(fn->typeBinding->definition);
+                        ClassType *ct = dynamic_cast<ClassType*>(fn->_this->type);
                         forv_Vec(TypeSymbol, ts, ct->types)
                           if (!strcmp(ts->name, s))
                             ts->addPragma("promoter");
@@ -365,8 +314,8 @@ static void reconstruct_iterator(FnSymbol* fn) {
 static void build_lvalue_function(FnSymbol* fn) {
   FnSymbol* new_fn = fn->copy();
   fn->defPoint->parentStmt->insertAfter(new DefExpr(new_fn));
-  if (fn->typeBinding)
-    fn->typeBinding->definition->methods.add(new_fn);
+  if (fn->_this)
+    fn->_this->type->methods.add(new_fn);
   new_fn->retRef = false;
   fn->retRef = false;
   new_fn->retType = dtVoid;

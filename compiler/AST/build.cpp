@@ -10,7 +10,6 @@ FnSymbol* build_if_expr(Expr* e, Expr* e1, Expr* e2) {
   static int uid = 1;
   FnSymbol* fn = new FnSymbol(stringcat("_if_fn", intstring(uid++)));
   fn->retRef = true;
-  fn->formals = new AList<DefExpr>();
   fn->addPragma("inline");
   if (e2)
     fn->insertAtTail(new CondStmt(e, new ReturnStmt(e1), new ReturnStmt(e2)));
@@ -23,7 +22,6 @@ FnSymbol* build_if_expr(Expr* e, Expr* e1, Expr* e2) {
 FnSymbol* build_let_expr(AList<Stmt>* decls, Expr* expr) {
   static int uid = 1;
   FnSymbol* fn = new FnSymbol(stringcat("_let_fn", intstring(uid++)));
-  fn->formals = new AList<DefExpr>();
   fn->addPragma("inline");
   fn->insertAtTail(decls);
   fn->insertAtTail(new ReturnStmt(expr));
@@ -134,20 +132,16 @@ AList<Stmt>* build_assignplus(Expr* lhs, Expr* rhs) {
   AList<Stmt>* stmts = new AList<Stmt>();
 
   fn = new FnSymbol(stringcat("_assignplus", intstring(uid)));
-  fn->formals =
-    new AList<DefExpr>(
-      new DefExpr(
-        new ArgSymbol(INTENT_BLANK, "_lhs", dtAny)));
+  fn->formals->insertAtTail(new ArgSymbol(INTENT_BLANK, "_lhs", dtAny));
   fn->addPragma("inline");
   fn->insertAtTail(new CallExpr("=", lhs->copy(), new CallExpr("+", lhs->copy(), rhs->copy())));
   stmts->insertAtTail(new DefExpr(fn));
 
   fn = new FnSymbol(stringcat("_assignplus", intstring(uid)));
-  fn->formals =
-    new AList<DefExpr>(
-      new DefExpr(
-        new ArgSymbol(INTENT_BLANK, "_lhs", dtUnknown), NULL,
-          new SymExpr("_domain")));
+  fn->formals->insertAtTail(
+    new DefExpr(
+      new ArgSymbol(INTENT_BLANK, "_lhs", dtUnknown), NULL,
+      new SymExpr("_domain")));
   fn->addPragma("inline");
   fn->insertAtTail(new CallExpr(new CallExpr(".", lhs->copy(), new_StringLiteral("add")), rhs->copy()));
   stmts->insertAtTail(new DefExpr(fn));
@@ -170,7 +164,6 @@ AList<Stmt>* build_type_select(AList<Expr>* exprs, AList<WhenStmt>* whenstmts) {
         USR_FATAL(exprs, "Type select statement has multiple otherwise clauses");
       has_otherwise = true;
       fn = new FnSymbol(stringcat("_typeselect", intstring(uid)));
-      fn->formals = new AList<DefExpr>();
       int lid = 1;
       for_alist(Expr, expr, exprs) {
         fn->formals->insertAtTail(
@@ -186,7 +179,6 @@ AList<Stmt>* build_type_select(AList<Expr>* exprs, AList<WhenStmt>* whenstmts) {
       if (whenstmt->caseExprs->length() != exprs->length())
         USR_FATAL(whenstmt, "Type select statement requires number of selectors to be equal to number of when conditions");
       fn = new FnSymbol(stringcat("_typeselect", intstring(uid)));
-      fn->formals = new AList<DefExpr>();
       int lid = 1;
       for_alist(Expr, expr, whenstmt->caseExprs) {
         fn->formals->insertAtTail(

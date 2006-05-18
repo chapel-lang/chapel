@@ -2022,8 +2022,8 @@ finalize_function(Fun *fun, int instantiation) {
     fs->_this->asymbol->sym->is_this = 1;
   // add to dispatch cache
   if (!instantiation) {
-    if (fs->typeBinding) {
-      if (is_reference_type(SYMBOL(fs->typeBinding->definition))) {
+    if (fs->_this) {
+      if (is_reference_type(SYMBOL(fs->_this->type))) {
         if (fs->isMethod) {
           add_to_universal_lookup_cache(name, fun);
           added = 1;

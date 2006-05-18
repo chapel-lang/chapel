@@ -19,7 +19,6 @@ static void buildDefaultIOFunctions(Type* type);
 // function_exists returns true iff
 //  function's name matches name
 //  function's number of formals matches numFormals if not -1
-//  function's typeBinding matches typeBinding if not NULL
 //  function's first formal's type's name matches formalTypeName1 if not NULL
 //  function's second formal's type's name matches formalTypeName2 if not NULL
 
@@ -34,7 +33,6 @@ static bool type_name_match(char* name, Symbol* sym) {
 
 static FnSymbol* function_exists(char* name,
                                  int numFormals = -1,
-                                 Type* typeBinding = NULL,
                                  char* formalTypeName1 = NULL,
                                  char* formalTypeName2 = NULL) {
   forv_Vec(FnSymbol, fn, fns) {
@@ -43,10 +41,6 @@ static FnSymbol* function_exists(char* name,
 
     if (numFormals != -1)
       if (numFormals != fn->formals->length())
-        continue;
-
-    if (typeBinding)
-      if (typeBinding != fn->typeBinding->definition)
         continue;
 
     if (formalTypeName1)
@@ -108,7 +102,6 @@ static void build_chpl_main(void) {
   if (!chpl_main) {
     if (userModules.n == 1) {
       chpl_main = new FnSymbol("main", NULL);
-      chpl_main->formals = new AList<DefExpr>();
       chpl_main->retType = dtVoid;
       userModules.v[0]->stmts->insertAtTail(new DefExpr(chpl_main));
       build(chpl_main);
@@ -126,10 +119,9 @@ static void build_chpl_main(void) {
 static void build_record_equality_function(ClassType* ct) {
   FnSymbol* fn = new FnSymbol("==");
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
-  AList<DefExpr>* args = new AList<DefExpr>(new DefExpr(arg1));
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", ct);
-  args->insertAtTail(new DefExpr(arg2));
-  fn->formals = args;
+  fn->formals->insertAtTail(arg1);
+  fn->formals->insertAtTail(arg2);
   fn->retType = dtBool;
   Expr* cond = NULL;
   forv_Vec(Symbol, tmp, ct->fields) {
@@ -152,10 +144,9 @@ static void build_record_inequality_function(ClassType* ct) {
   FnSymbol* fn = new FnSymbol("!=");
 
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
-  AList<DefExpr>* args = new AList<DefExpr>(new DefExpr(arg1));
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", ct);
-  args->insertAtTail(new DefExpr(arg2));
-  fn->formals = args;
+  fn->formals->insertAtTail(arg1);
+  fn->formals->insertAtTail(arg2);
   fn->retType = dtBool;
   Expr* cond = NULL;
   forv_Vec(Symbol, tmp, ct->fields) {
@@ -176,23 +167,22 @@ static void build_record_inequality_function(ClassType* ct) {
 
 
 static void build_record_assignment_function(ClassType* ct) {
-  if (function_exists("=", 2, NULL, ct->symbol->name))
+  if (function_exists("=", 2, ct->symbol->name))
     return;
 
   FnSymbol* fn = new FnSymbol("=");
-  ArgSymbol* _arg1 = 
+  ArgSymbol* arg1 = 
     f_equal_method ? new ArgSymbol(INTENT_REF, "this", ct)
     : new ArgSymbol(INTENT_BLANK, "_arg1", ct);
-  AList<DefExpr>* args = new AList<DefExpr>(new DefExpr(_arg1));
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtUnknown);
-  args->insertAtTail(new DefExpr(arg2));
-  fn->formals = args;
+  fn->formals->insertAtTail(arg1);
+  fn->formals->insertAtTail(arg2);
   fn->retType = dtUnknown;
   AList<Stmt>* body = new AList<Stmt>();
   forv_Vec(Symbol, tmp, ct->fields)
-    body->insertAtTail(new CallExpr(tmp->name, methodToken, _arg1, setterToken,
+    body->insertAtTail(new CallExpr(tmp->name, methodToken, arg1, setterToken,
                                     new CallExpr(tmp->name, methodToken, arg2)));
-  body->insertAtTail(new ReturnStmt(_arg1));
+  body->insertAtTail(new ReturnStmt(arg1));
   BlockStmt* block_stmt = new BlockStmt(body);
   fn->body = block_stmt;
   DefExpr* def = new DefExpr(fn);
@@ -202,7 +192,7 @@ static void build_record_assignment_function(ClassType* ct) {
     ct->methods.add(fn);
     fn->isMethod = true;
     fn->typeBinding = ct->symbol;
-    fn->_this = _arg1;
+    fn->_this = arg1;
   }
   build(fn);
   fns.add(fn);
@@ -210,12 +200,12 @@ static void build_record_assignment_function(ClassType* ct) {
 
 
 static void build_record_copy_function(ClassType* ct) {
-  if (function_exists("_copy", 1, NULL, ct->symbol->name))
+  if (function_exists("_copy", 1, ct->symbol->name))
     return;
 
   FnSymbol* fn = new FnSymbol("_copy");
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
-  fn->formals = new AList<DefExpr>(new DefExpr(arg));
+  fn->formals->insertAtTail(arg);
   CallExpr* call = new CallExpr(ct->defaultConstructor->name);
   forv_Vec(Symbol, tmp, ct->types)
     call->insertAtTail(new CallExpr(".", arg, new_StringLiteral(tmp->name)));
@@ -236,14 +226,14 @@ void buildDefaultIOFunctions(Type* type) {
   if (fnostdincs)
     return;
   if (type->hasDefaultWriteFunction()) {
-    if (!function_exists("fwrite", 2, NULL, "file", type->symbol->name)) {
+    if (!function_exists("fwrite", 2, "file", type->symbol->name)) {
       FnSymbol* fn = new FnSymbol("fwrite");
       fn->cname = stringcat("_auto_", type->symbol->name, "_fwrite");
       TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(fileModule->lookup("file"));
       ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", fileType->definition);
       ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "val", type);
-
-      fn->formals = new AList<DefExpr>(new DefExpr(fileArg), new DefExpr(arg));
+      fn->formals->insertAtTail(fileArg);
+      fn->formals->insertAtTail(arg);
       fn->retType = dtVoid;
       AList<Stmt>* body = type->buildDefaultWriteFunctionBody(fileArg, arg);
       BlockStmt* block_stmt = new BlockStmt(body);
@@ -257,13 +247,14 @@ void buildDefaultIOFunctions(Type* type) {
   }
 
   if (type->hasDefaultReadFunction()) {
-    if (!function_exists("fread", 2, NULL, "file", type->symbol->name)) {
+    if (!function_exists("fread", 2, "file", type->symbol->name)) {
       FnSymbol* fn = new FnSymbol("fread");
       fn->cname = stringcat("_auto_", type->symbol->name, "_fread");
       TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(fileModule->lookup("file"));
       ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", fileType->definition);
       ArgSymbol* arg = new ArgSymbol(INTENT_INOUT, "val", type);
-      fn->formals = new AList<DefExpr>(new DefExpr(fileArg), new DefExpr(arg));
+      fn->formals->insertAtTail(fileArg);
+      fn->formals->insertAtTail(arg);
       fn->retType = dtVoid;
       AList<Stmt>* body = type->buildDefaultReadFunctionBody(fileArg, arg);
       BlockStmt* block_stmt = new BlockStmt(body);

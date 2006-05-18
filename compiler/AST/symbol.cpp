@@ -575,7 +575,7 @@ void TypeSymbol::codegenDef(FILE* outfile) {
 FnSymbol::FnSymbol(char* initName, TypeSymbol* initTypeBinding) :
   Symbol(SYMBOL_FN, initName, new FnType()),
   typeBinding(initTypeBinding),
-  formals(NULL),
+  formals(new AList<DefExpr>()),
   retType(dtUnknown),
   where(NULL),
   retExpr(NULL),
@@ -708,7 +708,6 @@ build_empty_wrapper(FnSymbol* fn) {
   wrapper->noParens = fn->noParens;
   wrapper->retRef = fn->retRef;
   wrapper->isMethod = fn->isMethod;
-  wrapper->formals = new AList<DefExpr>();
   return wrapper;
 }
 

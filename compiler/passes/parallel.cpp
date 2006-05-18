@@ -29,7 +29,6 @@ cobegin () {
           for_alist (Stmt, stmt, b->body) {
             char *fname = stringcat ("_cobegin_stmt", intstring (ufid++));
             FnSymbol *fn = new FnSymbol (fname, NULL);
-            fn->formals = new AList<DefExpr>();
             fn->retType = dtVoid;
             stmt->remove ();
             fn->insertAtTail (stmt);            // move stmt to new function

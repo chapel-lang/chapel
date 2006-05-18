@@ -129,7 +129,7 @@ check_normalized_vars(Symbol* var) {
 
 static void
 check_normalized_functions(FnSymbol* fn) {
-  if (fn->noParens && !fn->typeBinding)
+  if (fn->noParens && !fn->_this)
     USR_FATAL_CONT(fn, "Non-member functions must have parenthesized argument lists");
 }
 

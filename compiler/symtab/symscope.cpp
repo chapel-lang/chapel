@@ -15,13 +15,6 @@
 
 static bool
 isGloballyVisible(FnSymbol* fn) {
-  if (fn->typeBinding) {
-    if (ClassType* ct = dynamic_cast<ClassType*>(fn->typeBinding->definition)) {
-      if (ct->isNominalType()) {
-        return true;
-      }
-    }
-  }
   for_alist(DefExpr, def, fn->formals) {
     if (ClassType* ct = dynamic_cast<ClassType*>(def->sym->type)) {
       if (ct->isNominalType()) {
@@ -142,8 +135,8 @@ SymScope::lookup(char* name) {
     return sym;
 
   if (FnSymbol* fn = dynamic_cast<FnSymbol*>(astParent)) {
-    if (fn->typeBinding) {
-      ClassType* ct = dynamic_cast<ClassType*>(fn->typeBinding->definition);
+    if (fn->_this) {
+      ClassType* ct = dynamic_cast<ClassType*>(fn->_this->type);
       if (ct) {
         Symbol* sym = ct->structScope->lookupLocal(name);
         if (sym)
