@@ -65198,3 +65198,13 @@ Added files:
 	chapel/test/trivial/deitz/: test_int32.chpl test_int32.good 
 	chapel/test/types/enum/deitz/: test_enum1b.chpl test_enum1b.good 
 
+---------------------------------------------------------------------------
+
+05/17/06 17:29:09 -- waynew
+
+Log message:
+	Jacobi algorithm test case.  No style points here... look elsewhere.
+
+Added files:
+	chapel/test/studies/jacobi/waynew/: NOTEST example1.chpl 
+
