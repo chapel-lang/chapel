@@ -44,6 +44,7 @@ _EXTERN InterpreterOp *xor_interpreter_op _INIT;
 _EXTERN InterpreterOp *land_interpreter_op _INIT;
 _EXTERN InterpreterOp *lor_interpreter_op _INIT;
 _EXTERN InterpreterOp *pow_interpreter_op _INIT;
+_EXTERN InterpreterOp *abs_interpreter_op _INIT;
 _EXTERN InterpreterOp *acos_interpreter_op _INIT;
 _EXTERN InterpreterOp *acosh_interpreter_op _INIT;
 _EXTERN InterpreterOp *asin_interpreter_op _INIT;

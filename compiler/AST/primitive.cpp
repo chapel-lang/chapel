@@ -51,6 +51,7 @@ initPrimitive() {
   prim_def(PRIMITIVE_LAND, "&&", land_interpreter_op, land_analysis_op);
   prim_def(PRIMITIVE_LOR, "||", lor_interpreter_op, lor_analysis_op);
   prim_def(PRIMITIVE_POW, "**", pow_interpreter_op, pow_analysis_op);
+  prim_def("abs", abs_interpreter_op, return_int_analysis_op);
   prim_def("acos", acos_interpreter_op, return_float_analysis_op);
   prim_def("acosh", acosh_interpreter_op, return_float_analysis_op);
   prim_def("asin", asin_interpreter_op, return_float_analysis_op);

@@ -164,6 +164,7 @@ enum PrimOps {
   PRIM_EXPM1, PRIM_FABS, PRIM_FLOOR, PRIM_LGAMMA, PRIM_LOG, PRIM_LOG10, 
   PRIM_LOG1P, PRIM_RINT, PRIM_SIN, PRIM_SINH, PRIM_SQRT, PRIM_TAN, PRIM_TANH,
 
+  PRIM_ABS,
   PRIM_ATAN2,
 
   PRIM_NONE, PRIM_INIT, PRIM_ALLOC, PRIM_TYPE_EQUAL, PRIM_FOPEN, PRIM_FCLOSE,
@@ -1921,6 +1922,13 @@ IFrame::iprimitive(CallExpr *s) {
       execute_f64_fn_f64(s, arg, &result, 
                          f64_fns_f64[kind - ARG_F64_RETURN_F64_START]);
       break;
+    case PRIM_ABS:
+      check_prim_args(s, 1);
+      check_type(s, arg[0], dtInt[IF1_INT_TYPE_64]);
+      result.kind = IMMEDIATE_ISLOT;
+      result.imm = new Immediate;
+      result.imm->set_int(abs(arg[0]->imm->v_int64));
+      break;
     case PRIM_ATAN2:
       check_prim_args(s, 2);
       check_type(s, arg[0], dtFloat[IF1_FLOAT_TYPE_64]);
@@ -2550,6 +2558,7 @@ init_interpreter() {
   lor_interpreter_op = new InterpreterOp("lor", PRIM_LOR);
   pow_interpreter_op = new InterpreterOp("pow", PRIM_POW);
 
+  abs_interpreter_op = new InterpreterOp("abs", PRIM_ABS);
   acos_interpreter_op = new InterpreterOp("acos", PRIM_ACOS);
   acosh_interpreter_op = new InterpreterOp("acosh", PRIM_ACOSH);
   asin_interpreter_op = new InterpreterOp("asin", PRIM_ASIN);

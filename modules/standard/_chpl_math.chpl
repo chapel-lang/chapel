@@ -2,6 +2,7 @@
 // Primitive math funs
 //
 
+pragma "inline" fun abs(x : int) return __primitive("abs", x);
 pragma "inline" fun acos(x : float) return __primitive("acos", x);
 pragma "inline" fun acosh(x : float) return __primitive("acosh", x);
 pragma "inline" fun asin(x : float) return __primitive("asin", x);
@@ -16,7 +17,7 @@ pragma "inline" fun erf(x : float) return __primitive("erf", x);
 pragma "inline" fun erfc(x : float) return __primitive("erfc", x);
 pragma "inline" fun exp(x : float) return __primitive("exp", x);
 pragma "inline" fun expm1(x : float) return __primitive("expm1", x);
-pragma "inline" fun fabs(x : float) return __primitive("fabs", x);
+pragma "inline" fun abs(x : float) return __primitive("fabs", x);
 pragma "inline" fun floor(x : float) return __primitive("floor", x);
 pragma "inline" fun lgamma(x : float) return __primitive("lgamma", x);
 pragma "inline" fun log(x : float) return __primitive("log", x);
