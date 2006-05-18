@@ -65291,3 +65291,13 @@ Modified files:
 Removed files:
 	chapel/test/modules/standard/math/: fabs.chpl fabs.good 
 
+---------------------------------------------------------------------------
+
+05/18/06 16:50:24 -- deitz
+
+Log message:
+	Test of dispatch on primitive types with bit widths passes.
+
+Added files:
+	chapel/test/trivial/deitz/: test_int32b.good test_int32b.chpl 
+
