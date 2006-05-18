@@ -65275,3 +65275,19 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+05/18/06 14:37:35 -- shannon
+
+Log message:
+	Added the abs function.  It's overloaded for ints and floats with
+	the fabs primitive called for floats.  The chapel user will
+	no longer use 'fabs'.
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/compiler/passes/: interpreter_ops.h runInterpreter.cpp 
+	chapel/modules/standard/: _chpl_math.chpl 
+Removed files:
+	chapel/test/modules/standard/math/: fabs.chpl fabs.good 
+
