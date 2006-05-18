@@ -22,7 +22,7 @@ view_ast(BaseAST* ast, bool number = false, long mark = -1, int indent = 0) {
     printf("%s", astTypeName[expr->astType]);
 
     if (CallExpr* call = dynamic_cast<CallExpr*>(expr))
-      if (call->isPrimitive())
+      if (call->primitive)
         printf(" %s", call->primitive->name);
 
     if (NamedExpr* named = dynamic_cast<NamedExpr*>(expr))

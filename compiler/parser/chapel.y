@@ -132,6 +132,7 @@ Is this "while x"(i); or "while x(i)";?
 %token TOTHERWISE
 %token TOUT
 %token TPRAGMA
+%token TPRIMITIVE
 %token TRECORD
 %token TREF
 %token TRETURN
@@ -1062,6 +1063,10 @@ tuple_paren_expr:
 parenop_expr:
   non_tuple_lvalue TLP expr_ls TRP
     { $$ = new CallExpr($1, $3); }
+| TPRIMITIVE TLP expr_ls TRP
+    {
+      $$ = build_primitive_call($3);
+    }
 ;
 
 

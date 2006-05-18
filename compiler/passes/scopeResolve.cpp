@@ -74,7 +74,7 @@ void scopeResolve(BaseAST* base) {
     if (SymExpr* symExpr = dynamic_cast<SymExpr*>(ast)) {
       if (symExpr->var->isUnresolved) {
         char* name = symExpr->var->name;
-        if (!strcmp(name, "__primitive") || !strcmp(name, "."))
+        if (!strcmp(name, "."))
           continue;
 
         Symbol* sym = symExpr->lookup(name);

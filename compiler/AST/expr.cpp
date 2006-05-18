@@ -597,7 +597,7 @@ Type* CallExpr::typeInfo(void) {
 
 void CallExpr::codegen(FILE* outfile) {
   bool first_actual = true;
-  if (isPrimitive()) {
+  if (primitive) {
     switch (primitive->tag) {
     case PRIMITIVE_UNKNOWN:
       fprintf(outfile, "%s(", primitive->name);
@@ -948,18 +948,6 @@ void CallExpr::codegen(FILE* outfile) {
     }
   }
   fprintf(outfile, ")");
-}
-
-
-bool CallExpr::isPrimitive(void) {
-  if (primitive)
-    return true;
-  if (SymExpr* variable = dynamic_cast<SymExpr*>(baseExpr)) {
-    if (!strcmp(variable->var->name, "__primitive")) {
-      return true;
-    }
-  }
-  return false;
 }
 
 

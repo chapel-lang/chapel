@@ -72,6 +72,7 @@ otherwise       processToken(TOTHERWISE);
 out             processToken(TOUT);
 param           processToken(TPARAM);
 pragma          processToken(TPRAGMA);
+__primitive     processToken(TPRIMITIVE);
 record          processToken(TRECORD);
 reduce          processToken(TREDUCE);
 return          processToken(TRETURN);

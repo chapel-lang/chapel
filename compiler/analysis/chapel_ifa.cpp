@@ -1515,7 +1515,7 @@ gen_call_expr(CallExpr *s) {
     } else
       rvals.v[2] = make_symbol(rvals.v[2]->imm.v_string);
     base = sym_operator;
-  } else if (s->isPrimitive()) {
+  } else if (s->primitive) {
     base = gen_primitive(s, args, rvals);
   } else if (base_symbol == SYMBOL_UNRESOLVED) {
     assert(n);

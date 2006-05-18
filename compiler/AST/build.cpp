@@ -6,6 +6,25 @@
 #include "symbol.h"
 #include "type.h"
 
+
+CallExpr* build_primitive_call(AList<Expr>* exprs) {
+  if (exprs->length() == 0)
+    INT_FATAL(exprs, "primitive has no name");
+  Expr* expr = exprs->get(1);
+  expr->remove();
+  SymExpr* symExpr = dynamic_cast<SymExpr*>(expr);
+  if (!symExpr)
+    INT_FATAL(expr, "primitive has no name");
+  VarSymbol* var = dynamic_cast<VarSymbol*>(symExpr->var);
+  if (!var || !var->immediate || var->immediate->const_kind != IF1_CONST_KIND_STRING)
+    INT_FATAL(expr, "primitive with non-literal string name");
+  PrimitiveOp* prim = primitives_map.get(var->immediate->v_string);
+  if (!prim)
+    INT_FATAL(expr, "primitive not found '%s'", var->immediate->v_string);
+  return new CallExpr(prim, exprs);
+}
+
+
 FnSymbol* build_if_expr(Expr* e, Expr* e1, Expr* e2) {
   static int uid = 1;
   FnSymbol* fn = new FnSymbol(stringcat("_if_fn", intstring(uid++)));

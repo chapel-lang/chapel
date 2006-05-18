@@ -25,7 +25,6 @@ static void insert_formal_temps(FnSymbol* fn);
 static void call_constructor_for_class(CallExpr* call);
 static void decompose_special_calls(CallExpr* call);
 static void hack_seqcat_call(CallExpr* call);
-static void convert_user_primitives(CallExpr* call);
 static void hack_resolve_types(Expr* expr);
 static void apply_getters_setters(FnSymbol* fn);
 static void insert_call_temps(CallExpr* call);
@@ -181,16 +180,6 @@ void normalize(BaseAST* base) {
           dynamic_cast<TypeSymbol*>(a->parentSymbol) &&
           a->exprType)
         a->exprType->remove();
-    }
-  }
-
-  asts.clear();
-  collect_asts_postorder(&asts, base);
-  forv_Vec(BaseAST, ast, asts) {
-    currentLineno = ast->lineno;
-    currentFilename = ast->filename;
-    if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
-      convert_user_primitives(a);
     }
   }
 
@@ -686,7 +675,7 @@ static void insert_call_temps(CallExpr* call) {
   if (call->partialTag == PARTIAL_OK)
     return;
 
-  if (call->primitive || call->isNamed("__primitive"))
+  if (call->primitive)
     return;
 
   if (CallExpr* parentCall = dynamic_cast<CallExpr*>(call->parentExpr)) {
@@ -736,25 +725,6 @@ static void fix_def_expr(DefExpr* def, VarSymbol* var) {
   }
   def->exprType->remove();
   def->init->remove();
-}
-
-
-static void convert_user_primitives(CallExpr* call) {
-  if (call->isNamed("__primitive")) {
-    if (!call->argList->length() > 0)
-      INT_FATAL(call, "primitive with no name");
-    SymExpr *s = dynamic_cast<SymExpr*>(call->argList->get(1));
-    if (!s)
-      INT_FATAL(call, "primitive with no name");
-    VarSymbol *str = dynamic_cast<VarSymbol*>(s->var);
-    if (!str || !str->immediate || str->immediate->const_kind != IF1_CONST_KIND_STRING)
-      INT_FATAL(call, "primitive with non-literal string name");
-    PrimitiveOp *prim = primitives_map.get(str->immediate->v_string);
-    if (!prim)
-      INT_FATAL(call, "primitive not found '%s'", str->immediate->v_string);
-    s->remove();
-    call->replace(new CallExpr(prim, call->argList));
-  }
 }
 
 

@@ -112,7 +112,6 @@ class CallExpr : public Expr {
   Expr* get(int index);
   FnSymbol* findFnSymbol(void);
   Type* typeInfo(void);
-  bool isPrimitive(void);
   bool isPrimitive(PrimitiveTag primitiveTag);
 
   bool isUnaryPrimitive(void);

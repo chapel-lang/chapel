@@ -53,7 +53,7 @@ static void inline_calls(BaseAST* base, Vec<FnSymbol*>* inline_stack = NULL) {
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
-      if (call->isPrimitive() || !call->parentStmt)
+      if (call->primitive || !call->parentStmt)
         continue;
       FnSymbol* fn = call->findFnSymbol();
       if (!fn || !fn->hasPragma("inline") || fn->hasPragma("no codegen"))

@@ -6,6 +6,8 @@
 #include "stmt.h"
 #include "symbol.h"
 
+CallExpr* build_primitive_call(AList<Expr>* exprs);
+
 FnSymbol* build_if_expr(Expr* e, Expr* e1, Expr* e2 = NULL);
 FnSymbol* build_let_expr(AList<Stmt>* decls, Expr* expr);
 AList<Stmt>* build_while_do_block(Expr* cond, BlockStmt* body);
