@@ -65410,3 +65410,16 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: clone.cpp 
 
+---------------------------------------------------------------------------
+
+05/19/06 12:38:52 -- jplevyak
+
+Log message:
+	Regress num_kind_string[] so that it matches the structure names again.
+	Fix make_cast_code.cpp so that it can be compiled with
+	  g++ -I../include make_cast_code.cpp
+	regenerate cast_code.cpp
+
+Modified files:
+	chapel/compiler/ifa/: cast_code.cc make_cast_code.cpp num.h 
+
