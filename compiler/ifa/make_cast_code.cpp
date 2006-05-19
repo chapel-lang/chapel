@@ -1,6 +1,6 @@
 #include <stdio.h>
-#define EXTERN
-#define EXTERN_INIT(_x) = _x
+#define IFA_EXTERN
+#define IFA_EXTERN_INIT(_x) = _x
 #include "num.h"
 
 

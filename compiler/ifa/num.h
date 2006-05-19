@@ -167,7 +167,7 @@ IFA_EXTERN int int_type_precision[5] IFA_EXTERN_INIT(CPP_IS_LAME);
 IFA_EXTERN int float_type_precision[8] IFA_EXTERN_INIT(CPP_IS_LAME);
 #undef CPP_IS_LAME
 
-#define CPP_IS_LAME {{0,0,0,0,0,0,0,0}, {"bool", "_uint8","_uint16","_uint32","_int",0,0,0}, {"bool","_int8","_int16","_int32","int",0,0,0}, {0,"_float32",0,"float",0,0,0,"_float128"}}
+#define CPP_IS_LAME {{0,0,0,0,0,0,0,0}, {"bool", "uint8","uint16","uint32","uint64",0,0,0}, {"bool","int8","int16","int32","int64",0,0,0}, {0,"float32",0,"float64",0,0,0,"float128"}}
 IFA_EXTERN char *num_kind_string[4][8] IFA_EXTERN_INIT(CPP_IS_LAME);
 #undef CPP_IS_LAME
 
