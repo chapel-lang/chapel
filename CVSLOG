@@ -65389,3 +65389,14 @@ Log message:
 Added files:
 	chapel/test/modules/standard/math/: abs.chpl abs.good 
 
+---------------------------------------------------------------------------
+
+05/19/06 11:57:31 -- shannon
+
+Log message:
+	Fixed a bug with the atan2() math function such that
+	it now works in the compiler.
+
+Modified files:
+	chapel/modules/standard/: _chpl_math.chpl 
+
