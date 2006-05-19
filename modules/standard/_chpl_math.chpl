@@ -8,6 +8,7 @@ pragma "inline" fun acosh(x : float) return __primitive("acosh", x);
 pragma "inline" fun asin(x : float) return __primitive("asin", x);
 pragma "inline" fun asinh(x : float) return __primitive("asinh", x);
 pragma "inline" fun atan(x : float) return __primitive("atan", x);
+pragma "inline" fun atan2(y : float, x : float) return __primitive("atan2", y, x);
 pragma "inline" fun atanh(x : float) return __primitive("atanh", x);
 pragma "inline" fun cbrt(x : float) return __primitive("cbrt", x);
 pragma "inline" fun ceil(x : float) return __primitive("ceil", x);
@@ -29,8 +30,3 @@ pragma "inline" fun sinh(x : float) return __primitive("sinh", x);
 pragma "inline" fun sqrt(x : float) return __primitive("sqrt", x);
 pragma "inline" fun tan(x: float) return __primitive("tan", x);
 pragma "inline" fun tanh(x : float) return __primitive("tanh", x);
-
-
-// Need to update these to use inline pragma
-
-pragma "no codegen" pragma "rename atan2" fun atan2(y : float, x : float) return __primitive("atan2", x);
