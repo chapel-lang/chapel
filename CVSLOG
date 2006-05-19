@@ -65301,3 +65301,14 @@ Log message:
 Added files:
 	chapel/test/trivial/deitz/: test_int32b.good test_int32b.chpl 
 
+---------------------------------------------------------------------------
+
+05/18/06 17:56:44 -- jplevyak
+
+Log message:
+	Extend entry set marking to use the reverse data flow graph in the
+	case where we are recursively examining setters.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
