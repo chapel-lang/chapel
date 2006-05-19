@@ -1135,9 +1135,9 @@ expr:
 | TLSBR nonempty_expr_ls TRSBR
     { $$ = new CallExpr("_build_domain", $2); }
 | TIF expr TTHEN expr TELSE expr
-    { $$ = new DefExpr(build_if_expr($2, $4, $6)); }
+    { $$ = new CallExpr(new DefExpr(build_if_expr($2, $4, $6))); }
 | TIF expr TTHEN expr %prec TNOELSE
-    { $$ = new DefExpr(build_if_expr($2, $4)); }
+    { $$ = new CallExpr(new DefExpr(build_if_expr($2, $4))); }
 ;
 
 
@@ -1146,7 +1146,7 @@ top_level_expr:
 | TNIL
     { $$ = new SymExpr(gNil); }
 | TLET var_decl_stmt_inner_ls TIN expr
-    { $$ = new DefExpr(build_let_expr($2, $4)); }
+    { $$ = new CallExpr(new DefExpr(build_let_expr($2, $4))); }
 | reduction %prec TREDUCE
 | TPARTIAL expr
     {

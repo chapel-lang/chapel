@@ -6,7 +6,7 @@ writeln(t(1));
 writeln(t(2)(1));
 writeln(t(2)(2));
 
-var x, y, z;
+var x : int, y : float, z : string;
 
 (x, (y, z)) = t;
 

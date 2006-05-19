@@ -751,7 +751,9 @@ static void fold_call_expr(CallExpr* call) {
     return;
   if (call->isPrimitive(PRIMITIVE_INIT)) {
     if (CallExpr* construct = dynamic_cast<CallExpr*>(call->get(1))) {
-      if (SymExpr* base = dynamic_cast<SymExpr*>(construct->baseExpr)) {
+      if (construct->isNamed("_construct__tuple"))
+        call->replace(construct->copy());
+      else if (SymExpr* base = dynamic_cast<SymExpr*>(construct->baseExpr)) {
         Symbol* sym = call->lookup(base);
         if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
           if (fn->fnClass == FN_CONSTRUCTOR) {

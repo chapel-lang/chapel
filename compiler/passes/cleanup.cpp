@@ -13,7 +13,7 @@
 #include "symtab.h"
 #include "stringutil.h"
 
-static void normalize_anonymous_record_or_forall_expression(DefExpr* def);
+static void normalize_nested_function_expressions(DefExpr* def);
 static void destructure_tuple(CallExpr* call);
 static void build_constructor(ClassType* ct);
 static void build_setters_and_getters(ClassType* ct);
@@ -21,7 +21,6 @@ static void flatten_primary_methods(FnSymbol* fn);
 static void resolve_secondary_method_type(FnSymbol* fn);
 static void add_this_formal_to_method(FnSymbol* fn);
 static void hack_array(DefExpr* def);
-// static void construct_tuple_type(int size);
 
 
 static void
@@ -139,7 +138,7 @@ void cleanup(BaseAST* base) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
     if (DefExpr* a = dynamic_cast<DefExpr*>(ast)) {
-      normalize_anonymous_record_or_forall_expression(a);
+      normalize_nested_function_expressions(a);
     } else if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
       SymExpr* base = dynamic_cast<SymExpr*>(a->baseExpr);
       if (base && !strcmp(base->var->name, "_tuple")) {
@@ -178,24 +177,20 @@ void cleanup(BaseAST* base) {
 }
 
 
-/*** normalize_anonymous_record_or_forall_expression
- ***   moves anonymous record definition into separate statement
- ***   moves anonymous forall expression into separate statement
- ***   NOTE: during parsing, these may be embedded in expressions
+/*** normalize_nested_function_expressions
+ ***   moves expressions that are parsed as nested function
+ ***   definitions into their own statement
+ ***   NOTE: during parsing, these are embedded in call expressions
  ***/
-static void normalize_anonymous_record_or_forall_expression(DefExpr* def) {
-  if (!def->parentStmt || (!def->parentExpr && def->parentStmt->astType == STMT_EXPR))
-    return;
-  Stmt* stmt = def->parentStmt;
-  if (stmt->getFunction() == stmt->getModule()->initFn)
-    stmt = dynamic_cast<Stmt*>(stmt->getFunction()->defPoint->parentStmt->next);
+static void normalize_nested_function_expressions(DefExpr* def) {
   if ((!strncmp("_anon_record", def->sym->name, 12)) ||
-      (!strncmp("_forallexpr", def->sym->name, 11))) {
-    def->replace(new SymExpr(def->sym));
-    stmt->insertBefore(def);
-  } else if ((!strncmp("_let_fn", def->sym->name, 7)) ||
-             (!strncmp("_if_fn", def->sym->name, 6))) {
-    def->replace(new CallExpr(def->sym->name));
+      (!strncmp("_forallexpr", def->sym->name, 11)) ||
+      (!strncmp("_let_fn", def->sym->name, 7)) ||
+      (!strncmp("_if_fn", def->sym->name, 6))) {
+    Stmt* stmt = def->parentStmt;
+    if (stmt->getFunction() == stmt->getModule()->initFn)
+      stmt = dynamic_cast<Stmt*>(stmt->getFunction()->defPoint->parentStmt->next);
+    def->replace(new SymExpr(def->sym->name));
     stmt->insertBefore(def);
   }
 }
