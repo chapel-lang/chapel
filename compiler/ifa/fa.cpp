@@ -1889,34 +1889,11 @@ make_top_edge(Fun *top) {
   return e;
 }
 
-static int 
-equiv_avar(AVar *a, AVar *b) {
-  if (a->contour != b->contour)
-    return 0;
-  Accum<AVar *> acc;
-  acc.add(a);
-  forv_AVar(x, acc.asvec) {
-    forv_AVar(y, x->backward) {
-      if (y == b)
-        return 1;
-      if (y->contour == a->contour) 
-        acc.add(y);
-    }
-    forv_AVar(y, x->forward) {
-      if (y == b)
-        return 1;
-      if (y->contour == a->contour) 
-        acc.add(y);
-    }
-  }
-  return 0;
-}
-
 static int
 is_return_value(AVar *av) {
   EntrySet *es = (EntrySet*)av->contour;
   forv_AVar(v, es->rets)
-    if (v == av || equiv_avar(v, av))
+    if (v == av)
       return 1;
   return 0;
 }
@@ -2752,6 +2729,14 @@ is_es_cs_recursive(CreationSet *cs) {
   return cs->es_backedges.n;
 }
 
+#define SPLIT_TYPE              0
+#define SPLIT_SETTER            1
+
+#define SPLIT_VALUE             0
+#define SPLIT_MARK              1
+
+#define SPLIT_EDGES             0
+#define SPLIT_DYNAMIC           1
 
 static void
 collect_type_confluence(AVar *av, Vec<AVar *> &confluences) {
@@ -2797,16 +2782,18 @@ collect_type_confluences(Vec<AVar *> &confluences) {
 
 
 static void
-collect_es_marked_confluences(Vec<AVar *> &confluences, Accum<AVar *> &acc) {
+collect_es_marked_confluences(Vec<AVar *> &confluences, Accum<AVar *> &acc, int fsetters) {
   confluences.clear();
   forv_AVar(xav, acc.asvec) {
-    for (AVar *av = xav; av; av = av->lvalue)
-      forv_AVar(x, av->backward) if (x && x->mark_map) {
+    for (AVar *av = xav; av; av = av->lvalue) {
+      Vec<AVar *> &dir = fsetters ? av->forward : av->backward;
+      forv_AVar(x, dir) if (x && x->mark_map) {
         if (different_marked_args(x, av, 1)) {
           confluences.set_add(av);
           break;
         }
       }
+    }
   }
   confluences.set_to_vec();
   qsort_by_id(confluences);
@@ -2989,15 +2976,6 @@ split_entry_set(AVar *av, int fsetters, int fmark, int fdynamic) {
   return split;
 }
 
-#define SPLIT_TYPE              0
-#define SPLIT_SETTER            1
-
-#define SPLIT_VALUE             0
-#define SPLIT_MARK              1
-
-#define SPLIT_EDGES             0
-#define SPLIT_DYNAMIC           1
-
 static void
 build_type_mark(AVar *av, CreationSet *cs, int mark = 1) {
   int m = av->mark_map ? av->mark_map->get(cs) : 0;
@@ -3022,14 +3000,12 @@ static void
 build_type_marks(AVar *av, Accum<AVar *> &acc) {
   // collect all contributing nodes
   acc.add(av);
-  forv_AVar(x, acc.asvec) {
+  forv_AVar(x, acc.asvec)
     forv_AVar(y, x->backward) if (y)
       acc.add(y);
-  }
-  forv_AVar(x, acc.asvec) {
+  forv_AVar(x, acc.asvec)
     forv_AVar(y, x->forward) if (y)
       acc.add(y);
-  }
   // mark them
   forv_AVar(x, acc.asvec) {
     if (x->gen)
@@ -3058,25 +3034,25 @@ build_setter_mark(AVar *av, AVar *x, int mark = 1) {
     build_setter_mark(y, x, mark + 1);
 }
 
+// this is a backward problem, so search forward then back
+// to find all the contributors and what they effect
 static void
 build_setter_marks(AVar *av, Accum<AVar *> &acc) {
   // collect all contributing nodes
   acc.add(av);
-  forv_AVar(x, acc.asvec) {
+  forv_AVar(x, acc.asvec)
     forv_AVar(y, x->forward) 
       if (y && y->setters && y->setters->some_intersection(*av->setters))
         acc.add(y);
-  }
-  forv_AVar(x, acc.asvec) {
+  forv_AVar(x, acc.asvec)
     forv_AVar(y, x->backward) 
       if (y && y->setters && y->setters->some_intersection(*av->setters))
         acc.add(y);
-  }
   // mark them
-  forv_AVar(x, acc.asvec) {
-    if (x->setters->in(x))
-      build_setter_mark(x, x);
-  }
+  forv_AVar(x, acc.asvec) if (x->setters)
+    forv_AVar(y, *x->setters)
+      if (x == y->container)
+        build_setter_mark(x, y);
 }
 
 static void
@@ -3361,7 +3337,7 @@ split_with_setter_marks(AVar *av) {
   Accum<AVar *> acc;
   build_setter_marks(av, acc);
   Vec<AVar *> confluences;
-  collect_es_marked_confluences(confluences, acc);
+  collect_es_marked_confluences(confluences, acc, SPLIT_SETTER);
   int analyze_again = 0;
   forv_AVar(av, confluences) {
     if (av->contour_is_entry_set) {
@@ -3471,7 +3447,7 @@ split_with_type_marks(AVar *av) {
   Accum<AVar *> acc;
   build_type_marks(av, acc);
   Vec<AVar *> confluences;
-  collect_es_marked_confluences(confluences, acc);
+  collect_es_marked_confluences(confluences, acc, SPLIT_TYPE);
   int analyze_again = 0;
   forv_AVar(av, confluences) {
     if (av->contour_is_entry_set) {
