@@ -65400,3 +65400,13 @@ Log message:
 Modified files:
 	chapel/modules/standard/: _chpl_math.chpl 
 
+---------------------------------------------------------------------------
+
+05/19/06 12:26:06 -- jplevyak
+
+Log message:
+	Fix SEGV which was causing test_array_1D to fail
+
+Modified files:
+	chapel/compiler/ifa/: clone.cpp 
+
