@@ -65,22 +65,6 @@ setVarSymbolAttributes(AList<Stmt>* stmts, varType vartag, consType constag) {
 }
 
 
-PrimitiveType* Symboltable::definePrimitiveType(char* name, char* cname, Symbol *initSymbol) {
-  PrimitiveType *t = 
-    dynamic_cast<PrimitiveType*>(defineBuiltinType(name, cname, new PrimitiveType(initSymbol)));
-  if (initSymbol)
-    initSymbol->type = t; // little chicken and the egg problem
-  return t;
-}
-
-Type* Symboltable::defineBuiltinType(char* name, char* cname, Type *newType) {
-  TypeSymbol* sym = new TypeSymbol(name, newType);
-  rootScope->define(sym);
-  sym->cname = stringcpy(cname);
-  return newType;
-}
-
-
 DefExpr* Symboltable::defineStructType(char* name, // NULL = anonymous
                                        Type* type,
                                        AList<Stmt>* def) {
@@ -94,20 +78,4 @@ DefExpr* Symboltable::defineStructType(char* name, // NULL = anonymous
   DefExpr* defExpr = new DefExpr(sym);
   structType->addDeclarations(def);
   return defExpr;
-}
-
-
-PrimitiveType* 
-Symboltable::createPrimitiveType (char      *name,
-                                  char      *cname,
-                                  char      *ltype_name,
-                                  char      *ltype_cname) {
-  PrimitiveType *newtype = Symboltable::definePrimitiveType (name, cname);
-  if (ltype_name) {
-    newtype->literalType = Symboltable::definePrimitiveType (ltype_name,
-                                                             ltype_cname);
-    newtype->literalType->dispatchParents.add (newtype);
-  }
-
-  return newtype;
 }

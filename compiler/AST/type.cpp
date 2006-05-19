@@ -953,25 +953,42 @@ void VariableType::codegen(FILE* outfile) {
 }
 
 
+static PrimitiveType* 
+createPrimitiveType(char *name, char *cname, char *ltname = NULL, char *ltcname = NULL) {
+  PrimitiveType* pt = new PrimitiveType(NULL);
+  TypeSymbol* ts = new TypeSymbol(name, pt);
+  ts->cname = cname;
+  rootScope->define(ts);
+  if (ltname) {
+    pt->literalType = new PrimitiveType(NULL);
+    TypeSymbol* lts = new TypeSymbol(ltname, pt->literalType);
+    lts->cname = ltcname;
+    rootScope->define(lts);
+    pt->literalType->dispatchParents.add(pt);
+  }
+  return pt;
+}
+
+
 // Create new primitive type for integers. Specify name for now. Though it will 
 // probably be something like int1, int8, etc. in the end. In that case
 // we can just specify the width.
-#define INIT_PRIMITIVE_INT( name, width)                                   \
-  dtInt[IF1_INT_TYPE_ ## width] = Symboltable::createPrimitiveType (name,  \
-                                  "_int" #width, "_intLiteral" #width,     \
-                                  "_int" #width "Literal");                \
-  dtInt[IF1_INT_TYPE_ ## width]->defaultValue = new_IntSymbol( 0,          \
+#define INIT_PRIMITIVE_INT( name, width)                                \
+  dtInt[IF1_INT_TYPE_ ## width] = createPrimitiveType (name,            \
+                                  "_int" #width, "_intLiteral" #width,  \
+                                  "_int" #width "Literal");             \
+  dtInt[IF1_INT_TYPE_ ## width]->defaultValue = new_IntSymbol( 0,       \
                                                 IF1_INT_TYPE_ ## width)
 
-#define INIT_PRIMITIVE_UINT( name, width)                                  \
-  dtUInt[IF1_INT_TYPE_ ## width] = Symboltable::createPrimitiveType (name, \
+#define INIT_PRIMITIVE_UINT( name, width)                               \
+  dtUInt[IF1_INT_TYPE_ ## width] = createPrimitiveType (name,           \
                                    "_uint" #width, "_uintLiteral" #width,  \
                                    "_uint" #width "Literal");              \
   dtUInt[IF1_INT_TYPE_ ## width]->defaultValue = new_UIntSymbol( 0,        \
                                                  IF1_INT_TYPE_ ## width)
 
-#define INIT_PRIMITIVE_FLOAT( name, width)                                    \
-  dtFloat[IF1_FLOAT_TYPE_ ## width] = Symboltable::createPrimitiveType (name, \
+#define INIT_PRIMITIVE_FLOAT( name, width)                              \
+  dtFloat[IF1_FLOAT_TYPE_ ## width] = createPrimitiveType (name,        \
                                    "_float" #width, "_floatLiteral" #width,   \
                                    "_float" #width "Literal");                \
   dtFloat[IF1_FLOAT_TYPE_ ## width]->defaultValue = new_FloatSymbol( "0.0", 0.0, IF1_FLOAT_TYPE_ ## width)
@@ -986,19 +1003,19 @@ void VariableType::codegen(FILE* outfile) {
 void initPrimitiveTypes(void) {
   rootScope = new SymScope(NULL, NULL);
 
-  dtNil = Symboltable::createPrimitiveType ("_nilType", "_nilType");
+  dtNil = createPrimitiveType ("_nilType", "_nilType");
   CREATE_DEFAULT_SYMBOL (dtNil, gNil, "nil");
   
-  dtUnknown = Symboltable::createPrimitiveType ("_unknownType", "_unknownType");
+  dtUnknown = createPrimitiveType ("_unknownType", "_unknownType");
   CREATE_DEFAULT_SYMBOL (dtUnknown, gUnknown, "_unknown");
 
-  dtUnspecified = Symboltable::createPrimitiveType ("_unspecifiedType", "_unspecifiedType");
+  dtUnspecified = createPrimitiveType ("_unspecifiedType", "_unspecifiedType");
   CREATE_DEFAULT_SYMBOL (dtUnspecified, gUnspecified, "_");
 
-  dtVoid = Symboltable::createPrimitiveType ("void", "void");
+  dtVoid = createPrimitiveType ("void", "void");
   CREATE_DEFAULT_SYMBOL (dtVoid, gVoid, "_void");
 
-  dtBool = Symboltable::createPrimitiveType ("bool", "_bool",
+  dtBool = createPrimitiveType ("bool", "_bool",
                                              "_boolLiteral", "_boolLiteral");
 
   // Create initial compiler module and its scope
@@ -1036,19 +1053,19 @@ void initPrimitiveTypes(void) {
   INIT_PRIMITIVE_FLOAT( "_float128", 128);
 
   // This should point to the complex type defined in modules/standard/_chpl_complex.chpl
-  dtComplex = Symboltable::createPrimitiveType ("complex", "_complex128",
+  dtComplex = createPrimitiveType ("complex", "_complex128",
                                                 "_complexLiteral", "_complex128Literal");
   dtComplex->defaultValue = new_ComplexSymbol("_MAKE_COMPLEX64(0.0,0.0)", 0.0, 0.0);
 
-  dtString = Symboltable::createPrimitiveType ("string", "_string",
+  dtString = createPrimitiveType ("string", "_string",
                                                "_stringLiteral", "_stringLiteral");
 
-  dtSymbol = Symboltable::createPrimitiveType ("symbol", "_symbol",
+  dtSymbol = createPrimitiveType ("symbol", "_symbol",
                                                "_symbolLiteral", "_symbolLiteral");
 
-  dtNumeric = Symboltable::createPrimitiveType ("numeric", "_numeric");
-  dtScalar = Symboltable::createPrimitiveType ("scalar", "_scalar");
-  dtAny = Symboltable::createPrimitiveType ("any", "_any");
+  dtNumeric = createPrimitiveType ("numeric", "_numeric");
+  dtScalar = createPrimitiveType ("scalar", "_scalar");
+  dtAny = createPrimitiveType ("any", "_any");
 }
 
 // you can use something like the following cache to 
