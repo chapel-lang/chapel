@@ -65312,3 +65312,32 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+05/19/06 09:23:30 -- deitz
+
+Log message:
+	Cleaned up code to create ModuleSymbol::initFn given previous coupling
+	of symboltable creation and AST insertion.  This function is now
+	created when the module is built.  It is now substantially easier to
+	build a module during compilation.
+	
+	Added convenience overloaded constructor for ImportExpr.
+	
+	Removed --fnostdincs_but_file which became pretty useless when write
+	was reimplemented with tuples.
+	
+	Removed dead code.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp build.cpp expr.cpp type.cpp 
+	chapel/compiler/include/: alist.h build.h driver.h expr.h 
+	                          symbol.h symtab.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/parser/: chapel.y parser.cpp 
+	chapel/compiler/passes/: cleanup.cpp filesToAST.cpp 
+	chapel/compiler/symtab/: symtab.cpp 
+	chapel/test/types/type_variables/deitz/functions/: 
+	                                                   test_foo5-error.good 
+	chapel/test/types/type_variables/jplevyak/: where-2-error.good 
+
