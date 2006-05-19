@@ -65379,3 +65379,13 @@ Modified files:
 	chapel/test/types/tuple/deitz/: test_destruct_nested.chpl 
 	                                test_tuple_of_tuples.chpl 
 
+---------------------------------------------------------------------------
+
+05/19/06 10:57:13 -- shannon
+
+Log message:
+	Added a test for the new abs() math routine.
+
+Added files:
+	chapel/test/modules/standard/math/: abs.chpl abs.good 
+
