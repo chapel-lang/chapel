@@ -65341,3 +65341,15 @@ Modified files:
 	                                                   test_foo5-error.good 
 	chapel/test/types/type_variables/jplevyak/: where-2-error.good 
 
+---------------------------------------------------------------------------
+
+05/19/06 09:26:11 -- deitz
+
+Log message:
+	Refactored createPrimitiveType, removing some excess mess.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/compiler/include/: symtab.h 
+	chapel/compiler/symtab/: symtab.cpp 
+
