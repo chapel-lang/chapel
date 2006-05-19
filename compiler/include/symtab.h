@@ -10,7 +10,6 @@
 extern SymScope* rootScope;
 
 extern Vec<ModuleSymbol*> allModules;     // Contains all modules
-extern Vec<ModuleSymbol*> codegenModules; // Contains codegened modules
 extern Vec<ModuleSymbol*> userModules;    // Contains user modules
 
 void registerModule(ModuleSymbol* mod);

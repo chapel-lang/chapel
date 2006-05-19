@@ -1,9 +1,9 @@
 test_foo5-error.chpl:16: error: ambiguous call 'foo'
 note: candidates are:
-test_foo5-error.chpl:1: foo, t @ _meta_type31, x : float64, y : float64
-test_foo5-error.chpl:8: foo, t @ _meta_type31, x : float64, y : float64
+test_foo5-error.chpl:1: foo, t @ _meta_type32, x : float64, y : float64
+test_foo5-error.chpl:8: foo, t @ _meta_type32, x : float64, y : float64
 test_foo5-error.chpl:17: error: ambiguous call 'foo'
 note: candidates are:
-test_foo5-error.chpl:1: foo, t @ _meta_type31, x : float64, y : float64
-test_foo5-error.chpl:8: foo, t @ _meta_type31, x : float64, y : float64
+test_foo5-error.chpl:1: foo, t @ _meta_type32, x : float64, y : float64
+test_foo5-error.chpl:8: foo, t @ _meta_type32, x : float64, y : float64
 fail: program does not type

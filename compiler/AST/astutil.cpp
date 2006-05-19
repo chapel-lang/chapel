@@ -297,7 +297,7 @@ void insert_help(BaseAST* ast,
         parentStmt->remove();
         if (!outer)
           USR_FATAL(mod, "Nested module is not defined at module level");
-        mod->stmts->insertAtHead(new ImportExpr(IMPORT_USE, new SymExpr(outer->name)));
+        mod->initFn->insertAtHead(new ImportExpr(IMPORT_USE, outer->name));
         parentScope = mod->modScope;
       } else {
         if (def_expr->sym && !def_expr->sym->isUnresolved) {

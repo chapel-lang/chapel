@@ -1,10 +1,73 @@
 #include "build.h"
 #include "baseAST.h"
 #include "expr.h"
+#include "runtime.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
+
+
+static bool stmtIsGlob(Stmt* stmt) {
+  if (ExprStmt* expr = dynamic_cast<ExprStmt*>(stmt))
+    if (DefExpr* def = dynamic_cast<DefExpr*>(expr->expr))
+      if (dynamic_cast<FnSymbol*>(def->sym) ||
+          dynamic_cast<ModuleSymbol*>(def->sym) ||
+          dynamic_cast<TypeSymbol*>(def->sym))
+        return true;
+  return false;
+}
+
+
+static void createInitFn(ModuleSymbol* mod) {
+  currentLineno = mod->lineno;
+  currentFilename = mod->filename;
+
+  mod->initFn = new FnSymbol(stringcat("__init_", mod->name));
+  mod->stmts->insertAtHead(new DefExpr(mod->initFn));
+  mod->initFn->retType = dtVoid;
+  mod->initFn->body->blkScope = mod->modScope;
+
+  if (!strcmp(mod->name, "_chpl_compiler")) {
+    mod->initFn->insertAtTail(new ImportExpr(IMPORT_USE, "prelude"));
+  } else if (strcmp(mod->name, "prelude")) {
+
+    // guard init function so it is not run more than once
+    VarSymbol* guard = new VarSymbol(stringcat("__run_", mod->name, "_firsttime"));
+    compilerModule->initFn->insertAtHead(new DefExpr(guard,
+                                                     new SymExpr(gTrue)));
+    mod->initFn->insertAtTail(
+      new CondStmt(new CallExpr("!", guard), new ReturnStmt()));
+    mod->initFn->insertAtTail(new CallExpr("=", guard, gFalse));
+
+    if (strcmp(mod->name, "_chpl_standard")) {
+      if (fnostdincs) {
+        mod->initFn->insertAtTail(new ImportExpr(IMPORT_USE, "_chpl_compiler"));
+        mod->initFn->insertAtTail(new ImportExpr(IMPORT_USE, "_chpl_base"));
+        mod->initFn->insertAtTail(new ImportExpr(IMPORT_USE, "_chpl_closure"));
+      } else
+        mod->initFn->insertAtTail(new ImportExpr(IMPORT_USE, "_chpl_standard"));
+    }
+  }
+
+  for_alist(Stmt, stmt, mod->stmts) {
+    if (!stmtIsGlob(stmt)) {
+      stmt->remove();
+      mod->initFn->insertAtTail(stmt);
+    }
+  }
+}
+
+
+ModuleSymbol* build_module(char* name, modType type, AList<Stmt>* stmts) {
+  ModuleSymbol* mod = new ModuleSymbol(name, type, stmts);
+  // a first pragma statement is a module-level pragma
+  if (BlockStmt* first = dynamic_cast<BlockStmt*>(mod->stmts->first()))
+    if (first->body->isEmpty())
+      mod->addPragmas(&first->pragmas);
+  createInitFn(mod);
+  return mod;
+}
 
 
 CallExpr* build_primitive_call(AList<Expr>* exprs) {

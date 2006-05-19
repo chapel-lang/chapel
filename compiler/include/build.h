@@ -6,6 +6,7 @@
 #include "stmt.h"
 #include "symbol.h"
 
+ModuleSymbol* build_module(char* name, modType type, AList<Stmt>* stmts);
 CallExpr* build_primitive_call(AList<Expr>* exprs);
 
 FnSymbol* build_if_expr(Expr* e, Expr* e1, Expr* e2 = NULL);

@@ -559,7 +559,7 @@ use_stmt:
 mod_decl_stmt:
   TMODULE identifier TLCBR stmt_ls TRCBR
     {
-      $$ = new AList<Stmt>(new ExprStmt(new DefExpr(new ModuleSymbol($2, MOD_USER, $4))));
+      $$ = new AList<Stmt>(new ExprStmt(new DefExpr(build_module($2, MOD_USER, $4))));
     }
 ;
 

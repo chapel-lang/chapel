@@ -11,18 +11,14 @@
 
 SymScope* rootScope = NULL;
 
-Vec<ModuleSymbol*> allModules;     // Contains all modules
-Vec<ModuleSymbol*> codegenModules; // Contains codegened modules
-Vec<ModuleSymbol*> userModules;    // Contains user modules
+Vec<ModuleSymbol*> allModules;  // Contains all modules
+Vec<ModuleSymbol*> userModules; // Contains user modules
 
 void registerModule(ModuleSymbol* mod) {
   switch (mod->modtype) {
   case MOD_USER:
     userModules.add(mod);
-  case MOD_INSTANTIATED:
   case MOD_STANDARD:
-    codegenModules.add(mod);
-  case MOD_INTERNAL:
     allModules.add(mod);
     break;
   default:

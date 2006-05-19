@@ -19,8 +19,6 @@ void parse(void) {
 
   if (!fnostdincs) {
     fileModule = ParseFile(stringcat(path, "_chpl_file.chpl"), MOD_STANDARD);
-  }
-  if (!fnostdincs && !fnostdincs_but_file) {
     ParseFile(stringcat(path, "_chpl_complex.chpl"), MOD_STANDARD);
     tupleModule = ParseFile(stringcat(path, "_chpl_htuple.chpl"), MOD_STANDARD);
     ParseFile(stringcat(path, "_chpl_adomain.chpl"), MOD_STANDARD);
@@ -47,11 +45,9 @@ void parse(void) {
 
   findInternalTypes();
 
-  if (!fnostdincs && !fnostdincs_but_file) {
+  if (!fnostdincs) {
     chpl_htuple = tupleModule->lookupType("_htuple");
     chpl_seq = seqModule->lookupType("seq");
-  }
-  if (!fnostdincs) {
     chpl_stdin = fileModule->lookupVar("stdin");
     chpl_stdout = fileModule->lookupVar("stdout");
     chpl_stderr = fileModule->lookupVar("stderr");

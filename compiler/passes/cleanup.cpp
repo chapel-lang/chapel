@@ -24,89 +24,6 @@ static void hack_array(DefExpr* def);
 // static void construct_tuple_type(int size);
 
 
-static bool stmtIsGlob(Stmt* stmt) {
-  if (!stmt)
-    INT_FATAL("Non-Stmt found in StmtIsGlob");
-  if (ExprStmt* expr_stmt = dynamic_cast<ExprStmt*>(stmt)) {
-    if (DefExpr* defExpr = dynamic_cast<DefExpr*>(expr_stmt->expr)) {
-      if (dynamic_cast<FnSymbol*>(defExpr->sym) ||
-          dynamic_cast<TypeSymbol*>(defExpr->sym)) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-
-void createInitFn(ModuleSymbol* mod) {
-  if (mod->initFn)
-    return;
-
-  currentLineno = mod->lineno;
-  currentFilename = mod->filename;
-
-  char* fnName = stringcat("__init_", mod->name);
-  AList<Stmt>* globstmts = NULL;
-  AList<Stmt>* initstmts = NULL;
-  AList<Stmt>* definition = mod->stmts;
-
-  // BLC: code to run user modules once only
-  char* runOnce = NULL;
-  if (mod != prelude && mod != compilerModule) {
-    if (fnostdincs || mod != standardModule) {
-      if (fnostdincs || fnostdincs_but_file) {
-        definition->insertAtHead(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol("_chpl_compiler"))));
-        definition->insertAtHead(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol("_chpl_base"))));
-        definition->insertAtHead(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol("_chpl_closure"))));
-        if (fnostdincs_but_file)
-          definition->insertAtHead(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol("_chpl_file"))));
-      } else
-        definition->insertAtHead(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol("_chpl_standard"))));
-    }
-
-    if (mod->modtype != MOD_INSTANTIATED) {
-      runOnce = stringcat("__run_", mod->name, "_firsttime");
-      DefExpr* varDefExpr = new DefExpr(new VarSymbol(runOnce),
-                                        new SymExpr(gTrue));
-      compilerModule->initFn->insertAtHead(varDefExpr);
-      Expr* assignVar = new CallExpr(PRIMITIVE_MOVE,
-                                     new UnresolvedSymbol(runOnce),
-                                     gFalse);
-      definition->insertAtHead(assignVar);
-    }
-  }
-
-  definition->filter(stmtIsGlob, globstmts, initstmts);
-
-  definition = globstmts;
-  BlockStmt* initFunBody;
-  if (initstmts->isEmpty()) {
-    initFunBody = new BlockStmt();
-  } else {
-    initFunBody = new BlockStmt(initstmts);
-  }
-  initFunBody->blkScope = mod->modScope;
-  if (runOnce) {
-    // put conditional in front of body
-    Stmt* testRun =
-      new CondStmt(
-        new CallExpr(
-          "!",
-          new SymExpr(
-            new UnresolvedSymbol(runOnce))), 
-        new ReturnStmt());
-    initFunBody->insertAtHead(testRun);
-  }
-
-  mod->initFn = new FnSymbol(fnName);
-  mod->initFn->retType = dtVoid;
-  mod->initFn->body = initFunBody;
-  definition->insertAtHead(new DefExpr(mod->initFn));
-  mod->stmts->insertAtHead(definition);
-}
-
-
 static void
 process_import_expr(ImportExpr* expr) {
   if (expr->importTag == IMPORT_WITH) {
@@ -180,9 +97,6 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* seen = NULL) {
 
 
 void cleanup(void) {
-  forv_Vec(ModuleSymbol, mod, allModules)
-    createInitFn(mod);
-
   forv_Vec(ModuleSymbol, mod, allModules) {
     Vec<BaseAST*> asts;
     collect_asts(&asts, mod);
@@ -200,13 +114,6 @@ void cleanup(void) {
 
 void cleanup(BaseAST* base) {
   Vec<BaseAST*> asts;
-  collect_asts(&asts, base);
-  forv_Vec(BaseAST, ast, asts) {
-    if (ModuleSymbol* a = dynamic_cast<ModuleSymbol*>(ast))
-      createInitFn(a);
-  }
-
-  asts.clear();
   collect_asts(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     if (ImportExpr* a = dynamic_cast<ImportExpr*>(ast)) {

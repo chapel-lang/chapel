@@ -1,6 +1,7 @@
 #include <typeinfo>
 #define TYPE_EXTERN
 #include "astutil.h"
+#include "build.h"
 #include "expr.h"
 #include "files.h"
 #include "misc.h"
@@ -984,9 +985,6 @@ void VariableType::codegen(FILE* outfile) {
   
 void initPrimitiveTypes(void) {
   rootScope = new SymScope(NULL, NULL);
-  // Create initial compiler module and its scope
-  compilerModule = new ModuleSymbol("_chpl_compiler", MOD_STANDARD, new AList<Stmt>());
-  compilerModule->stmts->insertAtTail(new ImportExpr(IMPORT_USE, new SymExpr(new UnresolvedSymbol("prelude"))));
 
   dtNil = Symboltable::createPrimitiveType ("_nilType", "_nilType");
   CREATE_DEFAULT_SYMBOL (dtNil, gNil, "nil");
@@ -1002,6 +1000,10 @@ void initPrimitiveTypes(void) {
 
   dtBool = Symboltable::createPrimitiveType ("bool", "_bool",
                                              "_boolLiteral", "_boolLiteral");
+
+  // Create initial compiler module and its scope
+  compilerModule = build_module("_chpl_compiler", MOD_STANDARD, new AList<Stmt>());
+
   CREATE_DEFAULT_SYMBOL (dtBool, gFalse, "false");
   gFalse->immediate = new Immediate;
   gFalse->immediate->v_bool = false;
@@ -1113,11 +1115,7 @@ void findInternalTypes(void) {
 
   dtClosure = dynamic_cast<TypeSymbol*>(closureModule->lookup("closure"))->definition;
 
-  // These should all be eliminated.  Note they almost are since they
-  // are MetaTypes, not the types in the prelude.
-  if (!fnostdincs || !fnostdincs_but_file) {
-    dtUnused = dynamic_cast<TypeSymbol*>(baseModule->lookup("_unused_class"))->definition;
-  }
+  dtUnused = dynamic_cast<TypeSymbol*>(baseModule->lookup("_unused_class"))->definition;
 
   // SJD: Can't do this when dtString is defined because
   // prelude hasn't been made yet.  Need to do it after.

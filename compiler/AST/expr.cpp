@@ -1123,6 +1123,18 @@ ImportExpr::ImportExpr(ImportTag initImportTag, Expr* initExpr) :
 }
 
 
+ImportExpr::ImportExpr(ImportTag initImportTag, char* initExpr) :
+  Expr(EXPR_IMPORT),
+  importTag(initImportTag),
+  expr(new SymExpr(new UnresolvedSymbol(initExpr)))
+{
+  version = NULL;
+  only = false;
+  renameList = NULL;
+  exceptList = NULL;
+}
+
+
 void ImportExpr::verify() {
   Expr::verify();
   if (astType != EXPR_IMPORT) {

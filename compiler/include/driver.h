@@ -18,7 +18,6 @@ extern int instantiation_limit;
 extern int fdump_html;
 extern int f_equal_method;
 extern int fnostdincs;
-extern int fnostdincs_but_file;
 
 extern int fgraph;
 

@@ -48,7 +48,6 @@ bool report_inlining = false;
 char system_dir[FILENAME_MAX] = DEFAULT_SYSTEM_DIR;
 int f_equal_method = 0;
 int fnostdincs = 0;
-int fnostdincs_but_file = 0;
 int num_constants_per_variable = 1;
 int instantiation_limit = 256;
 bool parallelPass = false;
@@ -61,7 +60,6 @@ static ArgumentDescription arg_desc[] = {
  {"ast-mode", 'a', "Set Interpreter to AST Mode", "T", &finterpreter_ast_mode, "CHPL_INTERPRETER_AST_MODE", NULL},
  {"trace", 's', "Trace Level", "+", &trace_level, "CHPL_TRACE", NULL},
  {"nostdincs", ' ', "No Standard Includes", "T", &fnostdincs, "CHPL_NOSTDINCS", NULL},
- {"nostdincs-but-file", ' ', "No Standard Includes but File", "T", &fnostdincs_but_file, "CHPL_NOSTDINCS_BUT_FILE", NULL},
  {"analysis-errors", ' ', "Pass Back Analysis Errors", "T", &fanalysis_errors, "CHPL_ANALYSIS_ERRORS", NULL},
  {"premalloc", 'm', "Pre-Malloc", "I", &pre_malloc, "CHPL_PRE_MALLOC", NULL},
  {"sysdir", 'S', "System Directory", "P", system_dir, "CHPL_SYSTEM_DIR", NULL},

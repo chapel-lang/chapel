@@ -168,6 +168,7 @@ class ImportExpr : public Expr {
   Map<char*,char*>* renameList; // only clause
   Vec<char*>* exceptList;       // except clause
   ImportExpr(ImportTag initImportTag, Expr* initExpr);
+  ImportExpr(ImportTag initImportTag, char* initExpr);
   virtual void verify(); 
   COPY_DEF(ImportExpr);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);

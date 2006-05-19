@@ -69,12 +69,6 @@ class AList : public BaseAST {
 
   // convert list to vector
   void getElements(Vec<elemType*>& elements);
-
-  // sort this list's nodes into trueElems and falseElems, leaving the
-  // original list empty.  trueElems and falseElems will be created if
-  // passed in as NULL; will be added to otherwise
-  void filter(bool filter(elemType*), AList<elemType>*& trueElems,
-              AList<elemType>*& falseElems);
 };
 
 #define for_alist(elemtype, node, list)  \
@@ -466,30 +460,6 @@ void AList<elemType>::getElements(Vec<elemType*>& elements) {
   _for_all_elems(node) {
     elements.add(node);
   }
-}
-
-
-template <class elemType>
-void AList<elemType>::filter(bool filter(elemType*), 
-                             AList<elemType>*& trueElems,
-                             AList<elemType>*& falseElems) {
-  if (trueElems == NULL) {
-    trueElems = new AList<elemType>();
-  }
-  if (falseElems == NULL) {
-    falseElems = new AList<elemType>();
-  }
-
-  _for_all_elems(node) {
-    node->remove();
-    if (filter(node)) {
-      trueElems->insertAtTail(node);
-    } else {
-      falseElems->insertAtTail(node);
-    }
-  }
-
-  clear();
 }
 
 #endif

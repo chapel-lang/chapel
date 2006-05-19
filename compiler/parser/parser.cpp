@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include "build.h"
 #include "countTokens.h"
 #include "files.h"
 #include "parser.h"
@@ -63,12 +64,7 @@ ModuleSymbol* ParseFile(char* filename, modType moduletype) {
 
   if (!containsOnlyModules(yystmtlist)) {
     char* modulename = filenameToModulename(filename);
-    newModule = new ModuleSymbol(modulename, moduletype, yystmtlist);
-
-    // for file modules to use a first pragma statement for module-level pragmas
-    if (BlockStmt* first = dynamic_cast<BlockStmt*>(newModule->stmts->first()))
-      if (first->body->isEmpty())
-        newModule->addPragmas(&first->pragmas);
+    newModule = build_module(modulename, moduletype, yystmtlist);
   }
 
   yyfilename = "<internal>";
