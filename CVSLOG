@@ -65363,3 +65363,19 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: interpreter_ops.h 
 
+---------------------------------------------------------------------------
+
+05/19/06 10:42:09 -- deitz
+
+Log message:
+	Fixed INIT primitive on tuples, fixing the two nested tuple regressions.
+	
+	Minor simplification of how anonymous records, forall expressions, if
+	expressions, and let expressions are transformed.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: cleanup.cpp normalize.cpp 
+	chapel/test/types/tuple/deitz/: test_destruct_nested.chpl 
+	                                test_tuple_of_tuples.chpl 
+
