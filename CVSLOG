@@ -65423,3 +65423,58 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: cast_code.cc make_cast_code.cpp num.h 
 
+---------------------------------------------------------------------------
+
+05/19/06 19:31:05 -- deitz
+
+Log message:
+	Removed all usage of the INIT primitive from the AST.  References to
+	it are still in the compiler; to be removed next.  Simplified DefExpr
+	transform.
+	
+	Removed references to dtUnspecified.  Left gUnspecified which is used
+	in the interpreter for implementing closures.
+	
+	Added _init function.  It returns the initial value of a type and is
+	used by the compiler for when it does not know the type before
+	analysis runs.  For example, "var x : y.type" could be translated into
+	"_move(x, _init(y))."
+	
+	The _init functions is treated similarly to the _copy function for
+	tuples, it is rebuilt during instantiation.
+	
+	Fixed --no-header-errors to apply to the printing of candidate
+	functions as well.
+	
+	Added a hack to param init so that the type is ignored on params that
+	also have an initialization expression.  This misses a necessary
+	coercion in the case of "param x : float = 4" and I added a test case
+	to mark this.  I did this because the param folding currently assumes
+	there is only one move to a parameter.
+	
+	Added _init functions for the primitive types and objects, _init
+	functions for records are automatically generated.  There is not yet
+	an _init function for the primitive types that have different bit
+	widths.  It is only necessary, however, for the case where the type is
+	unknown.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/ifa/: fa.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp normalize.cpp 
+	chapel/modules/standard/: _chpl_base.chpl _chpl_htuple.chpl 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-1.good 
+	chapel/test/memory/shannon/: configVarFile.good 
+	chapel/test/npb/ft/: ft-serial-working1.chpl 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+	chapel/test/types/type_variables/deitz/functions/: 
+	                                                   test_foo5-error.good 
+	chapel/test/types/type_variables/jplevyak/: where-2-error.good 
+Added files:
+	chapel/test/trivial/deitz/: test_coerce_param.chpl 
+	                            test_coerce_param.future 
+	                            test_coerce_param.good 
+
