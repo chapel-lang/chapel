@@ -30,7 +30,7 @@ fun nextrandlc(x : float, a : float) {
 }
 
 fun initrandlc(seed, a : float, in n : int) : float {
-  var i : int, t, g : float;
+  var i : int, t : float, g : float;
   var x : float = seed;
   t = a;
   while n != 0 do {
@@ -201,13 +201,13 @@ fun evolve(X1, X2, Twiddle) {
 
 var sums : [1..niter] complex; -- verification checksums
 
-var vdata_s : [1..6] complex;
-vdata_s(1) = 554.6087004964+484.5363331978i;
-vdata_s(2) = 554.6385409189+486.5304269511i;
-vdata_s(3) = 554.6148406171+488.3910722336i;
-vdata_s(4) = 554.5423607415+490.1273169046i;
-vdata_s(5) = 554.4255039624+491.7475857993i;
-vdata_s(6) = 554.2683411902+493.2597244941i;
+const vdata_s : [1..6] complex =
+  (/554.6087004964+484.5363331978i,
+    554.6385409189+486.5304269511i,
+    554.6148406171+488.3910722336i,
+    554.5423607415+490.1273169046i,
+    554.4255039624+491.7475857993i,
+    554.2683411902+493.2597244941i/);
 
 var vdata_w : [1..6] complex;
 vdata_w(1) = 567.3612178944+529.3246849175i;

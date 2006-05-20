@@ -40,6 +40,9 @@ fun _copy(x : _htuple) {
   return y;
 }
 
+pragma "inline" fun _init(x : _htuple)
+  return _htuple(x.elt_type, x.size);
+
 fun =(x : _htuple, y) {
   for param i in 1..x.size do
     x(i) = y(i);

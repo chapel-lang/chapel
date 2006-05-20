@@ -1066,6 +1066,18 @@ instantiate_tuple_copy(FnSymbol* fn) {
   return fn;
 }
 
+FnSymbol*
+instantiate_tuple_init(FnSymbol* fn) {
+  ArgSymbol* arg = dynamic_cast<ArgSymbol*>(fn->formals->only()->sym);
+  ClassType* ct = dynamic_cast<ClassType*>(arg->type);
+  CallExpr* call = new CallExpr(ct->defaultConstructor->name);
+  call->insertAtTail(new CallExpr(".", arg, new_StringLiteral("size")));
+  for (int i = 1; i < ct->fields.n; i++)
+    call->insertAtTail(new CallExpr("_init", new CallExpr(arg, new_IntLiteral(i))));
+  fn->body->replace(new BlockStmt(new ReturnStmt(call)));
+  return fn;
+}
+
 
 FnSymbol*
 FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
@@ -1165,6 +1177,9 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
 
     if (hasPragma("tuple copy"))
       newfn = instantiate_tuple_copy(newfn);
+
+    if (hasPragma("tuple init"))
+      newfn = instantiate_tuple_init(newfn);
 
     if (!newfn) {
       remove_icache(this, generic_substitutions);

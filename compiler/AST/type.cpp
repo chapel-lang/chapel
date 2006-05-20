@@ -1009,9 +1009,6 @@ void initPrimitiveTypes(void) {
   dtUnknown = createPrimitiveType ("_unknownType", "_unknownType");
   CREATE_DEFAULT_SYMBOL (dtUnknown, gUnknown, "_unknown");
 
-  dtUnspecified = createPrimitiveType ("_unspecifiedType", "_unspecifiedType");
-  CREATE_DEFAULT_SYMBOL (dtUnspecified, gUnspecified, "_");
-
   dtVoid = createPrimitiveType ("void", "void");
   CREATE_DEFAULT_SYMBOL (dtVoid, gVoid, "_void");
 

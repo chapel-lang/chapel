@@ -233,7 +233,6 @@ class PrimitiveType : public Type {
 // null-ish types
 TYPE_EXTERN PrimitiveType* dtNil;
 TYPE_EXTERN PrimitiveType* dtUnknown;
-TYPE_EXTERN PrimitiveType* dtUnspecified;
 TYPE_EXTERN PrimitiveType* dtVoid;
 
 // primitive types

@@ -1,0 +1,4 @@
+param coercion
+
+we currently ignore the type on parameters that are assigned a value.  this is a hack to keep parameter folding working.
+

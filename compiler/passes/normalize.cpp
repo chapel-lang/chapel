@@ -29,7 +29,7 @@ static void hack_resolve_types(Expr* expr);
 static void apply_getters_setters(FnSymbol* fn);
 static void insert_call_temps(CallExpr* call);
 static void fix_user_assign(CallExpr* call);
-static void fix_def_expr(DefExpr* def, VarSymbol* var);
+static void fix_def_expr(DefExpr* def);
 static void fold_params(Vec<DefExpr*>* defs, Vec<BaseAST*>* asts);
 static void expand_var_args(FnSymbol* fn);
 static int tag_generic(FnSymbol* fn);
@@ -143,9 +143,9 @@ void normalize(BaseAST* base) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
     if (DefExpr* a = dynamic_cast<DefExpr*>(ast)) {
-      if (VarSymbol* var = dynamic_cast<VarSymbol*>(a->sym))
+      if (dynamic_cast<VarSymbol*>(a->sym))
         if (dynamic_cast<FnSymbol*>(a->parentSymbol))
-          fix_def_expr(a, var);
+          fix_def_expr(a);
     }
   }
 
@@ -421,7 +421,7 @@ static void initialize_out_formals(FnSymbol* fn) {
       if (arg->defaultExpr)
         fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, arg, arg->defaultExpr->copy()));
       else
-        fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, arg, new CallExpr(PRIMITIVE_INIT, arg)));
+        fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, arg, new CallExpr("_init", arg)));
     }
     if (arg->intent == INTENT_OUT || arg->intent == INTENT_INOUT)
       arg->intent = INTENT_REF;
@@ -681,7 +681,7 @@ static void insert_call_temps(CallExpr* call) {
   if (CallExpr* parentCall = dynamic_cast<CallExpr*>(call->parentExpr)) {
     if (parentCall->isPrimitive(PRIMITIVE_MOVE))
       return;
-    if (parentCall->isPrimitive(PRIMITIVE_INIT))
+    if (parentCall->isNamed("_init"))
       call = parentCall;
   }
 
@@ -703,28 +703,47 @@ static void fix_user_assign(CallExpr* call) {
 }
 
 
-static void fix_def_expr(DefExpr* def, VarSymbol* var) {
-  static int uid = 1;
+static void fix_def_expr(DefExpr* def) {
   if (def->exprType) {
-    AList<Stmt>* stmts = new AList<Stmt>();
-    VarSymbol* tmp = new VarSymbol("_defTmp", dtUnknown, VAR_NORMAL, VAR_CONST);
-    tmp->cname = stringcat(tmp->name, intstring(uid++));
-    stmts->insertAtTail(new DefExpr(tmp));
-    CallExpr* call = dynamic_cast<CallExpr*>(def->exprType);
-    if (call && call->isNamed("_construct__tuple"))
-      stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, def->exprType->copy()));
+    bool ignore_type = false;
+    if (def->init) {
+
+      // ignore type on parameters if it has an init to avoid a double
+      // assignment for now.  this is a hack.  we need to handle the
+      // double assignment in the case of "param x : float = 1" where
+      // the integer literal is coerced to a float.
+      if (VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym))
+        if (var->consClass == VAR_PARAM)
+          ignore_type = true;
+
+      // also ignore type on classes for now so that nil does not get
+      // assigned to a class that will be assigned something else
+      // immediately.
+      if (SymExpr* sym = dynamic_cast<SymExpr*>(def->exprType))
+        if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(sym->var))
+          if (ClassType* ct = dynamic_cast<ClassType*>(ts->definition))
+            if (ct->classTag == CLASS_CLASS)
+              ignore_type = true;
+      if (CallExpr* call = dynamic_cast<CallExpr*>(def->exprType))
+        if (SymExpr* sym = dynamic_cast<SymExpr*>(call->baseExpr))
+          if (FnSymbol* fn = dynamic_cast<FnSymbol*>(call->lookup(sym)))
+            if (fn->fnClass == FN_CONSTRUCTOR)
+              if (ClassType* ct = dynamic_cast<ClassType*>(fn->retType))
+                if (ct->classTag == CLASS_CLASS)
+                  ignore_type = true;
+
+      if (ignore_type)
+        def->parentStmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, def->init->remove()));
+      else
+        def->parentStmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, new CallExpr("=", def->sym, def->init->remove())));
+    }
+    if (!ignore_type)
+      def->parentStmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, new CallExpr("_init", def->exprType->remove())));
     else
-      stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_INIT, def->exprType->copy())));
-    if (def->init)
-      stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, var, new CallExpr("=", tmp, def->init->copy())));
-    else
-      stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, var, tmp));
-    def->parentStmt->insertAfter(stmts);
+      def->exprType->remove();
   } else if (def->init) {
-    def->parentStmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, var, new CallExpr("_copy", def->init->remove())));
+    def->parentStmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, new CallExpr("_copy", def->init->remove())));
   }
-  def->exprType->remove();
-  def->init->remove();
 }
 
 
@@ -749,27 +768,6 @@ static void fix_def_expr(DefExpr* def, VarSymbol* var) {
 static void fold_call_expr(CallExpr* call) {
   if (call->partialTag == PARTIAL_ALWAYS)
     return;
-  if (call->isPrimitive(PRIMITIVE_INIT)) {
-    if (CallExpr* construct = dynamic_cast<CallExpr*>(call->get(1))) {
-      if (construct->isNamed("_construct__tuple"))
-        call->replace(construct->copy());
-      else if (SymExpr* base = dynamic_cast<SymExpr*>(construct->baseExpr)) {
-        Symbol* sym = call->lookup(base);
-        if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
-          if (fn->fnClass == FN_CONSTRUCTOR) {
-            if (ClassType* ct = dynamic_cast<ClassType*>(fn->retType)) {
-              if (ct->classTag == CLASS_CLASS) {
-                call->replace(new SymExpr(gNil));
-              }
-            }
-          }
-        }
-      }
-    }
-    if (call->get(1)->typeInfo() == dtInt[IF1_INT_TYPE_64])
-      call->replace(new SymExpr(dtInt[IF1_INT_TYPE_64]->defaultValue));
-    return;
-  }
   if (call->isNamed("_copy")) {
     if (call->argList->length() == 1) {
       if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->get(1))) {
@@ -780,6 +778,33 @@ static void fold_call_expr(CallExpr* call) {
         }
       }
     }
+  }
+  if (call->isNamed("_init")) {
+    if (CallExpr* construct = dynamic_cast<CallExpr*>(call->get(1))) {
+      if (SymExpr* base = dynamic_cast<SymExpr*>(construct->baseExpr)) {
+        Symbol* sym = call->lookup(base);
+        if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
+          if (fn->fnClass == FN_CONSTRUCTOR) {
+            if (ClassType* ct = dynamic_cast<ClassType*>(fn->retType)) {
+              if (ct->classTag == CLASS_CLASS)
+                call->replace(new SymExpr(gNil));
+              else
+                call->replace(construct->remove());
+            }
+          }
+        }
+      }
+    } else if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
+      if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(sym->var)) {
+        if (ts->definition->defaultValue)
+          call->replace(new SymExpr(ts->definition->defaultValue));
+        else if (ts->definition->defaultConstructor)
+          call->replace(new CallExpr(ts->definition->defaultConstructor));
+        else if (!dynamic_cast<VariableType*>(ts->definition))
+          INT_FATAL(ts, "type has neither defaultValue nor defaultConstructor");
+      }
+    }
+    return;
   }
   // fold parameter methods
   if (call->argList->length() == 2) {

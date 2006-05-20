@@ -892,7 +892,7 @@ record_tuple_inner_type:
     {
       CallExpr* call = new CallExpr("_tuple", new_IntLiteral($1->length()));
       for_alist(Expr, expr, $1) {
-        call->argList->insertAtTail(new CallExpr(PRIMITIVE_INIT, expr->remove()));
+        call->argList->insertAtTail(new CallExpr("_init", expr->remove()));
       }
       $$ = call;
     }

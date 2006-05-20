@@ -14,6 +14,7 @@ static void build_record_equality_function(ClassType* ct);
 static void build_record_inequality_function(ClassType* ct);
 static void build_record_assignment_function(ClassType* ct);
 static void build_record_copy_function(ClassType* ct);
+static void build_record_init_function(ClassType* ct);
 static void buildDefaultIOFunctions(Type* type);
 
 // function_exists returns true iff
@@ -73,6 +74,7 @@ void build_default_functions(void) {
           build_record_equality_function(ct);
           build_record_inequality_function(ct);
           build_record_assignment_function(ct);
+          build_record_init_function(ct);
           build_record_copy_function(ct);
         }
       }
@@ -219,6 +221,35 @@ static void build_record_copy_function(ClassType* ct) {
   fns.add(fn);
   if (ct->symbol->hasPragma("tuple"))
     fn->addPragma("tuple copy");
+}
+
+
+static void build_record_init_function(ClassType* ct) {
+  if (function_exists("_init", 1, ct->symbol->name))
+    return;
+
+  FnSymbol* fn = new FnSymbol("_init");
+  fn->addPragma("inline");
+  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
+  fn->formals->insertAtTail(arg);
+  CallExpr* call = new CallExpr(ct->defaultConstructor->name);
+  forv_Vec(Symbol, tmp, ct->types)
+    call->insertAtTail(new CallExpr(".", arg, new_StringLiteral(tmp->name)));
+  forv_Vec(Symbol, tmp, ct->fields) {
+    VarSymbol* var = dynamic_cast<VarSymbol*>(tmp);
+    if (var->consClass == VAR_PARAM)
+      call->insertAtTail(new CallExpr(".", arg, new_StringLiteral(tmp->name)));
+    else
+      call->insertAtTail(new CallExpr("_init", new CallExpr(".", arg, new_StringLiteral(tmp->name))));
+  }
+  fn->insertAtTail(new ReturnStmt(call));
+  DefExpr* def = new DefExpr(fn);
+  ct->symbol->defPoint->parentStmt->insertBefore(def);
+  reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
+  build(fn);
+  fns.add(fn);
+  if (ct->symbol->hasPragma("tuple"))
+    fn->addPragma("tuple init");
 }
 
 

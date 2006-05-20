@@ -46,6 +46,9 @@ pragma "inline" fun **(a: numeric, b: numeric) return __primitive("**", a, b);
 pragma "inline" fun ==(a: object, b: object) : bool return __primitive("ptr_eq", a, b);
 pragma "inline" fun !=(a: object, b: object) : bool return __primitive("ptr_neq", a, b);
 
+//
+// _copy
+//
 pragma "inline" pragma "split eager" fun _copy(x : object)
   return x;
 
@@ -57,6 +60,17 @@ pragma "inline" pragma "split eager" fun _copy(x : string) {
   y = x;
   return y;
 }
+
+
+//
+// _init
+//
+pragma "inline" fun _init(x : bool) return false;
+pragma "inline" fun _init(x : int) return 0;
+pragma "inline" fun _init(x : float) return 0.0;
+pragma "inline" fun _init(x : string) return "";
+pragma "inline" fun _init(x : object) return nil;
+
 
 //
 // Primitive funs for strings
