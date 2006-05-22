@@ -65478,3 +65478,16 @@ Added files:
 	                            test_coerce_param.future 
 	                            test_coerce_param.good 
 
+---------------------------------------------------------------------------
+
+05/22/06 11:30:30 -- deitz
+
+Log message:
+	Removed unused PRIMITIVE_INIT and associated dead code.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp 
+	chapel/compiler/analysis/: analysis_ops.h chapel_ifa.cpp 
+	chapel/compiler/include/: primitive.h 
+	chapel/compiler/passes/: resolveAnalyzed.cpp 
+
