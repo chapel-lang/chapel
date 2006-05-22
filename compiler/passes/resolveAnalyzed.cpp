@@ -260,20 +260,6 @@ static void resolve_symbol(CallExpr* call) {
   if (call->isPrimitive(PRIMITIVE_GET_MEMBER) ||
       call->isPrimitive(PRIMITIVE_SET_MEMBER))
     resolve_member_access(call, &call->member_offset, &call->member_type);
-  if (call->isPrimitive(PRIMITIVE_INIT)) {
-    Type* type = call->get(1)->typeInfo();
-    if (type->defaultValue) {
-      call->replace(new SymExpr(type->defaultValue));
-    } else {
-      Vec<FnSymbol*> fns;
-      call_info(call, fns);
-      if (fns.n == 1)
-        call->replace(new CallExpr(fns.v[0]));
-      else
-        INT_FATAL(call, "Cannot resolve default constructor");
-    }
-    return;
-  }
   if (call->primitive)
     return;
   if (call->partialTag == PARTIAL_ALWAYS) {

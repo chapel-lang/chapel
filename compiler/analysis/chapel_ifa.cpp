@@ -60,7 +60,6 @@ class AnalysisOp : public gc { public:
 static Sym *sym_anyscalar = 0;
 
 static Sym *cast_symbol = 0;
-static Sym *chapel_init_symbol = 0;
 
 static int init_function(FnSymbol *f);
 static int build_function(FnSymbol *f);
@@ -1502,11 +1501,7 @@ gen_call_expr(CallExpr *s) {
   astType_t base_symbol = undef_or_fn_expr(s->baseExpr);
   Sym *base = NULL;
   char *n = s->baseExpr ? s->baseExpr->ainfo->rval->name : 0;
-  if (s->isPrimitive(PRIMITIVE_INIT)) {
-    trvals.add(sym_primitive);
-    arg_names.insert(0, NULL);
-    base = chapel_init_symbol;
-  } else if (s->isPrimitive(PRIMITIVE_GET_MEMBER) ||
+  if (s->isPrimitive(PRIMITIVE_GET_MEMBER) ||
              s->isPrimitive(PRIMITIVE_SET_MEMBER)) {
     rvals.insert(1, make_symbol(s->isPrimitive(PRIMITIVE_GET_MEMBER) ? sym_period->name: sym_setter->name));
     assert(!some_name);
@@ -2157,7 +2152,6 @@ ACallbacks::report_analysis_errors(Vec<ATypeViolation*> &type_violations) {
 static void
 init_symbols() {
   cast_symbol = make_symbol("chapel_cast");
-  chapel_init_symbol = make_symbol("chapel_init");
 }
 
 static void
@@ -2282,39 +2276,6 @@ array_pointwise_op(PNode *pn, EntrySet *es) {
   AVar *result = make_AVar(pn->lvals.v[0], es);
   AVar *array = make_AVar(pn->rvals.v[2], es);
   flow_vars(array, result);
-}
-
-static void
-init_transfer_function(PNode *pn, EntrySet *es) {
-  AVar *tav = make_AVar(pn->rvals.v[2], es);
-  AVar *result = make_AVar(pn->lvals.v[0], es);
-  forv_CreationSet(tt, tav->out->sorted) {
-    Sym *type_sym = tt->sym->meta_type;
-    if (type_sym->is_meta_type)
-      type_sym = type_sym->meta_type;
-    Type *type = dynamic_cast<Type*>(type_sym->asymbol ? SYMBOL(type_sym) : 0);
-    if (!type) {
-      creation_point(result, type_sym);
-    } else {
-      if (type->defaultValue) {
-        Sym *val = get_defaultVal(type);
-        if (!val->var) val->var = new Var(val);
-        AVar *vval = make_AVar(val->var, es);
-        add_var_constraint(vval);
-        flow_vars(vval, result);
-      } else if (type->defaultConstructor) {
-        fill_tvals(es->fun, pn, 1);
-        AVar *cval = make_AVar(pn->tvals.v[0], es);
-        Sym *c = type->defaultConstructor->asymbol->sym;
-        AType *ctype = make_abstract_type(c);
-        CreationSet *cs = ctype->v[0];
-        update_gen(cval, ctype);
-        Vec<AVar *> args;
-        function_dispatch(pn, es, cval, cs, args, 0, Partial_NEVER);
-      } else
-        fail("Type without defaultValue or defaultConstructor");
-    }
-  }
 }
 
 static void
@@ -2786,7 +2747,6 @@ void
 init_chapel_ifa() {
   ifa_init(new ACallbacks);
   unimplemented_analysis_op = S("unimplemented", unimplemented_transfer_function);
-  init_analysis_op = S("init", init_transfer_function);
   return_bool_analysis_op = S("return_bool", return_bool_transfer_function);
   return_int_analysis_op = S("return_int", return_int_transfer_function); 
   return_float_analysis_op = S("return_float", return_float_transfer_function);

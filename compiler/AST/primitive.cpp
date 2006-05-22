@@ -27,7 +27,6 @@ initPrimitive() {
   primitives[PRIMITIVE_UNKNOWN] = NULL;
 
   prim_def(PRIMITIVE_MOVE, "move", unimplemented_interpreter_op, unimplemented_analysis_op);
-  prim_def(PRIMITIVE_INIT, "init", init_interpreter_op, init_analysis_op);
   prim_def(PRIMITIVE_UNARY_MINUS, "u-", unary_minus_interpreter_op, unary_minus_analysis_op);
   prim_def(PRIMITIVE_UNARY_PLUS, "u+", unary_plus_interpreter_op, unary_plus_analysis_op);
   prim_def(PRIMITIVE_UNARY_NOT, "u~", unary_not_interpreter_op, unary_not_analysis_op);

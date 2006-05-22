@@ -577,8 +577,6 @@ Type* CallExpr::typeInfo(void) {
       return get(1)->typeInfo();
     } else if (isBinaryPrimitive()) {
       return get(1)->typeInfo();
-    } else if (isPrimitive(PRIMITIVE_INIT)) {
-      return argList->get(1)->typeInfo();
     } else if (isPrimitive(PRIMITIVE_MOVE)) {
       return argList->get(1)->typeInfo();
     }
@@ -677,9 +675,6 @@ void CallExpr::codegen(FILE* outfile) {
       }
       break;
     }
-    case PRIMITIVE_INIT:
-      INT_FATAL(this, "Unexpected PRIMITIVE_INIT");
-      break;
     case PRIMITIVE_UNARY_MINUS:
       fprintf(outfile, "-");
       get(1)->codegen(outfile);
