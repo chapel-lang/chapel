@@ -65502,3 +65502,13 @@ Log message:
 Removed files:
 	chapel/test/types/file/bradc/: badfile.future 
 
+---------------------------------------------------------------------------
+
+05/22/06 14:51:15 -- deitz
+
+Log message:
+	Added my 2nd go at Jacobi.
+
+Added files:
+	chapel/test/studies/jacobi/deitz/: jacobi2.chpl 
+
