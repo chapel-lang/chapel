@@ -65491,3 +65491,14 @@ Modified files:
 	chapel/compiler/include/: primitive.h 
 	chapel/compiler/passes/: resolveAnalyzed.cpp 
 
+---------------------------------------------------------------------------
+
+05/22/06 13:40:44 -- deitz
+
+Log message:
+	Removed future which started working because of the change in handling
+	of the write function.
+
+Removed files:
+	chapel/test/types/file/bradc/: badfile.future 
+
