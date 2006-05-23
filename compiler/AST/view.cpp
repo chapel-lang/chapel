@@ -216,7 +216,7 @@ html_print_symbol(FILE* html_file, Symbol* sym, bool def, bool show_analysis_inf
         if (i > 0) fprintf(html_file, ", ");
         char *s;
         if (get_string(constants.v[i], &s))
-          fprintf(html_file, "<FONT COLOR=\"lightblue\">'%s'</FONT>", s);
+          fprintf(html_file, "<i><FONT COLOR=\"blue\">'%s'</FONT></i>", s);
         else if (SymExpr* v = dynamic_cast<SymExpr* >(constants.v[i]))          
           html_print_symbol(html_file, v->var, false, show_analysis_info);
         else 
@@ -319,9 +319,9 @@ html_view_ast(FILE* html_file, BaseAST* ast, bool show_analysis_info) {
       }
     } else if (VarSymbol* e = get_constant(expr)) {
       if (e->immediate->const_kind == IF1_CONST_KIND_STRING) {
-        fprintf(html_file, "<FONT COLOR=\"lightblue\">'%s'</FONT>", e->immediate->v_string);
+        fprintf(html_file, "<i><FONT COLOR=\"blue\">'%s'</FONT></i>", e->immediate->v_string);
       } else {
-        fprintf(html_file, "<FONT COLOR=\"lightblue\">%s</FONT>", e->cname);
+        fprintf(html_file, "<i><FONT COLOR=\"blue\">%s</FONT></i>", e->cname);
       }
     } else if (SymExpr* e = dynamic_cast<SymExpr*>(expr)) {
       html_print_symbol(html_file, e->var, false, show_analysis_info);
