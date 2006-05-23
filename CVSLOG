@@ -65548,3 +65548,21 @@ Removed files:
 	chapel/test/classes/deitz/: test_name_method.future 
 	                            test_name_method2.future 
 
+---------------------------------------------------------------------------
+
+05/23/06 11:05:27 -- deitz
+
+Log message:
+	Added a function simplify_nested_moves that makes the following
+	transforms in the AST:
+	
+	  tmp1 = tmp2 = tmp3   -->   tmp2 = tmp3; tmp1 = tmp2
+	  tmp1 = tmp1 = tmp2   -->   tmp1 = tmp2
+	
+	This function is called at the end of the resolve_analyzed pass and
+	simplifies the case where overloaded assignment resolves to the
+	primitive move.
+
+Modified files:
+	chapel/compiler/passes/: resolveAnalyzed.cpp 
+
