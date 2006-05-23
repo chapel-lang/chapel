@@ -65580,3 +65580,15 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: expr.cpp 
 
+---------------------------------------------------------------------------
+
+05/23/06 12:47:55 -- waynew
+
+Log message:
+	Another attempt to slowdown the compiler and (temporarily) increase
+	memory usage. The trade-off is that symbols now link to the appropriate
+	external html file.  Should make travering the html ast easier.
+
+Modified files:
+	chapel/compiler/AST/: view.cpp 
+
