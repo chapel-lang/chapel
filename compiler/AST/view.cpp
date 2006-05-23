@@ -8,6 +8,10 @@
 #include "stringutil.h"
 #include "chpl_log.h"
 
+
+static Map<int, char*> *symid2file;         // map symbol id to html file w/ tag
+
+
 static void
 view_ast(BaseAST* ast, bool number = false, long mark = -1, int indent = 0) {
   if (Expr* expr = dynamic_cast<Expr*>(ast)) {
@@ -176,12 +180,18 @@ structuralTypeSymbol(Symbol *s) {
 }
 
 static void
-html_print_symbol(FILE* html_file, Symbol* sym, bool def, bool show_analysis_info) {
+html_print_symbol(char *filename, FILE* html_file, Symbol* sym, bool def, bool show_analysis_info) {
   if (!sym->isUnresolved) {
-    if (def)
+    if (def) {
       fprintf(html_file, "<A NAME=\"SYM%ld\">", sym->id);
-    else
-      fprintf(html_file, "<A HREF=\"#SYM%ld\">", sym->id);
+      symid2file->put( sym->id, filename);
+    } else {
+      if (char *deffile = symid2file->get( sym->id)) {
+        fprintf(html_file, "<A HREF=\"%s#SYM%ld\">", deffile, sym->id);
+      } else {
+        fprintf(html_file, "<A HREF=\"#SYM%ld\">", sym->id);
+      }
+    }
   }
   if (dynamic_cast<FnSymbol*>(sym)) {
     fprintf(html_file, "<FONT COLOR=\"blue\">");
@@ -202,7 +212,7 @@ html_print_symbol(FILE* html_file, Symbol* sym, bool def, bool show_analysis_inf
       sym->type->symbol &&
       sym->type != dtUnknown) {
     fprintf(html_file, ":");
-    html_print_symbol(html_file, sym->type->symbol, false, show_analysis_info);
+    html_print_symbol( filename, html_file, sym->type->symbol, false, show_analysis_info);
   }
   if (show_analysis_info) {
     Vec<SymExpr *> constants;
@@ -218,7 +228,7 @@ html_print_symbol(FILE* html_file, Symbol* sym, bool def, bool show_analysis_inf
         if (get_string(constants.v[i], &s))
           fprintf(html_file, "<i><FONT COLOR=\"blue\">'%s'</FONT></i>", s);
         else if (SymExpr* v = dynamic_cast<SymExpr* >(constants.v[i]))          
-          html_print_symbol(html_file, v->var, false, show_analysis_info);
+          html_print_symbol( filename, html_file, v->var, false, show_analysis_info);
         else 
           INT_FATAL("bad constant");
       }
@@ -229,12 +239,12 @@ html_print_symbol(FILE* html_file, Symbol* sym, bool def, bool show_analysis_inf
 }
 
 static void
-html_print_fnsymbol(FILE* html_file, FnSymbol* fn, bool show_analysis_info) {
+html_print_fnsymbol(char* filename, FILE* html_file, FnSymbol* fn, bool show_analysis_info) {
   if (fn->_this) {
-    html_print_symbol(html_file, fn->_this->type->symbol, false, show_analysis_info);
+    html_print_symbol( filename, html_file, fn->_this->type->symbol, false, show_analysis_info);
     fprintf(html_file, " . ");
   }
-  html_print_symbol(html_file, fn, true, show_analysis_info);
+  html_print_symbol( filename, html_file, fn, true, show_analysis_info);
   fprintf(html_file, " ( ");
   bool first = true;
   for_alist(DefExpr, arg, fn->formals) {
@@ -243,17 +253,17 @@ html_print_fnsymbol(FILE* html_file, FnSymbol* fn, bool show_analysis_info) {
     } else {
       first = false;
     }
-    html_print_symbol(html_file, arg->sym, true, show_analysis_info);
+    html_print_symbol( filename, html_file, arg->sym, true, show_analysis_info);
   }
   fprintf(html_file, " ) ");
   if (fn->retType->symbol) {
     fprintf(html_file, " : ");
-    html_print_symbol(html_file, fn->retType->symbol, false, show_analysis_info);
+    html_print_symbol( filename, html_file, fn->retType->symbol, false, show_analysis_info);
   }
 }
 
 static void
-html_view_ast(FILE* html_file, BaseAST* ast, bool show_analysis_info) {
+html_view_ast(char *filename, FILE* html_file, BaseAST* ast, bool show_analysis_info) {
   if (Stmt* stmt = dynamic_cast<Stmt*>(ast)) {
     fprintf(html_file, "<DL>\n");
     if (dynamic_cast<BlockStmt*>(stmt)) {
@@ -265,7 +275,7 @@ html_view_ast(FILE* html_file, BaseAST* ast, bool show_analysis_info) {
       case goto_continue: fprintf(html_file, "<B>continue</B> "); break;
       }
       if (s->label)
-        html_print_symbol(html_file, s->label, true, show_analysis_info);
+        html_print_symbol( filename, html_file, s->label, true, show_analysis_info);
     } else if (dynamic_cast<CondStmt*>(stmt)) {
       fprintf(html_file, "<B>if</B> ");
     } else if (dynamic_cast<LabelStmt*>(stmt)) {
@@ -287,19 +297,19 @@ html_view_ast(FILE* html_file, BaseAST* ast, bool show_analysis_info) {
         fprintf(html_file, "<UL CLASS =\"mktree\">\n<LI>");
         fprintf(html_file, "<CHPLTAG=\"FN%ld\">\n", fn->id);
         fprintf(html_file, "<B>function ");
-        html_print_fnsymbol(html_file, fn, show_analysis_info);
+        html_print_fnsymbol( filename, html_file, fn, show_analysis_info);
         fprintf(html_file, "</B><UL>\n");
       } else if (structuralTypeSymbol(e->sym)) {
         fprintf(html_file, "<UL CLASS =\"mktree\">\n");
         fprintf(html_file, "<LI><B>type ");
-        html_print_symbol(html_file, e->sym, true, show_analysis_info);
+        html_print_symbol( filename, html_file, e->sym, true, show_analysis_info);
         fprintf(html_file, "</B><UL>\n");
       } else if (dynamic_cast<TypeSymbol*>(e->sym)) {
         fprintf(html_file, "<B>type</B> ");
-        html_print_symbol(html_file, e->sym, true, show_analysis_info);
+        html_print_symbol( filename, html_file, e->sym, true, show_analysis_info);
       } else if (dynamic_cast<VarSymbol*>(e->sym)) {
         fprintf(html_file, "<B>var</B> ");
-        html_print_symbol(html_file, e->sym, true, show_analysis_info);
+        html_print_symbol( filename, html_file, e->sym, true, show_analysis_info);
       } else if (ArgSymbol* s = dynamic_cast<ArgSymbol*>(e->sym)) {
         switch (s->intent) {
           case INTENT_IN: fprintf(html_file, "<B>in</B> "); break;
@@ -312,10 +322,10 @@ html_view_ast(FILE* html_file, BaseAST* ast, bool show_analysis_info) {
           default: break;
         }
         fprintf(html_file, "<B>arg</B> ");
-        html_print_symbol(html_file, e->sym, true, show_analysis_info);
+        html_print_symbol( filename, html_file, e->sym, true, show_analysis_info);
       } else {
         fprintf(html_file, "<B>def</B> ");
-        html_print_symbol(html_file, e->sym, true, show_analysis_info);
+        html_print_symbol( filename, html_file, e->sym, true, show_analysis_info);
       }
     } else if (VarSymbol* e = get_constant(expr)) {
       if (e->immediate->const_kind == IF1_CONST_KIND_STRING) {
@@ -324,7 +334,7 @@ html_view_ast(FILE* html_file, BaseAST* ast, bool show_analysis_info) {
         fprintf(html_file, "<i><FONT COLOR=\"blue\">%s</FONT></i>", e->cname);
       }
     } else if (SymExpr* e = dynamic_cast<SymExpr*>(expr)) {
-      html_print_symbol(html_file, e->var, false, show_analysis_info);
+      html_print_symbol( filename, html_file, e->var, false, show_analysis_info);
     } else if (NamedExpr* e = dynamic_cast<NamedExpr*>(expr)) {
       fprintf(html_file, "(%s = ", e->name);
     } else if (CallExpr* e = dynamic_cast<CallExpr*>(expr)) {
@@ -352,7 +362,7 @@ html_view_ast(FILE* html_file, BaseAST* ast, bool show_analysis_info) {
   Vec<BaseAST*> asts;
   get_ast_children(ast, asts);
   forv_Vec(BaseAST, ast, asts)
-    html_view_ast(html_file, ast, show_analysis_info);
+    html_view_ast(filename, html_file, ast, show_analysis_info);
 
   if (Stmt* stmt = dynamic_cast<Stmt*>(ast)) {
     if (dynamic_cast<BlockStmt*>(stmt))
@@ -382,7 +392,7 @@ html_view_ast(FILE* html_file, BaseAST* ast, bool show_analysis_info) {
         fprintf(html_file, " calls: ");
         for (int i = 0; i < fns.n; i++) {
           if (i > 0) fprintf(html_file, " ");
-          html_print_symbol(html_file, fns.v[i], false, show_analysis_info);
+          html_print_symbol( filename, html_file, fns.v[i], false, show_analysis_info);
         }
       }
     }
@@ -393,6 +403,7 @@ void html_view(int show_analysis_info) {
   static int uid = 1;
   FILE* html_file;
   char* filename;
+  symid2file = new Map<int, char*>;
   forv_Vec(ModuleSymbol, mod, allModules) {
     filename = stringcat("pass", intstring(uid), "_module_", mod->name, ".html");
     fprintf(html_index_file, "&nbsp;&nbsp;<a href=\"%s\">%s</a>\n", filename, mod->name);
@@ -409,9 +420,10 @@ void html_view(int show_analysis_info) {
     fprintf(html_file, "<div style=\"text-align: left;\">\n\n");
     fprintf(html_file, "<B>module %s</B>\n", mod->name);
     for_alist(Stmt, stmt, mod->stmts)
-      html_view_ast(html_file, stmt, show_analysis_info);
+      html_view_ast(filename, html_file, stmt, show_analysis_info);
     fprintf(html_file, "</HTML>\n");
     fclose(html_file);
   }
   uid++;
+  delete symid2file;
 }
