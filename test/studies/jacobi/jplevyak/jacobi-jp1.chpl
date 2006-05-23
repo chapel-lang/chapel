@@ -12,9 +12,10 @@ var stencil = (/ (-1,-1), (1, -1), (-1, 1), (1, 1) /);
 
 var again = 1;
 while (again) {
+  again = 0;
   [i in D] t(i) = a(i);
   forall i in D {
-    a(i) = t[i + stencil]/+;
+    a(i) = (t[i + stencil]/+)/stencil.length;
     again ||= (a(i) - t(i) > epsilon);
   }
 }

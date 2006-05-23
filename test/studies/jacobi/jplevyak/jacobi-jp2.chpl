@@ -13,7 +13,7 @@ var stencil = (/ (-1,-1), (1, -1), (-1, 1), (1, 1) /);
 
 while (1) {
   var tt = t;
-  [i in D] t(i) = t[i + stencil]/+;
+  [i in D] tt(i) = t[i + stencil]/+;
   if (epsilon < fabs((t - tt))/max) break;
 }
 
