@@ -65592,3 +65592,14 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: view.cpp 
 
+---------------------------------------------------------------------------
+
+05/23/06 14:18:21 -- deitz
+
+Log message:
+	Fixed the setter of fields so that it doesn't return 'this' even
+	though it is correctly marked as void.  It now returns void.
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp 
+
