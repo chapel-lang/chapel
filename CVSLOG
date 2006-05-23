@@ -65512,3 +65512,15 @@ Log message:
 Added files:
 	chapel/test/studies/jacobi/deitz/: jacobi2.chpl 
 
+---------------------------------------------------------------------------
+
+05/22/06 17:28:33 -- waynew
+
+Log message:
+	My monitor is old, my vision poor, and promises are broken.  Changed
+	the color of constants from "lightblue" to "blue" w/ italics. Reused
+	one of Steve's fine choice of colors.
+
+Modified files:
+	chapel/compiler/AST/: view.cpp 
+
