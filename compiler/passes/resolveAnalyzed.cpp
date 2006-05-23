@@ -11,6 +11,7 @@
 
 static void resolve_type(Symbol* sym);
 static void resolve_symbol(CallExpr* call);
+static void simplify_nested_moves(void);
 
 
 void resolve_analyzed(void) {
@@ -77,6 +78,8 @@ void resolve_analyzed(void) {
   remove_named_exprs();
   remove_static_actuals();
   remove_static_formals();
+
+  simplify_nested_moves();
 }
 
 
@@ -370,6 +373,33 @@ static void resolve_symbol(CallExpr* call) {
       }
     } else {
       call->makeOp(); // assume op if can't resolve
+    }
+  }
+}
+
+
+static void
+simplify_nested_moves(void) {
+  Vec<BaseAST*> asts;
+  collect_asts_postorder(&asts);
+  forv_Vec(BaseAST, ast, asts) {
+    if (CallExpr* move = dynamic_cast<CallExpr*>(ast)) {
+      if (move->isPrimitive(PRIMITIVE_MOVE)) {
+        if (CallExpr* innerMove = dynamic_cast<CallExpr*>(move->get(2))) {
+          if (innerMove->isPrimitive(PRIMITIVE_MOVE)) {
+            Expr* moveTarget = move->get(1);
+            Expr* innerMoveTarget = innerMove->get(1);
+            SymExpr* s1 = dynamic_cast<SymExpr*>(moveTarget);
+            SymExpr* s2 = dynamic_cast<SymExpr*>(innerMoveTarget);
+            if (s1 && s2 && s1->var == s2->var)
+              move->replace(innerMove->remove());
+            else {
+              move->parentStmt->insertBefore(innerMove->remove());
+              move->insertAtTail(innerMoveTarget->copy());
+            }
+          }
+        }
+      }
     }
   }
 }
