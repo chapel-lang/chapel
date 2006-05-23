@@ -65524,3 +65524,14 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: view.cpp 
 
+---------------------------------------------------------------------------
+
+05/23/06 07:11:53 -- jplevyak
+
+Log message:
+	Fix some minor typos
+
+Modified files:
+	chapel/test/studies/jacobi/jplevyak/: jacobi-jp1.chpl 
+	                                      jacobi-jp2.chpl 
+
