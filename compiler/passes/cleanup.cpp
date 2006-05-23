@@ -351,7 +351,6 @@ static void build_setter(ClassType* ct, Symbol* field) {
   Expr *assignExpr = new CallExpr("=", valExpr, fieldArg);
   fn->body->insertAtTail(
     new CallExpr(PRIMITIVE_SET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)), assignExpr));
-  fn->body->insertAtTail(new ReturnStmt(new SymExpr(_this)));
   ct->symbol->defPoint->parentStmt->insertBefore(new DefExpr(fn));
   reset_file_info(fn, field->lineno, field->filename);
 
