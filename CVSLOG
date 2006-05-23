@@ -65566,3 +65566,17 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: resolveAnalyzed.cpp 
 
+---------------------------------------------------------------------------
+
+05/23/06 11:36:36 -- deitz
+
+Log message:
+	Changed code generation of members to favor printing out
+	class_name->member_name when the variable has a class type.  The
+	(*((T*)(((char*)(p))+offset))) format with member_type and
+	member_offset is now only used for code generation where sum types are
+	involved.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+
