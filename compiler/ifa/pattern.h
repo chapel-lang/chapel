@@ -124,8 +124,8 @@ void build_patterns(FA *fa);
 void add_patterns(FA *fa, Fun *f);
 void build_arg_positions(FA *fa);
 int positional_to_named(PNode *pn, CreationSet *cs, MPosition &p, MPosition *result_p);
-int pattern_match(Vec<AVar *> &args, AVar *send, int is_closure, Partial_kind partial, 
-                  PNode *visibility_point, Vec<Match *> &matches);
+int pattern_match(Vec<AVar *> &args, Vec<char *> &names, AVar *send, int is_closure, 
+                  Partial_kind partial, PNode *visibility_point, Vec<Match *> &matches);
 MPosition *cannonicalize_mposition(MPosition &p);
 MPosition *build_arg_positions(Fun *f, MPosition *up = 0);
 

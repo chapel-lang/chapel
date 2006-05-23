@@ -59,7 +59,8 @@ static Que(AVar, send_worklist_link) send_worklist;
 static Vec<EntrySet *> entry_set_done;
 static Vec<ATypeViolation *> type_violations;
 
-static int application(PNode *p, EntrySet *es, AVar *fun, CreationSet *s, Vec<AVar *> &args, 
+static int application(PNode *p, EntrySet *es, AVar *fun, CreationSet *s, 
+                       Vec<AVar *> &args, Vec<char *> &names,
                        int is_closure, Partial_kind partial, PNode *visibility_point);
 
 AEdge::AEdge() : 
@@ -665,9 +666,8 @@ different_marked_args(AVar *a1, AVar *a2, int offset, AVar *basis = 0) {
 static int
 edge_type_compatible_with_edge(AEdge *e, AEdge *ee, EntrySet *es, int fmark = 0) {
   assert(e->args.n && ee->args.n);
-  forv_MPosition(p, e->match->fun->arg_positions) {
-    AVar *e_arg = e->args.get(p); 
-    AVar *ee_arg = ee->args.get(p);
+  forv_MPosition(p, e->match->fun->positional_arg_positions) {
+    AVar *e_arg = e->args.get(p), *ee_arg = ee->args.get(p);
     if (!e_arg || !ee_arg)
       continue;
     if (!fmark) {
@@ -749,7 +749,7 @@ int sset_compatible(AVar *av1, AVar *av2) {
 static int
 edge_sset_compatible_with_edge(AEdge *e, AEdge *ee) {
   assert(e->args.n && ee->args.n);
-  forv_MPosition(p, e->match->fun->arg_positions) {
+  forv_MPosition(p, e->match->fun->positional_arg_positions) {
     AVar *eav = e->args.get(p), *eeav = ee->args.get(p);
     if (eav && eeav)
       if (!sset_compatible(eav, eeav))
@@ -1307,22 +1307,18 @@ get_AEdges(Fun *f, PNode *p, EntrySet *from, Vec<AEdge *> &edges) {
 
 static void
 record_arg(PNode *pn, CreationSet *cs, AVar *a, Sym *s, AEdge *e, MPosition &p) {
-  MPosition *cpnum = cannonicalize_mposition(p), *cpname = 0, cpname_p;
-  if (positional_to_named(pn, cs, p, &cpname_p))
-    cpname = cannonicalize_mposition(cpname_p);
-  for (MPosition *cp = cpnum; cp; cp = cpname, cpname = 0) { 
-    e->args.put(cp, a);
-    if (s->is_pattern) {
-      AType *t = type_intersection(a->out, e->match->formal_filters.get(cp));
-      forv_CreationSet(cs, *t) {
-        assert(s->has.n == cs->vars.n);
-        p.push(1);
-        for (int i = 0; i < s->has.n; i++) {
-          record_arg(pn, cs, cs->vars.v[i], s->has.v[i], e, p);
-          p.inc();
-        }
-        p.pop();
+  MPosition *cp = cannonicalize_mposition(p);
+  e->args.put(cp, a);
+  if (s->is_pattern) {
+    AType *t = type_intersection(a->out, e->match->formal_filters.get(cp));
+    forv_CreationSet(cs, *t) {
+      assert(s->has.n == cs->vars.n);
+      p.push(1);
+      for (int i = 0; i < s->has.n; i++) {
+        record_arg(pn, cs, cs->vars.v[i], s->has.v[i], e, p);
+        p.inc();
       }
+      p.pop();
     }
   }
 }
@@ -1362,14 +1358,14 @@ make_AEdges(Match *m, PNode *p, EntrySet *from, Vec<AVar *> &args) {
 
 // returns 1 if any are partial, 0 if some matched and -1 if none matched
 static int
-all_applications(PNode *p, EntrySet *es, AVar *a0, Vec<AVar *> &args, 
+all_applications(PNode *p, EntrySet *es, AVar *a0, Vec<AVar *> &args, Vec<char *> &names,
                  int is_closure, Partial_kind partial, PNode *visibility_point = 0) 
 {
   if (!visibility_point) visibility_point = p;
   int incomplete = -2;
   a0->arg_of_send.add(make_AVar(p->lvals.v[0], es));
   forv_CreationSet(cs, *a0->out) if (cs)
-    switch (application(p, es, a0, cs, args, is_closure, partial, visibility_point)) {
+    switch (application(p, es, a0, cs, args, names, is_closure, partial, visibility_point)) {
       case -1: if (incomplete < 0) incomplete = -1; break;
       case 0: if (incomplete < 0) incomplete = 0; break;
       case 1: incomplete = 1; break;
@@ -1378,25 +1374,37 @@ all_applications(PNode *p, EntrySet *es, AVar *a0, Vec<AVar *> &args,
 }
 
 static int
-partial_application(PNode *p, EntrySet *es, CreationSet *cs, Vec<AVar *> args, 
+partial_application(PNode *p, EntrySet *es, CreationSet *cs, 
+                    Vec<AVar *> &args, Vec<char *> &names,
                     Partial_kind partial, PNode *visibility_point) 
 {
   AVar *result = make_AVar(p->lvals.v[0], es);
   assert(result->var->def == p);
   AVar *fun = cs->vars.v[0];
+  Vec<AVar *> a;
+  a.copy(args);
+  PNode *def = cs->defs.v[0]->var->def;
   for (int i = cs->vars.n - 1; i >= 1; i--) {
     cs->vars.v[i]->arg_of_send.add(result);
-    args.add(cs->vars.v[i]);
+    a.add(cs->vars.v[i]);
   }
+  Vec<char *> n;
+  n.fill(args.n + def->rvals.n);
+  for (int i = 0; i < def->code->names.n; i++)
+    n.v[i] = def->code->names.v[i];
+  for (int i = 1; i < names.n; i++)
+    n.v[def->rvals.n + i - 1] = names.v[i];
+  assert(!names.n || !names.v[0]);
   assert(cs->defs.n == 1);
-  int r = all_applications(p, es, fun, args, 1, partial, cs->defs.v[0]->var->def);
+  int r = all_applications(p, es, fun, a, n, 1, partial, def);
   if (!r)
     cs->closure_used = 1;
   return r;
 }
 
 int
-function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> &args, 
+function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, 
+                  Vec<AVar *> &args, Vec<char *> &names,
                   int is_closure, Partial_kind partial, PNode *visibility_point) 
 {
   if (!visibility_point) visibility_point = p;
@@ -1408,7 +1416,7 @@ function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> 
   Vec<Match *> matches;
   AVar *send = make_AVar(p->lvals.v[0], es);
   match_timer.start();
-  if (pattern_match(a, send, is_closure, partial, visibility_point, matches)) {
+  if (pattern_match(a, names, send, is_closure, partial, visibility_point, matches)) {
     forv_Match(m, matches) {
       if (!m->is_partial && partial != Partial_ALWAYS)
         make_AEdges(m, p, es, a);
@@ -1421,12 +1429,13 @@ function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> 
 }
 
 static int
-application(PNode *p, EntrySet *es, AVar *a0, CreationSet *cs, Vec<AVar *> &args, 
+application(PNode *p, EntrySet *es, AVar *a0, CreationSet *cs, 
+            Vec<AVar *> &args, Vec<char *> &names, 
             int is_closure, Partial_kind partial, PNode *visibility_point) 
 {
   if (sym_closure->implementors.set_in(cs->sym) && cs->defs.n)
-    return partial_application(p, es, cs, args, partial, visibility_point);
-  return function_dispatch(p, es, a0, cs, args, is_closure, partial, visibility_point);
+    return partial_application(p, es, cs, args, names, partial, visibility_point);
+  return function_dispatch(p, es, a0, cs, args, names, is_closure, partial, visibility_point);
 }
 
 void
@@ -1513,7 +1522,7 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
       args.add(av);
     }
     AVar *a0 = make_AVar(p->rvals.v[0], es);
-    if (all_applications(p, es, a0, args, 0, (Partial_kind)p->code->partial) > 0)
+    if (all_applications(p, es, a0, args, p->code->names, 0, (Partial_kind)p->code->partial) > 0)
       make_closure(result);
   } else {
     // argument and return constraints
@@ -1640,10 +1649,13 @@ add_send_edges_pnode(PNode *p, EntrySet *es) {
       case P_prim_apply: {
         assert(p->lvals.n == 1);
         Vec<AVar *> args;
+        Vec<char *> names;
+        names.add(0);
+        names.add(0);
         AVar *fun = make_AVar(p->rvals.v[1], es);
         AVar *a1 = make_AVar(p->rvals.v[3], es);
         args.add(a1);
-        if (all_applications(p, es, fun, args, 0, (Partial_kind)p->code->partial) > 0)
+        if (all_applications(p, es, fun, args, names, 0, (Partial_kind)p->code->partial) > 0)
           make_closure(result);
         break;
       }

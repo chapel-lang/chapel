@@ -348,7 +348,8 @@ AVar * unique_AVar(Var *v, void *contour);
 AVar *unique_AVar(Var *v, EntrySet *es);
 void qsort_pointers(void **left, void **right);
 void initialize_Sym_for_fa(Sym *s);
-int function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, Vec<AVar *> &args,
+int function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s, 
+                      Vec<AVar *> &args, Vec<char *> &names,
                       int is_closure, Partial_kind partial, PNode *visibility_point = 0);
 void add_var_constraint(AVar *av, Sym *s = 0);
 

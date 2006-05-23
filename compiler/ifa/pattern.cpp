@@ -80,7 +80,7 @@ class Matcher {
   void build_positional_map(MPosition &, int, Vec<Fun *> **);
   void update_match_map(AVar *, CreationSet *, MPosition *, MPosition *, Vec<Fun *> &);
   void find_arg_matches(AVar *, MPosition &, MPosition *, MPosition *, Vec<Fun *> **, int, int);
-  void find_all_matches(CreationSet *, Vec<AVar *> &, Vec<Fun *> **, MPosition &, int);
+  void find_all_matches(CreationSet *, Vec<AVar *> &, Vec<char *> &, Vec<Fun *> **, MPosition &, int);
   void find_single_match(CreationSet *, Vec<AVar *> &, Vec<Fun *> **, MPosition &, int);
   void find_best_cs_match(Vec<CreationSet *> &, MPosition &p, Vec<Fun *> &, Vec<Fun *> &, int);
   void find_best_matches(Vec<AVar *> &, Vec<CreationSet *> &, Vec<Fun *> &, MPosition &, 
@@ -302,22 +302,13 @@ Matcher::update_match_map(AVar *a, CreationSet *cs, MPosition *acp, MPosition *a
 }
 
 int
-positional_to_named(PNode *pn, CreationSet *cs, MPosition &pp, MPosition *np) {
-  if (!cs) {
-    assert(pp.pos.n == 1);
-    int i = Position2int(pp.pos.v[0]) - 1;
-    if (i < pn->code->names.n && pn->code->names.v[i]) {
-      np->copy(pp);
-      np->set_top(pn->code->names.v[i]);
-      return 1;
-    }
-  } else if (cs->sym == sym_tuple) {
-    int i = Position2int(pp.last()) - 1;
-    char *n = cs->sym->has_name(i);
-    if (n) {
-      np->copy(pp);
-      np->set_top(n);
-    }
+positional_to_named(PNode *pn, CreationSet *cs, Vec<char *> &names, 
+                    MPosition &pp, MPosition *np) 
+{
+  int i = Position2int(pp.last()) - 1;
+  if (i < names.n && names.v[i]) {
+    np->copy(pp);
+    np->set_top(names.v[i]);
     return 1;
   }
   return 0;
@@ -365,7 +356,7 @@ Matcher::find_arg_matches(AVar *a, MPosition &ap, MPosition *acp, MPosition *acp
           new_funs.set_add(f);
       }
       if (rec_funs.n) {
-        find_all_matches(cs, cs->vars, &rec_funs_p, ap, out_of_position);
+        find_all_matches(cs, cs->vars, cs->sym->has_names, &rec_funs_p, ap, out_of_position);
         funs.set_union(rec_funs);
       }
     }
@@ -456,15 +447,15 @@ Matcher::build_positional_map(MPosition &app, int nactuals, Vec<Fun *> **funs) {
 }
 
 void
-Matcher::find_all_matches(CreationSet *cs, Vec<AVar *> &args, Vec<Fun *> **partial_matches, 
-                          MPosition &app, int out_of_position)
+Matcher::find_all_matches(CreationSet *cs, Vec<AVar *> &args, Vec<char *> &names,
+                          Vec<Fun *> **partial_matches, MPosition &app, int out_of_position)
 {
   // determine named arguments
   int some_named = 0;
   app.push(1);
   forv_AVar(av, args) {
     MPosition anp;
-    if (positional_to_named(send->var->def, cs, app, &anp)) {
+    if (positional_to_named(send->var->def, cs, names, app, &anp)) {
       MPosition *acpp = cannonicalize_mposition(app);
       if (acpp) {
         MPosition *acnp = cannonicalize_mposition(anp);
@@ -1466,7 +1457,8 @@ match_cache_hit(Vec<AVar *> &args, AVar *send, int is_closure, Partial_kind part
 // main dispatch entry point - given a vector of arguments return a vector of matches
 //
 int
-pattern_match(Vec<AVar *> &args, AVar *send, int is_closure, Partial_kind partial, 
+pattern_match(Vec<AVar *> &args, Vec<char *> &names,
+              AVar *send, int is_closure, Partial_kind partial, 
               PNode *visibility_point, Vec<Match *> &matches)
 {
   pattern_matches++;
@@ -1482,7 +1474,7 @@ pattern_match(Vec<AVar *> &args, AVar *send, int is_closure, Partial_kind partia
   find_visible_functions(args, visibility_point, &partial_matches, matcher.function_values);
   log_dispatch_pattern_match(partial_matches, matcher.function_values, send);
   MPosition app;
-  matcher.find_all_matches(0, args, &partial_matches, app, 0);
+  matcher.find_all_matches(0, args, names, &partial_matches, app, 0);
   if (!partial_matches || !partial_matches->n)
     return 0;
   
