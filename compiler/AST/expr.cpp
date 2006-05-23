@@ -294,21 +294,24 @@ void DefExpr::codegen(FILE* outfile) { /** noop **/ }
 static void codegen_member(FILE* outfile, BaseAST *base, BaseAST *member, Type *member_type, 
                            int member_offset) 
 {
-  if (member_type) {
+  SymExpr* sbase = dynamic_cast<SymExpr*>(base);
+  SymExpr* smember = dynamic_cast<SymExpr*>(member);
+  if (sbase && smember && dynamic_cast<ClassType*>(sbase->var->type)) {
+    VarSymbol* memberVar = dynamic_cast<VarSymbol*>(smember->var);
+    if (!memberVar->immediate ||
+        memberVar->immediate->const_kind != IF1_CONST_KIND_STRING)
+      INT_FATAL(member, "Member name is not a string");
+    base->codegen(outfile);
+    fprintf(outfile, "->%s", memberVar->immediate->v_string);
+  } else if (member_type) {
     // (*((T*)(((char*)(p))+offset)))
     fprintf(outfile, "(*((");
     member_type->codegen(outfile);
     fprintf(outfile, "*)(((char*)(");
     base->codegen(outfile);
     fprintf(outfile, "))+%d)))", member_offset);
-  } else {
-    base->codegen(outfile);
-    VarSymbol *vsmember = dynamic_cast<VarSymbol*>(dynamic_cast<SymExpr*>(member)->var);
-    if (!vsmember->immediate || vsmember->immediate->const_kind != IF1_CONST_KIND_STRING) {
-      INT_FATAL(member, "Member name is not a string");
-    }
-    fprintf(outfile, "->%s", vsmember->immediate->v_string);
-  }
+  } else
+    INT_FATAL(base, "Cannot codegen member access");
 }
 
 
