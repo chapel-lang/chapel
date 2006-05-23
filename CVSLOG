@@ -65535,3 +65535,16 @@ Modified files:
 	chapel/test/studies/jacobi/jplevyak/: jacobi-jp1.chpl 
 	                                      jacobi-jp2.chpl 
 
+---------------------------------------------------------------------------
+
+05/23/06 07:50:12 -- jplevyak
+
+Log message:
+	Fix named argument member function futures.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp fa.h pattern.cpp pattern.h 
+Removed files:
+	chapel/test/classes/deitz/: test_name_method.future 
+	                            test_name_method2.future 
+
