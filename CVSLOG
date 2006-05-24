@@ -65613,3 +65613,96 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/libifa/: Makefile ifa.1 index.html 
 
+---------------------------------------------------------------------------
+
+05/24/06 11:07:04 -- deitz
+
+Log message:
+	Implemented a few low-level optimizations to clean up the generated
+	code, in particular, local copy propagation.  This pass is now
+	implemented and broken up into four phases.
+	
+	1. compressUnnecessaryScopes removes block statements that do not
+	   impact control flow, moving their bodies into the outer block
+	   statement.  This is helpful for copy propagation since that could
+	   potentially assign a variable from an inner scope to an outer
+	   scope.
+	
+	2. localCopyPropagation does the local copy propagation.  This is very
+	   conservative, assuming that any call may be a pass by reference
+	   situation.
+	
+	3. deadVariableElimination removes local variables that are only
+	   assigned values.
+	
+	4. deadExpressionElimination removes expression statements that have
+	   no effect.  In particular, this currently just removes a SymExpr.
+	
+	There are a number of limitations:
+	
+	1. This is disabled when -p is specified since cobegin is handled
+	   during code generation and requires the "unnecessary" block
+	   statements.
+	
+	2. Copy propagation is disabled on config variables since the
+	   initialization of config variables is inserted during code
+	   generation and so the AST is unaware.
+	
+	3. Because the init function of a module has the scope of the module,
+	   variables are not removed in this function.  Unfortunately this is
+	   where most of the code in our tests shows up since the init
+	   function contains all the code at the top level of a Chapel
+	   program.  I think we can fix the scope of the init function now
+	   that we have normalized the DefExpr.
+	
+	4. Local copy propagation is significantly more conservative than it
+	   needs to be, not checking to see if an actual is actually passed by
+	   reference, but simply assuming it is.
+	
+	This work identified a few things that still need to be normalized:
+	
+	1. Types are not removed from functions.
+	2. Config variables are not dealt with in the AST.
+	3. Cobegin is not dealt with in the AST.
+	4. The init function still has the module's scope.
+	
+	This pass currently works on variables indiscriminately and is on by
+	default.  I should probably add a flag to disable it and perhaps we
+	also want a flag that would only run the scalar optimizations on
+	compiler-inserted temporaries.
+	
+	Example.
+	
+	   {
+	     var x = ...;
+	     z = x;
+	   }
+	   y = z;
+	
+	After compressUnnecessaryScopes
+	
+	   var x = ...;
+	   z = x;
+	   y = z;
+	
+	After localCopyPropagation
+	
+	   var x = ...;
+	   z = x;
+	   y = x;
+	
+	After deadVariableElimination
+	
+	   var x = ...;
+	   x; // assuming z is not used anywhere
+	   y = x;
+	
+	After deadExpressionElimination
+	
+	   var x = ...;
+	   y = x;
+
+Modified files:
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/passes/: copy_propagation.cpp 
+
