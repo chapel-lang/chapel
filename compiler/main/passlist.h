@@ -15,7 +15,7 @@ void resolve_analyzed();
 void check_resolved();
 void flattenFunctions();
 void inlineFunctions();
-void copy_propagation();
+void copyPropagation();
 void codegen();
 
 PassInfo passlist[] = {
@@ -41,7 +41,7 @@ PassInfo passlist[] = {
   RUN(flattenFunctions), // denest nested functions
 
   RUN(inlineFunctions), // function inlining
-  RUN(copy_propagation), // not implemented yet
+  RUN(copyPropagation),
   RUN(codegen),
   LAST
 };
