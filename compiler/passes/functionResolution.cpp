@@ -287,7 +287,7 @@ build_promotion_wrapper(FnSymbol* fn,
     if (can_dispatch(NULL, actual_type, formal->type)) {
       if (require_scalar_promotion) {
         promotion_wrapper_required = true;
-        promoted_subs.put(formal, actual_type->symbol);
+        promoted_subs.put(formal, formal->type->symbol /*actual_type->symbol*/);
       }
     }
   }
