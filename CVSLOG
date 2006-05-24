@@ -65741,3 +65741,17 @@ Modified files:
 Removed files:
 	chapel/test/types/seq/deitz/: test_zipper1.future 
 
+---------------------------------------------------------------------------
+
+05/24/06 14:59:13 -- deitz
+
+Log message:
+	Fixed how the interpreter calls the scalar promotion wrapper to mimic
+	analysis.  It now lists the substitutions as the formal symbols and
+	the formal types.  It used to use the actual types.  Not sure whether
+	this matters yet.  This change gets test_scalar_promote3 through the
+	interpreter.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+
