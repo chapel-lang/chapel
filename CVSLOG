@@ -65755,3 +65755,16 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+05/24/06 16:37:25 -- jplevyak
+
+Log message:
+	Add testing system and update prelude for float128/complex128
+
+Modified files:
+	chapel/compiler/ifa/libifa/: Makefile prelude.v 
+Added files:
+	chapel/compiler/ifa/libifa/: ifa_tests 
+	chapel/compiler/ifa/libifa/tests/: literal.v literal.v.check 
+
