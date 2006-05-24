@@ -65706,3 +65706,22 @@ Modified files:
 	chapel/compiler/main/: passlist.h 
 	chapel/compiler/passes/: copy_propagation.cpp 
 
+---------------------------------------------------------------------------
+
+05/24/06 13:58:09 -- deitz
+
+Log message:
+	Enabled scalar promotion on functions that return a value.
+	
+	Note that the function cannot yet be scalar promoted with more than
+	one argument as this requires zippered iteration.  Looking into
+	enabling that now and expecting it should be easy.
+	
+	Added a working test case.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+Added files:
+	chapel/test/arrays/deitz/: test_scalar_promote3.chpl 
+	                           test_scalar_promote3.good 
+
