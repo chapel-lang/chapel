@@ -24,7 +24,7 @@ DIR = libifa
 # ***************************
 
 MAJOR=0
-MINOR=1
+MINOR=2
 RELEASE=$(MAJOR).$(MINOR)
 
 CC = g++
@@ -96,7 +96,8 @@ endif
 TAR_DIR = ifa-$(RELEASE)
 
 AUX_FILES = $(TAR_DIR)/Makefile $(TAR_DIR)/COPYRIGHT $(TAR_DIR)/README $(TAR_DIR)/index.html $(TAR_DIR)/manual.html $(TAR_DIR)/faq.html $(TAR_DIR)/ifa.1 $(TAR_DIR)/ifa.cat $(TAR_DIR)/Makefile.cg
-TAR_FILES = $(AUX_FILES)
+TEST_FILES = $(TAR_DIR)/ifa_tests $(TAR_DIR)/tests/*.v $(TAR_DIR)/tests/*.check $(TAR_DIR)/tests/*.flags
+TAR_FILES = $(AUX_FILES) $(TEST_FILES)
 
 LIB_SRCS = arg.cc ast.cc builtin.cc cdb.cc cfg.cc cg.cc clone.cc \
 	dead.cc dom.cc fa.cc fail.cc fun.cc graph.cc html.cc if1.cc ifa.cc inline.cc \
