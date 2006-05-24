@@ -835,11 +835,17 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs) {
   AList<DefExpr>* indices = new AList<DefExpr>();
   AList<Expr>* iterators = new AList<Expr>();
   AList<Expr>* wrapper_actuals = new AList<Expr>();
+  Expr* type = NULL;
   for_alist(DefExpr, formal, formals) {
     if (Symbol* ts = promotion_subs->get(formal->sym)) {
-      Type* new_type = dynamic_cast<TypeSymbol*>(ts)->definition;
+      if (type == NULL)
+        type = new SymExpr(ts);
+      else if (CallExpr* call = dynamic_cast<CallExpr*>(type))
+        call->insertAtTail(ts);
+      else
+        type = new CallExpr("_construct__tuple", type, ts);
       Symbol* new_formal = formal->sym->copy();
-      new_formal->type = new_type;
+      new_formal->type = dtUnknown;
       Symbol* new_index = new VarSymbol("_index");
       wrapper->formals->insertAtTail(new DefExpr(new_formal));
       iterators->insertAtTail(new SymExpr(new_formal));
@@ -859,13 +865,17 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs) {
                                            new ExprStmt(
                                              new CallExpr(this, wrapper_actuals))))));
   } else {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(type))
+      call->insertAtHead(new_IntLiteral(call->argList->length()));
+    VarSymbol* seq = new VarSymbol("_seq");
+    wrapper->insertAtTail(new DefExpr(seq, NULL, new CallExpr("_construct_seq", type)));
     wrapper->insertAtTail(new BlockStmt(build_for_block(BLOCK_FORALL,
                                          indices,
                                          iterators,
-                                         new BlockStmt(
-                                           new ReturnStmt(
-                                             new CallExpr(this, wrapper_actuals), true)))));
-    wrapper->fnClass = FN_ITERATOR;
+  new BlockStmt(
+                new ExprStmt(new CallExpr(new CallExpr(".", seq, new_StringLiteral("_append_in_place")),
+                              new CallExpr(this, wrapper_actuals)))))));
+    wrapper->insertAtTail(new ReturnStmt(seq));
   }
   defPoint->parentStmt->insertBefore(new DefExpr(wrapper));
   reset_file_info(wrapper->defPoint->parentStmt, lineno, filename);
