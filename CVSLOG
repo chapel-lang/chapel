@@ -65725,3 +65725,19 @@ Added files:
 	chapel/test/arrays/deitz/: test_scalar_promote3.chpl 
 	                           test_scalar_promote3.good 
 
+---------------------------------------------------------------------------
+
+05/24/06 14:00:04 -- deitz
+
+Log message:
+	Enabled zippered iteration and removed future.
+	
+	Note that zippered iteration is currently rank neutral as is iteration
+	in general.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+	chapel/test/types/seq/deitz/: test_zipper1.good 
+Removed files:
+	chapel/test/types/seq/deitz/: test_zipper1.future 
+
