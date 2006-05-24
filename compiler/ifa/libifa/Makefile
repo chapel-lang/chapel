@@ -17,6 +17,8 @@ endif
 MAKE_DPARSER = make_dparser
 LDFLAGS += -L/usr/local/lib 
 
+DIR = libifa
+
 # ***************************
 # ***** Makefile Proper *****
 # ***************************
@@ -91,10 +93,10 @@ ifeq ($(OS_TYPE),Linux)
   LIBS += -ldl -lrt
 endif
 
-DIR = libifa
+TAR_DIR = ifa-$(RELEASE)
 
-AUX_FILES = $(DIR)/Makefile $(DIR)/COPYRIGHT $(DIR)/README $(DIR)/index.html $(DIR)/manual.html $(DIR)/faq.html $(DIR)/ifa.1 $(DIR)/ifa.cat $(DIR)/Makefile.cg
-TAR_FILES = $(AUX_FILES) $(TEST_FILES)
+AUX_FILES = $(TAR_DIR)/Makefile $(TAR_DIR)/COPYRIGHT $(TAR_DIR)/README $(TAR_DIR)/index.html $(TAR_DIR)/manual.html $(TAR_DIR)/faq.html $(TAR_DIR)/ifa.1 $(TAR_DIR)/ifa.cat $(TAR_DIR)/Makefile.cg
+TAR_FILES = $(AUX_FILES)
 
 LIB_SRCS = arg.cc ast.cc builtin.cc cdb.cc cfg.cc cg.cc clone.cc \
 	dead.cc dom.cc fa.cc fail.cc fun.cc graph.cc html.cc if1.cc ifa.cc inline.cc \
@@ -168,7 +170,7 @@ ifa.cat: ifa.1
 	$(MAKE_DPARSER) -v -Xcc -I $<
 
 tar:
-	(cd ..;tar czhf libifa-$(RELEASE)-src.tar.gz libifa/*.cc $(DIR)/*.h $(TAR_FILES)) 
+	(cd ..;ln -s $(DIR) $(TAR_DIR);tar czhf $(TAR_DIR)-src.tar.gz $(TAR_DIR)/*.cc $(TAR_DIR)/*.h $(TAR_FILES)) 
 
 clean:
 	\rm -f *.o core *.core *.gmon *.a $(EXEC_FILES)
