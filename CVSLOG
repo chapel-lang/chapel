@@ -65603,3 +65603,13 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: cleanup.cpp 
 
+---------------------------------------------------------------------------
+
+05/24/06 09:16:54 -- jplevyak
+
+Log message:
+	updated libifa for inclusion on sourceforge.net
+
+Modified files:
+	chapel/compiler/ifa/libifa/: Makefile ifa.1 index.html 
+
