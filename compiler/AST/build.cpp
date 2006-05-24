@@ -171,22 +171,45 @@ AList<Stmt>* build_for_block(BlockTag tag,
     indexDef->init = new SymExpr(index);
     body->insertAtHead(indexDef);
   }
-  Symbol* iterator;
-  if (SymExpr* symExpr = dynamic_cast<SymExpr*>(iterators->only())) {
-    iterator = symExpr->var;
-  } else {
-    iterator = new VarSymbol(stringcat("_iterator_", intstring(uid)));
-    stmts->insertAtTail(new DefExpr(iterator, iterators->only()->copy()));
+  int numIterators = iterators->length();
+  Vec<Symbol*> iterator;
+  for (int i = 0; i < numIterators; i++) {
+    Expr* iteratorExpr = iterators->get(1);
+    iteratorExpr->remove();
+    if (SymExpr* symExpr = dynamic_cast<SymExpr*>(iteratorExpr)) {
+      iterator.add(symExpr->var);
+    } else {
+      iterator.add(new VarSymbol(stringcat("_iterator_", intstring(i), "_", intstring(uid))));
+      stmts->insertAtTail(new DefExpr(iterator.v[i], iteratorExpr));
+    }
   }
-  VarSymbol* cursor = new VarSymbol(stringcat("_cursor_", intstring(uid)));
-  stmts->insertAtTail(new DefExpr(cursor, new CallExpr(new CallExpr(".", iterator, new_StringLiteral("getHeadCursor")))));
+  Vec<VarSymbol*> cursor;
+  for (int i = 0; i < numIterators; i++) {
+    cursor.add(new VarSymbol(stringcat("_cursor_", intstring(i), "_", intstring(uid))));
+    stmts->insertAtTail(new DefExpr(cursor.v[i], new CallExpr(new CallExpr(".", iterator.v[i], new_StringLiteral("getHeadCursor")))));
+  }
   stmts->insertAtTail(new LabelStmt(new DefExpr(body->pre_loop)));
 
-  stmts->insertAtTail(new CondStmt(new CallExpr("!", new CallExpr(new CallExpr(".", iterator, new_StringLiteral("isValidCursor?")), cursor)), new GotoStmt(goto_normal, body->post_loop)));
+  for (int i = 0; i < numIterators; i++) {
+    stmts->insertAtTail(new CondStmt(new CallExpr("!", new CallExpr(new CallExpr(".", iterator.v[i], new_StringLiteral("isValidCursor?")), cursor.v[i])), new GotoStmt(goto_normal, body->post_loop)));
+  }
 
-  stmts->insertAtTail(new DefExpr(index, new CallExpr(new CallExpr(".", iterator, new_StringLiteral("getValue")), cursor)));
+  CallExpr* index_init;
+  if (numIterators == 1) {
+    index_init = new CallExpr(new CallExpr(".", iterator.v[0], new_StringLiteral("getValue")), cursor.v[0]);
+  } else {
+    index_init = new CallExpr("_construct__tuple", new_IntLiteral(numIterators));
+    for (int i = 0; i < numIterators; i++) {
+      index_init->insertAtTail(new CallExpr(new CallExpr(".", iterator.v[i], new_StringLiteral("getValue")), cursor.v[i]));
+    }
+  }
+  stmts->insertAtTail(new DefExpr(index, index_init));
   stmts->insertAtTail(body);
-  stmts->insertAtTail(new CallExpr("=", cursor, new CallExpr(new CallExpr(".", iterator, new_StringLiteral("getNextCursor")), cursor)));
+
+  for (int i = 0; i < numIterators; i++) {
+    stmts->insertAtTail(new CallExpr("=", cursor.v[i], new CallExpr(new CallExpr(".", iterator.v[i], new_StringLiteral("getNextCursor")), cursor.v[i])));
+  }
+
   stmts->insertAtTail(new GotoStmt(goto_normal, body->pre_loop));
   stmts->insertAtTail(new LabelStmt(new DefExpr(body->post_loop)));
   uid++;
