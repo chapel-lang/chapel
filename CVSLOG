@@ -65911,3 +65911,16 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/libifa/: Makefile 
 
+---------------------------------------------------------------------------
+
+05/25/06 15:55:57 -- deitz
+
+Log message:
+	Enabled scalar promotion on methods and added a test case.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+Added files:
+	chapel/test/arrays/deitz/: test_scalar_promote7.chpl 
+	                           test_scalar_promote7.good 
+
