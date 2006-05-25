@@ -835,15 +835,8 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs) {
   AList<DefExpr>* indices = new AList<DefExpr>();
   AList<Expr>* iterators = new AList<Expr>();
   AList<Expr>* wrapper_actuals = new AList<Expr>();
-  Expr* type = NULL;
   for_alist(DefExpr, formal, formals) {
-    if (Symbol* ts = promotion_subs->get(formal->sym)) {
-      if (type == NULL)
-        type = new SymExpr(ts);
-      else if (CallExpr* call = dynamic_cast<CallExpr*>(type))
-        call->insertAtTail(ts);
-      else
-        type = new CallExpr("_construct__tuple", type, ts);
+    if (promotion_subs->get(formal->sym)) {
       Symbol* new_formal = formal->sym->copy();
       new_formal->type = dtUnknown;
       Symbol* new_index = new VarSymbol("_index");
@@ -865,16 +858,41 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs) {
                                            new ExprStmt(
                                              new CallExpr(this, wrapper_actuals))))));
   } else {
-    if (CallExpr* call = dynamic_cast<CallExpr*>(type))
-      call->insertAtHead(new_IntLiteral(call->argList->length()));
+    CallExpr* elt_type;
+    if (iterators->length() == 1) {
+      elt_type = new CallExpr(new CallExpr(".", iterators->only()->copy(), new_StringLiteral("getValue")), new CallExpr(new CallExpr(".", iterators->only()->copy(), new_StringLiteral("getHeadCursor"))));
+    } else {
+      elt_type = new CallExpr("_construct__tuple", new_IntLiteral(iterators->length()));
+      for_alist(Expr, iteratorExpr, iterators) {
+        elt_type->insertAtTail(new CallExpr(new CallExpr(".", iteratorExpr->copy(), new_StringLiteral("getValue")), new CallExpr(new CallExpr(".", iteratorExpr->copy(), new_StringLiteral("getHeadCursor")))));
+      }
+    }
     VarSymbol* seq = new VarSymbol("_seq");
-    wrapper->insertAtTail(new DefExpr(seq, NULL, new CallExpr("_construct_seq", type)));
+    LabelSymbol* break_out = new LabelSymbol("type_break");
+
+    ASTMap map;
+    AList<DefExpr>* typeindices = indices->copy(&map);
+    AList<Expr>* typeiterators = iterators->copy(&map);
+    AList<Expr>* typewrapper_actuals = wrapper_actuals->copy(&map);
+
+    BlockStmt* body = 
+      new BlockStmt(
+                    new ExprStmt(new DefExpr(seq, new CallExpr("_construct_seq", new CallExpr(this, typewrapper_actuals)))));
+    body->insertAtTail(new GotoStmt(goto_normal, break_out));
+    wrapper->insertAtTail(new BlockStmt(build_for_block(BLOCK_FORALL,
+                                                        typeindices,
+                                                        typeiterators, body)));
+
+    while (!dynamic_cast<GotoStmt*>(body->next))
+      body->next->remove(); // eliminate dead code for analysis
+
+    wrapper->insertAtTail(new LabelStmt(new DefExpr(break_out)));
     wrapper->insertAtTail(new BlockStmt(build_for_block(BLOCK_FORALL,
                                          indices,
                                          iterators,
   new BlockStmt(
                 new ExprStmt(new CallExpr(new CallExpr(".", seq, new_StringLiteral("_append_in_place")),
-                              new CallExpr(this, wrapper_actuals)))))));
+                                          new CallExpr(this, wrapper_actuals)))))));
     wrapper->insertAtTail(new ReturnStmt(seq));
   }
   defPoint->parentStmt->insertBefore(new DefExpr(wrapper));
