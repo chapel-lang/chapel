@@ -836,8 +836,10 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs) {
   AList<Expr>* iterators = new AList<Expr>();
   AList<Expr>* wrapper_actuals = new AList<Expr>();
   for_alist(DefExpr, formal, formals) {
+    Symbol* new_formal = formal->sym->copy();
+    if (_this == formal->sym)
+      wrapper->_this = new_formal;
     if (promotion_subs->get(formal->sym)) {
-      Symbol* new_formal = formal->sym->copy();
       new_formal->type = dtUnknown;
       Symbol* new_index = new VarSymbol("_index");
       wrapper->formals->insertAtTail(new DefExpr(new_formal));
@@ -845,18 +847,19 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs) {
       indices->insertAtTail(new DefExpr(new_index));
       wrapper_actuals->insertAtTail(new SymExpr(new_index));
     } else {
-      Symbol* new_formal = formal->sym->copy();
       wrapper->formals->insertAtTail(new DefExpr(new_formal));
       wrapper_actuals->insertAtTail(new SymExpr(new_formal));
     }
   }
   if (returns_void(this)) {
+    CallExpr* actualCall = new CallExpr(this, wrapper_actuals);
+    if (isMethod)
+      actualCall = make_method_call_partial(actualCall);
     wrapper->insertAtTail(new BlockStmt(build_for_block(BLOCK_FORALL,
                                          indices,
                                          iterators,
                                          new BlockStmt(
-                                           new ExprStmt(
-                                             new CallExpr(this, wrapper_actuals))))));
+                                           new ExprStmt(actualCall)))));
   } else {
     CallExpr* elt_type;
     if (iterators->length() == 1) {
@@ -875,9 +878,13 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs) {
     AList<Expr>* typeiterators = iterators->copy(&map);
     AList<Expr>* typewrapper_actuals = wrapper_actuals->copy(&map);
 
+    CallExpr* typeactualCall = new CallExpr(this, typewrapper_actuals);
+    if (isMethod)
+      typeactualCall = make_method_call_partial(typeactualCall);
+
     BlockStmt* body = 
       new BlockStmt(
-                    new ExprStmt(new DefExpr(seq, new CallExpr("_construct_seq", new CallExpr(this, typewrapper_actuals)))));
+                    new ExprStmt(new DefExpr(seq, new CallExpr("_construct_seq", typeactualCall))));
     body->insertAtTail(new GotoStmt(goto_normal, break_out));
     wrapper->insertAtTail(new BlockStmt(build_for_block(BLOCK_FORALL,
                                                         typeindices,
@@ -887,12 +894,17 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs) {
       body->next->remove(); // eliminate dead code for analysis
 
     wrapper->insertAtTail(new LabelStmt(new DefExpr(break_out)));
+
+    CallExpr* actualCall = new CallExpr(this, wrapper_actuals);
+    if (isMethod)
+      actualCall = make_method_call_partial(actualCall);
+
     wrapper->insertAtTail(new BlockStmt(build_for_block(BLOCK_FORALL,
                                          indices,
                                          iterators,
   new BlockStmt(
                 new ExprStmt(new CallExpr(new CallExpr(".", seq, new_StringLiteral("_append_in_place")),
-                                          new CallExpr(this, wrapper_actuals)))))));
+                                          actualCall))))));
     wrapper->insertAtTail(new ReturnStmt(seq));
   }
   defPoint->parentStmt->insertBefore(new DefExpr(wrapper));
