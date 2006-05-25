@@ -25,8 +25,8 @@ fun main() {
 
   do {
     // assumes promotion of + over homogeneous tuples
-    [ij in D] B(ij) = (A(ij+north) + A(ij+south) + 
-                       A(ij+east)  + A(ij+west) )/4;
+    B = (A[D.shift(north)] + A[D.shift(south)] +
+         A[D.shift(east)]  + A[D.shift(west)]  )/4;
 
     bigdiff = max reduce [ij in D] abs(A(ij) - B(ij));
 

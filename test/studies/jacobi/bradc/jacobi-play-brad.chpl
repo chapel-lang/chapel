@@ -28,7 +28,7 @@ fun main() {
     // optimization will take place here
     [ij in D] B(ij) = sum reduce [off in StencilD] A(ij+off);
 
-    bigdiff = max reduce [ij in D] (A(ij) - B(ij));
+    bigdiff = max reduce [ij in D] abs(A(ij) - B(ij));
 
     [ij in D] A(ij) = B(ij);
   } while (bigdiff > epsilon);

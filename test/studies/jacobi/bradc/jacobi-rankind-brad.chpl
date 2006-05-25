@@ -17,19 +17,6 @@ for d in 1..rank {
   weights(ind) = 0.25;
 }
 
-fun computeBoundary(ijk: index(rank)) {
-  for d in 1..rank {
-    if (ijk(d) < 0 || ijk(d) > n+1) {
-      halt("Out of bounds error in computeBoundary");
-    }
-  } else if (ijk(d) == n+1) {
-    return 1.0;
-  } else {
-    return 0.0;
-  }
-}
-
-
 fun main() {
   var A, B: [D] float = 0.0;
 
@@ -43,10 +30,23 @@ fun main() {
     // optimization will take place here
     [ijk in D] B(ijk) = sum reduce [off in StencilD] A(ijk+off);
 
-    bigdiff = max reduce (A-B);
+    bigdiff = max reduce abs(A-B);
 
     A = B;
   } while (bigdiff > epsilon);
 
   writeln("Final A is: \n", A);
+}
+
+
+fun computeBoundary(ijk: index(rank)) {
+  for d in 1..rank {
+    if (ijk(d) < 0 || ijk(d) > n+1) {
+      halt("Out of bounds error in computeBoundary");
+    }
+  } else if (ijk(d) == n+1) {
+    return 1.0;
+  } else {
+    return 0.0;
+  }
 }
