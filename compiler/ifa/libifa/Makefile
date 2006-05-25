@@ -24,7 +24,7 @@ DIR = libifa
 # ***************************
 
 MAJOR=0
-MINOR=2
+MINOR=3
 RELEASE=$(MAJOR).$(MINOR)
 
 CC = g++
