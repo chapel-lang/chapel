@@ -65852,3 +65852,20 @@ Added files:
 	                           test_scalar_promote6.chpl 
 	                           test_scalar_promote6.good 
 
+---------------------------------------------------------------------------
+
+05/25/06 08:47:09 -- bradc
+
+Log message:
+	Added a new jacobi variation that uses array slicing rather than
+	scalars.  Also, added the abs() function to the use of all my
+	versions, which I'd forgotten yesterday.
+
+Modified files:
+	chapel/test/studies/jacobi/bradc/: README jacobi-play-brad.chpl 
+	                                   jacobi-play2-brad.chpl 
+	                                   jacobi-rankind-brad.chpl 
+	                                   jacobi-simple-brad.chpl 
+Added files:
+	chapel/test/studies/jacobi/bradc/: jacobi-slice-brad.chpl 
+
