@@ -65901,3 +65901,13 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/libifa/: index.html 
 
+---------------------------------------------------------------------------
+
+05/25/06 14:50:59 -- jplevyak
+
+Log message:
+	next version 0.3
+
+Modified files:
+	chapel/compiler/ifa/libifa/: Makefile 
+
