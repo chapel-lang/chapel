@@ -65829,3 +65829,26 @@ Log message:
 Added files:
 	chapel/test/studies/jacobi/bocchino/: jacobi.chpl 
 
+---------------------------------------------------------------------------
+
+05/24/06 18:15:52 -- deitz
+
+Log message:
+	Fix on thinko in my earlier scalar promotion checkin.  I was returning
+	a sequence with the wrong elt_type.  This now returns the right
+	elt_type, but ends up calling the first application of the function
+	twice in order to determine the type.  I will clean this code up.
+	
+	Added three more tests of scalar promotion, one of which scalar
+	promotes two arguments to a function and relies on zippered iteration.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+Added files:
+	chapel/test/arrays/deitz/: test_scalar_promote4.chpl 
+	                           test_scalar_promote4.good 
+	                           test_scalar_promote5.chpl 
+	                           test_scalar_promote5.good 
+	                           test_scalar_promote6.chpl 
+	                           test_scalar_promote6.good 
+
