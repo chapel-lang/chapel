@@ -65768,3 +65768,14 @@ Added files:
 	chapel/compiler/ifa/libifa/: ifa_tests 
 	chapel/compiler/ifa/libifa/tests/: literal.v literal.v.check 
 
+---------------------------------------------------------------------------
+
+05/24/06 17:26:09 -- jplevyak
+
+Log message:
+	two new jacobi examples
+
+Added files:
+	chapel/test/studies/jacobi/jplevyak/: jacobi-jp3.chpl 
+	                                      jacobi-jp4.chpl 
+
