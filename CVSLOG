@@ -65779,3 +65779,29 @@ Added files:
 	chapel/test/studies/jacobi/jplevyak/: jacobi-jp3.chpl 
 	                                      jacobi-jp4.chpl 
 
+---------------------------------------------------------------------------
+
+05/24/06 17:34:19 -- bradc
+
+Log message:
+	Some stabs at writing jacobi.  From the README:
+	
+	jacobi-simple-brad.chpl      : My stab at a reasonably simple jacobi
+	jacobi-simple-compilers.chpl : A failed attempt to modify the above until
+	                               it would compile
+	jacobi-play-brad.chpl        : Started to get playful with the simple version
+	jacobi-play2-brad.chpl       : Continued playfulness
+	jacobi-rankind-brad.chpl     : A somewhat unsatisfactory attempt to write a
+	                               rank-independent jacobi
+	
+	Steve, if you could print out jacobi-simple-brad.chpl,
+	jacobi-play-brad.chpl, and jacobi-play2-brad.chpl, that would be
+	great.
+
+Added files:
+	chapel/test/studies/jacobi/bradc/: README jacobi-play-brad.chpl 
+	                                   jacobi-play2-brad.chpl 
+	                                   jacobi-rankind-brad.chpl 
+	                                   jacobi-simple-brad.chpl 
+	                                   jacobi-simple-compiles.chpl 
+
