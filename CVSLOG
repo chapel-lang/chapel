@@ -65819,3 +65819,13 @@ Log message:
 Added files:
 	chapel/test/studies/jacobi/waynew/: example2.chpl 
 
+---------------------------------------------------------------------------
+
+05/24/06 18:04:30 -- bocchino
+
+Log message:
+	Jacobi example
+
+Added files:
+	chapel/test/studies/jacobi/bocchino/: jacobi.chpl 
+
