@@ -65805,3 +65805,17 @@ Added files:
 	                                   jacobi-simple-brad.chpl 
 	                                   jacobi-simple-compiles.chpl 
 
+---------------------------------------------------------------------------
+
+05/24/06 17:59:55 -- waynew
+
+Log message:
+	Not too much different from example1.chpl.  Changes include:
+	 - removal of the 3rd array to store the delta
+	 - removed the explicit max reduction the delta array
+	 - "main" world is now the smaller domain so that it does not
+	   print the extra border values in the final writeln
+
+Added files:
+	chapel/test/studies/jacobi/waynew/: example2.chpl 
+
