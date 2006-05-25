@@ -65869,3 +65869,15 @@ Modified files:
 Added files:
 	chapel/test/studies/jacobi/bradc/: jacobi-slice-brad.chpl 
 
+---------------------------------------------------------------------------
+
+05/25/06 09:01:18 -- bradc
+
+Log message:
+	Added missing NOTEST files to Rob and my directories (I forgot, and he
+	probably didn't know about the need).
+
+Added files:
+	chapel/test/studies/jacobi/bocchino/: NOTEST 
+	chapel/test/studies/jacobi/bradc/: NOTEST 
+
