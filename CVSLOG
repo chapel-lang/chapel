@@ -65891,3 +65891,13 @@ Log message:
 Added files:
 	chapel/compiler/ifa/libifa/tests/: literal.v.flags 
 
+---------------------------------------------------------------------------
+
+05/25/06 14:50:40 -- jplevyak
+
+Log message:
+	Update to 0.2
+
+Modified files:
+	chapel/compiler/ifa/libifa/: index.html 
+
