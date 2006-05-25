@@ -65881,3 +65881,13 @@ Added files:
 	chapel/test/studies/jacobi/bocchino/: NOTEST 
 	chapel/test/studies/jacobi/bradc/: NOTEST 
 
+---------------------------------------------------------------------------
+
+05/25/06 09:32:42 -- jplevyak
+
+Log message:
+	test flags file
+
+Added files:
+	chapel/compiler/ifa/libifa/tests/: literal.v.flags 
+
