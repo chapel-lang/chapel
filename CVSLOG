@@ -65956,3 +65956,26 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 	chapel/compiler/ifa/: fa.cpp fa.h 
 
+---------------------------------------------------------------------------
+
+05/26/06 11:12:59 -- deitz
+
+Log message:
+	Refactored the scalar promotion wrapper code and enabled forall
+	expressions with explicit indices such as
+	
+	  [indexVar in iteratorExpr] expr
+	
+	Removed two futures.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp symbol.cpp 
+	chapel/compiler/include/: build.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/test/arrays/deitz/: array_forall_expr.chpl 
+	                           array_forall_expr.good 
+	chapel/test/functions/deitz/: test_forallexpr1.chpl 
+Removed files:
+	chapel/test/arrays/deitz/: array_forall_expr.future 
+	chapel/test/functions/deitz/: test_forallexpr1.future 
+
