@@ -65924,3 +65924,13 @@ Added files:
 	chapel/test/arrays/deitz/: test_scalar_promote7.chpl 
 	                           test_scalar_promote7.good 
 
+---------------------------------------------------------------------------
+
+05/25/06 18:43:56 -- jplevyak
+
+Log message:
+	
+
+Modified files:
+	chapel/compiler/ifa/: builtin_symbols.h cg.cpp 
+
