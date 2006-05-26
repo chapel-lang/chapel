@@ -1124,12 +1124,7 @@ expr:
     {
       FnSymbol* forall_iterator =
         new FnSymbol(stringcat("_forallexpr", intstring(iterator_uid++)));
-      forall_iterator->fnClass = FN_ITERATOR;
-      forall_iterator->insertAtTail(
-        build_for_block(BLOCK_FORALL,
-                        exprsToIndices($2),
-                        $4,
-                        new BlockStmt(new ReturnStmt($6, true))));
+      forall_iterator->insertAtTail(build_for_expr(exprsToIndices($2), $4, $6));
       $$ = new CallExpr(new DefExpr(forall_iterator));
     }
 | TLSBR nonempty_expr_ls TRSBR

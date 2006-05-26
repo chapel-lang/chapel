@@ -851,61 +851,17 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs) {
       wrapper_actuals->insertAtTail(new SymExpr(new_formal));
     }
   }
+  CallExpr* actualCall = new CallExpr(this, wrapper_actuals);
+  if (isMethod)
+    actualCall = make_method_call_partial(actualCall);
   if (returns_void(this)) {
-    CallExpr* actualCall = new CallExpr(this, wrapper_actuals);
-    if (isMethod)
-      actualCall = make_method_call_partial(actualCall);
     wrapper->insertAtTail(new BlockStmt(build_for_block(BLOCK_FORALL,
                                          indices,
                                          iterators,
                                          new BlockStmt(
                                            new ExprStmt(actualCall)))));
   } else {
-    CallExpr* elt_type;
-    if (iterators->length() == 1) {
-      elt_type = new CallExpr(new CallExpr(".", iterators->only()->copy(), new_StringLiteral("getValue")), new CallExpr(new CallExpr(".", iterators->only()->copy(), new_StringLiteral("getHeadCursor"))));
-    } else {
-      elt_type = new CallExpr("_construct__tuple", new_IntLiteral(iterators->length()));
-      for_alist(Expr, iteratorExpr, iterators) {
-        elt_type->insertAtTail(new CallExpr(new CallExpr(".", iteratorExpr->copy(), new_StringLiteral("getValue")), new CallExpr(new CallExpr(".", iteratorExpr->copy(), new_StringLiteral("getHeadCursor")))));
-      }
-    }
-    VarSymbol* seq = new VarSymbol("_seq");
-    LabelSymbol* break_out = new LabelSymbol("type_break");
-
-    ASTMap map;
-    AList<DefExpr>* typeindices = indices->copy(&map);
-    AList<Expr>* typeiterators = iterators->copy(&map);
-    AList<Expr>* typewrapper_actuals = wrapper_actuals->copy(&map);
-
-    CallExpr* typeactualCall = new CallExpr(this, typewrapper_actuals);
-    if (isMethod)
-      typeactualCall = make_method_call_partial(typeactualCall);
-
-    BlockStmt* body = 
-      new BlockStmt(
-                    new ExprStmt(new DefExpr(seq, new CallExpr("_construct_seq", typeactualCall))));
-    body->insertAtTail(new GotoStmt(goto_normal, break_out));
-    wrapper->insertAtTail(new BlockStmt(build_for_block(BLOCK_FORALL,
-                                                        typeindices,
-                                                        typeiterators, body)));
-
-    while (!dynamic_cast<GotoStmt*>(body->next))
-      body->next->remove(); // eliminate dead code for analysis
-
-    wrapper->insertAtTail(new LabelStmt(new DefExpr(break_out)));
-
-    CallExpr* actualCall = new CallExpr(this, wrapper_actuals);
-    if (isMethod)
-      actualCall = make_method_call_partial(actualCall);
-
-    wrapper->insertAtTail(new BlockStmt(build_for_block(BLOCK_FORALL,
-                                         indices,
-                                         iterators,
-  new BlockStmt(
-                new ExprStmt(new CallExpr(new CallExpr(".", seq, new_StringLiteral("_append_in_place")),
-                                          actualCall))))));
-    wrapper->insertAtTail(new ReturnStmt(seq));
+    wrapper->insertAtTail(build_for_expr(indices, iterators, actualCall));
   }
   defPoint->parentStmt->insertBefore(new DefExpr(wrapper));
   reset_file_info(wrapper->defPoint->parentStmt, lineno, filename);

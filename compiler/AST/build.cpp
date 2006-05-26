@@ -147,6 +147,55 @@ AList<Stmt>* build_do_while_block(Expr* cond, BlockStmt* body) {
 }
 
 
+// builds body of for expression
+AList<Stmt>* build_for_expr(AList<DefExpr>* indices,
+                            AList<Expr>* iterators,
+                            Expr* expr) {
+  AList<Stmt>* stmts = new AList<Stmt>();
+
+  CallExpr* elt_type;
+  if (iterators->length() == 1) {
+    elt_type = new CallExpr(new CallExpr(".", iterators->only()->copy(), new_StringLiteral("getValue")), new CallExpr(new CallExpr(".", iterators->only()->copy(), new_StringLiteral("getHeadCursor"))));
+  } else {
+    elt_type = new CallExpr("_construct__tuple", new_IntLiteral(iterators->length()));
+    for_alist(Expr, iteratorExpr, iterators) {
+      elt_type->insertAtTail(new CallExpr(new CallExpr(".", iteratorExpr->copy(), new_StringLiteral("getValue")), new CallExpr(new CallExpr(".", iteratorExpr->copy(), new_StringLiteral("getHeadCursor")))));
+    }
+  }
+  VarSymbol* seq = new VarSymbol("_seq");
+  LabelSymbol* break_out = new LabelSymbol("type_break");
+
+  ASTMap map;
+  AList<DefExpr>* typeindices = indices->copy(&map);
+  AList<Expr>* typeiterators = iterators->copy(&map);
+  Expr* typeexpr = expr->copy(&map);
+
+  BlockStmt* body = 
+    new BlockStmt(
+      new ExprStmt(
+        new DefExpr(seq, new CallExpr("_construct_seq", typeexpr))));
+  body->insertAtTail(new GotoStmt(goto_normal, break_out));
+  stmts->insertAtTail(new BlockStmt(build_for_block(BLOCK_FORALL,
+                                                    typeindices,
+                                                    typeiterators,
+                                                    body)));
+
+  while (!dynamic_cast<GotoStmt*>(body->next))
+    body->next->remove(); // eliminate dead code for analysis
+
+  stmts->insertAtTail(new LabelStmt(new DefExpr(break_out)));
+
+  stmts->insertAtTail(new BlockStmt(build_for_block(BLOCK_FORALL,
+                                                    indices,
+                                                    iterators,
+                                                    new BlockStmt(
+                                                                  new ExprStmt(new CallExpr(new CallExpr(".", seq, new_StringLiteral("_append_in_place")),
+                                                                                            expr))))));
+  stmts->insertAtTail(new ReturnStmt(seq));
+  return stmts;
+}
+
+
 AList<Stmt>* build_for_block(BlockTag tag,
                              AList<DefExpr>* indices,
                              AList<Expr>* iterators,
