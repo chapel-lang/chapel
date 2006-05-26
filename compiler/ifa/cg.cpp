@@ -698,7 +698,7 @@ void
 cg_print_c(FILE *fp, FA *fa, Fun *init) {
   Vec<Var *> globals;
   int index = 0;
-  fprintf(fp, "#include \"c_runtime.h\"\n\n");
+  fprintf(fp, "#include \"%s/c_runtime.h\"\n\n", system_dir);
   if (build_type_strings(fp, fa, globals) < 0)
     fail("unable to generate C code: no unique typing");
   if (globals.n)
@@ -760,6 +760,7 @@ cg_compile(char *filename) {
   char target[512], s[1024];
   strcpy(target, filename);
   *strrchr(target, '.') = 0;
-  sprintf(s, "make -f Makefile.cg CG_TARGET=%s CG_FILES=%s.c", target, filename);
+  sprintf(s, "make -f %s/Makefile.cg CG_TARGET=%s CG_FILES=%s.c", 
+          system_dir, target, filename);
   return system(s);
 }
