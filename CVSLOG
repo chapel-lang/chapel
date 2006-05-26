@@ -65979,3 +65979,13 @@ Removed files:
 	chapel/test/arrays/deitz/: array_forall_expr.future 
 	chapel/test/functions/deitz/: test_forallexpr1.future 
 
+---------------------------------------------------------------------------
+
+05/26/06 12:36:40 -- jplevyak
+
+Log message:
+	Fix performance issue in analysis.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
