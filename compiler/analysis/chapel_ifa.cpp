@@ -26,7 +26,7 @@
 
 #define VARARG_END     0ll
 //#define MINIMIZED_MEMORY 1  // minimize the memory used by Sym's... needs valgrind checking for safety
-//#define USE_FLOAT_128
+#define USE_FLOAT_128
 
 #define SYMBOL(_x) (((ASymbol*)(_x)->asymbol)->symbol)
 
