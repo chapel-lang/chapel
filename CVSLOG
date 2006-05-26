@@ -65944,3 +65944,15 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: chapel_ifa.cpp 
 
+---------------------------------------------------------------------------
+
+05/26/06 08:59:42 -- jplevyak
+
+Log message:
+	Remove "split eager" from _copy on tuples.
+	Add some controls to prevent runaway eager splitting.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/ifa/: fa.cpp fa.h 
+
