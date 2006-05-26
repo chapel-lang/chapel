@@ -65934,3 +65934,13 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: builtin_symbols.h cg.cpp 
 
+---------------------------------------------------------------------------
+
+05/25/06 21:01:19 -- jplevyak
+
+Log message:
+	enable "128" bit complex/floats.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+
