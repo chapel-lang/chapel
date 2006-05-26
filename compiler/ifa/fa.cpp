@@ -670,8 +670,10 @@ edge_type_compatible_with_edge(AEdge *e, AEdge *ee, EntrySet *es, int fmark = 0)
     AVar *e_arg = e->args.get(p), *ee_arg = ee->args.get(p);
     if (!e_arg || !ee_arg)
       continue;
+    AType *etype = type_intersection(e_arg->out->type, e->match->formal_filters.get(p));
+    AType *eetype = type_intersection(ee_arg->out->type, ee->match->formal_filters.get(p));
     if (!fmark) {
-      if (ee_arg->out->type->n && e_arg->out->type->n && ee_arg->out->type != e_arg->out->type)
+      if (etype->n && eetype->n && etype != eetype)
         return 0;
     } else {
       AVar *es_arg = es->args.get(p);
@@ -705,8 +707,9 @@ edge_type_compatible_with_entry_set(AEdge *e, EntrySet *es, int fmark = 0) {
       AVar *es_arg = es->args.get(p), *e_arg = e->args.get(p);
       if (!e_arg)
         continue;
+      AType *etype = type_intersection(e_arg->out->type, e->match->formal_filters.get(p));
       if (!fmark) {
-        if (e_arg->out->type->n && es_arg->out->type->n && e_arg->out->type != es_arg->out->type)
+        if (etype->n && es_arg->out->type->n && etype != es_arg->out->type)
           return 0;
       } else
         if (different_marked_args(e_arg, es_arg, 2))
@@ -736,8 +739,8 @@ edge_type_compatible_with_entry_set(AEdge *e, EntrySet *es, int fmark = 0) {
   return 1;
 }
 
-static
-int sset_compatible(AVar *av1, AVar *av2) {
+static int 
+sset_compatible(AVar *av1, AVar *av2) {
   if (!same_eq_classes(av1->setters, av2->setters))
     return 0;
   if (av1->lvalue && av2->lvalue)
@@ -872,6 +875,24 @@ copy_AEdge(AEdge *ee, EntrySet *to) {
 }
 
 static int
+initial_compatibility(AEdge *e, EntrySet *es) {
+  forv_AEdge(ee, es->edges) if (ee) {
+    forv_MPosition(p, e->match->fun->positional_arg_positions) {
+      AVar *ee_arg = ee->args.get(p), *e_arg = e->args.get(p);
+      if (!e_arg || !ee_arg)
+        continue;
+      AType *etype = type_intersection(e_arg->out->type, e->match->formal_filters.get(p));
+      AType *eetype = ee->initial_types.get(p);
+      if (eetype && eetype->n && etype->n && etype != eetype)
+        goto Lnext;
+    }
+    return 1;
+  Lnext:;
+  }
+  return 0;
+}
+
+static int
 entry_set_compatibility(AEdge *e, EntrySet *es) {
   int val = INT_MAX;
   if (e->match->fun->split_unique)
@@ -881,7 +902,7 @@ entry_set_compatibility(AEdge *e, EntrySet *es) {
   switch (edge_type_compatible_with_entry_set(e, es)) {
     case 1: break;
     case 0: 
-      if (!analysis_pass && e->match->fun->split_eager)
+      if (!analysis_pass && e->match->fun->split_eager && !initial_compatibility(e, es))
         return 0;
       val -= 4; 
       break;
@@ -1309,8 +1330,9 @@ static void
 record_arg(PNode *pn, CreationSet *cs, AVar *a, Sym *s, AEdge *e, MPosition &p) {
   MPosition *cp = cannonicalize_mposition(p);
   e->args.put(cp, a);
+  AType *t = type_intersection(a->out, e->match->formal_filters.get(cp));
+  e->initial_types.put(cp, t);
   if (s->is_pattern) {
-    AType *t = type_intersection(a->out, e->match->formal_filters.get(cp));
     forv_CreationSet(cs, *t) {
       assert(s->has.n == cs->vars.n);
       p.push(1);
@@ -3355,19 +3377,27 @@ split_with_setter_marks(AVar *av) {
     if (av->contour_is_entry_set) {
       if (!av->is_lvalue) {
         AVar *aav = unique_AVar(av->var, av->contour);
-        if (is_return_value(aav)) {
-          if (split_entry_set(aav, SPLIT_SETTER, SPLIT_MARK, SPLIT_EDGES))
-            analyze_again = 1;
-        }
-      } else {
-        if (av->var->is_formal) {
-          if (split_entry_set(av, SPLIT_SETTER, SPLIT_MARK, SPLIT_EDGES))
-            analyze_again = 1;
-        }
-      }
+        if (is_return_value(aav))
+          analyze_again |= split_entry_set(aav, SPLIT_SETTER, SPLIT_MARK, SPLIT_EDGES);
+      } else
+        if (av->var->is_formal)
+          analyze_again |= split_entry_set(av, SPLIT_SETTER, SPLIT_MARK, SPLIT_EDGES);
     }
   }
   clear_marks(acc);
+  return analyze_again;
+}
+
+static int
+split_ess_setters_marks(Vec<AVar *> &confluences) {
+  int analyze_again = 0;
+  forv_AVar(av, confluences)
+    if (av->contour_is_entry_set)
+      analyze_again |= split_with_setter_marks(av);
+  if (!analyze_again)
+    forv_AVar(av, confluences)
+      if (!av->contour_is_entry_set)
+        analyze_again |= split_with_setter_marks(av);
   return analyze_again;
 }
 
@@ -3377,24 +3407,14 @@ split_ess_setters(Vec<AVar *> &confluences) {
   forv_AVar(av, confluences) {
     if (av->contour_is_entry_set) {
       if (!av->is_lvalue) {
-        if (is_return_value(av)) {
-          if (split_entry_set(av, SPLIT_SETTER, SPLIT_VALUE, SPLIT_EDGES))
-            analyze_again = 1;
-        } else if (!analyze_again)
-          if (split_with_setter_marks(av))
-            analyze_again = 1;
+        if (is_return_value(av))
+          analyze_again |= split_entry_set(av, SPLIT_SETTER, SPLIT_VALUE, SPLIT_EDGES);
       } else {
         AVar *aav = unique_AVar(av->var, av->contour);
-        if (aav->var->is_formal) {
-          if (split_entry_set(aav, SPLIT_SETTER, SPLIT_VALUE, SPLIT_EDGES))
-            analyze_again = 1;
-        } else if (!analyze_again)
-          if (split_with_setter_marks(av))
-            analyze_again = 1;
+        if (aav->var->is_formal)
+          analyze_again |= split_entry_set(aav, SPLIT_SETTER, SPLIT_VALUE, SPLIT_EDGES);
       }
-    } else if (!analyze_again)
-      if (split_with_setter_marks(av))
-        analyze_again = 1;
+    }
   }
   return analyze_again;
 }
@@ -3448,6 +3468,8 @@ split_for_setters() {
   Vec<AVar *> setter_confluences, setter_starters;
   collect_setter_confluences(setter_confluences, setter_starters);
   if (split_ess_setters(setter_confluences))
+    return 1;
+  if (split_ess_setters_marks(setter_confluences))
     return 1;
   if (split_css(setter_starters))
     return 1;
@@ -3663,10 +3685,9 @@ extend_analysis() {
       break;
     }
   }
-  if (!analyze_again) {
+  if (!analyze_again)
     // 4) split AEdges(s) and EntrySet(s) for violations based on type using dynamic dispatch
     analyze_again = split_for_violations(type_violations);
-  }
   extend_timer.stop();
   if (analysis_pass > IFA_PASS_LIMIT)
     analyze_again = 0;

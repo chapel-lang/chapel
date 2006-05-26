@@ -1102,7 +1102,6 @@ instantiate_tuple_copy(FnSymbol* fn) {
   for (int i = 1; i < ct->fields.n; i++)
     call->insertAtTail(new CallExpr(arg, new_IntLiteral(i)));
   fn->body->replace(new BlockStmt(new ReturnStmt(call)));
-  fn->addPragma("split eager");
   return fn;
 }
 

@@ -55,18 +55,19 @@ class AType : public Vec<CreationSet *> {
 
 class AEdge : public gc {
  public:
-  int                   id;
-  EntrySet              *from, *to;
-  PNode                 *pnode;
-  Map<MPosition*,AVar*> args;
-  Map<MPosition*,AVar*> filtered_args;
-  Vec<AVar *>           rets;
-  Fun                   *fun;
-  Match                 *match;
-  uint                  in_edge_worklist : 1;
-  uint                  es_backedge : 1;
-  uint                  es_cs_backedge : 1;
-  Link<AEdge>           edge_worklist_link;
+  int                    id;
+  EntrySet               *from, *to;
+  PNode                  *pnode;
+  Map<MPosition*,AVar*>  args;
+  Map<MPosition*,AVar*>  filtered_args;
+  Map<MPosition*,AType*> initial_types;
+  Vec<AVar *>            rets;
+  Fun                    *fun;
+  Match                  *match;
+  uint                   in_edge_worklist : 1;
+  uint                   es_backedge : 1;
+  uint                   es_cs_backedge : 1;
+  Link<AEdge>            edge_worklist_link;
 
   AEdge();
 };
