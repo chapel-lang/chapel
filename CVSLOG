@@ -65989,3 +65989,16 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+05/27/06 21:37:51 -- jplevyak
+
+Log message:
+	Add code to handle recursive closures.
+	Ignore eager splitting pragmas.
+	Fix typo in jacobi example.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp fa.h 
+	chapel/test/studies/jacobi/jplevyak/: jacobi-jp3.chpl 
+
