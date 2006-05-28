@@ -61,7 +61,8 @@ static Vec<ATypeViolation *> type_violations;
 
 static int application(PNode *p, EntrySet *es, AVar *fun, CreationSet *s, 
                        Vec<AVar *> &args, Vec<char *> &names,
-                       int is_closure, Partial_kind partial, PNode *visibility_point);
+                       int is_closure, Partial_kind partial, 
+                       PNode *visibility_point, Vec<CreationSet*> *closures);
 
 AEdge::AEdge() : 
   from(0), to(0), pnode(0), fun(0), match(0), in_edge_worklist(0) 
@@ -877,15 +878,9 @@ copy_AEdge(AEdge *ee, EntrySet *to) {
 static int
 initial_compatibility(AEdge *e, EntrySet *es) {
   forv_AEdge(ee, es->edges) if (ee) {
-    forv_MPosition(p, e->match->fun->positional_arg_positions) {
-      AVar *ee_arg = ee->args.get(p), *e_arg = e->args.get(p);
-      if (!e_arg || !ee_arg)
-        continue;
-      AType *etype = type_intersection(e_arg->out->type, e->match->formal_filters.get(p));
-      AType *eetype = ee->initial_types.get(p);
-      if (eetype && eetype->n && etype->n && etype != eetype)
+    forv_MPosition(p, e->match->fun->positional_arg_positions)
+      if (e->initial_types.get(p) != ee->initial_types.get(p))
         goto Lnext;
-    }
     return 1;
   Lnext:;
   }
@@ -902,8 +897,8 @@ entry_set_compatibility(AEdge *e, EntrySet *es) {
   switch (edge_type_compatible_with_entry_set(e, es)) {
     case 1: break;
     case 0: 
-      if (!analysis_pass && e->match->fun->split_eager && !initial_compatibility(e, es))
-        return 0;
+//      if (analysis_pass == 0 && e->match->fun->split_eager && !initial_compatibility(e, es))
+//        return 0;
       val -= 4; 
       break;
     case -1: return 0;
@@ -1381,13 +1376,14 @@ make_AEdges(Match *m, PNode *p, EntrySet *from, Vec<AVar *> &args) {
 // returns 1 if any are partial, 0 if some matched and -1 if none matched
 static int
 all_applications(PNode *p, EntrySet *es, AVar *a0, Vec<AVar *> &args, Vec<char *> &names,
-                 int is_closure, Partial_kind partial, PNode *visibility_point = 0) 
+                 int is_closure, Partial_kind partial, 
+                 PNode *visibility_point = 0, Vec<CreationSet *> *closures = 0) 
 {
   if (!visibility_point) visibility_point = p;
   int incomplete = -2;
   a0->arg_of_send.add(make_AVar(p->lvals.v[0], es));
   forv_CreationSet(cs, *a0->out) if (cs)
-    switch (application(p, es, a0, cs, args, names, is_closure, partial, visibility_point)) {
+    switch (application(p, es, a0, cs, args, names, is_closure, partial, visibility_point, closures)) {
       case -1: if (incomplete < 0) incomplete = -1; break;
       case 0: if (incomplete < 0) incomplete = 0; break;
       case 1: incomplete = 1; break;
@@ -1398,7 +1394,8 @@ all_applications(PNode *p, EntrySet *es, AVar *a0, Vec<AVar *> &args, Vec<char *
 static int
 partial_application(PNode *p, EntrySet *es, CreationSet *cs, 
                     Vec<AVar *> &args, Vec<char *> &names,
-                    Partial_kind partial, PNode *visibility_point) 
+                    Partial_kind partial, PNode *visibility_point,
+                    Vec<CreationSet *> *closures) 
 {
   AVar *result = make_AVar(p->lvals.v[0], es);
   assert(result->var->def == p);
@@ -1418,7 +1415,16 @@ partial_application(PNode *p, EntrySet *es, CreationSet *cs,
     n.v[def->rvals.n + i - 1] = names.v[i];
   assert(!names.n || !names.v[0]);
   assert(cs->defs.n == 1);
-  int r = all_applications(p, es, fun, a, n, 1, partial, def);
+  Vec<CreationSet*> c;
+  if (closures) {
+    if (closures->set_in(cs)) {
+      type_violation(ATypeViolation_CLOSURE_RECURSION, cs->vars.v[0], 0, result, 0);
+      return 0;
+    }
+  } else
+    closures = &c;
+  closures->set_add(cs);
+  int r = all_applications(p, es, fun, a, n, 1, partial, def, closures);
   if (!r)
     cs->closure_used = 1;
   return r;
@@ -1453,10 +1459,11 @@ function_dispatch(PNode *p, EntrySet *es, AVar *a0, CreationSet *s,
 static int
 application(PNode *p, EntrySet *es, AVar *a0, CreationSet *cs, 
             Vec<AVar *> &args, Vec<char *> &names, 
-            int is_closure, Partial_kind partial, PNode *visibility_point) 
+            int is_closure, Partial_kind partial, PNode *visibility_point,
+            Vec<CreationSet *> *closures) 
 {
   if (sym_closure->implementors.set_in(cs->sym) && cs->defs.n)
-    return partial_application(p, es, cs, args, names, partial, visibility_point);
+    return partial_application(p, es, cs, args, names, partial, visibility_point, closures);
   return function_dispatch(p, es, a0, cs, args, names, is_closure, partial, visibility_point);
 }
 
@@ -2336,6 +2343,10 @@ show_violations(FA *fa, FILE *fp) {
         fprintf(fp, "has mixed basic types:");
         show_type(*v->type, fp);
         fprintf(fp, "\n");
+        break;
+      case ATypeViolation_CLOSURE_RECURSION:
+        show_name(fp, v->av);
+        fprintf(fp, "is recursive closure\n");
         break;
     }
     if (v->send)

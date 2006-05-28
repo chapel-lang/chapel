@@ -239,7 +239,8 @@ enum ATypeViolation_kind {
   ATypeViolation_MEMBER,
   ATypeViolation_MATCH,
   ATypeViolation_NOTYPE,
-  ATypeViolation_BOXING
+  ATypeViolation_BOXING,
+  ATypeViolation_CLOSURE_RECURSION
 };
   
 class ATypeViolation : public gc {
