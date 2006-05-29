@@ -66002,3 +66002,14 @@ Modified files:
 	chapel/compiler/ifa/: fa.cpp fa.h 
 	chapel/test/studies/jacobi/jplevyak/: jacobi-jp3.chpl 
 
+---------------------------------------------------------------------------
+
+05/29/06 09:29:25 -- jplevyak
+
+Log message:
+	Up pass limit to 100.
+	Tweak initial_ compatibility.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp fa.h 
+
