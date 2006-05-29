@@ -877,14 +877,11 @@ copy_AEdge(AEdge *ee, EntrySet *to) {
 
 static int
 initial_compatibility(AEdge *e, EntrySet *es) {
-  forv_AEdge(ee, es->edges) if (ee) {
+  forv_AEdge(ee, es->edges) if (ee)
     forv_MPosition(p, e->match->fun->positional_arg_positions)
       if (e->initial_types.get(p) != ee->initial_types.get(p))
-        goto Lnext;
-    return 1;
-  Lnext:;
-  }
-  return 0;
+        return 0;
+  return 1;
 }
 
 static int
@@ -897,8 +894,11 @@ entry_set_compatibility(AEdge *e, EntrySet *es) {
   switch (edge_type_compatible_with_entry_set(e, es)) {
     case 1: break;
     case 0: 
-//      if (analysis_pass == 0 && e->match->fun->split_eager && !initial_compatibility(e, es))
-//        return 0;
+#if 0
+      // eager splitting doesn't help
+      if (analysis_pass == 0 && !initial_compatibility(e, es))
+        return 0;
+#endif
       val -= 4; 
       break;
     case -1: return 0;
@@ -1326,7 +1326,7 @@ record_arg(PNode *pn, CreationSet *cs, AVar *a, Sym *s, AEdge *e, MPosition &p) 
   MPosition *cp = cannonicalize_mposition(p);
   e->args.put(cp, a);
   AType *t = type_intersection(a->out, e->match->formal_filters.get(cp));
-  e->initial_types.put(cp, t);
+  e->initial_types.put(cp, t->type);
   if (s->is_pattern) {
     forv_CreationSet(cs, *t) {
       assert(s->has.n == cs->vars.n);
