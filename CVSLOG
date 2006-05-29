@@ -66013,3 +66013,13 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp fa.h 
 
+---------------------------------------------------------------------------
+
+05/29/06 13:37:57 -- jplevyak
+
+Log message:
+	Ensure that all type entry set splits precede marked type splits.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
