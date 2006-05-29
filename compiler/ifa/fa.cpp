@@ -875,6 +875,7 @@ copy_AEdge(AEdge *ee, EntrySet *to) {
   return e;
 }
 
+#if 0
 static int
 initial_compatibility(AEdge *e, EntrySet *es) {
   forv_AEdge(ee, es->edges) if (ee)
@@ -883,6 +884,7 @@ initial_compatibility(AEdge *e, EntrySet *es) {
         return 0;
   return 1;
 }
+#endif
 
 static int
 entry_set_compatibility(AEdge *e, EntrySet *es) {
@@ -3563,8 +3565,6 @@ split_ess_for_type(Vec<AVar *> &imprecisions, int fdynamic) {
         if (is_return_value(aav))
           analyze_again |= split_entry_set(aav, SPLIT_TYPE, SPLIT_VALUE, fdynamic);
       }
-      if (!analyze_again)
-        analyze_again |= split_with_type_marks(av);
     }
   }
   return analyze_again;
@@ -3574,8 +3574,12 @@ static int
 split_ess_for_mark_type(Vec<AVar *> &imprecisions) {
   int analyze_again = 0;
   forv_AVar(av, imprecisions)
-    if (!av->contour_is_entry_set)
+    if (av->contour_is_entry_set)
       analyze_again |= split_with_type_marks(av);
+  if (!analyze_again)
+    forv_AVar(av, imprecisions)
+      if (!av->contour_is_entry_set)
+        analyze_again |= split_with_type_marks(av);
   return analyze_again;
 }
 
