@@ -66127,3 +66127,13 @@ Added files:
 	                           jacobi-no-inline.compopts 
 	                           jacobi-no-inline.good 
 
+---------------------------------------------------------------------------
+
+05/30/06 16:17:37 -- deitz
+
+Log message:
+	Reenabled inlining by adding _init to the list of cnames that need to be mangled.  Added a test to make sure inlining keeps working.
+
+Modified files:
+	chapel/make/: Makefile.linux64 
+
