@@ -66023,3 +66023,14 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+05/30/06 08:52:35 -- deitz
+
+Log message:
+	Added missing case as stub to ACallbacks::report_analysis_errors to
+	remove compiler warning.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+
