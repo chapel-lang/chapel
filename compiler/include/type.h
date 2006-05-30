@@ -47,6 +47,7 @@ class Type : public BaseAST {
   bool isGeneric;
   Vec<Symbol*> genericSymbols;
   Type *instantiatedFrom;
+  Vec<Type*> *instantiatedWith;
   ASTMap substitutions;
 
   Type(astType_t astType, Symbol* init_defaultVal);

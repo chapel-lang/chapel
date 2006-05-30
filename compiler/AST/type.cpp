@@ -21,7 +21,8 @@ Type::Type(astType_t astType, Symbol* init_defaultVal) :
   asymbol(NULL),
   metaType(NULL),
   isGeneric(false),
-  instantiatedFrom(NULL)
+  instantiatedFrom(NULL),
+  instantiatedWith(NULL)
 { 
   typeParents.clear();
   dispatchParents.clear();

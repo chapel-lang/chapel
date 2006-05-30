@@ -1074,6 +1074,21 @@ instantiate_tuple_init(FnSymbol* fn) {
 }
 
 
+static int
+count_instantiate_with_recursion(Type* t) {
+  if (t->instantiatedWith) {
+    int high = 0;
+    forv_Vec(Type, s, *t->instantiatedWith) {
+      int count = count_instantiate_with_recursion(s);
+      if (count > high)
+        high = count;
+    }
+    return high + 1;
+  }
+  return 0;
+}
+
+
 FnSymbol*
 FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
   // check to make sure this fully instantiates
@@ -1128,11 +1143,26 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
           defPoint->parentScope->uses.add(type->symbol->defPoint->getModule());
 
     TypeSymbol* clone = retType->symbol->clone(&map);
+
+    clone->cname = stringcat(clone->name, "_A_");
+    forv_Vec(BaseAST, value, values) {
+      if (Type* type = dynamic_cast<Type*>(value)) {
+        clone->cname = stringcat(clone->cname, type->symbol->cname);
+        if (!clone->definition->instantiatedWith)
+          clone->definition->instantiatedWith = new Vec<Type*>();
+        clone->definition->instantiatedWith->add(type);
+      }
+    }
+    clone->cname = stringcat(clone->cname, "_B_");
+
     new_ast_types.add(clone);
     instantiate_add_subs(&substitutions, &map);
 
     ClassType* cloneType = dynamic_cast<ClassType*>(clone->definition);
     cloneType->instantiatedFrom = retType;
+
+    if (count_instantiate_with_recursion(cloneType) >= 6)
+      USR_FATAL(cloneType, "Recursive type instantiation limit reached");
 
     Vec<TypeSymbol *> types;
     types.move(cloneType->types);
