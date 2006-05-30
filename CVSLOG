@@ -66092,3 +66092,23 @@ Log message:
 Added files:
 	chapel/test/arrays/deitz/: test_index_domain2.future 
 
+---------------------------------------------------------------------------
+
+05/30/06 14:38:50 -- deitz
+
+Log message:
+	Added a new Jacobi future based on my Jacobi implementation.  It works
+	in the interpreter though I did not run it to completion.  There is an
+	analysis failure in the compiler.
+	
+	To get this to work, I added an overloaded + function at the top of
+	the program that overloads addition on the two types of tuples thereby
+	allowing the index from iterating over a domain to be added to the
+	stencil vector of tuples.
+	
+	I implemented this just to see how close we were.
+
+Added files:
+	chapel/test/arrays/deitz/: jacobi5.chpl jacobi5.future 
+	                           jacobi5.good 
+
