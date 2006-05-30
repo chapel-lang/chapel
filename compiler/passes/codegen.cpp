@@ -50,6 +50,7 @@ static void codegen_header(void) {
   cnames.put("stderr", 1);
   cnames.put("fwrite", 1);
   cnames.put("fread", 1);
+  cnames.put("_init", 1);
 
   // Remove functions not used (misses mutual recursion)
   compute_call_sites();
