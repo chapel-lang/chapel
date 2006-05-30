@@ -66082,3 +66082,13 @@ Added files:
 	                           test_index_domain2.chpl 
 	                           test_index_domain2.good 
 
+---------------------------------------------------------------------------
+
+05/30/06 12:24:00 -- deitz
+
+Log message:
+	Forgot to commit future.
+
+Added files:
+	chapel/test/arrays/deitz/: test_index_domain2.future 
+
