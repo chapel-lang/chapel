@@ -66052,3 +66052,33 @@ Modified files:
 	                               sumreduce2.chpl 
 	chapel/test/types/seq/deitz/: test_reduce1.chpl 
 
+---------------------------------------------------------------------------
+
+05/30/06 12:23:33 -- deitz
+
+Log message:
+	Added support for indexing into an array with a domain.  This works
+	for setting values in the array as in
+	
+	  A(InnerD) = 0.0;
+	
+	but fails for reading values from an array as in
+	
+	  writeln(A(InnerD));
+	
+	This works in the interpreter but fails in analysis with regards to
+	handling nested functions.  I filed a future for John and will also
+	look into it further.
+	
+	The result of reading an array indexed by a domain is an array rather
+	than a sequence.  We should discuss the semantics for when arrayness
+	can be maintained without lowering to sequence semantics.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+Added files:
+	chapel/test/arrays/deitz/: test_index_domain.chpl 
+	                           test_index_domain.good 
+	                           test_index_domain2.chpl 
+	                           test_index_domain2.good 
+
