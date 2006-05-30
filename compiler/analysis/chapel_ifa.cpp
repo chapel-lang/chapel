@@ -2144,6 +2144,8 @@ ACallbacks::report_analysis_errors(Vec<ATypeViolation*> &type_violations) {
         analysis_error(AERROR_CALL_ARGUMENT, v->send, v->type, v->av); break;
       case ATypeViolation_BOXING:
         analysis_error(AERROR_CALL_ARGUMENT, v->send, v->type, v->av); break;
+      case ATypeViolation_CLOSURE_RECURSION:
+        /* SJD: Added to remove compiler warning */ break;
     }
   }
   reportAnalysisErrors(&analysis_errors);
