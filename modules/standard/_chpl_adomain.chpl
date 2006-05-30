@@ -229,6 +229,18 @@ record _aarray {
     data.init();
   }
 
+  fun this(d : _adomain) {
+    var a : [d] elt_type;
+    for i in d do
+      a(i) = this(i);
+    return a;
+  }
+
+  fun =this(d : _adomain, v) {
+    for i in d do
+      this(i) = v;
+  }
+
   fun this(ind : (rank*int)) var : elt_type {
     for i in 1..rank do
       if ! _in(dom(i), ind(i)) {
