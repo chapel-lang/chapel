@@ -66034,3 +66034,21 @@ Log message:
 Modified files:
 	chapel/compiler/analysis/: chapel_ifa.cpp 
 
+---------------------------------------------------------------------------
+
+05/30/06 12:19:24 -- deitz
+
+Log message:
+	Reductions can now be specified just with the class name as in
+	
+	  max reduce A
+	
+	They currently need to be specified with the class name rather than an
+	instance of the class.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+	chapel/test/reductions/bradc/: maxreduce.chpl sumreduce.chpl 
+	                               sumreduce2.chpl 
+	chapel/test/types/seq/deitz/: test_reduce1.chpl 
+
