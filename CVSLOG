@@ -66112,3 +66112,18 @@ Added files:
 	chapel/test/arrays/deitz/: jacobi5.chpl jacobi5.future 
 	                           jacobi5.good 
 
+---------------------------------------------------------------------------
+
+05/30/06 16:14:03 -- deitz
+
+Log message:
+	
+
+Modified files:
+	chapel/compiler/passes/: codegen.cpp 
+	chapel/make/: Makefile.linux64 
+Added files:
+	chapel/test/arrays/deitz/: jacobi-no-inline.chpl 
+	                           jacobi-no-inline.compopts 
+	                           jacobi-no-inline.good 
+
