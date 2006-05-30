@@ -6,6 +6,6 @@ var A: [D] int = 1;
 
 var tot: int;
 
-tot = sum(int) reduce A;
+tot = sum reduce A;
 
 writeln("result is: ", tot);

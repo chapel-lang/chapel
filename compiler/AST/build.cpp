@@ -351,6 +351,7 @@ AList<Stmt>* build_type_select(AList<Expr>* exprs, AList<WhenStmt>* whenstmts) {
 }
 
 
-Expr* build_reduce_expr(Expr* red, Expr *seq) {
+Expr* build_reduce_expr(Expr* red, Expr* seq) {
+  red = new CallExpr(red, new CallExpr(new CallExpr(".", seq->copy(), new_StringLiteral("getValue")), new CallExpr(new CallExpr(".", seq->copy(), new_StringLiteral("getHeadCursor")))));
   return new CallExpr("_reduce", red, seq);
 }
