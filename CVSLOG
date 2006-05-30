@@ -66137,3 +66137,31 @@ Log message:
 Modified files:
 	chapel/make/: Makefile.linux64 
 
+---------------------------------------------------------------------------
+
+05/30/06 16:59:40 -- deitz
+
+Log message:
+	Added a check to catch possibly infinite recursive instantiation of
+	types as in
+	
+	  seq of seq of seq of seq of seq of ...
+	
+	This is also caught by a catch already implemented to make sure that a
+	given function is not instantiated more than a certain number of
+	times.  However, that number is potentially much greater than the
+	number necessary to catch recursively instantiated types.  Also, it
+	has proven, at least currently, that compilation time can be adversely
+	impacted so that the other check takes too long to catch.
+	
+	This is implemented by a new vector Type::instantiatedWith that keeps
+	track of the types used to instantiated another type.
+	
+	Also changed the cname to better reflect the type.  So seq of seq of
+	bool is now named _seq_A_seq_A_bool_B_B where A and B parenthesize the
+	name.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/include/: type.h 
+
