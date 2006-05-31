@@ -66187,3 +66187,14 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: clone.cpp 
 
+---------------------------------------------------------------------------
+
+05/30/06 20:16:06 -- jplevyak
+
+Log message:
+	Reorganize splitting so that entry sets and creation sets are split in
+	strict order.
+
+Modified files:
+	chapel/compiler/ifa/: fa.cpp 
+
