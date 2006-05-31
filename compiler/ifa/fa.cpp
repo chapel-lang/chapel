@@ -3312,7 +3312,7 @@ recompute_eq_classes(Vec<Setters *> &ss) {
 enum AKind { AKIND_TYPE, AKIND_SETTER, AKIND_MARK };
 
 static int
-analyze_confluence(AVar *av, Accum<AVar *> &avs, int akind = AKIND_TYPE) {
+compute_setters(AVar *av, Accum<AVar *> &avs, int akind = AKIND_TYPE) {
   if (av->contour_is_entry_set || av->contour == GLOBAL_CONTOUR)
     return 0;
   int setters_changed = 0;
@@ -3323,6 +3323,7 @@ analyze_confluence(AVar *av, Accum<AVar *> &avs, int akind = AKIND_TYPE) {
     if (akind == AKIND_TYPE && !x->out->type->n) continue;
     if (akind == AKIND_MARK && !x->mark_map) continue;
 #if 0
+    // group
     for (int i = 0; i < ss.n; i++) {
       forv_AVar(a, *ss.v[i]) if (a) {
         if ((akind == AKIND_TYPE && 
@@ -3476,20 +3477,22 @@ split_css(Vec<AVar *> &starters) {
 }
 
 static int
-split_for_setters(Accum<AVar *> &avs) {
+split_for_setters(Accum<AVar *> &avs, int analyze_again) {
   Vec<AVar *> setter_confluences, setter_starters;
   collect_setter_confluences(avs, setter_confluences, setter_starters);
   if (split_ess_setters(setter_confluences))
     return 1;
   if (split_ess_setters_marks(setter_confluences))
     return 1;
+  if (analyze_again)
+    return 1;
   if (split_css(setter_starters))
     return 1;
-  return 0;
+  return analyze_again;
 }
 
 static int
-split_with_type_marks(AVar *av) {
+split_with_type_marks(AVar *av, int fdynamic) {
   Accum<AVar *> acc;
   build_type_marks(av, acc);
   Vec<AVar *> confluences;
@@ -3499,25 +3502,17 @@ split_with_type_marks(AVar *av) {
     if (av->contour_is_entry_set) {
       if (!av->is_lvalue) {
         if (av->var->is_formal) {
-          if (split_entry_set(av, SPLIT_TYPE, SPLIT_MARK, SPLIT_EDGES))
+          if (split_entry_set(av, SPLIT_TYPE, SPLIT_MARK, fdynamic))
             analyze_again = 1;
         }
       } else {
         AVar *aav = unique_AVar(av->var, av->contour);
         if (is_return_value(aav)) {
-          if (split_entry_set(aav, SPLIT_TYPE, SPLIT_MARK, SPLIT_EDGES))
+          if (split_entry_set(aav, SPLIT_TYPE, SPLIT_MARK, fdynamic))
             analyze_again = 1;
         }
       }
     }
-  }
-  if (!analyze_again) {
-    collect_cs_marked_confluences(confluences);
-    Accum<AVar *> avs;
-    forv_AVar(av, confluences)
-      analyze_confluence(av, avs, AKIND_MARK);
-    if (split_for_setters(avs))
-      analyze_again = 1;
   }
   clear_marks(acc);
   return analyze_again;
@@ -3571,15 +3566,17 @@ split_ess_for_type(Vec<AVar *> &imprecisions, int fdynamic) {
 }
 
 static int
-split_ess_for_mark_type(Vec<AVar *> &imprecisions) {
+split_ess_for_mark_type(Vec<AVar *> &confluences) {
   int analyze_again = 0;
-  forv_AVar(av, imprecisions)
+  // a) first those where the confluence is NOT at an instance variable
+  forv_AVar(av, confluences)
     if (av->contour_is_entry_set)
-      analyze_again |= split_with_type_marks(av);
+      analyze_again |= split_with_type_marks(av, SPLIT_EDGES);
+  // b) then those where the confluence is at an instance variable
   if (!analyze_again)
-    forv_AVar(av, imprecisions)
+    forv_AVar(av, confluences)
       if (!av->contour_is_entry_set)
-        analyze_again |= split_with_type_marks(av);
+        analyze_again |= split_with_type_marks(av, SPLIT_EDGES);
   return analyze_again;
 }
 
@@ -3624,9 +3621,8 @@ result_is_different(AVar *result, AEdge *e) {
   return 0;
 }
 
-static int
-split_for_violations(Vec<ATypeViolation *> &violations) {
-  Vec<AVar *> imprecisions;
+static void
+collect_violation_imprecisions(Vec<ATypeViolation *> &violations, Vec<AVar *> &imprecisions) {
   forv_ATypeViolation(v, violations) if (v) {
     if (v->av->container && v->av->container->out->n > 1)
       imprecisions.set_add(v->av->container);
@@ -3654,7 +3650,17 @@ split_for_violations(Vec<ATypeViolation *> &violations) {
     }
   }
   imprecisions.set_to_vec();
-  return split_ess_for_type(imprecisions, SPLIT_DYNAMIC);
+}
+
+static int
+split_for_violations(Vec<ATypeViolation *> &violations) {
+  Vec<AVar *> imprecisions;
+  collect_violation_imprecisions(violations, imprecisions);
+  int analyze_again = split_ess_for_type(imprecisions, SPLIT_DYNAMIC);
+  if (!analyze_again)
+    forv_AVar(av, imprecisions)
+      analyze_again |= split_with_type_marks(av, SPLIT_DYNAMIC);
+  return analyze_again;
 }
 
 static void
@@ -3666,6 +3672,28 @@ clear_splits() {
 }
 
 static int
+split_for_setters_of_setters(Vec<AVar *> &confluences) {
+  int analyze_again = 0;
+  // split based on setters
+  while (!analyze_again) {
+    // a) compute setters for ivar confluences
+    collect_cs_setter_confluences(confluences);
+    Accum<AVar *> avs;
+    int progress = 0;
+    forv_AVar(av, confluences)
+      progress |= compute_setters(av, avs, AKIND_SETTER);
+    // b) stop if no progress
+    if (!progress) break;
+    // c) split EntrySet(s) and CreationSet(s) for setter confluences
+    if (split_for_setters(avs, analyze_again)) {
+      analyze_again = 1;
+      break;
+    }
+  }
+  return analyze_again;
+}
+
+static int
 extend_analysis() {
   int analyze_again = 0;
   extend_timer.restart();
@@ -3673,37 +3701,40 @@ extend_analysis() {
   compute_recursive_entry_creation_sets();
   clear_splits();
   Vec<AVar *> confluences;
-  // 1) split EntrySet(s) based on type
+  // 1) split EntrySets based on type using AVar::out
   collect_type_confluences(confluences);
   analyze_again = split_ess_for_type(confluences, SPLIT_EDGES);
-  // 2) split CreationSet(s) based on type
+  // 2) split EntrySets based on type using marks
   if (!analyze_again)
     analyze_again = split_ess_for_mark_type(confluences);
+  // 3) split based on setters of type 
   if (!analyze_again) {
     Accum<AVar *> avs;
     forv_AVar(av, confluences)
-      analyze_confluence(av, avs, AKIND_TYPE);
-    if (split_for_setters(avs))
+      compute_setters(av, avs, AKIND_TYPE);
+    if (split_for_setters(avs, analyze_again))
       analyze_again = 1;
+    if (!analyze_again)
+      analyze_again = split_for_setters_of_setters(confluences);
   }
-  // 3) split based on setters
-  while (!analyze_again) {
-    // a) compute setters for ivar confluences
-    collect_cs_setter_confluences(confluences);
-    Accum<AVar *> avs;
-    int progress = 0;
-    forv_AVar(av, confluences)
-      progress |= analyze_confluence(av, avs, AKIND_SETTER);
-    // b) stop if no progress
-    if (!progress) break;
-    // c) split EntrySet(s) and CreationSet(s) for setter confluences
-    if (split_for_setters(avs)) {
-      analyze_again = 1;
-      break;
+  // 4) split based on setters of type using marks
+  if (!analyze_again) {
+    forv_AVar(av, confluences) {
+      Accum<AVar *> acc;
+      build_type_marks(av, acc);
+      Vec<AVar *> marked_confluences;
+      collect_cs_marked_confluences(marked_confluences);
+      Accum<AVar *> avs;
+      forv_AVar(av, marked_confluences)
+        compute_setters(av, avs, AKIND_MARK);
+      if (split_for_setters(avs, analyze_again))
+        analyze_again = 1;
+      if (!analyze_again)
+        analyze_again = split_for_setters_of_setters(confluences);
     }
   }
   if (!analyze_again)
-    // 4) split AEdges(s) and EntrySet(s) for violations based on type using dynamic dispatch
+    // 5) split AEdges(s) and EntrySet(s) for violations based on type using dynamic dispatch
     analyze_again = split_for_violations(type_violations);
   extend_timer.stop();
   if (analysis_pass > IFA_PASS_LIMIT)
