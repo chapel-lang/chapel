@@ -893,10 +893,8 @@ fixup_clone_vars(Fun *f, Vec<EntrySet *> *ess) {
           AVarMap avs;
           for (int i = 0; i < v->avars.n; i++) {
             EntrySet *x = (EntrySet*)v->avars.v[i].key;
-            if (x && x->fun->ess.in(x)) {
-              assert(es->display.v[v->sym->nesting_depth-1] == x);
+            if (x && es->display.v[v->sym->nesting_depth-1] == x)
               avs.put(x, v->avars.v[i].value);
-            }
           }
           v->avars.move(avs);
         }
