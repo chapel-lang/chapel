@@ -68,11 +68,30 @@ check_parsed_vars(VarSymbol* var) {
 }
 
 
+static void
+check_named_arguments(CallExpr* call) {
+  Vec<char*> names;
+  for_alist(Expr, expr, call->argList) {
+    if (NamedExpr* named = dynamic_cast<NamedExpr*>(expr)) {
+      forv_Vec(char, name, names) {
+        if (!strcmp(name, named->name))
+          USR_FATAL(named, "The named argument '%s' is used more "
+                    "than once in the same function call.", name);
+      }
+      names.add(named->name);
+    }
+  }
+}
+
+
 void
 check_parsed(void) {
   Vec<BaseAST*> asts;
   collect_asts(&asts);
   forv_Vec(BaseAST, ast, asts) {
+
+    if (CallExpr* call = dynamic_cast<CallExpr*>(ast))
+      check_named_arguments(call);
 
     if (DefExpr* def = dynamic_cast<DefExpr*>(ast))
       if (dynamic_cast<VarSymbol*>(def->sym))

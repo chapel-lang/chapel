@@ -1,7 +1,0 @@
-deitz
-
-using the same named parameter does not generate an error
-
-Should this be caught before analysis? 
-
-Yes, it is a syntactic error. --- john
