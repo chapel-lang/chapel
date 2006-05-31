@@ -9,7 +9,7 @@
 #  compiler - Chapel compiler to use
 # 
 
-$debug = 1;
+$debug = 0;
 $logdir = "Logs";
 $synchdir = "Logs/.synch";
 $testcmd = "nice start_test";
@@ -23,9 +23,9 @@ sub systemd {
 
 
 sub main {
-    my ($node) = `uname -n`;
     my ($logfile, $synchfile, $workingdir, $testdir, $compiler, $platform);
-
+    my ($node) = `uname -n`;
+    chomp $node;
     ($node, $junk) = split (/\./, $node, 2);
 
     if ($#ARGV != 2) {
@@ -65,8 +65,6 @@ sub main {
     $dirfname =~ s/\//-/g;
     $logfile = "$logdir/$dirfname.$node.log";
     unlink $logfile if (-e $logfile);
-    # print "echo $testdir.$node.log > $logfile\n";
-    # systemd ("echo $testdir.$node.log > $logfile");
 
     $testarg = "-compiler $compiler -startdir $testdir -logfile $logfile";
     systemd ("$testcmd $testarg");

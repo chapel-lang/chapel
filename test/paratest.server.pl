@@ -146,10 +146,6 @@ sub free_workers {
 
 sub feed_nodes {
     local (@readyidv, $logfile, @logs, $testdir, $node);
-    # local ($compiler) = `which chpl`;
-    # chomp $compiler;
-    # local ($compiler) = "../compiler/$platform/chpl";
-
     $| = 1;    # autoflush stdout
 
     @testdir_list = sort @testdir_list;
@@ -162,19 +158,19 @@ sub feed_nodes {
         print "\n" if ($#readyidv >= 0);
         foreach $readyid (@readyidv) {    # for ready nodes
             next if ($#testdir_list < 0);
+
             $testdir = $testdir_list[0];
             $node = $node_list[$readyid]; # machine name to rem exec to
             $synchfile = "$synchdir/$node.$readyid";
 
             # remove synch file before forking work to worker
             unless (-e $synchfile) {
-                printf ("Error: cannot remove synch file '$synchfile'\n");
+                printf ("Error: synch file '$synchfile' missing\n");
                 exit (7);
             }
             unlink $synchfile;
 
             print "$node <- $testdir ($#testdir_list left)\n";
-            # print ("$rem_exe $node $pwd/$cmd $readyid $pwd $testdir\n");
 
             # fork work
             unless ($pid = fork) {        # child
@@ -182,12 +178,11 @@ sub feed_nodes {
                     # systemd ("$rem_exe $node $pwd/$cmd $readyid $pwd $testdir $compiler");
                     systemd ("$rem_exe $node $pwd/$cmd $readyid $pwd $testdir");
                 } else {
-                    # systemd ("$rem_exe $node $pwd/$cmd $readyid $pwd $testdir $compiler >& /dev/null");
+                    # systemd ("$rem_exe $node $pwd/$cmd $readyid $pwd $testdir");
                     systemd ("$rem_exe $node $pwd/$cmd $readyid $pwd $testdir > /dev/null 2>& 1");
                 }
                 exit (0);
             }
-            # print $testdir\n";
             shift @testdir_list;
 
             $testdir =~ s/\//-/g;
@@ -256,7 +251,6 @@ sub find_subdirs {
     @cdir = grep !/^\./, readdir CURRDIR;             # curr dir list of files
     closedir CURRDIR;
 
-    # print "$targetdir: ";
     if (chpl_files (@cdir)) {                         # if *.chpl files in curr
         unless ($targetdir eq ".") {chdir "..";}
         return (".");
