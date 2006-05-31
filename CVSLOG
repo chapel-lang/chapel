@@ -66231,3 +66231,14 @@ Removed files:
 	chapel/test/arrays/jplevyak/: simple-3.future 
 	chapel/test/functions/deitz/named/: test_named6-error.future 
 
+---------------------------------------------------------------------------
+
+05/31/06 14:39:31 -- waynew
+
+Log message:
+	Bug fix to paratest.client.pl.  Did not chomp node string.  Removed some
+	commented out debugging output.
+
+Modified files:
+	chapel/test/: paratest.server.pl paratest.client.pl 
+
