@@ -66198,3 +66198,17 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: fa.cpp 
 
+---------------------------------------------------------------------------
+
+05/31/06 09:48:12 -- deitz
+
+Log message:
+	Added a future that shows a problem with scalar promotion on a nested
+	sequence.  The test fails to resolve the call in analysis.  The test
+	succeeds in the interpreter.
+
+Added files:
+	chapel/test/arrays/deitz/: test_scalar_promote8.chpl 
+	                           test_scalar_promote8.future 
+	                           test_scalar_promote8.good 
+
