@@ -66165,3 +66165,13 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp type.cpp 
 	chapel/compiler/include/: type.h 
 
+---------------------------------------------------------------------------
+
+05/30/06 17:11:55 -- deitz
+
+Log message:
+	Removed unused _cross iterator from sequence module.
+
+Modified files:
+	chapel/modules/standard/: _chpl_seq.chpl 
+
