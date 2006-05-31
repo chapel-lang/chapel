@@ -66212,3 +66212,22 @@ Added files:
 	                           test_scalar_promote8.future 
 	                           test_scalar_promote8.good 
 
+---------------------------------------------------------------------------
+
+05/31/06 10:48:30 -- deitz
+
+Log message:
+	Added a check that the same name is not used to pass an actual by name
+	in the same function call.  Removed future.
+	
+	Fixed simple-3 test which declared an array over [3] rather than
+	[1..3].  Removed future.
+
+Modified files:
+	chapel/compiler/passes/: semanticChecks.cpp 
+	chapel/test/arrays/jplevyak/: simple-3.chpl simple-3.good 
+	chapel/test/functions/deitz/named/: test_named6-error.good 
+Removed files:
+	chapel/test/arrays/jplevyak/: simple-3.future 
+	chapel/test/functions/deitz/named/: test_named6-error.future 
+
