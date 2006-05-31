@@ -66175,3 +66175,15 @@ Log message:
 Modified files:
 	chapel/modules/standard/: _chpl_seq.chpl 
 
+---------------------------------------------------------------------------
+
+05/30/06 17:34:09 -- jplevyak
+
+Log message:
+	Fix bug in cloning of nested functions.
+	
+	This fixes:  arrays/deitz/test_index_domain2.chpl
+
+Modified files:
+	chapel/compiler/ifa/: clone.cpp 
+
