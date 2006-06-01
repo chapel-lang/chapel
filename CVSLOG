@@ -66242,3 +66242,53 @@ Log message:
 Modified files:
 	chapel/test/: paratest.server.pl paratest.client.pl 
 
+---------------------------------------------------------------------------
+
+06/01/06 10:46:09 -- shannon
+
+Log message:
+	Refactored the math functions in the interpreter such that we now
+	dynamically link the libm shared object and look up the functions.
+	
+	Added functionality to the test system such that one can now
+	specify different .good files for different platforms.  The
+	test system first looks for a <testname>.<platform>.good; if not
+	found it looks for <testname>.good.
+	
+	Re-added the exp2(), log2(), nearbyint(), round(), tgamma(),
+	and trunc() math functions.  These tests fail on the Sun platform.
+	They have been placed in an interpret-only directory with
+	sunos-specific .goods.
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/compiler/make/: Makefile.compiler.head 
+	chapel/compiler/passes/: interpreter_ops.h runInterpreter.cpp 
+	chapel/modules/standard/: _chpl_math.chpl 
+	chapel/test/: sub_test 
+	chapel/test/trivial/shannon/: readWriteEnum.chpl 
+	                              readWriteEnum.good 
+	                              readWriteEnum.stdin 
+Added files:
+	chapel/test/modules/standard/math/interpret/: .cvsignore 
+	                                              COMPOPTS NOEXEC 
+	                                              NOINTERP README 
+	                                              exp2.chpl 
+	                                              exp2.good 
+	                                              exp2.sunos.good 
+	                                              log2.chpl 
+	                                              log2.good 
+	                                              log2.sunos.good 
+	                                              nearbyint.chpl 
+	                                              nearbyint.good 
+	                                              nearbyint.sunos.good 
+	                                              round.chpl 
+	                                              round.good 
+	                                              round.sunos.good 
+	                                              tgamma.chpl 
+	                                              tgamma.good 
+	                                              tgamma.sunos.good 
+	                                              trunc.chpl 
+	                                              trunc.good 
+	                                              trunc.sunos.good 
+
