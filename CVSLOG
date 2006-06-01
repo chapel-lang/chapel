@@ -66304,3 +66304,18 @@ Added files:
 	                           test_scalar_promote9.future 
 	                           test_scalar_promote9.good 
 
+---------------------------------------------------------------------------
+
+06/01/06 13:51:38 -- jplevyak
+
+Log message:
+	Reorganize the way "most specific" is determined.
+	Instantiated types are now on par with declared types.
+	Sum types are now more specific than coerced or promoted types.
+	Add a test which should cover the case wayne was seeing.
+
+Modified files:
+	chapel/compiler/ifa/: ast.cpp pattern.cpp sym.h 
+Added files:
+	chapel/test/functions/jplevyak/: subsume-1.chpl subsume-1.good 
+
