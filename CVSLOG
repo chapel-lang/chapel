@@ -66292,3 +66292,15 @@ Added files:
 	                                              trunc.good 
 	                                              trunc.sunos.good 
 
+---------------------------------------------------------------------------
+
+06/01/06 10:57:19 -- deitz
+
+Log message:
+	Add future test for scalar promotion on arithmetic sequences.
+
+Added files:
+	chapel/test/arrays/deitz/: test_scalar_promote9.chpl 
+	                           test_scalar_promote9.future 
+	                           test_scalar_promote9.good 
+
