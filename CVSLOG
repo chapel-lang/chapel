@@ -66319,3 +66319,23 @@ Modified files:
 Added files:
 	chapel/test/functions/jplevyak/: subsume-1.chpl subsume-1.good 
 
+---------------------------------------------------------------------------
+
+06/01/06 14:36:24 -- shannon
+
+Log message:
+	Minor refactoring of the math function interpreter code.
+	There is now just one PrimOp enum for all the functions
+	that take a single float64 arg and return a float64
+	(and so just one case statement is needed).
+
+Modified files:
+	chapel/compiler/passes/: runInterpreter.cpp 
+	chapel/test/execflags/shannon/configs/: configVarString.chpl 
+	                                        configVarString.execopts 
+	                                        configVarString.good 
+	chapel/test/memory/shannon/: configVarFile.chpl 
+	                             configVarFile.good 
+	                             configVarFile.input 
+	                             memmaxInput.chpl memmaxIntOnly.chpl 
+
