@@ -2,6 +2,7 @@
 #include <signal.h>
 #include <ctype.h>
 #include <math.h>
+#include <dlfcn.h>
 #ifdef USE_READLINE
 #include <readline/readline.h>
 #include <readline/history.h>
@@ -153,16 +154,13 @@ struct IThread : public gc { public:
   IThread();
 };
 
-/**
- **  Note:  Update the f64_fns_f64 array and its corresponding PrimOps 
- **  together always.
- **/ 
 
 enum PrimOps {
   PRIM_ACOS, PRIM_ACOSH, PRIM_ASIN, PRIM_ASINH, PRIM_ATAN, PRIM_ATANH, 
   PRIM_CBRT, PRIM_CEIL, PRIM_COS, PRIM_COSH, PRIM_ERF, PRIM_ERFC, PRIM_EXP, 
-  PRIM_EXPM1, PRIM_FABS, PRIM_FLOOR, PRIM_LGAMMA, PRIM_LOG, PRIM_LOG10, 
-  PRIM_LOG1P, PRIM_RINT, PRIM_SIN, PRIM_SINH, PRIM_SQRT, PRIM_TAN, PRIM_TANH,
+  PRIM_EXP2, PRIM_EXPM1, PRIM_FABS, PRIM_FLOOR, PRIM_LGAMMA, PRIM_LOG, 
+  PRIM_LOG2, PRIM_LOG10, PRIM_LOG1P, PRIM_NEARBYINT, PRIM_RINT, PRIM_ROUND, 
+  PRIM_SIN, PRIM_SINH, PRIM_SQRT, PRIM_TAN, PRIM_TANH, PRIM_TGAMMA, PRIM_TRUNC,
 
   PRIM_ABS,
   PRIM_ATAN2,
@@ -177,17 +175,6 @@ enum PrimOps {
   PRIM_SET_MEMBER, PRIM_PTR_EQ, PRIM_PTR_NEQ, PRIM_CAST, PRIM_TO_STRING, 
   PRIM_COPY_STRING, PRIM_STRING_INDEX, PRIM_STRING_CONCAT, PRIM_STRING_EQUAL, 
   PRIM_STRING_SELECT, PRIM_STRING_STRIDED_SELECT, PRIM_STRING_LENGTH, PRIM_DONE 
-};
-
-
-typedef double (*f64_fn_f64) (double);
-const int ARG_F64_RETURN_F64_START = PRIM_ACOS;
-const int ARG_F64_RETURN_F64_STOP  = PRIM_TANH + 1;
-
-f64_fn_f64 f64_fns_f64[ARG_F64_RETURN_F64_STOP] = {
-  acos, acosh, asin, asinh, atan, atanh, cbrt, ceil, cos, cosh, erf, erfc, 
-  exp, expm1, fabs, floor, lgamma, log, log10, log1p, rint, sin, sinh, sqrt, 
-  tan, tanh
 };
 
 
@@ -1593,13 +1580,24 @@ convert_enum_to_int(ISlot *slot) {
 }
 
 void 
-execute_f64_fn_f64(CallExpr* s, ISlot** arg, ISlot* result, 
-                      double (*f64_fn_f64)(double)) {
+execute_f64_fn_f64(CallExpr* s, ISlot** arg, ISlot* result) {
+  void* handle;
+  double(*prim_sym_name)(double);
+  char* error;
+
   check_prim_args(s, 1);
   check_type(s, arg[0], dtFloat[IF1_FLOAT_TYPE_64]);
+  handle = dlopen("libm.so", RTLD_LAZY);
+  if (!handle) {
+    USR_FATAL("Failed to open libm.so");
+  }
+  *(void **) (&prim_sym_name) = dlsym(handle, s->primitive->name);
+  if ((error = dlerror()) != NULL) {
+    USR_FATAL("Failed to find symbol: %s", s->primitive->name);
+  }
   result->kind = IMMEDIATE_ISLOT;
   result->imm = new Immediate;
-  result->imm->set_float(f64_fn_f64(arg[0]->imm->v_float64));
+  result->imm->set_float((*prim_sym_name)(arg[0]->imm->v_float64));
 }
 
 int
@@ -1611,6 +1609,7 @@ IFrame::iprimitive(CallExpr *s) {
   ISlot **arg = &valStack.v[valStack.n-len];
   ISlot result;
   PrimOps kind = s->primitive->interpreterOp->kind;
+
   switch (kind) {
     case PRIM_NONE:
       INT_FATAL(ip, "interpreter: prim type: %d", s->primitive->interpreterOp->kind);
@@ -1912,16 +1911,18 @@ IFrame::iprimitive(CallExpr *s) {
       fold_constant(translate_prim.get(s->primitive->interpreterOp->kind), 
                     arg[0]->imm, arg[1]->imm, result.imm);
       break;
+
     case PRIM_ACOS: case PRIM_ACOSH: case PRIM_ASIN: case PRIM_ASINH: 
     case PRIM_ATAN: case PRIM_ATANH: case PRIM_CBRT: case PRIM_CEIL:
     case PRIM_COS: case PRIM_COSH: case PRIM_ERF: case PRIM_ERFC: 
-    case PRIM_EXP:  case PRIM_EXPM1: case PRIM_FABS: case PRIM_FLOOR: 
-    case PRIM_LGAMMA: case PRIM_LOG: case PRIM_LOG10: case PRIM_LOG1P: 
-    case PRIM_RINT:  case PRIM_SIN: case PRIM_SINH: case PRIM_SQRT: 
-    case PRIM_TAN: case PRIM_TANH: 
-      execute_f64_fn_f64(s, arg, &result, 
-                         f64_fns_f64[kind - ARG_F64_RETURN_F64_START]);
+    case PRIM_EXP: case PRIM_EXP2: case PRIM_EXPM1: case PRIM_FABS: 
+    case PRIM_FLOOR: case PRIM_LGAMMA: case PRIM_LOG: case PRIM_LOG2: 
+    case PRIM_LOG10: case PRIM_LOG1P: case PRIM_NEARBYINT: case PRIM_RINT: 
+    case PRIM_ROUND:  case PRIM_SIN: case PRIM_SINH: case PRIM_SQRT: 
+    case PRIM_TAN: case PRIM_TANH:  case PRIM_TGAMMA:  case PRIM_TRUNC:  
+      execute_f64_fn_f64(s, arg, &result);
       break;
+
     case PRIM_ABS:
       check_prim_args(s, 1);
       check_type(s, arg[0], dtInt[IF1_INT_TYPE_64]);
@@ -2557,7 +2558,6 @@ init_interpreter() {
   land_interpreter_op = new InterpreterOp("land", PRIM_LAND);
   lor_interpreter_op = new InterpreterOp("lor", PRIM_LOR);
   pow_interpreter_op = new InterpreterOp("pow", PRIM_POW);
-
   abs_interpreter_op = new InterpreterOp("abs", PRIM_ABS);
   acos_interpreter_op = new InterpreterOp("acos", PRIM_ACOS);
   acosh_interpreter_op = new InterpreterOp("acosh", PRIM_ACOSH);
@@ -2573,20 +2573,25 @@ init_interpreter() {
   erf_interpreter_op = new InterpreterOp("erf", PRIM_ERF);
   erfc_interpreter_op = new InterpreterOp("erfc", PRIM_ERFC);
   exp_interpreter_op = new InterpreterOp("exp", PRIM_EXP);
+  exp2_interpreter_op = new InterpreterOp("exp2", PRIM_EXP2);
   expm1_interpreter_op = new InterpreterOp("expm1", PRIM_EXPM1);
   fabs_interpreter_op = new InterpreterOp("fabs", PRIM_FABS);
   floor_interpreter_op = new InterpreterOp("floor", PRIM_FLOOR);
   lgamma_interpreter_op = new InterpreterOp("lgamma", PRIM_LGAMMA);
   log_interpreter_op = new InterpreterOp("log", PRIM_LOG);
+  log2_interpreter_op = new InterpreterOp("log2", PRIM_LOG2);
   log10_interpreter_op = new InterpreterOp("log10", PRIM_LOG10);
   log1p_interpreter_op = new InterpreterOp("log1p", PRIM_LOG1P);
+  nearbyint_interpreter_op = new InterpreterOp("nearbyint", PRIM_NEARBYINT);
   rint_interpreter_op = new InterpreterOp("rint", PRIM_RINT);
+  round_interpreter_op = new InterpreterOp("round", PRIM_ROUND);
   sin_interpreter_op = new InterpreterOp("sin", PRIM_SIN);
   sinh_interpreter_op = new InterpreterOp("sinh", PRIM_SINH);
   sqrt_interpreter_op = new InterpreterOp("sqrt", PRIM_SQRT);
   tan_interpreter_op = new InterpreterOp("tan", PRIM_TAN);
   tanh_interpreter_op = new InterpreterOp("tanh", PRIM_TANH);
-
+  tgamma_interpreter_op = new InterpreterOp("tgamma", PRIM_TGAMMA);
+  trunc_interpreter_op = new InterpreterOp("trunc", PRIM_TRUNC);
   get_member_interpreter_op = new InterpreterOp("get_member", PRIM_GET_MEMBER);
   set_member_interpreter_op = new InterpreterOp("set_member", PRIM_SET_MEMBER);
   ptr_eq_interpreter_op = new InterpreterOp("ptr_eq", PRIM_PTR_EQ);

@@ -1,16 +1,7 @@
-enum aramaic {mene, tekel, upharsin};
-var onTheWall: aramaic;
+enum week {Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday};
+var day: week;
 
-read(onTheWall);
-write(onTheWall);
-write(" ");
-read(onTheWall);
-write(onTheWall);
-write(" ");
-read(onTheWall);
-write(onTheWall);
-write(" ");
-read(onTheWall);
-writeln(onTheWall);
-read(onTheWall);
-write(onTheWall);
+read(day);
+writeln(day);
+read(day);
+writeln(day);

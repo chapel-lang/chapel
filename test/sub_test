@@ -138,13 +138,18 @@ else
     set futureSuffix = "future"
 endif
 
+set platform = `$testdir/../util/platform`
 
 # compile, execute, and compare each source file
 foreach chplsrc ($testsrc)
 
     # set execfile now since used in both if branches
     set execfile = $chplsrc:r
-    set checkfile = $execfile.good
+    # allow a platform-specific .good file to be used, if it exists
+    set checkfile = $execfile.$platform.good
+    if ( ! -r $checkfile ) then 
+       set checkfile = $execfile.good
+    endif
     set complog = $execfile.comp.out.tmp
     set execlog = $execfile.exec.out.tmp
 
@@ -215,7 +220,6 @@ foreach chplsrc ($testsrc)
             echo \[Executing $execfile.prediff\]
             ./$execfile.prediff $execfile $complog $compiler
         endif
-
 	if ( ! -r $checkfile ) then
 	    echo \[Error cannot locate compiler output comparison file $localdir/$checkfile\]
 	    continue
@@ -297,7 +301,6 @@ foreach chplsrc ($testsrc)
                 echo \[Executing $execfile.prediff\]
                 ./$execfile.prediff $execfile $execlog $compiler
             endif
-
 
 	    if ( ! -r $checkfile ) then
 		echo \[Error cannot locate program output comparison file $localdir/$checkfile\]
