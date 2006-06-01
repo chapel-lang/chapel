@@ -156,14 +156,7 @@ struct IThread : public gc { public:
 
 
 enum PrimOps {
-  PRIM_ACOS, PRIM_ACOSH, PRIM_ASIN, PRIM_ASINH, PRIM_ATAN, PRIM_ATANH, 
-  PRIM_CBRT, PRIM_CEIL, PRIM_COS, PRIM_COSH, PRIM_ERF, PRIM_ERFC, PRIM_EXP, 
-  PRIM_EXP2, PRIM_EXPM1, PRIM_FABS, PRIM_FLOOR, PRIM_LGAMMA, PRIM_LOG, 
-  PRIM_LOG2, PRIM_LOG10, PRIM_LOG1P, PRIM_NEARBYINT, PRIM_RINT, PRIM_ROUND, 
-  PRIM_SIN, PRIM_SINH, PRIM_SQRT, PRIM_TAN, PRIM_TANH, PRIM_TGAMMA, PRIM_TRUNC,
-
-  PRIM_ABS,
-  PRIM_ATAN2,
+  PRIM_64_FN_64, PRIM_ABS, PRIM_ATAN2,
 
   PRIM_NONE, PRIM_INIT, PRIM_ALLOC, PRIM_TYPE_EQUAL, PRIM_FOPEN, PRIM_FCLOSE,
   PRIM_STRERROR, PRIM_FPRINTF, PRIM_FSCANF, PRIM_FFLUSH, PRIM_ARRAY_INIT, 
@@ -1912,14 +1905,7 @@ IFrame::iprimitive(CallExpr *s) {
                     arg[0]->imm, arg[1]->imm, result.imm);
       break;
 
-    case PRIM_ACOS: case PRIM_ACOSH: case PRIM_ASIN: case PRIM_ASINH: 
-    case PRIM_ATAN: case PRIM_ATANH: case PRIM_CBRT: case PRIM_CEIL:
-    case PRIM_COS: case PRIM_COSH: case PRIM_ERF: case PRIM_ERFC: 
-    case PRIM_EXP: case PRIM_EXP2: case PRIM_EXPM1: case PRIM_FABS: 
-    case PRIM_FLOOR: case PRIM_LGAMMA: case PRIM_LOG: case PRIM_LOG2: 
-    case PRIM_LOG10: case PRIM_LOG1P: case PRIM_NEARBYINT: case PRIM_RINT: 
-    case PRIM_ROUND:  case PRIM_SIN: case PRIM_SINH: case PRIM_SQRT: 
-    case PRIM_TAN: case PRIM_TANH:  case PRIM_TGAMMA:  case PRIM_TRUNC:  
+    case PRIM_64_FN_64:
       execute_f64_fn_f64(s, arg, &result);
       break;
 
@@ -2559,39 +2545,39 @@ init_interpreter() {
   lor_interpreter_op = new InterpreterOp("lor", PRIM_LOR);
   pow_interpreter_op = new InterpreterOp("pow", PRIM_POW);
   abs_interpreter_op = new InterpreterOp("abs", PRIM_ABS);
-  acos_interpreter_op = new InterpreterOp("acos", PRIM_ACOS);
-  acosh_interpreter_op = new InterpreterOp("acosh", PRIM_ACOSH);
-  asin_interpreter_op = new InterpreterOp("asin", PRIM_ASIN);
-  asinh_interpreter_op = new InterpreterOp("asinh", PRIM_ASINH);
-  atan_interpreter_op = new InterpreterOp("atan", PRIM_ATAN);
+  acos_interpreter_op = new InterpreterOp("acos", PRIM_64_FN_64);
+  acosh_interpreter_op = new InterpreterOp("acosh", PRIM_64_FN_64);
+  asin_interpreter_op = new InterpreterOp("asin", PRIM_64_FN_64);
+  asinh_interpreter_op = new InterpreterOp("asinh", PRIM_64_FN_64);
+  atan_interpreter_op = new InterpreterOp("atan", PRIM_64_FN_64);
   atan2_interpreter_op = new InterpreterOp("atan2", PRIM_ATAN2);
-  atanh_interpreter_op = new InterpreterOp("atanh", PRIM_ATANH);
-  cbrt_interpreter_op = new InterpreterOp("cbrt", PRIM_CBRT);
-  ceil_interpreter_op = new InterpreterOp("ceil", PRIM_CEIL);
-  cos_interpreter_op = new InterpreterOp("cos", PRIM_COS);
-  cosh_interpreter_op = new InterpreterOp("cosh", PRIM_COSH);
-  erf_interpreter_op = new InterpreterOp("erf", PRIM_ERF);
-  erfc_interpreter_op = new InterpreterOp("erfc", PRIM_ERFC);
-  exp_interpreter_op = new InterpreterOp("exp", PRIM_EXP);
-  exp2_interpreter_op = new InterpreterOp("exp2", PRIM_EXP2);
-  expm1_interpreter_op = new InterpreterOp("expm1", PRIM_EXPM1);
-  fabs_interpreter_op = new InterpreterOp("fabs", PRIM_FABS);
-  floor_interpreter_op = new InterpreterOp("floor", PRIM_FLOOR);
-  lgamma_interpreter_op = new InterpreterOp("lgamma", PRIM_LGAMMA);
-  log_interpreter_op = new InterpreterOp("log", PRIM_LOG);
-  log2_interpreter_op = new InterpreterOp("log2", PRIM_LOG2);
-  log10_interpreter_op = new InterpreterOp("log10", PRIM_LOG10);
-  log1p_interpreter_op = new InterpreterOp("log1p", PRIM_LOG1P);
-  nearbyint_interpreter_op = new InterpreterOp("nearbyint", PRIM_NEARBYINT);
-  rint_interpreter_op = new InterpreterOp("rint", PRIM_RINT);
-  round_interpreter_op = new InterpreterOp("round", PRIM_ROUND);
-  sin_interpreter_op = new InterpreterOp("sin", PRIM_SIN);
-  sinh_interpreter_op = new InterpreterOp("sinh", PRIM_SINH);
-  sqrt_interpreter_op = new InterpreterOp("sqrt", PRIM_SQRT);
-  tan_interpreter_op = new InterpreterOp("tan", PRIM_TAN);
-  tanh_interpreter_op = new InterpreterOp("tanh", PRIM_TANH);
-  tgamma_interpreter_op = new InterpreterOp("tgamma", PRIM_TGAMMA);
-  trunc_interpreter_op = new InterpreterOp("trunc", PRIM_TRUNC);
+  atanh_interpreter_op = new InterpreterOp("atanh", PRIM_64_FN_64);
+  cbrt_interpreter_op = new InterpreterOp("cbrt", PRIM_64_FN_64);
+  ceil_interpreter_op = new InterpreterOp("ceil", PRIM_64_FN_64);
+  cos_interpreter_op = new InterpreterOp("cos", PRIM_64_FN_64);
+  cosh_interpreter_op = new InterpreterOp("cosh", PRIM_64_FN_64);
+  erf_interpreter_op = new InterpreterOp("erf", PRIM_64_FN_64);
+  erfc_interpreter_op = new InterpreterOp("erfc", PRIM_64_FN_64);
+  exp_interpreter_op = new InterpreterOp("exp", PRIM_64_FN_64);
+  exp2_interpreter_op = new InterpreterOp("exp2", PRIM_64_FN_64);
+  expm1_interpreter_op = new InterpreterOp("expm1", PRIM_64_FN_64);
+  fabs_interpreter_op = new InterpreterOp("fabs", PRIM_64_FN_64);
+  floor_interpreter_op = new InterpreterOp("floor", PRIM_64_FN_64);
+  lgamma_interpreter_op = new InterpreterOp("lgamma", PRIM_64_FN_64);
+  log_interpreter_op = new InterpreterOp("log", PRIM_64_FN_64);
+  log2_interpreter_op = new InterpreterOp("log2", PRIM_64_FN_64);
+  log10_interpreter_op = new InterpreterOp("log10", PRIM_64_FN_64);
+  log1p_interpreter_op = new InterpreterOp("log1p", PRIM_64_FN_64);
+  nearbyint_interpreter_op = new InterpreterOp("nearbyint", PRIM_64_FN_64);
+  rint_interpreter_op = new InterpreterOp("rint", PRIM_64_FN_64);
+  round_interpreter_op = new InterpreterOp("round", PRIM_64_FN_64);
+  sin_interpreter_op = new InterpreterOp("sin", PRIM_64_FN_64);
+  sinh_interpreter_op = new InterpreterOp("sinh", PRIM_64_FN_64);
+  sqrt_interpreter_op = new InterpreterOp("sqrt", PRIM_64_FN_64);
+  tan_interpreter_op = new InterpreterOp("tan", PRIM_64_FN_64);
+  tanh_interpreter_op = new InterpreterOp("tanh", PRIM_64_FN_64);
+  tgamma_interpreter_op = new InterpreterOp("tgamma", PRIM_64_FN_64);
+  trunc_interpreter_op = new InterpreterOp("trunc", PRIM_64_FN_64);
   get_member_interpreter_op = new InterpreterOp("get_member", PRIM_GET_MEMBER);
   set_member_interpreter_op = new InterpreterOp("set_member", PRIM_SET_MEMBER);
   ptr_eq_interpreter_op = new InterpreterOp("ptr_eq", PRIM_PTR_EQ);

@@ -1,4 +1,4 @@
-var willRacismLastForever : string;
+var x : string = "hi";
 
-writeln("Is Memin Pinguin funny?");
-read(willRacismLastForever);
+writeln(x);
+

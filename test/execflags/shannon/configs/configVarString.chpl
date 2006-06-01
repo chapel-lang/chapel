@@ -1,5 +1,5 @@
-config var x: string = "Why would the Republican party object to a recount";
+config var x: string = "May";
 writeln("x is initialized at compile time to:  ");
-writeln("Why would the Republican party object to a recount");
+writeln("May");
 writeln("x at runtime is:");
 writeln(x);
