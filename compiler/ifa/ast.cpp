@@ -367,6 +367,27 @@ set_value_for_value_classes(IF1 *i) {
   }
 }
 
+static void
+compute_isa(IF1 *i) {
+  for (int x = finalized_types; x < i->allsyms.n; x++) {
+    Sym *s = i->allsyms.v[x];
+    // compute closure of has for Type_LUB
+    if (s->type_kind == Type_LUB) {
+      Accum<Sym *> acc;
+      forv_Sym(ss, s->has)
+        acc.add(ss);
+      forv_Sym(ss, acc.asvec) {
+        if (ss->type_kind == Type_LUB)
+          forv_Sym(sss, ss->has)
+            acc.add(sss);
+      }
+      forv_Sym(ss, acc.asvec)
+        if (ss->type_kind != Type_LUB) 
+          s->isa.set_add(ss);
+    }
+  }
+}
+
 void
 make_meta_type(Sym *s) {
   if (!s->meta_type)
@@ -430,6 +451,7 @@ finalize_types(IF1 *i, int import_included_ivars) {
 #include "builtin_symbols.h"
 #undef S
   set_value_for_value_classes(i);
+  compute_isa(i);
   make_meta_types(i);
   compute_type_sizes(i);
   finalized_types = i->allsyms.n;

@@ -486,53 +486,81 @@ Matcher::find_all_matches(CreationSet *cs, Vec<AVar *> &args, Vec<char *> &names
   app.pop();
 }
 
-int
-subsumes(PMatch *x, PMatch *y, MPosition &app, int nargs) {
-  int result = 0, identical = 1;
-  app.push(1);
-  for (int i = 0; i < nargs; i++) {
-    MPosition *acpp = cannonicalize_mposition(app);
-    Sym *xtype = x->formal_dispatch_types.get(to_formal(acpp, x));
-    Sym *ytype = y->formal_dispatch_types.get(to_formal(acpp, y));
-    if (xtype == ytype)
-      goto Lnext;
-    identical = 0;
-    if (xtype->specializers.set_in(ytype)) {
-      if (ytype->specializers.set_in(xtype)) {
-        result = 0;
-        goto Lreturn;
-      }
-      if (result >= 0)
-        result = 1;
-      else {
-        result = 0;
-        goto Lreturn;
-      }
-    } else if (ytype->specializers.set_in(xtype)) {
-      if (xtype->specializers.set_in(ytype)) {
-        result = 0;
-        goto Lreturn;
-      }
-      if (result <= 0)
-        result = -1;
-      else {
-        result = 0;
-        goto Lreturn;
+static int
+subsumes_arg(PMatch *x, PMatch *y, MPosition *acpp, CreationSet *cs, int *identical) {
+  // check declared types
+  MPosition *xp = to_formal(acpp, x), *yp = to_formal(acpp, y);
+  Sym *xtype = dispatch_type(x->fun->arg_syms.get(xp));
+  Sym *ytype = dispatch_type(y->fun->arg_syms.get(yp));
+  Sym *s = cs->sym;
+  if (xtype != ytype) {
+    *identical = 0;
+    Sym *xxtype = x->generic_substitutions.get(x->fun->arg_syms.get(xp)->must_specialize);
+    xtype = xxtype ? xxtype : xtype;
+    Sym *yytype = y->generic_substitutions.get(y->fun->arg_syms.get(yp)->must_specialize);
+    ytype = yytype ? yytype : ytype;
+    if (xtype != ytype) {
+      if (xtype == s)
+        return -1;
+      if (ytype == s)
+        return 1;
+      // check declared sum types
+      if (xtype->isa.n || ytype->isa.n) {
+        if (xtype->isa.set_in(s)) {
+          if (!ytype->isa.set_in(s))
+            return -1;
+        } else if (ytype->isa.set_in(s))
+          return 1;
+        if (xtype->isa.set_in(s->type)) {
+          if (!ytype->isa.set_in(s->type))
+            return -1;
+        } else if (ytype->isa.set_in(s->type))
+          return 1;
       }
     }
-  Lnext:
+  }
+  // check final types
+  ytype = y->formal_dispatch_types.get(xp);
+  xtype = x->formal_dispatch_types.get(yp);
+  if (xtype != ytype) {
+    if (xtype->specializers.set_in(ytype)) {
+      if (!ytype->specializers.set_in(xtype))
+        return 1;
+    } else if (ytype->specializers.set_in(xtype))
+      return -1;
+  }
+  // break tie on lack of promotion substituation
+  if (!x->promotion_substitutions.get(xp) && y->promotion_substitutions.get(yp))
+    return -1;
+  if (x->promotion_substitutions.get(xp) && !y->promotion_substitutions.get(yp))
+    return 1;
+  // break tie on lack of coercion substituation
+  if (!x->coercion_substitutions.get(xp) && y->coercion_substitutions.get(yp))
+    return -1;
+  if (x->coercion_substitutions.get(xp) && !y->coercion_substitutions.get(yp))
+    return 1;
+  return 0;
+}
+
+int
+subsumes(PMatch *x, PMatch *y, MPosition &app, Vec<CreationSet *> &csargs) {
+  int result = 0, identical = 1;
+  app.push(1);
+  for (int i = 0; i < csargs.n; i++) {
+    MPosition *acpp = cannonicalize_mposition(app);
+    int r = subsumes_arg(x, y, acpp, csargs.v[i], &identical);
+    if (!result)
+      result = r;
+    else if (r && r != result) {
+      result = 0;
+      goto Lreturn;
+    }
     app.inc();
   }
   if (identical && !result) {
     if (x->fun->sym->nesting_depth > y->fun->sym->nesting_depth)
       result = -1;
     if (x->fun->sym->nesting_depth < y->fun->sym->nesting_depth)
-      result = 1;
-  }
-  if (!result) {
-    if (!x->promotion_substitutions.n && y->promotion_substitutions.n)
-      result = -1;
-    if (x->promotion_substitutions.n && !y->promotion_substitutions.n)
       result = 1;
   }
  Lreturn:
@@ -1207,7 +1235,7 @@ Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &app,
     if (subsumed.set_in(applicable.v[i]))
       continue;
     for (int j = i + 1; j < applicable.n; j++) if (applicable.v[j]) {
-      switch (subsumes(applicable.v[i], applicable.v[j], app, csargs.n)) {
+      switch (subsumes(applicable.v[i], applicable.v[j], app, csargs)) {
         case -1: subsumed.set_add(applicable.v[j]); break;
         case 0: break;
         case 1: goto LnextApplicable;

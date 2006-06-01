@@ -135,6 +135,7 @@ class Sym : public BasicSym {
   Vec<Sym *>            specializes;            // declared superclasses        *type*
   Vec<Sym *>            includes;               // included code                *type*
   Vec<Sym *>            implements;             // declared supertypes          *type*
+  Vec<Sym *>            isa;                    // transitive sum type elements *type*
 
   Sym                   *alias;                 // alias of type                *type*
   Sym                   *init;                  // for modules & classes (default init function) *type*
