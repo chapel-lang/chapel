@@ -3,6 +3,6 @@
 
 #CFLAGS += -DUSE_READLINE
 #LIBS += -lreadline
-LIBS += -lrt
+LIBS += -lrt -ldl
 
 -include $(CHAPEL_ROOT)/make/Makefile.gnu
