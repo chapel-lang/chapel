@@ -66339,3 +66339,24 @@ Modified files:
 	                             configVarFile.input 
 	                             memmaxInput.chpl memmaxIntOnly.chpl 
 
+---------------------------------------------------------------------------
+
+06/01/06 17:26:27 -- deitz
+
+Log message:
+	Removed future for test that indexes into an array with a domain that
+	John fixed.
+	
+	Removed future for Brad's test of assigning one array the negative of
+	another as in A = -B which started working now that scalar promotion
+	on functions that return values works.
+	
+	Added a test to assign the result of adding two arrays to a third
+	array as in C = A + B.  This works with zipper iteration.
+
+Added files:
+	chapel/test/arrays/deitz/: test_plus.chpl test_plus.good 
+Removed files:
+	chapel/test/arrays/bradc/: arrayassign1a.future 
+	chapel/test/arrays/deitz/: test_index_domain2.future 
+
