@@ -66360,3 +66360,61 @@ Removed files:
 	chapel/test/arrays/bradc/: arrayassign1a.future 
 	chapel/test/arrays/deitz/: test_index_domain2.future 
 
+---------------------------------------------------------------------------
+
+06/01/06 17:27:05 -- deitz
+
+Log message:
+	We sometimes need to create a list of Stmts rather than a single Stmt
+	when we parse a Chapel statement.  To this end, the Chapel grammar was
+	modified so that a statement is parsed as an AList<Stmt>.  However
+	this makes it difficult to determine the extent of a single Chapel
+	statement.
+	
+	Added a new type of BlockStmt called BLOCK_SCOPELESS that is like a
+	BlockStmt but that has no scope associated with it.  It is thus
+	organizational only.
+	
+	Modified the Chapel grammar so that Chapel statements are parsed as
+	scopeless BlockStmts.
+	
+	This is necessary to support the transformation on cobegin blocks that
+	seek to parallelize at the Chapel statement level.  Removed future for
+	a test of a while loop in a cobegin block.
+	
+	Added to the cleanup pass functionality to flatten all scopeless
+	blocks.  To discuss: Should we flatten these blocks or leave them in
+	as representative of where the Chapel statements are.  I can imagine
+	they may be useful for looking at the code and/or debugging.  Not
+	removing the scopeless blocks can be accomplished by not calling the
+	flatten_scopeless_blocks function in cleanup.  This has been tested
+	and works on Jacobi.
+	
+	Reassociated the uses vector with BaseAST rather than with SymScope
+	since the SymScope is wiped out when AST is removed and uses need to
+	be maintained.
+	
+	Added a new variant on collect_asts called collect_top_asts that does
+	not recurse into a symbol (other than the initial symbol passed to it
+	if that is a symbol).  This could be useful to collect the asts in a
+	function without also collecting the asts in nested functions.  It is
+	used now in the ClassType::addDeclarations to determine primary
+	methods, fields, and types in a class.  This makes this code more
+	robust necessary to handle the additional BlockStmts inserted with
+	this checkin.  I modified a bunch of other fragile code though some of
+	it remains fragile.
+	
+	Made the new traversal mechanism work when passed a list of
+	statements.  It still complains with other lists.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp baseAST.cpp build.cpp stmt.cpp 
+	                      symbol.cpp type.cpp 
+	chapel/compiler/include/: astutil.h baseAST.h build.h stmt.h 
+	                          symscope.h symtab.h 
+	chapel/compiler/parser/: chapel.y parser.cpp 
+	chapel/compiler/passes/: cleanup.cpp verify.cpp 
+	chapel/compiler/symtab/: symscope.cpp symtab.cpp 
+Removed files:
+	chapel/test/parallel/cobegin/waynew/: while.future 
+
