@@ -42,7 +42,8 @@ verify_parents(BaseAST* ast,
     if (stmt->parentStmt != parentStmt)
       INT_FATAL(stmt, "Stmt's parentStmt is incorrect");
     if (BlockStmt* blockStmt = dynamic_cast<BlockStmt*>(stmt))
-      parentScope = blockStmt->blkScope;
+      if (blockStmt->blockTag != BLOCK_SCOPELESS)
+        parentScope = blockStmt->blkScope;
     parentStmt = stmt;
   }
 

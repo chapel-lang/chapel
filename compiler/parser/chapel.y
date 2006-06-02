@@ -200,18 +200,19 @@ Is this "while x"(i); or "while x(i)";?
 %type <pstmtls> program
 %type <pstmtls> stmt_ls decl_stmt_ls
 
-%type <pstmtls> stmt empty_stmt label_stmt goto_stmt break_stmt continue_stmt
-%type <pstmtls> call_stmt expr_stmt if_stmt for_stmt while_do_stmt do_while_stmt
-%type <pstmtls> select_stmt return_stmt yield_stmt assign_stmt decl_stmt
-%type <pstmtls> type_select_stmt
+%type <pblockstmt> stmt empty_stmt label_stmt goto_stmt break_stmt continue_stmt
+%type <pblockstmt> call_stmt expr_stmt if_stmt for_stmt while_do_stmt do_while_stmt
+%type <pblockstmt> select_stmt return_stmt yield_stmt assign_stmt decl_stmt
+%type <pblockstmt> type_select_stmt
 
-%type <pstmtls> typedef_decl_stmt fn_decl_stmt class_decl_stmt mod_decl_stmt
-%type <pstmtls> typevar_decl_stmt enum_decl_stmt with_stmt use_stmt
+%type <pblockstmt> typedef_decl_stmt fn_decl_stmt class_decl_stmt mod_decl_stmt
+%type <pblockstmt> typevar_decl_stmt enum_decl_stmt with_stmt use_stmt
 
-%type <pstmtls> var_decl_stmt var_decl_stmt_inner var_decl_stmt_inner_ls
+%type <pblockstmt> var_decl_stmt
+%type <pstmtls> var_decl_stmt_inner var_decl_stmt_inner_ls
 
+%type <pblockstmt> parsed_block_single_stmt
 
-%type <pstmtls> parsed_block_single_stmt
 %type <pblockstmt> parsed_block_stmt block_stmt
 
 %type <pwhenstmt> when_stmt
@@ -279,8 +280,8 @@ stmt_ls:
   /* empty */
     { $$ = new AList<Stmt>(); }
 | stmt_ls pragma_ls stmt
-    { 
-      $3->first()->addPragmas($2);
+    {
+      $3->body->first()->addPragmas($2);
       $1->insertAtTail($3);
     }
 ;
@@ -304,7 +305,6 @@ stmt:
 | yield_stmt
 | assign_stmt
 | block_stmt
-    { $$ = new AList<Stmt>($1); }
 | decl_stmt
 | error
     { printf("syntax error"); exit(1); }
@@ -336,14 +336,14 @@ parsed_block_stmt:
 
 empty_stmt:
   TSEMI
-    { $$ = new AList<Stmt>(new BlockStmt()); }
+    { $$ = build_chpl_stmt(new BlockStmt()); }
 ;
 
 
 label_stmt:
   TLABEL identifier stmt
     {
-      $$ = $3;
+      $$ = build_chpl_stmt($3);
       $$->insertAtTail(new LabelStmt(stringcat("_post", $2)));
       $$->insertAtHead(new LabelStmt($2));
     }
@@ -352,83 +352,83 @@ label_stmt:
 
 goto_stmt:
   TGOTO identifier TSEMI
-    { $$ = new AList<Stmt>(new GotoStmt(goto_normal, $2)); }
+    { $$ = build_chpl_stmt(new GotoStmt(goto_normal, $2)); }
 ;
 
 
 break_stmt:
   TBREAK opt_identifier TSEMI
-    { $$ = new AList<Stmt>(new GotoStmt(goto_break, $2)); }
+    { $$ = build_chpl_stmt(new GotoStmt(goto_break, $2)); }
 ;
 
 
 continue_stmt:
   TCONTINUE opt_identifier TSEMI
-    { $$ = new AList<Stmt>(new GotoStmt(goto_continue, $2)); }
+    { $$ = build_chpl_stmt(new GotoStmt(goto_continue, $2)); }
 ;
 
 
 call_stmt:
   TCALL lvalue TSEMI
-    { $$ = new AList<Stmt>($2); }
+    { $$ = build_chpl_stmt($2); }
 ;
 
 
 expr_stmt:
   top_level_expr TSEMI
-    { $$ = new AList<Stmt>($1); }
+    { $$ = build_chpl_stmt($1); }
 ;
 
 
 if_stmt:
   TIF expr parsed_block_stmt            %prec TNOELSE
-    { $$ = new AList<Stmt>(new CondStmt($2, $3)); }
+    { $$ = build_chpl_stmt(new CondStmt($2, $3)); }
 | TIF expr TTHEN stmt                   %prec TNOELSE
-    { $$ = new AList<Stmt>(new CondStmt($2, $4)); }
+    { $$ = build_chpl_stmt(new CondStmt($2, $4)); }
 | TIF expr parsed_block_stmt TELSE stmt
-    { $$ = new AList<Stmt>(new CondStmt($2, $3, $5)); }
+    { $$ = build_chpl_stmt(new CondStmt($2, $3, $5)); }
 | TIF expr TTHEN stmt TELSE stmt
-    { $$ = new AList<Stmt>(new CondStmt($2, $4, $6)); }
+    { $$ = build_chpl_stmt(new CondStmt($2, $4, $6)); }
 ;
 
 
 for_stmt:
   TFOR TPARAM identifier TIN expr TDOTDOT expr TDO stmt
-    { $$ = build_param_for($3, $5, $7, $9); }
+    { $$ = build_chpl_stmt(build_param_for($3, $5, $7, $9)); }
 | TFOR TPARAM identifier TIN expr TDOTDOT expr parsed_block_stmt
-    { $$ = build_param_for($3, $5, $7, new AList<Stmt>($8)); }
+    { $$ = build_chpl_stmt(build_param_for($3, $5, $7, $8)); }
 | for_tag nonempty_expr_ls TIN nonempty_expr_ls parsed_block_stmt
-    { $$ = build_for_block($1, exprsToIndices($2), $4, $5); }
+    { $$ = build_chpl_stmt(build_for_block($1, exprsToIndices($2), $4, $5)); }
 | for_tag nonempty_expr_ls TIN nonempty_expr_ls TDO stmt
-    { $$ = build_for_block($1, exprsToIndices($2), $4, new BlockStmt($6)); }
+    { $$ = build_chpl_stmt(build_for_block($1, exprsToIndices($2), $4, new BlockStmt($6))); }
 | TLSBR nonempty_expr_ls TIN nonempty_expr_ls TRSBR stmt
-    { $$ = build_for_block(BLOCK_FORALL, exprsToIndices($2), $4, new BlockStmt($6)); }
+    { $$ = build_chpl_stmt(build_for_block(BLOCK_FORALL, exprsToIndices($2), $4, new BlockStmt($6))); }
 ;
 
 
 while_do_stmt:
   TWHILE expr TDO stmt
-    { $$ = build_while_do_block($2, new BlockStmt($4)); }
+    { $$ = build_chpl_stmt(build_while_do_block($2, new BlockStmt($4))); }
 | TWHILE expr parsed_block_stmt
-    { $$ = build_while_do_block($2, $3); }
+    { $$ = build_chpl_stmt(build_while_do_block($2, $3)); }
 ;
 
 
 do_while_stmt:
 TDO stmt TWHILE expr TSEMI
-    { $$ = build_do_while_block($4, new BlockStmt($2)); }
+    { $$ = build_chpl_stmt(build_do_while_block($4, new BlockStmt($2))); }
 ;
 
 
 type_select_stmt:
   TTYPE TSELECT nonempty_expr_ls TLCBR when_stmt_ls TRCBR
-    { $$ = new AList<Stmt>(build_type_select($3, $5)); }
+    { $$ = build_chpl_stmt(build_type_select($3, $5)); }
 ;
 
 
 select_stmt:
   TSELECT expr TLCBR when_stmt_ls TRCBR
-    { $$ = new AList<Stmt>(new SelectStmt($2, $4)); }
+    { $$ = build_chpl_stmt(new SelectStmt($2, $4)); }
 ;
 
 
@@ -452,58 +452,58 @@ when_stmt:
 
 return_stmt:
   TRETURN opt_expr TSEMI
-    { $$ = new AList<Stmt>(new ReturnStmt($2)); }
+    { $$ = build_chpl_stmt(new ReturnStmt($2)); }
 ;
 
 
 yield_stmt:
   TYIELD opt_expr TSEMI
-    { $$ = new AList<Stmt>(new ReturnStmt($2, true)); }
+    { $$ = build_chpl_stmt(new ReturnStmt($2, true)); }
 ;
 
 
 assign_stmt:
   lvalue TASSIGN expr TSEMI
     {
-      $$ = new AList<Stmt>(new CallExpr("=", $1, $3));
+      $$ = build_chpl_stmt(new CallExpr("=", $1, $3));
     }
 | lvalue TASSIGNPLUS expr TSEMI
     {
-      $$ = build_assignplus($1, $3);
+      $$ = build_chpl_stmt(build_assignplus($1, $3));
     }
 | lvalue TASSIGNMINUS expr TSEMI
     {
-      $$ = new AList<Stmt>(new CallExpr("=", $1,
+      $$ = build_chpl_stmt(new CallExpr("=", $1,
              new CallExpr("-", $1->copy(), $3)));
     }
 | lvalue TASSIGNMULTIPLY expr TSEMI
     {
-      $$ = new AList<Stmt>(new CallExpr("=", $1,
+      $$ = build_chpl_stmt(new CallExpr("=", $1,
              new CallExpr("*", $1->copy(), $3)));
     }
 | lvalue TASSIGNDIVIDE expr TSEMI
     {
-      $$ = new AList<Stmt>(new CallExpr("=", $1,
+      $$ = build_chpl_stmt(new CallExpr("=", $1,
              new CallExpr("/", $1->copy(), $3)));
     }
 | lvalue TASSIGNBAND expr TSEMI
     {
-      $$ = new AList<Stmt>(new CallExpr("=", $1,
+      $$ = build_chpl_stmt(new CallExpr("=", $1,
              new CallExpr("&", $1->copy(), $3)));
     }
 | lvalue TASSIGNBOR expr TSEMI
     {
-      $$ = new AList<Stmt>(new CallExpr("=", $1,
+      $$ = build_chpl_stmt(new CallExpr("=", $1,
              new CallExpr("|", $1->copy(), $3)));
     }
 | lvalue TASSIGNBXOR expr TSEMI
     {
-      $$ = new AList<Stmt>(new CallExpr("=", $1,
+      $$ = build_chpl_stmt(new CallExpr("=", $1,
              new CallExpr("^", $1->copy(), $3)));
     }
 | lvalue TASSIGNSEQCAT expr TSEMI
     {
-      $$ = new AList<Stmt>(new CallExpr("=", $1,
+      $$ = build_chpl_stmt(new CallExpr("=", $1,
              new CallExpr("#", $1->copy(), $3)));
     }
 ;
@@ -512,7 +512,7 @@ assign_stmt:
 block_stmt:
   atomic_cobegin TLCBR stmt_ls TRCBR
     {
-      $$ = new BlockStmt($3, $1);
+      $$ = build_chpl_stmt(new BlockStmt($3, $1));
     }
 ;
 
@@ -525,7 +525,7 @@ decl_stmt_ls:
     { $$ = new AList<Stmt>(); }
 | decl_stmt_ls pragma_ls decl_stmt
     {
-      $3->first()->addPragmas($2);
+      $3->body->first()->addPragmas($2);
       $1->insertAtTail($3);
     }
 ;
@@ -546,20 +546,20 @@ decl_stmt:
 
 with_stmt:
   TWITH lvalue TSEMI
-    { $$ = new AList<Stmt>(new ImportExpr(IMPORT_WITH, $2)); }
+    { $$ = build_chpl_stmt(new ImportExpr(IMPORT_WITH, $2)); }
 ;
 
 
 use_stmt:
   TUSE lvalue TSEMI
-    { $$ = new AList<Stmt>(new ImportExpr(IMPORT_USE, $2)); }
+    { $$ = build_chpl_stmt(new ImportExpr(IMPORT_USE, $2)); }
 ;
 
 
 mod_decl_stmt:
   TMODULE identifier TLCBR stmt_ls TRCBR
     {
-      $$ = new AList<Stmt>(new ExprStmt(new DefExpr(build_module($2, MOD_USER, $4))));
+      $$ = build_chpl_stmt(new ExprStmt(new DefExpr(build_module($2, MOD_USER, $4))));
     }
 ;
 
@@ -578,8 +578,8 @@ fn_decl_stmt:
       $2->retExpr = $5;
       if ($6)
         $2->where = new BlockStmt(new ExprStmt($6));
-      $2->body = $7;
-      $$ = new AList<Stmt>(new DefExpr($2));
+      $2->body = new BlockStmt($7);
+      $$ = build_chpl_stmt(new DefExpr($2));
     }
 ;
 
@@ -758,7 +758,7 @@ class_decl_stmt:
       DefExpr* def = Symboltable::defineStructType($3, $1, $6);
       def->sym->addPragmas($2);
       dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(def->sym)->definition)->inherits = $4;
-      $$ = new AList<Stmt>(def);
+      $$ = build_chpl_stmt(def);
     }
 ;
 
@@ -788,7 +788,7 @@ enum_decl_stmt:
       TypeSymbol* pst = new TypeSymbol($3, pdt);
       pst->addPragmas($2);
       DefExpr* def_expr = new DefExpr(pst);
-      $$ = new AList<Stmt>(def_expr);
+      $$ = build_chpl_stmt(def_expr);
     }
 ;
 
@@ -816,7 +816,7 @@ typedef_decl_stmt:
       TypeSymbol* typeSym = new TypeSymbol($3, newtype);
       typeSym->addPragmas($2);
       DefExpr* def_expr = new DefExpr(typeSym);
-      $$ = new AList<Stmt>(def_expr);
+      $$ = build_chpl_stmt(def_expr);
     }
 ;
 
@@ -828,7 +828,7 @@ typevar_decl_stmt:
       TypeSymbol* new_symbol = new TypeSymbol($3, new_type);
       new_symbol->addPragmas($2);
       DefExpr* def_expr = new DefExpr(new_symbol, NULL, $4);
-      $$ = new AList<Stmt>(def_expr);
+      $$ = build_chpl_stmt(def_expr);
     }
 ;
 
@@ -837,7 +837,7 @@ var_decl_stmt:
   var_state_tag var_const_tag var_decl_stmt_inner_ls TSEMI
     {
       setVarSymbolAttributes($3, $1, $2);
-      $$ = $3;
+      $$ = build_chpl_stmt($3);
     }
 ;
 

@@ -8,7 +8,29 @@
 #include "type.h"
 
 
+BlockStmt* build_chpl_stmt(BaseAST* ast) {
+  BlockStmt* block;
+  if (!ast)
+    block = new BlockStmt();
+  else if (Expr* a = dynamic_cast<Expr*>(ast))
+    block = new BlockStmt(new ExprStmt(a));
+  else if (Stmt* a = dynamic_cast<Stmt*>(ast))
+    block = new BlockStmt(a);
+  else if (AList<Stmt>* a = dynamic_cast<AList<Stmt>*>(ast))
+    block = new BlockStmt(a);
+  else
+    INT_FATAL(ast, "Illegal argument to build_chpl_stmt");
+  block->blockTag = BLOCK_SCOPELESS;
+  return block;
+}
+
+
 static bool stmtIsGlob(Stmt* stmt) {
+  if (BlockStmt* block = dynamic_cast<BlockStmt*>(stmt)) {
+    if (block->body->length() > 1)
+      return false;
+    stmt = block->body->only();
+  }
   if (ExprStmt* expr = dynamic_cast<ExprStmt*>(stmt))
     if (DefExpr* def = dynamic_cast<DefExpr*>(expr->expr))
       if (dynamic_cast<FnSymbol*>(def->sym) ||
@@ -62,9 +84,10 @@ static void createInitFn(ModuleSymbol* mod) {
 ModuleSymbol* build_module(char* name, modType type, AList<Stmt>* stmts) {
   ModuleSymbol* mod = new ModuleSymbol(name, type, stmts);
   // a first pragma statement is a module-level pragma
-  if (BlockStmt* first = dynamic_cast<BlockStmt*>(mod->stmts->first()))
-    if (first->body->isEmpty())
-      mod->addPragmas(&first->pragmas);
+  if (BlockStmt* first1 = dynamic_cast<BlockStmt*>(mod->stmts->first()))
+    if (BlockStmt* first2 = dynamic_cast<BlockStmt*>(first1->body->first()))
+      if (first2->body->isEmpty())
+        mod->addPragmas(&first2->pragmas);
   createInitFn(mod);
   return mod;
 }
@@ -120,8 +143,7 @@ static void build_loop_labels(BlockStmt* body) {
 
 
 AList<Stmt>* build_while_do_block(Expr* cond, BlockStmt* body) {
-  if (body->blockTag != BLOCK_NORMAL)
-    INT_FATAL(body, "Abnormal block passed to build_while_do_block");
+  body = new BlockStmt(body);
   body->blockTag = BLOCK_WHILE_DO;
   build_loop_labels(body);
   AList<Stmt>* stmts = new AList<Stmt>();
@@ -134,8 +156,7 @@ AList<Stmt>* build_while_do_block(Expr* cond, BlockStmt* body) {
 
 
 AList<Stmt>* build_do_while_block(Expr* cond, BlockStmt* body) {
-  if (body->blockTag != BLOCK_NORMAL)
-    INT_FATAL(body, "Abnormal block passed to build_do_while_block");
+  body = new BlockStmt(body);
   body->blockTag = BLOCK_DO_WHILE;
   build_loop_labels(body);
   AList<Stmt>* stmts = new AList<Stmt>();
@@ -178,10 +199,7 @@ AList<Stmt>* build_for_expr(AList<DefExpr>* indices,
   stmts->insertAtTail(new BlockStmt(build_for_block(BLOCK_FORALL,
                                                     typeindices,
                                                     typeiterators,
-                                                    body)));
-
-  while (!dynamic_cast<GotoStmt*>(body->next))
-    body->next->remove(); // eliminate dead code for analysis
+                                                    body, 1)));
 
   stmts->insertAtTail(new LabelStmt(new DefExpr(break_out)));
 
@@ -199,10 +217,11 @@ AList<Stmt>* build_for_expr(AList<DefExpr>* indices,
 AList<Stmt>* build_for_block(BlockTag tag,
                              AList<DefExpr>* indices,
                              AList<Expr>* iterators,
-                             BlockStmt* body) {
+                             BlockStmt* body,
+                             int only_once) { // execute only once
+                                              // used in build_for_expr
   static int uid = 1;
-  if (body->blockTag != BLOCK_NORMAL)
-    INT_FATAL(body, "Abnormal block passed to build_for_block");
+  body = new BlockStmt(body);
   body->blockTag = tag;
   AList<Stmt>* stmts = new AList<Stmt>();
   build_loop_labels(body);
@@ -255,18 +274,20 @@ AList<Stmt>* build_for_block(BlockTag tag,
   stmts->insertAtTail(new DefExpr(index, index_init));
   stmts->insertAtTail(body);
 
-  for (int i = 0; i < numIterators; i++) {
-    stmts->insertAtTail(new CallExpr("=", cursor.v[i], new CallExpr(new CallExpr(".", iterator.v[i], new_StringLiteral("getNextCursor")), cursor.v[i])));
+  if (!only_once) {
+    for (int i = 0; i < numIterators; i++) {
+      stmts->insertAtTail(new CallExpr("=", cursor.v[i], new CallExpr(new CallExpr(".", iterator.v[i], new_StringLiteral("getNextCursor")), cursor.v[i])));
+    }
+    stmts->insertAtTail(new GotoStmt(goto_normal, body->pre_loop));
   }
 
-  stmts->insertAtTail(new GotoStmt(goto_normal, body->pre_loop));
   stmts->insertAtTail(new LabelStmt(new DefExpr(body->post_loop)));
   uid++;
   return stmts;
 }
 
 
-AList<Stmt>* build_param_for(char* index, Expr* low, Expr* high, AList<Stmt>* stmts) {
+AList<Stmt>* build_param_for(char* index, Expr* low, Expr* high, BlockStmt* stmts) {
   BlockStmt* block = new BlockStmt(stmts);
   block->blockTag = BLOCK_PARAM_FOR;
   block->param_low = low;
@@ -354,4 +375,21 @@ AList<Stmt>* build_type_select(AList<Expr>* exprs, AList<WhenStmt>* whenstmts) {
 Expr* build_reduce_expr(Expr* red, Expr* seq) {
   red = new CallExpr(red, new CallExpr(new CallExpr(".", seq->copy(), new_StringLiteral("getValue")), new CallExpr(new CallExpr(".", seq->copy(), new_StringLiteral("getHeadCursor")))));
   return new CallExpr("_reduce", red, seq);
+}
+
+
+void
+setVarSymbolAttributes(AList<Stmt>* stmts, varType vartag, consType constag) {
+  for_alist(Stmt, stmt, stmts) {
+    if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {
+      if (DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr)) {
+        if (VarSymbol* var = dynamic_cast<VarSymbol*>(defExpr->sym)) {
+          var->consClass = constag;
+          var->varClass = vartag;
+          continue;
+        }
+      }
+    }
+    INT_FATAL(stmt, "Major error in setVarSymbolAttributes");
+  }
 }

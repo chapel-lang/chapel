@@ -7,7 +7,6 @@ class SymScope : public gc {
  public:
   BaseAST* astParent; // back pointer to AST
   SymScope* parent;
-  Vec<ModuleSymbol*> uses; // modules used by this scope
   Vec<Symbol*> symbols;
   Map<char*,Vec<FnSymbol*>*> visibleFunctions;
   ChainHashMap<char*, StringHashFns, Symbol*> table;

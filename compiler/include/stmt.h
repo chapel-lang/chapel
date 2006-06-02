@@ -66,6 +66,7 @@ class ReturnStmt : public Stmt {
 
 enum BlockTag {
   BLOCK_NORMAL = 0,
+  BLOCK_SCOPELESS,
   BLOCK_WHILE_DO,
   BLOCK_DO_WHILE,
   BLOCK_FOR,

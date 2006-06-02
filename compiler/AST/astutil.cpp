@@ -71,6 +71,28 @@ void collect_asts_postorder(Vec<BaseAST*>* asts) {
 }
 
 
+void collect_top_asts(Vec<BaseAST*>* asts, BaseAST* ast) {
+  Vec<BaseAST*> next_asts;
+  get_ast_children(ast, next_asts);
+  forv_Vec(BaseAST, next_ast, next_asts) {
+    if (!dynamic_cast<Symbol*>(next_ast))
+      collect_top_asts(asts, next_ast);
+  }
+  asts->add(ast);
+  if (Type* type = dynamic_cast<Type*>(ast)) {
+    asts->add(type->metaType);
+    asts->add(type->metaType->symbol);
+  }
+  if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
+    if (dynamic_cast<UnresolvedSymbol*>(sym->var))
+      asts->add(sym->var);
+    if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var))
+      if (var->immediate)
+        asts->add(sym->var);
+  }
+}
+
+
 void reset_file_info(BaseAST* baseAST, int lineno, char* filename) {
   Vec<BaseAST*> asts;
   collect_asts(&asts, baseAST);
@@ -273,14 +295,16 @@ void insert_help(BaseAST* ast,
     stmt->parentStmt = parentStmt;
 
     if (BlockStmt* blockStmt = dynamic_cast<BlockStmt*>(stmt)) {
-      if (blockStmt->blkScope &&
-          blockStmt->blkScope->astParent == blockStmt)
-        INT_FATAL(blockStmt, "Unexpected scope in BlockStmt");
-      if (!blockStmt->blkScope) {
-        blockStmt->blkScope = new SymScope(blockStmt, parentScope);
-        blockStmt->blkScope->astParent = blockStmt;
+      if (blockStmt->blockTag != BLOCK_SCOPELESS) {
+        if (blockStmt->blkScope &&
+            blockStmt->blkScope->astParent == blockStmt)
+          INT_FATAL(blockStmt, "Unexpected scope in BlockStmt");
+        if (!blockStmt->blkScope) {
+          blockStmt->blkScope = new SymScope(blockStmt, parentScope);
+          blockStmt->blkScope->astParent = blockStmt;
+        }
+        parentScope = blockStmt->blkScope;
       }
-      parentScope = blockStmt->blkScope;
     }
     parentStmt = stmt;
   }
@@ -356,8 +380,10 @@ void remove_help(BaseAST* ast) {
     remove_help(ast);
 
   if (BlockStmt* block = dynamic_cast<BlockStmt*>(ast)) {
-    if (block->blkScope && block->blkScope->astParent == block)
-      block->blkScope = NULL;
+    if (block->blockTag != BLOCK_SCOPELESS) {
+      if (block->blkScope && block->blkScope->astParent == block)
+        block->blkScope = NULL;
+    }
   }
   if (DefExpr* defExpr = dynamic_cast<DefExpr*>(ast)) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(defExpr->sym)) {

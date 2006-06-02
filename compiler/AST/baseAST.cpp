@@ -610,7 +610,12 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all, int sentinels) {
   case AST_TYPE_END:
     break;
   case LIST:
-    INT_FATAL(a, "Unexpected case in AST_GET_CHILDREN (LIST)");
+    if (AList<Stmt>* stmts = dynamic_cast<AList<Stmt>*>(a)) {
+      for_alist(Stmt, stmt, stmts) {
+        get_ast_children(stmt, asts, all, sentinels);
+      }
+    } else
+      INT_FATAL(a, "Unexpected case in AST_GET_CHILDREN (LIST)");
     break;
   case OBJECT:
     INT_FATAL(a, "Unexpected case in AST_GET_CHILDREN (OBJECT)");

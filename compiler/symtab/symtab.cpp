@@ -48,23 +48,6 @@ Symboltable::defineParam(intentTag tag, char* ident, Expr* type, Expr* init, Exp
 }
 
 
-void
-setVarSymbolAttributes(AList<Stmt>* stmts, varType vartag, consType constag) {
-  for_alist(Stmt, stmt, stmts) {
-    if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {
-      if (DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr)) {
-        if (VarSymbol* var = dynamic_cast<VarSymbol*>(defExpr->sym)) {
-          var->consClass = constag;
-          var->varClass = vartag;
-          continue;
-        }
-      }
-    }
-    INT_FATAL(stmt, "Major error in setVarSymbolAttributes");
-  }
-}
-
-
 DefExpr* Symboltable::defineStructType(char* name, // NULL = anonymous
                                        Type* type,
                                        AList<Stmt>* def) {

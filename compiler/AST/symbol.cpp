@@ -1140,7 +1140,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
     forv_Vec(BaseAST, value, values)
       if (Type* type = dynamic_cast<Type*>(value))
         if (type->symbol->defPoint)
-          defPoint->parentScope->uses.add(type->symbol->defPoint->getModule());
+          defPoint->parentScope->astParent->uses.add(type->symbol->defPoint->getModule());
 
     TypeSymbol* clone = retType->symbol->clone(&map);
 

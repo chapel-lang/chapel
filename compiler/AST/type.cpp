@@ -632,18 +632,19 @@ ClassType::copyInner(ASTMap* map) {
 
 void ClassType::addDeclarations(AList<Stmt>* newDeclarations,
                                 Stmt* beforeStmt) {
-  for_alist(Stmt, stmt, newDeclarations) {
-    if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {
-      if (DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr)) {
-        if (FnSymbol* fn = dynamic_cast<FnSymbol*>(defExpr->sym)) {
-          methods.add(fn);
-          fn->typeBinding = this->symbol;
-          if (fn->fnClass != FN_CONSTRUCTOR)
-            fn->isMethod = true;
-        }
+  Vec<BaseAST*> asts;
+  collect_top_asts(&asts, newDeclarations);
+  forv_Vec(BaseAST, ast, asts) {
+    if (DefExpr* defExpr = dynamic_cast<DefExpr*>(ast)) {
+      if (FnSymbol* fn = dynamic_cast<FnSymbol*>(defExpr->sym)) {
+        methods.add(fn);
+        fn->typeBinding = this->symbol;
+        if (fn->fnClass != FN_CONSTRUCTOR)
+          fn->isMethod = true;
       }
     }
   }
+
   if (beforeStmt) {
     beforeStmt->insertBefore(newDeclarations);
   } else {
@@ -651,15 +652,16 @@ void ClassType::addDeclarations(AList<Stmt>* newDeclarations,
   }
   types.clear();
   fields.clear();
-  for_alist(Stmt, stmt, declarationList) {
-    if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {
-      if (DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr)) {
-        if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(defExpr->sym)) {
-          types.add(ts);
-        } else if (dynamic_cast<VarSymbol*>(defExpr->sym) ||
-                   dynamic_cast<ArgSymbol*>(defExpr->sym)) {
-          fields.add(defExpr->sym);
-        }
+
+  asts.clear();
+  collect_top_asts(&asts, declarationList);
+  forv_Vec(BaseAST, ast, asts) {
+    if (DefExpr* defExpr = dynamic_cast<DefExpr*>(ast)) {
+      if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(defExpr->sym)) {
+        types.add(ts);
+      } else if (dynamic_cast<VarSymbol*>(defExpr->sym) ||
+                 dynamic_cast<ArgSymbol*>(defExpr->sym)) {
+        fields.add(defExpr->sym);
       }
     }
   }

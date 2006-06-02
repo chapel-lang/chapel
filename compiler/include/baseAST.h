@@ -107,6 +107,8 @@ class BaseAST : public gc {
   Vec<char*>* copyInfo; // traversals where this was copied
 
   Vec<char*> pragmas;
+  Vec<ModuleSymbol*> uses; // modules used (BlockStmt,FnSymbol,...)
+                           // via SymScope::astParent
 
   static long getNumIDs(void);
 

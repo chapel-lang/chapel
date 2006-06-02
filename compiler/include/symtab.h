@@ -21,8 +21,4 @@ class Symboltable {
   static DefExpr* defineStructType(char* name, Type* type, AList<Stmt>* def);
 };
 
-void setVarSymbolAttributes(AList<Stmt>* stmts,
-                            varType vartag,
-                            consType constag);
-
 #endif

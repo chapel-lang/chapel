@@ -24,6 +24,14 @@ static void hack_array(DefExpr* def);
 
 
 static void
+flatten_scopeless_block(BlockStmt* block) {
+  for_alist(Stmt, stmt, block->body)
+    block->insertBefore(stmt->remove());
+  block->remove();
+}
+
+
+static void
 process_import_expr(ImportExpr* expr) {
   if (expr->importTag == IMPORT_WITH) {
     if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(expr->parentSymbol)) {
@@ -41,7 +49,7 @@ process_import_expr(ImportExpr* expr) {
     ModuleSymbol* module = expr->getImportedModule();
     if (module != compilerModule)
       expr->parentStmt->insertBefore(new CallExpr(module->initFn));
-    expr->parentScope->uses.add(module);
+    expr->parentScope->astParent->uses.add(module);
     expr->parentStmt->remove();
   }
 }
@@ -113,6 +121,15 @@ void cleanup(void) {
 
 void cleanup(BaseAST* base) {
   Vec<BaseAST*> asts;
+  collect_asts(&asts, base);
+  forv_Vec(BaseAST, ast, asts) {
+    if (BlockStmt* block = dynamic_cast<BlockStmt*>(ast)) {
+      if (block->blockTag == BLOCK_SCOPELESS)
+        flatten_scopeless_block(block);
+    }
+  }
+
+  asts.clear();
   collect_asts(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     if (ImportExpr* a = dynamic_cast<ImportExpr*>(ast)) {

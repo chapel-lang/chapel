@@ -423,9 +423,7 @@ CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
   elseStmt(NULL)
 {
   BlockStmt* bs;
-  if (BlockStmt* s = dynamic_cast<BlockStmt*>(iThenStmt)) {
-    thenStmt = s;
-  } else if (Stmt* s = dynamic_cast<Stmt*>(iThenStmt)) {
+  if (Stmt* s = dynamic_cast<Stmt*>(iThenStmt)) {
     thenStmt = new BlockStmt(s);
   } else if (AList<Stmt>* s = dynamic_cast<AList<Stmt>*>(iThenStmt)) {
     if (s->length() == 1 && (bs = dynamic_cast<BlockStmt*>(s->only()))) {
@@ -438,9 +436,7 @@ CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
   }
   if (!iElseStmt)
     return;
-  if (BlockStmt* s = dynamic_cast<BlockStmt*>(iElseStmt)) {
-    elseStmt = s;
-  } else if (Stmt* s = dynamic_cast<Stmt*>(iElseStmt)) {
+  if (Stmt* s = dynamic_cast<Stmt*>(iElseStmt)) {
     elseStmt = new BlockStmt(s);
   } else if (AList<Stmt>* s = dynamic_cast<AList<Stmt>*>(iElseStmt)) {
     if (s->length() == 1 && (bs = dynamic_cast<BlockStmt*>(s->only()))) {
@@ -530,7 +526,10 @@ WhenStmt::WhenStmt(AList<Expr>* init_caseExprs, BlockStmt* init_doStmt) :
   Stmt(STMT_WHEN),
   caseExprs(init_caseExprs),
   doStmt(init_doStmt)
-{ }
+{
+  if (doStmt)
+    doStmt = new BlockStmt(doStmt);
+}
 
 
 WhenStmt::WhenStmt(AList<Expr>* init_caseExprs, Stmt* init_doStmt) :
