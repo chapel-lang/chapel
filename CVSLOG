@@ -66437,3 +66437,21 @@ Modified files:
 	chapel/make/: Makefile.linux Makefile.linux64 
 	              Makefile.linux64_32 
 
+---------------------------------------------------------------------------
+
+06/05/06 12:07:40 -- bradc
+
+Log message:
+	Adding cygwin-specific .good files for interpreted math tests.
+	On my install of cygwin, dynamically-linked math libraries don't
+	seem to be supported.  Perhaps I need to reconsider my install,
+	but for now, this will keep things clean.
+
+Added files:
+	chapel/test/modules/standard/math/interpret/: exp2.cygwin.good 
+	                                              log2.cygwin.good 
+	                                              nearbyint.cygwin.good 
+	                                              round.cygwin.good 
+	                                              tgamma.cygwin.good 
+	                                              trunc.cygwin.good 
+
