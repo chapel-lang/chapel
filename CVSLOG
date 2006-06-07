@@ -66455,3 +66455,43 @@ Added files:
 	                                              tgamma.cygwin.good 
 	                                              trunc.cygwin.good 
 
+---------------------------------------------------------------------------
+
+06/07/06 12:31:20 -- deitz
+
+Log message:
+	Removed the last two remaining functions from symtab.cpp and added
+	them to build.cpp to better reflect how they are used and what they
+	do.  That is, they are called during parsing to build up some AST.
+	
+	Moved symscope.cpp into the AST directory which makes sense now that
+	the symbol table and scopes are part of the AST and automatically
+	handled by the AST insertion and removal routines.
+	
+	This removes a bunch of unnecessary compilation dependences.
+
+Modified files:
+	chapel/compiler/: Makefile 
+	chapel/compiler/AST/: Makefile.share astutil.cpp baseAST.cpp 
+	                      build.cpp expr.cpp stmt.cpp symbol.cpp 
+	                      type.cpp view.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: baseAST.h build.h 
+	chapel/compiler/main/: driver.cpp runpasses.cpp 
+	chapel/compiler/parser/: chapel.y lexyacc.h parser.cpp 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         codegen.cpp filesToAST.cpp 
+	                         flattenFunctions.cpp 
+	                         functionResolution.cpp 
+	                         inlineFunctions.cpp normalize.cpp 
+	                         parallel.cpp printProgram.cpp 
+	                         resolveAnalyzed.cpp runAnalysis.cpp 
+	                         runInterpreter.cpp scopeResolve.cpp 
+	                         verify.cpp 
+Added files:
+	chapel/compiler/AST/: symscope.cpp 
+Removed files:
+	chapel/compiler/include/: symtab.h 
+	chapel/compiler/symtab/: Makefile Makefile.include 
+	                         Makefile.share symscope.cpp symtab.cpp 
+
