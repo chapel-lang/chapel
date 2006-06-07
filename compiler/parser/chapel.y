@@ -622,12 +622,12 @@ var_arg_expr:
 formal:
   formal_tag pragma_ls identifier opt_formal_var_type opt_init_expr
     {
-      $$ = Symboltable::defineParam($1, $3, $4, $5);
+      $$ = build_arg($1, $3, $4, $5, NULL);
       $$->sym->addPragmas($2);
     }
 | formal_tag pragma_ls identifier opt_formal_var_type var_arg_expr
     {
-      $$ = Symboltable::defineParam($1, $3, $4, NULL, $5);
+      $$ = build_arg($1, $3, $4, NULL, $5);
       $$->sym->addPragmas($2);
     }
 | TLP formal_ls TRP
@@ -642,8 +642,8 @@ formal:
       for_alist(DefExpr, x, $2) {
         stmts->insertAtTail(x);
       }
-      Symboltable::defineStructType(NULL, t, stmts);
-      $$ = Symboltable::defineParam(INTENT_IN, "<anonymous>", NULL, NULL);
+      build_class(NULL, t, stmts);
+      $$ = build_arg(INTENT_IN, "<anonymous>", NULL, NULL, NULL);
       $$->sym->type = t;
       t->isPattern = true;
     }
@@ -755,7 +755,7 @@ function:
 class_decl_stmt:
   class_tag pragma_ls identifier opt_inherit_expr_ls TLCBR decl_stmt_ls TRCBR
     {
-      DefExpr* def = Symboltable::defineStructType($3, $1, $6);
+      DefExpr* def = build_class($3, $1, $6);
       def->sym->addPragmas($2);
       dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(def->sym)->definition)->inherits = $4;
       $$ = build_chpl_stmt(def);
@@ -886,7 +886,7 @@ var_decl_stmt_inner:
 record_tuple_inner_type:
   record_inner_type_ls TRP
     {
-      $$ = Symboltable::defineStructType(stringcat("_anon_record", intstring(anon_record_uid++)), new ClassType(CLASS_RECORD), $1);
+      $$ = build_class(stringcat("_anon_record", intstring(anon_record_uid++)), new ClassType(CLASS_RECORD), $1);
     }
 | tuple_inner_type_ls TRP
     {
@@ -902,7 +902,7 @@ record_tuple_inner_type:
 record_tuple_type:
   TRECORD TLCBR decl_stmt_ls TRCBR
     {
-      $$ = Symboltable::defineStructType(stringcat("_anon_record", intstring(anon_record_uid++)), new ClassType(CLASS_RECORD), $3);
+      $$ = build_class(stringcat("_anon_record", intstring(anon_record_uid++)), new ClassType(CLASS_RECORD), $3);
     }
 | TLP record_tuple_inner_type
     {

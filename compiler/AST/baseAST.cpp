@@ -6,7 +6,6 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "symscope.h"
-#include "symtab.h"
 #include "type.h"
 #include "yy.h"
 #include "../passes/runAnalysis.h"
@@ -640,3 +639,20 @@ collect_ast_children(BaseAST *a, Accum<BaseAST *> &acc, int all) {
 }
 
 
+
+SymScope* rootScope = NULL;
+
+Vec<ModuleSymbol*> allModules;  // Contains all modules
+Vec<ModuleSymbol*> userModules; // Contains user modules
+
+void registerModule(ModuleSymbol* mod) {
+  switch (mod->modtype) {
+  case MOD_USER:
+    userModules.add(mod);
+  case MOD_STANDARD:
+    allModules.add(mod);
+    break;
+  default:
+    INT_FATAL(mod, "Unable to register module");
+  }
+}

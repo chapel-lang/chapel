@@ -5,7 +5,6 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "symscope.h"
-#include "symtab.h"
 
 
 /*** function_name_matches_method_name

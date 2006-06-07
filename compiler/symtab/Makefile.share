@@ -1,9 +1,0 @@
-SYMTAB_SRCS = \
-	symscope.cpp \
-        symtab.cpp
-
-CVS_SRCS = $(SYMTAB_SRCS)
-SRCS = $(CVS_SRCS)
-
-SYMTAB_OBJS = \
-	$(SYMTAB_SRCS:%.cpp=$(SYMTAB_OBJDIR)/%.$(OBJ_SUFFIX))

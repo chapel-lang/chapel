@@ -6,7 +6,6 @@
 #include "passes.h"
 #include "stmt.h"
 #include "symbol.h"
-#include "symtab.h"
 #include "stringutil.h"
 #include "driver.h"
 

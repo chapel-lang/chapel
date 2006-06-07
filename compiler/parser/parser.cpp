@@ -4,7 +4,6 @@
 #include "files.h"
 #include "parser.h"
 #include "stringutil.h"
-#include "symtab.h"
 #include "symbol.h"
 #include "chapel.tab.h"
 #include "yy.h"

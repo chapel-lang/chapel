@@ -1,8 +1,8 @@
 #include "astutil.h"
 #include "expr.h"
 #include "stmt.h"
-#include "symtab.h"
 #include "stringutil.h"
+#include "symscope.h"
 #include "runtime.h"
 
 resolve_call_error_type resolve_call_error;

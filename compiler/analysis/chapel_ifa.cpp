@@ -9,7 +9,7 @@
 #include "misc.h"
 #include "stmt.h"
 #include "stringutil.h"
-#include "symtab.h"
+#include "symscope.h"
 #include "builtin.h"
 #include "if1.h"
 #include "fa.h"

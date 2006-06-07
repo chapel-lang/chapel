@@ -1,8 +1,7 @@
-#include <stdio.h>
-#include <typeinfo>
+#include "expr.h"
 #include "passes.h"
+#include "stmt.h"
 #include "stringutil.h"
-#include "symtab.h"
 
 
 static void mapFormalsToActuals(CallExpr* call, ASTMap* map) {

@@ -1,11 +1,13 @@
 #include <stdio.h>
 #include "astutil.h"
 #include "driver.h"
+#include "expr.h"
 #include "files.h"
 #include "mysystem.h"
+#include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "symtab.h"
+#include "symscope.h"
 
 
 #define STRSUB(x)                               \

@@ -8,7 +8,7 @@
 #include "runtime.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "symtab.h"
+#include "symscope.h"
 #include "type.h"
 
 

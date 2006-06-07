@@ -2,8 +2,8 @@
 #include "expr.h"
 #include "stmt.h"
 #include "symbol.h"
+#include "symscope.h"
 #include "type.h"
-#include "symtab.h"
 
 
 void build(BaseAST* ast) {

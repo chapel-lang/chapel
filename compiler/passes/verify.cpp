@@ -2,7 +2,6 @@
 #include "expr.h"
 #include "stmt.h"
 #include "symbol.h"
-#include "symtab.h"
 #include "type.h"
 
 

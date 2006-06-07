@@ -13,11 +13,11 @@
 #include "driver.h"
 #include "runInterpreter.h"
 #include "symbol.h"
-#include "symtab.h"
 #include "view.h"
 #include "stringutil.h"
 #include "parser.h"
 #include "runtime.h"
+#include "symscope.h"
 
 #define HACK_NEWLINE_STRING 1
 

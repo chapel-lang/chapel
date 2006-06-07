@@ -18,7 +18,6 @@ SUBDIRS = \
 	main \
 	parser \
 	passes \
-	symtab \
 	test \
 	util \
 
@@ -38,7 +37,6 @@ include backend/Makefile.include
 include main/Makefile.include
 include parser/Makefile.include
 include passes/Makefile.include
-include symtab/Makefile.include
 include util/Makefile.include
 
 CVS_SRCS = 

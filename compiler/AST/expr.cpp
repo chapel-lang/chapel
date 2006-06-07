@@ -6,7 +6,6 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symscope.h"
-#include "symtab.h"
 #include "../passes/runAnalysis.h"
 
 

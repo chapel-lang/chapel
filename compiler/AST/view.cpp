@@ -3,8 +3,8 @@
 #include "stmt.h"
 #include "expr.h"
 #include "symbol.h"
+#include "symscope.h"
 #include "type.h"
-#include "symtab.h"
 #include "stringutil.h"
 #include "chpl_log.h"
 

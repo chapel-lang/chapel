@@ -3,7 +3,6 @@
 #include "parser.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "symtab.h"
 #include "countTokens.h"
 #include "yy.h"
 #include "runtime.h"

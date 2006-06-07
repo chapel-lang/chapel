@@ -3,7 +3,6 @@
 #include "analysis.h"
 #include "stringutil.h"
 #include "symscope.h"
-#include "symtab.h"
 #include "../passes/runAnalysis.h"
 #include "files.h"
 

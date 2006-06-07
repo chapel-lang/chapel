@@ -3,7 +3,7 @@
 #include "driver.h"
 #include "runAnalysis.h"
 #include "symbol.h"
-#include "symtab.h"
+#include "symscope.h"
 
 bool preAnalysis = true;
 bool inAnalysis = false;

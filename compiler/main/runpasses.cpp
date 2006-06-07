@@ -6,7 +6,6 @@
 #include "chpl_log.h"
 #include "runpasses.h"
 #include "stringutil.h"
-#include "symtab.h"
 #include "view.h"
 
 void verify();

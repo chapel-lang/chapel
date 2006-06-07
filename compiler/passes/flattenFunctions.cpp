@@ -1,8 +1,9 @@
-#include "passes.h"
-#include "symscope.h"
-#include "symtab.h"
-#include "astutil.h"
 #include "alist.h"
+#include "astutil.h"
+#include "expr.h"
+#include "passes.h"
+#include "stmt.h"
+#include "symscope.h"
 
 
 //

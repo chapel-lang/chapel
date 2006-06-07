@@ -10,7 +10,7 @@
 #include "runtime.h"
 #include "stmt.h"
 #include "symbol.h"
-#include "symtab.h"
+#include "symscope.h"
 #include "stringutil.h"
 
 static void normalize_nested_function_expressions(DefExpr* def);

@@ -393,3 +393,39 @@ setVarSymbolAttributes(AList<Stmt>* stmts, varType vartag, consType constag) {
     INT_FATAL(stmt, "Major error in setVarSymbolAttributes");
   }
 }
+
+
+DefExpr*
+build_class(char* name, Type* type, AList<Stmt>* decls) {
+  ClassType* ct = dynamic_cast<ClassType*>(type);
+
+  if (!ct) {
+    INT_FATAL(type, "build_class called on non ClassType");
+  }
+
+  TypeSymbol* sym = new TypeSymbol(name, ct);
+  DefExpr* defExpr = new DefExpr(sym);
+  ct->addDeclarations(decls);
+  return defExpr;
+}
+
+
+DefExpr*
+build_arg(intentTag tag, char* ident, Expr* type, Expr* init, Expr* variable) {
+  ArgSymbol* argSymbol = new ArgSymbol(tag, ident, dtUnknown, init, variable);
+  if (tag == INTENT_TYPE) {
+    char *name = stringcat("__type_variable_", argSymbol->name);
+    VariableType* new_type = new VariableType(getMetaType(NULL));
+    TypeSymbol* new_type_symbol = new TypeSymbol(name, new_type);
+    argSymbol->type = getMetaType(NULL);
+    argSymbol->genericSymbol = new_type_symbol;
+  } 
+#if 0
+  else if (tag == INTENT_PARAM) {
+    char *name = stringcat("__parameter_", argSymbol->name);
+    VarSymbol *varSymbol = new VarSymbol(name, dtUnknown, VAR_NORMAL, VAR_PARAM);
+    argSymbol->genericSymbol = varSymbol;
+  }
+#endif
+  return new DefExpr(argSymbol, NULL, type);
+}

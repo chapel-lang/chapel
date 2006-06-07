@@ -12,11 +12,11 @@
 #include "runpasses.h"
 #include "stmt.h"
 #include "stringutil.h"
-#include "symtab.h"
 #include "version.h"
 #include "../passes/runInterpreter.h"
 #include "chpl_log.h"
 #include "../ifa/fail.h"
+#include "primitive.h"
 
 
 static void version(ArgumentState *arg_state, char *arg_unused);
