@@ -400,7 +400,7 @@ AList<Stmt>* EnumType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymb
       new WhenStmt(whenExpr, new ExprStmt(new CallExpr("fwrite", fileArg, constantName)));
     selectWhenStmts->insertAtTail(thisWhenStmt);
   }
-  return new AList<Stmt>(new SelectStmt(new SymExpr(arg), selectWhenStmts));
+  return new AList<Stmt>(build_select(new SymExpr(arg), selectWhenStmts));
 }
 
 

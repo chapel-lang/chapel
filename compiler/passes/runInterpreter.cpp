@@ -2196,51 +2196,6 @@ IFrame::run(int timeslice) {
         }
         break;
       }
-      case STMT_WHEN: {
-        S(WhenStmt);
-        SelectStmt *select = (SelectStmt*)s->parentStmt;
-        assert(select->astType == STMT_SELECT);
-        int phase = stage % 3;
-        int a = (stage / 3) + 1; // FORTRAN-like 1 based indexing!
-        stage++;
-        switch (phase) {
-          case 0: { 
-            if (!s->caseExprs || s->caseExprs->length() < a) {
-              stage = 0;
-              POP_EVAL_STMT(s->doStmt);
-            }
-            EVAL_EXPR(s->caseExprs->get(a));
-            break;
-          }
-          case 1: {
-            PUSH_SELECTOR("==");
-            PUSH_VAL(s->caseExprs->get(a));
-            PUSH_VAL(select->caseExpr);
-            CALL_RET(3, islot(s->caseExprs));
-          }
-          case 2: {
-            ISlot *cond = islot(s->caseExprs);
-            check_type(ip, cond, dtBool);
-            if (!cond->imm->v_bool)
-              stage = 0;
-            break;
-          }
-        }
-        break;
-      }
-      case STMT_SELECT: {
-        S(SelectStmt);
-        switch (stage++) {
-          case 0:
-            EVAL_EXPR(s->caseExpr);
-            break;
-          case 1:
-            stage = 0;
-            EVAL_STMT((Stmt*)s->whenStmts->head->next);
-          default: INT_FATAL(ip, "interpreter: bad stage %d for astType: %d", stage, ip->astType); break;
-        }
-        break;
-      }
       case STMT_LABEL: assert(!stage); break;
       case STMT_GOTO: { assert(!stage);
         S(GotoStmt);

@@ -23,7 +23,6 @@ enum astType_t {
   STMT_BLOCK,
   STMT_COND,
   STMT_WHEN,
-  STMT_SELECT,
   STMT_LABEL,
   STMT_GOTO,
 

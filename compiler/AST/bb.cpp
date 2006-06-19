@@ -72,30 +72,6 @@ void buildBasicBlocks(FnSymbol* fn, Stmt* stmt) {
       BB_THREAD(top, elseTop);
       BB_THREAD(thenBottom, bottom);
       BB_THREAD(elseBottom, bottom);
-    } else if (SelectStmt* s = dynamic_cast<SelectStmt*>(stmt)) {
-      BB_ADD(s->caseExpr);
-      for_alist(WhenStmt, whenStmt, s->whenStmts) {
-        BB_ADD_LS(whenStmt->caseExprs);
-      }
-      BasicBlock* top = basicBlock;
-      BB_RESTART();
-      Vec<BasicBlock*> selectTops;
-      Vec<BasicBlock*> selectBottoms;
-      for_alist(WhenStmt, whenStmt, s->whenStmts) {
-        selectTops.add(basicBlock);
-        BBB(whenStmt->doStmt);
-        selectBottoms.add(basicBlock);
-        BB_RESTART();
-      }
-      BasicBlock* bottom = basicBlock;
-      forv_Vec(BasicBlock, bb, selectTops) {
-        BB_THREAD(top, bb);
-      }
-      forv_Vec(BasicBlock, bb, selectBottoms) {
-        BB_THREAD(bb, bottom);
-      }
-      // Can you bypass every when clause?  If so, uncomment
-      // BB_THREAD(top, bottom);
     } else if (LabelStmt* s = dynamic_cast<LabelStmt*>(stmt)) {
       BasicBlock* top = basicBlock;
       BB_RESTART();

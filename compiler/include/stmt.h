@@ -138,20 +138,6 @@ class WhenStmt : public Stmt {
 };
 
 
-class SelectStmt : public Stmt {
- public:
-  Expr* caseExpr;
-  AList<WhenStmt>* whenStmts;
-
-  SelectStmt(Expr* init_caseExpr = NULL, AList<WhenStmt>* init_whenStmts = NULL);
-  virtual void verify();
-  COPY_DEF(SelectStmt);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void print(FILE* outfile);
-  void codegenStmt(FILE* outfile);
-};
-
-
 class LabelStmt : public Stmt {
  public:
   DefExpr* defLabel;
