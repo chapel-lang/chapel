@@ -66513,3 +66513,33 @@ Modified files:
 	chapel/compiler/include/: build.h 
 	chapel/compiler/parser/: chapel.y 
 
+---------------------------------------------------------------------------
+
+06/19/06 11:36:52 -- deitz
+
+Log message:
+	Added a script
+	
+	  send_patch <name>
+	
+	that creates a patch of the workspace with a given name.  The patch is
+	stored in your home directory and is called name.patch.  If a file
+	called name.patch already exists, it is removed.
+	
+	Added a script
+	
+	  receive_patch <name>
+	
+	that throws away all changes to the current workspace, and then
+	applies a patch created with send_patch.
+	
+	Use these scripts to make one workspace look like another, for
+	example, when updating the Chapel servers with your current workspace
+	in order to test in parallel.
+	
+	The scripts rely on a clean workspace created with the -C cvs update
+	option.
+
+Added files:
+	./: receive_patch send_patch 
+
