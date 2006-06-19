@@ -66543,3 +66543,17 @@ Log message:
 Added files:
 	./: receive_patch send_patch 
 
+---------------------------------------------------------------------------
+
+06/19/06 11:49:04 -- deitz
+
+Log message:
+	Removed dead code associated with old AST representation of
+	select...when construct.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp bb.cpp stmt.cpp type.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: baseAST.h stmt.h 
+	chapel/compiler/passes/: runInterpreter.cpp 
+
