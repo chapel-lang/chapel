@@ -428,7 +428,7 @@ type_select_stmt:
 
 select_stmt:
   TSELECT expr TLCBR when_stmt_ls TRCBR
-    { $$ = build_chpl_stmt(new SelectStmt($2, $4)); }
+    { $$ = build_chpl_stmt(build_select($2, $4)); }
 ;
 
 

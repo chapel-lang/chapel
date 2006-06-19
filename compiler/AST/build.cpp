@@ -327,6 +327,46 @@ AList<Stmt>* build_assignplus(Expr* lhs, Expr* rhs) {
 }
 
 
+CondStmt* build_select(Expr* selectCond, AList<WhenStmt>* whenstmts) {
+  WhenStmt* otherwise = NULL;
+  CondStmt* top = NULL;
+  CondStmt* condStmt = NULL;
+
+  for_alist(WhenStmt, whenstmt, whenstmts) {
+    if (whenstmt->caseExprs->length() == 0) {
+      if (otherwise)
+        USR_FATAL(selectCond, "Select has multiple otherwise clauses");
+      otherwise = whenstmt;
+    } else {
+      Expr* expr = NULL;
+      for_alist(Expr, whenCond, whenstmt->caseExprs) {
+        whenCond->remove();
+        if (!expr)
+          expr = new CallExpr("==", selectCond->copy(), whenCond);
+        else
+          expr = new CallExpr("||", expr, new CallExpr("==", selectCond->copy(), whenCond));
+      }
+      if (!condStmt) {
+        condStmt = new CondStmt(expr, whenstmt->doStmt);
+        top = condStmt;
+      } else {
+        CondStmt* next = new CondStmt(expr, whenstmt->doStmt);
+        condStmt->elseStmt = new BlockStmt(next);
+        condStmt = next;
+      }
+    }
+  }
+  if (otherwise) {
+    if (!condStmt)
+      USR_FATAL(selectCond, "Select has no when clauses");
+    else {
+      condStmt->elseStmt = otherwise->doStmt;
+    }
+  }
+  return top;
+}
+
+
 AList<Stmt>* build_type_select(AList<Expr>* exprs, AList<WhenStmt>* whenstmts) {
   static int uid = 1;
   FnSymbol* fn;

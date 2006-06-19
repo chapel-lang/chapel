@@ -23,6 +23,7 @@ AList<Stmt>* build_for_expr(AList<DefExpr>* indices,
                             Expr* expr);
 AList<Stmt>* build_param_for(char* index, Expr* low, Expr* high, BlockStmt* stmts);
 AList<Stmt>* build_assignplus(Expr* lhs, Expr* rhs);
+CondStmt* build_select(Expr* s, AList<WhenStmt>* whenstmts);
 AList<Stmt>* build_type_select(AList<Expr>* s, AList<WhenStmt>* whenstmts);
 Expr* build_reduce_expr(Expr* red, Expr *seq);
 
