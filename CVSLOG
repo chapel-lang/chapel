@@ -66495,3 +66495,21 @@ Removed files:
 	chapel/compiler/symtab/: Makefile Makefile.include 
 	                         Makefile.share symscope.cpp symtab.cpp 
 
+---------------------------------------------------------------------------
+
+06/19/06 11:16:00 -- deitz
+
+Log message:
+	Normalized SelectStmt-WhenStmt in the representation to be based on
+	CondStmt.  SelectStmt and WhenStmt remain in the compiler, but are not
+	in the AST after parsing.  WhenStmt is used to group a list of
+	expressions and a statement during parsing, but this should be cleaned
+	up.
+	
+	Dead code has not been removed.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+	chapel/compiler/include/: build.h 
+	chapel/compiler/parser/: chapel.y 
+
