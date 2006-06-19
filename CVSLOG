@@ -66557,3 +66557,14 @@ Modified files:
 	chapel/compiler/include/: baseAST.h stmt.h 
 	chapel/compiler/passes/: runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+06/19/06 13:33:07 -- deitz
+
+Log message:
+	Simplified code for default write function for enumerated types to use
+	CondStmt over a select...when construct.
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+
