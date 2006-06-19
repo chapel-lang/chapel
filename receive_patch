@@ -1,0 +1,4 @@
+#!/bin/csh
+
+cvs -q update -C
+patch -p0 < ~/$1.patch

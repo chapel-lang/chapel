@@ -1,0 +1,4 @@
+#!/bin/csh
+
+rm -f ~/$1.patch
+cvs -q diff -c > ~/$1.patch
