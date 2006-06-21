@@ -1306,23 +1306,23 @@ build_builtin_symbols() {
   sym_uint16->specializes.add(sym_uint32);
   sym_uint32->specializes.add(sym_uint64);
 
-  sym_uint32->specializes.add(sym_int32);
-  sym_uint64->specializes.add(sym_int64);
+  sym_uint32->dispatch_types.add(sym_int32);
+  sym_uint64->dispatch_types.add(sym_int64);
 
   sym_int8->specializes.add(sym_int16);
   sym_int16->specializes.add(sym_int32);
   sym_int32->specializes.add(sym_int64);
 
-  sym_int32->specializes.add(sym_float32);
-  sym_int64->specializes.add(sym_float64);
+  sym_int32->dispatch_types.add(sym_float32);
+  sym_int64->dispatch_types.add(sym_float64);
 
   sym_float32->specializes.add(sym_float64);
   sym_float64->specializes.add(sym_float128);
 
-  sym_float32->specializes.add(sym_complex32);
-  sym_float64->specializes.add(sym_complex64);
+  sym_float32->dispatch_types.add(sym_complex32);
+  sym_float64->dispatch_types.add(sym_complex64);
 #ifdef USE_FLOAT_128
-  sym_float128->specializes.add(sym_complex128);
+  sym_float128->dispatch_types.add(sym_complex128);
 #endif
 
   sym_complex32->specializes.add(sym_complex64);
@@ -1330,7 +1330,7 @@ build_builtin_symbols() {
   sym_complex64->specializes.add(sym_complex128);
 #endif
 
-  sym_anynum->specializes.add(sym_string);
+  sym_anynum->dispatch_types.add(sym_string);
 
   // defined type hierarchy
   

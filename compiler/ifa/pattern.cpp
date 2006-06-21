@@ -89,6 +89,7 @@ class Matcher {
   PMatch *build_PMatch(Fun *, PMatch *);
   void instantiation_wrappers_and_partial_application(Vec<Fun *> &);
   Fun *build(PMatch *m, Vec<Fun *> &matches);
+  int subsumes(PMatch *x, PMatch *y, MPosition &app, Vec<CreationSet *> &csargs);
   void generic_arguments(Vec<CreationSet *> &, MPosition &, Vec<Fun *> &, int);
   void set_filters(Vec<CreationSet *> &, MPosition &, Vec<Fun *> &);
   void reverify_filters(Vec<Fun *> &);
@@ -488,71 +489,112 @@ Matcher::find_all_matches(CreationSet *cs, Vec<AVar *> &args, Vec<char *> &names
 
 static int
 subsumes_arg(PMatch *x, PMatch *y, MPosition *acpp, CreationSet *cs, int *identical) {
-  // check declared types
   MPosition *xp = to_formal(acpp, x), *yp = to_formal(acpp, y);
   Sym *xtype = dispatch_type(x->fun->arg_syms.get(xp));
   Sym *ytype = dispatch_type(y->fun->arg_syms.get(yp));
-  Sym *s = cs->sym;
-  if (xtype != ytype) {
+  Sym *atype = cs->sym;
+  if (xtype != ytype)
     *identical = 0;
-    Sym *xxtype = x->generic_substitutions.get(x->fun->arg_syms.get(xp)->must_specialize);
-    xtype = xxtype ? xxtype : xtype;
-    Sym *yytype = y->generic_substitutions.get(y->fun->arg_syms.get(yp)->must_specialize);
-    ytype = yytype ? yytype : ytype;
-    if (xtype != ytype) {
-      if (xtype == s)
-        return -1;
-      if (ytype == s)
-        return 1;
-      // check declared sum types
-      if (xtype->isa.n || ytype->isa.n) {
-        if (xtype->isa.set_in(s)) {
-          if (!ytype->isa.set_in(s))
-            return -1;
-        } else if (ytype->isa.set_in(s))
-          return 1;
-        if (xtype->isa.set_in(s->type)) {
-          if (!ytype->isa.set_in(s->type))
-            return -1;
-        } else if (ytype->isa.set_in(s->type))
-          return 1;
-      }
-    }
+
+  // promotion
+  int pri = 1 << 10;
+  if (!x->promotion_substitutions.get(xp) && y->promotion_substitutions.get(yp))
+    return -pri;
+  if (x->promotion_substitutions.get(xp) && !y->promotion_substitutions.get(yp))
+    return pri;
+  xtype = x->formal_dispatch_types.get(xp);
+  ytype = y->formal_dispatch_types.get(yp);
+  xtype = xtype->type; // ignore constants
+  ytype = ytype->type; // ignore constants
+  // sum by value
+  pri = pri / 2;
+  if (xtype != ytype) {
+    if (xtype->isa.set_in(atype)) {
+      if (!ytype->isa.set_in(atype))
+        return -pri;
+    } else if (ytype->isa.set_in(atype))
+      return pri;
   }
-  // check final types
-  ytype = y->formal_dispatch_types.get(xp);
-  xtype = x->formal_dispatch_types.get(yp);
+  atype = atype->type;
+  // sum by type
+  pri = pri / 2;
+  if (xtype != ytype) {
+    if (xtype->isa.set_in(atype)) {
+      if (!ytype->isa.set_in(atype))
+        return -pri;
+    } else if (ytype->isa.set_in(atype))
+      return pri;
+  }
+  // type hierarchy
+  pri = pri / 2;
   if (xtype != ytype) {
     if (xtype->specializers.set_in(ytype)) {
       if (!ytype->specializers.set_in(xtype))
-        return 1;
+        return pri;
     } else if (ytype->specializers.set_in(xtype))
-      return -1;
+      return -pri;
   }
-  // break tie on lack of promotion substituation
-  if (!x->promotion_substitutions.get(xp) && y->promotion_substitutions.get(yp))
-    return -1;
-  if (x->promotion_substitutions.get(xp) && !y->promotion_substitutions.get(yp))
-    return 1;
-  // break tie on lack of coercion substituation
-  if (!x->coercion_substitutions.get(xp) && y->coercion_substitutions.get(yp))
-    return -1;
-  if (x->coercion_substitutions.get(xp) && !y->coercion_substitutions.get(yp))
-    return 1;
+  // coercion
+  pri = pri / 2;
+  if (xtype != ytype) {
+    int xx = !!x->coercion_substitutions.get(xp), yy = !!y->coercion_substitutions.get(yp);
+    if (!xx && yy)
+      return -pri;
+    if (xx && !yy)
+      return pri;
+    if (xx && yy) {
+      Sym *t = coerce_num(xtype, ytype);
+      if (t == ytype)
+        return -pri;
+      if (t == xtype)
+        return pri;
+    }
+  }
+  // instantiation
+  pri = pri / 2;
+  xtype = x->generic_substitutions.get(x->fun->arg_syms.get(xp)->must_specialize);
+  ytype = y->generic_substitutions.get(y->fun->arg_syms.get(yp)->must_specialize);
+  xtype = xtype ? xtype->type : 0; // ignore parameters
+  ytype = ytype ? ytype->type : 0; // ignore parameters
+  if (xtype && !ytype)
+    return pri;
+  if (!xtype && ytype)
+    return -pri;
+  // parameter
+  pri = pri / 2;
+  xtype = x->generic_substitutions.get(x->fun->arg_syms.get(xp)->must_specialize);
+  ytype = y->generic_substitutions.get(y->fun->arg_syms.get(yp)->must_specialize);
+  if ((xtype && xtype->is_constant) && (!ytype || !ytype->is_constant))
+    return -pri;
+  if ((!xtype || !xtype->is_constant) && (ytype && ytype->is_constant))
+    return pri;
+  // constant
+  pri = pri / 2;
+  xtype = x->formal_dispatch_types.get(xp);
+  ytype = y->formal_dispatch_types.get(yp);
+  if (xtype != ytype) {
+    if (xtype->specializers.set_in(ytype)) {
+      if (!ytype->specializers.set_in(xtype))
+        return pri;
+    } else if (ytype->specializers.set_in(xtype))
+      return -pri;
+  }
   return 0;
 }
 
+#define ABS(_x) (((_x) < 0) ? -(_x) : (_x))
 int
-subsumes(PMatch *x, PMatch *y, MPosition &app, Vec<CreationSet *> &csargs) {
+Matcher::subsumes(PMatch *x, PMatch *y, MPosition &app, Vec<CreationSet *> &csargs) {
   int result = 0, identical = 1;
   app.push(1);
   for (int i = 0; i < csargs.n; i++) {
     MPosition *acpp = cannonicalize_mposition(app);
     int r = subsumes_arg(x, y, acpp, csargs.v[i], &identical);
-    if (!result)
+    if (ABS(r) > ABS(result))
       result = r;
+    else if (ABS(r) < ABS(result)) {}
     else if (r && r != result) {
-      result = 0;
+      result = 0;  // ambiguous
       goto Lreturn;
     }
     app.inc();
@@ -565,6 +607,9 @@ subsumes(PMatch *x, PMatch *y, MPosition &app, Vec<CreationSet *> &csargs) {
   }
  Lreturn:
   app.pop();
+  log(LOG_DISPATCH, "%d- %d subsumes? %d: %d\n", send->var->sym->id, 
+      x->fun->sym->id, y->fun->sym->id, result);
+  result = result < 0 ? -1 : ((result > 0) ? 1 : 0);
   return result;
 }
 
@@ -1064,7 +1109,12 @@ coercion_uses(PMatch **am, MPosition &app, Vec<CreationSet*> &args) {
 }
 
 static int
-verify_arg(Sym *actual, CreationSet *cs, Sym *formal_type) { 
+verify_arg(Sym *actual, CreationSet *cs, PMatch *m, MPosition *fcpp) { 
+  if (m->promotion_substitutions.get(fcpp) || m->coercion_substitutions.get(fcpp))
+    return 1;
+  Sym *formal_type = m->formal_dispatch_types.get(fcpp);
+  if (!formal_type)
+    return 1;
   if (cs->sym == sym_nil_type && actual->aspect &&
       sym_object->specializers.set_in(actual->aspect)) {
     if (!formal_type->specializers.set_in(actual->aspect))
@@ -1076,6 +1126,24 @@ verify_arg(Sym *actual, CreationSet *cs, Sym *formal_type) {
 }
 
 static int
+verify_args(PMatch *m, MPosition &app, Vec<CreationSet*> &args) {
+  app.push(1);
+  for (int i = 0; i < args.n; i++) {
+    MPosition *acpp = cannonicalize_mposition(app);
+    MPosition *fcpp = to_formal(acpp, m);
+    AVar *a = m->actuals.get(acpp);
+    CreationSet *cs = args.v[i];
+    if (!verify_arg(a->var->sym, cs, m, fcpp)) {
+      app.pop();
+      return 0;
+    }
+    app.inc();
+  }
+  app.pop();
+  return 1;
+}
+
+static void
 promotion_uses(PMatch **am, MPosition &app, Vec<CreationSet*> &args) {
   PMatch *m = *am;
   app.push(1);
@@ -1097,17 +1165,12 @@ promotion_uses(PMatch **am, MPosition &app, Vec<CreationSet*> &args) {
           m->promotion_substitutions.put(fcpp, promoted_type);
           m->formal_dispatch_types.put(fcpp, promoted_type);
         }
-      } else
-        if (!verify_arg(a->var->sym, cs, formal_type)) {
-          app.pop();
-          return 0;
-        }
+      }
     }
    LnextArg:;
     app.inc();
   }
   app.pop();
-  return 1;
 }
 
 // clear out values needed only while considering a particular csargs
@@ -1223,9 +1286,10 @@ Matcher::find_best_cs_match(Vec<CreationSet *> &csargs, MPosition &app,
   for (int i = 0; i < covered.n; i++) {
     if (!generic_substitutions(&covered.v[i], app, csargs, ast))
       continue;
-    if (!promotion_uses(&covered.v[i], app, csargs))
-      continue;
+    promotion_uses(&covered.v[i], app, csargs);
     coercion_uses(&covered.v[i], app, csargs);
+    if (!verify_args(covered.v[i], app, csargs))
+      continue;
     applicable.add(covered.v[i]);
   }
 

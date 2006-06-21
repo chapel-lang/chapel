@@ -321,6 +321,10 @@ creation_point(AVar *v, Sym *s) {
 //  all int combos below 32 bits become signed 32 bits, above become signed 64 bits
 Sym *
 coerce_num(Sym *a, Sym *b) {
+  if (a == b)
+    return a;
+  if (a == sym_string || b == sym_string)
+    return sym_string;
   if (a->num_kind == b->num_kind) {
     if (a->num_index > b->num_index)
       return a;
@@ -329,6 +333,21 @@ coerce_num(Sym *a, Sym *b) {
   }
   if (b->num_kind == IF1_NUM_KIND_FLOAT) {
     Sym *t = b; b = a; a = t;
+  }
+  if (b->num_kind == IF1_NUM_KIND_COMPLEX) {
+    Sym *t = b; b = a; a = t;
+  }
+  if (a->num_kind == IF1_NUM_KIND_COMPLEX) {
+    if (b->num_kind == IF1_NUM_KIND_FLOAT) {
+      if (a->num_index > b->num_index)
+        return a;
+      return if1->complex_types[b->num_index];
+    }
+    if (int_type_precision[b->num_kind] <= float_type_precision[a->num_kind])
+      return a;
+    if (int_type_precision[b->num_kind] >= 32)
+      return sym_complex32;
+    return sym_complex64;
   }
   if (a->num_kind == IF1_NUM_KIND_FLOAT) {
     if (int_type_precision[b->num_kind] <= float_type_precision[a->num_kind])

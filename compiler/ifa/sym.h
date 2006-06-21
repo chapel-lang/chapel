@@ -145,7 +145,7 @@ class Sym : public BasicSym {
 
   Vec<Sym *>            implementors;           // used by fa.cpp, implementors *type*
   Vec<Sym *>            specializers;           // used by fa.cpp, specializers *type*
-  Vec<Sym *>            dispatch_types;        // used by fa.cpp, pattern.cpp  *type*
+  Vec<Sym *>            dispatch_types;         // used by fa.cpp, pattern.cpp  *type*
 
   void                  *temp;                  // algorithmic temp             *type*
 
