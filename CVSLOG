@@ -66568,3 +66568,32 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: type.cpp 
 
+---------------------------------------------------------------------------
+
+06/21/06 14:22:45 -- jplevyak
+
+Log message:
+	unsigned is nolonger below int in the type hierarchy
+	int is nolonger below float in the type hierarchy
+	float is nolonger below complex in the type hierarchy
+	numeric is nolonger below string in the type hierarchy
+	   these conversions are now strictly coercions
+	coerce_num() now handles coersions to string
+	most specific is now defined by testing in this order:
+	  non-promotion vs. promotion
+	  sum type of values (e.g. symbols, constants) vs. not
+	  sum type of types (e.g. numeric) vs. not
+	  closest in the type hiearchy
+	  non-coersion vs. coercion
+	  non-type instantiation vs. type instantiation
+	  non-parameter vs parameters (constant instantiation)
+	  constant vs. non-constant type (e.g. where p == 1)
+	Also fixed up types/type_variables/deitz/functions/test_foo5-error.good
+	  which is now nolonger an error.
+
+Modified files:
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/ifa/: fa.cpp pattern.cpp sym.h 
+	chapel/test/types/type_variables/deitz/functions/: 
+	                                                   test_foo5-error.good 
+
