@@ -66597,3 +66597,39 @@ Modified files:
 	chapel/test/types/type_variables/deitz/functions/: 
 	                                                   test_foo5-error.good 
 
+---------------------------------------------------------------------------
+
+06/21/06 17:08:26 -- waynew
+
+Log message:
+	Cobegin stuff, one new test, and mod to existing test.
+	Cobegin support.
+	 - Cobegin statements can now access more than one variable.
+	 - Cobegin statements can now access locals.
+	 - Added an is_ref field to VarSymbol.
+	 - Added PRIMITIVE_GET/SET_MEMBER_REF_TO primitives to get/set
+	   references to the locals. Cobegin statements are referenced by
+	   a temporary class that is passed as an argument to the forked thread.
+	 - Changed the primitive PRIMITIVE_CHPL_ALLOC to codegen.  May be
+	   cobegin-specific as it's only used by "pass2" of the parallel passe.
+	
+	locals.chpl + baggage
+	 - Added a test for cobegins with references to locals.
+	
+	while.chpl/good
+	 - Previous version had multiple valid outputs. Possible results is
+	   now checked within the test itself.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp stmt.cpp symbol.cpp 
+	                      view.cpp 
+	chapel/compiler/include/: passes.h primitive.h symbol.h 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/passes/: cleanup.cpp parallel.cpp 
+	chapel/test/: paratest.server.pl 
+	chapel/test/parallel/cobegin/waynew/: while.chpl while.good 
+Added files:
+	chapel/test/parallel/cobegin/waynew/: locals.chpl 
+	                                      locals.compopts 
+	                                      locals.good locals.prediff 
+
