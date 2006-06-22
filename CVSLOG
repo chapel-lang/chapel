@@ -66633,3 +66633,14 @@ Added files:
 	                                      locals.compopts 
 	                                      locals.good locals.prediff 
 
+---------------------------------------------------------------------------
+
+06/21/06 17:41:01 -- waynew
+
+Log message:
+	Added -compopts flag that can be used to pass a compiler options string to
+	start_test.
+
+Modified files:
+	chapel/test/: paratest.client.pl paratest.server.pl 
+
