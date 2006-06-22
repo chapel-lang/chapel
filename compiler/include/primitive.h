@@ -34,6 +34,8 @@ enum PrimitiveTag {
   PRIMITIVE_POW,
   PRIMITIVE_GET_MEMBER,
   PRIMITIVE_SET_MEMBER,
+  PRIMITIVE_GET_MEMBER_REF_TO,         // get the value of the reference
+  PRIMITIVE_SET_MEMBER_REF_TO,         // set the reference to a var
   PRIMITIVE_TYPE_EQUAL,
   PRIMITIVE_CHPL_ALLOC,
   PRIMITIVE_PTR_EQUAL,

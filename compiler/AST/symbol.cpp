@@ -294,15 +294,17 @@ UnresolvedSymbol::copyInner(ASTMap* map) {
 }
 
 
-VarSymbol::VarSymbol(char* init_name,
-                     Type* init_type,
-                     varType init_varClass, 
-                     consType init_consClass) :
+VarSymbol::VarSymbol(char    *init_name,
+                     Type    *init_type,
+                     varType  init_varClass, 
+                     consType init_consClass,
+                     bool     init_isref) :
   Symbol(SYMBOL_VAR, init_name, init_type),
   varClass(init_varClass),
   consClass(init_consClass),
   immediate(NULL),
-  literalType(NULL)
+  literalType(NULL),
+  is_ref( init_isref)
 { }
 
 
@@ -387,6 +389,7 @@ void VarSymbol::codegenDef(FILE* outfile) {
   }
   type->codegen(outfile);
   fprintf(outfile, " ");
+  if (is_ref) fprintf( outfile, "*");
   this->codegen(outfile);
   fprintf(outfile, ";\n");
 }

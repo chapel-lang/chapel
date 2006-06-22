@@ -356,14 +356,16 @@ void BlockStmt::codegenStmt(FILE* outfile) {
         if (ExprStmt *estmt=dynamic_cast<ExprStmt*>(stmt)) {
           if (CallExpr *cexpr=dynamic_cast<CallExpr*>(estmt->expr)) {
             Expr *actuals = cexpr->argList->first();
-            // for now generate exactly one argument per function
+            // pass exactly one class object containing ptrs to locals
             fprintf (outfile, "(_chpl_threadarg_t)");
             if (actuals) {
+              /*
               FnSymbol *fnsym = cexpr->findFnSymbol();
               DefExpr  *formals = fnsym->formals->first();
               if (dynamic_cast<ArgSymbol*>(formals->sym)->requiresCPtr()) {
                 fprintf (outfile, "&");
               }
+              */
               fprintf (outfile, "(");
               actuals->codegen (outfile);
               fprintf (outfile, ")");

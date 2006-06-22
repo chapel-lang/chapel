@@ -290,8 +290,8 @@ void DefExpr::print(FILE* outfile) {
 void DefExpr::codegen(FILE* outfile) { /** noop **/ }
 
 
-static void codegen_member(FILE* outfile, BaseAST *base, BaseAST *member, Type *member_type, 
-                           int member_offset) 
+static void codegen_member(FILE* outfile, BaseAST *base, BaseAST *member, 
+                           Type *member_type, int member_offset)
 {
   SymExpr* sbase = dynamic_cast<SymExpr*>(base);
   SymExpr* smember = dynamic_cast<SymExpr*>(member);
@@ -839,8 +839,25 @@ void CallExpr::codegen(FILE* outfile) {
         get(3)->codegen(outfile);
         break;
       }
+    case PRIMITIVE_GET_MEMBER_REF_TO:
+      fprintf( outfile, "*(");
+      codegen_member( outfile, get(1), get(2), member_type, member_offset);
+      fprintf( outfile, ")");
+      break;
+    case PRIMITIVE_SET_MEMBER_REF_TO:
+      codegen_member( outfile, get(1), get(2), member_type, member_offset);
+      fprintf( outfile, " = ");
+      fprintf( outfile, "&(");
+      get(3)->codegen( outfile);
+      fprintf( outfile, ")");
+      break;
     case PRIMITIVE_CHPL_ALLOC:
-      INT_FATAL(this, "Unexpected"); break;
+      // void* _chpl_alloc(size_t size, _int64 id, char* description);
+      fprintf( outfile, "_chpl_alloc( sizeof( _");   // alloc struct, not ptr to
+      get(1)->codegen( outfile);
+      fprintf( outfile, "), %ld, ", get(1)->id);
+      get(2)->codegen( outfile);
+      fprintf( outfile, ")");
       break;
     case PRIMITIVE_TYPE_EQUAL: {
       int tid = (int)dynamic_cast<TypeSymbol*>(dynamic_cast<SymExpr*>(get(1))->var)->definition->id;

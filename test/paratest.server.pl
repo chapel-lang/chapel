@@ -320,6 +320,14 @@ sub main {
                 print "missing -logfile arg\n";
                 exit (8);
             }
+        } elsif (/^-compopts/) {
+            shift @ARGV;
+            if ($#ARGV >= 0) {
+                $compopts = $ARGV[0];
+            } else {
+                print "missing -compopts arg\n";
+                exit (8);
+            }
         } elsif (/^-help|^-h/) {
             print_help;
             exit (9);

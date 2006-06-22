@@ -382,8 +382,14 @@ static void build_setter(ClassType* ct, Symbol* field) {
 
 static void build_setters_and_getters(ClassType* ct) {
   forv_Vec(Symbol, field, ct->fields) {
-    build_setter(ct, field);
-    build_getter(ct, field);
+    VarSymbol *cfield = dynamic_cast<VarSymbol*>(field);
+    // if suppress for cobegin created arg classes
+    if (cfield && cfield->is_ref) {
+      continue;
+    } else {
+      build_setter(ct, field);
+      build_getter(ct, field);
+    }
   }
   forv_Vec(TypeSymbol, tmp, ct->types) {
     if (tmp->type->astType == TYPE_USER || tmp->type->astType == TYPE_VARIABLE)
