@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# Usage: paratest.client.pl id chapeltestdir testdir
+# Usage: paratest.client.pl id chapeltestdir testdir [compopts]
 #  
 # Used remotely by paratest.server.pl to run start_test locally.
 #  id - used to create a file to synchronize with paratest.server.pl
@@ -28,15 +28,19 @@ sub main {
     chomp $node;
     ($node, $junk) = split (/\./, $node, 2);
 
-    if ($#ARGV != 2) {
+    if (($#ARGV<2) || ($#ARGV>3)) {
         print "@ARGV\n";
-        print "usage: multitest.client.pl id chapeltestdir testdir\n";
+        print "usage: paratest.client.pl id chapeltestdir testdir\n";
         exit (3);
     }
 
     $id = $ARGV[0];
     $workingdir = $ARGV[1];
     $testdir = $ARGV[2];
+
+    if ($#ARGV==3) {
+        $compopts = "-compopts ". $ARGV[3];
+    }
 
     $synchfile = "$synchdir/$node.$id";
 
@@ -66,7 +70,7 @@ sub main {
     $logfile = "$logdir/$dirfname.$node.log";
     unlink $logfile if (-e $logfile);
 
-    $testarg = "-compiler $compiler -startdir $testdir -logfile $logfile";
+    $testarg = "-compiler $compiler -startdir $testdir -logfile $logfile $compopts";
     systemd ("$testcmd $testarg");
 
     systemd ("echo feed me > $synchfile");  # signal ready for more

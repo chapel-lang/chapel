@@ -175,11 +175,9 @@ sub feed_nodes {
             # fork work
             unless ($pid = fork) {        # child
                 if ($verbose) {
-                    # systemd ("$rem_exe $node $pwd/$cmd $readyid $pwd $testdir $compiler");
-                    systemd ("$rem_exe $node $pwd/$cmd $readyid $pwd $testdir");
+                    systemd ("$rem_exe $node $pwd/$cmd $readyid $pwd $testdir $compopts");
                 } else {
-                    # systemd ("$rem_exe $node $pwd/$cmd $readyid $pwd $testdir");
-                    systemd ("$rem_exe $node $pwd/$cmd $readyid $pwd $testdir > /dev/null 2>& 1");
+                    systemd ("$rem_exe $node $pwd/$cmd $readyid $pwd $testdir $compopts > /dev/null 2>& 1");
                 }
                 exit (0);
             }
@@ -277,9 +275,10 @@ sub find_subdirs {
 
 sub print_help {
     print "Usage: paratest.server.pl [-dirfile d] [-nodefile n] [-help|-h]\n";
+    print "    -compopts s: s is a string that is passed with -compopts to start_test.\n";
     print "    -dirfile  d: d is a file listing directories to test. Default is the current diretory.\n";
-    print "    -nodefile n: n is a file listing nodes to run on. Default is current node.\n";
     print "    -logfile  l: l is the output log file. Default is \"user\".\"platform\".log.\n";
+    print "    -nodefile n: n is a file listing nodes to run on. Default is current node.\n";
 }
 
 
