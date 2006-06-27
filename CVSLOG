@@ -66644,3 +66644,57 @@ Log message:
 Modified files:
 	chapel/test/: paratest.client.pl paratest.server.pl 
 
+---------------------------------------------------------------------------
+
+06/27/06 10:30:29 -- deitz
+
+Log message:
+	Initial implementation of a local type inference function/type
+	resolution scheme enabled via the --lti compiler flag.  There are 75
+	failing tests when this is enabled:
+	
+	  update error messages/output 14
+	  require error messages/are now errors 9
+	  currying 8
+	  nil 7
+	  inheritance 7
+	  interpreter issue 7
+	  visibility 5
+	  type aliases 3
+	  scalar promotion of numeric 2
+	  string coercion 2
+	  array fields 2
+	  other 4
+	  currently failing/still failing 3
+	
+	This is a major change that impacts instantiation.  Fixed a number of
+	bugs in instantiation.
+	
+	Added BaseAST::removePragma that allows pragmas to be removed during
+	compilation.
+	
+	Added the ability to start a traversal on an AList<Expr> or an
+	AList<DefExpr> which helps for debugging with print_view.
+	
+	Replaced dtUnknown with dtAny for formal arguments with unspecified
+	types.
+	
+	Added a returnInfo function pointer to primitives used by the lti
+	function resolution to determine the return value of primitives.
+	
+	Added debug routines iprint_view and inprint_view that take an ID of a
+	BaseAST rather than a pointer to the BaseAST.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp baseAST.cpp build.cpp expr.cpp 
+	                      primitive.cpp symbol.cpp type.cpp view.cpp 
+	chapel/compiler/include/: astutil.h baseAST.h driver.h 
+	                          primitive.h symbol.h type.h view.h 
+	chapel/compiler/main/: driver.cpp passlist.h 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         codegen.cpp functionResolution.cpp 
+	                         normalize.cpp resolveAnalyzed.cpp 
+	                         runAnalysis.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_base.chpl 
+	                          _chpl_seq.chpl prelude.chpl 
+
