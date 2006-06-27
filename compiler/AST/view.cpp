@@ -62,6 +62,11 @@ view_ast(BaseAST* ast, bool number = false, long mark = -1, int indent = 0) {
         if (number)
           printf("[%ld]", sym->var->type->symbol->id);
       }
+      if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym->var)) {
+        printf(":%s", fn->retType->symbol->name);
+        if (number)
+          printf("[%ld]", fn->retType->symbol->id);
+      }
 
       printf("'");
     }
@@ -97,6 +102,11 @@ view_ast(BaseAST* ast, bool number = false, long mark = -1, int indent = 0) {
       printf(":%s", sym->type->symbol->name);
       if (number)
         printf("[%ld]", sym->type->symbol->id);
+    }
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
+      printf(":%s", fn->retType->symbol->name);
+      if (number)
+        printf("[%ld]", fn->retType->symbol->id);
     }
     printf("'");
   }
@@ -152,6 +162,24 @@ void nprint_view(BaseAST* ast) {
 void nprint_view_noline(BaseAST* ast) {
   view_ast(ast, true);
   fflush(stdout);
+}
+
+
+void iprint_view(long id) {
+  Vec<BaseAST*> asts;
+  collect_asts(&asts);
+  forv_Vec(BaseAST, ast, asts)
+    if (ast->id == id)
+      print_view(ast);
+}
+
+
+void inprint_view(long id) {
+  Vec<BaseAST*> asts;
+  collect_asts(&asts);
+  forv_Vec(BaseAST, ast, asts)
+    if (ast->id == id)
+      nprint_view(ast);
 }
 
 
@@ -342,7 +370,7 @@ html_view_ast(char *filename, FILE* html_file, BaseAST* ast, bool show_analysis_
     } else if (NamedExpr* e = dynamic_cast<NamedExpr*>(expr)) {
       fprintf(html_file, "(%s = ", e->name);
     } else if (CallExpr* e = dynamic_cast<CallExpr*>(expr)) {
-      fprintf(html_file, "(");
+      fprintf(html_file, "(%ld ", e->id);
       if (!e->primitive) {
         fprintf(html_file, "<B>call</B> ");
       } else {

@@ -879,7 +879,7 @@ void CallExpr::codegen(FILE* outfile) {
   ///
 
   if (SymExpr* variable = dynamic_cast<SymExpr*>(baseExpr)) {
-    if (!strcmp(variable->var->name, "_chpl_alloc")) {
+    if (!strcmp(variable->var->cname, "_chpl_alloc")) {
       Type *t = variable->getFunction()->retType;
       fprintf(outfile, "_chpl_alloc(sizeof(_");
       t->codegen(outfile);

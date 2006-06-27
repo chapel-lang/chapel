@@ -2,7 +2,7 @@ class _seqNode {
   type elt_type;
 
   var _element : elt_type;
-  var _next : _seqNode(elt_type);
+  var _next : _seqNode of elt_type;
 }
 
 record seq {
@@ -210,7 +210,7 @@ pragma "inline" fun string.this(s: _aseq)
 
 class reduction { }
 
-fun _reduce(r : reduction, s) { // reduce sequence s by reduction r
+fun _reduce(r, s) { // reduce sequence s by reduction r
   for e in s do
     r.accumulate(e);
   return r.generate();  

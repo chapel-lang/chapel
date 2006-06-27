@@ -43,6 +43,7 @@ int trace_level = 0;
 int fgraph = 0;
 int fgraph_vcg = 0;
 int fcg = 0;
+bool local_type_inference = false;
 bool no_inline = false;
 bool report_inlining = false;
 char system_dir[FILENAME_MAX] = DEFAULT_SYSTEM_DIR;
@@ -55,6 +56,7 @@ int scalar_promotion = 1;
 int squelch_header_errors = 0;
 
 static ArgumentDescription arg_desc[] = {
+ {"lti", ' ', "Local Type Inference", "T", &local_type_inference, "", NULL},
  {"interpreter", 'I', "Start Interpreter in Insert Mode", "T", &finterpreter_insert_mode, "CHPL_INTERPRETER_INSERT", interpreter_insert_mode},
  {"interpret-program", 'i', "Run Program in Interpreter (-ii for prompt)", "+", &run_interpreter, "CHPL_INTERPRETER", NULL},
  {"ast-mode", 'a', "Set Interpreter to AST Mode", "T", &finterpreter_ast_mode, "CHPL_INTERPRETER_AST_MODE", NULL},

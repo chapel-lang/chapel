@@ -22,7 +22,8 @@ Type::Type(astType_t astType, Symbol* init_defaultVal) :
   metaType(NULL),
   isGeneric(false),
   instantiatedFrom(NULL),
-  instantiatedWith(NULL)
+  instantiatedWith(NULL),
+  clonedFrom(NULL)
 { 
   typeParents.clear();
   dispatchParents.clear();
@@ -1166,4 +1167,50 @@ complete_closure(ClassType *ct, Vec<Type *> types) {
     decls->insertAtTail(new DefExpr(field));
   }
   ct->addDeclarations(decls);
+}
+
+
+bool is_int_type(Type *t) {
+  return
+    t == dtInt[IF1_INT_TYPE_8] ||
+    t == dtInt[IF1_INT_TYPE_16] ||
+    t == dtInt[IF1_INT_TYPE_32] ||
+    t == dtInt[IF1_INT_TYPE_64];
+}
+
+
+bool is_uint_type(Type *t) {
+  return
+    t == dtUInt[IF1_INT_TYPE_8] ||
+    t == dtUInt[IF1_INT_TYPE_16] ||
+    t == dtUInt[IF1_INT_TYPE_32] ||
+    t == dtUInt[IF1_INT_TYPE_64];
+}
+
+
+bool is_float_type(Type *t) {
+  return
+    t == dtFloat[IF1_FLOAT_TYPE_32] ||
+    t == dtFloat[IF1_FLOAT_TYPE_64] ||
+    t == dtFloat[IF1_FLOAT_TYPE_128];
+}
+
+
+int get_width(Type *t) {
+  if (t == dtInt[IF1_INT_TYPE_8] || t == dtUInt[IF1_INT_TYPE_8])
+    return 8;
+  if (t == dtInt[IF1_INT_TYPE_16] || t == dtUInt[IF1_INT_TYPE_16])
+    return 16;
+  if (t == dtInt[IF1_INT_TYPE_32] || t == dtUInt[IF1_INT_TYPE_32])
+    return 32;
+  if (t == dtInt[IF1_INT_TYPE_64] || t == dtUInt[IF1_INT_TYPE_64])
+    return 64;
+  if (t == dtFloat[IF1_FLOAT_TYPE_32])
+    return 32;
+  if (t == dtFloat[IF1_FLOAT_TYPE_64])
+    return 64;
+  if (t == dtFloat[IF1_FLOAT_TYPE_128])
+    return 128;
+  INT_FATAL(t, "Unknown bit width");
+  return 0;
 }

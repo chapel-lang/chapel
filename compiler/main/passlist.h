@@ -12,6 +12,7 @@ void build_default_functions();
 void runInterpreter();
 void runAnalysis();
 void resolve_analyzed();
+void resolve();
 void check_resolved();
 void flattenFunctions();
 void parallel2();
@@ -37,11 +38,14 @@ PassInfo passlist[] = {
   RUN(runAnalysis),        // analysis
   RUN(resolve_analyzed),   // resolve functions/types with analysis information
 
+  RUN(resolve), // enabled by --lti (local type inference), disables analysis
+
   RUN(check_resolved),     // checks semantics of resolved AST
 
   RUN(flattenFunctions),   // denest nested functions
   RUN(parallel2),          // parallel transforms, part 2
   RUN(inlineFunctions),    // function inlining
+
   RUN(copyPropagation),
   RUN(codegen),
   LAST

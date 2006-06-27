@@ -453,6 +453,8 @@ build_class(char* name, Type* type, AList<Stmt>* decls) {
 DefExpr*
 build_arg(intentTag tag, char* ident, Expr* type, Expr* init, Expr* variable) {
   ArgSymbol* argSymbol = new ArgSymbol(tag, ident, dtUnknown, init, variable);
+  if (!type)
+    argSymbol->type = dtAny;
   if (tag == INTENT_TYPE) {
     char *name = stringcat("__type_variable_", argSymbol->name);
     VariableType* new_type = new VariableType(getMetaType(NULL));

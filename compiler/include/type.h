@@ -49,6 +49,7 @@ class Type : public BaseAST {
   Type *instantiatedFrom;
   Vec<Type*> *instantiatedWith;
   ASTMap substitutions;
+  Type *clonedFrom;
 
   Type(astType_t astType, Symbol* init_defaultVal);
   virtual void verify(); 
@@ -270,5 +271,10 @@ Type *getMetaType(Type *t);
 LiteralType *new_LiteralType(VarSymbol *literal_var);
 
 void complete_closure(ClassType *closureType, Vec<Type *> member_types);
+
+bool is_int_type(Type*);
+bool is_uint_type(Type*);
+bool is_float_type(Type*);
+int get_width(Type*);
 
 #endif

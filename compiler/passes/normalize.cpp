@@ -57,6 +57,8 @@ void normalize(BaseAST* base) {
         reconstruct_iterator(fn);
       if (fn->retRef)
         build_lvalue_function(fn);
+      if (fn->hasPragma("lti remove") && local_type_inference)
+        fn->defPoint->parentStmt->remove();
     }
   }
 
@@ -202,6 +204,10 @@ void normalize(BaseAST* base) {
     }
   }
 
+  if (local_type_inference) {
+    dtAny->isGeneric = true;
+    dtNumeric->isGeneric = true;
+  }
   asts.clear();
   collect_asts_postorder(&asts, base);
   int changed = 1;
@@ -311,6 +317,8 @@ static void build_lvalue_function(FnSymbol* fn) {
   ArgSymbol* setterToken = new ArgSymbol(INTENT_BLANK, "_setterTokenDummy",
                                          dtSetterToken);
   ArgSymbol* lvalue = new ArgSymbol(INTENT_BLANK, "_lvalue", fn->retType);
+  if (lvalue->type == dtUnknown)
+    lvalue->type = dtAny;
   new_fn->formals->insertAtTail(new DefExpr(setterToken));
   new_fn->formals->insertAtTail(new DefExpr(lvalue));
   Vec<BaseAST*> asts;
@@ -540,6 +548,26 @@ static bool can_resolve_type(Expr* type_expr) {
 }
 
 
+// static void set_field_as_arg(ArgSymbol* arg) {
+//   FnSymbol* fn = dynamic_cast<FnSymbol*>(arg->defPoint->parentSymbol);
+//   if (fn->fnClass == FN_CONSTRUCTOR) {
+//     ClassType* ct = dynamic_cast<ClassType*>(fn->retType);
+//     bool found = false;
+//     forv_Vec(Symbol, field, ct->fields) {
+//       if (!strcmp(field->name, arg->name)) {
+//         if (field->type == dtUnknown)
+//           field->type = arg->type;
+//         if (arg->type != field->type)
+//           INT_FATAL(fn, "Error in class constructor");
+//         found = true;
+//       }
+//     }
+//     if (!found)
+//       INT_FATAL(fn, "Error in class constructor");
+//   }
+// }
+
+
 static void hack_resolve_types(Expr* expr) {
   if (DefExpr* def_expr = dynamic_cast<DefExpr*>(expr)) {
     if (ArgSymbol* arg = dynamic_cast<ArgSymbol*>(def_expr->sym)) {
@@ -549,8 +577,14 @@ static void hack_resolve_types(Expr* expr) {
       } else if (arg->type == dtUnknown && can_resolve_type(def_expr->exprType)) {
         arg->type = def_expr->exprType->typeInfo();
         def_expr->exprType->remove();
+        //set_field_as_arg(arg);
         if (arg->intent == INTENT_PARAM)
           arg->type = dynamic_cast<PrimitiveType*>(arg->type)->literalType;
+      } else if (arg->type == dtUnknown && !def_expr->exprType && can_resolve_type(arg->defaultExpr)) {
+        Type *t = arg->defaultExpr->typeInfo();
+        if (t != dtNil)
+          arg->type = t;
+        //set_field_as_arg(arg);
       }
     } else if (VarSymbol* var = dynamic_cast<VarSymbol*>(def_expr->sym)) {
       // only until analysis's type_info resolves enums correctly
@@ -1132,7 +1166,7 @@ expand_var_args(FnSymbol* fn) {
             arg_def->insertBefore(new_arg_def);
           }
           VarSymbol* var = new VarSymbol(arg->name);
-          if (arg->type != dtUnknown) {
+          if (arg->type != dtAny) {
             int i = n;
             for_alist_backward(Expr, actual, actuals) {
               actual->remove();
@@ -1198,6 +1232,8 @@ tag_generic(FnSymbol *f) {
     f->genericSymbols.copy(genericSymbols);
     f->genericSymbols.set_to_vec();
     qsort(f->genericSymbols.v, f->genericSymbols.n, sizeof(genericSymbols.v[0]), compar_baseast);
+    if (f->retType != dtUnknown && f->fnClass == FN_CONSTRUCTOR)
+      f->retType->isGeneric = true;
   }
   return changed;
 }
@@ -1244,7 +1280,8 @@ resolve_formal_types(FnSymbol* fn) {
   if (!fn->isGeneric) {
     for_alist(DefExpr, formalDef, fn->formals) {
       if (dynamic_cast<CallExpr*>(formalDef->exprType)) {
-        resolve_type_expr(formalDef->exprType);
+        if (!local_type_inference)
+          resolve_type_expr(formalDef->exprType);
         hack_resolve_types(formalDef);
       }
     }

@@ -307,6 +307,15 @@ char* BaseAST::hasPragma(char* str) {
 }
 
 
+void BaseAST::removePragma(char* str) {
+  for (int i = 0; i < pragmas.n; i++)
+    if (!strcmp(pragmas.v[i], str))
+      pragmas.v[i] = "";
+  if (!dynamic_cast<ModuleSymbol*>(this) && getModule())
+    getModule()->removePragma(str);
+}
+
+
 char* BaseAST::hasPragmaPrefix(char* str) {
   forv_Vec(char, pragma, pragmas) {
     if (!strncmp(pragma, str, strlen(str)))
@@ -607,6 +616,14 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all, int sentinels) {
     if (AList<Stmt>* stmts = dynamic_cast<AList<Stmt>*>(a)) {
       for_alist(Stmt, stmt, stmts) {
         get_ast_children(stmt, asts, all, sentinels);
+      }
+    } else if (AList<Expr>* exprs = dynamic_cast<AList<Expr>*>(a)) {
+      for_alist(Expr, expr, exprs) {
+        get_ast_children(expr, asts, all, sentinels);
+      }
+    } else if (AList<DefExpr>* exprs = dynamic_cast<AList<DefExpr>*>(a)) {
+      for_alist(DefExpr, expr, exprs) {
+        get_ast_children(expr, asts, all, sentinels);
       }
     } else
       INT_FATAL(a, "Unexpected case in AST_GET_CHILDREN (LIST)");

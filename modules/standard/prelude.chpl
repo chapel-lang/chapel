@@ -83,18 +83,25 @@ pragma "rename _copy_string" fun =(a : string, b : any) : string {
   return __primitive("copy_string", b);
 }
 
+pragma "lti remove"
 pragma "split unique"
-pragma "builtin" fun =(a : numeric, b : any) { 
+pragma "builtin"
+fun =(a : numeric, b : any) { 
   return __primitive("cast", a, b);
 }
 
 pragma "split unique"
-pragma "builtin" fun =(a : any, b : any) { 
+pragma "builtin"
+fun =(a : any, b : any) { 
   return b; 
 }
 
 pragma "split unique"
 pragma "rename _chpl_alloc"
 fun _chpl_alloc(t, description:string) { return __primitive("chpl_alloc", t); }
+
+// for local type inference
+pragma "rename _chpl_alloc"
+fun _chpl_alloc2(type t, description:string) { return __primitive("chpl_alloc", t); }
 
 fun _init_string() { return ""; }

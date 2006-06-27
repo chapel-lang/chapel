@@ -48,8 +48,9 @@ class PrimitiveOp : public gc { public:
   char *name;
   InterpreterOp *interpreterOp;
   AnalysisOp *analysisOp;
+  Type *(*returnInfo)(CallExpr*);
 
-  PrimitiveOp(PrimitiveTag atag, char *aname, InterpreterOp *aiop, AnalysisOp *aaop);
+  PrimitiveOp(PrimitiveTag atag, char *aname, InterpreterOp *aiop, AnalysisOp *aaop, Type *(*areturnInfo)(CallExpr*));
 };
 
 extern HashMap<char *, StringHashFns, PrimitiveOp *> primitives_map;

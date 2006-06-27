@@ -11,6 +11,8 @@ bool postAnalysis = false;
 
 
 void runAnalysis(void) {
+  if (local_type_inference)
+    return;
   preAnalysis = false;
   inAnalysis = true;
   Accum<BaseAST*> asts;

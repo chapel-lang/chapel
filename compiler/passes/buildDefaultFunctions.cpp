@@ -175,7 +175,7 @@ static void build_record_assignment_function(ClassType* ct) {
   ArgSymbol* arg1 = 
     f_equal_method ? new ArgSymbol(INTENT_REF, "this", ct)
     : new ArgSymbol(INTENT_BLANK, "_arg1", ct);
-  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtUnknown);
+  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtAny);
   fn->formals->insertAtTail(arg1);
   fn->formals->insertAtTail(arg2);
   fn->retType = dtUnknown;

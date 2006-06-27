@@ -26,6 +26,7 @@ extern int trace_level;
 extern int run_interpreter;
 extern bool no_inline;
 extern bool report_inlining;
+extern bool local_type_inference;
 extern char system_dir[FILENAME_MAX];
 
 extern int debugParserLevel;

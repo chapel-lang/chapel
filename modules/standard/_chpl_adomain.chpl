@@ -4,7 +4,7 @@
 
 class _domain { }
 
-fun _build_domain(x : _domain)
+fun _build_domain(x)
   return x;
 
 fun _build_domain(ranges : _aseq ...?rank)

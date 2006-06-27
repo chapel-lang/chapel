@@ -416,7 +416,8 @@ ArgSymbol::ArgSymbol(intentTag iIntent, char* iName,
   variableExpr(iVariableExpr),
   genericSymbol(NULL),
   isGeneric(false),
-  isExactMatch(false)
+  isExactMatch(false),
+  instantiatedFrom(NULL)
 {
   if (intent == INTENT_PARAM || intent == INTENT_TYPE)
     isGeneric = true;
@@ -553,6 +554,10 @@ TypeSymbol* TypeSymbol::clone(ASTMap* map) {
   defPoint->parentStmt->insertBefore(new DefExpr(clone));
   clone->addPragmas(&pragmas);
   newClass->typeParents.add(originalClass);
+  if (local_type_inference) {
+    clone->definition->substitutions.copy(definition->substitutions);
+    clone->definition->dispatchParents.copy(definition->dispatchParents);
+  }
   return clone;
 }
 
@@ -706,8 +711,10 @@ build_empty_wrapper(FnSymbol* fn) {
   wrapper->addPragmas(&fn->pragmas);
   wrapper->addPragma("inline");
   wrapper->typeBinding = fn->typeBinding;
-  wrapper->retType = fn->retType;
-  wrapper->fnClass = fn->fnClass;
+  if (!local_type_inference) {
+    wrapper->retType = fn->retType;
+    wrapper->fnClass = fn->fnClass;
+  }
   wrapper->noParens = fn->noParens;
   wrapper->retRef = fn->retRef;
   wrapper->isMethod = fn->isMethod;
@@ -749,6 +756,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
   if (FnSymbol* cached = check_dwcache(this, defaults))
     return cached;
   FnSymbol* wrapper = build_empty_wrapper(this);
+  wrapper->retType = retType;
   wrapper->cname = stringcat("_default_wrap_", cname);
   CallExpr* call = new CallExpr(this);
   ASTMap copy_map;
@@ -842,8 +850,14 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs) {
     Symbol* new_formal = formal->sym->copy();
     if (_this == formal->sym)
       wrapper->_this = new_formal;
-    if (promotion_subs->get(formal->sym)) {
-      new_formal->type = dtUnknown;
+    if (Symbol* sub = promotion_subs->get(formal->sym)) {
+      if (local_type_inference) {
+        TypeSymbol* ts = dynamic_cast<TypeSymbol*>(sub);
+        if (!ts)
+          INT_FATAL(this, "error building promotion wrapper");
+        new_formal->type = ts->definition;
+      } else
+        new_formal->type = dtUnknown;
       Symbol* new_index = new VarSymbol("_index");
       wrapper->formals->insertAtTail(new DefExpr(new_formal));
       iterators->insertAtTail(new SymExpr(new_formal));
@@ -875,12 +889,24 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs) {
 static void
 instantiate_update_expr(ASTMap* substitutions, Expr* expr) {
   ASTMap map;
-  map.copy(*substitutions);
+  if (!local_type_inference)
+    map.copy(*substitutions);
   // for type variables, add TypeSymbols into the map as well
-  for (int i = 0; i < substitutions->n; i++)
-    if (Type *t = dynamic_cast<Type*>(substitutions->v[i].key))
-      if (Type *tt = dynamic_cast<Type*>(substitutions->v[i].value))
+  for (int i = 0; i < substitutions->n; i++) {
+    if (Type *t = dynamic_cast<Type*>(substitutions->v[i].key)) {
+      if (Type *tt = dynamic_cast<Type*>(substitutions->v[i].value)) {
+        if (local_type_inference)
+          map.put(t, tt);
         map.put(t->symbol, tt->symbol);
+      }
+    }
+    if (ArgSymbol* s = dynamic_cast<ArgSymbol*>(substitutions->v[i].key)) {
+      if (Symbol *ss = dynamic_cast<Symbol*>(substitutions->v[i].value)) {
+        if (local_type_inference)
+          map.put(s, ss);
+      }
+    }
+  }
   update_symbols(expr, &map);
 }
 
@@ -930,6 +956,13 @@ instantiate_function(FnSymbol *fn, ASTMap *all_subs, ASTMap *generic_subs) {
         if (VarSymbol *vs = dynamic_cast<VarSymbol*>(all_subs->get(ps))) {
           if (vs->literalType)
             ps->type = vs->literalType;
+        }
+      } else if (Type* t = dynamic_cast<Type*>(all_subs->get(ps))) {
+        if (local_type_inference) {
+          ps->isGeneric = false;
+          //ps->intent = INTENT_BLANK;
+          ps->instantiatedFrom = ps->type;
+          ps->type = t;
         }
       }
     }
@@ -1025,13 +1058,15 @@ instantiate_tuple(FnSymbol* fn) {
   Stmt* last = fn->body->body->last();
   for (int i = 1; i <= size; i++) {
     char* name = stringcat("x", intstring(i));
-    ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, name, dtUnknown, new SymExpr(gNil));
+    ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, name, dtAny, new SymExpr(gNil));
     fn->formals->insertAtTail(arg);
     last->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this,
                                     new_StringLiteral(name), arg));
     VarSymbol* field = new VarSymbol(name);
     tuple->addDeclarations(new AList<Stmt>(new ExprStmt(new DefExpr(field))));
   }
+  if (local_type_inference)
+    fn->removePragma("tuple");
 }
 
 FnSymbol*
@@ -1179,7 +1214,10 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
     instantiate_update_expr(&substitutions, clone->defPoint);
     substitutions.put(retType, clone->definition);
 
-    cloneType->substitutions.copy(*generic_substitutions);
+    if (local_type_inference)
+      cloneType->substitutions.map_union(*generic_substitutions);
+    else
+      cloneType->substitutions.copy(*generic_substitutions);
 
     forv_Vec(Type*, parent, retType->typeParents)
       cloneType->typeParents.add(parent);
@@ -1190,6 +1228,8 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
     newfn = instantiate_function(this, &substitutions, generic_substitutions);
     cloneType->defaultConstructor = newfn;
     newfn->typeBinding = clone;
+    if (local_type_inference)
+      newfn->retType = cloneType;
     check_promoter(cloneType);
     if (hasPragma("tuple"))
       instantiate_tuple(newfn);
@@ -1637,6 +1677,9 @@ VarSymbol *new_ImmediateSymbol(Immediate *imm) {
     sprint_imm(str, *imm);
   s->cname = dupstr(ss);
   *s->immediate = *imm;
+  if (local_type_inference)
+    if (is_int_type(t) || is_uint_type(t))
+      s->literalType = new_LiteralType(s);
   uniqueConstantsHash.put(s->immediate, s);
   return s;
 }

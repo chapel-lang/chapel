@@ -95,6 +95,7 @@ static void codegen_header(void) {
     // mangle symbol that is neither field nor formal if the symbol's
     // name has already been encountered
     if (!dynamic_cast<ArgSymbol*>(sym) &&
+        !dynamic_cast<UnresolvedSymbol*>(sym) &&
         !dynamic_cast<ClassType*>(sym->parentScope->astParent) &&
         cnames.get(sym->cname))
       sym->cname = stringcat("_", intstring(sym->id), "_", sym->cname);

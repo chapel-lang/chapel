@@ -114,6 +114,7 @@ class ArgSymbol : public Symbol {
   Symbol *genericSymbol;
   bool isGeneric;
   bool isExactMatch;
+  Type* instantiatedFrom;
 
   ArgSymbol(intentTag iIntent, char* iName, Type* iType,
             Expr* iDefaultExpr = NULL, Expr* iVariableExpr = NULL);

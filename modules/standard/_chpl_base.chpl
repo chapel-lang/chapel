@@ -49,10 +49,13 @@ pragma "inline" fun !=(a: object, b: object) : bool return __primitive("ptr_neq"
 //
 // _copy
 //
-pragma "inline" pragma "split eager" fun _copy(x : object)
+pragma "inline" pragma "split eager" fun _copy(x)
   return x;
 
-pragma "inline" pragma "split eager" fun _copy(x : numeric)
+//pragma "inline" pragma "split eager" fun _copy(x : object)
+//  return x;
+
+pragma "lti remove" pragma "inline" pragma "split eager" fun _copy(x : numeric)
   return x;
 
 pragma "inline" pragma "split eager" fun _copy(x : string) {

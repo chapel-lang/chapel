@@ -275,6 +275,8 @@ static void build_constructor(ClassType* ct) {
     VarSymbol *vtmp = dynamic_cast<VarSymbol*>(tmp);
     ArgSymbol* arg = new ArgSymbol((vtmp && vtmp->consClass == VAR_PARAM) ? INTENT_PARAM : INTENT_BLANK, name, type, init);
     DefExpr* defExpr = new DefExpr(arg, NULL, exprType);
+    if (!exprType && arg->type == dtUnknown && (!arg->defaultExpr || arg->defaultExpr->typeInfo() == dtNil))
+      arg->type = dtAny;
     args->insertAtTail(defExpr);
   }
 
@@ -291,6 +293,10 @@ static void build_constructor(ClassType* ct) {
   Expr* alloc_rhs = new CallExpr(prelude->lookup("_chpl_alloc"),
                                  ct->symbol,
                                  new_StringLiteral(description));
+  if (local_type_inference)
+    alloc_rhs = new CallExpr("_chpl_alloc2",
+                             ct->symbol,
+                             new_StringLiteral(description));
   CallExpr* alloc_expr = new CallExpr(PRIMITIVE_MOVE, fn->_this, alloc_rhs);
 
   fn->insertAtTail(new DefExpr(fn->_this));
@@ -359,7 +365,7 @@ static void build_setter(ClassType* ct, Symbol* field) {
   fn->retType = dtVoid;
 
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
-  ArgSymbol* fieldArg = new ArgSymbol(INTENT_BLANK, "_arg", dtUnknown);
+  ArgSymbol* fieldArg = new ArgSymbol(INTENT_BLANK, "_arg", dtAny);
   fn->formals->insertAtTail(new ArgSymbol(INTENT_BLANK, "_methodTokenDummy", dtMethodToken));
   fn->formals->insertAtTail(_this);
   fn->formals->insertAtTail(new ArgSymbol(INTENT_BLANK, "_setterTokenDummy", dtSetterToken));
