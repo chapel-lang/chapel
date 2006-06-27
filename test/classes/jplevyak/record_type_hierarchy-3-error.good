@@ -1,8 +1,8 @@
-_chpl_file.chpl:345: writeln, _e0_args
-_chpl_file.chpl:353: writeln, _e0_args, _e1_args
-_chpl_file.chpl:353: writeln, _e0_args, _e1_args, _e2_args
-_chpl_file.chpl:353: writeln, _e0_args, _e1_args, _e2_args, _e3_args
-_chpl_file.chpl:353: writeln, _e0_args, _e1_args, _e2_args, _e3_args, _e4_args
+_chpl_file.chpl:345: writeln, _e0_args : any
+_chpl_file.chpl:353: writeln, _e0_args : any, _e1_args : any
+_chpl_file.chpl:353: writeln, _e0_args : any, _e1_args : any, _e2_args : any
+_chpl_file.chpl:353: writeln, _e0_args : any, _e1_args : any, _e2_args : any, _e3_args : any
+_chpl_file.chpl:353: writeln, _e0_args : any, _e1_args : any, _e2_args : any, _e3_args : any, _e4_args : any
 _chpl_file.chpl:362: writeln
 fail: program does not type
 note: candidates are:

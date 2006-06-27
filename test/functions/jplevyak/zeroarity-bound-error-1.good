@@ -9,10 +9,10 @@ zeroarity-bound-error-1.chpl:9: illegal call argument type '_tmp' illegal: ( )
 zeroarity-bound-error-1.chpl:9: unresolved call 'writeln'
 note: candidates are:
 _chpl_file.chpl:0: writeln
-_chpl_file.chpl:0: writeln, _e0_args
-_chpl_file.chpl:0: writeln, _e0_args, _e1_args
-_chpl_file.chpl:0: writeln, _e0_args, _e1_args, _e2_args
-_chpl_file.chpl:0: writeln, _e0_args, _e1_args, _e2_args, _e3_args
-_chpl_file.chpl:0: writeln, _e0_args, _e1_args, _e2_args, _e3_args, _e4_args
+_chpl_file.chpl:0: writeln, _e0_args : any
+_chpl_file.chpl:0: writeln, _e0_args : any, _e1_args : any
+_chpl_file.chpl:0: writeln, _e0_args : any, _e1_args : any, _e2_args : any
+_chpl_file.chpl:0: writeln, _e0_args : any, _e1_args : any, _e2_args : any, _e3_args : any
+_chpl_file.chpl:0: writeln, _e0_args : any, _e1_args : any, _e2_args : any, _e3_args : any, _e4_args : any
 zeroarity-bound-error-1.chpl:9: expression has no type
 fail: program does not type
