@@ -66698,3 +66698,17 @@ Modified files:
 	chapel/modules/standard/: _chpl_adomain.chpl _chpl_base.chpl 
 	                          _chpl_seq.chpl prelude.chpl 
 
+---------------------------------------------------------------------------
+
+06/27/06 10:32:19 -- deitz
+
+Log message:
+	updated error messages on tests
+
+Modified files:
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-1.good 
+	                                 zeroarity-bound-error-2.good 
+	chapel/test/types/type_variables/jplevyak/: where-2-error.good 
+
