@@ -66712,3 +66712,14 @@ Modified files:
 	                                 zeroarity-bound-error-2.good 
 	chapel/test/types/type_variables/jplevyak/: where-2-error.good 
 
+---------------------------------------------------------------------------
+
+06/28/06 11:54:08 -- deitz
+
+Log message:
+	Refactored and cleaned new code.
+
+Modified files:
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+
