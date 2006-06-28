@@ -35,10 +35,10 @@ PassInfo passlist[] = {
                            //   Enabled by -i or --interpreter.
                            //   Terminates after running if enabled.
 
+  RUN(resolve), // enabled by --lti (local type inference), disables analysis
+
   RUN(runAnalysis),        // analysis
   RUN(resolve_analyzed),   // resolve functions/types with analysis information
-
-  RUN(resolve), // enabled by --lti (local type inference), disables analysis
 
   RUN(check_resolved),     // checks semantics of resolved AST
 

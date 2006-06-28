@@ -6,6 +6,30 @@
 #include "runtime.h"
 
 
+static Type*
+resolveType(Expr* expr) {
+  if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
+    if (!call->primitive) {
+      FnSymbol* fn = call->isResolved();
+      return fn->retType;
+    } else {
+      return call->primitive->returnInfo(call);
+    }
+  } else if (SymExpr* sym = dynamic_cast<SymExpr*>(expr)) {
+    return sym->var->type;
+  } else if (NamedExpr* a = dynamic_cast<NamedExpr*>(expr)) {
+    return resolveType(a->actual);
+  } else if (CastExpr* a = dynamic_cast<CastExpr*>(expr)) {
+    if (a->type)
+      return a->type;
+    else
+      return resolveType(a->newType);
+  }
+  INT_FATAL(expr, "Failure in resolveType");
+  return dtUnknown;
+}
+
+
 static void resolveCall(CallExpr* call);
 
 static void
@@ -23,7 +47,9 @@ resolveFormals(FnSymbol* fn) {
 resolve_call_error_type resolve_call_error;
 Vec<FnSymbol*> resolve_call_error_candidates;
 
-bool can_instantiate(Type* actualType, Type* formalType) {
+// Returns true iff dispatching the actualType to the formalType
+// results in an instantiation.
+bool canInstantiate(Type* actualType, Type* formalType) {
   if (local_type_inference) {
     if (formalType == dtAny)
       return true;
@@ -36,13 +62,15 @@ bool can_instantiate(Type* actualType, Type* formalType) {
       return true;
   }
   forv_Vec(Type, parent, actualType->typeParents) {
-    if (parent == formalType || can_instantiate(parent, formalType))
+    if (parent == formalType || canInstantiate(parent, formalType))
       return true;
   }
   return false;
 }
 
-bool require_coercion(Type* actualType, Type* formalType) {
+// Returns true iff dispatching the actualType to the formalType
+// results in a coercion.
+bool canCoerce(Type* actualType, Type* formalType) {
   if (is_int_type(formalType) && dynamic_cast<EnumType*>(actualType)) {
     return true;
   }
@@ -71,7 +99,10 @@ bool require_coercion(Type* actualType, Type* formalType) {
   return false;
 }
 
-bool can_dispatch(FnSymbol* fn, Symbol* param, Type* actualType, Type* formalType, bool* require_scalar_promotion = NULL) {
+// Returns true iff the actualType can dispatch to the formalType.
+// The function symbol is used to avoid scalar promotion on =.
+// param is set if the actual is a parameter (compile-time constant).
+bool canDispatch(FnSymbol* fn, Symbol* param, Type* actualType, Type* formalType, bool* require_scalar_promotion = NULL) {
   if (!local_type_inference) {
    if ((actualType != dtAny && actualType != dtUnknown) &&
        (formalType == dtAny || formalType == dtUnknown))
@@ -89,17 +120,17 @@ bool can_dispatch(FnSymbol* fn, Symbol* param, Type* actualType, Type* formalTyp
     if (ClassType* ct = dynamic_cast<ClassType*>(formalType))
       if (ct->classTag == CLASS_CLASS)
         return true;
-  if (require_coercion(actualType, formalType))
+  if (canCoerce(actualType, formalType))
     return true;
   if (LiteralType* lt = dynamic_cast<LiteralType*>(formalType))
     if (lt->literal == param)
       return true;
   forv_Vec(Type, parent, actualType->dispatchParents) {
-    if (parent == formalType || can_dispatch(fn, param, parent, formalType)) {
+    if (parent == formalType || canDispatch(fn, param, parent, formalType)) {
       return true;
     }
   }
-  if (strcmp(fn->name, "=") && actualType->scalarPromotionType && (can_dispatch(fn, NULL, actualType->scalarPromotionType, formalType))) {
+  if (strcmp(fn->name, "=") && actualType->scalarPromotionType && (canDispatch(fn, NULL, actualType->scalarPromotionType, formalType))) {
     if (require_scalar_promotion)
       *require_scalar_promotion = true;
     return true;
@@ -108,47 +139,28 @@ bool can_dispatch(FnSymbol* fn, Symbol* param, Type* actualType, Type* formalTyp
 }
 
 static bool
-more_specific(FnSymbol* fn, Symbol* param, Type* actualType, Type* formalType) {
-  if (can_dispatch(fn, param, actualType, formalType))
+moreSpecific(FnSymbol* fn, Symbol* param, Type* actualType, Type* formalType) {
+  if (canDispatch(fn, param, actualType, formalType))
     return true;
-  if (can_instantiate(actualType, formalType)) {
+  if (canInstantiate(actualType, formalType)) {
     return true;
   }
   return false;
 }
 
-Vec<FnSymbol*> fns; // live functions list
-
-bool actual_formal_match(FnSymbol* fn, Symbol* actual_param, Type* actual_type, ArgSymbol* formal) {
-  if (formal->intent == INTENT_TYPE || formal->type == dtUnknown)
-    return true;
-  if (can_dispatch(fn, actual_param, actual_type, formal->type))
-    return true;
-  return false;
-}
-
-
-// Return actual-formal map if FnSymbol is viable candidate to call
-static void
-add_candidate(Vec<FnSymbol*>* candidateFns,
-              Vec<Vec<ArgSymbol*>*>* candidateActualFormals,
-              FnSymbol* fn,
-              Vec<Type*>* actual_types,
-              Vec<Symbol*>* actual_params,
-              Vec<char*>* actual_names,
-              bool inst = false) {
-  int num_actuals = actual_types->n;
-  int num_formals = fn->formals ? fn->formals->length() : 0;
-
-  if (local_type_inference)
-    resolveFormals(fn);
-
-  Vec<ArgSymbol*>* actual_formals = new Vec<ArgSymbol*>();
-  Vec<Type*> formal_actuals;
-  Vec<Symbol*> formal_params;
+static bool
+computeActualFormalMap(FnSymbol* fn,
+                       Vec<Type*>* formal_actuals,
+                       Vec<Symbol*>* formal_params,
+                       Vec<ArgSymbol*>* actual_formals,
+                       int num_actuals,
+                       int num_formals,
+                       Vec<Type*>* actual_types,
+                       Vec<Symbol*>* actual_params,
+                       Vec<char*>* actual_names) {
   for (int i = 0; i < num_formals; i++) {
-    formal_actuals.add(NULL);
-    formal_params.add(NULL);
+    formal_actuals->add(NULL);
+    formal_params->add(NULL);
   }
   for (int i = 0; i < num_actuals; i++)
     actual_formals->add(NULL);
@@ -162,15 +174,15 @@ add_candidate(Vec<FnSymbol*>* candidateFns,
         if (!strcmp(actual_names->v[i], formal->name)) {
           match = true;
           actual_formals->v[i] = formal;
-          formal_actuals.v[j] = actual_types->v[i];
-          formal_params.v[j] = actual_params->v[i];
+          formal_actuals->v[j] = actual_types->v[i];
+          formal_params->v[j] = actual_params->v[i];
           break;
         }
       }
       if (!match)
-        return;
+        return false;
     }
-  }
+  } 
   for (int i = 0; i < num_actuals; i++) {
     if (!actual_names->v[i]) {
       bool match = false;
@@ -178,50 +190,90 @@ add_candidate(Vec<FnSymbol*>* candidateFns,
       for_alist(DefExpr, formalDef, fn->formals) {
         ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
         j++;
-        if (!formal_actuals.v[j]) {
+        if (!formal_actuals->v[j]) {
           match = true;
           actual_formals->v[i] = formal;
-          formal_actuals.v[j] = actual_types->v[i];
-          formal_params.v[j] = actual_params->v[i];
+          formal_actuals->v[j] = actual_types->v[i];
+          formal_params->v[j] = actual_params->v[i];
           break;
         }
       }
       if (!match && !fn->isGeneric)
-        return;
+        return false;
     }
   }
-  if (fn->isGeneric) {
-    ASTMap subs;
-    for (int i = 0; i < num_actuals; i++) {
-      if (actual_formals->v[i]) {
-        if (actual_formals->v[i]->isGeneric) {
-          if (actual_formals->v[i]->intent == INTENT_TYPE) {
-            TypeSymbol* ts =
-              dynamic_cast<TypeSymbol*>(actual_formals->v[i]->genericSymbol);
-            if (!ts)
-              INT_FATAL(actual_formals->v[i], "Unanticipated genericSymbol");
-            subs.put(ts->definition, actual_types->v[i]);
-          } else if (actual_formals->v[i]->intent == INTENT_PARAM) {
-            if (actual_params->v[i])
-              subs.put(actual_formals->v[i], actual_params->v[i]);
-          }
-        } else if (fn->isGeneric) {
-          TypeSymbol* formalType = actual_formals->v[i]->type->symbol;
-          if (fn->genericSymbols.set_in(formalType)) {
-            if (can_instantiate(actual_types->v[i], actual_formals->v[i]->type)) {
-              if (local_type_inference)
-                subs.put(actual_formals->v[i], actual_types->v[i]);
-              else
-                subs.put(actual_formals->v[i]->type, actual_types->v[i]);
-            }
+  return true;
+}
+
+
+static void
+computeGenericSubs(ASTMap &subs,
+                   FnSymbol* fn,
+                   int num_actuals,
+                   Vec<ArgSymbol*>* actual_formals,
+                   Vec<Type*>* actual_types,
+                   Vec<Symbol*>* actual_params) {
+  for (int i = 0; i < num_actuals; i++) {
+    if (actual_formals->v[i]) {
+      if (actual_formals->v[i]->isGeneric) {
+        if (actual_formals->v[i]->intent == INTENT_TYPE) {
+          TypeSymbol* ts =
+            dynamic_cast<TypeSymbol*>(actual_formals->v[i]->genericSymbol);
+          if (!ts)
+            INT_FATAL(actual_formals->v[i], "Unanticipated genericSymbol");
+          subs.put(ts->definition, actual_types->v[i]);
+        } else if (actual_formals->v[i]->intent == INTENT_PARAM) {
+          if (actual_params->v[i])
+            subs.put(actual_formals->v[i], actual_params->v[i]);
+        }
+      } else if (fn->isGeneric) {
+        TypeSymbol* formalType = actual_formals->v[i]->type->symbol;
+        if (fn->genericSymbols.set_in(formalType)) {
+          if (canInstantiate(actual_types->v[i], actual_formals->v[i]->type)) {
+            if (local_type_inference)
+              subs.put(actual_formals->v[i], actual_types->v[i]);
+            else
+              subs.put(actual_formals->v[i]->type, actual_types->v[i]);
           }
         }
       }
     }
+  }
+}
+
+
+// Return actual-formal map if FnSymbol is viable candidate to call
+static void
+addCandidate(Vec<FnSymbol*>* candidateFns,
+              Vec<Vec<ArgSymbol*>*>* candidateActualFormals,
+              FnSymbol* fn,
+              Vec<Type*>* actual_types,
+              Vec<Symbol*>* actual_params,
+              Vec<char*>* actual_names,
+              bool inst = false) {
+  if (local_type_inference)
+    resolveFormals(fn);
+
+  Vec<ArgSymbol*>* actual_formals = new Vec<ArgSymbol*>();
+
+  int num_actuals = actual_types->n;
+  int num_formals = fn->formals ? fn->formals->length() : 0;
+
+  Vec<Type*> formal_actuals;
+  Vec<Symbol*> formal_params;
+  bool valid = computeActualFormalMap(fn, &formal_actuals, &formal_params, actual_formals,
+                                      num_actuals, num_formals, actual_types, actual_params,
+                                      actual_names);
+  if (!valid)
+    return;
+
+  if (fn->isGeneric) {
+    ASTMap subs;
+    computeGenericSubs(subs, fn, num_actuals, actual_formals, actual_types, actual_params);
     if (subs.n && !fn->isPartialInstantiation(&subs)) {
       FnSymbol* inst_fn = fn->instantiate_generic(&subs);
       if (inst_fn)
-        add_candidate(candidateFns, candidateActualFormals, inst_fn, actual_types, actual_params, actual_names, true);
+        addCandidate(candidateFns, candidateActualFormals, inst_fn, actual_types, actual_params, actual_names, true);
     }
     return;
   }
@@ -231,7 +283,8 @@ add_candidate(Vec<FnSymbol*>* candidateFns,
     ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
     j++;
     if (formal_actuals.v[j] &&
-        !actual_formal_match(fn, formal_params.v[j], formal_actuals.v[j], formal))
+        !(formal->intent == INTENT_TYPE ||
+          canDispatch(fn, formal_params.v[j], formal_actuals.v[j], formal->type)))
       return;
     if (!formal_actuals.v[j] && !formal->defaultExpr)
       return;
@@ -240,41 +293,6 @@ add_candidate(Vec<FnSymbol*>* candidateFns,
   candidateActualFormals->add(actual_formals);
 }
 
-
-CallExpr* new_default_constructor_call(Type* type) {
-  if (!type->defaultConstructor)
-    INT_FATAL(type, "Cannot build default constructor for type");
-  CallExpr* call = new CallExpr(type->defaultConstructor->name);
-  if (type->substitutions.n > 0) {
-    Vec<BaseAST*> keys;
-    type->substitutions.get_keys(keys);
-    forv_Vec(BaseAST, key, keys) {
-      char* name = NULL;
-      if (Type* k = dynamic_cast<Type*>(key)) {
-        name = stringcpy(k->symbol->name);
-      } else if (Symbol* k = dynamic_cast<Symbol*>(key)) {
-        name = stringcpy(k->name);
-      } else {
-        INT_FATAL(type, "Unexpected case in new_default_constructor_call");
-      }
-      Expr* actual = NULL;
-      BaseAST* value = type->substitutions.get(key);
-      if (Type* v = dynamic_cast<Type*>(value)) {
-        if (v->defaultConstructor) {
-          actual = new_default_constructor_call(v);
-        } else {
-          actual = new SymExpr(v->symbol);
-        }
-      } else if (Symbol* v = dynamic_cast<Symbol*>(value)) {
-        actual = new SymExpr(v);
-      } else {
-        INT_FATAL(type, "Unexpected case in new_default_constructor_call");
-      }
-      call->insertAtTail(new NamedExpr(name, actual));
-    }
-  }
-  return call;
-}
 
 static FnSymbol*
 build_default_wrapper(FnSymbol* fn,
@@ -348,7 +366,7 @@ build_coercion_wrapper(FnSymbol* fn, Vec<Type*>* actual_types) {
     j++;
     Type* actual_type = actual_types->v[j];
     ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
-    if (require_coercion(actual_type, formal->type)) {
+    if (canCoerce(actual_type, formal->type)) {
       subs.put(formal, actual_type->symbol);
     }
   }
@@ -371,7 +389,7 @@ build_promotion_wrapper(FnSymbol* fn,
     Type* actual_type = actual_types->v[j];
     ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
     bool require_scalar_promotion = false;
-    if (can_dispatch(fn, NULL, actual_type, formal->type, &require_scalar_promotion)) {
+    if (canDispatch(fn, NULL, actual_type, formal->type, &require_scalar_promotion)) {
       if (require_scalar_promotion) {
         promotion_wrapper_required = true;
         promoted_subs.put(formal, actual_type->symbol);
@@ -402,81 +420,22 @@ resolve_type(BaseAST* ast,
     if (visibleFns.n == 1)
       fn = visibleFns.v[0];
   }
+
+  Vec<ArgSymbol*>* actual_formals = new Vec<ArgSymbol*>(); 
+
   int num_actuals = actual_types->n;
   int num_formals = fn->formals ? fn->formals->length() : 0;
-    
-  Vec<ArgSymbol*>* actual_formals = new Vec<ArgSymbol*>(); 
+
   Vec<Type*> formal_actuals;
   Vec<Symbol*> formal_params;
-  for (int i = 0; i < num_formals; i++) {
-    formal_actuals.add(NULL);
-    formal_params.add(NULL);
-  }
-  for (int i = 0; i < num_actuals; i++)
-    actual_formals->add(NULL);
-  for (int i = 0; i < num_actuals; i++) {
-    if (actual_names->v[i]) {
-      bool match = false;
-      int j = -1;
-      for_alist(DefExpr, formalDef, fn->formals) {
-        ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
-        j++;
-        if (!strcmp(actual_names->v[i], formal->name)) {
-          match = true;
-          actual_formals->v[i] = formal;
-          formal_actuals.v[j] = actual_types->v[i];
-          formal_params.v[j] = actual_params->v[i];
-          break;
-        }
-      }
-      if (!match)
-        return NULL;
-    }
-  } 
-  for (int i = 0; i < num_actuals; i++) {
-    if (!actual_names->v[i]) {
-      bool match = false;
-      int j = -1;
-      for_alist(DefExpr, formalDef, fn->formals) {
-        ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
-        j++;
-        if (!formal_actuals.v[j]) {
-          match = true;
-          actual_formals->v[i] = formal;
-          formal_actuals.v[j] = actual_types->v[i];
-          formal_params.v[j] = actual_params->v[i];
-          break;
-        }
-      }
-      if (!match && !fn->isGeneric)
-        return NULL;
-    }
-  }
+  bool valid = computeActualFormalMap(fn, &formal_actuals, &formal_params, actual_formals,
+                                      num_actuals, num_formals, actual_types, actual_params,
+                                      actual_names);
+  if (!valid)
+    return dtUnknown;
   if (fn->isGeneric) {
     ASTMap subs;
-    for (int i = 0; i < num_actuals; i++) {
-      if (actual_formals->v[i]) {
-        if (actual_formals->v[i]->isGeneric) {
-          if (actual_formals->v[i]->intent == INTENT_TYPE) {
-            TypeSymbol* ts =
-              dynamic_cast<TypeSymbol*>(actual_formals->v[i]->genericSymbol);
-            if (!ts)
-              INT_FATAL(actual_formals->v[i], "Unanticipated genericSymbol");
-            subs.put(ts->definition, actual_types->v[i]);
-          } else if (actual_formals->v[i]->intent == INTENT_PARAM) {
-            if (actual_params->v[i])
-              subs.put(actual_formals->v[i], actual_params->v[i]);
-          }
-        } else if (fn->isGeneric) {
-          TypeSymbol* formalType = actual_formals->v[i]->type->symbol;
-          if (fn->genericSymbols.set_in(formalType)) {
-            if (can_instantiate(actual_types->v[i], actual_formals->v[i]->type)) {
-              subs.put(actual_formals->v[i], actual_types->v[i]);
-            }
-          }
-        }
-      }
-    }
+    computeGenericSubs(subs, fn, num_actuals, actual_formals, actual_types, actual_params);
     if (subs.n && !fn->isPartialInstantiation(&subs)) {
       FnSymbol* inst_fn = fn->instantiate_generic(&subs);
       if (inst_fn)
@@ -503,9 +462,9 @@ resolve_call(BaseAST* ast,
     Vec<FnSymbol*> visibleFns;                    // visible functions
     ast->parentScope->getVisibleFunctions(&visibleFns, canon_name);
     forv_Vec(FnSymbol, visibleFn, visibleFns)
-      add_candidate(&candidateFns, &candidateActualFormals, visibleFn, actual_types, actual_params, actual_names);
+      addCandidate(&candidateFns, &candidateActualFormals, visibleFn, actual_types, actual_params, actual_names);
   } else 
-    add_candidate(&candidateFns, &candidateActualFormals, fnSymbol, actual_types, actual_params, actual_names);
+    addCandidate(&candidateFns, &candidateActualFormals, fnSymbol, actual_types, actual_params, actual_names);
 
   FnSymbol* best = NULL;
   Vec<ArgSymbol*>* actual_formals = 0;
@@ -524,8 +483,8 @@ resolve_call(BaseAST* ast,
             if (arg->intent != INTENT_TYPE && arg2->intent != INTENT_TYPE) {
               bool require_scalar_promotion1;
               bool require_scalar_promotion2;
-              can_dispatch(best, actual_params->v[k], actual_types->v[k], arg->type, &require_scalar_promotion1);
-              can_dispatch(best, actual_params->v[k], actual_types->v[k], arg2->type, &require_scalar_promotion2);
+              canDispatch(best, actual_params->v[k], actual_types->v[k], arg->type, &require_scalar_promotion1);
+              canDispatch(best, actual_params->v[k], actual_types->v[k], arg2->type, &require_scalar_promotion2);
               if (require_scalar_promotion1 && !require_scalar_promotion2)
                 better = true;
               else if (!require_scalar_promotion1 && require_scalar_promotion2)
@@ -533,10 +492,10 @@ resolve_call(BaseAST* ast,
               else {
                 Type* type = (arg->instantiatedFrom) ? arg->instantiatedFrom : arg->type;
                 Type* type2 = (arg2->instantiatedFrom) ? arg2->instantiatedFrom : arg2->type;
-                if (more_specific(best, NULL, type2, type) && type2 != type) {
+                if (moreSpecific(best, NULL, type2, type) && type2 != type) {
                   better = true;
                 }
-                if (!more_specific(best, NULL, type2, type)) {
+                if (!moreSpecific(best, NULL, type2, type)) {
                   as_good = false;
                 }
               }
@@ -586,53 +545,51 @@ resolve_call(BaseAST* ast,
   return best;
 }
 
-static void resolveFn(FnSymbol* fn);
+static void
+computeActuals(CallExpr* call,
+               Vec<Type*>* atypes,
+               Vec<Symbol*>* aparams,
+               Vec<char*>* anames) {
+  for_alist(Expr, actual, call->argList) {
+    atypes->add(resolveType(actual));
+    SymExpr* symExpr;
+    if (NamedExpr* named = dynamic_cast<NamedExpr*>(actual)) {
+      anames->add(named->name);
+      symExpr = dynamic_cast<SymExpr*>(named->actual);
+    } else {
+      anames->add(NULL);
+      symExpr = dynamic_cast<SymExpr*>(actual);
+    }
+    if (symExpr && symExpr->var->isParam()) {
+      aparams->add(symExpr->var);
+    } else {
+      aparams->add(NULL);
+    }
+  }
+}
 
 void
 resolve_type_expr(BaseAST* base) {
   Vec<BaseAST*> asts;
   collect_asts_postorder(&asts, base);
-  //forv_Vec(BaseAST, ast, asts) {
-    //if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
-      //if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(sym->var))
-        //if (dynamic_cast<VariableType*>(ts->definition))
-          //return;
-      //if (sym->var->type->isGeneric && sym->var->type != dtUnknown)
-        //return;
-    //}
-  //}
 
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
       if (!call->parentSymbol)
         continue;
-      Vec<Type*> actual_types;
-      Vec<Symbol*> actual_params;
-      Vec<char*> actual_names;
-      for_alist(Expr, actual, call->argList) {
-        actual_types.add(actual->typeInfo());
-        SymExpr* symExpr;
-        if (NamedExpr* named = dynamic_cast<NamedExpr*>(actual)) {
-          actual_names.add(named->name);
-          symExpr = dynamic_cast<SymExpr*>(named->actual);
-        } else {
-          actual_names.add(NULL);
-          symExpr = dynamic_cast<SymExpr*>(actual);
-        }
-        if (symExpr && symExpr->var->isParam()) {
-          actual_params.add(symExpr->var);
-        } else {
-          actual_params.add(NULL);
-        }
-      }
+      Vec<Type*> atypes;
+      Vec<Symbol*> aparams;
+      Vec<char*> anames;
+      computeActuals(call, &atypes, &aparams, &anames);
+
       SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr);
       char* name = base->var->name;
       FnSymbol* fn = call->isResolved();
       if (fn && fn->retType != dtUnknown)
         call->replace(new SymExpr(fn->retType->symbol));
       else {
-        Type* t = resolve_type(call, name, &actual_types,
-                               &actual_params, &actual_names,
+        Type* t = resolve_type(call, name, &atypes,
+                               &aparams, &anames,
                                call->partialTag, NULL);
         if (!t || t == dtUnknown)
           INT_FATAL(fn, "Unable to resolve type");
@@ -640,34 +597,6 @@ resolve_type_expr(BaseAST* base) {
       }
     }
   }
-}
-
-
-Vec<FnSymbol*> resolvedFns;
-
-
-
-static Type*
-resolveType(Expr* expr) {
-  if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
-    if (!call->primitive) {
-      FnSymbol* fn = call->isResolved();
-      return fn->retType;
-    } else {
-      return call->primitive->returnInfo(call);
-    }
-  } else if (SymExpr* sym = dynamic_cast<SymExpr*>(expr)) {
-    return sym->var->type;
-  } else if (NamedExpr* a = dynamic_cast<NamedExpr*>(expr)) {
-    return resolveType(a->actual);
-  } else if (CastExpr* a = dynamic_cast<CastExpr*>(expr)) {
-    if (a->type)
-      return a->type;
-    else
-      return resolveType(a->newType);
-  }
-  INT_FATAL(expr, "Failure in resolveType");
-  return NULL;
 }
 
 
@@ -688,22 +617,7 @@ resolveCall(CallExpr* call) {
     Vec<Type*> atypes;
     Vec<Symbol*> aparams;
     Vec<char*> anames;
-    for_alist(Expr, actual, call->argList) {
-      atypes.add(resolveType(actual));
-      SymExpr* symExpr;
-      if (NamedExpr* named = dynamic_cast<NamedExpr*>(actual)) {
-        anames.add(named->name);
-        symExpr = dynamic_cast<SymExpr*>(named->actual);
-      } else {
-        anames.add(NULL);
-        symExpr = dynamic_cast<SymExpr*>(actual);
-      }
-      if (symExpr && symExpr->var->isParam()) {
-        aparams.add(symExpr->var);
-      } else {
-        aparams.add(NULL);
-      }
-    }
+    computeActuals(call, &atypes, &aparams, &anames);
 
     SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr);
     char* name = base->var->name;
@@ -733,8 +647,6 @@ resolveCall(CallExpr* call) {
       call->primitive = primitives[PRIMITIVE_MOVE];
     } else
       call->baseExpr->replace(new SymExpr(resolvedFn));
-    if (call->isResolved())
-      resolveFn(call->isResolved());
   } else if (call->isPrimitive(PRIMITIVE_MOVE)) {
     if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
       Type* t = resolveType(call->get(2));
@@ -742,7 +654,7 @@ resolveCall(CallExpr* call) {
         sym->var->type = t;
       if (sym->var->type == dtNil)
         sym->var->type = t;
-      if (!t || t == dtUnknown)
+      if (t == dtUnknown)
         INT_FATAL(call, "Unable to resolve type");
       if (t != sym->var->type && t != dtNil) {
         if (UserType* ut = dynamic_cast<UserType*>(sym->var->type)) {
@@ -785,16 +697,18 @@ resolveCall(CallExpr* call) {
 
 
 static void
-resolveFn(FnSymbol* fn) {
-  if (resolvedFns.set_in(fn))
+resolveFns(FnSymbol* fn, Vec<FnSymbol*>* resolvedFns) {
+  if (resolvedFns->set_in(fn))
     return;
-  resolvedFns.set_add(fn);
+  resolvedFns->set_add(fn);
 
   Vec<BaseAST*> asts;
   collect_top_asts(&asts, fn->body);
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
       resolveCall(call);
+      if (call->isResolved())
+        resolveFns(call->isResolved(), resolvedFns);
     }
   }
   ReturnStmt* last = dynamic_cast<ReturnStmt*>(fn->body->body->last());
@@ -803,7 +717,7 @@ resolveFn(FnSymbol* fn) {
   Type* rt = resolveType(last->expr);
   if (fn->retType == dtUnknown)
     fn->retType = rt;
-  if (rt == dtUnknown || rt == NULL)
+  if (rt == dtUnknown)
     INT_FATAL(fn, "Unable to resolve return type");
   if (rt != fn->retType)
     INT_FATAL(fn, "Bad return type detected");
@@ -814,7 +728,10 @@ void
 resolve() {
   if (!local_type_inference)
     return;
-  resolveFn(chpl_main);
+
+  Vec<FnSymbol*> resolvedFns;
+  resolveFns(chpl_main, &resolvedFns);
+
   Vec<BaseAST*> asts;
   collect_asts(&asts);
   forv_Vec(BaseAST, ast, asts) {
@@ -833,11 +750,11 @@ resolve() {
   asts.clear();
   collect_asts(&asts);
   forv_Vec(BaseAST, ast, asts) {
-    if (ArgSymbol* as = dynamic_cast<ArgSymbol*>(ast)) {
-      if (as->defaultExpr)
-        as->defaultExpr->remove();
-      if (as->defPoint->exprType)
-        as->defPoint->exprType->remove();
+    if (ArgSymbol* a = dynamic_cast<ArgSymbol*>(ast)) {
+      if (a->defaultExpr)
+        a->defaultExpr->remove();
+      if (a->defPoint->exprType)
+        a->defPoint->exprType->remove();
     }
   }
 }

@@ -228,7 +228,8 @@ void normalize(BaseAST* base) {
   forv_Vec(BaseAST, ast, asts) {
     if (FnSymbol *fn = dynamic_cast<FnSymbol*>(ast)) {
       tag_hasVarArgs(fn);
-      resolve_formal_types(fn);
+      if (!local_type_inference)
+        resolve_formal_types(fn);
     }
   }
 
@@ -1280,8 +1281,7 @@ resolve_formal_types(FnSymbol* fn) {
   if (!fn->isGeneric) {
     for_alist(DefExpr, formalDef, fn->formals) {
       if (dynamic_cast<CallExpr*>(formalDef->exprType)) {
-        if (!local_type_inference)
-          resolve_type_expr(formalDef->exprType);
+        resolve_type_expr(formalDef->exprType);
         hack_resolve_types(formalDef);
       }
     }
