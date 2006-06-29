@@ -66723,3 +66723,22 @@ Modified files:
 	chapel/compiler/main/: passlist.h 
 	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
 
+---------------------------------------------------------------------------
+
+06/29/06 14:30:34 -- waynew
+
+Log message:
+	Partial checkin of begin-statement support.  Forked threads are
+	detached.  Main Chapel thread does not exit until all detached threads
+	reach the end of their begin block.  If a detached thread exits by
+	any other means and does not terminate the application, the main
+	thread will not terminate the application.
+
+Modified files:
+	chapel/compiler/AST/: stmt.cpp view.cpp 
+	chapel/compiler/include/: stmt.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/passes/: parallel.cpp 
+	chapel/runtime/include/: chplthreads.h 
+	chapel/runtime/src/: chplthreads.c main.c 
+
