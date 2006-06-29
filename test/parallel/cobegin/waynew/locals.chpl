@@ -33,7 +33,12 @@ fun function2( a:int) {
     d = 2*a;
     d = 4*a;
   }
-  writeln( "test2:", d);
+  write( "test2: ");
+  if (d==4 || d==8) {
+    writeln( "good");
+  } else {
+    writeln( "bad");
+  }
 }
 
 function2( 2);
@@ -46,7 +51,7 @@ fun function3() {
   }
 
   class D {
-    var c:D;
+    var c:C;
   }
 
   var c:C = C();
