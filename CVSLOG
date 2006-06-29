@@ -66742,3 +66742,13 @@ Modified files:
 	chapel/runtime/include/: chplthreads.h 
 	chapel/runtime/src/: chplthreads.c main.c 
 
+---------------------------------------------------------------------------
+
+06/29/06 16:19:38 -- waynew
+
+Log message:
+	Fixed error and handled nondeterministic behavior better.
+
+Modified files:
+	chapel/test/parallel/cobegin/waynew/: locals.chpl locals.good 
+
