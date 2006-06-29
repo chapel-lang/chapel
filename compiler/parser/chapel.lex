@@ -39,6 +39,7 @@ floatLiteral    {digit}+"."{digit}+
 %%
 
 atomic          processToken(TATOMIC);
+begin           processToken(TBEGIN);
 break           processToken(TBREAK);
 by              processToken(TBY);
 call            processToken(TCALL);

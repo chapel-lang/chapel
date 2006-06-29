@@ -101,6 +101,7 @@ Is this "while x"(i); or "while x(i)";?
 }
 
 %token TATOMIC
+%token TBEGIN
 %token TBREAK
 %token TCALL
 %token TCLASS
@@ -1265,6 +1266,8 @@ atomic_cobegin:
     { $$ = BLOCK_NORMAL; }
 | TATOMIC
     { $$ = BLOCK_ATOMIC; }
+| TBEGIN
+    { $$ = BLOCK_BEGIN; }
 | TCOBEGIN
     { $$ = BLOCK_COBEGIN; }
 ;

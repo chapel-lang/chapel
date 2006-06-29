@@ -9,13 +9,46 @@
 #include "stringutil.h"
 #include "driver.h"
 #include "runtime.h"         // for prelude
+#include "files.h"
 
 
-// This pass moves cobegin statements into nested functions. Currently,
+// Move begin blocks into their own functions so that it can be later 
+// interfaced with the expect thread interface. 
+static void
+begin_encapsulation() {
+  int  ufid = 1;
+
+  forv_Vec( ModuleSymbol, mod, allModules) {
+    Vec<BaseAST*> asts;
+    collect_asts( &asts, mod);
+    forv_Vec( BaseAST, ast, asts) {
+      if (BlockStmt *b = dynamic_cast<BlockStmt*>(ast)) {
+        if (BLOCK_BEGIN == b->blockTag) {
+          // replace with a new block w/ each stmt -> function call
+          BlockStmt *newb = new BlockStmt();
+          newb->blockTag = b->blockTag;
+
+          char *fname = stringcat( "_begin_block", intstring( ufid++));
+          FnSymbol *fn = new FnSymbol( fname, NULL);
+          fn->retType = dtVoid;
+          for_alist( Stmt, stmt, b->body) {
+            stmt->remove();
+            fn->insertAtTail( stmt);        // move stmts to new begin function
+          }
+          b->insertAtTail( new DefExpr( fn));
+          b->insertAtTail( new CallExpr( fname));
+        }
+      }
+    }
+  }
+}
+
+
+// This pass moves each cobegin statement into nested functions. Currently,
 // each statement is moved to within it's own function and the
 // appropriate function def and call expressions are added. 
-void
-cobegin_setup() {
+static void
+cobegin_encapsulation() {
   int  ufid = 1;
 
   forv_Vec( ModuleSymbol, mod, allModules) {
@@ -24,9 +57,9 @@ cobegin_setup() {
     forv_Vec( BaseAST, ast, asts) {
       if (BlockStmt *b = dynamic_cast<BlockStmt*>(ast)) {
         if (BLOCK_COBEGIN == b->blockTag) {
-          // replace with a new cobegin block w/ each stmt -> function call
+          // replace with a new block w/ each stmt -> function call
           BlockStmt *newb = new BlockStmt();
-          newb->blockTag = BLOCK_COBEGIN;
+          newb->blockTag = b->blockTag;
           for_alist( Stmt, stmt, b->body) {
             char *fname = stringcat( "_cobegin_stmt", intstring( ufid++));
             FnSymbol *fn = new FnSymbol( fname, NULL);
@@ -48,8 +81,50 @@ cobegin_setup() {
 
 void
 parallel1 (void) {
+  addLibInfo ("-lpthread");
   if (parallelPass) {
-    cobegin_setup();      // move cobegin stmts to within a function
+    begin_encapsulation();     // move begin block to within a function
+    cobegin_encapsulation();   // move cobegin stmts to within a function
+  }
+}
+
+
+// Mark locals that should be heap allocated.  This is for begin
+// blocks where the forked child thread and parent thread may
+// have different lifetimes.  The locals cannot live on a thread's
+// stack.
+static void
+begin_mark_locals() {
+  // AList<VarSymbol> *heap_list = new AList<VarSymbol>();
+
+  forv_Vec( ModuleSymbol, mod, allModules) {
+    Vec<BaseAST*> asts;
+    collect_asts( &asts, mod);
+    forv_Vec( BaseAST, ast, asts) {
+      BlockStmt *b = dynamic_cast<BlockStmt*>(ast);
+      if (b && (BLOCK_BEGIN == b->blockTag)) {
+        // should only be one call expr in the body
+        for_alist( Stmt, stmt, b->body) {
+          if (ExprStmt *estmt = dynamic_cast<ExprStmt*>( stmt)) {
+            if (CallExpr *fcall = dynamic_cast<CallExpr*>( estmt->expr)) {
+              // add the args that need to be heap allocated
+              AList<Stmt> *vlist = new AList<Stmt>();
+              for_alist( Expr, arg, fcall->argList) {
+                SymExpr   *s = dynamic_cast<SymExpr*>(arg);
+                ArgSymbol *var = (ArgSymbol*)(s->var);
+                vlist->insertAtTail(new DefExpr(new VarSymbol(var->name,
+                                                              var->type,
+                                                              VAR_NORMAL,
+                                                              VAR_VAR,
+                                                              true)));
+              }
+            } else {
+              INT_FATAL( b, "not a call expression in begin block");
+            }
+          }
+        }
+      }
+    }
   }
 }
 
@@ -59,14 +134,15 @@ parallel1 (void) {
 // created by the previous parallel pass. This is a way to pass along
 // multiple args through the limitation of one arg in the runtime's
 // thread creation interface. 
-void
-cobegin_thread_args() {
+static void
+thread_args() {
   forv_Vec( ModuleSymbol, mod, allModules) {
     Vec<BaseAST*> asts;
     collect_asts( &asts, mod);
     forv_Vec( BaseAST, ast, asts) {
       if (BlockStmt *b = dynamic_cast<BlockStmt*>(ast)) {
-        if (BLOCK_COBEGIN == b->blockTag) {
+        if ((BLOCK_BEGIN == b->blockTag) ||
+            (BLOCK_COBEGIN == b->blockTag)) {
           for_alist( Stmt, stmt, b->body) {
             if (ExprStmt *estmt = dynamic_cast<ExprStmt*>( stmt)) {
               if (CallExpr *fcall = dynamic_cast<CallExpr*>( estmt->expr)) {
@@ -116,8 +192,7 @@ cobegin_thread_args() {
                 }
 
                 // create wrapper-function that uses the class instance
-                char     *wrapn = stringcat("wrap", fname);
-                FnSymbol *wrap_fn = new FnSymbol( wrapn, NULL);
+                FnSymbol *wrap_fn = new FnSymbol( stringcat("wrap", fname), NULL);
                 DefExpr  *fcall_def= ((SymExpr*)fcall->baseExpr)->var->defPoint;
                 ArgSymbol *wrap_c = new ArgSymbol( INTENT_BLANK, "c", ctype);
                 wrap_fn->formals->insertAtTail( wrap_c);
@@ -151,6 +226,7 @@ cobegin_thread_args() {
 void
 parallel2 (void) {
   if (parallelPass) {
-    cobegin_thread_args();
+    begin_mark_locals();
+    thread_args();
   }
 }

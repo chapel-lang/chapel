@@ -294,8 +294,19 @@ static void
 html_view_ast(char *filename, FILE* html_file, BaseAST* ast, bool show_analysis_info) {
   if (Stmt* stmt = dynamic_cast<Stmt*>(ast)) {
     fprintf(html_file, "<DL>\n");
-    if (dynamic_cast<BlockStmt*>(stmt)) {
+    if (BlockStmt *b=dynamic_cast<BlockStmt*>(stmt)) {
       fprintf(html_file, "{");
+      switch( b->blockTag) {
+      case BLOCK_ATOMIC: fprintf( html_file, "atomic"); break;
+      case BLOCK_BEGIN: fprintf( html_file, "begin"); break;
+      case BLOCK_COBEGIN: fprintf( html_file, "cobegin"); break;
+      case BLOCK_DO_WHILE: fprintf( html_file, "do while"); break;
+      case BLOCK_FOR: fprintf( html_file, "for"); break;
+      case BLOCK_FORALL: fprintf( html_file, "forall"); break;
+      case BLOCK_ORDERED_FORALL: fprintf( html_file, "ordered forall"); break;
+      default:
+        break;
+      }
     } else if (GotoStmt* s = dynamic_cast<GotoStmt*>(stmt)) {
       switch (s->goto_type) {
       case goto_normal: fprintf(html_file, "<B>goto</B> "); break;
