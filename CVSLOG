@@ -66752,3 +66752,13 @@ Log message:
 Modified files:
 	chapel/test/parallel/cobegin/waynew/: locals.chpl locals.good 
 
+---------------------------------------------------------------------------
+
+06/30/06 10:22:03 -- waynew
+
+Log message:
+	Forgot to sort the .good output from the previous checkin fix.
+
+Modified files:
+	chapel/test/parallel/cobegin/waynew/: locals.good 
+
