@@ -103,20 +103,31 @@ begin_mark_locals() {
     forv_Vec( BaseAST, ast, asts) {
       BlockStmt *b = dynamic_cast<BlockStmt*>(ast);
       if (b && (BLOCK_BEGIN == b->blockTag)) {
-        // should only be one call expr in the body
+        // find the return stmt so we know where to insert before
+        
+
+        // note, should only be one call expr in the body of the begin
         for_alist( Stmt, stmt, b->body) {
           if (ExprStmt *estmt = dynamic_cast<ExprStmt*>( stmt)) {
             if (CallExpr *fcall = dynamic_cast<CallExpr*>( estmt->expr)) {
               // add the args that need to be heap allocated
-              AList<Stmt> *vlist = new AList<Stmt>();
               for_alist( Expr, arg, fcall->argList) {
                 SymExpr   *s = dynamic_cast<SymExpr*>(arg);
-                ArgSymbol *var = (ArgSymbol*)(s->var);
-                vlist->insertAtTail(new DefExpr(new VarSymbol(var->name,
-                                                              var->type,
-                                                              VAR_NORMAL,
-                                                              VAR_VAR,
-                                                              true)));
+                ArgSymbol *arg = (ArgSymbol*)(s->var);
+                ((VarSymbol*)arg->defPoint->sym)->on_heap = true;
+                CallExpr  *alloc = new CallExpr( PRIMITIVE_CHPL_ALLOC, 
+                                                 arg->type->symbol, 
+                                                 new_StringLiteral("begin allocated"));
+                Stmt      *defstmt = arg->defPoint->parentStmt;
+                defstmt->insertAfter( new CallExpr( PRIMITIVE_SET_HEAPVAR,
+                                                    arg->defPoint->sym,
+                                                    alloc));
+                BlockStmt *fb = dynamic_cast<BlockStmt*>(defstmt->parentStmt);
+                if (fb) {
+                  fb->body->last()->insertBefore( new CallExpr( PRIMITIVE_CHPL_FREE, arg->defPoint->sym));
+                } else {
+                  INT_FATAL( b, "cannot insert free in function's body");
+                }
               }
             } else {
               INT_FATAL( b, "not a call expression in begin block");

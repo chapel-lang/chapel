@@ -203,25 +203,25 @@ void Symbol::codegen(FILE* outfile) {
           iconst = (iconst+1) * -1;
         }
         if (iconst <= ((1<<7)-1)) {
-          fprintf( outfile, "_CHPL_CCONST_INT8( %s)", vsym->cname);
+          fprintf( outfile, "INT8( %s)", vsym->cname);
         } else if (iconst <= ((1<<15)-1)) {
-          fprintf( outfile, "_CHPL_CCONST_INT16( %s)", vsym->cname);
+          fprintf( outfile, "INT16( %s)", vsym->cname);
         } else if (iconst <= ((1<<31)-1)) {
-          fprintf( outfile, "_CHPL_CCONST_INT32( %s)", vsym->cname);
+          fprintf( outfile, "INT32( %s)", vsym->cname);
         } else {
-          fprintf( outfile, "_CHPL_CCONST_INT64( %s)", vsym->cname);
+          fprintf( outfile, "INT64( %s)", vsym->cname);
         }
 
       } else if (IF1_NUM_KIND_UINT == vsym->immediate->const_kind) {
         uint64 uconst = vsym->immediate->uint_value();
         if (uconst <= (((int64)1)<<8)) {
-          fprintf( outfile, "_CHPL_CCONST_UINT8( %s)", vsym->cname);
+          fprintf( outfile, "UINT8( %s)", vsym->cname);
         } else if (uconst <= (((int64)1)<<16)) {
-          fprintf( outfile, "_CHPL_CCONST_UINT16( %s)", vsym->cname);
+          fprintf( outfile, "UINT16( %s)", vsym->cname);
         } else if (uconst <= (((int64)1)<<32)) {
-          fprintf( outfile, "_CHPL_CCONST_UINT32( %s)", vsym->cname);
+          fprintf( outfile, "UINT32( %s)", vsym->cname);
         } else {
-          fprintf( outfile, "_CHPL_CCONST_UINT64( %s)", vsym->cname);
+          fprintf( outfile, "UINT64( %s)", vsym->cname);
         }
       } else {  // WAW: floats?
         fprintf(outfile, "%s", cname);
@@ -298,13 +298,15 @@ VarSymbol::VarSymbol(char    *init_name,
                      Type    *init_type,
                      varType  init_varClass, 
                      consType init_consClass,
-                     bool     init_isref) :
+                     bool     init_is_ref,
+                     bool     init_on_heap) :
   Symbol(SYMBOL_VAR, init_name, init_type),
   varClass(init_varClass),
   consClass(init_consClass),
   immediate(NULL),
   literalType(NULL),
-  is_ref( init_isref)
+  is_ref( init_is_ref),
+  on_heap( init_on_heap)
 { }
 
 
@@ -379,6 +381,17 @@ void VarSymbol::printDef(FILE* outfile) {
 }
 
 
+void VarSymbol::codegen( FILE* outfile) {
+  if (on_heap) {
+    fprintf( outfile, "*(");
+    Symbol::codegen(outfile);
+    fprintf( outfile, ")");
+  } else {
+    Symbol::codegen(outfile);
+  }
+}
+
+
 void VarSymbol::codegenDef(FILE* outfile) {
   if (type == dtVoid)
     return;
@@ -389,8 +402,8 @@ void VarSymbol::codegenDef(FILE* outfile) {
   }
   type->codegen(outfile);
   fprintf(outfile, " ");
-  if (is_ref) fprintf( outfile, "*");
-  this->codegen(outfile);
+  if (is_ref || on_heap) fprintf( outfile, "*");
+  Symbol::codegen(outfile);
   fprintf(outfile, ";\n");
 }
 

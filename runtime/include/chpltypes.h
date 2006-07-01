@@ -7,14 +7,14 @@ typedef void* _unspecifiedType;
 extern _unspecifiedType _;
 
 /* macros for specifying the correct C constant type */
-#define _CHPL_CCONST_INT8( i)   (i)
-#define _CHPL_CCONST_INT16( i)  (i)
-#define _CHPL_CCONST_INT32( i)  (i ## L)
-#define _CHPL_CCONST_INT64( i)  (i ## LL)
-#define _CHPL_CCONST_UINT8( i)  (i ## U)
-#define _CHPL_CCONST_UINT16( i) (i ## U)
-#define _CHPL_CCONST_UINT32( i) (i ## UL)
-#define _CHPL_CCONST_UINT64( i) (i ## ULL)
+#define INT8( i)   (i)
+#define INT16( i)  (i)
+#define INT32( i)  (i ## L)
+#define INT64( i)  (i ## LL)
+#define UINT8( i)  (i ## U)
+#define UINT16( i) (i ## U)
+#define UINT32( i) (i ## UL)
+#define UINT64( i) (i ## ULL)
 
 typedef enum __bool {
   false = 0,

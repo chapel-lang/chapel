@@ -844,21 +844,65 @@ void CallExpr::codegen(FILE* outfile) {
       codegen_member( outfile, get(1), get(2), member_type, member_offset);
       fprintf( outfile, ")");
       break;
-    case PRIMITIVE_SET_MEMBER_REF_TO:
+    case PRIMITIVE_SET_MEMBER_REF_TO: {
       codegen_member( outfile, get(1), get(2), member_type, member_offset);
       fprintf( outfile, " = ");
-      fprintf( outfile, "&(");
-      get(3)->codegen( outfile);
-      fprintf( outfile, ")");
+      SymExpr *s = dynamic_cast<SymExpr*>(get(3));
+      if (s && ((VarSymbol*)s->var)->on_heap) {  // if on_heap var
+        fprintf( outfile, "%s", ((VarSymbol*)s->var)->cname);
+      } else {
+        fprintf( outfile, "&(");
+        get(3)->codegen( outfile);
+        fprintf( outfile, ")");
+      }
       break;
-    case PRIMITIVE_CHPL_ALLOC:
-      // void* _chpl_alloc(size_t size, _int64 id, char* description);
-      fprintf( outfile, "_chpl_alloc( sizeof( _");   // alloc struct, not ptr to
+    }
+    case PRIMITIVE_SET_HEAPVAR: {   // used to allocate on_heap vars
+      SymExpr *s = dynamic_cast<SymExpr*>(get(1));
+      if (!s || !((VarSymbol*)s->var)->on_heap) {
+        INT_FATAL( get(1), "can only move_to_ref with on_heap variables");
+      }
+      fprintf( outfile, "%s = ", ((VarSymbol*)s->var)->cname);
+      get(2)->codegen(outfile);
+      break;
+    }
+    case PRIMITIVE_CHPL_ALLOC: {
+      bool is_class = false;
+      if (SymExpr *s = dynamic_cast<SymExpr*>(get(1))) {
+        if (TypeSymbol *t = dynamic_cast<TypeSymbol*>(s->var)) {
+          if (dynamic_cast<ClassType*>(t->definition)) {
+            is_class = true;
+          }
+        }
+      }
+      // pointer cast
+      fprintf( outfile, "(");
+      get(1)->codegen( outfile);
+      if (!is_class) {
+        fprintf( outfile, "*");
+      } 
+      fprintf( outfile, ") ");
+
+      // target: void* _chpl_alloc(size_t size, _int64 id, char* description);
+      fprintf( outfile, "_chpl_alloc( sizeof( ");
+      if (is_class) fprintf( outfile, "_");          // need struct of class
       get(1)->codegen( outfile);
       fprintf( outfile, "), %ld, ", get(1)->id);
       get(2)->codegen( outfile);
       fprintf( outfile, ")");
       break;
+    }
+    case PRIMITIVE_CHPL_FREE: {
+      fprintf( outfile, "_chpl_free( ");
+      SymExpr *s = dynamic_cast<SymExpr*>(get(1));
+      if (s && ((VarSymbol*)s->var)->on_heap) {
+        fprintf( outfile, "%s", ((VarSymbol*)s->var)->cname);
+      } else {
+        get(1)->codegen( outfile);
+      }
+      fprintf( outfile, ")");
+      break;
+    }
     case PRIMITIVE_TYPE_EQUAL: {
       int tid = (int)dynamic_cast<TypeSymbol*>(dynamic_cast<SymExpr*>(get(1))->var)->definition->id;
       fprintf(outfile, "(_chpl_alloc_id(");

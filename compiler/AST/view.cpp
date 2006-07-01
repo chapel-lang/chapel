@@ -347,11 +347,11 @@ html_view_ast(char *filename, FILE* html_file, BaseAST* ast, bool show_analysis_
         fprintf(html_file, "<B>type</B> ");
         html_print_symbol( filename, html_file, e->sym, true, show_analysis_info);
       } else if (VarSymbol* vs=dynamic_cast<VarSymbol*>(e->sym)) {
-        if (vs->is_ref) {
-          fprintf(html_file, "<B>ref var</B> ");
-        } else {
-          fprintf(html_file, "<B>var</B> ");
-        }
+        if (vs->on_heap) 
+          fprintf( html_file, "<B>heap </B>");
+        if (vs->is_ref)  
+          fprintf( html_file, "<B>ref </B> ");
+        fprintf(html_file, "<B>var</B> ");
         html_print_symbol( filename, html_file, e->sym, true, show_analysis_info);
       } else if (ArgSymbol* s = dynamic_cast<ArgSymbol*>(e->sym)) {
         switch (s->intent) {
