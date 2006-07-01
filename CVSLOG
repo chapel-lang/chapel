@@ -66762,3 +66762,19 @@ Log message:
 Modified files:
 	chapel/test/parallel/cobegin/waynew/: locals.good 
 
+---------------------------------------------------------------------------
+
+06/30/06 18:02:10 -- waynew
+
+Log message:
+	1. Another partial checkin of threaded-begin statement support.  Heap
+	   allocates locals used within begins.
+	2. Added on_heap field to VarSymbols to indicate a var on the heap.
+	3. Shortened the names of C constant suffix macros.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp symbol.cpp view.cpp 
+	chapel/compiler/include/: primitive.h symbol.h 
+	chapel/compiler/passes/: parallel.cpp 
+	chapel/runtime/include/: chplmem.h chpltypes.h 
+
