@@ -66882,3 +66882,29 @@ Modified files:
 	chapel/compiler/include/: stmt.h 
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+07/03/06 16:24:09 -- deitz
+
+Log message:
+	Removed code that translated Chapel IR to IF1.  The IR has been
+	greatly simplified and will continue to be simplified so it no longer
+	makes sense to maintain this code.
+	
+	Changed storage of the visible functions to use a string-mapped hash
+	table.  As an optimization soon, we should implement a nameid or such
+	on symbols that we can use instead of string comparison.
+
+Modified files:
+	chapel/compiler/: Makefile 
+	chapel/compiler/AST/: baseAST.cpp expr.cpp primitive.cpp 
+	                      symbol.cpp symscope.cpp view.cpp 
+	chapel/compiler/include/: baseAST.h expr.h primitive.h stmt.h 
+	                          symbol.h symscope.h type.h view.h 
+	chapel/compiler/main/: driver.cpp runpasses.cpp 
+Removed files:
+	chapel/compiler/analysis/: Makefile Makefile.include 
+	                           Makefile.share analysis_ops.h 
+	                           chapel_ifa.cpp chapel_ifa.h 
+	chapel/compiler/include/: analysis.h 
+
