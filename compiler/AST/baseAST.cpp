@@ -1,4 +1,3 @@
-#include "analysis.h"
 #include "astutil.h"
 #include "baseAST.h"
 #include "expr.h"
@@ -8,6 +7,13 @@
 #include "symscope.h"
 #include "type.h"
 #include "yy.h"
+#include "../ifa/if1.h"
+
+
+char *
+cannonicalize_string(char *s) {
+  return stringcpy(s); // if1_cannonicalize_string(if1, s);
+}
 
 
 static long uid = 1;

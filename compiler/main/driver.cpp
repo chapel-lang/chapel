@@ -1,6 +1,5 @@
 #define EXTERN
 #include "chpl.h"
-#include "analysis.h"
 #include "../ifa/arg.h"
 #include "../ifa/graph.h"
 #include "countTokens.h"
@@ -223,7 +222,6 @@ main(int argc, char *argv[]) {
   if (fdump_html || strcmp(log_flags, ""))
     init_logs();
   init_system();
-  init_chapel_ifa();
   init_interpreter();
   compile_all();
   free_args(&arg_state);

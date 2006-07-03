@@ -1,6 +1,5 @@
 #include <typeinfo>
 #include "astutil.h"
-#include "analysis.h"
 #include "build.h"
 #include "files.h"
 #include "misc.h"
@@ -1306,10 +1305,6 @@ void FnSymbol::printDef(FILE* outfile) {
 
 
 void FnSymbol::codegenHeader(FILE* outfile) {
-  if (retType == dtUnknown) {
-    retType = return_type_info(this);
-    INT_WARNING(this, "return type unknown, calling analysis late");
-  }
   retType->codegen(outfile);
   fprintf(outfile, " ");
   this->codegen(outfile);

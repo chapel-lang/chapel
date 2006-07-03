@@ -1,8 +1,0 @@
-ANALYSIS_SRCS = \
-	chapel_ifa.cpp \
-
-CVS_SRCS = $(ANALYSIS_SRCS)
-SRCS = $(CVS_SRCS) 
-
-ANALYSIS_OBJS = \
-	$(ANALYSIS_SRCS:%.cpp=$(ANALYSIS_OBJDIR)/%.$(OBJ_SUFFIX)) \

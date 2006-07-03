@@ -4,7 +4,6 @@
 #include "chpl.h"
 
 class InterpreterOp;
-class AnalysisOp;
 
 enum PrimitiveTag {
   PRIMITIVE_UNKNOWN = 0,    // use for any primitives not in this list
@@ -49,10 +48,9 @@ class PrimitiveOp : public gc { public:
   PrimitiveTag tag;
   char *name;
   InterpreterOp *interpreterOp;
-  AnalysisOp *analysisOp;
   Type *(*returnInfo)(CallExpr*);
 
-  PrimitiveOp(PrimitiveTag atag, char *aname, InterpreterOp *aiop, AnalysisOp *aaop, Type *(*areturnInfo)(CallExpr*));
+  PrimitiveOp(PrimitiveTag atag, char *aname, InterpreterOp *aiop, Type *(*areturnInfo)(CallExpr*));
 };
 
 extern HashMap<char *, StringHashFns, PrimitiveOp *> primitives_map;

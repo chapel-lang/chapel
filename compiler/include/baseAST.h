@@ -185,4 +185,6 @@ extern Vec<ModuleSymbol*> allModules;     // Contains all modules
 extern Vec<ModuleSymbol*> userModules;    // Contains user modules
 void registerModule(ModuleSymbol* mod);
 
+char* cannonicalize_string(char *s);
+
 #endif

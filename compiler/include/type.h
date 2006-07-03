@@ -4,7 +4,6 @@
 
 #include <stdio.h>
 #include "baseAST.h"
-#include "analysis.h"
 #include "chplenum.h"
 #include "../ifa/num.h"
 

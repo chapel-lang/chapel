@@ -3,11 +3,11 @@
 
 #include "alist.h"
 #include "baseAST.h"
-#include "analysis.h"
 #include "type.h"
 
 extern FnSymbol* chpl_main;
 
+class SymExpr;
 class DefExpr;
 class Stmt;
 class BlockStmt;

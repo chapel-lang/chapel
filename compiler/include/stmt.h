@@ -3,7 +3,6 @@
 
 #include <stdio.h>
 #include "alist.h"
-#include "analysis.h"
 #include "baseAST.h"
 #include "symbol.h"
 

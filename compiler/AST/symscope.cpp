@@ -1,6 +1,5 @@
 #include "expr.h"
 #include "stmt.h"
-#include "analysis.h"
 #include "stringutil.h"
 #include "symscope.h"
 #include "files.h"
@@ -241,9 +240,9 @@ void SymScope::codegenFunctions(FILE* outfile) {
 void SymScope::addVisibleFunction(FnSymbol* fn) {
   if (!fn->visible)
     return;
-  int is_setter = (fn->name[0] == '=' && !OPERATOR_CHAR(fn->name[1]) &&
-                   fn->name[1] != '\0');
-  char* n = cannonicalize_string(fn->name + (is_setter ? 1 : 0));
+  //  int is_setter = (fn->name[0] == '=' && !OPERATOR_CHAR(fn->name[1]) &&
+  //                   fn->name[1] != '\0');
+  char* n = cannonicalize_string(fn->name); // + (is_setter ? 1 : 0));
   Vec<FnSymbol*>* fs = visibleFunctions.get(n);
   if (!fs) fs = new Vec<FnSymbol*>;
   fs->add(fn);
@@ -254,9 +253,9 @@ void SymScope::addVisibleFunction(FnSymbol* fn) {
 void SymScope::removeVisibleFunction(FnSymbol* fn) {
   if (!fn->visible)
     return;
-  int is_setter = (fn->name[0] == '=' && !OPERATOR_CHAR(fn->name[1]) &&
-                   fn->name[1] != '\0');
-  char* n = cannonicalize_string(fn->name + (is_setter ? 1 : 0));
+  //  int is_setter = (fn->name[0] == '=' && !OPERATOR_CHAR(fn->name[1]) &&
+  //                   fn->name[1] != '\0');
+  char* n = cannonicalize_string(fn->name); // + (is_setter ? 1 : 0));
   Vec<FnSymbol*>* fs = visibleFunctions.get(n);
   if (!fs) return;
   for (int i = 0; i < fs->n; i++) {
@@ -293,15 +292,15 @@ void SymScope::getVisibleFunctions(Vec<FnSymbol*>* allVisibleFunctions,
 
 
 void SymScope::printVisibleFunctions() {
-  for (int i = 0; i < visibleFunctions.n; i++) {
-    Vec<FnSymbol *> *fs = visibleFunctions.v[i].value;
-    if (fs) {
-      forv_Vec(FnSymbol, fn, *fs) {
-        if (fn) {
-          fn->print(stdout);
-          printf(" %ld\n", fn->id);
-        }
-      }
-    }
-  }
+//   for (int i = 0; i < visibleFunctions.n; i++) {
+//     Vec<FnSymbol *> *fs = visibleFunctions.v[i].value;
+//     if (fs) {
+//       forv_Vec(FnSymbol, fn, *fs) {
+//         if (fn) {
+//           fn->print(stdout);
+//           printf(" %ld\n", fn->id);
+//         }
+//       }
+//     }
+//   }
 }

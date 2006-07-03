@@ -15,6 +15,6 @@ extern void mark_view(BaseAST* ast, long id);
 extern void print_symtab(BaseAST* ast);
 extern void nprint_symtab(BaseAST* ast);
 
-extern void html_view(int show_analysis_info);
+extern void html_view(void);
 
 #endif
