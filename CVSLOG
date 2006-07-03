@@ -66850,3 +66850,19 @@ Removed files:
 	chapel/test/types/type_variables/jplevyak/: where-2-error.chpl 
 	                                            where-2-error.good 
 
+---------------------------------------------------------------------------
+
+07/03/06 10:22:12 -- deitz
+
+Log message:
+	Updated error message output for some tests to reflect changes as of
+	last checkin.
+
+Modified files:
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/functions/deitz/: test_default_param3.good 
+	chapel/test/functions/deitz/default/: test_default3-error.good 
+	                                      test_default4-error.good 
+	chapel/test/functions/deitz/named/: test_named3-error.good 
+
