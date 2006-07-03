@@ -66778,3 +66778,75 @@ Modified files:
 	chapel/compiler/passes/: parallel.cpp 
 	chapel/runtime/include/: chplmem.h chpltypes.h 
 
+---------------------------------------------------------------------------
+
+07/03/06 09:57:03 -- deitz
+
+Log message:
+	Turned new function and type resolution scheme on by default.  There
+	is no flag to turn it off.  The 35 expected errors are listed in the
+	REGRESSIONS file.
+	
+	Removed usage of numeric sum type in exchange for specific use of the
+	primitive types and coercions.
+	
+	Added user error messages for unknown and ambiguous function calls.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp baseAST.cpp build.cpp expr.cpp 
+	                      primitive.cpp stmt.cpp symbol.cpp 
+	                      symscope.cpp 
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp passlist.h runpasses.cpp 
+	chapel/compiler/passes/: Makefile.share cleanup.cpp 
+	                         functionResolution.cpp normalize.cpp 
+	chapel/modules/standard/: _chpl_base.chpl _chpl_math.chpl 
+	                          prelude.chpl 
+	chapel/runtime/include/: chpltypes.h 
+	chapel/runtime/src/: chplio.c config.c 
+	chapel/test/: REGRESSIONS 
+	chapel/test/classes/jplevyak/: record_type_hierarchy-2.good 
+	                               record_type_hierarchy-3-error.good 
+	chapel/test/flowanalysis/recursion/: rec_fun-1.good 
+	                                     rec_fun-2.good 
+	                                     rec_fun-3.good 
+	chapel/test/functions/deitz/: test_default_param3.good 
+	chapel/test/functions/deitz/default/: test_default3-error.good 
+	                                      test_default4-error.good 
+	chapel/test/functions/deitz/named/: test_named3-error.good 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+	chapel/test/types/tuple/deitz/: 
+	                                test_tuple_record_implementation4.chpl 
+	chapel/test/types/type_variables/deitz/: test_myseq2.chpl 
+	                                         test_overinstantiate1a.compopts 
+	                                         test_overinstantiate1a.good 
+	chapel/test/types/type_variables/deitz/functions/: 
+	                                                   test_foo5-error.good 
+Added files:
+	chapel/test/interpreter/deitz/: NOTEST 
+	chapel/test/interpreter/jplevyak/: NOTEST 
+	chapel/test/modules/standard/math/interpret/: NOTEST 
+Removed files:
+	chapel/compiler/passes/: resolveAnalyzed.cpp runAnalysis.cpp 
+	                         runAnalysis.h 
+	chapel/test/classes/jplevyak/: 
+	                               record_type_hierarchy-3-error.prediff 
+	                               union_type_hierarchy-3-error.prediff 
+	chapel/test/functions/jplevyak/: dynamic-partial-1.chpl 
+	                                 dynamic-partial-1.good 
+	                                 partial-1.chpl partial-1.good 
+	                                 partial-2.chpl partial-2.good 
+	                                 partial-3.chpl partial-3.good 
+	                                 partial-4.chpl partial-4.good 
+	                                 partial-5.chpl partial-5.good 
+	                                 partial-6.chpl partial-6.good 
+	                                 partial-7.chpl partial-7.good 
+	chapel/test/functions/jplevyak/scoping/: visibility-2.chpl 
+	                                         visibility-2.good 
+	                                         visibility-3.chpl 
+	                                         visibility-3.good 
+	chapel/test/trivial/preston/: curry.chpl curry.good 
+	chapel/test/types/type_variables/jplevyak/: where-2-error.chpl 
+	                                            where-2-error.good 
+
