@@ -7,7 +7,6 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symscope.h"
-#include "../passes/runAnalysis.h"
 
 static int inBlockStmt = 0;
 bool printCppLineno = false;

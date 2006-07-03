@@ -10,8 +10,6 @@ PASSES_SRCS = \
         inlineFunctions.cpp \
 	printProgram.cpp \
         normalize.cpp \
-        resolveAnalyzed.cpp \
-	runAnalysis.cpp \
 	runInterpreter.cpp \
         scopeResolve.cpp \
         semanticChecks.cpp \

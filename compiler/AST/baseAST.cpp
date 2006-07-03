@@ -8,7 +8,6 @@
 #include "symscope.h"
 #include "type.h"
 #include "yy.h"
-#include "../passes/runAnalysis.h"
 
 
 static long uid = 1;
@@ -254,18 +253,6 @@ void BaseAST::postCopy(BaseAST* copy,
   copy->lineno = lineno;
   copy->filename = filename;
   copy->addPragmas(&pragmas);
-  if (!inAnalysis) {
-    Expr* expr = dynamic_cast<Expr*>(this);
-    Expr* exprCopy = dynamic_cast<Expr*>(copy);
-    if (expr && exprCopy) {
-      exprCopy->ainfo = expr->ainfo;
-    }
-    Stmt* stmt = dynamic_cast<Stmt*>(this);
-    Stmt* stmtCopy = dynamic_cast<Stmt*>(copy);
-    if (stmt && stmtCopy) {
-      stmtCopy->ainfo = stmt->ainfo;
-    }
-  }
   map->put(this, copy);
   if (!internal) {
     if (update_list) {

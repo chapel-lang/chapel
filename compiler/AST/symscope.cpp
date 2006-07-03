@@ -3,7 +3,6 @@
 #include "analysis.h"
 #include "stringutil.h"
 #include "symscope.h"
-#include "../passes/runAnalysis.h"
 #include "files.h"
 
 #define OPERATOR_CHAR(_c) \

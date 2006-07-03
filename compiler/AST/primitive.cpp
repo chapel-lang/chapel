@@ -229,7 +229,7 @@ initPrimitive() {
   prim_def("array_set", array_set_interpreter_op, array_set_analysis_op, returnInfoVoid);
   prim_def("cast", cast_interpreter_op, cast_analysis_op, returnInfoBool);
   prim_def("to_string", to_string_interpreter_op, return_string_analysis_op, returnInfoString);
-  prim_def("copy_string", copy_string_interpreter_op, return_string_analysis_op, returnInfoString);
+  prim_def("string_copy", copy_string_interpreter_op, return_string_analysis_op, returnInfoString);
   prim_def("string_index", string_index_interpreter_op, return_string_analysis_op, returnInfoString);
   prim_def("string_concat", string_concat_interpreter_op, return_string_analysis_op, returnInfoString);
   prim_def("string_equal", string_equal_interpreter_op, return_bool_analysis_op, returnInfoBool);

@@ -6,7 +6,6 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symscope.h"
-#include "../passes/runAnalysis.h"
 
 
 Expr::Expr(astType_t astType) :
@@ -568,10 +567,6 @@ Type* CallExpr::typeInfo(void) {
     return dtUnknown;
   }
 
-  if (preAnalysis) {
-    return dtUnknown;
-  }
-
   if (!baseExpr) {
     if (isLogicalPrimitive()) {
       return dtBool;
@@ -586,8 +581,6 @@ Type* CallExpr::typeInfo(void) {
 
   if (SymExpr* symExpr = dynamic_cast<SymExpr*>(baseExpr)) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(symExpr->var)) {
-      if (!strcmp(fn->name, "_chpl_alloc"))
-        return argList->get(1)->typeInfo();
       return fn->retType;
     }
   }
@@ -959,13 +952,14 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, "*(_complex128*)");
     } else if (!strcmp(variable->var->cname, "_chpl_read_complex")) {
       fprintf(outfile, "(_complex128**)");
-    } else if (!strcmp(variable->var->cname, "_copy_string")) {
-      get(1)->codegen(outfile);
-      fprintf(outfile, ", ");
-      get(2)->codegenCastToString(outfile);
-      fprintf(outfile, ")");
-      return;
     }
+  }
+  if (primitive && !strcmp(primitive->name, "string_copy")) {
+    get(1)->codegen(outfile);
+    fprintf(outfile, ", ");
+    get(2)->codegenCastToString(outfile);
+    fprintf(outfile, ")");
+    return;
   }
 
   if (SymExpr* variable = dynamic_cast<SymExpr*>(baseExpr)) {

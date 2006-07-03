@@ -34,7 +34,6 @@ static void expand_var_args(FnSymbol* fn);
 static int tag_generic(FnSymbol* fn);
 static int tag_generic(Type* fn);
 static void tag_hasVarArgs(FnSymbol* fn);
-static void resolve_formal_types(FnSymbol* fn);
 
 
 void normalize(void) {
@@ -57,8 +56,6 @@ void normalize(BaseAST* base) {
         reconstruct_iterator(fn);
       if (fn->retRef)
         build_lvalue_function(fn);
-      if (fn->hasPragma("lti remove") && local_type_inference)
-        fn->defPoint->parentStmt->remove();
     }
   }
 
@@ -204,10 +201,7 @@ void normalize(BaseAST* base) {
     }
   }
 
-  if (local_type_inference) {
-    dtAny->isGeneric = true;
-    dtNumeric->isGeneric = true;
-  }
+  dtAny->isGeneric = true;
   asts.clear();
   collect_asts_postorder(&asts, base);
   int changed = 1;
@@ -228,8 +222,6 @@ void normalize(BaseAST* base) {
   forv_Vec(BaseAST, ast, asts) {
     if (FnSymbol *fn = dynamic_cast<FnSymbol*>(ast)) {
       tag_hasVarArgs(fn);
-      if (!local_type_inference)
-        resolve_formal_types(fn);
     }
   }
 
@@ -314,6 +306,7 @@ static void build_lvalue_function(FnSymbol* fn) {
   new_fn->retRef = false;
   fn->retRef = false;
   new_fn->retType = dtVoid;
+  if (new_fn->retExpr) new_fn->retExpr->remove();
   new_fn->cname = stringcat("_setter_", fn->cname);
   ArgSymbol* setterToken = new ArgSymbol(INTENT_BLANK, "_setterTokenDummy",
                                          dtSetterToken);
@@ -363,8 +356,7 @@ static void normalize_returns(FnSymbol* fn) {
     fn->insertAtTail(new ReturnStmt());
   } else {
     retval = new VarSymbol(stringcat("_ret_", fn->name), fn->retType);
-    Expr* type = fn->retExpr;
-    type->remove();
+    Expr* type = (fn->retExpr) ? fn->retExpr->copy() : NULL;
     fn->insertAtHead(new DefExpr(retval, NULL, type));
     fn->insertAtTail(new ReturnStmt(retval));
   }
@@ -831,7 +823,7 @@ static void fold_call_expr(CallExpr* call) {
     } else if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
       if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(sym->var)) {
         if (ts->definition->defaultValue)
-          call->replace(new SymExpr(ts->definition->defaultValue));
+          call->replace(new CastExpr(new SymExpr(ts->definition->defaultValue), ts->definition));
         else if (ts->definition->defaultConstructor)
           call->replace(new CallExpr(ts->definition->defaultConstructor));
         else if (!dynamic_cast<VariableType*>(ts->definition))
@@ -1274,16 +1266,4 @@ tag_hasVarArgs(FnSymbol* fn) {
   for_formals(formal, fn)
     if (formal->variableExpr)
       fn->hasVarArgs = true;
-}
-
-static void
-resolve_formal_types(FnSymbol* fn) {
-  if (!fn->isGeneric) {
-    for_alist(DefExpr, formalDef, fn->formals) {
-      if (dynamic_cast<CallExpr*>(formalDef->exprType)) {
-        resolve_type_expr(formalDef->exprType);
-        hack_resolve_types(formalDef);
-      }
-    }
-  }
 }

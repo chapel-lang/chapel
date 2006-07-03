@@ -1,5 +1,4 @@
-test_default_param3.chpl:10: error: ambiguous call 'foo'
-note: candidates are:
-test_default_param3.chpl:1: foo, i : int64
-test_default_param3.chpl:5: foo, i : int64
-fail: program does not type
+Error: Ambiguous call 'foo(:int)' (test_default_param3.chpl:10)
+Candidates are:
+  foo(i: int)
+  foo(i: int, s: string)

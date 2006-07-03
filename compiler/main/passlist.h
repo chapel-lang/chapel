@@ -10,8 +10,6 @@ void normalize();
 void check_normalized();
 void build_default_functions();
 void runInterpreter();
-void runAnalysis();
-void resolve_analyzed();
 void resolve();
 void check_resolved();
 void flattenFunctions();
@@ -35,10 +33,7 @@ PassInfo passlist[] = {
                            //   Enabled by -i or --interpreter.
                            //   Terminates after running if enabled.
 
-  RUN(resolve), // enabled by --lti (local type inference), disables analysis
-
-  RUN(runAnalysis),        // analysis
-  RUN(resolve_analyzed),   // resolve functions/types with analysis information
+  RUN(resolve),            // resolves function calls and types
 
   RUN(check_resolved),     // checks semantics of resolved AST
 

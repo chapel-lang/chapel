@@ -280,8 +280,6 @@ void remove_static_actuals() {
             actual->remove();
           formalDef = fn->formals->next();
         }
-        if (!strcmp(fn->name, "_chpl_alloc"))
-          call->get(1)->remove();
       }
     }
   }

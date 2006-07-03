@@ -1,6 +1,4 @@
-foo of 2 and 4
-foo of 3 and itself
-foo (2) of 2 and 4.0
-foo (2) of 3 and 3.0
-foo (2) of 2.0 and 4.0
-foo (2) of 3.0 and 3.0
+Error: Ambiguous call 'foo(float, :float, :float)' (test_foo5-error.chpl:16)
+Candidates are:
+  foo(type t, x: t, y: t) (test_foo5-error.chpl:1)
+  foo(type t, x: t, y: float) (test_foo5-error.chpl:8)

@@ -1,8 +1,8 @@
 chapel compiler: reporting inlining, ! function was inlined
-chapel compiler: reporting inlining, _copy function was inlined
+chapel compiler: reporting inlining, _inst__copy function was inlined
 chapel compiler: reporting inlining, ! function was inlined
-chapel compiler: reporting inlining, _copy function was inlined
-chapel compiler: reporting inlining, _copy function was inlined
+chapel compiler: reporting inlining, _inst__copy function was inlined
+chapel compiler: reporting inlining, _inst__copy function was inlined
 chapel compiler: reporting inlining, _init function was inlined
 chapel compiler: reporting inlining, - function was inlined
 chapel compiler: reporting inlining, _inst___ddata_this function was inlined
@@ -79,8 +79,8 @@ chapel compiler: reporting inlining, __aseq__stride function was inlined
 chapel compiler: reporting inlining, ! function was inlined
 chapel compiler: reporting inlining, ! function was inlined
 chapel compiler: reporting inlining, _default_wrap__construct_Foo function was inlined
-chapel compiler: reporting inlining, _Foo_x function was inlined
-chapel compiler: reporting inlining, _Foo_y function was inlined
-chapel compiler: reporting inlining, _Foo_z function was inlined
+chapel compiler: reporting inlining, _inst__Foo_x function was inlined
+chapel compiler: reporting inlining, _inst__Foo_y function was inlined
+chapel compiler: reporting inlining, _inst__Foo_z function was inlined
 chapel compiler: reporting inlining, _Foo_y function was inlined
 2

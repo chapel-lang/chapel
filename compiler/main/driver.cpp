@@ -24,7 +24,6 @@ static void help(ArgumentState *arg_state, char *arg_unused);
 static void copyright(ArgumentState *arg_state, char *arg_unused);
 static void handleLibrary(ArgumentState* arg_state, char* arg_unused);
 static void handleLibPath(ArgumentState* arg_state, char* arg_unused);
-static void interpreter_insert_mode(ArgumentState* arg_state, char* arg_unused);
 
 FILE* html_index_file = NULL;
 
@@ -43,7 +42,6 @@ int trace_level = 0;
 int fgraph = 0;
 int fgraph_vcg = 0;
 int fcg = 0;
-bool local_type_inference = false;
 bool no_inline = false;
 bool report_inlining = false;
 char system_dir[FILENAME_MAX] = DEFAULT_SYSTEM_DIR;
@@ -56,31 +54,14 @@ int scalar_promotion = 1;
 int squelch_header_errors = 0;
 
 static ArgumentDescription arg_desc[] = {
- {"lti", ' ', "Local Type Inference", "T", &local_type_inference, "", NULL},
- {"interpreter", 'I', "Start Interpreter in Insert Mode", "T", &finterpreter_insert_mode, "CHPL_INTERPRETER_INSERT", interpreter_insert_mode},
- {"interpret-program", 'i', "Run Program in Interpreter (-ii for prompt)", "+", &run_interpreter, "CHPL_INTERPRETER", NULL},
- {"ast-mode", 'a', "Set Interpreter to AST Mode", "T", &finterpreter_ast_mode, "CHPL_INTERPRETER_AST_MODE", NULL},
- {"trace", 's', "Trace Level", "+", &trace_level, "CHPL_TRACE", NULL},
+ {"interpreter", 'i', "Run Chapel interpreter", "T", &run_interpreter, "CHPL_INTERPRETER", NULL},
  {"nostdincs", ' ', "No Standard Includes", "T", &fnostdincs, "CHPL_NOSTDINCS", NULL},
- {"analysis-errors", ' ', "Pass Back Analysis Errors", "T", &fanalysis_errors, "CHPL_ANALYSIS_ERRORS", NULL},
  {"premalloc", 'm', "Pre-Malloc", "I", &pre_malloc, "CHPL_PRE_MALLOC", NULL},
  {"sysdir", 'S', "System Directory", "P", system_dir, "CHPL_SYSTEM_DIR", NULL},
- {"print-call-depth", 'C', "Print Calls to this Depth", "I", &print_call_depth, "CHPL_PRINT_CALL_DEPTH", NULL},
- {"constant-limit", ' ', "# of Constants Propagated", "I", &num_constants_per_variable, 
-  "CHPL_CONSTANTS_PER_VARIABLE", NULL},
  {"devel", ' ', "Developer Compile", "F", &developer, "CHPL_DEVELOPER", NULL},
  {"ignore-errors", ' ', "Attempt to Ignore Errors", "F", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
  {"instantiation-limit", ' ', "Limit Number of Instantiations", "I", &instantiation_limit, "CHPL_INSTANTIATION_LIMIT", NULL},
  {"html", 't', "Write Program in HTML", "T", &fdump_html, "CHPL_HTML", NULL},
- {"lowlevel-cg", 'g', "Low Level Code Generation", "T", &fcg, "CHPL_CG", NULL},
- {"graph", 'G', "Write Program Graphs", "T", &fgraph, "CHPL_GRAPH", NULL},
- {"graph-format", ' ', "GraphViz = 0, VCG = 1", "I", &fgraph_vcg, "CHPL_GRAPHFORMAT", NULL},
- {"graph-constants", ' ', "Graph Constants", "T", &fgraph_constants, 
-  "CHPL_GRAPH_CONSTANTS", NULL},
- {"graph-frequencies", ' ', "Graph Frequencies", "T", &fgraph_frequencies, 
-  "CHPL_GRAPH_FREQUENCIES", NULL},
- {"graph-contours", ' ', "Graph Analysis Pass Contours", "T", &fgraph_pass_contours, 
-  "CHPL_GRAPH_CONTOURS", NULL},
  {"log-dir", ' ', "Log Directory", "P", log_dir, "CHPL_LOG_DIR", NULL},
  {"log", 'd', "Debug Logging Flags", "S512", log_flags, "CHPL_LOG_FLAGS", log_flags_arg},
  {"cg-cpp-lines", ' ', "Generate #line Directives", "F", &printCppLineno, "CHPL_CG_CPP_LINES", NULL},
@@ -159,12 +140,6 @@ handleLibrary(ArgumentState* arg_state, char* arg_unused) {
 static void 
 handleLibPath(ArgumentState* arg_state, char* arg_unused) {
   addLibInfo(stringcat("-L", libraryFilename));
-}
-
-static void 
-interpreter_insert_mode(ArgumentState* arg_state, char* arg_unused) {
-  if (finterpreter_insert_mode)
-    run_interpreter++;
 }
 
 void

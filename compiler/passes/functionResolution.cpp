@@ -41,6 +41,16 @@ resolveFormals(FnSymbol* fn) {
         normalize(formalDef);
       }
     }
+    if (fn->retExpr) {
+      resolve_type_expr(fn->retExpr);
+      SymExpr* sym = dynamic_cast<SymExpr*>(fn->retExpr);
+      if (!sym)
+        INT_FATAL(fn, "Bad return type expression");
+      if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(sym->var))
+        fn->retType = ts->definition;
+      else
+        fn->retType = sym->var->type;
+    }
   }
 }
 
@@ -50,17 +60,10 @@ Vec<FnSymbol*> resolve_call_error_candidates;
 // Returns true iff dispatching the actualType to the formalType
 // results in an instantiation.
 bool canInstantiate(Type* actualType, Type* formalType) {
-  if (local_type_inference) {
-    if (formalType == dtAny)
-      return true;
-    if ((formalType == dtNumeric && actualType == dtBool) ||
-        (formalType == dtNumeric && actualType == dtInt[IF1_INT_TYPE_64]) ||
-        (formalType == dtNumeric && actualType == dtFloat[IF1_FLOAT_TYPE_64]) ||
-        (formalType == dtNumeric && dynamic_cast<EnumType*>(actualType)))
-      return true;
-    if (actualType == formalType)
-      return true;
-  }
+  if (formalType == dtAny)
+    return true;
+  if (actualType == formalType)
+    return true;
   forv_Vec(Type, parent, actualType->typeParents) {
     if (parent == formalType || canInstantiate(parent, formalType))
       return true;
@@ -77,25 +80,25 @@ bool canCoerce(Type* actualType, Type* formalType) {
   if (is_int_type(formalType)) {
     if (actualType == dtBool)
       return true;
-    if (is_int_type(actualType) && get_width(actualType) <= get_width(formalType))
+    if (is_int_type(actualType) && get_width(actualType) < get_width(formalType))
       return true;
   }
   if (is_uint_type(formalType)) {
     if (actualType == dtBool)
       return true;
-    if (is_uint_type(actualType) && get_width(actualType) <= get_width(formalType))
+    if (is_uint_type(actualType) && get_width(actualType) < get_width(formalType))
       return true;
   }
   if (is_float_type(formalType)) {
     if (is_int_type(actualType) && get_width(actualType) <= get_width(formalType))
       return true;
-    if (is_float_type(actualType) && get_width(actualType) <= get_width(formalType))
+    if (is_float_type(actualType) && get_width(actualType) < get_width(formalType))
       return true;
   }
-//   if (formalType == dtString) {
-//     if (is_int_type(actualType) || is_float_type(actualType) || actualType == dtBool)
-//       return true;
-//   }
+  if (formalType == dtString) {
+    if (is_int_type(actualType) || is_float_type(actualType) || actualType == dtBool)
+      return true;
+  }
   return false;
 }
 
@@ -103,15 +106,6 @@ bool canCoerce(Type* actualType, Type* formalType) {
 // The function symbol is used to avoid scalar promotion on =.
 // param is set if the actual is a parameter (compile-time constant).
 bool canDispatch(FnSymbol* fn, Symbol* param, Type* actualType, Type* formalType, bool* require_scalar_promotion = NULL) {
-  if (!local_type_inference) {
-   if ((actualType != dtAny && actualType != dtUnknown) &&
-       (formalType == dtAny || formalType == dtUnknown))
-     return true;
-   if ((formalType == dtNumeric && actualType == dtBool) ||
-       (formalType == dtNumeric && actualType == dtInt[IF1_INT_TYPE_64]) ||
-       (formalType == dtNumeric && actualType == dtFloat[IF1_FLOAT_TYPE_64]))
-     return true;
-  }
   if (require_scalar_promotion)
     *require_scalar_promotion = false;
   if (actualType == formalType)
@@ -230,10 +224,7 @@ computeGenericSubs(ASTMap &subs,
         TypeSymbol* formalType = actual_formals->v[i]->type->symbol;
         if (fn->genericSymbols.set_in(formalType)) {
           if (canInstantiate(actual_types->v[i], actual_formals->v[i]->type)) {
-            if (local_type_inference)
-              subs.put(actual_formals->v[i], actual_types->v[i]);
-            else
-              subs.put(actual_formals->v[i]->type, actual_types->v[i]);
+            subs.put(actual_formals->v[i], actual_types->v[i]);
           }
         }
       }
@@ -251,8 +242,7 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
               Vec<Symbol*>* actual_params,
               Vec<char*>* actual_names,
               bool inst = false) {
-  if (local_type_inference)
-    resolveFormals(fn);
+  resolveFormals(fn);
 
   Vec<ArgSymbol*>* actual_formals = new Vec<ArgSymbol*>();
 
@@ -454,12 +444,13 @@ resolve_call(BaseAST* ast,
              PartialTag partialTag,
              FnSymbol *fnSymbol)
 {
+  Vec<FnSymbol*> visibleFns;                    // visible functions
+
   Vec<FnSymbol*> candidateFns;
   Vec<Vec<ArgSymbol*>*> candidateActualFormals; // candidate functions
 
   if (!fnSymbol) {
     char* canon_name = cannonicalize_string(name);
-    Vec<FnSymbol*> visibleFns;                    // visible functions
     ast->parentScope->getVisibleFunctions(&visibleFns, canon_name);
     forv_Vec(FnSymbol, visibleFn, visibleFns)
       addCandidate(&candidateFns, &candidateActualFormals, visibleFn, actual_types, actual_params, actual_names);
@@ -532,6 +523,11 @@ resolve_call(BaseAST* ast,
   }
 
   if (!best) {
+    for (int i = 0; i < visibleFns.n; i++) {
+      if (visibleFns.v[i]) {
+        resolve_call_error_candidates.add(visibleFns.v[i]);
+      }
+    }
     resolve_call_error = CALL_UNKNOWN;
     return NULL;
   }
@@ -539,9 +535,7 @@ resolve_call(BaseAST* ast,
   best = build_default_wrapper(best, actual_formals);
   best = build_order_wrapper(best, actual_formals);
   best = build_promotion_wrapper(best, actual_types);
-  //  if (local_type_inference)
-  //    best = build_clone(best, actual_types);
-  if (0) best = build_coercion_wrapper(best, actual_types);
+  best = build_coercion_wrapper(best, actual_types);
   return best;
 }
 
@@ -634,19 +628,59 @@ resolveCall(CallExpr* call) {
       return;
     }
     if (!resolvedFn) {
-      if (resolve_call_error == CALL_UNKNOWN) {
-        USR_FATAL(call, "Unresolved call");
-      } else if (resolve_call_error == CALL_AMBIGUOUS) {
-        USR_FATAL(call, "Ambiguous call");
+      if (resolve_call_error == CALL_UNKNOWN || resolve_call_error == CALL_AMBIGUOUS) {
+        if (resolve_call_error_candidates.n > 0) {
+          char *str;
+          str = stringcat(name, "(");
+          bool first = false;
+          for (int i = 0; i < atypes.n; i++) {
+            if (!first)
+              first = true;
+            else
+              str = stringcat(str, ", ");
+            if (anames.v[i])
+              str = stringcat(str, anames.v[i], "=");
+            if (MetaType* mt = dynamic_cast<MetaType*>(atypes.v[i]))
+              str = stringcat(str, mt->base->symbol->name);
+            else
+              str = stringcat(str, ":", atypes.v[i]->symbol->name);
+          }
+          str = stringcat(str, ")");
+          USR_FATAL_CONT(call, "%s call '%s'", (resolve_call_error == CALL_AMBIGUOUS) ? "Ambiguous" : "Unresolved", str);
+          USR_PRINT("Candidates are:");
+          forv_Vec(FnSymbol, fn, resolve_call_error_candidates) {
+            if (fn->instantiatedFrom)
+              fn = fn->instantiatedFrom;
+            str = stringcat(fn->name, "(");
+            bool first = false;
+            for_alist(DefExpr, formalDef, fn->formals) {
+              if (!first)
+                first = true;
+              else
+                str = stringcat(str, ", ");
+              if (dynamic_cast<ArgSymbol*>(formalDef->sym)->intent == INTENT_TYPE)
+                str = stringcat(str, "type ", formalDef->sym->name);
+              else
+                str = stringcat(str, formalDef->sym->name, ": ", formalDef->sym->type->symbol->name);
+            }
+            str = stringcat(str, ")");
+            USR_PRINT(fn, "  %s", str);
+          }
+          USR_STOP();
+        } else {
+          USR_FATAL(call, "Unresolved call '%s'", name);
+        }
       } else {
         INT_FATAL(call, "Error in resolve_call");
       }
     }
-    if (resolvedFn->hasPragma("builtin")) {
-      call->baseExpr->remove();
-      call->primitive = primitives[PRIMITIVE_MOVE];
-    } else
-      call->baseExpr->replace(new SymExpr(resolvedFn));
+    if (call->parentSymbol) {
+      if (resolvedFn->hasPragma("builtin")) {
+        call->baseExpr->remove();
+        call->primitive = primitives[PRIMITIVE_MOVE];
+      } else
+        call->baseExpr->replace(new SymExpr(resolvedFn));
+    }
   } else if (call->isPrimitive(PRIMITIVE_MOVE)) {
     if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
       Type* t = resolveType(call->get(2));
@@ -654,6 +688,14 @@ resolveCall(CallExpr* call) {
         sym->var->type = t;
       if (sym->var->type == dtNil)
         sym->var->type = t;
+      if (t == dtUnknown) {
+        if (CallExpr* rhs = dynamic_cast<CallExpr*>(call->get(2))) {
+          if (FnSymbol* rhsfn = rhs->isResolved()) {
+            USR_FATAL_CONT(rhsfn, "Unable to resolve return type of function '%s'", rhsfn->name);
+            USR_FATAL(rhs, "Called recursively at this point");
+          }
+        }
+      }
       if (t == dtUnknown)
         INT_FATAL(call, "Unable to resolve type");
       if (t != sym->var->type && t != dtNil) {
@@ -709,6 +751,12 @@ resolveFns(FnSymbol* fn, Vec<FnSymbol*>* resolvedFns) {
       resolveCall(call);
       if (call->isResolved())
         resolveFns(call->isResolved(), resolvedFns);
+      if (call->isPrimitive(PRIMITIVE_MOVE))
+        if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1)))
+          if (dynamic_cast<ClassType*>(sym->var->type)) {
+            resolveFormals(sym->var->type->defaultConstructor);
+            resolveFns(sym->var->type->defaultConstructor, resolvedFns);
+          }
     }
   }
   ReturnStmt* last = dynamic_cast<ReturnStmt*>(fn->body->body->last());
@@ -726,9 +774,6 @@ resolveFns(FnSymbol* fn, Vec<FnSymbol*>* resolvedFns) {
 
 void
 resolve() {
-  if (!local_type_inference)
-    return;
-
   Vec<FnSymbol*> resolvedFns;
   resolveFns(chpl_main, &resolvedFns);
 

@@ -290,13 +290,9 @@ static void build_constructor(ClassType* ct) {
   fn->_this = new VarSymbol("this", ct);
 
   char* description = stringcat("instance of class ", ct->symbol->name);
-  Expr* alloc_rhs = new CallExpr(prelude->lookup("_chpl_alloc"),
+  Expr* alloc_rhs = new CallExpr("_chpl_alloc",
                                  ct->symbol,
                                  new_StringLiteral(description));
-  if (local_type_inference)
-    alloc_rhs = new CallExpr("_chpl_alloc2",
-                             ct->symbol,
-                             new_StringLiteral(description));
   CallExpr* alloc_expr = new CallExpr(PRIMITIVE_MOVE, fn->_this, alloc_rhs);
 
   fn->insertAtTail(new DefExpr(fn->_this));

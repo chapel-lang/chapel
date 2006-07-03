@@ -1,17 +1,3 @@
-record_type_hierarchy-2.chpl:16: illegal call argument type 'b' illegal: ( D ) 
-record_type_hierarchy-2.chpl:16: illegal call argument type '_tmp' illegal: ( ) 
-record_type_hierarchy-2.chpl:16: unresolved call 'writeln'
-note: candidates are:
-_chpl_file.chpl:362: writeln
-_chpl_file.chpl:345: writeln, _e0_args : any
-_chpl_file.chpl:353: writeln, _e0_args : any, _e1_args : any
-_chpl_file.chpl:353: writeln, _e0_args : any, _e1_args : any, _e2_args : any
-_chpl_file.chpl:353: writeln, _e0_args : any, _e1_args : any, _e2_args : any, _e3_args : any
-_chpl_file.chpl:353: writeln, _e0_args : any, _e1_args : any, _e2_args : any, _e3_args : any, _e4_args : any
-record_type_hierarchy-2.chpl:16: unresolved call 'f'
-note: candidates are:
-record_type_hierarchy-2.chpl:10: f, a : C
-record_type_hierarchy-2.chpl:16: '_tmp' has no type
-record_type_hierarchy-2.chpl:16: expression has no type
-record_type_hierarchy-2.chpl:16: expression has no type
-fail: program does not type
+Error: Unresolved call 'f(:D)' (record_type_hierarchy-2.chpl:16)
+Candidates are:
+  f(a: C)

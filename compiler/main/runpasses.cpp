@@ -48,16 +48,9 @@ static void runPass(char *passName, void (*pass)(void)) {
   if (fdump_html) {
     gettimeofday(&stopTime, &timezone);
     fprintf(html_index_file, "<TR><TD>");
-    if (!strcmp(passName, "runAnalysis")) {
-      fprintf(html_index_file, "<A HREF=\"dump.html\">");
-    }
     fprintf(html_index_file, "%s", passName);
-    int analysis_pass = !strcmp(passName, "RunAnalysis");
-    if (analysis_pass) {
-      fprintf(html_index_file, "</A>");
-    }
     fprintf(html_index_file, "</TD><TD>");
-    html_view(analysis_pass);
+    html_view(0);
     fprintf(html_index_file, "</TD></TR>");
     fflush(html_index_file);
   }
@@ -87,6 +80,8 @@ void dump_index_footer(FILE* f) {
 
 
 void runPasses(void) {
+  if (run_interpreter)
+    USR_FATAL("The Chapel interpreter is not yet implemented.");
   if (fdump_html) {
     html_index_file = fopen(stringcat(log_dir, "index.html"), "w");
     dump_index_header(html_index_file);

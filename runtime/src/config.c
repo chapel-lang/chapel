@@ -45,7 +45,7 @@ void addToConfigList(char* currentArg, int isSingleArg) {
   _chpl_free(description);
 
   arg->isSingleArg = isSingleArg;
-  _copy_string(arg->input, currentArg);
+  arg->input = string_copy(currentArg);
   
   if (firstArg == NULL) {
     firstArg = arg;
@@ -347,7 +347,7 @@ void initSetValue(char* varName, char* value, char* moduleName) {
                                   varName, "\" to indicate which to use.");
     printError(message);
   }
-  _copy_string(configVar->setValue, value);
+  configVar->setValue = string_copy(value);
 }
 
 
@@ -384,9 +384,9 @@ void installConfigVar(char* varName, char* value, char* moduleName) {
     lastInTable->nextInstalled = configVar;
   }
   lastInTable = configVar;
-  _copy_string(configVar->varName, varName);
-  _copy_string(configVar->moduleName, moduleName);
-  _copy_string(configVar->defaultValue, value);
+  configVar->varName = string_copy(varName);
+  configVar->moduleName = string_copy(moduleName);
+  configVar->defaultValue = string_copy(value);
 } 
 
 
@@ -469,7 +469,7 @@ int setInCommandLine_string(char* varName, _string* value, char* moduleName) {
   char* setValue = lookupSetValue(varName, moduleName);
 
   if (setValue) {
-    _copy_string(*value, setValue);
+    *value = string_copy(setValue);
     varSet = 1;
   }
   return varSet;

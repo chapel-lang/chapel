@@ -1,2 +1,2 @@
-10
-10.0
+Error: Unable to resolve return type of function 'f' (rec_fun-1.chpl:2)
+Error: Called recursively at this point (rec_fun-1.chpl:5)
