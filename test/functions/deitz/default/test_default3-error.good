@@ -1,4 +1,4 @@
 Error: Ambiguous call 'foo()' (test_default3-error.chpl:17)
 Candidates are:
-  foo(i: int, j: float, k: string)
-  foo(i: float, j: string, k: int)
+  foo(i: int, j: float, k: string) (test_default3-error.chpl:1)
+  foo(i: float, j: string, k: int) (test_default3-error.chpl:5)

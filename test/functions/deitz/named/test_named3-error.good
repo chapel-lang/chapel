@@ -1,4 +1,4 @@
 Error: Unresolved call 'foo(i=:int, m=:int, n=:int)' (test_named3-error.chpl:23)
 Candidates are:
-  foo(i: int, j: int, k: int)
-  foo(l: int, m: int, n: int)
+  foo(i: int, j: int, k: int) (test_named3-error.chpl:1)
+  foo(l: int, m: int, n: int) (test_named3-error.chpl:5)
