@@ -40,7 +40,6 @@ linux and general regressions
 [Error matching program output for memory/shannon/memmaxExceedsLineno2]
 [Error matching program output for memory/shannon/memstatPrint]
 [Error matching program output for memory/shannon/printFinalMemStat]
-[Error matching program output for parallel/cobegin/waynew/locals]
 [Error matching compiler output for trivial/bradc/defaultinit2]
 [Error executing program trivial/deitz/test_coerce_integer_to_string1]
 [Error matching program output for trivial/deitz/test_plusassign]

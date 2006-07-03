@@ -1368,10 +1368,11 @@ build_builtin_symbols() {
 static Stmt *
 label_target(Stmt *stmt) {
   Stmt *target = stmt;
-  while (target && target->astType == STMT_LABEL)
-    target = dynamic_cast<LabelStmt*>(target)->stmt;
-  if (!target)
-    target = stmt;
+  // SJD: commented out unused code, pass no longer used
+//   while (target && target->astType == STMT_LABEL)
+//     target = dynamic_cast<LabelStmt*>(target)->stmt;
+//   if (!target)
+//     target = stmt;
   return target;
 }
 
@@ -1591,10 +1592,11 @@ gen_if1(BaseAST *ast) {
   switch (ast->astType) {
     case STMT: assert(!ast); break;
     case STMT_LABEL: {
-      LabelStmt *s = dynamic_cast<LabelStmt*>(ast);
-      Stmt *target = label_target(s);
-      if1_label(if1, &s->ainfo->code, s->stmt->ainfo, target->ainfo->label[0]);
-      if1_gen(if1, &s->ainfo->code, s->stmt->ainfo->code);
+  // SJD: commented out unused code, pass no longer used
+//       LabelStmt *s = dynamic_cast<LabelStmt*>(ast);
+//       Stmt *target = label_target(s);
+//       if1_label(if1, &s->ainfo->code, s->stmt->ainfo, target->ainfo->label[0]);
+//       if1_gen(if1, &s->ainfo->code, s->stmt->ainfo->code);
       break;
     }
     case STMT_GOTO: {

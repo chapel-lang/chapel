@@ -142,7 +142,6 @@ class WhenStmt : public Stmt {
 class LabelStmt : public Stmt {
  public:
   DefExpr* defLabel;
-  Stmt* stmt;
   
   LabelStmt(DefExpr* iDefLabel);
   LabelStmt(Symbol* iDefLabel);

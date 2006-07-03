@@ -630,20 +630,17 @@ void WhenStmt::codegenStmt(FILE* outfile) {
 
 LabelStmt::LabelStmt(DefExpr* iDefLabel) :
   Stmt(STMT_LABEL),
-  defLabel(iDefLabel),
-  stmt(new BlockStmt())
+  defLabel(iDefLabel)
 { }
 
 LabelStmt::LabelStmt(Symbol* iDefLabel) :
   Stmt(STMT_LABEL),
-  defLabel(new DefExpr(iDefLabel)),
-  stmt(new BlockStmt())
+  defLabel(new DefExpr(iDefLabel))
 { }
 
 LabelStmt::LabelStmt(char* iDefLabel) :
   Stmt(STMT_LABEL),
-  defLabel(new DefExpr(new LabelSymbol(iDefLabel))),
-  stmt(new BlockStmt())
+  defLabel(new DefExpr(new LabelSymbol(iDefLabel)))
 { }
 
 
@@ -666,9 +663,7 @@ LabelStmt::copyInner(ASTMap* map) {
 
 
 void LabelStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == stmt) {
-    INT_FATAL("LabelStmt::stmt should not be used");
-  } else if (old_ast == defLabel) {
+  if (old_ast == defLabel) {
     defLabel = dynamic_cast<DefExpr*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in LabelStmt::replaceChild");
@@ -680,7 +675,6 @@ void LabelStmt::print(FILE* outfile) {
   fprintf(outfile, "label ");
   defLabel->print(outfile);
   fprintf(outfile, " ");
-  stmt->print(outfile);
 }
 
 
