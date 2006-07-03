@@ -66866,3 +66866,19 @@ Modified files:
 	                                      test_default4-error.good 
 	chapel/test/functions/deitz/named/: test_named3-error.good 
 
+---------------------------------------------------------------------------
+
+07/03/06 11:43:47 -- deitz
+
+Log message:
+	Removed LabelStmt::stmt field.  Next step: remove LabelStmt.
+	
+	Removed one test from regressions file that is working (not due to
+	this change).
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp stmt.cpp 
+	chapel/compiler/analysis/: chapel_ifa.cpp 
+	chapel/compiler/include/: stmt.h 
+	chapel/test/: REGRESSIONS 
+
