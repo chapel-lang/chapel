@@ -285,7 +285,10 @@ void DefExpr::print(FILE* outfile) {
 }
 
 
-void DefExpr::codegen(FILE* outfile) { /** noop **/ }
+void DefExpr::codegen(FILE* outfile) {
+  if (dynamic_cast<LabelSymbol*>(sym))
+    fprintf(outfile, "%s:", sym->cname);
+}
 
 
 static void codegen_member(FILE* outfile, BaseAST *base, BaseAST *member, 

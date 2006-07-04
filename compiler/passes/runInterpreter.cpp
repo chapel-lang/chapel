@@ -2196,7 +2196,6 @@ IFrame::run(int timeslice) {
         }
         break;
       }
-      case STMT_LABEL: assert(!stage); break;
       case STMT_GOTO: { assert(!stage);
         S(GotoStmt);
         if (igoto(s->label->defPoint->parentStmt))

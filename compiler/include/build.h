@@ -7,6 +7,7 @@
 #include "symbol.h"
 
 BlockStmt* build_chpl_stmt(BaseAST* ast = NULL);
+ExprStmt* buildLabelStmt(char* name);
 ModuleSymbol* build_module(char* name, modType type, AList<Stmt>* stmts);
 CallExpr* build_primitive_call(AList<Expr>* exprs);
 

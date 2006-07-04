@@ -295,8 +295,6 @@ html_view_ast(char *filename, FILE* html_file, BaseAST* ast) {
         html_print_symbol( filename, html_file, s->label, true);
     } else if (dynamic_cast<CondStmt*>(stmt)) {
       fprintf(html_file, "<B>if</B> ");
-    } else if (dynamic_cast<LabelStmt*>(stmt)) {
-      fprintf(html_file, "<B>label</B> ");
     } else if (ReturnStmt* s = dynamic_cast<ReturnStmt*>(stmt)) {
       if (s->yield)
         fprintf(html_file, "<B>yield</B> ");
@@ -343,6 +341,9 @@ html_view_ast(char *filename, FILE* html_file, BaseAST* ast) {
           default: break;
         }
         fprintf(html_file, "<B>arg</B> ");
+        html_print_symbol( filename, html_file, e->sym, true);
+      } else if (dynamic_cast<LabelSymbol*>(e->sym)) {
+        fprintf(html_file, "<B>label</B> ");
         html_print_symbol( filename, html_file, e->sym, true);
       } else {
         fprintf(html_file, "<B>def</B> ");

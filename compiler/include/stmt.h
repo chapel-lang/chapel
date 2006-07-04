@@ -138,22 +138,6 @@ class WhenStmt : public Stmt {
 };
 
 
-class LabelStmt : public Stmt {
- public:
-  DefExpr* defLabel;
-  
-  LabelStmt(DefExpr* iDefLabel);
-  LabelStmt(Symbol* iDefLabel);
-  LabelStmt(char* iDefLabel);
-  virtual void verify();
-  COPY_DEF(LabelStmt);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void print(FILE* outfile);
-  void codegenStmt(FILE* outfile);
-  char* labelName(void);
-};
-
-
 enum gotoType {
   goto_normal = 0,
   goto_break,

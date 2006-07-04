@@ -345,8 +345,8 @@ label_stmt:
   TLABEL identifier stmt
     {
       $$ = build_chpl_stmt($3);
-      $$->insertAtTail(new LabelStmt(stringcat("_post", $2)));
-      $$->insertAtHead(new LabelStmt($2));
+      $$->insertAtTail(buildLabelStmt(stringcat("_post", $2)));
+      $$->insertAtHead(buildLabelStmt($2));
     }
 ;
 

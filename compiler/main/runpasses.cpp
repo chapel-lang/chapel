@@ -50,6 +50,7 @@ static void runPass(char *passName, void (*pass)(void)) {
     fprintf(html_index_file, "<TR><TD>");
     fprintf(html_index_file, "%s", passName);
     fprintf(html_index_file, "</TD><TD>");
+    html_view();
     fprintf(html_index_file, "</TD></TR>");
     fflush(html_index_file);
   }

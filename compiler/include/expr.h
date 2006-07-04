@@ -51,7 +51,6 @@ class DefExpr : public Expr {
   Type* typeInfo(void);
 
   void print(FILE* outfile);
-  bool noCodegen() { return true; }
   void codegen(FILE* outfile);
 };
 

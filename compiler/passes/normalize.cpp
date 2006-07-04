@@ -350,7 +350,7 @@ static void normalize_returns(FnSymbol* fn) {
   }
   bool returns_void = rets.v[0]->returnsVoid();
   LabelSymbol* label = new LabelSymbol(stringcat("_end_", fn->name));
-  fn->insertAtTail(new LabelStmt(label));
+  fn->insertAtTail(new DefExpr(label));
   VarSymbol* retval = NULL;
   if (returns_void) {
     fn->insertAtTail(new ReturnStmt());

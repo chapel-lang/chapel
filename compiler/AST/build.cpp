@@ -25,6 +25,12 @@ BlockStmt* build_chpl_stmt(BaseAST* ast) {
 }
 
 
+ExprStmt*
+buildLabelStmt(char* name) {
+  return new ExprStmt(new DefExpr(new LabelSymbol(name)));
+}
+
+
 static bool stmtIsGlob(Stmt* stmt) {
   if (BlockStmt* block = dynamic_cast<BlockStmt*>(stmt)) {
     if (block->body->length() > 1)
@@ -147,10 +153,10 @@ AList<Stmt>* build_while_do_block(Expr* cond, BlockStmt* body) {
   body->blockTag = BLOCK_WHILE_DO;
   build_loop_labels(body);
   AList<Stmt>* stmts = new AList<Stmt>();
-  stmts->insertAtTail(new LabelStmt(new DefExpr(body->pre_loop)));
+  stmts->insertAtTail(new DefExpr(body->pre_loop));
   stmts->insertAtTail(new CondStmt(cond, body));
   body->insertAtTail(new GotoStmt(goto_normal, body->pre_loop));
-  stmts->insertAtTail(new LabelStmt(new DefExpr(body->post_loop)));
+  stmts->insertAtTail(new DefExpr(body->post_loop));
   return stmts;
 }
 
@@ -160,10 +166,10 @@ AList<Stmt>* build_do_while_block(Expr* cond, BlockStmt* body) {
   body->blockTag = BLOCK_DO_WHILE;
   build_loop_labels(body);
   AList<Stmt>* stmts = new AList<Stmt>();
-  stmts->insertAtTail(new LabelStmt(new DefExpr(body->pre_loop)));
+  stmts->insertAtTail(new DefExpr(body->pre_loop));
   stmts->insertAtTail(body);
   stmts->insertAtTail(new CondStmt(cond, new GotoStmt(goto_normal, body->pre_loop)));
-  stmts->insertAtTail(new LabelStmt(new DefExpr(body->post_loop)));
+  stmts->insertAtTail(new DefExpr(body->post_loop));
   return stmts;
 }
 
@@ -201,7 +207,7 @@ AList<Stmt>* build_for_expr(AList<DefExpr>* indices,
                                                     typeiterators,
                                                     body, 1)));
 
-  stmts->insertAtTail(new LabelStmt(new DefExpr(break_out)));
+  stmts->insertAtTail(new DefExpr(break_out));
 
   stmts->insertAtTail(new BlockStmt(build_for_block(BLOCK_FORALL,
                                                     indices,
@@ -256,7 +262,7 @@ AList<Stmt>* build_for_block(BlockTag tag,
     cursor.add(new VarSymbol(stringcat("_cursor_", intstring(i), "_", intstring(uid))));
     stmts->insertAtTail(new DefExpr(cursor.v[i], new CallExpr(new CallExpr(".", iterator.v[i], new_StringLiteral("getHeadCursor")))));
   }
-  stmts->insertAtTail(new LabelStmt(new DefExpr(body->pre_loop)));
+  stmts->insertAtTail(new DefExpr(body->pre_loop));
 
   for (int i = 0; i < numIterators; i++) {
     stmts->insertAtTail(new CondStmt(new CallExpr("!", new CallExpr(new CallExpr(".", iterator.v[i], new_StringLiteral("isValidCursor?")), cursor.v[i])), new GotoStmt(goto_normal, body->post_loop)));
@@ -281,7 +287,7 @@ AList<Stmt>* build_for_block(BlockTag tag,
     stmts->insertAtTail(new GotoStmt(goto_normal, body->pre_loop));
   }
 
-  stmts->insertAtTail(new LabelStmt(new DefExpr(body->post_loop)));
+  stmts->insertAtTail(new DefExpr(body->post_loop));
   uid++;
   return stmts;
 }

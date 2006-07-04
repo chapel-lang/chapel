@@ -48,7 +48,21 @@ void buildBasicBlocks(FnSymbol* fn, Stmt* stmt) {
     BB_STOP();
   } else {
     if (ExprStmt* s = dynamic_cast<ExprStmt*>(stmt)) {
-      BB_ADD(s->expr);
+      DefExpr* def = dynamic_cast<DefExpr*>(s->expr);
+      if (def && dynamic_cast<LabelSymbol*>(def->sym)) {
+        BasicBlock* top = basicBlock;
+        BB_RESTART();
+        BasicBlock* bottom = basicBlock;
+        BB_THREAD(top, bottom);
+        LabelSymbol* label = dynamic_cast<LabelSymbol*>(def->sym);
+        if (Vec<BasicBlock*>* vbb = gotoMaps.get(label)) {
+          forv_Vec(BasicBlock, basicBlock, *vbb) {
+            BB_THREAD(basicBlock, bottom);
+          }
+        }
+        labelMaps.put(label, bottom);
+      } else
+        BB_ADD(s->expr);
     } else if (ReturnStmt* s = dynamic_cast<ReturnStmt*>(stmt)) {
       BB_ADD(s->expr);
     } else if (BlockStmt* s = dynamic_cast<BlockStmt*>(stmt)) {
@@ -72,18 +86,6 @@ void buildBasicBlocks(FnSymbol* fn, Stmt* stmt) {
       BB_THREAD(top, elseTop);
       BB_THREAD(thenBottom, bottom);
       BB_THREAD(elseBottom, bottom);
-    } else if (LabelStmt* s = dynamic_cast<LabelStmt*>(stmt)) {
-      BasicBlock* top = basicBlock;
-      BB_RESTART();
-      BasicBlock* bottom = basicBlock;
-      BB_THREAD(top, bottom);
-      LabelSymbol* label = dynamic_cast<LabelSymbol*>(s->defLabel->sym);
-      if (Vec<BasicBlock*>* vbb = gotoMaps.get(label)) {
-        forv_Vec(BasicBlock, basicBlock, *vbb) {
-          BB_THREAD(basicBlock, bottom);
-        }
-      }
-      labelMaps.put(label, bottom);
     } else if (GotoStmt* s = dynamic_cast<GotoStmt*>(stmt)) {
       LabelSymbol* label = dynamic_cast<LabelSymbol*>(s->label);
       if (BasicBlock* bb = labelMaps.get(label)) {

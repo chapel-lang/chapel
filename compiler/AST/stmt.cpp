@@ -24,8 +24,7 @@ Stmt::Stmt(astType_t astType) :
 void Stmt::verify() {
   BaseAST::verify();
   if (!prev || !next) {
-    if (!dynamic_cast<BlockStmt*>(this) &&
-        !dynamic_cast<LabelStmt*>(parentStmt)) {
+    if (!dynamic_cast<BlockStmt*>(this)) {
       INT_FATAL(this, "Statement is not in a list");
     }
   }
@@ -625,67 +624,6 @@ void WhenStmt::print(FILE* outfile) {
 
 void WhenStmt::codegenStmt(FILE* outfile) {
   INT_FATAL(this, "WhenStmt::codegenStmt encountered");
-}
-
-
-LabelStmt::LabelStmt(DefExpr* iDefLabel) :
-  Stmt(STMT_LABEL),
-  defLabel(iDefLabel)
-{ }
-
-LabelStmt::LabelStmt(Symbol* iDefLabel) :
-  Stmt(STMT_LABEL),
-  defLabel(new DefExpr(iDefLabel))
-{ }
-
-LabelStmt::LabelStmt(char* iDefLabel) :
-  Stmt(STMT_LABEL),
-  defLabel(new DefExpr(new LabelSymbol(iDefLabel)))
-{ }
-
-
-void LabelStmt::verify() {
-  Stmt::verify();
-  if (astType != STMT_LABEL) {
-    INT_FATAL(this, "Bad LabelStmt::astType");
-  }
-
-  if (!defLabel || !dynamic_cast<LabelSymbol*>(defLabel->sym)) {
-    INT_FATAL(this, "LabelStmt does not define a LabelSymbol");
-  }
-}
-
-
-LabelStmt*
-LabelStmt::copyInner(ASTMap* map) {
-  return new LabelStmt(COPY_INT(defLabel));
-}
-
-
-void LabelStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == defLabel) {
-    defLabel = dynamic_cast<DefExpr*>(new_ast);
-  } else {
-    INT_FATAL(this, "Unexpected case in LabelStmt::replaceChild");
-  }
-}
-
-
-void LabelStmt::print(FILE* outfile) {
-  fprintf(outfile, "label ");
-  defLabel->print(outfile);
-  fprintf(outfile, " ");
-}
-
-
-void LabelStmt::codegenStmt(FILE* outfile) {
-  defLabel->sym->codegen(outfile);
-  fprintf(outfile, ":;\n");
-}
-
-
-char* LabelStmt::labelName(void) {
-  return defLabel->sym->name;
 }
 
 
