@@ -66908,3 +66908,22 @@ Removed files:
 	                           chapel_ifa.cpp chapel_ifa.h 
 	chapel/compiler/include/: analysis.h 
 
+---------------------------------------------------------------------------
+
+07/03/06 17:15:21 -- deitz
+
+Log message:
+	Removed LabelStmt.  This contained a DefExpr that defined a
+	LabelSymbol.  A LabelSymbol is now defined in a DefExpr that is
+	defined in an ExprStmt like all other DefExprs.
+	
+	Reenabled html log output.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp bb.cpp build.cpp expr.cpp 
+	                      stmt.cpp view.cpp 
+	chapel/compiler/include/: baseAST.h build.h expr.h stmt.h 
+	chapel/compiler/main/: runpasses.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: normalize.cpp runInterpreter.cpp 
+
