@@ -67052,3 +67052,24 @@ Added files:
 	chapel/test/functions/deitz/: test_int_this2.chpl 
 	                              test_int_this2.good 
 
+---------------------------------------------------------------------------
+
+07/05/06 11:55:18 -- deitz
+
+Log message:
+	Removed a bunch of futures that now work because of better handling of
+	coercion on array element assignment, scalar promotion, nil,
+	instantiation followed by coercion, and empty sequences.
+
+Removed files:
+	chapel/test/arrays/deitz/: test_array_basic2.future 
+	                           test_scalar_promote8.future 
+	chapel/test/classes/bradc/: dispatch.future 
+	chapel/test/classes/deitz/: test_nil1.future 
+	chapel/test/functions/bradc/: arrayArg.future 
+	chapel/test/reductions/bradc/manual/: threeuses-cast.future 
+	                                      twouses.future 
+	chapel/test/trivial/bradc/: coerce.future 
+	chapel/test/types/seq/bradc/: emptySeq2.future 
+	chapel/test/types/type_variables/jplevyak/: construct-1.future 
+
