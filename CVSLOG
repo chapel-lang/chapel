@@ -66972,3 +66972,13 @@ Added files:
 	chapel/test/functions/deitz/: test_int_this.chpl 
 	                              test_int_this.good 
 
+---------------------------------------------------------------------------
+
+07/05/06 10:22:33 -- deitz
+
+Log message:
+	Updated REGRESSIONS file.
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+
