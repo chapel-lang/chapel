@@ -1,4 +1,4 @@
-{x = 0}
-{x = 0.0}
-0
-0.0
+Error: Unresolved call ':C.x' (test_inherit_mod1.chpl:17)
+Candidates are:
+  :D1.x (test_inherit_mod1.chpl:4)
+  :D2.x (test_inherit_mod1.chpl:8)

@@ -681,6 +681,8 @@ resolveCall(CallExpr* call) {
           USR_FATAL_CONT(call, "%s call '%s'", (resolve_call_error == CALL_AMBIGUOUS) ? "Ambiguous" : "Unresolved", str);
           USR_PRINT("Candidates are:");
           forv_Vec(FnSymbol, fn, resolve_call_error_candidates) {
+            if (fn->isSetter || fn->_setter)
+              continue;
             int start = 0;
             if (fn->instantiatedFrom)
               fn = fn->instantiatedFrom;
