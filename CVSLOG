@@ -67088,3 +67088,19 @@ Modified files:
 	                            test_inherit_mod2.good 
 	                            test_inherit_mod3.good 
 
+---------------------------------------------------------------------------
+
+07/05/06 16:39:38 -- deitz
+
+Log message:
+	Replaced CastExpr with PRIMITIVE_CAST CallExpr and simplified code.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp baseAST.cpp expr.cpp 
+	                      primitive.cpp symbol.cpp 
+	chapel/compiler/include/: baseAST.h expr.h primitive.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: cleanup.cpp functionResolution.cpp 
+	                         normalize.cpp runInterpreter.cpp 
+	chapel/test/: REGRESSIONS 
+
