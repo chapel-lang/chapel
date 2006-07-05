@@ -638,6 +638,7 @@ resolveCall(CallExpr* call) {
       if (resolve_call_error == CALL_UNKNOWN || resolve_call_error == CALL_AMBIGUOUS) {
         if (resolve_call_error_candidates.n > 0) {
           bool method = false;
+          bool _this = false;
           char *str = "";
           if (atypes.n > 1)
             if (atypes.v[0] == dtMethodToken)
@@ -648,12 +649,22 @@ resolveCall(CallExpr* call) {
             else
               str = stringcat(str, ":", atypes.v[1]->symbol->name, ".");
           }
-
-          str = stringcat(str, name);
+          if (!strcmp("this", name))
+            _this = true;
+          if (_this) {
+            str = stringcat(str, ":", atypes.v[0]->symbol->name);
+          } else {
+            str = stringcat(str, name);
+          }
           if (!call->methodTag)
             str = stringcat(str, "(");
           bool first = false;
-          for (int i = (method) ? 2 : 0; i < atypes.n; i++) {
+          int start = 0;
+          if (method)
+            start = 2;
+          if (_this)
+            start = 1;
+          for (int i = start; i < atypes.n; i++) {
             if (!first)
               first = true;
             else
@@ -670,18 +681,25 @@ resolveCall(CallExpr* call) {
           USR_FATAL_CONT(call, "%s call '%s'", (resolve_call_error == CALL_AMBIGUOUS) ? "Ambiguous" : "Unresolved", str);
           USR_PRINT("Candidates are:");
           forv_Vec(FnSymbol, fn, resolve_call_error_candidates) {
+            int start = 0;
             if (fn->instantiatedFrom)
               fn = fn->instantiatedFrom;
-            str = "";
             if (fn->isMethod) {
-              DefExpr* formalDef = fn->formals->get(2);
-              str = stringcat(str, ":", formalDef->sym->type->symbol->name, ".");
-            }
-            str = stringcat(str, fn->name);
+              if (!strcmp(fn->name, "this")) {
+                DefExpr* formalDef = fn->formals->get(1);
+                str = stringcat(":", formalDef->sym->type->symbol->name);
+                start = 1;
+              } else {
+                DefExpr* formalDef = fn->formals->get(2);
+                str = stringcat(":", formalDef->sym->type->symbol->name, ".", fn->name);
+                start = 2;
+              }
+            } else
+              str = stringcat(fn->name);
             if (!fn->noParens)
               str = stringcat(str, "(");
             bool first = false;
-            for (int i = (fn->isMethod) ? 2 : 0; i < fn->formals->length(); i++) {
+            for (int i = start; i < fn->formals->length(); i++) {
               DefExpr* formalDef = fn->formals->get(i+1);
               if (!first)
                 first = true;
