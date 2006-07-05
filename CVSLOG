@@ -66948,3 +66948,27 @@ Modified files:
 	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
 	chapel/test/functions/jplevyak/: zeroarity-bound-error-1.good 
 
+---------------------------------------------------------------------------
+
+07/05/06 10:21:44 -- deitz
+
+Log message:
+	Cleaned error messages related to function 'this' but is there a
+	better way to show this?  How should we list the candidates for
+	function calls that are not ambiguous, i.e., where the candidates are
+	just the visible functions?  Should we only list them if there are
+	fewer than k?
+	
+	Added a new test test_int_this that coerces the int to a string and
+	applies the string indexing function on the int.  This only works on
+	variables now since the literal is not allowed in this context in
+	parsing.  This is odd usage but basically 987(2) is 8, the second
+	character in the string "987" coerced from the int 987.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-2.good 
+Added files:
+	chapel/test/functions/deitz/: test_int_this.chpl 
+	                              test_int_this.good 
+
