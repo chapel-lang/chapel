@@ -66927,3 +66927,24 @@ Modified files:
 	chapel/compiler/parser/: chapel.y 
 	chapel/compiler/passes/: normalize.cpp runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+07/05/06 09:51:54 -- deitz
+
+Log message:
+	Added CallExpr::methodTag that is set to true if the CallExpr is a
+	method access.
+	
+	Made it so that functions with parentheses are not candidates for
+	method accesses so that it is an error to invoke a method with no
+	parentheses with parentheses.  This fixes
+	test/functions/jplevyak/zeroarity-bound-error-1.chpl.
+	
+	Cleaned up error messages on methods.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-1.good 
+
