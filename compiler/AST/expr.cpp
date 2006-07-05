@@ -65,13 +65,6 @@ bool Expr::isParam(void){
 }
 
 
-int Expr::rank(void) {
-  Type* exprType = this->typeInfo();
-
-  return exprType->rank();
-}
-
-
 Stmt* Expr::getStmt() {
   return (parentStmt) ? parentStmt : parentSymbol->defPoint->getStmt();
 }
@@ -552,6 +545,13 @@ FnSymbol* CallExpr::findFnSymbol(void) {
 
 
 Type* CallExpr::typeInfo(void) {
+  if (!primitive) {
+    FnSymbol* fn = isResolved();
+    if (fn)
+      return fn->retType;
+  } else {
+    return primitive->returnInfo(this);
+  }
   if (primitive &&
       ((!strcmp(primitive->name, ".")) ||
        (!strcmp(primitive->name, ".=")))) {
@@ -910,7 +910,18 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, ") == %d)", tid);
       break;
     }
-
+    case PRIMITIVE_CAST: {
+      if (typeInfo() == dtString) {
+        get(2)->codegenCastToString(outfile);
+        break;
+      }
+      fprintf(outfile, "(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, ")(");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
+    }
     case NUM_KNOWN_PRIMS:
       INT_FATAL(this, "Impossible"); break;
       break;
@@ -1039,83 +1050,6 @@ bool CallExpr::isLogicalPrimitive(void) {
      primitive->tag == PRIMITIVE_UNARY_LNOT ||
      primitive->tag == PRIMITIVE_LAND ||
      primitive->tag == PRIMITIVE_LOR);
-}
-
-
-CastExpr::CastExpr(Expr* initExpr, Type* initType, Expr* initNewType) :
-  Expr(EXPR_CAST),
-  expr(initExpr),
-  type(initType),
-  newType(initNewType)
-{ }
-
-
-CastExpr::CastExpr(Symbol* initExpr, Type* initType, Expr* initNewType) :
-  Expr(EXPR_CAST),
-  expr(new SymExpr(initExpr)),
-  type(initType),
-  newType(initNewType)
-{ }
-
-
-void CastExpr::verify() {
-  Expr::verify();
-  if (astType != EXPR_CAST) {
-    INT_FATAL(this, "Bad CastExpr::astType");
-  }
-}
-
-
-CastExpr*
-CastExpr::copyInner(ASTMap* map) {
-  return new CastExpr(COPY_INT(expr), type, COPY_INT(newType));
-}
-
-
-void CastExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == expr) {
-    expr = dynamic_cast<Expr*>(new_ast);
-  } else if (old_ast == newType) {
-    newType = dynamic_cast<Expr*>(new_ast);
-  } else {
-
-  }
-}
-
-
-Type* CastExpr::typeInfo(void) {
-  if (type) {
-    return type;
-  } else {
-    return newType->typeInfo();
-  }
-}
-
-
-void CastExpr::print(FILE* outfile) {
-  if (type)
-    type->print(outfile);
-  else
-    newType->print(outfile);
-  fprintf(outfile, "(");
-  expr->print(outfile);
-  fprintf(outfile, ")");
-}
-
-
-void CastExpr::codegen(FILE* outfile) {
-  if (type == dtString) {
-    expr->codegenCastToString(outfile);
-  } else {
-    fprintf(outfile, "(");
-    if (is_Scalar_Type(type))
-      type->codegen(outfile);
-    else
-      fprintf(outfile, "void*"); // this type not fixed up form cloning
-    fprintf(outfile, ")(");
-    expr->codegen(outfile);
-    fprintf(outfile, ")");
-  }
 }
 
 
@@ -1350,11 +1284,14 @@ exprsToIndicesHelper(AList<DefExpr>* defs,
   if (SymExpr* expr = dynamic_cast<SymExpr*>(index)) {
     defs->insertAtTail
       (new DefExpr(new VarSymbol(expr->var->name, type), NULL, exprType));
-  } else if (CastExpr* expr = dynamic_cast<CastExpr*>(index)) {
-    exprsToIndicesHelper(defs, expr->expr, expr->type, expr->newType);
-  } else {
-    INT_FATAL(index, "Error, Variable expected in index list");
+    return;
+  } else if (CallExpr* expr = dynamic_cast<CallExpr*>(index)) {
+    if (expr->isPrimitive(PRIMITIVE_CAST)) {
+      exprsToIndicesHelper(defs, expr->get(2), type, expr->get(1)->copy());
+      return;
+    }
   }
+  INT_FATAL(index, "Error, Variable expected in index list");
 }
 
 

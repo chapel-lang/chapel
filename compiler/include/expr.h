@@ -26,7 +26,6 @@ class Expr : public BaseAST {
 
   virtual bool isParam(void);
   virtual bool isConst(void);
-  virtual int rank(void);
 
   bool isRef(void);
   Stmt* Expr::getStmt();
@@ -116,25 +115,6 @@ class CallExpr : public Expr {
   bool isUnaryPrimitive(void);
   bool isBinaryPrimitive(void);
   bool isLogicalPrimitive(void);
-};
-
-
-class CastExpr : public Expr {
- public:
-  Expr* expr;
-  Type* type;
-  Expr* newType;
-
-  CastExpr(Expr* initExpr, Type* initType, Expr* initNewType = NULL);
-  CastExpr(Symbol* initExpr, Type* initType, Expr* initNewType = NULL);
-  virtual void verify(); 
-  COPY_DEF(CastExpr);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-
-  Type* typeInfo(void);
-
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
 };
 
 

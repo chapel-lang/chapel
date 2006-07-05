@@ -16,11 +16,6 @@ resolveType(Expr* expr) {
     return sym->var->type;
   } else if (NamedExpr* a = dynamic_cast<NamedExpr*>(expr)) {
     return resolveType(a->actual);
-  } else if (CastExpr* a = dynamic_cast<CastExpr*>(expr)) {
-    if (a->type)
-      return a->type;
-    else
-      return resolveType(a->newType);
   }
   INT_FATAL(expr, "Failure in resolveType");
   return NULL;
@@ -56,10 +51,13 @@ returnInfoFirst(CallExpr* call) {
   return resolveType(call->get(1));
 }
 
-// static Type*
-// returnInfoSecond(CallExpr* call) {
-//   return resolveType(call->get(2));
-// }
+static Type*
+returnInfoCast(CallExpr* call) {
+  Type* t = resolveType(call->get(1));
+  if (MetaType* mt = dynamic_cast<MetaType*>(t))
+    return mt->base;
+  return dtUnknown;
+}
 
 static Type*
 returnInfoMove(CallExpr* call) {
@@ -183,6 +181,7 @@ initPrimitive() {
   prim_def(PRIMITIVE_TYPE_EQUAL, "type_equal", type_equal_interpreter_op, returnInfoBool);
   prim_def(PRIMITIVE_PTR_EQUAL, "ptr_eq", ptr_eq_interpreter_op, returnInfoBool);
   prim_def(PRIMITIVE_PTR_NOTEQUAL, "ptr_neq", ptr_neq_interpreter_op, returnInfoBool);
+  prim_def(PRIMITIVE_CAST, "cast", cast_interpreter_op, returnInfoCast);
   prim_def("abs", abs_interpreter_op, returnInfoInt);
   prim_def("acos", acos_interpreter_op, returnInfoFloat);
   prim_def("acosh", acosh_interpreter_op, returnInfoFloat);
@@ -226,7 +225,6 @@ initPrimitive() {
   prim_def("array_init", array_init_interpreter_op, returnInfoVoid);
   prim_def("array_index", array_index_interpreter_op, returnInfoArrayIndex);
   prim_def("array_set", array_set_interpreter_op, returnInfoVoid);
-  prim_def("cast", cast_interpreter_op, returnInfoBool);
   prim_def("to_string", to_string_interpreter_op, returnInfoString);
   prim_def("string_copy", copy_string_interpreter_op, returnInfoString);
   prim_def("string_index", string_index_interpreter_op, returnInfoString);

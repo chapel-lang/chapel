@@ -740,7 +740,7 @@ FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_map) {
     wrapper->formals->insertAtTail(wrapper_formal);
     if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(coercion_map->get(formal))) {
       wrapper_formal->type = ts->definition;
-      call->insertAtTail(new CastExpr(wrapper_formal, formal->type));
+      call->insertAtTail(new CallExpr(PRIMITIVE_CAST, formal->type->symbol, wrapper_formal));
     } else {
       call->insertAtTail(wrapper_formal);
     }
@@ -797,7 +797,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
             formal->intent != INTENT_REF &&
             formal->intent != INTENT_OUT &&
             formal->intent != INTENT_INOUT)
-          call->insertAtTail(new CastExpr(temp, formal->type));
+          call->insertAtTail(new CallExpr(PRIMITIVE_CAST, formal->type->symbol, temp));
         else
           call->insertAtTail(temp);
       }

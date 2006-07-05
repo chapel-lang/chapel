@@ -132,11 +132,13 @@ void cleanup(BaseAST* base) {
   asts.clear();
   collect_asts(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
-    if (CastExpr* cast = dynamic_cast<CastExpr*>(ast)) {
-      if (SymExpr* sym = dynamic_cast<SymExpr*>(cast->newType)) {
-        if (sym->var->type == dtString)
-          cast->replace(new CallExpr("_tostring", cast->expr->copy(),
-                                     cast->newType->copy()));
+    if (CallExpr* cast = dynamic_cast<CallExpr*>(ast)) {
+      if (cast->isPrimitive(PRIMITIVE_CAST)) {
+        if (SymExpr* sym = dynamic_cast<SymExpr*>(cast->get(1))) {
+          if (sym->var->type == dtString)
+            cast->replace(new CallExpr("_tostring", cast->get(2)->copy(),
+                                       cast->get(1)->copy()));
+        }
       }
     }
   }

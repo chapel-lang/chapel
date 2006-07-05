@@ -587,14 +587,6 @@ static void hack_resolve_types(Expr* expr) {
             var->type = ts->definition;
     }
   }
-
-  if (CastExpr* castExpr = dynamic_cast<CastExpr*>(expr)) {
-    if (castExpr->type == dtUnknown && can_resolve_type(castExpr->newType)) {
-      castExpr->type = castExpr->newType->typeInfo();
-      castExpr->newType = NULL;
-    }
-  }
-
   if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
     if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(def->sym)) {
       if (UserType* userType = dynamic_cast<UserType*>(ts->definition)) {
@@ -824,7 +816,7 @@ static void fold_call_expr(CallExpr* call) {
     } else if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
       if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(sym->var)) {
         if (ts->definition->defaultValue)
-          call->replace(new CastExpr(new SymExpr(ts->definition->defaultValue), ts->definition));
+          call->replace(new CallExpr(PRIMITIVE_CAST, ts, ts->definition->defaultValue));
         else if (ts->definition->defaultConstructor)
           call->replace(new CallExpr(ts->definition->defaultConstructor));
         else if (!dynamic_cast<VariableType*>(ts->definition))

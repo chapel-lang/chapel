@@ -31,6 +31,7 @@ linux and general regressions
 [Error matching compiler output for functions/deitz/test_visible2]
 [Error matching compiler output for functions/deitz/nested/test_nested_global1]
 [Error matching program output for functions/jplevyak/introduce-dispatch-1]
+*[Error matching compiler output for functions/jplevyak/zeroarity-bound-error-2]
 [Error matching compiler output for functions/jplevyak/scoping/visibility-1]
 [Error matching program output for memory/shannon/memmaxExceedsLineno2]
 [Error matching program output for memory/shannon/memstatPrint]
@@ -42,6 +43,9 @@ linux and general regressions
 [Error executing program types/tuple/deitz/test_tuple_record_implementation4]
 [Error executing program types/typedefs/bradc/localType]
 [Error executing program types/typedefs/bradc/localType2]
+
+*This is working except the module name is location dependent.  Also,
+ what should this error look like?
 
 ==========================
 linux valgrind regressions

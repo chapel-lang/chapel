@@ -19,11 +19,6 @@ resolveType(Expr* expr) {
     return sym->var->type;
   } else if (NamedExpr* a = dynamic_cast<NamedExpr*>(expr)) {
     return resolveType(a->actual);
-  } else if (CastExpr* a = dynamic_cast<CastExpr*>(expr)) {
-    if (a->type)
-      return a->type;
-    else
-      return resolveType(a->newType);
   }
   INT_FATAL(expr, "Failure in resolveType");
   return dtUnknown;
@@ -356,9 +351,8 @@ build_coercion_wrapper(FnSymbol* fn, Vec<Type*>* actual_types) {
     j++;
     Type* actual_type = actual_types->v[j];
     ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
-    if (canCoerce(actual_type, formal->type)) {
+    if (canCoerce(actual_type, formal->type))
       subs.put(formal, actual_type->symbol);
-    }
   }
   if (subs.n)
     fn = fn->coercion_wrapper(&subs);
@@ -576,6 +570,8 @@ resolve_type_expr(BaseAST* base) {
 
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+      if (call->primitive)
+        call->replace(new SymExpr(call->typeInfo()->symbol));
       if (!call->parentSymbol)
         continue;
       Vec<Type*> atypes;

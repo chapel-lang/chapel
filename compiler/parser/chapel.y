@@ -1145,7 +1145,7 @@ top_level_expr:
     }
 | expr TCOLON type
     {
-      $$ = new CastExpr($1, dtUnknown, $3);
+      $$ = new CallExpr(PRIMITIVE_CAST, $3, $1);
     }
 /* | expr TCOLON STRINGLITERAL */
 /*   {  */

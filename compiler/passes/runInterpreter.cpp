@@ -2319,46 +2319,6 @@ IFrame::run(int timeslice) {
         }
         break;
       }
-      case EXPR_CAST: {
-        S(CastExpr);
-        switch (stage++) {
-          case 0:
-            EVAL_EXPR(s->expr);
-            break;
-          case 1:
-            if (!s->type)
-              EVAL_EXPR(s->newType);
-            break;
-          case 2: {
-            stage = 0;
-            ISlot *eslot = islot(s->expr);
-            Type *t = s->type;
-            if (!t) {
-              ISlot *tslot = islot(s->newType);
-              switch (tslot->kind) {
-                case OBJECT_ISLOT: t = tslot->object->type; break;
-                case IMMEDIATE_ISLOT: t = immediate_type(tslot->imm); break;
-                case SYMBOL_ISLOT: {
-                  if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(tslot->symbol)) {
-                    t = ts->definition;
-                    break;
-                  }
-                }
-                  // fall through
-                default:
-                  INT_FATAL(ip, "CastExpr with bad argument");
-              }
-            }
-            if (!t) {
-              INT_FATAL(ip, "CastExpr with NULL type");
-            }
-            eslot->aspect = t;
-            *islot(s) = *eslot;
-            break;
-          }
-        }
-        break;
-      }
       case EXPR_IMPORT:
         break;
     }
