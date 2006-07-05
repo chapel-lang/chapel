@@ -67073,3 +67073,18 @@ Removed files:
 	chapel/test/types/seq/bradc/: emptySeq2.future 
 	chapel/test/types/type_variables/jplevyak/: construct-1.future 
 
+---------------------------------------------------------------------------
+
+07/05/06 13:58:19 -- deitz
+
+Log message:
+	Cleaned up error messages and updated .good of three more tests that
+	are now errors but were not before.  Updated regressions file.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/test/: REGRESSIONS 
+	chapel/test/classes/deitz/: test_inherit_mod1.good 
+	                            test_inherit_mod2.good 
+	                            test_inherit_mod3.good 
+
