@@ -34,8 +34,6 @@ linux and general regressions
 [Error matching compiler output for functions/deitz/test_visible2]
 [Error matching compiler output for functions/deitz/nested/test_nested_global1]
 [Error matching program output for functions/jplevyak/introduce-dispatch-1]
-[Error matching program output for functions/jplevyak/zeroarity-bound-error-1]
-[Error matching compiler output for functions/jplevyak/zeroarity-bound-error-2]
 [Error matching compiler output for functions/jplevyak/scoping/visibility-1]
 [Error matching program output for memory/shannon/memmaxExceedsLineno2]
 [Error matching program output for memory/shannon/memstatPrint]
