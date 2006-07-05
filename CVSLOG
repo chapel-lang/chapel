@@ -66982,3 +66982,73 @@ Log message:
 Modified files:
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+07/05/06 11:44:13 -- deitz
+
+Log message:
+	Allow for literals to be used in more places than before during
+	parsing.  For example, as the base expression of a function or of a
+	dot expression as in "hello"(3) and "hello".foo().  In the former, we
+	are indexing directly into the literal "hello" using the string
+	indexing function.  Note that we can do this on an integer that is
+	coerced to a string as in 987(2).  In the latter, we are calling a
+	function bound to string which is presumably defined as in fun
+	string.foo() { ... }.
+	
+	Removed restriction on tuple multipliers needing to be in parentheses.
+	So for example
+	
+	  param rank = 2;
+	  var i : rank * int;
+	
+	no longer requires a parentheses around "rank * int."  Note that this
+	means that a parentheses changes the semantics since we allow for
+	1-tuples so
+	
+	  var i : (rank * int);
+	
+	is a 1-tuple of a rank-tuple of ints and
+	
+	  var i : (int);
+	
+	is a 1-tuple of ints.
+	
+	This is in contrast to expressions where
+	
+	  (2, 2)
+	
+	is a 2-tuple of ints but
+	
+	  (2)
+	
+	is just an int.
+	
+	Perhaps we should get rid of 1-tuples though this will require
+	special-casing functions that take variable number of arguments in the
+	case that the variable number is one, since this builds a 1-tuple.  Or
+	perhaps we are good now.
+	
+	Removed extra parentheses in module tuples.
+	
+	Updated tests.
+	
+	Added a new test case to test 987(2).
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: cleanup.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	chapel/test/demo/review_060130/: history_accumulator.chpl 
+	chapel/test/functions/deitz/iterators/: 
+	                                        test_instantiate_iterator2.chpl 
+	                                        test_instantiate_iterator3.chpl 
+	                                        test_instantiate_iterator3a.chpl 
+	chapel/test/types/tuple/deitz/: test_for_param_return.chpl 
+	                                test_htuple6.good 
+	                                test_htuple7.chpl 
+	                                test_param_tuple_arg1.chpl 
+Added files:
+	chapel/test/functions/deitz/: test_int_this2.chpl 
+	                              test_int_this2.good 
+
