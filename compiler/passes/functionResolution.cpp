@@ -449,13 +449,20 @@ resolve_call(BaseAST* ast,
   Vec<FnSymbol*> candidateFns;
   Vec<Vec<ArgSymbol*>*> candidateActualFormals; // candidate functions
 
+  bool methodTag = false;
+  if (CallExpr* call = dynamic_cast<CallExpr*>(ast))
+    methodTag = call->methodTag;
+
   if (!fnSymbol) {
-    char* canon_name = cannonicalize_string(name);
-    ast->parentScope->getVisibleFunctions(&visibleFns, canon_name);
-    forv_Vec(FnSymbol, visibleFn, visibleFns)
-      addCandidate(&candidateFns, &candidateActualFormals, visibleFn, actual_types, actual_params, actual_names);
-  } else 
-    addCandidate(&candidateFns, &candidateActualFormals, fnSymbol, actual_types, actual_params, actual_names);
+    ast->parentScope->getVisibleFunctions(&visibleFns, name);
+  } else
+    visibleFns.add(fnSymbol);
+
+  forv_Vec(FnSymbol, visibleFn, visibleFns) {
+    if (methodTag && !visibleFn->noParens)
+      continue;
+    addCandidate(&candidateFns, &candidateActualFormals, visibleFn, actual_types, actual_params, actual_names);
+  }
 
   FnSymbol* best = NULL;
   Vec<ArgSymbol*>* actual_formals = 0;
@@ -630,10 +637,23 @@ resolveCall(CallExpr* call) {
     if (!resolvedFn) {
       if (resolve_call_error == CALL_UNKNOWN || resolve_call_error == CALL_AMBIGUOUS) {
         if (resolve_call_error_candidates.n > 0) {
-          char *str;
-          str = stringcat(name, "(");
+          bool method = false;
+          char *str = "";
+          if (atypes.n > 1)
+            if (atypes.v[0] == dtMethodToken)
+              method = true;
+          if (method) {
+            if (MetaType* mt = dynamic_cast<MetaType*>(atypes.v[1]))
+              str = stringcat(str, mt->base->symbol->name, ".");
+            else
+              str = stringcat(str, ":", atypes.v[1]->symbol->name, ".");
+          }
+
+          str = stringcat(str, name);
+          if (!call->methodTag)
+            str = stringcat(str, "(");
           bool first = false;
-          for (int i = 0; i < atypes.n; i++) {
+          for (int i = (method) ? 2 : 0; i < atypes.n; i++) {
             if (!first)
               first = true;
             else
@@ -645,15 +665,24 @@ resolveCall(CallExpr* call) {
             else
               str = stringcat(str, ":", atypes.v[i]->symbol->name);
           }
-          str = stringcat(str, ")");
+          if (!call->methodTag)
+            str = stringcat(str, ")");
           USR_FATAL_CONT(call, "%s call '%s'", (resolve_call_error == CALL_AMBIGUOUS) ? "Ambiguous" : "Unresolved", str);
           USR_PRINT("Candidates are:");
           forv_Vec(FnSymbol, fn, resolve_call_error_candidates) {
             if (fn->instantiatedFrom)
               fn = fn->instantiatedFrom;
-            str = stringcat(fn->name, "(");
+            str = "";
+            if (fn->isMethod) {
+              DefExpr* formalDef = fn->formals->get(2);
+              str = stringcat(str, ":", formalDef->sym->type->symbol->name, ".");
+            }
+            str = stringcat(str, fn->name);
+            if (!fn->noParens)
+              str = stringcat(str, "(");
             bool first = false;
-            for_alist(DefExpr, formalDef, fn->formals) {
+            for (int i = (fn->isMethod) ? 2 : 0; i < fn->formals->length(); i++) {
+              DefExpr* formalDef = fn->formals->get(i+1);
               if (!first)
                 first = true;
               else
@@ -663,7 +692,8 @@ resolveCall(CallExpr* call) {
               else
                 str = stringcat(str, formalDef->sym->name, ": ", formalDef->sym->type->symbol->name);
             }
-            str = stringcat(str, ")");
+            if (!fn->noParens)
+              str = stringcat(str, ")");
             USR_PRINT(fn, "  %s", str);
           }
           USR_STOP();

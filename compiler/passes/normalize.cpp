@@ -653,6 +653,7 @@ static void apply_getters_setters(FnSymbol* fn) {
         Expr* _this = call->get(1);
         _this->remove();
         CallExpr* getter = new CallExpr(method, methodToken, _this);
+        getter->methodTag = true;
         call->replace(getter);
         if (CallExpr* parent = dynamic_cast<CallExpr*>(getter->parentExpr))
           if (parent->baseExpr == getter)

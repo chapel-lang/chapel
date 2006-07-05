@@ -336,7 +336,8 @@ CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
   partialTag(PARTIAL_NEVER),
   member(0),
   member_type(0),
-  member_offset(-1)
+  member_offset(-1),
+  methodTag(false)
 {
   if (Symbol* b = dynamic_cast<Symbol*>(base)) {
     baseExpr = new SymExpr(b);
@@ -360,7 +361,8 @@ CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg
   partialTag(PARTIAL_NEVER),
   member(0),
   member_type(0),
-  member_offset(-1)
+  member_offset(-1),
+  methodTag(false)
 {
   callExprHelper(this, arg1);
   callExprHelper(this, arg2);
@@ -376,7 +378,8 @@ CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg
   partialTag(PARTIAL_NEVER),
   member(0),
   member_type(0),
-  member_offset(-1)
+  member_offset(-1),
+  methodTag(false)
 {
   callExprHelper(this, arg1);
   callExprHelper(this, arg2);
@@ -393,7 +396,8 @@ CallExpr::CallExpr(char* name, BaseAST* arg1, BaseAST* arg2,
   partialTag(PARTIAL_NEVER),
   member(0),
   member_type(0),
-  member_offset(-1)
+  member_offset(-1),
+  methodTag(false)
 {
   callExprHelper(this, arg1);
   callExprHelper(this, arg2);
@@ -422,6 +426,7 @@ CallExpr::copyInner(ASTMap* map) {
   _this->member = member;
   _this->member_type = member_type;
   _this->member_offset = member_offset;
+  _this->methodTag = methodTag;
   return _this;
 }
 
