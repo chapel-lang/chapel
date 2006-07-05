@@ -226,9 +226,9 @@ Is this "while x"(i); or "while x(i)";?
 %type <ptype> class_tag
 
 %type <pexpr> parenop_expr memberaccess_expr non_tuple_lvalue lvalue
-%type <pexpr> tuple_paren_expr atom expr expr_list_item opt_expr
+%type <pexpr> tuple_paren_expr expr expr_list_item opt_expr
 %type <pexpr> literal range seq_expr where
-%type <pexpr> tuple_multiplier variable_expr top_level_expr
+%type <pexpr> variable_expr top_level_expr
 %type <pexpr> reduction opt_init_expr var_arg_expr
 %type <pexprls> expr_ls nonempty_expr_ls tuple_inner_type_ls opt_inherit_expr_ls
 %type <pdefexpr> formal enum_item
@@ -247,6 +247,7 @@ Is this "while x"(i); or "while x(i)";?
 %left TRSBR
 %left TIN
 %left TDOTDOT
+%left TSTARTUPLE
 %right TPARTIAL
 %left TSEQCAT
 %left TOR
@@ -974,12 +975,6 @@ record_inner_type_ls:
 ;
 
 
-tuple_multiplier:
-  INTLITERAL
-    { $$ = new_IntLiteral(yytext); }
-;
-
-
 variable_expr:
   identifier
     { $$ = new SymExpr(new UnresolvedSymbol($1)); }
@@ -987,14 +982,14 @@ variable_expr:
 
 
 type:
-  non_tuple_lvalue
+  non_tuple_lvalue %prec TSTARTUPLE
 | record_tuple_type
 | non_tuple_lvalue TOF type
     { $$ = new CallExpr($1, new NamedExpr("elt_type", $3)); }
-| tuple_multiplier TSTAR type
+/* | tuple_multiplier TSTAR type */
+/*     { $$ = new CallExpr("_htuple", $3, $1); } */
+| non_tuple_lvalue TSTAR type %prec TSTAR
     { $$ = new CallExpr("_htuple", $3, $1); }
-| TLP non_tuple_lvalue TSTAR type TRP
-    { $$ = new CallExpr("_htuple", $4, $2); }
 | TLSBR nonempty_expr_ls TRSBR type
     { $$ = new CallExpr("_build_array_type", new CallExpr("_build_domain", $2), $4); }
 | TDOMAIN TLP expr_ls TRP
@@ -1078,7 +1073,8 @@ memberaccess_expr:
 
 
 non_tuple_lvalue:
-  variable_expr
+  literal
+| variable_expr
 | parenop_expr
 | memberaccess_expr
 ;
@@ -1087,12 +1083,6 @@ non_tuple_lvalue:
 lvalue:
   non_tuple_lvalue
 | tuple_paren_expr
-;
-
-
-atom:
-  literal
-| lvalue
 ;
 
 
@@ -1138,7 +1128,7 @@ expr:
 
 
 top_level_expr: 
-  atom
+  lvalue
 | TNIL
     { $$ = new SymExpr(gNil); }
 | TLET var_decl_stmt_inner_ls TIN expr
@@ -1157,10 +1147,10 @@ top_level_expr:
     {
       $$ = new CastExpr($1, dtUnknown, $3);
     }
-| expr TCOLON STRINGLITERAL
-  { 
-    $$ = new CallExpr("_tostring", $1, new_StringLiteral($3));
-  }
+/* | expr TCOLON STRINGLITERAL */
+/*   {  */
+/*     $$ = new CallExpr("_tostring", $1, new_StringLiteral($3)); */
+/*   } */
 | range %prec TDOTDOT
 | seq_expr
 | TPLUS expr %prec TUPLUS

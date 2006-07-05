@@ -57,10 +57,10 @@ fun _aseq._expand(i : int) : _aseq {
 
 class _adomain : _domain {
   param rank : int;
-  var ranges : (rank * _aseq);
+  var ranges : rank*_aseq;
 
   fun getHeadCursor() {
-    var c : (rank*int);
+    var c : rank*int;
     for i in 1..rank do
       c(i) = ranges(i).getHeadCursor();
     return c;
@@ -101,7 +101,7 @@ class _adomain : _domain {
   fun _build_sparse_domain()
     return _sdomain(rank, adomain=this);
 
-  fun translate(dim : (rank*int)) {
+  fun translate(dim : rank*int) {
     var x = _adomain(rank);
     for i in 1..rank do
       x.ranges(i) = this(i)._translate(dim(i));
@@ -112,7 +112,7 @@ class _adomain : _domain {
     return translate(dim);
   }
 
-  fun interior(dim : (rank*int)) {
+  fun interior(dim : rank*int) {
     var x = _adomain(rank);
     for i in 1..rank do {
       if ((dim(i) > 0) && (this(i)._high+1-dim(i) < this(i)._low) ||
@@ -128,7 +128,7 @@ class _adomain : _domain {
     return interior(dim);
   }
 
-  fun exterior(dim : (rank*int)) {
+  fun exterior(dim : rank*int) {
     var x = _adomain(rank);
     for i in 1..rank do
       x.ranges(i) = this(i)._exterior(dim(i));
@@ -139,7 +139,7 @@ class _adomain : _domain {
     return exterior(dim);
   }
 
-  fun expand(dim : (rank*int)) {
+  fun expand(dim : rank*int) {
     var x = _adomain(rank);
     for i in 1..rank do {
       x.ranges(i) = ranges(i)._expand(dim(i));
@@ -169,7 +169,7 @@ class _adomain : _domain {
 }
 
 
-fun by(dom : _adomain, dim : (dom.rank*int)) {
+fun by(dom : _adomain, dim : dom.rank*int) {
   var x = _adomain(dom.rank);
   for i in 1..dom.rank do
     x.ranges(i) = dom.ranges(i) by dim(i);
@@ -190,7 +190,7 @@ record _aarray {
 
   var dom : _adomain(rank);
 
-  var info : (rank*2*int);
+  var info : rank*2*int;
   var size : int;
   var data : _ddata(elt_type);
 
@@ -241,7 +241,7 @@ record _aarray {
       this(i) = v;
   }
 
-  fun this(ind : (rank*int)) var : elt_type {
+  fun this(ind : rank*int) var : elt_type {
     for i in 1..rank do
       if ! _in(dom(i), ind(i)) {
         writeln("out of bounds error ", ind);
@@ -289,7 +289,7 @@ fun fwrite(f : file, x : _adomain) {
 }
 
 fun fwrite(f : file, x : _aarray) {
-  var i : (x.rank*int);
+  var i : x.rank*int;
   for dim in 1..x.rank do
     i(dim) = x.dom(dim)._low;
   label next while true {

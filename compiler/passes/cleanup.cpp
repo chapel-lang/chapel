@@ -132,6 +132,18 @@ void cleanup(BaseAST* base) {
   asts.clear();
   collect_asts(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
+    if (CastExpr* cast = dynamic_cast<CastExpr*>(ast)) {
+      if (SymExpr* sym = dynamic_cast<SymExpr*>(cast->newType)) {
+        if (sym->var->type == dtString)
+          cast->replace(new CallExpr("_tostring", cast->expr->copy(),
+                                     cast->newType->copy()));
+      }
+    }
+  }
+
+  asts.clear();
+  collect_asts(&asts, base);
+  forv_Vec(BaseAST, ast, asts) {
     if (ImportExpr* a = dynamic_cast<ImportExpr*>(ast)) {
       process_import_expr(a);
     }

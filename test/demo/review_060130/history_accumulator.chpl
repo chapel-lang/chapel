@@ -1,6 +1,6 @@
 record history_float {
   param size : int;
-  var h : (size*float);
+  var h : size*float;
   var f : float;
 }
 
