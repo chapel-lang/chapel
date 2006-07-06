@@ -67104,3 +67104,33 @@ Modified files:
 	                         normalize.cpp runInterpreter.cpp 
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+07/06/06 11:36:11 -- deitz
+
+Log message:
+	Made "object" codegen as "void*" to allow casts to it and declared a
+	fake object instance in the prelude so that object is not removed.
+	Made the coercion wrapper apply casts for parents in the class
+	hierarchy, enabling classes/deitz/inherit/test_inherit2.
+	
+	Fixed a bug in inlining in which class arguments were treated as if
+	the pointer was passed by reference, enabling the above change,
+	arrays/deitz/jacobi-no-inline, and trivial/deitz/test_plusassign.
+	
+	Removed ";" in generated code for DefExpr ExprStmts, introduced yesterday.
+	
+	Removed unnecessary-for-now _domain parent class.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/passes/: functionResolution.cpp 
+	                         inlineFunctions.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	                          _chpl_indefinite.chpl 
+	                          _chpl_sparse.chpl prelude.chpl 
+	chapel/test/: REGRESSIONS 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+
