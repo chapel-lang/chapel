@@ -67206,3 +67206,16 @@ Modified files:
 	chapel/compiler/parser/: chapel.y 
 	chapel/compiler/passes/: cleanup.cpp runInterpreter.cpp 
 
+---------------------------------------------------------------------------
+
+07/06/06 16:04:54 -- deitz
+
+Log message:
+	Unified resolveType function with typeInfo function, removing
+	resolveType and simplifying.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp symbol.cpp 
+	chapel/compiler/include/: expr.h symbol.h 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+
