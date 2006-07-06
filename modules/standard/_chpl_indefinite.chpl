@@ -29,7 +29,7 @@ _ps(24) = 402653189;
 _ps(25) = 805306457;
 _ps(26) = 1610612741;
 
-class _idomain : _domain {
+class _idomain {
   type ind_type;
   var num_inds : int;
   var size : int = 0;

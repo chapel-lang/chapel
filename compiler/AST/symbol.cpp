@@ -485,15 +485,6 @@ bool ArgSymbol::isConst(void) {
 }
 
 
-bool ArgSymbol::isRef(void) {
-  if (intent == INTENT_REF)
-    return true;
-  if (is_Reference_Type(type))
-    return true;
-  return false;
-}
-
-
 void ArgSymbol::codegen(FILE* outfile) {
   bool requiresDeref = requiresCPtr();
  

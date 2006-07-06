@@ -127,6 +127,13 @@ bool canDispatch(FnSymbol* fn, Symbol* param, Type* actualType, Type* formalType
   return false;
 }
 
+bool isDispatchParent(Type* t, Type* pt) {
+  forv_Vec(Type, p, t->dispatchParents)
+    if (p == pt || isDispatchParent(p, pt))
+      return true;
+  return false;
+}
+
 static bool
 moreSpecific(FnSymbol* fn, Symbol* param, Type* actualType, Type* formalType) {
   if (canDispatch(fn, param, actualType, formalType))
@@ -351,7 +358,7 @@ build_coercion_wrapper(FnSymbol* fn, Vec<Type*>* actual_types) {
     j++;
     Type* actual_type = actual_types->v[j];
     ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
-    if (canCoerce(actual_type, formal->type))
+    if (canCoerce(actual_type, formal->type) || isDispatchParent(actual_type, formal->type))
       subs.put(formal, actual_type->symbol);
   }
   if (subs.n)

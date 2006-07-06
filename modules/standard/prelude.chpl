@@ -3,6 +3,9 @@ pragma "no codegen";
 class object { }
 record value { }
 
+var _object : object;
+var _value : value();
+
 fun typeof(x) { }
 
 -- I/O

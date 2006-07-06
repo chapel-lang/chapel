@@ -1128,6 +1128,7 @@ void findInternalTypes(void) {
   if (!fnostdincs)
     dtFile = dynamic_cast<TypeSymbol*>(fileModule->lookup("file"))->definition;
   dtObject = dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(prelude->lookup("object"))->definition);
+  dtObject->symbol->cname = "void*";
   dtValue = dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(prelude->lookup("value"))->definition);
 
   dtClosure = dynamic_cast<TypeSymbol*>(closureModule->lookup("closure"))->definition;

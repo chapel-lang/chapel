@@ -2,8 +2,6 @@
 // Arrays and domains
 //
 
-class _domain { }
-
 fun _build_domain(x)
   return x;
 
@@ -55,7 +53,7 @@ fun _aseq._expand(i : int) : _aseq {
 }
 
 
-class _adomain : _domain {
+class _adomain {
   param rank : int;
   var ranges : rank*_aseq;
 

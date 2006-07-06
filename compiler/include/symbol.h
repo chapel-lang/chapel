@@ -127,7 +127,6 @@ class ArgSymbol : public Symbol {
 
   bool requiresCPtr(void);
   bool isConst(void);
-  bool isRef(void);
 
   void printDef(FILE* outfile);
   void codegen(FILE* outfile);

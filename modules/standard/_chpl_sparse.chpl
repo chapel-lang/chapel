@@ -1,4 +1,4 @@
-class _sdomain : _domain {
+class _sdomain {
   param rank : int;
   var adomain : _adomain(rank);
 

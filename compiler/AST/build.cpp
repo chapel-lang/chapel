@@ -322,7 +322,7 @@ AList<Stmt>* build_assignplus(Expr* lhs, Expr* rhs) {
   fn->formals->insertAtTail(
     new DefExpr(
       new ArgSymbol(INTENT_BLANK, "_lhs", dtUnknown), NULL,
-      new SymExpr("_domain")));
+      new SymExpr("_idomain")));
   fn->addPragma("inline");
   fn->insertAtTail(new CallExpr(new CallExpr(".", lhs->copy(), new_StringLiteral("add")), rhs->copy()));
   stmts->insertAtTail(new DefExpr(fn));

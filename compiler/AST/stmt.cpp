@@ -128,6 +128,9 @@ void ExprStmt::print(FILE* outfile) {
 
 
 void ExprStmt::codegenStmt(FILE* outfile) {
+  if (DefExpr* def = dynamic_cast<DefExpr*>(expr))
+    if (!dynamic_cast<LabelSymbol*>(def->sym))
+      return;
   expr->codegen(outfile);
   fprintf(outfile, ";\n");
 }
