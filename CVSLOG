@@ -67191,3 +67191,18 @@ Modified files:
 	                                         inlfunc2_report.good 
 	chapel/test/trivial/waynew/: uint2int.chpl uintliteral.chpl 
 
+---------------------------------------------------------------------------
+
+07/06/06 15:06:36 -- deitz
+
+Log message:
+	Replaced ImportExpr with PRIMITIVE_USE CallExpr and simplified code.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp baseAST.cpp build.cpp expr.cpp 
+	                      primitive.cpp view.cpp 
+	chapel/compiler/include/: baseAST.h expr.h primitive.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: cleanup.cpp runInterpreter.cpp 
+
