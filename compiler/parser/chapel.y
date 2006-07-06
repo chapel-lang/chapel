@@ -150,7 +150,6 @@ Is this "while x"(i); or "while x(i)";?
 %token TWHEN
 %token TWHERE
 %token TWHILE
-%token TWITH
 %token TYIELD
 
 %token TIDENT
@@ -207,7 +206,7 @@ Is this "while x"(i); or "while x(i)";?
 %type <pblockstmt> type_select_stmt
 
 %type <pblockstmt> typedef_decl_stmt fn_decl_stmt class_decl_stmt mod_decl_stmt
-%type <pblockstmt> typevar_decl_stmt enum_decl_stmt with_stmt use_stmt
+%type <pblockstmt> typevar_decl_stmt enum_decl_stmt use_stmt
 
 %type <pblockstmt> var_decl_stmt
 %type <pstmtls> var_decl_stmt_inner var_decl_stmt_inner_ls
@@ -534,8 +533,7 @@ decl_stmt_ls:
 
 
 decl_stmt:
-  with_stmt
-| use_stmt
+  use_stmt
 | mod_decl_stmt
 | fn_decl_stmt
 | class_decl_stmt
@@ -543,12 +541,6 @@ decl_stmt:
 | typedef_decl_stmt
 | typevar_decl_stmt
 | var_decl_stmt
-;
-
-
-with_stmt:
-  TWITH lvalue TSEMI
-    { $$ = build_chpl_stmt(new ImportExpr(IMPORT_WITH, $2)); }
 ;
 
 

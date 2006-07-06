@@ -3,9 +3,8 @@ record point {
   var y : float;
 }
 
-record cpoint {
+record cpoint : point {
   var color : int;
-  with point;
 }
 
 var p : point = point();

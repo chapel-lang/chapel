@@ -90,7 +90,6 @@ var             processToken(TVAR);
 when            processToken(TWHEN);
 where           processToken(TWHERE);
 while           processToken(TWHILE);
-with            processToken(TWITH);
 yield           processToken(TYIELD);
 
 "="             processToken(TASSIGN);

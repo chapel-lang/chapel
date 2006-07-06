@@ -3,8 +3,7 @@ class point {
   var y : float;
 }
 
-class cpoint {
-  with point;
+class cpoint : point {
   var color : int;
 }
 
