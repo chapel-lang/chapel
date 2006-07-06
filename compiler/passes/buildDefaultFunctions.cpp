@@ -12,6 +12,7 @@ static void build_chpl_main(void);
 static void build_record_equality_function(ClassType* ct);
 static void build_record_inequality_function(ClassType* ct);
 static void build_record_assignment_function(ClassType* ct);
+static void build_enum_assignment_function(EnumType* et);
 static void build_record_copy_function(ClassType* ct);
 static void build_record_init_function(ClassType* ct);
 static void buildDefaultIOFunctions(Type* type);
@@ -76,6 +77,9 @@ void build_default_functions(void) {
           build_record_init_function(ct);
           build_record_copy_function(ct);
         }
+      }
+      if (EnumType* et = dynamic_cast<EnumType*>(type->definition)) {
+        build_enum_assignment_function(et);
       }
     }
   }
@@ -162,6 +166,24 @@ static void build_record_inequality_function(ClassType* ct) {
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->parentStmt->insertBefore(def);
   reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
+  build(fn);
+  fns.add(fn);
+}
+
+
+static void build_enum_assignment_function(EnumType* et) {
+  if (function_exists("=", 2, et->symbol->name))
+    return;
+
+  FnSymbol* fn = new FnSymbol("=");
+  ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", et);
+  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", et);
+  fn->formals->insertAtTail(arg1);
+  fn->formals->insertAtTail(arg2);
+  fn->insertAtTail(new ReturnStmt(arg2));
+  DefExpr* def = new DefExpr(fn);
+  et->symbol->defPoint->parentStmt->insertBefore(def);
+  reset_file_info(def, et->symbol->lineno, et->symbol->filename);
   build(fn);
   fns.add(fn);
 }

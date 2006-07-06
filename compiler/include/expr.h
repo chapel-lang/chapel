@@ -101,7 +101,6 @@ class CallExpr : public Expr {
   void insertAtHead(BaseAST* ast);
   void insertAtTail(BaseAST* ast);
 
-  void makeOp(void);
   bool isAssign(void);
 
   FnSymbol* isResolved(void);

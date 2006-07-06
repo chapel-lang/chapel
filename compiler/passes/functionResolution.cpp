@@ -83,6 +83,8 @@ bool canCoerce(Type* actualType, Type* formalType) {
       return true;
     if (is_uint_type(actualType) && get_width(actualType) < get_width(formalType))
       return true;
+    if (is_int_type(actualType) && get_width(actualType) <= get_width(formalType))
+      return true;
   }
   if (is_float_type(formalType)) {
     if (is_int_type(actualType) && get_width(actualType) <= get_width(formalType))
@@ -728,10 +730,10 @@ resolveCall(CallExpr* call) {
       }
     }
     if (call->parentSymbol) {
-      if (resolvedFn->hasPragma("builtin")) {
-        call->baseExpr->remove();
-        call->primitive = primitives[PRIMITIVE_MOVE];
-      } else
+//       if (resolvedFn->hasPragma("builtin")) {
+//         call->baseExpr->remove();
+//         call->primitive = primitives[PRIMITIVE_MOVE];
+//       } else
         call->baseExpr->replace(new SymExpr(resolvedFn));
     }
   } else if (call->isPrimitive(PRIMITIVE_MOVE)) {
@@ -751,7 +753,7 @@ resolveCall(CallExpr* call) {
       }
       if (t == dtUnknown)
         INT_FATAL(call, "Unable to resolve type");
-      if (t != sym->var->type && t != dtNil) {
+      if (t != sym->var->type && t != dtNil && t != dtObject) {
         if (UserType* ut = dynamic_cast<UserType*>(sym->var->type)) {
           if (t != ut->underlyingType && t != dtNil)
             INT_FATAL(call, "Bad type detected");
@@ -780,7 +782,7 @@ resolveCall(CallExpr* call) {
           field->type = t;
         if (t == dtUnknown)
           INT_FATAL(call, "Unable to resolve field type");
-        if (t != field->type && t != dtNil)
+        if (t != field->type && t != dtNil && t != dtObject)
           INT_FATAL(call, "Bad field type detected");
         found = true;
       }

@@ -245,6 +245,7 @@ simplify_nested_moves() {
       if (move->isPrimitive(PRIMITIVE_MOVE)) {
         if (CallExpr* innerMove = dynamic_cast<CallExpr*>(move->get(2))) {
           if (innerMove->isPrimitive(PRIMITIVE_MOVE)) {
+            INT_FATAL(move, "NESTED MOVE!!");
             Expr* moveTarget = move->get(1);
             Expr* innerMoveTarget = innerMove->get(1);
             SymExpr* s1 = dynamic_cast<SymExpr*>(moveTarget);

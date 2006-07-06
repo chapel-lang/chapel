@@ -12,7 +12,7 @@ record _setterTokenType { }
 var _setterToken : _setterTokenType;
 
 // Primitive functions and operators on bool
-//pragma "inline" fun =(a: bool, b: bool) return b;
+pragma "inline" fun =(a: bool, b: bool) return b;
 //pragma "inline" fun _copy(a: bool) return a;
 pragma "inline" fun ~(a: bool) return __primitive("u~", a);
 pragma "inline" fun &(a: bool, b: bool) return __primitive("&", a, b);
@@ -29,7 +29,7 @@ pragma "inline" fun &&(a: bool, b: bool) return __primitive("&&", a, b);
 pragma "inline" fun ||(a: bool, b: bool) return __primitive("||", a, b);
 
 // Primitive functions and operators on int(8)
-//pragma "inline" fun =(a: int(8), b: int(8)) return b;
+pragma "inline" fun =(a: int(8), b: int) return b:int(8);
 //pragma "inline" fun _copy(a: int(8)) return a;
 pragma "inline" fun +(a: int(8)) return __primitive("u+", a);
 pragma "inline" fun -(a: int(8)) return __primitive("u-", a);
@@ -56,7 +56,7 @@ pragma "inline" fun &&(a: int(8), b: int(8)) return __primitive("&&", a, b);
 pragma "inline" fun ||(a: int(8), b: int(8)) return __primitive("||", a, b);
 
 // Primitive functions and operators on int(16)
-//pragma "inline" fun =(a: int(16), b: int(16)) return b;
+pragma "inline" fun =(a: int(16), b: int) return b:int(16);
 //pragma "inline" fun _copy(a: int(16)) return a;
 pragma "inline" fun +(a: int(16)) return __primitive("u+", a);
 pragma "inline" fun -(a: int(16)) return __primitive("u-", a);
@@ -83,7 +83,7 @@ pragma "inline" fun &&(a: int(16), b: int(16)) return __primitive("&&", a, b);
 pragma "inline" fun ||(a: int(16), b: int(16)) return __primitive("||", a, b);
 
 // Primitive functions and operators on int(32)
-//pragma "inline" fun =(a: int(32), b: int(32)) return b;
+pragma "inline" fun =(a: int(32), b: int) return b:int(32);
 //pragma "inline" fun _copy(a: int(32)) return a;
 pragma "inline" fun +(a: int(32)) return __primitive("u+", a);
 pragma "inline" fun -(a: int(32)) return __primitive("u-", a);
@@ -110,7 +110,7 @@ pragma "inline" fun &&(a: int(32), b: int(32)) return __primitive("&&", a, b);
 pragma "inline" fun ||(a: int(32), b: int(32)) return __primitive("||", a, b);
 
 // Primitive functions and operators on int(64)
-//pragma "inline" fun =(a: int(64), b: int(64)) return b;
+pragma "inline" fun =(a: int(64), b: int(64)) return b;
 //pragma "inline" fun _copy(a: int(64)) return a;
 pragma "inline" fun +(a: int(64)) return __primitive("u+", a);
 pragma "inline" fun -(a: int(64)) return __primitive("u-", a);
@@ -137,7 +137,7 @@ pragma "inline" fun &&(a: int(64), b: int(64)) return __primitive("&&", a, b);
 pragma "inline" fun ||(a: int(64), b: int(64)) return __primitive("||", a, b);
 
 // Primitive functions and operators on uint(8)
-//pragma "inline" fun =(a: uint(8), b: uint(8)) return b;
+pragma "inline" fun =(a: uint(8), b: uint) return b:uint(8);
 //pragma "inline" fun _copy(a: uint(8)) return a;
 pragma "inline" fun +(a: uint(8)) return __primitive("u+", a);
 pragma "inline" fun -(a: uint(8)) return __primitive("u-", a);
@@ -164,7 +164,7 @@ pragma "inline" fun &&(a: uint(8), b: uint(8)) return __primitive("&&", a, b);
 pragma "inline" fun ||(a: uint(8), b: uint(8)) return __primitive("||", a, b);
 
 // Primitive functions and operators on uint(16)
-//pragma "inline" fun =(a: uint(16), b: uint(16)) return b;
+pragma "inline" fun =(a: uint(16), b: uint) return b:uint(16);
 //pragma "inline" fun _copy(a: uint(16)) return a;
 pragma "inline" fun +(a: uint(16)) return __primitive("u+", a);
 pragma "inline" fun -(a: uint(16)) return __primitive("u-", a);
@@ -191,7 +191,7 @@ pragma "inline" fun &&(a: uint(16), b: uint(16)) return __primitive("&&", a, b);
 pragma "inline" fun ||(a: uint(16), b: uint(16)) return __primitive("||", a, b);
 
 // Primitive functions and operators on uint(32)
-//pragma "inline" fun =(a: uint(32), b: uint(32)) return b;
+pragma "inline" fun =(a: uint(32), b: uint) return b:uint(32);
 //pragma "inline" fun _copy(a: uint(32)) return a;
 pragma "inline" fun +(a: uint(32)) return __primitive("u+", a);
 pragma "inline" fun -(a: uint(32)) return __primitive("u-", a);
@@ -218,7 +218,7 @@ pragma "inline" fun &&(a: uint(32), b: uint(32)) return __primitive("&&", a, b);
 pragma "inline" fun ||(a: uint(32), b: uint(32)) return __primitive("||", a, b);
 
 // Primitive functions and operators on uint(64)
-//pragma "inline" fun =(a: uint(64), b: uint(64)) return b;
+pragma "inline" fun =(a: uint(64), b: uint(64)) return b;
 //pragma "inline" fun _copy(a: uint(64)) return a;
 pragma "inline" fun +(a: uint(64)) return __primitive("u+", a);
 pragma "inline" fun -(a: uint(64)) return __primitive("u-", a);
@@ -245,7 +245,7 @@ pragma "inline" fun &&(a: uint(64), b: uint(64)) return __primitive("&&", a, b);
 pragma "inline" fun ||(a: uint(64), b: uint(64)) return __primitive("||", a, b);
 
 // Primitive functions and operators on float(32)
-//pragma "inline" fun =(a: float(32), b: float(32)) return b;
+pragma "inline" fun =(a: float(32), b: float) return b:float(32);
 //pragma "inline" fun _copy(a: float(32)) return a;
 pragma "inline" fun +(a: float(32)) return __primitive("u+", a);
 pragma "inline" fun -(a: float(32)) return __primitive("u-", a);
@@ -265,7 +265,7 @@ pragma "inline" fun &&(a: float(32), b: float(32)) return __primitive("&&", a, b
 pragma "inline" fun ||(a: float(32), b: float(32)) return __primitive("||", a, b);
 
 // Primitive functions and operators on float(64)
-//pragma "inline" fun =(a: float(64), b: float(64)) return b;
+pragma "inline" fun =(a: float(64), b: float(64)) return b;
 //pragma "inline" fun _copy(a: float(64)) return a;
 pragma "inline" fun +(a: float(64)) return __primitive("u+", a);
 pragma "inline" fun -(a: float(64)) return __primitive("u-", a);
@@ -285,7 +285,7 @@ pragma "inline" fun &&(a: float(64), b: float(64)) return __primitive("&&", a, b
 pragma "inline" fun ||(a: float(64), b: float(64)) return __primitive("||", a, b);
 
 // Primitive functions and operators on string
-//pragma "inline" fun =(a: string, b: string) return __primitive("string_copy", b);
+pragma "inline" fun =(a: string, b: string) return __primitive("string_copy", b);
 //pragma "inline" fun _copy(x : string) {
 //  var y : string;
 //  y = x;
@@ -306,7 +306,7 @@ pragma "inline" fun string.this(i: int) return __primitive("string_index", this,
 pragma "inline" fun ==(a: object, b: object) return __primitive("ptr_eq", a, b);
 pragma "inline" fun !=(a: object, b: object) return __primitive("ptr_neq", a, b);
 
-pragma "builtin" fun =(a, b) return b;
+pragma "inline" fun =(a, b:object) return b;
 pragma "inline" fun _copy(a) return a;
 
 

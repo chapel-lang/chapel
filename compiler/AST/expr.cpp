@@ -465,46 +465,6 @@ CallExpr::insertAtTail(BaseAST* ast) {
 }
 
 
-#define make_op_help(tag, prim, args)                           \
-  if (!strcmp(fn->name, prim) && argList->length() == args) {   \
-    baseExpr->remove();                                         \
-    primitive = primitives[tag];                                \
-  }
-
-void CallExpr::makeOp(void) {
-  if (isNamed("=")) {
-    primitive = primitives[PRIMITIVE_MOVE];
-    baseExpr->remove();
-    return;
-  }
-  if (FnSymbol *fn = isResolved()) {
-    if (fn->hasPragma("builtin")) {
-      make_op_help(PRIMITIVE_UNARY_MINUS, "-", 1);
-      make_op_help(PRIMITIVE_UNARY_PLUS, "+", 1);
-      make_op_help(PRIMITIVE_UNARY_NOT, "~", 1);
-      make_op_help(PRIMITIVE_UNARY_LNOT, "!", 1);
-      make_op_help(PRIMITIVE_ADD, "+", 2);
-      make_op_help(PRIMITIVE_SUBTRACT, "-", 2);
-      make_op_help(PRIMITIVE_MULT, "*", 2);
-      make_op_help(PRIMITIVE_DIV, "/", 2);
-      make_op_help(PRIMITIVE_MOD, "%", 2);
-      make_op_help(PRIMITIVE_EQUAL, "==", 2);
-      make_op_help(PRIMITIVE_NOTEQUAL, "!=", 2);
-      make_op_help(PRIMITIVE_LESSOREQUAL, "<=", 2);
-      make_op_help(PRIMITIVE_GREATEROREQUAL, ">=", 2);
-      make_op_help(PRIMITIVE_LESS, "<", 2);
-      make_op_help(PRIMITIVE_GREATER, ">", 2);
-      make_op_help(PRIMITIVE_AND, "&", 2);
-      make_op_help(PRIMITIVE_OR, "|", 2);
-      make_op_help(PRIMITIVE_XOR, "^", 2);
-      make_op_help(PRIMITIVE_LAND, "&&", 2);
-      make_op_help(PRIMITIVE_LOR, "||", 2);
-      make_op_help(PRIMITIVE_POW, "**", 2);
-    }
-  }
-}
-
-
 bool CallExpr::isAssign(void) {
   return isPrimitive(PRIMITIVE_MOVE) || isNamed("=");
 }
