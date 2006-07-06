@@ -258,11 +258,6 @@ Symbol* Symbol::getSymbol(void) {
 }
 
 
-Type* Symbol::typeInfo(void) {
-  return type;
-}
-
-
 UnresolvedSymbol::UnresolvedSymbol(char* init_name, char* init_cname) :
   Symbol(SYMBOL_UNRESOLVED, init_name)
 {

@@ -385,6 +385,8 @@ static void insert_type_default_temp(UserType* userType) {
       userType->typeExpr &&
       userType->typeExpr->typeInfo() != dtUnknown) {
     userType->underlyingType = userType->typeExpr->typeInfo();
+    if (MetaType* mt = dynamic_cast<MetaType*>(userType->underlyingType))
+      userType->underlyingType = mt->base;
     userType->typeExpr = NULL;
     if (userType->defaultExpr) {
       char* temp_name = stringcat("_init_", sym->name);
@@ -541,26 +543,6 @@ static bool can_resolve_type(Expr* type_expr) {
 }
 
 
-// static void set_field_as_arg(ArgSymbol* arg) {
-//   FnSymbol* fn = dynamic_cast<FnSymbol*>(arg->defPoint->parentSymbol);
-//   if (fn->fnClass == FN_CONSTRUCTOR) {
-//     ClassType* ct = dynamic_cast<ClassType*>(fn->retType);
-//     bool found = false;
-//     forv_Vec(Symbol, field, ct->fields) {
-//       if (!strcmp(field->name, arg->name)) {
-//         if (field->type == dtUnknown)
-//           field->type = arg->type;
-//         if (arg->type != field->type)
-//           INT_FATAL(fn, "Error in class constructor");
-//         found = true;
-//       }
-//     }
-//     if (!found)
-//       INT_FATAL(fn, "Error in class constructor");
-//   }
-// }
-
-
 static void hack_resolve_types(Expr* expr) {
   if (DefExpr* def_expr = dynamic_cast<DefExpr*>(expr)) {
     if (ArgSymbol* arg = dynamic_cast<ArgSymbol*>(def_expr->sym)) {
@@ -569,15 +551,15 @@ static void hack_resolve_types(Expr* expr) {
         def_expr->exprType->remove();
       } else if (arg->type == dtUnknown && can_resolve_type(def_expr->exprType)) {
         arg->type = def_expr->exprType->typeInfo();
+        if (MetaType* mt = dynamic_cast<MetaType*>(arg->type))
+          arg->type = mt->base;
         def_expr->exprType->remove();
-        //set_field_as_arg(arg);
         if (arg->intent == INTENT_PARAM)
           arg->type = dynamic_cast<PrimitiveType*>(arg->type)->literalType;
       } else if (arg->type == dtUnknown && !def_expr->exprType && can_resolve_type(arg->defaultExpr)) {
         Type *t = arg->defaultExpr->typeInfo();
         if (t != dtNil)
           arg->type = t;
-        //set_field_as_arg(arg);
       }
     } else if (VarSymbol* var = dynamic_cast<VarSymbol*>(def_expr->sym)) {
       // only until analysis's type_info resolves enums correctly
@@ -593,6 +575,8 @@ static void hack_resolve_types(Expr* expr) {
         if (userType->underlyingType == dtUnknown && 
             can_resolve_type(userType->typeExpr)) {
           userType->underlyingType = userType->typeExpr->typeInfo();
+          if (MetaType* mt = dynamic_cast<MetaType*>(userType->underlyingType))
+            userType->underlyingType = mt->base;
           userType->typeExpr = NULL;
           if (!userType->defaultValue) {
             if (userType->underlyingType->defaultValue) {

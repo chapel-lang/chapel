@@ -51,7 +51,8 @@ void Expr::callReplaceChild(BaseAST* new_ast) {
 
 
 Type* Expr::typeInfo(void) {
-  return dtUnknown;
+  INT_FATAL(this, "Illegal call to Expr::typeInfo()");
+  return NULL;
 }
 
 
@@ -167,14 +168,14 @@ SymExpr::copyInner(ASTMap* map) {
 
 
 Type* SymExpr::typeInfo(void) {
-  if (ArgSymbol* argSymbol = dynamic_cast<ArgSymbol*>(var)) {
-    if (argSymbol->intent == INTENT_TYPE) {
-      return dynamic_cast<TypeSymbol*>(argSymbol->genericSymbol)->definition;
-    }
-  }
-  if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(var)) {
-    return ts->definition;
-  }
+//   if (ArgSymbol* argSymbol = dynamic_cast<ArgSymbol*>(var)) {
+//     if (argSymbol->intent == INTENT_TYPE) {
+//       return dynamic_cast<TypeSymbol*>(argSymbol->genericSymbol)->definition;
+//     }
+//   }
+//   if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(var)) {
+//     return ts->definition;
+//   }
   return var->type;
 }
 
@@ -249,14 +250,16 @@ void DefExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 Type* DefExpr::typeInfo(void) {
-  if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(sym)) {
-    if (VariableType *tv = dynamic_cast<VariableType*>(ts->definition)) {
-      MetaType *mt = dynamic_cast<MetaType*>(tv->type);
-      return mt->base;
-    } else
-      return ts->definition;
-  }
-  return sym->type;
+  INT_FATAL(this, "Illegal call to DefExpr::typeInfo()");
+//   if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(sym)) {
+//     if (VariableType *tv = dynamic_cast<VariableType*>(ts->definition)) {
+//       MetaType *mt = dynamic_cast<MetaType*>(tv->type);
+//       return mt->base;
+//     } else
+//       return ts->definition;
+//   }
+//   return sym->type;
+  return NULL;
 }
 
 
@@ -505,53 +508,12 @@ FnSymbol* CallExpr::findFnSymbol(void) {
 
 
 Type* CallExpr::typeInfo(void) {
-  if (!primitive) {
-    FnSymbol* fn = isResolved();
-    if (fn)
-      return fn->retType;
-  } else {
+  if (primitive)
     return primitive->returnInfo(this);
-  }
-  if (primitive &&
-      ((!strcmp(primitive->name, ".")) ||
-       (!strcmp(primitive->name, ".=")))) {
-    if (member_type != NULL && member_type != dtUnknown)
-      return member_type;
-    if (member && member->type != dtUnknown)
-      return member->type;
-    if (ClassType* ctype = dynamic_cast<ClassType*>(get(1)->typeInfo())) {
-      if (!dynamic_cast<VarSymbol*>(dynamic_cast<SymExpr*>(get(2))->var))
-        return dtUnknown;
-      char *name = dynamic_cast<VarSymbol*>(dynamic_cast<SymExpr*>(get(2))->var)->immediate->v_string;
-      Symbol* sym = ctype->structScope->lookupLocal(name);
-      if (sym) {
-        if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(sym))
-          return ts->definition;
-        else
-          return sym->type;
-      }
-    }
+  else if (isResolved())
+    return isResolved()->retType;
+  else
     return dtUnknown;
-  }
-
-  if (!baseExpr) {
-    if (isLogicalPrimitive()) {
-      return dtBool;
-    } else if (isUnaryPrimitive()) {
-      return get(1)->typeInfo();
-    } else if (isBinaryPrimitive()) {
-      return get(1)->typeInfo();
-    } else if (isPrimitive(PRIMITIVE_MOVE)) {
-      return argList->get(1)->typeInfo();
-    }
-  }
-
-  if (SymExpr* symExpr = dynamic_cast<SymExpr*>(baseExpr)) {
-    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(symExpr->var)) {
-      return fn->retType;
-    }
-  }
-  return dtUnknown;
 }
 
 
@@ -982,37 +944,6 @@ void CallExpr::codegen(FILE* outfile) {
 
 bool CallExpr::isPrimitive(PrimitiveTag primitiveTag) {
   return primitive && primitive->tag == primitiveTag;
-}
-
-
-bool CallExpr::isUnaryPrimitive(void) {
-  return
-    primitive &&
-    primitive->tag == PRIMITIVE_UNARY_MINUS &&
-    primitive->tag == PRIMITIVE_UNARY_PLUS &&
-    primitive->tag == PRIMITIVE_UNARY_NOT;
-}
-
-
-bool CallExpr::isBinaryPrimitive(void) {
-  return
-    primitive &&
-    primitive->tag >= PRIMITIVE_ADD &&
-    primitive->tag <= PRIMITIVE_POW;
-}
-
-
-bool CallExpr::isLogicalPrimitive(void) {
-  return primitive &&
-    (primitive->tag == PRIMITIVE_EQUAL ||
-     primitive->tag == PRIMITIVE_NOTEQUAL ||
-     primitive->tag == PRIMITIVE_LESSOREQUAL ||
-     primitive->tag == PRIMITIVE_GREATEROREQUAL ||
-     primitive->tag == PRIMITIVE_LESS ||
-     primitive->tag == PRIMITIVE_GREATER ||
-     primitive->tag == PRIMITIVE_UNARY_LNOT ||
-     primitive->tag == PRIMITIVE_LAND ||
-     primitive->tag == PRIMITIVE_LOR);
 }
 
 

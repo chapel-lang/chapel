@@ -63,7 +63,6 @@ class Symbol : public BaseAST {
   virtual void codegenPrototype(FILE* outfile);
   virtual FnSymbol* getFnSymbol(void);
   virtual Symbol* getSymbol(void);
-  virtual Type* typeInfo(void);
   int nestingDepth();
   FnSymbol *nestingParent(int i);
 };

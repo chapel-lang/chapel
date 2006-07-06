@@ -4,24 +4,6 @@
 #include "../passes/interpreter_ops.h"
 
 static Type*
-resolveType(Expr* expr) {
-  if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
-    if (!call->primitive) {
-      FnSymbol* fn = call->isResolved();
-      return fn->retType;
-    } else {
-      return call->primitive->returnInfo(call);
-    }
-  } else if (SymExpr* sym = dynamic_cast<SymExpr*>(expr)) {
-    return sym->var->type;
-  } else if (NamedExpr* a = dynamic_cast<NamedExpr*>(expr)) {
-    return resolveType(a->actual);
-  }
-  INT_FATAL(expr, "Failure in resolveType");
-  return NULL;
-}
-
-static Type*
 returnInfoBool(CallExpr* call) {
   return dtBool;
 }
@@ -48,12 +30,12 @@ returnInfoFloat(CallExpr* call) {
 
 static Type*
 returnInfoFirst(CallExpr* call) {
-  return resolveType(call->get(1));
+  return call->get(1)->typeInfo();
 }
 
 static Type*
 returnInfoCast(CallExpr* call) {
-  Type* t = resolveType(call->get(1));
+  Type* t = call->get(1)->typeInfo();
   if (MetaType* mt = dynamic_cast<MetaType*>(t))
     return mt->base;
   return dtUnknown;
@@ -61,8 +43,8 @@ returnInfoCast(CallExpr* call) {
 
 static Type*
 returnInfoMove(CallExpr* call) {
-  Type* t1 = resolveType(call->get(1));
-  Type* t2 = resolveType(call->get(2));
+  Type* t1 = call->get(1)->typeInfo();
+  Type* t2 = call->get(2)->typeInfo();
   if (t1 == dtUnknown || t1 == dtNil)
     return t2;
   return t1;
@@ -71,8 +53,8 @@ returnInfoMove(CallExpr* call) {
 // NEEDS TO BE FINISHED WHEN PRIMITIVES ARE REDONE
 static Type*
 returnInfoNumericUp(CallExpr* call) {
-  Type* t1 = resolveType(call->get(1));
-  Type* t2 = resolveType(call->get(2));
+  Type* t1 = call->get(1)->typeInfo();
+  Type* t2 = call->get(2)->typeInfo();
   if (is_int_type(t1) && is_float_type(t2))
     return t2;
   if (is_float_type(t1) && is_int_type(t2))

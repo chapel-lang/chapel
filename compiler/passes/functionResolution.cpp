@@ -6,25 +6,6 @@
 #include "runtime.h"
 
 
-static Type*
-resolveType(Expr* expr) {
-  if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
-    if (!call->primitive) {
-      FnSymbol* fn = call->isResolved();
-      return fn->retType;
-    } else {
-      return call->primitive->returnInfo(call);
-    }
-  } else if (SymExpr* sym = dynamic_cast<SymExpr*>(expr)) {
-    return sym->var->type;
-  } else if (NamedExpr* a = dynamic_cast<NamedExpr*>(expr)) {
-    return resolveType(a->actual);
-  }
-  INT_FATAL(expr, "Failure in resolveType");
-  return dtUnknown;
-}
-
-
 static void resolveCall(CallExpr* call);
 
 static void
@@ -555,7 +536,7 @@ computeActuals(CallExpr* call,
                Vec<Symbol*>* aparams,
                Vec<char*>* anames) {
   for_alist(Expr, actual, call->argList) {
-    atypes->add(resolveType(actual));
+    atypes->add(actual->typeInfo());
     SymExpr* symExpr;
     if (NamedExpr* named = dynamic_cast<NamedExpr*>(actual)) {
       anames->add(named->name);
@@ -738,7 +719,7 @@ resolveCall(CallExpr* call) {
     }
   } else if (call->isPrimitive(PRIMITIVE_MOVE)) {
     if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
-      Type* t = resolveType(call->get(2));
+      Type* t = call->get(2)->typeInfo();
       if (sym->var->type == dtUnknown)
         sym->var->type = t;
       if (sym->var->type == dtNil)
@@ -769,13 +750,13 @@ resolveCall(CallExpr* call) {
     if (!var || !var->immediate)
       INT_FATAL(call, "bad set member primitive");
     char* name = var->immediate->v_string;
-    ClassType* ct = dynamic_cast<ClassType*>(resolveType(call->get(1)));
+    ClassType* ct = dynamic_cast<ClassType*>(call->get(1)->typeInfo());
     if (!ct)
       INT_FATAL(call, "bad set member primitive");
     bool found = false;
     forv_Vec(Symbol, field, ct->fields) {
       if (!strcmp(field->name, name)) {
-        Type* t = resolveType(call->get(3));
+        Type* t = call->get(3)->typeInfo();
         if (field->type == dtUnknown)
           field->type = t;
         if (field->type == dtNil)
@@ -817,7 +798,7 @@ resolveFns(FnSymbol* fn, Vec<FnSymbol*>* resolvedFns) {
   ReturnStmt* last = dynamic_cast<ReturnStmt*>(fn->body->body->last());
   if (!last)
     INT_FATAL(fn, "Function is not normal");
-  Type* rt = resolveType(last->expr);
+  Type* rt = last->expr->typeInfo();
   if (fn->retType == dtUnknown)
     fn->retType = rt;
   if (rt == dtUnknown)
