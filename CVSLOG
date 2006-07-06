@@ -67151,3 +67151,43 @@ Modified files:
 	chapel/test/flowanalysis/newast/: sum_type-1.chpl 
 	                                  sum_type-2.chpl 
 
+---------------------------------------------------------------------------
+
+07/06/06 14:25:48 -- deitz
+
+Log message:
+	Removed special-casing of "=" function with "builtin" pragma.  Removed
+	"builtin" pragma.  With this change, uints are no longer coerced to
+	ints; a cast must be used.  Updated two tests.
+	
+	Allowed assignment of 64 bit primitives to primitives of lower width
+	since the default is 64 bits.  So
+	
+	  var i : int(32) = 23;
+	  var j : int(64) = 23;
+	  i = j;
+	  j = i;
+	
+	are legal.  Should we force an explicit conversion as in
+	
+	  var i : int(32) = 23:int(32);
+	  var j : int(64) = 23;
+	  i = j:int(32);
+	  j = i;
+	
+	?
+	
+	Fixed classes/deitz/inherit/test_inherit3 and
+	trivial/deitz/test_coerce_integer_to_string1.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp expr.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	                         functionResolution.cpp 
+	chapel/modules/standard/: _chpl_base.chpl 
+	chapel/test/: REGRESSIONS 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+	chapel/test/trivial/waynew/: uint2int.chpl uintliteral.chpl 
+
