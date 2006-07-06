@@ -131,33 +131,6 @@ class NamedExpr : public Expr {
 };
 
 
-enum ImportTag {
-  IMPORT_WITH,
-  IMPORT_USE
-};
-
-
-class ImportExpr : public Expr {
- public:
-  ImportTag importTag;          // true -> with, false -> use
-  Expr* expr;                   // Module or class withed or used
-  char* version;                // Module version
-  bool only;                    // only on renameList
-  Map<char*,char*>* renameList; // only clause
-  Vec<char*>* exceptList;       // except clause
-  ImportExpr(ImportTag initImportTag, Expr* initExpr);
-  ImportExpr(ImportTag initImportTag, char* initExpr);
-  virtual void verify(); 
-  COPY_DEF(ImportExpr);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  Type* typeInfo(void);
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-  ModuleSymbol* getImportedModule(void);
-  ClassType* getStruct(void);
-};
-
-
 Expr *new_IntLiteral(char *);
 Expr *new_IntLiteral(long long int i);
 Expr *new_UIntLiteral(char *ui_str);

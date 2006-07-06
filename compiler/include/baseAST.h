@@ -30,7 +30,6 @@ enum astType_t {
   EXPR_DEF,
   EXPR_CALL,
   EXPR_NAMED,
-  EXPR_IMPORT,
 
   SYMBOL,
   SYMBOL_UNRESOLVED,

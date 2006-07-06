@@ -370,12 +370,6 @@ html_view_ast(char *filename, FILE* html_file, BaseAST* ast) {
         fprintf(html_file, "(partial ok) ");
       if (e->partialTag == PARTIAL_ALWAYS)
         fprintf(html_file, "(partial always) ");
-    } else if (ImportExpr* e = dynamic_cast<ImportExpr*>(expr)) {
-      if (e->importTag == IMPORT_WITH) {
-        fprintf(html_file, "<B>with</B>");
-      } else {
-        fprintf(html_file, "<B>use</B>");
-      }
     } else {
       fprintf(html_file, "(%s", astTypeName[expr->astType]);
     }

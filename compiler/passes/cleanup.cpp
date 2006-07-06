@@ -32,25 +32,19 @@ flatten_scopeless_block(BlockStmt* block) {
 
 
 static void
-process_import_expr(ImportExpr* expr) {
-  if (expr->importTag == IMPORT_WITH) {
-    if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(expr->parentSymbol)) {
-      if (ClassType* ct = dynamic_cast<ClassType*>(ts->definition)) {
-        AList<Stmt>* with_decls = expr->getStruct()->declarationList->copy();
-        ct->addDeclarations(with_decls, expr->parentStmt);
-        expr->parentStmt->remove();
-        return;
-      }
-    }
-    USR_FATAL(expr, "Cannot find ClassType in ImportExpr");
-  }
-
-  if (expr->importTag == IMPORT_USE) {
-    ModuleSymbol* module = expr->getImportedModule();
-    if (module != compilerModule)
-      expr->parentStmt->insertBefore(new CallExpr(module->initFn));
-    expr->parentScope->astParent->uses.add(module);
-    expr->parentStmt->remove();
+process_import_expr(CallExpr* call) {
+  if (call->isPrimitive(PRIMITIVE_USE)) {
+    ModuleSymbol* mod = NULL;
+    if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
+      mod = dynamic_cast<ModuleSymbol*>(sym->lookup(sym->var->name));
+      if (!mod)
+        USR_FATAL(call, "Cannot find module '%s'", sym->var->name);
+    } else
+      INT_FATAL(call, "Use primitive has no module");
+    if (mod != compilerModule)
+      call->parentStmt->insertBefore(new CallExpr(mod->initFn));
+    call->parentScope->astParent->uses.add(mod);
+    call->parentStmt->remove();
   }
 }
 
@@ -108,7 +102,7 @@ void cleanup(void) {
     Vec<BaseAST*> asts;
     collect_asts(&asts, mod);
     forv_Vec(BaseAST, ast, asts) {
-      if (ImportExpr* a = dynamic_cast<ImportExpr*>(ast)) {
+      if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
         process_import_expr(a);
       }
     }
@@ -146,7 +140,7 @@ void cleanup(BaseAST* base) {
   asts.clear();
   collect_asts(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
-    if (ImportExpr* a = dynamic_cast<ImportExpr*>(ast)) {
+    if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
       process_import_expr(a);
     }
   }

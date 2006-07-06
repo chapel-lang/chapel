@@ -2319,8 +2319,6 @@ IFrame::run(int timeslice) {
         }
         break;
       }
-      case EXPR_IMPORT:
-        break;
     }
   LnextExpr:
     if (!stage) {

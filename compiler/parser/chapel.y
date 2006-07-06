@@ -546,7 +546,7 @@ decl_stmt:
 
 use_stmt:
   TUSE lvalue TSEMI
-    { $$ = build_chpl_stmt(new ImportExpr(IMPORT_USE, $2)); }
+    { $$ = build_chpl_stmt(new CallExpr(PRIMITIVE_USE, $2)); }
 ;
 
 

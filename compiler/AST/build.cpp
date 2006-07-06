@@ -57,7 +57,7 @@ static void createInitFn(ModuleSymbol* mod) {
   mod->initFn->body->blkScope = mod->modScope;
 
   if (!strcmp(mod->name, "_chpl_compiler")) {
-    mod->initFn->insertAtTail(new ImportExpr(IMPORT_USE, "prelude"));
+    mod->initFn->insertAtTail(new CallExpr(PRIMITIVE_USE, new SymExpr("prelude")));
   } else if (strcmp(mod->name, "prelude")) {
 
     // guard init function so it is not run more than once
@@ -70,11 +70,11 @@ static void createInitFn(ModuleSymbol* mod) {
 
     if (strcmp(mod->name, "_chpl_standard")) {
       if (fnostdincs) {
-        mod->initFn->insertAtTail(new ImportExpr(IMPORT_USE, "_chpl_compiler"));
-        mod->initFn->insertAtTail(new ImportExpr(IMPORT_USE, "_chpl_base"));
-        mod->initFn->insertAtTail(new ImportExpr(IMPORT_USE, "_chpl_closure"));
+        mod->initFn->insertAtTail(new CallExpr(PRIMITIVE_USE, new SymExpr("_chpl_compiler")));
+        mod->initFn->insertAtTail(new CallExpr(PRIMITIVE_USE, new SymExpr("_chpl_base")));
+        mod->initFn->insertAtTail(new CallExpr(PRIMITIVE_USE, new SymExpr("_chpl_closure")));
       } else
-        mod->initFn->insertAtTail(new ImportExpr(IMPORT_USE, "_chpl_standard"));
+        mod->initFn->insertAtTail(new CallExpr(PRIMITIVE_USE, new SymExpr("_chpl_standard")));
     }
   }
 

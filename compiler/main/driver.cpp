@@ -162,8 +162,8 @@ do_analysis(char *fn) {
 
 static void
 compile_all(void) {
-  initPrimitiveTypes();
   initPrimitive();
+  initPrimitiveTypes();
   testInputFiles(arg_state.nfile_arguments, arg_state.file_argument);
   runPasses();
 }

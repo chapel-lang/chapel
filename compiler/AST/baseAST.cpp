@@ -423,7 +423,6 @@ char* astTypeName[AST_TYPE_END+1] = {
   "DefExpr",
   "CallExpr",
   "NamedExpr",
-  "ImportExpr",
 
   "Symbol",
   "UnresolvedSymbol",
@@ -507,9 +506,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all, int sentinels) {
     break;
   case EXPR_SYM:
     ADD_CHILD(SymExpr, var);
-    goto LExprCommon;
-  case EXPR_IMPORT:
-    AST_ADD_CHILD(ImportExpr, expr);
     goto LExprCommon;
   case EXPR_DEF:
     AST_ADD_CHILD(DefExpr, init);

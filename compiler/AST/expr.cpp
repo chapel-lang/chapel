@@ -882,6 +882,9 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, ")");
       break;
     }
+    case PRIMITIVE_USE:
+      INT_FATAL(this, "Use should no longer be in AST");
+      break;
     case NUM_KNOWN_PRIMS:
       INT_FATAL(this, "Impossible"); break;
       break;
@@ -1059,104 +1062,6 @@ void NamedExpr::codegen(FILE* outfile) {
   INT_FATAL(this, "NamedExpr::codegen not implemented");
 }
 
-
-ImportExpr::ImportExpr(ImportTag initImportTag, Expr* initExpr) :
-  Expr(EXPR_IMPORT),
-  importTag(initImportTag),
-  expr(initExpr)
-{
-  version = NULL;
-  only = false;
-  renameList = NULL;
-  exceptList = NULL;
-}
-
-
-ImportExpr::ImportExpr(ImportTag initImportTag, char* initExpr) :
-  Expr(EXPR_IMPORT),
-  importTag(initImportTag),
-  expr(new SymExpr(new UnresolvedSymbol(initExpr)))
-{
-  version = NULL;
-  only = false;
-  renameList = NULL;
-  exceptList = NULL;
-}
-
-
-void ImportExpr::verify() {
-  Expr::verify();
-  if (astType != EXPR_IMPORT) {
-    INT_FATAL(this, "Bad ImportExpr::astType");
-  }
-}
-
-
-ImportExpr*
-ImportExpr::copyInner(ASTMap* map) {
-  return new ImportExpr(importTag, COPY_INT(expr));
-}
-
-
-void ImportExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == expr) {
-    expr = dynamic_cast<Expr*>(new_ast);
-  } else {
-    INT_FATAL(this, "Unexpected case in ImportExpr::replaceChild");
-  }
-}
-
-
-Type* ImportExpr::typeInfo(void) {
-  return dtVoid;
-}
-
-
-void ImportExpr::print(FILE* outfile) {
-  fprintf(outfile, importTag == IMPORT_WITH ? "with " : "use ");
-  expr->print(outfile);
-}
-
-
-void ImportExpr::codegen(FILE* outfile) {
-  INT_FATAL(this, "Cannot codegen ImportExpr");
-}
-
-
-ModuleSymbol* ImportExpr::getImportedModule(void) {
-  if (SymExpr* sym = dynamic_cast<SymExpr*>(expr)) {
-    ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(lookup(sym->var->name));
-    if (mod)
-      return mod;
-    USR_FATAL(this, "Cannot find module '%s'", sym->var->name);
-  }
-  INT_FATAL(this, "ImportExpr has no module");
-  return NULL;
-}
-
-
-static ClassType *
-getClassType(Symbol *s) {
-  if (!s)
-    return NULL;
-  if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(s))
-    return dynamic_cast<ClassType*>(ts->definition);
-  return NULL;
-}
-
-ClassType* 
-ImportExpr::getStruct(void) {
-  if (SymExpr* sym = dynamic_cast<SymExpr*>(expr)) {
-    if (ClassType *result = getClassType(sym->var))
-      return result;
-    else if (sym->var->isUnresolved) {
-      if (ClassType *result = getClassType(lookup(sym->var->name)))
-        return result;
-    }
-  }
-  INT_FATAL(this, "Cannot find ClassType in ImportExpr");
-  return NULL;
-}
 
 Expr *
 new_IntLiteral(char *l) {
