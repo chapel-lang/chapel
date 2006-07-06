@@ -67134,3 +67134,20 @@ Modified files:
 	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
 	                                         inlfunc2_report.good 
 
+---------------------------------------------------------------------------
+
+07/06/06 14:11:16 -- deitz
+
+Log message:
+	Removed "with" from the language and updated a few tests.
+
+Modified files:
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/test/classes/deitz/: test_class_with1.chpl 
+	                            test_class_with2.chpl 
+	                            test_class_with3.chpl 
+	                            test_record_with1.chpl 
+	chapel/test/classes/jplevyak/: sum_type-1.chpl 
+	chapel/test/flowanalysis/newast/: sum_type-1.chpl 
+	                                  sum_type-2.chpl 
+
