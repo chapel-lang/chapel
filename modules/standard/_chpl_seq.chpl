@@ -168,6 +168,11 @@ record _aseq {
   var _high : int;
   var _stride : int;
 
+  iterator this() : int {
+    forall x in this
+      yield x; 
+  }
+
   fun getHeadCursor()
     if _stride > 0 then
       return _low;

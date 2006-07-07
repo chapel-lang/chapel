@@ -228,6 +228,8 @@ static void reconstruct_iterator(FnSymbol* fn) {
   if (!seqType)
     USR_FATAL(fn, "Cannot infer iterator return type yet");
   Type *seqElementType = seqType->typeInfo();
+  if (MetaType* mt = dynamic_cast<MetaType*>(seqElementType))
+    seqElementType = mt->base;
   fn->retExpr->remove();
 
   Symbol* seq = new VarSymbol("_seq_result");
