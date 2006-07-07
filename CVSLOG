@@ -67264,3 +67264,31 @@ Modified files:
 	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
 	                                         inlfunc2_report.good 
 
+---------------------------------------------------------------------------
+
+07/07/06 10:33:41 -- deitz
+
+Log message:
+	Removed support for default values on user-defined types and fixed
+	support of user-defined types.  This fixes
+	
+	  trivial/bradc/defaultinit2
+	  trivial/shannon/readWriteUserType
+	  types/typedefs/bradc/localType
+	  types/typedefs/bradc/localType2
+	
+	To mark this change, I changed trivial/bradc/defaultinit2 to an error
+	test.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/test/: REGRESSIONS 
+	chapel/test/trivial/bradc/: defaultinit2.good 
+	chapel/test/types/typedefs/bradc/: localType.chpl localType.good 
+	                                   localType2.chpl 
+	                                   localType2.good 
+	chapel/test/types/typedefs/jplevyak/: copy_typedef-1.chpl 
+
