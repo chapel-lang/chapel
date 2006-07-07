@@ -18,7 +18,6 @@ bool normalized = false;
 static void reconstruct_iterator(FnSymbol* fn);
 static void build_lvalue_function(FnSymbol* fn);
 static void normalize_returns(FnSymbol* fn);
-static void insert_type_default_temp(UserType* userType);
 static void initialize_out_formals(FnSymbol* fn);
 static void insert_formal_temps(FnSymbol* fn);
 static void call_constructor_for_class(CallExpr* call);
@@ -66,19 +65,6 @@ void normalize(BaseAST* base) {
       normalize_returns(fn);
       initialize_out_formals(fn);
       insert_formal_temps(fn);
-    }
-  }
-
-  asts.clear();
-  collect_asts(&asts, base);
-  forv_Vec(BaseAST, ast, asts) {
-    currentLineno = ast->lineno;
-    currentFilename = ast->filename;
-
-    if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(ast)) {
-      if (UserType* userType = dynamic_cast<UserType*>(ts->definition)) {
-        insert_type_default_temp(userType);
-      }
     }
   }
 
@@ -379,44 +365,6 @@ static void normalize_returns(FnSymbol* fn) {
 }
 
 
-static void insert_type_default_temp(UserType* userType) {
-  TypeSymbol* sym = userType->symbol;
-  if (userType->underlyingType == dtUnknown &&
-      userType->typeExpr &&
-      userType->typeExpr->typeInfo() != dtUnknown) {
-    userType->underlyingType = userType->typeExpr->typeInfo();
-    if (MetaType* mt = dynamic_cast<MetaType*>(userType->underlyingType))
-      userType->underlyingType = mt->base;
-    userType->typeExpr = NULL;
-    if (userType->defaultExpr) {
-      char* temp_name = stringcat("_init_", sym->name);
-      Type* temp_type = userType;
-      Expr *temp_init = userType->defaultExpr->copy();
-      Symbol* parent_symbol = sym->defPoint->parentStmt->parentSymbol;
-      Symbol* outer_symbol = sym;
-      while (dynamic_cast<TypeSymbol*>(parent_symbol)) {
-        parent_symbol = parent_symbol->defPoint->parentStmt->parentSymbol;
-        outer_symbol = outer_symbol->defPoint->parentStmt->parentSymbol;
-      }
-      VarSymbol* temp = new VarSymbol(temp_name, temp_type);
-      DefExpr* def = new DefExpr(temp);
-      if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(parent_symbol)) {
-        mod->initFn->insertAtHead(def);
-      } else {
-        Stmt* insert_point = outer_symbol->defPoint->parentStmt;
-        insert_point->insertBefore(def);
-      }
-      def->parentStmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, temp, temp_init));
-      userType->defaultValue = temp;
-      userType->defaultExpr = NULL;
-    } else if (userType->underlyingType->defaultConstructor) 
-      userType->defaultConstructor = userType->underlyingType->defaultConstructor;
-    else if (userType->underlyingType->defaultValue)
-      userType->defaultValue = userType->underlyingType->defaultValue;
-  }
-}
-
-
 static void initialize_out_formals(FnSymbol* fn) {
   for_formals(arg, fn) {
     if (arg->intent == INTENT_OUT) {
@@ -544,31 +492,28 @@ static bool can_resolve_type(Expr* type_expr) {
 
 
 static void hack_resolve_types(Expr* expr) {
-  if (DefExpr* def_expr = dynamic_cast<DefExpr*>(expr)) {
-    if (ArgSymbol* arg = dynamic_cast<ArgSymbol*>(def_expr->sym)) {
-      if (arg->intent == INTENT_TYPE && can_resolve_type(def_expr->exprType)) {
-        arg->type = getMetaType(def_expr->exprType->typeInfo());
-        def_expr->exprType->remove();
-      } else if (arg->type == dtUnknown && can_resolve_type(def_expr->exprType)) {
-        arg->type = def_expr->exprType->typeInfo();
+  if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
+    if (ArgSymbol* arg = dynamic_cast<ArgSymbol*>(def->sym)) {
+      if (arg->intent == INTENT_TYPE && can_resolve_type(def->exprType)) {
+        arg->type = getMetaType(def->exprType->typeInfo());
+        def->exprType->remove();
+      } else if (arg->type == dtUnknown && can_resolve_type(def->exprType)) {
+        arg->type = def->exprType->typeInfo();
         if (MetaType* mt = dynamic_cast<MetaType*>(arg->type))
           arg->type = mt->base;
-        def_expr->exprType->remove();
-      } else if (arg->type == dtUnknown && !def_expr->exprType && can_resolve_type(arg->defaultExpr)) {
+        def->exprType->remove();
+      } else if (arg->type == dtUnknown && !def->exprType && can_resolve_type(arg->defaultExpr)) {
         Type *t = arg->defaultExpr->typeInfo();
         if (t != dtNil)
           arg->type = t;
       }
-    } else if (VarSymbol* var = dynamic_cast<VarSymbol*>(def_expr->sym)) {
+    } else if (VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym)) {
       // only until analysis's type_info resolves enums correctly
-      if (SymExpr* symExpr = dynamic_cast<SymExpr*>(def_expr->exprType))
+      if (SymExpr* symExpr = dynamic_cast<SymExpr*>(def->exprType))
         if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(symExpr->var))
           if (dynamic_cast<EnumType*>(ts->definition))
             var->type = ts->definition;
-    }
-  }
-  if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
-    if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(def->sym)) {
+    } else if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(def->sym)) {
       if (UserType* userType = dynamic_cast<UserType*>(ts->definition)) {
         if (userType->underlyingType == dtUnknown && 
             can_resolve_type(userType->typeExpr)) {
@@ -576,18 +521,22 @@ static void hack_resolve_types(Expr* expr) {
           if (MetaType* mt = dynamic_cast<MetaType*>(userType->underlyingType))
             userType->underlyingType = mt->base;
           userType->typeExpr = NULL;
-          if (!userType->defaultValue) {
-            if (userType->underlyingType->defaultValue) {
-              userType->defaultValue = userType->underlyingType->defaultValue;
-              insert_help(userType->defaultValue, NULL, NULL, userType->symbol, userType->symbol->defPoint->parentScope);
-            } else {
-              userType->defaultConstructor =
-                userType->underlyingType->defaultConstructor;
-            }
-          }
+          if (userType->underlyingType->defaultValue)
+            userType->defaultValue = userType->underlyingType->defaultValue;
+          if (userType->underlyingType->defaultConstructor)
+            userType->defaultConstructor =
+              userType->underlyingType->defaultConstructor;
         }
       }
     }
+  } else if (SymExpr* sym = dynamic_cast<SymExpr*>(expr)) {
+    if (UserType* ut = dynamic_cast<UserType*>(sym->var->type))
+      if (ut->underlyingType != dtUnknown)
+        sym->var->type = ut->underlyingType;
+    if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(sym->var))
+      if (UserType* ut = dynamic_cast<UserType*>(ts->definition))
+        if (ut->underlyingType != dtUnknown)
+          sym->var = ut->underlyingType->symbol;
   }
 }
 

@@ -804,9 +804,9 @@ enum_item:
 
 
 typedef_decl_stmt:
-  TTYPEDEF pragma_ls identifier TCOLON type opt_init_expr TSEMI
+  TTYPEDEF pragma_ls identifier TCOLON type TSEMI
     {
-      UserType* newtype = new UserType($5, $6);
+      UserType* newtype = new UserType($5);
       TypeSymbol* typeSym = new TypeSymbol($3, newtype);
       typeSym->addPragmas($2);
       DefExpr* def_expr = new DefExpr(typeSym);

@@ -11,7 +11,7 @@ fun readDefaultVal(): int {
 }
 
 fun foo() {
-  typedef myfooint: int = readDefaultVal();
+  typedef myfooint: int;
   var x: myfooint;
   var y: myfooint;
   writeln("x is: ", x);

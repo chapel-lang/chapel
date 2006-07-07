@@ -565,7 +565,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all, int sentinels) {
     goto LTypeCommon;
   case TYPE_USER:
     AST_ADD_CHILD(UserType, typeExpr);
-    AST_ADD_CHILD(UserType, defaultExpr);
     ADD_CHILD(UserType, underlyingType);
     goto LTypeCommon;
   case TYPE_CLASS:

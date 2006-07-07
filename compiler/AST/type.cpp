@@ -431,27 +431,10 @@ AList<Stmt>* EnumType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbo
 }
 
 
-UserType::UserType(Type* init_underlyingType, Expr* init_defaultExpr) :
-  Type(TYPE_USER, NULL),
-  typeExpr(NULL),
-  underlyingType(init_underlyingType),
-  defaultExpr(NULL)
-{}
-
-
-UserType::UserType(Expr* init_typeExpr, Expr* init_defaultExpr) :
+UserType::UserType(Expr* init_typeExpr) :
   Type(TYPE_USER, NULL),
   typeExpr(init_typeExpr),
-  underlyingType(dtUnknown),
-  defaultExpr(init_defaultExpr)
-{}
-
-
-UserType::UserType(Expr* init_typeExpr, Type* init_underlyingType, Expr* init_defaultExpr) :
-  Type(TYPE_USER, NULL),
-  typeExpr(init_typeExpr),
-  underlyingType(init_underlyingType),
-  defaultExpr(init_defaultExpr)
+  underlyingType(dtUnknown)
 {}
 
 
@@ -468,9 +451,8 @@ void UserType::verify() {
 
 UserType*
 UserType::copyInner(ASTMap* map) {
-  UserType* copy = new UserType(COPY_INT(typeExpr),
-                                COPY_INT(underlyingType),
-                                COPY_INT(defaultExpr));
+  UserType* copy = new UserType(COPY_INT(typeExpr));
+  copy->underlyingType = underlyingType;
   if (map) { 
     map->put(metaType, copy->metaType);
     map->put(metaType->symbol, copy->metaType->symbol);
@@ -483,8 +465,8 @@ UserType::copyInner(ASTMap* map) {
 void UserType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == defaultValue) {
     defaultValue = dynamic_cast<Symbol*>(new_ast);
-  } else if (old_ast == defaultExpr) {
-    defaultExpr = dynamic_cast<Expr*>(new_ast);
+  } else if (old_ast == typeExpr) {
+    typeExpr = dynamic_cast<Expr*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in Type::replaceChild");
   }
@@ -494,8 +476,6 @@ void UserType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 void UserType::printDef(FILE* outfile) {
   fprintf(outfile, "type ");
   symbol->print(outfile);
-  fprintf(outfile, " = ");
-  defaultExpr->print(outfile);
 }
 
 
