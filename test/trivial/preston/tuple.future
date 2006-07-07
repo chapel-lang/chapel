@@ -1,3 +1,0 @@
-deitz
-
-The problem here is that 'a' has inferred type and we have trouble generating the default constructor for it.
