@@ -1,1 +1,1 @@
-undefinedfn2.chpl:4: undefined function 'foo'
+Error: Unresolved call 'foo' (undefinedfn2.chpl:3)

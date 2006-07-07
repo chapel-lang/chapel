@@ -625,7 +625,15 @@ resolveCall(CallExpr* call) {
     }
     if (!resolvedFn) {
       if (resolve_call_error == CALL_UNKNOWN || resolve_call_error == CALL_AMBIGUOUS) {
-        if (resolve_call_error_candidates.n > 0) {
+        if (!strcmp("=", name)) {
+          if (atypes.v[1] == dtNil)
+            USR_FATAL(call, "Illegal assignment of nil to structure of type %s",
+                      atypes.v[0]->symbol->name);
+          else
+            USR_FATAL(call, "Type mismatch, assignment from %s to %s",
+                      atypes.v[0]->symbol->name,
+                      atypes.v[1]->symbol->name);
+        } else if (resolve_call_error_candidates.n > 0) {
           bool method = false;
           bool _this = false;
           char *str = "";

@@ -1,1 +1,1 @@
-s is: (//)
+Error: Illegal assignment of nil to structure of type seq (emptySeq3.chpl:1)
