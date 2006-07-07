@@ -67463,3 +67463,21 @@ Removed files:
 	chapel/test/types/type_variables/deitz/: 
 	                                         test_infer_class1.future 
 
+---------------------------------------------------------------------------
+
+07/07/06 15:46:52 -- deitz
+
+Log message:
+	Specialized error messages to unresolved assignment function.
+	
+	Updated error message output and removed three .futures.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/test/trivial/bradc/: undefinedfn.good undefinedfn2.good 
+	chapel/test/types/seq/bradc/: emptySeq3.good 
+Removed files:
+	chapel/test/trivial/bradc/: undefinedfn.future 
+	                            undefinedfn2.future 
+	chapel/test/types/seq/bradc/: emptySeq3.future 
+
