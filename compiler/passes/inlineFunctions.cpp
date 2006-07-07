@@ -55,7 +55,7 @@ static void inline_calls(BaseAST* base, Vec<FnSymbol*>* inline_stack = NULL) {
       if (call->primitive || !call->parentStmt)
         continue;
       FnSymbol* fn = call->findFnSymbol();
-      if (!fn || !fn->hasPragma("inline") || fn->hasPragma("no codegen"))
+      if (!fn || !fn->hasPragma("inline"))
         continue;
       if (!inline_stack)
         inline_stack = new Vec<FnSymbol*>();

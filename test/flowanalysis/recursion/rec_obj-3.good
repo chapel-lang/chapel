@@ -1,6 +1,1 @@
-3
-2
-1
-3.0
-2.0
-1.0
+Error: Unable to determine type of field from nil (rec_obj-3.chpl:20)

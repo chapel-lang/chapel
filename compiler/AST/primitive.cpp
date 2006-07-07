@@ -38,7 +38,8 @@ returnInfoCast(CallExpr* call) {
   Type* t = call->get(1)->typeInfo();
   if (MetaType* mt = dynamic_cast<MetaType*>(t))
     return mt->base;
-  return dtUnknown;
+  else
+    return t;
 }
 
 static Type*

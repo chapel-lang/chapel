@@ -666,22 +666,6 @@ static void fix_def_expr(DefExpr* def) {
         if (var->consClass == VAR_PARAM)
           ignore_type = true;
 
-      // also ignore type on classes for now so that nil does not get
-      // assigned to a class that will be assigned something else
-      // immediately.
-      if (SymExpr* sym = dynamic_cast<SymExpr*>(def->exprType))
-        if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(sym->var))
-          if (ClassType* ct = dynamic_cast<ClassType*>(ts->definition))
-            if (ct->classTag == CLASS_CLASS)
-              ignore_type = true;
-      if (CallExpr* call = dynamic_cast<CallExpr*>(def->exprType))
-        if (SymExpr* sym = dynamic_cast<SymExpr*>(call->baseExpr))
-          if (FnSymbol* fn = dynamic_cast<FnSymbol*>(call->lookup(sym)))
-            if (fn->fnClass == FN_CONSTRUCTOR)
-              if (ClassType* ct = dynamic_cast<ClassType*>(fn->retType))
-                if (ct->classTag == CLASS_CLASS)
-                  ignore_type = true;
-
       if (ignore_type)
         def->parentStmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, def->init->remove()));
       else
@@ -737,7 +721,7 @@ static void fold_call_expr(CallExpr* call) {
           if (fn->fnClass == FN_CONSTRUCTOR) {
             if (ClassType* ct = dynamic_cast<ClassType*>(fn->retType)) {
               if (ct->classTag == CLASS_CLASS)
-                call->replace(new SymExpr(gNil));
+                call->replace(new CallExpr(PRIMITIVE_CAST, construct->remove(), gNil));
               else
                 call->replace(construct->remove());
             }

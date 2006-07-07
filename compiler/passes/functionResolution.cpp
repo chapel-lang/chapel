@@ -668,6 +668,8 @@ resolveCall(CallExpr* call) {
           if (!call->methodTag)
             str = stringcat(str, ")");
           USR_FATAL_CONT(call, "%s call '%s'", (resolve_call_error == CALL_AMBIGUOUS) ? "Ambiguous" : "Unresolved", str);
+          if (_this)
+            USR_STOP();
           USR_PRINT("Candidates are:");
           forv_Vec(FnSymbol, fn, resolve_call_error_candidates) {
             if (fn->isSetter || fn->_setter)
@@ -763,7 +765,7 @@ resolveCall(CallExpr* call) {
         if (field->type == dtUnknown)
           field->type = t;
         if (field->type == dtNil)
-          field->type = t;
+          USR_FATAL(call, "Unable to determine type of field from nil");
         if (t == dtUnknown)
           INT_FATAL(call, "Unable to resolve field type");
         if (t != field->type && t != dtNil && t != dtObject)

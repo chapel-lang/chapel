@@ -302,7 +302,6 @@ pragma "inline" fun string.this(i: int) return __primitive("string_index", this,
 //
 pragma "inline" fun ==(a: object, b: object) return __primitive("ptr_eq", a, b);
 pragma "inline" fun !=(a: object, b: object) return __primitive("ptr_neq", a, b);
-
 pragma "inline" fun =(a, b:object) return b;
 pragma "inline" fun _copy(a) return a;
 
@@ -315,7 +314,7 @@ pragma "inline" fun _init(x : bool) return false;
 pragma "inline" fun _init(x : int) return 0;
 pragma "inline" fun _init(x : float) return 0.0;
 pragma "inline" fun _init(x : string) return "";
-pragma "inline" fun _init(x : object) return nil;
+pragma "inline" fun _init(x) return nil:x;
 
 
 //

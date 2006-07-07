@@ -14,10 +14,12 @@ class CFILEPTR {
   var FILEptr : int;
 }
 
-const _NULLCFILEPTR   : CFILEPTR = CFILEPTR(-1);
-const _STDINCFILEPTR  : CFILEPTR = CFILEPTR(0);
-const _STDOUTCFILEPTR : CFILEPTR = CFILEPTR(1);
-const _STDERRCFILEPTR : CFILEPTR = CFILEPTR(2);
+pragma "inline" fun _copy(x : CFILEPTR) return x;
+
+const _NULLCFILEPTR   = CFILEPTR(-1);
+const _STDINCFILEPTR  = CFILEPTR(0);
+const _STDOUTCFILEPTR = CFILEPTR(1);
+const _STDERRCFILEPTR = CFILEPTR(2);
 
 pragma "rename fopen" fun _fopen(filename, mode : string) : CFILEPTR {
   return CFILEPTR(__primitive("fopen", filename, mode));

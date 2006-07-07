@@ -838,7 +838,7 @@ void CallExpr::codegen(FILE* outfile) {
         break;
       }
       fprintf(outfile, "(");
-      get(1)->codegen(outfile);
+      typeInfo()->codegen(outfile);
       fprintf(outfile, ")(");
       get(2)->codegen(outfile);
       fprintf(outfile, ")");
