@@ -67519,3 +67519,17 @@ Added files:
 Removed files:
 	chapel/test/arrays/deitz/: test_scalar_promote9.future 
 
+---------------------------------------------------------------------------
+
+07/07/06 16:38:43 -- deitz
+
+Log message:
+	Removed two old unnecessary .futures.
+
+Removed files:
+	chapel/test/arrays/deitz/: test_domain1.chpl test_domain1.future 
+	                           test_domain1.good 
+	chapel/test/arrays/jplevyak/: test_domain2-error.chpl 
+	                              test_domain2-error.future 
+	                              test_domain2-error.good 
+
