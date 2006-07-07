@@ -67411,3 +67411,19 @@ Removed files:
 	chapel/test/reductions/bradc/manual/: threeuses.future 
 	chapel/test/trivial/deitz/: test_integer_method2.future 
 
+---------------------------------------------------------------------------
+
+07/07/06 14:35:12 -- deitz
+
+Log message:
+	Changed handling of UserTypes so that they are removed during scope
+	resolution.  Simplified code.  Fixed classes/deitz/test_type_in_class2
+	and removed a future.
+
+Modified files:
+	chapel/compiler/passes/: codegen.cpp functionResolution.cpp 
+	                         normalize.cpp scopeResolve.cpp 
+	chapel/test/: REGRESSIONS 
+Removed files:
+	chapel/test/types/tuple/bradc/: returnTuple2.future 
+
