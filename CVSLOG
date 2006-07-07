@@ -67400,3 +67400,14 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: cleanup.cpp normalize.cpp 
 
+---------------------------------------------------------------------------
+
+07/07/06 13:50:42 -- deitz
+
+Log message:
+	Removed two .future files for tests that are now working.
+
+Removed files:
+	chapel/test/reductions/bradc/manual/: threeuses.future 
+	chapel/test/trivial/deitz/: test_integer_method2.future 
+
