@@ -67314,3 +67314,15 @@ Modified files:
 	chapel/test/: REGRESSIONS 
 	chapel/test/classes/deitz/: test_method_call2.good 
 
+---------------------------------------------------------------------------
+
+07/07/06 11:00:52 -- deitz
+
+Log message:
+	Updated output on test and removed regression.
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+	chapel/test/types/tuple/deitz/: 
+	                                test_tuple_record_implementation4.good 
+
