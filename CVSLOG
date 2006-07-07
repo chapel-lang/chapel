@@ -67379,3 +67379,14 @@ Modified files:
 	chapel/test/types/type_variables/jplevyak/: 
 	                                            test_clone_class-1.chpl 
 
+---------------------------------------------------------------------------
+
+07/07/06 11:29:37 -- deitz
+
+Log message:
+	Updated .goods.
+
+Modified files:
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+
