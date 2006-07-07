@@ -67502,3 +67502,20 @@ Removed files:
 	                                  like-2.chpl like-2.future 
 	                                  like-2.good 
 
+---------------------------------------------------------------------------
+
+07/07/06 16:33:15 -- deitz
+
+Log message:
+	Enabled scalar promotion on arithmetic sequences, removed one .future,
+	and added a new test case that writes (1..9)**2.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/modules/standard/: _chpl_seq.chpl 
+Added files:
+	chapel/test/types/seq/deitz/: test_promote_aseq.chpl 
+	                              test_promote_aseq.good 
+Removed files:
+	chapel/test/arrays/deitz/: test_scalar_promote9.future 
+
