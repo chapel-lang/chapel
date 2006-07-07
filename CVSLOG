@@ -67219,3 +67219,20 @@ Modified files:
 	chapel/compiler/include/: expr.h symbol.h 
 	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
 
+---------------------------------------------------------------------------
+
+07/07/06 08:43:54 -- deitz
+
+Log message:
+	Removed LiteralType which has not been necessary for a long time,
+	since instantiated functions ceased to be visible.
+	
+	Added logic in function resolution to favor param instantiated
+	arguments over non-param instantiated arguments.  See
+	test/functions/deitz/test_lit_int1.chpl for an example.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: baseAST.h symbol.h type.h 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+
