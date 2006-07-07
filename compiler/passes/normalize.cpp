@@ -725,6 +725,10 @@ static void fold_call_expr(CallExpr* call) {
               else
                 call->replace(construct->remove());
             }
+          } else if (construct->isNamed("_build_array_type") ||
+                     construct->isNamed("_build_sparse_domain_type") ||
+                     construct->isNamed("_build_domain_type")) {
+            call->replace(construct->remove());
           }
         }
       }

@@ -20,7 +20,6 @@ static void build_setters_and_getters(ClassType* ct);
 static void flatten_primary_methods(FnSymbol* fn);
 static void resolve_secondary_method_type(FnSymbol* fn);
 static void add_this_formal_to_method(FnSymbol* fn);
-static void hack_array(DefExpr* def);
 
 
 static void
@@ -194,9 +193,6 @@ void cleanup(BaseAST* base) {
       flatten_primary_methods(fn);
       resolve_secondary_method_type(fn);
       add_this_formal_to_method(fn);
-    }
-    if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
-      hack_array(def);
     }
   }
 }
@@ -457,37 +453,6 @@ static void add_this_formal_to_method(FnSymbol* fn) {
       ArgSymbol* setter_dummy = new ArgSymbol(INTENT_BLANK, "_setterTokenDummy", 
                                               dtSetterToken);
       fn->formals->last()->insertBefore(new DefExpr(setter_dummy));
-    }
-  }
-}
-
-
-static void hack_array(DefExpr* def) {
-  if (ArgSymbol* arg = dynamic_cast<ArgSymbol*>(def->sym)) {
-    // handle arrays in constructors for arrays as fields
-    if (CallExpr* type = dynamic_cast<CallExpr*>(def->exprType)) {
-      if (type->isNamed("_build_array_type") ||
-          type->isNamed("_build_sparse_domain_type") ||
-          type->isNamed("_build_domain_type")) {
-        if (!arg->defaultExpr)
-          INT_FATAL(def, "Clean up arrays!!!");
-        Expr* expr = def->exprType;
-        expr->remove();
-        arg->defaultExpr->replace(expr);
-      }
-    }
-  } else if (VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym)) {
-    if (CallExpr* type = dynamic_cast<CallExpr*>(def->exprType)) {
-      if (type->isNamed("_build_array_type") ||
-          type->isNamed("_build_sparse_domain_type") ||
-          type->isNamed("_build_domain_type")) {
-        if (Expr* init = def->init) {
-          init->remove();
-          def->parentStmt->insertAfter(new CallExpr("=", def->sym, init));
-        }
-        type->remove();
-        def->parentStmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, var, type));
-      }
     }
   }
 }
