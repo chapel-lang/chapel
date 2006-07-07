@@ -165,6 +165,7 @@ initPrimitive() {
   prim_def(PRIMITIVE_PTR_EQUAL, "ptr_eq", ptr_eq_interpreter_op, returnInfoBool);
   prim_def(PRIMITIVE_PTR_NOTEQUAL, "ptr_neq", ptr_neq_interpreter_op, returnInfoBool);
   prim_def(PRIMITIVE_CAST, "cast", cast_interpreter_op, returnInfoCast);
+  prim_def(PRIMITIVE_TYPEOF, "typeof", unimplemented_interpreter_op, returnInfoFirst);
   prim_def(PRIMITIVE_USE, "use", unimplemented_interpreter_op, returnInfoVoid);
   prim_def("abs", abs_interpreter_op, returnInfoInt);
   prim_def("acos", acos_interpreter_op, returnInfoFloat);

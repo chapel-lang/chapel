@@ -125,7 +125,6 @@ Is this "while x"(i); or "while x(i)";?
 %token TITERATOR
 %token TLABEL
 %token TLET
-%token TLIKE
 %token TMODULE
 %token TNIL
 %token TOF
@@ -908,8 +907,6 @@ record_tuple_type:
 var_type:
   TCOLON type
     { $$ = $2; }
-| TLIKE expr
-    { $$ = $2; }
 ;
 
 
@@ -930,8 +927,6 @@ opt_var_type:
 
 formal_var_type:
   TCOLON formal_type
-    { $$ = $2; }
-| TLIKE expr
     { $$ = $2; }
 ;
 
@@ -1061,6 +1056,8 @@ parenop_expr:
 memberaccess_expr:
   non_tuple_lvalue TDOT identifier
     { $$ = new CallExpr(".", $1, new_StringSymbol($3)); }
+| non_tuple_lvalue TDOT TTYPE
+    { $$ = new CallExpr(PRIMITIVE_TYPEOF, $1); }
 ;
 
 

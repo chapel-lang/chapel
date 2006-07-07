@@ -64,7 +64,6 @@ inout           processToken(TINOUT);
 iterator        processToken(TITERATOR);
 label           processToken(TLABEL);
 let             processToken(TLET);
-like            processToken(TLIKE);
 module          processToken(TMODULE);
 nil             processToken(TNIL);
 of              processToken(TOF);

@@ -849,5 +849,8 @@ resolve() {
       if (a->defPoint->exprType)
         a->defPoint->exprType->remove();
     }
+    if (CallExpr* call = dynamic_cast<CallExpr*>(ast))
+      if (call->isPrimitive(PRIMITIVE_TYPEOF))
+        call->replace(call->get(1)->remove());
   }
 }

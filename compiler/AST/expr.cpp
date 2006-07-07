@@ -844,6 +844,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, ")");
       break;
     }
+    case PRIMITIVE_TYPEOF:
     case PRIMITIVE_USE:
       INT_FATAL(this, "Use should no longer be in AST");
       break;
