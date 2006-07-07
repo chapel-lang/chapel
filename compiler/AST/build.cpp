@@ -72,7 +72,6 @@ static void createInitFn(ModuleSymbol* mod) {
       if (fnostdincs) {
         mod->initFn->insertAtTail(new CallExpr(PRIMITIVE_USE, new SymExpr("_chpl_compiler")));
         mod->initFn->insertAtTail(new CallExpr(PRIMITIVE_USE, new SymExpr("_chpl_base")));
-        mod->initFn->insertAtTail(new CallExpr(PRIMITIVE_USE, new SymExpr("_chpl_closure")));
       } else
         mod->initFn->insertAtTail(new CallExpr(PRIMITIVE_USE, new SymExpr("_chpl_standard")));
     }

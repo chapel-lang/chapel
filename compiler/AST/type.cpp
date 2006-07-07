@@ -658,7 +658,7 @@ is_Reference_Type(Type *t) {
     return is_Reference_Type(ut->underlyingType);
   if (!t)
     return false;
-  if (t == dtNil || t->astType == TYPE_SUM)
+  if (t == dtNil)
     return true;
   ClassType* ct = dynamic_cast<ClassType*>(t);
   return (ct &&
@@ -829,36 +829,6 @@ void MetaType::verify() {
 }
 
 
-SumType::SumType() :
-  Type(TYPE_SUM, gNil)
-{
-}
-
-void SumType::verify() {
-  Type::verify();
-  if (astType != TYPE_SUM) {
-    INT_FATAL(this, "Bad SumType::astType");
-  }
-  if (prev || next) {
-    INT_FATAL(this, "Type is in AList");
-  }
-}
-
-
-void SumType::addType(Type* additionalType) {
-  components.add(additionalType);
-}
-
-void SumType::codegenDef(FILE* outfile) {
-  fprintf(outfile, "typedef void *");
-  symbol->codegen(outfile);
-  fprintf(outfile, ";\n");
-}
-
-void SumType::codegenStructName(FILE* outfile) {
-  symbol->codegen(outfile);
-}
-
 VariableType::VariableType(Type *init_type) :
   Type(TYPE_VARIABLE, NULL), 
   type(init_type)
@@ -994,57 +964,8 @@ void initPrimitiveTypes(void) {
   dtSymbol = createPrimitiveType ("symbol", "_symbol",
                                                "_symbolLiteral", "_symbolLiteral");
 
-  dtNumeric = createPrimitiveType ("numeric", "_numeric");
-  dtScalar = createPrimitiveType ("scalar", "_scalar");
   dtAny = createPrimitiveType ("any", "_any");
 }
-
-// you can use something like the following cache to 
-// find an existing SumType.
-
-// eventually this sort of a cache will have to be
-// implemented over all 'structural' types, e.g.
-// records
-
-class LUBCacheHashFns : public gc {
- public:
-  static unsigned int hash(SumType *a) {
-    unsigned int h = 0;
-    for (int i = 0; i < a->components.n; i++)
-      h += open_hash_multipliers[i % 256] * (uintptr_t)a->components.v[i];
-    return h;
-  }
-  static int equal(SumType *a, SumType *b) { 
-    if (a->components.n != b->components.n)
-      return 0;
-    for (int i = 0; i < a->components.n; i++)
-      if (a->components.v[i] != b->components.v[i])
-        return 0;
-    return 1;
-  }
-};
-
-static class BlockHash<SumType *, LUBCacheHashFns> lub_cache;
-
-Type *find_or_make_sum_type(Vec<Type *> *types) {
-  static int uid = 1;
-  if (types->n < 2) {
-    INT_FATAL("Trying to create sum_type of less than 2 types");
-  }
-  qsort(types->v, types->n, sizeof(types->v[0]), compar_baseast);
-  SumType* new_sum_type = new SumType;
-  for (int i = 0; i < types->n; i++)
-    new_sum_type->addType(types->v[i]);
-  SumType *old_type = lub_cache.get(new_sum_type);
-  if (old_type)
-    return old_type;
-  lub_cache.put(new_sum_type);
-  char* name = stringcat("_sum_type", intstring(uid++));
-  TypeSymbol* sym = new TypeSymbol(name, new_sum_type);
-  compilerModule->stmts->insertAtHead(new DefExpr(sym));
-  return new_sum_type;
-}
-
 
 Type *getMetaType(Type *t) {
   if (t)
@@ -1061,10 +982,6 @@ void findInternalTypes(void) {
   dtObject = dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(prelude->lookup("object"))->definition);
   dtObject->symbol->cname = "void*";
   dtValue = dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(prelude->lookup("value"))->definition);
-
-  dtClosure = dynamic_cast<TypeSymbol*>(closureModule->lookup("closure"))->definition;
-
-  dtUnused = dynamic_cast<TypeSymbol*>(baseModule->lookup("_unused_class"))->definition;
 
   // SJD: Can't do this when dtString is defined because
   // prelude hasn't been made yet.  Need to do it after.

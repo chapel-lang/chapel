@@ -14,7 +14,6 @@ void parse(void) {
 
   prelude = ParseFile(stringcat(path, "prelude.chpl"), MOD_STANDARD);
   baseModule = ParseFile(stringcat(path, "_chpl_base.chpl"), MOD_STANDARD);
-  closureModule = ParseFile(stringcat(path, "_chpl_closure.chpl"), MOD_STANDARD);
 
   if (!fnostdincs) {
     fileModule = ParseFile(stringcat(path, "_chpl_file.chpl"), MOD_STANDARD);

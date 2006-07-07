@@ -182,17 +182,6 @@ class MetaType : public Type {
   virtual void verify(); 
 };
 
-class SumType : public Type {
- public:
-  Vec<Type*> components;
-
-  SumType();
-  virtual void verify(); 
-  void addType(Type* additionalType);
-  virtual void codegenStructName(FILE* outfile);
-  void codegenDef(FILE* outfile);
-};
-
 class VariableType : public Type {
  public:
   Type* type;
@@ -229,23 +218,17 @@ TYPE_EXTERN PrimitiveType* dtString;
 TYPE_EXTERN PrimitiveType* dtSymbol;
 
 // internal types
-TYPE_EXTERN Type* dtClosure;
-TYPE_EXTERN Type* dtIndex;
 TYPE_EXTERN Type* dtMethodToken;
 TYPE_EXTERN Type* dtSetterToken;
 TYPE_EXTERN Type* dtFile;
-TYPE_EXTERN Type* dtUnused; // unused types for interfacing with ifa
 void findInternalTypes(void);
 
 // sum-ish types
 TYPE_EXTERN Type* dtAny;
-TYPE_EXTERN Type* dtScalar;
-TYPE_EXTERN Type* dtNumeric;
 TYPE_EXTERN ClassType* dtObject;
 TYPE_EXTERN ClassType* dtValue;
 
 void initPrimitiveTypes(void);
-Type *find_or_make_sum_type(Vec<Type *> *types);
 int is_Scalar_Type(Type *t);
 int is_Reference_Type(Type *t);
 int is_Value_Type(Type *t);

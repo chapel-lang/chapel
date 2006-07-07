@@ -31,7 +31,6 @@ enum ISlotKind {
   EMPTY_ISLOT,
   SELECTOR_ISLOT,
   SYMBOL_ISLOT,
-  CLOSURE_ISLOT,
   OBJECT_ISLOT,
   IMMEDIATE_ISLOT
 };
@@ -40,19 +39,11 @@ char *slotKindName[] = {
   "Empty",
   "Selector",
   "Symbol",
-  "Closure",
   "Object",
   "Immediate"
 };
 
 class ISlot;
-
-class IClosure : public gc { public:
-  Vec<ISlot *> args;
-  BaseAST *visibility_point;
-
-  IClosure(BaseAST *vp = 0) : visibility_point(vp) {}
-};
 
 class ISlot : public gc { public:
   ISlotKind     kind;
@@ -61,7 +52,6 @@ class ISlot : public gc { public:
   union {
     char *selector;
     Symbol *symbol;
-    IClosure *closure;
     IObject *object;
     Immediate *imm;
   };
@@ -122,7 +112,6 @@ struct IFrame : public gc { public:
   ISlot *get(BaseAST *ast);
   void put(BaseAST *ast, ISlot *s);
   ISlot *islot(BaseAST *ast);
-  ISlot *make_closure(int nargs);
   void icall(int nargs, ISlot *ret_slot = 0);
   void icall(FnSymbol *fn, int nargs = 0, int extra_args = 0);
   int igoto(Stmt *s);
@@ -467,17 +456,6 @@ user_error(IFrame *frame, char *fmt, ...) {
   }
 }
 
-ISlot *
-IFrame::make_closure(int nargs) {
-  ISlot *slot = new ISlot;
-  slot->kind = CLOSURE_ISLOT;
-  slot->closure = new IClosure(ip);
-  ISlot **args = &valStack.v[valStack.n-nargs];
-  for (int i = 0; i < nargs; i++)
-    slot->closure->args.add(args[i]);
-  return slot;
-}
-
 static Type *
 slot_type(ISlot *slot) {
   switch (slot->kind) {
@@ -507,15 +485,9 @@ IFrame::icall(int nargs, ISlot *ret_slot) {
   PartialTag partialTag = PARTIAL_NEVER;
   if (CallExpr *call = dynamic_cast<CallExpr*>(ip)) 
     partialTag = call->partialTag;
-  if (partialTag == PARTIAL_ALWAYS) {
-    *return_slot = *make_closure(nargs);
-    valStack.n -= nargs;
-    return;
-  }
   char *name = 0;
   int done = 0, extra_args = 0;
   FnSymbol *fn = 0;
-  Vec<ISlot *> closures;
   BaseAST *visibility_point = ip;
   do {
     ISlot **arg = &valStack.v[valStack.n-nargs];
@@ -529,21 +501,6 @@ IFrame::icall(int nargs, ISlot *ret_slot) {
       nargs--;
       extra_args++;
       done = 1;
-    } else if (arg[0]->kind == CLOSURE_ISLOT) {
-      if (closures.set_in(arg[0])) {
-        user_error(this, "recursive closure detected");
-        return;
-      }
-      closures.set_add(arg[0]);
-      visibility_point = arg[0]->closure->visibility_point;
-      Vec<ISlot *> &a = arg[0]->closure->args;
-      int istart = valStack.n - nargs;
-      valStack.fill(valStack.n + a.n - 1);
-      memmove(&valStack.v[istart + a.n], &valStack.v[istart + 1], 
-              sizeof(valStack.v[0]) * (nargs - 1));
-      for (int i = 0; i < a.n; i++)
-        valStack.v[istart + i] = a.v[i];
-      nargs += a.n - 1;
     } else {
       name = "this";
       done = 1;
@@ -563,10 +520,6 @@ IFrame::icall(int nargs, ISlot *ret_slot) {
         default:
         case EMPTY_ISLOT: 
           INT_FATAL("interpreter: bad slot type: %d", arg[i]->kind); break;
-        case CLOSURE_ISLOT: 
-          actual_types.add(dtClosure);
-          actual_params.add(NULL);
-          break;
         case SELECTOR_ISLOT: 
         case SYMBOL_ISLOT: 
           actual_types.add(arg[i]->symbol->type);
@@ -588,7 +541,6 @@ IFrame::icall(int nargs, ISlot *ret_slot) {
     switch (resolve_call_error) {
       default: INT_FATAL("interpreter: bad resolve_call_error: %d", (int)resolve_call_error); break;
       case CALL_PARTIAL:
-        *return_slot = *make_closure(nargs + 1);
         valStack.n -= (nargs + extra_args);
         return;
       case CALL_AMBIGUOUS:
@@ -824,7 +776,6 @@ print(ISlot *islot, int fnprint = 0) {
       printf("(%d)", (int)islot->symbol->id); 
       known_ids.put(islot->symbol->id, islot->symbol);
       break;
-    case CLOSURE_ISLOT: printf("closure: "); break;
     case OBJECT_ISLOT: 
       printf("object: %d", (int)islot->object->id); 
       known_ids.put(islot->object->id, islot->object);
@@ -1619,10 +1570,7 @@ IFrame::iprimitive(CallExpr *s) {
         ts = dynamic_cast<TypeSymbol*>(arg[0]->symbol);
       } else if (arg[0]->kind == IMMEDIATE_ISLOT)
         ts = immediate_type(arg[0]->imm)->symbol;
-      else if (arg[0]->kind == CLOSURE_ISLOT) {
-        result.set_symbol(gUnspecified);
-        break;
-      } else {
+      else {
         INT_FATAL(ip, "interpreter: bad argument to INIT primitive: %d", arg[0]->kind);
       }
       if (!ts) {

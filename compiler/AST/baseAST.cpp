@@ -441,7 +441,6 @@ char* astTypeName[AST_TYPE_END+1] = {
   "UserType",
   "ClassType",
   "MetaType",
-  "SumType",
   "VariableType",
 
   "List",
@@ -578,9 +577,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all, int sentinels) {
     goto LTypeCommon;
   case TYPE_META:
     ADD_CHILD(MetaType, base);
-    goto LTypeCommon;
-  case TYPE_SUM:
-    ADD_VEC(SumType, components, Type);
     goto LTypeCommon;
   case TYPE_VARIABLE:
     ADD_CHILD(VariableType, type);

@@ -1,4 +1,4 @@
-fun f(type t : numeric, y) {
+fun f(type t, y) {
   var x : t = y;
   writeln(x);
 }

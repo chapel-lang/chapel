@@ -1,8 +1,5 @@
 // _chpl_base module
 
-class _unused_class { } // for interfacing with analysis (sym_tuple)
-
-
 //
 // Setter and method tokens
 //

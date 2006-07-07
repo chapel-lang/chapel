@@ -2,7 +2,6 @@
 
 ModuleSymbol* prelude = NULL;
 ModuleSymbol* baseModule = NULL;
-ModuleSymbol* closureModule = NULL;
 ModuleSymbol* fileModule = NULL;
 ModuleSymbol* tupleModule = NULL;
 ModuleSymbol* seqModule = NULL;
