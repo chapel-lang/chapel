@@ -67303,3 +67303,14 @@ Modified files:
 	chapel/test/: REGRESSIONS 
 	chapel/test/classes/bradc/: callMethodOnClass.good 
 
+---------------------------------------------------------------------------
+
+07/07/06 10:47:50 -- deitz
+
+Log message:
+	Updated error message on test and removed regression.
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+	chapel/test/classes/deitz/: test_method_call2.good 
+
