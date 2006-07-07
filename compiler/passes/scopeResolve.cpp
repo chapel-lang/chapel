@@ -88,6 +88,14 @@ void scopeResolve(BaseAST* base) {
             else
               symExpr->var = sym;
 
+          if (type)
+            if (UserType* ut = dynamic_cast<UserType*>(type->definition)) {
+              Expr* e = ut->typeExpr->copy();
+              symExpr->replace(e);
+              scopeResolve(e);
+              continue;
+            }
+
           // Apply 'this' in methods where necessary
           if (type || !type) {
             Symbol* parent = symExpr->parentSymbol;
@@ -123,4 +131,9 @@ void scopeResolve(BaseAST* base) {
       resolveGotoLabel(gs);
     }
   }
+  forv_Vec(BaseAST, ast, asts)
+    if (DefExpr* def = dynamic_cast<DefExpr*>(ast))
+      if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(def->sym))
+        if (dynamic_cast<UserType*>(ts->definition))
+          def->parentStmt->remove();
 }

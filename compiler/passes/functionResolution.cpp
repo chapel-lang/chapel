@@ -739,13 +739,8 @@ resolveCall(CallExpr* call) {
       }
       if (t == dtUnknown)
         INT_FATAL(call, "Unable to resolve type");
-      if (t != sym->var->type && t != dtNil && t != dtObject) {
-        if (UserType* ut = dynamic_cast<UserType*>(sym->var->type)) {
-          if (t != ut->underlyingType && t != dtNil)
-            INT_FATAL(call, "Bad type detected");
-        } else
-          INT_FATAL(call, "Bad type detected");
-      }
+      if (t != sym->var->type && t != dtNil && t != dtObject)
+        INT_FATAL(call, "Bad type detected");
     }
   } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
     SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2));

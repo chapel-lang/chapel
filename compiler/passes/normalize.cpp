@@ -507,36 +507,7 @@ static void hack_resolve_types(Expr* expr) {
         if (t != dtNil)
           arg->type = t;
       }
-    } else if (VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym)) {
-      // only until analysis's type_info resolves enums correctly
-      if (SymExpr* symExpr = dynamic_cast<SymExpr*>(def->exprType))
-        if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(symExpr->var))
-          if (dynamic_cast<EnumType*>(ts->definition))
-            var->type = ts->definition;
-    } else if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(def->sym)) {
-      if (UserType* userType = dynamic_cast<UserType*>(ts->definition)) {
-        if (userType->underlyingType == dtUnknown && 
-            can_resolve_type(userType->typeExpr)) {
-          userType->underlyingType = userType->typeExpr->typeInfo();
-          if (MetaType* mt = dynamic_cast<MetaType*>(userType->underlyingType))
-            userType->underlyingType = mt->base;
-          userType->typeExpr = NULL;
-          if (userType->underlyingType->defaultValue)
-            userType->defaultValue = userType->underlyingType->defaultValue;
-          if (userType->underlyingType->defaultConstructor)
-            userType->defaultConstructor =
-              userType->underlyingType->defaultConstructor;
-        }
-      }
     }
-  } else if (SymExpr* sym = dynamic_cast<SymExpr*>(expr)) {
-    if (UserType* ut = dynamic_cast<UserType*>(sym->var->type))
-      if (ut->underlyingType != dtUnknown)
-        sym->var->type = ut->underlyingType;
-    if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(sym->var))
-      if (UserType* ut = dynamic_cast<UserType*>(ts->definition))
-        if (ut->underlyingType != dtUnknown)
-          sym->var = ut->underlyingType->symbol;
   }
 }
 
