@@ -67390,3 +67390,13 @@ Modified files:
 	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
 	                                         inlfunc2_report.good 
 
+---------------------------------------------------------------------------
+
+07/07/06 13:47:01 -- deitz
+
+Log message:
+	Refactored hack_array code and removed function of that name.
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp normalize.cpp 
+
