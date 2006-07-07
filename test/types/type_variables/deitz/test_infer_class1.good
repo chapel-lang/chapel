@@ -1,1 +1,3 @@
-{f = 1}
+Error: Unresolved call 'C(f=:int)' (test_infer_class1.chpl:6)
+Candidates are:
+  C(type t, f: t) (test_infer_class1.chpl:1)

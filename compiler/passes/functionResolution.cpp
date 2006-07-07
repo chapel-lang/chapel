@@ -642,6 +642,8 @@ resolveCall(CallExpr* call) {
             _this = true;
           if (_this) {
             str = stringcat(str, ":", atypes.v[0]->symbol->name);
+          } else if (!strncmp("_construct_", name, 11)) {
+            str = stringcat(str, name+11);
           } else {
             str = stringcat(str, name);
           }
@@ -687,7 +689,9 @@ resolveCall(CallExpr* call) {
                 str = stringcat(":", formalDef->sym->type->symbol->name, ".", fn->name);
                 start = 2;
               }
-            } else
+            } else if (!strncmp("_construct_", fn->name, 11))
+              str = stringcat(fn->name+11);
+            else
               str = stringcat(fn->name);
             if (!fn->noParens)
               str = stringcat(str, "(");
