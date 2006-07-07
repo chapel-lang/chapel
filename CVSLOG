@@ -67427,3 +67427,25 @@ Modified files:
 Removed files:
 	chapel/test/types/tuple/bradc/: returnTuple2.future 
 
+---------------------------------------------------------------------------
+
+07/07/06 15:07:04 -- deitz
+
+Log message:
+	Fixed .chpl or .good and removed 6 .future files.
+
+Modified files:
+	chapel/test/arrays/deitz/: test_array_assign3.good 
+	                           test_array_of_string2.good 
+	chapel/test/distributions/bradc/foundations/: blockdist3.chpl 
+	chapel/test/functions/deitz/: test_bad_function.good 
+	chapel/test/trivial/preston/: tuple.chpl 
+	chapel/test/types/typedefs/jplevyak/: copy_typedef-1.good 
+Removed files:
+	chapel/test/arrays/deitz/: test_array_assign3.future 
+	                           test_array_of_string2.future 
+	chapel/test/distributions/bradc/foundations/: blockdist3.future 
+	chapel/test/functions/deitz/: test_bad_function.future 
+	chapel/test/trivial/preston/: tuple.future 
+	chapel/test/types/typedefs/jplevyak/: copy_typedef-1.future 
+
