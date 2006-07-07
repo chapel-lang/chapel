@@ -113,21 +113,6 @@ class EnumType : public Type {
 };
 
 
-class LiteralType : public Type {
- public:
-  VarSymbol *literal;
-  
-  LiteralType(VarSymbol *init_literal);
-  virtual void verify();
-  COPY_DEF(LiteralType);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-
-  void printDef(FILE* outfile);
-  void codegenDef(FILE* outfile);
-  virtual void codegenDefaultFormat(FILE* outfile, bool isRead);
-};
-
-
 class UserType : public Type {
  public:
   Expr* typeExpr;               
@@ -220,8 +205,6 @@ class VariableType : public Type {
 
 class PrimitiveType : public Type {
  public:
-  Type *literalType;
-
   PrimitiveType(Symbol *init_defaultVal = NULL);
   virtual void verify(); 
 };
@@ -267,7 +250,6 @@ int is_Scalar_Type(Type *t);
 int is_Reference_Type(Type *t);
 int is_Value_Type(Type *t);
 Type *getMetaType(Type *t);
-LiteralType *new_LiteralType(VarSymbol *literal_var);
 
 void complete_closure(ClassType *closureType, Vec<Type *> member_types);
 

@@ -83,7 +83,6 @@ class VarSymbol : public Symbol {
   varType      varClass;
   consType     consClass;
   Immediate   *immediate;
-  LiteralType *literalType;
   bool         is_ref;       // reference type?  Initially, for cobegin gen
   bool         on_heap;      // is var allocated on the heap?
 
@@ -117,6 +116,7 @@ class ArgSymbol : public Symbol {
   bool isGeneric;
   bool isExactMatch;
   Type* instantiatedFrom;
+  bool instantiatedParam;
 
   ArgSymbol(intentTag iIntent, char* iName, Type* iType,
             Expr* iDefaultExpr = NULL, Expr* iVariableExpr = NULL);

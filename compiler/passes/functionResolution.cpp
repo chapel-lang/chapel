@@ -94,9 +94,6 @@ bool canDispatch(FnSymbol* fn, Symbol* param, Type* actualType, Type* formalType
         return true;
   if (canCoerce(actualType, formalType))
     return true;
-  if (LiteralType* lt = dynamic_cast<LiteralType*>(formalType))
-    if (lt->literal == param)
-      return true;
   forv_Vec(Type, parent, actualType->dispatchParents) {
     if (parent == formalType || canDispatch(fn, param, parent, formalType)) {
       return true;
@@ -463,22 +460,28 @@ resolve_call(BaseAST* ast,
             ArgSymbol* arg = actual_formals->v[k];
             ArgSymbol* arg2 = actual_formals2->v[k];
             if (arg->intent != INTENT_TYPE && arg2->intent != INTENT_TYPE) {
-              bool require_scalar_promotion1;
-              bool require_scalar_promotion2;
-              canDispatch(best, actual_params->v[k], actual_types->v[k], arg->type, &require_scalar_promotion1);
-              canDispatch(best, actual_params->v[k], actual_types->v[k], arg2->type, &require_scalar_promotion2);
-              if (require_scalar_promotion1 && !require_scalar_promotion2)
-                better = true;
-              else if (!require_scalar_promotion1 && require_scalar_promotion2)
+              if (arg->instantiatedParam && !arg2->instantiatedParam)
                 as_good = false;
+              else if (!arg->instantiatedParam && arg2->instantiatedParam)
+                better = true;
               else {
-                Type* type = (arg->instantiatedFrom) ? arg->instantiatedFrom : arg->type;
-                Type* type2 = (arg2->instantiatedFrom) ? arg2->instantiatedFrom : arg2->type;
-                if (moreSpecific(best, NULL, type2, type) && type2 != type) {
+                bool require_scalar_promotion1;
+                bool require_scalar_promotion2;
+                canDispatch(best, actual_params->v[k], actual_types->v[k], arg->type, &require_scalar_promotion1);
+                canDispatch(best, actual_params->v[k], actual_types->v[k], arg2->type, &require_scalar_promotion2);
+                if (require_scalar_promotion1 && !require_scalar_promotion2)
                   better = true;
-                }
-                if (!moreSpecific(best, NULL, type2, type)) {
+                else if (!require_scalar_promotion1 && require_scalar_promotion2)
                   as_good = false;
+                else {
+                  Type* type = (arg->instantiatedFrom) ? arg->instantiatedFrom : arg->type;
+                  Type* type2 = (arg2->instantiatedFrom) ? arg2->instantiatedFrom : arg2->type;
+                  if (moreSpecific(best, NULL, type2, type) && type2 != type) {
+                    better = true;
+                  }
+                  if (!moreSpecific(best, NULL, type2, type)) {
+                    as_good = false;
+                  }
                 }
               }
             } else if (arg->intent == INTENT_TYPE && arg2->intent != INTENT_TYPE) {

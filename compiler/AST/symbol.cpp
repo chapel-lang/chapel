@@ -298,7 +298,6 @@ VarSymbol::VarSymbol(char    *init_name,
   varClass(init_varClass),
   consClass(init_consClass),
   immediate(NULL),
-  literalType(NULL),
   is_ref( init_is_ref),
   on_heap( init_on_heap)
 { }
@@ -318,7 +317,6 @@ VarSymbol::copyInner(ASTMap* map) {
     new VarSymbol(stringcpy(name), type, varClass, consClass);
   newVarSymbol->cname = stringcpy(cname);
   assert(!newVarSymbol->immediate);
-  assert(!newVarSymbol->literalType);
   return newVarSymbol;
 }
 
@@ -424,7 +422,8 @@ ArgSymbol::ArgSymbol(intentTag iIntent, char* iName,
   genericSymbol(NULL),
   isGeneric(false),
   isExactMatch(false),
-  instantiatedFrom(NULL)
+  instantiatedFrom(NULL),
+  instantiatedParam(false)
 {
   if (intent == INTENT_PARAM || intent == INTENT_TYPE)
     isGeneric = true;
@@ -448,6 +447,7 @@ ArgSymbol::copyInner(ASTMap* map) {
   ps->isGeneric = isGeneric;
   ps->isExactMatch = isExactMatch;
   ps->cname = stringcpy(cname);
+  ps->instantiatedParam = instantiatedParam;
   return ps;
 }
 
@@ -938,10 +938,7 @@ instantiate_function(FnSymbol *fn, ASTMap *all_subs, ASTMap *generic_subs) {
       if (all_subs->get(ps) && ps->intent == INTENT_PARAM) {
         ps->intent = INTENT_BLANK;
         ps->isGeneric = false;
-        if (VarSymbol *vs = dynamic_cast<VarSymbol*>(all_subs->get(ps))) {
-          if (vs->literalType)
-            ps->type = vs->literalType;
-        }
+        ps->instantiatedParam = true;
       } else if (Type* t = dynamic_cast<Type*>(all_subs->get(ps))) {
         ps->isGeneric = false;
         ps->instantiatedFrom = ps->type;
@@ -1559,7 +1556,6 @@ VarSymbol *new_IntSymbol(long long int b, IF1_int_type int_type) {
   s->cname = dupstr(n);
   s->immediate = new Immediate;
   *s->immediate = imm;
-  s->literalType = new_LiteralType(s);
   uniqueConstantsHash.put(s->immediate, s);
   return s;
 }
@@ -1588,7 +1584,6 @@ VarSymbol *new_UIntSymbol(unsigned long long int b, IF1_int_type uint_type) {
   s->cname = dupstr(n);
   s->immediate = new Immediate;
   *s->immediate = imm;
-  s->literalType = new_LiteralType(s);
   uniqueConstantsHash.put(s->immediate, s);
   return s;
 }
@@ -1650,8 +1645,6 @@ VarSymbol *new_ImmediateSymbol(Immediate *imm) {
     sprint_imm(str, *imm);
   s->cname = dupstr(ss);
   *s->immediate = *imm;
-  if (is_int_type(t) || is_uint_type(t))
-    s->literalType = new_LiteralType(s);
   uniqueConstantsHash.put(s->immediate, s);
   return s;
 }

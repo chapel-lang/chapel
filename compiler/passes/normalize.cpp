@@ -554,8 +554,6 @@ static void hack_resolve_types(Expr* expr) {
         if (MetaType* mt = dynamic_cast<MetaType*>(arg->type))
           arg->type = mt->base;
         def_expr->exprType->remove();
-        if (arg->intent == INTENT_PARAM)
-          arg->type = dynamic_cast<PrimitiveType*>(arg->type)->literalType;
       } else if (arg->type == dtUnknown && !def_expr->exprType && can_resolve_type(arg->defaultExpr)) {
         Type *t = arg->defaultExpr->typeInfo();
         if (t != dtNil)

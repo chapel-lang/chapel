@@ -196,8 +196,7 @@ AList<Stmt>* Type::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* a
 
 
 PrimitiveType::PrimitiveType(Symbol *init) :
-  Type(TYPE_PRIMITIVE, init),
-  literalType(0)
+  Type(TYPE_PRIMITIVE, init)
 {}
 
 
@@ -432,65 +431,6 @@ AList<Stmt>* EnumType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbo
 }
 
 
-LiteralType::LiteralType(VarSymbol* init_literal) :
-  Type(TYPE_LITERAL, NULL),
-  literal(init_literal)
-{ }
-
-
-void LiteralType::verify() {
-  Type::verify();
-  if (astType != TYPE_LITERAL) {
-    INT_FATAL(this, "Bad LiteralType::astType");
-  }
-  if (prev || next) {
-    INT_FATAL(this, "Type is in AList");
-  }
-}
-
-
-LiteralType*
-LiteralType::copyInner(ASTMap* map) {
-  LiteralType* copy = new LiteralType(COPY_INT(literal));
-  if (map) {
-    map->put(metaType, copy->metaType);
-    map->put(metaType->symbol, copy->metaType->symbol);
-  }
-  copy->addSymbol(symbol);
-  return copy;
-}
-
-
-void LiteralType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == literal) {
-    literal = dynamic_cast<VarSymbol*>(new_ast);
-  } else {
-    INT_FATAL(this, "Unexpected case in Type::replaceChild");
-  }
-}
-
-
-void LiteralType::printDef(FILE* outfile) {
-  fprintf(outfile, "type ");
-  symbol->print(outfile);
-  fprintf(outfile, " = ");
-  literal->print(outfile);
-}
-
-
-void LiteralType::codegenDef(FILE* outfile) {
-  fprintf(outfile, "typedef ");
-  literal->type->codegen(outfile);
-  fprintf(outfile, " ");
-  symbol->codegen(outfile);
-  fprintf(outfile, ";\n");
-}
-
-void LiteralType::codegenDefaultFormat(FILE* outfile, bool isRead) {
-  literal->type->codegenDefaultFormat(outfile, isRead);
-}
-
-
 UserType::UserType(Type* init_underlyingType, Expr* init_defaultExpr) :
   Type(TYPE_USER, NULL),
   typeExpr(NULL),
@@ -691,8 +631,6 @@ int
 is_Scalar_Type(Type *t) {
   if (UserType *ut = dynamic_cast<UserType*>(t))
     return is_Scalar_Type(ut->underlyingType);
-  if (LiteralType *lt = dynamic_cast<LiteralType*>(t))
-    return is_Scalar_Type(lt->literal->type);
   return t && 
     t != dtUnknown && 
     t != dtString && 
@@ -962,13 +900,6 @@ createPrimitiveType(char *name, char *cname, char *ltname = NULL, char *ltcname 
   TypeSymbol* ts = new TypeSymbol(name, pt);
   ts->cname = cname;
   rootScope->define(ts);
-  if (ltname) {
-    pt->literalType = new PrimitiveType(NULL);
-    TypeSymbol* lts = new TypeSymbol(ltname, pt->literalType);
-    lts->cname = ltcname;
-    rootScope->define(lts);
-    pt->literalType->dispatchParents.add(pt);
-  }
   return pt;
 }
 
@@ -1141,22 +1072,6 @@ void findInternalTypes(void) {
     dynamic_cast<FnSymbol*>(prelude->lookup("_init_string"));
 }
 
-
-LiteralType *
-new_LiteralType(VarSymbol *literal_var) {
-  static int uid = 1;
-  assert(literal_var->immediate);
-  if (literal_var->literalType)
-    return literal_var->literalType;
-  literal_var->literalType = new LiteralType(literal_var);
-  char* name = stringcat("_literal_type", intstring(uid++));
-  TypeSymbol* sym = new TypeSymbol(name, literal_var->literalType);
-  literal_var->literalType->addSymbol(sym);
-  compilerModule->stmts->insertAtTail(new DefExpr(sym));
-  literal_var->literalType->defaultValue = literal_var;
-  literal_var->literalType->dispatchParents.add(literal_var->type);
-  return literal_var->literalType;
-}
 
 void 
 complete_closure(ClassType *ct, Vec<Type *> types) {
