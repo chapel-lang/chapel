@@ -67449,3 +67449,17 @@ Removed files:
 	chapel/test/trivial/preston/: tuple.future 
 	chapel/test/types/typedefs/jplevyak/: copy_typedef-1.future 
 
+---------------------------------------------------------------------------
+
+07/07/06 15:17:23 -- deitz
+
+Log message:
+	Removed .future, made output an error, and improved error message.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/test/types/type_variables/deitz/: test_infer_class1.good 
+Removed files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_infer_class1.future 
+
