@@ -67481,3 +67481,24 @@ Removed files:
 	                            undefinedfn2.future 
 	chapel/test/types/seq/bradc/: emptySeq3.future 
 
+---------------------------------------------------------------------------
+
+07/07/06 15:50:42 -- deitz
+
+Log message:
+	Removed support for "like" and added support for ".type" on a
+	variable.
+	
+	Removed two tests that don't make sense and updated one test.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp 
+	chapel/compiler/include/: primitive.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/test/types/like/deitz/: test_like1.chpl 
+Removed files:
+	chapel/test/types/like/jplevyak/: like-1.chpl like-1.good 
+	                                  like-2.chpl like-2.future 
+	                                  like-2.good 
+
