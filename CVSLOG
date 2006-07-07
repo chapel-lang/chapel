@@ -67292,3 +67292,14 @@ Modified files:
 	                                   localType2.good 
 	chapel/test/types/typedefs/jplevyak/: copy_typedef-1.chpl 
 
+---------------------------------------------------------------------------
+
+07/07/06 10:44:36 -- deitz
+
+Log message:
+	Updated error message on test and removed regression.
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+	chapel/test/classes/bradc/: callMethodOnClass.good 
+
