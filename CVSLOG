@@ -67253,3 +67253,14 @@ Modified files:
 Removed files:
 	chapel/modules/standard/: _chpl_closure.chpl 
 
+---------------------------------------------------------------------------
+
+07/07/06 08:49:26 -- deitz
+
+Log message:
+	Updated .goods.
+
+Modified files:
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+
