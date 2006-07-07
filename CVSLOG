@@ -67236,3 +67236,20 @@ Modified files:
 	chapel/compiler/include/: baseAST.h symbol.h type.h 
 	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
 
+---------------------------------------------------------------------------
+
+07/07/06 08:47:50 -- deitz
+
+Log message:
+	Removed SumType, dead code.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp build.cpp type.cpp 
+	chapel/compiler/include/: baseAST.h type.h 
+	chapel/compiler/main/: runtime.cpp 
+	chapel/compiler/passes/: filesToAST.cpp runInterpreter.cpp 
+	chapel/modules/standard/: _chpl_base.chpl _chpl_standard.chpl 
+	chapel/test/types/type_variables/jplevyak/: where-2.chpl 
+Removed files:
+	chapel/modules/standard/: _chpl_closure.chpl 
+
