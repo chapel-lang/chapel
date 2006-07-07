@@ -67326,3 +67326,56 @@ Modified files:
 	chapel/test/types/tuple/deitz/: 
 	                                test_tuple_record_implementation4.good 
 
+---------------------------------------------------------------------------
+
+07/07/06 11:27:41 -- deitz
+
+Log message:
+	Fixed and updated error message for the following tests that no longer
+	work due to semantic changes:
+	
+	  flowanalysis/recursion/rec_obj-1
+	  flowanalysis/recursion/rec_obj-2
+	  flowanalysis/recursion/rec_obj-3
+	
+	Allow casts to "non-types" because C(int) is both a type and an
+	expression.
+	
+	Disable printing of candidate functions for 'this' function and
+	updated error message for a test due to following change:
+	
+	Removed code to ignore class types as in
+	
+	  var c : C;
+	
+	It is now treated as
+	
+	  move(c, nil:C)
+	
+	Enabled inlining of functions that are not code generated because of
+	prelude/_chpl_base issue.
+	
+	Updated a bunch of tests that referred to classes that did not declare
+	the types of all their fields without specifying a field type.  See
+	test/types/type_variables/deitz/test_clone_class1a.chpl as an example.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp 
+	chapel/compiler/passes/: functionResolution.cpp 
+	                         inlineFunctions.cpp normalize.cpp 
+	chapel/modules/standard/: _chpl_base.chpl prelude.chpl 
+	chapel/test/: REGRESSIONS 
+	chapel/test/classes/bradc/: weirdinit.good 
+	chapel/test/flowanalysis/recursion/: rec_obj-1.good 
+	                                     rec_obj-2.good 
+	                                     rec_obj-3.good 
+	chapel/test/types/type_variables/deitz/: test_clone_class1.chpl 
+	                                         test_clone_class1a.chpl 
+	                                         test_clone_class2.chpl 
+	                                         test_clone_class2b.chpl 
+	                                         test_clone_class3.chpl 
+	                                         test_clone_class4.chpl 
+	                                         test_clone_class5.chpl 
+	chapel/test/types/type_variables/jplevyak/: 
+	                                            test_clone_class-1.chpl 
+
