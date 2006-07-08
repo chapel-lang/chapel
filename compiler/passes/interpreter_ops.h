@@ -15,7 +15,6 @@ class InterpreterOp;
 
 INTERPRETER_OP( unimplemented);
 INTERPRETER_OP( init);
-INTERPRETER_OP( type_equal);
 INTERPRETER_OP( alloc);
 INTERPRETER_OP( fopen);
 INTERPRETER_OP( fclose);

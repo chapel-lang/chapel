@@ -108,30 +108,30 @@ static char *
 num_string(Sym *s) {
   switch (s->num_kind) {
     default: assert(!"case");
-    case IF1_NUM_KIND_UINT:
+    case NUM_KIND_UINT:
       switch (s->num_index) {
-        case IF1_INT_TYPE_1:  return "_CG_bool";
-        case IF1_INT_TYPE_8:  return "_CG_uint8";
-        case IF1_INT_TYPE_16: return "_CG_uint16";
-        case IF1_INT_TYPE_32: return "_CG_uint32";
-        case IF1_INT_TYPE_64: return "_CG_uint64";
+        case INT_TYPE_1:  return "_CG_bool";
+        case INT_TYPE_8:  return "_CG_uint8";
+        case INT_TYPE_16: return "_CG_uint16";
+        case INT_TYPE_32: return "_CG_uint32";
+        case INT_TYPE_64: return "_CG_uint64";
         default: assert(!"case");
       }
       break;
-    case IF1_NUM_KIND_INT:
+    case NUM_KIND_INT:
       switch (s->num_index) {
-        case IF1_INT_TYPE_8:  return "_CG_int8";
-        case IF1_INT_TYPE_16: return "_CG_int16";
-        case IF1_INT_TYPE_32: return "_CG_int32";
-        case IF1_INT_TYPE_64: return "_CG_int64";
+        case INT_TYPE_8:  return "_CG_int8";
+        case INT_TYPE_16: return "_CG_int16";
+        case INT_TYPE_32: return "_CG_int32";
+        case INT_TYPE_64: return "_CG_int64";
         default: assert(!"case");
       }
       break;
-    case IF1_NUM_KIND_FLOAT:
+    case NUM_KIND_FLOAT:
       switch (s->num_index) {
-        case IF1_FLOAT_TYPE_32:  return "_CG_float32";
-        case IF1_FLOAT_TYPE_64:  return "_CG_float64";
-        case IF1_FLOAT_TYPE_128: return "_CG_float128";
+        case FLOAT_TYPE_32:  return "_CG_float32";
+        case FLOAT_TYPE_64:  return "_CG_float64";
+        case FLOAT_TYPE_128: return "_CG_float128";
         default: assert(!"case");
           break;
       }
@@ -704,7 +704,7 @@ cg_print_c(FILE *fp, FA *fa, Fun *init) {
   if (globals.n)
     fputs("\n", fp);
   forv_Var(v, globals) {
-    if (v->sym->imm.const_kind != IF1_NUM_KIND_NONE) {
+    if (v->sym->imm.const_kind != NUM_KIND_NONE) {
       char s[100];
       sprint_imm(s, v->sym->imm);
       v->cg_string = _dupstr(s);

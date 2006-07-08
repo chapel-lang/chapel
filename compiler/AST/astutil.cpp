@@ -420,3 +420,33 @@ void remove_help(BaseAST* ast) {
     }
   }
 }
+
+
+// Return the corresponding Symbol in the formal list of the actual a
+Symbol*
+actual_to_formal( Expr *a) {
+  if (SymExpr *se = dynamic_cast<SymExpr*>(a)) {
+    if (CallExpr *ce = dynamic_cast<CallExpr*>(se->parentExpr)) {
+      if (SymExpr *fe = dynamic_cast<SymExpr*>(ce->baseExpr)) {
+        if (FnSymbol *f = dynamic_cast<FnSymbol*>(fe->var)) {
+          AList<Expr>    *actuals = ce->argList;
+          AList<DefExpr> *formals = f->formals;
+          if (actuals->length() != formals->length()) {
+            INT_FATAL( "length of actuals and formals not the same");
+          }
+
+          Expr *e = actuals->first();
+          for_alist( DefExpr, farg, formals) {
+            if (a == e) {
+              return (ArgSymbol*)(farg->sym);
+            }
+            e = actuals->next();
+          }
+        }
+      }
+    }
+  }
+
+  INT_FATAL( "shouldn't get here");
+  return NULL;
+}

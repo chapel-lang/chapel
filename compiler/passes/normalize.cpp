@@ -805,11 +805,11 @@ static void fold_call_expr(CallExpr* call) {
     if (SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr)) {
       PrimitiveType **ptype_p = NULL;
 
-      FIND_PRIMITIVE_TYPE( dtInt, IF1_INT_TYPE_NUM, ptype_p);
+      FIND_PRIMITIVE_TYPE( dtInt, INT_TYPE_NUM, ptype_p);
       if (!ptype_p) {
-        FIND_PRIMITIVE_TYPE( dtUInt, IF1_INT_TYPE_NUM, ptype_p);
+        FIND_PRIMITIVE_TYPE( dtUInt, INT_TYPE_NUM, ptype_p);
         if (!ptype_p) {
-          FIND_PRIMITIVE_TYPE( dtFloat, IF1_FLOAT_TYPE_NUM, ptype_p);
+          FIND_PRIMITIVE_TYPE( dtFloat, FLOAT_TYPE_NUM, ptype_p);
         }
       }
 
@@ -817,11 +817,11 @@ static void fold_call_expr(CallExpr* call) {
         if (SymExpr* arg1 = dynamic_cast<SymExpr*>(call->get(1))) {
           if (VarSymbol* v1 = dynamic_cast<VarSymbol*>(arg1->var)) {
             if (Immediate* imm = v1->immediate) {
-              if ((IF1_NUM_KIND_INT == imm->const_kind) ||
-                  (IF1_NUM_KIND_UINT == imm->const_kind)) {
+              if ((NUM_KIND_INT == imm->const_kind) ||
+                  (NUM_KIND_UINT == imm->const_kind)) {
                 TypeSymbol *tsize;
                 int         size;
-                if (IF1_NUM_KIND_INT == imm->const_kind) {
+                if (NUM_KIND_INT == imm->const_kind) {
                   size = imm->int_value ();
                 } else {
                   size = (int) imm->uint_value ();
@@ -829,29 +829,29 @@ static void fold_call_expr(CallExpr* call) {
 
                 if (ptype_p == dtInt) {
                   switch (size) {
-                  case  8: tsize = dtInt[IF1_INT_TYPE_8]->symbol;  break;
-                  case 16: tsize = dtInt[IF1_INT_TYPE_16]->symbol; break;
-                  case 32: tsize = dtInt[IF1_INT_TYPE_32]->symbol; break;
-                  case 64: tsize = dtInt[IF1_INT_TYPE_64]->symbol; break;
+                  case  8: tsize = dtInt[INT_TYPE_8]->symbol;  break;
+                  case 16: tsize = dtInt[INT_TYPE_16]->symbol; break;
+                  case 32: tsize = dtInt[INT_TYPE_32]->symbol; break;
+                  case 64: tsize = dtInt[INT_TYPE_64]->symbol; break;
                   default:
                     USR_FATAL( call, "illegal size %d for int", size);
                   }
                   call->replace( new SymExpr(tsize));
                 } else if (ptype_p == dtUInt) {
                   switch (size) {
-                  case  8: tsize = dtUInt[IF1_INT_TYPE_8]->symbol;  break;
-                  case 16: tsize = dtUInt[IF1_INT_TYPE_16]->symbol; break;
-                  case 32: tsize = dtUInt[IF1_INT_TYPE_32]->symbol; break;
-                  case 64: tsize = dtUInt[IF1_INT_TYPE_64]->symbol; break;
+                  case  8: tsize = dtUInt[INT_TYPE_8]->symbol;  break;
+                  case 16: tsize = dtUInt[INT_TYPE_16]->symbol; break;
+                  case 32: tsize = dtUInt[INT_TYPE_32]->symbol; break;
+                  case 64: tsize = dtUInt[INT_TYPE_64]->symbol; break;
                   default:
                     USR_FATAL( call, "illegal size %d for uint", size);
                   }
                   call->replace( new SymExpr(tsize));
                 } else if (ptype_p == dtFloat) {
                   switch (size) {
-                  case 32:  tsize = dtFloat[IF1_FLOAT_TYPE_32]->symbol;  break;
-                  case 64:  tsize = dtFloat[IF1_FLOAT_TYPE_64]->symbol;  break;
-                  case 128: tsize = dtFloat[IF1_FLOAT_TYPE_128]->symbol; break;
+                  case 32:  tsize = dtFloat[FLOAT_TYPE_32]->symbol;  break;
+                  case 64:  tsize = dtFloat[FLOAT_TYPE_64]->symbol;  break;
+                  case 128: tsize = dtFloat[FLOAT_TYPE_128]->symbol; break;
                   default:
                     USR_FATAL( call, "illegal size %d for float", size);
                   }
@@ -1029,7 +1029,7 @@ expand_var_args(FnSymbol* fn) {
       // handle expansion of variable argument list where number of
       // variable arguments is a parameter
       if (VarSymbol* n_var = dynamic_cast<VarSymbol*>(sym->var)) {
-        if (n_var->type == dtInt[IF1_INT_TYPE_64] && n_var->immediate) {
+        if (n_var->type == dtInt[INT_TYPE_64] && n_var->immediate) {
           int n = n_var->immediate->v_int64;
           AList<Expr>* actual_types = new AList<Expr>();
           AList<Expr>* actuals = new AList<Expr>();

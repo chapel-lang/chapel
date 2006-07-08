@@ -169,22 +169,22 @@ Sym::imm_int(int *result) {
   int i = 0;
   switch (type->num_kind) {
     default: return -1;
-    case IF1_NUM_KIND_UINT: {
+    case NUM_KIND_UINT: {
       switch (type->num_index) {
-        case IF1_INT_TYPE_8:  i = imm.v_uint8; break;
-        case IF1_INT_TYPE_16: i = imm.v_uint16; break;
-        case IF1_INT_TYPE_32: i = imm.v_uint32; break;
-        case IF1_INT_TYPE_64: i = imm.v_uint64; break;
+        case INT_TYPE_8:  i = imm.v_uint8; break;
+        case INT_TYPE_16: i = imm.v_uint16; break;
+        case INT_TYPE_32: i = imm.v_uint32; break;
+        case INT_TYPE_64: i = imm.v_uint64; break;
         default: return -1;
       }
       break;
     }
-    case IF1_NUM_KIND_INT: {
+    case NUM_KIND_INT: {
       switch (type->num_index) {
-        case IF1_INT_TYPE_8:  i = imm.v_int8; break;
-        case IF1_INT_TYPE_16: i = imm.v_int16; break;
-        case IF1_INT_TYPE_32: i = imm.v_int32; break;
-        case IF1_INT_TYPE_64: i = imm.v_int64; break;
+        case INT_TYPE_8:  i = imm.v_int8; break;
+        case INT_TYPE_16: i = imm.v_int16; break;
+        case INT_TYPE_32: i = imm.v_int32; break;
+        case INT_TYPE_64: i = imm.v_int64; break;
         default: return -1;
       }
       break;
@@ -219,7 +219,7 @@ if1_set_int_type(IF1 *p, Sym *t, int signd, int size) {
   size >>= 3;
   while (size) { ss++; size >>= 1; }
   p->int_types[ss][signd] = t;
-  t->num_kind = signd ? IF1_NUM_KIND_INT : IF1_NUM_KIND_UINT;
+  t->num_kind = signd ? NUM_KIND_INT : NUM_KIND_UINT;
   t->num_index = ss;
 }
 
@@ -229,7 +229,7 @@ if1_set_float_type(IF1 *p, Sym *t, int size) {
   size >>= 4;
   ss = size - 1;
   p->float_types[ss] = t;
-  t->num_kind = IF1_NUM_KIND_FLOAT;
+  t->num_kind = NUM_KIND_FLOAT;
   t->num_index = ss;
 }
 
@@ -239,21 +239,21 @@ if1_set_complex_type(IF1 *p, Sym *t, int size) {
   size >>= 4;
   ss = size - 1;
   p->complex_types[ss] = t;
-  t->num_kind = IF1_NUM_KIND_COMPLEX;
+  t->num_kind = NUM_KIND_COMPLEX;
   t->num_index = ss;
 }
 
 int
 if1_numeric_size(IF1 *p, Sym *t) {
   switch (t->num_kind) {
-    case IF1_NUM_KIND_NONE: assert(!"bad case"); break;
-    case IF1_NUM_KIND_INT:
-    case IF1_NUM_KIND_UINT:
+    case NUM_KIND_NONE: assert(!"bad case"); break;
+    case NUM_KIND_INT:
+    case NUM_KIND_UINT:
       if (!t->num_index) return sizeof(bool);
       return 1 << (t->num_index ? t->num_index : 1) - 1;
-    case IF1_NUM_KIND_FLOAT:
+    case NUM_KIND_FLOAT:
       return 2 + (2 * t->num_index);
-    case IF1_NUM_KIND_COMPLEX:
+    case NUM_KIND_COMPLEX:
       return 2 * (2 + (2 * t->num_index));
   }
   return 0;
@@ -285,29 +285,29 @@ if1_numeric_alignment(IF1 *p, Sym *t) {
   int res = -1;
   switch (t->num_kind) {
     default: assert(!"case"); break;
-    case IF1_NUM_KIND_UINT:
-    case IF1_NUM_KIND_INT:
+    case NUM_KIND_UINT:
+    case NUM_KIND_INT:
       switch (t->num_index) {
-        case IF1_INT_TYPE_1: return ALIGNOF(bool); break;
-        case IF1_INT_TYPE_8: return ALIGNOF(uint8); break;
-        case IF1_INT_TYPE_16: return ALIGNOF(uint16); break;
-        case IF1_INT_TYPE_32: return ALIGNOF(uint32); break;
-        case IF1_INT_TYPE_64: return ALIGNOF(uint64); break;
+        case INT_TYPE_1: return ALIGNOF(bool); break;
+        case INT_TYPE_8: return ALIGNOF(uint8); break;
+        case INT_TYPE_16: return ALIGNOF(uint16); break;
+        case INT_TYPE_32: return ALIGNOF(uint32); break;
+        case INT_TYPE_64: return ALIGNOF(uint64); break;
         default: assert(!"case");
       }
       break;
-    case IF1_NUM_KIND_FLOAT:
+    case NUM_KIND_FLOAT:
       switch (t->num_index) {
-        case IF1_FLOAT_TYPE_32:  return ALIGNOF(float32);
-        case IF1_FLOAT_TYPE_64:  return ALIGNOF(float64);
-        case IF1_FLOAT_TYPE_128: return ALIGNOF(float128);
+        case FLOAT_TYPE_32:  return ALIGNOF(float32);
+        case FLOAT_TYPE_64:  return ALIGNOF(float64);
+        case FLOAT_TYPE_128: return ALIGNOF(float128);
         default: assert(!"case");
       }
       break;
-    case IF1_NUM_KIND_COMPLEX:
+    case NUM_KIND_COMPLEX:
       switch (t->num_index) {
-        case IF1_FLOAT_TYPE_32: return ALIGNOF(complex32);
-        case IF1_FLOAT_TYPE_64: return ALIGNOF(complex64);
+        case FLOAT_TYPE_32: return ALIGNOF(complex32);
+        case FLOAT_TYPE_64: return ALIGNOF(complex64);
         default: assert(!"case");
       }
       break;

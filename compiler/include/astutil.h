@@ -79,4 +79,6 @@ void insert_help(BaseAST* ast,
                  Symbol* parentSymbol,
                  SymScope* parentScope);
 
+Symbol* actual_to_formal( Expr *a);
+
 #endif

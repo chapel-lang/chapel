@@ -13,7 +13,7 @@
 
 
 // Move begin blocks into their own functions so that it can be later 
-// interfaced with the expect thread interface. 
+// interfaced with the expected thread interface. 
 static void
 begin_encapsulation() {
   int  ufid = 1;
@@ -89,44 +89,29 @@ parallel1 (void) {
 }
 
 
-// Mark locals that should be heap allocated.  This is for begin
-// blocks where the forked child thread and parent thread may
-// have different lifetimes.  The locals cannot live on a thread's
-// stack.
+// Mark locals that should be heap allocated and insert a call to allocate
+// them on the heap.  This is for begin blocks where the forked child thread 
+// and parent thread may have different lifetimes.  The locals cannot live 
+// on a thread's stack.
 static void
 begin_mark_locals() {
-  // AList<VarSymbol> *heap_list = new AList<VarSymbol>();
+  Vec<SymExpr*> arglist;
 
+  // Find all the args that should be heap allocated -> arglist
   forv_Vec( ModuleSymbol, mod, allModules) {
     Vec<BaseAST*> asts;
     collect_asts( &asts, mod);
     forv_Vec( BaseAST, ast, asts) {
       BlockStmt *b = dynamic_cast<BlockStmt*>(ast);
       if (b && (BLOCK_BEGIN == b->blockTag)) {
-        // find the return stmt so we know where to insert before
-        
-
         // note, should only be one call expr in the body of the begin
         for_alist( Stmt, stmt, b->body) {
           if (ExprStmt *estmt = dynamic_cast<ExprStmt*>( stmt)) {
             if (CallExpr *fcall = dynamic_cast<CallExpr*>( estmt->expr)) {
               // add the args that need to be heap allocated
               for_alist( Expr, arg, fcall->argList) {
-                SymExpr   *s = dynamic_cast<SymExpr*>(arg);
-                ArgSymbol *arg = (ArgSymbol*)(s->var);
-                ((VarSymbol*)arg->defPoint->sym)->on_heap = true;
-                CallExpr  *alloc = new CallExpr( PRIMITIVE_CHPL_ALLOC, 
-                                                 arg->type->symbol, 
-                                                 new_StringLiteral("begin allocated"));
-                Stmt      *defstmt = arg->defPoint->parentStmt;
-                defstmt->insertAfter( new CallExpr( PRIMITIVE_SET_HEAPVAR,
-                                                    arg->defPoint->sym,
-                                                    alloc));
-                BlockStmt *fb = dynamic_cast<BlockStmt*>(defstmt->parentStmt);
-                if (fb) {
-                  fb->body->last()->insertBefore( new CallExpr( PRIMITIVE_CHPL_FREE, arg->defPoint->sym));
-                } else {
-                  INT_FATAL( b, "cannot insert free in function's body");
+                if (SymExpr *s = dynamic_cast<SymExpr*>(arg)) {
+                  arglist.add( s);
                 }
               }
             } else {
@@ -134,6 +119,105 @@ begin_mark_locals() {
             }
           }
         }
+      }
+    }
+  }
+
+
+  // do a buch of stuff:
+  //  - mark locals as heap allocated
+  //  - create associated mutex + reference counter
+  //  - add mutex + ref-counter to nested function's arg list
+  //  - add calls to init ref-counter, touch, and free
+  forv_Vec( SymExpr, se, arglist) {
+    VarSymbol *local = (VarSymbol*)(se->var);  // var that is referenced
+    Stmt      *localdef = local->defPoint->parentStmt;
+
+    if (!local->on_heap) {        // no reference counter associated yet
+      local->on_heap = true;
+      // create reference counter
+      char      *refcname = stringcat( "_", stringcat(local->name, "_refc"));
+      VarSymbol *refc = new VarSymbol( refcname,
+                                       dtInt[INT_TYPE_64],
+                                       VAR_NORMAL,
+                                       VAR_VAR);
+      refc->on_heap = true;
+      localdef->insertBefore( new DefExpr( refc));
+      local->refc = refc;
+      // create reference counter mutex
+      char      *mname = stringcat( "_", stringcat(local->name, "_refcmutex"));
+      VarSymbol *m = new VarSymbol( mname, dtMutex, VAR_NORMAL, VAR_VAR);
+      m->on_heap = true;          // needs to be heap allocated
+      localdef->insertBefore( new DefExpr( m));
+      local->refcMutex = m;
+    }
+
+    // add refc and mutex args as both actuals and formals
+    CallExpr  *ce = (CallExpr*)se->parentExpr;
+    ce->argList->insertAtTail( new SymExpr( local->refc));
+    ce->argList->insertAtTail( new SymExpr( local->refcMutex)); 
+    ArgSymbol *rc_arg = new ArgSymbol( INTENT_REF, 
+                                       local->refc->name, 
+                                       dtInt[INT_TYPE_64]);
+    ArgSymbol *rcm_arg = new ArgSymbol( INTENT_REF, 
+                                        local->refcMutex->name, 
+                                        dtMutex);
+    FnSymbol  *fn = (FnSymbol*) ((SymExpr*)ce->baseExpr)->var;
+    fn->formals->insertAtTail(new DefExpr( rc_arg));
+    fn->formals->insertAtTail(new DefExpr( rcm_arg));
+
+    localdef->insertAfter( new CallExpr( PRIMITIVE_REFC_TOUCH, 
+                                         local,
+                                         local->refc,
+                                         local->refcMutex));
+    localdef->insertAfter( new CallExpr( PRIMITIVE_REFC_INIT, 
+                                         local,
+                                         local->refc,
+                                         local->refcMutex));
+    BlockStmt *mainfb = dynamic_cast<BlockStmt*>(localdef->parentStmt);
+    Stmt      *laststmt = mainfb->body->last();
+    if (dynamic_cast<ReturnStmt*>(laststmt)) {
+      laststmt->insertBefore( new CallExpr( PRIMITIVE_REFC_RELEASE, 
+                                            local,
+                                            local->refc,
+                                            local->refcMutex));
+    } else {
+      laststmt->insertAfter( new CallExpr( PRIMITIVE_REFC_RELEASE, 
+                                           local,
+                                           local->refc,
+                                           local->refcMutex));
+    }
+
+    // add touch + release for the begin block
+    se->parentStmt->parentStmt->insertBefore( new CallExpr( PRIMITIVE_REFC_TOUCH, 
+                                                            local,
+                                                            local->refc,
+                                                            local->refcMutex));
+    ArgSymbol *fa = (ArgSymbol*) actual_to_formal( se);
+    fn->body->body->last()->insertBefore( new CallExpr( PRIMITIVE_REFC_RELEASE,
+                                                        fa,
+                                                        rc_arg,
+                                                        rcm_arg));
+  }
+
+
+  // for each on_heap variable, add call to allocate it
+  forv_Vec(ModuleSymbol, mod, allModules) {
+    Vec<BaseAST*> asts;
+    asts.clear();
+    collect_asts_postorder(&asts, mod);
+    forv_Vec(BaseAST, ast, asts) {
+      if (VarSymbol *vs = dynamic_cast<VarSymbol*>(ast)) {
+        if (vs->on_heap) {
+          CallExpr *alloc = new CallExpr( PRIMITIVE_CHPL_ALLOC, 
+                                          vs->type->symbol, 
+                                          new_StringLiteral("heap alloc'd via begin"));
+          Stmt     *vsdef = vs->defPoint->parentStmt;
+          vsdef->insertAfter( new CallExpr( PRIMITIVE_SET_HEAPVAR,
+                                            vs->defPoint->sym,
+                                            alloc));
+        }
+      
       }
     }
   }

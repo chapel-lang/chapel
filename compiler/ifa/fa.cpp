@@ -331,14 +331,14 @@ coerce_num(Sym *a, Sym *b) {
     else
       return b;
   }
-  if (b->num_kind == IF1_NUM_KIND_FLOAT) {
+  if (b->num_kind == NUM_KIND_FLOAT) {
     Sym *t = b; b = a; a = t;
   }
-  if (b->num_kind == IF1_NUM_KIND_COMPLEX) {
+  if (b->num_kind == NUM_KIND_COMPLEX) {
     Sym *t = b; b = a; a = t;
   }
-  if (a->num_kind == IF1_NUM_KIND_COMPLEX) {
-    if (b->num_kind == IF1_NUM_KIND_FLOAT) {
+  if (a->num_kind == NUM_KIND_COMPLEX) {
+    if (b->num_kind == NUM_KIND_FLOAT) {
       if (a->num_index > b->num_index)
         return a;
       return if1->complex_types[b->num_index];
@@ -349,7 +349,7 @@ coerce_num(Sym *a, Sym *b) {
       return sym_complex32;
     return sym_complex64;
   }
-  if (a->num_kind == IF1_NUM_KIND_FLOAT) {
+  if (a->num_kind == NUM_KIND_FLOAT) {
     if (int_type_precision[b->num_kind] <= float_type_precision[a->num_kind])
       return a;
     if (int_type_precision[b->num_kind] >= 32)
@@ -357,13 +357,13 @@ coerce_num(Sym *a, Sym *b) {
     return sym_float64;
   }
   // mixed signed and unsigned
-  if (a->num_index >= IF1_INT_TYPE_64 || b->num_index >= IF1_INT_TYPE_64)
+  if (a->num_index >= INT_TYPE_64 || b->num_index >= INT_TYPE_64)
     return sym_int64;
-  else if (a->num_index >= IF1_INT_TYPE_32 || b->num_index >= IF1_INT_TYPE_32)
+  else if (a->num_index >= INT_TYPE_32 || b->num_index >= INT_TYPE_32)
     return sym_int32;
-  else if (a->num_index >= IF1_INT_TYPE_16 || b->num_index >= IF1_INT_TYPE_16)
+  else if (a->num_index >= INT_TYPE_16 || b->num_index >= INT_TYPE_16)
     return sym_int16;
-  else if (a->num_index >= IF1_INT_TYPE_8 || b->num_index >= IF1_INT_TYPE_8)
+  else if (a->num_index >= INT_TYPE_8 || b->num_index >= INT_TYPE_8)
     return sym_int8;
   return sym_bool;
 }

@@ -84,7 +84,9 @@ class VarSymbol : public Symbol {
   consType     consClass;
   Immediate   *immediate;
   bool         is_ref;       // reference type?  Initially, for cobegin gen
-  bool         on_heap;      // is var allocated on the heap?
+  bool         on_heap;      // is var allocated on the heap? for begin's
+  VarSymbol   *refc;         // number of outstanding references to
+  VarSymbol   *refcMutex;    // guard refc
 
   //changed isconstant flag to reflect var, const, param: 0, 1, 2
   VarSymbol(char* init_name, Type* init_type = dtUnknown,
@@ -253,9 +255,9 @@ class LabelSymbol : public Symbol {
 
 TypeSymbol *new_UnresolvedTypeSymbol(char *init_name);
 VarSymbol *new_StringSymbol(char *s);
-VarSymbol *new_IntSymbol(long long int b, IF1_int_type int_type=IF1_INT_TYPE_64);
-VarSymbol *new_UIntSymbol(unsigned long long int b, IF1_int_type uint_type=IF1_INT_TYPE_64);
-VarSymbol *new_FloatSymbol(char *n, long double b, IF1_float_type float_type=IF1_FLOAT_TYPE_64);
+VarSymbol *new_IntSymbol(long long int b, IF1_int_type int_type=INT_TYPE_64);
+VarSymbol *new_UIntSymbol(unsigned long long int b, IF1_int_type uint_type=INT_TYPE_64);
+VarSymbol *new_FloatSymbol(char *n, long double b, IF1_float_type float_type=FLOAT_TYPE_64);
 VarSymbol *new_ComplexSymbol(char *n, double r, double i);
 VarSymbol *new_ImmediateSymbol(Immediate *imm);
 VarSymbol *new_SymbolSymbol(char *str);

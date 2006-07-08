@@ -4,6 +4,9 @@
 // Pthread version of the Chapel thread interface
 #include <pthread.h>
 
+#define LOCK_NAME    "_mutex"
+#define REFC_NAME    "_refc"
+
 // mutexes
 typedef pthread_mutex_t _chpl_mutex_t;
 
@@ -36,6 +39,28 @@ typedef struct {                           // temporary work space
 // Chapel system thread control
 void initChplThreads( void);               // main thread init's thread support
 void exitChplThreads( void);               // called by the main thread
+
+
+// macros to init, touch, and free reference counted Chapel variables
+#define _CHPL_REFC_TOUCH(_var, _refc, _mutex)           \
+  _chpl_mutex_lock( &(_mutex));                         \
+  (_refc)++;                                            \
+  _chpl_mutex_unlock( &(_mutex))
+
+#define _CHPL_REFC_FREE(_var, _refc, _mutex)            \
+  _chpl_mutex_lock( &(_mutex));                         \
+  (_refc)--;                                            \
+  if ((_refc) == 0) {                                   \
+    _chpl_free( &(_var));                               \
+    _chpl_free( &(_refc));                              \
+    _chpl_mutex_unlock( &(_mutex));                     \
+    _chpl_mutex_destroy( &(_mutex));                    \
+    _chpl_free( &(_mutex));                             \
+  } else {                                              \
+    _chpl_mutex_unlock( &(_mutex));                     \
+  }
+
+
 
 // Fork and wait on nthreads. Used to implement Chapel's cobegin statement.
 // Return aggregate thread join error.

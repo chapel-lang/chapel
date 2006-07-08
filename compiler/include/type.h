@@ -207,9 +207,9 @@ TYPE_EXTERN PrimitiveType* dtVoid;
 
 // primitive types
 TYPE_EXTERN PrimitiveType* dtBool;
-TYPE_EXTERN PrimitiveType* dtInt[IF1_INT_TYPE_NUM];
-TYPE_EXTERN PrimitiveType* dtUInt[IF1_INT_TYPE_NUM];
-TYPE_EXTERN PrimitiveType* dtFloat[IF1_FLOAT_TYPE_NUM];
+TYPE_EXTERN PrimitiveType* dtInt[INT_TYPE_NUM];
+TYPE_EXTERN PrimitiveType* dtUInt[INT_TYPE_NUM];
+TYPE_EXTERN PrimitiveType* dtFloat[FLOAT_TYPE_NUM];
 TYPE_EXTERN PrimitiveType* dtComplex;
 TYPE_EXTERN PrimitiveType* dtString;
 TYPE_EXTERN PrimitiveType* dtSymbol;
@@ -218,6 +218,7 @@ TYPE_EXTERN PrimitiveType* dtSymbol;
 TYPE_EXTERN Type* dtMethodToken;
 TYPE_EXTERN Type* dtSetterToken;
 TYPE_EXTERN Type* dtFile;
+TYPE_EXTERN Type* dtMutex;  // for critical sections
 void findInternalTypes(void);
 
 // sum-ish types

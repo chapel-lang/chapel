@@ -86,31 +86,31 @@ void Expr::codegenCastToString(FILE* outfile) {
     if (exprType == dtBool) {
       fprintf(outfile, "bool");
 
-    } else if (exprType == dtInt[IF1_INT_TYPE_8]) {
+    } else if (exprType == dtInt[INT_TYPE_8]) {
       fprintf(outfile, "int8");
-    } else if (exprType == dtInt[IF1_INT_TYPE_16]) {
+    } else if (exprType == dtInt[INT_TYPE_16]) {
       fprintf(outfile, "int16");
-    } else if (exprType == dtInt[IF1_INT_TYPE_32]) {
+    } else if (exprType == dtInt[INT_TYPE_32]) {
       fprintf(outfile, "int32");
-    } else if (exprType == dtInt[IF1_INT_TYPE_64]) {
+    } else if (exprType == dtInt[INT_TYPE_64]) {
       fprintf(outfile, "int");
 
-    } else if (exprType == dtUInt[IF1_INT_TYPE_1]) {
+    } else if (exprType == dtUInt[INT_TYPE_1]) {
       fprintf(outfile, "bool");
-    } else if (exprType == dtUInt[IF1_INT_TYPE_8]) {
+    } else if (exprType == dtUInt[INT_TYPE_8]) {
       fprintf(outfile, "uint8");
-    } else if (exprType == dtUInt[IF1_INT_TYPE_16]) {
+    } else if (exprType == dtUInt[INT_TYPE_16]) {
       fprintf(outfile, "uint16");
-    } else if (exprType == dtUInt[IF1_INT_TYPE_32]) {
+    } else if (exprType == dtUInt[INT_TYPE_32]) {
       fprintf(outfile, "uint32");
-    } else if (exprType == dtUInt[IF1_INT_TYPE_64]) {
+    } else if (exprType == dtUInt[INT_TYPE_64]) {
       fprintf(outfile, "uint");
 
-    } else if (exprType == dtFloat[IF1_FLOAT_TYPE_32]) {
+    } else if (exprType == dtFloat[FLOAT_TYPE_32]) {
       fprintf(outfile, "float32");
-    } else if (exprType == dtFloat[IF1_FLOAT_TYPE_64]) {
+    } else if (exprType == dtFloat[FLOAT_TYPE_64]) {
       fprintf(outfile, "float64");
-    } else if (exprType == dtFloat[IF1_FLOAT_TYPE_128]) {
+    } else if (exprType == dtFloat[FLOAT_TYPE_128]) {
       fprintf(outfile, "float128");
 
     } else {
@@ -557,8 +557,8 @@ void CallExpr::codegen(FILE* outfile) {
         }
       Type* leftType = get(1)->typeInfo();
       Type* rightType = get(2)->typeInfo();
-      if ((leftType == dtInt[IF1_INT_TYPE_64] || 
-           leftType == dtFloat[IF1_FLOAT_TYPE_64]) &&
+      if ((leftType == dtInt[INT_TYPE_64] || 
+           leftType == dtFloat[FLOAT_TYPE_64]) &&
           rightType == dtNil) {
         get(1)->codegen(outfile);
         fprintf(outfile, " = (");
@@ -574,13 +574,13 @@ void CallExpr::codegen(FILE* outfile) {
         // numerics? widths less than default 64-bit Chapel size?  128-bit 
         // types and constants?
         if ((leftType != rightType) &&
-            (((leftType == dtInt[IF1_INT_TYPE_8])  ||
-              (leftType == dtInt[IF1_INT_TYPE_16]) ||
-              (leftType == dtInt[IF1_INT_TYPE_32]) ||
-              (leftType == dtUInt[IF1_INT_TYPE_1])  ||
-              (leftType == dtUInt[IF1_INT_TYPE_8])  ||
-              (leftType == dtUInt[IF1_INT_TYPE_16]) ||
-              (leftType == dtUInt[IF1_INT_TYPE_32])))) {
+            (((leftType == dtInt[INT_TYPE_8])  ||
+              (leftType == dtInt[INT_TYPE_16]) ||
+              (leftType == dtInt[INT_TYPE_32]) ||
+              (leftType == dtUInt[INT_TYPE_1])  ||
+              (leftType == dtUInt[INT_TYPE_8])  ||
+              (leftType == dtUInt[INT_TYPE_16]) ||
+              (leftType == dtUInt[INT_TYPE_32])))) {
           fprintf( outfile, " (");
           leftType->symbol->codegen( outfile);
           fprintf( outfile, ") ");
@@ -588,8 +588,8 @@ void CallExpr::codegen(FILE* outfile) {
 
         // WAW: YAH.  C enum types are int.  For
         // int/uint(1), we only want 1-bit.  See writeln for failure case.
-        if (rightType == dtInt[IF1_INT_TYPE_1] ||
-            rightType == dtUInt[IF1_INT_TYPE_1]) {
+        if (rightType == dtInt[INT_TYPE_1] ||
+            rightType == dtUInt[INT_TYPE_1]) {
           fprintf( outfile, " (");
           get(2)->codegen(outfile);
           fprintf( outfile, "& 0x1) ");
@@ -780,12 +780,78 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     }
     case PRIMITIVE_SET_HEAPVAR: {   // used to allocate on_heap vars
+      // args: heap var, alloc expr
       SymExpr *s = dynamic_cast<SymExpr*>(get(1));
       if (!s || !((VarSymbol*)s->var)->on_heap) {
         INT_FATAL( get(1), "can only move_to_ref with on_heap variables");
       }
       fprintf( outfile, "%s = ", ((VarSymbol*)s->var)->cname);
       get(2)->codegen(outfile);
+      break;
+    }
+    case PRIMITIVE_REFC_INIT: {    // initialize reference-counted var
+      // arg: heap var, refc, refc_mutex
+      SymExpr *se = dynamic_cast<SymExpr*>(get(1));
+      if (VarSymbol *vs = dynamic_cast<VarSymbol*>(se->var)) {
+        if (vs->on_heap) {
+          vs->refc->codegen( outfile);
+          fprintf( outfile, " = 0;\n");
+          fprintf( outfile, "_chpl_mutex_init( &(");
+          vs->refcMutex->codegen( outfile);
+          fprintf( outfile, "))");
+        } else {
+          INT_FATAL( get(1), "refc_init requires an on_heap VarSymbol");
+        }
+      } else {
+        INT_FATAL( get(1), "refc_init requires a VarSymbol");
+      }
+      break;
+    }
+    case PRIMITIVE_REFC_TOUCH: {   // touch reference-counted var
+      // arg: heap var, refc, refc_mutex
+      // v->var->cname, rc->var->cname, m->var->cname);
+      if (SymExpr *v = dynamic_cast<SymExpr*>(get(1))) {
+        if (SymExpr *rc = dynamic_cast<SymExpr*>(get(2))) {
+          if (SymExpr *m = dynamic_cast<SymExpr*>(get(3))) {
+            fprintf( outfile, "_CHPL_REFC_TOUCH( (");
+            v->codegen( outfile);
+            fprintf( outfile, "), (");
+            rc->codegen( outfile);
+            fprintf( outfile, "), (");
+            m->codegen( outfile);
+            fprintf( outfile, "))");
+          } else {
+            INT_FATAL( "refc_mutex not SymExpr");
+          }
+        } else {
+          INT_FATAL( "refc not SymExpr");
+        }
+      } else {
+        INT_FATAL( "var not SymExpr");
+      }
+      break;
+    }
+    case PRIMITIVE_REFC_RELEASE: { // possibly free reference-counted var
+      // arg: heap var, refc, refc_mutex
+      if (SymExpr *v = dynamic_cast<SymExpr*>(get(1))) {
+        if (SymExpr *rc = dynamic_cast<SymExpr*>(get(2))) {
+          if (SymExpr *m = dynamic_cast<SymExpr*>(get(3))) {
+            fprintf( outfile, "_CHPL_REFC_FREE( (");
+            v->codegen( outfile);
+            fprintf( outfile, "), (");
+            rc->codegen( outfile);
+            fprintf( outfile, "), (");
+            m->codegen( outfile);
+            fprintf( outfile, "))");
+          } else {
+            INT_FATAL( "refc_mutex not SymExpr");
+          }
+        } else {
+          INT_FATAL( "refc not SymExpr");
+        }
+      } else {
+        INT_FATAL( "not all args are SymExpr");
+      }
       break;
     }
     case PRIMITIVE_CHPL_ALLOC: {
@@ -805,11 +871,11 @@ void CallExpr::codegen(FILE* outfile) {
       } 
       fprintf( outfile, ") ");
 
-      // target: void* _chpl_alloc(size_t size, _int64 id, char* description);
+      // target: void* _chpl_alloc(size_t size, char* description);
       fprintf( outfile, "_chpl_alloc( sizeof( ");
       if (is_class) fprintf( outfile, "_");          // need struct of class
       get(1)->codegen( outfile);
-      fprintf( outfile, "), %ld, ", get(1)->id);
+      fprintf( outfile, "), ");
       get(2)->codegen( outfile);
       fprintf( outfile, ")");
       break;
@@ -823,13 +889,6 @@ void CallExpr::codegen(FILE* outfile) {
         get(1)->codegen( outfile);
       }
       fprintf( outfile, ")");
-      break;
-    }
-    case PRIMITIVE_TYPE_EQUAL: {
-      int tid = (int)dynamic_cast<TypeSymbol*>(dynamic_cast<SymExpr*>(get(1))->var)->definition->id;
-      fprintf(outfile, "(_chpl_alloc_id(");
-      get(2)->codegen(outfile);
-      fprintf(outfile, ") == %d)", tid);
       break;
     }
     case PRIMITIVE_CAST: {
@@ -864,7 +923,7 @@ void CallExpr::codegen(FILE* outfile) {
       Type *t = variable->getFunction()->retType;
       fprintf(outfile, "_chpl_alloc(sizeof(_");
       t->codegen(outfile);
-      fprintf(outfile, "), %d, ", (int)t->id);
+      fprintf(outfile, "), ");
       argList->get(1)->codegen(outfile);
       fprintf(outfile, ")");
       return;
@@ -1033,8 +1092,8 @@ get_int(Expr *e, long *i) {
     if (SymExpr *l = dynamic_cast<SymExpr*>(e)) {
       if (VarSymbol *v = dynamic_cast<VarSymbol*>(l->var)) {
         if (v->immediate &&
-            v->immediate->const_kind == IF1_NUM_KIND_INT &&
-            v->immediate->num_index == IF1_INT_TYPE_64) {
+            v->immediate->const_kind == NUM_KIND_INT &&
+            v->immediate->num_index == INT_TYPE_64) {
           *i = v->immediate->v_int64;
           return true;
         }

@@ -157,18 +157,18 @@ bool Type::requiresCParamTmp(intentTag intent) {
 
 bool Type::implementedUsingCVals(void) {
   if (this == dtBool ||
-      this == dtInt[IF1_INT_TYPE_8]  ||
-      this == dtInt[IF1_INT_TYPE_16] ||
-      this == dtInt[IF1_INT_TYPE_32] ||
-      this == dtInt[IF1_INT_TYPE_64] ||
-      this == dtUInt[IF1_INT_TYPE_1]  ||
-      this == dtUInt[IF1_INT_TYPE_8]  ||
-      this == dtUInt[IF1_INT_TYPE_16] ||
-      this == dtUInt[IF1_INT_TYPE_32] ||
-      this == dtUInt[IF1_INT_TYPE_64] ||
-      this == dtFloat[IF1_FLOAT_TYPE_32] ||
-      this == dtFloat[IF1_FLOAT_TYPE_64] ||
-      this == dtFloat[IF1_FLOAT_TYPE_128]) {
+      this == dtInt[INT_TYPE_8]  ||
+      this == dtInt[INT_TYPE_16] ||
+      this == dtInt[INT_TYPE_32] ||
+      this == dtInt[INT_TYPE_64] ||
+      this == dtUInt[INT_TYPE_1]  ||
+      this == dtUInt[INT_TYPE_8]  ||
+      this == dtUInt[INT_TYPE_16] ||
+      this == dtUInt[INT_TYPE_32] ||
+      this == dtUInt[INT_TYPE_64] ||
+      this == dtFloat[FLOAT_TYPE_32] ||
+      this == dtFloat[FLOAT_TYPE_64] ||
+      this == dtFloat[FLOAT_TYPE_128]) {
     return true;
   } else {
     return false;
@@ -858,24 +858,24 @@ createPrimitiveType(char *name, char *cname, char *ltname = NULL, char *ltcname 
 // probably be something like int1, int8, etc. in the end. In that case
 // we can just specify the width.
 #define INIT_PRIMITIVE_INT( name, width)                                \
-  dtInt[IF1_INT_TYPE_ ## width] = createPrimitiveType (name,            \
+  dtInt[INT_TYPE_ ## width] = createPrimitiveType (name,            \
                                   "_int" #width, "_intLiteral" #width,  \
                                   "_int" #width "Literal");             \
-  dtInt[IF1_INT_TYPE_ ## width]->defaultValue = new_IntSymbol( 0,       \
-                                                IF1_INT_TYPE_ ## width)
+  dtInt[INT_TYPE_ ## width]->defaultValue = new_IntSymbol( 0,       \
+                                                INT_TYPE_ ## width)
 
 #define INIT_PRIMITIVE_UINT( name, width)                               \
-  dtUInt[IF1_INT_TYPE_ ## width] = createPrimitiveType (name,           \
+  dtUInt[INT_TYPE_ ## width] = createPrimitiveType (name,           \
                                    "_uint" #width, "_uintLiteral" #width,  \
                                    "_uint" #width "Literal");              \
-  dtUInt[IF1_INT_TYPE_ ## width]->defaultValue = new_UIntSymbol( 0,        \
-                                                 IF1_INT_TYPE_ ## width)
+  dtUInt[INT_TYPE_ ## width]->defaultValue = new_UIntSymbol( 0,        \
+                                                 INT_TYPE_ ## width)
 
 #define INIT_PRIMITIVE_FLOAT( name, width)                              \
-  dtFloat[IF1_FLOAT_TYPE_ ## width] = createPrimitiveType (name,        \
+  dtFloat[FLOAT_TYPE_ ## width] = createPrimitiveType (name,        \
                                    "_float" #width, "_floatLiteral" #width,   \
                                    "_float" #width "Literal");                \
-  dtFloat[IF1_FLOAT_TYPE_ ## width]->defaultValue = new_FloatSymbol( "0.0", 0.0, IF1_FLOAT_TYPE_ ## width)
+  dtFloat[FLOAT_TYPE_ ## width]->defaultValue = new_FloatSymbol( "0.0", 0.0, FLOAT_TYPE_ ## width)
   
 
 #define CREATE_DEFAULT_SYMBOL(primType, gSym, name)                     \
@@ -905,8 +905,8 @@ void initPrimitiveTypes(void) {
   CREATE_DEFAULT_SYMBOL (dtBool, gFalse, "false");
   gFalse->immediate = new Immediate;
   gFalse->immediate->v_bool = false;
-  gFalse->immediate->const_kind = IF1_NUM_KIND_UINT;
-  gFalse->immediate->num_index = IF1_INT_TYPE_1;
+  gFalse->immediate->const_kind = NUM_KIND_UINT;
+  gFalse->immediate->num_index = INT_TYPE_1;
   uniqueConstantsHash.put(gFalse->immediate, gFalse);
   dtBool->defaultValue = gFalse;
 
@@ -914,8 +914,8 @@ void initPrimitiveTypes(void) {
   rootScope->define(gTrue); // SJD: Should intrinsics have DefExprs?
   gTrue->immediate = new Immediate;
   gTrue->immediate->v_bool = true;
-  gTrue->immediate->const_kind = IF1_NUM_KIND_UINT;
-  gTrue->immediate->num_index = IF1_INT_TYPE_1;
+  gTrue->immediate->const_kind = NUM_KIND_UINT;
+  gTrue->immediate->num_index = INT_TYPE_1;
   uniqueConstantsHash.put(gTrue->immediate, gTrue);
 
   // WAW: could have a loop, but the following unrolling is more explicit.
@@ -935,14 +935,18 @@ void initPrimitiveTypes(void) {
 
   // This should point to the complex type defined in modules/standard/_chpl_complex.chpl
   dtComplex = createPrimitiveType ("complex", "_complex128",
-                                                "_complexLiteral", "_complex128Literal");
-  dtComplex->defaultValue = new_ComplexSymbol("_MAKE_COMPLEX64(0.0,0.0)", 0.0, 0.0);
+                                   "_complexLiteral", "_complex128Literal");
+  dtComplex->defaultValue = new_ComplexSymbol("_MAKE_COMPLEX64(0.0,0.0)", 
+                                              0.0, 0.0);
 
-  dtString = createPrimitiveType ("string", "_string",
-                                               "_stringLiteral", "_stringLiteral");
+  dtString = createPrimitiveType( "string", "_string",
+                                  "_stringLiteral", "_stringLiteral");
 
-  dtSymbol = createPrimitiveType ("symbol", "_symbol",
-                                               "_symbolLiteral", "_symbolLiteral");
+  dtSymbol = createPrimitiveType( "symbol", "_symbol", 
+                                  "_symbolLiteral", "_symbolLiteral");
+
+  dtMutex = createPrimitiveType( "mutex", "_chpl_mutex_t", 
+                                  "_symbolMutex", "_symbolMutex");
 
   dtAny = createPrimitiveType ("any", "_any");
 }
@@ -985,44 +989,44 @@ complete_closure(ClassType *ct, Vec<Type *> types) {
 
 bool is_int_type(Type *t) {
   return
-    t == dtInt[IF1_INT_TYPE_8] ||
-    t == dtInt[IF1_INT_TYPE_16] ||
-    t == dtInt[IF1_INT_TYPE_32] ||
-    t == dtInt[IF1_INT_TYPE_64];
+    t == dtInt[INT_TYPE_8] ||
+    t == dtInt[INT_TYPE_16] ||
+    t == dtInt[INT_TYPE_32] ||
+    t == dtInt[INT_TYPE_64];
 }
 
 
 bool is_uint_type(Type *t) {
   return
-    t == dtUInt[IF1_INT_TYPE_8] ||
-    t == dtUInt[IF1_INT_TYPE_16] ||
-    t == dtUInt[IF1_INT_TYPE_32] ||
-    t == dtUInt[IF1_INT_TYPE_64];
+    t == dtUInt[INT_TYPE_8] ||
+    t == dtUInt[INT_TYPE_16] ||
+    t == dtUInt[INT_TYPE_32] ||
+    t == dtUInt[INT_TYPE_64];
 }
 
 
 bool is_float_type(Type *t) {
   return
-    t == dtFloat[IF1_FLOAT_TYPE_32] ||
-    t == dtFloat[IF1_FLOAT_TYPE_64] ||
-    t == dtFloat[IF1_FLOAT_TYPE_128];
+    t == dtFloat[FLOAT_TYPE_32] ||
+    t == dtFloat[FLOAT_TYPE_64] ||
+    t == dtFloat[FLOAT_TYPE_128];
 }
 
 
 int get_width(Type *t) {
-  if (t == dtInt[IF1_INT_TYPE_8] || t == dtUInt[IF1_INT_TYPE_8])
+  if (t == dtInt[INT_TYPE_8] || t == dtUInt[INT_TYPE_8])
     return 8;
-  if (t == dtInt[IF1_INT_TYPE_16] || t == dtUInt[IF1_INT_TYPE_16])
+  if (t == dtInt[INT_TYPE_16] || t == dtUInt[INT_TYPE_16])
     return 16;
-  if (t == dtInt[IF1_INT_TYPE_32] || t == dtUInt[IF1_INT_TYPE_32])
+  if (t == dtInt[INT_TYPE_32] || t == dtUInt[INT_TYPE_32])
     return 32;
-  if (t == dtInt[IF1_INT_TYPE_64] || t == dtUInt[IF1_INT_TYPE_64])
+  if (t == dtInt[INT_TYPE_64] || t == dtUInt[INT_TYPE_64])
     return 64;
-  if (t == dtFloat[IF1_FLOAT_TYPE_32])
+  if (t == dtFloat[FLOAT_TYPE_32])
     return 32;
-  if (t == dtFloat[IF1_FLOAT_TYPE_64])
+  if (t == dtFloat[FLOAT_TYPE_64])
     return 64;
-  if (t == dtFloat[IF1_FLOAT_TYPE_128])
+  if (t == dtFloat[FLOAT_TYPE_128])
     return 128;
   INT_FATAL(t, "Unknown bit width");
   return 0;

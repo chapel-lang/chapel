@@ -82,7 +82,7 @@ static ArgumentDescription arg_desc[] = {
  {"verbose", 'v', "Level of Verbosity", "+", &ifa_verbose, "CHPL_VERBOSE", NULL},
  {"print-commands", ' ', "Print Subprocess Commands", "F", &printSystemCommands, 
   "CHPL_PRINT_COMMANDS", NULL},
- {"parallel", 'p', "Parallelization Passes", "F", &parallelPass, "CHPL_PARALLELIZE", NULL},
+ {"parallel", 'p', "Enable threaded code generation", "F", &parallelPass, "CHPL_PARALLELIZE", NULL},
  {"print-passes", ' ', "Print Passes", "F", &printPasses, "CHPL_PRINT_PASSES", NULL},
  {"no-header-errors", ' ', "Squelch Header Errors", "T", &squelch_header_errors, "CHPL_SQUELCH_HEADER_ERRORS", NULL},
  {"version", ' ', "Show Version", NULL, NULL, NULL, version},

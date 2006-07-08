@@ -36,9 +36,11 @@ enum PrimitiveTag {
   PRIMITIVE_GET_MEMBER_REF_TO,         // get the value of the reference
   PRIMITIVE_SET_MEMBER_REF_TO,         // set the reference to a var
   PRIMITIVE_SET_HEAPVAR,               // used to alloc on_heap vars
+  PRIMITIVE_REFC_INIT,                 // initialize ref-counted heap var
+  PRIMITIVE_REFC_TOUCH,                // touch reference-counted var
+  PRIMITIVE_REFC_RELEASE,              // dec ref-counter and maybe free var
   PRIMITIVE_CHPL_ALLOC,
   PRIMITIVE_CHPL_FREE,                 // only for on_heap vars?
-  PRIMITIVE_TYPE_EQUAL,
   PRIMITIVE_PTR_EQUAL,
   PRIMITIVE_PTR_NOTEQUAL,
   PRIMITIVE_CAST,

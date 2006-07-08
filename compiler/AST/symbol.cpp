@@ -191,12 +191,12 @@ void Symbol::codegen(FILE* outfile) {
   if (VarSymbol *vsym = dynamic_cast<VarSymbol*>(this)) {
      // if not immed, is not num, or is boole
     if (!vsym->immediate ||
-        (vsym->immediate->const_kind == IF1_NUM_KIND_NONE) ||
-        (vsym->immediate->num_index == IF1_INT_TYPE_1)) { 
+        (vsym->immediate->const_kind == NUM_KIND_NONE) ||
+        (vsym->immediate->num_index == INT_TYPE_1)) { 
       fprintf(outfile, "%s", cname);
     } else {
       // find the min number of bytes to store constant
-      if (IF1_NUM_KIND_INT == vsym->immediate->const_kind) {
+      if (NUM_KIND_INT == vsym->immediate->const_kind) {
         int64 iconst = vsym->immediate->int_value();
         if (iconst < 0) {
           iconst = (iconst+1) * -1;
@@ -211,7 +211,7 @@ void Symbol::codegen(FILE* outfile) {
           fprintf( outfile, "INT64( %s)", vsym->cname);
         }
 
-      } else if (IF1_NUM_KIND_UINT == vsym->immediate->const_kind) {
+      } else if (NUM_KIND_UINT == vsym->immediate->const_kind) {
         uint64 uconst = vsym->immediate->uint_value();
         if (uconst <= (((int64)1)<<8)) {
           fprintf( outfile, "UINT8( %s)", vsym->cname);
@@ -298,8 +298,10 @@ VarSymbol::VarSymbol(char    *init_name,
   varClass(init_varClass),
   consClass(init_consClass),
   immediate(NULL),
-  is_ref( init_is_ref),
-  on_heap( init_on_heap)
+  is_ref(init_is_ref),
+  on_heap(init_on_heap),
+  refc(NULL),
+  refcMutex(NULL)
 { }
 
 
@@ -1443,13 +1445,15 @@ void ModuleSymbol::codegenDef(void) {
   inUserModule = (modtype == MOD_USER);
   openCFiles(name, &outfileinfo);
 
-  fprintf(codefile, "#include \"stdchpl.h\"\n");
   fprintf(codefile, "#include \"_chpl_header.h\"\n");
+  /*
+  fprintf(codefile, "#include \"stdchpl.h\"\n");
   if (parallelPass) {
     // WAW: Should be done in codegen, but cannot add include's after codegen.
     fprintf (codefile, "#include \"chplthreads.h\"\n");
   }
   fprintf(codefile, "\n");
+  */
 
   modScope->codegenFunctions(codefile);
 
@@ -1535,15 +1539,15 @@ VarSymbol *new_StringSymbol(char *str) {
 VarSymbol *new_IntSymbol(long long int b, IF1_int_type int_type) {
   Immediate imm;
   switch (int_type) {
-  case IF1_INT_TYPE_8  : imm.v_int8   = b; break;
-  case IF1_INT_TYPE_16 : imm.v_int16  = b; break;
-  case IF1_INT_TYPE_32 : imm.v_int32  = b; break;
-  case IF1_INT_TYPE_64 : imm.v_int64  = b; break;
-    // case IF1_INT_TYPE_128: imm.v_int128 = b; break;
+  case INT_TYPE_8  : imm.v_int8   = b; break;
+  case INT_TYPE_16 : imm.v_int16  = b; break;
+  case INT_TYPE_32 : imm.v_int32  = b; break;
+  case INT_TYPE_64 : imm.v_int64  = b; break;
+    // case INT_TYPE_128: imm.v_int128 = b; break;
   default:
     INT_FATAL( "unknown IF1_INT_TYPE");
   }
-  imm.const_kind = IF1_NUM_KIND_INT;
+  imm.const_kind = NUM_KIND_INT;
   imm.num_index = int_type;
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   if (s)
@@ -1563,15 +1567,15 @@ VarSymbol *new_IntSymbol(long long int b, IF1_int_type int_type) {
 VarSymbol *new_UIntSymbol(unsigned long long int b, IF1_int_type uint_type) {
   Immediate imm;
   switch (uint_type) {
-  case IF1_INT_TYPE_8  : imm.v_uint8   = b; break;
-  case IF1_INT_TYPE_16 : imm.v_uint16  = b; break;
-  case IF1_INT_TYPE_32 : imm.v_uint32  = b; break;
-  case IF1_INT_TYPE_64 : imm.v_uint64  = b; break;
-    // case IF1_INT_TYPE_128: imm.v_uint128 = b; break;
+  case INT_TYPE_8  : imm.v_uint8   = b; break;
+  case INT_TYPE_16 : imm.v_uint16  = b; break;
+  case INT_TYPE_32 : imm.v_uint32  = b; break;
+  case INT_TYPE_64 : imm.v_uint64  = b; break;
+    // case INT_TYPE_128: imm.v_uint128 = b; break;
   default:
     INT_FATAL( "unknown IF1_INT_TYPE");
   }
-  imm.const_kind = IF1_NUM_KIND_UINT;
+  imm.const_kind = NUM_KIND_UINT;
   imm.num_index = uint_type;
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   if (s)
@@ -1591,13 +1595,13 @@ VarSymbol *new_UIntSymbol(unsigned long long int b, IF1_int_type uint_type) {
 VarSymbol *new_FloatSymbol(char *n, long double b, IF1_float_type float_type) {
   Immediate imm;
   switch (float_type) {
-  case IF1_FLOAT_TYPE_32  : imm.v_float32  = b; break;
-  case IF1_FLOAT_TYPE_64  : imm.v_float64  = b; break;
-  case IF1_FLOAT_TYPE_128 : imm.v_float128 = b; break;
+  case FLOAT_TYPE_32  : imm.v_float32  = b; break;
+  case FLOAT_TYPE_64  : imm.v_float64  = b; break;
+  case FLOAT_TYPE_128 : imm.v_float128 = b; break;
   default:
     INT_FATAL( "unknown IF1_FLOAT_TYPE");
   }
-  imm.const_kind = IF1_NUM_KIND_FLOAT;
+  imm.const_kind = NUM_KIND_FLOAT;
   imm.num_index = float_type;
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   if (s)
@@ -1617,8 +1621,8 @@ VarSymbol *new_ComplexSymbol(char *n, double r, double i) {
   Immediate imm;
   imm.v_complex64.r = r;
   imm.v_complex64.i = i;
-  imm.const_kind = IF1_NUM_KIND_COMPLEX;
-  imm.num_index = IF1_FLOAT_TYPE_64;
+  imm.const_kind = NUM_KIND_COMPLEX;
+  imm.num_index = FLOAT_TYPE_64;
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   if (s)
     return s;
@@ -1668,17 +1672,17 @@ immediate_type(Immediate *imm) {
       USR_FATAL("bad immediate type");
       break;
     case IF1_CONST_KIND_STRING: return dtString;
-    case IF1_NUM_KIND_UINT:
-      if (imm->num_index == IF1_INT_TYPE_1) return dtBool;
+    case NUM_KIND_UINT:
+      if (imm->num_index == INT_TYPE_1) return dtBool;
       goto Lerror;
-    case IF1_NUM_KIND_INT:
-      if (imm->num_index == IF1_INT_TYPE_64) return dtInt[IF1_INT_TYPE_64];
+    case NUM_KIND_INT:
+      if (imm->num_index == INT_TYPE_64) return dtInt[INT_TYPE_64];
       goto Lerror;
-    case IF1_NUM_KIND_FLOAT:
-      if (imm->num_index == IF1_FLOAT_TYPE_64) return dtFloat[IF1_FLOAT_TYPE_64];
+    case NUM_KIND_FLOAT:
+      if (imm->num_index == FLOAT_TYPE_64) return dtFloat[FLOAT_TYPE_64];
       goto Lerror;
-    case IF1_NUM_KIND_COMPLEX:
-      if (imm->num_index == IF1_FLOAT_TYPE_64) return dtComplex;
+    case NUM_KIND_COMPLEX:
+      if (imm->num_index == FLOAT_TYPE_64) return dtComplex;
       goto Lerror;
   }
   return NULL;
@@ -1687,38 +1691,38 @@ immediate_type(Immediate *imm) {
 int
 set_immediate_type(Immediate *imm, Type *t) {
   if (t == dtBool) {
-    imm->const_kind = IF1_NUM_KIND_UINT;
-    imm->num_index = IF1_INT_TYPE_1; 
+    imm->const_kind = NUM_KIND_UINT;
+    imm->num_index = INT_TYPE_1; 
 
-  } else if (t == dtInt[IF1_INT_TYPE_64]) {
-    imm->const_kind = IF1_NUM_KIND_INT;
-    imm->num_index = IF1_INT_TYPE_64; 
-  } else if (t == dtInt[IF1_INT_TYPE_1]) {
-    imm->const_kind = IF1_NUM_KIND_INT;
-    imm->num_index = IF1_INT_TYPE_1; 
-  } else if (t == dtInt[IF1_INT_TYPE_8]) {
-    imm->const_kind = IF1_NUM_KIND_INT;
-    imm->num_index = IF1_INT_TYPE_8; 
-  } else if (t == dtInt[IF1_INT_TYPE_16]) {
-    imm->const_kind = IF1_NUM_KIND_INT;
-    imm->num_index = IF1_INT_TYPE_16; 
-  } else if (t == dtInt[IF1_INT_TYPE_32]) {
-    imm->const_kind = IF1_NUM_KIND_INT;
-    imm->num_index = IF1_INT_TYPE_32; 
+  } else if (t == dtInt[INT_TYPE_64]) {
+    imm->const_kind = NUM_KIND_INT;
+    imm->num_index = INT_TYPE_64; 
+  } else if (t == dtInt[INT_TYPE_1]) {
+    imm->const_kind = NUM_KIND_INT;
+    imm->num_index = INT_TYPE_1; 
+  } else if (t == dtInt[INT_TYPE_8]) {
+    imm->const_kind = NUM_KIND_INT;
+    imm->num_index = INT_TYPE_8; 
+  } else if (t == dtInt[INT_TYPE_16]) {
+    imm->const_kind = NUM_KIND_INT;
+    imm->num_index = INT_TYPE_16; 
+  } else if (t == dtInt[INT_TYPE_32]) {
+    imm->const_kind = NUM_KIND_INT;
+    imm->num_index = INT_TYPE_32; 
 
-  } else if (t == dtFloat[IF1_FLOAT_TYPE_32]) {
-    imm->const_kind = IF1_NUM_KIND_FLOAT;
-    imm->num_index = IF1_FLOAT_TYPE_32;
-  } else if (t == dtFloat[IF1_FLOAT_TYPE_32]) {
-    imm->const_kind = IF1_NUM_KIND_FLOAT;
-    imm->num_index = IF1_FLOAT_TYPE_32;
-  } else if (t == dtFloat[IF1_FLOAT_TYPE_128]) {
-    imm->const_kind = IF1_NUM_KIND_FLOAT;
-    imm->num_index = IF1_FLOAT_TYPE_128;
+  } else if (t == dtFloat[FLOAT_TYPE_32]) {
+    imm->const_kind = NUM_KIND_FLOAT;
+    imm->num_index = FLOAT_TYPE_32;
+  } else if (t == dtFloat[FLOAT_TYPE_32]) {
+    imm->const_kind = NUM_KIND_FLOAT;
+    imm->num_index = FLOAT_TYPE_32;
+  } else if (t == dtFloat[FLOAT_TYPE_128]) {
+    imm->const_kind = NUM_KIND_FLOAT;
+    imm->num_index = FLOAT_TYPE_128;
 
   } else if (t == dtComplex) {
-    imm->const_kind = IF1_NUM_KIND_COMPLEX;
-    imm->num_index = IF1_FLOAT_TYPE_64;
+    imm->const_kind = NUM_KIND_COMPLEX;
+    imm->num_index = FLOAT_TYPE_64;
   } else if (t == dtString) {
     imm->const_kind = IF1_CONST_KIND_STRING;
   } else

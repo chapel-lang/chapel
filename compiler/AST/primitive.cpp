@@ -20,12 +20,12 @@ returnInfoString(CallExpr* call) {
 
 static Type*
 returnInfoInt(CallExpr* call) {
-  return dtInt[IF1_INT_TYPE_64];
+  return dtInt[INT_TYPE_64];
 }
 
 static Type*
 returnInfoFloat(CallExpr* call) {
-  return dtFloat[IF1_FLOAT_TYPE_64];
+  return dtFloat[FLOAT_TYPE_64];
 }
 
 static Type*
@@ -159,9 +159,11 @@ initPrimitive() {
   prim_def(PRIMITIVE_GET_MEMBER_REF_TO, ".*", unimplemented_interpreter_op, returnInfoVoid);
   prim_def(PRIMITIVE_SET_MEMBER_REF_TO, ".=&", unimplemented_interpreter_op, returnInfoVoid);
   prim_def(PRIMITIVE_SET_HEAPVAR, "setheapvar", unimplemented_interpreter_op, returnInfoMove);
+  prim_def(PRIMITIVE_REFC_INIT, "refc_init", unimplemented_interpreter_op, returnInfoVoid);
+  prim_def(PRIMITIVE_REFC_TOUCH, "refc_touch", unimplemented_interpreter_op, returnInfoVoid);
+  prim_def(PRIMITIVE_REFC_RELEASE, "refc_release", unimplemented_interpreter_op, returnInfoVoid);
   prim_def(PRIMITIVE_CHPL_ALLOC, "chpl_alloc", alloc_interpreter_op, returnInfoChplAlloc);
   prim_def(PRIMITIVE_CHPL_FREE, "chpl_free", unimplemented_interpreter_op, returnInfoVoid);
-  prim_def(PRIMITIVE_TYPE_EQUAL, "type_equal", type_equal_interpreter_op, returnInfoBool);
   prim_def(PRIMITIVE_PTR_EQUAL, "ptr_eq", ptr_eq_interpreter_op, returnInfoBool);
   prim_def(PRIMITIVE_PTR_NOTEQUAL, "ptr_neq", ptr_neq_interpreter_op, returnInfoBool);
   prim_def(PRIMITIVE_CAST, "cast", cast_interpreter_op, returnInfoCast);
