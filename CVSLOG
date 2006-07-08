@@ -67549,3 +67549,28 @@ Added files:
 	                                    simple3.compopts 
 	                                    simple3.good simple3.prediff 
 
+---------------------------------------------------------------------------
+
+07/07/06 17:47:27 -- waynew
+
+Log message:
+	- Added last bits of implementation for threaded begin implementation,
+	  reference counting to heap allocated vars for begin blocks.  Begin
+	  should now work.
+	- Added function actual_to_formal (in astutil.cpp) to map actual to
+	  formal Symbol
+	- Removed some IF1 code + minor name changes.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp expr.cpp primitive.cpp 
+	                      symbol.cpp type.cpp 
+	chapel/compiler/ifa/: cg.cpp fa.cpp if1.cpp if1.h 
+	                      make_cast_code.cpp num.cpp num.h sym.cpp 
+	chapel/compiler/include/: astutil.h primitive.h symbol.h type.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/passes/: codegen.cpp interpreter_ops.h 
+	                         normalize.cpp parallel.cpp 
+	                         runInterpreter.cpp 
+	chapel/runtime/include/: chplmem.h chplthreads.h 
+	chapel/runtime/src/: chplmem.c 
+
