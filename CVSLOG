@@ -67533,3 +67533,19 @@ Removed files:
 	                              test_domain2-error.future 
 	                              test_domain2-error.good 
 
+---------------------------------------------------------------------------
+
+07/07/06 17:19:53 -- waynew
+
+Log message:
+	Tests for threaded begin block implementation.
+
+Added files:
+	chapel/test/parallel/begin/waynew/: simple.chpl simple.compopts 
+	                                    simple.good simple.prediff 
+	                                    simple2.chpl 
+	                                    simple2.compopts 
+	                                    simple2.good simple3.chpl 
+	                                    simple3.compopts 
+	                                    simple3.good simple3.prediff 
+
