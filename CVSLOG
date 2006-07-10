@@ -67621,3 +67621,21 @@ Added files:
 	                               test_nil_is_false.future 
 	                               test_nil_is_false.good 
 
+---------------------------------------------------------------------------
+
+07/10/06 13:39:25 -- deitz
+
+Log message:
+	Unified tuples.  There is now a single implementation of the tuple
+	record that is instantiated as needed.  This checkin removes the
+	htuple record.  Indexing into a tuple using a non-parameter value is
+	currently inefficient.  Indexing into a tuple with differently typed
+	values is an error but may not be caught and is not checked.
+
+Modified files:
+	chapel/compiler/include/: runtime.h 
+	chapel/compiler/main/: runtime.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: filesToAST.cpp normalize.cpp 
+	chapel/modules/standard/: _chpl_htuple.chpl 
+
