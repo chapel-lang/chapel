@@ -973,10 +973,8 @@ type:
 | record_tuple_type
 | non_tuple_lvalue TOF type
     { $$ = new CallExpr($1, new NamedExpr("elt_type", $3)); }
-/* | tuple_multiplier TSTAR type */
-/*     { $$ = new CallExpr("_htuple", $3, $1); } */
 | non_tuple_lvalue TSTAR type %prec TSTAR
-    { $$ = new CallExpr("_htuple", $3, $1); }
+    { $$ = new CallExpr("_tuple", $1, new CallExpr("_init", $3)); }
 | TLSBR nonempty_expr_ls TRSBR type
     { $$ = new CallExpr("_build_array_type", new CallExpr("_build_domain", $2), $4); }
 | TDOMAIN TLP expr_ls TRP

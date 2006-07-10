@@ -15,7 +15,6 @@ extern ModuleSymbol* seqModule;
 extern ModuleSymbol* standardModule;
 extern ModuleSymbol* compilerModule;
 
-extern TypeSymbol* chpl_htuple;
 extern TypeSymbol* chpl_seq;
 
 extern VarSymbol* chpl_stdin;

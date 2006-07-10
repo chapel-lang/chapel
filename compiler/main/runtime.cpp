@@ -9,7 +9,6 @@ ModuleSymbol* standardModule = NULL;
 ModuleSymbol* compilerModule = NULL;
 
 TypeSymbol* chpl_seq;
-TypeSymbol* chpl_htuple = NULL;
 
 VarSymbol* chpl_stdin = NULL;
 VarSymbol* chpl_stdout = NULL;

@@ -44,7 +44,6 @@ void parse(void) {
   findInternalTypes();
 
   if (!fnostdincs) {
-    chpl_htuple = tupleModule->lookupType("_htuple");
     chpl_seq = seqModule->lookupType("seq");
     chpl_stdin = fileModule->lookupVar("stdin");
     chpl_stdout = fileModule->lookupVar("stdout");

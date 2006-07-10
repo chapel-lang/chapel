@@ -28,7 +28,7 @@ static void apply_getters_setters(FnSymbol* fn);
 static void insert_call_temps(CallExpr* call);
 static void fix_user_assign(CallExpr* call);
 static void fix_def_expr(DefExpr* def);
-static void fold_params(Vec<DefExpr*>* defs, Vec<BaseAST*>* asts);
+static void fold_params(BaseAST* base);
 static void expand_var_args(FnSymbol* fn);
 static int tag_generic(FnSymbol* fn);
 static int tag_generic(Type* fn);
@@ -167,17 +167,7 @@ void normalize(BaseAST* base) {
     }
   }
 
-  compute_sym_uses(base);
-  Vec<DefExpr*> defs;
-  asts.clear();
-  collect_asts_postorder(&asts, base);
-  forv_Vec(BaseAST, ast, asts) {
-    if (DefExpr* a = dynamic_cast<DefExpr*>(ast)) {
-      defs.add(a);
-    }
-  }
-  fold_params(&defs, &asts);
-
+  fold_params(base);
 
   asts.clear();
   collect_asts(&asts, base);
@@ -717,6 +707,24 @@ static void fold_call_expr(CallExpr* call) {
     }
     return;
   }
+
+  if (call->isNamed("_construct__tuple")) {
+    if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
+      if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var)) {
+        if (var->immediate) {
+          int rank = var->immediate->v_int64;
+          if (rank != call->argList->length() - 1) {
+            if (call->argList->length() != 2)
+              INT_FATAL(call, "bad homogeneous tuple");
+            Expr* expr = call->get(2);
+            for (int i = 1; i < rank; i++)
+              call->insertAtTail(expr->copy());
+          }
+        }
+      }
+    }
+  }
+
   // fold parameter methods
   if (call->argList->length() == 2) {
     if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->get(1))) {
@@ -960,11 +968,21 @@ static void fold_param_for(BlockStmt* block) {
   }
 }
 
-static void fold_params(Vec<DefExpr*>* defs, Vec<BaseAST*>* asts) {
+static void fold_params(BaseAST* base) {
+  Vec<BaseAST*> asts;
+  collect_asts_postorder(&asts, base);
+ 
+  Vec<DefExpr*> defs;
+  forv_Vec(BaseAST, ast, asts) {
+    if (DefExpr* a = dynamic_cast<DefExpr*>(ast)) {
+      defs.add(a);
+    }
+  }
+
   bool change;
   do {
     change = false;
-    forv_Vec(BaseAST*, ast, *asts) {
+    forv_Vec(BaseAST, ast, asts) {
       if (CallExpr* a = dynamic_cast<CallExpr*>(ast))
         if (a->parentSymbol) // in ast
           fold_call_expr(a);
@@ -975,7 +993,8 @@ static void fold_params(Vec<DefExpr*>* defs, Vec<BaseAST*>* asts) {
         if (a->parentSymbol) // in ast
           fold_param_for(a);
     }
-    forv_Vec(DefExpr*, def, *defs) {
+    compute_sym_uses(base);
+    forv_Vec(DefExpr, def, defs) {
       if (def->parentSymbol)
         change |= fold_def_expr(def);
     }
@@ -1044,21 +1063,7 @@ expand_var_args(FnSymbol* fn) {
             arg_def->insertBefore(new_arg_def);
           }
           VarSymbol* var = new VarSymbol(arg->name);
-          if (arg->type != dtAny) {
-            int i = n;
-            for_alist_backward(Expr, actual, actuals) {
-              actual->remove();
-              fn->insertAtHead(
-                new CallExpr("=",
-                  new CallExpr(var, new_IntLiteral(i)), actual));
-              i--;
-            }
-            fn->insertAtHead(
-              new DefExpr(var,
-                new CallExpr("_htuple", arg->type->symbol, new_IntLiteral(n))));
-          } else {
-            fn->insertAtHead(new DefExpr(var, new CallExpr("_tuple", new_IntLiteral(n), actuals)));
-          }
+          fn->insertAtHead(new DefExpr(var, new CallExpr("_tuple", new_IntLiteral(n), actuals)));
           arg_def->remove();
           ASTMap update;
           update.put(arg, var);
