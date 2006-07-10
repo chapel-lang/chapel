@@ -1,3 +1,0 @@
-deitz
-
-code generation fails, this works in the interpreter, has to do with initialization of elements in ddata class.
