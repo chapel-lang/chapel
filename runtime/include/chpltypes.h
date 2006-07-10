@@ -33,6 +33,8 @@ typedef float              _float32;
 typedef double             _float64;
 typedef long double        _float128;
 
+#define ascii(s) ((_int8)(*s))
+
 typedef struct __complex128 {
   _float64 re;
   _float64 im;

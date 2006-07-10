@@ -294,8 +294,7 @@ pragma "inline" fun +(a: string, b: string) return __primitive("string_concat", 
 pragma "inline" fun length(a: string) return __primitive("string_length", a);
 pragma "inline" fun string.this(i: int) return __primitive("string_index", this, i);
 
-
-
+pragma "inline" fun ascii(a: string) return __primitive("ascii", a);
 
 //
 // Primitive funs for objects

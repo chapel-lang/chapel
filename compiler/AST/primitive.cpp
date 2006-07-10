@@ -220,5 +220,6 @@ initPrimitive() {
   prim_def("string_select", string_select_interpreter_op, returnInfoString);
   prim_def("string_strided_select", string_strided_select_interpreter_op, returnInfoString);
   prim_def("string_length", string_length_interpreter_op, returnInfoInt);
+  prim_def("ascii", unimplemented_interpreter_op, returnInfoInt);
   prim_def("exit", done_interpreter_op, returnInfoInt);
 }
