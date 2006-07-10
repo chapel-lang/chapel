@@ -1,0 +1,7 @@
+bocchino
+
+nil should be false!  Otherwise, code like
+
+while(n) { ... }
+
+doesn't have the obvious meaning.
