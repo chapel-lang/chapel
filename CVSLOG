@@ -67639,3 +67639,17 @@ Modified files:
 	chapel/compiler/passes/: filesToAST.cpp normalize.cpp 
 	chapel/modules/standard/: _chpl_htuple.chpl 
 
+---------------------------------------------------------------------------
+
+07/10/06 16:23:03 -- deitz
+
+Log message:
+	Cleaned up the arithmetic array indexing function to allow as many
+	integers as its rank, rather than any number.
+	
+	Fixed a bug in instantiating functions with variable arguments.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl 
+
