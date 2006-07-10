@@ -67574,3 +67574,19 @@ Modified files:
 	chapel/runtime/include/: chplmem.h chplthreads.h 
 	chapel/runtime/src/: chplmem.c 
 
+---------------------------------------------------------------------------
+
+07/10/06 09:50:58 -- deitz
+
+Log message:
+	Fixed a minor bug in function resolution error messages.
+	
+	Removed one .future.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/test/arrays/bradc/: enumarray.chpl 
+	chapel/test/types/tuple/deitz/: test_htuple_of_tuple.good 
+Removed files:
+	chapel/test/types/tuple/deitz/: test_htuple_of_tuple.future 
+
