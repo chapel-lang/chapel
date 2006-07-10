@@ -67590,3 +67590,22 @@ Modified files:
 Removed files:
 	chapel/test/types/tuple/deitz/: test_htuple_of_tuple.future 
 
+---------------------------------------------------------------------------
+
+07/10/06 10:00:24 -- deitz
+
+Log message:
+	Added support for a standard function "ascii" that returns the ascii
+	number of the first character in a string.  The spec talks about a
+	function called "code" that would do this on whatever alphabet the
+	string is defined over, but without alphabets, the function "ascii"
+	seems appropriate to me.
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/modules/standard/: _chpl_base.chpl 
+	chapel/runtime/include/: chpltypes.h 
+Added files:
+	chapel/test/types/string/deitz/: test_string_ascii.chpl 
+	                                 test_string_ascii.good 
+
