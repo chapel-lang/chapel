@@ -67609,3 +67609,15 @@ Added files:
 	chapel/test/types/string/deitz/: test_string_ascii.chpl 
 	                                 test_string_ascii.good 
 
+---------------------------------------------------------------------------
+
+07/10/06 10:58:49 -- bocchino
+
+Log message:
+	nil seems to evaluate to true; added a future to correct this.
+
+Added files:
+	chapel/test/classes/bocchino/: test_nil_is_false.chpl 
+	                               test_nil_is_false.future 
+	                               test_nil_is_false.good 
+
