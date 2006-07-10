@@ -251,7 +251,7 @@ record _aarray {
     return data(sum);
   }
 
-  fun this(ind : int ...?rank) var : elt_type
+  fun this(ind : int ...rank) var : elt_type
     return this(ind);
 }
 

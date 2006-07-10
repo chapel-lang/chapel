@@ -158,13 +158,15 @@ computeActualFormalMap(FnSymbol* fn,
       if (!match)
         return false;
     }
-  } 
+  }
   for (int i = 0; i < num_actuals; i++) {
     if (!actual_names->v[i]) {
       bool match = false;
       int j = -1;
       for_alist(DefExpr, formalDef, fn->formals) {
         ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
+        if (formal->variableExpr)
+          return (fn->isGeneric) ? true : false;
         j++;
         if (!formal_actuals->v[j]) {
           match = true;
