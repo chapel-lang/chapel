@@ -67682,3 +67682,16 @@ Added files:
 	                                      test_varargs11.chpl 
 	                                      test_varargs11.good 
 
+---------------------------------------------------------------------------
+
+07/10/06 18:01:24 -- deitz
+
+Log message:
+	Added two working tests I had lying around in one of my workspaces.
+
+Added files:
+	chapel/test/types/tuple/deitz/: test_class_tuple2.chpl 
+	                                test_class_tuple2.good 
+	                                test_tuple_function2.chpl 
+	                                test_tuple_function2.good 
+
