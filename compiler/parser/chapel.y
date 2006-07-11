@@ -1116,6 +1116,8 @@ expr:
 
 top_level_expr: 
   lvalue
+| TLP TDOTDOTDOT expr TRP
+    { $$ = new CallExpr(PRIMITIVE_TUPLE_EXPAND, $3); }
 | TNIL
     { $$ = new SymExpr(gNil); }
 | TLET var_decl_stmt_inner_ls TIN expr

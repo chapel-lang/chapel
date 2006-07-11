@@ -737,6 +737,17 @@ resolveCall(CallExpr* call) {
 //       } else
         call->baseExpr->replace(new SymExpr(resolvedFn));
     }
+
+  } else if (call->isPrimitive(PRIMITIVE_TUPLE_EXPAND)) {
+    SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1));
+    VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var);
+    int size = dynamic_cast<VarSymbol*>(var->type->substitutions.v[0].value)->immediate->v_int64;
+    for (int i = 1; i <= size; i++) {
+      CallExpr* e = new CallExpr(sym->copy(), new_IntLiteral(i));
+      call->insertBefore(e);
+      resolveCall(e);
+    }
+    call->remove();
   } else if (call->isPrimitive(PRIMITIVE_MOVE)) {
     if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
       Type* t = call->get(2)->typeInfo();
