@@ -92,9 +92,8 @@ exitChplThreads() {
   if (_chpl_begin_cnt > 0) {
     // block until everyone else is finished
     _chpl_condvar_wait( &_chpl_can_exit, &_chpl_begin_cnt_lock);
-  } else {
-    _chpl_mutex_unlock( &_chpl_begin_cnt_lock);
   }
+  _chpl_mutex_unlock( &_chpl_begin_cnt_lock);
 }
 
 
