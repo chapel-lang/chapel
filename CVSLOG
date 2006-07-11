@@ -67708,3 +67708,14 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: view.cpp 
 
+---------------------------------------------------------------------------
+
+07/11/06 16:32:08 -- waynew
+
+Log message:
+	Bug fix.  While it really does not matter at this point of Chapel app.
+	execution, main thread should mutex_unlock after being signaled.
+
+Modified files:
+	chapel/runtime/src/: chplthreads.c 
+
