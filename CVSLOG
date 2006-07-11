@@ -67695,3 +67695,16 @@ Added files:
 	                                test_tuple_function2.chpl 
 	                                test_tuple_function2.good 
 
+---------------------------------------------------------------------------
+
+07/11/06 12:19:45 -- waynew
+
+Log message:
+	Fixed how html links to definitions are generated. It is no longer
+	dependent on html output generation order within a pass/file, but is
+	now the correct way of using the defPoint link in the AST to obtain
+	the module name (i.e., rather than the AST traversal order, use the AST).
+
+Modified files:
+	chapel/compiler/AST/: view.cpp 
+
