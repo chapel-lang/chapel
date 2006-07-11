@@ -67653,3 +67653,32 @@ Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 	chapel/modules/standard/: _chpl_adomain.chpl 
 
+---------------------------------------------------------------------------
+
+07/10/06 17:59:54 -- deitz
+
+Log message:
+	Added the ability to destructure tuples in place using syntax like
+	(...x) where x is a tuple.  This is useful for passing arguments along
+	to another function without the tuple wrapping them as in:
+	
+	  fun foo(x : int...?k) {
+	    bar((...x));
+	  }
+	
+	where a variable number of ints are passed to foo and wrapped in a
+	tuple, and then unwrapped and passed to bar.
+	
+	Apologies for the syntax.  Better ideas?
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp 
+	chapel/compiler/include/: primitive.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: functionResolution.cpp 
+Added files:
+	chapel/test/functions/deitz/varargs/: test_varargs10.chpl 
+	                                      test_varargs10.good 
+	                                      test_varargs11.chpl 
+	                                      test_varargs11.good 
+
