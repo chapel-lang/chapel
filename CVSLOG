@@ -67719,3 +67719,16 @@ Log message:
 Modified files:
 	chapel/runtime/src/: chplthreads.c 
 
+---------------------------------------------------------------------------
+
+07/14/06 14:24:45 -- bradc
+
+Log message:
+	Program to print out lyrics to "99 bottles of beer on the wall",
+	as specified by (and submitted to) http://www.99-bottles-of-beer.net/
+	A brief look makes it appear that this may be the first modern
+	parallel programming language to solve the problem.  :)
+
+Added files:
+	chapel/test/trivial/bradc/: beer.chpl beer.good 
+
