@@ -67732,3 +67732,21 @@ Log message:
 Added files:
 	chapel/test/trivial/bradc/: beer.chpl beer.good 
 
+---------------------------------------------------------------------------
+
+07/14/06 17:11:46 -- bradc
+
+Log message:
+	Fixed a bug in which config consts were not available for
+	setting on the command-line flag (exposed by the 99 bottles
+	of beer program, and fixed with great help from Steve in
+	the airport).  Added a test to guard this feature in the
+	future.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+Added files:
+	chapel/test/execflags/bradc/: configconst.chpl 
+	                              configconst.execopts 
+	                              configconst.good 
+
