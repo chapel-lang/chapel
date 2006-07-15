@@ -877,7 +877,9 @@ static void fold_call_expr(CallExpr* call) {
 static bool fold_def_expr(DefExpr* def) {
   Symbol* value = NULL;
   CallExpr* move = NULL;
-  if (def->sym->isParam() || def->sym->isConst()) {
+  VarSymbol* defSymVar = dynamic_cast<VarSymbol*>(def->sym);
+  if (def->sym->isParam() || 
+      (def->sym->isConst() && defSymVar && defSymVar->varClass != VAR_CONFIG)) {
     forv_Vec(SymExpr*, sym, *def->sym->uses) {
       if (CallExpr* call = dynamic_cast<CallExpr*>(sym->parentExpr)) {
         if (call->isPrimitive(PRIMITIVE_MOVE) && call->get(1) == sym) {
