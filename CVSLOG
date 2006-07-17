@@ -67829,3 +67829,13 @@ Modified files:
 	chapel/compiler/include/: type.h 
 	chapel/compiler/passes/: normalize.cpp 
 
+---------------------------------------------------------------------------
+
+07/17/06 11:49:12 -- waynew
+
+Log message:
+	Simple test cases for testing complex primitive type.
+
+Added files:
+	chapel/test/trivial/waynew/: simple.chpl simple.good 
+
