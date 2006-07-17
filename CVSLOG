@@ -67768,3 +67768,28 @@ Modified files:
 	                             printMemTable.good 
 	                             printMemTable2.good 
 
+---------------------------------------------------------------------------
+
+07/17/06 10:43:29 -- deitz
+
+Log message:
+	Fixed support for ?t as a formal argument's type, removed 5 futures
+	and one bad test.  This fixes one regression.  Updated REGRESSIONS.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: cleanup.cpp scopeResolve.cpp 
+	chapel/test/: REGRESSIONS 
+Removed files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_typevar_function3.future 
+	                                         test_typevar_function4.future 
+	chapel/test/types/type_variables/deitz/functions/: 
+	                                                   test_foo6.future 
+	chapel/test/types/type_variables/jplevyak/: 
+	                                            question_mark-1.future 
+	                                            type_variables-1.chpl 
+	                                            type_variables-1.future 
+	                                            type_variables-1.good 
+	                                            where-4.future 
+
