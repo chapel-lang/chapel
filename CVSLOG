@@ -67750,3 +67750,21 @@ Added files:
 	                              configconst.execopts 
 	                              configconst.good 
 
+---------------------------------------------------------------------------
+
+07/17/06 09:38:34 -- deitz
+
+Log message:
+	Reworked array and domain implementation to use root array and domain
+	classes that are instantiated by the type of the implementation stored
+	in a field.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	chapel/test/memory/shannon/: jacobi.good memstatPrint.good 
+	                             printFinalMemStat.good 
+	                             printMemTable.good 
+	                             printMemTable2.good 
+
