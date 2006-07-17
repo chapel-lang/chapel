@@ -1,2 +1,2 @@
-test/arrays/bradc/noelemtype.chpl:5 ERROR: syntax error
+noelemtype.chpl:5 ERROR: syntax error
 yytext is: =

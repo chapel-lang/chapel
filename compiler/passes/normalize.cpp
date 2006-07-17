@@ -485,10 +485,7 @@ static bool can_resolve_type(Expr* type_expr) {
 static void hack_resolve_types(Expr* expr) {
   if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
     if (ArgSymbol* arg = dynamic_cast<ArgSymbol*>(def->sym)) {
-      if (arg->intent == INTENT_TYPE && can_resolve_type(def->exprType)) {
-        arg->type = getMetaType(def->exprType->typeInfo());
-        def->exprType->remove();
-      } else if (arg->type == dtUnknown && can_resolve_type(def->exprType)) {
+      if (arg->type == dtUnknown && can_resolve_type(def->exprType)) {
         arg->type = def->exprType->typeInfo();
         if (MetaType* mt = dynamic_cast<MetaType*>(arg->type))
           arg->type = mt->base;
