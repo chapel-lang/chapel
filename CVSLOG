@@ -67793,3 +67793,15 @@ Removed files:
 	                                            type_variables-1.good 
 	                                            where-4.future 
 
+---------------------------------------------------------------------------
+
+07/17/06 10:55:45 -- deitz
+
+Log message:
+	Removed .future and made test check the error message.
+
+Modified files:
+	chapel/test/trivial/deitz/: test_infer1.good 
+Removed files:
+	chapel/test/trivial/deitz/: test_infer1.future 
+
