@@ -67863,3 +67863,16 @@ Modified files:
 	chapel/test/arrays/bradc/: noelemtype.good 
 	chapel/test/classes/shannon/: overloadedFunction.good 
 
+---------------------------------------------------------------------------
+
+07/17/06 15:21:17 -- deitz
+
+Log message:
+	Made "nil" 0 and removed one .future.
+
+Modified files:
+	chapel/runtime/include/: chpltypes.h 
+	chapel/runtime/src/: chpltypes.c 
+Removed files:
+	chapel/test/classes/bocchino/: test_nil_is_false.future 
+
