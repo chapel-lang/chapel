@@ -18,15 +18,12 @@ linux and general regressions
 [Error matching compiler output for arrays/jplevyak/simple-2]
 [Error matching program output for classes/deitz/inherit/test_inherit4]
 [Error: Timed out compilation for classes/jplevyak/inherit-2]
-[Error matching compiler output for functions/deitz/test_typeconstraint1]
 [Error matching compiler output for functions/deitz/test_visible2]
 [Error matching compiler output for functions/deitz/nested/test_nested_global1]
 [Error matching program output for functions/jplevyak/introduce-dispatch-1]
 *[Error matching compiler output for functions/jplevyak/zeroarity-bound-error-2]
 [Error matching compiler output for functions/jplevyak/scoping/visibility-1]
 [Error matching program output for memory/shannon/memmaxExceedsLineno2]
-[Error matching program output for memory/shannon/memstatPrint]
-[Error matching program output for memory/shannon/printFinalMemStat]
 
 *This is working except the module name is location dependent.  Also,
  what should this error look like?

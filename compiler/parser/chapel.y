@@ -985,11 +985,10 @@ type:
 
 formal_type:
   type
-| TQUESTION identifier opt_var_type
-    { 
-      VariableType* new_type = new VariableType(getMetaType(0));
-      TypeSymbol* new_symbol = new TypeSymbol($2, new_type);
-      $$ = new DefExpr(new_symbol, NULL, $3);
+| TQUESTION identifier
+    {
+      TypeSymbol* new_symbol = new TypeSymbol($2, new UserType(new SymExpr(gNil))); // gNil is a place holder to be fixed in cleanup
+      $$ = new DefExpr(new_symbol, NULL, NULL);
     }
 ;
 
