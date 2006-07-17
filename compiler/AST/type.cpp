@@ -433,8 +433,7 @@ AList<Stmt>* EnumType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbo
 
 UserType::UserType(Expr* init_typeExpr) :
   Type(TYPE_USER, NULL),
-  typeExpr(init_typeExpr),
-  underlyingType(dtUnknown)
+  typeExpr(init_typeExpr)
 {}
 
 
@@ -452,7 +451,6 @@ void UserType::verify() {
 UserType*
 UserType::copyInner(ASTMap* map) {
   UserType* copy = new UserType(COPY_INT(typeExpr));
-  copy->underlyingType = underlyingType;
   if (map) { 
     map->put(metaType, copy->metaType);
     map->put(metaType->symbol, copy->metaType->symbol);
@@ -480,16 +478,12 @@ void UserType::printDef(FILE* outfile) {
 
 
 void UserType::codegenDef(FILE* outfile) {
-  fprintf(outfile, "typedef ");
-  underlyingType->codegen(outfile);
-  fprintf(outfile, " ");
-  symbol->codegen(outfile);
-  fprintf(outfile, ";\n");
+  INT_FATAL(this, "UserType should be removed by codegen time");
 }
 
 
 void UserType::codegenDefaultFormat(FILE* outfile, bool isRead) {
-  underlyingType->codegenDefaultFormat(outfile, isRead);
+  INT_FATAL(this, "UserType should be removed by codegen time");
 }
 
 
@@ -606,44 +600,6 @@ ClassType::isNominalType() {
   return classTag == CLASS_CLASS;
 }
 
-
-int
-is_Scalar_Type(Type *t) {
-  if (UserType *ut = dynamic_cast<UserType*>(t))
-    return is_Scalar_Type(ut->underlyingType);
-  return t && 
-    t != dtUnknown && 
-    t != dtString && 
-    t != dtNil && 
-    t != dtAny && 
-    (t->astType == TYPE_PRIMITIVE || t->astType == TYPE_ENUM);
-}
-
-
-int
-is_Value_Type(Type *t) {
-  if (UserType *ut = dynamic_cast<UserType*>(t))
-    return is_Value_Type(ut->underlyingType);
-  PrimitiveType *pt = dynamic_cast<PrimitiveType*>(t);
-  if (pt)
-    return true;
-  ClassType* ct = dynamic_cast<ClassType*>(t);
-  return ct && ct->classTag == CLASS_RECORD;
-}
-
-
-int
-is_Reference_Type(Type *t) {
-  if (UserType *ut = dynamic_cast<UserType*>(t))
-    return is_Reference_Type(ut->underlyingType);
-  if (!t)
-    return false;
-  if (t == dtNil)
-    return true;
-  ClassType* ct = dynamic_cast<ClassType*>(t);
-  return (ct &&
-          (ct->classTag == CLASS_CLASS));
-}
 
 void ClassType::codegenDef(FILE* outfile) {
   fprintf(outfile, "struct __");

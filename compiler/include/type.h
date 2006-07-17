@@ -116,7 +116,6 @@ class EnumType : public Type {
 class UserType : public Type {
  public:
   Expr* typeExpr;
-  Type* underlyingType;
 
   UserType(Expr* init_typeExpr);
   virtual void verify(); 
@@ -227,9 +226,6 @@ TYPE_EXTERN ClassType* dtObject;
 TYPE_EXTERN ClassType* dtValue;
 
 void initPrimitiveTypes(void);
-int is_Scalar_Type(Type *t);
-int is_Reference_Type(Type *t);
-int is_Value_Type(Type *t);
 Type *getMetaType(Type *t);
 
 void complete_closure(ClassType *closureType, Vec<Type *> member_types);

@@ -246,8 +246,7 @@ static void reconstruct_iterator(FnSymbol* fn) {
   if (scalar_promotion) {
     if (!strcmp("_promoter", fn->name)) {
       if (seqElementType != dtUnknown) {
-        if (is_Value_Type(seqElementType))
-          fn->_this->type->scalarPromotionType = seqElementType;
+        fn->_this->type->scalarPromotionType = seqElementType;
       } else {
         if (CallExpr *c = dynamic_cast<CallExpr*>(seqType)) {
           if (SymExpr *b = dynamic_cast<SymExpr*>(c->baseExpr)) {

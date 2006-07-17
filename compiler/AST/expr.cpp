@@ -73,10 +73,6 @@ Stmt* Expr::getStmt() {
 
 void Expr::codegenCastToString(FILE* outfile) {
   Type* exprType = typeInfo();
-  // BLC: could we fold this into typeInfo somehow?
-  while (UserType* userType = dynamic_cast<UserType*>(exprType)) {
-    exprType = userType->underlyingType;
-  }
   if (exprType == dtString) {
     codegen(outfile);
   } else if (exprType == dtNil) {
