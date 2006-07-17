@@ -1,2 +1,2 @@
 Calling the overloaded foo function with an int argument,
-and got the int foo.
+and got the float foo.
