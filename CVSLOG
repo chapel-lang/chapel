@@ -67817,3 +67817,15 @@ Modified files:
 Removed files:
 	chapel/test/classes/shannon/: overloadedFunction.future 
 
+---------------------------------------------------------------------------
+
+07/17/06 11:16:41 -- deitz
+
+Log message:
+	Removed unused UserType::underlyingType and some type utility functions.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/passes/: normalize.cpp 
+
