@@ -67876,3 +67876,16 @@ Modified files:
 Removed files:
 	chapel/test/classes/bocchino/: test_nil_is_false.future 
 
+---------------------------------------------------------------------------
+
+07/17/06 16:54:24 -- waynew
+
+Log message:
+	(re)Disabled these tests as current strategy for read(complex) is broken.
+
+Added files:
+	chapel/test/trivial/shannon/: readWriteComplex.future 
+	                              readWriteComplexLineno.future 
+	                              readWriteUserType.future 
+	chapel/test/types/file/: freadComplex.future 
+
