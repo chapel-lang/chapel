@@ -67839,3 +67839,15 @@ Log message:
 Added files:
 	chapel/test/trivial/waynew/: simple.chpl simple.good 
 
+---------------------------------------------------------------------------
+
+07/17/06 11:50:26 -- deitz
+
+Log message:
+	Removed .future and updated .good.
+
+Modified files:
+	chapel/test/arrays/bradc/: noelemtype.good 
+Removed files:
+	chapel/test/arrays/bradc/: noelemtype.future 
+
