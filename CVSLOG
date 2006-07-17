@@ -67805,3 +67805,15 @@ Modified files:
 Removed files:
 	chapel/test/trivial/deitz/: test_infer1.future 
 
+---------------------------------------------------------------------------
+
+07/17/06 11:11:46 -- deitz
+
+Log message:
+	Test works correctly, removed .future and updated .good.
+
+Modified files:
+	chapel/test/classes/shannon/: overloadedFunction.good 
+Removed files:
+	chapel/test/classes/shannon/: overloadedFunction.future 
+
