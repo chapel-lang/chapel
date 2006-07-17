@@ -2,22 +2,157 @@
 // Arrays and domains
 //
 
+class _array {
+  type _array_type;
+  type elt_type;
+  param rank : int;
+  var _value : _array_type;
+  var dom : _domain;
+
+  fun this(d : _domain) {
+    var a = d._build_array(elt_type);
+    for i in d do
+      a(i) = this(i);
+    return a;
+  }
+
+  fun =this(d : _domain, v) {
+    for i in d do
+      this(i) = v;
+  }
+
+  // need this function to compete with string indexing function
+  // (scalar promotion on array of strings or scalar promotion and
+  // coercion on array of ints/floats)
+  fun this(i:int...?k) var
+    return _value((...i));
+
+  fun this(i...?k) var
+    return _value((...i));
+
+  fun getHeadCursor()
+    return _value.getHeadCursor();
+
+  fun getNextCursor(c)
+    return _value.getNextCursor(c);
+
+  fun getValue(c)
+    return _value.getValue(c);
+
+  fun isValidCursor?(c)
+    return _value.isValidCursor?(c);
+
+  iterator this() : elt_type {
+    forall x in _value
+      yield x; 
+  }
+}
+
+fun =(a: _array, b: _array) {
+  a._value = b._value;
+  return a;
+}
+
+fun =(a: _array, b) {
+  a._value = b;
+  return a;
+}
+
+fun fwrite(f : file, a: _array) {
+  fwrite(f, a._value);
+}
+
+class _domain {
+  type _domain_type;
+  param rank : int;
+  var _value : _domain_type;
+
+  fun getHeadCursor()
+    return _value.getHeadCursor();
+
+  fun getNextCursor(c)
+    return _value.getNextCursor(c);
+
+  fun getValue(c)
+    return _value.getValue(c);
+
+  fun isValidCursor?(c)
+    return _value.isValidCursor?(c);
+
+  fun this(dim : int)
+    return _value(dim);
+
+  fun _build_array(type elt_type) {
+    var x = _value._build_array(elt_type);
+    return _array(x.type, elt_type, rank, x, this);
+  }
+
+  fun _build_sparse_domain() {
+    var x = _value._build_sparse_domain();
+    return _domain(x.type, rank, x);
+  }
+
+  fun add(i) {
+    _value.add(i);
+  }
+
+  fun expand(i...?k) {
+    var x = _value.expand((...i));
+    return _domain(x.type, rank, x);
+  }
+
+  fun exterior(i...?k) {
+    var x = _value.exterior((...i));
+    return _domain(x.type, rank, x);
+  }
+
+  fun interior(i...?k) {
+    var x = _value.interior((...i));
+    return _domain(x.type, rank, x);
+  }
+
+  fun translate(i...?k) {
+    var x = _value.translate((...i));
+    return _domain(x.type, rank, x);
+  }
+}
+
+fun =(a: _domain, b: _domain) {
+  a._value = b._value;
+  return a;
+}
+
+fun fwrite(f : file, a: _domain) {
+  fwrite(f, a._value);
+}
+
+fun by(a: _domain, b) {
+  var x = a._value by b;
+  return _domain(x.type, a.rank, x);
+}
+
+////////////////////////////////////////////////////
+
 fun _build_domain(x)
   return x;
 
-fun _build_domain(ranges : _aseq ...?rank)
-  return _adomain(rank, ranges);
+fun _build_domain(ranges : _aseq ...?rank) {
+  var x = _adomain(rank, ranges);
+  return _domain(x.type, rank, x);
+}
 
-fun _build_domain_type(param rank : int)
-  return _adomain(rank);
+fun _build_domain_type(param rank : int) {
+  var x = _adomain(rank);
+  return _domain(x.type, rank, x);
+}
 
-fun _build_domain_type(type ind_type)
-  return _idomain(ind_type);
+fun _build_domain_type(type ind_type) {
+  var x = _idomain(ind_type);
+  return _domain(x.type, 1, x);
+}
 
 fun _build_sparse_domain_type(dom)
   return dom._build_sparse_domain();
-
-class _array { }
 
 fun _build_array_type(dom, type elt_type)
   return dom._build_array(elt_type);

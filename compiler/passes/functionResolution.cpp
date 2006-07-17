@@ -741,7 +741,17 @@ resolveCall(CallExpr* call) {
   } else if (call->isPrimitive(PRIMITIVE_TUPLE_EXPAND)) {
     SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1));
     VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var);
-    int size = dynamic_cast<VarSymbol*>(var->type->substitutions.v[0].value)->immediate->v_int64;
+    int size = 0;
+    for (int i = 0; i < var->type->substitutions.n; i++) {
+      if (var->type->substitutions.v[i].key) {
+        if (!strcmp("size", dynamic_cast<Symbol*>(var->type->substitutions.v[i].key)->name)) {
+          size = dynamic_cast<VarSymbol*>(var->type->substitutions.v[i].value)->immediate->v_int64;
+          break;
+        }
+      }
+    }
+    if (size == 0)
+      INT_FATAL(call, "Invalid tuple expand primitive");
     for (int i = 1; i <= size; i++) {
       CallExpr* e = new CallExpr(sym->copy(), new_IntLiteral(i));
       call->insertBefore(e);
