@@ -67851,3 +67851,15 @@ Modified files:
 Removed files:
 	chapel/test/arrays/bradc/: noelemtype.future 
 
+---------------------------------------------------------------------------
+
+07/17/06 15:15:36 -- deitz
+
+Log message:
+	Removed an unused conditional in normalize and fixed two .goods.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/test/arrays/bradc/: noelemtype.good 
+	chapel/test/classes/shannon/: overloadedFunction.good 
+
