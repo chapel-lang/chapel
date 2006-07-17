@@ -1,3 +1,0 @@
-bradc
-
-I think this test is illegal though we may want to provide a way to specify that an argument to a function is an array even if we don't specify the exact type. -SJD

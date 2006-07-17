@@ -1,1 +1,2 @@
-A is: 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+test/arrays/bradc/noelemtype.chpl:5 ERROR: syntax error
+yytext is: =
