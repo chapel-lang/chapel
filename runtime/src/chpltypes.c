@@ -8,9 +8,6 @@
 #include "error.h"
 
 
-_nilType nil = (_nilType)1;
-_unspecifiedType _ = (_unspecifiedType)2;
-
 /* _glom_strings() expects every argument after the first to be 
    of type char*. */
 

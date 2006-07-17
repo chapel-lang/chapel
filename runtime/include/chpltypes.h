@@ -1,10 +1,8 @@
 #ifndef _chpltypes_H_
 #define _chpltypes_H_
 
-typedef void* _nilType;
-extern _nilType nil;
-typedef void* _unspecifiedType;
-extern _unspecifiedType _;
+#define nil 0
+#define _nilType void*
 
 /* macros for specifying the correct C constant type */
 #define INT8( i)   (i)
