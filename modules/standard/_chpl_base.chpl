@@ -350,7 +350,7 @@ pragma "no codegen" pragma "rename fflush" fun fflush(fp: _file) : int {
 
 fun init_elts(x, s, e) {
   for i in 1..s {
-    var y : e;
+    var y : e.type;
     x(i-1) = y;
   }
 }

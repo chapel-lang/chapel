@@ -64,6 +64,11 @@ fun _copy(a: _array) {
   return b;
 }
 
+fun _init(a: _array) {
+  var b : [a.dom] a.elt_type;
+  return b;
+}
+
 fun fwrite(f : file, a: _array) {
   fwrite(f, a._value);
 }
