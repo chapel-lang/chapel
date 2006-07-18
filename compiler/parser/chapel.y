@@ -1077,6 +1077,8 @@ lvalue:
 seq_expr:
   TSEQBEGIN expr_ls TSEQEND
     {
+      if ($2->length() == 0)
+        USR_FATAL($2, "Invalid empty sequence literal '(//)'");
       Expr* seqLiteral = new CallExpr("seq", $2->first()->copy());
       for_alist(Expr, element, $2) {
         element->remove();
