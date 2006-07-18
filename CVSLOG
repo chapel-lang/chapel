@@ -67952,3 +67952,15 @@ Modified files:
 Removed files:
 	chapel/modules/standard/: prelude.chpl 
 
+---------------------------------------------------------------------------
+
+07/18/06 10:18:56 -- deitz
+
+Log message:
+	Fixed .good and removed .future.
+
+Modified files:
+	chapel/test/classes/deitz/infer/: infer_field10.good 
+Removed files:
+	chapel/test/classes/deitz/infer/: infer_field10.future 
+
