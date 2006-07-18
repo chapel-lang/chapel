@@ -1,3 +1,0 @@
-jplevyak/deitz
-
-This is the error for when a class that has a field with no type or initialization expression is created without an initial value.  It is caused by the default constructor wrapper for R2.
