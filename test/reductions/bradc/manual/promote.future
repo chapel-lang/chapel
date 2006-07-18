@@ -1,9 +1,0 @@
-deitz
-
-Scalar promotion test.
-
-HISTORY
-
-function promotion is not yet implemented, so this
-reduction implementation doesn't work because it
-relies on it.
