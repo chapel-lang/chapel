@@ -67975,3 +67975,14 @@ Modified files:
 	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
 	                                         inlfunc2_report.good 
 
+---------------------------------------------------------------------------
+
+07/18/06 11:06:00 -- waynew
+
+Log message:
+	Temporary future before complex checkin.  Will remove after fixing reading of
+	complex type.
+
+Added files:
+	chapel/test/trivial/shannon/: readWriteComplexFail1.future 
+
