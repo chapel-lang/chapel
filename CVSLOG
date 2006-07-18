@@ -68108,3 +68108,20 @@ Modified files:
 	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
 	                                         inlfunc2_report.good 
 
+---------------------------------------------------------------------------
+
+07/18/06 12:14:52 -- waynew
+
+Log message:
+	Fixed i/o read(complex), where complex=primitive type now. Re-enabled tests
+	that exercise this feature.
+
+Modified files:
+	chapel/modules/standard/: _chpl_complex.chpl _chpl_file.chpl 
+Removed files:
+	chapel/test/trivial/shannon/: readWriteComplex.future 
+	                              readWriteComplexFail1.future 
+	                              readWriteComplexLineno.future 
+	                              readWriteUserType.future 
+	chapel/test/types/file/: freadComplex.future 
+
