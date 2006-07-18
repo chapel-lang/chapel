@@ -67889,3 +67889,13 @@ Added files:
 	                              readWriteUserType.future 
 	chapel/test/types/file/: freadComplex.future 
 
+---------------------------------------------------------------------------
+
+07/18/06 08:32:12 -- deitz
+
+Log message:
+	Removed .future for passing test due to tuple unification.
+
+Removed files:
+	chapel/test/types/tuple/deitz/: test_htuple9.future 
+
