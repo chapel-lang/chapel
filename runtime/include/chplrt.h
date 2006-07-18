@@ -3,13 +3,7 @@
 
 #define array_index(x, i) ((x)->_data[i])
 #define array_set(x, i, v) ((x)->_data[i] = v)
-#define array_init(type, x, size, v)                            \
-  {                                                             \
-    (x)->_data = _chpl_malloc(size, sizeof(type), "_data");     \
-    int _a_i;                                                   \
-    for (_a_i = 0; _a_i < size; _a_i++)                         \
-      (x)->_data[_a_i] = v;                                     \
-  }
+#define array_init(type, x, size) (x)->_data = _chpl_malloc(size, sizeof(type), "_data");
 
 #define _noop(x)
 

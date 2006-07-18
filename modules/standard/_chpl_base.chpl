@@ -362,7 +362,7 @@ class _ddata {
   var size : int;
   var _element : elt_type;
   pragma "inline" fun init() {
-    __primitive("array_init", this, size, _element);
+    __primitive("array_init", this, size);
     init_elts(this, size, _element);
   }
   pragma "inline" fun this(i : int) {
