@@ -17,6 +17,7 @@ Symbol *gNil = 0;
 Symbol *gUnknown = 0;
 Symbol *gUnspecified = 0;
 Symbol *gVoid = 0;
+Symbol *gFile = 0;
 VarSymbol *gTrue = 0;
 VarSymbol *gFalse = 0;
 

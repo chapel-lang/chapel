@@ -125,6 +125,15 @@ string_index(_string x, int i) {
 
 
 _bool
+string_contains(_string x, _string y) {
+  if (strstr(x, y))
+    return true;
+  else
+    return false;
+}
+
+
+_bool
 string_equal(_string x, _string y) {
   if (!strcmp(x, y)) {
     return true;

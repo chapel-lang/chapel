@@ -24,7 +24,7 @@ fun fread(f : file = stdin, x : complex) {
   var imagI: string;
   var matchingCharWasRead: int;
   var isNeg: bool;
-  var ignoreWhiteSpace = 1;
+  var ignoreWhiteSpace = true;
 
   fread(f, realPart);
 
@@ -39,7 +39,7 @@ fun fread(f : file = stdin, x : complex) {
 
   fread(f, imagPart);
 
-  ignoreWhiteSpace = 0;
+  ignoreWhiteSpace = false;
   matchingCharWasRead = _readLitChar(f.fp, "i", ignoreWhiteSpace);
   if (matchingCharWasRead != 1) {
     halt("***Error: Incorrect format for complex numbers***");

@@ -524,6 +524,15 @@ void CallExpr::codegen(FILE* outfile) {
         elt_type->symbol->codegen(outfile);
         first_actual = false;
       }
+      if (!strcmp(primitive->name, "fscanf")) {
+        get(1)->codegen(outfile);
+        fprintf(outfile, ", ");
+        get(2)->codegen(outfile);
+        fprintf(outfile, ", &");
+        get(3)->codegen(outfile);
+        fprintf(outfile, ")");
+        break;
+      }
       for_alist(Expr, actual, argList) {
         if (first_actual)
           first_actual = false;
@@ -884,6 +893,16 @@ void CallExpr::codegen(FILE* outfile) {
       } else {
         get(1)->codegen( outfile);
       }
+      fprintf( outfile, ")");
+      break;
+    }
+    case PRIMITIVE_TOSTRING: {
+      fprintf(outfile, "_chpl_tostring_");
+      fprintf(outfile, "%s", get(2)->typeInfo()->symbol->name);
+      fprintf( outfile, "(");
+      get(2)->codegen( outfile);
+      fprintf( outfile, ", ");
+      get(1)->codegen( outfile);
       fprintf( outfile, ")");
       break;
     }

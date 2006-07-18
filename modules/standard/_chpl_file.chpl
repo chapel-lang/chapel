@@ -1,3 +1,47 @@
+//
+// Functions on _file primitive type, the C file pointer type
+//
+
+pragma "inline" fun _strerrno() return __primitive("_errno");
+
+pragma "inline" fun _copy(x: _file) return x;
+pragma "inline" fun =(a: _file, b: _file) return b;
+pragma "inline" fun ==(a: _file, b: _file) return __primitive("==", a, b);
+pragma "inline" fun !=(a: _file, b: _file) return __primitive("!=", a, b);
+
+pragma "inline" fun _fopen(filename: string, mode: string)
+  return __primitive("fopen", filename, mode);
+
+pragma "inline" fun _fclose(fp: _file)
+  return __primitive("fclose", fp);
+
+pragma "inline" fun fprintf(fp: _file, fmt: string, val)
+  return __primitive("fprintf", fp, fmt, val);
+
+pragma "inline" fun fscanf(fp: _file, fmt: string, inout val)
+  return __primitive("fscanf", fp, fmt, val);
+
+fun _chpl_fwrite_float_help(fp: _file, val: float) {
+  var returnVal : int;
+  var str : string = val:"%g";
+  if (_string_contains(str, ".") || _string_contains(str, "e")) {
+    returnVal = fprintf(fp, "%s", str);
+  } else {
+    returnVal = fprintf(fp, "%s.0", str);
+  }
+  if returnVal < 0 then
+    fprintfError();
+}
+
+pragma "inline" fun _string_fscanf(fp: _file)
+  return __primitive("string_fscanf", fp);
+
+pragma "inline" fun _readLitChar(fp: _file, val: string, ignoreWhiteSpace: bool)
+  return __primitive("readLit", fp, val, ignoreWhiteSpace);
+
+
+
+
 pragma "rename _chpl_fflush"
 fun fflush(f: file) {
   fflush(f.fp);
@@ -77,7 +121,7 @@ class file {
   var filename : string = "";
   var mode : string = "r";
   var path : string = ".";
-  var fp : CFILEPTR = _NULLCFILEPTR;
+  var fp : _file = _NULLCFILEPTR;
 
   fun open {
     if (fp == _STDINCFILEPTR || fp == _STDOUTCFILEPTR ||  
@@ -93,7 +137,7 @@ class file {
 
     if (fp == _NULLCFILEPTR) {
       halt("***Error: Unable to open \"", fullFilename, "\": ", 
-           strerror(errno), "***");
+           _strerrno(), "***");
     }
   }
 
@@ -119,7 +163,7 @@ class file {
     if (returnVal < 0) {
       var fullFilename = path + "/" + filename;
       halt("***Error: The close of \"", fullFilename, "\" failed: ", 
-           strerror(errno), "***");
+           _strerrno(), "***");
     }
     fp = _NULLCFILEPTR;
   }
@@ -143,12 +187,12 @@ fun fopenError(f: file, isRead: bool) {
 
 
 fun fprintfError() {
-  halt("***Error: Write failed: ", strerror(errno), "***");
+  halt("***Error: Write failed: ", _strerrno(), "***");
 }
 
 
 fun fscanfError() {
-  halt("***Error: Read failed: ", strerror(errno), "***");
+  halt("***Error: Read failed: ", _strerrno(), "***");
 }
 
 
@@ -257,7 +301,7 @@ fun fwrite(f: file = stdout, val: float) {
 pragma "rename _chpl_fread_string"
 fun fread(f: file = stdin, inout val: string) {
   if (f.isOpen) {
-    _chpl_fread_string_help(f.fp, val);
+    val = _string_fscanf(f.fp);
   } else {
     fopenError(f, isRead = true);
   }
@@ -280,8 +324,7 @@ fun fwrite(f: file = stdout, val: string) {
 pragma "rename _chpl_fread_bool" 
 fun fread(f: file = stdin, inout val: bool) {
   if (f.isOpen) {
-    var valString : string;
-    _chpl_fread_string_help(f.fp, valString);
+    var valString : string = _string_fscanf(f.fp);
     if (valString == "true") {
       val = true;
     } else if (valString == "false") {

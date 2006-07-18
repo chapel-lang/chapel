@@ -14,6 +14,11 @@ returnInfoVoid(CallExpr* call) {
 }
 
 static Type*
+returnInfoFile(CallExpr* call) {
+  return dtFile;
+}
+
+static Type*
 returnInfoString(CallExpr* call) {
   return dtString;
 }
@@ -166,6 +171,7 @@ initPrimitive() {
   prim_def(PRIMITIVE_CHPL_FREE, "chpl_free", unimplemented_interpreter_op, returnInfoVoid);
   prim_def(PRIMITIVE_PTR_EQUAL, "ptr_eq", ptr_eq_interpreter_op, returnInfoBool);
   prim_def(PRIMITIVE_PTR_NOTEQUAL, "ptr_neq", ptr_neq_interpreter_op, returnInfoBool);
+  prim_def(PRIMITIVE_TOSTRING, "to_string", to_string_interpreter_op, returnInfoString);
   prim_def(PRIMITIVE_CAST, "cast", cast_interpreter_op, returnInfoCast);
   prim_def(PRIMITIVE_TYPEOF, "typeof", unimplemented_interpreter_op, returnInfoFirst);
   prim_def(PRIMITIVE_USE, "use", unimplemented_interpreter_op, returnInfoVoid);
@@ -204,16 +210,18 @@ initPrimitive() {
   prim_def("tanh", tanh_interpreter_op, returnInfoFloat);
   prim_def("tgamma", tgamma_interpreter_op, returnInfoFloat);
   prim_def("trunc", trunc_interpreter_op, returnInfoFloat);
-  prim_def("fopen", fopen_interpreter_op, returnInfoInt);
+  prim_def("fopen", fopen_interpreter_op, returnInfoFile);
   prim_def("fclose", fclose_interpreter_op, returnInfoInt);
-  prim_def("strerror", strerror_interpreter_op, returnInfoString);
+  prim_def("_errno", unimplemented_interpreter_op, returnInfoString);
   prim_def("fprintf", fprintf_interpreter_op, returnInfoInt);
   prim_def("fscanf", fscanf_interpreter_op, returnInfoInt);
   prim_def("fflush", fflush_interpreter_op, returnInfoInt);
   prim_def("array_init", array_init_interpreter_op, returnInfoVoid);
   prim_def("array_index", array_index_interpreter_op, returnInfoArrayIndex);
   prim_def("array_set", array_set_interpreter_op, returnInfoVoid);
-  prim_def("to_string", to_string_interpreter_op, returnInfoString);
+  prim_def("readLit", unimplemented_interpreter_op, returnInfoBool);
+  prim_def("string_fscanf", unimplemented_interpreter_op, returnInfoString);
+  prim_def("string_contains", unimplemented_interpreter_op, returnInfoBool);
   prim_def("string_copy", copy_string_interpreter_op, returnInfoString);
   prim_def("string_index", string_index_interpreter_op, returnInfoString);
   prim_def("string_concat", string_concat_interpreter_op, returnInfoString);

@@ -701,7 +701,7 @@ bool ClassType::hasDefaultReadFunction(void) {
 AList<Stmt>* ClassType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg) {
   AList<Stmt>* body = new AList<Stmt>();
   Symbol* ignoreWhiteSpace = new VarSymbol("ignoreWhiteSpace");
-  body->insertAtTail(new DefExpr(ignoreWhiteSpace, new_IntLiteral(1)));
+  body->insertAtTail(new DefExpr(ignoreWhiteSpace, new SymExpr(gTrue)));
   Symbol* matchingCharWasRead = new VarSymbol("matchingCharWasRead");
   body->insertAtTail(new DefExpr(matchingCharWasRead, new_IntLiteral((int64)0)));
   CallExpr* fileArgFP = new CallExpr(PRIMITIVE_GET_MEMBER, fileArg, new_StringSymbol("fp"));
@@ -853,7 +853,10 @@ void initPrimitiveTypes(void) {
   CREATE_DEFAULT_SYMBOL (dtVoid, gVoid, "_void");
 
   dtBool = createPrimitiveType ("bool", "_bool",
-                                             "_boolLiteral", "_boolLiteral");
+                                "_boolLiteral", "_boolLiteral");
+
+  dtFile = createPrimitiveType ("_file", "_cfile");
+  CREATE_DEFAULT_SYMBOL(dtFile, gFile, "0");
 
   // Create initial compiler module and its scope
   compilerModule = build_module("_chpl_compiler", MOD_STANDARD, new AList<Stmt>());
@@ -917,11 +920,8 @@ Type *getMetaType(Type *t) {
 void findInternalTypes(void) {
   dtMethodToken = dynamic_cast<TypeSymbol*>(baseModule->lookup("_methodTokenType"))->definition;
   dtSetterToken = dynamic_cast<TypeSymbol*>(baseModule->lookup("_setterTokenType"))->definition;
-  if (!fnostdincs)
-    dtFile = dynamic_cast<TypeSymbol*>(fileModule->lookup("file"))->definition;
-  dtObject = dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(prelude->lookup("object"))->definition);
-  dtObject->symbol->cname = "void*";
-  dtValue = dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(prelude->lookup("value"))->definition);
+  dtObject = dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(baseModule->lookup("object"))->definition);
+  dtValue = dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(baseModule->lookup("value"))->definition);
 
   // SJD: Can't do this when dtString is defined because
   // prelude hasn't been made yet.  Need to do it after.

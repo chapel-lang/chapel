@@ -7,21 +7,15 @@
 #include "error.h"
 
 
-CFILEPTR _NULLCFILEPTR = NULL;
-CFILEPTR _STDINCFILEPTR;
-CFILEPTR _STDOUTCFILEPTR;
-CFILEPTR _STDERRCFILEPTR;
+_cfile _NULLCFILEPTR = NULL;
+_cfile _STDINCFILEPTR;
+_cfile _STDOUTCFILEPTR;
+_cfile _STDERRCFILEPTR;
 
 void initChplio(void) {
   _STDINCFILEPTR = stdin;
   _STDOUTCFILEPTR = stdout;
   _STDERRCFILEPTR = stderr;  
-}
-
-
-static void printfError(void) {
-  char* message = _glom_strings(2, "Write failed: ", strerror(errno));
-  printError(message);
 }
 
 
@@ -31,33 +25,7 @@ static void scanfError(void) {
 }
 
 
-void _chpl_fwrite_float_help(FILE* fp, _float64 val) {
-  const int floatBuffLen = 1024;
-  char buff[floatBuffLen];
-  int returnVal = 0;
-  returnVal = sprintf(buff, "%g", val);
-  if (returnVal < 0) {
-    printfError();
-  }
-  if (strlen(buff) > floatBuffLen-1) {
-    fprintf(stderr, "Error: float I/O buffer overrun\n");
-    exit(1);
-  }
-  if (strchr(buff, '.') == NULL && strchr(buff, 'e') == NULL) {
-    returnVal = fprintf(fp, "%s.0", buff);
-    if (returnVal < 0) {
-      printfError();
-    }
-  } else {
-    returnVal = fprintf(fp, "%s", buff);
-    if (returnVal < 0) {
-      printfError();
-    }
-  }
-}
-
-
-void _chpl_fread_string_help(FILE* fp, _string* val) {
+_string string_fscanf(FILE* fp) {
   char localVal[_default_string_length];
   char dsl[1024];
   int returnVal = 0;
@@ -73,7 +41,7 @@ void _chpl_fread_string_help(FILE* fp, _string* val) {
     char* message = _glom_strings(2, "The maximum string length is ", dsl);
     printError(message);
   }
-  *val = string_copy(localVal);
+  return string_copy(localVal);
 }
 
 
@@ -83,10 +51,9 @@ void _classReadError(void) {
 }
 
                             
-int _readLitChar(FILE* fp, _string val, int ignoreWhiteSpace) {
+_bool readLit(FILE* fp, _string val, _bool ignoreWhiteSpace) {
   int returnVal  = 0;
   char inputVal  = ' ';
-  int charsMatch = 0;
 
   if (ignoreWhiteSpace) {
     while ((inputVal == ' ') || (inputVal == '\n') || (inputVal == '\r') || 
@@ -98,7 +65,7 @@ int _readLitChar(FILE* fp, _string val, int ignoreWhiteSpace) {
   }
 
   if (inputVal == *val) {
-    charsMatch = 1;
+    return true;
   } else { 
     returnVal = ungetc(inputVal, fp);
     if (returnVal == EOF) {
@@ -106,5 +73,5 @@ int _readLitChar(FILE* fp, _string val, int ignoreWhiteSpace) {
       printInternalError(message);
     }
   }
-  return charsMatch;
+  return false;
 }

@@ -22,17 +22,16 @@
 #define _default_string_length              256
 
 
-typedef FILE* CFILEPTR;
-extern CFILEPTR _NULLCFILEPTR;
-extern CFILEPTR _STDINCFILEPTR;
-extern CFILEPTR _STDOUTCFILEPTR;
-extern CFILEPTR _STDERRCFILEPTR;
+typedef FILE* _cfile;
+extern _cfile _NULLCFILEPTR;
+extern _cfile _STDINCFILEPTR;
+extern _cfile _STDOUTCFILEPTR;
+extern _cfile _STDERRCFILEPTR;
 
 void initChplio(void);
 
-void _chpl_fwrite_float_help(FILE* fp, _float64 val);
-void _chpl_fread_string_help(FILE* fp, _string* val);
-int  _readLitChar(FILE* fp, _string val, int ignoreWhiteSpace);
+_string string_fscanf(FILE* fp);
+_bool readLit(FILE* fp, _string val, _bool ignoreWhiteSpace);
 void _classReadError(void);
 
 #endif

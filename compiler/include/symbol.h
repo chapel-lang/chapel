@@ -271,6 +271,7 @@ extern Symbol *gNil;
 extern Symbol *gUnknown;
 extern Symbol *gUnspecified;
 extern Symbol *gVoid;
+extern Symbol *gFile;
 extern VarSymbol *gTrue;
 extern VarSymbol *gFalse;
 

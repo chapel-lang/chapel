@@ -1,5 +1,14 @@
 // _chpl_base module
 
+class object { }
+record value { }
+
+var _aobject : object;
+var _avalue : value;
+
+pragma "inline" fun _chpl_alloc(type t, description:string)
+  return __primitive("chpl_alloc", t, description);
+
 //
 // Setter and method tokens
 //
@@ -294,6 +303,18 @@ pragma "inline" fun +(a: string, b: string) return __primitive("string_concat", 
 pragma "inline" fun length(a: string) return __primitive("string_length", a);
 pragma "inline" fun string.this(i: int) return __primitive("string_index", this, i);
 
+pragma "inline" fun _string_contains(a: string, b: string)
+  return __primitive("string_contains", a, b);
+
+pragma "inline" fun _tostring(x : bool, format : string)
+  return __primitive("to_string", format, x);
+
+pragma "inline" fun _tostring(x : int, format : string)
+  return __primitive("to_string", format, x);
+
+pragma "inline" fun _tostring(x : float, format : string)
+  return __primitive("to_string", format, x);
+
 pragma "inline" fun ascii(a: string) return __primitive("ascii", a);
 
 //
@@ -301,7 +322,7 @@ pragma "inline" fun ascii(a: string) return __primitive("ascii", a);
 //
 pragma "inline" fun ==(a: object, b: object) return __primitive("ptr_eq", a, b);
 pragma "inline" fun !=(a: object, b: object) return __primitive("ptr_neq", a, b);
-pragma "inline" fun =(a, b:object) return b;
+pragma "inline" fun =(a, b:object) return b:a.type;
 pragma "inline" fun _copy(a) return a;
 
 
@@ -323,8 +344,8 @@ pragma "no codegen" pragma "rename _chpl_exit" fun exit(status : int) {
   __primitive("exit");       
 }
 
-pragma "no codegen" pragma "rename fflush" fun fflush(fp: CFILEPTR) : int {
-  return __primitive("fflush", fp.FILEptr);
+pragma "no codegen" pragma "rename fflush" fun fflush(fp: _file) : int {
+  return __primitive("fflush", fp);
 }
 
 fun init_elts(x, s, e) {

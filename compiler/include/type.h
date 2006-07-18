@@ -212,11 +212,11 @@ TYPE_EXTERN PrimitiveType* dtFloat[FLOAT_TYPE_NUM];
 TYPE_EXTERN PrimitiveType* dtComplex;
 TYPE_EXTERN PrimitiveType* dtString;
 TYPE_EXTERN PrimitiveType* dtSymbol;
+TYPE_EXTERN PrimitiveType* dtFile; 
 
 // internal types
 TYPE_EXTERN Type* dtMethodToken;
 TYPE_EXTERN Type* dtSetterToken;
-TYPE_EXTERN Type* dtFile;
 TYPE_EXTERN Type* dtMutex;  // for critical sections
 void findInternalTypes(void);
 

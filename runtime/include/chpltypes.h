@@ -33,6 +33,8 @@ typedef long double        _float128;
 
 #define ascii(s) ((_int8)(*s))
 
+#define _errno() (strerror(errno))
+
 typedef struct __complex128 {
   _float64 re;
   _float64 im;
@@ -53,6 +55,7 @@ char* _chpl_tostring_int(_int64 x, char* format);
 char* _chpl_tostring_float(_float64 x, char* format);
 char* _chpl_tostring_complex(_complex128 x, char* format);
 
+_bool string_contains(_string x, _string y);
 _string string_concat(_string x, _string y);
 _string string_index(_string x, int i);
 _string string_select(_string x, int low, int high);
