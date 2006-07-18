@@ -56,10 +56,7 @@ static void createInitFn(ModuleSymbol* mod) {
   mod->initFn->retType = dtVoid;
   mod->initFn->body->blkScope = mod->modScope;
 
-  if (!strcmp(mod->name, "_chpl_compiler")) {
-    mod->initFn->insertAtTail(new CallExpr(PRIMITIVE_USE, new SymExpr("prelude")));
-  } else if (strcmp(mod->name, "prelude")) {
-
+  if (strcmp(mod->name, "_chpl_compiler")) {
     // guard init function so it is not run more than once
     VarSymbol* guard = new VarSymbol(stringcat("__run_", mod->name, "_firsttime"));
     compilerModule->initFn->insertAtHead(new DefExpr(guard,

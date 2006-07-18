@@ -689,12 +689,6 @@ FnSymbol* FnSymbol::clone(ASTMap* map) {
   Stmt* copyStmt = defPoint->parentStmt->copy(map, NULL);
   ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(copyStmt);
   DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr);
-  // BLC: we don't want to rename any clones that we build in the
-  // prelude, because they likely refer to external functions for
-  // which clones will not be built
-  if (defPoint->getModule() == prelude) {
-    defExpr->sym->cname = stringcat("_clone_", cname);
-  }
   defPoint->parentStmt->insertAfter(copyStmt);
   clear_type_info(copyStmt);
   clear_type_info(defPoint);

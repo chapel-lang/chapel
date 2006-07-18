@@ -6,7 +6,6 @@
 #include "symbol.h"
 #include "type.h"
 
-extern ModuleSymbol* prelude;
 extern ModuleSymbol* baseModule;
 extern ModuleSymbol* closureModule;
 extern ModuleSymbol* fileModule;
@@ -20,9 +19,6 @@ extern TypeSymbol* chpl_seq;
 extern VarSymbol* chpl_stdin;
 extern VarSymbol* chpl_stdout;
 extern VarSymbol* chpl_stderr;
-
-extern VarSymbol* chpl_input_filename;
-extern VarSymbol* chpl_input_lineno;
 
 extern VarSymbol* setterToken;
 extern VarSymbol* methodToken;

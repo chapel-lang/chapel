@@ -6,24 +6,10 @@
 #include "chplrt.h"
 #include "error.h"
 
-
-_cfile _NULLCFILEPTR = NULL;
-_cfile _STDINCFILEPTR;
-_cfile _STDOUTCFILEPTR;
-_cfile _STDERRCFILEPTR;
-
-void initChplio(void) {
-  _STDINCFILEPTR = stdin;
-  _STDOUTCFILEPTR = stdout;
-  _STDERRCFILEPTR = stderr;  
-}
-
-
 static void scanfError(void) {
   char* message = _glom_strings(2, "Read failed: ", strerror(errno));
   printError(message);
 }
-
 
 _string string_fscanf(FILE* fp) {
   char localVal[_default_string_length];
@@ -42,12 +28,6 @@ _string string_fscanf(FILE* fp) {
     printError(message);
   }
   return string_copy(localVal);
-}
-
-
-void _classReadError(void) {
-  char* message = _glom_strings(2, "Read of the class failed: ", strerror(errno));
-  printError(message);
 }
 
                             

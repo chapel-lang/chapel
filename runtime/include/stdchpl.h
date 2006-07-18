@@ -18,7 +18,4 @@
 #include "error.h"
 #include "exit.h"
 
-#define __init_prelude()
-
 #endif
-

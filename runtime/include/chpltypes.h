@@ -33,8 +33,6 @@ typedef long double        _float128;
 
 #define ascii(s) ((_int8)(*s))
 
-#define _errno() (strerror(errno))
-
 typedef struct __complex128 {
   _float64 re;
   _float64 im;
@@ -43,11 +41,8 @@ typedef struct __complex128 {
 typedef char* _string;
 typedef _int64 _symbol;
 
-#define _init_string() _chpl_calloc(1, sizeof(char), "_init_string")
-
 #define string_copy(rhs) (_glom_strings(1, rhs))
 
-//_string _copy_string(_string* lhs, _string rhs);
 char* _glom_strings(int numstrings, ...);
 
 char* _chpl_tostring_bool(_bool x, char* format);

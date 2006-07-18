@@ -2,7 +2,15 @@
 // Functions on _file primitive type, the C file pointer type
 //
 
-pragma "inline" fun _strerrno() return __primitive("_errno");
+pragma "no codegen" var chpl_input_filename: string;
+pragma "no codegen" var chpl_input_lineno: int;
+
+pragma "inline" fun _get_errno() return __primitive("get_errno");
+pragma "inline" fun _get_eof() return __primitive("get_eof");
+pragma "inline" fun _get_stdin() return __primitive("get_stdin");
+pragma "inline" fun _get_stdout() return __primitive("get_stdout");
+pragma "inline" fun _get_stderr() return __primitive("get_stderr");
+pragma "inline" fun _get_nullfile() return __primitive("get_nullfile");
 
 pragma "inline" fun _copy(x: _file) return x;
 pragma "inline" fun =(a: _file, b: _file) return b;
@@ -121,40 +129,35 @@ class file {
   var filename : string = "";
   var mode : string = "r";
   var path : string = ".";
-  var fp : _file = _NULLCFILEPTR;
+  var fp : _file;
 
   fun open {
-    if (fp == _STDINCFILEPTR || fp == _STDOUTCFILEPTR ||  
-        fp == _STDERRCFILEPTR) {
+    if (this == stdin || this == stdout || this == stderr) {
       halt("***Error: It is not necessary to open \"", filename, "\"***");
-    }
-    if (fp != _NULLCFILEPTR) {
-      this.close;
     }
 
     var fullFilename = path + "/" + filename;
     fp = _fopen(fullFilename, mode);            
 
-    if (fp == _NULLCFILEPTR) {
+    if (fp == _get_nullfile()) {
       halt("***Error: Unable to open \"", fullFilename, "\": ", 
-           _strerrno(), "***");
+           _get_errno(), "***");
     }
   }
 
   fun isOpen: bool {
     var openStatus: bool = false;
-    if (fp != _NULLCFILEPTR) {
+    if (fp != _get_nullfile()) {
       openStatus = true;
     }
     return openStatus;
   }
 
   fun close {
-    if (fp == _STDINCFILEPTR || fp == _STDOUTCFILEPTR ||  
-        fp == _STDERRCFILEPTR) {
+    if (this == stdin || this == stdout || this == stderr) {
       halt("***Error: You may not close \"", filename, "\"***");
     }
-    if (fp == _NULLCFILEPTR) {
+    if (fp == _get_nullfile()) {
       var fullFilename = path + "/" + filename;
       halt("***Error: Trying to close \"", fullFilename, 
            "\" which isn't open***");
@@ -163,15 +166,15 @@ class file {
     if (returnVal < 0) {
       var fullFilename = path + "/" + filename;
       halt("***Error: The close of \"", fullFilename, "\" failed: ", 
-           _strerrno(), "***");
+           _get_errno(), "***");
     }
-    fp = _NULLCFILEPTR;
+    fp = _get_nullfile();
   }
 }
 
-const stdin  : file = file("stdin", "r", "/dev", _STDINCFILEPTR);
-const stdout : file = file("stdout", "w", "/dev", _STDOUTCFILEPTR);
-const stderr : file = file("stderr", "w", "/dev", _STDERRCFILEPTR);
+const stdin  : file = file("stdin", "r", "/dev", _get_stdin());
+const stdout : file = file("stdout", "w", "/dev", _get_stdout());
+const stderr : file = file("stderr", "w", "/dev", _get_stderr());
 
 
 fun fopenError(f: file, isRead: bool) {
@@ -187,12 +190,12 @@ fun fopenError(f: file, isRead: bool) {
 
 
 fun fprintfError() {
-  halt("***Error: Write failed: ", _strerrno(), "***");
+  halt("***Error: Write failed: ", _get_errno(), "***");
 }
 
 
 fun fscanfError() {
-  halt("***Error: Read failed: ", _strerrno(), "***");
+  halt("***Error: Read failed: ", _get_errno(), "***");
 }
 
 
@@ -208,7 +211,7 @@ pragma "rename _chpl_fread_int"
 fun fread(f: file = stdin, inout val: int) {
   if (f.isOpen) {
     var returnVal: int = fscanf(f.fp, "%lld", val);
-    if (returnVal == EOF) {
+    if (returnVal == _get_eof()) {
       halt("***Error: Read failed: EOF***");
     }
     if (returnVal < 0) {
@@ -241,7 +244,7 @@ pragma "rename _chpl_fread_uint"
 fun fread(f: file = stdin, inout val: uint) {
   if (f.isOpen) {
     var returnVal: int = fscanf(f.fp, "%llu", val);
-    if (returnVal == EOF) {
+    if (returnVal == _get_eof()) {
       halt("***Error: Read failed: EOF***");
     }
     if (returnVal < 0) {
@@ -274,7 +277,7 @@ pragma "rename _chpl_fread_float"
 fun fread(f: file = stdin, inout val: float) {
   if (f.isOpen) {
     var returnVal: int = fscanf(f.fp, "%lg", val);
-    if (returnVal == EOF) {
+    if (returnVal == _get_eof()) {
       halt("***Error: Read failed: EOF***");
     }
     if (returnVal < 0) {

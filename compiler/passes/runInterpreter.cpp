@@ -2058,8 +2058,6 @@ IFrame::run(int timeslice) {
         if (modsym->modtype == MOD_USER) {
           *filename_slot->imm = ip->filename;
           lineno_slot->imm->set_int(ip->lineno);
-          *islot(chpl_input_filename) = *filename_slot;
-          *islot(chpl_input_lineno) = *lineno_slot;
         }
       }
     }

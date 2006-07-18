@@ -21,18 +21,16 @@
 
 #define _default_string_length              256
 
+#define get_errno() (strerror(errno))
+#define get_eof() (EOF)
+#define get_stdin() (stdin)
+#define get_stdout() (stdout)
+#define get_stderr() (stderr)
+#define get_nullfile() (0)
 
 typedef FILE* _cfile;
-extern _cfile _NULLCFILEPTR;
-extern _cfile _STDINCFILEPTR;
-extern _cfile _STDOUTCFILEPTR;
-extern _cfile _STDERRCFILEPTR;
-
-void initChplio(void);
 
 _string string_fscanf(FILE* fp);
 _bool readLit(FILE* fp, _string val, _bool ignoreWhiteSpace);
-void _classReadError(void);
 
 #endif
-

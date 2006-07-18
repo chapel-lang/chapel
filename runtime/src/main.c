@@ -11,7 +11,6 @@ int main(int argc, char* argv[]) {
   parseArgs(argc, argv);
   initMemTable();
   CreateConfigVarTable();
-  initChplio();
   initChplThreads();
   _chpl_main();
   exitChplThreads();

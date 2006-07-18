@@ -212,7 +212,6 @@ initPrimitive() {
   prim_def("trunc", trunc_interpreter_op, returnInfoFloat);
   prim_def("fopen", fopen_interpreter_op, returnInfoFile);
   prim_def("fclose", fclose_interpreter_op, returnInfoInt);
-  prim_def("_errno", unimplemented_interpreter_op, returnInfoString);
   prim_def("fprintf", fprintf_interpreter_op, returnInfoInt);
   prim_def("fscanf", fscanf_interpreter_op, returnInfoInt);
   prim_def("fflush", fflush_interpreter_op, returnInfoInt);
@@ -231,4 +230,11 @@ initPrimitive() {
   prim_def("string_length", string_length_interpreter_op, returnInfoInt);
   prim_def("ascii", unimplemented_interpreter_op, returnInfoInt);
   prim_def("exit", done_interpreter_op, returnInfoInt);
+
+  prim_def("get_stdin", unimplemented_interpreter_op, returnInfoFile);
+  prim_def("get_stdout", unimplemented_interpreter_op, returnInfoFile);
+  prim_def("get_stderr", unimplemented_interpreter_op, returnInfoFile);
+  prim_def("get_nullfile", unimplemented_interpreter_op, returnInfoFile);
+  prim_def("get_errno", unimplemented_interpreter_op, returnInfoString);
+  prim_def("get_eof", unimplemented_interpreter_op, returnInfoInt);
 }

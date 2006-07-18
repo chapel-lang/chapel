@@ -377,9 +377,6 @@ static void insert_formal_temps(FnSymbol* fn) {
   if (!strcmp("=", fn->name))
     return;
 
-  if (fn->getModule() == prelude)
-    return;
-
   Vec<DefExpr*> tempDefs;
   ASTMap subs;
 

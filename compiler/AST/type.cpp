@@ -708,7 +708,7 @@ AList<Stmt>* ClassType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymb
   CallExpr* readOpenBrace = new CallExpr("_readLitChar", fileArgFP, new_StringLiteral("{"), ignoreWhiteSpace);
   body->insertAtTail(new CallExpr("=", matchingCharWasRead, readOpenBrace));
   CallExpr* notRead = new CallExpr("!", matchingCharWasRead);
-  Stmt* readError = new ExprStmt(new CallExpr("_classReadError"));
+  Stmt* readError = new ExprStmt(new CallExpr("halt", new_StringLiteral("Read of the class failed: "), new CallExpr("_get_errno")));
   CondStmt* readErrorCond = new CondStmt(notRead, readError);
   body->insertAtTail(readErrorCond);
   bool first = true;
@@ -900,6 +900,7 @@ void initPrimitiveTypes(void) {
 
   dtString = createPrimitiveType( "string", "_string",
                                   "_stringLiteral", "_stringLiteral");
+  dtString->defaultValue = new_StringSymbol("");
 
   dtSymbol = createPrimitiveType( "symbol", "_symbol", 
                                   "_symbolLiteral", "_symbolLiteral");
@@ -922,11 +923,6 @@ void findInternalTypes(void) {
   dtSetterToken = dynamic_cast<TypeSymbol*>(baseModule->lookup("_setterTokenType"))->definition;
   dtObject = dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(baseModule->lookup("object"))->definition);
   dtValue = dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(baseModule->lookup("value"))->definition);
-
-  // SJD: Can't do this when dtString is defined because
-  // prelude hasn't been made yet.  Need to do it after.
-  dtString->defaultConstructor =
-    dynamic_cast<FnSymbol*>(prelude->lookup("_init_string"));
 }
 
 

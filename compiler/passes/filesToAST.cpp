@@ -12,7 +12,6 @@ void parse(void) {
 
   char* path = stringcat(sysdirToChplRoot(system_dir), "/modules/standard/");
 
-  prelude = ParseFile(stringcat(path, "prelude.chpl"), MOD_STANDARD);
   baseModule = ParseFile(stringcat(path, "_chpl_base.chpl"), MOD_STANDARD);
 
   if (!fnostdincs) {
@@ -49,8 +48,6 @@ void parse(void) {
     chpl_stdout = fileModule->lookupVar("stdout");
     chpl_stderr = fileModule->lookupVar("stderr");
   }
-  chpl_input_filename = prelude->lookupVar("chpl_input_filename");
-  chpl_input_lineno = prelude->lookupVar("chpl_input_lineno");
   setterToken = baseModule->lookupVar("_setterToken");
   methodToken = baseModule->lookupVar("_methodToken");
 }

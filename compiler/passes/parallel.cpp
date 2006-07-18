@@ -8,7 +8,6 @@
 #include "symbol.h"
 #include "stringutil.h"
 #include "driver.h"
-#include "runtime.h"         // for prelude
 #include "files.h"
 
 
