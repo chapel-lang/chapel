@@ -68268,3 +68268,16 @@ Modified files:
 	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
 	                                         inlfunc2_report.good 
 
+---------------------------------------------------------------------------
+
+07/18/06 15:31:36 -- deitz
+
+Log message:
+	Remove .future and update .good to capture the error message.
+
+Modified files:
+	chapel/test/types/type_variables/deitz/: test_infer_class2.good 
+Removed files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_infer_class2.future 
+
