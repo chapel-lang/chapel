@@ -981,6 +981,8 @@ type:
     { $$ = new CallExpr("_build_domain_type", $3); }
 | TSPARSE TDOMAIN TLP expr_ls TRP
     { $$ = new CallExpr("_build_sparse_domain_type", $4); }
+| TINDEX TLP expr_ls TRP
+    { $$ = new CallExpr("_build_index_type", $3); }
 ;
 
 formal_type:

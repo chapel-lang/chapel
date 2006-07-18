@@ -87,6 +87,9 @@ class _domain {
     return _array(x.type, elt_type, rank, x, this);
   }
 
+  fun _build_index()
+    return _value._build_index();
+
   fun _build_sparse_domain() {
     var x = _value._build_sparse_domain();
     return _domain(x.type, rank, x);
@@ -156,6 +159,20 @@ fun _build_sparse_domain_type(dom)
 
 fun _build_array_type(dom, type elt_type)
   return dom._build_array(elt_type);
+
+fun _build_index_type(param i: int) where i > 1 {
+  var x : i*int;
+  return x;
+}
+
+fun _build_index_type(param i: int) where i == 1 {
+  var x : int;
+  return x;
+}
+
+fun _build_index_type(dom) {
+  return dom._build_index();
+}
 
 ///////////////
 
@@ -233,6 +250,11 @@ class _adomain {
 
   fun _build_sparse_domain()
     return _sdomain(rank, adomain=this);
+
+  fun _build_index() {
+    var x : rank*int;
+    return x;
+  }
 
   fun translate(dim : rank*int) {
     var x = _adomain(rank);

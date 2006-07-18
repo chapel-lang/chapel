@@ -101,6 +101,11 @@ class _idomain {
 
   fun _build_array(type elt_type)
     return _iarray(elt_type, ind_type, dom=this);
+
+  fun _build_index() {
+    var i : ind_type;
+    return i;
+  }
 }
 
 record _iarray {
