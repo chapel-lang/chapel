@@ -68052,3 +68052,15 @@ Added files:
 	chapel/test/functions/jplevyak/scoping/: visibility-1.future 
 	chapel/test/memory/shannon/: memmaxExceedsLineno2.future 
 
+---------------------------------------------------------------------------
+
+07/18/06 11:38:31 -- deitz
+
+Log message:
+	Removed .futures for tests that are not tested.
+
+Removed files:
+	chapel/test/flowanalysis/newast/: enumarray.future 
+	                                  formatoutput.future 
+	chapel/test/interpreter/jplevyak/: test_enum1.future 
+
