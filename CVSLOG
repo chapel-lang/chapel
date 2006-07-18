@@ -68246,3 +68246,14 @@ Added files:
 	chapel/test/arrays/deitz/: test_array_init.chpl 
 	                           test_array_init.good 
 
+---------------------------------------------------------------------------
+
+07/18/06 15:26:55 -- deitz
+
+Log message:
+	Cleanup array initialization slightly.
+
+Modified files:
+	chapel/modules/standard/: _chpl_base.chpl 
+	chapel/runtime/include/: chplrt.h 
+
