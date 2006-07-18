@@ -67964,3 +67964,14 @@ Modified files:
 Removed files:
 	chapel/test/classes/deitz/infer/: infer_field10.future 
 
+---------------------------------------------------------------------------
+
+07/18/06 10:26:26 -- deitz
+
+Log message:
+	Update .goods.
+
+Modified files:
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+
