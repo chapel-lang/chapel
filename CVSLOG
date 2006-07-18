@@ -68218,3 +68218,14 @@ Added files:
 	chapel/test/arrays/deitz/: test_copy_array.chpl 
 	                           test_copy_array.good 
 
+---------------------------------------------------------------------------
+
+07/18/06 14:38:25 -- waynew
+
+Log message:
+	SunOS-specific good file. Error message is different "Bad file number"
+	instead of "Bad file descriptor" as on Linux.
+
+Added files:
+	chapel/test/types/file/: fwriteIntFailed.sunos.good 
+
