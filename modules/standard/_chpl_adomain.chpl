@@ -58,6 +58,12 @@ fun =(a: _array, b) {
   return a;
 }
 
+fun _copy(a: _array) {
+  var b : [a.dom] a.elt_type;
+  b = a;
+  return b;
+}
+
 fun fwrite(f : file, a: _array) {
   fwrite(f, a._value);
 }
