@@ -68201,3 +68201,20 @@ Removed files:
 	chapel/test/domains/roxana/index/: test_index_expr0.compopts 
 	                                   test_index_expr2.compopts 
 
+---------------------------------------------------------------------------
+
+07/18/06 14:15:19 -- deitz
+
+Log message:
+	Implemented array _copy function enabling array inference as in
+	
+	   var B = A;
+	
+	where A is an array.  Added a test.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+Added files:
+	chapel/test/arrays/deitz/: test_copy_array.chpl 
+	                           test_copy_array.good 
+
