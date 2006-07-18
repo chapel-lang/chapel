@@ -800,7 +800,7 @@ resolveCall(CallExpr* call) {
         if (t == dtUnknown)
           INT_FATAL(call, "Unable to resolve field type");
         if (t != field->type && t != dtNil && t != dtObject)
-          INT_FATAL(call, "Bad field type detected");
+          USR_FATAL(call, "Cannot assign expression of type %s to field of type %s", t->symbol->name, field->type->symbol->name);
         found = true;
       }
     }
