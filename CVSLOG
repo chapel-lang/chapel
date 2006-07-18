@@ -68257,3 +68257,14 @@ Modified files:
 	chapel/modules/standard/: _chpl_base.chpl 
 	chapel/runtime/include/: chplrt.h 
 
+---------------------------------------------------------------------------
+
+07/18/06 15:28:02 -- deitz
+
+Log message:
+	Update .goods.
+
+Modified files:
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+
