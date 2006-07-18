@@ -176,6 +176,19 @@ check_normalized_def_before_use(FnSymbol* fn) {
 
 
 void
+check_normalized_enum(EnumType* et) {
+  for_alist(DefExpr, def, et->constants) {
+    if (def->init) {
+      SymExpr* sym = dynamic_cast<SymExpr*>(def->init);
+      if (!sym || (dynamic_cast<VarSymbol*>(sym->var)->consClass != VAR_PARAM &&
+                   !dynamic_cast<VarSymbol*>(sym->var)->immediate))
+        USR_FATAL(def, "Enumerator value for %s must be int parameter", def->sym->name);
+    }
+  }
+}
+
+
+void
 check_normalized(void) {
   compute_sym_uses();
   Vec<BaseAST*> asts;
@@ -196,6 +209,9 @@ check_normalized(void) {
       if (!(parent && parent->baseExpr == a))
         if (dynamic_cast<UnresolvedSymbol*>(a->var))
           USR_FATAL_CONT(a, "Symbol '%s' is not defined", a->var->name);
+    } else if (TypeSymbol* a = dynamic_cast<TypeSymbol*>(ast)) {
+      if (EnumType* et = dynamic_cast<EnumType*>(a->definition))
+        check_normalized_enum(et);
     }
   }
 }

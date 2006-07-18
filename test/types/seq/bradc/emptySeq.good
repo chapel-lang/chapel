@@ -1,1 +1,1 @@
-[chapel.y:1081] Error: Invalid empty sequence literal '(//)' (test/types/seq/bradc/emptySeq.chpl:1)
+Error: Invalid empty sequence literal '(//)' (emptySeq.chpl:1)
