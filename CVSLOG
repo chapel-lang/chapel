@@ -68375,3 +68375,13 @@ Modified files:
 Removed files:
 	chapel/test/types/seq/bradc/: emptySeq.future 
 
+---------------------------------------------------------------------------
+
+07/18/06 16:36:46 -- deitz
+
+Log message:
+	Remove .future of working test, record equality fix.
+
+Removed files:
+	chapel/test/functions/deitz/: test_operator_overloading2.future 
+
