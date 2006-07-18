@@ -68190,3 +68190,14 @@ Removed files:
 	                                   test_index_expr1.future 
 	                                   test_index_expr2.future 
 
+---------------------------------------------------------------------------
+
+07/18/06 14:13:07 -- deitz
+
+Log message:
+	Removed old compiler options for these tests.
+
+Removed files:
+	chapel/test/domains/roxana/index/: test_index_expr0.compopts 
+	                                   test_index_expr2.compopts 
+
