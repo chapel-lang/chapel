@@ -68125,3 +68125,15 @@ Removed files:
 	                              readWriteUserType.future 
 	chapel/test/types/file/: freadComplex.future 
 
+---------------------------------------------------------------------------
+
+07/18/06 12:15:49 -- deitz
+
+Log message:
+	Removed .future for advanced Jacobi test case.
+
+Modified files:
+	chapel/test/arrays/deitz/: jacobi5.chpl 
+Removed files:
+	chapel/test/arrays/deitz/: jacobi5.future 
+
