@@ -10,4 +10,4 @@ a.i = 1;
 var b : B;
 b.i = 2;
 
-writeln("0 = ", a == b);
+writeln("false = ", a == b);

@@ -123,7 +123,7 @@ static void build_chpl_main(void) {
 static void build_record_equality_function(ClassType* ct) {
   FnSymbol* fn = new FnSymbol("==");
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
-  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", ct);
+  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtAny);
   fn->formals->insertAtTail(arg1);
   fn->formals->insertAtTail(arg2);
   fn->retType = dtBool;
@@ -148,7 +148,7 @@ static void build_record_inequality_function(ClassType* ct) {
   FnSymbol* fn = new FnSymbol("!=");
 
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
-  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", ct);
+  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtAny);
   fn->formals->insertAtTail(arg1);
   fn->formals->insertAtTail(arg2);
   fn->retType = dtBool;
