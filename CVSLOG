@@ -67986,3 +67986,27 @@ Log message:
 Added files:
 	chapel/test/trivial/shannon/: readWriteComplexFail1.future 
 
+---------------------------------------------------------------------------
+
+07/18/06 11:08:21 -- deitz
+
+Log message:
+	Fixed record equality/inequality functions.  Note that record equality
+	is not symmetric if one record has a different number of fields than
+	the other.
+	
+	Updated two tests and removed their .futures.
+	
+	Fixed .good for infer_field10.
+
+Modified files:
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	chapel/test/classes/deitz/infer/: infer_field10.good 
+	chapel/test/classes/jplevyak/: record_equal-1.chpl 
+	                               record_equal-1.good 
+	                               record_equal-2.chpl 
+	                               record_equal-2.good 
+Removed files:
+	chapel/test/classes/jplevyak/: record_equal-1.future 
+	                               record_equal-2.future 
+
