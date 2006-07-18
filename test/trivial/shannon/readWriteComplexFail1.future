@@ -1,3 +1,0 @@
-deitz/waynew
-
-Need to settle on strategy for reads.  Previous strategy does not code gen passing around a pointer to complex primitive type correctly.  

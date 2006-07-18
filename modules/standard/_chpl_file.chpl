@@ -301,6 +301,54 @@ fun fwrite(f: file = stdout, val: float) {
 }
 
 
+pragma "rename _chpl_fread_complex"
+fun fread(f: file = stdin, inout val: complex) {
+  var realPart: float;
+  var imagPart: float;
+  var imagI: string;
+  var matchingCharWasRead: int;
+  var isNeg: bool;
+
+  fread(f, realPart);
+  matchingCharWasRead = _readLitChar(f.fp, "+", true);
+  if (matchingCharWasRead != 1) {
+    matchingCharWasRead = _readLitChar(f.fp, "-", true);
+    if (matchingCharWasRead != 1) {
+      halt("***Error: Incorrect format for complex numbers***");
+    }
+    isNeg = true;
+  }
+
+  fread(f, imagPart);
+  matchingCharWasRead = _readLitChar(f.fp, "i", false);
+  if (matchingCharWasRead != 1) {
+    halt("***Error: Incorrect format for complex numbers***");
+  }
+
+  val.real = realPart;
+  if (isNeg) {
+    val.imag = -imagPart;
+  } else {
+    val.imag = imagPart;
+  }
+}
+
+
+pragma "rename _chpl_fwrite_complex"
+fun fwrite(f: file = stdout, val: complex) {
+  if (f.isOpen) {
+     _chpl_fwrite_float_help(f.fp, val.real);
+     if (val.imag >= 0) {
+       fwrite( f, " + ", val.imag, "i");
+     } else {
+       fwrite( f, " - ", -val.imag, "i");
+     }
+  } else {
+    fopenError(f, isRead = false);
+  }
+}
+
+
 pragma "rename _chpl_fread_string"
 fun fread(f: file = stdin, inout val: string) {
   if (f.isOpen) {
