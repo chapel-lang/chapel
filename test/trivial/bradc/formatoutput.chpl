@@ -4,7 +4,7 @@ writeln("x is: ", x);
 writeln("x is: ", x:"%3lld");
 writeln("x is: ", x:"%.3lld");
 
-var D: domain(1) = 1..4;
+var D: domain(1) = [1..4];
 var A: [D] int;
 
 forall i in D {
