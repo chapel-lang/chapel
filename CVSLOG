@@ -68345,3 +68345,16 @@ Modified files:
 Removed files:
 	chapel/test/reductions/bradc/manual/: promote.future 
 
+---------------------------------------------------------------------------
+
+07/18/06 16:07:09 -- deitz
+
+Log message:
+	Updated .good and removed .future.  This may require more work to get
+	right.  The test skips over a variable declaration using a goto.
+
+Modified files:
+	chapel/test/trivial/deitz/: test_goto1.good 
+Removed files:
+	chapel/test/trivial/deitz/: test_goto1.future 
+
