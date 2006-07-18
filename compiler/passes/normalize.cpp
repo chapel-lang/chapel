@@ -329,11 +329,13 @@ static void normalize_returns(FnSymbol* fn) {
   LabelSymbol* label = new LabelSymbol(stringcat("_end_", fn->name));
   fn->insertAtTail(new DefExpr(label));
   VarSymbol* retval = NULL;
+  bool returnType = false;
   if (returns_void) {
     fn->insertAtTail(new ReturnStmt());
   } else {
     retval = new VarSymbol(stringcat("_ret_", fn->name), fn->retType);
     Expr* type = (fn->retExpr) ? fn->retExpr->copy() : NULL;
+    returnType = type != NULL;
     fn->insertAtHead(new DefExpr(retval, NULL, type));
     fn->insertAtTail(new ReturnStmt(retval));
   }
@@ -342,7 +344,11 @@ static void normalize_returns(FnSymbol* fn) {
     if (retval) {
       Expr* ret_expr = ret->expr;
       ret_expr->remove();
-      ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, ret_expr));
+      if (returnType)
+        ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval,
+                                       new CallExpr("=", retval, ret_expr)));
+      else
+        ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, ret_expr));
     }
     if (ret->next != label->defPoint->parentStmt) {
       ret->replace(new GotoStmt(goto_normal, label));

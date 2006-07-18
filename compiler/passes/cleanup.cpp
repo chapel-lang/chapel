@@ -355,7 +355,6 @@ static void build_getter(ClassType* ct, Symbol *field) {
   FnSymbol* fn = new FnSymbol(field->name);
   fn->addPragma("inline");
   fn->_getter = field;
-  fn->retType = field->type;
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
   fn->formals->insertAtTail(new ArgSymbol(INTENT_BLANK, "_methodTokenDummy", dtMethodToken));
   fn->formals->insertAtTail(_this);

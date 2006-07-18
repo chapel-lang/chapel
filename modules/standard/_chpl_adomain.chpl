@@ -374,7 +374,7 @@ record _aarray {
       this(i) = v;
   }
 
-  fun this(ind : rank*int) var : elt_type {
+  fun this(ind : rank*int) var {
     for i in 1..rank do
       if ! _in(dom(i), ind(i)) {
         writeln("out of bounds error ", ind);
@@ -386,7 +386,7 @@ record _aarray {
     return data(sum);
   }
 
-  fun this(ind : int ...rank) var : elt_type
+  fun this(ind : int ...rank) var
     return this(ind);
 }
 
