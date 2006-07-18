@@ -68358,3 +68358,20 @@ Modified files:
 Removed files:
 	chapel/test/trivial/deitz/: test_goto1.future 
 
+---------------------------------------------------------------------------
+
+07/18/06 16:20:19 -- deitz
+
+Log message:
+	Added an error message to tell the user not to write an empty sequence
+	literal as in (/ /) because the element type of this sequence is
+	invalid.  Updated .good of a test and removed .future.  Fixed tuple
+	syntax in another test, but did not remove .future.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/test/types/seq/bradc/: emptySeq.good 
+	chapel/test/types/tuple/deitz/: test_param_tuple_arg1-error.chpl 
+Removed files:
+	chapel/test/types/seq/bradc/: emptySeq.future 
+
