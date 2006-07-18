@@ -68321,3 +68321,15 @@ Removed files:
 	chapel/test/types/type_variables/deitz/: 
 	                                         test_clone_class1b.future 
 
+---------------------------------------------------------------------------
+
+07/18/06 15:51:14 -- deitz
+
+Log message:
+	Fixed test and removed .future.
+
+Modified files:
+	chapel/test/trivial/bradc/entrypoint/: wrongmain.chpl 
+Removed files:
+	chapel/test/trivial/bradc/entrypoint/: wrongmain.future 
+
