@@ -68064,3 +68064,15 @@ Removed files:
 	                                  formatoutput.future 
 	chapel/test/interpreter/jplevyak/: test_enum1.future 
 
+---------------------------------------------------------------------------
+
+07/18/06 12:01:13 -- deitz
+
+Log message:
+	Removed "incomplete" test.
+
+Removed files:
+	chapel/test/domains/roxana/classes/: test_domain_class.good 
+	                                     test_domain_class.chpl 
+	                                     test_domain_class.future 
+
