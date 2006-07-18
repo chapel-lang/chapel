@@ -68306,3 +68306,18 @@ Modified files:
 	                               union_type_hierarchy-2.future 
 	                               union_type_hierarchy-3-error.future 
 
+---------------------------------------------------------------------------
+
+07/18/06 15:47:15 -- deitz
+
+Log message:
+	Improved error message for bad field assignments and removed a .future.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/test/types/type_variables/deitz/: test_clone_class1b.chpl 
+	                                         test_clone_class1b.good 
+Removed files:
+	chapel/test/types/type_variables/deitz/: 
+	                                         test_clone_class1b.future 
+
