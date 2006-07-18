@@ -68385,3 +68385,17 @@ Log message:
 Removed files:
 	chapel/test/functions/deitz/: test_operator_overloading2.future 
 
+---------------------------------------------------------------------------
+
+07/18/06 16:49:09 -- deitz
+
+Log message:
+	Fixed assignment mismatch error message.
+	
+	Fixed formatoutput test which would work if scalar promotion of arrays
+	created an array or sequences printed out similarly.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/test/trivial/bradc/: formatoutput.chpl 
+
