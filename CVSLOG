@@ -68281,3 +68281,28 @@ Removed files:
 	chapel/test/types/type_variables/deitz/: 
 	                                         test_infer_class2.future 
 
+---------------------------------------------------------------------------
+
+07/18/06 15:38:20 -- deitz
+
+Log message:
+	Marked .futures waiting for union implementation as union futures.
+
+Modified files:
+	chapel/test/classes/bradc/: writeunion-workaround.future 
+	                            writeunion.future 
+	chapel/test/classes/bradc/unions/: assign.future assign1a.future 
+	                                   stringunion.future 
+	                                   twounions.future 
+	                                   writeunion.future 
+	chapel/test/classes/deitz/: test_union1.future 
+	                            test_union2.future 
+	                            test_union3.future 
+	                            test_union4.future 
+	                            test_union_method1.future 
+	                            test_union_method2.future 
+	                            test_union_method3.future 
+	chapel/test/classes/jplevyak/: union_type_hierarchy-1.future 
+	                               union_type_hierarchy-2.future 
+	                               union_type_hierarchy-3-error.future 
+
