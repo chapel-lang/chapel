@@ -10,4 +10,5 @@ fun main(argc: int, argv: [1..argc] string) {
 
 fun foo() {
   writeln("If we see this, I think it worked");
+  return 0;
 }
