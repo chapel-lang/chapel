@@ -68031,3 +68031,24 @@ Modified files:
 	chapel/runtime/include/: chplio.h chpltypes.h config.h 
 	chapel/runtime/src/: chplmem_tests.c chpltypes.c config.c 
 
+---------------------------------------------------------------------------
+
+07/18/06 11:13:36 -- deitz
+
+Log message:
+	Futurized regressions for further work.
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+Added files:
+	chapel/test/arrays/deitz/: test_class_array1.future 
+	chapel/test/arrays/jplevyak/: simple-2.future 
+	chapel/test/classes/deitz/inherit/: test_inherit4.future 
+	chapel/test/classes/jplevyak/: inherit-2.future 
+	chapel/test/functions/deitz/: test_visible2.future 
+	chapel/test/functions/deitz/nested/: test_nested_global1.future 
+	chapel/test/functions/jplevyak/: introduce-dispatch-1.future 
+	                                 zeroarity-bound-error-2.future 
+	chapel/test/functions/jplevyak/scoping/: visibility-1.future 
+	chapel/test/memory/shannon/: memmaxExceedsLineno2.future 
+
