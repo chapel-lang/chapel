@@ -68399,3 +68399,19 @@ Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 	chapel/test/trivial/bradc/: formatoutput.chpl 
 
+---------------------------------------------------------------------------
+
+07/18/06 16:53:12 -- deitz
+
+Log message:
+	Fix .good for emptySeq test to use non-developer message.
+	
+	Reenabled checking to make sure that the initializer to an enumerated
+	type is a compile-time constant.  Removed .future.
+
+Modified files:
+	chapel/compiler/passes/: semanticChecks.cpp 
+	chapel/test/types/seq/bradc/: emptySeq.good 
+Removed files:
+	chapel/test/types/enum/deitz/: test_enum6.future 
+
