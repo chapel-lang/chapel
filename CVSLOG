@@ -68137,3 +68137,25 @@ Modified files:
 Removed files:
 	chapel/test/arrays/deitz/: jacobi5.future 
 
+---------------------------------------------------------------------------
+
+07/18/06 12:21:09 -- deitz
+
+Log message:
+	Removed tests that incorrectly used internal _ddata array.
+
+Removed files:
+	chapel/test/domains/roxana/helper/: test_hash_table1a.chpl 
+	                                    test_hash_table1a.future 
+	                                    test_hash_table1a.good 
+	                                    test_hash_table1.chpl 
+	                                    test_hash_table1.future 
+	                                    test_hash_table1.good 
+	                                    test_hash_table2.chpl 
+	                                    test_hash_table2.good 
+	                                    test_hash_table3.chpl 
+	                                    test_hash_table3.good 
+	                                    test_hash_table.chpl 
+	                                    test_hash_table.future 
+	                                    test_hash_table.good 
+
