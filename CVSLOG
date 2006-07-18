@@ -68229,3 +68229,20 @@ Log message:
 Added files:
 	chapel/test/types/file/: fwriteIntFailed.sunos.good 
 
+---------------------------------------------------------------------------
+
+07/18/06 14:54:48 -- deitz
+
+Log message:
+	Implemented array _init function enabling array types as in
+	
+	  var B = A.type;
+	
+	where A is an array.  Added a test.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_base.chpl 
+Added files:
+	chapel/test/arrays/deitz/: test_array_init.chpl 
+	                           test_array_init.good 
+
