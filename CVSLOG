@@ -68097,3 +68097,14 @@ Removed files:
 	chapel/test/functions/bradc/: typefn2.future 
 	chapel/test/functions/jplevyak/: type_var_fun-1.future 
 
+---------------------------------------------------------------------------
+
+07/18/06 12:05:51 -- deitz
+
+Log message:
+	Updated .goods.
+
+Modified files:
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+
