@@ -68159,3 +68159,34 @@ Removed files:
 	                                    test_hash_table.future 
 	                                    test_hash_table.good 
 
+---------------------------------------------------------------------------
+
+07/18/06 12:22:50 -- deitz
+
+Log message:
+	Implemented a first cut of index types, updated index type tests with
+	new array and domain syntax, and removed 8 .futures (98 left!).
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	                          _chpl_indefinite.chpl 
+	chapel/test/domains/bradc/: domainindex.chpl 
+	chapel/test/domains/roxana/index/: test_index_assign.chpl 
+	                                   test_index_expr.chpl 
+	                                   test_index_expr.good 
+	                                   test_index_expr0.chpl 
+	                                   test_index_expr0.good 
+	                                   test_index_expr1.good 
+	                                   test_index_expr2.chpl 
+	                                   test_index_expr2.good 
+Removed files:
+	chapel/test/domains/bradc/: domainindex.future writeIndex.future 
+	                            writeIndex2.future 
+	chapel/test/domains/roxana/index/: test_index_assign.future 
+	                                   test_index_expr.future 
+	                                   test_index_expr0.future 
+	                                   test_index_expr1.future 
+	                                   test_index_expr2.future 
+
