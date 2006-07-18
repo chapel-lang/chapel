@@ -68076,3 +68076,24 @@ Removed files:
 	                                     test_domain_class.chpl 
 	                                     test_domain_class.future 
 
+---------------------------------------------------------------------------
+
+07/18/06 12:03:57 -- deitz
+
+Log message:
+	Reworked "return normalization" to allow a coercion from the type of
+	an expression returned to the return type specified using overloaded
+	assignment if the return type is specified.
+	
+	Removed two .futures.
+	
+	Fixed var functions like array indexing and getters to not specify the
+	return type.
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp normalize.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_base.chpl 
+Removed files:
+	chapel/test/functions/bradc/: typefn2.future 
+	chapel/test/functions/jplevyak/: type_var_fun-1.future 
+
