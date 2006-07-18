@@ -67899,3 +67899,22 @@ Log message:
 Removed files:
 	chapel/test/types/tuple/deitz/: test_htuple9.future 
 
+---------------------------------------------------------------------------
+
+07/18/06 08:55:10 -- deitz
+
+Log message:
+	Removed bulk of code from prelude placing functionality in other
+	standard modules and in primitives.  One major difficulty with the
+	prelude is a chicken/egg problem where core features of the
+	language/implementation are defined in _chpl_base and not available in
+	the prelude, whereas all other standard modules use one another.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: primitive.h symbol.h type.h 
+	chapel/modules/standard/: _chpl_base.chpl _chpl_complex.chpl 
+	                          _chpl_file.chpl prelude.chpl 
+	chapel/runtime/include/: chplio.h chpltypes.h 
+	chapel/runtime/src/: chplio.c chpltypes.c 
+
