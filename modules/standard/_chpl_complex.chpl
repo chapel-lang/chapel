@@ -1,7 +1,90 @@
-pragma "rename _chpl_complex" record complex {
-  var real : float;
-  var imag : float;
+fun complex.real: float {
+  return __primitive( "_chpl_complex_real", this);
 }
+
+fun complex.imag: float {
+  return __primitive( "_chpl_complex_imag", this);
+}
+
+fun complex.=real (f:float) {
+  __primitive( "_chpl_complex_set_real", this, f);
+}
+
+fun complex.=imag (f:float) {
+  __primitive( "_chpl_complex_set_imag", this, f);
+}
+
+fun =(a:complex, b:complex) {
+  var ret:complex;
+  ret.imag = b.imag;
+  ret.real = b.real;
+  return ret;
+}
+
+fun +(f:float, c:complex) {
+  var ret:complex;
+  ret.imag = c.imag;
+  ret.real = c.real + f;
+  return ret;
+}
+
+fun +(c:complex, f:float) {
+  var ret:complex;
+  ret.imag = c.imag;
+  ret.real = c.real + f;
+  return ret;
+}
+
+fun +(a:complex, b:complex) {
+  var sum:complex;
+  sum.real = a.real + b.real;
+  sum.imag = a.imag + b.imag;
+  return sum;
+}
+
+fun -(a:complex, b:complex) {
+  var diff:complex;
+  diff.real = a.real - b.real;
+  diff.imag = a.imag - b.imag;
+  return diff;
+}
+
+fun -(f:float, c:complex) {
+  var diff:complex;
+  diff.real = f - c.real;
+  diff.imag = -c.imag;
+  return diff;
+}
+
+fun -(c:complex, f:float) {
+  var diff:complex;
+  diff.real = c.real - f;
+  diff.imag = c.imag;
+  return diff;
+}
+
+fun *(a:complex, b:complex) {
+  var prod:complex;
+  prod.real = a.real*b.real - a.imag*b.imag;
+  prod.imag = a.imag*b.real + a.real*b.imag;
+  return prod;
+}
+
+fun /(a:complex, b:complex) {
+  var div:complex;
+  var d:float = b.real*b.real + b.imag*b.imag;
+  div.real = (a.real*b.real + a.imag*b.imag)/d; 
+  div.imag = (a.imag*b.real - a.real*b.imag)/d;
+  return div;
+}
+
+fun conjg(a:complex) {
+  var c:complex;
+  c.real = a.real;
+  c.imag = -a.imag;
+  return c;
+}
+
 
 
 pragma "rename _chpl_fwrite_complex"
@@ -16,7 +99,7 @@ fun fwrite(f : file = stdout, x : complex) {
   fwrite(f, x.imag, "i");
 }
 
-
+/*
 pragma "rename _chpl_fread_complex"
 fun fread(f : file = stdin, x : complex) {
   var realPart: float;
@@ -52,31 +135,11 @@ fun fread(f : file = stdin, x : complex) {
     x.imag = imagPart;
   }
 }
+*/
+
 
 pragma "no codegen"
 pragma "rename _chpl_tostring_complex"
 fun _tostring(x : complex, format : string) : string {
   return __primitive("to_string", format, x);
 }
-
-
-fun +(x : complex, y : complex)
-  return complex(x.real + y.real, x.imag + y.imag);
-
-fun +(x : float, y : complex)
-  return complex(x + y.real, y.imag);
-
-fun -(x : complex, y : complex)
-  return complex(x.real - y.real, x.imag - y.imag);
-
-fun *(x : complex, y : complex)
-  return complex(x.real*y.real - x.imag*y.imag,
-                 x.imag*y.real + x.real*y.imag);
-
-fun /(x : complex, y : complex)
-  return let d = y.real*y.real + y.imag*y.imag in
-    complex((x.real*y.real + x.imag*y.imag)/d,
-            (x.imag*y.real - x.real*y.imag)/d);
-
-fun conjg(x : complex)
-  return complex(x.real, -x.imag);

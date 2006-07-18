@@ -84,7 +84,7 @@ char* _chpl_tostring_float(_float64 x, char* format) {
 }
 
 
-char* _chpl_tostring_complex(_complex128 x, char* format) {
+char* _chpl_tostring_complex( _complex64 x, char* format) {
   char buffer[256];
   sprintf(buffer, format, x.re, x.im);
   return _glom_strings(1, buffer);
@@ -146,4 +146,23 @@ string_equal(_string x, _string y) {
 _int64
 string_length(_string x) {
   return strlen(x);
+}
+
+
+_complex32 
+_chpl_complex32( _float32 r, _float32 i) {
+  _complex32 ret_c = {r, i};
+  return ret_c;
+}
+
+_complex64 
+_chpl_complex64( _float64 r, _float64 i) {
+  _complex64 ret_c = {r, i};
+  return ret_c;
+}
+
+_complex128 
+_chpl_complex128( _float128 r, _float128 i) {
+  _complex128 ret_c = {r, i};
+  return ret_c;
 }

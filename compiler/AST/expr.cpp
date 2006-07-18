@@ -82,31 +82,31 @@ void Expr::codegenCastToString(FILE* outfile) {
     if (exprType == dtBool) {
       fprintf(outfile, "bool");
 
-    } else if (exprType == dtInt[INT_TYPE_8]) {
+    } else if (exprType == dtInt[INT_SIZE_8]) {
       fprintf(outfile, "int8");
-    } else if (exprType == dtInt[INT_TYPE_16]) {
+    } else if (exprType == dtInt[INT_SIZE_16]) {
       fprintf(outfile, "int16");
-    } else if (exprType == dtInt[INT_TYPE_32]) {
+    } else if (exprType == dtInt[INT_SIZE_32]) {
       fprintf(outfile, "int32");
-    } else if (exprType == dtInt[INT_TYPE_64]) {
+    } else if (exprType == dtInt[INT_SIZE_64]) {
       fprintf(outfile, "int");
 
-    } else if (exprType == dtUInt[INT_TYPE_1]) {
+    } else if (exprType == dtUInt[INT_SIZE_1]) {
       fprintf(outfile, "bool");
-    } else if (exprType == dtUInt[INT_TYPE_8]) {
+    } else if (exprType == dtUInt[INT_SIZE_8]) {
       fprintf(outfile, "uint8");
-    } else if (exprType == dtUInt[INT_TYPE_16]) {
+    } else if (exprType == dtUInt[INT_SIZE_16]) {
       fprintf(outfile, "uint16");
-    } else if (exprType == dtUInt[INT_TYPE_32]) {
+    } else if (exprType == dtUInt[INT_SIZE_32]) {
       fprintf(outfile, "uint32");
-    } else if (exprType == dtUInt[INT_TYPE_64]) {
+    } else if (exprType == dtUInt[INT_SIZE_64]) {
       fprintf(outfile, "uint");
 
-    } else if (exprType == dtFloat[FLOAT_TYPE_32]) {
+    } else if (exprType == dtFloat[FLOAT_SIZE_32]) {
       fprintf(outfile, "float32");
-    } else if (exprType == dtFloat[FLOAT_TYPE_64]) {
+    } else if (exprType == dtFloat[FLOAT_SIZE_64]) {
       fprintf(outfile, "float64");
-    } else if (exprType == dtFloat[FLOAT_TYPE_128]) {
+    } else if (exprType == dtFloat[FLOAT_SIZE_128]) {
       fprintf(outfile, "float128");
 
     } else {
@@ -291,7 +291,7 @@ static void codegen_member(FILE* outfile, BaseAST *base, BaseAST *member,
   if (sbase && smember && dynamic_cast<ClassType*>(sbase->var->type)) {
     VarSymbol* memberVar = dynamic_cast<VarSymbol*>(smember->var);
     if (!memberVar->immediate ||
-        memberVar->immediate->const_kind != IF1_CONST_KIND_STRING)
+        memberVar->immediate->const_kind != CONST_KIND_STRING)
       INT_FATAL(member, "Member name is not a string");
     base->codegen(outfile);
     fprintf(outfile, "->%s", memberVar->immediate->v_string);
@@ -557,7 +557,7 @@ void CallExpr::codegen(FILE* outfile) {
           if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var)) {
             if (var->varClass == VAR_CONFIG) {
               fprintf(outfile, "if (_INIT_CONFIG(%s%s, %s, \"%s\", \"%s\"))\n",
-                      (!strcmp(var->type->symbol->cname, "_chpl_complex")) ? "(_complex128**)&" : "&",
+                      (!strcmp(var->type->symbol->cname, "_chpl_complex")) ? "(_complex64**)&" : "&",
                       var->cname, 
                       var->type->symbol->cname,
                       var->name,
@@ -567,8 +567,8 @@ void CallExpr::codegen(FILE* outfile) {
         }
       Type* leftType = get(1)->typeInfo();
       Type* rightType = get(2)->typeInfo();
-      if ((leftType == dtInt[INT_TYPE_64] || 
-           leftType == dtFloat[FLOAT_TYPE_64]) &&
+      if ((leftType == dtInt[INT_SIZE_64] || 
+           leftType == dtFloat[FLOAT_SIZE_64]) &&
           rightType == dtNil) {
         get(1)->codegen(outfile);
         fprintf(outfile, " = (");
@@ -584,13 +584,13 @@ void CallExpr::codegen(FILE* outfile) {
         // numerics? widths less than default 64-bit Chapel size?  128-bit 
         // types and constants?
         if ((leftType != rightType) &&
-            (((leftType == dtInt[INT_TYPE_8])  ||
-              (leftType == dtInt[INT_TYPE_16]) ||
-              (leftType == dtInt[INT_TYPE_32]) ||
-              (leftType == dtUInt[INT_TYPE_1])  ||
-              (leftType == dtUInt[INT_TYPE_8])  ||
-              (leftType == dtUInt[INT_TYPE_16]) ||
-              (leftType == dtUInt[INT_TYPE_32])))) {
+            (((leftType == dtInt[INT_SIZE_8])  ||
+              (leftType == dtInt[INT_SIZE_16]) ||
+              (leftType == dtInt[INT_SIZE_32]) ||
+              (leftType == dtUInt[INT_SIZE_1])  ||
+              (leftType == dtUInt[INT_SIZE_8])  ||
+              (leftType == dtUInt[INT_SIZE_16]) ||
+              (leftType == dtUInt[INT_SIZE_32])))) {
           fprintf( outfile, " (");
           leftType->symbol->codegen( outfile);
           fprintf( outfile, ") ");
@@ -598,8 +598,8 @@ void CallExpr::codegen(FILE* outfile) {
 
         // WAW: YAH.  C enum types are int.  For
         // int/uint(1), we only want 1-bit.  See writeln for failure case.
-        if (rightType == dtInt[INT_TYPE_1] ||
-            rightType == dtUInt[INT_TYPE_1]) {
+        if (rightType == dtInt[INT_SIZE_1] ||
+            rightType == dtUInt[INT_SIZE_1]) {
           fprintf( outfile, " (");
           get(2)->codegen(outfile);
           fprintf( outfile, "& 0x1) ");
@@ -972,10 +972,8 @@ void CallExpr::codegen(FILE* outfile) {
   // compiler produced complex type to the runtime complex type;
   // eventually there should be no runtime complex type
   if (SymExpr* variable = dynamic_cast<SymExpr*>(baseExpr)) {
-    if (!strcmp(variable->var->cname, "_chpl_tostring_complex")) {
-      fprintf(outfile, "*(_complex128*)");
-    } else if (!strcmp(variable->var->cname, "_chpl_read_complex")) {
-      fprintf(outfile, "(_complex128**)");
+    if (!strcmp(variable->var->cname, "_chpl_read_complex")) {
+      fprintf(outfile, "(_complex64**)");
     }
   }
   if (primitive && !strcmp(primitive->name, "string_copy")) {
@@ -1076,30 +1074,35 @@ void NamedExpr::codegen(FILE* outfile) {
 
 
 Expr *
-new_IntLiteral(char *l) {
-  return new SymExpr(new_IntSymbol(strtoll(l, NULL, 10)));
+new_IntLiteral(char *l, IF1_int_type int_size) {
+  return new SymExpr(new_IntSymbol(strtoll(l, NULL, 10), int_size));
 }
 
 Expr *
-new_IntLiteral(long long int i) {
-  return new SymExpr(new_IntSymbol(i));
+new_IntLiteral(long long int i, IF1_int_type int_size) {
+  return new SymExpr(new_IntSymbol(i, int_size));
 }
 
 Expr *
-new_UIntLiteral(char *ui_str) {
-  // WAW: what about base 8 or 2?
-  return new SymExpr(new_UIntSymbol(strtoull(ui_str, NULL, 10)));
+new_UIntLiteral(char *ui_str, IF1_int_type uint_size) {
+  return new SymExpr(new_UIntSymbol(strtoull(ui_str, NULL, 10), uint_size));
 }
 
 Expr *
-new_UIntLiteral(unsigned long long u) {
-  // WAW: what about base 8 or 2?
-  return new SymExpr(new_UIntSymbol(u));
+new_UIntLiteral(unsigned long long u, IF1_int_type uint_size) {
+  return new SymExpr(new_UIntSymbol(u, uint_size));
 }
 
 Expr *
-new_FloatLiteral(char *n, long double d) {
-  return new SymExpr(new_FloatSymbol(n, d));
+new_FloatLiteral(char *n, long double d, IF1_float_type float_size) {
+  return new SymExpr(new_FloatSymbol(n, d, float_size));
+}
+
+Expr*
+new_ComplexLiteral(long double i, IF1_float_type float_size) {
+  char cstr[256];
+  sprintf( cstr, "_chpl_complex64(0.0, %Lg)", i);
+  return new SymExpr(new_ComplexSymbol(cstr, 0.0, i, float_size));
 }
 
 Expr *
@@ -1114,7 +1117,7 @@ get_int(Expr *e, long *i) {
       if (VarSymbol *v = dynamic_cast<VarSymbol*>(l->var)) {
         if (v->immediate &&
             v->immediate->const_kind == NUM_KIND_INT &&
-            v->immediate->num_index == INT_TYPE_64) {
+            v->immediate->num_index == INT_SIZE_64) {
           *i = v->immediate->v_int64;
           return true;
         }
@@ -1129,7 +1132,7 @@ get_string(Expr *e, char **s) {
   if (e) {
     if (SymExpr *l = dynamic_cast<SymExpr*>(e)) {
       if (VarSymbol *v = dynamic_cast<VarSymbol*>(l->var)) {
-        if (v->immediate && v->immediate->const_kind == IF1_CONST_KIND_STRING) {
+        if (v->immediate && v->immediate->const_kind == CONST_KIND_STRING) {
           *s = v->immediate->v_string;
           return true;
         }

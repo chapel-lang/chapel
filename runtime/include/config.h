@@ -23,15 +23,11 @@ void printConfigVarTable(void);
 void initSetValue(char* varName, char* value, char* moduleName);
 char* lookupSetValue(char* varName, char* moduleName);
 void installConfigVar(char* varName, char* value, char* moduleName);
-int setInCommandLine_int64(char* varName, _int64* value, 
-                               char* moduleName);
-int setInCommandLine_float64(char* varName, _float64* value, 
-                             char* moduleName);
-int setInCommandLine_bool(char* varName, _bool* value, 
-                             char* moduleName);
+int setInCommandLine_int64(char* varName, _int64* value, char* moduleName);
+int setInCommandLine_float64(char* varName, _float64* value, char* moduleName);
+int setInCommandLine_bool(char* varName, _bool* value, char* moduleName);
 int setInCommandLine_string(char* varName, _string* value, char* moduleName);
-int setInCommandLine_chpl_complex(char* varName, _complex128** value, 
-                                  char* moduleName);
+int setInCommandLine_complex64( char* varName, _complex64* value, char* moduleName);
 
 #endif
 

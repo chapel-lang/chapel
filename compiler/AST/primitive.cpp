@@ -25,12 +25,12 @@ returnInfoString(CallExpr* call) {
 
 static Type*
 returnInfoInt(CallExpr* call) {
-  return dtInt[INT_TYPE_64];
+  return dtInt[INT_SIZE_64];
 }
 
 static Type*
 returnInfoFloat(CallExpr* call) {
-  return dtFloat[FLOAT_TYPE_64];
+  return dtFloat[FLOAT_SIZE_64];
 }
 
 static Type*
@@ -230,6 +230,11 @@ initPrimitive() {
   prim_def("string_length", string_length_interpreter_op, returnInfoInt);
   prim_def("ascii", unimplemented_interpreter_op, returnInfoInt);
   prim_def("exit", done_interpreter_op, returnInfoInt);
+
+  prim_def("_chpl_complex_real", getreal_interpreter_op, returnInfoFloat);
+  prim_def("_chpl_complex_imag", getimag_interpreter_op, returnInfoFloat);
+  prim_def("_chpl_complex_set_real", setreal_interpreter_op, returnInfoVoid);
+  prim_def("_chpl_complex_set_imag", setimag_interpreter_op, returnInfoVoid);
 
   prim_def("get_stdin", unimplemented_interpreter_op, returnInfoFile);
   prim_def("get_stdout", unimplemented_interpreter_op, returnInfoFile);

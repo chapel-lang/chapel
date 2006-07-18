@@ -357,13 +357,13 @@ coerce_num(Sym *a, Sym *b) {
     return sym_float64;
   }
   // mixed signed and unsigned
-  if (a->num_index >= INT_TYPE_64 || b->num_index >= INT_TYPE_64)
+  if (a->num_index >= INT_SIZE_64 || b->num_index >= INT_SIZE_64)
     return sym_int64;
-  else if (a->num_index >= INT_TYPE_32 || b->num_index >= INT_TYPE_32)
+  else if (a->num_index >= INT_SIZE_32 || b->num_index >= INT_SIZE_32)
     return sym_int32;
-  else if (a->num_index >= INT_TYPE_16 || b->num_index >= INT_TYPE_16)
+  else if (a->num_index >= INT_SIZE_16 || b->num_index >= INT_SIZE_16)
     return sym_int16;
-  else if (a->num_index >= INT_TYPE_8 || b->num_index >= INT_TYPE_8)
+  else if (a->num_index >= INT_SIZE_8 || b->num_index >= INT_SIZE_8)
     return sym_int8;
   return sym_bool;
 }

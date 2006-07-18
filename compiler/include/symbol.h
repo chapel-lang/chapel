@@ -255,10 +255,10 @@ class LabelSymbol : public Symbol {
 
 TypeSymbol *new_UnresolvedTypeSymbol(char *init_name);
 VarSymbol *new_StringSymbol(char *s);
-VarSymbol *new_IntSymbol(long long int b, IF1_int_type int_type=INT_TYPE_64);
-VarSymbol *new_UIntSymbol(unsigned long long int b, IF1_int_type uint_type=INT_TYPE_64);
-VarSymbol *new_FloatSymbol(char *n, long double b, IF1_float_type float_type=FLOAT_TYPE_64);
-VarSymbol *new_ComplexSymbol(char *n, double r, double i);
+VarSymbol *new_IntSymbol(long long int b, IF1_int_type size=INT_SIZE_64);
+VarSymbol *new_UIntSymbol(unsigned long long int b, IF1_int_type size=INT_SIZE_64);
+VarSymbol *new_FloatSymbol(char *n, long double b, IF1_float_type size=FLOAT_SIZE_64);
+VarSymbol *new_ComplexSymbol(char *n, long double r, long double i, IF1_float_type size=FLOAT_SIZE_64);
 VarSymbol *new_ImmediateSymbol(Immediate *imm);
 VarSymbol *new_SymbolSymbol(char *str);
 PrimitiveType *immediate_type(Immediate *imm);

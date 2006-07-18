@@ -171,20 +171,20 @@ Sym::imm_int(int *result) {
     default: return -1;
     case NUM_KIND_UINT: {
       switch (type->num_index) {
-        case INT_TYPE_8:  i = imm.v_uint8; break;
-        case INT_TYPE_16: i = imm.v_uint16; break;
-        case INT_TYPE_32: i = imm.v_uint32; break;
-        case INT_TYPE_64: i = imm.v_uint64; break;
+        case INT_SIZE_8:  i = imm.v_uint8; break;
+        case INT_SIZE_16: i = imm.v_uint16; break;
+        case INT_SIZE_32: i = imm.v_uint32; break;
+        case INT_SIZE_64: i = imm.v_uint64; break;
         default: return -1;
       }
       break;
     }
     case NUM_KIND_INT: {
       switch (type->num_index) {
-        case INT_TYPE_8:  i = imm.v_int8; break;
-        case INT_TYPE_16: i = imm.v_int16; break;
-        case INT_TYPE_32: i = imm.v_int32; break;
-        case INT_TYPE_64: i = imm.v_int64; break;
+        case INT_SIZE_8:  i = imm.v_int8; break;
+        case INT_SIZE_16: i = imm.v_int16; break;
+        case INT_SIZE_32: i = imm.v_int32; break;
+        case INT_SIZE_64: i = imm.v_int64; break;
         default: return -1;
       }
       break;
@@ -277,6 +277,7 @@ MAKE_ALIGNOF(float64);
 MAKE_ALIGNOF(float128);
 MAKE_ALIGNOF(complex32);
 MAKE_ALIGNOF(complex64);
+MAKE_ALIGNOF(complex128);
 typedef char *alignstring;
 MAKE_ALIGNOF(alignstring);
 
@@ -288,30 +289,31 @@ if1_numeric_alignment(IF1 *p, Sym *t) {
     case NUM_KIND_UINT:
     case NUM_KIND_INT:
       switch (t->num_index) {
-        case INT_TYPE_1: return ALIGNOF(bool); break;
-        case INT_TYPE_8: return ALIGNOF(uint8); break;
-        case INT_TYPE_16: return ALIGNOF(uint16); break;
-        case INT_TYPE_32: return ALIGNOF(uint32); break;
-        case INT_TYPE_64: return ALIGNOF(uint64); break;
+        case INT_SIZE_1: return ALIGNOF(bool); break;
+        case INT_SIZE_8: return ALIGNOF(uint8); break;
+        case INT_SIZE_16: return ALIGNOF(uint16); break;
+        case INT_SIZE_32: return ALIGNOF(uint32); break;
+        case INT_SIZE_64: return ALIGNOF(uint64); break;
         default: assert(!"case");
       }
       break;
     case NUM_KIND_FLOAT:
       switch (t->num_index) {
-        case FLOAT_TYPE_32:  return ALIGNOF(float32);
-        case FLOAT_TYPE_64:  return ALIGNOF(float64);
-        case FLOAT_TYPE_128: return ALIGNOF(float128);
+        case FLOAT_SIZE_32:  return ALIGNOF(float32);
+        case FLOAT_SIZE_64:  return ALIGNOF(float64);
+        case FLOAT_SIZE_128: return ALIGNOF(float128);
         default: assert(!"case");
       }
       break;
     case NUM_KIND_COMPLEX:
       switch (t->num_index) {
-        case FLOAT_TYPE_32: return ALIGNOF(complex32);
-        case FLOAT_TYPE_64: return ALIGNOF(complex64);
+        case FLOAT_SIZE_32:  return ALIGNOF(complex32);
+        case FLOAT_SIZE_64:  return ALIGNOF(complex64);
+        case FLOAT_SIZE_128: return ALIGNOF(complex128);
         default: assert(!"case");
       }
       break;
-    case IF1_CONST_KIND_STRING: return ALIGNOF(alignstring);
+    case CONST_KIND_STRING: return ALIGNOF(alignstring);
   }
   return res;
 }

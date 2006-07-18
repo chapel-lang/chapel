@@ -31,8 +31,7 @@ void _chpl_memtest_allocAndFree(void) {
 
   _float64* f = (_float64*) _chpl_calloc(1, sizeof(_float64), "_float64");
   *f = 99.9;
-  _complex128* c = (_complex128*) _chpl_calloc(1, sizeof(_complex128), 
-                                               "_complex128");
+  _complex64* c = (_complex64*) _chpl_calloc(1, sizeof(_complex64), "_complex64");
   c->re = 1.2;
   c->im = 2.3;
   fprintf(stdout, "calloc'd a float and a complex\n");

@@ -23,9 +23,9 @@ class IF1 : public gc {
   Vec<Sym *>            allsyms;
   Vec<Label *>          alllabels; 
   Vec<Sym *>            allclosures;
-  Sym                   *int_types[INT_TYPE_NUM][2]; // 0 = unsigned, 1 = signed
-  Sym                   *float_types[FLOAT_TYPE_NUM];
-  Sym                   *complex_types[FLOAT_TYPE_NUM];
+  Sym                   *int_types[INT_SIZE_NUM][2]; // 0 = unsigned, 1 = signed
+  Sym                   *float_types[FLOAT_SIZE_NUM];
+  Sym                   *complex_types[FLOAT_SIZE_NUM];
   Sym                   *top;                   // main function
   Primitives            *primitives;
   IFACallbacks           *callback;

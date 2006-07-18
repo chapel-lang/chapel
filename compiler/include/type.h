@@ -206,10 +206,10 @@ TYPE_EXTERN PrimitiveType* dtVoid;
 
 // primitive types
 TYPE_EXTERN PrimitiveType* dtBool;
-TYPE_EXTERN PrimitiveType* dtInt[INT_TYPE_NUM];
-TYPE_EXTERN PrimitiveType* dtUInt[INT_TYPE_NUM];
-TYPE_EXTERN PrimitiveType* dtFloat[FLOAT_TYPE_NUM];
-TYPE_EXTERN PrimitiveType* dtComplex;
+TYPE_EXTERN PrimitiveType* dtInt[INT_SIZE_NUM];
+TYPE_EXTERN PrimitiveType* dtUInt[INT_SIZE_NUM];
+TYPE_EXTERN PrimitiveType* dtFloat[FLOAT_SIZE_NUM];
+TYPE_EXTERN PrimitiveType* dtComplex[FLOAT_SIZE_NUM];
 TYPE_EXTERN PrimitiveType* dtString;
 TYPE_EXTERN PrimitiveType* dtSymbol;
 TYPE_EXTERN PrimitiveType* dtFile; 

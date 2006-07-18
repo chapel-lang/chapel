@@ -366,6 +366,13 @@ static void initialize_out_formals(FnSymbol* fn) {
     }
     if (arg->intent == INTENT_OUT || arg->intent == INTENT_INOUT)
       arg->intent = INTENT_REF;
+
+    // pass primitive complex type as by reference
+    if ((arg->type == dtComplex[FLOAT_SIZE_32]) ||
+        (arg->type == dtComplex[FLOAT_SIZE_64]) ||
+        (arg->type == dtComplex[FLOAT_SIZE_128])) {
+      arg->intent = INTENT_REF;
+    }
   }
 }
 
@@ -525,7 +532,7 @@ static void apply_getters_setters(FnSymbol* fn) {
         char* method = NULL;
         if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->get(2)))
           if (VarSymbol* var = dynamic_cast<VarSymbol*>(symExpr->var))
-            if (var->immediate->const_kind == IF1_CONST_KIND_STRING)
+            if (var->immediate->const_kind == CONST_KIND_STRING)
               method = var->immediate->v_string;
         if (!method)
           INT_FATAL(call, "No method name for getter or setter");
@@ -543,7 +550,7 @@ static void apply_getters_setters(FnSymbol* fn) {
             char* method = NULL;
             if (SymExpr* symExpr = dynamic_cast<SymExpr*>(lhs->get(2)))
               if (VarSymbol* var = dynamic_cast<VarSymbol*>(symExpr->var))
-                if (var->immediate->const_kind == IF1_CONST_KIND_STRING)
+                if (var->immediate->const_kind == CONST_KIND_STRING)
                   method = var->immediate->v_string;
             if (!method)
               INT_FATAL(call, "No method name for getter or setter");
@@ -756,6 +763,12 @@ static void fold_call_expr(CallExpr* call) {
         Immediate* i1 = v1->immediate;
         Immediate* i2 = v2->immediate;
         if (i1 && i2) {
+          // WAW: folding not handling complex yet
+          if ((NUM_KIND_COMPLEX == i1->const_kind) ||
+              (NUM_KIND_COMPLEX == i2->const_kind)) {
+            return;
+          }
+
           FOLD_CALL("+", P_prim_add);
           FOLD_CALL("-", P_prim_subtract);
           FOLD_CALL("*", P_prim_mult);
@@ -806,11 +819,11 @@ static void fold_call_expr(CallExpr* call) {
     if (SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr)) {
       PrimitiveType **ptype_p = NULL;
 
-      FIND_PRIMITIVE_TYPE( dtInt, INT_TYPE_NUM, ptype_p);
+      FIND_PRIMITIVE_TYPE( dtInt, INT_SIZE_NUM, ptype_p);
       if (!ptype_p) {
-        FIND_PRIMITIVE_TYPE( dtUInt, INT_TYPE_NUM, ptype_p);
+        FIND_PRIMITIVE_TYPE( dtUInt, INT_SIZE_NUM, ptype_p);
         if (!ptype_p) {
-          FIND_PRIMITIVE_TYPE( dtFloat, FLOAT_TYPE_NUM, ptype_p);
+          FIND_PRIMITIVE_TYPE( dtFloat, FLOAT_SIZE_NUM, ptype_p);
         }
       }
 
@@ -830,29 +843,29 @@ static void fold_call_expr(CallExpr* call) {
 
                 if (ptype_p == dtInt) {
                   switch (size) {
-                  case  8: tsize = dtInt[INT_TYPE_8]->symbol;  break;
-                  case 16: tsize = dtInt[INT_TYPE_16]->symbol; break;
-                  case 32: tsize = dtInt[INT_TYPE_32]->symbol; break;
-                  case 64: tsize = dtInt[INT_TYPE_64]->symbol; break;
+                  case  8: tsize = dtInt[INT_SIZE_8]->symbol;  break;
+                  case 16: tsize = dtInt[INT_SIZE_16]->symbol; break;
+                  case 32: tsize = dtInt[INT_SIZE_32]->symbol; break;
+                  case 64: tsize = dtInt[INT_SIZE_64]->symbol; break;
                   default:
                     USR_FATAL( call, "illegal size %d for int", size);
                   }
                   call->replace( new SymExpr(tsize));
                 } else if (ptype_p == dtUInt) {
                   switch (size) {
-                  case  8: tsize = dtUInt[INT_TYPE_8]->symbol;  break;
-                  case 16: tsize = dtUInt[INT_TYPE_16]->symbol; break;
-                  case 32: tsize = dtUInt[INT_TYPE_32]->symbol; break;
-                  case 64: tsize = dtUInt[INT_TYPE_64]->symbol; break;
+                  case  8: tsize = dtUInt[INT_SIZE_8]->symbol;  break;
+                  case 16: tsize = dtUInt[INT_SIZE_16]->symbol; break;
+                  case 32: tsize = dtUInt[INT_SIZE_32]->symbol; break;
+                  case 64: tsize = dtUInt[INT_SIZE_64]->symbol; break;
                   default:
                     USR_FATAL( call, "illegal size %d for uint", size);
                   }
                   call->replace( new SymExpr(tsize));
                 } else if (ptype_p == dtFloat) {
                   switch (size) {
-                  case 32:  tsize = dtFloat[FLOAT_TYPE_32]->symbol;  break;
-                  case 64:  tsize = dtFloat[FLOAT_TYPE_64]->symbol;  break;
-                  case 128: tsize = dtFloat[FLOAT_TYPE_128]->symbol; break;
+                  case 32:  tsize = dtFloat[FLOAT_SIZE_32]->symbol;  break;
+                  case 64:  tsize = dtFloat[FLOAT_SIZE_64]->symbol;  break;
+                  case 128: tsize = dtFloat[FLOAT_SIZE_128]->symbol; break;
                   default:
                     USR_FATAL( call, "illegal size %d for float", size);
                   }
@@ -1043,7 +1056,7 @@ expand_var_args(FnSymbol* fn) {
       // handle expansion of variable argument list where number of
       // variable arguments is a parameter
       if (VarSymbol* n_var = dynamic_cast<VarSymbol*>(sym->var)) {
-        if (n_var->type == dtInt[INT_TYPE_64] && n_var->immediate) {
+        if (n_var->type == dtInt[INT_SIZE_64] && n_var->immediate) {
           int n = n_var->immediate->v_int64;
           AList<Expr>* actual_types = new AList<Expr>();
           AList<Expr>* actuals = new AList<Expr>();

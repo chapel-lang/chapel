@@ -97,11 +97,9 @@ INTERPRETER_OP( string_strided_select);
 INTERPRETER_OP( string_length);
 INTERPRETER_OP( done);
 
-/*
 INTERPRETER_OP( getreal);
 INTERPRETER_OP( getimag);
 INTERPRETER_OP( setreal);
 INTERPRETER_OP( setimag);
-*/
 
 #endif

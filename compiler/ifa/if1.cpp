@@ -44,9 +44,9 @@ if1_const(IF1 *p, Sym *type, char *constant, Immediate *imm) {
   imm->num_index = type->num_index;
   if (!imm->const_kind) {
     if (type == sym_string)
-      imm->const_kind = IF1_CONST_KIND_STRING;
+      imm->const_kind = CONST_KIND_STRING;
     else if (type == sym_symbol) 
-      imm->const_kind = IF1_CONST_KIND_SYMBOL;  
+      imm->const_kind = CONST_KIND_SYMBOL;  
     else
       assert(!"bad const");
   }
@@ -986,28 +986,28 @@ Code::source_line() {
   return 0;
 }
 
-static char *int_type_names[INT_TYPE_NUM][2] = {
+static char *int_type_names[INT_SIZE_NUM][2] = {
   { "bool",    "bool" },
   { "uint8",   "int8" },
   { "uint16",  "int16" },
   { "uint32",  "int32" },
   { "uint64",  "int64" }
 };
-static char *float_type_names[FLOAT_TYPE_NUM] = {
+static char *float_type_names[FLOAT_SIZE_NUM] = {
   NULL, "float32", NULL, "float64",  NULL, NULL, NULL, "float128" 
 };
-static char *complex_type_names[FLOAT_TYPE_NUM] = {
+static char *complex_type_names[FLOAT_SIZE_NUM] = {
   NULL, "complex32", NULL, "complex64", NULL, NULL, NULL, 
   // "complex128"
 };
-static int float_type_sizes[FLOAT_TYPE_NUM] = {
+static int float_type_sizes[FLOAT_SIZE_NUM] = {
   16, 32, 48, 64, 80, 96, 112, 128
 };
 
 void
 if1_set_primitive_types(IF1 *if1) {
   for (int signd = 0; signd < 2; signd++)
-    for (int s = 0; s < INT_TYPE_NUM; s++) {
+    for (int s = 0; s < INT_SIZE_NUM; s++) {
       char *tt = int_type_names[s][signd];
       if (tt) {
         Sym *ss = if1_get_builtin(if1, tt, tt+strlen(tt));
@@ -1015,7 +1015,7 @@ if1_set_primitive_types(IF1 *if1) {
         if1_set_int_type(if1, ss, signd, 8 << (s-1));
       }
     }
-  for (int s = 0; s < FLOAT_TYPE_NUM; s++) {
+  for (int s = 0; s < FLOAT_SIZE_NUM; s++) {
     char *tt = float_type_names[s];
     if (tt) {
       Sym *ss = if1_get_builtin(if1, tt, tt+strlen(tt));

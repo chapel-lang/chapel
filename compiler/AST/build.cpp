@@ -104,7 +104,7 @@ CallExpr* build_primitive_call(AList<Expr>* exprs) {
   if (!symExpr)
     INT_FATAL(expr, "primitive has no name");
   VarSymbol* var = dynamic_cast<VarSymbol*>(symExpr->var);
-  if (!var || !var->immediate || var->immediate->const_kind != IF1_CONST_KIND_STRING)
+  if (!var || !var->immediate || var->immediate->const_kind != CONST_KIND_STRING)
     INT_FATAL(expr, "primitive with non-literal string name");
   PrimitiveOp* prim = primitives_map.get(var->immediate->v_string);
   if (!prim)

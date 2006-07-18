@@ -156,7 +156,12 @@ enum PrimOps {
   PRIM_OR, PRIM_XOR, PRIM_LAND, PRIM_LOR, PRIM_POW, PRIM_GET_MEMBER, 
   PRIM_SET_MEMBER, PRIM_PTR_EQ, PRIM_PTR_NEQ, PRIM_CAST, PRIM_TO_STRING, 
   PRIM_COPY_STRING, PRIM_STRING_INDEX, PRIM_STRING_CONCAT, PRIM_STRING_EQUAL, 
-  PRIM_STRING_SELECT, PRIM_STRING_STRIDED_SELECT, PRIM_STRING_LENGTH, PRIM_DONE 
+  PRIM_STRING_SELECT, PRIM_STRING_STRIDED_SELECT, PRIM_STRING_LENGTH, 
+
+  PRIM_COMPLEX_GETREAL, PRIM_COMPLEX_GETIMAG, 
+  PRIM_COMPLEX_SETREAL, PRIM_COMPLEX_SETIMAG,
+
+  PRIM_DONE 
 };
 
 
@@ -285,38 +290,43 @@ check_type(BaseAST *ast, ISlot *slot, Type *t) {
         USR_FATAL(ast, "interpreter: bad immediate type");
       case NUM_KIND_UINT:
         if (t == dtBool && 
-            slot->imm->num_index == INT_TYPE_1) break;
-        if (t == dtUInt[INT_TYPE_8] && 
-            slot->imm->num_index == INT_TYPE_8) break;
-        if (t == dtUInt[INT_TYPE_16] && 
-            slot->imm->num_index == INT_TYPE_16) break;
-        if (t == dtUInt[INT_TYPE_32] && 
-            slot->imm->num_index == INT_TYPE_32) break;
-        if (t == dtUInt[INT_TYPE_64] && 
-            slot->imm->num_index == INT_TYPE_64) break;
+            slot->imm->num_index == INT_SIZE_1) break;
+        if (t == dtUInt[INT_SIZE_8] && 
+            slot->imm->num_index == INT_SIZE_8) break;
+        if (t == dtUInt[INT_SIZE_16] && 
+            slot->imm->num_index == INT_SIZE_16) break;
+        if (t == dtUInt[INT_SIZE_32] && 
+            slot->imm->num_index == INT_SIZE_32) break;
+        if (t == dtUInt[INT_SIZE_64] && 
+            slot->imm->num_index == INT_SIZE_64) break;
         goto Lerror;
       case NUM_KIND_INT:
-        if (t == dtInt[INT_TYPE_8] && 
-            slot->imm->num_index == INT_TYPE_8) break;
-        if (t == dtInt[INT_TYPE_16] && 
-            slot->imm->num_index == INT_TYPE_16) break;
-        if (t == dtInt[INT_TYPE_32] && 
-            slot->imm->num_index == INT_TYPE_32) break;
-        if (t == dtInt[INT_TYPE_64] && 
-            slot->imm->num_index == INT_TYPE_64) break;
+        if (t == dtInt[INT_SIZE_8] && 
+            slot->imm->num_index == INT_SIZE_8) break;
+        if (t == dtInt[INT_SIZE_16] && 
+            slot->imm->num_index == INT_SIZE_16) break;
+        if (t == dtInt[INT_SIZE_32] && 
+            slot->imm->num_index == INT_SIZE_32) break;
+        if (t == dtInt[INT_SIZE_64] && 
+            slot->imm->num_index == INT_SIZE_64) break;
         goto Lerror;
       case NUM_KIND_FLOAT:
-        if (t == dtFloat[FLOAT_TYPE_32] && 
-            slot->imm->num_index == FLOAT_TYPE_32) break;
-        if (t == dtFloat[FLOAT_TYPE_64] && 
-            slot->imm->num_index == FLOAT_TYPE_64) break;
-        if (t == dtFloat[FLOAT_TYPE_128] && 
-            slot->imm->num_index == FLOAT_TYPE_128) break;
+        if (t == dtFloat[FLOAT_SIZE_32] && 
+            slot->imm->num_index == FLOAT_SIZE_32) break;
+        if (t == dtFloat[FLOAT_SIZE_64] && 
+            slot->imm->num_index == FLOAT_SIZE_64) break;
+        if (t == dtFloat[FLOAT_SIZE_128] && 
+            slot->imm->num_index == FLOAT_SIZE_128) break;
         goto Lerror;
       case NUM_KIND_COMPLEX:
-        if (t == dtComplex && slot->imm->num_index == FLOAT_TYPE_64) break;
+        if (t == dtComplex[FLOAT_SIZE_32]
+            && slot->imm->num_index == FLOAT_SIZE_32) break;
+        if (t == dtComplex[FLOAT_SIZE_64]
+            && slot->imm->num_index == FLOAT_SIZE_64) break;
+        if (t == dtComplex[FLOAT_SIZE_128]
+            && slot->imm->num_index == FLOAT_SIZE_128) break;
         goto Lerror;
-      case IF1_CONST_KIND_STRING:
+      case CONST_KIND_STRING:
         if (t == dtString) break;
         goto Lerror;
     }
@@ -329,7 +339,7 @@ check_string(BaseAST *ast, ISlot *slot) {
   if (slot->kind != IMMEDIATE_ISLOT) {
     USR_FATAL(ast, "interpreter: unexpected kind of slot: %s, expected: String", slotKindName[slot->kind]);
   }
-  if (slot->imm->const_kind != IF1_CONST_KIND_STRING) {
+  if (slot->imm->const_kind != CONST_KIND_STRING) {
     char str[512];
     sprint_imm(str, *slot->imm);
     USR_FATAL(ast, "interpreter: bad immediate: %s", str);
@@ -342,7 +352,7 @@ check_numeric(BaseAST *ast, ISlot *slot) {
     switch (slot->imm->const_kind) {
       default: {
         char str[512], *s = str;
-        if (slot->imm->const_kind == IF1_CONST_KIND_STRING)
+        if (slot->imm->const_kind == CONST_KIND_STRING)
           s = slot->imm->v_string;
         else
           sprint_imm(str, *slot->imm);
@@ -1514,7 +1524,7 @@ execute_f64_fn_f64(CallExpr* s, ISlot** arg, ISlot* result) {
   char* error;
 
   check_prim_args(s, 1);
-  check_type(s, arg[0], dtFloat[FLOAT_TYPE_64]);
+  check_type(s, arg[0], dtFloat[FLOAT_SIZE_64]);
   handle = dlopen("libm.so", RTLD_LAZY);
   if (!handle) {
     USR_FATAL("Failed to open libm.so");
@@ -1615,7 +1625,7 @@ IFrame::iprimitive(CallExpr *s) {
     }
     case PRIM_FCLOSE: {
       check_prim_args(s, 1);
-      check_type(s, arg[0], dtInt[INT_TYPE_64]);
+      check_type(s, arg[0], dtInt[INT_SIZE_64]);
       result.kind = IMMEDIATE_ISLOT;
       result.imm = new Immediate;
       *result.imm = fclose((FILE*)(intptr_t)arg[0]->imm->v_int64);
@@ -1623,7 +1633,7 @@ IFrame::iprimitive(CallExpr *s) {
     }
     case PRIM_STRERROR: {
       check_prim_args(s, 1);
-      check_type(s, arg[0], dtInt[INT_TYPE_64]);
+      check_type(s, arg[0], dtInt[INT_SIZE_64]);
       result.kind = IMMEDIATE_ISLOT;
       result.imm = new Immediate;
       *result.imm = strerror((int)arg[0]->imm->v_int64);
@@ -1631,7 +1641,7 @@ IFrame::iprimitive(CallExpr *s) {
     }
     case PRIM_FPRINTF: {
       check_prim_args(s, 3);
-      check_type(s, arg[0], dtInt[INT_TYPE_64]);
+      check_type(s, arg[0], dtInt[INT_SIZE_64]);
       check_string(s, arg[1]);
       result.kind = IMMEDIATE_ISLOT;
       result.imm = new Immediate;
@@ -1659,13 +1669,13 @@ IFrame::iprimitive(CallExpr *s) {
           user_error(this, "unhandled primitive: %s", s->primitive->name);
           return 1;
 #ifndef HACK_NEWLINE_STRING
-        case IF1_CONST_KIND_STRING:
+        case CONST_KIND_STRING:
           result.imm->set_int(fprintf(fp,
                                       arg[1]->imm->v_string,
                                       arg[2]->imm->v_string));
           break;
 #else
-        case IF1_CONST_KIND_STRING:
+        case CONST_KIND_STRING:
           result.imm->set_int(fprintf(fp,
                                       arg[1]->imm->v_string,
                                       unescape_string(arg[2]->imm->v_string)));
@@ -1701,7 +1711,7 @@ IFrame::iprimitive(CallExpr *s) {
 
     case PRIM_FFLUSH: {
       check_prim_args(s, 1);
-      check_type(s, arg[0], dtInt[INT_TYPE_64]);
+      check_type(s, arg[0], dtInt[INT_SIZE_64]);
       result.kind = IMMEDIATE_ISLOT;
       result.imm = new Immediate;
       FILE *fp = (FILE*)(intptr_t)arg[0]->imm->v_int64;
@@ -1722,7 +1732,7 @@ IFrame::iprimitive(CallExpr *s) {
     case PRIM_ARRAY_INIT: {
       check_prim_args(s, 3);
       check_kind(s, arg[0], OBJECT_ISLOT);
-      check_type(s, arg[1], dtInt[INT_TYPE_64]);
+      check_type(s, arg[1], dtInt[INT_SIZE_64]);
       IObject *a = arg[0]->object;
       int len = arg[1]->imm->v_int64;
       a->array.fill(len);
@@ -1735,7 +1745,7 @@ IFrame::iprimitive(CallExpr *s) {
       check_prim_args(s, 2);
       check_kind(s, arg[0], OBJECT_ISLOT);
       IObject *a = arg[0]->object;
-      check_type(s, arg[1], dtInt[INT_TYPE_64]);
+      check_type(s, arg[1], dtInt[INT_SIZE_64]);
       int index = arg[1]->imm->v_int64;
       if (index < 0 || index >= a->array.n) {
         user_error(this, "array_index out of range (%d of %d)", index, a->array.n);
@@ -1748,7 +1758,7 @@ IFrame::iprimitive(CallExpr *s) {
       check_prim_args(s, 3);
       check_kind(s, arg[0], OBJECT_ISLOT);
       IObject *a = arg[0]->object;
-      check_type(s, arg[1], dtInt[INT_TYPE_64]);
+      check_type(s, arg[1], dtInt[INT_SIZE_64]);
       int index = arg[1]->imm->v_int64;
       if (index < 0 || index >= a->array.n) {
         user_error(this, "array_set out of range (%d of %d)", index, a->array.n);
@@ -1837,19 +1847,20 @@ IFrame::iprimitive(CallExpr *s) {
 
     case PRIM_ABS:
       check_prim_args(s, 1);
-      check_type(s, arg[0], dtInt[INT_TYPE_64]);
+      check_type(s, arg[0], dtInt[INT_SIZE_64]);
       result.kind = IMMEDIATE_ISLOT;
       result.imm = new Immediate;
       result.imm->set_int(abs(arg[0]->imm->v_int64));
       break;
     case PRIM_ATAN2:
       check_prim_args(s, 2);
-      check_type(s, arg[0], dtFloat[FLOAT_TYPE_64]);
-      check_type(s, arg[1], dtFloat[FLOAT_TYPE_64]);
+      check_type(s, arg[0], dtFloat[FLOAT_SIZE_64]);
+      check_type(s, arg[1], dtFloat[FLOAT_SIZE_64]);
       result.kind = IMMEDIATE_ISLOT;
       result.imm = new Immediate;
       result.imm->set_float(atan2(arg[0]->imm->v_float64, arg[1]->imm->v_float64));
       break;
+
     case PRIM_GET_MEMBER: 
     case PRIM_SET_MEMBER: {
       check_prim_args(s, kind == PRIM_GET_MEMBER ? 2 : 3);
@@ -1903,7 +1914,7 @@ IFrame::iprimitive(CallExpr *s) {
     case PRIM_STRING_INDEX: {
       check_prim_args(s, 2);
       check_string(s, arg[0]);
-      check_type(s, arg[1], dtInt[INT_TYPE_64]);
+      check_type(s, arg[1], dtInt[INT_SIZE_64]);
       int i = arg[1]->imm->v_int64;
       if ((int)strlen(arg[0]->imm->v_string) >= i) {
         user_error(this, "string_index out of range %d", i);
@@ -1932,8 +1943,8 @@ IFrame::iprimitive(CallExpr *s) {
     case PRIM_STRING_SELECT: {
       check_prim_args(s, 3);
       check_string(s, arg[0]);
-      check_type(s, arg[1], dtInt[INT_TYPE_64]);
-      check_type(s, arg[2], dtInt[INT_TYPE_64]);
+      check_type(s, arg[1], dtInt[INT_SIZE_64]);
+      check_type(s, arg[2], dtInt[INT_SIZE_64]);
       int i = arg[1]->imm->v_int64;
       int j = arg[2]->imm->v_int64;
       int l = strlen(arg[0]->imm->v_string);
@@ -1948,9 +1959,9 @@ IFrame::iprimitive(CallExpr *s) {
     case PRIM_STRING_STRIDED_SELECT: {
       check_prim_args(s, 4);
       check_string(s, arg[0]);
-      check_type(s, arg[1], dtInt[INT_TYPE_64]);
-      check_type(s, arg[2], dtInt[INT_TYPE_64]);
-      check_type(s, arg[3], dtInt[INT_TYPE_64]);
+      check_type(s, arg[1], dtInt[INT_SIZE_64]);
+      check_type(s, arg[2], dtInt[INT_SIZE_64]);
+      check_type(s, arg[3], dtInt[INT_SIZE_64]);
       int i = arg[1]->imm->v_int64;
       int j = arg[2]->imm->v_int64;
       int stride = arg[3]->imm->v_int64;
@@ -1975,6 +1986,36 @@ IFrame::iprimitive(CallExpr *s) {
       result.set_immediate(imm);
       break;
     }
+
+    case PRIM_COMPLEX_GETREAL:
+    case PRIM_COMPLEX_GETIMAG: {
+      check_prim_args(s, 1);
+      Immediate imm;
+      imm.v_float64 = (PRIM_COMPLEX_GETREAL==kind) ? 
+                      arg[1]->imm->v_complex64.r :
+                      arg[1]->imm->v_complex64.i;
+      imm.const_kind = NUM_KIND_FLOAT;
+      imm.num_index  = FLOAT_SIZE_64;        // WAW: handle other sizes?
+      result.set_immediate( imm);
+      break;
+    }
+    case PRIM_COMPLEX_SETREAL:
+    case PRIM_COMPLEX_SETIMAG: {
+      check_prim_args(s, 2);
+      check_kind(s, arg[0], OBJECT_ISLOT);
+      check_numeric(s, arg[1]);
+      Immediate imm;
+      if (PRIM_COMPLEX_SETREAL == kind) {
+        imm.v_complex64.r = arg[1]->imm->v_float64;
+      } else {
+        imm.v_complex64.i = arg[1]->imm->v_float64;
+      }
+      imm.const_kind = NUM_KIND_COMPLEX;
+      imm.num_index  = FLOAT_SIZE_64;       // WAW: handle other sizes?
+      result.set_immediate( imm);
+      break;
+    }
+
     case PRIM_DONE: {
       clean_exit(0);
     }
@@ -1994,7 +2035,7 @@ get_bool(IFrame *frame, ISlot *slot, bool *c) {
     case IMMEDIATE_ISLOT: {
       Immediate imm;
       imm.const_kind = NUM_KIND_UINT;
-      imm.num_index = INT_TYPE_1;
+      imm.num_index = INT_SIZE_1;
       coerce_immediate(slot->imm, &imm);
       *c = imm.v_bool;
       return 1;
@@ -2413,6 +2454,16 @@ init_interpreter() {
   tanh_interpreter_op = new InterpreterOp("tanh", PRIM_64_FN_64);
   tgamma_interpreter_op = new InterpreterOp("tgamma", PRIM_64_FN_64);
   trunc_interpreter_op = new InterpreterOp("trunc", PRIM_64_FN_64);
+
+  getreal_interpreter_op = new InterpreterOp("complex.real", 
+                                             PRIM_COMPLEX_GETREAL);
+  getimag_interpreter_op = new InterpreterOp("complex.imag", 
+                                             PRIM_COMPLEX_GETIMAG);
+  setreal_interpreter_op = new InterpreterOp("complex.=real", 
+                                             PRIM_COMPLEX_SETREAL);
+  setimag_interpreter_op = new InterpreterOp("complex.=imag", 
+                                             PRIM_COMPLEX_SETIMAG);
+
   get_member_interpreter_op = new InterpreterOp("get_member", PRIM_GET_MEMBER);
   set_member_interpreter_op = new InterpreterOp("set_member", PRIM_SET_MEMBER);
   ptr_eq_interpreter_op = new InterpreterOp("ptr_eq", PRIM_PTR_EQ);

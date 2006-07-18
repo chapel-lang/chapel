@@ -193,7 +193,7 @@ void Symbol::codegen(FILE* outfile) {
      // if not immed, is not num, or is boole
     if (!vsym->immediate ||
         (vsym->immediate->const_kind == NUM_KIND_NONE) ||
-        (vsym->immediate->num_index == INT_TYPE_1)) { 
+        (vsym->immediate->num_index == INT_SIZE_1)) { 
       fprintf(outfile, "%s", cname);
     } else {
       // find the min number of bytes to store constant
@@ -341,7 +341,7 @@ bool VarSymbol::isParam(void){
 
 void VarSymbol::print(FILE* outfile) {
   if (immediate) {
-    bool isString = (immediate->const_kind == IF1_CONST_KIND_STRING);
+    bool isString = (immediate->const_kind == CONST_KIND_STRING);
     if (isString) {
       fprintf(outfile, "\"");
     }
@@ -1512,7 +1512,7 @@ HashMap<char *, StringHashFns, VarSymbol *> uniqueSymbolHash;
 
 VarSymbol *new_StringSymbol(char *str) {
   Immediate imm;
-  imm.const_kind = IF1_CONST_KIND_STRING;
+  imm.const_kind = CONST_KIND_STRING;
   imm.v_string = cannonicalize_string(str);
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   if (s)
@@ -1531,24 +1531,23 @@ VarSymbol *new_StringSymbol(char *str) {
   return s;
 }
 
-VarSymbol *new_IntSymbol(long long int b, IF1_int_type int_type) {
+VarSymbol *new_IntSymbol(long long int b, IF1_int_type size) {
   Immediate imm;
-  switch (int_type) {
-  case INT_TYPE_8  : imm.v_int8   = b; break;
-  case INT_TYPE_16 : imm.v_int16  = b; break;
-  case INT_TYPE_32 : imm.v_int32  = b; break;
-  case INT_TYPE_64 : imm.v_int64  = b; break;
-    // case INT_TYPE_128: imm.v_int128 = b; break;
+  switch (size) {
+  case INT_SIZE_8  : imm.v_int8   = b; break;
+  case INT_SIZE_16 : imm.v_int16  = b; break;
+  case INT_SIZE_32 : imm.v_int32  = b; break;
+  case INT_SIZE_64 : imm.v_int64  = b; break;
+    // case INT_SIZE_128: imm.v_int128 = b; break;
   default:
-    INT_FATAL( "unknown IF1_INT_TYPE");
+    INT_FATAL( "unknown INT_SIZE");
   }
   imm.const_kind = NUM_KIND_INT;
-  imm.num_index = int_type;
+  imm.num_index = size;
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   if (s)
     return s;
-  s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), 
-                    dtInt[int_type]);
+  s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), dtInt[size]);
   rootScope->define(s);
   char n[80];
   sprintf(n, "%lld", b);
@@ -1559,24 +1558,23 @@ VarSymbol *new_IntSymbol(long long int b, IF1_int_type int_type) {
   return s;
 }
 
-VarSymbol *new_UIntSymbol(unsigned long long int b, IF1_int_type uint_type) {
+VarSymbol *new_UIntSymbol(unsigned long long int b, IF1_int_type size) {
   Immediate imm;
-  switch (uint_type) {
-  case INT_TYPE_8  : imm.v_uint8   = b; break;
-  case INT_TYPE_16 : imm.v_uint16  = b; break;
-  case INT_TYPE_32 : imm.v_uint32  = b; break;
-  case INT_TYPE_64 : imm.v_uint64  = b; break;
-    // case INT_TYPE_128: imm.v_uint128 = b; break;
+  switch (size) {
+  case INT_SIZE_8  : imm.v_uint8   = b; break;
+  case INT_SIZE_16 : imm.v_uint16  = b; break;
+  case INT_SIZE_32 : imm.v_uint32  = b; break;
+  case INT_SIZE_64 : imm.v_uint64  = b; break;
+    // case INT_SIZE_128: imm.v_uint128 = b; break;
   default:
-    INT_FATAL( "unknown IF1_INT_TYPE");
+    INT_FATAL( "unknown INT_SIZE");
   }
   imm.const_kind = NUM_KIND_UINT;
-  imm.num_index = uint_type;
+  imm.num_index = size;
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   if (s)
     return s;
-  s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), 
-                    dtUInt[uint_type]);
+  s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), dtUInt[size]);
   rootScope->define(s);
   char n[80];
   sprintf(n, "%llu", b);
@@ -1587,22 +1585,21 @@ VarSymbol *new_UIntSymbol(unsigned long long int b, IF1_int_type uint_type) {
   return s;
 }
 
-VarSymbol *new_FloatSymbol(char *n, long double b, IF1_float_type float_type) {
+VarSymbol *new_FloatSymbol(char *n, long double b, IF1_float_type size) {
   Immediate imm;
-  switch (float_type) {
-  case FLOAT_TYPE_32  : imm.v_float32  = b; break;
-  case FLOAT_TYPE_64  : imm.v_float64  = b; break;
-  case FLOAT_TYPE_128 : imm.v_float128 = b; break;
+  switch (size) {
+  case FLOAT_SIZE_32  : imm.v_float32  = b; break;
+  case FLOAT_SIZE_64  : imm.v_float64  = b; break;
+  case FLOAT_SIZE_128 : imm.v_float128 = b; break;
   default:
-    INT_FATAL( "unknown IF1_FLOAT_TYPE");
+    INT_FATAL( "unknown FLOAT_SIZE");
   }
   imm.const_kind = NUM_KIND_FLOAT;
-  imm.num_index = float_type;
+  imm.num_index = size;
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   if (s)
     return s;
-  s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), 
-                    dtFloat[float_type]);
+  s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), dtFloat[size]);
   rootScope->define(s);
   s->cname = dupstr(n);
   s->immediate = new Immediate;
@@ -1611,17 +1608,30 @@ VarSymbol *new_FloatSymbol(char *n, long double b, IF1_float_type float_type) {
   return s;
 }
 
-VarSymbol *new_ComplexSymbol(char *n, double r, double i) {
-  (void)n;
+VarSymbol *new_ComplexSymbol(char *n, long double r, long double i, IF1_float_type size) {
   Immediate imm;
-  imm.v_complex64.r = r;
-  imm.v_complex64.i = i;
+  switch (size) {
+  case FLOAT_SIZE_32: 
+    imm.v_complex32.r  = r; 
+    imm.v_complex32.i  = i; 
+    break;
+  case FLOAT_SIZE_64: 
+    imm.v_complex64.r  = r; 
+    imm.v_complex64.i  = i; 
+    break;
+  case FLOAT_SIZE_128: 
+    imm.v_complex128.r = r; 
+    imm.v_complex128.i = i; 
+    break;
+  default:
+    INT_FATAL( "unknown FLOAT_SIZE for complex");
+  }
   imm.const_kind = NUM_KIND_COMPLEX;
-  imm.num_index = FLOAT_TYPE_64;
+  imm.num_index = size;
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   if (s)
     return s;
-  s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), dtComplex);
+  s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), dtComplex[size]);
   rootScope->define(s);
   s->immediate = new Immediate;
   s->cname = dupstr(n);
@@ -1638,7 +1648,7 @@ VarSymbol *new_ImmediateSymbol(Immediate *imm) {
   s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), t);
   s->immediate = new Immediate;
   char str[512], *ss = str;
-  if (imm->const_kind == IF1_CONST_KIND_STRING)
+  if (imm->const_kind == CONST_KIND_STRING)
     ss = imm->v_string;
   else
     sprint_imm(str, *imm);
@@ -1662,23 +1672,19 @@ VarSymbol *new_SymbolSymbol(char *str) {
 PrimitiveType *
 immediate_type(Immediate *imm) {
   switch (imm->const_kind) {
+    case CONST_KIND_STRING: 
+      return dtString;
+    case NUM_KIND_UINT:
+      return dtUInt[imm->num_index];
+    case NUM_KIND_INT:
+      return dtInt[imm->num_index];
+    case NUM_KIND_FLOAT:
+      return dtFloat[imm->num_index];
+    case NUM_KIND_COMPLEX:
+      return dtComplex[imm->num_index];
     default: 
-  Lerror:
       USR_FATAL("bad immediate type");
       break;
-    case IF1_CONST_KIND_STRING: return dtString;
-    case NUM_KIND_UINT:
-      if (imm->num_index == INT_TYPE_1) return dtBool;
-      goto Lerror;
-    case NUM_KIND_INT:
-      if (imm->num_index == INT_TYPE_64) return dtInt[INT_TYPE_64];
-      goto Lerror;
-    case NUM_KIND_FLOAT:
-      if (imm->num_index == FLOAT_TYPE_64) return dtFloat[FLOAT_TYPE_64];
-      goto Lerror;
-    case NUM_KIND_COMPLEX:
-      if (imm->num_index == FLOAT_TYPE_64) return dtComplex;
-      goto Lerror;
   }
   return NULL;
 }
@@ -1687,41 +1693,42 @@ int
 set_immediate_type(Immediate *imm, Type *t) {
   if (t == dtBool) {
     imm->const_kind = NUM_KIND_UINT;
-    imm->num_index = INT_TYPE_1; 
+    imm->num_index = INT_SIZE_1; 
 
-  } else if (t == dtInt[INT_TYPE_64]) {
-    imm->const_kind = NUM_KIND_INT;
-    imm->num_index = INT_TYPE_64; 
-  } else if (t == dtInt[INT_TYPE_1]) {
-    imm->const_kind = NUM_KIND_INT;
-    imm->num_index = INT_TYPE_1; 
-  } else if (t == dtInt[INT_TYPE_8]) {
-    imm->const_kind = NUM_KIND_INT;
-    imm->num_index = INT_TYPE_8; 
-  } else if (t == dtInt[INT_TYPE_16]) {
-    imm->const_kind = NUM_KIND_INT;
-    imm->num_index = INT_TYPE_16; 
-  } else if (t == dtInt[INT_TYPE_32]) {
-    imm->const_kind = NUM_KIND_INT;
-    imm->num_index = INT_TYPE_32; 
+  } 
 
-  } else if (t == dtFloat[FLOAT_TYPE_32]) {
-    imm->const_kind = NUM_KIND_FLOAT;
-    imm->num_index = FLOAT_TYPE_32;
-  } else if (t == dtFloat[FLOAT_TYPE_32]) {
-    imm->const_kind = NUM_KIND_FLOAT;
-    imm->num_index = FLOAT_TYPE_32;
-  } else if (t == dtFloat[FLOAT_TYPE_128]) {
-    imm->const_kind = NUM_KIND_FLOAT;
-    imm->num_index = FLOAT_TYPE_128;
+  for( int w=INT_SIZE_1; w<INT_SIZE_NUM; w++) {
+    if (dtInt[w] && (t == dtInt[w])) {
+      imm->const_kind = NUM_KIND_INT;
+      imm->num_index = w;
+      return 0;
+    }
+  }
 
-  } else if (t == dtComplex) {
-    imm->const_kind = NUM_KIND_COMPLEX;
-    imm->num_index = FLOAT_TYPE_64;
-  } else if (t == dtString) {
-    imm->const_kind = IF1_CONST_KIND_STRING;
-  } else
-    return -1;
-  return 0;
+  for( int w=INT_SIZE_1; w<INT_SIZE_NUM; w++) {
+    if (dtUInt[w] && (t == dtUInt[w])) {
+      imm->const_kind = NUM_KIND_UINT;
+      imm->num_index = w;
+      return 0;
+    }
+  }
+
+  for( int w=FLOAT_SIZE_16; w<FLOAT_SIZE_NUM; w++) {
+    if (dtFloat[w] && (t == dtFloat[w])) {
+      imm->const_kind = NUM_KIND_FLOAT;
+      imm->num_index = w;
+      return 0;
+    }
+  }
+
+  for( int w=FLOAT_SIZE_16; w<FLOAT_SIZE_NUM; w++) {
+    if (dtComplex[w] && (t == dtComplex[w])) {
+      imm->const_kind = NUM_KIND_COMPLEX;
+      imm->num_index = w;
+      return 0;
+    }
+  }
+
+  return -1;
 }
 

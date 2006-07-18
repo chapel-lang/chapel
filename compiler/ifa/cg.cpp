@@ -94,6 +94,10 @@ cg_writeln(FILE *fp, Vec<Var *> vars, int ln) {
              vars.v[i]->type == sym_float64 ||
              vars.v[i]->type == sym_float128)
       fprintf(fp, "printf(\"%%g\", %s);\n", vars.v[i]->cg_string);
+    else if (vars.v[i]->type == sym_complex32 ||
+             vars.v[i]->type == sym_complex64 ||
+             vars.v[i]->type == sym_complex128)
+      fprintf(fp, "printf(\"%%g+%%gi\", %s);\n", vars.v[i]->cg_string);
     else if (vars.v[i]->type == sym_string)
       fprintf(fp, "printf(\"%%s\", %s);\n", vars.v[i]->cg_string);
     else
@@ -110,28 +114,37 @@ num_string(Sym *s) {
     default: assert(!"case");
     case NUM_KIND_UINT:
       switch (s->num_index) {
-        case INT_TYPE_1:  return "_CG_bool";
-        case INT_TYPE_8:  return "_CG_uint8";
-        case INT_TYPE_16: return "_CG_uint16";
-        case INT_TYPE_32: return "_CG_uint32";
-        case INT_TYPE_64: return "_CG_uint64";
+        case INT_SIZE_1:  return "_CG_bool";
+        case INT_SIZE_8:  return "_CG_uint8";
+        case INT_SIZE_16: return "_CG_uint16";
+        case INT_SIZE_32: return "_CG_uint32";
+        case INT_SIZE_64: return "_CG_uint64";
         default: assert(!"case");
       }
       break;
     case NUM_KIND_INT:
       switch (s->num_index) {
-        case INT_TYPE_8:  return "_CG_int8";
-        case INT_TYPE_16: return "_CG_int16";
-        case INT_TYPE_32: return "_CG_int32";
-        case INT_TYPE_64: return "_CG_int64";
+        case INT_SIZE_8:  return "_CG_int8";
+        case INT_SIZE_16: return "_CG_int16";
+        case INT_SIZE_32: return "_CG_int32";
+        case INT_SIZE_64: return "_CG_int64";
         default: assert(!"case");
       }
       break;
     case NUM_KIND_FLOAT:
       switch (s->num_index) {
-        case FLOAT_TYPE_32:  return "_CG_float32";
-        case FLOAT_TYPE_64:  return "_CG_float64";
-        case FLOAT_TYPE_128: return "_CG_float128";
+        case FLOAT_SIZE_32:  return "_CG_float32";
+        case FLOAT_SIZE_64:  return "_CG_float64";
+        case FLOAT_SIZE_128: return "_CG_float128";
+        default: assert(!"case");
+          break;
+      }
+      break;
+    case NUM_KIND_COMPLEX:
+      switch (s->num_index) {
+        case FLOAT_SIZE_32:  return "_CG_complex32";
+        case FLOAT_SIZE_64:  return "_CG_complex64";
+        case FLOAT_SIZE_128: return "_CG_complex128";
         default: assert(!"case");
           break;
       }

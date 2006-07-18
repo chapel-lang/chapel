@@ -137,7 +137,7 @@ begin_mark_locals() {
       // create reference counter
       char      *refcname = stringcat( "_", stringcat(local->name, "_refc"));
       VarSymbol *refc = new VarSymbol( refcname,
-                                       dtInt[INT_TYPE_64],
+                                       dtInt[INT_SIZE_64],
                                        VAR_NORMAL,
                                        VAR_VAR);
       refc->on_heap = true;
@@ -157,7 +157,7 @@ begin_mark_locals() {
     ce->argList->insertAtTail( new SymExpr( local->refcMutex)); 
     ArgSymbol *rc_arg = new ArgSymbol( INTENT_REF, 
                                        local->refc->name, 
-                                       dtInt[INT_TYPE_64]);
+                                       dtInt[INT_SIZE_64]);
     ArgSymbol *rcm_arg = new ArgSymbol( INTENT_REF, 
                                         local->refcMutex->name, 
                                         dtMutex);
