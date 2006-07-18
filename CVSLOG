@@ -67929,3 +67929,26 @@ Modified files:
 	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
 	                                         inlfunc2_report.good 
 
+---------------------------------------------------------------------------
+
+07/18/06 10:12:42 -- deitz
+
+Log message:
+	Removed prelude.
+	
+	Next step: remove all usage of the "no codegen" pragma.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp expr.cpp primitive.cpp 
+	                      symbol.cpp type.cpp 
+	chapel/compiler/include/: runtime.h 
+	chapel/compiler/main/: runtime.cpp 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	                         filesToAST.cpp normalize.cpp 
+	                         parallel.cpp runInterpreter.cpp 
+	chapel/modules/standard/: _chpl_file.chpl _chpl_standard.chpl 
+	chapel/runtime/include/: chplio.h chpltypes.h stdchpl.h 
+	chapel/runtime/src/: chplio.c main.c 
+Removed files:
+	chapel/modules/standard/: prelude.chpl 
+
