@@ -68010,3 +68010,24 @@ Removed files:
 	chapel/test/classes/jplevyak/: record_equal-1.future 
 	                               record_equal-2.future 
 
+---------------------------------------------------------------------------
+
+07/18/06 11:08:24 -- waynew
+
+Log message:
+	Implementation of complex primitive type.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp expr.cpp primitive.cpp 
+	                      symbol.cpp type.cpp view.cpp 
+	chapel/compiler/ifa/: cg.cpp fa.cpp if1.cpp if1.h 
+	                      make_cast_code.cpp num.cpp num.h sym.cpp 
+	chapel/compiler/include/: expr.h symbol.h type.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: interpreter_ops.h normalize.cpp 
+	                         parallel.cpp runInterpreter.cpp 
+	chapel/make/: Makefile.linux64 
+	chapel/modules/standard/: _chpl_complex.chpl 
+	chapel/runtime/include/: chplio.h chpltypes.h config.h 
+	chapel/runtime/src/: chplmem_tests.c chpltypes.c config.c 
+
