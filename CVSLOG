@@ -68333,3 +68333,15 @@ Modified files:
 Removed files:
 	chapel/test/trivial/bradc/entrypoint/: wrongmain.future 
 
+---------------------------------------------------------------------------
+
+07/18/06 15:53:04 -- deitz
+
+Log message:
+	Fixed domain declaration syntax and removed .future.
+
+Modified files:
+	chapel/test/reductions/bradc/manual/: promote.chpl 
+Removed files:
+	chapel/test/reductions/bradc/manual/: promote.future 
+
