@@ -68415,3 +68415,17 @@ Modified files:
 Removed files:
 	chapel/test/types/enum/deitz/: test_enum6.future 
 
+---------------------------------------------------------------------------
+
+07/19/06 12:29:43 -- deitz
+
+Log message:
+	Removed typeParents vector as it is equivalent to instantiatedFrom.
+	Added dispatchChildren vector to contain the reverse pointers as
+	dispatchParents.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/passes/: cleanup.cpp functionResolution.cpp 
+
