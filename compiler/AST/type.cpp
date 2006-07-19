@@ -25,8 +25,6 @@ Type::Type(astType_t astType, Symbol* init_defaultVal) :
   instantiatedWith(NULL),
   clonedFrom(NULL)
 { 
-  typeParents.clear();
-  dispatchParents.clear();
   if (astType != TYPE_META)
     metaType = new MetaType(this);
 }

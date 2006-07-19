@@ -65,8 +65,15 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* seen = NULL) {
 
   // make root records inherit from value
   // make root classes inherit from object
-  if (ct->inherits->length() == 0 && ct != dtValue && ct != dtObject)
-    ct->dispatchParents.add(ct->classTag == CLASS_RECORD ? dtValue : dtObject);
+  if (ct->inherits->length() == 0 && ct != dtValue && ct != dtObject) {
+    if (ct->classTag == CLASS_RECORD) {
+      ct->dispatchParents.add(dtValue);
+      dtValue->dispatchChildren.add(ct);
+    } else {
+      ct->dispatchParents.add(dtObject);
+      dtObject->dispatchChildren.add(ct);
+    }
+  }
 
   for_alist(Expr, expr, ct->inherits) {
     TypeSymbol* ts = dynamic_cast<TypeSymbol*>(expr->lookup(expr));
@@ -86,6 +93,7 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* seen = NULL) {
       add_class_to_hierarchy(pt, seen);
     }
     ct->dispatchParents.add(pt);
+    pt->dispatchChildren.add(ct);
     Stmt* insertPoint = ct->declarationList->first();
     forv_Vec(Symbol, field, pt->fields) {
       ct->addDeclarations(new AList<Stmt>(field->defPoint->parentStmt->copy()), insertPoint);

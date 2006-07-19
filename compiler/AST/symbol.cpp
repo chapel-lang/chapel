@@ -554,9 +554,10 @@ TypeSymbol* TypeSymbol::clone(ASTMap* map) {
   clone->cname = stringcat("_clone_", clone->cname);
   defPoint->parentStmt->insertBefore(new DefExpr(clone));
   clone->addPragmas(&pragmas);
-  newClass->typeParents.add(originalClass);
   clone->definition->substitutions.copy(definition->substitutions);
   clone->definition->dispatchParents.copy(definition->dispatchParents);
+  if (clone->definition->dispatchChildren.n)
+    INT_FATAL(this, "Generic type has subtypes");
   return clone;
 }
 
@@ -1190,12 +1191,6 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
     substitutions.put(retType, clone->definition);
 
     cloneType->substitutions.map_union(*generic_substitutions);
-
-    forv_Vec(Type*, parent, retType->typeParents)
-      cloneType->typeParents.add(parent);
-
-    forv_Vec(Type*, parent, retType->dispatchParents)
-      cloneType->dispatchParents.add(parent);
 
     newfn = instantiate_function(this, &substitutions, generic_substitutions);
     cloneType->defaultConstructor = newfn;

@@ -40,10 +40,9 @@ bool canInstantiate(Type* actualType, Type* formalType) {
     return true;
   if (actualType == formalType)
     return true;
-  forv_Vec(Type, parent, actualType->typeParents) {
-    if (parent == formalType || canInstantiate(parent, formalType))
-      return true;
-  }
+  if (actualType->instantiatedFrom &&
+      canInstantiate(actualType->instantiatedFrom, formalType))
+    return true;
   return false;
 }
 

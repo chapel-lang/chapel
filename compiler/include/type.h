@@ -33,8 +33,8 @@ class VariableType;
 
 class Type : public BaseAST {
  public:
-  Vec<Type*> typeParents;     // type hierarchy
   Vec<Type*> dispatchParents; // dispatch hierarchy
+  Vec<Type*> dispatchChildren; // dispatch hierarchy
   Type* scalarPromotionType;
 
   TypeSymbol* symbol;
