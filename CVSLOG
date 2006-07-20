@@ -68429,3 +68429,19 @@ Modified files:
 	chapel/compiler/include/: type.h 
 	chapel/compiler/passes/: cleanup.cpp functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+07/19/06 17:06:58 -- deitz
+
+Log message:
+	Made it so that specifying a return type on a function does not change
+	the semantics of the function to use overloaded assignment to a
+	temporary.  Reworked a few tests.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	chapel/test/functions/bradc/: typefn2.good 
+	chapel/test/functions/jplevyak/: type_var_fun-1.chpl 
+Added files:
+	chapel/test/functions/bradc/: typefn2a.chpl typefn2a.good 
+
