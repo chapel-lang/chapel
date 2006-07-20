@@ -7,8 +7,6 @@ chapel compiler: reporting inlining, _inst__chpl_alloc function was inlined
 chapel compiler: reporting inlining, _inst_= function was inlined
 chapel compiler: reporting inlining, _inst_= function was inlined
 chapel compiler: reporting inlining, _inst_= function was inlined
-chapel compiler: reporting inlining, _inst_= function was inlined
-chapel compiler: reporting inlining, _inst_= function was inlined
 chapel compiler: reporting inlining, _inst__copy function was inlined
 chapel compiler: reporting inlining, ! function was inlined
 chapel compiler: reporting inlining, _inst__copy function was inlined
