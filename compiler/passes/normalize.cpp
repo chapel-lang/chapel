@@ -576,7 +576,10 @@ static void apply_getters_setters(FnSymbol* fn) {
 static void insert_call_temps(CallExpr* call) {
   static int uid = 1;
 
-  if (!call->parentExpr || !call->parentStmt)
+  if (!call->parentStmt)
+    return;
+
+  if (!call->parentExpr && dynamic_cast<ExprStmt*>(call->parentStmt))
     return;
   
   if (dynamic_cast<DefExpr*>(call->parentExpr))

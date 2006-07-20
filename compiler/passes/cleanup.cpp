@@ -328,6 +328,8 @@ static void build_constructor(ClassType* ct) {
 
   fn->insertAtTail(new DefExpr(fn->_this));
   fn->insertAtTail(alloc_expr);
+  if (ct->classTag == CLASS_CLASS)
+    fn->insertAtTail(new CallExpr(PRIMITIVE_SETCID, fn->_this));
 
   // assign formals to fields by name
   forv_Vec(Symbol, field, ct->fields) {

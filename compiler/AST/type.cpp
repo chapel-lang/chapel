@@ -604,6 +604,10 @@ void ClassType::codegenDef(FILE* outfile) {
   symbol->codegen(outfile);
   fprintf(outfile, " {\n");
   bool printedSomething = false; // BLC: this is to avoid empty structs, illegal in C
+  if (classTag == CLASS_CLASS) {
+    fprintf(outfile, "int _cid;\n");
+    printedSomething = true;
+  }
   for_alist(Stmt, stmt, declarationList) {
     if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {
       if (DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr)) {

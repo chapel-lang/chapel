@@ -159,6 +159,8 @@ initPrimitive() {
   prim_def(PRIMITIVE_LAND, "&&", land_interpreter_op, returnInfoBool);
   prim_def(PRIMITIVE_LOR, "||", lor_interpreter_op, returnInfoBool);
   prim_def(PRIMITIVE_POW, "**", pow_interpreter_op, returnInfoNumericUp);
+  prim_def(PRIMITIVE_SETCID, "setcid", unimplemented_interpreter_op, returnInfoVoid);
+  prim_def(PRIMITIVE_GETCID, "getcid", unimplemented_interpreter_op, returnInfoBool);
   prim_def(PRIMITIVE_GET_MEMBER, ".", get_member_interpreter_op, returnInfoGetMember);
   prim_def(PRIMITIVE_SET_MEMBER, ".=", set_member_interpreter_op, returnInfoVoid);
   prim_def(PRIMITIVE_GET_MEMBER_REF_TO, ".*", unimplemented_interpreter_op, returnInfoVoid);

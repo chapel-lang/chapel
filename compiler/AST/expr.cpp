@@ -761,6 +761,17 @@ void CallExpr::codegen(FILE* outfile) {
       get(2)->codegen(outfile);
       fprintf(outfile, ")");
       break;
+    case PRIMITIVE_SETCID:
+      get(1)->codegen(outfile);
+      fprintf(outfile, "->_cid = %ld", get(1)->typeInfo()->id);
+      break;
+    case PRIMITIVE_GETCID:
+      fprintf(outfile, "(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, "->_cid == ");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
     case PRIMITIVE_GET_MEMBER:
       codegen_member(outfile, get(1), get(2), member_type, member_offset);
       break;

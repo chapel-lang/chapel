@@ -1,4 +1,5 @@
 #include "astutil.h"
+#include "build.h"
 #include "expr.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -6,7 +7,8 @@
 #include "runtime.h"
 
 
-static void resolveCall(CallExpr* call);
+static void resolveCall(CallExpr* call, Vec<FnSymbol*>* resolvedFns);
+static void resolveFns(FnSymbol* fn, Vec<FnSymbol*>* resolvedFns);
 
 static void
 resolveFormals(FnSymbol* fn) {
@@ -333,7 +335,7 @@ build_order_wrapper(FnSymbol* fn,
 
 static FnSymbol*
 build_coercion_wrapper(FnSymbol* fn, Vec<Type*>* actual_types) {
-  Map<Symbol*,Symbol*> subs;
+  ASTMap subs;
   int j = -1;
   for_alist(DefExpr, formalDef, fn->formals) {
     j++;
@@ -592,8 +594,28 @@ resolve_type_expr(BaseAST* base) {
 
 
 static void
-resolveCall(CallExpr* call) {
+build_dispatch_tree(Map<Type*,FnSymbol*>* dispatchMap,
+                    CallExpr* call,
+                    char* name,
+                    Vec<Type*>* atypes,
+                    Vec<Symbol*>* aparams,
+                    Vec<char*>* anames) {
+  forv_Vec(Type, type, atypes->v[1]->dispatchChildren) {
+    atypes->v[1] = type;
+    FnSymbol* fn = resolve_call(call, name, atypes, aparams, anames, call->partialTag, call->isResolved());
+    if (fn) {
+      dispatchMap->put(type, fn);
+      build_dispatch_tree(dispatchMap, call, name, atypes, aparams, anames);
+    }
+  }
+}
+
+
+
+static void
+resolveCall(CallExpr* call, Vec<FnSymbol*>* resolvedFns) {
   if (!call->primitive) {
+    bool already_resolved = false;
     bool is_this = false;
     if (SymExpr* sym = dynamic_cast<SymExpr*>(call->baseExpr))
       if (dynamic_cast<VarSymbol*>(sym->var) || dynamic_cast<ArgSymbol*>(sym->var))
@@ -605,6 +627,8 @@ resolveCall(CallExpr* call) {
       base->replace(new SymExpr("this"));
       call->insertAtHead(base);
     }
+    if (call->isResolved())
+      already_resolved = true;
     Vec<Type*> atypes;
     Vec<Symbol*> aparams;
     Vec<char*> anames;
@@ -730,11 +754,56 @@ resolveCall(CallExpr* call) {
       }
     }
     if (call->parentSymbol) {
-//       if (resolvedFn->hasPragma("builtin")) {
-//         call->baseExpr->remove();
-//         call->primitive = primitives[PRIMITIVE_MOVE];
-//       } else
+      bool may_dispatch = false;
+      if (atypes.n > 1) {
+        if (atypes.v[0] == dtMethodToken) {
+          if (ClassType* ct = dynamic_cast<ClassType*>(atypes.v[1])) {
+            if (ct->classTag == CLASS_CLASS) {
+              may_dispatch = true;
+            }
+          }
+        }
+      }
+      if (may_dispatch && !already_resolved) {
+        // handle dynamic dispatch tree
+        Map<Type*,FnSymbol*> dispatchMap;
+        build_dispatch_tree(&dispatchMap, call, name, &atypes, &aparams, &anames);
+        Vec<Type*> types;
+        dispatchMap.get_keys(types);
+        CallExpr* nextcall = call->copy();
         call->baseExpr->replace(new SymExpr(resolvedFn));
+        resolveFns(resolvedFn, resolvedFns);
+        Stmt* stmt = call->parentStmt;
+        Expr* dynamicArg = call->get(2);
+        forv_Vec(Type, type, types) {
+          if (type->isGeneric) {
+            USR_FATAL(type, "Cannot handle generic types with parent types");
+          }
+          resolveFormals(type->defaultConstructor);
+          resolveFns(type->defaultConstructor, resolvedFns);
+          CallExpr* nextnextcall = nextcall->copy();
+          resolveFns(dispatchMap.get(type), resolvedFns);
+          nextcall->baseExpr = new SymExpr(dispatchMap.get(type));
+          if (resolvedFn->retType != dispatchMap.get(type)->retType) {
+            INT_FATAL(call, "Illegal dispatch functions"); // make user error
+          }
+          nextcall->get(2)->replace(new CallExpr(PRIMITIVE_CAST, type->symbol, dynamicArg->copy()));
+          FnSymbol* if_fn = build_if_expr(new CallExpr(PRIMITIVE_GETCID,
+                                                       dynamicArg->copy(),
+                                                       new_IntLiteral(type->id)),
+                                          nextcall, call->copy());
+          stmt->insertBefore(new DefExpr(if_fn));
+          if_fn->retRef = false;
+          nextcall = nextnextcall;
+          CallExpr* tmp = new CallExpr(if_fn);
+          call->replace(tmp);
+          call = tmp;
+          normalize(if_fn);
+          resolveFns(if_fn, resolvedFns);
+        }
+      } else {
+        call->baseExpr->replace(new SymExpr(resolvedFn));
+      }
     }
 
   } else if (call->isPrimitive(PRIMITIVE_TUPLE_EXPAND)) {
@@ -754,7 +823,7 @@ resolveCall(CallExpr* call) {
     for (int i = 1; i <= size; i++) {
       CallExpr* e = new CallExpr(sym->copy(), new_IntLiteral(i));
       call->insertBefore(e);
-      resolveCall(e);
+      resolveCall(e, resolvedFns);
     }
     call->remove();
   } else if (call->isPrimitive(PRIMITIVE_MOVE)) {
@@ -819,7 +888,7 @@ resolveFns(FnSymbol* fn, Vec<FnSymbol*>* resolvedFns) {
   collect_top_asts(&asts, fn->body);
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
-      resolveCall(call);
+      resolveCall(call, resolvedFns);
       if (call->isResolved())
         resolveFns(call->isResolved(), resolvedFns);
       if (call->isPrimitive(PRIMITIVE_MOVE))

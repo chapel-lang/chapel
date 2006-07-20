@@ -24,7 +24,7 @@ VarSymbol *gFalse = 0;
 Vec<FnSymbol*> new_ast_functions;
 Vec<TypeSymbol*> new_ast_types;
 
-/*** Instantiation Cache vvv ***/
+/*** ASTMap Cache vvv ***/
 class Inst : public gc {
  public:
   Inst(FnSymbol* iOldFn, FnSymbol* iNewFn, ASTMap* iSubs) :
@@ -33,7 +33,6 @@ class Inst : public gc {
   FnSymbol* newFn;
   ASTMap* subs;
 };
-static Vec<Inst*> icache;
 
 static bool 
 subs_match(ASTMap* s1, ASTMap* s2) {
@@ -47,25 +46,28 @@ subs_match(ASTMap* s1, ASTMap* s2) {
 }
 
 static FnSymbol*
-check_icache(FnSymbol* fn, ASTMap* substitutions) {
-  forv_Vec(Inst, inst, icache)
+checkMapCache(Vec<Inst*>* cache, FnSymbol* fn, ASTMap* substitutions) {
+  forv_Vec(Inst, inst, *cache)
     if (inst->oldFn == fn && subs_match(substitutions, inst->subs))
       return inst->newFn;
   return NULL;
 }
 
 static void
-remove_icache(FnSymbol* fn, ASTMap* substitutions) {
-  forv_Vec(Inst, inst, icache)
+removeMapCache(Vec<Inst*>* cache, FnSymbol* fn, ASTMap* substitutions) {
+  forv_Vec(Inst, inst, *cache)
     if (inst->oldFn == fn && subs_match(substitutions, inst->subs))
       inst->newFn = NULL;
 }
 
 static void
-add_icache(FnSymbol* newFn) {
-  icache.add(new Inst(newFn->instantiatedFrom, newFn, &newFn->substitutions));
+addMapCache(Vec<Inst*>* cache, FnSymbol* oldFn, FnSymbol* newFn, ASTMap* subs) {
+  cache->add(new Inst(oldFn, newFn, subs));
 }
-/*** Instantiation Cache ^^^ ***/
+
+static Vec<Inst*> icache; // instantiation cache
+static Vec<Inst*> cw_cache; // coercion wrappers cache
+/*** ASTMap Cache ^^^ ***/
 
 
 /*** Default Wrapper Cache vvv ***/
@@ -713,7 +715,11 @@ build_empty_wrapper(FnSymbol* fn) {
 
 
 FnSymbol*
-FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_map) {
+FnSymbol::coercion_wrapper(ASTMap* coercion_map) {
+  // return cached if we already created this coercion wrapper
+  if (FnSymbol* cached = checkMapCache(&cw_cache, this, coercion_map))
+    return cached;
+
   FnSymbol* wrapper = build_empty_wrapper(this);
   wrapper->cname = stringcat("_coerce_wrap_", cname);
   CallExpr* call = new CallExpr(this);
@@ -738,6 +744,7 @@ FnSymbol::coercion_wrapper(Map<Symbol*,Symbol*>* coercion_map) {
   defPoint->parentStmt->insertAfter(new DefExpr(wrapper));
   reset_file_info(wrapper->defPoint->parentStmt, lineno, filename);
   normalize(wrapper);
+  addMapCache(&cw_cache, this, wrapper, coercion_map);
   return wrapper;
 }
 
@@ -921,7 +928,7 @@ instantiate_function(FnSymbol *fn, ASTMap *all_subs, ASTMap *generic_subs) {
     if (tt)
       clone->typeBinding = tt->symbol;
   }
-  add_icache(clone);
+  addMapCache(&icache, clone->instantiatedFrom, clone, &clone->substitutions);
   fn->defPoint->parentStmt->insertBefore(new DefExpr(clone));
   instantiate_add_subs(all_subs, &map);
   instantiate_update_expr(all_subs, clone->defPoint);
@@ -951,7 +958,7 @@ instantiate_function(FnSymbol *fn, ASTMap *all_subs, ASTMap *generic_subs) {
 FnSymbol*
 FnSymbol::clone_generic(ASTMap* formal_types) {
   // use same cache as instantiate generic since they won't collide
-  if (FnSymbol* cached = check_icache(this, formal_types))
+  if (FnSymbol* cached = checkMapCache(&icache, this, formal_types))
     return cached;
   Stmt* fnStmt = defPoint->parentStmt->copy();
   ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(fnStmt);
@@ -972,7 +979,7 @@ FnSymbol::clone_generic(ASTMap* formal_types) {
   }
   fnClone->instantiatedFrom = this;
   fnClone->substitutions.copy(*formal_types);
-  add_icache(fnClone);
+  addMapCache(&icache, this, fnClone, &fnClone->substitutions);
   return fnClone;
 }
 
@@ -1116,7 +1123,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
         generic_substitutions->v[i].value = metaType->base;
 
   // return cached if we did this instantiation already
-  if (FnSymbol* cached = check_icache(this, generic_substitutions))
+  if (FnSymbol* cached = checkMapCache(&icache, this, generic_substitutions))
     return cached;
 
   //  static int uid = 1;
@@ -1216,7 +1223,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
       newfn = instantiate_tuple_init(newfn);
 
     if (!newfn) {
-      remove_icache(this, generic_substitutions);
+      removeMapCache(&icache, this, generic_substitutions);
       return NULL;
     }
 
@@ -1248,7 +1255,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
     if (!symExpr)
       USR_FATAL(where, "Illegal where clause");
     if (!strcmp(symExpr->var->name, "false")) {
-      remove_icache(this, generic_substitutions);
+      removeMapCache(&icache, this, generic_substitutions);
       return NULL;
     }
     if (strcmp(symExpr->var->name, "true"))

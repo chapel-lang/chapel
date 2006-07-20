@@ -190,7 +190,7 @@ class FnSymbol : public Symbol {
   FnSymbol* clone(ASTMap* map);
   FnSymbol* promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs);
   FnSymbol* order_wrapper(Map<Symbol*,Symbol*>* formals_to_formals);
-  FnSymbol* coercion_wrapper(Map<Symbol*,Symbol*>* coercion_substitutions);
+  FnSymbol* coercion_wrapper(ASTMap* coercion_substitutions);
   FnSymbol* default_wrapper(Vec<Symbol*>* defaults);
   bool isPartialInstantiation(ASTMap* generic_substitutions);
   FnSymbol* instantiate_generic(ASTMap* substitutions);
