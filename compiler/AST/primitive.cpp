@@ -1,7 +1,6 @@
 #include "expr.h"
 #include "primitive.h"
 #include "type.h"
-#include "../passes/interpreter_ops.h"
 
 static Type*
 returnInfoBool(CallExpr* call) {
@@ -115,133 +114,133 @@ HashMap<char *, StringHashFns, PrimitiveOp *> primitives_map;
 
 PrimitiveOp* primitives[NUM_KNOWN_PRIMS];
 
-PrimitiveOp::PrimitiveOp(PrimitiveTag atag, char *aname, InterpreterOp *aiop, Type *(*areturnInfo)(CallExpr*))
-  : tag(atag), name(aname), interpreterOp(aiop), returnInfo(areturnInfo)
+PrimitiveOp::PrimitiveOp(PrimitiveTag atag, char *aname, Type *(*areturnInfo)(CallExpr*))
+  : tag(atag), name(aname), returnInfo(areturnInfo)
 {
   primitives_map.put(name, this);
 }
 
 static void
-prim_def(PrimitiveTag tag, char* name, InterpreterOp* iop, Type *(*returnInfo)(CallExpr*)) {
-  primitives[tag] = new PrimitiveOp(tag, name, iop, returnInfo);
+prim_def(PrimitiveTag tag, char* name, Type *(*returnInfo)(CallExpr*)) {
+  primitives[tag] = new PrimitiveOp(tag, name, returnInfo);
 }
 
 static void
-prim_def(char* name, InterpreterOp* iop, Type *(*returnInfo)(CallExpr*)) {
-  new PrimitiveOp(PRIMITIVE_UNKNOWN, name, iop, returnInfo);
+prim_def(char* name, Type *(*returnInfo)(CallExpr*)) {
+  new PrimitiveOp(PRIMITIVE_UNKNOWN, name, returnInfo);
 }
 
 void
 initPrimitive() {
   primitives[PRIMITIVE_UNKNOWN] = NULL;
 
-  prim_def(PRIMITIVE_MOVE, "move", unimplemented_interpreter_op, returnInfoMove);
-  prim_def(PRIMITIVE_UNARY_MINUS, "u-", unary_minus_interpreter_op, returnInfoFirst);
-  prim_def(PRIMITIVE_UNARY_PLUS, "u+", unary_plus_interpreter_op, returnInfoFirst);
-  prim_def(PRIMITIVE_UNARY_NOT, "u~", unary_not_interpreter_op, returnInfoFirst);
-  prim_def(PRIMITIVE_UNARY_LNOT, "!", unary_lnot_interpreter_op, returnInfoBool);
-  prim_def(PRIMITIVE_ADD, "+", add_interpreter_op, returnInfoNumericUp);
-  prim_def(PRIMITIVE_SUBTRACT, "-", subtract_interpreter_op, returnInfoNumericUp);
-  prim_def(PRIMITIVE_MULT, "*", mult_interpreter_op, returnInfoNumericUp);
-  prim_def(PRIMITIVE_DIV, "/", div_interpreter_op, returnInfoNumericUp);
-  prim_def(PRIMITIVE_MOD, "%", mod_interpreter_op, returnInfoFirst);
-  prim_def(PRIMITIVE_LSH, "<<", lsh_interpreter_op, returnInfoFirst);
-  prim_def(PRIMITIVE_RSH, ">>", rsh_interpreter_op, returnInfoFirst);
-  prim_def(PRIMITIVE_EQUAL, "==", equal_interpreter_op, returnInfoBool);
-  prim_def(PRIMITIVE_NOTEQUAL, "!=", notequal_interpreter_op, returnInfoBool);
-  prim_def(PRIMITIVE_LESSOREQUAL, "<=", elssorequal_interpreter_op, returnInfoBool);
-  prim_def(PRIMITIVE_GREATEROREQUAL, ">=", greaterorequal_interpreter_op, returnInfoBool);
-  prim_def(PRIMITIVE_LESS, "<", less_interpreter_op, returnInfoBool);
-  prim_def(PRIMITIVE_GREATER, ">", greater_interpreter_op, returnInfoBool);
-  prim_def(PRIMITIVE_AND, "&", and_interpreter_op, returnInfoFirst);
-  prim_def(PRIMITIVE_OR, "|", or_interpreter_op, returnInfoFirst);
-  prim_def(PRIMITIVE_XOR, "^", xor_interpreter_op, returnInfoFirst);
-  prim_def(PRIMITIVE_LAND, "&&", land_interpreter_op, returnInfoBool);
-  prim_def(PRIMITIVE_LOR, "||", lor_interpreter_op, returnInfoBool);
-  prim_def(PRIMITIVE_POW, "**", pow_interpreter_op, returnInfoNumericUp);
-  prim_def(PRIMITIVE_SETCID, "setcid", unimplemented_interpreter_op, returnInfoVoid);
-  prim_def(PRIMITIVE_GETCID, "getcid", unimplemented_interpreter_op, returnInfoBool);
-  prim_def(PRIMITIVE_GET_MEMBER, ".", get_member_interpreter_op, returnInfoGetMember);
-  prim_def(PRIMITIVE_SET_MEMBER, ".=", set_member_interpreter_op, returnInfoVoid);
-  prim_def(PRIMITIVE_GET_MEMBER_REF_TO, ".*", unimplemented_interpreter_op, returnInfoVoid);
-  prim_def(PRIMITIVE_SET_MEMBER_REF_TO, ".=&", unimplemented_interpreter_op, returnInfoVoid);
-  prim_def(PRIMITIVE_SET_HEAPVAR, "setheapvar", unimplemented_interpreter_op, returnInfoMove);
-  prim_def(PRIMITIVE_REFC_INIT, "refc_init", unimplemented_interpreter_op, returnInfoVoid);
-  prim_def(PRIMITIVE_REFC_TOUCH, "refc_touch", unimplemented_interpreter_op, returnInfoVoid);
-  prim_def(PRIMITIVE_REFC_RELEASE, "refc_release", unimplemented_interpreter_op, returnInfoVoid);
-  prim_def(PRIMITIVE_CHPL_ALLOC, "chpl_alloc", alloc_interpreter_op, returnInfoChplAlloc);
-  prim_def(PRIMITIVE_CHPL_FREE, "chpl_free", unimplemented_interpreter_op, returnInfoVoid);
-  prim_def(PRIMITIVE_PTR_EQUAL, "ptr_eq", ptr_eq_interpreter_op, returnInfoBool);
-  prim_def(PRIMITIVE_PTR_NOTEQUAL, "ptr_neq", ptr_neq_interpreter_op, returnInfoBool);
-  prim_def(PRIMITIVE_TOSTRING, "to_string", to_string_interpreter_op, returnInfoString);
-  prim_def(PRIMITIVE_CAST, "cast", cast_interpreter_op, returnInfoCast);
-  prim_def(PRIMITIVE_TYPEOF, "typeof", unimplemented_interpreter_op, returnInfoFirst);
-  prim_def(PRIMITIVE_USE, "use", unimplemented_interpreter_op, returnInfoVoid);
-  prim_def(PRIMITIVE_TUPLE_EXPAND, "expand_tuple", unimplemented_interpreter_op, returnInfoVoid);
-  prim_def("abs", abs_interpreter_op, returnInfoInt);
-  prim_def("acos", acos_interpreter_op, returnInfoFloat);
-  prim_def("acosh", acosh_interpreter_op, returnInfoFloat);
-  prim_def("asin", asin_interpreter_op, returnInfoFloat);
-  prim_def("asinh", asinh_interpreter_op, returnInfoFloat);
-  prim_def("atan", atan_interpreter_op, returnInfoFloat);
-  prim_def("atan2", atan2_interpreter_op, returnInfoFloat);  
-  prim_def("atanh", atanh_interpreter_op, returnInfoFloat);
-  prim_def("cbrt", cbrt_interpreter_op, returnInfoFloat);
-  prim_def("ceil", ceil_interpreter_op, returnInfoFloat);
-  prim_def("cos", cos_interpreter_op, returnInfoFloat);
-  prim_def("cosh", cosh_interpreter_op, returnInfoFloat);
-  prim_def("exp", exp_interpreter_op, returnInfoFloat);
-  prim_def("exp2", exp2_interpreter_op, returnInfoFloat);
-  prim_def("erf", erf_interpreter_op, returnInfoFloat);
-  prim_def("erfc", erfc_interpreter_op, returnInfoFloat);
-  prim_def("expm1", expm1_interpreter_op, returnInfoFloat);
-  prim_def("fabs", fabs_interpreter_op, returnInfoFloat);
-  prim_def("floor", floor_interpreter_op, returnInfoFloat);
-  prim_def("lgamma", lgamma_interpreter_op, returnInfoFloat);
-  prim_def("log", log_interpreter_op, returnInfoFloat);
-  prim_def("log2", log2_interpreter_op, returnInfoFloat);
-  prim_def("log10", log10_interpreter_op, returnInfoFloat);
-  prim_def("log1p", log1p_interpreter_op, returnInfoFloat);
-  prim_def("nearbyint", nearbyint_interpreter_op, returnInfoFloat);
-  prim_def("rint", rint_interpreter_op, returnInfoFloat);
-  prim_def("round", round_interpreter_op, returnInfoFloat);
-  prim_def("sin", sin_interpreter_op, returnInfoFloat);
-  prim_def("sinh", sinh_interpreter_op, returnInfoFloat);
-  prim_def("sqrt", sqrt_interpreter_op, returnInfoFloat);
-  prim_def("tan", tan_interpreter_op, returnInfoFloat);
-  prim_def("tanh", tanh_interpreter_op, returnInfoFloat);
-  prim_def("tgamma", tgamma_interpreter_op, returnInfoFloat);
-  prim_def("trunc", trunc_interpreter_op, returnInfoFloat);
-  prim_def("fopen", fopen_interpreter_op, returnInfoFile);
-  prim_def("fclose", fclose_interpreter_op, returnInfoInt);
-  prim_def("fprintf", fprintf_interpreter_op, returnInfoInt);
-  prim_def("fscanf", fscanf_interpreter_op, returnInfoInt);
-  prim_def("fflush", fflush_interpreter_op, returnInfoInt);
-  prim_def("array_init", array_init_interpreter_op, returnInfoVoid);
-  prim_def("array_index", array_index_interpreter_op, returnInfoArrayIndex);
-  prim_def("array_set", array_set_interpreter_op, returnInfoVoid);
-  prim_def("readLit", unimplemented_interpreter_op, returnInfoBool);
-  prim_def("string_fscanf", unimplemented_interpreter_op, returnInfoString);
-  prim_def("string_contains", unimplemented_interpreter_op, returnInfoBool);
-  prim_def("string_copy", copy_string_interpreter_op, returnInfoString);
-  prim_def("string_index", string_index_interpreter_op, returnInfoString);
-  prim_def("string_concat", string_concat_interpreter_op, returnInfoString);
-  prim_def("string_equal", string_equal_interpreter_op, returnInfoBool);
-  prim_def("string_select", string_select_interpreter_op, returnInfoString);
-  prim_def("string_strided_select", string_strided_select_interpreter_op, returnInfoString);
-  prim_def("string_length", string_length_interpreter_op, returnInfoInt);
-  prim_def("ascii", unimplemented_interpreter_op, returnInfoInt);
-  prim_def("exit", done_interpreter_op, returnInfoInt);
+  prim_def(PRIMITIVE_MOVE, "move", returnInfoMove);
+  prim_def(PRIMITIVE_UNARY_MINUS, "u-", returnInfoFirst);
+  prim_def(PRIMITIVE_UNARY_PLUS, "u+", returnInfoFirst);
+  prim_def(PRIMITIVE_UNARY_NOT, "u~", returnInfoFirst);
+  prim_def(PRIMITIVE_UNARY_LNOT, "!", returnInfoBool);
+  prim_def(PRIMITIVE_ADD, "+", returnInfoNumericUp);
+  prim_def(PRIMITIVE_SUBTRACT, "-", returnInfoNumericUp);
+  prim_def(PRIMITIVE_MULT, "*", returnInfoNumericUp);
+  prim_def(PRIMITIVE_DIV, "/", returnInfoNumericUp);
+  prim_def(PRIMITIVE_MOD, "%", returnInfoFirst);
+  prim_def(PRIMITIVE_LSH, "<<", returnInfoFirst);
+  prim_def(PRIMITIVE_RSH, ">>", returnInfoFirst);
+  prim_def(PRIMITIVE_EQUAL, "==", returnInfoBool);
+  prim_def(PRIMITIVE_NOTEQUAL, "!=", returnInfoBool);
+  prim_def(PRIMITIVE_LESSOREQUAL, "<=", returnInfoBool);
+  prim_def(PRIMITIVE_GREATEROREQUAL, ">=", returnInfoBool);
+  prim_def(PRIMITIVE_LESS, "<", returnInfoBool);
+  prim_def(PRIMITIVE_GREATER, ">", returnInfoBool);
+  prim_def(PRIMITIVE_AND, "&", returnInfoFirst);
+  prim_def(PRIMITIVE_OR, "|", returnInfoFirst);
+  prim_def(PRIMITIVE_XOR, "^", returnInfoFirst);
+  prim_def(PRIMITIVE_LAND, "&&", returnInfoBool);
+  prim_def(PRIMITIVE_LOR, "||", returnInfoBool);
+  prim_def(PRIMITIVE_POW, "**", returnInfoNumericUp);
+  prim_def(PRIMITIVE_SETCID, "setcid", returnInfoVoid);
+  prim_def(PRIMITIVE_GETCID, "getcid", returnInfoBool);
+  prim_def(PRIMITIVE_GET_MEMBER, ".", returnInfoGetMember);
+  prim_def(PRIMITIVE_SET_MEMBER, ".=", returnInfoVoid);
+  prim_def(PRIMITIVE_GET_MEMBER_REF_TO, ".*", returnInfoVoid);
+  prim_def(PRIMITIVE_SET_MEMBER_REF_TO, ".=&", returnInfoVoid);
+  prim_def(PRIMITIVE_SET_HEAPVAR, "setheapvar", returnInfoMove);
+  prim_def(PRIMITIVE_REFC_INIT, "refc_init", returnInfoVoid);
+  prim_def(PRIMITIVE_REFC_TOUCH, "refc_touch", returnInfoVoid);
+  prim_def(PRIMITIVE_REFC_RELEASE, "refc_release", returnInfoVoid);
+  prim_def(PRIMITIVE_CHPL_ALLOC, "chpl_alloc", returnInfoChplAlloc);
+  prim_def(PRIMITIVE_CHPL_FREE, "chpl_free", returnInfoVoid);
+  prim_def(PRIMITIVE_PTR_EQUAL, "ptr_eq", returnInfoBool);
+  prim_def(PRIMITIVE_PTR_NOTEQUAL, "ptr_neq", returnInfoBool);
+  prim_def(PRIMITIVE_TOSTRING, "to_string", returnInfoString);
+  prim_def(PRIMITIVE_CAST, "cast", returnInfoCast);
+  prim_def(PRIMITIVE_TYPEOF, "typeof", returnInfoFirst);
+  prim_def(PRIMITIVE_USE, "use", returnInfoVoid);
+  prim_def(PRIMITIVE_TUPLE_EXPAND, "expand_tuple", returnInfoVoid);
+  prim_def("abs", returnInfoInt);
+  prim_def("acos", returnInfoFloat);
+  prim_def("acosh", returnInfoFloat);
+  prim_def("asin", returnInfoFloat);
+  prim_def("asinh", returnInfoFloat);
+  prim_def("atan", returnInfoFloat);
+  prim_def("atan2", returnInfoFloat);  
+  prim_def("atanh", returnInfoFloat);
+  prim_def("cbrt", returnInfoFloat);
+  prim_def("ceil", returnInfoFloat);
+  prim_def("cos", returnInfoFloat);
+  prim_def("cosh", returnInfoFloat);
+  prim_def("exp", returnInfoFloat);
+  prim_def("exp2", returnInfoFloat);
+  prim_def("erf", returnInfoFloat);
+  prim_def("erfc", returnInfoFloat);
+  prim_def("expm1", returnInfoFloat);
+  prim_def("fabs", returnInfoFloat);
+  prim_def("floor", returnInfoFloat);
+  prim_def("lgamma", returnInfoFloat);
+  prim_def("log", returnInfoFloat);
+  prim_def("log2", returnInfoFloat);
+  prim_def("log10", returnInfoFloat);
+  prim_def("log1p", returnInfoFloat);
+  prim_def("nearbyint", returnInfoFloat);
+  prim_def("rint", returnInfoFloat);
+  prim_def("round", returnInfoFloat);
+  prim_def("sin", returnInfoFloat);
+  prim_def("sinh", returnInfoFloat);
+  prim_def("sqrt", returnInfoFloat);
+  prim_def("tan", returnInfoFloat);
+  prim_def("tanh", returnInfoFloat);
+  prim_def("tgamma", returnInfoFloat);
+  prim_def("trunc", returnInfoFloat);
+  prim_def("fopen", returnInfoFile);
+  prim_def("fclose", returnInfoInt);
+  prim_def("fprintf", returnInfoInt);
+  prim_def("fscanf", returnInfoInt);
+  prim_def("fflush", returnInfoInt);
+  prim_def("array_init", returnInfoVoid);
+  prim_def("array_index", returnInfoArrayIndex);
+  prim_def("array_set", returnInfoVoid);
+  prim_def("readLit", returnInfoBool);
+  prim_def("string_fscanf", returnInfoString);
+  prim_def("string_contains", returnInfoBool);
+  prim_def("string_copy", returnInfoString);
+  prim_def("string_index", returnInfoString);
+  prim_def("string_concat", returnInfoString);
+  prim_def("string_equal", returnInfoBool);
+  prim_def("string_select", returnInfoString);
+  prim_def("string_strided_select", returnInfoString);
+  prim_def("string_length", returnInfoInt);
+  prim_def("ascii", returnInfoInt);
+  prim_def("exit", returnInfoInt);
 
-  prim_def("_chpl_complex_real", getreal_interpreter_op, returnInfoFloat);
-  prim_def("_chpl_complex_imag", getimag_interpreter_op, returnInfoFloat);
-  prim_def("_chpl_complex_set_real", setreal_interpreter_op, returnInfoVoid);
-  prim_def("_chpl_complex_set_imag", setimag_interpreter_op, returnInfoVoid);
+  prim_def("_chpl_complex_real", returnInfoFloat);
+  prim_def("_chpl_complex_imag", returnInfoFloat);
+  prim_def("_chpl_complex_set_real", returnInfoVoid);
+  prim_def("_chpl_complex_set_imag", returnInfoVoid);
 
-  prim_def("get_stdin", unimplemented_interpreter_op, returnInfoFile);
-  prim_def("get_stdout", unimplemented_interpreter_op, returnInfoFile);
-  prim_def("get_stderr", unimplemented_interpreter_op, returnInfoFile);
-  prim_def("get_nullfile", unimplemented_interpreter_op, returnInfoFile);
-  prim_def("get_errno", unimplemented_interpreter_op, returnInfoString);
-  prim_def("get_eof", unimplemented_interpreter_op, returnInfoInt);
+  prim_def("get_stdin", returnInfoFile);
+  prim_def("get_stdout", returnInfoFile);
+  prim_def("get_stderr", returnInfoFile);
+  prim_def("get_nullfile", returnInfoFile);
+  prim_def("get_errno", returnInfoString);
+  prim_def("get_eof", returnInfoInt);
 }

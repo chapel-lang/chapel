@@ -9,7 +9,6 @@ void scopeResolve();
 void normalize();
 void check_normalized();
 void build_default_functions();
-void runInterpreter();
 void resolve();
 void check_resolved();
 void flattenFunctions();
@@ -22,19 +21,17 @@ PassInfo passlist[] = {
   FIRST,
   RUN(parse),              // parse files and create AST
   RUN(check_parsed),       // checks semantics of parsed AST
+
   RUN(parallel1),          // parallel transforms, part 1
+
   RUN(cleanup),            // post parsing transformations
   RUN(scopeResolve),       // resolve symbols by scope
   RUN(normalize),          // normalization transformations
   RUN(check_normalized),   // check semantics of normalized AST
+
   RUN(build_default_functions), // build default functions
 
-  RUN(runInterpreter),     // INTERPRETER
-                           //   Enabled by -i or --interpreter.
-                           //   Terminates after running if enabled.
-
   RUN(resolve),            // resolves function calls and types
-
   RUN(check_resolved),     // checks semantics of resolved AST
 
   RUN(flattenFunctions),   // denest nested functions

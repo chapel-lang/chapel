@@ -80,8 +80,6 @@ void dump_index_footer(FILE* f) {
 
 
 void runPasses(void) {
-  if (run_interpreter)
-    USR_FATAL("The Chapel interpreter is not yet implemented.");
   if (fdump_html) {
     html_index_file = fopen(stringcat(log_dir, "index.html"), "w");
     dump_index_header(html_index_file);

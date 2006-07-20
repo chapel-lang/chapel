@@ -12,7 +12,6 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "version.h"
-#include "../passes/runInterpreter.h"
 #include "chpl_log.h"
 #include "../ifa/fail.h"
 #include "primitive.h"
@@ -36,7 +35,6 @@ bool no_codegen = false;
 int debugParserLevel = 0;
 bool developer = false;
 bool ignore_errors = false;
-int run_interpreter = 0;
 int trace_level = 0;
 int fgraph = 0;
 int fgraph_vcg = 0;
@@ -53,7 +51,6 @@ int scalar_promotion = 1;
 int squelch_header_errors = 0;
 
 static ArgumentDescription arg_desc[] = {
- {"interpreter", 'i', "Run Chapel interpreter", "T", &run_interpreter, "CHPL_INTERPRETER", NULL},
  {"nostdincs", ' ', "No Standard Includes", "T", &fnostdincs, "CHPL_NOSTDINCS", NULL},
  {"premalloc", 'm', "Pre-Malloc", "I", &pre_malloc, "CHPL_PRE_MALLOC", NULL},
  {"sysdir", 'S', "System Directory", "P", system_dir, "CHPL_SYSTEM_DIR", NULL},
@@ -214,7 +211,7 @@ main(int argc, char *argv[]) {
                            &(arg_state.program_loc));
   process_args(&arg_state, argc, argv);
   startCatchingSignals();
-  if (arg_state.nfile_arguments < 1 && !finterpreter_insert_mode)
+  if (arg_state.nfile_arguments < 1)
     help(&arg_state, NULL);
   graph_type = !fgraph_vcg ? GraphViz : VCG;
   if (rungdb)
@@ -222,7 +219,6 @@ main(int argc, char *argv[]) {
   if (fdump_html || strcmp(log_flags, ""))
     init_logs();
   init_system();
-  init_interpreter();
   compile_all();
   free_args(&arg_state);
   clean_exit(0);
