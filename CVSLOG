@@ -68545,3 +68545,32 @@ Removed files:
 	chapel/compiler/passes/: interpreter.todo interpreter_ops.h 
 	                         runInterpreter.cpp runInterpreter.h 
 
+---------------------------------------------------------------------------
+
+07/20/06 14:24:54 -- deitz
+
+Log message:
+	Moved used files from ifa/ into the other compiler directories.  Most
+	of this involved moving things back to their original location.
+	
+	The only thing in ifa/ that is still used is num.h, prim.h,
+	prim_data.h, prim_data_incs.h and their .cpp files.
+
+Modified files:
+	chapel/compiler/: Makefile 
+	chapel/compiler/AST/: baseAST.cpp expr.cpp stmt.cpp symbol.cpp 
+	                      type.cpp view.cpp 
+	chapel/compiler/adt/: Makefile.share list.cpp map.cpp vec.cpp 
+	chapel/compiler/ifa/: Makefile.share 
+	chapel/compiler/include/: chpl.h driver.h expr.h stmt.h symbol.h 
+	                          type.h 
+	chapel/compiler/main/: Makefile.share driver.cpp runpasses.cpp 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+Added files:
+	chapel/compiler/include/: arg.h list.h log.h map.h vec.h 
+	chapel/compiler/main/: arg.cpp log.cpp 
+Removed files:
+	chapel/compiler/ifa/: arg.cpp arg.h list.cpp list.h log.cpp 
+	                      log.h map.cpp map.h vec.cpp vec.h 
+	chapel/compiler/include/: chpl_log.h 
+
