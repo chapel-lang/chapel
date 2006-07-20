@@ -1,5 +1,4 @@
 IFA_SRCS = \
-	arg.cpp \
 	ast.cpp \
 	builtin.cpp \
 	cdb.cpp \
@@ -16,11 +15,8 @@ IFA_SRCS = \
 	ifa.cpp \
 	if1.cpp \
 	inline.cpp \
-	list.cpp \
-	log.cpp \
 	loop.cpp \
 	num.cpp \
-	map.cpp \
 	pattern.cpp \
 	pdb.cpp \
 	pnode.cpp \
@@ -28,8 +24,7 @@ IFA_SRCS = \
 	region.cpp \
 	ssu.cpp \
 	sym.cpp \
-	var.cpp \
-	vec.cpp
+	var.cpp
 
 IFA_GEN_SRCS = \
 	prim_data.cpp

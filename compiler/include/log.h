@@ -4,7 +4,7 @@
 #ifndef _log_H_
 #define _log_H_
 
-#include "defs.h"
+#include "../ifa/defs.h"
 
 /*
   To add a new log type, add a new LOG_XXX with a unique letter:

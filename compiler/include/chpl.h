@@ -25,9 +25,9 @@
 extern int verbose_level;
 
 #include "extern.h"
-#include "../ifa/list.h"
-#include "../ifa/vec.h"
-#include "../ifa/map.h"
+#include "list.h"
+#include "vec.h"
+#include "map.h"
 #include "misc.h"
 
 #if defined(__CYGWIN__) || 1

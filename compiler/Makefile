@@ -19,6 +19,7 @@ SUBDIRS = \
 	passes \
 	test \
 	util \
+	adt
 
 #
 # include standard header for compiler
@@ -36,6 +37,7 @@ include main/Makefile.include
 include parser/Makefile.include
 include passes/Makefile.include
 include util/Makefile.include
+include adt/Makefile.include
 
 CVS_SRCS = 
 

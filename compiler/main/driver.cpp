@@ -1,19 +1,16 @@
 #define EXTERN
 #include "chpl.h"
-#include "../ifa/arg.h"
-#include "../ifa/graph.h"
+#include "arg.h"
 #include "countTokens.h"
 #include "driver.h"
 #include "files.h"
-#include "../ifa/ifa.h"
 #include "misc.h"
 #include "mysystem.h"
 #include "runpasses.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "version.h"
-#include "chpl_log.h"
-#include "../ifa/fail.h"
+#include "log.h"
 #include "primitive.h"
 
 
@@ -36,13 +33,10 @@ int debugParserLevel = 0;
 bool developer = false;
 bool ignore_errors = false;
 int trace_level = 0;
-int fgraph = 0;
-int fgraph_vcg = 0;
 int fcg = 0;
 bool no_inline = false;
 bool report_inlining = false;
 char system_dir[FILENAME_MAX] = DEFAULT_SYSTEM_DIR;
-int f_equal_method = 0;
 int fnostdincs = 0;
 int num_constants_per_variable = 1;
 int instantiation_limit = 256;
@@ -72,11 +66,9 @@ static ArgumentDescription arg_desc[] = {
  {"scalar-promotion", ' ', "Enable Scalar Promotion", "T", &scalar_promotion, "CHPL_SCALAR_PROMOTION", NULL},
  {"formal-temps", ' ', "Insert Temps for Formals", "F", &formalTemps, "CHPL_FORMAL_TEMPS", NULL},
  {"no-codegen", ' ', "Suppress Code Generation", "F", &no_codegen, "CHPL_NO_CODEGEN", NULL},
- {"equal-method", ' ', "Make = a method", "T", &f_equal_method, "CHPL_EQUAL_METHOD", NULL},
  {"parser-debug", 'D', "Parser Debug Level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},
  {"count-tokens", ' ', "Count Tokens", "F", &countTokens, "CHPL_COUNT_TOKENS", NULL},
  {"print-tokens", ' ', "Print Tokens", "F", &printTokens, "CHPL_PRINT_TOKENS", NULL},
- {"verbose", 'v', "Level of Verbosity", "+", &ifa_verbose, "CHPL_VERBOSE", NULL},
  {"print-commands", ' ', "Print Subprocess Commands", "F", &printSystemCommands, 
   "CHPL_PRINT_COMMANDS", NULL},
  {"parallel", 'p', "Enable threaded code generation", "F", &parallelPass, "CHPL_PARALLELIZE", NULL},
@@ -138,25 +130,6 @@ handleLibPath(ArgumentState* arg_state, char* arg_unused) {
   addLibInfo(stringcat("-L", libraryFilename));
 }
 
-void
-do_analysis(char *fn) {
-  if (ifa_analyze(fn) < 0)
-    fail("program does not type");
-  if (fgraph)
-    ifa_graph(fn);
-  if (fdump_html) {
-    char mktree_dir[512];
-    strcpy(mktree_dir, system_dir);
-    strcat(mktree_dir, "/etc/www");
-    ifa_html(fn, mktree_dir);
-  }
-  if (fcg) {
-    ifa_cg(fn);
-    ifa_compile(fn);
-  }
-  return;
-}
-
 static void
 compile_all(void) {
   initPrimitive();
@@ -213,7 +186,6 @@ main(int argc, char *argv[]) {
   startCatchingSignals();
   if (arg_state.nfile_arguments < 1)
     help(&arg_state, NULL);
-  graph_type = !fgraph_vcg ? GraphViz : VCG;
   if (rungdb)
     runCompilerInGDB(argc, argv);
   if (fdump_html || strcmp(log_flags, ""))

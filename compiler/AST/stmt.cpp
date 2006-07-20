@@ -16,8 +16,7 @@ bool justStartedGeneratingFunction = false;
 
 Stmt::Stmt(astType_t astType) :
   BaseAST(astType),
-  parentStmt(NULL),
-  ainfo(NULL)
+  parentStmt(NULL)
 {}
 
 

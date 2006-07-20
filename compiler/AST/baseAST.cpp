@@ -7,7 +7,6 @@
 #include "symscope.h"
 #include "type.h"
 #include "yy.h"
-#include "../ifa/if1.h"
 
 
 char *

@@ -3,7 +3,7 @@
 */
 #include <stdio.h>
 #include "arg.h"
-#include "defs.h"
+#include "chpl.h"
 
 static char *SPACES = "                                                                               ";
 static char *arg_types_keys = (char *)"IPSDfF+TL";

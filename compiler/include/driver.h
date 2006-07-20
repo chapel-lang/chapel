@@ -16,10 +16,7 @@ extern bool formalTemps;
 extern int instantiation_limit;
 
 extern int fdump_html;
-extern int f_equal_method;
 extern int fnostdincs;
-
-extern int fgraph;
 
 extern int trace_level;
 
@@ -37,7 +34,5 @@ extern int squelch_header_errors;
 
 extern bool parallelPass;
 extern int scalar_promotion;
-
-void do_analysis(char *fn);
 
 #endif

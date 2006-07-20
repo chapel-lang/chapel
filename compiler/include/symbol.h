@@ -11,7 +11,6 @@ class SymExpr;
 class DefExpr;
 class Stmt;
 class BlockStmt;
-class ASymbol;
 class SymScope;
 class Immediate;
 class BasicBlock;
@@ -42,7 +41,6 @@ class Symbol : public BaseAST {
   DefExpr* defPoint; // Point of definition
   Vec<SymExpr*>* uses;
 
-  ASymbol *asymbol;
   Symbol* overload;
   bool isUnresolved;
 

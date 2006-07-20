@@ -1,4 +1,4 @@
-#include "geysa.h"
+#include "../ifa/defs.h"
 
 // primes generated with map_mult.c
 uint open_hash_multipliers[256] = {

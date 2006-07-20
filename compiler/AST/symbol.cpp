@@ -114,7 +114,6 @@ Symbol::Symbol(astType_t astType, char* init_name, Type* init_type) :
   type(init_type),
   defPoint(NULL),
   uses(NULL),
-  asymbol(0),
   overload(NULL),
   isUnresolved(false)
 {}

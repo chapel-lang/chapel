@@ -1,5 +1,4 @@
 #include <sys/stat.h>
-#include "defs.h"
 #include "log.h"
 
 static char save_dir[FILENAME_MAX];

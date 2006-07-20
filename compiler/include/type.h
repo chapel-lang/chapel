@@ -26,7 +26,6 @@ class Expr;
 class DefExpr;
 class CallExpr;
 class CondStmt;
-class ASymbol;
 class SymScope;
 class VariableType;
 
@@ -40,7 +39,6 @@ class Type : public BaseAST {
   TypeSymbol* symbol;
   Symbol* defaultValue;
   FnSymbol *defaultConstructor;
-  ASymbol *asymbol;
   Vec<FnSymbol*> methods;
   Type *metaType;
   bool isGeneric;

@@ -8,14 +8,12 @@
 #include "primitive.h"
 
 class Stmt;
-class AAST;
 class FnSymbol;
 
 class Expr : public BaseAST {
  public:
   Stmt* parentStmt;
   Expr* parentExpr;
-  AAST *ainfo;
 
   Expr(astType_t astType = EXPR);
   COPY_DEF(Expr);

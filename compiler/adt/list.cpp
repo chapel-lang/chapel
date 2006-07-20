@@ -3,7 +3,6 @@
 */
 
 #include <stddef.h>
-#include "geysa.h"
 
 #ifdef TEST_LIB
 class A {

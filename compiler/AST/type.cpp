@@ -18,7 +18,6 @@ Type::Type(astType_t astType, Symbol* init_defaultVal) :
   symbol(NULL),
   defaultValue(init_defaultVal),
   defaultConstructor(NULL),
-  asymbol(NULL),
   metaType(NULL),
   isGeneric(false),
   instantiatedFrom(NULL),

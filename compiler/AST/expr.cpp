@@ -10,8 +10,7 @@
 Expr::Expr(astType_t astType) :
   BaseAST(astType),
   parentStmt(NULL),
-  parentExpr(NULL),
-  ainfo(NULL)
+  parentExpr(NULL)
 {}
 
 

@@ -193,9 +193,7 @@ static void build_record_assignment_function(ClassType* ct) {
     return;
 
   FnSymbol* fn = new FnSymbol("=");
-  ArgSymbol* arg1 = 
-    f_equal_method ? new ArgSymbol(INTENT_REF, "this", ct)
-    : new ArgSymbol(INTENT_BLANK, "_arg1", ct);
+  ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtAny);
   fn->formals->insertAtTail(arg1);
   fn->formals->insertAtTail(arg2);
@@ -210,12 +208,6 @@ static void build_record_assignment_function(ClassType* ct) {
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->parentStmt->insertBefore(def);
   reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
-  if (f_equal_method) {
-    ct->methods.add(fn);
-    fn->isMethod = true;
-    fn->typeBinding = ct->symbol;
-    fn->_this = arg1;
-  }
   build(fn);
   fns.add(fn);
 }

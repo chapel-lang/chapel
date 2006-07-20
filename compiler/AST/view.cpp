@@ -6,7 +6,7 @@
 #include "symscope.h"
 #include "type.h"
 #include "stringutil.h"
-#include "chpl_log.h"
+#include "log.h"
 
 
 static char*
