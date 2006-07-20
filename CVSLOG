@@ -68456,3 +68456,14 @@ Modified files:
 	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
 	                                         inlfunc2_report.good 
 
+---------------------------------------------------------------------------
+
+07/19/06 17:10:59 -- deitz
+
+Log message:
+	Updated .goods.
+
+Modified files:
+	chapel/test/memory/shannon/: memstatPrint.good 
+	                             printFinalMemStat.good 
+
