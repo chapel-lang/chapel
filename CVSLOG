@@ -68494,3 +68494,14 @@ Added files:
 	chapel/test/classes/deitz/: test_dynamic_dispatch.chpl 
 	                            test_dynamic_dispatch.good 
 
+---------------------------------------------------------------------------
+
+07/20/06 09:37:19 -- deitz
+
+Log message:
+	Updated .goods
+
+Modified files:
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+
