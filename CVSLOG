@@ -68574,3 +68574,17 @@ Removed files:
 	                      log.h map.cpp map.h vec.cpp vec.h 
 	chapel/compiler/include/: chpl_log.h 
 
+---------------------------------------------------------------------------
+
+07/20/06 15:05:17 -- deitz
+
+Log message:
+	Minor refactor of function resolution.  Removal of simplify nested
+	MOVE primitives which is no longer necessary because = is not special
+	cased during resolution.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp 
+	chapel/compiler/include/: astutil.h 
+	chapel/compiler/passes/: functionResolution.cpp 
+
