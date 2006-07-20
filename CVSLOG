@@ -68588,3 +68588,13 @@ Modified files:
 	chapel/compiler/include/: astutil.h 
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+07/20/06 16:04:55 -- deitz
+
+Log message:
+	Minor refactoring of function resolution.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+
