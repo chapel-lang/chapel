@@ -25,7 +25,7 @@ static FnSymbol* resolve_call(CallExpr* call,
                               Vec<Type*>* actual_types,
                               Vec<Symbol*>* actual_params,
                               Vec<char*>* actual_names);
-static void resolve_type_expr(BaseAST* base);
+static void resolve_type_expr(CallExpr* call);
 
 static void resolveCall(CallExpr* call, Vec<FnSymbol*>* resolvedFns);
 static void resolveFns(FnSymbol* fn, Vec<FnSymbol*>* resolvedFns);
@@ -40,7 +40,8 @@ resolveFormals(FnSymbol* fn) {
       }
     }
     if (fn->retExpr) {
-      resolve_type_expr(fn->retExpr);
+      if (CallExpr* call = dynamic_cast<CallExpr*>(fn->retExpr))
+        resolve_type_expr(call);
       SymExpr* sym = dynamic_cast<SymExpr*>(fn->retExpr);
       if (!sym)
         INT_FATAL(fn, "Bad return type expression");
@@ -398,20 +399,18 @@ build_promotion_wrapper(FnSymbol* fn,
 
 
 static Type*
-resolve_type(BaseAST* ast,
+resolve_type(CallExpr* call,
              char *name,
              Vec<Type*>* actual_types,
              Vec<Symbol*>* actual_params,
              Vec<char*>* actual_names,
-             PartialTag partialTag,
-             FnSymbol *fn)
-{
+             FnSymbol* fn = NULL) {
   if (!fn) {
     char* canon_name = cannonicalize_string(name);
     Vec<FnSymbol*> visibleFns;                    // visible functions
-    ast->parentScope->getVisibleFunctions(&visibleFns, canon_name);
+    call->parentScope->getVisibleFunctions(&visibleFns, canon_name);
     if (visibleFns.n > 1)
-      INT_FATAL(ast, "bad type");
+      INT_FATAL(call, "bad type");
     if (visibleFns.n == 1)
       fn = visibleFns.v[0];
   }
@@ -434,7 +433,7 @@ resolve_type(BaseAST* ast,
     if (subs.n && !fn->isPartialInstantiation(&subs)) {
       FnSymbol* inst_fn = fn->instantiate_generic(&subs);
       if (inst_fn)
-        return resolve_type(ast, name, actual_types, actual_params, actual_names, partialTag, inst_fn);
+        return resolve_type(call, name, actual_types, actual_params, actual_names, inst_fn);
     }
   }
   return fn->retType;
@@ -576,7 +575,7 @@ computeActuals(CallExpr* call,
 }
 
 static void
-resolve_type_expr(BaseAST* base) {
+resolve_type_expr(CallExpr* base) {
   Vec<BaseAST*> asts;
   collect_asts_postorder(&asts, base);
 
@@ -590,16 +589,13 @@ resolve_type_expr(BaseAST* base) {
       Vec<Symbol*> aparams;
       Vec<char*> anames;
       computeActuals(call, &atypes, &aparams, &anames);
-
-      SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr);
-      char* name = base->var->name;
+      SymExpr* sym = dynamic_cast<SymExpr*>(call->baseExpr);
+      char* name = sym->var->name;
       FnSymbol* fn = call->isResolved();
       if (fn && fn->retType != dtUnknown)
         call->replace(new SymExpr(fn->retType->symbol));
       else {
-        Type* t = resolve_type(call, name, &atypes,
-                               &aparams, &anames,
-                               call->partialTag, NULL);
+        Type* t = resolve_type(call, name, &atypes, &aparams, &anames);
         if (!t || t == dtUnknown)
           INT_FATAL(fn, "Unable to resolve type");
         call->replace(new SymExpr(t->symbol));
