@@ -68505,3 +68505,24 @@ Modified files:
 	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
 	                                         inlfunc2_report.good 
 
+---------------------------------------------------------------------------
+
+07/20/06 09:38:28 -- deitz
+
+Log message:
+	Updated output for test_inherit4 since write should no longer
+	dynamically dispatch.  Unless we reimplement write as a method and
+	implement write and writeln functions to call the methods.  Removed
+	.future.
+	
+	Added a new test test_inherit4b to do the dispatch via a method called
+	print that calls write on 'this'.
+
+Modified files:
+	chapel/test/classes/deitz/inherit/: test_inherit4.good 
+Added files:
+	chapel/test/classes/deitz/inherit/: test_inherit4b.chpl 
+	                                    test_inherit4b.good 
+Removed files:
+	chapel/test/classes/deitz/inherit/: test_inherit4.future 
+
