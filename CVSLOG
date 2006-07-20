@@ -68445,3 +68445,14 @@ Modified files:
 Added files:
 	chapel/test/functions/bradc/: typefn2a.chpl typefn2a.good 
 
+---------------------------------------------------------------------------
+
+07/19/06 17:07:36 -- deitz
+
+Log message:
+	Updated .goods
+
+Modified files:
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+
