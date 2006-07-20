@@ -287,9 +287,7 @@ static void build_lvalue_function(FnSymbol* fn) {
   new_fn->cname = stringcat("_setter_", fn->cname);
   ArgSymbol* setterToken = new ArgSymbol(INTENT_BLANK, "_setterTokenDummy",
                                          dtSetterToken);
-  ArgSymbol* lvalue = new ArgSymbol(INTENT_BLANK, "_lvalue", fn->retType);
-  if (lvalue->type == dtUnknown)
-    lvalue->type = dtAny;
+  ArgSymbol* lvalue = new ArgSymbol(INTENT_BLANK, "_lvalue", dtAny);
   new_fn->formals->insertAtTail(new DefExpr(setterToken));
   new_fn->formals->insertAtTail(new DefExpr(lvalue));
   Vec<BaseAST*> asts;
@@ -329,14 +327,11 @@ static void normalize_returns(FnSymbol* fn) {
   LabelSymbol* label = new LabelSymbol(stringcat("_end_", fn->name));
   fn->insertAtTail(new DefExpr(label));
   VarSymbol* retval = NULL;
-  bool returnType = false;
   if (returns_void) {
     fn->insertAtTail(new ReturnStmt());
   } else {
-    retval = new VarSymbol(stringcat("_ret_", fn->name), fn->retType);
-    Expr* type = (fn->retExpr) ? fn->retExpr->copy() : NULL;
-    returnType = type != NULL;
-    fn->insertAtHead(new DefExpr(retval, NULL, type));
+    retval = new VarSymbol(stringcat("_ret_", fn->name));
+    fn->insertAtHead(new DefExpr(retval));
     fn->insertAtTail(new ReturnStmt(retval));
   }
   bool label_is_used = false;
@@ -344,11 +339,7 @@ static void normalize_returns(FnSymbol* fn) {
     if (retval) {
       Expr* ret_expr = ret->expr;
       ret_expr->remove();
-      if (returnType)
-        ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval,
-                                       new CallExpr("=", retval, ret_expr)));
-      else
-        ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, ret_expr));
+      ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, ret_expr));
     }
     if (ret->next != label->defPoint->parentStmt) {
       ret->replace(new GotoStmt(goto_normal, label));

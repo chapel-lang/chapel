@@ -839,7 +839,7 @@ resolveFns(FnSymbol* fn, Vec<FnSymbol*>* resolvedFns) {
   if (rt == dtUnknown)
     INT_FATAL(fn, "Unable to resolve return type");
   if (rt != fn->retType)
-    INT_FATAL(fn, "Bad return type detected");
+    USR_FATAL(fn, "Return type does not match type of returned expression");
 }
 
 

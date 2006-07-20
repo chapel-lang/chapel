@@ -1,5 +1,5 @@
-fun min(type t): t {
-  return -999;
+fun min(type t) {
+  return -999:t;
 }
 
 writeln("minint is: ", min(int));
