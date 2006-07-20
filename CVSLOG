@@ -68467,3 +68467,30 @@ Modified files:
 	chapel/test/memory/shannon/: memstatPrint.good 
 	                             printFinalMemStat.good 
 
+---------------------------------------------------------------------------
+
+07/20/06 09:36:29 -- deitz
+
+Log message:
+	Implemented a first cut of an unoptimized form of dynamic dispatch on
+	the 'this' argument to a method.  This will not work in the case where
+	a generic type inherits from a class.
+	
+	Added primitives SETCID and GETCID to access a dynamic id on class
+	types to determine what the dynamic type of a class is.
+	
+	Implemented a coercion wrapper cache to avoid making multiple coercion
+	wrappers that are the same.  This uses the same cache code as
+	instantiation.
+	
+	Added a test case to test dynamic dispatch.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: primitive.h symbol.h 
+	chapel/compiler/passes/: cleanup.cpp functionResolution.cpp 
+	                         normalize.cpp 
+Added files:
+	chapel/test/classes/deitz/: test_dynamic_dispatch.chpl 
+	                            test_dynamic_dispatch.good 
+
