@@ -7,6 +7,26 @@
 #include "runtime.h"
 
 
+// types contains the types of the actuals
+// names contains the name if it is a named argument, otherwise NULL
+// e.g.  foo(arg1=12, "hi");
+//  types = int, string
+//  names = arg1, NULL
+enum resolve_call_error_type {
+  CALL_NO_ERROR,
+  CALL_PARTIAL,
+  CALL_AMBIGUOUS,
+  CALL_UNKNOWN
+};
+static resolve_call_error_type resolve_call_error;
+static Vec<FnSymbol*> resolve_call_error_candidates;
+static FnSymbol* resolve_call(CallExpr* call,
+                              char *name,
+                              Vec<Type*>* actual_types,
+                              Vec<Symbol*>* actual_params,
+                              Vec<char*>* actual_names);
+static void resolve_type_expr(BaseAST* base);
+
 static void resolveCall(CallExpr* call, Vec<FnSymbol*>* resolvedFns);
 static void resolveFns(FnSymbol* fn, Vec<FnSymbol*>* resolvedFns);
 
@@ -32,12 +52,10 @@ resolveFormals(FnSymbol* fn) {
   }
 }
 
-resolve_call_error_type resolve_call_error;
-Vec<FnSymbol*> resolve_call_error_candidates;
-
 // Returns true iff dispatching the actualType to the formalType
 // results in an instantiation.
-bool canInstantiate(Type* actualType, Type* formalType) {
+static bool
+canInstantiate(Type* actualType, Type* formalType) {
   if (formalType == dtAny)
     return true;
   if (actualType == formalType)
@@ -50,7 +68,8 @@ bool canInstantiate(Type* actualType, Type* formalType) {
 
 // Returns true iff dispatching the actualType to the formalType
 // results in a coercion.
-bool canCoerce(Type* actualType, Type* formalType) {
+static bool
+canCoerce(Type* actualType, Type* formalType) {
   if (is_int_type(formalType) && dynamic_cast<EnumType*>(actualType)) {
     return true;
   }
@@ -84,7 +103,8 @@ bool canCoerce(Type* actualType, Type* formalType) {
 // Returns true iff the actualType can dispatch to the formalType.
 // The function symbol is used to avoid scalar promotion on =.
 // param is set if the actual is a parameter (compile-time constant).
-bool canDispatch(FnSymbol* fn, Symbol* param, Type* actualType, Type* formalType, bool* require_scalar_promotion = NULL) {
+static bool
+canDispatch(FnSymbol* fn, Symbol* param, Type* actualType, Type* formalType, bool* require_scalar_promotion = NULL) {
   if (require_scalar_promotion)
     *require_scalar_promotion = false;
   if (actualType == formalType)
@@ -108,7 +128,8 @@ bool canDispatch(FnSymbol* fn, Symbol* param, Type* actualType, Type* formalType
   return false;
 }
 
-bool isDispatchParent(Type* t, Type* pt) {
+static bool
+isDispatchParent(Type* t, Type* pt) {
   forv_Vec(Type, p, t->dispatchParents)
     if (p == pt || isDispatchParent(p, pt))
       return true;
@@ -376,7 +397,7 @@ build_promotion_wrapper(FnSymbol* fn,
 }
 
 
-Type*
+static Type*
 resolve_type(BaseAST* ast,
              char *name,
              Vec<Type*>* actual_types,
@@ -419,28 +440,23 @@ resolve_type(BaseAST* ast,
   return fn->retType;
 }
 
-FnSymbol*
-resolve_call(BaseAST* ast,
+static FnSymbol*
+resolve_call(CallExpr* call,
              char *name,
              Vec<Type*>* actual_types,
              Vec<Symbol*>* actual_params,
-             Vec<char*>* actual_names,
-             PartialTag partialTag,
-             FnSymbol *fnSymbol)
-{
+             Vec<char*>* actual_names) {
   Vec<FnSymbol*> visibleFns;                    // visible functions
 
   Vec<FnSymbol*> candidateFns;
   Vec<Vec<ArgSymbol*>*> candidateActualFormals; // candidate functions
 
-  bool methodTag = false;
-  if (CallExpr* call = dynamic_cast<CallExpr*>(ast))
-    methodTag = call->methodTag;
+  bool methodTag = call->methodTag;
 
-  if (!fnSymbol) {
-    ast->parentScope->getVisibleFunctions(&visibleFns, name);
-  } else
-    visibleFns.add(fnSymbol);
+  if (!call->isResolved())
+    call->parentScope->getVisibleFunctions(&visibleFns, name);
+  else
+    visibleFns.add(call->isResolved());
 
   forv_Vec(FnSymbol, visibleFn, visibleFns) {
     if (methodTag && !visibleFn->noParens)
@@ -514,7 +530,7 @@ resolve_call(BaseAST* ast,
     return NULL;
   }
 
-  if (partialTag == PARTIAL_OK && (!best || !best->noParens)) {
+  if (call->partialTag == PARTIAL_OK && (!best || !best->noParens)) {
     resolve_call_error = CALL_PARTIAL;
     return NULL;
   }
@@ -559,7 +575,7 @@ computeActuals(CallExpr* call,
   }
 }
 
-void
+static void
 resolve_type_expr(BaseAST* base) {
   Vec<BaseAST*> asts;
   collect_asts_postorder(&asts, base);
@@ -602,7 +618,7 @@ build_dispatch_tree(Map<Type*,FnSymbol*>* dispatchMap,
                     Vec<char*>* anames) {
   forv_Vec(Type, type, atypes->v[1]->dispatchChildren) {
     atypes->v[1] = type;
-    FnSymbol* fn = resolve_call(call, name, atypes, aparams, anames, call->partialTag, call->isResolved());
+    FnSymbol* fn = resolve_call(call, name, atypes, aparams, anames);
     if (fn) {
       dispatchMap->put(type, fn);
       build_dispatch_tree(dispatchMap, call, name, atypes, aparams, anames);
@@ -636,7 +652,7 @@ resolveCall(CallExpr* call, Vec<FnSymbol*>* resolvedFns) {
 
     SymExpr* base = dynamic_cast<SymExpr*>(call->baseExpr);
     char* name = base->var->name;
-    FnSymbol* resolvedFn = resolve_call(call, name, &atypes, &aparams, &anames, call->partialTag, call->isResolved());
+    FnSymbol* resolvedFn = resolve_call(call, name, &atypes, &aparams, &anames);
     if (!resolvedFn && call->partialTag == PARTIAL_OK) {
       CallExpr* parentCall = dynamic_cast<CallExpr*>(call->parentExpr);
       if (!parentCall)
@@ -931,7 +947,6 @@ resolve() {
   remove_named_exprs();
   remove_static_actuals();
   remove_static_formals();
-  simplify_nested_moves();
   asts.clear();
   collect_asts(&asts);
   forv_Vec(BaseAST, ast, asts) {

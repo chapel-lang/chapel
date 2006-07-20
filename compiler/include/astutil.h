@@ -14,29 +14,6 @@ void scopeResolve(BaseAST* ast);
 void normalize(BaseAST* ast);
 void build(BaseAST* ast);
 
-// types contains the types of the actuals
-// names contains the name if it is a named argument, otherwise NULL
-// e.g.  foo(arg1=12, "hi");
-//  types = int, string
-//  names = arg1, NULL
-enum resolve_call_error_type {
-  CALL_NO_ERROR,
-  CALL_PARTIAL,
-  CALL_AMBIGUOUS,
-  CALL_UNKNOWN
-};
-extern resolve_call_error_type resolve_call_error;
-extern Vec<FnSymbol*> resolve_call_error_candidates;
-FnSymbol*
-resolve_call(BaseAST* ast,
-             char *name,
-             Vec<Type*>* actual_types,
-             Vec<Symbol*>* actual_params,
-             Vec<char*>* actual_names,
-             PartialTag partialTag,
-             FnSymbol *fnSymbol = NULL);
-void resolve_type_expr(BaseAST* base);
-
 // collect FnSymbols in the AST and return them in vectors
 void collect_functions(Vec<FnSymbol*>* functions);
 
@@ -65,8 +42,6 @@ void update_symbols(BaseAST* ast, ASTMap* map);
 
 // removes NamedExpr from AST
 void remove_named_exprs();
-
-void simplify_nested_moves();
 
 void remove_static_actuals();
 void remove_static_formals();

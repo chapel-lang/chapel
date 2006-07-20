@@ -236,34 +236,6 @@ void remove_named_exprs() {
 }
 
 
-void
-simplify_nested_moves() {
-  Vec<BaseAST*> asts;
-  collect_asts_postorder(&asts);
-  forv_Vec(BaseAST, ast, asts) {
-    if (CallExpr* move = dynamic_cast<CallExpr*>(ast)) {
-      if (move->isPrimitive(PRIMITIVE_MOVE)) {
-        if (CallExpr* innerMove = dynamic_cast<CallExpr*>(move->get(2))) {
-          if (innerMove->isPrimitive(PRIMITIVE_MOVE)) {
-            INT_FATAL(move, "NESTED MOVE!!");
-            Expr* moveTarget = move->get(1);
-            Expr* innerMoveTarget = innerMove->get(1);
-            SymExpr* s1 = dynamic_cast<SymExpr*>(moveTarget);
-            SymExpr* s2 = dynamic_cast<SymExpr*>(innerMoveTarget);
-            if (s1 && s2 && s1->var == s2->var)
-              move->replace(innerMove->remove());
-            else {
-              move->parentStmt->insertBefore(innerMove->remove());
-              move->insertAtTail(innerMoveTarget->copy());
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-
 void remove_static_actuals() {
   Vec<BaseAST*> asts;
   collect_asts_postorder(&asts);
