@@ -68526,3 +68526,22 @@ Added files:
 Removed files:
 	chapel/test/classes/deitz/inherit/: test_inherit4.future 
 
+---------------------------------------------------------------------------
+
+07/20/06 10:40:26 -- deitz
+
+Log message:
+	Removed interpreter code base in preparation for simplifications to
+	function resolution.  A new interpreter should be made on the lowered
+	representation for simplicity and in conjunction with the runtime,
+	implementation resources allowing.
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/compiler/include/: driver.h primitive.h 
+	chapel/compiler/main/: driver.cpp passlist.h runpasses.cpp 
+	chapel/compiler/passes/: Makefile.share 
+Removed files:
+	chapel/compiler/passes/: interpreter.todo interpreter_ops.h 
+	                         runInterpreter.cpp runInterpreter.h 
+
