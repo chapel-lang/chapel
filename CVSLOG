@@ -68771,3 +68771,19 @@ Log message:
 Removed files:
 	chapel/test/functions/jplevyak/: call_mapping-1.future 
 
+---------------------------------------------------------------------------
+
+07/21/06 14:38:25 -- deitz
+
+Log message:
+	Added a simple test as a future
+	
+	  var y1 = 2;
+	  writeln(y1);
+	
+	which fails because y1 is redefined.  What's special about y1?
+
+Added files:
+	chapel/test/trivial/deitz/: test_y1.chpl test_y1.future 
+	                            test_y1.good 
+
