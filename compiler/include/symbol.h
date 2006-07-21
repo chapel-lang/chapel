@@ -43,6 +43,7 @@ class Symbol : public BaseAST {
 
   Symbol* overload;
   bool isUnresolved;
+  bool isCompilerTemp;
 
   Symbol(astType_t astType, char* init_name, Type* init_type = dtUnknown);
   virtual void verify(); 

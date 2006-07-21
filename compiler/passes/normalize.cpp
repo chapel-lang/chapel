@@ -600,6 +600,7 @@ static void insert_call_temps(CallExpr* call) {
 
   Stmt* stmt = call->parentStmt;
   VarSymbol* tmp = new VarSymbol("_tmp", dtUnknown, VAR_NORMAL, VAR_CONST);
+  tmp->isCompilerTemp = true;
   tmp->cname = stringcat(tmp->name, intstring(uid++));
   call->replace(new SymExpr(tmp));
   stmt->insertBefore(new DefExpr(tmp));

@@ -119,7 +119,8 @@ Symbol::Symbol(astType_t astType, char* init_name, Type* init_type) :
   defPoint(NULL),
   uses(NULL),
   overload(NULL),
-  isUnresolved(false)
+  isUnresolved(false),
+  isCompilerTemp(false)
 {}
 
 

@@ -16,6 +16,9 @@ void compressUnnecessaryScopes(FnSymbol* fn) {
   collect_asts(&asts, fn);
   forv_Vec(BaseAST, ast, asts) {
     if (BlockStmt* block = dynamic_cast<BlockStmt*>(ast)) {
+      if (block->blockTag == BLOCK_COBEGIN ||
+          block->blockTag == BLOCK_BEGIN)
+        continue;
       if (block->prev && block->next) {
         for_alist(Stmt, stmt, block->body)
           block->insertBefore(stmt->remove());
@@ -30,6 +33,8 @@ void compressUnnecessaryScopes(FnSymbol* fn) {
 // of pass by reference assuming that any argument to a call may be
 // pass by reference.
 //
+// In the presence of threads, made even more conservative; compiler
+// temps only.
 void localCopyPropagation(BasicBlock* bb) {
   ChainHashMap<Symbol*,PointerHashFns,Symbol*> available;
   forv_Vec(Expr, expr, bb->exprs) {
@@ -68,13 +73,23 @@ void localCopyPropagation(BasicBlock* bb) {
       if (move->isPrimitive(PRIMITIVE_MOVE)) {
         if (SymExpr* lhs = dynamic_cast<SymExpr*>(move->get(1))) {
           if (SymExpr* rhs = dynamic_cast<SymExpr*>(move->get(2))) {
-            VarSymbol* config;
-            config = dynamic_cast<VarSymbol*>(lhs->var);
-            if (config && config->varClass == VAR_CONFIG)
+
+            if (!lhs->var->isCompilerTemp) // only compiler temps
               continue;
-            config = dynamic_cast<VarSymbol*>(rhs->var);
-            if (config && config->varClass == VAR_CONFIG)
-              continue;
+
+            // Note: Disabled on configuration variables until those
+            // are in the AST for real
+
+            VarSymbol* lhs_var = dynamic_cast<VarSymbol*>(lhs->var);
+            VarSymbol* rhs_var = dynamic_cast<VarSymbol*>(rhs->var);
+            if (lhs_var) {
+              if (lhs_var->varClass == VAR_CONFIG)
+                continue;
+            }
+            if (rhs_var) {
+              if (rhs_var->varClass == VAR_CONFIG)
+                continue;
+            }
             available.put(lhs->var, rhs->var);
           }
         }
