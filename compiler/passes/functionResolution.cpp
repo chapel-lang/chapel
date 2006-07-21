@@ -551,9 +551,14 @@ resolve_type_expr(CallExpr* base) {
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
       resolveCall(call);
+      if (call->typeInfo() == dtUnknown)
+        resolveFns(call->isResolved());
     }
   }
-  base->replace(new SymExpr(base->typeInfo()->symbol));
+  Type* t = base->typeInfo();
+  if (t == dtUnknown)
+    INT_FATAL(base, "Unable to resolve formal type");
+  base->replace(new SymExpr(t->symbol));
 }
 
 
