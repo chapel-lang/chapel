@@ -40,10 +40,13 @@ returnInfoFirst(CallExpr* call) {
 static Type*
 returnInfoCast(CallExpr* call) {
   Type* t = call->get(1)->typeInfo();
-  if (MetaType* mt = dynamic_cast<MetaType*>(t))
+  if (MetaType* mt = dynamic_cast<MetaType*>(t)) {
+    if (mt->base->isGeneric && !dynamic_cast<VariableType*>(mt->base))
+      USR_FATAL(call, "Illegal cast to generic type");
     return mt->base;
-  else
+  } else {
     return t;
+  }
 }
 
 static Type*
