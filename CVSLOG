@@ -68685,3 +68685,46 @@ Removed files:
 	chapel/test/arrays/deitz/: test_class_array1.future 
 	chapel/test/arrays/jplevyak/: simple-2.future 
 
+---------------------------------------------------------------------------
+
+07/21/06 11:34:26 -- waynew
+
+Log message:
+	A few checkin's.
+	 - Changed parser to have a sync type.  New format is "var i: sync int".
+	   Previous was "sync var i: int".
+	 - Initial implementation of sync vars on scalars. Writing (default
+	   wait empty, leave full) seems to work. Default read (wait full,
+	   leave empty) is current done through the function read_leave_empty.
+	   Need to automagically transform reads to this call and implement
+	   the other read + writes.
+	 - Enabled thread-enabling passes by default. Removed .compopts files
+	   in parallel tests.
+	 - Enabled copyPropagation pass with thread-passes.
+	 - First test case (parallel/sync/waynew/simple1.chpl) to test sync
+	   vars.  Currently brokend due to copyPropagation pass.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: primitive.h symbol.h type.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/passes/: codegen.cpp copy_propagation.cpp 
+	                         parallel.cpp 
+	chapel/modules/standard/: _chpl_base.chpl _chpl_file.chpl 
+	chapel/runtime/include/: chplthreads.h stdchpl.h 
+	chapel/runtime/src/: chplthreads.c 
+Added files:
+	chapel/test/parallel/sync/waynew/: simple1.chpl simple1.good 
+Removed files:
+	chapel/test/parallel/begin/waynew/: simple.compopts 
+	                                    simple2.compopts 
+	                                    simple3.compopts 
+	chapel/test/parallel/cobegin/waynew/: cobegin.simple0.compopts 
+	                                      cobegin.simple1.compopts 
+	                                      cobegin.simple2.compopts 
+	                                      depend.compopts 
+	                                      locals.compopts 
+	                                      while.compopts 
+	                                      writeln.compopts 
+
