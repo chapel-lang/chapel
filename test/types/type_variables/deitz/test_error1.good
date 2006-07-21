@@ -1,0 +1,3 @@
+Error: Unresolved call 'foo(:C(int))' (test_error1.chpl:14)
+Candidates are:
+  foo(i: int) (test_error1.chpl:10)

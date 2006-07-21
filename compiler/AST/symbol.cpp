@@ -1162,18 +1162,36 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
         if (type->symbol->defPoint)
           defPoint->parentScope->astParent->uses.add(type->symbol->defPoint->getModule());
 
-    TypeSymbol* clone = retType->symbol->clone(&map);
+    ClassType* originalClass = dynamic_cast<ClassType*>(retType);
+    if (!originalClass) {
+      INT_FATAL(this, "Attempt to instantiate non-class type");
+    }
+    TypeSymbol* clone = retType->symbol->copy(&map);
+    ClassType* newClass = dynamic_cast<ClassType*>(clone->definition);
+    if (!newClass) {
+      INT_FATAL(this, "Class cloning went horribly wrong");
+    }
 
-    clone->cname = stringcat(clone->name, "_A_");
+    clone->cname = stringcat(clone->cname, "_A_");
+    clone->name = stringcat(clone->name, "(");
     forv_Vec(BaseAST, value, values) {
       if (Type* type = dynamic_cast<Type*>(value)) {
         clone->cname = stringcat(clone->cname, type->symbol->cname);
+        clone->name = stringcat(clone->name, type->symbol->name);
         if (!clone->definition->instantiatedWith)
           clone->definition->instantiatedWith = new Vec<Type*>();
         clone->definition->instantiatedWith->add(type);
       }
     }
     clone->cname = stringcat(clone->cname, "_B_");
+    clone->name = stringcat(clone->name, ")");
+
+    retType->symbol->defPoint->parentStmt->insertBefore(new DefExpr(clone));
+    clone->addPragmas(&pragmas);
+    clone->definition->substitutions.copy(retType->substitutions);
+    clone->definition->dispatchParents.copy(retType->dispatchParents);
+    if (clone->definition->dispatchChildren.n)
+      INT_FATAL(this, "Generic type has subtypes");
 
     new_ast_types.add(clone);
     instantiate_add_subs(&substitutions, &map);
