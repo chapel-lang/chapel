@@ -68598,3 +68598,18 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+07/20/06 19:13:35 -- deitz
+
+Log message:
+	Improved function resolution handling of formal types to use the same
+	call resolution mechanism as elsewhere.  In previous attempts to make
+	this happen, I ran into infinite recursions that I couldn't get rid of
+	in the case of recursively defined types, e.g., a linked list node.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+
