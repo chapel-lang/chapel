@@ -68728,3 +68728,23 @@ Removed files:
 	                                      while.compopts 
 	                                      writeln.compopts 
 
+---------------------------------------------------------------------------
+
+07/21/06 14:13:43 -- deitz
+
+Log message:
+	Fixed parallel tests that were breaking in the copyPropagation pass by
+	disabling removal of spurious BlockStmts that had BLOCK_BEGIN or
+	BLOCK_COBEGIN tags.
+	
+	Added Symbol::isCompilerTemp bool to mark a symbol as being inserted
+	by the compiler.  Currently, inline temps and call temps are marked.
+	To make copy propagation even more conservative in the presence of
+	threading, only compiler temps are made available for substitution.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/passes/: copy_propagation.cpp 
+	                         inlineFunctions.cpp normalize.cpp 
+
