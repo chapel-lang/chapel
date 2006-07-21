@@ -68613,3 +68613,13 @@ Modified files:
 	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
 	                                         inlfunc2_report.good 
 
+---------------------------------------------------------------------------
+
+07/21/06 08:41:08 -- deitz
+
+Log message:
+	Removed some dead code in function resolution as a result of the last change.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+
