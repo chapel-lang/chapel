@@ -68635,3 +68635,21 @@ Modified files:
 	                             printFinalMemStat.good 
 	                             printMemTable2.good 
 
+---------------------------------------------------------------------------
+
+07/21/06 09:12:41 -- deitz
+
+Log message:
+	Improved error messages by making the name of instantiated types more
+	descriptive.  Instead of just being the name of the generic class, the
+	name has the types in parentheses, e.g., seq(int).
+	
+	Added a test case.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/test/types/seq/bradc/: emptySeq3.good 
+Added files:
+	chapel/test/types/type_variables/deitz/: test_error1.chpl 
+	                                         test_error1.good 
+
