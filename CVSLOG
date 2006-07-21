@@ -68653,3 +68653,15 @@ Added files:
 	chapel/test/types/type_variables/deitz/: test_error1.chpl 
 	                                         test_error1.good 
 
+---------------------------------------------------------------------------
+
+07/21/06 09:51:23 -- deitz
+
+Log message:
+	Fixed resolution of formal types so that the functions are resolved
+	which is important for array and domain types.  This almost gets the
+	array in class test working, program output fails.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+
