@@ -68820,3 +68820,14 @@ Modified files:
 Removed files:
 	chapel/test/demo/review_060130/: iterators.future 
 
+---------------------------------------------------------------------------
+
+07/21/06 16:58:27 -- deitz
+
+Log message:
+	Added working test of tuple of array type.
+
+Added files:
+	chapel/test/arrays/deitz/: test_tuple_of_array.chpl 
+	                           test_tuple_of_array.good 
+
