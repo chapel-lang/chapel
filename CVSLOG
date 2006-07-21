@@ -68665,3 +68665,23 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+07/21/06 10:59:52 -- deitz
+
+Log message:
+	Added special code to a constructor of a class or record that contains
+	an array field that initializes that field and then assigns the value
+	of an argument to that field if one is specified.  For all other
+	types, the argument that is passed in initializes the field.  Arrays
+	are different because they need to be initialized with a domain even
+	though the domain is not part of the type.
+	
+	This allows classes with array fields.  Removed two futures.
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp 
+Removed files:
+	chapel/test/arrays/deitz/: test_class_array1.future 
+	chapel/test/arrays/jplevyak/: simple-2.future 
+
