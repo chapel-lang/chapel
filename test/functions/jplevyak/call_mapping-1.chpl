@@ -6,7 +6,7 @@ class D {
   fun a(i : int) { return aa + i; }
   fun =a(i : int, v : int) { aa = i + v; }
 }
-var d : domain(1) = 1..3;
+var d : domain(1) = [1..3];
 class E {
   var a : [d] int;
 }
@@ -14,17 +14,15 @@ class E {
 var a : [d] int;
 var x = 1;
 var z = 1;
-var y1 = C();
-var y2 = D();
-var y3 = E();
+var Y1 = C();
+var Y2 = D();
+var Y3 = E();
 
 a(x) = z;
 writeln(a(x));
-y1.a = z;
-writeln(y1.a);
-y1.a() = z;
-writeln(y1.a());
-y2.a(2) = z;
-writeln(y2.a(2));
-y3.a()(2) = z;
-writeln(y3.a()(2));
+Y1.a = z;
+writeln(Y1.a);
+Y2.a(2) = z;
+writeln(Y2.a(2));
+Y3.a(2) = z;
+writeln(Y3.a(2));
