@@ -68748,3 +68748,16 @@ Modified files:
 	chapel/compiler/passes/: copy_propagation.cpp 
 	                         inlineFunctions.cpp normalize.cpp 
 
+---------------------------------------------------------------------------
+
+07/21/06 14:34:07 -- deitz
+
+Log message:
+	Updated test and removed .future.  This test has an array in a class
+	but also used some stopgap syntax that is no longer necessary or
+	legal.
+
+Modified files:
+	chapel/test/functions/jplevyak/: call_mapping-1.chpl 
+	                                 call_mapping-1.good 
+
