@@ -335,9 +335,22 @@ static void build_constructor(ClassType* ct) {
   forv_Vec(Symbol, field, ct->fields) {
     for_formals(formal, fn) {
       if (!formal->variableExpr && !strcmp(formal->name, field->name)) {
-        Expr* assign_expr = new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
-                                         new_StringSymbol(field->name), formal);
-        fn->insertAtTail(assign_expr);
+        CallExpr* call = dynamic_cast<CallExpr*>(formal->defPoint->exprType);
+        if (call && call->isNamed("_build_array_type")) {
+          VarSymbol* tmp = new VarSymbol("_tmp");
+          fn->insertAtTail(new DefExpr(tmp, NULL, call->copy()));
+          fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
+                                        new_StringSymbol(field->name), tmp));
+          fn->insertAtTail(new CondStmt(new SymExpr(formal), new ExprStmt(new CallExpr("=",
+                             new CallExpr(".",
+                                          fn->_this,
+                                          new_StringSymbol(field->name)),
+                                                                                       formal))));
+        } else {
+          Expr* assign_expr = new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
+                                           new_StringSymbol(field->name), formal);
+          fn->insertAtTail(assign_expr);
+        }
       }
     }
   }
