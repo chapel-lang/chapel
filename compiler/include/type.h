@@ -211,11 +211,13 @@ TYPE_EXTERN PrimitiveType* dtComplex[FLOAT_SIZE_NUM];
 TYPE_EXTERN PrimitiveType* dtString;
 TYPE_EXTERN PrimitiveType* dtSymbol;
 TYPE_EXTERN PrimitiveType* dtFile; 
+TYPE_EXTERN PrimitiveType* dtMutex;
+TYPE_EXTERN PrimitiveType* dtMutex_p;
+TYPE_EXTERN PrimitiveType* dtCondVar_p;        // condition variable
 
 // internal types
 TYPE_EXTERN Type* dtMethodToken;
 TYPE_EXTERN Type* dtSetterToken;
-TYPE_EXTERN Type* dtMutex;  // for critical sections
 void findInternalTypes(void);
 
 // sum-ish types
@@ -231,6 +233,6 @@ void complete_closure(ClassType *closureType, Vec<Type *> member_types);
 bool is_int_type(Type*);
 bool is_uint_type(Type*);
 bool is_float_type(Type*);
-int get_width(Type*);
+int  get_width(Type*);
 
 #endif

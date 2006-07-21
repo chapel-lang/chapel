@@ -80,6 +80,7 @@ scan            processToken(TSCAN);
 select          processToken(TSELECT);
 sparse          processToken(TSPARSE);
 static          processToken(TSTATIC);
+sync            processToken(TSYNC);
 then            processToken(TTHEN);
 type            processToken(TTYPE);
 typedef         processToken(TTYPEDEF);

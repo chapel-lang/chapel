@@ -11,15 +11,19 @@
 #include "astutil.h"
 #include "passes.h"
 
-FnSymbol* chpl_main = NULL;
+FnSymbol *chpl_main = NULL;
 
-Symbol *gNil = 0;
-Symbol *gUnknown = 0;
-Symbol *gUnspecified = 0;
-Symbol *gVoid = 0;
-Symbol *gFile = 0;
-VarSymbol *gTrue = 0;
-VarSymbol *gFalse = 0;
+Symbol *gNil = NULL;
+Symbol *gUnknown = NULL;
+Symbol *gUnspecified = NULL;
+Symbol *gVoid = NULL;
+Symbol *gFile = NULL;
+Symbol *gMutex_p = NULL;
+Symbol *gCondVar_p = NULL;
+
+VarSymbol *gTrue = NULL;
+VarSymbol *gFalse = NULL;
+
 
 Vec<FnSymbol*> new_ast_functions;
 Vec<TypeSymbol*> new_ast_types;
@@ -1460,14 +1464,6 @@ void ModuleSymbol::codegenDef(void) {
   openCFiles(name, &outfileinfo);
 
   fprintf(codefile, "#include \"_chpl_header.h\"\n");
-  /*
-  fprintf(codefile, "#include \"stdchpl.h\"\n");
-  if (parallelPass) {
-    // WAW: Should be done in codegen, but cannot add include's after codegen.
-    fprintf (codefile, "#include \"chplthreads.h\"\n");
-  }
-  fprintf(codefile, "\n");
-  */
 
   modScope->codegenFunctions(codefile);
 

@@ -122,7 +122,6 @@ begin_mark_locals() {
     }
   }
 
-
   // do a buch of stuff:
   //  - mark locals as heap allocated
   //  - create associated mutex + reference counter

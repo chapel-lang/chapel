@@ -39,6 +39,14 @@ enum PrimitiveTag {
   PRIMITIVE_REFC_INIT,                 // initialize ref-counted heap var
   PRIMITIVE_REFC_TOUCH,                // touch reference-counted var
   PRIMITIVE_REFC_RELEASE,              // dec ref-counter and maybe free var
+
+  PRIMITIVE_SYNCVAR_LOCK,                
+  PRIMITIVE_SYNCVAR_UNLOCK,
+  PRIMITIVE_SYNCVAR_SIGNAL_FULL,
+  PRIMITIVE_SYNCVAR_WAIT_FULL,
+  PRIMITIVE_SYNCVAR_SIGNAL_EMPTY,
+  PRIMITIVE_SYNCVAR_WAIT_EMPTY,
+
   PRIMITIVE_CHPL_ALLOC,
   PRIMITIVE_CHPL_FREE,                 // only for on_heap vars?
   PRIMITIVE_PTR_EQUAL,

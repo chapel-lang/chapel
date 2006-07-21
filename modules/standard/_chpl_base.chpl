@@ -373,6 +373,47 @@ class _ddata {
   }
 }
 
+
+// synch variable support
+pragma "sync var"
+record _syncvar {
+  type t;
+  var  value: t;             // actual data
+  var  is_full: bool;
+  var  lock: _mutex_p;       // need to acquire before accessing this record
+  var  cv_empty: _condvar_p; // wait for empty, signal this when empty
+  var  cv_full: _condvar_p;  // wait for full, signal this when full
+}
+
+
+// wait for empty, leaves full
+fun =( sv:_syncvar, value:sv.t) {
+  __primitive( "syncvar_lock", sv);
+  if (sv.is_full) {
+    __primitive( "syncvar_wait_empty", sv);
+  }
+  sv.value = value;
+  sv.is_full = true;
+  __primitive( "syncvar_signal_full", sv);
+  __primitive( "syncvar_unlock", sv);
+  return sv;
+}
+
+// wait for full, leave empty
+fun read_leave_empty( sv:_syncvar) {
+  var ret: sv.t;
+  __primitive( "syncvar_lock", sv);
+  if (!sv.is_full) {
+    __primitive( "syncvar_wait_full", sv);
+  }
+  ret = sv.value;
+  sv.is_full = false;
+  __primitive( "syncvar_signal_empty", sv);
+  __primitive( "syncvar_unlock", sv);
+  return ret;
+}
+
+
 //
 // MOVE THESE, maybe to a memory module?
 //

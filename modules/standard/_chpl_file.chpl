@@ -407,6 +407,12 @@ fun fwrite(f: file = stdout, val: bool) {
 }
 
 
+pragma "rename _chpl_fwrite_syncvar"
+fun fwrite(f: file = stdout, sv: _syncvar) {
+  fwrite( f, sv.value);
+}
+
+
 pragma "rename _chpl_fwriteln"
 fun fwriteln(f: file, args ...?numArgs) {
   for param i in 1..numArgs {

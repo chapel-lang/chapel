@@ -115,10 +115,6 @@ static void codegen_header(void) {
 
   FILE* outfile = openCFile("_chpl_header.h");
   fprintf(outfile, "#include \"stdchpl.h\"\n");
-  if (parallelPass) {
-    // WAW: Should be done in codegen, but cannot add include's after codegen.
-    fprintf (outfile, "#include \"chplthreads.h\"\n");
-  }
   fprintf(outfile, "\n");
 
   forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {

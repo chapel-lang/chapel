@@ -40,7 +40,7 @@ char system_dir[FILENAME_MAX] = DEFAULT_SYSTEM_DIR;
 int fnostdincs = 0;
 int num_constants_per_variable = 1;
 int instantiation_limit = 256;
-bool parallelPass = false;
+bool parallelPass = true;
 int scalar_promotion = 1;
 int squelch_header_errors = 0;
 
@@ -71,7 +71,7 @@ static ArgumentDescription arg_desc[] = {
  {"print-tokens", ' ', "Print Tokens", "F", &printTokens, "CHPL_PRINT_TOKENS", NULL},
  {"print-commands", ' ', "Print Subprocess Commands", "F", &printSystemCommands, 
   "CHPL_PRINT_COMMANDS", NULL},
- {"parallel", 'p', "Enable threaded code generation", "F", &parallelPass, "CHPL_PARALLELIZE", NULL},
+ {"parallel", 'p', "toggle threaded code generation", "T", &parallelPass, "CHPL_PARALLELIZE", NULL},
  {"print-passes", ' ', "Print Passes", "F", &printPasses, "CHPL_PRINT_PASSES", NULL},
  {"no-header-errors", ' ', "Squelch Header Errors", "T", &squelch_header_errors, "CHPL_SQUELCH_HEADER_ERRORS", NULL},
  {"version", ' ', "Show Version", NULL, NULL, NULL, version},

@@ -132,8 +132,6 @@ void deadExpressionElimination(FnSymbol* fn) {
 }
 
 void copyPropagation(void) {
-  if (parallelPass) // flattening of blocks a problem for cobegin
-    return;
   Vec<FnSymbol*> fns;
   collect_functions(&fns);
   forv_Vec(FnSymbol, fn, fns) {

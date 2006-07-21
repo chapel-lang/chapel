@@ -19,59 +19,76 @@ static int             _chpl_begin_cnt;        // number of unjoined threads
 static _chpl_condvar_t _chpl_can_exit;         // can main thread exit?
 
 // Mutex
+_chpl_mutex_p 
+_chpl_mutex_new( void) {
+  _chpl_mutex_p m;
+  m = (_chpl_mutex_p) _chpl_alloc( sizeof( _chpl_mutex_t), "mutex");
+  _chpl_mutex_init( m);
+  return m;
+}
+
+
 int 
-_chpl_mutex_init( _chpl_mutex_t *mutex) {
+_chpl_mutex_init( _chpl_mutex_p mutex) {
   // WAW: how to explicitly specify blocking-type?
   return pthread_mutex_init( mutex, NULL);
 }
 
 
 int
-_chpl_mutex_lock( _chpl_mutex_t *mutex) {
+_chpl_mutex_lock( _chpl_mutex_p mutex) {
   return pthread_mutex_lock( mutex);
 }
 
 
 int 
-_chpl_mutex_trylock( _chpl_mutex_t *mutex) {
+_chpl_mutex_trylock( _chpl_mutex_p mutex) {
   return pthread_mutex_trylock( mutex);
 }
 
 
 int
-_chpl_mutex_unlock( _chpl_mutex_t *mutex) {
+_chpl_mutex_unlock( _chpl_mutex_p mutex) {
   return pthread_mutex_unlock( mutex);
 }
 
 
 int  
-_chpl_mutex_destroy( _chpl_mutex_t *mutex) {
+_chpl_mutex_destroy( _chpl_mutex_p mutex) {
   return pthread_mutex_destroy( mutex);
 }
 
 
 // Condition variables
+_chpl_condvar_p 
+_chpl_condvar_new( void) {
+  _chpl_condvar_p cv;
+  cv = (_chpl_condvar_p) _chpl_alloc( sizeof( _chpl_condvar_t), "condition var");
+  _chpl_condvar_init( cv);
+  return cv;
+}
+
 int
-_chpl_condvar_init( _chpl_condvar_t *cond) {
+_chpl_condvar_init( _chpl_condvar_p cond) {
   // WAW: attributes?
   return pthread_cond_init( cond, NULL);
 }
 
 
 int
-_chpl_condvar_destroy( _chpl_condvar_t *cond) {
+_chpl_condvar_destroy( _chpl_condvar_p cond) {
   return pthread_cond_destroy( cond);
 }
 
 
 int
-_chpl_condvar_signal( _chpl_condvar_t *cond) {
+_chpl_condvar_signal( _chpl_condvar_p cond) {
   return pthread_cond_signal( cond);
 }
 
 
 int
-_chpl_condvar_wait( _chpl_condvar_t *cond, _chpl_mutex_t *mutex) {
+_chpl_condvar_wait( _chpl_condvar_p cond, _chpl_mutex_p mutex) {
   return pthread_cond_wait( cond, mutex);
 }
 

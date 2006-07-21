@@ -273,6 +273,9 @@ extern Symbol *gFile;
 extern VarSymbol *gTrue;
 extern VarSymbol *gFalse;
 
+extern Symbol *gMutex_p;
+extern Symbol *gCondVar_p;
+
 extern Vec<FnSymbol*> new_ast_functions;
 extern Vec<TypeSymbol*> new_ast_types;
 

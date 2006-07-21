@@ -550,7 +550,7 @@ void CallExpr::codegen(FILE* outfile) {
       if (get(1)->typeInfo() == dtVoid) {
         get(2)->codegen(outfile);
         return;
-      }
+      } 
       if (parentExpr == NULL) // top-level MOVE only
         if (SymExpr* sym = dynamic_cast<SymExpr*>(get(1))) {
           if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var)) {
@@ -829,7 +829,6 @@ void CallExpr::codegen(FILE* outfile) {
     }
     case PRIMITIVE_REFC_TOUCH: {   // touch reference-counted var
       // arg: heap var, refc, refc_mutex
-      // v->var->cname, rc->var->cname, m->var->cname);
       if (SymExpr *v = dynamic_cast<SymExpr*>(get(1))) {
         if (SymExpr *rc = dynamic_cast<SymExpr*>(get(2))) {
           if (SymExpr *m = dynamic_cast<SymExpr*>(get(3))) {
@@ -874,6 +873,89 @@ void CallExpr::codegen(FILE* outfile) {
       }
       break;
     }
+    case PRIMITIVE_SYNCVAR_LOCK: {
+      // arg: sync variable
+      if (SymExpr *m = dynamic_cast<SymExpr*>(get(1))) {
+        fprintf( outfile, "_chpl_mutex_lock((");
+        m->codegen( outfile);
+        fprintf( outfile, ")->lock)");
+      } else {
+        INT_FATAL( "arg not SymExpr");
+      }
+      break;
+    }
+    case PRIMITIVE_SYNCVAR_UNLOCK: {
+      // arg: sync variable
+      if (SymExpr *m = dynamic_cast<SymExpr*>(get(1))) {
+        fprintf( outfile, "_chpl_mutex_unlock((");
+        m->codegen( outfile);
+        fprintf( outfile, ")->lock)");
+      } else {
+        INT_FATAL( "arg not SymExpr");
+      }
+      break;
+    }
+    case PRIMITIVE_SYNCVAR_SIGNAL_FULL: {
+      // arg: sync variable
+      if (SymExpr *m = dynamic_cast<SymExpr*>(get(1))) {
+        fprintf( outfile, "_chpl_condvar_signal((");
+        m->codegen( outfile);
+        fprintf( outfile, ")->cv_full)");
+      } else {
+        INT_FATAL( "arg not SymExpr");
+      }
+      break;
+    }
+    case PRIMITIVE_SYNCVAR_WAIT_FULL: {
+      // arg: sync variable
+      if (SymExpr *m = dynamic_cast<SymExpr*>(get(1))) {
+        fprintf( outfile, "_chpl_condvar_wait((");
+        m->codegen( outfile);
+        fprintf( outfile, ")->cv_full, (");
+        m->codegen( outfile);
+        fprintf( outfile, ")->lock)");
+      } else {
+        INT_FATAL( "arg not SymExpr");
+      }
+      break;
+    }
+    case PRIMITIVE_SYNCVAR_SIGNAL_EMPTY: {
+      // arg: sync variable
+      if (SymExpr *m = dynamic_cast<SymExpr*>(get(1))) {
+        fprintf( outfile, "_chpl_condvar_signal((");
+        m->codegen( outfile);
+        fprintf( outfile, ")->cv_empty)");
+      } else {
+        INT_FATAL( "arg not SymExpr");
+      }
+      break;
+    }
+    case PRIMITIVE_SYNCVAR_WAIT_EMPTY: {
+      // arg: sync variable
+      if (SymExpr *m = dynamic_cast<SymExpr*>(get(1))) {
+        fprintf( outfile, "_chpl_condvar_wait((");
+        m->codegen( outfile);
+        fprintf( outfile, ")->cv_empty, (");
+        m->codegen( outfile);
+        fprintf( outfile, ")->lock)");
+      } else {
+        INT_FATAL( "arg not SymExpr");
+      }
+      break;
+    }
+      /*
+    case PRIMITIVE_MUTEX_INIT: {
+      // arg: mutex
+      if (SymExpr *m = dynamic_cast<SymExpr*>(get(1))) {
+        fprintf( outfile, "_chpl_mutex_init( &(");
+        m->codegen( outfile);
+        fprintf( outfile, ")");
+      } else {
+        INT_FATAL( "arg not SymExpr");
+      }
+      break;
+    }
+      */
     case PRIMITIVE_CHPL_ALLOC: {
       bool is_class = false;
       if (SymExpr *s = dynamic_cast<SymExpr*>(get(1))) {

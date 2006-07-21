@@ -802,7 +802,7 @@ void VariableType::codegen(FILE* outfile) {
 
 
 static PrimitiveType* 
-createPrimitiveType(char *name, char *cname, char *ltname = NULL, char *ltcname = NULL) {
+createPrimitiveType( char *name, char *cname) {
   PrimitiveType* pt = new PrimitiveType(NULL);
   TypeSymbol* ts = new TypeSymbol(name, pt);
   ts->cname = cname;
@@ -814,41 +814,30 @@ createPrimitiveType(char *name, char *cname, char *ltname = NULL, char *ltcname 
 // Create new primitive type for integers. Specify name for now. Though it will 
 // probably be something like int1, int8, etc. in the end. In that case
 // we can just specify the width (i.e., size).
-#define INIT_PRIMITIVE_INT( name, width)                            \
-  dtInt[INT_SIZE_ ## width] = createPrimitiveType (name,            \
-                               "_int" #width, "_intLiteral" #width, \
-                               "_int" #width "Literal");            \
-  dtInt[INT_SIZE_ ## width]->defaultValue = new_IntSymbol( 0,       \
-                                                           INT_SIZE_ ## width)
+#define INIT_PRIMITIVE_INT( name, width)                                 \
+  dtInt[INT_SIZE_ ## width] = createPrimitiveType (name, "_int" #width); \
+  dtInt[INT_SIZE_ ## width]->defaultValue = new_IntSymbol( 0, INT_SIZE_ ## width)
 
-#define INIT_PRIMITIVE_UINT( name, width)                               \
-  dtUInt[INT_SIZE_ ## width] = createPrimitiveType (name,               \
-                                "_uint" #width, "_uintLiteral" #width,  \
-                                "_uint" #width "Literal");              \
-  dtUInt[INT_SIZE_ ## width]->defaultValue = new_UIntSymbol( 0,         \
-                                                             INT_SIZE_ ## width)
+#define INIT_PRIMITIVE_UINT( name, width)                                  \
+  dtUInt[INT_SIZE_ ## width] = createPrimitiveType (name, "_uint" #width); \
+  dtUInt[INT_SIZE_ ## width]->defaultValue = new_UIntSymbol( 0, INT_SIZE_ ## width)
 
-#define INIT_PRIMITIVE_FLOAT( name, width)                              \
-  dtFloat[FLOAT_SIZE_ ## width] = createPrimitiveType (name,            \
-                                   "_float" #width, "_floatLiteral" #width,   \
-                                   "_float" #width "Literal");          \
+#define INIT_PRIMITIVE_FLOAT( name, width)                                     \
+  dtFloat[FLOAT_SIZE_ ## width] = createPrimitiveType (name, "_float" #width); \
   dtFloat[FLOAT_SIZE_ ## width]->defaultValue = new_FloatSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width)
   
-#define INIT_PRIMITIVE_COMPLEX( name, width)                            \
-  dtComplex[FLOAT_SIZE_ ## width]= createPrimitiveType (name,           \
-                                  "_complex" #width, "_complexLiteral" #width,\
-                                  "_complex" #width "Literal");         \
-  dtComplex[FLOAT_SIZE_ ## width]->defaultValue = new_ComplexSymbol(    \
-                                  "_chpl_complex" #width "(0.0, 0.0)",  \
+#define INIT_PRIMITIVE_COMPLEX( name, width)                                      \
+  dtComplex[FLOAT_SIZE_ ## width]= createPrimitiveType (name, "_complex" #width); \
+  dtComplex[FLOAT_SIZE_ ## width]->defaultValue = new_ComplexSymbol(              \
+                                  "_chpl_complex" #width "(0.0, 0.0)",            \
                                    0.0, 0.0, FLOAT_SIZE_ ## width)
-
 
 #define CREATE_DEFAULT_SYMBOL(primType, gSym, name)                     \
   gSym = new VarSymbol (name, primType, VAR_NORMAL, VAR_CONST);         \
   rootScope->define (gSym);                                             \
   primType->defaultValue = gSym
 
-  
+
 void initPrimitiveTypes(void) {
   rootScope = new SymScope(NULL, NULL);
 
@@ -861,11 +850,7 @@ void initPrimitiveTypes(void) {
   dtVoid = createPrimitiveType ("void", "void");
   CREATE_DEFAULT_SYMBOL (dtVoid, gVoid, "_void");
 
-  dtBool = createPrimitiveType ("bool", "_bool",
-                                "_boolLiteral", "_boolLiteral");
-
-  dtFile = createPrimitiveType ("_file", "_cfile");
-  CREATE_DEFAULT_SYMBOL(dtFile, gFile, "0");
+  dtBool = createPrimitiveType ("bool", "_bool");
 
   // Create initial compiler module and its scope
   compilerModule = build_module("_chpl_compiler", MOD_STANDARD, new AList<Stmt>());
@@ -905,15 +890,19 @@ void initPrimitiveTypes(void) {
   INIT_PRIMITIVE_COMPLEX( "_complex32", 32);
   INIT_PRIMITIVE_COMPLEX( "_complex128", 128);
 
-  dtString = createPrimitiveType( "string", "_string",
-                                  "_stringLiteral", "_stringLiteral");
+  dtString = createPrimitiveType( "string", "_string");
   dtString->defaultValue = new_StringSymbol("");
 
-  dtSymbol = createPrimitiveType( "symbol", "_symbol", 
-                                  "_symbolLiteral", "_symbolLiteral");
+  dtSymbol = createPrimitiveType( "symbol", "_symbol"); 
 
-  dtMutex = createPrimitiveType( "mutex", "_chpl_mutex_t", 
-                                  "_symbolMutex", "_symbolMutex");
+  dtFile = createPrimitiveType ("_file", "_cfile");
+  CREATE_DEFAULT_SYMBOL(dtFile, gFile, "0");
+
+  dtMutex = createPrimitiveType( "_mutex", "_chpl_mutex_t"); 
+  dtMutex_p = createPrimitiveType( "_mutex_p", "_chpl_mutex_p"); 
+  CREATE_DEFAULT_SYMBOL (dtMutex_p, gMutex_p, "_chpl_mutex_new()");
+  dtCondVar_p = createPrimitiveType( "_condvar_p", "_chpl_condvar_p"); 
+  CREATE_DEFAULT_SYMBOL (dtCondVar_p, gCondVar_p, "_chpl_condvar_new()");
 
   dtAny = createPrimitiveType ("any", "_any");
 }

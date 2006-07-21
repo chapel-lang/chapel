@@ -130,6 +130,7 @@ prim_def(char* name, Type *(*returnInfo)(CallExpr*)) {
   new PrimitiveOp(PRIMITIVE_UNKNOWN, name, returnInfo);
 }
 
+
 void
 initPrimitive() {
   primitives[PRIMITIVE_UNKNOWN] = NULL;
@@ -162,12 +163,20 @@ initPrimitive() {
   prim_def(PRIMITIVE_GETCID, "getcid", returnInfoBool);
   prim_def(PRIMITIVE_GET_MEMBER, ".", returnInfoGetMember);
   prim_def(PRIMITIVE_SET_MEMBER, ".=", returnInfoVoid);
+
   prim_def(PRIMITIVE_GET_MEMBER_REF_TO, ".*", returnInfoVoid);
   prim_def(PRIMITIVE_SET_MEMBER_REF_TO, ".=&", returnInfoVoid);
   prim_def(PRIMITIVE_SET_HEAPVAR, "setheapvar", returnInfoMove);
   prim_def(PRIMITIVE_REFC_INIT, "refc_init", returnInfoVoid);
   prim_def(PRIMITIVE_REFC_TOUCH, "refc_touch", returnInfoVoid);
   prim_def(PRIMITIVE_REFC_RELEASE, "refc_release", returnInfoVoid);
+  prim_def(PRIMITIVE_SYNCVAR_LOCK, "syncvar_lock", returnInfoVoid);
+  prim_def(PRIMITIVE_SYNCVAR_UNLOCK, "syncvar_unlock", returnInfoVoid);
+  prim_def(PRIMITIVE_SYNCVAR_SIGNAL_FULL, "syncvar_signal_full", returnInfoVoid);
+  prim_def(PRIMITIVE_SYNCVAR_WAIT_FULL, "syncvar_wait_full", returnInfoVoid);
+  prim_def(PRIMITIVE_SYNCVAR_SIGNAL_EMPTY, "syncvar_signal_empty", returnInfoVoid);
+  prim_def( PRIMITIVE_SYNCVAR_WAIT_EMPTY, "syncvar_wait_empty", returnInfoVoid);
+
   prim_def(PRIMITIVE_CHPL_ALLOC, "chpl_alloc", returnInfoChplAlloc);
   prim_def(PRIMITIVE_CHPL_FREE, "chpl_free", returnInfoVoid);
   prim_def(PRIMITIVE_PTR_EQUAL, "ptr_eq", returnInfoBool);
