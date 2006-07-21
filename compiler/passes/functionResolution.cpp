@@ -408,47 +408,6 @@ build_promotion_wrapper(FnSymbol* fn,
 }
 
 
-static Type*
-resolve_type(CallExpr* call,
-             char *name,
-             Vec<Type*>* actual_types,
-             Vec<Symbol*>* actual_params,
-             Vec<char*>* actual_names,
-             FnSymbol* fn = NULL) {
-  if (!fn) {
-    char* canon_name = cannonicalize_string(name);
-    Vec<FnSymbol*> visibleFns;                    // visible functions
-    call->parentScope->getVisibleFunctions(&visibleFns, canon_name);
-    if (visibleFns.n > 1)
-      INT_FATAL(call, "bad type");
-    if (visibleFns.n == 1)
-      fn = visibleFns.v[0];
-  }
-
-  Vec<ArgSymbol*>* actual_formals = new Vec<ArgSymbol*>(); 
-
-  int num_actuals = actual_types->n;
-  int num_formals = fn->formals ? fn->formals->length() : 0;
-
-  Vec<Type*> formal_actuals;
-  Vec<Symbol*> formal_params;
-  bool valid = computeActualFormalMap(fn, &formal_actuals, &formal_params, actual_formals,
-                                      num_actuals, num_formals, actual_types, actual_params,
-                                      actual_names);
-  if (!valid)
-    return dtUnknown;
-  if (fn->isGeneric) {
-    ASTMap subs;
-    computeGenericSubs(subs, fn, num_actuals, actual_formals, actual_types, actual_params);
-    if (subs.n && !fn->isPartialInstantiation(&subs)) {
-      FnSymbol* inst_fn = fn->instantiate_generic(&subs);
-      if (inst_fn)
-        return resolve_type(call, name, actual_types, actual_params, actual_names, inst_fn);
-    }
-  }
-  return fn->retType;
-}
-
 static FnSymbol*
 resolve_call(CallExpr* call,
              char *name,
@@ -595,28 +554,6 @@ resolve_type_expr(CallExpr* base) {
     }
   }
   base->replace(new SymExpr(base->typeInfo()->symbol));
-
-//       if (call->primitive)
-//         call->replace(new SymExpr(call->typeInfo()->symbol));
-//       if (!call->parentSymbol)
-//         continue;
-//       Vec<Type*> atypes;
-//       Vec<Symbol*> aparams;
-//       Vec<char*> anames;
-//       computeActuals(call, &atypes, &aparams, &anames);
-//       SymExpr* sym = dynamic_cast<SymExpr*>(call->baseExpr);
-//       char* name = sym->var->name;
-//       FnSymbol* fn = call->isResolved();
-//       if (fn && fn->retType != dtUnknown)
-//         call->replace(new SymExpr(fn->retType->symbol));
-//       else {
-//         Type* t = resolve_type(call, name, &atypes, &aparams, &anames);
-//         if (!t || t == dtUnknown)
-//           INT_FATAL(fn, "Unable to resolve type");
-//         call->replace(new SymExpr(t->symbol));
-//       }
-//     }
-//   }
 }
 
 
