@@ -68805,3 +68805,18 @@ Added files:
 Removed files:
 	chapel/test/classes/jplevyak/: inherit-2.future 
 
+---------------------------------------------------------------------------
+
+07/21/06 14:57:03 -- deitz
+
+Log message:
+	Fixed test.  It used old indexing into a domain function rather than
+	just doing it, D.range(2) instead of D(2).
+	
+	Updated .good which had the extra linefeed after writing an array.
+
+Modified files:
+	chapel/test/demo/review_060130/: iterators.chpl iterators.good 
+Removed files:
+	chapel/test/demo/review_060130/: iterators.future 
+
