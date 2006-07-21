@@ -7,6 +7,9 @@
 #include "runtime.h"
 
 
+static Vec<FnSymbol*> resolvedFns;
+
+
 // types contains the types of the actuals
 // names contains the name if it is a named argument, otherwise NULL
 // e.g.  foo(arg1=12, "hi");
@@ -27,12 +30,18 @@ static FnSymbol* resolve_call(CallExpr* call,
                               Vec<char*>* actual_names);
 static void resolve_type_expr(CallExpr* call);
 
-static void resolveCall(CallExpr* call, Vec<FnSymbol*>* resolvedFns);
-static void resolveFns(FnSymbol* fn, Vec<FnSymbol*>* resolvedFns);
+static void resolveCall(CallExpr* call);
+static void resolveFns(FnSymbol* fn);
 
 static void
 resolveFormals(FnSymbol* fn) {
+  static Vec<FnSymbol*> done;
+
   if (!fn->isGeneric) {
+    if (done.set_in(fn))
+      return;
+    done.set_add(fn);
+
     for_alist(DefExpr, formalDef, fn->formals) {
       if (CallExpr* call = dynamic_cast<CallExpr*>(formalDef->exprType)) {
         resolve_type_expr(call);
@@ -249,8 +258,6 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
               Vec<Symbol*>* actual_params,
               Vec<char*>* actual_names,
               bool inst = false) {
-  resolveFormals(fn);
-
   Vec<ArgSymbol*>* actual_formals = new Vec<ArgSymbol*>();
 
   int num_actuals = actual_types->n;
@@ -274,6 +281,9 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
     }
     return;
   }
+
+  if (!fn->isGeneric)
+    resolveFormals(fn);
 
   int j = -1;
   for_alist(DefExpr, formalDef, fn->formals) {
@@ -581,27 +591,32 @@ resolve_type_expr(CallExpr* base) {
 
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
-      if (call->primitive)
-        call->replace(new SymExpr(call->typeInfo()->symbol));
-      if (!call->parentSymbol)
-        continue;
-      Vec<Type*> atypes;
-      Vec<Symbol*> aparams;
-      Vec<char*> anames;
-      computeActuals(call, &atypes, &aparams, &anames);
-      SymExpr* sym = dynamic_cast<SymExpr*>(call->baseExpr);
-      char* name = sym->var->name;
-      FnSymbol* fn = call->isResolved();
-      if (fn && fn->retType != dtUnknown)
-        call->replace(new SymExpr(fn->retType->symbol));
-      else {
-        Type* t = resolve_type(call, name, &atypes, &aparams, &anames);
-        if (!t || t == dtUnknown)
-          INT_FATAL(fn, "Unable to resolve type");
-        call->replace(new SymExpr(t->symbol));
-      }
+      resolveCall(call);
     }
   }
+  base->replace(new SymExpr(base->typeInfo()->symbol));
+
+//       if (call->primitive)
+//         call->replace(new SymExpr(call->typeInfo()->symbol));
+//       if (!call->parentSymbol)
+//         continue;
+//       Vec<Type*> atypes;
+//       Vec<Symbol*> aparams;
+//       Vec<char*> anames;
+//       computeActuals(call, &atypes, &aparams, &anames);
+//       SymExpr* sym = dynamic_cast<SymExpr*>(call->baseExpr);
+//       char* name = sym->var->name;
+//       FnSymbol* fn = call->isResolved();
+//       if (fn && fn->retType != dtUnknown)
+//         call->replace(new SymExpr(fn->retType->symbol));
+//       else {
+//         Type* t = resolve_type(call, name, &atypes, &aparams, &anames);
+//         if (!t || t == dtUnknown)
+//           INT_FATAL(fn, "Unable to resolve type");
+//         call->replace(new SymExpr(t->symbol));
+//       }
+//     }
+//   }
 }
 
 
@@ -625,7 +640,7 @@ build_dispatch_tree(Map<Type*,FnSymbol*>* dispatchMap,
 
 
 static void
-resolveCall(CallExpr* call, Vec<FnSymbol*>* resolvedFns) {
+resolveCall(CallExpr* call) {
   if (!call->primitive) {
     bool already_resolved = false;
     bool is_this = false;
@@ -784,7 +799,7 @@ resolveCall(CallExpr* call, Vec<FnSymbol*>* resolvedFns) {
         dispatchMap.get_keys(types);
         CallExpr* nextcall = call->copy();
         call->baseExpr->replace(new SymExpr(resolvedFn));
-        resolveFns(resolvedFn, resolvedFns);
+        resolveFns(resolvedFn);
         Stmt* stmt = call->parentStmt;
         Expr* dynamicArg = call->get(2);
         forv_Vec(Type, type, types) {
@@ -792,9 +807,9 @@ resolveCall(CallExpr* call, Vec<FnSymbol*>* resolvedFns) {
             USR_FATAL(type, "Cannot handle generic types with parent types");
           }
           resolveFormals(type->defaultConstructor);
-          resolveFns(type->defaultConstructor, resolvedFns);
+          resolveFns(type->defaultConstructor);
           CallExpr* nextnextcall = nextcall->copy();
-          resolveFns(dispatchMap.get(type), resolvedFns);
+          resolveFns(dispatchMap.get(type));
           nextcall->baseExpr = new SymExpr(dispatchMap.get(type));
           if (resolvedFn->retType != dispatchMap.get(type)->retType) {
             INT_FATAL(call, "Illegal dispatch functions"); // make user error
@@ -811,7 +826,7 @@ resolveCall(CallExpr* call, Vec<FnSymbol*>* resolvedFns) {
           call->replace(tmp);
           call = tmp;
           normalize(if_fn);
-          resolveFns(if_fn, resolvedFns);
+          resolveFns(if_fn);
         }
       } else {
         call->baseExpr->replace(new SymExpr(resolvedFn));
@@ -835,9 +850,14 @@ resolveCall(CallExpr* call, Vec<FnSymbol*>* resolvedFns) {
     for (int i = 1; i <= size; i++) {
       CallExpr* e = new CallExpr(sym->copy(), new_IntLiteral(i));
       call->insertBefore(e);
-      resolveCall(e, resolvedFns);
+      resolveCall(e);
     }
     call->remove();
+  } else if (call->isPrimitive(PRIMITIVE_CAST)) {
+    Type* t= call->get(1)->typeInfo();
+    if (t == dtUnknown)
+      INT_FATAL(call, "Unable to resolve type");
+    call->get(1)->replace(new SymExpr(t->symbol));
   } else if (call->isPrimitive(PRIMITIVE_MOVE)) {
     if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
       Type* t = call->get(2)->typeInfo();
@@ -891,23 +911,23 @@ resolveCall(CallExpr* call, Vec<FnSymbol*>* resolvedFns) {
 
 
 static void
-resolveFns(FnSymbol* fn, Vec<FnSymbol*>* resolvedFns) {
-  if (resolvedFns->set_in(fn))
+resolveFns(FnSymbol* fn) {
+  if (resolvedFns.set_in(fn))
     return;
-  resolvedFns->set_add(fn);
+  resolvedFns.set_add(fn);
 
   Vec<BaseAST*> asts;
   collect_top_asts(&asts, fn->body);
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
-      resolveCall(call, resolvedFns);
+      resolveCall(call);
       if (call->isResolved())
-        resolveFns(call->isResolved(), resolvedFns);
+        resolveFns(call->isResolved());
       if (call->isPrimitive(PRIMITIVE_MOVE))
         if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1)))
           if (dynamic_cast<ClassType*>(sym->var->type)) {
             resolveFormals(sym->var->type->defaultConstructor);
-            resolveFns(sym->var->type->defaultConstructor, resolvedFns);
+            resolveFns(sym->var->type->defaultConstructor);
           }
     }
   }
@@ -926,8 +946,7 @@ resolveFns(FnSymbol* fn, Vec<FnSymbol*>* resolvedFns) {
 
 void
 resolve() {
-  Vec<FnSymbol*> resolvedFns;
-  resolveFns(chpl_main, &resolvedFns);
+  resolveFns(chpl_main);
 
   Vec<BaseAST*> asts;
   collect_asts(&asts);
