@@ -68787,3 +68787,21 @@ Added files:
 	chapel/test/trivial/deitz/: test_y1.chpl test_y1.future 
 	                            test_y1.good 
 
+---------------------------------------------------------------------------
+
+07/21/06 14:41:02 -- deitz
+
+Log message:
+	Added error checking to guard against casts to generic types
+	(incomplete types?).  Updated a .good and removed a .future.  Added a
+	"fixed" test of the future that works.
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/test/classes/jplevyak/: inherit-2.good 
+Added files:
+	chapel/test/classes/jplevyak/: inherit-2-fixed.chpl 
+	                               inherit-2-fixed.good 
+Removed files:
+	chapel/test/classes/jplevyak/: inherit-2.future 
+
