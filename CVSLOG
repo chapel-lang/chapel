@@ -68623,3 +68623,15 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+07/21/06 08:44:40 -- deitz
+
+Log message:
+	Updated .goods.
+
+Modified files:
+	chapel/test/memory/shannon/: memstatPrint.good 
+	                             printFinalMemStat.good 
+	                             printMemTable2.good 
+
