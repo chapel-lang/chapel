@@ -68831,3 +68831,15 @@ Added files:
 	chapel/test/arrays/deitz/: test_tuple_of_array.chpl 
 	                           test_tuple_of_array.good 
 
+---------------------------------------------------------------------------
+
+07/21/06 17:01:49 -- deitz
+
+Log message:
+	Added y1 to list of C names for which mangling is required.  Removed .future.
+
+Modified files:
+	chapel/compiler/passes/: codegen.cpp 
+Removed files:
+	chapel/test/trivial/deitz/: test_y1.future 
+
