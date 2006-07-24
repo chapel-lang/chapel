@@ -1,13 +1,13 @@
-type locale: int;
-type indexType: int;
+typedef locale: int;
+typedef indexType: int;
 
 param rank: int = 1;
 
 config const numLocales: int = 4;
 config const n: int = 10;
 
-var rankD: domain(1) = 1..rank;
-var localeD: domain(1) = 1..numLocales;
+var rankD: domain(1) = [1..rank];
+var localeD: domain(1) = [1..numLocales];
 
 var locales: [i in localeD] locale = i;
 

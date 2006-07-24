@@ -1,3 +1,5 @@
+inout
+
 deitz
 
 Need to put in a semantic check (maybe in processParameters) that

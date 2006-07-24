@@ -1,15 +1,7 @@
-bradc
+semantic
 
-I think the line
+Fails because of line
 
 A = [Mat] 2.0;
 
-is illegal.  If this is a for expression then it needs to be something like [i in Mat] but in this case, it is odd because the expression 2.0 does not contain i.  Leaving it to you to update.  -SJD
-
-deitz
-
-the current error is a parsing proble
-
-HISTORY
-
-Lots of advanced array concepts here that we don't support yet.
+Should this be legal?  There is no index but none is used.

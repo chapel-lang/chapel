@@ -1,3 +1,7 @@
+bradc
+
+Not all type variables are initialized in generic constructor
+
 ???
 
 This implementation tries to create three type variables

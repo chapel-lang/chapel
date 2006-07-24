@@ -1,3 +1,7 @@
+deitz
+
+return normalization should not be done on generic functions or variable argument functions
+
 deitz/jplevyak
 
 This test fails compilation with the following error message:

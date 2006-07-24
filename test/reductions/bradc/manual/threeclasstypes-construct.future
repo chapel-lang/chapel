@@ -1,3 +1,7 @@
+bradc
+
+not all type variables are defined in the constructor call
+
 ???
 
 This tries to call a user-supplied default constructor that

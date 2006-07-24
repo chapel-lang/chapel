@@ -1,3 +1,3 @@
-bradc
+semantic
 
-Please take a look at this.  If you get rid of the last line, it will work.  Otherwise, it needs support for promotion of scalar functions.
+scalar promotion of arrays should return arrays or sequences should print out as arrays or should the test output be updated?

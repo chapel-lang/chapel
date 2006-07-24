@@ -1,3 +1,7 @@
+semantic
+
+scalar promotion should preserve array or sequences should print like arrays
+
 bradc
 
 Please take a look at this.  If you get rid of the last 2 lines, it will work.  Otherwise, it needs support for promotion of scalar functions.

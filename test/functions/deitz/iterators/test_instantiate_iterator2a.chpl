@@ -1,5 +1,5 @@
-iterator foo(param rank : int, n : int) : (rank*int) {
-  var result : (rank*int);
+iterator foo(param rank : int, n : int) : rank*int {
+  var result : rank*int;
   if rank == 1 then
     for i in 1..n do
       yield i;

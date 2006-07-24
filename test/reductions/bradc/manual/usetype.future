@@ -1,3 +1,7 @@
+deitz
+
+Type within a class referred to in non-generic function fails.
+
 ???
 
 This version refers to the type within a class the way

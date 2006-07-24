@@ -1,3 +1,6 @@
+inout read
+
+
 shannon
 
 Read into a data member of a class uses temporary variables and doesn't copy

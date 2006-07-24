@@ -1,4 +1,9 @@
 deitz
 
+type variable in class referred to in non-generic function fails
+
+
+deitz
+
 x.t exprtype
 the getter is not being created

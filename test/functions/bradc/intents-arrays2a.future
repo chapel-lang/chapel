@@ -1,4 +1,4 @@
-bradc/deitz
+inout
 
 If I've got the language semantics correct, I believe we need
 to be inserting an initializer for the out parameter of 
