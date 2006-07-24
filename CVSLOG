@@ -68843,3 +68843,80 @@ Modified files:
 Removed files:
 	chapel/test/trivial/deitz/: test_y1.future 
 
+---------------------------------------------------------------------------
+
+07/24/06 11:18:20 -- deitz
+
+Log message:
+	Categorized and updated all .future files.  Removed two.
+
+Modified files:
+	chapel/test/arrays/bradc/: domarr2.future enumarray.future 
+	chapel/test/arrays/deitz/: test_array_in_class.good 
+	                           test_array_init2.future 
+	chapel/test/arrays/jplevyak/: ranks-1.future simple-4.chpl 
+	                              simple-4.future simple-4.good 
+	chapel/test/classes/bradc/: badred.future 
+	chapel/test/classes/shannon/: inoutClassDataMember.future 
+	chapel/test/distributions/bradc/foundations/: blockdist1.chpl 
+	                                              blockdist1.future 
+	                                              blockdist2.chpl 
+	                                              blockdist2.future 
+	chapel/test/execflags/shannon/configs/help/: 
+	                                             configVarDefaultValue.future 
+	chapel/test/functions/bradc/: arrayArg-explicit.chpl 
+	                              intents-arrays.future 
+	                              intents-arrays2.future 
+	                              intents-arrays2a.future 
+	                              nameDefaultParamInOut.future 
+	chapel/test/functions/deitz/: test_return1.future 
+	                              test_visible1.future 
+	chapel/test/functions/deitz/iterators/: 
+	                                        test_instantiate_iterator2a.chpl 
+	                                        test_instantiate_iterator2a.future 
+	chapel/test/functions/jplevyak/: intent-8-error.future 
+	                                 intent-9.future 
+	                                 introduce-dispatch-1.future 
+	                                 introduce-dispatch-1.good 
+	                                 zeroarity-bound-error-2.future 
+	chapel/test/functions/jplevyak/scoping/: visibility-4.future 
+	chapel/test/memory/shannon/: memmaxExceedsLineno.future 
+	                             memmaxExceedsLineno2.future 
+	chapel/test/reductions/bradc/manual/: 
+	                                      threeclasstypes-construct.chpl 
+	                                      threeclasstypes-construct.future 
+	                                      threeclasstypes-manual.chpl 
+	                                      threeclasstypes-manual.future 
+	                                      threeclasstypes.chpl 
+	                                      threeclasstypes.future 
+	                                      usetype.chpl 
+	                                      usetype.future 
+	                                      usetype2.chpl 
+	                                      usetype2.future 
+	chapel/test/trivial/bradc/: formatoutput.future 
+	chapel/test/trivial/deitz/: test_goto2.future 
+	chapel/test/trivial/jplevyak/: destruct-arg-1.future 
+	chapel/test/trivial/shannon/: condReturn.future 
+	                              condReturn2.future 
+	                              condReturn3.future 
+	                              readWriteComplexTuple.future 
+	chapel/test/types/file/: freadToClassDataMember.future 
+	chapel/test/types/seq/bradc/: length.modify.future 
+	chapel/test/types/tuple/deitz/: 
+	                                test_param_tuple_arg1-error.future 
+	chapel/test/types/type_variables/deitz/: 
+	                                         inherit_instantiate2.future 
+	                                         inherit_instantiate4.future 
+	chapel/test/types/type_variables/deitz/functions/: 
+	                                                   test_foo7.future 
+	chapel/test/types/type_variables/jplevyak/: 
+	                                            type_variable-2.future 
+	                                            typevar_constraint-1.future 
+	                                            typevar_use-1.future 
+	                                            where-1.future 
+	                                            where-3-error.future 
+	                                            where-3.future 
+Removed files:
+	chapel/test/arrays/deitz/: test_array_in_class.future 
+	chapel/test/functions/bradc/: arrayArg-explicit.future 
+
