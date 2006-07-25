@@ -68920,3 +68920,17 @@ Removed files:
 	chapel/test/arrays/deitz/: test_array_in_class.future 
 	chapel/test/functions/bradc/: arrayArg-explicit.future 
 
+---------------------------------------------------------------------------
+
+07/25/06 08:51:43 -- deitz
+
+Log message:
+	Simplified implementation of write variable argument functions by
+	using the new feature of passing variable arguments.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/modules/standard/: _chpl_file.chpl 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+
