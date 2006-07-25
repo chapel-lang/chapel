@@ -68944,3 +68944,20 @@ Log message:
 Added files:
 	chapel/compiler/: UnimplementedFeatures 
 
+---------------------------------------------------------------------------
+
+07/25/06 16:03:05 -- deitz
+
+Log message:
+	Made methodTokenType and setterTokenType primitive types.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/include/: runtime.h symbol.h type.h 
+	chapel/compiler/main/: runtime.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	                         filesToAST.cpp normalize.cpp 
+	                         scopeResolve.cpp 
+	chapel/modules/standard/: _chpl_base.chpl 
+
