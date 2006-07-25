@@ -1,0 +1,80 @@
+int/uint semantics "var x: uint = 12" "var y: int = 12u"
+byte width semantics  "var x : int(8) = 2" where 2 defaults to int(64)
+floating point literals
+fixed size strings
+primitive to string casts
+string to primitive functions
+variable declarations with shared types
+config parameters
+config variables (more orthogonal implementation)
+intents (in, out, inout, const)
+functions as arguments to functions
+underscore to destructure tuples
+variables accessed via modules (mod.x)
+using modules not in files passed to the compiler
+conditional declarations
+module initialize function
+module finalize function
+predefined argv sequence
+static methods
+constructors
+anonymous record literals
+assignment of records to classes
+nested classes
+nested records
+nested type aliases
+unions
+sequence # operator
+sequence indexing with negative integers
+sequence indexing by a tuple
+sequence of length-1 strings special features
+check for invalid goto usage
+cross product function application
+sequence indexing with a sequence
+any and all reductions
+implicit all reduction
+special interpretation of sequences in select statements
+predicate expressions "x = [i in D] if i < 10 then ..."
+indefinite sequences
+  usage in zippered context
+  usage in sequence indexing
+  fill function
+iterator functions
+sequence primitives
+  reverse, spread, transpose, reshape
+tuple to sequence cast
+sequence to tuple cast
+reductions
+cursors
+arithmetic index sets
+type select statements and wildcard underscore
+shadowing functions
+type variables nested in formal types "x : C(?t)"
+index types in domain type
+set_range method on arithmetic domains
+domain assignment
+enumerated domains
+indefinite domains
+  -=/remove method
+  member? method
+opaque domains
+subdomains
+product domains
+sparse domains
+domain arguments to functions
+association of arrays to domains
+association of subdomains to domains
+domain reallocation
+array reallocation
+array aliasing
+array arguments to functions
+  with explicit domains
+  with queried domains
+array functions
+scalar promotion to preserve arrayness
+complex array initialization "var x : [i in D] int = i"
+arrays of arrays
+serial statement
+forall statement in parallel
+single variables
+sync variables
