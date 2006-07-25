@@ -110,7 +110,7 @@ void scopeResolve(BaseAST* base) {
                       if (call && call->baseExpr == symExpr &&
                           call->argList->length() >= 2 &&
                           dynamic_cast<SymExpr*>(call->get(1)) &&
-                          dynamic_cast<SymExpr*>(call->get(1))->var == methodToken) {
+                          dynamic_cast<SymExpr*>(call->get(1))->var == gMethodToken) {
                         symExpr->var = new UnresolvedSymbol(name);
                       } else {
                         Expr* dot = new CallExpr(".", method->_this, 

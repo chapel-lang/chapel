@@ -9,14 +9,6 @@ var _avalue : value;
 pragma "inline" fun _chpl_alloc(type t, description:string)
   return __primitive("chpl_alloc", t, description);
 
-//
-// Setter and method tokens
-//
-record _methodTokenType { }
-var _methodToken : _methodTokenType;
-record _setterTokenType { }
-var _setterToken : _setterTokenType;
-
 // Primitive functions and operators on bool
 pragma "inline" fun =(a: bool, b: bool) return b;
 //pragma "inline" fun _copy(a: bool) return a;

@@ -905,6 +905,10 @@ void initPrimitiveTypes(void) {
   CREATE_DEFAULT_SYMBOL (dtCondVar_p, gCondVar_p, "_chpl_condvar_new()");
 
   dtAny = createPrimitiveType ("any", "_any");
+  dtMethodToken = createPrimitiveType ("_mt", "_mt");
+  CREATE_DEFAULT_SYMBOL (dtMethodToken, gMethodToken, "_unknown");
+  dtSetterToken = createPrimitiveType ("_st", "_st");
+  CREATE_DEFAULT_SYMBOL (dtSetterToken, gSetterToken, "_unknown");
 }
 
 Type *getMetaType(Type *t) {
@@ -915,8 +919,6 @@ Type *getMetaType(Type *t) {
 }
 
 void findInternalTypes(void) {
-  dtMethodToken = dynamic_cast<TypeSymbol*>(baseModule->lookup("_methodTokenType"))->definition;
-  dtSetterToken = dynamic_cast<TypeSymbol*>(baseModule->lookup("_setterTokenType"))->definition;
   dtObject = dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(baseModule->lookup("object"))->definition);
   dtValue = dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(baseModule->lookup("value"))->definition);
 }

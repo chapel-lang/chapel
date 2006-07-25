@@ -48,6 +48,4 @@ void parse(void) {
     chpl_stdout = fileModule->lookupVar("stdout");
     chpl_stderr = fileModule->lookupVar("stderr");
   }
-  setterToken = baseModule->lookupVar("_setterToken");
-  methodToken = baseModule->lookupVar("_methodToken");
 }

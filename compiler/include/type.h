@@ -216,8 +216,8 @@ TYPE_EXTERN PrimitiveType* dtMutex_p;
 TYPE_EXTERN PrimitiveType* dtCondVar_p;        // condition variable
 
 // internal types
-TYPE_EXTERN Type* dtMethodToken;
-TYPE_EXTERN Type* dtSetterToken;
+TYPE_EXTERN PrimitiveType* dtMethodToken;
+TYPE_EXTERN PrimitiveType* dtSetterToken;
 void findInternalTypes(void);
 
 // sum-ish types

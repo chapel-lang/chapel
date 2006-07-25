@@ -269,6 +269,8 @@ extern StringChainHash uniqueStringHash;
 extern Symbol *gNil;
 extern Symbol *gUnknown;
 extern Symbol *gUnspecified;
+extern Symbol *gMethodToken;
+extern Symbol *gSetterToken;
 extern Symbol *gVoid;
 extern Symbol *gFile;
 extern VarSymbol *gTrue;

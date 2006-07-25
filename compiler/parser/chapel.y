@@ -732,7 +732,7 @@ function:
       $$->_this = new ArgSymbol(INTENT_BLANK, "this", dtUnknown);
       $$->formals->insertAtHead(new DefExpr($$->_this, NULL, $2));
       $$->formals->insertAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_methodTokenDummy",
-                                                          dtUnknown), NULL, new SymExpr("_methodTokenType")));
+                                                          dtMethodToken)));
     }
 | TLP non_tuple_lvalue TRP TDOT TASSIGN identifier
     {
@@ -740,8 +740,8 @@ function:
       $$->_this = new ArgSymbol(INTENT_BLANK, "this", dtUnknown);
       $$->formals->insertAtHead(new DefExpr($$->_this, NULL, $2));
       $$->formals->insertAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_methodTokenDummy",
-                                                          dtUnknown), NULL, new SymExpr("_methodTokenType")));
-      $$->formals->last()->insertBefore(new DefExpr(new ArgSymbol(INTENT_BLANK, "_setterTokenDummy", dtUnknown), NULL, new SymExpr("_setterTokenType")));
+                                                          dtMethodToken)));
+      $$->formals->last()->insertBefore(new DefExpr(new ArgSymbol(INTENT_BLANK, "_setterTokenDummy", dtSetterToken)));
     }
 ;
 

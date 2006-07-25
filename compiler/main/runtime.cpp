@@ -12,6 +12,3 @@ TypeSymbol* chpl_seq;
 VarSymbol* chpl_stdin = NULL;
 VarSymbol* chpl_stdout = NULL;
 VarSymbol* chpl_stderr = NULL;
-
-VarSymbol* setterToken;
-VarSymbol* methodToken;

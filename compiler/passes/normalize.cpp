@@ -436,7 +436,7 @@ static void decompose_special_calls(CallExpr* call) {
     Expr* firstArg = call->argList->get(1);
     SymExpr* symArg = dynamic_cast<SymExpr*>(firstArg);
     // don't decompose method calls
-    if (symArg && symArg->var == methodToken)
+    if (symArg && symArg->var == gMethodToken)
       return;
   }
   if (call->isNamed("fread")) {
@@ -535,7 +535,7 @@ static void apply_getters_setters(FnSymbol* fn) {
           INT_FATAL(call, "No method name for getter or setter");
         Expr* _this = call->get(1);
         _this->remove();
-        CallExpr* getter = new CallExpr(method, methodToken, _this);
+        CallExpr* getter = new CallExpr(method, gMethodToken, _this);
         getter->methodTag = true;
         call->replace(getter);
         if (CallExpr* parent = dynamic_cast<CallExpr*>(getter->parentExpr))
@@ -556,14 +556,14 @@ static void apply_getters_setters(FnSymbol* fn) {
             Expr* rhs = call->get(2);
             rhs->remove();
             CallExpr* setter =
-              new CallExpr(method, methodToken, _this, setterToken, rhs);
+              new CallExpr(method, gMethodToken, _this, gSetterToken, rhs);
             call->replace(setter);
           } else {
             Expr* rhs = call->get(2);
             rhs->remove();
             lhs->remove();
             call->replace(lhs);
-            lhs->insertAtTail(setterToken);
+            lhs->insertAtTail(gSetterToken);
             lhs->insertAtTail(rhs);
           }
         }
@@ -730,7 +730,7 @@ static void fold_call_expr(CallExpr* call) {
   // fold parameter methods
   if (call->argList->length() == 2) {
     if (SymExpr* symExpr = dynamic_cast<SymExpr*>(call->get(1))) {
-      if (symExpr->var == methodToken) {
+      if (symExpr->var == gMethodToken) {
         Type* type = call->get(2)->typeInfo();
         Vec<BaseAST*> keys;
         type->substitutions.get_keys(keys);

@@ -129,8 +129,8 @@ static void build_record_equality_function(ClassType* ct) {
   fn->retType = dtBool;
   Expr* cond = NULL;
   forv_Vec(Symbol, tmp, ct->fields) {
-    Expr* left = new CallExpr(tmp->name, methodToken, arg1);
-    Expr* right = new CallExpr(tmp->name, methodToken, arg2);
+    Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
+    Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
     cond = (cond)
       ? new CallExpr("&&", cond, new CallExpr("==", left, right))
       : new CallExpr("==", left, right);
@@ -154,8 +154,8 @@ static void build_record_inequality_function(ClassType* ct) {
   fn->retType = dtBool;
   Expr* cond = NULL;
   forv_Vec(Symbol, tmp, ct->fields) {
-    Expr* left = new CallExpr(tmp->name, methodToken, arg1);
-    Expr* right = new CallExpr(tmp->name, methodToken, arg2);
+    Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
+    Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
     cond = (cond)
       ? new CallExpr("||", cond, new CallExpr("!=", left, right))
       : new CallExpr("!=", left, right);
@@ -200,8 +200,8 @@ static void build_record_assignment_function(ClassType* ct) {
   fn->retType = dtUnknown;
   AList<Stmt>* body = new AList<Stmt>();
   forv_Vec(Symbol, tmp, ct->fields)
-    body->insertAtTail(new CallExpr(tmp->name, methodToken, arg1, setterToken,
-                                    new CallExpr(tmp->name, methodToken, arg2)));
+    body->insertAtTail(new CallExpr(tmp->name, gMethodToken, arg1, gSetterToken,
+                                    new CallExpr(tmp->name, gMethodToken, arg2)));
   body->insertAtTail(new ReturnStmt(arg1));
   BlockStmt* block_stmt = new BlockStmt(body);
   fn->body = block_stmt;
