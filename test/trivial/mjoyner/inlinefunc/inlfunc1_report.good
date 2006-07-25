@@ -54,7 +54,6 @@ chapel compiler: reporting inlining, _inst_fprintf function was inlined
 chapel compiler: reporting inlining, = function was inlined
 chapel compiler: reporting inlining, < function was inlined
 chapel compiler: reporting inlining, = function was inlined
-chapel compiler: reporting inlining, = function was inlined
 chapel compiler: reporting inlining, ! function was inlined
 chapel compiler: reporting inlining, = function was inlined
 chapel compiler: reporting inlining, ! function was inlined

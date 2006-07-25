@@ -29,18 +29,6 @@ pragma "inline" fun fprintf(fp: _file, fmt: string, val)
 pragma "inline" fun fscanf(fp: _file, fmt: string, inout val)
   return __primitive("fscanf", fp, fmt, val);
 
-fun _chpl_fwrite_float_help(fp: _file, val: float) {
-  var returnVal : int;
-  var str : string = val:"%g";
-  if (_string_contains(str, ".") || _string_contains(str, "e")) {
-    returnVal = fprintf(fp, "%s", str);
-  } else {
-    returnVal = fprintf(fp, "%s.0", str);
-  }
-  if returnVal < 0 then
-    fprintfError();
-}
-
 pragma "inline" fun _string_fscanf(fp: _file)
   return __primitive("string_fscanf", fp);
 
@@ -199,14 +187,6 @@ fun fscanfError() {
 }
 
 
-pragma "rename _chpl_fwrite"
-fun fwrite(f: file = stdout, args ...?numArgs) {
-  for param i in 1..numArgs {
-    fwrite(f, args(i));
-  }
-}
-
-
 pragma "rename _chpl_fread_int" 
 fun fread(f: file = stdin, inout val: int) {
   if (f.isOpen) {
@@ -226,7 +206,7 @@ fun fread(f: file = stdin, inout val: int) {
 
 
 pragma "rename _chpl_fwrite_int"
-fun fwrite(f: file = stdout, val: int) {
+fun fwrite(f: file, val: int) {
   if (f.isOpen) {
     var returnVal: int = fprintf(f.fp, "%lld", val);
     if (returnVal < 0) {
@@ -259,7 +239,7 @@ fun fread(f: file = stdin, inout val: uint) {
 
 
 pragma "rename _chpl_fwrite_uint"
-fun fwrite(f: file = stdout, val: uint) {
+fun fwrite(f: file, val: uint) {
   if (f.isOpen) {
     var returnVal: int = fprintf(f.fp, "%llu", val);
     if (returnVal < 0) {
@@ -292,9 +272,17 @@ fun fread(f: file = stdin, inout val: float) {
 
 
 pragma "rename _chpl_fwrite_float"
-fun fwrite(f: file = stdout, val: float) {
+fun fwrite(f: file, val: float) {
   if (f.isOpen) {
-     _chpl_fwrite_float_help(f.fp, val);
+    var returnVal : int;
+    var str : string = val:"%g";
+    if (_string_contains(str, ".") || _string_contains(str, "e")) {
+      returnVal = fprintf(f.fp, "%s", str);
+    } else {
+      returnVal = fprintf(f.fp, "%s.0", str);
+    }
+    if returnVal < 0 then
+      fprintfError();
   } else {
     fopenError(f, isRead = false);
   }
@@ -335,13 +323,13 @@ fun fread(f: file = stdin, inout val: complex) {
 
 
 pragma "rename _chpl_fwrite_complex"
-fun fwrite(f: file = stdout, val: complex) {
+fun fwrite(f: file, val: complex) {
   if (f.isOpen) {
-     _chpl_fwrite_float_help(f.fp, val.real);
+     fwrite(f, val.real);
      if (val.imag >= 0) {
-       fwrite( f, " + ", val.imag, "i");
+       fwrite(f, " + ", val.imag, "i");
      } else {
-       fwrite( f, " - ", -val.imag, "i");
+       fwrite(f, " - ", -val.imag, "i");
      }
   } else {
     fopenError(f, isRead = false);
@@ -360,7 +348,7 @@ fun fread(f: file = stdin, inout val: string) {
 
 
 pragma "rename _chpl_fwrite_string"
-fun fwrite(f: file = stdout, val: string) {
+fun fwrite(f: file, val: string) {
   if (f.isOpen) {
     var returnVal: int = fprintf(f.fp, "%s", val);
     if (returnVal < 0) {
@@ -388,9 +376,8 @@ fun fread(f: file = stdin, inout val: bool) {
   }
 }
 
-
 pragma "rename _chpl_fwrite_bool"
-fun fwrite(f: file = stdout, val: bool) {
+fun fwrite(f: file, val: bool) {
   if (f.isOpen) {
     var returnVal: int;
     if (val == true) {
@@ -406,30 +393,13 @@ fun fwrite(f: file = stdout, val: bool) {
   }
 }
 
-
 pragma "rename _chpl_fwrite_syncvar"
-fun fwrite(f: file = stdout, sv: _syncvar) {
-  fwrite( f, sv.value);
+fun fwrite(f: file, sv: _syncvar) {
+  fwrite(f, sv.value);
 }
-
-
-pragma "rename _chpl_fwriteln"
-fun fwriteln(f: file, args ...?numArgs) {
-  for param i in 1..numArgs {
-    fwrite(f, args(i));
-  }
-  fwriteln(f);
-}
-
-
-pragma "rename _chpl_fwriteln_no_args"
-fun fwriteln(f: file = stdout) {
-  fwrite(f, "\n");
-}
-
 
 pragma "rename _chpl_fwrite_nil" 
-fun fwrite(f: file = stdout, x : _nilType) : void {
+fun fwrite(f: file, x : _nilType) : void {
   if (f.isOpen) {
     var returnVal: int = fprintf(f.fp, "%s", "nil");
     if (returnVal < 0) {
@@ -440,30 +410,29 @@ fun fwrite(f: file = stdout, x : _nilType) : void {
   }
 }
 
+fun fwrite(f: file, args ...?numArgs) {
+  for param i in 1..numArgs {
+    fwrite(f, args(i));
+  }
+}
 
-pragma "rename _chpl_write"
+fun fwriteln(f: file, args ...?numArgs) {
+  fwrite(f, (...args));
+  fwriteln(f);
+}
+
+fun fwriteln(f: file) {
+  fwrite(f, "\n");
+}
+
 fun write(args ...?numArgs) {
-  for param i in 1..numArgs {
-    fwrite(stdout, args(i));
-  }
+  fwrite(stdout, (...args));
 }
 
-
-pragma "rename _chpl_writeln"
-fun writeln(args ...?numArgs) { 
-  for param i in 1..numArgs {
-    fwrite(stdout, args(i));
-  }
-  fwriteln(stdout);
+fun writeln(args ...?numArgs) {
+  fwriteln(stdout, (...args));
 }
 
-
-pragma "rename _chpl_writeln_no_args"
 fun writeln() {
   fwriteln(stdout);
-}
-
-
-fun read() {
-  halt("***Error: This should never be called.  All read calls should be converted to freads***");
 }

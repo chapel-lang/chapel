@@ -790,9 +790,15 @@ resolveCall(CallExpr* call) {
     if (size == 0)
       INT_FATAL(call, "Invalid tuple expand primitive");
     for (int i = 1; i <= size; i++) {
+      VarSymbol* tmp = new VarSymbol("_expand_temp");
+      DefExpr* def = new DefExpr(tmp);
+      call->parentStmt->insertBefore(def);
       CallExpr* e = new CallExpr(sym->copy(), new_IntLiteral(i));
-      call->insertBefore(e);
+      CallExpr* move = new CallExpr(PRIMITIVE_MOVE, tmp, e);
+      call->parentStmt->insertBefore(move);
+      call->insertBefore(tmp);
       resolveCall(e);
+      resolveCall(move);
     }
     call->remove();
   } else if (call->isPrimitive(PRIMITIVE_CAST)) {
