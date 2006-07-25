@@ -68934,3 +68934,13 @@ Modified files:
 	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
 	                                         inlfunc2_report.good 
 
+---------------------------------------------------------------------------
+
+07/25/06 14:30:37 -- deitz
+
+Log message:
+	Added a list of unimplemented features for prioritization discussion.
+
+Added files:
+	chapel/compiler/: UnimplementedFeatures 
+
