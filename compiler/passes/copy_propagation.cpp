@@ -42,10 +42,18 @@ void localCopyPropagation(BasicBlock* bb) {
     // It would be easier to replace more if we didn't worry about
     // pass by reference!
     if (CallExpr* move = dynamic_cast<CallExpr*>(expr))
-      if (move->isPrimitive(PRIMITIVE_MOVE))
+      if (move->isPrimitive(PRIMITIVE_MOVE)) {
         if (SymExpr* rhs = dynamic_cast<SymExpr*>(move->get(2)))
           if (Symbol* copy = available.get(rhs->var))
             rhs->var = copy;
+        if (CallExpr* rhs = dynamic_cast<CallExpr*>(move->get(2)))
+          if (rhs->primitive)
+            for_alist(Expr, actual, rhs->argList) {
+              if (SymExpr* sym = dynamic_cast<SymExpr*>(actual))
+                if (Symbol* copy = available.get(sym->var))
+                  sym->var = copy;
+            }
+      }
 
     // Remove pairs of invalidated copies
     // This would be alot easier if we didn't have to worry about pass
@@ -81,13 +89,8 @@ void localCopyPropagation(BasicBlock* bb) {
             // are in the AST for real
 
             VarSymbol* lhs_var = dynamic_cast<VarSymbol*>(lhs->var);
-            VarSymbol* rhs_var = dynamic_cast<VarSymbol*>(rhs->var);
             if (lhs_var) {
               if (lhs_var->varClass == VAR_CONFIG)
-                continue;
-            }
-            if (rhs_var) {
-              if (rhs_var->varClass == VAR_CONFIG)
                 continue;
             }
             available.put(lhs->var, rhs->var);
@@ -103,16 +106,19 @@ void localCopyPropagation(BasicBlock* bb) {
 // never used anywhere.
 //
 void deadVariableElimination(FnSymbol* fn) {
+  bool is_global = false;
   if (dynamic_cast<ModuleSymbol*>(fn->body->blkScope->astParent))
-    return;  // don't delete module-level globals
+    is_global = true;
   compute_sym_uses(fn);
   Vec<BaseAST*> asts;
   collect_asts(&asts, fn);
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
+      if (is_global && !def->sym->isCompilerTemp)
+        continue;
       if (!dynamic_cast<VarSymbol*>(def->sym)) // labels, types, ...?
         continue;
-      if (def->parentSymbol != fn) // nested types not pulled out
+      if (!def->sym->isCompilerTemp && def->parentSymbol != fn) // nested types not pulled out
         continue;
       bool used = false;
       forv_Vec(SymExpr, use, *def->sym->uses) {
@@ -146,11 +152,48 @@ void deadExpressionElimination(FnSymbol* fn) {
   }
 }
 
+//
+// Removes gotos where the label immediately follows the goto
+//
+void removeUnnecessaryGotos(FnSymbol* fn) {
+  Vec<BaseAST*> asts;
+  collect_asts(&asts, fn);
+  forv_Vec(BaseAST, ast, asts) {
+    if (GotoStmt* gotoStmt = dynamic_cast<GotoStmt*>(ast))
+      if (ExprStmt* labelStmt = dynamic_cast<ExprStmt*>(gotoStmt->next))
+        if (DefExpr* def = dynamic_cast<DefExpr*>(labelStmt->expr))
+          if (def->sym == gotoStmt->label)
+            gotoStmt->remove();
+  }
+}
+
+//
+// Remove unused labels
+//
+void removeUnusedLabels(FnSymbol* fn) {
+  Vec<BaseAST*> labels;
+  Vec<BaseAST*> asts;
+  collect_asts(&asts, fn);
+  forv_Vec(BaseAST, ast, asts) {
+    if (GotoStmt* gotoStmt = dynamic_cast<GotoStmt*>(ast))
+      labels.set_add(gotoStmt->label);
+  }
+  forv_Vec(BaseAST, ast, asts) {
+    if (ExprStmt* labelStmt = dynamic_cast<ExprStmt*>(ast))
+      if (DefExpr* def = dynamic_cast<DefExpr*>(labelStmt->expr))
+        if (LabelSymbol* label = dynamic_cast<LabelSymbol*>(def->sym))
+          if (!labels.set_in(label))
+            labelStmt->remove();
+  }
+}
+
 void copyPropagation(void) {
   Vec<FnSymbol*> fns;
   collect_functions(&fns);
   forv_Vec(FnSymbol, fn, fns) {
     compressUnnecessaryScopes(fn);
+    removeUnnecessaryGotos(fn);
+    removeUnusedLabels(fn);
     buildBasicBlocks(fn);
     forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
       localCopyPropagation(bb);
