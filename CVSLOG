@@ -68961,3 +68961,22 @@ Modified files:
 	                         scopeResolve.cpp 
 	chapel/modules/standard/: _chpl_base.chpl 
 
+---------------------------------------------------------------------------
+
+07/26/06 14:55:51 -- deitz
+
+Log message:
+	Made copy propagation more aggressive on compiler temporaries and
+	removed goto-label pairs where the goto immediately preceded the label
+	(a common idiom in our generated code).  This decreases the number of
+	lines of code in the Jacobi test's main function from 442 to 258.
+	
+	Expect REGRESSION because integer literal is printed out without INT64
+	wrapper and then we try to shift it 64 bits.  Enough temporaries have
+	been removed that this shows up as a warning in the generated C code.
+	The temporary made it a 64 bit previously.
+
+Modified files:
+	chapel/compiler/passes/: copy_propagation.cpp 
+	chapel/test/: REGRESSIONS 
+
