@@ -68991,3 +68991,14 @@ Modified files:
 	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
 	                                         inlfunc2_report.good 
 
+---------------------------------------------------------------------------
+
+07/26/06 16:39:42 -- deitz
+
+Log message:
+	A script for stripping the generated code of unique ID to enable
+	comparing the generated code produced by two different compilers.
+
+Added files:
+	chapel/util/: clean_gen_code 
+
