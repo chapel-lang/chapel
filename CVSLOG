@@ -69013,3 +69013,16 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+07/26/06 16:59:53 -- deitz
+
+Log message:
+	Marked return temporaries as compiler temporaries so that they are
+	removed by copy propagation when possible.  Made it so that
+	isCompilerTemp flag is preserved on a symbol copy.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/passes/: normalize.cpp 
+
