@@ -68980,3 +68980,14 @@ Modified files:
 	chapel/compiler/passes/: copy_propagation.cpp 
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+07/26/06 16:24:10 -- deitz
+
+Log message:
+	Updated .goods
+
+Modified files:
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+
