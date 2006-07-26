@@ -69002,3 +69002,14 @@ Log message:
 Added files:
 	chapel/util/: clean_gen_code 
 
+---------------------------------------------------------------------------
+
+07/26/06 16:45:47 -- waynew
+
+Log message:
+	Steve's latest most-specific resolve call algorithm.  Does not use
+	comparisons with instantiatedFrom, unless one is dtAny and the other is not.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+
