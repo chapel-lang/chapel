@@ -331,6 +331,7 @@ static void normalize_returns(FnSymbol* fn) {
     fn->insertAtTail(new ReturnStmt());
   } else {
     retval = new VarSymbol(stringcat("_ret_", fn->name));
+    retval->isCompilerTemp = true;
     fn->insertAtHead(new DefExpr(retval));
     fn->insertAtTail(new ReturnStmt(retval));
   }

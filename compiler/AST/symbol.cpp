@@ -327,6 +327,7 @@ VarSymbol::copyInner(ASTMap* map) {
   VarSymbol* newVarSymbol = 
     new VarSymbol(stringcpy(name), type, varClass, consClass);
   newVarSymbol->cname = stringcpy(cname);
+  newVarSymbol->isCompilerTemp = isCompilerTemp;
   assert(!newVarSymbol->immediate);
   return newVarSymbol;
 }
