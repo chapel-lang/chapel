@@ -461,13 +461,20 @@ resolve_call(CallExpr* call,
                 else if (!require_scalar_promotion1 && require_scalar_promotion2)
                   as_good = false;
                 else {
-                  Type* type = (arg->instantiatedFrom) ? arg->instantiatedFrom : arg->type;
-                  Type* type2 = (arg2->instantiatedFrom) ? arg2->instantiatedFrom : arg2->type;
-                  if (moreSpecific(best, NULL, type2, type) && type2 != type) {
+                  if (arg->instantiatedFrom==dtAny &&
+                      arg2->instantiatedFrom!=dtAny) {
                     better = true;
-                  }
-                  if (!moreSpecific(best, NULL, type2, type)) {
+                  } else if (arg->instantiatedFrom!=dtAny &&
+                             arg2->instantiatedFrom==dtAny) {
                     as_good = false;
+                  } else {
+                    if (moreSpecific(best, NULL, arg2->type, arg->type) && 
+                        arg2->type != arg->type) {
+                      better = true;
+                    }
+                    if (!moreSpecific(best, NULL, arg2->type, arg->type)) {
+                      as_good = false;
+                    }
                   }
                 }
               }
