@@ -69051,3 +69051,16 @@ Modified files:
 Added files:
 	chapel/test/parallel/sync/waynew/: simple0.chpl simple0.good 
 
+---------------------------------------------------------------------------
+
+07/26/06 18:04:45 -- waynew
+
+Log message:
+	Simple2.chpl to test for wait_empty for default writes to sync var.
+	Minor cleanup of simple1.chpl.
+
+Modified files:
+	chapel/test/parallel/sync/waynew/: simple1.chpl 
+Added files:
+	chapel/test/parallel/sync/waynew/: simple2.chpl simple2.good 
+
