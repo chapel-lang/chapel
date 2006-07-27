@@ -69026,3 +69026,14 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 	chapel/compiler/passes/: normalize.cpp 
 
+---------------------------------------------------------------------------
+
+07/26/06 17:22:58 -- deitz
+
+Log message:
+	Added test of a class instantiated by a record.
+
+Added files:
+	chapel/test/types/type_variables/deitz/: test_class_record.chpl 
+	                                         test_class_record.good 
+
