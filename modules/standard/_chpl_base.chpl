@@ -377,8 +377,14 @@ record _syncvar {
   var  cv_full: _condvar_p;  // wait for full, signal this when full
 }
 
+// The operations are:
+//  = (i.e., write_wait_empty_leave_full)
+//  write_leave full
+//  read_wait_full_leave_empty
+//  read_wait_full_leave_full
+//  read
 
-// wait for empty, leaves full
+// wait for empty, leaves full. This is the default write on sync vars.
 fun =( sv:_syncvar, value:sv.t) {
   __primitive( "syncvar_lock", sv);
   if (sv.is_full) {
@@ -391,8 +397,19 @@ fun =( sv:_syncvar, value:sv.t) {
   return sv;
 }
 
-// wait for full, leave empty
-fun read_leave_empty( sv:_syncvar) {
+// no wait, leave full. This is the default read on sync vars.
+fun write_leave_full( sv:_syncvar) {
+  var ret: sv.t;
+  __primitive( "syncvar_lock", sv);
+  ret = sv.value;
+  sv.is_full = true;
+  __primitive( "syncvar_signal_full", sv);
+  __primitive( "syncvar_unlock", sv);
+  return ret;
+}
+
+// wait for full, leave empty. This is the default read on sync vars.
+fun read_wait_full_leave_empty( sv:_syncvar) {
   var ret: sv.t;
   __primitive( "syncvar_lock", sv);
   if (!sv.is_full) {
@@ -401,6 +418,28 @@ fun read_leave_empty( sv:_syncvar) {
   ret = sv.value;
   sv.is_full = false;
   __primitive( "syncvar_signal_empty", sv);
+  __primitive( "syncvar_unlock", sv);
+  return ret;
+}
+
+// wait for full, leave full.
+fun read_wait_full_leave_full( sv:_syncvar) {
+  var ret: sv.t;
+  __primitive( "syncvar_lock", sv);
+  if (!sv.is_full) {
+    __primitive( "syncvar_wait_full", sv);
+  }
+  ret = sv.value;
+  __primitive( "syncvar_signal_full", sv);
+  __primitive( "syncvar_unlock", sv);
+  return ret;
+}
+
+// read value.  No state change or signals
+fun read( sv:_syncvar) {
+  var ret: sv.t;
+  __primitive( "syncvar_lock", sv);
+  ret = sv.value;
   __primitive( "syncvar_unlock", sv);
   return ret;
 }

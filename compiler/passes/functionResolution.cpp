@@ -33,6 +33,8 @@ static void resolve_type_expr(CallExpr* call);
 static void resolveCall(CallExpr* call);
 static void resolveFns(FnSymbol* fn);
 
+static bool canDispatch( Type* actualType, Type* formalType, FnSymbol* fn = NULL, bool* require_scalar_promotion = NULL);
+
 static void
 resolveFormals(FnSymbol* fn) {
   static Vec<FnSymbol*> done;
@@ -80,6 +82,15 @@ canInstantiate(Type* actualType, Type* formalType) {
 // results in a coercion.
 static bool
 canCoerce(Type* actualType, Type* formalType) {
+  if (actualType->symbol->hasPragma( "sync var")) {
+    if (actualType->isGeneric) {
+      return false;
+    } else {
+      Type *base_type = (Type*)(actualType->substitutions.v[0].value);
+      return canDispatch( base_type, formalType);
+    }
+  }
+
   if (is_int_type(formalType) && dynamic_cast<EnumType*>(actualType)) {
     return true;
   }
@@ -114,7 +125,7 @@ canCoerce(Type* actualType, Type* formalType) {
 // The function symbol is used to avoid scalar promotion on =.
 // param is set if the actual is a parameter (compile-time constant).
 static bool
-canDispatch(FnSymbol* fn, Symbol* param, Type* actualType, Type* formalType, bool* require_scalar_promotion = NULL) {
+canDispatch( Type* actualType, Type* formalType, FnSymbol* fn, bool* require_scalar_promotion) {
   if (require_scalar_promotion)
     *require_scalar_promotion = false;
   if (actualType == formalType)
@@ -126,11 +137,14 @@ canDispatch(FnSymbol* fn, Symbol* param, Type* actualType, Type* formalType, boo
   if (canCoerce(actualType, formalType))
     return true;
   forv_Vec(Type, parent, actualType->dispatchParents) {
-    if (parent == formalType || canDispatch(fn, param, parent, formalType)) {
+    if (parent == formalType || canDispatch(parent, formalType, fn)) {
       return true;
     }
   }
-  if (strcmp(fn->name, "=") && actualType->scalarPromotionType && (canDispatch(fn, NULL, actualType->scalarPromotionType, formalType))) {
+  if (fn &&
+      strcmp(fn->name, "=") && 
+      actualType->scalarPromotionType && 
+      (canDispatch(actualType->scalarPromotionType, formalType, fn))) {
     if (require_scalar_promotion)
       *require_scalar_promotion = true;
     return true;
@@ -147,8 +161,8 @@ isDispatchParent(Type* t, Type* pt) {
 }
 
 static bool
-moreSpecific(FnSymbol* fn, Symbol* param, Type* actualType, Type* formalType) {
-  if (canDispatch(fn, param, actualType, formalType))
+moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType) {
+  if (canDispatch( actualType, formalType, fn))
     return true;
   if (canInstantiate(actualType, formalType)) {
     return true;
@@ -291,7 +305,7 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
     j++;
     if (formal_actuals.v[j] &&
         !(formal->intent == INTENT_TYPE ||
-          canDispatch(fn, formal_params.v[j], formal_actuals.v[j], formal->type)))
+          canDispatch(formal_actuals.v[j], formal->type, fn)))
       return;
     if (!formal_actuals.v[j] && !formal->defaultExpr)
       return;
@@ -395,7 +409,7 @@ build_promotion_wrapper(FnSymbol* fn,
     Type* actual_type = actual_types->v[j];
     ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
     bool require_scalar_promotion = false;
-    if (canDispatch(fn, NULL, actual_type, formal->type, &require_scalar_promotion)) {
+    if (canDispatch(actual_type, formal->type, fn, &require_scalar_promotion)){
       if (require_scalar_promotion) {
         promotion_wrapper_required = true;
         promoted_subs.put(formal, actual_type->symbol);
@@ -454,8 +468,8 @@ resolve_call(CallExpr* call,
               else {
                 bool require_scalar_promotion1;
                 bool require_scalar_promotion2;
-                canDispatch(best, actual_params->v[k], actual_types->v[k], arg->type, &require_scalar_promotion1);
-                canDispatch(best, actual_params->v[k], actual_types->v[k], arg2->type, &require_scalar_promotion2);
+                canDispatch( actual_types->v[k], arg->type, best, &require_scalar_promotion1);
+                canDispatch( actual_types->v[k], arg2->type, best, &require_scalar_promotion2);
                 if (require_scalar_promotion1 && !require_scalar_promotion2)
                   better = true;
                 else if (!require_scalar_promotion1 && require_scalar_promotion2)
@@ -468,11 +482,11 @@ resolve_call(CallExpr* call,
                              arg2->instantiatedFrom==dtAny) {
                     as_good = false;
                   } else {
-                    if (moreSpecific(best, NULL, arg2->type, arg->type) && 
+                    if (moreSpecific(best, arg2->type, arg->type) && 
                         arg2->type != arg->type) {
                       better = true;
                     }
-                    if (!moreSpecific(best, NULL, arg2->type, arg->type)) {
+                    if (!moreSpecific(best, arg2->type, arg->type)) {
                       as_good = false;
                     }
                   }
@@ -830,7 +844,9 @@ resolveCall(CallExpr* call) {
       }
       if (t == dtUnknown)
         INT_FATAL(call, "Unable to resolve type");
-      if (t != sym->var->type && t != dtNil && t != dtObject)
+      if (t != sym->var->type && 
+          t != dtNil && 
+          t != dtObject)
         INT_FATAL(call, "Bad type detected");
     }
   } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
