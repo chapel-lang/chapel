@@ -69064,3 +69064,15 @@ Modified files:
 Added files:
 	chapel/test/parallel/sync/waynew/: simple2.chpl simple2.good 
 
+---------------------------------------------------------------------------
+
+07/26/06 18:06:33 -- waynew
+
+Log message:
+	Initial version of what we want for the coercion of sync var reads.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/modules/standard/: _chpl_base.chpl 
+
