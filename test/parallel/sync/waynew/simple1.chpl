@@ -11,7 +11,7 @@ begin {
   j = 0;
   while (j < ITERATIONS) {
     // would like r = s;
-    r = read_leave_empty( s);
+    r = s;
     writeln( "2: got ", r);
     j += 1;
   }
