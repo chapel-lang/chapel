@@ -69037,3 +69037,17 @@ Added files:
 	chapel/test/types/type_variables/deitz/: test_class_record.chpl 
 	                                         test_class_record.good 
 
+---------------------------------------------------------------------------
+
+07/26/06 17:46:55 -- waynew
+
+Log message:
+	Created a new test (simple0) and modified the other (simple1) to
+	read a sync var without using the explicit read_wait_full_leave_empty
+	function.
+
+Modified files:
+	chapel/test/parallel/sync/waynew/: simple1.chpl 
+Added files:
+	chapel/test/parallel/sync/waynew/: simple0.chpl simple0.good 
+
