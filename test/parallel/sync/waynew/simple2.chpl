@@ -1,5 +1,5 @@
-// Main thread slowly writes to s.  Child thread reads from s and
-// outputs what was read.
+// Same as simple1.chpl, but instead fast writer, slow reader.
+// Outputs what was read.
 
 param ITERATIONS = 10;
 param WAIT = 10000000;
@@ -10,6 +10,7 @@ begin {
   var j: int;
   j = 0;
   while (j < ITERATIONS) {
+    for w in 1..WAIT;
     r = s;
     writeln( "2: got ", r);
     j += 1;
@@ -19,7 +20,6 @@ begin {
 var k: int;
 k = 0;
 while (k < ITERATIONS) {
-  for w in 1..WAIT;
   s = k;
   k += 1;
 }
