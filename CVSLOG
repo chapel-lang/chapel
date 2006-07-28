@@ -69076,3 +69076,15 @@ Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 	chapel/modules/standard/: _chpl_base.chpl 
 
+---------------------------------------------------------------------------
+
+07/28/06 15:17:05 -- deitz
+
+Log message:
+	Interesting ambiguous call checked in as a future to semantic.
+
+Added files:
+	chapel/test/types/seq/deitz/: test_seq_index1.chpl 
+	                              test_seq_index1.future 
+	                              test_seq_index1.good 
+
