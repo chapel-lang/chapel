@@ -69088,3 +69088,29 @@ Added files:
 	                              test_seq_index1.future 
 	                              test_seq_index1.good 
 
+---------------------------------------------------------------------------
+
+07/28/06 17:07:23 -- deitz
+
+Log message:
+	Fixed a corner case in the coercion wrapper code to handle coercion
+	wrappers on methods without parentheses.  These are only created when
+	the 'this' argument is coerced which can only happen with the sync
+	coercion.
+	
+	Unified out of bounds error messages for sequences and arrays.
+	
+	Simplified sequence indexing function and added support for indexing
+	into a sequence with a negative integer.  If sequence indexing started
+	at zero, we could generate the palindrome with scalar promotion on an
+	arithmetic sequence, s(-length..length), but it doesn't.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_seq.chpl 
+	chapel/test/arrays/deitz/: test_bounds1.good test_bounds2.good 
+	chapel/test/trivial/mjoyner/seq/: seq_index1.good 
+Added files:
+	chapel/test/types/seq/deitz/: test_seq_reverseindex1.chpl 
+	                              test_seq_reverseindex1.good 
+
