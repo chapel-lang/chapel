@@ -69114,3 +69114,14 @@ Added files:
 	chapel/test/types/seq/deitz/: test_seq_reverseindex1.chpl 
 	                              test_seq_reverseindex1.good 
 
+---------------------------------------------------------------------------
+
+07/28/06 17:08:18 -- deitz
+
+Log message:
+	Add class that contains a field that is a record simple test.
+
+Added files:
+	chapel/test/classes/deitz/: test_class_of_record.chpl 
+	                            test_class_of_record.good 
+
