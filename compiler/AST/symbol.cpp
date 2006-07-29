@@ -747,7 +747,7 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map) {
       call->insertAtTail(wrapper_formal);
     }
   }
-  if (isMethod)
+  if (isMethod && !noParens)
     call = make_method_call_partial(call);
   if (returns_void(this))
     wrapper->insertAtTail(call);

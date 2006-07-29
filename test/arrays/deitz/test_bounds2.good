@@ -1,2 +1,2 @@
 0
-out of bounds error (1, 6)
+array index out of bounds: (1, 6)

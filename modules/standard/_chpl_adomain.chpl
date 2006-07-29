@@ -410,7 +410,7 @@ record _aarray {
   fun this(ind : rank*int) var {
     for i in 1..rank do
       if ! _in(dom(i), ind(i)) {
-        writeln("out of bounds error ", ind);
+        writeln("array index out of bounds: ", ind);
         exit(0);
       }
     var sum : int;

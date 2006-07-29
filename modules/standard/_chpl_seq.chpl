@@ -18,19 +18,21 @@ record seq {
   }
 
   fun this(i : int) var {
-    var start_index : int = 1;
-    var end_index : int = _length;
-    if (i >= start_index && i <= end_index) {
-      var cntr : int = i - start_index;
+    if i >= 0 {
+      if i < 1 || i > length then
+        halt("sequence index out of bounds: ", i);
       var tmp = _first;
-      while(cntr != 0) {
+      for j in 1..i-1 do
         tmp = tmp._next;
-        cntr-= 1;
-      }
+      return tmp._element;
+    } else {
+      if -i > length then
+        halt("sequence index out of bounds: ", -i);
+      var tmp = _first;
+      for j in 1..length+i do
+        tmp = tmp._next;
       return tmp._element;
     }
-    else
-      halt("error: sequence index out-of-bounds, index is ", i);
   }
 
   fun getHeadCursor()
