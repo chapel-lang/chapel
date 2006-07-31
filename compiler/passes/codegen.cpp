@@ -71,10 +71,6 @@ static void codegen_header(void) {
     if (!sym)
       continue;
 
-    if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(ast))
-      if (dynamic_cast<MetaType*>(ts->definition))
-        continue;
-
     if (sym->name == sym->cname)
       sym->cname = stringcpy(sym->name);
 

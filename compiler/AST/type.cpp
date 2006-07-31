@@ -18,15 +18,11 @@ Type::Type(astType_t astType, Symbol* init_defaultVal) :
   symbol(NULL),
   defaultValue(init_defaultVal),
   defaultConstructor(NULL),
-  metaType(NULL),
   isGeneric(false),
   instantiatedFrom(NULL),
   instantiatedWith(NULL),
   clonedFrom(NULL)
-{ 
-  if (astType != TYPE_META)
-    metaType = new MetaType(this);
-}
+{ }
 
 
 void Type::verify() {
@@ -257,10 +253,6 @@ void EnumType::verify() {
 EnumType*
 EnumType::copyInner(ASTMap* map) {
   EnumType* copy = new EnumType(COPY_INT(constants));
-  if (map) {
-    map->put(metaType, copy->metaType);
-    map->put(metaType->symbol, copy->metaType->symbol);
-  }
   copy->addSymbol(symbol);
   return copy;
 }
@@ -448,10 +440,6 @@ void UserType::verify() {
 UserType*
 UserType::copyInner(ASTMap* map) {
   UserType* copy = new UserType(COPY_INT(typeExpr));
-  if (map) { 
-    map->put(metaType, copy->metaType);
-    map->put(metaType->symbol, copy->metaType->symbol);
-  }
   copy->addSymbol(symbol);
   return copy;
 }
@@ -519,10 +507,6 @@ void ClassType::verify() {
 ClassType*
 ClassType::copyInner(ASTMap* map) {
   ClassType* copy_type = new ClassType(classTag);
-  if (map) {
-    map->put(metaType, copy_type->metaType);
-    map->put(metaType->symbol, copy_type->metaType->symbol);
-  }
   AList<Stmt>* new_decls = new AList<Stmt>();
   for (Stmt* old_decls = declarationList->first();
        old_decls;
@@ -746,30 +730,6 @@ AList<Stmt>* ClassType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymb
 }
 
 
-MetaType::MetaType(Type* init_base) :
-  Type(TYPE_META, NULL),
-  base(init_base)
-{
-  static int uid = 1;
-  char* name = stringcat("_meta_type", intstring(uid++));
-  metaType = this;
-  symbol = new TypeSymbol(name, NULL);
-  symbol->definition = this;
-  symbol->type = this;
-}
-
-
-void MetaType::verify() {
-  Type::verify();
-  if (astType != TYPE_META) {
-    INT_FATAL(this, "Bad MetaType::astType");
-  }
-  if (prev || next) {
-    INT_FATAL(this, "Type is in AList");
-  }
-}
-
-
 VariableType::VariableType(Type *init_type) :
   Type(TYPE_VARIABLE, NULL), 
   type(init_type)
@@ -792,10 +752,6 @@ void VariableType::verify() {
 VariableType*
 VariableType::copyInner(ASTMap* map) {
   VariableType *copy = new VariableType(type);
-  if (map) { 
-    map->put(metaType, copy->metaType);
-    map->put(metaType->symbol, copy->metaType->symbol);
-  }
   return copy;
 }
 
@@ -915,29 +871,9 @@ void initPrimitiveTypes(void) {
   CREATE_DEFAULT_SYMBOL (dtSetterToken, gSetterToken, "_unknown");
 }
 
-Type *getMetaType(Type *t) {
-  if (t)
-    return t->metaType;
-  else
-    return dtAny->metaType;
-}
-
 void findInternalTypes(void) {
   dtObject = dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(baseModule->lookup("object"))->definition);
   dtValue = dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(baseModule->lookup("value"))->definition);
-}
-
-
-void 
-complete_closure(ClassType *ct, Vec<Type *> types) {
-  currentLineno = 0;
-  AList<Stmt>* decls = new AList<Stmt>();
-  for (int i = 1; i <= types.n; i++) {
-    char* fieldName = stringcat("_f", intstring(i));
-    VarSymbol* field = new VarSymbol(fieldName, types.v[i-1]);
-    decls->insertAtTail(new DefExpr(field));
-  }
-  ct->addDeclarations(decls);
 }
 
 

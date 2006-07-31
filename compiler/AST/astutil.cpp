@@ -22,10 +22,6 @@ void collect_functions(Vec<FnSymbol*>* fns) {
 
 void collect_asts(Vec<BaseAST*>* asts, BaseAST* ast) {
   asts->add(ast);
-  if (Type* type = dynamic_cast<Type*>(ast)) {
-    asts->add(type->metaType);
-    asts->add(type->metaType->symbol);
-  }
   if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
     if (dynamic_cast<UnresolvedSymbol*>(sym->var))
       asts->add(sym->var);
@@ -52,10 +48,6 @@ void collect_asts_postorder(Vec<BaseAST*>* asts, BaseAST* ast) {
     collect_asts_postorder(asts, next_ast);
   }
   asts->add(ast);
-  if (Type* type = dynamic_cast<Type*>(ast)) {
-    asts->add(type->metaType);
-    asts->add(type->metaType->symbol);
-  }
   if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
     if (dynamic_cast<UnresolvedSymbol*>(sym->var))
       asts->add(sym->var);
@@ -79,10 +71,6 @@ void collect_top_asts(Vec<BaseAST*>* asts, BaseAST* ast) {
       collect_top_asts(asts, next_ast);
   }
   asts->add(ast);
-  if (Type* type = dynamic_cast<Type*>(ast)) {
-    asts->add(type->metaType);
-    asts->add(type->metaType->symbol);
-  }
   if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
     if (dynamic_cast<UnresolvedSymbol*>(sym->var))
       asts->add(sym->var);

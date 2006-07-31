@@ -40,7 +40,6 @@ class Type : public BaseAST {
   Symbol* defaultValue;
   FnSymbol *defaultConstructor;
   Vec<FnSymbol*> methods;
-  Type *metaType;
   bool isGeneric;
   Vec<Symbol*> genericSymbols;
   Type *instantiatedFrom;
@@ -168,14 +167,6 @@ class ClassType : public Type {
 };
 
 
-class MetaType : public Type {
- public:
-  Type* base;
-
-  MetaType(Type* init_base);
-  virtual void verify(); 
-};
-
 class VariableType : public Type {
  public:
   Type* type;
@@ -226,9 +217,6 @@ TYPE_EXTERN ClassType* dtObject;
 TYPE_EXTERN ClassType* dtValue;
 
 void initPrimitiveTypes(void);
-Type *getMetaType(Type *t);
-
-void complete_closure(ClassType *closureType, Vec<Type *> member_types);
 
 bool is_int_type(Type*);
 bool is_uint_type(Type*);

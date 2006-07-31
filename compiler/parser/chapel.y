@@ -823,11 +823,6 @@ typevar_decl_stmt:
       var->addPragmas($2);
       DefExpr* def = new DefExpr(var);
       $$ = build_chpl_stmt(def);
-/*       VariableType* new_type = new VariableType(getMetaType(0)); */
-/*       TypeSymbol* new_symbol = new TypeSymbol($3, new_type); */
-/*       new_symbol->addPragmas($2); */
-/*       DefExpr* def_expr = new DefExpr(new_symbol); */
-/*       $$ = build_chpl_stmt(def_expr); */
     }
 ;
 

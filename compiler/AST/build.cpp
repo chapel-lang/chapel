@@ -463,11 +463,5 @@ build_arg(intentTag tag, char* ident, Expr* type, Expr* init, Expr* variable) {
   }
   if (!type)
     argSymbol->type = dtAny;
-//   if (tag == INTENT_TYPE) {
-//     VariableType* new_type = new VariableType(getMetaType(NULL));
-//     TypeSymbol* new_type_symbol = new TypeSymbol(argSymbol->name, new_type);
-//     argSymbol->type = getMetaType(NULL);
-//     argSymbol->genericSymbol = new_type_symbol;
-//   } 
   return new DefExpr(argSymbol, NULL, type);
 }

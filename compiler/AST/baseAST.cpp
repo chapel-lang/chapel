@@ -439,7 +439,6 @@ char* astTypeName[AST_TYPE_END+1] = {
   "EnumType",
   "UserType",
   "ClassType",
-  "MetaType",
   "VariableType",
 
   "List",
@@ -554,7 +553,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all, int sentinels) {
     ADD_CHILD(Type, symbol);
     ADD_CHILD(Type, defaultValue);
     ADD_CHILD(Type, defaultConstructor);
-    ADD_CHILD(Type, metaType);
     break;
   case TYPE_PRIMITIVE:
   case TYPE_FN:
@@ -571,9 +569,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all, int sentinels) {
     ADD_VEC(ClassType, fields, Symbol);
     ADD_VEC(ClassType, types, TypeSymbol);
     ADD_CHILD(ClassType, fieldSelector);
-    goto LTypeCommon;
-  case TYPE_META:
-    ADD_CHILD(MetaType, base);
     goto LTypeCommon;
   case TYPE_VARIABLE:
     ADD_CHILD(VariableType, type);

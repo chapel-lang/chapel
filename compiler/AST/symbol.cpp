@@ -518,7 +518,7 @@ void ArgSymbol::codegenDef(FILE* outfile) {
 }
 
 TypeSymbol::TypeSymbol(char* init_name, Type* init_definition) :
-  Symbol(SYMBOL_TYPE, init_name, init_definition /* ? init_definition->metaType : NULL*/), 
+  Symbol(SYMBOL_TYPE, init_name, init_definition),
   definition(init_definition)
 {
   if (!definition)
@@ -533,12 +533,8 @@ void TypeSymbol::verify() {
   if (astType != SYMBOL_TYPE) {
     INT_FATAL(this, "Bad TypeSymbol::astType");
   }
-//   if (type->astType != TYPE_META)
-//     INT_FATAL(this, "TypeSymbol::type is not a MetaType");
   if (definition->symbol != this)
     INT_FATAL(this, "TypeSymbol::definition->symbol != TypeSymbol");
-//   if (definition->metaType != type)
-//     INT_FATAL(this, "TypeSymbol::definition->meta_type != TypeSymbol::type");
   definition->verify();
 }
 
@@ -1143,12 +1139,6 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
   // check to make sure this fully instantiates
   if (isPartialInstantiation(generic_substitutions))
     INT_FATAL(this, "partial instantiation detected");
-
-  // change meta types to types
-  for (int i = 0; i < generic_substitutions->n; i++)
-    if (BaseAST* value = generic_substitutions->v[i].value)
-      if (MetaType* metaType = dynamic_cast<MetaType*>(value))
-        generic_substitutions->v[i].value = metaType->base;
 
   // return cached if we did this instantiation already
   if (FnSymbol* cached = checkMapCache(&icache, this, generic_substitutions))

@@ -229,8 +229,6 @@ static void reconstruct_iterator(FnSymbol* fn) {
   if (!seqType)
     USR_FATAL(fn, "Cannot infer iterator return type yet");
   Type *seqElementType = seqType->typeInfo();
-  if (MetaType* mt = dynamic_cast<MetaType*>(seqElementType))
-    seqElementType = mt->base;
   fn->retExpr->remove();
 
   Symbol* seq = new VarSymbol("_seq_result");
@@ -500,8 +498,6 @@ static void hack_resolve_types(Expr* expr) {
     if (ArgSymbol* arg = dynamic_cast<ArgSymbol*>(def->sym)) {
       if (arg->type == dtUnknown && can_resolve_type(def->exprType)) {
         arg->type = def->exprType->typeInfo();
-        if (MetaType* mt = dynamic_cast<MetaType*>(arg->type))
-          arg->type = mt->base;
         def->exprType->remove();
       } else if (arg->type == dtUnknown && !def->exprType && can_resolve_type(arg->defaultExpr)) {
         Type *t = arg->defaultExpr->typeInfo();

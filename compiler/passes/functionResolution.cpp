@@ -131,8 +131,6 @@ canCoerce(Type* actualType, Type* formalType) {
 // param is set if the actual is a parameter (compile-time constant).
 static bool
 canDispatch( Type* actualType, Type* formalType, FnSymbol* fn, bool* require_scalar_promotion) {
-  if (MetaType* mt = dynamic_cast<MetaType*>(actualType))
-    actualType = mt->base;
   if (require_scalar_promotion)
     *require_scalar_promotion = false;
   if (actualType == formalType)
@@ -261,8 +259,6 @@ computeGenericSubs(ASTMap &subs,
         TypeSymbol* formalType = actual_formals->v[i]->type->symbol;
         if (fn->genericSymbols.set_in(formalType)) {
           Type* actual_type = actual_types->v[i];
-          if (MetaType* mt = dynamic_cast<MetaType*>(actual_type))
-            actual_type = mt->base;
           if (canInstantiate(actual_type, actual_formals->v[i]->type)) {
             subs.put(actual_formals->v[i], actual_type);
           }

@@ -40,19 +40,13 @@ returnInfoFirst(CallExpr* call) {
 static Type*
 returnInfoCast(CallExpr* call) {
   Type* t = call->get(1)->typeInfo();
-  if (MetaType* mt = dynamic_cast<MetaType*>(t)) {
-    if (mt->base->isGeneric && !dynamic_cast<VariableType*>(mt->base))
-      USR_FATAL(call, "Illegal cast to generic type");
-    return mt->base;
-  } else {
-    if (t->isGeneric) {
-      if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1)))
-        if (sym->var->isTypeVariable)
-          return dtUnknown;
-      USR_FATAL(call, "Illegal cast to generic type");
-    }
-    return t;
+  if (t->isGeneric) {
+    if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1)))
+      if (sym->var->isTypeVariable)
+        return dtUnknown;
+    USR_FATAL(call, "Illegal cast to generic type");
   }
+  return t;
 }
 
 static Type*
@@ -90,18 +84,10 @@ returnInfoArrayIndex(CallExpr* call) {
 
 static Type*
 returnInfoChplAlloc(CallExpr* call) {
-//   FnSymbol* fn = dynamic_cast<FnSymbol*>(call->parentSymbol);
-//   if (fn->fnClass != FN_CONSTRUCTOR)
-//     INT_FATAL(call, "chpl_alloc primitive is not in constructor");
-//   return fn->retType;
-//   return call->get(1)->typeInfo();
   SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1));
   if (!sym)
     INT_FATAL(call, "bad _chpl_alloc primitive");
-  if (dynamic_cast<MetaType*>(sym->var->type))
-    return dynamic_cast<MetaType*>(sym->var->type)->base;
-  else
-    return sym->var->type;
+  return sym->var->type;
 }
 
 static Type*

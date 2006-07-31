@@ -246,14 +246,6 @@ void DefExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 Type* DefExpr::typeInfo(void) {
   INT_FATAL(this, "Illegal call to DefExpr::typeInfo()");
-//   if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(sym)) {
-//     if (VariableType *tv = dynamic_cast<VariableType*>(ts->definition)) {
-//       MetaType *mt = dynamic_cast<MetaType*>(tv->type);
-//       return mt->base;
-//     } else
-//       return ts->definition;
-//   }
-//   return sym->type;
   return NULL;
 }
 
