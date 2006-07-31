@@ -69143,3 +69143,41 @@ Removed files:
 	                                            type_variable-2.future 
 	                                            typevar_use-1.future 
 
+---------------------------------------------------------------------------
+
+07/31/06 14:39:48 -- deitz
+
+Log message:
+	Unified the two mechanisms for instantiating the types of functions
+	and classes used to handle the two cases:
+	
+	  fun foo(x) { ... }
+	
+	and
+	
+	  fun foo(type t, x: t) { ... }
+	
+	For better or worse, we now handle these the same way.  Added
+	Symbol::isTypeVariable to keep track of the case that a variable is
+	only taking a value in order to query its type as in the second case
+	above where the variable t is only used for its type.  Post-resolution
+	this code needs to be removed where possible.  It is a guess that for
+	array types we will need to keep the value since the domain is not
+	part of the type.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp expr.cpp primitive.cpp 
+	                      symbol.cpp type.cpp view.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         functionResolution.cpp 
+	                         inlineFunctions.cpp normalize.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	chapel/test/flowanalysis/recursion/: rec_obj-1.good 
+	                                     rec_obj-2.good 
+	                                     rec_obj-3.good 
+	chapel/test/types/type_variables/deitz/: 
+	                                         inherit_instantiate.chpl 
+	chapel/test/types/type_variables/jplevyak/: construct-1.good 
+
