@@ -69181,3 +69181,14 @@ Modified files:
 	                                         inherit_instantiate.chpl 
 	chapel/test/types/type_variables/jplevyak/: construct-1.good 
 
+---------------------------------------------------------------------------
+
+07/31/06 14:59:59 -- deitz
+
+Log message:
+	Updated .goods
+
+Modified files:
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+
