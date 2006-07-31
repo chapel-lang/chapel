@@ -27,7 +27,6 @@ class DefExpr;
 class CallExpr;
 class CondStmt;
 class SymScope;
-class VariableType;
 
 
 class Type : public BaseAST {
@@ -166,16 +165,6 @@ class ClassType : public Type {
 
 };
 
-
-class VariableType : public Type {
- public:
-  Type* type;
-
-  VariableType(Type *init_type = NULL);
-  virtual void verify(); 
-  COPY_DEF(VariableType);
-  void codegen(FILE* outfile);
-};
 
 class PrimitiveType : public Type {
  public:

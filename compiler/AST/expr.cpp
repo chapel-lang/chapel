@@ -163,14 +163,6 @@ SymExpr::copyInner(ASTMap* map) {
 
 
 Type* SymExpr::typeInfo(void) {
-//   if (ArgSymbol* argSymbol = dynamic_cast<ArgSymbol*>(var)) {
-//     if (argSymbol->intent == INTENT_TYPE) {
-//       return dynamic_cast<TypeSymbol*>(argSymbol->genericSymbol)->definition;
-//     }
-//   }
-//   if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(var)) {
-//     return ts->definition;
-//   }
   return var->type;
 }
 

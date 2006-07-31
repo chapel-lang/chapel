@@ -283,15 +283,6 @@ static void build_constructor(ClassType* ct) {
 
   AList<DefExpr>* args = new AList<DefExpr>();
 
-  forv_Vec(TypeSymbol, type, ct->types) {
-    if (VariableType* vt = dynamic_cast<VariableType*>(type->definition)) {
-      ArgSymbol* arg = new ArgSymbol(INTENT_TYPE, type->name, vt->type);
-      arg->isGeneric = true;
-      arg->genericSymbol = type;
-      args->insertAtTail(new DefExpr(arg));
-    }
-  }
-
   forv_Vec(Symbol, tmp, ct->fields) {
     char* name = tmp->name;
     Type* type = tmp->type;

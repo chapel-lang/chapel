@@ -45,10 +45,6 @@ Type::copyInner(ASTMap* map) {
 
 
 Type *Type::instantiate_generic(ASTMap &substitutions) {
-  if (astType == TYPE_VARIABLE) {
-    if (Type *t = dynamic_cast<Type*>(substitutions.get(this)))
-      return t;
-  }
   return 0;
 }
 
@@ -727,37 +723,6 @@ AList<Stmt>* ClassType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymb
   body->insertAtTail(new CallExpr("=", matchingCharWasRead, readCloseBrace));
   body->insertAtTail(readErrorCond->copy());
   return body;
-}
-
-
-VariableType::VariableType(Type *init_type) :
-  Type(TYPE_VARIABLE, NULL), 
-  type(init_type)
-{
-  isGeneric = true;
-}
-
-
-void VariableType::verify() {
-  Type::verify();
-  if (astType != TYPE_VARIABLE) {
-    INT_FATAL(this, "Bad VariableType::astType");
-  }
-  if (prev || next) {
-    INT_FATAL(this, "Type is in AList");
-  }
-}
-
-
-VariableType*
-VariableType::copyInner(ASTMap* map) {
-  VariableType *copy = new VariableType(type);
-  return copy;
-}
-
-
-void VariableType::codegen(FILE* outfile) {
-  INT_FATAL(this, "Unanticipated call to VariableType::codegen");
 }
 
 

@@ -439,7 +439,6 @@ char* astTypeName[AST_TYPE_END+1] = {
   "EnumType",
   "UserType",
   "ClassType",
-  "VariableType",
 
   "List",
 
@@ -569,9 +568,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all, int sentinels) {
     ADD_VEC(ClassType, fields, Symbol);
     ADD_VEC(ClassType, types, TypeSymbol);
     ADD_CHILD(ClassType, fieldSelector);
-    goto LTypeCommon;
-  case TYPE_VARIABLE:
-    ADD_CHILD(VariableType, type);
     goto LTypeCommon;
   case AST_TYPE_END:
     break;

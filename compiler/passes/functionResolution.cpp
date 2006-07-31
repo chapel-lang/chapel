@@ -245,13 +245,7 @@ computeGenericSubs(ASTMap &subs,
   for (int i = 0; i < num_actuals; i++) {
     if (actual_formals->v[i]) {
       if (actual_formals->v[i]->isGeneric) {
-        if (actual_formals->v[i]->intent == INTENT_TYPE) {
-          TypeSymbol* ts =
-            dynamic_cast<TypeSymbol*>(actual_formals->v[i]->genericSymbol);
-          if (!ts)
-            INT_FATAL(actual_formals->v[i], "Unanticipated genericSymbol");
-          subs.put(ts->definition, actual_types->v[i]);
-        } else if (actual_formals->v[i]->intent == INTENT_PARAM) {
+        if (actual_formals->v[i]->intent == INTENT_PARAM) {
           if (actual_params->v[i] && actual_params->v[i]->isParam())
             subs.put(actual_formals->v[i], actual_params->v[i]);
         }
@@ -310,8 +304,7 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
     ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
     j++;
     if (formal_actuals.v[j] &&
-        !(formal->intent == INTENT_TYPE ||
-          canDispatch(formal_actuals.v[j], formal->type, fn)))
+        !canDispatch(formal_actuals.v[j], formal->type, fn))
       return;
     if (formal_params.v[j] && formal_params.v[j]->isTypeVariable && !formal->isTypeVariable)
       return;
@@ -470,42 +463,36 @@ resolve_call(CallExpr* call,
           for (int k = 0; k < actual_formals->n; k++) {
             ArgSymbol* arg = actual_formals->v[k];
             ArgSymbol* arg2 = actual_formals2->v[k];
-            if (arg->intent != INTENT_TYPE && arg2->intent != INTENT_TYPE) {
-              if (arg->instantiatedParam && !arg2->instantiatedParam)
-                as_good = false;
-              else if (!arg->instantiatedParam && arg2->instantiatedParam)
+            if (arg->instantiatedParam && !arg2->instantiatedParam)
+              as_good = false;
+            else if (!arg->instantiatedParam && arg2->instantiatedParam)
+              better = true;
+            else {
+              bool require_scalar_promotion1;
+              bool require_scalar_promotion2;
+              canDispatch( actual_types->v[k], arg->type, best, &require_scalar_promotion1);
+              canDispatch( actual_types->v[k], arg2->type, best, &require_scalar_promotion2);
+              if (require_scalar_promotion1 && !require_scalar_promotion2)
                 better = true;
+              else if (!require_scalar_promotion1 && require_scalar_promotion2)
+                as_good = false;
               else {
-                bool require_scalar_promotion1;
-                bool require_scalar_promotion2;
-                canDispatch( actual_types->v[k], arg->type, best, &require_scalar_promotion1);
-                canDispatch( actual_types->v[k], arg2->type, best, &require_scalar_promotion2);
-                if (require_scalar_promotion1 && !require_scalar_promotion2)
+                if (arg->instantiatedFrom==dtAny &&
+                    arg2->instantiatedFrom!=dtAny) {
                   better = true;
-                else if (!require_scalar_promotion1 && require_scalar_promotion2)
+                } else if (arg->instantiatedFrom!=dtAny &&
+                           arg2->instantiatedFrom==dtAny) {
                   as_good = false;
-                else {
-                  if (arg->instantiatedFrom==dtAny &&
-                      arg2->instantiatedFrom!=dtAny) {
+                } else {
+                  if (moreSpecific(best, arg2->type, arg->type) && 
+                      arg2->type != arg->type) {
                     better = true;
-                  } else if (arg->instantiatedFrom!=dtAny &&
-                             arg2->instantiatedFrom==dtAny) {
+                  }
+                  if (!moreSpecific(best, arg2->type, arg->type)) {
                     as_good = false;
-                  } else {
-                    if (moreSpecific(best, arg2->type, arg->type) && 
-                        arg2->type != arg->type) {
-                      better = true;
-                    }
-                    if (!moreSpecific(best, arg2->type, arg->type)) {
-                      as_good = false;
-                    }
                   }
                 }
               }
-            } else if (arg->intent == INTENT_TYPE && arg2->intent != INTENT_TYPE) {
-              better = true;
-            } else if (arg->intent != INTENT_TYPE && arg2->intent == INTENT_TYPE) {
-              as_good = false;
             }
           }
           if (better || as_good) {

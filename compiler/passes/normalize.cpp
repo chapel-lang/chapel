@@ -397,8 +397,7 @@ static void insert_formal_temps(FnSymbol* fn) {
   for_alist_backward(DefExpr, formalDef, fn->formals) {
     ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
     if (formal->intent == INTENT_REF ||
-        formal->intent == INTENT_PARAM ||
-        formal->intent == INTENT_TYPE)
+        formal->intent == INTENT_PARAM)
       continue;
     VarSymbol* temp = new VarSymbol(stringcat("_", formal->name));
     DefExpr* tempDef = new DefExpr(temp, new SymExpr(formal));
@@ -715,7 +714,7 @@ static void fold_call_expr(CallExpr* call) {
           call->replace(new CallExpr(PRIMITIVE_CAST, ts, ts->definition->defaultValue));
         else if (ts->definition->defaultConstructor)
           call->replace(new CallExpr(ts->definition->defaultConstructor));
-        else if (!dynamic_cast<VariableType*>(ts->definition))
+        else
           INT_FATAL(ts, "type has neither defaultValue nor defaultConstructor");
       }
     }
@@ -1106,7 +1105,7 @@ genericFunctionArg(FnSymbol *f, Vec<Symbol *> &genericSymbols) {
     if (ArgSymbol *ps = dynamic_cast<ArgSymbol *>(formal->sym)) {
       if (TypeSymbol *ts = dynamic_cast<TypeSymbol *>(ps->genericSymbol)) {
         if (ts->definition->isGeneric) {
-          assert(dynamic_cast<VariableType*>(ts->definition));
+          INT_FATAL("AHHH");
           genericSymbols.set_add(ts);
           result = 1;
           continue;
@@ -1153,12 +1152,9 @@ tag_generic(Type *t) {
         genericSymbols.set_add(vs);
     }
     forv_Vec(TypeSymbol, s, st->types) {
-      if (s->definition->astType == TYPE_VARIABLE) 
-        genericSymbols.set_add(s->definition->symbol);
-      else
-        if (s->definition->isGeneric)
-          genericSymbols.set_union(s->definition->genericSymbols);
-    }    
+      if (s->definition->isGeneric)
+        genericSymbols.set_union(s->definition->genericSymbols);
+    }
   }
   if (genericSymbols.n) {
     genericSymbols.set_to_vec();

@@ -198,8 +198,7 @@ void update_symbols(BaseAST* ast, ASTMap* map) {
         BaseAST *b = map->get(ps->genericSymbol);
         if (b) {
           if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(b)) {
-            if (ts->definition->astType != TYPE_VARIABLE)
-              ps->isGeneric = 0;
+            ps->isGeneric = 0;
             ps->genericSymbol = ts;
           } else {
             INT_FATAL("Major error in update_symbols");
@@ -233,9 +232,8 @@ void remove_static_actuals() {
         DefExpr* formalDef = fn->formals->first();
         for_alist(Expr, actual, call->argList) {
           ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
-          if (formal->intent == INTENT_TYPE ||
-              (fn->fnClass != FN_CONSTRUCTOR && (formal->type == dtMethodToken ||
-                                                 formal->type == dtSetterToken)))
+          if (fn->fnClass != FN_CONSTRUCTOR && (formal->type == dtMethodToken ||
+                                                formal->type == dtSetterToken))
             actual->remove();
           formalDef = fn->formals->next();
         }
@@ -252,9 +250,8 @@ void remove_static_formals() {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
       for_alist(DefExpr, formalDef, fn->formals) {
         ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
-        if (formal->intent == INTENT_TYPE ||
-            (fn->fnClass != FN_CONSTRUCTOR && (formal->type == dtMethodToken ||
-                                               formal->type == dtSetterToken)))
+        if (fn->fnClass != FN_CONSTRUCTOR && (formal->type == dtMethodToken ||
+                                              formal->type == dtSetterToken))
           formalDef->remove();
       }
     }

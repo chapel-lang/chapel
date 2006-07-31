@@ -439,7 +439,7 @@ ArgSymbol::ArgSymbol(intentTag iIntent, char* iName,
   instantiatedFrom(NULL),
   instantiatedParam(false)
 {
-  if (intent == INTENT_PARAM || intent == INTENT_TYPE)
+  if (intent == INTENT_PARAM)
     isGeneric = true;
 }
 
@@ -777,32 +777,28 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
       wrapper->formals->insertAtTail(wrapper_formal);
       call->insertAtTail(wrapper_formal);
     } else {
-      if (formal->intent == INTENT_TYPE) {
-        call->insertAtTail(formal->defaultExpr->copy());
-      } else {
-        char* temp_name = stringcat("_default_temp_", formal->name);
-        VarSymbol* temp = new VarSymbol(temp_name);
-        copy_map.put(formal, temp);
-        Expr* temp_init = NULL;
-        Expr* temp_type = NULL;
-        if (formal->intent != INTENT_OUT)
-          temp_init = formal->defaultExpr->copy();
-        if (SymExpr* symExpr = dynamic_cast<SymExpr*>(temp_init))
-          if (symExpr->var == gNil)
-            temp_init = NULL;
-        if (formal->defPoint->exprType)
-          temp_type = formal->defPoint->exprType->copy();
-        if (!temp_type && !temp_init)
-          temp_type = new SymExpr(formal->type->symbol);
-        wrapper->insertAtTail(new DefExpr(temp, temp_init, temp_type));
-        if (formal->type != dtUnknown &&
-            formal->intent != INTENT_REF &&
-            formal->intent != INTENT_OUT &&
-            formal->intent != INTENT_INOUT)
-          call->insertAtTail(new CallExpr(PRIMITIVE_CAST, formal->type->symbol, temp));
-        else
-          call->insertAtTail(temp);
-      }
+      char* temp_name = stringcat("_default_temp_", formal->name);
+      VarSymbol* temp = new VarSymbol(temp_name);
+      copy_map.put(formal, temp);
+      Expr* temp_init = NULL;
+      Expr* temp_type = NULL;
+      if (formal->intent != INTENT_OUT)
+        temp_init = formal->defaultExpr->copy();
+      if (SymExpr* symExpr = dynamic_cast<SymExpr*>(temp_init))
+        if (symExpr->var == gNil)
+          temp_init = NULL;
+      if (formal->defPoint->exprType)
+        temp_type = formal->defPoint->exprType->copy();
+      if (!temp_type && !temp_init)
+        temp_type = new SymExpr(formal->type->symbol);
+      wrapper->insertAtTail(new DefExpr(temp, temp_init, temp_type));
+      if (formal->type != dtUnknown &&
+          formal->intent != INTENT_REF &&
+          formal->intent != INTENT_OUT &&
+          formal->intent != INTENT_INOUT)
+        call->insertAtTail(new CallExpr(PRIMITIVE_CAST, formal->type->symbol, temp));
+      else
+        call->insertAtTail(temp);
     }
   }
   update_symbols(wrapper->body, &copy_map);
@@ -946,10 +942,8 @@ instantiate_function(FnSymbol *fn, ASTMap *all_subs, ASTMap *generic_subs) {
   for_alist(DefExpr, formal, clone->formals) {
     if (ArgSymbol *ps = dynamic_cast<ArgSymbol *>(formal->sym)) {
       if (TypeSymbol *ts = dynamic_cast<TypeSymbol *>(ps->genericSymbol)) {
-        if (ts->definition->astType != TYPE_VARIABLE) {
-          ps->type = ts->type;
-          ps->isExactMatch = true;
-        }
+        ps->type = ts->type;
+        ps->isExactMatch = true;
       }
       if (all_subs->get(ps) && ps->intent == INTENT_PARAM) {
         ps->intent = INTENT_BLANK;
@@ -1281,21 +1275,6 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
   normalize(newfn);
   instantiatedTo->add(newfn);
   add_new_ast_functions(newfn);
-
-  //
-  // set default expression for type intent arguments
-  //
-  for_alist(DefExpr, formal_def, newfn->formals) {
-    ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formal_def->sym);
-    if (formal->intent == INTENT_TYPE) {
-      if (!formal->defaultExpr) {
-        BaseAST* prev = formal_def->prev;
-        formal_def->remove();
-        formal->defaultExpr = new SymExpr(formal->genericSymbol);
-        prev->insertAfter(formal_def);
-      }
-    }
-  }
 
   if (newfn->where) {
     ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(newfn->where->body->last());
