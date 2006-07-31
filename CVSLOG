@@ -69125,3 +69125,21 @@ Added files:
 	chapel/test/classes/deitz/: test_class_of_record.chpl 
 	                            test_class_of_record.good 
 
+---------------------------------------------------------------------------
+
+07/31/06 11:24:25 -- deitz
+
+Log message:
+	Added support for querying a type variable or type alias component of
+	a class.  Example: x.t where x's type is a class instantiated over t.
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp 
+Removed files:
+	chapel/test/reductions/bradc/manual/: 
+	                                      threeclasstypes-manual.future 
+	                                      usetype.future 
+	chapel/test/types/type_variables/jplevyak/: 
+	                                            type_variable-2.future 
+	                                            typevar_use-1.future 
+
