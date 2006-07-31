@@ -69207,3 +69207,18 @@ Modified files:
 	chapel/compiler/passes/: codegen.cpp functionResolution.cpp 
 	                         normalize.cpp 
 
+---------------------------------------------------------------------------
+
+07/31/06 15:43:00 -- deitz
+
+Log message:
+	Removed unused VariableType, a result from the last change's
+	unification, and INTENT_TYPE except during parsing.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp baseAST.cpp expr.cpp 
+	                      symbol.cpp type.cpp 
+	chapel/compiler/include/: baseAST.h type.h 
+	chapel/compiler/passes/: cleanup.cpp codegen.cpp 
+	                         functionResolution.cpp normalize.cpp 
+
