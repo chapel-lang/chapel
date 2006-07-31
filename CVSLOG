@@ -69192,3 +69192,18 @@ Modified files:
 	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
 	                                         inlfunc2_report.good 
 
+---------------------------------------------------------------------------
+
+07/31/06 15:09:02 -- deitz
+
+Log message:
+	Removed unused MetaType subsumed by Symbol::isTypeVariable in last change.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp baseAST.cpp build.cpp expr.cpp 
+	                      primitive.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: baseAST.h type.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: codegen.cpp functionResolution.cpp 
+	                         normalize.cpp 
+
