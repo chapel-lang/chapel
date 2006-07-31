@@ -33,6 +33,7 @@ static void expand_var_args(FnSymbol* fn);
 static int tag_generic(FnSymbol* fn);
 static int tag_generic(Type* fn);
 static void tag_hasVarArgs(FnSymbol* fn);
+static void change_types_to_values(FnSymbol* fn);
 
 
 void normalize(void) {
@@ -210,6 +211,16 @@ void normalize(BaseAST* base) {
       hack_resolve_types(a);
     }
   }
+
+  asts.clear();
+  collect_asts_postorder(&asts, base);
+  forv_Vec(BaseAST, ast, asts) {
+    if (FnSymbol* a = dynamic_cast<FnSymbol*>(ast)) {
+      if (!a->isGeneric) {
+        change_types_to_values(a);
+      }
+    }
+  }
 }
 
 
@@ -258,9 +269,9 @@ static void reconstruct_iterator(FnSymbol* fn) {
                       if (vs->immediate) {
                         char *s = vs->immediate->v_string;
                         ClassType *ct = dynamic_cast<ClassType*>(fn->_this->type);
-                        forv_Vec(TypeSymbol, ts, ct->types)
-                          if (!strcmp(ts->name, s))
-                            ts->addPragma("promoter");
+                        forv_Vec(Symbol, field, ct->fields)
+                          if (!strcmp(field->name, s))
+                            field->addPragma("promoter");
                       }
                     }
                   }
@@ -480,7 +491,7 @@ static bool can_resolve_type(Expr* type_expr) {
   if (!type_expr)
     return false;
   Type* type = type_expr->typeInfo();
-  return type && type != dtUnknown; // && type != dtNil;
+  return type && type != dtUnknown && type != dtAny; // && type != dtNil;
 }
 
 
@@ -636,9 +647,13 @@ static void fix_def_expr(DefExpr* def) {
       else
         def->parentStmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, new CallExpr("=", def->sym, def->init->remove())));
     }
-    if (!ignore_type)
-      def->parentStmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, new CallExpr("_init", def->exprType->remove())));
-    else
+    if (!ignore_type) {
+      VarSymbol* typeTemp = new VarSymbol("_typeTmp");
+      typeTemp->isTypeVariable = true;
+      def->parentStmt->insertBefore(new DefExpr(typeTemp));
+      def->parentStmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, typeTemp, new CallExpr("_init", def->exprType->remove())));
+      def->parentStmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, typeTemp));
+    } else
       def->exprType->remove();
   } else if (def->init) {
     def->parentStmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, def->sym, new CallExpr("_copy", def->init->remove())));
@@ -680,26 +695,26 @@ static void fold_call_expr(CallExpr* call) {
   }
   if (call->isNamed("_init")) {
     if (CallExpr* construct = dynamic_cast<CallExpr*>(call->get(1))) {
-      if (SymExpr* base = dynamic_cast<SymExpr*>(construct->baseExpr)) {
-        Symbol* sym = call->lookup(base);
-        if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
-          if (fn->fnClass == FN_CONSTRUCTOR) {
-            if (ClassType* ct = dynamic_cast<ClassType*>(fn->retType)) {
-              if (ct->classTag == CLASS_CLASS)
-                call->replace(new CallExpr(PRIMITIVE_CAST, construct->remove(), gNil));
-              else
-                call->replace(construct->remove());
-            }
-          } else if (construct->isNamed("_build_array_type") ||
-                     construct->isNamed("_build_sparse_domain_type") ||
-                     construct->isNamed("_build_domain_type") ||
-                     construct->isNamed("_build_index_type")) {
-            call->replace(construct->remove());
+      if (construct->isNamed("_build_array_type") ||
+          construct->isNamed("_build_sparse_domain_type") ||
+          construct->isNamed("_build_domain_type") ||
+          construct->isNamed("_build_index_type")) {
+        call->replace(construct->remove());
+      } else if (FnSymbol* fn = dynamic_cast<FnSymbol*>(construct->isResolved())) {
+        if (ClassType* ct = dynamic_cast<ClassType*>(fn->retType)) {
+          if (!ct->isGeneric) {
+            if (ct->classTag == CLASS_CLASS)
+              call->replace(new CallExpr(PRIMITIVE_CAST, fn->retType->symbol, gNil));
+            else
+              call->replace(construct->remove());
           }
         }
       }
     } else if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
-      if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(sym->var)) {
+      TypeSymbol* ts = dynamic_cast<TypeSymbol*>(sym->var);
+      if (!ts && sym->var->isTypeVariable)
+        ts = sym->var->type->symbol;
+      if (ts && !ts->definition->isGeneric) {
         if (ts->definition->defaultValue)
           call->replace(new CallExpr(PRIMITIVE_CAST, ts, ts->definition->defaultValue));
         else if (ts->definition->defaultConstructor)
@@ -1167,4 +1182,38 @@ tag_hasVarArgs(FnSymbol* fn) {
   for_formals(formal, fn)
     if (formal->variableExpr)
       fn->hasVarArgs = true;
+}
+
+static void
+change_types_to_values(FnSymbol* fn) {
+  Vec<BaseAST*> asts;
+  collect_top_asts(&asts, fn);
+  forv_Vec(BaseAST, ast, asts) {
+    if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
+      if (CallExpr* call = dynamic_cast<CallExpr*>(sym->parentExpr)) {
+        if (call->isPrimitive(PRIMITIVE_CAST))
+          continue;
+        if (call->isPrimitive(PRIMITIVE_CHPL_ALLOC))
+          continue;
+      }
+      if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(sym->var)) {
+        CallExpr* typecall = NULL;
+        if (type->definition->defaultValue)
+          typecall = new CallExpr(PRIMITIVE_CAST, type, type->definition->defaultValue);
+        else if (type->definition->defaultConstructor)
+          typecall = new CallExpr(type->definition->defaultConstructor);
+        else
+          INT_FATAL(type, "Bad type");
+        if (sym->parentStmt) {
+          VarSymbol* typeTemp = new VarSymbol("_typeTmp");
+          typeTemp->isTypeVariable = true;
+          sym->parentStmt->insertBefore(new DefExpr(typeTemp));
+          sym->parentStmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, typeTemp, typecall));
+          sym->replace(new SymExpr(typeTemp));
+        } else {
+          sym->replace(typecall);
+        }
+      }
+    }
+  }
 }

@@ -455,20 +455,19 @@ build_class(char* name, Type* type, AList<Stmt>* decls) {
 DefExpr*
 build_arg(intentTag tag, char* ident, Expr* type, Expr* init, Expr* variable) {
   ArgSymbol* argSymbol = new ArgSymbol(tag, ident, dtUnknown, init, variable);
+  if (argSymbol->intent == INTENT_TYPE) {
+    type = NULL;
+    argSymbol->intent = INTENT_BLANK;
+    argSymbol->isGeneric = false;
+    argSymbol->isTypeVariable = true;
+  }
   if (!type)
     argSymbol->type = dtAny;
-  if (tag == INTENT_TYPE) {
-    VariableType* new_type = new VariableType(getMetaType(NULL));
-    TypeSymbol* new_type_symbol = new TypeSymbol(argSymbol->name, new_type);
-    argSymbol->type = getMetaType(NULL);
-    argSymbol->genericSymbol = new_type_symbol;
-  } 
-#if 0
-  else if (tag == INTENT_PARAM) {
-    char *name = stringcat("__parameter_", argSymbol->name);
-    VarSymbol *varSymbol = new VarSymbol(name, dtUnknown, VAR_NORMAL, VAR_PARAM);
-    argSymbol->genericSymbol = varSymbol;
-  }
-#endif
+//   if (tag == INTENT_TYPE) {
+//     VariableType* new_type = new VariableType(getMetaType(NULL));
+//     TypeSymbol* new_type_symbol = new TypeSymbol(argSymbol->name, new_type);
+//     argSymbol->type = getMetaType(NULL);
+//     argSymbol->genericSymbol = new_type_symbol;
+//   } 
   return new DefExpr(argSymbol, NULL, type);
 }

@@ -306,6 +306,7 @@ static void build_constructor(ClassType* ct) {
     VarSymbol *vtmp = dynamic_cast<VarSymbol*>(tmp);
     ArgSymbol* arg = new ArgSymbol((vtmp && vtmp->consClass == VAR_PARAM) ? INTENT_PARAM : INTENT_BLANK, name, type, init);
     DefExpr* defExpr = new DefExpr(arg, NULL, exprType);
+    arg->isTypeVariable = tmp->isTypeVariable;
     if (!exprType && arg->type == dtUnknown && (!arg->defaultExpr || arg->defaultExpr->typeInfo() == dtNil))
       arg->type = dtAny;
     args->insertAtTail(defExpr);
@@ -321,7 +322,7 @@ static void build_constructor(ClassType* ct) {
   fn->_this = new VarSymbol("this", ct);
 
   char* description = stringcat("instance of class ", ct->symbol->name);
-  Expr* alloc_rhs = new CallExpr("_chpl_alloc",
+  Expr* alloc_rhs = new CallExpr(PRIMITIVE_CHPL_ALLOC,
                                  ct->symbol,
                                  new_StringLiteral(description));
   CallExpr* alloc_expr = new CallExpr(PRIMITIVE_MOVE, fn->_this, alloc_rhs);

@@ -2,6 +2,7 @@
 // Arrays and domains
 //
 
+pragma "array"
 class _array {
   type _array_type;
   type elt_type;

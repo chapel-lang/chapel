@@ -958,16 +958,14 @@ void CallExpr::codegen(FILE* outfile) {
       */
     case PRIMITIVE_CHPL_ALLOC: {
       bool is_class = false;
-      if (SymExpr *s = dynamic_cast<SymExpr*>(get(1))) {
-        if (TypeSymbol *t = dynamic_cast<TypeSymbol*>(s->var)) {
-          if (dynamic_cast<ClassType*>(t->definition)) {
-            is_class = true;
-          }
+      if (TypeSymbol *t = dynamic_cast<TypeSymbol*>(typeInfo()->symbol)) {
+        if (dynamic_cast<ClassType*>(t->definition)) {
+          is_class = true;
         }
       }
       // pointer cast
       fprintf( outfile, "(");
-      get(1)->codegen( outfile);
+      typeInfo()->symbol->codegen( outfile);
       if (!is_class) {
         fprintf( outfile, "*");
       } 
@@ -976,7 +974,7 @@ void CallExpr::codegen(FILE* outfile) {
       // target: void* _chpl_alloc(size_t size, char* description);
       fprintf( outfile, "_chpl_alloc( sizeof( ");
       if (is_class) fprintf( outfile, "_");          // need struct of class
-      get(1)->codegen( outfile);
+      typeInfo()->symbol->codegen( outfile);
       fprintf( outfile, "), ");
       get(2)->codegen( outfile);
       fprintf( outfile, ")");

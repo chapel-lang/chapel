@@ -7,6 +7,9 @@
 #include "runtime.h"
 
 
+static void setFieldTypes(FnSymbol* fn);
+
+
 static Vec<FnSymbol*> resolvedFns;
 
 
@@ -61,6 +64,8 @@ resolveFormals(FnSymbol* fn) {
       else
         fn->retType = sym->var->type;
     }
+    if (fn->fnClass == FN_CONSTRUCTOR)
+      setFieldTypes(fn);
   }
 }
 
@@ -126,6 +131,8 @@ canCoerce(Type* actualType, Type* formalType) {
 // param is set if the actual is a parameter (compile-time constant).
 static bool
 canDispatch( Type* actualType, Type* formalType, FnSymbol* fn, bool* require_scalar_promotion) {
+  if (MetaType* mt = dynamic_cast<MetaType*>(actualType))
+    actualType = mt->base;
   if (require_scalar_promotion)
     *require_scalar_promotion = false;
   if (actualType == formalType)
@@ -247,14 +254,17 @@ computeGenericSubs(ASTMap &subs,
             INT_FATAL(actual_formals->v[i], "Unanticipated genericSymbol");
           subs.put(ts->definition, actual_types->v[i]);
         } else if (actual_formals->v[i]->intent == INTENT_PARAM) {
-          if (actual_params->v[i])
+          if (actual_params->v[i] && actual_params->v[i]->isParam())
             subs.put(actual_formals->v[i], actual_params->v[i]);
         }
       } else if (fn->isGeneric) {
         TypeSymbol* formalType = actual_formals->v[i]->type->symbol;
         if (fn->genericSymbols.set_in(formalType)) {
-          if (canInstantiate(actual_types->v[i], actual_formals->v[i]->type)) {
-            subs.put(actual_formals->v[i], actual_types->v[i]);
+          Type* actual_type = actual_types->v[i];
+          if (MetaType* mt = dynamic_cast<MetaType*>(actual_type))
+            actual_type = mt->base;
+          if (canInstantiate(actual_type, actual_formals->v[i]->type)) {
+            subs.put(actual_formals->v[i], actual_type);
           }
         }
       }
@@ -266,12 +276,12 @@ computeGenericSubs(ASTMap &subs,
 // Return actual-formal map if FnSymbol is viable candidate to call
 static void
 addCandidate(Vec<FnSymbol*>* candidateFns,
-              Vec<Vec<ArgSymbol*>*>* candidateActualFormals,
-              FnSymbol* fn,
-              Vec<Type*>* actual_types,
-              Vec<Symbol*>* actual_params,
-              Vec<char*>* actual_names,
-              bool inst = false) {
+             Vec<Vec<ArgSymbol*>*>* candidateActualFormals,
+             FnSymbol* fn,
+             Vec<Type*>* actual_types,
+             Vec<Symbol*>* actual_params,
+             Vec<char*>* actual_names,
+             bool inst = false) {
   Vec<ArgSymbol*>* actual_formals = new Vec<ArgSymbol*>();
 
   int num_actuals = actual_types->n;
@@ -307,6 +317,10 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
         !(formal->intent == INTENT_TYPE ||
           canDispatch(formal_actuals.v[j], formal->type, fn)))
       return;
+    if (formal_params.v[j] && formal_params.v[j]->isTypeVariable && !formal->isTypeVariable)
+      return;
+//     if (formal_params.v[j] && !formal_params.v[j]->isTypeVariable && formal->isTypeVariable)
+//       return;
     if (!formal_actuals.v[j] && !formal->defaultExpr)
       return;
   }
@@ -556,11 +570,10 @@ computeActuals(CallExpr* call,
       anames->add(NULL);
       symExpr = dynamic_cast<SymExpr*>(actual);
     }
-    if (symExpr && symExpr->var->isParam()) {
+    if (symExpr)
       aparams->add(symExpr->var);
-    } else {
+    else
       aparams->add(NULL);
-    }
   }
 }
 
@@ -599,7 +612,6 @@ build_dispatch_tree(Map<Type*,FnSymbol*>* dispatchMap,
     }
   }
 }
-
 
 
 static void
@@ -657,8 +669,8 @@ resolveCall(CallExpr* call) {
             if (atypes.v[0] == dtMethodToken)
               method = true;
           if (method) {
-            if (MetaType* mt = dynamic_cast<MetaType*>(atypes.v[1]))
-              str = stringcat(str, mt->base->symbol->name, ".");
+            if (aparams.v[1] && aparams.v[1]->isTypeVariable)
+              str = stringcat(str, atypes.v[1]->symbol->name, ".");
             else
               str = stringcat(str, ":", atypes.v[1]->symbol->name, ".");
           }
@@ -686,8 +698,8 @@ resolveCall(CallExpr* call) {
               str = stringcat(str, ", ");
             if (anames.v[i])
               str = stringcat(str, anames.v[i], "=");
-            if (MetaType* mt = dynamic_cast<MetaType*>(atypes.v[i]))
-              str = stringcat(str, mt->base->symbol->name);
+            if (aparams.v[i] && aparams.v[i]->isTypeVariable)
+              str = stringcat(str, atypes.v[i]->symbol->name);
             else
               str = stringcat(str, ":", atypes.v[i]->symbol->name);
           }
@@ -726,9 +738,12 @@ resolveCall(CallExpr* call) {
                 first = true;
               else
                 str = stringcat(str, ", ");
-              if (dynamic_cast<ArgSymbol*>(formalDef->sym)->intent == INTENT_TYPE)
+              if (formalDef->sym->isTypeVariable)
                 str = stringcat(str, "type ", formalDef->sym->name);
-              else
+              else if (formalDef->sym->type == dtUnknown) {
+                if (SymExpr* sym = dynamic_cast<SymExpr*>(formalDef->exprType))
+                  str = stringcat(str, formalDef->sym->name, ": ", sym->var->name);
+              } else
                 str = stringcat(str, formalDef->sym->name, ": ", formalDef->sym->type->symbol->name);
             }
             if (!fn->noParens)
@@ -827,6 +842,30 @@ resolveCall(CallExpr* call) {
     if (t == dtUnknown)
       INT_FATAL(call, "Unable to resolve type");
     call->get(1)->replace(new SymExpr(t->symbol));
+  } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
+    SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2));
+    if (!sym)
+      INT_FATAL(call, "bad set member primitive");
+    VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var);
+    if (!var || !var->immediate)
+      INT_FATAL(call, "bad set member primitive");
+    char* name = var->immediate->v_string;
+    ClassType* ct = dynamic_cast<ClassType*>(call->get(1)->typeInfo());
+    if (!ct)
+      INT_FATAL(call, "bad set member primitive");
+    bool found = false;
+    forv_Vec(Symbol, field, ct->fields) {
+      if (!strcmp(field->name, name)) {
+        Type* t = call->get(3)->typeInfo();
+        if (t == dtUnknown)
+          INT_FATAL(call, "Unable to resolve field type");
+        if (t != field->type && t != dtNil && t != dtObject)
+          USR_FATAL(call, "Cannot assign expression of type %s to field of type %s", t->symbol->name, field->type->symbol->name);
+        found = true;
+      }
+    }
+    if (!found)
+      INT_FATAL(call, "bad set member primitive");
   } else if (call->isPrimitive(PRIMITIVE_MOVE)) {
     if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
       Type* t = call->get(2)->typeInfo();
@@ -849,34 +888,6 @@ resolveCall(CallExpr* call) {
           t != dtObject)
         INT_FATAL(call, "Bad type detected");
     }
-  } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
-    SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2));
-    if (!sym)
-      INT_FATAL(call, "bad set member primitive");
-    VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var);
-    if (!var || !var->immediate)
-      INT_FATAL(call, "bad set member primitive");
-    char* name = var->immediate->v_string;
-    ClassType* ct = dynamic_cast<ClassType*>(call->get(1)->typeInfo());
-    if (!ct)
-      INT_FATAL(call, "bad set member primitive");
-    bool found = false;
-    forv_Vec(Symbol, field, ct->fields) {
-      if (!strcmp(field->name, name)) {
-        Type* t = call->get(3)->typeInfo();
-        if (field->type == dtUnknown)
-          field->type = t;
-        if (field->type == dtNil)
-          USR_FATAL(call, "Unable to determine type of field from nil");
-        if (t == dtUnknown)
-          INT_FATAL(call, "Unable to resolve field type");
-        if (t != field->type && t != dtNil && t != dtObject)
-          USR_FATAL(call, "Cannot assign expression of type %s to field of type %s", t->symbol->name, field->type->symbol->name);
-        found = true;
-      }
-    }
-    if (!found)
-      INT_FATAL(call, "bad set member primitive");
   }
 }
 
@@ -942,8 +953,59 @@ resolve() {
       if (a->defPoint->exprType)
         a->defPoint->exprType->remove();
     }
-    if (CallExpr* call = dynamic_cast<CallExpr*>(ast))
+//     if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
+//       if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(sym->var)) {
+//         if (ts->definition->defaultValue) {
+//           sym->replace(new CallExpr(PRIMITIVE_CAST, ts, ts->definition->defaultValue));
+//         } else if (ts->definition->defaultConstructor) {
+//           CallExpr* construct = new CallExpr(ts->definition->defaultConstructor);
+//           sym->replace(construct);
+//           resolveCall(construct);
+//         } else {
+//           INT_FATAL(ts, "Type has neither defaultValue nor defaultConstructor");
+//         }
+//       }
+//     }
+    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
       if (call->isPrimitive(PRIMITIVE_TYPEOF))
         call->replace(call->get(1)->remove());
+      if (call->isNamed("_init")) {
+        if (CallExpr* construct = dynamic_cast<CallExpr*>(call->get(1))) {
+          if (FnSymbol* fn = construct->isResolved()) {
+            if (ClassType* ct = dynamic_cast<ClassType*>(fn->retType)) {
+              if (!ct->symbol->hasPragma("array") && ct->defaultValue) {
+                call->replace(new CallExpr(PRIMITIVE_CAST, ct->symbol, gNil));
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+static void
+setFieldTypes(FnSymbol* fn) {
+  ClassType* ct = dynamic_cast<ClassType*>(fn->retType);
+  if (!ct)
+    INT_FATAL(fn, "Constructor has no class type");
+  for_alist(DefExpr, formal, fn->formals) {
+    Type* t = formal->sym->type;
+    if (t == dtUnknown)
+      t = formal->exprType->typeInfo();
+    if (t == dtUnknown)
+      INT_FATAL(formal, "Unable to resolve field type");
+    if (t == dtNil)
+      USR_FATAL(formal, "Unable to determine type of field from nil");
+    bool found = false;
+    forv_Vec(Symbol, field, ct->fields) {
+      if (!strcmp(field->name, formal->sym->name)) {
+        field->type = t;
+        found = true;
+      }
+    }
+    if (!found)
+      INT_FATAL(formal, "Unable to find field in constructor");
   }
 }

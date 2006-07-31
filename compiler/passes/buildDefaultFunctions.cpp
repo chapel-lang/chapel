@@ -200,8 +200,9 @@ static void build_record_assignment_function(ClassType* ct) {
   fn->retType = dtUnknown;
   AList<Stmt>* body = new AList<Stmt>();
   forv_Vec(Symbol, tmp, ct->fields)
-    body->insertAtTail(new CallExpr(tmp->name, gMethodToken, arg1, gSetterToken,
-                                    new CallExpr(tmp->name, gMethodToken, arg2)));
+    if (!tmp->isTypeVariable)
+      body->insertAtTail(new CallExpr(tmp->name, gMethodToken, arg1, gSetterToken,
+                                      new CallExpr(tmp->name, gMethodToken, arg2)));
   body->insertAtTail(new ReturnStmt(arg1));
   BlockStmt* block_stmt = new BlockStmt(body);
   fn->body = block_stmt;
@@ -245,14 +246,10 @@ static void build_record_init_function(ClassType* ct) {
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
   fn->formals->insertAtTail(arg);
   CallExpr* call = new CallExpr(ct->defaultConstructor->name);
-  forv_Vec(Symbol, tmp, ct->types)
-    call->insertAtTail(new CallExpr(".", arg, new_StringLiteral(tmp->name)));
   forv_Vec(Symbol, tmp, ct->fields) {
     VarSymbol* var = dynamic_cast<VarSymbol*>(tmp);
-    if (var->consClass == VAR_PARAM)
-      call->insertAtTail(new CallExpr(".", arg, new_StringLiteral(tmp->name)));
-    else
-      call->insertAtTail(new CallExpr("_init", new CallExpr(".", arg, new_StringLiteral(tmp->name))));
+    if (var->consClass == VAR_PARAM || var->isTypeVariable)
+      call->insertAtTail(new NamedExpr(tmp->name, new CallExpr(".", arg, new_StringLiteral(tmp->name))));
   }
   fn->insertAtTail(new ReturnStmt(call));
   DefExpr* def = new DefExpr(fn);

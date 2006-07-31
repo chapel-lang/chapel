@@ -215,7 +215,7 @@ html_print_symbol(FILE* html_file, int pass, Symbol* sym, bool def) {
     if (def) {
       fprintf(html_file, "<A NAME=\"SYM%ld\">", sym->id);
     } else {
-      if (sym->defPoint) {
+      if (sym->defPoint && sym->defPoint->getModule()) {
         fprintf(html_file, "<A HREF=\"%s#SYM%ld\">",
                 html_file_name( pass, sym->defPoint->getModule()->name),
                 sym->id);

@@ -816,13 +816,18 @@ typedef_decl_stmt:
 
 
 typevar_decl_stmt:
-  TTYPE pragma_ls identifier opt_var_type TSEMI
+  TTYPE pragma_ls identifier TSEMI
     {
-      VariableType* new_type = new VariableType(getMetaType(0));
-      TypeSymbol* new_symbol = new TypeSymbol($3, new_type);
-      new_symbol->addPragmas($2);
-      DefExpr* def_expr = new DefExpr(new_symbol, NULL, $4);
-      $$ = build_chpl_stmt(def_expr);
+      VarSymbol* var = new VarSymbol($3);
+      var->isTypeVariable = true;
+      var->addPragmas($2);
+      DefExpr* def = new DefExpr(var);
+      $$ = build_chpl_stmt(def);
+/*       VariableType* new_type = new VariableType(getMetaType(0)); */
+/*       TypeSymbol* new_symbol = new TypeSymbol($3, new_type); */
+/*       new_symbol->addPragmas($2); */
+/*       DefExpr* def_expr = new DefExpr(new_symbol); */
+/*       $$ = build_chpl_stmt(def_expr); */
     }
 ;
 

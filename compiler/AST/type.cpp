@@ -618,7 +618,7 @@ void ClassType::codegenDef(FILE* outfile) {
     }
   }
   if (symbol->hasPragma("data class")) {
-    fields.v[1]->type->codegen(outfile);
+    fields.v[2]->type->codegen(outfile);
     fprintf(outfile, "* _data;\n");
   }
   if (!printedSomething) {
@@ -674,6 +674,8 @@ AList<Stmt>* ClassType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSym
 
   bool first = true;
   forv_Vec(Symbol, tmp, fields) {
+    if (tmp->isTypeVariable)
+      continue;
     if (!first) {
       body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringLiteral(", ")));
     }
@@ -714,6 +716,8 @@ AList<Stmt>* ClassType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymb
   body->insertAtTail(readErrorCond);
   bool first = true;
   forv_Vec(Symbol, tmp, fields) {
+    if (tmp->isTypeVariable)
+      continue;
     if (!first) {
       CallExpr* readComma = new CallExpr("_readLitChar", fileArgFP->copy(), new_StringLiteral(","), ignoreWhiteSpace);
       body->insertAtTail(new CallExpr("=", matchingCharWasRead, readComma));

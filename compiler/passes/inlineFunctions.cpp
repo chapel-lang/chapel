@@ -9,9 +9,14 @@ static void mapFormalsToActuals(CallExpr* call, ASTMap* map) {
   Expr* actual = call->argList->first();
   for_alist(DefExpr, formalDef, fn->formals) {
     ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
-    if (formal->intent == INTENT_REF) {
+    if (formal->intent == INTENT_REF || formal->isTypeVariable) {
       if (SymExpr* symExpr = dynamic_cast<SymExpr*>(actual)) {
-        map->put(formal, symExpr->var);
+        map->put(formal, symExpr);
+      } else if (CallExpr* call = dynamic_cast<CallExpr*>(actual)) {
+        if (call->isPrimitive(PRIMITIVE_CAST))
+          map->put(formal, call);
+        else
+          INT_FATAL("Illegal reference actual encountered in inlining");
       } else {
         INT_FATAL("Illegal reference actual encountered in inlining");
       }
@@ -22,7 +27,7 @@ static void mapFormalsToActuals(CallExpr* call, ASTMap* map) {
       call->parentStmt->insertBefore(new DefExpr(temp));
       call->parentStmt->insertBefore
         (new CallExpr(PRIMITIVE_MOVE, temp, actual->copy()));
-      map->put(formal, temp);
+      map->put(formal, new SymExpr(temp));
     }
     actual = call->argList->next();
   }
@@ -33,15 +38,23 @@ static void inline_call(CallExpr* call, Vec<Stmt*>* stmts) {
   FnSymbol* fn = call->findFnSymbol();
   ASTMap map;
   mapFormalsToActuals(call, &map);
-  AList<Stmt>* fn_body = fn->body->body->copy(&map);
+  AList<Stmt>* fn_body = fn->body->body->copy();
   ReturnStmt* return_stmt = dynamic_cast<ReturnStmt*>(fn_body->last());
   if (!return_stmt)
     INT_FATAL(call, "Cannot inline function, function is not normalized");
   Expr* return_value = return_stmt->expr;
   return_stmt->remove();
+  Vec<BaseAST*> asts;
+  collect_asts(&asts, fn_body);
   for_alist(Stmt, stmt, fn_body)
     stmts->add(stmt);
   call->parentStmt->insertBefore(fn_body);
+  forv_Vec(BaseAST, ast, asts) {
+    if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
+      if (Expr* expr = dynamic_cast<Expr*>(map.get(sym->var)))
+        sym->replace(expr->copy());
+    }
+  }
   if (fn->retType == dtVoid)
     call->parentStmt->remove();
   else

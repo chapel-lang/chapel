@@ -7,6 +7,6 @@ class D : C {
   var y : t;
 }
 
-var d = D(float);
+var d = D(t=float);
 
 writeln(d);

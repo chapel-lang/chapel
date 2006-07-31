@@ -122,7 +122,8 @@ Symbol::Symbol(astType_t astType, char* init_name, Type* init_type) :
   uses(NULL),
   overload(NULL),
   isUnresolved(false),
-  isCompilerTemp(false)
+  isCompilerTemp(false),
+  isTypeVariable(false)
 {}
 
 
@@ -328,6 +329,7 @@ VarSymbol::copyInner(ASTMap* map) {
     new VarSymbol(stringcpy(name), type, varClass, consClass);
   newVarSymbol->cname = stringcpy(cname);
   newVarSymbol->isCompilerTemp = isCompilerTemp;
+  newVarSymbol->isTypeVariable = isTypeVariable;
   assert(!newVarSymbol->immediate);
   return newVarSymbol;
 }
@@ -460,6 +462,7 @@ ArgSymbol::copyInner(ASTMap* map) {
   ps->isExactMatch = isExactMatch;
   ps->cname = stringcpy(cname);
   ps->instantiatedParam = instantiatedParam;
+  ps->isTypeVariable = isTypeVariable;
   return ps;
 }
 
@@ -515,7 +518,7 @@ void ArgSymbol::codegenDef(FILE* outfile) {
 }
 
 TypeSymbol::TypeSymbol(char* init_name, Type* init_definition) :
-  Symbol(SYMBOL_TYPE, init_name, init_definition ? init_definition->metaType : NULL), 
+  Symbol(SYMBOL_TYPE, init_name, init_definition /* ? init_definition->metaType : NULL*/), 
   definition(init_definition)
 {
   if (!definition)
@@ -530,12 +533,12 @@ void TypeSymbol::verify() {
   if (astType != SYMBOL_TYPE) {
     INT_FATAL(this, "Bad TypeSymbol::astType");
   }
-  if (type->astType != TYPE_META)
-    INT_FATAL(this, "TypeSymbol::type is not a MetaType");
+//   if (type->astType != TYPE_META)
+//     INT_FATAL(this, "TypeSymbol::type is not a MetaType");
   if (definition->symbol != this)
     INT_FATAL(this, "TypeSymbol::definition->symbol != TypeSymbol");
-  if (definition->metaType != type)
-    INT_FATAL(this, "TypeSymbol::definition->meta_type != TypeSymbol::type");
+//   if (definition->metaType != type)
+//     INT_FATAL(this, "TypeSymbol::definition->meta_type != TypeSymbol::type");
   definition->verify();
 }
 
@@ -1026,11 +1029,24 @@ check_promoter(ClassType *at) {
   if (!scalar_promotion)
     return;
   ClassType *t = dynamic_cast<ClassType*>(at->instantiatedFrom);
-  forv_Vec(TypeSymbol, tt, t->types) {
-    if (tt->hasPragma("promoter")) {
-      Type *seqElementType = dynamic_cast<Type*>(at->substitutions.get(tt->definition));
-      if (seqElementType != dtUnknown)
-        at->scalarPromotionType = seqElementType;
+  forv_Vec(Symbol, field, t->fields) {
+    if (field->hasPragma("promoter")) {
+      bool updated = false;
+      Vec<BaseAST*> keys;
+      at->substitutions.get_keys(keys);
+      forv_Vec(BaseAST, ast, keys) {
+        if (Symbol* sym = dynamic_cast<Symbol*>(ast)) {
+          if (!strcmp(field->name, sym->name)) {
+            Type* type = dynamic_cast<Type*>(at->substitutions.get(sym));
+            if (type && type != dtUnknown) {
+              at->scalarPromotionType = type;
+              updated = true;
+            }
+          }
+        }
+      }
+      if (!updated)
+        INT_FATAL(at, "Fail to resolve scalar promotion type on instantiation");
     }
   }
 }
@@ -1187,13 +1203,27 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
 
     clone->cname = stringcat(clone->cname, "_A_");
     clone->name = stringcat(clone->name, "(");
-    forv_Vec(BaseAST, value, values) {
-      if (Type* type = dynamic_cast<Type*>(value)) {
-        clone->cname = stringcat(clone->cname, type->symbol->cname);
-        clone->name = stringcat(clone->name, type->symbol->name);
-        if (!clone->definition->instantiatedWith)
-          clone->definition->instantiatedWith = new Vec<Type*>();
-        clone->definition->instantiatedWith->add(type);
+    bool first = false;
+    for (int i = 0; i < generic_substitutions->n; i++) {
+      if (BaseAST* value = generic_substitutions->v[i].value) {
+        if (Type* type = dynamic_cast<Type*>(value)) {
+          if (!first && !strncmp(clone->name, "_tuple", 6))
+            clone->name = stringcat("(");
+          if (first)
+            clone->name = stringcat(clone->name, ",");
+          clone->cname = stringcat(clone->cname, type->symbol->cname);
+          clone->name = stringcat(clone->name, type->symbol->name);
+          if (!clone->definition->instantiatedWith)
+            clone->definition->instantiatedWith = new Vec<Type*>();
+          clone->definition->instantiatedWith->add(type);
+          first = true;
+        } else if (Symbol* symbol = dynamic_cast<Symbol*>(value)) {
+          if (first)
+            clone->name = stringcat(clone->name, ",");
+          clone->cname = stringcat(clone->cname, symbol->cname);
+          clone->name = stringcat(clone->name, symbol->cname);
+          first = true;
+        }
       }
     }
     clone->cname = stringcat(clone->cname, "_B_");
