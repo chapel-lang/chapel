@@ -1,7 +1,5 @@
 chapel compiler: reporting inlining, ! function was inlined
 chapel compiler: reporting inlining, = function was inlined
-chapel compiler: reporting inlining, _inst__chpl_alloc function was inlined
-chapel compiler: reporting inlining, _inst__chpl_alloc function was inlined
 chapel compiler: reporting inlining, _inst_= function was inlined
 chapel compiler: reporting inlining, _inst_= function was inlined
 chapel compiler: reporting inlining, _inst_= function was inlined
@@ -13,7 +11,6 @@ chapel compiler: reporting inlining, _init function was inlined
 chapel compiler: reporting inlining, - function was inlined
 chapel compiler: reporting inlining, _inst___ddata_this function was inlined
 chapel compiler: reporting inlining, = function was inlined
-chapel compiler: reporting inlining, _inst__chpl_alloc function was inlined
 chapel compiler: reporting inlining, _inst___ddata_size function was inlined
 chapel compiler: reporting inlining, _inst___ddata_size function was inlined
 chapel compiler: reporting inlining, _inst___ddata__element function was inlined
@@ -30,7 +27,6 @@ chapel compiler: reporting inlining, ! function was inlined
 chapel compiler: reporting inlining, = function was inlined
 chapel compiler: reporting inlining, ! function was inlined
 chapel compiler: reporting inlining, = function was inlined
-chapel compiler: reporting inlining, _inst__chpl_alloc function was inlined
 chapel compiler: reporting inlining, = function was inlined
 chapel compiler: reporting inlining, _file_fp function was inlined
 chapel compiler: reporting inlining, _get_nullfile function was inlined
@@ -56,10 +52,6 @@ chapel compiler: reporting inlining, ! function was inlined
 chapel compiler: reporting inlining, = function was inlined
 chapel compiler: reporting inlining, ! function was inlined
 chapel compiler: reporting inlining, = function was inlined
-chapel compiler: reporting inlining, _inst__chpl_alloc function was inlined
-chapel compiler: reporting inlining, _inst__chpl_alloc function was inlined
-chapel compiler: reporting inlining, _inst__chpl_alloc function was inlined
-chapel compiler: reporting inlining, _inst__chpl_alloc function was inlined
 chapel compiler: reporting inlining, ! function was inlined
 chapel compiler: reporting inlining, = function was inlined
 chapel compiler: reporting inlining, ! function was inlined
@@ -100,7 +92,6 @@ chapel compiler: reporting inlining, ! function was inlined
 chapel compiler: reporting inlining, = function was inlined
 chapel compiler: reporting inlining, ! function was inlined
 chapel compiler: reporting inlining, = function was inlined
-chapel compiler: reporting inlining, _inst__chpl_alloc function was inlined
 chapel compiler: reporting inlining, __aseq__stride function was inlined
 chapel compiler: reporting inlining, > function was inlined
 chapel compiler: reporting inlining, __aseq__low function was inlined
@@ -122,7 +113,6 @@ chapel compiler: reporting inlining, = function was inlined
 chapel compiler: reporting inlining, = function was inlined
 chapel compiler: reporting inlining, = function was inlined
 chapel compiler: reporting inlining, = function was inlined
-chapel compiler: reporting inlining, _inst__chpl_alloc function was inlined
 chapel compiler: reporting inlining, _default_wrap__construct_Foo function was inlined
 chapel compiler: reporting inlining, _coerce_wrap__inst_= function was inlined
 chapel compiler: reporting inlining, _inst__Foo_x function was inlined
