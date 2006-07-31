@@ -369,6 +369,34 @@ static void build_constructor(ClassType* ct) {
 }
 
 
+static void build_type_getter(ClassType* ct, Symbol *field) {
+  forv_Vec(FnSymbol, fn, ct->methods) {
+    if (fn->_getter == field)
+      return;
+  }
+
+  FnSymbol* fn = new FnSymbol(field->name);
+  fn->addPragma("inline");
+  fn->_getter = field;
+  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
+  fn->formals->insertAtTail(new ArgSymbol(INTENT_BLANK, "_methodTokenDummy", dtMethodToken));
+  fn->formals->insertAtTail(_this);
+  VarSymbol* tmp = new VarSymbol("tmp");
+  fn->insertAtTail(new DefExpr(tmp));
+  fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_init", new CallExpr(field->name, gMethodToken, _this))));
+  fn->insertAtTail(new ReturnStmt(tmp));
+  DefExpr* def = new DefExpr(fn);
+  ct->symbol->defPoint->parentStmt->insertBefore(def);
+  reset_file_info(fn, field->lineno, field->filename);
+  ct->methods.add(fn);
+  fn->isMethod = true;
+  fn->typeBinding = ct->symbol;
+  fn->cname = stringcat("_", fn->typeBinding->cname, "_", fn->cname);
+  fn->noParens = true;
+  fn->_this = _this;
+}
+
+
 static void build_getter(ClassType* ct, Symbol *field) {
   forv_Vec(FnSymbol, fn, ct->methods) {
     if (fn->_getter == field)
@@ -439,8 +467,7 @@ static void build_setters_and_getters(ClassType* ct) {
     }
   }
   forv_Vec(TypeSymbol, tmp, ct->types) {
-    if (tmp->type->astType == TYPE_USER || tmp->type->astType == TYPE_VARIABLE)
-      build_getter(ct, tmp);
+    build_type_getter(ct, tmp);
   }
 }
 
