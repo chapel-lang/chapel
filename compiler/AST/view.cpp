@@ -167,21 +167,23 @@ void nprint_view_noline(BaseAST* ast) {
 }
 
 
-void iprint_view(long id) {
+BaseAST* ast(long id) {
   Vec<BaseAST*> asts;
   collect_asts(&asts);
-  forv_Vec(BaseAST, ast, asts)
-    if (ast->id == id)
-      print_view(ast);
+  forv_Vec(BaseAST, a, asts)
+    if (a->id == id)
+      return a;
+  return NULL;
+}
+
+
+void iprint_view(long id) {
+  print_view(ast(id));
 }
 
 
 void inprint_view(long id) {
-  Vec<BaseAST*> asts;
-  collect_asts(&asts);
-  forv_Vec(BaseAST, ast, asts)
-    if (ast->id == id)
-      nprint_view(ast);
+  nprint_view(ast(id));
 }
 
 

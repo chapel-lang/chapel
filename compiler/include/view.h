@@ -4,6 +4,7 @@
 #include "baseAST.h"
 #include "chplenum.h"
 
+extern BaseAST* ast(long id);
 extern void print_view(BaseAST* ast);
 extern void print_view_noline(BaseAST* ast);
 extern void iprint_view(long id);
