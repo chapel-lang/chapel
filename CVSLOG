@@ -69365,3 +69365,22 @@ Added files:
 	chapel/test/types/type_variables/deitz/: where-2.chpl 
 	                                         where-2.good 
 
+---------------------------------------------------------------------------
+
+08/01/06 16:50:05 -- deitz
+
+Log message:
+	Overloaded cast to mean "is subtype of" in the where clause, added
+	handling of is subtype primitive in parameter folding, changed/fixed
+	one test, and removed its .future.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp 
+	chapel/compiler/include/: primitive.h 
+	chapel/compiler/passes/: cleanup.cpp normalize.cpp 
+	chapel/test/types/type_variables/jplevyak/: 
+	                                            typevar_constraint-1.chpl 
+Removed files:
+	chapel/test/types/type_variables/jplevyak/: 
+	                                            typevar_constraint-1.future 
+
