@@ -5,10 +5,10 @@ class C {
 }
 
 
-fun f(x : ?t) where t.bar == int {
+fun f(x : ?t) where x.bar == int {
   writeln("x = ", x.x);
 }
 
-var c = C(x = 1);
+var c = C(bar=int, x=1);
 
 f(c);

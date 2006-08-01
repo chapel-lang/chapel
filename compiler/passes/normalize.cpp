@@ -33,7 +33,7 @@ static void expand_var_args(FnSymbol* fn);
 static int tag_generic(FnSymbol* fn);
 static int tag_generic(Type* fn);
 static void tag_hasVarArgs(FnSymbol* fn);
-static void change_types_to_values(FnSymbol* fn);
+static void change_types_to_values(BaseAST* base);
 
 
 void normalize(void) {
@@ -673,6 +673,19 @@ static void fix_def_expr(DefExpr* def) {
   }
 
 
+static bool
+isType(Expr* expr) {
+  if (SymExpr* sym = dynamic_cast<SymExpr*>(expr)) {
+    if (sym->var->isTypeVariable)
+      return true;
+  } else if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
+    if (call->isPrimitive(PRIMITIVE_TYPEOF))
+      return true;
+  }
+  return false;
+}
+
+
 static void fold_call_expr(CallExpr* call) {
   if (call->partialTag == PARTIAL_ALWAYS)
     return;
@@ -749,7 +762,9 @@ static void fold_call_expr(CallExpr* call) {
             if (call->isNamed(var->name)) {
               if (Symbol* value = dynamic_cast<Symbol*>(type->substitutions.get(key))) {
                 call->replace(new SymExpr(value));
-              }
+              }//  else if (Type* value = dynamic_cast<Type*>(type->substitutions.get(key))) {
+//                 call->replace(new SymExpr(value->symbol));
+//               }
             }
           } else if (Type* var = dynamic_cast<Type*>(key)) {
             if (call->isNamed(var->symbol->name)) {
@@ -825,6 +840,24 @@ static void fold_call_expr(CallExpr* call) {
     }
   }
 
+  if (call->isNamed("==")) {
+    if (isType(call->get(1)) || isType(call->get(2))) {
+      Type* lt = call->get(1)->typeInfo();
+      Type* rt = call->get(2)->typeInfo();
+      if (lt != dtUnknown && rt != dtUnknown &&
+          !lt->isGeneric && !rt->isGeneric)
+        call->replace((lt == rt) ? new SymExpr(gTrue) : new SymExpr(gFalse));
+    }
+  }
+  if (call->isNamed("!=")) {
+    if (isType(call->get(1)) || isType(call->get(2))) {
+      Type* lt = call->get(1)->typeInfo();
+      Type* rt = call->get(2)->typeInfo();
+      if (lt != dtUnknown && rt != dtUnknown &&
+          !lt->isGeneric && !rt->isGeneric)
+        call->replace((lt != rt) ? new SymExpr(gTrue) : new SymExpr(gFalse));
+    }
+  }
 
   // replace call expr of primitive type with appropriate primitive type
   if (call->argList->length() == 1) {
@@ -1018,6 +1051,7 @@ static void fold_params(BaseAST* base) {
       if (def->parentSymbol)
         change |= fold_def_expr(def);
     }
+    change_types_to_values(base);
   } while (change);
 }
 
@@ -1148,9 +1182,9 @@ tag_hasVarArgs(FnSymbol* fn) {
 }
 
 static void
-change_types_to_values(FnSymbol* fn) {
+change_types_to_values(BaseAST* base) {
   Vec<BaseAST*> asts;
-  collect_top_asts(&asts, fn);
+  collect_top_asts(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
       if (CallExpr* call = dynamic_cast<CallExpr*>(sym->parentExpr)) {
@@ -1168,7 +1202,7 @@ change_types_to_values(FnSymbol* fn) {
         else
           INT_FATAL(type, "Bad type");
         if (sym->parentStmt) {
-          VarSymbol* typeTemp = new VarSymbol("_typeTmp");
+          VarSymbol* typeTemp = new VarSymbol("_typeTmp", type->type);
           typeTemp->isTypeVariable = true;
           sym->parentStmt->insertBefore(new DefExpr(typeTemp));
           sym->parentStmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, typeTemp, typecall));
