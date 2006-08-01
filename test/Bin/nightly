@@ -355,16 +355,16 @@ if ($debug == 0) {
 # write stats and build new graph for linux only
 #
 if ($knownumtests == 1) {
-    $testcol = "$newnumtests";
+    $testcol = "$curnumtests";
 } else {
     $testcol = "-";
 }
 if ($valgrind == 0) {
-    $col = "$newsucc";
+    $col = "$cursucc";
     $vgrcol = "-";
 } else {
     $col = "-";
-    $vgrcol = "$newsucc";
+    $vgrcol = "$cursucc";
 }
 `echo "$statdate\t-\t$testcol\t$col\t$vgrcol" >> $statfile`;
 commitstats();
