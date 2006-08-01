@@ -116,10 +116,9 @@ void normalize(BaseAST* base) {
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
-    if (FnSymbol* a = dynamic_cast<FnSymbol*>(ast)) {
+    if (FnSymbol* a = dynamic_cast<FnSymbol*>(ast))
       if (!(a->_setter || a->_getter))
         apply_getters_setters(a);
-    }
   }
 
   asts.clear();
@@ -1097,71 +1096,51 @@ expand_var_args(FnSymbol* fn) {
 }
 
 
-static int
-genericFunctionArg(FnSymbol *f, Vec<Symbol *> &genericSymbols) {
-  int result = 0;
-  for (DefExpr* formal = f->formals->first(); formal; 
-       formal = f->formals->next()) {
-    if (ArgSymbol *ps = dynamic_cast<ArgSymbol *>(formal->sym)) {
-      if (ps->type && ps->type->isGeneric) {
-        genericSymbols.set_add(ps->type->symbol);
-        result = 1;
-        continue;
-      }
-      if (ps->intent == INTENT_PARAM) {
-        genericSymbols.set_add(ps);
-        result = 1;
-        continue;
-      }
-    }
+static bool
+hasGenericArgs(FnSymbol* fn) {
+  for_formals(formal, fn) {
+    if (formal->type && formal->type->isGeneric)
+      return true;
+    if (formal->intent == INTENT_PARAM)
+      return true;
   }
-  return result;
+  return false;
 }
 
 static int
-tag_generic(FnSymbol *f) {
-  int changed = 0;
-  Vec<Symbol *> genericSymbols;
-  if (genericFunctionArg(f, genericSymbols)) {
-    changed = !f->isGeneric || changed;
-    f->isGeneric = 1; 
-    f->genericSymbols.copy(genericSymbols);
-    f->genericSymbols.set_to_vec();
-    qsort(f->genericSymbols.v, f->genericSymbols.n, sizeof(genericSymbols.v[0]), compar_baseast);
-    if (f->retType != dtUnknown && f->fnClass == FN_CONSTRUCTOR)
-      f->retType->isGeneric = true;
+tag_generic(FnSymbol* fn) {
+  if (fn->isGeneric)
+    return 0;
+  if (hasGenericArgs(fn)) {
+    fn->isGeneric = 1; 
+    if (fn->retType != dtUnknown && fn->fnClass == FN_CONSTRUCTOR)
+      fn->retType->isGeneric = true;
+    return 1;
   }
-  return changed;
+  return 0;
 }
 
 static int
-tag_generic(Type *t) {
-  Vec<Symbol *> genericSymbols;
-  if (ClassType *st = dynamic_cast<ClassType *>(t)) {
-    forv_Vec(Symbol, s, st->fields) {
+tag_generic(Type* t) {
+  if (t->isGeneric)
+    return 0;
+  if (ClassType *ct = dynamic_cast<ClassType *>(t)) {
+    forv_Vec(Symbol, s, ct->fields) {
       VarSymbol *vs = dynamic_cast<VarSymbol *>(s);
-      if (vs && vs->consClass == VAR_PARAM)
-        genericSymbols.set_add(vs);
-    }
-    forv_Vec(TypeSymbol, s, st->types) {
-      if (s->definition->isGeneric)
-        genericSymbols.set_union(s->definition->genericSymbols);
+      if (vs && vs->consClass == VAR_PARAM) {
+        t->isGeneric = 1;
+        return 1;
+      }
     }
   }
-  if (genericSymbols.n) {
-    genericSymbols.set_to_vec();
-    qsort(genericSymbols.v, genericSymbols.n, sizeof(genericSymbols.v[0]), compar_baseast);
-    t->isGeneric = 1;
-    t->genericSymbols.move(genericSymbols);
-  }
-  return genericSymbols.n != 0;
+  return 0;
 }
 
 static void
 tag_hasVarArgs(FnSymbol* fn) {
   fn->hasVarArgs = false;
   if (fn->hasPragma("tuple"))
-    if (fn->genericSymbols.n) // not if instantiated
+    if (fn->isGeneric) // not if instantiated
       fn->hasVarArgs = true;
   for_formals(formal, fn)
     if (formal->variableExpr)

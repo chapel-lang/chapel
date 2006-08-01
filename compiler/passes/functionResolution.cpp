@@ -250,8 +250,7 @@ computeGenericSubs(ASTMap &subs,
             subs.put(actual_formals->v[i], actual_params->v[i]);
         }
       } else if (fn->isGeneric) {
-        TypeSymbol* formalType = actual_formals->v[i]->type->symbol;
-        if (fn->genericSymbols.set_in(formalType)) {
+        if (actual_formals->v[i]->type->isGeneric) {
           Type* actual_type = actual_types->v[i];
           if (canInstantiate(actual_type, actual_formals->v[i]->type)) {
             subs.put(actual_formals->v[i], actual_type);

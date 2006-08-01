@@ -167,7 +167,6 @@ class FnSymbol : public Symbol {
   Symbol* _setter; // the variable this function sets if it is a setter
   Symbol* _getter; // the variable this function gets if it is a getter
   bool isMethod;
-  Vec<Symbol *> genericSymbols;
   FnSymbol *instantiatedFrom;
   ASTMap substitutions;
   Vec<FnSymbol *> *instantiatedTo;
