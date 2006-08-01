@@ -69325,3 +69325,21 @@ Modified files:
 	chapel/compiler/include/: view.h 
 	chapel/compiler/AST/: view.cpp 
 
+---------------------------------------------------------------------------
+
+08/01/06 16:02:10 -- deitz
+
+Log message:
+	Enabled where clauses on simple type expressions and removed two futures.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/test/types/type_variables/jplevyak/: where-1.chpl 
+	                                            where-3-error.good 
+Added files:
+	chapel/test/types/type_variables/deitz/: where-1.chpl 
+	                                         where-1.good 
+Removed files:
+	chapel/test/types/type_variables/jplevyak/: where-3-error.future 
+	                                            where-3.future 
+
