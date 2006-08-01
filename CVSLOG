@@ -69233,3 +69233,15 @@ Modified files:
 	chapel/compiler/AST/: baseAST.cpp symbol.cpp type.cpp 
 	chapel/compiler/include/: symbol.h type.h 
 
+---------------------------------------------------------------------------
+
+07/31/06 17:12:03 -- deitz
+
+Log message:
+	Removed unused field ArgSymbol::genericSymbol.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp baseAST.cpp symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/passes/: normalize.cpp scopeResolve.cpp 
+
