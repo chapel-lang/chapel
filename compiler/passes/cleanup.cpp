@@ -448,9 +448,8 @@ static void flatten_primary_methods(FnSymbol* fn) {
 
 
 static void resolve_secondary_method_type(FnSymbol* fn) {
-  if (fn->typeBinding && fn->typeBinding->isUnresolved) {
+  if (fn->typeBinding && dynamic_cast<UnresolvedSymbol*>(fn->typeBinding)) {
     Symbol* typeBindingSymbol = fn->parentScope->lookup(fn->typeBinding->name);
-    assert(!typeBindingSymbol->isUnresolved);
     if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(typeBindingSymbol)) {
       Type* typeBinding = ts->definition;
       fn->typeBinding = ts;
@@ -470,7 +469,7 @@ static void add_this_formal_to_method(FnSymbol* fn) {
     return;
   if (fn->typeBinding && fn->fnClass != FN_CONSTRUCTOR) {
     fn->cname = stringcat("_", fn->typeBinding->cname, "_", fn->cname);
-    ArgSymbol* this_insert = new ArgSymbol(INTENT_BLANK, "this", fn->typeBinding->definition);
+    ArgSymbol* this_insert = new ArgSymbol(INTENT_BLANK, "this", fn->typeBinding->type);
     fn->formals->insertAtHead(new DefExpr(this_insert));
     fn->_this = this_insert;
     if (strcmp(fn->name, "this")) {

@@ -121,7 +121,6 @@ Symbol::Symbol(astType_t astType, char* init_name, Type* init_type) :
   defPoint(NULL),
   uses(NULL),
   overload(NULL),
-  isUnresolved(false),
   isCompilerTemp(false),
   isTypeVariable(false)
 {}
@@ -191,13 +190,6 @@ void Symbol::print(FILE* outfile) {
 
 
 void Symbol::codegen(FILE* outfile) {
-//   if (hasPragma("data class")) {
-//     TypeSymbol* typeSymbol = dynamic_cast<TypeSymbol*>(this);
-//     ClassType* dataType = dynamic_cast<ClassType*>(typeSymbol->definition);
-//     dataType->fields.v[1]->type->codegen(outfile);
-//     fprintf(outfile, "*");
-//   } else {
-
   if (VarSymbol *vsym = dynamic_cast<VarSymbol*>(this)) {
      // if not immed, is not num, or is boole
     if (!vsym->immediate ||
@@ -274,7 +266,6 @@ UnresolvedSymbol::UnresolvedSymbol(char* init_name, char* init_cname) :
   if (init_cname) {
     cname = init_cname;
   }
-  isUnresolved = true;
 }
 
 
@@ -512,14 +503,14 @@ void ArgSymbol::codegenDef(FILE* outfile) {
   Symbol::codegen(outfile);
 }
 
+
 TypeSymbol::TypeSymbol(char* init_name, Type* init_definition) :
   Symbol(SYMBOL_TYPE, init_name, init_definition),
   definition(init_definition)
 {
   if (!definition)
-    isUnresolved = true;
-  else
-    definition->addSymbol(this);
+    INT_FATAL(this, "TypeSymbol constructor called without type");
+  definition->addSymbol(this);
 }
 
 
@@ -583,7 +574,7 @@ void TypeSymbol::codegenDef(FILE* outfile) {
 }
 
 
-FnSymbol::FnSymbol(char* initName, TypeSymbol* initTypeBinding) :
+FnSymbol::FnSymbol(char* initName, Symbol* initTypeBinding) :
   Symbol(SYMBOL_FN, initName, new FnType()),
   typeBinding(initTypeBinding),
   formals(new AList<DefExpr>()),
@@ -926,7 +917,7 @@ instantiate_function(FnSymbol *fn, ASTMap *all_subs, ASTMap *generic_subs) {
   clone->substitutions.copy(*generic_subs);
   // patch up the typeBinding
   if (clone->typeBinding) {
-    Type *tt = dynamic_cast<Type*>(clone->substitutions.get(clone->typeBinding->definition));
+    Type *tt = dynamic_cast<Type*>(clone->substitutions.get(clone->typeBinding->type));
     if (tt)
       clone->typeBinding = tt->symbol;
   }
@@ -1040,7 +1031,7 @@ add_new_ast_functions(FnSymbol* fn) {
 
 static void
 instantiate_tuple(FnSymbol* fn) {
-  ClassType* tuple = dynamic_cast<ClassType*>(fn->typeBinding->definition);
+  ClassType* tuple = dynamic_cast<ClassType*>(fn->typeBinding->type);
   int size = dynamic_cast<VarSymbol*>(tuple->substitutions.v[0].value)->immediate->v_int64;
   Stmt* last = fn->body->body->last();
   for (int i = 1; i <= size; i++) {

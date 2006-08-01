@@ -42,7 +42,6 @@ class Symbol : public BaseAST {
   Vec<SymExpr*>* uses;
 
   Symbol* overload;
-  bool isUnresolved;
   bool isCompilerTemp;
   bool isTypeVariable;
 
@@ -149,7 +148,7 @@ class TypeSymbol : public Symbol {
 
 class FnSymbol : public Symbol {
  public:
-  TypeSymbol* typeBinding;
+  Symbol* typeBinding;
   AList<DefExpr>* formals;
   Type* retType;
   BlockStmt* where;
@@ -177,7 +176,7 @@ class FnSymbol : public Symbol {
   Vec<CallExpr*>* calledBy;
   Vec<CallExpr*>* calls;
 
-  FnSymbol(char* initName, TypeSymbol* initTypeBinding = NULL);
+  FnSymbol(char* initName, Symbol* initTypeBinding = NULL);
            
   virtual void verify(); 
   COPY_DEF(FnSymbol);
@@ -250,7 +249,6 @@ class LabelSymbol : public Symbol {
 };
 
 
-TypeSymbol *new_UnresolvedTypeSymbol(char *init_name);
 VarSymbol *new_StringSymbol(char *s);
 VarSymbol *new_IntSymbol(long long int b, IF1_int_type size=INT_SIZE_64);
 VarSymbol *new_UIntSymbol(unsigned long long int b, IF1_int_type size=INT_SIZE_64);

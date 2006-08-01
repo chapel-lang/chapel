@@ -720,10 +720,10 @@ function:
       $$->isSetter = true;
     }
 | identifier TDOT fname
-    { $$ = new FnSymbol($3, new TypeSymbol($1, NULL)); }
+    { $$ = new FnSymbol($3, new UnresolvedSymbol($1)); }
 | identifier TDOT TASSIGN identifier
     {
-      $$ = new FnSymbol($4, new TypeSymbol($1, NULL));
+      $$ = new FnSymbol($4, new UnresolvedSymbol($1));
       $$->isSetter = true;
     }
 | TLP non_tuple_lvalue TRP TDOT identifier

@@ -294,7 +294,7 @@ void insert_help(BaseAST* ast,
         mod->initFn->insertAtHead(new CallExpr(PRIMITIVE_USE, new SymExpr(outer->name)));
         parentScope = mod->modScope;
       } else {
-        if (def_expr->sym && !def_expr->sym->isUnresolved) {
+        if (def_expr->sym && !dynamic_cast<UnresolvedSymbol*>(def_expr->sym)) {
           def_expr->parentScope->define(def_expr->sym);
         }
       }

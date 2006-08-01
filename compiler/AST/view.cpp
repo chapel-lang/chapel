@@ -211,7 +211,7 @@ structuralTypeSymbol(Symbol *s) {
 
 static void
 html_print_symbol(FILE* html_file, int pass, Symbol* sym, bool def) {
-  if (!sym->isUnresolved) {
+  if (!dynamic_cast<UnresolvedSymbol*>(sym)) {
     if (def) {
       fprintf(html_file, "<A NAME=\"SYM%ld\">", sym->id);
     } else {
@@ -233,7 +233,7 @@ html_print_symbol(FILE* html_file, int pass, Symbol* sym, bool def) {
   }
   fprintf(html_file, "%s", sym->name);
   fprintf(html_file, "</FONT>");
-  if (!sym->isUnresolved) {
+  if (!dynamic_cast<UnresolvedSymbol*>(sym)) {
     fprintf(html_file, "<FONT COLOR=\"grey\">[%ld]</FONT>", sym->id);
   }
   fprintf(html_file, "</A>");

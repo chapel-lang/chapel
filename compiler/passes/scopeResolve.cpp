@@ -71,7 +71,7 @@ void scopeResolve(BaseAST* base) {
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     if (SymExpr* symExpr = dynamic_cast<SymExpr*>(ast)) {
-      if (symExpr->var->isUnresolved) {
+      if (dynamic_cast<UnresolvedSymbol*>(symExpr->var)) {
         char* name = symExpr->var->name;
         if (!strcmp(name, "."))
           continue;
