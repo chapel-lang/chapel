@@ -69245,3 +69245,17 @@ Modified files:
 	chapel/compiler/include/: symbol.h 
 	chapel/compiler/passes/: normalize.cpp scopeResolve.cpp 
 
+---------------------------------------------------------------------------
+
+08/01/06 09:10:15 -- deitz
+
+Log message:
+	Removed fields Type::genericSymbols and FnSymbol::genericSymbols in
+	favor of Type::isGeneric and FnSymbol::isGeneric.
+
+Modified files:
+	chapel/compiler/AST/: symscope.cpp 
+	chapel/compiler/include/: symbol.h type.h 
+	chapel/compiler/passes/: cleanup.cpp functionResolution.cpp 
+	                         normalize.cpp 
+
