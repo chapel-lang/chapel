@@ -433,7 +433,6 @@ ArgSymbol::ArgSymbol(intentTag iIntent, char* iName,
   intent(iIntent),
   defaultExpr(iDefaultExpr),
   variableExpr(iVariableExpr),
-  genericSymbol(NULL),
   isGeneric(false),
   instantiatedFrom(NULL),
   instantiatedParam(false)
@@ -455,8 +454,6 @@ ArgSymbol*
 ArgSymbol::copyInner(ASTMap* map) {
   ArgSymbol *ps = new ArgSymbol(intent, stringcpy(name),
                                 type, COPY_INT(defaultExpr), COPY_INT(variableExpr));
-  if (genericSymbol)
-    ps->genericSymbol = genericSymbol;
   ps->isGeneric = isGeneric;
   ps->cname = stringcpy(cname);
   ps->instantiatedParam = instantiatedParam;
@@ -939,9 +936,6 @@ instantiate_function(FnSymbol *fn, ASTMap *all_subs, ASTMap *generic_subs) {
   instantiate_update_expr(all_subs, clone->defPoint);
   for_alist(DefExpr, formal, clone->formals) {
     if (ArgSymbol *ps = dynamic_cast<ArgSymbol *>(formal->sym)) {
-      if (TypeSymbol *ts = dynamic_cast<TypeSymbol *>(ps->genericSymbol)) {
-        ps->type = ts->type;
-      }
       if (all_subs->get(ps) && ps->intent == INTENT_PARAM) {
         ps->intent = INTENT_BLANK;
         ps->isGeneric = false;
@@ -993,14 +987,8 @@ FnSymbol::isPartialInstantiation(ASTMap* generic_substitutions) {
     if (formal->isGeneric) {
       bool found = false;
       for (int i = 0; i < generic_substitutions->n; i++) {
-        if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(formal->genericSymbol)) {
-          if (ts->definition == generic_substitutions->v[i].key) {
-            found = true;
-          }
-        } else {
-          if (formal == generic_substitutions->v[i].key) {
-            found = true;
-          }
+        if (formal == generic_substitutions->v[i].key) {
+          found = true;
         }
       }
       if (!found) {

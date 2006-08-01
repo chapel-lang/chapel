@@ -1103,14 +1103,6 @@ genericFunctionArg(FnSymbol *f, Vec<Symbol *> &genericSymbols) {
   for (DefExpr* formal = f->formals->first(); formal; 
        formal = f->formals->next()) {
     if (ArgSymbol *ps = dynamic_cast<ArgSymbol *>(formal->sym)) {
-      if (TypeSymbol *ts = dynamic_cast<TypeSymbol *>(ps->genericSymbol)) {
-        if (ts->definition->isGeneric) {
-          INT_FATAL("AHHH");
-          genericSymbols.set_add(ts);
-          result = 1;
-          continue;
-        }
-      }
       if (ps->type && ps->type->isGeneric) {
         genericSymbols.set_add(ps->type->symbol);
         result = 1;

@@ -194,17 +194,6 @@ void update_symbols(BaseAST* ast, ASTMap* map) {
       XSUB(ps->_getter, Symbol);
     } else if (ArgSymbol* ps = dynamic_cast<ArgSymbol*>(ast)) {
       XSUB(ps->type, Type);
-      if (ps->isGeneric && ps->genericSymbol) {
-        BaseAST *b = map->get(ps->genericSymbol);
-        if (b) {
-          if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(b)) {
-            ps->isGeneric = 0;
-            ps->genericSymbol = ts;
-          } else {
-            INT_FATAL("Major error in update_symbols");
-          }
-        }
-      }
     }
   }
 }

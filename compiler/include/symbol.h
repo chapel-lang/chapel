@@ -114,7 +114,6 @@ class ArgSymbol : public Symbol {
   intentTag intent;
   Expr* defaultExpr;
   Expr* variableExpr;
-  Symbol *genericSymbol;
   bool isGeneric;
   Type* instantiatedFrom;
   bool instantiatedParam;

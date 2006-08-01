@@ -80,13 +80,9 @@ void scopeResolve(BaseAST* base) {
         //VarSymbol* var = dynamic_cast<VarSymbol*>(sym);
         FnSymbol* fn = dynamic_cast<FnSymbol*>(sym);
         TypeSymbol* type = dynamic_cast<TypeSymbol*>(sym);
-        ArgSymbol* arg = dynamic_cast<ArgSymbol*>(sym);
         if (sym) {
           if (!fn)
-            if (arg && arg->genericSymbol)
-              symExpr->var = arg->genericSymbol;
-            else
-              symExpr->var = sym;
+            symExpr->var = sym;
 
           if (type)
             if (UserType* ut = dynamic_cast<UserType*>(type->definition)) {
