@@ -69259,3 +69259,17 @@ Modified files:
 	chapel/compiler/passes/: cleanup.cpp functionResolution.cpp 
 	                         normalize.cpp 
 
+---------------------------------------------------------------------------
+
+08/01/06 09:27:41 -- deitz
+
+Log message:
+	Removed inconsistently used field isUnresolved in favor of more
+	consistently used UnresolvedSymbol.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp symbol.cpp view.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: cleanup.cpp scopeResolve.cpp 
+
