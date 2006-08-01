@@ -69354,3 +69354,14 @@ Log message:
 Added files:
 	chapel/test/parallel/sync/waynew/: PREDIFF 
 
+---------------------------------------------------------------------------
+
+08/01/06 16:49:02 -- deitz
+
+Log message:
+	Added where clause test on type comparisons and logical or.
+
+Added files:
+	chapel/test/types/type_variables/deitz/: where-2.chpl 
+	                                         where-2.good 
+
