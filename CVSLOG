@@ -69273,3 +69273,15 @@ Modified files:
 	chapel/compiler/parser/: chapel.y 
 	chapel/compiler/passes/: cleanup.cpp scopeResolve.cpp 
 
+---------------------------------------------------------------------------
+
+08/01/06 12:39:20 -- deitz
+
+Log message:
+	Updated access to array's element type to be A.elt_type.  Removed .future.
+
+Modified files:
+	chapel/test/reductions/bradc/manual/: usetype2.chpl 
+Removed files:
+	chapel/test/reductions/bradc/manual/: usetype2.future 
+
