@@ -435,7 +435,6 @@ ArgSymbol::ArgSymbol(intentTag iIntent, char* iName,
   variableExpr(iVariableExpr),
   genericSymbol(NULL),
   isGeneric(false),
-  isExactMatch(false),
   instantiatedFrom(NULL),
   instantiatedParam(false)
 {
@@ -459,7 +458,6 @@ ArgSymbol::copyInner(ASTMap* map) {
   if (genericSymbol)
     ps->genericSymbol = genericSymbol;
   ps->isGeneric = isGeneric;
-  ps->isExactMatch = isExactMatch;
   ps->cname = stringcpy(cname);
   ps->instantiatedParam = instantiatedParam;
   ps->isTypeVariable = isTypeVariable;
@@ -943,7 +941,6 @@ instantiate_function(FnSymbol *fn, ASTMap *all_subs, ASTMap *generic_subs) {
     if (ArgSymbol *ps = dynamic_cast<ArgSymbol *>(formal->sym)) {
       if (TypeSymbol *ts = dynamic_cast<TypeSymbol *>(ps->genericSymbol)) {
         ps->type = ts->type;
-        ps->isExactMatch = true;
       }
       if (all_subs->get(ps) && ps->intent == INTENT_PARAM) {
         ps->intent = INTENT_BLANK;

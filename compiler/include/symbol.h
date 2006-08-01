@@ -116,7 +116,6 @@ class ArgSymbol : public Symbol {
   Expr* variableExpr;
   Symbol *genericSymbol;
   bool isGeneric;
-  bool isExactMatch;
   Type* instantiatedFrom;
   bool instantiatedParam;
 

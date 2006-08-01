@@ -44,7 +44,6 @@ class Type : public BaseAST {
   Type *instantiatedFrom;
   Vec<Type*> *instantiatedWith;
   ASTMap substitutions;
-  Type *clonedFrom;
 
   Type(astType_t astType, Symbol* init_defaultVal);
   virtual void verify(); 
@@ -135,7 +134,6 @@ class ClassType : public Type {
   SymScope* structScope;
   AList<Stmt>* declarationList;
   bool isPattern;
-  EnumType* fieldSelector;
 
   AList<Expr>* inherits; // used from parsing, sets dispatchParents
 
