@@ -69314,3 +69314,14 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+08/01/06 15:43:15 -- deitz
+
+Log message:
+	Added debug function ast(long id) to return the BaseAST* of a given id.
+
+Modified files:
+	chapel/compiler/include/: view.h 
+	chapel/compiler/AST/: view.cpp 
+
