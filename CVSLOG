@@ -69222,3 +69222,14 @@ Modified files:
 	chapel/compiler/passes/: cleanup.cpp codegen.cpp 
 	                         functionResolution.cpp normalize.cpp 
 
+---------------------------------------------------------------------------
+
+07/31/06 17:10:36 -- deitz
+
+Log message:
+	Removed a few unused fields in types and symbols.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: symbol.h type.h 
+
