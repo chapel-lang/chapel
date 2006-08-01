@@ -69285,3 +69285,20 @@ Modified files:
 Removed files:
 	chapel/test/reductions/bradc/manual/: usetype2.future 
 
+---------------------------------------------------------------------------
+
+08/01/06 12:55:01 -- deitz
+
+Log message:
+	Removed some unused functions.
+	
+	Changed object and value into primitive types.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/include/: symbol.h type.h 
+	chapel/compiler/passes/: cleanup.cpp filesToAST.cpp 
+	                         functionResolution.cpp 
+	chapel/modules/standard/: _chpl_base.chpl 
+	chapel/runtime/include/: chpltypes.h 
+
