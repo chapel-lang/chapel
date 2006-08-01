@@ -678,8 +678,22 @@ isType(Expr* expr) {
   if (SymExpr* sym = dynamic_cast<SymExpr*>(expr)) {
     if (sym->var->isTypeVariable)
       return true;
+    if (dynamic_cast<TypeSymbol*>(sym->var))
+      return true;
   } else if (CallExpr* call = dynamic_cast<CallExpr*>(expr)) {
     if (call->isPrimitive(PRIMITIVE_TYPEOF))
+      return true;
+  }
+  return false;
+}
+
+
+static bool
+isSubType(Type* sub, Type* super) {
+  if (sub == super)
+    return true;
+  forv_Vec(Type, parent, sub->dispatchParents) {
+    if (isSubType(parent, super))
       return true;
   }
   return false;
@@ -856,6 +870,21 @@ static void fold_call_expr(CallExpr* call) {
       if (lt != dtUnknown && rt != dtUnknown &&
           !lt->isGeneric && !rt->isGeneric)
         call->replace((lt != rt) ? new SymExpr(gTrue) : new SymExpr(gFalse));
+    }
+  }
+  if (call->isPrimitive(PRIMITIVE_ISSUBTYPE)) {
+    if (isType(call->get(1)) || isType(call->get(2))) {
+      Type* lt = call->get(2)->typeInfo(); // a:t cast is cast(t,a)
+      Type* rt = call->get(1)->typeInfo();
+      if (lt != dtUnknown && rt != dtUnknown && lt != dtAny &&
+          rt != dtAny && !lt->isGeneric) {
+        bool is_true = false;
+        if (lt->instantiatedFrom == rt)
+          is_true = true;
+        if (isSubType(lt, rt))
+          is_true = true;
+        call->replace((is_true) ? new SymExpr(gTrue) : new SymExpr(gFalse));
+      }
     }
   }
 

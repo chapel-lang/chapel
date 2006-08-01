@@ -20,6 +20,7 @@ static void build_setters_and_getters(ClassType* ct);
 static void flatten_primary_methods(FnSymbol* fn);
 static void resolve_secondary_method_type(FnSymbol* fn);
 static void add_this_formal_to_method(FnSymbol* fn);
+static void change_cast_in_where(FnSymbol* fn);
 
 
 static void
@@ -201,6 +202,7 @@ void cleanup(BaseAST* base) {
       flatten_primary_methods(fn);
       resolve_secondary_method_type(fn);
       add_this_formal_to_method(fn);
+      change_cast_in_where(fn);
     }
   }
 
@@ -481,6 +483,20 @@ static void add_this_formal_to_method(FnSymbol* fn) {
       ArgSymbol* setter_dummy = new ArgSymbol(INTENT_BLANK, "_setterTokenDummy", 
                                               dtSetterToken);
       fn->formals->last()->insertBefore(new DefExpr(setter_dummy));
+    }
+  }
+}
+
+
+static void change_cast_in_where(FnSymbol* fn) {
+  if (fn->where) {
+    Vec<BaseAST*> asts;
+    collect_asts(&asts, fn->where);
+    forv_Vec(BaseAST, ast, asts) {
+      if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+        if (call->isPrimitive(PRIMITIVE_CAST))
+          call->primitive = primitives[PRIMITIVE_ISSUBTYPE];
+      }
     }
   }
 }

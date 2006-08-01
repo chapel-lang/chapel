@@ -997,6 +997,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, ")");
       break;
     }
+    case PRIMITIVE_ISSUBTYPE:
     case PRIMITIVE_TYPEOF:
     case PRIMITIVE_USE:
     case PRIMITIVE_TUPLE_EXPAND:
