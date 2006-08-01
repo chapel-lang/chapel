@@ -4,6 +4,9 @@
 #define nil 0
 #define _nilType void*
 
+#define _chpl_object void*
+#define _chpl_value void*
+
 /* macros for specifying the correct C constant type */
 #define INT8( i)   (i)
 #define INT16( i)  (i)

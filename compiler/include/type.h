@@ -8,7 +8,7 @@
 #include "../ifa/num.h"
 
 /*
-  Things which must be changed if instance variablers are added
+  Things which must be changed if instance variables are added
   to Types:
 
   1. add variable to class and constructor
@@ -48,11 +48,8 @@ class Type : public BaseAST {
   virtual void verify(); 
   COPY_DEF(Type);
   void addSymbol(TypeSymbol* newSymbol);
-  Type *instantiate_generic(ASTMap &substitutions);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-
-  virtual int rank(void);
 
   virtual void print(FILE* outfile);
   virtual void printDef(FILE* outfile);
@@ -174,10 +171,15 @@ class PrimitiveType : public Type {
 #define TYPE_EXTERN extern
 #endif
 
-// null-ish types
+// internal types
+TYPE_EXTERN Type* dtAny;
 TYPE_EXTERN PrimitiveType* dtNil;
 TYPE_EXTERN PrimitiveType* dtUnknown;
 TYPE_EXTERN PrimitiveType* dtVoid;
+TYPE_EXTERN PrimitiveType* dtObject;
+TYPE_EXTERN PrimitiveType* dtValue;
+TYPE_EXTERN PrimitiveType* dtMethodToken;
+TYPE_EXTERN PrimitiveType* dtSetterToken;
 
 // primitive types
 TYPE_EXTERN PrimitiveType* dtBool;
@@ -191,16 +193,6 @@ TYPE_EXTERN PrimitiveType* dtFile;
 TYPE_EXTERN PrimitiveType* dtMutex;
 TYPE_EXTERN PrimitiveType* dtMutex_p;
 TYPE_EXTERN PrimitiveType* dtCondVar_p;        // condition variable
-
-// internal types
-TYPE_EXTERN PrimitiveType* dtMethodToken;
-TYPE_EXTERN PrimitiveType* dtSetterToken;
-void findInternalTypes(void);
-
-// sum-ish types
-TYPE_EXTERN Type* dtAny;
-TYPE_EXTERN ClassType* dtObject;
-TYPE_EXTERN ClassType* dtValue;
 
 void initPrimitiveTypes(void);
 

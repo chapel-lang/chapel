@@ -1,11 +1,5 @@
 // _chpl_base module
 
-class object { }
-record value { }
-
-var _aobject : object;
-var _avalue : value;
-
 pragma "inline" fun _chpl_alloc(type t, description:string)
   return __primitive("chpl_alloc", t, description);
 

@@ -1357,33 +1357,6 @@ FnSymbol::insertAtTail(BaseAST* ast) {
 }
 
 
-int Symbol::nestingDepth() {
-  if (!defPoint) // labels
-    return 0;
-  Symbol *s = defPoint->parentSymbol;
-  int d = 0;
-  while (s->astType == SYMBOL_FN) {
-    d++;
-    s = s->defPoint->parentSymbol;
-  }
-  return d;
-}
-
-
-FnSymbol *Symbol::nestingParent(int i) {
-  if (!defPoint) // labels
-    return 0;
-  Symbol *s = defPoint->parentSymbol;
-  while (s->astType == SYMBOL_FN) {
-    i--;
-    if (i >= 0)
-      return dynamic_cast<FnSymbol*>(s);
-    s = s->defPoint->parentSymbol;
-  }
-  return 0;
-}
-
-
 EnumSymbol::EnumSymbol(char* init_name) :
   Symbol(SYMBOL_ENUM, init_name)
 { }

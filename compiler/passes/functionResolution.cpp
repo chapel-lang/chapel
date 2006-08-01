@@ -135,6 +135,8 @@ canDispatch( Type* actualType, Type* formalType, FnSymbol* fn, bool* require_sca
     *require_scalar_promotion = false;
   if (actualType == formalType)
     return true;
+  if (actualType == dtNil && formalType == dtObject)
+    return true;
   if (actualType == dtNil)
     if (ClassType* ct = dynamic_cast<ClassType*>(formalType))
       if (ct->classTag == CLASS_CLASS)

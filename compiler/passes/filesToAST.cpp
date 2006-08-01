@@ -40,8 +40,6 @@ void parse(void) {
   forv_Vec(ModuleSymbol, mod, allModules)
     insert_help(mod, NULL, NULL, mod, mod->modScope);
 
-  findInternalTypes();
-
   if (!fnostdincs) {
     chpl_seq = seqModule->lookupType("seq");
     chpl_stdin = fileModule->lookupVar("stdin");

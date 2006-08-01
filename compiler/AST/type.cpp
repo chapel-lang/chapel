@@ -43,22 +43,12 @@ Type::copyInner(ASTMap* map) {
 }
 
 
-Type *Type::instantiate_generic(ASTMap &substitutions) {
-  return 0;
-}
-
-
 void Type::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == defaultValue) {
     defaultValue = dynamic_cast<Symbol*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in Type::replaceChild");
   }
-}
-
-
-int Type::rank(void) {
-  return 0;
 }
 
 
@@ -773,6 +763,9 @@ void initPrimitiveTypes(void) {
   dtVoid = createPrimitiveType ("void", "void");
   CREATE_DEFAULT_SYMBOL (dtVoid, gVoid, "_void");
 
+  dtObject = createPrimitiveType("object", "_chpl_object");
+  dtValue = createPrimitiveType("value", "_chpl_value");
+
   dtBool = createPrimitiveType ("bool", "_bool");
 
   // Create initial compiler module and its scope
@@ -832,11 +825,6 @@ void initPrimitiveTypes(void) {
   CREATE_DEFAULT_SYMBOL (dtMethodToken, gMethodToken, "_unknown");
   dtSetterToken = createPrimitiveType ("_st", "_st");
   CREATE_DEFAULT_SYMBOL (dtSetterToken, gSetterToken, "_unknown");
-}
-
-void findInternalTypes(void) {
-  dtObject = dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(baseModule->lookup("object"))->definition);
-  dtValue = dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(baseModule->lookup("value"))->definition);
 }
 
 
