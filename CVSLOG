@@ -69384,3 +69384,15 @@ Removed files:
 	chapel/test/types/type_variables/jplevyak/: 
 	                                            typevar_constraint-1.future 
 
+---------------------------------------------------------------------------
+
+08/01/06 16:53:13 -- deitz
+
+Log message:
+	Added a sequence indexed by a sequence test case.  It works so we can
+	cross that off with zero effort.
+
+Added files:
+	chapel/test/types/seq/deitz/: test_seq_index2.chpl 
+	                              test_seq_index2.good 
+
