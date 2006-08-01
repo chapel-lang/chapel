@@ -69302,3 +69302,15 @@ Modified files:
 	chapel/modules/standard/: _chpl_base.chpl 
 	chapel/runtime/include/: chpltypes.h 
 
+---------------------------------------------------------------------------
+
+08/01/06 15:00:40 -- bradc
+
+Log message:
+	Fixed a bug in the nightly regression testing system in which
+	the number of tests that existed/passed was no longer being
+	correctly updated each night.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
