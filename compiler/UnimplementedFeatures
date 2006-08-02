@@ -10,20 +10,20 @@ HIGH PRIORITY ITEMS (For implementation before Dec 1)
 DONE nested type aliases
 DONE sequence # operator
 DONE sequence indexing with negative integers
-     sequence indexing by a tuple
+DONE sequence indexing by a tuple
      cross product function application
 DONE sequence indexing with a sequence
      predicate expressions "x = [i in D] if i < 10 then ..."
      iterator functions
      reductions
-     domain assignment
      indefinite domains
        -=/remove method
        member? method
-     domain arguments to functions
+DONE domain arguments to functions
      association of arrays to domains
-     domain reallocation
-     array reallocation
+       domain assignment
+       domain reallocation
+       array reallocation
      array arguments to functions
        with explicit domains
        with queried domains

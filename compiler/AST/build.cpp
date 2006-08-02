@@ -158,13 +158,18 @@ AList<Stmt>* build_while_do_block(Expr* cond, BlockStmt* body) {
 
 
 AList<Stmt>* build_do_while_block(Expr* cond, BlockStmt* body) {
+  BlockStmt* block = dynamic_cast<BlockStmt*>(body->body->first());
+  if (!block) {
+    block = new BlockStmt(body);
+    body = block;
+  }
   body = new BlockStmt(body);
   body->blockTag = BLOCK_DO_WHILE;
   build_loop_labels(body);
   AList<Stmt>* stmts = new AList<Stmt>();
   stmts->insertAtTail(new DefExpr(body->pre_loop));
   stmts->insertAtTail(body);
-  stmts->insertAtTail(new CondStmt(cond, new GotoStmt(goto_normal, body->pre_loop)));
+  block->insertAtTail(new CondStmt(cond, new GotoStmt(goto_normal, body->pre_loop)));
   stmts->insertAtTail(new DefExpr(body->post_loop));
   return stmts;
 }

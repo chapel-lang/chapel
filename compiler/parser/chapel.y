@@ -417,7 +417,7 @@ while_do_stmt:
 
 do_while_stmt:
 TDO stmt TWHILE expr TSEMI
-    { $$ = build_chpl_stmt(build_do_while_block($4, new BlockStmt($2))); }
+    { $$ = build_chpl_stmt(build_do_while_block($4, $2)); }
 ;
 
 
@@ -980,6 +980,8 @@ type:
     { $$ = new CallExpr("_build_array_type", new CallExpr("_build_domain", $2), $4); }
 | TDOMAIN TLP expr_ls TRP
     { $$ = new CallExpr("_build_domain_type", $3); }
+| TDOMAIN
+    { $$ = new SymExpr("_domain"); }
 | TSPARSE TDOMAIN TLP expr_ls TRP
     { $$ = new CallExpr("_build_sparse_domain_type", $4); }
 | TINDEX TLP expr_ls TRP
