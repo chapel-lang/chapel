@@ -69471,3 +69471,16 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 	chapel/compiler/include/: symbol.h 
 
+---------------------------------------------------------------------------
+
+08/02/06 10:30:34 -- deitz
+
+Log message:
+	Added .future to capture idea that type of formal argument should come
+	from the default expression if a type is not provided.
+
+Added files:
+	chapel/test/functions/deitz/: test_default_type.chpl 
+	                              test_default_type.future 
+	                              test_default_type.good 
+
