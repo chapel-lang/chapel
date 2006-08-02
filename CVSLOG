@@ -69499,3 +69499,18 @@ Modified files:
 Removed files:
 	chapel/test/trivial/bradc/: beer.future 
 
+---------------------------------------------------------------------------
+
+08/02/06 10:36:11 -- deitz
+
+Log message:
+	Reenabled folding of nested type definitions during parameter folding
+	(not just during function resolution) to handle case of the where
+	expression that looks like, for example, "where x.elt_type == int" and
+	removed one .future.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+Removed files:
+	chapel/test/types/type_variables/jplevyak/: where-1.future 
+
