@@ -799,7 +799,7 @@ resolveCall(CallExpr* call) {
 
   } else if (call->isPrimitive(PRIMITIVE_TUPLE_EXPAND)) {
     SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1));
-    VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var);
+    Symbol* var = dynamic_cast<Symbol*>(sym->var);
     int size = 0;
     for (int i = 0; i < var->type->substitutions.n; i++) {
       if (var->type->substitutions.v[i].key) {
@@ -820,6 +820,8 @@ resolveCall(CallExpr* call) {
       call->parentStmt->insertBefore(move);
       call->insertBefore(tmp);
       resolveCall(e);
+      if (e->isResolved())
+        resolveFns(e->isResolved());
       resolveCall(move);
     }
     call->remove();

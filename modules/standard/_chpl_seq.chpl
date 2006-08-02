@@ -35,6 +35,14 @@ record seq {
     }
   }
 
+  fun this(i: int, is: int...?k) var {
+    return this(i)(is);
+  }
+
+  fun this(is: _tuple) var {
+    return this((...is));
+  }
+
   fun getHeadCursor()
     return _first;
 
