@@ -69592,3 +69592,21 @@ Added files:
 	chapel/test/trivial/bradc/: uintloop.chpl uintloop.future 
 	                            uintloop.good 
 
+---------------------------------------------------------------------------
+
+08/02/06 12:26:47 -- bradc
+
+Log message:
+	Added some tests regarding the scoping of local variables in
+	a while loop -- as expected, using the variable in the
+	conditional of a while { ... } loop fails.  Using the variable
+	in the conditional of a do { ... } while loop also fails,
+	however.  In past meetings, we've discussed supporting this
+	behavior.  If we decide not to, the .good can be updated and
+	the .future removed.
+
+Added files:
+	chapel/test/trivial/bradc/: whilescope.chpl whilescope.future 
+	                            whilescope.good whilescope2.chpl 
+	                            whilescope2.good 
+
