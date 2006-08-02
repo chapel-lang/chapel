@@ -69640,3 +69640,27 @@ Added files:
 	chapel/test/parallel/sync/bradc/: .cvsignore sync_init.chpl 
 	                                  sync_init.good 
 
+---------------------------------------------------------------------------
+
+08/02/06 14:38:42 -- deitz
+
+Log message:
+	Added support for indexing into a sequence of sequences of ... with a
+	tuple such that the first element in the tuple indexes into the first
+	sequence, the second into the second, ...  Also added support for
+	indexing into a sequence of sequences of ... using variable arguments.
+	Added a test case.
+	
+	Fixed a bug in the tuple expansion resolution code in which the tuple
+	indexing call was resolved but the function was not.
+	
+	Fixed a bug in the tuplex expansion resolution code in which the tuple
+	was an ArgSymbol not a VarSymbol.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/modules/standard/: _chpl_seq.chpl 
+Added files:
+	chapel/test/types/seq/deitz/: test_seq_index3.chpl 
+	                              test_seq_index3.good 
+
