@@ -138,8 +138,16 @@ fun =(s1: seq, s2) {
   return s1;
 }
 
-fun #(s1 : seq, s2 : seq) {
+fun #(s1:seq, s2) where s1.type == s2.type {
   return s1._concat(s2);
+}
+
+fun #(s:seq, e) where s.elt_type == e.type {
+  return s._append(e);
+}
+
+fun #(e, s:seq) where s.elt_type == e.type {
+  return s._prepend(e);
 }
 
 fun reverse(s : seq, dim : int = 1) {

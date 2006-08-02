@@ -22,7 +22,6 @@ static void initialize_out_formals(FnSymbol* fn);
 static void insert_formal_temps(FnSymbol* fn);
 static void call_constructor_for_class(CallExpr* call);
 static void decompose_special_calls(CallExpr* call);
-static void hack_seqcat_call(CallExpr* call);
 static void hack_resolve_types(Expr* expr);
 static void apply_getters_setters(FnSymbol* fn);
 static void insert_call_temps(CallExpr* call);
@@ -86,18 +85,6 @@ void normalize(BaseAST* base) {
     currentFilename = ast->filename;
     if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
       decompose_special_calls(a);
-    }
-  }
-
-  asts.clear();
-  collect_asts_postorder(&asts, base);
-  forv_Vec(BaseAST, ast, asts) {
-    currentLineno = ast->lineno;
-    currentFilename = ast->filename;
-    if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
-      hack_seqcat_call(a);
-    } else if (Expr* a = dynamic_cast<Expr*>(ast)) {
-      hack_resolve_types(a);
     }
   }
 
@@ -454,31 +441,6 @@ static void decompose_special_calls(CallExpr* call) {
     call->parentStmt->remove();
   } else if (call->isNamed("read")) {
     decompose_multi_actuals(call, "fread", new SymExpr(chpl_stdin));
-  }
-}
-
-
-static void hack_seqcat_call(CallExpr* call) {
-  if (call->isNamed("#")) {
-    Type* leftType = call->get(1)->typeInfo();
-    Type* rightType = call->get(2)->typeInfo();
-
-    // assume dtUnknown may be sequence type, at least one should be
-    if (leftType != dtUnknown && rightType != dtUnknown)
-      INT_FATAL(call, "Bad # operation");
-
-    // if only one is, change to append or prepend
-    if (leftType != dtUnknown) {
-      call->replace(new CallExpr(
-                      new CallExpr(".", call->get(2)->copy(), 
-                                   new_StringSymbol("_prepend")),
-                      call->get(1)->copy()));
-    } else if (rightType != dtUnknown) {
-      call->replace(new CallExpr(
-                      new CallExpr(".", call->get(1)->copy(), 
-                                   new_StringSymbol("_append")),
-                      call->get(2)->copy()));
-    }
   }
 }
 

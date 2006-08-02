@@ -2,91 +2,91 @@ Unimplemented feature list
 
 HIGH PRIORITY ITEMS (For implementation before Dec 1)
 
-int/uint semantics "var x: uint = 12" "var y: int = 12u"
-byte width semantics  "var x : int(8) = 2" where 2 defaults to int(64)
-floating point literals
-variable declarations with shared types
-constructors
-nested type aliases
-sequence # operator
-sequence indexing with negative integers
-sequence indexing by a tuple
-cross product function application
-sequence indexing with a sequence
-predicate expressions "x = [i in D] if i < 10 then ..."
-iterator functions
-reductions
-domain assignment
-indefinite domains
-  -=/remove method
-  member? method
-domain arguments to functions
-association of arrays to domains
-domain reallocation
-array reallocation
-array arguments to functions
-  with explicit domains
-  with queried domains
-scalar promotion to preserve arrayness
-single variables
-sync variables
+     int/uint semantics "var x: uint = 12" "var y: int = 12u"
+     byte width semantics  "var x : int(8) = 2" where 2 defaults to int(64)
+     floating point literals
+     variable declarations with shared types
+     constructors
+DONE nested type aliases
+DONE sequence # operator
+DONE sequence indexing with negative integers
+     sequence indexing by a tuple
+     cross product function application
+DONE sequence indexing with a sequence
+     predicate expressions "x = [i in D] if i < 10 then ..."
+     iterator functions
+     reductions
+     domain assignment
+     indefinite domains
+       -=/remove method
+       member? method
+     domain arguments to functions
+     association of arrays to domains
+     domain reallocation
+     array reallocation
+     array arguments to functions
+       with explicit domains
+       with queried domains
+     scalar promotion to preserve arrayness
+     single variables
+     sync variables
 
 MEDIUM PRIORITY ITEMS (Maybe implemented by Dec 1)
 
-primitive to string casts
-string to primitive functions
-config parameters
-config variables (more orthogonal implementation)
-underscore to destructure tuples
-variables accessed via modules (mod.x)
-using modules not in files passed to the compiler
-unions
-indefinite sequences
-  usage in zippered context
-  usage in sequence indexing
-tuple to sequence cast
-sequence to tuple cast
-shadowing functions
-index types in domain type
-subdomains
-association of subdomains to domains
-array aliasing
-complex array initialization "var x : [i in D] int = i"
-arrays of arrays
-serial statement
+     primitive to string casts
+     string to primitive functions
+     config parameters
+     config variables (more orthogonal implementation)
+     underscore to destructure tuples
+     variables accessed via modules (mod.x)
+     using modules not in files passed to the compiler
+     unions
+     indefinite sequences
+       usage in zippered context
+       usage in sequence indexing
+     tuple to sequence cast
+     sequence to tuple cast
+     shadowing functions
+     index types in domain type
+     subdomains
+     association of subdomains to domains
+     array aliasing
+     complex array initialization "var x : [i in D] int = i"
+     arrays of arrays
+     serial statement
 
 LOW PRIORITY ITEMS (Probably not implemented by Dec 1)
 
-fixed size strings
-intents (in, out, inout, const)
-functions as arguments to functions
-conditional declarations
-module initialize function
-module finalize function
-predefined argv sequence
-anonymous record literals
-nested classes
-nested records
-sequence primitives
-  reverse, spread, transpose, reshape, fill
-type select statements and wildcard underscore
-type variables nested in formal types "x : C(?t)"
-enumerated domains
-opaque domains
-sparse domains
-forall statement in parallel
+     fixed size strings
+     intents (in, out, inout, const)
+     functions as arguments to functions
+     conditional declarations
+     module initialize function
+     module finalize function
+     predefined argv sequence
+     anonymous record literals
+     nested classes
+     nested records
+     sequence primitives
+       reverse, spread, transpose, reshape, fill
+     type select statements and wildcard underscore
+     type variables nested in formal types "x : C(?t)"
+     enumerated domains
+     opaque domains
+     sparse domains
+     forall statement in parallel
 
 CHOPPING BLOCK ITEMS
 
-static methods
-assignment of records to classes
-sequence of length-1 strings special features
-check for invalid goto usage
-any and all reductions
-implicit all reduction
-special interpretation of sequences in select statements
-cursors
-arithmetic index sets
-set_range method on arithmetic domains
-product domains
-array functions
+     static methods
+     assignment of records to classes
+     sequence of length-1 strings special features
+     check for invalid goto usage
+     any and all reductions
+     implicit all reduction
+     special interpretation of sequences in select statements
+     cursors
+     arithmetic index sets
+     set_range method on arithmetic domains
+     product domains
+     array functions

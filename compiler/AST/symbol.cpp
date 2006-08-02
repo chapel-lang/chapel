@@ -1193,7 +1193,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
   instantiatedTo->add(newfn);
   add_new_ast_functions(newfn);
 
-  if (newfn->where) {
+  if (!newfn->isGeneric && newfn->where) {
     ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(newfn->where->body->last());
     if (!exprStmt)
       INT_FATAL(where, "Bad where");
