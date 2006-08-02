@@ -69539,3 +69539,16 @@ Added files:
 	chapel/test/types/seq/deitz/: test_seq_record2.chpl 
 	                              test_seq_record2.good 
 
+---------------------------------------------------------------------------
+
+08/02/06 11:26:13 -- bradc
+
+Log message:
+	Fixed nightly token counting script to stop looking for
+	*.chpl files in the parser directory, as there are none,
+	and this causes the count to incorrectly be "0" for the
+	Chapel modules and such.
+
+Modified files:
+	chapel/util/tokencount/: tokctnightly 
+
