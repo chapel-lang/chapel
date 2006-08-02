@@ -1,0 +1,3 @@
+deitz
+
+This should produce an error if we take the formal type to be from the default expression.
