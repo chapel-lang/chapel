@@ -69437,3 +69437,15 @@ Log message:
 Modified files:
 	chapel/etc/emacs/21.4/: font-lock.el 
 
+---------------------------------------------------------------------------
+
+08/01/06 17:20:24 -- bradc
+
+Log message:
+	Some jacobi bug fixes that have been sitting around in my
+	directory for awhile (maybe since the ORNL HPLS team visit?)
+
+Modified files:
+	chapel/test/studies/jacobi/bradc/: jacobi-play-brad.chpl 
+	chapel/test/studies/jacobi/deitz/: jacobi2.chpl 
+
