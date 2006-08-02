@@ -69610,3 +69610,20 @@ Added files:
 	                            whilescope.good whilescope2.chpl 
 	                            whilescope2.good 
 
+---------------------------------------------------------------------------
+
+08/02/06 12:29:15 -- bradc
+
+Log message:
+	Added my own fibonacci computation engine using a cobegin that
+	creates three tasks: one to "compute" the 1st argument, one to
+	"compute" the 2nd argument, and the 3rd to compute the results.
+	sync vars are used to keep these tasks in sync.  Current
+	implementation works, but uses a lot of cruft to make sure that
+	we don't re-read or re-write a sync variable multiple times (in
+	particular, I find myself shadowing sync variables with local
+	copies of the values in a bunch of places).
+
+Added files:
+	chapel/test/parallel/sync/bradc/: fib_sync.chpl fib_sync.good 
+
