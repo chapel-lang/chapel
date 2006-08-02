@@ -26,7 +26,7 @@ fun main() {
   do {
     // the hope is that some major constant folding/stencil
     // optimization will take place here
-    [ij in D] B(ij) = sum reduce [off in StencilD] A(ij+off);
+    [ij in D] B(ij) = sum reduce [off in StencilD] (weight(off) * A(ij+off));
 
     bigdiff = max reduce [ij in D] abs(A(ij) - B(ij));
 
