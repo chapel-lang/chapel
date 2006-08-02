@@ -69564,3 +69564,16 @@ Added files:
 	                                  test_sync1.future 
 	                                  test_sync1.good 
 
+---------------------------------------------------------------------------
+
+08/02/06 11:31:15 -- deitz
+
+Log message:
+	Added a second future that tries a begin on a single statement but
+	results in a syntax error.
+
+Added files:
+	chapel/test/parallel/sync/deitz/: test_sync2.chpl 
+	                                  test_sync2.future 
+	                                  test_sync2.good 
+
