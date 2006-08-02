@@ -69677,3 +69677,21 @@ Added files:
 	                                         test_recurse.chpl 
 	                                         test_recurse.good 
 
+---------------------------------------------------------------------------
+
+08/02/06 15:58:24 -- deitz
+
+Log message:
+	Removed TypeSymbol::definition which is identical to TypeSymbol::type
+	due to the recent removal of MetaType.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp baseAST.cpp expr.cpp 
+	                      symbol.cpp symscope.cpp view.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         codegen.cpp functionResolution.cpp 
+	                         normalize.cpp scopeResolve.cpp 
+	                         semanticChecks.cpp verify.cpp 
+
