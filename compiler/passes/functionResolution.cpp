@@ -240,26 +240,28 @@ computeActualFormalMap(FnSymbol* fn,
 static void
 computeGenericSubs(ASTMap &subs,
                    FnSymbol* fn,
-                   int num_actuals,
-                   Vec<ArgSymbol*>* actual_formals,
-                   Vec<Type*>* actual_types,
-                   Vec<Symbol*>* actual_params) {
-  for (int i = 0; i < num_actuals; i++) {
-    if (actual_formals->v[i]) {
-      if (actual_formals->v[i]->isGeneric) {
-        if (actual_formals->v[i]->intent == INTENT_PARAM) {
-          if (actual_params->v[i] && actual_params->v[i]->isParam())
-            subs.put(actual_formals->v[i], actual_params->v[i]);
+                   int num_formals,
+                   Vec<Type*>* formal_actuals,
+                   Vec<Symbol*>* formal_params) {
+  int i = 0;
+  for_formals(formal, fn) {
+    if (formal->intent == INTENT_PARAM) {
+      if (formal_params->v[i] && formal_params->v[i]->isParam()) {
+        subs.put(formal, formal_params->v[i]);
+      }
+    } else if (formal->type->isGeneric) {
+      if (formal_actuals->v[i]) {
+        if (canInstantiate(formal_actuals->v[i], formal->type)) {
+          subs.put(formal, formal_actuals->v[i]);
         }
-      } else if (fn->isGeneric) {
-        if (actual_formals->v[i]->type->isGeneric) {
-          Type* actual_type = actual_types->v[i];
-          if (canInstantiate(actual_type, actual_formals->v[i]->type)) {
-            subs.put(actual_formals->v[i], actual_type);
-          }
+      } else if (formal->defaultExpr) {
+        Type* defaultType = formal->defaultExpr->typeInfo();
+        if (canInstantiate(defaultType, formal->type)) {
+          subs.put(formal, defaultType);
         }
       }
     }
+    i++;
   }
 }
 
@@ -288,7 +290,7 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
 
   if (fn->isGeneric) {
     ASTMap subs;
-    computeGenericSubs(subs, fn, num_actuals, actual_formals, actual_types, actual_params);
+    computeGenericSubs(subs, fn, num_formals, &formal_actuals, &formal_params);
     if (subs.n && !fn->isPartialInstantiation(&subs)) {
       FnSymbol* inst_fn = fn->instantiate_generic(&subs);
       if (inst_fn)

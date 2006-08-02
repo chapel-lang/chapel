@@ -898,10 +898,14 @@ instantiate_function(FnSymbol *fn, ASTMap *all_subs, ASTMap *generic_subs) {
         ps->intent = INTENT_BLANK;
         ps->isGeneric = false;
         ps->instantiatedParam = true;
+        ps->defaultExpr = new SymExpr(gNil);
+        ps->defaultExpr->parentSymbol = ps;
       } else if (Type* t = dynamic_cast<Type*>(all_subs->get(ps))) {
         ps->isGeneric = false;
         ps->instantiatedFrom = ps->type;
         ps->type = t;
+        ps->defaultExpr = new SymExpr(gNil);
+        ps->defaultExpr->parentSymbol = ps;
       }
     }
   }

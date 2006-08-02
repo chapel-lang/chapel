@@ -294,7 +294,7 @@ static void build_constructor(ClassType* ct) {
     Expr* init = tmp->defPoint->init;
     if (init)
       init->remove();
-    else
+    else if (!tmp->isTypeVariable)
       init = new SymExpr(gNil);
     VarSymbol *vtmp = dynamic_cast<VarSymbol*>(tmp);
     ArgSymbol* arg = new ArgSymbol((vtmp && vtmp->consClass == VAR_PARAM) ? INTENT_PARAM : INTENT_BLANK, name, type, init);
