@@ -69514,3 +69514,28 @@ Modified files:
 Removed files:
 	chapel/test/types/type_variables/jplevyak/: where-1.future 
 
+---------------------------------------------------------------------------
+
+08/02/06 11:22:32 -- deitz
+
+Log message:
+	Removed special handling of the # operator which worked to prepend or
+	append only on integers or strings.  It now works in the general case
+	and is not special-cased by the compiler.
+	
+	Fixed a bug in where expression evaluation in which the where
+	expression was evaluated on generic functions in the case where a
+	generic function was not completely instantiated.
+	
+	Updated list of unimplemented features, marking four high-priority
+	items as done.
+
+Modified files:
+	chapel/compiler/: UnimplementedFeatures 
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/modules/standard/: _chpl_seq.chpl 
+Added files:
+	chapel/test/types/seq/deitz/: test_seq_record2.chpl 
+	                              test_seq_record2.good 
+
