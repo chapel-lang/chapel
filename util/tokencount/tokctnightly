@@ -88,7 +88,7 @@ mysystem("cd $compdir/vparser && $tokctr $allcppfiles > ../vparser.ntoks");
 mysystem("cd $tmpdir/chapel/runtime && $tokctr $allcppfiles > runtime.ntoks");
 
 mysystem("cd $chapeldir && make third-party comprt", "making compiler", 1, 1);
-mysystem("$compdir/chpl --count-tokens $compdir/parser/*.chpl $chapeldir/modules/standard/*.chpl >& $compdir/chpcode.ntoks");
+mysystem("$compdir/chpl --count-tokens $chapeldir/modules/standard/*.chpl >& $compdir/chpcode.ntoks");
 
 $asttoks = `cat $compdir/AST.ntoks`; chomp($asttoks);
 $adttoks = `cat $compdir/adt.ntoks`; chomp($adttoks);
