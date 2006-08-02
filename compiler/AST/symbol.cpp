@@ -535,27 +535,6 @@ TypeSymbol::copyInner(ASTMap* map) {
 }
 
 
-TypeSymbol* TypeSymbol::clone(ASTMap* map) {
-  ClassType* originalClass = dynamic_cast<ClassType*>(definition);
-  if (!originalClass) {
-    INT_FATAL(this, "Attempt to clone non-class type");
-  }
-  TypeSymbol* clone = copy(map);
-  ClassType* newClass = dynamic_cast<ClassType*>(clone->definition);
-  if (!newClass) {
-    INT_FATAL(this, "Class cloning went horribly wrong");
-  }
-  clone->cname = stringcat("_clone_", clone->cname);
-  defPoint->parentStmt->insertBefore(new DefExpr(clone));
-  clone->addPragmas(&pragmas);
-  clone->definition->substitutions.copy(definition->substitutions);
-  clone->definition->dispatchParents.copy(definition->dispatchParents);
-  if (clone->definition->dispatchChildren.n)
-    INT_FATAL(this, "Generic type has subtypes");
-  return clone;
-}
-
-
 void TypeSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == type)
     type = dynamic_cast<Type*>(new_ast);
@@ -677,18 +656,6 @@ make_method_call_partial(CallExpr* call) {
     outer->insertAtTail(arg);
   }
   return outer;
-}
-
-
-FnSymbol* FnSymbol::clone(ASTMap* map) {
-  Stmt* copyStmt = defPoint->parentStmt->copy(map, NULL);
-  ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(copyStmt);
-  DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr);
-  defPoint->parentStmt->insertAfter(copyStmt);
-  clear_type_info(copyStmt);
-  clear_type_info(defPoint);
-  defExpr->sym->addPragmas(&pragmas);
-  return dynamic_cast<FnSymbol*>(defExpr->sym);
 }
 
 
@@ -940,36 +907,6 @@ instantiate_function(FnSymbol *fn, ASTMap *all_subs, ASTMap *generic_subs) {
   }
   return clone;
 }
-
-
-FnSymbol*
-FnSymbol::clone_generic(ASTMap* formal_types) {
-  // use same cache as instantiate generic since they won't collide
-  if (FnSymbol* cached = checkMapCache(&icache, this, formal_types))
-    return cached;
-  Stmt* fnStmt = defPoint->parentStmt->copy();
-  ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(fnStmt);
-  DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr);
-  FnSymbol* fnClone = dynamic_cast<FnSymbol*>(defExpr->sym);
-  fnClone->visible = false;
-  fnClone->cname = stringcat("_clone_", fnClone->cname);
-  defPoint->parentStmt->insertBefore(fnStmt);
-  DefExpr* oldFormalDef = formals->first();
-  for_alist(DefExpr, formalDef, fnClone->formals) {
-    ArgSymbol* oldFormal = dynamic_cast<ArgSymbol*>(oldFormalDef->sym);
-    ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
-    if (Type* type = dynamic_cast<Type*>(formal_types->get(oldFormal))) {
-      formal->type = type;
-      formalDef->exprType = NULL;
-    }
-    oldFormalDef = formals->next();
-  }
-  fnClone->instantiatedFrom = this;
-  fnClone->substitutions.copy(*formal_types);
-  addMapCache(&icache, this, fnClone, &fnClone->substitutions);
-  return fnClone;
-}
-
 
 bool
 FnSymbol::isPartialInstantiation(ASTMap* generic_substitutions) {

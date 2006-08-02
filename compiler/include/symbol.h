@@ -137,7 +137,6 @@ class TypeSymbol : public Symbol {
   TypeSymbol(char* init_name, Type* init_definition);
   virtual void verify(); 
   COPY_DEF(TypeSymbol);
-  TypeSymbol* clone(ASTMap* map);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void codegenDef(FILE* outfile);
   virtual void codegenPrototype(FILE* outfile);
@@ -169,7 +168,7 @@ class FnSymbol : public Symbol {
   Vec<FnSymbol *> *instantiatedTo;
   bool visible; // included in visible function list for dispatch
                 // compiler generated functions are not visible, e.g.,
-                // instantiated functions, wrappers, cloned functions
+                // instantiated functions and wrappers
   Vec<BasicBlock*>* basicBlocks;
   Vec<CallExpr*>* calledBy;
   Vec<CallExpr*>* calls;
@@ -181,14 +180,12 @@ class FnSymbol : public Symbol {
   virtual FnSymbol* getFnSymbol(void);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
-  FnSymbol* clone(ASTMap* map);
   FnSymbol* promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs);
   FnSymbol* order_wrapper(Map<Symbol*,Symbol*>* formals_to_formals);
   FnSymbol* coercion_wrapper(ASTMap* coercion_substitutions);
   FnSymbol* default_wrapper(Vec<Symbol*>* defaults);
   bool isPartialInstantiation(ASTMap* generic_substitutions);
   FnSymbol* instantiate_generic(ASTMap* substitutions);
-  FnSymbol* clone_generic(ASTMap* formal_types);
   void codegenHeader(FILE* outfile);
   void codegenPrototype(FILE* outfile);
   void codegenDef(FILE* outfile);
