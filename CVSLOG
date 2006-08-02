@@ -69695,3 +69695,35 @@ Modified files:
 	                         normalize.cpp scopeResolve.cpp 
 	                         semanticChecks.cpp verify.cpp 
 
+---------------------------------------------------------------------------
+
+08/02/06 16:59:26 -- deitz
+
+Log message:
+	Fixed do...while block scope so that the condition expression is in
+	the scope of the block.
+	
+	Added support for specifying a generic domain type at the formal
+	argument level so that a formal argument can be specified as being
+	some type of domain as in
+	
+	  fun foo(d: domain)
+	
+	Added three domain argument tests that all work.  Two tests test
+	explicit domain types, one test tests generic domain types.
+
+Modified files:
+	chapel/compiler/: UnimplementedFeatures 
+	chapel/compiler/AST/: build.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/test/trivial/bradc/: whilescope.good 
+Added files:
+	chapel/test/arrays/deitz/: test_domain_arg1.chpl 
+	                           test_domain_arg1.good 
+	                           test_domain_arg2.chpl 
+	                           test_domain_arg2.good 
+	                           test_domain_arg3.chpl 
+	                           test_domain_arg3.good 
+Removed files:
+	chapel/test/trivial/bradc/: whilescope.future 
+
