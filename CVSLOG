@@ -69484,3 +69484,18 @@ Added files:
 	                              test_default_type.future 
 	                              test_default_type.good 
 
+---------------------------------------------------------------------------
+
+08/02/06 10:35:33 -- deitz
+
+Log message:
+	Fixed bug in determination of generic substitutions.  It was
+	previously done over the actuals.  It is now done over the formals to
+	allow the default expression to instantiate.  Removed a .future.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/passes/: cleanup.cpp functionResolution.cpp 
+Removed files:
+	chapel/test/trivial/bradc/: beer.future 
+
