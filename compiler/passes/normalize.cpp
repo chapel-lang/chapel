@@ -175,7 +175,7 @@ void normalize(BaseAST* base) {
         changed = tag_generic(fn) || changed;
       if (DefExpr* a = dynamic_cast<DefExpr*>(ast)) {
         if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(a->sym))
-          changed = tag_generic(ts->definition) || changed;
+          changed = tag_generic(ts->type) || changed;
       }
     }
   }
@@ -402,7 +402,7 @@ static void insert_formal_temps(FnSymbol* fn) {
 static void call_constructor_for_class(CallExpr* call) {
   if (SymExpr* baseVar = dynamic_cast<SymExpr*>(call->baseExpr)) {
     if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(baseVar->var)) {
-      if (ClassType* ct = dynamic_cast<ClassType*>(ts->definition)) {
+      if (ClassType* ct = dynamic_cast<ClassType*>(ts->type)) {
         if (ct->defaultConstructor)
           call->baseExpr->replace(new SymExpr(ct->defaultConstructor->name));
         else
@@ -697,11 +697,11 @@ static void fold_call_expr(CallExpr* call) {
       TypeSymbol* ts = dynamic_cast<TypeSymbol*>(sym->var);
       if (!ts && sym->var->isTypeVariable)
         ts = sym->var->type->symbol;
-      if (ts && !ts->definition->isGeneric) {
-        if (ts->definition->defaultValue)
-          call->replace(new CallExpr(PRIMITIVE_CAST, ts, ts->definition->defaultValue));
-        else if (ts->definition->defaultConstructor)
-          call->replace(new CallExpr(ts->definition->defaultConstructor));
+      if (ts && !ts->type->isGeneric) {
+        if (ts->type->defaultValue)
+          call->replace(new CallExpr(PRIMITIVE_CAST, ts, ts->type->defaultValue));
+        else if (ts->type->defaultConstructor)
+          call->replace(new CallExpr(ts->type->defaultConstructor));
         else
           INT_FATAL(ts, "type has neither defaultValue nor defaultConstructor");
       }
@@ -1188,10 +1188,10 @@ change_types_to_values(BaseAST* base) {
       }
       if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(sym->var)) {
         CallExpr* typecall = NULL;
-        if (type->definition->defaultValue)
-          typecall = new CallExpr(PRIMITIVE_CAST, type, type->definition->defaultValue);
-        else if (type->definition->defaultConstructor)
-          typecall = new CallExpr(type->definition->defaultConstructor);
+        if (type->type->defaultValue)
+          typecall = new CallExpr(PRIMITIVE_CAST, type, type->type->defaultValue);
+        else if (type->type->defaultConstructor)
+          typecall = new CallExpr(type->type->defaultConstructor);
         else
           INT_FATAL(type, "Bad type");
         if (sym->parentStmt) {

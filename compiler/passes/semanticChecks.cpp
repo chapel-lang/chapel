@@ -210,7 +210,7 @@ check_normalized(void) {
         if (dynamic_cast<UnresolvedSymbol*>(a->var))
           USR_FATAL_CONT(a, "Symbol '%s' is not defined", a->var->name);
     } else if (TypeSymbol* a = dynamic_cast<TypeSymbol*>(ast)) {
-      if (EnumType* et = dynamic_cast<EnumType*>(a->definition))
+      if (EnumType* et = dynamic_cast<EnumType*>(a->type))
         check_normalized_enum(et);
     }
   }

@@ -247,7 +247,7 @@ void DefExpr::print(FILE* outfile) {
     sym->printDef(outfile);
     return;
   } else if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(sym)) {
-    ts->definition->printDef(outfile);
+    ts->type->printDef(outfile);
   } else if (dynamic_cast<VarSymbol*>(sym)) {
     sym->printDef(outfile);
   } else {
@@ -943,7 +943,7 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_CHPL_ALLOC: {
       bool is_class = false;
       if (TypeSymbol *t = dynamic_cast<TypeSymbol*>(typeInfo()->symbol)) {
-        if (dynamic_cast<ClassType*>(t->definition)) {
+        if (dynamic_cast<ClassType*>(t->type)) {
           is_class = true;
         }
       }

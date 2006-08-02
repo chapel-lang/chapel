@@ -132,9 +132,7 @@ class ArgSymbol : public Symbol {
 
 class TypeSymbol : public Symbol {
  public:
-  Type *definition;
-
-  TypeSymbol(char* init_name, Type* init_definition);
+  TypeSymbol(char* init_name, Type* init_type);
   virtual void verify(); 
   COPY_DEF(TypeSymbol);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);

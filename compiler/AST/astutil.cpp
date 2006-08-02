@@ -306,7 +306,7 @@ void insert_help(BaseAST* ast,
         parentScope = fn->argScope;
       }
       if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(def_expr->sym)) {
-        if (ClassType* type = dynamic_cast<ClassType*>(typeSym->definition)) {
+        if (ClassType* type = dynamic_cast<ClassType*>(typeSym->type)) {
           if (type->structScope)
             INT_FATAL(typeSym, "Unexpected scope in FnSymbol");
           type->structScope = new SymScope(type, parentScope);
@@ -360,7 +360,7 @@ void remove_help(BaseAST* ast) {
       fn->argScope = NULL;
     }
     if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(defExpr->sym)) {
-      if (ClassType* type = dynamic_cast<ClassType*>(typeSym->definition)) {
+      if (ClassType* type = dynamic_cast<ClassType*>(typeSym->type)) {
         type->structScope = NULL;
       }
     }

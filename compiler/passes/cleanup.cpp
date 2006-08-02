@@ -80,7 +80,7 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* seen = NULL) {
     TypeSymbol* ts = dynamic_cast<TypeSymbol*>(expr->lookup(expr));
     if (!ts)
       USR_FATAL(expr, "Illegal super class");
-    ClassType* pt = dynamic_cast<ClassType*>(ts->definition);
+    ClassType* pt = dynamic_cast<ClassType*>(ts->type);
     if (!pt)
       USR_FATAL(expr, "Illegal super class %s", ts->name);
     if (ct->classTag == CLASS_RECORD && pt->classTag == CLASS_CLASS)
@@ -158,7 +158,7 @@ void cleanup(BaseAST* base) {
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
       if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(def->sym)) {
-        if (ClassType* ct = dynamic_cast<ClassType*>(ts->definition)) {
+        if (ClassType* ct = dynamic_cast<ClassType*>(ts->type)) {
           add_class_to_hierarchy(ct);
         }
       }
@@ -186,7 +186,7 @@ void cleanup(BaseAST* base) {
   collect_asts(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(ast)) {
-      if (ClassType* ct = dynamic_cast<ClassType*>(type->definition)) {
+      if (ClassType* ct = dynamic_cast<ClassType*>(type->type)) {
         build_setters_and_getters(ct);
         build_constructor(ct);
       }
@@ -213,7 +213,7 @@ void cleanup(BaseAST* base) {
       if (ArgSymbol* arg = dynamic_cast<ArgSymbol*>(def->sym)) {
         if (DefExpr* tdef = dynamic_cast<DefExpr*>(def->exprType)) {
           if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(tdef->sym)) {
-            if (UserType* ut = dynamic_cast<UserType*>(ts->definition)) {
+            if (UserType* ut = dynamic_cast<UserType*>(ts->type)) {
               if (dynamic_cast<SymExpr*>(ut->typeExpr)) {
                 ut->typeExpr->replace(new CallExpr(PRIMITIVE_TYPEOF, arg));
                 arg->type = dtAny;
@@ -453,7 +453,7 @@ static void resolve_secondary_method_type(FnSymbol* fn) {
   if (fn->typeBinding && dynamic_cast<UnresolvedSymbol*>(fn->typeBinding)) {
     Symbol* typeBindingSymbol = fn->parentScope->lookup(fn->typeBinding->name);
     if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(typeBindingSymbol)) {
-      Type* typeBinding = ts->definition;
+      Type* typeBinding = ts->type;
       fn->typeBinding = ts;
       if (fn->fnClass != FN_CONSTRUCTOR) {
         fn->isMethod = true;

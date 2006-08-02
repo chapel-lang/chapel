@@ -66,10 +66,10 @@ void build_default_functions(void) {
   collect_asts(&asts);
   forv_Vec(BaseAST, ast, asts) {
     if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(ast)) {
-      if (type->definition->instantiatedFrom)
+      if (type->type->instantiatedFrom)
         continue;
-      buildDefaultIOFunctions(type->definition);
-      if (ClassType* ct = dynamic_cast<ClassType*>(type->definition)) {
+      buildDefaultIOFunctions(type->type);
+      if (ClassType* ct = dynamic_cast<ClassType*>(type->type)) {
         if (ct->classTag == CLASS_RECORD) {
           build_record_equality_function(ct);
           build_record_inequality_function(ct);
@@ -78,7 +78,7 @@ void build_default_functions(void) {
           build_record_copy_function(ct);
         }
       }
-      if (EnumType* et = dynamic_cast<EnumType*>(type->definition)) {
+      if (EnumType* et = dynamic_cast<EnumType*>(type->type)) {
         build_enum_assignment_function(et);
       }
     }
@@ -270,7 +270,7 @@ void buildDefaultIOFunctions(Type* type) {
       FnSymbol* fn = new FnSymbol("fwrite");
       fn->cname = stringcat("_auto_", type->symbol->name, "_fwrite");
       TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(fileModule->lookup("file"));
-      ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", fileType->definition);
+      ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", fileType->type);
       ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "val", type);
       fn->formals->insertAtTail(fileArg);
       fn->formals->insertAtTail(arg);
@@ -291,7 +291,7 @@ void buildDefaultIOFunctions(Type* type) {
       FnSymbol* fn = new FnSymbol("fread");
       fn->cname = stringcat("_auto_", type->symbol->name, "_fread");
       TypeSymbol* fileType = dynamic_cast<TypeSymbol*>(fileModule->lookup("file"));
-      ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", fileType->definition);
+      ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", fileType->type);
       ArgSymbol* arg = new ArgSymbol(INTENT_INOUT, "val", type);
       fn->formals->insertAtTail(fileArg);
       fn->formals->insertAtTail(arg);

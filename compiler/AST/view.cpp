@@ -132,7 +132,7 @@ static void view_symtab(BaseAST* ast, bool number = false, int indent = 0) {
   else if (FnSymbol* a = dynamic_cast<FnSymbol*>(ast))
     scope = a->argScope;
   else if (TypeSymbol* a = dynamic_cast<TypeSymbol*>(ast))
-    if (ClassType* ct = dynamic_cast<ClassType*>(a->definition))
+    if (ClassType* ct = dynamic_cast<ClassType*>(a->type))
       scope = ct->structScope;
 
   if (scope)
@@ -206,7 +206,7 @@ void mark_view(BaseAST* ast, long id) {
 static ClassType *
 structuralTypeSymbol(Symbol *s) {
   if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(s))
-    if (ClassType *st = dynamic_cast<ClassType*>(ts->definition))
+    if (ClassType *st = dynamic_cast<ClassType*>(ts->type))
       return st;
   return NULL;
 }

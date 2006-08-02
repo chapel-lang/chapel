@@ -85,7 +85,7 @@ void scopeResolve(BaseAST* base) {
             symExpr->var = sym;
 
           if (type)
-            if (UserType* ut = dynamic_cast<UserType*>(type->definition)) {
+            if (UserType* ut = dynamic_cast<UserType*>(type->type)) {
               Expr* e = ut->typeExpr->copy();
               symExpr->replace(e);
               scopeResolve(e);
@@ -130,7 +130,7 @@ void scopeResolve(BaseAST* base) {
   forv_Vec(BaseAST, ast, asts)
     if (DefExpr* def = dynamic_cast<DefExpr*>(ast))
       if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(def->sym))
-        if (dynamic_cast<UserType*>(ts->definition)) {
+        if (dynamic_cast<UserType*>(ts->type)) {
           if (def->parentStmt)
             def->parentStmt->remove();
           else

@@ -60,7 +60,7 @@ resolveFormals(FnSymbol* fn) {
       if (!sym)
         INT_FATAL(fn, "Bad return type expression");
       if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(sym->var))
-        fn->retType = ts->definition;
+        fn->retType = ts->type;
       else
         fn->retType = sym->var->type;
     }
@@ -941,19 +941,6 @@ resolve() {
       if (a->defPoint->exprType)
         a->defPoint->exprType->remove();
     }
-//     if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
-//       if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(sym->var)) {
-//         if (ts->definition->defaultValue) {
-//           sym->replace(new CallExpr(PRIMITIVE_CAST, ts, ts->definition->defaultValue));
-//         } else if (ts->definition->defaultConstructor) {
-//           CallExpr* construct = new CallExpr(ts->definition->defaultConstructor);
-//           sym->replace(construct);
-//           resolveCall(construct);
-//         } else {
-//           INT_FATAL(ts, "Type has neither defaultValue nor defaultConstructor");
-//         }
-//       }
-//     }
     if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
       if (call->isPrimitive(PRIMITIVE_TYPEOF))
         call->replace(call->get(1)->remove());

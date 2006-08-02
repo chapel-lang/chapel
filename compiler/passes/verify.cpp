@@ -69,7 +69,7 @@ verify_parents(BaseAST* ast,
       if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def_expr->sym))
         parentScope = fn->argScope;
       if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(def_expr->sym))
-        if (ClassType* type = dynamic_cast<ClassType*>(typeSym->definition))
+        if (ClassType* type = dynamic_cast<ClassType*>(typeSym->type))
           parentScope = type->structScope;
     }
     parentExpr = expr;

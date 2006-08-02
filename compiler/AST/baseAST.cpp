@@ -531,7 +531,7 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all, int sentinels) {
     AST_ADD_CHILD(ArgSymbol, variableExpr);
     goto LSymbolCommon;
   case SYMBOL_TYPE:
-    AST_ADD_CHILD(TypeSymbol, definition);
+    AST_ADD_CHILD(Symbol, type);
     goto LSymbolCommon;
   case SYMBOL_FN:
     AST_ADD_LIST(FnSymbol, formals, DefExpr);

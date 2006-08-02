@@ -118,11 +118,11 @@ static void codegen_header(void) {
     typeSymbol->codegenPrototype(outfile);
   }
   forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {
-    if (dynamic_cast<EnumType*>(typeSymbol->definition))
+    if (dynamic_cast<EnumType*>(typeSymbol->type))
       typeSymbol->codegenDef(outfile);
   }
   forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {
-    if (!dynamic_cast<EnumType*>(typeSymbol->definition)) {
+    if (!dynamic_cast<EnumType*>(typeSymbol->type)) {
       typeSymbol->codegenDef(outfile);
     }
   }

@@ -504,13 +504,12 @@ void ArgSymbol::codegenDef(FILE* outfile) {
 }
 
 
-TypeSymbol::TypeSymbol(char* init_name, Type* init_definition) :
-  Symbol(SYMBOL_TYPE, init_name, init_definition),
-  definition(init_definition)
+TypeSymbol::TypeSymbol(char* init_name, Type* init_type) :
+  Symbol(SYMBOL_TYPE, init_name, init_type)
 {
-  if (!definition)
+  if (!type)
     INT_FATAL(this, "TypeSymbol constructor called without type");
-  definition->addSymbol(this);
+  type->addSymbol(this);
 }
 
 
@@ -519,37 +518,34 @@ void TypeSymbol::verify() {
   if (astType != SYMBOL_TYPE) {
     INT_FATAL(this, "Bad TypeSymbol::astType");
   }
-  if (definition->symbol != this)
-    INT_FATAL(this, "TypeSymbol::definition->symbol != TypeSymbol");
-  definition->verify();
+  if (type->symbol != this)
+    INT_FATAL(this, "TypeSymbol::type->symbol != TypeSymbol");
+  type->verify();
 }
 
 
 TypeSymbol*
 TypeSymbol::copyInner(ASTMap* map) {
-  Type* new_definition = COPY_INT(definition);
-  TypeSymbol* new_definition_symbol = new TypeSymbol(stringcpy(name), new_definition);
-  new_definition->addSymbol(new_definition_symbol);
-  new_definition_symbol->cname = stringcpy(cname);
-  return new_definition_symbol;
+  Type* new_type = COPY_INT(type);
+  TypeSymbol* new_type_symbol = new TypeSymbol(stringcpy(name), new_type);
+  new_type->addSymbol(new_type_symbol);
+  new_type_symbol->cname = stringcpy(cname);
+  return new_type_symbol;
 }
 
 
 void TypeSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == type)
-    type = dynamic_cast<Type*>(new_ast);
-  else
-    definition->replaceChild(old_ast, new_ast);
+  type->replaceChild(old_ast, new_ast);
 }
 
 
 void TypeSymbol::codegenPrototype(FILE* outfile) {
-  definition->codegenPrototype(outfile);
+  type->codegenPrototype(outfile);
 }
 
 
 void TypeSymbol::codegenDef(FILE* outfile) {
-  definition->codegenDef(outfile);
+  type->codegenDef(outfile);
 }
 
 
@@ -688,7 +684,7 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map) {
       wrapper->_this = wrapper_formal;
     wrapper->formals->insertAtTail(wrapper_formal);
     if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(coercion_map->get(formal))) {
-      wrapper_formal->type = ts->definition;
+      wrapper_formal->type = ts->type;
       if (ts->hasPragma( "sync var")) {
         call->insertAtTail( new CallExpr( "read_wait_full_leave_empty",
                                           wrapper_formal));
@@ -811,7 +807,7 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs) {
       TypeSymbol* ts = dynamic_cast<TypeSymbol*>(sub);
       if (!ts)
         INT_FATAL(this, "error building promotion wrapper");
-      new_formal->type = ts->definition;
+      new_formal->type = ts->type;
       Symbol* new_index = new VarSymbol("_index");
       wrapper->formals->insertAtTail(new DefExpr(new_formal));
       iterators->insertAtTail(new SymExpr(new_formal));
@@ -1097,7 +1093,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
       INT_FATAL(this, "Attempt to instantiate non-class type");
     }
     TypeSymbol* clone = retType->symbol->copy(&map);
-    ClassType* newClass = dynamic_cast<ClassType*>(clone->definition);
+    ClassType* newClass = dynamic_cast<ClassType*>(clone->type);
     if (!newClass) {
       INT_FATAL(this, "Class cloning went horribly wrong");
     }
@@ -1114,9 +1110,9 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
             clone->name = stringcat(clone->name, ",");
           clone->cname = stringcat(clone->cname, type->symbol->cname);
           clone->name = stringcat(clone->name, type->symbol->name);
-          if (!clone->definition->instantiatedWith)
-            clone->definition->instantiatedWith = new Vec<Type*>();
-          clone->definition->instantiatedWith->add(type);
+          if (!clone->type->instantiatedWith)
+            clone->type->instantiatedWith = new Vec<Type*>();
+          clone->type->instantiatedWith->add(type);
           first = true;
         } else if (Symbol* symbol = dynamic_cast<Symbol*>(value)) {
           if (first)
@@ -1132,15 +1128,15 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
 
     retType->symbol->defPoint->parentStmt->insertBefore(new DefExpr(clone));
     clone->addPragmas(&pragmas);
-    clone->definition->substitutions.copy(retType->substitutions);
-    clone->definition->dispatchParents.copy(retType->dispatchParents);
-    if (clone->definition->dispatchChildren.n)
+    clone->type->substitutions.copy(retType->substitutions);
+    clone->type->dispatchParents.copy(retType->dispatchParents);
+    if (clone->type->dispatchChildren.n)
       INT_FATAL(this, "Generic type has subtypes");
 
     new_ast_types.add(clone);
     instantiate_add_subs(&substitutions, &map);
 
-    ClassType* cloneType = dynamic_cast<ClassType*>(clone->definition);
+    ClassType* cloneType = dynamic_cast<ClassType*>(clone->type);
     cloneType->instantiatedFrom = retType;
 
     if (count_instantiate_with_recursion(cloneType) >= 6)
@@ -1149,14 +1145,14 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
     Vec<TypeSymbol *> types;
     types.move(cloneType->types);
     for (int i = 0; i < types.n; i++) {
-      if (types.v[i] && substitutions.get(types.v[i]->definition)) {
+      if (types.v[i] && substitutions.get(types.v[i]->type)) {
         types.v[i]->defPoint->parentStmt->remove();
       } else
         cloneType->types.add(types.v[i]);
     }
 
     instantiate_update_expr(&substitutions, clone->defPoint);
-    substitutions.put(retType, clone->definition);
+    substitutions.put(retType, clone->type);
 
     cloneType->substitutions.map_union(*generic_substitutions);
 
