@@ -1,0 +1,3 @@
+Error: Unresolved call 'R(t=float, x=:string)' (construct-1b.chpl:6)
+Candidates are:
+  R(type t, x: t) (construct-1b.chpl:1)
