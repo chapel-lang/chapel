@@ -69406,3 +69406,23 @@ Log message:
 Modified files:
 	chapel/compiler/: UnimplementedFeatures 
 
+---------------------------------------------------------------------------
+
+08/01/06 17:14:29 -- bradc
+
+Log message:
+	Checked in a future version of the 99 bottles of beer
+	program which I meant to check in with the original.
+	Our submitted version had a known bug workaround due
+	to a default value seemingly not being used.  This
+	check-in changes beer.chpl to be the version that
+	we'd like to work (futurized) and copies the working
+	beer.chpl into beer-submitted.chpl, to make sure that
+	our submitted solution doesn't slip.
+
+Modified files:
+	chapel/test/trivial/bradc/: beer.chpl 
+Added files:
+	chapel/test/trivial/bradc/: beer-submitted.chpl 
+	                            beer-submitted.good beer.future 
+
