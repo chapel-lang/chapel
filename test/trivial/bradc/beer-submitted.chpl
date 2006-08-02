@@ -50,7 +50,8 @@ fun computeLyric(verseNum) {
 }
 
 
-fun describeBottles(bottleNum, startOfVerse = false) {
+fun describeBottles(bottleNum, startOfVerse:bool = false) {
+// NOTE: bool should not be necessary here (^^^^); working around bug
   var bottleDescription = if (bottleNum) then bottleNum:string 
                                          else (if startOfVerse then "N" 
                                                                else "n") 
