@@ -776,11 +776,13 @@ static void fold_call_expr(CallExpr* call) {
             if (call->isNamed(var->name)) {
               if (Symbol* value = dynamic_cast<Symbol*>(type->substitutions.get(key))) {
                 call->replace(new SymExpr(value));
-              }//  else if (Type* value = dynamic_cast<Type*>(type->substitutions.get(key))) {
-//                 call->replace(new SymExpr(value->symbol));
-//               }
+              } else if (Type* value = dynamic_cast<Type*>(type->substitutions.get(key))) {
+                if (var->isTypeVariable)
+                  call->replace(new SymExpr(value->symbol));
+              }
             }
           } else if (Type* var = dynamic_cast<Type*>(key)) {
+            INT_FATAL("type key encountered");
             if (call->isNamed(var->symbol->name)) {
               if (Type* value = dynamic_cast<Type*>(type->substitutions.get(key))) {
                 call->replace(new SymExpr(value->symbol));
