@@ -69627,3 +69627,16 @@ Log message:
 Added files:
 	chapel/test/parallel/sync/bradc/: fib_sync.chpl fib_sync.good 
 
+---------------------------------------------------------------------------
+
+08/02/06 12:47:29 -- bradc
+
+Log message:
+	Added a test to check that uninitialized variables are
+	empty by default and that initialized variables are
+	full by default.
+
+Added files:
+	chapel/test/parallel/sync/bradc/: .cvsignore sync_init.chpl 
+	                                  sync_init.good 
+
