@@ -69664,3 +69664,16 @@ Added files:
 	chapel/test/types/seq/deitz/: test_seq_index3.chpl 
 	                              test_seq_index3.good 
 
+---------------------------------------------------------------------------
+
+08/02/06 14:44:12 -- deitz
+
+Log message:
+	Added a couple tests I have lying around.
+
+Added files:
+	chapel/test/types/type_variables/deitz/: construct-1b.chpl 
+	                                         construct-1b.good 
+	                                         test_recurse.chpl 
+	                                         test_recurse.good 
+
