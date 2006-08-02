@@ -69426,3 +69426,14 @@ Added files:
 	chapel/test/trivial/bradc/: beer-submitted.chpl 
 	                            beer-submitted.good beer.future 
 
+---------------------------------------------------------------------------
+
+08/01/06 17:15:25 -- bradc
+
+Log message:
+	A few updates to the emacs font-lock file for Chapel,
+	based on recent syntax changes.
+
+Modified files:
+	chapel/etc/emacs/21.4/: font-lock.el 
+
