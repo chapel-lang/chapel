@@ -2730,7 +2730,7 @@ See also `chpl-font-lock-extra-types'.")
              "#" "="))))
        (chpl-type-specs
 	(eval-when-compile
-	  (regexp-opt '("class" "enum" "function" "module" "record" "type" 
+	  (regexp-opt '("class" "enum" "fun" "module" "record" "type" 
                         "typedef" "union"))))
        (chpl-type-specs-depth
 	(regexp-opt-depth chpl-type-specs))
@@ -2739,8 +2739,8 @@ See also `chpl-font-lock-extra-types'.")
 	  (cons
 	   ,(eval-when-compile
 	      (regexp-opt
-	       '("bool" "complex" "domain" "float" "index" "integer" "string" 
-                 "void")))
+	       '("bool" "complex" "domain" "float" "index" "int" "string" 
+                 "subdomain" "void")))
 	   chpl-font-lock-extra-types)
 	  "\\|"))
        (chpl-type-names-depth
