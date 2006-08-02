@@ -1,0 +1,4 @@
+lexical scoping
+
+variables declared in do ... while loops are not currently accessible
+in the conditional clause at the end of the loop.
