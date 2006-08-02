@@ -69552,3 +69552,15 @@ Log message:
 Modified files:
 	chapel/util/tokencount/: tokctnightly 
 
+---------------------------------------------------------------------------
+
+08/02/06 11:28:37 -- deitz
+
+Log message:
+	Added .future fibonacci sync test program.
+
+Added files:
+	chapel/test/parallel/sync/deitz/: test_sync1.chpl 
+	                                  test_sync1.future 
+	                                  test_sync1.good 
+
