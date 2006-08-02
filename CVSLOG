@@ -69396,3 +69396,13 @@ Added files:
 	chapel/test/types/seq/deitz/: test_seq_index2.chpl 
 	                              test_seq_index2.good 
 
+---------------------------------------------------------------------------
+
+08/01/06 17:03:53 -- deitz
+
+Log message:
+	Sorted.
+
+Modified files:
+	chapel/compiler/: UnimplementedFeatures 
+
