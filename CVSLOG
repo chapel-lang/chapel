@@ -69460,3 +69460,14 @@ Added files:
 	chapel/test/types/type_variables/deitz/: where-3.chpl 
 	                                         where-3.good 
 
+---------------------------------------------------------------------------
+
+08/02/06 09:33:10 -- deitz
+
+Log message:
+	Removed dead clone callback code.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+
