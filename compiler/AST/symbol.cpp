@@ -686,8 +686,7 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map) {
     if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(coercion_map->get(formal))) {
       wrapper_formal->type = ts->type;
       if (ts->hasPragma( "sync var")) {
-        call->insertAtTail( new CallExpr( "read_wait_full_leave_empty",
-                                          wrapper_formal));
+        call->insertAtTail( new CallExpr( "readFE", wrapper_formal));
       } else {
         call->insertAtTail(new CallExpr(PRIMITIVE_CAST, formal->type->symbol, wrapper_formal));
       }
