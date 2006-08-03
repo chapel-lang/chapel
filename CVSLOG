@@ -69799,3 +69799,19 @@ Log message:
 Modified files:
 	chapel/modules/standard/: _chpl_seq.chpl 
 
+---------------------------------------------------------------------------
+
+08/03/06 13:20:55 -- deitz
+
+Log message:
+	Added support for calling functions with square brackets instead of
+	parentheses and for scalar promoting such function calls to use cross
+	product semantics.
+
+Modified files:
+	chapel/compiler/: UnimplementedFeatures 
+	chapel/compiler/AST/: build.cpp expr.cpp symbol.cpp 
+	chapel/compiler/include/: build.h expr.h symbol.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: functionResolution.cpp 
+
