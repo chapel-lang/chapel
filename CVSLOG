@@ -69788,3 +69788,14 @@ Modified files:
 	chapel/modules/standard/: _chpl_base.chpl _chpl_seq.chpl 
 	chapel/runtime/include/: chpltypes.h stdchpl.h 
 
+---------------------------------------------------------------------------
+
+08/03/06 11:50:04 -- waynew
+
+Log message:
+	Modified reduction classes to use identity functions on elt_type
+	rather than using a conditional to set the initial value.
+
+Modified files:
+	chapel/modules/standard/: _chpl_seq.chpl 
+
