@@ -69768,3 +69768,23 @@ Log message:
 Added files:
 	chapel/test/trivial/waynew/: lreductions.chpl lreductions.good 
 
+---------------------------------------------------------------------------
+
+08/02/06 19:10:52 -- waynew
+
+Log message:
+	Added prod, land, lor, (need lxor op for lxor), band, bor, and bxor
+	reductions. Names to be changed later.
+	
+	Added min, max, and identity primitives for prod, bit-wise(and, or, xor),
+	and logical (and, or, xor) for types.  Not sure that latter are will be used
+	yet.
+	
+	Added _size primitive on types.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp type.cpp 
+	chapel/compiler/include/: primitive.h type.h 
+	chapel/modules/standard/: _chpl_base.chpl _chpl_seq.chpl 
+	chapel/runtime/include/: chpltypes.h stdchpl.h 
+
