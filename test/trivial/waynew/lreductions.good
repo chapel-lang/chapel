@@ -1,0 +1,12 @@
+
+B[D] = true true true true true true true true true true
+land B[D] = true
+lor B[D] = true
+
+B[D] = false false false false false false false false false false
+land B[D] = false
+lor B[D] = false
+
+B[D] = true false true false true false true false true false
+land B[D] = false
+lor B[D] = true
