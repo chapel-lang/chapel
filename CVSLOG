@@ -69960,3 +69960,16 @@ Modified files:
 	chapel/compiler/passes/: cleanup.cpp functionResolution.cpp 
 	                         normalize.cpp 
 
+---------------------------------------------------------------------------
+
+08/03/06 16:48:55 -- waynew
+
+Log message:
+	Temporary fix to serialize write/writeln's so that we get fewer cases of
+	nondeterministic output. Basically, use a sync bool as a lock to
+	writes to stdout.  A slightly more elegant solution requires a small fix
+	to sync vars.
+
+Modified files:
+	chapel/modules/standard/: _chpl_file.chpl 
+
