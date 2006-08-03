@@ -69906,3 +69906,27 @@ Modified files:
 	chapel/runtime/include/: chpltypes.h 
 	chapel/test/trivial/waynew/: mintest.good 
 
+---------------------------------------------------------------------------
+
+08/03/06 15:47:04 -- bradc
+
+Log message:
+	Fixed bug with specifying "." as the --savec current directory.
+	The problem was in the copy of the binary performed by the
+	Makefile.  While I had prevented against cases where the source
+	and the destination were the same string (e.g. cp a.out a.out),
+	I had not protected against the case where they were different
+	strings representing the same file (e.g., cp a.out ./a.out).
+	To get around this, I now always munge the name of the output
+	file written to the "temp" directory (e.g., the above examples
+	would convert to cp a.out.tmp a.out and cp a.out.tmp ./a.out
+	respectively).  Also, now remove the temp binary from the "temp"
+	directory, since the --savec flag really only requests that the
+	C code be saved.
+
+Modified files:
+	chapel/compiler/util/: files.cpp 
+	chapel/runtime/etc/: Makefile.include 
+Removed files:
+	chapel/test/compflags/waynew/: saveccurrdir.future 
+
