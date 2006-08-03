@@ -959,17 +959,17 @@ setFieldTypes(FnSymbol* fn) {
   ClassType* ct = dynamic_cast<ClassType*>(fn->retType);
   if (!ct)
     INT_FATAL(fn, "Constructor has no class type");
-  for_alist(DefExpr, formal, fn->formals) {
-    Type* t = formal->sym->type;
-    if (t == dtUnknown)
-      t = formal->exprType->typeInfo();
+  for_formals(formal, fn) {
+    Type* t = formal->type;
+    if (t == dtUnknown && formal->defPoint->exprType)
+      t = formal->defPoint->exprType->typeInfo();
     if (t == dtUnknown)
       INT_FATAL(formal, "Unable to resolve field type");
     if (t == dtNil)
       USR_FATAL(formal, "Unable to determine type of field from nil");
     bool found = false;
     forv_Vec(Symbol, field, ct->fields) {
-      if (!strcmp(field->name, formal->sym->name)) {
+      if (!strcmp(field->name, formal->name)) {
         field->type = t;
         found = true;
       }

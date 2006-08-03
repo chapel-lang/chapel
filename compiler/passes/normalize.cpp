@@ -30,7 +30,6 @@ static void fix_def_expr(DefExpr* def);
 static void fold_params(BaseAST* base);
 static void expand_var_args(FnSymbol* fn);
 static int tag_generic(FnSymbol* fn);
-static int tag_generic(Type* fn);
 static void tag_hasVarArgs(FnSymbol* fn);
 static void change_types_to_values(BaseAST* base);
 
@@ -141,16 +140,6 @@ void normalize(BaseAST* base) {
     }
   }
 
-  asts.clear();
-  collect_asts_postorder(&asts, base);
-  forv_Vec(BaseAST, ast, asts) {
-    currentLineno = ast->lineno;
-    currentFilename = ast->filename;
-    if (Expr* a = dynamic_cast<Expr*>(ast)) {
-      hack_resolve_types(a);
-    }
-  }
-
   dtAny->isGeneric = true;
   asts.clear();
   collect_asts_postorder(&asts, base);
@@ -160,10 +149,6 @@ void normalize(BaseAST* base) {
     forv_Vec(BaseAST, ast, asts) {
       if (FnSymbol *fn = dynamic_cast<FnSymbol*>(ast)) 
         changed = tag_generic(fn) || changed;
-      if (DefExpr* a = dynamic_cast<DefExpr*>(ast)) {
-        if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(a->sym))
-          changed = tag_generic(ts->type) || changed;
-      }
     }
   }
 
@@ -172,6 +157,16 @@ void normalize(BaseAST* base) {
   forv_Vec(BaseAST, ast, asts) {
     if (FnSymbol *fn = dynamic_cast<FnSymbol*>(ast)) {
       tag_hasVarArgs(fn);
+    }
+  }
+
+  asts.clear();
+  collect_asts_postorder(&asts, base);
+  forv_Vec(BaseAST, ast, asts) {
+    currentLineno = ast->lineno;
+    currentFilename = ast->filename;
+    if (Expr* a = dynamic_cast<Expr*>(ast)) {
+      hack_resolve_types(a);
     }
   }
 
@@ -427,22 +422,6 @@ static bool can_resolve_type(Expr* type_expr) {
     return false;
   Type* type = type_expr->typeInfo();
   return type && type != dtUnknown && type != dtAny; // && type != dtNil;
-}
-
-
-static void hack_resolve_types(Expr* expr) {
-  if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
-    if (ArgSymbol* arg = dynamic_cast<ArgSymbol*>(def->sym)) {
-      if (arg->type == dtUnknown && can_resolve_type(def->exprType)) {
-        arg->type = def->exprType->typeInfo();
-        def->exprType->remove();
-      } else if (arg->type == dtUnknown && !def->exprType && can_resolve_type(arg->defaultExpr)) {
-        Type *t = arg->defaultExpr->typeInfo();
-        if (t != dtNil)
-          arg->type = t;
-      }
-    }
-  }
 }
 
 
@@ -1100,10 +1079,24 @@ expand_var_args(FnSymbol* fn) {
 }
 
 
+static void hack_resolve_types(Expr* expr) {
+  if (DefExpr* def = dynamic_cast<DefExpr*>(expr)) {
+    if (ArgSymbol* arg = dynamic_cast<ArgSymbol*>(def->sym)) {
+      if (arg->type == dtUnknown && can_resolve_type(def->exprType)) {
+        arg->type = def->exprType->typeInfo();
+        def->exprType->remove();
+      }
+    }
+  }
+}
+
 static bool
 hasGenericArgs(FnSymbol* fn) {
   for_formals(formal, fn) {
-    if (formal->type && formal->type->isGeneric)
+    if (formal->type->isGeneric)
+      return true;
+    if (formal->defPoint->exprType &&
+        formal->defPoint->exprType->typeInfo()->isGeneric)
       return true;
     if (formal->intent == INTENT_PARAM)
       return true;
@@ -1120,22 +1113,6 @@ tag_generic(FnSymbol* fn) {
     if (fn->retType != dtUnknown && fn->fnClass == FN_CONSTRUCTOR)
       fn->retType->isGeneric = true;
     return 1;
-  }
-  return 0;
-}
-
-static int
-tag_generic(Type* t) {
-  if (t->isGeneric)
-    return 0;
-  if (ClassType *ct = dynamic_cast<ClassType *>(t)) {
-    forv_Vec(Symbol, s, ct->fields) {
-      VarSymbol *vs = dynamic_cast<VarSymbol *>(s);
-      if (vs && vs->consClass == VAR_PARAM) {
-        t->isGeneric = 1;
-        return 1;
-      }
-    }
   }
   return 0;
 }

@@ -292,15 +292,17 @@ static void build_constructor(ClassType* ct) {
     if (exprType)
       exprType->remove();
     Expr* init = tmp->defPoint->init;
-    if (init)
+    if (init) {
       init->remove();
-    else if (!tmp->isTypeVariable)
+      if (!exprType)
+        exprType = init->copy();
+    } else if (!tmp->isTypeVariable)
       init = new SymExpr(gNil);
     VarSymbol *vtmp = dynamic_cast<VarSymbol*>(tmp);
     ArgSymbol* arg = new ArgSymbol((vtmp && vtmp->consClass == VAR_PARAM) ? INTENT_PARAM : INTENT_BLANK, name, type, init);
     DefExpr* defExpr = new DefExpr(arg, NULL, exprType);
     arg->isTypeVariable = tmp->isTypeVariable;
-    if (!exprType && arg->type == dtUnknown && (!arg->defaultExpr || arg->defaultExpr->typeInfo() == dtNil))
+    if (!exprType && arg->type == dtUnknown)
       arg->type = dtAny;
     args->insertAtTail(defExpr);
   }
