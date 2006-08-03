@@ -59,9 +59,9 @@ typedef _int64              _symbol;
 #define MAX_UINT32          UINT32_MAX
 #define MAX_UINT64          UINT64_MAX
 
-#define MIN_FLOAT32         (0.0)
-#define MIN_FLOAT64         (0.0)
-#define MIN_FLOAT128        (0.0)
+#define MIN_FLOAT32         (-FLT_MAX)
+#define MIN_FLOAT64         (-DBL_MAX)
+#define MIN_FLOAT128        (-LDBL_MAX)
 #define MAX_FLOAT32         FLT_MAX
 #define MAX_FLOAT64         DBL_MAX
 #define MAX_FLOAT128        LDBL_MAX

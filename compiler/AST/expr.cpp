@@ -796,7 +796,7 @@ void CallExpr::codegen(FILE* outfile) {
           } else if (is_float_type( t)) {
             fprintf( outfile, "1.0");
           } else {
-            fprintf( outfile, "_chpl_complex%d( 1.0, 1.0)", get_width( t)); 
+            fprintf( outfile, "_chpl_complex%d( 1.0, 0.0)", get_width( t)); 
           }
         } else {
           INT_FATAL( t, "not arithmetic type");
@@ -869,16 +869,6 @@ void CallExpr::codegen(FILE* outfile) {
             // WAW: needs fixing?
             fprintf( outfile, "_chpl_complex%d( 0.0, 0.0)", get_width( t));
           }
-        } else {
-          INT_FATAL( t, "not arithmetic type");
-        }
-        break;
-      }
-    case PRIMITIVE_SIZE:
-      {
-        Type *t = get(1)->typeInfo();
-        if (is_arithmetic_type( t)) {
-          fprintf( outfile, "%d", get_width( t));
         } else {
           INT_FATAL( t, "not arithmetic type");
         }

@@ -3,8 +3,6 @@
 pragma "inline" fun _chpl_alloc(type t, description:string)
   return __primitive("chpl_alloc", t, description);
 
-pragma "inline" fun _size( type t) return __primitive("_size", t);
-
 // Primitive functions and operators on bool
 pragma "inline" fun =(a: bool, b: bool) return b;
 //pragma "inline" fun _copy(a: bool) return a;

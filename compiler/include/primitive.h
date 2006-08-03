@@ -38,7 +38,6 @@ enum PrimitiveTag {
   PRIMITIVE_LAND_ID,                   // logical AND identity operand
   PRIMITIVE_LOR_ID,                    // logical OR identity operand
   PRIMITIVE_LXOR_ID,                   // logical XOR identity operand
-  PRIMITIVE_SIZE,                      // return size of type (in bytes)
   PRIMITIVE_GETCID,
   PRIMITIVE_SETCID,
   PRIMITIVE_GET_MEMBER,

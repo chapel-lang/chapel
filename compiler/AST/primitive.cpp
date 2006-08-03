@@ -23,11 +23,6 @@ returnInfoString(CallExpr* call) {
 }
 
 static Type*
-returnInfoUInt8(CallExpr* call) {
-  return dtUInt[INT_SIZE_8];
-}
-
-static Type*
 returnInfoInt(CallExpr* call) {
   return dtInt[INT_SIZE_64];
 }
@@ -177,7 +172,6 @@ initPrimitive() {
   prim_def(PRIMITIVE_BAND_ID, "_band_id", returnInfoFirst);
   prim_def(PRIMITIVE_BOR_ID, "_bor_id", returnInfoFirst);
   prim_def(PRIMITIVE_BXOR_ID, "_bxor_id", returnInfoFirst);
-  prim_def(PRIMITIVE_SIZE, "_size", returnInfoUInt8);
 
   prim_def(PRIMITIVE_SETCID, "setcid", returnInfoVoid);
   prim_def(PRIMITIVE_GETCID, "getcid", returnInfoBool);
