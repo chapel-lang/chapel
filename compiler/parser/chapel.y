@@ -834,6 +834,7 @@ var_decl_stmt:
   var_state_tag var_const_tag var_decl_stmt_inner_ls TSEMI
     {
       setVarSymbolAttributes($3, $1, $2);
+      backPropagateInitsTypes($3);
       $$ = build_chpl_stmt($3);
     }
 ;

@@ -447,6 +447,28 @@ Expr* build_reduce_expr(Expr* red, Expr* seq) {
 
 
 void
+backPropagateInitsTypes(AList<Stmt>* stmts) {
+  Expr* init = NULL;
+  Expr* type = NULL;
+  for_alist_backward(Stmt, stmt, stmts) {
+    if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {
+      if (DefExpr* def = dynamic_cast<DefExpr*>(exprStmt->expr)) {
+        if (def->init || def->exprType) {
+          init = def->init;
+          type = def->exprType;
+        } else {
+          def->init = init ? init->copy() : NULL;
+          def->exprType = type ? type->copy() : NULL;
+        }
+        continue;
+      }
+    }
+    INT_FATAL(stmt, "Major error in backPropagateInitsTypes");
+  }
+}
+
+
+void
 setVarSymbolAttributes(AList<Stmt>* stmts, varType vartag, consType constag) {
   for_alist(Stmt, stmt, stmts) {
     if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {

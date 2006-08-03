@@ -28,6 +28,7 @@ CondStmt* build_select(Expr* s, AList<WhenStmt>* whenstmts);
 AList<Stmt>* build_type_select(AList<Expr>* s, AList<WhenStmt>* whenstmts);
 Expr* build_reduce_expr(Expr* red, Expr *seq);
 
+void backPropagateInitsTypes(AList<Stmt>* stmts);
 void setVarSymbolAttributes(AList<Stmt>* stmts,
                             varType vartag,
                             consType constag);

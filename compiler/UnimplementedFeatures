@@ -5,7 +5,7 @@ HIGH PRIORITY ITEMS (For implementation before Dec 1)
      int/uint semantics "var x: uint = 12" "var y: int = 12u"
      byte width semantics  "var x : int(8) = 2" where 2 defaults to int(64)
      floating point literals
-     variable declarations with shared types
+DONE variable declarations with shared types
      constructors
 DONE nested type aliases
 DONE sequence # operator
