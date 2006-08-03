@@ -69888,3 +69888,21 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: normalize.cpp 
 
+---------------------------------------------------------------------------
+
+08/03/06 15:38:31 -- waynew
+
+Log message:
+	Fixed _min primitive on float types to return the most negative number.
+	
+	Removed _size primitive.
+	
+	Fixed .good file.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp 
+	chapel/compiler/include/: primitive.h 
+	chapel/modules/standard/: _chpl_base.chpl 
+	chapel/runtime/include/: chpltypes.h 
+	chapel/test/trivial/waynew/: mintest.good 
+
