@@ -69839,3 +69839,21 @@ Log message:
 Modified files:
 	chapel/test/functions/deitz/: test_square2.chpl 
 
+---------------------------------------------------------------------------
+
+08/03/06 14:13:39 -- deitz
+
+Log message:
+	Implemented support for declaring multiple variables with a shared
+	type and/or initializer expression using back propagation of the type
+	and/or initializer expression.  Added a test case.
+
+Modified files:
+	chapel/compiler/: UnimplementedFeatures 
+	chapel/compiler/AST/: build.cpp 
+	chapel/compiler/include/: build.h 
+	chapel/compiler/parser/: chapel.y 
+Added files:
+	chapel/test/trivial/deitz/: test_var_decl_shared1.chpl 
+	                            test_var_decl_shared1.good 
+
