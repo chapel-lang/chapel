@@ -69829,3 +69829,13 @@ Added files:
 	                              test_square2.chpl 
 	                              test_square2.good 
 
+---------------------------------------------------------------------------
+
+08/03/06 13:30:52 -- deitz
+
+Log message:
+	Superficial change to test.
+
+Modified files:
+	chapel/test/functions/deitz/: test_square2.chpl 
+
