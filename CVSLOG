@@ -69737,3 +69737,14 @@ Log message:
 Added files:
 	chapel/test/trivial/waynew/: identity.chpl identity.good 
 
+---------------------------------------------------------------------------
+
+08/02/06 18:36:02 -- waynew
+
+Log message:
+	Test min/max value primitives.
+
+Added files:
+	chapel/test/trivial/waynew/: mintest.chpl mintest.good 
+	                             maxtest.chpl maxtest.good 
+
