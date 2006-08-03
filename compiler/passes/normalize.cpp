@@ -93,16 +93,6 @@ void normalize(BaseAST* base) {
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
-    if (Expr* a = dynamic_cast<Expr*>(ast)) {
-      hack_resolve_types(a);
-    }
-  }
-
-  asts.clear();
-  collect_asts_postorder(&asts, base);
-  forv_Vec(BaseAST, ast, asts) {
-    currentLineno = ast->lineno;
-    currentFilename = ast->filename;
     if (FnSymbol* a = dynamic_cast<FnSymbol*>(ast))
       if (!(a->_setter || a->_getter))
         apply_getters_setters(a);
@@ -149,8 +139,10 @@ void normalize(BaseAST* base) {
     if (DefExpr* a = dynamic_cast<DefExpr*>(ast)) {
       if (dynamic_cast<VarSymbol*>(a->sym) &&
           dynamic_cast<TypeSymbol*>(a->parentSymbol) &&
-          a->exprType)
+          a->exprType) {
+        INT_FATAL("REMOVE THIS CODE?");
         a->exprType->remove();
+      }
     }
   }
 
@@ -161,6 +153,16 @@ void normalize(BaseAST* base) {
   forv_Vec(BaseAST, ast, asts) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
       expand_var_args(fn);
+    }
+  }
+
+  asts.clear();
+  collect_asts_postorder(&asts, base);
+  forv_Vec(BaseAST, ast, asts) {
+    currentLineno = ast->lineno;
+    currentFilename = ast->filename;
+    if (Expr* a = dynamic_cast<Expr*>(ast)) {
+      hack_resolve_types(a);
     }
   }
 
@@ -185,16 +187,6 @@ void normalize(BaseAST* base) {
   forv_Vec(BaseAST, ast, asts) {
     if (FnSymbol *fn = dynamic_cast<FnSymbol*>(ast)) {
       tag_hasVarArgs(fn);
-    }
-  }
-
-  asts.clear();
-  collect_asts_postorder(&asts, base);
-  forv_Vec(BaseAST, ast, asts) {
-    currentLineno = ast->lineno;
-    currentFilename = ast->filename;
-    if (Expr* a = dynamic_cast<Expr*>(ast)) {
-      hack_resolve_types(a);
     }
   }
 

@@ -571,7 +571,7 @@ resolve_type_expr(Expr* expr) {
   }
   Type* t = expr->typeInfo();
   if (t == dtUnknown)
-    INT_FATAL(expr, "Unable to resolve formal type");
+    INT_FATAL(expr, "Unable to resolve type expression");
   return t;
 }
 
