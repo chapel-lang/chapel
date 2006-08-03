@@ -251,15 +251,10 @@ class sum : reduction {
 
 class product : reduction {
   type elt_type;
-  var value : elt_type;
-  var first = true;
+  var value : elt_type = _prod_id( elt_type);
+
   fun accumulate(x) {
-    if first {
-      first = false;
-      value = x;
-    } else {
-      value = value * x;
-    }
+    value = value * x;
   }
   fun generate() {
     return value;
@@ -268,16 +263,11 @@ class product : reduction {
 
 class max : reduction {
   type elt_type;
-  var value : elt_type;
-  var first = true;
+  var value : elt_type = _min( elt_type);
+
   fun accumulate(x) {
-    if first {
-      first = false;
-      value = x;
-    } else {
-      if (x > value) {
+    if (x > value) {
         value = x;
-      }
     }
   }
   fun generate() {
@@ -287,33 +277,11 @@ class max : reduction {
 
 class min : reduction {
   type elt_type;
-  var value : elt_type;
-  var first = true;
-  fun accumulate(x) {
-    if first {
-      first = false;
-      value = x;
-    } else {
-      if (x < value) {
-        value = x;
-      }
-    }
-  }
-  fun generate() {
-    return value;
-  }
-}
+  var value : elt_type = _max( elt_type);
 
-class prod : reduction {
-  type elt_type;
-  var value : elt_type;
-  var first = true;
   fun accumulate(x) {
-    if first {
-      first = false;
+    if (x < value) {
       value = x;
-    } else {
-      value = value * x;
     }
   }
   fun generate() {
@@ -323,15 +291,10 @@ class prod : reduction {
 
 class land : reduction {                 // logical and
   type elt_type;
-  var value : elt_type;
-  var first = true;
+  var value : elt_type = _land_id( elt_type);
+
   fun accumulate(x) {
-    if first {
-      first = false;
-      value = x;
-    } else {
-      value = value && x;
-    }
+    value = value && x;
   }
   fun generate() {
     return value;
@@ -340,15 +303,10 @@ class land : reduction {                 // logical and
 
 class lor : reduction {                 // logical or
   type elt_type;
-  var value : elt_type;
-  var first = true;
+  var value : elt_type = _lor_id( elt_type);
+
   fun accumulate(x) {
-    if first {
-      first = false;
-      value = x;
-    } else {
-      value = value || x;
-    }
+    value = value || x;
   }
   fun generate() {
     return value;
@@ -357,15 +315,10 @@ class lor : reduction {                 // logical or
 
 class band : reduction {                 // bit-wise and
   type elt_type;
-  var value : elt_type;
-  var first = true;
+  var value : elt_type = _band_id( elt_type);
+
   fun accumulate(x) {
-    if first {
-      first = false;
-      value = x;
-    } else {
-      value = value & x;
-    }
+    value = value & x;
   }
   fun generate() {
     return value;
@@ -374,15 +327,10 @@ class band : reduction {                 // bit-wise and
 
 class bor : reduction {                 // bit-wise or
   type elt_type;
-  var value : elt_type;
-  var first = true;
+  var value : elt_type = _bor_id( elt_type);
+
   fun accumulate(x) {
-    if first {
-      first = false;
-      value = x;
-    } else {
-      value = value | x;
-    }
+    value = value | x;
   }
   fun generate() {
     return value;
@@ -391,15 +339,10 @@ class bor : reduction {                 // bit-wise or
 
 class bxor : reduction {                // bit-wise xor
   type elt_type;
-  var value : elt_type;
-  var first = true;
+  var value : elt_type = _bxor_id( elt_type);
+
   fun accumulate(x) {
-    if first {
-      first = false;
-      value = x;
-    } else {
-      value = value ^ x;
-    }
+    value = value ^ x;
   }
   fun generate() {
     return value;
