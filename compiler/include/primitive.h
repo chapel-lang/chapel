@@ -29,6 +29,16 @@ enum PrimitiveTag {
   PRIMITIVE_LAND,
   PRIMITIVE_LOR,
   PRIMITIVE_POW,
+  PRIMITIVE_MIN,
+  PRIMITIVE_MAX,
+  PRIMITIVE_PROD_ID,                   // product identity operand
+  PRIMITIVE_BAND_ID,                   // bit-wise AND identity operand
+  PRIMITIVE_BOR_ID,                    // bit-wise OR identity operand
+  PRIMITIVE_BXOR_ID,                   // bit-wise XOR identity operand
+  PRIMITIVE_LAND_ID,                   // logical AND identity operand
+  PRIMITIVE_LOR_ID,                    // logical OR identity operand
+  PRIMITIVE_LXOR_ID,                   // logical XOR identity operand
+  PRIMITIVE_SIZE,                      // return size of type (in bytes)
   PRIMITIVE_GETCID,
   PRIMITIVE_SETCID,
   PRIMITIVE_GET_MEMBER,

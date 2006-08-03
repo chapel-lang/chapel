@@ -199,6 +199,8 @@ void initPrimitiveTypes(void);
 bool is_int_type(Type*);
 bool is_uint_type(Type*);
 bool is_float_type(Type*);
+bool is_complex_type(Type*);
+#define is_arithmetic_type(t) (is_int_type(t) || is_uint_type(t) || is_float_type(t) || is_complex_type(t))
 int  get_width(Type*);
 
 #endif

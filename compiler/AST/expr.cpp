@@ -744,6 +744,141 @@ void CallExpr::codegen(FILE* outfile) {
       get(2)->codegen(outfile);
       fprintf(outfile, ")");
       break;
+    case PRIMITIVE_MIN: 
+      {
+        Type *t = get(1)->typeInfo();
+        if (is_arithmetic_type( t)) {
+          if (is_int_type( t)) {
+            fprintf( outfile, "MIN_INT%d", get_width( t));
+          } else if (is_uint_type( t)) {
+            fprintf( outfile, "MIN_UINT%d", get_width( t));
+          } else if (is_float_type( t)) {
+            fprintf( outfile, "MIN_FLOAT%d", get_width( t));
+          } else {   // must be (is_complex_type( t))
+            fprintf( outfile, "_chpl_complex%d( MIN_FLOAT%d, MIN_FLOAT%d)", 
+                     get_width( t), get_width( t), get_width( t));
+          }
+        } else {
+          INT_FATAL( t, "not arithmetic type");
+        }
+        break;
+      }
+    case PRIMITIVE_MAX: 
+      {
+        Type *t = get(1)->typeInfo();
+        if (is_arithmetic_type( t)) {
+          if (is_int_type( t)) {
+            fprintf( outfile, "MAX_INT%d", get_width( t));
+          } else if (is_uint_type( t)) {
+            fprintf( outfile, "MAX_UINT%d", get_width( t));
+          } else if (is_float_type( t)) {
+            fprintf( outfile, "MAX_FLOAT%d", get_width( t));
+          } else {   // must be (is_complex_type( t))
+            fprintf( outfile, "_chpl_complex%d( MAX_FLOAT%d, MAX_FLOAT%d)", 
+                     get_width( t), get_width( t), get_width( t));
+          }
+        } else {
+          INT_FATAL( t, "not arithmetic type");
+        }
+        break;
+      }
+    case PRIMITIVE_PROD_ID: 
+      {
+        Type *t = get(1)->typeInfo();
+        if (is_arithmetic_type( t)) {
+          if (is_int_type( t) || is_uint_type( t)) {
+            fprintf( outfile, "INT%d(1)", get_width( t));
+          } else if (is_float_type( t)) {
+            fprintf( outfile, "1.0");
+          } else {
+            fprintf( outfile, "_chpl_complex%d( 1.0, 1.0)", get_width( t)); 
+          }
+        } else {
+          INT_FATAL( t, "not arithmetic type");
+        }
+        break;
+      }
+    case PRIMITIVE_LAND_ID: 
+      {
+        Type *t = get(1)->typeInfo();
+        if (is_arithmetic_type( t) || (t == dtBool)) {
+          if (t == dtBool) {
+            fprintf( outfile, "true");
+          } else if (is_int_type( t) || is_uint_type( t)) {
+            fprintf( outfile, "1");
+          } else if (is_float_type( t)) {
+            fprintf( outfile, "1.0");
+          } else {
+            fprintf( outfile, "_chpl_complex%d(1.0, 1.0)", get_width( t));
+          }
+        } else {
+          INT_FATAL( t, "cannot codegen logic identity for");
+        }
+        break;
+      }
+    case PRIMITIVE_LOR_ID: 
+    case PRIMITIVE_LXOR_ID: 
+      {
+        Type *t = get(1)->typeInfo();
+        if (is_arithmetic_type( t) || (t == dtBool)) {
+          if (t == dtBool) {
+            fprintf( outfile, "false");
+          } else if (is_int_type( t) || is_uint_type( t)) {
+            fprintf( outfile, "0");
+          } else if (is_float_type( t)) {
+            fprintf( outfile, "0.0");
+          } else {
+            fprintf( outfile, "_chpl_complex%d(0.0, 0.0)", get_width( t));
+          }
+        } else {
+          INT_FATAL( t, "cannot codegen logic identity for");
+        }
+        break;
+      }
+    case PRIMITIVE_BAND_ID: 
+      {
+        Type *t = get(1)->typeInfo();
+        if (is_arithmetic_type( t)) {
+          if (is_int_type( t) || is_uint_type( t) || is_float_type( t)) {
+            fprintf( outfile, "MAX_UINT%d", get_width( t));
+          } else {   // must be (is_complex_type( t))
+            // WAW: needs fixing?
+            fprintf( outfile, "_chpl_complex%d( MAX_UINT%d, MAX_UINT%d)", 
+                     get_width( t), get_width( t), get_width( t));
+          }
+        } else {
+          INT_FATAL( t, "not arithmetic type");
+        }
+        break;
+      }
+    case PRIMITIVE_BOR_ID: 
+    case PRIMITIVE_BXOR_ID: 
+      {
+        Type *t = get(1)->typeInfo();
+        if (is_arithmetic_type( t)) {
+          if (is_int_type( t) || is_uint_type( t)) {
+            fprintf( outfile, "0");
+          } else if (is_float_type( t)) {
+            fprintf( outfile, "0.0");
+          } else {   // must be (is_complex_type( t))
+            // WAW: needs fixing?
+            fprintf( outfile, "_chpl_complex%d( 0.0, 0.0)", get_width( t));
+          }
+        } else {
+          INT_FATAL( t, "not arithmetic type");
+        }
+        break;
+      }
+    case PRIMITIVE_SIZE:
+      {
+        Type *t = get(1)->typeInfo();
+        if (is_arithmetic_type( t)) {
+          fprintf( outfile, "%d", get_width( t));
+        } else {
+          INT_FATAL( t, "not arithmetic type");
+        }
+        break;
+      }
     case PRIMITIVE_SETCID:
       get(1)->codegen(outfile);
       fprintf(outfile, "->_cid = %ld", get(1)->typeInfo()->id);

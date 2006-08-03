@@ -854,20 +854,31 @@ bool is_float_type(Type *t) {
 }
 
 
+bool is_complex_type(Type *t) {
+  return
+    t == dtFloat[FLOAT_SIZE_32] ||
+    t == dtFloat[FLOAT_SIZE_64] ||
+    t == dtFloat[FLOAT_SIZE_128];
+}
+
+
 int get_width(Type *t) {
   if (t == dtInt[INT_SIZE_8] || t == dtUInt[INT_SIZE_8])
     return 8;
   if (t == dtInt[INT_SIZE_16] || t == dtUInt[INT_SIZE_16])
     return 16;
-  if (t == dtInt[INT_SIZE_32] || t == dtUInt[INT_SIZE_32])
+  if (t == dtInt[INT_SIZE_32] || 
+      t == dtUInt[INT_SIZE_32] ||
+      t == dtFloat[FLOAT_SIZE_32] || 
+      t == dtComplex[FLOAT_SIZE_32])
     return 32;
-  if (t == dtInt[INT_SIZE_64] || t == dtUInt[INT_SIZE_64])
+  if (t == dtInt[INT_SIZE_64] || 
+      t == dtUInt[INT_SIZE_64] ||
+      t == dtFloat[FLOAT_SIZE_64] ||
+      t == dtComplex[FLOAT_SIZE_64])
     return 64;
-  if (t == dtFloat[FLOAT_SIZE_32])
-    return 32;
-  if (t == dtFloat[FLOAT_SIZE_64])
-    return 64;
-  if (t == dtFloat[FLOAT_SIZE_128])
+  if (t == dtFloat[FLOAT_SIZE_128] ||
+      t == dtComplex[FLOAT_SIZE_128])
     return 128;
   INT_FATAL(t, "Unknown bit width");
   return 0;

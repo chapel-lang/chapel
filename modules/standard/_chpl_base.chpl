@@ -3,6 +3,8 @@
 pragma "inline" fun _chpl_alloc(type t, description:string)
   return __primitive("chpl_alloc", t, description);
 
+pragma "inline" fun _size( type t) return __primitive("_size", t);
+
 // Primitive functions and operators on bool
 pragma "inline" fun =(a: bool, b: bool) return b;
 //pragma "inline" fun _copy(a: bool) return a;
@@ -321,6 +323,21 @@ pragma "inline" fun _init(x : int) return 0;
 pragma "inline" fun _init(x : float) return 0.0;
 pragma "inline" fun _init(x : string) return "";
 pragma "inline" fun _init(x) return nil:x;
+
+
+// identity functions (for reduction operations)
+pragma "inline" fun _prod_id( type t) return __primitive( "_prod_id", t);
+pragma "inline" fun _land_id( type t) return __primitive( "_land_id", t);
+pragma "inline" fun _lor_id( type t) return __primitive( "_lor_id", t);
+pragma "inline" fun _lxor_id( type t) return __primitive( "_lxor_id", t);
+pragma "inline" fun _band_id( type t) return __primitive( "_band_id", t);
+pragma "inline" fun _bor_id( type t) return __primitive( "_bor_id", t);
+pragma "inline" fun _bxor_id( type t) return __primitive( "_bxor_id", t);
+
+
+// predefined functions
+pragma "inline" fun _min( type t) return __primitive( "_min", t);
+pragma "inline" fun _max( type t) return __primitive( "_max", t);
 
 
 //
