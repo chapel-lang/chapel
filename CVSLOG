@@ -69867,3 +69867,14 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+08/03/06 15:17:05 -- deitz
+
+Log message:
+	Removed one call to hack_resolve_types from normalize and moved
+	another to a new location in preparation for removing it.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+
