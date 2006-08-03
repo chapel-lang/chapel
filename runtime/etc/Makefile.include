@@ -5,4 +5,4 @@ include $(CHAPEL_RTDIR)/etc/Makefile.macros
 all:
 	gcc $(CFLAGS) -o $(TMPBINNAME) -I$(CHAPEL_RTDIR)/include/$(PLATFORM) -I$(CHAPEL_RTDIR)/include -L $(CHAPEL_RTDIR)/src/$(PLATFORM) $(CHAPEL_RTDIR)/src/$(PLATFORM)/main.o $(CHPLSRC) -lchpl -lm $(LIBS)
 	cp $(TMPBINNAME) $(BINNAME)
-
+	rm $(TMPBINNAME)

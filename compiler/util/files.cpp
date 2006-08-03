@@ -240,11 +240,9 @@ fileinfo* openTmpFile(char* tmpfilename) {
 static void genMakefileHeader(char* srcfilename, char* systemDir) {
   char* strippedExeFilename = stripdirectories(executableFilename);
   intExeFilename = genIntFilename(strippedExeFilename);
-  // BLC: This condtitional is done so that cp won't complain if
-  // the source and destination are the same file
-  if (strcmp(executableFilename, intExeFilename) == 0) {
-    intExeFilename = stringcat(intExeFilename, ".tmp");
-  }
+  // BLC: This munging is done so that cp won't complain if the source
+  // and destination are the same file (e.g., a.out and ./a.out)
+  intExeFilename = stringcat(intExeFilename, ".tmp");
   // BLC: We generate a TMPBINNAME which is the name that will be used
   // by the C compiler in creating the executable, and is in the
   // --savec directory (a /tmp directory by default).  We then copy it
