@@ -69815,3 +69815,17 @@ Modified files:
 	chapel/compiler/parser/: chapel.y 
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+08/03/06 13:26:45 -- deitz
+
+Log message:
+	Added two tests of square bracket functions and cross products.  The
+	second is vaguely interesting.
+
+Added files:
+	chapel/test/functions/deitz/: test_square1.chpl 
+	                              test_square1.good 
+	                              test_square2.chpl 
+	                              test_square2.good 
+
