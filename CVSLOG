@@ -69758,3 +69758,13 @@ Log message:
 Added files:
 	chapel/test/trivial/waynew/: reductions.chpl reductions.good 
 
+---------------------------------------------------------------------------
+
+08/02/06 18:38:27 -- waynew
+
+Log message:
+	Test logical AND and OR reductions on bool.
+
+Added files:
+	chapel/test/trivial/waynew/: lreductions.chpl lreductions.good 
+
