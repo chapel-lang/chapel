@@ -404,7 +404,8 @@ build_coercion_wrapper(FnSymbol* fn, Vec<Type*>* actual_types) {
 
 static FnSymbol*
 build_promotion_wrapper(FnSymbol* fn,
-                        Vec<Type*>* actual_types) {
+                        Vec<Type*>* actual_types,
+                        bool isSquare) {
   if (!strcmp(fn->name, "="))
     return fn;
   bool promotion_wrapper_required = false;
@@ -423,7 +424,7 @@ build_promotion_wrapper(FnSymbol* fn,
     }
   }
   if (promotion_wrapper_required)
-    fn = fn->promotion_wrapper(&promoted_subs);
+    fn = fn->promotion_wrapper(&promoted_subs, isSquare);
   return fn;
 }
 
@@ -536,7 +537,7 @@ resolve_call(CallExpr* call,
 
   best = build_default_wrapper(best, actual_formals);
   best = build_order_wrapper(best, actual_formals);
-  best = build_promotion_wrapper(best, actual_types);
+  best = build_promotion_wrapper(best, actual_types, call->square);
   best = build_coercion_wrapper(best, actual_types);
   return best;
 }

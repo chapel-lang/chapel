@@ -18,10 +18,10 @@ AList<Stmt>* build_do_while_block(Expr* cond, BlockStmt* body);
 AList<Stmt>* build_for_block(BlockTag tag,
                              AList<DefExpr>* indices,
                              AList<Expr>* iterators,
-                             BlockStmt* body, int only_once = 0);
+                             BlockStmt* body, bool isSquare = false, int only_once = 0);
 AList<Stmt>* build_for_expr(AList<DefExpr>* indices,
                             AList<Expr>* iterators,
-                            Expr* expr);
+                            Expr* expr, bool isSquare = false);
 AList<Stmt>* build_param_for(char* index, Expr* low, Expr* high, BlockStmt* stmts);
 AList<Stmt>* build_assignplus(Expr* lhs, Expr* rhs);
 CondStmt* build_select(Expr* s, AList<WhenStmt>* whenstmts);

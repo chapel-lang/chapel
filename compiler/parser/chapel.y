@@ -201,7 +201,7 @@ Is this "while x"(i); or "while x(i)";?
 %type <pstmtls> stmt_ls decl_stmt_ls
 
 %type <pblockstmt> stmt empty_stmt label_stmt goto_stmt break_stmt continue_stmt
-%type <pblockstmt> call_stmt expr_stmt if_stmt for_stmt while_do_stmt do_while_stmt
+%type <pblockstmt> call_stmt expr_stmt if_stmt expr_for_stmt for_stmt while_do_stmt do_while_stmt
 %type <pblockstmt> select_stmt return_stmt yield_stmt assign_stmt decl_stmt
 %type <pblockstmt> type_select_stmt
 
@@ -263,7 +263,7 @@ Is this "while x"(i); or "while x(i)";?
 %right TUPLUS TUMINUS TBNOT
 %right TEXP
 %left TCOLON TNOTCOLON
-%left TLP
+%left TLP TLSBR
 %left TDOT
 
 %% 
@@ -298,6 +298,7 @@ stmt:
 | expr_stmt
 | if_stmt
 | for_stmt
+| expr_for_stmt
 | while_do_stmt
 | do_while_stmt
 | select_stmt
@@ -402,7 +403,9 @@ for_stmt:
     { $$ = build_chpl_stmt(build_for_block($1, exprsToIndices($2), $4, $5)); }
 | for_tag nonempty_expr_ls TIN nonempty_expr_ls TDO stmt
     { $$ = build_chpl_stmt(build_for_block($1, exprsToIndices($2), $4, new BlockStmt($6))); }
-| TLSBR nonempty_expr_ls TIN nonempty_expr_ls TRSBR stmt
+
+expr_for_stmt:
+  TLSBR nonempty_expr_ls TIN nonempty_expr_ls TRSBR stmt
     { $$ = build_chpl_stmt(build_for_block(BLOCK_FORALL, exprsToIndices($2), $4, new BlockStmt($6))); }
 ;
 
@@ -1050,6 +1053,12 @@ tuple_paren_expr:
 parenop_expr:
   non_tuple_lvalue TLP expr_ls TRP
     { $$ = new CallExpr($1, $3); }
+| non_tuple_lvalue TLSBR expr_ls TRSBR
+    {
+      CallExpr* call = new CallExpr($1, $3);
+      call->square = true;
+      $$ = call;
+    }
 | TPRIMITIVE TLP expr_ls TRP
     {
       $$ = build_primitive_call($3);

@@ -178,7 +178,7 @@ AList<Stmt>* build_do_while_block(Expr* cond, BlockStmt* body) {
 // builds body of for expression
 AList<Stmt>* build_for_expr(AList<DefExpr>* indices,
                             AList<Expr>* iterators,
-                            Expr* expr) {
+                            Expr* expr, bool isSquare) {
   AList<Stmt>* stmts = new AList<Stmt>();
 
   CallExpr* elt_type;
@@ -206,7 +206,7 @@ AList<Stmt>* build_for_expr(AList<DefExpr>* indices,
   stmts->insertAtTail(new BlockStmt(build_for_block(BLOCK_FORALL,
                                                     typeindices,
                                                     typeiterators,
-                                                    body, 1)));
+                                                    body, false, 1)));
 
   stmts->insertAtTail(new DefExpr(break_out));
 
@@ -215,9 +215,25 @@ AList<Stmt>* build_for_expr(AList<DefExpr>* indices,
                                                     iterators,
                                                     new BlockStmt(
                                                                   new ExprStmt(new CallExpr(new CallExpr(".", seq, new_StringLiteral("_append_in_place")),
-                                                                                            expr))))));
+                                                                                            expr))), isSquare)));
   stmts->insertAtTail(new ReturnStmt(seq));
   return stmts;
+}
+
+
+static AList<Stmt>*
+build_cross_block(BlockTag tag,
+                  AList<DefExpr>* indices,
+                  AList<Expr>* iterators,
+                  BlockStmt* body) {
+  if (indices->length() != iterators->length())
+    INT_FATAL("Unexpected arguments to build_cross_block");
+  while (indices->length()) {
+    AList<DefExpr>* index = new AList<DefExpr>(indices->first()->remove());
+    AList<Expr>* iterator = new AList<Expr>(iterators->first()->remove());
+    body = new BlockStmt(build_for_block(tag, index, iterator, body));
+  }
+  return new AList<Stmt>(body);
 }
 
 
@@ -225,8 +241,13 @@ AList<Stmt>* build_for_block(BlockTag tag,
                              AList<DefExpr>* indices,
                              AList<Expr>* iterators,
                              BlockStmt* body,
+                             bool isSquare, // cross product of iterators
                              int only_once) { // execute only once
                                               // used in build_for_expr
+  if (isSquare && only_once)
+    INT_FATAL("Unexpected arguments to build_for_block");
+  if (isSquare)
+    return build_cross_block(tag, indices, iterators, body);
   static int uid = 1;
   body = new BlockStmt(body);
   body->blockTag = tag;

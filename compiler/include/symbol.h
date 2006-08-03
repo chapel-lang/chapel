@@ -178,7 +178,7 @@ class FnSymbol : public Symbol {
   virtual FnSymbol* getFnSymbol(void);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
-  FnSymbol* promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs);
+  FnSymbol* promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs, bool isSquare);
   FnSymbol* order_wrapper(Map<Symbol*,Symbol*>* formals_to_formals);
   FnSymbol* coercion_wrapper(ASTMap* coercion_substitutions);
   FnSymbol* default_wrapper(Vec<Symbol*>* defaults);

@@ -793,7 +793,8 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* order_map) {
 }
 
 
-FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs) {
+FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
+                                      bool isSquare) {
   FnSymbol* wrapper = build_empty_wrapper(this);
   wrapper->cname = stringcat("_promotion_wrap_", cname);
   AList<DefExpr>* indices = new AList<DefExpr>();
@@ -826,9 +827,10 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs) {
                                          indices,
                                          iterators,
                                          new BlockStmt(
-                                           new ExprStmt(actualCall)))));
+                                           new ExprStmt(actualCall)),
+                                         isSquare)));
   } else {
-    wrapper->insertAtTail(build_for_expr(indices, iterators, actualCall));
+    wrapper->insertAtTail(build_for_expr(indices, iterators, actualCall, isSquare));
   }
   defPoint->parentStmt->insertBefore(new DefExpr(wrapper));
   reset_file_info(wrapper->defPoint->parentStmt, lineno, filename);

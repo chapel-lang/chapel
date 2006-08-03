@@ -79,6 +79,7 @@ class CallExpr : public Expr {
   Type* member_type;
   int member_offset;
   bool methodTag;
+  bool square; // true if call made with square brackets
 
   CallExpr(BaseAST* base, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
            BaseAST* arg3 = NULL, BaseAST* arg4 = NULL);
