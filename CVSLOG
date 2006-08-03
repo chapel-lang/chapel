@@ -69878,3 +69878,13 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
 
+---------------------------------------------------------------------------
+
+08/03/06 15:17:42 -- deitz
+
+Log message:
+	Removed a small chunk of dead code in normalize.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+
