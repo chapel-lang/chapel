@@ -131,21 +131,6 @@ void normalize(BaseAST* base) {
     }
   }
 
-  asts.clear();
-  collect_asts_postorder(&asts, base);
-  forv_Vec(BaseAST, ast, asts) {
-    currentLineno = ast->lineno;
-    currentFilename = ast->filename;
-    if (DefExpr* a = dynamic_cast<DefExpr*>(ast)) {
-      if (dynamic_cast<VarSymbol*>(a->sym) &&
-          dynamic_cast<TypeSymbol*>(a->parentSymbol) &&
-          a->exprType) {
-        INT_FATAL("REMOVE THIS CODE?");
-        a->exprType->remove();
-      }
-    }
-  }
-
   fold_params(base);
 
   asts.clear();
