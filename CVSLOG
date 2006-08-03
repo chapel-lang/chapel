@@ -69948,3 +69948,15 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 	chapel/modules/standard/: _chpl_base.chpl 
 
+---------------------------------------------------------------------------
+
+08/03/06 16:31:36 -- deitz
+
+Log message:
+	Simplified tag_generic, removed half of hack_resolve_types and moved
+	it even lower in normalize in preparation for removal.
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp functionResolution.cpp 
+	                         normalize.cpp 
+
