@@ -31,7 +31,7 @@ static FnSymbol* resolve_call(CallExpr* call,
                               Vec<Type*>* actual_types,
                               Vec<Symbol*>* actual_params,
                               Vec<char*>* actual_names);
-static void resolve_type_expr(CallExpr* call);
+static Type* resolve_type_expr(Expr* expr);
 
 static void resolveCall(CallExpr* call);
 static void resolveFns(FnSymbol* fn);
@@ -48,21 +48,14 @@ resolveFormals(FnSymbol* fn) {
     done.set_add(fn);
 
     for_alist(DefExpr, formalDef, fn->formals) {
-      if (CallExpr* call = dynamic_cast<CallExpr*>(formalDef->exprType)) {
-        resolve_type_expr(call);
-        normalize(formalDef);
+      if (formalDef->exprType) {
+        formalDef->sym->type = resolve_type_expr(formalDef->exprType);
+        formalDef->exprType->remove();
       }
     }
     if (fn->retExpr) {
-      if (CallExpr* call = dynamic_cast<CallExpr*>(fn->retExpr))
-        resolve_type_expr(call);
-      SymExpr* sym = dynamic_cast<SymExpr*>(fn->retExpr);
-      if (!sym)
-        INT_FATAL(fn, "Bad return type expression");
-      if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(sym->var))
-        fn->retType = ts->type;
-      else
-        fn->retType = sym->var->type;
+      fn->retType = resolve_type_expr(fn->retExpr);
+      fn->retExpr->remove();
     }
     if (fn->fnClass == FN_CONSTRUCTOR)
       setFieldTypes(fn);
@@ -564,10 +557,10 @@ computeActuals(CallExpr* call,
   }
 }
 
-static void
-resolve_type_expr(CallExpr* base) {
+static Type*
+resolve_type_expr(Expr* expr) {
   Vec<BaseAST*> asts;
-  collect_asts_postorder(&asts, base);
+  collect_asts_postorder(&asts, expr);
 
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
@@ -576,10 +569,10 @@ resolve_type_expr(CallExpr* base) {
         resolveFns(call->isResolved());
     }
   }
-  Type* t = base->typeInfo();
+  Type* t = expr->typeInfo();
   if (t == dtUnknown)
-    INT_FATAL(base, "Unable to resolve formal type");
-  base->replace(new SymExpr(t->symbol));
+    INT_FATAL(expr, "Unable to resolve formal type");
+  return t;
 }
 
 
