@@ -69930,3 +69930,21 @@ Modified files:
 Removed files:
 	chapel/test/compflags/waynew/: saveccurrdir.future 
 
+---------------------------------------------------------------------------
+
+08/03/06 16:14:34 -- waynew
+
+Log message:
+	Changed sync function names to more reasonable names at Brad's suggestion.
+	My plan of using really long names to force a suggestion worked.  The
+	new temporary names are:
+	 = (same) - wait empty, leave full
+	 writeXF (new) - no wait on F/E, leave full
+	 readFE (new) - wait full, leave empty
+	 readFF (new) - wait full, leave full
+	 readXX (new) - no wait, leave F/E unchanged
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/modules/standard/: _chpl_base.chpl 
+
