@@ -69748,3 +69748,13 @@ Added files:
 	chapel/test/trivial/waynew/: mintest.chpl mintest.good 
 	                             maxtest.chpl maxtest.good 
 
+---------------------------------------------------------------------------
+
+08/02/06 18:37:58 -- waynew
+
+Log message:
+	Test min, max, sum, and product reductions on int, uint, and float.
+
+Added files:
+	chapel/test/trivial/waynew/: reductions.chpl reductions.good 
+
