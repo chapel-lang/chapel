@@ -69857,3 +69857,13 @@ Added files:
 	chapel/test/trivial/deitz/: test_var_decl_shared1.chpl 
 	                            test_var_decl_shared1.good 
 
+---------------------------------------------------------------------------
+
+08/03/06 14:52:22 -- deitz
+
+Log message:
+	Simplification of formal type resolution code.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+
