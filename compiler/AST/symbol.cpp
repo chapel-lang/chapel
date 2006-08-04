@@ -1057,7 +1057,6 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
   FnSymbol* newfn = NULL;
   currentLineno = lineno;
   currentFilename = filename;
-  ASTMap map;
 
   // check for infinite recursion by limiting the number of
   // instantiations of a particular type or function
@@ -1077,28 +1076,22 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
   }
 
   if (fnClass == FN_CONSTRUCTOR) {
+    if (!dynamic_cast<ClassType*>(retType))
+      INT_FATAL("bad instantiation of non-class type");
 
-    //
-    // Make what is visible at types to instantiate visible at
-    // instantiated type
-    //
+    // copy generic class type
+    TypeSymbol* clone = retType->symbol->copy();
+
+    // make scope of instantiation "use" module of instantiating types
+    // why??? --sjd
     Vec<BaseAST*> values;
     generic_substitutions->get_values(values);
     forv_Vec(BaseAST, value, values)
       if (Type* type = dynamic_cast<Type*>(value))
-        if (type->symbol->defPoint)
-          defPoint->parentScope->astParent->uses.add(type->symbol->defPoint->getModule());
+        if (!dynamic_cast<PrimitiveType*>(type))
+          defPoint->parentScope->astParent->uses.add(type->getModule());
 
-    ClassType* originalClass = dynamic_cast<ClassType*>(retType);
-    if (!originalClass) {
-      INT_FATAL(this, "Attempt to instantiate non-class type");
-    }
-    TypeSymbol* clone = retType->symbol->copy(&map);
-    ClassType* newClass = dynamic_cast<ClassType*>(clone->type);
-    if (!newClass) {
-      INT_FATAL(this, "Class cloning went horribly wrong");
-    }
-
+    // compute instantiatedWith vector and rename instantiated type
     clone->cname = stringcat(clone->cname, "_A_");
     clone->name = stringcat(clone->name, "(");
     bool first = false;
@@ -1135,33 +1128,30 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
       INT_FATAL(this, "Generic type has subtypes");
 
     new_ast_types.add(clone);
-    //    instantiate_add_subs(&substitutions, &map);
 
-    ClassType* cloneType = dynamic_cast<ClassType*>(clone->type);
-    cloneType->instantiatedFrom = retType;
+    clone->type->instantiatedFrom = retType;
 
-    if (count_instantiate_with_recursion(cloneType) >= 6)
-      USR_FATAL(cloneType, "Recursive type instantiation limit reached");
+    if (count_instantiate_with_recursion(clone->type) >= 6)
+      USR_FATAL(clone->type, "Recursive type instantiation limit reached");
 
-    Vec<TypeSymbol *> types;
-    types.move(cloneType->types);
-    for (int i = 0; i < types.n; i++) {
-      if (types.v[i] && substitutions.get(types.v[i]->type)) {
-        types.v[i]->defPoint->parentStmt->remove();
-      } else
-        cloneType->types.add(types.v[i]);
-    }
+//     Vec<TypeSymbol *> types;
+//     types.move(cloneType->types);
+//     for (int i = 0; i < types.n; i++) {
+//       if (types.v[i] && substitutions.get(types.v[i]->type)) {
+//         types.v[i]->defPoint->parentStmt->remove();
+//       } else
+//         cloneType->types.add(types.v[i]);
+//     }
 
-    //instantiate_update_expr(&substitutions, clone->defPoint);
     substitutions.put(retType, clone->type);
 
-    cloneType->substitutions.map_union(*generic_substitutions);
+    clone->type->substitutions.map_union(*generic_substitutions);
 
     newfn = instantiate_function(this, &substitutions, generic_substitutions);
-    cloneType->defaultConstructor = newfn;
+    clone->type->defaultConstructor = newfn;
     newfn->typeBinding = clone;
-    newfn->retType = cloneType;
-    check_promoter(cloneType);
+    newfn->retType = clone->type;
+    check_promoter(dynamic_cast<ClassType*>(clone->type));
     if (hasPragma("tuple"))
       instantiate_tuple(newfn);
 
