@@ -657,7 +657,6 @@ build_empty_wrapper(FnSymbol* fn) {
   wrapper->visible = false;
   wrapper->addPragmas(&fn->pragmas);
   wrapper->addPragma("inline");
-  wrapper->typeBinding = fn->typeBinding;
   wrapper->noParens = fn->noParens;
   wrapper->retRef = fn->retRef;
   wrapper->isMethod = fn->isMethod;
@@ -833,30 +832,8 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
   return wrapper;
 }
 
-static void
-instantiate_update_expr(ASTMap* substitutions, Expr* expr) {
-  ASTMap map;
-  // for type variables, add TypeSymbols into the map as well
-  for (int i = 0; i < substitutions->n; i++) {
-    if (Type *t = dynamic_cast<Type*>(substitutions->v[i].key)) {
-      if (Type *tt = dynamic_cast<Type*>(substitutions->v[i].value)) {
-        map.put(t, tt);
-        map.put(t->symbol, tt->symbol);
-      }
-    }
-    if (ArgSymbol* s = dynamic_cast<ArgSymbol*>(substitutions->v[i].key)) {
-      if (Symbol *ss = dynamic_cast<Symbol*>(substitutions->v[i].value)) {
-        map.put(s, ss);
-      }
-    }
-  }
-  update_symbols(expr, &map);
-}
-
-
 static FnSymbol*
 instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType) {
-  ASTMap all_subs;
   ASTMap map;
 
   FnSymbol* clone = fn->copy(&map);
@@ -864,40 +841,38 @@ instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType) {
   clone->visible = false;
   clone->instantiatedFrom = fn;
   clone->substitutions.copy(*generic_subs);
-  // patch up the typeBinding
-  if (clone->typeBinding) {
-    Type *tt = dynamic_cast<Type*>(clone->substitutions.get(clone->typeBinding->type));
-    if (tt)
-      clone->typeBinding = tt->symbol;
-  }
   addMapCache(&icache, clone->instantiatedFrom, clone, &clone->substitutions);
   fn->defPoint->parentStmt->insertBefore(new DefExpr(clone));
 
-  if (newType) {
-    all_subs.put(fn->retType, newType);
-    all_subs.put(fn->retType->symbol, newType->symbol);
-  }
+  // update body of function with parameter substitutions and, for
+  // constructors, with a return type substitution
+  ASTMap subs;
   for (int i = 0; i < generic_subs->n; i++) {
     if (ArgSymbol* arg = dynamic_cast<ArgSymbol*>(generic_subs->v[i].key)) {
-      all_subs.put(map.get(arg), generic_subs->v[i].value);
+      if (arg->intent == INTENT_PARAM)
+        subs.put(map.get(arg), generic_subs->v[i].value);
     }
   }
-  instantiate_update_expr(&all_subs, clone->defPoint);
-  for_alist(DefExpr, formal, clone->formals) {
-    if (ArgSymbol *ps = dynamic_cast<ArgSymbol *>(formal->sym)) {
-      if (all_subs.get(ps) && ps->intent == INTENT_PARAM) {
-        ps->intent = INTENT_BLANK;
-        ps->isGeneric = false;
-        ps->instantiatedParam = true;
-        ps->defaultExpr = new SymExpr(gNil);
-        ps->defaultExpr->parentSymbol = ps;
-      } else if (Type* t = dynamic_cast<Type*>(all_subs.get(ps))) {
-        ps->isGeneric = false;
-        ps->instantiatedFrom = ps->type;
-        ps->type = t;
-        ps->defaultExpr = new SymExpr(gNil);
-        ps->defaultExpr->parentSymbol = ps;
-      }
+  if (newType) {
+    subs.put(fn->retType, newType);
+    subs.put(fn->retType->symbol, newType->symbol);
+  }
+  update_symbols(clone, &subs);
+
+  for_formals(formal, fn) {
+    ArgSymbol* cloneFormal = dynamic_cast<ArgSymbol*>(map.get(formal));
+    if (generic_subs->get(formal) && formal->intent == INTENT_PARAM) {
+      cloneFormal->intent = INTENT_BLANK;
+      cloneFormal->isGeneric = false;
+      cloneFormal->instantiatedParam = true;
+      cloneFormal->defaultExpr = new SymExpr(gNil);
+      cloneFormal->defaultExpr->parentSymbol = cloneFormal;
+    } else if (Type* t = dynamic_cast<Type*>(generic_subs->get(formal))) {
+      cloneFormal->isGeneric = false;
+      cloneFormal->instantiatedFrom = formal->type;
+      cloneFormal->type = t;
+      cloneFormal->defaultExpr = new SymExpr(gNil);
+      cloneFormal->defaultExpr->parentSymbol = cloneFormal;
     }
   }
   return clone;
@@ -951,7 +926,7 @@ check_promoter(ClassType *at) {
 
 static void
 instantiate_tuple(FnSymbol* fn) {
-  ClassType* tuple = dynamic_cast<ClassType*>(fn->typeBinding->type);
+  ClassType* tuple = dynamic_cast<ClassType*>(fn->retType);
   int size = dynamic_cast<VarSymbol*>(tuple->substitutions.v[0].value)->immediate->v_int64;
   Stmt* last = fn->body->body->last();
   for (int i = 1; i <= size; i++) {
@@ -1117,7 +1092,6 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
 
     newfn = instantiate_function(this, generic_substitutions, clone->type);
     clone->type->defaultConstructor = newfn;
-    newfn->typeBinding = clone;
     newfn->retType = clone->type;
     check_promoter(dynamic_cast<ClassType*>(clone->type));
     if (hasPragma("tuple"))
