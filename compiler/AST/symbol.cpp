@@ -26,10 +26,6 @@ Symbol *gCondVar_p = NULL;
 VarSymbol *gTrue = NULL;
 VarSymbol *gFalse = NULL;
 
-
-Vec<FnSymbol*> new_ast_functions;
-Vec<TypeSymbol*> new_ast_types;
-
 /*** ASTMap Cache vvv ***/
 class Inst : public gc {
  public:
@@ -956,18 +952,6 @@ check_promoter(ClassType *at) {
 }
 
 static void
-add_new_ast_functions(FnSymbol* fn) {
-  new_ast_functions.add(fn);
-  Vec<BaseAST*> asts;
-  collect_asts(&asts, fn->body);
-  forv_Vec(BaseAST, ast, asts) {
-    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast))
-      new_ast_functions.add(fn);
-  }
-}
-
-
-static void
 instantiate_tuple(FnSymbol* fn) {
   ClassType* tuple = dynamic_cast<ClassType*>(fn->typeBinding->type);
   int size = dynamic_cast<VarSymbol*>(tuple->substitutions.v[0].value)->immediate->v_int64;
@@ -1127,21 +1111,10 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
     if (clone->type->dispatchChildren.n)
       INT_FATAL(this, "Generic type has subtypes");
 
-    new_ast_types.add(clone);
-
     clone->type->instantiatedFrom = retType;
 
     if (count_instantiate_with_recursion(clone->type) >= 6)
       USR_FATAL(clone->type, "Recursive type instantiation limit reached");
-
-//     Vec<TypeSymbol *> types;
-//     types.move(cloneType->types);
-//     for (int i = 0; i < types.n; i++) {
-//       if (types.v[i] && substitutions.get(types.v[i]->type)) {
-//         types.v[i]->defPoint->parentStmt->remove();
-//       } else
-//         cloneType->types.add(types.v[i]);
-//     }
 
     substitutions.put(retType, clone->type);
 
@@ -1172,13 +1145,13 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
 
     if (!newfn) {
       removeMapCache(&icache, this, generic_substitutions);
+      INT_FATAL("HA HA");
       return NULL;
     }
 
   }
   normalize(newfn);
   instantiatedTo->add(newfn);
-  add_new_ast_functions(newfn);
 
   if (!newfn->isGeneric && newfn->where) {
     ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(newfn->where->body->last());
