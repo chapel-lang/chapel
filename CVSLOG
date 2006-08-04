@@ -70080,3 +70080,18 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+08/04/06 15:14:05 -- deitz
+
+Log message:
+	Added a flag --unoptimized that currently disables copy propagation
+	and the other low-level optimizations in that pass.  Fixed a bug in
+	forall expression handling to get it to work.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+	chapel/compiler/include/: driver.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/passes/: copy_propagation.cpp semanticChecks.cpp 
+
