@@ -70022,3 +70022,16 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+08/04/06 11:00:22 -- bradc
+
+Log message:
+	Updated a few futures that still aren't working.
+
+Modified files:
+	chapel/test/reductions/bradc/manual/: 
+	                                      threeclasstypes-construct.future 
+	                                      threeclasstypes.chpl 
+	                                      threeclasstypes.future 
+
