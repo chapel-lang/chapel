@@ -25,7 +25,7 @@ fun stack.pop() : elt_type {
 fun fwrite(f : file, s : stack) {
   var tmp = s.top;
   while tmp != nil {
-    write(tmp.value, " ");
+    fwrite(f, tmp.value, " ");
     tmp = tmp.next;
   }
 }

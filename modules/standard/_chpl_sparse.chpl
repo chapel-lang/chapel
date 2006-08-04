@@ -14,5 +14,5 @@ record _sarray {
 }
 
 fun fwrite(f : file, x : _sarray) {
-  write("Sparse arrays are not implemented");
+  halt("Sparse arrays are not implemented");
 }
