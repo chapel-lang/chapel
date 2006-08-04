@@ -69983,3 +69983,32 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+08/03/06 17:27:24 -- bradc
+
+Log message:
+	Made the _cid field of a class an _int64 rather than an
+	int in order to improve portability across architectures/
+	compilers with a different default int size.  (while an
+	_int32 probably would have been plenty sufficient, it
+	started to play into different compilers' notions of how
+	fields should be aligned in a record for the tests in
+	question).
+	
+	This should fix the following tests for the cygwin platform.
+	I also simplified the tests to remove copies, strings, and
+	other things whose sizes might vary over time.  This makes
+	the tests test less stuff about memory allocation, but should
+	continue to allow them to test the mechanisms in question,
+	and be more portable across platforms and time (which I think
+	is the more important thing at this point).
+
+Modified files:
+	chapel/compiler/AST/: type.cpp 
+	chapel/test/memory/shannon/: memstatPrint.chpl memstatPrint.good 
+	                             printFinalMemStat.chpl 
+	                             printFinalMemStat.good 
+	                             printMemTable2.chpl 
+	                             printMemTable2.good 
+
