@@ -70012,3 +70012,13 @@ Modified files:
 	                             printMemTable2.chpl 
 	                             printMemTable2.good 
 
+---------------------------------------------------------------------------
+
+08/04/06 10:10:31 -- deitz
+
+Log message:
+	Some cleanup to instantiate_generic function.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
