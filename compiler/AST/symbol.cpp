@@ -1135,7 +1135,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
       INT_FATAL(this, "Generic type has subtypes");
 
     new_ast_types.add(clone);
-    instantiate_add_subs(&substitutions, &map);
+    //    instantiate_add_subs(&substitutions, &map);
 
     ClassType* cloneType = dynamic_cast<ClassType*>(clone->type);
     cloneType->instantiatedFrom = retType;
@@ -1152,7 +1152,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
         cloneType->types.add(types.v[i]);
     }
 
-    instantiate_update_expr(&substitutions, clone->defPoint);
+    //instantiate_update_expr(&substitutions, clone->defPoint);
     substitutions.put(retType, clone->type);
 
     cloneType->substitutions.map_union(*generic_substitutions);
