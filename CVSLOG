@@ -70095,3 +70095,19 @@ Modified files:
 	chapel/compiler/main/: driver.cpp 
 	chapel/compiler/passes/: copy_propagation.cpp semanticChecks.cpp 
 
+---------------------------------------------------------------------------
+
+08/04/06 16:33:51 -- bradc
+
+Log message:
+	Put "quad" on the C reserved words list to avoid
+	conflicts on SunOS.  This should make the Sun
+	nightly regressions match the linux regressions.
+	
+	Also, put a comment in the REGRESSIONS file to
+	capture why int8-64b is failing.
+
+Modified files:
+	chapel/compiler/passes/: codegen.cpp 
+	chapel/test/: REGRESSIONS 
+
