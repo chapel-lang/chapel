@@ -1,1 +1,5 @@
-totalMem=68, maxMem=68
+totalMem=0, maxMem=0
+totalMem=64, maxMem=64
+totalMem=128, maxMem=128
+totalMem=192, maxMem=192
+totalMem=256, maxMem=256

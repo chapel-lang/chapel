@@ -572,7 +572,7 @@ void ClassType::codegenDef(FILE* outfile) {
   fprintf(outfile, " {\n");
   bool printedSomething = false; // BLC: this is to avoid empty structs, illegal in C
   if (classTag == CLASS_CLASS) {
-    fprintf(outfile, "int _cid;\n");
+    fprintf(outfile, "_int64 _cid;\n");
     printedSomething = true;
   }
   for_alist(Stmt, stmt, declarationList) {

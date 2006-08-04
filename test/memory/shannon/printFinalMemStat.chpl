@@ -1,25 +1,25 @@
-config var i: int = 0;
-config var f: float = 1.2;
-config var b: bool = true;
+config var print: bool = false;
 
 class C {
-  var u: int;
-  var v: int;
-  var w: int;
-  var x: int;
-  var y: int;
-  var z: int;
-}
-
-fun foo() {
-  var s: string = "1234567890";
-
-  s = "";
+  var a: int(64);
+  var b: int(64);
+  var c: int(64);
+  var d: int(64);
+  var e: int(64);
+  var f: int(64);
+  var g: int(64);
 }
 
 var c = C();
-foo();
+var d = C();
+var e = C();
+var f = C();
 
-writeln(i);
-writeln(f);
-writeln(b);
+if print {
+  writeln(c);
+  writeln(d);
+  writeln(e);
+  writeln(f);
+}
+
+

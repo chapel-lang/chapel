@@ -1,19 +1,28 @@
+config var print: bool = false;
+
 class C {
-  var u: int;
-  var v: int;
-  var w: int;
-  var x: int;
-  var y: int;
-  var z: int;
+  var a: int(64);
+  var b: int(64);
+  var c: int(64);
+  var d: int(64);
+  var e: int(64);
+  var f: int(64);
+  var g: int(64);
 }
-
-fun foo() {
-  var s: string = "1234567890";
-
-  s = "";
-}
-
-var c = C();
-foo();
 
 _chpl_memtest_printMemStat();
+var c = C();
+_chpl_memtest_printMemStat();
+var d = C();
+_chpl_memtest_printMemStat();
+var e = C();
+_chpl_memtest_printMemStat();
+var f = C();
+_chpl_memtest_printMemStat();
+
+if print {
+  writeln(c);
+  writeln(d);
+  writeln(e);
+  writeln(f);
+}

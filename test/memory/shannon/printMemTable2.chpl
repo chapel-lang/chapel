@@ -10,5 +10,7 @@ class C {
 
 var c = C();
 var d = C();
+var e = C();
+var f = C();
 
 _chpl_memtest_printMemTable();
