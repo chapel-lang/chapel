@@ -1,7 +1,7 @@
 class mysumreduce {
   type intype;
-  type statetype: intype;
-  type outtype: intype;
+  type statetype = intype;
+  type outtype = intype;
   
   fun ident(): statetype {
     return 0;

@@ -1,6 +1,13 @@
+generic classes with default types
+
+Switched syntaxes to something that Steve thinks makes more sense for
+default type bindings.  This isn't expected to work yet.
+
+
 bradc
 
 Not all type variables are initialized in generic constructor
+
 
 ???
 
