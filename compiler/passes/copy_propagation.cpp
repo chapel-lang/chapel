@@ -188,6 +188,8 @@ void removeUnusedLabels(FnSymbol* fn) {
 }
 
 void copyPropagation(void) {
+  if (unoptimized)
+    return;
   Vec<FnSymbol*> fns;
   collect_functions(&fns);
   forv_Vec(FnSymbol, fn, fns) {

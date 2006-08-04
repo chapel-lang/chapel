@@ -20,6 +20,7 @@ extern int fnostdincs;
 
 extern int trace_level;
 
+extern bool unoptimized;
 extern bool no_inline;
 extern bool report_inlining;
 extern char system_dir[FILENAME_MAX];

@@ -97,7 +97,7 @@ check_parsed(void) {
       if (dynamic_cast<VarSymbol*>(def->sym))
         if (dynamic_cast<FnSymbol*>(def->parentSymbol) ||
             dynamic_cast<ModuleSymbol*>(def->parentSymbol))
-          if (!def->init && !def->exprType)
+          if (!def->init && !def->exprType && !def->sym->isCompilerTemp)
             USR_FATAL_CONT(def->sym,
                            "Variable '%s' is not initialized or has no type",
                            def->sym->name);
