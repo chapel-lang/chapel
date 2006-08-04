@@ -70035,3 +70035,14 @@ Modified files:
 	                                      threeclasstypes.chpl 
 	                                      threeclasstypes.future 
 
+---------------------------------------------------------------------------
+
+08/04/06 11:00:39 -- deitz
+
+Log message:
+	Some more cleanup to instantiate_generic function.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+
