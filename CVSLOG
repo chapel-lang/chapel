@@ -70070,3 +70070,13 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+08/04/06 14:55:28 -- deitz
+
+Log message:
+	Cleaned instantiate_generic more.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
