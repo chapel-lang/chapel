@@ -854,22 +854,11 @@ instantiate_update_expr(ASTMap* substitutions, Expr* expr) {
 }
 
 
-static void
-instantiate_add_subs(ASTMap* substitutions, ASTMap* map) {
-  ASTMap tmp;
-  tmp.copy(*substitutions);
-  for (int i = 0; i < tmp.n; i++) {
-    if (tmp.v[i].key) {
-      if (BaseAST *b = map->get(tmp.v[i].key))
-        substitutions->put(b, tmp.v[i].value);
-    }
-  }
-}
-
-
 static FnSymbol*
-instantiate_function(FnSymbol *fn, ASTMap *all_subs, ASTMap *generic_subs) {
+instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType) {
+  ASTMap all_subs;
   ASTMap map;
+
   FnSymbol* clone = fn->copy(&map);
   clone->cname = stringcat("_inst_", clone->cname);
   clone->visible = false;
@@ -883,17 +872,26 @@ instantiate_function(FnSymbol *fn, ASTMap *all_subs, ASTMap *generic_subs) {
   }
   addMapCache(&icache, clone->instantiatedFrom, clone, &clone->substitutions);
   fn->defPoint->parentStmt->insertBefore(new DefExpr(clone));
-  instantiate_add_subs(all_subs, &map);
-  instantiate_update_expr(all_subs, clone->defPoint);
+
+  if (newType) {
+    all_subs.put(fn->retType, newType);
+    all_subs.put(fn->retType->symbol, newType->symbol);
+  }
+  for (int i = 0; i < generic_subs->n; i++) {
+    if (ArgSymbol* arg = dynamic_cast<ArgSymbol*>(generic_subs->v[i].key)) {
+      all_subs.put(map.get(arg), generic_subs->v[i].value);
+    }
+  }
+  instantiate_update_expr(&all_subs, clone->defPoint);
   for_alist(DefExpr, formal, clone->formals) {
     if (ArgSymbol *ps = dynamic_cast<ArgSymbol *>(formal->sym)) {
-      if (all_subs->get(ps) && ps->intent == INTENT_PARAM) {
+      if (all_subs.get(ps) && ps->intent == INTENT_PARAM) {
         ps->intent = INTENT_BLANK;
         ps->isGeneric = false;
         ps->instantiatedParam = true;
         ps->defaultExpr = new SymExpr(gNil);
         ps->defaultExpr->parentSymbol = ps;
-      } else if (Type* t = dynamic_cast<Type*>(all_subs->get(ps))) {
+      } else if (Type* t = dynamic_cast<Type*>(all_subs.get(ps))) {
         ps->isGeneric = false;
         ps->instantiatedFrom = ps->type;
         ps->type = t;
@@ -1037,7 +1035,6 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
     return cached;
 
   //  static int uid = 1;
-  ASTMap substitutions(*generic_substitutions);
   FnSymbol* newfn = NULL;
   currentLineno = lineno;
   currentFilename = filename;
@@ -1116,11 +1113,9 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
     if (count_instantiate_with_recursion(clone->type) >= 6)
       USR_FATAL(clone->type, "Recursive type instantiation limit reached");
 
-    substitutions.put(retType, clone->type);
-
     clone->type->substitutions.map_union(*generic_substitutions);
 
-    newfn = instantiate_function(this, &substitutions, generic_substitutions);
+    newfn = instantiate_function(this, generic_substitutions, clone->type);
     clone->type->defaultConstructor = newfn;
     newfn->typeBinding = clone;
     newfn->retType = clone->type;
@@ -1129,7 +1124,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
       instantiate_tuple(newfn);
 
   } else {
-    newfn = instantiate_function(this, &substitutions, generic_substitutions);
+    newfn = instantiate_function(this, generic_substitutions, NULL);
 
     if (hasPragma("tuple set"))
       newfn = instantiate_tuple_set(newfn);
@@ -1142,12 +1137,6 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
 
     if (hasPragma("tuple init"))
       newfn = instantiate_tuple_init(newfn);
-
-    if (!newfn) {
-      removeMapCache(&icache, this, generic_substitutions);
-      INT_FATAL("HA HA");
-      return NULL;
-    }
 
   }
   normalize(newfn);
