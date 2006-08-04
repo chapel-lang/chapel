@@ -70060,3 +70060,13 @@ Modified files:
 	                                         inlfunc2_report.good 
 	chapel/test/types/type_variables/deitz/: test_stack.chpl 
 
+---------------------------------------------------------------------------
+
+08/04/06 13:44:07 -- deitz
+
+Log message:
+	Another minor cleanup to instantiate_generic
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
