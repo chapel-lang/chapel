@@ -70046,3 +70046,17 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 	chapel/compiler/include/: symbol.h 
 
+---------------------------------------------------------------------------
+
+08/04/06 11:09:03 -- deitz
+
+Log message:
+	Fixed last night regressions with minor change to two fwrite functions
+
+Modified files:
+	chapel/modules/standard/: _chpl_sparse.chpl 
+	chapel/test/sparse/deitz/: test_sparse1.good 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+	chapel/test/types/type_variables/deitz/: test_stack.chpl 
+
