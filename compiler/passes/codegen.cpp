@@ -54,6 +54,7 @@ static void codegen_header(void) {
   cnames.put("fread", 1);
   cnames.put("_init", 1);
   cnames.put("y1", 1); // this is ridiculous...
+  cnames.put("quad", 1);
 
   // Remove functions not used (misses mutual recursion)
   compute_call_sites();
