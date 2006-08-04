@@ -69973,3 +69973,13 @@ Log message:
 Modified files:
 	chapel/modules/standard/: _chpl_file.chpl 
 
+---------------------------------------------------------------------------
+
+08/03/06 17:03:17 -- deitz
+
+Log message:
+	Commented out a couple lines of code in instantiation.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
