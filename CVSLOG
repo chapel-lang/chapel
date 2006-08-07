@@ -70151,3 +70151,29 @@ Modified files:
 	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
 	                                         inlfunc2_report.good 
 
+---------------------------------------------------------------------------
+
+08/07/06 10:53:34 -- deitz
+
+Log message:
+	Added support for predicate for-expressions where the if-expression is
+	immediately nested in the for-expression as in
+	
+	   ... [i in 1..10] if i % 2 == 0 then i**2 ...
+	
+	I believe this is the only type of predicate expression we support since
+	
+	   ... [i in 1..10] i + if ...
+	
+	does not make sense.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+	chapel/compiler/include/: build.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: cleanup.cpp 
+	chapel/test/npb/ft/: ft-serial-working1.chpl 
+Added files:
+	chapel/test/trivial/deitz/: test_predicate.chpl 
+	                            test_predicate.good 
+
