@@ -70140,3 +70140,14 @@ Modified files:
 Added files:
 	chapel/test/trivial/deitz/: test_integer_method3.future 
 
+---------------------------------------------------------------------------
+
+08/07/06 09:47:47 -- deitz
+
+Log message:
+	updated .goods
+
+Modified files:
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+
