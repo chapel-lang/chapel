@@ -70205,3 +70205,18 @@ Modified files:
 	chapel/compiler/: UnimplementedFeatures 
 	chapel/compiler/main/: driver.cpp 
 
+---------------------------------------------------------------------------
+
+08/07/06 11:33:38 -- deitz
+
+Log message:
+	Added performance test (currently tested only for correctness).  It is
+	a loop to initialize a 2D array.  After we stop allocating records, I
+	can make it larger to comparse against the C program also checked in.
+	The loop seems to take the vast majority of the 0.064 seconds compared
+	to the 0 seconds of the C program.
+
+Added files:
+	chapel/test/performance/deitz/: test_for2d.c test_for2d.chpl 
+	                                test_for2d.good 
+
