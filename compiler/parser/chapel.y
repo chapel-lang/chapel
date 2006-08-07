@@ -1124,8 +1124,12 @@ expr:
     { $$ = new CallExpr("_build_domain", $2); }
 | TIF expr TTHEN expr TELSE expr
     { $$ = new CallExpr(new DefExpr(build_if_expr($2, $4, $6))); }
-| TIF expr TTHEN expr %prec TNOELSE
-    { $$ = new CallExpr(new DefExpr(build_if_expr($2, $4))); }
+| TLSBR nonempty_expr_ls TIN nonempty_expr_ls TRSBR TIF expr TTHEN expr %prec TNOELSE
+    {
+      FnSymbol* forif_fn = new FnSymbol("_forif_fn");
+      forif_fn->insertAtTail(build_for_expr(exprsToIndices($2), $4, $9, false, $7));
+      $$ = new CallExpr(new DefExpr(forif_fn));
+    }
 ;
 
 

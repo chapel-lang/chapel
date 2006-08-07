@@ -176,9 +176,12 @@ AList<Stmt>* build_do_while_block(Expr* cond, BlockStmt* body) {
 
 
 // builds body of for expression
-AList<Stmt>* build_for_expr(AList<DefExpr>* indices,
-                            AList<Expr>* iterators,
-                            Expr* expr, bool isSquare) {
+AList<Stmt>*
+build_for_expr(AList<DefExpr>* indices,
+               AList<Expr>* iterators,
+               Expr* expr,
+               bool isSquare,
+               Expr* cond) {
   AList<Stmt>* stmts = new AList<Stmt>();
 
   CallExpr* elt_type;
@@ -213,12 +216,14 @@ AList<Stmt>* build_for_expr(AList<DefExpr>* indices,
                                                     body, false, 1)));
   stmts->insertAtTail(new DefExpr(break_out));
 
+  ExprStmt* append_stmt =
+    new ExprStmt(
+      new CallExpr(
+        new CallExpr(".", seq, new_StringLiteral("_append_in_place")), expr));
   stmts->insertAtTail(new BlockStmt(build_for_block(BLOCK_FORALL,
                                                     indices,
                                                     iterators,
-                                                    new BlockStmt(
-                                                                  new ExprStmt(new CallExpr(new CallExpr(".", seq, new_StringLiteral("_append_in_place")),
-                                                                                            expr))), isSquare)));
+                                                    cond ? new BlockStmt(new CondStmt(cond, append_stmt)) : new BlockStmt(append_stmt), isSquare)));
   stmts->insertAtTail(new ReturnStmt(seq));
   return stmts;
 }

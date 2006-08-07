@@ -234,7 +234,8 @@ static void normalize_nested_function_expressions(DefExpr* def) {
   if ((!strncmp("_anon_record", def->sym->name, 12)) ||
       (!strncmp("_forallexpr", def->sym->name, 11)) ||
       (!strncmp("_let_fn", def->sym->name, 7)) ||
-      (!strncmp("_if_fn", def->sym->name, 6))) {
+      (!strncmp("_if_fn", def->sym->name, 6)) ||
+      (!strncmp("_forif_fn", def->sym->name, 9))) {
     Stmt* stmt = def->parentStmt;
     if (stmt->getFunction() == stmt->getModule()->initFn)
       stmt = dynamic_cast<Stmt*>(stmt->getFunction()->defPoint->parentStmt->next);

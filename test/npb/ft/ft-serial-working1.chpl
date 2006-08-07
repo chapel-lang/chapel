@@ -325,7 +325,7 @@ fun verify() {
         ierr = (sums(iter).imag - vdata_d(iter).imag) / vdata_d(iter).imag;
       }
     }
-    if !(fabs(rerr) <= epsilon && fabs(ierr) <= epsilon) then
+    if !(abs(rerr) <= epsilon && abs(ierr) <= epsilon) then
       return false;
   }
   return true;

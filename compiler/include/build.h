@@ -21,7 +21,9 @@ AList<Stmt>* build_for_block(BlockTag tag,
                              BlockStmt* body, bool isSquare = false, int only_once = 0);
 AList<Stmt>* build_for_expr(AList<DefExpr>* indices,
                             AList<Expr>* iterators,
-                            Expr* expr, bool isSquare = false);
+                            Expr* expr,
+                            bool isSquare = false,
+                            Expr* cond = NULL);
 AList<Stmt>* build_param_for(char* index, Expr* low, Expr* high, BlockStmt* stmts);
 AList<Stmt>* build_assignplus(Expr* lhs, Expr* rhs);
 CondStmt* build_select(Expr* s, AList<WhenStmt>* whenstmts);
