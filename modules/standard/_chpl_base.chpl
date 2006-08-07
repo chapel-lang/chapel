@@ -319,6 +319,7 @@ pragma "inline" fun _copy(a) return a;
 pragma "inline" fun _init(x : bool) return false;
 pragma "inline" fun _init(x : int) return 0;
 pragma "inline" fun _init(x : float) return 0.0;
+pragma "inline" fun _init(x : complex) return 0.0i;
 pragma "inline" fun _init(x : string) return "";
 pragma "inline" fun _init(x) return nil:x;
 
