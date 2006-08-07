@@ -70191,3 +70191,17 @@ Added files:
 	chapel/test/arrays/deitz/: test_array_complex.chpl 
 	                           test_array_complex.good 
 
+---------------------------------------------------------------------------
+
+08/07/06 11:23:55 -- deitz
+
+Log message:
+	Added environment variable CHPL_UNOPTIMIZED for --unoptimized flag for
+	use by new cron job primarily.
+	
+	Updated UnimplementedFeatures list to cross off predicate expressions.
+
+Modified files:
+	chapel/compiler/: UnimplementedFeatures 
+	chapel/compiler/main/: driver.cpp 
+
