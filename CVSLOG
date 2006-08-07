@@ -70177,3 +70177,17 @@ Added files:
 	chapel/test/trivial/deitz/: test_predicate.chpl 
 	                            test_predicate.good 
 
+---------------------------------------------------------------------------
+
+08/07/06 11:09:27 -- deitz
+
+Log message:
+	Added complex _init function and enabled arrays of complex numbers.
+	Added a test case.
+
+Modified files:
+	chapel/modules/standard/: _chpl_base.chpl 
+Added files:
+	chapel/test/arrays/deitz/: test_array_complex.chpl 
+	                           test_array_complex.good 
+
