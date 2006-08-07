@@ -62,7 +62,7 @@ static ArgumentDescription arg_desc[] = {
  {"output", 'o', "Name of Executable Output", "P", executableFilename, "CHPL_EXE_NAME", NULL},
  {"savec", ' ', "Save Intermediate C Code", "P", saveCDir, "CHPL_SAVEC_DIR", NULL},
  {"gdb", ' ', "Run compiler in gdb", "F", &rungdb, NULL, NULL},
- {"unoptimized", ' ', "Generate naive code (lots of temps)", "F", &unoptimized, NULL, NULL},
+ {"unoptimized", ' ', "Generate naive code (lots of temps)", "F", &unoptimized, "CHPL_UNOPTIMIZED", NULL},
  {"no-inline", ' ', "Do Not Inline Functions" , "F", &no_inline, NULL, NULL},
  {"report-inlining", ' ', "Print Inlined Functions", "F", &report_inlining, NULL, NULL},
  {"scalar-promotion", ' ', "Enable Scalar Promotion", "T", &scalar_promotion, "CHPL_SCALAR_PROMOTION", NULL},
