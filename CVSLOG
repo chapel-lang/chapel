@@ -70111,3 +70111,32 @@ Modified files:
 	chapel/compiler/passes/: codegen.cpp 
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+08/07/06 09:47:42 -- deitz
+
+Log message:
+	Removed FnSymbol::typeBinding which is unnecessary and was used only
+	during cleanup.  Made some resulting simplifications.
+	
+	Futurized: trivial/deitz/test_integer_method3.chpl
+	Is something like
+	  int(32).print()
+	legal?
+	
+	Fixed hack of complex to make complex methods pass by reference during
+	code generation.  Previously the type was looked at during
+	normalization and it was fortunate coincidence that some but not all
+	of the formal types were known.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         codegen.cpp normalize.cpp parallel.cpp 
+	                         scopeResolve.cpp 
+	chapel/test/trivial/deitz/: test_integer_method3.chpl 
+Added files:
+	chapel/test/trivial/deitz/: test_integer_method3.future 
+
