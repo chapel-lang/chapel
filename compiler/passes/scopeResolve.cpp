@@ -11,8 +11,8 @@
  ***   returns true iff function name matches a method name in class
  ***/
 static bool
-function_name_matches_method_name(FnSymbol* fn, ClassType* ct) {
-  forv_Vec(FnSymbol, method, ct->methods) {
+function_name_matches_method_name(FnSymbol* fn, Type* type) {
+  forv_Vec(FnSymbol, method, type->methods) {
     if (!strcmp(fn->name, method->name))
       return true;
   }
@@ -98,9 +98,16 @@ void scopeResolve(BaseAST* base) {
             while (!dynamic_cast<ModuleSymbol*>(parent)) {
               if (FnSymbol* method = dynamic_cast<FnSymbol*>(parent)) {
                 if (method->_this) {
-                  ClassType* ct = dynamic_cast<ClassType*>(method->_this->type);
+                  Type* type = method->_this->type;
+                  if (type == dtUnknown) {
+                    if (method->_this->defPoint->exprType) {
+                      scopeResolve(method->_this->defPoint->exprType);
+                      if (SymExpr* sym = dynamic_cast<SymExpr*>(method->_this->defPoint->exprType))
+                        type = sym->var->type;
+                    }
+                  }
                   if ((sym && dynamic_cast<ClassType*>(sym->parentScope->astParent)) ||
-                      (fn && ct && function_name_matches_method_name(fn, ct)))
+                      (fn && function_name_matches_method_name(fn, type)))
                     if (symExpr->var != method->_this) {
                       CallExpr* call = dynamic_cast<CallExpr*>(symExpr->parentExpr);
                       if (call && call->baseExpr == symExpr &&

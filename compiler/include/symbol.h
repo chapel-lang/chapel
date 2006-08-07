@@ -143,7 +143,6 @@ class TypeSymbol : public Symbol {
 
 class FnSymbol : public Symbol {
  public:
-  Symbol* typeBinding;
   AList<DefExpr>* formals;
   Type* retType;
   BlockStmt* where;
@@ -171,7 +170,7 @@ class FnSymbol : public Symbol {
   Vec<CallExpr*>* calledBy;
   Vec<CallExpr*>* calls;
 
-  FnSymbol(char* initName, Symbol* initTypeBinding = NULL);
+  FnSymbol(char* initName);
            
   virtual void verify(); 
   COPY_DEF(FnSymbol);

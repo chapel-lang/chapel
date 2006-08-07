@@ -1,4 +1,4 @@
-fun (int(32)).print() {
+fun int(32).print() {
   writeln("int(32).print = ", this);
 }
 

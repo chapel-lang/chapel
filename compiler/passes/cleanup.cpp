@@ -18,7 +18,6 @@ static void destructure_tuple(CallExpr* call);
 static void build_constructor(ClassType* ct);
 static void build_setters_and_getters(ClassType* ct);
 static void flatten_primary_methods(FnSymbol* fn);
-static void resolve_secondary_method_type(FnSymbol* fn);
 static void add_this_formal_to_method(FnSymbol* fn);
 static void change_cast_in_where(FnSymbol* fn);
 
@@ -200,7 +199,6 @@ void cleanup(BaseAST* base) {
     currentFilename = ast->filename;
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
       flatten_primary_methods(fn);
-      resolve_secondary_method_type(fn);
       add_this_formal_to_method(fn);
       change_cast_in_where(fn);
     }
@@ -312,8 +310,6 @@ static void build_constructor(ClassType* ct) {
   reset_file_info(fn, ct->symbol->lineno, ct->symbol->filename);
   ct->symbol->defPoint->parentStmt->insertBefore(new DefExpr(fn));
 
-  fn->typeBinding = ct->symbol;
-
   fn->_this = new VarSymbol("this", ct);
 
   char* description = stringcat("instance of class ", ct->symbol->name);
@@ -353,7 +349,7 @@ static void build_constructor(ClassType* ct) {
 
   forv_Vec(FnSymbol, method, ct->methods) {
     if (!strcmp(method->name, "initialize")) {
-      if (method->formals->length() == 0) {
+      if (method->formals->length() == 2) {
         fn->insertAtTail(new CallExpr("initialize"));
         break;
       }
@@ -383,8 +379,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
   reset_file_info(fn, field->lineno, field->filename);
   ct->methods.add(fn);
   fn->isMethod = true;
-  fn->typeBinding = ct->symbol;
-  fn->cname = stringcat("_", fn->typeBinding->cname, "_", fn->cname);
+  fn->cname = stringcat("_", ct->symbol->cname, "_", fn->cname);
   fn->noParens = true;
   fn->_this = _this;
 }
@@ -416,8 +411,7 @@ static void build_setter(ClassType* ct, Symbol* field) {
 
   ct->methods.add(fn);
   fn->isMethod = true;
-  fn->typeBinding = ct->symbol;
-  fn->cname = stringcat("_", fn->typeBinding->cname, "_", fn->cname);
+  fn->cname = stringcat("_", ct->symbol->cname, "_", fn->cname);
   fn->noParens = true;
   fn->_this = _this;
 }
@@ -438,10 +432,8 @@ static void build_setters_and_getters(ClassType* ct) {
 
 
 static void flatten_primary_methods(FnSymbol* fn) {
-  if (dynamic_cast<TypeSymbol*>(fn->defPoint->parentSymbol)) {
-    Stmt* insertPoint = fn->typeBinding->defPoint->parentStmt;
-    if (!fn->typeBinding)
-      INT_FATAL(fn, "Primary method has no typeBinding");
+  if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(fn->defPoint->parentSymbol)) {
+    Stmt* insertPoint = ts->defPoint->parentStmt;
     while (dynamic_cast<TypeSymbol*>(insertPoint->parentSymbol))
       insertPoint = insertPoint->parentSymbol->defPoint->parentStmt;
     Stmt* stmt = fn->defPoint->parentStmt;
@@ -451,42 +443,11 @@ static void flatten_primary_methods(FnSymbol* fn) {
 }
 
 
-static void resolve_secondary_method_type(FnSymbol* fn) {
-  if (fn->typeBinding && dynamic_cast<UnresolvedSymbol*>(fn->typeBinding)) {
-    Symbol* typeBindingSymbol = fn->parentScope->lookup(fn->typeBinding->name);
-    if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(typeBindingSymbol)) {
-      Type* typeBinding = ts->type;
-      fn->typeBinding = ts;
-      if (fn->fnClass != FN_CONSTRUCTOR) {
-        fn->isMethod = true;
-      }
-      typeBinding->methods.add(fn);
-    } else {
-      USR_FATAL(fn, "Function is not bound to type");
-    }
-  }
-}
-
-
 static void add_this_formal_to_method(FnSymbol* fn) {
-  if (fn->_this) // already added
-    return;
-  if (fn->typeBinding && fn->fnClass != FN_CONSTRUCTOR) {
-    fn->cname = stringcat("_", fn->typeBinding->cname, "_", fn->cname);
-    ArgSymbol* this_insert = new ArgSymbol(INTENT_BLANK, "this", fn->typeBinding->type);
-    fn->formals->insertAtHead(new DefExpr(this_insert));
-    fn->_this = this_insert;
-    if (strcmp(fn->name, "this")) {
-      ArgSymbol* token_dummy = new ArgSymbol(INTENT_BLANK, "_methodTokenDummy",
-                                             dtMethodToken);
-      fn->formals->insertAtHead(new DefExpr(token_dummy));
-    }
-    if (fn->isSetter) {
-      ArgSymbol* setter_dummy = new ArgSymbol(INTENT_BLANK, "_setterTokenDummy", 
-                                              dtSetterToken);
-      fn->formals->last()->insertBefore(new DefExpr(setter_dummy));
-    }
-  }
+  if (fn->isSetter &&
+      fn->formals->get(fn->formals->length()-1)->sym->type != dtSetterToken)
+    fn->formals->last()->insertBefore
+      (new DefExpr(new ArgSymbol(INTENT_BLANK, "_st", dtSetterToken)));
 }
 
 

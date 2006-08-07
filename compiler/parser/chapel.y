@@ -219,7 +219,7 @@ Is this "while x"(i); or "while x(i)";?
 %type <pwhenstmtls> when_stmt_ls
 
 %type <pexpr> opt_var_type var_type fnrettype opt_formal_var_type formal_var_type formal_type
-%type <pexpr> type record_tuple_type
+%type <pexpr> type record_tuple_type type_binding_expr
 %type <pexpr> record_tuple_inner_type
 %type <pstmtls> record_inner_type_ls
 %type <ptype> class_tag
@@ -714,6 +714,10 @@ where:
     { $$ = $2; }
 ;
 
+type_binding_expr:
+  variable_expr
+  /* | parenop_expr */;
+
 function:
   fname
     { $$ = new FnSymbol($1); }
@@ -722,29 +726,22 @@ function:
       $$ = new FnSymbol($2);
       $$->isSetter = true;
     }
-| identifier TDOT fname
-    { $$ = new FnSymbol($3, new UnresolvedSymbol($1)); }
-| identifier TDOT TASSIGN identifier
+| type_binding_expr TDOT fname
     {
-      $$ = new FnSymbol($4, new UnresolvedSymbol($1));
+      $$ = new FnSymbol($3);
+      $$->_this = new ArgSymbol(INTENT_BLANK, "this", dtUnknown);
+      $$->formals->insertAtHead(new DefExpr($$->_this, NULL, $1));
+      if (strcmp("this", $3))
+        $$->formals->insertAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_methodTokenDummy", dtMethodToken)));
+    }
+| type_binding_expr TDOT TASSIGN identifier
+    {
+      $$ = new FnSymbol($4);
+      $$->_this = new ArgSymbol(INTENT_BLANK, "this", dtUnknown);
+      $$->formals->insertAtHead(new DefExpr($$->_this, NULL, $1));
+      if (strcmp("this", $4))
+        $$->formals->insertAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_methodTokenDummy", dtMethodToken)));
       $$->isSetter = true;
-    }
-| TLP non_tuple_lvalue TRP TDOT identifier
-    {
-      $$ = new FnSymbol($5);
-      $$->_this = new ArgSymbol(INTENT_BLANK, "this", dtUnknown);
-      $$->formals->insertAtHead(new DefExpr($$->_this, NULL, $2));
-      $$->formals->insertAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_methodTokenDummy",
-                                                          dtMethodToken)));
-    }
-| TLP non_tuple_lvalue TRP TDOT TASSIGN identifier
-    {
-      $$ = new FnSymbol($6);
-      $$->_this = new ArgSymbol(INTENT_BLANK, "this", dtUnknown);
-      $$->formals->insertAtHead(new DefExpr($$->_this, NULL, $2));
-      $$->formals->insertAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_methodTokenDummy",
-                                                          dtMethodToken)));
-      $$->formals->last()->insertBefore(new DefExpr(new ArgSymbol(INTENT_BLANK, "_setterTokenDummy", dtSetterToken)));
     }
 ;
 

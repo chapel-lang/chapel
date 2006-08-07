@@ -468,7 +468,11 @@ void ArgSymbol::printDef(FILE* outfile) {
 
 
 bool ArgSymbol::requiresCPtr(void) {
-  return intent == INTENT_OUT || intent == INTENT_INOUT || intent == INTENT_REF;
+  return
+    intent == INTENT_OUT ||
+    intent == INTENT_INOUT ||
+    intent == INTENT_REF ||
+    (!strcmp(name, "this") && is_complex_type(type));
 }
 
 
@@ -545,9 +549,8 @@ void TypeSymbol::codegenDef(FILE* outfile) {
 }
 
 
-FnSymbol::FnSymbol(char* initName, Symbol* initTypeBinding) :
+FnSymbol::FnSymbol(char* initName) :
   Symbol(SYMBOL_FN, initName, new FnType()),
-  typeBinding(initTypeBinding),
   formals(new AList<DefExpr>()),
   retType(dtUnknown),
   where(NULL),
@@ -592,7 +595,7 @@ FnSymbol* FnSymbol::getFnSymbol(void) {
 
 FnSymbol*
 FnSymbol::copyInner(ASTMap* map) {
-  FnSymbol* copy = new FnSymbol(name, typeBinding);
+  FnSymbol* copy = new FnSymbol(name);
   copy->formals = COPY_INT(formals);
   copy->retType = retType;
   copy->where = COPY_INT(where);

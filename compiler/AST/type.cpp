@@ -517,9 +517,11 @@ void ClassType::addDeclarations(AList<Stmt>* newDeclarations,
     if (DefExpr* defExpr = dynamic_cast<DefExpr*>(ast)) {
       if (FnSymbol* fn = dynamic_cast<FnSymbol*>(defExpr->sym)) {
         methods.add(fn);
-        fn->typeBinding = this->symbol;
-        if (fn->fnClass != FN_CONSTRUCTOR)
-          fn->isMethod = true;
+        fn->_this = new ArgSymbol(INTENT_BLANK, "this", this);
+        fn->formals->insertAtHead(new DefExpr(fn->_this));
+        if (strcmp("this", fn->name))
+          fn->formals->insertAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_methodTokenDummy", dtMethodToken)));
+        fn->isMethod = true;
       }
     }
   }
@@ -856,9 +858,9 @@ bool is_float_type(Type *t) {
 
 bool is_complex_type(Type *t) {
   return
-    t == dtFloat[FLOAT_SIZE_32] ||
-    t == dtFloat[FLOAT_SIZE_64] ||
-    t == dtFloat[FLOAT_SIZE_128];
+    t == dtComplex[FLOAT_SIZE_32] ||
+    t == dtComplex[FLOAT_SIZE_64] ||
+    t == dtComplex[FLOAT_SIZE_128];
 }
 
 

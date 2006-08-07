@@ -331,13 +331,6 @@ static void initialize_out_formals(FnSymbol* fn) {
     }
     if (arg->intent == INTENT_OUT || arg->intent == INTENT_INOUT)
       arg->intent = INTENT_REF;
-
-    // pass primitive complex type as by reference
-    if ((arg->type == dtComplex[FLOAT_SIZE_32]) ||
-        (arg->type == dtComplex[FLOAT_SIZE_64]) ||
-        (arg->type == dtComplex[FLOAT_SIZE_128])) {
-      arg->intent = INTENT_REF;
-    }
   }
 }
 

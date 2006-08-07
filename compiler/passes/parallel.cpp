@@ -28,7 +28,7 @@ begin_encapsulation() {
           newb->blockTag = b->blockTag;
 
           char *fname = stringcat( "_begin_block", intstring( ufid++));
-          FnSymbol *fn = new FnSymbol( fname, NULL);
+          FnSymbol *fn = new FnSymbol( fname);
           fn->retType = dtVoid;
           for_alist( Stmt, stmt, b->body) {
             stmt->remove();
@@ -61,7 +61,7 @@ cobegin_encapsulation() {
           newb->blockTag = b->blockTag;
           for_alist( Stmt, stmt, b->body) {
             char *fname = stringcat( "_cobegin_stmt", intstring( ufid++));
-            FnSymbol *fn = new FnSymbol( fname, NULL);
+            FnSymbol *fn = new FnSymbol( fname);
             fn->retType = dtVoid;
             stmt->remove();
             fn->insertAtTail( stmt);            // move stmt to new function
@@ -285,7 +285,7 @@ thread_args() {
                 }
 
                 // create wrapper-function that uses the class instance
-                FnSymbol *wrap_fn = new FnSymbol( stringcat("wrap", fname), NULL);
+                FnSymbol *wrap_fn = new FnSymbol( stringcat("wrap", fname));
                 DefExpr  *fcall_def= ((SymExpr*)fcall->baseExpr)->var->defPoint;
                 ArgSymbol *wrap_c = new ArgSymbol( INTENT_BLANK, "c", ctype);
                 wrap_fn->formals->insertAtTail( wrap_c);

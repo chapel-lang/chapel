@@ -52,6 +52,10 @@ static void codegen_header(void) {
   cnames.put("stderr", 1);
   cnames.put("fwrite", 1);
   cnames.put("fread", 1);
+  cnames.put("read", 1);
+  cnames.put("write", 1);
+  cnames.put("open", 1);
+  cnames.put("close", 1);
   cnames.put("_init", 1);
   cnames.put("y1", 1); // this is ridiculous...
   cnames.put("quad", 1);
