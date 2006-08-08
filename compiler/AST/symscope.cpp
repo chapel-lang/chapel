@@ -116,7 +116,7 @@ SymScope::lookupLocal(char* name, Vec<SymScope*>* alreadyVisited) {
     return sym;
 
   if (astParent) {
-    forv_Vec(ModuleSymbol, module, astParent->uses) {
+    forv_Vec(ModuleSymbol, module, astParent->modUses) {
       sym = module->modScope->lookupLocal(name, alreadyVisited);
       if (sym)
         return sym;
@@ -156,7 +156,7 @@ void SymScope::print() {
 
 
 void SymScope::print(bool number, int indent) {
-  if (!symbols.n && (!astParent || !astParent->uses.n))
+  if (!symbols.n && (!astParent || !astParent->modUses.n))
     return;
   for (int i = 0; i < indent; i++)
     printf(" ");
@@ -175,7 +175,7 @@ void SymScope::print(bool number, int indent) {
     printf(" ");
   printf("-----------------------------------------------------------------\n");
   if (astParent) {
-    forv_Vec(ModuleSymbol, mod, astParent->uses) {
+    forv_Vec(ModuleSymbol, mod, astParent->modUses) {
       if (mod) {
         for (int i = 0; i < indent; i++)
           printf(" ");
@@ -278,7 +278,7 @@ void SymScope::getVisibleFunctions(Vec<FnSymbol*>* allVisibleFunctions,
   if (fs)
     allVisibleFunctions->append(*fs);
   if (astParent) {
-    forv_Vec(ModuleSymbol, module, astParent->uses) {
+    forv_Vec(ModuleSymbol, module, astParent->modUses) {
       module->modScope->getVisibleFunctions(allVisibleFunctions, name, true);
     }
   }

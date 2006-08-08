@@ -1048,7 +1048,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
     forv_Vec(BaseAST, value, values)
       if (Type* type = dynamic_cast<Type*>(value))
         if (!dynamic_cast<PrimitiveType*>(type))
-          defPoint->parentScope->astParent->uses.add(type->getModule());
+          defPoint->parentScope->astParent->modUses.add(type->getModule());
 
     // compute instantiatedWith vector and rename instantiated type
     clone->cname = stringcat(clone->cname, "_A_");
