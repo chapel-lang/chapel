@@ -1,5 +1,5 @@
 const N = 128;
-const ITERS = 10;
+const ITERS = 100;
 
 var D = [1..N, 1..N];
 var A: [D] int;

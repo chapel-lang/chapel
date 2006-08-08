@@ -1,23 +1,24 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define myint long long int
 #define N 128
 #define ITERS 100
 
-#define A(i,j) ARR[(i-1)*N+j-1]
+#define A(i,j) ARR[i*N+j]
 
 int main() {
-  int *ARR;
-  ARR = (int*)malloc(N*N*sizeof(int));
+  myint *ARR;
+  ARR = (myint*)malloc(N*N*sizeof(myint));
 
-  int i, j, k;
+  myint i, j, k;
   for (i = 0; i < N; i++)
     for (j = 0; j < N; j++)
       A(i,j) = 0;
   for (k = 0; k < ITERS; k++)
     for (i = 0; i < N; i++)
       for (j = 0; j < N; j++)
-        A(i,j) = i + j + 2 + k;
-  printf("%d\n", A(52,52));
+        A(i,j) = i + j + 2 + k + 1;
+  printf("%ld\n", A(51,51));
   return 0;
 }
