@@ -70246,3 +70246,27 @@ Log message:
 Modified files:
 	chapel/test/performance/deitz/: test_for2d.c test_for2d.chpl 
 
+---------------------------------------------------------------------------
+
+08/08/06 10:59:17 -- waynew
+
+Log message:
+	Support for sync vars within a class.  In addition to the spec
+	requirements, prompted by the need for a lock in the file class to
+	serialize output in threaded applications.
+	
+	 - Added primitives to create/destroy mutexes and condition variables.
+	 - Removed hack to initialize mutexes and condition vars via default value.
+	 - Added "no default functions" pragma to avoid building default functions
+	   for records.  Used by sync vars.
+	 - Added initialize function for sync vars.
+	 - Added _init and = functions for mutexes and conditon vars.
+	 - Removed fwrite( file, _syncvar).  Not needed.  Sync var fwrites should
+	   coerce correctly.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp type.cpp view.cpp 
+	chapel/compiler/include/: primitive.h 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	chapel/modules/standard/: _chpl_base.chpl _chpl_file.chpl 
+
