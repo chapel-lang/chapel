@@ -70220,3 +70220,14 @@ Added files:
 	chapel/test/performance/deitz/: test_for2d.c test_for2d.chpl 
 	                                test_for2d.good 
 
+---------------------------------------------------------------------------
+
+08/08/06 08:57:37 -- deitz
+
+Log message:
+	Changed test program to iterate over a 128x128 array of integers 100
+	times.  C time is 0.011 seconds, Chapel time is 0.587 seconds.
+
+Modified files:
+	chapel/test/performance/deitz/: test_for2d.c test_for2d.chpl 
+
