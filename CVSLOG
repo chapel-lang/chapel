@@ -70286,3 +70286,16 @@ Modified files:
 	chapel/modules/standard/: _chpl_adomain.chpl 
 	chapel/test/arrays/deitz/: test_bounds1.good test_bounds2.good 
 
+---------------------------------------------------------------------------
+
+08/08/06 16:45:24 -- deitz
+
+Log message:
+	Renamed BaseAST::uses to BaseAST::modUses so that it doesn't conflict
+	with Symbol::uses.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp symscope.cpp 
+	chapel/compiler/include/: baseAST.h 
+	chapel/compiler/passes/: cleanup.cpp 
+
