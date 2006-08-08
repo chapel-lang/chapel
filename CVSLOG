@@ -70270,3 +70270,19 @@ Modified files:
 	chapel/compiler/passes/: buildDefaultFunctions.cpp 
 	chapel/modules/standard/: _chpl_base.chpl _chpl_file.chpl 
 
+---------------------------------------------------------------------------
+
+08/08/06 12:10:33 -- deitz
+
+Log message:
+	Improved performance test dramatically by specifying that some loops
+	in domain iteration and array indexing are parameter loops that should
+	be unrolled.
+	                          OLD      NEW
+	        test_for2d.chpl = 1:44.33  3.10
+	        test_for2d.c    =     .02   .02
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	chapel/test/arrays/deitz/: test_bounds1.good test_bounds2.good 
+
