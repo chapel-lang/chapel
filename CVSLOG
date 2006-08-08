@@ -70231,3 +70231,18 @@ Log message:
 Modified files:
 	chapel/test/performance/deitz/: test_for2d.c test_for2d.chpl 
 
+---------------------------------------------------------------------------
+
+08/08/06 09:56:22 -- deitz
+
+Log message:
+	Revised tests and timings:
+	
+	test_for2d.chpl = 1:44.33
+	test_for2d.c    =     .02
+	
+	Using -O0 -g and 64-bit integers.
+
+Modified files:
+	chapel/test/performance/deitz/: test_for2d.c test_for2d.chpl 
+
