@@ -393,11 +393,6 @@ fun fwrite(f: file, val: bool) {
   }
 }
 
-pragma "rename _chpl_fwrite_syncvar"
-fun fwrite(f: file, sv: _syncvar) {
-  fwrite(f, sv.value);
-}
-
 pragma "rename _chpl_fwrite_nil" 
 fun fwrite(f: file, x : _nilType) : void {
   if (f.isOpen) {

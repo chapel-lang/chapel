@@ -1057,11 +1057,14 @@ void CallExpr::codegen(FILE* outfile) {
       }
       break;
     }
-      /*
-    case PRIMITIVE_MUTEX_INIT: {
+    case PRIMITIVE_MUTEX_NEW: {
+      fprintf( outfile, "_chpl_mutex_new()");
+      break;
+    }
+    case PRIMITIVE_MUTEX_DESTROY: {
       // arg: mutex
       if (SymExpr *m = dynamic_cast<SymExpr*>(get(1))) {
-        fprintf( outfile, "_chpl_mutex_init( &(");
+        fprintf( outfile, "_chpl_mutex_destroy( ");
         m->codegen( outfile);
         fprintf( outfile, ")");
       } else {
@@ -1069,7 +1072,21 @@ void CallExpr::codegen(FILE* outfile) {
       }
       break;
     }
-      */
+    case PRIMITIVE_CONDVAR_NEW: {
+      fprintf( outfile, "_chpl_condvar_new()");
+      break;
+    }
+    case PRIMITIVE_CONDVAR_DESTROY: {
+      // arg: mutex
+      if (SymExpr *m = dynamic_cast<SymExpr*>(get(1))) {
+        fprintf( outfile, "_chpl_condvar_destroy( ");
+        m->codegen( outfile);
+        fprintf( outfile, ")");
+      } else {
+        INT_FATAL( "arg not SymExpr");
+      }
+      break;
+    }
     case PRIMITIVE_CHPL_ALLOC: {
       bool is_class = false;
       if (TypeSymbol *t = dynamic_cast<TypeSymbol*>(typeInfo()->symbol)) {

@@ -310,6 +310,7 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
     }
   }
 
+
   if (Expr* expr = dynamic_cast<Expr*>(ast)) {
     fprintf(html_file, " ");
     if (DefExpr* e = dynamic_cast<DefExpr*>(expr)) {
@@ -321,18 +322,25 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
         fprintf(html_file, "</B><UL>\n");
       } else if (structuralTypeSymbol(e->sym)) {
         fprintf(html_file, "<UL CLASS =\"mktree\">\n");
-        fprintf(html_file, "<LI><B>type ");
+        fprintf(html_file, "<LI>");
+        if (DefExpr *def = dynamic_cast<DefExpr*>( ast))
+          if (def->sym->hasPragma( "sync var")) {
+            fprintf( html_file, "<B>sync</B> ");
+          }
+        fprintf(html_file, "<B>type ");
         html_print_symbol( html_file, pass, e->sym, true);
         fprintf(html_file, "</B><UL>\n");
       } else if (dynamic_cast<TypeSymbol*>(e->sym)) {
-        fprintf(html_file, "<B>type</B> ");
+        fprintf(html_file, "<B>type </B> ");
         html_print_symbol( html_file, pass, e->sym, true);
       } else if (VarSymbol* vs=dynamic_cast<VarSymbol*>(e->sym)) {
+        if (vs->type->symbol->hasPragma( "sync var"))
+          fprintf( html_file, "<B>sync </B>");
         if (vs->on_heap) 
           fprintf( html_file, "<B>heap </B>");
         if (vs->is_ref)  
           fprintf( html_file, "<B>ref </B> ");
-        fprintf(html_file, "<B>var</B> ");
+        fprintf(html_file, "<B>var </B> ");
         html_print_symbol( html_file, pass, e->sym, true);
       } else if (ArgSymbol* s = dynamic_cast<ArgSymbol*>(e->sym)) {
         switch (s->intent) {

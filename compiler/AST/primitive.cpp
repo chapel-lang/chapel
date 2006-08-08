@@ -33,6 +33,16 @@ returnInfoFloat(CallExpr* call) {
 }
 
 static Type*
+returnInfoMutexP( CallExpr* call) {
+  return dtMutex_p;
+}
+
+static Type*
+returnInfoCondVarP( CallExpr* call) {
+  return dtCondVar_p;
+}
+
+static Type*
 returnInfoFirst(CallExpr* call) {
   return call->get(1)->typeInfo();
 }
@@ -184,12 +194,19 @@ initPrimitive() {
   prim_def(PRIMITIVE_REFC_INIT, "refc_init", returnInfoVoid);
   prim_def(PRIMITIVE_REFC_TOUCH, "refc_touch", returnInfoVoid);
   prim_def(PRIMITIVE_REFC_RELEASE, "refc_release", returnInfoVoid);
+
+  // operations on sync vars
   prim_def(PRIMITIVE_SYNCVAR_LOCK, "syncvar_lock", returnInfoVoid);
   prim_def(PRIMITIVE_SYNCVAR_UNLOCK, "syncvar_unlock", returnInfoVoid);
   prim_def(PRIMITIVE_SYNCVAR_SIGNAL_FULL, "syncvar_signal_full", returnInfoVoid);
   prim_def(PRIMITIVE_SYNCVAR_WAIT_FULL, "syncvar_wait_full", returnInfoVoid);
   prim_def(PRIMITIVE_SYNCVAR_SIGNAL_EMPTY, "syncvar_signal_empty", returnInfoVoid);
   prim_def( PRIMITIVE_SYNCVAR_WAIT_EMPTY, "syncvar_wait_empty", returnInfoVoid);
+  // sync var support
+  prim_def( PRIMITIVE_MUTEX_NEW, "mutex_new", returnInfoMutexP);
+  prim_def( PRIMITIVE_MUTEX_DESTROY, "mutex_destroy", returnInfoVoid);
+  prim_def( PRIMITIVE_CONDVAR_NEW, "condvar_new", returnInfoCondVarP);
+  prim_def( PRIMITIVE_CONDVAR_DESTROY, "condvar_destroy", returnInfoVoid);
 
   prim_def(PRIMITIVE_CHPL_ALLOC, "chpl_alloc", returnInfoChplAlloc);
   prim_def(PRIMITIVE_CHPL_FREE, "chpl_free", returnInfoVoid);

@@ -377,7 +377,13 @@ class _ddata {
 
 
 // synch variable support
-pragma "sync var"
+pragma "inline" fun _init( cv: _mutex_p) return __primitive( "mutex_new");
+pragma "inline" fun =( a: _mutex_p, b: _mutex_p) return b;
+pragma "inline" fun _init( cv: _condvar_p) return __primitive( "condvar_new");
+pragma "inline" fun =( a: _condvar_p, b: _condvar_p) return b;
+
+// synch variable
+pragma "sync var" pragma "no default functions"
 record _syncvar {
   type t;
   var  value: t;             // actual data
@@ -385,6 +391,18 @@ record _syncvar {
   var  lock: _mutex_p;       // need to acquire before accessing this record
   var  cv_empty: _condvar_p; // wait for empty, signal this when empty
   var  cv_full: _condvar_p;  // wait for full, signal this when full
+
+  fun initialize() {
+    is_full = false; 
+    lock = __primitive( "mutex_new");
+    cv_empty = __primitive( "condvar_new");
+    cv_full = __primitive( "condvar_new");
+  }
+}
+
+
+fun _init( sv:_syncvar) {
+  return _syncvar( sv.value.type); 
 }
 
 // The operations are:

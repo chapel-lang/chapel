@@ -66,7 +66,8 @@ void build_default_functions(void) {
   collect_asts(&asts);
   forv_Vec(BaseAST, ast, asts) {
     if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(ast)) {
-      if (type->type->instantiatedFrom)
+      if (type->hasPragma( "no default functions") ||
+          type->type->instantiatedFrom)
         continue;
       buildDefaultIOFunctions(type->type);
       if (ClassType* ct = dynamic_cast<ClassType*>(type->type)) {
