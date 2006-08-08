@@ -223,13 +223,13 @@ class _adomain {
 
   fun getHeadCursor() {
     var c : rank*int;
-    for i in 1..rank do
+    for param i in 1..rank do
       c(i) = ranges(i).getHeadCursor();
     return c;
   }
 
   fun getNextCursor(c) {
-    for i in 1..rank {
+    for param i in 1..rank {
       c(i) = ranges(i).getNextCursor(c(i));
       if ranges(i).isValidCursor?(c(i)) then
         return c;
@@ -248,8 +248,8 @@ class _adomain {
   }
 
   fun isValidCursor?(c) {
-    for i in 1..rank do
-      if c(i) < ranges(i)._low || c(i) > ranges(i)._high then
+    for param i in 1..rank do
+      if !ranges(i).isValidCursor?(c(i)) then
         return false;
     return true;
   }
@@ -409,13 +409,12 @@ record _aarray {
   }
 
   fun this(ind : rank*int) var {
-    for i in 1..rank do
-      if ! _in(dom(i), ind(i)) {
-        writeln("array index out of bounds: ", ind);
-        exit(0);
+    for param i in 1..rank do
+      if !_in(dom(i), ind(i)) {
+        halt("array index out of bounds: ", ind);
       }
     var sum : int;
-    for i in 1..rank do
+    for param i in 1..rank do
       sum = sum + (ind(i) - off(i)) * blk(i);
     return data(sum);
   }
