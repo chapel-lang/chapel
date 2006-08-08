@@ -1,15 +1,23 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define N 128
+#define ITERS 100
+
+#define A(i,j) ARR[(i-1)*N+j-1]
+
 int main() {
-  double A[128][128];
-  int i, j;
-  for (i = 0; i < 128; i++)
-    for (j = 0; j < 128; j++)
-      A[i][j] = 0.0;
-  for (i = 0; i < 128; i++)
-    for (j = 0; j < 128; j++)
-      A[i][j] = i + j + 2;
-  printf("%g\n", A[51][51]);
+  int *ARR;
+  ARR = (int*)malloc(N*N*sizeof(int));
+
+  int i, j, k;
+  for (i = 0; i < N; i++)
+    for (j = 0; j < N; j++)
+      A(i,j) = 0;
+  for (k = 0; k < ITERS; k++)
+    for (i = 0; i < N; i++)
+      for (j = 0; j < N; j++)
+        A(i,j) = i + j + 2 + k;
+  printf("%d\n", A(52,52));
   return 0;
 }
