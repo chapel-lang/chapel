@@ -114,6 +114,12 @@ exitChplThreads() {
 }
 
 
+_uint64
+_chpl_thread_id( void) {
+  return pthread_self();
+}
+
+
 int
 _chpl_cobegin (int                      nthreads, 
                _chpl_threadfp_t        *fp, 

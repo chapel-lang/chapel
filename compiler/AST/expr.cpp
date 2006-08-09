@@ -956,6 +956,10 @@ void CallExpr::codegen(FILE* outfile) {
       }
       break;
     }
+    case PRIMITIVE_THREAD_ID: {
+      fprintf( outfile, "_chpl_thread_id()");
+      break;
+    }
     case PRIMITIVE_SYNCVAR_LOCK: {
       // arg: sync variable
       if (SymExpr *m = dynamic_cast<SymExpr*>(get(1))) {

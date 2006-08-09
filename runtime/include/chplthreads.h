@@ -3,9 +3,7 @@
 
 // Pthread version of the Chapel thread interface
 #include <pthread.h>
-
-#define LOCK_NAME    "_mutex"
-#define REFC_NAME    "_refc"
+#include "chpltypes.h"
 
 // mutexes
 typedef pthread_mutex_t _chpl_mutex_t;
@@ -44,6 +42,7 @@ typedef struct {                           // temporary work space
 void initChplThreads( void);               // main thread init's thread support
 void exitChplThreads( void);               // called by the main thread
 
+_uint64 _chpl_thread_id( void);            // return caller's thread id
 
 // macros to init, touch, and free reference-counted Chapel variables
 #define _CHPL_REFC_TOUCH(_var, _refc, _mutex)           \

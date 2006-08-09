@@ -48,6 +48,7 @@ enum PrimitiveTag {
   PRIMITIVE_REFC_INIT,                 // initialize ref-counted heap var
   PRIMITIVE_REFC_TOUCH,                // touch reference-counted var
   PRIMITIVE_REFC_RELEASE,              // dec ref-counter and maybe free var
+  PRIMITIVE_THREAD_ID,
 
   PRIMITIVE_SYNCVAR_LOCK,                
   PRIMITIVE_SYNCVAR_UNLOCK,

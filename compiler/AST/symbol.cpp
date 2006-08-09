@@ -737,6 +737,8 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
         temp_type = formal->defPoint->exprType->copy();
       if (!temp_type && !temp_init)
         temp_type = new SymExpr(formal->type->symbol);
+      if (formal->type->symbol->hasPragma( "sync var"))
+        temp_type = new CallExpr("_init", formal->type->symbol);
       wrapper->insertAtTail(new DefExpr(temp, temp_init, temp_type));
       if (formal->type != dtUnknown &&
           formal->intent != INTENT_REF &&

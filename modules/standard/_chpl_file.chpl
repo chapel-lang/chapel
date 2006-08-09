@@ -118,6 +118,7 @@ class file {
   var mode : string = "r";
   var path : string = ".";
   var fp : _file;
+  var writeLock : sync int = 0;    // for serializing fwrite output
 
   fun open {
     if (this == stdin || this == stdout || this == stderr) {
@@ -205,8 +206,25 @@ fun fread(f: file = stdin, inout val: int) {
 }
 
 
+fun _fwrite_lock( f: file) {
+  var me: int = __primitive( "thread_id");
+  if (isFull(f.writeLock)) {
+    if (readXF( f.writeLock) != me) {
+      return false;
+    }
+  }
+  f.writeLock = me;
+  return true;
+}
+
+fun _fwrite_unlock( f: file) {
+  writeXE( f.writeLock, 0);
+}
+
+
 pragma "rename _chpl_fwrite_int"
 fun fwrite(f: file, val: int) {
+  var need_release: bool = _fwrite_lock( f);
   if (f.isOpen) {
     var returnVal: int = fprintf(f.fp, "%lld", val);
     if (returnVal < 0) {
@@ -217,6 +235,7 @@ fun fwrite(f: file, val: int) {
   } else {
     fopenError(f, isRead = false);
   }
+  if (need_release) { _fwrite_unlock( f); }
 }
 
 
@@ -240,6 +259,7 @@ fun fread(f: file = stdin, inout val: uint) {
 
 pragma "rename _chpl_fwrite_uint"
 fun fwrite(f: file, val: uint) {
+  var need_release: bool = _fwrite_lock( f);
   if (f.isOpen) {
     var returnVal: int = fprintf(f.fp, "%llu", val);
     if (returnVal < 0) {
@@ -250,6 +270,7 @@ fun fwrite(f: file, val: uint) {
   } else {
     fopenError(f, isRead = false);
   }
+  if (need_release) { _fwrite_unlock( f); }
 }
 
 
@@ -273,6 +294,7 @@ fun fread(f: file = stdin, inout val: float) {
 
 pragma "rename _chpl_fwrite_float"
 fun fwrite(f: file, val: float) {
+  var need_release: bool = _fwrite_lock( f);
   if (f.isOpen) {
     var returnVal : int;
     var str : string = val:"%g";
@@ -286,6 +308,7 @@ fun fwrite(f: file, val: float) {
   } else {
     fopenError(f, isRead = false);
   }
+  if (need_release) { _fwrite_unlock( f); }
 }
 
 
@@ -324,6 +347,7 @@ fun fread(f: file = stdin, inout val: complex) {
 
 pragma "rename _chpl_fwrite_complex"
 fun fwrite(f: file, val: complex) {
+  var need_release: bool = _fwrite_lock( f);
   if (f.isOpen) {
      fwrite(f, val.real);
      if (val.imag >= 0) {
@@ -334,6 +358,7 @@ fun fwrite(f: file, val: complex) {
   } else {
     fopenError(f, isRead = false);
   }
+  if (need_release) { _fwrite_unlock( f); }
 }
 
 
@@ -349,6 +374,7 @@ fun fread(f: file = stdin, inout val: string) {
 
 pragma "rename _chpl_fwrite_string"
 fun fwrite(f: file, val: string) {
+  var need_release: bool = _fwrite_lock( f);
   if (f.isOpen) {
     var returnVal: int = fprintf(f.fp, "%s", val);
     if (returnVal < 0) {
@@ -357,6 +383,7 @@ fun fwrite(f: file, val: string) {
   } else {
     fopenError(f, isRead = false);
   }
+  if (need_release) { _fwrite_unlock( f); }
 }
 
 
@@ -378,6 +405,7 @@ fun fread(f: file = stdin, inout val: bool) {
 
 pragma "rename _chpl_fwrite_bool"
 fun fwrite(f: file, val: bool) {
+  var need_release: bool = _fwrite_lock( f);
   if (f.isOpen) {
     var returnVal: int;
     if (val == true) {
@@ -391,10 +419,12 @@ fun fwrite(f: file, val: bool) {
   } else {
     fopenError(f, isRead = false);
   }
+  if (need_release) { _fwrite_unlock( f); }
 }
 
 pragma "rename _chpl_fwrite_nil" 
 fun fwrite(f: file, x : _nilType) : void {
+  var need_release: bool = _fwrite_lock( f);
   if (f.isOpen) {
     var returnVal: int = fprintf(f.fp, "%s", "nil");
     if (returnVal < 0) {
@@ -403,21 +433,29 @@ fun fwrite(f: file, x : _nilType) : void {
   } else {
     fopenError(f, isRead = false);
   }
+  if (need_release) { _fwrite_unlock( f); }
 }
 
+
 fun fwrite(f: file, args ...?numArgs) {
+  var need_release: bool = _fwrite_lock( f);
   for param i in 1..numArgs {
     fwrite(f, args(i));
   }
+  if (need_release) { _fwrite_unlock( f); }
 }
 
 fun fwriteln(f: file, args ...?numArgs) {
+  var need_release: bool = _fwrite_lock( f);
   fwrite(f, (...args));
   fwriteln(f);
+  if (need_release) { _fwrite_unlock( f); }
 }
 
 fun fwriteln(f: file) {
+  var need_release: bool = _fwrite_lock( f);
   fwrite(f, "\n");
+  if (need_release) { _fwrite_unlock( f); }
 }
 
 
