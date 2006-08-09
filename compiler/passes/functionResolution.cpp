@@ -949,6 +949,17 @@ resolve() {
           }
         }
       }
+      if (call->isPrimitive(PRIMITIVE_SET_MEMBER) ||
+          call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
+        SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2));
+        if (!sym)
+          INT_FATAL(call, "bad member primitive");
+        VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var);
+        if (!var || !var->immediate)
+          INT_FATAL(call, "bad member primitive");
+        char* name = var->immediate->v_string;
+        call->get(2)->replace(new SymExpr(call->get(1)->typeInfo()->getField(name)));
+      }
     }
   }
 }

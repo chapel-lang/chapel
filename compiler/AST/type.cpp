@@ -173,6 +173,12 @@ AList<Stmt>* Type::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* a
 }
 
 
+Symbol* Type::getField(char* name) {
+  INT_FATAL(this, "getField not called on ClassType");
+  return NULL;
+}
+
+
 PrimitiveType::PrimitiveType(Symbol *init) :
   Type(TYPE_PRIMITIVE, init)
 {}
@@ -709,6 +715,17 @@ AList<Stmt>* ClassType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymb
   body->insertAtTail(new CallExpr("=", matchingCharWasRead, readCloseBrace));
   body->insertAtTail(readErrorCond->copy());
   return body;
+}
+
+
+
+Symbol* ClassType::getField(char* name) {
+  forv_Vec(Symbol, sym, fields) {
+    if (!strcmp(sym->name, name))
+      return sym;
+  }
+  INT_FATAL(this, "field not in class in getField");
+  return NULL;
 }
 
 

@@ -102,23 +102,26 @@ returnInfoChplAlloc(CallExpr* call) {
 
 static Type*
 returnInfoGetMember(CallExpr* call) {
-  SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2));
-  if (!sym)
-    INT_FATAL(call, "bad member primitive");
-  VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var);
-  if (!var || !var->immediate)
-    INT_FATAL(call, "bad member primitive");
-  char* name = var->immediate->v_string;
   SymExpr* sym1 = dynamic_cast<SymExpr*>(call->get(1));
   if (!sym1)
     INT_FATAL(call, "bad member primitive");
   ClassType* ct = dynamic_cast<ClassType*>(sym1->var->type);
   if (!ct)
     INT_FATAL(call, "bad member primitive");
-  forv_Vec(Symbol, field, ct->fields) {
-    if (!strcmp(field->name, name))
-      return field->type;
-  }
+  SymExpr* sym = dynamic_cast<SymExpr*>(call->get(2));
+  if (!sym)
+    INT_FATAL(call, "bad member primitive");
+  VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var);
+  if (!var)
+    INT_FATAL(call, "bad member primitive");
+  if (var->immediate) {
+    char* name = var->immediate->v_string;
+    forv_Vec(Symbol, field, ct->fields) {
+      if (!strcmp(field->name, name))
+        return field->type;
+    }
+  } else
+    return var->type;
   INT_FATAL(call, "bad member primitive");
   return NULL;
 }

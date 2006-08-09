@@ -279,7 +279,7 @@ thread_args() {
                   ArgSymbol *var = (ArgSymbol*)(s->var);
                   CallExpr *setc=new CallExpr(PRIMITIVE_SET_MEMBER_REF_TO,
                                               tempc,
-                                              new_StringLiteral(var->name),
+                                              ctype->getField(var->name),
                                               var);
                   b->insertBefore( setc);
                 }
@@ -297,7 +297,7 @@ thread_args() {
                 forv_Vec( Symbol, field, ctype->fields) {  // insert args
                   new_cofn->insertAtTail( new CallExpr(PRIMITIVE_GET_MEMBER_REF_TO,
                                                        wrap_c,
-                                                       new_StringSymbol(field->name)));
+                                                       field));
                 }
                 wrap_fn->retType = dtVoid;
                 fcall->parentStmt->remove();               // rm orig. call

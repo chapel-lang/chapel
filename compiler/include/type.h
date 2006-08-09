@@ -67,6 +67,7 @@ class Type : public BaseAST {
   virtual AList<Stmt>* buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
   virtual bool hasDefaultReadFunction(void);
   virtual AList<Stmt>* buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
+  virtual Symbol* getField(char* name);
 };
 
 #define forv_Type(_p, _v) forv_Vec(Type, _p, _v)
@@ -155,7 +156,7 @@ class ClassType : public Type {
   virtual AList<Stmt>* buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
   virtual bool hasDefaultReadFunction(void);
   virtual AList<Stmt>* buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymbol* arg);
-
+  virtual Symbol* getField(char* name);
 };
 
 
