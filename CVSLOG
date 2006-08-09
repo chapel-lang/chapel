@@ -70299,3 +70299,15 @@ Modified files:
 	chapel/compiler/include/: baseAST.h 
 	chapel/compiler/passes/: cleanup.cpp 
 
+---------------------------------------------------------------------------
+
+08/09/06 09:37:03 -- deitz
+
+Log message:
+	Updated .goods.
+
+Modified files:
+	chapel/test/performance/deitz/: test_for2d.good 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+
