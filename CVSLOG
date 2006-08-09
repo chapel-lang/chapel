@@ -70335,3 +70335,18 @@ Modified files:
 	chapel/compiler/include/: type.h 
 	chapel/compiler/passes/: buildDefaultFunctions.cpp 
 
+---------------------------------------------------------------------------
+
+08/09/06 12:30:35 -- deitz
+
+Log message:
+	After resolution, changed field access primitives to contain a direct
+	reference to the field symbol rather than a string literal.  They
+	still indirect via a string literal prior to resolution.  Updated
+	PRIMITIVE_{GET|SET}_MEMBER[_REF_TO] primitives.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/passes/: functionResolution.cpp parallel.cpp 
+
