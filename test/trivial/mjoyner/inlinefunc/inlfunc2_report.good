@@ -17,6 +17,14 @@ chapel compiler: reporting inlining, _inst___ddata_size function was inlined
 chapel compiler: reporting inlining, _inst___ddata__element function was inlined
 chapel compiler: reporting inlining, = function was inlined
 chapel compiler: reporting inlining, = function was inlined
+chapel compiler: reporting inlining, = function was inlined
+chapel compiler: reporting inlining, = function was inlined
+chapel compiler: reporting inlining, = function was inlined
+chapel compiler: reporting inlining, _inst___syncvar_is_full function was inlined
+chapel compiler: reporting inlining, _inst___syncvar_lock function was inlined
+chapel compiler: reporting inlining, _inst___syncvar_cv_empty function was inlined
+chapel compiler: reporting inlining, _inst___syncvar_cv_full function was inlined
+chapel compiler: reporting inlining, _inst___syncvar_value function was inlined
 chapel compiler: reporting inlining, _default_wrap__inst__construct__syncvar function was inlined
 chapel compiler: reporting inlining, _inst___syncvar_is_full function was inlined
 chapel compiler: reporting inlining, _inst___syncvar_value function was inlined
@@ -35,7 +43,6 @@ chapel compiler: reporting inlining, _coerce_wrap__inst_= function was inlined
 chapel compiler: reporting inlining, _get_stderr function was inlined
 chapel compiler: reporting inlining, _coerce_wrap__inst_= function was inlined
 chapel compiler: reporting inlining, _default_wrap__inst__construct__syncvar function was inlined
-chapel compiler: reporting inlining, _inst__init function was inlined
 chapel compiler: reporting inlining, _file_fp function was inlined
 chapel compiler: reporting inlining, ! function was inlined
 chapel compiler: reporting inlining, = function was inlined
