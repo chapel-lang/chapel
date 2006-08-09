@@ -134,7 +134,6 @@ class ClassType : public Type {
   AList<Expr>* inherits; // used from parsing, sets dispatchParents
 
   Vec<Symbol*> fields;
-  Vec<TypeSymbol*> types;
 
   ClassType(ClassTag initClassTag);
   virtual void verify(); 

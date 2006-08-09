@@ -223,8 +223,6 @@ static void build_record_copy_function(ClassType* ct) {
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
   fn->formals->insertAtTail(arg);
   CallExpr* call = new CallExpr(ct->defaultConstructor->name);
-  forv_Vec(Symbol, tmp, ct->types)
-    call->insertAtTail(new CallExpr(".", arg, new_StringLiteral(tmp->name)));
   forv_Vec(Symbol, tmp, ct->fields)
     call->insertAtTail(new CallExpr(".", arg, new_StringLiteral(tmp->name)));
   fn->insertAtTail(new ReturnStmt(call));

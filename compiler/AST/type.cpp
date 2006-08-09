@@ -470,7 +470,6 @@ ClassType::ClassType(ClassTag initClassTag) :
   }
   fields.clear();
   methods.clear();
-  types.clear();
   isPattern = false;
 }
 
@@ -531,16 +530,13 @@ void ClassType::addDeclarations(AList<Stmt>* newDeclarations,
   } else {
     declarationList->insertAtTail(newDeclarations);
   }
-  types.clear();
   fields.clear();
 
   asts.clear();
   collect_top_asts(&asts, declarationList);
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* defExpr = dynamic_cast<DefExpr*>(ast)) {
-      if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(defExpr->sym)) {
-        types.add(ts);
-      } else if (dynamic_cast<VarSymbol*>(defExpr->sym) ||
+      if (dynamic_cast<VarSymbol*>(defExpr->sym) ||
                  dynamic_cast<ArgSymbol*>(defExpr->sym)) {
         fields.add(defExpr->sym);
       }
