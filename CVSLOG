@@ -70311,3 +70311,15 @@ Modified files:
 	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
 	                                         inlfunc2_report.good 
 
+---------------------------------------------------------------------------
+
+08/09/06 11:18:44 -- deitz
+
+Log message:
+	Removed unused CallExpr::member, CallExpr::member_type, and
+	CallExpr::member_offset.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/include/: expr.h 
+
