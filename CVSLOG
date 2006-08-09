@@ -70372,3 +70372,30 @@ Modified files:
 	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
 	                                         inlfunc2_report.good 
 
+---------------------------------------------------------------------------
+
+08/09/06 16:55:39 -- deitz
+
+Log message:
+	Modified ClassType to contain a AList<DefExpr> of fields rather than
+	the declarationList AList<Stmt> and the Vec<Symbol> of fields to make
+	it easier to handle during compilation.  Simplified lots of code.
+	
+	Added a stylized loop for_fields over the field symbols in class types
+	similar to for_formals over the formal symbols in functions.  Or to
+	loop backwards, use for_fields_backward.
+	
+	Removed ClassType::isPattern used for unexercised portion of parser to
+	handle codes that I imagine would have looked something like
+	   fun foo(x: int, (y: float, z: string)) ...
+	and would have accepted a record with fields named y and z.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp expr.cpp primitive.cpp 
+	                      symbol.cpp type.cpp 
+	chapel/compiler/include/: alist.h type.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         functionResolution.cpp normalize.cpp 
+	                         parallel.cpp 
+
