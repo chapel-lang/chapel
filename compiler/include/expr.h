@@ -73,11 +73,8 @@ class CallExpr : public Expr {
  public:
   Expr* baseExpr;
   AList<Expr>* argList;
-  PrimitiveOp *primitive;
+  PrimitiveOp* primitive;
   PartialTag partialTag;
-  Symbol* member;
-  Type* member_type;
-  int member_offset;
   bool methodTag;
   bool square; // true if call made with square brackets
 

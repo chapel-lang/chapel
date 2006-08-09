@@ -266,9 +266,8 @@ void DefExpr::codegen(FILE* outfile) {
 }
 
 
-static void codegen_member(FILE* outfile, BaseAST *base, BaseAST *member, 
-                           Type *member_type, int member_offset)
-{
+static void
+codegen_member(FILE* outfile, BaseAST *base, BaseAST *member) {
   SymExpr* sbase = dynamic_cast<SymExpr*>(base);
   SymExpr* smember = dynamic_cast<SymExpr*>(member);
   if (sbase && smember && dynamic_cast<ClassType*>(sbase->var->type)) {
@@ -278,13 +277,6 @@ static void codegen_member(FILE* outfile, BaseAST *base, BaseAST *member,
       INT_FATAL(member, "Member name is not a string");
     base->codegen(outfile);
     fprintf(outfile, "->%s", memberVar->immediate->v_string);
-  } else if (member_type) {
-    // (*((T*)(((char*)(p))+offset)))
-    fprintf(outfile, "(*((");
-    member_type->codegen(outfile);
-    fprintf(outfile, "*)(((char*)(");
-    base->codegen(outfile);
-    fprintf(outfile, "))+%d)))", member_offset);
   } else
     INT_FATAL(base, "Cannot codegen member access");
 }
@@ -309,9 +301,6 @@ CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
   argList(new AList<Expr>()),
   primitive(NULL),
   partialTag(PARTIAL_NEVER),
-  member(0),
-  member_type(0),
-  member_offset(-1),
   methodTag(false),
   square(false)
 {
@@ -335,9 +324,6 @@ CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg
   argList(new AList<Expr>()),
   primitive(prim),
   partialTag(PARTIAL_NEVER),
-  member(0),
-  member_type(0),
-  member_offset(-1),
   methodTag(false),
   square(false)
 {
@@ -353,9 +339,6 @@ CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg
   argList(new AList<Expr>()),
   primitive(primitives[prim]),
   partialTag(PARTIAL_NEVER),
-  member(0),
-  member_type(0),
-  member_offset(-1),
   methodTag(false),
   square(false)
 {
@@ -372,9 +355,6 @@ CallExpr::CallExpr(char* name, BaseAST* arg1, BaseAST* arg2,
   argList(new AList<Expr>()),
   primitive(NULL),
   partialTag(PARTIAL_NEVER),
-  member(0),
-  member_type(0),
-  member_offset(-1),
   methodTag(false),
   square(false)
 {
@@ -402,9 +382,6 @@ CallExpr::copyInner(ASTMap* map) {
     _this = new CallExpr(COPY_INT(baseExpr), COPY_INT(argList));
   _this->primitive = primitive;;
   _this->partialTag = partialTag;
-  _this->member = member;
-  _this->member_type = member_type;
-  _this->member_offset = member_offset;
   _this->methodTag = methodTag;
   _this->square = square;
   return _this;
@@ -886,22 +863,22 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, ")");
       break;
     case PRIMITIVE_GET_MEMBER:
-      codegen_member(outfile, get(1), get(2), member_type, member_offset);
+      codegen_member(outfile, get(1), get(2));
       break;
     case PRIMITIVE_SET_MEMBER:
       {
-        codegen_member(outfile, get(1), get(2), member_type, member_offset);
+        codegen_member(outfile, get(1), get(2));
         fprintf(outfile, " = ");
         get(3)->codegen(outfile);
         break;
       }
     case PRIMITIVE_GET_MEMBER_REF_TO:
       fprintf( outfile, "*(");
-      codegen_member( outfile, get(1), get(2), member_type, member_offset);
+      codegen_member( outfile, get(1), get(2));
       fprintf( outfile, ")");
       break;
     case PRIMITIVE_SET_MEMBER_REF_TO: {
-      codegen_member( outfile, get(1), get(2), member_type, member_offset);
+      codegen_member( outfile, get(1), get(2));
       fprintf( outfile, " = ");
       SymExpr *s = dynamic_cast<SymExpr*>(get(3));
       if (s && ((VarSymbol*)s->var)->on_heap) {  // if on_heap var
