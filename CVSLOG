@@ -70350,3 +70350,25 @@ Modified files:
 	chapel/compiler/include/: type.h 
 	chapel/compiler/passes/: functionResolution.cpp parallel.cpp 
 
+---------------------------------------------------------------------------
+
+08/09/06 15:05:23 -- waynew
+
+Log message:
+	Added a sync var (writeLock) within the file class to serialize fwrites.
+	Nested fwrite calls by the same thread should not deadlock now.
+	 - fix for the type of the temp var used for the constructor wrapper call
+	 - added a primitive to obtain the calling thread's id
+	 - added isFull and writeXE sync var operations
+	
+	Set a couple inlining report .good files.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp symbol.cpp 
+	chapel/compiler/include/: primitive.h 
+	chapel/modules/standard/: _chpl_base.chpl _chpl_file.chpl 
+	chapel/runtime/include/: chplthreads.h 
+	chapel/runtime/src/: chplthreads.c 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+
