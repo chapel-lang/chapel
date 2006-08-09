@@ -70323,3 +70323,15 @@ Modified files:
 	chapel/compiler/AST/: expr.cpp 
 	chapel/compiler/include/: expr.h 
 
+---------------------------------------------------------------------------
+
+08/09/06 12:29:36 -- deitz
+
+Log message:
+	Removed unused ClassType::types vector.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp type.cpp 
+	chapel/compiler/include/: type.h 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+
