@@ -129,7 +129,7 @@ static void build_record_equality_function(ClassType* ct) {
   fn->formals->insertAtTail(arg2);
   fn->retType = dtBool;
   Expr* cond = NULL;
-  forv_Vec(Symbol, tmp, ct->fields) {
+  for_fields(tmp, ct) {
     Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
     Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
     cond = (cond)
@@ -154,7 +154,7 @@ static void build_record_inequality_function(ClassType* ct) {
   fn->formals->insertAtTail(arg2);
   fn->retType = dtBool;
   Expr* cond = NULL;
-  forv_Vec(Symbol, tmp, ct->fields) {
+  for_fields(tmp, ct) {
     Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
     Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
     cond = (cond)
@@ -200,7 +200,7 @@ static void build_record_assignment_function(ClassType* ct) {
   fn->formals->insertAtTail(arg2);
   fn->retType = dtUnknown;
   AList<Stmt>* body = new AList<Stmt>();
-  forv_Vec(Symbol, tmp, ct->fields)
+  for_fields(tmp, ct)
     if (!tmp->isTypeVariable)
       body->insertAtTail(new CallExpr(tmp->name, gMethodToken, arg1, gSetterToken,
                                       new CallExpr(tmp->name, gMethodToken, arg2)));
@@ -223,7 +223,7 @@ static void build_record_copy_function(ClassType* ct) {
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
   fn->formals->insertAtTail(arg);
   CallExpr* call = new CallExpr(ct->defaultConstructor->name);
-  forv_Vec(Symbol, tmp, ct->fields)
+  for_fields(tmp, ct)
     call->insertAtTail(new CallExpr(".", arg, new_StringLiteral(tmp->name)));
   fn->insertAtTail(new ReturnStmt(call));
   DefExpr* def = new DefExpr(fn);
@@ -245,7 +245,7 @@ static void build_record_init_function(ClassType* ct) {
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
   fn->formals->insertAtTail(arg);
   CallExpr* call = new CallExpr(ct->defaultConstructor->name);
-  forv_Vec(Symbol, tmp, ct->fields) {
+  for_fields(tmp, ct) {
     VarSymbol* var = dynamic_cast<VarSymbol*>(tmp);
     if (var->consClass == VAR_PARAM || var->isTypeVariable)
       call->insertAtTail(new NamedExpr(tmp->name, new CallExpr(".", arg, new_StringLiteral(tmp->name))));

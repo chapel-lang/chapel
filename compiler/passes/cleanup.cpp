@@ -94,9 +94,9 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* seen = NULL) {
     }
     ct->dispatchParents.add(pt);
     pt->dispatchChildren.add(ct);
-    Stmt* insertPoint = ct->declarationList->first();
-    forv_Vec(Symbol, field, pt->fields) {
-      ct->addDeclarations(new AList<Stmt>(field->defPoint->parentStmt->copy()), insertPoint);
+    for_fields_backward(field, pt) {
+      if (dynamic_cast<VarSymbol*>(field))
+        ct->fields->insertAtHead(field->defPoint->copy());
     }
   }
 
@@ -284,7 +284,9 @@ static void build_constructor(ClassType* ct) {
 
   AList<DefExpr>* args = new AList<DefExpr>();
 
-  forv_Vec(Symbol, tmp, ct->fields) {
+  for_fields(tmp, ct) {
+    if (!dynamic_cast<VarSymbol*>(tmp))
+      continue;
     char* name = tmp->name;
     Type* type = tmp->type;
     Expr* exprType = tmp->defPoint->exprType;
@@ -325,7 +327,7 @@ static void build_constructor(ClassType* ct) {
     fn->insertAtTail(new CallExpr(PRIMITIVE_SETCID, fn->_this));
 
   // assign formals to fields by name
-  forv_Vec(Symbol, field, ct->fields) {
+  for_fields(field, ct) {
     for_formals(formal, fn) {
       if (!formal->variableExpr && !strcmp(formal->name, field->name)) {
         CallExpr* call = dynamic_cast<CallExpr*>(formal->defPoint->exprType);
@@ -419,12 +421,10 @@ static void build_setter(ClassType* ct, Symbol* field) {
 
 
 static void build_setters_and_getters(ClassType* ct) {
-  forv_Vec(Symbol, field, ct->fields) {
+  for_fields(field, ct) {
     VarSymbol *cfield = dynamic_cast<VarSymbol*>(field);
     // if suppress for cobegin created arg classes
-    if (cfield && cfield->is_ref) {
-      continue;
-    } else {
+    if (cfield && !cfield->is_ref) {
       build_setter(ct, field);
       build_getter(ct, field);
     }
@@ -437,9 +437,9 @@ static void flatten_primary_methods(FnSymbol* fn) {
     Stmt* insertPoint = ts->defPoint->parentStmt;
     while (dynamic_cast<TypeSymbol*>(insertPoint->parentSymbol))
       insertPoint = insertPoint->parentSymbol->defPoint->parentStmt;
-    Stmt* stmt = fn->defPoint->parentStmt;
-    stmt->remove();
-    insertPoint->insertBefore(stmt);
+    DefExpr* def = fn->defPoint;
+    def->remove();
+    insertPoint->insertBefore(new ExprStmt(def));
   }
 }
 

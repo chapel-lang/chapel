@@ -467,16 +467,14 @@ ClassType::ClassType(ClassTag initClassTag) :
   Type(TYPE_CLASS, NULL),
   classTag(initClassTag),
   structScope(NULL),
-  declarationList(new AList<Stmt>()),
+  fields(new AList<DefExpr>()),
   inherits(new AList<Expr>())
 {
   if (classTag == CLASS_CLASS) { // set defaultValue to nil to keep it
                                  // from being constructed
     defaultValue = gNil;
   }
-  fields.clear();
   methods.clear();
-  isPattern = false;
 }
 
 
@@ -496,31 +494,22 @@ void ClassType::verify() {
 ClassType*
 ClassType::copyInner(ASTMap* map) {
   ClassType* copy_type = new ClassType(classTag);
-  AList<Stmt>* new_decls = new AList<Stmt>();
-  for (Stmt* old_decls = declarationList->first();
-       old_decls;
-       old_decls = declarationList->next()) {
-    ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(old_decls);
-    DefExpr* defExpr = exprStmt ? dynamic_cast<DefExpr*>(exprStmt->expr) : NULL;
-    if (defExpr && dynamic_cast<FnSymbol*>(defExpr->sym)) {
-      copy_type->methods.add(dynamic_cast<FnSymbol*>(defExpr->sym));
-    } else {
-      new_decls->insertAtTail(COPY_INT(old_decls));
-    }
+  copy_type->fields = COPY_INT(fields);
+  for_fields(field, copy_type) {
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(field))
+      copy_type->methods.add(fn);
   }
-  copy_type->addDeclarations(new_decls);
-  copy_type->isPattern = isPattern;
   return copy_type;
 }
 
 
-void ClassType::addDeclarations(AList<Stmt>* newDeclarations,
-                                Stmt* beforeStmt) {
+void ClassType::addDeclarations(AList<Stmt>* stmts, bool tail) {
   Vec<BaseAST*> asts;
-  collect_top_asts(&asts, newDeclarations);
+  collect_top_asts(&asts, stmts);
+
   forv_Vec(BaseAST, ast, asts) {
-    if (DefExpr* defExpr = dynamic_cast<DefExpr*>(ast)) {
-      if (FnSymbol* fn = dynamic_cast<FnSymbol*>(defExpr->sym)) {
+    if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
+      if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def->sym)) {
         methods.add(fn);
         fn->_this = new ArgSymbol(INTENT_BLANK, "this", this);
         fn->formals->insertAtHead(new DefExpr(fn->_this));
@@ -528,24 +517,12 @@ void ClassType::addDeclarations(AList<Stmt>* newDeclarations,
           fn->formals->insertAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_methodTokenDummy", dtMethodToken)));
         fn->isMethod = true;
       }
-    }
-  }
-
-  if (beforeStmt) {
-    beforeStmt->insertBefore(newDeclarations);
-  } else {
-    declarationList->insertAtTail(newDeclarations);
-  }
-  fields.clear();
-
-  asts.clear();
-  collect_top_asts(&asts, declarationList);
-  forv_Vec(BaseAST, ast, asts) {
-    if (DefExpr* defExpr = dynamic_cast<DefExpr*>(ast)) {
-      if (dynamic_cast<VarSymbol*>(defExpr->sym) ||
-                 dynamic_cast<ArgSymbol*>(defExpr->sym)) {
-        fields.add(defExpr->sym);
-      }
+      if (def->parentSymbol)
+        def->remove();
+      if (tail)
+        fields->insertAtTail(def);
+      else
+        fields->insertAtHead(def);
     }
   }
 }
@@ -554,8 +531,8 @@ void ClassType::addDeclarations(AList<Stmt>* newDeclarations,
 void ClassType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == defaultValue) {
     defaultValue = dynamic_cast<Symbol*>(new_ast);
-  } else if (old_ast == declarationList) {
-    declarationList = dynamic_cast<AList<Stmt>*>(new_ast);
+  } else if (old_ast == fields) {
+    fields = dynamic_cast<AList<DefExpr>*>(new_ast);
   } else if (old_ast == inherits) {
     inherits = dynamic_cast<AList<Expr>*>(new_ast);
   } else {
@@ -579,18 +556,12 @@ void ClassType::codegenDef(FILE* outfile) {
     fprintf(outfile, "_int64 _cid;\n");
     printedSomething = true;
   }
-  for_alist(Stmt, stmt, declarationList) {
-    if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt)) {
-      if (DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr)) {
-        if (VarSymbol* var = dynamic_cast<VarSymbol*>(defExpr->sym)) {
-          var->codegenDef(outfile);
-          printedSomething = true;
-        }
-      }
-    }
+  for_fields(field, this) {
+    field->codegenDef(outfile);
+    printedSomething = true;
   }
   if (symbol->hasPragma("data class")) {
-    fields.v[2]->type->codegen(outfile);
+    fields->get(3)->sym->type->codegen(outfile);
     fprintf(outfile, "* _data;\n");
   }
   if (!printedSomething) {
@@ -645,7 +616,7 @@ AList<Stmt>* ClassType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSym
   }
 
   bool first = true;
-  forv_Vec(Symbol, tmp, fields) {
+  for_fields(tmp, this) {
     if (tmp->isTypeVariable)
       continue;
     if (!first) {
@@ -687,7 +658,7 @@ AList<Stmt>* ClassType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymb
   CondStmt* readErrorCond = new CondStmt(notRead, readError);
   body->insertAtTail(readErrorCond);
   bool first = true;
-  forv_Vec(Symbol, tmp, fields) {
+  for_fields(tmp, this) {
     if (tmp->isTypeVariable)
       continue;
     if (!first) {
@@ -720,7 +691,7 @@ AList<Stmt>* ClassType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymb
 
 
 Symbol* ClassType::getField(char* name) {
-  forv_Vec(Symbol, sym, fields) {
+  for_fields(sym, this) {
     if (!strcmp(sym->name, name))
       return sym;
   }

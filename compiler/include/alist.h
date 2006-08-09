@@ -85,6 +85,20 @@ class AList : public BaseAST {
        formal = _alist_next,                                            \
          _alist_next = (formal) ? dynamic_cast<ArgSymbol*>(dynamic_cast<DefExpr*>((formal)->defPoint->next)->sym) : NULL)
 
+#define for_fields(field, ct)                                           \
+  for (Symbol *field = ((ct)->fields) ? (((ct)->fields)->head ? dynamic_cast<DefExpr*>(((ct)->fields)->head->next)->sym : NULL) : NULL, \
+         *_alist_next = (field) ? dynamic_cast<DefExpr*>((field)->defPoint->next)->sym : NULL; \
+       (field);                                                         \
+       field = _alist_next,                                             \
+         _alist_next = (field) ? dynamic_cast<DefExpr*>((field)->defPoint->next)->sym : NULL)
+
+#define for_fields_backward(field, ct)                                  \
+  for (Symbol *field = ((ct)->fields) ? (((ct)->fields)->tail ? dynamic_cast<DefExpr*>(((ct)->fields)->tail->prev)->sym : NULL) : NULL, \
+         *_alist_prev = (field) ? dynamic_cast<DefExpr*>((field)->defPoint->prev)->sym : NULL; \
+       (field);                                                         \
+       field = _alist_prev,                                             \
+         _alist_prev = (field) ? dynamic_cast<DefExpr*>((field)->defPoint->prev)->sym : NULL)
+
 #define for_alist_nonreentrant(elemtype, node, list)  \
   for (elemtype *node = list->first(),                \
          *_alist_next = (node) ? list->next() : NULL; \

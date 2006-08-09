@@ -907,7 +907,7 @@ check_promoter(ClassType *at) {
   if (!scalar_promotion)
     return;
   ClassType *t = dynamic_cast<ClassType*>(at->instantiatedFrom);
-  forv_Vec(Symbol, field, t->fields) {
+  for_fields(field, t) {
     if (field->hasPragma("promoter")) {
       bool updated = false;
       Vec<BaseAST*> keys;
@@ -941,7 +941,7 @@ instantiate_tuple(FnSymbol* fn) {
     last->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this,
                                     new_StringLiteral(name), arg));
     VarSymbol* field = new VarSymbol(name);
-    tuple->addDeclarations(new AList<Stmt>(new ExprStmt(new DefExpr(field))));
+    tuple->fields->insertAtTail(field);
   }
   fn->removePragma("tuple");
 }
@@ -970,7 +970,7 @@ instantiate_tuple_copy(FnSymbol* fn) {
   ClassType* ct = dynamic_cast<ClassType*>(arg->type);
   CallExpr* call = new CallExpr(ct->defaultConstructor->name);
   call->insertAtTail(new CallExpr(".", arg, new_StringLiteral("size")));
-  for (int i = 1; i < ct->fields.n; i++)
+  for (int i = 1; i < ct->fields->length(); i++)
     call->insertAtTail(new CallExpr(arg, new_IntLiteral(i)));
   fn->body->replace(new BlockStmt(new ReturnStmt(call)));
   return fn;
@@ -982,7 +982,7 @@ instantiate_tuple_init(FnSymbol* fn) {
   ClassType* ct = dynamic_cast<ClassType*>(arg->type);
   CallExpr* call = new CallExpr(ct->defaultConstructor->name);
   call->insertAtTail(new CallExpr(".", arg, new_StringLiteral("size")));
-  for (int i = 1; i < ct->fields.n; i++)
+  for (int i = 1; i < ct->fields->length(); i++)
     call->insertAtTail(new CallExpr("_init", new CallExpr(arg, new_IntLiteral(i))));
   fn->body->replace(new BlockStmt(new ReturnStmt(call)));
   return fn;

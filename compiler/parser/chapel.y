@@ -627,23 +627,6 @@ formal:
       $$ = build_arg($1, $3, $4, NULL, $5);
       $$->sym->addPragmas($2);
     }
-| TLP formal_ls TRP
-    {
-      ClassType *t = new ClassType(CLASS_RECORD);
-      // NOTE:
-      //   change DefExpr into ExprStmt because functions take 
-      //   a list of DefExpr but records take a list of Stmt
-      // NOTE:
-      //   this record has members which are ArgSymbols
-      AList<Stmt> *stmts = new AList<Stmt>;
-      for_alist(DefExpr, x, $2) {
-        stmts->insertAtTail(x);
-      }
-      build_class(NULL, t, stmts);
-      $$ = build_arg(INTENT_IN, "<anonymous>", NULL, NULL, NULL);
-      $$->sym->type = t;
-      t->isPattern = true;
-    }
 ;
 
 

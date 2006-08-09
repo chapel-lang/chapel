@@ -294,7 +294,7 @@ thread_args() {
 
                 // translate the original cobegin function
                 CallExpr *new_cofn = new CallExpr( ((SymExpr*)fcall->baseExpr)->var);
-                forv_Vec( Symbol, field, ctype->fields) {  // insert args
+                for_fields(field, ctype) {  // insert args
                   new_cofn->insertAtTail( new CallExpr(PRIMITIVE_GET_MEMBER_REF_TO,
                                                        wrap_c,
                                                        field));

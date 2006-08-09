@@ -225,7 +225,7 @@ static void reconstruct_iterator(FnSymbol* fn) {
                       if (vs->immediate) {
                         char *s = vs->immediate->v_string;
                         ClassType *ct = dynamic_cast<ClassType*>(fn->_this->type);
-                        forv_Vec(Symbol, field, ct->fields)
+                        for_fields(field, ct)
                           if (!strcmp(field->name, s))
                             field->addPragma("promoter");
                       }

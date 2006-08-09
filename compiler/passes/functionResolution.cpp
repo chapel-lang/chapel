@@ -836,7 +836,7 @@ resolveCall(CallExpr* call) {
     if (!ct)
       INT_FATAL(call, "bad set member primitive");
     bool found = false;
-    forv_Vec(Symbol, field, ct->fields) {
+    for_fields(field, ct) {
       if (!strcmp(field->name, name)) {
         Type* t = call->get(3)->typeInfo();
         if (t == dtUnknown)
@@ -979,7 +979,7 @@ setFieldTypes(FnSymbol* fn) {
     if (t == dtNil)
       USR_FATAL(formal, "Unable to determine type of field from nil");
     bool found = false;
-    forv_Vec(Symbol, field, ct->fields) {
+    for_fields(field, ct) {
       if (!strcmp(field->name, formal->name)) {
         field->type = t;
         found = true;

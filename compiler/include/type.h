@@ -129,18 +129,13 @@ class ClassType : public Type {
  public:
   ClassTag classTag;
   SymScope* structScope;
-  AList<Stmt>* declarationList;
-  bool isPattern;
-
+  AList<DefExpr>* fields;
   AList<Expr>* inherits; // used from parsing, sets dispatchParents
-
-  Vec<Symbol*> fields;
 
   ClassType(ClassTag initClassTag);
   virtual void verify(); 
   COPY_DEF(ClassType);
-  void addDeclarations(AList<Stmt>* newDeclarations,
-                       Stmt* afterStmt = NULL);
+  void addDeclarations(AList<Stmt>* stmts, bool tail = true);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
