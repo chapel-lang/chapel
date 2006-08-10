@@ -70412,3 +70412,13 @@ Modified files:
 	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
 	                                         inlfunc2_report.good 
 
+---------------------------------------------------------------------------
+
+08/10/06 11:31:17 -- waynew
+
+Log message:
+	Fix to remove a Chapel build compiler warning.
+
+Modified files:
+	chapel/runtime/src/: chplthreads.c 
+
