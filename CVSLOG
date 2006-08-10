@@ -70422,3 +70422,14 @@ Log message:
 Modified files:
 	chapel/runtime/src/: chplthreads.c 
 
+---------------------------------------------------------------------------
+
+08/10/06 13:26:52 -- waynew
+
+Log message:
+	Fix to remove a Valgrind-detected error.  Replaced instances of
+	static cast with a dynamic_cast.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+
