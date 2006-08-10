@@ -70399,3 +70399,16 @@ Modified files:
 	                         functionResolution.cpp normalize.cpp 
 	                         parallel.cpp 
 
+---------------------------------------------------------------------------
+
+08/10/06 08:11:40 -- waynew
+
+Log message:
+	Might as well exercise the new per file class writeLock if I'm going to
+	check it in (i.e., remove the older obsolete strategy).
+
+Modified files:
+	chapel/modules/standard/: _chpl_file.chpl 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+
