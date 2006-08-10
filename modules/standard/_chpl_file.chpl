@@ -459,25 +459,14 @@ fun fwriteln(f: file) {
 }
 
 
-var _stdout_lock: sync bool;
-
 fun write(args ...?numArgs) {
-  var bogus: bool;
-  _stdout_lock = true;
   fwrite(stdout, (...args));
-  bogus = _stdout_lock;
 }
 
 fun writeln(args ...?numArgs) {
-  var bogus: bool;
-  _stdout_lock = true;
   fwriteln(stdout, (...args));
-  bogus = _stdout_lock;
 }
 
 fun writeln() {
-  var bogus: bool;
-  _stdout_lock = true;
   fwriteln(stdout);
-  bogus = _stdout_lock;
 }
