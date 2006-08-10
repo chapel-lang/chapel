@@ -70433,3 +70433,18 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: expr.cpp 
 
+---------------------------------------------------------------------------
+
+08/10/06 14:24:59 -- waynew
+
+Log message:
+	Per file writeLock is now an uint.  Minor changes to _fwrite_lock and
+	removed initial write to writeLock.  Changed inline report .good files as
+	appropriate.
+
+Modified files:
+	chapel/compiler/AST/: primitive.cpp 
+	chapel/modules/standard/: _chpl_base.chpl _chpl_file.chpl 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+
