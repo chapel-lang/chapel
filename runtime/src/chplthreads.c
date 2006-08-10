@@ -116,7 +116,7 @@ exitChplThreads() {
 
 _uint64
 _chpl_thread_id( void) {
-  return pthread_self();
+  return (_uint64) pthread_self();
 }
 
 
