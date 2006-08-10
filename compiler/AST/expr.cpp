@@ -873,8 +873,11 @@ void CallExpr::codegen(FILE* outfile) {
       codegen_member( outfile, get(1), get(2));
       fprintf( outfile, " = ");
       SymExpr *s = dynamic_cast<SymExpr*>(get(3));
-      if (s && ((VarSymbol*)s->var)->on_heap) {  // if on_heap var
-        fprintf( outfile, "%s", ((VarSymbol*)s->var)->cname);
+      VarSymbol *vs;
+      if (s && 
+          (vs= dynamic_cast<VarSymbol*>(s->var)) &&
+          vs->on_heap) {  // if on_heap var
+        fprintf( outfile, "%s", vs->cname);
       } else {
         fprintf( outfile, "&(");
         get(3)->codegen( outfile);
@@ -885,11 +888,15 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_SET_HEAPVAR: {   // used to allocate on_heap vars
       // args: heap var, alloc expr
       SymExpr *s = dynamic_cast<SymExpr*>(get(1));
-      if (!s || !((VarSymbol*)s->var)->on_heap) {
+      VarSymbol *vs;
+      if (s &&
+          (vs = dynamic_cast<VarSymbol*>(s->var)) &&
+          vs->on_heap) {
+        fprintf( outfile, "%s = ", ((VarSymbol*)s->var)->cname);
+        get(2)->codegen(outfile);
+      } else {
         INT_FATAL( get(1), "can only move_to_ref with on_heap variables");
       }
-      fprintf( outfile, "%s = ", ((VarSymbol*)s->var)->cname);
-      get(2)->codegen(outfile);
       break;
     }
     case PRIMITIVE_REFC_INIT: {    // initialize reference-counted var
