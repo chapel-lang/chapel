@@ -26,6 +26,8 @@ chapel compiler: reporting inlining, _inst___syncvar_cv_full function was inline
 chapel compiler: reporting inlining, _inst___syncvar_is_full function was inlined
 chapel compiler: reporting inlining, _inst___syncvar_value function was inlined
 chapel compiler: reporting inlining, _inst___syncvar_is_full function was inlined
+chapel compiler: reporting inlining, _inst___syncvar_is_full function was inlined
+chapel compiler: reporting inlining, ! function was inlined
 chapel compiler: reporting inlining, _inst___syncvar_value function was inlined
 chapel compiler: reporting inlining, _inst___syncvar_is_full function was inlined
 chapel compiler: reporting inlining, _inst___syncvar_value function was inlined
@@ -66,9 +68,10 @@ chapel compiler: reporting inlining, _get_errno function was inlined
 chapel compiler: reporting inlining, = function was inlined
 chapel compiler: reporting inlining, _file_writeLock function was inlined
 chapel compiler: reporting inlining, _file_writeLock function was inlined
-chapel compiler: reporting inlining, != function was inlined
+chapel compiler: reporting inlining, == function was inlined
 chapel compiler: reporting inlining, _inst__file_writeLock function was inlined
 chapel compiler: reporting inlining, _file_writeLock function was inlined
+chapel compiler: reporting inlining, _coerce_wrap__inst_writeFE function was inlined
 chapel compiler: reporting inlining, = function was inlined
 chapel compiler: reporting inlining, _file_fp function was inlined
 chapel compiler: reporting inlining, _inst_fprintf function was inlined

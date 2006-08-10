@@ -118,7 +118,7 @@ class file {
   var mode : string = "r";
   var path : string = ".";
   var fp : _file;
-  var writeLock : sync int = 0;    // for serializing fwrite output
+  var writeLock : sync uint;    // for serializing fwrite output
 
   fun open {
     if (this == stdin || this == stdout || this == stderr) {
@@ -207,9 +207,9 @@ fun fread(f: file = stdin, inout val: int) {
 
 
 fun _fwrite_lock( f: file) {
-  var me: int = __primitive( "thread_id");
-  if (isFull(f.writeLock)) {
-    if (readXF( f.writeLock) != me) {
+  var me: uint = __primitive( "thread_id");
+  if (isFull( f.writeLock)) {
+    if (readXX( f.writeLock) == me) {
       return false;
     }
   }
@@ -218,7 +218,7 @@ fun _fwrite_lock( f: file) {
 }
 
 fun _fwrite_unlock( f: file) {
-  writeXE( f.writeLock, 0);
+  writeFE( f.writeLock, 0);  // writeXE works also as it should be full before
 }
 
 

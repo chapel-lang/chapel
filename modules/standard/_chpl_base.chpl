@@ -407,6 +407,7 @@ fun _init( sv:_syncvar) {
 
 // The operations are:
 //  = (i.e., write_wait_empty_leave_full)
+//  writeFE - wait full, leave empty
 //  writeXF - no wait, leave full
 //  writeXE - no wait, leave empty
 //  readFE - wait full, leave empty
@@ -427,7 +428,20 @@ fun =( sv:_syncvar, value:sv.t) {
   return sv;
 }
 
-// no wait, leave full. This is the default read on sync vars.
+// wait full, leave empty.
+fun writeFE( sv:_syncvar, value:sv.t) {
+  __primitive( "syncvar_lock", sv);
+  if (!sv.is_full) {
+    __primitive( "syncvar_wait_full", sv);
+  }
+  sv.value = value;
+  sv.is_full = false;
+  __primitive( "syncvar_signal_empty", sv);
+  __primitive( "syncvar_unlock", sv);
+  return sv;
+}
+
+// no wait, leave full.
 fun writeXF( sv:_syncvar, value:sv.t) {
   __primitive( "syncvar_lock", sv);
   sv.value = value;

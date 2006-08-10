@@ -28,6 +28,11 @@ returnInfoInt(CallExpr* call) {
 }
 
 static Type*
+returnInfoUInt(CallExpr* call) {
+  return dtUInt[INT_SIZE_64];
+}
+
+static Type*
 returnInfoFloat(CallExpr* call) {
   return dtFloat[FLOAT_SIZE_64];
 }
@@ -197,7 +202,7 @@ initPrimitive() {
   prim_def(PRIMITIVE_REFC_INIT, "refc_init", returnInfoVoid);
   prim_def(PRIMITIVE_REFC_TOUCH, "refc_touch", returnInfoVoid);
   prim_def(PRIMITIVE_REFC_RELEASE, "refc_release", returnInfoVoid);
-  prim_def( PRIMITIVE_THREAD_ID, "thread_id", returnInfoInt);  // 64-bit
+  prim_def( PRIMITIVE_THREAD_ID, "thread_id", returnInfoUInt);  // 64-bit
 
   // operations on sync vars
   prim_def(PRIMITIVE_SYNCVAR_LOCK, "syncvar_lock", returnInfoVoid);
