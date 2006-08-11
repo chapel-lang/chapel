@@ -175,7 +175,7 @@ void cleanup(BaseAST* base) {
       SymExpr* base = dynamic_cast<SymExpr*>(a->baseExpr);
       if (base && !strcmp(base->var->name, "_tuple")) {
         CallExpr* parent = dynamic_cast<CallExpr*>(a->parentExpr);
-        if (parent && parent->isAssign() && parent->get(1) == a)
+        if (parent && parent->isNamed("=") && parent->get(1) == a)
           destructure_tuple(parent);
       }
     }

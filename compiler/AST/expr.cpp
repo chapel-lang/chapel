@@ -421,11 +421,6 @@ CallExpr::insertAtTail(BaseAST* ast) {
 }
 
 
-bool CallExpr::isAssign(void) {
-  return isPrimitive(PRIMITIVE_MOVE) || isNamed("=");
-}
-
-
 FnSymbol* CallExpr::isResolved(void) {
   SymExpr* base = dynamic_cast<SymExpr*>(baseExpr);
   return base ? dynamic_cast<FnSymbol*>(base->var) : NULL;
@@ -509,61 +504,21 @@ void CallExpr::codegen(FILE* outfile) {
         get(2)->codegen(outfile);
         return;
       } 
-      if (parentExpr == NULL) // top-level MOVE only
-        if (SymExpr* sym = dynamic_cast<SymExpr*>(get(1))) {
-          if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var)) {
-            if (var->varClass == VAR_CONFIG) {
-              fprintf(outfile, "if (_INIT_CONFIG(%s%s, %s, \"%s\", \"%s\"))\n",
-                      (!strcmp(var->type->symbol->cname, "_chpl_complex")) ? "(_complex64**)&" : "&",
-                      var->cname, 
-                      var->type->symbol->cname,
-                      var->name,
-                      var->defPoint->getModule()->name);
-            }
+      if (SymExpr* sym = dynamic_cast<SymExpr*>(get(1))) {
+        if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var)) {
+          if (var->varClass == VAR_CONFIG) {
+            fprintf(outfile, "if (_INIT_CONFIG(%s%s, %s, \"%s\", \"%s\"))\n",
+                    (!strcmp(var->type->symbol->cname, "_chpl_complex")) ? "(_complex64**)&" : "&",
+                    var->cname, 
+                    var->type->symbol->cname,
+                    var->name,
+                    var->defPoint->getModule()->name);
           }
         }
-      Type* leftType = get(1)->typeInfo();
-      Type* rightType = get(2)->typeInfo();
-      if ((leftType == dtInt[INT_SIZE_64] || 
-           leftType == dtFloat[FLOAT_SIZE_64]) &&
-          rightType == dtNil) {
-        get(1)->codegen(outfile);
-        fprintf(outfile, " = (");
-        leftType->codegen(outfile);
-        fprintf(outfile, ")(intptr_t)");
-        get(2)->codegen(outfile);
-      } else {
-        get(1)->codegen(outfile);
-        fprintf(outfile, " = ");
-
-        // WAW: YAH (yet another hack). Insert C cast to remove warnings 
-        // during comilation of Chapel generated code. Only cast for 
-        // numerics? widths less than default 64-bit Chapel size?  128-bit 
-        // types and constants?
-        if ((leftType != rightType) &&
-            (((leftType == dtInt[INT_SIZE_8])  ||
-              (leftType == dtInt[INT_SIZE_16]) ||
-              (leftType == dtInt[INT_SIZE_32]) ||
-              (leftType == dtUInt[INT_SIZE_1])  ||
-              (leftType == dtUInt[INT_SIZE_8])  ||
-              (leftType == dtUInt[INT_SIZE_16]) ||
-              (leftType == dtUInt[INT_SIZE_32])))) {
-          fprintf( outfile, " (");
-          leftType->symbol->codegen( outfile);
-          fprintf( outfile, ") ");
-        }
-
-        // WAW: YAH.  C enum types are int.  For
-        // int/uint(1), we only want 1-bit.  See writeln for failure case.
-        if (rightType == dtInt[INT_SIZE_1] ||
-            rightType == dtUInt[INT_SIZE_1]) {
-          fprintf( outfile, " (");
-          get(2)->codegen(outfile);
-          fprintf( outfile, "& 0x1) ");
-        } else {
-          get(2)->codegen(outfile);
-        }
       }
+      get(1)->codegen(outfile);
+      fprintf(outfile, " = ");
+      get(2)->codegen(outfile);
       break;
     }
     case PRIMITIVE_UNARY_MINUS:

@@ -97,8 +97,6 @@ class CallExpr : public Expr {
   void insertAtHead(BaseAST* ast);
   void insertAtTail(BaseAST* ast);
 
-  bool isAssign(void);
-
   FnSymbol* isResolved(void);
   bool isNamed(char*);
 
