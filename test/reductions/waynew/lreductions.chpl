@@ -1,4 +1,4 @@
-// Test logical AND and OR arithmetic reductions
+// Test logical AND and OR reductions
 
 param M = 10;
 
