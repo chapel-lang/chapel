@@ -70448,3 +70448,17 @@ Modified files:
 	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
 	                                         inlfunc2_report.good 
 
+---------------------------------------------------------------------------
+
+08/11/06 09:33:22 -- deitz
+
+Log message:
+	Removed CallExpr::isAssign() which was used seldomly and incorrectly.
+	
+	Removed all cast hacks in the code generation of PRIMITIVE_MOVE.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/passes/: cleanup.cpp 
+
