@@ -70462,3 +70462,22 @@ Modified files:
 	chapel/compiler/include/: expr.h 
 	chapel/compiler/passes/: cleanup.cpp 
 
+---------------------------------------------------------------------------
+
+08/11/06 15:42:38 -- waynew
+
+Log message:
+	Moved previous reduction and logical reduction tests from the trivial
+	directory to the reductions directory.  Also added a bit-wise reduction
+	test.
+
+Added files:
+	chapel/test/reductions/waynew/: breductions.chpl 
+	                                breductions.good 
+	                                lreductions.chpl 
+	                                lreductions.good reductions.chpl 
+	                                reductions.good 
+Removed files:
+	chapel/test/trivial/waynew/: lreductions.chpl lreductions.good 
+	                             reductions.chpl reductions.good 
+
