@@ -70584,3 +70584,21 @@ Log message:
 Removed files:
 	chapel/compiler/test/: Makefile test_lib.cpp 
 
+---------------------------------------------------------------------------
+
+08/11/06 18:13:50 -- marybeth
+
+Log message:
+	This commit adds a blas subdirectory to the test/studies directory.
+	This subdirectory will capture all of the serial and parallel blas
+	studies done.
+	
+	One program is added:  saxpy_simple.chpl and its correct results:
+	saxpy_simple.good.  This is a simple implementation since it does
+	not include a function call to a saxpy routine.  Instead the program
+	contains a simple saxpy-like loop.
+
+Added files:
+	chapel/test/studies/blas/marybeth/: saxpy_simple.chpl 
+	                                    saxpy_simple.good 
+
