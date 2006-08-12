@@ -4,8 +4,19 @@
 #ifndef _num_h_
 #define _num_h_
 
-#include "defs.h"
-#include "prim_data.h"
+#include <assert.h>
+#include <string.h>
+#include "chplalloc.h"
+#include "chpltypes.h"
+#include "map.h"
+#include "misc.h"
+
+#ifndef IFA_EXTERN
+#define IFA_EXTERN extern
+#endif
+#ifndef IFA_EXTERN_INIT
+#define IFA_EXTERN_INIT(x)
+#endif
 
 enum IF1_num_kind {
   NUM_KIND_NONE, NUM_KIND_UINT, NUM_KIND_INT, NUM_KIND_FLOAT, NUM_KIND_COMPLEX

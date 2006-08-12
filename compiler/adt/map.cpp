@@ -1,4 +1,4 @@
-#include "../ifa/defs.h"
+#include "chpltypes.h"
 
 // primes generated with map_mult.c
 uint open_hash_multipliers[256] = {

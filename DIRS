@@ -1,9 +1,13 @@
 chapel/
   BUILD_VERSION       -- build number (automatically updated by CVS)
+  COPYRIGHT           -- copyright message for the compiler
   CVSLOG              -- log of commits (automatically updated by CVS)
+  LICENSE             -- current license agreement
   Makefile            -- top-level Makefile (doesn't do much)
   compiler/           -- sources for Chapel-to-C translator
-  examples/           -- created to store official examples (may go away)
+  doc/                -- documentation for Chapel (mostly internal)
+  etc/                -- currently, support for Chapel mode in emacs
+  examples/           -- created to store official examples (way out of date)
   make/               -- contains common Makefile stuff
     Makefile          -- echoes some of the inferred settings
     Makefile.base     -- base Makefile to be included by all other Makefiles
@@ -14,6 +18,9 @@ chapel/
     Makefile.sun      -- "
     Makefile.unknown  -- generates error message when platform isn't recognized
     Makefile.gnu      -- gnu-specific settings
+  modules/            -- code that's written in Chapel goes here
+    provided/         -- contains optional modules
+    standard/         -- automatically included modules
   runtime/            -- runtime libraries
     etc/              -- extras for runtime libraries
     include/          -- headers for runtime libraries

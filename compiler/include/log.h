@@ -4,7 +4,18 @@
 #ifndef _log_H_
 #define _log_H_
 
-#include "../ifa/defs.h"
+#include <stdio.h>
+#include "chpltypes.h"
+
+#ifndef IFA_EXTERN
+#define IFA_EXTERN extern
+#endif
+#ifndef IFA_EXTERN_INIT
+#define IFA_EXTERN_INIT(x)
+#endif
+
+
+//#include "../ifa/defs.h"
 
 /*
   To add a new log type, add a new LOG_XXX with a unique letter:

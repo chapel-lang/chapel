@@ -56,6 +56,7 @@ $(PLATFORM_DIR_DIR):
 	@echo making $(PLATFORM) subdirectory
 	@-mkdir $(PLATFORM) > /dev/null 2>&1
 	@-touch $(PLATFORM_DIR_DIR)
+	@-touch $(PLATFORM_DIR)
 
 
 #

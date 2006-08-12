@@ -1,6 +1,8 @@
-#include "defs.h"
+#include <math.h>
+#include <string.h>
+#include <stdio.h>
 #include "num.h"
-#include "math.h"
+#include "prim_data.h"
 
 static int 
 sprint_float_val(char* str, double val) {

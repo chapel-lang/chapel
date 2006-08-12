@@ -7,6 +7,7 @@
 #include "astutil.h"
 #include "expr.h"
 #include "passes.h"
+#include "../ifa/prim_data.h"
 #include "runtime.h"
 #include "stmt.h"
 #include "symbol.h"

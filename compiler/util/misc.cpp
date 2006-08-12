@@ -5,10 +5,10 @@
 #include "../main/version.h"
 #include "files.h"
 #include "chpl.h"
-#include "ast.h"
-#include "if1.h"
-#include "var.h"
-#include "pnode.h"
+//#include "ast.h"
+//#include "if1.h"
+//#include "var.h"
+//#include "pnode.h"
 #include "baseAST.h"
 
 void cleanup_for_exit(void) {
@@ -153,6 +153,7 @@ void printProblem(char *fmt, ...) {
 }
 
 
+/*
 void printProblem(IFAAST* ast, char *fmt, ...) {
   va_list args;
   int usrlineno = 0;
@@ -173,6 +174,7 @@ void printProblem(IFAAST* ast, char *fmt, ...) {
     clean_exit(1);
   }
 }
+*/
 
 
 void printProblem(BaseAST* ast, char *fmt, ...) {

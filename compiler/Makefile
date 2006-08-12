@@ -11,15 +11,16 @@ COMPILER_SUBDIR = .
 # subdirectories and false subdirectory-oriented targets to force recursion
 #
 SUBDIRS = \
+	adt \
 	AST \
-	ifa \
 	backend \
+	ifa \
 	main \
 	parser \
 	passes \
-	test \
 	util \
-	adt
+
+#	test \
 
 #
 # include standard header for compiler
@@ -30,23 +31,23 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.head
 #
 # include source subdirectories here
 #
+include adt/Makefile.include
 include AST/Makefile.include
-include ifa/Makefile.include
 include backend/Makefile.include
+include ifa/Makefile.include
 include main/Makefile.include
 include parser/Makefile.include
 include passes/Makefile.include
 include util/Makefile.include
-include adt/Makefile.include
 
 CVS_SRCS = 
 
 CHPL = chpl$(CHPL_MUNGE)$(EXE_SUFFIX)
 CHPL_OBJS = \
-	$(AST_OBJS) \
 	$(ADT_OBJS) \
-	$(IFA_OBJS) \
+	$(AST_OBJS) \
 	$(BACKEND_OBJS) \
+	$(IFA_OBJS) \
 	$(MAIN_OBJS) \
 	$(PARSER_OBJS) \
 	$(PASSES_OBJS) \

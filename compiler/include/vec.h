@@ -7,8 +7,9 @@
 
 #include <string.h>
 #include <stdint.h>
-#include "stdlib.h"
+#include <stdlib.h>
 #include <sys/types.h>
+#include "chplalloc.h"
 
 // Simple Vector class, also supports open hashed sets
 

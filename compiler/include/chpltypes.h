@@ -13,7 +13,7 @@ typedef unsigned short     uint16;
 typedef unsigned int       uint32;
 typedef unsigned long long uint64;
 // typedef unsigned long long uint128;  // WAW: needs fixing
-/* typedef uint32 uint; * already part of most systems */
+typedef uint32 uint;
 typedef float       float32;
 typedef double      float64;
 typedef long double float128;
