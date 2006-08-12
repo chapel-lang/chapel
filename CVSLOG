@@ -70498,3 +70498,53 @@ Added files:
 	chapel/test/parallel/sync/waynew/: .cvsignore 
 	chapel/test/trivial/waynew/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+08/11/06 17:39:45 -- bradc
+
+Log message:
+	Pruned out dead code from ifa/ subdirectory of the compiler
+	and cleaned up its Makefiles.  The only remaining files in
+	ifa/ are currently:
+	
+	  fail.cpp
+	  num.cpp
+	  num.h
+	  prim_data.h
+	
+	Also added a new file to define "global" variables for IFA:
+	
+	  ifa_vars.cpp
+	
+	Further refactoring could move this code to other directories
+	closer to where its used.  That's a separate step, though.
+
+Modified files:
+	./: DIRS 
+	chapel/compiler/: Makefile Tasks 
+	chapel/compiler/adt/: map.cpp vec.cpp 
+	chapel/compiler/ifa/: Makefile Makefile.share fail.cpp num.cpp 
+	                      num.h 
+	chapel/compiler/include/: chpltypes.h log.h vec.h 
+	chapel/compiler/main/: log.cpp 
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/compiler/util/: misc.cpp 
+	chapel/make/: Makefile.base 
+Added files:
+	chapel/compiler/ifa/: ifa_vars.cpp 
+Removed files:
+	chapel/compiler/ifa/: ast.cpp ast.h builtin.cpp builtin.h 
+	                      builtin_symbols.h cdb.cpp cdb.h cfg.cpp 
+	                      cg.cpp cg.h clone.cpp clone.h code.h 
+	                      dead.cpp dead.h defs.h dom.cpp dom.h 
+	                      fa.cpp fa.h fail.h fun.cpp fun.h graph.cpp 
+	                      graph.h html.cpp html.h if1.cpp if1.h 
+	                      ifa.cpp ifa.h inline.cpp inline.h loop.cpp 
+	                      loop.h make_cast_code.cpp pattern.cpp 
+	                      pattern.h pdb.cpp pdb.h pnode.cpp pnode.h 
+	                      prim.cpp prim.h prim_data.cpp 
+	                      prim_data.dat prim_data_incs.cpp 
+	                      prim_data_incs.h region.cpp region.h 
+	                      ssu.cpp ssu.h sym.cpp sym.h test_adt.cpp 
+	                      timer.h var.cpp var.h 
+
