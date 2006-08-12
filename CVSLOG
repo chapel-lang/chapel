@@ -70481,3 +70481,20 @@ Removed files:
 	chapel/test/trivial/waynew/: lreductions.chpl lreductions.good 
 	                             reductions.chpl reductions.good 
 
+---------------------------------------------------------------------------
+
+08/11/06 17:13:49 -- bradc
+
+Log message:
+	Checking in a bunch of .cvsignore files in the testing
+	system to squelch *.tmp files from being listed in
+	the output of cvs -nq update.
+
+Added files:
+	chapel/test/classes/bocchino/: .cvsignore 
+	chapel/test/parallel/begin/waynew/: .cvsignore 
+	chapel/test/parallel/cobegin/waynew/: .cvsignore 
+	chapel/test/parallel/sync/deitz/: .cvsignore 
+	chapel/test/parallel/sync/waynew/: .cvsignore 
+	chapel/test/trivial/waynew/: .cvsignore 
+
