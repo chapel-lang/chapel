@@ -70548,3 +70548,25 @@ Removed files:
 	                      ssu.cpp ssu.h sym.cpp sym.h test_adt.cpp 
 	                      timer.h var.cpp var.h 
 
+---------------------------------------------------------------------------
+
+08/11/06 17:46:53 -- waynew
+
+Log message:
+	Changed the syntax of sum, product, logical and, logical or, bit-wise
+	and, bit-wise or, and bit-wise xor reductions to + reduce, * reduce, && reduce,
+	|| reduce, & reduce, | reduce, and ^ reduce.  Also changed tests to match.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/modules/standard/: _chpl_seq.chpl 
+	chapel/test/arrays/deitz/: jacobi5.chpl 
+	chapel/test/reductions/bradc/: sumreduce.chpl sumreduce2.chpl 
+	chapel/test/reductions/waynew/: breductions.chpl 
+	                                lreductions.chpl 
+	                                lreductions.good reductions.chpl 
+	                                reductions.good 
+	chapel/test/types/seq/deitz/: test_reduce1.chpl 
+Added files:
+	chapel/test/reductions/waynew/: .cvsignore 
+
