@@ -1199,6 +1199,20 @@ top_level_expr:
 reduction:
   expr TREDUCE expr
     { $$ = build_reduce_expr($1, $3); }
+| TPLUS TREDUCE expr
+    { $$ = build_reduce_expr( new SymExpr( "_sum"), $3); }
+| TSTAR TREDUCE expr
+    { $$ = build_reduce_expr( new SymExpr( "_product"), $3); }
+| TAND TREDUCE expr
+    { $$ = build_reduce_expr( new SymExpr( "_land"), $3); }
+| TOR TREDUCE expr
+    { $$ = build_reduce_expr( new SymExpr( "_lor"), $3); }
+| TBAND TREDUCE expr
+    { $$ = build_reduce_expr( new SymExpr( "_band"), $3); }
+| TBOR TREDUCE expr
+    { $$ = build_reduce_expr( new SymExpr( "_bor"), $3); }
+| TBXOR TREDUCE expr
+    { $$ = build_reduce_expr( new SymExpr( "_bxor"), $3); }
 | identifier TSCAN expr
     { $$ = new CallExpr(new UnresolvedSymbol("_scan"), new UnresolvedSymbol($1), $3); }
 ;

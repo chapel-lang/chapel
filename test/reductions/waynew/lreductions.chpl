@@ -8,15 +8,15 @@ forall i in D do {
   B(i) = true;
 }
 writeln( "\nB[D] = ", B);
-writeln( "land B[D] = ", land reduce B);
-writeln( "lor B[D] = ", lor reduce B);
+writeln( "&& reduce B[D] = ", && reduce B);
+writeln( "|| reduce B[D] = ", || reduce B);
 
 forall i in D do {
   B(i) = false;
 }
 writeln( "\nB[D] = ", B);
-writeln( "land B[D] = ", land reduce B);
-writeln( "lor B[D] = ", lor reduce B);
+writeln( "&& reduce B[D] = ", && reduce B);
+writeln( "|| reduce B[D] = ", || reduce B);
 
 var toggle: bool = false;
 forall i in D do {
@@ -24,5 +24,5 @@ forall i in D do {
   B(i) = toggle;
 }
 writeln( "\nB[D] = ", B);
-writeln( "land B[D] = ", land reduce B);
-writeln( "lor B[D] = ", lor reduce B);
+writeln( "&& reduce B[D] = ", && reduce B);
+writeln( "|| reduce B[D] = ", || reduce B);

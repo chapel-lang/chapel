@@ -239,7 +239,7 @@ fun _reduce(r, s) { // reduce sequence s by reduction r
   return r.generate();  
 }
 
-class sum : reduction {
+class _sum : reduction {
   type elt_type;
   var value : elt_type;   // assume default value is sum identity value
   fun accumulate(x) {
@@ -249,7 +249,7 @@ class sum : reduction {
     return value;
 }
 
-class product : reduction {
+class _product : reduction {
   type elt_type;
   var value : elt_type = _prod_id( elt_type);
 
@@ -289,7 +289,7 @@ class min : reduction {
   }
 }
 
-class land : reduction {                 // logical and
+class _land : reduction {                 // logical and
   type elt_type;
   var value : elt_type = _land_id( elt_type);
 
@@ -301,7 +301,7 @@ class land : reduction {                 // logical and
   }
 }
 
-class lor : reduction {                 // logical or
+class _lor : reduction {                 // logical or
   type elt_type;
   var value : elt_type = _lor_id( elt_type);
 
@@ -313,7 +313,7 @@ class lor : reduction {                 // logical or
   }
 }
 
-class band : reduction {                 // bit-wise and
+class _band : reduction {                 // bit-wise and
   type elt_type;
   var value : elt_type = _band_id( elt_type);
 
@@ -325,7 +325,7 @@ class band : reduction {                 // bit-wise and
   }
 }
 
-class bor : reduction {                 // bit-wise or
+class _bor : reduction {                 // bit-wise or
   type elt_type;
   var value : elt_type = _bor_id( elt_type);
 
@@ -337,7 +337,7 @@ class bor : reduction {                 // bit-wise or
   }
 }
 
-class bxor : reduction {                // bit-wise xor
+class _bxor : reduction {                // bit-wise xor
   type elt_type;
   var value : elt_type = _bxor_id( elt_type);
 

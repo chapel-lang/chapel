@@ -19,14 +19,14 @@ Temp(SouthD) = 1.0;
 var iter = 0;
 
 do {
-  [i in D] Temp(i) = (sum reduce A(i + stencil)) / 4.0;
+  [i in D] Temp(i) = (+ reduce A(i + stencil)) / 4.0;
   iter += 1;
-  if (sum reduce abs(A - Temp)) <= epsilon {
+  if (+ reduce abs(A - Temp)) <= epsilon {
     break;
   }
-  [i in D] A(i) = (sum reduce Temp(i + stencil)) / 4.0;
+  [i in D] A(i) = (+ reduce Temp(i + stencil)) / 4.0;
   iter += 1;
-} while (sum reduce abs(A - Temp)) > epsilon;
+} while (+ reduce abs(A - Temp)) > epsilon;
 
-writeln("Delta = ", sum reduce abs(A - Temp));
+writeln("Delta = ", + reduce abs(A - Temp));
 writeln("Iterations = ", iter);

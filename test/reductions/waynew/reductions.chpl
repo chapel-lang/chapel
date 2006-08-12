@@ -8,19 +8,19 @@ forall i in D do {
   I(i) = i;
 }
 writeln( "\nI[D] = ", I);
-writeln( "min I[D] = ", min reduce I);
-writeln( "max I[D] = ", max reduce I);
-writeln( "sum I[D] = ", sum reduce I);
-writeln( "product I[D] = ", product reduce I);
+writeln( "min reduce I[D] = ", min reduce I);
+writeln( "max reduce I[D] = ", max reduce I);
+writeln( "+ reduce I[D] = ", + reduce I);
+writeln( "* reduce I[D] = ", * reduce I);
 
 forall i in D do {
   I(i) = -1 * i;
 }
 writeln( "\nI[D] = ", I);
-writeln( "min I[D] = ", min reduce I);
-writeln( "max I[D] = ", max reduce I);
-writeln( "sum I[D] = ", sum reduce I);
-writeln( "product I[D] = ", product reduce I);
+writeln( "min reduce I[D] = ", min reduce I);
+writeln( "max reduce I[D] = ", max reduce I);
+writeln( "+ reduce I[D] = ", + reduce I);
+writeln( "* reduce I[D] = ", * reduce I);
 
 var neg: bool = false;
 forall i in D do {
@@ -32,10 +32,10 @@ forall i in D do {
   }
 }
 writeln( "\nI[D] = ", I);
-writeln( "min I[D] = ", min reduce I);
-writeln( "max I[D] = ", max reduce I);
-writeln( "sum I[D] = ", sum reduce I);
-writeln( "product I[D] = ", product reduce I);
+writeln( "min reduce I[D] = ", min reduce I);
+writeln( "max reduce I[D] = ", max reduce I);
+writeln( "+ reduce I[D] = ", + reduce I);
+writeln( "* reduce I[D] = ", * reduce I);
 
 var UI: [D] int;
 forall i in D do {
@@ -44,8 +44,8 @@ forall i in D do {
 writeln( "\nUI[D] = ", UI);
 writeln( "min UI[D] = ", min reduce UI);
 writeln( "max UI[D] = ", max reduce UI);
-writeln( "sum I[D] = ", sum reduce UI);
-writeln( "product I[D] = ", product reduce UI);
+writeln( "+ reduce UI[D] = ", + reduce UI);
+writeln( "* reduce UI[D] = ", * reduce UI);
 
 var F: [D] float;
 forall i in D do {
@@ -59,5 +59,5 @@ forall i in D do {
 writeln( "\nF[D] = ", F);
 writeln( "min F[D] = ", min reduce F);
 writeln( "max F[D] = ", max reduce F);
-writeln( "sum I[D] = ", sum reduce F);
-writeln( "product I[D] = ", product reduce F);
+writeln( "+ reduce F[D] = ", + reduce F);
+writeln( "* reduce F[D] = ", * reduce F);
