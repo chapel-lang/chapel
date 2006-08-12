@@ -70570,3 +70570,17 @@ Modified files:
 Added files:
 	chapel/test/reductions/waynew/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+08/11/06 17:47:08 -- bradc
+
+Log message:
+	Last check-in removed the test/ directory from the
+	build process.  This check-in removes all CVS files
+	from the test directory.  It is now dead (though
+	we'll have to wait until we move to subversion to
+	remove it from our directories).
+
+Removed files:
+	chapel/compiler/test/: Makefile test_lib.cpp 
+
