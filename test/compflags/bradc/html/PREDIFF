@@ -1,0 +1,2 @@
+grep TITLE log/index.html $1 >> $2
+
