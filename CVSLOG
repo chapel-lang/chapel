@@ -70732,3 +70732,14 @@ Modified files:
 	chapel/modules/standard/: _chpl_htuple.chpl 
 	chapel/test/types/type_variables/jplevyak/: construct-1.good 
 
+---------------------------------------------------------------------------
+
+08/14/06 15:25:45 -- deitz
+
+Log message:
+	Updated .good of inline report tests.
+
+Modified files:
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+
