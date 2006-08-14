@@ -70628,3 +70628,15 @@ Added files:
 	                           test_scalar_promote10.future 
 	                           test_scalar_promote10.good 
 
+---------------------------------------------------------------------------
+
+08/14/06 10:29:08 -- waynew
+
+Log message:
+	Tests that use a sync var as a field within a class. Similar to simple0.chpl,
+	simple1.chpl, and simple2.chpl.
+
+Added files:
+	chapel/test/parallel/sync/waynew/: class0.chpl class0.good 
+	                                   class1.chpl class1.good 
+
