@@ -81,7 +81,7 @@ void dump_index_footer(FILE* f) {
 
 void runPasses(void) {
   if (fdump_html) {
-    html_index_file = fopen(stringcat("log/index.html"), "w");
+    html_index_file = fopen(stringcat(log_dir, "index.html"), "w");
     dump_index_header(html_index_file);
     fprintf(html_index_file, "<TABLE CELLPADDING=\"0\" CELLSPACING=\"0\">");
   }
