@@ -70602,3 +70602,16 @@ Added files:
 	chapel/test/studies/blas/marybeth/: saxpy_simple.chpl 
 	                                    saxpy_simple.good 
 
+---------------------------------------------------------------------------
+
+08/14/06 09:51:55 -- deitz
+
+Log message:
+	Reenabled -t option by setting the file to "log/"+filename instead of
+	log_dir which is no longer getting set correctly.  This change
+	probably makes log_dir new dead ifa code, or we can set it.
+
+Modified files:
+	chapel/compiler/AST/: view.cpp 
+	chapel/compiler/main/: runpasses.cpp 
+
