@@ -186,50 +186,7 @@ void Symbol::print(FILE* outfile) {
 
 
 void Symbol::codegen(FILE* outfile) {
-  if (VarSymbol *vsym = dynamic_cast<VarSymbol*>(this)) {
-     // if not immed, is not num, or is boole
-    if (!vsym->immediate ||
-        (vsym->immediate->const_kind == NUM_KIND_NONE) ||
-        (vsym->immediate->num_index == INT_SIZE_1)) { 
-      fprintf(outfile, "%s", cname);
-    } else {
-      // find the min number of bytes to store constant
-      if (NUM_KIND_INT == vsym->immediate->const_kind) {
-        int64 iconst = vsym->immediate->int_value();
-        if (iconst < 0) {
-          iconst = (iconst+1) * -1;
-        }
-        if (iconst <= ((1<<7)-1)) {
-          fprintf( outfile, "INT8( %s)", vsym->cname);
-        } else if (iconst <= ((1<<15)-1)) {
-          fprintf( outfile, "INT16( %s)", vsym->cname);
-        } else if (iconst <= ((1<<31)-1)) {
-          fprintf( outfile, "INT32( %s)", vsym->cname);
-        } else {
-          fprintf( outfile, "INT64( %s)", vsym->cname);
-        }
-
-      } else if (NUM_KIND_UINT == vsym->immediate->const_kind) {
-        uint64 uconst = vsym->immediate->uint_value();
-        if (uconst <= (((int64)1)<<8)) {
-          fprintf( outfile, "UINT8( %s)", vsym->cname);
-        } else if (uconst <= (((int64)1)<<16)) {
-          fprintf( outfile, "UINT16( %s)", vsym->cname);
-        } else if (uconst <= (((int64)1)<<32)) {
-          fprintf( outfile, "UINT32( %s)", vsym->cname);
-        } else {
-          fprintf( outfile, "UINT64( %s)", vsym->cname);
-        }
-      } else {  // WAW: floats?
-        fprintf(outfile, "%s", cname);
-      }
-    } 
-
-  } else {
-    fprintf(outfile, "%s", cname);
-  }
-
-//   }
+  fprintf(outfile, "%s", cname);
 }
 
 
@@ -375,13 +332,44 @@ void VarSymbol::printDef(FILE* outfile) {
 
 
 void VarSymbol::codegen( FILE* outfile) {
-  if (on_heap) {
+  if (on_heap)
     fprintf( outfile, "*(");
-    Symbol::codegen(outfile);
-    fprintf( outfile, ")");
+
+  if (immediate &&
+      immediate->const_kind == NUM_KIND_INT  &&
+      immediate->num_index != INT_SIZE_1) {
+    // find the min number of bytes to store constant
+    int64 iconst = immediate->int_value();
+    if (iconst < 0)
+      iconst = (iconst+1) * -1;
+    if (iconst <= ((1<<7)-1)) {
+      fprintf( outfile, "INT8( %s)", cname);
+    } else if (iconst <= ((1<<15)-1)) {
+      fprintf( outfile, "INT16( %s)", cname);
+    } else if (iconst <= ((1<<31)-1)) {
+      fprintf( outfile, "INT32( %s)", cname);
+    } else {
+      fprintf( outfile, "INT64( %s)", cname);
+    }
+  } else if (immediate &&
+      immediate->const_kind == NUM_KIND_UINT  &&
+      immediate->num_index != INT_SIZE_1) {
+    uint64 uconst = immediate->uint_value();
+    if (uconst <= (((int64)1)<<8)) {
+      fprintf( outfile, "UINT8( %s)", cname);
+    } else if (uconst <= (((int64)1)<<16)) {
+      fprintf( outfile, "UINT16( %s)", cname);
+    } else if (uconst <= (((int64)1)<<32)) {
+      fprintf( outfile, "UINT32( %s)", cname);
+    } else {
+      fprintf( outfile, "UINT64( %s)", cname);
+    }
   } else {
-    Symbol::codegen(outfile);
+    fprintf(outfile, "%s", cname);
   }
+
+  if (on_heap)
+    fprintf( outfile, ")");
 }
 
 
