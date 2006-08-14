@@ -70743,3 +70743,29 @@ Modified files:
 	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
 	                                         inlfunc2_report.good 
 
+---------------------------------------------------------------------------
+
+08/14/06 15:29:37 -- deitz
+
+Log message:
+	Added support for passing arrays to a function where the array
+	specification contains no domain as in
+	
+	  fun foo(A: [] float) { ... }
+	
+	The current limitation is that this must be a top-level formal
+	argument type.  The transformation makes this into
+	
+	  fun foo(A: _array) where A.elt_type == float { ... }
+	
+	Added two test cases.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: cleanup.cpp 
+Added files:
+	chapel/test/arrays/deitz/: test_array_arg1.chpl 
+	                           test_array_arg1.good 
+	                           test_array_arg2.chpl 
+	                           test_array_arg2.good 
+
