@@ -70699,3 +70699,36 @@ Log message:
 Added files:
 	chapel/test/compflags/bradc/html/: CLEANFILES 
 
+---------------------------------------------------------------------------
+
+08/14/06 15:24:37 -- deitz
+
+Log message:
+	Implemented optimization scalar replacement of aggregates that works
+	under an assumption of references as opposed to setters (which
+	required the record reference semantics).  It is disabled by default
+	and enabled with temporarily inverted flag --no-scalar-replacement.
+	
+	Implemented transform to change returned records into pass by
+	reference records.
+	
+	Made Symbol::uses a vector rather than a pointer to a vector for
+	convenience.
+	
+	Changed function resolution to favor a more normalized form for the
+	resolved state of partial call applications.
+	
+	Swapped back expected output of
+	test/types/type_variables/jplevyak/construct-1 due to reasonable
+	change in semantic interpretation by the compiler.  What should it be?
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp symbol.cpp 
+	chapel/compiler/include/: driver.h symbol.h 
+	chapel/compiler/main/: driver.cpp passlist.h 
+	chapel/compiler/passes/: codegen.cpp copy_propagation.cpp 
+	                         functionResolution.cpp normalize.cpp 
+	                         semanticChecks.cpp 
+	chapel/modules/standard/: _chpl_htuple.chpl 
+	chapel/test/types/type_variables/jplevyak/: construct-1.good 
+
