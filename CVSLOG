@@ -70687,3 +70687,15 @@ Added files:
 	                                   testit.chpl testit.compopts 
 	                                   testit.good 
 
+---------------------------------------------------------------------------
+
+08/14/06 14:37:43 -- bradc
+
+Log message:
+	Oops, forgot to have the test clean up the log/ directory
+	to make sure it wasn't just re-using one from the previous
+	run.
+
+Added files:
+	chapel/test/compflags/bradc/html/: CLEANFILES 
+
