@@ -70615,3 +70615,16 @@ Modified files:
 	chapel/compiler/AST/: view.cpp 
 	chapel/compiler/main/: runpasses.cpp 
 
+---------------------------------------------------------------------------
+
+08/14/06 10:15:08 -- deitz
+
+Log message:
+	Test showing failing setter of setter strategy, illustrating the need
+	for getters that return reference types.
+
+Added files:
+	chapel/test/arrays/deitz/: test_scalar_promote10.chpl 
+	                           test_scalar_promote10.future 
+	                           test_scalar_promote10.good 
+
