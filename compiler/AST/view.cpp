@@ -426,7 +426,7 @@ void html_view() {
     // filename = stringcat("pass", intstring(uid), "_module_", mod->name, ".html");
     filename = html_file_name( uid, mod->name);
     fprintf(html_index_file, "&nbsp;&nbsp;<a href=\"%s\">%s</a>\n", filename, mod->name);
-    html_file = fopen(stringcat(log_dir, filename), "w");
+    html_file = fopen(stringcat("log/", filename), "w");
     fprintf(html_file, "<CHPLTAG=\"%s\">\n", currentTraversal);
     fprintf(html_file, "<HTML>\n");
     fprintf(html_file, "<HEAD>\n");
