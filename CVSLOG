@@ -70662,3 +70662,13 @@ Added files:
 	chapel/test/types/tuple/deitz/: test_tuples5.chpl 
 	                                test_tuples5.good 
 
+---------------------------------------------------------------------------
+
+08/14/06 11:53:31 -- deitz
+
+Log message:
+	Minor refactor of Symbol/VarSymbol::codegen
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+
