@@ -39,11 +39,12 @@ class Symbol : public BaseAST {
   char* cname; // Name of symbol for generating C code
   Type* type;
   DefExpr* defPoint; // Point of definition
-  Vec<SymExpr*>* uses;
 
   Symbol* overload;
   bool isCompilerTemp;
   bool isTypeVariable;
+
+  Vec<SymExpr*> uses;
 
   Symbol(astType_t astType, char* init_name, Type* init_type = dtUnknown);
   virtual void verify(); 

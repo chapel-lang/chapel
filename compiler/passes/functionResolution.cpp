@@ -598,16 +598,22 @@ static void
 resolveCall(CallExpr* call) {
   if (!call->primitive) {
     bool already_resolved = false;
-    bool is_this = false;
-    if (SymExpr* sym = dynamic_cast<SymExpr*>(call->baseExpr))
-      if (dynamic_cast<VarSymbol*>(sym->var) || dynamic_cast<ArgSymbol*>(sym->var))
-        is_this = true;
-    if (dynamic_cast<CallExpr*>(call->baseExpr))
-      is_this = true;
-    if (is_this) {
+    if (SymExpr* sym = dynamic_cast<SymExpr*>(call->baseExpr)) {
+      if (dynamic_cast<VarSymbol*>(sym->var) || dynamic_cast<ArgSymbol*>(sym->var)) {
+        Expr* base = call->baseExpr;
+        base->replace(new SymExpr("this"));
+        call->insertAtHead(base);
+      }
+    }
+    if (dynamic_cast<CallExpr*>(call->baseExpr)) {
+      VarSymbol* this_temp = new VarSymbol("this_temp");
       Expr* base = call->baseExpr;
       base->replace(new SymExpr("this"));
-      call->insertAtHead(base);
+      CallExpr* move = new CallExpr(PRIMITIVE_MOVE, this_temp, base);
+      call->insertAtHead(new SymExpr(this_temp));
+      call->parentStmt->insertBefore(new DefExpr(this_temp));
+      call->parentStmt->insertBefore(move);
+      resolveCall(move);
     }
     if (call->isResolved())
       already_resolved = true;
@@ -944,6 +950,8 @@ resolve() {
             if (ClassType* ct = dynamic_cast<ClassType*>(fn->retType)) {
               if (!ct->symbol->hasPragma("array") && ct->defaultValue) {
                 call->replace(new CallExpr(PRIMITIVE_CAST, ct->symbol, gNil));
+              } else if (!ct->symbol->hasPragma("array")) {
+                call->replace(construct->remove());
               }
             }
           }

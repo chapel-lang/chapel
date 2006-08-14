@@ -115,7 +115,6 @@ Symbol::Symbol(astType_t astType, char* init_name, Type* init_type) :
   cname(name),
   type(init_type),
   defPoint(NULL),
-  uses(NULL),
   overload(NULL),
   isCompilerTemp(false),
   isTypeVariable(false)
@@ -728,10 +727,16 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
       if (formal->type->symbol->hasPragma( "sync var"))
         temp_type = new CallExpr("_init", formal->type->symbol);
       wrapper->insertAtTail(new DefExpr(temp, temp_init, temp_type));
+      bool cast = false;
+      ClassType* ct = dynamic_cast<ClassType*>(formal->type);
       if (formal->type != dtUnknown &&
           formal->intent != INTENT_REF &&
           formal->intent != INTENT_OUT &&
           formal->intent != INTENT_INOUT)
+        cast = true;
+      if (ct && ct->classTag == CLASS_RECORD)
+        cast = false;
+      if (cast)
         call->insertAtTail(new CallExpr(PRIMITIVE_CAST, formal->type->symbol, temp));
       else
         call->insertAtTail(temp);

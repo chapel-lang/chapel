@@ -13,6 +13,8 @@ void resolve();
 void check_resolved();
 void flattenFunctions();
 void parallel2();
+void convertReturnsToArgs();
+void destructureRecords();
 void inlineFunctions();
 void copyPropagation();
 void codegen();
@@ -36,6 +38,8 @@ PassInfo passlist[] = {
 
   RUN(flattenFunctions),   // denest nested functions
   RUN(parallel2),          // parallel transforms, part 2
+  RUN(convertReturnsToArgs), // pass records instead of returning them
+  RUN(destructureRecords),   // destructure records into components
   RUN(inlineFunctions),    // function inlining
 
   RUN(copyPropagation),

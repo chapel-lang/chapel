@@ -35,6 +35,7 @@ bool ignore_errors = false;
 int trace_level = 0;
 int fcg = 0;
 bool unoptimized = false;
+bool no_scalar_replacement = true;
 bool no_inline = false;
 bool report_inlining = false;
 char system_dir[FILENAME_MAX] = DEFAULT_SYSTEM_DIR;
@@ -64,6 +65,7 @@ static ArgumentDescription arg_desc[] = {
  {"gdb", ' ', "Run compiler in gdb", "F", &rungdb, NULL, NULL},
  {"unoptimized", ' ', "Generate naive code (lots of temps)", "F", &unoptimized, "CHPL_UNOPTIMIZED", NULL},
  {"no-inline", ' ', "Do Not Inline Functions" , "F", &no_inline, NULL, NULL},
+ {"no-scalar-replacement", ' ', "**INVERTED** Do not scalar replace marked records (e.g. tuples)", "T", &no_scalar_replacement, NULL, NULL},
  {"report-inlining", ' ', "Print Inlined Functions", "F", &report_inlining, NULL, NULL},
  {"scalar-promotion", ' ', "Enable Scalar Promotion", "T", &scalar_promotion, "CHPL_SCALAR_PROMOTION", NULL},
  {"formal-temps", ' ', "Insert Temps for Formals", "F", &formalTemps, "CHPL_FORMAL_TEMPS", NULL},

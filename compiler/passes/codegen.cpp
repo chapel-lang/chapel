@@ -9,6 +9,400 @@
 #include "symbol.h"
 #include "symscope.h"
 
+// convert functions that return records into functions that take
+// those records as a reference argument and fix calls
+void
+convertReturnsToArgs() {
+  Vec<BaseAST*> asts;
+  collect_asts(&asts);
+
+  // convert calls to pass returned record by reference, handling the
+  // case where the returned record is ignored
+  forv_Vec(BaseAST, ast, asts) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+      if (!call->primitive && call->isResolved()) {
+        FnSymbol* fn = call->isResolved();
+        ClassType* ct = dynamic_cast<ClassType*>(fn->retType);
+        if (ct && ct->classTag == CLASS_RECORD) {
+          if (!call->parentExpr) {
+            VarSymbol* tmp = new VarSymbol("_ignored_ret", ct);
+            tmp->isCompilerTemp = true;
+            call->parentStmt->insertBefore(new DefExpr(tmp));
+            call->insertAtTail(tmp);
+          } else {
+            CallExpr* move = dynamic_cast<CallExpr*>(call->parentExpr);
+            if (!move || !move->isPrimitive(PRIMITIVE_MOVE))
+              INT_FATAL(call, "Call is not in move");
+            call->insertAtTail(move->argList->get(1)->remove());
+            move->replace(call->remove());
+          }
+        }
+      }
+    }
+  }
+
+  // convert functions to take returned record by reference
+  forv_Vec(BaseAST, ast, asts) {
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
+      ClassType* ct = dynamic_cast<ClassType*>(fn->retType);
+      if (ct && ct->classTag == CLASS_RECORD) {
+        ArgSymbol* arg = new ArgSymbol(INTENT_REF, "_ret", ct);
+        fn->formals->insertAtTail(arg);
+        fn->retType = dtVoid;
+        ReturnStmt* ret = dynamic_cast<ReturnStmt*>(fn->body->body->last());
+        ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, arg, ret->expr->copy()));
+        ret->expr->replace(new SymExpr(gVoid));
+      }
+    }
+  }
+}
+
+
+static bool
+isScalarReplaceable(ClassType* ct) {
+  return ct->classTag == CLASS_RECORD && ct->symbol->hasPragma("destructure");
+}
+
+static int max(int a, int b) {
+  return (a >= b) ? a : b;
+}
+
+static void setOrder(Map<ClassType*,int>& order, ClassType* ct);
+
+static int
+getOrder(Map<ClassType*,int>& order, ClassType* ct, Vec<ClassType*>& visit) {
+  if (visit.set_in(ct))
+    return 0;
+  visit.set_add(ct);
+  if (order.get(ct))
+    return order.get(ct);
+  int i = 0;
+  for_fields(field, ct) {
+    if (ClassType* fct = dynamic_cast<ClassType*>(field->type)) {
+      if (isScalarReplaceable(fct))
+        setOrder(order, fct);
+      i = max(i, getOrder(order, fct, visit));
+    }
+  }
+  return i + isScalarReplaceable(ct);
+}
+
+
+static void
+setOrder(Map<ClassType*,int>& order, ClassType* ct) {
+  if (order.get(ct))
+    return;
+  Vec<ClassType*> visit;
+  int i = getOrder(order, ct, visit);
+  order.put(ct, i);
+}
+
+
+// _MOVE(USE, SYM)
+static void handleMUS(ClassType* ct, Vec<Symbol*>& syms, CallExpr* call) {
+  SymExpr* rhs = dynamic_cast<SymExpr*>(call->get(2)->remove());
+  int i = 1;
+  forv_Vec(Symbol, sym, syms) {
+    if (rhs->parentSymbol) {
+      rhs = rhs->copy();
+      rhs->var->uses.add(rhs);
+    }
+    call->parentStmt->insertBefore(
+      new CallExpr(PRIMITIVE_MOVE, sym,
+        new CallExpr(PRIMITIVE_GET_MEMBER, rhs, ct->fields->get(i)->sym)));
+    i++;
+  }
+  call->parentStmt->remove();
+}
+
+// _MOVE(SYM, USE)
+static void handleMSU(ClassType* ct, Vec<Symbol*>& syms, CallExpr* call) {
+  SymExpr* lhs = dynamic_cast<SymExpr*>(call->get(1)->remove());
+  int i = 1;
+  forv_Vec(Symbol, sym, syms) {
+    if (lhs->parentSymbol) {
+      lhs = lhs->copy();
+      lhs->var->uses.add(lhs);
+    }
+    call->parentStmt->insertBefore(
+      new CallExpr(PRIMITIVE_SET_MEMBER, lhs, ct->fields->get(i)->sym, sym));
+    i++;
+  }
+  call->parentStmt->remove();
+}
+
+// _SET(USE, SYM, SYM)
+static void handleSUSS(ClassType* ct, Vec<Symbol*>& syms, CallExpr* call) {
+  SymExpr* setter = dynamic_cast<SymExpr*>(call->get(2));
+  int i = 0;
+  for_fields(field, ct) {
+    if (!strcmp(setter->var->name, field->name)) {
+      call->parentStmt->insertBefore(
+        new CallExpr(PRIMITIVE_MOVE, syms.v[i], call->get(3)->remove()));
+      call->parentStmt->remove();
+      break;
+    }
+    i++;
+  }
+}
+
+// _SET(SYM, USE, SYM)
+static void handleSSUS(ClassType* ct, Vec<Symbol*>& syms, CallExpr* call) {
+  SymExpr* _this = dynamic_cast<SymExpr*>(call->get(1));
+  SymExpr* rhs = dynamic_cast<SymExpr*>(call->get(3));
+  _this->remove();
+  rhs->remove();
+  int i = 1;
+  forv_Vec(Symbol, sym, syms) {
+    if (_this->parentSymbol) {
+      _this = _this->copy();
+      _this->var->uses.add(_this);
+    }
+    if (rhs->parentSymbol) {
+      rhs = rhs->copy();
+      rhs->var->uses.add(rhs);
+    }
+    call->parentStmt->insertBefore(
+      new CallExpr(PRIMITIVE_SET_MEMBER, _this, sym,
+        new CallExpr(PRIMITIVE_GET_MEMBER, rhs, ct->fields->get(i)->sym)));
+    i++;
+  }
+  call->parentStmt->remove();
+}
+
+// _SET(*, *, USE)
+static void handleSSSU(ClassType* ct, Vec<Symbol*>& syms, CallExpr* call) {
+  SymExpr* _this = dynamic_cast<SymExpr*>(call->get(1));
+  SymExpr* lhs = dynamic_cast<SymExpr*>(call->get(2));
+  _this->remove();
+  lhs->remove();
+  int i = 1;
+  forv_Vec(Symbol, sym, syms) {
+    if (_this->parentSymbol) {
+      _this = _this->copy();
+      _this->var->uses.add(_this);
+    }
+    if (lhs->parentSymbol) {
+      lhs = lhs->copy();
+      lhs->var->uses.add(lhs);
+    }
+    call->parentStmt->insertBefore(
+      new CallExpr(PRIMITIVE_SET_MEMBER, _this,
+        new CallExpr(PRIMITIVE_GET_MEMBER, lhs, ct->fields->get(i)->sym), sym));
+    i++;
+  }
+  call->parentStmt->remove();
+}
+
+// _GET(USE, SYM)
+static void handleGUS(ClassType* ct, Vec<Symbol*>& syms, CallExpr* call) {
+  SymExpr* getter = dynamic_cast<SymExpr*>(call->get(2));
+  int i = 0;
+  for_fields(field, ct) {
+    if (!strcmp(getter->var->name, field->name)) {
+      call->replace(new SymExpr(syms.v[i]));
+      break;
+    }
+    i++;
+  }
+}
+
+// _GET(SYM, USE) in _MOVE(SYM, _GET(SYM, USE))
+static void handleGSU(ClassType* ct, Vec<Symbol*>& syms, CallExpr* call) {
+  CallExpr* move = dynamic_cast<CallExpr*>(call->parentExpr);
+  if (!move || !move->isPrimitive(PRIMITIVE_MOVE))
+    INT_FATAL(call, "unexpected case in handleGSU");
+  SymExpr* lhs = dynamic_cast<SymExpr*>(move->get(1)->remove());
+  SymExpr* _this = dynamic_cast<SymExpr*>(call->get(1)->remove());
+  int i = 1;
+  forv_Vec(Symbol, sym, syms) {
+    if (lhs->parentSymbol) {
+      lhs = lhs->copy();
+      lhs->var->uses.add(lhs);
+    }
+    if (_this->parentSymbol) {
+      _this = _this->copy();
+      _this->var->uses.add(_this);
+    }
+    move->parentStmt->insertBefore(
+      new CallExpr(PRIMITIVE_MOVE,
+        new CallExpr(PRIMITIVE_GET_MEMBER, lhs, ct->fields->get(i)->sym),
+        new CallExpr(PRIMITIVE_GET_MEMBER, _this, sym)));
+    i++;
+  }
+  call->parentStmt->remove();
+}
+
+static void
+makeScalarReplacements(ClassType* ct, Vec<Symbol*>& syms, DefExpr* def) {
+  ArgSymbol* arg = dynamic_cast<ArgSymbol*>(def->sym);
+  VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym);
+  for_fields(field, ct) {
+    char* name = stringcat(def->sym->name, "_", field->name);
+    if (var) {
+      VarSymbol* sym = new VarSymbol(name, field->type);
+      sym->isCompilerTemp = def->sym->isCompilerTemp;
+      syms.add(sym);
+      if (def->parentStmt)
+        def->parentStmt->insertBefore(new DefExpr(sym));
+      else
+        def->insertBefore(new DefExpr(sym));
+    } else if (arg) {
+      ArgSymbol* sym = new ArgSymbol(arg->intent, name, field->type);
+      if (!strcmp(arg->name, "this"))
+        arg->intent = INTENT_REF;
+      syms.add(sym);
+      def->insertBefore(new DefExpr(sym));
+    }
+  }
+  if (def->parentStmt)
+    def->parentStmt->remove();
+  else
+    def->remove();
+}
+
+static void
+scalarReplaceSyms(Vec<Symbol*>& symbols) {
+  forv_Vec(Symbol, symbol, symbols) {
+    ClassType* ct = dynamic_cast<ClassType*>(symbol->type);
+    DefExpr* def = symbol->defPoint;
+    Vec<Symbol*> syms;
+    makeScalarReplacements(ct, syms, def);
+    forv_Vec(SymExpr, use, def->sym->uses) {
+      if (!use->parentSymbol)
+        continue;
+      CallExpr* call = dynamic_cast<CallExpr*>(use->parentExpr);
+      if (!call)
+        INT_FATAL(use, "unexpected use");
+      if (!call->primitive) { // handle function call
+        forv_Vec(Symbol, sym, syms)
+          use->insertBefore(new SymExpr(sym));
+        use->remove();
+        continue;
+      }
+      if (call->isPrimitive(PRIMITIVE_MOVE)) {
+        if (use == call->get(1)) {
+          if (CallExpr* rhs = dynamic_cast<CallExpr*>(call->get(2))) {
+            if (rhs && rhs->isPrimitive(PRIMITIVE_CHPL_ALLOC)) {
+              call->parentStmt->remove();
+            } else {
+              INT_FATAL("unexpected use");
+            }
+          } else if (dynamic_cast<SymExpr*>(call->get(2))) {
+            handleMUS(ct, syms, call);
+          } else {
+            INT_FATAL("unexpected use");
+          }
+        } else if (use == call->get(2)) {
+          handleMSU(ct, syms, call);
+        } else {
+          INT_FATAL("unexpected use");
+        }
+      } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
+        if (call->get(1) == use) {
+          handleSUSS(ct, syms, call);
+        } else if (call->get(2) == use) {
+          handleSSUS(ct, syms, call);
+        } else if (call->get(3) == use) {
+          handleSSSU(ct, syms, call);
+        } else {
+          INT_FATAL(use, "unexpected use");
+        }
+      } else if (call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
+        if (call->get(1) == use) {
+          handleGUS(ct, syms, call);
+        } else if (call->get(2) == use) {
+          handleGSU(ct, syms, call);
+        } else {
+          INT_FATAL(use, "unexpected use");
+        }
+      } else {
+        INT_FATAL(use, "unexpected use");
+      }
+    }
+  }
+}
+
+
+static void
+scalarReplace(Vec<ClassType*>& typeSet) {
+  Vec<BaseAST*> asts;
+  collect_asts(&asts);
+  compute_sym_uses();
+
+  Vec<Symbol*> fields, vars, args;
+  forv_Vec(BaseAST, ast, asts) {
+    if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
+      ClassType* ct = dynamic_cast<ClassType*>(def->sym->type);
+      if (!typeSet.set_in(ct))
+        continue;
+      ArgSymbol* arg = dynamic_cast<ArgSymbol*>(def->sym);
+      VarSymbol* var = dynamic_cast<VarSymbol*>(def->sym);
+      if (var && !var->defPoint->parentStmt)
+        fields.add(var);
+      else if (var)
+        vars.add(var);
+      else if (arg)
+        args.add(arg);
+    }
+  }
+  Vec<Symbol*> syms;
+  syms.append(fields);
+  syms.append(vars);
+  syms.append(args);
+  scalarReplaceSyms(syms);
+}
+
+
+void
+destructureRecords() {
+  if (no_scalar_replacement)
+    return;
+
+  Vec<BaseAST*> asts;
+  collect_asts(&asts);
+
+  // order types that should be scalar replaced
+  //  e.g. replace ((int,int),string) before (int,int)
+  Map<ClassType*,int> order;
+  forv_Vec(BaseAST, ast, asts) {
+    if (DefExpr* def = dynamic_cast<DefExpr*>(ast))
+      if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(def->sym))
+        if (ClassType* ct = dynamic_cast<ClassType*>(ts->type))
+          if (isScalarReplaceable(ct))
+            setOrder(order, ct);
+  }
+  for (int i = 0; i < order.n; i++) {
+    if (order.v[i].key && order.v[i].value) {
+      printf("%d: %s\n", order.v[i].value, order.v[i].key->symbol->name);
+    }
+  }
+
+  // determine max ordering number
+  Vec<ClassType*> keys;
+  order.get_keys(keys);
+  int maxOrder = 0;
+  forv_Vec(ClassType, key, keys) {
+    maxOrder = max(maxOrder, order.get(key));
+  }
+  printf("%d\n", maxOrder);
+
+  // iteratively call scalar replace, respecting type ordering
+  for (int i = maxOrder; i >= 1; i--) {
+    Vec<ClassType*> typeSet;
+    forv_Vec(ClassType, key, keys) {
+      if (order.get(key) == i)
+        typeSet.set_add(key);
+    }
+    scalarReplace(typeSet);
+  }
+
+  // inline constructors for scalar replaced types
+  forv_Vec(ClassType, key, keys) {
+    key->defaultConstructor->addPragma("inline");
+  }
+}
+
 
 #define STRSUB(x)                               \
   *ch = '\0';                                   \

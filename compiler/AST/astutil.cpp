@@ -132,13 +132,13 @@ void compute_sym_uses(BaseAST* base) {
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* a = dynamic_cast<DefExpr*>(ast)) {
       def_set.set_add(a);
-      a->sym->uses = new Vec<SymExpr*>();
+      a->sym->uses.clear();
     }
   }
   forv_Vec(BaseAST, ast, asts) {
     if (SymExpr* a = dynamic_cast<SymExpr*>(ast)) {
       if (a->var->defPoint && def_set.set_in(a->var->defPoint)) {
-        a->var->uses->add(a);
+        a->var->uses.add(a);
       }
     }
   }

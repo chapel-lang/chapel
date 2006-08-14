@@ -121,7 +121,7 @@ void deadVariableElimination(FnSymbol* fn) {
       if (!def->sym->isCompilerTemp && def->parentSymbol != fn) // nested types not pulled out
         continue;
       bool used = false;
-      forv_Vec(SymExpr, use, *def->sym->uses) {
+      forv_Vec(SymExpr, use, def->sym->uses) {
         if (!use->parentSymbol)
           continue;
         CallExpr* move = dynamic_cast<CallExpr*>(use->parentExpr);
@@ -129,7 +129,7 @@ void deadVariableElimination(FnSymbol* fn) {
           used = true;
       }
       if (!used) {
-        forv_Vec(SymExpr, use, *def->sym->uses) {
+        forv_Vec(SymExpr, use, def->sym->uses) {
           CallExpr* move = dynamic_cast<CallExpr*>(use->parentExpr);
           move->replace(move->get(2)->remove());
         }

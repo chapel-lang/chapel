@@ -1,10 +1,10 @@
-pragma "tuple" record _tuple {
+pragma "destructure" pragma "tuple" record _tuple {
   param size : int;
 
-  pragma "tuple get" fun this(param i : int)
+  pragma "inline" pragma "tuple get" fun this(param i : int)
     return 0;
 
-  pragma "tuple set" fun =this(param i : int, y);
+  pragma "inline" pragma "tuple set" fun =this(param i : int, y);
 
   fun this(i : int) {
     for param j in 1..size do
@@ -25,7 +25,7 @@ pragma "tuple" record _tuple {
   }
 }
 
-fun =(x : _tuple, y) {
+pragma "inline" fun =(x : _tuple, y) {
   for param i in 1..x.size do
     x(i) = y(i);
   return x;
