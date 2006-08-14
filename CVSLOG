@@ -70672,3 +70672,18 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 
+---------------------------------------------------------------------------
+
+08/14/06 14:34:57 -- bradc
+
+Log message:
+	Added a simple test to check that the --html flag works.  It
+	uses a PREDIFF script to grep log/index.html for its title
+	line and make sure that it exists.  This is not a particularly
+	deep test, but makes sure that the index file is created.
+
+Added files:
+	chapel/test/compflags/bradc/html/: .cvsignore PREDIFF 
+	                                   testit.chpl testit.compopts 
+	                                   testit.good 
+
