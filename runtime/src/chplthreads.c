@@ -1,9 +1,10 @@
 // Pthread implementation
 
+#include <stdint.h>
+#include <pthread.h>
 #include "chplrt.h"
 #include "chplthreads.h"
 #include "chplmem.h"
-#include <pthread.h>
 
 typedef struct {
   _chpl_threadfp_t  fun;                   // function to fork as a new thread
@@ -116,7 +117,7 @@ exitChplThreads() {
 
 _uint64
 _chpl_thread_id( void) {
-  return (_uint64) pthread_self();
+  return (intptr_t) pthread_self();
 }
 
 
