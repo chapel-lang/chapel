@@ -70769,3 +70769,22 @@ Added files:
 	                           test_array_arg2.chpl 
 	                           test_array_arg2.good 
 
+---------------------------------------------------------------------------
+
+08/14/06 16:59:44 -- bradc
+
+Log message:
+	Re-enabled use of log dir, because the bug I introduced
+	affected other ifa/ variables as well (of course, the
+	fact that the non-initialization of these variables
+	didn't cause any regressions might point to other dead
+	code).  It still might be appropriate to remove the
+	log_dir mechanism if we decide that it isn't worth
+	supporting, but I wanted to get it working as it was
+	previously before deciding whether to remove it or not.
+
+Modified files:
+	chapel/compiler/AST/: view.cpp 
+	chapel/compiler/ifa/: ifa_vars.cpp 
+	chapel/compiler/main/: runpasses.cpp 
+
