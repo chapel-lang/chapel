@@ -962,6 +962,8 @@ type:
     { $$ = new CallExpr("_tuple", $1, new CallExpr("_init", $3)); }
 | TLSBR nonempty_expr_ls TRSBR type
     { $$ = new CallExpr("_build_array_type", new CallExpr("_build_domain", $2), $4); }
+| TLSBR TRSBR type
+    { $$ = new CallExpr("_build_array_type", gNil, $3); }
 | TDOMAIN TLP expr_ls TRP
     { $$ = new CallExpr("_build_domain_type", $3); }
 | TDOMAIN
