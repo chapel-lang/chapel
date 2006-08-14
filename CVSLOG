@@ -70651,3 +70651,14 @@ Log message:
 Modified files:
 	chapel/runtime/src/: chplthreads.c 
 
+---------------------------------------------------------------------------
+
+08/14/06 11:51:02 -- deitz
+
+Log message:
+	Added simple tuple of tuple case.
+
+Added files:
+	chapel/test/types/tuple/deitz/: test_tuples5.chpl 
+	                                test_tuples5.good 
+
