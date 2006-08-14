@@ -70640,3 +70640,14 @@ Added files:
 	chapel/test/parallel/sync/waynew/: class0.chpl class0.good 
 	                                   class1.chpl class1.good 
 
+---------------------------------------------------------------------------
+
+08/14/06 11:13:30 -- waynew
+
+Log message:
+	Changed a cast that should remove a compiler-build warning that is
+	preventing the build on Cygwin.
+
+Modified files:
+	chapel/runtime/src/: chplthreads.c 
+
