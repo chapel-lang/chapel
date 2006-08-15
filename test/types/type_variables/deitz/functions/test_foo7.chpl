@@ -3,7 +3,7 @@ class C {
   var x : t;
 }
 
-fun foo(c : C(?u)) {
+def foo(c : C(?u)) {
   var y : u;
   writeln("foo of ", c, " with y = ", y);
 }

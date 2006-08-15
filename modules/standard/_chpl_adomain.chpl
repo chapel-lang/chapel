@@ -10,14 +10,14 @@ class _array {
   var _value : _array_type;
   var dom : _domain;
 
-  fun this(d : _domain) {
+  def this(d : _domain) {
     var a = d._build_array(elt_type);
     for i in d do
       a(i) = this(i);
     return a;
   }
 
-  fun =this(d : _domain, v) {
+  def =this(d : _domain, v) {
     for i in d do
       this(i) = v;
   }
@@ -25,22 +25,22 @@ class _array {
   // need this function to compete with string indexing function
   // (scalar promotion on array of strings or scalar promotion and
   // coercion on array of ints/floats)
-  fun this(i:int...?k) var
+  def this(i:int...?k) var
     return _value((...i));
 
-  fun this(i...?k) var
+  def this(i...?k) var
     return _value((...i));
 
-  fun getHeadCursor()
+  def getHeadCursor()
     return _value.getHeadCursor();
 
-  fun getNextCursor(c)
+  def getNextCursor(c)
     return _value.getNextCursor(c);
 
-  fun getValue(c)
+  def getValue(c)
     return _value.getValue(c);
 
-  fun isValidCursor?(c)
+  def isValidCursor?(c)
     return _value.isValidCursor?(c);
 
   iterator this() : elt_type {
@@ -49,28 +49,28 @@ class _array {
   }
 }
 
-fun =(a: _array, b: _array) {
+def =(a: _array, b: _array) {
   a._value = b._value;
   return a;
 }
 
-fun =(a: _array, b) {
+def =(a: _array, b) {
   a._value = b;
   return a;
 }
 
-fun _copy(a: _array) {
+def _copy(a: _array) {
   var b : [a.dom] a.elt_type;
   b = a;
   return b;
 }
 
-fun _init(a: _array) {
+def _init(a: _array) {
   var b : [a.dom] a.elt_type;
   return b;
 }
 
-fun fwrite(f : file, a: _array) {
+def fwrite(f : file, a: _array) {
   fwrite(f, a._value);
 }
 
@@ -79,120 +79,120 @@ class _domain {
   param rank : int;
   var _value : _domain_type;
 
-  fun getHeadCursor()
+  def getHeadCursor()
     return _value.getHeadCursor();
 
-  fun getNextCursor(c)
+  def getNextCursor(c)
     return _value.getNextCursor(c);
 
-  fun getValue(c)
+  def getValue(c)
     return _value.getValue(c);
 
-  fun isValidCursor?(c)
+  def isValidCursor?(c)
     return _value.isValidCursor?(c);
 
-  fun this(dim : int)
+  def this(dim : int)
     return _value(dim);
 
-  fun _build_array(type elt_type) {
+  def _build_array(type elt_type) {
     var x = _value._build_array(elt_type);
     return _array(x.type, elt_type, rank, x, this);
   }
 
-  fun _build_index()
+  def _build_index()
     return _value._build_index();
 
-  fun _build_sparse_domain() {
+  def _build_sparse_domain() {
     var x = _value._build_sparse_domain();
     return _domain(x.type, rank, x);
   }
 
-  fun add(i) {
+  def add(i) {
     _value.add(i);
   }
 
-  fun expand(i...?k) {
+  def expand(i...?k) {
     var x = _value.expand((...i));
     return _domain(x.type, rank, x);
   }
 
-  fun exterior(i...?k) {
+  def exterior(i...?k) {
     var x = _value.exterior((...i));
     return _domain(x.type, rank, x);
   }
 
-  fun interior(i...?k) {
+  def interior(i...?k) {
     var x = _value.interior((...i));
     return _domain(x.type, rank, x);
   }
 
-  fun translate(i...?k) {
+  def translate(i...?k) {
     var x = _value.translate((...i));
     return _domain(x.type, rank, x);
   }
 }
 
-fun =(a: _domain, b: _domain) {
+def =(a: _domain, b: _domain) {
   a._value = b._value;
   return a;
 }
 
-fun fwrite(f : file, a: _domain) {
+def fwrite(f : file, a: _domain) {
   fwrite(f, a._value);
 }
 
-fun by(a: _domain, b) {
+def by(a: _domain, b) {
   var x = a._value by b;
   return _domain(x.type, a.rank, x);
 }
 
 ////////////////////////////////////////////////////
 
-fun _build_domain(x)
+def _build_domain(x)
   return x;
 
-fun _build_domain(ranges : _aseq ...?rank) {
+def _build_domain(ranges : _aseq ...?rank) {
   var x = _adomain(rank, ranges);
   return _domain(x.type, rank, x);
 }
 
-fun _build_domain_type(param rank : int) {
+def _build_domain_type(param rank : int) {
   var x = _adomain(rank);
   return _domain(x.type, rank, x);
 }
 
-fun _build_domain_type(type ind_type) {
+def _build_domain_type(type ind_type) {
   var x = _idomain(ind_type);
   return _domain(x.type, 1, x);
 }
 
-fun _build_sparse_domain_type(dom)
+def _build_sparse_domain_type(dom)
   return dom._build_sparse_domain();
 
-fun _build_array_type(dom, type elt_type)
+def _build_array_type(dom, type elt_type)
   return dom._build_array(elt_type);
 
-fun _build_index_type(param i: int) where i > 1 {
+def _build_index_type(param i: int) where i > 1 {
   var x : i*int;
   return x;
 }
 
-fun _build_index_type(param i: int) where i == 1 {
+def _build_index_type(param i: int) where i == 1 {
   var x : int;
   return x;
 }
 
-fun _build_index_type(dom) {
+def _build_index_type(dom) {
   return dom._build_index();
 }
 
 ///////////////
 
-fun _aseq._translate(i : int) : _aseq {
+def _aseq._translate(i : int) : _aseq {
   return _low+i.._high+i by _stride;
 }
 
-fun _aseq._interior(i : int) : _aseq {
+def _aseq._interior(i : int) : _aseq {
   var x : _aseq = _low.._high by _stride;
   if (i < 0) {
     x = _low.._low-1-i by _stride;
@@ -202,7 +202,7 @@ fun _aseq._interior(i : int) : _aseq {
   return x;
 }
 
-fun _aseq._exterior(i : int) : _aseq {
+def _aseq._exterior(i : int) : _aseq {
   var x : _aseq = _low.._high by _stride;
   if (i < 0) {
     x = _low+i.._low-1 by _stride;
@@ -212,7 +212,7 @@ fun _aseq._exterior(i : int) : _aseq {
   return x;
 }
 
-fun _aseq._expand(i : int) : _aseq {
+def _aseq._expand(i : int) : _aseq {
   return _low-i.._high+i by _stride;
 }
 
@@ -221,14 +221,14 @@ class _adomain {
   param rank : int;
   var ranges : rank*_aseq;
 
-  fun getHeadCursor() {
+  def getHeadCursor() {
     var c : rank*int;
     for param i in 1..rank do
       c(i) = ranges(i).getHeadCursor();
     return c;
   }
 
-  fun getNextCursor(c) {
+  def getNextCursor(c) {
     for param i in 1..rank {
       c(i) = ranges(i).getNextCursor(c(i));
       if ranges(i).isValidCursor?(c(i)) then
@@ -240,46 +240,46 @@ class _adomain {
     return c;
   }
 
-  fun getValue(c) {
+  def getValue(c) {
     if rank == 1 then
       return c(1);
     else
       return c;
   }
 
-  fun isValidCursor?(c) {
+  def isValidCursor?(c) {
     for param i in 1..rank do
       if !ranges(i).isValidCursor?(c(i)) then
         return false;
     return true;
   }
 
-  fun this(dim : int)
+  def this(dim : int)
     return ranges(dim);
 
-  fun _build_array(type elt_type)
+  def _build_array(type elt_type)
     return _aarray(elt_type, rank, dom=this);
 
-  fun _build_sparse_domain()
+  def _build_sparse_domain()
     return _sdomain(rank, adomain=this);
 
-  fun _build_index() {
+  def _build_index() {
     var x : rank*int;
     return x;
   }
 
-  fun translate(dim : rank*int) {
+  def translate(dim : rank*int) {
     var x = _adomain(rank);
     for i in 1..rank do
       x.ranges(i) = this(i)._translate(dim(i));
     return x;
   }
 
-  fun translate(dim : int ...?numDims) {
+  def translate(dim : int ...?numDims) {
     return translate(dim);
   }
 
-  fun interior(dim : rank*int) {
+  def interior(dim : rank*int) {
     var x = _adomain(rank);
     for i in 1..rank do {
       if ((dim(i) > 0) && (this(i)._high+1-dim(i) < this(i)._low) ||
@@ -291,22 +291,22 @@ class _adomain {
     return x;
   }
 
-  fun interior(dim : int ...?numDims) {
+  def interior(dim : int ...?numDims) {
     return interior(dim);
   }
 
-  fun exterior(dim : rank*int) {
+  def exterior(dim : rank*int) {
     var x = _adomain(rank);
     for i in 1..rank do
       x.ranges(i) = this(i)._exterior(dim(i));
     return x;
   }
   
-  fun exterior(dim : int ...?numDims) {
+  def exterior(dim : int ...?numDims) {
     return exterior(dim);
   }
 
-  fun expand(dim : rank*int) {
+  def expand(dim : rank*int) {
     var x = _adomain(rank);
     for i in 1..rank do {
       x.ranges(i) = ranges(i)._expand(dim(i));
@@ -317,7 +317,7 @@ class _adomain {
     return x;
   }  
   
-  fun expand(dim : int ...?numDims) {
+  def expand(dim : int ...?numDims) {
     var x = _adomain(rank);
     if (rank == numDims) {
       -- NOTE: would probably like to get rid of this assignment
@@ -336,14 +336,14 @@ class _adomain {
 }
 
 
-fun by(dom : _adomain, dim : dom.rank*int) {
+def by(dom : _adomain, dim : dom.rank*int) {
   var x = _adomain(dom.rank);
   for i in 1..dom.rank do
     x.ranges(i) = dom.ranges(i) by dim(i);
   return x;
 }
 
-fun by(dom : _adomain, dim : int) {
+def by(dom : _adomain, dim : int) {
   var x = _adomain(dom.rank);
   for i in 1..dom.rank do
     x.ranges(i) = dom.ranges(i) by dim;
@@ -361,16 +361,16 @@ record _aarray {
   var size : int;
   var data : _ddata(elt_type);
 
-  fun getHeadCursor()
+  def getHeadCursor()
     return 0;
 
-  fun getNextCursor(c)
+  def getNextCursor(c)
     return c + 1;
 
-  fun getValue(c)
+  def getValue(c)
     return data(c);
 
-  fun isValidCursor?(c)
+  def isValidCursor?(c)
     return c < size;
 
   iterator this() : elt_type {
@@ -378,13 +378,13 @@ record _aarray {
       yield x; 
   }
 
-  fun off(dim : int) var
+  def off(dim : int) var
     return info(dim)(1);
 
-  fun blk(dim : int) var
+  def blk(dim : int) var
     return info(dim)(2);
 
-  fun initialize() {
+  def initialize() {
     if dom == nil then return;
     for dim in 1..rank do
       off(dim) = dom(dim)._low;
@@ -396,19 +396,19 @@ record _aarray {
     data.init();
   }
 
-  fun this(d : _adomain) {
+  def this(d : _adomain) {
     var a : [d] elt_type;
     for i in d do
       a(i) = this(i);
     return a;
   }
 
-  fun =this(d : _adomain, v) {
+  def =this(d : _adomain, v) {
     for i in d do
       this(i) = v;
   }
 
-  fun this(ind : rank*int) var {
+  def this(ind : rank*int) var {
     for param i in 1..rank do
       if !_in(dom(i), ind(i)) {
         halt("array index out of bounds: ", ind);
@@ -419,11 +419,11 @@ record _aarray {
     return data(sum);
   }
 
-  fun this(ind : int ...rank) var
+  def this(ind : int ...rank) var
     return this(ind);
 }
 
-fun =(x : _aarray, y : _aarray) {
+def =(x : _aarray, y : _aarray) {
   var j : int;
   for e in y {
     x.data(j) = e;
@@ -432,7 +432,7 @@ fun =(x : _aarray, y : _aarray) {
   return x;
 }
 
-fun =(x : _aarray, y : seq) {
+def =(x : _aarray, y : seq) {
   var j : int;
   for e in y {
     x.data(j) = e;
@@ -441,20 +441,20 @@ fun =(x : _aarray, y : seq) {
   return x;
 }
 
-fun =(x : _aarray, y) {
+def =(x : _aarray, y) {
   for i in 0..x.size-1 do
     x.data(i) = y;
   return x;
 }
 
-fun fwrite(f : file, x : _adomain) {
+def fwrite(f : file, x : _adomain) {
   fwrite(f, "[", x(1));
   for i in 2..x.rank do
     fwrite(f, ", ", x(i));
   fwrite(f, "]");
 }
 
-fun fwrite(f : file, x : _aarray) {
+def fwrite(f : file, x : _aarray) {
   var i : x.rank*int;
   for dim in 1..x.rank do
     i(dim) = x.dom(dim)._low;

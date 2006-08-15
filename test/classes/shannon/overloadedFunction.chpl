@@ -1,4 +1,4 @@
-fun foo(x: float) { 
+def foo(x: float) { 
   writeln("and got the float foo.");
 
 }
@@ -10,10 +10,10 @@ class C {
 
 var myC = C();
 
-fun foo(c: C = myC, fmt: string = "foo", x: int) {
+def foo(c: C = myC, fmt: string = "foo", x: int) {
   writeln("and got the int foo.");
 
 }
 
-writeln("Calling the overloaded foo fun with an int argument,");
+writeln("Calling the overloaded foo function with an int argument,");
 foo(3);

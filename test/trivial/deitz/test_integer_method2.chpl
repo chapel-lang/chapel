@@ -1,4 +1,4 @@
-fun int.print() {
+def int.print() {
   writeln("int.print = ", this);
 }
 

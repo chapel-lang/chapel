@@ -1,4 +1,4 @@
-fun foo(x: int) {
+def foo(x: int) {
   var x = x + 1;
 
   writeln("x is: ", x);

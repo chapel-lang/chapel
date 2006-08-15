@@ -4,7 +4,7 @@ record EndPoints {
   var end : int;
 }
 
-fun f((s,e) : EndPoints) {
+def f((s,e) : EndPoints) {
  return e - s;
 }
 

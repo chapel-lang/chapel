@@ -1,4 +1,4 @@
-fun f((x, y), z) {
+def f((x, y), z) {
   writeln(x);
   writeln(z);
   writeln(y);

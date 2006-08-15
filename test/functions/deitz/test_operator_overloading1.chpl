@@ -3,7 +3,7 @@ record point {
   var y : int;
 }
 
-fun +(p1 : point, p2 : point) : point {
+def +(p1 : point, p2 : point) : point {
   var p3 : point = point();
   p3.x = p1.x + p2.x;
   p3.y = p1.y + p2.y;

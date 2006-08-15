@@ -1,4 +1,4 @@
-fun zero(A : [?D] float) {
+def zero(A : [?D] float) {
   forall i in D {
     A(i) = 0;
   }

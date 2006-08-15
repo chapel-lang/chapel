@@ -1,4 +1,4 @@
-fun foo(x1 : float, x2 : int) {
+def foo(x1 : float, x2 : int) {
   writeln("foo w/ float ", x1, " and int ", x2);
 }
 

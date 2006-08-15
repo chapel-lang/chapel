@@ -1,7 +1,7 @@
 class dog {
   var weight : float;
   var paws : int;
-  fun grow(pounds : float) {
+  def grow(pounds : float) {
     weight += pounds;
   }
 }

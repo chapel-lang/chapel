@@ -7,7 +7,7 @@ record myrecord {
   var a: seq(int);
 }
 
-fun main() {
+def main() {
   var x: myrecord;
   var y: myrecord;
 

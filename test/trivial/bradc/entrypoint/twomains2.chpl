@@ -1,11 +1,11 @@
 var x = 32;
 var y = -1;
 
-fun main(x: int) {
+def main(x: int) {
   writeln("In main(x), x is: ", x);
 }
 
-fun main() {
+def main() {
   var y = 42;
 
   writeln("x is: ", x);

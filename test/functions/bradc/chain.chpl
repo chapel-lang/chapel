@@ -1,9 +1,9 @@
-fun foo(a) {
+def foo(a) {
   writeln("in foo, a is ", a);
   bar(7);
 }
 
-fun bar(a) {
+def bar(a) {
   writeln("in bar, a is ", a);
 }
 

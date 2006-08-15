@@ -1,9 +1,9 @@
-fun foo(inout t : int) {
+def foo(inout t : int) {
   writeln(t);
   t += 1;
 }
 
-fun bar(inout t : int) {
+def bar(inout t : int) {
   foo(t);
   writeln(t);
   t += 1;

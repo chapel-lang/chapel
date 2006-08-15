@@ -1,5 +1,5 @@
 
-fun test () {
+def test () {
   var x : int;
 
   x = 92;

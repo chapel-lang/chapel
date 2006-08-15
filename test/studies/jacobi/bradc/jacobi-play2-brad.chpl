@@ -13,7 +13,7 @@ param weights: [StencilD] float = (/ (/ 0.00, 0.25, 0.00 /),
                                      (/ 0.00, 0.25, 0.00 /) /);
 
 
-fun main() {
+def main() {
   var A, B: [D] float = 0.0;
 
   A.setBoundary(computeBoundary);
@@ -37,7 +37,7 @@ fun main() {
 }
 
 
-fun computeBoundary((i, j): index(2)) {
+def computeBoundary((i, j): index(2)) {
   if (i < 0 || i > n+1 || j < 0 || j > n+1) {
     halt("Out of bounds error in computeBoundary");
   } else if (j == n+1) {

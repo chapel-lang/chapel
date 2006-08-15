@@ -8,12 +8,12 @@ class D {
   var y = 20;
   var locc: C;
 
-  fun doit {
+  def doit {
     locc = globc;
   }
 }
 
-fun main() {
+def main() {
   var d: D = D();
   globc = nil;
   d.doit;

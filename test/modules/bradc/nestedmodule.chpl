@@ -1,16 +1,16 @@
 module a {
 
-  fun runa() {
+  def runa() {
     writeln("in runa() in module a");
   }
 
   module aSubB {
 
-    fun runab() {
+    def runab() {
       writeln("in runab() in module aSubB");
     }
 
-    fun main() {
+    def main() {
       runa();
       runab();
     }  

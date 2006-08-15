@@ -1,4 +1,4 @@
-fun foo(d : domain(2)) {
+def foo(d : domain(2)) {
   var a : [d] int;
   for ij in d do
     a(ij) = ij(1) + ij(2);

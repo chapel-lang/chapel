@@ -5,7 +5,7 @@ class C {
 }
 
 
-fun f(x : ?t) where x.bar == int {
+def f(x : ?t) where x.bar == int {
   writeln("x = ", x.x);
 }
 

@@ -1,6 +1,6 @@
-fun foo() {
+def foo() {
   var x = 1;
-  fun bar() {
+  def bar() {
     var y = 2;
     writeln(x);
     writeln(y);

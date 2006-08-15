@@ -3,8 +3,8 @@ class C {
 }
 class D {
   var aa : int;
-  fun a(i : int) { return aa + i; }
-  fun =a(i : int, v : int) { aa = i + v; }
+  def a(i : int) { return aa + i; }
+  def =a(i : int, v : int) { aa = i + v; }
 }
 var d : domain(1) = [1..3];
 class E {

@@ -1,12 +1,12 @@
-fun foo(s : string) {
+def foo(s : string) {
   write("string ", s);
 }
 
-fun foo(i : int) {
+def foo(i : int) {
   write("int ", i);
 }
 
-fun foo(ys ...2) {
+def foo(ys ...2) {
   foo(ys(1));
   write(", ");
   foo(ys(2));

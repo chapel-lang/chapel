@@ -1,5 +1,5 @@
 class C {
-  fun this(ii : int ...3) : int {
+  def this(ii : int ...3) : int {
     for i in 1..3 do
       writeln(ii(i));
     return 4;

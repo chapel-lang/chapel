@@ -13,7 +13,7 @@ const
   r46   = 0.5**46,
   t46   = 2.0**46;
 
-fun nextrandlc(x : float, a : float) {
+def nextrandlc(x : float, a : float) {
   var t1 = r23 * a;
   var a1 = floor(t1);
   var a2 = a - t23 * a1;
@@ -29,7 +29,7 @@ fun nextrandlc(x : float, a : float) {
   return (x3, r46 * x3);
 }
 
-fun initrandlc(seed, a : float, in n : int) : float {
+def initrandlc(seed, a : float, in n : int) : float {
   var i : int, t : float, g : float;
   var x : float = seed;
   t = a;
@@ -45,7 +45,7 @@ fun initrandlc(seed, a : float, in n : int) : float {
 
 var randlc_last_n : int = -2,
     randlc_last_x : float;
-fun randlc(n : int) : float {
+def randlc(n : int) : float {
   var result : float;
   if n != randlc_last_n + 1 then
     randlc_last_x = initrandlc(seed, arand, n);
@@ -86,14 +86,14 @@ var
   U2 : [DXYZ] complex,
   Twiddle : [DXYZ] float;
 
-fun compute_initial_conditions(X1) {
+def compute_initial_conditions(X1) {
   forall i,j,k in DXYZ {
     X1(i,j,k).real = randlc(((i*ny+j)*nz+k)*2);
     X1(i,j,k).imag = randlc(((i*ny+j)*nz+k)*2+1);
   }
 }
 
-fun compute_index_map(Twiddle) {
+def compute_index_map(Twiddle) {
   const ap = -4.0 * alpha * pi * pi;
   forall i,j,k in DXYZ do
     Twiddle(i,j,k) = exp(ap*(((i+nx/2) % nx - nx/2)**2 +
@@ -105,7 +105,7 @@ var fftblock : int = 16, fftblockpad : int = 18;
 
 var u : [0..nz-1] complex;
 
-fun fft_init() {
+def fft_init() {
   var t : float, ti : float;
   var m = bpop(nz-1);
   var ku = 2;
@@ -121,7 +121,7 @@ fun fft_init() {
   }
 }
 
-fun fftz2(dir, l, m, n, ny, ny1 : int, u, x, y) {
+def fftz2(dir, l, m, n, ny, ny1 : int, u, x, y) {
   var lk = 2**(l-1), li = 2**(m-1), lj = 2*lk;
   for i in 0..li-1 {
     var i11 = i * lk, i12 = i11 + n/2, i21 = i * lj, i22 = i21 + lk;
@@ -137,7 +137,7 @@ fun fftz2(dir, l, m, n, ny, ny1 : int, u, x, y) {
   }
 }
 
-fun cfftz(dir, m, n, ny, ny1 : int, x, y) {
+def cfftz(dir, m, n, ny, ny1 : int, x, y) {
   for l in 1..m by 2 {
     fftz2(dir, l, m, n, ny, ny1, u, x, y);
     if l != m then
@@ -148,7 +148,7 @@ fun cfftz(dir, m, n, ny, ny1 : int, x, y) {
   }
 }
 
-fun cffts1(dir, n, X1, X2, ny, ny1, x, y) {
+def cffts1(dir, n, X1, X2, ny, ny1, x, y) {
   for j in DXYZ(2) {
     for kk in DXYZ(3) by ny {
       [i1,_,i3 in [0..n-1,j..j,kk..kk+ny-1]] x(i1,i3-kk) = X1(i1,j,i3);
@@ -158,7 +158,7 @@ fun cffts1(dir, n, X1, X2, ny, ny1, x, y) {
   }
 }
 
-fun cffts2(dir, n, X1, X2, ny, ny1, x, y) {
+def cffts2(dir, n, X1, X2, ny, ny1, x, y) {
   for i in DXYZ(1) {
     for kk in DXYZ(3) by ny {
       [_,i2,i3 in [i..i,0..n-1,kk..kk+ny-1]] x(i2,i3-kk) = X1(i,i2,i3);
@@ -168,7 +168,7 @@ fun cffts2(dir, n, X1, X2, ny, ny1, x, y) {
   }
 }
 
-fun cffts3(dir, n, X1, X2, ny, ny1, x, y) {
+def cffts3(dir, n, X1, X2, ny, ny1, x, y) {
   for i in DXYZ(1) {
     for jj in DXYZ(2) by ny {
       [_,i2,i3 in [i..i,jj..jj+ny-1,0..n-1]] x(i3,i2-jj) = X1(i,i2,i3);
@@ -178,7 +178,7 @@ fun cffts3(dir, n, X1, X2, ny, ny1, x, y) {
   }
 }
 
-fun fft(dir : int, X1, X2) {
+def fft(dir : int, X1, X2) {
   var x : [0..nz-1, 0..fftblockpad-1] complex;
   var y : [0..nz-1, 0..fftblockpad-1] complex;
   if dir == 1 {
@@ -192,7 +192,7 @@ fun fft(dir : int, X1, X2) {
   }
 }
 
-fun evolve(X1, X2, Twiddle) {
+def evolve(X1, X2, Twiddle) {
   forall ijk in DXYZ {
     X1(ijk) *= (Twiddle(ijk) + 0i);
     X2(ijk) = X1(ijk);
@@ -296,7 +296,7 @@ vdata_d(23) = 511.8776626738+511.9755100241i;
 vdata_d(24) = 511.8799262314+511.9776353561i;
 vdata_d(25) = 511.8822370068+511.9794338060i;
 
-fun verify() {
+def verify() {
   var rerr : float, ierr : float;
   for iter in 1..niter {
     select problem_class {
@@ -331,7 +331,7 @@ fun verify() {
   return true;
 }
 
-fun checksum(i, X1) {
+def checksum(i, X1) {
   var chk : complex;
   [j in 1..1024] chk += X1((5*j) % nx, (3*j) % ny, j % nz);
   chk = chk / ((nx * ny * nz) + 0i);

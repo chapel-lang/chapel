@@ -1,4 +1,4 @@
-pragma "inline" fun foo() {
+pragma "inline" def foo() {
   var i : int = 0;
   while(i < 10) {
     i = i + 1;
@@ -15,7 +15,7 @@ pragma "inline" fun foo() {
   return;    
 }
 
-fun main() {
+def main() {
  foo();
  foo();
  return;

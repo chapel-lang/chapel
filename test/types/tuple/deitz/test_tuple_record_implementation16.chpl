@@ -3,15 +3,15 @@ record mytuple {
   type t2;
   var f1 : t1;
   var f2 : t2;
-  fun this(param i : int) var where i == 1 {
+  def this(param i : int) var where i == 1 {
     return f1;
   }
-  fun this(param i : int) var where i == 2 {
+  def this(param i : int) var where i == 2 {
     return f2;
   }
 }
 
-fun fwrite(f : file, val : mytuple) {
+def fwrite(f : file, val : mytuple) {
   fwrite(f, "(", val.f1, ", ", val.f2, ")");
 }
 

@@ -1,4 +1,4 @@
-fun foo(param rank : int) {
+def foo(param rank : int) {
   var x : rank*int;
   for param i in 1..rank do
     x(i) = i;

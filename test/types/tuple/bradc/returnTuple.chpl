@@ -1,4 +1,4 @@
-fun returntwo(): (int, float) {
+def returntwo(): (int, float) {
   return (1, 2.3);
 }
 

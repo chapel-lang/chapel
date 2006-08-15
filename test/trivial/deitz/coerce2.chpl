@@ -1,5 +1,5 @@
 class C {
-  fun =foo(i : int, f : float) {
+  def =foo(i : int, f : float) {
     writeln(i);
     writeln(f);
   }

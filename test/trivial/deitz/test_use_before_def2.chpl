@@ -1,4 +1,4 @@
-fun foo() {
+def foo() {
   writeln(x);
   var x : int = 12;
 }

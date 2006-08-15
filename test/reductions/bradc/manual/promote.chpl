@@ -2,15 +2,15 @@ class mysumreduce {
   type t;
   var state: t;
   
-  fun init() {
+  def init() {
     state = 0;
   }
 
-  fun combine(x: t) {
+  def combine(x: t) {
     state += x;
   }
 
-  fun finalize(): t {
+  def finalize(): t {
     return state;
   }
 }

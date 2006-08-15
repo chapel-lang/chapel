@@ -1,31 +1,31 @@
 
-fun callin(in x: string) {
+def callin(in x: string) {
   writeln("in callin, x is: ", x);
   x += "b";
   writeln("re-assigned to be: ", x);
 }
 
 
-fun callout(out x: string) {
+def callout(out x: string) {
   writeln("in callout, x is: ", x);
   x += "c";
   writeln("re-assigned to be: ", x);
 }
 
 
-fun callinout(inout x: string) {
+def callinout(inout x: string) {
   writeln("in callinout, x is: ", x);
   x += "d";
   writeln("re-assigned to be: ", x);
 }
 
 
-fun callblank(x: string) {
+def callblank(x: string) {
   writeln("in callblank, x is: ", x);
 }
 
 
-fun main() {
+def main() {
   var a: string = "a";
 
   callin(a);

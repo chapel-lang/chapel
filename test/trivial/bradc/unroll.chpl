@@ -1,17 +1,17 @@
 
-fun foo(x: int) {
+def foo(x: int) {
   writeln("Got an int");
 }
 
-fun foo(x: float) {
+def foo(x: float) {
   writeln("Got a float");
 }
 
-fun foo(x: string) {
+def foo(x: string) {
   writeln("Got a string");
 }
 
-fun unrollme(x ...?numargs) {
+def unrollme(x ...?numargs) {
   for param i in 1..numargs {
     foo(x(i));
   }

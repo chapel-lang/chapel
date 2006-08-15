@@ -2,7 +2,7 @@ class bar {
   implements reduction;
 }
 
-fun main() {
+def main() {
   class reduction {
   } -- override built-in reduction class?
 

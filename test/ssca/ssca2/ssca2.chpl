@@ -16,7 +16,7 @@ config var ENABLE_PLOT_K3DB  = false;
 union Weight {
   var i : int;
   var s : string;
-  fun is_string {
+  def is_string {
     typeselect (this) {
       when s     return true;
       otherwise  return false;
@@ -66,7 +66,7 @@ class Graph {
                       VertexD=>VertexD,
                       ParEdgeD=>ParEdgeD);
 
-  fun copy(s : Graph) {
+  def copy(s : Graph) {
     return Graph(VerteD  =s.VertexD,
                  ParEdgeD=s.ParEdgeD);
   }
@@ -85,11 +85,11 @@ class Subgraph {
     start = s;
     end   = e;
   }
-  fun adjMatrix(i: index(AdjD)) { return weights(i).length; }
+  def adjMatrix(i: index(AdjD)) { return weights(i).length; }
 }
 
 
-fun main() {
+def main() {
   -- Scalable Data Generator parameters.
   -- Total number of vertices in directed multigraph.
   config var TOT_VERTICES       =  2^8;
@@ -193,7 +193,7 @@ fun main() {
 }
 
 
-fun genScalData(totVertices, maxCliqueSize, maxParalEdges,
+def genScalData(totVertices, maxCliqueSize, maxParalEdges,
                      percentIntWeights, 
                      maxIntWeightP, probInterclEdges) {
 
@@ -331,7 +331,7 @@ fun genScalData(totVertices, maxCliqueSize, maxParalEdges,
 }
 
 
-fun binsearch(x : [?lo..?hi] , y]) {
+def binsearch(x : [?lo..?hi] , y]) {
   if (hi < lo  ) then return lo;
   if (x(hi) > y) then return hi;
   if (y <= x(lo)) then return lo;
@@ -348,7 +348,7 @@ fun binsearch(x : [?lo..?hi] , y]) {
   return hi;
 }
 
-fun computeGraph(edges , totVertices, maxParalEdges, 
+def computeGraph(edges , totVertices, maxParalEdges, 
                       maxIntWeight ) : Graph {
   var G = Graph();
   G:Numbers = edges;
@@ -371,9 +371,9 @@ fun computeGraph(edges , totVertices, maxParalEdges,
 }
 
 
-fun sortWeights( G : Graph, soughtString : string ) {
+def sortWeights( G : Graph, soughtString : string ) {
 
-  fun Subgraph.choose(value) {
+  def Subgraph.choose(value) {
     return [e in AdjD] (if (weights(e) == value) then EndPoints(e));
   }
   use G only intg, strg;
@@ -382,12 +382,12 @@ fun sortWeights( G : Graph, soughtString : string ) {
 }
 
 
-fun Graph.findSubGraphs(SUBGR_EDGE_LENGTH : int,
+def Graph.findSubGraphs(SUBGR_EDGE_LENGTH : int,
                              startSetIntVPairs : seq of EndPoints,
                              startSetStrVPairs : seq of EndPoints) 
                             : seq of Graph {
     
-  fun Subgraph.expandSubGraphs(start, complete:subgraph) {
+  def Subgraph.expandSubGraphs(start, complete:subgraph) {
     var frontier like AdjD = (start.start, start.end);
     AdjD = start;
     for k in 2..SUBGR_EDGE_LENGTH {
@@ -413,9 +413,9 @@ fun Graph.findSubGraphs(SUBGR_EDGE_LENGTH : int,
   return subgraphs;
 }
 
-fun cutClusters(G, cutBoxSize, alpha) {
+def cutClusters(G, cutBoxSize, alpha) {
 
-  fun cutClustersCommon( adjMatrix : Subgraph,
+  def cutClustersCommon( adjMatrix : Subgraph,
                               cutBoxSize, alpha) {
     if cutBoxSize < 1
       then halt('cutBoxSize must be a least one.');
@@ -488,7 +488,7 @@ fun cutClusters(G, cutBoxSize, alpha) {
   var strVertexRemap = cutClustersCommon( G.strg, cutBoxSize, alpha );
   var cutG = Graph.copy(G);
 
-  fun remap(oldg, newg, vertexRemap) {
+  def remap(oldg, newg, vertexRemap) {
     var map: [G.VertexD];
     forall (new, old) in (1.., vertexRemap) do 
       map(old) = new;

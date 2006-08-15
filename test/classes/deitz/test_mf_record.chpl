@@ -1,11 +1,11 @@
 record foo {
   var x : int;
-  fun bar() {
+  def bar() {
     writeln("method bar ", x);
   }
 }
 
-fun bar(f : foo) {
+def bar(f : foo) {
   writeln("function bar ", f.x);
 }
 

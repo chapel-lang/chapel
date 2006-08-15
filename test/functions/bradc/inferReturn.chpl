@@ -1,19 +1,19 @@
-fun returnInt() {
+def returnInt() {
   return 2;
 }
 
 
-fun returnFloat() {
+def returnFloat() {
   return 2.3;
 }
 
 
-fun returnString() {
+def returnString() {
   return "hi there";
 }
 
 
-fun main() {
+def main() {
   writeln("returnInt() returns: ", returnInt());
   writeln("returnFloat() returns: ", returnFloat());
   writeln("returnString() returns: ", returnString());

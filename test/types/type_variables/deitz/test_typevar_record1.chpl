@@ -1,7 +1,7 @@
 record foo {
   type t;
   var x : t;
-  fun print() {
+  def print() {
     writeln(x);
   }
 }

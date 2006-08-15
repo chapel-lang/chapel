@@ -1,4 +1,4 @@
-fun foo(param i : int) {
+def foo(param i : int) {
   writeln("in foo ", i);
   foo(i + 1);
 }

@@ -1,4 +1,4 @@
-fun foo(s) {
+def foo(s) {
 
   writeln("s is: ", s);
 

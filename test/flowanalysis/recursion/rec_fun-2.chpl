@@ -1,11 +1,11 @@
 
-fun g(x) {
+def g(x) {
  if (x > 19)
    return x;
   return g(x + 1);
 }
 
-fun f(x) {
+def f(x) {
   return g(x);
 }
 

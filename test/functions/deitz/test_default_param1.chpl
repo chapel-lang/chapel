@@ -1,4 +1,4 @@
-fun foo(i : int = 12) {
+def foo(i : int = 12) {
   writeln(i);
 }
 

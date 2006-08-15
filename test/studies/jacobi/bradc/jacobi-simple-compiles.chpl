@@ -11,7 +11,7 @@ const south = ( 1,  0);
 const east  = ( 0,  1);
 const west  = ( 0, -1);
 
-fun main() {
+def main() {
   var A: [BigD] float = 0.0, 
       B: [D] float;
 

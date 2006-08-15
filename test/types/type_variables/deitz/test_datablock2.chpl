@@ -3,7 +3,7 @@ class DataBlock {
   var x1 : t;
   var x2 : t;
   var x3 : t;
-  fun this(i : int) : t {
+  def this(i : int) : t {
     if i == 1 then
       return x1;
     else if i == 2 then
@@ -11,7 +11,7 @@ class DataBlock {
     else
       return x3;
   }
-  fun =this(i : int, val : t) {
+  def =this(i : int, val : t) {
     if i == 1 then
       x1 = val;
     else if i == 2 then

@@ -1,8 +1,8 @@
-fun int(32).print() {
+def int(32).print() {
   writeln("int(32).print = ", this);
 }
 
-fun int.print() {
+def int.print() {
   writeln("int.print = ", this);
 }
 

@@ -7,7 +7,7 @@ class Foo {
   var y : int;
 }
 
-fun main() {
+def main() {
   var f : Foo = Foo();
   /* setter method will be created, temporary should not be created for f
    * since formal param this will be a ref */
@@ -33,11 +33,11 @@ fun main() {
  
 }
 
-pragma "inline" fun leaf(x : Foo) : Foo {
+pragma "inline" def leaf(x : Foo) : Foo {
   return x;
 }
 
-fun bar(in a: int, out b: int, inout c : int, const d : int) {    
+def bar(in a: int, out b: int, inout c : int, const d : int) {    
   a = 11;
   b = 22;
   c = 33;

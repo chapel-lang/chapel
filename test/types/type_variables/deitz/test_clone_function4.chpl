@@ -1,8 +1,8 @@
-fun filler(x : int) {
+def filler(x : int) {
   writeln(x);
 }
 
-fun foo(x) {
+def foo(x) {
   writeln(x);
 }
 

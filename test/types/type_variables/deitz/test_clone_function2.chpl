@@ -1,4 +1,4 @@
-fun foo(x) {
+def foo(x) {
   writeln(x);
 }
 

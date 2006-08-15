@@ -1,6 +1,6 @@
 
 
-fun foo(out x) {
+def foo(out x) {
   x = 7;
 }
 

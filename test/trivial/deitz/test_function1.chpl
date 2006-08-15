@@ -3,7 +3,7 @@ record R {
   var y;
 }
 
-fun foo(a, b) {
+def foo(a, b) {
   var r = R(a, b);
   writeln(r);
 }

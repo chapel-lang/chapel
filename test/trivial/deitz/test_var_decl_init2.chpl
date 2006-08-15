@@ -1,4 +1,4 @@
-fun foo(n : int) : int {
+def foo(n : int) : int {
   return n * 2;
 }
 

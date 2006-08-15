@@ -59,11 +59,11 @@ for loc in localeD {
 }
 
 
-fun min(type t): int {
+def min(type t): int {
   return -999;
 }
 
 
-fun max(type t): int {
+def max(type t): int {
   return 999;
 }

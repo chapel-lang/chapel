@@ -3,7 +3,7 @@ class pair {
   var y: float;
 }
 
-fun main() {
+def main() {
   var a: pair = a();
   writeln("Shouldn't that line have generated an error?");
 }

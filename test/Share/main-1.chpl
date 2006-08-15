@@ -2,6 +2,6 @@
 
 writeln("not here");
 
-fun main {
+def main {
   writeln("but here");
 }

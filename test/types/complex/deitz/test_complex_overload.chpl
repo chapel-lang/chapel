@@ -1,8 +1,8 @@
-fun foo(x : float) {
+def foo(x : float) {
   writeln("It's a float!");
 }
 
-fun foo(x : complex) {
+def foo(x : complex) {
   writeln("It's a complex!");
 }
 

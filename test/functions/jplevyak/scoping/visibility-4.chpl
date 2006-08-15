@@ -4,12 +4,12 @@ record bar {
 record foo : bar {
   var y : int;
 }
-fun f(x : foo) { return 2; }
+def f(x : foo) { return 2; }
 
 {
-  fun f(x : bar) { return 3; }
+  def f(x : bar) { return 3; }
   {
-    fun f(x : foo) { return 4; }
+    def f(x : foo) { return 4; }
   }
   var x = foo();
   writeln(f(x));

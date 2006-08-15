@@ -1,8 +1,8 @@
-fun baz() {
+def baz() {
   var y = 2.0;
-  fun foo() {
+  def foo() {
    var x = 1;
-   fun bar() {
+   def bar() {
      x = x + 1;
      y = y + 1;
      writeln(x);

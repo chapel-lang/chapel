@@ -1,8 +1,8 @@
-fun foo() {
+def foo() {
   var y : int = 3;
   record bar {
     var x : int = 2;
-    fun f() {
+    def f() {
       writeln(x);
       writeln(y);
     }

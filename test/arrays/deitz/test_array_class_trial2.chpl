@@ -4,7 +4,7 @@ class array1d {
   var x2 : t;
   var x3 : t;
   var x4 : t;
-  fun this(i : int) : t {
+  def this(i : int) : t {
     var result : t;
     select i {
       when 1 do result = x1;
@@ -16,7 +16,7 @@ class array1d {
     writeln("Read on ", i, " returns ", result);
     return result;
   }
-  fun =this(i : int, val : t) : t {
+  def =this(i : int, val : t) : t {
     select i {
       when 1 do x1 = val;
       when 2 do x2 = val;

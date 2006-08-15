@@ -1,9 +1,9 @@
 class foo {
   var x : int;
-  fun setx(i : int) {
+  def setx(i : int) {
     x = i;
   }
-  fun getx() : int {
+  def getx() : int {
     return x;
   }
 }

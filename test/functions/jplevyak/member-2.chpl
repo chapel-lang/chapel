@@ -1,9 +1,9 @@
 class foo {
   var i : int;
-  fun f() { return 10 + i; } 
+  def f() { return 10 + i; } 
 }
 
-fun f(x : foo) {
+def f(x : foo) {
   return 20 + x.i;
 }
 

@@ -8,7 +8,7 @@ class myotherclass {
   var y: int;
 }
 
-fun foo(a) {
+def foo(a) {
   writeln("a is: (", a.x, ", ", a.y, ") -- b is: (", b.x, ", ", b.y, ")");
 }
 

@@ -1,4 +1,4 @@
-fun min(type t) {
+def min(type t) {
   var x: t;
   x = -999;
   return x;

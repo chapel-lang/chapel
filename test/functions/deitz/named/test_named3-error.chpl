@@ -1,8 +1,8 @@
-fun foo(i : int, j : int, k : int) {
+def foo(i : int, j : int, k : int) {
   writeln("foo1 of ", i, ", ", j, ", ", k);
 }
 
-fun foo(l : int, m : int, n : int) {
+def foo(l : int, m : int, n : int) {
   writeln("foo2 of ", l, ", ", m, ", ", n);
 }
 

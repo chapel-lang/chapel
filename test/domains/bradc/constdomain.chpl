@@ -1,6 +1,6 @@
 config var n: int = 16;
 
-fun main() {
+def main() {
   const D: domain(1) = [1..n];
   var A: [D] int;
 

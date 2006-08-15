@@ -3,7 +3,7 @@ var favorite: dessert = pie;
 
 writeDessert(stdout, favorite);
 
-fun writeDessert(f: file, val: dessert) {
+def writeDessert(f: file, val: dessert) {
   select (val) {
     when (cake) do 
       fwrite(f, "cake");

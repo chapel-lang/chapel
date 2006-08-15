@@ -2,7 +2,7 @@
 
 config y = 1;
 
-fun foo(a) {
+def foo(a) {
   return a + a;
 }
 

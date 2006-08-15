@@ -1,9 +1,9 @@
-fun foo(a: [] float) {
+def foo(a: [] float) {
   writeln("array of floats");
   writeln(a);
 }
 
-fun foo(a: [] int) {
+def foo(a: [] int) {
   writeln("array of ints");
   writeln(a);
 }

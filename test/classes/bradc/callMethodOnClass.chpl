@@ -2,7 +2,7 @@ class C {
   var x = 1.2;
 }
 
-fun newC() {
+def newC() {
   var c = C();
   c.x = 2.3;
   return c;
@@ -11,16 +11,16 @@ fun newC() {
 class D {
   var y: C;
 
-  fun start {
+  def start {
     y = newC();
   }
 
-  fun testit {
+  def testit {
     writeln("y.x is: ", y.x);
   }
 }
 
-fun main() {
+def main() {
   var myD = D();
   D.start;  -- BUG if I call this on D!!
   D.testit;

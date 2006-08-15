@@ -1,7 +1,7 @@
-fun f(x, y, z) { writeln(x + y + z); return x + y + z; }
+def f(x, y, z) { writeln(x + y + z); return x + y + z; }
 class A {
   var a;
-  fun this(x,y) { return a(x, y); }
+  def this(x,y) { return a(x, y); }
 }
 class C {
   var a;

@@ -1,15 +1,15 @@
 class C {
   var c;
-  fun f() { return c * 2; }
+  def f() { return c * 2; }
 }
-fun ff(a : C) { return a.c * 2; }
+def ff(a : C) { return a.c * 2; }
 
 class D : C {
   var d;
-  fun g() { return c * d; }
-  fun f() { return c * 3; }
+  def g() { return c * d; }
+  def f() { return c * 3; }
 }
-fun ff(a : D) { return ff(a:C(a.c)) * 2; }
+def ff(a : D) { return ff(a:C(a.c)) * 2; }
 
 var x = D(c = 1, d = 2.0);
 var y = D(c = 3.0, d = 4);

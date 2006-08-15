@@ -53,7 +53,7 @@ const Hier: [lvl in Levels] domain(Base) = Base by -2**(lvl-1);
 const Stencil: domain(3) = [-1..1, -1..1, -1..1];
 
 
-fun main() {
+def main() {
   var initTimer, benchTimer: timer;
 
   initTimer.start();
@@ -73,7 +73,7 @@ fun main() {
 
 -- top-level funs
 
-fun initializeMG(V, U, R) {
+def initializeMG(V, U, R) {
   writeln(" NAS Parallel Benchmarks 3.0 (Chapel version) - MG Benchmark");
   writeln(" Size: ", nx, "x", ny, "x", nz);
   writeln(" Iterations: ", numIters);
@@ -88,7 +88,7 @@ fun initializeMG(V, U, R) {
 }
 
 
-fun computeMG(V, U, R) {
+def computeMG(V, U, R) {
   resid(R(1), V, U(1));
   norm2u3(R(1));
   for it in (1..numIters) {
@@ -100,7 +100,7 @@ fun computeMG(V, U, R) {
 }
 
 
-fun printResults(rnm2, inittime, runtime) {
+def printResults(rnm2, inittime, runtime) {
   var verified = false;
 
   if (verifyValue != 0.0) {
@@ -135,13 +135,13 @@ fun printResults(rnm2, inittime, runtime) {
 }
 
 
-fun runOneIteration(V, U, R) {
+def runOneIteration(V, U, R) {
   mg3P(V, U, R);
   resid(R(1), V, U(1));
 }
 
 
-fun mg3P(V, U, R) {
+def mg3P(V, U, R) {
   -- project up the hierarchy
   for lvl in (2..numLevels) {
     rprj3(R(lvl), R(lvl-1));
@@ -166,7 +166,7 @@ fun mg3P(V, U, R) {
 }
 
 
-fun resid(R, V, U) {
+def resid(R, V, U) {
   const a: coeff = (-8.0/3.0, 0.0, 1.0/6.0, 1.0/12.0);
   const a3d: [(i,j,k) in Stencil] float = a((i!=0) + (j!=0) + (k!=0));
 
@@ -178,7 +178,7 @@ fun resid(R, V, U) {
 }
 
 
-fun psinv(U, R) {
+def psinv(U, R) {
   const c: coeff = initCValues();
   const c3d: [(i,j,k) in Stencil] float = c((i!=0) + (j!=0) + (k!=0));
 
@@ -189,7 +189,7 @@ fun psinv(U, R) {
 }
 
 
-fun rprj3(S, R) {
+def rprj3(S, R) {
   const w: coeff = (0.5, 0.25, 0.125, 0.0625);
   const w3d: [(i,j,k) in Stencil] float = w((i!=0) + (j!=0) + (k!=0));
 
@@ -200,7 +200,7 @@ fun rprj3(S, R) {
 }
 
 
-fun interp(R, S) {
+def interp(R, S) {
   const IDom: domain(3) = [-1..0, -1..0, -1..0];
   const IStn: [(i,j,k) in IDom] domain(3) = [i..0, j..0, k..0];
   const w: [ijk in IDom] float = 1.0 / IStn.numIndices();
@@ -216,7 +216,7 @@ fun interp(R, S) {
 }
 
 
-fun norm2u3(R) {
+def norm2u3(R) {
   const rnm2 = sqrt((sum reduce R**2)/(nx*ny*nz)),
         rnmu = max reduce abs(R);
 
@@ -224,7 +224,7 @@ fun norm2u3(R) {
 }
 
 
-fun initCValues(Class): coeff {
+def initCValues(Class): coeff {
   if (Class == A || Class == S || Class == W) {
     return (/-3.0/8.0,  1.0/32.0, -1.0/64.0, 0.0/);
   } else {
@@ -236,7 +236,7 @@ fun initCValues(Class): coeff {
 
 -- SETUP ROUTINES:
 
-fun initArrays(V, U, R) {
+def initArrays(V, U, R) {
   -- conservatively, one might want to do "V=0.0; U=0.0; R=0.0; zran3(V);", 
   -- but the following is minimal:
   zran3(V);
@@ -250,7 +250,7 @@ fun initArrays(V, U, R) {
 }
 
 
-fun zran3(V) {
+def zran3(V) {
   const numCharges = 10;
   var pos, neg: [1..numCharges] index(Base);
 
@@ -278,7 +278,7 @@ fun zran3(V) {
 }
 
 
-fun longRandlc(n) {
+def longRandlc(n) {
   const s = 314159265.0,
         arand = 5.0**13;
 
@@ -302,7 +302,7 @@ fun longRandlc(n) {
 }
 
 
-fun randlc(x, a) {
+def randlc(x, a) {
   const r23 = 0.5**23,
         t23 = 2.0**23,
         r46 = 0.5**46,
@@ -328,7 +328,7 @@ fun randlc(x, a) {
 }
 
 
-fun lg2(x) {
+def lg2(x) {
   var lg = -1;
   while (x) {
     x *= 2;

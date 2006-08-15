@@ -1,6 +1,6 @@
 class foo {
   var x : int = 12;
-  fun initialize() {
+  def initialize() {
     x += 10;
   }
 }

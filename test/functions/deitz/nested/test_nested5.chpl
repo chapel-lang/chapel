@@ -1,5 +1,5 @@
-fun bar() {
-  fun foo(i : int = 1, j : int = 2, k : int = 3) {
+def bar() {
+  def foo(i : int = 1, j : int = 2, k : int = 3) {
     writeln("foo of ", i, ", ", j, ", ", k);
   }
 

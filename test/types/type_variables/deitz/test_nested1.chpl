@@ -2,11 +2,11 @@ class C {
   type t;
   var x = 1;
   var y : t;
-  fun foo() {
-    fun bar(_x) {
+  def foo() {
+    def bar(_x) {
       writeln("default bar");
     }
-    fun bar(_x : string) {
+    def bar(_x : string) {
       writeln("bar of string");
     }
     bar(x);

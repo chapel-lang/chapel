@@ -1,8 +1,8 @@
-fun foo(x) where x == int || x == float {
+def foo(x) where x == int || x == float {
   writeln("int or float = ", x);
 }
 
-fun foo(x) where x == complex || x == bool {
+def foo(x) where x == complex || x == bool {
   writeln("complex or bool = ", x);
 }
 

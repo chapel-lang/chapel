@@ -1,7 +1,7 @@
 class point {
   var x : float;
   var y : float;
-  fun speak() {
+  def speak() {
     writeln("Hello");
   }
 }

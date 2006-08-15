@@ -1,7 +1,7 @@
 class bar {
   type t;
   var y : t;
-  fun clone()
+  def clone()
     return bar(t, y);
 }
 

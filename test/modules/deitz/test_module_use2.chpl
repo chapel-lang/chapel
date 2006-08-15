@@ -1,7 +1,7 @@
 module red {
   var x : int = 8;
 
-  fun foo(i : int) {
+  def foo(i : int) {
     writeln(i);
   }
 }
@@ -11,7 +11,7 @@ module blue {
 
   use red;
 
-  fun main() {
+  def main() {
     foo(y);
     foo(x);
     foo(16);

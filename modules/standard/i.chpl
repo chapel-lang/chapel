@@ -1,1 +1,1 @@
-fun main() { }
+def main() { }

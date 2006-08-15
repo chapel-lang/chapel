@@ -2,7 +2,7 @@ class foo {
   var a : int;
 }
 
-fun bar(x : foo) var {
+def bar(x : foo) var {
   return x;
 }
 

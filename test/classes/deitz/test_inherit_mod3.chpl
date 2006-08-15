@@ -8,7 +8,7 @@ class D2 : C {
   var x : float;
 }
 
-fun foo(c : C) {
+def foo(c : C) {
   writeln(c.x);
 }
 

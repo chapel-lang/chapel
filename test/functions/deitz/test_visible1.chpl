@@ -4,8 +4,8 @@ class C {
 
 var c = C();
 
-fun foo() {
-  fun bar(c : C) {
+def foo() {
+  def bar(c : C) {
     writeln("in bar");
   }
   writeln("in foo");

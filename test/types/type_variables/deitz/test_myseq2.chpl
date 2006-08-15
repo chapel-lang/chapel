@@ -10,7 +10,7 @@ class myseq {
   var first : myseq_node(elementType);
   var last : myseq_node(elementType);
 
-  fun append(e : elementType) : myseq(elementType) {
+  def append(e : elementType) : myseq(elementType) {
     var new : myseq_node(elementType) = myseq_node(elementType);
     new.element = e;
     if length > 0 {
@@ -24,7 +24,7 @@ class myseq {
     return this;
   }
 
-  fun print() {
+  def print() {
     write("Sequence (length = ", length, ") (/");
     var tmp = first;
     while tmp != nil {

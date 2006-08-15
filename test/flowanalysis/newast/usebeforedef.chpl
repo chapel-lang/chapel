@@ -1,6 +1,6 @@
 foo(5);
 
-fun foo(a) {
+def foo(a) {
   writeln("a is ", a);
 }
 

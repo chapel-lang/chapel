@@ -7,7 +7,7 @@ record myrecord {
   var c: myclass;
 }
 
-fun main() {
+def main() {
   var x: myrecord;
   var y: myrecord;
 

@@ -1,4 +1,4 @@
-fun foo(param rank : int, x : rank*int) {
+def foo(param rank : int, x : rank*int) {
   writeln(x);
 }
 

@@ -9,7 +9,7 @@ var arg2out: sync int = 1;
 
 var result: sync int;
 
-fun arg1supplier() {
+def arg1supplier() {
   var newval: int;
   do {
     newval = arg1in;
@@ -17,7 +17,7 @@ fun arg1supplier() {
   } while (newval != -1);
 }
 
-fun arg2supplier() {
+def arg2supplier() {
   var newval: int;
   do {
     newval = result;
@@ -25,7 +25,7 @@ fun arg2supplier() {
   } while (newval != -1);
 }
 
-fun fibcomputer() {
+def fibcomputer() {
   if (n > 1) {
     output(1, 0);
     if (n > 2) {
@@ -47,7 +47,7 @@ fun fibcomputer() {
   }
 }
 
-fun main() {
+def main() {
   cobegin {
     fibcomputer();
     arg1supplier();
@@ -55,7 +55,7 @@ fun main() {
   }
 }
 
-fun output(ind, fib) {
+def output(ind, fib) {
   writeln("fib #", ind, " is: ", fib);
 }
 

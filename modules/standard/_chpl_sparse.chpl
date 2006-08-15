@@ -2,7 +2,7 @@ class _sdomain {
   param rank : int;
   var adomain : _adomain(rank);
 
-  fun _build_array(type elt_type)
+  def _build_array(type elt_type)
     return _sarray(elt_type, rank, dom=this);
 }
 
@@ -13,6 +13,6 @@ record _sarray {
   var dom : _sdomain(rank);
 }
 
-fun fwrite(f : file, x : _sarray) {
+def fwrite(f : file, x : _sarray) {
   halt("Sparse arrays are not implemented");
 }

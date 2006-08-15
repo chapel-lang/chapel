@@ -1,6 +1,6 @@
 -- a beginning
 
-fun gcd(in x, in y) {
+def gcd(in x, in y) {
   if x < 0 then x = -x;
   if y < 0 then y = -y;
 

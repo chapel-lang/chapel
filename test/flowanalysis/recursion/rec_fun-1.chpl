@@ -1,5 +1,5 @@
 
-fun f(x) {
+def f(x) {
  if (x > 9)
    return x;
   return f(x + 1);

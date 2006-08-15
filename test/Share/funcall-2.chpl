@@ -1,5 +1,5 @@
 
-fun foo {
+def foo {
   return (x = 1, y = 2);
 }
 

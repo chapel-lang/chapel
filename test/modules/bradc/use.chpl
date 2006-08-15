@@ -1,5 +1,5 @@
 module mod1 {
-  fun foo() {
+  def foo() {
     writeln("in mod1.foo()");
   }
 }
@@ -8,12 +8,12 @@ module mod1 {
 module mod2 {
   use mod1; 
 
-  fun bar() {
+  def bar() {
     writeln("in mod2.bar()");
     foo();
   }
 
-  fun main() {
+  def main() {
     bar();
   }
 }

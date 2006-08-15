@@ -7,7 +7,7 @@ var c = C(int);
 
 writeln(c);
 
-fun foo(i : int) {
+def foo(i : int) {
   writeln(i);
 }
 

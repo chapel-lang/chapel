@@ -6,7 +6,7 @@ class bar {
 class foo {
   type t;
   var x : bar(t) = bar(t);
-  fun print() {
+  def print() {
     writeln(x.y);
   }
 }

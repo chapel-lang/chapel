@@ -2,7 +2,7 @@
 module module1 {
   var x = 3;
 
-  fun main() {
+  def main() {
     writeln("x is: ", x);
   }
 }

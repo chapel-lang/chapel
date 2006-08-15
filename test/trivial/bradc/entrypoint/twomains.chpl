@@ -1,13 +1,13 @@
 var x = 32;
 var y = -1;
 
-fun main() {
+def main() {
   var y = 42;
 
   writeln("x is: ", x);
   writeln("y is: ", y);  
 }
 
-fun main() {
+def main() {
   writeln("Should never get here");
 }

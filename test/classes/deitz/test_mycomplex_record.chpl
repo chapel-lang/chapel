@@ -3,41 +3,41 @@ record mycomplex {
   var im : float;
 }
 
-fun +(x : mycomplex, y : mycomplex)
+def +(x : mycomplex, y : mycomplex)
   return mycomplex(x.re + y.re, x.im + y.im);
 
-fun +(x : mycomplex, y : float)
+def +(x : mycomplex, y : float)
   return mycomplex(x.re + y, x.im);
 
-fun +(x : float, y : mycomplex)
+def +(x : float, y : mycomplex)
   return mycomplex(x + y.re, y.im);
 
-fun -(x : mycomplex, y : mycomplex)
+def -(x : mycomplex, y : mycomplex)
   return mycomplex(x.re - y.re, x.im - y.im);
 
-fun -(x : mycomplex, y : float)
+def -(x : mycomplex, y : float)
   return mycomplex(x.re - y, x.im);
 
-fun -(x : float, y : mycomplex)
+def -(x : float, y : mycomplex)
   return mycomplex(x - y.re, -y.im);
 
-fun *(x : mycomplex, y : mycomplex)
+def *(x : mycomplex, y : mycomplex)
   return mycomplex(x.re*y.re - x.im*y.im, x.im*y.re + x.re*y.im);
 
-fun *(x : mycomplex, y : float)
+def *(x : mycomplex, y : float)
   return mycomplex(x.re*y, x.im*y);
 
-fun *(x : float, y : mycomplex)
+def *(x : float, y : mycomplex)
   return mycomplex(x*y.re, x*y.im);
 
-fun /(x : mycomplex, y : mycomplex)
+def /(x : mycomplex, y : mycomplex)
   return let d = y.re*y.re + y.im*y.im in
     mycomplex((x.re*y.re + x.im*y.im)/d, (x.im*y.re - x.re*y.im)/d);
 
-fun /(x : mycomplex, y : float)
+def /(x : mycomplex, y : float)
   return mycomplex(x.re/y, x.im/y);
 
-fun /(x : float, y : mycomplex)
+def /(x : float, y : mycomplex)
   return let d = y.re*y.re + y.im*y.im in
     mycomplex(x*y.re/d, -x*y.im/d);
 

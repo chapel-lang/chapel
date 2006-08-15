@@ -1,4 +1,4 @@
-fun foobar(x) {
+def foobar(x) {
   return x;
 }
 

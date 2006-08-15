@@ -4,11 +4,11 @@ class D {
 
 class C : D {
   var x = 1;
-  fun foo() {
-    fun bar(_x) {
+  def foo() {
+    def bar(_x) {
       writeln("default bar");
     }
-    fun bar(_x : D) {
+    def bar(_x : D) {
       writeln("bar of D");
     }
     bar(x);

@@ -1,4 +1,4 @@
-fun f(x: int, y: int) {
+def f(x: int, y: int) {
   write(x + y);
 }
 

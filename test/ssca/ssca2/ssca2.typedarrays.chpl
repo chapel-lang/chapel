@@ -33,7 +33,7 @@ union Weight {
 -- select during compilation.  We also need to implement the normal
 -- select statement.
 
-  fun is_string {
+  def is_string {
     typeselect (this) {
       when s     return true;
       otherwise  return false;
@@ -91,7 +91,7 @@ class Graph {
                       ParEdgeD=>ParEdgeD);
 */
 
-  fun copy(s : Graph) {
+  def copy(s : Graph) {
     return Graph(VerteD  =s.VertexD,
                  ParEdgeD=s.ParEdgeD);
   }
@@ -128,19 +128,19 @@ class Subgraph {
 /* TMP
 
 -- SJD: What's with the square brackets?
--- BLC: This was a concept which David had of a fun that
+-- BLC: This was a concept which David had of a def that
 --      had a domain;  I've never been sure of its purpose and
 --      believe that in any case for this benchmark it could be 
 --      written:
 -- 
---   fun adjMatrix [i:AdjD] { return weights(i).length; }
+--   def adjMatrix [i:AdjD] { return weights(i).length; }
 */
 
-  fun adjMatrix(i: index(AdjD)) { return weights(i).length; }
+  def adjMatrix(i: index(AdjD)) { return weights(i).length; }
 }
 
 
-fun main() {
+def main() {
   -- Scalable Data Generator parameters.
   -- Total number of vertices in directed multigraph.
   config var TOT_VERTICES       =  2^8;
@@ -248,7 +248,7 @@ fun main() {
 }
 
 
-fun genScalData(totVertices, maxCliqueSize, maxParalEdges,
+def genScalData(totVertices, maxCliqueSize, maxParalEdges,
                      percentIntWeights, 
                      maxIntWeightP, probInterclEdges) {
 
@@ -442,7 +442,7 @@ fun genScalData(totVertices, maxCliqueSize, maxParalEdges,
 
 /* TMP
 -- BLC: This queried range throws the compiler off...
-fun binsearch(x : [?lo..?hi] , y]) {
+def binsearch(x : [?lo..?hi] , y]) {
 */
   if (hi < lo  ) then return lo;
   if (x(hi) > y) then return hi;
@@ -462,7 +462,7 @@ fun binsearch(x : [?lo..?hi] , y]) {
 }
 */
 
-fun computeGraph(edges , totVertices, maxParalEdges, 
+def computeGraph(edges , totVertices, maxParalEdges, 
                       maxIntWeight ) : Graph {
   var G = Graph();
 /* TMP
@@ -497,9 +497,9 @@ fun computeGraph(edges , totVertices, maxParalEdges,
 }
 
 
-fun sortWeights( G : Graph, soughtString : string ) {
+def sortWeights( G : Graph, soughtString : string ) {
 
-  fun Subgraph.choose(value) {
+  def Subgraph.choose(value) {
     return [e in AdjD] (if (weights(e) == value) then EndPoints(e));
   }
 /* TMP
@@ -511,12 +511,12 @@ fun sortWeights( G : Graph, soughtString : string ) {
 }
 
 
-fun Graph.findSubGraphs(SUBGR_EDGE_LENGTH : int,
+def Graph.findSubGraphs(SUBGR_EDGE_LENGTH : int,
                              startSetIntVPairs : seq of EndPoints,
                              startSetStrVPairs : seq of EndPoints) 
                             : seq of Graph {
     
-  fun Subgraph.expandSubGraphs(start, complete:subgraph) {
+  def Subgraph.expandSubGraphs(start, complete:subgraph) {
     var frontier like AdjD = (start.start, start.end);
     AdjD = start;
     for k in 2..SUBGR_EDGE_LENGTH {
@@ -560,9 +560,9 @@ fun Graph.findSubGraphs(SUBGR_EDGE_LENGTH : int,
   return subgraphs;
 }
 
-fun cutClusters(G, cutBoxSize, alpha) {
+def cutClusters(G, cutBoxSize, alpha) {
 
-  fun cutClustersCommon( adjMatrix : Subgraph,
+  def cutClustersCommon( adjMatrix : Subgraph,
                               cutBoxSize, alpha) {
     if cutBoxSize < 1
       then halt('cutBoxSize must be a least one.');
@@ -659,7 +659,7 @@ fun cutClusters(G, cutBoxSize, alpha) {
   var strVertexRemap = cutClustersCommon( G.strg, cutBoxSize, alpha );
   var cutG = Graph.copy(G);
 
-  fun remap(oldg, newg, vertexRemap) {
+  def remap(oldg, newg, vertexRemap) {
 
     var map: [G.VertexD] index(Vertex);
 

@@ -1,4 +1,4 @@
-fun foo() {
+def foo() {
   record bar {
     var x : int = 2;
   }

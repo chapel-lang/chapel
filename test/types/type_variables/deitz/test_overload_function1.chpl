@@ -1,8 +1,8 @@
-fun foo(x : int) {
+def foo(x : int) {
   writeln(x);
 }
 
-fun foo(x : float) {
+def foo(x : float) {
   writeln(x);
 }
 

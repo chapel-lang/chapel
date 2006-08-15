@@ -13,7 +13,7 @@ param weights: [StencilD] float = (/ (/ 0.00, 0.25, 0.00 /),
                                      (/ 0.00, 0.25, 0.00 /) /);
 
 
-fun main() {
+def main() {
   var A: [BigD] float = 0.0;
   var B: [D] float;
 

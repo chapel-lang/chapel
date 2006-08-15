@@ -10,7 +10,7 @@ class myseq {
   var first : myseq_node(elementType);
   var last : myseq_node(elementType);
 
-  fun append(e : elementType) {
+  def append(e : elementType) {
     var new : myseq_node(elementType) = myseq_node(elementType = elementType);
     new.element = e;
     first = new;
@@ -18,7 +18,7 @@ class myseq {
     length = 1;
   }
 
-  fun print() {
+  def print() {
     writeln("sequence contains ", first.element);
   }
 }

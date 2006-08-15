@@ -1,6 +1,6 @@
 class foo {
   var a : int;
-  fun bar {
+  def bar {
     if a < 100
       then return true;
       else return false;

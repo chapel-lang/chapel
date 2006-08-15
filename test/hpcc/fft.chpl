@@ -3,14 +3,14 @@ config var logN: int = 4;
 
 // PLACEHOLDER for external stuff
 class timer {
-  fun start();
-  fun stop();
-  fun gettime() { return 1.0; }
+  def start();
+  def stop();
+  def gettime() { return 1.0; }
 }
 // END PLACEHOLDER
 
 
-fun main() {
+def main() {
   const N = 1 << logN;
   const gflop = 5.0 * N * logN / 1000000000.0;
 
@@ -65,7 +65,7 @@ fun main() {
   writeln("GFlops = ", gflop / time);
 }
 
-fun bit_reverse(W) {
+def bit_reverse(W) {
   return W;
 /*
 //  const WD = W.domain;
@@ -84,7 +84,7 @@ fun bit_reverse(W) {
 */
 }
 
-fun dfft(n, logn, a, w) {
+def dfft(n, logn, a, w) {
 /*
   cf1st(n, a, w);
 
@@ -97,11 +97,11 @@ fun dfft(n, logn, a, w) {
 */
 }
 
-fun prand_array(X) {
+def prand_array(X) {
 }
 
 //fun twiddles(W: [?DW] float) {
-fun twiddles(W) {
+def twiddles(W) {
 /*
 //  const DW = W.domain();
   const n = DW.extent() / 2;

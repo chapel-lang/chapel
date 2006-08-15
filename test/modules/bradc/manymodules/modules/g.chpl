@@ -1,30 +1,30 @@
 
 
-fun runga() {
+def runga() {
   writeln("in runga() from module g");
 }
 
 module g2 {
-  fun runga() {
+  def runga() {
     writeln("in runga() from module g2");
   }
 
-  fun rungb() {
+  def rungb() {
     writeln("in rungb() from module g3");
   }
 }
 
 module g3 {
-  fun runga() {
+  def runga() {
     writeln("in runga() from module g2");
   }
 
-  fun rungb() {
+  def rungb() {
     writeln("in rungb() from module g3");
   }
 }
 
 
-fun rungb() {
+def rungb() {
   writeln("in rungb() from module g");
 }

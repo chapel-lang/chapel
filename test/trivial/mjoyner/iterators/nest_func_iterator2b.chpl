@@ -9,7 +9,7 @@ iterator basic(inout z: int) : int {
 
 
 
-fun main() {
+def main() {
 var x : int = 5;
 var a: int = 9;
 writeln("initially, a is: ", a);

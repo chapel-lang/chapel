@@ -3,17 +3,17 @@ var b = 0;
 var c = 0;
 var d = 0;
 
-fun jam_records1 () {
+def jam_records1 () {
   while (0==a) {;}   // wait on thread last statement in cobegin
   b = 1;
 }
 
-fun jam_records2 () {
+def jam_records2 () {
   while (0==b) {;}   // wait on thread 1
   c = 1;
 }
 
-fun jam_records3 () {
+def jam_records3 () {
   while (0==c) {;}   // wait on thread 2
   d = 1;
 }

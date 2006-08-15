@@ -4,7 +4,7 @@ var y: int;
 
 y = 456;
 
-fun foo(z: int) {
+def foo(z: int) {
   var a: int = 789;
 
   writeln("a is: ", a);

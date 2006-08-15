@@ -1,4 +1,4 @@
-fun foo() {
+def foo() {
   writeln("in foo!");
 }
 

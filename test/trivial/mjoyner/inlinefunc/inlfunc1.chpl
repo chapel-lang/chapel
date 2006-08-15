@@ -5,7 +5,7 @@ class Foo {
   var z : int;
 }
 
-fun main() {
+def main() {
   var f : Foo = Foo();
   f.x = 1;
   f.y = 2;

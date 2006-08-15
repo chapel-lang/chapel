@@ -1,4 +1,4 @@
-fun min(type t) {
+def min(type t) {
   return -999:t;
 }
 

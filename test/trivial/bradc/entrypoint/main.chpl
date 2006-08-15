@@ -1,7 +1,7 @@
 var x = 32;
 var y = -1;
 
-fun main() {
+def main() {
   var y = 42;
 
   writeln("x is: ", x);

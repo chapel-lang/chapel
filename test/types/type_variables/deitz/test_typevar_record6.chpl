@@ -10,7 +10,7 @@ record foo {
   var first : node(t);
   var last : node(t);
 
-  fun append(e : t) {
+  def append(e : t) {
    var new : node(t) = node(t);
     new.element = e;
     if length > 0 {
@@ -24,7 +24,7 @@ record foo {
     return this;
   }
 
-  fun copy() {
+  def copy() {
     var new : foo(t);
     var tmp = first;
     while (tmp != nil) {
@@ -35,7 +35,7 @@ record foo {
   }
 }
 
-fun fwrite(fp: file, f : foo) {
+def fwrite(fp: file, f : foo) {
   fwrite(fp, "(/");
   var tmp = f.first;
   while tmp != nil {

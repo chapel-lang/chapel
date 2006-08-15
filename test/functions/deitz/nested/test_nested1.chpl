@@ -1,5 +1,5 @@
-fun foo(i : int) {
-  fun bar(i : int) {
+def foo(i : int) {
+  def bar(i : int) {
     writeln(i);
   }
   bar(i);

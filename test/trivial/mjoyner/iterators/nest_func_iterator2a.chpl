@@ -8,7 +8,7 @@ iterator basic() : int {
 
 
 
-fun main() {
+def main() {
 var x : int = 5;
   for i in basic() {
     writeln(i+x);

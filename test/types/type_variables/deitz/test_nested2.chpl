@@ -1,9 +1,9 @@
-fun foo(type t) {
+def foo(type t) {
   var x : t;
-  fun bar(_x) {
+  def bar(_x) {
     writeln("default bar");
   }
-  fun bar(_x : int) {
+  def bar(_x : int) {
     writeln("bar of int");
   }
   bar(x);

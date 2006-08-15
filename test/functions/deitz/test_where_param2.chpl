@@ -1,4 +1,4 @@
-fun foo(param i : int) 
+def foo(param i : int) 
   where i == 1;
 {
 // this syntax is nolonger legal
@@ -6,7 +6,7 @@ fun foo(param i : int)
   writeln("Alpha");
 }
 
-fun foo(param i : int) 
+def foo(param i : int) 
   where i == 2;
 {
 // this syntax is nolonger legal

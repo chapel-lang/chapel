@@ -1,4 +1,4 @@
-fun bar {
+def bar {
   writeln("this is not allowed");
 }
 

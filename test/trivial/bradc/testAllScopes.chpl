@@ -1,8 +1,8 @@
 var a: int = 1;                      -- module scope
 var n: int = 14;
 
-fun b(c: int): int {        -- fun param scope
-  var d: int = 4;                    -- fun scope
+def b(c: int): int {        -- def param scope
+  var d: int = 4;                    -- def scope
   writeln("c is: ", c);
   writeln("d is: ", d);
 
@@ -11,7 +11,7 @@ fun b(c: int): int {        -- fun param scope
 
 class e {
   var f: int = 6;                    -- class scope
-  fun g(h: int): int {
+  def g(h: int): int {
     var i: int = 9;
 --    writeln("f is: ", f);
     writeln("h is: ", h);
@@ -20,7 +20,7 @@ class e {
   }
 }
 
-fun main() {
+def main() {
   writeln("a is: ", a);
   var myB: int;
   myB = b(3);

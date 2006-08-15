@@ -111,12 +111,12 @@ Is this "while x"(i); or "while x(i)";?
 %token TCONSTRUCTOR
 %token TPARAM
 %token TCONTINUE
+%token TDEF
 %token TDO
 %token TDOMAIN
 %token TENUM
 %token TFOR
 %token TFORALL
-%token TFUN
 %token TGOTO
 %token TIF
 %token TIN
@@ -582,7 +582,7 @@ fn_decl_stmt:
 
 
 fn_tag:
-  TFUN
+  TDEF
     { $$ = FN_FUNCTION; }
 | TCONSTRUCTOR
     { $$ = FN_CONSTRUCTOR; }

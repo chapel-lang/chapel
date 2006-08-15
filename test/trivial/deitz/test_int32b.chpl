@@ -1,8 +1,8 @@
-fun foo(i : int(32)) {
+def foo(i : int(32)) {
   writeln("int32 = ", i);
 }
 
-fun foo(i : int) {
+def foo(i : int) {
   writeln("int64 = ", i);
 }
 

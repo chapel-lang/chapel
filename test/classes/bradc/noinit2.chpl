@@ -3,7 +3,7 @@ class pair {
   var y: float;
 }
 
-fun main() {
+def main() {
   var a: pair;
 
   if (a == nil) {

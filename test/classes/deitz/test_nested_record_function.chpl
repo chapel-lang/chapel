@@ -23,7 +23,7 @@ cp.coordinate.y = 3.3;
 
 writeln("cp { ", cp.coordinate.x, ", ", cp.coordinate.y, ", ", cp.color, " }");
 
-fun foo(x : float) {
+def foo(x : float) {
   writeln(x);
 }
 

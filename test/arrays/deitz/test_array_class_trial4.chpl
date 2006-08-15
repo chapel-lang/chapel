@@ -3,7 +3,7 @@ class array1d {
   var x1 : t;
   var x2 : t;
   var x3 : t;
-  fun indexedby(i : int) : t {
+  def indexedby(i : int) : t {
     var result : t;
     select i {
       when 1 do result = x1;
@@ -14,7 +14,7 @@ class array1d {
     write("[Read on ", i, " returns ", result, "]");
     return result;
   }
-  fun =indexedby(i : int, val : t) : t {
+  def =indexedby(i : int, val : t) : t {
     select i {
       when 1 do x1 = val;
       when 2 do x2 = val;

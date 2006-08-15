@@ -7,7 +7,7 @@ class cpoint : point {
   var color : int;
 }
 
-fun length(a) {
+def length(a) {
   return a.x * a.y;
 }
 

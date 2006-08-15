@@ -1,10 +1,10 @@
 pragma "inline"
-fun foo(param i : int) where i % 2 == 0 {
+def foo(param i : int) where i % 2 == 0 {
   writeln(i, " divided by two is ", i / 2);
 }
 
 pragma "inline"
-fun foo(param i : int) where i % 2 == 1 {
+def foo(param i : int) where i % 2 == 1 {
   writeln(i, " is not divisible by two");
 }
 

@@ -1,11 +1,11 @@
 
-fun g(c) { 
-  fun f() { return 1; }
+def g(c) { 
+  def f() { return 1; }
   return c(); 
 }
 
-fun h() {
-  fun f() { return 2; }
+def h() {
+  def f() { return 2; }
   writeln(g(=>f()));
 }
 

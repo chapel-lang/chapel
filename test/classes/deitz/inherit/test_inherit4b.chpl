@@ -1,18 +1,18 @@
 class C {
   var x : int = 1;
-  fun print() {
+  def print() {
     writeln(this);
   }
 }
 
 class D : C {
   var y : float = 2.0;
-  fun print() {
+  def print() {
     writeln(this);
   }
 }
 
-fun foo(c : C) {
+def foo(c : C) {
   c.print();
 }
 

@@ -1,5 +1,5 @@
 record foo { var a : int;  }
-fun =(a : foo, b) {
+def =(a : foo, b) {
   a.a = b.a + 10;
   return a;
 }

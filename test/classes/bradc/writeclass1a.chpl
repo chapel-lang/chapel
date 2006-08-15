@@ -3,7 +3,7 @@ class myclass {
   var y: float;
 }
 
-fun fwrite(f:file, c:myclass) {
+def fwrite(f:file, c:myclass) {
   fwrite(f, c.x, " ", c.y);
 }
 

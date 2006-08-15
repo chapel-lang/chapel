@@ -1,6 +1,6 @@
 class C {
   var x = 2;
-  fun foo return 3;
+  def foo return 3;
 }
 
 var c = C(4);

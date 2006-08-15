@@ -2,7 +2,7 @@ class _myadomain : _domain {
   param rank : int;
   var ranges : (rank * _aseq);
 
-  fun expand(dim : (rank*int)) {
+  def expand(dim : (rank*int)) {
     writeln("in the tuple expand");
 
     var x = _myadomain(rank);
@@ -19,7 +19,7 @@ class _myadomain : _domain {
     return x;
   }  
  
-  fun expand(dim : int ...?numDims) {
+  def expand(dim : int ...?numDims) {
     if (rank == numDims) {
       writeln("numDims: ", numDims);
       writeln("rank: ", rank);

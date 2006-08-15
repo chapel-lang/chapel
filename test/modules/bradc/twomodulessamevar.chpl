@@ -2,7 +2,7 @@ module foo {
   var x: int;
   var y: string = "this is a test";
 
-  fun main() {
+  def main() {
     writeln("x is: ", x);
     writeln("y is: ", y);
   }

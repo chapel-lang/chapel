@@ -1,6 +1,6 @@
 class C {
   var x : int;
-  fun foo(i : int) {
+  def foo(i : int) {
     x = i;
   }
 }

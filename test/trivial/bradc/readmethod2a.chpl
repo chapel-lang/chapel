@@ -1,10 +1,10 @@
 class G {
-  fun readit(): int {
+  def readit(): int {
     return 1;
   }
 }
 
-fun main() {
+def main() {
   var goo = G();
   var gooResult = goo.readit();
   writeln("gooResult = ", gooResult);

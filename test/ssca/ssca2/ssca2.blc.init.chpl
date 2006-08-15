@@ -53,30 +53,30 @@ record edgeTuple {
 -- parallel will require some care
 
 -- return a random float in [0.0, 1.0)
-fun randomFloat() {
+def randomFloat() {
   halt("Need to implement randomFloat()");
   return 0.0;
 }
 
 -- flip a coin, returning heads (true) with probability headsProb
-fun coinFlip(headsProb: float = 0.5) {
+def coinFlip(headsProb: float = 0.5) {
   return (randomFloat() < headsProb);
 }
 
 -- return a random int from 1 to maxval, inclusive
-fun randomInt(maxint: int) {
+def randomInt(maxint: int) {
   halt("Need to implement randomInt()");
   return 0;
 }
 
 -- return a random string of length strlen
-fun randomString(strlen: int) {
+def randomString(strlen: int) {
   halt("Need to implement randomString()");
   return "<empty>";
 }
 
 
-fun generateDirectedEdges(v1, v2) {
+def generateDirectedEdges(v1, v2) {
   var edges: seq(edgeTuple);
   var numParallelEdges: int = randomInt(maxParallelEdges);
   forall parEdge in 1..numParallelEdges { -- TODO: could drop "parEdge"
@@ -92,7 +92,7 @@ fun generateDirectedEdges(v1, v2) {
 }
 
 
-fun generateEdges(v1, v2) {
+def generateEdges(v1, v2) {
   var edges: seq(edgeTuple);
   var forward = true,   -- generate forward edges?
       backward = true;  -- generate backward edges?
@@ -113,7 +113,7 @@ fun generateEdges(v1, v2) {
 }
 
 
-fun generateEdgeList() {
+def generateEdgeList() {
   var edgeTuples: seq(edgeTuple);
   var numVerticesTaken = 0;
   var clique: [Vertices] int;
@@ -168,7 +168,7 @@ fun generateEdgeList() {
 }
 
 /*
-fun kernel1(edgeTuples: seq(edgeTuple)) {
+def kernel1(edgeTuples: seq(edgeTuple)) {
   forall t in edgeTuples {
     var newEdge: edge = (t.source, t.sink);
     AdjSpace += newEdge;
@@ -182,7 +182,7 @@ fun kernel1(edgeTuples: seq(edgeTuple)) {
 }
 
 
-fun kernel2(soughtString: string) {
+def kernel2(soughtString: string) {
   var maxIntWeight = sum reduce Edges.intWeights;
   var maxEdges: sparse domain(EdgeSpace) = nil;
 
@@ -205,12 +205,12 @@ fun kernel2(soughtString: string) {
 }
 
 
-fun kernel3(startEdges, subGraphEdgeLength: int) {
+def kernel3(startEdges, subGraphEdgeLength: int) {
   forall startEdge in startEdges {
     results #= findSubgraph(startEdge);
   }
 
-  fun findSubgraph(startEdge) {
+  def findSubgraph(startEdge) {
     var frontier: sparse domain(Vertices);
     frontier += sv1;
     frontier += sv2;
@@ -244,13 +244,13 @@ fun kernel3(startEdges, subGraphEdgeLength: int) {
 }
 
 
-fun kernel4(maxClusterSize: int, k4alpha) {
+def kernel4(maxClusterSize: int, k4alpha) {
   halt("kernel4 not implemented yet");
 }
 */
 
 
-fun writeConfigs() {
+def writeConfigs() {
   writeln("scale = ", scale);
   writeln("totVertices = ", totVertices);
   writeln("maxCliqueSize = ", maxCliqueSize);
@@ -262,7 +262,7 @@ fun writeConfigs() {
   writeln("maxStrLen = ", maxStrLen);
 }
 
-fun main() {
+def main() {
   writeConfigs();
   generateEdgeList();
 }

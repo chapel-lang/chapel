@@ -1,6 +1,6 @@
 
 
-fun foo(in x) {
+def foo(in x) {
   x = 7;
   return x;
 }

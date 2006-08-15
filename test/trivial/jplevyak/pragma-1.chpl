@@ -1,2 +1,2 @@
-pragma "fast" fun foo() { return 1; }
+pragma "fast" def foo() { return 1; }
 writeln(foo());

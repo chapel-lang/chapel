@@ -1,4 +1,4 @@
-fun swap(inout x, inout y) {
+def swap(inout x, inout y) {
   var tmp = x;
   x = y;
   y = tmp;

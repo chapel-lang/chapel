@@ -1,4 +1,4 @@
-fun f(a,b,c) {
+def f(a,b,c) {
   if (a) then
     return b;
   else

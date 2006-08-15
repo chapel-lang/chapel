@@ -1,12 +1,12 @@
-fun foo() {
+def foo() {
   writeln("function foo called");
 }
 
 class bar {
-  fun foo() {
+  def foo() {
     writeln("method foo called");
   }
-  fun goo() {
+  def goo() {
     foo();
   }
 }

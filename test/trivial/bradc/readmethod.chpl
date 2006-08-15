@@ -1,3 +1,3 @@
-fun main() {
+def main() {
   var gooResult = goo.read();
 }

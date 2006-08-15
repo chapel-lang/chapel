@@ -2,11 +2,11 @@ class C {
   var m = 2.3;
 }
 
-fun buildC() {
+def buildC() {
   return C();
 }
 
-fun foo(x: int ...?numargs) {
+def foo(x: int ...?numargs) {
   writeln("In foo()");
   if (numargs > 1) {
     return buildC();

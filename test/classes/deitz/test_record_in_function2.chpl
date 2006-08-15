@@ -1,7 +1,7 @@
-fun foo() {
+def foo() {
   record bar {
     var x : int = 2;
-    fun f() {
+    def f() {
       writeln(x);
     }
   }

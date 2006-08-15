@@ -1,4 +1,4 @@
-fun +(x : 2*int, y : 2*int)
+def +(x : 2*int, y : 2*int)
   return (x(1) + y(1), x(2) + y(2));
 
 config const n = 5;

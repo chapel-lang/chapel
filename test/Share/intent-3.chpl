@@ -1,6 +1,6 @@
 
 
-fun foo(inout x) {
+def foo(inout x) {
   x = x + x;
   return x;
 }

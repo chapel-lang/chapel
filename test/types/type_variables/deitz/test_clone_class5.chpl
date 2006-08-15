@@ -2,7 +2,7 @@ class foo {
   var x;
   var y;
   var z : int = 12;
-  fun print() {
+  def print() {
     writeln("x is ", x, " and y is ", y, " and z is ", z);
   }
 }

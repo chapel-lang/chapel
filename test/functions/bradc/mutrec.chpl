@@ -1,4 +1,4 @@
-fun foo(a) {
+def foo(a) {
   writeln("in foo");
   if (a == 0) {
     bar(1);
@@ -7,7 +7,7 @@ fun foo(a) {
   }
 }
 
-fun bar(a) {
+def bar(a) {
   writeln("in bar");
   if (a == 0) {
     foo(1);

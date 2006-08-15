@@ -1,7 +1,7 @@
 class bar {
   type t;
   var y : t;
-  fun print() {
+  def print() {
     writeln(y);
   }
 }
@@ -9,7 +9,7 @@ class bar {
 class foo {
   type t;
   var x : t;
-  fun print() {
+  def print() {
     writeln(x);
   }
 }

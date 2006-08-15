@@ -6,19 +6,19 @@ class D {
   var y: C;
 }
 
-fun foo(c: C) {
+def foo(c: C) {
   writeln("x is: ", c.x);
 }
 
-fun foo(d: D) {
+def foo(d: D) {
   foo(d.y);
 }
 
-fun foo(n: _nilType) {
+def foo(n: _nilType) {
   writeln("foo() was passed a nil instance");
 }
 
-fun main() {
+def main() {
   var myC = C(x=1);
   foo(myC);
   var myD = D();

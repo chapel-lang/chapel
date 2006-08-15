@@ -1,7 +1,7 @@
 
 ;
 
-fun foo();
+def foo();
 
 var D = 1..3;
 

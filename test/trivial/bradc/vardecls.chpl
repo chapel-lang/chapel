@@ -1,22 +1,22 @@
 var x: int = 2;
 
-fun foo(x: int) {
+def foo(x: int) {
   writeln("x in foo() is: ", x);
   var x = 4;
   writeln("then x is: ", x);
 }
 
-fun bar() {
+def bar() {
   writeln("x in bar() is: ", x);
   var x = 5;
   writeln("then x is: ", x);
 }
 
-fun baz() {
+def baz() {
   writeln("x in baz() is: ", x);
 }
 
-fun main() {
+def main() {
   foo(3);
   writeln();
   bar();

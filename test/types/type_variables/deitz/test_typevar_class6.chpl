@@ -3,7 +3,7 @@ class foo {
   type t2;
   var x : t1;
   var y : t2;
-  fun print() {
+  def print() {
     writeln(x, " and ", y);
   }
 }

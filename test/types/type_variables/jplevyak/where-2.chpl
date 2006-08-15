@@ -1,4 +1,4 @@
-fun f(type t, y) {
+def f(type t, y) {
   var x : t = y;
   writeln(x);
 }

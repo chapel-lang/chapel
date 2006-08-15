@@ -2,7 +2,7 @@ class mysumreduce {
   type t;
   var ident: t = 0;
   
-  fun combine(x: t, y: t): t {
+  def combine(x: t, y: t): t {
     return x + y;
   }
 }

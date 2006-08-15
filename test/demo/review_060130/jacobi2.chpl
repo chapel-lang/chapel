@@ -10,7 +10,7 @@ var BigR : domain(2) = [0..n+1, 0..n+1];
 var A : [BigR] float;
 var Temp : [R] float;
 
-fun main() {
+def main() {
   [ij in BigR]  A(ij) = 0.0;
   [j in 1..n] A(n+1,j) = 1.0;
 

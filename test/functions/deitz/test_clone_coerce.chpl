@@ -1,8 +1,8 @@
-fun foo(x : string) {
+def foo(x : string) {
   writeln("string ", x);
 }
 
-fun foo(x) {
+def foo(x) {
   writeln("any ", x);
 }
 

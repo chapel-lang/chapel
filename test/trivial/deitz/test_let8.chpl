@@ -1,4 +1,4 @@
-fun foo(inout a : int) : int {
+def foo(inout a : int) : int {
   a += 1;
   return a;
 }

@@ -1,6 +1,6 @@
 class foo {
   var x : int;
-  fun getx() : int {
+  def getx() : int {
     return x;
   }
 }

@@ -1,5 +1,5 @@
 module b {
-  fun runb() {
+  def runb() {
     writeln("in runb() from module b");
   }
 }

@@ -39,7 +39,7 @@ writeln(Lyrics);
 
 // HELPER FUNCTIONS:
 
-fun computeLyric(verseNum) {
+def computeLyric(verseNum) {
   var bottleNum = numBottles - (verseNum - 1);
   var nextBottle = (bottleNum + numVerses - 1)%numVerses;
   return "\n" // disguise space used to separate elements in array I/O
@@ -50,7 +50,7 @@ fun computeLyric(verseNum) {
 }
 
 
-fun describeBottles(bottleNum, startOfVerse:bool = false) {
+def describeBottles(bottleNum, startOfVerse:bool = false) {
 // NOTE: bool should not be necessary here (^^^^); working around bug
   var bottleDescription = if (bottleNum) then bottleNum:string 
                                          else (if startOfVerse then "N" 
@@ -62,7 +62,7 @@ fun describeBottles(bottleNum, startOfVerse:bool = false) {
 }
 
 
-fun computeAction(bottleNum) {
+def computeAction(bottleNum) {
   return if (bottleNum == 0) then "Go to the store and buy some more, "
                              else "Take one down and pass it around, ";
 }

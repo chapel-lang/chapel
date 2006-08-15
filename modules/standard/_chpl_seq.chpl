@@ -17,7 +17,7 @@ record seq {
       yield x; 
   }
 
-  fun this(i : int) var {
+  def this(i : int) var {
     if i >= 0 {
       if i < 1 || i > length then
         halt("sequence index out of bounds: ", i);
@@ -35,39 +35,39 @@ record seq {
     }
   }
 
-  fun this(i: int, is: int...?k) var {
+  def this(i: int, is: int...?k) var {
     return this(i)(is);
   }
 
-  fun this(is: _tuple) var {
+  def this(is: _tuple) var {
     return this((...is));
   }
 
-  fun getHeadCursor()
+  def getHeadCursor()
     return _first;
 
-  fun getNextCursor(c)
+  def getNextCursor(c)
     return c._next;
 
-  fun getValue(c)
+  def getValue(c)
     return c._element;
 
-  fun isValidCursor?(c)
+  def isValidCursor?(c)
     return c != nil;
 
-  fun length : int
+  def length : int
     return _length;
 
-  fun _append(e : elt_type)
+  def _append(e : elt_type)
     return this._copy()._append_in_place(e);
 
-  fun _prepend(e : elt_type)
+  def _prepend(e : elt_type)
     return this._copy()._prepend_in_place(e);
 
-  fun _concat(s : seq)
+  def _concat(s : seq)
     return this._copy()._concat_in_place(s);
 
-  fun _append_in_place(e : elt_type) {
+  def _append_in_place(e : elt_type) {
     var tmp = e;
     var new = _seqNode(elt_type, tmp);
     if _length > 0 {
@@ -81,11 +81,11 @@ record seq {
     return this;
   }
 
-  fun _yield(e: elt_type) {
+  def _yield(e: elt_type) {
     this._append_in_place(e);
   } 
 
-  fun _prepend_in_place(e : elt_type) {
+  def _prepend_in_place(e : elt_type) {
     var tmp = e;
     var new = _seqNode(elt_type, tmp);
     if _length > 0 {
@@ -99,7 +99,7 @@ record seq {
     return this;
   }
 
-  fun _concat_in_place(s : seq) {
+  def _concat_in_place(s : seq) {
     if _length > 0 {
       _last._next = s._first;
       _last = s._last;
@@ -112,7 +112,7 @@ record seq {
     return this;
   }
 
-  fun _copy() {
+  def _copy() {
     var new : seq of elt_type;
     var tmp = _first;
     while tmp != nil {
@@ -122,13 +122,13 @@ record seq {
     return new;
   }
 
-  fun _delete() {
+  def _delete() {
     _first = nil;
     _last = nil;
     _length = 0;
   }
 
-  fun _reverse() {
+  def _reverse() {
     var new : seq of elt_type;
     var tmp = _first;
     while (tmp != nil) {
@@ -139,33 +139,33 @@ record seq {
   }
 }
 
-fun =(s1: seq, s2) {
+def =(s1: seq, s2) {
   s1._delete();
   forall e in s2 do
     s1._append_in_place(e);
   return s1;
 }
 
-fun #(s1:seq, s2) where s1.type == s2.type {
+def #(s1:seq, s2) where s1.type == s2.type {
   return s1._concat(s2);
 }
 
-fun #(s:seq, e) where s.elt_type == e.type {
+def #(s:seq, e) where s.elt_type == e.type {
   return s._append(e);
 }
 
-fun #(e, s:seq) where s.elt_type == e.type {
+def #(e, s:seq) where s.elt_type == e.type {
   return s._prepend(e);
 }
 
-fun reverse(s : seq, dim : int = 1) {
+def reverse(s : seq, dim : int = 1) {
   if (dim != 1) {
     halt("reverse(:seq, dim=1) only implemented for dim 1");
   }
   return s._reverse();
 }
 
-fun fwrite(f : file, s : seq) {
+def fwrite(f : file, s : seq) {
   fwrite(f, "(/");
   var tmp = s._first;
   while tmp != nil {
@@ -191,41 +191,41 @@ record _aseq {
       yield x; 
   }
 
-  fun getHeadCursor()
+  def getHeadCursor()
     if _stride > 0 then
       return _low;
     else
       return _high;
 
-  fun getNextCursor(c)
+  def getNextCursor(c)
     return c + _stride;
 
-  fun getValue(c)
+  def getValue(c)
     return c;
 
-  fun isValidCursor?(c)
+  def isValidCursor?(c)
     return _low <= c && c <= _high;
 
-  fun length : int
+  def length : int
     return
       (if _stride > 0
         then (_high - _low + _stride) / _stride
         else (_low - _high + _stride) / _stride);
 }
 
-fun by(s : _aseq, i : int)
+def by(s : _aseq, i : int)
   return _aseq(s._low, s._high, s._stride * i);
 
-fun _in(s : _aseq, i : int)
+def _in(s : _aseq, i : int)
   return i >= s._low && i <= s._high && (i - s._low) % s._stride == 0;
 
-fun fwrite(f : file, s : _aseq) {
+def fwrite(f : file, s : _aseq) {
   fwrite(f, s._low, "..", s._high);
   if (s._stride > 1) then
     fwrite(f, " by ", s._stride);
 }
 
-pragma "inline" fun string.this(s: _aseq)
+pragma "inline" def string.this(s: _aseq)
   if s._stride != 1 then
     return __primitive("string_strided_select", this, s._low, s._high, s._stride);
   else
@@ -233,7 +233,7 @@ pragma "inline" fun string.this(s: _aseq)
 
 class reduction { }
 
-fun _reduce(r, s) { // reduce sequence s by reduction r
+def _reduce(r, s) { // reduce sequence s by reduction r
   for e in s do
     r.accumulate(e);
   return r.generate();  
@@ -242,10 +242,10 @@ fun _reduce(r, s) { // reduce sequence s by reduction r
 class _sum : reduction {
   type elt_type;
   var value : elt_type;   // assume default value is sum identity value
-  fun accumulate(x) {
+  def accumulate(x) {
     value = value + x;
   }
-  fun generate()
+  def generate()
     return value;
 }
 
@@ -253,10 +253,10 @@ class _product : reduction {
   type elt_type;
   var value : elt_type = _prod_id( elt_type);
 
-  fun accumulate(x) {
+  def accumulate(x) {
     value = value * x;
   }
-  fun generate() {
+  def generate() {
     return value;
   }
 }
@@ -265,12 +265,12 @@ class max : reduction {
   type elt_type;
   var value : elt_type = _min( elt_type);
 
-  fun accumulate(x) {
+  def accumulate(x) {
     if (x > value) {
         value = x;
     }
   }
-  fun generate() {
+  def generate() {
     return value;
   }
 }
@@ -279,12 +279,12 @@ class min : reduction {
   type elt_type;
   var value : elt_type = _max( elt_type);
 
-  fun accumulate(x) {
+  def accumulate(x) {
     if (x < value) {
       value = x;
     }
   }
-  fun generate() {
+  def generate() {
     return value;
   }
 }
@@ -293,10 +293,10 @@ class _land : reduction {                 // logical and
   type elt_type;
   var value : elt_type = _land_id( elt_type);
 
-  fun accumulate(x) {
+  def accumulate(x) {
     value = value && x;
   }
-  fun generate() {
+  def generate() {
     return value;
   }
 }
@@ -305,10 +305,10 @@ class _lor : reduction {                 // logical or
   type elt_type;
   var value : elt_type = _lor_id( elt_type);
 
-  fun accumulate(x) {
+  def accumulate(x) {
     value = value || x;
   }
-  fun generate() {
+  def generate() {
     return value;
   }
 }
@@ -317,10 +317,10 @@ class _band : reduction {                 // bit-wise and
   type elt_type;
   var value : elt_type = _band_id( elt_type);
 
-  fun accumulate(x) {
+  def accumulate(x) {
     value = value & x;
   }
-  fun generate() {
+  def generate() {
     return value;
   }
 }
@@ -329,10 +329,10 @@ class _bor : reduction {                 // bit-wise or
   type elt_type;
   var value : elt_type = _bor_id( elt_type);
 
-  fun accumulate(x) {
+  def accumulate(x) {
     value = value | x;
   }
-  fun generate() {
+  def generate() {
     return value;
   }
 }
@@ -341,10 +341,10 @@ class _bxor : reduction {                // bit-wise xor
   type elt_type;
   var value : elt_type = _bxor_id( elt_type);
 
-  fun accumulate(x) {
+  def accumulate(x) {
     value = value ^ x;
   }
-  fun generate() {
+  def generate() {
     return value;
   }
 }

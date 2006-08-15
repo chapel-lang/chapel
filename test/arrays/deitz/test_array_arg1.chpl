@@ -1,4 +1,4 @@
-fun foo(a: [] float) {
+def foo(a: [] float) {
   writeln(a);
 }
 

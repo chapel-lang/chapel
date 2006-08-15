@@ -1,7 +1,7 @@
 
 
 module f {
-  fun runf() {
+  def runf() {
     writeln("in runf() from module f");
   }
 }

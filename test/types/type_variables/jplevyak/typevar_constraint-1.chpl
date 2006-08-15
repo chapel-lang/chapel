@@ -1,8 +1,8 @@
-fun foo(type t, a : t) where t:A {
+def foo(type t, a : t) where t:A {
   writeln("foo1 ", a.x);
 }
 
-fun foo(type t, c : t) where t:C {
+def foo(type t, c : t) where t:C {
   writeln("foo2 ", c.x);
 }
 

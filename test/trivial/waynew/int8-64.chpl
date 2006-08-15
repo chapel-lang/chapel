@@ -1,4 +1,4 @@
-fun jam_records( somei:int(64)) : void {
+def jam_records( somei:int(64)) : void {
   writeln( somei);
 }
 

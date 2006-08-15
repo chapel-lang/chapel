@@ -1,7 +1,7 @@
 union foo {
   var i : int;
   var f : float;
-  fun hello() {
+  def hello() {
     writeln("Hello");
   }
 }

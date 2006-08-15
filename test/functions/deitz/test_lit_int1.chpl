@@ -1,7 +1,7 @@
-fun foo(param x : int)
+def foo(param x : int)
   return x;
 
-fun foo(x : int)
+def foo(x : int)
   return -1;
 
 var y : int = 2;

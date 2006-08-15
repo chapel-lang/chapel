@@ -4,7 +4,7 @@ record foo {
   var z : int = 3;
 }
 
-fun fwrite(fp : file, f : foo) {
+def fwrite(fp : file, f : foo) {
   fwrite(fp, "(---", f.x, " ", f.y, " ", f.z, "---)");
 }
 

@@ -1,9 +1,9 @@
 var a = 2;
 var b = 3;
 var c = 5;
-fun foo() {
+def foo() {
   var x = a * b * c;
-  fun bar() {
+  def bar() {
     var y = a * b;
     return x * y;
   }

@@ -6,7 +6,7 @@ t[n+1,..] = 1.0;
 
 const stencil = (/(-1, -1), (-1, 1), (1, -1), (1, 1)/);
 
-fun jacobi(t) {
+def jacobi(t) {
   var tt = t;
   var again = 0;
   [i in D] { 

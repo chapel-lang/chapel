@@ -1,4 +1,4 @@
-fun foo(x, y, z) {
+def foo(x, y, z) {
   return (x - 1) * y + z;
 }
 

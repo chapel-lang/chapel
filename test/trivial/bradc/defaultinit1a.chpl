@@ -1,4 +1,4 @@
-fun main() {
+def main() {
 
 writeln("a is: ", a);
 writeln("b is: ", b);

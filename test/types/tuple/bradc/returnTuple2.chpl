@@ -1,6 +1,6 @@
 typedef mytup: (int, float);
 
-fun returntwo(): mytup {
+def returntwo(): mytup {
   return (1, 2.3);
 }
 

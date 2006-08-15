@@ -1,4 +1,4 @@
-fun foo(d: domain) {
+def foo(d: domain) {
   var a: [d] float;
   writeln(a);
 }

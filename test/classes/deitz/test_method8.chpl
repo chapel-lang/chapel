@@ -1,6 +1,6 @@
 class foo {
   var x : int = 12;
-  fun bar(x : int) {
+  def bar(x : int) {
     writeln(x);
   }
 }

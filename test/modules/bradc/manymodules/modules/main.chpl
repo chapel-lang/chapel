@@ -1,5 +1,5 @@
 var x = 2;
 
-fun main() {
+def main() {
   writeln("x is: ", x);
 }

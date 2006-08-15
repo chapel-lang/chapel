@@ -1,9 +1,9 @@
 class foo {
   var i : int;
-  fun primary() {
+  def primary() {
     writeln("primary method call; i is ", i);
   }
-  fun setx() {
+  def setx() {
     i = 4;
   }
 }

@@ -1,13 +1,13 @@
-fun bar() {
+def bar() {
   var x : int = 12;
   var y : int = 15;
-  fun foo() {
+  def foo() {
     writeln(x);
     if (x > 0) {
       goo();
     }
   }
-  fun goo() {
+  def goo() {
     writeln(y);
     if (y < 0) {
       foo();

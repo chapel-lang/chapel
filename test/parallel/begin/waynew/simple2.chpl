@@ -3,7 +3,7 @@ var go = false;
 
 
 
-fun work() {
+def work() {
   var b = 2;
 
   begin {
@@ -15,7 +15,7 @@ fun work() {
 }
 
 
-fun jam_records() {
+def jam_records() {
   cobegin {
     work();
     begin {

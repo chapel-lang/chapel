@@ -1,5 +1,5 @@
 
-fun foo() {
+def foo() {
   var x = 0;
   label lab1 writeln(1);
   x = x + 1;

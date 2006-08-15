@@ -7,7 +7,7 @@ var b : bar(int);
 
 writeln(b);
 
-fun foo(b : bar(int)) {
+def foo(b : bar(int)) {
   writeln(b);
 }
 

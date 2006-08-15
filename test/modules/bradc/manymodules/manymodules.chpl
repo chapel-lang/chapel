@@ -10,7 +10,7 @@ use d;
 use e;
 use f;
 
-fun main() {
+def main() {
   writeln("x is: ", x);
   runa();
   runb();

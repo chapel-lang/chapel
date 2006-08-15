@@ -1,12 +1,12 @@
-fun foo(param i : int, param j : int) where i < j {
+def foo(param i : int, param j : int) where i < j {
   writeln(i, " is less than ", j);
 }
 
-fun foo(param i : int, param j : int) where i == j {
+def foo(param i : int, param j : int) where i == j {
   writeln(i, " is equal to ", j);
 }
 
-fun foo(param i : int, param j : int) where i > j {
+def foo(param i : int, param j : int) where i > j {
   writeln(i, " is greater than ", j);
 }
 

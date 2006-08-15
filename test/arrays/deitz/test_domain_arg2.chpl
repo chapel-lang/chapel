@@ -1,8 +1,8 @@
-fun foo(d: domain(int)) {
+def foo(d: domain(int)) {
   writeln("indefinite domain of int = ", d);
 }
 
-fun foo(d: domain(2)) {
+def foo(d: domain(2)) {
   writeln("2D arithmetic domain = ", d);
 }
 

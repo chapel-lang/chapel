@@ -1,4 +1,4 @@
-fun sum(is: int...?k) {
+def sum(is: int...?k) {
   var result: int;
   for param j in 1..k do
     result += is(j);

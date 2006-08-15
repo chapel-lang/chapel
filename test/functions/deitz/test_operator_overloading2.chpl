@@ -3,7 +3,7 @@ record point {
   var y : int;
 }
 
-fun ==(p1 : point, p2 : point) : bool {
+def ==(p1 : point, p2 : point) : bool {
   if p1.x != p2.x then return false;
   if p1.y != p2.y then return false;
   return true;

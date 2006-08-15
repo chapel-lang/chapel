@@ -1,4 +1,4 @@
-fun instantiateme(param x : int, y : string) {
+def instantiateme(param x : int, y : string) {
   writeln(y);
   writeln(x);
 }

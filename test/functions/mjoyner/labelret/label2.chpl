@@ -1,4 +1,4 @@
-fun foo() : int {
+def foo() : int {
   var i : int = 0;
   while(i < 10) {
     i = i + 1;
@@ -12,7 +12,7 @@ fun foo() : int {
   return i;    
 }
 
-fun main() {
+def main() {
  foo();
  return;
 }

@@ -9,20 +9,20 @@ record stack {
   var top : stack_elt(elt_type);
 }
 
-fun stack.empty
+def stack.empty
   return top == nil;
 
-fun stack.push(v : elt_type) {
+def stack.push(v : elt_type) {
   top = stack_elt(elt_type, v, top);
 }
 
-fun stack.pop() : elt_type {
+def stack.pop() : elt_type {
   var v = top.value;
   top = top.next;
   return v;
 }
 
-fun fwrite(f : file, s : stack) {
+def fwrite(f : file, s : stack) {
   var tmp = s.top;
   while tmp != nil {
     fwrite(f, tmp.value, " ");

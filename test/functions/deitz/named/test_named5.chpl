@@ -1,4 +1,4 @@
-fun foo(i : int, j : int, k : int) {
+def foo(i : int, j : int, k : int) {
   writeln("foo of ", i, ", ", j, ", ", k);
 }
 

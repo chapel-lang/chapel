@@ -1,10 +1,10 @@
 typedef mytuple : int;
 
-fun foo(t : mytuple, param i : int) where i == 1 {
+def foo(t : mytuple, param i : int) where i == 1 {
   return 1;
 }
 
-fun foo(t : mytuple, param i : int) where i == 2 {
+def foo(t : mytuple, param i : int) where i == 2 {
   return 2;
 }
 

@@ -1,10 +1,10 @@
 
 class A {
   var a : float;
-  fun this(i) {
+  def this(i) {
     return a;
   }
-  fun =this(i, x) {
+  def =this(i, x) {
     a = x;
   }
 }
@@ -12,10 +12,10 @@ class A {
 class C {
   var a : A = A();
   var bb : int;
-  fun f() {
+  def f() {
     a(1) *= 2.0;
   }
-  fun b(i) var {
+  def b(i) var {
     return bb; 
   }
 }

@@ -6,7 +6,7 @@ var Inner: subdomain(Full) = [2..n-1,2..n-1];
 var A: [Full] float, B: [Full] float;
 var threshold: float = 0.1;
 
-fun main() {
+def main() {
   initialize();
   while (true) {
     if (stencil(A,B) < threshold) {
@@ -22,7 +22,7 @@ fun main() {
 
 // Put the stencil of X in Y
 // Return the max difference between the new and old stencils
-fun stencil(X,Y) {
+def stencil(X,Y) {
   forall i,j in Inner {
     Y(i,j) = (X(i+1,j) + X(i-1,j) + X(i,j+1) + X(i,j-1)) / 4;
   }
@@ -31,7 +31,7 @@ fun stencil(X,Y) {
 
 // Initialize everything but the south boundary to 0.0
 // Initialize the south boundary to 1.0
-fun initialize() {
+def initialize() {
   forall i in [n..n,1..n] {
     A(i) = 1.0;
     B(i) = 1.0;

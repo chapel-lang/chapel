@@ -1,6 +1,6 @@
 
 
-fun foo(const x) {
+def foo(const x) {
   return x + x;
 }
 

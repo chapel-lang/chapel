@@ -1,11 +1,11 @@
-fun foo(type t, x : t, y : t) {
+def foo(type t, x : t, y : t) {
   if x == y then
     writeln("foo of ", x, " and itself");
   else
     writeln("foo of ", x, " and ", y);
 }
 
-fun foo(type t, x : t, y : float) {
+def foo(type t, x : t, y : float) {
   writeln("foo (2) of ", x, " and ", y);
 }
 

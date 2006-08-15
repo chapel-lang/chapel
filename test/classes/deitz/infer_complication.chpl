@@ -1,7 +1,7 @@
 class C {
   var x;
   var y;
-  fun foo() {
+  def foo() {
     return x + y;
   }
 }

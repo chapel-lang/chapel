@@ -1,4 +1,4 @@
-fun foo(i : int, j : int) {
+def foo(i : int, j : int) {
   writeln(i);
   writeln(j);
 }

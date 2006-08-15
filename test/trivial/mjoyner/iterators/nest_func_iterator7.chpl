@@ -30,7 +30,7 @@ pragma "inline" iterator trivial() : int {
   }
 }
 
-fun main() {
+def main() {
 var x : int = 5;
   for i in basic() {
     for j in simple() {

@@ -1,6 +1,6 @@
-fun foo(x : int = 4) : float return x / 2.0;
+def foo(x : int = 4) : float return x / 2.0;
 
-fun foo(x : float) {
+def foo(x : float) {
   writeln(x);
 }
 

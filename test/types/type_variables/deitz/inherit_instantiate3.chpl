@@ -11,7 +11,7 @@ var d = D(p=2);
 
 writeln(d);
 
-fun foo(d : D) {
+def foo(d : D) {
   for param i in 1..d.p do
     writeln(i);
 }

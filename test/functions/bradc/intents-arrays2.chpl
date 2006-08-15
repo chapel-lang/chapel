@@ -2,7 +2,7 @@ config var n: int = 6;
 var D: domain(1) = [1..n];
 var A: [D] float;
 
-fun callin(in x) {
+def callin(in x) {
   writeln("in callin, x is: ", x);
   forall i in D {
     x(i) += 1.0;
@@ -11,7 +11,7 @@ fun callin(in x) {
 }
 
 
-fun callout(out x) {
+def callout(out x) {
   forall i in D {
     x(i) = i;
   }
@@ -19,7 +19,7 @@ fun callout(out x) {
 }
 
 
-fun callinout(inout x) {
+def callinout(inout x) {
   writeln("in callinout, x is: ", x);
   forall i in D {
     x(i) += 1.0;
@@ -28,7 +28,7 @@ fun callinout(inout x) {
 }
 
 
-fun callblank(x) {
+def callblank(x) {
   writeln("in callblank, x is: ", x);
   forall i in D {
     x(i) += 1.0;
@@ -37,7 +37,7 @@ fun callblank(x) {
 }
 
 
-fun main() {
+def main() {
 
   forall i in D {
     A(i) = i;

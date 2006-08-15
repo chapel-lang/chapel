@@ -1,6 +1,6 @@
-fun bar(x) return 12;
+def bar(x) return 12;
 
-fun foo(x, y = bar(x)) {
+def foo(x, y = bar(x)) {
   writeln(x, " ", y);
 }
 

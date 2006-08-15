@@ -3,7 +3,7 @@ record mytuple {
   var field2 : float;
 }
 
-fun foo(param i : int, t : mytuple) {
+def foo(param i : int, t : mytuple) {
   return 1;
 }
 

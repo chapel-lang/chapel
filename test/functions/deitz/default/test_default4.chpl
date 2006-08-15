@@ -1,12 +1,12 @@
-fun foo(i : int = 1, j : float = 2.0, k : string = "three") {
+def foo(i : int = 1, j : float = 2.0, k : string = "three") {
   writeln("foo of ", i, ", ", j, ", ", k);
 }
 
-fun foo(i : float = 1.0, j : string = "two", k : int = 3) {
+def foo(i : float = 1.0, j : string = "two", k : int = 3) {
   writeln("foo of ", i, ", ", j, ", ", k);
 }
 
-fun foo(i : string = "one", j : int = 2, k : float = 3.0) {
+def foo(i : string = "one", j : int = 2, k : float = 3.0) {
   writeln("foo of ", i, ", ", j, ", ", k);
 }
 

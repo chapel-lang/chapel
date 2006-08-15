@@ -1,9 +1,9 @@
 class C {
-  fun foo() { writeln("isa C"); }
+  def foo() { writeln("isa C"); }
 }
 
 class D : C {
-  fun foo() { writeln("isa D"); }
+  def foo() { writeln("isa D"); }
 }
 
 var c = C();

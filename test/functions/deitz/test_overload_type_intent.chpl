@@ -1,10 +1,10 @@
-fun foo(type t) {
+def foo(type t) {
   writeln("foo(type t) called");
   var x : t;
   writeln("  ", x);
 }
 
-fun foo(x : int) {
+def foo(x : int) {
   writeln("foo(int) called");
   writeln("  ", x);
 }

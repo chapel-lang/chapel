@@ -3,15 +3,15 @@ class mysumreduce {
   type statetype = intype;
   type outtype = intype;
   
-  fun ident(): statetype {
+  def ident(): statetype {
     return 0;
   }
 
-  fun combine(x: statetype, y: intype): statetype {
+  def combine(x: statetype, y: intype): statetype {
     return x + y;
   }
 
-  fun result(x: statetype): outtype {
+  def result(x: statetype): outtype {
     return x;
   }
 }

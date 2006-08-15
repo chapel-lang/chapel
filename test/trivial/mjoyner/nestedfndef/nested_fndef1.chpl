@@ -1,7 +1,7 @@
-fun main() {  
+def main() {  
   nested();            
   
-  fun nested() {
+  def nested() {
     var x : int = 3;
     writeln(x);
   } 

@@ -8,7 +8,7 @@ forall i in D {
   A(i) = i;
 }
 
-fun foo(X) {
+def foo(X) {
   writeln("X is: ", X);
 }
 
