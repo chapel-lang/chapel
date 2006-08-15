@@ -1045,6 +1045,8 @@ memberaccess_expr:
     { $$ = new CallExpr(".", $1, new_StringSymbol($3)); }
 | non_tuple_lvalue TDOT TTYPE
     { $$ = new CallExpr(PRIMITIVE_TYPEOF, $1); }
+| non_tuple_lvalue TDOT TDOMAIN
+    { $$ = new CallExpr(".", $1, new_StringSymbol("dom")); }
 ;
 
 
