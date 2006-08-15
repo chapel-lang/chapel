@@ -71443,3 +71443,17 @@ Log message:
 Modified files:
 	chapel/compiler/parser/: chapel.lex chapel.y 
 
+---------------------------------------------------------------------------
+
+08/15/06 16:27:34 -- deitz
+
+Log message:
+	Added support to query a domain's array by writing A.domain where A is
+	an array and added a test.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+Added files:
+	chapel/test/arrays/deitz/: test_dot_domain.chpl 
+	                           test_dot_domain.good 
+
