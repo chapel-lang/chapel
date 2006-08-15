@@ -20,7 +20,6 @@ static void build_setters_and_getters(ClassType* ct);
 static void flatten_primary_methods(FnSymbol* fn);
 static void add_this_formal_to_method(FnSymbol* fn);
 static void change_cast_in_where(FnSymbol* fn);
-static void fixup_array_formals(FnSymbol* fn);
 
 
 static void
@@ -202,7 +201,6 @@ void cleanup(BaseAST* base) {
       flatten_primary_methods(fn);
       add_this_formal_to_method(fn);
       change_cast_in_where(fn);
-      fixup_array_formals(fn);
     }
   }
 
@@ -464,32 +462,6 @@ static void change_cast_in_where(FnSymbol* fn) {
       if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
         if (call->isPrimitive(PRIMITIVE_CAST))
           call->primitive = primitives[PRIMITIVE_ISSUBTYPE];
-      }
-    }
-  }
-}
-
-
-static void fixup_array_formals(FnSymbol* fn) {
-  Vec<BaseAST*> asts;
-  collect_top_asts(&asts, fn);
-  forv_Vec(BaseAST, ast, asts) {
-    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
-      if (call->isNamed("_build_array_type")) {
-        SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1));
-        if (sym && sym->var == gNil) {
-          DefExpr* def = dynamic_cast<DefExpr*>(call->parentExpr);
-          if (!def || !dynamic_cast<ArgSymbol*>(def->sym) || def->exprType != call)
-            USR_FATAL(call, "Array with empty domain can only be used as a formal argument type");
-          def->exprType->replace(new SymExpr("_array"));
-          if (!fn->where) {
-            fn->where = new BlockStmt(new ExprStmt(new SymExpr(gTrue)));
-            insert_help(fn->where, NULL, NULL, fn, fn->argScope);
-          }
-          ExprStmt* stmt = dynamic_cast<ExprStmt*>(fn->where->body->only());
-          Expr* expr = stmt->expr;
-          expr->replace(new CallExpr("&&", expr->copy(), new CallExpr("==", call->get(2)->copy(), new CallExpr(".", def->sym, new_StringLiteral("elt_type")))));
-        }
       }
     }
   }

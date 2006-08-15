@@ -97,10 +97,13 @@ check_parsed(void) {
       if (dynamic_cast<VarSymbol*>(def->sym))
         if (dynamic_cast<FnSymbol*>(def->parentSymbol) ||
             dynamic_cast<ModuleSymbol*>(def->parentSymbol))
-          if (!def->init && !def->exprType && !def->sym->isCompilerTemp)
-            USR_FATAL_CONT(def->sym,
-                           "Variable '%s' is not initialized or has no type",
-                           def->sym->name);
+          if (!def->init && !def->exprType && !def->sym->isCompilerTemp) {
+            CallExpr* parentCall = dynamic_cast<CallExpr*>(def->parentExpr);
+            if (!parentCall || !parentCall->isNamed("_build_array_type"))
+              USR_FATAL_CONT(def->sym,
+                             "Variable '%s' is not initialized or has no type",
+                             def->sym->name);
+          }
 
     if (Symbol* sym = dynamic_cast<Symbol*>(ast))
       check_redefinition(sym);

@@ -18,7 +18,7 @@ void parse(void) {
     fileModule = ParseFile(stringcat(path, "_chpl_file.chpl"), MOD_STANDARD);
     ParseFile(stringcat(path, "_chpl_complex.chpl"), MOD_STANDARD);
     tupleModule = ParseFile(stringcat(path, "_chpl_htuple.chpl"), MOD_STANDARD);
-    ParseFile(stringcat(path, "_chpl_adomain.chpl"), MOD_STANDARD);
+    domainModule = ParseFile(stringcat(path, "_chpl_adomain.chpl"), MOD_STANDARD);
     ParseFile(stringcat(path, "_chpl_indefinite.chpl"), MOD_STANDARD);
     ParseFile(stringcat(path, "_chpl_sparse.chpl"), MOD_STANDARD);
     ParseFile(stringcat(path, "_chpl_math.chpl"), MOD_STANDARD);
@@ -42,6 +42,7 @@ void parse(void) {
 
   if (!fnostdincs) {
     chpl_seq = seqModule->lookupType("seq");
+    chpl_array = domainModule->lookupType("_array");
     chpl_stdin = fileModule->lookupVar("stdin");
     chpl_stdout = fileModule->lookupVar("stdout");
     chpl_stderr = fileModule->lookupVar("stderr");

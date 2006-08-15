@@ -955,6 +955,8 @@ type:
     { $$ = new CallExpr("_build_array_type", new CallExpr("_build_domain", $2), $4); }
 | TLSBR TRSBR type
     { $$ = new CallExpr("_build_array_type", gNil, $3); }
+| TLSBR TQUESTION identifier TRSBR type
+    { $$ = new CallExpr("_build_array_type", new DefExpr(new VarSymbol($3)), $5); }
 | TDOMAIN TLP expr_ls TRP
     { $$ = new CallExpr("_build_domain_type", $3); }
 | TDOMAIN

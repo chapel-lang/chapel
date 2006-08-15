@@ -33,6 +33,7 @@ static void expand_var_args(FnSymbol* fn);
 static int tag_generic(FnSymbol* fn);
 static void tag_hasVarArgs(FnSymbol* fn);
 static void change_types_to_values(BaseAST* base);
+static void fixup_array_formals(FnSymbol* fn);
 
 
 void normalize(void) {
@@ -51,6 +52,7 @@ void normalize(BaseAST* base) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
       currentLineno = fn->lineno;
       currentFilename = fn->filename;
+      fixup_array_formals(fn);
       if (fn->fnClass == FN_ITERATOR)
         reconstruct_iterator(fn);
       if (fn->retRef && !fn->_getter)
@@ -1152,6 +1154,42 @@ change_types_to_values(BaseAST* base) {
           sym->replace(new SymExpr(typeTemp));
         } else {
           sym->replace(typecall);
+        }
+      }
+    }
+  }
+}
+
+
+
+static void fixup_array_formals(FnSymbol* fn) {
+  Vec<BaseAST*> asts;
+  collect_top_asts(&asts, fn);
+  forv_Vec(BaseAST, ast, asts) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+      if (call->isNamed("_build_array_type")) {
+        SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1));
+        DefExpr* def = dynamic_cast<DefExpr*>(call->get(1));
+        if (def || (sym && sym->var == gNil)) {
+          DefExpr* parent = dynamic_cast<DefExpr*>(call->parentExpr);
+          if (!parent || !dynamic_cast<ArgSymbol*>(parent->sym) || parent->exprType != call)
+            USR_FATAL(call, "Array with empty or queried domain can only be used as a formal argument type");
+          parent->exprType->replace(new SymExpr(chpl_array));
+          if (!fn->where) {
+            fn->where = new BlockStmt(new ExprStmt(new SymExpr(gTrue)));
+            insert_help(fn->where, NULL, NULL, fn, fn->argScope);
+          }
+          ExprStmt* stmt = dynamic_cast<ExprStmt*>(fn->where->body->only());
+          Expr* expr = stmt->expr;
+          expr->replace(new CallExpr("&&", expr->copy(), new CallExpr("==", call->get(2)->remove(), new CallExpr(".", parent->sym, new_StringLiteral("elt_type")))));
+          if (def) {
+            forv_Vec(BaseAST, ast, asts) {
+              if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
+                if (sym->var == def->sym)
+                  sym->replace(new CallExpr(".", parent->sym, new_StringLiteral("dom")));
+              }
+            }
+          }
         }
       }
     }
