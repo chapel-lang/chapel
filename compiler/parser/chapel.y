@@ -103,7 +103,6 @@ Is this "while x"(i); or "while x(i)";?
 %token TATOMIC
 %token TBEGIN
 %token TBREAK
-%token TCALL
 %token TCLASS
 %token TCOBEGIN
 %token TCONFIG
@@ -201,7 +200,7 @@ Is this "while x"(i); or "while x(i)";?
 %type <pstmtls> stmt_ls decl_stmt_ls
 
 %type <pblockstmt> stmt empty_stmt label_stmt goto_stmt break_stmt continue_stmt
-%type <pblockstmt> call_stmt expr_stmt if_stmt expr_for_stmt for_stmt while_do_stmt do_while_stmt
+%type <pblockstmt> expr_stmt if_stmt expr_for_stmt for_stmt while_do_stmt do_while_stmt
 %type <pblockstmt> select_stmt return_stmt yield_stmt assign_stmt decl_stmt
 %type <pblockstmt> type_select_stmt
 
@@ -294,7 +293,6 @@ stmt:
 | goto_stmt
 | break_stmt
 | continue_stmt
-| call_stmt
 | expr_stmt
 | if_stmt
 | for_stmt
@@ -319,7 +317,6 @@ parsed_block_single_stmt:
 | goto_stmt
 | break_stmt
 | continue_stmt
-| call_stmt
 | if_stmt
 | select_stmt
 | for_stmt
@@ -367,12 +364,6 @@ break_stmt:
 continue_stmt:
   TCONTINUE opt_identifier TSEMI
     { $$ = build_chpl_stmt(new GotoStmt(goto_continue, $2)); }
-;
-
-
-call_stmt:
-  TCALL lvalue TSEMI
-    { $$ = build_chpl_stmt($2); }
 ;
 
 

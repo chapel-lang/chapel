@@ -42,7 +42,6 @@ atomic          processToken(TATOMIC);
 begin           processToken(TBEGIN);
 break           processToken(TBREAK);
 by              processToken(TBY);
-call            processToken(TCALL);
 class           processToken(TCLASS);
 cobegin         processToken(TCOBEGIN);
 config          processToken(TCONFIG);
