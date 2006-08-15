@@ -1,7 +1,7 @@
 #ifndef _chplrt_H_
 #define _chplrt_H_
 
-#define array_index(x, i) ((x)->_data[i])
+#define array_get(x, i) (&((x)->_data[i]))
 #define array_set(x, i, v) ((x)->_data[i] = v)
 #define array_init(type, x, size) (x)->_data = _chpl_malloc(size, sizeof(type), "_data");
 

@@ -13,6 +13,7 @@
 // those records as a reference argument and fix calls
 void
 convertReturnsToArgs() {
+  return; // disabled
   Vec<BaseAST*> asts;
   collect_asts(&asts);
 

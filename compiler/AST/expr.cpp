@@ -120,6 +120,12 @@ void Expr::codegenCastToString(FILE* outfile) {
 }
 
 
+bool Expr::isRef() {
+  INT_FATAL("bad call to Expr::isRef()");
+  return false;
+}
+
+
 SymExpr::SymExpr(Symbol* init_var) :
   Expr(EXPR_SYM),
   var(init_var)
@@ -184,6 +190,11 @@ void SymExpr::print(FILE* outfile) {
 
 void SymExpr::codegen(FILE* outfile) {
   var->codegen(outfile);
+}
+
+
+bool SymExpr::isRef() {
+  return var->isReference;
 }
 
 
@@ -471,11 +482,6 @@ void CallExpr::codegen(FILE* outfile) {
     switch (primitive->tag) {
     case PRIMITIVE_UNKNOWN:
       fprintf(outfile, "%s(", primitive->name);
-      if (!strcmp(primitive->name, "array_init")) {
-        Type* elt_type = argList->last()->typeInfo();
-        elt_type->symbol->codegen(outfile);
-        first_actual = false;
-      }
       if (!strcmp(primitive->name, "fscanf")) {
         get(1)->codegen(outfile);
         fprintf(outfile, ", ");
@@ -492,6 +498,31 @@ void CallExpr::codegen(FILE* outfile) {
           fprintf(outfile, ", ");
         actual->codegen(outfile);
       }
+      fprintf(outfile, ")");
+      break;
+    case PRIMITIVE_ARRAY_GET:
+      fprintf(outfile, "array_get(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, ", ");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
+    case PRIMITIVE_ARRAY_SET:
+      fprintf(outfile, "array_set(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, ", ");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ", ");
+      get(3)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
+    case PRIMITIVE_ARRAY_INIT:
+      fprintf(outfile, "array_init(");
+      argList->last()->typeInfo()->symbol->codegen(outfile);
+      fprintf(outfile, ", ");
+      get(1)->codegen(outfile);
+      fprintf(outfile, ", ");
+      get(2)->codegen(outfile);
       fprintf(outfile, ")");
       break;
     case PRIMITIVE_MOVE: {
@@ -516,9 +547,27 @@ void CallExpr::codegen(FILE* outfile) {
           }
         }
       }
-      get(1)->codegen(outfile);
+      SymExpr* sym = dynamic_cast<SymExpr*>(get(1));
+      if (!sym)
+        INT_FATAL(this, "bad move expression");
+      if (dynamic_cast<ArgSymbol*>(sym->var))
+        get(1)->codegen(outfile);
+      else if (sym->var->isReference && !get(2)->isRef())
+        fprintf(outfile, "*%s", sym->var->cname);
+      else if (dynamic_cast<VarSymbol*>(sym->var) && dynamic_cast<VarSymbol*>(sym->var)->on_heap)
+        fprintf(outfile, "*%s", sym->var->cname);
+      else
+        fprintf(outfile, "%s", sym->var->cname);
       fprintf(outfile, " = ");
+      if (get(2)->isRef() && get(1)->isRef() && dynamic_cast<SymExpr*>(get(2)))
+        fprintf(outfile, "&(");
+      if (get(2)->isRef() && !get(1)->isRef() && !dynamic_cast<SymExpr*>(get(2)))
+        fprintf(outfile, "*(");
       get(2)->codegen(outfile);
+      if (get(2)->isRef() && get(1)->isRef() && dynamic_cast<SymExpr*>(get(2)))
+        fprintf(outfile, ")");
+      if (get(2)->isRef() && !get(1)->isRef() && !dynamic_cast<SymExpr*>(get(2)))
+        fprintf(outfile, ")");
       break;
     }
     case PRIMITIVE_UNARY_MINUS:
@@ -810,7 +859,9 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, ")");
       break;
     case PRIMITIVE_GET_MEMBER:
+      fprintf(outfile, "(&(");
       codegen_member(outfile, get(1), get(2));
+      fprintf(outfile, "))");
       break;
     case PRIMITIVE_SET_MEMBER:
       {
@@ -1180,6 +1231,15 @@ void CallExpr::codegen(FILE* outfile) {
 
 bool CallExpr::isPrimitive(PrimitiveTag primitiveTag) {
   return primitive && primitive->tag == primitiveTag;
+}
+
+
+bool CallExpr::isRef() {
+  if (FnSymbol* fn = isResolved())
+    return fn->retRef;
+  else if (primitive)
+    return primitive->isReference;
+  return false;
 }
 
 

@@ -214,10 +214,18 @@ void ReturnStmt::print(FILE* outfile) {
 void ReturnStmt::codegenStmt(FILE* outfile) {
   if (yield)
     INT_FATAL(this, "Yield should be removed before codegen");
+  SymExpr* sym = dynamic_cast<SymExpr*>(expr);
+  if (!sym)
+    INT_FATAL(this, "return stmt not normal in codegen");
   fprintf(outfile, "return");
   if (!returnsVoid()) {
     fprintf(outfile, " ");
-    expr->codegen(outfile);
+    FnSymbol* fn = getFunction();
+    if (fn->retRef && !sym->var->isReference)
+      fprintf(outfile, "&");
+    if (!fn->retRef && sym->var->isReference)
+      fprintf(outfile, "*");
+    fprintf(outfile, "%s", sym->var->cname);
   }
   fprintf(outfile, ";\n");
 }

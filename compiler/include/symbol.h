@@ -43,6 +43,8 @@ class Symbol : public BaseAST {
   Symbol* overload;
   bool isCompilerTemp;
   bool isTypeVariable;
+  bool isReference;    // is a reference
+  bool canReference;   // can be a reference (determined during resolution)
 
   Vec<SymExpr*> uses;
 
@@ -158,8 +160,8 @@ class FnSymbol : public Symbol {
   bool isGeneric;
   bool hasVarArgs;
   Symbol* _this;
-  Symbol* _setter; // the variable this function sets if it is a setter
   Symbol* _getter; // the variable this function gets if it is a getter
+  Symbol* _setter;
   bool isMethod;
   FnSymbol *instantiatedFrom;
   ASTMap substitutions;

@@ -7,6 +7,7 @@
 class Type;
 class FnSymbol;
 class VarSymbol;
+class ArgSymbol;
 class CallExpr;
 
 void cleanup(BaseAST* ast);
@@ -54,6 +55,6 @@ void insert_help(BaseAST* ast,
                  Symbol* parentSymbol,
                  SymScope* parentScope);
 
-Symbol* actual_to_formal( Expr *a);
+ArgSymbol* actual_to_formal( Expr *a);
 
 #endif

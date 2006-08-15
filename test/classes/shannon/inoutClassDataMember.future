@@ -1,4 +1,0 @@
-inout
-
-When a class data member is an inout argument to a function, 
-the value set in the function is not maintained.

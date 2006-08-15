@@ -16,6 +16,7 @@ void parallel2();
 void convertReturnsToArgs();
 void destructureRecords();
 void inlineFunctions();
+void cullOverReferences();
 void copyPropagation();
 void codegen();
 
@@ -41,6 +42,8 @@ PassInfo passlist[] = {
   RUN(convertReturnsToArgs), // pass records instead of returning them
   RUN(destructureRecords),   // destructure records into components
   RUN(inlineFunctions),    // function inlining
+
+  RUN(cullOverReferences),
 
   RUN(copyPropagation),
   RUN(codegen),

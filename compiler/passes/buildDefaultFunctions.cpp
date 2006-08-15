@@ -202,8 +202,7 @@ static void build_record_assignment_function(ClassType* ct) {
   AList<Stmt>* body = new AList<Stmt>();
   for_fields(tmp, ct)
     if (!tmp->isTypeVariable)
-      body->insertAtTail(new CallExpr(tmp->name, gMethodToken, arg1, gSetterToken,
-                                      new CallExpr(tmp->name, gMethodToken, arg2)));
+      body->insertAtTail(new CallExpr("=", new CallExpr(".", arg1, new_StringLiteral(tmp->name)), new CallExpr(".", arg2, new_StringLiteral(tmp->name))));
   body->insertAtTail(new ReturnStmt(arg1));
   BlockStmt* block_stmt = new BlockStmt(body);
   fn->body = block_stmt;

@@ -1,1 +1,1 @@
-Error: Cannot assign expression of type float to field of type int (test_clone_class1b.chpl:2)
+Error: Type mismatch in assignment from float to int (test_clone_class1b.chpl:2)

@@ -117,7 +117,9 @@ Symbol::Symbol(astType_t astType, char* init_name, Type* init_type) :
   defPoint(NULL),
   overload(NULL),
   isCompilerTemp(false),
-  isTypeVariable(false)
+  isTypeVariable(false),
+  isReference(false),
+  canReference(false)
 {}
 
 
@@ -273,6 +275,8 @@ VarSymbol::copyInner(ASTMap* map) {
   newVarSymbol->cname = stringcpy(cname);
   newVarSymbol->isCompilerTemp = isCompilerTemp;
   newVarSymbol->isTypeVariable = isTypeVariable;
+  newVarSymbol->isReference = isReference;
+  newVarSymbol->canReference = canReference;
   assert(!newVarSymbol->immediate);
   return newVarSymbol;
 }
@@ -331,7 +335,7 @@ void VarSymbol::printDef(FILE* outfile) {
 
 
 void VarSymbol::codegen( FILE* outfile) {
-  if (on_heap)
+  if (on_heap || isReference)
     fprintf( outfile, "*(");
 
   if (immediate &&
@@ -367,7 +371,7 @@ void VarSymbol::codegen( FILE* outfile) {
     fprintf(outfile, "%s", cname);
   }
 
-  if (on_heap)
+  if (on_heap || isReference)
     fprintf( outfile, ")");
 }
 
@@ -382,8 +386,8 @@ void VarSymbol::codegenDef(FILE* outfile) {
   }
   type->codegen(outfile);
   fprintf(outfile, " ");
-  if (is_ref || on_heap) fprintf( outfile, "*");
-  Symbol::codegen(outfile);
+  if (is_ref || on_heap || isReference) fprintf( outfile, "*");
+  fprintf(outfile, "%s", cname);
   fprintf(outfile, ";\n");
 }
 
@@ -469,25 +473,20 @@ bool ArgSymbol::isConst(void) {
 
 
 void ArgSymbol::codegen(FILE* outfile) {
-  bool requiresDeref = requiresCPtr();
- 
-  if (requiresDeref) {
+  if (requiresCPtr())
     fprintf(outfile, "(*");
-  }
-  Symbol::codegen(outfile);
-  if (requiresDeref) {
+  fprintf(outfile, "%s", cname);
+  if (requiresCPtr())
     fprintf(outfile, ")");
-  }
 }
 
 
 void ArgSymbol::codegenDef(FILE* outfile) {
   type->codegen(outfile);
-  if (requiresCPtr()) {
+  if (requiresCPtr())
     fprintf(outfile, "* const");
-  }
   fprintf(outfile, " ");
-  Symbol::codegen(outfile);
+  fprintf(outfile, "%s", cname);
 }
 
 
@@ -551,8 +550,8 @@ FnSymbol::FnSymbol(char* initName) :
   isGeneric(false),
   hasVarArgs(false),
   _this(NULL),
-  _setter(NULL),
   _getter(NULL),
+  _setter(NULL),
   isMethod(false),
   instantiatedFrom(NULL),
   instantiatedTo(NULL),
@@ -592,13 +591,13 @@ FnSymbol::copyInner(ASTMap* map) {
   copy->retRef = retRef;
   copy->retExpr = COPY_INT(retExpr);
   copy->cname = cname;
-  copy->isSetter = isSetter;
   copy->isGeneric = false;  // set in normalize()
+  copy->isSetter = isSetter;
   copy->_this = _this;
-  copy->_setter = _setter;
   copy->_getter = _getter; // If it is a cloned class we probably want
                            // this to point to the new member, but how
                            // do we do that
+  copy->_setter = _setter;
   copy->isMethod = isMethod;
   return copy;
 }
@@ -944,6 +943,7 @@ instantiate_tuple_get(FnSymbol* fn) {
   int index = dynamic_cast<VarSymbol*>(fn->substitutions.get(fn->instantiatedFrom->formals->get(2)->sym))->immediate->v_int64;
   char* name = stringcat("x", intstring(index));
   fn->body->replace(new BlockStmt(new ReturnStmt(new CallExpr(PRIMITIVE_GET_MEMBER, fn->_this, new_StringLiteral(name)))));
+  fn->retRef = true;
   return fn;
 }
 
@@ -953,7 +953,8 @@ instantiate_tuple_set(FnSymbol* fn) {
   char* name = stringcat("x", intstring(index));
   VarSymbol* tmp = new VarSymbol("_tmp");
   fn->insertAtHead(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, new_StringLiteral(name), new CallExpr("=", tmp, fn->formals->last()->sym)));
-  fn->insertAtHead(new DefExpr(tmp, new CallExpr(PRIMITIVE_GET_MEMBER, fn->_this, new_StringLiteral(name))));
+  fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER, fn->_this, new_StringLiteral(name))));
+  fn->insertAtHead(new DefExpr(tmp));
   return fn;
 }
 
@@ -1155,8 +1156,10 @@ void FnSymbol::printDef(FILE* outfile) {
 
 void FnSymbol::codegenHeader(FILE* outfile) {
   retType->codegen(outfile);
+  if (retRef)
+    fprintf(outfile, "*");
   fprintf(outfile, " ");
-  this->codegen(outfile);
+  fprintf(outfile, "%s", cname);
   fprintf(outfile, "(");
   if (!formals) {
     fprintf(outfile, "void");

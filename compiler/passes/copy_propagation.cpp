@@ -84,6 +84,8 @@ void localCopyPropagation(BasicBlock* bb) {
 
             if (!lhs->var->isCompilerTemp) // only compiler temps
               continue;
+            if (lhs->var->isReference || rhs->var->isReference)
+              continue;
 
             // Note: Disabled on configuration variables until those
             // are in the AST for real

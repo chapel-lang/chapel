@@ -135,20 +135,20 @@ HashMap<char *, StringHashFns, PrimitiveOp *> primitives_map;
 
 PrimitiveOp* primitives[NUM_KNOWN_PRIMS];
 
-PrimitiveOp::PrimitiveOp(PrimitiveTag atag, char *aname, Type *(*areturnInfo)(CallExpr*))
-  : tag(atag), name(aname), returnInfo(areturnInfo)
+PrimitiveOp::PrimitiveOp(PrimitiveTag atag, char *aname, Type *(*areturnInfo)(CallExpr*), bool aIsReference)
+  : tag(atag), name(aname), returnInfo(areturnInfo), isReference(aIsReference)
 {
   primitives_map.put(name, this);
 }
 
 static void
-prim_def(PrimitiveTag tag, char* name, Type *(*returnInfo)(CallExpr*)) {
-  primitives[tag] = new PrimitiveOp(tag, name, returnInfo);
+prim_def(PrimitiveTag tag, char* name, Type *(*returnInfo)(CallExpr*), bool isReference = false) {
+  primitives[tag] = new PrimitiveOp(tag, name, returnInfo, isReference);
 }
 
 static void
-prim_def(char* name, Type *(*returnInfo)(CallExpr*)) {
-  new PrimitiveOp(PRIMITIVE_UNKNOWN, name, returnInfo);
+prim_def(char* name, Type *(*returnInfo)(CallExpr*), bool isReference = false) {
+  new PrimitiveOp(PRIMITIVE_UNKNOWN, name, returnInfo, isReference);
 }
 
 
@@ -193,7 +193,7 @@ initPrimitive() {
 
   prim_def(PRIMITIVE_SETCID, "setcid", returnInfoVoid);
   prim_def(PRIMITIVE_GETCID, "getcid", returnInfoBool);
-  prim_def(PRIMITIVE_GET_MEMBER, ".", returnInfoGetMember);
+  prim_def(PRIMITIVE_GET_MEMBER, ".", returnInfoGetMember, true);
   prim_def(PRIMITIVE_SET_MEMBER, ".=", returnInfoVoid);
 
   prim_def(PRIMITIVE_GET_MEMBER_REF_TO, ".*", returnInfoVoid);
@@ -227,6 +227,11 @@ initPrimitive() {
   prim_def(PRIMITIVE_TYPEOF, "typeof", returnInfoFirst);
   prim_def(PRIMITIVE_USE, "use", returnInfoVoid);
   prim_def(PRIMITIVE_TUPLE_EXPAND, "expand_tuple", returnInfoVoid);
+
+  prim_def(PRIMITIVE_ARRAY_INIT, "array_init", returnInfoVoid);
+  prim_def(PRIMITIVE_ARRAY_GET, "array_get", returnInfoArrayIndex, true);
+  prim_def(PRIMITIVE_ARRAY_SET, "array_set", returnInfoVoid);
+
   prim_def("abs", returnInfoInt);
   prim_def("acos", returnInfoFloat);
   prim_def("acosh", returnInfoFloat);
@@ -266,9 +271,6 @@ initPrimitive() {
   prim_def("fprintf", returnInfoInt);
   prim_def("fscanf", returnInfoInt);
   prim_def("fflush", returnInfoInt);
-  prim_def("array_init", returnInfoVoid);
-  prim_def("array_index", returnInfoArrayIndex);
-  prim_def("array_set", returnInfoVoid);
   prim_def("readLit", returnInfoBool);
   prim_def("string_fscanf", returnInfoString);
   prim_def("string_contains", returnInfoBool);
@@ -282,8 +284,8 @@ initPrimitive() {
   prim_def("ascii", returnInfoInt);
   prim_def("exit", returnInfoInt);
 
-  prim_def("_chpl_complex_real", returnInfoFloat);
-  prim_def("_chpl_complex_imag", returnInfoFloat);
+  prim_def("_chpl_complex_real", returnInfoFloat, true);
+  prim_def("_chpl_complex_imag", returnInfoFloat, true);
   prim_def("_chpl_complex_set_real", returnInfoVoid);
   prim_def("_chpl_complex_set_imag", returnInfoVoid);
 

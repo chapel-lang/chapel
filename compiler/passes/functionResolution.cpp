@@ -869,12 +869,15 @@ resolveCall(CallExpr* call) {
           }
         }
       }
+      if (call->get(2)->isRef() && sym->var->canReference)
+        sym->var->isReference = true;
       if (t == dtUnknown)
         INT_FATAL(call, "Unable to resolve type");
       if (t != sym->var->type && 
           t != dtNil && 
           t != dtObject)
-        INT_FATAL(call, "Bad type detected");
+        USR_FATAL(call, "Type mismatch in assignment from %s to %s",
+                  t->symbol->name, sym->var->type->symbol->name);
     }
   }
 }

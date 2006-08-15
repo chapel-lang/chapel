@@ -375,6 +375,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
   FnSymbol* fn = new FnSymbol(field->name);
   fn->addPragma("inline");
   fn->_getter = field;
+  fn->retRef = true;
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
   fn->formals->insertAtTail(new ArgSymbol(INTENT_BLANK, "_methodTokenDummy", dtMethodToken));
   fn->formals->insertAtTail(_this);
@@ -407,10 +408,11 @@ static void build_setter(ClassType* ct, Symbol* field) {
   fn->formals->insertAtTail(_this);
   fn->formals->insertAtTail(new ArgSymbol(INTENT_BLANK, "_setterTokenDummy", dtSetterToken));
   fn->formals->insertAtTail(fieldArg);
-  Expr *valExpr = new CallExpr(PRIMITIVE_GET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)));
-  Expr *assignExpr = new CallExpr("=", valExpr, fieldArg);
-  fn->body->insertAtTail(
-    new CallExpr(PRIMITIVE_SET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)), assignExpr));
+  VarSymbol* val = new VarSymbol("_tmp");
+  fn->insertAtTail(new DefExpr(val));
+  fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, val, new CallExpr(PRIMITIVE_GET_MEMBER, _this, new_StringSymbol(field->name))));
+  fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, val, new CallExpr("=", val, fieldArg)));
+  fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, _this, new_StringSymbol(field->name), val));
   ct->symbol->defPoint->parentStmt->insertBefore(new DefExpr(fn));
   reset_file_info(fn, field->lineno, field->filename);
 

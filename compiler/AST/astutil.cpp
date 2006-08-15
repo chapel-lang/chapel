@@ -221,8 +221,7 @@ void remove_static_actuals() {
         DefExpr* formalDef = fn->formals->first();
         for_alist(Expr, actual, call->argList) {
           ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
-          if (fn->fnClass != FN_CONSTRUCTOR && (formal->type == dtMethodToken ||
-                                                formal->type == dtSetterToken))
+          if (formal->type == dtMethodToken || formal->type == dtSetterToken)
             actual->remove();
           formalDef = fn->formals->next();
         }
@@ -239,8 +238,7 @@ void remove_static_formals() {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
       for_alist(DefExpr, formalDef, fn->formals) {
         ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
-        if (fn->fnClass != FN_CONSTRUCTOR && (formal->type == dtMethodToken ||
-                                              formal->type == dtSetterToken))
+        if (formal->type == dtMethodToken || formal->type == dtSetterToken)
           formalDef->remove();
       }
     }
@@ -369,7 +367,7 @@ void remove_help(BaseAST* ast) {
 
 
 // Return the corresponding Symbol in the formal list of the actual a
-Symbol*
+ArgSymbol*
 actual_to_formal( Expr *a) {
   if (SymExpr *se = dynamic_cast<SymExpr*>(a)) {
     if (CallExpr *ce = dynamic_cast<CallExpr*>(se->parentExpr)) {
@@ -382,9 +380,9 @@ actual_to_formal( Expr *a) {
           }
 
           Expr *e = actuals->first();
-          for_alist( DefExpr, farg, formals) {
+          for_formals(farg, f) {
             if (a == e) {
-              return (ArgSymbol*)(farg->sym);
+              return farg;
             }
             e = actuals->next();
           }

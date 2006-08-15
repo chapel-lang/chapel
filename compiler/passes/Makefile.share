@@ -4,6 +4,7 @@ PASSES_SRCS = \
         parallel.cpp \
 	codegen.cpp \
         copy_propagation.cpp \
+        cullOverReferences.cpp \
 	filesToAST.cpp \
         flattenFunctions.cpp \
         functionResolution.cpp \

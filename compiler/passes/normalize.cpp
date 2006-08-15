@@ -53,7 +53,7 @@ void normalize(BaseAST* base) {
       currentFilename = fn->filename;
       if (fn->fnClass == FN_ITERATOR)
         reconstruct_iterator(fn);
-      if (fn->retRef)
+      if (fn->retRef && !fn->_getter)
         build_lvalue_function(fn);
     }
   }
@@ -300,6 +300,7 @@ static void normalize_returns(FnSymbol* fn) {
   } else {
     retval = new VarSymbol(stringcat("_ret_", fn->name));
     retval->isCompilerTemp = true;
+    retval->isReference = fn->retRef;
     fn->insertAtHead(new DefExpr(retval));
     fn->insertAtTail(new ReturnStmt(retval));
   }
@@ -519,6 +520,7 @@ static void insert_call_temps(CallExpr* call) {
   Stmt* stmt = call->parentStmt;
   VarSymbol* tmp = new VarSymbol("_tmp", dtUnknown, VAR_NORMAL, VAR_CONST);
   tmp->isCompilerTemp = true;
+  tmp->canReference = true;
   tmp->cname = stringcat(tmp->name, intstring(uid++));
   call->replace(new SymExpr(tmp));
   stmt->insertBefore(new DefExpr(tmp));
@@ -669,7 +671,7 @@ static void fold_call_expr(CallExpr* call) {
               INT_FATAL(call, "bad homogeneous tuple");
             Expr* expr = call->get(2);
             for (int i = 1; i < rank; i++)
-              call->insertAtTail(expr->copy());
+              call->insertAtTail(new CallExpr("_copy", expr->copy()));
           }
         }
       }

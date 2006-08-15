@@ -650,7 +650,7 @@ AList<Stmt>* ClassType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymb
   body->insertAtTail(new DefExpr(ignoreWhiteSpace, new SymExpr(gTrue)));
   Symbol* matchingCharWasRead = new VarSymbol("matchingCharWasRead");
   body->insertAtTail(new DefExpr(matchingCharWasRead, new_IntLiteral((int64)0)));
-  CallExpr* fileArgFP = new CallExpr(PRIMITIVE_GET_MEMBER, fileArg, new_StringSymbol("fp"));
+  CallExpr* fileArgFP = new CallExpr(".", fileArg, new_StringSymbol("fp"));
   CallExpr* readOpenBrace = new CallExpr("_readLitChar", fileArgFP, new_StringLiteral("{"), ignoreWhiteSpace);
   body->insertAtTail(new CallExpr("=", matchingCharWasRead, readOpenBrace));
   CallExpr* notRead = new CallExpr("!", matchingCharWasRead);
@@ -677,7 +677,7 @@ AList<Stmt>* ClassType::buildDefaultReadFunctionBody(ArgSymbol* fileArg, ArgSymb
     CallExpr* readEqualSign = new CallExpr("_readLitChar", fileArgFP->copy(), new_StringLiteral("="), ignoreWhiteSpace);
     body->insertAtTail(new CallExpr("=", matchingCharWasRead, readEqualSign));
     body->insertAtTail(readErrorCond->copy());
-    CallExpr* argName = new CallExpr(PRIMITIVE_GET_MEMBER, arg, name->copy());
+    CallExpr* argName = new CallExpr(".", arg, name->copy());
     CallExpr* readValue = new CallExpr("fread", fileArg, argName);
     body->insertAtTail(readValue);
     first = false;

@@ -267,6 +267,8 @@ html_print_fnsymbol( FILE* html_file, int pass, FnSymbol* fn) {
     html_print_symbol( html_file, pass, arg->sym, true);
   }
   fprintf(html_file, " ) ");
+  if (fn->retRef)
+    fprintf(html_file, "<b>ref</b> ");
   if (fn->retType->symbol) {
     fprintf(html_file, " : ");
     html_print_symbol( html_file, pass, fn->retType->symbol, false);
@@ -338,7 +340,7 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
           fprintf( html_file, "<B>sync </B>");
         if (vs->on_heap) 
           fprintf( html_file, "<B>heap </B>");
-        if (vs->is_ref)  
+        if (vs->is_ref || vs->isReference)  
           fprintf( html_file, "<B>ref </B> ");
         fprintf(html_file, "<B>var </B> ");
         html_print_symbol( html_file, pass, e->sym, true);

@@ -71,6 +71,9 @@ enum PrimitiveTag {
   PRIMITIVE_TYPEOF,
   PRIMITIVE_USE,
   PRIMITIVE_TUPLE_EXPAND,
+  PRIMITIVE_ARRAY_INIT,
+  PRIMITIVE_ARRAY_GET,
+  PRIMITIVE_ARRAY_SET,
   NUM_KNOWN_PRIMS
 };
 
@@ -78,8 +81,9 @@ class PrimitiveOp : public gc { public:
   PrimitiveTag tag;
   char *name;
   Type *(*returnInfo)(CallExpr*);
+  bool isReference;
 
-  PrimitiveOp(PrimitiveTag atag, char *aname, Type *(*areturnInfo)(CallExpr*));
+  PrimitiveOp(PrimitiveTag atag, char *aname, Type *(*areturnInfo)(CallExpr*), bool aIsReference);
 };
 
 extern HashMap<char *, StringHashFns, PrimitiveOp *> primitives_map;

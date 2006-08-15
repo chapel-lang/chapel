@@ -89,8 +89,8 @@ _int64 string_length(_string x);
 _complex32  _chpl_complex32( _float32 r, _float32 i);
 _complex64  _chpl_complex64( _float64 r, _float64 i);
 _complex128 _chpl_complex128( _float128 r, _float128 i);
-#define     _chpl_complex_real(c)               c.re
-#define     _chpl_complex_imag(c)               c.im
+#define     _chpl_complex_real(c)               &c.re
+#define     _chpl_complex_imag(c)               &c.im
 #define     _chpl_complex_set_real(c, r)        c.re=r
 #define     _chpl_complex_set_imag(c, i)        c.im=i
 

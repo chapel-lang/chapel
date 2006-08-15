@@ -25,7 +25,7 @@ class Expr : public BaseAST {
   virtual bool isParam(void);
   virtual bool isConst(void);
 
-  bool isRef(void);
+  virtual bool isRef(void);
   Stmt* Expr::getStmt();
 
   void codegenCastToString(FILE* outfile);
@@ -66,6 +66,7 @@ class SymExpr : public Expr {
   virtual bool isParam(void);
   void print(FILE* outfile);
   void codegen(FILE* outfile);
+  virtual bool isRef(void);
 };
 
 
@@ -104,6 +105,7 @@ class CallExpr : public Expr {
   FnSymbol* findFnSymbol(void);
   Type* typeInfo(void);
   bool isPrimitive(PrimitiveTag primitiveTag);
+  virtual bool isRef(void);
 };
 
 

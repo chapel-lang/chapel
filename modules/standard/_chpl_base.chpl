@@ -368,7 +368,7 @@ class _ddata {
     init_elts(this, size, _element);
   }
   pragma "inline" fun this(i : int) {
-    return __primitive("array_index", this, i);
+    return __primitive("array_get", this, i);
   }
   pragma "inline" fun =this(i : int, val : elt_type) {
     __primitive("array_set", this, i, val);
