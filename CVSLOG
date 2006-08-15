@@ -70788,3 +70788,15 @@ Modified files:
 	chapel/compiler/ifa/: ifa_vars.cpp 
 	chapel/compiler/main/: runpasses.cpp 
 
+---------------------------------------------------------------------------
+
+08/15/06 09:51:08 -- deitz
+
+Log message:
+	Added jacobi test of unoptimized flag.
+
+Added files:
+	chapel/test/arrays/deitz/: jacobi-unoptimized.chpl 
+	                           jacobi-unoptimized.compopts 
+	                           jacobi-unoptimized.good 
+
