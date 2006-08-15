@@ -71457,3 +71457,38 @@ Added files:
 	chapel/test/arrays/deitz/: test_dot_domain.chpl 
 	                           test_dot_domain.good 
 
+---------------------------------------------------------------------------
+
+08/15/06 16:57:42 -- deitz
+
+Log message:
+	Added support for querying a domain of an array in the formal argument
+	type as in
+	
+	  def foo(A: [?D] int) { ... D ... }
+	
+	It is transformed into
+	
+	  def foo(A: _array) where A.elt_type == int { ... A.domain ... }
+	
+	Added chpl_array in the compiler to point to the _array class in the
+	module.
+	
+	Added a test case.
+	
+	Updated a future to use writeln instead of write and removed its
+	.future file.
+
+Modified files:
+	chapel/compiler/include/: runtime.h 
+	chapel/compiler/main/: runtime.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: cleanup.cpp filesToAST.cpp 
+	                         normalize.cpp semanticChecks.cpp 
+	chapel/test/arrays/jplevyak/: ranks-1.chpl 
+Added files:
+	chapel/test/arrays/deitz/: test_array_arg3.chpl 
+	                           test_array_arg3.good 
+Removed files:
+	chapel/test/arrays/jplevyak/: ranks-1.future 
+
