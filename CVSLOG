@@ -70800,3 +70800,15 @@ Added files:
 	                           jacobi-unoptimized.compopts 
 	                           jacobi-unoptimized.good 
 
+---------------------------------------------------------------------------
+
+08/15/06 10:50:01 -- waynew
+
+Log message:
+	Split two tests.  There was no synchronization between the two tests.
+
+Modified files:
+	chapel/test/parallel/sync/waynew/: class1.chpl class1.good 
+Added files:
+	chapel/test/parallel/sync/waynew/: class2.chpl class2.good 
+
