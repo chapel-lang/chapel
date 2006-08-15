@@ -71433,3 +71433,13 @@ Modified files:
 	                                   localType2.chpl 
 	chapel/test/types/typedefs/jplevyak/: copy_typedef-1.chpl 
 
+---------------------------------------------------------------------------
+
+08/15/06 14:11:22 -- deitz
+
+Log message:
+	Removed support for 'call' keyword.
+
+Modified files:
+	chapel/compiler/parser/: chapel.lex chapel.y 
+
