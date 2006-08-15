@@ -70812,3 +70812,62 @@ Modified files:
 Added files:
 	chapel/test/parallel/sync/waynew/: class2.chpl class2.good 
 
+---------------------------------------------------------------------------
+
+08/15/06 13:35:15 -- deitz
+
+Log message:
+	Added initial support for references in the implementation.  A symbol
+	is a reference if Symbol::isReference is true.
+	
+	A symbol can be made a reference during function resolution if
+	Symbol::canReference is true.  Such a symbol is turned into a
+	reference if it captures the result of a call that returns a
+	reference.  This is necessary to capture the result of var functions
+	as a reference during function resolution.  The long-term plan is to
+	introduce a reference type that will transparently handle this case.
+	
+	Added an optimizing pass cullOverReferences that changes
+	Symbol::isReference to false if it does not need to be a reference.
+	
+	Added utility functions Expr::isRef() that returns true if the
+	expression returns a reference or is a reference.
+	
+	Reworked actual_to_formal function to return an ArgSymbol and to use
+	the for_formals loop.
+	
+	Simplified logic regarding array primitives.
+	
+	Note that the reference logic is overly complicated because code
+	generation is overly complicated.  Code generation handles AST that
+	cannot exist post-normalization and this should be simplified to
+	handle only normalized code.
+	
+	Added Primitive::isReference which is true if the primitive returns a
+	reference.
+	
+	Removed two futures regarding reading fields as in
+	
+	  read(x.a)
+	
+	which work now that x.a returns a reference since INOUT is implemented
+	as pass by reference.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp expr.cpp primitive.cpp 
+	                      stmt.cpp symbol.cpp type.cpp view.cpp 
+	chapel/compiler/include/: astutil.h expr.h primitive.h symbol.h 
+	chapel/compiler/main/: passlist.h 
+	chapel/compiler/passes/: Makefile.share 
+	                         buildDefaultFunctions.cpp cleanup.cpp 
+	                         codegen.cpp copy_propagation.cpp 
+	                         functionResolution.cpp normalize.cpp 
+	chapel/modules/standard/: _chpl_base.chpl 
+	chapel/runtime/include/: chplrt.h chpltypes.h 
+	chapel/test/types/type_variables/deitz/: test_clone_class1b.good 
+Added files:
+	chapel/compiler/passes/: cullOverReferences.cpp 
+Removed files:
+	chapel/test/classes/shannon/: inoutClassDataMember.future 
+	chapel/test/types/file/: freadToClassDataMember.future 
+
