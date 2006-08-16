@@ -47,6 +47,9 @@ class _array {
     forall x in _value
       yield x; 
   }
+
+  def view(d: _domain)
+    return _value.view(d._value);
 }
 
 def =(a: _array, b: _array) {
@@ -356,10 +359,10 @@ record _aarray {
   param rank : int;
 
   var dom : _adomain(rank);
-
   var info : rank*2*int;
   var size : int;
   var data : _ddata(elt_type);
+  var noinit: bool = false;
 
   def getHeadCursor()
     return 0;
@@ -386,6 +389,7 @@ record _aarray {
 
   def initialize() {
     if dom == nil then return;
+    if noinit == true then return;
     for dim in 1..rank do
       off(dim) = dom(dim)._low;
     blk(rank) = 1;
@@ -421,6 +425,22 @@ record _aarray {
 
   def this(ind : int ...rank) var
     return this(ind);
+
+  def view(d: _adomain) {
+    if rank != d.rank then
+      halt("array rank change not supported");
+    for param i in 1..rank do
+      if d(i).length != dom(i).length then
+        halt("extent in dimension ", i, " does not match actual");
+    var alias: _aarray(elt_type, rank, d, noinit=true);
+    alias.data = data;
+    alias.size = size;
+    for param i in 1..rank {
+      alias.off(i) = d(i)._low;
+      alias.blk(i) = blk(i);
+    }
+    return _array(alias.type, elt_type, rank, alias, _domain(d.type, rank, d));
+  }
 }
 
 def =(x : _aarray, y : _aarray) {

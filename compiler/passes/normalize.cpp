@@ -1202,6 +1202,20 @@ static void fixup_array_formals(FnSymbol* fn) {
               }
             }
           }
+        } else {
+          DefExpr* parent = dynamic_cast<DefExpr*>(call->parentExpr);
+          if (parent && dynamic_cast<ArgSymbol*>(parent->sym) && parent->exprType == call) {
+            VarSymbol* tmp = new VarSymbol(stringcat("_view_", parent->sym->name));
+            forv_Vec(BaseAST, ast, asts) {
+              if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
+                if (sym->var == parent->sym)
+                  sym->var = tmp;
+              }
+            }
+            fn->insertAtHead(new CondStmt(new SymExpr(parent->sym), new ExprStmt(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(new CallExpr(".", parent->sym, new_StringLiteral("view")), call->get(1)->copy())))));
+            fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, parent->sym));
+            fn->insertAtHead(new DefExpr(tmp));
+          }
         }
       }
     }
