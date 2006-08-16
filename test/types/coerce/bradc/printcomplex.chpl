@@ -17,7 +17,6 @@ writeln("s is: ", s);
 s = c4;
 writeln("s is: ", s);
 
-/*
 var c5: complex(32) = 1.2 + 3.4i;
 var c6: complex(32) = 5.6 - 7.8i;
 var c7: complex(32) = -9.0 + 1.2i;
@@ -52,4 +51,3 @@ writeln("s is: ", s);
 
 s = cc;
 writeln("s is: ", s);
-*/

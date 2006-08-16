@@ -7,18 +7,18 @@ var i32: int(32) = 3;
 var i64: int(64) = 4;
 var idf: int     = 5;
 
-var u08: uint( 8) = 6;
-var u16: uint(16) = 7;
-var u32: uint(32) = 8;
-var u64: uint(64) = 9;
-var udf: uint     = 10;
+var u08: uint( 8) = 6u;
+var u16: uint(16) = 7u;
+var u32: uint(32) = 8u;
+var u64: uint(64) = 9u;
+var udf: uint     = 10u;
 
 var f32: float(32) = 11.12;
 var f64: float(64) = 13.14;
 var fdf: float     = 15.16;
 
-//var c32: complex(32) = 17.18 + 19.20i;
-//var c64: complex(64) = 21.22 + 23.24i;
+var c32: complex(32) = 17.18 + 19.20i;
+var c64: complex(64) = 21.22 + 23.24i;
 var cdf: complex = 25.26 + 27.28i;
 
 def dobool(x) {
@@ -60,8 +60,6 @@ dotype(f32);
 dotype(f64);
 dotype(fdf);
 
-/*
 dotype(c32);
 dotype(c64);
-*/
 dotype(cdf);

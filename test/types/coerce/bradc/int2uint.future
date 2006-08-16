@@ -1,0 +1,5 @@
+uint coercion
+
+A test of coercing ints to uints and back again, which does 
+not currently work (not surprisingly -- we just decided on
+this last week or so).
