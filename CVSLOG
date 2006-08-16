@@ -71753,3 +71753,18 @@ Log message:
 Modified files:
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+08/16/06 11:15:41 -- waynew
+
+Log message:
+	Moved complex test to a more suitable location just in case someone is
+	looking for complex examples.
+
+Added files:
+	chapel/test/types/complex/waynew/: complex-simple.chpl 
+	                                   complex-simple.good 
+Removed files:
+	chapel/test/trivial/waynew/: complex-simple.chpl 
+	                             complex-simple.good 
+
