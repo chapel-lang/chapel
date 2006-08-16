@@ -71704,3 +71704,40 @@ Log message:
 Modified files:
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+08/16/06 10:59:32 -- deitz
+
+Log message:
+	Added support for passing arrays to arguments that take arrays over
+	different domains.  The array is aliased and the argument's domain is
+	used in this alias.  So
+	
+	  var A: [1..3, 1..4] int;
+	
+	can be passed to
+	
+	  def foo(A: [0..2, 2..5] int)
+	
+	The rule is that the shape of the formal argument's domain must match
+	the shape of the actual's.  What are the semantics for indefinite
+	arrays, sparse arrays, opaque arrays?
+	
+	This functionality is added through a function called view that must
+	be defined in the array class for any domain type to which the array
+	can be aliased.  The runtime checks should be performed in this
+	function.
+	
+	At some point, with the _array class wrapper now defined, we can start
+	to refactor arrays and domains to make the code that the user needs to
+	write to define their own arrays easier.
+	
+	Added a test case.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl 
+Added files:
+	chapel/test/arrays/deitz/: test_array_arg6.chpl 
+	                           test_array_arg6.good 
+
