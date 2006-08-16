@@ -71554,3 +71554,16 @@ Modified files:
 	chapel/compiler/ifa/: .cvsignore 
 	chapel/runtime/src/: .cvsignore 
 
+---------------------------------------------------------------------------
+
+08/15/06 17:36:11 -- waynew
+
+Log message:
+	Test out 32-bit and 64-bit complex numbers.
+
+Modified files:
+	chapel/test/trivial/waynew/: maxtest.chpl 
+Added files:
+	chapel/test/trivial/waynew/: complex-simple.chpl 
+	                             complex-simple.good 
+
