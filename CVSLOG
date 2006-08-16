@@ -71644,3 +71644,19 @@ Added files:
 	chapel/test/arrays/bradc/: uintarr.chpl uintarr.good 
 	chapel/test/types/scalar/bradc/: .cvsignore uint.chpl uint.good 
 
+---------------------------------------------------------------------------
+
+08/15/06 18:56:08 -- bradc
+
+Log message:
+	Noticed that _init() was not overloaded for uint, which was
+	causing initializations of arrays of uints to try and use
+	the string _init() function instead.
+	
+	As I check this in, I notice that it's also not defined for
+	complexes, but will test and check that in separately, since
+	complexes are weirder than uints (and I haven't tested it yet).
+
+Modified files:
+	chapel/modules/standard/: _chpl_base.chpl 
+
