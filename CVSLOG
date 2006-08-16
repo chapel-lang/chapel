@@ -71682,3 +71682,15 @@ Added files:
 	chapel/test/arrays/deitz/: test_array_arg4.chpl 
 	                           test_array_arg4.good 
 
+---------------------------------------------------------------------------
+
+08/16/06 09:32:31 -- deitz
+
+Log message:
+	Added test of passing array to formal array argument with anonymous
+	domain.
+
+Added files:
+	chapel/test/arrays/deitz/: test_array_arg5.chpl 
+	                           test_array_arg5.good 
+
