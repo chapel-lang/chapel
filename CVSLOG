@@ -71928,3 +71928,13 @@ Removed files:
 	                               union_type_hierarchy-2.future 
 	                               union_type_hierarchy-3-error.future 
 
+---------------------------------------------------------------------------
+
+08/16/06 15:05:59 -- deitz
+
+Log message:
+	Added support for assigning an arithmetic sequence to an array.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+
