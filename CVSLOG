@@ -71785,3 +71785,14 @@ Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+08/16/06 11:25:12 -- deitz
+
+Log message:
+	Checked off array arguments to functions and reductions in list of
+	unimplemented features.
+
+Modified files:
+	chapel/compiler/: UnimplementedFeatures 
+
