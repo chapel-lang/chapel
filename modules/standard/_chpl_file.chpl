@@ -222,23 +222,6 @@ def _fwrite_unlock( f: file) {
 }
 
 
-pragma "rename _chpl_fwrite_int"
-def fwrite(f: file, val: int) {
-  var need_release: bool = _fwrite_lock( f);
-  if (f.isOpen) {
-    var returnVal: int = fprintf(f.fp, "%lld", val);
-    if (returnVal < 0) {
-      fprintfError();
-    } else if (returnVal == 0) {
-      halt("***Error: No int was written***");
-    }
-  } else {
-    fopenError(f, isRead = false);
-  }
-  if (need_release) { _fwrite_unlock( f); }
-}
-
-
 pragma "rename _chpl_fread_uint" 
 def fread(f: file = stdin, inout val: uint) {
   if (f.isOpen) {
@@ -257,23 +240,6 @@ def fread(f: file = stdin, inout val: uint) {
 }
 
 
-pragma "rename _chpl_fwrite_uint"
-def fwrite(f: file, val: uint) {
-  var need_release: bool = _fwrite_lock( f);
-  if (f.isOpen) {
-    var returnVal: int = fprintf(f.fp, "%llu", val);
-    if (returnVal < 0) {
-      fprintfError();
-    } else if (returnVal == 0) {
-      halt("***Error: No int was written***");
-    }
-  } else {
-    fopenError(f, isRead = false);
-  }
-  if (need_release) { _fwrite_unlock( f); }
-}
-
-
 pragma "rename _chpl_fread_float"
 def fread(f: file = stdin, inout val: float) {
   if (f.isOpen) {
@@ -289,26 +255,6 @@ def fread(f: file = stdin, inout val: float) {
   } else {
     fopenError(f, isRead = true);
   }
-}
-
-
-pragma "rename _chpl_fwrite_float"
-def fwrite(f: file, val: float) {
-  var need_release: bool = _fwrite_lock( f);
-  if (f.isOpen) {
-    var returnVal : int;
-    var str : string = val:"%g";
-    if (_string_contains(str, ".") || _string_contains(str, "e")) {
-      returnVal = fprintf(f.fp, "%s", str);
-    } else {
-      returnVal = fprintf(f.fp, "%s.0", str);
-    }
-    if returnVal < 0 then
-      fprintfError();
-  } else {
-    fopenError(f, isRead = false);
-  }
-  if (need_release) { _fwrite_unlock( f); }
 }
 
 
@@ -342,23 +288,6 @@ def fread(f: file = stdin, inout val: complex) {
   } else {
     val.imag = imagPart;
   }
-}
-
-
-pragma "rename _chpl_fwrite_complex"
-def fwrite(f: file, val: complex) {
-  var need_release: bool = _fwrite_lock( f);
-  if (f.isOpen) {
-     fwrite(f, val.real);
-     if (val.imag >= 0) {
-       fwrite(f, " + ", val.imag, "i");
-     } else {
-       fwrite(f, " - ", -val.imag, "i");
-     }
-  } else {
-    fopenError(f, isRead = false);
-  }
-  if (need_release) { _fwrite_unlock( f); }
 }
 
 
@@ -403,25 +332,6 @@ def fread(f: file = stdin, inout val: bool) {
   }
 }
 
-pragma "rename _chpl_fwrite_bool"
-def fwrite(f: file, val: bool) {
-  var need_release: bool = _fwrite_lock( f);
-  if (f.isOpen) {
-    var returnVal: int;
-    if (val == true) {
-      returnVal = fprintf(f.fp, "%s", "true");
-    } else {
-      returnVal = fprintf(f.fp, "%s", "false");
-    }
-    if (returnVal < 0) { 
-      fprintfError();
-    }
-  } else {
-    fopenError(f, isRead = false);
-  }
-  if (need_release) { _fwrite_unlock( f); }
-}
-
 pragma "rename _chpl_fwrite_nil" 
 def fwrite(f: file, x : _nilType) : void {
   var need_release: bool = _fwrite_lock( f);
@@ -429,6 +339,8 @@ def fwrite(f: file, x : _nilType) : void {
     var returnVal: int = fprintf(f.fp, "%s", "nil");
     if (returnVal < 0) {
       fprintfError();
+    } else if (returnVal == 0) {
+      halt("*** Error: No value was written***");
     }
   } else {
     fopenError(f, isRead = false);
