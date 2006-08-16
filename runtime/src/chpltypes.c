@@ -126,10 +126,10 @@ char* _chpl_tostring_complex32( _complex32 x, char* format) {
   if (format == _default_format_write_complex32) {
     char* re = _chpl_tostring_float32(x.re, "%g");
     _float32 imval = x.im;
-    char* op = "+";
+    char* op = " + ";
     if (imval < 0.0) {
       imval = -x.im;
-      op = "-";
+      op = " - ";
     }
     char* im = _chpl_tostring_float32(imval, "%g");
     return _glom_strings(4, re, op, im, "i");
