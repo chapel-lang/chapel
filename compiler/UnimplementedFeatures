@@ -15,7 +15,7 @@ DONE cross product function application
 DONE sequence indexing with a sequence
 DONE predicate expressions "x = [i in D] if i < 10 then ..."
      iterator functions
-     reductions
+DONE reductions
      indefinite domains
        -=/remove method
        member? method
@@ -24,9 +24,9 @@ DONE domain arguments to functions
        domain assignment
        domain reallocation
        array reallocation
-     array arguments to functions
-       with explicit domains
-       with queried domains
+DONE array arguments to functions
+DONE   with explicit domains
+DONE   with queried domains
      scalar promotion to preserve arrayness
      single variables
      sync variables
