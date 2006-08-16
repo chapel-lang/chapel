@@ -71542,3 +71542,15 @@ Added files:
 	                                 printzeroes.good tostring.chpl 
 	                                 tostring.good 
 
+---------------------------------------------------------------------------
+
+08/15/06 17:19:42 -- bradc
+
+Log message:
+	Added linux64 to a couple of .cvsignore files that didn't
+	contain it for some reason...
+
+Modified files:
+	chapel/compiler/ifa/: .cvsignore 
+	chapel/runtime/src/: .cvsignore 
+
