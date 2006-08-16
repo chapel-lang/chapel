@@ -5,8 +5,9 @@
 #                beginning with # are ignored.
 #   -nodefile n: n is a file listing nodes to run on. Default is current node.
 #                To run multiple processes on MP nodes, list the node multiple
-#                times, once for each desired process. Lines with are ignored.
-#   -logfile  l: l is the output logfile. Default is "user"."platform".log.
+#                times, once for each desired process. Lines with # are ignored.
+#   -logfile  l: l is the output logfile. Default is "user"."platform".log in
+#                subdirectory Logs.
 #
 # Requirements:
 #  - paratest.server.pl is run in $CHPLHOME/test.
@@ -41,7 +42,7 @@ $cmd = "paratest.client.pl";
 $rem_exe = "ssh";
 $pwd = `pwd`; chomp $pwd;
 $summary_len = 2;
-$sleep_time = 5;                                 # time (sec) between checks
+$sleep_time = 4;                               # time (sec) between checks
 
 my (@testdir_list, @node_list, $starttime, $endtime);
 
@@ -245,7 +246,6 @@ sub find_subdirs {
     print "looking in '$targetdir'\n" if $debug;
     chdir $targetdir;
     opendir CURRDIR, "." or die "Cannot open directory '$targetdir'\n";
-    #@cdir = grep !/^\.\.?$/, readdir CURRDIR;
     @cdir = grep !/^\./, readdir CURRDIR;             # curr dir list of files
     closedir CURRDIR;
 
@@ -256,14 +256,13 @@ sub find_subdirs {
         foreach $filen (@cdir) {
             next if ($filen =~ /$dirs_to_ignore/);
             if (-d $filen) {                          # if dir
+                next if (-e "$filen/NOTEST");         # ignore dirs with NOTEST
                 if ($debug) {for ($i=0; $i<$level; $i++)  {print "    ";}}
                 @subdirs = find_subdirs ($filen, $level+1);
                 if ($#subdirs >= 0) {
                     foreach $subdir (@subdirs) {
                         push @founddirs, "$filen/$subdir";
                     }
-                } else {
-                    push @founddirs, $filen;            # filesys leaf dir
                 }
             }
         }
@@ -277,7 +276,7 @@ sub print_help {
     print "Usage: paratest.server.pl [-dirfile d] [-nodefile n] [-help|-h]\n";
     print "    -compopts s: s is a string that is passed with -compopts to start_test.\n";
     print "    -dirfile  d: d is a file listing directories to test. Default is the current diretory.\n";
-    print "    -logfile  l: l is the output log file. Default is \"user\".\"platform\".log.\n";
+    print "    -logfile  l: l is the output log file. Default is \"user\".\"platform\".log. in the Logs subdirectory\n";
     print "    -nodefile n: n is a file listing nodes to run on. Default is current node.\n";
 }
 
