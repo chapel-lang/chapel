@@ -71891,3 +71891,40 @@ Modified files:
 	chapel/runtime/src/: chplmem_tests.c 
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+08/16/06 14:54:57 -- deitz
+
+Log message:
+	Added support for unions and removed 16 futures.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: primitive.h type.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         codegen.cpp 
+	chapel/test/classes/bradc/: writeunion-workaround.good 
+	                            writeunion.good 
+	chapel/test/classes/deitz/: test_union2.good test_union3.future 
+	                            test_union4.good 
+	                            test_union_method3.good 
+	chapel/test/classes/jplevyak/: union_type_hierarchy-2.good 
+	                               union_type_hierarchy-3-error.good 
+Removed files:
+	chapel/test/classes/bradc/: writeunion-workaround.future 
+	                            writeunion.future 
+	chapel/test/classes/bradc/unions/: assign.future assign1a.future 
+	                                   stringunion.future 
+	                                   twounions.future 
+	                                   writeunion.future 
+	chapel/test/classes/deitz/: test_union1.future 
+	                            test_union2.future 
+	                            test_union4.future 
+	                            test_union_method1.future 
+	                            test_union_method2.future 
+	                            test_union_method3.future 
+	chapel/test/classes/jplevyak/: union_type_hierarchy-1.future 
+	                               union_type_hierarchy-2.future 
+	                               union_type_hierarchy-3-error.future 
+
