@@ -461,6 +461,15 @@ def =(x : _aarray, y : seq) {
   return x;
 }
 
+def =(x: _aarray, y: _aseq) {
+  var j : int;
+  for e in y {
+    x.data(j) = e;
+    j = j + 1;
+  }
+  return x;
+}
+
 def =(x : _aarray, y) {
   for i in 0..x.size-1 do
     x.data(i) = y;
