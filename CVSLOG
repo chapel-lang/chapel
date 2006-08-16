@@ -71741,3 +71741,15 @@ Added files:
 	chapel/test/arrays/deitz/: test_array_arg6.chpl 
 	                           test_array_arg6.good 
 
+---------------------------------------------------------------------------
+
+08/16/06 11:06:47 -- deitz
+
+Log message:
+	Updated regressions file to point out linux64 regression that I can't
+	explain.  It works on the desktop but not the server and it appears
+	different code is executing.  It is not a size issue.
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+
