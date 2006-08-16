@@ -71670,3 +71670,15 @@ Log message:
 Modified files:
 	chapel/test/arrays/bradc/: uintarr.good 
 
+---------------------------------------------------------------------------
+
+08/16/06 09:30:18 -- deitz
+
+Log message:
+	Added test of passing array to formal argument array with explicit
+	named domain.
+
+Added files:
+	chapel/test/arrays/deitz/: test_array_arg4.chpl 
+	                           test_array_arg4.good 
+
