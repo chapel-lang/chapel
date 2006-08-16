@@ -44,6 +44,7 @@
 #   -logfile   <log filename>         ./Logs/<username>.<platform>.log
 #   -valgrind
 #   -interpret
+#   -norecurse
 #
 # These options can be used with a double-dash as well 
 # (e.g. --compopts).
@@ -86,6 +87,12 @@
 # those that are not executed (noexec) tests are skipped when this
 # flag is invoked.  In addition, a directory can be requested to
 # be skipped by dropping a NOINTERP file into it.
+#
+# The -norecurse flag requests that the starting directory be tested
+# but that its subdirectories not be visited recursively.  This is
+# useful for pinpointing the testing of a single directory with
+# -startdir when you do not want to also visit its subdirectories,
+# if any.
 #
 # By default, setting up a subdirectory for testing simply consists
 # of creating the directory, putting Chapel (.chpl) source files
@@ -288,6 +295,7 @@ set logfile = "$testdir/Logs/$user.$platform.log"
 set valgrind = 0
 set valgrindexe = 0
 set interpret = 0
+set recurse = 1
 
 
 while ( $#argv > 0 )
@@ -338,6 +346,11 @@ while ( $#argv > 0 )
                 shift
                 set interpret = 1
                 breaksw
+        case -norecurse
+        case --norecurse
+                shift
+                set recurse = 0
+                breaksw
         case -valgrindexe:
         case --valgrindexe:
                 shift
@@ -352,6 +365,7 @@ while ( $#argv > 0 )
 		echo "          -compopts" \"\"
 		echo "          -execopts" \"\"
 		echo "          -startdir ."
+                echo "          -norecurse"
 		echo "          -logfile ./Logs/$user.$platform.log"
 		echo "          -valgrind"
                 echo "          -valgrindexe"
@@ -470,9 +484,14 @@ endif
 #   Don't include output or RCS directories (-v says don't include)
 #   Take off : with sed
 #
-set dirs = `ls -R |& grep ":" | grep -v "\.:" | grep -v "Permission denied" | grep -v "CVS" | grep -v Bin | grep -v Logs | grep -v Samples | grep -v Share | sed 's/://g'`
-# gotta add ./ on in case -startdir is specified
-set dirs = (./ $dirs)
+if ($recurse == 1) then
+    echo "doing the recursive case"
+    set dirs = `ls -R |& grep ":" | grep -v "\.:" | grep -v "Permission denied" | grep -v "CVS" | grep -v Bin | grep -v Logs | grep -v Samples | grep -v Share | sed 's/://g'`
+    # gotta add ./ on in case -startdir is specified
+    set dirs = (./ $dirs)
+else
+    set dirs = (./)
+endif
 
 #echo "dirs is $dirs"
 #echo "cwd is $cwd"
