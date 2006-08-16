@@ -71820,3 +71820,14 @@ Added files:
 	chapel/test/arrays/deitz/: test_indefinite8.chpl 
 	                           test_indefinite8.good 
 
+---------------------------------------------------------------------------
+
+08/16/06 11:29:16 -- deitz
+
+Log message:
+	Add working tuple of record case I had lying around.
+
+Added files:
+	chapel/test/types/tuple/deitz/: test_tuple_of_record.chpl 
+	                                test_tuple_of_record.good 
+
