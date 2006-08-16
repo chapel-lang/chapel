@@ -33,3 +33,7 @@ writeln( _max( c32.type));
 writeln( _max( c64.type));
 writeln( _max( complex.type));
 */
+
+var c32:complex(32);
+c32 = 5.2i;
+writeln( c32);
