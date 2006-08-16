@@ -71866,3 +71866,13 @@ Modified files:
 	                         fwriteIntUnopenedFile.chpl 
 	                         fwriteIntUnopenedFile.good 
 
+---------------------------------------------------------------------------
+
+08/16/06 12:16:50 -- deitz
+
+Log message:
+	Fix .good thinko.
+
+Modified files:
+	chapel/test/trivial/deitz/: test_string_coercion1.good 
+
