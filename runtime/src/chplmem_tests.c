@@ -6,7 +6,7 @@
 
 
 void _chpl_memtest_printMemTable(void) {
-  printMemTable(48);
+  printMemTable(60);
 }
 
 
