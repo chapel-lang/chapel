@@ -71768,3 +71768,20 @@ Removed files:
 	chapel/test/trivial/waynew/: complex-simple.chpl 
 	                             complex-simple.good 
 
+---------------------------------------------------------------------------
+
+08/16/06 11:22:15 -- deitz
+
+Log message:
+	Enabled coercion from int to complex.  Note that the spec allows this
+	coercion.
+	
+	This fixes last night's two regressions, updated regressions file.
+	
+	Enabled cast from int to complex which we want regardless.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/test/: REGRESSIONS 
+
