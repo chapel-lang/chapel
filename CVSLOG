@@ -71807,3 +71807,16 @@ Added files:
 	chapel/test/trivial/deitz/: test_string_coercion1.chpl 
 	                            test_string_coercion1.good 
 
+---------------------------------------------------------------------------
+
+08/16/06 11:27:57 -- deitz
+
+Log message:
+	Add working indefinite array over floats test.  It works by coercing
+	the float to string and using the string hash function.  Awful,
+	especially considering that string hash function just returns zero!
+
+Added files:
+	chapel/test/arrays/deitz/: test_indefinite8.chpl 
+	                           test_indefinite8.good 
+
