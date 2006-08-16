@@ -33,6 +33,8 @@ linux valgrind regressions
 linux64-specific regressions
 ============================
 
+test/memory/shannon/printMemTable.chpl
+I don't know why this is failing.  It only fails on linux64 and it is reporting extra class instances here.  Odd.
 
 
 ===========================
