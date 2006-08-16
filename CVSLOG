@@ -71992,3 +71992,17 @@ Modified files:
 Removed files:
 	chapel/test/types/seq/bradc/: length.modify.future 
 
+---------------------------------------------------------------------------
+
+08/16/06 16:39:13 -- bradc
+
+Log message:
+	Added a -norecurse flag to the testing system so that
+	one can test a single directory without testing its
+	children (only really useful with the -startdir flag).
+	
+	Next up: ability to test a single test.
+
+Modified files:
+	chapel/test/: start_test 
+
