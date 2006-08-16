@@ -1129,7 +1129,22 @@ void CallExpr::codegen(FILE* outfile) {
       if (typeInfo() == dtString) {
         get(2)->codegenCastToString(outfile);
         break;
+      } else if (is_complex_type( typeInfo())) {
+        fprintf( outfile, "_chpl_complex%d( ", get_width(get(1)->typeInfo()));
+        if (is_complex_type(get(2)->typeInfo())) {       // complex->complex
+          get(2)->codegen( outfile);
+          fprintf( outfile, ".re, ");
+          get(2)->codegen( outfile);
+          fprintf( outfile, ".im)");
+        } else if (is_float_type( get(2)->typeInfo())) { // float->complex
+          get(2)->codegen( outfile);
+          fprintf( outfile, ", 0.0)");
+        } else {
+          INT_FATAL( "illegal cast to complex");
+        }
+        break;
       }
+
       fprintf(outfile, "(");
       typeInfo()->codegen(outfile);
       fprintf(outfile, ")(");

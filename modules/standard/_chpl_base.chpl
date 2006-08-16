@@ -319,7 +319,6 @@ pragma "inline" def _copy(a) return a;
 pragma "inline" def _init(x : bool) return false;
 pragma "inline" def _init(x : int) return 0;
 pragma "inline" def _init(x : float) return 0.0;
-pragma "inline" def _init(x : complex) return 0.0i;
 pragma "inline" def _init(x : string) return "";
 pragma "inline" def _init(x) return nil:x;
 

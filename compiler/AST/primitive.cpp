@@ -38,6 +38,18 @@ returnInfoFloat(CallExpr* call) {
 }
 
 static Type*
+returnInfoComplexField(CallExpr* call) {  // for get real/imag primitives
+  Type *t = call->get(1)->typeInfo();
+  if (t == dtComplex[FLOAT_SIZE_32]) {
+    return dtFloat[FLOAT_SIZE_32];
+  } else if (t == dtComplex[FLOAT_SIZE_64]) {
+    return dtFloat[FLOAT_SIZE_64];
+  } else { // t == dtComplex[FLOAT_SIZE_128])
+    return dtFloat[FLOAT_SIZE_128];
+  }
+}
+
+static Type*
 returnInfoMutexP( CallExpr* call) {
   return dtMutex_p;
 }
@@ -284,10 +296,10 @@ initPrimitive() {
   prim_def("ascii", returnInfoInt);
   prim_def("exit", returnInfoInt);
 
-  prim_def("_chpl_complex_real", returnInfoFloat, true);
-  prim_def("_chpl_complex_imag", returnInfoFloat, true);
-  prim_def("_chpl_complex_set_real", returnInfoVoid);
-  prim_def("_chpl_complex_set_imag", returnInfoVoid);
+  prim_def("complex_get_real", returnInfoComplexField, true);
+  prim_def("complex_get_imag", returnInfoComplexField, true);
+  prim_def("complex_set_real", returnInfoVoid);
+  prim_def("complex_set_imag", returnInfoVoid);
 
   prim_def("get_stdin", returnInfoFile);
   prim_def("get_stdout", returnInfoFile);

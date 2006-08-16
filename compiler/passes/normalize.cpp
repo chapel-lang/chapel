@@ -816,6 +816,9 @@ static void fold_call_expr(CallExpr* call) {
         FIND_PRIMITIVE_TYPE( dtUInt, INT_SIZE_NUM, ptype_p);
         if (!ptype_p) {
           FIND_PRIMITIVE_TYPE( dtFloat, FLOAT_SIZE_NUM, ptype_p);
+          if (!ptype_p) {
+            FIND_PRIMITIVE_TYPE( dtComplex, FLOAT_SIZE_NUM, ptype_p);
+          }
         }
       }
 
@@ -858,6 +861,15 @@ static void fold_call_expr(CallExpr* call) {
                   case 32:  tsize = dtFloat[FLOAT_SIZE_32]->symbol;  break;
                   case 64:  tsize = dtFloat[FLOAT_SIZE_64]->symbol;  break;
                   case 128: tsize = dtFloat[FLOAT_SIZE_128]->symbol; break;
+                  default:
+                    USR_FATAL( call, "illegal size %d for float", size);
+                  }
+                  call->replace( new SymExpr(tsize));
+                } else if (ptype_p == dtComplex) {
+                  switch (size) {
+                  case 32:  tsize = dtComplex[FLOAT_SIZE_32]->symbol;  break;
+                  case 64:  tsize = dtComplex[FLOAT_SIZE_64]->symbol;  break;
+                  case 128: tsize = dtComplex[FLOAT_SIZE_128]->symbol; break;
                   default:
                     USR_FATAL( call, "illegal size %d for float", size);
                   }
