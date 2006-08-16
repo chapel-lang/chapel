@@ -71567,3 +71567,13 @@ Added files:
 	chapel/test/trivial/waynew/: complex-simple.chpl 
 	                             complex-simple.good 
 
+---------------------------------------------------------------------------
+
+08/15/06 18:04:37 -- waynew
+
+Log message:
+	Ooops.  Checked in play version of maxtest.chpl.  Heh heh.
+
+Modified files:
+	chapel/test/trivial/waynew/: maxtest.chpl 
+
