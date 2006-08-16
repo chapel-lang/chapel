@@ -71596,3 +71596,25 @@ Modified files:
 	chapel/modules/standard/: _chpl_base.chpl _chpl_complex.chpl 
 	chapel/runtime/include/: chpltypes.h 
 
+---------------------------------------------------------------------------
+
+08/15/06 18:46:52 -- bradc
+
+Log message:
+	Updated my coercion tests to uncomment parts that
+	relied on complex(32) and complex(64).
+	
+	Added a uint<->int coercion test as a future (we
+	discussed at recent meeting, but it hasn't been
+	implemented yet).
+
+Modified files:
+	chapel/test/types/coerce/bradc/: printcomplex.chpl 
+	                                 printcomplex.good 
+	                                 printzeroes.chpl 
+	                                 printzeroes.good tostring.chpl 
+	                                 tostring.good 
+Added files:
+	chapel/test/types/coerce/bradc/: int2uint.chpl int2uint.future 
+	                                 int2uint.good 
+
