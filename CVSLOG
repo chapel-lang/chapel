@@ -71577,3 +71577,22 @@ Log message:
 Modified files:
 	chapel/test/trivial/waynew/: maxtest.chpl 
 
+---------------------------------------------------------------------------
+
+08/15/06 18:12:00 -- waynew
+
+Log message:
+	Support for complex.  Should support complex(32) now.
+	 - codegen of primitive cast to complex
+	 - changed complex_get_real/imag primitive to use returnInfoComplexField
+	 - added returnInfoComplexField to return the appropriate type for a
+	   complex real or imaginary field
+	 - can coerce to complex
+	 - operations with complex(32)
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	chapel/modules/standard/: _chpl_base.chpl _chpl_complex.chpl 
+	chapel/runtime/include/: chpltypes.h 
+
