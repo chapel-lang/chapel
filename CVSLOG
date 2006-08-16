@@ -71694,3 +71694,13 @@ Added files:
 	chapel/test/arrays/deitz/: test_array_arg5.chpl 
 	                           test_array_arg5.good 
 
+---------------------------------------------------------------------------
+
+08/16/06 10:26:19 -- bradc
+
+Log message:
+	Updated regressions list.
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+
