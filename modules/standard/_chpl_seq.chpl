@@ -58,6 +58,10 @@ record seq {
   def length : int
     return _length;
 
+  def =length(x) {
+    error("illegal assignment to sequence's length");
+  }
+
   def _append(e : elt_type)
     return this._copy()._append_in_place(e);
 

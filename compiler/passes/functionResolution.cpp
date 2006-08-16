@@ -11,6 +11,7 @@ static void setFieldTypes(FnSymbol* fn);
 
 
 static Vec<FnSymbol*> resolvedFns;
+Vec<CallExpr*> callStack;
 
 
 // types contains the types of the actuals
@@ -577,9 +578,11 @@ resolve_type_expr(Expr* expr) {
 
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+      callStack.add(call);
       resolveCall(call);
       if (call->typeInfo() == dtUnknown)
         resolveFns(call->isResolved());
+      callStack.pop();
     }
   }
   Type* t = expr->typeInfo();
@@ -685,12 +688,19 @@ resolveCall(CallExpr* call) {
           if (!call->methodTag)
             str = stringcat(str, "(");
           bool first = false;
+          bool setter = false;
           int start = 0;
           if (method)
             start = 2;
           if (_this)
             start = 1;
           for (int i = start; i < atypes.n; i++) {
+            if (aparams.v[i] == gSetterToken) {
+              str = stringcat(str, ") = ");
+              setter = true;
+              first = false;
+              continue;
+            }
             if (!first)
               first = true;
             else
@@ -702,7 +712,7 @@ resolveCall(CallExpr* call) {
             else
               str = stringcat(str, ":", atypes.v[i]->symbol->name);
           }
-          if (!call->methodTag)
+          if (!call->methodTag && !setter)
             str = stringcat(str, ")");
           USR_FATAL_CONT(call, "%s call '%s'", (resolve_call_error == CALL_AMBIGUOUS) ? "Ambiguous" : "Unresolved", str);
           if (_this)
@@ -832,7 +842,9 @@ resolveCall(CallExpr* call) {
       CallExpr* move = new CallExpr(PRIMITIVE_MOVE, tmp, e);
       call->parentStmt->insertBefore(move);
       call->insertBefore(tmp);
+      callStack.add(e);
       resolveCall(e);
+      callStack.pop();
       if (e->isResolved())
         resolveFns(e->isResolved());
       resolveCall(move);
@@ -895,7 +907,6 @@ resolveCall(CallExpr* call) {
   }
 }
 
-
 static void
 resolveFns(FnSymbol* fn) {
   if (resolvedFns.set_in(fn))
@@ -906,6 +917,17 @@ resolveFns(FnSymbol* fn) {
   collect_top_asts(&asts, fn->body);
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+      if (call->isPrimitive(PRIMITIVE_ERROR)) {
+        SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1));
+        VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var);
+        USR_FATAL(callStack.v[callStack.n-1], "%s", var->immediate->v_string);
+      }
+    }
+  }
+
+  forv_Vec(BaseAST, ast, asts) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+      callStack.add(call);
       resolveCall(call);
       if (call->isResolved())
         resolveFns(call->isResolved());
@@ -915,6 +937,7 @@ resolveFns(FnSymbol* fn) {
             resolveFormals(sym->var->type->defaultConstructor);
             resolveFns(sym->var->type->defaultConstructor);
           }
+      callStack.pop();
     }
   }
   ReturnStmt* last = dynamic_cast<ReturnStmt*>(fn->body->body->last());

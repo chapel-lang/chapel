@@ -1,4 +1,4 @@
-Error: Unresolved call ':C.x' (test_inherit_mod1.chpl:17)
+Error: Unresolved call ':C.x' (test_inherit_mod1.chpl:18)
 Candidates are:
   :D1.x (test_inherit_mod1.chpl:4)
   :D2.x (test_inherit_mod1.chpl:8)

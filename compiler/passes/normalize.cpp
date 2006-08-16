@@ -438,6 +438,8 @@ static void apply_getters_setters(FnSymbol* fn) {
   collect_asts_postorder(&asts, fn);
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+      currentLineno = call->lineno;
+      currentFilename = call->filename;
       if (call->getFunction() != fn) // in a nested function, handle
                                      // later, because it may be a
                                      // getter or a setter

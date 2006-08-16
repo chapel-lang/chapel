@@ -246,6 +246,8 @@ initPrimitive() {
   prim_def(PRIMITIVE_ARRAY_GET, "array_get", returnInfoArrayIndex, true);
   prim_def(PRIMITIVE_ARRAY_SET, "array_set", returnInfoVoid);
 
+  prim_def(PRIMITIVE_ERROR, "error", returnInfoVoid);
+
   prim_def("abs", returnInfoInt);
   prim_def("acos", returnInfoFloat);
   prim_def("acosh", returnInfoFloat);
