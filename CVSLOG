@@ -71831,3 +71831,38 @@ Added files:
 	chapel/test/types/tuple/deitz/: test_tuple_of_record.chpl 
 	                                test_tuple_of_record.good 
 
+---------------------------------------------------------------------------
+
+08/16/06 12:13:38 -- bradc
+
+Log message:
+	Now that we support automatic coercions from scalar types to
+	strings, this checkin removes all fwrite() functions for scalar
+	types, replacing them with a single fwrite() function that
+	takes a string argument.  This has the benefits of (a) making
+	sure that all file I/O is stringified identically to string
+	casts (previously, we had different code for printing complexes
+	and casting them to strings, e.g.); (b) making it easier to add
+	new code to the fwrite() call -- error cases, locking, and such.
+	
+	In making this change, I had to update a few of Shannon's file
+	I/O error tests, because the use of various coercions and
+	inlining were confusing the line number mechanism.  Since the
+	point of the tests was not to test line numbers or coercions,
+	but error cases on File I/O, I put in explicit coercions to
+	strings in order to avoid the wrappers and inlining that threw
+	off the line numbers.  Getting line numbers right is a known
+	issue, and a broader one than intended to be solved by this
+	checkin.
+	
+	Also, updated the inlfunc1_*.good files as usual.
+
+Modified files:
+	chapel/modules/standard/: _chpl_file.chpl 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+	chapel/test/types/file/: fwriteIntFailed.chpl 
+	                         fwriteIntFailed.good 
+	                         fwriteIntUnopenedFile.chpl 
+	                         fwriteIntUnopenedFile.good 
+
