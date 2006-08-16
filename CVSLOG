@@ -71876,3 +71876,18 @@ Log message:
 Modified files:
 	chapel/test/trivial/deitz/: test_string_coercion1.good 
 
+---------------------------------------------------------------------------
+
+08/16/06 13:56:06 -- bradc
+
+Log message:
+	Resolved linux64 regression noted by Steve earlier -- the
+	array class had gotten bigger such that it went over a
+	memtest threshold for a 64-bit g++ layout, but not a 32-bit
+	layout.  I raised the threshhold to a somewhat higher value
+	to make these tests work as a few more fields get added.
+
+Modified files:
+	chapel/runtime/src/: chplmem_tests.c 
+	chapel/test/: REGRESSIONS 
+
