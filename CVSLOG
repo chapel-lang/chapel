@@ -71951,3 +71951,44 @@ Log message:
 Modified files:
 	chapel/test/: paratest.server.pl 
 
+---------------------------------------------------------------------------
+
+08/16/06 16:33:42 -- deitz
+
+Log message:
+	Fixed line numbers on setter and getter calls and updated the line
+	numbers in 5 tests, making them correct.
+	
+	Added keyword error used in a special error call, for example,
+	
+	  error("illegal assignment to sequence's length");
+	
+	This error message is a static error that is printed to the user if a
+	function that contains the error is called after parameter folding and
+	instantiation are done.  It greatly improves the error message in a
+	semi-ridiculous future test/types/seq/bradc/length.modify.chpl.
+	Updated this test's output and removed the future.  The filename and
+	line number associated with this error message is the filename and
+	line number of the call expression from which the function was called.
+	
+	The error statement should only be used within parameter conditional
+	statements so that it is removed if the parameter conditional
+	evaluates to false.  If a function contains an error statement after
+	parameter folding and instantiation, it is a static error to call this
+	function.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp 
+	chapel/compiler/include/: primitive.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	chapel/modules/standard/: _chpl_seq.chpl 
+	chapel/test/classes/bradc/: callMethodOnClass.good 
+	chapel/test/classes/deitz/: test_inherit_mod1.good 
+	                            test_inherit_mod2.good 
+	                            test_inherit_mod3.good 
+	chapel/test/functions/jplevyak/: zeroarity-bound-error-1.good 
+	chapel/test/types/seq/bradc/: length.modify.good 
+Removed files:
+	chapel/test/types/seq/bradc/: length.modify.future 
+
