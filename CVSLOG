@@ -71796,3 +71796,14 @@ Log message:
 Modified files:
 	chapel/compiler/: UnimplementedFeatures 
 
+---------------------------------------------------------------------------
+
+08/16/06 11:26:38 -- deitz
+
+Log message:
+	Add string coercion test case I had lying around.
+
+Added files:
+	chapel/test/trivial/deitz/: test_string_coercion1.chpl 
+	                            test_string_coercion1.good 
+
