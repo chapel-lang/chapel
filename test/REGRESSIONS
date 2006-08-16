@@ -19,9 +19,6 @@ trivial/waynew/int8-64b -- fails because integer literals are printed
 out without 64-bit coercion wrapper.  Fix is pending decision about
 integer literal widths.
 
-arrays/deitz/test_array_complex
-types/complex/bradc/intfloatelement -- These two fail because ints and
-complexes are coerced to strings and then concatenated
 
 ==========================
 linux valgrind regressions
@@ -33,8 +30,10 @@ linux valgrind regressions
 linux64-specific regressions
 ============================
 
-test/memory/shannon/printMemTable.chpl
-I don't know why this is failing.  It only fails on linux64 and it is reporting extra class instances here.  Odd.
+
+test/memory/shannon/printMemTable.chpl -- I don't know why this is
+failing.  It only fails on linux64 and it is reporting extra class
+instances here.  Odd.
 
 
 ===========================

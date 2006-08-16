@@ -1136,7 +1136,8 @@ void CallExpr::codegen(FILE* outfile) {
           fprintf( outfile, ".re, ");
           get(2)->codegen( outfile);
           fprintf( outfile, ".im)");
-        } else if (is_float_type( get(2)->typeInfo())) { // float->complex
+        } else if (is_float_type( get(2)->typeInfo()) || // float->complex
+                   is_int_type( get(2)->typeInfo())) { // int->complex
           get(2)->codegen( outfile);
           fprintf( outfile, ", 0.0)");
         } else {

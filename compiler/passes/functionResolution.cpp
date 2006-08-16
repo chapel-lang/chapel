@@ -113,6 +113,9 @@ canCoerce(Type* actualType, Type* formalType) {
       return true;
   }
   if (is_complex_type(formalType)) {
+    if (is_int_type(actualType) && 
+        (get_width(actualType) <= get_width(formalType)))
+      return true;
     if (is_float_type(actualType) && 
         (get_width(actualType) <= get_width(formalType)))
       return true;
