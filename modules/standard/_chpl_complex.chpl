@@ -87,7 +87,7 @@ def conjg(a:complex) {
 
 
 pragma "no codegen"
-pragma "rename _chpl_tostring_complex"
+pragma "rename _chpl_tostring_complex64"
 def _tostring(x : complex, format : string) : string {
   return __primitive("to_string", format, x);
 }

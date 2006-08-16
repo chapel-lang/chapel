@@ -7,6 +7,8 @@
 #include "chpltypes.h"
 #include "error.h"
 
+char* _default_format_write_complex32 = "%g + %gi";
+char* _default_format_write_complex64 = "%lg + %lgi";
 
 /* _glom_strings() expects every argument after the first to be 
    of type char*. */
@@ -70,24 +72,91 @@ char* _chpl_tostring_bool(_bool x, char* format) {
 }
 
 
-char* _chpl_tostring_int(_int64 x, char* format) {
+char* _chpl_tostring_int32(_int32 x, char* format) {
+  char buffer[256];
+  sprintf(buffer, format, x);
+  return _glom_strings(1, buffer);
+}
+
+char* _chpl_tostring_int64(_int64 x, char* format) {
   char buffer[256];
   sprintf(buffer, format, x);
   return _glom_strings(1, buffer);
 }
 
 
-char* _chpl_tostring_float(_float64 x, char* format) {
+char* _chpl_tostring_uint32(_uint32 x, char* format) {
   char buffer[256];
   sprintf(buffer, format, x);
   return _glom_strings(1, buffer);
 }
 
 
-char* _chpl_tostring_complex( _complex64 x, char* format) {
+char* _chpl_tostring_uint64(_uint64 x, char* format) {
   char buffer[256];
-  sprintf(buffer, format, x.re, x.im);
+  sprintf(buffer, format, x);
   return _glom_strings(1, buffer);
+}
+
+
+static void ensurePointZero(char* buffer) {
+  if (!strchr(buffer, '.') && !strchr(buffer, 'e')) {
+    strcat(buffer, ".0");
+  }
+}
+
+
+char* _chpl_tostring_float32(_float32 x, char* format) {
+  char buffer[256];
+  sprintf(buffer, format, x);
+  ensurePointZero(buffer);
+  return _glom_strings(1, buffer);
+}
+
+
+char* _chpl_tostring_float64(_float64 x, char* format) {
+  char buffer[256];
+  sprintf(buffer, format, x);
+  ensurePointZero(buffer);
+  return _glom_strings(1, buffer);
+}
+
+
+char* _chpl_tostring_complex32( _complex32 x, char* format) {
+  if (format == _default_format_write_complex32) {
+    char* re = _chpl_tostring_float32(x.re, "%g");
+    _float32 imval = x.im;
+    char* op = "+";
+    if (imval < 0.0) {
+      imval = -x.im;
+      op = "-";
+    }
+    char* im = _chpl_tostring_float32(imval, "%g");
+    return _glom_strings(4, re, op, im, "i");
+  } else {
+    char buffer[256];
+    sprintf(buffer, format, x.re, x.im);
+    return _glom_strings(1, buffer);
+  }
+}
+
+
+char* _chpl_tostring_complex64( _complex64 x, char* format) {
+  if (format == _default_format_write_complex64) {
+    char* re = _chpl_tostring_float64(x.re, "%g");
+    _float64 imval = x.im;
+    char* op = " + ";
+    if (imval < 0.0) {
+      imval = -x.im;
+      op = " - ";
+    }
+    char* im = _chpl_tostring_float64(imval, "%g");
+    return _glom_strings(4, re, op, im, "i");
+  } else {
+    char buffer[256];
+    sprintf(buffer, format, x.re, x.im);
+    return _glom_strings(1, buffer);
+  }
 }
 
 

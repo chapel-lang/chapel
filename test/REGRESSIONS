@@ -19,6 +19,10 @@ trivial/waynew/int8-64b -- fails because integer literals are printed
 out without 64-bit coercion wrapper.  Fix is pending decision about
 integer literal widths.
 
+regressions/waynew/breductions.chpl -- due to the new support for
+coercion from uints to strings, this file fails for unknown reasons so
+far.
+
 
 ==========================
 linux valgrind regressions

@@ -70,6 +70,47 @@ Stmt* Expr::getStmt() {
 }
 
 
+static void genTostringRoutineName(FILE* outfile, Type* exprType) {
+  fprintf(outfile, "_chpl_tostring_");
+  if (exprType == dtBool) {
+    fprintf(outfile, "bool");
+    
+  } else if (exprType == dtInt[INT_SIZE_8]) {
+    fprintf(outfile, "int32");
+  } else if (exprType == dtInt[INT_SIZE_16]) {
+    fprintf(outfile, "int32");
+  } else if (exprType == dtInt[INT_SIZE_32]) {
+    fprintf(outfile, "int32");
+  } else if (exprType == dtInt[INT_SIZE_64]) {
+    fprintf(outfile, "int64");
+    
+  } else if (exprType == dtUInt[INT_SIZE_1]) {
+    fprintf(outfile, "bool");
+  } else if (exprType == dtUInt[INT_SIZE_8]) {
+    fprintf(outfile, "uint32");
+  } else if (exprType == dtUInt[INT_SIZE_16]) {
+    fprintf(outfile, "uint32");
+  } else if (exprType == dtUInt[INT_SIZE_32]) {
+    fprintf(outfile, "uint32");
+  } else if (exprType == dtUInt[INT_SIZE_64]) {
+    fprintf(outfile, "uint64");
+    
+  } else if (exprType == dtFloat[FLOAT_SIZE_32]) {
+    fprintf(outfile, "float32");
+  } else if (exprType == dtFloat[FLOAT_SIZE_64]) {
+    fprintf(outfile, "float64");
+  } else if (exprType == dtFloat[FLOAT_SIZE_128]) {
+    fprintf(outfile, "float128");
+  } else if (exprType == dtComplex[FLOAT_SIZE_32]) {
+    fprintf(outfile, "complex32");
+  } else if (exprType == dtComplex[FLOAT_SIZE_64]) {
+    fprintf(outfile, "complex64");
+  } else {
+    INT_FATAL(exprType, "Unexpected type case in codegenCastToString");
+  }
+}
+
+
 void Expr::codegenCastToString(FILE* outfile) {
   Type* exprType = typeInfo();
   if (exprType == dtString) {
@@ -77,40 +118,7 @@ void Expr::codegenCastToString(FILE* outfile) {
   } else if (exprType == dtNil) {
     fprintf(outfile, "\"\"");
   } else {
-    fprintf(outfile, "_chpl_tostring_");
-    if (exprType == dtBool) {
-      fprintf(outfile, "bool");
-
-    } else if (exprType == dtInt[INT_SIZE_8]) {
-      fprintf(outfile, "int8");
-    } else if (exprType == dtInt[INT_SIZE_16]) {
-      fprintf(outfile, "int16");
-    } else if (exprType == dtInt[INT_SIZE_32]) {
-      fprintf(outfile, "int32");
-    } else if (exprType == dtInt[INT_SIZE_64]) {
-      fprintf(outfile, "int");
-
-    } else if (exprType == dtUInt[INT_SIZE_1]) {
-      fprintf(outfile, "bool");
-    } else if (exprType == dtUInt[INT_SIZE_8]) {
-      fprintf(outfile, "uint8");
-    } else if (exprType == dtUInt[INT_SIZE_16]) {
-      fprintf(outfile, "uint16");
-    } else if (exprType == dtUInt[INT_SIZE_32]) {
-      fprintf(outfile, "uint32");
-    } else if (exprType == dtUInt[INT_SIZE_64]) {
-      fprintf(outfile, "uint");
-
-    } else if (exprType == dtFloat[FLOAT_SIZE_32]) {
-      fprintf(outfile, "float32");
-    } else if (exprType == dtFloat[FLOAT_SIZE_64]) {
-      fprintf(outfile, "float64");
-    } else if (exprType == dtFloat[FLOAT_SIZE_128]) {
-      fprintf(outfile, "float128");
-
-    } else {
-      INT_FATAL(this, "Unexpected type case in codegenCastToString");
-    }
+    genTostringRoutineName(outfile, exprType);
     fprintf(outfile, "(");
     codegen(outfile);
     fprintf(outfile, ", ");
@@ -1109,8 +1117,7 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     }
     case PRIMITIVE_TOSTRING: {
-      fprintf(outfile, "_chpl_tostring_");
-      fprintf(outfile, "%s", get(2)->typeInfo()->symbol->name);
+      genTostringRoutineName(outfile, get(2)->typeInfo());
       fprintf( outfile, "(");
       get(2)->codegen( outfile);
       fprintf( outfile, ", ");
