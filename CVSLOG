@@ -71660,3 +71660,13 @@ Log message:
 Modified files:
 	chapel/modules/standard/: _chpl_base.chpl 
 
+---------------------------------------------------------------------------
+
+08/15/06 19:00:33 -- bradc
+
+Log message:
+	Stupid spacing problem with hand-generating output.
+
+Modified files:
+	chapel/test/arrays/bradc/: uintarr.good 
+
