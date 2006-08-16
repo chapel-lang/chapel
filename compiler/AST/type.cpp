@@ -486,7 +486,9 @@ void ClassType::verify() {
   if (prev || next) {
     INT_FATAL(this, "Type is in AList");
   }
-  if (classTag != CLASS_CLASS && classTag != CLASS_RECORD)
+  if (classTag != CLASS_CLASS &&
+      classTag != CLASS_RECORD &&
+      classTag != CLASS_UNION)
     INT_FATAL(this, "Bad ClassType::classTag");
 }
 
@@ -555,9 +557,18 @@ void ClassType::codegenDef(FILE* outfile) {
   if (classTag == CLASS_CLASS) {
     fprintf(outfile, "_int64 _cid;\n");
     printedSomething = true;
+  } else if (classTag == CLASS_UNION) {
+    fprintf(outfile, "_int64 _uid;\n");
+    fprintf(outfile, "union {\n");
   }
   for_fields(field, this) {
     field->codegenDef(outfile);
+    printedSomething = true;
+  }
+  if (classTag == CLASS_UNION) {
+    if (!printedSomething)
+      fprintf(outfile, "int _emptyUnionPlaceholder;\n");
+    fprintf(outfile, "};\n");
     printedSomething = true;
   }
   if (symbol->hasPragma("data class")) {
@@ -615,18 +626,31 @@ AList<Stmt>* ClassType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSym
     body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringLiteral("(")));
   }
 
-  bool first = true;
-  for_fields(tmp, this) {
-    if (tmp->isTypeVariable)
-      continue;
-    if (!first) {
-      body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringLiteral(", ")));
+  if (classTag == CLASS_UNION) {
+    CondStmt* cond = NULL;
+    for_fields(tmp, this) {
+      BlockStmt* writeFieldBlock = new BlockStmt();
+      writeFieldBlock->insertAtTail(new CallExpr("fwrite", fileArg, new_StringLiteral(tmp->name)));
+      writeFieldBlock->insertAtTail(new CallExpr("fwrite", fileArg, new_StringLiteral(" = ")));
+      writeFieldBlock->insertAtTail(new CallExpr("fwrite", fileArg, 
+                                      new CallExpr(".", arg, new_StringSymbol(tmp->name))));
+      cond = new CondStmt(new CallExpr(PRIMITIVE_UNION_GETID, arg, new_IntLiteral(tmp->id)), writeFieldBlock, cond);
     }
-    body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringLiteral(tmp->name)));
-    body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringLiteral(" = ")));
-    body->insertAtTail(new CallExpr("fwrite", fileArg, 
-                                    new CallExpr(".", arg, new_StringSymbol(tmp->name))));
-    first = false;
+    body->insertAtTail(cond);
+  } else {
+    bool first = true;
+    for_fields(tmp, this) {
+      if (tmp->isTypeVariable)
+        continue;
+      if (!first) {
+        body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringLiteral(", ")));
+      }
+      body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringLiteral(tmp->name)));
+      body->insertAtTail(new CallExpr("fwrite", fileArg, new_StringLiteral(" = ")));
+      body->insertAtTail(new CallExpr("fwrite", fileArg, 
+                                      new CallExpr(".", arg, new_StringSymbol(tmp->name))));
+      first = false;
+    }
   }
 
   if (classTag == CLASS_CLASS) {
@@ -636,7 +660,7 @@ AList<Stmt>* ClassType::buildDefaultWriteFunctionBody(ArgSymbol* fileArg, ArgSym
   }
 
   return body;
- }
+}
 
 
 bool ClassType::hasDefaultReadFunction(void) {

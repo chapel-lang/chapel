@@ -733,7 +733,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
           formal->intent != INTENT_OUT &&
           formal->intent != INTENT_INOUT)
         cast = true;
-      if (ct && ct->classTag == CLASS_RECORD)
+      if (ct && ct->classTag != CLASS_CLASS)
         cast = false;
       if (cast)
         call->insertAtTail(new CallExpr(PRIMITIVE_CAST, formal->type->symbol, temp));

@@ -1,2 +1,2 @@
 x: (-1)
-x: (ERROR: Union type error (test_union4.chpl:4)
+Halt reached: illegal union access

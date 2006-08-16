@@ -122,7 +122,8 @@ class UserType : public Type {
 
 enum ClassTag {
   CLASS_CLASS,
-  CLASS_RECORD
+  CLASS_RECORD,
+  CLASS_UNION
 };
 
 class ClassType : public Type {

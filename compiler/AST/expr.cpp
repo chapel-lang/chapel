@@ -866,6 +866,18 @@ void CallExpr::codegen(FILE* outfile) {
       get(2)->codegen(outfile);
       fprintf(outfile, ")");
       break;
+    case PRIMITIVE_UNION_SETID:
+      get(1)->codegen(outfile);
+      fprintf(outfile, "->_uid = ");
+      get(2)->codegen(outfile);
+      break;
+    case PRIMITIVE_UNION_GETID:
+      fprintf(outfile, "(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, "->_uid == ");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
     case PRIMITIVE_GET_MEMBER:
       fprintf(outfile, "(&(");
       codegen_member(outfile, get(1), get(2));

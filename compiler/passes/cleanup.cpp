@@ -69,7 +69,7 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* seen = NULL) {
     if (ct->classTag == CLASS_RECORD) {
       ct->dispatchParents.add(dtValue);
       dtValue->dispatchChildren.add(ct);
-    } else {
+    } else if (ct->classTag == CLASS_CLASS) {
       ct->dispatchParents.add(dtObject);
       dtObject->dispatchChildren.add(ct);
     }
@@ -82,6 +82,8 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* seen = NULL) {
     ClassType* pt = dynamic_cast<ClassType*>(ts->type);
     if (!pt)
       USR_FATAL(expr, "Illegal super class %s", ts->name);
+    if (ct->classTag == CLASS_UNION || pt->classTag == CLASS_UNION)
+      USR_FATAL(expr, "Illegal inheritance involving union type");
     if (ct->classTag == CLASS_RECORD && pt->classTag == CLASS_CLASS)
       USR_FATAL(expr, "Record %s inherits from class %s",
                 ct->symbol->name, pt->symbol->name);
@@ -325,7 +327,8 @@ static void build_constructor(ClassType* ct) {
   fn->insertAtTail(alloc_expr);
   if (ct->classTag == CLASS_CLASS)
     fn->insertAtTail(new CallExpr(PRIMITIVE_SETCID, fn->_this));
-
+  if (ct->classTag == CLASS_UNION)
+    fn->insertAtTail(new CallExpr(PRIMITIVE_UNION_SETID, fn->_this, new_IntSymbol(0)));
   // assign formals to fields by name
   for_fields(field, ct) {
     for_formals(formal, fn) {
@@ -377,7 +380,9 @@ static void build_getter(ClassType* ct, Symbol *field) {
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
   fn->formals->insertAtTail(new ArgSymbol(INTENT_BLANK, "_methodTokenDummy", dtMethodToken));
   fn->formals->insertAtTail(_this);
-  fn->body = new BlockStmt(new ReturnStmt(new CallExpr(PRIMITIVE_GET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)))));
+  if (ct->classTag == CLASS_UNION)
+    fn->insertAtTail(new CondStmt(new CallExpr("!", new CallExpr(PRIMITIVE_UNION_GETID, _this, new_IntSymbol(field->id))), new ExprStmt(new CallExpr("halt", new_StringLiteral("illegal union access")))));
+  fn->insertAtTail(new ReturnStmt(new CallExpr(PRIMITIVE_GET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)))));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->parentStmt->insertBefore(def);
   reset_file_info(fn, field->lineno, field->filename);
@@ -407,8 +412,21 @@ static void build_setter(ClassType* ct, Symbol* field) {
   fn->formals->insertAtTail(new ArgSymbol(INTENT_BLANK, "_setterTokenDummy", dtSetterToken));
   fn->formals->insertAtTail(fieldArg);
   VarSymbol* val = new VarSymbol("_tmp");
-  fn->insertAtTail(new DefExpr(val));
-  fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, val, new CallExpr(PRIMITIVE_GET_MEMBER, _this, new_StringSymbol(field->name))));
+  if (ct->classTag == CLASS_UNION) {
+    Expr* init = field->defPoint->init;
+    Expr* type = field->defPoint->exprType;
+    if (!init && !type)
+      USR_FATAL(ct, "union fields require either a type or an initializer");
+    if (init)
+      init = init->copy();
+    if (type)
+      type = type->copy();
+    fn->insertAtTail(new DefExpr(val, init, type));
+    fn->insertAtTail(new CallExpr(PRIMITIVE_UNION_SETID, _this, new_IntSymbol(field->id)));
+  } else {
+    fn->insertAtTail(new DefExpr(val));
+    fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, val, new CallExpr(PRIMITIVE_GET_MEMBER, _this, new_StringSymbol(field->name))));
+  }
   fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, val, new CallExpr("=", val, fieldArg)));
   fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, _this, new_StringSymbol(field->name), val));
   ct->symbol->defPoint->parentStmt->insertBefore(new DefExpr(fn));

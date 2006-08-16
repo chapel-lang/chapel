@@ -12,9 +12,11 @@ static void build_chpl_main(void);
 static void build_record_equality_function(ClassType* ct);
 static void build_record_inequality_function(ClassType* ct);
 static void build_record_assignment_function(ClassType* ct);
+static void build_union_assignment_function(ClassType* ct);
 static void build_enum_assignment_function(EnumType* et);
 static void build_record_copy_function(ClassType* ct);
 static void build_record_init_function(ClassType* ct);
+static void build_union_assignment_function(ClassType* ct);
 static void buildDefaultIOFunctions(Type* type);
 
 // function_exists returns true iff
@@ -77,6 +79,9 @@ void build_default_functions(void) {
           build_record_assignment_function(ct);
           build_record_init_function(ct);
           build_record_copy_function(ct);
+        }
+        if (ct->classTag == CLASS_UNION) {
+          build_union_assignment_function(ct);
         }
       }
       if (EnumType* et = dynamic_cast<EnumType*>(type->type)) {
@@ -203,6 +208,32 @@ static void build_record_assignment_function(ClassType* ct) {
   for_fields(tmp, ct)
     if (!tmp->isTypeVariable)
       body->insertAtTail(new CallExpr("=", new CallExpr(".", arg1, new_StringLiteral(tmp->name)), new CallExpr(".", arg2, new_StringLiteral(tmp->name))));
+  body->insertAtTail(new ReturnStmt(arg1));
+  BlockStmt* block_stmt = new BlockStmt(body);
+  fn->body = block_stmt;
+  DefExpr* def = new DefExpr(fn);
+  ct->symbol->defPoint->parentStmt->insertBefore(def);
+  reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
+  build(fn);
+  fns.add(fn);
+}
+
+
+static void build_union_assignment_function(ClassType* ct) {
+  if (function_exists("=", 2, ct->symbol->name))
+    return;
+
+  FnSymbol* fn = new FnSymbol("=");
+  ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
+  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", ct);
+  fn->formals->insertAtTail(arg1);
+  fn->formals->insertAtTail(arg2);
+  fn->retType = dtUnknown;
+  AList<Stmt>* body = new AList<Stmt>();
+  body->insertAtTail(new CallExpr(PRIMITIVE_UNION_SETID, arg1, new_IntSymbol(0)));
+  for_fields(tmp, ct)
+    if (!tmp->isTypeVariable)
+      body->insertAtTail(new CondStmt(new CallExpr(PRIMITIVE_UNION_GETID, arg2, new_IntLiteral(tmp->id)), new ExprStmt(new CallExpr("=", new CallExpr(".", arg1, new_StringLiteral(tmp->name)), new CallExpr(".", arg2, new_StringLiteral(tmp->name))))));
   body->insertAtTail(new ReturnStmt(arg1));
   BlockStmt* block_stmt = new BlockStmt(body);
   fn->body = block_stmt;

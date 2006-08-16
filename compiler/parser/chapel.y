@@ -737,7 +737,7 @@ class_tag:
 | TRECORD
     { $$ = new ClassType(CLASS_RECORD); }
 | TUNION
-    { USR_FATAL("Unions are not yet supported"); }
+    { $$ = new ClassType(CLASS_UNION); }
 ;
 
 

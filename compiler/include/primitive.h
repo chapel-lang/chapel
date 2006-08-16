@@ -40,6 +40,8 @@ enum PrimitiveTag {
   PRIMITIVE_LXOR_ID,                   // logical XOR identity operand
   PRIMITIVE_GETCID,
   PRIMITIVE_SETCID,
+  PRIMITIVE_UNION_GETID,
+  PRIMITIVE_UNION_SETID,
   PRIMITIVE_GET_MEMBER,
   PRIMITIVE_SET_MEMBER,
   PRIMITIVE_GET_MEMBER_REF_TO,         // get the value of the reference
