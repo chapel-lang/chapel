@@ -71618,3 +71618,18 @@ Added files:
 	chapel/test/types/coerce/bradc/: int2uint.chpl int2uint.future 
 	                                 int2uint.good 
 
+---------------------------------------------------------------------------
+
+08/15/06 18:48:18 -- bradc
+
+Log message:
+	Fixed a typo in the spacing of stringifying complex
+	values that I'd fixed in my private copy, but somehow
+	never made it into my commit regarding stringifying
+	scalar types...  Went unnoticed probably because I'd
+	commented out most of my complex tests until the last
+	checkin.
+
+Modified files:
+	chapel/runtime/src/: chpltypes.c 
+
