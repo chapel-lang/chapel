@@ -71492,3 +71492,53 @@ Added files:
 Removed files:
 	chapel/test/arrays/jplevyak/: ranks-1.future 
 
+---------------------------------------------------------------------------
+
+08/15/06 17:14:20 -- bradc
+
+Log message:
+	Added better support and tests for coercing base types to
+	strings.
+	
+	* unified codegen of _chpl_tostring_* routines -- previously this
+	  was done in two different places using slightly different ways.
+	
+	* made complexes and uints coerce to strings
+	
+	* added runtime support for converting types of various bitwidths
+	  to strings and unified the names to make them more
+	  bitwidth-specific
+	
+	* added three tests of scalar type to string coercions:
+	
+	  - one that tries all scalar types, their min and max values,
+	    converting to strings and printing them out
+	
+	  - one that converts floating point and complex values with
+	    integral values in them to strings as x.0 to make sure that
+	    those work
+	
+	  - one that converts complex values with various signs of each
+	    component to strings to see how they print out.
+	
+	This will have a single regression: reductions/waynew/breductions.chpl.
+	
+	The next step for this work is to replace all the fwrite() calls
+	on various scalar types with a single fwrite() call that takes a
+	string and rely on the default coercions to convert scalar types
+	to strings.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/modules/standard/: _chpl_complex.chpl 
+	chapel/runtime/include/: chplio.h chpltypes.h 
+	chapel/runtime/src/: chpltypes.c 
+	chapel/test/: REGRESSIONS 
+Added files:
+	chapel/test/types/coerce/bradc/: .cvsignore printcomplex.chpl 
+	                                 printcomplex.good 
+	                                 printzeroes.chpl 
+	                                 printzeroes.good tostring.chpl 
+	                                 tostring.good 
+
