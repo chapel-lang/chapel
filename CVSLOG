@@ -71633,3 +71633,14 @@ Log message:
 Modified files:
 	chapel/runtime/src/: chpltypes.c 
 
+---------------------------------------------------------------------------
+
+08/15/06 18:48:49 -- bradc
+
+Log message:
+	Some miscellaneous uint-oriented tests.
+
+Added files:
+	chapel/test/arrays/bradc/: uintarr.chpl uintarr.good 
+	chapel/test/types/scalar/bradc/: .cvsignore uint.chpl uint.good 
+
