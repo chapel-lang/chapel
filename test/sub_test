@@ -113,7 +113,11 @@ else
 endif
 
 # get all the source files
-set testsrc = `ls *.{chpl,v}`
+if ($?CHPL_ONETEST == 0) then
+    set testsrc = `ls *.{chpl,v}`
+else
+    set testsrc = "$CHPL_ONETEST"
+endif
 
 if ($?CHPL_VALGRIND_OPTS == 0) then
   set CHPL_VALGRIND_OPTS = "--tool=memcheck"
