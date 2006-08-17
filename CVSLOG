@@ -72089,3 +72089,39 @@ Log message:
 Added files:
 	chapel/doc/internal/: Release2006 
 
+---------------------------------------------------------------------------
+
+08/17/06 15:30:57 -- bradc
+
+Log message:
+	Updated Chapel's file implementation to report better and
+	more portable error messages for writing to a file that is
+	not open for writing.  This should get rid of the outstanding
+	cygwin and sunos regressions.
+	
+	Also restructured the file module so that a file's name,
+	path, and mode can't be changed once the file is open, but
+	this doesn't currently work due to the need to write a
+	setter for a class field with the same name (future filed
+	for this in previous test I committed).  The code to do this
+	is checked in here, but not enabled, and I've filed 3 futures
+	against this capability.
+
+Modified files:
+	chapel/modules/standard/: _chpl_file.chpl 
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+	chapel/test/types/file/: fwriteIntFailed.good 
+Added files:
+	chapel/test/types/file/bradc/: changeFilenameWhileOpen.chpl 
+	                               changeFilenameWhileOpen.future 
+	                               changeFilenameWhileOpen.good 
+	                               changeModeWhileOpen.chpl 
+	                               changeModeWhileOpen.future 
+	                               changeModeWhileOpen.good 
+	                               changePathWhileOpen.chpl 
+	                               changePathWhileOpen.future 
+	                               changePathWhileOpen.good 
+Removed files:
+	chapel/test/types/file/: fwriteIntFailed.sunos.good 
+
