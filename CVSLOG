@@ -72125,3 +72125,19 @@ Added files:
 Removed files:
 	chapel/test/types/file/: fwriteIntFailed.sunos.good 
 
+---------------------------------------------------------------------------
+
+08/17/06 16:55:59 -- deitz
+
+Log message:
+	Added support for hex and binary literals.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/parser/: chapel.lex 
+Added files:
+	chapel/test/trivial/deitz/: test_binary_literal.chpl 
+	                            test_binary_literal.good 
+	                            test_hex_literal.chpl 
+	                            test_hex_literal.good 
+
