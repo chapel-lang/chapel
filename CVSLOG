@@ -72077,3 +72077,15 @@ Added files:
 	                            setterForField.future 
 	                            setterForField.good 
 
+---------------------------------------------------------------------------
+
+08/17/06 15:09:02 -- bradc
+
+Log message:
+	Added notes that I mailed out on the release the other
+	week to the internal docs directory because I find myself
+	wanting to refer to that mail constantly.
+
+Added files:
+	chapel/doc/internal/: Release2006 
+
