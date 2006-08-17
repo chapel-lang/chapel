@@ -72006,3 +72006,20 @@ Log message:
 Modified files:
 	chapel/test/: start_test 
 
+---------------------------------------------------------------------------
+
+08/16/06 17:40:17 -- bradc
+
+Log message:
+	Modified the testing system to support the -onetest flag
+	which takes the name of a single test and will run the
+	testing system on that test only.  For example:
+	
+	        start_test -onetest test/trivial/bradc/declprintint.chpl
+	
+	For obvious reasons, the -onetest flag doesn't work in
+	combination with the -startdir flag.
+
+Modified files:
+	chapel/test/: start_test sub_test 
+
