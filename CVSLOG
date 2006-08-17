@@ -72053,3 +72053,27 @@ Log message:
 Modified files:
 	chapel/test/: paratest.client.pl paratest.server.pl 
 
+---------------------------------------------------------------------------
+
+08/17/06 14:49:03 -- bradc
+
+Log message:
+	Added a test for a feature that Steve and I just talked about --
+	the desire/need for a setter method to be named the same as the
+	field.  The other way to do this is to name the field something
+	else and pretend that it's a real field through a setter/getter
+	pair, but this has the disadvantages that:
+	
+	  (a) the field couldn't be named in the default constructor
+	  (b) the trivial getter must be written by the user
+	
+	Instead, we discussed allowing the user to create setters that
+	would squash the creation of the default setters and in which
+	assignments to the field in question would be done using
+	primitive moves rather than calls to a setter.
+
+Added files:
+	chapel/test/classes/bradc/: setterForField.chpl 
+	                            setterForField.future 
+	                            setterForField.good 
+
