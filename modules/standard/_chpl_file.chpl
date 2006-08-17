@@ -112,7 +112,6 @@ def _writeHaltReached() {
   }
 }
 
-
 class file {
   var filename : string = "";
   var mode : string = "r";
@@ -133,6 +132,45 @@ class file {
            _get_errno(), "***");
     }
   }
+
+  def _checkFileStateChangeLegality(state) {
+    if (isOpen) {
+      halt("Cannot change ", state, " of file ", path, "/", filename, 
+           " while it is open");
+    }
+  }
+
+/*
+  // BLC: These next three setters can be removed if we can
+  // special-case setters to not call themselves recursively
+  // when the setter has the same name as a field
+
+  def filename {
+    return _filename;
+  }
+
+  def =filename(newfilename) {
+    _checkFileStateChangeLegality("filename");
+  }
+
+  def path {
+    return _path;
+  }
+
+  def =path(newpath) {
+    _checkFileStateChangeLegality("path");
+    path = newpath;
+  }
+
+  def mode {
+    return _mode;
+  }
+
+  def =mode(newmode: string) {
+    _checkFileStateChangeLegality("mode");
+    mode = newmode;
+  }
+*/
 
   def isOpen: bool {
     var openStatus: bool = false;
@@ -166,7 +204,7 @@ const stdout : file = file("stdout", "w", "/dev", _get_stdout());
 const stderr : file = file("stderr", "w", "/dev", _get_stderr());
 
 
-def fopenError(f: file, isRead: bool) {
+def _fopenError(f: file, isRead: bool) {
   var fullFilename:string = f.path + "/" + f.filename;
   if (isRead) {
     halt("***Error: You must open \"", fullFilename, 
@@ -178,12 +216,19 @@ def fopenError(f: file, isRead: bool) {
 }
 
 
-def fprintfError() {
+def _fmodeError(f: file, isRead: bool) {
+  var fullFilename: string = f.path + "/" + f.filename;
+  var modestring = if (isRead) then "reading" else "writing";
+  halt("***Error: ", fullFilename, " not open for ", modestring, "***");
+}
+
+
+def _fprintfError() {
   halt("***Error: Write failed: ", _get_errno(), "***");
 }
 
 
-def fscanfError() {
+def _fscanfError() {
   halt("***Error: Read failed: ", _get_errno(), "***");
 }
 
@@ -196,12 +241,12 @@ def fread(f: file = stdin, inout val: int) {
       halt("***Error: Read failed: EOF***");
     }
     if (returnVal < 0) {
-      fscanfError();
+      _fscanfError();
     } else if (returnVal == 0) {
       halt("***Error: No int was read***");
     }
   } else {
-    fopenError(f, isRead = true);
+    _fopenError(f, isRead = true);
   }
 }
 
@@ -230,12 +275,12 @@ def fread(f: file = stdin, inout val: uint) {
       halt("***Error: Read failed: EOF***");
     }
     if (returnVal < 0) {
-      fscanfError();
+      _fscanfError();
     } else if (returnVal == 0) {
       halt("***Error: No int was read***");
     }
   } else {
-    fopenError(f, isRead = true);
+    _fopenError(f, isRead = true);
   }
 }
 
@@ -248,12 +293,12 @@ def fread(f: file = stdin, inout val: float) {
       halt("***Error: Read failed: EOF***");
     }
     if (returnVal < 0) {
-      fscanfError();
+      _fscanfError();
     } else if (returnVal == 0) {
       halt("***Error: No float was read***");
     }
   } else {
-    fopenError(f, isRead = true);
+    _fopenError(f, isRead = true);
   }
 }
 
@@ -296,23 +341,8 @@ def fread(f: file = stdin, inout val: string) {
   if (f.isOpen) {
     val = _string_fscanf(f.fp);
   } else {
-    fopenError(f, isRead = true);
+    _fopenError(f, isRead = true);
   }
-}
-
-
-pragma "rename _chpl_fwrite_string"
-def fwrite(f: file, val: string) {
-  var need_release: bool = _fwrite_lock( f);
-  if (f.isOpen) {
-    var returnVal: int = fprintf(f.fp, "%s", val);
-    if (returnVal < 0) {
-      fprintfError();
-    } 
-  } else {
-    fopenError(f, isRead = false);
-  }
-  if (need_release) { _fwrite_unlock( f); }
 }
 
 
@@ -328,22 +358,42 @@ def fread(f: file = stdin, inout val: bool) {
       halt("***Error: Not of bool type***");
     }
   } else {
-    fopenError(f, isRead = true);
+    _fopenError(f, isRead = true);
   }
 }
+
+pragma "rename _chpl_fwrite_string"
+def fwrite(f: file, val: string) {
+  var need_release: bool = _fwrite_lock( f);
+
+  if (!f.isOpen) {
+    _fopenError(f, isRead = false);
+  }
+  if (f.mode != "w") {
+    _fmodeError(f, isRead = false);
+  }
+  var returnVal = fprintf(f.fp, "%s", val);
+  if (returnVal < 0) {
+    _fprintfError();
+  } 
+
+  if (need_release) { _fwrite_unlock( f); }
+}
+
 
 pragma "rename _chpl_fwrite_nil" 
 def fwrite(f: file, x : _nilType) : void {
   var need_release: bool = _fwrite_lock( f);
+
   if (f.isOpen) {
     var returnVal: int = fprintf(f.fp, "%s", "nil");
     if (returnVal < 0) {
-      fprintfError();
+      _fprintfError();
     } else if (returnVal == 0) {
       halt("*** Error: No value was written***");
     }
   } else {
-    fopenError(f, isRead = false);
+    _fopenError(f, isRead = false);
   }
   if (need_release) { _fwrite_unlock( f); }
 }

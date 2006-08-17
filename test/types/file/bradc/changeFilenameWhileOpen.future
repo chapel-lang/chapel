@@ -1,0 +1,5 @@
+primitive moves in setters
+
+Once classes/bradc/setterForField.chpl is working, Brad can
+make the necessary changes to the _chpl_file.chpl module to
+get this test working.
