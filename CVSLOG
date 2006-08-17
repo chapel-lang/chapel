@@ -72041,3 +72041,15 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 	chapel/compiler/passes/: normalize.cpp 
 
+---------------------------------------------------------------------------
+
+08/17/06 13:37:22 -- waynew
+
+Log message:
+	Changed to distribute units of work as (flat) directories rather than
+	sub-trees. This can enable better load balancing.  In practice, this
+	potential can be limited by directories with lots of tests/work.
+
+Modified files:
+	chapel/test/: paratest.client.pl paratest.server.pl 
+
