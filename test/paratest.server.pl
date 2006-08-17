@@ -243,31 +243,26 @@ sub find_subdirs {
     local ($targetdir, $level) = @_;
     local ($filen, @cdir, $subdir, @subdirs, @founddirs, @subdirs, $i);
 
+    $debug = 0;
+
     print "looking in '$targetdir'\n" if $debug;
-    chdir $targetdir;
-    opendir CURRDIR, "." or die "Cannot open directory '$targetdir'\n";
+    opendir CURRDIR, $targetdir or die "Cannot open directory '$targetdir'\n";
     @cdir = grep !/^\./, readdir CURRDIR;             # curr dir list of files
     closedir CURRDIR;
 
-    if (chpl_files (@cdir)) {                         # if *.chpl files in curr
-        unless ($targetdir eq ".") {chdir "..";}
-        return (".");
-    } else {
-        foreach $filen (@cdir) {
-            next if ($filen =~ /$dirs_to_ignore/);
-            if (-d $filen) {                          # if dir
-                next if (-e "$filen/NOTEST");         # ignore dirs with NOTEST
-                if ($debug) {for ($i=0; $i<$level; $i++)  {print "    ";}}
-                @subdirs = find_subdirs ($filen, $level+1);
-                if ($#subdirs >= 0) {
-                    foreach $subdir (@subdirs) {
-                        push @founddirs, "$filen/$subdir";
-                    }
-                }
-            }
+    if (chpl_files (@cdir)) {                         # if *.chpl files in dir
+	push @founddirs, $targetdir;
+	print "$targetdir\n" if $debug;
+    }
+    
+    foreach $filen (@cdir) {
+	next if ($filen =~ /$dirs_to_ignore/);
+	if (-d "$targetdir/$filen") {                 # if dir
+            next if (-e "$targetdir/$filen/NOTEST");  # ignore dirs with NOTEST
+	    if ($debug) {for ($i=0; $i<$level; $i++)  {print "    ";}}
+	    push @founddirs, find_subdirs ("$targetdir/$filen", $level+1);
         }
     }
-    unless ($targetdir eq ".") {chdir "..";}
     return @founddirs;
 }
 

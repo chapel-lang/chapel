@@ -70,7 +70,7 @@ sub main {
     $logfile = "$logdir/$dirfname.$node.log";
     unlink $logfile if (-e $logfile);
 
-    $testarg = "-compiler $compiler -startdir $testdir -logfile $logfile $compopts";
+    $testarg = "-compiler $compiler -startdir $testdir -norecurse -logfile $logfile $compopts";
     systemd ("$testcmd $testarg");
 
     systemd ("echo feed me > $synchfile");  # signal ready for more
