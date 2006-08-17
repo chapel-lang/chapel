@@ -1328,7 +1328,14 @@ void NamedExpr::codegen(FILE* outfile) {
 
 Expr *
 new_IntLiteral(char *l, IF1_int_type int_size) {
-  return new SymExpr(new_IntSymbol(strtoll(l, NULL, 10), int_size));
+  int64 i;
+  if (!strncmp("0b", l, 2))
+    i = strtoll(l+2, NULL, 2);
+  else if (!strncmp("0x", l, 2))
+    i = strtoll(l+2, NULL, 16);
+  else
+    i = strtoll(l, NULL, 10);
+  return new SymExpr(new_IntSymbol(i, int_size));
 }
 
 Expr *
