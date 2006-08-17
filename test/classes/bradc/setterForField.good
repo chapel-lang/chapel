@@ -1,0 +1,3 @@
+myC is: {x = 2}
+myC is: {x = 3}
+Halt reached: Can only assign C.x non-negative integers!
