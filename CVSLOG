@@ -72023,3 +72023,21 @@ Log message:
 Modified files:
 	chapel/test/: start_test sub_test 
 
+---------------------------------------------------------------------------
+
+08/17/06 11:47:02 -- deitz
+
+Log message:
+	Special-cased codegen of
+	   -9223372036854775808
+	as
+	   -INT64(9223372036854775807) - INT64(1)
+	
+	Added folding of shift left and shift right.
+	
+	This will resolve our one regression.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/passes/: normalize.cpp 
+
