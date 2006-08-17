@@ -746,6 +746,8 @@ static void fold_call_expr(CallExpr* call) {
           FOLD_CALL("!=", P_prim_notequal);
           FOLD_CALL("&&", P_prim_land);
           FOLD_CALL("||", P_prim_lor);
+          FOLD_CALL("<<", P_prim_lsh);
+          FOLD_CALL(">>", P_prim_rsh);
           if (call->isNamed("=")) {
             call->replace(new SymExpr(v2));
             return;

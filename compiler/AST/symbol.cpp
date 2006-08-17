@@ -343,16 +343,20 @@ void VarSymbol::codegen( FILE* outfile) {
       immediate->num_index != INT_SIZE_1) {
     // find the min number of bytes to store constant
     int64 iconst = immediate->int_value();
-    if (iconst < 0)
-      iconst = (iconst+1) * -1;
-    if (iconst <= ((1<<7)-1)) {
-      fprintf( outfile, "INT8( %s)", cname);
-    } else if (iconst <= ((1<<15)-1)) {
-      fprintf( outfile, "INT16( %s)", cname);
-    } else if (iconst <= ((1<<31)-1)) {
-      fprintf( outfile, "INT32( %s)", cname);
+    if (iconst == (1ll<<63)) {
+      fprintf(outfile, "-INT64(9223372036854775807) - INT64(1)");
     } else {
-      fprintf( outfile, "INT64( %s)", cname);
+      if (iconst < 0)
+        iconst = (iconst+1) * -1;
+      if (iconst <= ((1<<7)-1)) {
+        fprintf( outfile, "INT8( %s)", cname);
+      } else if (iconst <= ((1<<15)-1)) {
+        fprintf( outfile, "INT16( %s)", cname);
+      } else if (iconst <= ((1<<31)-1)) {
+        fprintf( outfile, "INT32( %s)", cname);
+      } else {
+        fprintf( outfile, "INT64( %s)", cname);
+      }
     }
   } else if (immediate &&
       immediate->const_kind == NUM_KIND_UINT  &&
