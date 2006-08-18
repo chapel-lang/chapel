@@ -3,11 +3,19 @@
 # Usage: paratest.server.pl [-dirfile d] [-nodefile n] [-logfile l] [-help|-h]
 #   -dirfile  d: d is a file listing directories to test. Default is ".". Lines
 #                beginning with # are ignored.
+#   -dirdist   : distribute work at the granularity of directories (file 
+#                granurality is the default.
+#   -futures   : in file granurality distribution mode, include tests with 
+#                .futures. Default is to not include these tests in file 
+#                granularity distribution mode.
 #   -nodefile n: n is a file listing nodes to run on. Default is current node.
 #                To run multiple processes on MP nodes, list the node multiple
 #                times, once for each desired process. Lines with # are ignored.
 #   -logfile  l: l is the output logfile. Default is "user"."platform".log in
 #                subdirectory Logs.
+#
+# Creating a file name PARAHALT in the root test directory halts the
+# distribution of more work.
 #
 # Requirements:
 #  - paratest.server.pl is run in $CHPLHOME/test.
@@ -36,13 +44,13 @@ $dirs_to_ignore = "CVS|Bin|Logs|Samples|Share|OUTPUT|RCS";
 
 $logdir = "Logs";
 $synchdir = "$logdir/.synch";
-#$compiler = "../compiler/chpl";
 $cmd = "paratest.client.pl";
-#$rem_exe = "ssh -v";
 $rem_exe = "ssh";
 $pwd = `pwd`; chomp $pwd;
 $summary_len = 2;
-$sleep_time = 4;                               # time (sec) between checks
+$sleep_time = 1;                      # polling time (sec) to distribute work
+$futures = 0;
+$dirdist = 1;
 
 my (@testdir_list, @node_list, $starttime, $endtime);
 
@@ -146,14 +154,15 @@ sub free_workers {
 
 
 sub feed_nodes {
-    local (@readyidv, $logfile, @logs, $testdir, $node);
+    local (@readyidv, $logfile, @logs, $testdir, $node, $rem_cmd);
     $| = 1;    # autoflush stdout
 
     @testdir_list = sort @testdir_list;
     print $#node_list+1; print " worker(s) (@node_list)\n";
     print $#testdir_list+1; print " test(s) (@testdir_list)\n";
 
-    while ($#testdir_list >= 0) {         # while still have work to do
+    while (($#testdir_list >= 0) &&       # while still have work to do
+           !(-e "PARAHALT")) {
         @readyidv = free_workers ();      # get IDs of nodes that are ready
 
         print "\n" if ($#readyidv >= 0);
@@ -175,11 +184,13 @@ sub feed_nodes {
 
             # fork work
             unless ($pid = fork) {        # child
+                $rem_cmd = "$rem_exe $node $pwd/$cmd $readyid $pwd $testdir $dirdist $compopts";
                 if ($verbose) {
-                    systemd ("$rem_exe $node $pwd/$cmd $readyid $pwd $testdir $compopts");
+                    systemd ($rem_cmd);
                 } else {
-                    systemd ("$rem_exe $node $pwd/$cmd $readyid $pwd $testdir $compopts > /dev/null 2>& 1");
+                    systemd ("$rem_cmd > /dev/null 2>& 1");
                 }
+                print ":)";
                 exit (0);
             }
             shift @testdir_list;
@@ -241,7 +252,7 @@ sub chpl_files {
 
 sub find_subdirs {
     local ($targetdir, $level) = @_;
-    local ($filen, @cdir, $subdir, @subdirs, @founddirs, @subdirs, $i);
+    local ($filen, @cdir, @founddirs, $i);
 
     $debug = 0;
 
@@ -267,10 +278,44 @@ sub find_subdirs {
 }
 
 
+sub find_files {
+    local ($targetdir, $level, $no_futures, $recursive) = @_;
+    local ($filen, @cdir, @foundfiles);
+
+    $debug = 0;
+
+    print "looking in '$targetdir'\n" if $debug;
+    opendir CURRDIR, $targetdir or die "Cannot open directory '$targetdir'\n";
+    @cdir = grep !/^\./, readdir CURRDIR;             # curr dir list of files
+    closedir CURRDIR;
+
+    foreach $filen (@cdir) {
+	next if ($filen =~ /$dirs_to_ignore/);
+	$filepath = "$targetdir/$filen";
+	unless (-e "$targetdir/NOTEST") {             # do not ignore this dir?
+	    if ($filepath =~ /\.chpl$/) {
+		$futuref = $filepath;
+		$futuref =~ s/\.chpl$/.future/;
+		next if ((-e $futuref) && $no_futures);
+		push @foundfiles, $filepath;
+	    }
+	}
+
+	if ((-d $filepath) && $recursive) {           # if dir and recursive
+	    if ($debug) {for ($i=0; $i<$level; $i++)  {print "    ";}}
+	    push @foundfiles, find_files ($filepath, $level+1, $no_futures, $recursive);
+        }
+    }
+    return @foundfiles;
+}
+
+
 sub print_help {
     print "Usage: paratest.server.pl [-dirfile d] [-nodefile n] [-help|-h]\n";
     print "    -compopts s: s is a string that is passed with -compopts to start_test.\n";
     print "    -dirfile  d: d is a file listing directories to test. Default is the current diretory.\n";
+    print "    -dirdist   : distribute work at the granularity of directories (file granurality is the default)\n";
+    print "    -futures   : in file granurality distribution mode, include tests with .futures. Default is to not include these tests in file granularity distribution mode.\n";
     print "    -logfile  l: l is the output log file. Default is \"user\".\"platform\".log. in the Logs subdirectory\n";
     print "    -nodefile n: n is a file listing nodes to run on. Default is current node.\n";
 }
@@ -289,7 +334,17 @@ sub main {
 
     while ($#ARGV >= 0) {
         $_ = $ARGV[0];
-        if (/^-dirfile/) {
+        if (/^-compopts/) {
+            shift @ARGV;
+            if ($#ARGV >= 0) {
+                $compopts = $ARGV[0];
+            } else {
+                print "missing -compopts arg\n";
+                exit (8);
+            }
+        } elsif (/^-dirdist/) {
+            $dirdist = 1;
+        } elsif (/^-dirfile/) {
             shift @ARGV;
             if ($#ARGV >= 0) {
                 $dirfile = $ARGV[0];
@@ -297,14 +352,8 @@ sub main {
                 print "missing -dirfile arg\n";
                 exit (8);
             }
-        } elsif (/^-nodefile/) {
-            shift @ARGV;
-            if ($#ARGV >= 0) {
-                $nodefile = $ARGV[0];
-            } else {
-                print "missing -nodefile arg\n";
-                exit (8);
-            }
+        } elsif (/^-futures/) {
+            $futures = 1;
         } elsif (/^-logfile/) {
             shift @ARGV;
             if ($#ARGV >= 0) {
@@ -313,12 +362,12 @@ sub main {
                 print "missing -logfile arg\n";
                 exit (8);
             }
-        } elsif (/^-compopts/) {
+        } elsif (/^-nodefile/) {
             shift @ARGV;
             if ($#ARGV >= 0) {
-                $compopts = $ARGV[0];
+                $nodefile = $ARGV[0];
             } else {
-                print "missing -compopts arg\n";
+                print "missing -nodefile arg\n";
                 exit (8);
             }
         } elsif (/^-help|^-h/) {
@@ -349,11 +398,19 @@ sub main {
         while (<dirfile>) {
             next if /^$|^\#/;
             chomp;
-            push @testdir_list, $_;
+            if ($dirdist) {
+                push @testdir_list, $_;
+            } else {
+                push @testdir_list, find_files( $_, 0, !$futures, 0);
+            }
             # print "$_\n";
         }
     } else { # else, current working dir
-        @testdir_list = find_subdirs (".", 0);
+        if ($dirdist) {
+            @testdir_list = find_subdirs (".", 0);
+        } else {
+            @testdir_list = find_files (".", 0, !$futures, 1);
+        }
     }
 
 
