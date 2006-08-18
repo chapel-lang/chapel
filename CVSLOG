@@ -72156,3 +72156,82 @@ Modified files:
 Added files:
 	chapel/test/trivial/deitz/: test_float.chpl test_float.good 
 
+---------------------------------------------------------------------------
+
+08/18/06 11:29:20 -- deitz
+
+Log message:
+	Implemented coercion of parameters to primitive types in which they
+	fit and remove special-cased assignment statement that allowed a
+	primitive of any size to be assigned to a smaller one.  That is, you
+	can now only assign an int(8) to and int(8) or anything that can be
+	coerced to an int(8).
+	
+	Also, implemented the correct semantics of coercions between int and
+	uint; uint can only be coerced to int of a greater size.
+	
+	Fixed a problem with line numbers in wrappers.  A wrapper now has its
+	line number and filename set to -1 and internal.  When the wrapper is
+	inlined, its line number and filename is set to that of the call.
+	Compiler errors using the error primitive now case the -1 line number
+	too.  Also fixed the incorrectly set line number/filename on temps in
+	inlining.  Removed the stopgap from two tests that Brad had modified
+	to keep them working in the presence of this problem.
+	
+	Changed the name of the primitive types to make it be Chapel specific.
+	So the cname of int(8) is still _int8 but the name is now int(8).  I
+	didn't do this for complex(32) because _complex32 is used in the
+	module.  I believe a better solution is that when you bind a function
+	to a primitive type, you are doing that to the generic primitive.  So
+	writing
+	
+	  def int.print()
+	
+	should be equivalent to
+	
+	  def int(?k).print()
+	
+	I also think I have a decent way of handling primitive types that have
+	a query component to them so I'm ready to do this.  That would allow
+	generic functions like
+	
+	  def foo(i: int(?k)) { ... }
+	
+	Fixed created setter function to use the return type as the rhs value
+	argument's type in the built setter.  Previously this was ignored and
+	'any' was used.  So something like
+	
+	  def foo(i: int) var : int
+	
+	did not require the assigned value to be an int.  This impacted
+	coercion to the assigned type thus, for example, an array of uint can
+	now be assigned an int parameter expression and it is coerced to uint.
+	
+	Added parameter folding of ** operator.
+	
+	Reworked this function of arrays, putting in explicit setters, to deal
+	with the above changes.
+	
+	Update a number of tests to use explicit casts so that they work given
+	the new coercion rules.
+	
+	Added a test to make sure that you cannot assign a parameter value
+	that is too big for a primitive type.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/passes/: functionResolution.cpp 
+	                         inlineFunctions.cpp normalize.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_base.chpl 
+	chapel/test/trivial/deitz/: test_int32.chpl test_int32.good 
+	chapel/test/trivial/waynew/: int2uint.chpl int8-64.chpl 
+	                             int8-64b.chpl int8b.chpl 
+	                             uint2int.chpl uint8-64.chpl 
+	chapel/test/types/file/: fwriteIntFailed.chpl 
+	                         fwriteIntFailed.good 
+	                         fwriteIntUnopenedFile.chpl 
+	                         fwriteIntUnopenedFile.good 
+Added files:
+	chapel/test/trivial/deitz/: test_int8_error.chpl 
+	                            test_int8_error.good 
+
