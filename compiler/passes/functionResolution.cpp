@@ -37,7 +37,11 @@ static Type* resolve_type_expr(Expr* expr);
 static void resolveCall(CallExpr* call);
 static void resolveFns(FnSymbol* fn);
 
-static bool canDispatch( Type* actualType, Type* formalType, FnSymbol* fn = NULL, bool* require_scalar_promotion = NULL);
+static bool canDispatch(Type* actualType,
+                        Symbol* actualParam,
+                        Type* formalType,
+                        FnSymbol* fn = NULL,
+                        bool* require_scalar_promotion = NULL);
 
 static void
 resolveFormals(FnSymbol* fn) {
@@ -63,6 +67,61 @@ resolveFormals(FnSymbol* fn) {
   }
 }
 
+static bool
+fits_in_int(int width, Immediate* imm) {
+  if (imm->const_kind == NUM_KIND_INT) {
+    int64 i = imm->int_value();
+    switch (width) {
+    default: INT_FATAL("bad width in fits_in_int");
+    case 8:
+      return (i >= -128 && i <= 127);
+    case 16:
+      return (i >= -32768 && i <= 32767);
+    case 32:
+      return (i >= -2147483648ll && i <= 2147483647ll);
+    case 64:
+      return (i >= -9223372036854775807ll-1 && i <= 9223372036854775807ll);
+    }
+  } else if (imm->const_kind == NUM_KIND_UINT) {
+    uint64 i = imm->uint_value();
+    switch (width) {
+    default: INT_FATAL("bad width in fits_in_int");
+    case 8:
+      return (i <= 127);
+    case 16:
+      return (i <= 32767);
+    case 32:
+      return (i <= 2147483647ll);
+    case 64:
+      return (i <= 9223372036854775807ll);
+    }
+  }
+  return false;
+}
+
+static bool
+fits_in_uint(int width, Immediate* imm) {
+  if (imm->const_kind == NUM_KIND_INT) {
+    int64 i = imm->int_value();
+    return i >= 0;
+  } else if (imm->const_kind == NUM_KIND_UINT) {
+    uint64 i = imm->uint_value();
+    switch (width) {
+    default: INT_FATAL("bad width in fits_in_int");
+    case 8:
+      return (i <= 1<<8);
+    case 16:
+      return (i <= 1<<16);
+    case 32:
+      return (i <= 1ull<<32);
+    case 64:
+      return true;
+    }
+  }
+  return false;
+}
+
+
 // Returns true iff dispatching the actualType to the formalType
 // results in an instantiation.
 static bool
@@ -80,13 +139,13 @@ canInstantiate(Type* actualType, Type* formalType) {
 // Returns true iff dispatching the actualType to the formalType
 // results in a coercion.
 static bool
-canCoerce(Type* actualType, Type* formalType) {
+canCoerce(Type* actualType, Symbol* actualParam, Type* formalType) {
   if (actualType->symbol->hasPragma( "sync var")) {
     if (actualType->isGeneric) {
       return false;
     } else {
       Type *base_type = (Type*)(actualType->substitutions.v[0].value);
-      return canDispatch( base_type, formalType);
+      return canDispatch(base_type, actualParam, formalType);
     }
   }
 
@@ -96,26 +155,45 @@ canCoerce(Type* actualType, Type* formalType) {
   if (is_int_type(formalType)) {
     if (actualType == dtBool)
       return true;
-    if (is_int_type(actualType) && get_width(actualType) < get_width(formalType))
+    if (is_int_type(actualType) &&
+        get_width(actualType) < get_width(formalType))
       return true;
+    if (is_uint_type(actualType) &&
+        get_width(actualType) < get_width(formalType))
+      return true;
+    if (VarSymbol* var = dynamic_cast<VarSymbol*>(actualParam))
+      if (var->immediate)
+        if (fits_in_int(get_width(formalType), var->immediate))
+          return true;
   }
   if (is_uint_type(formalType)) {
     if (actualType == dtBool)
       return true;
-    if (is_uint_type(actualType) && get_width(actualType) < get_width(formalType))
+    if (is_uint_type(actualType) &&
+        get_width(actualType) < get_width(formalType))
       return true;
-    if (is_int_type(actualType) && get_width(actualType) <= get_width(formalType))
-      return true;
+    if (VarSymbol* var = dynamic_cast<VarSymbol*>(actualParam))
+      if (var->immediate)
+        if (fits_in_uint(get_width(formalType), var->immediate))
+          return true;
   }
   if (is_float_type(formalType)) {
-    if (is_int_type(actualType) && get_width(actualType) <= get_width(formalType))
+    if (is_int_type(actualType) &&
+        get_width(actualType) <= get_width(formalType))
       return true;
-    if (is_float_type(actualType) && get_width(actualType) < get_width(formalType))
+    if (is_uint_type(actualType) &&
+        get_width(actualType) <= get_width(formalType))
+      return true;
+    if (is_float_type(actualType) && 
+        get_width(actualType) < get_width(formalType))
       return true;
   }
   if (is_complex_type(formalType)) {
     if (is_int_type(actualType) && 
         (get_width(actualType) <= get_width(formalType)))
+      return true;
+    if (is_uint_type(actualType) &&
+        get_width(actualType) <= get_width(formalType))
       return true;
     if (is_float_type(actualType) && 
         (get_width(actualType) <= get_width(formalType)))
@@ -137,7 +215,7 @@ canCoerce(Type* actualType, Type* formalType) {
 // The function symbol is used to avoid scalar promotion on =.
 // param is set if the actual is a parameter (compile-time constant).
 static bool
-canDispatch( Type* actualType, Type* formalType, FnSymbol* fn, bool* require_scalar_promotion) {
+canDispatch(Type* actualType, Symbol* actualParam, Type* formalType, FnSymbol* fn, bool* require_scalar_promotion) {
   if (require_scalar_promotion)
     *require_scalar_promotion = false;
   if (actualType == formalType)
@@ -148,17 +226,17 @@ canDispatch( Type* actualType, Type* formalType, FnSymbol* fn, bool* require_sca
     if (ClassType* ct = dynamic_cast<ClassType*>(formalType))
       if (ct->classTag == CLASS_CLASS)
         return true;
-  if (canCoerce(actualType, formalType))
+  if (canCoerce(actualType, actualParam, formalType))
     return true;
   forv_Vec(Type, parent, actualType->dispatchParents) {
-    if (parent == formalType || canDispatch(parent, formalType, fn)) {
+    if (parent == formalType || canDispatch(parent, actualParam, formalType, fn)) {
       return true;
     }
   }
   if (fn &&
       strcmp(fn->name, "=") && 
       actualType->scalarPromotionType && 
-      (canDispatch(actualType->scalarPromotionType, formalType, fn))) {
+      (canDispatch(actualType->scalarPromotionType, actualParam, formalType, fn))) {
     if (require_scalar_promotion)
       *require_scalar_promotion = true;
     return true;
@@ -176,7 +254,7 @@ isDispatchParent(Type* t, Type* pt) {
 
 static bool
 moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType) {
-  if (canDispatch( actualType, formalType, fn))
+  if (canDispatch(actualType, NULL, formalType, fn))
     return true;
   if (canInstantiate(actualType, formalType)) {
     return true;
@@ -314,7 +392,7 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
     ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
     j++;
     if (formal_actuals.v[j] &&
-        !canDispatch(formal_actuals.v[j], formal->type, fn))
+        !canDispatch(formal_actuals.v[j], formal_params.v[j], formal->type, fn))
       return;
     if (formal_params.v[j] && formal_params.v[j]->isTypeVariable && !formal->isTypeVariable)
       return;
@@ -393,14 +471,17 @@ build_order_wrapper(FnSymbol* fn,
 
 
 static FnSymbol*
-build_coercion_wrapper(FnSymbol* fn, Vec<Type*>* actual_types) {
+build_coercion_wrapper(FnSymbol* fn,
+                       Vec<Type*>* actual_types,
+                       Vec<Symbol*>* actual_params) {
   ASTMap subs;
   int j = -1;
   for_alist(DefExpr, formalDef, fn->formals) {
     j++;
     Type* actual_type = actual_types->v[j];
+    Symbol* actual_param = actual_params->v[j];
     ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
-    if (canCoerce(actual_type, formal->type) || isDispatchParent(actual_type, formal->type))
+    if (canCoerce(actual_type, actual_param, formal->type) || isDispatchParent(actual_type, formal->type))
       subs.put(formal, actual_type->symbol);
   }
   if (subs.n)
@@ -412,6 +493,7 @@ build_coercion_wrapper(FnSymbol* fn, Vec<Type*>* actual_types) {
 static FnSymbol*
 build_promotion_wrapper(FnSymbol* fn,
                         Vec<Type*>* actual_types,
+                        Vec<Symbol*>* actual_params,
                         bool isSquare) {
   if (!strcmp(fn->name, "="))
     return fn;
@@ -421,9 +503,10 @@ build_promotion_wrapper(FnSymbol* fn,
   for_alist(DefExpr, formalDef, fn->formals) {
     j++;
     Type* actual_type = actual_types->v[j];
+    Symbol* actual_param = actual_params->v[j];
     ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
     bool require_scalar_promotion = false;
-    if (canDispatch(actual_type, formal->type, fn, &require_scalar_promotion)){
+    if (canDispatch(actual_type, actual_param, formal->type, fn, &require_scalar_promotion)){
       if (require_scalar_promotion) {
         promotion_wrapper_required = true;
         promoted_subs.put(formal, actual_type->symbol);
@@ -457,7 +540,8 @@ resolve_call(CallExpr* call,
   forv_Vec(FnSymbol, visibleFn, visibleFns) {
     if (methodTag && !visibleFn->noParens)
       continue;
-    addCandidate(&candidateFns, &candidateActualFormals, visibleFn, actual_types, actual_params, actual_names);
+    addCandidate(&candidateFns, &candidateActualFormals, visibleFn,
+                 actual_types, actual_params, actual_names);
   }
 
   FnSymbol* best = NULL;
@@ -474,15 +558,15 @@ resolve_call(CallExpr* call,
           for (int k = 0; k < actual_formals->n; k++) {
             ArgSymbol* arg = actual_formals->v[k];
             ArgSymbol* arg2 = actual_formals2->v[k];
-            if (arg->instantiatedParam && !arg2->instantiatedParam)
+            if (arg->type == arg2->type && arg->instantiatedParam && !arg2->instantiatedParam)
               as_good = false;
-            else if (!arg->instantiatedParam && arg2->instantiatedParam)
+            else if (arg->type == arg2->type && !arg->instantiatedParam && arg2->instantiatedParam)
               better = true;
             else {
               bool require_scalar_promotion1;
               bool require_scalar_promotion2;
-              canDispatch( actual_types->v[k], arg->type, best, &require_scalar_promotion1);
-              canDispatch( actual_types->v[k], arg2->type, best, &require_scalar_promotion2);
+              canDispatch(actual_types->v[k], actual_params->v[k], arg->type, best, &require_scalar_promotion1);
+              canDispatch(actual_types->v[k], actual_params->v[k], arg2->type, best, &require_scalar_promotion2);
               if (require_scalar_promotion1 && !require_scalar_promotion2)
                 better = true;
               else if (!require_scalar_promotion1 && require_scalar_promotion2)
@@ -544,8 +628,8 @@ resolve_call(CallExpr* call,
 
   best = build_default_wrapper(best, actual_formals);
   best = build_order_wrapper(best, actual_formals);
-  best = build_promotion_wrapper(best, actual_types, call->square);
-  best = build_coercion_wrapper(best, actual_types);
+  best = build_promotion_wrapper(best, actual_types, actual_params, call->square);
+  best = build_coercion_wrapper(best, actual_types, actual_params);
   return best;
 }
 
@@ -610,6 +694,65 @@ build_dispatch_tree(Map<Type*,FnSymbol*>* dispatchMap,
 }
 
 
+char* call2string(CallExpr* call,
+                  char* name,
+                  Vec<Type*>& atypes,
+                  Vec<Symbol*>& aparams,
+                  Vec<char*>& anames) {
+  bool method = false;
+  bool _this = false;
+  char *str = "";
+  if (atypes.n > 1)
+    if (atypes.v[0] == dtMethodToken)
+      method = true;
+  if (method) {
+    if (aparams.v[1] && aparams.v[1]->isTypeVariable)
+      str = stringcat(str, atypes.v[1]->symbol->name, ".");
+    else
+      str = stringcat(str, ":", atypes.v[1]->symbol->name, ".");
+  }
+  if (!strcmp("this", name))
+    _this = true;
+  if (_this) {
+    str = stringcat(str, ":", atypes.v[0]->symbol->name);
+  } else if (!strncmp("_construct_", name, 11)) {
+    str = stringcat(str, name+11);
+  } else {
+    str = stringcat(str, name);
+  }
+  if (!call->methodTag)
+    str = stringcat(str, "(");
+  bool first = false;
+  bool setter = false;
+  int start = 0;
+  if (method)
+    start = 2;
+  if (_this)
+    start = 1;
+  for (int i = start; i < atypes.n; i++) {
+    if (aparams.v[i] == gSetterToken) {
+      str = stringcat(str, ") = ");
+      setter = true;
+      first = false;
+      continue;
+    }
+    if (!first)
+      first = true;
+    else
+      str = stringcat(str, ", ");
+    if (anames.v[i])
+      str = stringcat(str, anames.v[i], "=");
+    if (aparams.v[i] && aparams.v[i]->isTypeVariable)
+      str = stringcat(str, atypes.v[i]->symbol->name);
+    else
+      str = stringcat(str, ":", atypes.v[i]->symbol->name);
+  }
+  if (!call->methodTag && !setter)
+    str = stringcat(str, ")");
+  return str;
+}
+
+
 static void
 resolveCall(CallExpr* call) {
   if (!call->primitive) {
@@ -664,57 +807,18 @@ resolveCall(CallExpr* call) {
                       atypes.v[0]->symbol->name);
           }
         } else if (resolve_call_error_candidates.n > 0) {
-          bool method = false;
-          bool _this = false;
-          char *str = "";
-          if (atypes.n > 1)
-            if (atypes.v[0] == dtMethodToken)
-              method = true;
-          if (method) {
-            if (aparams.v[1] && aparams.v[1]->isTypeVariable)
-              str = stringcat(str, atypes.v[1]->symbol->name, ".");
-            else
-              str = stringcat(str, ":", atypes.v[1]->symbol->name, ".");
+          char* str = call2string(call, name, atypes, aparams, anames);
+          USR_FATAL_CONT(call, "%s call '%s'", (resolve_call_error == CALL_AMBIGUOUS) ? "Ambiguous" : "Unresolved", str);
+          if (developer) {
+            for (int i = callStack.n-1; i>=0; i--) {
+              CallExpr* cs = callStack.v[i];
+              char* name = cs->getFunction()->name;
+              USR_PRINT(callStack.v[i], "  called from %s", name);
+            }
           }
+          bool _this = false;
           if (!strcmp("this", name))
             _this = true;
-          if (_this) {
-            str = stringcat(str, ":", atypes.v[0]->symbol->name);
-          } else if (!strncmp("_construct_", name, 11)) {
-            str = stringcat(str, name+11);
-          } else {
-            str = stringcat(str, name);
-          }
-          if (!call->methodTag)
-            str = stringcat(str, "(");
-          bool first = false;
-          bool setter = false;
-          int start = 0;
-          if (method)
-            start = 2;
-          if (_this)
-            start = 1;
-          for (int i = start; i < atypes.n; i++) {
-            if (aparams.v[i] == gSetterToken) {
-              str = stringcat(str, ") = ");
-              setter = true;
-              first = false;
-              continue;
-            }
-            if (!first)
-              first = true;
-            else
-              str = stringcat(str, ", ");
-            if (anames.v[i])
-              str = stringcat(str, anames.v[i], "=");
-            if (aparams.v[i] && aparams.v[i]->isTypeVariable)
-              str = stringcat(str, atypes.v[i]->symbol->name);
-            else
-              str = stringcat(str, ":", atypes.v[i]->symbol->name);
-          }
-          if (!call->methodTag && !setter)
-            str = stringcat(str, ")");
-          USR_FATAL_CONT(call, "%s call '%s'", (resolve_call_error == CALL_AMBIGUOUS) ? "Ambiguous" : "Unresolved", str);
           if (_this)
             USR_STOP();
           USR_PRINT("Candidates are:");
@@ -844,9 +948,9 @@ resolveCall(CallExpr* call) {
       call->insertBefore(tmp);
       callStack.add(e);
       resolveCall(e);
-      callStack.pop();
       if (e->isResolved())
         resolveFns(e->isResolved());
+      callStack.pop();
       resolveCall(move);
     }
     call->remove();
@@ -918,9 +1022,15 @@ resolveFns(FnSymbol* fn) {
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
       if (call->isPrimitive(PRIMITIVE_ERROR)) {
+        CallExpr* from;
+        for (int i = callStack.n-1; i >= 0; i--) {
+          from = callStack.v[i];
+          if (from->lineno > 0)
+            break;
+        }
         SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1));
         VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var);
-        USR_FATAL(callStack.v[callStack.n-1], "%s", var->immediate->v_string);
+        USR_FATAL(from, "%s", var->immediate->v_string);
       }
     }
   }

@@ -25,11 +25,19 @@ class _array {
   // need this function to compete with string indexing function
   // (scalar promotion on array of strings or scalar promotion and
   // coercion on array of ints/floats)
-  def this(i:int...?k) var
+  def this(i:int...?k)
     return _value((...i));
 
-  def this(i...?k) var
-    return _value((...i));
+  def =this(i:int...?k, val: elt_type) {
+    _value((...i)) = val;
+  }
+
+  def this(i) where !(i.type:_domain)
+    return _value(i);
+
+  def =this(i, val: elt_type) where !(i.type:_domain) {
+    _value(i) = val;
+  }
 
   def getHeadCursor()
     return _value.getHeadCursor();
@@ -57,7 +65,17 @@ def =(a: _array, b: _array) {
   return a;
 }
 
-def =(a: _array, b) {
+def =(a: _array, b: seq) {
+  a._value = b;
+  return a;
+}
+
+def =(a: _array, b: _aseq) {
+  a._value = b;
+  return a;
+}
+
+def =(a: _array, b: a.elt_type) {
   a._value = b;
   return a;
 }

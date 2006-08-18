@@ -1,0 +1,1 @@
+Error: value is too large to assign to int(8) (test_int8_error.chpl:2)

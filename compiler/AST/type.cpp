@@ -799,22 +799,22 @@ void initPrimitiveTypes(void) {
 
   // WAW: could have a loop, but the following unrolling is more explicit.
   INIT_PRIMITIVE_INT( "int", 64);          // default size
-  INIT_PRIMITIVE_INT( "_int8", 8);
-  INIT_PRIMITIVE_INT( "_int16", 16);
-  INIT_PRIMITIVE_INT( "_int32", 32);
+  INIT_PRIMITIVE_INT( "int(8)", 8);
+  INIT_PRIMITIVE_INT( "int(16)", 16);
+  INIT_PRIMITIVE_INT( "int(32)", 32);
 
   INIT_PRIMITIVE_UINT( "uint", 64);        // default size
-  INIT_PRIMITIVE_UINT( "_uint8", 8);
-  INIT_PRIMITIVE_UINT( "_uint16", 16);
-  INIT_PRIMITIVE_UINT( "_uint32", 32);
+  INIT_PRIMITIVE_UINT( "uint(8)", 8);
+  INIT_PRIMITIVE_UINT( "uint(16)", 16);
+  INIT_PRIMITIVE_UINT( "uint(32)", 32);
 
   INIT_PRIMITIVE_FLOAT( "float", 64);      // default size
-  INIT_PRIMITIVE_FLOAT( "_float32", 32);
-  INIT_PRIMITIVE_FLOAT( "_float128", 128);
+  INIT_PRIMITIVE_FLOAT( "float(32)", 32);
+  INIT_PRIMITIVE_FLOAT( "float(128)", 128);
 
   INIT_PRIMITIVE_COMPLEX( "complex", 64);  // default size
-  INIT_PRIMITIVE_COMPLEX( "_complex32", 32);
-  INIT_PRIMITIVE_COMPLEX( "_complex128", 128);
+  INIT_PRIMITIVE_COMPLEX( "_complex32", 32); // supports hack, used in module
+  INIT_PRIMITIVE_COMPLEX( "complex(128)", 128);
 
   dtString = createPrimitiveType( "string", "_string");
   dtString->defaultValue = new_StringSymbol("");

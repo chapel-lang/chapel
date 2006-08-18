@@ -689,7 +689,7 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map) {
   else
     wrapper->insertAtTail(new ReturnStmt(call));
   defPoint->parentStmt->insertAfter(new DefExpr(wrapper));
-  reset_file_info(wrapper->defPoint->parentStmt, lineno, filename);
+  clear_file_info(wrapper->defPoint->parentStmt);
   normalize(wrapper);
   addMapCache(&cw_cache, this, wrapper, coercion_map);
   return wrapper;
@@ -753,7 +753,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
   else
     wrapper->insertAtTail(new ReturnStmt(call));
   defPoint->parentStmt->insertAfter(new DefExpr(wrapper));
-  reset_file_info(wrapper->defPoint->parentStmt, lineno, filename);
+  clear_file_info(wrapper->defPoint->parentStmt);
   add_dwcache(wrapper, this, defaults);
   normalize(wrapper);
   return wrapper;
@@ -782,7 +782,7 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* order_map) {
   else
     wrapper->insertAtTail(new ReturnStmt(call));
   defPoint->parentStmt->insertBefore(new DefExpr(wrapper));
-  reset_file_info(wrapper->defPoint->parentStmt, lineno, filename);
+  clear_file_info(wrapper->defPoint->parentStmt);
   normalize(wrapper);
   return wrapper;
 }
@@ -828,7 +828,7 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
     wrapper->insertAtTail(build_for_expr(indices, iterators, actualCall, isSquare));
   }
   defPoint->parentStmt->insertBefore(new DefExpr(wrapper));
-  reset_file_info(wrapper->defPoint->parentStmt, lineno, filename);
+  clear_file_info(wrapper->defPoint->parentStmt);
   normalize(wrapper);
   return wrapper;
 }

@@ -21,7 +21,7 @@ pragma "inline" def &&(a: bool, b: bool) return __primitive("&&", a, b);
 pragma "inline" def ||(a: bool, b: bool) return __primitive("||", a, b);
 
 // Primitive functions and operators on int(8)
-pragma "inline" def =(a: int(8), b: int) return b:int(8);
+pragma "inline" def =(a: int(8), b: int(8)) return b;
 //pragma "inline" def _copy(a: int(8)) return a;
 pragma "inline" def +(a: int(8)) return __primitive("u+", a);
 pragma "inline" def -(a: int(8)) return __primitive("u-", a);
@@ -48,7 +48,7 @@ pragma "inline" def &&(a: int(8), b: int(8)) return __primitive("&&", a, b);
 pragma "inline" def ||(a: int(8), b: int(8)) return __primitive("||", a, b);
 
 // Primitive functions and operators on int(16)
-pragma "inline" def =(a: int(16), b: int) return b:int(16);
+pragma "inline" def =(a: int(16), b: int(16)) return b;
 //pragma "inline" def _copy(a: int(16)) return a;
 pragma "inline" def +(a: int(16)) return __primitive("u+", a);
 pragma "inline" def -(a: int(16)) return __primitive("u-", a);
@@ -75,7 +75,7 @@ pragma "inline" def &&(a: int(16), b: int(16)) return __primitive("&&", a, b);
 pragma "inline" def ||(a: int(16), b: int(16)) return __primitive("||", a, b);
 
 // Primitive functions and operators on int(32)
-pragma "inline" def =(a: int(32), b: int) return b:int(32);
+pragma "inline" def =(a: int(32), b: int(32)) return b;
 //pragma "inline" def _copy(a: int(32)) return a;
 pragma "inline" def +(a: int(32)) return __primitive("u+", a);
 pragma "inline" def -(a: int(32)) return __primitive("u-", a);
@@ -129,7 +129,7 @@ pragma "inline" def &&(a: int(64), b: int(64)) return __primitive("&&", a, b);
 pragma "inline" def ||(a: int(64), b: int(64)) return __primitive("||", a, b);
 
 // Primitive functions and operators on uint(8)
-pragma "inline" def =(a: uint(8), b: uint) return b:uint(8);
+pragma "inline" def =(a: uint(8), b: uint(8)) return b;
 //pragma "inline" def _copy(a: uint(8)) return a;
 pragma "inline" def +(a: uint(8)) return __primitive("u+", a);
 pragma "inline" def -(a: uint(8)) return __primitive("u-", a);
@@ -156,7 +156,7 @@ pragma "inline" def &&(a: uint(8), b: uint(8)) return __primitive("&&", a, b);
 pragma "inline" def ||(a: uint(8), b: uint(8)) return __primitive("||", a, b);
 
 // Primitive functions and operators on uint(16)
-pragma "inline" def =(a: uint(16), b: uint) return b:uint(16);
+pragma "inline" def =(a: uint(16), b: uint(16)) return b;
 //pragma "inline" def _copy(a: uint(16)) return a;
 pragma "inline" def +(a: uint(16)) return __primitive("u+", a);
 pragma "inline" def -(a: uint(16)) return __primitive("u-", a);
@@ -183,7 +183,7 @@ pragma "inline" def &&(a: uint(16), b: uint(16)) return __primitive("&&", a, b);
 pragma "inline" def ||(a: uint(16), b: uint(16)) return __primitive("||", a, b);
 
 // Primitive functions and operators on uint(32)
-pragma "inline" def =(a: uint(32), b: uint) return b:uint(32);
+pragma "inline" def =(a: uint(32), b: uint(32)) return b;
 //pragma "inline" def _copy(a: uint(32)) return a;
 pragma "inline" def +(a: uint(32)) return __primitive("u+", a);
 pragma "inline" def -(a: uint(32)) return __primitive("u-", a);

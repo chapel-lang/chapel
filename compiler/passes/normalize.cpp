@@ -253,13 +253,18 @@ static void build_lvalue_function(FnSymbol* fn) {
   new_fn->retRef = false;
   fn->retRef = false;
   new_fn->retType = dtVoid;
-  if (new_fn->retExpr) new_fn->retExpr->remove();
   new_fn->cname = stringcat("_setter_", fn->cname);
   ArgSymbol* setterToken = new ArgSymbol(INTENT_BLANK, "_setterTokenDummy",
                                          dtSetterToken);
   ArgSymbol* lvalue = new ArgSymbol(INTENT_BLANK, "_lvalue", dtAny);
+  Expr* exprType = NULL;
+  if (new_fn->retExpr) {
+    lvalue->type = dtUnknown;
+    exprType = new_fn->retExpr;
+    exprType->remove();
+  }
   new_fn->formals->insertAtTail(new DefExpr(setterToken));
-  new_fn->formals->insertAtTail(new DefExpr(lvalue));
+  new_fn->formals->insertAtTail(new DefExpr(lvalue, NULL, exprType));
   Vec<BaseAST*> asts;
   collect_asts_postorder(&asts, new_fn->body);
   forv_Vec(BaseAST, ast, asts) {
@@ -748,6 +753,7 @@ static void fold_call_expr(CallExpr* call) {
           FOLD_CALL("||", P_prim_lor);
           FOLD_CALL("<<", P_prim_lsh);
           FOLD_CALL(">>", P_prim_rsh);
+          FOLD_CALL("**", P_prim_pow);
           if (call->isNamed("=")) {
             call->replace(new SymExpr(v2));
             return;

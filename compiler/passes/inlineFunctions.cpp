@@ -5,6 +5,8 @@
 
 
 static void mapFormalsToActuals(CallExpr* call, ASTMap* map) {
+  currentFilename = call->filename;
+  currentLineno = call->lineno;
   FnSymbol* fn = call->findFnSymbol();
   Expr* actual = call->argList->first();
   for_alist(DefExpr, formalDef, fn->formals) {
@@ -39,6 +41,8 @@ static void inline_call(CallExpr* call, Vec<Stmt*>* stmts) {
   ASTMap map;
   mapFormalsToActuals(call, &map);
   AList<Stmt>* fn_body = fn->body->body->copy();
+  if (fn->lineno == -1)
+    reset_file_info(fn_body, call->lineno, call->filename);
   ReturnStmt* return_stmt = dynamic_cast<ReturnStmt*>(fn_body->last());
   if (!return_stmt)
     INT_FATAL(call, "Cannot inline function, function is not normalized");

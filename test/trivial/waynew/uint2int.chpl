@@ -6,7 +6,7 @@ i = ui:int;
 writeln ("ui=", ui);
 writeln ("i=", i);
 
-ui = -29;
+ui = (-29):uint;
 i = ui:int;
 writeln ("ui=", ui);
 writeln ("i=", i);
