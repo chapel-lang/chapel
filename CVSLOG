@@ -72268,3 +72268,44 @@ Log message:
 Modified files:
 	chapel/test/trivial/deitz/: test_int8_error.good 
 
+---------------------------------------------------------------------------
+
+08/18/06 16:05:46 -- deitz
+
+Log message:
+	Added support for querying the width of a primitive type in a formal
+	argument as in
+	
+	  def foo(i: int(?k)) ...
+	
+	which creates a foo that can take an int of any of the widths.  This
+	is done by replicating the function for each supported primitive width
+	thereby allowing coercions to fall out.
+	
+	Used this new support to greatly simplify the modules that define
+	operators and functions on the primitive types.  This removes alot of
+	replicated code.
+	
+	Changed the assignment to complex and float so that narrowing is not
+	allowed.  Following Java, you cannot write
+	
+	  var f: float(32) = 2.0;
+	
+	This requires a suffix or an explicit cast.  Apparently there is no
+	parallel to the parameter expression exception for floats.
+	
+	Updated tests to obey this coercion rule.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: normalize.cpp semanticChecks.cpp 
+	chapel/modules/standard/: _chpl_base.chpl _chpl_complex.chpl 
+	chapel/test/trivial/waynew/: float32-64.chpl 
+	chapel/test/types/coerce/bradc/: printcomplex.chpl 
+	                                 printzeroes.chpl tostring.chpl 
+	chapel/test/types/complex/waynew/: complex-simple.chpl 
+Added files:
+	chapel/test/functions/deitz/: test_query_int_arg.chpl 
+	                              test_query_int_arg.good 
+
