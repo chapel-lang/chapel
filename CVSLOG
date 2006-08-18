@@ -72141,3 +72141,18 @@ Added files:
 	                            test_hex_literal.chpl 
 	                            test_hex_literal.good 
 
+---------------------------------------------------------------------------
+
+08/18/06 10:29:53 -- deitz
+
+Log message:
+	Added support for float literals with an exponent part.  Also changed
+	support to allow float literals that start with the point as in .02
+	but note that we still cannot allow float literals that have no digits
+	following the point.
+
+Modified files:
+	chapel/compiler/parser/: chapel.lex chapel.y 
+Added files:
+	chapel/test/trivial/deitz/: test_float.chpl test_float.good 
+
