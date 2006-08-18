@@ -1232,7 +1232,7 @@ literal:
 | UINTLITERAL
     { $$ = new_UIntLiteral(yytext); }
 | FLOATLITERAL
-    { $$ = new_FloatLiteral(yytext, atof(yytext)); }
+    { $$ = new_FloatLiteral(yytext, strtold(yytext, NULL)); }
 | IMAGLITERAL
     {
       yytext[strlen(yytext)-1] = '\0';

@@ -38,7 +38,8 @@ ident           {letter}({letter}|{digit}|\?)*
 binaryLiteral   0b{bit}+
 hexLiteral      0x{hexDigit}+
 intLiteral      {digit}+|{binaryLiteral}|{hexLiteral}
-floatLiteral    {digit}+"."{digit}+
+exponent        [Ee][\+\-]?{digit}+
+floatLiteral    {digit}*"."{digit}+{exponent}?
 
 
 %%
