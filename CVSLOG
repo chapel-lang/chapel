@@ -72258,3 +72258,13 @@ Log message:
 Modified files:
 	chapel/test/: paratest.client.pl paratest.server.pl 
 
+---------------------------------------------------------------------------
+
+08/18/06 15:14:17 -- deitz
+
+Log message:
+	Corrected .good.
+
+Modified files:
+	chapel/test/trivial/deitz/: test_int8_error.good 
+
