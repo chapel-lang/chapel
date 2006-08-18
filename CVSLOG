@@ -72235,3 +72235,14 @@ Added files:
 	chapel/test/trivial/deitz/: test_int8_error.chpl 
 	                            test_int8_error.good 
 
+---------------------------------------------------------------------------
+
+08/18/06 11:30:05 -- deitz
+
+Log message:
+	Updated .goods
+
+Modified files:
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+
