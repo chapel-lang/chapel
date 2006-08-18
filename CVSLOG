@@ -72246,3 +72246,15 @@ Modified files:
 	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
 	                                         inlfunc2_report.good 
 
+---------------------------------------------------------------------------
+
+08/18/06 14:50:22 -- waynew
+
+Log message:
+	One minor change and groundwork for file granularity distribution of work.
+	 - Creating a file named PARAHALT will prevent future distribution of work.
+	   One way to stop parallel testing in the middle.
+
+Modified files:
+	chapel/test/: paratest.client.pl paratest.server.pl 
+
