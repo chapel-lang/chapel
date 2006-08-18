@@ -13,11 +13,11 @@ var u32: uint(32) = 8u;
 var u64: uint(64) = 9u;
 var udf: uint     = 10u;
 
-var f32: float(32) = 11.12;
+var f32: float(32) = 11.12:float(32);
 var f64: float(64) = 13.14;
 var fdf: float     = 15.16;
 
-var c32: complex(32) = 17.18 + 19.20i;
+var c32: complex(32) = (17.18 + 19.20i):complex(32);
 var c64: complex(64) = 21.22 + 23.24i;
 var cdf: complex = 25.26 + 27.28i;
 

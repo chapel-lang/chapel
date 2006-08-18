@@ -17,10 +17,10 @@ writeln("s is: ", s);
 s = c4;
 writeln("s is: ", s);
 
-var c5: complex(32) = 1.2 + 3.4i;
-var c6: complex(32) = 5.6 - 7.8i;
-var c7: complex(32) = -9.0 + 1.2i;
-var c8: complex(32) = -3.4 - 5.6i;
+var c5: complex(32) = (1.2 + 3.4i):complex(32);
+var c6: complex(32) = (5.6 - 7.8i):complex(32);
+var c7: complex(32) = (-9.0 + 1.2i):complex(32);
+var c8: complex(32) = (-3.4 - 5.6i):complex(32);
 
 s = c5;
 writeln("s is: ", s);

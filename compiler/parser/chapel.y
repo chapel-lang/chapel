@@ -1044,6 +1044,16 @@ parenop_expr:
     {
       $$ = new CallExpr(PRIMITIVE_ERROR, new_StringLiteral($3));
     }
+| non_tuple_lvalue TLP TQUESTION identifier TRP
+    {
+      CallExpr* call = new CallExpr($1, new DefExpr(new VarSymbol($4)));
+      if (!(call->isNamed("int") ||
+            call->isNamed("uint") ||
+            call->isNamed("float") ||
+            call->isNamed("complex")))
+        USR_FATAL(call, "nested queries not supported on non-primitive types");
+      $$ = call;
+    }
 ;
 
 

@@ -5,11 +5,11 @@ var a32: complex(32);
 writeln( "a32 = ", a32);
 a32 = _max(a32.type);
 writeln( "max(a32) = ", a32);
-var f32: float(32) = 5.6;
+var f32: float(32) = 5.6:float(32);
 
-var b32:complex(32) = 1.2 + 3.4i;
+var b32:complex(32) = (1.2 + 3.4i):complex(32);
 writeln( "b32 = ", b32);
-a32 = 8.9i + f32;
+a32 = (8.9i + f32):complex(32);
 writeln( "a32 = ", a32);
 
 writeln( "a32 + b32 = ", a32 + b32);

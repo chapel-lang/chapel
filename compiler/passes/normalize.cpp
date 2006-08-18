@@ -34,6 +34,7 @@ static int tag_generic(FnSymbol* fn);
 static void tag_hasVarArgs(FnSymbol* fn);
 static void change_types_to_values(BaseAST* base);
 static void fixup_array_formals(FnSymbol* fn);
+static void fixup_parameterized_primitive_formals(FnSymbol* fn);
 
 
 void normalize(void) {
@@ -53,6 +54,7 @@ void normalize(BaseAST* base) {
       currentLineno = fn->lineno;
       currentFilename = fn->filename;
       fixup_array_formals(fn);
+      fixup_parameterized_primitive_formals(fn);
       if (fn->fnClass == FN_ITERATOR)
         reconstruct_iterator(fn);
       if (fn->retRef && !fn->_getter)
@@ -1226,6 +1228,51 @@ static void fixup_array_formals(FnSymbol* fn) {
             fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, parent->sym));
             fn->insertAtHead(new DefExpr(tmp));
           }
+        }
+      }
+    }
+  }
+}
+
+
+static void
+clone_for_parameterized_primitive_formals(FnSymbol* fn,
+                                          DefExpr* def,
+                                          int width) {
+  compute_sym_uses(fn);
+  ASTMap map;
+  FnSymbol* newfn = fn->copy(&map);
+  DefExpr* newdef = dynamic_cast<DefExpr*>(map.get(def));
+  newdef->replace(new SymExpr(new_IntSymbol(width)));
+  forv_Vec(SymExpr, sym, def->sym->uses) {
+    SymExpr* newsym = dynamic_cast<SymExpr*>(map.get(sym));
+    newsym->var = new_IntSymbol(width);
+  }
+  fn->defPoint->parentStmt->insertAfter(new DefExpr(newfn));
+  fixup_parameterized_primitive_formals(newfn);
+}
+
+static void
+fixup_parameterized_primitive_formals(FnSymbol* fn) {
+  Vec<BaseAST*> asts;
+  collect_top_asts(&asts, fn);
+  forv_Vec(BaseAST, ast, asts) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+      if (call->argList->length() != 1)
+        continue;
+      if (DefExpr* def = dynamic_cast<DefExpr*>(call->get(1))) {
+        if (call->isNamed("int") || call->isNamed("uint")) {
+          for( int i=INT_SIZE_1; i<INT_SIZE_NUM; i++)
+            if (dtInt[i])
+              clone_for_parameterized_primitive_formals(fn, def,
+                                                        get_width(dtInt[i]));
+          fn->defPoint->parentStmt->remove();
+        } else if (call->isNamed("float") || call->isNamed("complex")) {
+          for( int i=FLOAT_SIZE_16; i<FLOAT_SIZE_NUM; i++)
+            if (dtFloat[i])
+              clone_for_parameterized_primitive_formals(fn, def,
+                                                        get_width(dtFloat[i]));
+          fn->defPoint->parentStmt->remove();
         }
       }
     }
