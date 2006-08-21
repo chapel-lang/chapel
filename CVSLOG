@@ -72998,3 +72998,14 @@ Log message:
 Removed files:
 	chapel/test/arrays/deitz/part2/: test_array_of_array2.chpl 
 
+---------------------------------------------------------------------------
+
+08/21/06 13:18:04 -- deitz
+
+Log message:
+	Remove file accidentally checked in.
+
+Removed files:
+	chapel/test/types/type_variables/deitz/part7/: 
+	                                               test_generic_error1.chpl 
+
