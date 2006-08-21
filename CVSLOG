@@ -73009,3 +73009,30 @@ Removed files:
 	chapel/test/types/type_variables/deitz/part7/: 
 	                                               test_generic_error1.chpl 
 
+---------------------------------------------------------------------------
+
+08/21/06 13:20:47 -- deitz
+
+Log message:
+	Added stylized for_actuals loop to go over the expressions in a call's
+	argument list; use for_actuals(actual, call) { ... }.  This is similar
+	to for_formals(formal, fn), already supported.
+	
+	Added stylized zipper loop to iterate over the formals and actuals at
+	the same time; use for_formals_actuals(formal, actual, call).  Note
+	that the call must already be resolved.  If the number of formals does
+	not match the number of actuals, an error is encountered.
+	
+	Changed code to use for_actuals in places.
+	
+	Refactored primitive operator codegen into a helper routine.
+	
+	Moved exprsToIndices to build.cpp.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp build.cpp expr.cpp 
+	chapel/compiler/include/: alist.h build.h expr.h 
+	chapel/compiler/passes/: cleanup.cpp copy_propagation.cpp 
+	                         functionResolution.cpp normalize.cpp 
+	                         parallel.cpp semanticChecks.cpp 
+
