@@ -72988,3 +72988,13 @@ Log message:
 Modified files:
 	chapel/modules/standard/: _chpl_complex.chpl 
 
+---------------------------------------------------------------------------
+
+08/21/06 12:23:51 -- deitz
+
+Log message:
+	Remove file accidentally checked in.
+
+Removed files:
+	chapel/test/arrays/deitz/part2/: test_array_of_array2.chpl 
+
