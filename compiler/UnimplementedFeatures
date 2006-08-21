@@ -2,9 +2,9 @@ Unimplemented feature list
 
 HIGH PRIORITY ITEMS (For implementation before Dec 1)
 
-     int/uint semantics "var x: uint = 12" "var y: int = 12u"
-     byte width semantics  "var x : int(8) = 2" where 2 defaults to int(64)
-     floating point literals
+DONE int/uint semantics "var x: uint = 12" "var y: int = 12u"
+DONE byte width semantics  "var x : int(8) = 2" where 2 defaults to int(64)
+DONE floating point literals
 DONE variable declarations with shared types
      constructors
 DONE nested type aliases
