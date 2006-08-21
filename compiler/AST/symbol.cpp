@@ -795,11 +795,11 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
   AList<DefExpr>* indices = new AList<DefExpr>();
   AList<Expr>* iterators = new AList<Expr>();
   AList<Expr>* wrapper_actuals = new AList<Expr>();
-  for_alist(DefExpr, formal, formals) {
-    Symbol* new_formal = formal->sym->copy();
-    if (_this == formal->sym)
+  for_formals(formal, this) {
+    Symbol* new_formal = formal->copy();
+    if (_this == formal)
       wrapper->_this = new_formal;
-    if (Symbol* sub = promotion_subs->get(formal->sym)) {
+    if (Symbol* sub = promotion_subs->get(formal)) {
       TypeSymbol* ts = dynamic_cast<TypeSymbol*>(sub);
       if (!ts)
         INT_FATAL(this, "error building promotion wrapper");
@@ -881,8 +881,7 @@ instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType) {
 
 bool
 FnSymbol::isPartialInstantiation(ASTMap* generic_substitutions) {
-  for_alist(DefExpr, formalDef, this->formals) {
-    ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
+  for_formals(formal, this) {
     if (formal->isGeneric) {
       bool found = false;
       for (int i = 0; i < generic_substitutions->n; i++) {
@@ -1169,11 +1168,11 @@ void FnSymbol::codegenHeader(FILE* outfile) {
     fprintf(outfile, "void");
   } else {
     bool first = true;
-    for_alist(DefExpr, formal, formals) {
+    for_formals(formal, this) {
       if (!first) {
         fprintf(outfile, ", ");
       }
-      formal->sym->codegenDef(outfile);
+      formal->codegenDef(outfile);
       first = false;
     }
   }

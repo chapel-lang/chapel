@@ -356,10 +356,8 @@ static void insert_formal_temps(FnSymbol* fn) {
   Vec<DefExpr*> tempDefs;
   ASTMap subs;
 
-  for_alist_backward(DefExpr, formalDef, fn->formals) {
-    ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
-    if (formal->intent == INTENT_REF ||
-        formal->intent == INTENT_PARAM)
+  for_formals_backward(formal, fn) {
+    if (formal->intent == INTENT_REF || formal->intent == INTENT_PARAM)
       continue;
     VarSymbol* temp = new VarSymbol(stringcat("_", formal->name));
     DefExpr* tempDef = new DefExpr(temp, new SymExpr(formal));
@@ -1049,8 +1047,7 @@ compute_max_actuals() {
 
 static void
 expand_var_args(FnSymbol* fn) {
-  for_alist(DefExpr, arg_def, fn->formals) {
-    ArgSymbol* arg = dynamic_cast<ArgSymbol*>(arg_def->sym);
+  for_formals(arg, fn) {
     if (DefExpr* def = dynamic_cast<DefExpr*>(arg->variableExpr)) {
       // recursively handle variable argument list where number of
       // variable arguments is one or more as in ...?k
@@ -1078,18 +1075,18 @@ expand_var_args(FnSymbol* fn) {
           AList<Expr>* actual_types = new AList<Expr>();
           AList<Expr>* actuals = new AList<Expr>();
           for (int i = 0; i < n; i++) {
-            DefExpr* new_arg_def = arg_def->copy();
+            DefExpr* new_arg_def = arg->defPoint->copy();
             ArgSymbol* new_arg = dynamic_cast<ArgSymbol*>(new_arg_def->sym);
             new_arg->variableExpr = NULL;
             actual_types->insertAtTail(new SymExpr(new_arg));
             actuals->insertAtTail(new SymExpr(new_arg));
             new_arg->name = stringcat("_e", intstring(i), "_", arg->name);
             new_arg->cname = stringcat("_e", intstring(i), "_", arg->cname);
-            arg_def->insertBefore(new_arg_def);
+            arg->defPoint->insertBefore(new_arg_def);
           }
           VarSymbol* var = new VarSymbol(arg->name);
           fn->insertAtHead(new DefExpr(var, new CallExpr("_tuple", new_IntLiteral(n), actuals)));
-          arg_def->remove();
+          arg->defPoint->remove();
           ASTMap update;
           update.put(arg, var);
           update_symbols(fn, &update);

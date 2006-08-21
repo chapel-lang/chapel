@@ -85,6 +85,13 @@ class AList : public BaseAST {
        formal = _alist_next,                                            \
          _alist_next = (formal) ? dynamic_cast<ArgSymbol*>(dynamic_cast<DefExpr*>((formal)->defPoint->next)->sym) : NULL)
 
+#define for_formals_backward(formal, fn)                                \
+  for (ArgSymbol *formal = ((fn)->formals) ? (((fn)->formals)->tail ? dynamic_cast<ArgSymbol*>(dynamic_cast<DefExpr*>(((fn)->formals)->tail->prev)->sym) : NULL) : NULL, \
+         *_alist_prev = (formal) ? dynamic_cast<ArgSymbol*>(dynamic_cast<DefExpr*>((formal)->defPoint->prev)->sym) : NULL; \
+       (formal);                                                        \
+       formal = _alist_prev,                                            \
+         _alist_prev = (formal) ? dynamic_cast<ArgSymbol*>(dynamic_cast<DefExpr*>((formal)->defPoint->prev)->sym) : NULL)
+
 #define for_formals_actuals(formal, actual, call)                       \
   FnSymbol* _alist_fn = (call)->isResolved();                             \
   if (_alist_fn->formals->length() != (call)->argList->length())        \

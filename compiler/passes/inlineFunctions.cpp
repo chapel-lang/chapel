@@ -9,8 +9,7 @@ static void mapFormalsToActuals(CallExpr* call, ASTMap* map) {
   currentLineno = call->lineno;
   FnSymbol* fn = call->findFnSymbol();
   Expr* actual = call->argList->first();
-  for_alist(DefExpr, formalDef, fn->formals) {
-    ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
+  for_formals(formal, fn) {
     if (formal->intent == INTENT_REF || formal->isTypeVariable) {
       if (SymExpr* symExpr = dynamic_cast<SymExpr*>(actual)) {
         map->put(formal, symExpr);

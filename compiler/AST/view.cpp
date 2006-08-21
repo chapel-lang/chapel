@@ -258,13 +258,13 @@ html_print_fnsymbol( FILE* html_file, int pass, FnSymbol* fn) {
   html_print_symbol( html_file, pass, fn, true);
   fprintf(html_file, " ( ");
   bool first = true;
-  for_alist(DefExpr, arg, fn->formals) {
+  for_formals(formal, fn) {
     if (!first) {
       fprintf(html_file, " , ");
     } else {
       first = false;
     }
-    html_print_symbol( html_file, pass, arg->sym, true);
+    html_print_symbol( html_file, pass, formal, true);
   }
   fprintf(html_file, " ) ");
   if (fn->retRef)

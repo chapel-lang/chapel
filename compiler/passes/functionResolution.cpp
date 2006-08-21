@@ -52,10 +52,10 @@ resolveFormals(FnSymbol* fn) {
       return;
     done.set_add(fn);
 
-    for_alist(DefExpr, formalDef, fn->formals) {
-      if (formalDef->exprType) {
-        formalDef->sym->type = resolve_type_expr(formalDef->exprType);
-        formalDef->exprType->remove();
+    for_formals(formal, fn) {
+      if (formal->defPoint->exprType) {
+        formal->type = resolve_type_expr(formal->defPoint->exprType);
+        formal->defPoint->exprType->remove();
       }
     }
     if (fn->retExpr) {
@@ -282,8 +282,7 @@ computeActualFormalMap(FnSymbol* fn,
     if (actual_names->v[i]) {
       bool match = false;
       int j = -1;
-      for_alist(DefExpr, formalDef, fn->formals) {
-        ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
+      for_formals(formal, fn) {
         j++;
         if (!strcmp(actual_names->v[i], formal->name)) {
           match = true;
@@ -301,8 +300,7 @@ computeActualFormalMap(FnSymbol* fn,
     if (!actual_names->v[i]) {
       bool match = false;
       int j = -1;
-      for_alist(DefExpr, formalDef, fn->formals) {
-        ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
+      for_formals(formal, fn) {
         if (formal->variableExpr)
           return (fn->isGeneric) ? true : false;
         j++;
@@ -388,8 +386,7 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
     resolveFormals(fn);
 
   int j = -1;
-  for_alist(DefExpr, formalDef, fn->formals) {
-    ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
+  for_formals(formal, fn) {
     j++;
     if (formal_actuals.v[j] &&
         !canDispatch(formal_actuals.v[j], formal_params.v[j], formal->type, fn))
@@ -414,8 +411,7 @@ build_default_wrapper(FnSymbol* fn,
   int num_formals = fn->formals ? fn->formals->length() : 0;
   if (num_formals > num_actuals) {
     Vec<Symbol*> defaults;
-    for_alist(DefExpr, formalDef, fn->formals) {
-      ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
+    for_formals(formal, fn) {
       bool used = false;
       forv_Vec(ArgSymbol, arg, *actual_formals) {
         if (arg == formal)
@@ -428,8 +424,7 @@ build_default_wrapper(FnSymbol* fn,
 
     // update actual_formals for use in build_order_wrapper
     DefExpr* newFormalDef = wrapper->formals->first();
-    for_alist(DefExpr, formalDef, fn->formals) {
-      ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
+    for_formals(formal, fn) {
       for (int i = 0; i < actual_formals->n; i++) {
         if (actual_formals->v[i] == formal) {
           ArgSymbol* newFormal = dynamic_cast<ArgSymbol*>(newFormalDef->sym);
@@ -449,9 +444,8 @@ build_order_wrapper(FnSymbol* fn,
   bool order_wrapper_required = false;
   Map<Symbol*,Symbol*> formals_to_formals;
   int i = 0;
-  for_alist(DefExpr, formalDef, fn->formals) {
+  for_formals(formal, fn) {
     i++;
-    ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
 
     int j = 0;
     forv_Vec(ArgSymbol, af, *actual_formals) {
@@ -476,11 +470,10 @@ build_coercion_wrapper(FnSymbol* fn,
                        Vec<Symbol*>* actual_params) {
   ASTMap subs;
   int j = -1;
-  for_alist(DefExpr, formalDef, fn->formals) {
+  for_formals(formal, fn) {
     j++;
     Type* actual_type = actual_types->v[j];
     Symbol* actual_param = actual_params->v[j];
-    ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
     if (canCoerce(actual_type, actual_param, formal->type) || isDispatchParent(actual_type, formal->type))
       subs.put(formal, actual_type->symbol);
   }
@@ -500,11 +493,10 @@ build_promotion_wrapper(FnSymbol* fn,
   bool promotion_wrapper_required = false;
   Map<Symbol*,Symbol*> promoted_subs;
   int j = -1;
-  for_alist(DefExpr, formalDef, fn->formals) {
+  for_formals(formal, fn) {
     j++;
     Type* actual_type = actual_types->v[j];
     Symbol* actual_param = actual_params->v[j];
-    ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
     bool require_scalar_promotion = false;
     if (canDispatch(actual_type, actual_param, formal->type, fn, &require_scalar_promotion)){
       if (require_scalar_promotion) {

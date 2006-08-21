@@ -12,8 +12,8 @@
 
 static bool
 isGloballyVisible(FnSymbol* fn) {
-  for_alist(DefExpr, def, fn->formals) {
-    if (ClassType* ct = dynamic_cast<ClassType*>(def->sym->type)) {
+  for_formals(formal, fn) {
+    if (ClassType* ct = dynamic_cast<ClassType*>(formal->type)) {
       if (ct->isNominalType()) {
         return true;
       }
