@@ -72978,3 +72978,13 @@ Removed files:
 	                           test_scalar_promote9.chpl 
 	                           test_scalar_promote9.good 
 
+---------------------------------------------------------------------------
+
+08/21/06 12:20:43 -- deitz
+
+Log message:
+	Minor refactoring of complex module.
+
+Modified files:
+	chapel/modules/standard/: _chpl_complex.chpl 
+
