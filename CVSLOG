@@ -73036,3 +73036,19 @@ Modified files:
 	                         functionResolution.cpp normalize.cpp 
 	                         parallel.cpp semanticChecks.cpp 
 
+---------------------------------------------------------------------------
+
+08/21/06 13:54:28 -- deitz
+
+Log message:
+	Added for_formals_backward(formal, fn) { ... }.
+	
+	Changed for_alist in code to use for_formals and for_formals_backward
+	where possible.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp symscope.cpp view.cpp 
+	chapel/compiler/include/: alist.h 
+	chapel/compiler/passes/: functionResolution.cpp 
+	                         inlineFunctions.cpp normalize.cpp 
+
