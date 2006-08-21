@@ -484,6 +484,7 @@ Type* CallExpr::typeInfo(void) {
 }
 
 
+// codegen unary operator or infix binary operator
 static void
 help_codegen_op(FILE* outfile, char* name, Expr* e1, Expr* e2 = NULL) {
   fprintf(outfile, "(");
@@ -494,6 +495,34 @@ help_codegen_op(FILE* outfile, char* name, Expr* e1, Expr* e2 = NULL) {
   } else {
     fprintf(outfile, name);
     e1->codegen(outfile);
+  }
+  fprintf(outfile, ")");
+}
+
+
+// codegen function call
+static void
+help_codegen_fn(FILE* outfile, char* name, BaseAST* ast1 = NULL,
+                BaseAST* ast2 = NULL, BaseAST* ast3 = NULL,
+                BaseAST* ast4 = NULL, BaseAST* ast5 = NULL) {
+  fprintf(outfile, "%s(", name);
+  if (ast1)
+    ast1->codegen(outfile);
+  if (ast2) {
+    fprintf(outfile, ", ");
+    ast2->codegen(outfile);
+  }
+  if (ast3) {
+    fprintf(outfile, ", ");
+    ast3->codegen(outfile);
+  }
+  if (ast4) {
+    fprintf(outfile, ", ");
+    ast4->codegen(outfile);
+  }
+  if (ast5) {
+    fprintf(outfile, ", ");
+    ast5->codegen(outfile);
   }
   fprintf(outfile, ")");
 }
@@ -525,29 +554,13 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, ")");
       break;
     case PRIMITIVE_ARRAY_GET:
-      fprintf(outfile, "array_get(");
-      get(1)->codegen(outfile);
-      fprintf(outfile, ", ");
-      get(2)->codegen(outfile);
-      fprintf(outfile, ")");
+      help_codegen_fn(outfile, "array_get", get(1), get(2));
       break;
     case PRIMITIVE_ARRAY_SET:
-      fprintf(outfile, "array_set(");
-      get(1)->codegen(outfile);
-      fprintf(outfile, ", ");
-      get(2)->codegen(outfile);
-      fprintf(outfile, ", ");
-      get(3)->codegen(outfile);
-      fprintf(outfile, ")");
+      help_codegen_fn(outfile, "array_set", get(1), get(2), get(3));
       break;
     case PRIMITIVE_ARRAY_INIT:
-      fprintf(outfile, "array_init(");
-      argList->last()->typeInfo()->symbol->codegen(outfile);
-      fprintf(outfile, ", ");
-      get(1)->codegen(outfile);
-      fprintf(outfile, ", ");
-      get(2)->codegen(outfile);
-      fprintf(outfile, ")");
+      help_codegen_fn(outfile, "array_init", get(2)->typeInfo(), get(1), get(2));
       break;
     case PRIMITIVE_MOVE: {
       if (SymExpr* sym = dynamic_cast<SymExpr*>(get(1))) {
@@ -879,154 +892,64 @@ void CallExpr::codegen(FILE* outfile) {
       }
       break;
     }
-    case PRIMITIVE_REFC_TOUCH: {   // touch reference-counted var
-      // arg: heap var, refc, refc_mutex
-      if (SymExpr *v = dynamic_cast<SymExpr*>(get(1))) {
-        if (SymExpr *rc = dynamic_cast<SymExpr*>(get(2))) {
-          if (SymExpr *m = dynamic_cast<SymExpr*>(get(3))) {
-            fprintf( outfile, "_CHPL_REFC_TOUCH( (");
-            v->codegen( outfile);
-            fprintf( outfile, "), (");
-            rc->codegen( outfile);
-            fprintf( outfile, "), (");
-            m->codegen( outfile);
-            fprintf( outfile, "))");
-          } else {
-            INT_FATAL( "refc_mutex not SymExpr");
-          }
-        } else {
-          INT_FATAL( "refc not SymExpr");
-        }
-      } else {
-        INT_FATAL( "var not SymExpr");
-      }
+    case PRIMITIVE_REFC_TOUCH: // touch reference-counted var
+      help_codegen_fn(outfile, "_CHPL_REFC_TOUCH", get(1), get(2), get(3));
       break;
-    }
-    case PRIMITIVE_REFC_RELEASE: { // possibly free reference-counted var
-      // arg: heap var, refc, refc_mutex
-      if (SymExpr *v = dynamic_cast<SymExpr*>(get(1))) {
-        if (SymExpr *rc = dynamic_cast<SymExpr*>(get(2))) {
-          if (SymExpr *m = dynamic_cast<SymExpr*>(get(3))) {
-            fprintf( outfile, "_CHPL_REFC_FREE( (");
-            v->codegen( outfile);
-            fprintf( outfile, "), (");
-            rc->codegen( outfile);
-            fprintf( outfile, "), (");
-            m->codegen( outfile);
-            fprintf( outfile, "))");
-          } else {
-            INT_FATAL( "refc_mutex not SymExpr");
-          }
-        } else {
-          INT_FATAL( "refc not SymExpr");
-        }
-      } else {
-        INT_FATAL( "not all args are SymExpr");
-      }
+    case PRIMITIVE_REFC_RELEASE: // possibly free reference-counted var
+      help_codegen_fn(outfile, "_CHPL_REFC_FREE", get(1), get(2), get(3));
       break;
-    }
-    case PRIMITIVE_THREAD_ID: {
-      fprintf( outfile, "_chpl_thread_id()");
+    case PRIMITIVE_THREAD_ID:
+      fprintf(outfile, "_chpl_thread_id()");
       break;
-    }
-    case PRIMITIVE_SYNCVAR_LOCK: {
-      // arg: sync variable
-      if (SymExpr *m = dynamic_cast<SymExpr*>(get(1))) {
-        fprintf( outfile, "_chpl_mutex_lock((");
-        m->codegen( outfile);
-        fprintf( outfile, ")->lock)");
-      } else {
-        INT_FATAL( "arg not SymExpr");
-      }
+    case PRIMITIVE_SYNCVAR_LOCK:
+      fprintf( outfile, "_chpl_mutex_lock((");
+      get(1)->codegen( outfile);
+      fprintf( outfile, ")->lock)");
       break;
-    }
-    case PRIMITIVE_SYNCVAR_UNLOCK: {
-      // arg: sync variable
-      if (SymExpr *m = dynamic_cast<SymExpr*>(get(1))) {
-        fprintf( outfile, "_chpl_mutex_unlock((");
-        m->codegen( outfile);
-        fprintf( outfile, ")->lock)");
-      } else {
-        INT_FATAL( "arg not SymExpr");
-      }
+    case PRIMITIVE_SYNCVAR_UNLOCK:
+      fprintf( outfile, "_chpl_mutex_unlock((");
+      get(1)->codegen( outfile);
+      fprintf( outfile, ")->lock)");
       break;
-    }
-    case PRIMITIVE_SYNCVAR_SIGNAL_FULL: {
-      // arg: sync variable
-      if (SymExpr *m = dynamic_cast<SymExpr*>(get(1))) {
-        fprintf( outfile, "_chpl_condvar_signal((");
-        m->codegen( outfile);
-        fprintf( outfile, ")->cv_full)");
-      } else {
-        INT_FATAL( "arg not SymExpr");
-      }
+    case PRIMITIVE_SYNCVAR_SIGNAL_FULL:
+      fprintf( outfile, "_chpl_condvar_signal((");
+      get(1)->codegen( outfile);
+      fprintf( outfile, ")->cv_full)");
       break;
-    }
-    case PRIMITIVE_SYNCVAR_WAIT_FULL: {
-      // arg: sync variable
-      if (SymExpr *m = dynamic_cast<SymExpr*>(get(1))) {
-        fprintf( outfile, "_chpl_condvar_wait((");
-        m->codegen( outfile);
-        fprintf( outfile, ")->cv_full, (");
-        m->codegen( outfile);
-        fprintf( outfile, ")->lock)");
-      } else {
-        INT_FATAL( "arg not SymExpr");
-      }
+    case PRIMITIVE_SYNCVAR_WAIT_FULL:
+      fprintf( outfile, "_chpl_condvar_wait((");
+      get(1)->codegen( outfile);
+      fprintf( outfile, ")->cv_full, (");
+      get(1)->codegen( outfile);
+      fprintf( outfile, ")->lock)");
       break;
-    }
-    case PRIMITIVE_SYNCVAR_SIGNAL_EMPTY: {
-      // arg: sync variable
-      if (SymExpr *m = dynamic_cast<SymExpr*>(get(1))) {
-        fprintf( outfile, "_chpl_condvar_signal((");
-        m->codegen( outfile);
-        fprintf( outfile, ")->cv_empty)");
-      } else {
-        INT_FATAL( "arg not SymExpr");
-      }
+    case PRIMITIVE_SYNCVAR_SIGNAL_EMPTY:
+      fprintf( outfile, "_chpl_condvar_signal((");
+      get(1)->codegen( outfile);
+      fprintf( outfile, ")->cv_empty)");
       break;
-    }
-    case PRIMITIVE_SYNCVAR_WAIT_EMPTY: {
-      // arg: sync variable
-      if (SymExpr *m = dynamic_cast<SymExpr*>(get(1))) {
-        fprintf( outfile, "_chpl_condvar_wait((");
-        m->codegen( outfile);
-        fprintf( outfile, ")->cv_empty, (");
-        m->codegen( outfile);
-        fprintf( outfile, ")->lock)");
-      } else {
-        INT_FATAL( "arg not SymExpr");
-      }
+    case PRIMITIVE_SYNCVAR_WAIT_EMPTY:
+      fprintf( outfile, "_chpl_condvar_wait((");
+      get(1)->codegen( outfile);
+      fprintf( outfile, ")->cv_empty, (");
+      get(1)->codegen( outfile);
+      fprintf( outfile, ")->lock)");
       break;
-    }
-    case PRIMITIVE_MUTEX_NEW: {
+    case PRIMITIVE_MUTEX_NEW:
       fprintf( outfile, "_chpl_mutex_new()");
       break;
-    }
-    case PRIMITIVE_MUTEX_DESTROY: {
-      // arg: mutex
-      if (SymExpr *m = dynamic_cast<SymExpr*>(get(1))) {
-        fprintf( outfile, "_chpl_mutex_destroy( ");
-        m->codegen( outfile);
-        fprintf( outfile, ")");
-      } else {
-        INT_FATAL( "arg not SymExpr");
-      }
+    case PRIMITIVE_MUTEX_DESTROY:
+      fprintf( outfile, "_chpl_mutex_destroy( ");
+      get(1)->codegen( outfile);
+      fprintf( outfile, ")");
       break;
-    }
-    case PRIMITIVE_CONDVAR_NEW: {
+    case PRIMITIVE_CONDVAR_NEW:
       fprintf( outfile, "_chpl_condvar_new()");
       break;
-    }
     case PRIMITIVE_CONDVAR_DESTROY: {
-      // arg: mutex
-      if (SymExpr *m = dynamic_cast<SymExpr*>(get(1))) {
-        fprintf( outfile, "_chpl_condvar_destroy( ");
-        m->codegen( outfile);
-        fprintf( outfile, ")");
-      } else {
-        INT_FATAL( "arg not SymExpr");
-      }
+      fprintf( outfile, "_chpl_condvar_destroy( ");
+      get(1)->codegen( outfile);
+      fprintf( outfile, ")");
       break;
     }
     case PRIMITIVE_CHPL_ALLOC: {
