@@ -72319,3 +72319,17 @@ Log message:
 Modified files:
 	chapel/compiler/: UnimplementedFeatures 
 
+---------------------------------------------------------------------------
+
+08/21/06 10:34:35 -- deitz
+
+Log message:
+	Made some preparatory simplifications to codegen.
+	
+	Updated unimplemented features list.
+
+Modified files:
+	chapel/compiler/: UnimplementedFeatures 
+	chapel/compiler/AST/: stmt.cpp type.cpp 
+	chapel/compiler/include/: alist.h baseAST.h stmt.h type.h 
+
