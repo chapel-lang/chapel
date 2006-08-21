@@ -72309,3 +72309,13 @@ Added files:
 	chapel/test/functions/deitz/: test_query_int_arg.chpl 
 	                              test_query_int_arg.good 
 
+---------------------------------------------------------------------------
+
+08/21/06 09:18:00 -- deitz
+
+Log message:
+	Updated list of unimplemented features.
+
+Modified files:
+	chapel/compiler/: UnimplementedFeatures 
+
