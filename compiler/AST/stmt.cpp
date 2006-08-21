@@ -59,12 +59,6 @@ void Stmt::codegen(FILE* outfile) {
       }
     }
   }
-  codegenStmt(outfile);
-}
-
-
-void Stmt::codegenStmt(FILE* outfile) {
-  INT_FATAL(this, "codegenStmt not implemented for Stmt subclass");
 }
 
 
@@ -126,7 +120,8 @@ void ExprStmt::print(FILE* outfile) {
 }
 
 
-void ExprStmt::codegenStmt(FILE* outfile) {
+void ExprStmt::codegen(FILE* outfile) {
+  Stmt::codegen(outfile);
   if (DefExpr* def = dynamic_cast<DefExpr*>(expr))
     if (!dynamic_cast<LabelSymbol*>(def->sym))
       return;
@@ -134,12 +129,6 @@ void ExprStmt::codegenStmt(FILE* outfile) {
   fprintf(outfile, ";\n");
 }
 
-bool ExprStmt::noCodegen() {
-  if (expr)
-    return expr->noCodegen();
-  else
-    return false;
-}
 
 ReturnStmt::ReturnStmt(Expr* initExpr, bool init_yield) :
   Stmt(STMT_RETURN),
@@ -211,7 +200,8 @@ void ReturnStmt::print(FILE* outfile) {
 }
 
 
-void ReturnStmt::codegenStmt(FILE* outfile) {
+void ReturnStmt::codegen(FILE* outfile) {
+  Stmt::codegen(outfile);
   if (yield)
     INT_FATAL(this, "Yield should be removed before codegen");
   SymExpr* sym = dynamic_cast<SymExpr*>(expr);
@@ -418,7 +408,8 @@ codegenBegin( FILE* outfile, AList<Stmt> *body) {
 }
 
 
-void BlockStmt::codegenStmt(FILE* outfile) {
+void BlockStmt::codegen(FILE* outfile) {
+  Stmt::codegen(outfile);
   fprintf(outfile, "{\n");
   inBlockStmt++;
   if (blkScope) {
@@ -563,14 +554,15 @@ void CondStmt::print(FILE* outfile) {
   }
 }
 
-void CondStmt::codegenStmt(FILE* outfile) {
+void CondStmt::codegen(FILE* outfile) {
+  Stmt::codegen(outfile);
   fprintf(outfile, "if (");
   condExpr->codegen(outfile);
   fprintf(outfile, ") ");
-  thenStmt->codegenStmt(outfile);
+  thenStmt->codegen(outfile);
   if (elseStmt) {
     fprintf(outfile, " else ");
-    elseStmt->codegenStmt(outfile);
+    elseStmt->codegen(outfile);
   }
 }
 
@@ -632,8 +624,8 @@ void WhenStmt::print(FILE* outfile) {
 }
 
 
-void WhenStmt::codegenStmt(FILE* outfile) {
-  INT_FATAL(this, "WhenStmt::codegenStmt encountered");
+void WhenStmt::codegen(FILE* outfile) {
+  INT_FATAL(this, "WhenStmt::codegen encountered");
 }
 
 
@@ -692,7 +684,8 @@ void GotoStmt::print(FILE* outfile) {
 }
 
 
-void GotoStmt::codegenStmt(FILE* outfile) {
+void GotoStmt::codegen(FILE* outfile) {
+  Stmt::codegen(outfile);
   fprintf(outfile, "goto ");
   label->codegen(outfile);
   fprintf(outfile, ";\n");

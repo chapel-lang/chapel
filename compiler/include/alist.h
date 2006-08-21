@@ -404,11 +404,9 @@ void AList<elemType>::printDef(FILE* outfile, char* separator) {
 template <class elemType>
 void AList<elemType>::codegen(FILE* outfile, char* separator) {
   _for_all_elems(node) {
-    if (!node->noCodegen()) {
-      node->codegen(outfile);
-      if (node->next != tail) {
-        fprintf(outfile, "%s", separator);
-      }
+    node->codegen(outfile);
+    if (node->next != tail) {
+      fprintf(outfile, "%s", separator);
     }
   }
 }
@@ -418,11 +416,9 @@ void AList<elemType>::codegen(FILE* outfile, char* separator) {
 template <class elemType>
 void AList<elemType>::codegenDef(FILE* outfile, char* separator) {
   _for_all_elems(node) {
-    if (!node->noCodegen()) {
-      node->codegenDef(outfile);
-      if (node->next != tail) {
-        fprintf(outfile, "%s", separator);
-      }
+    node->codegenDef(outfile);
+    if (node->next != tail) {
+      fprintf(outfile, "%s", separator);
     }
   }
 }

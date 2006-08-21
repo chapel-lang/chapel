@@ -115,8 +115,6 @@ class UserType : public Type {
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
   void printDef(FILE* outfile);
-  void codegenDef(FILE* outfile);
-  void codegenDefaultFormat(FILE* outfile, bool isRead);
 };
 
 
@@ -143,7 +141,6 @@ class ClassType : public Type {
   bool isNominalType();
 
   virtual void codegenDef(FILE* outfile);
-  virtual void codegenStructName(FILE* outfile);
   virtual void codegenPrototype(FILE* outfile);
 
   virtual bool implementedUsingCVals(void);

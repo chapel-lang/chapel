@@ -69,7 +69,7 @@ void Type::codegen(FILE* outfile) {
 }
 
 void Type::codegenDef(FILE* outfile) {
-  INT_FATAL(this, "Don't know how to codegenDef() for all types yet");
+  INT_FATAL(this, "Unexpected call to Type::codegenDef");
 }
 
 
@@ -453,16 +453,6 @@ void UserType::printDef(FILE* outfile) {
 }
 
 
-void UserType::codegenDef(FILE* outfile) {
-  INT_FATAL(this, "UserType should be removed by codegen time");
-}
-
-
-void UserType::codegenDefaultFormat(FILE* outfile, bool isRead) {
-  INT_FATAL(this, "UserType should be removed by codegen time");
-}
-
-
 ClassType::ClassType(ClassTag initClassTag) :
   Type(TYPE_CLASS, NULL),
   classTag(initClassTag),
@@ -582,20 +572,9 @@ void ClassType::codegenDef(FILE* outfile) {
 }
 
 
-void ClassType::codegenStructName(FILE* outfile) {
-  fprintf(outfile, "_");
-  symbol->codegen(outfile);
-  fprintf(outfile,", *");
-  symbol->codegen(outfile);
-}
-
-
 void ClassType::codegenPrototype(FILE* outfile) {
-  fprintf(outfile, "typedef struct __");
-  symbol->codegen(outfile);
-  fprintf(outfile, " ");
-  codegenStructName(outfile);
-  fprintf(outfile, ";\n");
+  fprintf(outfile, "typedef struct __%s _%s, *%s;\n",
+          symbol->cname, symbol->cname, symbol->cname);
 }
 
 

@@ -22,8 +22,7 @@ class Stmt : public BaseAST {
   Stmt(astType_t astType = STMT);
   virtual void verify();
   COPY_DEF(Stmt);
-  void codegen(FILE* outfile);
-  virtual void codegenStmt(FILE* outfile);
+  virtual void codegen(FILE* outfile);
   virtual void callReplaceChild(BaseAST* new_ast);
   virtual ASTContext getContext(void);
 };
@@ -40,8 +39,7 @@ class ExprStmt : public Stmt {
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
   virtual void print(FILE* outfile);
-  virtual bool noCodegen();
-  virtual void codegenStmt(FILE* outfile);
+  virtual void codegen(FILE* outfile);
 };
 
 
@@ -56,7 +54,7 @@ class ReturnStmt : public Stmt {
   COPY_DEF(ReturnStmt);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void print(FILE* outfile);
-  void codegenStmt(FILE* outfile);
+  void codegen(FILE* outfile);
   bool returnsVoid();
 };
 
@@ -95,7 +93,7 @@ class BlockStmt : public Stmt {
   COPY_DEF(BlockStmt);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void print(FILE* outfile);
-  void codegenStmt(FILE* outfile);
+  void codegen(FILE* outfile);
 
   void insertAtHead(BaseAST* ast);
   void insertAtTail(BaseAST* ast);
@@ -116,7 +114,7 @@ class CondStmt : public Stmt {
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
   void print(FILE* outfile);
-  void codegenStmt(FILE* outfile);
+  void codegen(FILE* outfile);
 };
 
 
@@ -132,7 +130,7 @@ class WhenStmt : public Stmt {
   COPY_DEF(WhenStmt);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void print(FILE* outfile);
-  void codegenStmt(FILE* outfile);
+  void codegen(FILE* outfile);
 };
 
 
@@ -154,7 +152,7 @@ class GotoStmt : public Stmt {
   virtual void verify();
   COPY_DEF(GotoStmt);
   void print(FILE* outfile);
-  void codegenStmt(FILE* outfile);
+  void codegen(FILE* outfile);
 };
 
 

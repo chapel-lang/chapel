@@ -114,7 +114,6 @@ class BaseAST : public gc {
   virtual void printDef(FILE* outfile);
   void println(FILE* outfile);
 
-  virtual bool noCodegen() { return false; }
   virtual void codegen(FILE* outfile);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);

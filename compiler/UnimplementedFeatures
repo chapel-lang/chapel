@@ -40,7 +40,7 @@ MEDIUM PRIORITY ITEMS (Maybe implemented by Dec 1)
      underscore to destructure tuples
      variables accessed via modules (mod.x)
      using modules not in files passed to the compiler
-     unions
+DONE unions
      indefinite sequences
        usage in zippered context
        usage in sequence indexing
