@@ -38,4 +38,6 @@ void setVarSymbolAttributes(AList<Stmt>* stmts,
 DefExpr* build_class(char* name, Type* type, AList<Stmt>* decls);
 DefExpr*
 build_arg(intentTag tag, char* ident, Expr* type, Expr* init, Expr* variable);
+
+AList<DefExpr>* exprsToIndices(AList<Expr>* indices);
 #endif

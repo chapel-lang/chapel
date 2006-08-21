@@ -391,7 +391,7 @@ static void call_constructor_for_class(CallExpr* call) {
 
 static void
 decompose_multi_actuals(CallExpr* call, char* new_name, Expr* first_actual) {
-  for_alist(Expr, actual, call->argList) {
+  for_actuals(actual, call) {
     actual->remove();
     call->parentStmt->insertBefore
       (new CallExpr(new_name, first_actual->copy(), actual));

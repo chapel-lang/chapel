@@ -108,7 +108,7 @@ begin_mark_locals() {
           if (ExprStmt *estmt = dynamic_cast<ExprStmt*>( stmt)) {
             if (CallExpr *fcall = dynamic_cast<CallExpr*>( estmt->expr)) {
               // add the args that need to be heap allocated
-              for_alist( Expr, arg, fcall->argList) {
+              for_actuals(arg, fcall) {
                 if (SymExpr *s = dynamic_cast<SymExpr*>(arg)) {
                   arglist.add( s);
                 }
@@ -249,7 +249,7 @@ thread_args() {
 
                 // add the function args as fields in the class
                 AList<Stmt>* vlist = new AList<Stmt>();
-                for_alist( Expr, arg, fcall->argList) {
+                for_actuals(arg, fcall) {
                   SymExpr   *s = dynamic_cast<SymExpr*>(arg);
                   ArgSymbol *var = (ArgSymbol*)(s->var);
                   vlist->insertAtTail(new DefExpr(new VarSymbol(var->name,
@@ -274,7 +274,7 @@ thread_args() {
                                                tempc_alloc));
 
                 // set the references in the class instance
-                for_alist( Expr, arg, fcall->argList) {
+                for_actuals(arg, fcall) {
                   SymExpr   *s = dynamic_cast<SymExpr*>(arg);
                   ArgSymbol *var = (ArgSymbol*)(s->var);
                   CallExpr *setc=new CallExpr(PRIMITIVE_SET_MEMBER_REF_TO,

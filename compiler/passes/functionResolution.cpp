@@ -638,7 +638,7 @@ computeActuals(CallExpr* call,
                Vec<Type*>* atypes,
                Vec<Symbol*>* aparams,
                Vec<char*>* anames) {
-  for_alist(Expr, actual, call->argList) {
+  for_actuals(actual, call) {
     atypes->add(actual->typeInfo());
     SymExpr* symExpr;
     if (NamedExpr* named = dynamic_cast<NamedExpr*>(actual)) {
@@ -788,7 +788,7 @@ resolveCall(CallExpr* call) {
       CallExpr* parentCall = dynamic_cast<CallExpr*>(call->parentExpr);
       if (!parentCall)
         INT_FATAL(call, "Bad partial call");
-      for_alist_backward(Expr, actual, call->argList) {
+      for_actuals_backward(actual, call) {
         actual->remove();
         parentCall->insertAtHead(actual);
       }

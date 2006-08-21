@@ -133,6 +133,5 @@ Expr *new_StringLiteral(char *str);
 bool get_int(Expr *e, long *i); // false is failure
 bool get_string(Expr *e, char **s); // false is failure
 VarSymbol *get_constant(Expr *e);
-AList<DefExpr>* exprsToIndices(AList<Expr>* indices);
 
 #endif

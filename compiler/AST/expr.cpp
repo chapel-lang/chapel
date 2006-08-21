@@ -484,8 +484,22 @@ Type* CallExpr::typeInfo(void) {
 }
 
 
+static void
+help_codegen_op(FILE* outfile, char* name, Expr* e1, Expr* e2 = NULL) {
+  fprintf(outfile, "(");
+  if (e2) {
+    e1->codegen(outfile);
+    fprintf(outfile, name);
+    e2->codegen(outfile);
+  } else {
+    fprintf(outfile, name);
+    e1->codegen(outfile);
+  }
+  fprintf(outfile, ")");
+}
+
+
 void CallExpr::codegen(FILE* outfile) {
-  bool first_actual = true;
   if (primitive) {
     switch (primitive->tag) {
     case PRIMITIVE_UNKNOWN:
@@ -499,7 +513,9 @@ void CallExpr::codegen(FILE* outfile) {
         fprintf(outfile, ")");
         break;
       }
-      for_alist(Expr, actual, argList) {
+      bool first_actual;
+      first_actual = true;
+      for_actuals(actual, this) {
         if (first_actual)
           first_actual = false;
         else
@@ -579,156 +595,76 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     }
     case PRIMITIVE_UNARY_MINUS:
-      fprintf(outfile, "-");
-      get(1)->codegen(outfile);
+      help_codegen_op(outfile, "-", get(1));
       break;
     case PRIMITIVE_UNARY_PLUS:
-      fprintf(outfile, "+");
-      get(1)->codegen(outfile);
+      help_codegen_op(outfile, "+", get(1));
       break;
     case PRIMITIVE_UNARY_NOT:
-      fprintf(outfile, "~");
-      get(1)->codegen(outfile);
+      help_codegen_op(outfile, "~", get(1));
       break;
     case PRIMITIVE_UNARY_LNOT:
-      fprintf(outfile, "!");
-      get(1)->codegen(outfile);
+      help_codegen_op(outfile, "!", get(1));
       break;
     case PRIMITIVE_ADD:
-      fprintf(outfile, "(");
-      get(1)->codegen(outfile);
-      fprintf(outfile, "+");
-      get(2)->codegen(outfile);
-      fprintf(outfile, ")");
+      help_codegen_op(outfile, "+", get(1), get(2));
       break;
     case PRIMITIVE_SUBTRACT:
-      fprintf(outfile, "(");
-      get(1)->codegen(outfile);
-      fprintf(outfile, "-");
-      get(2)->codegen(outfile);
-      fprintf(outfile, ")");
+      help_codegen_op(outfile, "-", get(1), get(2));
       break;
     case PRIMITIVE_MULT:
-      fprintf(outfile, "(");
-      get(1)->codegen(outfile);
-      fprintf(outfile, "*");
-      get(2)->codegen(outfile);
-      fprintf(outfile, ")");
+      help_codegen_op(outfile, "*", get(1), get(2));
       break;
     case PRIMITIVE_DIV:
-      fprintf(outfile, "(");
-      get(1)->codegen(outfile);
-      fprintf(outfile, "/");
-      get(2)->codegen(outfile);
-      fprintf(outfile, ")");
+      help_codegen_op(outfile, "/", get(1), get(2));
       break;
     case PRIMITIVE_MOD:
-      fprintf(outfile, "(");
-      get(1)->codegen(outfile);
-      fprintf(outfile, "%%");
-      get(2)->codegen(outfile);
-      fprintf(outfile, ")");
+      help_codegen_op(outfile, "%%", get(1), get(2));
       break;
     case PRIMITIVE_LSH:
-      fprintf(outfile, "(");
-      get(1)->codegen(outfile);
-      fprintf(outfile, "<<");
-      get(2)->codegen(outfile);
-      fprintf(outfile, ")");
+      help_codegen_op(outfile, "<<", get(1), get(2));
       break;
     case PRIMITIVE_RSH:
-      fprintf(outfile, "(");
-      get(1)->codegen(outfile);
-      fprintf(outfile, ">>");
-      get(2)->codegen(outfile);
-      fprintf(outfile, ")");
+      help_codegen_op(outfile, ">>", get(1), get(2));
       break;
     case PRIMITIVE_PTR_EQUAL:
     case PRIMITIVE_EQUAL:
-      fprintf(outfile, "(");
-      get(1)->codegen(outfile);
-      fprintf(outfile, "==");
-      get(2)->codegen(outfile);
-      fprintf(outfile, ")");
+      help_codegen_op(outfile, "==", get(1), get(2));
       break;
     case PRIMITIVE_PTR_NOTEQUAL:
     case PRIMITIVE_NOTEQUAL:
-      fprintf(outfile, "(");
-      get(1)->codegen(outfile);
-      fprintf(outfile, "!=");
-      get(2)->codegen(outfile);
-      fprintf(outfile, ")");
+      help_codegen_op(outfile, "!=", get(1), get(2));
       break;
     case PRIMITIVE_LESSOREQUAL:
-      fprintf(outfile, "(");
-      get(1)->codegen(outfile);
-      fprintf(outfile, "<=");
-      get(2)->codegen(outfile);
-      fprintf(outfile, ")");
+      help_codegen_op(outfile, "<=", get(1), get(2));
       break;
     case PRIMITIVE_GREATEROREQUAL:
-      fprintf(outfile, "(");
-      get(1)->codegen(outfile);
-      fprintf(outfile, ">=");
-      get(2)->codegen(outfile);
-      fprintf(outfile, ")");
+      help_codegen_op(outfile, ">=", get(1), get(2));
       break;
     case PRIMITIVE_LESS:
-      fprintf(outfile, "(");
-      get(1)->codegen(outfile);
-      fprintf(outfile, "<");
-      get(2)->codegen(outfile);
-      fprintf(outfile, ")");
+      help_codegen_op(outfile, "<", get(1), get(2));
       break;
     case PRIMITIVE_GREATER:
-      fprintf(outfile, "(");
-      get(1)->codegen(outfile);
-      fprintf(outfile, ">");
-      get(2)->codegen(outfile);
-      fprintf(outfile, ")");
+      help_codegen_op(outfile, ">", get(1), get(2));
       break;
     case PRIMITIVE_AND:
-      fprintf(outfile, "(");
-      get(1)->codegen(outfile);
-      fprintf(outfile, "&");
-      get(2)->codegen(outfile);
-      fprintf(outfile, ")");
+      help_codegen_op(outfile, "&", get(1), get(2));
       break;
     case PRIMITIVE_OR:
-      fprintf(outfile, "(");
-      get(1)->codegen(outfile);
-      fprintf(outfile, "|");
-      get(2)->codegen(outfile);
-      fprintf(outfile, ")");
+      help_codegen_op(outfile, "|", get(1), get(2));
       break;
     case PRIMITIVE_XOR:
-      fprintf(outfile, "(");
-      get(1)->codegen(outfile);
-      fprintf(outfile, "^");
-      get(2)->codegen(outfile);
-      fprintf(outfile, ")");
+      help_codegen_op(outfile, "^", get(1), get(2));
       break;
     case PRIMITIVE_LAND:
-      fprintf(outfile, "(");
-      get(1)->codegen(outfile);
-      fprintf(outfile, "&&");
-      get(2)->codegen(outfile);
-      fprintf(outfile, ")");
+      help_codegen_op(outfile, "&&", get(1), get(2));
       break;
     case PRIMITIVE_LOR:
-      fprintf(outfile, "(");
-      get(1)->codegen(outfile);
-      fprintf(outfile, "||");
-      get(2)->codegen(outfile);
-      fprintf(outfile, ")");
+      help_codegen_op(outfile, "||", get(1), get(2));
       break;
     case PRIMITIVE_POW:
       fprintf(outfile, "pow");
-      fprintf(outfile, "(");
-      get(1)->codegen(outfile);
-      fprintf(outfile, ", ");
-      get(2)->codegen(outfile);
-      fprintf(outfile, ")");
+      help_codegen_op(outfile, ", ", get(1), get(2));
       break;
     case PRIMITIVE_MIN: 
       {
@@ -1173,34 +1109,14 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_USE:
     case PRIMITIVE_TUPLE_EXPAND:
     case PRIMITIVE_ERROR:
-      INT_FATAL(this, "Use should no longer be in AST");
+      INT_FATAL(this, "primitive should no longer be in AST");
       break;
     case NUM_KNOWN_PRIMS:
-      INT_FATAL(this, "Impossible"); break;
+      INT_FATAL(this, "Impossible");
       break;
     }
     return;
   }
-
-  ///
-  /// BEGIN KLUDGE
-  ///
-
-  if (SymExpr* variable = dynamic_cast<SymExpr*>(baseExpr)) {
-    if (!strcmp(variable->var->cname, "_chpl_alloc")) {
-      Type *t = variable->getFunction()->retType;
-      fprintf(outfile, "_chpl_alloc(sizeof(_");
-      t->codegen(outfile);
-      fprintf(outfile, "), ");
-      argList->get(1)->codegen(outfile);
-      fprintf(outfile, ")");
-      return;
-    }
-  }
-  
-  ///
-  /// END KLUDGE
-  ///
 
   if (SymExpr* variable = dynamic_cast<SymExpr*>(baseExpr)) {
     if (!strcmp(variable->var->cname, "_data_construct")) {
@@ -1239,30 +1155,17 @@ void CallExpr::codegen(FILE* outfile) {
     }
   }
 
-  Expr* actuals = argList->first();
-  if (actuals) {
-    FnSymbol* fn = findFnSymbol();
-    DefExpr* formals = fn->formals->first();
-    while (actuals && formals) {
-      if (first_actual)
-        first_actual = false;
-      else
-        fprintf(outfile, ", ");
-
-      bool ampersand = dynamic_cast<ArgSymbol*>(formals->sym)->requiresCPtr();
-      if (ampersand) {
-        fprintf(outfile, "&(");
-      }
-      actuals->codegen(outfile);
-      if (ampersand) {
-        fprintf(outfile, ")");
-      }
-      formals = fn->formals->next();
-      actuals = argList->next();
-    }
-    if (formals || actuals) {
-      INT_FATAL(this, "Number of formals and actuals didn't match");
-    }
+  bool first_actual = true;
+  for_formals_actuals(formal, actual, this) {
+    if (first_actual)
+      first_actual = false;
+    else
+      fprintf(outfile, ", ");
+    if (formal->requiresCPtr())
+      fprintf(outfile, "&(");
+    actual->codegen(outfile);
+    if (formal->requiresCPtr())
+      fprintf(outfile, ")");
   }
   fprintf(outfile, ")");
 }
@@ -1417,32 +1320,3 @@ get_constant(Expr *e) {
   }
   return 0;
 }
-
-
-static void
-exprsToIndicesHelper(AList<DefExpr>* defs,
-                     Expr* index,
-                     Type* type,
-                     Expr* exprType = NULL) {
-  if (SymExpr* expr = dynamic_cast<SymExpr*>(index)) {
-    defs->insertAtTail
-      (new DefExpr(new VarSymbol(expr->var->name, type), NULL, exprType));
-    return;
-  } else if (CallExpr* expr = dynamic_cast<CallExpr*>(index)) {
-    if (expr->isPrimitive(PRIMITIVE_CAST)) {
-      exprsToIndicesHelper(defs, expr->get(2), type, expr->get(1)->copy());
-      return;
-    }
-  }
-  INT_FATAL(index, "Error, Variable expected in index list");
-}
-
-
-AList<DefExpr>* exprsToIndices(AList<Expr>* indices) {
-  AList<DefExpr>* defs = new AList<DefExpr>();
-  for_alist(Expr, index, indices) {
-    exprsToIndicesHelper(defs, index, dtUnknown);
-  }
-  return defs;
-}
-

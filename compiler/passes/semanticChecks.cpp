@@ -71,7 +71,7 @@ check_parsed_vars(VarSymbol* var) {
 static void
 check_named_arguments(CallExpr* call) {
   Vec<char*> names;
-  for_alist(Expr, expr, call->argList) {
+  for_actuals(expr, call) {
     if (NamedExpr* named = dynamic_cast<NamedExpr*>(expr)) {
       forv_Vec(char, name, names) {
         if (!strcmp(name, named->name))

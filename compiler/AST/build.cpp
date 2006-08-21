@@ -521,3 +521,31 @@ build_arg(intentTag tag, char* ident, Expr* type, Expr* init, Expr* variable) {
     argSymbol->type = dtAny;
   return new DefExpr(argSymbol, NULL, type);
 }
+
+
+static void
+exprsToIndicesHelper(AList<DefExpr>* defs,
+                     Expr* index,
+                     Type* type,
+                     Expr* exprType = NULL) {
+  if (SymExpr* expr = dynamic_cast<SymExpr*>(index)) {
+    defs->insertAtTail
+      (new DefExpr(new VarSymbol(expr->var->name, type), NULL, exprType));
+    return;
+  } else if (CallExpr* expr = dynamic_cast<CallExpr*>(index)) {
+    if (expr->isPrimitive(PRIMITIVE_CAST)) {
+      exprsToIndicesHelper(defs, expr->get(2), type, expr->get(1)->copy());
+      return;
+    }
+  }
+  INT_FATAL(index, "Error, Variable expected in index list");
+}
+
+
+AList<DefExpr>* exprsToIndices(AList<Expr>* indices) {
+  AList<DefExpr>* defs = new AList<DefExpr>();
+  for_alist(Expr, index, indices) {
+    exprsToIndicesHelper(defs, index, dtUnknown);
+  }
+  return defs;
+}

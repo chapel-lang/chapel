@@ -261,7 +261,7 @@ static void destructure_tuple(CallExpr* call) {
   CallExpr* tuple = dynamic_cast<CallExpr*>(call->get(1));
   call->replace(new CallExpr(PRIMITIVE_MOVE, temp, call->get(2)->remove()));
   int i = 1;
-  for_alist(Expr, expr, tuple->argList) {
+  for_actuals(expr, tuple) {
     if (i > 1)
       stmt->insertAfter(
         new CallExpr("=", expr->remove(),

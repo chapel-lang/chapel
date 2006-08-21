@@ -85,6 +85,25 @@ class AList : public BaseAST {
        formal = _alist_next,                                            \
          _alist_next = (formal) ? dynamic_cast<ArgSymbol*>(dynamic_cast<DefExpr*>((formal)->defPoint->next)->sym) : NULL)
 
+#define for_formals_actuals(formal, actual, call)                       \
+  FnSymbol* _alist_fn = (call)->isResolved();                             \
+  if (_alist_fn->formals->length() != (call)->argList->length())        \
+    INT_FATAL(call, "number of actuals does not match number of formals"); \
+  int _alist_i = 1;                                                       \
+  Expr* actual = ((call)->argList->length() >= _alist_i) ? (call)->get(_alist_i) : NULL; \
+  for (ArgSymbol *formal = ((_alist_fn)->formals) ? (((_alist_fn)->formals)->head ? dynamic_cast<ArgSymbol*>(dynamic_cast<DefExpr*>(((_alist_fn)->formals)->head->next)->sym) : NULL) : NULL, \
+         *_alist_next = (formal) ? dynamic_cast<ArgSymbol*>(dynamic_cast<DefExpr*>((formal)->defPoint->next)->sym) : NULL; \
+       (formal);                                                        \
+       formal = _alist_next,                                            \
+         _alist_next = (formal) ? dynamic_cast<ArgSymbol*>(dynamic_cast<DefExpr*>((formal)->defPoint->next)->sym) : NULL, \
+         _alist_i++, actual = formal ? (call)->get(_alist_i) : NULL)
+
+#define for_actuals(actual, call)               \
+  for_alist(Expr, actual, (call)->argList)
+
+#define for_actuals_backward(actual, call)               \
+  for_alist_backward(Expr, actual, (call)->argList)
+
 #define for_fields(field, ct)                                           \
   for (Symbol *field = ((ct)->fields) ? (((ct)->fields)->head ? dynamic_cast<DefExpr*>(((ct)->fields)->head->next)->sym : NULL) : NULL, \
          *_alist_next = (field) ? dynamic_cast<DefExpr*>((field)->defPoint->next)->sym : NULL; \
@@ -99,26 +118,12 @@ class AList : public BaseAST {
        field = _alist_prev,                                             \
          _alist_prev = (field) ? dynamic_cast<DefExpr*>((field)->defPoint->prev)->sym : NULL)
 
-#define for_alist_nonreentrant(elemtype, node, list)  \
-  for (elemtype *node = list->first(),                \
-         *_alist_next = (node) ? list->next() : NULL; \
-       node;                                          \
-       node = _alist_next,                            \
-         _alist_next = (node) ? list->next() : NULL)
-
 #define for_alist_backward(elemtype, node, list)  \
   for (elemtype *node = (list) ? ((list)->tail ? dynamic_cast<elemtype*>((list)->tail->prev) : NULL) : NULL,      \
          *_alist_prev = (node) ? dynamic_cast<elemtype*>((node)->prev) : NULL;                  \
        _alist_prev;                                                                             \
        node = _alist_prev,                                                                      \
          _alist_prev = (node) ? dynamic_cast<elemtype*>((node)->prev) : NULL)
-
-#define for_alist_backward_nonreentrant(elemtype, node, list)  \
-  for (elemtype *node = list->last(),                 \
-         *_alist_prev = (node) ? list->prev() : NULL; \
-       node;                                          \
-       node = _alist_prev,                            \
-         _alist_prev = (node) ? list->prev() : NULL)
 
 // this is intended for internal use only
 // note that we store a node one ahead in case the current node is

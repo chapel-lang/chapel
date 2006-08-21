@@ -153,8 +153,8 @@ void clear_type_info(BaseAST* base) {
       defExpr->sym->type = dtUnknown;
 
       if (FnSymbol* fn = dynamic_cast<FnSymbol*>(defExpr->sym)) {
-        for_alist(DefExpr, tmp, fn->formals) {
-          tmp->sym->type = dtUnknown;
+        for_formals(tmp, fn) {
+          tmp->type = dtUnknown;
         }
         fn->retType = dtUnknown;
       }
@@ -219,7 +219,7 @@ void remove_static_actuals() {
     if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
       if (FnSymbol* fn = call->isResolved()) {
         DefExpr* formalDef = fn->formals->first();
-        for_alist(Expr, actual, call->argList) {
+        for_actuals(actual, call) {
           ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
           if (formal->type == dtMethodToken || formal->type == dtSetterToken)
             actual->remove();
@@ -236,10 +236,9 @@ void remove_static_formals() {
   collect_asts_postorder(&asts);
   forv_Vec(BaseAST, ast, asts) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
-      for_alist(DefExpr, formalDef, fn->formals) {
-        ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
+      for_formals(formal, fn) {
         if (formal->type == dtMethodToken || formal->type == dtSetterToken)
-          formalDef->remove();
+          formal->defPoint->remove();
       }
     }
   }

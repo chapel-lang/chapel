@@ -48,7 +48,7 @@ void localCopyPropagation(BasicBlock* bb) {
             rhs->var = copy;
         if (CallExpr* rhs = dynamic_cast<CallExpr*>(move->get(2)))
           if (rhs->primitive)
-            for_alist(Expr, actual, rhs->argList) {
+            for_actuals(actual, rhs) {
               if (SymExpr* sym = dynamic_cast<SymExpr*>(actual))
                 if (Symbol* copy = available.get(sym->var))
                   sym->var = copy;
