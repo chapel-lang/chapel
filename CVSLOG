@@ -73052,3 +73052,13 @@ Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 	                         inlineFunctions.cpp normalize.cpp 
 
+---------------------------------------------------------------------------
+
+08/21/06 14:36:12 -- deitz
+
+Log message:
+	minor refactor of primitive codegen.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+
