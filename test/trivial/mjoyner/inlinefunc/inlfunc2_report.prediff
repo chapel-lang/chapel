@@ -1,0 +1,3 @@
+grep leaf $2 | grep -v _coerce_ > out.tmp
+tail -n 4 $2 >> out.tmp
+mv out.tmp $2
