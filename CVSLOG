@@ -73062,3 +73062,21 @@ Log message:
 Modified files:
 	chapel/compiler/AST/: expr.cpp 
 
+---------------------------------------------------------------------------
+
+08/22/06 11:19:30 -- bradc
+
+Log message:
+	Changed start_test script to skip over tests marked
+	as .future by default.  Use the -futures flag to get
+	the old behavior.  Also changed the nightly regression
+	testing script to use the -futures flag so that nightly
+	regressions will run and report as always.
+	
+	Haven't yet added the feature steve wants of running the
+	futures only.
+
+Modified files:
+	chapel/test/: start_test sub_test 
+	chapel/test/Bin/: nightly 
+
