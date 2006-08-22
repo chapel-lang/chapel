@@ -73139,3 +73139,21 @@ Modified files:
 	chapel/test/compflags/bradc/nameoutput/: localname.preexec 
 	                                         localnamesavec.preexec 
 
+---------------------------------------------------------------------------
+
+08/22/06 16:55:27 -- marybeth
+
+Log message:
+	Committing two tests that currently fail:
+	
+	saxpy1.chpl should work, but fails with an error trying to assign
+	an array to a constant.
+	
+	saxpy2.chpl works, but shouldn't.  It should fail with an error
+	of using D before it's defined.
+
+Added files:
+	chapel/test/studies/blas/marybeth/: saxpy1.chpl saxpy1.good 
+	                                    saxpy1.future saxpy2.chpl 
+	                                    saxpy2.good saxpy2.future 
+
