@@ -73096,3 +73096,28 @@ Modified files:
 	chapel/test/: start_test sub_test 
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+08/22/06 15:53:33 -- bradc
+
+Log message:
+	Tightened up Mack's inlfunc?_report tests so that they
+	only check for the inlining that they were meant to
+	test and not all the rest of the inlining that occurs
+	due to the way Chapel is implemneted.  These should no
+	longer need to be updated when module stuff changes --
+	only when things like setters and getters are renamed.
+	
+	As a result, please start checking the output when
+	they regress and only committing new .good files if
+	they make sense, as opposed to copying over the
+	.exec.out.tmp file to a .good file when you make
+	changes to the compiler that cause them to fail.
+
+Modified files:
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.good 
+	                                         inlfunc2_report.good 
+Added files:
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.prediff 
+	                                         inlfunc2_report.prediff 
+
