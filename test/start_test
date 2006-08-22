@@ -45,6 +45,7 @@
 #   -onetest   <single test>          N/A
 #   -logfile   <log filename>         ./Logs/<username>.<platform>.log
 #   -valgrind
+#   -futures
 #   -interpret
 #
 # These options can be used with a double-dash as well 
@@ -91,6 +92,10 @@
 # The -valgrindexe option specifies that the generated executable
 # should be run using valgrind, but not the compiler.
 #
+# The -futures option specifies that the testing system should
+# test both future and non-future tests.  By default, future tests
+# are skipped over.
+#
 # The -interpret option requests that the compiler be executed in
 # interpreter mode.  This will cause the test system to invoke the
 # compiler to interpret the program rather than compile and run it.
@@ -121,8 +126,9 @@
 # is working and stable, its future file should be removed and 
 # should not be re-added (for future failures of the test should
 # be counted as regressions).  The .future file should contain
-# the userid of the developer who's court it's in on the first
-# line (this will appear in the test system's summaries).
+# the userid of the developer whose court it's in on the first
+# line (this will appear in the test system's summaries), or some
+# other categorization of what the future is dependent on to pass.
 # Subsequent lines can contain notes and will be ignored by the
 # testing system.
 #
@@ -302,6 +308,7 @@ set logfile = "$testdir/Logs/$user.$platform.log"
 set valgrind = 0
 set valgrindexe = 0
 set interpret = 0
+set testfutures = 0
 set recurse = 1
 
 
@@ -347,6 +354,11 @@ while ( $#argv > 0 )
 		shift
 		set valgrind = 1
 		breaksw
+        case -futures:
+        case --futures:
+                shift
+                set testfutures = 1
+                breaksw
         case -i:
         case --interpret:
         case -interpret:
@@ -532,6 +544,12 @@ endif
 #echo "cwd is $cwd"
 #exit 0
 
+if ($testfutures == 1) then
+    setenv CHPL_TEST_FUTURES 1
+else
+    setenv CHPL_TEST_FUTURES 0
+endif
+
 foreach dir ($dirs)
 	if ( -x $dir ) then
 		pushd $dir >& /dev/null
@@ -590,8 +608,12 @@ grep "$futuremarker" $logfile |& tee -a $logfile.summary
 
 set successes = `grep "$successmarker" $logfile | wc -l`
 set failures = `grep "$errormarker" $logfile | wc -l`
-set futures = `grep "$futuremarker" $logfile | wc -l`
-echo \[\Summary: \#Successes = $successes \| \#Failures = $failures \| \#Futures = $futures\] |& tee -a $logfile.summary
+if ($testfutures == 0) then
+    echo \[\Summary: \#Successes = $successes \| \#Failures = $failures\] |& tee -a $logfile.summary
+else
+    set futures = `grep "$futuremarker" $logfile | wc -l`
+    echo \[\Summary: \#Successes = $successes \| \#Failures = $failures \| \#Futures = $futures\] |& tee -a $logfile.summary
+endif
 echo \[END\] |& tee -a $logfile.summary
 cat $logfile.summary >> $logfile
 echo ''

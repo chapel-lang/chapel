@@ -216,7 +216,7 @@ if ($valgrind == 1) {
 #
 #`rm -f $rawstdlog $rawvgrlog $rawstdsummary $rawvgrsummary`;
 
-$testflags = "-logfile $rawlog";
+$testflags = "-logfile $rawlog -futures";
 if ($interpret == 1) {
     $testflags = "$testflags -interpret";
 }
