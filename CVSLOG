@@ -73121,3 +73121,21 @@ Added files:
 	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.prediff 
 	                                         inlfunc2_report.prediff 
 
+---------------------------------------------------------------------------
+
+08/22/06 16:28:33 -- bradc
+
+Log message:
+	Changed test system to generate executables with the name "foo"
+	(for a test foo.chpl) rather than a.out so that multiple copies
+	of the test system can run in the same directory structure with
+	less likelihood of conflicting (particularly if an agent like
+	the parallel testing system is pinpointing specific tests with
+	them).  Updated a few tests that had been written with "a.out"
+	hardcoded into their preexec scripts.
+
+Modified files:
+	chapel/test/: sub_test 
+	chapel/test/compflags/bradc/nameoutput/: localname.preexec 
+	                                         localnamesavec.preexec 
+
