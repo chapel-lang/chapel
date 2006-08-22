@@ -73080,3 +73080,19 @@ Modified files:
 	chapel/test/: start_test sub_test 
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+08/22/06 11:36:51 -- bradc
+
+Log message:
+	Added a -futuresonly flag to the start_test script which
+	causes only future tests to be tested.
+	
+	Made the nightly script skip over futures when run in
+	valgrind mode in hopes of helping it complete in fewer
+	than 3 days.
+
+Modified files:
+	chapel/test/: start_test sub_test 
+	chapel/test/Bin/: nightly 
+
