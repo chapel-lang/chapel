@@ -216,12 +216,15 @@ if ($valgrind == 1) {
 #
 #`rm -f $rawstdlog $rawvgrlog $rawstdsummary $rawvgrsummary`;
 
-$testflags = "-logfile $rawlog -futures";
+$testflags = "-logfile $rawlog";
 if ($interpret == 1) {
     $testflags = "$testflags -interpret";
 }
 if ($valgrind == 1) {
     $testflags = "$testflags -valgrind";
+}
+if ($valgrind == 0) {
+    $testflags = "$testflags -futures";
 }
 
 $status = mysystem("cd $testdir && ./start_test $testflags", "running standard tests", 0, 0);

@@ -119,11 +119,10 @@ else
     set testsrc = "$CHPL_ONETEST"
 endif
 
-if ($CHPL_TEST_FUTURES == 1) then
-    set testfutures = 1
-else
-    set testfutures = 0
-endif
+# for this flag 2 == "test futures only"
+#               1 == "test futures and non-futures"
+#               0 == "test non-futures only"
+set testfutures = $CHPL_TEST_FUTURES
 
 if ($?CHPL_VALGRIND_OPTS == 0) then
   set CHPL_VALGRIND_OPTS = "--tool=memcheck"
@@ -201,8 +200,16 @@ foreach chplsrc ($testsrc)
     endif
 
     # skip future tests unless we request otherwise
-    if (-r ./$execfile.future && $testfutures == 0) then
-        echo \[Skipping future test: $localdir/$execfile\]
+    if (-r ./$execfile.future) then
+        if ($testfutures == 0) then
+            echo \[Skipping future test: $localdir/$execfile\]
+            continue;
+        endif
+    else
+        if ($testfutures == 2) then
+            echo \[Skipping non-future test: $localdir/$execfile\]
+            continue;
+        endif
     endif
 
     # if interpreting, skip tests that are futures, noexec, or require execopts

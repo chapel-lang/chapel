@@ -46,6 +46,7 @@
 #   -logfile   <log filename>         ./Logs/<username>.<platform>.log
 #   -valgrind
 #   -futures
+#   -futuresonly
 #   -interpret
 #
 # These options can be used with a double-dash as well 
@@ -92,9 +93,10 @@
 # The -valgrindexe option specifies that the generated executable
 # should be run using valgrind, but not the compiler.
 #
-# The -futures option specifies that the testing system should
-# test both future and non-future tests.  By default, future tests
-# are skipped over.
+# The -futures option specifies that the testing system should test
+# both future and non-future tests.  By default, future tests are
+# skipped over.  The -futuresonly option specifies that the testing
+# system should test only the future tests and not the others.
 #
 # The -interpret option requests that the compiler be executed in
 # interpreter mode.  This will cause the test system to invoke the
@@ -309,6 +311,7 @@ set valgrind = 0
 set valgrindexe = 0
 set interpret = 0
 set testfutures = 0
+set testfuturesonly = 0
 set recurse = 1
 
 
@@ -358,6 +361,11 @@ while ( $#argv > 0 )
         case --futures:
                 shift
                 set testfutures = 1
+                breaksw
+        case -futuresonly
+        case --futuresonly
+                shift
+                set testfuturesonly = 1
                 breaksw
         case -i:
         case --interpret:
@@ -544,10 +552,14 @@ endif
 #echo "cwd is $cwd"
 #exit 0
 
-if ($testfutures == 1) then
-    setenv CHPL_TEST_FUTURES 1
+if ($testfuturesonly == 1) then
+    setenv CHPL_TEST_FUTURES 2
 else
-    setenv CHPL_TEST_FUTURES 0
+    if ($testfutures == 1) then
+        setenv CHPL_TEST_FUTURES 1
+    else
+        setenv CHPL_TEST_FUTURES 0
+    endif
 endif
 
 foreach dir ($dirs)
@@ -608,7 +620,7 @@ grep "$futuremarker" $logfile |& tee -a $logfile.summary
 
 set successes = `grep "$successmarker" $logfile | wc -l`
 set failures = `grep "$errormarker" $logfile | wc -l`
-if ($testfutures == 0) then
+if ($testfutures == 0 && $testfuturesonly == 0) then
     echo \[\Summary: \#Successes = $successes \| \#Failures = $failures\] |& tee -a $logfile.summary
 else
     set futures = `grep "$futuremarker" $logfile | wc -l`
