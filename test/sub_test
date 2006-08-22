@@ -218,8 +218,8 @@ foreach chplsrc ($testsrc)
         continue;
     endif
 
-    echo \[Executing: \"$valgrndcomp$compiler $compopts $chplsrc $lastcompopts \< $compstdin\"\]
-    $timedexec $timeout "$valgrndcomp$compiler $compopts $chplsrc $lastcompopts" < "$compstdin" >& $complog
+    echo \[Executing: \"$valgrndcomp$compiler -o $execfile $compopts $chplsrc $lastcompopts \< $compstdin\"\]
+    $timedexec $timeout "$valgrndcomp$compiler -o $execfile $compopts $chplsrc $lastcompopts" < "$compstdin" >& $complog
 	
     set compstatus = $status
     if ( $compstatus != 0 || $executebin == "no") then
@@ -263,7 +263,7 @@ foreach chplsrc ($testsrc)
 	#   program output
 	echo \[Success compiling $localdir/$chplsrc\]
 
-	set binfile = a.out
+	set binfile = $execfile
 
 	if (-x ./PREEXEC) then
             echo \[Executing PREEXEC\]

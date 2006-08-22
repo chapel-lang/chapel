@@ -1,2 +1,2 @@
 #!/bin/sh
-mv b.out a.out
+mv b.out $1
