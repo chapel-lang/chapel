@@ -73205,3 +73205,21 @@ Modified files:
 	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.prediff 
 	                                         inlfunc2_report.prediff 
 
+---------------------------------------------------------------------------
+
+08/23/06 15:44:26 -- deitz
+
+Log message:
+	Add a few simple tests I've used to test my upcoming records on the
+	stack change.
+
+Added files:
+	chapel/test/parallel/sync/deitz/: test_sync_in_class_simple.chpl 
+	                                  test_sync_in_class_simple.good 
+	                                  test_sync_in_class_simple2.chpl 
+	                                  test_sync_in_class_simple2.good 
+	                                  test_sync_in_class_simple3.chpl 
+	                                  test_sync_in_class_simple3.good 
+	chapel/test/types/tuple/deitz/: test_tuples6.chpl 
+	                                test_tuples6.good 
+
