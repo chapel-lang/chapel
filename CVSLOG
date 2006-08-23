@@ -73157,3 +73157,19 @@ Added files:
 	                                    saxpy1.future saxpy2.chpl 
 	                                    saxpy2.good saxpy2.future 
 
+---------------------------------------------------------------------------
+
+08/22/06 17:00:47 -- bradc
+
+Log message:
+	Removed use of strtold() to create floating point literals due
+	to its non-supportedness on Sun and Cygwin (this is what broke
+	the build the past few days on those platforms).  I switched
+	this to strtod() because that gives us 64-bit literals which
+	should be sufficient for the near-term (and in any case, is
+	better than integers which seem to currently be using a routine
+	that creates 32-bit literal values?)
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+
