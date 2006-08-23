@@ -1,0 +1,1 @@
+Error: Variable 'y' used before defined (useBeforeDef.chpl:1)

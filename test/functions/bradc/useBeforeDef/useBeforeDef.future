@@ -1,0 +1,4 @@
+deitz
+
+Like test/studies/blas/marybeth/saxpy2.chpl, this test should report a
+use-before-def error.
