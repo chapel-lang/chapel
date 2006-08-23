@@ -73173,3 +73173,23 @@ Log message:
 Modified files:
 	chapel/compiler/parser/: chapel.y 
 
+---------------------------------------------------------------------------
+
+08/22/06 17:22:41 -- bradc
+
+Log message:
+	Added a pair of tests that we discussed in today's
+	libraries meeting that make sure a value cannot be
+	used before it is defined in a function's formal
+	type or default value expressions.  These are similar
+	to the one that Mary Beth checked in in saxpy2.chpl
+	above, but slightly different cases.
+
+Added files:
+	chapel/test/functions/bradc/useBeforeDef/: useBeforeDef.chpl 
+	                                           useBeforeDef.future 
+	                                           useBeforeDef.good 
+	                                           useBeforeDef2.chpl 
+	                                           useBeforeDef2.future 
+	                                           useBeforeDef2.good 
+
