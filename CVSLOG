@@ -73193,3 +73193,15 @@ Added files:
 	                                           useBeforeDef2.future 
 	                                           useBeforeDef2.good 
 
+---------------------------------------------------------------------------
+
+08/23/06 09:39:17 -- bradc
+
+Log message:
+	Fixed yesterday's prediff scripts to use "tail" in a more
+	portable way.
+
+Modified files:
+	chapel/test/trivial/mjoyner/inlinefunc/: inlfunc1_report.prediff 
+	                                         inlfunc2_report.prediff 
+
