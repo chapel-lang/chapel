@@ -4,10 +4,8 @@
 #   -dirfile  d: d is a file listing directories to test. Default is ".". Lines
 #                beginning with # are ignored.
 #   -filedist  : distribute work at the granularity of test files (directory
-#                granurality is the default.
-#   -futures   : in file granurality distribution mode, include tests with 
-#                .futures. Default is to not include these tests in file 
-#                granularity distribution mode.
+#                granurality is the default).
+#   -futures   : include .future tests (default is none).
 #   -nodefile n: n is a file listing nodes to run on. Default is current node.
 #                To run multiple processes on MP nodes, list the node multiple
 #                times, once for each desired process. Lines with # are ignored.
@@ -321,9 +319,9 @@ sub print_help {
     print "Usage: paratest.server.pl [-dirfile d] [-nodefile n] [-help|-h]\n";
     print "    -compopts s: s is a string that is passed with -compopts to start_test.\n";
     print "    -dirfile  d: d is a file listing directories to test. Default is the current diretory.\n";
-    print "    -filedist  : distribute work at the granularity of files (directory granurality is the default)\n";
-    print "    -futures   : in file granurality distribution mode, include tests with .futures. Default is to not include these tests in file granularity distribution mode.\n";
-    print "    -logfile  l: l is the output log file. Default is \"user\".\"platform\".log. in the Logs subdirectory\n";
+    print "    -filedist  : distribute work at the granularity of files (directory granurality is the default).\n";
+    print "    -futures   : include .future tests (default is none).\n";
+    print "    -logfile  l: l is the output log file. Default is \"user\".\"platform\".log. in the Logs subdirectory.\n";
     print "    -nodefile n: n is a file listing nodes to run on. Default is current node.\n";
 }
 
