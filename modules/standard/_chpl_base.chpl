@@ -326,7 +326,7 @@ def isFull( sv:_syncvar) {
 //
 // MOVE THESE, maybe to a memory module?
 //
-pragma "no codegen" def _chpl_memtest_printMemTable();
+pragma "no codegen" def _chpl_memtest_printMemTable(threshold: int = 1000);
 pragma "no codegen" def _chpl_memtest_printMemStat();
 pragma "no codegen" def _chpl_memtest_resetMemStat();
 pragma "no codegen" def _chpl_memtest_allocAndFree();

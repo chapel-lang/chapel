@@ -5,8 +5,8 @@
 #include "chpltypes.h"
 
 
-void _chpl_memtest_printMemTable(void) {
-  printMemTable(1000);
+void _chpl_memtest_printMemTable(int threshold) {
+  printMemTable(threshold);
 }
 
 

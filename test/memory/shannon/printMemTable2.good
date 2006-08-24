@@ -6,8 +6,8 @@
 Size:    Number:  Total:   Address:    Description:
 (bytes)           (bytes)  
 ================================================================================
-64       1        64       0xnnnnnnnn  instance of class C
-64       1        64       0xnnnnnnnn  instance of class C
-64       1        64       0xnnnnnnnn  instance of class C
-64       1        64       0xnnnnnnnn  instance of class C
+128      1        128      0xnnnnnnnn  instance of class C
+128      1        128      0xnnnnnnnn  instance of class C
+128      1        128      0xnnnnnnnn  instance of class C
+128      1        128      0xnnnnnnnn  instance of class C
 

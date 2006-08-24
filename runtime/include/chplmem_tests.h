@@ -1,7 +1,7 @@
 #ifndef _chplmem_tests_H_
 #define _chplmem_tests_H_
 
-void _chpl_memtest_printMemTable(void);
+void _chpl_memtest_printMemTable(int threshold);
 void _chpl_memtest_printMemStat(void);
 void _chpl_memtest_resetMemStat(void);
 void _chpl_memtest_allocAndFree(void);
