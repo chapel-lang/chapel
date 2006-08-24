@@ -227,6 +227,16 @@ void cleanup(BaseAST* base) {
 }
 
 
+static BlockStmt*
+getBlock(Stmt* stmt) {
+  if (BlockStmt* block = dynamic_cast<BlockStmt*>(stmt)) {
+    if (block->blkScope)
+      return block;
+  }
+  return getBlock(stmt->parentStmt);
+}
+
+
 /*** normalize_nested_function_expressions
  ***   moves expressions that are parsed as nested function
  ***   definitions into their own statement
@@ -237,9 +247,12 @@ static void normalize_nested_function_expressions(DefExpr* def) {
       (!strncmp("_forallexpr", def->sym->name, 11)) ||
       (!strncmp("_let_fn", def->sym->name, 7)) ||
       (!strncmp("_if_fn", def->sym->name, 6)) ||
+      (!strncmp("_reduce_fn", def->sym->name, 10)) ||
       (!strncmp("_forif_fn", def->sym->name, 9))) {
     Stmt* stmt = def->parentStmt;
-    if (stmt->getFunction() == stmt->getModule()->initFn)
+    BlockStmt* block = getBlock(stmt);
+    if (block->getFunction()->body == block &&
+        block->getFunction() == block->getModule()->initFn)
       stmt = dynamic_cast<Stmt*>(stmt->getFunction()->defPoint->parentStmt->next);
     def->replace(new SymExpr(def->sym->name));
     stmt->insertBefore(def);

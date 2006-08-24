@@ -449,9 +449,15 @@ AList<Stmt>* build_type_select(AList<Expr>* exprs, AList<WhenStmt>* whenstmts) {
 }
 
 
-Expr* build_reduce_expr(Expr* red, Expr* seq) {
-  red = new CallExpr(red, new CallExpr(new CallExpr(".", seq->copy(), new_StringLiteral("getValue")), new CallExpr(new CallExpr(".", seq->copy(), new_StringLiteral("getHeadCursor")))));
-  return new CallExpr("_reduce", red, seq);
+FnSymbol* build_reduce_expr(Expr* red, Expr* seq) {
+  static int uid = 1;
+  FnSymbol* fn = new FnSymbol(stringcat("_reduce_fn", intstring(uid++)));
+  fn->addPragma("inline");
+  VarSymbol* tmp = new VarSymbol("_red_seq");
+  fn->insertAtTail(new DefExpr(tmp, seq));
+  red = new CallExpr(red, new CallExpr(new CallExpr(".", tmp, new_StringLiteral("getValue")), new CallExpr(new CallExpr(".", tmp, new_StringLiteral("getHeadCursor")))));
+  fn->insertAtTail(new ReturnStmt(new CallExpr("_reduce", red, tmp)));
+  return fn;
 }
 
 
