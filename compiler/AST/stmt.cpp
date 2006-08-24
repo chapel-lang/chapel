@@ -211,9 +211,9 @@ void ReturnStmt::codegen(FILE* outfile) {
   if (!returnsVoid()) {
     fprintf(outfile, " ");
     FnSymbol* fn = getFunction();
-    if (fn->retRef && !sym->var->isReference)
+    if (fn->retRef && !sym->isRef())
       fprintf(outfile, "&");
-    if (!fn->retRef && sym->var->isReference)
+    if (!fn->retRef && sym->isRef())
       fprintf(outfile, "*");
     fprintf(outfile, "%s", sym->var->cname);
   }
@@ -236,6 +236,7 @@ BlockStmt::BlockStmt(AList<Stmt>* init_body, BlockTag init_blockTag) :
   post_loop(NULL),
   param_low(NULL),
   param_high(NULL),
+  param_stride(NULL),
   param_index(NULL)
 {}
 
@@ -249,6 +250,7 @@ BlockStmt::BlockStmt(Stmt* init_body, BlockTag init_blockTag) :
   post_loop(NULL),
   param_low(NULL),
   param_high(NULL),
+  param_stride(NULL),
   param_index(NULL)
 {}
 
@@ -266,6 +268,7 @@ BlockStmt::copyInner(ASTMap* map) {
   BlockStmt* _this = new BlockStmt(COPY_INT(body), blockTag);
   _this->param_low = COPY_INT(param_low);
   _this->param_high = COPY_INT(param_high);
+  _this->param_stride = COPY_INT(param_stride);
   _this->param_index = COPY_INT(param_index);
   return _this;
 }
@@ -278,6 +281,8 @@ void BlockStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
     param_low = dynamic_cast<Expr*>(new_ast);
   } else if (old_ast == param_high) {
     param_high = dynamic_cast<Expr*>(new_ast);
+  } else if (old_ast == param_stride) {
+    param_stride = dynamic_cast<Expr*>(new_ast);
   } else if (old_ast == param_index) {
     param_index = dynamic_cast<Expr*>(new_ast);
   } else {

@@ -83,6 +83,7 @@ class BlockStmt : public Stmt {
   LabelSymbol* post_loop;
   Expr* param_low; // for unrolling, low bound
   Expr* param_high; // for unrolling, high bound
+  Expr* param_stride;
   Expr* param_index; // for unrolling, index variable
 
   BlockStmt::BlockStmt(AList<Stmt>* init_body = new AList<Stmt>(), 

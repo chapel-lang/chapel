@@ -10,7 +10,9 @@ isWritten(SymExpr* sym) {
   CallExpr* call = dynamic_cast<CallExpr*>(sym->parentExpr);
   if (!call)
     return false;
-  if (call->isPrimitive(PRIMITIVE_MOVE))
+  if (call->isPrimitive(PRIMITIVE_MOVE) ||
+      call->isPrimitive(PRIMITIVE_SET_MEMBER) ||
+      call->isPrimitive(PRIMITIVE_SET_MEMBER_REF_TO))
     if (call->get(1) == sym)
       return true;
   return false;
@@ -18,17 +20,16 @@ isWritten(SymExpr* sym) {
 
 static bool
 isReferenced(SymExpr* sym) {
-  CallExpr* call = dynamic_cast<CallExpr*>(sym->parentExpr);
-  if (!call)
-    return true; // maybe, e.g., in a return stmt
-  if (call->isPrimitive(PRIMITIVE_MOVE))
-    if (call->get(2) == sym)
-      if (SymExpr* lhs = dynamic_cast<SymExpr*>(call->get(1)))
-        if (lhs->var->isReference)
-          return true;
-  if (call->isResolved())
-    if (actual_to_formal(sym)->intent == INTENT_REF)
-      return true;
+  if (CallExpr* call = dynamic_cast<CallExpr*>(sym->parentExpr)) {
+    if (call->isPrimitive(PRIMITIVE_REF))
+      if (call->get(2) == sym)
+        return true;
+    if (call->isResolved())
+      if (actual_to_formal(sym)->requiresCPtr())
+        return true;
+  }
+  if (dynamic_cast<ReturnStmt*>(sym->parentStmt) && sym->getFunction()->retRef)
+    return true;
   return false;
 }
 
@@ -37,6 +38,7 @@ isReferenced(SymExpr* sym) {
 // case where an if expression evaluates to a literal, for example.
 void cullOverReferences() {
   compute_sym_uses();
+  compute_call_sites();
   Vec<BaseAST*> asts;
   collect_asts(&asts);
   bool change;
@@ -54,15 +56,29 @@ void cullOverReferences() {
               if (isReferenced(sym))
                 refCount++;
             }
-            if (refCount == 0 && writeCount <= 1) {
+            if (refCount == 0 && writeCount == 0) {
               change = true;
               var->isReference = false;
-            } else if (refCount == 0 && writeCount == 2) {
-              // hack for if_fn handling of if expressions
-              if (!strncmp("_ret__if_fn", var->cname, 11)) {
-                change = true;
-                var->isReference = false;
+              forv_Vec(SymExpr, sym, var->uses) {
+                if (CallExpr* call = dynamic_cast<CallExpr*>(sym->parentExpr))
+                  if (call->isPrimitive(PRIMITIVE_REF))
+                    if (sym == call->get(1))
+                      call->primitive = primitives[PRIMITIVE_MOVE];
               }
+            }
+          }
+        } else if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def->sym)) {
+          if (fn->retRef) {
+            int refCount = 0;
+            forv_Vec(CallExpr, call, *fn->calledBy) {
+              if (CallExpr* ref = dynamic_cast<CallExpr*>(call->parentExpr))
+                if (ref->isPrimitive(PRIMITIVE_REF))
+                  if (ref->get(2) == call)
+                    refCount++;
+            }
+            if (refCount == 0) {
+              change = true;
+              fn->retRef = false;
             }
           }
         }

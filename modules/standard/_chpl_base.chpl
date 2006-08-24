@@ -1,8 +1,5 @@
 // _chpl_base module
 
-pragma "inline" def _chpl_alloc(type t, description:string)
-  return __primitive("chpl_alloc", t, description);
-
 // Primitive functions and operators on bool
 pragma "inline" def =(a: bool, b: bool) return b;
 //pragma "inline" def _copy(a: bool) return a;

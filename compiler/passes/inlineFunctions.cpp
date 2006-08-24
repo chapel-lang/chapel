@@ -10,7 +10,7 @@ static void mapFormalsToActuals(CallExpr* call, ASTMap* map) {
   FnSymbol* fn = call->findFnSymbol();
   Expr* actual = call->argList->first();
   for_formals(formal, fn) {
-    if (formal->intent == INTENT_REF || formal->isTypeVariable) {
+    if (formal->requiresCPtr() || formal->isTypeVariable) {
       if (SymExpr* symExpr = dynamic_cast<SymExpr*>(actual)) {
         map->put(formal, symExpr);
       } else if (CallExpr* call = dynamic_cast<CallExpr*>(actual)) {

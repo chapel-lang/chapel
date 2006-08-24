@@ -202,7 +202,7 @@ void SymExpr::codegen(FILE* outfile) {
 
 
 bool SymExpr::isRef() {
-  return var->isReference;
+  return var->isRef();
 }
 
 
@@ -286,9 +286,13 @@ void DefExpr::codegen(FILE* outfile) {
 
 
 static void
-codegen_member(FILE* outfile, BaseAST *base, BaseAST *member) {
+codegen_member(FILE* outfile, Expr *base, BaseAST *member) {
   base->codegen(outfile);
-  fprintf(outfile, "->");
+  ClassType* ct = dynamic_cast<ClassType*>(base->typeInfo());
+  if (ct->classTag == CLASS_CLASS)
+    fprintf(outfile, "->");
+  else
+    fprintf(outfile, ".");
   member->codegen(outfile);
 }
 
@@ -562,7 +566,7 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_ARRAY_INIT:
       help_codegen_fn(outfile, "array_init", get(2)->typeInfo(), get(1), get(2));
       break;
-    case PRIMITIVE_MOVE: {
+    case PRIMITIVE_MOVE:
       if (SymExpr* sym = dynamic_cast<SymExpr*>(get(1))) {
         if (!strcmp("chpl_input_filename", sym->var->name) ||
             !strcmp("chpl_input_lineno", sym->var->name))
@@ -584,29 +588,25 @@ void CallExpr::codegen(FILE* outfile) {
           }
         }
       }
-      SymExpr* sym = dynamic_cast<SymExpr*>(get(1));
-      if (!sym)
-        INT_FATAL(this, "bad move expression");
-      if (dynamic_cast<ArgSymbol*>(sym->var))
-        get(1)->codegen(outfile);
-      else if (sym->var->isReference && !get(2)->isRef())
-        fprintf(outfile, "*%s", sym->var->cname);
-      else if (dynamic_cast<VarSymbol*>(sym->var) && dynamic_cast<VarSymbol*>(sym->var)->on_heap)
-        fprintf(outfile, "*%s", sym->var->cname);
-      else
-        fprintf(outfile, "%s", sym->var->cname);
+      get(1)->codegen(outfile);
       fprintf(outfile, " = ");
-      if (get(2)->isRef() && get(1)->isRef() && dynamic_cast<SymExpr*>(get(2)))
-        fprintf(outfile, "&(");
-      if (get(2)->isRef() && !get(1)->isRef() && !dynamic_cast<SymExpr*>(get(2)))
-        fprintf(outfile, "*(");
+      if (dynamic_cast<CallExpr*>(get(2)) && get(2)->isRef())
+        fprintf(outfile, "(*");
       get(2)->codegen(outfile);
-      if (get(2)->isRef() && get(1)->isRef() && dynamic_cast<SymExpr*>(get(2)))
-        fprintf(outfile, ")");
-      if (get(2)->isRef() && !get(1)->isRef() && !dynamic_cast<SymExpr*>(get(2)))
+      if (dynamic_cast<CallExpr*>(get(2)) && get(2)->isRef())
         fprintf(outfile, ")");
       break;
-    }
+    case PRIMITIVE_REF:
+      if (SymExpr* sym = dynamic_cast<SymExpr*>(get(1))) {
+        fprintf(outfile, "%s = ", sym->var->cname);
+        if (!dynamic_cast<CallExpr*>(get(2)))
+          fprintf(outfile, "&(");
+        get(2)->codegen(outfile);
+        if (!dynamic_cast<CallExpr*>(get(2)))
+          fprintf(outfile, ")");
+      } else
+        INT_FATAL(this, "bad primitive ref in codegen");
+      break;
     case PRIMITIVE_UNARY_MINUS:
       help_codegen_op(outfile, "-", get(1));
       break;
@@ -817,13 +817,13 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     case PRIMITIVE_UNION_SETID:
       get(1)->codegen(outfile);
-      fprintf(outfile, "->_uid = ");
+      fprintf(outfile, "._uid = ");
       get(2)->codegen(outfile);
       break;
     case PRIMITIVE_UNION_GETID:
       fprintf(outfile, "(");
       get(1)->codegen(outfile);
-      fprintf(outfile, "->_uid == ");
+      fprintf(outfile, "._uid == ");
       get(2)->codegen(outfile);
       fprintf(outfile, ")");
       break;
@@ -904,36 +904,36 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_SYNCVAR_LOCK:
       fprintf( outfile, "_chpl_mutex_lock((");
       get(1)->codegen( outfile);
-      fprintf( outfile, ")->lock)");
+      fprintf( outfile, ").lock)");
       break;
     case PRIMITIVE_SYNCVAR_UNLOCK:
       fprintf( outfile, "_chpl_mutex_unlock((");
       get(1)->codegen( outfile);
-      fprintf( outfile, ")->lock)");
+      fprintf( outfile, ").lock)");
       break;
     case PRIMITIVE_SYNCVAR_SIGNAL_FULL:
       fprintf( outfile, "_chpl_condvar_signal((");
       get(1)->codegen( outfile);
-      fprintf( outfile, ")->cv_full)");
+      fprintf( outfile, ").cv_full)");
       break;
     case PRIMITIVE_SYNCVAR_WAIT_FULL:
       fprintf( outfile, "_chpl_condvar_wait((");
       get(1)->codegen( outfile);
-      fprintf( outfile, ")->cv_full, (");
+      fprintf( outfile, ").cv_full, (");
       get(1)->codegen( outfile);
-      fprintf( outfile, ")->lock)");
+      fprintf( outfile, ").lock)");
       break;
     case PRIMITIVE_SYNCVAR_SIGNAL_EMPTY:
       fprintf( outfile, "_chpl_condvar_signal((");
       get(1)->codegen( outfile);
-      fprintf( outfile, ")->cv_empty)");
+      fprintf( outfile, ").cv_empty)");
       break;
     case PRIMITIVE_SYNCVAR_WAIT_EMPTY:
       fprintf( outfile, "_chpl_condvar_wait((");
       get(1)->codegen( outfile);
-      fprintf( outfile, ")->cv_empty, (");
+      fprintf( outfile, ").cv_empty, (");
       get(1)->codegen( outfile);
-      fprintf( outfile, ")->lock)");
+      fprintf( outfile, ").lock)");
       break;
     case PRIMITIVE_MUTEX_NEW:
       fprintf( outfile, "_chpl_mutex_new()");

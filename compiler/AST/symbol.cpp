@@ -214,6 +214,11 @@ Symbol* Symbol::getSymbol(void) {
 }
 
 
+bool Symbol::isRef(void) {
+  return false;
+}
+
+
 UnresolvedSymbol::UnresolvedSymbol(char* init_name, char* init_cname) :
   Symbol(SYMBOL_UNRESOLVED, init_name)
 {
@@ -336,7 +341,7 @@ void VarSymbol::printDef(FILE* outfile) {
 
 void VarSymbol::codegen( FILE* outfile) {
   if (on_heap || isReference)
-    fprintf( outfile, "*(");
+    fprintf( outfile, "(*");
 
   if (immediate &&
       immediate->const_kind == NUM_KIND_INT  &&
@@ -393,6 +398,11 @@ void VarSymbol::codegenDef(FILE* outfile) {
   if (is_ref || on_heap || isReference) fprintf( outfile, "*");
   fprintf(outfile, "%s", cname);
   fprintf(outfile, ";\n");
+}
+
+
+bool VarSymbol::isRef(void) {
+  return isReference;
 }
 
 
@@ -463,11 +473,15 @@ void ArgSymbol::printDef(FILE* outfile) {
 
 
 bool ArgSymbol::requiresCPtr(void) {
-  return
-    intent == INTENT_OUT ||
-    intent == INTENT_INOUT ||
-    intent == INTENT_REF ||
-    (!strcmp(name, "this") && is_complex_type(type));
+  if (intent == INTENT_OUT ||
+      intent == INTENT_INOUT ||
+      intent == INTENT_REF ||
+      (!strcmp(name, "this") && is_complex_type(type)))
+    return true;
+  ClassType* ct = dynamic_cast<ClassType*>(type);
+  if (ct && ct->classTag != CLASS_CLASS)
+    return true;
+  return false;
 }
 
 
@@ -491,6 +505,11 @@ void ArgSymbol::codegenDef(FILE* outfile) {
     fprintf(outfile, "* const");
   fprintf(outfile, " ");
   fprintf(outfile, "%s", cname);
+}
+
+
+bool ArgSymbol::isRef(void) {
+  return requiresCPtr();
 }
 
 
@@ -549,6 +568,7 @@ FnSymbol::FnSymbol(char* initName) :
   fnClass(FN_FUNCTION),
   noParens(false),
   retRef(false),
+  buildSetter(false),
   argScope(NULL),
   isSetter(false),
   isGeneric(false),
@@ -826,6 +846,11 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
                                          isSquare)));
   } else {
     wrapper->insertAtTail(build_for_expr(indices, iterators, actualCall, isSquare));
+//     ReturnStmt* ret = dynamic_cast<ReturnStmt*>(wrapper->body->body->last());
+//     SymExpr* sym = dynamic_cast<SymExpr*>(ret->expr);
+//     if (wrapper->retRef)
+//       sym->var->isReference = true;
+    wrapper->retRef = false;
   }
   defPoint->parentStmt->insertBefore(new DefExpr(wrapper));
   clear_file_info(wrapper->defPoint->parentStmt);
@@ -946,7 +971,6 @@ instantiate_tuple_get(FnSymbol* fn) {
   int index = dynamic_cast<VarSymbol*>(fn->substitutions.get(fn->instantiatedFrom->formals->get(2)->sym))->immediate->v_int64;
   char* name = stringcat("x", intstring(index));
   fn->body->replace(new BlockStmt(new ReturnStmt(new CallExpr(PRIMITIVE_GET_MEMBER, fn->_this, new_StringLiteral(name)))));
-  fn->retRef = true;
   return fn;
 }
 

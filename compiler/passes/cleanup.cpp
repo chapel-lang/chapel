@@ -324,7 +324,8 @@ static void build_constructor(ClassType* ct) {
   CallExpr* alloc_expr = new CallExpr(PRIMITIVE_MOVE, fn->_this, alloc_rhs);
 
   fn->insertAtTail(new DefExpr(fn->_this));
-  fn->insertAtTail(alloc_expr);
+  if (ct->classTag == CLASS_CLASS)
+    fn->insertAtTail(alloc_expr);
   if (ct->classTag == CLASS_CLASS)
     fn->insertAtTail(new CallExpr(PRIMITIVE_SETCID, fn->_this));
   if (ct->classTag == CLASS_UNION)
@@ -376,7 +377,6 @@ static void build_getter(ClassType* ct, Symbol *field) {
   FnSymbol* fn = new FnSymbol(field->name);
   fn->addPragma("inline");
   fn->_getter = field;
-  fn->retRef = true;
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
   fn->formals->insertAtTail(new ArgSymbol(INTENT_BLANK, "_methodTokenDummy", dtMethodToken));
   fn->formals->insertAtTail(_this);
@@ -412,6 +412,8 @@ static void build_setter(ClassType* ct, Symbol* field) {
   fn->formals->insertAtTail(new ArgSymbol(INTENT_BLANK, "_setterTokenDummy", dtSetterToken));
   fn->formals->insertAtTail(fieldArg);
   VarSymbol* val = new VarSymbol("_tmp");
+  val->isCompilerTemp = true;
+  val->canReference = true;
   if (ct->classTag == CLASS_UNION) {
     Expr* init = field->defPoint->init;
     Expr* type = field->defPoint->exprType;

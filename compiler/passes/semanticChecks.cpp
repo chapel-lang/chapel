@@ -170,7 +170,8 @@ check_normalized_def_before_use(FnSymbol* fn) {
       if (dynamic_cast<VarSymbol*>(sym->var))
         if (sym->var->defPoint && sym->var->defPoint->parentSymbol == fn)
           if (!defined.set_in(sym->var))
-            USR_FATAL(sym, "Variable '%s' used before defined", sym->var->name);
+            if (sym->var != fn->_this)
+              USR_FATAL(sym, "Variable '%s' used before defined", sym->var->name);
     }
   }
 }

@@ -758,6 +758,8 @@ resolveCall(CallExpr* call) {
     }
     if (dynamic_cast<CallExpr*>(call->baseExpr)) {
       VarSymbol* this_temp = new VarSymbol("this_temp");
+      this_temp->isCompilerTemp = true;
+      this_temp->canReference = true;
       Expr* base = call->baseExpr;
       base->replace(new SymExpr("this"));
       CallExpr* move = new CallExpr(PRIMITIVE_MOVE, this_temp, base);
@@ -904,6 +906,7 @@ resolveCall(CallExpr* call) {
                                           nextcall, call->copy());
           stmt->insertBefore(new DefExpr(if_fn));
           if_fn->retRef = false;
+          if_fn->buildSetter = false;
           nextcall = nextnextcall;
           CallExpr* tmp = new CallExpr(if_fn);
           call->replace(tmp);
@@ -990,8 +993,10 @@ resolveCall(CallExpr* call) {
           }
         }
       }
-      if (call->get(2)->isRef() && sym->var->canReference)
+      if (call->get(2)->isRef() && sym->var->canReference) {
         sym->var->isReference = true;
+        call->primitive = primitives[PRIMITIVE_REF];
+      }
       if (t == dtUnknown)
         INT_FATAL(call, "Unable to resolve type");
       if (t != sym->var->type && 
@@ -1045,7 +1050,12 @@ resolveFns(FnSymbol* fn) {
   ReturnStmt* last = dynamic_cast<ReturnStmt*>(fn->body->body->last());
   if (!last)
     INT_FATAL(fn, "Function is not normal");
-  Type* rt = last->expr->typeInfo();
+  SymExpr* ret = dynamic_cast<SymExpr*>(last->expr);
+  if (!ret)
+    INT_FATAL(fn, "Function is not normal");
+  if (ret->var->isReference)
+    fn->retRef = true;
+  Type* rt = ret->typeInfo();
   if (fn->retType == dtUnknown)
     fn->retType = rt;
   if (rt == dtUnknown)

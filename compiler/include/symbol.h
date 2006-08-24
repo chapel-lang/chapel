@@ -65,6 +65,7 @@ class Symbol : public BaseAST {
   virtual void codegenPrototype(FILE* outfile);
   virtual FnSymbol* getFnSymbol(void);
   virtual Symbol* getSymbol(void);
+  virtual bool isRef(void);
 };
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
 
@@ -99,13 +100,13 @@ class VarSymbol : public Symbol {
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
   bool isConst(void);
-  //Roxana
   bool isParam(void);
 
   void print(FILE* outfile);
   void printDef(FILE* outfile);
   void codegen(FILE* outfile);
   virtual void codegenDef(FILE* outfile);
+  virtual bool isRef(void);
 };
 
 
@@ -130,6 +131,7 @@ class ArgSymbol : public Symbol {
   void printDef(FILE* outfile);
   void codegen(FILE* outfile);
   void codegenDef(FILE* outfile);
+  virtual bool isRef(void);
 };
 
 
@@ -154,6 +156,7 @@ class FnSymbol : public Symbol {
   fnType fnClass;
   bool noParens;
   bool retRef;
+  bool buildSetter;
 
   SymScope* argScope;
   bool isSetter;

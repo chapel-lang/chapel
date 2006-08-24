@@ -13,7 +13,7 @@
 // those records as a reference argument and fix calls
 void
 convertReturnsToArgs() {
-  return; // disabled
+  return;
   Vec<BaseAST*> asts;
   collect_asts(&asts);
 
@@ -24,7 +24,7 @@ convertReturnsToArgs() {
       if (!call->primitive && call->isResolved()) {
         FnSymbol* fn = call->isResolved();
         ClassType* ct = dynamic_cast<ClassType*>(fn->retType);
-        if (ct && ct->classTag == CLASS_RECORD) {
+        if (ct && ct->classTag != CLASS_CLASS) {
           if (!call->parentExpr) {
             VarSymbol* tmp = new VarSymbol("_ignored_ret", ct);
             tmp->isCompilerTemp = true;
@@ -46,7 +46,7 @@ convertReturnsToArgs() {
   forv_Vec(BaseAST, ast, asts) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
       ClassType* ct = dynamic_cast<ClassType*>(fn->retType);
-      if (ct && ct->classTag == CLASS_RECORD) {
+      if (ct && ct->classTag != CLASS_CLASS) {
         ArgSymbol* arg = new ArgSymbol(INTENT_REF, "_ret", ct);
         fn->formals->insertAtTail(arg);
         fn->retType = dtVoid;
@@ -59,19 +59,15 @@ convertReturnsToArgs() {
 }
 
 
-static bool
-isScalarReplaceable(ClassType* ct) {
-  return ct->classTag == CLASS_RECORD && ct->symbol->hasPragma("destructure");
-}
-
 static int max(int a, int b) {
   return (a >= b) ? a : b;
 }
 
-static void setOrder(Map<ClassType*,int>& order, ClassType* ct);
+static void setOrder(Map<ClassType*,int>& order, int& maxOrder, ClassType* ct);
 
 static int
-getOrder(Map<ClassType*,int>& order, ClassType* ct, Vec<ClassType*>& visit) {
+getOrder(Map<ClassType*,int>& order, int& maxOrder,
+         ClassType* ct, Vec<ClassType*>& visit) {
   if (visit.set_in(ct))
     return 0;
   visit.set_add(ct);
@@ -80,22 +76,24 @@ getOrder(Map<ClassType*,int>& order, ClassType* ct, Vec<ClassType*>& visit) {
   int i = 0;
   for_fields(field, ct) {
     if (ClassType* fct = dynamic_cast<ClassType*>(field->type)) {
-      if (isScalarReplaceable(fct))
-        setOrder(order, fct);
-      i = max(i, getOrder(order, fct, visit));
+      if (fct->classTag != CLASS_CLASS)
+        setOrder(order, maxOrder, fct);
+      i = max(i, getOrder(order, maxOrder, fct, visit));
     }
   }
-  return i + isScalarReplaceable(ct);
+  return i + (ct->classTag != CLASS_CLASS);
 }
 
 
 static void
-setOrder(Map<ClassType*,int>& order, ClassType* ct) {
-  if (order.get(ct))
+setOrder(Map<ClassType*,int>& order, int& maxOrder, ClassType* ct) {
+  if (ct->classTag == CLASS_CLASS || order.get(ct))
     return;
   Vec<ClassType*> visit;
-  int i = getOrder(order, ct, visit);
+  int i = getOrder(order, maxOrder, ct, visit);
   order.put(ct, i);
+  if (i > maxOrder)
+    maxOrder = i;
 }
 
 
@@ -366,36 +364,28 @@ destructureRecords() {
   // order types that should be scalar replaced
   //  e.g. replace ((int,int),string) before (int,int)
   Map<ClassType*,int> order;
+  int maxOrder = 0;
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = dynamic_cast<DefExpr*>(ast))
       if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(def->sym))
         if (ClassType* ct = dynamic_cast<ClassType*>(ts->type))
-          if (isScalarReplaceable(ct))
-            setOrder(order, ct);
+          setOrder(order, maxOrder, ct);
   }
-  for (int i = 0; i < order.n; i++) {
-    if (order.v[i].key && order.v[i].value) {
-      printf("%d: %s\n", order.v[i].value, order.v[i].key->symbol->name);
-    }
-  }
-
-  // determine max ordering number
-  Vec<ClassType*> keys;
-  order.get_keys(keys);
-  int maxOrder = 0;
-  forv_Vec(ClassType, key, keys) {
-    maxOrder = max(maxOrder, order.get(key));
-  }
-  printf("%d\n", maxOrder);
 
   // iteratively call scalar replace, respecting type ordering
+  Vec<ClassType*> keys;
+  order.get_keys(keys);
   for (int i = maxOrder; i >= 1; i--) {
     Vec<ClassType*> typeSet;
+    bool nonEmpty = false;
     forv_Vec(ClassType, key, keys) {
-      if (order.get(key) == i)
+      if (order.get(key) == i && key->symbol->hasPragma("destructure")) {
+        nonEmpty = true;
         typeSet.set_add(key);
+      }
     }
-    scalarReplace(typeSet);
+    if (nonEmpty)
+      scalarReplace(typeSet);
   }
 
   // inline constructors for scalar replaced types
@@ -455,6 +445,7 @@ static void codegen_header(void) {
   cnames.put("y1", 1); // this is ridiculous...
   cnames.put("quad", 1);
   cnames.put("printf", 1);
+  cnames.put("abs", 1);
 
   // Remove functions not used (misses mutual recursion)
   compute_call_sites();
@@ -501,7 +492,6 @@ static void codegen_header(void) {
     cnames.put(sym->cname, 1);
 
     if (TypeSymbol* typeSymbol = dynamic_cast<TypeSymbol*>(sym)) {
-      //      if (!typeSymbol->hasPragma("data class"))
       typeSymbols.add(typeSymbol);
     } else if (FnSymbol* fnSymbol = dynamic_cast<FnSymbol*>(sym)) {
       fnSymbols.add(fnSymbol);
@@ -518,15 +508,50 @@ static void codegen_header(void) {
   forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {
     typeSymbol->codegenPrototype(outfile);
   }
+
+  // codegen enumerated types
   forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {
     if (dynamic_cast<EnumType*>(typeSymbol->type))
       typeSymbol->codegenDef(outfile);
   }
-  forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {
-    if (!dynamic_cast<EnumType*>(typeSymbol->type)) {
-      typeSymbol->codegenDef(outfile);
+
+  // order records/unions topologically
+  //   (int, int) before (int, (int, int))
+  Map<ClassType*,int> order;
+  int maxOrder = 0;
+  forv_Vec(TypeSymbol, ts, typeSymbols) {
+    if (ClassType* ct = dynamic_cast<ClassType*>(ts->type))
+      setOrder(order, maxOrder, ct);
+  }
+
+  // debug
+//   for (int i = 0; i < order.n; i++) {
+//     if (order.v[i].key && order.v[i].value) {
+//       printf("%d: %s\n", order.v[i].value, order.v[i].key->symbol->name);
+//     }
+//   }
+//   printf("%d\n", maxOrder);
+
+  // codegen records/unions in topological order
+  Vec<ClassType*> keys;
+  order.get_keys(keys);
+  for (int i = 1; i <= maxOrder; i++) {
+    forv_Vec(ClassType, key, keys) {
+      if (order.get(key) == i)
+        key->symbol->codegenDef(outfile);
     }
   }
+
+  // codegen remaining types
+  forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {
+    if (ClassType* ct = dynamic_cast<ClassType*>(typeSymbol->type))
+      if (ct->classTag != CLASS_CLASS)
+        continue;
+    if (dynamic_cast<EnumType*>(typeSymbol->type))
+      continue;
+    typeSymbol->codegenDef(outfile);
+  }
+
   forv_Vec(FnSymbol, fnSymbol, fnSymbols) {
     fnSymbol->codegenPrototype(outfile);
   }

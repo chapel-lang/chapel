@@ -6,22 +6,11 @@ pragma "destructure" pragma "tuple" record _tuple {
 
   pragma "inline" pragma "tuple set" def =this(param i : int, y);
 
-  def this(i : int) {
+  def this(i : int) var {
     for param j in 1..size do
       if i == j then
         return this(j);
     halt("tuple indexing out-of-bounds error");
-  }
-
-  def =this(i : int, y) {
-    var good = false;
-    for param j in 1..size do
-      if i == j {
-        this(j) = y;
-        good = true;
-      }
-    if !good then
-      halt("tuple indexing out-of-bounds error");
   }
 }
 

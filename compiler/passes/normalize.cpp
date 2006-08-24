@@ -57,7 +57,7 @@ void normalize(BaseAST* base) {
       fixup_parameterized_primitive_formals(fn);
       if (fn->fnClass == FN_ITERATOR)
         reconstruct_iterator(fn);
-      if (fn->retRef && !fn->_getter)
+      if (fn->buildSetter)
         build_lvalue_function(fn);
     }
   }
@@ -252,8 +252,7 @@ static void build_lvalue_function(FnSymbol* fn) {
   fn->defPoint->parentStmt->insertAfter(new DefExpr(new_fn));
   if (fn->_this)
     fn->_this->type->methods.add(new_fn);
-  new_fn->retRef = false;
-  fn->retRef = false;
+  fn->buildSetter = false;
   new_fn->retType = dtVoid;
   new_fn->cname = stringcat("_setter_", fn->cname);
   ArgSymbol* setterToken = new ArgSymbol(INTENT_BLANK, "_setterTokenDummy",
@@ -309,7 +308,7 @@ static void normalize_returns(FnSymbol* fn) {
   } else {
     retval = new VarSymbol(stringcat("_ret_", fn->name));
     retval->isCompilerTemp = true;
-    retval->isReference = fn->retRef;
+    retval->canReference = true;
     fn->insertAtHead(new DefExpr(retval));
     fn->insertAtTail(new ReturnStmt(retval));
   }
@@ -679,8 +678,18 @@ static void fold_call_expr(CallExpr* call) {
             if (call->argList->length() != 2)
               INT_FATAL(call, "bad homogeneous tuple");
             Expr* expr = call->get(2);
-            for (int i = 1; i < rank; i++)
-              call->insertAtTail(new CallExpr("_copy", expr->copy()));
+            for (int i = 1; i < rank; i++) {
+              if (call->parentStmt) {
+                VarSymbol* tmp = new VarSymbol("_tmp");
+                tmp->isCompilerTemp = true;
+                tmp->canReference = true;
+                call->parentStmt->insertBefore(new DefExpr(tmp));
+                call->parentStmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_copy", expr->copy())));
+                call->insertAtTail(tmp);
+              } else {
+                call->insertAtTail(new CallExpr("_copy", expr->copy()));
+              }
+            }
           }
         }
       }
@@ -961,18 +970,23 @@ static void fold_param_for(BlockStmt* block) {
   if (block->param_low || block->param_high) {
     if (SymExpr* lse = dynamic_cast<SymExpr*>(block->param_low)) {
       if (SymExpr* hse = dynamic_cast<SymExpr*>(block->param_high)) {
+        if (SymExpr* sse = dynamic_cast<SymExpr*>(block->param_stride)) {
         if (VarSymbol* lvar = dynamic_cast<VarSymbol*>(lse->var)) {
           if (VarSymbol* hvar = dynamic_cast<VarSymbol*>(hse->var)) {
-            if (lvar->immediate && hvar->immediate) {
+          if (VarSymbol* svar = dynamic_cast<VarSymbol*>(sse->var)) {
+            if (lvar->immediate && hvar->immediate && svar->immediate) {
               int low = lvar->immediate->v_int64;
               int high = hvar->immediate->v_int64;
+              int stride = svar->immediate->v_int64;
               block->param_low->remove();
               block->param_high->remove();
               Expr* index_expr = block->param_index;
               block->param_index->remove();
               block->blockTag = BLOCK_NORMAL;
               Symbol* index = dynamic_cast<SymExpr*>(index_expr)->var;
-              for (int i = low; i <= high; i++) {
+              if (stride < 0)
+                INT_FATAL("fix this");
+              for (int i = low; i <= high; i += stride) {
                 VarSymbol* new_index = new VarSymbol(index->name);
                 new_index->consClass = VAR_PARAM;
                 block->insertBefore(new DefExpr(new_index, new_IntLiteral(i)));
@@ -984,6 +998,8 @@ static void fold_param_for(BlockStmt* block) {
               block->remove();
             }
           }
+          }
+        }
         }
       }
     }

@@ -573,8 +573,12 @@ void ClassType::codegenDef(FILE* outfile) {
 
 
 void ClassType::codegenPrototype(FILE* outfile) {
-  fprintf(outfile, "typedef struct __%s _%s, *%s;\n",
-          symbol->cname, symbol->cname, symbol->cname);
+  if (classTag == CLASS_CLASS)
+    fprintf(outfile, "typedef struct __%s _%s, *%s;\n",
+            symbol->cname, symbol->cname, symbol->cname);
+  else
+    fprintf(outfile, "typedef struct __%s %s;\n",
+            symbol->cname, symbol->cname);
 }
 
 

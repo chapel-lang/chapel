@@ -408,7 +408,7 @@ record _aarray {
   def initialize() {
     if dom == nil then return;
     if noinit == true then return;
-    for dim in 1..rank do
+    for param dim in 1..rank do
       off(dim) = dom(dim)._low;
     blk(rank) = 1;
     for dim in 1..rank-1 by -1 do

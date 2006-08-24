@@ -226,7 +226,7 @@ Is this "while x"(i); or "while x(i)";?
 
 %type <pexpr> parenop_expr memberaccess_expr non_tuple_lvalue lvalue
 %type <pexpr> tuple_paren_expr expr expr_list_item opt_expr
-%type <pexpr> literal range seq_expr where
+%type <pexpr> literal seq_expr where
 %type <pexpr> variable_expr top_level_expr
 %type <pexpr> reduction opt_init_expr var_arg_expr
 %type <pexprls> expr_ls nonempty_expr_ls tuple_inner_type_ls opt_inherit_expr_ls
@@ -388,9 +388,13 @@ if_stmt:
 
 for_stmt:
   TFOR TPARAM identifier TIN expr TDOTDOT expr TDO stmt
-    { $$ = build_chpl_stmt(build_param_for($3, $5, $7, $9)); }
+{ $$ = build_chpl_stmt(build_param_for($3, $5, $7, new_IntLiteral(1), $9)); }
 | TFOR TPARAM identifier TIN expr TDOTDOT expr parsed_block_stmt
-    { $$ = build_chpl_stmt(build_param_for($3, $5, $7, $8)); }
+    { $$ = build_chpl_stmt(build_param_for($3, $5, $7, new_IntLiteral(1), $8)); }
+/* | TFOR TPARAM identifier TIN expr TDOTDOT expr TBY expr TDO stmt */
+/*     { $$ = build_chpl_stmt(build_param_for($3, $5, $7, $9, $11)); } */
+//| TFOR TPARAM identifier TIN expr TDOTDOT expr TBY expr parsed_block_stmt
+  //    { $$ = build_chpl_stmt(build_param_for($3, $5, $7, $9, $10)); }
 | for_tag nonempty_expr_ls TIN nonempty_expr_ls parsed_block_stmt
     { $$ = build_chpl_stmt(build_for_block($1, exprsToIndices($2), $4, $5)); }
 | for_tag nonempty_expr_ls TIN nonempty_expr_ls TDO stmt
@@ -563,7 +567,7 @@ fn_decl_stmt:
         $2->noParens = true;
       else
         $2->formals->insertAtTail($3);
-      $2->retRef = $4;
+      $2->buildSetter = $4;
       $2->retExpr = $5;
       if ($6)
         $2->where = new BlockStmt(new ExprStmt($6));
@@ -1154,7 +1158,8 @@ top_level_expr:
 /*   {  */
 /*     $$ = new CallExpr("_tostring", $1, new_StringLiteral($3)); */
 /*   } */
-| range %prec TDOTDOT
+| expr TDOTDOT expr
+    { $$ = new CallExpr("_aseq", $1, $3, new_IntLiteral(1)); }
 | seq_expr
 | TPLUS expr %prec TUPLUS
     { $$ = new CallExpr("+", $2); }
@@ -1227,12 +1232,6 @@ reduction:
     { $$ = build_reduce_expr( new SymExpr( "_bxor"), $3); }
 | identifier TSCAN expr
     { $$ = new CallExpr(new UnresolvedSymbol("_scan"), new UnresolvedSymbol($1), $3); }
-;
-
-
-range:
-  expr TDOTDOT expr
-    { $$ = new CallExpr("_aseq", $1, $3, new_IntLiteral(1)); }
 ;
 
 

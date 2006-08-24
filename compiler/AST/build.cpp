@@ -116,7 +116,7 @@ CallExpr* build_primitive_call(AList<Expr>* exprs) {
 FnSymbol* build_if_expr(Expr* e, Expr* e1, Expr* e2) {
   static int uid = 1;
   FnSymbol* fn = new FnSymbol(stringcat("_if_fn", intstring(uid++)));
-  fn->retRef = true;
+  fn->buildSetter = true;
   fn->addPragma("inline");
   if (e2)
     fn->insertAtTail(new CondStmt(e, new ReturnStmt(e1), new ReturnStmt(e2)));
@@ -323,11 +323,12 @@ AList<Stmt>* build_for_block(BlockTag tag,
 }
 
 
-AList<Stmt>* build_param_for(char* index, Expr* low, Expr* high, BlockStmt* stmts) {
+AList<Stmt>* build_param_for(char* index, Expr* low, Expr* high, Expr* stride, BlockStmt* stmts) {
   BlockStmt* block = new BlockStmt(stmts);
   block->blockTag = BLOCK_PARAM_FOR;
   block->param_low = low;
   block->param_high = high;
+  block->param_stride = stride;
   VarSymbol* index_var = new VarSymbol(index);
   block->param_index = new SymExpr(index_var);
   BlockStmt* outer = new BlockStmt(block);
