@@ -73375,3 +73375,17 @@ Log message:
 Modified files:
 	chapel/test/: paratest.client.pl paratest.server.pl 
 
+---------------------------------------------------------------------------
+
+08/24/06 16:06:29 -- bradc
+
+Log message:
+	Made a bunch of classes that were not sub-classes of gc
+	into sub-classes of gc to make sure that they weren't
+	throwing off the garbage collector's ability to collect
+	them.  Unfortunately, it seems that they weren't.
+
+Modified files:
+	chapel/compiler/ifa/: num.h 
+	chapel/compiler/include/: list.h map.h uniqueName.h vec.h 
+
