@@ -73403,3 +73403,13 @@ Log message:
 Modified files:
 	chapel/test/: paratest.server.pl 
 
+---------------------------------------------------------------------------
+
+08/24/06 16:54:17 -- waynew
+
+Log message:
+	Test two implementations of an iterator, old-style and desired.
+
+Added files:
+	chapel/test/functions/waynew/: itest.chpl itest.good 
+
