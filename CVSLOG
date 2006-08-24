@@ -73316,3 +73316,16 @@ Added files:
 	chapel/test/types/seq/deitz/: test_reduce_forall.chpl 
 	                              test_reduce_forall.good 
 
+---------------------------------------------------------------------------
+
+08/24/06 13:02:11 -- deitz
+
+Log message:
+	Added _init functions for each width of primitive type.  Fixed a bug
+	in coercion in which a coercion wrapper was unnecessarily created for
+	64-bit integer parameter to 64-bit integer coercion.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/modules/standard/: _chpl_base.chpl _chpl_complex.chpl 
+
