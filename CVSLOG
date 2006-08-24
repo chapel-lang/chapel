@@ -73329,3 +73329,15 @@ Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 	chapel/modules/standard/: _chpl_base.chpl _chpl_complex.chpl 
 
+---------------------------------------------------------------------------
+
+08/24/06 15:40:02 -- bradc
+
+Log message:
+	Added a round of garbage collection before each pass
+	is invoked.  Use "setenv GC_PRINT_STATS" to have it
+	print what it's doing at each collection point.
+
+Modified files:
+	chapel/compiler/main/: runpasses.cpp 
+
