@@ -73291,3 +73291,28 @@ Modified files:
 	chapel/test/memory/shannon/: printMemTable2.chpl 
 	                             printMemTable2.good 
 
+---------------------------------------------------------------------------
+
+08/24/06 11:33:48 -- deitz
+
+Log message:
+	Reworked front-end support for reductions to break it into a function
+	in order to capture the sequence before copying it to determine type
+	information.  For performance later, this needs to be reengineered.
+	
+	Fixed a bug in handling function expressions that was pulling them out
+	to far in cases where they were at module scope but in a block
+	statement.
+	
+	Added a test
+	  writeln(+ reduce [i in 1..4] (i**2));
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+	chapel/compiler/include/: build.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: cleanup.cpp 
+Added files:
+	chapel/test/types/seq/deitz/: test_reduce_forall.chpl 
+	                              test_reduce_forall.good 
+
