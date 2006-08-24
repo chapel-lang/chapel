@@ -1,12 +1,14 @@
 #!/usr/bin/perl
 
-# Usage: paratest.client.pl id chapeltestdir testdir distmode [compopts]
+# Usage: paratest.client.pl id chapeltestdir testdir distmode futures [compopts]
 #  
 # Used remotely by paratest.server.pl to run start_test locally.
 #  id - used to create a file to synchronize with paratest.server.pl
 #  chapeltestdir - root dir of Chapel test infrastructure
 #  testdir - directory to run start_test on
-#  compiler - Chapel compiler to use
+#  distmode - work distribution mode (0=directory, 1=file)
+#  futures - include .future tests (0=no, 1=yes)
+#  compopts - optional Chapel compiler options
 # 
 
 $debug = 0;
@@ -28,18 +30,19 @@ sub main {
     chomp $node;
     ($node, $junk) = split (/\./, $node, 2);
 
-    if ($#ARGV < 3) {
+    if ($#ARGV < 4) {
         print "@ARGV\n";
-        print "usage: paratest.client.pl id chapeltestdir testdir distmode [compopts]\n";
+        print "usage: paratest.client.pl id chapeltestdir testdir distmode futures [compopts]\n";
         exit (3);
     }
 
     $id = $ARGV[0];
     $workingdir = $ARGV[1];
     $testdir = $ARGV[2];
-    $distdir = $ARGV[3];
+    $filedist = $ARGV[3];
+    $incl_futures = ($ARGV[4] == 1) ? "-futures" : "" ;
 
-    if ($#ARGV==4) {
+    if ($#ARGV==5) {
         $compopts = "-compopts ". $ARGV[4];
     }
 
@@ -71,11 +74,11 @@ sub main {
     $logfile = "$logdir/$dirfname.$node.log";
     unlink $logfile if (-e $logfile);
 
-    $testarg = "-compiler $compiler -logfile $logfile $compopts";
-    if ($distdir) {
-        $testarg = "$testarg -startdir $testdir -norecurse";
-    } else {
+    $testarg = "-compiler $compiler -logfile $logfile $incl_futures $compopts";
+    if ($filedist) {
         $testarg = "$testarg -onetest $testdir";
+    } else {
+        $testarg = "$testarg -startdir $testdir -norecurse";
     }
     systemd ("$testcmd $testarg");
 

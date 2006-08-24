@@ -3,7 +3,7 @@
 # Usage: paratest.server.pl [-dirfile d] [-nodefile n] [-logfile l] [-help|-h]
 #   -dirfile  d: d is a file listing directories to test. Default is ".". Lines
 #                beginning with # are ignored.
-#   -dirdist   : distribute work at the granularity of directories (file 
+#   -filedist  : distribute work at the granularity of test files (directory
 #                granurality is the default.
 #   -futures   : in file granurality distribution mode, include tests with 
 #                .futures. Default is to not include these tests in file 
@@ -49,8 +49,8 @@ $rem_exe = "ssh";
 $pwd = `pwd`; chomp $pwd;
 $summary_len = 2;
 $sleep_time = 1;                      # polling time (sec) to distribute work
-$futures = 0;
-$dirdist = 1;
+$incl_futures = 0;
+$filedist = 0;
 
 my (@testdir_list, @node_list, $starttime, $endtime);
 
@@ -181,23 +181,30 @@ sub feed_nodes {
             unlink $synchfile;
 
             print "$node <- $testdir ($#testdir_list left)\n";
-
+            $testdirname = $testdir;
+            $testdirname =~ s/\//-/g;
+            $logfile = "$logdir/$testdirname.$node.log";
             # fork work
             unless ($pid = fork) {        # child
-                $rem_cmd = "$rem_exe $node $pwd/$cmd $readyid $pwd $testdir $dirdist $compopts";
+                $rem_cmd = "$rem_exe $node $pwd/$cmd $readyid $pwd $testdir $filedist $incl_futures $compopts";
                 if ($verbose) {
                     systemd ($rem_cmd);
                 } else {
                     systemd ("$rem_cmd > /dev/null 2>& 1");
                 }
-                print ":)";
+                $partial_errors = `grep -a "^\\[Error" $logfile`;
+                if ($partial_errors =~ /^\[Error/) {
+                    @errors = split /^/m, $partial_errors;
+                    chomp $errors[0];
+                    print "\n:( " . $errors[0] . "\n";
+                } else {
+                    print ":)";
+                }
                 exit (0);
             }
-            shift @testdir_list;
 
-            $testdir =~ s/\//-/g;
-            $logfile = "$logdir/$testdir.$node.log";
             push @logs, $logfile;
+            shift @testdir_list;
         }
 
         # wait before checking for free workers
@@ -314,7 +321,7 @@ sub print_help {
     print "Usage: paratest.server.pl [-dirfile d] [-nodefile n] [-help|-h]\n";
     print "    -compopts s: s is a string that is passed with -compopts to start_test.\n";
     print "    -dirfile  d: d is a file listing directories to test. Default is the current diretory.\n";
-    print "    -dirdist   : distribute work at the granularity of directories (file granurality is the default)\n";
+    print "    -filedist  : distribute work at the granularity of files (directory granurality is the default)\n";
     print "    -futures   : in file granurality distribution mode, include tests with .futures. Default is to not include these tests in file granularity distribution mode.\n";
     print "    -logfile  l: l is the output log file. Default is \"user\".\"platform\".log. in the Logs subdirectory\n";
     print "    -nodefile n: n is a file listing nodes to run on. Default is current node.\n";
@@ -342,8 +349,8 @@ sub main {
                 print "missing -compopts arg\n";
                 exit (8);
             }
-        } elsif (/^-dirdist/) {
-            $dirdist = 1;
+        } elsif (/^-filedist/) {
+            $filedist = 1;
         } elsif (/^-dirfile/) {
             shift @ARGV;
             if ($#ARGV >= 0) {
@@ -353,7 +360,7 @@ sub main {
                 exit (8);
             }
         } elsif (/^-futures/) {
-            $futures = 1;
+            $incl_futures = 1;
         } elsif (/^-logfile/) {
             shift @ARGV;
             if ($#ARGV >= 0) {
@@ -398,18 +405,18 @@ sub main {
         while (<dirfile>) {
             next if /^$|^\#/;
             chomp;
-            if ($dirdist) {
-                push @testdir_list, $_;
+            if ($filedist) {
+                push @testdir_list, find_files( $_, 0, !$incl_futures, 0);
             } else {
-                push @testdir_list, find_files( $_, 0, !$futures, 0);
+                push @testdir_list, $_;
             }
             # print "$_\n";
         }
     } else { # else, current working dir
-        if ($dirdist) {
-            @testdir_list = find_subdirs (".", 0);
+        if ($filedist) {
+            @testdir_list = find_files (".", 0, !$incl_futures, 1);
         } else {
-            @testdir_list = find_files (".", 0, !$futures, 1);
+            @testdir_list = find_subdirs (".", 0);
         }
     }
 
