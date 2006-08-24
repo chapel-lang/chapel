@@ -30,6 +30,7 @@ class gc {
 #define REALLOC realloc
 #define FREE free
 #define MEM_INIT()
+#define GC_gcollect()
 #endif
 #endif
 
