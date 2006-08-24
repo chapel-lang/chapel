@@ -73389,3 +73389,17 @@ Modified files:
 	chapel/compiler/ifa/: num.h 
 	chapel/compiler/include/: list.h map.h uniqueName.h vec.h 
 
+---------------------------------------------------------------------------
+
+08/24/06 16:08:00 -- waynew
+
+Log message:
+	Oops.  Updated the comments and -help to be more accurate.
+	
+	#   -filedist  : distribute work at the granularity of test files (directory
+	#                granurality is the default).
+	#   -futures   : include .future tests (default is none).
+
+Modified files:
+	chapel/test/: paratest.server.pl 
+
