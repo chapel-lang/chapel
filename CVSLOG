@@ -73223,3 +73223,53 @@ Added files:
 	chapel/test/types/tuple/deitz/: test_tuples6.chpl 
 	                                test_tuples6.good 
 
+---------------------------------------------------------------------------
+
+08/23/06 19:26:58 -- deitz
+
+Log message:
+	Changed record allocation strategy to allocate records on the stack
+	rather than the heap.
+	
+	Added field FnSymbol::buildSetter to mean that the user specified that
+	this function is a 'var' function and requires a setter.  This used to
+	be done with the FnSymbol::retRef field.  The retRef field now means
+	that the function returns a reference.  It is set during function
+	resolution and possibly unset in cullOverReferences.
+	
+	Started to add strides to parameter for loops, but did not finish this
+	work due to parsing problems and changing needs related to the rest of
+	the changes described here.
+	
+	Added a PRIMITIVE_REF to indicate that a reference should point at
+	what another reference points at or at a value.  Nice simplifications
+	to PRIMITIVE_MOVE as a result of this addition.
+	
+	Ordered records to codegen in an acceptable order to avoid a C error
+	of using an unspecified type.
+	
+	Major improvements to cullOverReferences to remove references that do
+	not need to be references.
+	
+	Fixed a bug in inlining regarding references and updated the output of
+	a complex numbers test that was not working correctly.
+	
+	Expect regression of memory/shannon/printMemTable2.  Brad to fix.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp expr.cpp primitive.cpp stmt.cpp 
+	                      symbol.cpp type.cpp 
+	chapel/compiler/include/: build.h primitive.h stmt.h symbol.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: cleanup.cpp codegen.cpp 
+	                         cullOverReferences.cpp 
+	                         functionResolution.cpp 
+	                         inlineFunctions.cpp normalize.cpp 
+	                         semanticChecks.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl _chpl_base.chpl 
+	                          _chpl_htuple.chpl 
+	chapel/runtime/src/: chplmem_tests.c 
+	chapel/test/memory/shannon/: printMemTable.chpl 
+	                             printMemTable.good 
+	chapel/test/types/complex/waynew/: complex-simple.good 
+
