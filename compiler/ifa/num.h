@@ -187,7 +187,7 @@ Immediate::uint_value( void) {
 }
 
 
-class ImmHashFns { public:
+class ImmHashFns : public gc { public:
   static unsigned int hash(Immediate *);
   static int equal(Immediate *, Immediate *);
 };

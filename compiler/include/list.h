@@ -21,7 +21,7 @@
 #include <stdint.h>
 #endif
 
-template <class C> class SLink {
+template <class C> class SLink : public gc {
  public:
   C *next;
   SLink() : next(NULL) {};

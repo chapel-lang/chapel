@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include "chplalloc.h"
 
-class UniqueName
+class UniqueName : public gc
 {
   //const char* name;
   const char* start; //the initial string (e.g. _u)

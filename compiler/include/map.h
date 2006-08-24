@@ -73,7 +73,7 @@ template <class K, class AHashFns, class C> class HashMap : public Map<K,C> {
           if ((_p)->key)
 
 
-class StringHashFns {
+class StringHashFns : public gc {
  public:
   static unsigned int hash(char *s) { 
     unsigned int h = 0; 
@@ -84,7 +84,7 @@ class StringHashFns {
   static int equal(char *a, char *b) { return !strcmp(a, b); }
 };
 
-class PointerHashFns {
+class PointerHashFns : public gc {
  public:
   static unsigned int hash(void *s) { return (unsigned int)(uintptr_t)s; }
   static int equal(void *a, void *b) { return a == b; }
@@ -146,7 +146,7 @@ template <class C, class ABlockHashFns> class BlockHash :
   public NBlockHash<C, ABlockHashFns, DEFAULT_BLOCK_HASH_SIZE> {};
 typedef BlockHash<char *, StringHashFns> StringBlockHash;
 
-template <class K, class C> class Env {
+template <class K, class C> class Env : public gc {
  public:
   void put(K akey, C avalue);
   C get(K akey);

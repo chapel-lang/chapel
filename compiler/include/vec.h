@@ -83,7 +83,7 @@ class Vec : public gc {
 #define forv_Vec(_c, _p, _v) if ((_v).n) for (_c *qq__##_p = (_c*)0, *_p = (_v).v[0]; \
                     ((intptr_t)(qq__##_p) < (_v).length()) && ((_p = (_v).v[(intptr_t)qq__##_p]) || 1); qq__##_p = (_c*)(((intptr_t)qq__##_p) + 1))
 
-template <class C, int S = VEC_INTEGRAL_SIZE> class Accum { public:
+template <class C, int S = VEC_INTEGRAL_SIZE> class Accum : public gc { public:
   Vec<C,S> asset;
   Vec<C,S> asvec;
   void add(C c) { if (asset.set_add(c)) asvec.add(c); }
