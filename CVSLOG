@@ -73352,3 +73352,26 @@ Log message:
 Modified files:
 	chapel/compiler/include/: chplalloc.h 
 
+---------------------------------------------------------------------------
+
+08/24/06 16:01:53 -- waynew
+
+Log message:
+	Added/enabled the following options.  Note that file distribution mode is
+	still broken (-filedist).
+	
+	  -filedist  : distribute work at the granularity of test files (directory
+	               granurality is the default.
+	  -futures   : in file granurality distribution mode, include tests with
+	               .futures. Default is to not include these tests in file
+	               granularity distribution mode.
+	
+	Added the printing of the first "Error" line for each partial log generated.
+	This will have fine granularity in file distribution mode.  Otherwise,
+	an error indicates at least one error was encountered in the directory
+	that was distributed.  You will have to look at the partial log or the
+	final log to see all the error in that directory.
+
+Modified files:
+	chapel/test/: paratest.client.pl paratest.server.pl 
+
