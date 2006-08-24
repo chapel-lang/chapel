@@ -73273,3 +73273,21 @@ Modified files:
 	                             printMemTable.good 
 	chapel/test/types/complex/waynew/: complex-simple.good 
 
+---------------------------------------------------------------------------
+
+08/24/06 11:02:59 -- bradc
+
+Log message:
+	Short-term workaround to get around the printMemTable2
+	regression from last-night -- made the internal print
+	Mem table routine take a threshold as an argument.
+	Longer-term solution is to have a memory tracking
+	module, but I couldn't get that done in time.
+
+Modified files:
+	chapel/modules/standard/: _chpl_base.chpl 
+	chapel/runtime/include/: chplmem_tests.h 
+	chapel/runtime/src/: chplmem_tests.c 
+	chapel/test/memory/shannon/: printMemTable2.chpl 
+	                             printMemTable2.good 
+
