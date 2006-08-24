@@ -161,10 +161,11 @@ canCoerce(Type* actualType, Symbol* actualParam, Type* formalType) {
     if (is_uint_type(actualType) &&
         get_width(actualType) < get_width(formalType))
       return true;
-    if (VarSymbol* var = dynamic_cast<VarSymbol*>(actualParam))
-      if (var->immediate)
-        if (fits_in_int(get_width(formalType), var->immediate))
-          return true;
+    if (get_width(formalType) < 64)
+      if (VarSymbol* var = dynamic_cast<VarSymbol*>(actualParam))
+        if (var->immediate)
+          if (fits_in_int(get_width(formalType), var->immediate))
+            return true;
   }
   if (is_uint_type(formalType)) {
     if (actualType == dtBool)

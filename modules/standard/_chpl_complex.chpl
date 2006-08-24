@@ -1,4 +1,4 @@
-pragma "inline" def _init(x: complex(?w)) return 0.0i:x.type;
+pragma "inline" def _init(x: complex(?w)) return 0.0i:complex(w);
 
 // complex(32) bound functions
 def _complex32.real: float(32) return __primitive( "complex_get_real", this);
@@ -14,8 +14,8 @@ def complex.=imag (f:float) { __primitive( "complex_set_imag", this, f); }
 
 def =(a: complex(?w), b: complex(w)) return b;
 
-pragma "inline" def _complex(real, imag) {
-  var x: complex;
+pragma "inline" def _complex(real: float(?w), imag: float(w)) {
+  var x: complex(w);
   x.real = real;
   x.imag = imag;
   return x;

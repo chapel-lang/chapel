@@ -2,7 +2,6 @@
 
 // Primitive functions and operators on bool
 pragma "inline" def =(a: bool, b: bool) return b;
-//pragma "inline" def _copy(a: bool) return a;
 pragma "inline" def ~(a: bool) return __primitive("u~", a);
 pragma "inline" def &(a: bool, b: bool) return __primitive("&", a, b);
 pragma "inline" def |(a: bool, b: bool) return __primitive("|", a, b);
@@ -124,9 +123,9 @@ pragma "inline" def _copy(a) return a;
 // _init
 //
 pragma "inline" def _init(x : bool) return false;
-pragma "inline" def _init(x : int) return 0;
-pragma "inline" def _init(x : uint) return 0u;
-pragma "inline" def _init(x : float) return 0.0;
+pragma "inline" def _init(x : int(?w)) return 0:int(w);
+pragma "inline" def _init(x : uint(?w)) return 0:uint(w);
+pragma "inline" def _init(x : float(?w)) return 0:float(w);
 pragma "inline" def _init(x : string) return "";
 pragma "inline" def _init(x) return nil:x;
 
