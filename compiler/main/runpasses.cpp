@@ -32,6 +32,7 @@ static void runPass(char *passName, void (*pass)(void)) {
   if (fdump_html) {
     gettimeofday(&startTime, &timezone);
   }
+  GC_gcollect();
   if (printPasses) {
     fprintf(stderr, "%32s :", passName);
     fflush(stderr);
