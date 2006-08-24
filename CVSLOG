@@ -73341,3 +73341,14 @@ Log message:
 Modified files:
 	chapel/compiler/main/: runpasses.cpp 
 
+---------------------------------------------------------------------------
+
+08/24/06 15:44:40 -- bradc
+
+Log message:
+	In order to make a "nogc" build work, added a stub-out
+	of the call to the forced GC round that I just introduced.
+
+Modified files:
+	chapel/compiler/include/: chplalloc.h 
+
