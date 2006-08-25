@@ -1,0 +1,4 @@
+# Makefile.darwin: contains darwin-specific variables
+#
+
+-include $(CHAPEL_ROOT)/make/Makefile.gnu

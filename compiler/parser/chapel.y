@@ -399,6 +399,8 @@ for_stmt:
     { $$ = build_chpl_stmt(build_for_block($1, exprsToIndices($2), $4, $5)); }
 | for_tag nonempty_expr_ls TIN nonempty_expr_ls TDO stmt
     { $$ = build_chpl_stmt(build_for_block($1, exprsToIndices($2), $4, new BlockStmt($6))); }
+;
+
 
 expr_for_stmt:
   TLSBR nonempty_expr_ls TIN nonempty_expr_ls TRSBR stmt

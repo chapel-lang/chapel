@@ -12,7 +12,7 @@ AList<Stmt>* yystmtlist = NULL;
 char* yyfilename;
 int yylineno;
 int yystartlineno;
-
+extern YYLTYPE yylloc;
 
 static char* filenameToModulename(char* filename) {
   char* modulename = stringcpy(filename);

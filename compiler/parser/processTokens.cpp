@@ -5,6 +5,7 @@
 #include "yy.h"
 #include "chapel.tab.h"
 
+extern YYLTYPE yylloc;
 
 static int stringBuffLen = 0;
 static int stringLen = 0;
