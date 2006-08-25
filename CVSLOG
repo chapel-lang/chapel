@@ -73583,3 +73583,13 @@ Log message:
 Added files:
 	chapel/test/arrays/deitz/: matrix.chpl matrix.good 
 
+---------------------------------------------------------------------------
+
+08/25/06 16:20:02 -- deitz
+
+Log message:
+	Minor change to show off one more feature.
+
+Modified files:
+	chapel/test/arrays/deitz/: matrix.chpl 
+
