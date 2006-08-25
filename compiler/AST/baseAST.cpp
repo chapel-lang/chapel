@@ -42,18 +42,13 @@ BaseAST::BaseAST(astType_t type) :
   parentScope(NULL),
   parentSymbol(NULL),
   filename(yyfilename), 
-  lineno(yystartlineno),
-  traversalInfo(NULL),
-  copyInfo(NULL)
+  lineno(yystartlineno)
 {
   checkid(id);
   if (lineno == -1) {
-    if (currentTraversal) {
-      traversalInfo = stringcpy(currentTraversal);
-    }
     if (currentLineno && currentFilename) {
       lineno = currentLineno;
-      filename = stringcpy(currentFilename);
+      filename = currentFilename;
     }
   }
 }

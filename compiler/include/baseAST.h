@@ -95,8 +95,6 @@ class BaseAST : public gc {
 
   char* filename;       // filename of location
   int lineno;           // line number of location
-  char* traversalInfo;  // traversal where this was created
-  Vec<char*>* copyInfo; // traversals where this was copied
 
   Vec<char*> pragmas;
   Vec<ModuleSymbol*> modUses; // modules used (BlockStmt,FnSymbol,...)
