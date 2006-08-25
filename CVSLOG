@@ -73593,3 +73593,18 @@ Log message:
 Modified files:
 	chapel/test/arrays/deitz/: matrix.chpl 
 
+---------------------------------------------------------------------------
+
+08/25/06 16:46:28 -- bradc
+
+Log message:
+	Dead code elimination -- pulled out code related to unit tests
+	(which we disabled a few weeks ago).
+
+Modified files:
+	chapel/compiler/: Makefile 
+	chapel/compiler/adt/: Makefile.share map.cpp vec.cpp 
+	chapel/compiler/util/: misc.cpp 
+Removed files:
+	chapel/compiler/adt/: list.cpp 
+
