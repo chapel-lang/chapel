@@ -73442,3 +73442,13 @@ Modified files:
 Added files:
 	chapel/make/: Makefile.darwin 
 
+---------------------------------------------------------------------------
+
+08/24/06 21:13:23 -- deitz
+
+Log message:
+	Fixed bug in reference showing up in Wayne's itest example.  This is a stopgap partial fix.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+
