@@ -1217,23 +1217,37 @@ top_level_expr:
 
 reduction:
   expr TREDUCE expr
-    { $$ = new CallExpr(new DefExpr(build_reduce_expr($1, $3))); }
+    { $$ = new CallExpr(new DefExpr(build_reduce($1, $3))); }
 | TPLUS TREDUCE expr
-    { $$ = new CallExpr(new DefExpr(build_reduce_expr( new SymExpr( "_sum"), $3))); }
+    { $$ = new CallExpr(new DefExpr(build_reduce(new SymExpr("_sum"), $3))); }
 | TSTAR TREDUCE expr
-    { $$ = new CallExpr(new DefExpr(build_reduce_expr( new SymExpr( "_product"), $3))); }
+    { $$ = new CallExpr(new DefExpr(build_reduce(new SymExpr("_prod"), $3))); }
 | TAND TREDUCE expr
-    { $$ = new CallExpr(new DefExpr(build_reduce_expr( new SymExpr( "_land"), $3))); }
+    { $$ = new CallExpr(new DefExpr(build_reduce(new SymExpr("_land"), $3))); }
 | TOR TREDUCE expr
-    { $$ = new CallExpr(new DefExpr(build_reduce_expr( new SymExpr( "_lor"), $3))); }
+    { $$ = new CallExpr(new DefExpr(build_reduce(new SymExpr("_lor"), $3))); }
 | TBAND TREDUCE expr
-    { $$ = new CallExpr(new DefExpr(build_reduce_expr( new SymExpr( "_band"), $3))); }
+    { $$ = new CallExpr(new DefExpr(build_reduce(new SymExpr("_band"), $3))); }
 | TBOR TREDUCE expr
-    { $$ = new CallExpr(new DefExpr(build_reduce_expr( new SymExpr( "_bor"), $3))); }
+    { $$ = new CallExpr(new DefExpr(build_reduce(new SymExpr("_bor"), $3))); }
 | TBXOR TREDUCE expr
-    { $$ = new CallExpr(new DefExpr(build_reduce_expr( new SymExpr( "_bxor"), $3))); }
-| identifier TSCAN expr
-    { $$ = new CallExpr(new UnresolvedSymbol("_scan"), new UnresolvedSymbol($1), $3); }
+    { $$ = new CallExpr(new DefExpr(build_reduce(new SymExpr("_bxor"), $3))); }
+|  expr TSCAN expr
+    { $$ = new CallExpr(new DefExpr(build_scan($1, $3))); }
+| TPLUS TSCAN expr
+    { $$ = new CallExpr(new DefExpr(build_scan(new SymExpr("_sum"), $3))); }
+| TSTAR TSCAN expr
+    { $$ = new CallExpr(new DefExpr(build_scan(new SymExpr("_prod"), $3))); }
+| TAND TSCAN expr
+    { $$ = new CallExpr(new DefExpr(build_scan(new SymExpr("_land"), $3))); }
+| TOR TSCAN expr
+    { $$ = new CallExpr(new DefExpr(build_scan(new SymExpr("_lor"), $3))); }
+| TBAND TSCAN expr
+    { $$ = new CallExpr(new DefExpr(build_scan(new SymExpr("_band"), $3))); }
+| TBOR TSCAN expr
+    { $$ = new CallExpr(new DefExpr(build_scan(new SymExpr("_bor"), $3))); }
+| TBXOR TSCAN expr
+    { $$ = new CallExpr(new DefExpr(build_scan(new SymExpr("_bxor"), $3))); }
 ;
 
 

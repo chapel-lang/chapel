@@ -1,9 +1,9 @@
-def min(type t): t {
+def mymin(type t): t {
   return -999:t;
 }
 
-var minint: int = min(int);
-var minfloat: float = min(float);
+var minint: int = mymin(int);
+var minfloat: float = mymin(float);
 
 writeln("minint is: ", minint);
 writeln("minfloat is: ", minfloat);

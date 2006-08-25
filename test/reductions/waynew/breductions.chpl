@@ -13,21 +13,21 @@ writeln( "| reduce B[D] = ", | reduce B);
 writeln( "^ reduce B[D] = ", ^ reduce B);
 
 B(1) = 0;
-B(2) = _max( uint);
+B(2) = max( uint);
 writeln( "\nB[D] = ", B);
 writeln( "& reduce B[D] = ", & reduce B);
 writeln( "| reduce B[D] = ", | reduce B);
 writeln( "^ reduce B[D] = ", ^ reduce B);
 
-B(1) = _max( uint);
+B(1) = max( uint);
 B(2) = 0;
 writeln( "\nB[D] = ", B);
 writeln( "& reduce B[D] = ", & reduce B);
 writeln( "| reduce B[D] = ", | reduce B);
 writeln( "^ reduce B[D] = ", ^ reduce B);
 
-B(1) = _max( uint);
-B(2) = _max( uint);
+B(1) = max( uint);
+B(2) = max( uint);
 writeln( "\nB[D] = ", B);
 writeln( "& reduce B[D] = ", & reduce B);
 writeln( "| reduce B[D] = ", | reduce B);

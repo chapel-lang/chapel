@@ -449,7 +449,16 @@ AList<Stmt>* build_type_select(AList<Expr>* exprs, AList<WhenStmt>* whenstmts) {
 }
 
 
-FnSymbol* build_reduce_expr(Expr* red, Expr* seq) {
+FnSymbol* build_reduce(Expr* red, Expr* seq) {
+  if (SymExpr* sym = dynamic_cast<SymExpr*>(red)) {
+    if (UnresolvedSymbol* us = dynamic_cast<UnresolvedSymbol*>(sym->var)) {
+      if (!strcmp(us->name, "max"))
+        us->name = "_max";
+      else if (!strcmp(us->name, "min"))
+        us->name = "_min";
+    }
+  }
+
   static int uid = 1;
   FnSymbol* fn = new FnSymbol(stringcat("_reduce_fn", intstring(uid++)));
   fn->addPragma("inline");
@@ -457,6 +466,27 @@ FnSymbol* build_reduce_expr(Expr* red, Expr* seq) {
   fn->insertAtTail(new DefExpr(tmp, seq));
   red = new CallExpr(red, new CallExpr(new CallExpr(".", tmp, new_StringLiteral("getValue")), new CallExpr(new CallExpr(".", tmp, new_StringLiteral("getHeadCursor")))));
   fn->insertAtTail(new ReturnStmt(new CallExpr("_reduce", red, tmp)));
+  return fn;
+}
+
+
+FnSymbol* build_scan(Expr* scan, Expr* seq) {
+  if (SymExpr* sym = dynamic_cast<SymExpr*>(scan)) {
+    if (UnresolvedSymbol* us = dynamic_cast<UnresolvedSymbol*>(sym->var)) {
+      if (!strcmp(us->name, "max"))
+        us->name = "_max";
+      else if (!strcmp(us->name, "min"))
+        us->name = "_min";
+    }
+  }
+
+  static int uid = 1;
+  FnSymbol* fn = new FnSymbol(stringcat("_scan_fn", intstring(uid++)));
+  fn->addPragma("inline");
+  VarSymbol* tmp = new VarSymbol("_scan_seq");
+  fn->insertAtTail(new DefExpr(tmp, seq));
+  scan = new CallExpr(scan, new CallExpr(new CallExpr(".", tmp, new_StringLiteral("getValue")), new CallExpr(new CallExpr(".", tmp, new_StringLiteral("getHeadCursor")))));
+  fn->insertAtTail(new ReturnStmt(new CallExpr("_scan", scan, tmp)));
   return fn;
 }
 

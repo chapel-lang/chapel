@@ -28,7 +28,8 @@ AList<Stmt>* build_param_for(char* index, Expr* low, Expr* high, Expr* stride, B
 AList<Stmt>* build_assignplus(Expr* lhs, Expr* rhs);
 CondStmt* build_select(Expr* s, AList<WhenStmt>* whenstmts);
 AList<Stmt>* build_type_select(AList<Expr>* s, AList<WhenStmt>* whenstmts);
-FnSymbol* build_reduce_expr(Expr* red, Expr *seq);
+FnSymbol* build_reduce(Expr* red, Expr *seq);
+FnSymbol* build_scan(Expr* scan, Expr *seq);
 
 void backPropagateInitsTypes(AList<Stmt>* stmts);
 void setVarSymbolAttributes(AList<Stmt>* stmts,

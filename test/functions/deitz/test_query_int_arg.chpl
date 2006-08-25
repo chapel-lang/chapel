@@ -2,7 +2,7 @@ def foo(i: int(?k)) {
   writeln("foo of int on ", k, " bits called with ", i);
   var i2: int(k) = i;
   writeln(i2);
-  i2 = _max(i2.type);
+  i2 = max(i2.type);
   writeln(i2);
 }
 

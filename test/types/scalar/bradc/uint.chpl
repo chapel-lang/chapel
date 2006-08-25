@@ -5,8 +5,8 @@ writeln("x is: ", x);
 writeln("y is: ", y);
 writeln();
 
-x = _max(uint);
-y = _max(uint);
+x = max(uint);
+y = max(uint);
 writeln("x is: ", x);
 writeln("y is: ", y);
 

@@ -235,120 +235,106 @@ pragma "inline" def string.this(s: _aseq)
   else
     return __primitive("string_select", this, s._low, s._high);
 
-class reduction { }
-
 def _reduce(r, s) { // reduce sequence s by reduction r
   for e in s do
     r.accumulate(e);
   return r.generate();  
 }
 
-class _sum : reduction {
+def _scan(r, s) {
+  var s2: seq(r.elt_type);
+  for e in s {
+    r.accumulate(e);
+    s2._append_in_place(r.generate());
+  }
+  return s2;
+}
+
+class _sum {
   type elt_type;
   var value : elt_type;   // assume default value is sum identity value
   def accumulate(x) {
     value = value + x;
   }
-  def generate()
-    return value;
+  def generate() return value;
 }
 
-class _product : reduction {
+class _prod {
   type elt_type;
   var value : elt_type = _prod_id( elt_type);
 
   def accumulate(x) {
     value = value * x;
   }
-  def generate() {
-    return value;
-  }
+  def generate() return value;
 }
 
-class max : reduction {
+class _max {
   type elt_type;
-  var value : elt_type = _min( elt_type);
+  var value : elt_type = min( elt_type);
 
   def accumulate(x) {
-    if (x > value) {
-        value = x;
-    }
+    value = max(x, value);
   }
-  def generate() {
-    return value;
-  }
+  def generate() return value;
 }
 
-class min : reduction {
+class _min {
   type elt_type;
-  var value : elt_type = _max( elt_type);
+  var value : elt_type = max( elt_type);
 
   def accumulate(x) {
-    if (x < value) {
-      value = x;
-    }
+    value = min(x, value);
   }
-  def generate() {
-    return value;
-  }
+  def generate() return value;
 }
 
-class _land : reduction {                 // logical and
+class _land {                 // logical and
   type elt_type;
   var value : elt_type = _land_id( elt_type);
 
   def accumulate(x) {
     value = value && x;
   }
-  def generate() {
-    return value;
-  }
+  def generate() return value;
 }
 
-class _lor : reduction {                 // logical or
+class _lor {                 // logical or
   type elt_type;
   var value : elt_type = _lor_id( elt_type);
 
   def accumulate(x) {
     value = value || x;
   }
-  def generate() {
-    return value;
-  }
+  def generate() return value;
 }
 
-class _band : reduction {                 // bit-wise and
+class _band {                 // bit-wise and
   type elt_type;
   var value : elt_type = _band_id( elt_type);
 
   def accumulate(x) {
     value = value & x;
   }
-  def generate() {
-    return value;
-  }
+  def generate() return value;
 }
 
-class _bor : reduction {                 // bit-wise or
+class _bor {                 // bit-wise or
   type elt_type;
   var value : elt_type = _bor_id( elt_type);
 
   def accumulate(x) {
     value = value | x;
   }
-  def generate() {
-    return value;
-  }
+  def generate() return value;
 }
 
-class _bxor : reduction {                // bit-wise xor
+class _bxor {                // bit-wise xor
   type elt_type;
   var value : elt_type = _bxor_id( elt_type);
 
   def accumulate(x) {
     value = value ^ x;
   }
-  def generate() {
-    return value;
-  }
+  def generate() return value;
 }

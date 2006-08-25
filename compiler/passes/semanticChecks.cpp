@@ -125,29 +125,6 @@ check_normalized_calls(CallExpr* call) {
 
 
 static void
-check_normalized_vars(Symbol* var) {
-  if (!var->isConst() && !var->isParam())
-    return;
-  int num_moves = 0;
-  CallExpr* move = 0;
-  forv_Vec(SymExpr*, sym, var->uses) {
-    if (CallExpr* call = dynamic_cast<CallExpr*>(sym->parentExpr)) {
-      if (call->isPrimitive(PRIMITIVE_MOVE) && call->get(1) == sym) {
-        num_moves++;
-        move = call;
-      }
-    }
-  }
-  if (num_moves >= 3) {
-    USR_FATAL_CONT(move, "Assigning to a constant expression");
-  }
-  if (num_moves >= 1 && dynamic_cast<ArgSymbol*>(var)) {
-    USR_FATAL_CONT(move, "Assigning to a constant expression");
-  }
-}
-
-
-static void
 check_normalized_functions(FnSymbol* fn) {
   if (fn->noParens && !fn->_this)
     USR_FATAL_CONT(fn, "Non-member functions must have parenthesized argument lists");
@@ -192,17 +169,11 @@ check_normalized_enum(EnumType* et) {
 
 void
 check_normalized(void) {
-  compute_sym_uses();
   Vec<BaseAST*> asts;
   collect_asts(&asts);
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
       check_normalized_calls(a);
-    } else if (VarSymbol* a = dynamic_cast<VarSymbol*>(ast)) {
-      if (!a->immediate)
-        check_normalized_vars(a);
-    } else if (ArgSymbol* a = dynamic_cast<ArgSymbol*>(ast)) {
-      check_normalized_vars(a);
     } else if (FnSymbol* a = dynamic_cast<FnSymbol*>(ast)) {
       check_normalized_functions(a);
       check_normalized_def_before_use(a);
@@ -236,8 +207,35 @@ check_resolved_vars(VarSymbol* var) {
 }
 
 
+static void
+check_resolved_syms(Symbol* var) {
+  if (!var->isConst() && !var->isParam())
+    return;
+  if (VarSymbol* vs = dynamic_cast<VarSymbol*>(var))
+    if (vs->immediate)
+      return;
+  int num_moves = 0;
+  CallExpr* move = 0;
+  forv_Vec(SymExpr*, sym, var->uses) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(sym->parentExpr)) {
+      if (call->isPrimitive(PRIMITIVE_MOVE) && call->get(1) == sym) {
+        num_moves++;
+        move = call;
+      }
+    }
+  }
+  if (num_moves >= 3) {
+    USR_FATAL_CONT(move, "Assigning to a constant expression");
+  }
+  if (num_moves >= 1 && dynamic_cast<ArgSymbol*>(var)) {
+    USR_FATAL_CONT(move, "Assigning to a constant expression");
+  }
+}
+
+
 void
 check_resolved(void) {
+  compute_sym_uses();
   Vec<BaseAST*> asts;
   collect_asts(&asts);
   forv_Vec(BaseAST, ast, asts) {
@@ -245,5 +243,7 @@ check_resolved(void) {
       check_resolved_calls(a);
     else if (VarSymbol* a = dynamic_cast<VarSymbol*>(ast))
       check_resolved_vars(a);
+    if (dynamic_cast<VarSymbol*>(ast) || dynamic_cast<ArgSymbol*>(ast))
+      check_resolved_syms(dynamic_cast<Symbol*>(ast));
   }
 }

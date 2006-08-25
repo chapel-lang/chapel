@@ -35,13 +35,13 @@ for loc in localeD {
     }
 
     if (myPos == 0) {
-      mylo(d) = min(indexType);
+      mylo(d) = mymin(indexType);
     } else {
       mylo(d) = (numElems * myPos) / numLocs;
       mylo(d) += globLo(d);
     }
     if (myPos == numLocs - 1) {
-      myhi(d) = max(indexType);
+      myhi(d) = mymax(indexType);
     } else {
       myhi(d) = (numElems * (myPos + 1)) / numLocs;
       myhi(d) -= 1;
@@ -59,11 +59,11 @@ for loc in localeD {
 }
 
 
-def min(type t): int {
+def mymin(type t): int {
   return -999;
 }
 
 
-def max(type t): int {
+def mymax(type t): int {
   return 999;
 }

@@ -141,9 +141,14 @@ pragma "inline" def _bxor_id( type t) return __primitive( "_bxor_id", t);
 
 
 // predefined functions
-pragma "inline" def _min( type t) return __primitive( "_min", t);
-pragma "inline" def _max( type t) return __primitive( "_max", t);
+pragma "inline" def min(type t) return __primitive( "_min", t);
+pragma "inline" def max(type t) return __primitive( "_max", t);
 
+pragma "inline" def min(x, y) return if x < y then x else y;
+pragma "inline" def max(x, y) return if x > y then x else y;
+
+pragma "inline" def min(x, y, z...?k) return min(min(x, y), (...z));
+pragma "inline" def max(x, y, z...?k) return max(max(x, y), (...z));
 
 //
 // More primitive funs

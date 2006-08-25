@@ -3,7 +3,7 @@
 writeln( "\ncomplex(32) numbers");
 var a32: complex(32);
 writeln( "a32 = ", a32);
-a32 = _max(a32.type);
+a32 = max(a32.type);
 writeln( "max(a32) = ", a32);
 var f32: float(32) = 5.6:float(32);
 
@@ -27,7 +27,7 @@ writeln( "conjg(a32) = ", conjg(a32));
 writeln( "\ncomplex(64) numbers");
 var a64:complex(64);
 writeln( "a64 = ", a64);
-a64 = _max(a64.type);
+a64 = max(a64.type);
 writeln( "max(a64) = ", a64);
 var f64: float(64) = 5.6;
 
@@ -51,7 +51,7 @@ writeln( "conjg(a64) = ", conjg(a64));
 writeln( "\ncomplex numbers");
 var r64:complex;
 writeln( "r64 = ", r64);
-r64 = _max(r64.type);
+r64 = max(r64.type);
 writeln( "max(r64) = ", r64);
 var t64: float = 5.6;
 

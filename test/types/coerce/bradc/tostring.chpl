@@ -32,10 +32,10 @@ def dotype(x: ?t) {
   var s: string;
   s = x;
   writeln("s is: ", s);
-  var v = _min(t);
+  var v = min(t);
   s = v;
   writeln("s is: ", s);
-  v = _max(t);
+  v = max(t);
   s = v;
   writeln("s is: ", s);
   writeln();
