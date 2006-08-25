@@ -20,8 +20,6 @@ SUBDIRS = \
 	passes \
 	util \
 
-#	test \
-
 #
 # include standard header for compiler
 #

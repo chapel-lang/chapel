@@ -1,5 +1,4 @@
 ADT_SRCS = \
-	list.cpp \
 	map.cpp \
 	vec.cpp
 

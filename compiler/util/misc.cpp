@@ -5,10 +5,6 @@
 #include "../main/version.h"
 #include "files.h"
 #include "chpl.h"
-//#include "ast.h"
-//#include "if1.h"
-//#include "var.h"
-//#include "pnode.h"
 #include "baseAST.h"
 
 void cleanup_for_exit(void) {
@@ -36,12 +32,6 @@ clean_exit(int status) {
   cleanup_for_exit();
   exit(status);
 }
-
-#ifdef TEST_LIB
-bool ignore_errors = 0;
-bool developer = false;
-void get_version(char *) {}
-#endif
 
 
 // Support for internal errors, adopted from ZPL compiler
