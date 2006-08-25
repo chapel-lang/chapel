@@ -588,7 +588,7 @@ static void fix_def_expr(DefExpr* def) {
 #define FIND_PRIMITIVE_TYPE( prim_type, numoftypes, ptype_p)            \
   for (int type=0; type<numoftypes; type++) {                           \
     if (prim_type[type] &&                                              \
-        (prim_type[type]->symbol == (TypeSymbol*) base->var)) {         \
+        (prim_type[type]->symbol == dynamic_cast<TypeSymbol*>(base->var))) { \
       ptype_p = prim_type;                                              \
       break;                                                            \
     }                                                                   \

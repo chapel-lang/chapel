@@ -128,7 +128,12 @@ begin_mark_locals() {
   //  - add mutex + ref-counter to nested function's arg list
   //  - add calls to init ref-counter, touch, and free
   forv_Vec( SymExpr, se, arglist) {
-    VarSymbol *local = (VarSymbol*)(se->var);  // var that is referenced
+    VarSymbol *local;             // var that is referenced
+
+    if (!(local = dynamic_cast<VarSymbol*>( se->var))) {  
+      INT_FATAL( se->var, "currently can only handle locals (not args)");
+    }
+
     Stmt      *localdef = local->defPoint->parentStmt;
 
     if (!local->on_heap) {        // no reference counter associated yet
@@ -151,7 +156,11 @@ begin_mark_locals() {
     }
 
     // add refc and mutex args as both actuals and formals
-    CallExpr  *ce = (CallExpr*)se->parentExpr;
+    CallExpr  *ce;
+    if (!(ce = dynamic_cast<CallExpr*>( se->parentExpr))) {
+      INT_FATAL( se->parentExpr, "should be walking args of a call within begin");
+    }
+
     ce->argList->insertAtTail( new SymExpr( local->refc));
     ce->argList->insertAtTail( new SymExpr( local->refcMutex)); 
     ArgSymbol *rc_arg = new ArgSymbol( INTENT_REF, 
@@ -160,7 +169,7 @@ begin_mark_locals() {
     ArgSymbol *rcm_arg = new ArgSymbol( INTENT_REF, 
                                         local->refcMutex->name, 
                                         dtMutex);
-    FnSymbol  *fn = (FnSymbol*) ((SymExpr*)ce->baseExpr)->var;
+    FnSymbol  *fn = dynamic_cast<FnSymbol*>( (dynamic_cast<SymExpr*>( ce->baseExpr))->var);
     fn->formals->insertAtTail(new DefExpr( rc_arg));
     fn->formals->insertAtTail(new DefExpr( rcm_arg));
 
@@ -191,7 +200,7 @@ begin_mark_locals() {
                                                             local,
                                                             local->refc,
                                                             local->refcMutex));
-    ArgSymbol *fa = (ArgSymbol*) actual_to_formal( se);
+    ArgSymbol *fa = dynamic_cast<ArgSymbol*>( actual_to_formal( se));
     fn->body->body->last()->insertBefore( new CallExpr( PRIMITIVE_REFC_RELEASE,
                                                         fa,
                                                         rc_arg,
@@ -240,7 +249,7 @@ thread_args() {
             if (ExprStmt *estmt = dynamic_cast<ExprStmt*>( stmt)) {
               if (CallExpr *fcall = dynamic_cast<CallExpr*>( estmt->expr)) {
                 // create a new class to capture refs to locals
-                char* fname = ((SymExpr*)fcall->baseExpr)->var->name;
+                char* fname = (dynamic_cast<SymExpr*>(fcall->baseExpr))->var->name;
                 ClassType* ctype = new ClassType( CLASS_CLASS);
                 TypeSymbol* new_c = new TypeSymbol( stringcat("_class_locals", 
                                                               fname),
@@ -250,8 +259,8 @@ thread_args() {
                 // add the function args as fields in the class
                 AList<Stmt>* vlist = new AList<Stmt>();
                 for_actuals(arg, fcall) {
-                  SymExpr   *s = dynamic_cast<SymExpr*>(arg);
-                  ArgSymbol *var = (ArgSymbol*)(s->var);
+                  SymExpr *s = dynamic_cast<SymExpr*>(arg);
+                  Symbol  *var = s->var; // arg or var
                   vlist->insertAtTail(new DefExpr(new VarSymbol(var->name,
                                                                 var->type,
                                                                 VAR_NORMAL,
@@ -275,8 +284,8 @@ thread_args() {
 
                 // set the references in the class instance
                 for_actuals(arg, fcall) {
-                  SymExpr   *s = dynamic_cast<SymExpr*>(arg);
-                  ArgSymbol *var = (ArgSymbol*)(s->var);
+                  SymExpr *s = dynamic_cast<SymExpr*>(arg);
+                  Symbol  *var = s->var; // var or arg
                   CallExpr *setc=new CallExpr(PRIMITIVE_SET_MEMBER_REF_TO,
                                               tempc,
                                               ctype->getField(var->name),
@@ -286,14 +295,14 @@ thread_args() {
 
                 // create wrapper-function that uses the class instance
                 FnSymbol *wrap_fn = new FnSymbol( stringcat("wrap", fname));
-                DefExpr  *fcall_def= ((SymExpr*)fcall->baseExpr)->var->defPoint;
+                DefExpr  *fcall_def= (dynamic_cast<SymExpr*>( fcall->baseExpr))->var->defPoint;
                 ArgSymbol *wrap_c = new ArgSymbol( INTENT_BLANK, "c", ctype);
                 wrap_fn->formals->insertAtTail( wrap_c);
                 mod->stmts->insertAtTail( new DefExpr( wrap_fn));
                 b->insertAtHead( new CallExpr( wrap_fn, tempc));
 
                 // translate the original cobegin function
-                CallExpr *new_cofn = new CallExpr( ((SymExpr*)fcall->baseExpr)->var);
+                CallExpr *new_cofn = new CallExpr( (dynamic_cast<SymExpr*>(fcall->baseExpr))->var);
                 for_fields(field, ctype) {  // insert args
                   new_cofn->insertAtTail( new CallExpr(PRIMITIVE_GET_MEMBER_REF_TO,
                                                        wrap_c,
