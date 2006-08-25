@@ -30,7 +30,7 @@ def *(M1: Matrix, M2: Matrix) {
   if M1.n != M2.m then
     halt("illegal matrix * operation");
   var M3: Matrix(M1(1,1)*M2(1,1), M1.m, M2.n);
-  [i,j in M3.D] M3(i,j) = + reduce [k in 1..M1.n] (M1(i,k) + M2(k,j));
+  [i,j in M3.D] M3(i,j) = + reduce [k in M1.D(2)] (M1(i,k) + M2(k,j));
   return M3;
 }
 
