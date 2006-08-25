@@ -31,6 +31,7 @@ class gc {
 #define FREE free
 #define MEM_INIT()
 #define GC_gcollect()
+#define GC_get_heap_size() 0
 #endif
 #endif
 

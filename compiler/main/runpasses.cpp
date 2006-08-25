@@ -27,6 +27,7 @@ static void runPass(char *passName, void (*pass)(void)) {
   struct timeval startTime;
   struct timeval stopTime;
   struct timezone timezone;
+  static int heapsize = 0;
 
   currentTraversal = stringcpy(passName);
   if (fdump_html) {
@@ -37,13 +38,18 @@ static void runPass(char *passName, void (*pass)(void)) {
     fprintf(stderr, "%32s :", passName);
     fflush(stderr);
     gettimeofday(&startTime, &timezone);
+    heapsize = GC_get_heap_size();
   }
   (*pass)();
   if (printPasses) {
     gettimeofday(&stopTime, &timezone);
-    fprintf(stderr, "%8.3f seconds\n",  
+    int newheapsize = GC_get_heap_size();
+    fprintf(stderr, "%8.3f seconds,",  
             ((double)((stopTime.tv_sec*1e6+stopTime.tv_usec) - 
                       (startTime.tv_sec*1e6+startTime.tv_usec))) / 1e6);
+    fprintf(stderr, " heap = %6dk (+%6dk)\n", newheapsize/1024, 
+            (newheapsize - heapsize)/1024);
+    heapsize = newheapsize;
   }
 
   if (fdump_html) {
