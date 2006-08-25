@@ -73499,3 +73499,25 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: normalize.cpp parallel.cpp 
 
+---------------------------------------------------------------------------
+
+08/25/06 12:12:10 -- deitz
+
+Log message:
+	Removed unnecessary calls vector from FnSymbol.
+	
+	Added utility cleanAst that calls BaseAST::clean virtual method which
+	currently only clears the Symbol::uses vector.  It is called between
+	passes and removes unnecessary stuff.
+	
+	It also returns the high water mark of asts and the current number of
+	live asts.  These values are now printed out between passes using the
+	--print-passes flag.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp baseAST.cpp symbol.cpp 
+	                      type.cpp 
+	chapel/compiler/include/: baseAST.h symbol.h vec.h 
+	chapel/compiler/main/: driver.cpp runpasses.cpp 
+	chapel/compiler/passes/: flattenFunctions.cpp normalize.cpp 
+
