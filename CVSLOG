@@ -73573,3 +73573,13 @@ Modified files:
 Added files:
 	chapel/test/reductions/deitz/: test_scan1.chpl test_scan1.good 
 
+---------------------------------------------------------------------------
+
+08/25/06 16:18:29 -- deitz
+
+Log message:
+	Added a matrix record test case.
+
+Added files:
+	chapel/test/arrays/deitz/: matrix.chpl matrix.good 
+
