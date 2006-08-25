@@ -73473,3 +73473,19 @@ Modified files:
 Removed files:
 	chapel/test/classes/bradc/: setterForField.future 
 
+---------------------------------------------------------------------------
+
+08/25/06 10:23:46 -- deitz
+
+Log message:
+	Removed traversalInfo string.
+	
+	Removed unused copyInfo vector.
+	
+	Stopped copying the filename string on each AST.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp 
+	chapel/compiler/include/: baseAST.h 
+	chapel/compiler/util/: misc.cpp 
+
