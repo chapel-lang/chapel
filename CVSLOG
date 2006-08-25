@@ -73489,3 +73489,13 @@ Modified files:
 	chapel/compiler/include/: baseAST.h 
 	chapel/compiler/util/: misc.cpp 
 
+---------------------------------------------------------------------------
+
+08/25/06 11:17:23 -- waynew
+
+Log message:
+	Changed static casts to the more correct dynamic_cast.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp parallel.cpp 
+
