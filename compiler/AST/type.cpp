@@ -506,7 +506,7 @@ void ClassType::addDeclarations(AList<Stmt>* stmts, bool tail) {
         fn->_this = new ArgSymbol(INTENT_BLANK, "this", this);
         fn->formals->insertAtHead(new DefExpr(fn->_this));
         if (strcmp("this", fn->name))
-          fn->formals->insertAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_methodTokenDummy", dtMethodToken)));
+          fn->formals->insertAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
         fn->isMethod = true;
       }
       if (def->parentSymbol)
@@ -750,8 +750,8 @@ void initPrimitiveTypes(void) {
   dtNil = createPrimitiveType ("_nilType", "_nilType");
   CREATE_DEFAULT_SYMBOL (dtNil, gNil, "nil");
   
-  dtUnknown = createPrimitiveType ("_unknownType", "_unknownType");
-  CREATE_DEFAULT_SYMBOL (dtUnknown, gUnknown, "_unknown");
+  dtUnknown = createPrimitiveType ("_unknown", "_unknown");
+  CREATE_DEFAULT_SYMBOL (dtUnknown, gUnknown, "_gunknown");
 
   dtVoid = createPrimitiveType ("void", "void");
   CREATE_DEFAULT_SYMBOL (dtVoid, gVoid, "_void");
@@ -814,10 +814,10 @@ void initPrimitiveTypes(void) {
   CREATE_DEFAULT_SYMBOL (dtCondVar_p, gCondVar_p, "NULL");
 
   dtAny = createPrimitiveType ("any", "_any");
-  dtMethodToken = createPrimitiveType ("_mt", "_mt");
-  CREATE_DEFAULT_SYMBOL (dtMethodToken, gMethodToken, "_unknown");
-  dtSetterToken = createPrimitiveType ("_st", "_st");
-  CREATE_DEFAULT_SYMBOL (dtSetterToken, gSetterToken, "_unknown");
+  dtMethodToken = createPrimitiveType ("_MT", "_MT");
+  CREATE_DEFAULT_SYMBOL (dtMethodToken, gMethodToken, "_mt");
+  dtSetterToken = createPrimitiveType ("_ST", "_ST");
+  CREATE_DEFAULT_SYMBOL (dtSetterToken, gSetterToken, "_st");
 }
 
 

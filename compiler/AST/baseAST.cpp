@@ -22,6 +22,10 @@ static long uid = 1;
 static void checkid(long id) {
 }
 
+void printlastid() {
+  printf("%ld\n", uid);
+}
+
 long BaseAST::getNumIDs(void) {
   return uid;
 }
@@ -538,8 +542,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all, int sentinels) {
     AST_ADD_CHILD(FnSymbol, body);
     ADD_CHILD(FnSymbol, retType);
     ADD_CHILD(FnSymbol, _this);
-    ADD_CHILD(FnSymbol, _setter);
-    ADD_CHILD(FnSymbol, _getter);
     AST_ADD_CHILD(FnSymbol, where);
     AST_ADD_CHILD(FnSymbol, retExpr);
     goto LSymbolCommon;

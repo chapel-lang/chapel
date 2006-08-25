@@ -818,7 +818,7 @@ resolveCall(CallExpr* call) {
             USR_STOP();
           USR_PRINT("Candidates are:");
           forv_Vec(FnSymbol, fn, resolve_call_error_candidates) {
-            if (fn->isSetter || fn->_setter)
+            if (fn->isSetter)
               continue;
             int start = 0;
             if (fn->instantiatedFrom)
@@ -851,6 +851,8 @@ resolveCall(CallExpr* call) {
               else if (formalDef->sym->type == dtUnknown) {
                 if (SymExpr* sym = dynamic_cast<SymExpr*>(formalDef->exprType))
                   str = stringcat(str, formalDef->sym->name, ": ", sym->var->name);
+                else
+                  str = stringcat(str, formalDef->sym->name, ": ", formalDef->sym->type->symbol->name);
               } else
                 str = stringcat(str, formalDef->sym->name, ": ", formalDef->sym->type->symbol->name);
             }

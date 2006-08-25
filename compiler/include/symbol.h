@@ -157,14 +157,13 @@ class FnSymbol : public Symbol {
   bool noParens;
   bool retRef;
   bool buildSetter;
+  bool defSetGet;
 
   SymScope* argScope;
   bool isSetter;
   bool isGeneric;
   bool hasVarArgs;
   Symbol* _this;
-  Symbol* _getter; // the variable this function gets if it is a getter
-  Symbol* _setter;
   bool isMethod;
   FnSymbol *instantiatedFrom;
   ASTMap substitutions;

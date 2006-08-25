@@ -37,7 +37,8 @@ static bool type_name_match(char* name, Symbol* sym) {
 static FnSymbol* function_exists(char* name,
                                  int numFormals = -1,
                                  char* formalTypeName1 = NULL,
-                                 char* formalTypeName2 = NULL) {
+                                 char* formalTypeName2 = NULL,
+                                 char* formalTypeName3 = NULL) {
   forv_Vec(FnSymbol, fn, fns) {
     if (strcmp(name, fn->name))
       continue;
@@ -54,9 +55,93 @@ static FnSymbol* function_exists(char* name,
       if (!type_name_match(formalTypeName2, fn->formals->get(2)->sym))
         continue;
 
+    if (formalTypeName3)
+      if (!type_name_match(formalTypeName3, fn->formals->get(3)->sym))
+        continue;
+
     return fn;
   }
   return NULL;
+}
+
+
+static void build_getter(ClassType* ct, Symbol *field) {
+  if (function_exists(field->name, 2, dtMethodToken->symbol->name, ct->symbol->name))
+    return;
+
+  FnSymbol* fn = new FnSymbol(field->name);
+  fn->defSetGet = true;
+  fn->addPragma("inline");
+  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
+  fn->formals->insertAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  fn->formals->insertAtTail(_this);
+  if (ct->classTag == CLASS_UNION)
+    fn->insertAtTail(new CondStmt(new CallExpr("!", new CallExpr(PRIMITIVE_UNION_GETID, _this, new_IntSymbol(field->id))), new ExprStmt(new CallExpr("halt", new_StringLiteral("illegal union access")))));
+  fn->insertAtTail(new ReturnStmt(new CallExpr(PRIMITIVE_GET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)))));
+  DefExpr* def = new DefExpr(fn);
+  ct->symbol->defPoint->parentStmt->insertBefore(def);
+  reset_file_info(fn, field->lineno, field->filename);
+  build(fn);
+  fns.add(fn);
+  ct->methods.add(fn);
+  fn->isMethod = true;
+  fn->cname = stringcat("_", ct->symbol->cname, "_", fn->cname);
+  fn->noParens = true;
+  fn->_this = _this;
+}
+
+
+static void build_setter(ClassType* ct, Symbol* field) {
+  if (FnSymbol* fn = function_exists(field->name, 4, dtMethodToken->symbol->name, ct->symbol->name, dtSetterToken->symbol->name)) {
+    Vec<BaseAST*> asts;
+    collect_asts(&asts, fn);
+    forv_Vec(BaseAST, ast, asts) {
+      if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+        if (call->isNamed(field->name) && call->argList->length() == 4) {
+          if (call->get(1)->typeInfo() == dtMethodToken &&
+              call->get(2)->typeInfo() == ct &&
+              call->get(3)->typeInfo() == dtSetterToken) {
+            call->replace(new CallExpr(PRIMITIVE_SET_MEMBER, call->get(2)->remove(), new_StringLiteral(field->name), call->get(3 /* 2 removed */)->remove()));
+          }
+        }
+      }
+    }
+    return;
+  }
+
+  FnSymbol* fn = new FnSymbol(field->name);
+  fn->isSetter = true;
+  fn->defSetGet = true;
+  fn->addPragma("inline");
+  fn->retType = dtVoid;
+
+  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
+  ArgSymbol* fieldArg = new ArgSymbol(INTENT_BLANK, "_arg", dtAny);
+  fn->formals->insertAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  fn->formals->insertAtTail(_this);
+  fn->formals->insertAtTail(new ArgSymbol(INTENT_BLANK, "_st", dtSetterToken));
+  fn->formals->insertAtTail(fieldArg);
+  VarSymbol* val = new VarSymbol("_tmp");
+  val->isCompilerTemp = true;
+  val->canReference = true;
+  fn->insertAtTail(new DefExpr(val));
+  if (ct->classTag == CLASS_UNION) {
+    fn->insertAtTail(new CallExpr(PRIMITIVE_UNION_SETID, _this, new_IntSymbol(field->id)));
+    fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, val, new CallExpr("_copy", fieldArg)));
+  } else {
+    fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, val, new CallExpr(PRIMITIVE_GET_MEMBER, _this, new_StringSymbol(field->name))));
+    fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, val, new CallExpr("=", val, fieldArg)));
+  }
+  fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, _this, new_StringSymbol(field->name), val));
+  ct->symbol->defPoint->parentStmt->insertBefore(new DefExpr(fn));
+  reset_file_info(fn, field->lineno, field->filename);
+  build(fn);
+  fns.add(fn);
+  ct->methods.add(fn);
+  fn->isMethod = true;
+  fn->cname = stringcat("_", ct->symbol->cname, "_", fn->cname);
+  fn->noParens = true;
+  fn->_this = _this;
 }
 
 
@@ -68,6 +153,16 @@ void build_default_functions(void) {
   collect_asts(&asts);
   forv_Vec(BaseAST, ast, asts) {
     if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(ast)) {
+      if (ClassType* ct = dynamic_cast<ClassType*>(type->type)) {
+        for_fields(field, ct) {
+          VarSymbol *cfield = dynamic_cast<VarSymbol*>(field);
+          // if suppress for cobegin created arg classes
+          if (cfield && !cfield->is_ref) {
+            build_setter(ct, field);
+            build_getter(ct, field);
+          }
+        }
+      }
       if (type->hasPragma( "no default functions") ||
           type->type->instantiatedFrom)
         continue;

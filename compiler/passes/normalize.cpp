@@ -98,7 +98,7 @@ void normalize(BaseAST* base) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
     if (FnSymbol* a = dynamic_cast<FnSymbol*>(ast))
-      if (!(a->_setter || a->_getter))
+      if (!a->defSetGet)
         apply_getters_setters(a);
   }
 
@@ -255,7 +255,7 @@ static void build_lvalue_function(FnSymbol* fn) {
   fn->buildSetter = false;
   new_fn->retType = dtVoid;
   new_fn->cname = stringcat("_setter_", fn->cname);
-  ArgSymbol* setterToken = new ArgSymbol(INTENT_BLANK, "_setterTokenDummy",
+  ArgSymbol* setterToken = new ArgSymbol(INTENT_BLANK, "_st",
                                          dtSetterToken);
   ArgSymbol* lvalue = new ArgSymbol(INTENT_BLANK, "_lvalue", dtAny);
   Expr* exprType = NULL;

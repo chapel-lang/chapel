@@ -16,7 +16,6 @@
 static void normalize_nested_function_expressions(DefExpr* def);
 static void destructure_tuple(CallExpr* call);
 static void build_constructor(ClassType* ct);
-static void build_setters_and_getters(ClassType* ct);
 static void flatten_primary_methods(FnSymbol* fn);
 static void add_this_formal_to_method(FnSymbol* fn);
 static void change_cast_in_where(FnSymbol* fn);
@@ -188,7 +187,6 @@ void cleanup(BaseAST* base) {
   forv_Vec(BaseAST, ast, asts) {
     if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(ast)) {
       if (ClassType* ct = dynamic_cast<ClassType*>(type->type)) {
-        build_setters_and_getters(ct);
         build_constructor(ct);
       }
     }
@@ -378,92 +376,6 @@ static void build_constructor(ClassType* ct) {
 
   fn->insertAtTail(new ReturnStmt(fn->_this));
   fn->retType = ct;
-}
-
-
-static void build_getter(ClassType* ct, Symbol *field) {
-  forv_Vec(FnSymbol, fn, ct->methods) {
-    if (fn->_getter == field)
-      return;
-  }
-
-  FnSymbol* fn = new FnSymbol(field->name);
-  fn->addPragma("inline");
-  fn->_getter = field;
-  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
-  fn->formals->insertAtTail(new ArgSymbol(INTENT_BLANK, "_methodTokenDummy", dtMethodToken));
-  fn->formals->insertAtTail(_this);
-  if (ct->classTag == CLASS_UNION)
-    fn->insertAtTail(new CondStmt(new CallExpr("!", new CallExpr(PRIMITIVE_UNION_GETID, _this, new_IntSymbol(field->id))), new ExprStmt(new CallExpr("halt", new_StringLiteral("illegal union access")))));
-  fn->insertAtTail(new ReturnStmt(new CallExpr(PRIMITIVE_GET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)))));
-  DefExpr* def = new DefExpr(fn);
-  ct->symbol->defPoint->parentStmt->insertBefore(def);
-  reset_file_info(fn, field->lineno, field->filename);
-  ct->methods.add(fn);
-  fn->isMethod = true;
-  fn->cname = stringcat("_", ct->symbol->cname, "_", fn->cname);
-  fn->noParens = true;
-  fn->_this = _this;
-}
-
-
-static void build_setter(ClassType* ct, Symbol* field) {
-  forv_Vec(FnSymbol, fn, ct->methods) {
-    if (fn->_setter == field)
-      return;
-  }
-
-  FnSymbol* fn = new FnSymbol(field->name);
-  fn->addPragma("inline");
-  fn->_setter = field;
-  fn->retType = dtVoid;
-
-  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
-  ArgSymbol* fieldArg = new ArgSymbol(INTENT_BLANK, "_arg", dtAny);
-  fn->formals->insertAtTail(new ArgSymbol(INTENT_BLANK, "_methodTokenDummy", dtMethodToken));
-  fn->formals->insertAtTail(_this);
-  fn->formals->insertAtTail(new ArgSymbol(INTENT_BLANK, "_setterTokenDummy", dtSetterToken));
-  fn->formals->insertAtTail(fieldArg);
-  VarSymbol* val = new VarSymbol("_tmp");
-  val->isCompilerTemp = true;
-  val->canReference = true;
-  if (ct->classTag == CLASS_UNION) {
-    Expr* init = field->defPoint->init;
-    Expr* type = field->defPoint->exprType;
-    if (!init && !type)
-      USR_FATAL(ct, "union fields require either a type or an initializer");
-    if (init)
-      init = init->copy();
-    if (type)
-      type = type->copy();
-    fn->insertAtTail(new DefExpr(val, init, type));
-    fn->insertAtTail(new CallExpr(PRIMITIVE_UNION_SETID, _this, new_IntSymbol(field->id)));
-  } else {
-    fn->insertAtTail(new DefExpr(val));
-    fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, val, new CallExpr(PRIMITIVE_GET_MEMBER, _this, new_StringSymbol(field->name))));
-  }
-  fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, val, new CallExpr("=", val, fieldArg)));
-  fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, _this, new_StringSymbol(field->name), val));
-  ct->symbol->defPoint->parentStmt->insertBefore(new DefExpr(fn));
-  reset_file_info(fn, field->lineno, field->filename);
-
-  ct->methods.add(fn);
-  fn->isMethod = true;
-  fn->cname = stringcat("_", ct->symbol->cname, "_", fn->cname);
-  fn->noParens = true;
-  fn->_this = _this;
-}
-
-
-static void build_setters_and_getters(ClassType* ct) {
-  for_fields(field, ct) {
-    VarSymbol *cfield = dynamic_cast<VarSymbol*>(field);
-    // if suppress for cobegin created arg classes
-    if (cfield && !cfield->is_ref) {
-      build_setter(ct, field);
-      build_getter(ct, field);
-    }
-  }
 }
 
 

@@ -132,7 +132,6 @@ SymScope::lookup(char* name) {
   Symbol* sym = lookupLocal(name);
   if (sym)
     return sym;
-
   if (FnSymbol* fn = dynamic_cast<FnSymbol*>(astParent)) {
     if (fn->_this) {
       ClassType* ct = dynamic_cast<ClassType*>(fn->_this->type);
@@ -145,8 +144,7 @@ SymScope::lookup(char* name) {
   }
   if (parent)
     return parent->lookup(name);
-  else
-    return NULL;
+  return NULL;
 }
 
 

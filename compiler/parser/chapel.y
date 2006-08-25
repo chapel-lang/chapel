@@ -713,7 +713,7 @@ function:
       $$->_this = new ArgSymbol(INTENT_BLANK, "this", dtUnknown);
       $$->formals->insertAtHead(new DefExpr($$->_this, NULL, $1));
       if (strcmp("this", $3))
-        $$->formals->insertAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_methodTokenDummy", dtMethodToken)));
+        $$->formals->insertAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
     }
 | type_binding_expr TDOT TASSIGN identifier
     {
@@ -721,7 +721,7 @@ function:
       $$->_this = new ArgSymbol(INTENT_BLANK, "this", dtUnknown);
       $$->formals->insertAtHead(new DefExpr($$->_this, NULL, $1));
       if (strcmp("this", $4))
-        $$->formals->insertAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_methodTokenDummy", dtMethodToken)));
+        $$->formals->insertAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
       $$->isSetter = true;
     }
 ;

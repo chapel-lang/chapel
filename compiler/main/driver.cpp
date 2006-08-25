@@ -14,6 +14,8 @@
 #include "primitive.h"
 
 
+extern void printlastid(void);
+
 static void version(ArgumentState *arg_state, char *arg_unused);
 static void help(ArgumentState *arg_state, char *arg_unused);
 static void copyright(ArgumentState *arg_state, char *arg_unused);
@@ -196,6 +198,7 @@ main(int argc, char *argv[]) {
     init_logs();
   init_system();
   compile_all();
+  //printlastid();
   free_args(&arg_state);
   clean_exit(0);
   return 0;

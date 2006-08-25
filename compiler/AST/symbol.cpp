@@ -569,13 +569,12 @@ FnSymbol::FnSymbol(char* initName) :
   noParens(false),
   retRef(false),
   buildSetter(false),
+  defSetGet(false),
   argScope(NULL),
   isSetter(false),
   isGeneric(false),
   hasVarArgs(false),
   _this(NULL),
-  _getter(NULL),
-  _setter(NULL),
   isMethod(false),
   instantiatedFrom(NULL),
   instantiatedTo(NULL),
@@ -618,10 +617,6 @@ FnSymbol::copyInner(ASTMap* map) {
   copy->isGeneric = false;  // set in normalize()
   copy->isSetter = isSetter;
   copy->_this = _this;
-  copy->_getter = _getter; // If it is a cloned class we probably want
-                           // this to point to the new member, but how
-                           // do we do that
-  copy->_setter = _setter;
   copy->isMethod = isMethod;
   return copy;
 }

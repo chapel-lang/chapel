@@ -190,8 +190,6 @@ void update_symbols(BaseAST* ast, ASTMap* map) {
       XSUB(ps->type, Type);
       XSUB(ps->retType, Type);
       XSUB(ps->_this, Symbol);
-      XSUB(ps->_setter, Symbol);
-      XSUB(ps->_getter, Symbol);
     } else if (ArgSymbol* ps = dynamic_cast<ArgSymbol*>(ast)) {
       XSUB(ps->type, Type);
     }

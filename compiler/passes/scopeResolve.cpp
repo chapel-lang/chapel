@@ -11,9 +11,9 @@
  ***   returns true iff function name matches a method name in class
  ***/
 static bool
-function_name_matches_method_name(FnSymbol* fn, Type* type) {
-  forv_Vec(FnSymbol, method, type->methods) {
-    if (!strcmp(fn->name, method->name))
+name_matches_method(char* name, Type* type) {
+  forv_Vec(Symbol, method, type->methods) {
+    if (!strcmp(name, method->name))
       return true;
   }
   return false;
@@ -76,8 +76,32 @@ void scopeResolve(BaseAST* base) {
         if (!strcmp(name, "."))
           continue;
 
+        // resolve method's type if in a method
+        Symbol* parent = symExpr->parentSymbol;
+        while (!dynamic_cast<ModuleSymbol*>(parent)) {
+          if (FnSymbol* method = dynamic_cast<FnSymbol*>(parent)) {
+            if (method->_this) {
+              if (method->_this->type == dtUnknown) {
+                if (SymExpr* sym = dynamic_cast<SymExpr*>(method->_this->defPoint->exprType)) {
+                  if (sym->var->type == dtUnknown) {
+                    TypeSymbol* ts =
+                      dynamic_cast<TypeSymbol*>(symExpr->lookup(sym->var->name));
+                    sym->var = ts;
+                    sym->remove();
+                  }
+                  method->_this->type = sym->var->type;
+                }
+              }
+              break;
+            }
+          }
+          parent = parent->defPoint->parentSymbol;
+        }
+
+        if (!dynamic_cast<UnresolvedSymbol*>(symExpr->var))
+          continue;
+
         Symbol* sym = symExpr->lookup(name);
-        //VarSymbol* var = dynamic_cast<VarSymbol*>(sym);
         FnSymbol* fn = dynamic_cast<FnSymbol*>(sym);
         TypeSymbol* type = dynamic_cast<TypeSymbol*>(sym);
         if (sym) {
@@ -91,42 +115,33 @@ void scopeResolve(BaseAST* base) {
               scopeResolve(e);
               continue;
             }
+        }
 
-          // Apply 'this' in methods where necessary
-          if (type || !type) {
-            Symbol* parent = symExpr->parentSymbol;
-            while (!dynamic_cast<ModuleSymbol*>(parent)) {
-              if (FnSymbol* method = dynamic_cast<FnSymbol*>(parent)) {
-                if (method->_this) {
-                  Type* type = method->_this->type;
-                  if (type == dtUnknown) {
-                    if (method->_this->defPoint->exprType) {
-                      scopeResolve(method->_this->defPoint->exprType);
-                      if (SymExpr* sym = dynamic_cast<SymExpr*>(method->_this->defPoint->exprType))
-                        type = sym->var->type;
-                    }
+        // Apply 'this' in methods where necessary
+        {
+          Symbol* parent = symExpr->parentSymbol;
+          while (!dynamic_cast<ModuleSymbol*>(parent)) {
+            if (FnSymbol* method = dynamic_cast<FnSymbol*>(parent)) {
+              if (method->_this && symExpr->var != method->_this) {
+                Type* type = method->_this->type;
+                if ((sym && dynamic_cast<ClassType*>(sym->parentScope->astParent)) ||
+                    name_matches_method(name, type)) {
+                  CallExpr* call = dynamic_cast<CallExpr*>(symExpr->parentExpr);
+                  if (call && call->baseExpr == symExpr &&
+                      call->argList->length() >= 2 &&
+                      dynamic_cast<SymExpr*>(call->get(1)) &&
+                      dynamic_cast<SymExpr*>(call->get(1))->var == gMethodToken) {
+                    symExpr->var = new UnresolvedSymbol(name);
+                  } else {
+                    Expr* dot = new CallExpr(".", method->_this, new_StringSymbol(name));
+                    symExpr->replace(dot);
+                    asts.add(dot);
                   }
-                  if ((sym && dynamic_cast<ClassType*>(sym->parentScope->astParent)) ||
-                      (fn && function_name_matches_method_name(fn, type)))
-                    if (symExpr->var != method->_this) {
-                      CallExpr* call = dynamic_cast<CallExpr*>(symExpr->parentExpr);
-                      if (call && call->baseExpr == symExpr &&
-                          call->argList->length() >= 2 &&
-                          dynamic_cast<SymExpr*>(call->get(1)) &&
-                          dynamic_cast<SymExpr*>(call->get(1))->var == gMethodToken) {
-                        symExpr->var = new UnresolvedSymbol(name);
-                      } else {
-                        Expr* dot = new CallExpr(".", method->_this, 
-                                                 new_StringSymbol(name));
-                        symExpr->replace(dot);
-                        asts.add(dot);
-                      }
-                    }
-                  break;
                 }
+                break;
               }
-              parent = parent->defPoint->parentSymbol;
             }
+            parent = parent->defPoint->parentSymbol;
           }
         }
       }

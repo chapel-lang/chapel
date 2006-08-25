@@ -1,6 +1,0 @@
-primitive moves in setters
-
-This test currently fails because the setter calls itself 
-recursively rather than treating the assignment to x in
-the setter as a primitive assignment as in a constructor
-context (if we had constructors :)
