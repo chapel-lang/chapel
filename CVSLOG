@@ -73521,3 +73521,55 @@ Modified files:
 	chapel/compiler/main/: driver.cpp runpasses.cpp 
 	chapel/compiler/passes/: flattenFunctions.cpp normalize.cpp 
 
+---------------------------------------------------------------------------
+
+08/25/06 16:06:28 -- deitz
+
+Log message:
+	Added support for scans.
+	
+	Changed _min and _max functions that query the minimum and maximum
+	values of a type to min and max.  Changed the name of the builtin
+	reduction classes to _min and _max.  Updated numerous tests that use
+	these functions.
+	
+	Added standard generic functions min and max that take two arguments
+	and that are implemented using the < and > comparator respectively.
+	Added wrapper min and max functions that take three or more arguments
+	and that are implemented in terms of the two argument functions.
+	
+	  def min(x, y) return if x < y then x else y;
+	  def max(x, y) return if x > y then x else y;
+	  def min(x, y, z...?k) return min(min(x, y), (...z));
+	  def max(x, y, z...?k) return max(max(x, y), (...z));
+	
+	The module version of these functions is decorated with the inline
+	pragma for an efficient implementation.
+	
+	Moved constant checking after resolution.  This needs revamping.
+	Changed the output of two tests, making them legal, since the error,
+	writing a setter that assigns to the argument, is dead.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp 
+	chapel/compiler/include/: build.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: cleanup.cpp semanticChecks.cpp 
+	chapel/modules/standard/: _chpl_base.chpl _chpl_seq.chpl 
+	chapel/test/distributions/bradc/foundations/: blockdist3.chpl 
+	chapel/test/functions/bradc/: typefn.chpl typefn2.chpl 
+	                              typefn2a.chpl typefn3.chpl 
+	                              typefn4.chpl typefn4a.chpl 
+	                              typefn5.chpl 
+	chapel/test/functions/deitz/: test_query_int_arg.chpl 
+	                              test_var_function_access.good 
+	                              test_var_function_access2.good 
+	chapel/test/functions/jplevyak/: type_var_fun-1.chpl 
+	chapel/test/reductions/waynew/: breductions.chpl 
+	chapel/test/trivial/waynew/: maxtest.chpl mintest.chpl 
+	chapel/test/types/coerce/bradc/: tostring.chpl 
+	chapel/test/types/complex/waynew/: complex-simple.chpl 
+	chapel/test/types/scalar/bradc/: uint.chpl 
+Added files:
+	chapel/test/reductions/deitz/: test_scan1.chpl test_scan1.good 
+
