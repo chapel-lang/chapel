@@ -73413,3 +73413,15 @@ Log message:
 Added files:
 	chapel/test/functions/waynew/: itest.chpl itest.good 
 
+---------------------------------------------------------------------------
+
+08/24/06 17:25:19 -- bradc
+
+Log message:
+	Added support for printing out heap size statistics when
+	the --print-passes flag is used.
+
+Modified files:
+	chapel/compiler/main/: runpasses.cpp 
+	chapel/compiler/include/: chplalloc.h 
+
