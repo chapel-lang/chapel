@@ -73452,3 +73452,24 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+08/25/06 10:20:43 -- deitz
+
+Log message:
+	Moved creation of setters and getters into buildDefaultFunctions pass,
+	reworked scopeResolution, and enabled user-defined setters and getters
+	on fields.  Removed one future.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp baseAST.cpp symbol.cpp 
+	                      symscope.cpp type.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         functionResolution.cpp normalize.cpp 
+	                         scopeResolve.cpp 
+Removed files:
+	chapel/test/classes/bradc/: setterForField.future 
+
