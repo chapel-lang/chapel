@@ -88,15 +88,21 @@ void flattenFunctions(void) {
   do {
     change = false;
     forv_Vec(FnSymbol, fn, all_nested_functions) {
+      Vec<BaseAST*> asts;
+      collect_top_asts(&asts, fn);
       Vec<Symbol*>* uses = args_map.get(fn);
-      forv_Vec(CallExpr, call, *fn->calls) {
-        if (FnSymbol* fcall = call->findFnSymbol()) {
-          Vec<Symbol*>* call_uses = args_map.get(fcall);
-          if (call_uses) {
-            forv_Vec(Symbol, sym, *call_uses) {
-              if (isOuterVar(sym, fn))
-                if (uses->add_exclusive(sym))
-                  change = true;
+      forv_Vec(BaseAST, ast, asts) {
+        if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+          if (call->isResolved()) {
+            if (FnSymbol* fcall = call->findFnSymbol()) {
+              Vec<Symbol*>* call_uses = args_map.get(fcall);
+              if (call_uses) {
+                forv_Vec(Symbol, sym, *call_uses) {
+                  if (isOuterVar(sym, fn))
+                    if (uses->add_exclusive(sym))
+                      change = true;
+                }
+              }
             }
           }
         }

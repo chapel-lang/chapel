@@ -15,16 +15,37 @@ cannonicalize_string(char *s) {
 }
 
 
+Vec<BaseAST*> gAsts;
 static long uid = 1;
+
+
+void cleanAst(long* astCount, int* liveCount) {
+  Vec<BaseAST*> asts;
+  collect_asts(&asts);
+  forv_Vec(BaseAST, ast, asts)
+    ast->clean();
+  gAsts.clear();
+  forv_Vec(BaseAST, ast, asts) {
+    if (Symbol* sym = dynamic_cast<Symbol*>(ast))
+      if (!sym->defPoint)
+        gAsts.add(sym);
+    if (Type* type = dynamic_cast<Type*>(ast))
+      if (!type->symbol->defPoint)
+        gAsts.add(type);
+    if (dynamic_cast<Expr*>(ast) || dynamic_cast<Stmt*>(ast))
+      if (ast->parentSymbol)
+        gAsts.add(ast);
+  }
+  *astCount = uid;
+  *liveCount = gAsts.n;
+}
+
 
 // This is here so that we can break on the creation of a particular
 // BaseAST instance in gdb.
 static void checkid(long id) {
 }
 
-void printlastid() {
-  printf("%ld\n", uid);
-}
 
 long BaseAST::getNumIDs(void) {
   return uid;
@@ -51,6 +72,8 @@ BaseAST::BaseAST(astType_t type) :
       filename = currentFilename;
     }
   }
+  if (astType != LIST)
+    gAsts.add(this);
 }
 
 
@@ -62,6 +85,11 @@ BaseAST::copyInner(ASTMap* map) {
 
 
 void BaseAST::verify() {
+
+}
+
+
+void BaseAST::clean() {
 
 }
 

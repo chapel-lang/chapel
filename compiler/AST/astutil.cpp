@@ -102,7 +102,6 @@ void compute_call_sites() {
   forv_Vec(BaseAST, ast, asts) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
       fn->calledBy = new Vec<CallExpr*>();
-      fn->calls = new Vec<CallExpr*>();
     }
   }
   forv_Vec(BaseAST, ast, asts) {
@@ -114,7 +113,6 @@ void compute_call_sites() {
                                               // longer in the tree,
                                               // e.g., _INIT_CONFIG
           call->findFnSymbol()->calledBy->add(call);
-          call->getFunction()->calls->add(call);
         }
       }
     }

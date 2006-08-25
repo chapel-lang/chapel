@@ -50,6 +50,7 @@ class Symbol : public BaseAST {
 
   Symbol(astType_t astType, char* init_name, Type* init_type = dtUnknown);
   virtual void verify(); 
+  virtual void clean();
   void setParentScope(SymScope* init_parentScope);
   COPY_DEF(Symbol);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -173,7 +174,6 @@ class FnSymbol : public Symbol {
                 // instantiated functions and wrappers
   Vec<BasicBlock*>* basicBlocks;
   Vec<CallExpr*>* calledBy;
-  Vec<CallExpr*>* calls;
 
   FnSymbol(char* initName);
            

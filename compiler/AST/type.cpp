@@ -21,7 +21,7 @@ Type::Type(astType_t astType, Symbol* init_defaultVal) :
   isGeneric(false),
   instantiatedFrom(NULL),
   instantiatedWith(NULL)
-{ }
+{}
 
 
 void Type::verify() {

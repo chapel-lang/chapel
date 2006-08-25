@@ -13,6 +13,8 @@ class Stmt;
 class Expr;
 class SymScope;
 
+extern Vec<BaseAST*> gAsts;
+
 /**
  **  Note: update astType_t and astTypeName together always.
  **/
@@ -107,6 +109,7 @@ class BaseAST : public gc {
   COPY_DEF(BaseAST);
 
   virtual void verify(); 
+  virtual void clean();
 
   virtual void print(FILE* outfile);
   virtual void printDef(FILE* outfile);

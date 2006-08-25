@@ -9,6 +9,7 @@
 #include "view.h"
 
 void verify();
+void cleanAst(long* astCount, int* liveCount);
 
 bool printPasses = false;
 
@@ -28,6 +29,9 @@ static void runPass(char *passName, void (*pass)(void)) {
   struct timeval stopTime;
   struct timezone timezone;
   static int heapsize = 0;
+  static long lastAstCount = 0;
+  long astCount = 0;
+  int liveAstCount = 0;
 
   currentTraversal = stringcpy(passName);
   if (fdump_html) {
@@ -41,15 +45,19 @@ static void runPass(char *passName, void (*pass)(void)) {
     heapsize = GC_get_heap_size();
   }
   (*pass)();
+  cleanAst(&astCount, &liveAstCount);
   if (printPasses) {
     gettimeofday(&stopTime, &timezone);
     int newheapsize = GC_get_heap_size();
     fprintf(stderr, "%8.3f seconds,",  
             ((double)((stopTime.tv_sec*1e6+stopTime.tv_usec) - 
                       (startTime.tv_sec*1e6+startTime.tv_usec))) / 1e6);
-    fprintf(stderr, " heap = %6dk (+%6dk)\n", newheapsize/1024, 
+    fprintf(stderr, " heap = %6dk (+%6dk),", newheapsize/1024, 
             (newheapsize - heapsize)/1024);
     heapsize = newheapsize;
+    fprintf(stderr, " asts = %6ld (+%6ld) (live = %6d)\n",
+            astCount, astCount-lastAstCount, liveAstCount);
+    lastAstCount = astCount;
   }
 
   if (fdump_html) {

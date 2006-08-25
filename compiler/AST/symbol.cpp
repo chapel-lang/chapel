@@ -145,6 +145,12 @@ void Symbol::verify() {
 }
 
 
+void Symbol::clean() {
+  BaseAST::clean();
+  uses.clear();
+}
+
+
 void Symbol::setParentScope(SymScope* init_parentScope) {
   parentScope = init_parentScope;
 }
@@ -580,8 +586,7 @@ FnSymbol::FnSymbol(char* initName) :
   instantiatedTo(NULL),
   visible(true),
   basicBlocks(NULL),
-  calledBy(NULL),
-  calls(NULL)
+  calledBy(NULL)
 { }
 
 

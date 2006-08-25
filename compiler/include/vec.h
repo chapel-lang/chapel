@@ -33,7 +33,7 @@ class Vec : public gc {
   Vec<C,S>(const Vec<C,S> &vv);
   ~Vec() { if (v && v != e) FREE(v); }
 
-  void add(C a);  
+  void add(C a);
   int add_exclusive(C a);
   C& add();
   C pop();

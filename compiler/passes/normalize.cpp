@@ -14,6 +14,8 @@
 #include "stringutil.h"
 #include "view.h"
 
+#define MEMDB 0
+
 bool normalized = false;
 
 static void reconstruct_iterator(FnSymbol* fn);
@@ -48,6 +50,8 @@ void normalize(BaseAST* base) {
   Vec<BaseAST*> asts;
 
   asts.clear();
+  if (MEMDB && base == domainModule)
+    printf("\nMark1: %6d\n", GC_get_heap_size()/1024);
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
@@ -63,6 +67,8 @@ void normalize(BaseAST* base) {
   }
 
   asts.clear();
+  if (MEMDB && base == domainModule)
+    printf("Mark2: %6d\n", GC_get_heap_size()/1024);
   collect_asts(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
@@ -73,6 +79,8 @@ void normalize(BaseAST* base) {
   }
 
   asts.clear();
+  if (MEMDB && base == domainModule)
+    printf("Mark3: %6d\n", GC_get_heap_size()/1024);
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
@@ -83,6 +91,8 @@ void normalize(BaseAST* base) {
   }
 
   asts.clear();
+  if (MEMDB && base == domainModule)
+    printf("Mark4: %6d\n", GC_get_heap_size()/1024);
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
@@ -93,6 +103,8 @@ void normalize(BaseAST* base) {
   }
 
   asts.clear();
+  if (MEMDB && base == domainModule)
+    printf("Mark5: %6d\n", GC_get_heap_size()/1024);
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
@@ -103,6 +115,8 @@ void normalize(BaseAST* base) {
   }
 
   asts.clear();
+  if (MEMDB && base == domainModule)
+    printf("Mark6: %6d\n", GC_get_heap_size()/1024);
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
@@ -115,6 +129,8 @@ void normalize(BaseAST* base) {
   }
 
   asts.clear();
+  if (MEMDB && base == domainModule)
+    printf("Mark7: %6d\n", GC_get_heap_size()/1024);
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
@@ -125,6 +141,8 @@ void normalize(BaseAST* base) {
   }
 
   asts.clear();
+  if (MEMDB && base == domainModule)
+    printf("Mark8: %6d\n", GC_get_heap_size()/1024);
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
@@ -138,6 +156,8 @@ void normalize(BaseAST* base) {
   fold_params(base);
 
   asts.clear();
+  if (MEMDB && base == domainModule)
+    printf("Mark9: %6d\n", GC_get_heap_size()/1024);
   collect_asts(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
@@ -147,6 +167,8 @@ void normalize(BaseAST* base) {
 
   dtAny->isGeneric = true;
   asts.clear();
+  if (MEMDB && base == domainModule)
+    printf("Mark10: %6d\n", GC_get_heap_size()/1024);
   collect_asts_postorder(&asts, base);
   int changed = 1;
   while (changed) {
@@ -158,6 +180,8 @@ void normalize(BaseAST* base) {
   }
 
   asts.clear();
+  if (MEMDB && base == domainModule)
+    printf("Mark11: %6d\n", GC_get_heap_size()/1024);
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     if (FnSymbol *fn = dynamic_cast<FnSymbol*>(ast)) {
@@ -166,6 +190,8 @@ void normalize(BaseAST* base) {
   }
 
   asts.clear();
+  if (MEMDB && base == domainModule)
+    printf("Mark12: %6d\n", GC_get_heap_size()/1024);
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
@@ -176,6 +202,8 @@ void normalize(BaseAST* base) {
   }
 
   asts.clear();
+  if (MEMDB && base == domainModule)
+    printf("Mark13: %6d\n", GC_get_heap_size()/1024);
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     if (FnSymbol* a = dynamic_cast<FnSymbol*>(ast)) {
@@ -184,6 +212,10 @@ void normalize(BaseAST* base) {
       }
     }
   }
+
+  asts.clear();
+  if (MEMDB && base == domainModule)
+    printf("Mark14: %6d\n", GC_get_heap_size()/1024);
 }
 
 
