@@ -998,6 +998,8 @@ resolveCall(CallExpr* call) {
         sym->var->isReference = true;
         call->primitive = primitives[PRIMITIVE_REF];
       }
+      if (sym->var->isReference && !strncmp(sym->var->name, "_ret_", 5))
+        call->primitive = primitives[PRIMITIVE_REF];
       if (t == dtUnknown)
         INT_FATAL(call, "Unable to resolve type");
       if (t != sym->var->type && 
