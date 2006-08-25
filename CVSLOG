@@ -73425,3 +73425,20 @@ Modified files:
 	chapel/compiler/main/: runpasses.cpp 
 	chapel/compiler/include/: chplalloc.h 
 
+---------------------------------------------------------------------------
+
+08/24/06 20:51:10 -- deitz
+
+Log message:
+	Added a missing ';' to the Chapel grammar.
+	Added extern declarations of yylloc in some of the parser files.
+	Removed a space between the -L and the library path in the Makefile.
+	Added a Makefile for darwin.
+	Checked in from my mac.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y parser.cpp processTokens.cpp 
+	chapel/runtime/etc/: Makefile.include 
+Added files:
+	chapel/make/: Makefile.darwin 
+
