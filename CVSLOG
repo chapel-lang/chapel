@@ -73630,3 +73630,20 @@ Removed files:
 	                             prelude.v scope.cc scope.h v.g 
 	                             version.cc version.h 
 
+---------------------------------------------------------------------------
+
+08/25/06 17:32:56 -- bradc
+
+Log message:
+	I often use the nightly script as a sanity check to make
+	sure that the code I checked in builds and runs tests
+	correctly.  Sometimes I just want to make sure it builds.
+	
+	Added a flag -notest to it that can be used to build the
+	code from the repository without running the tests as a
+	short sanity check.  Running -notest also turns on the
+	-debug flag by default.
+
+Modified files:
+	chapel/test/Bin/: nightly 
+
