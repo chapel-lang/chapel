@@ -73608,3 +73608,25 @@ Modified files:
 Removed files:
 	chapel/compiler/adt/: list.cpp 
 
+---------------------------------------------------------------------------
+
+08/25/06 17:04:18 -- bradc
+
+Log message:
+	Killed libifa/ code which had escaped my notice before in
+	cleaning up the ifa/ directory.  (Note that I don't believe
+	this code was ever counted in our nightly code size check,
+	so this was never accounted for and we won't see any further
+	shrinkage on the graphs due to this check-in).
+
+Removed files:
+	chapel/compiler/ifa/libifa/: COPYRIGHT Makefile Makefile.cg 
+	                             README ast_kinds.h ast_to_if1.cc 
+	                             ast_to_if1.h c.g c_runtime.h 
+	                             faq.html ifa.1 ifa_defs.h ifa_tests 
+	                             index.html main.cc make_ast.cc 
+	                             make_ast.h manual.html mkdep 
+	                             parse.cc parse.h parse_structs.h 
+	                             prelude.v scope.cc scope.h v.g 
+	                             version.cc version.h 
+
