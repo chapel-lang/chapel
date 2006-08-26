@@ -73647,3 +73647,24 @@ Log message:
 Modified files:
 	chapel/test/Bin/: nightly 
 
+---------------------------------------------------------------------------
+
+08/25/06 17:37:21 -- bradc
+
+Log message:
+	Due to a strange combination of events (windows file
+	systems not being case sensitive, change the test
+	system to name the output using -o, and the fact that
+	a test happened to have the same name as a subdirectory)
+	this test started failing on cygwin.  Moved the test
+	into the subdirectory (a better place for it) and
+	renamed it in order to get around this strange
+	confluence of events.
+
+Added files:
+	chapel/test/functions/bradc/useBeforeDef/: useFnBeforeDef.chpl 
+	                                           useFnBeforeDef.good 
+Removed files:
+	chapel/test/functions/bradc/: usebeforedef.chpl 
+	                              usebeforedef.good 
+
