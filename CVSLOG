@@ -73706,3 +73706,26 @@ Added files:
 	                              test_seq_class5.chpl 
 	                              test_seq_class5.good 
 
+---------------------------------------------------------------------------
+
+08/28/06 14:59:31 -- deitz
+
+Log message:
+	Added a guard against instantiating a type or function with generic
+	types.
+	
+	Also moved BaseAST::pragmas vector to Symbol::pragmas as pragmas are
+	only used on symbols.  This also helps to make this clear, a pragma is
+	not a DefExpr or and ExprStmt, but rather a Symbol.  However, pragmas
+	can still be added to DefExprs or ExprStmts of DefExprs, and they are
+	automatically added to Symbol::pragmas.
+	
+	This refactoring reduces the max heap size used on the Jacobi test
+	case after pass buildDefaultFunctions by 7M.  The max heap size by the
+	end of the program is mainly unchanged, growing even larger
+	(relatively) in functionResolution.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp build.cpp symbol.cpp 
+	chapel/compiler/include/: alist.h baseAST.h symbol.h 
+
