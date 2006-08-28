@@ -28,7 +28,7 @@ static void runPass(char *passName, void (*pass)(void)) {
   struct timeval startTime;
   struct timeval stopTime;
   struct timezone timezone;
-  static int heapsize = 0;
+  static long heapsize = (long)GC_get_heap_size()/1024;
   static long lastAstCount = 0;
   long astCount = 0;
   int liveAstCount = 0;
@@ -42,18 +42,17 @@ static void runPass(char *passName, void (*pass)(void)) {
     fprintf(stderr, "%32s :", passName);
     fflush(stderr);
     gettimeofday(&startTime, &timezone);
-    heapsize = GC_get_heap_size();
   }
   (*pass)();
   cleanAst(&astCount, &liveAstCount);
   if (printPasses) {
     gettimeofday(&stopTime, &timezone);
-    int newheapsize = GC_get_heap_size();
+    long newheapsize = (long)GC_get_heap_size()/1024;
+    long diff = newheapsize - heapsize;
     fprintf(stderr, "%8.3f seconds,",  
             ((double)((stopTime.tv_sec*1e6+stopTime.tv_usec) - 
                       (startTime.tv_sec*1e6+startTime.tv_usec))) / 1e6);
-    fprintf(stderr, " heap = %6dk (+%6dk),", newheapsize/1024, 
-            (newheapsize - heapsize)/1024);
+    fprintf(stderr, " heap = %6ldk (+%6ldk),", newheapsize, diff);
     heapsize = newheapsize;
     fprintf(stderr, " asts = %6ld (+%6ld) (live = %6d)\n",
             astCount, astCount-lastAstCount, liveAstCount);
