@@ -73668,3 +73668,41 @@ Removed files:
 	chapel/test/functions/bradc/: usebeforedef.chpl 
 	                              usebeforedef.good 
 
+---------------------------------------------------------------------------
+
+08/28/06 14:53:59 -- deitz
+
+Log message:
+	Fixed a few bugs:
+	
+	Removed infinite loop in topological order calculation of records for
+	code generation that was seen when a class of a record of the same
+	class existed.
+	
+	Fixed handling of record references so that culling of over-references
+	is more aggressive.  This is necessarily aggressive or we end up with
+	references to records that are on the stack.
+	
+	Fixed debug code in normalize to use #IFDEF.
+	
+	Enabled appending to sequences any subtype of the elt_type.
+	
+	Set object default value to nil.
+	
+	Changed sync record into a class and special cased the 'sync var'
+	pragma so that the sync class does not have a defaultValue set to nil,
+	but is rather constructed.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/passes/: cleanup.cpp codegen.cpp 
+	                         cullOverReferences.cpp normalize.cpp 
+	chapel/modules/standard/: _chpl_base.chpl _chpl_seq.chpl 
+Added files:
+	chapel/test/types/seq/deitz/: test_seq_class3.chpl 
+	                              test_seq_class3.good 
+	                              test_seq_class4.chpl 
+	                              test_seq_class4.good 
+	                              test_seq_class5.chpl 
+	                              test_seq_class5.good 
+
