@@ -73729,3 +73729,27 @@ Modified files:
 	chapel/compiler/AST/: baseAST.cpp build.cpp symbol.cpp 
 	chapel/compiler/include/: alist.h baseAST.h symbol.h 
 
+---------------------------------------------------------------------------
+
+08/28/06 15:03:23 -- bradc
+
+Log message:
+	Added a --ccflags option to the compiler which allows the
+	user to define a 256-character string of arguments that
+	will be passed to the C compiler invocation that is used
+	to compile the Chapel-generated code.
+	
+	For example:
+	
+	    chpl --ccflags -O3 foo.chpl
+	
+	or:
+	
+	    chpl --ccflags "-Wall -Werror" foo.chpl
+
+Modified files:
+	chapel/compiler/include/: files.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/compiler/util/: files.cpp 
+	chapel/runtime/etc/: Makefile.include 
+
