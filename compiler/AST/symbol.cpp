@@ -225,6 +225,37 @@ bool Symbol::isRef(void) {
 }
 
 
+char* Symbol::hasPragma(char* str) {
+  forv_Vec(char, pragma, pragmas) {
+    if (!strcmp(pragma, str))
+      return pragma;
+  }
+  if (!dynamic_cast<ModuleSymbol*>(this) && getModule())
+    return getModule()->hasPragma(str);
+  return NULL;
+}
+
+
+void Symbol::removePragma(char* str) {
+  for (int i = 0; i < pragmas.n; i++)
+    if (!strcmp(pragmas.v[i], str))
+      pragmas.v[i] = "";
+  if (!dynamic_cast<ModuleSymbol*>(this) && getModule())
+    getModule()->removePragma(str);
+}
+
+
+char* Symbol::hasPragmaPrefix(char* str) {
+  forv_Vec(char, pragma, pragmas) {
+    if (!strncmp(pragma, str, strlen(str)))
+      return pragma;
+  }
+  if (!dynamic_cast<ModuleSymbol*>(this) && getModule())
+    return getModule()->hasPragmaPrefix(str);
+  return NULL;
+}
+
+
 UnresolvedSymbol::UnresolvedSymbol(char* init_name, char* init_cname) :
   Symbol(SYMBOL_UNRESOLVED, init_name)
 {
@@ -1027,6 +1058,15 @@ count_instantiate_with_recursion(Type* t) {
 
 FnSymbol*
 FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
+  Vec<BaseAST*> values;
+  generic_substitutions->get_values(values);
+  forv_Vec(BaseAST, ast, values) {
+    if (Type* t = dynamic_cast<Type*>(ast)) {
+      if (t->isGeneric)
+        INT_FATAL(this, "illegal instantiation with a generic type");
+    }
+  }
+
   // check to make sure this fully instantiates
   if (isPartialInstantiation(generic_substitutions))
     INT_FATAL(this, "partial instantiation detected");

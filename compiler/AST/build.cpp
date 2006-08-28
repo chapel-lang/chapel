@@ -85,11 +85,6 @@ static void createInitFn(ModuleSymbol* mod) {
 
 ModuleSymbol* build_module(char* name, modType type, AList<Stmt>* stmts) {
   ModuleSymbol* mod = new ModuleSymbol(name, type, stmts);
-  // a first pragma statement is a module-level pragma
-  if (BlockStmt* first1 = dynamic_cast<BlockStmt*>(mod->stmts->first()))
-    if (BlockStmt* first2 = dynamic_cast<BlockStmt*>(first1->body->first()))
-      if (first2->body->isEmpty())
-        mod->addPragmas(&first2->pragmas);
   createInitFn(mod);
   return mod;
 }

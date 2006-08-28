@@ -47,6 +47,7 @@ class Symbol : public BaseAST {
   bool canReference;   // can be a reference (determined during resolution)
 
   Vec<SymExpr*> uses;
+  Vec<char*> pragmas;
 
   Symbol(astType_t astType, char* init_name, Type* init_type = dtUnknown);
   virtual void verify(); 
@@ -67,6 +68,10 @@ class Symbol : public BaseAST {
   virtual FnSymbol* getFnSymbol(void);
   virtual Symbol* getSymbol(void);
   virtual bool isRef(void);
+
+  char* hasPragma(char* str);
+  void removePragma(char* str);
+  char* hasPragmaPrefix(char* str);
 };
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
 

@@ -459,7 +459,6 @@ AList<elemType>::copy(ASTMap* map,
 
   newList->lineno = lineno;
   newList->filename = filename;
-  newList->addPragmas(&pragmas);
   if (!internal) {
     if (update_list) {
       for (int j = 0; j < update_list->n; j++) {

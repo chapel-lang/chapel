@@ -284,7 +284,8 @@ void BaseAST::postCopy(BaseAST* copy,
                        bool internal) {
   copy->lineno = lineno;
   copy->filename = filename;
-  copy->addPragmas(&pragmas);
+  if (Symbol* s = dynamic_cast<Symbol*>(copy))
+    s->addPragmas(&(dynamic_cast<Symbol*>(this)->pragmas));
   map->put(this, copy);
   if (!internal) {
     if (update_list) {
@@ -315,44 +316,13 @@ void BaseAST::printLoc(FILE* outfile) {
 }
 
 
-char* BaseAST::hasPragma(char* str) {
-  forv_Vec(char, pragma, pragmas) {
-    if (!strcmp(pragma, str))
-      return pragma;
-  }
-  if (!dynamic_cast<ModuleSymbol*>(this) && getModule())
-    return getModule()->hasPragma(str);
-  return NULL;
-}
-
-
-void BaseAST::removePragma(char* str) {
-  for (int i = 0; i < pragmas.n; i++)
-    if (!strcmp(pragmas.v[i], str))
-      pragmas.v[i] = "";
-  if (!dynamic_cast<ModuleSymbol*>(this) && getModule())
-    getModule()->removePragma(str);
-}
-
-
-char* BaseAST::hasPragmaPrefix(char* str) {
-  forv_Vec(char, pragma, pragmas) {
-    if (!strncmp(pragma, str, strlen(str)))
-      return pragma;
-  }
-  if (!dynamic_cast<ModuleSymbol*>(this) && getModule())
-    return getModule()->hasPragmaPrefix(str);
-  return NULL;
-}
-
-
 void BaseAST::addPragma(char* str) {
   if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(this)) {
     exprStmt->expr->addPragma(str);
   } else if (DefExpr* defExpr = dynamic_cast<DefExpr*>(this)) {
     defExpr->sym->addPragma(str);
-  } else {
-    pragmas.add(stringcpy(str));
+  } else if (Symbol* sym = dynamic_cast<Symbol*>(this)) {
+    sym->pragmas.add(stringcpy(str));
   }
 }
 

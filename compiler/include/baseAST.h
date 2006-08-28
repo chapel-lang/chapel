@@ -98,7 +98,6 @@ class BaseAST : public gc {
   char* filename;       // filename of location
   int lineno;           // line number of location
 
-  Vec<char*> pragmas;
   Vec<ModuleSymbol*> modUses; // modules used (BlockStmt,FnSymbol,...)
                               // via SymScope::astParent
 
@@ -140,9 +139,6 @@ class BaseAST : public gc {
   char* stringLoc(void);
   void printLoc(FILE* outfile);
 
-  char* hasPragma(char* str);
-  void removePragma(char* str);
-  char* hasPragmaPrefix(char* str);
   void addPragma(char* str);
   void addPragmas(Vec<char*>* srcPragmas);
 
