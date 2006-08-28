@@ -73753,3 +73753,15 @@ Modified files:
 	chapel/compiler/util/: files.cpp 
 	chapel/runtime/etc/: Makefile.include 
 
+---------------------------------------------------------------------------
+
+08/28/06 15:41:46 -- bradc
+
+Log message:
+	Oops -- I had done a stupid, stupid thing when computing
+	the heap sizes used by each pass.  This should be much
+	more accurate.
+
+Modified files:
+	chapel/compiler/main/: runpasses.cpp 
+
