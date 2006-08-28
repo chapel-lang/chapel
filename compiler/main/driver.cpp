@@ -62,6 +62,7 @@ static ArgumentDescription arg_desc[] = {
  {"lib-search-path", 'L', "Library Search Path", "P", libraryFilename, "CHPL_LIB_PATH", handleLibPath},
  {"output", 'o', "Name of Executable Output", "P", executableFilename, "CHPL_EXE_NAME", NULL},
  {"savec", ' ', "Save Intermediate C Code", "P", saveCDir, "CHPL_SAVEC_DIR", NULL},
+ {"ccflags", ' ', "Specify back-end C compiler flags", "S256", ccflags, "CHPL_CC_FLAGS", NULL},
  {"gdb", ' ', "Run compiler in gdb", "F", &rungdb, NULL, NULL},
  {"unoptimized", ' ', "Generate naive code (lots of temps)", "F", &unoptimized, "CHPL_UNOPTIMIZED", NULL},
  {"no-inline", ' ', "Do Not Inline Functions" , "F", &no_inline, NULL, NULL},

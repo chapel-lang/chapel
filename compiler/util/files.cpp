@@ -13,6 +13,7 @@
 
 char executableFilename[FILENAME_MAX] = "a.out";
 char saveCDir[FILENAME_MAX] = "";
+char ccflags[256] = "-g";
 
 FILE* codefile;
 
@@ -250,6 +251,7 @@ static void genMakefileHeader(char* srcfilename, char* systemDir) {
   // default -- after linking is done.  As it turns out, this saves a
   // factor of 5 or so in time in running the test system, as opposed
   // to specifying BINNAME on the C compiler command line.
+  fprintf(makefile, "CFLAGS = %s\n", ccflags);
   fprintf(makefile, "BINNAME = %s\n", executableFilename);
   fprintf(makefile, "TMPBINNAME = %s\n", intExeFilename);
   fprintf(makefile, "CHAPEL_ROOT = %s\n", sysdirToChplRoot(systemDir));
