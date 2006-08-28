@@ -76,7 +76,7 @@ getOrder(Map<ClassType*,int>& order, int& maxOrder,
   int i = 0;
   for_fields(field, ct) {
     if (ClassType* fct = dynamic_cast<ClassType*>(field->type)) {
-      if (fct->classTag != CLASS_CLASS)
+      if (!visit.set_in(fct) && fct->classTag != CLASS_CLASS)
         setOrder(order, maxOrder, fct);
       i = max(i, getOrder(order, maxOrder, fct, visit));
     }
@@ -86,11 +86,13 @@ getOrder(Map<ClassType*,int>& order, int& maxOrder,
 
 
 static void
-setOrder(Map<ClassType*,int>& order, int& maxOrder, ClassType* ct) {
+setOrder(Map<ClassType*,int>& order, int& maxOrder,
+         ClassType* ct) {
   if (ct->classTag == CLASS_CLASS || order.get(ct))
     return;
+  int i;
   Vec<ClassType*> visit;
-  int i = getOrder(order, maxOrder, ct, visit);
+  i = getOrder(order, maxOrder, ct, visit);
   order.put(ct, i);
   if (i > maxOrder)
     maxOrder = i;

@@ -1104,6 +1104,8 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
 
     retType->symbol->defPoint->parentStmt->insertBefore(new DefExpr(clone));
     clone->addPragmas(&pragmas);
+    if (clone->hasPragma("sync var"))
+      clone->type->defaultValue = NULL;
     clone->type->substitutions.copy(retType->substitutions);
     clone->type->dispatchParents.copy(retType->dispatchParents);
     if (clone->type->dispatchChildren.n)

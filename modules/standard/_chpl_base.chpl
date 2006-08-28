@@ -194,8 +194,8 @@ pragma "inline" def _init( cv: _condvar_p) return __primitive( "condvar_new");
 pragma "inline" def =( a: _condvar_p, b: _condvar_p) return b;
 
 // synch variable
-pragma "sync var" pragma "no default functions"
-record _syncvar {
+pragma "sync var"
+class _syncvar {
   type t;
   var  value: t;             // actual data
   var  is_full: bool;
@@ -211,6 +211,9 @@ record _syncvar {
   }
 }
 
+def _copy( sv:_syncvar) {
+  return readFE(sv);
+}
 
 def _init( sv:_syncvar) {
   return _syncvar( sv.value.type); 

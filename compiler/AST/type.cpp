@@ -757,6 +757,7 @@ void initPrimitiveTypes(void) {
   CREATE_DEFAULT_SYMBOL (dtVoid, gVoid, "_void");
 
   dtObject = createPrimitiveType("object", "_chpl_object");
+  dtObject->defaultValue = gNil;
   dtValue = createPrimitiveType("value", "_chpl_value");
 
   dtBool = createPrimitiveType ("bool", "_bool");

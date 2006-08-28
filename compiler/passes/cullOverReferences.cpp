@@ -24,9 +24,13 @@ isReferenced(SymExpr* sym) {
     if (call->isPrimitive(PRIMITIVE_REF))
       if (call->get(2) == sym)
         return true;
-    if (call->isResolved())
-      if (actual_to_formal(sym)->requiresCPtr())
+    if (call->isResolved()) {
+      ArgSymbol* formal = actual_to_formal(sym);
+      if (formal->intent == INTENT_REF)
         return true;
+      if (formal->defPoint->getFunction()->_this == formal)
+        return true;
+    }
   }
   if (dynamic_cast<ReturnStmt*>(sym->parentStmt) && sym->getFunction()->retRef)
     return true;
