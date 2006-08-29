@@ -73765,3 +73765,15 @@ Log message:
 Modified files:
 	chapel/compiler/main/: runpasses.cpp 
 
+---------------------------------------------------------------------------
+
+08/28/06 17:07:27 -- deitz
+
+Log message:
+	Changed Vec<Vec<ArgSymbol*>*> to Vec<Vec<ArgSymbol*> > in
+	functionResolution and explicitly free it.  This improves memory
+	performance in resolve.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+
