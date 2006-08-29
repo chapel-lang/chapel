@@ -618,7 +618,9 @@ FnSymbol::FnSymbol(char* initName) :
   visible(true),
   basicBlocks(NULL),
   calledBy(NULL)
-{ }
+{
+  gFns.add(this);
+}
 
 
 void FnSymbol::verify() {

@@ -16,6 +16,7 @@ cannonicalize_string(char *s) {
 
 
 Vec<BaseAST*> gAsts;
+Vec<FnSymbol*> gFns;
 static long uid = 1;
 
 
@@ -25,6 +26,7 @@ void cleanAst(long* astCount, int* liveCount) {
   forv_Vec(BaseAST, ast, asts)
     ast->clean();
   gAsts.clear();
+  gFns.clear();
   forv_Vec(BaseAST, ast, asts) {
     if (Symbol* sym = dynamic_cast<Symbol*>(ast))
       if (!sym->defPoint)
@@ -35,6 +37,9 @@ void cleanAst(long* astCount, int* liveCount) {
     if (dynamic_cast<Expr*>(ast) || dynamic_cast<Stmt*>(ast))
       if (ast->parentSymbol)
         gAsts.add(ast);
+    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast))
+      if (fn->defPoint->parentSymbol)
+        gFns.add(fn);
   }
   *astCount = uid;
   *liveCount = gAsts.n;

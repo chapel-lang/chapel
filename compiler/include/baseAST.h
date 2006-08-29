@@ -14,6 +14,7 @@ class Expr;
 class SymScope;
 
 extern Vec<BaseAST*> gAsts;
+extern Vec<FnSymbol*> gFns;
 
 /**
  **  Note: update astType_t and astTypeName together always.
