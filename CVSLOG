@@ -73777,3 +73777,16 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+08/29/06 11:41:21 -- deitz
+
+Log message:
+	Added Vec<FnSymbol*> gFns to contain all the functions.  This list is
+	pruned between passes to remove functions that are not in the AST.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp symbol.cpp 
+	chapel/compiler/include/: baseAST.h 
+	chapel/compiler/passes/: normalize.cpp 
+
