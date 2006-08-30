@@ -73800,3 +73800,26 @@ Log message:
 Added files:
 	chapel/test/trivial/deitz/: int_casts.chpl int_casts.good 
 
+---------------------------------------------------------------------------
+
+08/30/06 11:50:29 -- deitz
+
+Log message:
+	Refactored cleanup to collect asts only once at the top level, and
+	redundantly only on where expressions.  This improvement is possible
+	primarily because we no longer copy asts all the time.
+	
+	This improves the performance of the cleanup pass by over a factor of
+	two on Jacobi, from 0.192 to 0.092 seconds on my desktop.
+	
+	Minor refactoring to normalize.
+	
+	Added vec of types called gTypes with similar meaning to gFunctions
+	only for types.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp baseAST.cpp 
+	chapel/compiler/include/: astutil.h baseAST.h 
+	chapel/compiler/passes/: cleanup.cpp normalize.cpp 
+	                         scopeResolve.cpp 
+
