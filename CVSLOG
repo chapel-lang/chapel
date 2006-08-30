@@ -73823,3 +73823,15 @@ Modified files:
 	chapel/compiler/passes/: cleanup.cpp normalize.cpp 
 	                         scopeResolve.cpp 
 
+---------------------------------------------------------------------------
+
+08/30/06 11:59:12 -- deitz
+
+Log message:
+	Fixed 64-bit regression of classes/bradc/setterForField.chpl.  My
+	fault in my code that relied on the actual arguments to a function
+	call being resolved in order in C++.
+
+Modified files:
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+
