@@ -31,19 +31,28 @@ flatten_scopeless_block(BlockStmt* block) {
 
 static void
 process_import_expr(CallExpr* call) {
-  if (call->isPrimitive(PRIMITIVE_USE)) {
-    ModuleSymbol* mod = NULL;
-    if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
-      mod = dynamic_cast<ModuleSymbol*>(sym->lookup(sym->var->name));
-      if (!mod)
-        USR_FATAL(call, "Cannot find module '%s'", sym->var->name);
-    } else
-      INT_FATAL(call, "Use primitive has no module");
-    if (mod != compilerModule)
-      call->parentStmt->insertBefore(new CallExpr(mod->initFn));
-    call->parentScope->astParent->modUses.add(mod);
-    call->parentStmt->remove();
-  }
+  ModuleSymbol* mod = NULL;
+  if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
+    mod = dynamic_cast<ModuleSymbol*>(sym->lookup(sym->var->name));
+    if (!mod)
+      USR_FATAL(call, "Cannot find module '%s'", sym->var->name);
+  } else
+    INT_FATAL(call, "Use primitive has no module");
+  if (mod != compilerModule)
+    call->parentStmt->insertBefore(new CallExpr(mod->initFn));
+  call->parentScope->astParent->modUses.add(mod);
+  call->parentStmt->remove();
+}
+
+
+static void
+specialize_string_cast(CallExpr* call) {
+  if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1)))
+    if (sym->var->type == dtString) {
+      Expr* arg1 = call->get(2);
+      Expr* arg2 = call->get(1);
+      call->replace(new CallExpr("_tostring", arg1->remove(), arg2->remove()));
+    }
 }
 
 
@@ -106,109 +115,38 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* seen = NULL) {
 
 
 void cleanup(void) {
-  forv_Vec(ModuleSymbol, mod, allModules) {
-    Vec<BaseAST*> asts;
-    collect_asts(&asts, mod);
-    forv_Vec(BaseAST, ast, asts) {
-      if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
-        process_import_expr(a);
-      }
-    }
-  }
-
   forv_Vec(ModuleSymbol, mod, allModules)
     cleanup(mod);
 }
 
 
-void cleanup(BaseAST* base) {
+void cleanup(Symbol* base) {
   Vec<BaseAST*> asts;
   collect_asts(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
+    currentLineno = ast->lineno;
+    currentFilename = ast->filename;
     if (BlockStmt* block = dynamic_cast<BlockStmt*>(ast)) {
       if (block->blockTag == BLOCK_SCOPELESS)
         flatten_scopeless_block(block);
-    }
-  }
-
-  asts.clear();
-  collect_asts(&asts, base);
-  forv_Vec(BaseAST, ast, asts) {
-    if (CallExpr* cast = dynamic_cast<CallExpr*>(ast)) {
-      if (cast->isPrimitive(PRIMITIVE_CAST)) {
-        if (SymExpr* sym = dynamic_cast<SymExpr*>(cast->get(1))) {
-          if (sym->var->type == dtString)
-            cast->replace(new CallExpr("_tostring", cast->get(2)->copy(),
-                                       cast->get(1)->copy()));
-        }
-      }
-    }
-  }
-
-  asts.clear();
-  collect_asts(&asts, base);
-  forv_Vec(BaseAST, ast, asts) {
-    if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
-      process_import_expr(a);
-    }
-  }
-
-  asts.clear();
-  collect_asts(&asts, base);
-  forv_Vec(BaseAST, ast, asts) {
-    if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
+    } else if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+      if (call->isPrimitive(PRIMITIVE_CAST))
+        specialize_string_cast(call);
+      else if (call->isPrimitive(PRIMITIVE_USE))
+        process_import_expr(call);
+      else if (call->isNamed("_tuple"))
+        destructure_tuple(call);
+    } else if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
+      normalize_nested_function_expressions(def);
       if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(def->sym)) {
         if (ClassType* ct = dynamic_cast<ClassType*>(ts->type)) {
           add_class_to_hierarchy(ct);
         }
-      }
-    }
-  }
-
-  asts.clear();
-  collect_asts(&asts, base);
-  forv_Vec(BaseAST, ast, asts) {
-    currentLineno = ast->lineno;
-    currentFilename = ast->filename;
-    if (DefExpr* a = dynamic_cast<DefExpr*>(ast)) {
-      normalize_nested_function_expressions(a);
-    } else if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
-      SymExpr* base = dynamic_cast<SymExpr*>(a->baseExpr);
-      if (base && !strcmp(base->var->name, "_tuple")) {
-        CallExpr* parent = dynamic_cast<CallExpr*>(a->parentExpr);
-        if (parent && parent->isNamed("=") && parent->get(1) == a)
-          destructure_tuple(parent);
-      }
-    }
-  }
-
-  asts.clear();
-  collect_asts(&asts, base);
-  forv_Vec(BaseAST, ast, asts) {
-    if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(ast)) {
-      if (ClassType* ct = dynamic_cast<ClassType*>(type->type)) {
-        build_constructor(ct);
-      }
-    }
-  }
-
-  asts.clear();
-  collect_asts(&asts, base);
-  forv_Vec(BaseAST, ast, asts) {
-    currentLineno = ast->lineno;
-    currentFilename = ast->filename;
-    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
-      flatten_primary_methods(fn);
-      add_this_formal_to_method(fn);
-      change_cast_in_where(fn);
-    }
-  }
-
-  asts.clear();
-  collect_asts(&asts, base);
-  forv_Vec(BaseAST, ast, asts) {
-    if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
-      if (ArgSymbol* arg = dynamic_cast<ArgSymbol*>(def->sym)) {
+      } else if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def->sym)) {
+        flatten_primary_methods(fn);
+        add_this_formal_to_method(fn);
+        change_cast_in_where(fn);
+      } else if (ArgSymbol* arg = dynamic_cast<ArgSymbol*>(def->sym)) {
         if (DefExpr* tdef = dynamic_cast<DefExpr*>(def->exprType)) {
           if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(tdef->sym)) {
             if (UserType* ut = dynamic_cast<UserType*>(ts->type)) {
@@ -218,6 +156,17 @@ void cleanup(BaseAST* base) {
               }
             }
           }
+        }
+      }
+    }
+  }
+  forv_Vec(BaseAST, ast, asts) {
+    currentLineno = ast->lineno;
+    currentFilename = ast->filename;
+    if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
+      if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(def->sym)) {
+        if (ClassType* ct = dynamic_cast<ClassType*>(ts->type)) {
+          build_constructor(ct);
         }
       }
     }
@@ -267,13 +216,15 @@ static void normalize_nested_function_expressions(DefExpr* def) {
  ***   NOTE: handles recursive tuple destructuring, (i,(j,k)) = ...
  ***/
 static void destructure_tuple(CallExpr* call) {
-  Stmt* stmt = call->parentStmt;
+  CallExpr* parent = dynamic_cast<CallExpr*>(call->parentExpr);
+  if (!parent || !parent->isNamed("=") || parent->get(1) != call)
+    return;
+  Stmt* stmt = parent->parentStmt;
   VarSymbol* temp = new VarSymbol("_tuple_destruct");
   stmt->insertBefore(new DefExpr(temp));
-  CallExpr* tuple = dynamic_cast<CallExpr*>(call->get(1));
-  call->replace(new CallExpr(PRIMITIVE_MOVE, temp, call->get(2)->remove()));
+  parent->replace(new CallExpr(PRIMITIVE_MOVE, temp, parent->get(2)->remove()));
   int i = 1;
-  for_actuals(expr, tuple) {
+  for_actuals(expr, call) {
     if (i > 1)
       stmt->insertAfter(
         new CallExpr("=", expr->remove(),
@@ -332,15 +283,13 @@ static void build_constructor(ClassType* ct) {
 
   fn->_this = new VarSymbol("this", ct);
 
-  char* description = stringcat("instance of class ", ct->symbol->name);
-  Expr* alloc_rhs = new CallExpr(PRIMITIVE_CHPL_ALLOC,
-                                 ct->symbol,
-                                 new_StringLiteral(description));
-  CallExpr* alloc_expr = new CallExpr(PRIMITIVE_MOVE, fn->_this, alloc_rhs);
-
   fn->insertAtTail(new DefExpr(fn->_this));
   if (ct->classTag == CLASS_CLASS)
-    fn->insertAtTail(alloc_expr);
+    fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, fn->_this,
+                       new CallExpr(PRIMITIVE_CHPL_ALLOC,
+                         ct->symbol,
+                         new_StringLiteral(stringcat("instance of class ",
+                                                     ct->symbol->name)))));
   if (ct->classTag == CLASS_CLASS)
     fn->insertAtTail(new CallExpr(PRIMITIVE_SETCID, fn->_this));
   if (ct->classTag == CLASS_UNION)

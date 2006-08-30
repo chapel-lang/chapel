@@ -6,10 +6,10 @@
 #include "type.h"
 
 
-void build(BaseAST* ast) {
-  cleanup(ast);
-  scopeResolve(ast);
-  normalize(ast);
+void build(FnSymbol* fn) {
+  cleanup(fn);
+  scopeResolve(fn);
+  normalize(fn);
 }
 
 void collect_functions(Vec<FnSymbol*>* fns) {

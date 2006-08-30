@@ -10,10 +10,10 @@ class VarSymbol;
 class ArgSymbol;
 class CallExpr;
 
-void cleanup(BaseAST* ast);
-void scopeResolve(BaseAST* ast);
+void cleanup(Symbol* sym);
+void scopeResolve(Symbol* sym);
 void normalize(BaseAST* ast);
-void build(BaseAST* ast);
+void build(FnSymbol* fn);
 
 // collect FnSymbols in the AST and return them in vectors
 void collect_functions(Vec<FnSymbol*>* functions);

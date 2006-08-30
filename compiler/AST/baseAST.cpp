@@ -17,6 +17,7 @@ cannonicalize_string(char *s) {
 
 Vec<BaseAST*> gAsts;
 Vec<FnSymbol*> gFns;
+Vec<TypeSymbol*> gTypes;
 static long uid = 1;
 
 
@@ -27,19 +28,29 @@ void cleanAst(long* astCount, int* liveCount) {
     ast->clean();
   gAsts.clear();
   gFns.clear();
+  gTypes.clear();
   forv_Vec(BaseAST, ast, asts) {
-    if (Symbol* sym = dynamic_cast<Symbol*>(ast))
-      if (!sym->defPoint)
+    if (Symbol* sym = dynamic_cast<Symbol*>(ast)) {
+      if (!sym->defPoint) {
         gAsts.add(sym);
-    if (Type* type = dynamic_cast<Type*>(ast))
-      if (!type->symbol->defPoint)
-        gAsts.add(type);
-    if (dynamic_cast<Expr*>(ast) || dynamic_cast<Stmt*>(ast))
-      if (ast->parentSymbol)
+        if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym))
+          gFns.add(fn);
+        if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(sym)) {
+          gAsts.add(type->type);
+          gTypes.add(type);
+        }
+      }
+    } else if (dynamic_cast<Expr*>(ast) || dynamic_cast<Stmt*>(ast)) {
+      if (ast->parentSymbol) {
         gAsts.add(ast);
-    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast))
-      if (fn->defPoint->parentSymbol)
-        gFns.add(fn);
+        if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
+          if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def->sym))
+            gFns.add(fn);
+          if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(def->sym))
+            gTypes.add(type);
+        }
+      }
+    }
   }
   *astCount = uid;
   *liveCount = gAsts.n;

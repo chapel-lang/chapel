@@ -7,7 +7,7 @@
 #include "symscope.h"
 
 
-/*** function_name_matches_method_name
+/*** name_matches_method
  ***   returns true iff function name matches a method name in class
  ***/
 static bool
@@ -22,34 +22,31 @@ name_matches_method(char* name, Type* type) {
 
 static BlockStmt*
 find_outer_loop(Stmt* stmt) {
-  if (!stmt)
-    return NULL;
   if (BlockStmt* block = dynamic_cast<BlockStmt*>(stmt))
     if (block->isLoop())
       return block;
-  return find_outer_loop(stmt->parentStmt);
+  if (stmt->parentStmt)
+    return find_outer_loop(stmt->parentStmt);
+  return NULL;
 }
 
 
 static void
-resolveGotoLabel(GotoStmt* gotoStmt) {
+resolveGotoLabel(GotoStmt* gotoStmt, Vec<BaseAST*>& asts) {
   if (!gotoStmt->label) {
     BlockStmt* loop = find_outer_loop(gotoStmt);
-    if (!loop) {
+    if (!loop)
       USR_FATAL(gotoStmt, "break or continue is not in a loop");
-    } else if (gotoStmt->goto_type == goto_break) {
+    if (gotoStmt->goto_type == goto_break)
       gotoStmt->label = loop->post_loop;
-    } else if (gotoStmt->goto_type == goto_continue) {
+    else if (gotoStmt->goto_type == goto_continue)
       gotoStmt->label = loop->pre_loop;
-    } else
+    else
       INT_FATAL(gotoStmt, "Unexpected goto type");
   } else if (dynamic_cast<UnresolvedSymbol*>(gotoStmt->label)) {
-    FnSymbol* fn = gotoStmt->getFunction();
     char* name = gotoStmt->label->name;
     if (gotoStmt->goto_type == goto_break)
       name = stringcat("_post", name);
-    Vec<BaseAST*> asts;
-    collect_asts(&asts, fn);
     forv_Vec(BaseAST, ast, asts) {
       if (LabelSymbol* ls = dynamic_cast<LabelSymbol*>(ast)) {
         if (!strcmp(ls->name, name))
@@ -61,12 +58,26 @@ resolveGotoLabel(GotoStmt* gotoStmt) {
 
 
 void scopeResolve(void) {
-  forv_Vec(ModuleSymbol, mod, allModules)
-    scopeResolve(mod);
+  forv_Vec(TypeSymbol, type, gTypes)
+    scopeResolve(type);
+  forv_Vec(FnSymbol, fn, gFns)
+    scopeResolve(fn);
+  forv_Vec(TypeSymbol, type, gTypes) {
+    if (dynamic_cast<UserType*>(type->type)) {
+      if (type->defPoint->parentStmt)
+        type->defPoint->parentStmt->remove();
+      else
+        type->defPoint->remove();
+    }
+  }
+
 }
 
 
-void scopeResolve(BaseAST* base) {
+void scopeResolve(Symbol* base) {
+  if (!dynamic_cast<TypeSymbol*>(base) && !dynamic_cast<FnSymbol*>(base))
+    INT_FATAL(base, "scopeResolve called on Symbol other than Type or Fn");
+
   Vec<BaseAST*> asts;
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
@@ -112,7 +123,7 @@ void scopeResolve(BaseAST* base) {
             if (UserType* ut = dynamic_cast<UserType*>(type->type)) {
               Expr* e = ut->typeExpr->copy();
               symExpr->replace(e);
-              scopeResolve(e);
+              //scopeResolve(e);
               continue;
             }
         }
@@ -146,16 +157,7 @@ void scopeResolve(BaseAST* base) {
         }
       }
     } else if (GotoStmt* gs = dynamic_cast<GotoStmt*>(ast)) {
-      resolveGotoLabel(gs);
+      resolveGotoLabel(gs, asts);
     }
   }
-  forv_Vec(BaseAST, ast, asts)
-    if (DefExpr* def = dynamic_cast<DefExpr*>(ast))
-      if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(def->sym))
-        if (dynamic_cast<UserType*>(ts->type)) {
-          if (def->parentStmt)
-            def->parentStmt->remove();
-          else
-            def->remove();
-        }
 }

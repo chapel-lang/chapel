@@ -14,8 +14,6 @@
 #include "stringutil.h"
 #include "view.h"
 
-//#define MEMDB
-
 bool normalized = false;
 
 static void reconstruct_iterator(FnSymbol* fn);
@@ -49,10 +47,6 @@ void normalize(void) {
 void normalize(BaseAST* base) {
   Vec<BaseAST*> asts;
 
-#ifdef MEMDB
-  if (dynamic_cast<ModuleSymbol*>(base))
-    printf("\nMark1: %6d\n", GC_get_heap_size()/1024);
-#endif
   asts.clear();
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
@@ -68,10 +62,6 @@ void normalize(BaseAST* base) {
     }
   }
 
-#ifdef MEMDB
-  if (dynamic_cast<ModuleSymbol*>(base))
-    printf("Mark2: %6d\n", GC_get_heap_size()/1024);
-#endif
   asts.clear();
   collect_asts(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
@@ -82,10 +72,6 @@ void normalize(BaseAST* base) {
     }
   }
 
-#ifdef MEMDB
-  if (dynamic_cast<ModuleSymbol*>(base))
-    printf("Mark3: %6d\n", GC_get_heap_size()/1024);
-#endif
   asts.clear();
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
@@ -93,27 +79,10 @@ void normalize(BaseAST* base) {
     currentFilename = ast->filename;
     if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
       call_constructor_for_class(a);
-    }
-  }
-
-#ifdef MEMDB
-  if (dynamic_cast<ModuleSymbol*>(base))
-    printf("Mark4: %6d\n", GC_get_heap_size()/1024);
-#endif
-  asts.clear();
-  collect_asts_postorder(&asts, base);
-  forv_Vec(BaseAST, ast, asts) {
-    currentLineno = ast->lineno;
-    currentFilename = ast->filename;
-    if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
       decompose_special_calls(a);
     }
   }
 
-#ifdef MEMDB
-  if (dynamic_cast<ModuleSymbol*>(base))
-    printf("Mark5: %6d\n", GC_get_heap_size()/1024);
-#endif
   asts.clear();
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
@@ -124,10 +93,6 @@ void normalize(BaseAST* base) {
         apply_getters_setters(a);
   }
 
-#ifdef MEMDB
-  if (dynamic_cast<ModuleSymbol*>(base))
-    printf("Mark6: %6d\n", GC_get_heap_size()/1024);
-#endif
   asts.clear();
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
@@ -140,10 +105,6 @@ void normalize(BaseAST* base) {
     }
   }
 
-#ifdef MEMDB
-  if (dynamic_cast<ModuleSymbol*>(base))
-    printf("Mark7: %6d\n", GC_get_heap_size()/1024);
-#endif
   asts.clear();
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
@@ -151,30 +112,12 @@ void normalize(BaseAST* base) {
     currentFilename = ast->filename;
     if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
       insert_call_temps(a);
-    }
-  }
-
-#ifdef MEMDB
-  if (dynamic_cast<ModuleSymbol*>(base))
-    printf("Mark8: %6d\n", GC_get_heap_size()/1024);
-#endif
-  asts.clear();
-  collect_asts_postorder(&asts, base);
-  forv_Vec(BaseAST, ast, asts) {
-    currentLineno = ast->lineno;
-    currentFilename = ast->filename;
-    if (CallExpr* a = dynamic_cast<CallExpr*>(ast)) {
-      if (a->isNamed("="))
-        fix_user_assign(a);
+      fix_user_assign(a);
     }
   }
 
   fold_params(base);
 
-#ifdef MEMDB
-  if (dynamic_cast<ModuleSymbol*>(base))
-    printf("Mark9: %6d\n", GC_get_heap_size()/1024);
-#endif
   asts.clear();
   collect_asts(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
@@ -183,10 +126,6 @@ void normalize(BaseAST* base) {
     }
   }
 
-#ifdef MEMDB
-  if (dynamic_cast<ModuleSymbol*>(base))
-    printf("Mark10: %6d\n", GC_get_heap_size()/1024);
-#endif
   dtAny->isGeneric = true;
   asts.clear();
   collect_asts_postorder(&asts, base);
@@ -199,10 +138,6 @@ void normalize(BaseAST* base) {
     }
   }
 
-#ifdef MEMDB
-  if (dynamic_cast<ModuleSymbol*>(base))
-    printf("Mark11: %6d\n", GC_get_heap_size()/1024);
-#endif
   asts.clear();
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
@@ -211,10 +146,6 @@ void normalize(BaseAST* base) {
     }
   }
 
-#ifdef MEMDB
-  if (dynamic_cast<ModuleSymbol*>(base))
-    printf("Mark12: %6d\n", GC_get_heap_size()/1024);
-#endif
   asts.clear();
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
@@ -225,10 +156,6 @@ void normalize(BaseAST* base) {
     }
   }
 
-#ifdef MEMDB
-  if (dynamic_cast<ModuleSymbol*>(base))
-    printf("Mark13: %6d\n", GC_get_heap_size()/1024);
-#endif
   asts.clear();
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
@@ -238,11 +165,6 @@ void normalize(BaseAST* base) {
       }
     }
   }
-
-#ifdef MEMDB
-  if (dynamic_cast<ModuleSymbol*>(base))
-    printf("Mark14: %6d\n", GC_get_heap_size()/1024);
-#endif
 }
 
 
@@ -593,7 +515,7 @@ static void insert_call_temps(CallExpr* call) {
 
 
 static void fix_user_assign(CallExpr* call) {
-  if (call->parentExpr)
+  if (call->parentExpr || !call->isNamed("="))
     return;
   CallExpr* move = new CallExpr(PRIMITIVE_MOVE, call->get(1)->copy());
   call->replace(move);
