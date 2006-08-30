@@ -101,7 +101,9 @@ static void build_setter(ClassType* ct, Symbol* field) {
           if (call->get(1)->typeInfo() == dtMethodToken &&
               call->get(2)->typeInfo() == ct &&
               call->get(3)->typeInfo() == dtSetterToken) {
-            call->replace(new CallExpr(PRIMITIVE_SET_MEMBER, call->get(2)->remove(), new_StringLiteral(field->name), call->get(3 /* 2 removed */)->remove()));
+            Expr* arg2 = call->get(2);
+            Expr* arg4 = call->get(4);
+            call->replace(new CallExpr(PRIMITIVE_SET_MEMBER, arg2->remove(), new_StringLiteral(field->name), arg4->remove()));
           }
         }
       }
