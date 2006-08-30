@@ -1150,6 +1150,9 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
       clone->type->defaultValue = NULL;
     clone->type->substitutions.copy(retType->substitutions);
     clone->type->dispatchParents.copy(retType->dispatchParents);
+    forv_Vec(Type, t, retType->dispatchParents) {
+      t->dispatchChildren.add(clone->type);
+    }
     if (clone->type->dispatchChildren.n)
       INT_FATAL(this, "Generic type has subtypes");
 
@@ -1183,6 +1186,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
       newfn = instantiate_tuple_init(newfn);
 
   }
+
   normalize(newfn);
   instantiatedTo->add(newfn);
 
@@ -1200,6 +1204,9 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
     if (strcmp(symExpr->var->name, "true"))
       USR_FATAL(where, "Illegal where clause");
   }
+
+  if (newfn->formals->length() > 1 && newfn->formals->get(1)->sym->type == dtMethodToken)
+    newfn->formals->get(2)->sym->type->methods.add(newfn);
 
   return newfn;
 }

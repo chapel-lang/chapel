@@ -287,7 +287,7 @@ static void normalize_returns(FnSymbol* fn) {
   if (returns_void) {
     fn->insertAtTail(new ReturnStmt());
   } else {
-    retval = new VarSymbol(stringcat("_ret_", fn->name));
+    retval = new VarSymbol(stringcat("_ret_", fn->name), fn->retType);
     retval->isCompilerTemp = true;
     retval->canReference = true;
     fn->insertAtHead(new DefExpr(retval));

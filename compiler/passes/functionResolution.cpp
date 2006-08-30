@@ -13,6 +13,10 @@ static void setFieldTypes(FnSymbol* fn);
 static Vec<FnSymbol*> resolvedFns;
 Vec<CallExpr*> callStack;
 
+static Map<FnSymbol*,Vec<CallExpr*>*> ddc; // vec of calls that may
+                                           // require dynamic dispatch
+static Map<FnSymbol*,Vec<FnSymbol*>*> ddf; // map of functions to
+                                           // virtual children
 
 // types contains the types of the actuals
 // names contains the name if it is a named argument, otherwise NULL
@@ -674,22 +678,22 @@ resolve_type_expr(Expr* expr) {
 }
 
 
-static void
-build_dispatch_tree(Map<Type*,FnSymbol*>* dispatchMap,
-                    CallExpr* call,
-                    char* name,
-                    Vec<Type*>* atypes,
-                    Vec<Symbol*>* aparams,
-                    Vec<char*>* anames) {
-  forv_Vec(Type, type, atypes->v[1]->dispatchChildren) {
-    atypes->v[1] = type;
-    FnSymbol* fn = resolve_call(call, name, atypes, aparams, anames);
-    if (fn) {
-      dispatchMap->put(type, fn);
-      build_dispatch_tree(dispatchMap, call, name, atypes, aparams, anames);
-    }
-  }
-}
+// static void
+// build_dispatch_tree(Map<Type*,FnSymbol*>* dispatchMap,
+//                     CallExpr* call,
+//                     char* name,
+//                     Vec<Type*>* atypes,
+//                     Vec<Symbol*>* aparams,
+//                     Vec<char*>* anames) {
+//   forv_Vec(Type, type, atypes->v[1]->dispatchChildren) {
+//     atypes->v[1] = type;
+//     FnSymbol* fn = resolve_call(call, name, atypes, aparams, anames);
+//     if (fn) {
+//       dispatchMap->put(type, fn);
+//       build_dispatch_tree(dispatchMap, call, name, atypes, aparams, anames);
+//     }
+//   }
+// }
 
 
 char* call2string(CallExpr* call,
@@ -751,10 +755,53 @@ char* call2string(CallExpr* call,
 }
 
 
+char* fn2string(FnSymbol* fn) {
+  char* str;
+  int start = 0;
+  if (fn->instantiatedFrom)
+    fn = fn->instantiatedFrom;
+  if (fn->isMethod) {
+    if (!strcmp(fn->name, "this")) {
+      DefExpr* formalDef = fn->formals->get(1);
+      str = stringcat(":", formalDef->sym->type->symbol->name);
+      start = 1;
+    } else {
+      DefExpr* formalDef = fn->formals->get(2);
+      str = stringcat(":", formalDef->sym->type->symbol->name, ".", fn->name);
+      start = 2;
+    }
+  } else if (!strncmp("_construct_", fn->name, 11))
+    str = stringcat(fn->name+11);
+  else
+    str = stringcat(fn->name);
+  if (!fn->noParens)
+    str = stringcat(str, "(");
+  bool first = false;
+  for (int i = start; i < fn->formals->length(); i++) {
+    DefExpr* formalDef = fn->formals->get(i+1);
+    if (!first)
+      first = true;
+    else
+      str = stringcat(str, ", ");
+    if (formalDef->sym->isTypeVariable)
+      str = stringcat(str, "type ", formalDef->sym->name);
+    else if (formalDef->sym->type == dtUnknown) {
+      if (SymExpr* sym = dynamic_cast<SymExpr*>(formalDef->exprType))
+        str = stringcat(str, formalDef->sym->name, ": ", sym->var->name);
+      else
+        str = stringcat(str, formalDef->sym->name, ": ", formalDef->sym->type->symbol->name);
+    } else
+      str = stringcat(str, formalDef->sym->name, ": ", formalDef->sym->type->symbol->name);
+  }
+  if (!fn->noParens)
+    str = stringcat(str, ")");
+  return str;
+}
+
+
 static void
 resolveCall(CallExpr* call) {
   if (!call->primitive) {
-    bool already_resolved = false;
     if (SymExpr* sym = dynamic_cast<SymExpr*>(call->baseExpr)) {
       if (dynamic_cast<VarSymbol*>(sym->var) || dynamic_cast<ArgSymbol*>(sym->var)) {
         Expr* base = call->baseExpr;
@@ -774,8 +821,6 @@ resolveCall(CallExpr* call) {
       call->parentStmt->insertBefore(move);
       resolveCall(move);
     }
-    if (call->isResolved())
-      already_resolved = true;
     Vec<Type*> atypes;
     Vec<Symbol*> aparams;
     Vec<char*> anames;
@@ -825,44 +870,7 @@ resolveCall(CallExpr* call) {
           forv_Vec(FnSymbol, fn, resolve_call_error_candidates) {
             if (fn->isSetter)
               continue;
-            int start = 0;
-            if (fn->instantiatedFrom)
-              fn = fn->instantiatedFrom;
-            if (fn->isMethod) {
-              if (!strcmp(fn->name, "this")) {
-                DefExpr* formalDef = fn->formals->get(1);
-                str = stringcat(":", formalDef->sym->type->symbol->name);
-                start = 1;
-              } else {
-                DefExpr* formalDef = fn->formals->get(2);
-                str = stringcat(":", formalDef->sym->type->symbol->name, ".", fn->name);
-                start = 2;
-              }
-            } else if (!strncmp("_construct_", fn->name, 11))
-              str = stringcat(fn->name+11);
-            else
-              str = stringcat(fn->name);
-            if (!fn->noParens)
-              str = stringcat(str, "(");
-            bool first = false;
-            for (int i = start; i < fn->formals->length(); i++) {
-              DefExpr* formalDef = fn->formals->get(i+1);
-              if (!first)
-                first = true;
-              else
-                str = stringcat(str, ", ");
-              if (formalDef->sym->isTypeVariable)
-                str = stringcat(str, "type ", formalDef->sym->name);
-              else if (formalDef->sym->type == dtUnknown) {
-                if (SymExpr* sym = dynamic_cast<SymExpr*>(formalDef->exprType))
-                  str = stringcat(str, formalDef->sym->name, ": ", sym->var->name);
-                else
-                  str = stringcat(str, formalDef->sym->name, ": ", formalDef->sym->type->symbol->name);
-              } else
-                str = stringcat(str, formalDef->sym->name, ": ", formalDef->sym->type->symbol->name);
-            }
-            if (!fn->noParens)
-              str = stringcat(str, ")");
+            char* str = fn2string(fn);
             USR_PRINT(fn, "  %s", str);
           }
           USR_STOP();
@@ -874,16 +882,20 @@ resolveCall(CallExpr* call) {
       }
     }
     if (call->parentSymbol) {
-      bool may_dispatch = false;
+      call->baseExpr->replace(new SymExpr(resolvedFn));
       if (atypes.n > 1) {
         if (atypes.v[0] == dtMethodToken) {
           if (ClassType* ct = dynamic_cast<ClassType*>(atypes.v[1])) {
-            if (ct->classTag == CLASS_CLASS) {
-              may_dispatch = true;
+            if (ct->classTag == CLASS_CLASS && ct->dispatchChildren.n > 0) {
+              Vec<CallExpr*>* calls = ddc.get(resolvedFn);
+              if (!calls) calls = new Vec<CallExpr*>();
+              calls->add(call);
+              ddc.put(resolvedFn, calls);
             }
           }
         }
       }
+      /*
       if (may_dispatch && !already_resolved) {
         // handle dynamic dispatch tree
         Map<Type*,FnSymbol*> dispatchMap;
@@ -923,8 +935,7 @@ resolveCall(CallExpr* call) {
           resolveFns(if_fn);
         }
       } else {
-        call->baseExpr->replace(new SymExpr(resolvedFn));
-      }
+      */
     }
 
   } else if (call->isPrimitive(PRIMITIVE_TUPLE_EXPAND)) {
@@ -1075,9 +1086,107 @@ resolveFns(FnSymbol* fn) {
 }
 
 
+static bool
+signature_match(FnSymbol* fn, FnSymbol* gn) {
+  if (strcmp(fn->name, gn->name))
+    return false;
+  if (fn->isGeneric || gn->isGeneric)
+    return false;
+  if (fn->formals->length() != gn->formals->length())
+    return false;
+  for (int i = 3; i <= fn->formals->length(); i++) {
+    ArgSymbol* fa = dynamic_cast<ArgSymbol*>(fn->formals->get(i)->sym);
+    ArgSymbol* ga = dynamic_cast<ArgSymbol*>(gn->formals->get(i)->sym);
+    if (!strcmp(fa->name, ga->name))
+      return false;
+    if (fa->type != ga->type)
+      return false;
+  }
+  return true;
+}
+
+
+static void
+add_to_ddf(FnSymbol* pfn, ClassType* pt, ClassType* ct) {
+  forv_Vec(FnSymbol, cfn, ct->methods) {
+    if (signature_match(pfn, cfn)) {
+      Vec<FnSymbol*>* fns = ddf.get(pfn);
+      if (!fns) fns = new Vec<FnSymbol*>();
+      fns->add(cfn);
+      ddf.put(pfn, fns);
+    }
+  }
+}
+
+
+static void
+build_ddf() {
+  static int n = 0;
+  for (int i = n; i < gFns.n; i++) {
+    FnSymbol* fn = gFns.v[i];
+    if (fn->formals->length() > 1 && fn->formals->get(1)->sym->type == dtMethodToken) {
+      if (ClassType* pt = dynamic_cast<ClassType*>(fn->formals->get(2)->sym->type)) {
+        if (!pt->isGeneric) {
+          forv_Vec(Type, t, pt->dispatchChildren) {
+            ClassType* ct = dynamic_cast<ClassType*>(t);
+            add_to_ddf(fn, pt, ct);
+          }
+        }
+      }
+    }
+  }
+  n = gFns.n;
+}
+
+
 void
 resolve() {
   resolveFns(chpl_main);
+
+  build_ddf();
+
+//   printf("ddf:\n");
+//   for (int i = 0; i < ddf.n; i++) {
+//     if (ddf.v[i].key) {
+//       printf("  %s\n", fn2string(ddf.v[i].key));
+//       for (int j = 0; j < ddf.v[i].value->n; j++) {
+//         printf("    %s\n", fn2string(ddf.v[i].value->v[j]));
+//       }
+//     }
+//   }
+
+  Vec<FnSymbol*> keys;
+  ddf.get_keys(keys);
+  forv_Vec(FnSymbol, key, keys) {
+    Vec<FnSymbol*>* fns = ddf.get(key);
+    if (Vec<CallExpr*>* calls = ddc.get(key)) {
+      forv_Vec(CallExpr, call, *calls) {
+        forv_Vec(FnSymbol, fn, *fns) {
+          resolveFns(fn);
+          Type* type = fn->formals->get(2)->sym->type;
+          CallExpr* subcall = call->copy();
+          SymExpr* tmp = new SymExpr(gNil);
+          FnSymbol* if_fn = build_if_expr(new CallExpr(PRIMITIVE_GETCID,
+                                                       call->get(2)->copy(),
+                                                       new_IntLiteral(type->id)),
+                                          subcall, tmp);
+          if_fn->retRef = false;
+          if_fn->buildSetter = false;
+          if_fn->retType = key->retType;
+          if (key->retType == dtUnknown)
+            INT_FATAL(call, "bad parent virtual function return type");
+          call->parentStmt->insertBefore(new DefExpr(if_fn));
+          call->replace(new CallExpr(if_fn));
+          tmp->replace(call);
+          subcall->baseExpr->replace(new SymExpr(fn));
+          SymExpr* se = dynamic_cast<SymExpr*>(subcall->get(2));
+          se->replace(new CallExpr(PRIMITIVE_CAST, type->symbol, se->var));
+          normalize(if_fn);
+          resolvedFns.set_add(if_fn);
+        }
+      }
+    }
+  }
 
   Vec<BaseAST*> asts;
   collect_asts(&asts);
