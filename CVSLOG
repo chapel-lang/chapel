@@ -73835,3 +73835,26 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: buildDefaultFunctions.cpp 
 
+---------------------------------------------------------------------------
+
+08/30/06 16:33:25 -- deitz
+
+Log message:
+	Major refactor of dynamic dispatch code in preparation for supporting
+	dynamic dispatch in which the subclass is generic.  The dynamic
+	dispatch code is now inserted after function resolution not during
+	function resolution.  A table of all dynamic dispatchable functions
+	and where they apply is built.
+	
+	Changed semantics to be more reasonable and more like other languages.
+	A subtype's method is only dynamically dispatched if its signature
+	matches exactly the signature of the supertype's method.
+	
+	Improved instantiation so that instantiated classes are put in the
+	dispatchChildren table of the types in their dispatchParents table and
+	so that instantiated methods are put in the methods table their types.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+
