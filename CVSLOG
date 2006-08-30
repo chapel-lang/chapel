@@ -73790,3 +73790,13 @@ Modified files:
 	chapel/compiler/include/: baseAST.h 
 	chapel/compiler/passes/: normalize.cpp 
 
+---------------------------------------------------------------------------
+
+08/30/06 10:16:34 -- deitz
+
+Log message:
+	Added test I had lying around.
+
+Added files:
+	chapel/test/trivial/deitz/: int_casts.chpl int_casts.good 
+
