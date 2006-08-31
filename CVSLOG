@@ -73957,3 +73957,26 @@ Added files:
 	                                     test_dd2.chpl test_dd2.good 
 	                                     test_dd3.chpl test_dd3.good 
 
+---------------------------------------------------------------------------
+
+08/31/06 16:20:39 -- deitz
+
+Log message:
+	Added 3 tests and fixed 4 bugs:
+	1. Now apply this to methods that are not overridden in a subclass but
+	   are called with an implicit this in the method of the subclass.
+	2. Now handle the case where a cast is applied to 'this' in a method
+	   that is dynamically dispatched.
+	3. No longer dynamic dispatch to a type that is dead.
+	4. Now codegen C casts with a parentheses around the cast.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/passes/: functionResolution.cpp scopeResolve.cpp 
+Added files:
+	chapel/test/classes/deitz/dispatch/: test_dd4.chpl test_dd4.good 
+	                                     test_dd4b.chpl 
+	                                     test_dd4b.good 
+	                                     test_dd4c.chpl 
+	                                     test_dd4c.good 
+
