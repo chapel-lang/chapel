@@ -73858,3 +73858,13 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
 
+---------------------------------------------------------------------------
+
+08/30/06 17:58:24 -- waynew
+
+Log message:
+	Simple test to test begin with a single statement.
+
+Added files:
+	chapel/test/parallel/begin/waynew/: single.chpl single.good 
+
