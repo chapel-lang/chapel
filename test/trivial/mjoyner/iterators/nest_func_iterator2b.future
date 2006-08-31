@@ -1,0 +1,5 @@
+waynew
+
+Currently do not support inout arguments to iterators. Two problems are 1)
+knowning which iterator to resolve to and 2) the iterator interface would
+have to change to pass along the inout argument (e.g., getNextCursor).
