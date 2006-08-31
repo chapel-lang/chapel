@@ -73980,3 +73980,13 @@ Added files:
 	                                     test_dd4c.chpl 
 	                                     test_dd4c.good 
 
+---------------------------------------------------------------------------
+
+08/31/06 16:21:47 -- deitz
+
+Log message:
+	Added a test of scalar promotion and dynamic dispatch.  It worked!
+
+Added files:
+	chapel/test/classes/deitz/dispatch/: test_dd5.chpl test_dd5.good 
+
