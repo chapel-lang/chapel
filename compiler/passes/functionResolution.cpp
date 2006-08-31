@@ -884,49 +884,7 @@ resolveCall(CallExpr* call) {
     }
     if (call->parentSymbol) {
       call->baseExpr->replace(new SymExpr(resolvedFn));
-      /*
-      if (may_dispatch && !already_resolved) {
-        // handle dynamic dispatch tree
-        Map<Type*,FnSymbol*> dispatchMap;
-        build_dispatch_tree(&dispatchMap, call, name, &atypes, &aparams, &anames);
-        Vec<Type*> types;
-        dispatchMap.get_keys(types);
-        CallExpr* nextcall = call->copy();
-        call->baseExpr->replace(new SymExpr(resolvedFn));
-        resolveFns(resolvedFn);
-        Stmt* stmt = call->parentStmt;
-        Expr* dynamicArg = call->get(2);
-        forv_Vec(Type, type, types) {
-          if (type->isGeneric) {
-            USR_FATAL(type, "Cannot handle generic types with parent types");
-          }
-          resolveFormals(type->defaultConstructor);
-          resolveFns(type->defaultConstructor);
-          CallExpr* nextnextcall = nextcall->copy();
-          resolveFns(dispatchMap.get(type));
-          nextcall->baseExpr = new SymExpr(dispatchMap.get(type));
-          if (resolvedFn->retType != dispatchMap.get(type)->retType) {
-            INT_FATAL(call, "Illegal dispatch functions"); // make user error
-          }
-          nextcall->get(2)->replace(new CallExpr(PRIMITIVE_CAST, type->symbol, dynamicArg->copy()));
-          FnSymbol* if_fn = build_if_expr(new CallExpr(PRIMITIVE_GETCID,
-                                                       dynamicArg->copy(),
-                                                       new_IntLiteral(type->id)),
-                                          nextcall, call->copy());
-          stmt->insertBefore(new DefExpr(if_fn));
-          if_fn->retRef = false;
-          if_fn->buildSetter = false;
-          nextcall = nextnextcall;
-          CallExpr* tmp = new CallExpr(if_fn);
-          call->replace(tmp);
-          call = tmp;
-          normalize(if_fn);
-          resolveFns(if_fn);
-        }
-      } else {
-      */
     }
-
   } else if (call->isPrimitive(PRIMITIVE_TUPLE_EXPAND)) {
     SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1));
     Symbol* var = dynamic_cast<Symbol*>(sym->var);
@@ -1141,7 +1099,9 @@ add_to_ddf(FnSymbol* pfn, ClassType* pt, ClassType* ct) {
 
 static void
 add_all_children_ddf_help(FnSymbol* fn, ClassType* pt, ClassType* ct) {
-  add_to_ddf(fn, pt, ct);
+  if (ct->defaultConstructor->instantiatedTo ||
+      resolvedFns.set_in(ct->defaultConstructor))
+    add_to_ddf(fn, pt, ct);
   forv_Vec(Type, t, ct->dispatchChildren) {
     ClassType* ct = dynamic_cast<ClassType*>(t);
     if (!ct->instantiatedFrom)
@@ -1226,6 +1186,11 @@ resolve() {
           subcall->baseExpr->replace(new SymExpr(fn));
           if (SymExpr* se = dynamic_cast<SymExpr*>(subcall->get(2)))
             se->replace(new CallExpr(PRIMITIVE_CAST, type->symbol, se->var));
+          else if (CallExpr* ce = dynamic_cast<CallExpr*>(subcall->get(2)))
+            if (ce->isPrimitive(PRIMITIVE_CAST))
+              ce->get(1)->replace(new SymExpr(type->symbol));
+            else
+              INT_FATAL(subcall, "unexpected");
           else
             INT_FATAL(subcall, "unexpected");
           normalize(if_fn);

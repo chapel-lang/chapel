@@ -16,6 +16,10 @@ name_matches_method(char* name, Type* type) {
     if (!strcmp(name, method->name))
       return true;
   }
+  forv_Vec(Type, pt, type->dispatchParents) {
+    if (name_matches_method(name, pt))
+      return true;
+  }
   return false;
 }
 
