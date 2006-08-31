@@ -73890,3 +73890,17 @@ Added files:
 	chapel/test/trivial/mjoyner/iterators/: 
 	                                        nest_func_iterator2b.future 
 
+---------------------------------------------------------------------------
+
+08/30/06 19:09:05 -- deitz
+
+Log message:
+	Added support for dynamic dispatch where the subtype was generic and
+	added a test case.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+Added files:
+	chapel/test/classes/deitz/: test_dynamic_dispatch2.chpl 
+	                            test_dynamic_dispatch2.good 
+
