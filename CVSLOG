@@ -73921,3 +73921,21 @@ Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 	                         inlineFunctions.cpp verify.cpp 
 
+---------------------------------------------------------------------------
+
+08/31/06 14:25:06 -- waynew
+
+Log message:
+	Some more iterator function test cases. Tests include multiple args,
+	param arg, and nested for.
+
+Added files:
+	chapel/test/functions/waynew/: iterator1.chpl iterator1.good 
+	                               iterator2.chpl iterator2.good 
+	                               iterator4a.chpl iterator4a.good 
+	                               iterator4b.chpl iterator4b.good 
+	                               iterator5a.chpl iterator5a.good 
+	                               iterator5b.chpl iterator5b.good 
+Removed files:
+	chapel/test/functions/waynew/: itest.chpl itest.good 
+
