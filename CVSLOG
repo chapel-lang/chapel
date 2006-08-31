@@ -73868,3 +73868,13 @@ Log message:
 Added files:
 	chapel/test/parallel/begin/waynew/: single.chpl single.good 
 
+---------------------------------------------------------------------------
+
+08/30/06 18:24:38 -- waynew
+
+Log message:
+	Support for begin with a single statement.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+
