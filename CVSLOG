@@ -73904,3 +73904,20 @@ Added files:
 	chapel/test/classes/deitz/: test_dynamic_dispatch2.chpl 
 	                            test_dynamic_dispatch2.good 
 
+---------------------------------------------------------------------------
+
+08/31/06 09:14:32 -- deitz
+
+Log message:
+	Removed reentrant iterator implementation from alist and simplified
+	some code in the compiler as a result.
+	
+	Removed hyper all traversal which is no longer used.  This used to
+	collect ast nodes in a traversal including, for example, SymExpr::var.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp baseAST.cpp expr.cpp 
+	chapel/compiler/include/: alist.h baseAST.h 
+	chapel/compiler/passes/: functionResolution.cpp 
+	                         inlineFunctions.cpp verify.cpp 
+
