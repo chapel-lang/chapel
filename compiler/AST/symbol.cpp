@@ -617,7 +617,8 @@ FnSymbol::FnSymbol(char* initName) :
   instantiatedTo(NULL),
   visible(true),
   basicBlocks(NULL),
-  calledBy(NULL)
+  calledBy(NULL),
+  isWrapper(false)
 {
   gFns.add(this);
 }
@@ -700,6 +701,7 @@ make_method_call_partial(CallExpr* call) {
 static FnSymbol*
 build_empty_wrapper(FnSymbol* fn) {
   FnSymbol* wrapper = new FnSymbol(fn->name);
+  wrapper->isWrapper = true;
   wrapper->visible = false;
   wrapper->addPragmas(&fn->pragmas);
   wrapper->addPragma("inline");

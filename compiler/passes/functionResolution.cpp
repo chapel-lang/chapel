@@ -884,18 +884,6 @@ resolveCall(CallExpr* call) {
     }
     if (call->parentSymbol) {
       call->baseExpr->replace(new SymExpr(resolvedFn));
-      if (atypes.n > 1) {
-        if (atypes.v[0] == dtMethodToken) {
-          if (ClassType* ct = dynamic_cast<ClassType*>(atypes.v[1])) {
-            if (ct->classTag == CLASS_CLASS && ct->dispatchChildren.n > 0) {
-              Vec<CallExpr*>* calls = ddc.get(resolvedFn);
-              if (!calls) calls = new Vec<CallExpr*>();
-              calls->add(call);
-              ddc.put(resolvedFn, calls);
-            }
-          }
-        }
-      }
       /*
       if (may_dispatch && !already_resolved) {
         // handle dynamic dispatch tree
@@ -1096,7 +1084,7 @@ signature_match(FnSymbol* fn, FnSymbol* gn) {
   for (int i = 3; i <= fn->formals->length(); i++) {
     ArgSymbol* fa = dynamic_cast<ArgSymbol*>(fn->formals->get(i)->sym);
     ArgSymbol* ga = dynamic_cast<ArgSymbol*>(gn->formals->get(i)->sym);
-    if (!strcmp(fa->name, ga->name))
+    if (strcmp(fa->name, ga->name))
       return false;
     if (fa->type != ga->type)
       return false;
@@ -1109,10 +1097,18 @@ static void
 add_to_ddf(FnSymbol* pfn, ClassType* pt, ClassType* ct) {
   forv_Vec(FnSymbol, cfn, ct->methods) {
     if (signature_match(pfn, cfn)) {
-      if (cfn->isGeneric) {
+      if (ct->isGeneric) {
         ASTMap subs;
         forv_Vec(FnSymbol, cons, *ct->defaultConstructor->instantiatedTo) {
           subs.put(cfn->formals->get(2)->sym, cons->retType);
+          for (int i = 3; i <= cfn->formals->length(); i++) {
+            ArgSymbol* arg = dynamic_cast<ArgSymbol*>(cfn->formals->get(i)->sym);
+            if (arg->intent == INTENT_PARAM) {
+              INT_FATAL(arg, "unhandled case");
+            } else if (arg->type->isGeneric) {
+              subs.put(arg, pfn->formals->get(i)->sym->type);
+            }
+          }
           FnSymbol* icfn = cfn->instantiate_generic(&subs);
           resolveFns(icfn);
           Vec<FnSymbol*>* fns = ddf.get(pfn);
@@ -1121,6 +1117,17 @@ add_to_ddf(FnSymbol* pfn, ClassType* pt, ClassType* ct) {
           ddf.put(pfn, fns);
         }
       } else {
+        ASTMap subs;
+        for (int i = 3; i <= cfn->formals->length(); i++) {
+          ArgSymbol* arg = dynamic_cast<ArgSymbol*>(cfn->formals->get(i)->sym);
+          if (arg->intent == INTENT_PARAM) {
+            INT_FATAL(arg, "unhandled case");
+          } else if (arg->type->isGeneric) {
+            subs.put(arg, pfn->formals->get(i)->sym->type);
+          }
+        }
+        if (subs.n)
+          cfn = cfn->instantiate_generic(&subs);
         resolveFns(cfn);
         Vec<FnSymbol*>* fns = ddf.get(pfn);
         if (!fns) fns = new Vec<FnSymbol*>();
@@ -1133,17 +1140,36 @@ add_to_ddf(FnSymbol* pfn, ClassType* pt, ClassType* ct) {
 
 
 static void
+add_all_children_ddf_help(FnSymbol* fn, ClassType* pt, ClassType* ct) {
+  add_to_ddf(fn, pt, ct);
+  forv_Vec(Type, t, ct->dispatchChildren) {
+    ClassType* ct = dynamic_cast<ClassType*>(t);
+    if (!ct->instantiatedFrom)
+      add_all_children_ddf_help(fn, pt, ct);
+  }
+}
+
+
+static void
+add_all_children_ddf(FnSymbol* fn, ClassType* pt) {
+  forv_Vec(Type, t, pt->dispatchChildren) {
+    ClassType* ct = dynamic_cast<ClassType*>(t);
+    if (!ct->instantiatedFrom)
+      add_all_children_ddf_help(fn, pt, ct);
+  }
+}
+
+
+static void
 build_ddf() {
-  Vec<FnSymbol*> fns;
-  ddc.get_keys(fns);
-  forv_Vec(FnSymbol, fn, fns) {
-    if (fn->formals->length() > 1 && fn->formals->get(1)->sym->type == dtMethodToken) {
-      if (ClassType* pt = dynamic_cast<ClassType*>(fn->formals->get(2)->sym->type)) {
-        if (!pt->isGeneric) {
-          forv_Vec(Type, t, pt->dispatchChildren) {
-            ClassType* ct = dynamic_cast<ClassType*>(t);
-            if (!ct->instantiatedFrom)
-              add_to_ddf(fn, pt, ct);
+  forv_Vec(FnSymbol, fn, gFns) {
+    if (fn->isWrapper || !resolvedFns.set_in(fn))
+      continue;
+    if (fn->formals->length() > 1) {
+      if (fn->formals->get(1)->sym->type == dtMethodToken) {
+        if (ClassType* pt = dynamic_cast<ClassType*>(fn->formals->get(2)->sym->type)) {
+          if (pt->classTag == CLASS_CLASS && !pt->isGeneric) {
+            add_all_children_ddf(fn, pt);
           }
         }
       }
@@ -1173,12 +1199,14 @@ resolve() {
 //     }
 //   }
 
-  Vec<FnSymbol*> keys;
-  ddf.get_keys(keys);
-  forv_Vec(FnSymbol, key, keys) {
-    Vec<FnSymbol*>* fns = ddf.get(key);
-    if (Vec<CallExpr*>* calls = ddc.get(key)) {
-      forv_Vec(CallExpr, call, *calls) {
+  Vec<CallExpr*> calls;
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (CallExpr* call = dynamic_cast<CallExpr*>(ast))
+      calls.add(call);
+  }
+  forv_Vec(CallExpr, call, calls) {
+    if (FnSymbol* key = call->isResolved()) {
+      if (Vec<FnSymbol*>* fns = ddf.get(key)) {
         forv_Vec(FnSymbol, fn, *fns) {
           Type* type = fn->formals->get(2)->sym->type;
           CallExpr* subcall = call->copy();
@@ -1196,8 +1224,10 @@ resolve() {
           call->replace(new CallExpr(if_fn));
           tmp->replace(call);
           subcall->baseExpr->replace(new SymExpr(fn));
-          SymExpr* se = dynamic_cast<SymExpr*>(subcall->get(2));
-          se->replace(new CallExpr(PRIMITIVE_CAST, type->symbol, se->var));
+          if (SymExpr* se = dynamic_cast<SymExpr*>(subcall->get(2)))
+            se->replace(new CallExpr(PRIMITIVE_CAST, type->symbol, se->var));
+          else
+            INT_FATAL(subcall, "unexpected");
           normalize(if_fn);
           resolvedFns.set_add(if_fn);
         }

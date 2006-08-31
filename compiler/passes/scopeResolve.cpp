@@ -101,6 +101,7 @@ void scopeResolve(Symbol* base) {
                     sym->remove();
                   }
                   method->_this->type = sym->var->type;
+                  method->_this->type->methods.add(method);
                 }
               }
               break;

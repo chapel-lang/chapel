@@ -179,6 +179,7 @@ class FnSymbol : public Symbol {
                 // instantiated functions and wrappers
   Vec<BasicBlock*>* basicBlocks;
   Vec<CallExpr*>* calledBy;
+  bool isWrapper;
 
   FnSymbol(char* initName);
            
