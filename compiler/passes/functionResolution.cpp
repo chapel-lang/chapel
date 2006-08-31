@@ -1090,8 +1090,6 @@ static bool
 signature_match(FnSymbol* fn, FnSymbol* gn) {
   if (strcmp(fn->name, gn->name))
     return false;
-  if (fn->isGeneric || gn->isGeneric)
-    return false;
   if (fn->formals->length() != gn->formals->length())
     return false;
   for (int i = 3; i <= fn->formals->length(); i++) {
@@ -1110,10 +1108,24 @@ static void
 add_to_ddf(FnSymbol* pfn, ClassType* pt, ClassType* ct) {
   forv_Vec(FnSymbol, cfn, ct->methods) {
     if (signature_match(pfn, cfn)) {
-      Vec<FnSymbol*>* fns = ddf.get(pfn);
-      if (!fns) fns = new Vec<FnSymbol*>();
-      fns->add(cfn);
-      ddf.put(pfn, fns);
+      if (cfn->isGeneric) {
+        ASTMap subs;
+        forv_Vec(FnSymbol, cons, *ct->defaultConstructor->instantiatedTo) {
+          subs.put(cfn->formals->get(2)->sym, cons->retType);
+          FnSymbol* icfn = cfn->instantiate_generic(&subs);
+          resolveFns(icfn);
+          Vec<FnSymbol*>* fns = ddf.get(pfn);
+          if (!fns) fns = new Vec<FnSymbol*>();
+          fns->add(icfn);
+          ddf.put(pfn, fns);
+        }
+      } else {
+        resolveFns(cfn);
+        Vec<FnSymbol*>* fns = ddf.get(pfn);
+        if (!fns) fns = new Vec<FnSymbol*>();
+        fns->add(cfn);
+        ddf.put(pfn, fns);
+      }
     }
   }
 }
@@ -1121,21 +1133,21 @@ add_to_ddf(FnSymbol* pfn, ClassType* pt, ClassType* ct) {
 
 static void
 build_ddf() {
-  static int n = 0;
-  for (int i = n; i < gFns.n; i++) {
-    FnSymbol* fn = gFns.v[i];
+  Vec<FnSymbol*> fns;
+  ddc.get_keys(fns);
+  forv_Vec(FnSymbol, fn, fns) {
     if (fn->formals->length() > 1 && fn->formals->get(1)->sym->type == dtMethodToken) {
       if (ClassType* pt = dynamic_cast<ClassType*>(fn->formals->get(2)->sym->type)) {
         if (!pt->isGeneric) {
           forv_Vec(Type, t, pt->dispatchChildren) {
             ClassType* ct = dynamic_cast<ClassType*>(t);
-            add_to_ddf(fn, pt, ct);
+            if (!ct->instantiatedFrom)
+              add_to_ddf(fn, pt, ct);
           }
         }
       }
     }
   }
-  n = gFns.n;
 }
 
 
@@ -1143,7 +1155,12 @@ void
 resolve() {
   resolveFns(chpl_main);
 
-  build_ddf();
+  int num_types;
+  do {
+    num_types = gTypes.n;
+    ddf.clear();
+    build_ddf();
+  } while (num_types != gTypes.n);
 
 //   printf("ddf:\n");
 //   for (int i = 0; i < ddf.n; i++) {
@@ -1162,7 +1179,6 @@ resolve() {
     if (Vec<CallExpr*>* calls = ddc.get(key)) {
       forv_Vec(CallExpr, call, *calls) {
         forv_Vec(FnSymbol, fn, *fns) {
-          resolveFns(fn);
           Type* type = fn->formals->get(2)->sym->type;
           CallExpr* subcall = call->copy();
           SymExpr* tmp = new SymExpr(gNil);
