@@ -20,7 +20,6 @@ Vec<FnSymbol*> gFns;
 Vec<TypeSymbol*> gTypes;
 static long uid = 1;
 
-
 void cleanAst(long* astCount, int* liveCount) {
   Vec<BaseAST*> asts;
   collect_asts(&asts);
@@ -464,159 +463,122 @@ char* currentTraversal = NULL;
 
 #define AST_ADD_CHILD(_t, _m) if (((_t*)a)->_m) asts.add(((_t*)a)->_m)
 #define AST_ADD_LIST(_t, _m, _mt)                                       \
-  if (((_t*)a)->_m) { \
-    for (_mt* tmp = ((_t*)a)->_m->first(); tmp; tmp = ((_t*)a)->_m->next()) \
-      asts.add(tmp);                                                      \
-    if (sentinels) {                                                      \
-      asts.add(((_t*)a)->_m->head);                                       \
-      asts.add(((_t*)a)->_m->tail);                                       \
-    } \
+  if (((_t*)a)->_m) {                                                   \
+    for_alist(_mt, tmp, ((_t*)a)->_m) {                                 \
+      asts.add(tmp);                                                    \
+    }                                                                   \
+    if (sentinels) {                                                    \
+      asts.add(((_t*)a)->_m->head);                                     \
+      asts.add(((_t*)a)->_m->tail);                                     \
+    }                                                                   \
   }
 
-#define AST_ADD_VEC(_t, _m, _mt) \
-  forv_Vec(_mt, c, ((_t*)a)->_m) asts.add(c)
-
-#define ADD_CHILD(_t, _m) if (all) AST_ADD_CHILD(_t, _m)
-#define ADD_LIST(_t, _m, _mt) if (all) AST_ADD_LIST(_t, _m, _mt)
-#define ADD_VEC(_t, _m, _mt) if (all) AST_ADD_VEC(_t, _m, _mt)
-
 void
-get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all, int sentinels) {
+get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int sentinels) {
   switch (a->astType) {
   case STMT:
-  LStmtCommon:
+  case EXPR:
+  case SYMBOL:
+  case TYPE:
     break;
   case STMT_EXPR:
     AST_ADD_CHILD(ExprStmt, expr);
-    goto LStmtCommon;
+    break;
   case STMT_RETURN:
     AST_ADD_CHILD(ReturnStmt, expr);
-    goto LStmtCommon;
+    break;
   case STMT_BLOCK:
     AST_ADD_CHILD(BlockStmt, param_low);
     AST_ADD_CHILD(BlockStmt, param_high);
     AST_ADD_CHILD(BlockStmt, param_index);
     AST_ADD_LIST(BlockStmt, body, Stmt);
-    goto LStmtCommon;
+    break;
   case STMT_COND:
     AST_ADD_CHILD(CondStmt, condExpr);
     AST_ADD_CHILD(CondStmt, thenStmt);
     AST_ADD_CHILD(CondStmt, elseStmt);
-    goto LStmtCommon;
+    break;
   case STMT_WHEN:
     AST_ADD_LIST(WhenStmt, caseExprs, Expr);
     AST_ADD_CHILD(WhenStmt, doStmt);
-    goto LStmtCommon;
+    break;
   case STMT_GOTO:
-    ADD_CHILD(GotoStmt, label);
-    goto LStmtCommon;
-  case EXPR:
-    LExprCommon:
     break;
   case EXPR_SYM:
-    ADD_CHILD(SymExpr, var);
-    goto LExprCommon;
+    break;
   case EXPR_DEF:
     AST_ADD_CHILD(DefExpr, init);
     AST_ADD_CHILD(DefExpr, exprType);
     AST_ADD_CHILD(DefExpr, sym);
-    goto LExprCommon;
+    break;
   case EXPR_CALL:
     AST_ADD_CHILD(CallExpr, baseExpr);
     AST_ADD_LIST(CallExpr, argList, Expr);
-    goto LExprCommon;
+    break;
   case EXPR_NAMED:
     AST_ADD_CHILD(NamedExpr, actual);
-    goto LExprCommon;
-  case SYMBOL:
+    break;
   case SYMBOL_UNRESOLVED:
-  LSymbolCommon:
-    ADD_CHILD(Symbol, type);
     break;
   case SYMBOL_MODULE:
     AST_ADD_LIST(ModuleSymbol, stmts, Stmt);
-    ADD_CHILD(ModuleSymbol, initFn);
-    goto LSymbolCommon;
+    break;
   case SYMBOL_VAR:
-    goto LSymbolCommon;
+    break;
   case SYMBOL_ARG:
     AST_ADD_CHILD(ArgSymbol, defaultExpr);
     AST_ADD_CHILD(ArgSymbol, variableExpr);
-    goto LSymbolCommon;
+    break;
   case SYMBOL_TYPE:
     AST_ADD_CHILD(Symbol, type);
-    goto LSymbolCommon;
+    break;
   case SYMBOL_FN:
     AST_ADD_LIST(FnSymbol, formals, DefExpr);
     AST_ADD_CHILD(FnSymbol, body);
-    ADD_CHILD(FnSymbol, retType);
-    ADD_CHILD(FnSymbol, _this);
     AST_ADD_CHILD(FnSymbol, where);
     AST_ADD_CHILD(FnSymbol, retExpr);
-    goto LSymbolCommon;
+    break;
   case SYMBOL_ENUM:
+    break;
   case SYMBOL_LABEL:
-    goto LSymbolCommon;
-  case TYPE:
-  LTypeCommon:
-    ADD_CHILD(Type, symbol);
-    ADD_CHILD(Type, defaultValue);
-    ADD_CHILD(Type, defaultConstructor);
     break;
   case TYPE_PRIMITIVE:
+    break;
   case TYPE_FN:
-    goto LTypeCommon;
+    break;
   case TYPE_ENUM:
     AST_ADD_LIST(EnumType, constants, DefExpr);
-    goto LTypeCommon;
+    break;
   case TYPE_USER:
     AST_ADD_CHILD(UserType, typeExpr);
-    goto LTypeCommon;
+    break;
   case TYPE_CLASS:
     AST_ADD_LIST(ClassType, fields, DefExpr);
     AST_ADD_LIST(ClassType, inherits, Expr);
-    goto LTypeCommon;
-  case AST_TYPE_END:
     break;
   case LIST:
     if (AList<Stmt>* stmts = dynamic_cast<AList<Stmt>*>(a)) {
       for_alist(Stmt, stmt, stmts) {
-        get_ast_children(stmt, asts, all, sentinels);
+        get_ast_children(stmt, asts, sentinels);
       }
     } else if (AList<Expr>* exprs = dynamic_cast<AList<Expr>*>(a)) {
       for_alist(Expr, expr, exprs) {
-        get_ast_children(expr, asts, all, sentinels);
+        get_ast_children(expr, asts, sentinels);
       }
     } else if (AList<DefExpr>* exprs = dynamic_cast<AList<DefExpr>*>(a)) {
       for_alist(DefExpr, expr, exprs) {
-        get_ast_children(expr, asts, all, sentinels);
+        get_ast_children(expr, asts, sentinels);
       }
     } else
-      INT_FATAL(a, "Unexpected case in AST_GET_CHILDREN (LIST)");
+      INT_FATAL(a, "Unexpected case in get_ast_children (LIST)");
     break;
-  case OBJECT:
-    INT_FATAL(a, "Unexpected case in AST_GET_CHILDREN (OBJECT)");
+  case AST_TYPE_END:
+    INT_FATAL(a, "Unexpected case in get_ast_children (AST_TYPE_END)");
     break;
   }
 }
 #undef AST_ADD_CHILD
 #undef AST_ADD_LIST
-#undef AST_ADD_VEC
-#undef ADD_CHILD
-#undef ADD_LIST
-#undef ADD_VEC
-
-void
-collect_ast_children(BaseAST *a, Accum<BaseAST *> &acc, int all) {
-  acc.add(a);
-  forv_BaseAST(x, acc.asvec) {
-    Vec<BaseAST *> tmp;
-    get_ast_children(x, tmp, all);
-    acc.add(tmp);
-  }
-}
-
-
 
 SymScope* rootScope = NULL;
 

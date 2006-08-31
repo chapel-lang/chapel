@@ -3,11 +3,6 @@
 
 // Lists for use with Stmts and Exprs (only)
 
-#define ExprList AList<Expr>
-#define DefExprList AList<DefExpr>
-#define StmtList AList<Stmt>
-#define WhenStmtList AList<WhenStmt>
-
 #include <stdio.h>
 #include "chpl.h"
 #include "astutil.h"
@@ -18,8 +13,6 @@ class AList : public BaseAST {
  public:
   elemType* head;
   elemType* tail;
-  elemType* cursor;      /* WARNING: NON-REENTRANT ITERATORS !!! */
-  bool debugNestedTraversals;
 
   // constructors
   AList();
@@ -40,13 +33,9 @@ class AList : public BaseAST {
 
   // iteration
   elemType* first(void); // begin iteration over a list
-  elemType* next(void);  // continue iteration over the list
   elemType* last(void);  // begin backwards iteration over a list
-  elemType* prev(void);  // continue backward iteration over the list
-  void reset(void); // reset iteration if terminated prematurely
 
   // other ways to get elements from the list
-  elemType* representative(void); // return an arbitrary element in a list
   elemType* only(void); // return the single element in a list
   elemType* get(int index); // get the index-th element in a list
 
@@ -66,9 +55,6 @@ class AList : public BaseAST {
   void printDef(FILE* outfile, char* separator = ", ");
   void codegen(FILE* outfile, char* separator = ", ");
   void codegenDef(FILE* outfile, char* separator = ", ");
-
-  // convert list to vector
-  void getElements(Vec<elemType*>& elements);
 };
 
 #define for_alist(elemtype, node, list)  \
@@ -132,23 +118,12 @@ class AList : public BaseAST {
        node = _alist_prev,                                                                      \
          _alist_prev = (node) ? dynamic_cast<elemtype*>((node)->prev) : NULL)
 
-// this is intended for internal use only
-// note that we store a node one ahead in case the current node is
-// removed or something
-#define _for_all_elems(node)                                            \
-  elemType* node;                                                       \
-  BaseAST* nextNode;                                                    \
-  for (node = dynamic_cast<elemType*>(head->next), nextNode = node->next; \
-       node != tail;                                                    \
-       node = dynamic_cast<elemType*>(nextNode), nextNode = node->next)
 
 template <class elemType>
 AList<elemType>::AList() :
   BaseAST(LIST),
   head(new elemType()),
-  tail(new elemType()),
-  cursor(NULL),
-  debugNestedTraversals(false)
+  tail(new elemType())
 {
   clear();
 }
@@ -158,9 +133,7 @@ template <class elemType>
 AList<elemType>::AList(BaseAST* elem1) :
   BaseAST(LIST),
   head(new elemType()),
-  tail(new elemType()),
-  cursor(NULL),
-  debugNestedTraversals(false)
+  tail(new elemType())
 {
   clear();
   if (elem1) insertAtTail(elem1);
@@ -171,9 +144,7 @@ template <class elemType>
 AList<elemType>::AList(BaseAST* elem1, BaseAST* elem2) :
   BaseAST(LIST),
   head(new elemType()),
-  tail(new elemType()),
-  cursor(NULL),
-  debugNestedTraversals(false)
+  tail(new elemType())
 {
   clear();
   if (elem1) insertAtTail(elem1);
@@ -185,9 +156,7 @@ template <class elemType>
 AList<elemType>::AList(BaseAST* elem1, BaseAST* elem2, BaseAST* elem3) :
   BaseAST(LIST),
   head(new elemType()),
-  tail(new elemType()),
-  cursor(NULL),
-  debugNestedTraversals(false)
+  tail(new elemType())
 {
   clear();
   if (elem1) insertAtTail(elem1);
@@ -201,9 +170,7 @@ AList<elemType>::AList(BaseAST* elem1, BaseAST* elem2,
                        BaseAST* elem3, BaseAST* elem4) :
   BaseAST(LIST),
   head(new elemType()),
-  tail(new elemType()),
-  cursor(NULL),
-  debugNestedTraversals(false)
+  tail(new elemType())
 {
   clear();
   if (elem1) insertAtTail(elem1);
@@ -233,88 +200,26 @@ bool AList<elemType>::isEmpty(void) {
 template <class elemType>
 int AList<elemType>::length(void) {
   int numNodes = 0;
-  _for_all_elems(node) {
+  for_alist(elemType, node, this) {
     numNodes++;
   }
   return numNodes;
 }
 
 
-/* WARNING: NON-REENTRANT ITERATORS !!! */
 template <class elemType>
 elemType* AList<elemType>::first(void) {
-  if (this == NULL) {
+  if (this == NULL || isEmpty())
     return NULL;
-  }
-  if (cursor != NULL) {
-    if (debugNestedTraversals) {
-      INT_FATAL(this, "Nested list iteration detected\n");
-    }
-  }
-  if (isEmpty()) {
-    cursor = NULL;
-  } else {
-    cursor = dynamic_cast<elemType*>(head->next);
-  }
-  return cursor;
+  return dynamic_cast<elemType*>(head->next);
 }
 
 
-/* WARNING: NON-REENTRANT ITERATORS !!! */
-template <class elemType>
-elemType* AList<elemType>::next(void) {
-  cursor = dynamic_cast<elemType*>(cursor->next);
-  if (cursor == tail) {
-    cursor = NULL;
-  }
-  return cursor;
-}
-
-
-/* WARNING: NON-REENTRANT ITERATORS !!! */
 template <class elemType>
 elemType* AList<elemType>::last(void) {
-  if (this == NULL) {
+  if (this == NULL || isEmpty())
     return NULL;
-  }
-  if (cursor != NULL) {
-    if (debugNestedTraversals) {
-      INT_FATAL(this, "Nested list iteration detected\n");
-    }
-  }
-  if (isEmpty()) {
-    cursor = NULL;
-  } else {
-    cursor = dynamic_cast<elemType*>(tail->prev);
-  }
-  return cursor;
-}
-
-
-/* WARNING: NON-REENTRANT ITERATORS !!! */
-template <class elemType>
-elemType* AList<elemType>::prev(void) {
-  cursor = dynamic_cast<elemType*>(cursor->prev);
-  if (cursor == head) {
-    cursor = NULL;
-  }
-  return cursor;
-}
-
-
-/* WARNING: NON-REENTRANT ITERATORS !!! */
-template <class elemType>
-void AList<elemType>::reset(void) {
-  cursor = NULL;
-}
-
-
-template <class elemType>
-elemType* AList<elemType>::representative(void) {
-  if (isEmpty()) {
-    INT_FATAL(this, "representative() called on empty list");
-  }
-  return dynamic_cast<elemType*>(head->next);
+  return dynamic_cast<elemType*>(tail->prev);
 }
 
 
@@ -324,7 +229,7 @@ elemType* AList<elemType>::only(void) {
     INT_FATAL(this, "only() called on empty list");
   }
   if (head->next->next == tail) {
-    return representative();
+    return first();
   } else {
     INT_FATAL(this, "only() called on list with more than one element");
     return NULL;
@@ -338,7 +243,7 @@ elemType* AList<elemType>::get(int index) {
     INT_FATAL(this, "Indexing list must use positive integer");
   }
   int i = 0;
-  _for_all_elems(node) {
+  for_alist(elemType, node, this) {
     i++;
     if (i == index) {
       return node;
@@ -393,7 +298,7 @@ void AList<elemType>::insertAfterListHelper(BaseAST* ast) {
 
 template <class elemType>
 void AList<elemType>::print(FILE* outfile, char* separator) {
-  _for_all_elems(node) {
+  for_alist(elemType, node, this) {
     node->print(outfile);
     if (node->next != tail) {
       fprintf(outfile, "%s", separator);
@@ -404,7 +309,7 @@ void AList<elemType>::print(FILE* outfile, char* separator) {
 
 template <class elemType>
 void AList<elemType>::printDef(FILE* outfile, char* separator) {
-  _for_all_elems(node) {
+  for_alist(elemType, node, this) {
     node->printDef(outfile);
     if (node->next != tail) {
       fprintf(outfile, "%s", separator);
@@ -415,7 +320,7 @@ void AList<elemType>::printDef(FILE* outfile, char* separator) {
 
 template <class elemType>
 void AList<elemType>::codegen(FILE* outfile, char* separator) {
-  _for_all_elems(node) {
+  for_alist(elemType, node, this) {
     node->codegen(outfile);
     if (node->next != tail) {
       fprintf(outfile, "%s", separator);
@@ -427,7 +332,7 @@ void AList<elemType>::codegen(FILE* outfile, char* separator) {
 
 template <class elemType>
 void AList<elemType>::codegenDef(FILE* outfile, char* separator) {
-  _for_all_elems(node) {
+  for_alist(elemType, node, this) {
     node->codegenDef(outfile);
     if (node->next != tail) {
       fprintf(outfile, "%s", separator);
@@ -450,7 +355,7 @@ AList<elemType>::copy(ASTMap* map,
   }
 
   AList<elemType>* newList = new AList<elemType>();
-  _for_all_elems(node) {
+  for_alist(elemType, node, this) {
     elemType* newnode = COPY_INT(node);
     newnode->next = NULL;
     newnode->prev = NULL;
@@ -473,14 +378,6 @@ AList<elemType>::copy(ASTMap* map,
       update_symbols(node, map);
   }
   return newList;
-}
-
-
-template <class elemType>
-void AList<elemType>::getElements(Vec<elemType*>& elements) {
-  _for_all_elems(node) {
-    elements.add(node);
-  }
 }
 
 #endif

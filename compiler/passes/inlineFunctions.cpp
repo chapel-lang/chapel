@@ -7,9 +7,7 @@
 static void mapFormalsToActuals(CallExpr* call, ASTMap* map) {
   currentFilename = call->filename;
   currentLineno = call->lineno;
-  FnSymbol* fn = call->findFnSymbol();
-  Expr* actual = call->argList->first();
-  for_formals(formal, fn) {
+  for_formals_actuals(formal, actual, call) {
     if (formal->requiresCPtr() || formal->isTypeVariable) {
       if (SymExpr* symExpr = dynamic_cast<SymExpr*>(actual)) {
         map->put(formal, symExpr);
@@ -30,7 +28,6 @@ static void mapFormalsToActuals(CallExpr* call, ASTMap* map) {
         (new CallExpr(PRIMITIVE_MOVE, temp, actual->copy()));
       map->put(formal, new SymExpr(temp));
     }
-    actual = call->argList->next();
   }
 }
 

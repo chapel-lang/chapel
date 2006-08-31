@@ -213,13 +213,11 @@ void remove_static_actuals() {
   collect_asts_postorder(&asts);
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
-      if (FnSymbol* fn = call->isResolved()) {
-        DefExpr* formalDef = fn->formals->first();
+      if (call->isResolved()) {
         for_actuals(actual, call) {
-          ArgSymbol* formal = dynamic_cast<ArgSymbol*>(formalDef->sym);
-          if (formal->type == dtMethodToken || formal->type == dtSetterToken)
+          if (actual->typeInfo() == dtMethodToken ||
+              actual->typeInfo() == dtSetterToken)
             actual->remove();
-          formalDef = fn->formals->next();
         }
       }
     }
@@ -311,7 +309,7 @@ void insert_help(BaseAST* ast,
   }
 
   Vec<BaseAST*> asts;
-  get_ast_children(ast, asts, 0, 1);
+  get_ast_children(ast, asts, 1);
   forv_Vec(BaseAST, ast, asts)
     insert_help(ast, parentExpr, parentStmt, parentSymbol, parentScope);
 }
@@ -363,29 +361,15 @@ void remove_help(BaseAST* ast) {
 
 // Return the corresponding Symbol in the formal list of the actual a
 ArgSymbol*
-actual_to_formal( Expr *a) {
-  if (SymExpr *se = dynamic_cast<SymExpr*>(a)) {
-    if (CallExpr *ce = dynamic_cast<CallExpr*>(se->parentExpr)) {
-      if (SymExpr *fe = dynamic_cast<SymExpr*>(ce->baseExpr)) {
-        if (FnSymbol *f = dynamic_cast<FnSymbol*>(fe->var)) {
-          AList<Expr>    *actuals = ce->argList;
-          AList<DefExpr> *formals = f->formals;
-          if (actuals->length() != formals->length()) {
-            INT_FATAL( "length of actuals and formals not the same");
-          }
-
-          Expr *e = actuals->first();
-          for_formals(farg, f) {
-            if (a == e) {
-              return farg;
-            }
-            e = actuals->next();
-          }
-        }
+actual_to_formal(Expr *a) {
+  if (CallExpr *call = dynamic_cast<CallExpr*>(a->parentExpr)) {
+    if (call->isResolved()) {
+      for_formals_actuals(formal, actual, call) {
+        if (a == actual)
+          return formal;
       }
     }
   }
-
-  INT_FATAL( "shouldn't get here");
+  INT_FATAL(a, "bad call to actual_to_formals");
   return NULL;
 }

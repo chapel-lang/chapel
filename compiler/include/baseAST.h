@@ -53,7 +53,6 @@ enum astType_t {
   TYPE_CLASS,
 
   LIST,
-  OBJECT,
 
   AST_TYPE_END 
 };
@@ -163,8 +162,7 @@ typedef MapElem<BaseAST*,BaseAST*> ASTMapElem;
 int compar_baseast(const void *ai, const void *aj);
 // for use with qsort
 
-void get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int all = 0, int sentinels = 0);
-void collect_ast_children(BaseAST *a, Accum<BaseAST *> &asts, int all = 0);
+void get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int sentinels = 0);
 
 extern int currentLineno;
 extern char* currentFilename;

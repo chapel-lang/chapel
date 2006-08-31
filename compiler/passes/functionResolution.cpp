@@ -428,13 +428,14 @@ build_default_wrapper(FnSymbol* fn,
     wrapper = fn->default_wrapper(&defaults);
 
     // update actual_formals for use in build_order_wrapper
-    DefExpr* newFormalDef = wrapper->formals->first();
+    int j = 1;
     for_formals(formal, fn) {
       for (int i = 0; i < actual_formals->n; i++) {
         if (actual_formals->v[i] == formal) {
+          DefExpr* newFormalDef = wrapper->formals->get(j);
           ArgSymbol* newFormal = dynamic_cast<ArgSymbol*>(newFormalDef->sym);
           actual_formals->v[i] = newFormal;
-          newFormalDef = wrapper->formals->next();
+          j++;
         }
       }
     }

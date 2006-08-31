@@ -76,7 +76,7 @@ verify_parents(BaseAST* ast,
   }
 
   Vec<BaseAST*> asts;
-  get_ast_children(ast, asts, 0, 1);
+  get_ast_children(ast, asts, 1);
   forv_Vec(BaseAST, ast, asts)
     verify_parents(ast, parentExpr, parentStmt, parentSymbol, parentScope);
 }
