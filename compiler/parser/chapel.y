@@ -516,6 +516,10 @@ block_stmt:
     {
       $$ = build_chpl_stmt(new BlockStmt($3, $1));
     }
+ | TBEGIN stmt
+    {
+      $$ = build_chpl_stmt( new BlockStmt( $2, BLOCK_BEGIN));
+    }
 ;
 
 
@@ -1288,8 +1292,6 @@ atomic_cobegin:
     { $$ = BLOCK_NORMAL; }
 | TATOMIC
     { $$ = BLOCK_ATOMIC; }
-| TBEGIN
-    { $$ = BLOCK_BEGIN; }
 | TCOBEGIN
     { $$ = BLOCK_COBEGIN; }
 ;
