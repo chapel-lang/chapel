@@ -73939,3 +73939,21 @@ Added files:
 Removed files:
 	chapel/test/functions/waynew/: itest.chpl itest.good 
 
+---------------------------------------------------------------------------
+
+08/31/06 15:30:46 -- deitz
+
+Log message:
+	Improved dynamic dispatch to cope with default values, coercions, and
+	hierarchies of depth greater than one.  Added three semi-tricky test
+	cases.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/passes/: functionResolution.cpp scopeResolve.cpp 
+Added files:
+	chapel/test/classes/deitz/dispatch/: test_dd1.chpl test_dd1.good 
+	                                     test_dd2.chpl test_dd2.good 
+	                                     test_dd3.chpl test_dd3.good 
+
