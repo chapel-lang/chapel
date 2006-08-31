@@ -73878,3 +73878,15 @@ Log message:
 Modified files:
 	chapel/compiler/parser/: chapel.y 
 
+---------------------------------------------------------------------------
+
+08/30/06 18:27:04 -- waynew
+
+Log message:
+	We do not yet really support inout arguments to iterators.  Not sure if
+	we want this or what the semantics are.
+
+Added files:
+	chapel/test/trivial/mjoyner/iterators/: 
+	                                        nest_func_iterator2b.future 
+
