@@ -1,5 +1,5 @@
 Error: Unresolved call ':C.x' (test_inherit_mod1.chpl:18)
 Candidates are:
-  :_iterator__promoter.x (/users/waynew/projects/chapel/dev/work2/chapel/modules/standard/_chpl_adomain.chpl:398)
+  :_iterator__promoter.x (_chpl_adomain.chpl:398)
   :D1.x (test_inherit_mod1.chpl:4)
   :D2.x (test_inherit_mod1.chpl:8)
