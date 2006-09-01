@@ -157,7 +157,7 @@ class FnSymbol : public Symbol {
   AList<DefExpr>* formals;
   Type* retType;
   BlockStmt* where;
-  Expr* retExpr;
+  Expr* retExprType;
   BlockStmt* body;
   fnType fnClass;
   bool noParens;
@@ -180,6 +180,8 @@ class FnSymbol : public Symbol {
   Vec<BasicBlock*>* basicBlocks;
   Vec<CallExpr*>* calledBy;
   bool isWrapper;
+
+  bool makeGloballyVisible;  // WAW: temporary hack to get iterator-created methods visible
 
   FnSymbol(char* initName);
            

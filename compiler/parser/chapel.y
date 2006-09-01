@@ -574,7 +574,7 @@ fn_decl_stmt:
       else
         $2->formals->insertAtTail($3);
       $2->buildSetter = $4;
-      $2->retExpr = $5;
+      $2->retExprType = $5;
       if ($6)
         $2->where = new BlockStmt(new ExprStmt($6));
       $2->body = new BlockStmt($7);

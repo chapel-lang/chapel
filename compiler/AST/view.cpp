@@ -84,6 +84,11 @@ view_ast(BaseAST* ast, bool number = false, long mark = -1, int indent = 0) {
     if (number)
       printf("%ld ", ast->id);
     printf("%s", astTypeName[stmt->astType]);
+
+    if (GotoStmt *gs= dynamic_cast<GotoStmt*>(ast)) {
+      printf( " ");
+      view_ast( gs->label, number, mark, indent+1);
+    }
   }
 
   if (Symbol* sym = dynamic_cast<Symbol*>(ast)) {

@@ -62,9 +62,9 @@ resolveFormals(FnSymbol* fn) {
         formal->defPoint->exprType->remove();
       }
     }
-    if (fn->retExpr) {
-      fn->retType = resolve_type_expr(fn->retExpr);
-      fn->retExpr->remove();
+    if (fn->retExprType) {
+      fn->retType = resolve_type_expr(fn->retExprType);
+      fn->retExprType->remove();
     }
     if (fn->fnClass == FN_CONSTRUCTOR)
       setFieldTypes(fn);
@@ -665,11 +665,14 @@ resolve_type_expr(Expr* expr) {
 
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
-      callStack.add(call);
-      resolveCall(call);
-      if (call->typeInfo() == dtUnknown)
-        resolveFns(call->isResolved());
-      callStack.pop();
+      if (call->parentSymbol) {
+        callStack.add(call);
+        resolveCall(call);
+        if (call->parentSymbol &&
+            (call->typeInfo() == dtUnknown))
+          resolveFns(call->isResolved());
+        callStack.pop();
+      }
     }
   }
   Type* t = expr->typeInfo();

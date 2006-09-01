@@ -600,7 +600,7 @@ FnSymbol::FnSymbol(char* initName) :
   formals(new AList<DefExpr>()),
   retType(dtUnknown),
   where(NULL),
-  retExpr(NULL),
+  retExprType(NULL),
   body(new BlockStmt()),
   fnClass(FN_FUNCTION),
   noParens(false),
@@ -618,7 +618,8 @@ FnSymbol::FnSymbol(char* initName) :
   visible(true),
   basicBlocks(NULL),
   calledBy(NULL),
-  isWrapper(false)
+  isWrapper(false),
+  makeGloballyVisible(false) // WAW: temporary hack to get iterator-created methods visible
 {
   gFns.add(this);
 }
@@ -651,7 +652,7 @@ FnSymbol::copyInner(ASTMap* map) {
   copy->fnClass = fnClass;
   copy->noParens = noParens;
   copy->retRef = retRef;
-  copy->retExpr = COPY_INT(retExpr);
+  copy->retExprType = COPY_INT(retExprType);
   copy->cname = cname;
   copy->isGeneric = false;  // set in normalize()
   copy->isSetter = isSetter;
@@ -668,8 +669,8 @@ void FnSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
     formals = dynamic_cast<AList<DefExpr>*>(new_ast);
   } else if (old_ast == where) {
     where = dynamic_cast<BlockStmt*>(new_ast);
-  } else if (old_ast == retExpr) {
-    retExpr = dynamic_cast<Expr*>(new_ast);
+  } else if (old_ast == retExprType) {
+    retExprType = dynamic_cast<Expr*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in FnSymbol::replaceChild");
   }

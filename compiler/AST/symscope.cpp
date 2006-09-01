@@ -12,6 +12,7 @@
 
 static bool
 isGloballyVisible(FnSymbol* fn) {
+  if (fn->makeGloballyVisible) return true; // WAW: temporary hack to get iterator-created methods visible
   for_formals(formal, fn) {
     if (ClassType* ct = dynamic_cast<ClassType*>(formal->type)) {
       if (ct->isNominalType()) {
