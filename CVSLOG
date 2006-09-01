@@ -74043,3 +74043,50 @@ Modified files:
 	                            test_inherit_mod2.good 
 	                            test_inherit_mod3.good 
 
+---------------------------------------------------------------------------
+
+09/01/06 15:44:20 -- waynew
+
+Log message:
+	Partial check in for iterator function to iterator class implementation.
+	Currently we have 10 regressions (7 real) listed below with this checkin.
+	The last error category is not specific to this check in, but how we report
+	the file name (path) for candidate functions. The file name needs to be more
+	generic for .good comparisons.
+	
+	This checkin includes the following:
+	 - Transformation of the iterator function to an iterator class with appropriate
+	   methods.
+	 - retExpr -> retExprType
+	 - FnSymbol field makeGloballyVisible as a hack to let _to_seq() work.
+	   Otherwise, the _to_seq() function does not have visibility to the iterator
+	   class methods created in the module where the iterator function is defined.
+	 - Print labels for goto statement with view_ast()
+	 - Bug fix to cleanup()
+	 - Steve's bug fix to resolveCall() to hangle "partial ok's" in arg lists
+	
+	Current failures (10) with this checkin:
+	arrays/domains + iterator
+	 [Error compiler :arrays/deitz/domains/test_domain2]
+	 [Error compiler :arrays/deitz/domains/test_domain3]
+	
+	tuples + iterator
+	 [Error compiler :demo/review_060130/iterators]
+	 [Error compiler :functions/deitz/iterators/test_instantiate_iterator2]
+	 [Error compiler :functions/deitz/iterators/test_instantiate_iterator3]
+	 [Error compiler :functions/deitz/iterators/test_instantiate_iterator3a]
+	 [Error compiler :types/seq/deitz/test_seq_tuple3]
+	
+	filename path prefix
+	 [Error compiler :classes/deitz/test_inherit_mod1]
+	 [Error compiler :classes/deitz/test_inherit_mod2]
+	 [Error compiler :classes/deitz/test_inherit_mod3]
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp symbol.cpp symscope.cpp 
+	                      view.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: cleanup.cpp functionResolution.cpp 
+	                         normalize.cpp 
+
