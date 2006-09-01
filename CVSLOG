@@ -74003,3 +74003,30 @@ Log message:
 Added files:
 	chapel/test/functions/waynew/: iterator6.chpl iterator6.good 
 
+---------------------------------------------------------------------------
+
+09/01/06 14:28:26 -- waynew
+
+Log message:
+	- Primary change in tests from writeln(iterator) to writeln(_to_seq(iterator)).
+	This is a temporary change.
+	- Changed .good's to reflect candidate function introduced by the iterator class
+
+Modified files:
+	chapel/modules/standard/: _chpl_seq.chpl 
+	chapel/test/arrays/deitz/domains/: test_domain2.chpl 
+	chapel/test/classes/deitz/: test_inherit_mod1.good 
+	                            test_inherit_mod2.good 
+	                            test_inherit_mod3.good 
+	chapel/test/classes/deitz/infer/: infer_field2.chpl 
+	                                  infer_field2a.chpl 
+	                                  infer_field2b.chpl 
+	                                  infer_field2c.chpl 
+	chapel/test/functions/deitz/: test_iterator1.chpl 
+	chapel/test/functions/deitz/iterators/: 
+	                                        test_instantiate_iterator1.chpl 
+	                                        test_instantiate_iterator2.chpl 
+	                                        test_instantiate_iterator3.chpl 
+	                                        test_instantiate_iterator3a.chpl 
+	chapel/test/types/seq/deitz/: test_seq_tuple3.chpl 
+
