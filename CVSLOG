@@ -74030,3 +74030,16 @@ Modified files:
 	                                        test_instantiate_iterator3a.chpl 
 	chapel/test/types/seq/deitz/: test_seq_tuple3.chpl 
 
+---------------------------------------------------------------------------
+
+09/01/06 15:27:11 -- waynew
+
+Log message:
+	Fixed .good to remove filename prefix.  Previous prefix had an absolute path
+	that was user-enviro-specific.
+
+Modified files:
+	chapel/test/classes/deitz/: test_inherit_mod1.good 
+	                            test_inherit_mod2.good 
+	                            test_inherit_mod3.good 
+
