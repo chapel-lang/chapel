@@ -73990,3 +73990,16 @@ Log message:
 Added files:
 	chapel/test/classes/deitz/dispatch/: test_dd5.chpl test_dd5.good 
 
+---------------------------------------------------------------------------
+
+09/01/06 11:12:02 -- waynew
+
+Log message:
+	Test temporary _to_seq() function on a iterator to return a sequence. This
+	allows one to do writeln( _to_seq( iteratorfn())).  The plan is to
+	later automatically insert _to_seq such that the user can just write
+	writeln( iteratorfn()).
+
+Added files:
+	chapel/test/functions/waynew/: iterator6.chpl iterator6.good 
+
