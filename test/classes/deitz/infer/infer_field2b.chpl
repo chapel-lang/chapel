@@ -42,7 +42,7 @@ def foo() {
   return s;
 }
 
-writeln(bar());
+writeln( _to_seq( bar()));
 writeln(foo());
 
 for i in bar() do

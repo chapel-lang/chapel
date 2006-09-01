@@ -6,4 +6,4 @@ iterator basic() : int {
   }
 }
 
-writeln(basic());
+writeln( _to_seq( basic()));

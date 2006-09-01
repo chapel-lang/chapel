@@ -250,6 +250,16 @@ def _scan(r, s) {
   return s2;
 }
 
+
+def _to_seq( i) {
+  var s: seq (i.getValue(i.getNextCursor(i.getHeadCursor()))).type;
+  for x in i {
+    s #= x;
+  }
+  return s;
+}
+
+
 class _sum {
   type elt_type;
   var value : elt_type;   // assume default value is sum identity value

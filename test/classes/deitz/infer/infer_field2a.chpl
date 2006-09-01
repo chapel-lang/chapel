@@ -42,4 +42,4 @@ iterator bar() : int {
   }
 }
 
-writeln(bar());
+writeln( _to_seq( bar()));
