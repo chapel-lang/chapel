@@ -74110,3 +74110,14 @@ Log message:
 Added files:
 	chapel/test/functions/waynew/: iterator7.chpl iterator7.good 
 
+---------------------------------------------------------------------------
+
+09/05/06 10:31:50 -- waynew
+
+Log message:
+	Replaced inserted call to use the correct setter function in iterator
+	transformation. Removed old commented code in cleanup.
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp normalize.cpp 
+
