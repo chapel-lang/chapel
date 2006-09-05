@@ -168,15 +168,6 @@ void cleanup(Symbol* base) {
         build_constructor(ct);
       }
     }
-    /*
-    if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
-      if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(def->sym)) {
-        if (ClassType* ct = dynamic_cast<ClassType*>(ts->type)) {
-          build_constructor(ct);
-        }
-      }
-    }
-    */
   }
 }
 

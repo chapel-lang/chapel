@@ -247,7 +247,13 @@ iterator_create_fields( FnSymbol *fn, ClassType *ic) {
         // need to reset default value (make re-entrant)
         Stmt *def_stmt= def->parentStmt;
         Expr *init_e = (def->init) ? dynamic_cast<Expr*>(def->init->remove()) : new CallExpr( "_init", (new CallExpr( ".", _this, new_StringLiteral( v->name))));
-        Expr *newdef = new CallExpr( PRIMITIVE_SET_MEMBER, _this, new_StringLiteral( v->name), init_e);
+        // Expr *newdef = new CallExpr( PRIMITIVE_SET_MEMBER, _this, new_StringLiteral( v->name), init_e);
+
+        Expr *newdef = new CallExpr( v->name, 
+                                     gMethodToken,
+                                     _this,
+                                     gSetterToken,
+                                     init_e);
         def_stmt->replace( new ExprStmt( newdef));
 
         // replace uses in body
@@ -320,9 +326,9 @@ iterator_constructor_fixup( ClassType *ct) {
 }
 
 
-// Replace yield statements with return and label.  Return both a vec of the
-// replaced return statements which will be used when constructing
-// getValue and a vec of labels (for cursor returns).
+// Replace yield statements with a return and label.  Return both a vec of the
+// replaced return statements which will be used when constructing getValue 
+// and a vec of labels (for cursor returns).
 static void
 iterator_replace_yields( FnSymbol *fn, 
                          Vec<ReturnStmt*>  *vals_returned,
