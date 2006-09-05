@@ -412,6 +412,8 @@ iterator_transform( FnSymbol *fn) {
   nextcf->fnClass = FN_FUNCTION;
   nextcf->isMethod = true;
   nextcf->makeGloballyVisible = true;
+  nextcf->retType = dtUnknown;
+  nextcf->retExprType = NULL;
   m->stmts->insertAtHead( new DefExpr( nextcf));
   compute_sym_uses( nextcf);
   iterator_create_fields( nextcf, ic);
