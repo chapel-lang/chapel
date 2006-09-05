@@ -74100,3 +74100,13 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: normalize.cpp 
 
+---------------------------------------------------------------------------
+
+09/05/06 10:02:32 -- waynew
+
+Log message:
+	Test iterator without initializer for local (i.e., uses default value).
+
+Added files:
+	chapel/test/functions/waynew/: iterator7.chpl iterator7.good 
+
