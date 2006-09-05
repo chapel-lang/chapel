@@ -197,8 +197,8 @@ static void
 iterator_formals( FnSymbol *fn, ClassType *t, ArgSymbol *cursor=NULL) {
   fn->formals->clear();
   fn->formals->insertAtTail( new DefExpr( new ArgSymbol( INTENT_BLANK,
-							 "_yummyMethodToken",
-							 dtMethodToken)));
+                                                         "_yummyMethodToken",
+                                                         dtMethodToken)));
   fn->_this = new ArgSymbol( INTENT_BLANK, "this", t);
   fn->formals->insertAtTail( new DefExpr( fn->_this));
   if (cursor) fn->formals->insertAtTail( new DefExpr( cursor));
@@ -264,8 +264,8 @@ iterator_create_fields( FnSymbol *fn, ClassType *ic) {
   // create formals
   fn->formals->clear();
   fn->formals->insertAtTail( new DefExpr( new ArgSymbol( INTENT_BLANK,
-							 "_yummyMethodToken",
-							 dtMethodToken)));
+                                                         "_yummyMethodToken",
+                                                         dtMethodToken)));
   fn->_this = _this;
   fn->formals->insertAtTail( new DefExpr( fn->_this));
 }
