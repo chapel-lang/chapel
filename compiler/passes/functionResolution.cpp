@@ -873,7 +873,9 @@ resolveCall(CallExpr* call) {
             USR_STOP();
           USR_PRINT("Candidates are:");
           forv_Vec(FnSymbol, fn, resolve_call_error_candidates) {
-            if (fn->isSetter)
+            if (fn->isSetter) 
+              continue;
+            if (!developer && fn->getModule()->modtype == MOD_STANDARD)
               continue;
             char* str = fn2string(fn);
             USR_PRINT(fn, "  %s", str);
