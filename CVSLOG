@@ -74259,3 +74259,13 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+09/06/06 15:12:50 -- deitz
+
+Log message:
+	Updated UnimplementedFeatures test.
+
+Modified files:
+	chapel/compiler/: UnimplementedFeatures 
+
