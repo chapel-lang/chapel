@@ -20,10 +20,10 @@ DONE reductions
        -=/remove method
        member? method
 DONE domain arguments to functions
-     association of arrays to domains
-       domain assignment
-       domain reallocation
-       array reallocation
+DONE association of arrays to domains
+DONE   domain assignment
+DONE   domain reallocation
+DONE   array reallocation
 DONE array arguments to functions
 DONE   with explicit domains
 DONE   with queried domains
