@@ -563,7 +563,7 @@ void CallExpr::codegen(FILE* outfile) {
       help_codegen_fn(outfile, "array_set", get(1), get(2), get(3));
       break;
     case PRIMITIVE_ARRAY_INIT:
-      help_codegen_fn(outfile, "array_init", get(2)->typeInfo(), get(1), get(2));
+      help_codegen_fn(outfile, "array_init", get(1), get(2)->typeInfo(), get(3));
       break;
     case PRIMITIVE_MOVE:
       if (SymExpr* sym = dynamic_cast<SymExpr*>(get(1))) {
