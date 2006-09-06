@@ -25,12 +25,6 @@ worked on.
  [Error compiler :functions/deitz/iterators/test_instantiate_iterator3]
  [Error compiler :functions/deitz/iterators/test_instantiate_iterator3a]
 
-Need to suppress printing of candidate functions in standard modules to
-the user.
- [Error compiler :classes/deitz/test_inherit_mod1]
- [Error compiler :classes/deitz/test_inherit_mod2]
- [Error compiler :classes/deitz/test_inherit_mod3]
-
 
 ==========================
 linux valgrind regressions
