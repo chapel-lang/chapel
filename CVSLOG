@@ -74158,3 +74158,13 @@ Added files:
 	                           test_array_decl.good 
 	chapel/test/classes/deitz/: test_class6.chpl test_class6.good 
 
+---------------------------------------------------------------------------
+
+09/06/06 13:29:58 -- waynew
+
+Log message:
+	Update.
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+
