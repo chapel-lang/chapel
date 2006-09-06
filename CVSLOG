@@ -74280,3 +74280,13 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 
+---------------------------------------------------------------------------
+
+09/06/06 15:30:38 -- waynew
+
+Log message:
+	Update.  Fixed removed regressions.
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+
