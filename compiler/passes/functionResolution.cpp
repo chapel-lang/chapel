@@ -357,22 +357,23 @@ computeGenericSubs(ASTMap &subs,
 // Return actual-formal map if FnSymbol is viable candidate to call
 static void
 addCandidate(Vec<FnSymbol*>* candidateFns,
-             Vec<Vec<ArgSymbol*> >* candidateActualFormals,
+             Vec<Vec<ArgSymbol*>*>* candidateActualFormals,
              FnSymbol* fn,
              Vec<Type*>* actual_types,
              Vec<Symbol*>* actual_params,
              Vec<char*>* actual_names,
              bool inst = false) {
-  Vec<ArgSymbol*> actual_formals;
+  Vec<ArgSymbol*>* actual_formals = new Vec<ArgSymbol*>();
 
   int num_actuals = actual_types->n;
   int num_formals = fn->formals ? fn->formals->length() : 0;
 
   Vec<Type*> formal_actuals;
   Vec<Symbol*> formal_params;
-  bool valid = computeActualFormalMap(fn, &formal_actuals, &formal_params, &actual_formals,
-                                      num_actuals, num_formals, actual_types, actual_params,
-                                      actual_names);
+  bool valid = computeActualFormalMap(fn, &formal_actuals, &formal_params,
+                                      actual_formals, num_actuals,
+                                      num_formals, actual_types,
+                                      actual_params, actual_names);
   if (!valid)
     return;
 
@@ -526,7 +527,7 @@ resolve_call(CallExpr* call,
   Vec<FnSymbol*> visibleFns;                    // visible functions
 
   Vec<FnSymbol*> candidateFns;
-  Vec<Vec<ArgSymbol*> > candidateActualFormals; // candidate functions
+  Vec<Vec<ArgSymbol*>*> candidateActualFormals; // candidate functions
 
   bool methodTag = call->methodTag;
 
@@ -547,12 +548,12 @@ resolve_call(CallExpr* call,
   for (int i = 0; i < candidateFns.n; i++) {
     if (candidateFns.v[i]) {
       best = candidateFns.v[i];
-      actual_formals = &candidateActualFormals.v[i];
+      actual_formals = candidateActualFormals.v[i];
       for (int j = 0; j < candidateFns.n; j++) {
         if (i != j && candidateFns.v[j]) {
           bool better = false;
           bool as_good = true;
-          Vec<ArgSymbol*>* actual_formals2 = &candidateActualFormals.v[j];
+          Vec<ArgSymbol*>* actual_formals2 = candidateActualFormals.v[j];
           for (int k = 0; k < actual_formals->n; k++) {
             ArgSymbol* arg = actual_formals->v[k];
             ArgSymbol* arg2 = actual_formals2->v[k];
@@ -606,32 +607,27 @@ resolve_call(CallExpr* call,
       }
     }
     resolve_call_error = CALL_AMBIGUOUS;
-    return NULL;
-  }
-  
-  if (call->partialTag == PARTIAL_OK && (!best || !best->noParens)) {
+    best = NULL;
+  } else if (call->partialTag == PARTIAL_OK && (!best || !best->noParens)) {
     resolve_call_error = CALL_PARTIAL;
-    return NULL;
-  }
-  
-  if (!best) {
+    best = NULL;
+  } else if (!best) {
     for (int i = 0; i < visibleFns.n; i++) {
       if (visibleFns.v[i]) {
         resolve_call_error_candidates.add(visibleFns.v[i]);
       }
     }
     resolve_call_error = CALL_UNKNOWN;
-    return NULL;
+    best = NULL;
+  } else {
+    best = build_default_wrapper(best, actual_formals);
+    best = build_order_wrapper(best, actual_formals);
+    best = build_promotion_wrapper(best, actual_types, actual_params, call->square);
+    best = build_coercion_wrapper(best, actual_types, actual_params);
   }
 
-  best = build_default_wrapper(best, actual_formals);
-  best = build_order_wrapper(best, actual_formals);
-  best = build_promotion_wrapper(best, actual_types, actual_params, call->square);
-  best = build_coercion_wrapper(best, actual_types, actual_params);
-
   for (int i = 0; i < candidateActualFormals.n; i++)
-    candidateActualFormals.v[i].clear();
-  candidateActualFormals.clear();
+    candidateActualFormals.v[i]->clear();
 
   return best;
 }
