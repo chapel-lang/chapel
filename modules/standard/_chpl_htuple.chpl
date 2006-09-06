@@ -26,3 +26,17 @@ def fwrite(f : file, x : _tuple) {
     fwrite(f, ", ", x(i));
   fwrite(f, ")");
 }
+
+def _seq_to_tuple(s: seq, param i: int) {
+  var t: i*s.elt_type;
+  for param j in 1..i do
+    t(j) = s(j);
+  return t;
+}
+
+def _tuple_to_seq(t: _tuple) {
+  var s = (/ t(1) /);
+  for param j in 2..t.size do
+    s #= t(j);
+  return s;
+}

@@ -46,13 +46,25 @@ process_import_expr(CallExpr* call) {
 
 
 static void
-specialize_string_cast(CallExpr* call) {
-  if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1)))
-    if (sym->var->type == dtString) {
-      Expr* arg1 = call->get(2);
-      Expr* arg2 = call->get(1);
-      call->replace(new CallExpr("_tostring", arg1->remove(), arg2->remove()));
+specialize_casts(CallExpr* call) {
+  if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
+    if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var)) {
+      if (var->immediate && var->immediate->const_kind == CONST_KIND_STRING) {
+        Expr* arg1 = call->get(2);
+        Expr* arg2 = call->get(1);
+        call->replace(new CallExpr("_tostring", arg1->remove(), arg2->remove()));
+      } else if (var->immediate && var->immediate->const_kind == NUM_KIND_INT) {
+        Expr* arg1 = call->get(2);
+        Expr* arg2 = call->get(1);
+        call->replace(new CallExpr("_seq_to_tuple", arg1->remove(), arg2->remove()));
+      }
     }
+    if (!strcmp("seq", sym->var->name)) {
+      Expr* arg1 = call->get(2);
+      call->get(1)->remove();
+      call->replace(new CallExpr("_tuple_to_seq", arg1->remove()));
+    }
+  }
 }
 
 
@@ -147,7 +159,7 @@ void cleanup(Symbol* base) {
         flatten_scopeless_block(block);
     } else if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
       if (call->isPrimitive(PRIMITIVE_CAST))
-        specialize_string_cast(call);
+        specialize_casts(call);
       else if (call->isNamed("_tuple"))
         destructure_tuple(call);
     } else if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
