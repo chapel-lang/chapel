@@ -74337,3 +74337,16 @@ Added files:
 	chapel/test/trivial/deitz/: test_init_int8.chpl 
 	                            test_init_int8.good 
 
+---------------------------------------------------------------------------
+
+09/06/06 16:57:53 -- deitz
+
+Log message:
+	Fixed a bug caught by Valgrind and identifed by Brad in which arrays
+	were always allocated as if the elements were of size int64.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/modules/standard/: _chpl_base.chpl 
+	chapel/runtime/include/: chplrt.h 
+
