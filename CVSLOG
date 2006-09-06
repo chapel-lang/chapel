@@ -74134,3 +74134,15 @@ Log message:
 Modified files:
 	chapel/compiler/passes/: normalize.cpp 
 
+---------------------------------------------------------------------------
+
+09/06/06 11:18:38 -- waynew
+
+Log message:
+	Because the iterator is transformed into a class, we now need nested
+	class support to enable these tests to pass.
+
+Added files:
+	chapel/test/arrays/deitz/domains/: test_domain2.future 
+	                                   test_domain3.future 
+
