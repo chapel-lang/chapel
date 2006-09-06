@@ -74181,3 +74181,17 @@ Modified files:
 	                            test_inherit_mod2.good 
 	                            test_inherit_mod3.good 
 
+---------------------------------------------------------------------------
+
+09/06/06 14:38:59 -- bradc
+
+Log message:
+	Made the start_test script issue a warning if -valgrind is
+	used and the chpl-nogc compiler is older than the chpl
+	compiler.  This is intended to help bozos like me who forget
+	that one must update chpl-nogc up-to-date in order to get
+	accurate -valgrind test results.
+
+Modified files:
+	chapel/test/: start_test 
+
