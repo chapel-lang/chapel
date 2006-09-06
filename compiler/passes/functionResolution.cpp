@@ -748,8 +748,11 @@ char* call2string(CallExpr* call,
       str = stringcat(str, ", ");
     if (anames.v[i])
       str = stringcat(str, anames.v[i], "=");
+    VarSymbol* var = dynamic_cast<VarSymbol*>(aparams.v[i]);
     if (aparams.v[i] && aparams.v[i]->isTypeVariable)
       str = stringcat(str, atypes.v[i]->symbol->name);
+    else if (var && var->immediate)
+      str = stringcat(str, aparams.v[i]->cname);
     else
       str = stringcat(str, ":", atypes.v[i]->symbol->name);
   }
@@ -782,20 +785,22 @@ char* fn2string(FnSymbol* fn) {
     str = stringcat(str, "(");
   bool first = false;
   for (int i = start; i < fn->formals->length(); i++) {
-    DefExpr* formalDef = fn->formals->get(i+1);
+    ArgSymbol* arg = dynamic_cast<ArgSymbol*>(fn->formals->get(i+1)->sym);
     if (!first)
       first = true;
     else
       str = stringcat(str, ", ");
-    if (formalDef->sym->isTypeVariable)
-      str = stringcat(str, "type ", formalDef->sym->name);
-    else if (formalDef->sym->type == dtUnknown) {
-      if (SymExpr* sym = dynamic_cast<SymExpr*>(formalDef->exprType))
-        str = stringcat(str, formalDef->sym->name, ": ", sym->var->name);
+    if (arg->intent == INTENT_PARAM)
+      str = stringcat(str, "param ");
+    if (arg->isTypeVariable)
+      str = stringcat(str, "type ", arg->name);
+    else if (arg->type == dtUnknown) {
+      if (SymExpr* sym = dynamic_cast<SymExpr*>(arg->defPoint->exprType))
+        str = stringcat(str, arg->name, ": ", sym->var->name);
       else
-        str = stringcat(str, formalDef->sym->name, ": ", formalDef->sym->type->symbol->name);
+        str = stringcat(str, arg->name);
     } else
-      str = stringcat(str, formalDef->sym->name, ": ", formalDef->sym->type->symbol->name);
+      str = stringcat(str, arg->name, ": ", arg->type->symbol->name);
   }
   if (!fn->noParens)
     str = stringcat(str, ")");

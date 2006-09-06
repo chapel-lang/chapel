@@ -108,7 +108,7 @@ class _idomain {
   }
 }
 
-record _iarray {
+class _iarray: _abase {
   type elt_type;
   type ind_type;
   var dom : _idomain(ind_type);

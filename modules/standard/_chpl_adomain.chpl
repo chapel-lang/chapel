@@ -2,6 +2,14 @@
 // Arrays and domains
 //
 
+// this is the class that all array classes are derived from
+class _abase {
+  def reallocate(d: _domain) {
+    halt("reallocation not implemented for this array");
+  }
+}
+
+// this is a wrapper class for all arrays
 pragma "array"
 class _array {
   type _array_type;
@@ -61,22 +69,22 @@ class _array {
 }
 
 def =(a: _array, b: _array) {
-  a._value = b._value;
+  a._value.assign(b._value);
   return a;
 }
 
 def =(a: _array, b: seq) {
-  a._value = b;
+  a._value.assign(b);
   return a;
 }
 
 def =(a: _array, b: _aseq) {
-  a._value = b;
+  a._value.assign(b);
   return a;
 }
 
 def =(a: _array, b: a.elt_type) {
-  a._value = b;
+  a._value.assign(b);
   return a;
 }
 
@@ -99,6 +107,7 @@ class _domain {
   type _domain_type;
   param rank : int;
   var _value : _domain_type;
+  var _arrs: seq(_abase);
 
   def getHeadCursor()
     return _value.getHeadCursor();
@@ -117,6 +126,7 @@ class _domain {
 
   def _build_array(type elt_type) {
     var x = _value._build_array(elt_type);
+    _arrs #= x;
     return _array(x.type, elt_type, rank, x, this);
   }
 
@@ -154,6 +164,8 @@ class _domain {
 }
 
 def =(a: _domain, b: _domain) {
+  for e in a._arrs do
+    e.reallocate(b);
   a._value = b._value;
   return a;
 }
@@ -372,7 +384,7 @@ def by(dom : _adomain, dim : int) {
 }
 
 
-record _aarray {
+class _aarray: _abase {
   type elt_type;
   param rank : int;
 
@@ -450,7 +462,7 @@ record _aarray {
     for param i in 1..rank do
       if d(i).length != dom(i).length then
         halt("extent in dimension ", i, " does not match actual");
-    var alias: _aarray(elt_type, rank, d, noinit=true);
+    var alias = _aarray(elt_type, rank, d, noinit=true);
     alias.data = data;
     alias.size = size;
     for param i in 1..rank {
@@ -459,39 +471,47 @@ record _aarray {
     }
     return _array(alias.type, elt_type, rank, alias, _domain(d.type, rank, d));
   }
-}
 
-def =(x : _aarray, y : _aarray) {
-  var j : int;
-  for e in y {
-    x.data(j) = e;
-    j = j + 1;
+  def reallocate(d: _domain) {
+    if (d.rank == rank) {
+      var new = _aarray(elt_type, rank, d._value);
+      for i in _intersect(d._value, dom) do
+        new(i) = this(i);
+      dom = new.dom;
+      info = new.info;
+      size = new.size;
+      data = new.data;
+    }
   }
-  return x;
-}
 
-def =(x : _aarray, y : seq) {
-  var j : int;
-  for e in y {
-    x.data(j) = e;
-    j = j + 1;
+  def assign(y : _aarray) {
+    var j : int;
+    for e in y {
+      data(j) = e;
+      j = j + 1;
+    }
   }
-  return x;
-}
 
-def =(x: _aarray, y: _aseq) {
-  var j : int;
-  for e in y {
-    x.data(j) = e;
-    j = j + 1;
+  def assign(y : seq) {
+    var j : int;
+    for e in y {
+      data(j) = e;
+      j = j + 1;
+    }
   }
-  return x;
-}
 
-def =(x : _aarray, y) {
-  for i in 0..x.size-1 do
-    x.data(i) = y;
-  return x;
+  def assign(y: _aseq) {
+    var j : int;
+    for e in y {
+      data(j) = e;
+      j = j + 1;
+    }
+  }
+
+  def assign(y: elt_type) {
+    for i in 0..size-1 do
+      data(i) = y;
+  }
 }
 
 def fwrite(f : file, x : _adomain) {
@@ -524,4 +544,43 @@ def fwrite(f : file, x : _aarray) {
       break;
     }
   }
+}
+
+def _intersect(a: _aseq, b: _aseq) {
+  if a._stride != 1 || b._stride != 1 then
+    halt("not yet supporting strided domains");
+  return max(a._low, b._low)..min(a._high, b._high);
+}
+
+def _intersect(a: _adomain, b: _adomain) {
+  var c = _adomain(a.rank);
+  for param i in 1..a.rank do
+    c.ranges(i) = _intersect(a(i), b(i));
+  return c;
+}
+
+// for when we start supporting strides
+// Extended-Euclid (Knuth Volume 2 --- Section 4.5.2)
+// given two non-negative integers u and v
+// returns (gcd(u, v), x) where x is set such that u*x + v*y = gcd(u, v)
+def _extended_euclid(u: int, v: int) {
+  var u1 = 1;
+  var u2 = 0;
+  var u3 = u;
+  var v1 = 0;
+  var v2 = 1;
+  var v3 = v;
+  while v3 != 0 {
+    var q = u3 / v3;
+    var t1 = u1 - v1 * q;
+    var t2 = u2 - v2 * q;
+    var t3 = u3 - v3 * q;
+    u1 = v1;
+    u2 = v2;
+    u3 = v3;
+    v1 = t1;
+    v2 = t2;
+    v3 = t3;
+  }
+  return (u3, u1);
 }

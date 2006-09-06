@@ -115,6 +115,14 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* seen = NULL) {
 
 
 void cleanup(void) {
+  forv_Vec(BaseAST, ast, gAsts) {
+    currentLineno = ast->lineno;
+    currentFilename = ast->filename;
+    if (CallExpr* call = dynamic_cast<CallExpr*>(ast))
+      if (call->isPrimitive(PRIMITIVE_USE))
+        process_import_expr(call);
+  }
+
   forv_Vec(ModuleSymbol, mod, allModules)
     cleanup(mod);
 }
@@ -126,14 +134,20 @@ void cleanup(Symbol* base) {
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
+    if (CallExpr* call = dynamic_cast<CallExpr*>(ast))
+      if (call->isPrimitive(PRIMITIVE_USE))
+        process_import_expr(call);
+  }
+
+  forv_Vec(BaseAST, ast, asts) {
+    currentLineno = ast->lineno;
+    currentFilename = ast->filename;
     if (BlockStmt* block = dynamic_cast<BlockStmt*>(ast)) {
       if (block->blockTag == BLOCK_SCOPELESS)
         flatten_scopeless_block(block);
     } else if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
       if (call->isPrimitive(PRIMITIVE_CAST))
         specialize_string_cast(call);
-      else if (call->isPrimitive(PRIMITIVE_USE))
-        process_import_expr(call);
       else if (call->isNamed("_tuple"))
         destructure_tuple(call);
     } else if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {

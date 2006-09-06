@@ -1,4 +1,4 @@
-Error: Ambiguous call 'foo(:int)' (test_default_param3.chpl:10)
+Error: Ambiguous call 'foo(17)' (test_default_param3.chpl:10)
 Candidates are:
   foo(i: int) (test_default_param3.chpl:1)
   foo(i: int, s: string) (test_default_param3.chpl:5)

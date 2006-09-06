@@ -7,8 +7,6 @@ Size:    Number:  Total:   Address:    Description:
 (bytes)           (bytes)  
 ================================================================================
 8        484      3872     0xnnnnnnnn  _data
-8        484      3872     0xnnnnnnnn  _data
-8        400      3200     0xnnnnnnnn  _data
 8        400      3200     0xnnnnnnnn  _data
 
 Jacobi computation complete.

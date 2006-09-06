@@ -1,3 +1,3 @@
-Error: Unresolved call 'f(t=float, :int)' (where-3-error.chpl:5)
+Error: Unresolved call 'f(t=float, 1)' (where-3-error.chpl:5)
 Candidates are:
   f(type t, x: any) (where-3-error.chpl:1)

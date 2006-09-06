@@ -1,4 +1,4 @@
-Error: Unresolved call ':bar.foo(:int)' (test_method_call2.chpl:10)
+Error: Unresolved call ':bar.foo(2)' (test_method_call2.chpl:10)
 Candidates are:
   foo(i: int) (test_method_call2.chpl:1)
   :bar.foo() (test_method_call2.chpl:6)
