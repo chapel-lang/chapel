@@ -74269,3 +74269,14 @@ Log message:
 Modified files:
 	chapel/compiler/: UnimplementedFeatures 
 
+---------------------------------------------------------------------------
+
+09/06/06 15:29:33 -- waynew
+
+Log message:
+	For non-developers suppress the printing of candidate functions in standard
+	modules on an unresolved function error.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+
