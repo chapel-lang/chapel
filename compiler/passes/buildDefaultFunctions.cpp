@@ -66,8 +66,22 @@ static FnSymbol* function_exists(char* name,
 
 
 static void build_getter(ClassType* ct, Symbol *field) {
-  if (function_exists(field->name, 2, dtMethodToken->symbol->name, ct->symbol->name))
+  if (FnSymbol* fn = function_exists(field->name, 2, dtMethodToken->symbol->name, ct->symbol->name)) {
+    Vec<BaseAST*> asts;
+    collect_asts(&asts, fn);
+    forv_Vec(BaseAST, ast, asts) {
+      if (CallExpr* call = dynamic_cast<CallExpr*>(ast)) {
+        if (call->isNamed(field->name) && call->argList->length() == 2) {
+          if (call->get(1)->typeInfo() == dtMethodToken &&
+              call->get(2)->typeInfo() == ct) {
+            Expr* arg2 = call->get(2);
+            call->replace(new CallExpr(PRIMITIVE_GET_MEMBER, arg2->remove(), new_StringLiteral(field->name)));
+          }
+        }
+      }
+    }
     return;
+  }
 
   FnSymbol* fn = new FnSymbol(field->name);
   fn->defSetGet = true;
