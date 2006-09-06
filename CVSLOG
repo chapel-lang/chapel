@@ -74290,3 +74290,20 @@ Log message:
 Modified files:
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+09/06/06 15:40:56 -- deitz
+
+Log message:
+	Added support for user-defined getters and a test case.  Passed three
+	file module futures over to Brad.
+
+Modified files:
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	chapel/test/types/file/bradc/: changeFilenameWhileOpen.future 
+	                               changeModeWhileOpen.future 
+	                               changePathWhileOpen.future 
+Added files:
+	chapel/test/classes/deitz/: test_setter_getter.chpl 
+	                            test_setter_getter.good 
+
