@@ -427,6 +427,18 @@ if ($valgrind) then
     endif
     if ($compiler == "") then
         set compiler = "../compiler/$platform/chpl-nogc"
+        test $compiler -nt ../compiler/$platform/chpl
+        if ($status == 1) then
+            echo
+            echo
+            echo 
+            echo "     *****************************************"
+            echo "     * WARNING: chpl-nogc is older than chpl *"
+            echo "     *****************************************"
+            echo 
+            echo
+            echo
+        endif
     endif
 else
     setenv CHPL_TEST_VGRND_COMP off
