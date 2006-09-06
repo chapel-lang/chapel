@@ -74195,3 +74195,56 @@ Log message:
 Modified files:
 	chapel/test/: start_test 
 
+---------------------------------------------------------------------------
+
+09/06/06 14:58:52 -- deitz
+
+Log message:
+	Added support for domain assignment that reallocates arrays declared
+	over the assigned domain and preserves the data in these arrays.  This
+	involved adding a new base class of all array classes called _abase.
+	It relies on dynamic dispatch on generics.
+	
+	The data is preserved by iterating over the intersection of the two
+	domains in the domain assignment.  Note that strided arrays and
+	domains are not yet supported.  Added a function _extended_euclid
+	which I copied from the ZPL runtime where it is cited as being from
+	Knuth Vol. 2, Section 4.5.2.  This function is required to compute the
+	intersection of strided domains.
+	
+	Changed arrays from records to classes.  This happens to remove the
+	duplicate data that we were allocating for arrays.  Updated the two
+	memory test outputs accordingly.
+	
+	Fixed a bug in cleanup in which use statements were not cleaned up
+	early enough.
+	
+	Improved how function calls are printed out so that if the actual is a
+	parameter, the value is written rather than its type.  This is nice if
+	the function expects a parameter though not ideal otherwise.  Also
+	improved how functions are printed out, now printing param in front of
+	arguments that have parameter intents.  Updated error outputs on about
+	9 tests.
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp functionResolution.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	                          _chpl_indefinite.chpl 
+	                          _chpl_sparse.chpl 
+	chapel/test/classes/deitz/: test_method_call2.good 
+	chapel/test/functions/deitz/: test_bad_function.good 
+	                              test_default_param3.good 
+	chapel/test/functions/deitz/named/: test_named3-error.good 
+	chapel/test/memory/shannon/: jacobi.good printMemTable.good 
+	chapel/test/types/type_variables/deitz/functions/: 
+	                                                   test_foo5-error.good 
+	chapel/test/types/type_variables/deitz/part7/: construct-1b.good 
+	                                               test_infer_class1.good 
+	                                               test_infer_class2.good 
+	chapel/test/types/type_variables/jplevyak/: where-3-error.good 
+Added files:
+	chapel/test/domains/deitz/: test_domain_reassign1.chpl 
+	                            test_domain_reassign1.good 
+	                            test_domain_reassign2.chpl 
+	                            test_domain_reassign2.good 
+
