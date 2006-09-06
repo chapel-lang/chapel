@@ -74168,3 +74168,16 @@ Log message:
 Modified files:
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+09/06/06 14:19:17 -- waynew
+
+Log message:
+	Reverted back .good.  We will not print standard module functions as
+	candidates on error to the user.
+
+Modified files:
+	chapel/test/classes/deitz/: test_inherit_mod1.good 
+	                            test_inherit_mod2.good 
+	                            test_inherit_mod3.good 
+
