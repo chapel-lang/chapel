@@ -74146,3 +74146,15 @@ Added files:
 	chapel/test/arrays/deitz/domains/: test_domain2.future 
 	                                   test_domain3.future 
 
+---------------------------------------------------------------------------
+
+09/06/06 11:20:55 -- deitz
+
+Log message:
+	Added two working tests I had lying around.
+
+Added files:
+	chapel/test/arrays/deitz/: test_array_decl.chpl 
+	                           test_array_decl.good 
+	chapel/test/classes/deitz/: test_class6.chpl test_class6.good 
+
