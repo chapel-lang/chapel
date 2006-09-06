@@ -74248,3 +74248,14 @@ Added files:
 	                            test_domain_reassign2.chpl 
 	                            test_domain_reassign2.good 
 
+---------------------------------------------------------------------------
+
+09/06/06 15:08:13 -- deitz
+
+Log message:
+	Reverted some code in function resolution to use a vec of pointers to
+	vecs rather than the odd vec of vec code.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+
