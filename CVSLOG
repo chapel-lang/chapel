@@ -74326,3 +74326,14 @@ Added files:
 	                                     tuple2seq1.chpl 
 	                                     tuple2seq1.good 
 
+---------------------------------------------------------------------------
+
+09/06/06 16:30:36 -- deitz
+
+Log message:
+	Added test I had lying around that is now working.
+
+Added files:
+	chapel/test/trivial/deitz/: test_init_int8.chpl 
+	                            test_init_int8.good 
+
