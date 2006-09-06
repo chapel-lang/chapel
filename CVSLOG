@@ -74307,3 +74307,22 @@ Added files:
 	chapel/test/classes/deitz/: test_setter_getter.chpl 
 	                            test_setter_getter.good 
 
+---------------------------------------------------------------------------
+
+09/06/06 16:25:51 -- deitz
+
+Log message:
+	Added support for casting a sequence to a tuple and a tuple to a
+	sequence.  Added two tests.  Updated the list of unimplemented
+	features.
+
+Modified files:
+	chapel/compiler/: UnimplementedFeatures 
+	chapel/compiler/passes/: cleanup.cpp 
+	chapel/modules/standard/: _chpl_htuple.chpl 
+Added files:
+	chapel/test/types/seq/deitz/tuples/: seq2tuple1.chpl 
+	                                     seq2tuple1.good 
+	                                     tuple2seq1.chpl 
+	                                     tuple2seq1.good 
+
