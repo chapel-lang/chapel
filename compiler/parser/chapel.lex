@@ -2,8 +2,7 @@
 
 #include <stdio.h>
 #include <typeinfo>
-#include "lexyacc.h"
-#include "chapel.tab.h"
+#include "lexincludes.h"
 
 /* make sure flex-generated code uses these */
 #ifdef USE_GC
@@ -18,9 +17,11 @@
 /* avoid warnings */
 #define YY_NO_UNPUT
 
+#ifndef processToken
 #define processToken(t) \
   countToken(yytext);  \
   return(t)
+#endif
 
 #define processStringLiteral(q)     \
   yylval.pch = eatStringLiteral(q); \
@@ -187,9 +188,11 @@ int getNextYYChar() {
   return yyinput();
 }
 
+/*
 AList<Stmt>* parse_string(char* string) {
   yystmtlist = NULL;
   yy_scan_string(string);
   yyparse();
   return yystmtlist;
 }
+*/

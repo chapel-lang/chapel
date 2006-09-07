@@ -3,7 +3,7 @@
 #include "misc.h"
 #include "processTokens.h"
 #include "yy.h"
-#include "chapel.tab.h"
+#include "lexincludes.h"
 
 extern YYLTYPE yylloc;
 

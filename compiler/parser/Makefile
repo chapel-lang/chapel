@@ -17,13 +17,16 @@ OTHER_DEPEND_RULES = \
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 
 CLEAN_TARGS += \
-	chapel.tab.c \
-	lex.yy.c \
-	chapel.tab.h \
-	chapel.output \
+	*.tab.c \
+	*.yy.c \
+	*.tab.h \
+	*.output \
 
 lex.yy.c: chapel.lex chapel.tab.h
 	flex chapel.lex
+
+modulefinder.lex.yy.c: chapel.lex modulefinder.tab.h
+	flex -o$@ chapel.lex
 
 #BLC: This rule uses two hacks: 
 #     - one to avoid using return rather than $$ which has cost me hours 
@@ -37,6 +40,22 @@ chapel.tab.h chapel.tab.c: chapel.y
 	@if [ `grep "conflicts:" chapel.output | wc -l` -ne 0 ]; then echo "PROBLEM: chapel.y contains conflicts"; exit 1; fi;
 #	@if [`grep return chapel.y | wc -l` -ne 0 ]; then echo "PROBLEM: chapel.y contains return"; grep zyxv chapel.y; fi;
 
+modulefinder.tab.h modulefinder.tab.c: modulefinder.y
+	bison -d -v -t modulefinder.y
+	cat modulefinder.tab.c | sed s/__attribute__/\\/\\// > modulefinder.tab.c.tmp
+	mv modulefinder.tab.c.tmp modulefinder.tab.c
+	@if [ `grep "conflicts:" modulefinder.output | wc -l` -ne 0 ]; then echo "PROBLEM: modulefinder.y contains conflicts"; exit 1; fi;
+
+MODULEFINDER_OBJS = \
+	$(PLATFORM)/modulefinder.o \
+	$(PLATFORM)/modulefinder.tab.o \
+	$(PLATFORM)/modulefinder.lex.yy.o \
+	$(PLATFORM)/processTokens.moduleFinder.o \
+	$(PLATFORM)/yy.o
+
+modulefinder: modulefinder.tab.h $(MODULEFINDER_OBJS)
+	g++ -o $@ $(MODULEFINDER_OBJS) $(LIBS)
+
 
 FORCE:
 
@@ -49,11 +68,20 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.foot
 $(PLATFORM)/chapel.tab.o: chapel.tab.c $(PLATFORM_DIR) $(LEXYACC_INCLUDES)
 	$(CXX) -c $(CFLAGS) -Wno-error -o $@ $<
 
+$(PLATFORM)/modulefinder.tab.o: modulefinder.tab.c $(PLATFORM_DIR) $(LEXYACC_INCLUDES)
+	$(CXX) -c $(CFLAGS) -Wno-error -o $@ $<
+
 $(PLATFORM)/chapel.tab.nogc.o: chapel.tab.c $(PLATFORM_DIR) $(LEXYACC_INCLUDES)
 	$(CXX) -c $(CFLAGS) -Wno-error -o $@ $<
 
 $(PLATFORM)/lex.yy.o: lex.yy.c $(PLATFORM_DIR) chapel.tab.h $(LEXYACC_INCLUDES)
 	$(CXX) -c $(CFLAGS) -o $@ $<
+
+$(PLATFORM)/modulefinder.lex.yy.o: modulefinder.lex.yy.c $(PLATFORM_DIR) modulefinder.tab.h
+	$(CXX) -c -DMODULE_FINDER $(CFLAGS) -o $@ $<
+
+$(PLATFORM)/processTokens.moduleFinder.o: $(PLATFORM)/processTokens.o
+	$(CXX) -c -DMODULE_FINDER $(CFLAGS) -o $@ processTokens.cpp
 
 $(PLATFORM)/lex.yy.nogc.o: lex.yy.c $(PLATFORM_DIR) chapel.tab.h $(LEXYACC_INCLUDES)
 	$(CXX) -c $(CFLAGS) -o $@ $<
