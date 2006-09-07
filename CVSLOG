@@ -74450,3 +74450,16 @@ Added files:
 	                                        test_instantiate_iterator3.future 
 	                                        test_instantiate_iterator3a.future 
 
+---------------------------------------------------------------------------
+
+09/07/06 15:42:28 -- waynew
+
+Log message:
+	Added -valgrind option to pass "-valgrind" to start test and to change
+	the target Chapel compiler to chpl-nogc.
+	
+	Fixed a bug along the way where no node file was specified.
+
+Modified files:
+	chapel/test/: paratest.client.pl paratest.server.pl 
+
