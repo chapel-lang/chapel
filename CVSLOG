@@ -74407,3 +74407,19 @@ Modified files:
 Added files:
 	chapel/test/types/file/bradc/: CLEANFILES 
 
+---------------------------------------------------------------------------
+
+09/07/06 11:00:02 -- bradc
+
+Log message:
+	Adding some stray documents that I've had around --
+	a whiteboard capture from John's last meeting in Seattle
+	(can't remember when that was), and David's sources for
+	his SSCA2 whitepaper.
+
+Added files:
+	chapel/doc/internal/: notes.johnslastmeeting.whiteboardcapture 
+	chapel/doc/internal/SSCA2/: .cvsignore Makefile newcode.tex 
+	                            nuweb sane.sty ssca2.pdf ssca2.tex 
+	                            ssca2.w 
+
