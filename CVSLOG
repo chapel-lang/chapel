@@ -74367,3 +74367,31 @@ Removed files:
 	                               changeModeWhileOpen.future 
 	                               changePathWhileOpen.future 
 
+---------------------------------------------------------------------------
+
+09/07/06 09:12:34 -- bradc
+
+Log message:
+	This check-in adds some code for building an executable
+	currently called "modulefinder" which scans a list of
+	files given on the command-line to find all modules that
+	they might define.  It shares the Chapel compiler lexer
+	in order to reuse the capabilities of eating comments and
+	string literals, but it creates its own (flat) grammar for
+	scanning the file.  New tokens added to chapel.lex should
+	now be added to modulefinder.y as well.
+	
+	This utility is not built by default, and is not currently
+	used by the compiler, but is intended to eventually be used
+	with a search path to find modules that a user's code is
+	"use"-ing.  While not perfect, the code is in good enough
+	shape that I started to get nervous not having it under CVS
+	control, so am checking it in.
+
+Modified files:
+	chapel/compiler/parser/: .cvsignore Makefile chapel.lex 
+	                         processTokens.cpp 
+Added files:
+	chapel/compiler/parser/: lexincludes.h modulefinder.cpp 
+	                         modulefinder.h modulefinder.y 
+
