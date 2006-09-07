@@ -74395,3 +74395,15 @@ Added files:
 	chapel/compiler/parser/: lexincludes.h modulefinder.cpp 
 	                         modulefinder.h modulefinder.y 
 
+---------------------------------------------------------------------------
+
+09/07/06 10:55:31 -- bradc
+
+Log message:
+	Added a few things to keep my new tests clean.
+
+Modified files:
+	chapel/test/types/file/bradc/: .cvsignore 
+Added files:
+	chapel/test/types/file/bradc/: CLEANFILES 
+
