@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# Usage: paratest.client.pl id chapeltestdir testdir distmode futures [compopts]
+# Usage: paratest.client.pl id chapeltestdir testdir distmode futures valgrind [compopts]
 #  
 # Used remotely by paratest.server.pl to run start_test locally.
 #  id - used to create a file to synchronize with paratest.server.pl
@@ -8,6 +8,7 @@
 #  testdir - directory to run start_test on
 #  distmode - work distribution mode (0=directory, 1=file)
 #  futures - include .future tests (0=no, 1=yes)
+#  valgrind - run valgrind (0=no, 1=yes)
 #  compopts - optional Chapel compiler options
 # 
 
@@ -30,9 +31,9 @@ sub main {
     chomp $node;
     ($node, $junk) = split (/\./, $node, 2);
 
-    if ($#ARGV < 4) {
+    if ($#ARGV < 5) {
         print "@ARGV\n";
-        print "usage: paratest.client.pl id chapeltestdir testdir distmode futures [compopts]\n";
+        print "usage: paratest.client.pl id chapeltestdir testdir distmode futures valgrind [compopts]\n";
         exit (3);
     }
 
@@ -41,9 +42,11 @@ sub main {
     $testdir = $ARGV[2];
     $filedist = $ARGV[3];
     $incl_futures = ($ARGV[4] == 1) ? "-futures" : "" ;
+    $valgrind = ($ARGV[5] == 1) ? "-valgrind" : "";
 
-    if ($#ARGV==5) {
-        $compopts = "-compopts ". $ARGV[4];
+    print "$id $workingdir $testdir $filedist $incl_futures $valgrind" if $debug;
+    if ($#ARGV==6) {
+        $compopts = "-compopts ". $ARGV[6];
     }
 
     $synchfile = "$synchdir/$node.$id";
@@ -55,8 +58,7 @@ sub main {
     print "\n* $node up @ $workingdir *\n";
 
     $platform = `../util/platform`; chomp $platform;
-    # $compiler = $ARGV[3];
-    $compiler = "../compiler/$platform/chpl";
+    $compiler = ($ARGV[5] == 1) ? "../compiler/$platform/chpl-nogc" : "../compiler/$platform/chpl";
     unless (-e $compiler) {
         print "Error: cannot find chpl as '$compiler'\n";
         exit (2);
@@ -74,7 +76,7 @@ sub main {
     $logfile = "$logdir/$dirfname.$node.log";
     unlink $logfile if (-e $logfile);
 
-    $testarg = "-compiler $compiler -logfile $logfile $incl_futures $compopts";
+    $testarg = "-compiler $compiler -logfile $logfile $incl_futures $valgrind $compopts";
     if ($filedist) {
         $testarg = "$testarg -onetest $testdir";
     } else {

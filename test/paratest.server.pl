@@ -1,6 +1,8 @@
 #!/usr/bin/perl
 
-# Usage: paratest.server.pl [-dirfile d] [-nodefile n] [-logfile l] [-help|-h]
+# Usage: paratest.server.pl [-compopts] [-dirfile d] [-filedist] [-futures] 
+#                            [-help|-h] [-nodefile n] [-logfile l] [-valgrind]
+#   -compopts s: s is a string that is passed with -compopts to start_test.
 #   -dirfile  d: d is a file listing directories to test. Default is ".". Lines
 #                beginning with # are ignored.
 #   -filedist  : distribute work at the granularity of test files (directory
@@ -11,6 +13,7 @@
 #                times, once for each desired process. Lines with # are ignored.
 #   -logfile  l: l is the output logfile. Default is "user"."platform".log in
 #                subdirectory Logs.
+#   -valgrind  : pass -valgrind flag to start_test
 #
 # Creating a file name PARAHALT in the root test directory halts the
 # distribution of more work.
@@ -42,13 +45,14 @@ $dirs_to_ignore = "CVS|Bin|Logs|Samples|Share|OUTPUT|RCS";
 
 $logdir = "Logs";
 $synchdir = "$logdir/.synch";
-$cmd = "paratest.client.pl";
+$client_script = "paratest.client.pl";
 $rem_exe = "ssh";
 $pwd = `pwd`; chomp $pwd;
 $summary_len = 2;
 $sleep_time = 1;                      # polling time (sec) to distribute work
 $incl_futures = 0;
 $filedist = 0;
+$valgrind = 0;
 
 my (@testdir_list, @node_list, $starttime, $endtime);
 
@@ -65,6 +69,8 @@ sub collect_logs {
     local ($fin_log, @logs) = @_;
     local ($len, $successes, $failures, $futures);
     local ($grep_summ, $head_opts);
+
+    print "collecting logs\n" if $debug;
 
     if ($platform eq "linux") {
         $head_opts = "-q";                     # quiet mode
@@ -136,6 +142,8 @@ sub collect_logs {
 sub free_workers {
     local (@readyv, @readyids, $node, $id);
 
+    print "checking for available workers\n" if $debug;
+
     opendir WORKDIR, "$synchdir";
     @readyv = readdir WORKDIR;
     closedir WORKDIR;
@@ -155,6 +163,8 @@ sub feed_nodes {
     local (@readyidv, $logfile, @logs, $testdir, $node, $rem_cmd);
     $| = 1;    # autoflush stdout
 
+    print "about to start distributing work\n" if $debug;
+
     @testdir_list = sort @testdir_list;
     print $#node_list+1; print " worker(s) (@node_list)\n";
     print $#testdir_list+1; print " test(s) (@testdir_list)\n";
@@ -163,6 +173,7 @@ sub feed_nodes {
            !(-e "PARAHALT")) {
         @readyidv = free_workers ();      # get IDs of nodes that are ready
 
+        print @readyidv if $debug;
         print "\n" if ($#readyidv >= 0);
         foreach $readyid (@readyidv) {    # for ready nodes
             next if ($#testdir_list < 0);
@@ -184,7 +195,7 @@ sub feed_nodes {
             $logfile = "$logdir/$testdirname.$node.log";
             # fork work
             unless ($pid = fork) {        # child
-                $rem_cmd = "$rem_exe $node $pwd/$cmd $readyid $pwd $testdir $filedist $incl_futures $compopts";
+                $rem_cmd = "$rem_exe $node $pwd/$client_script $readyid $pwd $testdir $filedist $incl_futures $valgrind $compopts";
                 if ($verbose) {
                     systemd ($rem_cmd);
                 } else {
@@ -225,6 +236,8 @@ sub feed_nodes {
 # synchronization files for them initially.
 sub nodes_free {
     local ($id, $node, $fname, $dirv);
+
+    print "making all nodes available to work\n" if $debug;
     # clean synch dir
     opendir WORKDIR, "$synchdir";
     @dirv = readdir WORKDIR;
@@ -316,13 +329,14 @@ sub find_files {
 
 
 sub print_help {
-    print "Usage: paratest.server.pl [-dirfile d] [-nodefile n] [-help|-h]\n";
+    print "Usage: paratest.server.pl [-compopts] [-dirfile d] [-filedist] [-futures] [-logfile l] [-nodefile n] [-valgrind] [-help|-h]\n";
     print "    -compopts s: s is a string that is passed with -compopts to start_test.\n";
     print "    -dirfile  d: d is a file listing directories to test. Default is the current diretory.\n";
     print "    -filedist  : distribute work at the granularity of files (directory granurality is the default).\n";
     print "    -futures   : include .future tests (default is none).\n";
     print "    -logfile  l: l is the output log file. Default is \"user\".\"platform\".log. in the Logs subdirectory.\n";
     print "    -nodefile n: n is a file listing nodes to run on. Default is current node.\n";
+    print "    -valgrind  : pass -valgrind to start_test.\n";
 }
 
 
@@ -375,11 +389,14 @@ sub main {
                 print "missing -nodefile arg\n";
                 exit (8);
             }
+        } elsif (/^-valgrind/) {
+            $valgrind = 1;
         } elsif (/^-help|^-h/) {
             print_help;
             exit (9);
         } else {
             print "unknown arg $_\n";
+            exit (9);
         }
         shift @ARGV;
     }
@@ -395,6 +412,7 @@ sub main {
     } else { # else, just current node
         local ($node) = `uname -n`;
         ($node, $junk) = split (/\./, $node, 2);
+        chomp $node;
         push @node_list, $node;
     }
 
@@ -408,7 +426,6 @@ sub main {
             } else {
                 push @testdir_list, $_;
             }
-            # print "$_\n";
         }
     } else { # else, current working dir
         if ($filedist) {
