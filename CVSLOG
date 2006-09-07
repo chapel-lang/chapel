@@ -74437,3 +74437,16 @@ Modified files:
 	chapel/compiler/include/: baseAST.h build.h primitive.h stmt.h 
 	chapel/compiler/parser/: chapel.y 
 
+---------------------------------------------------------------------------
+
+09/07/06 15:32:16 -- waynew
+
+Log message:
+	Need to move iterator transformation after param folding.  Otherwise, these
+	tests fail.
+
+Added files:
+	chapel/test/functions/deitz/iterators/: 
+	                                        test_instantiate_iterator3.future 
+	                                        test_instantiate_iterator3a.future 
+
