@@ -74350,3 +74350,20 @@ Modified files:
 	chapel/modules/standard/: _chpl_base.chpl 
 	chapel/runtime/include/: chplrt.h 
 
+---------------------------------------------------------------------------
+
+09/07/06 08:50:22 -- bradc
+
+Log message:
+	Updated the file class to use the setter and getter support that
+	Steve enabled yesterday in order to prevent assignment to its
+	filename, path, and mode while the file is open.  Un-futurized
+	three tests that tested this behavior.
+
+Modified files:
+	chapel/modules/standard/: _chpl_file.chpl 
+Removed files:
+	chapel/test/types/file/bradc/: changeFilenameWhileOpen.future 
+	                               changeModeWhileOpen.future 
+	                               changePathWhileOpen.future 
+
