@@ -140,21 +140,17 @@ class file {
     }
   }
 
-/*
-  // BLC: These next three setters can be removed if we can
-  // special-case setters to not call themselves recursively
-  // when the setter has the same name as a field
-
   def filename {
-    return _filename;
+    return filename;
   }
 
   def =filename(newfilename) {
     _checkFileStateChangeLegality("filename");
+    filename = newfilename;
   }
 
   def path {
-    return _path;
+    return path;
   }
 
   def =path(newpath) {
@@ -163,14 +159,13 @@ class file {
   }
 
   def mode {
-    return _mode;
+    return mode;
   }
 
   def =mode(newmode: string) {
     _checkFileStateChangeLegality("mode");
     mode = newmode;
   }
-*/
 
   def isOpen: bool {
     var openStatus: bool = false;
