@@ -248,6 +248,7 @@ initPrimitive() {
   prim_def(PRIMITIVE_ARRAY_SET, "array_set", returnInfoVoid);
 
   prim_def(PRIMITIVE_ERROR, "error", returnInfoVoid);
+  prim_def(PRIMITIVE_WHEN, "when case expressions", returnInfoVoid);
 
   prim_def("abs", returnInfoInt);
   prim_def("acos", returnInfoFloat);

@@ -119,22 +119,6 @@ class CondStmt : public Stmt {
 };
 
 
-class WhenStmt : public Stmt {
- public:
-  AList<Expr>* caseExprs;
-  BlockStmt* doStmt;
-
-  WhenStmt(AList<Expr>* init_caseExprs = NULL, BlockStmt* init_doStmt = NULL);
-  WhenStmt(AList<Expr>* init_caseExprs, Stmt* init_doStmt);
-  WhenStmt(AList<Expr>* init_caseExprs, AList<Stmt>* init_doStmt);
-  virtual void verify();
-  COPY_DEF(WhenStmt);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void print(FILE* outfile);
-  void codegen(FILE* outfile);
-};
-
-
 enum gotoType {
   goto_normal = 0,
   goto_break,

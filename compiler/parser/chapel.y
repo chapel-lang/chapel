@@ -84,7 +84,6 @@ Is this "while x"(i); or "while x(i)";?
   DefExpr* pdefexpr;
 
   Stmt* pstmt;
-  WhenStmt* pwhenstmt;
   BlockStmt* pblockstmt;
 
   Type* ptype;
@@ -96,7 +95,6 @@ Is this "while x"(i); or "while x(i)";?
 
   AList<Expr>* pexprls;
   AList<Stmt>* pstmtls;
-  AList<WhenStmt>* pwhenstmtls;
   AList<DefExpr>* pdefexprls;
 }
 
@@ -215,8 +213,8 @@ Is this "while x"(i); or "while x(i)";?
 
 %type <pblockstmt> parsed_block_stmt block_stmt
 
-%type <pwhenstmt> when_stmt
-%type <pwhenstmtls> when_stmt_ls
+%type <pstmt> when_stmt
+%type <pstmtls> when_stmt_ls
 
 %type <pexpr> opt_var_type var_type fnrettype opt_formal_var_type formal_var_type formal_type
 %type <pexpr> type record_tuple_type type_binding_expr
@@ -436,7 +434,7 @@ select_stmt:
 
 when_stmt_ls:
   /* empty */
-    { $$ = new AList<WhenStmt>(); }
+    { $$ = new AList<Stmt>(); }
 | when_stmt_ls when_stmt
     { $1->insertAtTail($2); }
 ; 
@@ -444,11 +442,11 @@ when_stmt_ls:
 
 when_stmt:
   TWHEN nonempty_expr_ls TDO stmt
-    { $$ = new WhenStmt($2, $4); }
+    { $$ = new CondStmt(new CallExpr(PRIMITIVE_WHEN, $2), $4); }
 | TWHEN nonempty_expr_ls parsed_block_stmt
-    { $$ = new WhenStmt($2, $3); }
+    { $$ = new CondStmt(new CallExpr(PRIMITIVE_WHEN, $2), $3); }
 | TOTHERWISE stmt
-    { $$ = new WhenStmt(new AList<Expr>(), $2); }
+    { $$ = new CondStmt(new CallExpr(PRIMITIVE_WHEN), $2); }
 ;
 
 

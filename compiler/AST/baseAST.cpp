@@ -426,7 +426,6 @@ char* astTypeName[AST_TYPE_END+1] = {
   "ReturnStmt",
   "BlockStmt",
   "CondStmt",
-  "WhenStmt",
   "GotoStmt",
 
   "Expr",
@@ -497,10 +496,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int sentinels) {
     AST_ADD_CHILD(CondStmt, condExpr);
     AST_ADD_CHILD(CondStmt, thenStmt);
     AST_ADD_CHILD(CondStmt, elseStmt);
-    break;
-  case STMT_WHEN:
-    AST_ADD_LIST(WhenStmt, caseExprs, Expr);
-    AST_ADD_CHILD(WhenStmt, doStmt);
     break;
   case STMT_GOTO:
     break;

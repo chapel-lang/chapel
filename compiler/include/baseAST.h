@@ -26,7 +26,6 @@ enum astType_t {
   STMT_RETURN,
   STMT_BLOCK,
   STMT_COND,
-  STMT_WHEN,
   STMT_GOTO,
 
   EXPR,

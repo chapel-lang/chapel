@@ -26,8 +26,8 @@ AList<Stmt>* build_for_expr(AList<DefExpr>* indices,
                             Expr* cond = NULL);
 AList<Stmt>* build_param_for(char* index, Expr* low, Expr* high, Expr* stride, BlockStmt* stmts);
 AList<Stmt>* build_assignplus(Expr* lhs, Expr* rhs);
-CondStmt* build_select(Expr* s, AList<WhenStmt>* whenstmts);
-AList<Stmt>* build_type_select(AList<Expr>* s, AList<WhenStmt>* whenstmts);
+CondStmt* build_select(Expr* s, AList<Stmt>* whenstmts);
+AList<Stmt>* build_type_select(AList<Expr>* s, AList<Stmt>* whenstmts);
 FnSymbol* build_reduce(Expr* red, Expr *seq);
 FnSymbol* build_scan(Expr* scan, Expr *seq);
 

@@ -359,19 +359,25 @@ AList<Stmt>* build_assignplus(Expr* lhs, Expr* rhs) {
 }
 
 
-CondStmt* build_select(Expr* selectCond, AList<WhenStmt>* whenstmts) {
-  WhenStmt* otherwise = NULL;
+CondStmt* build_select(Expr* selectCond, AList<Stmt>* whenstmts) {
+  CondStmt* otherwise = NULL;
   CondStmt* top = NULL;
   CondStmt* condStmt = NULL;
 
-  for_alist(WhenStmt, whenstmt, whenstmts) {
-    if (whenstmt->caseExprs->length() == 0) {
+  for_alist(Stmt, stmt, whenstmts) {
+    CondStmt* when = dynamic_cast<CondStmt*>(stmt);
+    if (!when)
+      INT_FATAL("error in build_select");
+    CallExpr* conds = dynamic_cast<CallExpr*>(when->condExpr);
+    if (!conds || !conds->isPrimitive(PRIMITIVE_WHEN))
+      INT_FATAL("error in build_select");
+    if (conds->argList->length() == 0) {
       if (otherwise)
         USR_FATAL(selectCond, "Select has multiple otherwise clauses");
-      otherwise = whenstmt;
+      otherwise = when;
     } else {
       Expr* expr = NULL;
-      for_alist(Expr, whenCond, whenstmt->caseExprs) {
+      for_alist(Expr, whenCond, conds->argList) {
         whenCond->remove();
         if (!expr)
           expr = new CallExpr("==", selectCond->copy(), whenCond);
@@ -379,10 +385,10 @@ CondStmt* build_select(Expr* selectCond, AList<WhenStmt>* whenstmts) {
           expr = new CallExpr("||", expr, new CallExpr("==", selectCond->copy(), whenCond));
       }
       if (!condStmt) {
-        condStmt = new CondStmt(expr, whenstmt->doStmt);
+        condStmt = new CondStmt(expr, when->thenStmt);
         top = condStmt;
       } else {
-        CondStmt* next = new CondStmt(expr, whenstmt->doStmt);
+        CondStmt* next = new CondStmt(expr, when->thenStmt);
         condStmt->elseStmt = new BlockStmt(next);
         condStmt = next;
       }
@@ -392,21 +398,27 @@ CondStmt* build_select(Expr* selectCond, AList<WhenStmt>* whenstmts) {
     if (!condStmt)
       USR_FATAL(selectCond, "Select has no when clauses");
     else {
-      condStmt->elseStmt = otherwise->doStmt;
+      condStmt->elseStmt = otherwise->thenStmt;
     }
   }
   return top;
 }
 
 
-AList<Stmt>* build_type_select(AList<Expr>* exprs, AList<WhenStmt>* whenstmts) {
+AList<Stmt>* build_type_select(AList<Expr>* exprs, AList<Stmt>* whenstmts) {
   static int uid = 1;
   FnSymbol* fn;
   AList<Stmt>* stmts = new AList<Stmt>();
   bool has_otherwise = false;
 
-  for_alist(WhenStmt, whenstmt, whenstmts) {
-    if (whenstmt->caseExprs->length() == 0) {
+  for_alist(Stmt, stmt, whenstmts) {
+    CondStmt* when = dynamic_cast<CondStmt*>(stmt);
+    if (!when)
+      INT_FATAL("error in build_select");
+    CallExpr* conds = dynamic_cast<CallExpr*>(when->condExpr);
+    if (!conds || !conds->isPrimitive(PRIMITIVE_WHEN))
+      INT_FATAL("error in build_select");
+    if (conds->argList->length() == 0) {
       if (has_otherwise)
         USR_FATAL(exprs, "Type select statement has multiple otherwise clauses");
       has_otherwise = true;
@@ -420,14 +432,14 @@ AList<Stmt>* build_type_select(AList<Expr>* exprs, AList<WhenStmt>* whenstmts) {
                           dtAny)));
       }
       fn->addPragma("inline");
-      fn->insertAtTail(whenstmt->doStmt->body->copy());
+      fn->insertAtTail(when->thenStmt->body->copy());
       stmts->insertAtTail(new DefExpr(fn));
     } else {
-      if (whenstmt->caseExprs->length() != exprs->length())
-        USR_FATAL(whenstmt, "Type select statement requires number of selectors to be equal to number of when conditions");
+      if (conds->argList->length() != exprs->length())
+        USR_FATAL(when, "Type select statement requires number of selectors to be equal to number of when conditions");
       fn = new FnSymbol(stringcat("_typeselect", intstring(uid)));
       int lid = 1;
-      for_alist(Expr, expr, whenstmt->caseExprs) {
+      for_alist(Expr, expr, conds->argList) {
         fn->formals->insertAtTail(
           new DefExpr(
             new ArgSymbol(INTENT_BLANK,
@@ -435,7 +447,7 @@ AList<Stmt>* build_type_select(AList<Expr>* exprs, AList<WhenStmt>* whenstmts) {
                           dtUnknown), NULL, expr->copy()));
       }
       fn->addPragma("inline");
-      fn->insertAtTail(whenstmt->doStmt->body->copy());
+      fn->insertAtTail(when->thenStmt->body->copy());
       stmts->insertAtTail(new DefExpr(fn));
     }
   }

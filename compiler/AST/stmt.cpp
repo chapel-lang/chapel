@@ -572,68 +572,6 @@ void CondStmt::codegen(FILE* outfile) {
 }
 
 
-WhenStmt::WhenStmt(AList<Expr>* init_caseExprs, BlockStmt* init_doStmt) :
-  Stmt(STMT_WHEN),
-  caseExprs(init_caseExprs),
-  doStmt(init_doStmt)
-{
-  if (doStmt)
-    doStmt = new BlockStmt(doStmt);
-}
-
-
-WhenStmt::WhenStmt(AList<Expr>* init_caseExprs, Stmt* init_doStmt) :
-  Stmt(STMT_WHEN),
-  caseExprs(init_caseExprs),
-  doStmt(new BlockStmt(init_doStmt))
-{ }
-
-
-WhenStmt::WhenStmt(AList<Expr>* init_caseExprs, AList<Stmt>* init_doStmt) :
-  Stmt(STMT_WHEN),
-  caseExprs(init_caseExprs),
-  doStmt(new BlockStmt(init_doStmt))
-{ }
-
-
-void WhenStmt::verify() {
-  Stmt::verify();
-  if (astType != STMT_WHEN) {
-    INT_FATAL(this, "Bad WhenStmt::astType");
-  }
-}
-
-
-WhenStmt*
-WhenStmt::copyInner(ASTMap* map) {
-  return new WhenStmt(COPY_INT(caseExprs), COPY_INT(doStmt));
-}
-
-
-void WhenStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == caseExprs) {
-    caseExprs = dynamic_cast<AList<Expr>*>(new_ast);
-  } else if (old_ast == doStmt) {
-    doStmt = dynamic_cast<BlockStmt*>(new_ast);
-  } else {
-    INT_FATAL(this, "Unexpected case in WhenStmt::replaceChild");
-  }
-}
-
-
-void WhenStmt::print(FILE* outfile) {
-  fprintf(outfile, "when ");
-  caseExprs->print(outfile);
-  fprintf(outfile, " do ");
-  doStmt->print(outfile);
-}
-
-
-void WhenStmt::codegen(FILE* outfile) {
-  INT_FATAL(this, "WhenStmt::codegen encountered");
-}
-
-
 GotoStmt::GotoStmt(gotoType init_goto_type) :
   Stmt(STMT_GOTO),
   label(NULL),

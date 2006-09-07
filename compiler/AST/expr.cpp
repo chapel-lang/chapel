@@ -1031,6 +1031,7 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_USE:
     case PRIMITIVE_TUPLE_EXPAND:
     case PRIMITIVE_ERROR:
+    case PRIMITIVE_WHEN:
       INT_FATAL(this, "primitive should no longer be in AST");
       break;
     case NUM_KNOWN_PRIMS:
