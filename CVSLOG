@@ -74423,3 +74423,17 @@ Added files:
 	                            nuweb sane.sty ssca2.pdf ssca2.tex 
 	                            ssca2.w 
 
+---------------------------------------------------------------------------
+
+09/07/06 14:26:29 -- deitz
+
+Log message:
+	Removed WhenStmt which was only used during parsing.  It was confusing
+	to keep it around as somebody might attempt to use it.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp build.cpp expr.cpp 
+	                      primitive.cpp stmt.cpp 
+	chapel/compiler/include/: baseAST.h build.h primitive.h stmt.h 
+	chapel/compiler/parser/: chapel.y 
+
