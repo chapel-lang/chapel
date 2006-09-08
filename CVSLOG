@@ -74582,3 +74582,34 @@ Log message:
 Modified files:
 	chapel/modules/standard/: _chpl_adomain.chpl 
 
+---------------------------------------------------------------------------
+
+09/08/06 15:13:07 -- deitz
+
+Log message:
+	Switched to row major iteration order over arithmetic domains
+	
+	  C                                    0.86 seconds
+	  old O3 Chapel "no bounds checking"  57.77 seconds
+	  new O3 Chapel "no bounds checking"  54.88 seconds
+	
+	Updated some .goods to reflect column-major to row-major change.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	chapel/test/arrays/deitz/: array_forall_expr.good 
+	                           test_dot_domain.good 
+	chapel/test/arrays/deitz/domains/: test_domains_2D.good 
+	                                   test_domains_2Da.good 
+	                                   test_domains_2Db.good 
+	                                   test_domains_2Dc.good 
+	                                   test_domains_2Dd.good 
+	                                   test_domains_5D.good 
+	chapel/test/arrays/deitz/part1/: test_array_2Da.good 
+	                                 test_array_2Db.good 
+	                                 test_array_2Dc.good 
+	                                 test_array_3D.good 
+	                                 test_array_3D_float.good 
+	                                 test_array_arg5.good 
+	                                 test_array_arg6.good 
+
