@@ -1,6 +1,0 @@
-arithmetic sequences
-
-When an arithmetic sequence is used to drive a loop, and the
-arithmetic sequence is defined in terms of an unsigned int
-rather than an int, unresolved calls are encountered during
-compilation.

@@ -12,6 +12,8 @@
  ***/
 static bool
 name_matches_method(char* name, Type* type) {
+  if (!strcmp(name, type->symbol->name))
+    return false;
   forv_Vec(Symbol, method, type->methods) {
     if (!strcmp(name, method->name))
       return true;

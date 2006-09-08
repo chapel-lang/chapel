@@ -190,6 +190,14 @@ record _aseq {
   var _high : int;
   var _stride : int;
 
+  def _aseq(_low, _high) {
+    error("Invalid arithmetic sequence, bounds must be integers");
+  }
+
+  def _aseq(_low, _high, _stride) {
+    error("Invalid arithmetic sequence, bounds and stride must be integers");
+  }
+
   iterator this() : int {
     forall x in this
       yield x; 

@@ -17,9 +17,9 @@
 
 bool normalized = false;
 
-// static void reconstruct_iterator(FnSymbol* fn);
-static void enable_scalar_promotion( FnSymbol* fn);
-static void iterator_transform( FnSymbol* fn);
+static void change_method_into_constructor(FnSymbol* fn);
+static void enable_scalar_promotion(FnSymbol* fn);
+static void iterator_transform(FnSymbol* fn);
 static void build_lvalue_function(FnSymbol* fn);
 static void normalize_returns(FnSymbol* fn);
 static void initialize_out_formals(FnSymbol* fn);
@@ -62,6 +62,7 @@ void normalize(BaseAST* base) {
         enable_scalar_promotion( fn);
         iterator_transform( fn);
       }
+      change_method_into_constructor(fn);
     }
   }
 
@@ -1546,4 +1547,32 @@ fixup_parameterized_primitive_formals(FnSymbol* fn) {
       }
     }
   }
+}
+
+
+static void change_method_into_constructor(FnSymbol* fn) {
+  if (fn->formals->length() <= 1)
+    return;
+  if (fn->formals->get(1)->sym->type != dtMethodToken)
+    return;
+  if (fn->formals->get(2)->sym->type == dtUnknown)
+    INT_FATAL(fn, "this argument has unknown type");
+  if (strcmp(fn->formals->get(2)->sym->type->symbol->name, fn->name))
+    return;
+  ClassType* ct = dynamic_cast<ClassType*>(fn->formals->get(2)->sym->type);
+  if (!ct)
+    INT_FATAL(fn, "constructor on non-class type");
+  fn->name = stringcat("_construct_", fn->name);
+  fn->_this = new VarSymbol("this", ct);
+  fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, fn->_this, new CallExpr(ct->symbol)));
+  fn->insertAtHead(new DefExpr(fn->_this));
+  fn->insertAtTail(new ReturnStmt(new SymExpr(fn->_this)));
+  ASTMap map;
+  map.put(fn->formals->get(2)->sym, fn->_this);
+  fn->formals->get(2)->remove();
+  fn->formals->get(1)->remove();
+  update_symbols(fn, &map);
+  Stmt* stmt = fn->defPoint->parentStmt;
+  stmt->remove();
+  ct->symbol->defPoint->parentStmt->insertBefore(stmt);
 }
