@@ -281,10 +281,7 @@ class _adomain {
   }
 
   def isValidCursor?(c) {
-    for param i in 1..rank do
-      if !ranges(i).isValidCursor?(c(i)) then
-        return false;
-    return true;
+    return c(1) != ranges(1)._high+1;
   }
 
   def this(dim : int)
