@@ -300,12 +300,15 @@ codegen_member(FILE* outfile, Expr *base, BaseAST *member) {
 static void callExprHelper(CallExpr* call, BaseAST* arg) {
   if (!arg)
     return;
-  if (dynamic_cast<Symbol*>(arg) ||
-      dynamic_cast<Expr*>(arg) ||
-      dynamic_cast<AList<Expr>*>(arg))
+  if (dynamic_cast<Symbol*>(arg) || dynamic_cast<Expr*>(arg))
     call->insertAtTail(arg);
   else
     INT_FATAL(call, "Bad argList in CallExpr constructor");
+}
+
+
+static void callExprHelper(CallExpr* call, AList<Expr>* arg) {
+  call->insertAtTail(arg);
 }
 
 
@@ -379,6 +382,63 @@ CallExpr::CallExpr(char* name, BaseAST* arg1, BaseAST* arg2,
 }
 
 
+CallExpr::CallExpr(BaseAST* base, AList<Expr>* args) :
+  Expr(EXPR_CALL),
+  baseExpr(NULL),
+  argList(new AList<Expr>()),
+  primitive(NULL),
+  partialTag(PARTIAL_NEVER),
+  methodTag(false),
+  square(false)
+{
+  if (Symbol* b = dynamic_cast<Symbol*>(base)) {
+    baseExpr = new SymExpr(b);
+  } else if (Expr* b = dynamic_cast<Expr*>(base)) {
+    baseExpr = b;
+  } else {
+    INT_FATAL(this, "Bad baseExpr in CallExpr constructor");
+  }
+  callExprHelper(this, args);
+}
+
+
+CallExpr::CallExpr(PrimitiveOp *prim, AList<Expr>* args) :
+  Expr(EXPR_CALL),
+  baseExpr(NULL),
+  argList(new AList<Expr>()),
+  primitive(prim),
+  partialTag(PARTIAL_NEVER),
+  methodTag(false),
+  square(false)
+{
+  callExprHelper(this, args);
+}
+
+CallExpr::CallExpr(PrimitiveTag prim, AList<Expr>* args) :
+  Expr(EXPR_CALL),
+  baseExpr(NULL),
+  argList(new AList<Expr>()),
+  primitive(primitives[prim]),
+  partialTag(PARTIAL_NEVER),
+  methodTag(false),
+  square(false)
+{
+  callExprHelper(this, args);
+}
+
+CallExpr::CallExpr(char* name, AList<Expr>* args) :
+  Expr(EXPR_CALL),
+  baseExpr(new SymExpr(new UnresolvedSymbol(name))),
+  argList(new AList<Expr>()),
+  primitive(NULL),
+  partialTag(PARTIAL_NEVER),
+  methodTag(false),
+  square(false)
+{
+  callExprHelper(this, args);
+}
+
+
 void CallExpr::verify() {
   Expr::verify();
   if (astType != EXPR_CALL) {
@@ -405,8 +465,6 @@ CallExpr::copyInner(ASTMap* map) {
 void CallExpr::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == baseExpr) {
     baseExpr = dynamic_cast<Expr*>(new_ast);
-  } else if (old_ast == argList) {
-    argList = dynamic_cast<AList<Expr>*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in CallExpr::replaceChild");
   }
@@ -439,6 +497,18 @@ CallExpr::insertAtHead(BaseAST* ast) {
 
 void
 CallExpr::insertAtTail(BaseAST* ast) {
+  argList->insertAtTail(ast);
+}
+
+
+void
+CallExpr::insertAtHead(AList<Expr>* ast) {
+  argList->insertAtHead(ast);
+}
+
+
+void
+CallExpr::insertAtTail(AList<Expr>* ast) {
   argList->insertAtTail(ast);
 }
 

@@ -1029,7 +1029,9 @@ tuple_paren_expr:
         $$ = $2->get(1);
         $$->remove();
       } else {
-        $$ = new CallExpr("_tuple", new_IntLiteral($2->length()), $2);
+        CallExpr* tupleCall = new CallExpr("_tuple", $2);
+        tupleCall->insertAtHead(new_IntLiteral(tupleCall->argList->length()));
+        $$ = tupleCall;
       }
     }
 ;
@@ -1093,7 +1095,7 @@ seq_expr:
   TSEQBEGIN expr_ls TSEQEND
     {
       if ($2->length() == 0)
-        USR_FATAL($2, "Invalid empty sequence literal '(//)'");
+        USR_FATAL("Invalid empty sequence literal '(//)'");
       Expr* seqLiteral = new CallExpr("seq", $2->first()->copy());
       for_alist(Expr, element, $2) {
         element->remove();

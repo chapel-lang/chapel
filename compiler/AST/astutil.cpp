@@ -1,3 +1,4 @@
+#include "astutil.h"
 #include "baseAST.h"
 #include "expr.h"
 #include "stmt.h"
@@ -21,6 +22,8 @@ void collect_functions(Vec<FnSymbol*>* fns) {
 }
 
 void collect_asts(Vec<BaseAST*>* asts, BaseAST* ast) {
+  if (ast->astType == LIST)
+    INT_FATAL("ha");
   asts->add(ast);
   if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
     if (dynamic_cast<UnresolvedSymbol*>(sym->var))
@@ -81,12 +84,40 @@ void collect_top_asts(Vec<BaseAST*>* asts, BaseAST* ast) {
 }
 
 
+void collect_top_asts(Vec<BaseAST*>* asts, AList<Stmt>* ast) {
+  for_alist(Stmt, stmt, ast) {
+    collect_top_asts(asts, stmt);
+  }
+}
+
+
+void collect_asts(Vec<BaseAST*>* asts, AList<Stmt>* ast) {
+  for_alist(Stmt, stmt, ast) {
+    collect_asts(asts, stmt);
+  }
+}
+
+
+void collect_asts_postorder(Vec<BaseAST*>* asts, AList<Stmt>* ast) {
+  for_alist(Stmt, stmt, ast) {
+    collect_asts_postorder(asts, stmt);
+  }
+}
+
+
 void reset_file_info(BaseAST* baseAST, int lineno, char* filename) {
   Vec<BaseAST*> asts;
   collect_asts(&asts, baseAST);
   forv_Vec(BaseAST, ast, asts) {
     ast->lineno = lineno;
     ast->filename = filename;
+  }
+}
+
+
+void reset_file_info(AList<Stmt>* stmts, int lineno, char* filename) {
+  for_alist(Stmt, stmt, stmts) {
+    reset_file_info(stmt, lineno, filename);
   }
 }
 
@@ -244,6 +275,10 @@ void insert_help(BaseAST* ast,
                  Stmt* parentStmt,
                  Symbol* parentSymbol,
                  SymScope* parentScope) {
+
+  if (ast->astType == LIST)
+    INT_FATAL("ha");
+
   if (Symbol* sym = dynamic_cast<Symbol*>(ast)) {
     parentSymbol = sym;
     parentExpr = NULL;
@@ -316,46 +351,45 @@ void insert_help(BaseAST* ast,
 
 
 void remove_help(BaseAST* ast) {
+  if (ast->astType == LIST)
+    INT_FATAL("ha");
   if (Stmt* stmt = dynamic_cast<Stmt*>(ast)) {
     stmt->parentScope = NULL;
     stmt->parentSymbol = NULL;
     stmt->parentStmt = NULL;
+    if (BlockStmt* block = dynamic_cast<BlockStmt*>(ast)) {
+      if (block->blockTag != BLOCK_SCOPELESS) {
+        if (block->blkScope && block->blkScope->astParent == block)
+          block->blkScope = NULL;
+      }
+    }
   }
   if (Expr* expr = dynamic_cast<Expr*>(ast)) {
     expr->parentScope = NULL;
     expr->parentSymbol = NULL;
     expr->parentStmt = NULL;
     expr->parentExpr = NULL;
-  }
-  if (DefExpr* defExpr = dynamic_cast<DefExpr*>(ast)) {
-    if (!dynamic_cast<ModuleSymbol*>(defExpr->sym)) {
-      if (defExpr->sym->parentScope)
-        defExpr->sym->parentScope->undefine(defExpr->sym);
-      defExpr->sym->parentScope = NULL;
+    if (DefExpr* defExpr = dynamic_cast<DefExpr*>(ast)) {
+      if (defExpr->sym && !dynamic_cast<ModuleSymbol*>(defExpr->sym)) {
+        if (defExpr->sym->parentScope)
+          defExpr->sym->parentScope->undefine(defExpr->sym);
+        defExpr->sym->parentScope = NULL;
+      }
+      if (FnSymbol* fn = dynamic_cast<FnSymbol*>(defExpr->sym)) {
+        fn->argScope = NULL;
+      }
+      if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(defExpr->sym)) {
+        if (ClassType* type = dynamic_cast<ClassType*>(typeSym->type)) {
+          type->structScope = NULL;
+        }
+      }
     }
   }
 
   Vec<BaseAST*> asts;
   get_ast_children(ast, asts);
-  forv_Vec(BaseAST, ast, asts)
-    remove_help(ast);
-
-  if (BlockStmt* block = dynamic_cast<BlockStmt*>(ast)) {
-    if (block->blockTag != BLOCK_SCOPELESS) {
-      if (block->blkScope && block->blkScope->astParent == block)
-        block->blkScope = NULL;
-    }
-  }
-  if (DefExpr* defExpr = dynamic_cast<DefExpr*>(ast)) {
-    if (FnSymbol* fn = dynamic_cast<FnSymbol*>(defExpr->sym)) {
-      fn->argScope = NULL;
-    }
-    if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(defExpr->sym)) {
-      if (ClassType* type = dynamic_cast<ClassType*>(typeSym->type)) {
-        type->structScope = NULL;
-      }
-    }
-  }
+  forv_Vec(BaseAST, a, asts)
+    remove_help(a);
 }
 
 

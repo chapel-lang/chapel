@@ -87,6 +87,10 @@ class CallExpr : public Expr {
            BaseAST* arg3 = NULL);
   CallExpr(char* name, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
            BaseAST* arg3 = NULL, BaseAST* arg4 = NULL);
+  CallExpr(BaseAST* base, AList<Expr>* args);
+  CallExpr(PrimitiveOp *prim, AList<Expr>* args);
+  CallExpr(PrimitiveTag prim, AList<Expr>* args);
+  CallExpr(char* name, AList<Expr>* args);
   virtual void verify(); 
   COPY_DEF(CallExpr);
 
@@ -97,6 +101,8 @@ class CallExpr : public Expr {
 
   void insertAtHead(BaseAST* ast);
   void insertAtTail(BaseAST* ast);
+  void insertAtHead(AList<Expr>* ast);
+  void insertAtTail(AList<Expr>* ast);
 
   FnSymbol* isResolved(void);
   bool isNamed(char*);

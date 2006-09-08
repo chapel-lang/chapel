@@ -201,27 +201,9 @@ void BaseAST::replace(BaseAST* new_ast) {
 }
 
 
-bool BaseAST::isList(void) {
-  return false;
-}
-
-
-void BaseAST::insertBeforeListHelper(BaseAST* ast) {
-  INT_FATAL(this, "Illegal call to insertAfterListHelper");
-}
-
-
-void BaseAST::insertAfterListHelper(BaseAST* ast) {
-  INT_FATAL(this, "Illegal call to insertAfterListHelper");
-}
-
-
 void BaseAST::insertBefore(BaseAST* new_ast) {
   if (new_ast->parentSymbol) {
     INT_FATAL(new_ast, "Argument is already in AST in BaseAST::insertBefore");
-  }
-  if (isList()) {
-    INT_FATAL(this, "Cannot call insertBefore on a list, use insertAtHead");
   }
   if (!prev) {
     INT_FATAL(this, "Cannot call insertBefore on BaseAST not in a list");
@@ -235,27 +217,20 @@ void BaseAST::insertBefore(BaseAST* new_ast) {
     new_ast = new DefExpr(dynamic_cast<Symbol*>(new_ast));
   if (dynamic_cast<Expr*>(this) && dynamic_cast<Symbol*>(new_ast))
     new_ast = new SymExpr(dynamic_cast<Symbol*>(new_ast));
-  if (new_ast->isList()) {
-    new_ast->insertBeforeListHelper(this);
-  } else {
-    new_ast->prev = prev;
-    new_ast->next = this;
-    prev->next = new_ast;
-    prev = new_ast;
-    ASTContext context = getContext();
-    if (context.parentSymbol)
-      insert_help(new_ast, context.parentExpr, context.parentStmt,
-                  context.parentSymbol, context.parentScope);
-  }
+  new_ast->prev = prev;
+  new_ast->next = this;
+  prev->next = new_ast;
+  prev = new_ast;
+  ASTContext context = getContext();
+  if (context.parentSymbol)
+    insert_help(new_ast, context.parentExpr, context.parentStmt,
+                context.parentSymbol, context.parentScope);
 }
 
 
 void BaseAST::insertAfter(BaseAST* new_ast) {
   if (new_ast->parentSymbol) {
     INT_FATAL(new_ast, "Argument is already in AST in BaseAST::insertAfter");
-  }
-  if (isList()) {
-    INT_FATAL(this, "Cannot call insertAfter on a list, use insertAtTail");
   }
   if (!next) {
     INT_FATAL(this, "Cannot call insertAfter on BaseAST not in a list");
@@ -269,51 +244,32 @@ void BaseAST::insertAfter(BaseAST* new_ast) {
     new_ast = new DefExpr(dynamic_cast<Symbol*>(new_ast));
   if (dynamic_cast<Expr*>(this) && dynamic_cast<Symbol*>(new_ast))
     new_ast = new SymExpr(dynamic_cast<Symbol*>(new_ast));
-  if (new_ast->isList()) {
-    new_ast->insertAfterListHelper(this);
-  } else {
-    new_ast->prev = this;
-    new_ast->next = next;
-    next->prev = new_ast;
-    next = new_ast; 
-    ASTContext context = getContext();
-    if (context.parentSymbol)
-      insert_help(new_ast, context.parentExpr, context.parentStmt,
-                  context.parentSymbol, context.parentScope);
-  }
+  new_ast->prev = this;
+  new_ast->next = next;
+  next->prev = new_ast;
+  next = new_ast; 
+  ASTContext context = getContext();
+  if (context.parentSymbol)
+    insert_help(new_ast, context.parentExpr, context.parentStmt,
+                context.parentSymbol, context.parentScope);
 }
 
 
-void BaseAST::preCopy(ASTMap*& map,
-                      Vec<BaseAST*>* update_list,
-                      bool internal) {
+void BaseAST::preCopy(ASTMap*& map, bool internal) {
   if (!map) {
     map = new ASTMap();
   }
 }
 
 
-void BaseAST::postCopy(BaseAST* copy,
-                       ASTMap* map,
-                       Vec<BaseAST*>* update_list,
-                       bool internal) {
+void BaseAST::postCopy(BaseAST* copy, ASTMap* map, bool internal) {
   copy->lineno = lineno;
   copy->filename = filename;
   if (Symbol* s = dynamic_cast<Symbol*>(copy))
     s->addPragmas(&(dynamic_cast<Symbol*>(this)->pragmas));
   map->put(this, copy);
-  if (!internal) {
-    if (update_list) {
-      for (int j = 0; j < update_list->n; j++) {
-        for (int i = 0; i < map->n; i++) {
-          if (update_list->v[j] == map->v[i].key) {
-            update_list->v[j] = map->v[i].value;
-          }
-        }
-      }
-    }
+  if (!internal)
     update_symbols(copy, map);
-  }
 }
 
 
@@ -552,21 +508,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int sentinels) {
     AST_ADD_LIST(ClassType, inherits, Expr);
     break;
   case LIST:
-    if (AList<Stmt>* stmts = dynamic_cast<AList<Stmt>*>(a)) {
-      for_alist(Stmt, stmt, stmts) {
-        get_ast_children(stmt, asts, sentinels);
-      }
-    } else if (AList<Expr>* exprs = dynamic_cast<AList<Expr>*>(a)) {
-      for_alist(Expr, expr, exprs) {
-        get_ast_children(expr, asts, sentinels);
-      }
-    } else if (AList<DefExpr>* exprs = dynamic_cast<AList<DefExpr>*>(a)) {
-      for_alist(DefExpr, expr, exprs) {
-        get_ast_children(expr, asts, sentinels);
-      }
-    } else
-      INT_FATAL(a, "Unexpected case in get_ast_children (LIST)");
-    break;
   case AST_TYPE_END:
     INT_FATAL(a, "Unexpected case in get_ast_children (AST_TYPE_END)");
     break;

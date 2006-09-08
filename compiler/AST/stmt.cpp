@@ -275,9 +275,7 @@ BlockStmt::copyInner(ASTMap* map) {
 
 
 void BlockStmt::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == body) {
-    body = dynamic_cast<AList<Stmt>*>(new_ast);
-  } else if (old_ast == param_low) {
+  if (old_ast == param_low) {
     param_low = dynamic_cast<Expr*>(new_ast);
   } else if (old_ast == param_high) {
     param_high = dynamic_cast<Expr*>(new_ast);
@@ -385,7 +383,7 @@ static void
 codegenBegin( FILE* outfile, AList<Stmt> *body) {
   // Body should be one function call that we fork.
   if (body->length() != 1)
-    INT_FATAL( body, "begin codegen - expect only one function call");
+    INT_FATAL("begin codegen - expect only one function call");
 
   fprintf( outfile, "_chpl_begin( ");
   for_alist (Stmt, stmt, body) {
@@ -454,6 +452,18 @@ BlockStmt::insertAtTail(BaseAST* ast) {
 }
 
 
+void
+BlockStmt::insertAtHead(AList<Stmt>* ast) {
+  body->insertAtHead(ast);
+}
+
+
+void
+BlockStmt::insertAtTail(AList<Stmt>* ast) {
+  body->insertAtTail(ast);
+}
+
+
 bool
 BlockStmt::isLoop(void) {
   return
@@ -471,30 +481,15 @@ CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
   thenStmt(NULL),
   elseStmt(NULL)
 {
-  BlockStmt* bs;
-  if (Stmt* s = dynamic_cast<Stmt*>(iThenStmt)) {
+  if (Stmt* s = dynamic_cast<Stmt*>(iThenStmt))
     thenStmt = new BlockStmt(s);
-  } else if (AList<Stmt>* s = dynamic_cast<AList<Stmt>*>(iThenStmt)) {
-    if (s->length() == 1 && (bs = dynamic_cast<BlockStmt*>(s->only()))) {
-      bs->remove();
-      thenStmt = bs;
-    } else
-      thenStmt = new BlockStmt(s);
-  } else {
+  else
     INT_FATAL(iThenStmt, "Bad then-stmt passed to CondStmt constructor");
-  }
-  if (!iElseStmt)
-    return;
-  if (Stmt* s = dynamic_cast<Stmt*>(iElseStmt)) {
-    elseStmt = new BlockStmt(s);
-  } else if (AList<Stmt>* s = dynamic_cast<AList<Stmt>*>(iElseStmt)) {
-    if (s->length() == 1 && (bs = dynamic_cast<BlockStmt*>(s->only()))) {
-      bs->remove();
-      elseStmt = bs;
-    } else
+  if (iElseStmt) {
+    if (Stmt* s = dynamic_cast<Stmt*>(iElseStmt))
       elseStmt = new BlockStmt(s);
-  } else {
-    INT_FATAL(iElseStmt, "Bad else-stmt passed to CondStmt constructor");
+    else
+      INT_FATAL(iElseStmt, "Bad else-stmt passed to CondStmt constructor");
   }
 }
 

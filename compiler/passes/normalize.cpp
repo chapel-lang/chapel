@@ -1355,7 +1355,9 @@ expand_var_args(FnSymbol* fn) {
             arg->defPoint->insertBefore(new_arg_def);
           }
           VarSymbol* var = new VarSymbol(arg->name);
-          fn->insertAtHead(new DefExpr(var, new CallExpr("_tuple", new_IntLiteral(n), actuals)));
+          CallExpr* tupleCall = new CallExpr("_tuple", actuals);
+          tupleCall->insertAtHead(new_IntLiteral(n));
+          fn->insertAtHead(new DefExpr(var, tupleCall));
           arg->defPoint->remove();
           ASTMap update;
           update.put(arg, var);

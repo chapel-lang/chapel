@@ -1,3 +1,4 @@
+#include "astutil.h"
 #include "expr.h"
 #include "passes.h"
 #include "stmt.h"
@@ -48,7 +49,10 @@ static void inline_call(CallExpr* call, Vec<Stmt*>* stmts) {
   collect_asts(&asts, fn_body);
   for_alist(Stmt, stmt, fn_body)
     stmts->add(stmt);
-  call->parentStmt->insertBefore(fn_body);
+  for_alist(Stmt, stmt, fn_body) {
+    stmt->remove();
+    call->parentStmt->insertBefore(stmt);
+  }
   forv_Vec(BaseAST, ast, asts) {
     if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
       if (Expr* expr = dynamic_cast<Expr*>(map.get(sym->var)))

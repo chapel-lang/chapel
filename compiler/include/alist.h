@@ -5,11 +5,12 @@
 
 #include <stdio.h>
 #include "chpl.h"
-#include "astutil.h"
 #include "baseAST.h"
 
+extern void update_symbols(BaseAST* ast, ASTMap* map);
+
 template <class elemType>
-class AList : public BaseAST {
+class AList : public gc {
  public:
   elemType* head;
   elemType* tail;
@@ -23,9 +24,7 @@ class AList : public BaseAST {
   void clear(void);
 
   // copy routines
-  virtual AList<elemType>* copy(ASTMap* map = NULL,
-                                Vec<BaseAST*>* update_list = NULL,
-                                bool internal = false);
+  virtual AList<elemType>* copy(ASTMap* map = NULL, bool internal = false);
 
   // checks for length
   bool isEmpty(void);
@@ -41,14 +40,11 @@ class AList : public BaseAST {
 
   // add element(s) at beginning of list
   void insertAtHead(BaseAST* new_ast);
+  void insertAtHead(AList<elemType>* new_ast);
 
   // add element(s) at end of list
   void insertAtTail(BaseAST* new_ast);
-
-  // helper routines for insertAfter/insertBefore
-  bool isList(void);
-  void insertBeforeListHelper(BaseAST* ast);
-  void insertAfterListHelper(BaseAST* ast);
+  void insertAtTail(AList<elemType>* new_ast);
 
   // different ways to print/codegen lists
   void print(FILE* outfile, char* separator = ", ");
@@ -121,7 +117,6 @@ class AList : public BaseAST {
 
 template <class elemType>
 AList<elemType>::AList() :
-  BaseAST(LIST),
   head(new elemType()),
   tail(new elemType())
 {
@@ -131,7 +126,6 @@ AList<elemType>::AList() :
 
 template <class elemType>
 AList<elemType>::AList(BaseAST* elem1) :
-  BaseAST(LIST),
   head(new elemType()),
   tail(new elemType())
 {
@@ -142,7 +136,6 @@ AList<elemType>::AList(BaseAST* elem1) :
 
 template <class elemType>
 AList<elemType>::AList(BaseAST* elem1, BaseAST* elem2) :
-  BaseAST(LIST),
   head(new elemType()),
   tail(new elemType())
 {
@@ -154,7 +147,6 @@ AList<elemType>::AList(BaseAST* elem1, BaseAST* elem2) :
 
 template <class elemType>
 AList<elemType>::AList(BaseAST* elem1, BaseAST* elem2, BaseAST* elem3) :
-  BaseAST(LIST),
   head(new elemType()),
   tail(new elemType())
 {
@@ -168,7 +160,6 @@ AList<elemType>::AList(BaseAST* elem1, BaseAST* elem2, BaseAST* elem3) :
 template <class elemType>
 AList<elemType>::AList(BaseAST* elem1, BaseAST* elem2,
                        BaseAST* elem3, BaseAST* elem4) :
-  BaseAST(LIST),
   head(new elemType()),
   tail(new elemType())
 {
@@ -226,12 +217,12 @@ elemType* AList<elemType>::last(void) {
 template <class elemType>
 elemType* AList<elemType>::only(void) {
   if (isEmpty()) {
-    INT_FATAL(this, "only() called on empty list");
+    INT_FATAL("only() called on empty list");
   }
   if (head->next->next == tail) {
     return first();
   } else {
-    INT_FATAL(this, "only() called on list with more than one element");
+    INT_FATAL("only() called on list with more than one element");
     return NULL;
   }
 }
@@ -240,7 +231,7 @@ elemType* AList<elemType>::only(void) {
 template <class elemType>
 elemType* AList<elemType>::get(int index) {
   if (index <=0) {
-    INT_FATAL(this, "Indexing list must use positive integer");
+    INT_FATAL("Indexing list must use positive integer");
   }
   int i = 0;
   for_alist(elemType, node, this) {
@@ -249,7 +240,7 @@ elemType* AList<elemType>::get(int index) {
       return node;
     }
   }
-  INT_FATAL(this, "Indexing list out of bounds");
+  INT_FATAL("Indexing list out of bounds");
   return NULL;
 }
 
@@ -264,6 +255,15 @@ void AList<elemType>::insertAtHead(BaseAST* new_ast) {
 
 
 template <class elemType>
+void AList<elemType>::insertAtHead(AList<elemType>* new_ast) {
+  for_alist_backward(elemType, elem, new_ast) {
+    elem->remove();
+    insertAtHead(elem);
+  }
+}
+
+
+template <class elemType>
 void AList<elemType>::insertAtTail(BaseAST* new_ast) {
   if (new_ast->parentSymbol) {
     INT_FATAL(new_ast, "Argument is already in AST in AList::insertAtTail");
@@ -273,25 +273,10 @@ void AList<elemType>::insertAtTail(BaseAST* new_ast) {
 
 
 template <class elemType>
-bool AList<elemType>::isList(void) {
-  return true;
-}
-
-
-template <class elemType>
-void AList<elemType>::insertBeforeListHelper(BaseAST* ast) {
-  for_alist(elemType, elem, this) {
+void AList<elemType>::insertAtTail(AList<elemType>* new_ast) {
+  for_alist(elemType, elem, new_ast) {
     elem->remove();
-    ast->insertBefore(elem);
-  }
-}
-
-
-template <class elemType>
-void AList<elemType>::insertAfterListHelper(BaseAST* ast) {
-  for_alist_backward(elemType, elem, this) {
-    elem->remove();
-    ast->insertAfter(elem);
+    insertAtTail(elem);
   }
 }
 
@@ -342,10 +327,7 @@ void AList<elemType>::codegenDef(FILE* outfile, char* separator) {
 
 
 template <class elemType>
-AList<elemType>*
-AList<elemType>::copy(ASTMap* map,
-                      Vec<BaseAST*>* update_list,
-                      bool internal) {
+AList<elemType>* AList<elemType>::copy(ASTMap* map, bool internal) {
   if (isEmpty()) {
     return new AList<elemType>();
   }
@@ -362,18 +344,7 @@ AList<elemType>::copy(ASTMap* map,
     newList->insertAtTail(newnode);
   }
 
-  newList->lineno = lineno;
-  newList->filename = filename;
   if (!internal) {
-    if (update_list) {
-      for (int j = 0; j < update_list->n; j++) {
-        for (int i = 0; i < map->n; i++) {
-          if (update_list->v[j] == map->v[i].key) {
-            update_list->v[j] = map->v[i].value;
-          }
-        }
-      }
-    }
     for_alist(elemType, node, newList)
       update_symbols(node, map);
   }

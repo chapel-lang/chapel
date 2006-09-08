@@ -23,8 +23,10 @@ static void change_cast_in_where(FnSymbol* fn);
 
 static void
 flatten_scopeless_block(BlockStmt* block) {
-  for_alist(Stmt, stmt, block->body)
-    block->insertBefore(stmt->remove());
+  for_alist(Stmt, stmt, block->body) {
+    stmt->remove();
+    block->insertBefore(stmt);
+  }
   block->remove();
 }
 

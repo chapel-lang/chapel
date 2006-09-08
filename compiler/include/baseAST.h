@@ -58,24 +58,18 @@ enum astType_t {
 
 extern char* astTypeName[];
 
-#define isSomeStmt(_x) (((_x) >= STMT) && (_x) < EXPR)
-#define isSomeExpr(_x) (((_x) >= EXPR) && (_x) < SYMBOL)
-#define isSomeSymbol(_x) (((_x) >= SYMBOL) && (_x) < TYPE)
-#define isSomeType(_x) (((_x) >= TYPE) && (_x) < LIST)
-
 #define COPY_DEF(type)                                   \
   virtual type* copy(Map<BaseAST*,BaseAST*>* map = NULL, \
-                     Vec<BaseAST*>* update_list = NULL,  \
                      bool internal = false) {            \
-    preCopy(map, update_list, internal);                 \
+    preCopy(map, internal);                              \
     type* _this = copyInner(map);                        \
-    postCopy(_this, map, update_list, internal);         \
+    postCopy(_this, map, internal);                      \
     return _this;                                        \
   }                                                      \
   virtual type* copyInner(Map<BaseAST*,BaseAST*>* map)
 
 #define COPY(c) (c ? c->copy() : NULL)
-#define COPY_INT(c) (c ? c->copy(map, NULL, true) : NULL)
+#define COPY_INT(c) (c ? c->copy(map, true) : NULL)
 
 typedef struct _ASTContext {
   SymScope* parentScope;
@@ -126,15 +120,10 @@ class BaseAST : public gc {
   void insertBefore(BaseAST* new_ast);
   void insertAfter(BaseAST* new_ast);
 
-  // Helper routines for insertAfter/insertBefore
-  virtual bool isList(void);
-  virtual void insertBeforeListHelper(BaseAST* ast);
-  virtual void insertAfterListHelper(BaseAST* ast);
-
 // need to put this as default value to copy for new interface
 //    new ASTMap();
-  void preCopy(Map<BaseAST*,BaseAST*>*& map, Vec<BaseAST*>* update_list, bool internal);
-  void postCopy(BaseAST* copy, Map<BaseAST*,BaseAST*>* map, Vec<BaseAST*>* update_list, bool internal);
+  void preCopy(Map<BaseAST*,BaseAST*>*& map, bool internal);
+  void postCopy(BaseAST* copy, Map<BaseAST*,BaseAST*>* map, bool internal);
 
   char* stringLoc(void);
   void printLoc(FILE* outfile);

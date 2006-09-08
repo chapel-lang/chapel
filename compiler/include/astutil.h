@@ -3,6 +3,7 @@
 
 #include "baseAST.h"
 #include "chplenum.h"
+#include "alist.h"
 
 class Type;
 class FnSymbol;
@@ -21,13 +22,17 @@ void collect_functions(Vec<FnSymbol*>* functions);
 // collect Stmts and Exprs in the AST and return them in vectors
 void collect_asts(Vec<BaseAST*>* asts);
 void collect_asts(Vec<BaseAST*>* asts, BaseAST* ast);
+void collect_asts(Vec<BaseAST*>* asts, AList<Stmt>* ast);
 void collect_asts_postorder(Vec<BaseAST*>* asts);
 void collect_asts_postorder(Vec<BaseAST*>* asts, BaseAST* ast);
+void collect_asts_postorder(Vec<BaseAST*>* asts, AList<Stmt>* ast);
 void collect_top_asts(Vec<BaseAST*>* asts, BaseAST* ast);
+void collect_top_asts(Vec<BaseAST*>* asts, AList<Stmt>* ast);
 
 // utility routines for clearing and resetting lineno and filename
 void clear_file_info(BaseAST* baseAST);
 void reset_file_info(BaseAST* baseAST, int lineno, char* filename);
+void reset_file_info(AList<Stmt>* baseAST, int lineno, char* filename);
 
 // compute call sites FnSymbol::calls
 void compute_call_sites();

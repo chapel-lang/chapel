@@ -665,8 +665,6 @@ FnSymbol::copyInner(ASTMap* map) {
 void FnSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == body) {
     body = dynamic_cast<BlockStmt*>(new_ast);
-  } else if (old_ast == formals) {
-    formals = dynamic_cast<AList<DefExpr>*>(new_ast);
   } else if (old_ast == where) {
     where = dynamic_cast<BlockStmt*>(new_ast);
   } else if (old_ast == retExprType) {
@@ -1303,6 +1301,18 @@ FnSymbol::insertAtTail(BaseAST* ast) {
 }
 
 
+void
+FnSymbol::insertAtHead(AList<Stmt>* ast) {
+  body->insertAtHead(ast);
+}
+
+
+void
+FnSymbol::insertAtTail(AList<Stmt>* ast) {
+  body->insertAtTail(ast);
+}
+
+
 EnumSymbol::EnumSymbol(char* init_name) :
   Symbol(SYMBOL_ENUM, init_name)
 { }
@@ -1375,11 +1385,7 @@ void ModuleSymbol::codegenDef(void) {
 
 
 void ModuleSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == stmts) {
-    stmts = dynamic_cast<AList<Stmt>*>(new_ast);
-  } else {
-    INT_FATAL(this, "Unexpected case in ModuleSymbol::replaceChild");
-  }
+  INT_FATAL(this, "Unexpected case in ModuleSymbol::replaceChild");
 }
 
 

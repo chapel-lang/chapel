@@ -8,6 +8,13 @@
 #include "type.h"
 
 
+BlockStmt* build_chpl_stmt(AList<Stmt>* stmts) {
+  BlockStmt* block = new BlockStmt(stmts);
+  block->blockTag = BLOCK_SCOPELESS;
+  return block;
+}
+
+
 BlockStmt* build_chpl_stmt(BaseAST* ast) {
   BlockStmt* block;
   if (!ast)
@@ -15,8 +22,6 @@ BlockStmt* build_chpl_stmt(BaseAST* ast) {
   else if (Expr* a = dynamic_cast<Expr*>(ast))
     block = new BlockStmt(new ExprStmt(a));
   else if (Stmt* a = dynamic_cast<Stmt*>(ast))
-    block = new BlockStmt(a);
-  else if (AList<Stmt>* a = dynamic_cast<AList<Stmt>*>(ast))
     block = new BlockStmt(a);
   else
     INT_FATAL(ast, "Illegal argument to build_chpl_stmt");
@@ -92,7 +97,7 @@ ModuleSymbol* build_module(char* name, modType type, AList<Stmt>* stmts) {
 
 CallExpr* build_primitive_call(AList<Expr>* exprs) {
   if (exprs->length() == 0)
-    INT_FATAL(exprs, "primitive has no name");
+    INT_FATAL("primitive has no name");
   Expr* expr = exprs->get(1);
   expr->remove();
   SymExpr* symExpr = dynamic_cast<SymExpr*>(expr);
@@ -420,7 +425,7 @@ AList<Stmt>* build_type_select(AList<Expr>* exprs, AList<Stmt>* whenstmts) {
       INT_FATAL("error in build_select");
     if (conds->argList->length() == 0) {
       if (has_otherwise)
-        USR_FATAL(exprs, "Type select statement has multiple otherwise clauses");
+        USR_FATAL(conds, "Type select statement has multiple otherwise clauses");
       has_otherwise = true;
       fn = new FnSymbol(stringcat("_typeselect", intstring(uid)));
       int lid = 1;

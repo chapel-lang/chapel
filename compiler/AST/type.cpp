@@ -252,8 +252,6 @@ EnumType::copyInner(ASTMap* map) {
 void EnumType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == defaultValue) {
     defaultValue = dynamic_cast<Symbol*>(new_ast);
-  } else if (old_ast == constants) {
-    constants = dynamic_cast<AList<DefExpr>*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in Type::replaceChild");
   }
@@ -523,10 +521,6 @@ void ClassType::addDeclarations(AList<Stmt>* stmts, bool tail) {
 void ClassType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == defaultValue) {
     defaultValue = dynamic_cast<Symbol*>(new_ast);
-  } else if (old_ast == fields) {
-    fields = dynamic_cast<AList<DefExpr>*>(new_ast);
-  } else if (old_ast == inherits) {
-    inherits = dynamic_cast<AList<Expr>*>(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in Type::replaceChild");
   }

@@ -98,6 +98,8 @@ class BlockStmt : public Stmt {
 
   void insertAtHead(BaseAST* ast);
   void insertAtTail(BaseAST* ast);
+  void insertAtHead(AList<Stmt>* ast);
+  void insertAtTail(AList<Stmt>* ast);
 
   bool isLoop(void);
 };
