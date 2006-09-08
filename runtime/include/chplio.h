@@ -14,6 +14,8 @@
 #define _default_format_write_int32       "%d"
 #define _default_format_write_int64       "%lld" /* long long int */
 
+#define _default_format_read_uint64       "%llu"
+
 #define _default_format_write_uint8       "%u"
 #define _default_format_write_uint16      "%u"
 #define _default_format_write_uint32      "%u"

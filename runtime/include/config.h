@@ -24,6 +24,7 @@ void initSetValue(char* varName, char* value, char* moduleName);
 char* lookupSetValue(char* varName, char* moduleName);
 void installConfigVar(char* varName, char* value, char* moduleName);
 int setInCommandLine_int64(char* varName, _int64* value, char* moduleName);
+int setInCommandLine_uint64(char* varName, _uint64* value, char* moduleName);
 int setInCommandLine_float64(char* varName, _float64* value, char* moduleName);
 int setInCommandLine_bool(char* varName, _bool* value, char* moduleName);
 int setInCommandLine_string(char* varName, _string* value, char* moduleName);

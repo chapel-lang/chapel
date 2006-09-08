@@ -412,6 +412,27 @@ int setInCommandLine_int64(char* varName, _int64* value,
 }
 
 
+int setInCommandLine_uint64(char* varName, _uint64* value, char* moduleName) {
+  int varSet = 0;
+  char* setValue = lookupSetValue(varName, moduleName);
+
+  if (setValue) {
+    char extraChars;
+    int numScans = sscanf(setValue, _default_format_read_uint64"%c", 
+                          value, &extraChars);
+    if (numScans == 1) {
+      varSet = 1;
+    } else {
+      char* message = _glom_strings(5, "\"", setValue, "\" is not a valid "
+                                    "value for config var \"", varName, 
+                                    "\" of type uint");
+      printError(message);
+    }
+  }
+  return varSet;
+}  
+
+
 int setInCommandLine_float64(char* varName, _float64* value, 
                              char* moduleName) {
   int varSet = 0;
