@@ -74463,3 +74463,22 @@ Log message:
 Modified files:
 	chapel/test/: paratest.client.pl paratest.server.pl 
 
+---------------------------------------------------------------------------
+
+09/08/06 09:21:54 -- deitz
+
+Log message:
+	Reworked AList<> so that it is no longer a subclass of BaseAST.
+	
+	Removed update_list functionality from copy which was unused.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp baseAST.cpp build.cpp expr.cpp 
+	                      stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: alist.h astutil.h baseAST.h build.h 
+	                          expr.h stmt.h symbol.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: cleanup.cpp filesToAST.cpp 
+	                         inlineFunctions.cpp normalize.cpp 
+	chapel/test/types/seq/bradc/: emptySeq.good 
+
