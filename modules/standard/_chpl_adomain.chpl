@@ -263,11 +263,11 @@ class _adomain {
 
   def getNextCursor(c) {
     for param i in 1..rank {
-      c(i) = ranges(i).getNextCursor(c(i));
-      if ranges(i).isValidCursor?(c(i)) then
+      c(rank-i+1) = ranges(rank-i+1).getNextCursor(c(rank-i+1));
+      if ranges(rank-i+1).isValidCursor?(c(rank-i+1)) then
         return c;
       else
-        c(i) = ranges(i).getHeadCursor();
+        c(rank-i+1) = ranges(rank-i+1).getHeadCursor();
     }
     c(1) = ranges(1)._high+1;
     return c;
