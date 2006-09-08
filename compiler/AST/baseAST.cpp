@@ -87,8 +87,7 @@ BaseAST::BaseAST(astType_t type) :
       filename = currentFilename;
     }
   }
-  if (astType != LIST)
-    gAsts.add(this);
+  gAsts.add(this);
 }
 
 
@@ -407,8 +406,6 @@ char* astTypeName[AST_TYPE_END+1] = {
   "UserType",
   "ClassType",
 
-  "List",
-
   "AST_TYPE_END"
 };
 
@@ -507,7 +504,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int sentinels) {
     AST_ADD_LIST(ClassType, fields, DefExpr);
     AST_ADD_LIST(ClassType, inherits, Expr);
     break;
-  case LIST:
   case AST_TYPE_END:
     INT_FATAL(a, "Unexpected case in get_ast_children (AST_TYPE_END)");
     break;

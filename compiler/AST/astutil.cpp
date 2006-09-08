@@ -22,8 +22,6 @@ void collect_functions(Vec<FnSymbol*>* fns) {
 }
 
 void collect_asts(Vec<BaseAST*>* asts, BaseAST* ast) {
-  if (ast->astType == LIST)
-    INT_FATAL("ha");
   asts->add(ast);
   if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
     if (dynamic_cast<UnresolvedSymbol*>(sym->var))
@@ -275,10 +273,6 @@ void insert_help(BaseAST* ast,
                  Stmt* parentStmt,
                  Symbol* parentSymbol,
                  SymScope* parentScope) {
-
-  if (ast->astType == LIST)
-    INT_FATAL("ha");
-
   if (Symbol* sym = dynamic_cast<Symbol*>(ast)) {
     parentSymbol = sym;
     parentExpr = NULL;
@@ -351,8 +345,6 @@ void insert_help(BaseAST* ast,
 
 
 void remove_help(BaseAST* ast) {
-  if (ast->astType == LIST)
-    INT_FATAL("ha");
   if (Stmt* stmt = dynamic_cast<Stmt*>(ast)) {
     stmt->parentScope = NULL;
     stmt->parentSymbol = NULL;

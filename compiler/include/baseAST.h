@@ -51,8 +51,6 @@ enum astType_t {
   TYPE_USER,
   TYPE_CLASS,
 
-  LIST,
-
   AST_TYPE_END 
 };
 
