@@ -74613,3 +74613,30 @@ Modified files:
 	                                 test_array_arg5.good 
 	                                 test_array_arg6.good 
 
+---------------------------------------------------------------------------
+
+09/08/06 16:16:26 -- bradc
+
+Log message:
+	Refactored modulefinder code as suggested by Steve --
+	gave it its own modulefinder.lex file rather than
+	reusing the chapel.lex file in order to reduce the
+	amount of work required when adding new tokens to the
+	parser (these will simply be handled by the TOTHER
+	catch-all token in modulefinder.lex).
+	
+	As a result, modulefinder.lex/y should only need to
+	be updated when something structural in the code that
+	could affect where modules are found changes -- for
+	example, comments, string literals, and other constructs
+	that involve nesting or require scanning until the end
+	of something is found.
+
+Modified files:
+	chapel/compiler/parser/: Makefile chapel.lex modulefinder.y 
+	                         processTokens.cpp 
+Added files:
+	chapel/compiler/parser/: modulefinder.lex 
+Removed files:
+	chapel/compiler/parser/: lexincludes.h 
+
