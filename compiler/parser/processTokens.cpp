@@ -3,7 +3,15 @@
 #include "misc.h"
 #include "processTokens.h"
 #include "yy.h"
-#include "lexincludes.h"
+#ifndef MODULE_FINDER
+#include "chapel.tab.h"
+#else
+#include "modulefinder.tab.h"
+#define countNewline()
+#define countSingleLineComment(x)
+#define countMultiLineComment(x)
+#define countCommentLine()
+#endif
 
 extern YYLTYPE yylloc;
 

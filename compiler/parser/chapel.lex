@@ -2,7 +2,8 @@
 
 #include <stdio.h>
 #include <typeinfo>
-#include "lexincludes.h"
+#include "lexyacc.h"
+#include "chapel.tab.h"
 
 /* make sure flex-generated code uses these */
 #ifdef USE_GC

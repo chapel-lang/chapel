@@ -25,8 +25,8 @@ CLEAN_TARGS += \
 lex.yy.c: chapel.lex chapel.tab.h
 	flex chapel.lex
 
-modulefinder.lex.yy.c: chapel.lex modulefinder.tab.h
-	flex -o$@ chapel.lex
+modulefinder.lex.yy.c: modulefinder.lex modulefinder.tab.h
+	flex -o$@ modulefinder.lex
 
 #BLC: This rule uses two hacks: 
 #     - one to avoid using return rather than $$ which has cost me hours 
