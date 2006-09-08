@@ -74528,3 +74528,31 @@ Added files:
 	                              test_no_bounds_checking_false2.compopts 
 	                              test_no_bounds_checking_false2.good 
 
+---------------------------------------------------------------------------
+
+09/08/06 11:28:04 -- deitz
+
+Log message:
+	Added initial support for constructors.  You can now write your own
+	constructors (it is a constructor because it has the same name as the
+	class) but there is no way to call another constructor, etc.  Added a
+	test case to show it works.
+	
+	Added a couple of error-catching constructors to the arithmetic
+	sequence class that use the error construct.  These constructors catch
+	the case where the user is trying to construct an arithmetic sequence
+	out of non-integers.
+	
+	Removed trivial/bradc/uintloop.future and updated .good to admit that
+	this is correctly an error.  Brad- take a look.
+
+Modified files:
+	chapel/compiler/passes/: normalize.cpp scopeResolve.cpp 
+	chapel/modules/standard/: _chpl_seq.chpl 
+	chapel/test/trivial/bradc/: uintloop.good 
+Added files:
+	chapel/test/classes/deitz/constructors/: test_construct1.chpl 
+	                                         test_construct1.good 
+Removed files:
+	chapel/test/trivial/bradc/: uintloop.future 
+
