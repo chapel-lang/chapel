@@ -74556,3 +74556,14 @@ Added files:
 Removed files:
 	chapel/test/trivial/bradc/: uintloop.future 
 
+---------------------------------------------------------------------------
+
+09/08/06 14:38:37 -- bradc
+
+Log message:
+	Added support to the runtime for uint config variables.
+
+Modified files:
+	chapel/runtime/include/: chplio.h config.h 
+	chapel/runtime/src/: config.c 
+
