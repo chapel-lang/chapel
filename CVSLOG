@@ -74482,3 +74482,14 @@ Modified files:
 	                         inlineFunctions.cpp normalize.cpp 
 	chapel/test/types/seq/bradc/: emptySeq.good 
 
+---------------------------------------------------------------------------
+
+09/08/06 10:05:15 -- deitz
+
+Log message:
+	Minor cleanup resulting from AList change.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp baseAST.cpp 
+	chapel/compiler/include/: baseAST.h 
+
