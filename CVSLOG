@@ -74640,3 +74640,35 @@ Added files:
 Removed files:
 	chapel/compiler/parser/: lexincludes.h 
 
+---------------------------------------------------------------------------
+
+09/08/06 16:49:32 -- deitz
+
+Log message:
+	This checkin gets the serial version of the NAS FT benchmark in Chapel
+	up and running!  This is a milestone but note that it runs very slowly.
+	
+	Temporarily disabled folding of floating point parameters and fixed
+	the parsing of complex literals to operate on the character string
+	like the parsing of float literals.
+	
+	Fixed a bug in the working version of the NAS FT serial Chapel code in
+	which I had written "m-1" instead of "m-l".
+	
+	Updated the NAS FT serial Chapel code to use scientific notation for
+	the floating point literals.
+	
+	Removed the NOTEST file in test/npb/ft.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: normalize.cpp 
+	chapel/test/npb/ft/: ft-serial-working1.chpl 
+Added files:
+	chapel/test/npb/ft/: ft-serial-working1.good ft-serial.future 
+	                     ft-serial.good ft-serial.notest 
+Removed files:
+	chapel/test/npb/ft/: NOTEST 
+
