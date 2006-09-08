@@ -74567,3 +74567,18 @@ Modified files:
 	chapel/runtime/include/: chplio.h config.h 
 	chapel/runtime/src/: config.c 
 
+---------------------------------------------------------------------------
+
+09/08/06 14:43:42 -- deitz
+
+Log message:
+	Improved adomain isValidCursor routine improving performance further:
+	
+	  C                                    0.86 seconds
+	  old O3 Chapel "no bounds checking"  70.78 seconds
+	
+	  new O3 Chapel "no bounds checking"  57.77 seconds
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+
