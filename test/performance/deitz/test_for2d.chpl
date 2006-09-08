@@ -1,4 +1,4 @@
-const N = 128;
+const N = 1024;
 const ITERS = 100;
 
 var D = [1..N, 1..N];

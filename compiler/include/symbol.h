@@ -278,6 +278,7 @@ extern Symbol *gVoid;
 extern Symbol *gFile;
 extern VarSymbol *gTrue;
 extern VarSymbol *gFalse;
+extern VarSymbol *gBoundsChecking;
 
 extern Symbol *gMutex_p;
 extern Symbol *gCondVar_p;

@@ -25,6 +25,7 @@ Symbol *gCondVar_p = NULL;
 
 VarSymbol *gTrue = NULL;
 VarSymbol *gFalse = NULL;
+VarSymbol *gBoundsChecking = NULL;
 
 /*** ASTMap Cache vvv ***/
 class Inst : public gc {

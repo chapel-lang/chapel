@@ -443,10 +443,10 @@ class _aarray: _abase {
   }
 
   def this(ind : rank*int) var {
-    for param i in 1..rank do
-      if !_in(dom(i), ind(i)) {
-        halt("array index out of bounds: ", ind);
-      }
+    if boundsChecking
+      for param i in 1..rank do
+        if !_in(dom(i), ind(i)) then
+          halt("array index out of bounds: ", ind);
     var sum : int;
     for param i in 1..rank do
       sum = sum + (ind(i) - off(i)) * blk(i);

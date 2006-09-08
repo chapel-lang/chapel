@@ -21,6 +21,7 @@ extern int fnostdincs;
 extern int trace_level;
 
 extern bool unoptimized;
+extern bool no_bounds_checking;
 extern bool no_inline;
 extern bool no_scalar_replacement;
 extern bool report_inlining;

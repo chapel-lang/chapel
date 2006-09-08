@@ -775,6 +775,16 @@ void initPrimitiveTypes(void) {
   gTrue->immediate->num_index = INT_SIZE_1;
   uniqueConstantsHash.put(gTrue->immediate, gTrue);
 
+  gBoundsChecking = new VarSymbol("boundsChecking", dtBool, VAR_NORMAL, VAR_CONST);
+  rootScope->define(gBoundsChecking);
+  if (no_bounds_checking) {
+    gBoundsChecking->immediate = gFalse->immediate;
+    gBoundsChecking->cname = gFalse->cname;
+  } else {
+    gBoundsChecking->immediate = gTrue->immediate;
+    gBoundsChecking->cname = gTrue->cname;
+  }
+
   // WAW: could have a loop, but the following unrolling is more explicit.
   INIT_PRIMITIVE_INT( "int", 64);          // default size
   INIT_PRIMITIVE_INT( "int(8)", 8);

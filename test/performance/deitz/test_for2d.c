@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 #define myint long long int
-#define N 128
+#define N 1024
 #define ITERS 100
 
 #define A(i,j) ARR[i*N+j]
