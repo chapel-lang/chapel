@@ -74493,3 +74493,38 @@ Modified files:
 	chapel/compiler/AST/: astutil.cpp baseAST.cpp 
 	chapel/compiler/include/: baseAST.h 
 
+---------------------------------------------------------------------------
+
+09/08/06 10:09:09 -- deitz
+
+Log message:
+	Added support for the --no-bounds-checking compiler flag to disable
+	bounds checking.  This sets a param that is accessible by the standard
+	modules as well as user code called boundsChecking.  It is set to true
+	by default and false when the flag is used.
+	
+	Increased the size of the array in my performance test by a factor of
+	64 (from 128*128 to 1024*1024) resulting in more accurate times.
+	
+	Tests are with the -O3 flag.
+	
+	  C                             0.87 seconds
+	  Chapel                       83.14 seconds
+	  Chapel "no bounds checking"  70.78 seconds
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/include/: driver.h symbol.h 
+	chapel/compiler/main/: driver.cpp 
+	chapel/modules/standard/: _chpl_adomain.chpl 
+	chapel/test/performance/deitz/: test_for2d.c test_for2d.chpl 
+Added files:
+	chapel/test/compflags/deitz/: test_no_bounds_checking.chpl 
+	                              test_no_bounds_checking.good 
+	                              test_no_bounds_checking_false.chpl 
+	                              test_no_bounds_checking_false.compopts 
+	                              test_no_bounds_checking_false.good 
+	                              test_no_bounds_checking_false2.chpl 
+	                              test_no_bounds_checking_false2.compopts 
+	                              test_no_bounds_checking_false2.good 
+
