@@ -1258,9 +1258,9 @@ new_FloatLiteral(char *n, long double d, IF1_float_type float_size) {
 }
 
 Expr*
-new_ComplexLiteral(long double i, IF1_float_type float_size) {
+new_ComplexLiteral(char *n, long double i, IF1_float_type float_size) {
   char cstr[256];
-  sprintf( cstr, "_chpl_complex64(0.0, %Lg)", i);
+  sprintf( cstr, "_chpl_complex64(0.0, %s)", n);
   return new SymExpr(new_ComplexSymbol(cstr, 0.0, i, float_size));
 }
 

@@ -981,71 +981,6 @@ static void fold_call_expr(CallExpr* call) {
     }
   }
 
-  if (call->argList->length() == 2) {
-    if (call->get(1)->typeInfo() == dtString) // folding not handling strings yet
-      return;
-    SymExpr* a1 = dynamic_cast<SymExpr*>(call->get(1));
-    SymExpr* a2 = dynamic_cast<SymExpr*>(call->get(2));
-    if (a1 && a2) {
-      VarSymbol* v1 = dynamic_cast<VarSymbol*>(a1->var);
-      VarSymbol* v2 = dynamic_cast<VarSymbol*>(a2->var);
-      if (v1 && v2) {
-        Immediate* i1 = v1->immediate;
-        Immediate* i2 = v2->immediate;
-        if (i1 && i2) {
-          // WAW: folding not handling complex yet
-          if ((NUM_KIND_COMPLEX == i1->const_kind) ||
-              (NUM_KIND_COMPLEX == i2->const_kind)) {
-            return;
-          }
-
-          FOLD_CALL("+", P_prim_add);
-          FOLD_CALL("-", P_prim_subtract);
-          FOLD_CALL("*", P_prim_mult);
-          FOLD_CALL("/", P_prim_div);
-          FOLD_CALL("&", P_prim_and);
-          FOLD_CALL("|", P_prim_or);
-          FOLD_CALL("^", P_prim_xor);
-          FOLD_CALL("%", P_prim_mod);
-          FOLD_CALL("<", P_prim_less);
-          FOLD_CALL("<=", P_prim_lessorequal);
-          FOLD_CALL(">", P_prim_greater);
-          FOLD_CALL(">=", P_prim_greaterorequal);
-          FOLD_CALL("==", P_prim_equal);
-          FOLD_CALL("!=", P_prim_notequal);
-          FOLD_CALL("&&", P_prim_land);
-          FOLD_CALL("||", P_prim_lor);
-          FOLD_CALL("<<", P_prim_lsh);
-          FOLD_CALL(">>", P_prim_rsh);
-          FOLD_CALL("**", P_prim_pow);
-          if (call->isNamed("=")) {
-            call->replace(new SymExpr(v2));
-            return;
-          }
-        }
-      }
-    }
-  }
-
-  if (call->argList->length() == 1) {
-    SymExpr* a1 = dynamic_cast<SymExpr*>(call->get(1));
-    if (a1) {
-      VarSymbol* v1 = dynamic_cast<VarSymbol*>(a1->var);
-      if (v1) {
-        Immediate* i1 = v1->immediate;
-        Immediate* i2 = NULL;
-        if (i1) {
-          FOLD_CALL("+", P_prim_plus);
-          FOLD_CALL("-", P_prim_minus);
-          FOLD_CALL("~", P_prim_not);
-          FOLD_CALL("!", P_prim_lnot);
-        }
-
-        /* look for 8? */
-      }
-    }
-  }
-
   if (call->isNamed("==")) {
     if (isType(call->get(1)) || isType(call->get(2))) {
       Type* lt = call->get(1)->typeInfo();
@@ -1156,7 +1091,75 @@ static void fold_call_expr(CallExpr* call) {
       }
     }
   }
+
+  if (call->argList->length() == 2) {
+    if (call->get(1)->typeInfo() == dtString) // folding not handling strings yet
+      return;
+    if (is_float_type(call->get(1)->typeInfo()))
+      return;
+    SymExpr* a1 = dynamic_cast<SymExpr*>(call->get(1));
+    SymExpr* a2 = dynamic_cast<SymExpr*>(call->get(2));
+    if (a1 && a2) {
+      VarSymbol* v1 = dynamic_cast<VarSymbol*>(a1->var);
+      VarSymbol* v2 = dynamic_cast<VarSymbol*>(a2->var);
+      if (v1 && v2) {
+        Immediate* i1 = v1->immediate;
+        Immediate* i2 = v2->immediate;
+        if (i1 && i2) {
+          // WAW: folding not handling complex yet
+          if ((NUM_KIND_COMPLEX == i1->const_kind) ||
+              (NUM_KIND_COMPLEX == i2->const_kind)) {
+            return;
+          }
+
+          FOLD_CALL("+", P_prim_add);
+          FOLD_CALL("-", P_prim_subtract);
+          FOLD_CALL("*", P_prim_mult);
+          FOLD_CALL("/", P_prim_div);
+          FOLD_CALL("&", P_prim_and);
+          FOLD_CALL("|", P_prim_or);
+          FOLD_CALL("^", P_prim_xor);
+          FOLD_CALL("%", P_prim_mod);
+          FOLD_CALL("<", P_prim_less);
+          FOLD_CALL("<=", P_prim_lessorequal);
+          FOLD_CALL(">", P_prim_greater);
+          FOLD_CALL(">=", P_prim_greaterorequal);
+          FOLD_CALL("==", P_prim_equal);
+          FOLD_CALL("!=", P_prim_notequal);
+          FOLD_CALL("&&", P_prim_land);
+          FOLD_CALL("||", P_prim_lor);
+          FOLD_CALL("<<", P_prim_lsh);
+          FOLD_CALL(">>", P_prim_rsh);
+          FOLD_CALL("**", P_prim_pow);
+          if (call->isNamed("=")) {
+            call->replace(new SymExpr(v2));
+            return;
+          }
+        }
+      }
+    }
+  }
+
+  if (call->argList->length() == 1) {
+    SymExpr* a1 = dynamic_cast<SymExpr*>(call->get(1));
+    if (a1) {
+      VarSymbol* v1 = dynamic_cast<VarSymbol*>(a1->var);
+      if (v1) {
+        Immediate* i1 = v1->immediate;
+        Immediate* i2 = NULL;
+        if (i1) {
+          FOLD_CALL("+", P_prim_plus);
+          FOLD_CALL("-", P_prim_minus);
+          FOLD_CALL("~", P_prim_not);
+          FOLD_CALL("!", P_prim_lnot);
+        }
+
+        /* look for 8? */
+      }
+    }
+  }
 }
+
 
 static bool fold_def_expr(DefExpr* def) {
   Symbol* value = NULL;

@@ -1265,7 +1265,7 @@ literal:
 | IMAGLITERAL
     {
       yytext[strlen(yytext)-1] = '\0';
-      $$ = new_ComplexLiteral(atof(yytext));
+      $$ = new_ComplexLiteral(yytext, strtod(yytext, NULL));
     }
 | STRINGLITERAL
     { $$ = new_StringLiteral($1); }
