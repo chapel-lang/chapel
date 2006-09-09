@@ -74672,3 +74672,39 @@ Added files:
 Removed files:
 	chapel/test/npb/ft/: NOTEST 
 
+---------------------------------------------------------------------------
+
+09/08/06 17:21:56 -- waynew
+
+Log message:
+	- Implementation of single variables and some tests.  There is currently a
+	case that is breaking sync/single on a test not checked in yet, but I wanted
+	to checkpoint.
+	
+	- Bug fix for sync implementation. Reading of a sync class' members now
+	readXX instead of readFE. Also renabled "no default functions" for
+	syncvar to prevent i/o functions for it.
+	
+	- Added a sleep(int) primitive.
+	
+	- Removed commented out code in chplthreads.h.  Was initial attempt to
+	implement sync var ops in runtime.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp symbol.cpp view.cpp 
+	chapel/compiler/include/: primitive.h 
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/passes/: cleanup.cpp codegen.cpp 
+	                         functionResolution.cpp 
+	chapel/modules/standard/: _chpl_base.chpl 
+	chapel/runtime/include/: chplthreads.h 
+Added files:
+	chapel/test/parallel/single/waynew/: .cvsignore simple0.chpl 
+	                                     simple0.good simple0b.chpl 
+	                                     simple0b.good simple1.chpl 
+	                                     simple1.good simple2.chpl 
+	                                     simple2.good simple3.chpl 
+	                                     simple3.good simple4.chpl 
+	                                     simple4.good 
+	chapel/test/parallel/sync/waynew/: class3.chpl class3.good 
+
