@@ -86,6 +86,7 @@ reduce          processToken(TREDUCE);
 return          processToken(TRETURN);
 scan            processToken(TSCAN);
 select          processToken(TSELECT);
+single          processToken(TSINGLE);
 sparse          processToken(TSPARSE);
 static          processToken(TSTATIC);
 sync            processToken(TSYNC);

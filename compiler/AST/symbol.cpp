@@ -728,8 +728,20 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map) {
     wrapper->formals->insertAtTail(wrapper_formal);
     if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(coercion_map->get(formal))) {
       wrapper_formal->type = ts->type;
-      if (ts->hasPragma( "sync var")) {
-        call->insertAtTail( new CallExpr( "readFE", wrapper_formal));
+      if (ts->hasPragma( "sync var") || ts->hasPragma( "single var")) {
+        // check if this is a member access
+        DefExpr *mt;
+        if ((this->formals->length() > 0) &&
+            (mt = dynamic_cast<DefExpr*>(this->formals->get(1))) &&
+            (mt->sym->type == dtMethodToken) &&
+            (_this == this->formals->get(2)->sym)) {
+          call->insertAtTail( new CallExpr( "readXX", wrapper_formal));
+        } else {
+          if (ts->hasPragma( "sync var"))
+            call->insertAtTail( new CallExpr( "readFE", wrapper_formal));
+          else
+            call->insertAtTail( new CallExpr( "readFF", wrapper_formal));
+        }
       } else {
         call->insertAtTail(new CallExpr(PRIMITIVE_CAST, formal->type->symbol, wrapper_formal));
       }
@@ -782,7 +794,8 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
         temp_type = formal->defPoint->exprType->copy();
       if (!temp_type && !temp_init)
         temp_type = new SymExpr(formal->type->symbol);
-      if (formal->type->symbol->hasPragma( "sync var"))
+      if (formal->type->symbol->hasPragma( "sync var") ||
+          formal->type->symbol->hasPragma( "single var"))
         temp_type = new CallExpr("_init", formal->type->symbol);
       wrapper->insertAtTail(new DefExpr(temp, temp_init, temp_type));
       bool cast = false;
@@ -1148,7 +1161,8 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
 
     retType->symbol->defPoint->parentStmt->insertBefore(new DefExpr(clone));
     clone->addPragmas(&pragmas);
-    if (clone->hasPragma("sync var"))
+    if (clone->hasPragma("sync var") ||
+        clone->hasPragma("single var"))
       clone->type->defaultValue = NULL;
     clone->type->substitutions.copy(retType->substitutions);
     clone->type->dispatchParents.copy(retType->dispatchParents);

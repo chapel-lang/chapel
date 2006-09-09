@@ -333,6 +333,8 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
         if (DefExpr *def = dynamic_cast<DefExpr*>( ast))
           if (def->sym->hasPragma( "sync var")) {
             fprintf( html_file, "<B>sync</B> ");
+          } else if (def->sym->hasPragma( "single var")) {
+            fprintf( html_file, "<B>single</B> ");
           }
         fprintf(html_file, "<B>type ");
         html_print_symbol( html_file, pass, e->sym, true);
@@ -341,8 +343,11 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
         fprintf(html_file, "<B>type </B> ");
         html_print_symbol( html_file, pass, e->sym, true);
       } else if (VarSymbol* vs=dynamic_cast<VarSymbol*>(e->sym)) {
-        if (vs->type->symbol->hasPragma( "sync var"))
+        if (vs->type->symbol->hasPragma( "sync var")) {
           fprintf( html_file, "<B>sync </B>");
+        } else if (vs->type->symbol->hasPragma( "single var")) {
+          fprintf( html_file, "<B>single </B>");
+        }
         if (vs->on_heap) 
           fprintf( html_file, "<B>heap </B>");
         if (vs->is_ref || vs->isReference)  

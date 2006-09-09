@@ -153,6 +153,9 @@ pragma "inline" def max(x, y, z...?k) return max(max(x, y), (...z));
 //
 // More primitive funs
 //
+
+pragma "inline" def sleep( t: int) return __primitive( "sleep", t);
+
 pragma "no codegen" pragma "rename _chpl_exit" def exit(status : int) {
   __primitive("exit");       
 }
@@ -193,8 +196,8 @@ pragma "inline" def =( a: _mutex_p, b: _mutex_p) return b;
 pragma "inline" def _init( cv: _condvar_p) return __primitive( "condvar_new");
 pragma "inline" def =( a: _condvar_p, b: _condvar_p) return b;
 
-// synch variable
 pragma "sync var"
+pragma "no default functions"
 class _syncvar {
   type t;
   var  value: t;             // actual data
@@ -310,7 +313,7 @@ def readXF( sv:_syncvar) {
   return ret;
 }
 
-// read value.  No state change or signals
+// read value.  No state change or signals.
 def readXX( sv:_syncvar) {
   var ret: sv.t;
   __primitive( "syncvar_lock", sv);
@@ -328,6 +331,59 @@ def isFull( sv:_syncvar) {
   return isfull;
 }
 
+
+// single variable support
+pragma "single var" 
+pragma "no default functions"
+class _singlevar {
+  type t;
+  var  value: t;             // actual data
+  var  is_full: bool;
+  var  lock: _mutex_p;       // need to acquire before accessing this record
+  var  cv_full: _condvar_p;  // wait for full
+
+  def initialize() {
+    is_full = false; 
+    lock = __primitive( "mutex_new");
+    cv_full = __primitive( "condvar_new");
+  }
+}
+
+def _copy( sv:_singlevar) {
+  return readFF( sv);
+}
+
+def _init( sv:_singlevar) {
+  return _singlevar( sv.value.type); 
+}
+
+
+// Can only write once.  Otherwise, it is an error.
+def =( sv:_singlevar, value:sv.t) {
+  __primitive( "singlevar_lock", sv);
+  if (sv.is_full) {
+    halt( "***Error: single var already defined***");
+  }
+  sv.value = value;
+  sv.is_full = true;
+  __primitive( "singlevar_signal_full", sv);
+  __primitive( "singlevar_unlock", sv);
+  return sv;
+}
+
+
+// Wait for full
+def readFF( sv:_singlevar) {
+  var ret: sv.t;
+  __primitive( "singlevar_lock", sv);
+  if (!sv.is_full) {
+    __primitive( "singlevar_wait_full", sv);
+  }
+  ret = sv.value;
+  __primitive( "singlevar_signal_full", sv); // in case others are waiting
+  __primitive( "singlevar_unlock", sv);
+  return ret;
+}
 
 
 //

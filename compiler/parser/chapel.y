@@ -135,6 +135,7 @@ Is this "while x"(i); or "while x(i)";?
 %token TREF
 %token TRETURN
 %token TSELECT
+%token TSINGLE
 %token TSPARSE
 %token TSTATIC
 %token TSYNC
@@ -974,6 +975,8 @@ type:
     { $$ = new CallExpr("_build_sparse_domain_type", $4); }
 | TINDEX TLP expr_ls TRP
     { $$ = new CallExpr("_build_index_type", $3); }
+| TSINGLE type
+    { $$ = new CallExpr( "_singlevar", $2); }
 | TSYNC type
     { $$ = new CallExpr( "_syncvar", $2); }
 ;

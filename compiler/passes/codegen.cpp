@@ -433,21 +433,22 @@ static void codegen_header(void) {
 
   chpl_main->addPragma("rename _chpl_main");
 
-  cnames.put("main", 1);
+  cnames.put("abs", 1);
+  cnames.put("_init", 1);
   cnames.put("stdin", 1);
-  cnames.put("stdout", 1);
-  cnames.put("stderr", 1);
+  cnames.put("close", 1);
   cnames.put("fwrite", 1);
   cnames.put("fread", 1);
-  cnames.put("read", 1);
-  cnames.put("write", 1);
+  cnames.put("main", 1);
   cnames.put("open", 1);
-  cnames.put("close", 1);
-  cnames.put("_init", 1);
-  cnames.put("y1", 1); // this is ridiculous...
-  cnames.put("quad", 1);
   cnames.put("printf", 1);
-  cnames.put("abs", 1);
+  cnames.put("quad", 1);
+  cnames.put("read", 1);
+  cnames.put("sleep", 1);
+  cnames.put("stderr", 1);
+  cnames.put("stdout", 1);
+  cnames.put("write", 1);
+  cnames.put("y1", 1); // this is ridiculous...
 
   // Remove functions not used (misses mutual recursion)
   compute_call_sites();
