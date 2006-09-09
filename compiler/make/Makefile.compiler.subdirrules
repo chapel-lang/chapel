@@ -17,15 +17,15 @@ depend: $(DEPENDSUBDIRS) $(PLATFORM_DIR) $(DEPEND_DEPS) echocompilerdir
 	@echo Updating dependences...
 	@rm -f $(CVS_DEPENDS).tmp
 	@echo > $(CVS_DEPENDS).tmp
-	-@for file in $(CVS_SRCS); do \
-	  $(ECHO) -n $(PLATFORM)/ >> $(CVS_DEPENDS).tmp; \
-	  $(MAKEDEPEND) $(CFLAGS) $$file | grep -v \^\# >> $(CVS_DEPENDS).tmp; \
-	done
+	@$(MAKE) filedepend
 	$(OTHER_DEPEND_RULES)
 	@echo Updating nogc dependences...
 	@$(MAKE) USE_GC= nogcdepend
 	@mv -f $(CVS_DEPENDS).tmp $(CVS_DEPENDS)
 
+CVS_GC_DEPS= $(CVS_SRCS:%.cpp=%.depend)
 CVS_NOGC_DEPS= $(CVS_SRCS:%.cpp=%.nogcdepend)
 
+filedepend: $(CVS_GC_DEPS)
 nogcdepend: $(CVS_NOGC_DEPS)
+
