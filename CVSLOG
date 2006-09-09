@@ -74708,3 +74708,24 @@ Added files:
 	                                     simple4.good 
 	chapel/test/parallel/sync/waynew/: class3.chpl class3.good 
 
+---------------------------------------------------------------------------
+
+09/08/06 17:58:07 -- bradc
+
+Log message:
+	Improved make depend rules so that they would once again
+	work for the nogc version of the compiler, and to clean
+	up the implementation of the normal dependence generation
+	a bit.
+	
+	To the extent that I've tested this, it seems to be working.
+	If you find any sort of make scenarios that don't seem to
+	work as you expect, please let me know.  Makefiles are still
+	amazingly brittle...
+	
+	Thanks.
+
+Modified files:
+	chapel/compiler/make/: Makefile.compiler.foot 
+	                       Makefile.compiler.subdirrules 
+
