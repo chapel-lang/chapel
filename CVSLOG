@@ -74729,3 +74729,13 @@ Modified files:
 	chapel/compiler/make/: Makefile.compiler.foot 
 	                       Makefile.compiler.subdirrules 
 
+---------------------------------------------------------------------------
+
+09/11/06 09:59:33 -- waynew
+
+Log message:
+	Forgot to remove futurized tests.
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+
