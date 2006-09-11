@@ -74843,3 +74843,20 @@ Added files:
 	chapel/test/arrays/deitz/stride/: test_stride2.chpl 
 	                                  test_stride2.good 
 
+---------------------------------------------------------------------------
+
+09/11/06 14:07:39 -- deitz
+
+Log message:
+	Removed new_...Literal functions which were a needless indirection
+	that has been tedious to maintain.  Use the new_...Symbol functions
+	instead.
+
+Modified files:
+	chapel/compiler/AST/: build.cpp expr.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: expr.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         functionResolution.cpp normalize.cpp 
+	                         parallel.cpp 
+
