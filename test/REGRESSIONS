@@ -20,12 +20,6 @@ out without 64-bit coercion wrapper.  Fix is pending decision about
 integer literal widths.
 
 
-Need parms folded before iterator transformating.  Fix is currently being
-worked on.
- [Error compiler :functions/deitz/iterators/test_instantiate_iterator3]
- [Error compiler :functions/deitz/iterators/test_instantiate_iterator3a]
-
-
 ==========================
 linux valgrind regressions
 ==========================
