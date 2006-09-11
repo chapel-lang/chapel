@@ -74783,3 +74783,25 @@ Log message:
 Added files:
 	chapel/test/arrays/deitz/: rowMajor.chpl rowMajor.good 
 
+---------------------------------------------------------------------------
+
+09/11/06 11:14:14 -- deitz
+
+Log message:
+	Added initial support for strided arrays.  They were mostly supported,
+	but this updates the indexing function to take into account the stride
+	and also the array write function.  They will likely not work in other
+	contexts yet, e.g., changing the domain and reallocating the array.
+	
+	This degrades performance on the performance test by about 12 seconds:
+	
+		  C                                        0.86 seconds
+	          Chapel with no-bounds-checking (before) 56.59 seconds
+	          Chapel with no-bounds-checking          68.65 seconds
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+Added files:
+	chapel/test/arrays/deitz/stride/: test_stride1.chpl 
+	                                  test_stride1.good 
+
