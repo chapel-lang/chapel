@@ -74827,3 +74827,19 @@ Removed files:
 	chapel/test/classes/deitz/: test_anon_record3.chpl 
 	                            test_anon_record3.good 
 
+---------------------------------------------------------------------------
+
+09/11/06 11:57:30 -- deitz
+
+Log message:
+	Added support for changing the stride of a domain or changing a domain
+	that has non-unit stride.
+	
+	Added a test case.
+
+Modified files:
+	chapel/modules/standard/: _chpl_adomain.chpl 
+Added files:
+	chapel/test/arrays/deitz/stride/: test_stride2.chpl 
+	                                  test_stride2.good 
+
