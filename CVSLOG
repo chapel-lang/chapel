@@ -74871,3 +74871,14 @@ Modified files:
 	chapel/make/: Makefile.cygwin Makefile.linux Makefile.linux64 
 	              Makefile.linux64_32 
 
+---------------------------------------------------------------------------
+
+09/11/06 15:07:41 -- deitz
+
+Log message:
+	Removed a little dead code.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/include/: symbol.h 
+
