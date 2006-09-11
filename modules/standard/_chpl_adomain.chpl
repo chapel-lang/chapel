@@ -544,9 +544,18 @@ def fwrite(f : file, x : _aarray) {
 }
 
 def _intersect(a: _aseq, b: _aseq) {
-  if a._stride != 1 || b._stride != 1 then
-    halt("not yet supporting strided domains");
-  return max(a._low, b._low)..min(a._high, b._high);
+  var g, x: int;
+  (g, x) = _extended_euclid(a._stride, b._stride);
+  if abs(a._low - b._low) % g != 0 then
+    return 1..0;
+  var low = max(a._low, b._low);
+  var high = min(a._high, b._high);
+  var stride = a._stride * b._stride / g;
+  var alignment = a._low + (b._low - a._low) * x * a._stride / g;
+  if alignment == 0 then
+    alignment = stride;
+  low = low + low % alignment;
+  return low..high by stride;
 }
 
 def _intersect(a: _adomain, b: _adomain) {
