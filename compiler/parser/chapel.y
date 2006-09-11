@@ -218,9 +218,7 @@ Is this "while x"(i); or "while x(i)";?
 %type <pstmtls> when_stmt_ls
 
 %type <pexpr> opt_var_type var_type fnrettype opt_formal_var_type formal_var_type formal_type
-%type <pexpr> type record_tuple_type type_binding_expr
-%type <pexpr> record_tuple_inner_type
-%type <pstmtls> record_inner_type_ls
+%type <pexpr> type anon_record_type tuple_type type_binding_expr
 %type <ptype> class_tag
 
 %type <pexpr> parenop_expr memberaccess_expr non_tuple_lvalue lvalue
@@ -228,7 +226,7 @@ Is this "while x"(i); or "while x(i)";?
 %type <pexpr> literal seq_expr where
 %type <pexpr> variable_expr top_level_expr
 %type <pexpr> reduction opt_init_expr var_arg_expr
-%type <pexprls> expr_ls nonempty_expr_ls tuple_inner_type_ls opt_inherit_expr_ls
+%type <pexprls> expr_ls nonempty_expr_ls opt_inherit_expr_ls type_ls
 %type <pdefexpr> formal enum_item
 %type <pdefexprls> formal_ls opt_formal_ls enum_ls
 
@@ -862,15 +860,19 @@ var_decl_stmt_inner:
 /** TYPES ********************************************************************/
 
 
-record_tuple_inner_type:
-  record_inner_type_ls TRP
+type_ls:
+  type
+    { $$ = new AList<Expr>($1); }
+| type_ls TCOMMA type
+    { $1->insertAtTail($3); }
+;
+
+
+tuple_type:
+  TLP type_ls TRP
     {
-      $$ = build_class(stringcat("_anon_record", intstring(anon_record_uid++)), new ClassType(CLASS_RECORD), $1);
-    }
-| tuple_inner_type_ls TRP
-    {
-      CallExpr* call = new CallExpr("_tuple", new_IntLiteral($1->length()));
-      for_alist(Expr, expr, $1) {
+      CallExpr* call = new CallExpr("_tuple", new_IntLiteral($2->length()));
+      for_alist(Expr, expr, $2) {
         call->argList->insertAtTail(new CallExpr("_init", expr->remove()));
       }
       $$ = call;
@@ -878,14 +880,10 @@ record_tuple_inner_type:
 ;
 
 
-record_tuple_type:
+anon_record_type:
   TRECORD TLCBR decl_stmt_ls TRCBR
     {
       $$ = build_class(stringcat("_anon_record", intstring(anon_record_uid++)), new ClassType(CLASS_RECORD), $3);
-    }
-| TLP record_tuple_inner_type
-    {
-      $$ = $2;
     }
 ;
 
@@ -932,22 +930,6 @@ opt_init_expr:
 ;
 
 
-tuple_inner_type_ls:
-  type
-    { $$ = new AList<Expr>($1); }
-| tuple_inner_type_ls TCOMMA type
-    { $1->insertAtTail($3); }
-;
-
-
-record_inner_type_ls:
-  identifier var_type opt_init_expr
-    { $$ = new AList<Stmt>(new DefExpr(new VarSymbol($1), $3, $2)); }
-| record_inner_type_ls TCOMMA identifier var_type
-    { $1->insertAtTail(new DefExpr(new VarSymbol($3), NULL, $4)); }
-;
-
-
 variable_expr:
   identifier
     { $$ = new SymExpr(new UnresolvedSymbol($1)); }
@@ -956,7 +938,8 @@ variable_expr:
 
 type:
   non_tuple_lvalue %prec TSTARTUPLE
-| record_tuple_type
+| anon_record_type
+| tuple_type
 | non_tuple_lvalue TOF type
     { $$ = new CallExpr($1, new NamedExpr("elt_type", $3)); }
 | non_tuple_lvalue TSTAR type %prec TSTAR
