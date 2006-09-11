@@ -1597,17 +1597,6 @@ VarSymbol *new_ImmediateSymbol(Immediate *imm) {
   return s;
 }
 
-VarSymbol *new_SymbolSymbol(char *str) {
-  str = cannonicalize_string(str);
-  VarSymbol *s = uniqueSymbolHash.get(str);
-  if (s)
-    return s;
-  s = new VarSymbol(str, dtSymbol);
-  s->cname = intstring(s->id);
-  uniqueSymbolHash.put(str, s);
-  return s;
-}
-
 PrimitiveType *
 immediate_type(Immediate *imm) {
   switch (imm->const_kind) {
@@ -1627,47 +1616,3 @@ immediate_type(Immediate *imm) {
   }
   return NULL;
 }
-
-int
-set_immediate_type(Immediate *imm, Type *t) {
-  if (t == dtBool) {
-    imm->const_kind = NUM_KIND_UINT;
-    imm->num_index = INT_SIZE_1; 
-
-  } 
-
-  for( int w=INT_SIZE_1; w<INT_SIZE_NUM; w++) {
-    if (dtInt[w] && (t == dtInt[w])) {
-      imm->const_kind = NUM_KIND_INT;
-      imm->num_index = w;
-      return 0;
-    }
-  }
-
-  for( int w=INT_SIZE_1; w<INT_SIZE_NUM; w++) {
-    if (dtUInt[w] && (t == dtUInt[w])) {
-      imm->const_kind = NUM_KIND_UINT;
-      imm->num_index = w;
-      return 0;
-    }
-  }
-
-  for( int w=FLOAT_SIZE_16; w<FLOAT_SIZE_NUM; w++) {
-    if (dtFloat[w] && (t == dtFloat[w])) {
-      imm->const_kind = NUM_KIND_FLOAT;
-      imm->num_index = w;
-      return 0;
-    }
-  }
-
-  for( int w=FLOAT_SIZE_16; w<FLOAT_SIZE_NUM; w++) {
-    if (dtComplex[w] && (t == dtComplex[w])) {
-      imm->const_kind = NUM_KIND_COMPLEX;
-      imm->num_index = w;
-      return 0;
-    }
-  }
-
-  return -1;
-}
-

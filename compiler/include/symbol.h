@@ -262,9 +262,7 @@ VarSymbol *new_UIntSymbol(unsigned long long int b, IF1_int_type size=INT_SIZE_6
 VarSymbol *new_FloatSymbol(char *n, long double b, IF1_float_type size=FLOAT_SIZE_64);
 VarSymbol *new_ComplexSymbol(char *n, long double r, long double i, IF1_float_type size=FLOAT_SIZE_64);
 VarSymbol *new_ImmediateSymbol(Immediate *imm);
-VarSymbol *new_SymbolSymbol(char *str);
 PrimitiveType *immediate_type(Immediate *imm);
-int set_immediate_type(Immediate *imm, Type *); // -1 on failure
 
 extern HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
 extern StringChainHash uniqueStringHash;
