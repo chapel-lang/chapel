@@ -385,9 +385,9 @@ if_stmt:
 
 for_stmt:
   TFOR TPARAM identifier TIN expr TDOTDOT expr TDO stmt
-{ $$ = build_chpl_stmt(build_param_for($3, $5, $7, new_IntLiteral(1), $9)); }
+    { $$ = build_chpl_stmt(build_param_for($3, $5, $7, new SymExpr(new_IntSymbol(1)), $9)); }
 | TFOR TPARAM identifier TIN expr TDOTDOT expr parsed_block_stmt
-    { $$ = build_chpl_stmt(build_param_for($3, $5, $7, new_IntLiteral(1), $8)); }
+    { $$ = build_chpl_stmt(build_param_for($3, $5, $7, new SymExpr(new_IntSymbol(1)), $8)); }
 /* | TFOR TPARAM identifier TIN expr TDOTDOT expr TBY expr TDO stmt */
 /*     { $$ = build_chpl_stmt(build_param_for($3, $5, $7, $9, $11)); } */
 //| TFOR TPARAM identifier TIN expr TDOTDOT expr TBY expr parsed_block_stmt
@@ -871,7 +871,7 @@ type_ls:
 tuple_type:
   TLP type_ls TRP
     {
-      CallExpr* call = new CallExpr("_tuple", new_IntLiteral($2->length()));
+      CallExpr* call = new CallExpr("_tuple", new_IntSymbol($2->length()));
       for_alist(Expr, expr, $2) {
         call->argList->insertAtTail(new CallExpr("_init", expr->remove()));
       }
@@ -1016,7 +1016,7 @@ tuple_paren_expr:
         $$->remove();
       } else {
         CallExpr* tupleCall = new CallExpr("_tuple", $2);
-        tupleCall->insertAtHead(new_IntLiteral(tupleCall->argList->length()));
+        tupleCall->insertAtHead(new_IntSymbol(tupleCall->argList->length()));
         $$ = tupleCall;
       }
     }
@@ -1038,7 +1038,7 @@ parenop_expr:
     }
 | TERROR TLP STRINGLITERAL TRP
     {
-      $$ = new CallExpr(PRIMITIVE_ERROR, new_StringLiteral($3));
+      $$ = new CallExpr(PRIMITIVE_ERROR, new_StringSymbol($3));
     }
 | non_tuple_lvalue TLP TQUESTION identifier TRP
     {
@@ -1148,10 +1148,10 @@ top_level_expr:
     }
 /* | expr TCOLON STRINGLITERAL */
 /*   {  */
-/*     $$ = new CallExpr("_tostring", $1, new_StringLiteral($3)); */
+/*     $$ = new CallExpr("_tostring", $1, new_StringSymbol($3)); */
 /*   } */
 | expr TDOTDOT expr
-    { $$ = new CallExpr("_aseq", $1, $3, new_IntLiteral(1)); }
+    { $$ = new CallExpr("_aseq", $1, $3, new_IntSymbol(1)); }
 | seq_expr
 | TPLUS expr %prec TUPLUS
     { $$ = new CallExpr("+", $2); }
@@ -1243,18 +1243,27 @@ reduction:
 
 literal:
   INTLITERAL
-    { $$ = new_IntLiteral(yytext); }
+    {
+      if (!strncmp("0b", yytext, 2))
+        $$ = new SymExpr(new_IntSymbol(strtoll(yytext+2, NULL, 2)));
+      else if (!strncmp("0x", yytext, 2))
+        $$ = new SymExpr(new_IntSymbol(strtoll(yytext+2, NULL, 16)));
+      else
+        $$ = new SymExpr(new_IntSymbol(strtoll(yytext, NULL, 10)));
+    }
 | UINTLITERAL
-    { $$ = new_UIntLiteral(yytext); }
+    { $$ = new SymExpr(new_UIntSymbol(strtoull(yytext, NULL, 10))); }
 | FLOATLITERAL
-    { $$ = new_FloatLiteral(yytext, strtod(yytext, NULL)); }
+    { $$ = new SymExpr(new_FloatSymbol(yytext, strtod(yytext, NULL))); }
 | IMAGLITERAL
     {
       yytext[strlen(yytext)-1] = '\0';
-      $$ = new_ComplexLiteral(yytext, strtod(yytext, NULL));
+      char cstr[256];
+      sprintf( cstr, "_chpl_complex64(0.0, %s)", yytext);
+      $$ = new SymExpr(new_ComplexSymbol(cstr, 0.0, strtod(yytext, NULL)));
     }
 | STRINGLITERAL
-    { $$ = new_StringLiteral($1); }
+    { $$ = new SymExpr(new_StringSymbol($1)); }
 ;
 
 

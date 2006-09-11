@@ -186,11 +186,11 @@ build_for_expr(AList<DefExpr>* indices,
 
   CallExpr* elt_type;
   if (iterators->length() == 1) {
-    elt_type = new CallExpr(new CallExpr(".", iterators->only()->copy(), new_StringLiteral("getValue")), new CallExpr(new CallExpr(".", iterators->only()->copy(), new_StringLiteral("getHeadCursor"))));
+    elt_type = new CallExpr(new CallExpr(".", iterators->only()->copy(), new_StringSymbol("getValue")), new CallExpr(new CallExpr(".", iterators->only()->copy(), new_StringSymbol("getHeadCursor"))));
   } else {
-    elt_type = new CallExpr("_construct__tuple", new_IntLiteral(iterators->length()));
+    elt_type = new CallExpr("_construct__tuple", new_IntSymbol(iterators->length()));
     for_alist(Expr, iteratorExpr, iterators) {
-      elt_type->insertAtTail(new CallExpr(new CallExpr(".", iteratorExpr->copy(), new_StringLiteral("getValue")), new CallExpr(new CallExpr(".", iteratorExpr->copy(), new_StringLiteral("getHeadCursor")))));
+      elt_type->insertAtTail(new CallExpr(new CallExpr(".", iteratorExpr->copy(), new_StringSymbol("getValue")), new CallExpr(new CallExpr(".", iteratorExpr->copy(), new_StringSymbol("getHeadCursor")))));
     }
   }
   VarSymbol* seq = new VarSymbol("_seq");
@@ -219,7 +219,7 @@ build_for_expr(AList<DefExpr>* indices,
   ExprStmt* append_stmt =
     new ExprStmt(
       new CallExpr(
-        new CallExpr(".", seq, new_StringLiteral("_append_in_place")), expr));
+        new CallExpr(".", seq, new_StringSymbol("_append_in_place")), expr));
   stmts->insertAtTail(new BlockStmt(build_for_block(BLOCK_FORALL,
                                                     indices,
                                                     iterators,
@@ -266,7 +266,7 @@ AList<Stmt>* build_for_block(BlockTag tag,
     int i = 1;
     for_alist(DefExpr, indexDef, indices) {
       indexDef->remove();
-      indexDef->init = new CallExpr(index, new_IntLiteral(i++));
+      indexDef->init = new CallExpr(index, new_IntSymbol(i++));
       body->insertAtHead(indexDef);
     }
   } else {
@@ -290,21 +290,21 @@ AList<Stmt>* build_for_block(BlockTag tag,
   Vec<VarSymbol*> cursor;
   for (int i = 0; i < numIterators; i++) {
     cursor.add(new VarSymbol(stringcat("_cursor_", intstring(i), "_", intstring(uid))));
-    stmts->insertAtTail(new DefExpr(cursor.v[i], new CallExpr(new CallExpr(".", iterator.v[i], new_StringLiteral("getHeadCursor")))));
+    stmts->insertAtTail(new DefExpr(cursor.v[i], new CallExpr(new CallExpr(".", iterator.v[i], new_StringSymbol("getHeadCursor")))));
   }
   stmts->insertAtTail(new DefExpr(body->pre_loop));
 
   for (int i = 0; i < numIterators; i++) {
-    stmts->insertAtTail(new CondStmt(new CallExpr("!", new CallExpr(new CallExpr(".", iterator.v[i], new_StringLiteral("isValidCursor?")), cursor.v[i])), new GotoStmt(goto_normal, body->post_loop)));
+    stmts->insertAtTail(new CondStmt(new CallExpr("!", new CallExpr(new CallExpr(".", iterator.v[i], new_StringSymbol("isValidCursor?")), cursor.v[i])), new GotoStmt(goto_normal, body->post_loop)));
   }
 
   CallExpr* index_init;
   if (numIterators == 1) {
-    index_init = new CallExpr(new CallExpr(".", iterator.v[0], new_StringLiteral("getValue")), cursor.v[0]);
+    index_init = new CallExpr(new CallExpr(".", iterator.v[0], new_StringSymbol("getValue")), cursor.v[0]);
   } else {
-    index_init = new CallExpr("_construct__tuple", new_IntLiteral(numIterators));
+    index_init = new CallExpr("_construct__tuple", new_IntSymbol(numIterators));
     for (int i = 0; i < numIterators; i++) {
-      index_init->insertAtTail(new CallExpr(new CallExpr(".", iterator.v[i], new_StringLiteral("getValue")), cursor.v[i]));
+      index_init->insertAtTail(new CallExpr(new CallExpr(".", iterator.v[i], new_StringSymbol("getValue")), cursor.v[i]));
     }
   }
   stmts->insertAtTail(new DefExpr(index, index_init));
@@ -312,7 +312,7 @@ AList<Stmt>* build_for_block(BlockTag tag,
 
   if (!only_once) {
     for (int i = 0; i < numIterators; i++) {
-      stmts->insertAtTail(new CallExpr("=", cursor.v[i], new CallExpr(new CallExpr(".", iterator.v[i], new_StringLiteral("getNextCursor")), cursor.v[i])));
+      stmts->insertAtTail(new CallExpr("=", cursor.v[i], new CallExpr(new CallExpr(".", iterator.v[i], new_StringSymbol("getNextCursor")), cursor.v[i])));
     }
     stmts->insertAtTail(new GotoStmt(goto_normal, body->pre_loop));
   }
@@ -332,7 +332,7 @@ AList<Stmt>* build_param_for(char* index, Expr* low, Expr* high, Expr* stride, B
   VarSymbol* index_var = new VarSymbol(index);
   block->param_index = new SymExpr(index_var);
   BlockStmt* outer = new BlockStmt(block);
-  block->insertBefore(new DefExpr(index_var, new_IntLiteral((int64)0)));
+  block->insertBefore(new DefExpr(index_var, new_IntSymbol((int64)0)));
   block->insertBefore(new CallExpr("=", index_var, index_var)); // because otherwise it is dead leading to an analysis problem
   return new AList<Stmt>(outer);
 }
@@ -355,7 +355,7 @@ AList<Stmt>* build_assignplus(Expr* lhs, Expr* rhs) {
       new ArgSymbol(INTENT_BLANK, "_lhs", dtUnknown), NULL,
       new SymExpr("_domain")));
   fn->addPragma("inline");
-  fn->insertAtTail(new CallExpr(new CallExpr(".", lhs->copy(), new_StringLiteral("add")), rhs->copy()));
+  fn->insertAtTail(new CallExpr(new CallExpr(".", lhs->copy(), new_StringSymbol("add")), rhs->copy()));
   stmts->insertAtTail(new DefExpr(fn));
 
   stmts->insertAtTail(new CallExpr(fn->name, lhs->copy()));
@@ -476,7 +476,7 @@ FnSymbol* build_reduce(Expr* red, Expr* seq) {
   fn->addPragma("inline");
   VarSymbol* tmp = new VarSymbol("_red_seq");
   fn->insertAtTail(new DefExpr(tmp, seq));
-  red = new CallExpr(red, new CallExpr(new CallExpr(".", tmp, new_StringLiteral("getValue")), new CallExpr(new CallExpr(".", tmp, new_StringLiteral("getHeadCursor")))));
+  red = new CallExpr(red, new CallExpr(new CallExpr(".", tmp, new_StringSymbol("getValue")), new CallExpr(new CallExpr(".", tmp, new_StringSymbol("getHeadCursor")))));
   fn->insertAtTail(new ReturnStmt(new CallExpr("_reduce", red, tmp)));
   return fn;
 }
@@ -497,7 +497,7 @@ FnSymbol* build_scan(Expr* scan, Expr* seq) {
   fn->addPragma("inline");
   VarSymbol* tmp = new VarSymbol("_scan_seq");
   fn->insertAtTail(new DefExpr(tmp, seq));
-  scan = new CallExpr(scan, new CallExpr(new CallExpr(".", tmp, new_StringLiteral("getValue")), new CallExpr(new CallExpr(".", tmp, new_StringLiteral("getHeadCursor")))));
+  scan = new CallExpr(scan, new CallExpr(new CallExpr(".", tmp, new_StringSymbol("getValue")), new CallExpr(new CallExpr(".", tmp, new_StringSymbol("getHeadCursor")))));
   fn->insertAtTail(new ReturnStmt(new CallExpr("_scan", scan, tmp)));
   return fn;
 }

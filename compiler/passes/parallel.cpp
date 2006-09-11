@@ -218,7 +218,7 @@ begin_mark_locals() {
         if (vs->on_heap) {
           CallExpr *alloc = new CallExpr( PRIMITIVE_CHPL_ALLOC, 
                                           vs->type->symbol, 
-                                          new_StringLiteral("heap alloc'd via begin"));
+                                          new_StringSymbol("heap alloc'd via begin"));
           Stmt     *vsdef = vs->defPoint->parentStmt;
           vsdef->insertAfter( new CallExpr( PRIMITIVE_SET_HEAPVAR,
                                             vs->defPoint->sym,
@@ -277,7 +277,7 @@ thread_args() {
                 b->insertBefore( new DefExpr( tempc));
                 CallExpr *tempc_alloc = new CallExpr( PRIMITIVE_CHPL_ALLOC,
                                                       ctype->symbol,
-                                                      new_StringLiteral( stringcat( "instance of class ", ctype->symbol->name)));
+                                                      new_StringSymbol( stringcat( "instance of class ", ctype->symbol->name)));
                 b->insertBefore( new CallExpr( PRIMITIVE_MOVE,
                                                tempc,
                                                tempc_alloc));

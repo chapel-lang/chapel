@@ -75,7 +75,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
           if (call->get(1)->typeInfo() == dtMethodToken &&
               call->get(2)->typeInfo() == ct) {
             Expr* arg2 = call->get(2);
-            call->replace(new CallExpr(PRIMITIVE_GET_MEMBER, arg2->remove(), new_StringLiteral(field->name)));
+            call->replace(new CallExpr(PRIMITIVE_GET_MEMBER, arg2->remove(), new_StringSymbol(field->name)));
           }
         }
       }
@@ -90,7 +90,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
   fn->formals->insertAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->formals->insertAtTail(_this);
   if (ct->classTag == CLASS_UNION)
-    fn->insertAtTail(new CondStmt(new CallExpr("!", new CallExpr(PRIMITIVE_UNION_GETID, _this, new_IntSymbol(field->id))), new ExprStmt(new CallExpr("halt", new_StringLiteral("illegal union access")))));
+    fn->insertAtTail(new CondStmt(new CallExpr("!", new CallExpr(PRIMITIVE_UNION_GETID, _this, new_IntSymbol(field->id))), new ExprStmt(new CallExpr("halt", new_StringSymbol("illegal union access")))));
   fn->insertAtTail(new ReturnStmt(new CallExpr(PRIMITIVE_GET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)))));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->parentStmt->insertBefore(def);
@@ -117,7 +117,7 @@ static void build_setter(ClassType* ct, Symbol* field) {
               call->get(3)->typeInfo() == dtSetterToken) {
             Expr* arg2 = call->get(2);
             Expr* arg4 = call->get(4);
-            call->replace(new CallExpr(PRIMITIVE_SET_MEMBER, arg2->remove(), new_StringLiteral(field->name), arg4->remove()));
+            call->replace(new CallExpr(PRIMITIVE_SET_MEMBER, arg2->remove(), new_StringSymbol(field->name), arg4->remove()));
           }
         }
       }
@@ -318,7 +318,7 @@ static void build_record_assignment_function(ClassType* ct) {
   AList<Stmt>* body = new AList<Stmt>();
   for_fields(tmp, ct)
     if (!tmp->isTypeVariable)
-      body->insertAtTail(new CallExpr("=", new CallExpr(".", arg1, new_StringLiteral(tmp->name)), new CallExpr(".", arg2, new_StringLiteral(tmp->name))));
+      body->insertAtTail(new CallExpr("=", new CallExpr(".", arg1, new_StringSymbol(tmp->name)), new CallExpr(".", arg2, new_StringSymbol(tmp->name))));
   body->insertAtTail(new ReturnStmt(arg1));
   BlockStmt* block_stmt = new BlockStmt(body);
   fn->body = block_stmt;
@@ -344,7 +344,7 @@ static void build_union_assignment_function(ClassType* ct) {
   body->insertAtTail(new CallExpr(PRIMITIVE_UNION_SETID, arg1, new_IntSymbol(0)));
   for_fields(tmp, ct)
     if (!tmp->isTypeVariable)
-      body->insertAtTail(new CondStmt(new CallExpr(PRIMITIVE_UNION_GETID, arg2, new_IntLiteral(tmp->id)), new ExprStmt(new CallExpr("=", new CallExpr(".", arg1, new_StringLiteral(tmp->name)), new CallExpr(".", arg2, new_StringLiteral(tmp->name))))));
+      body->insertAtTail(new CondStmt(new CallExpr(PRIMITIVE_UNION_GETID, arg2, new_IntSymbol(tmp->id)), new ExprStmt(new CallExpr("=", new CallExpr(".", arg1, new_StringSymbol(tmp->name)), new CallExpr(".", arg2, new_StringSymbol(tmp->name))))));
   body->insertAtTail(new ReturnStmt(arg1));
   BlockStmt* block_stmt = new BlockStmt(body);
   fn->body = block_stmt;
@@ -365,7 +365,7 @@ static void build_record_copy_function(ClassType* ct) {
   fn->formals->insertAtTail(arg);
   CallExpr* call = new CallExpr(ct->defaultConstructor->name);
   for_fields(tmp, ct)
-    call->insertAtTail(new CallExpr(".", arg, new_StringLiteral(tmp->name)));
+    call->insertAtTail(new CallExpr(".", arg, new_StringSymbol(tmp->name)));
   fn->insertAtTail(new ReturnStmt(call));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->parentStmt->insertBefore(def);
@@ -389,7 +389,7 @@ static void build_record_init_function(ClassType* ct) {
   for_fields(tmp, ct) {
     VarSymbol* var = dynamic_cast<VarSymbol*>(tmp);
     if (var->consClass == VAR_PARAM || var->isTypeVariable)
-      call->insertAtTail(new NamedExpr(tmp->name, new CallExpr(".", arg, new_StringLiteral(tmp->name))));
+      call->insertAtTail(new NamedExpr(tmp->name, new CallExpr(".", arg, new_StringSymbol(tmp->name))));
   }
   fn->insertAtTail(new ReturnStmt(call));
   DefExpr* def = new DefExpr(fn);

@@ -206,21 +206,34 @@ bool SymExpr::isRef() {
 }
 
 
-DefExpr::DefExpr(Symbol* initSym, Expr* initInit, Expr* initExprType) :
+DefExpr::DefExpr(Symbol* initSym, BaseAST* initInit, BaseAST* initExprType) :
   Expr(EXPR_DEF),
   sym(initSym),
-  init(initInit),
-  exprType(initExprType)
+  init(NULL),
+  exprType(NULL)
 {
-  if (sym) {
+  if (sym)
     sym->defPoint = this;
-  }
-  if (init && init->parentSymbol) {
+
+  if (Expr* a = dynamic_cast<Expr*>(initInit))
+    init = a;
+  else if (Symbol* a = dynamic_cast<Symbol*>(initInit))
+    init = new SymExpr(a);
+  else if (initInit)
+    INT_FATAL(this, "DefExpr initialized with bad init ast");
+
+  if (Expr* a = dynamic_cast<Expr*>(initExprType))
+    exprType = a;
+  else if (Symbol* a = dynamic_cast<Symbol*>(initExprType))
+    exprType = new SymExpr(a);
+  else if (initExprType)
+    INT_FATAL(this, "DefExpr initialized with bad exprType ast");
+
+  if (init && init->parentSymbol)
     INT_FATAL(this, "DefExpr initialized with init already in tree");
-  }
-  if (exprType && exprType->parentSymbol) {
+
+  if (exprType && exprType->parentSymbol)
     INT_FATAL(this, "DefExpr initialized with exprType already in tree");
-  }
 }
 
 
@@ -1228,50 +1241,6 @@ void NamedExpr::codegen(FILE* outfile) {
   INT_FATAL(this, "NamedExpr::codegen not implemented");
 }
 
-
-Expr *
-new_IntLiteral(char *l, IF1_int_type int_size) {
-  int64 i;
-  if (!strncmp("0b", l, 2))
-    i = strtoll(l+2, NULL, 2);
-  else if (!strncmp("0x", l, 2))
-    i = strtoll(l+2, NULL, 16);
-  else
-    i = strtoll(l, NULL, 10);
-  return new SymExpr(new_IntSymbol(i, int_size));
-}
-
-Expr *
-new_IntLiteral(long long int i, IF1_int_type int_size) {
-  return new SymExpr(new_IntSymbol(i, int_size));
-}
-
-Expr *
-new_UIntLiteral(char *ui_str, IF1_int_type uint_size) {
-  return new SymExpr(new_UIntSymbol(strtoull(ui_str, NULL, 10), uint_size));
-}
-
-Expr *
-new_UIntLiteral(unsigned long long u, IF1_int_type uint_size) {
-  return new SymExpr(new_UIntSymbol(u, uint_size));
-}
-
-Expr *
-new_FloatLiteral(char *n, long double d, IF1_float_type float_size) {
-  return new SymExpr(new_FloatSymbol(n, d, float_size));
-}
-
-Expr*
-new_ComplexLiteral(char *n, long double i, IF1_float_type float_size) {
-  char cstr[256];
-  sprintf( cstr, "_chpl_complex64(0.0, %s)", n);
-  return new SymExpr(new_ComplexSymbol(cstr, 0.0, i, float_size));
-}
-
-Expr *
-new_StringLiteral(char *s) {
-  return new SymExpr(new_StringSymbol(s));
-}
 
 bool 
 get_int(Expr *e, long *i) {

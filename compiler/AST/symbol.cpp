@@ -1007,7 +1007,7 @@ instantiate_tuple(FnSymbol* fn) {
     ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, name, dtAny, new SymExpr(gNil));
     fn->formals->insertAtTail(arg);
     last->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this,
-                                    new_StringLiteral(name), arg));
+                                    new_StringSymbol(name), arg));
     VarSymbol* field = new VarSymbol(name);
     tuple->fields->insertAtTail(field);
   }
@@ -1018,7 +1018,7 @@ FnSymbol*
 instantiate_tuple_get(FnSymbol* fn) {
   int index = dynamic_cast<VarSymbol*>(fn->substitutions.get(fn->instantiatedFrom->formals->get(2)->sym))->immediate->v_int64;
   char* name = stringcat("x", intstring(index));
-  fn->body->replace(new BlockStmt(new ReturnStmt(new CallExpr(PRIMITIVE_GET_MEMBER, fn->_this, new_StringLiteral(name)))));
+  fn->body->replace(new BlockStmt(new ReturnStmt(new CallExpr(PRIMITIVE_GET_MEMBER, fn->_this, new_StringSymbol(name)))));
   return fn;
 }
 
@@ -1027,8 +1027,8 @@ instantiate_tuple_set(FnSymbol* fn) {
   int index = dynamic_cast<VarSymbol*>(fn->substitutions.get(fn->instantiatedFrom->formals->get(2)->sym))->immediate->v_int64;
   char* name = stringcat("x", intstring(index));
   VarSymbol* tmp = new VarSymbol("_tmp");
-  fn->insertAtHead(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, new_StringLiteral(name), new CallExpr("=", tmp, fn->formals->last()->sym)));
-  fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER, fn->_this, new_StringLiteral(name))));
+  fn->insertAtHead(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, new_StringSymbol(name), new CallExpr("=", tmp, fn->formals->last()->sym)));
+  fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER, fn->_this, new_StringSymbol(name))));
   fn->insertAtHead(new DefExpr(tmp));
   return fn;
 }
@@ -1038,9 +1038,9 @@ instantiate_tuple_copy(FnSymbol* fn) {
   ArgSymbol* arg = dynamic_cast<ArgSymbol*>(fn->formals->only()->sym);
   ClassType* ct = dynamic_cast<ClassType*>(arg->type);
   CallExpr* call = new CallExpr(ct->defaultConstructor->name);
-  call->insertAtTail(new CallExpr(".", arg, new_StringLiteral("size")));
+  call->insertAtTail(new CallExpr(".", arg, new_StringSymbol("size")));
   for (int i = 1; i < ct->fields->length(); i++)
-    call->insertAtTail(new CallExpr(arg, new_IntLiteral(i)));
+    call->insertAtTail(new CallExpr(arg, new_IntSymbol(i)));
   fn->body->replace(new BlockStmt(new ReturnStmt(call)));
   return fn;
 }
@@ -1050,9 +1050,9 @@ instantiate_tuple_init(FnSymbol* fn) {
   ArgSymbol* arg = dynamic_cast<ArgSymbol*>(fn->formals->only()->sym);
   ClassType* ct = dynamic_cast<ClassType*>(arg->type);
   CallExpr* call = new CallExpr(ct->defaultConstructor->name);
-  call->insertAtTail(new CallExpr(".", arg, new_StringLiteral("size")));
+  call->insertAtTail(new CallExpr(".", arg, new_StringSymbol("size")));
   for (int i = 1; i < ct->fields->length(); i++)
-    call->insertAtTail(new CallExpr("_init", new CallExpr(arg, new_IntLiteral(i))));
+    call->insertAtTail(new CallExpr("_init", new CallExpr(arg, new_IntSymbol(i))));
   fn->body->replace(new BlockStmt(new ReturnStmt(call)));
   return fn;
 }

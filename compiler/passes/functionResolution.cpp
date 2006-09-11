@@ -910,7 +910,7 @@ resolveCall(CallExpr* call) {
       VarSymbol* tmp = new VarSymbol("_expand_temp");
       DefExpr* def = new DefExpr(tmp);
       call->parentStmt->insertBefore(def);
-      CallExpr* e = new CallExpr(sym->copy(), new_IntLiteral(i));
+      CallExpr* e = new CallExpr(sym->copy(), new_IntSymbol(i));
       CallExpr* move = new CallExpr(PRIMITIVE_MOVE, tmp, e);
       call->parentStmt->insertBefore(move);
       call->insertBefore(tmp);
@@ -1187,7 +1187,7 @@ resolve() {
           SymExpr* tmp = new SymExpr(gNil);
           FnSymbol* if_fn = build_if_expr(new CallExpr(PRIMITIVE_GETCID,
                                                        call->get(2)->copy(),
-                                                       new_IntLiteral(type->id)),
+                                                       new_IntSymbol(type->id)),
                                           subcall, tmp);
           if_fn->retRef = false;
           if_fn->buildSetter = false;

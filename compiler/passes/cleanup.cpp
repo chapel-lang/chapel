@@ -254,7 +254,7 @@ static void destructure_tuple(CallExpr* call) {
     if (i > 1)
       stmt->insertAfter(
         new CallExpr("=", expr->remove(),
-          new CallExpr(temp, new_IntLiteral(i-1))));
+          new CallExpr(temp, new_IntSymbol(i-1))));
     i++;
   }
 }
@@ -315,7 +315,7 @@ static void build_constructor(ClassType* ct) {
     fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, fn->_this,
                        new CallExpr(PRIMITIVE_CHPL_ALLOC,
                          ct->symbol,
-                         new_StringLiteral(stringcat("instance of class ",
+                         new_StringSymbol(stringcat("instance of class ",
                                                      ct->symbol->name)))));
   if (ct->classTag == CLASS_CLASS)
     fn->insertAtTail(new CallExpr(PRIMITIVE_SETCID, fn->_this));

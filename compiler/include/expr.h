@@ -39,8 +39,8 @@ class DefExpr : public Expr {
   Expr* exprType;
 
   DefExpr(Symbol* initSym = NULL,
-          Expr* initInit = NULL,
-          Expr* initExprType = NULL);
+          BaseAST* initInit = NULL,
+          BaseAST* initExprType = NULL);
   virtual void verify(); 
   COPY_DEF(DefExpr);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -128,14 +128,6 @@ class NamedExpr : public Expr {
   void codegen(FILE* outfile);
 };
 
-
-Expr *new_IntLiteral(char *, IF1_int_type int_size=INT_SIZE_64);
-Expr *new_IntLiteral(long long int i, IF1_int_type int_size=INT_SIZE_64);
-Expr *new_UIntLiteral(char *ui_str, IF1_int_type uint_size=INT_SIZE_64);
-Expr *new_UIntLiteral(unsigned long long u, IF1_int_type uint_size=INT_SIZE_64);
-Expr *new_FloatLiteral(char *n, long double d, IF1_float_type float_size=FLOAT_SIZE_64);
-Expr *new_ComplexLiteral(char* n, long double i,IF1_float_type comp_size=FLOAT_SIZE_64);
-Expr *new_StringLiteral(char *str);
 bool get_int(Expr *e, long *i); // false is failure
 bool get_string(Expr *e, char **s); // false is failure
 VarSymbol *get_constant(Expr *e);

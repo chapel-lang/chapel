@@ -226,7 +226,7 @@ iterator_create_fields( FnSymbol *fn, ClassType *ic) {
                                             etype));
       // replace uses in body
       forv_Vec( SymExpr, se, a->uses) {
-        se->replace( new CallExpr( ".", _this, new_StringLiteral( se->var->name)));
+        se->replace( new CallExpr( ".", _this, new_StringSymbol( se->var->name)));
 
       }
     }
@@ -247,8 +247,8 @@ iterator_create_fields( FnSymbol *fn, ClassType *ic) {
 
         // need to reset default value (make re-entrant)
         Stmt *def_stmt= def->parentStmt;
-        Expr *init_e = (def->init) ? dynamic_cast<Expr*>(def->init->remove()) : new CallExpr( "_init", (new CallExpr( ".", _this, new_StringLiteral( v->name))));
-        // Expr *newdef = new CallExpr( PRIMITIVE_SET_MEMBER, _this, new_StringLiteral( v->name), init_e);
+        Expr *init_e = (def->init) ? dynamic_cast<Expr*>(def->init->remove()) : new CallExpr( "_init", (new CallExpr( ".", _this, new_StringSymbol( v->name))));
+        // Expr *newdef = new CallExpr( PRIMITIVE_SET_MEMBER, _this, new_StringSymbol( v->name), init_e);
 
         Expr *newdef = new CallExpr( v->name, 
                                      gMethodToken,
@@ -260,7 +260,7 @@ iterator_create_fields( FnSymbol *fn, ClassType *ic) {
         // replace uses in body
         compute_sym_uses( fn);
         forv_Vec( SymExpr, se, v->uses) {  // replace each use
-          se->replace( new CallExpr( ".", _this, new_StringLiteral(se->var->name)));
+          se->replace( new CallExpr( ".", _this, new_StringSymbol(se->var->name)));
         }
       }
     }
@@ -344,7 +344,7 @@ iterator_replace_yields( FnSymbol *fn,
     if (ReturnStmt *rs=dynamic_cast<ReturnStmt*>( ast)) {
       if (rs->yield) {
         return_pts++;
-        rs->insertBefore( new ReturnStmt( new_IntLiteral( return_pts)));
+        rs->insertBefore( new ReturnStmt( new_IntSymbol( return_pts)));
         l = new LabelSymbol( iterator_return_label( return_pts));
         labels->add( l);
         rs->insertAfter( new ExprStmt( new DefExpr( l)));
@@ -362,12 +362,12 @@ iterator_build_jtable( FnSymbol *fn, ArgSymbol *c, Vec<ReturnStmt*> *vals_return
   LabelSymbol *l = labels->first();
   b->insertAtTail( new ExprStmt( new DefExpr( l))); 
   for( int retpt=0; retpt<=vals_returned->length(); retpt++) {
-    b->insertAtHead( new CondStmt( new CallExpr( "==", c, new_IntLiteral( retpt)), new GotoStmt( goto_normal, l)));
+    b->insertAtHead( new CondStmt( new CallExpr( "==", c, new_IntSymbol( retpt)), new GotoStmt( goto_normal, l)));
     labels->remove( 0);
     l = labels->first();
   }
   fn->body->insertAtHead( b);
-  fn->body->insertAtTail( new ReturnStmt( new_IntLiteral( vals_returned->length()+1)));
+  fn->body->insertAtTail( new ReturnStmt( new_IntSymbol( vals_returned->length()+1)));
 }
 
 
@@ -377,7 +377,7 @@ iterator_build_vtable( FnSymbol *fn, ArgSymbol *c, Vec<ReturnStmt*> *vals_return
   BlockStmt *b= build_chpl_stmt();
   uint retpt= 1;
   forv_Vec( Stmt, stmt, *vals_returned) {
-    b->insertAtTail( new CondStmt( new CallExpr( "==", c, new_IntLiteral( retpt)),
+    b->insertAtTail( new CondStmt( new CallExpr( "==", c, new_IntSymbol( retpt)),
                                    stmt));
     retpt++;
   }
@@ -431,7 +431,7 @@ iterator_transform( FnSymbol *fn) {
   headcf->makeGloballyVisible = true;
   m->stmts->insertAtHead( new DefExpr( headcf));
   iterator_formals( headcf, ic);
-  headcf->body->insertAtHead( new ReturnStmt( new CallExpr( new CallExpr( ".", headcf->_this, new_StringLiteral( "getNextCursor")), new_IntLiteral( "0"))));
+  headcf->body->insertAtHead( new ReturnStmt( new CallExpr( new CallExpr( ".", headcf->_this, new_StringSymbol( "getNextCursor")), new_IntSymbol(0))));
   headcf->isMethod = true;
 
   FnSymbol *valuef = new FnSymbol( "getValue");
@@ -448,7 +448,7 @@ iterator_transform( FnSymbol *fn) {
   FnSymbol *isvalidcf = new FnSymbol( "isValidCursor?");
   isvalidcf->makeGloballyVisible = true;
   m->stmts->insertAtHead( new DefExpr( isvalidcf));
-  isvalidcf->body->insertAtHead( new ReturnStmt( new CallExpr( "!=", cursor, new_IntLiteral( vals_returned->length()+1))));
+  isvalidcf->body->insertAtHead( new ReturnStmt( new CallExpr( "!=", cursor, new_IntSymbol( vals_returned->length()+1))));
   iterator_formals( isvalidcf, ic, cursor);
   isvalidcf->isMethod = true;
 
@@ -1247,7 +1247,7 @@ static void fold_param_for(BlockStmt* block) {
               for (int i = low; i <= high; i += stride) {
                 VarSymbol* new_index = new VarSymbol(index->name);
                 new_index->consClass = VAR_PARAM;
-                block->insertBefore(new DefExpr(new_index, new_IntLiteral(i)));
+                block->insertBefore(new DefExpr(new_index, new_IntSymbol(i)));
                 ASTMap map;
                 map.put(index, new_index);
                 block->insertBefore(block->copy(&map));
@@ -1328,11 +1328,11 @@ expand_var_args(FnSymbol* fn) {
       if (max_actuals == 0)
         compute_max_actuals();
       for (int i = 1; i <= max_actuals; i++) {
-        arg->variableExpr->replace(new_IntLiteral(i));
+        arg->variableExpr->replace(new SymExpr(new_IntSymbol(i)));
         FnSymbol* new_fn = fn->copy();
         fn->defPoint->parentStmt->insertBefore(new DefExpr(new_fn));
         DefExpr* new_def = def->copy();
-        new_def->init = new_IntLiteral(i);
+        new_def->init = new SymExpr(new_IntSymbol(i));
         new_fn->insertAtHead(new_def);
         ASTMap update;
         update.put(def->sym, new_def->sym);
@@ -1360,7 +1360,7 @@ expand_var_args(FnSymbol* fn) {
           }
           VarSymbol* var = new VarSymbol(arg->name);
           CallExpr* tupleCall = new CallExpr("_tuple", actuals);
-          tupleCall->insertAtHead(new_IntLiteral(n));
+          tupleCall->insertAtHead(new_IntSymbol(n));
           fn->insertAtHead(new DefExpr(var, tupleCall));
           arg->defPoint->remove();
           ASTMap update;
@@ -1478,12 +1478,12 @@ static void fixup_array_formals(FnSymbol* fn) {
           }
           ExprStmt* stmt = dynamic_cast<ExprStmt*>(fn->where->body->only());
           Expr* expr = stmt->expr;
-          expr->replace(new CallExpr("&&", expr->copy(), new CallExpr("==", call->get(2)->remove(), new CallExpr(".", parent->sym, new_StringLiteral("elt_type")))));
+          expr->replace(new CallExpr("&&", expr->copy(), new CallExpr("==", call->get(2)->remove(), new CallExpr(".", parent->sym, new_StringSymbol("elt_type")))));
           if (def) {
             forv_Vec(BaseAST, ast, asts) {
               if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
                 if (sym->var == def->sym)
-                  sym->replace(new CallExpr(".", parent->sym, new_StringLiteral("dom")));
+                  sym->replace(new CallExpr(".", parent->sym, new_StringSymbol("dom")));
               }
             }
           }
@@ -1497,7 +1497,7 @@ static void fixup_array_formals(FnSymbol* fn) {
                   sym->var = tmp;
               }
             }
-            fn->insertAtHead(new CondStmt(new SymExpr(parent->sym), new ExprStmt(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(new CallExpr(".", parent->sym, new_StringLiteral("view")), call->get(1)->copy())))));
+            fn->insertAtHead(new CondStmt(new SymExpr(parent->sym), new ExprStmt(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(new CallExpr(".", parent->sym, new_StringSymbol("view")), call->get(1)->copy())))));
             fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, parent->sym));
             fn->insertAtHead(new DefExpr(tmp));
           }
