@@ -74882,3 +74882,13 @@ Modified files:
 	chapel/compiler/AST/: symbol.cpp 
 	chapel/compiler/include/: symbol.h 
 
+---------------------------------------------------------------------------
+
+09/11/06 15:28:15 -- bradc
+
+Log message:
+	Removing an unnecessary -D flag from the ifa/ Makefile.
+
+Modified files:
+	chapel/compiler/ifa/: Makefile 
+
