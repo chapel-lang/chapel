@@ -74860,3 +74860,14 @@ Modified files:
 	                         functionResolution.cpp normalize.cpp 
 	                         parallel.cpp 
 
+---------------------------------------------------------------------------
+
+09/11/06 14:28:05 -- bradc
+
+Log message:
+	Removed readline-related things from the build process.
+
+Modified files:
+	chapel/make/: Makefile.cygwin Makefile.linux Makefile.linux64 
+	              Makefile.linux64_32 
+
