@@ -446,7 +446,7 @@ class _aarray: _abase {
           halt("array index out of bounds: ", ind);
     var sum : int;
     for param i in 1..rank do
-      sum = sum + (ind(i) - off(i)) * blk(i);
+      sum = sum + ((ind(i) - off(i)) * blk(i)) / dom(i)._stride;
     return data(sum);
   }
 
@@ -524,12 +524,12 @@ def fwrite(f : file, x : _aarray) {
     i(dim) = x.dom(dim)._low;
   label next while true {
     fwrite(f, x(i));
-    if i(x.rank) < x.dom(x.rank)._high {
+    if i(x.rank) <= (x.dom(x.rank)._high - x.dom(x.rank)._stride) {
       fwrite(f, " ");
       i(x.rank) += x.dom(x.rank)._stride;
     } else {
       for dim in 1..x.rank-1 by -1 {
-        if i(dim) < x.dom(dim)._high {
+        if i(dim) <= (x.dom(dim)._high - x.dom(dim)._stride) {
           i(dim) += x.dom(dim)._stride;
           for dim2 in dim+1..x.rank {
             fwrite(f, "\n");
