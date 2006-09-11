@@ -1,9 +1,6 @@
 # Makefile.cygwin: contains cygwin-specific variables
 #
 
-CFLAGS += -DUSE_READLINE
-LIBS += -lreadline
-
 EXE_SUFFIX=.exe
 PLATFORM_PREMAKE=rm -f $*/FILES
 

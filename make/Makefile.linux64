@@ -1,9 +1,7 @@
 # Makefile.linux64: contains linux64-specific variables
 #
 
-#CFLAGS += -DUSE_READLINE
 LIBS += -lrt
-#LIBS += -lreadline
 LIBS += -ldl
 
 -include $(CHAPEL_ROOT)/make/Makefile.gnu

@@ -5,6 +5,6 @@ CFLAGS += -m32
 LDFLAGS += -m32
 CONFIGURE_PREFIX=linux32 
 MAKE_OPTIONS="CC=gcc -m32"
-LIBS += -lreadline -lrt -ldl
+LIBS += -lrt -ldl
 
 -include $(CHAPEL_ROOT)/make/Makefile.gnu
