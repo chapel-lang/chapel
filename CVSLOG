@@ -74772,3 +74772,14 @@ Added files:
 	chapel/test/classes/marybeth/: test_dispatch1-error.chpl 
 	                               test_dispatch1-error.good 
 
+---------------------------------------------------------------------------
+
+09/11/06 10:24:06 -- deitz
+
+Log message:
+	Added a test of row major storage of arrays that explicit prints out
+	some internal state to ensure that it is stored in row major.
+
+Added files:
+	chapel/test/arrays/deitz/: rowMajor.chpl rowMajor.good 
+
