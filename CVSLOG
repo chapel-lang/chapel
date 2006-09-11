@@ -74739,3 +74739,36 @@ Log message:
 Modified files:
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+09/11/06 10:22:57 -- deitz
+
+Log message:
+	Added an error message test written by Mary Beth, now working.
+	
+	Fixed a bug in which an expression of any class type could be assigned
+	to a variable of any class type.  The rhs now must be a subclass of
+	the lhs.
+	
+	Fixed two buggy tests.  One tried to assign one variable to another
+	variable of subclass type.  I put in an explicit cast.  (Should this
+	cast be checked at runtime?  I believe yes.)
+	
+	The other buggy test had written
+	  var d: domain(1) = [1..n, 1..n];
+	and had worked because the 2D domain is stored in memory such that it
+	could be accessed as if it were a 1D domain.  I fixed this test by
+	dropping the second range from the domain.
+	
+	Special-cased assignment of nil to non-class error.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/modules/standard/: _chpl_base.chpl _chpl_seq.chpl 
+	chapel/test/arrays/deitz/part1/: test_array_arg4.chpl 
+	chapel/test/classes/deitz/dispatch/: test_dd1.chpl 
+	chapel/test/types/seq/bradc/: emptySeq3.good 
+Added files:
+	chapel/test/classes/marybeth/: test_dispatch1-error.chpl 
+	                               test_dispatch1-error.good 
+
