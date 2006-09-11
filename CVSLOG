@@ -74805,3 +74805,25 @@ Added files:
 	chapel/test/arrays/deitz/stride/: test_stride1.chpl 
 	                                  test_stride1.good 
 
+---------------------------------------------------------------------------
+
+09/11/06 11:46:51 -- deitz
+
+Log message:
+	Removed support for anonymous record types declared as
+	
+	  var a : (x : int, y : int);
+	
+	This is not in the spec and I'm not sure why I added it; the parsing
+	is hairy for one.  Anonymous records are still supported as
+	
+	  var a : record { var x : int; var y : int; };
+	
+	Simplifed the parser a little.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+Removed files:
+	chapel/test/classes/deitz/: test_anon_record3.chpl 
+	                            test_anon_record3.good 
+
