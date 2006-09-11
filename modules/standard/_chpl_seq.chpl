@@ -143,7 +143,7 @@ record seq {
   }
 }
 
-def =(s1: seq, s2) {
+def =(s1: seq, s2: seq) {
   s1._delete();
   forall e in s2 do
     s1._append_in_place(e);

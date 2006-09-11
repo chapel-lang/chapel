@@ -114,7 +114,7 @@ pragma "inline" def ascii(a: string) return __primitive("ascii", a);
 //
 pragma "inline" def ==(a: object, b: object) return __primitive("ptr_eq", a, b);
 pragma "inline" def !=(a: object, b: object) return __primitive("ptr_neq", a, b);
-pragma "inline" def =(a, b:object) return b:a.type;
+pragma "inline" def =(a, b) return b;
 pragma "inline" def _copy(a) return a;
 
 

@@ -13,5 +13,5 @@ var c: C = D(x=3,y=4);
 c.foo(12);
 c.foo(true);
 
-var d: D = c;
+var d: D = c:D;
 d.foo(true);

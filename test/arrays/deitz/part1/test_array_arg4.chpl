@@ -1,6 +1,6 @@
 config var n: int = 4;
 
-var D: domain(1) = [1..n, 1..n];
+var D: domain(1) = [1..n];
 var A: [D] int;
 
 def foo(X: [D] int) {

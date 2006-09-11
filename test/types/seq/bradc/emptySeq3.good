@@ -1,1 +1,1 @@
-Error: Illegal assignment of nil to structure of type seq(int) (emptySeq3.chpl:1)
+Error: Type mismatch in assignment from nil to seq(int) (emptySeq3.chpl:1)

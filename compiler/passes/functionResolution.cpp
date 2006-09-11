@@ -974,11 +974,18 @@ resolveCall(CallExpr* call) {
         call->primitive = primitives[PRIMITIVE_REF];
       if (t == dtUnknown)
         INT_FATAL(call, "Unable to resolve type");
-      if (t != sym->var->type && 
-          t != dtNil && 
-          t != dtObject)
+      ClassType* ct = dynamic_cast<ClassType*>(sym->var->type);
+      if (t == dtNil && sym->var->type != dtNil && (!ct || ct->classTag != CLASS_CLASS))
+        USR_FATAL(call, "Type mismatch in assignment from nil to %s",
+                  sym->var->type->symbol->name);
+      if (t != dtNil && t != sym->var->type && !isDispatchParent(t, sym->var->type))
         USR_FATAL(call, "Type mismatch in assignment from %s to %s",
                   t->symbol->name, sym->var->type->symbol->name);
+      if (t != sym->var->type && isDispatchParent(t, sym->var->type)) {
+        Expr* rhs = call->get(2);
+        rhs->remove();
+        call->insertAtTail(new CallExpr(PRIMITIVE_CAST, sym->var->type->symbol, rhs));
+      }
     }
   }
 }
