@@ -982,7 +982,7 @@ pragma_ls:
 
 pragma:
   TPRAGMA STRINGLITERAL
-{ $$ = stringcpy($2); }
+{ $$ = canonicalize_string($2); }
 ;
 
 
@@ -1269,7 +1269,7 @@ literal:
 
 identifier:
   TIDENT
-    { $$ = stringcpy(yytext); }
+    { $$ = canonicalize_string(yytext); }
 ;
 
 

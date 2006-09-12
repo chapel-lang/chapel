@@ -532,7 +532,7 @@ resolve_call(CallExpr* call,
   bool methodTag = call->methodTag;
 
   if (!call->isResolved())
-    call->parentScope->getVisibleFunctions(&visibleFns, name);
+    call->parentScope->getVisibleFunctions(&visibleFns, canonicalize_string(name));
   else
     visibleFns.add(call->isResolved());
 

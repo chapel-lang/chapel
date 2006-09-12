@@ -112,7 +112,7 @@ add_dwcache(FnSymbol* newFn, FnSymbol* oldFn, Vec<Symbol*>* defaults) {
 
 Symbol::Symbol(astType_t astType, char* init_name, Type* init_type) :
   BaseAST(astType),
-  name(init_name),
+  name(canonicalize_string(init_name)),
   cname(name),
   type(init_type),
   defPoint(NULL),
@@ -257,13 +257,9 @@ char* Symbol::hasPragmaPrefix(char* str) {
 }
 
 
-UnresolvedSymbol::UnresolvedSymbol(char* init_name, char* init_cname) :
+UnresolvedSymbol::UnresolvedSymbol(char* init_name) :
   Symbol(SYMBOL_UNRESOLVED, init_name)
-{
-  if (init_cname) {
-    cname = init_cname;
-  }
-}
+{ }
 
 
 void UnresolvedSymbol::verify() {
@@ -282,7 +278,7 @@ void UnresolvedSymbol::codegen(FILE* outfile) {
 
 UnresolvedSymbol*
 UnresolvedSymbol::copyInner(ASTMap* map) {
-  return new UnresolvedSymbol(stringcpy(name));
+  return new UnresolvedSymbol(name);
 }
 
 
@@ -313,9 +309,8 @@ void VarSymbol::verify() {
 
 VarSymbol*
 VarSymbol::copyInner(ASTMap* map) {
-  VarSymbol* newVarSymbol = 
-    new VarSymbol(stringcpy(name), type, varClass, consClass);
-  newVarSymbol->cname = stringcpy(cname);
+  VarSymbol* newVarSymbol = new VarSymbol(name, type, varClass, consClass);
+  newVarSymbol->cname = cname;
   newVarSymbol->isCompilerTemp = isCompilerTemp;
   newVarSymbol->isTypeVariable = isTypeVariable;
   newVarSymbol->isReference = isReference;
@@ -482,10 +477,10 @@ void ArgSymbol::verify() {
 
 ArgSymbol*
 ArgSymbol::copyInner(ASTMap* map) {
-  ArgSymbol *ps = new ArgSymbol(intent, stringcpy(name),
-                                type, COPY_INT(defaultExpr), COPY_INT(variableExpr));
+  ArgSymbol *ps = new ArgSymbol(intent, name, type,
+                                COPY_INT(defaultExpr), COPY_INT(variableExpr));
   ps->isGeneric = isGeneric;
-  ps->cname = stringcpy(cname);
+  ps->cname = cname;
   ps->instantiatedParam = instantiatedParam;
   ps->isTypeVariable = isTypeVariable;
   return ps;
@@ -574,9 +569,9 @@ void TypeSymbol::verify() {
 TypeSymbol*
 TypeSymbol::copyInner(ASTMap* map) {
   Type* new_type = COPY_INT(type);
-  TypeSymbol* new_type_symbol = new TypeSymbol(stringcpy(name), new_type);
+  TypeSymbol* new_type_symbol = new TypeSymbol(name, new_type);
   new_type->addSymbol(new_type_symbol);
-  new_type_symbol->cname = stringcpy(cname);
+  new_type_symbol->cname = cname;
   return new_type_symbol;
 }
 
@@ -1349,7 +1344,7 @@ void EnumSymbol::verify() {
 
 EnumSymbol*
 EnumSymbol::copyInner(ASTMap* map) {
-  return new EnumSymbol(stringcpy(name));
+  return new EnumSymbol(name);
 }
 
 
@@ -1443,8 +1438,8 @@ void LabelSymbol::verify() {
 
 LabelSymbol* 
 LabelSymbol::copyInner(ASTMap* map) {
-  LabelSymbol* copy = new LabelSymbol(stringcpy(name));
-  copy->cname = stringcpy(cname);
+  LabelSymbol* copy = new LabelSymbol(name);
+  copy->cname = cname;
   return copy;
 }
 
@@ -1452,17 +1447,16 @@ void LabelSymbol::codegenDef(FILE* outfile) { }
 
 static int literal_id = 1;
 HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
-HashMap<char *, StringHashFns, VarSymbol *> uniqueSymbolHash;
 
 
 VarSymbol *new_StringSymbol(char *str) {
   Immediate imm;
   imm.const_kind = CONST_KIND_STRING;
-  imm.v_string = cannonicalize_string(str);
+  imm.v_string = canonicalize_string(str);
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   if (s)
     return s;
-  s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), dtString);
+  s = new VarSymbol("_literal_string", dtString);
   int l = strlen(str);
   char *n = (char*)MALLOC(l + 3);
   strcpy(n + 1, str);

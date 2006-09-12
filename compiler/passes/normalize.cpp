@@ -409,7 +409,7 @@ iterator_transform( FnSymbol *fn) {
   // create getNextCursor
   FnSymbol *nextcf = new FnSymbol( "getNextCursor");
   nextcf = fn->copy();
-  nextcf->name = nextcf->cname = "getNextCursor";
+  nextcf->name = nextcf->cname = canonicalize_string("getNextCursor");
   nextcf->fnClass = FN_FUNCTION;
   nextcf->isMethod = true;
   nextcf->makeGloballyVisible = true;
@@ -1565,7 +1565,7 @@ static void change_method_into_constructor(FnSymbol* fn) {
   ClassType* ct = dynamic_cast<ClassType*>(fn->formals->get(2)->sym->type);
   if (!ct)
     INT_FATAL(fn, "constructor on non-class type");
-  fn->name = stringcat("_construct_", fn->name);
+  fn->name = canonicalize_string(stringcat("_construct_", fn->name));
   fn->_this = new VarSymbol("this", ct);
   fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, fn->_this, new CallExpr(ct->symbol)));
   fn->insertAtHead(new DefExpr(fn->_this));

@@ -78,7 +78,7 @@ class Symbol : public BaseAST {
 
 class UnresolvedSymbol : public Symbol {
  public:
-  UnresolvedSymbol(char* init_name, char* init_cname = NULL);
+  UnresolvedSymbol(char* init_name);
   virtual void verify(); 
   COPY_DEF(UnresolvedSymbol);
   void codegen(FILE* outfile);

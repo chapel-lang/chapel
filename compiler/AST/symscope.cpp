@@ -239,19 +239,17 @@ void SymScope::codegenFunctions(FILE* outfile) {
 void SymScope::addVisibleFunction(FnSymbol* fn) {
   if (!fn->visible)
     return;
-  char* n = cannonicalize_string(fn->name);
-  Vec<FnSymbol*>* fs = visibleFunctions.get(n);
+  Vec<FnSymbol*>* fs = visibleFunctions.get(fn->name);
   if (!fs) fs = new Vec<FnSymbol*>;
   fs->add(fn);
-  visibleFunctions.put(n, fs);
+  visibleFunctions.put(fn->name, fs);
 }
 
 
 void SymScope::removeVisibleFunction(FnSymbol* fn) {
   if (!fn->visible)
     return;
-  char* n = cannonicalize_string(fn->name);
-  Vec<FnSymbol*>* fs = visibleFunctions.get(n);
+  Vec<FnSymbol*>* fs = visibleFunctions.get(fn->name);
   if (!fs) return;
   for (int i = 0; i < fs->n; i++) {
     if (fs->v[i] == fn) {
@@ -283,19 +281,4 @@ void SymScope::getVisibleFunctions(Vec<FnSymbol*>* allVisibleFunctions,
   }
   if (parent)
     parent->getVisibleFunctions(allVisibleFunctions, name, true);
-}
-
-
-void SymScope::printVisibleFunctions() {
-//   for (int i = 0; i < visibleFunctions.n; i++) {
-//     Vec<FnSymbol *> *fs = visibleFunctions.v[i].value;
-//     if (fs) {
-//       forv_Vec(FnSymbol, fn, *fs) {
-//         if (fn) {
-//           fn->print(stdout);
-//           printf(" %ld\n", fn->id);
-//         }
-//       }
-//     }
-//   }
 }

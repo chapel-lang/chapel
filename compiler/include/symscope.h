@@ -8,7 +8,7 @@ class SymScope : public gc {
   BaseAST* astParent; // back pointer to AST
   SymScope* parent;
   Vec<Symbol*> symbols;
-  ChainHashMap<char*, StringHashFns, Vec<FnSymbol*>*> visibleFunctions;
+  Map<char*,Vec<FnSymbol*>*> visibleFunctions;
   ChainHashMap<char*, StringHashFns, Symbol*> table;
 
   SymScope(BaseAST* iastParent, SymScope* iparent);
@@ -29,7 +29,6 @@ class SymScope : public gc {
   void removeVisibleFunction(FnSymbol* fn);
   void getVisibleFunctions(Vec<FnSymbol*>* allVisibleFunctions, char* name,
                            bool recursed = false);
-  void printVisibleFunctions();
 }; 
 
 #endif

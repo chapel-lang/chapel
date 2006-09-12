@@ -10,6 +10,7 @@
 
 void verify();
 void cleanAst(long* astCount, int* liveCount);
+void destroyAst();
 
 bool printPasses = false;
 
@@ -110,4 +111,5 @@ void runPasses(void) {
     dump_index_footer(html_index_file);
     fclose(html_index_file);
   }
+  destroyAst();
 }

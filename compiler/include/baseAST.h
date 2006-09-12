@@ -3,6 +3,8 @@
 
 #include "chpl.h"
 
+char* canonicalize_string(char *s);
+
 class Symbol;
 class ModuleSymbol;
 class FnSymbol;
@@ -160,7 +162,5 @@ extern SymScope* rootScope; // contains intrinsics and all modules
 extern Vec<ModuleSymbol*> allModules;     // Contains all modules
 extern Vec<ModuleSymbol*> userModules;    // Contains user modules
 void registerModule(ModuleSymbol* mod);
-
-char* cannonicalize_string(char *s);
 
 #endif

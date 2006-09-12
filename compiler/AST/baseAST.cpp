@@ -8,10 +8,16 @@
 #include "type.h"
 #include "yy.h"
 
+ChainHashMap<char*, StringHashFns, char*> chapelStringsTable;
 
-char *
-cannonicalize_string(char *s) {
-  return stringcpy(s); // if1_cannonicalize_string(if1, s);
+char*
+canonicalize_string(char *s) {
+  char* ss = chapelStringsTable.get(s);
+  if (!ss) {
+    ss = stringcpy(s);
+    chapelStringsTable.put(ss, ss);
+  }
+  return ss;
 }
 
 
@@ -53,6 +59,15 @@ void cleanAst(long* astCount, int* liveCount) {
   }
   *astCount = uid;
   *liveCount = gAsts.n;
+}
+
+
+void destroyAst() {
+  Vec<char*> keys;
+  chapelStringsTable.get_keys(keys);
+  forv_Vec(char*, key, keys) {
+    FREE(key);
+  }
 }
 
 
@@ -292,7 +307,7 @@ void BaseAST::addPragma(char* str) {
   } else if (DefExpr* defExpr = dynamic_cast<DefExpr*>(this)) {
     defExpr->sym->addPragma(str);
   } else if (Symbol* sym = dynamic_cast<Symbol*>(this)) {
-    sym->pragmas.add(stringcpy(str));
+    sym->pragmas.add(str);
   }
 }
 
