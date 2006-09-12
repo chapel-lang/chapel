@@ -416,7 +416,7 @@ char* currentTraversal = NULL;
 #define AST_ADD_CHILD(_t, _m) if (((_t*)a)->_m) asts.add(((_t*)a)->_m)
 #define AST_ADD_LIST(_t, _m, _mt)                                       \
   if (((_t*)a)->_m) {                                                   \
-    for_alist(_mt, tmp, ((_t*)a)->_m) {                                 \
+    for_alist_sc(_mt, tmp, ((_t*)a)->_m) {                              \
       asts.add(tmp);                                                    \
     }                                                                   \
     if (sentinels) {                                                    \

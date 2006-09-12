@@ -53,12 +53,19 @@ class AList : public gc {
   void codegenDef(FILE* outfile, char* separator = ", ");
 };
 
-#define for_alist(elemtype, node, list)  \
-  for (elemtype *node = (list) ? ((list)->head ? dynamic_cast<elemtype*>((list)->head->next) : NULL) : NULL,      \
-         *_alist_next = (node) ? dynamic_cast<elemtype*>((node)->next) : NULL;                  \
-       _alist_next;                                                                             \
-       node = _alist_next,                                                                      \
+#define for_alist(elemtype, node, list)                                 \
+  for (elemtype *node = (list) ? ((list)->head ? dynamic_cast<elemtype*>((list)->head->next) : NULL) : NULL, \
+         *_alist_next = (node) ? dynamic_cast<elemtype*>((node)->next) : NULL; \
+       _alist_next;                                                     \
+       node = _alist_next,                                              \
          _alist_next = (node) ? dynamic_cast<elemtype*>((node)->next) : NULL)
+
+#define for_alist_sc(elemtype, node, list)                              \
+  for (elemtype *node = (list)->head ? (elemtype*)((list)->head->next) : NULL, \
+         *_alist_next = node ? (elemtype*)(node->next) : NULL;          \
+       _alist_next;                                                     \
+       node = _alist_next,                                              \
+         _alist_next = node ? (elemtype*)(node->next) : NULL)
 
 #define for_formals(formal, fn)                                         \
   for (ArgSymbol *formal = ((fn)->formals) ? (((fn)->formals)->head ? dynamic_cast<ArgSymbol*>(dynamic_cast<DefExpr*>(((fn)->formals)->head->next)->sym) : NULL) : NULL, \
