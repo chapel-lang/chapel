@@ -366,6 +366,8 @@ static void flatten_primary_methods(FnSymbol* fn) {
     DefExpr* def = fn->defPoint;
     def->remove();
     insertPoint->insertBefore(new ExprStmt(def));
+    if (ts->hasPragma( "synchronization primitive"))
+      fn->addPragma( "synchronization primitive");
   }
 }
 

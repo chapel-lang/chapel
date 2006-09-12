@@ -208,7 +208,6 @@ class _syncvar {
   var  cv_empty: _condvar_p; // wait for empty, signal this when empty
   var  cv_full: _condvar_p;  // wait for full, signal this when full
 
-  pragma "synchronization primitive" 
   def initialize() {
     is_full = false; 
     lock = __primitive( "mutex_new");
@@ -357,7 +356,6 @@ class _singlevar {
   var  lock: _mutex_p;       // need to acquire before accessing this record
   var  cv_full: _condvar_p;  // wait for full
 
-  pragma "synchronization primitive" 
   def initialize() {
     is_full = false; 
     lock = __primitive( "mutex_new");
