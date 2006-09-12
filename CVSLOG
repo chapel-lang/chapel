@@ -74985,3 +74985,24 @@ Modified files:
 	chapel/compiler/parser/: chapel.y 
 	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
 
+---------------------------------------------------------------------------
+
+09/12/06 13:25:17 -- deitz
+
+Log message:
+	Made a new utility astr(char*, ...) that takes between one and four
+	strings and returns a canonical string of the concatenation.  Think of
+	"astr" as standing for AST string.
+	
+	Canonicalized more of the strings in the AST.
+	
+	Added a measure to --print-passes so that at the end it prints the
+	time spent between passes.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp build.cpp symbol.cpp 
+	chapel/compiler/include/: baseAST.h 
+	chapel/compiler/main/: runpasses.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+
