@@ -74955,3 +74955,15 @@ Modified files:
 	chapel/compiler/AST/: baseAST.cpp 
 	chapel/compiler/include/: alist.h 
 
+---------------------------------------------------------------------------
+
+09/12/06 10:04:43 -- deitz
+
+Log message:
+	Added a virtual destructor to BaseAST and removed flag
+	-Wno-non-virtual-dtor.
+
+Modified files:
+	chapel/compiler/include/: baseAST.h 
+	chapel/make/: Makefile.gnu 
+
