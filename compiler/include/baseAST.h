@@ -97,6 +97,7 @@ class BaseAST : public gc {
 
   BaseAST(void);
   BaseAST(astType_t type);
+  virtual ~BaseAST() { }
   COPY_DEF(BaseAST);
 
   virtual void verify(); 

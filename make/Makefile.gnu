@@ -40,7 +40,7 @@ CFLAGS += -pg
 LDFLAGS += -pg
 endif
 
-CFLAGS += -Wall -Wno-non-virtual-dtor
+CFLAGS += -Wall
 
 
 
