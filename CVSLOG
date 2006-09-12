@@ -74906,3 +74906,23 @@ Added files:
 	chapel/test/parallel/single/waynew/: class0.chpl class0.good 
 	                                     class1.chpl class1.good 
 
+---------------------------------------------------------------------------
+
+09/11/06 17:53:48 -- waynew
+
+Log message:
+	- Bug fix for sync/single variable. Make sure that we only instantiate
+	on the sync/single type only when we need to.  Otherwise, instantiate with
+	the base type.
+	
+	- Added pragma "synchronization primitive" for the sync/single class and
+	its functions.
+	
+	- Built getter/setter functions inherit "synchronization primitive".
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp cleanup.cpp 
+	                         functionResolution.cpp 
+	chapel/modules/standard/: _chpl_base.chpl 
+
