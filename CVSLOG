@@ -74892,3 +74892,17 @@ Log message:
 Modified files:
 	chapel/compiler/ifa/: Makefile 
 
+---------------------------------------------------------------------------
+
+09/11/06 17:13:16 -- waynew
+
+Log message:
+	Test the combination of synchronizaton class fields with write function.
+	In particular, we want to test that synchronization is coerced first
+	(i.e., grabbing the sync lock/state first) before the file lock is
+	obtained.  Otherwise, we can deadlock.
+
+Added files:
+	chapel/test/parallel/single/waynew/: class0.chpl class0.good 
+	                                     class1.chpl class1.good 
+
