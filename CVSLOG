@@ -75006,3 +75006,15 @@ Modified files:
 	chapel/compiler/parser/: chapel.y 
 	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
 
+---------------------------------------------------------------------------
+
+09/12/06 14:41:22 -- deitz
+
+Log message:
+	Reworked verify (called between passes) to traverse the AST once
+	rather than twice.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp symbol.cpp 
+	chapel/compiler/passes/: verify.cpp 
+
