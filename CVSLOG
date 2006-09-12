@@ -75018,3 +75018,26 @@ Modified files:
 	chapel/compiler/AST/: expr.cpp symbol.cpp 
 	chapel/compiler/passes/: verify.cpp 
 
+---------------------------------------------------------------------------
+
+09/12/06 15:03:30 -- deitz
+
+Log message:
+	Fixed a bug in derived records where no instance of the base record is
+	created and fixed support for casting a record to its base type.
+	
+	Futurized three tests that inherit from a generic parent where the
+	parent is generic because it has fields with no type or initialization
+	expression:
+	
+	  class C { var x; }
+	  class D: C { var y; }
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp 
+	chapel/compiler/passes/: functionResolution.cpp 
+Added files:
+	chapel/test/classes/jplevyak/: inherit-1.future 
+	                               inherit-2-fixed.future 
+	                               inherit-2.future 
+
