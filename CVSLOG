@@ -74926,3 +74926,14 @@ Modified files:
 	                         functionResolution.cpp 
 	chapel/modules/standard/: _chpl_base.chpl 
 
+---------------------------------------------------------------------------
+
+09/12/06 09:04:32 -- bradc
+
+Log message:
+	Steve's recent improvements to line numbers seem to have fixed
+	this test on all platforms.
+
+Removed files:
+	chapel/test/memory/shannon/: memmaxExceedsLineno.future 
+
