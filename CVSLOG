@@ -74967,3 +74967,21 @@ Modified files:
 	chapel/compiler/include/: baseAST.h 
 	chapel/make/: Makefile.gnu 
 
+---------------------------------------------------------------------------
+
+09/12/06 10:25:21 -- deitz
+
+Log message:
+	Added facility for canonicalizing strings.  All Symbol::name strings
+	need to be canonicalized now.  Use canonicalize_string(char*).
+	
+	Removed a bunch of string copying and sped up resolution a little by
+	making the visible function map a map rather than a string hash table.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp symbol.cpp symscope.cpp 
+	chapel/compiler/include/: baseAST.h map.h symbol.h symscope.h 
+	chapel/compiler/main/: runpasses.cpp 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+
