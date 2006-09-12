@@ -75041,3 +75041,17 @@ Added files:
 	                               inherit-2-fixed.future 
 	                               inherit-2.future 
 
+---------------------------------------------------------------------------
+
+09/12/06 15:46:27 -- waynew
+
+Log message:
+	Minor fix to sync/single var support.  The "synchronization primitive"
+	pragma need not be put on their methods explicitly.  The methods will inherit
+	that pragma from the sync/single symbol during cleanup now.  Removed a
+	couple pragmas accordingly in _chpl_base.chpl.
+
+Modified files:
+	chapel/compiler/passes/: cleanup.cpp 
+	chapel/modules/standard/: _chpl_base.chpl 
+
