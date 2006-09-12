@@ -1105,11 +1105,20 @@ void CallExpr::codegen(FILE* outfile) {
         break;
       }
 
-      fprintf(outfile, "((");
-      typeInfo()->codegen(outfile);
-      fprintf(outfile, ")(");
-      get(2)->codegen(outfile);
-      fprintf(outfile, "))");
+      ClassType* ct = dynamic_cast<ClassType*>(typeInfo());
+      if (ct && ct->classTag != CLASS_CLASS) {
+        fprintf(outfile, "(*((");
+        typeInfo()->codegen(outfile);
+        fprintf(outfile, "*)(&(");
+        get(2)->codegen(outfile);
+        fprintf(outfile, "))))");
+      } else {
+        fprintf(outfile, "((");
+        typeInfo()->codegen(outfile);
+        fprintf(outfile, ")(");
+        get(2)->codegen(outfile);
+        fprintf(outfile, "))");
+      }
       break;
     }
     case PRIMITIVE_ISSUBTYPE:

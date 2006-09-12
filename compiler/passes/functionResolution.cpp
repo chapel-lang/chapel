@@ -1028,6 +1028,7 @@ resolveFns(FnSymbol* fn) {
       callStack.pop();
     }
   }
+
   ReturnStmt* last = dynamic_cast<ReturnStmt*>(fn->body->body->last());
   if (!last)
     INT_FATAL(fn, "Function is not normal");
@@ -1043,6 +1044,15 @@ resolveFns(FnSymbol* fn) {
     INT_FATAL(fn, "Unable to resolve return type");
   if (rt != fn->retType)
     USR_FATAL(fn, "Return type does not match type of returned expression");
+
+  if (fn->fnClass == FN_CONSTRUCTOR) {
+    forv_Vec(Type, parent, fn->retType->dispatchParents) {
+      if (dynamic_cast<ClassType*>(parent) && parent != dtValue && parent != dtObject && parent->defaultConstructor) {
+        resolveFormals(parent->defaultConstructor);
+        resolveFns(parent->defaultConstructor);
+      }
+    }
+  }
 }
 
 
