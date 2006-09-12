@@ -728,7 +728,7 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map) {
     wrapper->formals->insertAtTail(wrapper_formal);
     if (TypeSymbol *ts = dynamic_cast<TypeSymbol*>(coercion_map->get(formal))) {
       wrapper_formal->type = ts->type;
-      if (ts->hasPragma( "sync var") || ts->hasPragma( "single var")) {
+      if (ts->hasPragma( "synchronization primitive")) {
         // check if this is a member access
         DefExpr *mt;
         if ((this->formals->length() > 0) &&
@@ -739,7 +739,7 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map) {
         } else {
           if (ts->hasPragma( "sync var"))
             call->insertAtTail( new CallExpr( "readFE", wrapper_formal));
-          else
+          else   // else, single var case
             call->insertAtTail( new CallExpr( "readFF", wrapper_formal));
         }
       } else {
@@ -794,8 +794,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults) {
         temp_type = formal->defPoint->exprType->copy();
       if (!temp_type && !temp_init)
         temp_type = new SymExpr(formal->type->symbol);
-      if (formal->type->symbol->hasPragma( "sync var") ||
-          formal->type->symbol->hasPragma( "single var"))
+      if (formal->type->symbol->hasPragma( "synchronization primitive"))
         temp_type = new CallExpr("_init", formal->type->symbol);
       wrapper->insertAtTail(new DefExpr(temp, temp_init, temp_type));
       bool cast = false;
@@ -1075,13 +1074,21 @@ count_instantiate_with_recursion(Type* t) {
 
 FnSymbol*
 FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
-  Vec<BaseAST*> values;
-  generic_substitutions->get_values(values);
-  forv_Vec(BaseAST, ast, values) {
-    if (Type* t = dynamic_cast<Type*>(ast)) {
+  Vec<BaseAST*> keys;
+  generic_substitutions->get_keys( keys);
+  forv_Vec(BaseAST, key, keys) {
+    if (Type* t = dynamic_cast<Type*>(generic_substitutions->get( key))) {
       if (t->isGeneric)
         INT_FATAL(this, "illegal instantiation with a generic type");
+      if (t->symbol->hasPragma( "synchronization primitive")) {
+        if (!hasPragma( "synchronization primitive") ||
+            (isMethod && (t->instantiatedFrom != _this->type))) {
+          Type  *base_type = dynamic_cast<Type*>( t->substitutions.v[0].value);
+          generic_substitutions->put( key, base_type);
+        }
+      }
     }
+
   }
 
   // check to make sure this fully instantiates
@@ -1161,8 +1168,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
 
     retType->symbol->defPoint->parentStmt->insertBefore(new DefExpr(clone));
     clone->addPragmas(&pragmas);
-    if (clone->hasPragma("sync var") ||
-        clone->hasPragma("single var"))
+    if (clone->hasPragma( "synchronization primitive"))
       clone->type->defaultValue = NULL;
     clone->type->substitutions.copy(retType->substitutions);
     clone->type->dispatchParents.copy(retType->dispatchParents);

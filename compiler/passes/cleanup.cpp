@@ -264,8 +264,7 @@ static void build_constructor(ClassType* ct) {
   if (ct->defaultConstructor)
     return;
 
-  if (ct->symbol->hasPragma("sync var") ||
-      ct->symbol->hasPragma("single var"))
+  if (ct->symbol->hasPragma("synchronization primitive"))
     ct->defaultValue = NULL;
 
   char* name = stringcat("_construct_", ct->symbol->name);

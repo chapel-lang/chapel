@@ -86,6 +86,8 @@ static void build_getter(ClassType* ct, Symbol *field) {
   FnSymbol* fn = new FnSymbol(field->name);
   fn->defSetGet = true;
   fn->addPragma("inline");
+  if (ct->symbol->hasPragma( "synchronization primitive")) 
+    fn->addPragma( "synchronization primitive");
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
   fn->formals->insertAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->formals->insertAtTail(_this);
@@ -130,6 +132,8 @@ static void build_setter(ClassType* ct, Symbol* field) {
   fn->defSetGet = true;
   fn->addPragma("inline");
   fn->retType = dtVoid;
+  if (ct->symbol->hasPragma( "synchronization primitive")) 
+    fn->addPragma( "synchronization primitive");
 
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
   ArgSymbol* fieldArg = new ArgSymbol(INTENT_BLANK, "_arg", dtAny);

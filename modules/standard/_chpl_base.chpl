@@ -190,22 +190,25 @@ class _ddata {
 }
 
 
-// synch variable support
+// synchronization primitives support
 pragma "inline" def _init( cv: _mutex_p) return __primitive( "mutex_new");
 pragma "inline" def =( a: _mutex_p, b: _mutex_p) return b;
 pragma "inline" def _init( cv: _condvar_p) return __primitive( "condvar_new");
 pragma "inline" def =( a: _condvar_p, b: _condvar_p) return b;
 
+
+pragma "synchronization primitive" 
 pragma "sync var"
 pragma "no default functions"
 class _syncvar {
-  type t;
-  var  value: t;             // actual data
+  type base_type;
+  var  value: base_type;     // actual data
   var  is_full: bool;
   var  lock: _mutex_p;       // need to acquire before accessing this record
   var  cv_empty: _condvar_p; // wait for empty, signal this when empty
   var  cv_full: _condvar_p;  // wait for full, signal this when full
 
+  pragma "synchronization primitive" 
   def initialize() {
     is_full = false; 
     lock = __primitive( "mutex_new");
@@ -214,10 +217,12 @@ class _syncvar {
   }
 }
 
+pragma "synchronization primitive" 
 def _copy( sv:_syncvar) {
   return readFE(sv);
 }
 
+pragma "synchronization primitive" 
 def _init( sv:_syncvar) {
   return _syncvar( sv.value.type); 
 }
@@ -233,7 +238,8 @@ def _init( sv:_syncvar) {
 //  readXX - no wait, leave F/E unchanged
 
 // wait for empty, leaves full. This is the default write on sync vars.
-def =( sv:_syncvar, value:sv.t) {
+pragma "synchronization primitive" 
+def =( sv:_syncvar, value:sv.base_type) {
   __primitive( "syncvar_lock", sv);
   if (sv.is_full) {
     __primitive( "syncvar_wait_empty", sv);
@@ -246,7 +252,8 @@ def =( sv:_syncvar, value:sv.t) {
 }
 
 // wait full, leave empty.
-def writeFE( sv:_syncvar, value:sv.t) {
+pragma "synchronization primitive" 
+def writeFE( sv:_syncvar, value:sv.base_type) {
   __primitive( "syncvar_lock", sv);
   if (!sv.is_full) {
     __primitive( "syncvar_wait_full", sv);
@@ -259,7 +266,8 @@ def writeFE( sv:_syncvar, value:sv.t) {
 }
 
 // no wait, leave full.
-def writeXF( sv:_syncvar, value:sv.t) {
+pragma "synchronization primitive" 
+def writeXF( sv:_syncvar, value:sv.base_type) {
   __primitive( "syncvar_lock", sv);
   sv.value = value;
   sv.is_full = true;
@@ -268,7 +276,8 @@ def writeXF( sv:_syncvar, value:sv.t) {
 }
 
 // no wait, leave empty. One use of this is with using sync var as a lock.
-def writeXE( sv:_syncvar, value:sv.t) {
+pragma "synchronization primitive" 
+def writeXE( sv:_syncvar, value:sv.base_type) {
   __primitive( "syncvar_lock", sv);
   sv.value = value;
   sv.is_full = false;
@@ -277,8 +286,9 @@ def writeXE( sv:_syncvar, value:sv.t) {
 }
 
 // wait for full, leave empty. This is the default read on sync vars.
+pragma "synchronization primitive" 
 def readFE( sv:_syncvar) {
-  var ret: sv.t;
+  var ret: sv.base_type;
   __primitive( "syncvar_lock", sv);
   if (!sv.is_full) {
     __primitive( "syncvar_wait_full", sv);
@@ -291,8 +301,9 @@ def readFE( sv:_syncvar) {
 }
 
 // wait for full, leave full.
+pragma "synchronization primitive" 
 def readFF( sv:_syncvar) {
-  var ret: sv.t;
+  var ret: sv.base_type;
   __primitive( "syncvar_lock", sv);
   if (!sv.is_full) {
     __primitive( "syncvar_wait_full", sv);
@@ -304,8 +315,9 @@ def readFF( sv:_syncvar) {
 }
 
 // no wait, leave full.
+pragma "synchronization primitive" 
 def readXF( sv:_syncvar) {
-  var ret: sv.t;
+  var ret: sv.base_type;
   __primitive( "syncvar_lock", sv);
   ret = sv.value;
   __primitive( "syncvar_signal_full", sv);
@@ -314,8 +326,9 @@ def readXF( sv:_syncvar) {
 }
 
 // read value.  No state change or signals.
+pragma "synchronization primitive" 
 def readXX( sv:_syncvar) {
-  var ret: sv.t;
+  var ret: sv.base_type;
   __primitive( "syncvar_lock", sv);
   ret = sv.value;
   __primitive( "syncvar_unlock", sv);
@@ -323,6 +336,7 @@ def readXX( sv:_syncvar) {
 }
 
 
+pragma "synchronization primitive" 
 def isFull( sv:_syncvar) {
   var isfull: bool;
   __primitive( "syncvar_lock", sv);
@@ -333,15 +347,17 @@ def isFull( sv:_syncvar) {
 
 
 // single variable support
+pragma "synchronization primitive" 
 pragma "single var" 
 pragma "no default functions"
 class _singlevar {
-  type t;
-  var  value: t;             // actual data
+  type base_type;
+  var  value: base_type;     // actual data
   var  is_full: bool;
   var  lock: _mutex_p;       // need to acquire before accessing this record
   var  cv_full: _condvar_p;  // wait for full
 
+  pragma "synchronization primitive" 
   def initialize() {
     is_full = false; 
     lock = __primitive( "mutex_new");
@@ -349,17 +365,20 @@ class _singlevar {
   }
 }
 
+pragma "synchronization primitive" 
 def _copy( sv:_singlevar) {
   return readFF( sv);
 }
 
+pragma "synchronization primitive" 
 def _init( sv:_singlevar) {
   return _singlevar( sv.value.type); 
 }
 
 
 // Can only write once.  Otherwise, it is an error.
-def =( sv:_singlevar, value:sv.t) {
+pragma "synchronization primitive" 
+def =( sv:_singlevar, value:sv.base_type) {
   __primitive( "singlevar_lock", sv);
   if (sv.is_full) {
     halt( "***Error: single var already defined***");
@@ -373,8 +392,9 @@ def =( sv:_singlevar, value:sv.t) {
 
 
 // Wait for full
+pragma "synchronization primitive" 
 def readFF( sv:_singlevar) {
-  var ret: sv.t;
+  var ret: sv.base_type;
   __primitive( "singlevar_lock", sv);
   if (!sv.is_full) {
     __primitive( "singlevar_wait_full", sv);
