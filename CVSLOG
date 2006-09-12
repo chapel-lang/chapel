@@ -74937,3 +74937,21 @@ Log message:
 Removed files:
 	chapel/test/memory/shannon/: memmaxExceedsLineno.future 
 
+---------------------------------------------------------------------------
+
+09/12/06 09:57:58 -- deitz
+
+Log message:
+	Most of the traversal code uses static casts.  Reworked traversing
+	ALists in the traversal to use static casts as well with new stylized
+	loop for_alist_sc which is meant to only be used in get_ast_children.
+	This results in a modest but measurable speedup.
+	
+	Profiling the code reveals that the majority of time is spent
+	traversing the AST and that over-traversing in normalization is the
+	main culprit.
+
+Modified files:
+	chapel/compiler/AST/: baseAST.cpp 
+	chapel/compiler/include/: alist.h 
+
