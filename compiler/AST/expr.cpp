@@ -247,7 +247,6 @@ void DefExpr::verify() {
   }
   if (dynamic_cast<FnSymbol*>(sym) && (exprType || init))
     INT_FATAL(this, "Bad FnSymbol::defPoint");
-  sym->verify();
 }
 
 

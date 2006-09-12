@@ -562,7 +562,6 @@ void TypeSymbol::verify() {
   }
   if (type->symbol != this)
     INT_FATAL(this, "TypeSymbol::type->symbol != TypeSymbol");
-  type->verify();
 }
 
 

@@ -20,11 +20,13 @@ static bool EQparentSymbol(Symbol* sym1, Symbol* sym2) {
 
 
 static void
-verify_parents(BaseAST* ast,
+verify_ast(BaseAST* ast,
                Expr* parentExpr,
                Stmt* parentStmt,
                Symbol* parentSymbol,
                SymScope* parentScope) {
+  ast->verify();
+
   if (Symbol* sym = dynamic_cast<Symbol*>(ast)) {
     parentSymbol = sym;
     parentExpr = NULL;
@@ -76,19 +78,14 @@ verify_parents(BaseAST* ast,
   }
 
   Vec<BaseAST*> asts;
-  get_ast_children(ast, asts, 1);
+  get_ast_children(ast, asts);
   forv_Vec(BaseAST, ast, asts)
-    verify_parents(ast, parentExpr, parentStmt, parentSymbol, parentScope);
+    verify_ast(ast, parentExpr, parentStmt, parentSymbol, parentScope);
 }
 
 
 void
 verify() {
   forv_Vec(ModuleSymbol, mod, allModules)
-    verify_parents(mod, NULL, NULL, mod, mod->modScope);
-
-  Vec<BaseAST*> asts;
-  collect_asts(&asts);
-  forv_Vec(BaseAST, ast, asts)
-    ast->verify();
+    verify_ast(mod, NULL, NULL, mod, mod->modScope);
 }
