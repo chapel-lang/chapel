@@ -14,12 +14,24 @@ char*
 canonicalize_string(char *s) {
   char* ss = chapelStringsTable.get(s);
   if (!ss) {
-    ss = stringcpy(s);
+    ss = strdup(s);
     chapelStringsTable.put(ss, ss);
   }
   return ss;
 }
 
+char*
+astr(char* s1, char* s2, char* s3, char* s4) {
+  char s[1024];
+  strcpy(s, s1);
+  if (s2)
+    strcat(s, s2);
+  if (s3)
+    strcat(s, s3);
+  if (s4)
+    strcat(s, s4);
+  return canonicalize_string(s);
+}
 
 Vec<BaseAST*> gAsts;
 Vec<FnSymbol*> gFns;

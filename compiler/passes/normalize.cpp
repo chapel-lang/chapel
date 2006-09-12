@@ -1354,7 +1354,7 @@ expand_var_args(FnSymbol* fn) {
             new_arg->variableExpr = NULL;
             actual_types->insertAtTail(new SymExpr(new_arg));
             actuals->insertAtTail(new SymExpr(new_arg));
-            new_arg->name = stringcat("_e", intstring(i), "_", arg->name);
+            new_arg->name = astr("_e", intstring(i), "_", arg->name);
             new_arg->cname = stringcat("_e", intstring(i), "_", arg->cname);
             arg->defPoint->insertBefore(new_arg_def);
           }

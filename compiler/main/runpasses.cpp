@@ -26,6 +26,9 @@ struct PassInfo {
 
 
 static void runPass(char *passName, void (*pass)(void)) {
+  static struct timeval startTimeBetweenPasses;
+  static struct timeval stopTimeBetweenPasses;
+  static double timeBetweenPasses = -1.0;
   struct timeval startTime;
   struct timeval stopTime;
   struct timezone timezone;
@@ -40,6 +43,15 @@ static void runPass(char *passName, void (*pass)(void)) {
   }
   GC_gcollect();
   if (printPasses) {
+    gettimeofday(&stopTimeBetweenPasses, &timezone);
+    if (timeBetweenPasses < 0.0)
+      timeBetweenPasses = 0.0;
+    else
+      timeBetweenPasses += 
+        ((double)((stopTimeBetweenPasses.tv_sec*1e6+
+                   stopTimeBetweenPasses.tv_usec) - 
+                  (startTimeBetweenPasses.tv_sec*1e6+
+                   startTimeBetweenPasses.tv_usec))) / 1e6;
     fprintf(stderr, "%32s :", passName);
     fflush(stderr);
     gettimeofday(&startTime, &timezone);
@@ -58,6 +70,10 @@ static void runPass(char *passName, void (*pass)(void)) {
     fprintf(stderr, " asts = %6ld (+%6ld) (live = %6d)\n",
             astCount, astCount-lastAstCount, liveAstCount);
     lastAstCount = astCount;
+    gettimeofday(&startTimeBetweenPasses, &timezone);
+    if (!strcmp(passName, "codegen"))
+      fprintf(stderr, "%32s :%8.3f seconds\n", "time between passes",
+              timeBetweenPasses);
   }
 
   if (fdump_html) {

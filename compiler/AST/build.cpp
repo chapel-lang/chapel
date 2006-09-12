@@ -465,9 +465,9 @@ FnSymbol* build_reduce(Expr* red, Expr* seq) {
   if (SymExpr* sym = dynamic_cast<SymExpr*>(red)) {
     if (UnresolvedSymbol* us = dynamic_cast<UnresolvedSymbol*>(sym->var)) {
       if (!strcmp(us->name, "max"))
-        us->name = "_max";
+        us->name = astr("_max");
       else if (!strcmp(us->name, "min"))
-        us->name = "_min";
+        us->name = astr("_min");
     }
   }
 
@@ -486,9 +486,9 @@ FnSymbol* build_scan(Expr* scan, Expr* seq) {
   if (SymExpr* sym = dynamic_cast<SymExpr*>(scan)) {
     if (UnresolvedSymbol* us = dynamic_cast<UnresolvedSymbol*>(sym->var)) {
       if (!strcmp(us->name, "max"))
-        us->name = "_max";
+        us->name = astr("_max");
       else if (!strcmp(us->name, "min"))
-        us->name = "_min";
+        us->name = astr("_min");
     }
   }
 

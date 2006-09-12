@@ -1134,32 +1134,32 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions) {
 
     // compute instantiatedWith vector and rename instantiated type
     clone->cname = stringcat(clone->cname, "_A_");
-    clone->name = stringcat(clone->name, "(");
+    clone->name = astr(clone->name, "(");
     bool first = false;
     for (int i = 0; i < generic_substitutions->n; i++) {
       if (BaseAST* value = generic_substitutions->v[i].value) {
         if (Type* type = dynamic_cast<Type*>(value)) {
           if (!first && !strncmp(clone->name, "_tuple", 6))
-            clone->name = stringcat("(");
+            clone->name = astr("(");
           if (first)
-            clone->name = stringcat(clone->name, ",");
+            clone->name = astr(clone->name, ",");
           clone->cname = stringcat(clone->cname, type->symbol->cname);
-          clone->name = stringcat(clone->name, type->symbol->name);
+          clone->name = astr(clone->name, type->symbol->name);
           if (!clone->type->instantiatedWith)
             clone->type->instantiatedWith = new Vec<Type*>();
           clone->type->instantiatedWith->add(type);
           first = true;
         } else if (Symbol* symbol = dynamic_cast<Symbol*>(value)) {
           if (first)
-            clone->name = stringcat(clone->name, ",");
+            clone->name = astr(clone->name, ",");
           clone->cname = stringcat(clone->cname, symbol->cname);
-          clone->name = stringcat(clone->name, symbol->cname);
+          clone->name = astr(clone->name, symbol->cname);
           first = true;
         }
       }
     }
     clone->cname = stringcat(clone->cname, "_B_");
-    clone->name = stringcat(clone->name, ")");
+    clone->name = astr(clone->name, ")");
 
     retType->symbol->defPoint->parentStmt->insertBefore(new DefExpr(clone));
     clone->addPragmas(&pragmas);

@@ -1048,7 +1048,7 @@ resolveFns(FnSymbol* fn) {
 
 static bool
 signature_match(FnSymbol* fn, FnSymbol* gn) {
-  if (strcmp(fn->name, gn->name))
+  if (fn->name != gn->name)
     return false;
   if (fn->formals->length() != gn->formals->length())
     return false;

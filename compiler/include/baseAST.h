@@ -4,6 +4,7 @@
 #include "chpl.h"
 
 char* canonicalize_string(char *s);
+char* astr(char* s1, char* s2 = NULL, char* s3 = NULL, char* s4 = NULL);
 
 class Symbol;
 class ModuleSymbol;

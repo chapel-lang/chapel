@@ -565,7 +565,7 @@ fn_decl_stmt:
     {
       $2->fnClass = $1;
       if ($1 == FN_ITERATOR && !strcmp($2->name, "this"))
-        $2->name = "_promoter";
+        $2->name = astr("_promoter");
       if (!$3)
         $2->noParens = true;
       else
