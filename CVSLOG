@@ -75110,3 +75110,14 @@ Added files:
 	                                     complex_expressions.future 
 	                                     complex_expressions.good 
 
+---------------------------------------------------------------------------
+
+09/13/06 15:07:31 -- marybeth
+
+Log message:
+	Correction to complex_expression.future.  I put waynew on the first
+	line of the file.
+
+Modified files:
+	chapel/test/types/complex/marybeth/: complex_expressions.future 
+
