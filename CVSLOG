@@ -75079,3 +75079,15 @@ Log message:
 Modified files:
 	chapel/compiler/: UnimplementedFeatures 
 
+---------------------------------------------------------------------------
+
+09/13/06 09:31:00 -- deitz
+
+Log message:
+	Added a second MBH test that looks at passing a derived record to a
+	record and ensuring that dynamic dispatch does not happen.
+
+Added files:
+	chapel/test/classes/marybeth/: test_dispatch_record.chpl 
+	                               test_dispatch_record.good 
+
