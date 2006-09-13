@@ -745,11 +745,13 @@ char* call2string(CallExpr* call,
     if (anames.v[i])
       str = stringcat(str, anames.v[i], "=");
     VarSymbol* var = dynamic_cast<VarSymbol*>(aparams.v[i]);
+    char buff[512];
     if (aparams.v[i] && aparams.v[i]->isTypeVariable)
       str = stringcat(str, atypes.v[i]->symbol->name);
-    else if (var && var->immediate)
-      str = stringcat(str, aparams.v[i]->cname);
-    else
+    else if (var && var->immediate) {
+      sprint_imm(buff, *var->immediate);
+      str = stringcat(str, buff);
+    } else
       str = stringcat(str, ":", atypes.v[i]->symbol->name);
   }
   if (!call->methodTag && !setter)

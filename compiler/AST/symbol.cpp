@@ -374,9 +374,11 @@ void VarSymbol::printDef(FILE* outfile) {
 
 void VarSymbol::codegen( FILE* outfile) {
   if (on_heap || isReference)
-    fprintf( outfile, "(*");
+    fprintf(outfile, "(*");
 
-  if (immediate &&
+  if (immediate && immediate->const_kind == CONST_KIND_STRING) {
+    fprintf(outfile, "\"%s\"", immediate->v_string);
+  } else if (immediate &&
       immediate->const_kind == NUM_KIND_INT  &&
       immediate->num_index != INT_SIZE_1) {
     // find the min number of bytes to store constant
@@ -1456,13 +1458,6 @@ VarSymbol *new_StringSymbol(char *str) {
   if (s)
     return s;
   s = new VarSymbol("_literal_string", dtString);
-  int l = strlen(str);
-  char *n = (char*)MALLOC(l + 3);
-  strcpy(n + 1, str);
-  n[0]='\"';
-  n[l+1]='\"';
-  n[l+2]=0;
-  s->cname = n;
   s->immediate = new Immediate;
   *s->immediate = imm;
   uniqueConstantsHash.put(s->immediate, s);

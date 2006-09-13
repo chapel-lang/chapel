@@ -284,10 +284,6 @@ iterator_find_arg( char *name, AList<DefExpr> *formals) {
     if (ArgSymbol *a = dynamic_cast<ArgSymbol*>(de->sym)) {
       if (!strcmp( name, a->name)) {
         return a;
-      } else if (strlen( name) > 2) {
-        if (!strncmp( &name[1], a->name, strlen( name)-2)) {
-          return a;
-        }
       }
     }
   }
@@ -313,8 +309,11 @@ iterator_constructor_fixup( ClassType *ct) {
             if (!strcmp( arg1->name, "this") && 
                 (arg1e->typeInfo() == ct)) {
               if (SymExpr *arg2e = dynamic_cast<SymExpr*>( ce->argList->get(2))) {
-                Symbol *arg2 = arg2e->var;
-                ArgSymbol *a = iterator_find_arg( arg2->cname, fn->formals);
+                Symbol *arg2 = dynamic_cast<VarSymbol*>(arg2e->var);
+                char* str;
+                if (!get_string(arg2e, &str))
+                  INT_FATAL(arg2e, "string literal expected");
+                ArgSymbol *a = iterator_find_arg(str, fn->formals);
                 if (!a) INT_FATAL( arg2, "could not find arg to replace with");
                 ce->replace( new SymExpr( a));
               }

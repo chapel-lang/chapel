@@ -158,7 +158,7 @@ sprint_imm(char *str, Immediate &imm) {
       }
       break;
     case CONST_KIND_STRING:
-      res = sprintf(str, "%s", imm.v_string); break;
+      res = sprintf(str, "\"%s\"", imm.v_string); break;
       break;
   }
   return res;
