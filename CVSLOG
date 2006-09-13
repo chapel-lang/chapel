@@ -75055,3 +75055,17 @@ Modified files:
 	chapel/compiler/passes/: cleanup.cpp 
 	chapel/modules/standard/: _chpl_base.chpl 
 
+---------------------------------------------------------------------------
+
+09/12/06 17:21:21 -- deitz
+
+Log message:
+	Removed use of cname to store literal value for string immediates.
+	This is now stored in only one spot for simplicity.  Changes to other
+	immediates to follow.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp 
+	chapel/compiler/ifa/: num.cpp 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+
