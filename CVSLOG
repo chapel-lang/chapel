@@ -75091,3 +75091,22 @@ Added files:
 	chapel/test/classes/marybeth/: test_dispatch_record.chpl 
 	                               test_dispatch_record.good 
 
+---------------------------------------------------------------------------
+
+09/13/06 14:02:41 -- marybeth
+
+Log message:
+	Checking in the complex_expressions test with a .future.
+	In reading the Matlab manual, I wanted to test out features
+	of their complex variables.  Currently, our compiler can't
+	handle all that Matlab can.
+	
+	I'm not pushing for this functionality.  But, I thought it
+	should be clear about what we plan to support and what we don't.
+	I will need to update the spec accordingly.
+
+Added files:
+	chapel/test/types/complex/marybeth/: complex_expressions.chpl 
+	                                     complex_expressions.future 
+	                                     complex_expressions.good 
+
