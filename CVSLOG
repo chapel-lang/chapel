@@ -75179,3 +75179,19 @@ Added files:
 	chapel/test/trivial/deitz/: test_int_uint.chpl 
 	                            test_int_uint.good 
 
+---------------------------------------------------------------------------
+
+09/14/06 15:35:40 -- deitz
+
+Log message:
+	Simplified codegen of int and uint to always print out literals as
+	64-bit, until I suppose, we add support for suffixes.
+	
+	Stop using cname to store the literal for int, uint, and bool.  It is
+	still used for float and complex.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp type.cpp 
+	chapel/compiler/ifa/: num.cpp 
+	chapel/compiler/passes/: normalize.cpp semanticChecks.cpp 
+
