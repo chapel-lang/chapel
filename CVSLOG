@@ -75136,3 +75136,25 @@ Removed files:
 	                     ft-serial-working1.good ft-serial.future 
 	                     ft-serial.notest 
 
+---------------------------------------------------------------------------
+
+09/14/06 14:27:04 -- deitz
+
+Log message:
+	Added automatic memory management of ast nodes.  Added calls to delete
+	and free the memory we have in a movement to remove the use of Boehm
+	GC.
+	
+	Added a README file in the compiler/ directory that will eventually
+	contain many notes for developers to heed.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp baseAST.cpp bb.cpp expr.cpp 
+	                      stmt.cpp symbol.cpp symscope.cpp type.cpp 
+	chapel/compiler/include/: alist.h baseAST.h expr.h stmt.h 
+	                          symbol.h symscope.h type.h 
+	chapel/compiler/parser/: chapel.y parser.cpp 
+	chapel/compiler/passes/: functionResolution.cpp 
+	                         inlineFunctions.cpp normalize.cpp 
+	                         parallel.cpp 
+
