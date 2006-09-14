@@ -75195,3 +75195,31 @@ Modified files:
 	chapel/compiler/ifa/: num.cpp 
 	chapel/compiler/passes/: normalize.cpp semanticChecks.cpp 
 
+---------------------------------------------------------------------------
+
+09/14/06 16:30:26 -- waynew
+
+Log message:
+	1. Mainly, partial checkin of updated indefinite domain implementation. Hash
+	   functions for our primitive types and compiler generated hash function
+	   for records.
+	
+	2. Added float2int and object2int primitives. Originally wanted float2uint
+	   and object2int (i.e., hashing on uint's), but running into some
+	   behavior that makes it more hairy.  Sticking with hashing on int's for now.
+	
+	3. Some code factoring for sync/single vars.
+	
+	4. A test to make sure that our hash function on records is not obviously bad.
+
+Modified files:
+	chapel/compiler/AST/: expr.cpp primitive.cpp 
+	chapel/compiler/include/: primitive.h 
+	chapel/compiler/passes/: buildDefaultFunctions.cpp 
+	chapel/modules/standard/: _chpl_base.chpl _chpl_indefinite.chpl 
+	chapel/runtime/include/: chpltypes.h 
+	chapel/runtime/src/: chpltypes.c 
+Added files:
+	chapel/test/domains/waynew/: .cvsignore record_hash.chpl 
+	                             record_hash.good 
+
