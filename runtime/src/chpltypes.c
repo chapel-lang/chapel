@@ -1,6 +1,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include "chplmem.h"
 #include "chplrt.h"
@@ -215,6 +216,18 @@ string_equal(_string x, _string y) {
 _int64
 string_length(_string x) {
   return strlen(x);
+}
+
+
+_int64 
+float2int( _float64 f) {
+  return *(_uint64*)(&f);
+}
+
+
+_int64 
+object2int( _chpl_object o) {
+  return (intptr_t) o;
 }
 
 

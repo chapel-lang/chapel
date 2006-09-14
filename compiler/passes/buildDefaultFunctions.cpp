@@ -9,12 +9,13 @@
 static Vec<FnSymbol*> fns;
 
 static void build_chpl_main(void);
-static void build_record_equality_function(ClassType* ct);
-static void build_record_inequality_function(ClassType* ct);
-static void build_record_assignment_function(ClassType* ct);
 static void build_union_assignment_function(ClassType* ct);
 static void build_enum_assignment_function(EnumType* et);
+static void build_record_assignment_function(ClassType* ct);
 static void build_record_copy_function(ClassType* ct);
+static void build_record_hash_function(ClassType* ct);
+static void build_record_equality_function(ClassType* ct);
+static void build_record_inequality_function(ClassType* ct);
 static void build_record_init_function(ClassType* ct);
 static void build_union_assignment_function(ClassType* ct);
 static void buildDefaultIOFunctions(Type* type);
@@ -194,6 +195,7 @@ void build_default_functions(void) {
           build_record_assignment_function(ct);
           build_record_init_function(ct);
           build_record_copy_function(ct);
+          build_record_hash_function(ct);
         }
         if (ct->classTag == CLASS_UNION) {
           build_union_assignment_function(ct);
@@ -403,6 +405,44 @@ static void build_record_init_function(ClassType* ct) {
   fns.add(fn);
   if (ct->symbol->hasPragma("tuple"))
     fn->addPragma("tuple init");
+}
+
+
+static void build_record_hash_function( ClassType *ct) {
+  if ( function_exists( "_indefinite_hash", 1, ct->symbol->name))
+    return;
+
+  FnSymbol *fn = new FnSymbol( "_indefinite_hash");
+  fn->addPragma( "inline");
+  ArgSymbol *arg = new ArgSymbol( INTENT_BLANK, "r", ct);
+  fn->formals->insertAtTail( arg);
+
+  if (ct->fields->length() < 0) {
+    fn->insertAtTail( new ReturnStmt( new_UIntSymbol(0)));
+  } else {
+    CallExpr *call;
+    bool first = true;
+    for_fields( field, ct) {
+      CallExpr *field_access = new CallExpr( field->name, gMethodToken, arg); 
+      if (first) {
+        call =  new CallExpr( "_indefinite_hash", field_access);
+        first = false;
+      } else {
+        call = new CallExpr( "^", 
+                             new CallExpr( "_indefinite_hash",
+                                           field_access),
+                             new CallExpr( "<<",
+                                           call,
+                                           new_IntSymbol(17)));
+      }
+    }
+    fn->insertAtTail( new ReturnStmt( call));
+  }
+  DefExpr *def = new DefExpr( fn);
+  ct->symbol->defPoint->parentStmt->insertBefore( def);
+  reset_file_info( def, ct->symbol->lineno, ct->symbol->filename);
+  build(fn);
+  fns.add(fn);
 }
 
 

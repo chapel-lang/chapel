@@ -987,38 +987,34 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_THREAD_ID:
       fprintf(outfile, "_chpl_thread_id()");
       break;
-    case PRIMITIVE_SYNCVAR_LOCK:
-    case PRIMITIVE_SINGLEVAR_LOCK:
+    case PRIMITIVE_SYNC_LOCK:
       fprintf( outfile, "_chpl_mutex_lock((");
       get(1)->codegen( outfile);
       fprintf( outfile, ")->lock)");
       break;
-    case PRIMITIVE_SYNCVAR_UNLOCK:
-    case PRIMITIVE_SINGLEVAR_UNLOCK:
+    case PRIMITIVE_SYNC_UNLOCK:
       fprintf( outfile, "_chpl_mutex_unlock((");
       get(1)->codegen( outfile);
       fprintf( outfile, ")->lock)");
       break;
-    case PRIMITIVE_SYNCVAR_SIGNAL_FULL:
-    case PRIMITIVE_SINGLEVAR_SIGNAL_FULL:
+    case PRIMITIVE_SYNC_SIGNAL_FULL:
       fprintf( outfile, "_chpl_condvar_signal((");
       get(1)->codegen( outfile);
       fprintf( outfile, ")->cv_full)");
       break;
-    case PRIMITIVE_SYNCVAR_WAIT_FULL:
-    case PRIMITIVE_SINGLEVAR_WAIT_FULL:
+    case PRIMITIVE_SYNC_WAIT_FULL:
       fprintf( outfile, "_chpl_condvar_wait((");
       get(1)->codegen( outfile);
       fprintf( outfile, ")->cv_full, (");
       get(1)->codegen( outfile);
       fprintf( outfile, ")->lock)");
       break;
-    case PRIMITIVE_SYNCVAR_SIGNAL_EMPTY:
+    case PRIMITIVE_SYNC_SIGNAL_EMPTY:
       fprintf( outfile, "_chpl_condvar_signal((");
       get(1)->codegen( outfile);
       fprintf( outfile, ")->cv_empty)");
       break;
-    case PRIMITIVE_SYNCVAR_WAIT_EMPTY:
+    case PRIMITIVE_SYNC_WAIT_EMPTY:
       fprintf( outfile, "_chpl_condvar_wait((");
       get(1)->codegen( outfile);
       fprintf( outfile, ")->cv_empty, (");

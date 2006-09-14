@@ -147,8 +147,59 @@ def fwrite(f : file, x : _iarray) {
     fwrite(f, " ", x.data(i));
 }
 
-def _indefinite_hash(x : int)
-  return x;
+// Thomas Wang's 64b mix function from http://www.concentric.net/~Ttwang/tech/inthash.htm
+def _gen_key(i: int): int {
+  var key = i;
+  key += ~(key << 32);
+  key = key ^ (key >> 22);
+  key += ~(key << 13);
+  key = key ^ (key >> 8);
+  key += (key << 3);
+  key = key ^ (key >> 15);
+  key += ~(key << 27);
+  key = key ^ (key >> 31);
+  return key;
+}
 
-def _indefinite_hash(x : string)
-  return 1;
+pragma "inline"
+def _indefinite_hash(b: bool): int {
+  if (b) 
+    return 17;
+  else
+    return 31;
+}
+
+pragma "inline"
+def _indefinite_hash(i: int): int {
+  return _gen_key(i);
+}
+
+pragma "inline"
+def _indefinite_hash(u: uint): int {
+  return _gen_key(u:int);
+}
+
+pragma "inline"
+def _indefinite_hash(f: float): int {
+  return _gen_key(__primitive( "float2int", f));
+}
+
+pragma "inline"
+def _indefinite_hash(c: complex): int {
+  return _gen_key(c.real:int ^ c.imag:int); 
+}
+
+// Use djb2 (Dan Bernstein in comp.lang.c.
+pragma "inline"
+def _indefinite_hash(x : string): int {
+  var hash: int = 0;
+  for c in 1..length(x) {
+    hash = ((hash << 5) + hash) ^ ascii(x(c));
+  }
+  return _gen_key(hash);
+}
+
+pragma "inline"
+def _indefinite_hash(o: object): int {
+  return _gen_key(__primitive( "object2int", o));
+}

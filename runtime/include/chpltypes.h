@@ -90,6 +90,10 @@ _string string_strided_select(_string x, int low, int high, int stride);
 _bool string_equal(_string x, _string y);
 _int64 string_length(_string x);
 
+_int64 float2int( _float64 f);       // return the raw bytes of the float
+_int64 object2int( _chpl_object o);  // return the ptr
+
+
 // Construction and assignment of complex numbers
 _complex32  _chpl_complex32( _float32 r, _float32 i);
 _complex64  _chpl_complex64( _float64 r, _float64 i);

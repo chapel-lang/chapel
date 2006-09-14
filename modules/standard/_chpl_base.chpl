@@ -239,63 +239,63 @@ def _init( sv:_syncvar) {
 // wait for empty, leaves full. This is the default write on sync vars.
 pragma "synchronization primitive" 
 def =( sv:_syncvar, value:sv.base_type) {
-  __primitive( "syncvar_lock", sv);
+  __primitive( "sync_lock", sv);
   if (sv.is_full) {
-    __primitive( "syncvar_wait_empty", sv);
+    __primitive( "sync_wait_empty", sv);
   }
   sv.value = value;
   sv.is_full = true;
-  __primitive( "syncvar_signal_full", sv);
-  __primitive( "syncvar_unlock", sv);
+  __primitive( "sync_signal_full", sv);
+  __primitive( "sync_unlock", sv);
   return sv;
 }
 
 // wait full, leave empty.
 pragma "synchronization primitive" 
 def writeFE( sv:_syncvar, value:sv.base_type) {
-  __primitive( "syncvar_lock", sv);
+  __primitive( "sync_lock", sv);
   if (!sv.is_full) {
-    __primitive( "syncvar_wait_full", sv);
+    __primitive( "sync_wait_full", sv);
   }
   sv.value = value;
   sv.is_full = false;
-  __primitive( "syncvar_signal_empty", sv);
-  __primitive( "syncvar_unlock", sv);
+  __primitive( "sync_signal_empty", sv);
+  __primitive( "sync_unlock", sv);
   return sv;
 }
 
 // no wait, leave full.
 pragma "synchronization primitive" 
 def writeXF( sv:_syncvar, value:sv.base_type) {
-  __primitive( "syncvar_lock", sv);
+  __primitive( "sync_lock", sv);
   sv.value = value;
   sv.is_full = true;
-  __primitive( "syncvar_signal_full", sv);
-  __primitive( "syncvar_unlock", sv);
+  __primitive( "sync_signal_full", sv);
+  __primitive( "sync_unlock", sv);
 }
 
 // no wait, leave empty. One use of this is with using sync var as a lock.
 pragma "synchronization primitive" 
 def writeXE( sv:_syncvar, value:sv.base_type) {
-  __primitive( "syncvar_lock", sv);
+  __primitive( "sync_lock", sv);
   sv.value = value;
   sv.is_full = false;
-  __primitive( "syncvar_signal_full", sv);
-  __primitive( "syncvar_unlock", sv);
+  __primitive( "sync_signal_full", sv);
+  __primitive( "sync_unlock", sv);
 }
 
 // wait for full, leave empty. This is the default read on sync vars.
 pragma "synchronization primitive" 
 def readFE( sv:_syncvar) {
   var ret: sv.base_type;
-  __primitive( "syncvar_lock", sv);
+  __primitive( "sync_lock", sv);
   if (!sv.is_full) {
-    __primitive( "syncvar_wait_full", sv);
+    __primitive( "sync_wait_full", sv);
   }
   ret = sv.value;
   sv.is_full = false;
-  __primitive( "syncvar_signal_empty", sv);
-  __primitive( "syncvar_unlock", sv);
+  __primitive( "sync_signal_empty", sv);
+  __primitive( "sync_unlock", sv);
   return ret;
 }
 
@@ -303,13 +303,13 @@ def readFE( sv:_syncvar) {
 pragma "synchronization primitive" 
 def readFF( sv:_syncvar) {
   var ret: sv.base_type;
-  __primitive( "syncvar_lock", sv);
+  __primitive( "sync_lock", sv);
   if (!sv.is_full) {
-    __primitive( "syncvar_wait_full", sv);
+    __primitive( "sync_wait_full", sv);
   }
   ret = sv.value;
-  __primitive( "syncvar_signal_full", sv);
-  __primitive( "syncvar_unlock", sv);
+  __primitive( "sync_signal_full", sv);
+  __primitive( "sync_unlock", sv);
   return ret;
 }
 
@@ -317,10 +317,10 @@ def readFF( sv:_syncvar) {
 pragma "synchronization primitive" 
 def readXF( sv:_syncvar) {
   var ret: sv.base_type;
-  __primitive( "syncvar_lock", sv);
+  __primitive( "sync_lock", sv);
   ret = sv.value;
-  __primitive( "syncvar_signal_full", sv);
-  __primitive( "syncvar_unlock", sv);
+  __primitive( "sync_signal_full", sv);
+  __primitive( "sync_unlock", sv);
   return ret;
 }
 
@@ -328,9 +328,9 @@ def readXF( sv:_syncvar) {
 pragma "synchronization primitive" 
 def readXX( sv:_syncvar) {
   var ret: sv.base_type;
-  __primitive( "syncvar_lock", sv);
+  __primitive( "sync_lock", sv);
   ret = sv.value;
-  __primitive( "syncvar_unlock", sv);
+  __primitive( "sync_unlock", sv);
   return ret;
 }
 
@@ -338,9 +338,9 @@ def readXX( sv:_syncvar) {
 pragma "synchronization primitive" 
 def isFull( sv:_syncvar) {
   var isfull: bool;
-  __primitive( "syncvar_lock", sv);
+  __primitive( "sync_lock", sv);
   isfull = sv.is_full;
-  __primitive( "syncvar_unlock", sv);
+  __primitive( "sync_unlock", sv);
   return isfull;
 }
 
@@ -377,14 +377,14 @@ def _init( sv:_singlevar) {
 // Can only write once.  Otherwise, it is an error.
 pragma "synchronization primitive" 
 def =( sv:_singlevar, value:sv.base_type) {
-  __primitive( "singlevar_lock", sv);
+  __primitive( "sync_lock", sv);
   if (sv.is_full) {
     halt( "***Error: single var already defined***");
   }
   sv.value = value;
   sv.is_full = true;
-  __primitive( "singlevar_signal_full", sv);
-  __primitive( "singlevar_unlock", sv);
+  __primitive( "sync_signal_full", sv);
+  __primitive( "sync_unlock", sv);
   return sv;
 }
 
@@ -393,13 +393,13 @@ def =( sv:_singlevar, value:sv.base_type) {
 pragma "synchronization primitive" 
 def readFF( sv:_singlevar) {
   var ret: sv.base_type;
-  __primitive( "singlevar_lock", sv);
+  __primitive( "sync_lock", sv);
   if (!sv.is_full) {
-    __primitive( "singlevar_wait_full", sv);
+    __primitive( "sync_wait_full", sv);
   }
   ret = sv.value;
-  __primitive( "singlevar_signal_full", sv); // in case others are waiting
-  __primitive( "singlevar_unlock", sv);
+  __primitive( "sync_signal_full", sv); // in case others are waiting
+  __primitive( "sync_unlock", sv);
   return ret;
 }
 
