@@ -418,10 +418,10 @@ iterator_transform( FnSymbol *fn) {
   compute_sym_uses( nextcf);
   iterator_create_fields( nextcf, ic);
   nextcf->formals->insertAtTail( new DefExpr( cursor));
-  Vec<ReturnStmt*>  *vals_returned = new Vec<ReturnStmt*>();
-  Vec<LabelSymbol*> *labels = new Vec<LabelSymbol*>();
-  iterator_replace_yields( nextcf, vals_returned, labels);
-  iterator_build_jtable( nextcf, cursor, vals_returned, labels);
+  Vec<ReturnStmt*> vals_returned;
+  Vec<LabelSymbol*> labels;
+  iterator_replace_yields( nextcf, &vals_returned, &labels);
+  iterator_build_jtable( nextcf, cursor, &vals_returned, &labels);
   cleanup( ic_def->sym);  // cleanup( ic_def);
   normalize( ic_def);
   iterator_constructor_fixup( ic);
@@ -437,7 +437,7 @@ iterator_transform( FnSymbol *fn) {
   valuef->makeGloballyVisible = true;
   m->stmts->insertAtHead( new DefExpr( valuef));
   iterator_formals( valuef, ic, cursor);
-  iterator_build_vtable( valuef, cursor, vals_returned);
+  iterator_build_vtable( valuef, cursor, &vals_returned);
   iterator_update_this_uses( valuef, 
                              valuef->formals->get(2), 
                              nextcf->formals->get(2));
@@ -447,7 +447,7 @@ iterator_transform( FnSymbol *fn) {
   FnSymbol *isvalidcf = new FnSymbol( "isValidCursor?");
   isvalidcf->makeGloballyVisible = true;
   m->stmts->insertAtHead( new DefExpr( isvalidcf));
-  isvalidcf->body->insertAtHead( new ReturnStmt( new CallExpr( "!=", cursor, new_IntSymbol( vals_returned->length()+1))));
+  isvalidcf->body->insertAtHead( new ReturnStmt( new CallExpr( "!=", cursor, new_IntSymbol(vals_returned.length()+1))));
   iterator_formals( isvalidcf, ic, cursor);
   isvalidcf->isMethod = true;
 

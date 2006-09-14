@@ -50,6 +50,7 @@ class Symbol : public BaseAST {
   Vec<char*> pragmas;
 
   Symbol(astType_t astType, char* init_name, Type* init_type = dtUnknown);
+  virtual ~Symbol();
   virtual void verify(); 
   virtual void clean();
   void setParentScope(SymScope* init_parentScope);
@@ -101,6 +102,7 @@ class VarSymbol : public Symbol {
             consType init_consClass = VAR_VAR,
             bool     init_is_ref = false,
             bool     init_on_heap = false);
+  ~VarSymbol();
   virtual void verify(); 
   COPY_DEF(VarSymbol);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -184,6 +186,7 @@ class FnSymbol : public Symbol {
   bool makeGloballyVisible;  // WAW: temporary hack to get iterator-created methods visible
 
   FnSymbol(char* initName);
+  ~FnSymbol();
            
   virtual void verify(); 
   COPY_DEF(FnSymbol);
@@ -235,6 +238,7 @@ class ModuleSymbol : public Symbol {
   ModuleSymbol(char* init_name,
                modType init_modtype,
                AList<Stmt>* init_stmts);
+  ~ModuleSymbol();
   virtual void verify(); 
   COPY_DEF(ModuleSymbol);
   void setModScope(SymScope* init_modScope);

@@ -24,6 +24,12 @@ Type::Type(astType_t astType, Symbol* init_defaultVal) :
 {}
 
 
+Type::~Type() {
+  if (instantiatedWith)
+    delete instantiatedWith;
+}
+
+
 void Type::verify() {
   BaseAST::verify();
   if (parentSymbol)
@@ -227,6 +233,11 @@ EnumType::EnumType(AList<DefExpr>* init_constants) :
 {
   for_alist(DefExpr, def, constants)
     def->sym->type = this;
+}
+
+
+EnumType::~EnumType() {
+  delete constants;
 }
 
 
@@ -461,6 +472,14 @@ ClassType::ClassType(ClassTag initClassTag) :
     defaultValue = gNil;
   }
   methods.clear();
+}
+
+
+ClassType::~ClassType() {
+  if (structScope)
+    delete structScope;
+  delete fields;
+  delete inherits;
 }
 
 
@@ -776,10 +795,12 @@ void initPrimitiveTypes(void) {
   gBoundsChecking = new VarSymbol("boundsChecking", dtBool, VAR_NORMAL, VAR_CONST);
   rootScope->define(gBoundsChecking);
   if (no_bounds_checking) {
-    gBoundsChecking->immediate = gFalse->immediate;
+    gBoundsChecking->immediate = new Immediate;
+    *gBoundsChecking->immediate = *gFalse->immediate;
     gBoundsChecking->cname = gFalse->cname;
   } else {
-    gBoundsChecking->immediate = gTrue->immediate;
+    gBoundsChecking->immediate = new Immediate;
+    *gBoundsChecking->immediate = *gTrue->immediate;
     gBoundsChecking->cname = gTrue->cname;
   }
 

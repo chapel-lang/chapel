@@ -255,6 +255,13 @@ BlockStmt::BlockStmt(Stmt* init_body, BlockTag init_blockTag) :
 {}
 
 
+BlockStmt::~BlockStmt() {
+  if (blkScope && blkScope->astParent == this)
+    delete blkScope;
+  delete body;
+}
+
+
 void BlockStmt::verify() {
   Stmt::verify();
   if (astType != STMT_BLOCK) {

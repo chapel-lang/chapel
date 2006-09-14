@@ -13,8 +13,6 @@ static void setFieldTypes(FnSymbol* fn);
 static Vec<FnSymbol*> resolvedFns;
 Vec<CallExpr*> callStack;
 
-static Map<FnSymbol*,Vec<CallExpr*>*> ddc; // vec of calls that may
-                                           // require dynamic dispatch
 static Map<FnSymbol*,Vec<FnSymbol*>*> ddf; // map of functions to
                                            // virtual children
 
@@ -374,8 +372,10 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
                                       actual_formals, num_actuals,
                                       num_formals, actual_types,
                                       actual_params, actual_names);
-  if (!valid)
+  if (!valid) {
+    delete actual_formals;
     return;
+  }
 
   if (fn->isGeneric) {
     ASTMap subs;
@@ -385,6 +385,7 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
       if (inst_fn)
         addCandidate(candidateFns, candidateActualFormals, inst_fn, actual_types, actual_params, actual_names, true);
     }
+    delete actual_formals;
     return;
   }
 
@@ -395,14 +396,22 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
   for_formals(formal, fn) {
     j++;
     if (formal_actuals.v[j] &&
-        !canDispatch(formal_actuals.v[j], formal_params.v[j], formal->type, fn))
+        !canDispatch(formal_actuals.v[j], formal_params.v[j], formal->type, fn)) {
+      delete actual_formals;
       return;
-    if (formal_params.v[j] && formal_params.v[j]->isTypeVariable && !formal->isTypeVariable)
+    }
+    if (formal_params.v[j] && formal_params.v[j]->isTypeVariable && !formal->isTypeVariable) {
+      delete actual_formals;
       return;
-//     if (formal_params.v[j] && !formal_params.v[j]->isTypeVariable && formal->isTypeVariable)
+   }
+//     if (formal_params.v[j] && !formal_params.v[j]->isTypeVariable && formal->isTypeVariable) {
+//       delete actual_formals;
 //       return;
-    if (!formal_actuals.v[j] && !formal->defaultExpr)
+//     }
+    if (!formal_actuals.v[j] && !formal->defaultExpr) {
+      delete actual_formals;
       return;
+    }
   }
   candidateFns->add(fn);
   candidateActualFormals->add(actual_formals);
@@ -627,7 +636,7 @@ resolve_call(CallExpr* call,
   }
 
   for (int i = 0; i < candidateActualFormals.n; i++)
-    candidateActualFormals.v[i]->clear();
+    delete candidateActualFormals.v[i];
 
   return best;
 }
@@ -1170,6 +1179,11 @@ resolve() {
   int num_types;
   do {
     num_types = gTypes.n;
+    Vec<FnSymbol*> keys;
+    ddf.get_keys(keys);
+    forv_Vec(FnSymbol, key, keys) {
+      delete ddf.get(key);
+    }
     ddf.clear();
     build_ddf();
   } while (num_types != gTypes.n);
@@ -1223,6 +1237,12 @@ resolve() {
         }
       }
     }
+  }
+
+  Vec<FnSymbol*> keys;
+  ddf.get_keys(keys);
+  forv_Vec(FnSymbol, key, keys) {
+    delete ddf.get(key);
   }
 
   Vec<BaseAST*> asts;

@@ -20,6 +20,7 @@ class Stmt : public BaseAST {
   Stmt* parentStmt;
 
   Stmt(astType_t astType = STMT);
+  virtual ~Stmt() { }
   virtual void verify();
   COPY_DEF(Stmt);
   virtual void codegen(FILE* outfile);
@@ -90,6 +91,7 @@ class BlockStmt : public Stmt {
                        BlockTag init_blockTag = BLOCK_NORMAL);
   BlockStmt::BlockStmt(Stmt* init_body,
                        BlockTag init_blockTag = BLOCK_NORMAL);
+  BlockStmt::~BlockStmt();
   virtual void verify();
   COPY_DEF(BlockStmt);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);

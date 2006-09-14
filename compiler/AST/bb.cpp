@@ -39,6 +39,12 @@ void buildBasicBlocks(FnSymbol* fn, Stmt* stmt) {
   static Map<LabelSymbol*,BasicBlock*> labelMaps;
   static int id;
   if (!stmt) {
+    if (fn->basicBlocks) {
+      forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
+        delete bb;
+      }
+      delete fn->basicBlocks;
+    }
     fn->basicBlocks = new Vec<BasicBlock*>();
     gotoMaps.clear();
     labelMaps.clear();

@@ -37,6 +37,15 @@ SymScope::SymScope(BaseAST* iastParent, SymScope* iparent) :
 { }
 
 
+SymScope::~SymScope() {
+  Vec<char*> keys;
+  visibleFunctions.get_keys(keys);
+  forv_Vec(char, key, keys) {
+    delete visibleFunctions.get(key);
+  }
+}
+
+
 void SymScope::define(Symbol* sym) {
   Symbol* tmp = table.get(sym->name);
   if (tmp) {

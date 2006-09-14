@@ -23,13 +23,6 @@ void collect_functions(Vec<FnSymbol*>* fns) {
 
 void collect_asts(Vec<BaseAST*>* asts, BaseAST* ast) {
   asts->add(ast);
-  if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
-    if (dynamic_cast<UnresolvedSymbol*>(sym->var))
-      asts->add(sym->var);
-    if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var))
-      if (var->immediate)
-        asts->add(sym->var);
-  }
   Vec<BaseAST*> next_asts;
   get_ast_children(ast, next_asts);
   forv_Vec(BaseAST, next_ast, next_asts) {
@@ -49,13 +42,6 @@ void collect_asts_postorder(Vec<BaseAST*>* asts, BaseAST* ast) {
     collect_asts_postorder(asts, next_ast);
   }
   asts->add(ast);
-  if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
-    if (dynamic_cast<UnresolvedSymbol*>(sym->var))
-      asts->add(sym->var);
-    if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var))
-      if (var->immediate)
-        asts->add(sym->var);
-  }
 }
 
 void collect_asts_postorder(Vec<BaseAST*>* asts) {
@@ -72,13 +58,6 @@ void collect_top_asts(Vec<BaseAST*>* asts, BaseAST* ast) {
       collect_top_asts(asts, next_ast);
   }
   asts->add(ast);
-  if (SymExpr* sym = dynamic_cast<SymExpr*>(ast)) {
-    if (dynamic_cast<UnresolvedSymbol*>(sym->var))
-      asts->add(sym->var);
-    if (VarSymbol* var = dynamic_cast<VarSymbol*>(sym->var))
-      if (var->immediate)
-        asts->add(sym->var);
-  }
 }
 
 
@@ -130,7 +109,10 @@ void compute_call_sites() {
   collect_asts(&asts);
   forv_Vec(BaseAST, ast, asts) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(ast)) {
-      fn->calledBy = new Vec<CallExpr*>();
+      if (fn->calledBy)
+        fn->calledBy->clear();
+      else
+        fn->calledBy = new Vec<CallExpr*>();
     }
   }
   forv_Vec(BaseAST, ast, asts) {
@@ -308,6 +290,8 @@ void insert_help(BaseAST* ast,
     if (DefExpr* def_expr = dynamic_cast<DefExpr*>(expr)) {
       if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(def_expr->sym)) {
         ModuleSymbol* outer = dynamic_cast<ModuleSymbol*>(def_expr->parentSymbol);
+        mod->defPoint->sym = NULL;
+        mod->defPoint = NULL;
         parentStmt->remove();
         if (!outer)
           USR_FATAL(mod, "Nested module is not defined at module level");
@@ -345,14 +329,23 @@ void insert_help(BaseAST* ast,
 
 
 void remove_help(BaseAST* ast) {
+  Vec<BaseAST*> asts;
+  get_ast_children(ast, asts);
+  forv_Vec(BaseAST, a, asts)
+    remove_help(a);
+
   if (Stmt* stmt = dynamic_cast<Stmt*>(ast)) {
     stmt->parentScope = NULL;
     stmt->parentSymbol = NULL;
     stmt->parentStmt = NULL;
     if (BlockStmt* block = dynamic_cast<BlockStmt*>(ast)) {
       if (block->blockTag != BLOCK_SCOPELESS) {
-        if (block->blkScope && block->blkScope->astParent == block)
-          block->blkScope = NULL;
+        if (block->blkScope) {
+          if (block->blkScope->astParent == block) {
+            delete block->blkScope;
+            block->blkScope = NULL;
+          }
+        }
       }
     }
   }
@@ -367,21 +360,24 @@ void remove_help(BaseAST* ast) {
           defExpr->sym->parentScope->undefine(defExpr->sym);
         defExpr->sym->parentScope = NULL;
       }
+      if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(defExpr->sym))
+        INT_FATAL(mod, "Cannot remove module");
       if (FnSymbol* fn = dynamic_cast<FnSymbol*>(defExpr->sym)) {
-        fn->argScope = NULL;
+        if (fn->argScope) {
+          delete fn->argScope;
+          fn->argScope = NULL;
+        }
       }
       if (TypeSymbol* typeSym = dynamic_cast<TypeSymbol*>(defExpr->sym)) {
         if (ClassType* type = dynamic_cast<ClassType*>(typeSym->type)) {
-          type->structScope = NULL;
+          if (type->structScope) {
+            delete type->structScope;
+            type->structScope = NULL;
+          }
         }
       }
     }
   }
-
-  Vec<BaseAST*> asts;
-  get_ast_children(ast, asts);
-  forv_Vec(BaseAST, a, asts)
-    remove_help(a);
 }
 
 

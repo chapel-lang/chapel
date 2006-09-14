@@ -39,36 +39,30 @@ Vec<TypeSymbol*> gTypes;
 static long uid = 1;
 
 void cleanAst(long* astCount, int* liveCount) {
-  Vec<BaseAST*> asts;
-  collect_asts(&asts);
-  forv_Vec(BaseAST, ast, asts)
-    ast->clean();
-  gAsts.clear();
   gFns.clear();
   gTypes.clear();
-  forv_Vec(BaseAST, ast, asts) {
-    if (Symbol* sym = dynamic_cast<Symbol*>(ast)) {
-      if (!sym->defPoint) {
-        gAsts.add(sym);
-        if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym))
-          gFns.add(fn);
-        if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(sym)) {
-          gAsts.add(type->type);
-          gTypes.add(type);
-        }
-      }
-    } else if (dynamic_cast<Expr*>(ast) || dynamic_cast<Stmt*>(ast)) {
+  Vec<BaseAST*> asts;
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (dynamic_cast<Expr*>(ast) || dynamic_cast<Stmt*>(ast)) {
       if (ast->parentSymbol) {
-        gAsts.add(ast);
+        asts.add(ast);
         if (DefExpr* def = dynamic_cast<DefExpr*>(ast)) {
           if (FnSymbol* fn = dynamic_cast<FnSymbol*>(def->sym))
             gFns.add(fn);
           if (TypeSymbol* type = dynamic_cast<TypeSymbol*>(def->sym))
             gTypes.add(type);
         }
+      } else {
+        delete ast;
       }
+    } else {
+      asts.add(ast);
     }
   }
+  gAsts.clear();
+  gAsts.move(asts);
+  forv_Vec(BaseAST, ast, gAsts)
+    ast->clean();
   *astCount = uid;
   *liveCount = gAsts.n;
 }
@@ -77,9 +71,13 @@ void cleanAst(long* astCount, int* liveCount) {
 void destroyAst() {
   Vec<char*> keys;
   chapelStringsTable.get_keys(keys);
-  forv_Vec(char*, key, keys) {
+  forv_Vec(char, key, keys) {
     FREE(key);
   }
+  forv_Vec(BaseAST, ast, gAsts) {
+    delete ast;
+  }
+  delete rootScope;
 }
 
 
@@ -281,24 +279,6 @@ void BaseAST::insertAfter(BaseAST* new_ast) {
 }
 
 
-void BaseAST::preCopy(ASTMap*& map, bool internal) {
-  if (!map) {
-    map = new ASTMap();
-  }
-}
-
-
-void BaseAST::postCopy(BaseAST* copy, ASTMap* map, bool internal) {
-  copy->lineno = lineno;
-  copy->filename = filename;
-  if (Symbol* s = dynamic_cast<Symbol*>(copy))
-    s->addPragmas(&(dynamic_cast<Symbol*>(this)->pragmas));
-  map->put(this, copy);
-  if (!internal)
-    update_symbols(copy, map);
-}
-
-
 char* BaseAST::stringLoc(void) {
   const int tmpBuffSize = 64;
   char tmpBuff[tmpBuffSize];
@@ -325,11 +305,15 @@ void BaseAST::addPragma(char* str) {
 
 
 void BaseAST::addPragmas(Vec<char*>* srcPragmas) {
-  if (srcPragmas) {
-    forv_Vec(char, srcPragma, *srcPragmas) {
-      addPragma(srcPragma);
-    }
+  forv_Vec(char, srcPragma, *srcPragmas) {
+    addPragma(srcPragma);
   }
+}
+
+
+void BaseAST::copyPragmas(BaseAST* ast) {
+  if (Symbol* sym = dynamic_cast<Symbol*>(ast))
+    addPragmas(&(sym->pragmas));
 }
 
 
@@ -469,6 +453,7 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int sentinels) {
   case STMT_BLOCK:
     AST_ADD_CHILD(BlockStmt, param_low);
     AST_ADD_CHILD(BlockStmt, param_high);
+    AST_ADD_CHILD(BlockStmt, param_stride);
     AST_ADD_CHILD(BlockStmt, param_index);
     AST_ADD_LIST(BlockStmt, body, Stmt);
     break;

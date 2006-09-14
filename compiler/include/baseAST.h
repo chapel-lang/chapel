@@ -3,6 +3,11 @@
 
 #include "chpl.h"
 
+typedef Map<BaseAST*,BaseAST*> ASTMap;
+typedef MapElem<BaseAST*,BaseAST*> ASTMapElem;
+
+extern void update_symbols(BaseAST* ast, ASTMap* map);
+
 char* canonicalize_string(char *s);
 char* astr(char* s1, char* s2 = NULL, char* s3 = NULL, char* s4 = NULL);
 
@@ -59,15 +64,21 @@ enum astType_t {
 
 extern char* astTypeName[];
 
-#define COPY_DEF(type)                                   \
-  virtual type* copy(Map<BaseAST*,BaseAST*>* map = NULL, \
-                     bool internal = false) {            \
-    preCopy(map, internal);                              \
-    type* _this = copyInner(map);                        \
-    postCopy(_this, map, internal);                      \
-    return _this;                                        \
-  }                                                      \
-  virtual type* copyInner(Map<BaseAST*,BaseAST*>* map)
+#define COPY_DEF(type)                                                  \
+  virtual type* copy(ASTMap* map = NULL, bool internal = false) {       \
+    ASTMap localMap;                                                    \
+    if (!map)                                                           \
+      map = &localMap;                                                  \
+    type* _this = copyInner(map);                                       \
+    _this->lineno = lineno;                                             \
+    _this->filename = filename;                                         \
+    _this->copyPragmas(this);                                           \
+    map->put(this, _this);                                              \
+    if (!internal)                                                      \
+      update_symbols(_this, map);                                       \
+    return _this;                                                       \
+  }                                                                     \
+  virtual type* copyInner(ASTMap* map)
 
 #define COPY(c) (c ? c->copy() : NULL)
 #define COPY_INT(c) (c ? c->copy(map, true) : NULL)
@@ -122,16 +133,12 @@ class BaseAST : public gc {
   void insertBefore(BaseAST* new_ast);
   void insertAfter(BaseAST* new_ast);
 
-// need to put this as default value to copy for new interface
-//    new ASTMap();
-  void preCopy(Map<BaseAST*,BaseAST*>*& map, bool internal);
-  void postCopy(BaseAST* copy, Map<BaseAST*,BaseAST*>* map, bool internal);
-
   char* stringLoc(void);
   void printLoc(FILE* outfile);
 
   void addPragma(char* str);
   void addPragmas(Vec<char*>* srcPragmas);
+  void copyPragmas(BaseAST* ast);
 
   ModuleSymbol* getModule();
   FnSymbol* getFunction();
@@ -143,9 +150,6 @@ class BaseAST : public gc {
   VarSymbol* lookupVar(char*);
   VarSymbol* lookupVar(BaseAST*);
 };
-
-typedef Map<BaseAST*,BaseAST*> ASTMap;
-typedef MapElem<BaseAST*,BaseAST*> ASTMapElem;
 
 #define forv_BaseAST(_p, _v) forv_Vec(BaseAST, _p, _v)
 

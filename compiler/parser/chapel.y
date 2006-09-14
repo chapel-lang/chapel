@@ -280,6 +280,7 @@ stmt_ls:
 | stmt_ls pragma_ls stmt
     {
       $3->body->first()->addPragmas($2);
+      delete $2;
       $1->insertAtTail($3);
     }
 ;
@@ -529,6 +530,7 @@ decl_stmt_ls:
 | decl_stmt_ls pragma_ls decl_stmt
     {
       $3->body->first()->addPragmas($2);
+      delete $2;
       $1->insertAtTail($3);
     }
 ;
@@ -620,11 +622,13 @@ formal:
     {
       $$ = build_arg($1, $3, $4, $5, NULL);
       $$->sym->addPragmas($2);
+      delete $2;
     }
 | formal_tag pragma_ls identifier opt_formal_var_type var_arg_expr
     {
       $$ = build_arg($1, $3, $4, NULL, $5);
       $$->sym->addPragmas($2);
+      delete $2;
     }
 ;
 
@@ -733,6 +737,7 @@ class_decl_stmt:
     {
       DefExpr* def = build_class($3, $1, $6);
       def->sym->addPragmas($2);
+      delete $2;
       dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(def->sym)->type)->inherits = $4;
       $$ = build_chpl_stmt(def);
     }
@@ -763,6 +768,7 @@ enum_decl_stmt:
       EnumType* pdt = new EnumType($5);
       TypeSymbol* pst = new TypeSymbol($3, pdt);
       pst->addPragmas($2);
+      delete $2;
       DefExpr* def_expr = new DefExpr(pst);
       $$ = build_chpl_stmt(def_expr);
     }
@@ -791,6 +797,7 @@ typedef_decl_stmt:
       UserType* newtype = new UserType($5);
       TypeSymbol* typeSym = new TypeSymbol($3, newtype);
       typeSym->addPragmas($2);
+      delete $2;
       DefExpr* def_expr = new DefExpr(typeSym);
       $$ = build_chpl_stmt(def_expr);
     }
@@ -803,6 +810,7 @@ typevar_decl_stmt:
       VarSymbol* var = new VarSymbol($3);
       var->isTypeVariable = true;
       var->addPragmas($2);
+      delete $2;
       DefExpr* def = new DefExpr(var);
       $$ = build_chpl_stmt(def);
     }
@@ -982,7 +990,7 @@ pragma_ls:
 
 pragma:
   TPRAGMA STRINGLITERAL
-{ $$ = canonicalize_string($2); }
+    { $$ = canonicalize_string($2); }
 ;
 
 
@@ -1002,9 +1010,9 @@ expr_list_item:
 
 nonempty_expr_ls:
   pragma_ls expr_list_item
-    { $2->addPragmas($1); $$ = new AList<Expr>($2); }
+    { $2->addPragmas($1); delete $1; $$ = new AList<Expr>($2); }
 | nonempty_expr_ls TCOMMA pragma_ls expr_list_item
-    { $4->addPragmas($3); $1->insertAtTail($4); }
+    { $4->addPragmas($3); delete $3; $1->insertAtTail($4); }
 ;
 
 

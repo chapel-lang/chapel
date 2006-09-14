@@ -339,9 +339,9 @@ AList<elemType>* AList<elemType>::copy(ASTMap* map, bool internal) {
     return new AList<elemType>();
   }
 
-  if (!map) {
-    map = new ASTMap();
-  }
+  ASTMap localMap;
+  if (!map)
+    map = &localMap;
 
   AList<elemType>* newList = new AList<elemType>();
   for_alist(elemType, node, this) {

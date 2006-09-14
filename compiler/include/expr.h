@@ -16,6 +16,7 @@ class Expr : public BaseAST {
   Expr* parentExpr;
 
   Expr(astType_t astType = EXPR);
+  virtual ~Expr() { }
   COPY_DEF(Expr);
   virtual void callReplaceChild(BaseAST* new_ast);
   virtual void verify();
@@ -91,6 +92,7 @@ class CallExpr : public Expr {
   CallExpr(PrimitiveOp *prim, AList<Expr>* args);
   CallExpr(PrimitiveTag prim, AList<Expr>* args);
   CallExpr(char* name, AList<Expr>* args);
+  ~CallExpr();
   virtual void verify(); 
   COPY_DEF(CallExpr);
 

@@ -45,6 +45,7 @@ class Type : public BaseAST {
   ASTMap substitutions;
 
   Type(astType_t astType, Symbol* init_defaultVal);
+  virtual ~Type();
   virtual void verify(); 
   COPY_DEF(Type);
   void addSymbol(TypeSymbol* newSymbol);
@@ -87,6 +88,7 @@ class EnumType : public Type {
   AList<DefExpr>* constants; // EnumSymbols
 
   EnumType(AList<DefExpr>* init_constants);
+  ~EnumType();
   virtual void verify(); 
   COPY_DEF(EnumType);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -132,6 +134,7 @@ class ClassType : public Type {
   AList<Expr>* inherits; // used from parsing, sets dispatchParents
 
   ClassType(ClassTag initClassTag);
+  ~ClassType();
   virtual void verify(); 
   COPY_DEF(ClassType);
   void addDeclarations(AList<Stmt>* stmts, bool tail = true);

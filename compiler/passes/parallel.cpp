@@ -70,7 +70,6 @@ cobegin_encapsulation() {
           }
           b->insertBefore (newb);
           b->remove ();
-          delete b;
         }
       }
     }

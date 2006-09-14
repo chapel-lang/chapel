@@ -12,6 +12,7 @@ class SymScope : public gc {
   ChainHashMap<char*, StringHashFns, Symbol*> table;
 
   SymScope(BaseAST* iastParent, SymScope* iparent);
+  ~SymScope();
   
   void define(Symbol* sym);
   void undefine(Symbol* sym);

@@ -28,6 +28,18 @@ static char* filenameToModulename(char* filename) {
   return modulename;
 }
 
+static void
+clearModulesDefPoints(AList<Stmt>* stmts) {
+  for_alist(Stmt, stmt, stmts) {
+    if (BlockStmt* block = dynamic_cast<BlockStmt*>(stmt))
+      stmt = block->body->first();
+    if (ExprStmt* exprStmt = dynamic_cast<ExprStmt*>(stmt))
+      if (DefExpr* defExpr = dynamic_cast<DefExpr*>(exprStmt->expr))
+        if (ModuleSymbol* mod = dynamic_cast<ModuleSymbol*>(defExpr->sym))
+          mod->defPoint = NULL;
+  }
+}
+
 bool containsOnlyModules(AList<Stmt>* stmts) {
   for_alist(Stmt, stmt, stmts) {
     bool isModuleDef = false;
@@ -66,6 +78,8 @@ ModuleSymbol* ParseFile(char* filename, modType moduletype) {
   if (!containsOnlyModules(yystmtlist)) {
     char* modulename = filenameToModulename(filename);
     newModule = build_module(modulename, moduletype, yystmtlist);
+  } else {
+    clearModulesDefPoints(yystmtlist);
   }
 
   yyfilename = "<internal>";

@@ -75,9 +75,10 @@ static void inline_calls(BaseAST* base, Vec<FnSymbol*>* inline_stack = NULL) {
       FnSymbol* fn = call->findFnSymbol();
       if (!fn || !fn->hasPragma("inline"))
         continue;
+      Vec<FnSymbol*> stack;
       if (!inline_stack)
-        inline_stack = new Vec<FnSymbol*>();
-      if (inline_stack->in(fn))
+        inline_stack = &stack;
+      else if (inline_stack->in(fn))
         INT_FATAL(fn, "Recursive inlining detected");
       inline_stack->add(fn);
       Vec<Stmt*> stmts;

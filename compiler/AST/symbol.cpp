@@ -1,5 +1,6 @@
 #include <typeinfo>
 #include "astutil.h"
+#include "bb.h"
 #include "build.h"
 #include "files.h"
 #include "misc.h"
@@ -122,6 +123,10 @@ Symbol::Symbol(astType_t astType, char* init_name, Type* init_type) :
   isReference(false),
   canReference(false)
 {}
+
+
+Symbol::~Symbol() {
+}
 
 
 void Symbol::verify() {
@@ -297,6 +302,12 @@ VarSymbol::VarSymbol(char    *init_name,
   refc(NULL),
   refcMutex(NULL)
 { }
+
+
+VarSymbol::~VarSymbol() {
+  if (immediate)
+    delete immediate;
+}
 
 
 void VarSymbol::verify() {
@@ -619,6 +630,23 @@ FnSymbol::FnSymbol(char* initName) :
   makeGloballyVisible(false) // WAW: temporary hack to get iterator-created methods visible
 {
   gFns.add(this);
+}
+
+
+FnSymbol::~FnSymbol() {
+  if (instantiatedTo)
+    delete instantiatedTo;
+  if (basicBlocks) {
+    forv_Vec(BasicBlock, bb, *basicBlocks) {
+      delete bb;
+    }
+    delete basicBlocks;
+  }
+  if (calledBy)
+    delete calledBy;
+  if (argScope)
+    delete argScope;
+  delete formals;
 }
 
 
@@ -1364,6 +1392,12 @@ ModuleSymbol::ModuleSymbol(char* init_name,
   rootScope->define(this);
   registerModule(this);
   modScope->astParent = this;
+}
+
+
+ModuleSymbol::~ModuleSymbol() {
+  if (stmts)
+    delete stmts;
 }
 
 

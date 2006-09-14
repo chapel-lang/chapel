@@ -451,6 +451,11 @@ CallExpr::CallExpr(char* name, AList<Expr>* args) :
 }
 
 
+CallExpr::~CallExpr() {
+  delete argList;
+}
+
+
 void CallExpr::verify() {
   Expr::verify();
   if (astType != EXPR_CALL) {
