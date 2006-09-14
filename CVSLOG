@@ -75158,3 +75158,24 @@ Modified files:
 	                         inlineFunctions.cpp normalize.cpp 
 	                         parallel.cpp 
 
+---------------------------------------------------------------------------
+
+09/14/06 15:24:43 -- deitz
+
+Log message:
+	Added test
+	
+	  var x = 1, y = 1u, z = x + y;
+	  writeln((x, y, z));
+	
+	which prints out
+	
+	  (1, 1, 2.0)
+	
+	showing an unfortunate characteristic of unsigned.  The result of
+	adding a 64-bit integer to a 64-bit usigned integer is a 64-bit float.
+
+Added files:
+	chapel/test/trivial/deitz/: test_int_uint.chpl 
+	                            test_int_uint.good 
+
