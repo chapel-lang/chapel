@@ -1,7 +1,7 @@
-// NAS FT - Ported to Chapel from ZPL
+// NAS FT - Initial port to Chapel based on ZPL
 
 config const
-  verbose         = false,
+  verbose         = true,
   timers_enabled  = false,
   timers_disabled = false;
 
@@ -13,163 +13,174 @@ const
   r46   = 0.5**46,
   t46   = 2.0**46;
 
-def nextrandlc(inout x : float, a : float) : float {
-  // SJD: I want to say these are all floats
-  var t1, t2, t3, t4, a1, a2, x1, x2, z : float;
-  t1 = r23 * a;
-  a1 = floor(t1);
-  a2 = a - t23 * a1;
+def nextrandlc(x : float, a : float) {
+  var t1 = r23 * a;
+  var a1 = floor(t1);
+  var a2 = a - t23 * a1;
   t1 = r23 * x;
-  x1 = floor(t1);
-  x2 = x - t23 * x1;
+  var x1 = floor(t1);
+  var x2 = x - t23 * x1;
   t1 = a1 * x2 + a2 * x1;
-  t2 = floor(r23 * t1);
-  z  = t1 - t23 * t2;
-  t3 = t23 * z + a2 * x2;
-  t4 = floor(r46 * t3);
-  x  = t3 - t46 * t4;
-  return r46 * x;
+  var t2 = floor(r23 * t1);
+  var z  = t1 - t23 * t2;
+  var t3 = t23 * z + a2 * x2;
+  var t4 = floor(r46 * t3);
+  var x3 = t3 - t46 * t4;
+  return (x3, r46 * x3);
 }
 
 def initrandlc(seed, a : float, in n : int) : float {
-  var i : int, t, g : float;
+  var i : int, t : float, g : float;
   var x : float = seed;
   t = a;
   while n != 0 do {
     i = n / 2;
     if 2 * i != n then
-      g = nextrandlc(x, t);
-    g = nextrandlc(t, t);
+      (x, g) = nextrandlc(x, t);
+    (t, g) = nextrandlc(t, t);
     n = i;
   }
   return x;
 }
 
 var randlc_last_n : int = -2,
-    randlc_last_x : double;
+    randlc_last_x : float;
 def randlc(n : int) : float {
+  var result : float;
   if n != randlc_last_n + 1 then
     randlc_last_x = initrandlc(seed, arand, n);
   randlc_last_n = n;
-  return nextrandlc(randlc_last_x, arand);
+  (randlc_last_x, result) = nextrandlc(randlc_last_x, arand);
+  return result;
 }
 
 enum classes {S = 1, W, A, B, C, D};
 
-const class_defaults =
-  (('T',    4,    4,    4,  3),
-   ('S',   64,   64,   64,  6),
-   ('W',   32,  128,  128,  6),
-   ('A',  128,  256,  512,  6),
-   ('B',  256,  256,  512, 20),
-   ('C',  512,  512,  512, 20),
-   ('D', 1024, 1024, 2048, 25));
+/*
+var class_defaults : [S..D] (string, int, int, int, int) =
+  (/ ('S',   64,   64,   64,  6),
+     ('W',   32,  128,  128,  6),
+     ('A',  128,  256,  512,  6),
+     ('B',  256,  256,  512, 20),
+     ('C',  512,  512,  512, 20),
+     ('D', 1024, 1024, 2048, 25) /);
+*/
 
-config const problem_class = S;
+config const problem_class = 1;
 
---const (char, nx, ny, nz, niter) = class_defaults(problem_class);
+config var
+  nx : int = 64,
+  ny : int = 64,
+  nz : int = 64,
+  niter : int = 6;
 
---const
---  alpha = 1.0e-6,
---  pi = 3.141592653589793238,
---  epsilon = 1.0e-12;
+const
+  alpha = 1.0e-6,
+  pi = 3.141592653589793238,
+  epsilon = 1.0e-12;
 
-def compute_initial_conditions(X1 : [?D] complex) {
-  forall i,j,k in D {
+var
+  DXYZ : domain(3) = [0..nx-1, 0..ny-1, 0..nz-1],
+  U0 : [DXYZ] complex,
+  U1 : [DXYZ] complex,
+  U2 : [DXYZ] complex,
+  Twiddle : [DXYZ] float;
+
+def compute_initial_conditions(X1) {
+  forall i,j,k in DXYZ {
     X1(i,j,k).real = randlc(((i*ny+j)*nz+k)*2);
     X1(i,j,k).imag = randlc(((i*ny+j)*nz+k)*2+1);
   }
 }
 
-def compute_index_map(Twiddle : [?D] float) {
+def compute_index_map(Twiddle) {
   const ap = -4.0 * alpha * pi * pi;
-  forall i,j,k in D do
-    Twiddle = exp((ap*(i+nx/2) % nx - nx/2)**2 +
-                  (ap*(i+nx/2) % nx - nx/2)**2 +
-                  (ap*(i+nx/2) % nx - nx/2)**2);
+  forall i,j,k in DXYZ do
+    Twiddle(i,j,k) = exp(ap*(((i+nx/2) % nx - nx/2)**2 +
+                             ((j+ny/2) % ny - ny/2)**2 +
+                             ((k+nz/2) % nz - nz/2)**2));
 }
 
 var fftblock : int = 16, fftblockpad : int = 18;
 
-var u : [0..nz-1] dcomplex;
+var u : [0..nz-1] complex;
 
 def fft_init() {
-  var t, ti : double;
+  var t : float, ti : float;
   var m = bpop(nz-1);
   var ku = 2;
   var ln = 1;
-  u[0] = m;
+  u(0) = m+0i;
   for j in 1..m {
     for i in 0..ln-1 {
-      u[i+ku-1].real = cos(i*pi/ln);
-      u[i+ku-1].imag = sin(i*pi/ln);
+      u(i+ku-1).real = cos(i*pi/ln);
+      u(i+ku-1).imag = sin(i*pi/ln);
     }
     ku += ln;
     ln *= 2;
   }
 }
 
-def fftz2(dir, l, m, n, ny, ny1 : int,
-               u : [0..nz-1] complex,
-               x, y : [0..n-1, 0..ny1-1] complex) {
-  var lk = 2**(l-1), li = 2**(m-1), lj = 2*lk;
+def fftz2(dir, l, m, n, ny, ny1 : int, u, x, y) {
+  var lk = 1<<(l-1), li = 1<<(m-l), lj = 2*lk;
   for i in 0..li-1 {
     var i11 = i * lk, i12 = i11 + n/2, i21 = i * lj, i22 = i21 + lk;
     var u1 = if dir == 1 then u(li+i) else conjg(u(li+i));
     for k in 0..lk-1 {
       for j in 0..ny-1 {
-        var x11 = x[i11+k, j];
-        var x21 = x[i12+k, j];
-        y[i21+k, j] = x11+x21;
-        y[i22+k, j] = u1*(x11-x21);
+        var x11 = x(i11+k, j);
+        var x21 = x(i12+k, j);
+        y(i21+k, j) = x11+x21;
+        y(i22+k, j) = u1*(x11-x21);
       }
     }
   }
 }
 
-def cfftz(dir, m, n, ny, ny1 : int,
-               x, y : [0..n-1, 0..ny1-1] complex) {
+def cfftz(dir, m, n, ny, ny1 : int, x, y) {
   for l in 1..m by 2 {
     fftz2(dir, l, m, n, ny, ny1, u, x, y);
     if l != m then
       fftz2(dir, l+1, m, n, ny, ny1, u, y, x);
     else
-      x = y;
+      forall ij in [0..n-1, 0..ny-1] do
+        x(ij) = y(ij);
   }
 }
 
 def cffts1(dir, n, X1, X2, ny, ny1, x, y) {
-  for j in X1.domain(2) {
-    for kk in X1.domain(3) by ny {
-      [i1,_,i3 in 0..n-1,j..j,kk..kk+ny-1] x(i1,i3-kk) = X1(i1,j,i3);
+  for j in DXYZ(2) {
+    for kk in DXYZ(3) by ny {
+      [i1,_,i3 in [0..n-1,j..j,kk..kk+ny-1]] x(i1,i3-kk) = X1(i1,j,i3);
       cfftz(dir, bpop(n-1), n, ny, ny1, x, y);
-      [i1,_,i3 in 0..n-1,j..j,kk..kk+ny-1] X2(i1,j,i3) = x(i1,i3-kk);
+      [i1,_,i3 in [0..n-1,j..j,kk..kk+ny-1]] X2(i1,j,i3) = x(i1,i3-kk);
     }
   }
 }
 
 def cffts2(dir, n, X1, X2, ny, ny1, x, y) {
-  for i in X1.domain(1) {
-    for kk in X1.domain(3) by ny {
-      [_,i2,i3 in i..i,0..n-1,kk..kk+ny-1] x(i2,i3-kk) = X1(i,i2,i3);
+  for i in DXYZ(1) {
+    for kk in DXYZ(3) by ny {
+      [_,i2,i3 in [i..i,0..n-1,kk..kk+ny-1]] x(i2,i3-kk) = X1(i,i2,i3);
       cfftz(dir, bpop(n-1), n, ny, ny1, x, y);
-      [_,i2,i3 in i..i,0..n-1,kk..kk+ny-1] X2(i,i2,i3) = x(i2,i3-kk);
+      [_,i2,i3 in [i..i,0..n-1,kk..kk+ny-1]] X2(i,i2,i3) = x(i2,i3-kk);
     }
   }
 }
 
 def cffts3(dir, n, X1, X2, ny, ny1, x, y) {
-  for i in X1.domain(1) {
-    for jj in X1.domain(2) by ny {
-      [_,i2,i3 in i..i,jj..jj+ny-1,0..n-1] x[i3,i2-jj) = X1(i,i2,i3);
+  for i in DXYZ(1) {
+    for jj in DXYZ(2) by ny {
+      [_,i2,i3 in [i..i,jj..jj+ny-1,0..n-1]] x(i3,i2-jj) = X1(i,i2,i3);
       cfftz(dir, bpop(n-1), n, ny, ny1, x, y);
-      [_,i2,i3 in i..i,jj..jj+ny-1,0..n-1] X2(i,i2,i3) = x[i3,i2-jj);
+      [_,i2,i3 in [i..i,jj..jj+ny-1,0..n-1]] X2(i,i2,i3) = x(i3,i2-jj);
     }
   }
 }
 
 def fft(dir : int, X1, X2) {
-  var x, y : [0..nz-1, 0..fftblockpad-1] complex;
+  var x : [0..nz-1, 0..fftblockpad-1] complex;
+  var y : [0..nz-1, 0..fftblockpad-1] complex;
   if dir == 1 {
     cffts3(dir, nz, X1, X1, fftblock, fftblockpad, x, y);
     cffts2(dir, ny, X1, X1, fftblock, fftblockpad, x, y);
@@ -182,8 +193,10 @@ def fft(dir : int, X1, X2) {
 }
 
 def evolve(X1, X2, Twiddle) {
-  X1 *= Twiddle;
-  X2 = X1;
+  forall ijk in DXYZ {
+    X1(ijk) *= (Twiddle(ijk) + 0i);
+    X2(ijk) = X1(ijk);
+  }
 }
 
 var sums : [1..niter] complex; -- verification checksums
@@ -285,7 +298,7 @@ const
        5.118822370068e+02+5.119794338060e+02i /);
 
 def verify() {
-  var rerr, ierr : double;
+  var rerr : float, ierr : float;
   for iter in 1..niter {
     select problem_class {
       when S {
@@ -319,27 +332,19 @@ def verify() {
   return true;
 }
 
-def checksum(iter, X1) {
-  var chk = 0;
+def checksum(i, X1) {
+  var chk : complex;
   [j in 1..1024] chk += X1((5*j) % nx, (3*j) % ny, j % nz);
-  chk /= nx * ny * nz;
+  chk = chk / ((nx * ny * nz) + 0i);
   sums(i) = chk;
   if verbose then
-    writeln("T = ", i, "    Checksum = ", sums(i).real, " ", sums(i).imag);
+    writeln("T = ", i, "    Checksum = ", sums(i).real:"%15.12e", " ", sums(i).imag:"%15.12e");
 }
-
-var
-  DXYZ : domain(3) = [0..nx-1, 0..ny-1, 0..nz-1],
-  U0 : [DXYZ] complex,
-  U1 : [DXYZ] complex,
-  U2 : [DXYZ] complex,
-  Twiddle : [DXYZ] double;
 
 --
 -- Run problem once to ensure all data is touched
 --
-
-compute_indexmap(Twiddle);
+compute_index_map(Twiddle);
 compute_initial_conditions(U1);
 fft_init();
 fft(1, U1, U0);
@@ -348,7 +353,7 @@ fft(1, U1, U0);
 -- Restart benchmark
 --
 
-compute_indexmap(Twiddle);
+compute_index_map(Twiddle);
 compute_initial_conditions(U1);
 fft_init();
 fft(1, U1, U0);
