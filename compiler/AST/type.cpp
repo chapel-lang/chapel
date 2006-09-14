@@ -797,11 +797,9 @@ void initPrimitiveTypes(void) {
   if (no_bounds_checking) {
     gBoundsChecking->immediate = new Immediate;
     *gBoundsChecking->immediate = *gFalse->immediate;
-    gBoundsChecking->cname = gFalse->cname;
   } else {
     gBoundsChecking->immediate = new Immediate;
     *gBoundsChecking->immediate = *gTrue->immediate;
-    gBoundsChecking->cname = gTrue->cname;
   }
 
   // WAW: could have a loop, but the following unrolling is more explicit.

@@ -1207,17 +1207,23 @@ static bool fold_def_expr(DefExpr* def) {
 
 static void fold_cond_stmt(CondStmt* if_stmt) {
   if (SymExpr* cond = dynamic_cast<SymExpr*>(if_stmt->condExpr)) {
-    if (!strcmp(cond->var->cname, "true")) {
-      Stmt* then_stmt = if_stmt->thenStmt;
-      then_stmt->remove();
-      if_stmt->replace(then_stmt);
-    } else if (!strcmp(cond->var->cname, "false")) {
-      Stmt* else_stmt = if_stmt->elseStmt;
-      if (else_stmt) {
-        else_stmt->remove();
-        if_stmt->replace(else_stmt);
-      } else {
-        if_stmt->remove();
+    if (VarSymbol* var = dynamic_cast<VarSymbol*>(cond->var)) {
+      if (var->immediate &&
+          var->immediate->const_kind == NUM_KIND_UINT &&
+          var->immediate->num_index == INT_SIZE_1) {
+        if (var->immediate->v_bool == gTrue->immediate->v_bool) {
+          Stmt* then_stmt = if_stmt->thenStmt;
+          then_stmt->remove();
+          if_stmt->replace(then_stmt);
+        } else if (var->immediate->v_bool == gFalse->immediate->v_bool) {
+          Stmt* else_stmt = if_stmt->elseStmt;
+          if (else_stmt) {
+            else_stmt->remove();
+            if_stmt->replace(else_stmt);
+          } else {
+            if_stmt->remove();
+          }
+        }
       }
     }
   }

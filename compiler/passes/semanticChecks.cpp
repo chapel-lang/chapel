@@ -10,6 +10,8 @@
 
 static void
 check_redefinition(Symbol* sym) {
+  if (sym->parentScope == rootScope)
+    return;
   if (sym->overload) {
     int count = 0;
     for (Symbol* tmp = sym; tmp; tmp = tmp->overload) {

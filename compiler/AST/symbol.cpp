@@ -383,51 +383,34 @@ void VarSymbol::printDef(FILE* outfile) {
 }
 
 
-void VarSymbol::codegen( FILE* outfile) {
+void VarSymbol::codegen(FILE* outfile) {
   if (on_heap || isReference)
     fprintf(outfile, "(*");
 
   if (immediate && immediate->const_kind == CONST_KIND_STRING) {
     fprintf(outfile, "\"%s\"", immediate->v_string);
   } else if (immediate &&
-      immediate->const_kind == NUM_KIND_INT  &&
-      immediate->num_index != INT_SIZE_1) {
-    // find the min number of bytes to store constant
+             immediate->const_kind == NUM_KIND_UINT &&
+             immediate->num_index == INT_SIZE_1) {
+    fprintf(outfile, immediate->uint_value() ? "true" : "false");
+  } else if (immediate &&
+             immediate->const_kind == NUM_KIND_INT) {
     int64 iconst = immediate->int_value();
     if (iconst == (1ll<<63)) {
       fprintf(outfile, "-INT64(9223372036854775807) - INT64(1)");
     } else {
-      if (iconst < 0)
-        iconst = (iconst+1) * -1;
-      if (iconst <= ((1<<7)-1)) {
-        fprintf( outfile, "INT8( %s)", cname);
-      } else if (iconst <= ((1<<15)-1)) {
-        fprintf( outfile, "INT16( %s)", cname);
-      } else if (iconst <= ((1<<31)-1)) {
-        fprintf( outfile, "INT32( %s)", cname);
-      } else {
-        fprintf( outfile, "INT64( %s)", cname);
-      }
+      fprintf(outfile, "INT64(%lld)", iconst);
     }
   } else if (immediate &&
-      immediate->const_kind == NUM_KIND_UINT  &&
-      immediate->num_index != INT_SIZE_1) {
+             immediate->const_kind == NUM_KIND_UINT) {
     uint64 uconst = immediate->uint_value();
-    if (uconst <= (((int64)1)<<8)) {
-      fprintf( outfile, "UINT8( %s)", cname);
-    } else if (uconst <= (((int64)1)<<16)) {
-      fprintf( outfile, "UINT16( %s)", cname);
-    } else if (uconst <= (((int64)1)<<32)) {
-      fprintf( outfile, "UINT32( %s)", cname);
-    } else {
-      fprintf( outfile, "UINT64( %s)", cname);
-    }
+    fprintf(outfile, "UINT64(%lld)", uconst);
   } else {
     fprintf(outfile, "%s", cname);
   }
 
   if (on_heap || isReference)
-    fprintf( outfile, ")");
+    fprintf(outfile, ")");
 }
 
 
@@ -441,7 +424,7 @@ void VarSymbol::codegenDef(FILE* outfile) {
   }
   type->codegen(outfile);
   fprintf(outfile, " ");
-  if (is_ref || on_heap || isReference) fprintf( outfile, "*");
+  if (is_ref || on_heap || isReference) fprintf(outfile, "*");
   fprintf(outfile, "%s", cname);
   fprintf(outfile, ";\n");
 }
@@ -1492,6 +1475,7 @@ VarSymbol *new_StringSymbol(char *str) {
   if (s)
     return s;
   s = new VarSymbol("_literal_string", dtString);
+  rootScope->define(s);
   s->immediate = new Immediate;
   *s->immediate = imm;
   uniqueConstantsHash.put(s->immediate, s);
@@ -1514,11 +1498,8 @@ VarSymbol *new_IntSymbol(long long int b, IF1_int_type size) {
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   if (s)
     return s;
-  s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), dtInt[size]);
+  s = new VarSymbol("_literal_int", dtInt[size]);
   rootScope->define(s);
-  char n[80];
-  sprintf(n, "%lld", b);
-  s->cname = dupstr(n);
   s->immediate = new Immediate;
   *s->immediate = imm;
   uniqueConstantsHash.put(s->immediate, s);
@@ -1541,11 +1522,8 @@ VarSymbol *new_UIntSymbol(unsigned long long int b, IF1_int_type size) {
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   if (s)
     return s;
-  s = new VarSymbol(stringcat("_literal_", intstring(literal_id++)), dtUInt[size]);
+  s = new VarSymbol("_literal_uint", dtUInt[size]);
   rootScope->define(s);
-  char n[80];
-  sprintf(n, "%llu", b);
-  s->cname = dupstr(n);
   s->immediate = new Immediate;
   *s->immediate = imm;
   uniqueConstantsHash.put(s->immediate, s);

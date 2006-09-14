@@ -245,7 +245,7 @@ fprint_imm(FILE *fp, Immediate &imm) {
       }
       break;
     case CONST_KIND_STRING:
-      res = fprintf(fp, "%s", imm.v_string); break;
+      res = fprintf(fp, "\"%s\"", imm.v_string); break;
       break;
   }
   return res;
