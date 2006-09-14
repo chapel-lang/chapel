@@ -75121,3 +75121,18 @@ Log message:
 Modified files:
 	chapel/test/types/complex/marybeth/: complex_expressions.future 
 
+---------------------------------------------------------------------------
+
+09/14/06 12:18:39 -- deitz
+
+Log message:
+	Renamed ft-serial-working1 to ft-serial as this is the first serial ft
+	benchmark.  The old ft-serial version still had some ZPL in it, etc.
+
+Modified files:
+	chapel/test/npb/ft/: ft-serial.chpl 
+Removed files:
+	chapel/test/npb/ft/: ft-serial-working1.chpl 
+	                     ft-serial-working1.good ft-serial.future 
+	                     ft-serial.notest 
+
