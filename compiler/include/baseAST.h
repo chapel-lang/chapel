@@ -157,7 +157,7 @@ class BaseAST : public gc {
 int compar_baseast(const void *ai, const void *aj);
 // for use with qsort
 
-void get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int sentinels = 0);
+void get_ast_children(BaseAST *a, Vec<BaseAST *> &asts);
 
 extern int currentLineno;
 extern char* currentFilename;

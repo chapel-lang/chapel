@@ -64,7 +64,7 @@ class AList : public gc {
          _alist_next = (node) ? dynamic_cast<elemtype*>((node)->next) : NULL)
 
 #define for_alist_sc(elemtype, node, list)                              \
-  for (elemtype *node = (list)->head ? (elemtype*)((list)->head->next) : NULL, \
+  for (elemtype *node = (list) ? ((list)->head ? (elemtype*)((list)->head->next) : NULL) : NULL, \
          *_alist_next = node ? (elemtype*)(node->next) : NULL;          \
        _alist_next;                                                     \
        node = _alist_next,                                              \
@@ -190,6 +190,8 @@ template <class elemType>
 void AList<elemType>::clear(void) {
   head->next = tail;
   tail->prev = head;
+  head->parentSymbol = (Symbol*)0x1;
+  tail->parentSymbol = (Symbol*)0x1;
 }
 
 

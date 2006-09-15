@@ -1387,8 +1387,6 @@ ModuleSymbol::ModuleSymbol(char* init_name, modType init_modtype) :
   registerModule(this);
   modScope->astParent = this;
   stmts->parent = this;
-  stmts->head->parentSymbol = this;
-  stmts->tail->parentSymbol = this;
 }
 
 

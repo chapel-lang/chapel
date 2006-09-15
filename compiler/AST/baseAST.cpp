@@ -407,19 +407,13 @@ char* currentFilename = NULL;
 char* currentTraversal = NULL;
 
 #define AST_ADD_CHILD(_t, _m) if (((_t*)a)->_m) asts.add(((_t*)a)->_m)
-#define AST_ADD_LIST(_t, _m, _mt)                                       \
-  if (((_t*)a)->_m) {                                                   \
-    for_alist_sc(_mt, tmp, ((_t*)a)->_m) {                              \
-      asts.add(tmp);                                                    \
-    }                                                                   \
-    if (sentinels) {                                                    \
-      asts.add(((_t*)a)->_m->head);                                     \
-      asts.add(((_t*)a)->_m->tail);                                     \
-    }                                                                   \
+#define AST_ADD_LIST(_t, _m, _mt)        \
+  for_alist_sc(_mt, tmp, ((_t*)a)->_m) { \
+    asts.add(tmp);                       \
   }
 
 void
-get_ast_children(BaseAST *a, Vec<BaseAST *> &asts, int sentinels) {
+get_ast_children(BaseAST *a, Vec<BaseAST *> &asts) {
   switch (a->astType) {
   case STMT:
   case EXPR:

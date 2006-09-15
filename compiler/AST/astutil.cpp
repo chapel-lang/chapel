@@ -418,7 +418,7 @@ void insert_help(BaseAST* ast,
   }
 
   Vec<BaseAST*> asts;
-  get_ast_children(ast, asts, 1);
+  get_ast_children(ast, asts);
   forv_Vec(BaseAST, ast, asts)
     insert_help(ast, parentExpr, parentStmt, parentSymbol, parentScope);
 }
