@@ -15,9 +15,9 @@ linux and general regressions
 =============================
 
 
-trivial/waynew/int8-64b -- fails because integer literals are printed
-out without 64-bit coercion wrapper.  Fix is pending decision about
-integer literal widths.
+[Error matching compiler output for classes/deitz/test_type_in_class2]
+
+test fails from typedef to type change because type is thought to be generic.
 
 
 ==========================
