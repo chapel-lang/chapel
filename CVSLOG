@@ -75271,3 +75271,18 @@ Log message:
 Modified files:
 	chapel/compiler/parser/: chapel.y chapel.lex 
 
+---------------------------------------------------------------------------
+
+09/14/06 17:10:46 -- deitz
+
+Log message:
+	Mark one regression that should be easy to fix
+	
+	[Error matching compiler output for classes/deitz/test_type_in_class2]
+	
+	since the class in this test is not necessarily generic, we should be
+	able to use it to define the type with the default type.
+
+Modified files:
+	chapel/test/: REGRESSIONS 
+
