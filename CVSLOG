@@ -75318,3 +75318,22 @@ Added files:
 Removed files:
 	chapel/test/studies/jacobi/waynew/: NOTEST 
 
+---------------------------------------------------------------------------
+
+09/15/06 15:10:22 -- deitz
+
+Log message:
+	Stopped using sentinels to contain parents (parentSymbol, parentStmt,
+	parentExpr, parentScope) to enable insertion into alists.
+	
+	Added a BaseAST* parent pointer to the alist.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp baseAST.cpp build.cpp expr.cpp 
+	                      stmt.cpp symbol.cpp type.cpp 
+	chapel/compiler/include/: alist.h astutil.h symbol.h 
+	chapel/compiler/parser/: chapel.y 
+	chapel/compiler/passes/: cleanup.cpp filesToAST.cpp 
+Removed files:
+	chapel/modules/standard/: i.chpl 
+
