@@ -2,10 +2,12 @@
 
 param M = 4;
 param N = 4;
+/*
 config const THRESHOLD = 0.00001;
 // config const THRESHOLD: = 0.00001; // generates "0.0 = 0.0001"
 // param MAXDELTAPOSSIBLE:float = 1.0;// error:value not known at compile time?
-// param THRESHOLD:float = 0.00001;   // error:value not known at compile time?
+*/
+param THRESHOLD = 0.00001;
 
 
 // would like to use subdomains for D, northOfD, southOfD, westOfD, eastOfD
