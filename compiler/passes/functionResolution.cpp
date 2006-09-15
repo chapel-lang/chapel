@@ -963,6 +963,28 @@ resolveCall(CallExpr* call) {
       INT_FATAL(call, "bad set member primitive");
   } else if (call->isPrimitive(PRIMITIVE_MOVE)) {
     if (SymExpr* sym = dynamic_cast<SymExpr*>(call->get(1))) {
+
+      //
+      // special case cast of class w/ type variables that is not generic
+      //   i.e. types are type definitions (have default types)
+      //
+      if (CallExpr* cast = dynamic_cast<CallExpr*>(call->get(2))) {
+        if (cast->isPrimitive(PRIMITIVE_CAST)) {
+          if (SymExpr* te = dynamic_cast<SymExpr*>(cast->get(1))) {
+            if (TypeSymbol* ts = dynamic_cast<TypeSymbol*>(te->var)) {
+              if (ClassType* ct = dynamic_cast<ClassType*>(ts->type)) {
+                if (ct->classTag == CLASS_CLASS && ct->isGeneric) {
+                  CallExpr* cc = new CallExpr(ct->defaultConstructor->name);
+                  te->replace(cc);
+                  resolveCall(cc);
+                  cc->replace(new SymExpr(cc->typeInfo()->symbol));
+                }
+              }
+            }
+          }
+        }
+      }
+
       Type* t = call->get(2)->typeInfo();
       if (sym->var->type == dtUnknown)
         sym->var->type = t;

@@ -15,10 +15,6 @@ linux and general regressions
 =============================
 
 
-[Error matching compiler output for classes/deitz/test_type_in_class2]
-
-test fails from typedef to type change because type is thought to be generic.
-
 
 ==========================
 linux valgrind regressions
