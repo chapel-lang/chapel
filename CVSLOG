@@ -75286,3 +75286,20 @@ Log message:
 Modified files:
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+09/15/06 09:18:37 -- deitz
+
+Log message:
+	Implemented some initial internal refactoring of the ast insertion
+	routines.
+	
+	Added a function BaseAST::inTree() to determine whether an AST is in
+	the program tree.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp baseAST.cpp expr.cpp stmt.cpp 
+	                      symbol.cpp type.cpp 
+	chapel/compiler/include/: alist.h astutil.h baseAST.h expr.h 
+	                          stmt.h symbol.h type.h 
+
