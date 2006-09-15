@@ -11,7 +11,7 @@ def readDefaultVal(): int {
 }
 
 def foo() {
-  typedef myfooint: int;
+  type myfooint = int;
   var x: myfooint;
   var y: myfooint;
   writeln("x is: ", x);

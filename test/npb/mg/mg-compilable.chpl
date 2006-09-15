@@ -123,9 +123,9 @@ config const warmup = true;
 -- the 27-point stencils.
 
 /* HACK: array types not parsed yet
-typedef coeff: [0..3] float;
+type coeff = [0..3] float;
 */
-typedef coeff: 4*float; -- HACK
+type coeff = 4*float; -- HACK
 
 
 -- the domains that define the multigrid data structure

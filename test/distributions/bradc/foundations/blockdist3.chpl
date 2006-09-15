@@ -1,5 +1,5 @@
-typedef locale: int;
-typedef indexType: int;
+type locale = int;
+type indexType = int;
 
 param rank: int = 1;
 

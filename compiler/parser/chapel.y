@@ -141,7 +141,6 @@ Is this "while x"(i); or "while x(i)";?
 %token TSYNC
 %token TTHEN
 %token TTYPE
-%token TTYPEDEF
 %token TUNION
 %token TUSE
 %token TVAL
@@ -197,11 +196,11 @@ Is this "while x"(i); or "while x(i)";?
 %type <vpch> pragma_ls
 
 %type <pstmtls> program
-%type <pstmtls> stmt_ls decl_stmt_ls
+%type <pstmtls> stmt_ls decl_stmt_ls class_body_stmt_ls
 
 %type <pblockstmt> stmt empty_stmt label_stmt goto_stmt break_stmt continue_stmt
 %type <pblockstmt> expr_stmt if_stmt expr_for_stmt for_stmt while_do_stmt do_while_stmt
-%type <pblockstmt> select_stmt return_stmt yield_stmt assign_stmt decl_stmt
+%type <pblockstmt> select_stmt return_stmt yield_stmt assign_stmt decl_stmt class_body_stmt
 %type <pblockstmt> type_select_stmt
 
 %type <pblockstmt> typedef_decl_stmt fn_decl_stmt class_decl_stmt mod_decl_stmt
@@ -225,7 +224,7 @@ Is this "while x"(i); or "while x(i)";?
 %type <pexpr> tuple_paren_expr expr expr_list_item opt_expr
 %type <pexpr> literal seq_expr where
 %type <pexpr> variable_expr top_level_expr
-%type <pexpr> reduction opt_init_expr var_arg_expr
+%type <pexpr> reduction opt_init_expr opt_init_type var_arg_expr
 %type <pexprls> expr_ls nonempty_expr_ls opt_inherit_expr_ls type_ls
 %type <pdefexpr> formal enum_item
 %type <pdefexprls> formal_ls opt_formal_ls enum_ls
@@ -524,6 +523,27 @@ block_stmt:
 /** DECLARATION STATEMENTS ***************************************************/
 
 
+class_body_stmt_ls:
+  /* empty */
+    { $$ = new AList<Stmt>(); }
+| class_body_stmt_ls pragma_ls class_body_stmt
+    {
+      $3->body->first()->addPragmas($2);
+      delete $2;
+      $1->insertAtTail($3);
+    }
+;
+
+
+class_body_stmt:
+  fn_decl_stmt
+| class_decl_stmt
+| enum_decl_stmt
+| typevar_decl_stmt
+| var_decl_stmt
+;
+
+
 decl_stmt_ls:
   /* empty */
     { $$ = new AList<Stmt>(); }
@@ -543,7 +563,6 @@ decl_stmt:
 | class_decl_stmt
 | enum_decl_stmt
 | typedef_decl_stmt
-| typevar_decl_stmt
 | var_decl_stmt
 ;
 
@@ -733,7 +752,7 @@ function:
 
 
 class_decl_stmt:
-  class_tag pragma_ls identifier opt_inherit_expr_ls TLCBR decl_stmt_ls TRCBR
+  class_tag pragma_ls identifier opt_inherit_expr_ls TLCBR class_body_stmt_ls TRCBR
     {
       DefExpr* def = build_class($3, $1, $6);
       def->sym->addPragmas($2);
@@ -792,7 +811,7 @@ enum_item:
 
 
 typedef_decl_stmt:
-  TTYPEDEF pragma_ls identifier TCOLON type TSEMI
+  TTYPE pragma_ls identifier TASSIGN type TSEMI
     {
       UserType* newtype = new UserType($5);
       TypeSymbol* typeSym = new TypeSymbol($3, newtype);
@@ -804,14 +823,22 @@ typedef_decl_stmt:
 ;
 
 
+opt_init_type:
+  /* nothing */
+    { $$ = NULL; }
+| TASSIGN type
+    { $$ = $2; }
+;
+
+
 typevar_decl_stmt:
-  TTYPE pragma_ls identifier TSEMI
+  TTYPE pragma_ls identifier opt_init_type TSEMI
     {
       VarSymbol* var = new VarSymbol($3);
       var->isTypeVariable = true;
       var->addPragmas($2);
       delete $2;
-      DefExpr* def = new DefExpr(var);
+      DefExpr* def = new DefExpr(var, $4);
       $$ = build_chpl_stmt(def);
     }
 ;

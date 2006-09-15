@@ -90,7 +90,7 @@ config const warmup = true;
 -- coefficient values that define the weight values used in each of
 -- the 27-point stencils.
 
-typedef coeff: [0..3] float;
+type coeff = [0..3] float;
 
 
 -- the domains that define the multigrid data structure

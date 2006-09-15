@@ -289,7 +289,7 @@ static void build_constructor(ClassType* ct) {
     Expr* init = tmp->defPoint->init;
     if (init) {
       init->remove();
-      if (!exprType)
+      if (!tmp->isTypeVariable && !exprType)
         exprType = init->copy();
     } else if (!tmp->isTypeVariable)
       init = new SymExpr(gNil);

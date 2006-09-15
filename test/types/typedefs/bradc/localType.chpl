@@ -2,7 +2,7 @@
 -- values are evaluated each time the type is encountered
 
 def foo(defval: int) {
-  typedef myfooint: int;
+  type myfooint = int;
   var x: myfooint;
   writeln("x is: ", x);
 }

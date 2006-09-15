@@ -2,6 +2,6 @@
    def error for Vertices */
 config var numVertices: int = 3;
 var Vertices: domain(1) = [1..numVertices];
-typedef vertex: index(Vertices);
+type vertex = index(Vertices);
 
 writeln("If we see this, the test probably worked");

@@ -1,4 +1,4 @@
-typedef mytup: (int, float);
+type mytup = (int, float);
 
 def returntwo(): mytup {
   return (1, 2.3);

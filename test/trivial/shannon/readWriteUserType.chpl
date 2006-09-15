@@ -1,13 +1,13 @@
-typedef newInt:  int;
+type newInt=  int;
 var  myInt:   newInt;
 
-typedef newFloat:    float;
+type newFloat=    float;
 var  myFloat:     newFloat;
 
-typedef newBoolean:  bool;
+type newBoolean=  bool;
 var  myBoolean:   newBoolean;
 
-typedef newComplex:  complex;
+type newComplex=  complex;
 var  myComplex:   newComplex;
 
 write("Enter an int: ");

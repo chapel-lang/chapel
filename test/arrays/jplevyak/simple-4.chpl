@@ -1,5 +1,5 @@
 
-typedef arr : [1..3] int;
+type arr = [1..3] int;
 
 class C {
   var a : int;

@@ -92,7 +92,6 @@ static          processToken(TSTATIC);
 sync            processToken(TSYNC);
 then            processToken(TTHEN);
 type            processToken(TTYPE);
-typedef         processToken(TTYPEDEF);
 union           processToken(TUNION);
 use             processToken(TUSE);
 var             processToken(TVAR);

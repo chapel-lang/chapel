@@ -1,4 +1,4 @@
-typedef mytuple : int;
+type mytuple = int;
 
 def foo(t : mytuple, param i : int) where i == 1 {
   return 1;

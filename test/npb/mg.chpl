@@ -45,7 +45,7 @@ config const verifyValue = checksum(Class);
 
 config const warmup = true;
 
-typedef coeff: [0..3] float;
+type coeff = [0..3] float;
 
 const Levels: domain(1) = [1..numLevels];
 const Base: domain(3) distributed(Block(3)) = [1..nx, 1..ny, 1..nz];
