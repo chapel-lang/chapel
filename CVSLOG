@@ -75303,3 +75303,18 @@ Modified files:
 	chapel/compiler/include/: alist.h astutil.h baseAST.h expr.h 
 	                          stmt.h symbol.h type.h 
 
+---------------------------------------------------------------------------
+
+09/15/06 11:11:29 -- waynew
+
+Log message:
+	Check in Jacobi .good's and enable testing (what I didn't do, but thought
+	I did).
+
+Modified files:
+	chapel/test/studies/jacobi/waynew/: example1.chpl example2.chpl 
+Added files:
+	chapel/test/studies/jacobi/waynew/: example1.good example2.good 
+Removed files:
+	chapel/test/studies/jacobi/waynew/: NOTEST 
+
