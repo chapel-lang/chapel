@@ -106,7 +106,6 @@ Is this "while x"(i); or "while x(i)";?
 %token TCONFIG
 %token TCONST
 %token TCONSTRUCTOR
-%token TPARAM
 %token TCONTINUE
 %token TDEF
 %token TDO
@@ -129,10 +128,10 @@ Is this "while x"(i); or "while x(i)";?
 %token TORDERED
 %token TOTHERWISE
 %token TOUT
+%token TPARAM
 %token TPRAGMA
 %token TPRIMITIVE
 %token TRECORD
-%token TREF
 %token TRETURN
 %token TSELECT
 %token TSINGLE
@@ -155,31 +154,28 @@ Is this "while x"(i); or "while x(i)";?
 %token <pch> STRINGLITERAL
 
 %token TASSIGN
-%token TASSIGNPLUS
-%token TASSIGNMINUS
-%token TASSIGNMULTIPLY
-%token TASSIGNDIVIDE
 %token TASSIGNBAND
 %token TASSIGNBOR
 %token TASSIGNBXOR
+%token TASSIGNDIVIDE
+%token TASSIGNMINUS
+%token TASSIGNMULTIPLY
+%token TASSIGNPLUS
 %token TASSIGNSEQCAT
 
-%token TSEMI
+%token TCOLON
 %token TCOMMA
 %token TDOT
 %token TDOTDOTDOT
-%token TCOLON
 %token TNOTCOLON
 %token TQUESTION
-%token TPARTIAL
-%token TLP
-%token TRP
-%token TSEQBEGIN
-%token TSEQEND
-%token TLSBR
-%token TRSBR
-%token TLCBR
-%token TRCBR
+
+%token TLCBR TRCBR
+%token TLP TRP
+%token TLSBR TRSBR
+%token TSEQBEGIN TSEQEND
+
+%token TSEMI
 
 %type <vt> var_state_tag
 %type <ct> var_const_tag
@@ -243,7 +239,6 @@ Is this "while x"(i); or "while x(i)";?
 %left TIN
 %left TDOTDOT
 %left TSTARTUPLE
-%right TPARTIAL
 %left TSEQCAT
 %left TOR
 %left TAND
@@ -1168,23 +1163,10 @@ top_level_expr:
 | TLET var_decl_stmt_inner_ls TIN expr
     { $$ = new CallExpr(new DefExpr(build_let_expr($2, $4))); }
 | reduction %prec TREDUCE
-| TPARTIAL expr
-    {
-      $$ = $2;
-      if (CallExpr* call = dynamic_cast<CallExpr*>($$)) {
-        call->partialTag = PARTIAL_ALWAYS;
-      } else {
-        USR_FATAL($$, "Unable to partially evaluate non-call");
-      }
-    }
 | expr TCOLON type
     {
       $$ = new CallExpr(PRIMITIVE_CAST, $3, $1);
     }
-/* | expr TCOLON STRINGLITERAL */
-/*   {  */
-/*     $$ = new CallExpr("_tostring", $1, new_StringSymbol($3)); */
-/*   } */
 | expr TDOTDOT expr
     { $$ = new CallExpr("_aseq", $1, $3, new_IntSymbol(1)); }
 | seq_expr
