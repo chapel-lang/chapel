@@ -26,6 +26,7 @@ class Stmt : public BaseAST {
   virtual void codegen(FILE* outfile);
   virtual void callReplaceChild(BaseAST* new_ast);
   virtual ASTContext getContext(void);
+  virtual bool inTree();
 };
 #define forv_Stmt(_p, _v) forv_Vec(Stmt, _p, _v)
 

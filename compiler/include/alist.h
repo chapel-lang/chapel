@@ -7,7 +7,9 @@
 #include "chpl.h"
 #include "baseAST.h"
 
+extern BaseAST* ast_wrap(BaseAST* context, BaseAST* ast);
 extern void update_symbols(BaseAST* ast, ASTMap* map);
+extern void sibling_insert_help(BaseAST* parent, BaseAST* ast);
 
 template <class elemType>
 class AList : public gc {
@@ -254,10 +256,16 @@ elemType* AList<elemType>::get(int index) {
 
 template <class elemType>
 void AList<elemType>::insertAtHead(BaseAST* new_ast) {
-  if (new_ast->parentSymbol) {
+  if (new_ast->parentSymbol)
     INT_FATAL(new_ast, "Argument is already in AST in AList::insertAtHead");
-  }
-  head->next->insertBefore(new_ast);
+  if (new_ast->prev || new_ast->next)
+    INT_FATAL(new_ast, "Argument is in a list in AList::insertAtHead");
+  new_ast = ast_wrap(head, new_ast);
+  new_ast->prev = head;
+  new_ast->next = head->next;
+  head->next = new_ast;
+  new_ast->next->prev = new_ast;
+  sibling_insert_help(head, new_ast);
 }
 
 
@@ -272,10 +280,16 @@ void AList<elemType>::insertAtHead(AList<elemType>* new_ast) {
 
 template <class elemType>
 void AList<elemType>::insertAtTail(BaseAST* new_ast) {
-  if (new_ast->parentSymbol) {
+  if (new_ast->parentSymbol)
     INT_FATAL(new_ast, "Argument is already in AST in AList::insertAtTail");
-  }
-  tail->prev->insertAfter(new_ast);
+  if (new_ast->prev || new_ast->next)
+    INT_FATAL(new_ast, "Argument is in a list in AList::insertAtTail");
+  new_ast = ast_wrap(head, new_ast);
+  new_ast->next = tail;
+  new_ast->prev = tail->prev;
+  tail->prev = new_ast;
+  new_ast->prev->next = new_ast;
+  sibling_insert_help(tail, new_ast);
 }
 
 

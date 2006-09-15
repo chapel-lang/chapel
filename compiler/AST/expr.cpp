@@ -38,6 +38,14 @@ ASTContext Expr::getContext(void) {
 }
 
 
+bool Expr::inTree(void) {
+  if (parentSymbol)
+    return true;
+  else
+    return false;
+}
+
+
 void Expr::callReplaceChild(BaseAST* new_ast) {
   if (parentExpr) {
     parentExpr->replaceChild(this, new_ast);

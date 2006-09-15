@@ -47,6 +47,7 @@ class Type : public BaseAST {
   Type(astType_t astType, Symbol* init_defaultVal);
   virtual ~Type();
   virtual void verify(); 
+  virtual bool inTree();
   COPY_DEF(Type);
   void addSymbol(TypeSymbol* newSymbol);
 

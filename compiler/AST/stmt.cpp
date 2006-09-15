@@ -72,6 +72,14 @@ ASTContext Stmt::getContext(void) {
 }
 
 
+bool Stmt::inTree(void) {
+  if (parentSymbol)
+    return true;
+  else
+    return false;
+}
+
+
 void Stmt::callReplaceChild(BaseAST* new_ast) {
   if (parentStmt) {
     parentStmt->replaceChild(this, new_ast);

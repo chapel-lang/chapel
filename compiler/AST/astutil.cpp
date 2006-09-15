@@ -250,6 +250,65 @@ void remove_static_formals() {
 }
 
 
+BaseAST* ast_wrap(BaseAST* context, BaseAST* ast) {
+  if (dynamic_cast<Stmt*>(context) && dynamic_cast<Expr*>(ast))
+    ast = new ExprStmt(dynamic_cast<Expr*>(ast));
+  if (dynamic_cast<DefExpr*>(context) && dynamic_cast<Symbol*>(ast))
+    ast = new DefExpr(dynamic_cast<Symbol*>(ast));
+  if (dynamic_cast<Expr*>(context) && dynamic_cast<Symbol*>(ast))
+    ast = new SymExpr(dynamic_cast<Symbol*>(ast));
+  return ast;
+}
+
+
+void sibling_insert_help(BaseAST* parent, BaseAST* ast) {
+  Expr* parentExpr = NULL;
+  Stmt* parentStmt = NULL;
+  Symbol* parentSymbol = NULL;
+  SymScope* parentScope = NULL;
+  if (Expr* expr = dynamic_cast<Expr*>(parent)) {
+    parentExpr = expr->parentExpr;
+    parentStmt = expr->parentStmt;
+    parentSymbol = expr->parentSymbol;
+    parentScope = expr->parentScope;
+  } else if (Stmt* stmt = dynamic_cast<Stmt*>(parent)) {
+    parentStmt = stmt->parentStmt;
+    parentSymbol = stmt->parentSymbol;
+    parentScope = stmt->parentScope;
+  } else
+    INT_FATAL(ast, "major error in sibling_insert_help");
+  if (parentSymbol)
+    insert_help(ast, parentExpr, parentStmt, parentSymbol, parentScope);
+}
+
+
+void parent_insert_help(BaseAST* parent, BaseAST* ast) {
+  Expr* parentExpr = NULL;
+  Stmt* parentStmt = NULL;
+  Symbol* parentSymbol = NULL;
+  SymScope* parentScope = NULL;
+  if (Expr* expr = dynamic_cast<Expr*>(parent)) {
+    parentExpr = expr;
+    parentStmt = expr->parentStmt;
+    parentSymbol = expr->parentSymbol;
+    parentScope = expr->parentScope;
+  } else if (Stmt* stmt = dynamic_cast<Stmt*>(parent)) {
+    parentStmt = stmt;
+    parentSymbol = stmt->parentSymbol;
+    parentScope = stmt->parentScope;
+  } else if (Symbol* symbol = dynamic_cast<Symbol*>(parent)) {
+    parentSymbol = symbol;
+    parentScope = symbol->parentScope;
+  } else if (Type* type = dynamic_cast<Type*>(parent)) {
+    parentSymbol = type->symbol;
+    parentScope = type->symbol->parentScope;
+  } else
+    INT_FATAL(ast, "major error in parent_insert_help");
+  if (parentSymbol)
+    insert_help(ast, parentExpr, parentStmt, parentSymbol, parentScope);
+}
+
+
 void insert_help(BaseAST* ast,
                  Expr* parentExpr,
                  Stmt* parentStmt,

@@ -179,6 +179,12 @@ ASTContext BaseAST::getContext(void) {
 }
 
 
+bool BaseAST::inTree(void) {
+  INT_FATAL(this, "Unexpected call to BaseAST::inTree()");
+  return false;
+}
+
+
 BaseAST* BaseAST::remove(void) {
   if (!this)
     return this;
@@ -199,12 +205,10 @@ BaseAST* BaseAST::remove(void) {
 
 
 void BaseAST::replace(BaseAST* new_ast) {
-  if (new_ast->parentSymbol) {
+  if (new_ast->parentSymbol)
     INT_FATAL(new_ast, "Argument is already in AST in BaseAST::replace");
-  }
-  if (new_ast->prev || new_ast->next) {
+  if (new_ast->prev || new_ast->next)
     INT_FATAL(new_ast, "Argument is in a list in BaseAST::replace");
-  }
   if (prev || next) {
     if (!prev || !next) {
       INT_FATAL(this, "Ill-formed list in BaseAST::replace");
@@ -226,56 +230,34 @@ void BaseAST::replace(BaseAST* new_ast) {
 
 
 void BaseAST::insertBefore(BaseAST* new_ast) {
-  if (new_ast->parentSymbol) {
+  if (new_ast->parentSymbol)
     INT_FATAL(new_ast, "Argument is already in AST in BaseAST::insertBefore");
-  }
-  if (!prev) {
+  if (!prev)
     INT_FATAL(this, "Cannot call insertBefore on BaseAST not in a list");
-  }
-  if (new_ast->prev || new_ast->next) {
+  if (new_ast->prev || new_ast->next)
     INT_FATAL(new_ast, "Argument is in a list in BaseAST::insertBefore");
-  }
-  if (dynamic_cast<Stmt*>(this) && dynamic_cast<Expr*>(new_ast))
-    new_ast = new ExprStmt(dynamic_cast<Expr*>(new_ast));
-  if (dynamic_cast<DefExpr*>(this) && dynamic_cast<Symbol*>(new_ast))
-    new_ast = new DefExpr(dynamic_cast<Symbol*>(new_ast));
-  if (dynamic_cast<Expr*>(this) && dynamic_cast<Symbol*>(new_ast))
-    new_ast = new SymExpr(dynamic_cast<Symbol*>(new_ast));
+  new_ast = ast_wrap(this, new_ast);
   new_ast->prev = prev;
   new_ast->next = this;
   prev->next = new_ast;
   prev = new_ast;
-  ASTContext context = getContext();
-  if (context.parentSymbol)
-    insert_help(new_ast, context.parentExpr, context.parentStmt,
-                context.parentSymbol, context.parentScope);
+  sibling_insert_help(this, new_ast);
 }
 
 
 void BaseAST::insertAfter(BaseAST* new_ast) {
-  if (new_ast->parentSymbol) {
+  if (new_ast->parentSymbol)
     INT_FATAL(new_ast, "Argument is already in AST in BaseAST::insertAfter");
-  }
-  if (!next) {
+  if (!next)
     INT_FATAL(this, "Cannot call insertAfter on BaseAST not in a list");
-  }
-  if (new_ast->prev || new_ast->next) {
+  if (new_ast->prev || new_ast->next)
     INT_FATAL(new_ast, "Argument is in a list in BaseAST::insertAfter");
-  }
-  if (dynamic_cast<Stmt*>(this) && dynamic_cast<Expr*>(new_ast))
-    new_ast = new ExprStmt(dynamic_cast<Expr*>(new_ast));
-  if (dynamic_cast<DefExpr*>(this) && dynamic_cast<Symbol*>(new_ast))
-    new_ast = new DefExpr(dynamic_cast<Symbol*>(new_ast));
-  if (dynamic_cast<Expr*>(this) && dynamic_cast<Symbol*>(new_ast))
-    new_ast = new SymExpr(dynamic_cast<Symbol*>(new_ast));
+  new_ast = ast_wrap(this, new_ast);
   new_ast->prev = this;
   new_ast->next = next;
   next->prev = new_ast;
-  next = new_ast; 
-  ASTContext context = getContext();
-  if (context.parentSymbol)
-    insert_help(new_ast, context.parentExpr, context.parentStmt,
-                context.parentSymbol, context.parentScope);
+  next = new_ast;
+  sibling_insert_help(this, new_ast);
 }
 
 

@@ -54,6 +54,7 @@ class Symbol : public BaseAST {
   virtual void verify(); 
   virtual void clean();
   void setParentScope(SymScope* init_parentScope);
+  virtual bool inTree();
   COPY_DEF(Symbol);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 

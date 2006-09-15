@@ -162,6 +162,14 @@ void Symbol::setParentScope(SymScope* init_parentScope) {
 }
 
 
+bool Symbol::inTree(void) {
+  if (defPoint)
+    return defPoint->inTree();
+  else
+    return true;
+}
+
+
 Symbol*
 Symbol::copyInner(ASTMap* map) {
   INT_FATAL(this, "Illegal call to Symbol::copy");

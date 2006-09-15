@@ -127,6 +127,7 @@ class BaseAST : public gc {
   virtual void callReplaceChild(BaseAST* new_ast);
 
   virtual ASTContext getContext(void);
+  virtual bool inTree(void);
 
   BaseAST* remove(void);
   void replace(BaseAST* new_ast);

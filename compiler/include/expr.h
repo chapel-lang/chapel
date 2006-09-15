@@ -21,6 +21,7 @@ class Expr : public BaseAST {
   virtual void callReplaceChild(BaseAST* new_ast);
   virtual void verify();
   virtual ASTContext getContext(void);
+  virtual bool inTree();
   virtual Type* typeInfo(void);
 
   virtual bool isParam(void);

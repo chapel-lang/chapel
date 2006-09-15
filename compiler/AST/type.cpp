@@ -42,6 +42,14 @@ void Type::addSymbol(TypeSymbol* newsymbol) {
 }
 
 
+bool Type::inTree(void) {
+  if (symbol)
+    return symbol->inTree();
+  else
+    return true;
+}
+
+
 Type*
 Type::copyInner(ASTMap* map) {
   INT_FATAL(this, "Illegal call to Type::copy");
