@@ -75337,3 +75337,20 @@ Modified files:
 Removed files:
 	chapel/modules/standard/: i.chpl 
 
+---------------------------------------------------------------------------
+
+09/15/06 15:28:22 -- deitz
+
+Log message:
+	Fixed regression:
+	[Error matching compiler output for classes/deitz/test_type_in_class2]
+	
+	Special-cased the use of a class as a type where the class is generic
+	but has a default on the type.  See the test for an example.  This
+	special case is required because of not distinguishing between typedef
+	and type in classes.  It was expected and is easy to handle.
+
+Modified files:
+	chapel/compiler/passes/: functionResolution.cpp 
+	chapel/test/: REGRESSIONS 
+
