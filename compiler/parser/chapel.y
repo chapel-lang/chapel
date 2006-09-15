@@ -752,7 +752,7 @@ class_decl_stmt:
       DefExpr* def = build_class($3, $1, $6);
       def->sym->addPragmas($2);
       delete $2;
-      dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(def->sym)->type)->inherits = $4;
+      dynamic_cast<ClassType*>(dynamic_cast<TypeSymbol*>(def->sym)->type)->inherits->insertAtTail($4);
       $$ = build_chpl_stmt(def);
     }
 ;

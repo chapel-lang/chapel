@@ -163,10 +163,12 @@ void Symbol::setParentScope(SymScope* init_parentScope) {
 
 
 bool Symbol::inTree(void) {
+  if (dynamic_cast<ModuleSymbol*>(this))
+    return true;
   if (defPoint)
     return defPoint->inTree();
   else
-    return true;
+    return false;
 }
 
 
@@ -621,6 +623,7 @@ FnSymbol::FnSymbol(char* initName) :
   makeGloballyVisible(false) // WAW: temporary hack to get iterator-created methods visible
 {
   gFns.add(this);
+  formals->parent = this;
 }
 
 
@@ -650,6 +653,8 @@ void FnSymbol::verify() {
     if (!dynamic_cast<ReturnStmt*>(body->body->last()))
       INT_FATAL(this, "Last statement in normalized function is not a return");
   }
+  if (formals->parent != this)
+    INT_FATAL(this, "Bad AList::parent in FnSymbol");
 }
 
 
@@ -661,7 +666,7 @@ FnSymbol* FnSymbol::getFnSymbol(void) {
 FnSymbol*
 FnSymbol::copyInner(ASTMap* map) {
   FnSymbol* copy = new FnSymbol(name);
-  copy->formals = COPY_INT(formals);
+  copy->formals->insertAtTail(COPY_INT(formals));
   copy->retType = retType;
   copy->where = COPY_INT(where);
   copy->body = COPY_INT(body);
@@ -1371,18 +1376,19 @@ EnumSymbol::copyInner(ASTMap* map) {
 void EnumSymbol::codegenDef(FILE* outfile) { }
 
 
-ModuleSymbol::ModuleSymbol(char* init_name,
-                           modType init_modtype,
-                           AList<Stmt>* init_stmts) :
+ModuleSymbol::ModuleSymbol(char* init_name, modType init_modtype) :
   Symbol(SYMBOL_MODULE, init_name),
   modtype(init_modtype),
-  stmts(init_stmts),
+  stmts(new AList<Stmt>()),
   initFn(NULL),
   modScope(new SymScope(this, rootScope))
 {
   rootScope->define(this);
   registerModule(this);
   modScope->astParent = this;
+  stmts->parent = this;
+  stmts->head->parentSymbol = this;
+  stmts->tail->parentSymbol = this;
 }
 
 
@@ -1397,6 +1403,8 @@ void ModuleSymbol::verify() {
   if (astType != SYMBOL_MODULE) {
     INT_FATAL(this, "Bad ModuleSymbol::astType");
   }
+  if (stmts->parent != this)
+    INT_FATAL(this, "Bad AList::parent in ModuleSymbol");
 }
 
 

@@ -7,15 +7,16 @@
 #include "chpl.h"
 #include "baseAST.h"
 
-extern BaseAST* ast_wrap(BaseAST* context, BaseAST* ast);
 extern void update_symbols(BaseAST* ast, ASTMap* map);
-extern void sibling_insert_help(BaseAST* parent, BaseAST* ast);
+extern void parent_insert_help(BaseAST* parent, BaseAST* ast);
+extern BaseAST* sibling_ast_wrap(BaseAST* sibling, BaseAST* ast);
 
 template <class elemType>
 class AList : public gc {
  public:
   elemType* head;
   elemType* tail;
+  BaseAST* parent;
 
   // constructors
   AList();
@@ -127,7 +128,8 @@ class AList : public gc {
 template <class elemType>
 AList<elemType>::AList() :
   head(new elemType()),
-  tail(new elemType())
+  tail(new elemType()),
+  parent(NULL)
 {
   clear();
 }
@@ -136,7 +138,8 @@ AList<elemType>::AList() :
 template <class elemType>
 AList<elemType>::AList(BaseAST* elem1) :
   head(new elemType()),
-  tail(new elemType())
+  tail(new elemType()),
+  parent(NULL)
 {
   clear();
   if (elem1) insertAtTail(elem1);
@@ -146,7 +149,8 @@ AList<elemType>::AList(BaseAST* elem1) :
 template <class elemType>
 AList<elemType>::AList(BaseAST* elem1, BaseAST* elem2) :
   head(new elemType()),
-  tail(new elemType())
+  tail(new elemType()),
+  parent(NULL)
 {
   clear();
   if (elem1) insertAtTail(elem1);
@@ -157,7 +161,8 @@ AList<elemType>::AList(BaseAST* elem1, BaseAST* elem2) :
 template <class elemType>
 AList<elemType>::AList(BaseAST* elem1, BaseAST* elem2, BaseAST* elem3) :
   head(new elemType()),
-  tail(new elemType())
+  tail(new elemType()),
+  parent(NULL)
 {
   clear();
   if (elem1) insertAtTail(elem1);
@@ -170,7 +175,8 @@ template <class elemType>
 AList<elemType>::AList(BaseAST* elem1, BaseAST* elem2,
                        BaseAST* elem3, BaseAST* elem4) :
   head(new elemType()),
-  tail(new elemType())
+  tail(new elemType()),
+  parent(NULL)
 {
   clear();
   if (elem1) insertAtTail(elem1);
@@ -260,12 +266,12 @@ void AList<elemType>::insertAtHead(BaseAST* new_ast) {
     INT_FATAL(new_ast, "Argument is already in AST in AList::insertAtHead");
   if (new_ast->prev || new_ast->next)
     INT_FATAL(new_ast, "Argument is in a list in AList::insertAtHead");
-  new_ast = ast_wrap(head, new_ast);
+  new_ast = sibling_ast_wrap(head, new_ast);
   new_ast->prev = head;
   new_ast->next = head->next;
   head->next = new_ast;
   new_ast->next->prev = new_ast;
-  sibling_insert_help(head, new_ast);
+  parent_insert_help(parent, new_ast);
 }
 
 
@@ -284,12 +290,12 @@ void AList<elemType>::insertAtTail(BaseAST* new_ast) {
     INT_FATAL(new_ast, "Argument is already in AST in AList::insertAtTail");
   if (new_ast->prev || new_ast->next)
     INT_FATAL(new_ast, "Argument is in a list in AList::insertAtTail");
-  new_ast = ast_wrap(head, new_ast);
+  new_ast = sibling_ast_wrap(head, new_ast);
   new_ast->next = tail;
   new_ast->prev = tail->prev;
   tail->prev = new_ast;
   new_ast->prev->next = new_ast;
-  sibling_insert_help(tail, new_ast);
+  parent_insert_help(parent, new_ast);
 }
 
 

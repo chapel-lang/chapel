@@ -35,11 +35,8 @@ void parse(void) {
   }
   finishCountingTokens();
 
-  if (userModules.n == 0)
-    ParseFile(stringcat(path, "i.chpl"), MOD_USER);
-
-  forv_Vec(ModuleSymbol, mod, allModules)
-    insert_help(mod, NULL, NULL, mod, mod->modScope);
+//   forv_Vec(ModuleSymbol, mod, allModules)
+//     insert_help(mod, NULL, NULL, mod, mod->modScope);
 
   if (!fnostdincs) {
     chpl_seq = seqModule->lookupType("seq");

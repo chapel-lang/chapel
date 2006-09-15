@@ -38,7 +38,7 @@ buildLabelStmt(char* name) {
 
 static bool stmtIsGlob(Stmt* stmt) {
   if (BlockStmt* block = dynamic_cast<BlockStmt*>(stmt)) {
-    if (block->body->length() > 1)
+    if (block->body->length() != 1)
       return false;
     stmt = block->body->only();
   }
@@ -89,7 +89,11 @@ static void createInitFn(ModuleSymbol* mod) {
 
 
 ModuleSymbol* build_module(char* name, modType type, AList<Stmt>* stmts) {
-  ModuleSymbol* mod = new ModuleSymbol(name, type, stmts);
+  ModuleSymbol* mod = new ModuleSymbol(name, type);
+  for_alist(Stmt, stmt, stmts) {
+    stmt->remove();
+    mod->stmts->insertAtTail(stmt);
+  }
   createInitFn(mod);
   return mod;
 }

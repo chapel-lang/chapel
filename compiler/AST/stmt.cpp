@@ -246,7 +246,9 @@ BlockStmt::BlockStmt(AList<Stmt>* init_body, BlockTag init_blockTag) :
   param_high(NULL),
   param_stride(NULL),
   param_index(NULL)
-{}
+{
+  body->parent = this;
+}
 
 
 BlockStmt::BlockStmt(Stmt* init_body, BlockTag init_blockTag) :
@@ -260,7 +262,9 @@ BlockStmt::BlockStmt(Stmt* init_body, BlockTag init_blockTag) :
   param_high(NULL),
   param_stride(NULL),
   param_index(NULL)
-{}
+{
+  body->parent = this;
+}
 
 
 BlockStmt::~BlockStmt() {
@@ -275,6 +279,8 @@ void BlockStmt::verify() {
   if (astType != STMT_BLOCK) {
     INT_FATAL(this, "Bad BlockStmt::astType");
   }
+  if (body->parent != this)
+    INT_FATAL(this, "Bad AList::parent in BlockStmt");
 }
 
 

@@ -46,7 +46,7 @@ bool Type::inTree(void) {
   if (symbol)
     return symbol->inTree();
   else
-    return true;
+    return false;
 }
 
 
@@ -241,6 +241,7 @@ EnumType::EnumType(AList<DefExpr>* init_constants) :
 {
   for_alist(DefExpr, def, constants)
     def->sym->type = this;
+  constants->parent = this;
 }
 
 
@@ -257,6 +258,8 @@ void EnumType::verify() {
   if (prev || next) {
     INT_FATAL(this, "Type is in AList");
   }
+  if (constants->parent != this)
+    INT_FATAL(this, "Bad AList::parent in EnumType");
 }
 
 
@@ -480,6 +483,8 @@ ClassType::ClassType(ClassTag initClassTag) :
     defaultValue = gNil;
   }
   methods.clear();
+  fields->parent = this;
+  inherits->parent = this;
 }
 
 
@@ -503,13 +508,16 @@ void ClassType::verify() {
       classTag != CLASS_RECORD &&
       classTag != CLASS_UNION)
     INT_FATAL(this, "Bad ClassType::classTag");
+  if (fields->parent != this || inherits->parent != this)
+    INT_FATAL(this, "Bad AList::parent in ClassType");
 }
 
 
 ClassType*
 ClassType::copyInner(ASTMap* map) {
   ClassType* copy_type = new ClassType(classTag);
-  copy_type->fields = COPY_INT(fields);
+  copy_type->fields->insertAtTail(COPY_INT(fields));
+  copy_type->inherits->insertAtTail(COPY_INT(inherits));
   for_fields(field, copy_type) {
     if (FnSymbol* fn = dynamic_cast<FnSymbol*>(field))
       copy_type->methods.add(fn);

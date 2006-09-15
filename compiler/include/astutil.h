@@ -53,7 +53,8 @@ void remove_static_actuals();
 void remove_static_formals();
 
 // replaces Fixup
-BaseAST* ast_wrap(BaseAST* context, BaseAST* ast);
+BaseAST* parent_ast_wrap(BaseAST* parent, BaseAST* ast);
+BaseAST* sibling_ast_wrap(BaseAST* sibling, BaseAST* ast);
 void remove_help(BaseAST* ast);
 void parent_insert_help(BaseAST* parent, BaseAST* ast);
 void sibling_insert_help(BaseAST* sibling, BaseAST* ast);

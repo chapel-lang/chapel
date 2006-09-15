@@ -1,5 +1,6 @@
 #include <typeinfo>
 #include <string.h>
+#include "astutil.h"
 #include "expr.h"
 #include "misc.h"
 #include "stmt.h"
@@ -353,6 +354,7 @@ CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
+  argList->parent = this;
 }
 
 
@@ -368,6 +370,7 @@ CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg
   callExprHelper(this, arg1);
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
+  argList->parent = this;
 }
 
 CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg3) :
@@ -382,6 +385,7 @@ CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg
   callExprHelper(this, arg1);
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
+  argList->parent = this;
 }
 
 
@@ -399,6 +403,7 @@ CallExpr::CallExpr(char* name, BaseAST* arg1, BaseAST* arg2,
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
+  argList->parent = this;
 }
 
 
@@ -419,6 +424,7 @@ CallExpr::CallExpr(BaseAST* base, AList<Expr>* args) :
     INT_FATAL(this, "Bad baseExpr in CallExpr constructor");
   }
   callExprHelper(this, args);
+  argList->parent = this;
 }
 
 
@@ -432,6 +438,7 @@ CallExpr::CallExpr(PrimitiveOp *prim, AList<Expr>* args) :
   square(false)
 {
   callExprHelper(this, args);
+  argList->parent = this;
 }
 
 CallExpr::CallExpr(PrimitiveTag prim, AList<Expr>* args) :
@@ -444,6 +451,7 @@ CallExpr::CallExpr(PrimitiveTag prim, AList<Expr>* args) :
   square(false)
 {
   callExprHelper(this, args);
+  argList->parent = this;
 }
 
 CallExpr::CallExpr(char* name, AList<Expr>* args) :
@@ -456,6 +464,7 @@ CallExpr::CallExpr(char* name, AList<Expr>* args) :
   square(false)
 {
   callExprHelper(this, args);
+  argList->parent = this;
 }
 
 
@@ -469,6 +478,8 @@ void CallExpr::verify() {
   if (astType != EXPR_CALL) {
     INT_FATAL(this, "Bad CallExpr::astType");
   }
+  if (argList->parent != this)
+    INT_FATAL(this, "Bad AList::parent in CallExpr");
 }
 
 
@@ -516,12 +527,14 @@ void CallExpr::print(FILE* outfile) {
 
 void
 CallExpr::insertAtHead(BaseAST* ast) {
+  ast = parent_ast_wrap(this, ast);
   argList->insertAtHead(ast);
 }
 
 
 void
 CallExpr::insertAtTail(BaseAST* ast) {
+  ast = parent_ast_wrap(this, ast);
   argList->insertAtTail(ast);
 }
 

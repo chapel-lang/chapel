@@ -70,20 +70,22 @@ specialize_casts(CallExpr* call) {
 }
 
 
+static Vec<ClassType*> classesInHierarchy;
+
+
 static void
 add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* seen = NULL) {
-  if (!ct->inherits)
-    return;
+  Vec<ClassType*> localSeen;
 
-  if (seen == NULL) {
-    Vec<ClassType*> seen;
-    add_class_to_hierarchy(ct, &seen);
-    return;
-  }
+  if (!seen)
+    seen = &localSeen;
 
-  forv_Vec(ClassType, at, *seen)
-    if (at == ct)
-      USR_FATAL(ct, "Class hierarchy is cyclic");
+  if (seen->set_in(ct))
+    USR_FATAL(ct, "Class hierarchy is cyclic");
+
+  if (classesInHierarchy.set_in(ct))
+    return;
+  classesInHierarchy.set_add(ct);
 
   // make root records inherit from value
   // make root classes inherit from object
@@ -113,7 +115,7 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* seen = NULL) {
       USR_FATAL(expr, "Class %s inherits from record %s",
                 ct->symbol->name, pt->symbol->name);
     if (pt->inherits) {
-      seen->add(ct);
+      seen->set_add(ct);
       add_class_to_hierarchy(pt, seen);
     }
     ct->dispatchParents.add(pt);
@@ -123,8 +125,6 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* seen = NULL) {
         ct->fields->insertAtHead(field->defPoint->copy());
     }
   }
-
-  ct->inherits = NULL;
 }
 
 
@@ -227,7 +227,7 @@ static void normalize_nested_function_expressions(DefExpr* def) {
     BlockStmt* block = getBlock(stmt);
     if (block->getFunction()->body == block &&
         block->getFunction() == block->getModule()->initFn)
-      stmt = dynamic_cast<Stmt*>(stmt->getFunction()->defPoint->parentStmt->next);
+      stmt = stmt->getFunction()->defPoint->parentStmt;
     def->replace(new SymExpr(def->sym->name));
     stmt->insertBefore(def);
   }
@@ -276,8 +276,6 @@ static void build_constructor(ClassType* ct) {
   if (ct->symbol->hasPragma("tuple"))
     fn->addPragma("tuple");
 
-  AList<DefExpr>* args = new AList<DefExpr>();
-
   for_fields(tmp, ct) {
     if (!dynamic_cast<VarSymbol*>(tmp))
       continue;
@@ -299,10 +297,8 @@ static void build_constructor(ClassType* ct) {
     arg->isTypeVariable = tmp->isTypeVariable;
     if (!exprType && arg->type == dtUnknown)
       arg->type = dtAny;
-    args->insertAtTail(defExpr);
+    fn->formals->insertAtTail(defExpr);
   }
-
-  fn->formals = args;
 
   reset_file_info(fn, ct->symbol->lineno, ct->symbol->filename);
   ct->symbol->defPoint->parentStmt->insertBefore(new DefExpr(fn));

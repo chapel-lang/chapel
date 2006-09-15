@@ -236,9 +236,7 @@ class ModuleSymbol : public Symbol {
 
   SymScope* modScope;
 
-  ModuleSymbol(char* init_name,
-               modType init_modtype,
-               AList<Stmt>* init_stmts);
+  ModuleSymbol(char* init_name, modType init_modtype);
   ~ModuleSymbol();
   virtual void verify(); 
   COPY_DEF(ModuleSymbol);

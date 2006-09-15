@@ -236,7 +236,7 @@ void BaseAST::insertBefore(BaseAST* new_ast) {
     INT_FATAL(this, "Cannot call insertBefore on BaseAST not in a list");
   if (new_ast->prev || new_ast->next)
     INT_FATAL(new_ast, "Argument is in a list in BaseAST::insertBefore");
-  new_ast = ast_wrap(this, new_ast);
+  new_ast = sibling_ast_wrap(this, new_ast);
   new_ast->prev = prev;
   new_ast->next = this;
   prev->next = new_ast;
@@ -252,7 +252,7 @@ void BaseAST::insertAfter(BaseAST* new_ast) {
     INT_FATAL(this, "Cannot call insertAfter on BaseAST not in a list");
   if (new_ast->prev || new_ast->next)
     INT_FATAL(new_ast, "Argument is in a list in BaseAST::insertAfter");
-  new_ast = ast_wrap(this, new_ast);
+  new_ast = sibling_ast_wrap(this, new_ast);
   new_ast->prev = this;
   new_ast->next = next;
   next->prev = new_ast;
