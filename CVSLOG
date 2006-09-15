@@ -75223,3 +75223,41 @@ Added files:
 	chapel/test/domains/waynew/: .cvsignore record_hash.chpl 
 	                             record_hash.good 
 
+---------------------------------------------------------------------------
+
+09/14/06 17:07:50 -- deitz
+
+Log message:
+	Changed syntax of typedef to type, as discussed, so
+	
+	  typedef myint: int;
+	
+	is now
+	
+	  type myint = int;
+	
+	Updated tests.
+
+Modified files:
+	chapel/compiler/parser/: chapel.lex chapel.y 
+	chapel/compiler/passes/: cleanup.cpp 
+	chapel/test/arrays/jplevyak/: simple-4.chpl 
+	chapel/test/classes/deitz/: test_class_in_usertype.chpl 
+	                            test_type_in_class2.chpl 
+	                            test_type_in_class3.chpl 
+	                            test_type_in_class4.chpl 
+	chapel/test/distributions/bradc/foundations/: blockdist1.chpl 
+	                                              blockdist2.chpl 
+	                                              blockdist3.chpl 
+	chapel/test/domains/bradc/: domainindex.chpl 
+	chapel/test/npb/: mg.chpl 
+	chapel/test/npb/mg/: mg-annotated.chpl mg-compilable.chpl 
+	chapel/test/trivial/bradc/: defaultinit2.good 
+	chapel/test/trivial/shannon/: readWriteUserType.chpl 
+	chapel/test/types/tuple/bradc/: returnTuple2.chpl 
+	chapel/test/types/tuple/deitz/: 
+	                                test_tuple_record_implementation4.chpl 
+	chapel/test/types/typedefs/bradc/: localType.chpl 
+	                                   localType2.chpl 
+	chapel/test/types/typedefs/jplevyak/: copy_typedef-1.chpl 
+
