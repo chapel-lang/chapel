@@ -75354,3 +75354,17 @@ Modified files:
 	chapel/compiler/passes/: functionResolution.cpp 
 	chapel/test/: REGRESSIONS 
 
+---------------------------------------------------------------------------
+
+09/15/06 15:52:59 -- deitz
+
+Log message:
+	Stopped traversing the sentinels and adding parent information to them.
+	
+	Temporarily, the parentSymbol of sentinel expressions and statements
+	is set to 0x1 so that they are not deleted during cleanup.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp baseAST.cpp symbol.cpp 
+	chapel/compiler/include/: alist.h baseAST.h 
+
