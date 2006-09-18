@@ -1,2 +1,2 @@
 a = 1.0
-atanh(a) = inf.0
+atanh(a) = inf

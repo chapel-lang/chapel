@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,6 +8,10 @@
 #include "chplrt.h"
 #include "chpltypes.h"
 #include "error.h"
+
+#define NANSTRING "nan"
+#define NEGINFSTRING "-inf"
+#define POSINFSTRING "inf"
 
 char* _default_format_write_complex32 = "%g + %gi";
 char* _default_format_write_complex64 = "%lg + %lgi";
@@ -110,7 +115,17 @@ static void ensurePointZero(char* buffer) {
 char* _chpl_tostring_float32(_float32 x, char* format) {
   char buffer[256];
   sprintf(buffer, format, x);
-  ensurePointZero(buffer);
+  if (isnan(x)) {
+    return NANSTRING;
+  } else if (isinf(x)) {
+    if (x < 0) {
+      return NEGINFSTRING;
+    } else {
+      return POSINFSTRING;
+    }
+  } else {
+    ensurePointZero(buffer);
+  }
   return _glom_strings(1, buffer);
 }
 
@@ -118,21 +133,39 @@ char* _chpl_tostring_float32(_float32 x, char* format) {
 char* _chpl_tostring_float64(_float64 x, char* format) {
   char buffer[256];
   sprintf(buffer, format, x);
-  ensurePointZero(buffer);
+  if (isnan(x)) {
+    return NANSTRING;
+  } else if (isinf(x)) {
+    if (x < 0) {
+      return NEGINFSTRING;
+    } else {
+      return POSINFSTRING;
+    }
+  } else {
+    ensurePointZero(buffer);
+  }
   return _glom_strings(1, buffer);
 }
 
 
 char* _chpl_tostring_complex32( _complex32 x, char* format) {
+  if (isnan(x.re) || isnan(x.im)) {
+    return NANSTRING;
+  }
   if (format == _default_format_write_complex32) {
     char* re = _chpl_tostring_float32(x.re, "%g");
     _float32 imval = x.im;
     char* op = " + ";
-    if (imval < 0.0) {
+    if (imval < 0) {
       imval = -x.im;
       op = " - ";
     }
     char* im = _chpl_tostring_float32(imval, "%g");
+    // Not sure how to test for negative zero to handle this earlier
+    if (strcmp(im, "-0.0") == 0) {
+      op = " - ";
+      im = "0.0";
+    }
     return _glom_strings(4, re, op, im, "i");
   } else {
     char buffer[256];
@@ -143,15 +176,23 @@ char* _chpl_tostring_complex32( _complex32 x, char* format) {
 
 
 char* _chpl_tostring_complex64( _complex64 x, char* format) {
+  if (isnan(x.re) || isnan(x.im)) {
+    return NANSTRING;
+  }
   if (format == _default_format_write_complex64) {
     char* re = _chpl_tostring_float64(x.re, "%g");
     _float64 imval = x.im;
     char* op = " + ";
-    if (imval < 0.0) {
+    if (imval < 0) {
       imval = -x.im;
       op = " - ";
     }
     char* im = _chpl_tostring_float64(imval, "%g");
+    // Not sure how to test for negative zero to handle this earlier
+    if (strcmp(im, "-0.0") == 0) {
+      op = " - ";
+      im = "0.0";
+    }
     return _glom_strings(4, re, op, im, "i");
   } else {
     char buffer[256];
