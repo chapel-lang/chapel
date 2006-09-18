@@ -75399,3 +75399,14 @@ Added files:
 	chapel/test/trivial/deitz/: test_integer_method4.chpl 
 	                            test_integer_method4.good 
 
+---------------------------------------------------------------------------
+
+09/18/06 15:33:51 -- bradc
+
+Log message:
+	Made start_test so that if the -onetest flag is used,
+	futures will be tested.
+
+Modified files:
+	chapel/test/: start_test 
+
