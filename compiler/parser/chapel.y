@@ -212,8 +212,9 @@ Is this "while x"(i); or "while x(i)";?
 %type <pstmt> when_stmt
 %type <pstmtls> when_stmt_ls
 
-%type <pexpr> opt_var_type var_type fnrettype opt_formal_var_type formal_var_type formal_type
+%type <pexpr> opt_type opt_formal_type
 %type <pexpr> type anon_record_type tuple_type type_binding_expr
+%type <pexpr> composable_type variable_type parenop_type memberaccess_type
 %type <ptype> class_tag
 
 %type <pexpr> parenop_expr memberaccess_expr non_tuple_lvalue lvalue
@@ -238,7 +239,7 @@ Is this "while x"(i); or "while x(i)";?
 %left TRSBR
 %left TIN
 %left TDOTDOT
-%left TSTARTUPLE
+%right TSTARTUPLE
 %left TSEQCAT
 %left TOR
 %left TAND
@@ -265,11 +266,27 @@ program: stmt_ls
 ;
 
 
+/** PRAGMAS ******************************************************************/
+
+
+pragma_ls:
+    { $$ = new Vec<char*>(); }
+| pragma_ls pragma
+    { $1->add($2); }
+;
+
+
+pragma:
+  TPRAGMA STRINGLITERAL
+    { $$ = canonicalize_string($2); }
+;
+
+
 /** STATEMENTS ***************************************************************/
 
 
 stmt_ls:
-  /* empty */
+  /* nothing */
     { $$ = new AList<Stmt>(); }
 | stmt_ls pragma_ls stmt
     {
@@ -427,7 +444,7 @@ select_stmt:
 
 
 when_stmt_ls:
-  /* empty */
+  /* nothing */
     { $$ = new AList<Stmt>(); }
 | when_stmt_ls when_stmt
     { $1->insertAtTail($2); }
@@ -519,7 +536,7 @@ block_stmt:
 
 
 class_body_stmt_ls:
-  /* empty */
+  /* nothing */
     { $$ = new AList<Stmt>(); }
 | class_body_stmt_ls pragma_ls class_body_stmt
     {
@@ -540,7 +557,7 @@ class_body_stmt:
 
 
 decl_stmt_ls:
-  /* empty */
+  /* nothing */
     { $$ = new AList<Stmt>(); }
 | decl_stmt_ls pragma_ls decl_stmt
     {
@@ -577,7 +594,7 @@ mod_decl_stmt:
 
 
 fn_decl_stmt:
-  fn_tag function opt_formal_ls fnretref fnrettype where parsed_block_stmt
+  fn_tag function opt_formal_ls fnretref opt_type where parsed_block_stmt
     {
       $2->fnClass = $1;
       if ($1 == FN_ITERATOR && !strcmp($2->name, "this"))
@@ -614,7 +631,7 @@ opt_formal_ls:
 
 
 formal_ls:
-  /* empty */
+  /* nothing */
     { $$ = new AList<DefExpr>(); }
 | formal
     { $$ = new AList<DefExpr>($1); }
@@ -632,13 +649,13 @@ var_arg_expr:
 
 
 formal:
-  formal_tag pragma_ls identifier opt_formal_var_type opt_init_expr
+  formal_tag pragma_ls identifier opt_formal_type opt_init_expr
     {
       $$ = build_arg($1, $3, $4, $5, NULL);
       $$->sym->addPragmas($2);
       delete $2;
     }
-| formal_tag pragma_ls identifier opt_formal_var_type var_arg_expr
+| formal_tag pragma_ls identifier opt_formal_type var_arg_expr
     {
       $$ = build_arg($1, $3, $4, NULL, $5);
       $$->sym->addPragmas($2);
@@ -648,7 +665,7 @@ formal:
 
 
 fnretref:
-  /* empty */
+  /* nothing */
     { $$ = false; }
 | TVAR
     { $$ = true; }
@@ -708,7 +725,7 @@ fname:
   ;
 
 where:
-  /* empty */
+  /* nothing */
     { $$ = NULL; }
 | TWHERE expr
     { $$ = $2; }
@@ -769,7 +786,7 @@ class_tag:
 
 
 opt_inherit_expr_ls:
-  /* empty */
+  /* nothing */
     { $$ = new AList<Expr>(); }
 | TCOLON nonempty_expr_ls
     { $$ = $2; }
@@ -849,26 +866,6 @@ var_decl_stmt:
 ;
 
 
-var_state_tag:
-  /* nothing */
-    { $$ = VAR_NORMAL; }
-| TCONFIG
-    { $$ = VAR_CONFIG; }
-| TSTATIC
-    { $$ = VAR_STATE; }
-;
-
-
-var_const_tag:
-  TVAR
-    { $$ = VAR_VAR; }
-| TCONST
-    { $$ = VAR_CONST; }
-| TPARAM
-    { $$ = VAR_PARAM; }
-;
-
-
 var_decl_stmt_inner_ls:
   var_decl_stmt_inner
 | var_decl_stmt_inner_ls TCOMMA var_decl_stmt_inner
@@ -879,7 +876,7 @@ var_decl_stmt_inner_ls:
 
 
 var_decl_stmt_inner:
-  identifier opt_var_type opt_init_expr
+  identifier opt_type opt_init_expr
     {
       VarSymbol* var = new VarSymbol($1);
       $$ = new AList<Stmt>(new DefExpr(var, $3, $2));
@@ -918,61 +915,53 @@ anon_record_type:
 ;
 
 
-var_type:
-  TCOLON type
-    { $$ = $2; }
-;
-
-
-fnrettype:
-  /* empty */
-    { $$ = NULL; }
-| TCOLON type
-    { $$ = $2; }
-;
-
-
-opt_var_type:
-  /* nothing */
-    { $$ = NULL; }
-| var_type
-;
-
-
-formal_var_type:
-  TCOLON formal_type
-    { $$ = $2; }
-;
-
-
-opt_formal_var_type:
-  /* nothing */
-    { $$ = NULL; }
-| formal_var_type
-;
-
-
-opt_init_expr:
-  /* nothing */
-    { $$ = NULL; }
-| TASSIGN expr
-    { $$ = $2; }
-;
-
-
-variable_expr:
+variable_type:
   identifier
     { $$ = new SymExpr(new UnresolvedSymbol($1)); }
 ;
 
 
+parenop_type:
+  composable_type TLP expr_ls TRP
+    { $$ = new CallExpr($1, $3); }
+| composable_type TLP TQUESTION identifier TRP
+    {
+      CallExpr* call = new CallExpr($1, new DefExpr(new VarSymbol($4)));
+      if (!(call->isNamed("int") ||
+            call->isNamed("uint") ||
+            call->isNamed("float") ||
+            call->isNamed("complex")))
+        USR_FATAL(call, "nested queries not supported on non-primitive types");
+      $$ = call;
+    }
+;
+
+
+memberaccess_type:
+  composable_type TDOT identifier
+    { $$ = new CallExpr(".", $1, new_StringSymbol($3)); }
+| composable_type TDOT TTYPE
+    { $$ = new CallExpr(PRIMITIVE_TYPEOF, $1); }
+| composable_type TDOT TDOMAIN
+    { $$ = new CallExpr(".", $1, new_StringSymbol("dom")); }
+;
+
+
+composable_type:
+  literal
+| variable_type
+| parenop_type
+| memberaccess_type
+;
+
+
 type:
-  non_tuple_lvalue %prec TSTARTUPLE
+  composable_type %prec TSTARTUPLE
 | anon_record_type
 | tuple_type
-| non_tuple_lvalue TOF type
+| composable_type TOF type
     { $$ = new CallExpr($1, new NamedExpr("elt_type", $3)); }
-| non_tuple_lvalue TSTAR type %prec TSTAR
+| composable_type TSTAR type %prec TSTAR
     { $$ = new CallExpr("_tuple", $1, new CallExpr("_init", $3)); }
 | TLSBR nonempty_expr_ls TRSBR type
     { $$ = new CallExpr("_build_array_type", new CallExpr("_build_domain", $2), $4); }
@@ -994,32 +983,48 @@ type:
     { $$ = new CallExpr( "_syncvar", $2); }
 ;
 
-formal_type:
-  type
-| TQUESTION identifier
+
+opt_init_expr:
+  /* nothing */
+    { $$ = NULL; }
+| TASSIGN expr
+    { $$ = $2; }
+;
+
+
+opt_type:
+  /* nothing */
+    { $$ = NULL; }
+| TCOLON type
+    { $$ = $2; }
+;
+
+
+opt_formal_type:
+  opt_type
+| TCOLON TQUESTION identifier
     {
-      TypeSymbol* new_symbol = new TypeSymbol($2, new UserType(new SymExpr(gNil))); // gNil is a place holder to be fixed in cleanup
+      TypeSymbol* new_symbol = new TypeSymbol($3, new UserType(new SymExpr(gNil))); // gNil is a place holder to be fixed in cleanup
       $$ = new DefExpr(new_symbol, NULL, NULL);
     }
 ;
 
-pragma_ls:
-    { $$ = new Vec<char*>(); }
-| pragma_ls pragma
-    { $1->add($2); }
-;
 
-
-pragma:
-  TPRAGMA STRINGLITERAL
-    { $$ = canonicalize_string($2); }
-;
+/** EXPRESSIONS **************************************************************/
 
 
 expr_ls:
-  /* empty */
+  /* nothing */
     { $$ = new AList<Expr>(); }
 | nonempty_expr_ls
+;
+
+
+nonempty_expr_ls:
+  pragma_ls expr_list_item
+    { $2->addPragmas($1); delete $1; $$ = new AList<Expr>($2); }
+| nonempty_expr_ls TCOMMA pragma_ls expr_list_item
+    { $4->addPragmas($3); delete $3; $1->insertAtTail($4); }
 ;
 
 
@@ -1030,11 +1035,42 @@ expr_list_item:
 ;
 
 
-nonempty_expr_ls:
-  pragma_ls expr_list_item
-    { $2->addPragmas($1); delete $1; $$ = new AList<Expr>($2); }
-| nonempty_expr_ls TCOMMA pragma_ls expr_list_item
-    { $4->addPragmas($3); delete $3; $1->insertAtTail($4); }
+literal:
+  INTLITERAL
+    {
+      if (!strncmp("0b", yytext, 2))
+        $$ = new SymExpr(new_IntSymbol(strtoll(yytext+2, NULL, 2)));
+      else if (!strncmp("0x", yytext, 2))
+        $$ = new SymExpr(new_IntSymbol(strtoll(yytext+2, NULL, 16)));
+      else
+        $$ = new SymExpr(new_IntSymbol(strtoll(yytext, NULL, 10)));
+    }
+| UINTLITERAL
+    { $$ = new SymExpr(new_UIntSymbol(strtoull(yytext, NULL, 10))); }
+| FLOATLITERAL
+    { $$ = new SymExpr(new_FloatSymbol(yytext, strtod(yytext, NULL))); }
+| IMAGLITERAL
+    {
+      yytext[strlen(yytext)-1] = '\0';
+      char cstr[256];
+      sprintf( cstr, "_chpl_complex64(0.0, %s)", yytext);
+      $$ = new SymExpr(new_ComplexSymbol(cstr, 0.0, strtod(yytext, NULL)));
+    }
+| STRINGLITERAL
+    { $$ = new SymExpr(new_StringSymbol($1)); }
+;
+
+
+identifier:
+  TIDENT
+    { $$ = canonicalize_string(yytext); }
+;
+
+
+opt_identifier:
+  /* nothing */
+    { $$ = NULL; }
+| identifier
 ;
 
 
@@ -1054,9 +1090,9 @@ tuple_paren_expr:
 
 
 parenop_expr:
-  non_tuple_lvalue TLP expr_ls TRP
+  lvalue TLP expr_ls TRP
     { $$ = new CallExpr($1, $3); }
-| non_tuple_lvalue TLSBR expr_ls TRSBR
+| lvalue TLSBR expr_ls TRSBR
     {
       CallExpr* call = new CallExpr($1, $3);
       call->square = true;
@@ -1070,26 +1106,22 @@ parenop_expr:
     {
       $$ = new CallExpr(PRIMITIVE_ERROR, new_StringSymbol($3));
     }
-| non_tuple_lvalue TLP TQUESTION identifier TRP
-    {
-      CallExpr* call = new CallExpr($1, new DefExpr(new VarSymbol($4)));
-      if (!(call->isNamed("int") ||
-            call->isNamed("uint") ||
-            call->isNamed("float") ||
-            call->isNamed("complex")))
-        USR_FATAL(call, "nested queries not supported on non-primitive types");
-      $$ = call;
-    }
 ;
 
 
 memberaccess_expr:
-  non_tuple_lvalue TDOT identifier
+  lvalue TDOT identifier
     { $$ = new CallExpr(".", $1, new_StringSymbol($3)); }
-| non_tuple_lvalue TDOT TTYPE
+| lvalue TDOT TTYPE
     { $$ = new CallExpr(PRIMITIVE_TYPEOF, $1); }
-| non_tuple_lvalue TDOT TDOMAIN
+| lvalue TDOT TDOMAIN
     { $$ = new CallExpr(".", $1, new_StringSymbol("dom")); }
+;
+
+
+variable_expr:
+  identifier
+    { $$ = new SymExpr(new UnresolvedSymbol($1)); }
 ;
 
 
@@ -1126,7 +1158,7 @@ seq_expr:
 
 
 opt_expr:
-  /* empty */
+  /* nothing */
     { $$ = NULL; }
 | expr
 ;
@@ -1258,45 +1290,6 @@ reduction:
 ;
 
 
-literal:
-  INTLITERAL
-    {
-      if (!strncmp("0b", yytext, 2))
-        $$ = new SymExpr(new_IntSymbol(strtoll(yytext+2, NULL, 2)));
-      else if (!strncmp("0x", yytext, 2))
-        $$ = new SymExpr(new_IntSymbol(strtoll(yytext+2, NULL, 16)));
-      else
-        $$ = new SymExpr(new_IntSymbol(strtoll(yytext, NULL, 10)));
-    }
-| UINTLITERAL
-    { $$ = new SymExpr(new_UIntSymbol(strtoull(yytext, NULL, 10))); }
-| FLOATLITERAL
-    { $$ = new SymExpr(new_FloatSymbol(yytext, strtod(yytext, NULL))); }
-| IMAGLITERAL
-    {
-      yytext[strlen(yytext)-1] = '\0';
-      char cstr[256];
-      sprintf( cstr, "_chpl_complex64(0.0, %s)", yytext);
-      $$ = new SymExpr(new_ComplexSymbol(cstr, 0.0, strtod(yytext, NULL)));
-    }
-| STRINGLITERAL
-    { $$ = new SymExpr(new_StringSymbol($1)); }
-;
-
-
-identifier:
-  TIDENT
-    { $$ = canonicalize_string(yytext); }
-;
-
-
-opt_identifier:
-  /* empty */
-    { $$ = NULL; }
-| identifier
-;
-
-
 /** TAGS *********************************************************************/
 
 
@@ -1334,6 +1327,26 @@ formal_tag:
     { $$ = INTENT_PARAM; }
 | TTYPE
     { $$ = INTENT_TYPE; }
+;
+
+
+var_state_tag:
+  /* nothing */
+    { $$ = VAR_NORMAL; }
+| TCONFIG
+    { $$ = VAR_CONFIG; }
+| TSTATIC
+    { $$ = VAR_STATE; }
+;
+
+
+var_const_tag:
+  TVAR
+    { $$ = VAR_VAR; }
+| TCONST
+    { $$ = VAR_CONST; }
+| TPARAM
+    { $$ = VAR_PARAM; }
 ;
 
 
