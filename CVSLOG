@@ -75410,3 +75410,55 @@ Log message:
 Modified files:
 	chapel/test/: start_test 
 
+---------------------------------------------------------------------------
+
+09/18/06 15:38:44 -- bradc
+
+Log message:
+	Implemented floating point and complex output so that
+	it would work with NaNs and infinities.  In particular,
+	we no longer print out nan.0 and inf.0.  Also made
+	complexes with imaginary components that are negative
+	work better (it used to print out "...+ -0.0i").  Added
+	a test to lock in this behavior and updated other
+	tests that ran into this problem.
+	
+	More specifically...
+	
+	* If a floating point value is a nan or infinity it will
+	  print out as nan, inf, or -inf.
+	
+	* If a complex value has a nan real or imaginary portion,
+	  it will print out as nan.
+	
+	* If a complex value has an infinity real or imaginary
+	  portion, it will print out as inf for that component.
+	  This has the unfortunate effect of an imaginary
+	  (positive) infinity print out as "...+ infi".
+	  suggestions for better approaches welcome.
+	
+	* If a complex value has a negative 0.0 imaginary value,
+	  it will print out as "...- 0.0i"
+	
+	If you think any of these choices are wrong (and they may
+	be), let me know.
+	
+	Suspect that input of nans and infinities would currently
+	break, but there aren't any tests that do this yet... :)
+
+Modified files:
+	chapel/runtime/src/: chpltypes.c 
+	chapel/test/modules/standard/math/: acosh_out_of_range.good 
+	                                    atanh_asymptote.good 
+	                                    atanh_out_of_range.good 
+	                                    cosh_asymptote.good 
+	chapel/test/types/complex/marybeth/: complex_expressions.chpl 
+	                                     complex_expressions.good 
+Added files:
+	chapel/test/arrays/deitz/part1/: .cvsignore 
+	chapel/test/types/file/bradc/scalar/: 
+	                                      floatcomplexexceptions.chpl 
+	                                      floatcomplexexceptions.good 
+Removed files:
+	chapel/test/types/complex/marybeth/: complex_expressions.future 
+
