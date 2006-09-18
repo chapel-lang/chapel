@@ -75368,3 +75368,34 @@ Modified files:
 	chapel/compiler/AST/: astutil.cpp baseAST.cpp symbol.cpp 
 	chapel/compiler/include/: alist.h baseAST.h 
 
+---------------------------------------------------------------------------
+
+09/18/06 10:46:02 -- deitz
+
+Log message:
+	Fixed a bug in the parser in which parenthesized expression could not
+	have '.' applied to them as in:
+	
+	  (1+2*4).print()
+	
+	and
+	
+	  (d:C).foo()
+	
+	Note that you need to parenthesize the ':' expression in the above as
+	'.' has precedence supporting code like
+	
+	  d:c.type
+	
+	Rearranged and cleaned up the parser code somewhat.
+	
+	Added two tests.
+
+Modified files:
+	chapel/compiler/parser/: chapel.y 
+Added files:
+	chapel/test/functions/deitz/: test_base_method_call.chpl 
+	                              test_base_method_call.good 
+	chapel/test/trivial/deitz/: test_integer_method4.chpl 
+	                            test_integer_method4.good 
+
