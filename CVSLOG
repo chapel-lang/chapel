@@ -75462,3 +75462,71 @@ Added files:
 Removed files:
 	chapel/test/types/complex/marybeth/: complex_expressions.future 
 
+---------------------------------------------------------------------------
+
+09/18/06 15:48:55 -- deitz
+
+Log message:
+	Made every function globally visible and added disambiguation based on
+	visibility.  This was an idea that John and I had discussed a while
+	back and which we thought had merit.  As I was working on making
+	functions that had class arguments globally visible, I was forced into
+	implementing this idea.
+	
+	In this change, the best function is chosen based on the best match.
+	But if a best match cannot be found from the candidates, the
+	candidates are pruned based on which are the most visible.  Then the
+	remaining most visible candidates are again searched for a best.
+	
+	Removed two futures.
+	
+	Here is an example that illustrates some of the issues:
+	
+	def f() {
+	  record R {
+	    var x: int;
+	  }
+	  var r : R;
+	  writeln(r);
+	}
+	
+	We create a write function for R automatically.  It is nested inside f
+	alongside R.
+	
+	Prior to this change, the write function was globally visible because
+	it had a class argument, namely file.  Because it is globally visible,
+	it cannot refer to anything inside f.  This is fine because it
+	doesn't, but moving it outside f is a problem because the getter R.x
+	is inside f and so not visible from outside f.
+	
+	No problem, certainly this function should not be globally visible
+	just because of the file argument.  One solution is to make file a
+	record.  Then the automatic write function for the record will not be
+	globally visible and pulled out of f.  The problem in this case is
+	that the writeln implementation in chpl_file cannot see this write
+	function.
+	
+	Another solution is not to pull the write function out of f until
+	later.  This is not what I ended up doing, but we should discuss this
+	tradeoff.
+	
+	In general though, this relies on the special treatment of the write
+	function which is globally visible because of the class file type.
+	Does anybody else see this as an issue?
+	
+	What I don't like is that a generic function elsewhere that is
+	instantiated based on a record nested in a function will not have
+	access to any of the functionality on that record.
+	
+	Also, note that I left file a class because == is implemented to rely
+	on pointer equality.
+
+Modified files:
+	chapel/compiler/AST/: symbol.cpp symscope.cpp 
+	chapel/compiler/include/: symbol.h 
+	chapel/compiler/passes/: functionResolution.cpp normalize.cpp 
+	chapel/modules/standard/: _chpl_file.chpl 
+Removed files:
+	chapel/test/functions/deitz/: test_visible1.future 
+	chapel/test/functions/deitz/nested/: test_nested_global1.future 
+
