@@ -1,0 +1,4 @@
+Error: Unresolved call 'foo(:[] complex)' (badArrArgErrMsg.chpl:6)
+  called from main (badArrArgErrMsg.chpl:???)
+Candidates are:
+  foo(X: [] float) (badArrArgErrMsg.chpl:8)
