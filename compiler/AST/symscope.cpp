@@ -10,27 +10,6 @@
    _c != '_'&& _c != '?' && _c != '$')                  \
 
 
-static bool
-isGloballyVisible(FnSymbol* fn) {
-  if (fn->makeGloballyVisible) return true; // WAW: temporary hack to get iterator-created methods visible
-  for_formals(formal, fn) {
-    if (ClassType* ct = dynamic_cast<ClassType*>(formal->type)) {
-      if (ct->isNominalType()) {
-        return true;
-      }
-    }
-  }
-  if (fn->fnClass == FN_CONSTRUCTOR) {
-    if (ClassType* ct = dynamic_cast<ClassType*>(fn->retType)) {
-      if (ct->isNominalType()) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-
 SymScope::SymScope(BaseAST* iastParent, SymScope* iparent) :
   astParent(iastParent),
   parent(iparent)
@@ -67,11 +46,12 @@ void SymScope::define(Symbol* sym) {
     symbols.add(sym);
   }
   if (FnSymbol* fn = dynamic_cast<FnSymbol*>(sym)) {
-    if (isGloballyVisible(fn)) {
-      rootScope->addVisibleFunction(fn);
-    } else {
-      addVisibleFunction(fn);
-    }
+    rootScope->addVisibleFunction(fn);
+//     if (fn->global) {
+//       rootScope->addVisibleFunction(fn);
+//     } else {
+//       addVisibleFunction(fn);
+//     }
   }
 }
 

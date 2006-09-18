@@ -11,6 +11,7 @@
 #include "runtime.h"
 #include "stmt.h"
 #include "symbol.h"
+#include "symscope.h"
 #include "stringutil.h"
 #include "view.h"
 #include "build.h"
@@ -35,6 +36,7 @@ static void fold_params(BaseAST* base);
 static void expand_var_args(FnSymbol* fn);
 static int  tag_generic(FnSymbol* fn);
 static void tag_hasVarArgs(FnSymbol* fn);
+static void tag_global(FnSymbol* fn);
 static void change_types_to_values(BaseAST* base);
 static void fixup_array_formals(FnSymbol* fn);
 static void fixup_parameterized_primitive_formals(FnSymbol* fn);
@@ -159,6 +161,7 @@ void normalize(BaseAST* base) {
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     if (FnSymbol *fn = dynamic_cast<FnSymbol*>(ast)) {
+      tag_global(fn);
       tag_hasVarArgs(fn);
     }
   }
@@ -411,7 +414,7 @@ iterator_transform( FnSymbol *fn) {
   nextcf->name = nextcf->cname = canonicalize_string("getNextCursor");
   nextcf->fnClass = FN_FUNCTION;
   nextcf->isMethod = true;
-  nextcf->makeGloballyVisible = true;
+  nextcf->global = true;
   nextcf->retType = dtUnknown;
   nextcf->retExprType = NULL;
   m->stmts->insertAtHead( new DefExpr( nextcf));
@@ -427,14 +430,14 @@ iterator_transform( FnSymbol *fn) {
   iterator_constructor_fixup( ic);
 
   FnSymbol *headcf = new FnSymbol( "getHeadCursor");
-  headcf->makeGloballyVisible = true;
+  headcf->global = true;
   m->stmts->insertAtHead( new DefExpr( headcf));
   iterator_formals( headcf, ic);
   headcf->body->insertAtHead( new ReturnStmt( new CallExpr( new CallExpr( ".", headcf->_this, new_StringSymbol( "getNextCursor")), new_IntSymbol(0))));
   headcf->isMethod = true;
 
   FnSymbol *valuef = new FnSymbol( "getValue");
-  valuef->makeGloballyVisible = true;
+  valuef->global = true;
   m->stmts->insertAtHead( new DefExpr( valuef));
   iterator_formals( valuef, ic, cursor);
   iterator_build_vtable( valuef, cursor, &vals_returned);
@@ -445,7 +448,7 @@ iterator_transform( FnSymbol *fn) {
   valuef->isMethod = true;
 
   FnSymbol *isvalidcf = new FnSymbol( "isValidCursor?");
-  isvalidcf->makeGloballyVisible = true;
+  isvalidcf->global = true;
   m->stmts->insertAtHead( new DefExpr( isvalidcf));
   isvalidcf->body->insertAtHead( new ReturnStmt( new CallExpr( "!=", cursor, new_IntSymbol(vals_returned.length()+1))));
   iterator_formals( isvalidcf, ic, cursor);
@@ -1426,6 +1429,31 @@ tag_hasVarArgs(FnSymbol* fn) {
   for_formals(formal, fn)
     if (formal->variableExpr)
       fn->hasVarArgs = true;
+}
+
+static void tag_global(FnSymbol* fn) {
+  if (fn->global)
+    return;
+  for_formals(formal, fn) {
+    if (ClassType* ct = dynamic_cast<ClassType*>(formal->type))
+      if (ct->classTag == CLASS_CLASS)
+        fn->global = true;
+    if (SymExpr* sym = dynamic_cast<SymExpr*>(formal->defPoint->exprType))
+      if (ClassType* ct = dynamic_cast<ClassType*>(sym->var->type))
+        if (ct->classTag == CLASS_CLASS)
+          fn->global = true;
+  }
+  if (fn->global) {
+    fn->parentScope->removeVisibleFunction(fn);
+    rootScope->removeVisibleFunction(fn);
+    rootScope->addVisibleFunction(fn);
+    if (dynamic_cast<FnSymbol*>(fn->defPoint->parentSymbol)) {
+      ModuleSymbol* mod = fn->getModule();
+      Stmt* stmt = fn->defPoint->parentStmt;
+      stmt->remove();
+      mod->stmts->insertAtTail(stmt);
+    }
+  }
 }
 
 static void

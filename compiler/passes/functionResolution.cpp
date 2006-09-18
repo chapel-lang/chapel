@@ -527,42 +527,81 @@ build_promotion_wrapper(FnSymbol* fn,
 }
 
 
-static FnSymbol*
-resolve_call(CallExpr* call,
-             char *name,
-             Vec<Type*>* actual_types,
-             Vec<Symbol*>* actual_params,
-             Vec<char*>* actual_names) {
-  Vec<FnSymbol*> visibleFns;                    // visible functions
+static int
+visibility_distance(SymScope* scope, FnSymbol* fn,
+                    int d = 1, Vec<SymScope*>* alreadyVisited = NULL) {
+  Vec<SymScope*> localAlreadyVisited;
 
-  Vec<FnSymbol*> candidateFns;
-  Vec<Vec<ArgSymbol*>*> candidateActualFormals; // candidate functions
+  if (!alreadyVisited)
+    alreadyVisited = &localAlreadyVisited;
 
-  bool methodTag = call->methodTag;
+  if (alreadyVisited->set_in(scope))
+    return 0;
 
-  if (!call->isResolved())
-    call->parentScope->getVisibleFunctions(&visibleFns, canonicalize_string(name));
-  else
-    visibleFns.add(call->isResolved());
+  alreadyVisited->set_add(scope);
 
-  forv_Vec(FnSymbol, visibleFn, visibleFns) {
-    if (methodTag && !visibleFn->noParens)
-      continue;
-    addCandidate(&candidateFns, &candidateActualFormals, visibleFn,
-                 actual_types, actual_params, actual_names);
+  if (Symbol* sym = scope->lookupLocal(fn->name)) {
+    for (Symbol* tmp = sym; tmp; tmp = tmp->overload) {
+      if (tmp == fn)
+        return d;
+    }
   }
 
+  if (scope->astParent) {
+    forv_Vec(ModuleSymbol, module, scope->astParent->modUses) {
+      int dd = visibility_distance(module->modScope, fn, d, alreadyVisited);
+      if (dd > 0)
+        return dd;
+    }
+  }
+
+  if (scope->parent)
+    return visibility_distance(scope->parent, fn, d+1, alreadyVisited);
+
+  return 0;
+}
+
+
+static void
+disambiguate_by_scope(SymScope* scope, Vec<FnSymbol*>* candidateFns) {
+  Vec<int> vds;
+  forv_Vec(FnSymbol, fn, *candidateFns) {
+    vds.add(visibility_distance(scope, fn));
+  }
+  int md = 0;
+  for (int i = 0; i < vds.n; i++) {
+    if (vds.v[i] != 0) {
+      if (md) {
+        if (vds.v[i] < md)
+          md = vds.v[i];
+      } else
+        md = vds.v[i];
+    }
+  }
+  for (int i = 0; i < vds.n; i++) {
+    if (vds.v[i] != md)
+      candidateFns->v[i] = 0;
+  }
+}
+
+
+static FnSymbol*
+disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
+                      Vec<Vec<ArgSymbol*>*>* candidateActualFormals,
+                      Vec<Type*>* actual_types,
+                      Vec<Symbol*>* actual_params,
+                      Vec<ArgSymbol*>** ret_afs) {
   FnSymbol* best = NULL;
   Vec<ArgSymbol*>* actual_formals = 0;
-  for (int i = 0; i < candidateFns.n; i++) {
-    if (candidateFns.v[i]) {
-      best = candidateFns.v[i];
-      actual_formals = candidateActualFormals.v[i];
-      for (int j = 0; j < candidateFns.n; j++) {
-        if (i != j && candidateFns.v[j]) {
+  for (int i = 0; i < candidateFns->n; i++) {
+    if (candidateFns->v[i]) {
+      best = candidateFns->v[i];
+      actual_formals = candidateActualFormals->v[i];
+      for (int j = 0; j < candidateFns->n; j++) {
+        if (i != j && candidateFns->v[j]) {
           bool better = false;
           bool as_good = true;
-          Vec<ArgSymbol*>* actual_formals2 = candidateActualFormals.v[j];
+          Vec<ArgSymbol*>* actual_formals2 = candidateActualFormals->v[j];
           for (int k = 0; k < actual_formals->n; k++) {
             ArgSymbol* arg = actual_formals->v[k];
             ArgSymbol* arg2 = actual_formals2->v[k];
@@ -607,6 +646,49 @@ resolve_call(CallExpr* call,
       if (best)
         break;
     }
+  }
+  *ret_afs = actual_formals;
+  return best;
+}
+
+
+static FnSymbol*
+resolve_call(CallExpr* call,
+             char *name,
+             Vec<Type*>* actual_types,
+             Vec<Symbol*>* actual_params,
+             Vec<char*>* actual_names) {
+  Vec<FnSymbol*> visibleFns;                    // visible functions
+
+  Vec<FnSymbol*> candidateFns;
+  Vec<Vec<ArgSymbol*>*> candidateActualFormals; // candidate functions
+
+  bool methodTag = call->methodTag;
+
+  if (!call->isResolved())
+    call->parentScope->getVisibleFunctions(&visibleFns, canonicalize_string(name));
+  else
+    visibleFns.add(call->isResolved());
+
+  forv_Vec(FnSymbol, visibleFn, visibleFns) {
+    if (methodTag && !visibleFn->noParens)
+      continue;
+    addCandidate(&candidateFns, &candidateActualFormals, visibleFn,
+                 actual_types, actual_params, actual_names);
+  }
+
+  FnSymbol* best = NULL;
+  Vec<ArgSymbol*>* actual_formals = 0;
+  best = disambiguate_by_match(&candidateFns, &candidateActualFormals,
+                               actual_types, actual_params,
+                               &actual_formals);
+
+  // use visibility and then look for best again
+  if (!best && candidateFns.n > 1) {
+    disambiguate_by_scope(call->parentScope, &candidateFns);
+    best = disambiguate_by_match(&candidateFns, &candidateActualFormals,
+                                 actual_types, actual_params,
+                                 &actual_formals);
   }
 
   if (!best && candidateFns.n > 0) {

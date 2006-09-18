@@ -617,10 +617,10 @@ FnSymbol::FnSymbol(char* initName) :
   instantiatedFrom(NULL),
   instantiatedTo(NULL),
   visible(true),
+  global(false),
   basicBlocks(NULL),
   calledBy(NULL),
-  isWrapper(false),
-  makeGloballyVisible(false) // WAW: temporary hack to get iterator-created methods visible
+  isWrapper(false)
 {
   gFns.add(this);
   formals->parent = this;
@@ -679,6 +679,8 @@ FnSymbol::copyInner(ASTMap* map) {
   copy->isSetter = isSetter;
   copy->_this = _this;
   copy->isMethod = isMethod;
+  copy->visible = visible;
+  copy->global = global;
   return copy;
 }
 

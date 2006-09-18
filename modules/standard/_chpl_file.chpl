@@ -194,9 +194,9 @@ class file {
   }
 }
 
-const stdin  : file = file("stdin", "r", "/dev", _get_stdin());
-const stdout : file = file("stdout", "w", "/dev", _get_stdout());
-const stderr : file = file("stderr", "w", "/dev", _get_stderr());
+const stdin  = file("stdin", "r", "/dev", _get_stdin());
+const stdout = file("stdout", "w", "/dev", _get_stdout());
+const stderr = file("stderr", "w", "/dev", _get_stderr());
 
 
 def _fopenError(f: file, isRead: bool) {

@@ -180,11 +180,13 @@ class FnSymbol : public Symbol {
   bool visible; // included in visible function list for dispatch
                 // compiler generated functions are not visible, e.g.,
                 // instantiated functions and wrappers
+  bool global; // function is globally visible e.g. class argument
+               // WAW: temporary hack to get iterator-created methods
+               // visible
+
   Vec<BasicBlock*>* basicBlocks;
   Vec<CallExpr*>* calledBy;
   bool isWrapper;
-
-  bool makeGloballyVisible;  // WAW: temporary hack to get iterator-created methods visible
 
   FnSymbol(char* initName);
   ~FnSymbol();
