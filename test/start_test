@@ -382,6 +382,7 @@ while ( $#argv > 0 )
         case --onetest:
                 shift
                 set onetestpath = $argv[1]
+                set testfutures = 1
                 shift
                 breaksw
         case -valgrindexe:
