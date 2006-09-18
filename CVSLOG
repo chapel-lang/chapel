@@ -75530,3 +75530,19 @@ Removed files:
 	chapel/test/functions/deitz/: test_visible1.future 
 	chapel/test/functions/deitz/nested/: test_nested_global1.future 
 
+---------------------------------------------------------------------------
+
+09/18/06 16:57:12 -- bradc
+
+Log message:
+	Added a future test in which we can't find
+	a function that takes the expected array
+	type -- we currently generate a very cryptic
+	error message.  This is a placeholder to try
+	and get it clarified.
+
+Added files:
+	chapel/test/arrays/bradc/errors/: badArrArgErrMsg.chpl 
+	                                  badArrArgErrMsg.future 
+	                                  badArrArgErrMsg.good 
+
