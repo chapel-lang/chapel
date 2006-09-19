@@ -75703,3 +75703,16 @@ Added files:
 	                                    ra-bradc-uintliteral.future 
 	                                    ra-bradc-uintliteral.good 
 
+---------------------------------------------------------------------------
+
+09/19/06 12:56:50 -- marybeth
+
+Log message:
+	Changed all unsigned literals (with the u suffix) to integer
+	literals when assigning to uints.
+	
+	Now, the ran array is nonzero after HPCC_starts.
+
+Modified files:
+	chapel/test/studies/hpcc/RA/marybeth/: ra.chpl 
+
