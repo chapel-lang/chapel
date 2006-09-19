@@ -75635,3 +75635,13 @@ Added files:
 Removed files:
 	chapel/test/studies/hpcc/RA/: ra.chpl ra.c ra.good 
 
+---------------------------------------------------------------------------
+
+09/19/06 08:53:40 -- deitz
+
+Log message:
+	Removed .future.
+
+Removed files:
+	chapel/test/functions/deitz/: test_visible2.future 
+
