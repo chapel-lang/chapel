@@ -1,0 +1,7 @@
+unsigned int literals
+
+It seems that the compiler accepts 0x1u as a literal format
+(as I think it should), but treats this as zero.  If it
+should not be accepting this, this test's good file should
+be changed to reflect the error.
+
