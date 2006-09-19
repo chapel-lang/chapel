@@ -75610,3 +75610,13 @@ Modified files:
 Removed files:
 	chapel/test/domains/bradc/: queryLength.future 
 
+---------------------------------------------------------------------------
+
+09/18/06 20:54:25 -- deitz
+
+Log message:
+	Added .good.
+
+Added files:
+	chapel/test/studies/hpcc/RA/: ra.good 
+
