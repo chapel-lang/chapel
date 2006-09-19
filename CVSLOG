@@ -75559,3 +75559,25 @@ Added files:
 	chapel/test/domains/bradc/: queryLength.chpl queryLength.future 
 	                            queryLength.good 
 
+---------------------------------------------------------------------------
+
+09/18/06 18:15:53 -- bradc
+
+Log message:
+	Finally got back to work on HPCC FFT.  Pulled
+	the twiddles() routine out of the C code to make
+	it a standalone source file that would run and
+	print output.  Got a standalone Chapel program
+	computing the same thing and tucked that code
+	back into fft.chpl.
+	
+	Also updated main() in fft.chpl to reflect new
+	features and bug fixes in the compiler -- it's
+	much better than the last time I worked on this...
+	Nice job!!!
+
+Modified files:
+	chapel/test/hpcc/: fft.chpl 
+Added files:
+	chapel/test/hpcc/: twiddles.c twiddles.chpl twiddles.good 
+
