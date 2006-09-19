@@ -49,7 +49,7 @@ int squelch_header_errors = 0;
 
 static ArgumentDescription arg_desc[] = {
  {"nostdincs", ' ', "No Standard Includes", "T", &fnostdincs, "CHPL_NOSTDINCS", NULL},
- {"premalloc", 'm', "Pre-Malloc", "I", &pre_malloc, "CHPL_PRE_MALLOC", NULL},
+ {"premalloc", 'm', "Pre-Malloc", "I", &pre_malloc, "CHPL_PRE_malloc", NULL},
  {"sysdir", 'S', "System Directory", "P", system_dir, "CHPL_SYSTEM_DIR", NULL},
  {"devel", ' ', "Developer Compile", "F", &developer, "CHPL_DEVELOPER", NULL},
  {"ignore-errors", ' ', "Attempt to Ignore Errors", "F", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
@@ -184,9 +184,8 @@ void runCompilerInGDB(int argc, char* argv[]) {
 
 int
 main(int argc, char *argv[]) {
-  MEM_INIT();
   if (pre_malloc)
-    (void)MALLOC(pre_malloc);
+    (void)malloc(pre_malloc);
   compute_program_name_loc(argv[0], &(arg_state.program_name),
                            &(arg_state.program_loc));
   process_args(&arg_state, argc, argv);

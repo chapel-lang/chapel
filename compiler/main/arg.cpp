@@ -83,7 +83,7 @@ void
 process_args(ArgumentState *arg_state, int argc, char **aargv) {
   int i, len;
   char *end = 0;
-  char **argv = (char**)MALLOC((argc+1)*sizeof(char*));
+  char **argv = (char**)malloc((argc+1)*sizeof(char*));
   for (i = 0; i < argc; i++)
     argv[i] = _dupstr(aargv[i]);
   argv[i] = NULL;
@@ -150,7 +150,7 @@ process_args(ArgumentState *arg_state, int argc, char **aargv) {
           }
       }
     } else {
-      arg_state->file_argument = (char **)REALLOC(
+      arg_state->file_argument = (char **)realloc(
         arg_state->file_argument, 
         sizeof(char**) * (arg_state->nfile_arguments + 2));
       arg_state->file_argument[arg_state->nfile_arguments++] = *argv;
@@ -224,5 +224,5 @@ usage(ArgumentState *arg_state, char *arg_unused) {
 void
 free_args(ArgumentState *arg_state) {
   if (arg_state->file_argument)
-    FREE(arg_state->file_argument);
+    free(arg_state->file_argument);
 }

@@ -2,7 +2,6 @@
 #define _LEXYACC_H_
 
 #include "build.h"
-#include "chplalloc.h"
 #include "countTokens.h"
 #include "driver.h"
 #include "expr.h"

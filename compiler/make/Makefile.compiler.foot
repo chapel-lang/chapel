@@ -35,18 +35,11 @@ echocompilerdir:
 # pattern-based rules
 #
 
-$(PLATFORM)/%.nogc.o: %.cpp $(PLATFORM_DIR)
-	$(CXX) -c $(CXXFLAGS) -o $@ $<
-
 %.depend: %.cpp $(PLATFORM_DIR)
 	@$(MAKEDEPEND) -MT '$(PLATFORM)/$*.o' $(CFLAGS) $< | grep -v \^\# >> $(CVS_DEPENDS).tmp
 
-%.nogcdepend: %.cpp $(PLATFORM_DIR)
-	@$(MAKEDEPEND) -MT '$(PLATFORM)/$*.nogc.o' $(CFLAGS) $< | grep -v \^\# >> $(CVS_DEPENDS).tmp
-
 $(PLATFORM)/%.o: %.cpp $(PLATFORM_DIR)
 	$(CXX) -c $(CXXFLAGS) -o $@ $<
-
 
 FORCE:
 

@@ -2,9 +2,9 @@
 #include <pwd.h>
 #include <string.h>
 #include <sys/types.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include "beautify.h"
-#include "chplalloc.h"
 #include "chpltypes.h"
 #include "files.h"
 #include "misc.h"
@@ -56,7 +56,7 @@ void addLibInfo(char* libName) {
   numLibFlags++;
   if (numLibFlags > libSpace) {
     libSpace = 2*numLibFlags;
-    libFlag = (char**)REALLOC(libFlag, libSpace*sizeof(char*));
+    libFlag = (char**)realloc(libFlag, libSpace*sizeof(char*));
   }
   libFlag[numLibFlags-1] = stringcpy(libName);
 }
@@ -228,7 +228,7 @@ void closeCFiles(fileinfo* outfile) {
 
 
 fileinfo* openTmpFile(char* tmpfilename) {
-  fileinfo* newfile = (fileinfo*)MALLOC(sizeof(fileinfo));
+  fileinfo* newfile = (fileinfo*)malloc(sizeof(fileinfo));
 
   newfile->filename = stringcpy(tmpfilename);
   newfile->pathname = genIntFilename(tmpfilename);
@@ -300,7 +300,7 @@ static char** inputFilenames = {NULL};
 
 
 void testInputFiles(int numFilenames, char* filename[]) {
-  inputFilenames = (char**)MALLOC((numFilenames+1)*sizeof(char*));
+  inputFilenames = (char**)malloc((numFilenames+1)*sizeof(char*));
   int i;
   for (i=0; i<numFilenames; i++) {
     FILE* testfile = openInputFile(filename[i]);

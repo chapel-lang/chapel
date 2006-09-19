@@ -12,7 +12,6 @@
 #include <unistd.h>
 #include <string.h>
 
-#include "chplalloc.h"
 #include "chpltypes.h"
 
 #define round2(_x,_n) ((_x + ((_n)-1)) & ~((_n)-1))

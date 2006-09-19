@@ -4,8 +4,6 @@
 DEBUG=1
 #OPTIMIZE=1
 #PROFILE=1
-USE_GC=1
-#LEAK_DETECT=1
 
 #
 # include the standard Chapel Makefile.base
@@ -16,28 +14,13 @@ CHAPEL_SUBDIR = compiler/$(COMPILER_SUBDIR)
 
 include $(CHAPEL_ROOT)/make/Makefile.base
 
-
 CFLAGS += -I. -I$(COMPILER_ROOT)/include/$(PLATFORM) -I$(COMPILER_ROOT)/include
-
 
 #
 # add gc-related stuff
 #
-ifdef USE_GC
-CFLAGS += -DUSE_GC
-CFLAGS += -I$(GC_ROOT)/include/gc
-LIBS += $(GC_ROOT)/lib/libgc.a
 OBJ_SUFFIX=o
 CHPL_MUNGE=
-else
-OBJ_SUFFIX=nogc.o
-CHPL_MUNGE=-nogc
-endif
-
-ifdef LEAK_DETECT
-CFLAGS += -DLEAK_DETECT -I$(GC_ROOT)/include
-LIBS += $(GC_ROOT)/lib/libleak.a
-endif
 
 
 ifeq ($(DIR_USES_OFFSETOF), 1)
@@ -71,7 +54,6 @@ CLEAN_TARGS = \
 	*.gmon \
 	*.a \
 	$(GEN_SRCS) \
-        *.nogc.cpp \
 	$(EXECS)
 
 CLOBBER_TARGS = \

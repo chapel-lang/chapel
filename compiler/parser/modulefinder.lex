@@ -2,21 +2,9 @@
 
 #include <stdio.h>
 #include <typeinfo>
-#include "chplalloc.h"
 #include "processTokens.h"
 #include "modulefinder.tab.h"
 #include "yy.h"
-
-
-/* make sure flex-generated code uses these */
-#ifdef USE_GC
-#undef malloc
-#undef realloc
-#undef free
-#define malloc MALLOC
-#define realloc REALLOC
-#define free FREE
-#endif
 
 /* avoid warnings */
 #define YY_NO_UNPUT

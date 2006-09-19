@@ -90,7 +90,7 @@ typedef struct _ASTContext {
   Expr* parentExpr;
 } ASTContext;
 
-class BaseAST : public gc {
+class BaseAST {
  public:
   astType_t astType;    // BaseAST subclass
   long id;              // Unique ID

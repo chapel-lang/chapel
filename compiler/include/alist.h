@@ -12,7 +12,7 @@ extern void parent_insert_help(BaseAST* parent, BaseAST* ast);
 extern BaseAST* sibling_ast_wrap(BaseAST* sibling, BaseAST* ast);
 
 template <class elemType>
-class AList : public gc {
+class AList {
  public:
   elemType* head;
   elemType* tail;

@@ -40,10 +40,10 @@ typedef void *_CG_ref;
 
 #define _CG_prim_primitive_chapel_defexpr(_c) ((void*)0)
 #define _CG_prim_coerce(_t, _v) ((_t)_v)
-#define _CG_prim_closure(_c) (_c)GC_MALLOC(sizeof(*((_c)0)))
-#define _CG_prim_tuple(_c) (_c)GC_MALLOC(sizeof(*((_c)0)))
-#define _CG_prim_vector(_c, _n) (void*)GC_MALLOC(sizeof(_c*) * _n)
-#define _CG_prim_new(_c) (_c)GC_MALLOC(sizeof(*((_c)0)))
+#define _CG_prim_closure(_c) (_c)GC_malloc(sizeof(*((_c)0)))
+#define _CG_prim_tuple(_c) (_c)GC_malloc(sizeof(*((_c)0)))
+#define _CG_prim_vector(_c, _n) (void*)GC_malloc(sizeof(_c*) * _n)
+#define _CG_prim_new(_c) (_c)GC_malloc(sizeof(*((_c)0)))
 #define _CG_prim_reply(_c, _r) return _r
 #define _CG_prim_primitive(_p, _x) printf("%d\n", (unsigned int)(uintptr_t)_x);
 #define _CG_prim_add(_a, _op, _b) ((_a) + (_b))
@@ -62,7 +62,7 @@ typedef void *_CG_ref;
 #define _CG_prim_set(_a, _b) (_a) = (_b)
 #define _CG_prim_apply(_a, _b) ((*(_a)->e0)((_a)->e1))
 #define _CG_make_apply(_r, _s, _f, _a) do {     \
-  _r = (_s)GC_MALLOC(sizeof(*((_s)0)));         \
+  _r = (_s)GC_malloc(sizeof(*((_s)0)));         \
   _r->e0 = _f;                                  \
   _r->e1 = _a;                                  \
 } while (0)
@@ -76,4 +76,4 @@ static inline int _CG_prim_primitive_write(_CG_symbol s, ...) {
 #define _CG_prim_primitive_sizeof(x) sizeof(x)
 #define _methodTokenType char
 #define _CG_prim_primitive_cast(type, x) (x)
-#define _chpl_alloc(_lvalue, _type) ((_type)GC_MALLOC(sizeof(*(_lvalue))))
+#define _chpl_alloc(_lvalue, _type) ((_type)GC_malloc(sizeof(*(_lvalue))))

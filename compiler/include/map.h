@@ -14,7 +14,7 @@
 static inline char *
 _dupstr(char *s, char *e = 0) {
   int l = e ? e-s : strlen(s);
-  char *ss = (char*)MALLOC(l+1);
+  char *ss = (char*)malloc(l+1);
   memcpy(ss, s, l);
   ss[l] = 0;
   return ss;
@@ -22,7 +22,7 @@ _dupstr(char *s, char *e = 0) {
 
 // Simple direct mapped Map (pointer hash table) and Environment
 
-template <class K, class C> class MapElem : public gc {
+template <class K, class C> class MapElem {
  public:
   K     key;
   C     value;
@@ -48,7 +48,7 @@ template <class K, class C> class Map : public Vec<MapElem<K,C> > {
   int some_disjunction(Map<K,C> &m);
 };
 
-template <class C> class HashFns : public gc {
+template <class C> class HashFns {
  public:
   static unsigned int hash(C a);
   static int equal(C a, C b);
@@ -73,7 +73,7 @@ template <class K, class AHashFns, class C> class HashMap : public Map<K,C> {
           if ((_p)->key)
 
 
-class StringHashFns : public gc {
+class StringHashFns {
  public:
   static unsigned int hash(char *s) { 
     unsigned int h = 0; 
@@ -84,7 +84,7 @@ class StringHashFns : public gc {
   static int equal(char *a, char *b) { return !strcmp(a, b); }
 };
 
-class PointerHashFns : public gc {
+class PointerHashFns {
  public:
   static unsigned int hash(void *s) { return (unsigned int)(uintptr_t)s; }
   static int equal(void *a, void *b) { return a == b; }
@@ -117,7 +117,7 @@ class StringChainHash : public ChainHash<char *, StringHashFns> {
   char *canonicalize(char *s, char *e);
 };
 
-template <class C, class AHashFns, int N> class NBlockHash : public gc {
+template <class C, class AHashFns, int N> class NBlockHash {
  public:
   int n;
   int i;
@@ -146,7 +146,7 @@ template <class C, class ABlockHashFns> class BlockHash :
   public NBlockHash<C, ABlockHashFns, DEFAULT_BLOCK_HASH_SIZE> {};
 typedef BlockHash<char *, StringHashFns> StringBlockHash;
 
-template <class K, class C> class Env : public gc {
+template <class K, class C> class Env {
  public:
   void put(K akey, C avalue);
   C get(K akey);
@@ -577,13 +577,13 @@ NBlockHash<C, AHashFns, N>::put(C c) {
   C *old_v = v;
   i = i + 1;
   n = prime2[i];
-  v = (C*)MALLOC(n * sizeof(C) * N);
+  v = (C*)malloc(n * sizeof(C) * N);
   memset(v, 0, n * sizeof(C) * N);
   for (;vv < ve; vv++)
     if (*vv)
       put(*vv);
   if (old_v != &e[0])
-    FREE(old_v);
+    free(old_v);
   return put(c);
 }
 
@@ -657,7 +657,7 @@ NBlockHash<C, AHashFns, N>::copy(const NBlockHash<C, AHashFns, N> &hh) {
     v = e;
   } else {
     if (hh.v) {
-      v = (C*)MALLOC(n * sizeof(C) * N);
+      v = (C*)malloc(n * sizeof(C) * N);
       memcpy(v, hh.v, n * sizeof(C) * N);
     } else
       v = 0;

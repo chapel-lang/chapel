@@ -7,7 +7,7 @@ class Expr;
 class Stmt;
 class FnSymbol;
 
-class BasicBlock : public gc {
+class BasicBlock {
  public:
   int id;
   Vec<Expr*> exprs;

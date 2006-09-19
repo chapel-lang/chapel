@@ -65,7 +65,7 @@ enum PrimitiveTag {
   PRIMITIVE_CONDVAR_DESTROY,
 
   PRIMITIVE_CHPL_ALLOC,
-  PRIMITIVE_CHPL_FREE,                 // only for on_heap vars?
+  PRIMITIVE_CHPL_free,                 // only for on_heap vars?
   PRIMITIVE_PTR_EQUAL,
   PRIMITIVE_PTR_NOTEQUAL,
   PRIMITIVE_TOSTRING,
@@ -82,7 +82,7 @@ enum PrimitiveTag {
   NUM_KNOWN_PRIMS
 };
 
-class PrimitiveOp : public gc { public:
+class PrimitiveOp { public:
   PrimitiveTag tag;
   char *name;
   Type *(*returnInfo)(CallExpr*);

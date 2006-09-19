@@ -2,8 +2,7 @@ UTIL_SRCS = \
 	files.cpp \
 	misc.cpp \
 	mysystem.cpp \
-	stringutil.cpp \
-	uniqueName.cpp \
+	stringutil.cpp
 
 CVS_SRCS = $(UTIL_SRCS)
 SRCS = $(CVS_SRCS)

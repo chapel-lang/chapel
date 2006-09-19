@@ -21,7 +21,7 @@
 #include <stdint.h>
 #endif
 
-template <class C> class SLink : public gc {
+template <class C> class SLink {
  public:
   C *next;
   SLink() : next(NULL) {};
@@ -35,7 +35,7 @@ template <class C> struct Link : SLink<C> {
 #define GetLinkNext(_c, _e, _o) (((Link<_c> *)(void*)(((intptr_t)(void*)_e) + _o))->next)
 #define GetLinkPrev(_c, _e, _o) (((Link<_c> *)(void*)(((intptr_t)(void*)_e) + _o))->prev)
 
-template <class C, int o> class SLL : public gc {
+template <class C, int o> class SLL {
  public:
   C *head;
   inline void push(C *e);
@@ -48,7 +48,7 @@ template <class C, int o> class SLL : public gc {
 #define SList(_c, _f)  SLL<_c, offsetof(_c, _f)>
 #define forl_LL(_c, _p, _l) for (_c *_p = (_l).head; _p; _p = (_l).next_link(_p))
 
-template <class C, int o> class DLL : public gc {
+template <class C, int o> class DLL {
  public:
   C *head;
   inline void push(C *e);
@@ -99,7 +99,7 @@ class CountQueue : public Queue<C, o> {
 #define CountQue(_c, _f) CountQueue<_c, offsetof(_c, _f)>
 
 template <class C>
-class ConsCell : public gc {
+class ConsCell {
  public:
   C             car;
   ConsCell      *cdr;
@@ -109,7 +109,7 @@ class ConsCell : public gc {
 };
 
 template <class C>
-class List : public gc {
+class List {
  public:
   ConsCell<C> *head;
   C first() { if (head) return head->car; else return 0; }

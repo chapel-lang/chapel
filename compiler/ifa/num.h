@@ -6,7 +6,6 @@
 
 #include <assert.h>
 #include <string.h>
-#include "chplalloc.h"
 #include "chpltypes.h"
 #include "map.h"
 #include "misc.h"
@@ -37,7 +36,7 @@ enum IF1_float_type {
   FLOAT_SIZE_NUM
 };
 
-class Immediate : public gc { public:
+class Immediate { public:
   unsigned int const_kind : 4;
   unsigned int num_index : 3;
   union {
@@ -187,7 +186,7 @@ Immediate::uint_value( void) {
 }
 
 
-class ImmHashFns : public gc { public:
+class ImmHashFns { public:
   static unsigned int hash(Immediate *);
   static int equal(Immediate *, Immediate *);
 };

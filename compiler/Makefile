@@ -40,7 +40,7 @@ include util/Makefile.include
 
 CVS_SRCS = 
 
-CHPL = chpl$(CHPL_MUNGE)$(EXE_SUFFIX)
+CHPL = chpl$(EXE_SUFFIX)
 CHPL_OBJS = \
 	$(ADT_OBJS) \
 	$(AST_OBJS) \
@@ -74,9 +74,7 @@ $(CHPL): $(PLATFORM)/$(CHPL)
 $(PLATFORM)/$(CHPL): $(PLATFORM_DIR_DIR) $(CHPL_OBJS)
 	$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(LIBS)
 	@echo "Updating TAGS..."
-	@etags 	$(GC_SRC_DIR)/*.h $(GC_SRC_DIR)/*.c \
-		$(GC_SRC_DIR)/*/*.h $(GC_SRC_DIR)/*/*.c \
-		$(ALL_SRCS) */*.h
+	@etags $(ALL_SRCS) */*.h
 	-@(which ebrowse > /dev/null 2>&1 && echo "Updating BROWSE..." && ebrowse $(ALL_SRCS) */*.h) || echo "ebrowse not available"
 
 

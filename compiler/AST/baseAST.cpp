@@ -72,7 +72,7 @@ void destroyAst() {
   Vec<char*> keys;
   chapelStringsTable.get_keys(keys);
   forv_Vec(char, key, keys) {
-    FREE(key);
+    free(key);
   }
   forv_Vec(BaseAST, ast, gAsts) {
     delete ast;

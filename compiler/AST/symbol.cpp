@@ -29,7 +29,7 @@ VarSymbol *gFalse = NULL;
 VarSymbol *gBoundsChecking = NULL;
 
 /*** ASTMap Cache vvv ***/
-class Inst : public gc {
+class Inst {
  public:
   Inst(FnSymbol* iOldFn, FnSymbol* iNewFn, ASTMap* iSubs) :
     oldFn(iOldFn), newFn(iNewFn), subs(new ASTMap(*iSubs)) { }
@@ -75,7 +75,7 @@ static Vec<Inst*> cw_cache; // coercion wrappers cache
 
 
 /*** Default Wrapper Cache vvv ***/
-class DWCacheItem : public gc {
+class DWCacheItem {
  public:
   DWCacheItem(FnSymbol* iOldFn, FnSymbol* iNewFn, Vec<Symbol*>* iDefaults) :
     oldFn(iOldFn), newFn(iNewFn), defaults(new Vec<Symbol*>(*iDefaults)) { }

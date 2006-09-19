@@ -1,9 +1,6 @@
 
 all: $(MAKEALLSUBDIRS) echocompilerdir $(TARGETS)
 
-nogc: FORCE
-	$(MAKE) USE_GC= all
-
 clean: $(CLEANSUBDIRS) echocompilerdir
 	rm -f $(CLEAN_TARGS)
 
@@ -19,13 +16,8 @@ depend: $(DEPENDSUBDIRS) $(PLATFORM_DIR) $(DEPEND_DEPS) echocompilerdir
 	@echo > $(CVS_DEPENDS).tmp
 	@$(MAKE) filedepend
 	$(OTHER_DEPEND_RULES)
-	@echo Updating nogc dependences...
-	@$(MAKE) USE_GC= nogcdepend
 	@mv -f $(CVS_DEPENDS).tmp $(CVS_DEPENDS)
 
-CVS_GC_DEPS= $(CVS_SRCS:%.cpp=%.depend)
-CVS_NOGC_DEPS= $(CVS_SRCS:%.cpp=%.nogcdepend)
+CVS_DEPS= $(CVS_SRCS:%.cpp=%.depend)
 
-filedepend: $(CVS_GC_DEPS)
-nogcdepend: $(CVS_NOGC_DEPS)
-
+filedepend: $(CVS_DEPS)

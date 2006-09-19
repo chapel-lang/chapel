@@ -18,7 +18,7 @@ static void gdbShouldBreakHere() {
 char *
 dupstr(char *s, char *e) {
   int l = e ? e-s : strlen(s);
-  char *ss = (char*)MALLOC(l+1);
+  char *ss = (char*)malloc(l+1);
   memcpy(ss, s, l);
   ss[l] = 0;
   return ss;

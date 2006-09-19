@@ -31,7 +31,7 @@ static void newString(void) {
 static void addChar(char c) {
   if (stringLen+2 > stringBuffLen) {
     stringBuffLen = 2*(stringBuffLen + 1);
-    stringBuffer = (char*)REALLOC(stringBuffer, stringBuffLen*sizeof(char));
+    stringBuffer = (char*)realloc(stringBuffer, stringBuffLen*sizeof(char));
   }
   stringBuffer[stringLen] = c;
   stringLen++;

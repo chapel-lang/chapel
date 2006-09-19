@@ -3,7 +3,7 @@
 
 #include "symbol.h"
 
-class SymScope : public gc {
+class SymScope {
  public:
   BaseAST* astParent; // back pointer to AST
   SymScope* parent;

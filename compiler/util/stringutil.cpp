@@ -1,7 +1,7 @@
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include "chplalloc.h"
 #include "misc.h"
 #include "stringutil.h"
 
@@ -23,7 +23,7 @@ int stringlen(const char* s1, const char* s2, const char* s3, const char* s4,
 
 
 char* stringcpy(const char* s1) {
-  char* s = (char*)MALLOC(stringlen(s1) + 1);
+  char* s = (char*)malloc(stringlen(s1) + 1);
   strcpy(s, s1);
   return s;
 }
@@ -31,7 +31,7 @@ char* stringcpy(const char* s1) {
 
 char* stringcat(const char* s1, const char* s2, const char* s3, const char* s4,
                 const char* s5) {
-  char* s = (char*)MALLOC(stringlen(s1, s2, s3, s4, s5) + 1);
+  char* s = (char*)malloc(stringlen(s1, s2, s3, s4, s5) + 1);
   sprintf(s, "%s%s%s%s%s", s1, s2, s3, s4, s5);
   return s;
 }

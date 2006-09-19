@@ -9,7 +9,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#include "chplalloc.h"
 
 // Simple Vector class, also supports open hashed sets
 
@@ -22,7 +21,7 @@
 #define SET_INITIAL_INDEX       2
 
 template <class C, int S = VEC_INTEGRAL_SIZE>  // S must be a power of 2
-class Vec : public gc {
+class Vec {
  public:
   int           n;
   int           i;      // size index for sets
@@ -31,7 +30,7 @@ class Vec : public gc {
   
   Vec<C,S>();
   Vec<C,S>(const Vec<C,S> &vv);
-  ~Vec() { if (v && v != e) FREE(v); }
+  ~Vec() { if (v && v != e) free(v); }
 
   void add(C a);
   int add_exclusive(C a);
@@ -83,7 +82,7 @@ class Vec : public gc {
 #define forv_Vec(_c, _p, _v) if ((_v).n) for (_c *qq__##_p = (_c*)0, *_p = (_v).v[0]; \
                     ((intptr_t)(qq__##_p) < (_v).length()) && ((_p = (_v).v[(intptr_t)qq__##_p]) || 1); qq__##_p = (_c*)(((intptr_t)qq__##_p) + 1))
 
-template <class C, int S = VEC_INTEGRAL_SIZE> class Accum : public gc { public:
+template <class C, int S = VEC_INTEGRAL_SIZE> class Accum { public:
   Vec<C,S> asset;
   Vec<C,S> asvec;
   void add(C c) { if (asset.set_add(c)) asvec.add(c); }
@@ -163,7 +162,7 @@ Vec<C,S>::pop() {
 
 template <class C, int S> inline void
 Vec<C,S>::clear() {
-  if (v && v != e) FREE(v);
+  if (v && v != e) free(v);
   v = NULL;
   n = 0;
   i = 0;
@@ -303,7 +302,7 @@ Vec<C,S>::addx() {
     return;
   }
   if (v == e) {
-    v = (C*)MALLOC(VEC_INITIAL_SIZE * sizeof(C));
+    v = (C*)malloc(VEC_INITIAL_SIZE * sizeof(C));
     memcpy(v, &e[0], n * sizeof(C));
   } else {
     if ((n & (VEC_INITIAL_SIZE -1)) == 0) {
@@ -314,10 +313,10 @@ Vec<C,S>::addx() {
       if (!l) {
         void *vv = (void*)v;
         nl = 1 << nl;
-        v = (C*)MALLOC(nl * sizeof(C));
+        v = (C*)malloc(nl * sizeof(C));
         memcpy(v, vv, n * sizeof(C));
         memset(&v[n], 0, (nl - n) * sizeof(C));
-        FREE(vv);
+        free(vv);
       }
     }
   }
@@ -342,7 +341,7 @@ Vec<C,S>::set_expand() {
   else
     i = i + 1;
   n = prime2[i];
-  v = (C*)MALLOC(n * sizeof(C));
+  v = (C*)malloc(n * sizeof(C));
   memset(v, 0, n * sizeof(C));
 }
 
@@ -534,7 +533,7 @@ Vec<C,S>::copy_internal(const Vec<C,S> &vv) {
   l = l >> VEC_INITIAL_SHIFT;
   while (l) { l = l >> 1; nl++; }
   nl = 1 << nl;
-  v = (C*)MALLOC(nl * sizeof(C));
+  v = (C*)malloc(nl * sizeof(C));
   memcpy(v, vv.v, n * sizeof(C));
   memset(v + n, 0, (nl - n) * sizeof(C)); 
 }
