@@ -75727,3 +75727,13 @@ Modified files:
 	chapel/compiler/AST/: astutil.cpp expr.cpp 
 	chapel/compiler/include/: astutil.h 
 
+---------------------------------------------------------------------------
+
+09/19/06 13:29:32 -- waynew
+
+Log message:
+	auto _to_seq not in yet
+
+Added files:
+	chapel/test/functions/waynew/: iterator8.future 
+
