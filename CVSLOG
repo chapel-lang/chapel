@@ -75620,3 +75620,18 @@ Log message:
 Added files:
 	chapel/test/studies/hpcc/RA/: ra.good 
 
+---------------------------------------------------------------------------
+
+09/18/06 22:34:37 -- marybeth
+
+Log message:
+	Fixing earlier commit of Random Access files.  I meant to put them
+	under the directory "marybeth."
+	
+	I also moved Steve's added ra.good file.
+
+Added files:
+	chapel/test/studies/hpcc/RA/marybeth/: ra.c ra.chpl ra.good 
+Removed files:
+	chapel/test/studies/hpcc/RA/: ra.chpl ra.c ra.good 
+
