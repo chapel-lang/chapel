@@ -75820,3 +75820,13 @@ Added files:
 	                                    ra-bradc-illegalcast.good 
 	                                    ra.c 
 
+---------------------------------------------------------------------------
+
+09/19/06 14:57:42 -- bradc
+
+Log message:
+	Some minor updates to the emacs Chapel mode.
+
+Modified files:
+	chapel/etc/emacs/21.4/: font-lock.el 
+
