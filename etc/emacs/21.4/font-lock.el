@@ -2740,7 +2740,7 @@ See also `chpl-font-lock-extra-types'.")
 	   ,(eval-when-compile
 	      (regexp-opt
 	       '("bool" "complex" "domain" "float" "index" "int" "string" 
-                 "subdomain" "void")))
+                 "subdomain" "uint" "void")))
 	   chpl-font-lock-extra-types)
 	  "\\|"))
        (chpl-type-names-depth
@@ -2748,8 +2748,8 @@ See also `chpl-font-lock-extra-types'.")
        (chpl-preprocessor-directives
 	(eval-when-compile
 	  (regexp-opt
-	   '("define"  "elif" "else" "endif" "error" "file" "if" "ifdef"
-	     "ifndef" "include" "line" "pragma" "undef"))))
+	   '("define" "do" "elif" "else" "endif" "error" "file" "if" "ifdef"
+	     "ifndef" "include" "line" "pragma" "then" "undef"))))
        (chpl-preprocessor-directives-depth
 	(regexp-opt-depth chpl-preprocessor-directives)))
  (setq chpl-font-lock-keywords-1
