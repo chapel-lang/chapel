@@ -75598,3 +75598,15 @@ Log message:
 Added files:
 	chapel/test/studies/hpcc/RA/: ra.c ra.chpl 
 
+---------------------------------------------------------------------------
+
+09/18/06 20:44:11 -- deitz
+
+Log message:
+	Changed length() to length.
+
+Modified files:
+	chapel/test/domains/bradc/: queryLength.chpl 
+Removed files:
+	chapel/test/domains/bradc/: queryLength.future 
+
