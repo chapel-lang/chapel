@@ -1,0 +1,10 @@
+error messages
+
+This version of the code generates an error message that 
+points to a function header.  It seems that the error
+relates to the type mismatch in the conditional expression
+on line 42.  I've created a .good file for that error, if
+that is in fact an error (in particular, should the int
+literal implicitly be coereced to match the uint branch?
+If so, then maybe this isn't an error at all...)
+

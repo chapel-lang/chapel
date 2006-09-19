@@ -1,0 +1,5 @@
+error messages
+
+This test allows me to cast a domain to a uint without an error
+message (or, if this should be legal, by promoting the indices
+and casting them one at a time to uints, then it should work).
