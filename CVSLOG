@@ -75677,3 +75677,13 @@ Removed files:
 	chapel/compiler/include/: chplalloc.h uniqueName.h 
 	chapel/compiler/util/: uniqueName.cpp 
 
+---------------------------------------------------------------------------
+
+09/19/06 11:28:35 -- waynew
+
+Log message:
+	Just another iterator test.
+
+Added files:
+	chapel/test/functions/waynew/: iterator8.chpl iterator8.good 
+
