@@ -75581,3 +75581,20 @@ Modified files:
 Added files:
 	chapel/test/hpcc/: twiddles.c twiddles.chpl twiddles.good 
 
+---------------------------------------------------------------------------
+
+09/18/06 18:27:49 -- marybeth
+
+Log message:
+	Adding a Chapel and a C version of the Random Access HPC benchmark.
+	
+	I started with the C version, extracting it from the HPC benchmark
+	suite.  I had to modify it in order to make it a standalone program.
+	
+	Then, I did a pretty straightforward translation from C to Chapel.
+	It's gross.  But, I wanted to make sure that the random number generation
+	matched the C version.  Much more work is needed still.
+
+Added files:
+	chapel/test/studies/hpcc/RA/: ra.c ra.chpl 
+
