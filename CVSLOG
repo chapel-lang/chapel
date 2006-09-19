@@ -75737,3 +75737,13 @@ Log message:
 Added files:
 	chapel/test/functions/waynew/: iterator8.future 
 
+---------------------------------------------------------------------------
+
+09/19/06 14:05:37 -- waynew
+
+Log message:
+	Test creating an indefinite tuple domain.
+
+Added files:
+	chapel/test/domains/waynew/: tuple_domain.chpl tuple_domain.good 
+
