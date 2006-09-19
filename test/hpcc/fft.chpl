@@ -1,5 +1,5 @@
-config var logN: int = 4;
-
+config var logN = 5;
+config var debug = false;
 
 // PLACEHOLDER for external stuff
 class timer {
@@ -17,11 +17,8 @@ def main() {
   const EPS = 2.0 ** -51.0;
   const THRESHOLD = 16.0;
 
-// BLC: const domains not supported (constdomain.chpl)
-//  const D: domain(1) = [1..N];
-// rewritten as var:
-  var D: domain(1) = [1..N];
-  var DW: domain(1) = [1..N/4];
+  const D = [1..N];
+  const DW = [1..N/4];
 
   var A: [D] complex;
   var B: [D] complex;
@@ -29,19 +26,19 @@ def main() {
 
   prand_array(A);
 
-  B = A;                   // save A for verification step
+  B = A;                       // save A for verification step
 
   twiddles(W);
   W = bit_reverse(W);
 
-  A.im = -A.im;            // conjugate data
+  A.imag = -A.imag;            // conjugate data
 
   A = bit_reverse(A);
 
   dfft(A, W);
 
-  A.re =  A.re / N;        // conjugate and scale data
-  A.im = -A.im / N;
+  A.real =  A.real / N;        // conjugate and scale data
+  A.imag = -A.imag / N;
 
   var fftTimer = timer();
   fftTimer.start();
@@ -52,7 +49,7 @@ def main() {
   fftTimer.stop();
   var time = fftTimer.gettime();
 
-  var maxerr = max reduce sqrt((B.re - A.re)**2 + (B.im - A.im)**2);
+  var maxerr = max reduce sqrt((B.real - A.real)**2 + (B.imag - A.imag)**2);
 
   maxerr = maxerr / logN / EPS;
 
@@ -84,7 +81,7 @@ def bit_reverse(W) {
 */
 }
 
-def dfft(n, logn, a, w) {
+def dfft(a, w) {
 /*
   cf1st(n, a, w);
 
@@ -101,350 +98,24 @@ def prand_array(X) {
 }
 
 //fun twiddles(W: [?DW] float) {
-def twiddles(W) {
-/*
-//  const DW = W.domain();
-  const n = DW.extent() / 2;
+def twiddles(W: [?WD] complex) {
+  // TODO: workaround until I figure out how to query domain's length:
+  const n = (1<<logN)/4;
+  // const n = WD(1).length();
   const delta = atan(1.0) / n;
+  const i = 1.0;
 
-  W(0) = 1.0;
-  W(1) = 0.0;
-  W(n) = cos(delta * n);
-  W(n+1) = W(n);
-  for i in 2..n-1 by 2 {
-    const x = cos(delta * i);
-    const y = sin(delta * i);
-    W(i)           = x;
-    W(i+1)         = y;
-    W(2*n - i)     = y;
-    W(2*n - i + 1) = x;
+  W(1) = 1.0;
+  // TODO: need to figure out the best way to write this _complex
+  W(n/2 + 1) = let cosDeltaN = cos(delta * n)
+                in _complex(cosDeltaN, cosDeltaN);
+  for i in 2..n/2 {
+    // TODO: this is a bit unfortunate -- do we have other options?
+    const deltaI = delta * 2*(i-1);
+    const x = cos(deltaI);
+    const y = sin(deltaI);
+    W(i)         = _complex(x, y);
+    W(n - i + 2) = _complex(y, x);
   }
-  writeln(W);
-*/
+  if (debug) then writeln("in twiddles(), W is: ", W);
 }
-
-
-/*
-
-#include <math.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <sys/mta_task.h>
-#include <machine/runtime.h>
-
-double timer()
-{ return ((double) mta_get_clock(0) / mta_clock_freq()); }
-
-#pragma mta inline
-void btrfly(j, wk1r, wk1i, wk2r, wk2i, wk3r, wk3i, a, b, c, d)
-  int j;
-  double wk1r, wk1i, wk2r, wk2i, wk3r, wk3i, *a, *b, *c, *d;
-{ double x0r = a[j    ] + b[j    ];
-  double x0i = a[j + 1] + b[j + 1];
-  double x1r = a[j    ] - b[j    ];
-  double x1i = a[j + 1] - b[j + 1];
-  double x2r = c[j    ] + d[j    ];
-  double x2i = c[j + 1] + d[j + 1];
-  double x3r = c[j    ] - d[j    ];
-  double x3i = c[j + 1] - d[j + 1];
-
-  a[j    ] = x0r + x2r;
-  a[j + 1] = x0i + x2i;
-  x0r -= x2r;
-  x0i -= x2i;
-  c[j    ] = wk2r * x0r - wk2i * x0i;
-  c[j + 1] = wk2r * x0i + wk2i * x0r;
-  x0r = x1r - x3i;
-  x0i = x1i + x3r;
-  b[j    ] = wk1r * x0r - wk1i * x0i;
-  b[j + 1] = wk1r * x0i + wk1i * x0r;
-  x0r = x1r + x3i;
-  x0i = x1i - x3r;
-  d[j    ] = wk3r * x0r - wk3i * x0i;
-  d[j + 1] = wk3r * x0i + wk3i * x0r;
-}
-
-double * bit_reverse(int n, double *w) {
-  unsigned int i, mask, shift;
-  double *v = new double[2 * n];
-
-  mask  = 0x0102040810204080;
-  shift = (int) (log(n) / log(2));
-
-#pragma mta use 100 streams
-#pragma mta assert no dependence
-  for (i = 0; i < n; i++) {
-      int ndx = MTA_BIT_MAT_OR(mask, MTA_BIT_MAT_OR(i, mask));
-      ndx = MTA_ROTATE_LEFT(ndx, shift);
-      v[2 * ndx]     = w[2 * i];
-      v[2 * ndx + 1] = w[2 * i + 1];
-  }
-
-  free(w);
-  return(v);
-}
-
-void twiddles(int n, double *w)
-{ int i;
-  double delta = atan(1.0) / n;
-
-  w[0]     = 1;
-  w[1]     = 0;
-  w[n]     = cos(delta * n);
-  w[n + 1] = w[n];
-
-#pragma mta assert no dependence
-  for (i = 2; i < n; i += 2) {
-      double x = cos(delta * i);
-      double y = sin(delta * i);
-      w[i]             = x;
-      w[i + 1]         = y;
-      w[2 * n - i]     = y;
-      w[2 * n - i + 1] = x;
-} }
-
-void cft1st(int n, double *a, double *w)
-{ int j, k1;
-
-  double *v   = w + 1;
-  double *b   = a + 2;
-  double *c   = a + 4;
-  double *d   = a + 6;
-  double wk1r = w[2];
-
-  double x0r = a[0] + a[2];
-  double x0i = a[1] + a[3];
-  double x1r = a[0] - a[2];
-  double x1i = a[1] - a[3];
-  double x2r = a[4] + a[6];
-  double x2i = a[5] + a[7];
-  double x3r = a[4] - a[6];
-  double x3i = a[5] - a[7];
-
-  a[0] = x0r + x2r;
-  a[1] = x0i + x2i;
-  a[4] = x0r - x2r;
-  a[5] = x0i - x2i;
-  a[2] = x1r - x3i;
-  a[3] = x1i + x3r;
-  a[6] = x1r + x3i;
-  a[7] = x1i - x3r;
-
-  x0r  = a[8]  + a[10];
-  x0i  = a[9]  + a[11];
-  x1r  = a[8]  - a[10];
-  x1i  = a[9]  - a[11];
-  x2r  = a[12] + a[14];
-  x2i  = a[13] + a[15];
-  x3r  = a[12] - a[14];
-  x3i  = a[13] - a[15];
-  a[8] = x0r + x2r;
-  a[9] = x0i + x2i;
-  a[12] = x2i - x0i;
-  a[13] = x0r - x2r;
-  x0r   = x1r - x3i;
-  x0i   = x1i + x3r;
-  a[10] = wk1r * (x0r - x0i);
-  a[11] = wk1r * (x0r + x0i);
-  x0r   = x3i + x1r;
-  x0i   = x3r - x1i;
-  a[14] = wk1r * (x0i - x0r);
-  a[15] = wk1r * (x0i + x0r);
-
-#pragma mta use 100 streams
-#pragma mta no scalar expansion
-#pragma mta assert no dependence
-  for (j = 16, k1 = 2; j < n; j += 16, k1 += 2) {
-      double wk2r = w[k1];
-      double wk2i = v[k1];
-      double wk1r = w[k1 + k1];
-      double wk1i = v[k1 + k1];
-      double wk3r = wk1r - 2 * wk2i * wk1i;
-      double wk3i = 2 * wk2i * wk1r - wk1i;
-
-      btrfly (j, wk1r, wk1i, wk2r, wk2i, wk3r, wk3i, a, b, c, d);
-
-      wk1r = w[k1 + k1 + 2];
-      wk1i = v[k1 + k1 + 2];
-      wk3r = wk1r - 2 * wk2r * wk1i;
-      wk3i = 2 * wk2r * wk1r - wk1i;
-
-      btrfly (j + 8, wk1r, wk1i, - wk2i, wk2r, wk3r, wk3i, a, b, c, d);
-} }
-
-void cftmd0(int n, int l, double *a, double *w)
-{ int j, m = l << 2;
-
-  double wk1r = w[2];
-
-  double *v = w + 1;
-  double *b = a + l;
-  double *c = a + l + l;
-  double *d = a + l + l + l;
-
-#pragma mta use 100 streams
-#pragma mta assert no dependence
-  for (j = 0; j < l; j += 2)
-      btrfly(j, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, a, b, c, d);
-
-#pragma mta use 100 streams
-#pragma mta assert no dependence
-  for (j = m; j < l + m; j += 2)
-      btrfly(j, wk1r, wk1r, 0.0, 1.0, - wk1r, wk1r, a, b, c, d);
-}
-
-void cftmd1(int n, int l, double *a, double *w)
-{ int j, k, k1;
-
-  int m  = l << 2;
-  int m2 = 2 * m;
-
-  double *v = w + 1;
-  double *b = a + l;
-  double *c = a + l + l;
-  double *d = a + l + l + l;
-
-  cftmd0(n, l, a, w);
-
-#pragma mta use 100 streams
-#pragma mta no scalar expansion
-#pragma mta assert no dependence
-  for (k = m2, k1 = 2; k < n; k += m2, k1 += 2) {
-      double wk2r = w[k1];
-      double wk2i = v[k1];
-      double wk1r = w[k1 + k1];
-      double wk1i = v[k1 + k1];
-      double wk3r = wk1r - 2 * wk2i * wk1i;
-      double wk3i = 2 * wk2i * wk1r - wk1i;
-
-      for (j = k; j < l + k; j += 2)
-          btrfly (j, wk1r, wk1i, wk2r, wk2i, wk3r, wk3i, a, b, c, d);
-
-      wk1r = w[k1 + k1 + 2];
-      wk1i = v[k1 + k1 + 2];
-      wk3r = wk1r - 2 * wk2r * wk1i;
-      wk3i = 2 * wk2r * wk1r - wk1i;
-
-      for (j = k + m; j < l + k + m; j += 2)
-          btrfly (j, wk1r, wk1i, - wk2i, wk2r, wk3r, wk3i, a, b, c, d);
-} }
-
-void cftmd21(int n, int l, double *a, double *w)
-{ int j, k, k1;
-  int m  = l << 2;
-  int m2 = 2 * m;
-  int m3 = 3 * m;
-
-  double *v = w + 1;
-  double *b = a + l;
-  double *c = a + l + l;
-  double *d = a + l + l + l;
-
-  for (k = m2, k1 = 2; k < n; k += m2, k1 += 2) {
-      double wk2r = w[k1];
-      double wk2i = v[k1];
-      double wk1r = w[k1 + k1];
-      double wk1i = v[k1 + k1];
-      double wk3r = wk1r - 2 * wk2i * wk1i;
-      double wk3i = 2 * wk2i * wk1r - wk1i;
-
-#pragma mta use 100 streams
-#pragma mta assert no dependence
-  for (j = k; j < k + l; j += 2)
-      btrfly (j, wk1r, wk1i, wk2r, wk2i, wk3r, wk3i, a, b, c, d);
-
-      wk1r = w[k1 + k1 + 2];
-      wk1i = v[k1 + k1 + 2];
-      wk3r = wk1r - 2 * wk2r * wk1i;
-      wk3i = 2 * wk2r * wk1r - wk1i;
-
-#pragma mta use 100 streams
-#pragma mta assert no dependence
-  for (j = k + m; j < k + m + l; j += 2)
-      btrfly (j, wk1r, wk1i, - wk2i, wk2r, wk3r, wk3i, a, b, c, d);
-
-} }
-
-void cftmd2(int n, int l, double *a, double *w)
-{ int j, k, k1;
-
-  int m  = l << 2;
-  int m2 = 2 * m;
-
-  double *v = w + 1;
-  double *b = a + l;
-  double *c = a + l + l;
-  double *d = a + l + l + l;
-
-  cftmd0(n, l, a, w);
-
-  if (m2 >= n) return;
-  if (m2 >= n / 8) {cftmd21(n, l, a, w); return;}
-
-#pragma mta use 100 streams
-#pragma mta assert no dependence
-  for (j = 0; j < l; j += 2)  {
-#pragma mta assert no dependence
-  for (k = m2, k1 = 2; k < n; k += m2, k1 += 2) {
-      double wk2r = w[k1];
-      double wk2i = v[k1];
-      double wk1r = w[k1 + k1];
-      double wk1i = v[k1 + k1];
-      double wk3r = wk1r - 2 * wk2i * wk1i;
-      double wk3i = 2 * wk2i * wk1r - wk1i;
-
-      btrfly (j + k, wk1r, wk1i, wk2r, wk2i, wk3r, wk3i, a, b, c, d);
-  }
-
-#pragma mta assert no dependence
-  for (k = m2, k1 = 2; k < n; k += m2, k1 += 2) {
-      double wk2r = w[k1];
-      double wk2i = v[k1];
-      double wk1r = w[k1 + k1 + 2];
-      double wk1i = v[k1 + k1 + 2];
-      double wk3r = wk1r - 2 * wk2r * wk1i;
-      double wk3i = 2 * wk2r * wk1r - wk1i;
-
-      btrfly (j + k + m, wk1r, wk1i, - wk2i, wk2r, wk3r, wk3i, a, b, c, d);
-
-} } }
-
-void dfft(int n, int logn, double *a, double *w)
-{ int i, l, j;
-  double *v, *b, *c, *d;
-
-  cft1st(n, a, w);
-
-  i = 4; l = 8;
-
-  for ( ; i <= logn / 2; i += 2, l *= 4) cftmd1(n, l, a, w);
-  for ( ; i <= logn - 1; i += 2, l *= 4) cftmd2(n, l, a, w);
-
-  v = w + 1;
-  b = a + l;
-  c = a + l + l;
-  d = a + l + l + l;
-
-  if ((l << 2) == n) {
-
-#pragma mta use 100 streams
-#pragma mta assert no dependence
-     for (j = 0; j < l; j += 2)
-         btrfly(j, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, a, b, c, d);
-
-  } else {
-
-#pragma mta use 100 streams
-#pragma mta assert no dependence
-     for (j = 0; j < l; j += 2) {
-         double x0r = a[j    ];
-         double x0i = a[j + 1];
-         double x1r = b[j    ];
-         double x1i = b[j + 1];
-         a[j    ]   = x0r + x1r;
-         a[j + 1]   = x0i + x1i;
-         b[j    ]   = x0r - x1r;
-         b[j + 1]   = x0i - x1i;
-} }  }
-
-*/
