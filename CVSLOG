@@ -75757,3 +75757,17 @@ Log message:
 Added files:
 	chapel/test/domains/waynew/: tuple_domain.future 
 
+---------------------------------------------------------------------------
+
+09/19/06 14:47:37 -- bradc
+
+Log message:
+	My first draft rewrite of Mary Beth's ra.chpl code.  It
+	seems to be working.  I've littered comments throughout
+	it about things that we might like to improve in the
+	implementation or language to clean it up.  I can walk
+	us through these as part of today's meeting.
+
+Added files:
+	chapel/test/studies/hpcc/RA/bradc/: ra-bradc.chpl ra-bradc.good 
+
