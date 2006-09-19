@@ -261,21 +261,6 @@ BaseAST* sibling_ast_wrap(BaseAST* sibling, BaseAST* ast) {
 }
 
 
-BaseAST* parent_ast_wrap(BaseAST* parent, BaseAST* ast) {
-  if (dynamic_cast<ModuleSymbol*>(parent) && dynamic_cast<Expr*>(ast))
-    ast = new ExprStmt(dynamic_cast<Expr*>(ast));
-  else if (dynamic_cast<BlockStmt*>(parent) && dynamic_cast<Expr*>(ast))
-    ast = new ExprStmt(dynamic_cast<Expr*>(ast));
-  else if (dynamic_cast<FnSymbol*>(parent) && dynamic_cast<Symbol*>(ast))
-    ast = new DefExpr(dynamic_cast<Symbol*>(ast));
-  else if (dynamic_cast<EnumType*>(parent) && dynamic_cast<Symbol*>(ast))
-    ast = new DefExpr(dynamic_cast<Symbol*>(ast));
-  else if (dynamic_cast<CallExpr*>(parent) && dynamic_cast<Symbol*>(ast))
-    ast = new SymExpr(dynamic_cast<Symbol*>(ast));
-  return ast;
-}
-
-
 void sibling_insert_help(BaseAST* sibling, BaseAST* ast) {
   Expr* parentExpr = NULL;
   Stmt* parentStmt = NULL;

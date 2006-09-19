@@ -527,14 +527,12 @@ void CallExpr::print(FILE* outfile) {
 
 void
 CallExpr::insertAtHead(BaseAST* ast) {
-  ast = parent_ast_wrap(this, ast);
   argList->insertAtHead(ast);
 }
 
 
 void
 CallExpr::insertAtTail(BaseAST* ast) {
-  ast = parent_ast_wrap(this, ast);
   argList->insertAtTail(ast);
 }
 
