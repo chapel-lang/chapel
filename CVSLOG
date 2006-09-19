@@ -75687,3 +75687,19 @@ Log message:
 Added files:
 	chapel/test/functions/waynew/: iterator8.chpl iterator8.good 
 
+---------------------------------------------------------------------------
+
+09/19/06 12:21:55 -- bradc
+
+Log message:
+	Committing a future test showing that the literal format
+	0x1u is accepted by the compiler but results in a 0 value
+	being stored.  If this were to somehow be fixed in the
+	next few hours, it would be very useful to this afternoon's
+	random access discussion... :)
+
+Added files:
+	chapel/test/studies/hpcc/RA/bradc/: ra-bradc-uintliteral.chpl 
+	                                    ra-bradc-uintliteral.future 
+	                                    ra-bradc-uintliteral.good 
+
