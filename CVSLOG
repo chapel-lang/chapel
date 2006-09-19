@@ -75716,3 +75716,14 @@ Log message:
 Modified files:
 	chapel/test/studies/hpcc/RA/marybeth/: ra.chpl 
 
+---------------------------------------------------------------------------
+
+09/19/06 13:25:30 -- deitz
+
+Log message:
+	Removed parent_ast_wrap and unnecessary uses of it.
+
+Modified files:
+	chapel/compiler/AST/: astutil.cpp expr.cpp 
+	chapel/compiler/include/: astutil.h 
+
