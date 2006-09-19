@@ -14,7 +14,7 @@
  *
  *  last revised 9/18/2008 by marybeth
  */  
-param POLY:uint = 0x0000000000000007u;
+param POLY:uint = 0x0000000000000007;
 param PERIOD:int = 1317624576693539401;
 param MEMSIZE:int = 1000; 
 
@@ -28,6 +28,7 @@ def HPCC_starts(n:int):uint {
   var ran:uint;
   var D: domain(1) = [0..63];
   var m2: [D] uint;
+  var result: uint;
 
   while (n2 < 0) do {
     n2 += PERIOD;
@@ -35,9 +36,12 @@ def HPCC_starts(n:int):uint {
   while (n2 > PERIOD) do {
     n2 -= PERIOD;
   }
-  if (n2 == 0) then return 0x1u;
+  if (n2 == 0) {
+    result = 0x1;
+    return result;
+  }
 
-  temp = 1u;
+  temp = 0x1;
   for i in D {
     m2(i) = temp;
     if (temp:int) < 0 then
@@ -53,7 +57,7 @@ def HPCC_starts(n:int):uint {
   i = 62;
   while !((n2 >> i) & 1) do i -= 1;
 
-  ran = 0x2u;
+  ran = 0x2;
   while (i > 0) do {
     temp = 0;
     for j in D do {
@@ -136,7 +140,7 @@ def main() {
 
   /* Verification of results (in serial or "safe" mode; optional) */
   i  = 0;
-  temp = 0x1u;
+  temp = 0x1;
   do {
     if (temp:int) < 0 then
       temp = ((temp << 1) ^ POLY);
