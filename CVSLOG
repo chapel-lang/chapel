@@ -75546,3 +75546,16 @@ Added files:
 	                                  badArrArgErrMsg.future 
 	                                  badArrArgErrMsg.good 
 
+---------------------------------------------------------------------------
+
+09/18/06 17:38:52 -- bradc
+
+Log message:
+	Trying to get the query of a domain's length into the testing
+	system, but can't get it to work yet.  Steve, can you look at
+	this and suggest fixes?  I might be doing something stupid.
+
+Added files:
+	chapel/test/domains/bradc/: queryLength.chpl queryLength.future 
+	                            queryLength.good 
+
