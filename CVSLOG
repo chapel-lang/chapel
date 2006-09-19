@@ -75645,3 +75645,35 @@ Log message:
 Removed files:
 	chapel/test/functions/deitz/: test_visible2.future 
 
+---------------------------------------------------------------------------
+
+09/19/06 10:16:00 -- deitz
+
+Log message:
+	Removed usage of Boehm GC and updated the Makefiles.
+	
+	Removed some dead code.
+
+Modified files:
+	./: Makefile 
+	chapel/compiler/: Makefile 
+	chapel/compiler/AST/: baseAST.cpp expr.cpp primitive.cpp 
+	                      symbol.cpp 
+	chapel/compiler/backend/: beautify.cpp 
+	chapel/compiler/etc/: c_runtime.h 
+	chapel/compiler/ifa/: num.h 
+	chapel/compiler/include/: alist.h baseAST.h bb.h chpl.h list.h 
+	                          map.h primitive.h symscope.h vec.h 
+	chapel/compiler/main/: arg.cpp driver.cpp runpasses.cpp 
+	chapel/compiler/make/: Makefile.compiler.foot 
+	                       Makefile.compiler.head 
+	                       Makefile.compiler.subdirrules 
+	chapel/compiler/parser/: chapel.lex lexyacc.h modulefinder.lex 
+	                         processTokens.cpp 
+	chapel/compiler/util/: Makefile.share files.cpp misc.cpp 
+	                       stringutil.cpp 
+	chapel/make/: Makefile.base 
+Removed files:
+	chapel/compiler/include/: chplalloc.h uniqueName.h 
+	chapel/compiler/util/: uniqueName.cpp 
+
