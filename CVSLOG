@@ -75747,3 +75747,13 @@ Log message:
 Added files:
 	chapel/test/domains/waynew/: tuple_domain.chpl tuple_domain.good 
 
+---------------------------------------------------------------------------
+
+09/19/06 14:38:31 -- waynew
+
+Log message:
+	.future file
+
+Added files:
+	chapel/test/domains/waynew/: tuple_domain.future 
+
