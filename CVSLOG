@@ -75771,3 +75771,52 @@ Log message:
 Added files:
 	chapel/test/studies/hpcc/RA/bradc/: ra-bradc.chpl ra-bradc.good 
 
+---------------------------------------------------------------------------
+
+09/19/06 14:56:22 -- bradc
+
+Log message:
+	Checking in some bugs/futures that I found while
+	working on the RA benchmark:
+	
+	 ra-bradc-badlineno.chpl : an error message reports
+	                           a line number, seemingly
+	                           unrelated to the problem
+	
+	 ra-bradc-badparam.chpl :  the compiler complains
+	                           about a param value even
+	                           though working versions of
+	                           the code declare the param
+	                           in the same way
+	
+	 ra-bradc-duplcateErrors.chpl : the compiler reports
+	                                the same error 6 times
+	                                even though the function
+	                                probably isn't being
+	                                cloned
+	
+	 ra-bradc-illegalcast.chpl : a cast from domain to uint
+	                             is accepted and codegened
+	                             by the compiler to create
+	                             nonsense;  should either be
+	                             legal or report an error.
+	
+	Also checking in ra.c -- a version of the C code that I've
+	been hacking on and embedding debug printing in.
+
+Added files:
+	chapel/test/studies/hpcc/RA/bradc/: .cvsignore 
+	                                    ra-bradc-badlineno.chpl 
+	                                    ra-bradc-badlineno.future 
+	                                    ra-bradc-badlineno.good 
+	                                    ra-bradc-badparam.chpl 
+	                                    ra-bradc-badparam.future 
+	                                    ra-bradc-badparam.good 
+	                                    ra-bradc-duplicateErrors.chpl 
+	                                    ra-bradc-duplicateErrors.future 
+	                                    ra-bradc-duplicateErrors.good 
+	                                    ra-bradc-illegalcast.chpl 
+	                                    ra-bradc-illegalcast.future 
+	                                    ra-bradc-illegalcast.good 
+	                                    ra.c 
+
