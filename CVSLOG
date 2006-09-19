@@ -75830,3 +75830,14 @@ Log message:
 Modified files:
 	chapel/etc/emacs/21.4/: font-lock.el 
 
+---------------------------------------------------------------------------
+
+09/19/06 14:58:52 -- bradc
+
+Log message:
+	Made start_test so that if the -onetest flag is used, things
+	like NOTEST in the directory will be ignored.
+
+Modified files:
+	chapel/test/: start_test 
+
